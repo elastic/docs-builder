@@ -234,6 +234,7 @@ internal sealed partial class ChangelogCommands(
 	/// <param name="issues">Optional: Issue URL(s) or number(s) (comma-separated), or a path to a newline-delimited file containing issue URLs or numbers. Can be specified multiple times. Each occurrence can be either comma-separated issues (e.g., `--issues "https://github.com/owner/repo/issues/123,456"`) or a file path (e.g., `--issues /path/to/file.txt`). If --owner and --repo are provided, issue numbers can be used instead of URLs. If specified, --title can be derived from the issue. Creates one changelog file per issue. Mutually exclusive with --release-version and --report.</param>
 	/// <param name="owner">Optional: GitHub repository owner (used when --prs or --issues contains just numbers, or when using --release-version). Falls back to bundle.owner in changelog.yml when not specified. If that value is also absent, "elastic" is used.</param>
 	/// <param name="output">Optional: Output directory for the changelog. Falls back to bundle.directory in changelog.yml when not specified. Defaults to current directory.</param>
+	/// <param name="pr">Optional: Alias for --prs that accepts a single pull request URL or PR number. Feeds into --prs. Prefer --prs for multiple values.</param>
 	/// <param name="prs">Optional: Pull request URL(s) or PR number(s) (comma-separated), or a path to a newline-delimited file containing PR URLs or numbers. Can be specified multiple times. Each occurrence can be either comma-separated PRs (e.g., `--prs "https://github.com/owner/repo/pull/123,6789"`) or a file path (e.g., `--prs /path/to/file.txt`). When specifying PRs directly, provide comma-separated values. When specifying a file path, provide a single value that points to a newline-delimited file. If --owner and --repo are provided, PR numbers can be used instead of URLs. If specified, --title can be derived from the PR. If mappings are configured, --areas and --type can also be derived from the PR. Creates one changelog file per PR. Mutually exclusive with --release-version and --report.</param>
 	/// <param name="report">Optional: URL or file path to a promotion report HTML document. Extracts GitHub pull request URLs and creates one changelog per PR (same parsing as `changelog bundle --report`). Mutually exclusive with --prs, --issues, and --release-version.</param>
 	/// <param name="repo">Optional: GitHub repository name (used when --prs or --issues contains just numbers, or when using --release-version). Falls back to bundle.repo in changelog.yml when not specified.</param>
@@ -263,6 +264,7 @@ internal sealed partial class ChangelogCommands(
 		string[]? issues = null,
 		string? owner = null,
 		string? output = null,
+		string? pr = null,
 		string[]? prs = null,
 		string? report = null,
 		string? releaseVersion = null,
@@ -279,6 +281,9 @@ internal sealed partial class ChangelogCommands(
 	{
 		var ctx = ct;
 		await using var serviceInvoker = new ServiceInvoker(collector);
+
+		if (!string.IsNullOrWhiteSpace(pr))
+			prs = prs is { Length: > 0 } ? [.. prs, pr] : [pr];
 
 		var hasReport = !string.IsNullOrWhiteSpace(report);
 		if (hasReport)
