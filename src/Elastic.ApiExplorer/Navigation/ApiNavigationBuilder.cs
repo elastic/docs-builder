@@ -157,7 +157,6 @@ public class ApiNavigationBuilder(ILogger logger, BuildContext context)
 			StructuralNavigationItem.Create(context.UrlPathPrefix, apiUrlSuffix, rootNavigation, openApiDocument)
 		);
 
-		// Add existing navigation items (OpenAPI generated content)
 		if (topLevelNavigationItems.Count > 0)
 			finalNavigationItems.AddRange(topLevelNavigationItems);
 		else if (rootNavigation.NavigationItems.Count > 0)
