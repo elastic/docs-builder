@@ -111,7 +111,13 @@ public class ChangelogEntryValidationService(
 					$"No changelog entry file found for PR #{input.PrNumber}. " +
 						$"Add one at {expectedPath}, or run 'docs-builder changelog pr' to generate it."
 				);
-				await WriteMetadataAsync(input, "missing-entry", null, defaultBranch, ctx);
+				var resolvedProducts = matchedProducts.Count switch
+				{
+					0 => null,
+					1 => matchedProducts[0].Id,
+					_ => string.Join(", ", matchedProducts.Select(p => p.Id))
+				};
+				await WriteMetadataAsync(input, "missing-entry", null, defaultBranch, ctx, resolvedProducts: resolvedProducts);
 				return false;
 			}
 			await WriteMetadataAsync(input, "ok", null, defaultBranch, ctx);
@@ -252,7 +258,8 @@ public class ChangelogEntryValidationService(
 		List<EntryFileFinding>? findings,
 		string defaultBranch,
 		Cancel ctx,
-		ValidationGate gate = ValidationGate.Entries
+		ValidationGate gate = ValidationGate.Entries,
+		string? resolvedProducts = null
 	)
 	{
 		if (env?.IsRunningOnCI != true || input.PrNumber <= 0)
@@ -275,7 +282,8 @@ public class ChangelogEntryValidationService(
 			HeadRepo = input.HeadRepo,
 			ConfigFile = input.ConfigFile,
 			DefaultBranch = defaultBranch,
-			EntryFindings = entryFindings
+			EntryFindings = entryFindings,
+			ResolvedProducts = resolvedProducts
 		};
 
 		await _metadataWriter.WriteAsync(metadata, ctx);

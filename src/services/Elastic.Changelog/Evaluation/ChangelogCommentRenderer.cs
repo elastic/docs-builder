@@ -250,7 +250,8 @@ internal static class ChangelogCommentRenderer
 		int prNumber,
 		bool isFork = false,
 		string? repoName = null,
-		bool canCommit = true
+		bool canCommit = true,
+		string? resolvedProducts = null
 	)
 	{
 		var dir = changelogDir ?? "docs/changelog";
@@ -258,7 +259,44 @@ internal static class ChangelogCommentRenderer
 
 		if (isFork)
 		{
-			var product = repoName ?? "your-repo";
+			// Determine product line(s) for the YAML snippet and --products flag.
+			string productYamlLine;
+			string? productsFlag;
+			string? productsNote;
+			if (resolvedProducts is not null)
+			{
+				var ids = resolvedProducts.Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
+				if (ids.Length == 1)
+				{
+					productYamlLine = $"  - product: {ids[0]}";
+					productsFlag = $"  --products {ids[0]} \\";
+					productsNote = null;
+				}
+				else
+				{
+					var choices = string.Join(", ", ids.Select(id => WrapInlineCode(id)));
+					productYamlLine = $"  - product: one-of  # pick one of: {string.Join(", ", ids)}";
+					productsFlag = "  --products one-of \\";
+					productsNote = $"Replace `one-of` with one of: {choices}.";
+				}
+			}
+			else
+			{
+				productYamlLine = $"  - product: {repoName ?? "your-repo"}";
+				productsFlag = null;
+				productsNote = null;
+			}
+
+			var docsBuilderLines = new List<string>
+			{
+				$"docs-builder changelog add \\",
+				$"  --concise \\",
+				$"  --pr {prNumber} \\",
+				"  --type enhancement \\",
+				"  --title \"Describe your change clearly\"",
+			};
+			if (productsFlag is not null)
+				docsBuilderLines.Insert(docsBuilderLines.Count - 1, productsFlag);
 
 			var bashScript = string.Join(
 				"\n",
@@ -267,18 +305,11 @@ internal static class ChangelogCommentRenderer
 				"type: enhancement  # feature | enhancement | bug-fix | breaking-change",
 				"title: Describe your change clearly",
 				"products:",
-				$"  - product: {product}",
+				productYamlLine,
 				"YAML"
 			);
 
-			var docsBuilderScript = string.Join(
-				"\n",
-				$"docs-builder changelog add \\",
-				$"  --concise \\",
-				$"  --pr {prNumber} \\",
-				"  --type enhancement \\",
-				"  --title \"Describe your change clearly\""
-			);
+			var docsBuilderScript = string.Join("\n", docsBuilderLines);
 
 			var gitScript = string.Join(
 				"\n",
@@ -302,13 +333,20 @@ internal static class ChangelogCommentRenderer
 				"**Option 2 — generate with `docs-builder`** (fetches title and type from the PR if `GITHUB_TOKEN` is set)",
 				"",
 				WrapCodeFence(docsBuilderScript, "bash"),
+			};
+			if (productsNote is not null)
+			{
+				parts.Add("");
+				parts.Add($"> ℹ️ {productsNote}");
+			}
+			parts.AddRange([
 				"",
 				"Then commit and push:",
 				"",
 				WrapCodeFence(gitScript, "bash"),
 				"",
 				"Adjust `type` and `title` to match your change. The changelog validation will re-run automatically once you push.",
-			};
+			]);
 
 			return Truncate(string.Join("\n", parts));
 		}
