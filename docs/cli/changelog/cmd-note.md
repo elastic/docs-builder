@@ -66,7 +66,7 @@ The scrubber writes two indexes per note:
 
 `{changelog}` does not read these indexes. It loads published bundle YAML (and amend sidecars listed in `bundle/{product}/registry.json`).
 
-If the release bundle for that product and version or date has already shipped when you upload, the scrubber generates a `{parent}.amend-notes.yaml` sidecar so the changelog reaches published docs without a manual rerun. Don't run `changelog bundle-amend --add` for that file. Refer to [](/data/release-notes/bundle.md#changelog-bundle-notes-after-ship).
+If the release bundle for that product and version or date has already shipped when you upload, the scrubber generates an amend sidecar for **that product**, then rebuilds that product's `bundle/{product}/registry.json` so `{changelog}` `:cdn:` pages pick it up. Other products that share the version are left alone. Don't run `changelog bundle-amend --add` for that file. Refer to [](/data/release-notes/bundle.md#changelog-bundle-notes-after-ship).
 
 If there is no existing or planned bundle for that product and version or date, you can create a bundle from a path list that contains all the relevant changelogs. Refer to [Bundle by file paths](/cli/changelog/bundle.md#changelog-bundle-files).
 
