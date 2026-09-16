@@ -129,6 +129,6 @@ public sealed class ReleaseNotesFetcher(ILoggerFactory logFactory, IFileSystem f
 		return new FetchedReleaseNotes { BundlesByProduct = bundleMap, DeclaredProducts = declaredSet, InferredProducts = inferredSet };
 	}
 
-	internal static bool IsValidCdnProductId(string product) =>
+	public static bool IsValidCdnProductId(string product) =>
 		product.Length > 0 && product.All(c => char.IsAsciiLetterOrDigit(c) || c is '_' or '-');
 }
