@@ -128,4 +128,134 @@ public class ChangelogEntryValidationServiceTests(ITestOutputHelper output) : Ch
 		result.Should().BeTrue("a registered repo with an empty file list and no require-changelog-file should pass");
 		Collector.Errors.Should().Be(0);
 	}
+
+	// ── Cross-repo PR existence tests ─────────────────────────────────────────────────────────
+
+	private IConfigurationContext ContextWithProductRepo(string productId, string ownerRepo)
+	{
+		var products = new Dictionary<string, Product>
+		{
+			{ "elasticsearch", new Product { Id = "elasticsearch", DisplayName = "Elasticsearch" } },
+			{ productId, new Product { Id = productId, DisplayName = productId, Repository = ownerRepo } }
+		};
+		return new ConfigurationContext
+		{
+			Endpoints = ConfigurationContext.Endpoints,
+			ConfigurationFileProvider = ConfigurationContext.ConfigurationFileProvider,
+			VersionsConfiguration = ConfigurationContext.VersionsConfiguration,
+			ProductsConfiguration = new ProductsConfiguration
+			{
+				Products = products.ToFrozenDictionary(),
+				PublicReferenceProducts = FrozenDictionary<string, Product>.Empty,
+				ProductDisplayNames = products.ToDictionary(p => p.Key, p => p.Value.DisplayName).ToFrozenDictionary()
+			},
+			SearchConfiguration = ConfigurationContext.SearchConfiguration,
+			LegacyUrlMappings = ConfigurationContext.LegacyUrlMappings
+		};
+	}
+
+	private async Task WriteEntryFile(string relPath, string yaml)
+	{
+		var fullPath = FileSystem.Path.Join(Root, relPath);
+		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(fullPath)!);
+		await FileSystem.File.WriteAllTextAsync(fullPath, yaml);
+	}
+
+	[Fact]
+	public async Task ValidateEntries_ProductRepoHasPr_NoExistenceError()
+	{
+		// Entry references 'apm' whose repo is elastic/apm. PR 42 exists there.
+		// The submitting repo (elastic/elasticsearch) should never be queried.
+		await WriteConfig(MinimalConfig);
+		const string entryYaml =
+			"""
+			type: feature
+			title: My feature
+			products:
+			  - product: apm
+			""";
+		await WriteEntryFile("docs/changelog/42.yaml", entryYaml);
+
+		var prService = A.Fake<IGitHubPrService>();
+		A.CallTo(() => prService.CheckPullRequestsExistAsync("elastic", "apm", A<IReadOnlyList<int>>._, A<CancellationToken>._)).Returns(
+			(IReadOnlyDictionary<int, bool>)new Dictionary<int, bool> { { 42, true } }
+		);
+
+		var ctx = ContextWithProductRepo("apm", "elastic/apm");
+		var svc = new ChangelogEntryValidationService(LoggerFactory, ctx, prService, RunnerTempFileSystem);
+		var args = MakeArgs("elasticsearch") with { Files = ["docs/changelog/42.yaml"] };
+		var result = await svc.ValidateEntries(Collector, args, CancellationToken.None);
+
+		result.Should().BeTrue();
+		Collector.Errors.Should().Be(0);
+		A.CallTo(
+			() => prService.CheckPullRequestsExistAsync("elastic", "apm", A<IReadOnlyList<int>>._, A<CancellationToken>._)
+		).MustHaveHappenedOnceExactly();
+		A.CallTo(
+			() => prService.CheckPullRequestsExistAsync("elastic", "elasticsearch", A<IReadOnlyList<int>>._, A<CancellationToken>._)
+		).MustNotHaveHappened();
+	}
+
+	[Fact]
+	public async Task ValidateEntries_NoProductRepo_FallsBackToSubmittingRepo()
+	{
+		// elasticsearch product has no Repository field — falls back to elastic/elasticsearch.
+		await WriteConfig(MinimalConfig);
+		const string entryYaml =
+			"""
+			type: feature
+			title: My feature
+			products:
+			  - product: elasticsearch
+			""";
+		await WriteEntryFile("docs/changelog/42.yaml", entryYaml);
+
+		var prService = A.Fake<IGitHubPrService>();
+		A.CallTo(
+			() => prService.CheckPullRequestsExistAsync("elastic", "elasticsearch", A<IReadOnlyList<int>>._, A<CancellationToken>._)
+		).Returns((IReadOnlyDictionary<int, bool>)new Dictionary<int, bool> { { 42, true } });
+
+		var svc = CreateService(prService);
+		var args = MakeArgs("elasticsearch") with { Files = ["docs/changelog/42.yaml"] };
+		var result = await svc.ValidateEntries(Collector, args, CancellationToken.None);
+
+		result.Should().BeTrue();
+		Collector.Errors.Should().Be(0);
+		A.CallTo(
+			() => prService.CheckPullRequestsExistAsync("elastic", "elasticsearch", A<IReadOnlyList<int>>._, A<CancellationToken>._)
+		).MustHaveHappenedOnceExactly();
+	}
+
+	[Fact]
+	public async Task ValidateEntries_AllProductReposMissingPr_EmitsError()
+	{
+		// Entry references 'apm' whose repo is elastic/apm. PR 42 definitively absent there.
+		await WriteConfig(MinimalConfig);
+		const string entryYaml =
+			"""
+			type: feature
+			title: My feature
+			products:
+			  - product: apm
+			""";
+		await WriteEntryFile("docs/changelog/42.yaml", entryYaml);
+
+		var prService = A.Fake<IGitHubPrService>();
+		A.CallTo(() => prService.CheckPullRequestsExistAsync("elastic", "apm", A<IReadOnlyList<int>>._, A<CancellationToken>._)).Returns(
+			(IReadOnlyDictionary<int, bool>)new Dictionary<int, bool> { { 42, false } }
+		);
+
+		var ctx = ContextWithProductRepo("apm", "elastic/apm");
+		var svc = new ChangelogEntryValidationService(LoggerFactory, ctx, prService, RunnerTempFileSystem);
+		var args = MakeArgs("elasticsearch") with { Files = ["docs/changelog/42.yaml"] };
+		var result = await svc.ValidateEntries(Collector, args, CancellationToken.None);
+
+		result.Should().BeFalse();
+		Collector.Errors.Should().BeGreaterThan(0);
+		Collector
+			.Diagnostics
+			.Where(d => d.Severity == Severity.Error)
+			.Should()
+			.Contain(d => d.Message.Contains("42") && d.Message.Contains("elastic/apm"));
+	}
 }
