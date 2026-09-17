@@ -1248,6 +1248,23 @@ public class BundleLoaderTests(ITestOutputHelper output)
 	}
 
 	[Fact]
+	public void SerializeBundle_DescriptionWithControlCharacter_StaysParseable()
+	{
+		// A block scalar writes content raw, so a control character in a multiline description used to
+		// land in the file unescaped and the bundle no longer parsed.
+		var description = "Upstream deps\n" + (char)0 + "See the blog";
+
+		var yaml = ReleaseNotesSerialization.SerializeBundle(new Bundle
+		{
+			Products = [new BundledProduct { ProductId = "elasticsearch", Target = "9.3.0" }],
+			Description = description
+		});
+
+		yaml.Should().NotContain("description: |");
+		ReleaseNotesSerialization.DeserializeBundle(yaml).Description.Should().Be(description);
+	}
+
+	[Fact]
 	public void LoadBundles_DescriptionSerializesAsLiteralBlock()
 	{
 		// Arrange - Test round-trip serialization of description field

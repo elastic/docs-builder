@@ -32,10 +32,12 @@ public static class BundleDescriptionInput
 		Cancel ctx
 	)
 	{
+		// Presence decides, not content. A whitespace-only path still means the caller passed the flag,
+		// and an empty value from a CI variable must fail rather than fall back to the config intro.
 		var specified = 0;
 		if (request.Description != null)
 			specified++;
-		if (!string.IsNullOrWhiteSpace(request.DescriptionFile))
+		if (request.DescriptionFile != null)
 			specified++;
 		if (request.ClearDescription)
 			specified++;
@@ -52,10 +54,25 @@ public static class BundleDescriptionInput
 		if (request.ClearDescription)
 			return BundleDescriptionInputResult.Patch(string.Empty);
 
-		if (request.Description != null)
-			return BundleDescriptionInputResult.Patch(request.Description);
+		return request.Description != null
+			? BundleDescriptionInputResult.Patch(request.Description)
+			: await ReadAsync(collector, fileSystem, request, ctx).ConfigureAwait(false);
+	}
 
+	private static async Task<BundleDescriptionInputResult> ReadAsync(
+		IDiagnosticsCollector collector,
+		IFileSystem fileSystem,
+		BundleDescriptionRequest request,
+		Cancel ctx
+	)
+	{
 		var trimmedFile = request.DescriptionFile!.Trim();
+		if (trimmedFile.Length == 0)
+		{
+			collector.EmitError(string.Empty, $"--description-file requires a path, or {StdinPath} to read from standard input.");
+			return BundleDescriptionInputResult.Fail;
+		}
+
 		if (trimmedFile == StdinPath)
 		{
 			if (request.Stdin == null)
@@ -65,7 +82,7 @@ public static class BundleDescriptionInput
 			}
 
 			var stdinText = await request.Stdin.ReadToEndAsync(ctx).ConfigureAwait(false);
-			return BundleDescriptionInputResult.Patch(stdinText.TrimEnd('\r', '\n'));
+			return Accept(collector, null, stdinText);
 		}
 
 		if (!fileSystem.File.Exists(trimmedFile))
@@ -75,7 +92,27 @@ public static class BundleDescriptionInput
 		}
 
 		var fileText = await fileSystem.File.ReadAllTextAsync(trimmedFile, ctx).ConfigureAwait(false);
-		return BundleDescriptionInputResult.Patch(fileText.TrimEnd('\r', '\n'));
+		return Accept(collector, trimmedFile, fileText);
+	}
+
+	/// <summary>
+	/// A NUL byte means the source was not UTF-8 text, most often a UTF-16 file saved with no byte order
+	/// mark. The bundle serializer escapes the byte rather than breaking the YAML, but the intro would
+	/// still be unreadable, so the run stops here where the source can be named.
+	/// </summary>
+	private static BundleDescriptionInputResult Accept(IDiagnosticsCollector collector, string? file, string text)
+	{
+		if (text.Contains('\0', StringComparison.Ordinal))
+		{
+			collector.EmitError(
+				file ?? string.Empty,
+				$"The description read from {file ?? "standard input"} is not UTF-8 text because it contains a NUL byte. " +
+					"Save the source as UTF-8 and run the command again."
+			);
+			return BundleDescriptionInputResult.Fail;
+		}
+
+		return BundleDescriptionInputResult.Patch(text.TrimEnd('\r', '\n'));
 	}
 }
 

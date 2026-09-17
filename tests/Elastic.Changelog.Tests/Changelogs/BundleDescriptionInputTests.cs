@@ -95,4 +95,51 @@ public class BundleDescriptionInputTests(ITestOutputHelper output) : ChangelogTe
 		result.Success.Should().BeFalse();
 		Collector.Errors.Should().BeGreaterThan(0);
 	}
+
+	[Fact]
+	public async Task ResolveAsync_EmptyDescriptionFile_Fails()
+	{
+		// A CI variable that expands to nothing must not look like "no description flag was passed",
+		// which would silently keep the config intro in profile mode.
+		var result = await ResolveAsync(descriptionFile: "   ");
+
+		result.Success.Should().BeFalse();
+		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("--description-file requires a path"));
+	}
+
+	[Fact]
+	public async Task ResolveAsync_DescriptionAndEmptyFile_Fails()
+	{
+		var result = await ResolveAsync(string.Empty, string.Empty);
+
+		result.Success.Should().BeFalse();
+		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("mutually exclusive"));
+	}
+
+	[Fact]
+	public async Task ResolveAsync_FileWithNulByte_Fails()
+	{
+		// A UTF-16 file saved with no byte order mark decodes as UTF-8 into NUL-separated characters.
+		// Accepting it would put an unreadable intro in a published bundle.
+		var path = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "desc.md");
+		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(path)!);
+		await FileSystem.File.WriteAllTextAsync(path, "Line one\n" + (char)0 + "Line two", TestContext.Current.CancellationToken);
+
+		var result = await ResolveAsync(descriptionFile: path);
+
+		result.Success.Should().BeFalse();
+		Collector.Errors.Should().BeGreaterThan(0);
+		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("NUL byte"));
+	}
+
+	[Fact]
+	public async Task ResolveAsync_StdinWithNulByte_Fails()
+	{
+		using var stdin = new StringReader("Line one\n" + (char)0 + "Line two");
+
+		var result = await ResolveAsync(descriptionFile: BundleDescriptionInput.StdinPath, stdin: stdin);
+
+		result.Success.Should().BeFalse();
+		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("standard input"));
+	}
 }

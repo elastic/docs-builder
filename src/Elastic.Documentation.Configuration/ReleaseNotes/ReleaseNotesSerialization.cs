@@ -468,9 +468,31 @@ public static partial class ReleaseNotesSerialization
 	{
 		public override void Emit(ScalarEventInfo eventInfo, IEmitter emitter)
 		{
-			if (eventInfo.Source.Value is string value && value.Contains('\n'))
-				eventInfo.Style = ScalarStyle.Literal;
+			if (eventInfo.Source.Value is string value)
+			{
+				if (!IsBlockSafe(value))
+					eventInfo.Style = ScalarStyle.DoubleQuoted;
+				else if (value.Contains('\n'))
+					eventInfo.Style = ScalarStyle.Literal;
+			}
+
 			base.Emit(eventInfo, emitter);
+		}
+
+		/// <summary>
+		/// Both block styles write their content raw, so a control character that is not a line break or a
+		/// tab lands in the file unescaped and the document no longer parses. Those values take the
+		/// double-quoted style instead, which escapes the character.
+		/// </summary>
+		private static bool IsBlockSafe(string value)
+		{
+			foreach (var c in value)
+			{
+				if (c is < ' ' and not ('\n' or '\r' or '\t'))
+					return false;
+			}
+
+			return true;
 		}
 	}
 }

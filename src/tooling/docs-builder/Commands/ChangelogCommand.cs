@@ -2343,11 +2343,27 @@ internal sealed partial class ChangelogCommands(
 		Cancel ctx
 	)
 	{
-		var file = string.IsNullOrWhiteSpace(descriptionFile)
-			? null
-			: descriptionFile.Trim() == BundleDescriptionInput.StdinPath ? BundleDescriptionInput.StdinPath : NormalizePath(descriptionFile);
-		var request = new BundleDescriptionRequest(description, file, ClearDescription: clearDescription, Stdin: Console.In);
+		var request = new BundleDescriptionRequest(
+			description,
+			NormalizeDescriptionFile(descriptionFile),
+			ClearDescription: clearDescription,
+			Stdin: Console.In
+		);
 		return await BundleDescriptionInput.ResolveAsync(collector, _fileSystem, request, ctx);
+	}
+
+	/// <summary>
+	/// A whitespace-only path stays non-null so the resolver still sees the flag as supplied and rejects it,
+	/// instead of treating the run as if no description source was given.
+	/// </summary>
+	private string? NormalizeDescriptionFile(string? descriptionFile)
+	{
+		if (string.IsNullOrWhiteSpace(descriptionFile))
+			return descriptionFile;
+
+		return descriptionFile.Trim() == BundleDescriptionInput.StdinPath
+			? BundleDescriptionInput.StdinPath
+			: NormalizePath(descriptionFile);
 	}
 
 	/// <summary>Upload changelog entries or bundle artifacts to S3 or Elasticsearch.</summary>
