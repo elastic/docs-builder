@@ -4,5 +4,6 @@ toc:
   - file: ingest.md
   - file: essc.md
   - file: changelog-bundle-registry.md
+  - file: release-notes-handover.md
   - file: page-feedback.md
   - toc: link-validation

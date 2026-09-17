@@ -12,3 +12,4 @@ These are old development notes created during the initial development of {{dbui
 - **[Elasticsearch ingest](./ingest.md)** — The lexical and semantic indexing pipeline with hash-based change detection.
 - **[essc](./essc.md)** — The AOT-compiled CLI for indexing elastic.co content (Contentstack, Labs) into Elasticsearch.
 - **[Changelog bundle registry](./changelog-bundle-registry.md)** — CDN-based changelog bundle publishing, scrubbing, and the `{changelog}` directive's `cdn:` mode.
+- **[Release notes handover](./release-notes-handover.md)** — Orientation for whoever takes over the release notes automation: moving parts, code map, maturity, and open gaps.
