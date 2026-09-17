@@ -4,45 +4,37 @@ FROM public.ecr.aws/amazonlinux/amazonlinux:2023 AS base
 
 ARG TARGETARCH
 ARG TARGETOS
-# Override to pin a specific RID (e.g. linux-x64 in CI). When empty, the
-# native Docker architecture is used (linux-arm64 on Apple Silicon, etc.).
-ARG PUBLISH_RID=linux-x64
 
 WORKDIR /app
 
 RUN rpm --import https://packages.microsoft.com/keys/microsoft.asc
 
-RUN dnf update -y
-RUN dnf install -y git
-RUN dnf install -y clang
-RUN dnf install -y libicu
+RUN dnf update -y \
+    && dnf install -y git clang libicu
 
 COPY --from=node /usr/local/bin/node /usr/local/bin/node
 COPY --from=node /usr/local/lib/node_modules /usr/local/lib/node_modules
 RUN ln -s /usr/local/lib/node_modules/npm/bin/npm-cli.js /usr/local/bin/npm \
     && ln -s /usr/local/lib/node_modules/npm/bin/npx-cli.js /usr/local/bin/npx
 
-## temporary see: https://github.com/amazonlinux/amazon-linux-2023/issues/1025
-RUN dnf install -y tar
-RUN dnf install -y findutils
-RUN curl -L https://dot.net/v1/dotnet-install.sh -o dotnet-install.sh
-RUN chmod +x ./dotnet-install.sh
-RUN ./dotnet-install.sh
+# dotnet-install.sh requires tar and findutils, not present in the AL2023 base image
+# see: https://github.com/amazonlinux/amazon-linux-2023/issues/1025
+RUN dnf install -y tar findutils \
+    && curl -L https://dot.net/v1/dotnet-install.sh -o dotnet-install.sh \
+    && chmod +x ./dotnet-install.sh \
+    && ./dotnet-install.sh
 ENV PATH="$PATH:/root/.dotnet"
-# /end temporary
 
 COPY . .
 
 ENV DOTNET_NOLOGO=true \
     DOTNET_CLI_TELEMETRY_OPTOUT=true
 
-RUN if [ -n "$PUBLISH_RID" ]; then rid="$PUBLISH_RID"; \
-    elif [ "$TARGETARCH" = "arm64" ]; then rid="linux-arm64"; \
-    elif [ "$TARGETARCH" = "amd64" ]; then rid="linux-x64"; \
-    else echo "Unknown TARGETARCH: $TARGETARCH" >&2; exit 1; fi \
+RUN arch=$TARGETARCH \
+    && if [ "$arch" = "amd64" ]; then arch="x64"; fi \
     && dotnet publish src/api/Elastic.Documentation.Mcp.Remote \
        --configuration Release \
-       --runtime "$rid" \
+       --runtime "${TARGETOS}-${arch}" \
        --output /app/mcp-publish
 
 # Runtime stage for ECS Fargate deployment

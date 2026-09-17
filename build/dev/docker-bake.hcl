@@ -36,7 +36,6 @@ target "mcp" {
   context    = "."
   dockerfile = "src/api/Elastic.Documentation.Mcp.Remote/Dockerfile"
   tags       = ["${IMAGE_REPOSITORY}:mcp"]
-  args       = { PUBLISH_RID = "" }
 
   cache-from = CACHE_REPOSITORY != "" ? ["type=registry,ref=${CACHE_REPOSITORY}-mcp"] : []
   cache-to   = CACHE_REPOSITORY != "" ? ["type=registry,ref=${CACHE_REPOSITORY}-mcp,mode=max"] : []
