@@ -48,10 +48,16 @@ public sealed class NotesIndexReconciler(
 	/// read to derive the grouping; every affected index is then (re)written.
 	/// </summary>
 	/// <returns>
-	/// A map of <c>version → list of NoteIndexEntry</c> (the version-union, same shape NoteAmend
-	/// consumes today). Returns an empty dictionary when no notes exist.
+	/// Notes grouped by product, then version. Legacy version-union indexes are still written
+	/// in this pass but are not part of the return value; <see cref="NoteAmendReconciler"/> uses
+	/// the product map only. A product×version whose product-scoped index is stale is included
+	/// with an empty note list so amend can drop that product's sidecar. Those keys stay in S3
+	/// until amend succeeds; leftover version-union indexes are deleted in this pass.
 	/// </returns>
-	public async Task<IReadOnlyDictionary<string, IReadOnlyList<NoteIndexEntry>>> ReconcileRepoAsync(ChangelogScope notesScope, Cancel ctx)
+	public async Task<IReadOnlyDictionary<string, IReadOnlyDictionary<string, IReadOnlyList<NoteIndexEntry>>>> ReconcileRepoAsync(
+		ChangelogScope notesScope,
+		Cancel ctx
+	)
 	{
 		if (notesScope.Kind != ChangelogScopeKind.Notes)
 			throw new ArgumentException($"Notes reconcile requires a Notes scope; got '{notesScope}'.", nameof(notesScope));
@@ -82,42 +88,66 @@ public sealed class NotesIndexReconciler(
 		var existingIndexKeys = await ListExistingNotesIndexes(notesScope, ctx);
 		var intendedKeys = IntendedIndexKeys(org, repo, byProductVersion.Keys, byVersion.Keys);
 
-		if (byVersion.Count == 0)
-		{
-			_logger.LogDebug("No versions found for repo {Repo}; removing any stale indexes", notesScope.Group);
-			await DeleteStaleIndexes(existingIndexKeys, intendedKeys, ctx);
-			return new Dictionary<string, IReadOnlyList<NoteIndexEntry>>();
-		}
-
-		var writes = BuildIndexWrites(org, repo, byProductVersion, byVersion);
-		var written = new Dictionary<string, IReadOnlyList<NoteIndexEntry>>(StringComparer.Ordinal);
+		var writtenProducts = new Dictionary<string, Dictionary<string, IReadOnlyList<NoteIndexEntry>>>(StringComparer.Ordinal);
+		IReadOnlyList<(string Product, string Version)> vanished = [];
 		try
 		{
-			await Parallel.ForEachAsync(writes, new ParallelOptions
+			if (byVersion.Count == 0)
 			{
-				MaxDegreeOfParallelism = MaxParallelReads,
-				CancellationToken = ctx
-			}, async (write, ct) =>
+				_logger.LogDebug("No versions found for repo {Repo}; removing any stale indexes", notesScope.Group);
+			}
+			else
 			{
-				await WriteIndexAsync(
-					write.Key,
-					write.Entries,
-					ct,
-					write.Product is null ? null : new NotesIndexMetadata(write.Product, write.Version!)
-				);
-				if (write.Product is not null)
-					return;
-				lock (written)
-					written[write.Version!] = write.Entries;
-			});
+				var writes = BuildIndexWrites(org, repo, byProductVersion, byVersion);
+				await Parallel.ForEachAsync(writes, new ParallelOptions
+				{
+					MaxDegreeOfParallelism = MaxParallelReads,
+					CancellationToken = ctx
+				}, async (write, ct) =>
+				{
+					await WriteIndexAsync(
+						write.Key,
+						write.Entries,
+						ct,
+						write.Product is null ? null : new NotesIndexMetadata(write.Product, write.Version!)
+					);
+					if (write.Product is null)
+						return;
+					lock (writtenProducts)
+					{
+						if (!writtenProducts.TryGetValue(write.Product, out var byVer))
+							writtenProducts[write.Product] = byVer = [with(StringComparer.Ordinal)];
+						byVer[write.Version!] = write.Entries;
+					}
+				});
+			}
 		}
 		finally
 		{
-			await DeleteStaleIndexes(existingIndexKeys, intendedKeys, ctx);
+			vanished = await DeleteStaleIndexes(existingIndexKeys, intendedKeys, ctx);
 		}
 
-		return written;
+		MergeVanishedProductVersions(writtenProducts, vanished);
+		return ToProductMap(writtenProducts);
 	}
+
+	private static void MergeVanishedProductVersions(
+		Dictionary<string, Dictionary<string, IReadOnlyList<NoteIndexEntry>>> map,
+		IReadOnlyList<(string Product, string Version)> vanished
+	)
+	{
+		foreach (var (product, version) in vanished)
+		{
+			if (!map.TryGetValue(product, out var byVer))
+				map[product] = byVer = [with(StringComparer.Ordinal)];
+			if (!byVer.ContainsKey(version))
+				byVer[version] = [];
+		}
+	}
+
+	private static IReadOnlyDictionary<string, IReadOnlyDictionary<string, IReadOnlyList<NoteIndexEntry>>> ToProductMap(
+		Dictionary<string, Dictionary<string, IReadOnlyList<NoteIndexEntry>>> map
+	) => map.ToDictionary(kv => kv.Key, kv => (IReadOnlyDictionary<string, IReadOnlyList<NoteIndexEntry>>)kv.Value, StringComparer.Ordinal);
 
 	private static void AddIndexEntry(Dictionary<string, List<NoteIndexEntry>> map, string groupKey, string poolRelativePath)
 	{
@@ -196,12 +226,27 @@ public sealed class NotesIndexReconciler(
 		return keys;
 	}
 
-	private async Task DeleteStaleIndexes(IReadOnlyList<string> existingKeys, HashSet<string> intendedKeys, Cancel ctx)
+	private async Task<IReadOnlyList<(string Product, string Version)>> DeleteStaleIndexes(
+		IReadOnlyList<string> existingKeys,
+		HashSet<string> intendedKeys,
+		Cancel ctx
+	)
 	{
+		var vanished = new List<(string Product, string Version)>();
 		foreach (var key in existingKeys)
 		{
 			if (intendedKeys.Contains(key))
 				continue;
+
+			var read = await ReadStaleIndexIdentity(key, ctx);
+			if (read.Kind is StaleIndexReadKind.ReadFailed or StaleIndexReadKind.AlreadyGone)
+				continue;
+
+			if (read.Kind == StaleIndexReadKind.ProductScoped)
+			{
+				vanished.Add((read.Product!, read.Version!));
+				continue;
+			}
 
 			try
 			{
@@ -212,6 +257,37 @@ public sealed class NotesIndexReconciler(
 			{
 				_logger.LogWarning(ex, "Failed to delete stale notes index {Key}", key);
 			}
+		}
+
+		return vanished;
+	}
+
+	/// <summary>
+	/// Reads identity from a stale notes-index body. Does not parse the filename slug.
+	/// A failed GET/deserialize must not delete the object; a legacy body (no product/version)
+	/// may be deleted without a vanished product.
+	/// </summary>
+	private async Task<StaleIndexRead> ReadStaleIndexIdentity(string key, Cancel ctx)
+	{
+		try
+		{
+			using var response = await s3Client.GetObjectAsync(new GetObjectRequest { BucketName = publicBucketName, Key = key }, ctx);
+			await using var stream = response.ResponseStream;
+			var index = await JsonSerializer.DeserializeAsync(stream, NotesIndexJsonContext.Default.NotesIndex, ctx);
+			if (index?.Product is not { Length: > 0 } product || index.Version is not { Length: > 0 } version)
+				return new StaleIndexRead(StaleIndexReadKind.Legacy);
+			if (!ChangelogKeys.IsValidProduct(product) || !ChangelogKeys.IsValidRepo(version))
+				return new StaleIndexRead(StaleIndexReadKind.Legacy);
+			return new StaleIndexRead(StaleIndexReadKind.ProductScoped, product, version);
+		}
+		catch (AmazonS3Exception ex) when (ex.StatusCode == HttpStatusCode.NotFound)
+		{
+			return new StaleIndexRead(StaleIndexReadKind.AlreadyGone);
+		}
+		catch (Exception ex) when (ex is not OperationCanceledException)
+		{
+			_logger.LogWarning(ex, "Could not read identity from stale notes index {Key}; leaving it for the next reconcile", key);
+			return new StaleIndexRead(StaleIndexReadKind.ReadFailed);
 		}
 	}
 
@@ -327,6 +403,23 @@ public sealed class NotesIndexReconciler(
 		{
 			_logger.LogWarning(ex, "Could not read versions from note {Key}; skipping", key);
 			return [];
+		}
+	}
+
+	/// <summary>
+	/// Deletes a notes-index object. A missing key is success so amend can drop a vanished
+	/// product's index after the sidecar work without racing a prior delete.
+	/// </summary>
+	public async Task DeleteIndexAsync(string key, Cancel ctx)
+	{
+		try
+		{
+			_ = await s3Client.DeleteObjectAsync(new DeleteObjectRequest { BucketName = publicBucketName, Key = key }, ctx);
+			_logger.LogInformation("Removed notes index {Key}", key);
+		}
+		catch (AmazonS3Exception ex) when (ex.StatusCode == HttpStatusCode.NotFound)
+		{
+			_logger.LogDebug("Notes index {Key} already absent", key);
 		}
 	}
 
@@ -454,6 +547,16 @@ public sealed class NotesIndexReconciler(
 	}
 
 	private readonly record struct NotesIndexWrite(string Key, IReadOnlyList<NoteIndexEntry> Entries, string? Product, string? Version);
+
+	private enum StaleIndexReadKind
+	{
+		ReadFailed,
+		AlreadyGone,
+		Legacy,
+		ProductScoped
+	}
+
+	private readonly record struct StaleIndexRead(StaleIndexReadKind Kind, string? Product = null, string? Version = null);
 }
 
 /// <summary>Optional product and version written onto a product-scoped notes index body.</summary>

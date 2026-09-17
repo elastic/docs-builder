@@ -2,7 +2,9 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Net;
 using System.Text.Json;
+using Amazon.S3;
 using AwesomeAssertions;
 using Elastic.Changelog.Reconciliation;
 using Elastic.Documentation;
@@ -104,11 +106,20 @@ public class NoteAmendReconcilerTests
 
 	private static NotesIndex ReadNotesIndex(string json) => JsonSerializer.Deserialize(json, NotesIndexJsonContext.Default.NotesIndex)!;
 
-	private static IReadOnlyDictionary<string, IReadOnlyList<NoteIndexEntry>> NotesByVersion(string version, params string[] paths) =>
-		new Dictionary<string, IReadOnlyList<NoteIndexEntry>>
+	private static IReadOnlyDictionary<string, IReadOnlyDictionary<string, IReadOnlyList<NoteIndexEntry>>> NotesByProduct(
+		string product,
+		string version,
+		params string[] paths
+	) =>
+		new Dictionary<string, IReadOnlyDictionary<string, IReadOnlyList<NoteIndexEntry>>>(StringComparer.Ordinal)
 		{
-			[version] = [.. paths.Select(p => new NoteIndexEntry { Path = p, BundleSeq = 0 })]
+			[product] = new Dictionary<string, IReadOnlyList<NoteIndexEntry>>(StringComparer.Ordinal)
+			{
+				[version] = [.. paths.Select(p => new NoteIndexEntry { Path = p, BundleSeq = 0 })]
+			}
 		};
+
+	private static string ProductIndexKey(string? product = null) => ChangelogKeys.NotesIndexKey(Org, Repo, product ?? Product, Version);
 
 	// -----------------------------------------------------------------------------------------
 
@@ -120,8 +131,8 @@ public class NoteAmendReconcilerTests
 		_s3.Seed(PublicBucket, BundleKey(parent), ParentBundleYaml("main/pr-100.yaml"));
 		_s3.Seed(PublicBucket, NoteKey("main", "note-cve.yml"), NoteYaml);
 
-		var notesByVersion = NotesByVersion(Version, "main/note-cve.yml");
-		await _reconciler.ReconcileAsync(NotesScope(), notesByVersion, TestContext.Current.CancellationToken);
+		var notesByProduct = NotesByProduct(Product, Version, "main/note-cve.yml");
+		await _reconciler.ReconcileAsync(NotesScope(), notesByProduct, TestContext.Current.CancellationToken);
 
 		// Amend sidecar must have been written.
 		_s3.Exists(PublicBucket, AmendNotesKey(parent)).Should().BeTrue("late note must produce an amend sidecar");
@@ -131,6 +142,11 @@ public class NoteAmendReconcilerTests
 		_s3.Exists(PublicBucket, indexKey).Should().BeTrue("notes index must be re-written with bundle_seq values");
 		var index = ReadNotesIndex(_s3.ContentOf(PublicBucket, indexKey));
 		index.Notes.Should().ContainSingle().Which.BundleSeq.Should().Be(2);
+
+		var productIndex = ReadNotesIndex(_s3.ContentOf(PublicBucket, ProductIndexKey()));
+		productIndex.Notes.Should().ContainSingle().Which.BundleSeq.Should().Be(2);
+		productIndex.Product.Should().Be(Product);
+		productIndex.Version.Should().Be(Version);
 	}
 
 	[Fact]
@@ -142,8 +158,8 @@ public class NoteAmendReconcilerTests
 		_s3.Seed(PublicBucket, BundleKey(parent), ParentBundleYaml("main/note-cve.yml", "main/pr-100.yaml"));
 		_s3.Seed(PublicBucket, NoteKey("main", "note-cve.yml"), NoteYaml);
 
-		var notesByVersion = NotesByVersion(Version, "main/note-cve.yml");
-		await _reconciler.ReconcileAsync(NotesScope(), notesByVersion, TestContext.Current.CancellationToken);
+		var notesByProduct = NotesByProduct(Product, Version, "main/note-cve.yml");
+		await _reconciler.ReconcileAsync(NotesScope(), notesByProduct, TestContext.Current.CancellationToken);
 
 		// No amend sidecar should be written.
 		_s3.Exists(PublicBucket, AmendNotesKey(parent)).Should().BeFalse("note already in parent → no amend needed");
@@ -180,8 +196,8 @@ public class NoteAmendReconcilerTests
 		_s3.Seed(PublicBucket, BundleKey(humanAmend), ReleaseNotesSerialization.SerializeBundle(amendBundle));
 		_s3.Seed(PublicBucket, NoteKey("main", "note-cve.yml"), NoteYaml);
 
-		var notesByVersion = NotesByVersion(Version, "main/note-cve.yml");
-		await _reconciler.ReconcileAsync(NotesScope(), notesByVersion, TestContext.Current.CancellationToken);
+		var notesByProduct = NotesByProduct(Product, Version, "main/note-cve.yml");
+		await _reconciler.ReconcileAsync(NotesScope(), notesByProduct, TestContext.Current.CancellationToken);
 
 		_s3
 			.Exists(PublicBucket, AmendNotesKey(parent))
@@ -208,8 +224,8 @@ public class NoteAmendReconcilerTests
 		_s3.Seed(PublicBucket, BundleKey(parent), ReleaseNotesSerialization.SerializeBundle(handAuthored));
 		_s3.Seed(PublicBucket, NoteKey("main", "note-cve.yml"), NoteYaml);
 
-		var notesByVersion = NotesByVersion(Version, "main/note-cve.yml");
-		await _reconciler.ReconcileAsync(NotesScope(), notesByVersion, TestContext.Current.CancellationToken);
+		var notesByProduct = NotesByProduct(Product, Version, "main/note-cve.yml");
+		await _reconciler.ReconcileAsync(NotesScope(), notesByProduct, TestContext.Current.CancellationToken);
 
 		// No amend written; shipped state is unknown.
 		_s3.Exists(PublicBucket, AmendNotesKey(parent)).Should().BeFalse("unknown shipped state → skip, no amend");
@@ -244,11 +260,126 @@ public class NoteAmendReconcilerTests
 		_s3.Seed(PublicBucket, AmendNotesKey(parent), ReleaseNotesSerialization.SerializeBundle(staleAmend));
 
 		// No notes for this version (note was deleted from the pool).
-		var notesByVersion = NotesByVersion(Version);
-		await _reconciler.ReconcileAsync(NotesScope(), notesByVersion, TestContext.Current.CancellationToken);
+		var notesByProduct = NotesByProduct(Product, Version);
+		var touched = await _reconciler.ReconcileAsync(NotesScope(), notesByProduct, TestContext.Current.CancellationToken);
 
 		_s3.Exists(PublicBucket, AmendNotesKey(parent)).Should().BeFalse("stale amend sidecar must be deleted when no notes remain");
-		_s3.Deletes.Should().ContainSingle().Which.Key.Should().Be(AmendNotesKey(parent));
+		_s3.Deletes.Select(d => d.Key).Should().Contain(AmendNotesKey(parent));
+		_s3.Deletes.Select(d => d.Key).Should().Contain(ChangelogKeys.NotesIndexKey(Org, Repo, Product, Version));
+		touched.Should().Equal(Product);
+	}
+
+	[Fact]
+	public async Task SidecarAlreadyAbsent_NoLateNotes_ProductStillTouched()
+	{
+		const string parent = "elasticsearch-9.3.0.yaml";
+		_s3.Seed(PublicBucket, RegistryKey(), RegistryJson(parent));
+		_s3.Seed(PublicBucket, BundleKey(parent), ParentBundleYaml("main/pr-100.yaml"));
+
+		var notesByProduct = NotesByProduct(Product, Version);
+		var touched = await _reconciler.ReconcileAsync(NotesScope(), notesByProduct, TestContext.Current.CancellationToken);
+
+		_s3.Exists(PublicBucket, AmendNotesKey(parent)).Should().BeFalse();
+		touched.Should().Equal(Product);
+	}
+
+	[Fact]
+	public async Task ReconcileRepoOmitsProduct_ExistingAmendSidecarDeleted()
+	{
+		const string parent = "elasticsearch-9.3.0.yaml";
+		_s3.Seed(PublicBucket, RegistryKey(), RegistryJson(parent));
+		_s3.Seed(PublicBucket, BundleKey(parent), ParentBundleYaml("main/pr-100.yaml"));
+		var staleAmend = new Bundle
+		{
+			Products = [new BundledProduct(Product, target: Version, lifecycle: Lifecycle.Ga)],
+			Entries =
+			[
+				new BundledEntry
+				{
+					File = new BundledFile { Name = "main/note-cve.yml", Checksum = "old" },
+					Title = "CVE",
+					Type = ChangelogEntryType.Security
+				}
+			]
+		};
+		_s3.Seed(PublicBucket, AmendNotesKey(parent), ReleaseNotesSerialization.SerializeBundle(staleAmend));
+		_s3.Seed(
+			PublicBucket,
+			ChangelogKeys.NotesIndexKey(Org, Repo, Product, Version),
+			/*lang=json,strict*/
+			"""{"schema_version":1,"product":"elasticsearch","version":"9.3.0","notes":[{"path":"main/note-cve.yml","bundle_seq":2}]}"""
+		);
+		_s3.Seed(
+			PublicBucket,
+			$"bundle/kibana/registry.json",
+			JsonSerializer.Serialize(
+				new ChangelogRegistry
+				{
+					Product = "kibana",
+					Bundles = [new ChangelogRegistryBundle { File = "kibana-9.3.0.yaml", Target = Version }]
+				},
+				ChangelogRegistryJsonContext.Default.ChangelogRegistry
+			)
+		);
+		_s3.Seed(PublicBucket, "bundle/kibana/kibana-9.3.0.yaml", ParentBundleFor("kibana", Version, "main/note-kibana.yml"));
+		_s3.Seed(
+			PublicBucket,
+			NoteKey("main", "note-kibana.yml"),
+			"title: Kibana known issue\n" + "type: known-issue\n" + "products:\n" + "  - product: kibana\n" + "    versions: [9.3.0]\n"
+		);
+
+		var notesByProduct = await _notesReconciler.ReconcileRepoAsync(NotesScope(), TestContext.Current.CancellationToken);
+		notesByProduct.Should().ContainKey(Product);
+		notesByProduct[Product][Version].Should().BeEmpty();
+		notesByProduct.Should().ContainKey("kibana");
+		_s3.Exists(PublicBucket, ChangelogKeys.NotesIndexKey(Org, Repo, Product, Version)).Should().BeTrue();
+
+		var touched = await _reconciler.ReconcileAsync(NotesScope(), notesByProduct, TestContext.Current.CancellationToken);
+
+		_s3.Exists(PublicBucket, AmendNotesKey(parent)).Should().BeFalse();
+		touched.Should().Contain(Product);
+		_s3.Exists(PublicBucket, ChangelogKeys.NotesIndexKey(Org, Repo, Product, Version)).Should().BeFalse();
+		_s3.Exists(PublicBucket, "bundle/kibana/kibana-9.3.0.amend-notes.yaml").Should().BeFalse();
+	}
+
+	[Fact]
+	public async Task SidecarDeleteIoFailure_Throws_AndLeavesProductScopedIndex()
+	{
+		const string parent = "elasticsearch-9.3.0.yaml";
+		_s3.Seed(PublicBucket, RegistryKey(), RegistryJson(parent));
+		_s3.Seed(PublicBucket, BundleKey(parent), ParentBundleYaml("main/pr-100.yaml"));
+		var staleAmend = new Bundle
+		{
+			Products = [new BundledProduct(Product, target: Version, lifecycle: Lifecycle.Ga)],
+			Entries =
+			[
+				new BundledEntry
+				{
+					File = new BundledFile { Name = "main/note-cve.yml", Checksum = "old" },
+					Title = "CVE",
+					Type = ChangelogEntryType.Security
+				}
+			]
+		};
+		_s3.Seed(PublicBucket, AmendNotesKey(parent), ReleaseNotesSerialization.SerializeBundle(staleAmend));
+		_s3.Seed(
+			PublicBucket,
+			ChangelogKeys.NotesIndexKey(Org, Repo, Product, Version),
+			/*lang=json,strict*/
+			"""{"schema_version":1,"product":"elasticsearch","version":"9.3.0","notes":[]}"""
+		);
+
+		var notesByProduct = await _notesReconciler.ReconcileRepoAsync(NotesScope(), TestContext.Current.CancellationToken);
+		_s3.Exists(PublicBucket, ChangelogKeys.NotesIndexKey(Org, Repo, Product, Version)).Should().BeTrue();
+
+		var sidecarKey = AmendNotesKey(parent);
+		_s3.DeleteFault =
+			key => key == sidecarKey ? new AmazonS3Exception("unavailable") { StatusCode = HttpStatusCode.InternalServerError } : null;
+
+		var act = async () => await _reconciler.ReconcileAsync(NotesScope(), notesByProduct, TestContext.Current.CancellationToken);
+		await act.Should().ThrowAsync<AmazonS3Exception>();
+		_s3.Exists(PublicBucket, sidecarKey).Should().BeTrue();
+		_s3.Exists(PublicBucket, ChangelogKeys.NotesIndexKey(Org, Repo, Product, Version)).Should().BeTrue();
 	}
 
 	[Fact]
@@ -259,15 +390,15 @@ public class NoteAmendReconcilerTests
 		_s3.Seed(PublicBucket, BundleKey(parent), ParentBundleYaml("main/pr-100.yaml"));
 		_s3.Seed(PublicBucket, NoteKey("main", "note-cve.yml"), NoteYaml);
 
-		var notesByVersion = NotesByVersion(Version, "main/note-cve.yml");
+		var notesByProduct = NotesByProduct(Product, Version, "main/note-cve.yml");
 
 		// First reconcile → amend sidecar written.
-		await _reconciler.ReconcileAsync(NotesScope(), notesByVersion, TestContext.Current.CancellationToken);
+		await _reconciler.ReconcileAsync(NotesScope(), notesByProduct, TestContext.Current.CancellationToken);
 		var putsAfterFirst = _s3.Puts.Count;
 		putsAfterFirst.Should().BeGreaterThan(0, "first pass must write the amend sidecar and the notes index");
 
 		// Second reconcile with the same state → content is identical → no additional PUTs.
-		await _reconciler.ReconcileAsync(NotesScope(), notesByVersion, TestContext.Current.CancellationToken);
+		await _reconciler.ReconcileAsync(NotesScope(), notesByProduct, TestContext.Current.CancellationToken);
 		var putsAfterSecond = _s3.Puts.Count;
 
 		// The notes index re-write is idempotent too (same content, conditional PUT is a no-op).
@@ -284,8 +415,8 @@ public class NoteAmendReconcilerTests
 		_s3.Seed(PublicBucket, BundleKey("elasticsearch-8.0.0.yaml"), ParentBundleYaml("main/pr-100.yaml"));
 		_s3.Seed(PublicBucket, NoteKey("main", "note-cve.yml"), NoteYaml);
 
-		var notesByVersion = NotesByVersion(Version, "main/note-cve.yml");
-		await _reconciler.ReconcileAsync(NotesScope(), notesByVersion, TestContext.Current.CancellationToken);
+		var notesByProduct = NotesByProduct(Product, Version, "main/note-cve.yml");
+		await _reconciler.ReconcileAsync(NotesScope(), notesByProduct, TestContext.Current.CancellationToken);
 
 		// No amend sidecar: no matching bundle.
 		_s3.Puts.Should().NotContain(p => p.Key.Contains("amend-notes"), "no matching bundle → no amend possible");
@@ -297,13 +428,101 @@ public class NoteAmendReconcilerTests
 	}
 
 	[Fact]
-	public async Task NoProductsInBundleTree_NoAmend()
+	public async Task NoPublishedBundle_NoAmend()
 	{
-		// Bundle tree is empty (no products listed under bundle/).
-		// No registry.json objects exist, so ListObjectsV2 returns no common prefixes.
-		var notesByVersion = NotesByVersion(Version, "main/note-cve.yml");
-		await _reconciler.ReconcileAsync(NotesScope(), notesByVersion, TestContext.Current.CancellationToken);
+		// Product is in the notes map but has no bundle registry — do not walk other products.
+		var notesByProduct = NotesByProduct(Product, Version, "main/note-cve.yml");
+		await _reconciler.ReconcileAsync(NotesScope(), notesByProduct, TestContext.Current.CancellationToken);
 
-		_s3.Puts.Should().NotContain(p => p.Key.Contains("amend-notes"));
+		_s3.Puts.Should().NotContain(p => p.Key.Contains("amend-notes", StringComparison.Ordinal));
+	}
+
+	[Fact]
+	public async Task EceNote_DoesNotWriteOrDeleteHostedAmendNotes()
+	{
+		const string ece = "cloud-enterprise";
+		const string hosted = "cloud-hosted";
+		const string version = "4.2.0";
+		const string eceParent = "cloud-4.2.0.yaml";
+		const string hostedParent = "cloud-4.2.0.yaml";
+		const string hostedSidecar = "cloud-4.2.0.amend-notes.yaml";
+
+		var eceNoteYaml = "title: ECE note\n"
+			+ "type: known-issue\n"
+			+ "products:\n"
+			+ "  - product: cloud-enterprise\n"
+			+ "    versions: [4.2.0]\n";
+
+		_s3.Seed(
+			PublicBucket,
+			$"bundle/{ece}/registry.json",
+			JsonSerializer.Serialize(
+				new ChangelogRegistry { Product = ece, Bundles = [new ChangelogRegistryBundle { File = eceParent, Target = version }] },
+				ChangelogRegistryJsonContext.Default.ChangelogRegistry
+			)
+		);
+		_s3.Seed(
+			PublicBucket,
+			$"bundle/{hosted}/registry.json",
+			JsonSerializer.Serialize(
+				new ChangelogRegistry
+				{
+					Product = hosted,
+					Bundles =
+					[
+						new ChangelogRegistryBundle { File = hostedParent, Target = version },
+						new ChangelogRegistryBundle { File = hostedSidecar, Target = version }
+					]
+				},
+				ChangelogRegistryJsonContext.Default.ChangelogRegistry
+			)
+		);
+		_s3.Seed(PublicBucket, $"bundle/{ece}/{eceParent}", ParentBundleFor(ece, version, "main/pr-100.yaml"));
+		_s3.Seed(PublicBucket, $"bundle/{hosted}/{hostedParent}", ParentBundleFor(hosted, version, "main/pr-hosted.yaml"));
+
+		var hostedAmend = new Bundle
+		{
+			Products = [new BundledProduct(hosted, target: version, lifecycle: Lifecycle.Ga)],
+			Entries =
+			[
+				new BundledEntry
+				{
+					File = new BundledFile { Name = "main/note-hosted.yml", Checksum = "old" },
+					Title = "Hosted note",
+					Type = ChangelogEntryType.KnownIssue
+				}
+			]
+		};
+		var hostedSidecarYaml = ReleaseNotesSerialization.SerializeBundle(hostedAmend);
+		_s3.Seed(PublicBucket, $"bundle/{hosted}/{hostedSidecar}", hostedSidecarYaml);
+		_s3.Seed(PublicBucket, NoteKey("main", "note-ece.yml"), eceNoteYaml);
+
+		var notesByProduct = NotesByProduct(ece, version, "main/note-ece.yml");
+		var touched = await _reconciler.ReconcileAsync(NotesScope(), notesByProduct, TestContext.Current.CancellationToken);
+
+		touched.Should().Equal(ece);
+		_s3.Exists(PublicBucket, $"bundle/{ece}/cloud-4.2.0.amend-notes.yaml").Should().BeTrue();
+		_s3.ContentOf(PublicBucket, $"bundle/{hosted}/{hostedSidecar}").Should().Be(hostedSidecarYaml);
+		_s3.Deletes.Should().NotContain(d => d.Key.Contains($"bundle/{hosted}/", StringComparison.Ordinal));
+	}
+
+	private static string ParentBundleFor(string product, string version, params string[] entryFileNames)
+	{
+		var bundle = new Bundle
+		{
+			Products = [new BundledProduct(product, target: version, lifecycle: Lifecycle.Ga)],
+			Entries =
+			[
+				.. entryFileNames.Select(
+					n => new BundledEntry
+					{
+						File = new BundledFile { Name = n, Checksum = "abc123" },
+						Title = $"Entry for {n}",
+						Type = ChangelogEntryType.BugFix
+					}
+				)
+			]
+		};
+		return ReleaseNotesSerialization.SerializeBundle(bundle);
 	}
 }
