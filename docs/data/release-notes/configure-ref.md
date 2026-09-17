@@ -154,13 +154,13 @@ These settings are located in the `bundle.profiles.<name>` section of the config
 :   Overrides [bundle.release_dates](#bundle-basic).
 
 `repo`
-:   **Deprecated.** The repository is derived from `GITHUB_REPOSITORY` or the git remote `origin`. Remove this setting from the profile.
+:   **Deprecated** for most profile types. Remove this setting unless the profile uses `source: github_release`, which still requires `repo` to be set here or in `bundle.repo`.
 :   The derived name is the `{repo}` segment of the conventional bundle file name. It is the GitHub repository you ran the command in, not `products.yml` `repository:`.
 
 `source`
 :   Derive the list of changelogs from the specified source.
 :   Only `github_release` is currently supported (equivalent to the `--release-version` command option). The command asks GitHub for the tag of the previous release, lists the commits between that tag and the version argument, and resolves each commit to its merged pull request. The release notes text is not read.
-:   Requires a `GITHUB_TOKEN` or `GH_TOKEN` environment variable.
+:   Requires a `GITHUB_TOKEN` environment variable.
 :   Mutually exclusive with `products`.
 :   Example: `source: github_release`
 

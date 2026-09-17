@@ -199,8 +199,8 @@ The product ID and lifecycle in each file can be inferred from the repository na
 The files do not include a version field; which product release they belong to is determined by the origin branch.
 
 :::{note}
-`--release-version` requires a `GITHUB_TOKEN` or `GH_TOKEN` environment variable and is mutually exclusive with `--prs` and `--issues`.
-The repository is derived from `--repo`, then `GITHUB_REPOSITORY`, then the git remote `origin`.
+`--release-version` requires a `GITHUB_TOKEN` environment variable and is mutually exclusive with `--prs` and `--issues`.
+The repository is resolved from `--repo` or `bundle.repo` in `changelog.yml`; both are required when `--release-version` is used.
 :::
 
 You can use the `docs-builder changelog gh-release` command as a one-shot alternative to `changelog add` and `changelog bundle` commands.
