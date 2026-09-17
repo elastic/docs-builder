@@ -14,6 +14,27 @@ Every notable change gets a small YAML file, called a changelog entry. At releas
 
 The design goal behind the churn you will see in the history is simple. The team wants one source of truth for "what shipped", one place where scrubbing happens, and no vendored copies of release notes in docs repositories.
 
+```mermaid
+flowchart LR
+    PR["Pull request<br/>labels + title + body"]:::plain
+    Entry["Changelog entry<br/>docs/changelog/*.yaml"]:::note
+    Bundle["Bundle<br/>docs/releases/*.yaml"]:::note
+    Private["Private S3 bucket<br/>full metadata"]:::important
+    Lambda["Scrubber Lambda<br/>scrub + reconcile registry"]:::warning
+    Public["Public S3 + CloudFront<br/>bundle/{product}/registry.json"]:::success
+    Page["{changelog} directive<br/>rendered docs page"]:::success
+    Files["changelog render<br/>Markdown / AsciiDoc / GFM"]:::plain
+
+    PR -->|"changelog add (CI)"| Entry
+    Entry -->|"changelog upload"| Private
+    Entry -->|"changelog bundle / gh-release"| Bundle
+    Bundle -->|"changelog upload"| Private
+    Private -->|"S3 event via SQS"| Lambda
+    Lambda --> Public
+    Public -->|"prefetch at build start"| Page
+    Bundle -.-> Files
+```
+
 ## Three artifacts, two trees
 
 You will read the code more easily if you keep three artifacts and two S3 trees in mind.
@@ -63,6 +84,38 @@ A second workflow, `release-notes-changelog-file.yml`, runs on `workflow_run` af
 
 A third workflow, `release-notes-comments.yml`, downloads the decision artifact and calls `changelog github-comment` to post or update one sticky comment on the PR.
 
+The three workflows are split by trust level. The read-only one runs in the PR context. The two write-capable ones run on `workflow_run`, which uses the base branch's code and permissions. Artifacts carry state across that boundary.
+
+```mermaid
+flowchart TB
+    subgraph RO["release-notes.yml on pull_request (read-only)"]
+        direction LR
+        VL["changelog validate-labels<br/>no API calls, fork-safe"]:::note
+        VE["changelog validate<br/>entry files the PR touched"]:::note
+        EP["changelog evaluate-pr<br/>only if require-changelog-file"]:::plain
+        DA["changelog-decision artifact<br/>metadata.json"]:::important
+        VL --> VE --> EP --> DA
+    end
+
+    subgraph RW["release-notes-changelog-file.yml on workflow_run (write)"]
+        direction LR
+        PF["preflight<br/>fork? org member?"]:::warning
+        GE["submit/evaluate<br/>evaluate-pr + changelog add<br/>prepare-artifact"]:::note
+        SA["changelog-staging artifact"]:::important
+        AP["submit/apply<br/>evaluate-artifact<br/>commit or comment"]:::success
+        PF -->|"same repo, or member fork"| GE --> SA --> AP
+        PF -->|"outsider fork"| FG["fork-guidance<br/>decision artifact only"]:::plain
+    end
+
+    subgraph CM["release-notes-comments.yml on workflow_run (write)"]
+        GC["changelog github-comment<br/>one sticky PR comment"]:::success
+    end
+
+    RO ==>|"workflow_run completed"| RW
+    RO ==>|"workflow_run completed"| CM
+    RW ==>|"workflow_run completed"| CM
+```
+
 Two older workflow names, `changelog-validate.yml` and `changelog-submit.yml`, do the same job. The onboarding validator accepts both shapes. New consumers should use the `release-notes*` shape.
 
 Fork PRs deserve a note. The upstream token cannot push to a fork branch. A fork PR from an Elastic org member gets the entry as a comment. A fork PR from an outsider is skipped and gets guidance only. The org-membership check uses a Vault-issued ephemeral token, so it depends on `elastic/ci-gh-actions`. The docs-actions README still says that fork entries are regenerated at merge time by the upload workflow. That regeneration was removed on 2026-08-31 in docs-actions pull request 319. Today a fork PR entry that was never committed is not uploaded. Treat that README paragraph as stale.
@@ -76,6 +129,26 @@ Every consumer repository needs an IAM role provisioned in `docs-infra`. That is
 ### A release happens
 
 There are three bundle families. Pick the right one for the product and do not mix them.
+
+```mermaid
+flowchart TB
+    Q1{"How is the release identified?"}:::warning
+    Q1 -->|"a git tag and a GitHub release"| Q2{"Do developers commit<br/>entry files per PR?"}:::warning
+    Q1 -->|"a date and a promoted commit range"| GR["Commit-range family<br/>changelog bundle profile date<br/>--start-git-ref --end-git-ref"]:::note
+    Q1 -->|"a PR list, issue list,<br/>report, or path list"| PF["Profile family<br/>changelog bundle profile version list"]:::note
+    Q2 -->|"no, derive from PRs"| GH["Tagged family<br/>changelog gh-release repo tag"]:::note
+    Q2 -->|"yes"| PF
+
+    GH --> WF1["release-notes.yml<br/>bundle-on-release: true<br/>bundle-create-version + bundle-publish"]:::plain
+    PF --> WF2["changelog-bundle.yml<br/>bundle-create + bundle-upload<br/>Docker, --network none when possible"]:::plain
+    GR --> WF3["changelog-promotion-bundle.yml<br/>called by a product-owned wrapper"]:::plain
+
+    WF1 --> UP["changelog upload --artifact-type bundle<br/>to the private bucket"]:::success
+    WF2 --> UP
+    WF3 --> UP
+```
+
+Every family resolves each PR the same way. A checked-in entry in the CDN pool wins. Otherwise the command synthesizes one from the PR title, labels, and release-note text. A PR it cannot fetch is reported as missing, never dropped in silence.
 
 **Tagged releases** use `changelog gh-release`. The `bundle` job in `release-notes.yml` runs when `bundle-on-release` is true, through the `bundle-create-version` and `bundle-publish` composite actions. The command asks GitHub for the previous tag with the `generate-notes` endpoint, lists the commits in the range with the compare API, and resolves each commit to its PR. For each PR it first probes the CDN for a checked-in entry at `changelog/{org}/{repo}/{branch}/{pr}.yaml`. If it finds one, it uses it verbatim. Otherwise it synthesizes an entry from the PR title, labels, and release-note text in the body. Release body parsing was removed on 2026-09-15 in pull request 4092. The `ReleaseNoteParser` class is still in the tree but no production path calls it. This repository uses this family for its own release notes through `.github/workflows/changelog-publish.yml`.
 
@@ -91,6 +164,30 @@ Bundles from older docs-builder versions in the private bucket may contain `# PR
 
 An S3 event on the private bucket goes to SQS. The Lambda reads the message batch and treats each event as "this key may have changed", never as an instruction. For each key it reads the current private object. If present, it scrubs and writes the public copy. If absent, it deletes the public copy. It then rebuilds the product `registry.json` from the public listing and patches the shallow per-tree map. For a note upload, `NotesIndexReconciler` updates a notes index and `NoteAmendReconciler` writes or refreshes `{parent}.amend-notes.yaml` for any bundle that already shipped.
 
+```mermaid
+flowchart TB
+    EV["SQS batch of S3 events<br/>at-least-once, unordered"]:::plain --> K{"What kind of key?"}:::warning
+
+    K -->|"*.yaml under bundle/ or changelog/"| GET["GET current private object"]:::note
+    K -->|"bundle/{product}/registry.json"| SCHED["Never copied.<br/>Only schedules the group reconcile"]:::plain
+    K -->|"changelog/.../registry.json"| MIRROR["Legacy pool manifest<br/>mirrored verbatim"]:::plain
+    K -->|"other .json"| SKIP["Skip with warning"]:::plain
+
+    GET -->|"present"| SCRUB["Scrub with the assembler.yml allowlist<br/>PUT public copy"]:::note
+    GET -->|"absent"| DEL["Conditional DELETE of public copy"]:::caution
+    SCRUB --> HEAD["HEAD private object again<br/>redo if it changed underneath"]:::note
+    DEL --> GROUP
+    HEAD --> GROUP
+
+    GROUP{"Key under bundle/{product}/?"}:::warning
+    GROUP -->|"yes"| REG["BundleRegistryReconciler<br/>list public prefix<br/>rebuild registry.json<br/>conditional PUT or DELETE"]:::important
+    GROUP -->|"no, a changelog pool key"| NOTES["NotesIndexReconciler<br/>NoteAmendReconciler<br/>write {parent}.amend-notes.yaml"]:::important
+    SCHED --> REG
+    REG --> SHALLOW["ShallowRegistryReconciler<br/>patch bundle/registry.json or changelog/registry.json"]:::success
+    NOTES --> SHALLOW
+    SHALLOW --> DONE["Emit CloudWatch EMF metrics<br/>report failed message ids for redelivery"]:::success
+```
+
 The allowlist comes from `config/assembler.yml`, embedded in the Lambda binary at build time. Every reference repository not marked `private: true` is allowed. Sixteen repositories are marked private today. Editing `assembler.yml` therefore changes what can appear on the public CDN, and the release workflow redeploys the Lambda and attaches a `changelog-scrubber-allowlist.json` identity to the GitHub release. `changelog scrubber-allowlist` reads that identity so backfill plans can pin it.
 
 Writes use S3 conditional requests with retries. A message that cannot be processed lands in a dead-letter queue. Alerting and a redrive runbook are tracked in `docs-eng-team` and are not finished. There is no operator CLI to reconcile or verify. That was a deliberate decision.
@@ -101,13 +198,60 @@ A docset that wants CDN release notes declares each product under `release_notes
 
 The `{changelog}` directive is then a selector over that prefetched set. The preferred syntax is `:::{changelog} elasticsearch`. The `:cdn:` option is the legacy spelling and still works. A `/`-prefixed argument means a local folder and emits a deprecation warning in non-isolated builds. A bare `:::{changelog}` with no argument still falls back to the local `changelog/bundles/` folder. There are three `TODO` comments in `ChangelogBlock.cs` about removing the local path once every consumer migrates.
 
+```mermaid
+flowchart TB
+    B["Build starts"]:::plain --> PRE["ReleaseNotesFetcher<br/>for each product in docset.yml release_notes:<br/>GET registry.json, GET every listed file"]:::important
+    PRE -->|"registry 404 or unparseable"| FAIL["Build fails"]:::error
+    PRE -->|"a listed bundle 404s"| WARN["Warn and skip that bundle"]:::warning
+    PRE --> PARSE["Markdown parsing begins<br/>directive is a pure in-memory lookup"]:::note
+
+    PARSE --> D{"{changelog} directive<br/>how is it written?"}:::warning
+    D -->|":cdn: product<br/>or :cdn: with no value"| CDN1["Legacy CDN mode<br/>infer product from repo if empty"]:::note
+    D -->|"argument starts with /"| LOCAL["Local folder<br/>deprecation warning outside isolated builds"]:::caution
+    D -->|"argument is a product name"| CDN2["Preferred CDN mode"]:::tip
+    D -->|"no argument, no option"| LOCAL2["Local changelog/bundles/<br/>backward compatibility"]:::caution
+
+    CDN1 --> SEL{"Product declared<br/>under release_notes?"}:::warning
+    CDN2 --> SEL
+    SEL -->|"no"| ERR["Directive error"]:::error
+    SEL -->|"yes"| FILT["Apply :type:, :version:, :since_version:<br/>hide unreleased versions on the current content source<br/>merge .amend-N and .amend-notes sidecars"]:::note
+    LOCAL --> FILT
+    LOCAL2 --> FILT
+    FILT --> OUT["Render sections per type"]:::success
+```
+
 Two behaviors are easy to miss. On production, the `current` content source hides any bundle whose version is newer than the product's current release in `versions.yml`. On staging, the `next` content source shows it. This is what lets prestage products upload before release day. Date-based products are never filtered. Second, the default `:type:` hides breaking changes, deprecations, and known issues. A new known-issue note will not appear on a page unless the page asks for it.
 
 ### A late note arrives
 
 Some content has no PR: a known issue, a security advisory, a post-release correction. `changelog note` writes a `note-{slug}.yml` with `products[].versions`. It uploads like any entry. If the release bundle already shipped, the Lambda generates `{parent}.amend-notes.yaml` so the note reaches the page without a rebundle. The `.amend-notes` suffix is reserved. Do not create such files by hand.
 
-This path is the least stable part of the system right now. See [What is in flight](#what-is-in-flight).
+This path is the least stable part of the system right now. See [What is in flight](#what-is-in-flight). The sequence below shows the intended path and marks the two places where it breaks on `main` today.
+
+```mermaid
+sequenceDiagram
+    participant A as Author
+    participant CI as release-notes.yml sync job
+    participant S3p as Private bucket
+    participant L as Scrubber Lambda
+    participant S3 as Public bucket
+    participant B as docs-builder build
+
+    A->>A: changelog note --products "cloud-enterprise 4.2.0"
+    A->>CI: push note-*.yml to main
+    CI->>S3p: changelog upload --artifact-type changelog,amend
+    S3p-->>L: S3 event via SQS
+    L->>S3: scrub and PUT changelog/{org}/{repo}/{branch}/note-*.yml
+    L->>S3: NotesIndexReconciler writes notes index
+    L->>S3: NoteAmendReconciler writes bundle/{product}/{parent}.amend-notes.yaml
+    Note over L,S3: Bug 1 (issue 4090): the product registry.json is not rebuilt here, so the sidecar is not listed
+    Note over L,S3: Bug 2 (issue 4103): the notes index is keyed by version only, so sibling products can share a note
+    B->>S3: GET bundle/{product}/registry.json
+    S3-->>B: bundles list, without the sidecar
+    B->>B: BundleLoader merges .amend-N and .amend-notes into the parent
+    Note over B: Fixed in PR 4104. Before it, .amend-notes was treated as its own parent
+    B->>B: render, with the default type filter still hiding known issues
+```
 
 ## Configuration surfaces
 
@@ -140,6 +284,21 @@ When you change any command, regenerate `docs/cli-schema.json` with `dotnet run 
 
 The release-notes onboarding RFC in `docs-eng-team` defines two paths. The code mirrors them in the `ReleaseNotesPath` enum.
 
+```mermaid
+flowchart LR
+    P["products.yml<br/>features.release-notes"]:::plain
+    P -->|"false"| NONE["No participation<br/>directive and validators ignore the product"]:::plain
+    P -->|"omitted, true, or on-release"| OR["on-release<br/>bundle cut when the release publishes"]:::tip
+    P -->|"prestage"| PS["prestage<br/>bundle reviewed and committed before release"]:::warning
+
+    OR --> ORF["Required in the product repo:<br/>release-notes.yml<br/>docs/changelog.yml"]:::note
+    PS --> PSF["Required in the product repo:<br/>release-notes.yml<br/>release-notes-changelog-file.yml<br/>changelog-bundle-stage.yml<br/>docs/changelog.yml"]:::note
+    PSF --> GAP["changelog-bundle-stage.yml<br/>does not exist in docs-actions"]:::error
+
+    ORF --> V["changelog validate-onboarding<br/>probes each repo over the GitHub API"]:::success
+    PSF --> V
+```
+
 An **on-release** product cuts its bundle when the release is published. It needs one workflow file, `release-notes.yml`, with `bundle-on-release: true`. This is the low-touch path for tagged products such as agents and SDKs. The playground repository `docs-playground-release-notes-tagged` exercises it.
 
 A **prestage** product reviews and commits its bundle before release day. The onboarding validator requires `release-notes.yml`, `release-notes-changelog-file.yml`, and a `changelog-bundle-stage.yml`. The last file does not exist in docs-actions as a reusable workflow. The validator requires it, but nothing provides it. The playground repository `docs-playground-release-notes-changelogs` exercises this path. If a real product onboards as prestage, this is the first thing that breaks.
@@ -160,7 +319,17 @@ The persistent disk cache for CDN bundles, listed as a follow-up in the registry
 
 ## What is in flight
 
-As of 2026-09-17, `lcawl` has a stack of four pull requests that fix the late-note path. Phase one merged as 4104. Phases two to four are 4120, 4122, and 4124. Together they make the notes index product-scoped instead of version-scoped, make the Lambda rebuild the product registry after it writes an amend-notes sidecar, and make `BundleLoader` recognize `.amend-notes.yaml` as a sidecar. The root causes are written up in issues 4090 and 4103. Until the stack merges, a note uploaded after a bundle shipped does not appear on CDN pages, and a note for one product can leak into a sibling product's amend sidecar when both share a version string.
+As of 2026-09-17, `lcawl` has a stack of four pull requests that fix the late-note path. Phase one merged as 4104. Phases two to four are 4120, 4122, and 4124. Each later phase is based on the branch of the one before it, so they must merge in order.
+
+```mermaid
+flowchart LR
+    M["main"]:::plain --> P1["4104 merged<br/>BundleLoader recognizes<br/>.amend-notes as a sidecar"]:::success
+    P1 --> P2["4120 open<br/>read notes-{product}-{version}.json<br/>with a fallback to the old key"]:::warning
+    P2 --> P3["4122 open<br/>product-scoped NoteAmend<br/>rebuild registry after a sidecar write"]:::warning
+    P3 --> P4["4124 open<br/>stop writing notes-{version}.json<br/>delete leftovers, drop the fallback"]:::warning
+    P4 --> FIX["Issues 4090 and 4103 closed"]:::tip
+```
+ Together they make the notes index product-scoped instead of version-scoped, make the Lambda rebuild the product registry after it writes an amend-notes sidecar, and make `BundleLoader` recognize `.amend-notes.yaml` as a sidecar. The root causes are written up in issues 4090 and 4103. Until the stack merges, a note uploaded after a bundle shipped does not appear on CDN pages, and a note for one product can leak into a sibling product's amend sidecar when both share a version string.
 
 Pull request 4125 lets `bundle-amend` replace a bundle's intro description without rebundling. Pull request 4065 splits "Features and enhancements" into two sections and adds `keep-feature-descriptions`. Pull request 4116 restricts entry products to what the repository declares. Pull request 4075 adds `--overwrite` to upload. Pull request 3995 removes two outputs from `evaluate-artifact` that docs-actions still reads. If that one merges, `submit/apply/action.yml` must change in the same week.
 
