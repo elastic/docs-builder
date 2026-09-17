@@ -1,5 +1,3 @@
-FROM node:22-bookworm-slim AS node
-
 FROM public.ecr.aws/amazonlinux/amazonlinux:2023 AS base
 
 ARG TARGETARCH
