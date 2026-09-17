@@ -1,10 +1,10 @@
 ## Description
 
-Create changelog files and a bundle from a GitHub release by parsing pull request references from the release notes.
+Create changelog files and a bundle from a GitHub release.
 
-:::{important}
-Only automated GitHub release notes (the default format or [Release Drafter](https://github.com/release-drafter/release-drafter) format) are supported at this time.
-:::
+The command asks GitHub for the tag of the previous release, lists the commits between that tag and the release tag, and resolves each commit to its merged pull request. The release notes text is not read, so the release body can be empty or in any format. Each pull request is logged with the reason it was included or excluded.
+
+The command requires a `GITHUB_TOKEN` or `GH_TOKEN` environment variable. It uses the GitHub releases, compare, and GraphQL APIs.
 
 For general information about changelogs, go to [](/data/release-notes/overview.md).
 
@@ -12,14 +12,14 @@ For general information about changelogs, go to [](/data/release-notes/overview.
 
 The command creates two types of output in the directory specified by `--output`:
 
-- One YAML changelog file per pull request found in the release notes.
+- One YAML changelog file per pull request in the release.
 - A bundle file at `{output}/bundles/{version}-{product}-bundle.yml` that references all created changelog files.
 
 The product ID (and optional lifecycle) are inferred from the release tag and the repository name (via [products.yml](https://github.com/elastic/docs-builder/blob/main/config/products.yml)). For example, a tag of `v9.2.0` on `elastic/elasticsearch` creates PR-linked changelogs with `product: elasticsearch` and `lifecycle: ga`. The files do not include a version field; which product release they belong to is determined by the origin branch.
 
 ## Entry sourcing precedence
 
-For each pull request found in the release notes, the command follows the same fidelity ladder as commit-range bundling:
+For each pull request in the release, the command follows the same fidelity ladder as commit-range bundling:
 
 1. **A checked-in changelog entry wins.** If an entry for the PR already exists in the repository's entry pool (uploaded via `changelog-upload`), it is used verbatim — matched by file-name-derived PR numbers (file names survive scrubbing) or by its `prs` references.
 2. **Otherwise an entry is synthesized from PR metadata**: release-note text from the PR body becomes the description (the same extraction path `changelog add` uses, controlled by `extract.release_notes`), and linked issues are carried over (`extract.issues`).

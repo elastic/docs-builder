@@ -26,8 +26,6 @@ Example profile in `changelog.yml`:
 
 ```yaml
 bundle:
-  repo: elasticsearch
-  owner: elastic
   directory: docs/changelog
   output_directory: docs/releases
   profiles:
@@ -38,7 +36,7 @@ bundle:
       output_directory: docs/releases/cloud-serverless
 ```
 
-The bundle's file name is derived by convention as `{repo}-{product}-{version}.yaml` from the GitHub repository (determined by `--repo`, then the profile's `repo`, then `bundle.repo`, then the git `origin`), the profile's primary output product, and the version argument.
+The bundle's file name is derived by convention as `{repo}-{product}-{version}.yaml` from the GitHub repository (determined by `--repo`, then `GITHUB_REPOSITORY`, then the git `origin`), the profile's primary output product, and the version argument. The `repo` and `owner` settings in `changelog.yml` are deprecated; refer to [Basic settings](/data/release-notes/configure-ref.md#bundle-basic).
 For example, `docs-builder changelog bundle elasticsearch-release 9.2.0` writes `docs/releases/elasticsearch-elasticsearch-9.2.0.yaml`.
 If no repository can be resolved, the command warns and falls back to `{product}-{version}.yaml`.
 Setting an explicit `output` pattern on a profile is a hard error, and no two profiles may share a primary output product — they would collide on the same conventional target.
@@ -196,46 +194,42 @@ Profile mode does not accept lifecycle on the command line. For semver and date-
 
 For more information about acceptable product and lifecycle values, go to [Product format](#product-format).
 
-## PR and issue link allowlist [link-allowlist]
+## PR and issue links [link-allowlist]
 
-A changelog in a public repository might contain links to pull requests or issues in repositories that should not appear in published documentation.
+The `changelog bundle` command does not remove pull request or issue links. The bundle keeps every link from the changelog entries.
 
-Set `bundle.link_allow_repos` in `changelog.yml` to an explicit list of `owner/repo` strings. When this key is present (including as an empty list), PR and issue references are filtered at bundle time: only links whose resolved repository is in the list are kept; others are rewritten to `# PRIVATE:` sentinel strings in the bundle YAML.
+The changelog scrubber Lambda removes links to private repositories when it copies a bundle to the public CDN. It uses the `private: true` flag in `assembler.yml`. The `bundle.link_allow_repos` setting in `changelog.yml` is obsolete and is no longer read. Refer to [Hide private links](/data/release-notes/bundle.md#hide-private-links).
 
 ## Examples
 
 ### Bundle by GitHub release [changelog-bundle-release-version]
 
-You can use `--release-version` to fetch pull request references directly from GitHub release notes and use them as the bundle filter.
+You can use `--release-version` to derive the PR list from a GitHub release and use it as the bundle filter.
 This is equivalent to building a PR list file manually and passing it with `--prs`, but without any file management.
 
-:::{important}
-Only automated GitHub release notes (the default format or [Release Drafter](https://github.com/release-drafter/release-drafter) format) are supported at this time.
-:::
+The command asks GitHub for the tag of the previous release, lists the commits between that tag and the release tag, and resolves each commit to its merged pull request. The release notes text is not read, so the release body can be empty or in any format.
 
 ```sh
 docs-builder changelog bundle \
   --release-version v1.34.0 \ <1>
   --repo apm-agent-dotnet \ <2>
-  --owner elastic <3>
-  --output-products "apm-agent-dotnet 1.34.0 ga" <4>
+  --output-products "apm-agent-dotnet 1.34.0 ga" <3>
 ```
 
-1. The tag value that is used in the `GET /repos/{owner}/{repo}/releases/tags/{tag}` releases API.
-2. You must specify `--repo` or set `bundle.repo` in the changelog configuration file.
-3. If you don't specify `--owner`, it uses `bundle.owner` in the changelog configuration or else defaults to `elastic`.
-4. The bundle's product metadata is inferred automatically from the release tag and repository name; you can override that behavior with the `--output-products` option.
+1. The release tag. Use `latest` for the most recent release.
+2. Optional. The repository is derived from `GITHUB_REPOSITORY` or the git remote `origin` when you omit it. The owner defaults to `elastic`.
+3. The bundle's product metadata is inferred automatically from the release tag and repository name; you can override that behavior with the `--output-products` option.
 
 :::{note}
-`--release-version` requires a `GITHUB_TOKEN` or `GH_TOKEN` environment variable (or an active `gh` login) to fetch release details from the GitHub API.
+`--release-version` requires a `GITHUB_TOKEN` or `GH_TOKEN` environment variable (or an active `gh` login). The command uses the GitHub releases, compare, and GraphQL APIs.
 :::
 
-By default all changelogs that match PRs in the GitHub release notes are included in the bundle.
+By default all changelogs that match PRs in the release are included in the bundle.
 To apply additional filtering by the changelog type, areas, or products, add [rules.bundle](/data/release-notes/configure-ref.md#rules-bundle) configuration settings.
 
 :::{tip}
 If you are not creating changelogs when you create your pull requests, consider the `docs-builder changelog gh-release` command as a one-shot alternative to the `changelog add` and `changelog bundle` commands.
-It parses the release notes, creates one changelog file per pull request found, and creates a `changelog-bundle.yaml` file — all in a single step. Refer to [changelog gh-release](/cli/changelog/gh-release.md).
+It resolves the pull requests in the release, creates one changelog file per pull request, and creates a bundle file — all in a single step. Refer to [changelog gh-release](/cli/changelog/gh-release.md).
 :::
 
 ### Bundle by issues [changelog-bundle-issues]

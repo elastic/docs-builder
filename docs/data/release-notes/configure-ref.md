@@ -48,20 +48,17 @@ These settings are relevant to one or all of the `changelog bundle`, `changelog 
 | ------------------------- | ----------- |
 | `bundle.branch`           | Branch whose CDN changelog pool (`changelog/{org}/{repo}/{branch}/...`) entries are sourced from when bundling (default: `main`). Refer to [Entry sourcing](#bundle-entry-sourcing). |
 | `bundle.directory`        | Input directory containing changelog YAML files (default: `docs/changelog`). |
-| `bundle.link_allow_repos` | List of `owner/repo` pairs whose PR/issue links are preserved. When set (including empty `[]`), links to unlisted repos become `# PRIVATE:` sentinels. |
+| `bundle.link_allow_repos` | **Obsolete.** No longer read. Remove it from `changelog.yml`. The changelog scrubber Lambda removes links to private repositories when it copies content to the public CDN, based on the `private: true` flag in `assembler.yml`. Refer to [Hide private links](/data/release-notes/bundle.md#hide-private-links). |
 | `bundle.output_directory` | Output directory for bundled files (default: `docs/releases`). Conventional `{repo}-{product}-{version}.yaml` names are written here in profile mode (unless the profile sets `output_directory`) and in option mode when `--output` is omitted. Passing `--output` as a directory, or setting a profile `output_directory`, writes that same file name in the directory you specify instead. |
-| `bundle.owner`            | Default GitHub repository owner (for example, `elastic`). Also the org segment of uploaded changelog-entry keys (`changelog/{org}/{repo}/{branch}/...`) and CDN entry sourcing. |
+| `bundle.owner`            | **Deprecated.** The GitHub repository owner is derived from `GITHUB_REPOSITORY` or the git remote `origin`. Remove this setting from `changelog.yml`. It is still read as a fallback for the org segment of uploaded changelog-entry keys (`changelog/{org}/{repo}/{branch}/...`) and CDN entry sourcing. |
 | `bundle.release_dates`    | When `true`, bundles include a `release-date` field (default: true). |
-| `bundle.repo`             | GitHub repository name for link and file name generation (for example, `elasticsearch`). Written to `products[].repo` so `{changelog}` can resolve bare PR and issue numbers. Also the `{repo}` segment of `{repo}-{product}-{version}.yaml` names, and the repo segment of uploaded changelog-entry keys (`changelog/{org}/{repo}/{branch}/...`) and CDN entry sourcing. Derived from `GITHUB_REPOSITORY` or git `origin` when omitted. |
+| `bundle.repo`             | **Deprecated.** The GitHub repository name is derived from `GITHUB_REPOSITORY` or the git remote `origin`. Remove this setting from `changelog.yml`. A value that matches the derived repository produces a warning. A value that differs is an error, because it would point uploads at the wrong repository. The derived name is the `{repo}` segment of `{repo}-{product}-{version}.yaml` names and of uploaded changelog-entry keys (`changelog/{org}/{repo}/{branch}/...`). |
 | `bundle.use_local_changelogs` | When `true`, always source entries from the local folder and never from the CDN (default: `false`). Refer to [Entry sourcing](#bundle-entry-sourcing). |
 
 :::
 
 :::{important}
-When `bundle.link_allow_repos` is omitted, no link filtering occurs.
-
-- For private repos, set it to `[]` or add related public repos to the list.
-- For public repos, add your `owner/repo` to the list at a minimum.
+`changelog.yml` does not control which pull request and issue links appear in published documentation. The changelog scrubber Lambda removes links to repositories that are marked `private: true` in `assembler.yml` when it publishes to the public CDN. To hide all links on a page, use the `:link-visibility:` option of the [changelog directive](/syntax/changelog.md#hide-links).
 :::
 
 ### Entry sourcing [bundle-entry-sourcing]
@@ -143,7 +140,7 @@ These settings are located in the `bundle.profiles.<name>` section of the config
 :   Refer to [](/cli/changelog/bundle.md#product-format).
 
 `owner`
-:   Overrides [bundle.owner](#bundle-basic).
+:   **Deprecated.** The owner is derived automatically. Remove this setting from the profile.
 
 `products`
 :   Derive the list of changelogs by matching their `products` values (equivalent to the `--input-products` command option).
@@ -157,15 +154,13 @@ These settings are located in the `bundle.profiles.<name>` section of the config
 :   Overrides [bundle.release_dates](#bundle-basic).
 
 `repo`
-:   Overrides [bundle.repo](#bundle-basic).
-:   Required for `source: github_release` profiles, unless `bundle.repo` is already set. For all other profiles, it's optional.
-:   Also the `{repo}` segment of the conventional bundle file name and the `products[].repo` value in the bundle YAML.
-:   This is the GitHub repository you ran the command in, not `products.yml` `repository:`.
+:   **Deprecated.** The repository is derived from `GITHUB_REPOSITORY` or the git remote `origin`. Remove this setting from the profile.
+:   The derived name is the `{repo}` segment of the conventional bundle file name. It is the GitHub repository you ran the command in, not `products.yml` `repository:`.
 
 `source`
 :   Derive the list of changelogs from the specified source.
-:   Only `github_release` is currently supported (equivalent to the `--release-version` command option), which means a PR list is fetched from the GitHub release identified by the version argument.
-:   Requires `repo` to be set at the profile or `bundle` level.
+:   Only `github_release` is currently supported (equivalent to the `--release-version` command option). The command asks GitHub for the tag of the previous release, lists the commits between that tag and the version argument, and resolves each commit to its merged pull request. The release notes text is not read.
+:   Requires a `GITHUB_TOKEN` or `GH_TOKEN` environment variable.
 :   Mutually exclusive with `products`.
 :   Example: `source: github_release`
 

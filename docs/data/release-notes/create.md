@@ -16,7 +16,7 @@ Refer to [](/data/release-notes/configure.md).
 ## Create changelog files from command line [command-line]
 
 These steps describe how to use the [changelog add](/cli/changelog/add.md) and [changelog note](/cli/changelog/note.md) commands to create changelog YAML files.
-If you already have automated release notes for GitHub releases, you can use the [changelog gh-release](/cli/changelog/gh-release.md) command instead.
+If you publish GitHub releases, you can use the [changelog gh-release](/cli/changelog/gh-release.md) command instead.
 
 1. If you're accessing private repositories or creating a large number of changelogs, log into GitHub or set the `GITHUB_TOKEN` (or `GH_TOKEN` ) environment variable with a sufficient personal access token. Refer to [Authorization](/data/release-notes/configure.md#authorization).
 
@@ -183,26 +183,28 @@ docs-builder changelog add --prs prs.txt \
 
 In this example, the command creates one changelog for each pull request in the list.
 
-### Create changelogs from GitHub release notes [changelog-add-release-version]
+### Create changelogs from a GitHub release [changelog-add-release-version]
 
-If you have GitHub releases with automated release notes (the default format or [Release Drafter](https://github.com/release-drafter/release-drafter) format), the changelog commands can derive the PR list from those release notes with the `--release-version` option.
+If you publish GitHub releases, the changelog commands can derive the PR list from a release with the `--release-version` option.
+The command asks GitHub for the tag of the previous release, lists the commits between the two tags, and resolves each commit to its merged pull request.
+The release notes text is not read, so the release body can be empty or in any format.
 For example:
 
 ```sh
 docs-builder changelog add --release-version v1.34.0
 ```
 
-This command creates one changelog file per PR found in the `v1.34.0` GitHub release notes.
+This command creates one changelog file per PR in the `v1.34.0` release.
 The product ID and lifecycle in each file can be inferred from the repository name and configuration.
 The files do not include a version field; which product release they belong to is determined by the origin branch.
 
 :::{note}
-`--release-version` requires `--repo` (or `bundle.repo` set in `changelog.yml`) and is mutually exclusive with `--prs` and `--issues`.
-The option precedence is: CLI option > `changelog.yml` bundle section > built-in default.
+`--release-version` requires a `GITHUB_TOKEN` or `GH_TOKEN` environment variable and is mutually exclusive with `--prs` and `--issues`.
+The repository is derived from `--repo`, then `GITHUB_REPOSITORY`, then the git remote `origin`.
 :::
 
 You can use the `docs-builder changelog gh-release` command as a one-shot alternative to `changelog add` and `changelog bundle` commands.
-The command parses the release notes, creates one changelog file per pull request found, and creates a `changelog-bundle.yaml` file — all in a single step. Refer to [](/cli/changelog/gh-release.md).
+The command resolves the pull requests in the release, creates one changelog file per pull request, and creates a bundle file — all in a single step. Refer to [](/cli/changelog/gh-release.md).
 
 ### Release highlights
 

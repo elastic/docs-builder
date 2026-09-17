@@ -29,12 +29,8 @@ rules:
   create:
     exclude: "changelog:skip, chore, dependencies, automation, ci, redesign"
 
-# Bundle defaults (owner/repo/link_allow_repos seeded by `changelog init`).
+# Bundle defaults. The owner and repository are derived from GITHUB_REPOSITORY
+# or the git remote, so they are not set here. Link removal for private
+# repositories happens in the changelog scrubber Lambda, not at bundle time.
 bundle:
   output_directory: docs/releases
-  owner: elastic
-  repo: docs-builder
-  # Keep only docs-builder's own PR/issue links in bundles; anything else
-  # is scrubbed to a private sentinel.
-  link_allow_repos:
-    - elastic/docs-builder

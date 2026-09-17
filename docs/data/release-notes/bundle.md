@@ -73,8 +73,6 @@ For example:
 bundle:
   directory: docs/changelog <1>
   output_directory: docs/releases <2>
-  repo: elasticsearch 
-  owner: elastic
   profiles:
     serverless-report:
       output_products: "cloud-serverless {version}" <3>
@@ -85,13 +83,14 @@ bundle:
 
 1. The directory that contains changelog files.
 2. The default directory that contains changelog bundles. Profiles that omit `output_directory` write here.
-3. The bundle's product metadata, which affects the rules that are applied and the product and version titles that ultimately appear in the documentation. If omitted, it's derived from all the changelogs in the bundle. The authoring repo (`bundle.repo` here) and the first product also determine the bundle's file name, which is derived by convention as `{repo}-{product}-{version}.yaml`.
+3. The bundle's product metadata, which affects the rules that are applied and the product and version titles that ultimately appear in the documentation. If omitted, it's derived from all the changelogs in the bundle. The authoring repo and the first product also determine the bundle's file name, which is derived by convention as `{repo}-{product}-{version}.yaml`. The authoring repo is derived from `GITHUB_REPOSITORY` or the git remote `origin`; you do not set it in the file.
 4. Optional. Replaces `bundle.output_directory` for this profile (the same as option-mode `--output` when it is a directory). This profile writes `docs/releases/cloud-serverless/elasticsearch-cloud-serverless-{version}.yaml` so a `{changelog}` directive can point at that folder without mixing other products.
 
 ### Bundle by GitHub releases [profile-gh-release]
 
-If you have automated GitHub release notes, the `changelog bundle` command can fetch the release from GitHub, parse PR references from the release notes, and uses them as the bundle filter.
-Only automated GitHub release notes (the default format or [Release Drafter](https://github.com/release-drafter/release-drafter) format) are supported at this time.
+If you publish GitHub releases, the `changelog bundle` command can derive the PR list from the release itself and use it as the bundle filter.
+The command asks GitHub for the previous release tag, lists the commits between the two tags, and resolves each commit to its merged pull request.
+The text of the release notes is not read, so the release body can be empty or in any format.
 
 Your profile must contain `source: github_release`.
 It's also a good idea to include the [basic bundle settings](/data/release-notes/configure-ref.md#bundle-basic) and the [profile settings](/data/release-notes/configure-ref.md#bundle-profiles) for the output filename and output products.
@@ -102,12 +101,10 @@ bundle:
   profiles:
     agent-gh-release:
       source: github_release <1>
-      repo: apm-agent-dotnet
-      owner: elastic
       output_products: "apm-agent-dotnet {version} {lifecycle}" <2>
 ```
 
-1. This profile fetches the PR list from the GitHub release notes for the version tag specified in the command.
+1. This profile derives the PR list from the commits between the previous release tag and the version tag specified in the command. The repository is derived from the git remote or `GITHUB_REPOSITORY`.
 2. For `source: github_release` profiles, the `{lifecycle}` placeholder in `output_products` is inferred from full release tag name. For example, if the release tag is `v1.34.1-preview.1` the lifecycle is `preview`. Refer to [](/cli/changelog/bundle.md#lifecycle-inference) for more details.
 
 ### Bundle by git commit range [profile-git-range]
@@ -119,16 +116,13 @@ Your profile must **not** contain a `products` pattern or `source: github_releas
 
 ```yaml
 bundle:
-  repo: my-service <1>
-  owner: elastic
   output_directory: docs/releases
   profiles:
     serverless-release:
-      output_products: "cloud-serverless {version}" <2>
+      output_products: "cloud-serverless {version}" <1>
 ```
 
-1. The authoring repository whose commit range is resolved and whose entry pool is consulted.
-2. Also applied to entries synthesized from PR metadata when the PR's labels map to no product. The bundle is named `{repo}-{product}-{version}.yaml` by convention (here `my-service-cloud-serverless-2026-08-13.yaml`).
+1. Also applied to entries synthesized from PR metadata when the PR's labels map to no product. The authoring repository, whose commit range is resolved and whose entry pool is consulted, is derived from `GITHUB_REPOSITORY` or the git remote `origin`. The bundle is named `{repo}-{product}-{version}.yaml` by convention (for a repository named `my-service`, `my-service-cloud-serverless-2026-08-13.yaml`).
 
 ```sh
 docs-builder changelog bundle serverless-release 2026-08-13 \
@@ -152,8 +146,6 @@ For example:
 bundle:
   directory: docs/changelog
   output_directory: docs/releases
-  repo: elasticsearch
-  owner: elastic
   profiles:
     # Collect all changelogs
     release-all:
@@ -243,7 +235,7 @@ For example, if the source of truth for what was shipped in each release is:
 - automated release notes for GitHub releases:
 
   ```sh
-  # Bundle changelogs from the release notes of a specific GitHub tag
+  # Bundle changelogs from the pull requests in a specific GitHub release
   docs-builder changelog bundle agent-gh-release v1.34.1
 
   # Use "latest" to fetch the most recent release
@@ -440,8 +432,6 @@ If there are features or projects that are not yet ready for public documentatio
 bundle:
   directory: docs/changelog
   output_directory: docs/releases
-  repo: elasticsearch 
-  owner: elastic
   profiles:
     serverless-report:
       output_products: "cloud-serverless {version}"
@@ -458,32 +448,15 @@ Any changelogs with matching `feature-id` values are commented out when you publ
 ### Hide private links
 
 A changelog can reference multiple pull requests and issues in its `prs` and `issues` fields.
-You can allowlist links to certain repos with the [`link_allow_repos` setting](/data/release-notes/configure-ref.md#bundle-basic).
-For example:
+The `changelog bundle` command does not remove any of these links. The bundle in your repository and in the private S3 bucket keeps the full list.
 
-```yaml
-bundle:
-  directory: docs/changelog
-  output_directory: docs/releases
-  repo: elasticsearch 
-  owner: elastic
-  link_allow_repos: <1>
-    - elastic/elasticsearch
-    - elastic/kibana
-    - elastic/roadmap
-```
+Link removal happens in one place: the changelog scrubber Lambda. When it copies a bundle to the public CDN, it removes each link to a repository that is marked `private: true` in [assembler.yml](https://github.com/elastic/docs-builder/blob/main/config/assembler.yml). You do not configure this in `changelog.yml`. For details, refer to [Changelog bundle registry](/development/changelog-bundle-registry.md).
 
-1. Only links to these owner/repo pairs are shown in the release docs. Others are rewritten to `# PRIVATE:` sentinels.
-
-There are no implicit values for this setting.
-You must list every repo whose links should appear, including the current repo.
-When this setting is omitted entirely, no link filtering is applied.
-
-:::{tip}
-The bundle's changelog entries are sanitized but the individual changelog files are unchanged.
+:::{note}
+Older versions of `changelog.yml` have a `bundle.link_allow_repos` setting. It is obsolete and is no longer read. Remove it from your configuration file. Bundles created with it contain `# PRIVATE:` sentinels; new bundles contain the original links.
 :::
 
-If you are working in a private repo and do not want any pull request or issue links to appear (even if they target a public repo), you can also configure link visibility in the [changelog directive](/syntax/changelog.md#hide-links) and [changelog render](/cli/changelog/render.md) command.
+If you are working in a private repo and do not want any pull request or issue links to appear (even if they target a public repo), you can configure link visibility in the [changelog directive](/syntax/changelog.md#hide-links) and [changelog render](/cli/changelog/render.md) command.
 
 ## Next steps
 

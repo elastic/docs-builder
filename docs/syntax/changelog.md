@@ -350,7 +350,7 @@ This is determined by checking the `assembler.yml` configuration:
 - In standalone builds without `assembler.yml`, all links are shown by default
 - When [`:cdn:`](#cdn) is set, `:link-visibility: auto` keeps links (CDN bundles are already scrubbed for public delivery). You do not need `:link-visibility: keep-links` on CDN pages for this reason alone.
 
-Use `:link-visibility: keep-links` or `hide-links` on the `{changelog}` directive to override this behavior. For local merged bundles where a private repo's entries were already sanitized at bundle time with [`link_allow_repos`](/data/release-notes/configure-ref.md#bundle-basic), use `:link-visibility: keep-links` so public constituents' links are not hidden with the private repo's.
+Use `:link-visibility: keep-links` or `hide-links` on the `{changelog}` directive to override this behavior. For local merged bundles that combine a private repo with public repos, use `:link-visibility: keep-links` so the public constituents' links are not hidden with the private repo's.
 
 ## Bundle merging
 

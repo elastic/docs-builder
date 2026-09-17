@@ -231,21 +231,13 @@ bundle:
   #   
   #   For more information, see the [release notes](https://www.elastic.co/docs/release-notes/product#product-{version}).
   # changelog-init-bundle-seed
-  # PR/issue link allowlist: when set (including []), only links to these owner/repo pairs are kept
-  # in bundle output; others are rewritten to '# PRIVATE:' sentinels.
-  # There is no implicit allow: you must list every repo whose links should appear, including your
-  # own (bundle.repo as owner/repo). When omitted entirely, no link filtering is applied.
-  # Run `changelog init` in a GitHub clone to pre-fill owner, repo, and link_allow_repos, or set
-  # bundle.owner, bundle.repo, and link_allow_repos manually. Example — allow only this repo:
-  # link_allow_repos:
-  #   - elastic/kibana
-  # To allow cross-repo links, add more owner/repo entries (for example elastic/elasticsearch).
-  # Optional: default GitHub repo name applied to all profiles that do not specify their own.
-  # Used by the {changelog} directive to generate correct PR/issue links when the product ID
-  # differs from the GitHub repository name. Can be overridden per profile.
-  # repo: elasticsearch
-  # Optional: default GitHub owner applied to all profiles that do not specify their own.
-  # owner: elastic
+  # `changelog init` may seed owner, repo, and link_allow_repos above. All three are deprecated
+  # or obsolete and can be deleted:
+  #   - link_allow_repos is no longer read. Bundles keep every PR/issue link. The changelog
+  #     scrubber Lambda removes links to repositories marked `private: true` in assembler.yml
+  #     when it publishes to the public CDN.
+  #   - repo and owner are derived from GITHUB_REPOSITORY or the git remote origin. A repo value
+  #     that differs from the derived repository is an error.
   # Optional: branch whose CDN changelog pool (changelog/{org}/{repo}/{branch}/...) is sourced from when
   # bundling entries from the CDN. Defaults to "main" when unset. Can be overridden per profile.
   # branch: main
@@ -281,12 +273,12 @@ bundle:
     #   # Optional: control auto-population of release-date for this profile.
     #   # When true (default), auto-populate release dates. When false, equivalent to --no-release-date.
     #   # release_dates: true
-    # Example: GitHub release profile (fetches PR list directly from a GitHub release)
+    # Example: GitHub release profile (derives the PR list from a GitHub release)
     # Use when you want to bundle or remove changelogs based on a published GitHub release.
+    # The PR list comes from the commits between the previous release tag and the given tag;
+    # the release notes text is not read. Requires GITHUB_TOKEN.
     # elasticsearch-gh-release:
-    #   source: github_release       # Fetch PR list from GitHub release instead of filtering input changelogs
-    #   repo: elasticsearch          # GitHub repository (required if bundle.repo is not set)
-    #   owner: elastic               # GitHub owner (optional; defaults to bundle.owner or "elastic")
+    #   source: github_release       # Derive the PR list from the release instead of filtering input changelogs
     #   output_products: "elasticsearch {version} {lifecycle}"
 
     # Example: Serverless release profile (filter by promotion report, PR, or issue list)
@@ -297,9 +289,6 @@ bundle:
     #   # Optional: replace bundle.output_directory for this profile (same as --output as a directory).
     #   # The conventional {repo}-{product}-{version}.yaml name is written in this folder.
     #   # output_directory: docs/releases/cloud-serverless
-    #   # Optional: GitHub repository for link and file name generation (overrides bundle.repo if set)
-    #     repo: elasticsearch
-    #     owner: elastic
     #   # Feature IDs to hide when bundling with this profile (accepts string or list)
     #   hide_features:
     #     - feature-flag-1

@@ -2,7 +2,7 @@
 
 Upload changelog entries or bundle artifacts to S3 or Elasticsearch. The command discovers `.yaml` and `.yml` files in a local directory and uploads only files whose content hash changed since the last run. Changelog entries are uploaded once under `changelog/{org}/{repo}/{branch}/{file}`, keyed by the authoring owner, repository, and branch; bundles are uploaded under `bundle/{product}/{file}`, product-scoped from the bundle YAML.
 
-A downstream scrubber copies published objects to the public bucket and removes pull request and issue links that are not on the allowlist (unlike bundle-time `# PRIVATE:` sentinels on the private side). Those public bundles are less likely to work with [`changelog unpack`](/cli/changelog/unpack.md).
+The uploaded files keep every pull request and issue link. A downstream scrubber Lambda copies published objects to the public bucket and removes links to repositories that are marked `private: true` in `assembler.yml`. Those public bundles are less likely to work with [`changelog unpack`](/cli/changelog/unpack.md).
 
 To create bundles first, use [](/cli/changelog/bundle.md).
 For the end-to-end workflow, see [](/data/release-notes/bundle.md).
@@ -36,16 +36,15 @@ Your IAM policy must allow these S3 actions on the target bucket:
 
 | Permission | Purpose |
 | ---------- | ------- |
-| `s3:PutObject` | Upload changelog and bundle YAML files and `registry.json` manifests |
-| `s3:GetObject` | Read existing `registry.json` for merge and compare remote content |
-| `s3:GetObject` (metadata) | Compare remote ETags to skip unchanged files |
+| `s3:PutObject` | Upload changelog and bundle YAML files |
+| `s3:GetObject` | Compare remote ETags to skip unchanged files |
 
-`s3:ListBucket` is not required. The command uploads to known keys derived from local file names and product IDs — it does not enumerate the bucket.
+`s3:ListBucket` is not required. The command uploads to known keys derived from local file names and product IDs — it does not enumerate the bucket. The command never writes a `registry.json`; the scrubber Lambda owns those manifests.
 
 You can scope object-level permissions to the key prefixes the command writes:
 
-- `bundle/*` (bundle YAML and `bundle/{product}/registry.json`)
-- `changelog/*` (entry YAML and `changelog/{org}/{repo}/{branch}/registry.json`)
+- `bundle/*` (bundle YAML)
+- `changelog/*` (entry YAML)
 
 #### Local development
 
