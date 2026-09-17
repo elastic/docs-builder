@@ -170,11 +170,13 @@ public class ChangelogPrEvaluationService(
 		if (resolvedType == null)
 		{
 			_logger.LogInformation("No type label found on PR");
+			var noTypeLabelTable = BuildLabelTable(config.LabelToType);
+			var typeLabels = config.LabelToType is { Count: > 0 } ? string.Join(", ", config.LabelToType.Keys) : "(none configured)";
+			var skipHint = skipLabels != null ? $" To skip changelog generation add one of: {skipLabels}." : "";
 			collector.EmitError(
 				string.Empty,
-				"No matching changelog type label found on this PR. Add a label from your changelog.yml pivot.types, or a skip label."
+				$"No matching changelog type label found on this PR. Add one of the following labels: {typeLabels}.{skipHint}"
 			);
-			var noTypeLabelTable = BuildLabelTable(config.LabelToType);
 			_ = await SetOutputs(
 				PrEvaluationResult.NoLabel,
 				title,
@@ -202,9 +204,12 @@ public class ChangelogPrEvaluationService(
 		if (productLabelTable != null && (config.ProductsConfiguration?.Default is null or { Count: 0 }))
 		{
 			_logger.LogInformation("Multiple products configured but no matching product label on PR; no default products configured");
+			var productLabels = config.LabelToProducts is { Count: > 0 }
+				? string.Join(", ", config.LabelToProducts.Keys)
+				: "(none configured)";
 			collector.EmitError(
 				string.Empty,
-				"No matching product label found on this PR. Add a label from your changelog.yml pivot.products."
+				$"No matching product label found on this PR. Add one of the following labels: {productLabels}."
 			);
 			_ = await SetOutputs(
 				PrEvaluationResult.NoLabel,
@@ -235,8 +240,17 @@ public class ChangelogPrEvaluationService(
 					"Add a changelog entry file to the PR or disable the require-changelog-file gate."
 			);
 			_ = await SetOutputs(PrEvaluationResult.MissingEntry, changelogDir: changelogDir);
+			// Resolve products for the missing-entry snippet: prefer label-resolved; fall back to repo lookup.
+			var missingEntryProducts = resolvedProducts ?? ResolveProductsFromRepo(input.Repo);
 			// Write metadata so the github-comment step can render a missing-entry body.
-			await WriteDecisionMetadataAsync(input, "missing-entry", changelogDir: changelogDir, defaultBranch: defaultBranch, ctx: ctx);
+			await WriteDecisionMetadataAsync(
+				input,
+				"missing-entry",
+				changelogDir: changelogDir,
+				defaultBranch: defaultBranch,
+				resolvedProducts: missingEntryProducts,
+				ctx: ctx
+			);
 			return false;
 		}
 
@@ -286,7 +300,8 @@ public class ChangelogPrEvaluationService(
 		string? changelogDir = null,
 		string? changelogFilename = null,
 		string? ambiguousTypeLabels = null,
-		string? defaultBranch = null
+		string? defaultBranch = null,
+		string? resolvedProducts = null
 	)
 	{
 		if (env?.IsRunningOnCI != true || input.PrNumber <= 0)
@@ -309,9 +324,21 @@ public class ChangelogPrEvaluationService(
 			ChangelogDir = changelogDir,
 			ChangelogFilename = changelogFilename,
 			AmbiguousTypeLabels = ambiguousTypeLabels,
-			DefaultBranch = defaultBranch
+			DefaultBranch = defaultBranch,
+			ResolvedProducts = resolvedProducts
 		};
 		await _metadataWriter.WriteAsync(metadata, ctx);
+	}
+
+	private string? ResolveProductsFromRepo(string repo)
+	{
+		var matched = configurationContext.ProductsConfiguration.GetProductsByRepositoryName(repo);
+		return matched.Count switch
+		{
+			0 => null,
+			1 => matched[0].Id,
+			_ => string.Join(", ", matched.Select(p => p.Id))
+		};
 	}
 
 	private async Task<bool> SetOutputs(

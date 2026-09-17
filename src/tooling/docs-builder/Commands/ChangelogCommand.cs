@@ -234,6 +234,7 @@ internal sealed partial class ChangelogCommands(
 	/// <param name="issues">Optional: Issue URL(s) or number(s) (comma-separated), or a path to a newline-delimited file containing issue URLs or numbers. Can be specified multiple times. Each occurrence can be either comma-separated issues (e.g., `--issues "https://github.com/owner/repo/issues/123,456"`) or a file path (e.g., `--issues /path/to/file.txt`). If --owner and --repo are provided, issue numbers can be used instead of URLs. If specified, --title can be derived from the issue. Creates one changelog file per issue. Mutually exclusive with --release-version and --report.</param>
 	/// <param name="owner">Optional: GitHub repository owner (used when --prs or --issues contains just numbers, or when using --release-version). Falls back to bundle.owner in changelog.yml when not specified. If that value is also absent, "elastic" is used.</param>
 	/// <param name="output">Optional: Output directory for the changelog. Falls back to bundle.directory in changelog.yml when not specified. Defaults to current directory.</param>
+	/// <param name="pr">Optional: Alias for --prs that accepts a single pull request URL or PR number. Feeds into --prs. Prefer --prs for multiple values.</param>
 	/// <param name="prs">Optional: Pull request URL(s) or PR number(s) (comma-separated), or a path to a newline-delimited file containing PR URLs or numbers. Can be specified multiple times. Each occurrence can be either comma-separated PRs (e.g., `--prs "https://github.com/owner/repo/pull/123,6789"`) or a file path (e.g., `--prs /path/to/file.txt`). When specifying PRs directly, provide comma-separated values. When specifying a file path, provide a single value that points to a newline-delimited file. If --owner and --repo are provided, PR numbers can be used instead of URLs. If specified, --title can be derived from the PR. If mappings are configured, --areas and --type can also be derived from the PR. Creates one changelog file per PR. Mutually exclusive with --release-version and --report.</param>
 	/// <param name="report">Optional: URL or file path to a promotion report HTML document. Extracts GitHub pull request URLs and creates one changelog per PR (same parsing as `changelog bundle --report`). Mutually exclusive with --prs, --issues, and --release-version.</param>
 	/// <param name="repo">Optional: GitHub repository name (used when --prs or --issues contains just numbers, or when using --release-version). Falls back to bundle.repo in changelog.yml when not specified.</param>
@@ -263,6 +264,7 @@ internal sealed partial class ChangelogCommands(
 		string[]? issues = null,
 		string? owner = null,
 		string? output = null,
+		string? pr = null,
 		string[]? prs = null,
 		string? report = null,
 		string? releaseVersion = null,
@@ -279,6 +281,9 @@ internal sealed partial class ChangelogCommands(
 	{
 		var ctx = ct;
 		await using var serviceInvoker = new ServiceInvoker(collector);
+
+		if (!string.IsNullOrWhiteSpace(pr))
+			prs = prs is { Length: > 0 } ? [.. prs, pr] : [pr];
 
 		var hasReport = !string.IsNullOrWhiteSpace(report);
 		if (hasReport)
@@ -387,11 +392,12 @@ internal sealed partial class ChangelogCommands(
 				CreateBundle = false
 			};
 
-			serviceInvoker.AddCommand(
-				releaseChangelogService,
-				releaseInput,
-				static async (s, collector, state, ctx) => await s.CreateChangelogsFromRelease(collector, state, ctx)
-			);
+			serviceInvoker.AddCommand(releaseChangelogService, releaseInput, static async (s, collector, state, ctx) =>
+			{
+				// CreateBundle = false on this path; bundle_path output is not needed.
+				var result = await s.CreateChangelogsFromRelease(collector, state, ctx);
+				return result.Success;
+			});
 
 			return await serviceInvoker.InvokeAsync(ctx);
 		}
@@ -882,6 +888,7 @@ internal sealed partial class ChangelogCommands(
 				}
 
 				IGitHubReleaseService releaseService = new GitHubReleaseService(logFactory);
+				IGitHubCommitRangeService commitRangeService = new GitHubCommitRangeService(logFactory);
 				var release = await releaseService.FetchReleaseAsync(resolvedOwner, resolvedRepo, releaseVersion, ctx);
 				if (release == null)
 				{
@@ -892,21 +899,46 @@ internal sealed partial class ChangelogCommands(
 					return 1;
 				}
 
-				var parsedNotes = ReleaseNoteParser.Parse(release.Body);
-				if (parsedNotes.PrReferences.Count == 0)
+				var previousTag = await releaseService.FetchPreviousTagAsync(resolvedOwner, resolvedRepo, release.TagName, ctx);
+				if (previousTag == null)
+				{
+					collector.EmitError(
+						string.Empty,
+						$"GitHub could not determine the previous release before '{release.TagName}' in {resolvedOwner}/{resolvedRepo}. Cannot derive PR list from commit range."
+					);
+					return 1;
+				}
+
+				var resolution = await commitRangeService.ResolvePullRequestsAsync(
+					collector,
+					new CommitRangeArguments
+					{
+						Owner = resolvedOwner,
+						Repo = resolvedRepo,
+						StartRef = previousTag,
+						EndRef = release.TagName
+					},
+					ctx
+				);
+				if (resolution == null)
+				{
+					collector.EmitError(
+						string.Empty,
+						$"Failed to resolve PR list from commit range {previousTag}..{release.TagName} for {resolvedOwner}/{resolvedRepo}."
+					);
+					return 1;
+				}
+
+				if (resolution.PullRequests.Count == 0)
 				{
 					collector.EmitWarning(
 						string.Empty,
-						$"No PR references found in release notes for {resolvedOwner}/{resolvedRepo}@{release.TagName}. No bundle will be created."
+						$"No PRs found in commit range {previousTag}..{release.TagName} for {resolvedOwner}/{resolvedRepo}. No bundle will be created."
 					);
 					return 0;
 				}
 
-				// Build full PR URLs and inject them as the PR filter
-				prs = parsedNotes
-					.PrReferences
-					.Select(r => $"https://github.com/{resolvedOwner}/{resolvedRepo}/pull/{r.PrNumber}")
-					.ToArray();
+				prs = resolution.PullRequests.Select(pr => pr.Url).ToArray();
 			}
 		}
 
@@ -1237,13 +1269,18 @@ internal sealed partial class ChangelogCommands(
 			DryRun = dryRun
 		};
 
+		string? bundlePath = null;
+		input = input with { OnBundlePathResolved = path => bundlePath = path };
 		serviceInvoker.AddCommand(
 			service,
 			input,
 			static async (s, collector, state, ctx) => await s.BundleChangelogs(collector, state, ctx)
 		);
 
-		return await serviceInvoker.InvokeAsync(ctx);
+		var exitCode = await serviceInvoker.InvokeAsync(ctx);
+		if (bundlePath != null)
+			await githubActionsService.SetOutputAsync("bundle_path", bundlePath);
+		return exitCode;
 	}
 
 	/// <summary>Delete changelog entry files matching a filter.</summary>
@@ -1288,7 +1325,12 @@ internal sealed partial class ChangelogCommands(
 		var ctx = ct;
 		await using var serviceInvoker = new ServiceInvoker(collector);
 
-		var service = new ChangelogRemoveService(logFactory, _fileSystem, configurationContext);
+		var service = new ChangelogRemoveService(
+			logFactory,
+			_fileSystem,
+			configurationContext,
+			commitRangeService: new GitHubCommitRangeService(logFactory)
+		);
 
 		var isProfileMode = !string.IsNullOrWhiteSpace(profile);
 
@@ -1328,6 +1370,7 @@ internal sealed partial class ChangelogCommands(
 			}
 
 			IGitHubReleaseService releaseService = new GitHubReleaseService(logFactory);
+			IGitHubCommitRangeService commitRangeService = new GitHubCommitRangeService(logFactory);
 			var release = await releaseService.FetchReleaseAsync(resolvedOwner, resolvedRepo, releaseVersion, ctx);
 			if (release == null)
 			{
@@ -1338,18 +1381,40 @@ internal sealed partial class ChangelogCommands(
 				return 1;
 			}
 
-			var parsedNotes = ReleaseNoteParser.Parse(release.Body);
-			if (parsedNotes.PrReferences.Count == 0)
+			var previousTag = await releaseService.FetchPreviousTagAsync(resolvedOwner, resolvedRepo, release.TagName, ctx);
+			if (previousTag == null)
+			{
+				collector.EmitError(
+					string.Empty,
+					$"GitHub could not determine the previous release before '{release.TagName}' in {resolvedOwner}/{resolvedRepo}. Cannot derive PR list from commit range."
+				);
+				return 1;
+			}
+
+			var resolution = await commitRangeService.ResolvePullRequestsAsync(
+				collector,
+				new CommitRangeArguments { Owner = resolvedOwner, Repo = resolvedRepo, StartRef = previousTag, EndRef = release.TagName },
+				ctx
+			);
+			if (resolution == null)
+			{
+				collector.EmitError(
+					string.Empty,
+					$"Failed to resolve PR list from commit range {previousTag}..{release.TagName} for {resolvedOwner}/{resolvedRepo}."
+				);
+				return 1;
+			}
+
+			if (resolution.PullRequests.Count == 0)
 			{
 				collector.EmitWarning(
 					string.Empty,
-					$"No PR references found in release notes for {resolvedOwner}/{resolvedRepo}@{release.TagName}. No changelogs will be removed."
+					$"No PRs found in commit range {previousTag}..{release.TagName} for {resolvedOwner}/{resolvedRepo}. No changelogs will be removed."
 				);
 				return 0;
 			}
 
-			// Build full PR URLs and inject them as the PR filter
-			prs = parsedNotes.PrReferences.Select(r => $"https://github.com/{resolvedOwner}/{resolvedRepo}/pull/{r.PrNumber}").ToArray();
+			prs = resolution.PullRequests.Select(pr => pr.Url).ToArray();
 		}
 
 		var allPrs = ExpandCommaSeparated(prs);
@@ -1638,7 +1703,6 @@ internal sealed partial class ChangelogCommands(
 		string? output = null,
 		string? releaseDate = null,
 		bool stripTitlePrefix = false,
-		bool warnOnTypeMismatch = true,
 		CancellationToken ct = default
 	)
 	{
@@ -1699,18 +1763,22 @@ internal sealed partial class ChangelogCommands(
 			Config = config?.FullName,
 			Output = resolvedOutput,
 			StripTitlePrefix = stripTitlePrefixResolved,
-			WarnOnTypeMismatch = warnOnTypeMismatch,
 			Description = description,
 			ReleaseDate = releaseDate
 		};
 
-		serviceInvoker.AddCommand(
-			service,
-			input,
-			static async (s, collector, state, ctx) => await s.CreateChangelogsFromRelease(collector, state, ctx)
-		);
+		string? bundlePath = null;
+		serviceInvoker.AddCommand(service, input, async (s, collector, state, ctx) =>
+		{
+			var result = await s.CreateChangelogsFromRelease(collector, state, ctx);
+			bundlePath = result.BundlePath;
+			return result.Success;
+		});
 
-		return await serviceInvoker.InvokeAsync(ctx);
+		var exitCode = await serviceInvoker.InvokeAsync(ctx);
+		if (bundlePath != null)
+			await githubActionsService.SetOutputAsync("bundle_path", bundlePath);
+		return exitCode;
 	}
 
 	/// <summary>Append or exclude changelog entries in a published bundle without modifying it.</summary>

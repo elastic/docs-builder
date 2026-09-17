@@ -125,8 +125,9 @@ public record BundleChangelogsArguments
 	public bool SuppressReleaseDate { get; init; }
 
 	/// <summary>
-	/// When non-null (including empty), PR/issue links are filtered to this <c>owner/repo</c> allowlist (from changelog.yml <c>bundle.link_allow_repos</c>).
+	/// Obsolete — no longer read. Link sanitization is handled by the scrubber Lambda.
 	/// </summary>
+	[Obsolete("link_allow_repos is no longer read.", error: false)]
 	public IReadOnlyList<string>? LinkAllowRepos { get; init; }
 
 	/// <summary>
@@ -146,6 +147,14 @@ public record BundleChangelogsArguments
 	/// entry source) without writing a bundle. Only valid together with a git ref range.
 	/// </summary>
 	public bool DryRun { get; init; }
+
+	/// <summary>
+	/// Optional callback invoked with the resolved output file path immediately after the bundle
+	/// is written to disk. Used by <c>ChangelogCommand.Bundle</c> to capture the path for GitHub
+	/// Actions output without changing the <see cref="ChangelogBundlingService.BundleChangelogs"/>
+	/// return type (tests that don't need the path leave this null).
+	/// </summary>
+	public Action<string>? OnBundlePathResolved { get; init; }
 }
 
 /// <summary>
@@ -542,40 +551,6 @@ public partial class ChangelogBundlingService(
 			return false;
 
 		var bundleData = buildResult.Data;
-		if (input.LinkAllowRepos != null)
-		{
-			if (
-				!LinkAllowlistSanitizer.TryApplyBundle(
-					collector,
-					bundleData,
-					input.LinkAllowRepos,
-					input.Owner ?? "elastic",
-					productRepo,
-					out var sanitizedBundle,
-					out _
-				)
-			)
-				return false;
-			bundleData = sanitizedBundle;
-
-			if (configurationContext != null && input.LinkAllowRepos.Count > 0)
-			{
-				try
-				{
-					var assemblyYaml = configurationContext.ConfigurationFileProvider.AssemblerFile.ReadToEnd();
-					var assembly = AssemblyConfiguration.Deserialize(assemblyYaml, skipPrivateRepositories: false);
-					LinkAllowlistSanitizer.EmitAssemblerDiagnostics(collector, input.LinkAllowRepos, assembly);
-				}
-				catch (Exception ex) when (ex is not (OutOfMemoryException or StackOverflowException))
-				{
-					collector.EmitWarning(
-						string.Empty,
-						$"Could not load assembler.yml for bundle.link_allow_repos diagnostics: {ex.Message}"
-					);
-				}
-			}
-		}
-
 		// Apply description with placeholder substitution
 		if (!string.IsNullOrEmpty(input.Description))
 		{
@@ -635,6 +610,10 @@ public partial class ChangelogBundlingService(
 		// Write bundle file
 		await WriteBundleFileAsync(bundleData, outputPath, ctx);
 
+		// Notify the caller of the resolved output path (used by ChangelogCommand.Bundle to emit
+		// bundle_path as a GitHub Actions step output so callers don't need to predict the path).
+		input.OnBundlePathResolved?.Invoke(outputPath);
+
 		return true;
 	}
 
@@ -661,7 +640,8 @@ public partial class ChangelogBundlingService(
 				_logger,
 				ctx,
 				input.ProfileReport,
-				_releaseService
+				_releaseService,
+				_commitRangeService
 			);
 
 		if (filterResult == null)
@@ -1046,7 +1026,7 @@ public partial class ChangelogBundlingService(
 		var directory = input.Directory ?? config?.Bundle?.Directory ?? _fileSystem.Directory.GetCurrentDirectory();
 
 		if (config?.Bundle == null)
-			return input with { Directory = directory, LinkAllowRepos = null };
+			return input with { Directory = directory };
 
 		// File name is resolved later in ResolveResolvedOutputPath so option-mode can use the
 		// conventional {repo}-{product}-{version}.yaml name. Keep a directory --output as-is.
@@ -1076,8 +1056,7 @@ public partial class ChangelogBundlingService(
 			Owner = owner,
 			Branch = branch,
 			Description = description,
-			SuppressReleaseDate = suppressReleaseDate,
-			LinkAllowRepos = config.Bundle.LinkAllowRepos
+			SuppressReleaseDate = suppressReleaseDate
 		};
 	}
 
