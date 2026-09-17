@@ -236,8 +236,8 @@ bundle:
   #   - link_allow_repos is no longer read. Bundles keep every PR/issue link. The changelog
   #     scrubber Lambda removes links to repositories marked `private: true` in assembler.yml
   #     when it publishes to the public CDN.
-  #   - repo and owner are derived from GITHUB_REPOSITORY or the git remote origin. A repo value
-  #     that differs from the derived repository is an error.
+  #   - repo is derived from GITHUB_REPOSITORY or the git remote origin; delete it unless you need to override.
+  #   - owner is NOT derived; it defaults to "elastic". Keep it if your GitHub organization is not "elastic".
   # Optional: branch whose CDN changelog pool (changelog/{org}/{repo}/{branch}/...) is sourced from when
   # bundling entries from the CDN. Defaults to "main" when unset. Can be overridden per profile.
   # branch: main

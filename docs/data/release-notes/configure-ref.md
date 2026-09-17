@@ -140,7 +140,7 @@ These settings are located in the `bundle.profiles.<name>` section of the config
 :   Refer to [](/cli/changelog/bundle.md#product-format).
 
 `owner`
-:   **Deprecated.** The owner is derived automatically. Remove this setting from the profile.
+:   Overrides [bundle.owner](#bundle-basic). Keep this setting if the profile's repository owner differs from the bundle default. For `source: github_release` and `--release-version` flows, owner falls back to `"elastic"` with no automatic env or git derivation.
 
 `products`
 :   Derive the list of changelogs by matching their `products` values (equivalent to the `--input-products` command option).

@@ -13,7 +13,7 @@ The command creates a `changelog.yml` configuration file and `changelog` and `re
 When the template is written for the first time, the command seeds `bundle.owner`, `bundle.repo`, and `bundle.link_allow_repos` from your `git` remote `origin` (when it points at `github.com`) and/or from `--owner` and `--repo`. CLI values override values inferred from `git`. If neither source provides enough information, the placeholder lines are removed from the template.
 
 :::{note}
-These three seeded settings are deprecated or obsolete. `bundle.link_allow_repos` is no longer read. `bundle.owner` and `bundle.repo` are derived automatically from `GITHUB_REPOSITORY` or the git remote, and a `bundle.repo` value that differs from the derived repository is an error. You can delete all three lines from the generated file. Refer to [Basic settings](/data/release-notes/configure-ref.md#bundle-basic).
+`bundle.link_allow_repos` is no longer read; delete it. `bundle.repo` is derived from `GITHUB_REPOSITORY` or the git remote at runtime; delete it unless you need to override the derived value. Keep `bundle.owner` if your GitHub organization is not `elastic` — it is not derived automatically and defaults to `"elastic"`. Refer to [Basic settings](/data/release-notes/configure-ref.md#bundle-basic).
 :::
 
 ## Examples
