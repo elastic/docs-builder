@@ -1,7 +1,12 @@
+FROM node:22-bookworm-slim AS node
+
 FROM public.ecr.aws/amazonlinux/amazonlinux:2023 AS base
 
 ARG TARGETARCH
 ARG TARGETOS
+# Override to pin a specific RID (e.g. linux-x64 in CI). When empty, the
+# native Docker architecture is used (linux-arm64 on Apple Silicon, etc.).
+ARG PUBLISH_RID=linux-x64
 
 WORKDIR /app
 
