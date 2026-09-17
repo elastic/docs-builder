@@ -279,6 +279,7 @@ bundle:
     # the release notes text is not read. Requires GITHUB_TOKEN.
     # elasticsearch-gh-release:
     #   source: github_release       # Derive the PR list from the release instead of filtering input changelogs
+    #   repo: elasticsearch          # Required for source: github_release (profile.repo or bundle.repo must be set)
     #   output_products: "elasticsearch {version} {lifecycle}"
 
     # Example: Serverless release profile (filter by promotion report, PR, or issue list)
