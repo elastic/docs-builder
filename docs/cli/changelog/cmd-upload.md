@@ -201,11 +201,3 @@ docs-builder changelog upload \
   --s3-bucket-name my-changelog-bundles \
   --overwrite
 ```
-
-```sh
-docs-builder changelog upload \
-  --artifact-type changelog \
-  --target s3 \
-  --s3-bucket-name my-changelog-bundles \
-  --overwrite
-```
