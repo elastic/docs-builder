@@ -59,12 +59,10 @@ products:
 ## After creation
 
 Upload is the same as for other changelog YAML files.
-The scrubber writes two indexes per note:
-
-- `changelog/{org}/{repo}/notes-{product}-{version}.json` — notes for that product and version. `changelog bundle` reads this key first.
-- `changelog/{org}/{repo}/notes-{version}.json` — the union of notes for that version across products, kept for older CLI pins.
-
-`{changelog}` does not read these indexes. It loads published bundle YAML (and amend sidecars listed in `bundle/{product}/registry.json`).
+The scrubber writes `changelog/{org}/{repo}/notes-{product}-{version}.json` listing every note
+file for that product and version. `changelog bundle` reads that key. `{changelog}` does not —
+it loads published bundle YAML (and amend sidecars listed in `bundle/{product}/registry.json`),
+so removing a notes-index object from S3 does not change `:cdn:` pages.
 
 If the release bundle for that product and version or date has already shipped when you upload, the scrubber generates an amend sidecar for **that product**, then rebuilds that product's `bundle/{product}/registry.json` so `{changelog}` `:cdn:` pages pick it up. Other products that share the version are left alone.
 

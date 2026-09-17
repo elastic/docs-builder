@@ -19,7 +19,6 @@ namespace Elastic.Changelog.Reconciliation;
 /// (<c>{parent}.amend-notes.yaml</c>) that carries notes that arrived after the release shipped.
 /// Also updates each <c>bundle_seq</c> on the product-scoped notes index: 0 = no bundle yet,
 /// 1 = shipped in the original bundle or a human amend, 2 = carried by the reconciler amend sidecar.
-/// The dual-written legacy <c>notes-{version}.json</c> path list is refreshed in the same pass.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -52,8 +51,8 @@ public sealed class NoteAmendReconciler(
 	/// <summary>
 	/// For the given repository scope, scans each product that appears in
 	/// <paramref name="notesByProduct"/> (not every <c>bundle/{product}/</c> prefix), writes or
-	/// deletes that product's reconciler-owned amend sidecars, and re-writes product-scoped and
-	/// legacy notes indexes with correct <c>bundle_seq</c> values. Empty version lists mean that
+	/// deletes that product's reconciler-owned amend sidecars, and re-writes product-scoped
+	/// notes indexes with correct <c>bundle_seq</c> values. Empty version lists mean that
 	/// product×version just vanished from the notes index; amend still runs so sidecars can drop.
 	/// </summary>
 	/// <returns>
@@ -128,18 +127,6 @@ public sealed class NoteAmendReconciler(
 			var updatedEntries = WithSeqs(write.Notes, seqs);
 			await notesIndexReconciler.WriteIndexAsync(indexKey, updatedEntries, ct, new NotesIndexMetadata(write.Product, write.Version));
 		});
-
-		foreach (var (version, unionNotes) in UnionByVersion(notesByProduct))
-		{
-			ctx.ThrowIfCancellationRequested();
-			if (unionNotes.Count == 0)
-				continue;
-
-			var seqs = MaxSeqsForVersion(notesByProduct.Keys, version, seqMap);
-			var updatedEntries = WithSeqs(unionNotes, seqs);
-			var indexKey = ChangelogKeys.NotesIndexKey(org, repo, version);
-			await notesIndexReconciler.WriteIndexAsync(indexKey, updatedEntries, ctx);
-		}
 	}
 
 	private static List<NoteIndexEntry> WithSeqs(IReadOnlyList<NoteIndexEntry> notes, IReadOnlyDictionary<string, int> seqs) =>
@@ -147,47 +134,6 @@ public sealed class NoteAmendReconciler(
 			.Select(n => n with { BundleSeq = seqs.TryGetValue(n.Path, out var s) ? s : 0 })
 			.OrderBy(n => n.Path, StringComparer.Ordinal)
 			.ToList();
-
-	private static Dictionary<string, List<NoteIndexEntry>> UnionByVersion(
-		IReadOnlyDictionary<string, IReadOnlyDictionary<string, IReadOnlyList<NoteIndexEntry>>> notesByProduct
-	)
-	{
-		var byVersion = new Dictionary<string, List<NoteIndexEntry>>(StringComparer.Ordinal);
-		foreach (var byProductVersion in notesByProduct.Values)
-		{
-			foreach (var (version, notes) in byProductVersion)
-			{
-				if (!byVersion.TryGetValue(version, out var union))
-					byVersion[version] = union = [];
-				foreach (var note in notes)
-				{
-					if (!union.Any(e => e.Path == note.Path))
-						union.Add(note);
-				}
-			}
-		}
-		return byVersion;
-	}
-
-	private static Dictionary<string, int> MaxSeqsForVersion(
-		IEnumerable<string> products,
-		string version,
-		IReadOnlyDictionary<string, Dictionary<string, int>> seqMap
-	)
-	{
-		var max = new Dictionary<string, int>(StringComparer.Ordinal);
-		foreach (var product in products)
-		{
-			if (!seqMap.TryGetValue(ProductVersionKey(product, version), out var seqs))
-				continue;
-			foreach (var (path, seq) in seqs)
-			{
-				if (!max.TryGetValue(path, out var current) || seq > current)
-					max[path] = seq;
-			}
-		}
-		return max;
-	}
 
 	private static string ProductVersionKey(string product, string version) => $"{product}/{version}";
 
