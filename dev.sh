@@ -34,7 +34,8 @@ case "${1:-help}" in
     echo "  stop                 Stop the development server"
     echo "  docs                 Build the current documentation set"
     echo "  test                 Run the unit-test suite (delegates to ./build.sh unit-test)"
-    echo "  serve-mcp            Run the MCP server at http://localhost:8080"
+    echo "  serve-mcp            Run the MCP server at http://localhost:8080 (public profile)"
+    echo "  serve-mcp-internal   Run the MCP server at http://localhost:8080 (internal profile)"
     echo "  serve-mcp-detached   Run the MCP server in the background"
     echo "  stop-mcp             Stop the MCP server"
     echo "  clean                Stop containers and remove containers, networks, and volumes"
@@ -70,6 +71,10 @@ case "${1:-help}" in
   serve-mcp)
     _ensure_mcp
     _compose up --no-build mcp
+    ;;
+  serve-mcp-internal)
+    _ensure_mcp
+    MCP_SERVER_PROFILE=internal _compose up --no-build mcp
     ;;
   serve-mcp-detached)
     _ensure_mcp
