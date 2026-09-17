@@ -58,7 +58,7 @@ exclude-entries:
 
 An amend file can contain both `exclude-entries` and `entries`. Within each amend file, exclusions are applied before additions.
 
-When bundles are loaded (either via the `changelog render` command or the `{changelog}` directive), amend files are **automatically merged** with their parent bundles in sequence (`amend-1`, `amend-2`, …).
+When bundles are loaded (either via the `changelog render` command or the `{changelog}` directive), amend files are **automatically merged** with their parent bundles in sequence (`amend-1`, `amend-2`, …, then `.amend-notes` when that sidecar is present).
 The result is rendered as a single release.
 
 :::{note}

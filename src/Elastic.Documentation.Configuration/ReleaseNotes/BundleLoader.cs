@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions;
-using System.Text.RegularExpressions;
 using Elastic.Documentation.ReleaseNotes;
 using Elastic.Documentation.Versions;
 using YamlDotNet.Core;
@@ -13,7 +12,7 @@ namespace Elastic.Documentation.Configuration.ReleaseNotes;
 /// <summary>
 /// Service for loading, resolving, filtering, and merging changelog bundles.
 /// </summary>
-public partial class BundleLoader(IFileSystem fileSystem)
+public class BundleLoader(IFileSystem fileSystem)
 {
 	/// <summary>
 	/// Loads all changelog bundles from a folder.
@@ -54,7 +53,7 @@ public partial class BundleLoader(IFileSystem fileSystem)
 	/// <summary>
 	/// Loads bundles from in-memory YAML content rather than a folder. Used by the <c>changelog</c>
 	/// directive in <c>cdn:</c> mode, where bundle files are fetched over HTTP.
-	/// Amend files are still merged by name.
+	/// Amend sidecars (numbered and <c>.amend-notes</c>) are still merged by file name.
 	/// </summary>
 	/// <param name="bundles">Bundle file name and raw YAML content pairs.</param>
 	/// <param name="emitWarning">Callback to emit warnings during loading.</param>
@@ -244,7 +243,8 @@ public partial class BundleLoader(IFileSystem fileSystem)
 
 	/// <summary>
 	/// Merges amend files with their parent bundles.
-	/// Amend files follow the naming pattern: {baseName}.amend-{N}.yaml
+	/// Numbered sidecars (<c>{baseName}.amend-{N}.yaml</c>) apply in numeric order, then the
+	/// reconciler-owned <c>{baseName}.amend-notes.yaml</c> sidecar.
 	/// </summary>
 	/// <param name="bundles">The list of loaded bundles including amend files.</param>
 	/// <param name="emitWarning">Callback to emit warnings during entry resolution.</param>
@@ -263,7 +263,7 @@ public partial class BundleLoader(IFileSystem fileSystem)
 		var mergedAmendPaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 		var mergedParents = new Dictionary<string, LoadedBundle>(StringComparer.OrdinalIgnoreCase);
 
-		var amendsByParent = amendBundles.GroupBy(a => GetParentBundlePath(a.FilePath)).Where(group => group.Key != null);
+		var amendsByParent = amendBundles.GroupBy(a => BundleAmendMerger.GetParentBundlePath(a.FilePath)).Where(group => group.Key != null);
 
 		foreach (var group in amendsByParent)
 		{
@@ -271,7 +271,7 @@ public partial class BundleLoader(IFileSystem fileSystem)
 			if (!bundlesByPath.TryGetValue(parentPath, out var parentBundle))
 				continue;
 
-			var orderedAmendData = group.OrderBy(a => BundleAmendMerger.GetAmendFileNumber(a.FilePath)).Select(a => a.Data).ToList();
+			var orderedAmendData = group.OrderBy(AmendMergeOrder).Select(a => a.Data).ToList();
 
 			var mergedEntryList = BundleAmendMerger.MergeEntries(parentBundle.Data.Entries, orderedAmendData);
 			var mergedBundleData = parentBundle.Data with { Entries = mergedEntryList };
@@ -297,23 +297,12 @@ public partial class BundleLoader(IFileSystem fileSystem)
 	}
 
 	/// <summary>
-	/// Gets the parent bundle path from an amend file path.
+	/// Numbered amends first (<c>1</c>, <c>2</c>, …), then <c>.amend-notes</c> (numeric suffix is
+	/// <c>0</c> on <see cref="BundleAmendMerger.GetAmendFileNumber"/>).
 	/// </summary>
-	/// <param name="amendFilePath">The amend file path.</param>
-	/// <returns>The parent bundle path, or null if not an amend file.</returns>
-	private string? GetParentBundlePath(string amendFilePath)
+	private static int AmendMergeOrder(LoadedBundle amend)
 	{
-		if (!BundleAmendMerger.IsAmendFile(amendFilePath))
-			return null;
-
-		var directory = fileSystem.Path.GetDirectoryName(amendFilePath) ?? string.Empty;
-		var fileName = fileSystem.Path.GetFileName(amendFilePath);
-		var extension = fileSystem.Path.GetExtension(amendFilePath);
-		var parentFileName = AmendFileRegex().Replace(fileName, extension);
-
-		return fileSystem.Path.Join(directory, parentFileName);
+		var number = BundleAmendMerger.GetAmendFileNumber(amend.FilePath);
+		return number == 0 ? int.MaxValue : number;
 	}
-
-	[GeneratedRegex(@"\.amend-\d+\.ya?ml$", RegexOptions.IgnoreCase)]
-	private static partial Regex AmendFileRegex();
 }

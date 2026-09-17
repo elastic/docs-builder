@@ -65,6 +65,12 @@ products:
   terraform-google-edot-cf:
     display: 'Terraform Google Elastic Cloud Forwarder'
     versioning: 'terraform-google-edot-cf'
+  connectors:
+    display: 'Elastic Connectors'
+    versioning: 'stack'
+    features:
+      public-reference: false
+      release-notes: false
   curator:
     display: 'Elasticsearch Curator'
   docs-builder:
@@ -151,10 +157,28 @@ products:
   elastic-agent:
     display: 'Elastic Agent'
     versioning: 'stack'
+  elastic-defend:
+    display: 'Elastic Defend'
+    versioning: 'stack'
+    features:
+      public-reference: false
+      release-notes: false
   elastic-docs:
     display: 'Elastic Documentation'
     features:
       public-reference: false
+  elastic-maps-server:
+    display: 'Elastic Maps Server'
+    versioning: 'stack'
+    features:
+      public-reference: false
+      release-notes: false
+  elastic-package-registry:
+    display: 'Elastic Package Registry'
+    repository: 'package-registry'
+    features:
+      public-reference: false
+      release-notes: false
   elastic-serverless-forwarder:
     display: 'Elastic Serverless Forwarder'
     versioning: 'esf'
@@ -203,6 +227,11 @@ products:
     display: 'Elasticsearch for Apache Hadoop'
     repository: 'elasticsearch-hadoop'
     versioning: 'stack'
+  enterprise-search:
+    display: 'Elastic Enterprise Search'
+    features:
+      public-reference: false
+      release-notes: false
   ess:
     display: 'Elastic Cloud Hosted'
     versioning: 'all'
@@ -263,6 +292,11 @@ products:
   serverless-vector-database:
     display: 'Elasticsearch Vector Database Serverless'
     versioning: 'serverless'
+  synthetics-recorder:
+    display: 'Elastic Synthetics Recorder'
+    features:
+      public-reference: false
+      release-notes: false
   transport-go:
     display: 'Elastic Transport Go'
     repository: 'elastic-transport-go'

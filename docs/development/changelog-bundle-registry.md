@@ -72,7 +72,9 @@ narrowed reconciliation to the bundle tree):
   only**, authored by the scrubber Lambda's `NoteAmendReconciler`. When a note is uploaded after
   its release bundle has already shipped, the reconciler generates one aggregate sidecar per
   published bundle that lists all such late notes. The Lambda rebuilds it from current state on
-  every reconcile, so redelivered events never produce duplicate amends. The `.amend-notes` suffix
+  every reconcile, so redelivered events never produce duplicate amends. `{changelog}` `:cdn:` and
+  `changelog render` merge this sidecar into the parent the same way as numbered `.amend-{N}`
+  files, after those numbered amends. The `.amend-notes` suffix
   is **reserved** — do not create files with that suffix manually; see
   [](/cli/changelog/bundle-amend.md). Public copies track private-bucket create and delete
   events. Authors cannot issue those deletes through docs-builder today: `changelog upload`

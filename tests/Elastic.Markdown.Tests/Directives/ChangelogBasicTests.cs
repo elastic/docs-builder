@@ -375,7 +375,7 @@ public class ChangelogCustomPathTests : DirectiveTest<ChangelogBlock>
 			output,
 			// language=markdown
 			"""
-		:::{changelog} release-notes/bundles
+		:::{changelog} /release-notes/bundles
 		:::
 		"""
 		) =>
@@ -692,7 +692,7 @@ public class ChangelogNotFoundTests(ITestOutputHelper output) : DirectiveTest<Ch
 	output,
 	// language=markdown
 	"""
-	:::{changelog} missing-bundles
+	:::{changelog} /missing-bundles
 	:::
 	"""
 )

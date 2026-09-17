@@ -62,12 +62,14 @@ public class ChangelogRemoveService(
 	ILoggerFactory logFactory,
 	IChangelogFileSystem fileSystem,
 	IConfigurationContext? configurationContext = null,
-	IGitHubReleaseService? releaseService = null
+	IGitHubReleaseService? releaseService = null,
+	IGitHubCommitRangeService? commitRangeService = null
 ) : IService
 {
 	private readonly ILogger _logger = logFactory.CreateLogger<ChangelogRemoveService>();
 	private readonly IChangelogFileSystem _fileSystem = fileSystem;
 	private readonly IGitHubReleaseService _releaseService = releaseService ?? new GitHubReleaseService(logFactory);
+	private readonly IGitHubCommitRangeService _commitRangeService = commitRangeService ?? new GitHubCommitRangeService(logFactory);
 	private readonly ChangelogConfigurationLoader? _configLoader = configurationContext != null
 		? new ChangelogConfigurationLoader(logFactory, configurationContext, fileSystem)
 		: null;
@@ -109,7 +111,8 @@ public class ChangelogRemoveService(
 					_logger,
 					ctx,
 					input.ProfileReport,
-					_releaseService
+					_releaseService,
+					_commitRangeService
 				);
 
 				if (filterResult == null)

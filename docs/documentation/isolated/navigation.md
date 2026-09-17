@@ -76,6 +76,8 @@ toc:
 
 All children must be siblings of the parent file (same directory).
 
+A `file:` entry also accepts `default_cta: <template>`, which applies a [CTA template](cta.md) to the file and all of its children.
+
 ### Folder without explicit children
 
 Auto-include all markdown files in a folder. Useful during development:
@@ -99,6 +101,8 @@ toc:
 ```
 
 When `children` is defined, all markdown files in the folder must be listed.
+
+A `folder:` entry also accepts `default_cta: <template>`, which applies a [CTA template](cta.md) to every page in the folder.
 
 ### Deep-linked `index.md` files
 

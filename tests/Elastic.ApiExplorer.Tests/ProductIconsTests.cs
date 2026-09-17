@@ -25,4 +25,11 @@ public class ProductIconsTests
 		ProductIcons.Get("ess").Should().Contain("<svg");
 		ProductIcons.Get("cloud-serverless").Should().Be(ProductIcons.Get("ess"));
 	}
+
+	[Fact]
+	public void Get_VectorDatabase_ReturnsOfficialMark()
+	{
+		ProductIcons.Get("vectordb").Should().Contain("<svg");
+		ProductIcons.Get("serverless-vector-database").Should().Be(ProductIcons.Get("vectordb"));
+	}
 }

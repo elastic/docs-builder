@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.Text;
+using Elastic.Changelog;
 
 namespace Elastic.Changelog.Evaluation;
 
@@ -240,22 +241,123 @@ internal static class ChangelogCommentRenderer
 	/// <summary>
 	/// Renders the Step 2 (file gate) body: informs the author that no changelog entry file
 	/// was found for their PR and suggests the expected file path.
+	/// When <paramref name="isFork"/> is <c>true</c>, appends copy-pasteable bash and
+	/// docs-builder one-liner instructions so external contributors can add the file manually.
+	/// When <paramref name="canCommit"/> is <c>true</c> and <paramref name="isFork"/> is
+	/// <c>false</c>, the non-fork body tells the author automation will commit the entry.
 	/// </summary>
-	internal static string RenderMissingEntry(string? changelogDir, int prNumber)
+	internal static string RenderMissingEntry(
+		string? changelogDir,
+		int prNumber,
+		bool isFork = false,
+		bool canCommit = true,
+		string? resolvedProducts = null
+	)
 	{
 		var dir = changelogDir ?? "docs/changelog";
 		var expectedPath = $"{dir}/{prNumber}.yaml";
 
-		return Truncate(
-			string.Join(
+		if (isFork)
+		{
+			// Extract product IDs only — resolvedProducts can carry full specs like "elasticsearch 9.2 ga".
+			var parsedProducts = ProductArgument.ParseProductSpecs(resolvedProducts);
+			var productIds = parsedProducts.Select(p => p.Product).Where(p => !string.IsNullOrWhiteSpace(p)).Select(p => p!).ToList();
+
+			// Determine product line(s) for the YAML snippet and --products flag.
+			string productYamlLine;
+			string? productsFlag;
+			string? productsNote;
+			if (productIds.Count == 1)
+			{
+				productYamlLine = $"  - product: {productIds[0]}";
+				productsFlag = $"  --products {productIds[0]} \\";
+				productsNote = null;
+			}
+			else if (productIds.Count > 1)
+			{
+				var choices = string.Join(", ", productIds.Select(WrapInlineCode));
+				productYamlLine = $"  - product: your-product-id  # pick one of: {string.Join(", ", productIds)}";
+				productsFlag = null;
+				productsNote = $"Replace `your-product-id` with one of: {choices}.";
+			}
+			else
+			{
+				productYamlLine = "  - product: your-product-id";
+				productsFlag = null;
+				productsNote = null;
+			}
+
+			var docsBuilderLines = new List<string>
+			{
+				$"docs-builder changelog add \\",
+				$"  --concise \\",
+				$"  --pr {prNumber} \\",
+				"  --type enhancement \\",
+				"  --title \"Describe your change clearly\"",
+			};
+			if (productsFlag is not null)
+				docsBuilderLines.Insert(docsBuilderLines.Count - 1, productsFlag);
+
+			var bashScript = string.Join(
 				"\n",
+				$"mkdir -p -- \"{dir}\"",
+				$"cat > \"{expectedPath}\" << 'YAML'",
+				$"pr: {prNumber}",
+				"type: enhancement  # feature | enhancement | bug-fix | breaking-change",
+				"title: Describe your change clearly",
+				"products:",
+				productYamlLine,
+				"YAML"
+			);
+
+			var docsBuilderScript = string.Join("\n", docsBuilderLines);
+
+			var gitScript = string.Join(
+				"\n",
+				$"git add \"{expectedPath}\"",
+				$"git commit -m \"Add changelog entry for PR #{prNumber}\"",
+				"git push"
+			);
+
+			var parts = new List<string>
+			{
 				Title,
 				"",
-				$"📋 **Changelog entry file required** — no entry file was found for PR #{prNumber}.",
+				$"📋 **Changelog entry needed** — this repository requires {WrapInlineCode(expectedPath)} for labeled PRs.",
 				"",
-				$"Add {WrapInlineCode(expectedPath)} to the PR branch, or disable the {WrapInlineCode("require-changelog-file")} gate in your {WrapInlineCode("release-notes.yml")} workflow."
-			)
-		);
+				"As an external contributor the workflow cannot commit to your fork — add the entry manually and push.",
+				"",
+				"**Option 1 — create the file manually (no tooling required)**",
+				"",
+				WrapCodeFence(bashScript, "bash"),
+				"",
+				"**Option 2 — generate with `docs-builder`** (fetches title and type from the PR if `GITHUB_TOKEN` is set)",
+				"",
+				WrapCodeFence(docsBuilderScript, "bash"),
+			};
+			if (productsNote is not null)
+			{
+				parts.Add("");
+				parts.Add($"> ℹ️ {productsNote}");
+			}
+			parts.AddRange([
+				"",
+				"Then commit and push:",
+				"",
+				WrapCodeFence(gitScript, "bash"),
+				"",
+				"Adjust `type` and `title` to match your change. The changelog validation will re-run automatically once you push.",
+			]);
+
+			return Truncate(string.Join("\n", parts));
+		}
+
+		var nonForkBody = canCommit
+			? $"📋 **Changelog entry pending** — {WrapInlineCode(expectedPath)} will be committed automatically. "
+				+ $"If it does not appear shortly, add {WrapInlineCode(expectedPath)} to the PR branch manually."
+			: $"📋 **Changelog entry needed** — add {WrapInlineCode(expectedPath)} to the PR branch and push.";
+
+		return Truncate(string.Join("\n", Title, "", nonForkBody));
 	}
 
 	/// <summary>
