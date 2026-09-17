@@ -8,22 +8,25 @@ using Elastic.Documentation.Configuration;
 
 namespace Elastic.Changelog.Tests.Changelogs;
 
-public class BundleDescriptionInputTests : ChangelogTestBase
+public class BundleDescriptionInputTests(ITestOutputHelper output) : ChangelogTestBase(output)
 {
-	public BundleDescriptionInputTests(ITestOutputHelper output) : base(output) { }
+	private async Task<BundleDescriptionInputResult> ResolveAsync(
+		string? description = null,
+		string? descriptionFile = null,
+		bool clearDescription = false,
+		TextReader? stdin = null
+	) =>
+		await BundleDescriptionInput.ResolveAsync(
+			Collector,
+			FileSystem,
+			new BundleDescriptionRequest(description, descriptionFile, ClearDescription: clearDescription, Stdin: stdin),
+			TestContext.Current.CancellationToken
+		);
 
 	[Fact]
 	public async Task ResolveAsync_NoSource_ReturnsNone()
 	{
-		var result = await BundleDescriptionInput.ResolveAsync(
-			Collector,
-			FileSystem,
-			null,
-			null,
-			clearDescription: false,
-			stdin: null,
-			TestContext.Current.CancellationToken
-		);
+		var result = await ResolveAsync();
 
 		result.Success.Should().BeTrue();
 		result.HasPatch.Should().BeFalse();
@@ -33,31 +36,27 @@ public class BundleDescriptionInputTests : ChangelogTestBase
 	[Fact]
 	public async Task ResolveAsync_ClearDescription_ReturnsEmptyPatch()
 	{
-		var result = await BundleDescriptionInput.ResolveAsync(
-			Collector,
-			FileSystem,
-			null,
-			null,
-			clearDescription: true,
-			stdin: null,
-			TestContext.Current.CancellationToken
-		);
+		var result = await ResolveAsync(clearDescription: true);
 
 		result.Should().Be(BundleDescriptionInputResult.Patch(string.Empty));
 	}
 
 	[Fact]
+	public async Task ResolveAsync_EmptyDescription_ReturnsEmptyPatch()
+	{
+		// An empty --description is still an explicitly supplied source: profile mode must be able to
+		// tell it apart from "no description flag at all" when rejecting a config/CLI collision.
+		var result = await ResolveAsync(description: string.Empty);
+
+		result.Success.Should().BeTrue();
+		result.HasPatch.Should().BeTrue();
+		result.Value.Should().BeEmpty();
+	}
+
+	[Fact]
 	public async Task ResolveAsync_DescriptionAndFile_Fails()
 	{
-		var result = await BundleDescriptionInput.ResolveAsync(
-			Collector,
-			FileSystem,
-			"inline",
-			"/tmp/desc.md",
-			clearDescription: false,
-			stdin: null,
-			TestContext.Current.CancellationToken
-		);
+		var result = await ResolveAsync("inline", "/tmp/desc.md");
 
 		result.Success.Should().BeFalse();
 		Collector.Errors.Should().BeGreaterThan(0);
@@ -70,15 +69,7 @@ public class BundleDescriptionInputTests : ChangelogTestBase
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(path)!);
 		await FileSystem.File.WriteAllTextAsync(path, "Line one\nLine two\n", TestContext.Current.CancellationToken);
 
-		var result = await BundleDescriptionInput.ResolveAsync(
-			Collector,
-			FileSystem,
-			null,
-			path,
-			clearDescription: false,
-			stdin: null,
-			TestContext.Current.CancellationToken
-		);
+		var result = await ResolveAsync(descriptionFile: path);
 
 		result.Success.Should().BeTrue();
 		result.HasPatch.Should().BeTrue();
@@ -89,15 +80,8 @@ public class BundleDescriptionInputTests : ChangelogTestBase
 	public async Task ResolveAsync_Stdin_ReadsReader()
 	{
 		using var stdin = new StringReader("From stdin\n");
-		var result = await BundleDescriptionInput.ResolveAsync(
-			Collector,
-			FileSystem,
-			null,
-			BundleDescriptionInput.StdinPath,
-			clearDescription: false,
-			stdin,
-			TestContext.Current.CancellationToken
-		);
+
+		var result = await ResolveAsync(descriptionFile: BundleDescriptionInput.StdinPath, stdin: stdin);
 
 		result.Success.Should().BeTrue();
 		result.Value.Should().Be("From stdin");
@@ -106,15 +90,7 @@ public class BundleDescriptionInputTests : ChangelogTestBase
 	[Fact]
 	public async Task ResolveAsync_MissingFile_Fails()
 	{
-		var result = await BundleDescriptionInput.ResolveAsync(
-			Collector,
-			FileSystem,
-			null,
-			"/does-not-exist.md",
-			clearDescription: false,
-			stdin: null,
-			TestContext.Current.CancellationToken
-		);
+		var result = await ResolveAsync(descriptionFile: "/does-not-exist.md");
 
 		result.Success.Should().BeFalse();
 		Collector.Errors.Should().BeGreaterThan(0);

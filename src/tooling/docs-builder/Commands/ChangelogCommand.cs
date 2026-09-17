@@ -2346,15 +2346,8 @@ internal sealed partial class ChangelogCommands(
 		var file = string.IsNullOrWhiteSpace(descriptionFile)
 			? null
 			: descriptionFile.Trim() == BundleDescriptionInput.StdinPath ? BundleDescriptionInput.StdinPath : NormalizePath(descriptionFile);
-		return await BundleDescriptionInput.ResolveAsync(
-			collector,
-			_fileSystem,
-			description,
-			file,
-			clearDescription: clearDescription,
-			stdin: Console.In,
-			ctx
-		);
+		var request = new BundleDescriptionRequest(description, file, ClearDescription: clearDescription, Stdin: Console.In);
+		return await BundleDescriptionInput.ResolveAsync(collector, _fileSystem, request, ctx);
 	}
 
 	/// <summary>Upload changelog entries or bundle artifacts to S3 or Elasticsearch.</summary>

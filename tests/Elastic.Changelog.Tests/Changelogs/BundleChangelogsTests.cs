@@ -6472,6 +6472,42 @@ public class BundleChangelogsTests : ChangelogTestBase
 	}
 
 	[Fact]
+	public async Task BundleChangelogs_ProfileWithDescription_RejectsEmptyCliDescription()
+	{
+		// --description "" reaches the service as an empty string, not null. The collision check keys off
+		// the flag being supplied at all, so an empty value must fail rather than silently take the profile intro.
+		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog.yml");
+		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
+		await FileSystem.File.WriteAllTextAsync(
+			configPath,
+			"""
+			bundle:
+			  profiles:
+			    es-release:
+			      products: "elasticsearch {version} {lifecycle}"
+			      description: "From profile"
+			""",
+			TestContext.Current.CancellationToken
+		);
+
+		var input = new BundleChangelogsArguments
+		{
+			Directory = _changelogDir,
+			Profile = "es-release",
+			ProfileArgument = "9.2.0",
+			Config = configPath,
+			ForceLocal = true,
+			Description = string.Empty
+		};
+
+		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+
+		result.Should().BeFalse();
+		Collector.Errors.Should().BeGreaterThan(0);
+		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("--description"));
+	}
+
+	[Fact]
 	public async Task BundleChangelogs_WithBundleReleaseDatesFalse_SuppressesReleaseDate()
 	{
 		// Arrange

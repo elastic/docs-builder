@@ -28,19 +28,16 @@ public static class BundleDescriptionInput
 	public static async Task<BundleDescriptionInputResult> ResolveAsync(
 		IDiagnosticsCollector collector,
 		IFileSystem fileSystem,
-		string? description,
-		string? descriptionFile,
-		bool clearDescription,
-		TextReader? stdin,
+		BundleDescriptionRequest request,
 		Cancel ctx
 	)
 	{
 		var specified = 0;
-		if (description != null)
+		if (request.Description != null)
 			specified++;
-		if (!string.IsNullOrWhiteSpace(descriptionFile))
+		if (!string.IsNullOrWhiteSpace(request.DescriptionFile))
 			specified++;
-		if (clearDescription)
+		if (request.ClearDescription)
 			specified++;
 
 		if (specified > 1)
@@ -52,22 +49,22 @@ public static class BundleDescriptionInput
 		if (specified == 0)
 			return BundleDescriptionInputResult.None;
 
-		if (clearDescription)
+		if (request.ClearDescription)
 			return BundleDescriptionInputResult.Patch(string.Empty);
 
-		if (description != null)
-			return BundleDescriptionInputResult.Patch(description);
+		if (request.Description != null)
+			return BundleDescriptionInputResult.Patch(request.Description);
 
-		var trimmedFile = descriptionFile!.Trim();
+		var trimmedFile = request.DescriptionFile!.Trim();
 		if (trimmedFile == StdinPath)
 		{
-			if (stdin == null)
+			if (request.Stdin == null)
 			{
 				collector.EmitError(string.Empty, "--description-file - requires standard input.");
 				return BundleDescriptionInputResult.Fail;
 			}
 
-			var stdinText = await stdin.ReadToEndAsync(ctx);
+			var stdinText = await request.Stdin.ReadToEndAsync(ctx).ConfigureAwait(false);
 			return BundleDescriptionInputResult.Patch(stdinText.TrimEnd('\r', '\n'));
 		}
 
@@ -77,10 +74,16 @@ public static class BundleDescriptionInput
 			return BundleDescriptionInputResult.Fail;
 		}
 
-		var fileText = await fileSystem.File.ReadAllTextAsync(trimmedFile, ctx);
+		var fileText = await fileSystem.File.ReadAllTextAsync(trimmedFile, ctx).ConfigureAwait(false);
 		return BundleDescriptionInputResult.Patch(fileText.TrimEnd('\r', '\n'));
 	}
 }
+
+/// <summary>
+/// Mutually exclusive description sources passed to <see cref="BundleDescriptionInput.ResolveAsync"/>.
+/// A <c>DescriptionFile</c> of <see cref="BundleDescriptionInput.StdinPath"/> reads from <c>Stdin</c>.
+/// </summary>
+public sealed record BundleDescriptionRequest(string? Description, string? DescriptionFile, bool ClearDescription, TextReader? Stdin);
 
 /// <summary>Outcome of <see cref="BundleDescriptionInput.ResolveAsync"/>.</summary>
 public sealed record BundleDescriptionInputResult(bool Success, bool HasPatch, string? Value)

@@ -725,15 +725,8 @@ public partial class ChangelogBundlingService(
 			// Checkout fallback is for {repo}/{owner} text only — keep returned Repo/Owner as
 			// config/CLI so combined owner/repo still supplies the CDN owner.
 			var descriptionTemplate = profile.Description ?? config.Bundle.Description;
-			if (!string.IsNullOrEmpty(input.Description) && !string.IsNullOrEmpty(descriptionTemplate))
-			{
-				collector.EmitError(
-					string.Empty,
-					$"When using a profile, --description and --description-file are not allowed if bundle.description or the profile description is set. " +
-						"Remove the CLI description, or remove the description from changelog.yml."
-				);
+			if (!ValidateProfileDescription(collector, input.Description, descriptionTemplate))
 				return null;
-			}
 
 			if (!string.IsNullOrEmpty(descriptionTemplate))
 			{
@@ -799,6 +792,25 @@ public partial class ChangelogBundlingService(
 			Description = profileDescription ?? input.Description,
 			SuppressReleaseDate = profileSuppressReleaseDate
 		};
+	}
+
+	/// <summary>
+	/// Configuration owns the bundle intro in profile mode, so a CLI description source is only allowed when
+	/// neither <c>bundle.description</c> nor the profile description is set. Presence of the flag is what counts:
+	/// an empty <c>--description</c> is still a supplied source, so this tests for null rather than emptiness.
+	/// Shared by the run path and <see cref="PlanBundleAsync"/> so <c>--plan</c> rejects the same invocations.
+	/// </summary>
+	private static bool ValidateProfileDescription(IDiagnosticsCollector collector, string? cliDescription, string? descriptionTemplate)
+	{
+		if (cliDescription is null || string.IsNullOrEmpty(descriptionTemplate))
+			return true;
+
+		collector.EmitError(
+			string.Empty,
+			"When using a profile, --description and --description-file are not allowed if bundle.description or the profile description is set. " +
+				"Remove the CLI description, or remove the description from changelog.yml."
+		);
+		return false;
 	}
 
 	/// <summary>
@@ -1117,13 +1129,17 @@ public partial class ChangelogBundlingService(
 			if (!ValidateProfileOutputs(collector, config))
 				return null;
 
-			if (
-				config?.Bundle?.Profiles?.TryGetValue(input.Profile, out profileDef) == true
-				&& string.Equals(profileDef.Source, "github_release", StringComparison.OrdinalIgnoreCase)
-			)
+			if (config?.Bundle?.Profiles?.TryGetValue(input.Profile, out profileDef) == true)
 			{
-				needsNetwork = true;
-				needsGithubToken = true;
+				// Mirror the run path so a CI preflight rejects a CLI description that collides with config.
+				if (!ValidateProfileDescription(collector, input.Description, profileDef.Description ?? config.Bundle.Description))
+					return null;
+
+				if (string.Equals(profileDef.Source, "github_release", StringComparison.OrdinalIgnoreCase))
+				{
+					needsNetwork = true;
+					needsGithubToken = true;
+				}
 			}
 		}
 
