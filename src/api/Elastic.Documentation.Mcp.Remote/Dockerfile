@@ -1,5 +1,3 @@
-FROM node:22-bookworm-slim AS node
-
 FROM public.ecr.aws/amazonlinux/amazonlinux:2023 AS base
 
 ARG TARGETARCH
@@ -10,12 +8,7 @@ WORKDIR /app
 RUN rpm --import https://packages.microsoft.com/keys/microsoft.asc
 
 RUN dnf update -y \
-    && dnf install -y git clang libicu
-
-COPY --from=node /usr/local/bin/node /usr/local/bin/node
-COPY --from=node /usr/local/lib/node_modules /usr/local/lib/node_modules
-RUN ln -s /usr/local/lib/node_modules/npm/bin/npm-cli.js /usr/local/bin/npm \
-    && ln -s /usr/local/lib/node_modules/npm/bin/npx-cli.js /usr/local/bin/npx
+    && dnf install -y git clang libicu nodejs22 nodejs22-npm
 
 # dotnet-install.sh requires tar and findutils, not present in the AL2023 base image
 # see: https://github.com/amazonlinux/amazon-linux-2023/issues/1025
