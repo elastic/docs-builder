@@ -28,9 +28,9 @@ public record S3UploadOptions
 	/// <summary>
 	/// When true, Put when the remote key exists with different content.
 	/// Unchanged (ETag match) files are still skipped. New keys are still uploaded.
-	/// Default is true (replace). Phase 2 will flip this to false (refuse unless requested).
+	/// Default is false (refuse unless requested).
 	/// </summary>
-	public bool Overwrite { get; init; } = true;
+	public bool Overwrite { get; init; }
 }
 
 /// <summary>A remote object that was not overwritten because <see cref="S3UploadOptions.Overwrite"/> was false.</summary>
@@ -58,7 +58,7 @@ public class S3IncrementalUploader(
 	private readonly ILogger _logger = logFactory.CreateLogger<S3IncrementalUploader>();
 
 	public Task<UploadResult> Upload(IReadOnlyList<UploadTarget> targets, bool skipEtagCheck = false, Cancel ctx = default) =>
-		Upload(targets, new S3UploadOptions { SkipEtagCheck = skipEtagCheck }, ctx);
+		Upload(targets, new S3UploadOptions { SkipEtagCheck = skipEtagCheck, Overwrite = skipEtagCheck }, ctx);
 
 	public async Task<UploadResult> Upload(IReadOnlyList<UploadTarget> targets, S3UploadOptions options, Cancel ctx = default)
 	{

@@ -2328,8 +2328,8 @@ internal sealed partial class ChangelogCommands(
 	/// <param name="repo">GitHub repository name, the second segment of changelog entry keys (changelog/{org}/{repo}/{branch}/...). Falls back to bundle.repo in changelog.yml, then the git remote origin. Required for changelog uploads; ignored for bundle uploads.</param>
 	/// <param name="owner">GitHub owner (org), the first segment of changelog entry keys (changelog/{org}/{repo}/{branch}/...). Falls back to bundle.owner in changelog.yml, then the git remote origin. Required for changelog uploads; ignored for bundle uploads.</param>
 	/// <param name="branch">Branch, the third segment of changelog entry keys (changelog/{org}/{repo}/{branch}/...), stored verbatim. Falls back to the current checkout's branch. Required for changelog uploads; ignored for bundle uploads.</param>
-	/// <param name="skipEtagCheck">Upload every discovered file even when its content hash matches the remote object. Use to re-trigger downstream scrubbers without changing file content. Implies --overwrite.</param>
-	/// <param name="overwrite">Replace remote objects whose content differs. Today upload still replaces those objects even if you omit this flag. Pass it so GitHub Actions keep working after a later release that replaces only when the flag is set.</param>
+	/// <param name="skipEtagCheck">Upload every discovered file even when its content hash matches the remote object. Each upload emits s3:ObjectCreated, which re-triggers the scrubber Lambda on the private bucket. Default behavior (without this flag) skips unchanged files. Also replaces objects whose content differs, so you do not need --overwrite as well.</param>
+	/// <param name="overwrite">Replace remote objects whose content differs. Omit this flag to skip replacing those existing objects. Unchanged (ETag match) files and PR-alias markers are still skipped. Use --skip-etag-check to upload those too. When a replacement is refused, the warning includes the existing remote object.</param>
 	[NoOptionsInjection]
 	public async Task<int> Upload(
 		string artifactType,
@@ -2346,7 +2346,6 @@ internal sealed partial class ChangelogCommands(
 	)
 	{
 		var ctx = ct;
-		_ = overwrite;
 
 		// Accept a comma-separated list of artifact types (e.g. "changelog,amend")
 		var artifactTypeList = artifactType.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
@@ -2411,9 +2410,7 @@ internal sealed partial class ChangelogCommands(
 				Owner = resolvedOwner,
 				Branch = resolvedBranch,
 				SkipEtagCheck = skipEtagCheck,
-				// Plain bool is presence-only: omit parses as false. A nullable bool would also
-				// emit a negated flag. Phase 1 always replaces from the CLI (omit and --overwrite).
-				Overwrite = true
+				Overwrite = overwrite || skipEtagCheck
 			};
 			serviceInvoker.AddCommand(service, args, static async (s, c, state, ct) => await s.Upload(c, state, ct));
 		}

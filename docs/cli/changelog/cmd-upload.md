@@ -1,8 +1,15 @@
 ## Description
 
-Upload changelog entries or bundle artifacts to S3 or Elasticsearch. The command discovers `.yaml` and `.yml` files in a local directory and uploads only files whose content hash changed since the last run. Changelog entries are uploaded once under `changelog/{org}/{repo}/{branch}/{file}`, keyed by the authoring owner, repository, and branch; bundles are uploaded under `bundle/{product}/{file}`, product-scoped from the bundle YAML.
+Upload changelog entries or bundle artifacts to S3 or Elasticsearch.
+The command discovers `.yaml` and `.yml` files in a local directory and by default uploads only files whose content hash changed since the last run.
+Changelog entries are uploaded once under `changelog/{org}/{repo}/{branch}/{file}`, keyed by the authoring owner, repository, and branch; bundles are uploaded under `bundle/{product}/{file}`, product-scoped from the bundle YAML.
 
 A downstream scrubber copies published objects to the public bucket and removes pull request and issue links that are not on the allowlist (unlike bundle-time `# PRIVATE:` sentinels on the private side). Those public bundles are less likely to work with [`changelog unpack`](/cli/changelog/unpack.md).
+
+:::{note}
+Upload uses content-hash–based incremental transfer. By default, unchanged files and unchanged PR-alias markers are skipped. Re-running the same command is safe and idempotent.
+If you need to upload every discovered file even when its content hash matches the remote object, pass `--skip-etag-check`.
+:::
 
 To create bundles first, use [](/cli/changelog/bundle.md).
 For the end-to-end workflow, see [](/data/release-notes/bundle.md).
@@ -113,19 +120,6 @@ objects that only older CLI versions still write. See
 
 Profile-mode and option-mode bundle files are named `{repo}-{product}-{version}.yaml` (for example `kibana-cloud-serverless-2026-08-27.yaml` and `elasticsearch-cloud-serverless-2026-08-27.yaml`) so several repositories can publish the same product and version without overwriting each other under `bundle/{product}/`. In option mode, an explicit `--output` file path (a path ending in `.yml` or `.yaml`) is used as-is. When `--output` is omitted, that `{repo}-{product}-{version}.yaml` name is written under `bundle.output_directory`. When `--output` is a directory (any path that does not end in `.yml` or `.yaml`), the file is written in that directory. If the authoring repo cannot be resolved, the command warns and falls back to `{product}-{version}.yaml`, which can collide. If product or version cannot be resolved, the command warns and writes `changelog-bundle.yaml`.
 
-:::{note}
-Upload uses content-hash–based incremental transfer. Unchanged files and unchanged PR-alias markers are skipped. Re-running the same command is safe and idempotent.
-If it's necessary to re-trigger downstream scrubbers without changing file content, pass `--skip-etag-check` to upload every discovered file even when its content hash matches the remote object.
-The completion log reports how many objects were **new** versus **replaced**. If an object already exists in S3 with different content, this release still replaces it, whether or not you pass `--overwrite`. Pass `--overwrite` anyway so GitHub Actions keep working after a later release that will leave the remote object in place unless the flag is set. `--skip-etag-check` also replaces.
-:::
-
-## Options
-
-| Option | Purpose |
-| ------ | ------- |
-| `--skip-etag-check` | Upload every discovered file even when its content hash matches the remote object. Each upload emits `s3:ObjectCreated`, which re-triggers the scrubber Lambda on the private bucket. Default behavior (without this flag) skips unchanged files. Implies `--overwrite`. |
-| `--overwrite` | Replace remote objects whose content differs. Today that still happens if you omit the flag. Pass it so GitHub Actions keep working after a later release that will replace only when the flag is set. Unchanged (ETag match) files and PR-alias markers are still skipped. When a replacement is refused, the warning describes the remote object from its YAML (pointer vs full changelog) and whether this run was writing an alias. |
-
 ## Configuration
 
 Directory resolution order:
@@ -189,10 +183,13 @@ docs-builder changelog upload \
   --config ./config/changelog.yml
 ```
 
-### Explicit overwrite
+### Replace existing files
 
-If S3 already has a different version of the file, the upload command currently replaces it. `--overwrite` does not change that yet.
-That option was added so GitHub Actions keep working after a later release that will replace only when the flag is set:
+The `changelog upload` command completion log reports how many objects were new or replaced.
+If an object already exists in S3 with different content, the command skips replacing the remote object and exits non-zero.
+It prints a warning that includes the existing remote object so you can reconcile the differences.
+
+To force the command to replace existing files, pass `--overwrite`:
 
 ```sh
 docs-builder changelog upload \
@@ -202,10 +199,16 @@ docs-builder changelog upload \
   --overwrite
 ```
 
+### Upload every discovered file
+
+Pass `--skip-etag-check` to upload every discovered file, including files whose content hash matches the remote object.
+Each upload emits `s3:ObjectCreated`, so the scrubber Lambda runs again.
+Local files that differ from S3 are replaced too, so you do not need `--overwrite` as well:
+
 ```sh
 docs-builder changelog upload \
   --artifact-type changelog \
   --target s3 \
   --s3-bucket-name my-changelog-bundles \
-  --overwrite
+  --skip-etag-check
 ```

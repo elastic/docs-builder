@@ -1139,7 +1139,7 @@ public class ChangelogUploadServiceTests
 	}
 
 	[Fact]
-	public async Task Upload_WithoutOverwrite_WhenRemoteDiffers_ReturnsFalseAndEmitsRemoteYaml()
+	public async Task Upload_WhenRemoteDiffers_ByDefault_ReturnsFalseAndEmitsRemoteYaml()
 	{
 		const string remoteYaml =
 			"""
@@ -1176,8 +1176,7 @@ public class ChangelogUploadServiceTests
 			Directory = _changelogDir,
 			Owner = "elastic",
 			Repo = "elasticsearch",
-			Branch = "main",
-			Overwrite = false
+			Branch = "main"
 		};
 		var ct = TestContext.Current.CancellationToken;
 		var result = await _service.Upload(_collector, args, ct);
@@ -1195,7 +1194,7 @@ public class ChangelogUploadServiceTests
 			.Contain(
 				d => d.Severity == Severity.Warning && d.Message.Contains(
 					"s3://test-bucket/changelog/elastic/elasticsearch/main/12345.yaml"
-				) && d.Message.Contains(localPath) && d.Message.Contains("product: elasticsearch")
+				) && d.Message.Contains(localPath) && d.Message.Contains("product: elasticsearch") && d.Message.Contains("--overwrite")
 			);
 
 		A.CallTo(() => _s3Client.PutObjectAsync(A<PutObjectRequest>._, A<CancellationToken>._)).MustNotHaveHappened();
@@ -1253,8 +1252,7 @@ public class ChangelogUploadServiceTests
 			Directory = _changelogDir,
 			Owner = "elastic",
 			Repo = "elasticsearch",
-			Branch = "main",
-			Overwrite = false
+			Branch = "main"
 		};
 		var ct = TestContext.Current.CancellationToken;
 		var result = await _service.Upload(_collector, args, ct);
@@ -1262,7 +1260,7 @@ public class ChangelogUploadServiceTests
 		result.Should().BeFalse();
 		A.CallTo(
 			() => _s3Client.PutObjectAsync(
-				A<PutObjectRequest>.That.Matches(r => r.Key == "changelog/elastic/elasticsearch/main/67890.yaml"),
+				A<PutObjectRequest>.That.Matches(r => r.Key == "changelog/elastic/elasticsearch/main/67890.yaml" && r.IfNoneMatch == "*"),
 				A<CancellationToken>._
 			)
 		).MustHaveHappenedOnceExactly();
@@ -1559,5 +1557,45 @@ public class ChangelogUploadServiceTests
 		result.Should().BeTrue();
 		A.CallTo(() => _s3Client.PutObjectAsync(A<PutObjectRequest>._, A<CancellationToken>._)).MustHaveHappenedOnceExactly();
 		A.CallTo(() => _s3Client.GetObjectAsync(A<GetObjectRequest>._, A<CancellationToken>._)).MustNotHaveHappened();
+	}
+
+	[Fact]
+	public async Task Upload_SkipEtagCheck_WhenRemoteExists_Puts()
+	{
+		AddChangelog(
+			"12345.yaml",
+			"""
+			title: Cloud serverless variant
+			type: bug-fix
+			products:
+			  - product: cloud-serverless
+			prs:
+			  - "12345"
+			"""
+		);
+
+		A.CallTo(
+			() => _s3Client.GetObjectMetadataAsync(A<GetObjectMetadataRequest>._, A<CancellationToken>._)
+		).Returns(new GetObjectMetadataResponse { ETag = "\"stale-etag\"" });
+		A.CallTo(() => _s3Client.PutObjectAsync(A<PutObjectRequest>._, A<CancellationToken>._)).Returns(new PutObjectResponse());
+
+		var args = new ChangelogUploadArguments
+		{
+			ArtifactType = ArtifactType.Changelog,
+			Target = UploadTargetKind.S3,
+			S3BucketName = "test-bucket",
+			Directory = _changelogDir,
+			Owner = "elastic",
+			Repo = "elasticsearch",
+			Branch = "main",
+			SkipEtagCheck = true
+		};
+		var ct = TestContext.Current.CancellationToken;
+		var result = await _service.Upload(_collector, args, ct);
+
+		result.Should().BeTrue();
+		A.CallTo(
+			() => _s3Client.PutObjectAsync(A<PutObjectRequest>.That.Matches(r => r.IfNoneMatch == null), A<CancellationToken>._)
+		).MustHaveHappenedOnceExactly();
 	}
 }

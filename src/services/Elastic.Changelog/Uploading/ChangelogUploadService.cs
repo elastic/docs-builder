@@ -72,15 +72,15 @@ public record ChangelogUploadArguments
 
 	/// <summary>
 	/// When true, upload every discovered file even when its content hash matches the remote object.
-	/// Useful to re-trigger downstream scrubbers without changing file content.
+	/// Useful to upload every discovered file even when its content hash matches the remote object.
 	/// </summary>
 	public bool SkipEtagCheck { get; init; }
 
 	/// <summary>
 	/// When true, replace a remote object whose content differs from the local file.
-	/// Default is true (replace). Unchanged (ETag match) files are still skipped.
+	/// Default is false (do not replace). Unchanged (ETag match) files are still skipped.
 	/// </summary>
-	public bool Overwrite { get; init; } = true;
+	public bool Overwrite { get; init; }
 }
 
 public class ChangelogUploadService(
