@@ -217,11 +217,11 @@ docs-builder changelog bundle \
 ```
 
 1. The release tag. Use `latest` for the most recent release.
-2. Optional. The repository is derived from `GITHUB_REPOSITORY` or the git remote `origin` when you omit it. The owner defaults to `elastic`.
+2. Required unless `bundle.repo` is set in `changelog.yml`. The owner defaults to `elastic`.
 3. The bundle's product metadata is inferred automatically from the release tag and repository name; you can override that behavior with the `--output-products` option.
 
 :::{note}
-`--release-version` requires a `GITHUB_TOKEN` or `GH_TOKEN` environment variable (or an active `gh` login). The command uses the GitHub releases, compare, and GraphQL APIs.
+`--release-version` requires a `GITHUB_TOKEN` environment variable. The command uses the GitHub releases, compare, and GraphQL APIs.
 :::
 
 By default all changelogs that match PRs in the release are included in the bundle.

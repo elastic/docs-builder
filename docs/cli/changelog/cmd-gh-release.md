@@ -4,7 +4,7 @@ Create changelog files and a bundle from a GitHub release.
 
 The command asks GitHub for the tag of the previous release, lists the commits between that tag and the release tag, and resolves each commit to its merged pull request. The release notes text is not read, so the release body can be empty or in any format. Each pull request is logged with the reason it was included or excluded.
 
-The command requires a `GITHUB_TOKEN` or `GH_TOKEN` environment variable. It uses the GitHub releases, compare, and GraphQL APIs.
+The command requires a `GITHUB_TOKEN` environment variable. It uses the GitHub releases, compare, and GraphQL APIs.
 
 For general information about changelogs, go to [](/data/release-notes/overview.md).
 

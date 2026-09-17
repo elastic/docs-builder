@@ -104,7 +104,7 @@ bundle:
       output_products: "apm-agent-dotnet {version} {lifecycle}" <2>
 ```
 
-1. This profile derives the PR list from the commits between the previous release tag and the version tag specified in the command. The repository is derived from the git remote or `GITHUB_REPOSITORY`.
+1. This profile derives the PR list from the commits between the previous release tag and the version tag specified in the command. The repository is resolved from `repo` set on the profile or from `bundle.repo` in the top-level configuration.
 2. For `source: github_release` profiles, the `{lifecycle}` placeholder in `output_products` is inferred from full release tag name. For example, if the release tag is `v1.34.1-preview.1` the lifecycle is `preview`. Refer to [](/cli/changelog/bundle.md#lifecycle-inference) for more details.
 
 ### Bundle by git commit range [profile-git-range]
@@ -245,7 +245,7 @@ For example, if the source of truth for what was shipped in each release is:
   Alternatively, use the [changelog gh-release](/cli/changelog/gh-release.md) command, which creates the changelogs and bundles at the same time.
 
   :::{note}
-  This method requires a `GITHUB_TOKEN` or `GH_TOKEN` environment variable (or an active `gh` login) to fetch release details from the GitHub API.
+  This method requires a `GITHUB_TOKEN` environment variable to fetch release details from the GitHub API.
   :::
 
 - all changelog files that exist in a specific folder:
@@ -359,7 +359,7 @@ For example, if the source of truth for what was shipped in each release is:
   ```
 
   :::{note}
-  This method requires a `GITHUB_TOKEN` or `GH_TOKEN` environment variable (or an active `gh` login) to fetch release details from the GitHub API.
+  This method requires a `GITHUB_TOKEN` environment variable to fetch release details from the GitHub API.
   :::
 
 - all changelog files that exist in a specific folder:
