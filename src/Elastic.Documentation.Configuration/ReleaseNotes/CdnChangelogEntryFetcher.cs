@@ -487,23 +487,18 @@ public sealed class CdnChangelogEntryFetcher : IDisposable
 	}
 
 	/// <summary>
-	/// <summary>
-	/// Fetches all <c>note-*.yml</c> entries for <paramref name="org"/>/<paramref name="repo"/> at
-	/// <paramref name="version"/> from the CDN. Reads the <c>notes-{version}.json</c> index to enumerate
-	/// the pool-relative note paths; a missing index means no notes (not an error). A listed note that
-	/// cannot be fetched is a hard error — the index is an authoritative promise that the note exists.
+	/// Fetches all <c>note-*.yml</c> entries for <paramref name="org"/>/<paramref name="repo"/> and
+	/// <paramref name="product"/> at <paramref name="version"/> from the CDN. Reads
+	/// <c>notes-{product}-{version}.json</c> first; on HTTP 404 only, falls back to the legacy
+	/// <c>notes-{version}.json</c>. A missing index (both 404) means no notes (not an error).
+	/// An empty product-scoped index does not fall back. A listed note that cannot be fetched
+	/// is a hard error — the index is an authoritative promise that the note exists.
 	/// </summary>
-	/// <param name="baseUri">CDN base URI.</param>
-	/// <param name="org">Repository org (e.g. <c>elastic</c>).</param>
-	/// <param name="repo">Repository name (e.g. <c>kibana</c>).</param>
-	/// <param name="version">Release version string (e.g. <c>9.0.0</c>).</param>
-	/// <param name="emitError">Called once per hard error; caller decides how to surface it.</param>
-	/// <param name="ctx">Cancellation token.</param>
-	/// <returns>The fetched note entries, keyed by pool-relative path (<c>main/note-foo.yml</c>).</returns>
 	public async Task<IReadOnlyList<CdnChangelogEntry>> FetchNotesAsync(
 		Uri baseUri,
 		string org,
 		string repo,
+		string product,
 		string version,
 		Action<string> emitError,
 		Cancel ctx
@@ -515,31 +510,87 @@ public sealed class CdnChangelogEntryFetcher : IDisposable
 			return [];
 		}
 
-		var indexUri = CombineSegments(baseUri, ["changelog", org, repo, $"notes-{version}.json"]);
-		NotesIndex? index;
+		if (!ChangelogKeys.IsValidProduct(product))
+		{
+			emitError($"Invalid product '{product}' for notes fetch: must be a non-empty ASCII product segment.");
+			return [];
+		}
+
+		var productIndexUri = CombineSegments(baseUri, ["changelog", org, repo, $"notes-{product}-{version}.json"]);
+		var (productMissing, productIndex) = await TryLoadNotesIndexAsync(
+			productIndexUri,
+			org,
+			repo,
+			version,
+			emitError,
+			ctx
+		).ConfigureAwait(false);
+		if (productIndex is not null)
+			return await FetchListedNotesAsync(baseUri, org, repo, version, productIndex, emitError, ctx).ConfigureAwait(false);
+		if (!productMissing)
+			return [];
+
+		var legacyIndexUri = CombineSegments(baseUri, ["changelog", org, repo, $"notes-{version}.json"]);
+		var (legacyMissing, legacyIndex) = await TryLoadNotesIndexAsync(legacyIndexUri, org, repo, version, emitError, ctx).ConfigureAwait(
+			false
+		);
+		if (legacyIndex is not null)
+			return await FetchListedNotesAsync(baseUri, org, repo, version, legacyIndex, emitError, ctx).ConfigureAwait(false);
+		if (legacyMissing)
+		{
+			_logger.LogDebug(
+				"Notes index for {Org}/{Repo}/{Product}@{Version} not found at {ProductUri} or {LegacyUri}; no notes to bundle",
+				org,
+				repo,
+				product,
+				version,
+				productIndexUri,
+				legacyIndexUri
+			);
+		}
+		return [];
+	}
+
+	/// <summary>
+	/// Loads a notes index. Returns <c>missing: true</c> only on HTTP 404. A present but empty
+	/// or unparseable body is <c>missing: false</c> with a null index so callers do not fall back.
+	/// </summary>
+	private async Task<(bool Missing, NotesIndex? Index)> TryLoadNotesIndexAsync(
+		Uri indexUri,
+		string org,
+		string repo,
+		string version,
+		Action<string> emitError,
+		Cancel ctx
+	)
+	{
 		try
 		{
 			var (notFound, content) = await FetchTextOrNotFoundAsync(indexUri, 1, ctx).ConfigureAwait(false);
 			if (notFound)
-			{
-				_logger.LogDebug(
-					"Notes index for {Org}/{Repo}@{Version} not found at {Uri}; no notes to bundle",
-					org,
-					repo,
-					version,
-					indexUri
-				);
-				return [];
-			}
-			index = JsonSerializer.Deserialize(content, NotesIndexJsonContext.Default.NotesIndex);
+				return (true, null);
+
+			var index = JsonSerializer.Deserialize(content, NotesIndexJsonContext.Default.NotesIndex);
+			return (false, index);
 		}
 		catch (Exception ex) when (ex is not OperationCanceledException)
 		{
 			emitError($"Could not fetch notes index for {org}/{repo}@{version} from {indexUri}: {ex.Message}");
-			return [];
+			return (false, null);
 		}
+	}
 
-		if (index is null || index.Notes.Count == 0)
+	private async Task<IReadOnlyList<CdnChangelogEntry>> FetchListedNotesAsync(
+		Uri baseUri,
+		string org,
+		string repo,
+		string version,
+		NotesIndex index,
+		Action<string> emitError,
+		Cancel ctx
+	)
+	{
+		if (index.Notes is not { Count: > 0 })
 			return [];
 
 		var repoLabel = $"{org}/{repo}";
@@ -548,7 +599,6 @@ public sealed class CdnChangelogEntryFetcher : IDisposable
 		{
 			ctx.ThrowIfCancellationRequested();
 
-			// Pool-relative path is "{branch}/note-{name}.yml"; split on first '/' only.
 			var poolRelativePath = noteEntry.Path;
 			var slash = poolRelativePath.IndexOf('/', StringComparison.Ordinal);
 			if (slash <= 0 || slash == poolRelativePath.Length - 1)
@@ -578,7 +628,6 @@ public sealed class CdnChangelogEntryFetcher : IDisposable
 				continue;
 			}
 
-			// The notes index asserts this note exists — a miss is a real pipeline error.
 			emitError(
 				$"Note '{poolRelativePath}' for {repoLabel}@{version} is listed in the notes index but could not be fetched from {noteUri}: {lastError}. " +
 					"Ensure the note was uploaded and scrubbed; if it persists check the changelog scrubber pipeline."

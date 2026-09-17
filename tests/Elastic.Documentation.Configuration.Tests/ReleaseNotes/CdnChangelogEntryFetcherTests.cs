@@ -286,6 +286,7 @@ public class CdnChangelogEntryFetcherTests
 			BaseUri,
 			"elastic",
 			"elasticsearch",
+			"elasticsearch",
 			"9.0.0",
 			emitError,
 			TestContext.Current.CancellationToken
@@ -293,7 +294,10 @@ public class CdnChangelogEntryFetcherTests
 
 		entries.Should().BeEmpty();
 		errors.Should().BeEmpty("a missing index is expected for targets with no notes");
-		handler.RequestedPaths.Should().ContainSingle().Which.Should().EndWith("/changelog/elastic/elasticsearch/notes-9.0.0.json");
+		handler
+			.RequestedPaths
+			.Should()
+			.Equal("/changelog/elastic/elasticsearch/notes-elasticsearch-9.0.0.json", "/changelog/elastic/elasticsearch/notes-9.0.0.json");
 	}
 
 	[Fact]
@@ -302,7 +306,7 @@ public class CdnChangelogEntryFetcherTests
 		var handler = new StubHandler(req =>
 		{
 			var path = req.RequestUri!.AbsolutePath;
-			if (path.EndsWith("/notes-9.0.0.json", StringComparison.Ordinal))
+			if (path.EndsWith("/notes-elasticsearch-9.0.0.json", StringComparison.Ordinal))
 				return Json(/*lang=json,strict*/
 					"""{"schema_version":1,"notes":[{"path":"main/note-slow-rollover.yml","bundle_seq":0},{"path":"9.0/note-gap.yml","bundle_seq":0}]}"""
 				);
@@ -315,6 +319,7 @@ public class CdnChangelogEntryFetcherTests
 			BaseUri,
 			"elastic",
 			"elasticsearch",
+			"elasticsearch",
 			"9.0.0",
 			emitError,
 			TestContext.Current.CancellationToken
@@ -322,6 +327,8 @@ public class CdnChangelogEntryFetcherTests
 
 		errors.Should().BeEmpty();
 		entries.Select(e => e.FileName).Should().BeEquivalentTo("main/note-slow-rollover.yml", "9.0/note-gap.yml");
+		handler.RequestedPaths.Should().Contain(p => p.EndsWith("/notes-elasticsearch-9.0.0.json", StringComparison.Ordinal));
+		handler.RequestedPaths.Should().NotContain(p => p.EndsWith("/notes-9.0.0.json", StringComparison.Ordinal));
 		// Verify the actual note URLs contain branch segments
 		handler.RequestedPaths.Should().Contain(p => p.EndsWith("/main/note-slow-rollover.yml", StringComparison.Ordinal));
 		handler.RequestedPaths.Should().Contain(p => p.EndsWith("/9.0/note-gap.yml", StringComparison.Ordinal));
@@ -334,7 +341,7 @@ public class CdnChangelogEntryFetcherTests
 		var handler = new StubHandler(req =>
 		{
 			var path = req.RequestUri!.AbsolutePath;
-			if (path.EndsWith("/notes-9.0.0.json", StringComparison.Ordinal))
+			if (path.EndsWith("/notes-elasticsearch-9.0.0.json", StringComparison.Ordinal))
 				return Json(/*lang=json,strict*/ """{"schema_version":1,"notes":[{"path":"main/note-missing.yml","bundle_seq":0}]}""");
 			return new HttpResponseMessage(HttpStatusCode.NotFound);
 		});
@@ -344,6 +351,7 @@ public class CdnChangelogEntryFetcherTests
 		var entries = await fetcher.FetchNotesAsync(
 			BaseUri,
 			"elastic",
+			"elasticsearch",
 			"elasticsearch",
 			"9.0.0",
 			emitError,
@@ -365,6 +373,7 @@ public class CdnChangelogEntryFetcherTests
 			BaseUri,
 			"elastic",
 			"elasticsearch",
+			"elasticsearch",
 			"9.0.0",
 			emitError,
 			TestContext.Current.CancellationToken
@@ -372,6 +381,75 @@ public class CdnChangelogEntryFetcherTests
 
 		entries.Should().BeEmpty();
 		errors.Should().BeEmpty();
+		handler.RequestedPaths.Should().ContainSingle().Which.Should().EndWith("/notes-elasticsearch-9.0.0.json");
+	}
+
+	[Fact]
+	public async Task FetchNotesAsync_ProductIndex404_FallsBackToLegacy()
+	{
+		var handler = new StubHandler(req =>
+		{
+			var path = req.RequestUri!.AbsolutePath;
+			if (
+				path.EndsWith("/notes-9.0.0.json", StringComparison.Ordinal)
+				&& !path.Contains("notes-elasticsearch-", StringComparison.Ordinal)
+			)
+				return Json(/*lang=json,strict*/
+					"""{"schema_version":1,"notes":[{"path":"main/note-slow-rollover.yml","bundle_seq":0}]}"""
+				);
+			if (path.EndsWith("note-slow-rollover.yml", StringComparison.Ordinal))
+				return Yaml(SampleEntry);
+			return new HttpResponseMessage(HttpStatusCode.NotFound);
+		});
+		var (errors, _, emitError, _) = Diagnostics();
+
+		using var fetcher = CreateFetcher(handler);
+		var entries = await fetcher.FetchNotesAsync(
+			BaseUri,
+			"elastic",
+			"elasticsearch",
+			"elasticsearch",
+			"9.0.0",
+			emitError,
+			TestContext.Current.CancellationToken
+		);
+
+		errors.Should().BeEmpty();
+		entries.Select(e => e.FileName).Should().BeEquivalentTo("main/note-slow-rollover.yml");
+		handler.RequestedPaths.Should().Contain(p => p.EndsWith("/notes-elasticsearch-9.0.0.json", StringComparison.Ordinal));
+		handler.RequestedPaths.Should().Contain(p => p.EndsWith("/notes-9.0.0.json", StringComparison.Ordinal));
+	}
+
+	[Fact]
+	public async Task FetchNotesAsync_EmptyProductIndex_DoesNotFallBackToLegacy()
+	{
+		var handler = new StubHandler(req =>
+		{
+			var path = req.RequestUri!.AbsolutePath;
+			if (path.EndsWith("/notes-elasticsearch-9.0.0.json", StringComparison.Ordinal))
+				return Json(/*lang=json,strict*/ """{"schema_version":1,"notes":[]}""");
+			if (path.EndsWith("/notes-9.0.0.json", StringComparison.Ordinal))
+				return Json(/*lang=json,strict*/
+					"""{"schema_version":1,"notes":[{"path":"main/note-slow-rollover.yml","bundle_seq":0}]}"""
+				);
+			return Yaml(SampleEntry);
+		});
+		var (errors, _, emitError, _) = Diagnostics();
+
+		using var fetcher = CreateFetcher(handler);
+		var entries = await fetcher.FetchNotesAsync(
+			BaseUri,
+			"elastic",
+			"elasticsearch",
+			"elasticsearch",
+			"9.0.0",
+			emitError,
+			TestContext.Current.CancellationToken
+		);
+
+		entries.Should().BeEmpty();
+		errors.Should().BeEmpty();
+		handler.RequestedPaths.Should().ContainSingle().Which.Should().EndWith("/notes-elasticsearch-9.0.0.json");
 	}
 
 	private static HttpResponseMessage Json(string body) =>

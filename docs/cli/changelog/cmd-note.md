@@ -59,7 +59,12 @@ products:
 ## After creation
 
 Upload is the same as for other changelog YAML files.
-An index at `changelog/{org}/{repo}/notes-{version}.json` lists every changelog "note" file that applies to each version.
+The scrubber writes two indexes per note:
+
+- `changelog/{org}/{repo}/notes-{product}-{version}.json` — notes for that product and version. `changelog bundle` reads this key first.
+- `changelog/{org}/{repo}/notes-{version}.json` — the union of notes for that version across products, kept for older CLI pins.
+
+`{changelog}` does not read these indexes. It loads published bundle YAML (and amend sidecars listed in `bundle/{product}/registry.json`).
 
 If the release bundle for that product and version or date has already shipped when you upload, the scrubber generates an amend file so the changelog reaches published docs without a manual rerun.
 
