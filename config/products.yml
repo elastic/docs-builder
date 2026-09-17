@@ -167,6 +167,11 @@ products:
     display: 'Elastic Documentation'
     features:
       public-reference: false
+  elastic-endgame:
+    display: 'Elastic Endgame'
+    features:
+      public-reference: false
+      release-notes: false
   elastic-maps-server:
     display: 'Elastic Maps Server'
     versioning: 'stack'
@@ -256,6 +261,16 @@ products:
   logstash:
     display: 'Logstash'
     versioning: 'stack'
+  logstash-integration-kafka:
+    display: 'Logstash Kafka integration plugin'
+    features:
+      public-reference: false
+      release-notes: false
+  logstash-output-tcp:
+    display: 'Logstash TCP output plugin'
+    features:
+      public-reference: false
+      release-notes: false
   machine-learning:
     display: 'Machine Learning'
     versioning: 'stack'
