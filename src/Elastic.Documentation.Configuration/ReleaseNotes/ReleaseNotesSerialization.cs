@@ -9,7 +9,9 @@ using System.Text.RegularExpressions;
 using Elastic.Documentation.Configuration.Serialization;
 using Elastic.Documentation.ReleaseNotes;
 using Elastic.Documentation.Text;
+using YamlDotNet.Core;
 using YamlDotNet.Serialization;
+using YamlDotNet.Serialization.EventEmitters;
 using YamlDotNet.Serialization.NamingConventions;
 
 namespace Elastic.Documentation.Configuration.ReleaseNotes;
@@ -36,6 +38,7 @@ public static partial class ReleaseNotesSerialization
 		.ConfigureDefaultValuesHandling(DefaultValuesHandling.OmitNull | DefaultValuesHandling.OmitEmptyCollections)
 		.WithQuotingNecessaryStrings()
 		.DisableAliases()
+		.WithEventEmitter(inner => new MultilineLiteralEventEmitter(inner))
 		.Build();
 
 	/// <summary>
@@ -92,7 +95,25 @@ public static partial class ReleaseNotesSerialization
 	public static string SerializeBundle(Bundle bundle)
 	{
 		var dto = ToDto(bundle);
-		return YamlSerializer.Serialize(dto);
+		var yaml = YamlSerializer.Serialize(dto);
+		return bundle.Description is { Length: 0 } ? EnsureTopLevelEmptyDescription(yaml) : yaml;
+	}
+
+	/// <summary>
+	/// YamlDotNet's <see cref="DefaultValuesHandling.OmitEmptyCollections"/> also drops empty strings
+	/// (string implements <see cref="System.Collections.IEnumerable"/>). An empty bundle
+	/// <c>description</c> is the clear-intro sentinel and must be written explicitly.
+	/// </summary>
+	private static string EnsureTopLevelEmptyDescription(string yaml)
+	{
+		using var reader = new StringReader(yaml);
+		while (reader.ReadLine() is { } line)
+		{
+			if (line.StartsWith("description:", StringComparison.Ordinal))
+				return yaml;
+		}
+
+		return yaml.TrimEnd() + "\ndescription: \"\"\n";
 	}
 
 	private static string ApplyDefensiveTitleQuotingIfNeeded(string yaml, string? title)
@@ -438,6 +459,20 @@ public static partial class ReleaseNotesSerialization
 		"conjunction" => MatchMode.Conjunction,
 		_ => null
 	};
+
+	/// <summary>
+	/// Emits multiline strings as YAML literal block scalars (<c>|</c>) so lists and paragraphs
+	/// keep their newlines instead of being folded (<c>&gt;</c>).
+	/// </summary>
+	private sealed class MultilineLiteralEventEmitter(IEventEmitter nextEmitter) : ChainedEventEmitter(nextEmitter)
+	{
+		public override void Emit(ScalarEventInfo eventInfo, IEmitter emitter)
+		{
+			if (eventInfo.Source.Value is string value && value.Contains('\n'))
+				eventInfo.Style = ScalarStyle.Literal;
+			base.Emit(eventInfo, emitter);
+		}
+	}
 }
 
 /// <summary>

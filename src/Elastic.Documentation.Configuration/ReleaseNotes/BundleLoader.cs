@@ -271,10 +271,13 @@ public class BundleLoader(IFileSystem fileSystem)
 			if (!bundlesByPath.TryGetValue(parentPath, out var parentBundle))
 				continue;
 
-			var orderedAmendData = group.OrderBy(AmendMergeOrder).Select(a => a.Data).ToList();
+			var orderedAmends = group.OrderBy(AmendMergeOrder).ToList();
+			var orderedAmendData = orderedAmends.Select(a => a.Data).ToList();
+			var numberedAmendData = orderedAmends.Where(a => !BundleAmendMerger.IsNotesAmendFile(a.FilePath)).Select(a => a.Data).ToList();
 
 			var mergedEntryList = BundleAmendMerger.MergeEntries(parentBundle.Data.Entries, orderedAmendData);
-			var mergedBundleData = parentBundle.Data with { Entries = mergedEntryList };
+			var mergedDescription = BundleAmendMerger.MergeDescription(parentBundle.Data.Description, numberedAmendData);
+			var mergedBundleData = parentBundle.Data with { Entries = mergedEntryList, Description = mergedDescription };
 			var resolvedEntries = ResolveEntries(mergedBundleData, fileSystem.Path.GetFileName(parentPath), emitWarning);
 
 			mergedParents[parentPath] = new LoadedBundle(

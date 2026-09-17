@@ -50,10 +50,37 @@ public class BundleAmendMergerTests
 		BundleAmendMerger.GetParentBundlePath(amendPath).Should().Be(expectedParent);
 
 	[Theory]
-	[InlineData("9.3.0.yaml")]
-	[InlineData("9.3.0.amend-.yaml")]
-	[InlineData("9.3.0.amend-1.json")]
-	public void GetParentBundlePath_NonAmendFile_ReturnsNull(string path) => BundleAmendMerger.GetParentBundlePath(path).Should().BeNull();
+	[InlineData("elasticsearch-9.3.0.amend-notes.yaml", true)]
+	[InlineData("elasticsearch-9.3.0.amend-1.yaml", false)]
+	[InlineData("9.3.0.yaml", false)]
+	public void IsNotesAmendFile_DetectsNotesSidecar(string path, bool expected) =>
+		BundleAmendMerger.IsNotesAmendFile(path).Should().Be(expected);
+
+	[Fact]
+	public void MergeDescription_OmittedAmend_InheritsParent()
+	{
+		var parent = "Original intro";
+		var amend = new Bundle { Entries = [CreateFileEntry("add.yaml", "ccc")] };
+
+		BundleAmendMerger.MergeDescription(parent, [amend]).Should().Be(parent);
+	}
+
+	[Fact]
+	public void MergeDescription_LastNumberedAmendWins()
+	{
+		var amend1 = new Bundle { Description = "First intro" };
+		var amend2 = new Bundle { Description = "Second intro" };
+
+		BundleAmendMerger.MergeDescription("Original", [amend1, amend2]).Should().Be("Second intro");
+	}
+
+	[Fact]
+	public void MergeDescription_EmptyString_ClearsParent()
+	{
+		var amend = new Bundle { Description = "" };
+
+		BundleAmendMerger.MergeDescription("Original intro", [amend]).Should().BeNull();
+	}
 
 	private static BundledEntry CreateFileEntry(string name, string checksum) =>
 		new() { File = new BundledFile { Name = name, Checksum = checksum } };

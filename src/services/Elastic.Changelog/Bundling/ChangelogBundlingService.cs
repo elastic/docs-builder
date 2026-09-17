@@ -725,6 +725,16 @@ public partial class ChangelogBundlingService(
 			// Checkout fallback is for {repo}/{owner} text only — keep returned Repo/Owner as
 			// config/CLI so combined owner/repo still supplies the CDN owner.
 			var descriptionTemplate = profile.Description ?? config.Bundle.Description;
+			if (!string.IsNullOrEmpty(input.Description) && !string.IsNullOrEmpty(descriptionTemplate))
+			{
+				collector.EmitError(
+					string.Empty,
+					$"When using a profile, --description and --description-file are not allowed if bundle.description or the profile description is set. " +
+						"Remove the CLI description, or remove the description from changelog.yml."
+				);
+				return null;
+			}
+
 			if (!string.IsNullOrEmpty(descriptionTemplate))
 			{
 				// Validate placeholder usage in profile mode
@@ -786,7 +796,7 @@ public partial class ChangelogBundlingService(
 			Owner = owner,
 			Branch = branch,
 			HideFeatures = mergedHideFeatures,
-			Description = profileDescription,
+			Description = profileDescription ?? input.Description,
 			SuppressReleaseDate = profileSuppressReleaseDate
 		};
 	}

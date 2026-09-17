@@ -5,6 +5,7 @@
 using System.IO.Abstractions;
 using System.Text;
 using Elastic.Changelog.Utilities;
+using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Configuration.Changelog;
@@ -60,6 +61,12 @@ public record AmendBundleArguments
 	/// write beside the parent file.
 	/// </summary>
 	public string? Output { get; init; }
+
+	/// <summary>
+	/// Bundle intro patch. <see langword="null"/> inherits the parent; empty string clears;
+	/// any other value replaces (after placeholder substitution).
+	/// </summary>
+	public string? Description { get; init; }
 }
 
 /// <summary>
@@ -93,9 +100,9 @@ public class ChangelogBundleAmendService(
 	{
 		try
 		{
-			if (input.AddFiles.Count == 0 && input.RemoveFiles.Count == 0)
+			if (input.AddFiles.Count == 0 && input.RemoveFiles.Count == 0 && input.Description is null)
 			{
-				collector.EmitError(string.Empty, "At least one file must be specified with --add or --remove");
+				collector.EmitError(string.Empty, BundleDescriptionInput.AmendRequiresChange);
 				return false;
 			}
 
@@ -131,7 +138,7 @@ public class ChangelogBundleAmendService(
 			var useCdn = ChangelogEntrySourcing.ShouldSourceFromCdn(authoringRepo, useLocalChangelogs: useLocalChangelogs);
 
 			IReadOnlyDictionary<string, string>? cdnContents = null;
-			if (useCdn)
+			if (useCdn && (input.AddFiles.Count > 0 || input.RemoveFiles.Count > 0))
 			{
 				var fetched = await FetchCdnContentsAsync(
 					collector,
@@ -205,10 +212,37 @@ public class ChangelogBundleAmendService(
 				}
 			}
 
-			if (excludeEntries.Count == 0 && entries.Count == 0)
+			if (excludeEntries.Count == 0 && entries.Count == 0 && input.Description is null)
 			{
 				collector.EmitWarning(string.Empty, "No changes to apply; amend file was not created.");
 				return true;
+			}
+
+			string? amendDescription = null;
+			if (input.Description is not null)
+			{
+				if (input.Description.Length == 0)
+					amendDescription = string.Empty;
+				else
+				{
+					var firstProduct = parentBundle.Products.Count > 0 ? parentBundle.Products[0] : null;
+					try
+					{
+						amendDescription = BundleDescriptionSubstitution.SubstitutePlaceholders(
+							input.Description,
+							firstProduct?.Target,
+							firstProduct?.Lifecycle?.ToStringFast(true),
+							firstProduct?.Owner ?? "elastic",
+							firstProduct?.Repo ?? firstProduct?.ProductId,
+							validateResolvable: true
+						);
+					}
+					catch (InvalidOperationException ex)
+					{
+						collector.EmitError(string.Empty, $"Description placeholder substitution failed: {ex.Message}");
+						return false;
+					}
+				}
 			}
 
 			var amendFileName = $"{parent.BaseName}.amend-{nextAmendNumber}{parent.Extension}";
@@ -229,25 +263,27 @@ public class ChangelogBundleAmendService(
 			if (input.DryRun)
 			{
 				_logger.LogInformation(
-					"Dry run: would exclude {ExcludeCount} and add {AddCount} entries at {AmendFilePath}",
+					"Dry run: would exclude {ExcludeCount} and add {AddCount} entries at {AmendFilePath} (description patch: {HasDescriptionPatch})",
 					excludeEntries.Count,
 					entries.Count,
-					amendFilePath
+					amendFilePath,
+					input.Description is not null
 				);
 				return true;
 			}
 
 			_logger.LogInformation(
-				"Creating amend file: {AmendFilePath} (exclude={ExcludeCount}, add={AddCount})",
+				"Creating amend file: {AmendFilePath} (exclude={ExcludeCount}, add={AddCount}, description patch: {HasDescriptionPatch})",
 				amendFilePath,
 				excludeEntries.Count,
-				entries.Count
+				entries.Count,
+				input.Description is not null
 			);
 
 			// Copy the parent's complete products (target, repo, owner) so the amend is self-contained:
 			// upload destination discovery, the registry's per-product target, and :version:-filtered
 			// CDN fetches all derive from a bundle file's own products.
-			var amendBundle = AmendDocumentBuilder.Build(parentBundle.Products, entries, excludeEntries);
+			var amendBundle = AmendDocumentBuilder.Build(parentBundle.Products, entries, excludeEntries, description: amendDescription);
 
 			var yaml = ReleaseNotesSerialization.SerializeBundle(amendBundle);
 

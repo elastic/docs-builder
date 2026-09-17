@@ -748,7 +748,9 @@ internal sealed partial class ChangelogCommands(
 	/// <summary>Aggregate changelog entries matching a filter into a single bundle YAML.</summary>
 	/// <remarks>
 	/// <para><b>Profile-based commands</b> (<c>bundle &lt;profile&gt; &lt;version|report&gt; [report] [--plan]</c>): filters, paths, repo metadata,
-	/// description, hide-features, and release-date behaviour come from <c>changelog.yml</c>. Only <c>--plan</c> is supported
+	/// description, hide-features, and release-date behaviour come from <c>changelog.yml</c>. <c>--description</c> and
+	/// <c>--description-file</c> are allowed in profile-based commands only when neither <c>bundle.description</c> nor
+	/// the profile's <c>description</c> is set. Only <c>--plan</c> is otherwise supported
 	/// alongside profile positional arguments; other flags documented below as unsupported in profile-based commands must be set in
 	/// configuration instead. Config is auto-discovered from <c>./changelog.yml</c> or <c>./docs/changelog.yml</c>. Use
 	/// <c>bundle.release_dates</c> or <c>bundle.profiles.&lt;name&gt;.release_dates</c> to control auto-population;
@@ -762,7 +764,8 @@ internal sealed partial class ChangelogCommands(
 	/// <param name="all">Include all changelogs in the directory. This option is not supported in profile-based commands. The equivalent configuration option is <c>bundle.profiles.&lt;name&gt;.products: "* * *"</c>.</param>
 	/// <param name="config">Path to the changelog.yml configuration file. Defaults to 'docs/changelog.yml' in option-based mode. This option is not supported in profile-based commands; configuration is auto-discovered.</param>
 	/// <param name="directory">Directory containing changelog YAML files. Uses config <c>bundle.directory</c> or defaults to current directory. This option is not supported in profile-based commands. The equivalent configuration option is <c>bundle.directory</c>.</param>
-	/// <param name="description">Bundle description text with placeholder support ({version}, {lifecycle}, {owner}, {repo}). Overrides <c>bundle.description</c> from config. In option-based mode, placeholders require --output-products. This option is not supported in profile-based commands. The equivalent configuration options are <c>bundle.description</c> or <c>bundle.profiles.&lt;name&gt;.description</c>.</param>
+	/// <param name="description">Bundle description text with placeholder support ({version}, {lifecycle}, {owner}, {repo}). Overrides <c>bundle.description</c> from config. In option-based mode, placeholders require --output-products. In profile-based commands, allowed only when neither <c>bundle.description</c> nor the profile <c>description</c> is set. Mutually exclusive with --description-file.</param>
+	/// <param name="descriptionFile">Path to a UTF-8 file whose contents are the bundle description, or <c>-</c> to read from stdin. Same placeholder rules as --description. Mutually exclusive with --description. In profile-based commands, allowed only when neither <c>bundle.description</c> nor the profile <c>description</c> is set.</param>
 	/// <param name="hideFeatures">Feature IDs (comma-separated) or a path to a newline-delimited file. Entries with matching feature-id values are hidden when the bundle is rendered. This option is not supported in profile-based commands. The equivalent configuration option is <c>bundle.profiles.&lt;name&gt;.hide_features</c>.</param>
 	/// <param name="noReleaseDate">Skip auto-population of release date in the bundle. Mutually exclusive with --release-date. This option is not supported in profile-based commands. The equivalent configuration options are <c>bundle.release_dates: false</c> or <c>bundle.profiles.&lt;name&gt;.release_dates: false</c>.</param>
 	/// <param name="releaseDate">Explicit release date for the bundle in YYYY-MM-DD format. Overrides auto-population behaviour. Mutually exclusive with --no-release-date. This option is not supported in profile-based commands; use option-based mode, or set <c>bundle.release_dates</c> in configuration to control auto-population.</param>
@@ -792,6 +795,7 @@ internal sealed partial class ChangelogCommands(
 		[Existing, ExpandUserProfile, RejectSymbolicLinks, FileExtensions(Extensions = "yml,yaml")] FileInfo? config = null,
 		[ExpandUserProfile, RejectSymbolicLinks] DirectoryInfo? directory = null,
 		string? description = null,
+		string? descriptionFile = null,
 		string[]? hideFeatures = null,
 		bool noReleaseDate = false,
 		string? releaseDate = null,
@@ -976,8 +980,6 @@ internal sealed partial class ChangelogCommands(
 				forbidden.Add("--config");
 			if (directory != null)
 				forbidden.Add("--directory");
-			if (!string.IsNullOrWhiteSpace(description))
-				forbidden.Add("--description");
 
 			if (forbidden.Count > 0)
 			{
@@ -1172,6 +1174,16 @@ internal sealed partial class ChangelogCommands(
 			}
 		}
 
+		var descriptionResult = await ResolveBundleDescription(description, descriptionFile, clearDescription: false, ctx);
+		if (!descriptionResult.Success)
+		{
+			_ = collector.StartAsync(ctx);
+			await collector.WaitForDrain();
+			await collector.StopAsync(ctx);
+			return 1;
+		}
+		var resolvedDescription = descriptionResult.HasPatch ? descriptionResult.Value : null;
+
 		// --plan mode: resolve config/profile metadata and set CI outputs without executing
 		if (plan)
 		{
@@ -1189,7 +1201,7 @@ internal sealed partial class ChangelogCommands(
 				Repo = repo,
 				ReleaseVersion = releaseVersion,
 				Config = config?.FullName,
-				Description = description,
+				Description = resolvedDescription,
 				StartGitRef = startGitRef,
 				EndGitRef = endGitRef
 			};
@@ -1261,7 +1273,7 @@ internal sealed partial class ChangelogCommands(
 			Report = !isProfileMode ? report : null,
 			Config = config?.FullName,
 			HideFeatures = allFeatureIdsForBundle.Count > 0 ? allFeatureIdsForBundle.ToArray() : null,
-			Description = description,
+			Description = resolvedDescription,
 			ReleaseDate = releaseDate,
 			SuppressReleaseDate = noReleaseDate,
 			StartGitRef = startGitRef,
@@ -1781,7 +1793,7 @@ internal sealed partial class ChangelogCommands(
 		return exitCode;
 	}
 
-	/// <summary>Append or exclude changelog entries in a published bundle without modifying it.</summary>
+	/// <summary>Append or exclude changelog entries, or replace the bundle intro description, without modifying the parent file.</summary>
 	/// <remarks>
 	/// Creates an immutable <c>.amend-N</c> sidecar using the same <c>.yaml</c> or <c>.yml</c> extension
 	/// as the parent. The parent may be a local file (the sidecar is written next to it) or a CDN locator
@@ -1796,6 +1808,9 @@ internal sealed partial class ChangelogCommands(
 	/// <param name="forceLocal">Optional: Force local entry sourcing for this run (equivalent to <c>bundle.use_local_changelogs: true</c> without editing config).</param>
 	/// <param name="dryRun">Optional: Preview changes without writing an amend file.</param>
 	/// <param name="output">Optional: Where to write the new sidecar when the parent is a CDN locator. A directory, or a <c>.yaml</c>/<c>.yml</c> path whose file name must be <c>{parent}.amend-N</c> plus the same extension as the parent for the next unused N. Falls back to <c>bundle.output_directory</c> in changelog.yml, then the current directory. Ignored for a local parent.</param>
+	/// <param name="description">Optional: Replace the parent bundle's intro description. Supports {version}, {lifecycle}, {owner}, and {repo} from the parent products. Mutually exclusive with --description-file and --clear-description. May be used without --add/--remove.</param>
+	/// <param name="descriptionFile">Optional: Path to a UTF-8 file whose contents replace the parent intro, or <c>-</c> to read from stdin. Same placeholders as --description. Mutually exclusive with --description and --clear-description.</param>
+	/// <param name="clearDescription">Optional: Remove the effective bundle intro. Mutually exclusive with --description and --description-file. May be used without --add/--remove.</param>
 	[NoOptionsInjection]
 	public async Task<int> BundleAmend(
 		[Argument] string bundlePath,
@@ -1805,6 +1820,9 @@ internal sealed partial class ChangelogCommands(
 		bool forceLocal = false,
 		bool dryRun = false,
 		string? output = null,
+		string? description = null,
+		string? descriptionFile = null,
+		bool clearDescription = false,
 		CancellationToken ct = default
 	)
 	{
@@ -1816,9 +1834,18 @@ internal sealed partial class ChangelogCommands(
 		var normalizedAddFiles = add != null ? ExpandCommaSeparated(add).Select(NormalizePath).ToList() : [];
 		var normalizedRemoveFiles = remove != null ? ExpandCommaSeparated(remove).Select(NormalizePath).ToList() : [];
 
-		if (normalizedAddFiles.Count == 0 && normalizedRemoveFiles.Count == 0)
+		var descriptionResult = await ResolveBundleDescription(description, descriptionFile, clearDescription, ctx);
+		if (!descriptionResult.Success)
 		{
-			collector.EmitError(string.Empty, "At least one file must be specified with --add or --remove");
+			_ = collector.StartAsync(ctx);
+			await collector.WaitForDrain();
+			await collector.StopAsync(ctx);
+			return 1;
+		}
+
+		if (normalizedAddFiles.Count == 0 && normalizedRemoveFiles.Count == 0 && !descriptionResult.HasPatch)
+		{
+			collector.EmitError(string.Empty, BundleDescriptionInput.AmendRequiresChange);
 			_ = collector.StartAsync(ctx);
 			await collector.WaitForDrain();
 			await collector.StopAsync(ctx);
@@ -1838,7 +1865,8 @@ internal sealed partial class ChangelogCommands(
 			Force = force,
 			ForceLocal = forceLocal,
 			DryRun = dryRun,
-			Output = string.IsNullOrWhiteSpace(output) ? null : NormalizePath(output)
+			Output = string.IsNullOrWhiteSpace(output) ? null : NormalizePath(output),
+			Description = descriptionResult.HasPatch ? descriptionResult.Value : null
 		};
 
 		serviceInvoker.AddCommand(service, input, static async (s, collector, state, ctx) => await s.AmendBundle(collector, state, ctx));
@@ -2306,6 +2334,27 @@ internal sealed partial class ChangelogCommands(
 			_ = GitHubRemoteParser.TryParseGitHubComOwnerRepo(originUrl, out gitOwner, out gitRepo);
 
 		return ChangelogTemplateSeeder.ApplyBundleRepoSeed(content, ownerCli, repoCli, gitOwner, gitRepo);
+	}
+
+	private async Task<BundleDescriptionInputResult> ResolveBundleDescription(
+		string? description,
+		string? descriptionFile,
+		bool clearDescription,
+		Cancel ctx
+	)
+	{
+		var file = string.IsNullOrWhiteSpace(descriptionFile)
+			? null
+			: descriptionFile.Trim() == BundleDescriptionInput.StdinPath ? BundleDescriptionInput.StdinPath : NormalizePath(descriptionFile);
+		return await BundleDescriptionInput.ResolveAsync(
+			collector,
+			_fileSystem,
+			description,
+			file,
+			clearDescription: clearDescription,
+			stdin: Console.In,
+			ctx
+		);
 	}
 
 	/// <summary>Upload changelog entries or bundle artifacts to S3 or Elasticsearch.</summary>

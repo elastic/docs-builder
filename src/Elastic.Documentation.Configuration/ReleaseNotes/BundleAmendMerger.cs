@@ -17,8 +17,15 @@ public static partial class BundleAmendMerger
 	[GeneratedRegex(@"\.amend-(\d+|notes)(\.ya?ml)$", RegexOptions.IgnoreCase)]
 	private static partial Regex AmendFileRegex();
 
-	/// <summary>Whether a path is an amend sidecar (<c>{name}.amend-{N}.yaml</c>).</summary>
+	/// <summary>Whether a path is an amend sidecar (<c>{name}.amend-{N}.yaml</c> or <c>.amend-notes</c>).</summary>
 	public static bool IsAmendFile(string filePath) => AmendFileRegex().IsMatch(filePath);
+
+	/// <summary>Whether a path is the reconciler-owned <c>.amend-notes</c> sidecar.</summary>
+	public static bool IsNotesAmendFile(string filePath)
+	{
+		var match = AmendFileRegex().Match(filePath);
+		return match.Success && match.Groups[1].Value.Equals("notes", StringComparison.OrdinalIgnoreCase);
+	}
 
 	/// <summary>Numeric suffix from an amend file path; <c>0</c> when not an amend file.</summary>
 	public static int GetAmendFileNumber(string filePath)
@@ -38,6 +45,23 @@ public static partial class BundleAmendMerger
 	{
 		var match = AmendFileRegex().Match(filePath);
 		return match.Success ? string.Concat(filePath.AsSpan(0, match.Index), match.Groups[2].Value) : null;
+	}
+
+	/// <summary>
+	/// Applies numbered-amend description patches to the parent intro.
+	/// An omitted <see cref="Bundle.Description"/> inherits; a non-null value (including empty) replaces.
+	/// Empty string clears the effective intro. Callers must pass only numbered amends — not <c>.amend-notes</c>.
+	/// </summary>
+	public static string? MergeDescription(string? parentDescription, IReadOnlyList<Bundle> numberedAmendsInOrder)
+	{
+		var current = parentDescription;
+		foreach (var amend in numberedAmendsInOrder)
+		{
+			if (amend.Description is null)
+				continue;
+			current = amend.Description.Length == 0 ? null : amend.Description;
+		}
+		return current;
 	}
 
 	/// <summary>

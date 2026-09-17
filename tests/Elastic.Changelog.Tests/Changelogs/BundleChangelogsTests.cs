@@ -6375,6 +6375,103 @@ public class BundleChangelogsTests : ChangelogTestBase
 	}
 
 	[Fact]
+	public async Task BundleChangelogs_ProfileWithoutDescription_UsesCliDescription()
+	{
+		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog.yml");
+		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
+		await FileSystem.File.WriteAllTextAsync(
+			configPath,
+			"""
+			bundle:
+			  repo: elasticsearch
+			  owner: elastic
+			  profiles:
+			    es-release:
+			      products: "elasticsearch {version} {lifecycle}"
+			      output_products: "elasticsearch {version} {lifecycle}"
+			""",
+			TestContext.Current.CancellationToken
+		);
+
+		var changelog =
+			"""
+			title: Elasticsearch feature
+			type: feature
+			products:
+			  - product: elasticsearch
+			    target: 9.2.0
+			    lifecycle: ga
+			prs:
+			  - https://github.com/elastic/elasticsearch/pull/100
+			""";
+		await FileSystem.File.WriteAllTextAsync(
+			FileSystem.Path.Join(_changelogDir, "1755268999-feature.yaml"),
+			changelog,
+			TestContext.Current.CancellationToken
+		);
+
+		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
+		FileSystem.Directory.CreateDirectory(outputDir);
+
+		var input = new BundleChangelogsArguments
+		{
+			Directory = _changelogDir,
+			Profile = "es-release",
+			ProfileArgument = "9.2.0",
+			Config = configPath,
+			OutputDirectory = outputDir,
+			ForceLocal = true,
+			Description = "CLI intro for {version}"
+		};
+
+		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+
+		result.Should().BeTrue(
+			$"Expected bundling to succeed, but got errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}"
+		);
+		Collector.Errors.Should().Be(0);
+
+		var outputFiles = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
+		outputFiles.Should().NotBeEmpty();
+		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputFiles[0], TestContext.Current.CancellationToken);
+		bundleContent.Should().Contain("CLI intro for 9.2.0");
+	}
+
+	[Fact]
+	public async Task BundleChangelogs_ProfileWithDescription_RejectsCliDescription()
+	{
+		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog.yml");
+		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
+		await FileSystem.File.WriteAllTextAsync(
+			configPath,
+			"""
+			bundle:
+			  profiles:
+			    es-release:
+			      products: "elasticsearch {version} {lifecycle}"
+			      description: "From profile"
+			""",
+			TestContext.Current.CancellationToken
+		);
+
+		var input = new BundleChangelogsArguments
+		{
+			Directory = _changelogDir,
+			Profile = "es-release",
+			ProfileArgument = "9.2.0",
+			Config = configPath,
+			ForceLocal = true,
+			Description = "From CLI"
+		};
+
+		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+
+		result.Should().BeFalse();
+		Collector.Errors.Should().BeGreaterThan(0);
+		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("--description"));
+	}
+
+	[Fact]
 	public async Task BundleChangelogs_WithBundleReleaseDatesFalse_SuppressesReleaseDate()
 	{
 		// Arrange

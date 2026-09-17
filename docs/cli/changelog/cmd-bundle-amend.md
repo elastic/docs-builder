@@ -1,20 +1,20 @@
 ## Description
 
-Amend a bundle with additional or excluded changelog entries without modifying the parent bundle file.
+Amend a bundle with additional or excluded changelog entries, or replace the bundle intro `description`, without modifying the parent bundle file.
 Amend bundles follow a specific naming convention: `{parent-bundle-name}.amend-{N}` plus the same `.yaml` or `.yml` extension as the parent, where `{N}` is a sequence number.
 
 :::{note}
 The suffix `.amend-notes` (for example `9.3.0.amend-notes.yaml`) is reserved for use by the changelog scrubber Lambda. The Lambda generates and manages these files automatically; you must not create, edit, or delete them manually.
 :::
 
-Specify at least one of `--add` or `--remove`.
+Specify at least one of `--add`, `--remove`, `--description`, `--description-file`, or `--clear-description`.
 
 To create a bundle, use [](/cli/changelog/bundle.md).
 For details and examples, go to [](/data/release-notes/bundle.md).
 
 ## Output
 
-Amend bundles contain the parent bundle's `products` plus only the changes for that amend file, not a full repetition of the original bundle's entries.
+Amend bundles contain the parent bundle's `products` plus only the changes for that amend file, not a full repetition of the original bundle's entries. A description-only amend may omit `entries` and `exclude-entries`.
 
 The parent's complete `products` (including `target`, `repo`, and `owner`) are copied into every amend file so the amend is self-contained: upload destination discovery, the registry's per-product `target`, and `:version:`-filtered CDN consumption all derive from a bundle file's own products.
 
@@ -59,6 +59,8 @@ An amend file can contain both `exclude-entries` and `entries`. Within each amen
 
 When bundles are loaded (either via the `changelog render` command or the `{changelog}` directive), amend files are **automatically merged** with their parent bundles in sequence (`amend-1`, `amend-2`, …, then `.amend-notes` when that sidecar is present).
 The result is rendered as a single release.
+
+A numbered amend may also set `description`. When that field is present, it **replaces** the parent bundle's intro (empty `description` clears it). Numbered amends that omit `description` leave the current intro unchanged. The `.amend-notes` sidecar never changes the intro.
 
 :::{note}
 Amend bundles created by older docs-builder versions may omit `products`; they are still accepted when loading and merge into their parent as before. `hide-features` is always inherited from the parent bundle. If an amend bundle is found without a matching parent bundle, it remains standalone.
@@ -173,3 +175,19 @@ docs-builder changelog bundle-amend \
   --remove /changelog/elastic/kibana/main/138723.yaml \
   --dry-run
 ```
+
+### Replace the bundle intro description
+
+Use this when the release intro (upstream dependency lists, blog links, and similar Markdown) is ready after the bundle already exists. You do not need `--add` or `--remove`.
+
+```sh
+docs-builder changelog bundle-amend \
+  ./docs/releases/1.12.0.yaml \
+  --description-file .ci/changelog-bundle-description.md
+```
+
+Placeholders `{version}`, `{lifecycle}`, `{owner}`, and `{repo}` are substituted from the parent bundle's products.
+
+`--description` passes the Markdown inline. `--clear-description` removes the effective intro. The three options are mutually exclusive.
+
+After upload, `{changelog}` and `changelog render` use the last numbered amend that sets `description`.
