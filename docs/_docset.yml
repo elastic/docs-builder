@@ -64,13 +64,6 @@ api:
     - spec: kibana-serverless.yaml
       product: kibana
       repository: elastic/kibana
-  docs-builder-cloud-billing:
-    - spec: cloud-billing.yaml
-      product: ess
-      repository: elastic/cloud
-      catalog:
-        categories:
-          - ess
   docs-builder-cloud-connect:
     - spec: cloud-connect.yml
       product: ess
