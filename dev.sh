@@ -43,7 +43,7 @@ case "${1:-help}" in
     _bake --load all
     ;;
   build-mcp)
-    _bake --load mcp "${@:2}"
+    _bake --load mcp
     ;;
   rebuild)
     _bake --no-cache --load all
