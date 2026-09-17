@@ -32,15 +32,14 @@ ENV DOTNET_NOLOGO=true \
 
 RUN arch=$TARGETARCH \
     && if [ "$arch" = "amd64" ]; then arch="x64"; fi \
-    && dotnet publish src/api/Elastic.Documentation.Mcp.Remote \
-       --configuration Release \
-       --runtime "${TARGETOS}-${arch}" \
-       --output /app/mcp-publish
+    && RID="${TARGETOS}-${arch}" \
+    && dotnet publish src/api/Elastic.Documentation.Mcp.Remote -r "${RID}" -c Release \
+    && cp -r ".artifacts/publish/Elastic.Documentation.Mcp.Remote/release_${RID}/." /app/publish/
 
 # Runtime stage for ECS Fargate deployment
 FROM public.ecr.aws/amazonlinux/amazonlinux:2023-minimal AS runtime
 WORKDIR /app
-COPY --from=base /app/mcp-publish/bootstrap /app/bootstrap
+COPY --from=base /app/publish/ /app/
 RUN chmod +x /app/bootstrap
 EXPOSE 8080
 ENV ASPNETCORE_URLS=http://+:8080 \
