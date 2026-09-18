@@ -2,18 +2,55 @@ import { config } from '../../config'
 import '../../eui-icons-cache'
 import { sharedQueryClient } from '../shared/queryClient'
 import { NavigationSearch } from './NavigationSearch'
+import { useSearchActions, type TypeFilter } from './navigationSearch.store'
 import { EuiHorizontalRule, EuiProvider, useEuiTheme } from '@elastic/eui'
 import { css } from '@emotion/react'
 import r2wc from '@r2wc/react-to-web-component'
 import { QueryClientProvider, useQuery } from '@tanstack/react-query'
-import { StrictMode } from 'react'
+import { StrictMode, useEffect } from 'react'
 
 interface NavigationSearchProps {
     placeholder?: string
+    type?: string
 }
 
-const NavigationSearchInner = ({ placeholder }: NavigationSearchProps) => {
+const parseTypeFilter = (value: string | undefined): TypeFilter =>
+    value === 'docs' || value === 'api' ? value : 'all'
+
+export const NavigationSearchWrapper = ({
+    placeholder,
+    type,
+}: NavigationSearchProps) => {
+    return (
+        <StrictMode>
+            <EuiProvider
+                colorMode="light"
+                globalStyles={false}
+                utilityClasses={false}
+            >
+                <QueryClientProvider client={sharedQueryClient}>
+                    <NavigationSearchInner
+                        placeholder={placeholder}
+                        type={type}
+                    />
+                </QueryClientProvider>
+            </EuiProvider>
+        </StrictMode>
+    )
+}
+
+const NavigationSearchInner = ({
+    placeholder,
+    type,
+}: NavigationSearchProps) => {
     const { euiTheme } = useEuiTheme()
+    const { setTypeFilter } = useSearchActions()
+    const typeFilter = parseTypeFilter(type)
+
+    useEffect(() => {
+        setTypeFilter(typeFilter)
+    }, [setTypeFilter, typeFilter])
+
     const { data: isApiAvailable } = useQuery({
         queryKey: ['api-health'],
         queryFn: async () => {
@@ -39,7 +76,12 @@ const NavigationSearchInner = ({ placeholder }: NavigationSearchProps) => {
                 padding-right: ${euiTheme.size.base};
             `}
         >
-            <NavigationSearch placeholder={placeholder} />
+            <NavigationSearch
+                placeholder={
+                    placeholder ??
+                    (typeFilter === 'api' ? 'Jump to API' : undefined)
+                }
+            />
             <EuiHorizontalRule
                 margin="none"
                 css={css`
@@ -50,27 +92,12 @@ const NavigationSearchInner = ({ placeholder }: NavigationSearchProps) => {
     )
 }
 
-const NavigationSearchWrapper = ({ placeholder }: NavigationSearchProps) => {
-    return (
-        <StrictMode>
-            <EuiProvider
-                colorMode="light"
-                globalStyles={false}
-                utilityClasses={false}
-            >
-                <QueryClientProvider client={sharedQueryClient}>
-                    <NavigationSearchInner placeholder={placeholder} />
-                </QueryClientProvider>
-            </EuiProvider>
-        </StrictMode>
-    )
-}
-
 customElements.define(
     'navigation-search',
     r2wc(NavigationSearchWrapper, {
         props: {
             placeholder: 'string',
+            type: 'string',
         },
     })
 )

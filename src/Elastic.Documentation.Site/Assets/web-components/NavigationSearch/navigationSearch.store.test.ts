@@ -3,9 +3,9 @@ import { act } from 'react'
 
 describe('navigationSearch.store', () => {
     beforeEach(() => {
-        // Reset store state before each test
         act(() => {
             navigationSearchStore.getState().actions.clearSearchTerm()
+            navigationSearchStore.getState().actions.setTypeFilter('all')
         })
     })
 
@@ -60,6 +60,17 @@ describe('navigationSearch.store', () => {
             })
 
             // Assert
+            expect(navigationSearchStore.getState().searchTerm).toBe('')
+        })
+
+        it('keeps the type filter when clearing the search term', () => {
+            act(() => {
+                navigationSearchStore.getState().actions.setTypeFilter('api')
+                navigationSearchStore.getState().actions.setSearchTerm('_bulk')
+                navigationSearchStore.getState().actions.clearSearchTerm()
+            })
+
+            expect(navigationSearchStore.getState().typeFilter).toBe('api')
             expect(navigationSearchStore.getState().searchTerm).toBe('')
         })
     })
