@@ -349,4 +349,10 @@ describe('Navigation Search Result Click Tracking', () => {
             })
         )
     })
+
+    it('does not show Alpha or Give feedback in the dropdown', () => {
+        renderWithProviders(<NavigationSearch />)
+        expect(screen.queryByText('ALPHA')).not.toBeInTheDocument()
+        expect(screen.queryByText(/give feedback/i)).not.toBeInTheDocument()
+    })
 })
