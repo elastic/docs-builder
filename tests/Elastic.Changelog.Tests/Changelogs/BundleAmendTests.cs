@@ -350,6 +350,65 @@ public class BundleAmendTests : ChangelogTestBase
 	}
 
 	[Fact]
+	public async Task AmendBundle_DescriptionOnly_WritesSidecarWithoutEntries()
+	{
+		var ct = TestContext.Current.CancellationToken;
+		var bundlePath = await CreateBundleWithFullProducts(ct);
+
+		var amendCollector = new TestDiagnosticsCollector(Output);
+		var input = new AmendBundleArguments { BundlePath = bundlePath, Description = "This release is based on {repo} {version}." };
+
+		var result = await Service.AmendBundle(amendCollector, input, ct);
+
+		result.Should().BeTrue();
+		amendCollector.Errors.Should().Be(0);
+
+		var amendFiles = ChangelogBundleAmendService.DiscoverAmendFiles(FileSystem, bundlePath);
+		amendFiles.Should().HaveCount(1);
+
+		var amend = ReleaseNotesSerialization.DeserializeBundle(await FileSystem.File.ReadAllTextAsync(amendFiles[0], ct));
+		amend.Entries.Should().BeEmpty();
+		amend.ExcludeEntries.Should().BeEmpty();
+		amend.Description.Should().Be("This release is based on elasticsearch 9.3.0.");
+		amend.Products[0].Target.Should().Be("9.3.0");
+	}
+
+	[Fact]
+	public async Task AmendBundle_ClearDescription_WritesEmptyDescription()
+	{
+		var ct = TestContext.Current.CancellationToken;
+		var bundlePath = await CreateBundle(ct);
+
+		var amendCollector = new TestDiagnosticsCollector(Output);
+		var input = new AmendBundleArguments { BundlePath = bundlePath, Description = "" };
+
+		var result = await Service.AmendBundle(amendCollector, input, ct);
+
+		result.Should().BeTrue();
+		amendCollector.Errors.Should().Be(0);
+
+		var yaml = await FileSystem.File.ReadAllTextAsync(ChangelogBundleAmendService.DiscoverAmendFiles(FileSystem, bundlePath)[0], ct);
+		yaml.Should().Contain("description:");
+		ReleaseNotesSerialization.DeserializeBundle(yaml).Description.Should().BeEmpty();
+	}
+
+	[Fact]
+	public async Task AmendBundle_NeitherEntriesNorDescription_Fails()
+	{
+		var ct = TestContext.Current.CancellationToken;
+		var bundlePath = await CreateBundle(ct);
+
+		var amendCollector = new TestDiagnosticsCollector(Output);
+		var input = new AmendBundleArguments { BundlePath = bundlePath };
+
+		var result = await Service.AmendBundle(amendCollector, input, ct);
+
+		result.Should().BeFalse();
+		amendCollector.Errors.Should().BeGreaterThan(0);
+		amendCollector.Diagnostics.Should().Contain(d => d.Message.Contains("--description"));
+	}
+
+	[Fact]
 	public async Task AmendBundle_CorruptExistingAmend_FailsWithoutWritingNewAmend()
 	{
 		var ct = TestContext.Current.CancellationToken;

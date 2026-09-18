@@ -3143,7 +3143,7 @@
           ],
           "name": "bundle",
           "summary": "Aggregate changelog entries matching a filter into a single bundle YAML.",
-          "notes": "Profile-based commands (bundle \u003Cprofile\u003E \u003Cversion|report\u003E [report] [--plan]): filters, paths, repo metadata,\ndescription, hide-features, and release-date behaviour come from changelog.yml. Only --plan is supported\nalongside profile positional arguments; other flags documented below as unsupported in profile-based commands must be set in\nconfiguration instead. Config is auto-discovered from ./changelog.yml or ./docs/changelog.yml. Use\nbundle.release_dates or bundle.profiles.\u003Cname\u003E.release_dates to control auto-population;\n--release-date and --no-release-date require option-based mode.\n\nOption-based mode (no profile argument): exactly one filter must be specified \u2014\n--all, --input-products, --prs, --issues, --release-version, --report, or --files.",
+          "notes": "Profile-based commands (bundle \u003Cprofile\u003E \u003Cversion|report\u003E [report] [--plan]): filters, paths, repo metadata,\ndescription, hide-features, and release-date behaviour come from changelog.yml. --description and\n--description-file are allowed in profile-based commands only when neither bundle.description nor\nthe profile\u0027s description is set. Only --plan is otherwise supported\nalongside profile positional arguments; other flags documented below as unsupported in profile-based commands must be set in\nconfiguration instead. Config is auto-discovered from ./changelog.yml or ./docs/changelog.yml. Use\nbundle.release_dates or bundle.profiles.\u003Cname\u003E.release_dates to control auto-population;\n--release-date and --no-release-date require option-based mode.\n\nOption-based mode (no profile argument): exactly one filter must be specified \u2014\n--all, --input-products, --prs, --issues, --release-version, --report, or --files.",
           "usage": "docs-builder changelog bundle [\u003Cprofile\u003E] [\u003Cprofile-arg\u003E] [\u003Cprofile-report\u003E] [options]",
           "examples": [],
           "parameters": [
@@ -3215,7 +3215,14 @@
               "name": "description",
               "type": "string",
               "required": false,
-              "summary": "Bundle description text with placeholder support ({version}, {lifecycle}, {owner}, {repo}). Overrides bundle.description from config. In option-based mode, placeholders require --output-products. This option is not supported in profile-based commands. The equivalent configuration options are bundle.description or bundle.profiles.\u003Cname\u003E.description."
+              "summary": "Bundle description text with placeholder support ({version}, {lifecycle}, {owner}, {repo}). Overrides bundle.description from config. In option-based mode, placeholders require --output-products. In profile-based commands, allowed only when neither bundle.description nor the profile description is set. Mutually exclusive with --description-file."
+            },
+            {
+              "role": "flag",
+              "name": "description-file",
+              "type": "string",
+              "required": false,
+              "summary": "Path to a UTF-8 file whose contents are the bundle description, or - to read from stdin. Same placeholder rules as --description. Mutually exclusive with --description. In profile-based commands, allowed only when neither bundle.description nor the profile description is set."
             },
             {
               "role": "flag",
@@ -3406,7 +3413,7 @@
             "changelog"
           ],
           "name": "bundle-amend",
-          "summary": "Append or exclude changelog entries in a published bundle without modifying it.",
+          "summary": "Append or exclude changelog entries, or replace the bundle intro description, without modifying the parent file.",
           "notes": "Creates an immutable .amend-N sidecar using the same .yaml or .yml extension\nas the parent. The parent may be a local file (the sidecar is written next to it) or a CDN locator\n/bundle/{product}/{file}.yaml (the sidecar is written under --output,\nbundle.output_directory, or the current directory).\nUpload the sidecar separately with changelog upload --artifact-type bundle.",
           "usage": "docs-builder changelog bundle-amend \u003Cbundle-path\u003E [options]",
           "examples": [],
@@ -3466,6 +3473,28 @@
               "type": "string",
               "required": false,
               "summary": "Optional: Where to write the new sidecar when the parent is a CDN locator. A directory, or a .yaml/.yml path whose file name must be {parent}.amend-N plus the same extension as the parent for the next unused N. Falls back to bundle.output_directory in changelog.yml, then the current directory. Ignored for a local parent."
+            },
+            {
+              "role": "flag",
+              "name": "description",
+              "type": "string",
+              "required": false,
+              "summary": "Optional: Replace the parent bundle\u0027s intro description. Supports {version}, {lifecycle}, {owner}, and {repo} from the parent products. Mutually exclusive with --description-file and --clear-description. May be used without --add/--remove."
+            },
+            {
+              "role": "flag",
+              "name": "description-file",
+              "type": "string",
+              "required": false,
+              "summary": "Optional: Path to a UTF-8 file whose contents replace the parent intro, or - to read from stdin. Same placeholders as --description. Mutually exclusive with --description and --clear-description."
+            },
+            {
+              "role": "flag",
+              "name": "clear-description",
+              "type": "boolean",
+              "required": false,
+              "summary": "Optional: Remove the effective bundle intro. Mutually exclusive with --description and --description-file. May be used without --add/--remove.",
+              "defaultValue": "false"
             },
             {
               "role": "flag",
@@ -5116,7 +5145,15 @@
               "name": "skip-etag-check",
               "type": "boolean",
               "required": false,
-              "summary": "Upload every discovered file even when its content hash matches the remote object. Use to re-trigger downstream scrubbers without changing file content.",
+              "summary": "Upload every discovered file even when its content hash matches the remote object. Use to re-trigger downstream scrubbers without changing file content. Mutually exclusive with --no-overwrite.",
+              "defaultValue": "false"
+            },
+            {
+              "role": "flag",
+              "name": "no-overwrite",
+              "type": "boolean",
+              "required": false,
+              "summary": "When a remote object already exists with different content, skip PutObject, warn with the existing YAML, and exit non-zero. New keys are still uploaded. Mutually exclusive with --skip-etag-check.",
               "defaultValue": "false"
             },
             {
