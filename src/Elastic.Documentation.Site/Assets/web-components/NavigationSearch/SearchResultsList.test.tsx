@@ -2,7 +2,6 @@ import {
     emptyStateCopy,
     formatApiProductCrumb,
     navigationSearchBreadcrumbs,
-    navigationSearchResultTitle,
 } from './SearchResultsList'
 
 describe('navigationSearchBreadcrumbs', () => {
@@ -53,26 +52,6 @@ describe('formatApiProductCrumb', () => {
     it('turns a product key into a display label', () => {
         expect(formatApiProductCrumb('elasticsearch')).toBe('Elasticsearch API')
         expect(formatApiProductCrumb('kibana')).toBe('Kibana API')
-    })
-})
-
-describe('navigationSearchResultTitle', () => {
-    it('strips the product suffix from API row titles', () => {
-        expect(
-            navigationSearchResultTitle(
-                'Bulk index or delete documents - Elasticsearch API',
-                'api'
-            )
-        ).toBe('Bulk index or delete documents')
-        expect(
-            navigationSearchResultTitle('Search dashboards - Kibana API', 'api')
-        ).toBe('Search dashboards')
-    })
-
-    it('leaves docs titles alone', () => {
-        expect(
-            navigationSearchResultTitle('Search - Elasticsearch API', 'all')
-        ).toBe('Search - Elasticsearch API')
     })
 })
 

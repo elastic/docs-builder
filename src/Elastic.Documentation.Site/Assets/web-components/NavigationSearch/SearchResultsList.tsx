@@ -27,8 +27,6 @@ import { useRef, useMemo, MutableRefObject, useEffect } from 'react'
 const RESULTS_MAX_HEIGHT = 465
 const BREADCRUMB_SEPARATOR = ' / '
 
-const PRODUCT_API_SUFFIX = / - .+ API$/
-
 export const formatApiProductCrumb = (title: string) => {
     if (/ API$/i.test(title)) {
         return title
@@ -40,11 +38,6 @@ export const formatApiProductCrumb = (title: string) => {
         .join(' ')
     return `${displayName} API`
 }
-
-export const navigationSearchResultTitle = (
-    title: string,
-    typeFilter: TypeFilter
-) => (typeFilter === 'api' ? title.replace(PRODUCT_API_SUFFIX, '') : title)
 
 export const navigationSearchBreadcrumbs = (
     parents: SearchResultItem['parents'],
@@ -289,9 +282,7 @@ const SearchResultRow = ({
                 `}
             >
                 <Breadcrumb items={breadcrumbItems} />
-                <Title
-                    text={navigationSearchResultTitle(result.title, typeFilter)}
-                />
+                <Title text={result.title} />
                 {result.description && (
                     <Description text={result.description} />
                 )}
