@@ -22,6 +22,9 @@ public class YamlFrontMatter
 	[YamlMember(Alias = "navigation_title")]
 	public string? NavigationTitle { get; set; }
 
+	[YamlMember(Alias = "meta_title")]
+	public string? MetaTitle { get; set; }
+
 	[YamlMember(Alias = "sub")]
 	public Dictionary<string, string>? Properties { get; set; }
 

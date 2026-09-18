@@ -15,9 +15,12 @@ namespace Elastic.ApiExplorer.Landing;
 public class MarkdownPageViewModel(ApiRenderContext context) : ApiViewModel(context)
 {
 	public required string PageTitle { get; init; }
+	public string? MetaTitle { get; init; }
 
 	public required HtmlString BodyHtml { get; init; }
 
 	/// <inheritdoc />
-	protected override string? LayoutPageTitle => PageTitle;
+	protected override string? LayoutPageTitle => string.IsNullOrWhiteSpace(MetaTitle) ? PageTitle : MetaTitle;
+
+	protected override string BreadcrumbCurrentTitle => PageTitle;
 }
