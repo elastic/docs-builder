@@ -40,7 +40,7 @@ const SearchResultItemParent = z.object({
 })
 
 const SearchResultItem = z.object({
-    type: z.enum(['docs']),
+    type: z.enum(['docs', 'api']),
     url: z.string(),
     title: z.string(),
     description: z.string(),
@@ -54,7 +54,7 @@ const SearchAggregations = z.object({
     type: z.record(z.string(), z.number()).optional(),
 })
 
-const SearchResponse = z.object({
+export const SearchResponse = z.object({
     results: z.array(SearchResultItem),
     totalResults: z.number(),
     pageCount: z.number(),

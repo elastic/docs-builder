@@ -10,7 +10,7 @@ public class MockNavigationSearchService : INavigationSearchService
 	[
 		new NavigationSearchResultItem
 		{
-			Type = "doc",
+			Type = "docs",
 			Url = "https://www.elastic.co/kibana",
 			Title = "Kibana: Explore, Visualize, Discover Data",
 			Description =
@@ -19,7 +19,7 @@ public class MockNavigationSearchService : INavigationSearchService
 		},
 		new NavigationSearchResultItem
 		{
-			Type = "doc",
+			Type = "docs",
 			Url = "https://www.elastic.co/docs/explore-analyze",
 			Title = "Explore and analyze | Elastic Docs",
 			Description =
@@ -28,7 +28,7 @@ public class MockNavigationSearchService : INavigationSearchService
 		},
 		new NavigationSearchResultItem
 		{
-			Type = "doc",
+			Type = "docs",
 			Url = "https://www.elastic.co/docs/deploy-manage/deploy/self-managed/install-kibana",
 			Title = "Install Kibana | Elastic Docs",
 			Description =
@@ -37,7 +37,7 @@ public class MockNavigationSearchService : INavigationSearchService
 		},
 		new NavigationSearchResultItem
 		{
-			Type = "doc",
+			Type = "docs",
 			Url = "https://www.elastic.co/kibana/kibana-lens",
 			Title = "Kibana Lens - Data visualization. Simply.",
 			Description =
@@ -46,7 +46,7 @@ public class MockNavigationSearchService : INavigationSearchService
 		},
 		new NavigationSearchResultItem
 		{
-			Type = "doc",
+			Type = "docs",
 			Url = "https://www.elastic.co/docs",
 			Title = "Elastic Docs - Elastic products, guides & reference",
 			Description =
@@ -55,7 +55,7 @@ public class MockNavigationSearchService : INavigationSearchService
 		},
 		new NavigationSearchResultItem
 		{
-			Type = "doc",
+			Type = "docs",
 			Url = "https://www.elastic.co/docs/get-started/introduction",
 			Title = "Get started | Elastic Docs",
 			Description =
@@ -64,7 +64,7 @@ public class MockNavigationSearchService : INavigationSearchService
 		},
 		new NavigationSearchResultItem
 		{
-			Type = "doc",
+			Type = "docs",
 			Url = "https://www.elastic.co/docs/solutions/search/elasticsearch-basics-quickstart",
 			Title = "Elasticsearch basics quickstart",
 			Description =
@@ -73,7 +73,7 @@ public class MockNavigationSearchService : INavigationSearchService
 		},
 		new NavigationSearchResultItem
 		{
-			Type = "doc",
+			Type = "docs",
 			Url = "https://www.elastic.co/docs/api/doc/elasticsearch/group/endpoint-document",
 			Title = "Elasticsearch API documentation",
 			Description =

@@ -1,6 +1,6 @@
 import { create } from 'zustand/react'
 
-export type TypeFilter = 'all' | 'doc' | 'api'
+export type TypeFilter = 'all' | 'docs' | 'api'
 
 /** -1 indicates no item is selected (e.g., before user starts typing) */
 export const NO_SELECTION = -1
