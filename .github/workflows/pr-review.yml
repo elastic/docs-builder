@@ -6,7 +6,7 @@ on:
 permissions:
   actions: read
   contents: read
-  copilot-requests: write
+  copilot-requests: write # zizmor: ignore[excessive-permissions] required by the AI PR review workflow
   issues: write # needed for failure tracking and no-op run tracking
   pull-requests: write
 
