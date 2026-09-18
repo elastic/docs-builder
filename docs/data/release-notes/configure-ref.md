@@ -109,6 +109,10 @@ bundle:
 
 The `|` (pipe) preserves line breaks and is ideal for Markdown-formatted text. Avoid using `>` (greater than) for descriptions as it folds line breaks into spaces, making lists and paragraphs difficult to format correctly.
 
+Generated bundle YAML from `changelog bundle` and `changelog bundle-amend` writes multiline `description` values as `|` literals.
+
+To change the intro of an already-created bundle without re-running `changelog bundle`, use [](/cli/changelog/bundle-amend.md) with `--description` or `--description-file`.
+
 ### Bundle profiles [bundle-profiles]
 
 Named profiles enable you to run commands repeatedly with consistent options.
