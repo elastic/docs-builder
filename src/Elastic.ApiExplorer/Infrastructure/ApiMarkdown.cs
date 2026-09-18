@@ -80,6 +80,9 @@ public static partial class ApiMarkdown
 	[GeneratedRegex(@"\{\{\{?[^}]+\}?\}\}")]
 	private static partial Regex MustachePattern();
 
+	internal const string OperationListLabel = "All methods and paths for this operation:";
+	internal const string OperationListMarkdownHeader = "**All methods and paths for this operation:**";
+
 	[GeneratedRegex(@"<span class=""operation-verb (\w+)"">(\w+)</span>\s*<span class=""operation-path"">([^<]+)</span>", RegexOptions.IgnoreCase)]
 	private static partial Regex OperationVerbPathRegex();
 
@@ -93,7 +96,7 @@ public static partial class ApiMarkdown
 		if (string.IsNullOrEmpty(description))
 			return (description ?? string.Empty, []);
 
-		if (!description.Contains("**All methods and paths for this operation:**", StringComparison.Ordinal))
+		if (!description.Contains(OperationListMarkdownHeader, StringComparison.Ordinal))
 			return (description, []);
 
 		var matches = OperationVerbPathRegex().Matches(description);
@@ -107,11 +110,7 @@ public static partial class ApiMarkdown
 			return (description, []);
 
 		// Strip the header line and HTML block; keep any text that follows
-		var headerStart = description.LastIndexOf(
-			"**All methods and paths for this operation:**",
-			htmlStartIndex,
-			StringComparison.Ordinal
-		);
+		var headerStart = description.LastIndexOf(OperationListMarkdownHeader, htmlStartIndex, StringComparison.Ordinal);
 		var beforeHeader = headerStart > 0 ? description[..headerStart].Trim() : string.Empty;
 		var afterHtml = description[(htmlEndIndex + 6)..].Trim();
 
@@ -138,7 +137,7 @@ public static partial class ApiMarkdown
 			return clean;
 
 		var result = new StringBuilder();
-		_ = result.AppendLine("**All methods and paths for this operation:**");
+		_ = result.AppendLine(OperationListMarkdownHeader);
 		_ = result.AppendLine();
 		foreach (var (method, route) in urls)
 			_ = result.AppendLine($"- **{method.ToUpperInvariant()}** `{route}`");

@@ -86,7 +86,7 @@
 		<div class="api-operation-description" id="description">
 			@if (pageModel.DescriptionUrls.Count > 0)
 			{
-				<p class="api-description-url-label">All methods and paths for this operation:</p>
+				<p class="api-description-url-label">@ApiMarkdown.OperationListLabel</p>
 				<ul class="api-url-listing api-description-url-listing">
 					@foreach (var url in pageModel.DescriptionUrls)
 					{

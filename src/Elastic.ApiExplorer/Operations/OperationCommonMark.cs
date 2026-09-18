@@ -130,7 +130,7 @@ internal static class OperationCommonMark
 
 		if (hasUrls)
 		{
-			_ = markdown.AppendLine("**All methods and paths for this operation:**");
+			_ = markdown.AppendLine(ApiMarkdown.OperationListMarkdownHeader);
 			_ = markdown.AppendLine();
 			foreach (var url in page.DescriptionUrls)
 				_ = markdown.AppendLine($"- **{url.Method.ToUpperInvariant()}** `{url.Route}`");
