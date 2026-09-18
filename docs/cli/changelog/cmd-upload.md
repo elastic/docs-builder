@@ -39,8 +39,8 @@ Your IAM policy must allow these S3 actions on the target bucket:
 | Permission | Purpose |
 | ---------- | ------- |
 | `s3:PutObject` | Upload changelog and bundle YAML files and `registry.json` manifests |
-| `s3:GetObject` | Read existing `registry.json` for merge and compare remote content |
-| `s3:GetObject` (metadata) | Compare remote ETags to skip unchanged files |
+| `s3:GetObject` | Read existing objects for ETag comparison, and with `--no-overwrite` print the remote YAML body |
+| `s3:GetObject` (metadata) | HeadObject used to skip unchanged files and classify new versus replaced |
 
 `s3:ListBucket` is not required. The command uploads to known keys derived from local file names and product IDs — it does not enumerate the bucket.
 
@@ -116,15 +116,17 @@ objects that only older CLI versions still write. See
 Profile-mode and option-mode bundle files are named `{repo}-{product}-{version}.yaml` (for example `kibana-cloud-serverless-2026-08-27.yaml` and `elasticsearch-cloud-serverless-2026-08-27.yaml`) so several repositories can publish the same product and version without overwriting each other under `bundle/{product}/`. In option mode, an explicit `--output` file path (a path ending in `.yml` or `.yaml`) is used as-is. When `--output` is omitted, that `{repo}-{product}-{version}.yaml` name is written under `bundle.output_directory`. When `--output` is a directory (any path that does not end in `.yml` or `.yaml`), the file is written in that directory. If the authoring repo cannot be resolved, the command warns and falls back to `{product}-{version}.yaml`, which can collide. If product or version cannot be resolved, the command warns and writes `changelog-bundle.yaml`.
 
 :::{note}
-Upload uses content-hash–based incremental transfer. Unchanged files are skipped. Re-running the same command is safe and idempotent.
+Upload uses content-hash–based incremental transfer. Unchanged files and unchanged PR-alias markers are skipped. Re-running the same command is safe and idempotent.
 If it's necessary to re-trigger downstream scrubbers without changing file content, pass `--skip-etag-check` to upload every discovered file even when its content hash matches the remote object.
+The completion log reports how many objects were **new** versus **replaced**. Pass `--no-overwrite` to refuse replacements: the command skips those Puts, warns with the existing remote YAML, and exits non-zero. New objects are written with `If-None-Match: *` so a concurrent upload cannot overwrite a key that appears between HeadObject and PutObject. `--no-overwrite` cannot be combined with `--skip-etag-check`.
 :::
 
 ## Options
 
 | Option | Purpose |
 | ------ | ------- |
-| `--skip-etag-check` | Upload every discovered file even when its content hash matches the remote object. Each upload emits `s3:ObjectCreated`, which re-triggers the scrubber Lambda on the private bucket. Default behavior (without this flag) skips unchanged files. |
+| `--skip-etag-check` | Upload every discovered file even when its content hash matches the remote object. Each upload emits `s3:ObjectCreated`, which re-triggers the scrubber Lambda on the private bucket. Default behavior (without this flag) skips unchanged files. Mutually exclusive with `--no-overwrite`. |
+| `--no-overwrite` | When a remote object already exists with different content, do not replace it. New keys are still uploaded, using a create-only S3 precondition (`If-None-Match: *`). The command warns with the existing remote YAML, reports `not overwritten` in the summary, and exits non-zero. Unchanged (ETag match) files and PR-alias markers are still skipped. A changelog that lists more than one PR also writes PR-alias markers (`link:` pointers at the extra PR numbers); `--no-overwrite` only refuses those markers when their bytes differ from the remote object, and the warning says they are pointers rather than full changelogs. Mutually exclusive with `--skip-etag-check`. |
 
 ## Configuration
 
@@ -187,4 +189,16 @@ docs-builder changelog upload \
   --target s3 \
   --s3-bucket-name my-changelog-bundles \
   --config ./config/changelog.yml
+```
+
+### Refuse overwrites of existing objects
+
+Skip PutObject when the remote key already exists with different content (for example a `{pr}.yaml` that already lists `elasticsearch` while you are uploading a `cloud-serverless` variant). New keys still upload. The command prints the existing remote YAML and exits non-zero:
+
+```sh
+docs-builder changelog upload \
+  --artifact-type changelog \
+  --target s3 \
+  --s3-bucket-name my-changelog-bundles \
+  --no-overwrite
 ```
