@@ -36,9 +36,6 @@ subs:
   webhook-cm: "Case Management webhook"
   hosted-ems: "hosted Elastic Maps Service"
 
-release_notes:
-  - product: docs-builder
-
 features:
   primary-nav: false
 
