@@ -213,6 +213,21 @@ public class BundleAmendCdnParentTests(ITestOutputHelper output) : ChangelogTest
 	}
 
 	[Fact]
+	public void DiscoverAmendFiles_NumberedBeforeNotesSidecar()
+	{
+		var bundleDir = CreateDir();
+		var parentPath = FileSystem.Path.Join(bundleDir, "9.3.0.yaml");
+		FileSystem.File.WriteAllText(parentPath, "products: []\nentries: []\n");
+		FileSystem.File.WriteAllText(FileSystem.Path.Join(bundleDir, "9.3.0.amend-notes.yaml"), "products: []\nentries: []\n");
+		FileSystem.File.WriteAllText(FileSystem.Path.Join(bundleDir, "9.3.0.amend-2.yaml"), "products: []\nentries: []\n");
+		FileSystem.File.WriteAllText(FileSystem.Path.Join(bundleDir, "9.3.0.amend-1.yaml"), "products: []\nentries: []\n");
+
+		var amendFiles = ChangelogBundleAmendService.DiscoverAmendFiles(FileSystem, parentPath);
+
+		amendFiles.Select(FileSystem.Path.GetFileName).Should().Equal("9.3.0.amend-1.yaml", "9.3.0.amend-2.yaml", "9.3.0.amend-notes.yaml");
+	}
+
+	[Fact]
 	public async Task Amend_CdnParent_YmlExtension_IgnoresMismatchedExtensionSidecar_WritesAmend1()
 	{
 		var outputDir = CreateDir();
