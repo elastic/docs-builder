@@ -23,6 +23,15 @@ public class RelatedLearningConfigurationTests
 		config.TryGet("elastic-agent", out _).Should().BeTrue();
 		config.TryGet("index-basics", out _).Should().BeTrue();
 		config.TryGet("data-types-and-mappings", out _).Should().BeTrue();
+		config.TryGet("rag-foundation", out _).Should().BeTrue();
+		config.TryGet("rag-beyond-basics", out var ragBeyondBasics).Should().BeTrue();
+		ragBeyondBasics!.Title.Should().Be("Beyond RAG basics: Advanced strategies for AI applications blog");
+		config.TryGet("rag-build-system", out var ragBuildSystem).Should().BeTrue();
+		ragBuildSystem!.Title.Should().Be("Building a RAG System With Gemma, Hugging Face & Elasticsearch blog");
+		config.TryGet("rag-build-agentic", out _).Should().BeTrue();
+		config.TryGet("semantic-search-foundation", out _).Should().BeTrue();
+		config.TryGet("semantic-search-text-embedding", out _).Should().BeTrue();
+		config.TryGet("logs-essentials", out _).Should().BeTrue();
 	}
 
 	[Fact]

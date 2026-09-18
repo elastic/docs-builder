@@ -1,9 +1,9 @@
 links:
   apm-with-elastic:
-    title: APM with Elastic
+    title: APM with Elastic on-demand training
     url: https://www.elastic.co/training/apm-with-elastic
   elastic-agent:
-    title: Elastic Agent
+    title: Elastic Agent on-demand training
     url: https://www.elastic.co/training/elastic-agent
   index-basics:
     title: Index Basics
@@ -15,13 +15,13 @@ links:
     title: RAG Foundation on-demand training
     url: https://www.elastic.co/training/rag-foundation
   rag-beyond-basics:
-    title: Beyond RAG basics: Advanced strategies for AI applications blog
+    title: "Beyond RAG basics: Advanced strategies for AI applications blog"
     url: https://www.elastic.co/blog/beyond-rag-basics
   rag-build-system:
-    title: Building a RAG System With Gemma, Hugging Face & Elasticsearch blog
+    title: "Building a RAG System With Gemma, Hugging Face & Elasticsearch blog"
     url: https://www.elastic.co/search-labs/blog/building-a-rag-system-with-gemma-hugging-face-elasticsearch
   rag-build-agentic:
-    title: Agentic RAG with LangChain & Elasticsearch blog
+    title: "Agentic RAG with Elasticsearch & Langchain blog"
     url: https://www.elastic.co/search-labs/blog/rag-agent-tool-elasticsearch-langchain
   semantic-search-foundation:
     title: Semantic search foundation on-demand training
