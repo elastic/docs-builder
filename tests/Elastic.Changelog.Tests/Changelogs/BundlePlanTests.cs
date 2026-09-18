@@ -320,4 +320,63 @@ public class BundlePlanTests : ChangelogTestBase
 		result.Should().NotBeNull();
 		result.NeedsNetwork.Should().BeFalse();
 	}
+
+	[Fact]
+	public async Task Plan_ProfileWithDescription_RejectsCliDescription()
+	{
+		// CI preflights with --plan before the bundle run, so plan must reject the same collision the run does.
+		// language=yaml
+		var configContent =
+			"""
+			bundle:
+			  output_directory: docs/releases
+			  profiles:
+			    my-profile:
+			      products: "elasticsearch {version} {lifecycle}"
+			      description: "From profile"
+			""";
+		var configPath = await CreateConfigAsync(configContent);
+
+		var input = new BundleChangelogsArguments
+		{
+			Profile = "my-profile",
+			ProfileArgument = "9.2.0",
+			Config = configPath,
+			Description = "From CLI"
+		};
+
+		var result = await Service.PlanBundleAsync(Collector, input, hasReleaseVersion: false, TestContext.Current.CancellationToken);
+
+		result.Should().BeNull();
+		Collector.Errors.Should().BeGreaterThan(0);
+		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("--description"));
+	}
+
+	[Fact]
+	public async Task Plan_ProfileWithoutDescription_AllowsCliDescription()
+	{
+		// language=yaml
+		var configContent =
+			"""
+			bundle:
+			  output_directory: docs/releases
+			  profiles:
+			    my-profile:
+			      products: "elasticsearch {version} {lifecycle}"
+			""";
+		var configPath = await CreateConfigAsync(configContent);
+
+		var input = new BundleChangelogsArguments
+		{
+			Profile = "my-profile",
+			ProfileArgument = "9.2.0",
+			Config = configPath,
+			Description = "From CLI"
+		};
+
+		var result = await Service.PlanBundleAsync(Collector, input, hasReleaseVersion: false, TestContext.Current.CancellationToken);
+
+		result.Should().NotBeNull();
+		Collector.Errors.Should().Be(0);
+	}
 }

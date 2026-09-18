@@ -318,6 +318,8 @@ docs-builder changelog bundle-amend \
 
 This creates an amend file with `exclude-entries` that is merged when the bundle is rendered.
 
+To replace the bundle intro (for example, upstream dependency versions or a release blog link) without regenerating entries, pass `--description`, `--description-file`, or `--clear-description`. You can use those flags on their own or together with `--add` / `--remove`. Numbered amends that set `description` replace the parent intro at load time; `.amend-notes` does not.
+
 When bundles are turned into docs (either via the `changelog render` command or the `{changelog}` directive), amend files are **automatically merged** with their parent bundles. Numbered `{parent}.amend-{N}` sidecars apply in order, then a Lambda-owned `{parent}.amend-notes.yaml` sidecar if one exists.
 The changelogs from all matching amend files are combined with the parent bundle's changelogs and the result is rendered as a single release.
 
