@@ -89,6 +89,7 @@ suppress:
 
 toc:
   - file: index.md
+  - file: release-notes.md
   - hidden: 404.md
   - hidden: developer-notes.md
 
