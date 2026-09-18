@@ -16,12 +16,14 @@ import {
     ATTR_NAVIGATION_SEARCH_CLOSE_REASON,
     ATTR_NAVIGATION_SEARCH_HAD_RESULTS,
     ATTR_NAVIGATION_SEARCH_HAD_SELECTION,
+    ATTR_NAVIGATION_SEARCH_SURFACE,
     ATTR_NAVIGATION_SEARCH_NAVIGATION_METHOD,
     ATTR_NAVIGATION_SEARCH_NAVIGATION_DIRECTION,
     ATTR_NAVIGATION_SEARCH_RETRY_AFTER,
     ATTR_ERROR_TYPE,
     ATTR_EXCEPTION_MESSAGE,
 } from '../../telemetry/semconv'
+import { useTypeFilter } from './navigationSearch.store'
 import { useCallback } from 'react'
 
 export type NavigationSearchTrigger = 'keyboard_shortcut' | 'focus' | 'click'
@@ -62,18 +64,21 @@ interface ErrorParams {
 }
 
 export const useNavigationSearchTelemetry = () => {
-    /**
-     * Track when user opens Navigation Search (focus or keyboard shortcut)
-     */
-    const trackOpened = useCallback((trigger: NavigationSearchTrigger) => {
-        logInfo('navigation_search_opened', {
-            [ATTR_NAVIGATION_SEARCH_TRIGGER]: trigger,
-        })
-    }, [])
+    const typeFilter = useTypeFilter()
+    const surface = typeFilter === 'api' ? 'api' : undefined
 
-    /**
-     * Track when Navigation Search is closed
-     */
+    const trackOpened = useCallback(
+        (trigger: NavigationSearchTrigger) => {
+            logInfo('navigation_search_opened', {
+                [ATTR_NAVIGATION_SEARCH_TRIGGER]: trigger,
+                ...(surface
+                    ? { [ATTR_NAVIGATION_SEARCH_SURFACE]: surface }
+                    : {}),
+            })
+        },
+        [surface]
+    )
+
     const trackClosed = useCallback(
         ({ reason, query, hadResults, hadSelection }: ClosedParams) => {
             logInfo('navigation_search_closed', {
@@ -81,14 +86,14 @@ export const useNavigationSearchTelemetry = () => {
                 [ATTR_NAVIGATION_SEARCH_QUERY]: query,
                 [ATTR_NAVIGATION_SEARCH_HAD_RESULTS]: hadResults,
                 [ATTR_NAVIGATION_SEARCH_HAD_SELECTION]: hadSelection,
+                ...(surface
+                    ? { [ATTR_NAVIGATION_SEARCH_SURFACE]: surface }
+                    : {}),
             })
         },
-        []
+        [surface]
     )
 
-    /**
-     * Track when user clicks on a result
-     */
     const trackResultClicked = useCallback(
         ({ query, position, url, score }: ResultClickParams) => {
             logInfo('navigation_search_result_clicked', {
@@ -96,9 +101,12 @@ export const useNavigationSearchTelemetry = () => {
                 [ATTR_NAVIGATION_SEARCH_RESULT_POSITION]: position,
                 [ATTR_NAVIGATION_SEARCH_RESULT_URL]: url,
                 [ATTR_NAVIGATION_SEARCH_RESULT_SCORE]: score,
+                ...(surface
+                    ? { [ATTR_NAVIGATION_SEARCH_SURFACE]: surface }
+                    : {}),
             })
         },
-        []
+        [surface]
     )
 
     /**
