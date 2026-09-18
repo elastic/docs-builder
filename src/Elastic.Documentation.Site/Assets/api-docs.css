@@ -1758,6 +1758,17 @@ a.type-linked:hover {
 		width: 9px;
 		height: 9px;
 	}
+
+	.api-url {
+		margin-left: 0;
+		color: #516381;
+		font-family:
+			'Roboto Mono', ui-monospace, SFMono-Regular, Menlo, Monaco,
+			Consolas, monospace;
+		font-size: 13px;
+		font-weight: 300;
+		line-height: 20px;
+	}
 }
 
 .api-operation-description {
