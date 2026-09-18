@@ -20,9 +20,14 @@ public class RelatedLearningBasicTests(ITestOutputHelper output) : DirectiveTest
 	public void ResolvesCatalogId()
 	{
 		Block!.Items.Should().ContainSingle();
-		Block.Items[0].Id.Should().Be("apm-with-elastic");
-		Block.Items[0].Title.Should().Be("APM with Elastic");
-		Block.Items[0].Url.Should().Be("https://www.elastic.co/training/apm-with-elastic");
+		var item = Block.Items[0];
+		item.Id.Should().Be("apm-with-elastic");
+		item.Title.Should().NotBeNullOrWhiteSpace();
+		item.Url.Should().NotBeNullOrWhiteSpace();
+
+		Set.Context.RelatedLearningConfiguration.TryGet("apm-with-elastic", out var catalog).Should().BeTrue();
+		item.Title.Should().Be(catalog!.Title);
+		item.Url.Should().Be(catalog.Url);
 	}
 
 	[Fact]
@@ -35,13 +40,14 @@ public class RelatedLearningBasicTests(ITestOutputHelper output) : DirectiveTest
 	[Fact]
 	public void RendersHeadingIdAndExternalLink()
 	{
+		var item = Block!.Items.Should().ContainSingle().Which;
 		Html.Should().Contain("id=\"related-learning-heading\"");
 		Html.Should().Contain("<h2>");
 		Html.Should().Contain("Related learning");
-		Html.Should().Contain("href=\"https://www.elastic.co/training/apm-with-elastic\"");
+		Html.Should().Contain($"href=\"{item.Url}\"");
 		Html.Should().Contain("target=\"_blank\"");
 		Html.Should().Contain("rel=\"noopener noreferrer\"");
-		Html.Should().Contain("APM with Elastic");
+		Html.Should().Contain(item.Title);
 		CountOccurrences(Html, "id=\"related-learning-heading\"").Should().Be(1);
 	}
 
@@ -81,8 +87,8 @@ public class RelatedLearningOrderTests(ITestOutputHelper output) : DirectiveTest
 	public void DisplayOrderMatchesIds()
 	{
 		Block!.Items.Select(i => i.Id).Should().Equal("index-basics", "apm-with-elastic");
-		var indexPos = Html.IndexOf("Index Basics", StringComparison.Ordinal);
-		var apmPos = Html.IndexOf("APM with Elastic", StringComparison.Ordinal);
+		var indexPos = Html.IndexOf(Block.Items[0].Title, StringComparison.Ordinal);
+		var apmPos = Html.IndexOf(Block.Items[1].Title, StringComparison.Ordinal);
 		indexPos.Should().BePositive();
 		apmPos.Should().BeGreaterThan(indexPos);
 	}
