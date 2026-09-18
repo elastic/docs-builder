@@ -1,0 +1,32 @@
+name: Release notes
+
+# Single shared workflow that covers the per-PR and per-push release-notes gates:
+#
+#   pull_request -> validate the type label and any changelog entry files in the PR
+#   push (main)  -> upload changelog entries and amends to the changelog S3 pool
+#
+# Release-time bundling is NOT wired here. `release-notes.yml` gates its bundle job on
+# `github.event_name == 'release'`, and release-drafter publishes our GitHub release with
+# GITHUB_TOKEN (see release.yml). GitHub does not start workflow runs from events created
+# by GITHUB_TOKEN, so an `on: release` trigger in this file would never fire. The bundle is
+# built from the `publish-release-notes` jobs in release.yml instead, which run in the same
+# workflow that cuts the release. Use release-notes-backfill.yml to bundle a past tag.
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, labeled, unlabeled]
+  push:
+    branches: [main]
+
+permissions: {}
+
+jobs:
+  release-notes:
+    permissions:
+      contents: read
+      pull-requests: read
+      packages: read
+      id-token: write
+    uses: elastic/docs-actions/.github/workflows/release-notes.yml@v1
+    with:
+      config: docs/changelog.yml
