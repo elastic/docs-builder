@@ -56,7 +56,7 @@ case "${1:-help}" in
     _bake --load api "${@:2}"
     ;;
   build-mcp)
-    _bake --load mcp
+    _bake --load mcp "${@:2}"
     ;;
   rebuild)
     _bake --no-cache --load all
