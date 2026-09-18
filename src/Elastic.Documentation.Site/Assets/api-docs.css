@@ -1730,6 +1730,36 @@ a.type-linked:hover {
 }
 
 /* Operation description — same body copy as property/query descriptions (14/20, #516381) */
+.api-description-url-label {
+	margin: 0 0 0.5rem;
+	font-size: 12px;
+	font-weight: 500;
+	color: var(--color-subdued, #516381);
+}
+
+.api-description-url-listing {
+	margin-bottom: 1rem;
+
+	.api-method {
+		height: 18px;
+		font-size: 10px;
+		line-height: 12px;
+		padding: 0 4px;
+		gap: 2px;
+		border-radius: 5px;
+	}
+
+	.api-method-icon {
+		width: 9px;
+		height: 9px;
+	}
+
+	.api-method-icon svg {
+		width: 9px;
+		height: 9px;
+	}
+}
+
 .api-operation-description {
 	color: var(--color-subdued, #516381);
 	font-family: var(--font-body, Inter, ui-sans-serif, system-ui, sans-serif);
