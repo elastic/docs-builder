@@ -8,4 +8,12 @@ describe('initializeOtel', () => {
 
         expect(initializeOtel()).toBe(false)
     })
+
+    it('does not read document.cookie during initialization', () => {
+        const cookieSpy = jest.spyOn(document, 'cookie', 'get')
+
+        initializeOtel()
+
+        expect(cookieSpy).not.toHaveBeenCalled()
+    })
 })
