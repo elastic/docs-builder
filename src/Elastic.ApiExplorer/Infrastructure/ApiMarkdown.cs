@@ -137,16 +137,16 @@ public static partial class ApiMarkdown
 			return clean;
 
 		var result = new StringBuilder();
+		if (!string.IsNullOrWhiteSpace(clean))
+		{
+			_ = result.AppendLine(clean);
+			_ = result.AppendLine();
+		}
+
 		_ = result.AppendLine(OperationListMarkdownHeader);
 		_ = result.AppendLine();
 		foreach (var (method, route) in urls)
 			_ = result.AppendLine($"- **{method.ToUpperInvariant()}** `{route}`");
-
-		if (!string.IsNullOrWhiteSpace(clean))
-		{
-			_ = result.AppendLine();
-			_ = result.Append(clean);
-		}
 
 		return result.ToString().Trim();
 	}
