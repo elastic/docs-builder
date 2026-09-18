@@ -69,7 +69,7 @@ If there is no existing or planned bundle for that product and version or date, 
 
 `changelog remove` only deletes local YAML. It does not change a published bundle or the changelog pool.
 
-- If the note is already embedded in the parent bundle, use `changelog bundle-amend --remove` and upload the numbered sidecar. Refer to [](/data/release-notes/bundle.md#changelog-bundle-notes-after-ship).
+- If the note is already in the parent bundle or a numbered `amend-N` sidecar, use `changelog bundle-amend --remove` and upload `{parent}.amend-N.yaml` with `changelog upload --artifact-type bundle`. Refer to [](/data/release-notes/bundle.md#changelog-bundle-notes-after-ship).
 - If the note exists only in `.amend-notes` (uploaded after the bundle shipped), no `changelog` command unpublishes it from the pool. Don't create, edit, or delete `.amend-notes` files.
 
 ## Configuration checks
