@@ -81,7 +81,7 @@
 	@{
 		var prerequisites = Model.Prerequisites;
 	}
-	@if (!string.IsNullOrWhiteSpace(pageModel.DescriptionMarkdown) || pageModel.DescriptionUrls.Count > 0 || pageModel.ExternalDocs is not null)
+	@if (!string.IsNullOrWhiteSpace(pageModel.DescriptionMarkdown) || pageModel.DescriptionUrls.Count > 0)
 	{
 		<div class="api-operation-description" id="description">
 			@if (pageModel.DescriptionUrls.Count > 0)
@@ -110,6 +110,12 @@
 				</a>
 			}
 		</div>
+	}
+	else if (pageModel.ExternalDocs is not null)
+	{
+		<a href="@pageModel.ExternalDocs.Url" class="docs-reference-btn" @(pageModel.ExternalDocs.IsElasticDocs ? "" : "target=\"_blank\" rel=\"noopener\"")>
+			@pageModel.ExternalDocs.LinkText
+		</a>
 	}
 	@if (prerequisites is { Count: > 0 })
 	{
