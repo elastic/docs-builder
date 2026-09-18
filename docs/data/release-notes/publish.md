@@ -47,7 +47,31 @@ The first option is simplest since it requires only a one-time change to your ex
 ### Publish bundles directly [changelog-directive]
 
 You can use the [`{changelog}` directive](/syntax/changelog.md) to derive docs from your release bundles.
-For example, update your existing release note page to include a directive like this:
+Pass the product name as the directive argument to source bundles from the public CDN:
+
+```md
+:::{changelog} my-product
+:release-dates:
+:highlights:
+:::
+```
+
+:::{important}
+Before adding this directive, register the product in `_docset.yml`:
+
+```yaml
+release_notes:
+  - product: my-product
+```
+
+The build fails with an error if the product is not listed there.
+:::
+
+:::{note}
+The CDN registry for a product is created by the first published bundle. If no release has gone through the bundle pipeline yet, the build fails with a 404. Add the render page only after the first release has run successfully.
+:::
+
+The directive also supports a local path argument for isolated builds and legacy setups:
 
 ```md
 :::{changelog} /path/to/bundles
