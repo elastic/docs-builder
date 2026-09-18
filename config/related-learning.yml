@@ -21,7 +21,7 @@ links:
     title: Building a RAG System With Gemma, Hugging Face & Elasticsearch blog
     url: https://www.elastic.co/search-labs/blog/building-a-rag-system-with-gemma-hugging-face-elasticsearch
   rag-build-agentic:
-    title: Agentic RAG with Elasticsearch & Langchain blog
+    title: Agentic RAG with LangChain & Elasticsearch blog
     url: https://www.elastic.co/search-labs/blog/rag-agent-tool-elasticsearch-langchain
   semantic-search-foundation:
     title: Semantic search foundation on-demand training
