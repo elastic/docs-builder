@@ -1248,6 +1248,16 @@ public class BundleLoaderTests(ITestOutputHelper output)
 	}
 
 	[Fact]
+	public void SerializeBundle_EmptyDescriptionWithoutProducts_RoundTripsClearSentinel()
+	{
+		var yaml = ReleaseNotesSerialization.SerializeBundle(new Bundle { Description = "" });
+
+		yaml.Should().Contain("description: \"\"");
+		yaml.Should().NotContain("{");
+		ReleaseNotesSerialization.DeserializeBundle(yaml).Description.Should().BeEmpty();
+	}
+
+	[Fact]
 	public void SerializeBundle_DescriptionWithControlCharacter_StaysParseable()
 	{
 		// A block scalar writes content raw, so a control character in a multiline description used to

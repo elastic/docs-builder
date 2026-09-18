@@ -95,25 +95,7 @@ public static partial class ReleaseNotesSerialization
 	public static string SerializeBundle(Bundle bundle)
 	{
 		var dto = ToDto(bundle);
-		var yaml = YamlSerializer.Serialize(dto);
-		return bundle.Description is { Length: 0 } ? EnsureTopLevelEmptyDescription(yaml) : yaml;
-	}
-
-	/// <summary>
-	/// YamlDotNet's <see cref="DefaultValuesHandling.OmitEmptyCollections"/> also drops empty strings
-	/// (string implements <see cref="System.Collections.IEnumerable"/>). An empty bundle
-	/// <c>description</c> is the clear-intro sentinel and must be written explicitly.
-	/// </summary>
-	private static string EnsureTopLevelEmptyDescription(string yaml)
-	{
-		using var reader = new StringReader(yaml);
-		while (reader.ReadLine() is { } line)
-		{
-			if (line.StartsWith("description:", StringComparison.Ordinal))
-				return yaml;
-		}
-
-		return yaml.TrimEnd() + "\ndescription: \"\"\n";
+		return YamlSerializer.Serialize(dto);
 	}
 
 	private static string ApplyDefensiveTitleQuotingIfNeeded(string yaml, string? title)
