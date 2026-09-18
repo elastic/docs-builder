@@ -271,7 +271,7 @@ public class BundleLoader(IFileSystem fileSystem)
 			if (!bundlesByPath.TryGetValue(parentPath, out var parentBundle))
 				continue;
 
-			var orderedAmends = group.OrderBy(AmendMergeOrder).ToList();
+			var orderedAmends = group.OrderBy(a => BundleAmendMerger.GetAmendMergeOrder(a.FilePath)).ToList();
 			var orderedAmendData = orderedAmends.Select(a => a.Data).ToList();
 			var numberedAmendData = orderedAmends.Where(a => !BundleAmendMerger.IsNotesAmendFile(a.FilePath)).Select(a => a.Data).ToList();
 
@@ -297,15 +297,5 @@ public class BundleLoader(IFileSystem fileSystem)
 			.Where(bundle => !mergedAmendPaths.Contains(bundle.FilePath))
 			.Select(bundle => mergedParents.TryGetValue(bundle.FilePath, out var mergedBundle) ? mergedBundle : bundle)
 			.ToList();
-	}
-
-	/// <summary>
-	/// Numbered amends first (<c>1</c>, <c>2</c>, …), then <c>.amend-notes</c> (numeric suffix is
-	/// <c>0</c> on <see cref="BundleAmendMerger.GetAmendFileNumber"/>).
-	/// </summary>
-	private static int AmendMergeOrder(LoadedBundle amend)
-	{
-		var number = BundleAmendMerger.GetAmendFileNumber(amend.FilePath);
-		return number == 0 ? int.MaxValue : number;
 	}
 }

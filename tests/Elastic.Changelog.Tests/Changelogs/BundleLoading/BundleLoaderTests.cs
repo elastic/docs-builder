@@ -609,6 +609,57 @@ public class BundleLoaderTests(ITestOutputHelper output)
 	}
 
 	[Fact]
+	public void LoadBundles_NumberedExcludeThenNotesReadd_KeepsEntry()
+	{
+		var bundlesFolder = "/docs/changelog/bundles";
+		_fileSystem.Directory.CreateDirectory(bundlesFolder);
+
+		// language=yaml
+		var parentBundle =
+			"""
+			products:
+			  - product: elasticsearch
+			    target: 9.3.0
+			description: Parent intro
+			entries:
+			  - title: Shipped feature
+			    type: feature
+			    file:
+			      name: shipped.yaml
+			      checksum: aaa
+			""";
+		// language=yaml
+		var numberedExclude =
+			"""
+			exclude-entries:
+			  - file:
+			      name: shipped.yaml
+			      checksum: aaa
+			""";
+		// language=yaml
+		var amendNotes =
+			"""
+			products: []
+			description: Notes sidecar must not win
+			entries:
+			  - title: Late readd
+			    type: security
+			    file:
+			      name: shipped.yaml
+			      checksum: aaa
+			""";
+		_fileSystem.File.WriteAllText($"{bundlesFolder}/9.3.0.yaml", parentBundle);
+		_fileSystem.File.WriteAllText($"{bundlesFolder}/9.3.0.amend-1.yaml", numberedExclude);
+		_fileSystem.File.WriteAllText($"{bundlesFolder}/9.3.0.amend-notes.yaml", amendNotes);
+
+		var bundles = CreateService().LoadBundles(bundlesFolder, EmitWarning);
+
+		bundles.Should().HaveCount(1);
+		bundles[0].Entries.Select(e => e.Title).Should().Equal("Late readd");
+		bundles[0].Data.Description.Should().Be("Parent intro");
+	}
+
+	[Fact]
 	public void LoadBundles_AmendFileWithoutParent_RemainsStandalone()
 	{
 		// Arrange

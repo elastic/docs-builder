@@ -37,6 +37,18 @@ public static partial class BundleAmendMerger
 	}
 
 	/// <summary>
+	/// Sort key for applying amend sidecars: numbered files in numeric order, then
+	/// <c>.amend-notes</c> (<see cref="GetAmendFileNumber"/> is <c>0</c> for notes).
+	/// Do not use this value to pick the next numbered sidecar; use
+	/// <see cref="GetAmendFileNumber"/> for that.
+	/// </summary>
+	public static int GetAmendMergeOrder(string filePath)
+	{
+		var number = GetAmendFileNumber(filePath);
+		return number == 0 ? int.MaxValue : number;
+	}
+
+	/// <summary>
 	/// Parent bundle path for an amend sidecar, keeping the amend's extension
 	/// (<c>repo-9.3.0.amend-1.yaml</c> → <c>repo-9.3.0.yaml</c>); null when
 	/// <paramref name="filePath"/> is not an amend file. Works on bare file names and full paths alike.

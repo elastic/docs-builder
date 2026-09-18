@@ -56,6 +56,32 @@ public class BundleAmendMergerTests
 	public void IsNotesAmendFile_DetectsNotesSidecar(string path, bool expected) =>
 		BundleAmendMerger.IsNotesAmendFile(path).Should().Be(expected);
 
+	[Theory]
+	[InlineData("9.3.0.amend-1.yaml", 1)]
+	[InlineData("9.3.0.amend-12.yaml", 12)]
+	[InlineData("9.3.0.amend-notes.yaml", int.MaxValue)]
+	[InlineData("9.3.0.yaml", int.MaxValue)]
+	public void GetAmendMergeOrder_NumberedFirstNotesLast(string path, int expected) =>
+		BundleAmendMerger.GetAmendMergeOrder(path).Should().Be(expected);
+
+	[Fact]
+	public void MergeEntries_NumberedExcludeThenNotesReadd_KeepsEntry()
+	{
+		var parent = new List<BundledEntry> { CreateFileEntry("shipped.yaml", "aaa") };
+		var numbered = new Bundle { ExcludeEntries = [CreateFileEntry("shipped.yaml", "aaa")] };
+		var notes = new Bundle { Entries = [CreateFileEntry("shipped.yaml", "aaa")] };
+		var byFileName = new Dictionary<string, Bundle>(StringComparer.OrdinalIgnoreCase)
+		{
+			["9.3.0.amend-1.yaml"] = numbered,
+			["9.3.0.amend-notes.yaml"] = notes
+		};
+
+		var ordered = byFileName.Keys.OrderBy(BundleAmendMerger.GetAmendMergeOrder).Select(name => byFileName[name]).ToList();
+		var merged = BundleAmendMerger.MergeEntries(parent, ordered);
+
+		merged.Should().ContainSingle(e => e.File!.Name == "shipped.yaml");
+	}
+
 	[Fact]
 	public void MergeDescription_OmittedAmend_InheritsParent()
 	{

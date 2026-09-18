@@ -711,7 +711,7 @@ public class ChangelogBundleAmendService(
 			}
 		}
 
-		var orderedNames = byFileName.Keys.OrderBy(BundleAmendMerger.GetAmendFileNumber).ToList();
+		var orderedNames = byFileName.Keys.OrderBy(BundleAmendMerger.GetAmendMergeOrder).ToList();
 		var bundles = orderedNames.Select(name => byFileName[name]).ToList();
 		var nextNumber = orderedNames.Select(BundleAmendMerger.GetAmendFileNumber).DefaultIfEmpty(0).Max() + 1;
 		return (true, bundles, nextNumber);
@@ -904,7 +904,7 @@ public class ChangelogBundleAmendService(
 			.Directory
 			.GetFiles(directory, $"{baseName}.amend-*.y*ml")
 			.Where(file => string.Equals(fileSystem.Path.GetExtension(file), extension, StringComparison.OrdinalIgnoreCase))
-			.OrderBy(BundleAmendMerger.GetAmendFileNumber)
+			.OrderBy(BundleAmendMerger.GetAmendMergeOrder)
 			.ToList();
 
 		return amendFiles;
