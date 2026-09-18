@@ -4,6 +4,8 @@ Upload changelog entries or bundle artifacts to S3 or Elasticsearch. The command
 
 A downstream scrubber copies published objects to the public bucket and removes pull request and issue links that are not on the allowlist (unlike bundle-time `# PRIVATE:` sentinels on the private side). Those public bundles are less likely to work with [`changelog unpack`](/cli/changelog/unpack.md).
 
+Uploading a `note-*.yml` file can cause the scrubber to create or update `{parent}.amend-notes.yaml` on the **public** bucket. This command does not write that sidecar. The command does not delete objects. There is no `changelog` subcommand that unpublishes a pool file. Refer to [](/data/release-notes/bundle.md#changelog-bundle-notes-after-ship).
+
 To create bundles first, use [](/cli/changelog/bundle.md).
 For the end-to-end workflow, see [](/data/release-notes/bundle.md).
 
