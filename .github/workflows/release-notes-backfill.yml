@@ -30,6 +30,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
         with:
+          ref: ${{ inputs.version }}
           persist-credentials: false
 
       - name: Create bundle
@@ -51,6 +52,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
         with:
+          ref: ${{ inputs.version }}
           persist-credentials: false
 
       - name: Publish bundle to S3

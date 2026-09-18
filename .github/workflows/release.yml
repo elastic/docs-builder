@@ -343,7 +343,6 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
-      id-token: write
     steps:
       - name: Publish release
         env:
@@ -353,6 +352,16 @@ jobs:
         run: |
           gh release edit "$TAG_NAME" --draft=false --latest --repo "$REPO"
 
+  # Notification runs after publish-release but is decoupled from the bundle jobs.
+  # A dispatch failure must not prevent a published tag from getting its release-notes bundle.
+  notify-docs-internal-workflows:
+    needs:
+      - release-drafter
+      - publish-release
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+    steps:
       - name: Fetch ephemeral GitHub token
         id: fetch-ephemeral-token
         uses: elastic/ci-gh-actions/fetch-github-token@v1
@@ -437,6 +446,7 @@ jobs:
       - deploy-changelog-scrubber-lambda-prod
       - release
       - publish-release
+      - notify-docs-internal-workflows
       - create-release-notes-bundle
       - publish-release-notes-bundle
     if: always() && contains(needs.*.result, 'failure')
