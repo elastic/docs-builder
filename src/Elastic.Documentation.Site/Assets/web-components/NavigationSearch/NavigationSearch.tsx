@@ -15,9 +15,6 @@ import { useNavigationSearchTelemetry } from './useNavigationSearchTelemetry'
 import {
     EuiInputPopover,
     useEuiTheme,
-    useEuiFontSize,
-    EuiBetaBadge,
-    EuiLink,
     EuiIcon,
     EuiText,
     useIsWithinMaxBreakpoint,
@@ -199,9 +196,6 @@ export const NavigationSearch = ({
     )
 }
 
-const FEEDBACK_URL =
-    'https://github.com/elastic/docs-eng-team/issues/new?template=search-or-ask-ai-feedback.yml'
-
 const KEYBOARD_SHORTCUTS = [
     { keys: ['returnKey'], label: 'Jump to' },
     { keys: ['sortUp', 'sortDown'], label: 'Navigate' },
@@ -239,18 +233,21 @@ const SearchDropdownContent = ({
 
 const SearchDropdownFooter = () => {
     const { euiTheme } = useEuiTheme()
-    const { fontSize: sFontsize, lineHeight: sLineHeight } = useEuiFontSize('s')
     const isMobile = useIsWithinMaxBreakpoint('s')
     const typeFilter = useTypeFilter()
     const shortcuts =
         typeFilter === 'api' ? API_KEYBOARD_SHORTCUTS : KEYBOARD_SHORTCUTS
+
+    if (isMobile) {
+        return null
+    }
 
     return (
         <div
             css={css`
                 display: flex;
                 align-items: center;
-                justify-content: space-between;
+                justify-content: flex-end;
                 min-height: 40px;
                 box-sizing: content-box;
                 border-top: 1px solid ${euiTheme.colors.borderBaseSubdued};
@@ -259,63 +256,16 @@ const SearchDropdownFooter = () => {
                 border-bottom-left-radius: ${euiTheme.size.s};
                 padding-inline: ${euiTheme.size.base};
                 padding-block: ${euiTheme.size.xs};
+                gap: ${euiTheme.size.base};
             `}
         >
-            <div
-                css={css`
-                    display: flex;
-                    align-items: center;
-                    gap: ${euiTheme.size.s};
-                `}
-            >
-                <EuiBetaBadge
-                    color="accent"
-                    label="ALPHA"
-                    size="s"
-                    anchorProps={{
-                        css: css`
-                            display: inline-flex;
-                            align-items: center;
-                        `,
-                    }}
+            {shortcuts.map((shortcut, index) => (
+                <KeyboardShortcutItem
+                    key={index}
+                    keys={shortcut.keys}
+                    label={shortcut.label}
                 />
-                <span
-                    css={css`
-                        font-size: ${euiTheme.size.m};
-                        color: ${euiTheme.colors.textDisabled};
-                    `}
-                >
-                    ·
-                </span>
-                <EuiLink
-                    href={FEEDBACK_URL}
-                    target="_blank"
-                    external
-                    css={css`
-                        font-size: ${sFontsize};
-                        line-height: ${sLineHeight};
-                    `}
-                >
-                    Give feedback
-                </EuiLink>
-            </div>
-            {!isMobile && (
-                <div
-                    css={css`
-                        display: flex;
-                        align-items: center;
-                        gap: ${euiTheme.size.base};
-                    `}
-                >
-                    {shortcuts.map((shortcut, index) => (
-                        <KeyboardShortcutItem
-                            key={index}
-                            keys={shortcut.keys}
-                            label={shortcut.label}
-                        />
-                    ))}
-                </div>
-            )}
+            ))}
         </div>
     )
 }

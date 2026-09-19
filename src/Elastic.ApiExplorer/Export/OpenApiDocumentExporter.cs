@@ -126,15 +126,13 @@ public partial class OpenApiDocumentExporter(VersionsConfiguration versionsConfi
 				var operationMoniker = ApiUrlBuilder.OperationMoniker(operationId, path.Key);
 				var url = $"{productUrl}/operation/{operationMoniker}";
 
-				var productName = CultureInfo.InvariantCulture.TextInfo.ToTitleCase(product);
+				var productLabel = ProductApiLabel(product);
 				// Trim: spec summaries occasionally carry stray leading/trailing whitespace or a
 				// trailing newline, which would otherwise flow verbatim into the indexed title.
 				var summary = operation.Value.Summary?.Trim();
-				// inject product name into title to ensure differentiation and better scoring
-				var title = $"{(string.IsNullOrEmpty(summary) ? operationId : summary)} - {productName} API";
-				// append the raw operation id (e.g. "_bulk") so the REST endpoint name is searchable —
-				// keep it verbatim (no case/underscore normalization) since that's exactly what users type.
-				var searchTitle = $"{title} - {operationId}";
+				var title = string.IsNullOrEmpty(summary) ? operationId : summary;
+				var method = operation.Key.ToString().ToUpperInvariant();
+				var searchTitle = BuildSearchTitle(title, productLabel, operationId, $"{method} {path.Key}");
 				var description = ApiMarkdown.TransformOperationListToMarkdown(operation.Value.Description);
 
 				// Build body content from operation details
@@ -186,8 +184,8 @@ public partial class OpenApiDocumentExporter(VersionsConfiguration versionsConfi
 					Applies = applies?.ToAppliesTo(),
 					Parents =
 					[
-						new ParentDocument { Title = "API Reference", Path = "/docs/api" },
-						new ParentDocument { Title = product, Path = productUrl }
+						new ParentDocument { Title = "API", Path = "/docs/api" },
+						new ParentDocument { Title = productLabel, Path = productUrl }
 					],
 					Product = inference?.Product?.Id,
 					RelatedProducts = inference?.RelatedProducts.Count > 0
@@ -233,6 +231,25 @@ public partial class OpenApiDocumentExporter(VersionsConfiguration versionsConfi
 
 		// Include if added version is <= current version
 		return addedInVersion <= currentVersion;
+	}
+
+	/// <summary>
+	/// Display label for the product crumb, e.g. <c>elasticsearch</c> → <c>Elasticsearch API</c>.
+	/// </summary>
+	internal static string ProductApiLabel(string product) =>
+		$"{CultureInfo.InvariantCulture.TextInfo.ToTitleCase(product.Replace('-', ' '))} API";
+
+	/// <summary>
+	/// Search tokens users type for an operation: the product label, the raw operation id
+	/// (e.g. <c>_bulk</c>, <c>indices.get</c>), and the HTTP method plus path
+	/// (e.g. <c>PUT /_bulk</c>). Keep ids and paths verbatim — no case or punctuation
+	/// rewriting — because that is what people paste. The product label lives here rather
+	/// than in <c>Title</c>, so result rows do not repeat "Elasticsearch API" on every hit.
+	/// </summary>
+	internal static string BuildSearchTitle(string title, string productLabel, string operationId, string methodAndPath)
+	{
+		var searchTitle = $"{title} - {productLabel} - {operationId} - {methodAndPath}";
+		return operationId.Contains('.', StringComparison.Ordinal) ? $"{searchTitle} - {operationId.Replace('.', ' ')}" : searchTitle;
 	}
 
 	/// <summary>
