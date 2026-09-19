@@ -64,13 +64,17 @@ internal sealed partial class ChangelogCommands(
 	/// <param name="bundlesDir">Bundle output directory. Defaults to <c>docs/releases</c>.</param>
 	/// <param name="owner">GitHub owner for seeding bundle defaults. Overrides the value inferred from git remote origin.</param>
 	/// <param name="repo">GitHub repository name for seeding bundle defaults. Overrides the value inferred from git remote origin.</param>
+	/// <param name="mode">Onboarding mode: <c>gh-release</c> (bundle from GitHub release notes, no per-PR entries), <c>changelog-auto</c> (per-PR entries, automated bundle at release), or <c>changelog-manual</c> (per-PR entries, manual bundling). Defaults to <c>changelog-manual</c> behaviour when omitted.</param>
+	/// <param name="workflows">When set, generates the three <c>release-notes-*.yml</c> GitHub Actions caller files under <c>.github/workflows/</c>.</param>
 	[NoOptionsInjection]
 	public Task<int> Init(
 		[ExpandUserProfile, RejectSymbolicLinks] DirectoryInfo? path = null,
 		[ExpandUserProfile, RejectSymbolicLinks] DirectoryInfo? changelogDir = null,
 		[ExpandUserProfile, RejectSymbolicLinks] DirectoryInfo? bundlesDir = null,
 		string? owner = null,
-		string? repo = null
+		string? repo = null,
+		string? mode = null,
+		bool workflows = false
 	)
 	{
 		var rootPath = path?.FullName ?? Path.GetFullPath(".");
@@ -101,17 +105,25 @@ internal sealed partial class ChangelogCommands(
 		var useNonDefaultBundlesDir = bundlesDir != null;
 		var repoRoot = Paths.FindGitRoot(docsFolder)?.FullName ?? docsFolder.FullName;
 
+		var isGhRelease = string.Equals(mode, "gh-release", StringComparison.OrdinalIgnoreCase);
+		var bundleOnRelease = isGhRelease || string.Equals(mode, "changelog-auto", StringComparison.OrdinalIgnoreCase);
+
 		// Create changelog.yml from example if it does not exist
 		if (!_fileSystem.File.Exists(configPath))
 		{
+			var templateResourceName = isGhRelease
+				? "Documentation.Builder.changelog.example-gh-release.yml"
+				: "Documentation.Builder.changelog.example.yml";
+			var templateFileName = isGhRelease ? "changelog.example-gh-release.yml" : "changelog.example.yml";
+
 			byte[]? templateBytes = null;
-			using (var stream = typeof(ChangelogCommands).Assembly.GetManifestResourceStream("Documentation.Builder.changelog.example.yml"))
+			using (var stream = typeof(ChangelogCommands).Assembly.GetManifestResourceStream(templateResourceName))
 			{
 				if (stream == null)
 				{
 					// Fallback: try config relative to current directory (for development)
 					var localConfigDir = _fileSystem.Path.Join(Directory.GetCurrentDirectory(), "config");
-					var localConfigPath = _fileSystem.Path.Join(localConfigDir, "changelog.example.yml");
+					var localConfigPath = _fileSystem.Path.Join(localConfigDir, templateFileName);
 					if (_fileSystem.File.Exists(localConfigPath))
 					{
 						templateBytes = _fileSystem.File.ReadAllBytes(localConfigPath);
@@ -127,7 +139,7 @@ internal sealed partial class ChangelogCommands(
 
 			if (templateBytes == null || templateBytes.Length == 0)
 			{
-				collector.EmitError(string.Empty, "Could not find changelog.example.yml template. Ensure docs-builder is built correctly.");
+				collector.EmitError(string.Empty, $"Could not find {templateFileName} template. Ensure docs-builder is built correctly.");
 				return Task.FromResult(1);
 			}
 
@@ -217,8 +229,149 @@ internal sealed partial class ChangelogCommands(
 			}
 		}
 
+		// Warn about existing fixture entries that could be accidentally uploaded
+		WarnAboutFixtureEntries(changelogPath, configPath);
+
+		// Generate GitHub Actions workflow caller files when requested
+		if (workflows)
+		{
+			var configRelPath = GetPathForConfig(repoRoot, configPath).Trim('"');
+			var workflowsDir = _fileSystem.Path.Join(repoRoot, ".github", "workflows");
+			if (!_fileSystem.Directory.Exists(workflowsDir))
+			{
+				try
+				{
+					_ = _fileSystem.Directory.CreateDirectory(workflowsDir);
+				}
+				catch (IOException ex)
+				{
+					collector.EmitError(string.Empty, $"Failed to create .github/workflows directory: {ex.Message}", ex);
+					return Task.FromResult(1);
+				}
+			}
+
+			WriteWorkflowFile(workflowsDir, "release-notes.yml", BuildReleaseNotesWorkflow(configRelPath, bundleOnRelease));
+			WriteWorkflowFile(workflowsDir, "release-notes-comments.yml", BuildReleaseNotesCommentsWorkflow());
+			WriteWorkflowFile(workflowsDir, "release-notes-changelog-file.yml", BuildReleaseNotesChangelogFileWorkflow(configRelPath));
+
+			if (bundleOnRelease)
+			{
+				_logger.LogWarning(
+					"bundle-on-release: true only fires when the release is published by a human or a non-GITHUB_TOKEN. " +
+						"If your release workflow uses github.token, add the bundle jobs inline instead. " +
+						"See: https://elastic.github.io/docs-builder/data/release-notes/onboard/github-release-driven"
+				);
+			}
+		}
+
 		return Task.FromResult(0);
 	}
+
+	private void WarnAboutFixtureEntries(string changelogPath, string configPath)
+	{
+		if (!_fileSystem.Directory.Exists(changelogPath))
+			return;
+
+		var configFileName = _fileSystem.Path.GetFileName(configPath);
+		var existingEntries = _fileSystem
+			.Directory
+			.GetFiles(changelogPath, "*.yml")
+			.Concat(_fileSystem.Directory.GetFiles(changelogPath, "*.yaml"))
+			.Where(f => !string.Equals(_fileSystem.Path.GetFileName(f), configFileName, StringComparison.OrdinalIgnoreCase))
+			.ToList();
+
+		if (existingEntries.Count > 0)
+		{
+			_logger.LogWarning(
+				"Found {Count} existing .yaml file(s) in {ChangelogPath}. " +
+					"Only files directly in this directory are uploaded (TopDirectoryOnly). " +
+					"Move demo/sample/fixture entries to {ChangelogPath}/examples/ before the first push to main, " +
+					"or they may be included in release bundles.",
+				existingEntries.Count,
+				changelogPath,
+				changelogPath
+			);
+		}
+	}
+
+	private void WriteWorkflowFile(string workflowsDir, string fileName, string content)
+	{
+		var filePath = _fileSystem.Path.Join(workflowsDir, fileName);
+		if (_fileSystem.File.Exists(filePath))
+		{
+			_logger.LogWarning("Workflow file already exists, skipping: {FilePath}", filePath);
+			return;
+		}
+
+		try
+		{
+			_fileSystem.File.WriteAllText(filePath, content);
+			_logger.LogInformation("Created workflow file: {FilePath}", filePath);
+		}
+		catch (IOException ex)
+		{
+			_logger.LogWarning("Failed to write workflow file '{FilePath}': {Message}", filePath, ex.Message);
+		}
+	}
+
+	private static string BuildReleaseNotesWorkflow(string configRelPath, bool bundleOnRelease)
+	{
+		var releaseTrigger = bundleOnRelease ? "  release:\n    types: [published]\n" : string.Empty;
+		var bundleWith = bundleOnRelease ? "      bundle-on-release: true\n" : string.Empty;
+		return "name: Release notes\n"
+			+ "on:\n"
+			+ "  pull_request:\n"
+			+ "    types: [opened, synchronize, reopened, labeled, unlabeled]\n"
+			+ "  push:\n"
+			+ "    branches: [main]\n"
+			+ releaseTrigger
+			+ "permissions: {}\n"
+			+ "jobs:\n"
+			+ "  release-notes:\n"
+			+ "    permissions:\n"
+			+ "      contents: read\n"
+			+ "      pull-requests: read\n"
+			+ "      packages: read\n"
+			+ "      id-token: write\n"
+			+ "    uses: elastic/docs-actions/.github/workflows/release-notes.yml@v1\n"
+			+ "    with:\n"
+			+ $"      config: {configRelPath}\n"
+			+ bundleWith;
+	}
+
+	private static string BuildReleaseNotesCommentsWorkflow() =>
+		"name: Release notes comments\n"
+			+ "on:\n"
+			+ "  workflow_run:\n"
+			+ "    workflows: [Release notes]\n"
+			+ "    types: [completed]\n"
+			+ "permissions: {}\n"
+			+ "jobs:\n"
+			+ "  comment:\n"
+			+ "    if: github.event.workflow_run.event == 'pull_request'\n"
+			+ "    permissions:\n"
+			+ "      pull-requests: write\n"
+			+ "      actions: read\n"
+			+ "    uses: elastic/docs-actions/.github/workflows/release-notes-comments.yml@v1\n";
+
+	private static string BuildReleaseNotesChangelogFileWorkflow(string configRelPath) =>
+		"name: Release notes changelog file\n"
+			+ "on:\n"
+			+ "  workflow_run:\n"
+			+ "    workflows: [Release notes]\n"
+			+ "    types: [completed]\n"
+			+ "permissions: {}\n"
+			+ "jobs:\n"
+			+ "  changelog-file:\n"
+			+ "    permissions:\n"
+			+ "      contents: write\n"
+			+ "      pull-requests: write\n"
+			+ "      id-token: write\n"
+			+ "      packages: read\n"
+			+ "      actions: write\n"
+			+ "    uses: elastic/docs-actions/.github/workflows/release-notes-changelog-file.yml@v1\n"
+			+ "    with:\n"
+			+ $"      config: {configRelPath}\n";
 
 	/// <summary>Create a new changelog entry YAML file.</summary>
 	/// <param name="products">Optional: Products affected in format "product [lifecycle], ..." (e.g., "cloud-serverless, kibana" or "elasticsearch ga"). Do not include a version or date; that is an error. Use 'changelog note' for version-listed items. If not specified, products are inferred from the repository or config defaults.</param>
