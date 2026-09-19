@@ -36,7 +36,6 @@ export const navigationSearchStore = create<NavigationSearchState>((set) => ({
         clearSearchTerm: () =>
             set({
                 searchTerm: '',
-                typeFilter: 'all',
                 selectedIndex: NO_SELECTION,
             }),
     },
