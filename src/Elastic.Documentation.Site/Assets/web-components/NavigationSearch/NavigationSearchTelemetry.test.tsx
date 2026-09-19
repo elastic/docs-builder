@@ -76,6 +76,7 @@ const renderWithProviders = (ui: React.ReactElement) => {
 // Helper to reset all stores
 const resetStores = () => {
     navigationSearchStore.getState().actions.clearSearchTerm()
+    navigationSearchStore.getState().actions.setTypeFilter('all')
     cooldownStore.setState({
         cooldowns: {
             search: { cooldown: null, awaitingNewInput: false },
@@ -313,6 +314,40 @@ describe('Navigation Search Result Click Tracking', () => {
             'navigation_search_result_clicked',
             expect.objectContaining({
                 'navigation_search.query': 'updated query',
+            })
+        )
+    })
+
+    it('includes navigation_search.surface=api on opened, closed, and result_clicked', async () => {
+        navigationSearchStore.getState().actions.setTypeFilter('api')
+        renderWithProviders(<NavigationSearch />)
+        const input = screen.getByPlaceholderText(/jump to/i)
+
+        await userEvent.click(input)
+        expect(logging.logInfo).toHaveBeenCalledWith(
+            'navigation_search_opened',
+            expect.objectContaining({
+                'navigation_search.surface': 'api',
+            })
+        )
+
+        await userEvent.type(input, 'bulk')
+        jest.clearAllMocks()
+        await userEvent.keyboard('{Escape}')
+        expect(logging.logInfo).toHaveBeenCalledWith(
+            'navigation_search_closed',
+            expect.objectContaining({
+                'navigation_search.surface': 'api',
+            })
+        )
+
+        const props = createResultsListProps()
+        renderWithProviders(<SearchResultsList {...props} />)
+        await userEvent.click(screen.getByText('Elasticsearch Guide'))
+        expect(logging.logInfo).toHaveBeenCalledWith(
+            'navigation_search_result_clicked',
+            expect.objectContaining({
+                'navigation_search.surface': 'api',
             })
         )
     })

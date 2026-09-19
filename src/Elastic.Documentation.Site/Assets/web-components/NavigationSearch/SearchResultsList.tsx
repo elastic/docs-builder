@@ -1,8 +1,13 @@
 import { config } from '../../config'
 import { useHtmxLink } from '../shared/htmx/useHtmxLink'
 import { SanitizedHtmlContent } from './SanitizedHtmlContent'
-import { useSelectedIndex, useSearchActions } from './navigationSearch.store'
-import { useSearchTerm } from './navigationSearch.store'
+import {
+    useSelectedIndex,
+    useSearchActions,
+    useSearchTerm,
+    useTypeFilter,
+    type TypeFilter,
+} from './navigationSearch.store'
 import {
     useNavigationSearchQuery,
     SearchResultItem,
@@ -22,6 +27,23 @@ import { useRef, useMemo, MutableRefObject, useEffect } from 'react'
 const RESULTS_MAX_HEIGHT = 465
 const BREADCRUMB_SEPARATOR = ' / '
 
+export const navigationSearchBreadcrumbs = (
+    parents: SearchResultItem['parents'],
+    typeFilter: TypeFilter,
+    buildType: string
+) => {
+    if (buildType === 'codex' || typeFilter === 'api') {
+        return parents.map((parent) => parent.title)
+    }
+
+    return ['Docs', ...parents.slice(1).map((parent) => parent.title)]
+}
+
+export const emptyStateCopy = (typeFilter: TypeFilter) =>
+    typeFilter === 'api'
+        ? "We couldn't find an API that matches your search"
+        : "We couldn't find a page that matches your search"
+
 export interface SearchResultsListProps {
     isKeyboardNavigating: MutableRefObject<boolean>
     onMouseMove: () => void
@@ -39,6 +61,7 @@ export const SearchResultsList = ({
     const { isLoading, data } = useNavigationSearchQuery()
     const containerRef = useRef<HTMLDivElement>(null)
     const searchTerm = useSearchTerm()
+    const typeFilter = useTypeFilter()
     const { trackResultClicked } = useNavigationSearchTelemetry()
 
     const results = data?.results ?? []
@@ -82,9 +105,7 @@ export const SearchResultsList = ({
     if (results.length === 0) {
         return (
             <div css={containerStyles}>
-                <div css={emptyStateStyles}>
-                    We couldn't find a page that matches your search
-                </div>
+                <div css={emptyStateStyles}>{emptyStateCopy(typeFilter)}</div>
             </div>
         )
     }
@@ -153,14 +174,16 @@ const SearchResultRow = ({
     const isMobile = useIsWithinMaxBreakpoint('s')
     const { ref, href } = useHtmxLink(result.url)
 
-    const breadcrumbItems = useMemo(() => {
-        if (config.buildType == 'codex') {
-            return result.parents.map((p) => p.title)
-        }
-
-        const typePrefix = 'Docs'
-        return [typePrefix, ...result.parents.slice(1).map((p) => p.title)]
-    }, [result.parents])
+    const typeFilter = useTypeFilter()
+    const breadcrumbItems = useMemo(
+        () =>
+            navigationSearchBreadcrumbs(
+                result.parents,
+                typeFilter,
+                config.buildType
+            ),
+        [result.parents, typeFilter]
+    )
 
     return (
         <a
@@ -243,7 +266,11 @@ const SearchResultRow = ({
                     <Description text={result.description} />
                 )}
             </div>
-            {!isMobile && <JumpToIndicator />}
+            {!isMobile && (
+                <JumpToIndicator
+                    label={typeFilter === 'api' ? 'Jump to API' : 'Jump to'}
+                />
+            )}
         </a>
     )
 }
@@ -368,7 +395,7 @@ const Description = ({ text }: { text: string }) => {
     )
 }
 
-const JumpToIndicator = () => {
+const JumpToIndicator = ({ label }: { label: string }) => {
     const { euiTheme } = useEuiTheme()
 
     return (
@@ -382,7 +409,7 @@ const JumpToIndicator = () => {
             `}
         >
             <EuiBadge color="hollow">
-                Jump to <EuiIcon type="returnKey" size="s" />
+                {label} <EuiIcon type="returnKey" size="s" />
             </EuiBadge>
         </div>
     )
