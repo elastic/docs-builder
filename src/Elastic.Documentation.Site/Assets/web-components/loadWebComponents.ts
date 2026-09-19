@@ -36,6 +36,7 @@ export const loadWebComponents = createWebComponentLoader({
     'applies-to-popover': () => import('./AppliesToPopover'),
     'page-feedback': () => import('./PageFeedback'),
     'diagnostics-panel': () => import('./Diagnostics/DiagnosticsComponent'),
+    'related-pages': () => import('./RelatedPages/RelatedPagesComponent'),
     'storybook-story': () => import('./StorybookStory/StorybookStoryComponent'),
     'vector-sizing-calculator': () =>
         import('./VectorSizingCalculator/VectorSizingCalculatorComponent'),
