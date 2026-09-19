@@ -1,0 +1,28 @@
+name: Release notes changelog file
+
+# Commits the generated changelog entry (docs/changelog/{pr}.yaml) to the pull request
+# branch. Runs as a `workflow_run` follow-up on release-notes.yml so that it executes with
+# the base branch's permissions and can write to the branch.
+#
+# Fork pull requests are skipped by the shared workflow's preflight job (a bot cannot push
+# to a fork). Those entries are synthesized from the PR record at bundle time instead — see
+# the entry sourcing precedence in docs/cli/changelog/cmd-gh-release.md.
+
+on:
+  workflow_run:
+    workflows: [Release notes]
+    types: [completed]
+
+permissions: {}
+
+jobs:
+  changelog-file:
+    permissions:
+      contents: write
+      pull-requests: write
+      id-token: write
+      packages: read
+      actions: write
+    uses: elastic/docs-actions/.github/workflows/release-notes-changelog-file.yml@v1
+    with:
+      config: docs/changelog.yml

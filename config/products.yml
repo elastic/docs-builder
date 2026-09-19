@@ -78,6 +78,9 @@ products:
     repository: 'docs-builder'
     features:
       public-reference: false
+      # Bundles are cut at release time from the GitHub release. Omitting the key resolves
+      # to the same path; it is spelled out so `changelog validate-onboarding` reads true.
+      release-notes: on-release
   docs-playground-release-notes-changelogs:
     display: 'Release Notes Playground (Changelogs)'
     features:

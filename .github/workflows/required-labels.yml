@@ -34,5 +34,5 @@ jobs:
           mode: exactly
           count: 1
           use_regex: false
-          add_comment: true
+          add_comment: false
           labels: ${{ steps.get-labels.outputs.labels }}
