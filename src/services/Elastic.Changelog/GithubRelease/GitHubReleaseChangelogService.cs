@@ -312,18 +312,33 @@ public class GitHubReleaseChangelogService(
 		Cancel ctx
 	)
 	{
-		var previousTag = await _releaseService.FetchPreviousTagAsync(owner, repo, currentTag, ctx);
+		var lookup = await _releaseService.FetchPreviousTagAsync(owner, repo, currentTag, ctx);
 
-		if (previousTag == null)
+		if (lookup.Status == PreviousTagStatus.LookupFailed)
 		{
-			// First release in this repo — fall back to the initial commit so the range covers all
+			collector.EmitError(
+				string.Empty,
+				$"GitHub could not determine the previous release before '{currentTag}' in {owner}/{repo} " +
+					"due to an API or transport failure. Cannot derive PR list from commit range."
+			);
+			return null;
+		}
+
+		string previousTag;
+		if (lookup.Tag is not null)
+		{
+			previousTag = lookup.Tag;
+		}
+		else
+		{
+			// Genuine first release — fall back to the initial commit so the range covers all
 			// PR merges up to this tag rather than failing entirely.
 			var initialCommit = await _releaseService.FetchInitialCommitAsync(owner, repo, currentTag, ctx);
 			if (initialCommit is null)
 			{
 				collector.EmitError(
 					string.Empty,
-					$"GitHub could not determine the previous release before '{currentTag}' in {owner}/{repo}, " +
+					$"No previous release found for '{currentTag}' in {owner}/{repo}, " +
 						"and could not fetch the repository's initial commit as a fallback. " + "Cannot derive PR list from commit range."
 				);
 				return null;

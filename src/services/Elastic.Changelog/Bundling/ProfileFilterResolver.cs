@@ -521,8 +521,8 @@ public static partial class ProfileFilterResolver
 
 		logger?.LogInformation("Fetched release {Tag} from {Owner}/{Repo}", release.TagName, owner, repo);
 
-		var previousTag = await releaseService.FetchPreviousTagAsync(owner, repo, release.TagName, ctx);
-		if (previousTag == null)
+		var previousTagResult = await releaseService.FetchPreviousTagAsync(owner, repo, release.TagName, ctx);
+		if (previousTagResult.Tag == null)
 		{
 			collector.EmitError(
 				string.Empty,
@@ -530,6 +530,7 @@ public static partial class ProfileFilterResolver
 			);
 			return null;
 		}
+		var previousTag = previousTagResult.Tag;
 
 		logger?.LogInformation(
 			"Resolving PRs via commit range {PrevTag}..{Tag} for {Owner}/{Repo}",

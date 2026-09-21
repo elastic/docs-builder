@@ -138,14 +138,19 @@ public partial class GitHubReleaseService(
 	}
 
 	/// <inheritdoc />
-	public async Task<string?> FetchPreviousTagAsync(string owner, string repo, string currentTag, CancellationToken ctx = default)
+	public async Task<PreviousTagResult> FetchPreviousTagAsync(
+		string owner,
+		string repo,
+		string currentTag,
+		CancellationToken ctx = default
+	)
 	{
 		try
 		{
 			var (currentPrefix, currentMajor, currentIsPreRelease) = ParseTagIdentity(currentTag);
 			var currentVersion = ParseTagVersion(currentTag);
 
-			var result = await ScanReleasesForPreviousTagAsync(
+			var (releasesTag, releasesFailed) = await ScanReleasesForPreviousTagAsync(
 				owner,
 				repo,
 				currentTag,
@@ -155,11 +160,11 @@ public partial class GitHubReleaseService(
 				currentVersion,
 				ctx
 			);
-			if (result is not null)
-				return result;
+			if (releasesTag is not null)
+				return PreviousTagResult.Found(releasesTag);
 
 			_logger.LogDebug("Releases API yielded no predecessor for {CurrentTag}; trying git tags API", currentTag);
-			return await ScanTagsApiForPreviousTagAsync(
+			var (tagsTag, tagsFailed) = await ScanTagsApiForPreviousTagAsync(
 				owner,
 				repo,
 				currentTag,
@@ -169,20 +174,28 @@ public partial class GitHubReleaseService(
 				currentVersion,
 				ctx
 			);
+			if (tagsTag is not null)
+				return PreviousTagResult.Found(tagsTag);
+
+			// Both scans completed. If either had a transport failure, the result is indeterminate.
+			if (releasesFailed || tagsFailed)
+				return PreviousTagResult.LookupFailed;
+
+			return PreviousTagResult.FirstRelease;
 		}
 		catch (HttpRequestException ex)
 		{
 			_logger.LogWarning(ex, "HTTP error scanning for previous tag of {CurrentTag}", currentTag);
-			return null;
+			return PreviousTagResult.LookupFailed;
 		}
 		catch (TaskCanceledException)
 		{
 			_logger.LogWarning("Request timeout scanning for previous tag of {CurrentTag}", currentTag);
-			return null;
+			return PreviousTagResult.LookupFailed;
 		}
 	}
 
-	private async Task<string?> ScanReleasesForPreviousTagAsync(
+	private async Task<(string? Tag, bool Failed)> ScanReleasesForPreviousTagAsync(
 		string owner,
 		string repo,
 		string currentTag,
@@ -206,7 +219,7 @@ public partial class GitHubReleaseService(
 
 			using var response = await GetWithRetryAsync(url, ctx);
 			if (response is null)
-				return null;
+				return (null, true);
 
 			var jsonContent = await response.Content.ReadAsStringAsync(ctx);
 			var releases = JsonSerializer.Deserialize(jsonContent, GitHubReleaseJsonContext.Default.GitHubReleaseResponseArray);
@@ -229,7 +242,7 @@ public partial class GitHubReleaseService(
 					var (candidatePrefix, _, _) = ParseTagIdentity(tagName);
 					if (!string.Equals(candidatePrefix, currentPrefix, StringComparison.OrdinalIgnoreCase))
 						continue;
-					return r.TagName;
+					return (r.TagName, false);
 				}
 
 				// Semver: accumulate the highest candidate strictly below the current version.
@@ -244,7 +257,7 @@ public partial class GitHubReleaseService(
 					bestMatch = r.TagName;
 					// Definitive exact predecessor found — no tag can rank higher and still be below current.
 					if (IsDefiniteExactPredecessor(candidateVersion.Value, currentVersion.Value))
-						return bestMatch;
+						return (bestMatch, false);
 				}
 			}
 
@@ -257,10 +270,10 @@ public partial class GitHubReleaseService(
 			page++;
 		}
 
-		return bestMatch;
+		return (bestMatch, false);
 	}
 
-	private async Task<string?> ScanTagsApiForPreviousTagAsync(
+	private async Task<(string? Tag, bool Failed)> ScanTagsApiForPreviousTagAsync(
 		string owner,
 		string repo,
 		string currentTag,
@@ -284,7 +297,7 @@ public partial class GitHubReleaseService(
 
 			using var response = await GetWithRetryAsync(url, ctx);
 			if (response is null)
-				return null;
+				return (null, true);
 
 			var jsonContent = await response.Content.ReadAsStringAsync(ctx);
 			var tags = JsonSerializer.Deserialize(jsonContent, GitHubReleaseJsonContext.Default.GitHubTagResponseArray);
@@ -306,7 +319,7 @@ public partial class GitHubReleaseService(
 					var (candidatePrefix, _, _) = ParseTagIdentity(tagName);
 					if (!string.Equals(candidatePrefix, currentPrefix, StringComparison.OrdinalIgnoreCase))
 						continue;
-					return t.Name;
+					return (t.Name, false);
 				}
 
 				if (!IsSemverCandidate(tagName, currentTag, currentPrefix, currentMajor, currentIsPreRelease, out var candidateVersion))
@@ -319,7 +332,7 @@ public partial class GitHubReleaseService(
 					bestSemver = candidateVersion;
 					bestMatch = t.Name;
 					if (IsDefiniteExactPredecessor(bestSemver.Value, currentVersion.Value))
-						return bestMatch;
+						return (bestMatch, false);
 				}
 			}
 
@@ -331,7 +344,7 @@ public partial class GitHubReleaseService(
 			page++;
 		}
 
-		return bestMatch;
+		return (bestMatch, false);
 	}
 
 	/// <summary>
