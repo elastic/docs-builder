@@ -42,10 +42,8 @@ public record ProfileFilterResult
 	public string Version { get; init; } = "unknown";
 
 	/// <summary>
-	/// The lifecycle inferred from the raw release tag when using <c>source: github_release</c>.
-	/// Set to the lifecycle derived from the full tag name (e.g. <c>"preview"</c> for <c>v1.0.0-preview.1</c>),
-	/// <em>before</em> <see cref="ChangelogTextUtilities.ExtractBaseVersion"/> strips the pre-release suffix.
-	/// <c>null</c> for all other profile types; in those cases, lifecycle is inferred from <see cref="Version"/>.
+	/// The lifecycle inferred from the raw release tag.
+	/// When non-null, overrides lifecycle inference from <see cref="Version"/>.
 	/// </summary>
 	public string? Lifecycle { get; init; }
 }
@@ -75,9 +73,6 @@ public static partial class ProfileFilterResolver
 	/// version string for <c>{version}</c> substitution and this value is used as the PR/issue filter
 	/// source (promotion report or URL list file).
 	/// </param>
-	/// <param name="releaseService">
-	/// Optional GitHub release service. Required when the profile's <c>source</c> is <c>github_release</c>.
-	/// </param>
 	public static async Task<ProfileFilterResult?> ResolveAsync(
 		IDiagnosticsCollector collector,
 		string profileName,
@@ -86,9 +81,7 @@ public static partial class ProfileFilterResolver
 		IChangelogFileSystem fileSystem,
 		ILogger? logger,
 		Cancel ctx,
-		string? profileReport = null,
-		IGitHubReleaseService? releaseService = null,
-		IGitHubCommitRangeService? commitRangeService = null
+		string? profileReport = null
 	)
 	{
 		if (config?.Bundle?.Profiles == null || !config.Bundle.Profiles.TryGetValue(profileName, out var profile))
@@ -105,21 +98,6 @@ public static partial class ProfileFilterResolver
 			);
 			return null;
 		}
-
-		// Handle github_release source before the generic argument-type detection
-		if (string.Equals(profile.Source, "github_release", StringComparison.OrdinalIgnoreCase))
-			return await ResolveFromGitHubReleaseAsync(
-				collector,
-				profileName,
-				profileArgument,
-				profileReport,
-				profile,
-				config,
-				releaseService,
-				commitRangeService,
-				logger,
-				ctx
-			);
 
 		// When a separate report argument is provided, profileArgument is always the version
 		if (profileReport != null)
@@ -433,149 +411,5 @@ public static partial class ProfileFilterResolver
 
 		products = list.Count > 0 ? list : [];
 		return true;
-	}
-
-	/// <summary>
-	/// Handles profiles with <c>source: github_release</c>. Fetches PR references directly
-	/// from the GitHub release identified by <paramref name="profileArgument"/> (version tag or
-	/// <c>"latest"</c>) and returns them as the PR filter.
-	/// </summary>
-	private static async Task<ProfileFilterResult?> ResolveFromGitHubReleaseAsync(
-		IDiagnosticsCollector collector,
-		string profileName,
-		string profileArgument,
-		string? profileReport,
-		BundleProfile profile,
-		ChangelogConfiguration? config,
-		IGitHubReleaseService? releaseService,
-		IGitHubCommitRangeService? commitRangeService,
-		ILogger? logger,
-		Cancel ctx
-	)
-	{
-		if (!string.IsNullOrWhiteSpace(profile.Products))
-		{
-			collector.EmitError(
-				string.Empty,
-				$"Profile '{profileName}': 'source: github_release' cannot be combined with a 'products' filter. " +
-					"Remove the 'products' field or change the source."
-			);
-			return null;
-		}
-
-		if (!string.IsNullOrWhiteSpace(profileReport))
-		{
-			collector.EmitError(
-				string.Empty,
-				$"Profile '{profileName}': 'source: github_release' does not accept a third positional argument. " +
-					"The PR list is sourced automatically from the GitHub release. " +
-					"To override the lifecycle in 'output_products', hardcode the value instead of using {{lifecycle}} " +
-					"(for example, output_products: \"apm-agent-dotnet {{version}} preview\")."
-			);
-			return null;
-		}
-
-		if (releaseService == null)
-		{
-			collector.EmitError(
-				string.Empty,
-				$"Profile '{profileName}': a GitHub release service is required for 'source: github_release'."
-			);
-			return null;
-		}
-
-		if (commitRangeService == null)
-		{
-			collector.EmitError(string.Empty, $"Profile '{profileName}': a commit-range service is required for 'source: github_release'.");
-			return null;
-		}
-
-		// Resolve repo and owner: profile-level overrides bundle-level defaults
-#pragma warning disable CS0618
-		var repo = profile.Repo ?? config?.Bundle?.Repo;
-		var owner = profile.Owner ?? config?.Bundle?.Owner ?? "elastic";
-#pragma warning restore CS0618
-
-		if (string.IsNullOrWhiteSpace(repo))
-		{
-			collector.EmitError(
-				string.Empty,
-				$"Profile '{profileName}': 'source: github_release' requires a GitHub repository name. " +
-					"Set 'repo' on the profile or on the top-level 'bundle' configuration."
-			);
-			return null;
-		}
-
-		logger?.LogInformation("Fetching GitHub release {Version} from {Owner}/{Repo}", profileArgument, owner, repo);
-
-		var release = await releaseService.FetchReleaseAsync(owner, repo, profileArgument, ctx);
-		if (release == null)
-		{
-			collector.EmitError(
-				string.Empty,
-				$"Profile '{profileName}': failed to fetch release '{profileArgument}' from {owner}/{repo}. " +
-					"Ensure the repository exists and the version tag is valid."
-			);
-			return null;
-		}
-
-		logger?.LogInformation("Fetched release {Tag} from {Owner}/{Repo}", release.TagName, owner, repo);
-
-		var previousTag = await releaseService.FetchPreviousTagAsync(owner, repo, release.TagName, ctx);
-		if (previousTag == null)
-		{
-			collector.EmitError(
-				string.Empty,
-				$"Profile '{profileName}': GitHub could not determine the previous release before '{release.TagName}' in {owner}/{repo}. Cannot derive PR list from commit range."
-			);
-			return null;
-		}
-
-		logger?.LogInformation(
-			"Resolving PRs via commit range {PrevTag}..{Tag} for {Owner}/{Repo}",
-			previousTag,
-			release.TagName,
-			owner,
-			repo
-		);
-
-		var resolution = await commitRangeService.ResolvePullRequestsAsync(
-			collector,
-			new CommitRangeArguments { Owner = owner, Repo = repo, StartRef = previousTag, EndRef = release.TagName },
-			ctx
-		);
-		if (resolution == null)
-		{
-			collector.EmitError(
-				string.Empty,
-				$"Profile '{profileName}': failed to resolve PR list from commit range {previousTag}..{release.TagName}."
-			);
-			return null;
-		}
-
-		if (resolution.PullRequests.Count == 0)
-		{
-			collector.EmitWarning(
-				string.Empty,
-				$"Profile '{profileName}': no PRs found in commit range {previousTag}..{release.TagName}. The bundle will be empty."
-			);
-			return null;
-		}
-
-		var prUrls = resolution.PullRequests.Select(pr => pr.Url).ToArray();
-
-		var version = ChangelogTextUtilities.ExtractBaseVersion(release.TagName);
-		// Infer lifecycle from the raw tag before base-version extraction so that pre-release suffixes
-		// (e.g. "-preview.1", "-beta.1") are preserved for {lifecycle} substitution in output_products/output.
-		var lifecycle = VersionLifecycleInference.InferLifecycle(release.TagName);
-		logger?.LogInformation(
-			"Resolved {Count} PR(s) from commit range for release {Tag} (version: {Version}, lifecycle: {Lifecycle})",
-			prUrls.Length,
-			release.TagName,
-			version,
-			lifecycle
-		);
-
-		return new ProfileFilterResult { Prs = prUrls, Version = version, Lifecycle = lifecycle };
 	}
 }

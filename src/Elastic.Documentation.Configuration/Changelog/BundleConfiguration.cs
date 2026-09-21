@@ -78,6 +78,11 @@ public record BundleConfiguration
 	/// Named bundle profiles for different release scenarios.
 	/// </summary>
 	public IReadOnlyDictionary<string, BundleProfile>? Profiles { get; init; }
+
+	/// <summary>
+	/// Release trigger to profile mappings for github, unified, and serverless release types.
+	/// </summary>
+	public BundleReleases? Releases { get; init; }
 }
 
 /// <summary>
@@ -86,6 +91,11 @@ public record BundleConfiguration
 /// </summary>
 public record BundleProfile
 {
+	/// <summary>
+	/// Target product ID for this profile. Validated against products.yml. Replaces output_products.
+	/// </summary>
+	public string? Product { get; init; }
+
 	/// <summary>
 	/// Product filter pattern for input changelogs.
 	/// Format: "product {version} {lifecycle}" where placeholders are substituted at runtime.
@@ -106,18 +116,15 @@ public record BundleProfile
 	public string? Output { get; init; }
 
 	/// <summary>
-	/// Profile-specific output directory. Replaces <see cref="BundleConfiguration.OutputDirectory"/>
-	/// for this profile the same way option-mode <c>--output</c> as a directory replaces it. The
-	/// conventional <c>{repo}-{product}-{version}.yaml</c> name is joined onto this path. A
-	/// <c>.yml</c>/<c>.yaml</c> value is a hard error (use of free-form filenames is what
-	/// <see cref="Output"/> used to allow).
+	/// Profile-specific output directory. Deprecated: derived automatically as bundle.output_directory/{product}.
 	/// </summary>
+	[Obsolete("Profile output_directory is derived automatically as bundle.output_directory/{product}. Remove this field.")]
 	public string? OutputDirectory { get; init; }
 
 	/// <summary>
-	/// Output products pattern. When set, overrides the products array derived from matched changelogs.
-	/// Supports {version} and {lifecycle} placeholders.
+	/// Output products pattern. Deprecated: use 'product' instead.
 	/// </summary>
+	[Obsolete("Use 'product' instead. 'output_products' will be removed in a future version.")]
 	public string? OutputProducts { get; init; }
 
 	/// <summary>
@@ -161,9 +168,44 @@ public record BundleProfile
 	public bool? ReleaseDates { get; init; }
 
 	/// <summary>
-	/// Profile source type. When set to <c>"github_release"</c>, the profile fetches
-	/// PR references directly from a GitHub release and uses them as the bundle filter.
-	/// Mutually exclusive with <see cref="Products"/>.
+	/// Profile source type. Removed — use bundle.releases.github to map release tags to profiles.
 	/// </summary>
+	[Obsolete("'source: github_release' is removed. Use bundle.releases.github to map release tags to profiles.")]
 	public string? Source { get; init; }
+}
+
+/// <summary>
+/// Release trigger to profile mappings for the three supported release types.
+/// </summary>
+public record BundleReleases
+{
+	public IReadOnlyList<GithubReleaseEntry>? Github { get; init; }
+	public IReadOnlyList<UnifiedReleaseEntry>? Unified { get; init; }
+	public ServerlessRelease? Serverless { get; init; }
+}
+
+/// <summary>
+/// Maps a GitHub release tag glob pattern to a bundle profile.
+/// </summary>
+public record GithubReleaseEntry
+{
+	public required string Tag { get; init; }
+	public required string Profile { get; init; }
+}
+
+/// <summary>
+/// Maps a product ID to a bundle profile for unified/versioned stack releases.
+/// </summary>
+public record UnifiedReleaseEntry
+{
+	public required string Product { get; init; }
+	public required string Profile { get; init; }
+}
+
+/// <summary>
+/// Designates the bundle profile used for serverless releases (no tag/product selector).
+/// </summary>
+public record ServerlessRelease
+{
+	public required string Profile { get; init; }
 }

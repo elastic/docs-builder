@@ -189,7 +189,6 @@ public partial class ChangelogBundlingService(
 	ILoggerFactory logFactory,
 	IChangelogFileSystem fileSystem,
 	IConfigurationContext? configurationContext = null,
-	IGitHubReleaseService? releaseService = null,
 	CdnChangelogEntryFetcher? entryFetcher = null,
 	IGitHubPrService? prService = null,
 	IGitHubCommitRangeService? commitRangeService = null,
@@ -199,7 +198,6 @@ public partial class ChangelogBundlingService(
 	private readonly ILogger _logger = logFactory.CreateLogger<ChangelogBundlingService>();
 	private readonly IChangelogFileSystem _fileSystem = fileSystem;
 	private readonly IEnvironmentVariables? _env = env;
-	private readonly IGitHubReleaseService _releaseService = releaseService ?? new GitHubReleaseService(logFactory);
 	private readonly CdnChangelogEntryFetcher _entryFetcher = entryFetcher ?? new CdnChangelogEntryFetcher(logFactory);
 	private readonly IGitHubPrService _prService = prService ?? new GitHubPrService(logFactory);
 	private readonly IGitHubCommitRangeService _commitRangeService = commitRangeService ?? new GitHubCommitRangeService(logFactory);
@@ -639,9 +637,7 @@ public partial class ChangelogBundlingService(
 				_fileSystem,
 				_logger,
 				ctx,
-				input.ProfileReport,
-				_releaseService,
-				_commitRangeService
+				input.ProfileReport
 			);
 
 		if (filterResult == null)
@@ -659,8 +655,6 @@ public partial class ChangelogBundlingService(
 
 		if (config?.Bundle?.Profiles != null && config.Bundle.Profiles.TryGetValue(input.Profile!, out var profile))
 		{
-			// For github_release profiles, lifecycle is carried from the raw tag (pre-release suffix preserved).
-			// For all other profile types, infer it from the base version string.
 			var resolvedLifecycle = filterResult.Lifecycle ?? VersionLifecycleInference.InferLifecycle(filterResult.Version);
 
 			// Bundle output names follow {repo}-{product}-{version}.yaml when an authoring repo
@@ -688,12 +682,14 @@ public partial class ChangelogBundlingService(
 			}
 
 			// Parse output_products pattern with version/lifecycle substitution
+#pragma warning disable CS0618
 			if (!string.IsNullOrWhiteSpace(profile.OutputProducts))
 			{
 				var outputProductsPattern = profile
 					.OutputProducts
 					.Replace("{version}", filterResult.Version)
 					.Replace("{lifecycle}", resolvedLifecycle);
+#pragma warning restore CS0618
 				if (
 					!ProfileFilterResolver.TryParseProfileProducts(
 						outputProductsPattern,
@@ -734,7 +730,9 @@ public partial class ChangelogBundlingService(
 				var hasVersionPlaceholder = descriptionTemplate.Contains("{version}") || descriptionTemplate.Contains("{lifecycle}");
 				var hasOwnerRepoPlaceholder = descriptionTemplate.Contains("{owner}") || descriptionTemplate.Contains("{repo}");
 
+#pragma warning disable CS0618
 				if (hasVersionPlaceholder && filterResult.Version == "unknown" && string.IsNullOrEmpty(profile.OutputProducts))
+#pragma warning restore CS0618
 				{
 					collector.EmitError(
 						string.Empty,
@@ -876,8 +874,8 @@ public partial class ChangelogBundlingService(
 
 	/// <summary>
 	/// Profile resolution for commit-range mode: the profile contributes output metadata only, so
-	/// filter-producing profile shapes (<c>source: github_release</c>, a <c>products</c> pattern)
-	/// are rejected and the version argument is carried through for placeholder substitution.
+	/// filter-producing profile shapes (a <c>products</c> pattern) are rejected and the version
+	/// argument is carried through for placeholder substitution.
 	/// </summary>
 	private static ProfileFilterResult? ResolveGitRangeProfileFilter(
 		IDiagnosticsCollector collector,
@@ -896,16 +894,6 @@ public partial class ChangelogBundlingService(
 			collector.EmitError(
 				string.Empty,
 				$"Profile '{input.Profile}' requires a version as the second argument when bundling a git commit range"
-			);
-			return null;
-		}
-
-		if (string.Equals(profile.Source, "github_release", StringComparison.OrdinalIgnoreCase))
-		{
-			collector.EmitError(
-				string.Empty,
-				$"Profile '{input.Profile}': 'source: github_release' cannot be combined with --start-git-ref/--end-git-ref. " +
-					"The PR list is derived from the commit range itself."
 			);
 			return null;
 		}
@@ -1134,12 +1122,6 @@ public partial class ChangelogBundlingService(
 				// Mirror the run path so a CI preflight rejects a CLI description that collides with config.
 				if (!ValidateProfileDescription(collector, input.Description, profileDef.Description ?? config.Bundle.Description))
 					return null;
-
-				if (string.Equals(profileDef.Source, "github_release", StringComparison.OrdinalIgnoreCase))
-				{
-					needsNetwork = true;
-					needsGithubToken = true;
-				}
 			}
 		}
 
@@ -1171,15 +1153,7 @@ public partial class ChangelogBundlingService(
 			&& ResolvePrimaryProduct(profileDef, input) is { } primaryProduct
 		)
 		{
-			// For 'source: github_release', ProcessProfile names the bundle from the version it
-			// extracts out of the fetched release tag (ExtractBaseVersion strips a leading 'v' and any
-			// pre-release suffix), not the raw CLI argument. Mirror that here for concrete version
-			// arguments so plan's output_path always matches the file bundle actually writes; "latest"
-			// can't be resolved to a concrete tag without the network call plan deliberately avoids, so
-			// it is passed through as-is (a best-effort value CI must not depend on byte-for-byte).
-			var planVersion = string.Equals(profileDef.Source, "github_release", StringComparison.OrdinalIgnoreCase)
-				? ChangelogTextUtilities.ExtractBaseVersion(input.ProfileArgument)
-				: input.ProfileArgument;
+			var planVersion = input.ProfileArgument;
 			var fileName = BundleOutputNaming.ResolveFileName(
 				collector,
 				_fileSystem,
@@ -1311,12 +1285,14 @@ public partial class ChangelogBundlingService(
 	/// </summary>
 	private static string? ResolveConfiguredOutputDirectory(ChangelogConfiguration? config, BundleChangelogsArguments input)
 	{
+#pragma warning disable CS0618
 		if (
 			!string.IsNullOrWhiteSpace(input.Profile)
 			&& config?.Bundle?.Profiles?.TryGetValue(input.Profile, out var profile) == true
 			&& !string.IsNullOrWhiteSpace(profile.OutputDirectory)
 		)
 			return profile.OutputDirectory;
+#pragma warning restore CS0618
 
 		return config?.Bundle?.OutputDirectory;
 	}
@@ -1324,7 +1300,9 @@ public partial class ChangelogBundlingService(
 	/// <summary>The first concrete product id from a profile's <c>output_products</c>/<c>products</c> pattern.</summary>
 	private static string? ResolvePrimaryProductFromProfile(BundleProfile profileDef)
 	{
+#pragma warning disable CS0618
 		var pattern = profileDef.OutputProducts ?? profileDef.Products;
+#pragma warning restore CS0618
 		if (string.IsNullOrWhiteSpace(pattern))
 			return null;
 
@@ -1359,7 +1337,9 @@ public partial class ChangelogBundlingService(
 				valid = false;
 			}
 
+#pragma warning disable CS0618
 			if (BundleOutputNaming.IsYamlFilePath(profile.OutputDirectory))
+#pragma warning restore CS0618
 			{
 				collector.EmitError(
 					string.Empty,

@@ -195,51 +195,42 @@ public class BundlePlanTests : ChangelogTestBase
 	}
 
 	[Fact]
-	public async Task Plan_ProfileMode_GitHubRelease_ReturnsNeedsNetwork()
+	public async Task Plan_ProfileMode_WithProductProfile_ReturnsNeedsNetwork()
 	{
+		// A profile with a repo configured causes CDN sourcing which requires network.
 		// language=yaml
 		var configContent =
 			"""
 			bundle:
 			  output_directory: docs/releases
+			  repo: elasticsearch
 			  profiles:
 			    es-release:
-			      source: github_release
-			      repo: elasticsearch
 			      output_products: "elasticsearch {version}"
 			""";
 		var configPath = await CreateConfigAsync(configContent);
 
-		var input = new BundleChangelogsArguments { Profile = "es-release", ProfileArgument = "v9.2.0", Config = configPath };
+		var input = new BundleChangelogsArguments { Profile = "es-release", ProfileArgument = "9.2.0", Config = configPath };
 
 		var result = await Service.PlanBundleAsync(Collector, input, hasReleaseVersion: false, TestContext.Current.CancellationToken);
 
 		result.Should().NotBeNull();
 		result.NeedsNetwork.Should().BeTrue();
-		result.NeedsGithubToken.Should().BeTrue();
-		// 'source: github_release' names the bundle from ExtractBaseVersion(release.TagName) at run time
-		// (leading 'v' stripped), not the raw CLI argument — plan must mirror that so output_path matches
-		// the file 'bundle' actually writes.
-		result
-			.OutputPath
-			.Should()
-			.EndWith(FileSystem.Path.Join("docs", "releases", "elasticsearch-elasticsearch-9.2.0.yaml").OptionalWindowsReplace());
+		result.NeedsGithubToken.Should().BeFalse();
 	}
 
 	[Fact]
 	public async Task Plan_ProfileMode_ConventionalName_UsesPrimaryOutputProduct()
 	{
-		// Output names follow {repo}-{product}-{version}.yaml; lifecycle only affects
-		// product metadata (output_products), never the file name.
+		// Output names follow {repo}-{product}-{version}.yaml.
 		// language=yaml
 		var configContent =
 			"""
 			bundle:
 			  output_directory: docs/releases
+			  repo: apm-agent-dotnet
 			  profiles:
 			    dotnet-release:
-			      source: github_release
-			      repo: apm-agent-dotnet
 			      output_products: "apm-agent-dotnet {version} {lifecycle}"
 			""";
 		var configPath = await CreateConfigAsync(configContent);
@@ -249,12 +240,12 @@ public class BundlePlanTests : ChangelogTestBase
 		var result = await Service.PlanBundleAsync(Collector, input, hasReleaseVersion: false, TestContext.Current.CancellationToken);
 
 		result.Should().NotBeNull();
-		// ExtractBaseVersion strips the pre-release suffix at run time too, so plan's file name must
-		// drop "-beta.1" the same way to stay in sync with the bundle 'run' actually writes.
 		result
 			.OutputPath
 			.Should()
-			.EndWith(FileSystem.Path.Join("docs", "releases", "apm-agent-dotnet-apm-agent-dotnet-1.0.0.yaml").OptionalWindowsReplace());
+			.EndWith(
+				FileSystem.Path.Join("docs", "releases", "apm-agent-dotnet-apm-agent-dotnet-1.0.0-beta.1.yaml").OptionalWindowsReplace()
+			);
 	}
 
 	[Fact]

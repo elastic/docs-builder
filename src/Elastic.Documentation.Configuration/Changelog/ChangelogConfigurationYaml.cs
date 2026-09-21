@@ -330,6 +330,11 @@ internal sealed record BundleConfigurationYaml
 	/// Named bundle profiles.
 	/// </summary>
 	public Dictionary<string, BundleProfileYaml>? Profiles { get; set; }
+
+	/// <summary>
+	/// Release trigger to profile mappings for github, unified, and serverless release types.
+	/// </summary>
+	public BundleReleasesYaml? Releases { get; set; }
 }
 
 /// <summary>
@@ -337,6 +342,11 @@ internal sealed record BundleConfigurationYaml
 /// </summary>
 internal sealed record BundleProfileYaml
 {
+	/// <summary>
+	/// Target product ID for this profile. Validated against products.yml. Replaces output_products.
+	/// </summary>
+	public string? Product { get; set; }
+
 	/// <summary>
 	/// Product filter pattern for input changelogs.
 	/// Supports {version} and {lifecycle} placeholders.
@@ -352,12 +362,14 @@ internal sealed record BundleProfileYaml
 	/// <summary>
 	/// Profile-specific output directory. Replaces <c>bundle.output_directory</c> for this profile.
 	/// </summary>
+	[Obsolete("Profile output_directory is derived automatically as bundle.output_directory/{product}. Remove this field.")]
 	public string? OutputDirectory { get; set; }
 
 	/// <summary>
 	/// Output products pattern. Overrides the products array derived from matched changelogs.
 	/// Supports {version} and {lifecycle} placeholders.
 	/// </summary>
+	[Obsolete("Use 'product' instead. 'output_products' will be removed in a future version.")]
 	public string? OutputProducts { get; set; }
 
 	/// <summary>
@@ -392,11 +404,46 @@ internal sealed record BundleProfileYaml
 	public bool? ReleaseDates { get; set; }
 
 	/// <summary>
-	/// Profile source type. When set to <c>"github_release"</c>, the profile fetches
-	/// PR references directly from a GitHub release and uses them as the bundle filter.
-	/// Mutually exclusive with <see cref="Products"/>.
+	/// Profile source type. Removed — use bundle.releases.github to map release tags to profiles.
 	/// </summary>
+	[Obsolete("'source: github_release' is removed. Use bundle.releases.github to map release tags to profiles.")]
 	public string? Source { get; set; }
+}
+
+/// <summary>
+/// Internal DTO for bundle releases configuration in YAML.
+/// </summary>
+internal sealed record BundleReleasesYaml
+{
+	public List<GithubReleaseEntryYaml>? Github { get; set; }
+	public List<UnifiedReleaseEntryYaml>? Unified { get; set; }
+	public ServerlessReleaseYaml? Serverless { get; set; }
+}
+
+/// <summary>
+/// Maps a GitHub release tag glob pattern to a bundle profile.
+/// </summary>
+internal sealed record GithubReleaseEntryYaml
+{
+	public string? Tag { get; set; }
+	public string? Profile { get; set; }
+}
+
+/// <summary>
+/// Maps a product ID to a bundle profile for unified/versioned stack releases.
+/// </summary>
+internal sealed record UnifiedReleaseEntryYaml
+{
+	public string? Product { get; set; }
+	public string? Profile { get; set; }
+}
+
+/// <summary>
+/// Designates the bundle profile used for serverless releases (no tag/product selector).
+/// </summary>
+internal sealed record ServerlessReleaseYaml
+{
+	public string? Profile { get; set; }
 }
 
 /// <summary>
