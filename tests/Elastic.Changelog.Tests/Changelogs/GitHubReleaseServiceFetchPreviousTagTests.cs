@@ -1027,9 +1027,9 @@ public class GitHubReleaseServiceFetchPreviousTagTests(ITestOutputHelper output)
 	}
 
 	[Fact]
-	public async Task FetchInitialCommit_WalkParentsApiFailure_FallsBackToCandidate()
+	public async Task FetchInitialCommit_WalkParentsApiFailure_ReturnsNull()
 	{
-		// Commits page succeeds; parent-walk API returns an error → fall back to date-ordered candidate.
+		// Commits page succeeds; parent-walk API returns an error → indeterminate, return null.
 		var handler = new StubHandler(req =>
 		{
 			if (req.RequestUri!.PathAndQuery.Contains("/git/commits/"))
@@ -1037,7 +1037,7 @@ public class GitHubReleaseServiceFetchPreviousTagTests(ITestOutputHelper output)
 			return JsonWithLink(CommitsJson("sha-new", "sha-old"));
 		});
 		var result = await Service(handler).FetchInitialCommitAsync(Owner, Repo, "v1.0.0");
-		result.Should().Be("sha-old");
+		result.Should().BeNull();
 	}
 
 	private sealed class StubHandler(Func<HttpRequestMessage, HttpResponseMessage> responder) : HttpMessageHandler

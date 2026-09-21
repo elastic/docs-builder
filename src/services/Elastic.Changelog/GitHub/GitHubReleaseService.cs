@@ -753,17 +753,12 @@ public partial class GitHubReleaseService(
 			var root = await WalkToRootAsync(owner, repo, candidate, ctx);
 			if (root is null)
 			{
-				_logger.LogWarning(
-					"Parent-walk could not reach root for {Owner}/{Repo}; falling back to date-ordered candidate {Sha}",
-					owner,
-					repo,
-					candidate
-				);
+				_logger.LogWarning("Parent-walk could not reach root for {Owner}/{Repo}; result is indeterminate", owner, repo);
+				return null;
 			}
 
-			var sha = root ?? candidate;
-			_logger.LogDebug("Initial commit SHA for {Owner}/{Repo}: {Sha}", owner, repo, sha);
-			return sha;
+			_logger.LogDebug("Initial commit SHA for {Owner}/{Repo}: {Sha}", owner, repo, root);
+			return root;
 		}
 		catch (HttpRequestException ex)
 		{
