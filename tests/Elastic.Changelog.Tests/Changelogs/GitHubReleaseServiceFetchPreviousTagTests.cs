@@ -925,6 +925,70 @@ public class GitHubReleaseServiceFetchPreviousTagTests(ITestOutputHelper output)
 		requestCount.Should().Be(3);
 	}
 
+	// ─────────────────────────────────────────────────────────────────────────
+	// FetchInitialCommitAsync
+	// ─────────────────────────────────────────────────────────────────────────
+
+	private static string CommitsJson(params string[] shas)
+	{
+		var items = shas.Select(s => $$$"""{"sha":"{{{s}}}"}""");
+		return $"[{string.Join(",", items)}]";
+	}
+
+	private static HttpResponseMessage JsonWithLink(string body, string? lastUrl = null)
+	{
+		var response = new HttpResponseMessage(System.Net.HttpStatusCode.OK)
+		{
+			Content = new StringContent(body, System.Text.Encoding.UTF8, "application/json")
+		};
+		if (lastUrl is not null)
+			response.Headers.Add("Link", $"<{lastUrl}>; rel=\"last\"");
+		return response;
+	}
+
+	[Fact]
+	public async Task FetchInitialCommit_SinglePage_ReturnsOldestCommit()
+	{
+		// Single page — no Link header — oldest commit is last in the array.
+		var handler = new StubHandler(_ => JsonWithLink(CommitsJson("sha-new", "sha-mid", "sha-old")));
+		var result = await Service(handler).FetchInitialCommitAsync(Owner, Repo, "v1.0.0");
+		result.Should().Be("sha-old");
+	}
+
+	[Fact]
+	public async Task FetchInitialCommit_MultiPage_FollowsLastLinkAndReturnsOldestCommit()
+	{
+		const string lastPageUrl = "https://api.github.com/repos/elastic/elasticsearch/commits?sha=v1.0.0&per_page=100&page=5";
+		var calls = new List<string>();
+		var handler = new StubHandler(req =>
+		{
+			calls.Add(req.RequestUri!.ToString());
+			return req.RequestUri.ToString().Contains("page=5")
+				? JsonWithLink(CommitsJson("sha-p5-a", "sha-p5-b", "sha-initial"))
+				: JsonWithLink(CommitsJson("sha-new", "sha-mid"), lastPageUrl);
+		});
+		var result = await Service(handler).FetchInitialCommitAsync(Owner, Repo, "v1.0.0");
+		result.Should().Be("sha-initial");
+		calls.Should().HaveCount(2);
+		calls[1].Should().Be(lastPageUrl);
+	}
+
+	[Fact]
+	public async Task FetchInitialCommit_HttpError_ReturnsNull()
+	{
+		var handler = new StubHandler(_ => new HttpResponseMessage(System.Net.HttpStatusCode.NotFound));
+		var result = await Service(handler).FetchInitialCommitAsync(Owner, Repo, "v1.0.0");
+		result.Should().BeNull();
+	}
+
+	[Fact]
+	public async Task FetchInitialCommit_EmptyCommitList_ReturnsNull()
+	{
+		var handler = new StubHandler(_ => JsonWithLink("[]"));
+		var result = await Service(handler).FetchInitialCommitAsync(Owner, Repo, "v1.0.0");
+		result.Should().BeNull();
+	}
+
 	private sealed class StubHandler(Func<HttpRequestMessage, HttpResponseMessage> responder) : HttpMessageHandler
 	{
 		protected override HttpResponseMessage Send(HttpRequestMessage request, CancellationToken cancellationToken) => responder(request);

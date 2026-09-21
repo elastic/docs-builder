@@ -671,8 +671,90 @@ public partial class GitHubReleaseService(
 		public string? Name { get; set; }
 	}
 
+	private sealed class GitHubCommitResponse
+	{
+		[JsonPropertyName("sha")]
+		public string? Sha { get; set; }
+	}
+
 	[JsonSerializable(typeof(GitHubReleaseResponse))]
 	[JsonSerializable(typeof(GitHubReleaseResponse[]))]
 	[JsonSerializable(typeof(GitHubTagResponse[]))]
+	[JsonSerializable(typeof(GitHubCommitResponse[]))]
 	private sealed partial class GitHubReleaseJsonContext : JsonSerializerContext;
+
+	/// <inheritdoc />
+	public async Task<string?> FetchInitialCommitAsync(string owner, string repo, string tagRef, CancellationToken ctx = default)
+	{
+		try
+		{
+			var url = $"https://api.github.com/repos/{owner}/{repo}/commits?sha={Uri.EscapeDataString(tagRef)}&per_page=100";
+			_logger.LogDebug("Fetching initial commit for {Owner}/{Repo} at {Tag}: GET {ApiUrl}", owner, repo, tagRef, url);
+
+			using var firstResponse = await _transport.GetAsync(url, ctx);
+			if (!firstResponse.IsSuccessStatusCode)
+			{
+				_logger.LogWarning(
+					"GitHub API {Url} returned HTTP {StatusCode} fetching initial commit",
+					url,
+					(int)firstResponse.StatusCode
+				);
+				return null;
+			}
+
+			var lastPageUrl = ParseLastLinkHeader(firstResponse.Headers);
+			string jsonContent;
+
+			if (lastPageUrl is null)
+			{
+				jsonContent = await firstResponse.Content.ReadAsStringAsync(ctx);
+			}
+			else
+			{
+				using var lastResponse = await _transport.GetAsync(lastPageUrl, ctx);
+				if (!lastResponse.IsSuccessStatusCode)
+				{
+					_logger.LogWarning(
+						"GitHub API {Url} returned HTTP {StatusCode} fetching last page of commits",
+						lastPageUrl,
+						(int)lastResponse.StatusCode
+					);
+					return null;
+				}
+				jsonContent = await lastResponse.Content.ReadAsStringAsync(ctx);
+			}
+
+			var commits = JsonSerializer.Deserialize(jsonContent, GitHubReleaseJsonContext.Default.GitHubCommitResponseArray);
+			var sha = commits is { Length: > 0 } ? commits[^1].Sha : null;
+
+			if (sha is null)
+				_logger.LogWarning("No commits found in {Owner}/{Repo} at ref {Tag}", owner, repo, tagRef);
+			else
+				_logger.LogDebug("Initial commit SHA for {Owner}/{Repo}: {Sha}", owner, repo, sha);
+
+			return sha;
+		}
+		catch (HttpRequestException ex)
+		{
+			_logger.LogWarning(ex, "HTTP error fetching initial commit for {Owner}/{Repo}", owner, repo);
+			return null;
+		}
+		catch (TaskCanceledException)
+		{
+			_logger.LogWarning("Request timeout fetching initial commit for {Owner}/{Repo}", owner, repo);
+			return null;
+		}
+	}
+
+	private static string? ParseLastLinkHeader(System.Net.Http.Headers.HttpResponseHeaders headers)
+	{
+		if (!headers.TryGetValues("Link", out var values))
+			return null;
+		var linkHeader = string.Join(", ", values);
+		var match = LastLinkRegex().Match(linkHeader);
+		return match.Success ? match.Groups["url"].Value : null;
+	}
+
+	[GeneratedRegex(@"<(?<url>[^>]+)>;\s*rel=""last""")]
+	private static partial Regex LastLinkRegex();
 }

@@ -316,12 +316,28 @@ public class GitHubReleaseChangelogService(
 
 		if (previousTag == null)
 		{
-			collector.EmitError(
-				string.Empty,
-				$"GitHub could not determine the previous release before '{currentTag}' in {owner}/{repo}. " +
-					"Cannot derive PR list from commit range. Ensure at least one prior release exists in the same major version line."
+			// First release in this repo — fall back to the initial commit so the range covers all
+			// PR merges up to this tag rather than failing entirely.
+			var initialCommit = await _releaseService.FetchInitialCommitAsync(owner, repo, currentTag, ctx);
+			if (initialCommit is null)
+			{
+				collector.EmitError(
+					string.Empty,
+					$"GitHub could not determine the previous release before '{currentTag}' in {owner}/{repo}, " +
+						"and could not fetch the repository's initial commit as a fallback. " + "Cannot derive PR list from commit range."
+				);
+				return null;
+			}
+
+			_logger.LogInformation(
+				"No previous release found for {CurrentTag} in {Owner}/{Repo} — treating as first release; " +
+					"comparing all commits from initial commit {InitialSha}",
+				currentTag,
+				owner,
+				repo,
+				initialCommit
 			);
-			return null;
+			previousTag = initialCommit;
 		}
 
 		_logger.LogInformation(

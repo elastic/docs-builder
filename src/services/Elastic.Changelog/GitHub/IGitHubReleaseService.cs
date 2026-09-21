@@ -114,4 +114,15 @@ public interface IGitHubReleaseService
 	/// <param name="ctx">Cancellation token</param>
 	/// <returns>The asset content, or null if the download fails</returns>
 	Task<string?> DownloadAssetTextAsync(GitHubReleaseAsset asset, CancellationToken ctx = default);
+
+	/// <summary>
+	/// Fetches the SHA of the oldest commit reachable from <paramref name="tagRef"/> in the repository.
+	/// Used as a fallback start-ref when no previous release exists (i.e., this is the very first release).
+	/// </summary>
+	/// <param name="owner">Repository owner</param>
+	/// <param name="repo">Repository name</param>
+	/// <param name="tagRef">The tag or ref to walk back from</param>
+	/// <param name="ctx">Cancellation token</param>
+	/// <returns>The initial commit SHA, or <c>null</c> if it cannot be determined.</returns>
+	Task<string?> FetchInitialCommitAsync(string owner, string repo, string tagRef, CancellationToken ctx = default);
 }
