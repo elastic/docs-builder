@@ -22,25 +22,26 @@ public record ApiTag(
 	IReadOnlyCollection<ApiEndpoint> Endpoints
 ) : IApiGroupingModel
 {
+	public object? CreatePageModel(ApiRenderContext context) => ApiOverviewBuilder.BuildTagChildren(context.CurrentNavigation);
+
 	/// <inheritdoc />
-	public async Task RenderAsync(FileSystemStream stream, ApiRenderContext context, Cancel ctx = default)
+	public async Task RenderAsync(FileSystemStream stream, ApiRenderContext context, object? pageModel, Cancel ctx = default)
 	{
-		var viewModel = new TagLandingViewModel(context)
-		{
-			Tag = this,
-			OverviewRows = ApiOverviewBuilder.BuildTagChildren(context.CurrentNavigation)
-		};
+		var overviewRows = pageModel as IReadOnlyList<ApiOverviewRow> ?? ApiOverviewBuilder.BuildTagChildren(context.CurrentNavigation);
+		var viewModel = new TagLandingViewModel(context) { Tag = this, OverviewRows = overviewRows };
 		var slice = TagLandingView.Create(viewModel);
 		await slice.RenderAsync(stream, cancellationToken: ctx);
 	}
 
-	public Task<string?> RenderCommonMarkAsync(ApiRenderContext context, Cancel ctx = default)
+	public async Task RenderAsync(FileSystemStream stream, ApiRenderContext context, Cancel ctx = default) =>
+		await RenderAsync(stream, context, null, ctx);
+
+	public Task<string?> RenderCommonMarkAsync(ApiRenderContext context, object? pageModel, Cancel ctx = default)
 	{
-		var viewModel = new TagLandingViewModel(context)
-		{
-			Tag = this,
-			OverviewRows = ApiOverviewBuilder.BuildTagChildren(context.CurrentNavigation)
-		};
+		var overviewRows = pageModel as IReadOnlyList<ApiOverviewRow> ?? ApiOverviewBuilder.BuildTagChildren(context.CurrentNavigation);
+		var viewModel = new TagLandingViewModel(context) { Tag = this, OverviewRows = overviewRows };
 		return Task.FromResult<string?>(LandingCommonMark.Tag(viewModel));
 	}
+
+	public Task<string?> RenderCommonMarkAsync(ApiRenderContext context, Cancel ctx = default) => RenderCommonMarkAsync(context, null, ctx);
 }
