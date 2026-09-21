@@ -10,15 +10,17 @@ namespace Elastic.Markdown.Tests;
 
 public class EmbeddedStaticAssetTests
 {
-	private static readonly string[] ResourceNames =
-		typeof(EmbeddedOrPhysicalFileProvider).Assembly.GetManifestResourceNames();
+	private static readonly string[] ResourceNames = typeof(EmbeddedOrPhysicalFileProvider).Assembly.GetManifestResourceNames();
 
 	[Fact]
 	public void EmbedGeneratedAssets_includes_source_maps_unconditionally()
 	{
-		var mapEmbeds = File.ReadAllLines(SiteCsprojPath())
-			.Where(static line => line.Contains("EmbeddedResource", StringComparison.Ordinal)
-				&& (line.Contains("*.js.map", StringComparison.Ordinal) || line.Contains("*.css.map", StringComparison.Ordinal)))
+		var mapEmbeds = File
+			.ReadAllLines(SiteCsprojPath())
+			.Where(
+				static line => line.Contains("EmbeddedResource", StringComparison.Ordinal) &&
+					(line.Contains("*.js.map", StringComparison.Ordinal) || line.Contains("*.css.map", StringComparison.Ordinal))
+			)
 			.ToArray();
 
 		mapEmbeds.Should().HaveCount(2);
