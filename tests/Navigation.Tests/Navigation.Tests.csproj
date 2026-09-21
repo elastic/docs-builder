@@ -5,6 +5,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <RootNamespace>Elastic.Documentation.Navigation.Tests</RootNamespace>
+    <UseTUnit>true</UseTUnit>
   </PropertyGroup>
 
   <ItemGroup>
