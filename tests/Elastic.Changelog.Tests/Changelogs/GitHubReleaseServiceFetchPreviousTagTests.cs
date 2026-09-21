@@ -952,31 +952,62 @@ public class GitHubReleaseServiceFetchPreviousTagTests(ITestOutputHelper output)
 		return response;
 	}
 
-	[Fact]
-	public async Task FetchInitialCommit_SinglePage_ReturnsOldestCommit()
+	private static string GitCommitJson(string sha, params string[] parentShas)
 	{
-		// Single page — no Link header — oldest commit is last in the array.
-		var handler = new StubHandler(_ => JsonWithLink(CommitsJson("sha-new", "sha-mid", "sha-old")));
+		var parents = string.Join(",", parentShas.Select(p => $$$"""{"sha":"{{{p}}}"}"""));
+		return $$$"""{"sha":"{{{sha}}}","parents":[{{{parents}}}]}""";
+	}
+
+	[Fact]
+	public async Task FetchInitialCommit_SinglePage_WalksParentsToRoot()
+	{
+		// Commits page returns sha-new → sha-mid → sha-old (date-ordered, oldest last).
+		// sha-old has a parent sha-root; sha-root has no parents → sha-root is the true root.
+		var handler = new StubHandler(req =>
+		{
+			var path = req.RequestUri!.PathAndQuery;
+			if (path.Contains("/git/commits/sha-old"))
+				return JsonWithLink(GitCommitJson("sha-old", "sha-root"));
+			if (path.Contains("/git/commits/sha-root"))
+				return JsonWithLink(GitCommitJson("sha-root"));
+			return JsonWithLink(CommitsJson("sha-new", "sha-mid", "sha-old"));
+		});
+		var result = await Service(handler).FetchInitialCommitAsync(Owner, Repo, "v1.0.0");
+		result.Should().Be("sha-root");
+	}
+
+	[Fact]
+	public async Task FetchInitialCommit_CandidateIsRoot_ReturnsCandidateDirectly()
+	{
+		// sha-old has no parents — it is already the root; no further walk needed.
+		var handler = new StubHandler(req =>
+		{
+			var path = req.RequestUri!.PathAndQuery;
+			if (path.Contains("/git/commits/sha-old"))
+				return JsonWithLink(GitCommitJson("sha-old"));
+			return JsonWithLink(CommitsJson("sha-new", "sha-mid", "sha-old"));
+		});
 		var result = await Service(handler).FetchInitialCommitAsync(Owner, Repo, "v1.0.0");
 		result.Should().Be("sha-old");
 	}
 
 	[Fact]
-	public async Task FetchInitialCommit_MultiPage_FollowsLastLinkAndReturnsOldestCommit()
+	public async Task FetchInitialCommit_MultiPage_FollowsLastLinkThenWalksParents()
 	{
 		const string lastPageUrl = "https://api.github.com/repos/elastic/elasticsearch/commits?sha=v1.0.0&per_page=100&page=5";
-		var calls = new List<string>();
 		var handler = new StubHandler(req =>
 		{
-			calls.Add(req.RequestUri!.ToString());
-			return req.RequestUri.ToString().Contains("page=5")
-				? JsonWithLink(CommitsJson("sha-p5-a", "sha-p5-b", "sha-initial"))
-				: JsonWithLink(CommitsJson("sha-new", "sha-mid"), lastPageUrl);
+			var path = req.RequestUri!.PathAndQuery;
+			if (path.Contains("/git/commits/sha-initial"))
+				return JsonWithLink(GitCommitJson("sha-initial")); // root — no parents
+			if (req.RequestUri.ToString().Contains("page=5"))
+				return JsonWithLink(CommitsJson("sha-p5-a", "sha-p5-b", "sha-initial"));
+			if (path.Contains("/commits"))
+				return JsonWithLink(CommitsJson("sha-new", "sha-mid"), lastPageUrl);
+			return new HttpResponseMessage(System.Net.HttpStatusCode.NotFound);
 		});
 		var result = await Service(handler).FetchInitialCommitAsync(Owner, Repo, "v1.0.0");
 		result.Should().Be("sha-initial");
-		calls.Should().HaveCount(2);
-		calls[1].Should().Be(lastPageUrl);
 	}
 
 	[Fact]
@@ -993,6 +1024,20 @@ public class GitHubReleaseServiceFetchPreviousTagTests(ITestOutputHelper output)
 		var handler = new StubHandler(_ => JsonWithLink("[]"));
 		var result = await Service(handler).FetchInitialCommitAsync(Owner, Repo, "v1.0.0");
 		result.Should().BeNull();
+	}
+
+	[Fact]
+	public async Task FetchInitialCommit_WalkParentsApiFailure_FallsBackToCandidate()
+	{
+		// Commits page succeeds; parent-walk API returns an error → fall back to date-ordered candidate.
+		var handler = new StubHandler(req =>
+		{
+			if (req.RequestUri!.PathAndQuery.Contains("/git/commits/"))
+				return new HttpResponseMessage(System.Net.HttpStatusCode.InternalServerError);
+			return JsonWithLink(CommitsJson("sha-new", "sha-old"));
+		});
+		var result = await Service(handler).FetchInitialCommitAsync(Owner, Repo, "v1.0.0");
+		result.Should().Be("sha-old");
 	}
 
 	private sealed class StubHandler(Func<HttpRequestMessage, HttpResponseMessage> responder) : HttpMessageHandler

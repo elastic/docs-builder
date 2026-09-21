@@ -690,10 +690,26 @@ public partial class GitHubReleaseService(
 		public string? Sha { get; set; }
 	}
 
+	private sealed class GitHubGitCommitParent
+	{
+		[JsonPropertyName("sha")]
+		public string? Sha { get; set; }
+	}
+
+	private sealed class GitHubGitCommitResponse
+	{
+		[JsonPropertyName("sha")]
+		public string? Sha { get; set; }
+
+		[JsonPropertyName("parents")]
+		public List<GitHubGitCommitParent>? Parents { get; set; }
+	}
+
 	[JsonSerializable(typeof(GitHubReleaseResponse))]
 	[JsonSerializable(typeof(GitHubReleaseResponse[]))]
 	[JsonSerializable(typeof(GitHubTagResponse[]))]
 	[JsonSerializable(typeof(GitHubCommitResponse[]))]
+	[JsonSerializable(typeof(GitHubGitCommitResponse))]
 	private sealed partial class GitHubReleaseJsonContext : JsonSerializerContext;
 
 	/// <inheritdoc />
@@ -724,13 +740,29 @@ public partial class GitHubReleaseService(
 			}
 
 			var commits = JsonSerializer.Deserialize(jsonContent, GitHubReleaseJsonContext.Default.GitHubCommitResponseArray);
-			var sha = commits is { Length: > 0 } ? commits[^1].Sha : null;
+			var candidate = commits is { Length: > 0 } ? commits[^1].Sha : null;
 
-			if (sha is null)
+			if (candidate is null)
+			{
 				_logger.LogWarning("No commits found in {Owner}/{Repo} at ref {Tag}", owner, repo, tagRef);
-			else
-				_logger.LogDebug("Initial commit SHA for {Owner}/{Repo}: {Sha}", owner, repo, sha);
+				return null;
+			}
 
+			// Walk parents to find the true DAG root. The date-ordered commits page can end on a
+			// non-root commit when branches with old commit dates were merged before tagging.
+			var root = await WalkToRootAsync(owner, repo, candidate, ctx);
+			if (root is null)
+			{
+				_logger.LogWarning(
+					"Parent-walk could not reach root for {Owner}/{Repo}; falling back to date-ordered candidate {Sha}",
+					owner,
+					repo,
+					candidate
+				);
+			}
+
+			var sha = root ?? candidate;
+			_logger.LogDebug("Initial commit SHA for {Owner}/{Repo}: {Sha}", owner, repo, sha);
 			return sha;
 		}
 		catch (HttpRequestException ex)
@@ -743,6 +775,35 @@ public partial class GitHubReleaseService(
 			_logger.LogWarning("Request timeout fetching initial commit for {Owner}/{Repo}", owner, repo);
 			return null;
 		}
+	}
+
+	/// <summary>
+	/// Walks the first-parent chain from <paramref name="startSha"/> until a commit with no parents is
+	/// found (the DAG root). Bounded at 100 hops to cap API usage on deep histories.
+	/// Returns <c>null</c> when any API call fails or the bound is exceeded.
+	/// </summary>
+	private async Task<string?> WalkToRootAsync(string owner, string repo, string startSha, CancellationToken ctx)
+	{
+		const int maxHops = 100;
+		var current = startSha;
+
+		for (var hop = 0; hop < maxHops; hop++)
+		{
+			var url = $"https://api.github.com/repos/{owner}/{repo}/git/commits/{current}";
+			using var response = await GetWithRetryAsync(url, ctx);
+			if (response is null)
+				return null;
+
+			var json = await response.Content.ReadAsStringAsync(ctx);
+			var commit = JsonSerializer.Deserialize(json, GitHubReleaseJsonContext.Default.GitHubGitCommitResponse);
+			if (commit?.Parents is null or { Count: 0 })
+				return current;
+
+			current = commit.Parents[0].Sha ?? current;
+		}
+
+		_logger.LogWarning("Parent-walk exceeded {MaxHops} hops for {Owner}/{Repo}", maxHops, owner, repo);
+		return null;
 	}
 
 	private static string? ParseLastLinkHeader(System.Net.Http.Headers.HttpResponseHeaders headers)
