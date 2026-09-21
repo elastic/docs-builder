@@ -7,6 +7,7 @@ using System.IO.Abstractions;
 using System.Security;
 using System.Text;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.FileSystems;
 
 namespace Elastic.Changelog.Evaluation;
 
@@ -22,8 +23,9 @@ public static class ChangelogPrBodyReader
 	public static async Task<string?> ReadAsync(
 		string? prBodyFile,
 		IDiagnosticsCollector collector,
-		IFileSystem fileSystem,
-		CancellationToken ct)
+		IRunnerTempFileSystem fileSystem,
+		CancellationToken ct
+	)
 	{
 		if (string.IsNullOrWhiteSpace(prBodyFile))
 			return null;

@@ -16,11 +16,9 @@ public class S3EtagCalculatorTests
 	private readonly MockFileSystem _fileSystem = new();
 	private readonly S3EtagCalculator _calculator;
 
-	public S3EtagCalculatorTests() =>
-		_calculator = new S3EtagCalculator(NullLoggerFactory.Instance, _fileSystem);
+	public S3EtagCalculatorTests() => _calculator = new S3EtagCalculator(NullLoggerFactory.Instance, _fileSystem);
 
-	private string TempPath(string name) =>
-		_fileSystem.Path.Join(_fileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), name);
+	private string TempPath(string name) => _fileSystem.Path.Join(_fileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), name);
 
 	[Fact]
 	[SuppressMessage("Security", "CA5351:Do Not Use Broken Cryptographic Algorithms")]
@@ -80,5 +78,17 @@ public class S3EtagCalculatorTests
 		var etagB = await _calculator.CalculateS3ETag(pathB, ct);
 
 		etagA.Should().NotBe(etagB);
+	}
+
+	[Fact]
+	[SuppressMessage("Security", "CA5351:Do Not Use Broken Cryptographic Algorithms")]
+	public void CalculateS3ETag_Bytes_ReturnsMd5Hex()
+	{
+		var content = "link: 100"u8.ToArray();
+		var expected = Convert.ToHexStringLower(MD5.HashData(content));
+
+		var etag = _calculator.CalculateS3ETag(content);
+
+		etag.Should().Be(expected);
 	}
 }

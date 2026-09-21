@@ -12,7 +12,7 @@
 		<div class="union-collapse-toggle">
 			<button class="expand-toggle union-group-toggle">
 				<span class="toggle-icon">+</span>
-				<span class="toggle-label">Show @Model.Variants.Count type options</span>
+				<span class="toggle-label">show type options</span>
 			</button>
 		</div>
 	}
@@ -31,13 +31,13 @@
 			<div class="union-variant-label">
 				@if (variant.IsArrayVariant)
 				{
-					<span class="array-icon">[]</span>
+					<span class="@SchemaHelpers.WrapperArrayIconCssClass">[]</span>
 				}
 				@if (variant.IsObjectType)
 				{
-					<span class="object-icon">{}</span>
+					<span class="@SchemaHelpers.WrapperObjectIconCssClass">{}</span>
 				}
-				<code class="schema-type">@variant.DisplayName</code>
+				<code class="schema-type"><span class="@SchemaHelpers.TypeAtomCssClassOrNull(variant.DisplayName)">@variant.DisplayName</span></code>
 			</div>
 			@if (variant.ShowProperties && variant.Properties is not null)
 			{
@@ -46,7 +46,7 @@
 					<div class="expand-toggle-row union-expand-toggle">
 						<button class="expand-toggle">
 							<span class="toggle-icon">@(variant.DefaultExpanded ? "−" : "+")</span>
-							<span class="toggle-label">@(variant.DefaultExpanded ? "Hide" : "Show") @variant.NestedCount properties</span>
+							<span class="toggle-label">@(variant.DefaultExpanded ? "hide" : "show") properties</span>
 						</button>
 					</div>
 				}

@@ -19,14 +19,15 @@ public static class ChangelogRenderUtilities
 #pragma warning disable IDE0060 // Remove unused parameter
 	public static string GetComponent(ChangelogEntry entry, ChangelogRenderContext? context = null)
 #pragma warning restore IDE0060 // Remove unused parameter
-		=> entry.Areas is { Count: > 0 } ? entry.Areas[0] : string.Empty;
+	=> entry.Areas is { Count: > 0 } ? entry.Areas[0] : string.Empty;
 
 	/// <summary>
 	/// Gets the entry context (repo, owner, hideLinks, shouldHide) for a specific entry.
 	/// </summary>
 	public static (string EntryRepo, string EntryOwner, bool HideLinks, bool ShouldHide) GetEntryContext(
 		ChangelogEntry entry,
-		ChangelogRenderContext context)
+		ChangelogRenderContext context
+	)
 	{
 		var entryRepo = context.EntryToRepo.GetValueOrDefault(entry, context.Repo);
 		var entryOwner = context.EntryToOwner.GetValueOrDefault(entry, context.Owner);
@@ -40,10 +41,7 @@ public static class ChangelogRenderUtilities
 	/// rules.publish is no longer supported; filtering must be done at bundle time via rules.bundle.
 	/// </summary>
 #pragma warning disable IDE0060 // Remove unused parameter
-	public static bool ShouldHideEntry(
-		ChangelogEntry entry,
-		HashSet<string> featureIdsToHide,
-		ChangelogRenderContext? context = null)
+	public static bool ShouldHideEntry(ChangelogEntry entry, HashSet<string> featureIdsToHide, ChangelogRenderContext? context = null)
 #pragma warning restore IDE0060 // Remove unused parameter
 	{
 		// Check feature IDs only

@@ -1,4 +1,5 @@
 # Release Notes
 
 :::{changelog}
+:highlights:
 :::

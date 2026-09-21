@@ -30,8 +30,11 @@ public class ServiceInvoker(IDiagnosticsCollector collector) : IAsyncDisposable
 		return [];
 	}
 
-	public void AddCommand<TService, TState>(TService service, TState state, Func<TService, IDiagnosticsCollector, TState, Cancel, Task<bool>> invoke)
-		where TService : IService =>
+	public void AddCommand<TService, TState>(
+		TService service,
+		TState state,
+		Func<TService, IDiagnosticsCollector, TState, Cancel, Task<bool>> invoke
+	) where TService : IService =>
 		_tasks.Add(new InvokeState
 		{
 			ServiceName = service.GetType().Name,
@@ -39,8 +42,12 @@ public class ServiceInvoker(IDiagnosticsCollector collector) : IAsyncDisposable
 			Command = async ctx => await invoke(service, collector, state, ctx)
 		});
 
-	public void AddCommand<TService, TState>(TService service, TState state, bool strict, Func<TService, IDiagnosticsCollector, TState, Cancel, Task<bool>> invoke)
-		where TService : IService =>
+	public void AddCommand<TService, TState>(
+		TService service,
+		TState state,
+		bool strict,
+		Func<TService, IDiagnosticsCollector, TState, Cancel, Task<bool>> invoke
+	) where TService : IService =>
 		_tasks.Add(new InvokeState
 		{
 			ServiceName = service.GetType().Name,
@@ -48,8 +55,10 @@ public class ServiceInvoker(IDiagnosticsCollector collector) : IAsyncDisposable
 			Command = async ctx => await invoke(service, collector, state, ctx)
 		});
 
-	public void AddCommand<TService>(TService service, Func<TService, IDiagnosticsCollector, Cancel, Task<bool>> invoke)
-		where TService : IService =>
+	public void AddCommand<TService>(
+		TService service,
+		Func<TService, IDiagnosticsCollector, Cancel, Task<bool>> invoke
+	) where TService : IService =>
 		_tasks.Add(new InvokeState
 		{
 			ServiceName = service.GetType().Name,
@@ -67,7 +76,9 @@ public class ServiceInvoker(IDiagnosticsCollector collector) : IAsyncDisposable
 				var success = await task.Command(ctx).ConfigureAwait(false);
 				await collector.WaitForDrain();
 				if (!success && task.Strict && collector.Errors + collector.Warnings == 0)
-					collector.EmitGlobalError($"Service {task.ServiceName} registered as strict but returned false without emitting errors or warnings ");
+					collector.EmitGlobalError(
+						$"Service {task.ServiceName} registered as strict but returned false without emitting errors or warnings "
+					);
 				if (!success && !task.Strict && collector.Errors == 0)
 					collector.EmitGlobalError($"Service {task.ServiceName} returned false without emitting errors");
 			}

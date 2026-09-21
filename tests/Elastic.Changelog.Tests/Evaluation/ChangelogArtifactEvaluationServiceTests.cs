@@ -23,27 +23,21 @@ public class ChangelogArtifactEvaluationServiceTests(ITestOutputHelper output) :
 	private static readonly string Root = Paths.WorkingDirectoryRoot.FullName;
 	private static readonly string MetadataFilePath = Path.Join(Root, "artifact/metadata.json");
 
-	private ChangelogArtifactEvaluationService CreateService() =>
-		new(LoggerFactory, _mockGitHub, _mockCore, FileSystem);
+	private ChangelogArtifactEvaluationService CreateService() => new(LoggerFactory, _mockGitHub, _mockCore, RunnerTempFileSystem);
 
 	private static EvaluateArtifactArguments DefaultArgs() =>
-		new()
-		{
-			MetadataPath = MetadataFilePath,
-			Owner = "elastic",
-			Repo = "test-repo"
-		};
+		new() { MetadataPath = MetadataFilePath, Owner = "elastic", Repo = "test-repo" };
 
-	private async Task WriteMetadata(ChangelogArtifactMetadata metadata, string? path = null)
+	private async Task WriteMetadata(GithubDecisionMetadata metadata, string? path = null)
 	{
 		path ??= MetadataFilePath;
 		var dir = FileSystem.Path.GetDirectoryName(path)!;
 		FileSystem.Directory.CreateDirectory(dir);
-		var json = JsonSerializer.Serialize(metadata, ChangelogArtifactMetadataJsonContext.Default.ChangelogArtifactMetadata);
+		var json = JsonSerializer.Serialize(metadata, GithubDecisionMetadataJsonContext.Default.GithubDecisionMetadata);
 		await FileSystem.File.WriteAllTextAsync(path, json);
 	}
 
-	private static ChangelogArtifactMetadata DefaultMetadata(
+	private static GithubDecisionMetadata DefaultMetadata(
 		string status = "success",
 		string? changelogFilename = "42.yaml",
 		bool canCommit = true
@@ -64,18 +58,16 @@ public class ChangelogArtifactEvaluationServiceTests(ITestOutputHelper output) :
 		};
 
 	private void SetupPrInfo(string headSha = "abc123", bool isFork = false, string[]? labels = null) =>
-		A.CallTo(() => _mockGitHub.FetchPrInfoAsync("42", "elastic", "test-repo", A<CancellationToken>._))
-			.Returns(new GitHubPrInfo
-			{
-				Title = "Test PR",
-				HeadSha = headSha,
-				HeadRef = "feature/test",
-				IsFork = isFork,
-				Labels = labels ?? ["type:feature"]
-			});
+		A.CallTo(() => _mockGitHub.FetchPrInfoAsync("42", "elastic", "test-repo", A<CancellationToken>._)).Returns(new GitHubPrInfo
+		{
+			Title = "Test PR",
+			HeadSha = headSha,
+			HeadRef = "feature/test",
+			IsFork = isFork,
+			Labels = labels ?? ["type:feature"]
+		});
 
-	private void VerifyOutputSet(string name, string value) =>
-		A.CallTo(() => _mockCore.SetOutputAsync(name, value)).MustHaveHappened();
+	private void VerifyOutputSet(string name, string value) => A.CallTo(() => _mockCore.SetOutputAsync(name, value)).MustHaveHappened();
 
 	[Fact]
 	public async Task EvaluateArtifact_MissingMetadata_ReturnsTrue()
@@ -85,16 +77,14 @@ public class ChangelogArtifactEvaluationServiceTests(ITestOutputHelper output) :
 		var result = await service.EvaluateArtifact(Collector, DefaultArgs(), CancellationToken.None);
 
 		result.Should().BeTrue();
-		A.CallTo(() => _mockGitHub.FetchPrInfoAsync(A<string>._, A<string>._, A<string>._, A<CancellationToken>._))
-			.MustNotHaveHappened();
+		A.CallTo(() => _mockGitHub.FetchPrInfoAsync(A<string>._, A<string>._, A<string>._, A<CancellationToken>._)).MustNotHaveHappened();
 	}
 
 	[Fact]
 	public async Task EvaluateArtifact_FetchPrFails_ReturnsFalse()
 	{
 		await WriteMetadata(DefaultMetadata());
-		A.CallTo(() => _mockGitHub.FetchPrInfoAsync("42", "elastic", "test-repo", A<CancellationToken>._))
-			.Returns((GitHubPrInfo?)null);
+		A.CallTo(() => _mockGitHub.FetchPrInfoAsync("42", "elastic", "test-repo", A<CancellationToken>._)).Returns((GitHubPrInfo?)null);
 
 		var service = CreateService();
 		var result = await service.EvaluateArtifact(Collector, DefaultArgs(), CancellationToken.None);
@@ -118,10 +108,7 @@ public class ChangelogArtifactEvaluationServiceTests(ITestOutputHelper output) :
 	[Fact]
 	public async Task EvaluateArtifact_AllProductsBlocked_ReturnsTrueGracefully()
 	{
-		var metadata = DefaultMetadata() with
-		{
-			CreateRules = new CreateRules { Labels = ["changelog:skip"], Mode = FieldMode.Exclude }
-		};
+		var metadata = DefaultMetadata() with { CreateRules = new CreateRules { Labels = ["changelog:skip"], Mode = FieldMode.Exclude } };
 		await WriteMetadata(metadata);
 		SetupPrInfo(labels: ["changelog:skip", "type:feature"]);
 
@@ -169,12 +156,7 @@ public class ChangelogArtifactEvaluationServiceTests(ITestOutputHelper output) :
 	[Fact]
 	public async Task EvaluateArtifact_ForkCanCommit_SetsCommitFlag()
 	{
-		var metadata = DefaultMetadata(canCommit: true) with
-		{
-			IsFork = true,
-			HeadRepo = "contributor/repo",
-			MaintainerCanModify = true
-		};
+		var metadata = DefaultMetadata(canCommit: true) with { IsFork = true, HeadRepo = "contributor/repo", MaintainerCanModify = true };
 		await WriteMetadata(metadata);
 		SetupPrInfo();
 
@@ -190,12 +172,7 @@ public class ChangelogArtifactEvaluationServiceTests(ITestOutputHelper output) :
 	[Fact]
 	public async Task EvaluateArtifact_ForkCannotCommit_SetsCommentSuccessFlag()
 	{
-		var metadata = DefaultMetadata(canCommit: false) with
-		{
-			IsFork = true,
-			HeadRepo = "contributor/repo",
-			MaintainerCanModify = false
-		};
+		var metadata = DefaultMetadata(canCommit: false) with { IsFork = true, HeadRepo = "contributor/repo", MaintainerCanModify = false };
 		await WriteMetadata(metadata);
 		SetupPrInfo();
 

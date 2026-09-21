@@ -29,9 +29,11 @@ public class LegacyPageService(ILoggerFactory logFactory) : IService
 	private static BloomFilter LoadBloomFilter()
 	{
 		var assembly = typeof(LegacyPageService).Assembly;
-		using var stream = assembly.GetManifestResourceStream(ResourceName) ?? throw new FileNotFoundException(
-			$"Embedded resource '{ResourceName}' not found in assembly '{assembly.FullName}'. " +
-			"Ensure the Build Action for 'legacy-pages.bloom.bin' is 'Embedded Resource' and the path/name is correct.");
+		using var stream = assembly.GetManifestResourceStream(ResourceName)
+			?? throw new FileNotFoundException(
+				$"Embedded resource '{ResourceName}' not found in assembly '{assembly.FullName}'. " +
+					"Ensure the Build Action for 'legacy-pages.bloom.bin' is 'Embedded Resource' and the path/name is correct."
+			);
 		return BloomFilter.Load(stream);
 	}
 

@@ -38,7 +38,7 @@ public interface ICodexPageRenderer
 public class CodexGenerator(ILoggerFactory logFactory, BuildContext context, IDirectoryInfo outputDirectory)
 {
 	private readonly ILogger _logger = logFactory.CreateLogger<CodexGenerator>();
-	private readonly IFileSystem _writeFileSystem = context.WriteFileSystem;
+	private readonly IFileSystem _writeFileSystem = outputDirectory.FileSystem;
 	private readonly StaticFileContentHashProvider _contentHashProvider = new(new EmbeddedOrPhysicalFileProvider(context));
 	private readonly IDirectoryInfo _outputDirectory = outputDirectory;
 
@@ -73,23 +73,19 @@ public class CodexGenerator(ILoggerFactory logFactory, BuildContext context, IDi
 		_logger.LogInformation("Copying static files to codex output directory");
 		var assembly = typeof(EmbeddedOrPhysicalFileProvider).Assembly;
 
-		foreach (var resourceName in assembly.GetManifestResourceNames()
-			.Where(r => r.StartsWith("Elastic.Documentation.Site._static.", StringComparison.Ordinal)))
+		foreach (var resourceName in assembly.GetManifestResourceNames().Where(
+			r => r.StartsWith("Elastic.Documentation.Site._static.", StringComparison.Ordinal)
+		))
 		{
 			await using var resourceStream = assembly.GetManifestResourceStream(resourceName);
 			if (resourceStream == null)
 				continue;
 
 			// Convert resource name to file path: Elastic.Documentation.Site._static.file.ext -> _static/file.ext
-			var path = resourceName
-				.Replace("Elastic.Documentation.Site.", "")
-				.Replace("_static.", $"_static{Path.DirectorySeparatorChar}");
+			var path = resourceName.Replace("Elastic.Documentation.Site.", "").Replace("_static.", $"_static{Path.DirectorySeparatorChar}");
 
 			// Output to codex's URL prefix directory (e.g., internal-docs/_static/)
-			var outputPath = Path.Join(
-				_outputDirectory.FullName,
-				context.UrlPathPrefix?.Trim('/') ?? string.Empty,
-				path);
+			var outputPath = Path.Join(_outputDirectory.FullName, context.UrlPathPrefix?.Trim('/') ?? string.Empty, path);
 
 			var outputFile = _writeFileSystem.FileInfo.New(outputPath);
 			if (outputFile.Directory is { Exists: false })
@@ -105,23 +101,14 @@ public class CodexGenerator(ILoggerFactory logFactory, BuildContext context, IDi
 		CodexNavigation codexNavigation,
 		CodexRenderContext renderContext,
 		CodexNavigationHtmlWriter navigationRenderer,
-		CancellationToken ctx)
+		CancellationToken ctx
+	)
 	{
-		var navigationRenderResult = await navigationRenderer.RenderNavigation(
-			codexNavigation,
-			codexNavigation.Index,
-			ctx);
+		var navigationRenderResult = await navigationRenderer.RenderNavigation(codexNavigation, codexNavigation.Index, ctx);
 
-		renderContext = renderContext with
-		{
-			CurrentNavigation = codexNavigation.Index,
-			NavigationHtml = navigationRenderResult.Html
-		};
+		renderContext = renderContext with { CurrentNavigation = codexNavigation.Index, NavigationHtml = navigationRenderResult.Html };
 
-		var viewModel = new LandingViewModel(renderContext)
-		{
-			IndexPage = (CodexIndexPage)codexNavigation.Index.Model
-		};
+		var viewModel = new LandingViewModel(renderContext) { IndexPage = (CodexIndexPage)codexNavigation.Index.Model };
 
 		var outputFile = GetOutputFile(codexNavigation.Url);
 		if (!outputFile.Directory!.Exists)
@@ -138,23 +125,14 @@ public class CodexGenerator(ILoggerFactory logFactory, BuildContext context, IDi
 		GroupNavigation groupNav,
 		CodexRenderContext renderContext,
 		CodexNavigationHtmlWriter navigationRenderer,
-		CancellationToken ctx)
+		CancellationToken ctx
+	)
 	{
-		var navigationRenderResult = await navigationRenderer.RenderNavigation(
-			groupNav,
-			groupNav.Index,
-			ctx);
+		var navigationRenderResult = await navigationRenderer.RenderNavigation(groupNav, groupNav.Index, ctx);
 
-		renderContext = renderContext with
-		{
-			CurrentNavigation = groupNav.Index,
-			NavigationHtml = navigationRenderResult.Html
-		};
+		renderContext = renderContext with { CurrentNavigation = groupNav.Index, NavigationHtml = navigationRenderResult.Html };
 
-		var viewModel = new GroupLandingViewModel(renderContext)
-		{
-			Group = groupNav
-		};
+		var viewModel = new GroupLandingViewModel(renderContext) { Group = groupNav };
 
 		var outputFile = GetOutputFile(groupNav.Url);
 		if (!outputFile.Directory!.Exists)
@@ -179,5 +157,7 @@ public class CodexGenerator(ILoggerFactory logFactory, BuildContext context, IDi
 /// <summary>
 /// Navigation HTML writer for codex builds.
 /// </summary>
-internal sealed class CodexNavigationHtmlWriter(BuildContext context, CodexNavigation codexNavigation)
-	: IsolatedBuildNavigationHtmlWriter(context, codexNavigation);
+internal sealed class CodexNavigationHtmlWriter(BuildContext context, CodexNavigation codexNavigation) : IsolatedBuildNavigationHtmlWriter(
+	context,
+	codexNavigation
+);

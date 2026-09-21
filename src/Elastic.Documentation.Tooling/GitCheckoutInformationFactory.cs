@@ -4,6 +4,7 @@
 
 using System.IO.Abstractions;
 using System.Text.RegularExpressions;
+using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Extensions;
 using Microsoft.Extensions.Logging;
 using Nullean.ScopedFileSystem;
@@ -19,57 +20,91 @@ public static partial class GitCheckoutInformationFactory
 		if (source is null)
 			return GitCheckoutInformation.Unavailable;
 
-		// Return test data for in-memory (mock) file systems. Use ScopedFileSystem.InnerType
-		// (available since Nullean.ScopedFileSystem 0.4.0) to inspect through the scope wrapper
-		// rather than relying on the outer type name.
-		var fsType = fileSystem is ScopedFileSystem sf ? sf.InnerType : fileSystem.GetType();
-		if (fsType.Name.Contains("Mock", StringComparison.OrdinalIgnoreCase))
+		var result = TryCreate(source, fileSystem, logger);
+
+		// Fall back to canned test data only when the inner filesystem is a mock AND no .git entry
+		// exists at all at the source. This preserves back-compat for tests that seed no git layout
+		// (they get the well-known canned instance), while tests that seed a .git file or directory
+		// — even one that fails to resolve — receive the real result (Unavailable).
+		// Use ScopedFileSystem.InnerType (available since Nullean.ScopedFileSystem 0.4.0) to inspect
+		// through the scope wrapper rather than relying on the outer type name.
+		if (result == GitCheckoutInformation.Unavailable)
 		{
-			return new GitCheckoutInformation
+			var fsType = fileSystem is ScopedFileSystem sf ? sf.InnerType : fileSystem.GetType();
+			if (fsType.Name.Contains("Mock", StringComparison.OrdinalIgnoreCase) && IsLegacyTestWithoutGitLayout(fileSystem, source))
 			{
-				Branch = $"test-e35fcb27-5f60-4e",
-				Remote = "elastic/docs-builder",
-				Ref = "e35fcb27-5f60-4e",
-				RepositoryName = "docs-builder"
-			};
+				return new GitCheckoutInformation
+				{
+					Branch = "test-e35fcb27-5f60-4e",
+					Remote = "elastic/docs-builder",
+					Ref = "e35fcb27-5f60-4e",
+					RepositoryName = "docs-builder"
+				};
+			}
 		}
-		var fakeRef = Guid.NewGuid().ToString()[..16];
 
-		var gitDir = GitDir(source, ".git");
-		if (!gitDir.Exists)
+		return result;
+	}
+
+	private static GitCheckoutInformation TryCreate(IDirectoryInfo source, IFileSystem fileSystem, ILogger? logger)
+	{
+		// Resolve the actual .git directory. For regular repos this is source/.git/;
+		// for worktrees source/.git is a file pointing to the real git dir.
+		IDirectoryInfo gitDir;
+		var gitDirPath = fileSystem.Path.Join(source.FullName, ".git");
+
+		if (fileSystem.Directory.Exists(gitDirPath))
 		{
-			var worktreeFile = Git(source, ".git");
-			if (!worktreeFile.Exists)
+			gitDir = fileSystem.DirectoryInfo.New(gitDirPath);
+		}
+		else
+		{
+			var gitFile = fileSystem.FileInfo.New(gitDirPath);
+			if (!Paths.TryReadGitDirPointer(fileSystem, gitFile, out var resolvedGitDir) || resolvedGitDir is null)
 				return GitCheckoutInformation.Unavailable;
-			var workTreePath = Read(source, ".git")?.Replace("gitdir: ", string.Empty);
-			if (workTreePath is null)
-				return GitCheckoutInformation.Unavailable;
-			gitDir = fileSystem.DirectoryInfo.New(workTreePath).GetParent(".git");
-			if (gitDir is null || !gitDir.Exists)
-				return GitCheckoutInformation.Unavailable;
+
+			gitDir = resolvedGitDir;
 		}
 
-		var gitConfig = Git(gitDir, "config");
-		if (!gitConfig.Exists)
+		var gitConfigPath = fileSystem.Path.Join(gitDir.FullName, "config");
+		if (!fileSystem.File.Exists(gitConfigPath))
 		{
 			logger?.LogInformation("Git checkout information not available.");
 			return GitCheckoutInformation.Unavailable;
 		}
 
-		var head = Read(gitDir, "HEAD") ?? fakeRef;
-		var gitRef = head;
-		var branch = head.Replace("refs/heads/", string.Empty);
-		if (head.StartsWith("ref:", StringComparison.OrdinalIgnoreCase))
+		var headPath = fileSystem.Path.Join(gitDir.FullName, "HEAD");
+		var headText = fileSystem.File.Exists(headPath) ? fileSystem.File.ReadAllText(headPath).Trim() : null;
+
+		if (headText is null)
+			return GitCheckoutInformation.Unavailable;
+
+		string gitRef;
+		string branch;
+		if (headText.StartsWith("ref:", StringComparison.OrdinalIgnoreCase))
 		{
-			head = head.Replace("ref: ", string.Empty);
-			gitRef = Read(gitDir, head) ?? fakeRef;
-			branch = branch.Replace("ref: ", string.Empty);
+			var refPath = headText["ref:".Length..].Trim();
+			branch = refPath.Replace("refs/heads/", string.Empty);
+			var refFilePath = fileSystem.Path.Join(gitDir.FullName, refPath.Replace('/', fileSystem.Path.DirectorySeparatorChar));
+			if (fileSystem.File.Exists(refFilePath))
+				gitRef = fileSystem.File.ReadAllText(refFilePath).Trim();
+			else if (TryResolvePackedRef(fileSystem, gitDir, refPath, out var packedSha))
+				gitRef = packedSha; // loose ref file absent — ref lives in packed-refs instead
+
+			else
+				gitRef = headText; // symbolic ref not yet written (new empty repo) — use the ref name itself
 		}
 		else
-			branch = Environment.GetEnvironmentVariable("GITHUB_PR_REF_NAME") ?? Environment.GetEnvironmentVariable("GITHUB_REF_NAME") ?? "detached/head";
+		{
+			// Detached HEAD: raw SHA
+			gitRef = headText;
+			branch = Environment.GetEnvironmentVariable("GITHUB_PR_REF_NAME")
+				?? Environment.GetEnvironmentVariable("GITHUB_REF_NAME")
+				?? "detached/head";
+		}
 
 		var ini = new IniFile();
-		using var stream = gitConfig.OpenRead();
+		using var stream = fileSystem.File.OpenRead(gitConfigPath);
 		using var streamReader = new StreamReader(stream);
 		ini.Load(streamReader);
 
@@ -113,35 +148,74 @@ public static partial class GitCheckoutInformationFactory
 		logger?.LogInformation("-> Remote Name: {GitRemote}", info.Remote);
 		logger?.LogInformation("-> Repository Name: {RepositoryName}", info.RepositoryName);
 		return info;
+	}
 
-		IFileInfo Git(IDirectoryInfo directoryInfo, string path) =>
-			fileSystem.FileInfo.New(Path.Join(directoryInfo.FullName, path));
+	/// <summary>
+	/// Returns <see langword="true"/> for test setups that use a mock filesystem but do not seed a
+	/// real git layout — either no <c>.git</c> entry at all, or a bare <c>.git</c> directory without
+	/// a <c>config</c> file. Tests that only add <c>.git/</c> to make <c>FindGitRoot</c> succeed
+	/// intentionally fall into the second case; they do not need real git metadata.
+	/// <para>
+	/// These test setups pre-date testable git resolution and continue to receive the canned test
+	/// instance so they do not need to be updated. A <c>.git</c> <em>file</em> (worktree pointer) is
+	/// excluded: tests that seed a worktree pointer are explicitly modelling a worktree layout and
+	/// expect real resolution or <see cref="GitCheckoutInformation.Unavailable"/>.
+	/// </para>
+	/// </summary>
+	private static bool IsLegacyTestWithoutGitLayout(IFileSystem fileSystem, IDirectoryInfo source)
+	{
+		var gitPath = fileSystem.Path.Join(source.FullName, ".git");
+		var noGitEntry = !fileSystem.Directory.Exists(gitPath) && !fileSystem.File.Exists(gitPath);
+		var gitDirWithoutConfig = fileSystem.Directory.Exists(gitPath) && !fileSystem.File.Exists(fileSystem.Path.Join(gitPath, "config"));
+		return noGitEntry || gitDirWithoutConfig;
+	}
 
-		IDirectoryInfo GitDir(IDirectoryInfo directoryInfo, string path) =>
-			fileSystem.DirectoryInfo.New(Path.Join(directoryInfo.FullName, path));
+	/// <summary>
+	/// Resolves a symbolic ref (e.g. <c>refs/heads/main</c>) to a SHA via <c>.git/packed-refs</c>.
+	/// Git packs loose refs into this file (e.g. after <c>git gc</c>, or on checkouts made by
+	/// <c>actions/checkout</c>), so the ref may not exist as a standalone file under <c>refs/</c>
+	/// even though HEAD still points at it.
+	/// </summary>
+	private static bool TryResolvePackedRef(IFileSystem fileSystem, IDirectoryInfo gitDir, string refPath, out string sha)
+	{
+		sha = string.Empty;
+		var packedRefsPath = fileSystem.Path.Join(gitDir.FullName, "packed-refs");
+		if (!fileSystem.File.Exists(packedRefsPath))
+			return false;
 
-		string? Read(IDirectoryInfo directoryInfo, string path)
+		foreach (var line in fileSystem.File.ReadAllLines(packedRefsPath))
 		{
-			var gitPath = Git(directoryInfo, path).FullName;
-			return !fileSystem.File.Exists(gitPath)
-				? null
-				: fileSystem.File.ReadAllText(gitPath).Trim(Environment.NewLine.ToCharArray());
+			// Comment lines start with '#'; peeled-tag annotations start with '^'. Both are skipped.
+			if (line.Length == 0 || line[0] == '#' || line[0] == '^')
+				continue;
+
+			var spaceIndex = line.IndexOf(' ');
+			if (spaceIndex < 0)
+				continue;
+
+			var lineRef = line[(spaceIndex + 1)..].Trim();
+			if (!lineRef.Equals(refPath, StringComparison.Ordinal))
+				continue;
+
+			sha = line[..spaceIndex].Trim();
+			return !string.IsNullOrEmpty(sha);
 		}
+		return false;
+	}
 
-		string BranchTrackingRemote(string b, IniFile c)
-		{
-			var sections = c.GetSections();
-			var branchSection = $"branch \"{b}\"";
-			if (!sections.Contains(branchSection))
-				return string.Empty;
+	private static string BranchTrackingRemote(string branch, IniFile config)
+	{
+		var sections = config.GetSections();
+		var branchSection = $"branch \"{branch}\"";
+		if (!sections.Contains(branchSection))
+			return string.Empty;
 
-			var remoteName = ini.GetSetting(branchSection, "remote")?.Trim();
+		var remoteName = config.GetSetting(branchSection, "remote")?.Trim();
+		if (string.IsNullOrEmpty(remoteName))
+			return string.Empty;
 
-			var remoteSection = $"remote \"{remoteName}\"";
-
-			remote = ini.GetSetting(remoteSection, "url")?.Trim();
-			return remote ?? string.Empty;
-		}
+		var remoteSection = $"remote \"{remoteName}\"";
+		return config.GetSetting(remoteSection, "url")?.Trim() ?? string.Empty;
 	}
 
 	[GeneratedRegex(@"\.git$", RegexOptions.IgnoreCase)]

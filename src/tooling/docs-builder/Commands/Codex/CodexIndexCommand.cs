@@ -4,15 +4,13 @@
 
 using System.ComponentModel.DataAnnotations;
 using System.IO.Abstractions;
-using Actions.Core.Services;
-
 using Elastic.Codex;
 using Elastic.Codex.Indexing;
 using Elastic.Codex.Sourcing;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Diagnostics;
-using Elastic.Documentation.Isolated;
+using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.Services;
 using Microsoft.Extensions.Logging;
 using Nullean.Argh;
@@ -24,9 +22,7 @@ namespace Documentation.Builder.Commands.Codex;
 internal sealed class CodexIndexCommand(
 	ILoggerFactory logFactory,
 	IDiagnosticsCollector collector,
-	IConfigurationContext configurationContext,
-	ICoreService githubActionsService,
-	IEnvironmentVariables environmentVariables
+	IConfigurationContext configurationContext
 )
 {
 	/// <summary>Index the built portal documentation into Elasticsearch.</summary>
@@ -34,7 +30,6 @@ internal sealed class CodexIndexCommand(
 	/// <para>Run after <c>codex build</c>. Streams documents from all included documentation sets to the cluster.</para>
 	/// </remarks>
 	/// <param name="config">Path to the <c>codex.yml</c> configuration file.</param>
-
 	[RequiresAuth]
 	public async Task<int> Index(
 		GlobalCliOptions _,
@@ -44,12 +39,11 @@ internal sealed class CodexIndexCommand(
 	)
 	{
 		await using var serviceInvoker = new ServiceInvoker(collector);
-		var readFs = FileSystemFactory.ScopeCurrentWorkingDirectory(new FileSystem(), [Paths.FindGitRoot(config.FullName)]);
-		var configFile = readFs.FileInfo.New(config.FullName);
-		if (!CodexConfigurationLoader.TryLoad(configFile, config.FullName, collector, out var codexConfig, out var environment))
+		var fs = new CodexFileSystem(config.FullName);
+		if (!CodexConfigurationLoader.TryLoad(fs.ConfigurationFile, config.FullName, collector, out var codexConfig, out var environment))
 			return 1;
 
-		var codexContext = new CodexContext(codexConfig, configFile, collector, readFs, FileSystemFactory.RealWrite, null, null);
+		var codexContext = new CodexContext(codexConfig, fs.ConfigurationFile, collector, fs);
 
 		var cloneResult = await CodexCloneService.DiscoverCheckouts(codexContext, logFactory, ct);
 
@@ -59,11 +53,11 @@ internal sealed class CodexIndexCommand(
 			return 1;
 		}
 
-		var isolatedBuildService = new IsolatedBuildService(logFactory, configurationContext, githubActionsService, environmentVariables);
-		var service = new CodexIndexService(logFactory, configurationContext, isolatedBuildService);
-		serviceInvoker.AddCommand(service, (codexContext, cloneResult, readFs, es),
-			static async (s, col, state, c) =>
-				await s.Index(state.codexContext, state.cloneResult, state.readFs, state.es, c)
+		var service = new CodexIndexService(logFactory, configurationContext);
+		serviceInvoker.AddCommand(
+			service,
+			(codexContext, cloneResult, fs, es),
+			static async (s, col, state, c) => await s.Index(state.codexContext, state.cloneResult, state.fs, state.es, c)
 		);
 
 		return await serviceInvoker.InvokeAsync(ct);

@@ -10,14 +10,19 @@ namespace Elastic.Markdown.Tests.Directives;
 
 public class ChangelogSubsectionsDisabledByDefaultTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogSubsectionsDisabledByDefaultTests(ITestOutputHelper output) : base(output,
-		// language=markdown
-		"""
+	public ChangelogSubsectionsDisabledByDefaultTests(ITestOutputHelper output) : base(
+			output,
+			// language=markdown
+			"""
 		:::{changelog}
 		:::
-		""") => FileSystem.AddFile("docs/changelog/bundles/9.3.0.yaml", new MockFileData(
-		// language=yaml
 		"""
+		) =>
+		FileSystem.AddFile(
+			"docs/changelog/bundles/9.3.0.yaml",
+			new MockFileData(
+				// language=yaml
+				"""
 		products:
 		- product: elasticsearch
 		  target: 9.3.0
@@ -40,7 +45,9 @@ public class ChangelogSubsectionsDisabledByDefaultTests : DirectiveTest<Changelo
 		  - Indexing
 		  prs:
 		  - "222222"
-		"""));
+		"""
+			)
+		);
 
 	[Fact]
 	public void SubsectionsPropertyDefaultsToFalse() => Block!.Subsections.Should().BeFalse();
@@ -64,15 +71,20 @@ public class ChangelogSubsectionsDisabledByDefaultTests : DirectiveTest<Changelo
 
 public class ChangelogSubsectionsEnabledTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogSubsectionsEnabledTests(ITestOutputHelper output) : base(output,
-		// language=markdown
-		"""
+	public ChangelogSubsectionsEnabledTests(ITestOutputHelper output) : base(
+			output,
+			// language=markdown
+			"""
 		:::{changelog}
 		:subsections:
 		:::
-		""") => FileSystem.AddFile("docs/changelog/bundles/9.3.0.yaml", new MockFileData(
-		// language=yaml
 		"""
+		) =>
+		FileSystem.AddFile(
+			"docs/changelog/bundles/9.3.0.yaml",
+			new MockFileData(
+				// language=yaml
+				"""
 		products:
 		- product: elasticsearch
 		  target: 9.3.0
@@ -95,7 +107,9 @@ public class ChangelogSubsectionsEnabledTests : DirectiveTest<ChangelogBlock>
 		  - Indexing
 		  prs:
 		  - "222222"
-		"""));
+		"""
+			)
+		);
 
 	[Fact]
 	public void SubsectionsPropertyIsTrue() => Block!.Subsections.Should().BeTrue();
@@ -119,15 +133,20 @@ public class ChangelogSubsectionsEnabledTests : DirectiveTest<ChangelogBlock>
 
 public class ChangelogSubsectionsExplicitFalseTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogSubsectionsExplicitFalseTests(ITestOutputHelper output) : base(output,
-		// language=markdown
-		"""
+	public ChangelogSubsectionsExplicitFalseTests(ITestOutputHelper output) : base(
+			output,
+			// language=markdown
+			"""
 		:::{changelog}
 		:subsections: false
 		:::
-		""") => FileSystem.AddFile("docs/changelog/bundles/9.3.0.yaml", new MockFileData(
-		// language=yaml
 		"""
+		) =>
+		FileSystem.AddFile(
+			"docs/changelog/bundles/9.3.0.yaml",
+			new MockFileData(
+				// language=yaml
+				"""
 		products:
 		- product: elasticsearch
 		  target: 9.3.0
@@ -141,7 +160,9 @@ public class ChangelogSubsectionsExplicitFalseTests : DirectiveTest<ChangelogBlo
 		  - Search
 		  prs:
 		  - "111111"
-		"""));
+		"""
+			)
+		);
 
 	[Fact]
 	public void SubsectionsPropertyIsFalse() => Block!.Subsections.Should().BeFalse();
@@ -160,15 +181,20 @@ public class ChangelogSubsectionsExplicitFalseTests : DirectiveTest<ChangelogBlo
 /// </summary>
 public class ChangelogSubsectionsNoAreaRulesTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogSubsectionsNoAreaRulesTests(ITestOutputHelper output) : base(output,
-		// language=markdown
-		"""
+	public ChangelogSubsectionsNoAreaRulesTests(ITestOutputHelper output) : base(
+			output,
+			// language=markdown
+			"""
 		:::{changelog}
 		:subsections:
 		:::
-		""") => FileSystem.AddFile("docs/changelog/bundles/9.3.0.yaml", new MockFileData(
-		// language=yaml
 		"""
+		) =>
+		FileSystem.AddFile(
+			"docs/changelog/bundles/9.3.0.yaml",
+			new MockFileData(
+				// language=yaml
+				"""
 		products:
 		- product: elasticsearch
 		  target: 9.3.0
@@ -183,7 +209,9 @@ public class ChangelogSubsectionsNoAreaRulesTests : DirectiveTest<ChangelogBlock
 		  - Monitoring
 		  - Security
 		  pr: "111111"
-		"""));
+		"""
+			)
+		);
 
 	[Fact]
 	public void GroupsUnderFirstArea()

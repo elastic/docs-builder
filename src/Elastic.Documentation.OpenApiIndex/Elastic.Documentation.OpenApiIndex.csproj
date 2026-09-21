@@ -8,6 +8,7 @@
     </PropertyGroup>
 
     <ItemGroup>
+      <PackageReference Include="AWSSDK.CloudFront" />
       <PackageReference Include="AWSSDK.S3" />
     </ItemGroup>
 

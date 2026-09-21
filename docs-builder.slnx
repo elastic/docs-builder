@@ -64,6 +64,7 @@
   </Folder>
   <Folder Name="/src/authoring/">
     <Project Path="src/authoring/Elastic.Documentation.Refactor/Elastic.Documentation.Refactor.csproj" />
+    <Project Path="src/authoring/Elastic.LegacyDocs.Migration/Elastic.LegacyDocs.Migration.csproj" />
   </Folder>
   <Folder Name="/src/infra/">
 	  <Project Path="src/infra/docs-lambda-index-publisher/docs-lambda-index-publisher.csproj" />
@@ -86,6 +87,8 @@
     <File Path="src/tooling/Directory.Build.props" />
     <Project Path="src/tooling/docs-builder/docs-builder.csproj" />
     <Project Path="src/tooling/essc/essc.csproj" />
+    <Project Path="src/tooling/docs-migrate/docs-migrate.csproj" />
+    <Project Path="src/tooling/adoc-compare/adoc-compare.csproj" />
   </Folder>
   <Folder Name="/tests-integration/">
     <File Path="tests-integration/Directory.Build.props" />
@@ -109,8 +112,10 @@
     <Project Path="tests/Navigation.Tests/Navigation.Tests.csproj" />
     <Project Path="tests/Elastic.Changelog.Tests/Elastic.Changelog.Tests.csproj" />
     <Project Path="tests/Elastic.Documentation.Integrations.Tests/Elastic.Documentation.Integrations.Tests.csproj" />
+    <Project Path="tests/Elastic.Documentation.Deploying.Tests/Elastic.Documentation.Deploying.Tests.csproj" />
     <Project Path="tests/Elastic.SiteSearch.Tests/Elastic.SiteSearch.Tests.csproj" />
     <Project Path="tests/Elastic.Documentation.OpenApiIndex.Tests/Elastic.Documentation.OpenApiIndex.Tests.csproj" />
+    <Project Path="tests/Elastic.LegacyDocs.Migration.Tests/Elastic.LegacyDocs.Migration.Tests.csproj" />
   </Folder>
   <Project Path=".github/.github.csproj">
     <Build Project="false" />

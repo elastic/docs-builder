@@ -5,28 +5,22 @@
 using System.Collections.Generic;
 using System.IO.Abstractions;
 using System.Text;
+using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.ReleaseNotes;
-using Nullean.ScopedFileSystem;
 
 namespace Elastic.Changelog.Rendering.Markdown;
 
 /// <summary>
 /// Options for rendering PR and issue links
 /// </summary>
-public record PrIssueLinkOptions(
-	ChangelogEntry Entry,
-	string Repo,
-	string Owner,
-	bool HideLinks,
-	bool IndentForListItem = false
-);
+public record PrIssueLinkOptions(ChangelogEntry Entry, string Repo, string Owner, bool HideLinks, bool IndentForListItem = false);
 
 /// <summary>
 /// Abstract base class for changelog markdown renderers
 /// </summary>
-public abstract class MarkdownRendererBase(ScopedFileSystem fileSystem) : IChangelogMarkdownRenderer
+public abstract class MarkdownRendererBase(IChangelogFileSystem fileSystem) : IChangelogMarkdownRenderer
 {
-	protected ScopedFileSystem FileSystem { get; } = fileSystem;
+	protected IChangelogFileSystem FileSystem { get; } = fileSystem;
 
 	/// <inheritdoc />
 	public abstract string OutputFileName { get; }

@@ -223,6 +223,13 @@ internal sealed record PivotConfigurationYaml
 	public Dictionary<string, YamlLenientList?>? Products { get; set; }
 
 	/// <summary>
+	/// Feature ID definitions with labels (string or list per value).
+	/// Keys are feature-id strings (e.g., "feature:new-search-api").
+	/// Values are label strings that trigger setting that feature-id.
+	/// </summary>
+	public Dictionary<string, YamlLenientList?>? Features { get; set; }
+
+	/// <summary>
 	/// Labels that trigger the highlight flag (string or list).
 	/// </summary>
 	public YamlLenientList? Highlight { get; set; }
@@ -341,6 +348,11 @@ internal sealed record BundleProfileYaml
 	/// Supports {version} placeholder.
 	/// </summary>
 	public string? Output { get; set; }
+
+	/// <summary>
+	/// Profile-specific output directory. Replaces <c>bundle.output_directory</c> for this profile.
+	/// </summary>
+	public string? OutputDirectory { get; set; }
 
 	/// <summary>
 	/// Output products pattern. Overrides the products array derived from matched changelogs.

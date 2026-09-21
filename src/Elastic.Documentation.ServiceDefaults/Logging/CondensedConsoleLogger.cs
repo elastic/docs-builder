@@ -11,9 +11,7 @@ namespace Elastic.Documentation.ServiceDefaults.Logging;
 
 public class CondensedConsoleFormatter() : ConsoleFormatter("condensed")
 {
-	public override void Write<TState>(
-		in LogEntry<TState> logEntry, IExternalScopeProvider? scopeProvider, TextWriter textWriter
-	)
+	public override void Write<TState>(in LogEntry<TState> logEntry, IExternalScopeProvider? scopeProvider, TextWriter textWriter)
 	{
 		var now = DateTime.UtcNow;
 		var message = logEntry.Formatter.Invoke(logEntry.State, logEntry.Exception);
@@ -21,8 +19,7 @@ public class CondensedConsoleFormatter() : ConsoleFormatter("condensed")
 		var logLevel = GetLogLevel(logEntry.LogLevel);
 		var categoryName = logEntry.Category;
 
-		var nowString =
-			Environment.UserInteractive
+		var nowString = Environment.UserInteractive
 			? ""
 			: now.ToString("[yyyy-MM-ddTHH:mm:ss.fffZ] ", System.Globalization.CultureInfo.InvariantCulture);
 

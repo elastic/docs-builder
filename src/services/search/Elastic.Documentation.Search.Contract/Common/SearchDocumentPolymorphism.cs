@@ -133,11 +133,10 @@ public static class SearchDocumentPolymorphism
 	/// </summary>
 	public static IJsonTypeInfoResolver Compose(
 		IEnumerable<IJsonTypeInfoResolver> consumerContexts,
-		params Action<JsonTypeInfo>[] modifiers)
+		params Action<JsonTypeInfo>[] modifiers
+	)
 	{
-		var resolvers = new[] { ContractResolver }
-			.Concat(consumerContexts)
-			.ToArray();
+		var resolvers = new[] { ContractResolver }.Concat(consumerContexts).ToArray();
 
 		var combined = JsonTypeInfoResolver.Combine(resolvers);
 

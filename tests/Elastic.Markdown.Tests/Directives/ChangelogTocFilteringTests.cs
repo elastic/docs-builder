@@ -14,16 +14,20 @@ namespace Elastic.Markdown.Tests.Directives;
 /// </summary>
 public class ChangelogPublishBlockerFiltersTocTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogPublishBlockerFiltersTocTests(ITestOutputHelper output) : base(output,
-		// language=markdown
-		"""
+	public ChangelogPublishBlockerFiltersTocTests(ITestOutputHelper output) : base(
+			output,
+			// language=markdown
+			"""
 		:::{changelog}
 		:::
-		""")
+		"""
+		)
 	{
-		FileSystem.AddFile("docs/changelog/bundles/9.3.0.yaml", new MockFileData(
-			// language=yaml
-			"""
+		FileSystem.AddFile(
+			"docs/changelog/bundles/9.3.0.yaml",
+			new MockFileData(
+				// language=yaml
+				"""
 			products:
 			- product: elasticsearch
 			  target: 9.3.0
@@ -49,18 +53,24 @@ public class ChangelogPublishBlockerFiltersTocTests : DirectiveTest<ChangelogBlo
 			    target: 9.3.0
 			  prs:
 			  - "333333"
-			"""));
+			"""
+			)
+		);
 
 		// rules.publish in config is ignored by the directive
-		FileSystem.AddFile("docs/changelog.yml", new MockFileData(
-			// language=yaml
-			"""
+		FileSystem.AddFile(
+			"docs/changelog.yml",
+			new MockFileData(
+				// language=yaml
+				"""
 			rules:
 			  publish:
 			    exclude_types:
 			      - docs
 			      - other
-			"""));
+			"""
+			)
+		);
 	}
 
 	[Fact]
@@ -124,16 +134,20 @@ public class ChangelogPublishBlockerFiltersTocTests : DirectiveTest<ChangelogBlo
 /// </summary>
 public class ChangelogHideFeaturesFiltersTocTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogHideFeaturesFiltersTocTests(ITestOutputHelper output) : base(output,
-		// language=markdown
-		"""
+	public ChangelogHideFeaturesFiltersTocTests(ITestOutputHelper output) : base(
+			output,
+			// language=markdown
+			"""
 		:::{changelog}
 		:::
-		""") =>
+		"""
+		) =>
 		// Bundle with hide-features that filters out all "other" entries
-		FileSystem.AddFile("docs/changelog/bundles/9.3.0.yaml", new MockFileData(
-			// language=yaml
-			"""
+		FileSystem.AddFile(
+			"docs/changelog/bundles/9.3.0.yaml",
+			new MockFileData(
+				// language=yaml
+				"""
 			products:
 			- product: elasticsearch
 			  target: 9.3.0
@@ -164,7 +178,9 @@ public class ChangelogHideFeaturesFiltersTocTests : DirectiveTest<ChangelogBlock
 			    target: 9.3.0
 			  prs:
 			  - "333333"
-			"""));
+			"""
+			)
+		);
 
 	[Fact]
 	public void TocExcludesHiddenOtherSection()
@@ -209,14 +225,19 @@ public class ChangelogHideFeaturesFiltersTocTests : DirectiveTest<ChangelogBlock
 /// </summary>
 public class ChangelogPartialFilterRetainsTocTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogPartialFilterRetainsTocTests(ITestOutputHelper output) : base(output,
-		// language=markdown
-		"""
+	public ChangelogPartialFilterRetainsTocTests(ITestOutputHelper output) : base(
+			output,
+			// language=markdown
+			"""
 		:::{changelog}
 		:::
-		""") => FileSystem.AddFile("docs/changelog/bundles/9.3.0.yaml", new MockFileData(
-			// language=yaml
-			"""
+		"""
+		) =>
+		FileSystem.AddFile(
+			"docs/changelog/bundles/9.3.0.yaml",
+			new MockFileData(
+				// language=yaml
+				"""
 			products:
 			- product: elasticsearch
 			  target: 9.3.0
@@ -238,7 +259,9 @@ public class ChangelogPartialFilterRetainsTocTests : DirectiveTest<ChangelogBloc
 			    target: 9.3.0
 			  prs:
 			  - "222222"
-			"""));
+			"""
+			)
+		);
 
 	[Fact]
 	public void TocRetainsSectionWhenSomeEntriesRemain()
@@ -267,16 +290,20 @@ public class ChangelogPartialFilterRetainsTocTests : DirectiveTest<ChangelogBloc
 /// </summary>
 public class ChangelogCombinedFiltersFilterTocTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogCombinedFiltersFilterTocTests(ITestOutputHelper output) : base(output,
-		// language=markdown
-		"""
+	public ChangelogCombinedFiltersFilterTocTests(ITestOutputHelper output) : base(
+			output,
+			// language=markdown
+			"""
 		:::{changelog}
 		:::
-		""")
+		"""
+		)
 	{
-		FileSystem.AddFile("docs/changelog/bundles/9.3.0.yaml", new MockFileData(
-			// language=yaml
-			"""
+		FileSystem.AddFile(
+			"docs/changelog/bundles/9.3.0.yaml",
+			new MockFileData(
+				// language=yaml
+				"""
 			products:
 			- product: elasticsearch
 			  target: 9.3.0
@@ -305,17 +332,23 @@ public class ChangelogCombinedFiltersFilterTocTests : DirectiveTest<ChangelogBlo
 			    target: 9.3.0
 			  prs:
 			  - "333333"
-			"""));
+			"""
+			)
+		);
 
 		// rules.publish is ignored by the directive; only hide-features applies
-		FileSystem.AddFile("docs/changelog.yml", new MockFileData(
-			// language=yaml
-			"""
+		FileSystem.AddFile(
+			"docs/changelog.yml",
+			new MockFileData(
+				// language=yaml
+				"""
 			rules:
 			  publish:
 			    exclude_types:
 			      - docs
-			"""));
+			"""
+			)
+		);
 	}
 
 	[Fact]
@@ -367,16 +400,20 @@ public class ChangelogCombinedFiltersFilterTocTests : DirectiveTest<ChangelogBlo
 /// </summary>
 public class ChangelogPublishBlockerAreaFiltersTocTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogPublishBlockerAreaFiltersTocTests(ITestOutputHelper output) : base(output,
-		// language=markdown
-		"""
+	public ChangelogPublishBlockerAreaFiltersTocTests(ITestOutputHelper output) : base(
+			output,
+			// language=markdown
+			"""
 		:::{changelog}
 		:::
-		""")
+		"""
+		)
 	{
-		FileSystem.AddFile("docs/changelog/bundles/9.3.0.yaml", new MockFileData(
-			// language=yaml
-			"""
+		FileSystem.AddFile(
+			"docs/changelog/bundles/9.3.0.yaml",
+			new MockFileData(
+				// language=yaml
+				"""
 			products:
 			- product: elasticsearch
 			  target: 9.3.0
@@ -406,17 +443,23 @@ public class ChangelogPublishBlockerAreaFiltersTocTests : DirectiveTest<Changelo
 			  - Internal
 			  prs:
 			  - "333333"
-			"""));
+			"""
+			)
+		);
 
 		// rules.publish in config is ignored by the directive
-		FileSystem.AddFile("docs/changelog.yml", new MockFileData(
-			// language=yaml
-			"""
+		FileSystem.AddFile(
+			"docs/changelog.yml",
+			new MockFileData(
+				// language=yaml
+				"""
 			rules:
 			  publish:
 			    exclude_areas:
 			      - Internal
-			"""));
+			"""
+			)
+		);
 	}
 
 	[Fact]
@@ -459,14 +502,19 @@ public class ChangelogPublishBlockerAreaFiltersTocTests : DirectiveTest<Changelo
 /// </summary>
 public class ChangelogAllEntriesFilteredTocTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogAllEntriesFilteredTocTests(ITestOutputHelper output) : base(output,
-		// language=markdown
-		"""
+	public ChangelogAllEntriesFilteredTocTests(ITestOutputHelper output) : base(
+			output,
+			// language=markdown
+			"""
 		:::{changelog}
 		:::
-		""") => FileSystem.AddFile("docs/changelog/bundles/9.3.0.yaml", new MockFileData(
-			// language=yaml
-			"""
+		"""
+		) =>
+		FileSystem.AddFile(
+			"docs/changelog/bundles/9.3.0.yaml",
+			new MockFileData(
+				// language=yaml
+				"""
 			products:
 			- product: elasticsearch
 			  target: 9.3.0
@@ -489,7 +537,9 @@ public class ChangelogAllEntriesFilteredTocTests : DirectiveTest<ChangelogBlock>
 			    target: 9.3.0
 			  prs:
 			  - "222222"
-			"""));
+			"""
+			)
+		);
 
 	[Fact]
 	public void OmitsVersionFromTocWhenNoRenderableEntries()
@@ -499,10 +549,7 @@ public class ChangelogAllEntriesFilteredTocTests : DirectiveTest<ChangelogBlock>
 	}
 
 	[Fact]
-	public void OmitsVersionFromRenderedOutput()
-	{
-		Html.Should().NotContain("9.3.0");
-	}
+	public void OmitsVersionFromRenderedOutput() => Html.Should().NotContain("9.3.0");
 
 	[Fact]
 	public void NoAnchorsGenerated()
@@ -518,17 +565,21 @@ public class ChangelogAllEntriesFilteredTocTests : DirectiveTest<ChangelogBlock>
 /// </summary>
 public class ChangelogMultipleBundlesTocFilteringTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogMultipleBundlesTocFilteringTests(ITestOutputHelper output) : base(output,
-		// language=markdown
-		"""
+	public ChangelogMultipleBundlesTocFilteringTests(ITestOutputHelper output) : base(
+			output,
+			// language=markdown
+			"""
 		:::{changelog}
 		:::
-		""")
+		"""
+		)
 	{
 		// 9.3.0 has docs entries that will be blocked
-		FileSystem.AddFile("docs/changelog/bundles/9.3.0.yaml", new MockFileData(
-			// language=yaml
-			"""
+		FileSystem.AddFile(
+			"docs/changelog/bundles/9.3.0.yaml",
+			new MockFileData(
+				// language=yaml
+				"""
 			products:
 			- product: elasticsearch
 			  target: 9.3.0
@@ -547,12 +598,16 @@ public class ChangelogMultipleBundlesTocFilteringTests : DirectiveTest<Changelog
 			    target: 9.3.0
 			  prs:
 			  - "222222"
-			"""));
+			"""
+			)
+		);
 
 		// 9.2.0 only has docs entries (all will be blocked)
-		FileSystem.AddFile("docs/changelog/bundles/9.2.0.yaml", new MockFileData(
-			// language=yaml
-			"""
+		FileSystem.AddFile(
+			"docs/changelog/bundles/9.2.0.yaml",
+			new MockFileData(
+				// language=yaml
+				"""
 			products:
 			- product: elasticsearch
 			  target: 9.2.0
@@ -564,17 +619,23 @@ public class ChangelogMultipleBundlesTocFilteringTests : DirectiveTest<Changelog
 			    target: 9.2.0
 			  prs:
 			  - "333333"
-			"""));
+			"""
+			)
+		);
 
 		// rules.publish is ignored by the directive
-		FileSystem.AddFile("docs/changelog.yml", new MockFileData(
-			// language=yaml
-			"""
+		FileSystem.AddFile(
+			"docs/changelog.yml",
+			new MockFileData(
+				// language=yaml
+				"""
 			rules:
 			  publish:
 			    exclude_types:
 			      - docs
-			"""));
+			"""
+			)
+		);
 	}
 
 	[Fact]

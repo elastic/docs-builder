@@ -16,7 +16,8 @@ public class FolderSortOrderTests(ITestOutputHelper output) : DocumentationSetNa
 	public void FolderWithDefaultSortOrderIsAscending()
 	{
 		// language=yaml
-		var yaml = """
+		var yaml =
+			"""
 		           project: 'test-project'
 		           toc:
 		             - folder: api-versions
@@ -36,14 +37,18 @@ public class FolderSortOrderTests(ITestOutputHelper output) : DocumentationSetNa
 		folderItem.Sort.Should().BeNull();
 
 		var fileNames = folderItem.Children.Select(c => c.PathRelativeToDocumentationSet).ToList();
-		fileNames.Should().BeEquivalentTo(["api-versions/v1.md", "api-versions/v2.md", "api-versions/v3.md"], options => options.WithStrictOrdering());
+		fileNames.Should().BeEquivalentTo(
+			["api-versions/v1.md", "api-versions/v2.md", "api-versions/v3.md"],
+			options => options.WithStrictOrdering()
+		);
 	}
 
 	[Fact]
 	public void FolderWithSortDescendingOrdersFilesZToA()
 	{
 		// language=yaml
-		var yaml = """
+		var yaml =
+			"""
 		           project: 'test-project'
 		           toc:
 		             - folder: api-versions
@@ -64,14 +69,18 @@ public class FolderSortOrderTests(ITestOutputHelper output) : DocumentationSetNa
 		folderItem.Sort.Should().Be("desc");
 
 		var fileNames = folderItem.Children.Select(c => c.PathRelativeToDocumentationSet).ToList();
-		fileNames.Should().BeEquivalentTo(["api-versions/v3.md", "api-versions/v2.md", "api-versions/v1.md"], options => options.WithStrictOrdering());
+		fileNames.Should().BeEquivalentTo(
+			["api-versions/v3.md", "api-versions/v2.md", "api-versions/v1.md"],
+			options => options.WithStrictOrdering()
+		);
 	}
 
 	[Fact]
 	public void FolderWithSortDescendingLongFormOrdersFilesZToA()
 	{
 		// language=yaml
-		var yaml = """
+		var yaml =
+			"""
 		           project: 'test-project'
 		           toc:
 		             - folder: api-versions
@@ -92,14 +101,18 @@ public class FolderSortOrderTests(ITestOutputHelper output) : DocumentationSetNa
 		folderItem.Sort.Should().Be("descending");
 
 		var fileNames = folderItem.Children.Select(c => c.PathRelativeToDocumentationSet).ToList();
-		fileNames.Should().BeEquivalentTo(["api-versions/v3.md", "api-versions/v2.md", "api-versions/v1.md"], options => options.WithStrictOrdering());
+		fileNames.Should().BeEquivalentTo(
+			["api-versions/v3.md", "api-versions/v2.md", "api-versions/v1.md"],
+			options => options.WithStrictOrdering()
+		);
 	}
 
 	[Fact]
 	public void FolderWithSortAscendingExplicitOrdersFilesAToZ()
 	{
 		// language=yaml
-		var yaml = """
+		var yaml =
+			"""
 		           project: 'test-project'
 		           toc:
 		             - folder: api-versions
@@ -120,14 +133,18 @@ public class FolderSortOrderTests(ITestOutputHelper output) : DocumentationSetNa
 		folderItem.Sort.Should().Be("asc");
 
 		var fileNames = folderItem.Children.Select(c => c.PathRelativeToDocumentationSet).ToList();
-		fileNames.Should().BeEquivalentTo(["api-versions/v1.md", "api-versions/v2.md", "api-versions/v3.md"], options => options.WithStrictOrdering());
+		fileNames.Should().BeEquivalentTo(
+			["api-versions/v1.md", "api-versions/v2.md", "api-versions/v3.md"],
+			options => options.WithStrictOrdering()
+		);
 	}
 
 	[Fact]
 	public void FolderWithSortDescendingPlacesIndexMdFirst()
 	{
 		// language=yaml
-		var yaml = """
+		var yaml =
+			"""
 		           project: 'test-project'
 		           toc:
 		             - folder: api-versions
@@ -159,7 +176,8 @@ public class FolderSortOrderTests(ITestOutputHelper output) : DocumentationSetNa
 	public void FolderWithFileAndSortDescendingPreservesSortOrder()
 	{
 		// language=yaml
-		var yaml = """
+		var yaml =
+			"""
 		           project: 'test-project'
 		           toc:
 		             - folder: api-versions
@@ -182,7 +200,8 @@ public class FolderSortOrderTests(ITestOutputHelper output) : DocumentationSetNa
 	public void FolderWithExplicitChildrenIgnoresSortOrder()
 	{
 		// language=yaml
-		var yaml = """
+		var yaml =
+			"""
 		           project: 'test-project'
 		           toc:
 		             - folder: api-versions
@@ -203,14 +222,18 @@ public class FolderSortOrderTests(ITestOutputHelper output) : DocumentationSetNa
 		var folderItem = docSet.TableOfContents.First().Should().BeOfType<FolderRef>().Subject;
 
 		var fileNames = folderItem.Children.Select(c => c.PathRelativeToDocumentationSet).ToList();
-		fileNames.Should().BeEquivalentTo(["api-versions/v1.md", "api-versions/v2.md", "api-versions/v3.md"], options => options.WithStrictOrdering());
+		fileNames.Should().BeEquivalentTo(
+			["api-versions/v1.md", "api-versions/v2.md", "api-versions/v3.md"],
+			options => options.WithStrictOrdering()
+		);
 	}
 
 	[Fact]
 	public void FolderWithUnrecognizedSortValueEmitsError()
 	{
 		// language=yaml
-		var yaml = """
+		var yaml =
+			"""
 		           project: 'test-project'
 		           toc:
 		             - folder: api-versions
@@ -225,16 +248,15 @@ public class FolderSortOrderTests(ITestOutputHelper output) : DocumentationSetNa
 		var context = CreateContext(fileSystem);
 		_ = DocumentationSetFile.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
 
-		context.Diagnostics.Should().Contain(d =>
-			d.Severity == Severity.Error &&
-			d.Message.Contains("Unknown sort order 'newest'"));
+		context.Diagnostics.Should().Contain(d => d.Severity == Severity.Error && d.Message.Contains("Unknown sort order 'newest'"));
 	}
 
 	[Fact]
 	public void FolderSortUsesNaturalOrderForVersionNumbers()
 	{
 		// language=yaml
-		var yaml = """
+		var yaml =
+			"""
 		           project: 'test-project'
 		           toc:
 		             - folder: api-versions
@@ -265,7 +287,8 @@ public class FolderSortOrderTests(ITestOutputHelper output) : DocumentationSetNa
 	public void FolderSortDescendingUsesNaturalOrderForVersionNumbers()
 	{
 		// language=yaml
-		var yaml = """
+		var yaml =
+			"""
 		           project: 'test-project'
 		           toc:
 		             - folder: api-versions

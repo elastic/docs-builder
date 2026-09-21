@@ -108,9 +108,7 @@ export async function createApiErrorFromResponse(
                         ? rateLimitScopeHeader
                         : undefined
                 errorSchema.rateLimitScope = rateLimitScope as
-                    | 'per-user'
-                    | 'global'
-                    | undefined
+                    'per-user' | 'global' | undefined
             }
         }
 

@@ -9,11 +9,13 @@ You can then set up a changelog configuration file to make the content workflow 
 
 1. Optional: Choose the GitHub labels that you'll use to automatically derive some changelog fields.
 
-    1. Create labels for _types_. The supported types are defined in [ChangelogEntryType.cs](https://github.com/elastic/docs-builder/blob/main/src/Elastic.Documentation/ChangelogEntryType.cs). At a minimum, add labels for the `feature`, `bug-fix`, and `breaking-change` types.
+    1. Create labels for _types_. The supported types are defined in [ChangelogEntryType.cs](https://github.com/elastic/docs-builder/blob/main/src/Elastic.Documentation/ReleaseNotes/ChangelogEntryType.cs). At a minimum, add labels for the `feature`, `bug-fix`, and `breaking-change` types.
 
     1. Create labels for _products_. If your repo only pertains to a single product or you don't want to use labels to accomplish this classification, this step is not required.
 
     1. Create labels for _areas_ (or "features" or "components") of your products. If you don't want to show categories (other than the default "type" categories) in your documentation, this step is not required.
+
+    1. Create labels for _feature IDs_ when there are significant features that span multiple changelogs. This step is not required unless you use feature flags or want to [hide unreleased features](/data/release-notes/bundle.md#changelog-bundle-hide-features) in release bundles.
 
     1. Create labels to opt in or out of changelogs. For example, create `non-issue` or `release_notes:skip` labels for PRs that _shouldn't_ have changelogs. Alternatively, create a `@Public` label to identify PRs that _should_ have changelogs. You can only choose one label strategy for this behavior: exclusion or inclusion.
 
@@ -76,7 +78,8 @@ docs-builder changelog init
      - To set the changelog file name pattern, update [filename](/data/release-notes/configure-ref.md#filename).
      - To control what is extracted from GitHub, update [extract](/data/release-notes/configure-ref.md#extract).
      - To change bundle default behaviour or create reusable profiles, update [bundle](/data/release-notes/configure-ref.md#bundle).
-     - If you have GitHub labels to set changelog areas, types, or products, update [pivot](/data/release-notes/configure-ref.md#pivot).
+     - If you have GitHub labels to set changelog areas, types, products, or feature IDs, update [pivot](/data/release-notes/configure-ref.md#pivot).
+     - If you map feature IDs with `pivot.features`, also list any unreleased feature IDs under the relevant bundle profile's [`hide_features`](/data/release-notes/configure-ref.md#bundle-profiles) setting so those changelogs stay commented out until the feature is ready to publish. For more information, refer to [](/data/release-notes/bundle.md#changelog-bundle-hide-features).
      - If you have GitHub labels to opt in or out of changelogs, update [rules.create](/data/release-notes/configure-ref.md#rules-create).
      - If you want to filter changelogs in or out of release bundles based on their area, type, or products, update [rules.bundle](/data/release-notes/configure-ref.md#rules-bundle).
 

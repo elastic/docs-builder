@@ -15,7 +15,10 @@ public sealed record BundleDto
 	public List<BundledProductDto>? Products { get; set; }
 	/// <summary>
 	/// Optional introductory description text for this bundle.
+	/// Empty string is the clear-intro sentinel and must be emitted; null is omitted (inherit).
+	/// Overrides the serializer's OmitEmptyCollections, which would otherwise drop <c>""</c>.
 	/// </summary>
+	[YamlMember(DefaultValuesHandling = DefaultValuesHandling.OmitNull)]
 	public string? Description { get; set; }
 	/// <summary>
 	/// Optional release date for this bundle.
@@ -23,6 +26,12 @@ public sealed record BundleDto
 	/// </summary>
 	[YamlMember(Alias = "release-date", ApplyNamingConventions = false)]
 	public string? ReleaseDate { get; set; }
+	/// <summary>
+	/// Optional git ref of the published endpoint this bundle was cut for.
+	/// Written by commit-range bundling (<c>--end-git-ref</c>); serialized as <c>git_ref</c>.
+	/// </summary>
+	[YamlMember(Alias = "git_ref", ApplyNamingConventions = false)]
+	public string? GitRef { get; set; }
 	/// <summary>
 	/// Feature IDs that should be hidden when rendering this bundle.
 	/// Entries with matching feature-id values will be commented out in the output.
@@ -77,6 +86,7 @@ public sealed record BundledEntryDto
 	public string? Pr { get; set; }
 	public List<string>? Prs { get; set; }
 	public List<string>? Issues { get; set; }
+	public string? Link { get; set; }
 }
 
 /// <summary>

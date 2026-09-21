@@ -18,13 +18,15 @@ public record ApiSchema(string SchemaId, string DisplayName, string Category, IO
 {
 	public async Task RenderAsync(FileSystemStream stream, ApiRenderContext context, Cancel ctx = default)
 	{
-		var viewModel = new SchemaViewModel(context)
-		{
-			Schema = this,
-			Page = SchemaPageModel.Create(this, context)
-		};
+		var viewModel = new SchemaViewModel(context) { Schema = this, Page = SchemaPageModel.Create(this, context) };
 		var slice = SchemaView.Create(viewModel);
 		await slice.RenderAsync(stream, cancellationToken: ctx);
+	}
+
+	public Task<string?> RenderCommonMarkAsync(ApiRenderContext context, Cancel ctx = default)
+	{
+		var page = SchemaPageModel.Create(this, context);
+		return Task.FromResult<string?>(SchemaCommonMark.Write(this, page, context));
 	}
 }
 
@@ -43,7 +45,7 @@ public class SchemaNavigationItem : ILeafNavigationItem<ApiSchema>
 		NavigationTitle = apiSchema.DisplayName;
 		Parent = parent;
 		var moniker = ApiUrlBuilder.SchemaMoniker(apiSchema.SchemaId);
-		Url = $"{urlPathPrefix?.TrimEnd('/')}/api/{apiUrlSuffix}/types/{moniker}";
+		Url = $"{ApiUrlBuilder.ProductRoot(urlPathPrefix, apiUrlSuffix)}/types/{moniker}";
 		Id = ShortId.Create(Url);
 	}
 

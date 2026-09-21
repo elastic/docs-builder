@@ -11,8 +11,7 @@ namespace Elastic.Changelog.Tests.Changelogs.Render;
 public class ChecksumValidationTests(ITestOutputHelper output) : RenderChangelogTestBase(output)
 {
 	// language=yaml
-	private const string BundleHeader =
-		"""
+	private const string BundleHeader = """
 		products:
 		  - product: elasticsearch
 		    target: 9.2.0
@@ -85,7 +84,6 @@ public class ChecksumValidationTests(ITestOutputHelper output) : RenderChangelog
 		var withComments = ComputeSha1(ChangelogWithComments);
 		var withoutComments = ComputeSha1(ChangelogWithoutComments);
 
-		withComments.Should().Be(withoutComments,
-			"checksum should be identical regardless of comment lines");
+		withComments.Should().Be(withoutComments, "checksum should be identical regardless of comment lines");
 	}
 }

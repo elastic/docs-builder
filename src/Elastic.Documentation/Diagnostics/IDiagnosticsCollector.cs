@@ -28,6 +28,12 @@ public interface IDiagnosticsCollector : IAsyncDisposable
 	/// requested but hasn't scheduled yet" from "StartAsync was never called at all".
 	bool IsStartRequested { get; }
 
+	/// True while a Drain() pass is actively executing — items may have been dequeued
+	/// from the channel but output writes may not yet be complete. WaitForDrain uses this
+	/// to avoid returning in the window between TryRead (makes TryPeek false) and
+	/// the subsequent output.Write calls finishing.
+	bool IsDraining { get; }
+
 	/// Time source for drain waits and their timeouts; tests supply a fake to
 	/// exercise timeout paths in virtual time instead of wall-clock time.
 	TimeProvider TimeProvider { get; }
@@ -70,7 +76,8 @@ public interface IDiagnosticsCollector : IAsyncDisposable
 			{
 				throw new InvalidOperationException(
 					"WaitForDrain called on a collector that was never started; no reader is draining the channel. " +
-					"Call StartAsync first or dispose the collector to drain synchronously.");
+						"Call StartAsync first or dispose the collector to drain synchronously."
+				);
 			}
 
 			// StartAsync was called but the Task.Run delegate hasn't been picked up by the
@@ -83,18 +90,20 @@ public interface IDiagnosticsCollector : IAsyncDisposable
 				if (TimeProvider.GetElapsedTime(waitStart) > TimeSpan.FromSeconds(2))
 					throw new InvalidOperationException(
 						"WaitForDrain timed out waiting for the background reader to start. " +
-						"StartAsync was called but the reader delegate did not start within the deadline.");
+							"StartAsync was called but the reader delegate did not start within the deadline."
+					);
 			}
 		}
 
 		var start = TimeProvider.GetTimestamp();
-		while (Channel.Reader.TryPeek(out _))
+		// Poll until the channel is empty AND no Drain() pass is in progress.
+		// Checking only TryPeek is insufficient: TryRead dequeues the item (making TryPeek false)
+		// before output.Write is called, so WaitForDrain can return before outputs are written.
+		while (Channel.Reader.TryPeek(out _) || IsDraining)
 		{
 			await Task.Delay(TimeSpan.FromMilliseconds(10), TimeProvider);
 			if (TimeProvider.GetElapsedTime(start) > TimeSpan.FromSeconds(2))
 				throw new Exception("Could not iterate over all diagnostic messages in a timely fashion");
 		}
 	}
-
-
 }
