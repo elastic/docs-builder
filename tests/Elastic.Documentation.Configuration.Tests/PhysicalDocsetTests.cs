@@ -10,7 +10,7 @@ namespace Elastic.Documentation.Configuration.Tests;
 
 public class PhysicalDocsetTests
 {
-	[Fact]
+	[Test]
 	public void CliReferenceRefReadsTitleOverrides()
 	{
 		const string yaml =
@@ -30,7 +30,7 @@ public class PhysicalDocsetTests
 		cliRef.NavigationTitle.Should().Be("CLI reference");
 	}
 
-	[Fact]
+	[Test]
 	public void PhysicalDocsetFileCanBeDeserialized()
 	{
 		var docsetPath = Path.Join(Paths.WorkingDirectoryRoot.FullName, "docs", "_docset.yml");
@@ -72,7 +72,7 @@ public class PhysicalDocsetTests
 		cliRef.Should().NotBeNull();
 	}
 
-	[Fact]
+	[Test]
 	public void PhysicalDocsetContainsExpectedFolders()
 	{
 		var docsetPath = Path.Join(Paths.WorkingDirectoryRoot.FullName, "docs", "_docset.yml");
@@ -95,7 +95,7 @@ public class PhysicalDocsetTests
 		cliRef.Should().NotBeNull();
 	}
 
-	[Fact]
+	[Test]
 	public void PhysicalDocsetHasValidNestedStructure()
 	{
 		var docsetPath = Path.Join(Paths.WorkingDirectoryRoot.FullName, "docs", "_docset.yml");
@@ -118,7 +118,7 @@ public class PhysicalDocsetTests
 		cliRef.Children.Should().BeEmpty();
 	}
 
-	[Fact]
+	[Test]
 	public void PhysicalTestDocsetContainsFileReferencesWithChildren()
 	{
 		var docsetPath = Path.Join(Paths.WorkingDirectoryRoot.FullName, "docs-tests", "docset.yml");

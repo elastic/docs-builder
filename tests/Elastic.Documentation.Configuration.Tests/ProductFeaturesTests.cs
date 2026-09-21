@@ -12,7 +12,7 @@ namespace Elastic.Documentation.Configuration.Tests;
 
 public class ProductFeaturesTests
 {
-	[Fact]
+	[Test]
 	public void ProductWithNoFeaturesKey_GetsAllFeaturesEnabled()
 	{
 		var config = LoadActualProductsConfiguration();
@@ -23,7 +23,7 @@ public class ProductFeaturesTests
 		elasticsearch.Features.ParticipatesInReleaseNotes.Should().BeTrue();
 	}
 
-	[Fact]
+	[Test]
 	public void ProductWithPublicReferenceDisabled_HasCorrectFeatures()
 	{
 		var config = LoadActualProductsConfiguration();
@@ -33,7 +33,7 @@ public class ProductFeaturesTests
 		docsBuilder.Features.ReleaseNotes.Should().Be(ReleaseNotesPath.OnRelease);
 	}
 
-	[Fact]
+	[Test]
 	public void ProductWithoutPublicReference_GetsNoneVersioningSystem()
 	{
 		var config = LoadActualProductsConfiguration();
@@ -44,7 +44,7 @@ public class ProductFeaturesTests
 		docsBuilder.VersioningSystem.Id.Should().Be(VersioningSystemId.None);
 	}
 
-	[Fact]
+	[Test]
 	public void PublicReferenceProducts_ExcludesProductsWithPublicReferenceDisabled()
 	{
 		var config = LoadActualProductsConfiguration();
@@ -53,7 +53,7 @@ public class ProductFeaturesTests
 		config.PublicReferenceProducts.Should().NotContainKey("docs-builder");
 	}
 
-	[Fact]
+	[Test]
 	public void PublicReferenceProducts_IncludesStandardProducts()
 	{
 		var config = LoadActualProductsConfiguration();
@@ -62,7 +62,7 @@ public class ProductFeaturesTests
 		config.PublicReferenceProducts.Should().ContainKey("kibana");
 	}
 
-	[Fact]
+	[Test]
 	public void AllProducts_ContainsBothStandardAndOptedOutProducts()
 	{
 		var config = LoadActualProductsConfiguration();
@@ -71,7 +71,7 @@ public class ProductFeaturesTests
 		config.Products.Should().ContainKey("docs-builder");
 	}
 
-	[Fact]
+	[Test]
 	public void ProductFeatures_All_HasBothFeaturesEnabled()
 	{
 		var all = ProductFeatures.All;
@@ -81,7 +81,7 @@ public class ProductFeaturesTests
 		all.ParticipatesInReleaseNotes.Should().BeTrue();
 	}
 
-	[Fact]
+	[Test]
 	public void ProductFeatures_KnownKeys_ContainsExpectedEntries()
 	{
 		ProductFeatures.KnownKeys.Should().Contain("public-reference");
@@ -89,7 +89,7 @@ public class ProductFeaturesTests
 		ProductFeatures.KnownKeys.Should().HaveCount(2);
 	}
 
-	[Fact]
+	[Test]
 	public void GetDisplayName_WorksForProductsWithDisabledFeatures()
 	{
 		var config = LoadActualProductsConfiguration();
@@ -97,7 +97,7 @@ public class ProductFeaturesTests
 		config.GetDisplayName("docs-builder").Should().Be("Elastic Docs Builder");
 	}
 
-	[Fact]
+	[Test]
 	public void GetProductByRepositoryName_WorksForProductsWithDisabledFeatures()
 	{
 		var config = LoadActualProductsConfiguration();
@@ -107,12 +107,12 @@ public class ProductFeaturesTests
 		product.Id.Should().Be("docs-builder");
 	}
 
-	[Theory]
-	[InlineData("true", ReleaseNotesPath.OnRelease)]
-	[InlineData("false", ReleaseNotesPath.None)]
-	[InlineData("prestage", ReleaseNotesPath.Prestage)]
-	[InlineData("Prestage", ReleaseNotesPath.Prestage)]
-	[InlineData("on-release", ReleaseNotesPath.OnRelease)]
+	[Test]
+	[Arguments("true", ReleaseNotesPath.OnRelease)]
+	[Arguments("false", ReleaseNotesPath.None)]
+	[Arguments("prestage", ReleaseNotesPath.Prestage)]
+	[Arguments("Prestage", ReleaseNotesPath.Prestage)]
+	[Arguments("on-release", ReleaseNotesPath.OnRelease)]
 	public void ReleaseNotesFeature_AcceptsBooleansAndPathStrings(string value, ReleaseNotesPath expected)
 	{
 		var config = ParseProducts(
@@ -130,7 +130,7 @@ public class ProductFeaturesTests
 		config.Products["widget"].Features.ParticipatesInReleaseNotes.Should().Be(expected != ReleaseNotesPath.None);
 	}
 
-	[Fact]
+	[Test]
 	public void ReleaseNotesFeature_OmittedInFeaturesMap_DefaultsToOnRelease()
 	{
 		var config = ParseProducts(
@@ -148,7 +148,7 @@ public class ProductFeaturesTests
 		config.Products["widget"].Features.PublicReference.Should().BeFalse();
 	}
 
-	[Fact]
+	[Test]
 	public void ReleaseNotesFeature_InvalidValue_Throws()
 	{
 		var act =
@@ -169,7 +169,7 @@ public class ProductFeaturesTests
 			.WithMessage("*'release-notes' value 'sideways'*Allowed values: true, false, prestage, on-release*");
 	}
 
-	[Fact]
+	[Test]
 	public void PublicReferenceFeature_InvalidValue_Throws()
 	{
 		var act =
@@ -187,7 +187,7 @@ public class ProductFeaturesTests
 		act.Should().Throw<InvalidOperationException>().WithMessage("*'public-reference' value 'prestage'*Allowed values: true, false*");
 	}
 
-	[Fact]
+	[Test]
 	public void ReleaseNotesFeature_PresentButEmpty_Throws()
 	{
 		// A present-but-empty key must be rejected, not silently treated as the omitted-key default.
@@ -209,7 +209,7 @@ public class ProductFeaturesTests
 			.WithMessage("*has an empty 'release-notes' value*Allowed values: true, false, prestage, on-release*");
 	}
 
-	[Fact]
+	[Test]
 	public void PublicReferenceFeature_PresentButEmpty_Throws()
 	{
 		var act =

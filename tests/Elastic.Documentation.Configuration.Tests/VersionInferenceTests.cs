@@ -49,8 +49,8 @@ public class VersionInferenceTests
 			{ nameof(ProductApplicability.EdotCollector), "edot-collector" }
 		};
 
-	public static TheoryData<string, string> ProductApplicabilityOptionsAsList =>
-		[.. ProductApplicabilityOptions.Select(kvp => (kvp.Key, kvp.Value))];
+	public static IEnumerable<(string, string)> ProductApplicabilityOptionsAsList =>
+		ProductApplicabilityOptions.Select(kvp => (kvp.Key, kvp.Value));
 
 	private static VersionsConfiguration CreateVersionsConfiguration()
 	{
@@ -201,9 +201,8 @@ public class VersionInferenceTests
 		return applicability;
 	}
 
-	[Theory(DisplayName = "ProductApplicabilityToProductId returns correct product ID for product {0}"), MemberData(nameof(
-		ProductApplicabilityOptionsAsList
-	))]
+	[Test, DisplayName("ProductApplicabilityToProductId returns correct product ID for product {0}")]
+	[MethodDataSource(nameof(ProductApplicabilityOptionsAsList))]
 	public void InferVersionReturnsCorrectVersioningForAllProductApplicabilityProperties(
 		string productApplicabilityEntry,
 		string targetProductId
@@ -239,7 +238,7 @@ public class VersionInferenceTests
 		resultingProductId.Should().Be(targetProductId, $"Product {productApplicabilityEntry} should return '{targetProductId}'");
 	}
 
-	[Fact]
+	[Test]
 	public void InferVersionPrioritizesLegacyPagesOverAppliesTo()
 	{
 		var versionsConfiguration = CreateVersionsConfiguration();
@@ -270,7 +269,7 @@ public class VersionInferenceTests
 		result.Id.Should().Be(VersioningSystemId.Ece);
 	}
 
-	[Fact]
+	[Test]
 	public void InferVersionPrioritizesProductApplicabilityOverStack()
 	{
 		var versionsConfiguration = CreateVersionsConfiguration();
@@ -288,7 +287,7 @@ public class VersionInferenceTests
 		result.Id.Should().Be(VersioningSystemId.Curator);
 	}
 
-	[Fact]
+	[Test]
 	public void InferVersionPrioritizesStackOverDeployment()
 	{
 		var versionsConfiguration = CreateVersionsConfiguration();
@@ -306,7 +305,7 @@ public class VersionInferenceTests
 		result.Id.Should().Be(VersioningSystemId.Stack);
 	}
 
-	[Fact]
+	[Test]
 	public void InferVersionPrioritizesDeploymentOverServerless()
 	{
 		var versionsConfiguration = CreateVersionsConfiguration();
@@ -324,7 +323,7 @@ public class VersionInferenceTests
 		result.Id.Should().Be(VersioningSystemId.Eck);
 	}
 
-	[Fact]
+	[Test]
 	public void InferVersionReturnsServerlessVersioningWhenOnlyServerlessSet()
 	{
 		var versionsConfiguration = CreateVersionsConfiguration();
@@ -360,7 +359,7 @@ public class VersionInferenceTests
 		}
 	}
 
-	[Fact]
+	[Test]
 	public void InferVersionReturnsDeploymentVersioningForAllDeploymentTypes()
 	{
 		var versionsConfiguration = CreateVersionsConfiguration();
@@ -390,7 +389,7 @@ public class VersionInferenceTests
 		}
 	}
 
-	[Fact]
+	[Test]
 	public void InferVersionFallsBackToRepositoryNameWhenNoAppliesTo()
 	{
 		var versionsConfiguration = CreateVersionsConfiguration();
@@ -402,7 +401,7 @@ public class VersionInferenceTests
 		result.Id.Should().Be(VersioningSystemId.Curator);
 	}
 
-	[Fact]
+	[Test]
 	public void InferVersionFallsBackToStackWhenNoMatchFound()
 	{
 		var versionsConfiguration = CreateVersionsConfiguration();
@@ -414,21 +413,21 @@ public class VersionInferenceTests
 		result.Id.Should().Be(VersioningSystemId.Stack);
 	}
 
-	[Fact]
+	[Test]
 	public void ProductApplicabilityToProductIdReturnsNullForEmptyApplicability()
 	{
 		var result = ProductApplicabilityConversion.ProductApplicabilityToProductId(new ProductApplicability());
 		result.Should().BeNull();
 	}
 
-	[Theory(DisplayName = "IsVersionless returns true for versionless products")]
-	[InlineData(VersioningSystemId.All)]
-	[InlineData(VersioningSystemId.Serverless)]
-	[InlineData(VersioningSystemId.Ech)]
-	[InlineData(VersioningSystemId.Ess)]
-	[InlineData(VersioningSystemId.ElasticsearchProject)]
-	[InlineData(VersioningSystemId.ObservabilityProject)]
-	[InlineData(VersioningSystemId.SecurityProject)]
+	[Test, DisplayName("IsVersionless returns true for versionless products")]
+	[Arguments(VersioningSystemId.All)]
+	[Arguments(VersioningSystemId.Serverless)]
+	[Arguments(VersioningSystemId.Ech)]
+	[Arguments(VersioningSystemId.Ess)]
+	[Arguments(VersioningSystemId.ElasticsearchProject)]
+	[Arguments(VersioningSystemId.ObservabilityProject)]
+	[Arguments(VersioningSystemId.SecurityProject)]
 	public void IsVersionlessReturnsTrueForVersionlessProducts(VersioningSystemId id)
 	{
 		var versioningSystem = new VersioningSystem
@@ -444,12 +443,12 @@ public class VersionInferenceTests
 			.BeTrue($"Versioning system {id} with version {VersioningSystem.VersionlessSentinel} should be marked as versionless");
 	}
 
-	[Theory(DisplayName = "IsVersionless returns false for versioned products")]
-	[InlineData(VersioningSystemId.Stack, 9, 2, 0)]
-	[InlineData(VersioningSystemId.Ece, 4, 0, 3)]
-	[InlineData(VersioningSystemId.Eck, 3, 2, 0)]
-	[InlineData(VersioningSystemId.ApmAgentJava, 1, 55, 2)]
-	[InlineData(VersioningSystemId.EdotCollector, 9, 2, 2)]
+	[Test, DisplayName("IsVersionless returns false for versioned products")]
+	[Arguments(VersioningSystemId.Stack, 9, 2, 0)]
+	[Arguments(VersioningSystemId.Ece, 4, 0, 3)]
+	[Arguments(VersioningSystemId.Eck, 3, 2, 0)]
+	[Arguments(VersioningSystemId.ApmAgentJava, 1, 55, 2)]
+	[Arguments(VersioningSystemId.EdotCollector, 9, 2, 2)]
 	public void IsVersionlessReturnsFalseForVersionedProducts(VersioningSystemId id, int major, int minor, int patch)
 	{
 		var versioningSystem = new VersioningSystem
@@ -465,7 +464,7 @@ public class VersionInferenceTests
 			.BeFalse($"Versioning system {id} with version {major}.{minor}.{patch} should not be marked as versionless");
 	}
 
-	[Fact(DisplayName = "VersionlessSentinel constant matches versions.yml value")]
+	[Test, DisplayName("VersionlessSentinel constant matches versions.yml value")]
 	public void VersionlessSentinelMatchesConfigValue() =>
 		// This test ensures the sentinel value matches what's used in config/versions.yml
 		// If this test fails, update VersioningSystem.VersionlessSentinel to match versions.yml
@@ -489,7 +488,7 @@ public class VersionInferenceTests
 		VersioningSystemId.SecurityProject
 	];
 
-	[Fact(DisplayName = "IsVersionless correctly identifies all versionless systems from actual config")]
+	[Test, DisplayName("IsVersionless correctly identifies all versionless systems from actual config")]
 	public void IsVersionlessCorrectlyIdentifiesAllVersionlessSystemsFromActualConfig()
 	{
 		// Load the actual versions.yml configuration
@@ -525,7 +524,7 @@ public class VersionInferenceTests
 		}
 	}
 
-	[Fact(DisplayName = "All versioning systems in config are accounted for in IsVersionless logic")]
+	[Test, DisplayName("All versioning systems in config are accounted for in IsVersionless logic")]
 	public void AllVersioningSystemsInConfigAreAccountedFor()
 	{
 		// Load the actual versions.yml configuration

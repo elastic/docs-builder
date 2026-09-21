@@ -12,7 +12,7 @@ namespace Elastic.Documentation.Configuration.Tests;
 
 public class ProductsConfigurationTests
 {
-	[Fact]
+	[Test]
 	public void GetProductsByRepositoryName_ProductIdMatch_ReturnsSingleElement()
 	{
 		var config = ParseProducts(
@@ -30,7 +30,7 @@ public class ProductsConfigurationTests
 		results[0].Id.Should().Be("elasticsearch");
 	}
 
-	[Fact]
+	[Test]
 	public void GetProductsByRepositoryName_OwnerRepoForm_UsesLastSegment()
 	{
 		var config = ParseProducts(
@@ -48,7 +48,7 @@ public class ProductsConfigurationTests
 		results[0].Id.Should().Be("elasticsearch");
 	}
 
-	[Fact]
+	[Test]
 	public void GetProductsByRepositoryName_ThreeProductsSharingRepository_ReturnsAllThree()
 	{
 		var config = ParseProducts(
@@ -78,7 +78,7 @@ public class ProductsConfigurationTests
 		results.Select(p => p.Id).Should().Contain(["cloud-hosted", "cloud-serverless", "cloud-enterprise"]);
 	}
 
-	[Fact]
+	[Test]
 	public void GetProductsByRepositoryName_BlankRepository_ReturnsEmpty()
 	{
 		var config = ParseProducts(
@@ -95,7 +95,7 @@ public class ProductsConfigurationTests
 		results.Should().BeEmpty();
 	}
 
-	[Fact]
+	[Test]
 	public void GetProductsByRepositoryName_UnknownRepository_ReturnsEmpty()
 	{
 		var config = ParseProducts(
@@ -112,7 +112,7 @@ public class ProductsConfigurationTests
 		results.Should().BeEmpty();
 	}
 
-	[Fact]
+	[Test]
 	public void GetProductByRepositoryName_SingleMatch_ReturnsProduct()
 	{
 		var config = ParseProducts(
@@ -130,7 +130,7 @@ public class ProductsConfigurationTests
 		product!.Id.Should().Be("elasticsearch");
 	}
 
-	[Fact]
+	[Test]
 	public void GetProductByRepositoryName_MultipleMatches_ReturnsNull()
 	{
 		var config = ParseProducts(
@@ -154,7 +154,7 @@ public class ProductsConfigurationTests
 		product.Should().BeNull();
 	}
 
-	[Fact]
+	[Test]
 	public void GetProductByRepositoryName_NoMatch_ReturnsNull()
 	{
 		var config = ParseProducts(
@@ -171,7 +171,7 @@ public class ProductsConfigurationTests
 		product.Should().BeNull();
 	}
 
-	[Fact]
+	[Test]
 	public void GetProductsByRepositoryName_ActualCloudProducts_ReturnsThreeProducts()
 	{
 		var config = LoadActualProductsConfiguration();
