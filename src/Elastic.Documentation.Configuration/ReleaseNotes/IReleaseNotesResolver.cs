@@ -24,9 +24,9 @@ public interface IReleaseNotesResolver
 	bool IsNotFound(string product);
 
 	/// <summary>
-	/// Whether <paramref name="product"/> was explicitly declared under <c>release_notes</c> in
-	/// docset.yml but returned HTTP 404 during prefetch — no bundles have been published yet.
-	/// A 404 for a declared product is a warning (product is registered, no release cut yet).
+	/// Whether <paramref name="product"/> is registered in products.yml but returned HTTP 404 during
+	/// prefetch — no bundles have been published yet. products.yml membership is the authoritative gate;
+	/// 404 on the CDN registry is a warning (no release cut yet), not an unknown-product error.
 	/// </summary>
 	bool IsNotFoundDeclared(string product);
 

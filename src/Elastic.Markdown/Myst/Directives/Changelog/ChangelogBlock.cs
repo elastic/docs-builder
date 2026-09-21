@@ -614,7 +614,7 @@ public class ChangelogBlock(DirectiveBlockParser parser, ParserContext context) 
 		if (Context.ReleaseNotesResolver.IsNotFoundDeclared(product))
 		{
 			this.EmitHint(
-				$"No CDN bundles published yet for declared product '{product}'. " +
+				$"'{product}' is registered in products.yml but has no CDN bundles yet. " +
 					$"The changelog will render empty until the first release is published."
 			);
 			return;

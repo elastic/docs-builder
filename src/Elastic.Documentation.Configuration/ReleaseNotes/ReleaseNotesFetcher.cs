@@ -108,8 +108,8 @@ public sealed class ReleaseNotesFetcher(ILoggerFactory logFactory, IFileSystem f
 				? msg => collector.EmitError(string.Empty, msg)
 				: msg => collector.EmitWarning(string.Empty, msg), // inferred: real errors become warnings, not build failures
 			 emitWarning: msg => collector.EmitWarning(string.Empty, msg), ctx,
-			// 404 for declared products is a warning, not an error — the product is registered but
-			// no release has been cut yet. Track the state so the directive can render a hint.
+			// 404 for products registered in products.yml is a warning, not an error — products.yml
+			// membership is the authoritative gate; 404 means no release has been cut yet.
 			// 404 for inferred products is silently tracked (hint emitted by the directive).
 			emitNotFound: _ =>
 			{
@@ -117,7 +117,7 @@ public sealed class ReleaseNotesFetcher(ILoggerFactory logFactory, IFileSystem f
 				if (isRequired)
 					collector.EmitWarning(
 						string.Empty,
-						$"No CDN bundles published yet for declared product '{product}'. The changelog will render empty until the first release is published."
+						$"No CDN bundles published yet for '{product}' (registered in products.yml). The changelog will render empty until the first release is published."
 					);
 			}).ConfigureAwait(false);
 			return (product, bundles, isRequired, notFound);
