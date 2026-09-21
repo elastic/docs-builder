@@ -36,6 +36,10 @@ stack: ga 9.0.0
 </p>
 """
 
+    [<Fact>]
+    let ``reserves a separator when the badge has a key`` () =
+        markdown |> convertsToContainingRawHtml """<span class="applicable-separator"></span>"""
+
 type ``stack preview future version`` () =
     static let markdown = Setup.Markdown """
 ```{applies_to}
@@ -337,6 +341,10 @@ stack: ga 8.8.0, preview 8.1.0
 </p>
 """
 
+    [<Fact>]
+    let ``reserves the multi-lifecycle ellipsis before hydration`` () =
+        markdown |> convertsToContainingRawHtml """<span class="applicable-ellipsis">"""
+
 type ``deprecation planned`` () =
     static let markdown = Setup.Markdown """
 ```{applies_to}
@@ -416,6 +424,10 @@ product: preview 1.3.0
 </applies-to-popover>
 </p>
 """
+
+    [<Fact>]
+    let ``omits the separator when the badge has no key`` () =
+        markdown |> doesNotConvertToContainingHtml """<span class="applicable-separator"></span>"""
         
 
 // Test complex mixed scenarios

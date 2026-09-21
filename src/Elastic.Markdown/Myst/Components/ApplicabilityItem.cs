@@ -14,4 +14,8 @@ public record ApplicabilityItem(
 )
 {
 	public Applicability Applicability => PrimaryApplicability;
+
+	public bool ShowSeparator =>
+		!string.IsNullOrEmpty(Key)
+			&& (RenderData.ShowLifecycleName || RenderData.ShowVersion || !string.IsNullOrEmpty(RenderData.BadgeLifecycleText));
 }
