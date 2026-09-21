@@ -14,28 +14,28 @@
       "commands": [
         "minver"
       ],
-      "rollForward": false
+      "rollForward": true
     },
     "dotnet-project-licenses": {
       "version": "2.7.1",
       "commands": [
         "dotnet-project-licenses"
       ],
-      "rollForward": false
+      "rollForward": true
     },
     "thirdlicense": {
       "version": "1.3.1",
       "commands": [
         "thirdlicense"
       ],
-      "rollForward": false
+      "rollForward": true
     },
     "release-notes": {
       "version": "0.6.0",
       "commands": [
         "release-notes"
       ],
-      "rollForward": false
+      "rollForward": true
     },
     "curb-cli": {
       "version": "0.7.1",
@@ -49,7 +49,7 @@
       "commands": [
         "aspire"
       ],
-      "rollForward": false
+      "rollForward": true
     }
   }
 }

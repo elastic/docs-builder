@@ -50,7 +50,7 @@ public class MathBlock(DirectiveBlockParser parser, ParserContext context) : Dir
 
 	private string? ExtractContent()
 	{
-		if (!this.Any())
+		if (this.Count == 0)
 			return null;
 
 		var lines = new List<string>();

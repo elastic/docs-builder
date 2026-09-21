@@ -997,7 +997,7 @@ public partial class ChangelogBundlingService(
 		if (input.DryRun)
 		{
 			// The report is the dry run's product: print it verbatim for release-PR bodies / job summaries.
-			await Console.Out.WriteLineAsync(report);
+			await Console.Out.WriteLineAsync(report, ctx);
 			return result.Success && collector.Errors == 0;
 		}
 
@@ -2257,7 +2257,7 @@ public partial class ChangelogBundlingService(
 	)
 	{
 		// Early validation: validate bundle has some product context
-		if ((outputProductIds == null || outputProductIds.Count == 0) && !entries.Any(e => e.Data.Products?.Any() == true))
+		if ((outputProductIds == null || outputProductIds.Count == 0) && !entries.Any(e => e.Data.Products?.Count > 0))
 		{
 			collector.EmitError(
 				string.Empty,

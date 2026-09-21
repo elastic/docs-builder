@@ -2,7 +2,7 @@
 
 FROM node:22-bookworm-slim AS node
 
-FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
+FROM mcr.microsoft.com/dotnet/sdk:11.0 AS build
 
 WORKDIR /src
 
@@ -41,7 +41,7 @@ RUN case "${TARGETARCH}" in \
     --self-contained true \
     --output /app/publish
 
-FROM mcr.microsoft.com/dotnet/runtime-deps:10.0 AS runtime
+FROM mcr.microsoft.com/dotnet/runtime-deps:11.0 AS runtime
 
 WORKDIR /workspace
 
