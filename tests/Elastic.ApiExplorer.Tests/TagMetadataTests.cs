@@ -285,7 +285,10 @@ public class TagMetadataTests
 		tagNavItem.Id.Should().NotBe("Machine Learning Anomaly Detection APIs"); // Not the display name
 	}
 
-	private static async Task<(OpenApiGenerator generator, OpenApiDocument document)> CreateGeneratorWithSpec(string openApiJson)
+	private static async Task<(OpenApiGenerator generator, OpenApiDocument document)> CreateGeneratorWithSpec(
+		string openApiJson,
+		bool apiNavGroupingEnabled = false
+	)
 	{
 		var collector = new DiagnosticsCollector([]);
 		var configurationContext = TestHelpers.CreateConfigurationContext(new FileSystem());
@@ -294,6 +297,7 @@ public class TagMetadataTests
 			DocumentationFileSystem.Resolve(Paths.WorkingDirectoryRoot.FullName),
 			configurationContext
 		);
+		context.Configuration.Features.ApiNavGroupingEnabled = apiNavGroupingEnabled;
 
 		var generator = new OpenApiGenerator(NullLoggerFactory.Instance, context, NoopMarkdownStringRenderer.Instance);
 
@@ -400,8 +404,6 @@ public class TagMetadataTests
 		var navigation = generator.CreateNavigation("test", openApiDocument);
 
 		// Assert - should be sorted alphabetically by display name: "Animal Zoo", "charlie", "Fruit Store"
-		navigation.NavigationItems.Should().HaveCount(3);
-
 		var tagItems = navigation.NavigationItems.OfType<TagNavigationItem>().ToList();
 		tagItems.Should().HaveCount(3);
 
@@ -608,7 +610,7 @@ public class TagMetadataTests
 		}
 		""";
 
-		var (generator, openApiDocument) = await CreateGeneratorWithSpec(openApiJson);
+		var (generator, openApiDocument) = await CreateGeneratorWithSpec(openApiJson, apiNavGroupingEnabled: true);
 
 		// Act
 		var navigation = generator.CreateNavigation("elasticsearch", openApiDocument);
@@ -651,7 +653,7 @@ public class TagMetadataTests
 		}
 		""";
 
-		var (generator, openApiDocument) = await CreateGeneratorWithSpec(openApiJson);
+		var (generator, openApiDocument) = await CreateGeneratorWithSpec(openApiJson, apiNavGroupingEnabled: true);
 		var navigation = generator.CreateNavigation("elasticsearch", openApiDocument);
 
 		var expectedOverviewUrl = navigation.Index.Url;
@@ -751,7 +753,7 @@ public class TagMetadataTests
 		}
 		""";
 
-		var (generator, openApiDocument) = await CreateGeneratorWithSpec(openApiJson);
+		var (generator, openApiDocument) = await CreateGeneratorWithSpec(openApiJson, apiNavGroupingEnabled: true);
 		var navigation = generator.CreateNavigation("test", openApiDocument);
 
 		var titles = navigation.NavigationItems.OfType<ClassificationNavigationItem>().Select(c => c.NavigationTitle).ToList();
@@ -802,7 +804,7 @@ public class TagMetadataTests
 		}
 		""";
 
-		var (generator, openApiDocument) = await CreateGeneratorWithSpec(openApiJson);
+		var (generator, openApiDocument) = await CreateGeneratorWithSpec(openApiJson, apiNavGroupingEnabled: true);
 		var navigation = generator.CreateNavigation("test", openApiDocument);
 
 		var classifications = navigation.NavigationItems.OfType<ClassificationNavigationItem>().ToList();

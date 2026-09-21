@@ -8,6 +8,7 @@ using Elastic.Changelog.GitHub;
 using Elastic.Changelog.GithubRelease;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.ReleaseNotes;
+using Elastic.Documentation.Diagnostics;
 using FakeItEasy;
 
 namespace Elastic.Changelog.Tests.Changelogs.Create;
@@ -22,6 +23,7 @@ public class GhReleaseExtractionParityTests(ITestOutputHelper output) : Changelo
 {
 	private readonly IGitHubReleaseService _releaseService = A.Fake<IGitHubReleaseService>();
 	private readonly IGitHubPrService _prService = A.Fake<IGitHubPrService>();
+	private readonly IGitHubCommitRangeService _commitRangeService = A.Fake<IGitHubCommitRangeService>();
 
 	// language=yaml
 	private const string PoolEntry =
@@ -34,15 +36,6 @@ public class GhReleaseExtractionParityTests(ITestOutputHelper output) : Changelo
 		    lifecycle: ga
 		""";
 
-	private const string ReleaseBody =
-		"""
-		## What's Changed
-
-		* Fix query parsing edge case by @contributor1 in #12345
-
-		**Full Changelog**: https://github.com/elastic/elasticsearch/compare/v9.1.0...v9.2.0
-		""";
-
 	private GitHubReleaseChangelogService Service(StubHandler handler) =>
 		new(
 			LoggerFactory,
@@ -50,6 +43,7 @@ public class GhReleaseExtractionParityTests(ITestOutputHelper output) : Changelo
 			FileSystem,
 			_releaseService,
 			_prService,
+			commitRangeService: _commitRangeService,
 			entryFetcher: new CdnChangelogEntryFetcher(new TestLoggerFactory(Output), handler, sleep: (_, _) => Task.CompletedTask)
 		);
 
@@ -83,13 +77,39 @@ public class GhReleaseExtractionParityTests(ITestOutputHelper output) : Changelo
 			return new HttpResponseMessage(HttpStatusCode.NotFound);
 		});
 
-	private void ArrangeRelease() =>
+	private void ArrangeRelease(params int[] prNumbers)
+	{
+		if (prNumbers.Length == 0)
+			prNumbers = [12345];
+
 		A.CallTo(() => _releaseService.FetchReleaseAsync("elastic", "elasticsearch", "v9.2.0", A<Cancel>._)).Returns(new GitHubReleaseInfo
 		{
 			TagName = "v9.2.0",
 			Name = "9.2.0",
-			Body = ReleaseBody
+			Body = ""
 		});
+
+		A.CallTo(() => _releaseService.FetchPreviousTagAsync("elastic", "elasticsearch", "v9.2.0", A<Cancel>._)).Returns("v9.1.0");
+
+		var prs = prNumbers.Select(
+			n => new CommitRangePullRequest
+			{
+				Number = n,
+				Url = $"https://github.com/elastic/elasticsearch/pull/{n}",
+				CommitShas = ["abc123"]
+			}
+		).ToList();
+
+		A.CallTo(
+			() => _commitRangeService.ResolvePullRequestsAsync(
+				A<IDiagnosticsCollector>._,
+				A<CommitRangeArguments>.That.Matches(
+					a => a.Owner == "elastic" && a.Repo == "elasticsearch" && a.StartRef == "v9.1.0" && a.EndRef == "v9.2.0"
+				),
+				A<Cancel>._
+			)
+		).Returns(new CommitRangeResolution { TotalCommits = prNumbers.Length, PullRequests = prs, CommitsWithoutPullRequest = [] });
+	}
 
 	private CreateChangelogsFromReleaseArguments Input(string outputDir, bool createBundle = false) =>
 		new() { Repository = "elastic/elasticsearch", Version = "v9.2.0", Output = outputDir, CreateBundle = createBundle };
@@ -113,7 +133,7 @@ public class GhReleaseExtractionParityTests(ITestOutputHelper output) : Changelo
 			TestContext.Current.CancellationToken
 		);
 
-		result.Should().BeTrue();
+		result.Success.Should().BeTrue();
 		var entryPath = FileSystem.Path.Join(outputDir, "12345.yaml");
 		FileSystem.File.Exists(entryPath).Should().BeTrue("the pool entry keeps its original file name");
 		var content = await FileSystem.File.ReadAllTextAsync(entryPath, TestContext.Current.CancellationToken);
@@ -144,7 +164,7 @@ public class GhReleaseExtractionParityTests(ITestOutputHelper output) : Changelo
 			TestContext.Current.CancellationToken
 		);
 
-		result.Should().BeTrue("synthesis from PR metadata still produces an entry even though the pool file was unusable");
+		result.Success.Should().BeTrue("synthesis from PR metadata still produces an entry even though the pool file was unusable");
 		FileSystem
 			.File
 			.Exists(FileSystem.Path.Join(outputDir, "12345.yaml"))
@@ -171,21 +191,7 @@ public class GhReleaseExtractionParityTests(ITestOutputHelper output) : Changelo
 		// shared entry marks it "claimed", and a *second* PR matching the same still-unwritten file
 		// (via leading-number filename matching) is wrongly treated as already satisfied and silently
 		// dropped instead of falling back to PR-metadata synthesis.
-		const string sharedBody =
-			"""
-			## What's Changed
-
-			* Fix query parsing edge case by @contributor1 in #12345
-			* Improve indexing throughput by @contributor2 in #12346
-
-			**Full Changelog**: https://github.com/elastic/elasticsearch/compare/v9.1.0...v9.2.0
-			""";
-		A.CallTo(() => _releaseService.FetchReleaseAsync("elastic", "elasticsearch", "v9.2.0", A<Cancel>._)).Returns(new GitHubReleaseInfo
-		{
-			TagName = "v9.2.0",
-			Name = "9.2.0",
-			Body = sharedBody
-		});
+		ArrangeRelease(12345, 12346);
 
 		_ = A.CallTo(
 			() => _prService.FetchPrInfoAsync(
@@ -231,7 +237,7 @@ public class GhReleaseExtractionParityTests(ITestOutputHelper output) : Changelo
 
 		var result = await Service(handler).CreateChangelogsFromRelease(Collector, Input(outputDir), TestContext.Current.CancellationToken);
 
-		result.Should().BeTrue("both PRs must fall back to PR-metadata synthesis despite the shared unparseable pool file");
+		result.Success.Should().BeTrue("both PRs must fall back to PR-metadata synthesis despite the shared unparseable pool file");
 		var files = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
 		files.Should().HaveCount(2, "each PR must synthesize its own entry rather than one silently disappearing");
 		var contents = await Task.WhenAll(files.Select(f => FileSystem.File.ReadAllTextAsync(f, TestContext.Current.CancellationToken)));
@@ -258,7 +264,7 @@ public class GhReleaseExtractionParityTests(ITestOutputHelper output) : Changelo
 			TestContext.Current.CancellationToken
 		);
 
-		result.Should().BeTrue();
+		result.Success.Should().BeTrue();
 		var files = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
 		files.Should().ContainSingle();
 		var content = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current.CancellationToken);
@@ -284,7 +290,7 @@ public class GhReleaseExtractionParityTests(ITestOutputHelper output) : Changelo
 			TestContext.Current.CancellationToken
 		);
 
-		result.Should().BeTrue();
+		result.Success.Should().BeTrue();
 		var files = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
 		var content = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current.CancellationToken);
 		content.Should().Contain("https://github.com/elastic/elasticsearch/issues/999");
@@ -309,7 +315,7 @@ public class GhReleaseExtractionParityTests(ITestOutputHelper output) : Changelo
 			TestContext.Current.CancellationToken
 		);
 
-		result.Should().BeTrue();
+		result.Success.Should().BeTrue();
 		var files = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
 		var content = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current.CancellationToken);
 		content.Should().NotContain("description:");
@@ -330,7 +336,7 @@ public class GhReleaseExtractionParityTests(ITestOutputHelper output) : Changelo
 			TestContext.Current.CancellationToken
 		);
 
-		result.Should().BeTrue();
+		result.Success.Should().BeTrue();
 		var bundlesDir = FileSystem.Path.Join(outputDir, "bundles");
 		var bundleFiles = FileSystem.Directory.GetFiles(bundlesDir, "*.yml");
 		bundleFiles.Should().ContainSingle();

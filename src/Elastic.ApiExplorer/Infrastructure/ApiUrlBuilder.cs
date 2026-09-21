@@ -63,6 +63,18 @@ public static partial class ApiUrlBuilder
 	/// <summary>Deterministic URL leaf for <c>.../group/{segment}</c> from the canonical tag name.</summary>
 	public static string TagMoniker(string? tagName) => $"endpoint-{TagSlug(tagName)}";
 
+	public const string AuthenticationSegment = "authentication";
+	public const string ServersSegment = "servers";
+
+	/// <summary>Child markdown slugs that collide with generated API Explorer paths.</summary>
+	public static readonly string[] ReservedChildSegments = ["types", "group", "operation", AuthenticationSegment, ServersSegment];
+
+	public static string AuthenticationUrl(string? urlPathPrefix, string apiUrlSuffix) =>
+		$"{ProductRoot(urlPathPrefix, apiUrlSuffix)}/{AuthenticationSegment}";
+
+	public static string ServersUrl(string? urlPathPrefix, string apiUrlSuffix) =>
+		$"{ProductRoot(urlPathPrefix, apiUrlSuffix)}/{ServersSegment}";
+
 	[GeneratedRegex(@"\s*\(([^)]+)\)")]
 	private static partial Regex ParentheticalSuffixPattern();
 }

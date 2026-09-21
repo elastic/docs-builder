@@ -101,7 +101,7 @@ public class BundleAmendTests : ChangelogTestBase
 		// Reset collector for the amend operation
 		var amendCollector = new TestDiagnosticsCollector(Output);
 
-		var input = new AmendBundleArguments { BundlePath = bundlePath, AddFiles = [newFile] };
+		var input = new AmendBundleArguments { BundlePath = bundlePath, AddFiles = [newFile], ForceLocal = true };
 
 		var result = await Service.AmendBundle(amendCollector, input, ct);
 
@@ -131,7 +131,7 @@ public class BundleAmendTests : ChangelogTestBase
 		var changelogFile = FileSystem.Path.Join(_changelogDir, "1755268130-existing.yaml");
 		var amendCollector = new TestDiagnosticsCollector(Output);
 
-		var input = new AmendBundleArguments { BundlePath = bundlePath, RemoveFiles = [changelogFile] };
+		var input = new AmendBundleArguments { BundlePath = bundlePath, RemoveFiles = [changelogFile], ForceLocal = true };
 
 		var result = await Service.AmendBundle(amendCollector, input, ct);
 
@@ -156,11 +156,11 @@ public class BundleAmendTests : ChangelogTestBase
 		var newFile = await CreateNewChangelogFile(ct);
 
 		var addCollector = new TestDiagnosticsCollector(Output);
-		var addInput = new AmendBundleArguments { BundlePath = bundlePath, AddFiles = [newFile] };
+		var addInput = new AmendBundleArguments { BundlePath = bundlePath, AddFiles = [newFile], ForceLocal = true };
 		(await Service.AmendBundle(addCollector, addInput, ct)).Should().BeTrue();
 
 		var removeCollector = new TestDiagnosticsCollector(Output);
-		var removeInput = new AmendBundleArguments { BundlePath = bundlePath, RemoveFiles = [newFile] };
+		var removeInput = new AmendBundleArguments { BundlePath = bundlePath, RemoveFiles = [newFile], ForceLocal = true };
 
 		var result = await Service.AmendBundle(removeCollector, removeInput, ct);
 
@@ -197,7 +197,7 @@ public class BundleAmendTests : ChangelogTestBase
 		);
 
 		var amendCollector = new TestDiagnosticsCollector(Output);
-		var input = new AmendBundleArguments { BundlePath = bundlePath, RemoveFiles = [changelogFile] };
+		var input = new AmendBundleArguments { BundlePath = bundlePath, RemoveFiles = [changelogFile], ForceLocal = true };
 
 		var result = await Service.AmendBundle(amendCollector, input, ct);
 
@@ -214,7 +214,13 @@ public class BundleAmendTests : ChangelogTestBase
 		var addFile = await CreateNewChangelogFile(ct);
 
 		var amendCollector = new TestDiagnosticsCollector(Output);
-		var input = new AmendBundleArguments { BundlePath = bundlePath, RemoveFiles = [removeFile], AddFiles = [addFile] };
+		var input = new AmendBundleArguments
+		{
+			BundlePath = bundlePath,
+			RemoveFiles = [removeFile],
+			AddFiles = [addFile],
+			ForceLocal = true
+		};
 
 		var result = await Service.AmendBundle(amendCollector, input, ct);
 
@@ -341,6 +347,65 @@ public class BundleAmendTests : ChangelogTestBase
 		amend.Products[0].Target.Should().Be("9.3.0");
 		amend.Products[0].Repo.Should().Be("elasticsearch");
 		amend.Products[0].Owner.Should().Be("elastic");
+	}
+
+	[Fact]
+	public async Task AmendBundle_DescriptionOnly_WritesSidecarWithoutEntries()
+	{
+		var ct = TestContext.Current.CancellationToken;
+		var bundlePath = await CreateBundleWithFullProducts(ct);
+
+		var amendCollector = new TestDiagnosticsCollector(Output);
+		var input = new AmendBundleArguments { BundlePath = bundlePath, Description = "This release is based on {repo} {version}." };
+
+		var result = await Service.AmendBundle(amendCollector, input, ct);
+
+		result.Should().BeTrue();
+		amendCollector.Errors.Should().Be(0);
+
+		var amendFiles = ChangelogBundleAmendService.DiscoverAmendFiles(FileSystem, bundlePath);
+		amendFiles.Should().HaveCount(1);
+
+		var amend = ReleaseNotesSerialization.DeserializeBundle(await FileSystem.File.ReadAllTextAsync(amendFiles[0], ct));
+		amend.Entries.Should().BeEmpty();
+		amend.ExcludeEntries.Should().BeEmpty();
+		amend.Description.Should().Be("This release is based on elasticsearch 9.3.0.");
+		amend.Products[0].Target.Should().Be("9.3.0");
+	}
+
+	[Fact]
+	public async Task AmendBundle_ClearDescription_WritesEmptyDescription()
+	{
+		var ct = TestContext.Current.CancellationToken;
+		var bundlePath = await CreateBundle(ct);
+
+		var amendCollector = new TestDiagnosticsCollector(Output);
+		var input = new AmendBundleArguments { BundlePath = bundlePath, Description = "" };
+
+		var result = await Service.AmendBundle(amendCollector, input, ct);
+
+		result.Should().BeTrue();
+		amendCollector.Errors.Should().Be(0);
+
+		var yaml = await FileSystem.File.ReadAllTextAsync(ChangelogBundleAmendService.DiscoverAmendFiles(FileSystem, bundlePath)[0], ct);
+		yaml.Should().Contain("description:");
+		ReleaseNotesSerialization.DeserializeBundle(yaml).Description.Should().BeEmpty();
+	}
+
+	[Fact]
+	public async Task AmendBundle_NeitherEntriesNorDescription_Fails()
+	{
+		var ct = TestContext.Current.CancellationToken;
+		var bundlePath = await CreateBundle(ct);
+
+		var amendCollector = new TestDiagnosticsCollector(Output);
+		var input = new AmendBundleArguments { BundlePath = bundlePath };
+
+		var result = await Service.AmendBundle(amendCollector, input, ct);
+
+		result.Should().BeFalse();
+		amendCollector.Errors.Should().BeGreaterThan(0);
+		amendCollector.Diagnostics.Should().Contain(d => d.Message.Contains("--description"));
 	}
 
 	[Fact]

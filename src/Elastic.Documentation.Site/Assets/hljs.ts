@@ -40,9 +40,10 @@ export async function highlightCodeBlocks(root: ParentNode): Promise<void> {
 }
 
 export async function initHighlight(): Promise<void> {
-    const root = document.querySelector('#markdown-content')
-    if (!root) return
-    await highlightCodeBlocks(root)
+    const roots = document.querySelectorAll(
+        '#markdown-content, #api-examples-panel'
+    )
+    for (const root of roots) await highlightCodeBlocks(root)
 }
 
 hljs.registerLanguage('apiheader', function () {
@@ -168,6 +169,80 @@ hljs.registerLanguage('kuery', function () {
     }
 })
 hljs.registerAliases(['kql'], { languageName: 'kuery' })
+
+// Elasticsearch Console samples: METHOD path + optional JSON body
+hljs.registerLanguage('console', function () {
+    return {
+        name: 'console',
+        aliases: ['es-console'],
+        contains: [
+            {
+                className: 'meta',
+                begin: /^(?:GET|POST|PUT|DELETE|HEAD|OPTIONS|PATCH)\b/,
+                end: /$/,
+                contains: [
+                    {
+                        className: 'keyword',
+                        begin: /^(?:GET|POST|PUT|DELETE|HEAD|OPTIONS|PATCH)/,
+                    },
+                    {
+                        className: 'string',
+                        begin: /\S+/,
+                    },
+                ],
+            },
+            {
+                begin: /\{/,
+                end: /(?=\n(?:GET|POST|PUT|DELETE|HEAD|OPTIONS|PATCH)\b)|$/,
+                subLanguage: 'json',
+                relevance: 0,
+            },
+        ],
+    }
+})
+
+// cURL samples: command, flags, HTTP methods, strings, line continuations
+hljs.registerLanguage('curl', function () {
+    return {
+        name: 'curl',
+        contains: [
+            {
+                className: 'built_in',
+                begin: /\bcurl\b/,
+            },
+            {
+                className: 'params',
+                begin: /--?[A-Za-z][\w-]*/,
+            },
+            {
+                className: 'keyword',
+                begin: /\b(?:GET|POST|PUT|DELETE|HEAD|OPTIONS|PATCH)\b/,
+            },
+            {
+                className: 'symbol',
+                begin: /\\$/,
+            },
+            {
+                className: 'string',
+                begin: /"/,
+                end: /"/,
+                contains: [{ begin: /\\./ }],
+                relevance: 0,
+            },
+            {
+                className: 'string',
+                begin: /'/,
+                end: /'/,
+                contains: [{ begin: /\\./ }],
+                relevance: 0,
+            },
+            {
+                className: 'variable',
+                begin: /\$[A-Za-z_][\w]*/,
+            },
+        ],
+    }
+})
 
 hljs.addPlugin(mergeHTMLPlugin)
 

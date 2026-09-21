@@ -5,10 +5,11 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="$(SolutionRoot)\src\api\Elastic.Documentation.Api\Elastic.Documentation.Api.csproj"/>
+    <ProjectReference Include="$(SolutionRoot)\src\api\Elastic.Documentation.Api\Elastic.Documentation.Api.csproj" />
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="Elastic.Transport.VirtualizedCluster" />
     <PackageReference Include="FakeItEasy" />
     <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" />
     <PackageReference Include="OpenTelemetry.Exporter.InMemory" />

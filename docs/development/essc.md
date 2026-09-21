@@ -17,11 +17,26 @@ existing interface.
 
 Current sources:
 
-| Source       | Namespace           | Description                                          |
-| ------------ | ------------------- | ---------------------------------------------------- |
-| Contentstack | `contentstack`      | elastic.co marketing, blog, product, and event pages |
-| Labs         | `labs`              | Search, security, and observability labs properties  |
-| Legacy docs  | `guide` _(planned)_ | `/guide` legacy documentation                        |
+| Source       | Namespace           | Description                                                             |
+| ------------ | ------------------- | ------------------------------------------------------------------------ |
+| Contentstack | `contentstack`      | elastic.co marketing, blog, product, event, and Search/Security/Observability Labs pages |
+| Legacy docs  | `guide` _(planned)_ | `/guide` legacy documentation                                           |
+
+Search Labs, Security Labs, and Observability Labs (`/search-labs/*`, `/security-labs/*`,
+`/observability-labs/*`) are all sourced from Contentstack — there is no HTML crawler for elastic.co
+labs properties anymore. Every URL on the Security Labs and Observability Labs sitemaps maps onto a
+Contentstack content type (homepage, blog posts, blog categories, and — Security Labs only —
+`reports`/`threat_command`), which was confirmed by diffing the live sitemaps against Contentstack's
+sync stream before the crawler was removed.
+
+The `labs-*` indices those two properties used to be crawled into still exist and still hold
+historical/legacy data; they're not deleted by this change. They remain visible to `indices cleanup`
+(and other lifecycle commands) as an ordinary index family — see `LabsMappingContext` in
+`Elastic.Documentation.Search.Contract`. `indices unify` no longer reads from `labs-*`: every
+document's `path` doubles as its `_id`, so a URL still present in `labs-*` would silently overwrite
+the fresher Contentstack-sourced `site-*` copy of the same page. Decommissioning `labs-*` and the
+`"labs"` document-type discriminator in the shared search contract (which reaches beyond essc into
+the search API/frontend) is a separate, explicitly-scoped follow-up, not part of removing the crawler.
 
 ## Installation
 
@@ -143,26 +158,16 @@ essc contentstack types
 
 ### `contentstack samples`
 
-Dumps raw Contentstack entries for a given content type, useful for inspecting
-the source data structure.
+Fetches one sync page per content type and writes the first item's raw JSON to disk — useful for
+inspecting a schema before writing mapping code or generating test fixtures.
 
 ```bash
-essc contentstack samples <content-type>
+essc contentstack samples
+essc contentstack samples --content-type reports,threat_command
 ```
 
-## Labs commands
-
-### `labs sync`
-
-Discovers labs URLs from sitemaps, crawls HTML, and bulk-ingests into **`labs-*`** indices. See `essc labs sync --help` for crawl flags (`--dry-run`, `--force`, `--no-ai`, `--max-ai-docs`, `--max-ai-time`, etc.).
-
-### `labs ai-enrich`
-
-Runs generative AI enrichment on existing **`labs-*`** semantic indices without re-crawling. Flags match **`contentstack ai-enrich`** (`--max-ai-time`, `--max-ai-docs`, `--endpoint`, `--api-key`).
-
-```bash
-essc labs ai-enrich
-```
+Omit `--content-type` to sample every UID already registered in `PageContentTypes.All`; pass a
+comma-separated list to sample specific (including not-yet-registered) UIDs instead.
 
 ## Indices commands
 

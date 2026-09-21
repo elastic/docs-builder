@@ -42,6 +42,10 @@ public class FeatureFlags(Dictionary<string, bool> initFeatureFlags)
 
 	public bool NavigationPreviewEnabled { get => IsEnabled("navigation-preview"); set => _featureFlags["navigation-preview"] = value; }
 
+	public bool PageFeedbackEnabled { get => IsEnabled("page-feedback"); set => _featureFlags["page-feedback"] = value; }
+
+	public bool ApiNavGroupingEnabled { get => IsEnabled("api-nav-grouping"); set => _featureFlags["api-nav-grouping"] = value; }
+
 	private bool IsEnabled(string key)
 	{
 		var envKey = $"FEATURE_{key.ToUpperInvariant().Replace('-', '_')}";

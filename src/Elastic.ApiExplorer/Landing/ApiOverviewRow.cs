@@ -4,6 +4,7 @@
 
 using Elastic.ApiExplorer.Model;
 using Elastic.ApiExplorer.Operations;
+using Elastic.ApiExplorer.Structural;
 using Elastic.ApiExplorer.Types;
 using Elastic.Documentation.Navigation;
 
@@ -76,7 +77,8 @@ public static class ApiOverviewBuilder
 					{
 						Kind = OverviewRowKind.Operation,
 						Title = operation.NavigationTitle,
-						Operations = [operation]
+						Operations = [operation],
+						Url = operation.Url
 					});
 					break;
 				case SchemaCategoryNavigationItem schemaCategory:
@@ -98,6 +100,14 @@ public static class ApiOverviewBuilder
 						Kind = OverviewRowKind.MarkdownPage,
 						Title = markdownPage.NavigationTitle,
 						Url = markdownPage.Url
+					});
+					break;
+				case StructuralNavigationItem structuralPage:
+					rows.Add(new ApiOverviewRow
+					{
+						Kind = OverviewRowKind.MarkdownPage,
+						Title = structuralPage.NavigationTitle,
+						Url = structuralPage.Url
 					});
 					break;
 				default:
@@ -123,7 +133,8 @@ public static class ApiOverviewBuilder
 					{
 						Kind = OverviewRowKind.Operation,
 						Title = operation.NavigationTitle,
-						Operations = [operation]
+						Operations = [operation],
+						Url = operation.Url
 					});
 					break;
 				default:
@@ -146,7 +157,8 @@ public static class ApiOverviewBuilder
 			{
 				Kind = OverviewRowKind.Endpoint,
 				Title = endpoint.NavigationTitle,
-				Operations = endpointOperations
+				Operations = endpointOperations,
+				Url = endpoint.Url
 			});
 		else
 			recurse(endpoint, rows);

@@ -172,10 +172,8 @@ public class CreateChangelogArgumentsValidator(IConfigurationContext configurati
 			{
 				collector.EmitError(
 					string.Empty,
-					$"Product '{product.Product}' specifies version(s) '{string.Join("|", product.Versions)}', " +
-						"but changelog entries do not carry version applicability — the origin branch is the address. " +
-						"For PR-less items that apply to specific release versions (known issues, security advisories) " +
-						"use 'changelog note' instead."
+					$"Product '{product.Product}' specifies version(s) '{string.Join("|", product.Versions)}'. " +
+						"'changelog add' does not require or allow product versions."
 				);
 				return false;
 			}

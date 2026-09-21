@@ -33,4 +33,14 @@ public record ApiTag(
 		var slice = TagLandingView.Create(viewModel);
 		await slice.RenderAsync(stream, cancellationToken: ctx);
 	}
+
+	public Task<string?> RenderCommonMarkAsync(ApiRenderContext context, Cancel ctx = default)
+	{
+		var viewModel = new TagLandingViewModel(context)
+		{
+			Tag = this,
+			OverviewRows = ApiOverviewBuilder.BuildTagChildren(context.CurrentNavigation)
+		};
+		return Task.FromResult<string?>(LandingCommonMark.Tag(viewModel));
+	}
 }

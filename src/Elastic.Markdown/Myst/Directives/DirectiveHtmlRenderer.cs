@@ -5,6 +5,7 @@
 using System;
 using System.Diagnostics.CodeAnalysis;
 using Elastic.Documentation.AppliesTo;
+using Elastic.Documentation.Site.Icons;
 using Elastic.Markdown.Diagnostics;
 using Elastic.Markdown.Helpers;
 using Elastic.Markdown.Myst.CodeBlocks;
@@ -22,12 +23,14 @@ using Elastic.Markdown.Myst.Directives.Include;
 using Elastic.Markdown.Myst.Directives.Listing;
 using Elastic.Markdown.Myst.Directives.Math;
 using Elastic.Markdown.Myst.Directives.PageCard;
+using Elastic.Markdown.Myst.Directives.RelatedLearning;
 using Elastic.Markdown.Myst.Directives.Settings;
 using Elastic.Markdown.Myst.Directives.Stepper;
 using Elastic.Markdown.Myst.Directives.Storybook;
 using Elastic.Markdown.Myst.Directives.SubPages;
 using Elastic.Markdown.Myst.Directives.Table;
 using Elastic.Markdown.Myst.Directives.Tabs;
+using Elastic.Markdown.Myst.Directives.VectorSizing;
 using Elastic.Markdown.Myst.Directives.Version;
 using Elastic.Markdown.Myst.InlineParsers.Substitution;
 using Elastic.Markdown.Myst.Roles;
@@ -123,6 +126,9 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 			case WhatsNewBlock whatsNewBlock:
 				WriteWhatsNew(renderer, whatsNewBlock);
 				return;
+			case RelatedLearningBlock relatedLearningBlock:
+				WriteRelatedLearning(renderer, relatedLearningBlock);
+				return;
 			case PageCardBlock pageCardBlock:
 				WritePageCard(renderer, pageCardBlock);
 				return;
@@ -137,6 +143,9 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 				return;
 			case ButtonBlock buttonBlock:
 				WriteButton(renderer, buttonBlock);
+				return;
+			case VectorSizingBlock vectorSizingBlock:
+				WriteVectorSizing(renderer, vectorSizingBlock);
 				return;
 			case ListSubPagesBlock listSubPagesBlock:
 				WriteListSubPages(renderer, listSubPagesBlock);
@@ -347,6 +356,21 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 		return html;
 	}
 
+	private static void WriteRelatedLearning(HtmlRenderer renderer, RelatedLearningBlock block)
+	{
+		if (block.Items.Count == 0)
+			return;
+
+		var slice = RelatedLearningView.Create(new RelatedLearningViewModel
+		{
+			DirectiveBlock = block,
+			Heading = block.Heading,
+			Slug = block.Slug,
+			Items = block.Items
+		});
+		RenderRazorSlice(slice, renderer);
+	}
+
 	private static void WritePageCard(HtmlRenderer renderer, PageCardBlock block)
 	{
 		var slice = PageCardView.Create(new PageCardViewModel { DirectiveBlock = block, Title = block.Title, Url = block.ResolvedUrl });
@@ -452,14 +476,13 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 		if (string.IsNullOrEmpty(block.Url))
 			return;
 
-		var prefix = block.Build.UrlPathPrefix?.TrimEnd('/') ?? string.Empty;
 		var slice = AgentSkillView.Create(new AgentSkillViewModel
 		{
 			DirectiveBlock = block,
 			Url = block.Url,
 			InstallCommand = block.InstallCommand,
 			HasBody = block.Count > 0,
-			LearnMoreUrl = $"{prefix}/explore-analyze/ai-features/agent-skills#available-skills"
+			LearnMoreUrl = "https://www.elastic.co/docs/explore-analyze/ai-features/agent-skills#available-skills"
 		});
 		RenderRazorSlice(slice, renderer);
 	}
@@ -857,6 +880,12 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 
 		var html = document.ToHtml(MarkdownParser.Pipeline);
 		_ = renderer.Write(html);
+	}
+
+	private static void WriteVectorSizing(HtmlRenderer renderer, VectorSizingBlock block)
+	{
+		var slice = VectorSizingView.Create(new VectorSizingViewModel { DirectiveBlock = block });
+		RenderRazorSlice(slice, renderer);
 	}
 
 	private static void WriteMathBlock(HtmlRenderer renderer, MathBlock block)

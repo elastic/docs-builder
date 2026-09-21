@@ -25,11 +25,11 @@
 		@if (hasGroups)
 		{
 			<div class="listing-group-chips flex flex-wrap items-center gap-2 mt-3">
-				<button class="listing-chip listing-chip-all listing-chip-active px-3 py-1 text-xs rounded-full border border-blue-elastic text-blue-elastic" data-group="">All</button>
+				<button type="button" class="listing-chip listing-chip-all listing-chip-active px-3 py-1 text-xs rounded-full border border-blue-elastic text-blue-elastic" data-group="" aria-pressed="true">All</button>
 				<span class="text-grey-20 select-none">|</span>
 				@foreach (var kvp in groupTitles)
 				{
-					<button class="listing-chip px-3 py-1 text-xs rounded-full border border-grey-20 text-ink-light hover:border-blue-elastic hover:text-blue-elastic" data-group="@kvp.Key">@kvp.Value</button>
+					<button type="button" class="listing-chip px-3 py-1 text-xs rounded-full border border-grey-20 text-ink-light hover:border-blue-elastic hover:text-blue-elastic" data-group="@kvp.Key" aria-pressed="false">@kvp.Value</button>
 				}
 			</div>
 		}

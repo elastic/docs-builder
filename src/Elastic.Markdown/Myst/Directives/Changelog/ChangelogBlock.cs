@@ -108,6 +108,13 @@ public class ChangelogBlock(DirectiveBlockParser parser, ParserContext context) 
 	public string? VersionFilter { get; private set; }
 
 	/// <summary>
+	/// When set (the <c>:since_version:</c> option), bundles at or before this version are excluded from
+	/// the rendered output. Useful when older versions are already hardcoded on the page and the directive
+	/// is used to backfill newer releases from S3/CDN.
+	/// </summary>
+	public string? SinceVersion { get; private set; }
+
+	/// <summary>
 	/// Loaded and parsed bundles, sorted by version (semver descending).
 	/// </summary>
 	public IReadOnlyList<LoadedBundle> LoadedBundles { get; private set; } = [];
@@ -225,12 +232,15 @@ public class ChangelogBlock(DirectiveBlockParser parser, ParserContext context) 
 		ReleaseDatesEnabled = PropBool("release-dates");
 		HighlightsEnabled = PropBool("highlights");
 		VersionFilter = Prop("version") is { Length: > 0 } v ? v.Trim() : null;
+		SinceVersion = Prop("since_version") is { Length: > 0 } sv ? sv.Trim() : null;
 
+		// Backward-compat: explicit :cdn: option takes priority over the argument-based parsing.
 		if (Properties?.ContainsKey("cdn") == true)
 		{
 			// :cdn: takes an explicit product, or may be valueless to infer the product from the
 			// repository that holds the doc (the common case where the repo name is the product id).
-			var product = Prop("cdn") is { Length: > 0 } explicitProduct ? explicitProduct.Trim() : InferCdnProductFromRepository();
+			var isAutoInferred = Prop("cdn") is not { Length: > 0 };
+			var product = isAutoInferred ? InferCdnProductFromRepository() : Prop("cdn")!.Trim();
 
 			if (string.IsNullOrWhiteSpace(product))
 			{
@@ -247,11 +257,60 @@ public class ChangelogBlock(DirectiveBlockParser parser, ParserContext context) 
 				return;
 			}
 
+			// Warn when the author also supplied a folder argument — it is ignored because :cdn: takes priority.
+			if (!string.IsNullOrWhiteSpace(Arguments))
+				this.EmitWarning("The bundles folder argument is ignored when :cdn: is set; bundles are sourced from the CDN.");
+
 			CdnProduct = product;
-			LoadCdnBundles(product);
+			LoadCdnBundles(product, isAutoInferred);
 			return;
 		}
 
+		// TODO: This argument parsing (path vs product name) needs refactoring when all usages are
+		// updated to explicit product names. At that point the '/' check and local-path support can
+		// be removed.
+		if (!string.IsNullOrWhiteSpace(Arguments) && Arguments.StartsWith('/'))
+		{
+			// Path argument — still honored in all build types for backward compatibility.
+			// In non-isolated builds a deprecation warning is emitted; the local path is still used
+			// so existing repos with committed bundle files continue to work until they migrate to
+			// an explicit product name.
+			// TODO: Once all usages are migrated, restrict path arguments to isolated builds only.
+			if (Build.BuildType != BuildType.Isolated)
+			{
+				this.EmitWarning(
+					"Local bundle path argument is deprecated in non-local builds. " +
+						"Migrate to an explicit product name (e.g. '::{changelog} elasticsearch') so CDN is used instead."
+				);
+			}
+
+			ExtractBundlesFolderPath();
+			if (Found)
+				LoadAndCacheBundles();
+			return;
+		}
+
+		// Explicit product name as argument: use CDN with that product.
+		// TODO: Once path-argument usages are migrated, the no-argument case below should also
+		// default to CDN (inferring the product from the repository), replacing local-folder discovery.
+		if (!string.IsNullOrWhiteSpace(Arguments))
+		{
+			var argProduct = Arguments.Trim();
+
+			if (!IsValidCdnProduct(argProduct))
+			{
+				this.EmitError($"Invalid CDN product '{argProduct}'. Product names must match [a-zA-Z0-9_-]+.");
+				return;
+			}
+
+			CdnProduct = argProduct;
+			LoadCdnBundles(argProduct);
+			return;
+		}
+
+		// No argument and no :cdn: option: fall back to local folder discovery (existing behavior).
+		// This preserves backward compatibility for bare {changelog} directives until all repos
+		// have declared release_notes in docset.yml and migrated to an explicit product name.
 		ExtractBundlesFolderPath();
 		if (Found)
 			LoadAndCacheBundles();
@@ -484,9 +543,13 @@ public class ChangelogBlock(DirectiveBlockParser parser, ParserContext context) 
 	{
 		try
 		{
-			// Try to load assembler configuration to get private repositories
+			// Try to load assembler configuration to get private repositories.
+			// Use AllPrivateRepositoryNames rather than PrivateRepositories.Keys: PrivateRepositories
+			// excludes skip:true entries (because the cross-link fetcher has no link index for them),
+			// but skip:true means "does not publish docs", not "is public". Repos like kibana-team
+			// (private:true, skip:true) must still have their links hidden at render time.
 			var assemblerConfig = AssemblyConfiguration.Create(Build.ConfigurationFileProvider);
-			foreach (var repoName in assemblerConfig.PrivateRepositories.Keys)
+			foreach (var repoName in assemblerConfig.AllPrivateRepositoryNames)
 				_ = PrivateRepositories.Add(repoName);
 		}
 		catch
@@ -511,19 +574,40 @@ public class ChangelogBlock(DirectiveBlockParser parser, ParserContext context) 
 		ApplyLoadedBundles(loadedBundles);
 	}
 
-	private void LoadCdnBundles(string product)
+	private void LoadCdnBundles(string product, bool isAutoInferred = false)
 	{
-		// Product validity is checked by the caller before CdnProduct is assigned.
-		if (!string.IsNullOrWhiteSpace(Arguments))
-			this.EmitWarning("The bundles folder argument is ignored when :cdn: is set; bundles are sourced from the CDN.");
-
-		// :cdn: is a selector over release notes prefetched at build startup. A product must be declared
-		// under `release_notes` in docset.yml; otherwise its bundles were never fetched.
+		// :cdn: is a selector over release notes prefetched at build startup.
 		if (!Context.ReleaseNotesResolver.IsDeclared(product))
 		{
-			this.EmitError(
-				$"The :cdn: product '{product}' is not declared in docset.yml. Add it under 'release_notes:', for example:\n  release_notes:\n    - product: {product}"
-			);
+			if (!isAutoInferred)
+			{
+				this.EmitError(
+					$"The :cdn: product '{product}' is not declared in docset.yml. Add it under 'release_notes:', for example:\n  release_notes:\n    - product: {product}"
+				);
+				return;
+			}
+
+			// Auto-inferred products are fetched best-effort. Inferred bundles are not promoted into
+			// DeclaredProducts to avoid cross-repo contamination in assembler runs (one repo's successful
+			// inference must not suppress the undeclared-product error for an explicit :cdn: in another).
+			// Check BundlesByProduct directly: bundles are present when the CDN fetch succeeded.
+			if (Context.ReleaseNotesResolver.TryGetBundles(product, out var inferredBundles) && inferredBundles.Count > 0)
+			{
+				ApplyLoadedBundles(inferredBundles);
+				Found = LoadedBundles.Count > 0;
+				return;
+			}
+
+			// No bundles available. Emit a hint only for the 404 case (not yet published) — for other
+			// CDN errors a warning was already emitted during prefetch, so no extra message is needed.
+			if (Context.ReleaseNotesResolver.IsNotFound(product))
+			{
+				this.EmitHint(
+					$"No CDN bundles found for auto-inferred product '{product}'. " +
+						$"The changelog will render empty until bundles are published. " +
+						$"To suppress this hint, declare it explicitly under 'release_notes:' in docset.yml."
+				);
+			}
 			return;
 		}
 
@@ -534,7 +618,7 @@ public class ChangelogBlock(DirectiveBlockParser parser, ParserContext context) 
 
 	private void ApplyLoadedBundles(IReadOnlyList<LoadedBundle> loadedBundles)
 	{
-		var filteredBundles = FilterUnreleasedVersions(FilterByVersion(loadedBundles));
+		var filteredBundles = FilterBySinceVersion(FilterUnreleasedVersions(FilterByVersion(loadedBundles)));
 
 		// Sort by version (descending - newest first)
 		// Supports both semver (e.g., "9.3.0") and date-based (e.g., "2025-08-05") versions
@@ -590,6 +674,41 @@ public class ChangelogBlock(DirectiveBlockParser parser, ParserContext context) 
 		return visible;
 	}
 
+	/// <summary>
+	/// Filters bundles at or before the optional <c>:since_version:</c> threshold. Bundles whose version
+	/// is ≤ <see cref="SinceVersion"/> are excluded so the directive only shows newer releases — useful
+	/// when older versions are already hardcoded on the page and the directive backfills from S3/CDN.
+	/// </summary>
+	private IReadOnlyList<LoadedBundle> FilterBySinceVersion(IReadOnlyList<LoadedBundle> bundles)
+	{
+		if (SinceVersion is not { Length: > 0 } since)
+			return bundles;
+
+		var sinceVd = VersionOrDate.Parse(since);
+		if (sinceVd.Raw is not null)
+		{
+			this.EmitWarning(
+				$":since_version: '{since}' is not a valid semver or date (YYYY-MM-DD / YYYY-MM) — filter will not be applied."
+			);
+			return bundles;
+		}
+
+		var visible = new List<LoadedBundle>(bundles.Count);
+		foreach (var bundle in bundles)
+		{
+			var bundleVd = VersionOrDate.Parse(bundle.Version);
+			if (bundleVd <= sinceVd)
+			{
+				this.EmitHint($"Hiding changelog bundle '{bundle.Version}': it is at or before the :since_version: filter '{since}'.");
+				continue;
+			}
+
+			visible.Add(bundle);
+		}
+
+		return visible;
+	}
+
 	/// <summary>Filters bundles by the optional <c>:version:</c> value; warns and renders empty when nothing matches.</summary>
 	private IReadOnlyList<LoadedBundle> FilterByVersion(IReadOnlyList<LoadedBundle> bundles)
 	{
@@ -604,8 +723,7 @@ public class ChangelogBlock(DirectiveBlockParser parser, ParserContext context) 
 		return matched;
 	}
 
-	private static bool IsValidCdnProduct(string product) =>
-		product.Length > 0 && product.All(c => char.IsAsciiLetterOrDigit(c) || c is '_' or '-');
+	private static bool IsValidCdnProduct(string product) => ReleaseNotesFetcher.IsValidCdnProductId(product);
 
 	/// <summary>Infers the CDN product for a valueless <c>:cdn:</c> from the repo, mapped to its canonical id via products.yml.</summary>
 	private string? InferCdnProductFromRepository()

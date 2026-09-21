@@ -149,11 +149,14 @@ public class OnboardingValidationTests(ITestOutputHelper output) : ChangelogTest
 	}
 
 	[Fact]
-	public async Task NoPrestageProducts_PassesWithoutAnyRequest()
+	public async Task NoManagedProducts_PassesWithoutAnyRequest()
 	{
-		var onRelease = PrestageProduct("widget") with { Features = ProductFeatures.All };
+		var unmanaged = PrestageProduct("widget") with
+		{
+			Features = new ProductFeatures { PublicReference = true, ReleaseNotes = ReleaseNotesPath.None }
+		};
 		var handler = RepoWith("widget");
-		var service = Service(ContextWith(onRelease), handler);
+		var service = Service(ContextWith(unmanaged), handler);
 
 		var result = await service.ValidateOnboardingAsync(
 			Collector,
@@ -163,6 +166,44 @@ public class OnboardingValidationTests(ITestOutputHelper output) : ChangelogTest
 
 		result.Should().BeTrue();
 		handler.RequestedPaths.Should().BeEmpty();
+	}
+
+	[Fact]
+	public async Task OnReleaseProductWithWorkflow_Passes()
+	{
+		var product = PrestageProduct("widget") with { Features = ProductFeatures.All };
+		var handler = RepoWith("widget", ".github/workflows/release-notes.yml", "docs/changelog.yml");
+		var service = Service(ContextWith(product), handler);
+
+		var result = await service.ValidateOnboardingAsync(
+			Collector,
+			new ValidateOnboardingArguments(),
+			TestContext.Current.CancellationToken
+		);
+
+		result.Should().BeTrue();
+		Collector.Errors.Should().Be(0);
+		handler.RequestedPaths.Should().Contain("/repos/elastic/widget/contents/.github/workflows/release-notes.yml");
+	}
+
+	[Fact]
+	public async Task OnReleaseProductMissingWorkflow_FailsListingTheFile()
+	{
+		var product = PrestageProduct("widget") with { Features = ProductFeatures.All };
+		var handler = RepoWith("widget", "docs/changelog.yml");
+		var service = Service(ContextWith(product), handler);
+
+		var result = await service.ValidateOnboardingAsync(
+			Collector,
+			new ValidateOnboardingArguments(),
+			TestContext.Current.CancellationToken
+		);
+
+		result.Should().BeFalse();
+		Collector
+			.Diagnostics
+			.Should()
+			.Contain(d => d.Severity == Severity.Error && d.Message.Contains("widget") && d.Message.Contains("release-notes.yml"));
 	}
 
 	[Fact]

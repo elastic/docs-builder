@@ -1,0 +1,29 @@
+{
+  "uid": "blt00000000000000d2",
+  "_version": 2,
+  "locale": "en-us",
+  "ACL": {},
+  "created_at": "2023-11-01T09:00:00.000Z",
+  "created_by": "bltuser00000000001a",
+  "updated_at": "2023-11-02T10:00:00.000Z",
+  "updated_by": "bltuser00000000002b",
+  "tags": [],
+  "title": "Reports",
+  "title_l10n": "Reports",
+  "url": "/security-labs/reports",
+  "subheading_l10n": "In-depth research reports from the Elastic Security Labs team.",
+  "seo": {
+    "seo_title_l10n": "",
+    "seo_description_l10n": "",
+    "seo_image": null,
+    "canonical_tag": "",
+    "do_not_index": false,
+    "nofollow": false
+  },
+  "publish_details": {
+    "environment": "bltenv00000000001a",
+    "locale": "en-us",
+    "time": "2023-11-02T10:05:00.000Z",
+    "user": "bltuser00000000001a"
+  }
+}

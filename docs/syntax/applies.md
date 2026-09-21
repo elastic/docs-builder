@@ -24,10 +24,13 @@ When documenting a new feature or behavior, answer these two questions:
 | You need to show entirely different content for each variant, not just tag the same content | [Versioned tabs](applies-switch.md) |
 | You're adding a version-specific note, tip, or warning | [Admonition annotation](admonitions.md) |
 | You're adding a version-specific dropdown | [Dropdown annotation](dropdowns.md) |
+| You're tagging a `{settings}` YAML entry | [applies_to in settings YAML](automated_settings.md#settings-yaml) |
 
 ## Syntax reference
 
 The `applies_to` metadata supports an [exhaustive list of keys](#key-value-reference). When you write or edit documentation, only specify the keys that apply to that content.
+
+`{settings}` YAML is an exception. Each setting renders a **Supported on** line, so you list every deployment key. Refer to [applies_to in settings YAML](automated_settings.md#settings-yaml).
 
 Each key accepts values with the following syntax:
 
@@ -394,6 +397,8 @@ applies_to:
 ## Badge rendering reference
 
 This section provides detailed rules for how badges are rendered based on lifecycle, version, and release status. Use this as a reference when you need to understand the exact rendering behavior.
+
+For `{settings}` YAML, still write the version on `stack`. Do not omit it to hide **Planned**. See [applies_to in settings YAML](automated_settings.md#settings-yaml).
 
 ### Rendering order
 

@@ -53,25 +53,34 @@ public class CodexGitRepository(
 
 	public bool IsInitialized() => Directory.Exists(Path.Join(WorkingDirectory.FullName, ".git"));
 
-	public void Fetch(string reference) =>
-		_ = ExecInWithRetry(
-			EnvironmentVars,
-			NetworkRetry,
-			"git",
-			"fetch",
-			"--no-tags",
-			"--prune",
-			"--no-recurse-submodules",
-			"--depth",
-			"1",
-			"origin",
-			reference
-		);
+	public void Fetch(string reference)
+	{
+		if (
+			!ExecInWithRetry(
+				EnvironmentVars,
+				NetworkRetry,
+				"git",
+				"fetch",
+				"--no-tags",
+				"--prune",
+				"--no-recurse-submodules",
+				"--depth",
+				"1",
+				"origin",
+				reference
+			)
+		)
+			throw new InvalidOperationException($"git fetch failed for '{reference}'");
+	}
 
 	public void EnableSparseCheckout(string[] folders) =>
 		ExecIn(EnvironmentVars, "git", ["sparse-checkout", "set", "--no-cone", .. folders]);
 
-	public void Checkout(string reference) => ExecIn(EnvironmentVars, "git", "checkout", "--force", reference);
+	public void Checkout(string reference)
+	{
+		if (!ExecInWithRetry(EnvironmentVars, RetryPolicy.None, "git", "checkout", "--force", reference))
+			throw new InvalidOperationException($"git checkout failed for '{reference}'");
+	}
 
 	public void GitAddOrigin(string origin) => ExecIn(EnvironmentVars, "git", "remote", "add", "origin", origin);
 }

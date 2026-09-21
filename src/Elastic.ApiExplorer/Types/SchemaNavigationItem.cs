@@ -22,6 +22,12 @@ public record ApiSchema(string SchemaId, string DisplayName, string Category, IO
 		var slice = SchemaView.Create(viewModel);
 		await slice.RenderAsync(stream, cancellationToken: ctx);
 	}
+
+	public Task<string?> RenderCommonMarkAsync(ApiRenderContext context, Cancel ctx = default)
+	{
+		var page = SchemaPageModel.Create(this, context);
+		return Task.FromResult<string?>(SchemaCommonMark.Write(this, page, context));
+	}
 }
 
 public class SchemaNavigationItem : ILeafNavigationItem<ApiSchema>

@@ -84,6 +84,11 @@ public class CodexCloneService(ILoggerFactory logFactory, ILinkIndexReader linkI
 			try
 			{
 				var git = new CodexGitRepository(loggerFactory, context.Collector, subDir);
+				if (!git.HasHead())
+				{
+					logger.LogWarning("Could not read commit for {Name}; skipping", repoName);
+					continue;
+				}
 				currentCommit = git.GetCurrentCommit();
 			}
 			catch (OperationCanceledException)
@@ -186,7 +191,10 @@ public class CodexCloneService(ILoggerFactory logFactory, ILinkIndexReader linkI
 
 		try
 		{
-			var git = new CodexGitRepository(logFactory, context.Collector, repoDir);
+			// Git command failures emit collector errors. Use a local collector so a
+			// missing clone token policy warns and skips instead of failing the job.
+			var gitCollector = new DiagnosticsCollector([]);
+			var git = new CodexGitRepository(logFactory, gitCollector, repoDir);
 
 			if (assumeCloned && git.IsInitialized())
 			{

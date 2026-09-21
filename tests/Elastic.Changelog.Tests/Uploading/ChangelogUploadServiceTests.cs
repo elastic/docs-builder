@@ -11,7 +11,9 @@ using AwesomeAssertions;
 using Elastic.Changelog.Tests.Changelogs;
 using Elastic.Changelog.Uploading;
 using Elastic.Documentation.Configuration;
+using Elastic.Documentation.Configuration.Changelog;
 using Elastic.Documentation.Configuration.ReleaseNotes;
+using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.ReleaseNotes;
 using FakeItEasy;
@@ -646,6 +648,86 @@ public class ChangelogUploadServiceTests
 	}
 
 	[Fact]
+	public void CollectBundleScanDirectories_IncludesGlobalAndProfileDirectories()
+	{
+		var config = new ChangelogConfiguration
+		{
+			Bundle = new BundleConfiguration
+			{
+				OutputDirectory = "docs/releases",
+				Profiles = new Dictionary<string, BundleProfile>
+				{
+					["kibana-release"] = new(),
+					["serverless-release"] = new() { OutputDirectory = "docs/releases/cloud-serverless" }
+				}
+			}
+		};
+
+		ChangelogUploadService.CollectBundleScanDirectories(null, config).Should().Equal("docs/releases", "docs/releases/cloud-serverless");
+	}
+
+	[Fact]
+	public void CollectBundleScanDirectories_ExplicitDirectory_IgnoresConfig()
+	{
+		var config = new ChangelogConfiguration { Bundle = new BundleConfiguration { OutputDirectory = "docs/releases" } };
+
+		ChangelogUploadService.CollectBundleScanDirectories("custom/out", config).Should().Equal("custom/out");
+	}
+
+	[Fact]
+	public void DiscoverBundleUploadTargets_ProfileSubdirectory_IsFoundWhenThatDirectoryIsScanned()
+	{
+		var root = _mockFileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
+		var globalDir = _mockFileSystem.Path.Join(root, "docs", "releases");
+		var profileDir = _mockFileSystem.Path.Join(globalDir, "cloud-serverless");
+		_mockFileSystem.Directory.CreateDirectory(globalDir);
+		_mockFileSystem.Directory.CreateDirectory(profileDir);
+
+		// language=yaml
+		const string bundleYaml =
+			"""
+			products:
+			  - product: cloud-serverless
+			    target: 2026-08-27
+			entries: []
+			""";
+		var nestedPath = _mockFileSystem.Path.Join(profileDir, "kibana-cloud-serverless-2026-08-27.yaml");
+		_mockFileSystem.AddFile(nestedPath, new MockFileData(bundleYaml));
+		_mockFileSystem.AddFile(
+			_mockFileSystem.Path.Join(globalDir, "kibana-kibana-9.3.0.yaml"),
+			new MockFileData(
+				"""
+				products:
+				  - product: kibana
+				    target: 9.3.0
+				entries: []
+				"""
+			)
+		);
+
+		_service
+			.DiscoverBundleUploadTargets(_collector, globalDir)
+			.Should()
+			.ContainSingle(t => t.S3Key.Contains("kibana-kibana-9.3.0.yaml"));
+		_service.DiscoverBundleUploadTargets(_collector, globalDir).Should().NotContain(t => t.LocalPath == nestedPath);
+
+		var config = new ChangelogConfiguration
+		{
+			Bundle = new BundleConfiguration
+			{
+				OutputDirectory = globalDir,
+				Profiles = new Dictionary<string, BundleProfile> { ["serverless-release"] = new() { OutputDirectory = profileDir } }
+			}
+		};
+		var scanDirs = ChangelogUploadService.CollectBundleScanDirectories(null, config);
+		var targets = scanDirs.SelectMany(d => _service.DiscoverBundleUploadTargets(_collector, d)).ToList();
+
+		targets.Should().Contain(t => t.LocalPath == nestedPath);
+		targets.Should().Contain(t => t.S3Key == "bundle/cloud-serverless/kibana-cloud-serverless-2026-08-27.yaml");
+		targets.Should().Contain(t => t.S3Key == "bundle/kibana/kibana-kibana-9.3.0.yaml");
+	}
+
+	[Fact]
 	public void DiscoverBundleUploadTargets_MultipleProducts_CreatesTargetPerProduct()
 	{
 		var bundleDir = _mockFileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "releases");
@@ -1030,7 +1112,7 @@ public class ChangelogUploadServiceTests
 	public void DiscoverUploadTargets_MultiPrEntry_AddsMarkerTargets()
 	{
 		// language=yaml
-		AddChangelog(
+		var path = AddChangelog(
 			"100.yaml",
 			"""
 			title: Multi-PR feature
@@ -1050,8 +1132,219 @@ public class ChangelogUploadServiceTests
 		);
 		var marker = targets.SingleOrDefault(t => t.S3Key == "changelog/elastic/elasticsearch/main/200.yaml");
 		marker.Should().NotBeNull();
-		marker.InlineContent.Should().NotBeNullOrEmpty("marker has inline content, no local file");
+		marker.LocalPath.Should().Be(path);
+		marker.InlineContent.Should().NotBeNullOrEmpty("marker has inline content, no extra on-disk file");
 		var markerEntry = ReleaseNotesSerialization.DeserializeEntry(marker.InlineContent);
 		markerEntry.Link.Should().Be("100");
+	}
+
+	[Fact]
+	public async Task Upload_NoOverwrite_WhenRemoteDiffers_ReturnsFalseAndEmitsRemoteYaml()
+	{
+		const string remoteYaml =
+			"""
+			title: Existing elasticsearch entry
+			type: bug-fix
+			products:
+			  - product: elasticsearch
+			""";
+		var localPath = AddChangelog(
+			"12345.yaml",
+			"""
+			title: Cloud serverless variant
+			type: bug-fix
+			products:
+			  - product: cloud-serverless
+			prs:
+			  - "12345"
+			"""
+		);
+
+		A.CallTo(
+			() => _s3Client.GetObjectMetadataAsync(A<GetObjectMetadataRequest>._, A<CancellationToken>._)
+		).Returns(new GetObjectMetadataResponse { ETag = "\"stale-etag\"" });
+		A.CallTo(() => _s3Client.GetObjectAsync(A<GetObjectRequest>._, A<CancellationToken>._)).Returns(new GetObjectResponse
+		{
+			ResponseStream = new MemoryStream(System.Text.Encoding.UTF8.GetBytes(remoteYaml))
+		});
+
+		var args = new ChangelogUploadArguments
+		{
+			ArtifactType = ArtifactType.Changelog,
+			Target = UploadTargetKind.S3,
+			S3BucketName = "test-bucket",
+			Directory = _changelogDir,
+			Owner = "elastic",
+			Repo = "elasticsearch",
+			Branch = "main",
+			NoOverwrite = true
+		};
+		var ct = TestContext.Current.CancellationToken;
+		var result = await _service.Upload(_collector, args, ct);
+
+		result.Should().BeFalse();
+		_collector.Errors.Should().BeGreaterThan(0);
+		_collector.Warnings.Should().BeGreaterThan(0);
+		_collector
+			.Diagnostics
+			.Should()
+			.Contain(d => d.Severity == Severity.Error && d.Message.Contains("already exist at the destination"));
+		_collector
+			.Diagnostics
+			.Should()
+			.Contain(
+				d => d.Severity == Severity.Warning && d.Message.Contains(
+					"s3://test-bucket/changelog/elastic/elasticsearch/main/12345.yaml"
+				) && d.Message.Contains(localPath) && d.Message.Contains("product: elasticsearch")
+			);
+
+		A.CallTo(() => _s3Client.PutObjectAsync(A<PutObjectRequest>._, A<CancellationToken>._)).MustNotHaveHappened();
+	}
+
+	[Fact]
+	public async Task Upload_NoOverwrite_MixedNewAndExisting_UploadsNewAndRefusesExisting()
+	{
+		AddChangelog(
+			"12345.yaml",
+			"""
+			title: Existing PR
+			type: bug-fix
+			products:
+			  - product: cloud-serverless
+			prs:
+			  - "12345"
+			"""
+		);
+		AddChangelog(
+			"67890.yaml",
+			"""
+			title: New PR
+			type: feature
+			products:
+			  - product: elasticsearch
+			prs:
+			  - "67890"
+			"""
+		);
+
+		A.CallTo(
+			() => _s3Client.GetObjectMetadataAsync(
+				A<GetObjectMetadataRequest>.That.Matches(r => r.Key == "changelog/elastic/elasticsearch/main/12345.yaml"),
+				A<CancellationToken>._
+			)
+		).Returns(new GetObjectMetadataResponse { ETag = "\"stale-etag\"" });
+		A.CallTo(
+			() => _s3Client.GetObjectMetadataAsync(
+				A<GetObjectMetadataRequest>.That.Matches(r => r.Key == "changelog/elastic/elasticsearch/main/67890.yaml"),
+				A<CancellationToken>._
+			)
+		).Throws(new AmazonS3Exception("Not Found") { StatusCode = HttpStatusCode.NotFound });
+		A.CallTo(() => _s3Client.GetObjectAsync(A<GetObjectRequest>._, A<CancellationToken>._)).Returns(new GetObjectResponse
+		{
+			ResponseStream = new MemoryStream("title: remote elasticsearch\n"u8.ToArray())
+		});
+		A.CallTo(() => _s3Client.PutObjectAsync(A<PutObjectRequest>._, A<CancellationToken>._)).Returns(new PutObjectResponse());
+
+		var args = new ChangelogUploadArguments
+		{
+			ArtifactType = ArtifactType.Changelog,
+			Target = UploadTargetKind.S3,
+			S3BucketName = "test-bucket",
+			Directory = _changelogDir,
+			Owner = "elastic",
+			Repo = "elasticsearch",
+			Branch = "main",
+			NoOverwrite = true
+		};
+		var ct = TestContext.Current.CancellationToken;
+		var result = await _service.Upload(_collector, args, ct);
+
+		result.Should().BeFalse();
+		A.CallTo(
+			() => _s3Client.PutObjectAsync(
+				A<PutObjectRequest>.That.Matches(r => r.Key == "changelog/elastic/elasticsearch/main/67890.yaml"),
+				A<CancellationToken>._
+			)
+		).MustHaveHappenedOnceExactly();
+		A.CallTo(
+			() => _s3Client.PutObjectAsync(
+				A<PutObjectRequest>.That.Matches(r => r.Key == "changelog/elastic/elasticsearch/main/12345.yaml"),
+				A<CancellationToken>._
+			)
+		).MustNotHaveHappened();
+	}
+
+	[Fact]
+	public async Task Upload_NoOverwrite_MultiPrMarker_ExplainsAliasNotFullChangelog()
+	{
+		var localPath = AddChangelog(
+			"100.yaml",
+			"""
+			title: Multi-PR feature
+			type: feature
+			products:
+			  - product: elasticsearch
+			prs:
+			  - https://github.com/elastic/elasticsearch/pull/100
+			  - https://github.com/elastic/elasticsearch/pull/200
+			"""
+		);
+
+		A.CallTo(
+			() => _s3Client.GetObjectMetadataAsync(
+				A<GetObjectMetadataRequest>.That.Matches(r => r.Key == "changelog/elastic/elasticsearch/main/100.yaml"),
+				A<CancellationToken>._
+			)
+		).Throws(new AmazonS3Exception("Not Found") { StatusCode = HttpStatusCode.NotFound });
+		A.CallTo(
+			() => _s3Client.GetObjectMetadataAsync(
+				A<GetObjectMetadataRequest>.That.Matches(r => r.Key == "changelog/elastic/elasticsearch/main/200.yaml"),
+				A<CancellationToken>._
+			)
+		).Returns(new GetObjectMetadataResponse { ETag = "\"marker-etag\"" });
+		A.CallTo(() => _s3Client.GetObjectAsync(A<GetObjectRequest>._, A<CancellationToken>._)).Returns(new GetObjectResponse
+		{
+			ResponseStream = new MemoryStream("""
+				link: "100"
+				"""u8.ToArray())
+		});
+		A.CallTo(() => _s3Client.PutObjectAsync(A<PutObjectRequest>._, A<CancellationToken>._)).Returns(new PutObjectResponse());
+
+		var args = new ChangelogUploadArguments
+		{
+			ArtifactType = ArtifactType.Changelog,
+			Target = UploadTargetKind.S3,
+			S3BucketName = "test-bucket",
+			Directory = _changelogDir,
+			Owner = "elastic",
+			Repo = "elasticsearch",
+			Branch = "main",
+			NoOverwrite = true
+		};
+		var ct = TestContext.Current.CancellationToken;
+		var result = await _service.Upload(_collector, args, ct);
+
+		result.Should().BeFalse();
+		_collector.Diagnostics.Should().Contain(d => d.Severity == Severity.Error && d.Message.Contains("PR-alias marker"));
+		_collector
+			.Diagnostics
+			.Should()
+			.Contain(
+				d => d.Severity == Severity.Warning && d.Message.Contains("PR-alias marker already exists") && d.Message.Contains(
+					"canonical changelog for PR 100"
+				) && d.Message.Contains(localPath) && d.Message.Contains("Existing remote marker:") && d.Message.Contains("link:")
+			);
+		A.CallTo(
+			() => _s3Client.PutObjectAsync(
+				A<PutObjectRequest>.That.Matches(r => r.Key == "changelog/elastic/elasticsearch/main/100.yaml"),
+				A<CancellationToken>._
+			)
+		).MustHaveHappenedOnceExactly();
+		A.CallTo(
+			() => _s3Client.PutObjectAsync(
+				A<PutObjectRequest>.That.Matches(r => r.Key == "changelog/elastic/elasticsearch/main/200.yaml"),
+				A<CancellationToken>._
+			)
+		).MustNotHaveHappened();
 	}
 }

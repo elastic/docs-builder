@@ -6,6 +6,7 @@ using System.IO.Abstractions.TestingHelpers;
 using System.Runtime.InteropServices;
 using AwesomeAssertions;
 using Elastic.Documentation.Configuration.Toc;
+using Elastic.Documentation.Configuration.Toc.CliReference;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Extensions;
 using Nullean.ScopedFileSystem;
@@ -622,6 +623,36 @@ public class DocumentationSetFileTests
 		apiFolder.Children.ElementAt(0).Should().BeOfType<IndexFileRef>();
 		apiFolder.Children.ElementAt(1).Should().BeOfType<FolderRef>();
 		apiFolder.Children.ElementAt(2).Should().BeOfType<FileRef>();
+	}
+
+	[Fact]
+	public void LoadAndResolvePreservesCliReferenceAppliesTo()
+	{
+		var fileSystem = new MockFileSystem();
+
+		// language=yaml
+		var docsetYaml =
+			"""
+		           project: 'test-project'
+		           toc:
+		             - cli: cli/schema.json
+		               folder: cli
+		               applies_to:
+		                 stack: preview
+		                 serverless: preview
+		           """;
+
+		fileSystem.AddFile("/docs/docset.yml", new MockFileData(docsetYaml));
+		fileSystem.AddFile("/docs/cli/schema.json", new MockFileData("{}"));
+
+		var docsetPath = fileSystem.FileInfo.New("/docs/docset.yml");
+		var collector = new DiagnosticsCollector([]);
+		var result = DocumentationSetFile.LoadAndResolve(collector, docsetPath, new ScopedFileSystem(fileSystem, "/docs"));
+
+		var cliRef = result.TableOfContents.OfType<CliReferenceRef>().Single();
+		cliRef.AppliesTo.Should().NotBeNull();
+		cliRef.AppliesTo.Stack.Should().NotBeNull();
+		cliRef.AppliesTo.Serverless.Should().NotBeNull();
 	}
 
 	[Fact]

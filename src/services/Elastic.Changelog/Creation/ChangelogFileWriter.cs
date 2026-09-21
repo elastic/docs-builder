@@ -74,7 +74,7 @@ public class ChangelogFileWriter(IFileSystem fileSystem, ILogger logger)
 		if (!fileSystem.Directory.Exists(outputDir))
 			_ = fileSystem.Directory.CreateDirectory(outputDir);
 
-		var filename = GenerateNoteFilename(input.NoteName, input.Title);
+		var filename = GetNoteFileName(input.NoteName, input.Title);
 		var filePath = fileSystem.Path.Join(outputDir, filename);
 
 		var normalizedContent = ChangelogUtf8Normalization.StripLeadingUtf8BomChar(yamlContent);
@@ -83,7 +83,7 @@ public class ChangelogFileWriter(IFileSystem fileSystem, ILogger logger)
 		return true;
 	}
 
-	private static string GenerateNoteFilename(string? noteName, string? title)
+	internal static string GetNoteFileName(string? noteName, string? title)
 	{
 		var source = !string.IsNullOrWhiteSpace(noteName) ? noteName : title;
 		if (string.IsNullOrWhiteSpace(source))
@@ -116,29 +116,36 @@ public class ChangelogFileWriter(IFileSystem fileSystem, ILogger logger)
 	/// <summary>Maximum filename length before extension to avoid filesystem path-too-long errors.</summary>
 	private const int MaxFilenameLength = 200;
 
+	internal static string? TryGetChangelogFileName(CreateChangelogArguments input)
+	{
+		if (input.Prs is not { Length: > 0 })
+			return null;
+
+		var numbers = input
+			.Prs
+			.Select(pr => ChangelogTextUtilities.ExtractPrNumber(pr, input.Owner, input.Repo))
+			.Where(n => n.HasValue)
+			.Select(n => n!.Value)
+			.Distinct()
+			.OrderBy(n => n)
+			.ToList();
+
+		if (numbers.Count == 0)
+			return null;
+
+		var joined = $"{string.Join("-", numbers)}.yaml";
+		if (joined.Length <= MaxFilenameLength + 5) // ".yaml" = 5 chars
+
+			return joined;
+
+		return $"{numbers[0]}-to-{numbers[^1]}-{numbers.Count}-prs.yaml";
+	}
+
 	private string? GenerateFilename(IDiagnosticsCollector collector, CreateChangelogArguments input)
 	{
-		if (input.Prs is { Length: > 0 })
-		{
-			var numbers = input
-				.Prs
-				.Select(pr => ChangelogTextUtilities.ExtractPrNumber(pr, input.Owner, input.Repo))
-				.Where(n => n.HasValue)
-				.Select(n => n!.Value)
-				.Distinct()
-				.OrderBy(n => n)
-				.ToList();
-
-			if (numbers.Count > 0)
-			{
-				var joined = $"{string.Join("-", numbers)}.yaml";
-				if (joined.Length <= MaxFilenameLength + 5) // ".yaml" = 5 chars
-
-					return joined;
-				// Too many PRs: use compact format to avoid path-too-long errors
-				return $"{numbers[0]}-to-{numbers[^1]}-{numbers.Count}-prs.yaml";
-			}
-		}
+		var filename = TryGetChangelogFileName(input);
+		if (filename != null)
+			return filename;
 
 		collector.EmitError(
 			string.Empty,
@@ -290,9 +297,9 @@ public class ChangelogFileWriter(IFileSystem fileSystem, ILogger logger)
 			#       Valid values are defined in https://github.com/elastic/docs-builder/blob/main/config/products.yml
 			#
 			#     versions:
-			#       Note-only. A list of release versions this note applies to.
+			#       Required when the changelog is not tied to a pull request.
 			#       Example: [9.3.0, 9.4.0] or [2026-05-15]
-			#       For PR-anchored entries, leave this absent — the branch is the address.
+			#       Omit when the file lists prs.
 			#
 			#     lifecycle:
 			#       An optional string for new features or enhancements that have a specific availability.
@@ -314,7 +321,7 @@ public class ChangelogFileWriter(IFileSystem fileSystem, ILogger logger)
 			#   (Max 600 characters).
 
 			# feature-id:
-			#   An optional string to associate a feature or enhanceent with a
+			#   An optional string to associate a feature or enhancement with a
 			#   unique feature flag.
 
 			# highlight:

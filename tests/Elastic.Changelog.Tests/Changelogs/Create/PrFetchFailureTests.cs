@@ -231,10 +231,12 @@ public class PrFetchFailureTests(ITestOutputHelper output) : CreateChangelogTest
 
 		// Assert: under --strict-fetch the bulk fetch failure escalates to an error.
 		// No files are written because filename derivation requires a PR number;
-		// the caller must use 'changelog note' for issue-only entries.
+		// the caller must use 'changelog note' for issue-only entries. The aggregate
+		// "changelogs were created" fetch summary is omitted because nothing was written.
 		result.Should().BeFalse();
 		Collector.Errors.Should().BeGreaterThan(0);
-		Collector.Diagnostics.Should().Contain(d => d.Severity == Severity.Error && d.Message.Contains("could not be fetched from GitHub"));
+		Collector.Diagnostics.Should().Contain(d => d.Severity == Severity.Error && d.Message.Contains("changelog note"));
+		Collector.Diagnostics.Should().NotContain(d => d.Message.Contains("Their changelogs were created"));
 	}
 
 	[Fact]
@@ -262,5 +264,43 @@ public class PrFetchFailureTests(ITestOutputHelper output) : CreateChangelogTest
 		result.Should().BeTrue();
 		Collector.Errors.Should().BeGreaterThan(0);
 		Collector.Diagnostics.Should().Contain(d => d.Severity == Severity.Error && d.Message.Contains("--strict-fetch"));
+	}
+
+	[Fact]
+	public async Task CreateChangelog_WithVersionedProductsOnBulkAdd_EmitsErrorWithoutFetchOrFiles()
+	{
+		A.CallTo(() => MockGitHubService.FetchPrInfoAsync(A<string>._, A<string?>._, A<string?>._, A<CancellationToken>._)).Returns(
+			(GitHubPrInfo?)null
+		);
+
+		var service = CreateService();
+		var outputDir = CreateOutputDirectory();
+
+		var input = new CreateChangelogArguments
+		{
+			Prs = ["https://github.com/elastic/elasticsearch/pull/12345", "https://github.com/elastic/elasticsearch/pull/67890"],
+			Products =
+			[
+				new ProductArgument { Product = "cloud-serverless", Target = "2026-08-27" },
+				new ProductArgument { Product = "kibana" }
+			],
+			Output = outputDir
+		};
+
+		var result = await service.CreateChangelog(Collector, input, TestContext.Current.CancellationToken);
+
+		result.Should().BeFalse();
+		Collector.Errors.Should().BeGreaterThan(0);
+		Collector
+			.Diagnostics
+			.Should()
+			.Contain(d => d.Severity == Severity.Error && d.Message.Contains("does not require or allow product versions"));
+		Collector.Diagnostics.Should().NotContain(d => d.Message.Contains("could not be fetched"));
+		Collector.Diagnostics.Should().NotContain(d => d.Message.Contains("Their changelogs were created"));
+		A.CallTo(
+			() => MockGitHubService.FetchPrInfoAsync(A<string>._, A<string?>._, A<string?>._, A<CancellationToken>._)
+		).MustNotHaveHappened();
+		if (FileSystem.Directory.Exists(outputDir))
+			FileSystem.Directory.GetFiles(outputDir, "*.yaml").Should().BeEmpty();
 	}
 }

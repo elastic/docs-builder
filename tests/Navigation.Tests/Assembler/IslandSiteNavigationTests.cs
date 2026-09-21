@@ -216,4 +216,64 @@ public class IslandSiteNavigationTests(ITestOutputHelper output)
 		obsNode.IsIsland.Should().BeTrue("content-set set island: true; navigation.yml can't remove it");
 		obsNode.RendersAsIsland().Should().BeTrue();
 	}
+
+	// ──────────────────────────────────────────────────────────────
+	// Nested toc: children in a plain navigation.yml toc (no section:) must NOT
+	// be implicit islands — only explicit island: true or docset island: true counts.
+	// Regression: a1a434701 introduced unconditional IsIsland = true for every
+	// tocRef.Children entry, causing e.g. reference/elasticsearch to render as
+	// an island on prod even without NAVIGATION_PREVIEW.
+	// ──────────────────────────────────────────────────────────────
+	[Fact]
+	public void NestedTocChildren_InPlainNavigationYml_AreNotImplicitIslands()
+	{
+		// A top-level toc: with children: — the child must NOT be made an island
+		// just because it appears in the children: list.
+		// language=yaml
+		var siteNavYaml =
+			"""
+		                  toc:
+		                    - toc: observability://
+		                      path_prefix: reference
+		                      children:
+		                        - toc: serverless-search://
+		                          path_prefix: reference/search
+		                  """;
+
+		var siteNavFile = SiteNavigationFile.Deserialize(siteNavYaml);
+		var fileSystem = SiteNavigationTestFixture.CreateMultiRepositoryFileSystem();
+
+		var obsContext = SiteNavigationTestFixture.CreateAssemblerContext(fileSystem, "/checkouts/current/observability", output);
+		var obsDocset = DocumentationSetFile.LoadAndResolve(
+			obsContext.Collector,
+			fileSystem.FileInfo.New("/checkouts/current/observability/docs/docset.yml"),
+			new CheckoutsFileSystem(fileSystem.DirectoryInfo.New("/checkouts"), inner: fileSystem)
+		);
+		var obsNav = new DocumentationSetNavigation<IDocumentationFile>(obsDocset, obsContext, GenericDocumentationFileFactory.Instance);
+
+		var searchContext = SiteNavigationTestFixture.CreateAssemblerContext(fileSystem, "/checkouts/current/serverless-search", output);
+		var searchDocset = DocumentationSetFile.LoadAndResolve(
+			searchContext.Collector,
+			fileSystem.FileInfo.New("/checkouts/current/serverless-search/docs/docset.yml"),
+			new CheckoutsFileSystem(fileSystem.DirectoryInfo.New("/checkouts"), inner: fileSystem)
+		);
+		var searchNav = new DocumentationSetNavigation<IDocumentationFile>(
+			searchDocset,
+			searchContext,
+			GenericDocumentationFileFactory.Instance
+		);
+
+		var siteContext = SiteNavigationTestFixture.CreateContext(fileSystem, "/checkouts/current/observability", output);
+		var navigation = new SiteNavigation(siteNavFile, siteContext, [obsNav, searchNav], sitePrefix: null);
+
+		// The top-level entry (observability://) is an island — that's the defined behaviour for
+		// every top-level SiteTableOfContentsRef in navigation.yml.
+		var obsNode = navigation.NavigationItems.ElementAt(0).Should().BeOfType<DocumentationSetNavigation<IDocumentationFile>>().Subject;
+		obsNode.RendersAsIsland().Should().BeTrue("top-level toc: entries are always islands");
+
+		// The nested child (serverless-search://) must NOT be an implicit island.
+		// It has no island: true in navigation.yml and no island: true in its docset.yml.
+		searchNav.IsIsland.Should().BeFalse("nested toc: children without island: true are not implicit islands");
+		searchNav.RendersAsIsland().Should().BeFalse("nested child is not an island");
+	}
 }

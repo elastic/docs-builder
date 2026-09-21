@@ -62,12 +62,14 @@ public class ChangelogRemoveService(
 	ILoggerFactory logFactory,
 	IChangelogFileSystem fileSystem,
 	IConfigurationContext? configurationContext = null,
-	IGitHubReleaseService? releaseService = null
+	IGitHubReleaseService? releaseService = null,
+	IGitHubCommitRangeService? commitRangeService = null
 ) : IService
 {
 	private readonly ILogger _logger = logFactory.CreateLogger<ChangelogRemoveService>();
 	private readonly IChangelogFileSystem _fileSystem = fileSystem;
 	private readonly IGitHubReleaseService _releaseService = releaseService ?? new GitHubReleaseService(logFactory);
+	private readonly IGitHubCommitRangeService _commitRangeService = commitRangeService ?? new GitHubCommitRangeService(logFactory);
 	private readonly ChangelogConfigurationLoader? _configLoader = configurationContext != null
 		? new ChangelogConfigurationLoader(logFactory, configurationContext, fileSystem)
 		: null;
@@ -109,7 +111,8 @@ public class ChangelogRemoveService(
 					_logger,
 					ctx,
 					input.ProfileReport,
-					_releaseService
+					_releaseService,
+					_commitRangeService
 				);
 
 				if (filterResult == null)
@@ -235,8 +238,10 @@ public class ChangelogRemoveService(
 		var directory = input.Directory ?? config?.Bundle?.Directory ?? _fileSystem.Directory.GetCurrentDirectory();
 
 		// Apply repo/owner: CLI takes precedence; fall back to bundle-level config defaults.
+#pragma warning disable CS0618
 		var repo = input.Repo ?? config?.Bundle?.Repo;
 		var owner = input.Owner ?? config?.Bundle?.Owner;
+#pragma warning restore CS0618
 
 		return input with { Directory = directory, Repo = repo, Owner = owner };
 	}

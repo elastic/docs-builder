@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.Net;
+using Elastic.Documentation.Extensions;
 using Elastic.Markdown.Helpers;
 using Elastic.Markdown.Myst.CodeBlocks;
 using Elastic.Markdown.Myst.Directives;
@@ -15,6 +16,7 @@ using Elastic.Markdown.Myst.Directives.Hub;
 using Elastic.Markdown.Myst.Directives.Image;
 using Elastic.Markdown.Myst.Directives.Include;
 using Elastic.Markdown.Myst.Directives.Math;
+using Elastic.Markdown.Myst.Directives.RelatedLearning;
 using Elastic.Markdown.Myst.Directives.Settings;
 using Elastic.Markdown.Myst.Directives.Storybook;
 using Markdig.Extensions.DefinitionLists;
@@ -79,25 +81,7 @@ public static class LlmRenderingHelpers
 	/// <summary>
 	/// Converts relative URLs to absolute URLs for LLM consumption
 	/// </summary>
-	public static string? MakeAbsoluteUrl(Uri? baseUri, string? url)
-	{
-		if (
-			string.IsNullOrEmpty(url)
-			|| baseUri == null
-			|| Uri.IsWellFormedUriString(url, UriKind.Absolute)
-			|| !Uri.IsWellFormedUriString(url, UriKind.Relative)
-		)
-			return url;
-		try
-		{
-			var absoluteUri = new Uri(baseUri, url);
-			return absoluteUri.ToString();
-		}
-		catch
-		{
-			return url;
-		}
-	}
+	public static string? MakeAbsoluteUrl(Uri? baseUri, string? url) => UrlPath.MakeAbsolute(baseUri, url);
 
 	/// <summary>
 	/// Renders a markdown table from a list of rows (each row is a list of cell values).
@@ -525,6 +509,9 @@ public class LlmDirectiveRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, 
 			case WhatsNewBlock whatsNewBlock:
 				WriteWhatsNewBlock(renderer, whatsNewBlock);
 				return;
+			case RelatedLearningBlock relatedLearningBlock:
+				WriteRelatedLearningBlock(renderer, relatedLearningBlock);
+				return;
 		}
 
 		// Ensure single empty line before directive
@@ -749,6 +736,19 @@ public class LlmDirectiveRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, 
 		if (string.IsNullOrEmpty(label) || string.IsNullOrEmpty(url))
 			return;
 		renderer.WriteLine($"- [{label}]({HubLinkForLlm(renderer, url)})");
+	}
+
+	private static void WriteRelatedLearningBlock(LlmMarkdownRenderer renderer, RelatedLearningBlock block)
+	{
+		if (block.Items.Count == 0)
+			return;
+
+		renderer.EnsureBlockSpacing();
+		renderer.WriteLine($"## {block.Heading}");
+		renderer.EnsureLine();
+		foreach (var item in block.Items)
+			renderer.WriteLine($"- [{item.Title}]({item.Url})");
+		renderer.EnsureLine();
 	}
 
 	// Hub links are authored as markdown paths. Strip the extension so the export matches how
