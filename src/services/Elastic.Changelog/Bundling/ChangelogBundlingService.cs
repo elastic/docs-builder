@@ -1297,9 +1297,12 @@ public partial class ChangelogBundlingService(
 		return config?.Bundle?.OutputDirectory;
 	}
 
-	/// <summary>The first concrete product id from a profile's <c>output_products</c>/<c>products</c> pattern.</summary>
+	/// <summary>The first concrete product id from a profile's <c>product</c> or (deprecated) <c>output_products</c>/<c>products</c> pattern.</summary>
 	private static string? ResolvePrimaryProductFromProfile(BundleProfile profileDef)
 	{
+		if (!string.IsNullOrWhiteSpace(profileDef.Product))
+			return profileDef.Product;
+
 #pragma warning disable CS0618
 		var pattern = profileDef.OutputProducts ?? profileDef.Products;
 #pragma warning restore CS0618

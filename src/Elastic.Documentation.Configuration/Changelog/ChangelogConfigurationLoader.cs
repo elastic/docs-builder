@@ -705,7 +705,7 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 					collector.EmitError(configPath, $"bundle.releases.github[{i}].profile is required.");
 					return null;
 				}
-				if (profiles != null && !profiles.ContainsKey(entry.Profile))
+				if (profiles == null || !profiles.ContainsKey(entry.Profile))
 				{
 					collector.EmitError(
 						configPath,
@@ -744,7 +744,7 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 					);
 					return null;
 				}
-				if (profiles != null && !profiles.ContainsKey(entry.Profile))
+				if (profiles == null || !profiles.ContainsKey(entry.Profile))
 				{
 					collector.EmitError(
 						configPath,
@@ -764,7 +764,7 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 				collector.EmitError(configPath, "bundle.releases.serverless.profile is required.");
 				return null;
 			}
-			if (profiles != null && !profiles.ContainsKey(yaml.Serverless.Profile))
+			if (profiles == null || !profiles.ContainsKey(yaml.Serverless.Profile))
 			{
 				collector.EmitError(
 					configPath,
