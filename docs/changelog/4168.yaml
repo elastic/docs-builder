@@ -4,4 +4,4 @@ type: bug-fix
 products:
 - product: docs-builder
   lifecycle: ga
-title: Use bundle.output_directory as default output path in gh-release mode
+title: Fix gh-release output path and first-release fallback
