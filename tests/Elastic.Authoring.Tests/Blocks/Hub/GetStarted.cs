@@ -17,19 +17,19 @@ public class GetStartedWithATitleAndIntro : MarkdownTest
 		:::
 		""";
 
-	[Fact(DisplayName = "renders the heading")]
+	[Test, DisplayName("renders the heading")]
 	public async Task RendersHeading() =>
 		await Docs.ConvertsToContainingHtml("""<h2 class="hub-get-started-title">Get started in 3 steps</h2>""");
 
-	[Fact(DisplayName = "numbers steps from one, zero padded")]
+	[Test, DisplayName("numbers steps from one, zero padded")]
 	public async Task NumbersStepsFromOne() =>
 		await Docs.ConvertsToContainingRawHtml("""<span class="hub-get-started-step-num" aria-hidden="true">01</span>""");
 
 	// Nothing renders between the intro and the numbered list. The section is the steps.
-	[Fact(DisplayName = "renders nothing above the steps")]
+	[Test, DisplayName("renders nothing above the steps")]
 	public async Task RendersNothingAboveSteps() => await Docs.DoesNotConvertToContainingHtml("hub-get-started-actions");
 
-	[Fact(DisplayName = "has no errors")]
+	[Test, DisplayName("has no errors")]
 	public async Task HasNoErrors() => await Docs.HasNoErrors();
 }
 
@@ -47,10 +47,10 @@ public class GetStartedWithALinkStep : MarkdownTest
 		:::
 		""";
 
-	[Fact(DisplayName = "makes the whole step clickable")]
+	[Test, DisplayName("makes the whole step clickable")]
 	public async Task MakesStepClickable() => await Docs.ConvertsToContainingHtml("""<span>Start writing</span>""");
 
-	[Fact(DisplayName = "has no errors")]
+	[Test, DisplayName("has no errors")]
 	public async Task HasNoErrors() => await Docs.HasNoErrors();
 }
 
@@ -74,15 +74,15 @@ public class GetStartedWithOptionSteps : MarkdownTest
 		:::
 		""";
 
-	[Fact(DisplayName = "renders both options")]
+	[Test, DisplayName("renders both options")]
 	public async Task RendersBothOptions() =>
 		await Docs.ConvertsToContainingHtml("""<span class="hub-get-started-option-label">Preview locally</span>""");
 
-	[Fact(DisplayName = "renders the option command")]
+	[Test, DisplayName("renders the option command")]
 	public async Task RendersOptionCommand() =>
 		await Docs.ConvertsToContainingHtml("""<code class="language-sh">docs-builder serve</code>""");
 
-	[Fact(DisplayName = "has no errors")]
+	[Test, DisplayName("has no errors")]
 	public async Task HasNoErrors() => await Docs.HasNoErrors();
 }
 
@@ -98,7 +98,7 @@ public class GetStartedWithARelativeStepLink : MarkdownTest
 		:::
 		""";
 
-	[Fact(DisplayName = "rejects a relative path")]
+	[Test, DisplayName("rejects a relative path")]
 	public async Task RejectsRelativePath() => await Docs.HasError("must be an absolute path starting with `/`");
 }
 
@@ -109,7 +109,7 @@ public class GetStartedWithoutABody : MarkdownTest
 		:::
 		""";
 
-	[Fact(DisplayName = "errors")]
+	[Test, DisplayName("errors")]
 	public async Task Errors() => await Docs.HasError("{get-started}");
 }
 
@@ -135,11 +135,11 @@ public class GetStartedWithFourSteps : MarkdownTest
 		:::
 		""";
 
-	[Fact(DisplayName = "lays the three remaining steps across three tracks")]
+	[Test, DisplayName("lays the three remaining steps across three tracks")]
 	public async Task LaysRemainingStepsAcrossThreeTracks() =>
 		await Docs.ConvertsToContainingRawHtml("""<ol class="hub-get-started-steps" style="--hub-step-columns: 3">""");
 
-	[Fact(DisplayName = "has no errors")]
+	[Test, DisplayName("has no errors")]
 	public async Task HasNoErrors() => await Docs.HasNoErrors();
 }
 
@@ -159,10 +159,10 @@ public class GetStartedWithFiveSteps : MarkdownTest
 
 	// Four steps divide evenly into two rows of two, so they take two tracks rather than
 	// three with a single step stranded on the last row.
-	[Fact(DisplayName = "pairs four steps into two tracks")]
+	[Test, DisplayName("pairs four steps into two tracks")]
 	public async Task PairsFourStepsIntoTwoTracks() =>
 		await Docs.ConvertsToContainingRawHtml("""<ol class="hub-get-started-steps" style="--hub-step-columns: 2">""");
 
-	[Fact(DisplayName = "has no errors")]
+	[Test, DisplayName("has no errors")]
 	public async Task HasNoErrors() => await Docs.HasNoErrors();
 }

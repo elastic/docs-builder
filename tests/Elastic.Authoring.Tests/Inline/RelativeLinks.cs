@@ -49,7 +49,7 @@ public class TwoPagesWithAnchorsEndUpInArtifact : GeneratorTest
 			)
 		];
 
-	[Fact(DisplayName = "validate index.md HTML")]
+	[Test, DisplayName("validate index.md HTML")]
 	public async Task ValidateHtml() =>
 		await Docs.Converts("deeply/nested/file.md").ToHtml(
 			"""
@@ -60,6 +60,6 @@ public class TwoPagesWithAnchorsEndUpInArtifact : GeneratorTest
 		"""
 		);
 
-	[Fact(DisplayName = "has no errors")]
+	[Test, DisplayName("has no errors")]
 	public async Task HasNoErrors() => await Docs.HasNoErrors();
 }

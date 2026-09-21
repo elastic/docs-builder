@@ -10,7 +10,7 @@ public class BasicTextFormatting : DocumentTest
 		This is **bold** and *italic* text.
 		""";
 
-	[Fact(DisplayName = "converts to standard markdown")]
+	[Test, DisplayName("converts to standard markdown")]
 	public async Task ConvertsToStandardMarkdown() => await Docs.ConvertsToNewLlm("This is **bold** and *italic* text.\n");
 }
 
@@ -21,7 +21,7 @@ public class Headings : DocumentTest
 		### Heading 3
 		""";
 
-	[Fact(DisplayName = "converts to standard markdown headings")]
+	[Test, DisplayName("converts to standard markdown headings")]
 	public async Task ConvertsToStandardMarkdownHeadings() =>
 		await Docs.ConvertsToNewLlm("""
 
@@ -44,7 +44,7 @@ public class CodeBlocks : DocumentTest
 		```
 		""";
 
-	[Fact(DisplayName = "renders code blocks")]
+	[Test, DisplayName("renders code blocks")]
 	public async Task RendersCodeBlocks() =>
 		await Docs.ConvertsToNewLlm("""
 
@@ -67,7 +67,7 @@ public class EnhancedCodeBlocks : DocumentTest
 		1. This is a callout
 		""";
 
-	[Fact(DisplayName = "converts to code block with optional caption comment")]
+	[Test, DisplayName("converts to code block with optional caption comment")]
 	public async Task ConvertsToCodeBlockWithOptionalCaptionComment() =>
 		await Docs.ConvertsToNewLlm("""
 
@@ -99,7 +99,7 @@ public class Lists : DocumentTest
 		3. Ordered item 3
 		""";
 
-	[Fact(DisplayName = "converts to standard markdown lists")]
+	[Test, DisplayName("converts to standard markdown lists")]
 	public async Task ConvertsToStandardMarkdownLists() =>
 		await Docs.ConvertsToNewLlm(
 			"""
@@ -133,7 +133,7 @@ public class Tables : DocumentTest
 		| Cell 3 | Cell 4 |
 		""";
 
-	[Fact(DisplayName = "converts to standard markdown tables")]
+	[Test, DisplayName("converts to standard markdown tables")]
 	public async Task ConvertsToStandardMarkdownTables() =>
 		await Docs.ConvertsToNewLlm(
 			"""
@@ -152,7 +152,7 @@ public class AppliesToRole : DocumentTest
 		This is an inline {applies_to}`stack: preview 9.1` element.
 		""";
 
-	[Fact(DisplayName = "converts to human readable format")]
+	[Test, DisplayName("converts to human readable format")]
 	public async Task ConvertsToHumanReadableFormat() =>
 		await Docs.ConvertsToNewLlm("This is an inline <applies-to>Elastic Stack: Planned</applies-to> element.\n");
 }
@@ -163,7 +163,7 @@ public class AppliesToRoleWithGaFutureVersion : DocumentTest
 		This is an inline {applies_to}`stack: ga 9.0` element.
 		""";
 
-	[Fact(DisplayName = "shows planned text for unreleased version")]
+	[Test, DisplayName("shows planned text for unreleased version")]
 	public async Task ShowsPlannedTextForUnreleasedVersion() =>
 		await Docs.ConvertsToNewLlm("This is an inline <applies-to>Elastic Stack: Planned</applies-to> element.\n");
 }
@@ -174,7 +174,7 @@ public class AppliesToRoleWithGaReleasedVersion : DocumentTest
 		This is an inline {applies_to}`stack: ga 7.3` element.
 		""";
 
-	[Fact(DisplayName = "shows ga text for released version")]
+	[Test, DisplayName("shows ga text for released version")]
 	public async Task ShowsGaTextForReleasedVersion() =>
 		await Docs.ConvertsToNewLlm("This is an inline <applies-to>Elastic Stack: Generally available since 7.3</applies-to> element.\n");
 }
@@ -185,7 +185,7 @@ public class AppliesToRoleInSentenceWithServerless : DocumentTest
 		This feature is available on {applies_to}`serverless: ga` for all users.
 		""";
 
-	[Fact(DisplayName = "shows serverless availability in sentence")]
+	[Test, DisplayName("shows serverless availability in sentence")]
 	public async Task ShowsServerlessAvailabilityInSentence() =>
 		await Docs.ConvertsToNewLlm(
 			"This feature is available on <applies-to>Elastic Cloud Serverless: Generally available</applies-to> for all users.\n"
@@ -199,7 +199,7 @@ public class AppliesToRoleInSentenceWithPreview : DocumentTest
 		The new API {applies_to}`stack: preview 7.5` provides enhanced functionality.
 		""";
 
-	[Fact(DisplayName = "shows preview availability in sentence")]
+	[Test, DisplayName("shows preview availability in sentence")]
 	public async Task ShowsPreviewAvailabilityInSentence() =>
 		await Docs.ConvertsToNewLlm(
 			"The new API <applies-to>Elastic Stack: Preview since 7.5</applies-to> provides enhanced functionality.\n"
@@ -213,7 +213,7 @@ public class AppliesToRoleInSentenceWithDeprecated : DocumentTest
 		This method {applies_to}`stack: deprecated 7.0` should not be used in new code.
 		""";
 
-	[Fact(DisplayName = "shows deprecated availability in sentence")]
+	[Test, DisplayName("shows deprecated availability in sentence")]
 	public async Task ShowsDeprecatedAvailabilityInSentence() =>
 		await Docs.ConvertsToNewLlm(
 			"This method <applies-to>Elastic Stack: Deprecated since 7.0</applies-to> should not be used in new code.\n"
@@ -224,21 +224,21 @@ public class AppliesToInlineRoleFormats : DocumentTest
 {
 	protected override string Document => "placeholder";
 
-	[Theory]
-	[InlineData("stack: ga 7.3", "Elastic Stack: Generally available since 7.3")]
-	[InlineData("stack: ga 8.0", "Elastic Stack: Generally available since 8.0")]
-	[InlineData("stack: ga 8.0+", "Elastic Stack: Generally available since 8.0")]
-	[InlineData("stack: ga 9.0", "Elastic Stack: Planned")]
-	[InlineData("stack: preview 7.5", "Elastic Stack: Preview since 7.5")]
-	[InlineData("stack: preview =7.0", "Elastic Stack: Preview in 7.0")]
-	[InlineData("stack: ga 7.0-8.0", "Elastic Stack: Generally available from 7.0 to 8.0")]
-	[InlineData("stack: beta 7.0-7.5", "Elastic Stack: Beta from 7.0 to 7.5")]
-	[InlineData("stack: preview 9.1", "Elastic Stack: Planned")]
-	[InlineData("stack: beta 7.0", "Elastic Stack: Beta since 7.0")]
-	[InlineData("stack: deprecated 7.0", "Elastic Stack: Deprecated since 7.0")]
-	[InlineData("serverless: ga", "Elastic Cloud Serverless: Generally available")]
-	[InlineData("elasticsearch: preview", "Serverless Elasticsearch projects: Preview")]
-	[InlineData("vectordb: ga", "Serverless Elasticsearch Vector Database projects: Generally available")]
+	[Test]
+	[Arguments("stack: ga 7.3", "Elastic Stack: Generally available since 7.3")]
+	[Arguments("stack: ga 8.0", "Elastic Stack: Generally available since 8.0")]
+	[Arguments("stack: ga 8.0+", "Elastic Stack: Generally available since 8.0")]
+	[Arguments("stack: ga 9.0", "Elastic Stack: Planned")]
+	[Arguments("stack: preview 7.5", "Elastic Stack: Preview since 7.5")]
+	[Arguments("stack: preview =7.0", "Elastic Stack: Preview in 7.0")]
+	[Arguments("stack: ga 7.0-8.0", "Elastic Stack: Generally available from 7.0 to 8.0")]
+	[Arguments("stack: beta 7.0-7.5", "Elastic Stack: Beta from 7.0 to 7.5")]
+	[Arguments("stack: preview 9.1", "Elastic Stack: Planned")]
+	[Arguments("stack: beta 7.0", "Elastic Stack: Beta since 7.0")]
+	[Arguments("stack: deprecated 7.0", "Elastic Stack: Deprecated since 7.0")]
+	[Arguments("serverless: ga", "Elastic Cloud Serverless: Generally available")]
+	[Arguments("elasticsearch: preview", "Serverless Elasticsearch projects: Preview")]
+	[Arguments("vectordb: ga", "Serverless Elasticsearch Vector Database projects: Generally available")]
 	public async Task RendersAllLifecycleTypesCorrectly(string input, string expected)
 	{
 		var scenario = Setup.Document($"Test {{applies_to}}`{input}` here.");
@@ -254,7 +254,7 @@ public class AppliesToInlineRoleWithMultipleLifecycles : DocumentTest
 		This feature {applies_to}`stack: beta 7.0-7.1, ga 7.2` has multiple lifecycles.
 		""";
 
-	[Fact(DisplayName = "renders multiple lifecycles with product name for each")]
+	[Test, DisplayName("renders multiple lifecycles with product name for each")]
 	public async Task RendersMultipleLifecyclesWithProductNameForEach() =>
 		await Docs.ConvertsToNewLlm(
 			"This feature <applies-to>Elastic Stack: Generally available since 7.2, Elastic Stack: Beta from 7.0 to 7.1</applies-to> has multiple lifecycles.\n"
@@ -278,7 +278,7 @@ public class FrontmatterAppliesToInMetadata : GeneratorTest
 			),
 		];
 
-	[Fact(DisplayName = "includes applies_to in LLM metadata output")]
+	[Test, DisplayName("includes applies_to in LLM metadata output")]
 	public async Task IncludesAppliesToInLlmMetadataOutput() =>
 		await Docs.ConvertsToLlmWithMetadata(
 			"""
@@ -303,7 +303,7 @@ public class AppliesToCodeBlockDirective : DocumentTest
 		```
 		""";
 
-	[Fact(DisplayName = "renders applies_to block with human-readable text")]
+	[Test, DisplayName("renders applies_to block with human-readable text")]
 	public async Task RendersAppliesToBlockWithHumanReadableText() =>
 		await Docs.ConvertsToNewLlm(
 			"""
@@ -323,7 +323,7 @@ public class AppliesToCodeBlockWithMultipleLifecycles : DocumentTest
 		```
 		""";
 
-	[Fact(DisplayName = "renders multiple lifecycles with product name for each")]
+	[Test, DisplayName("renders multiple lifecycles with product name for each")]
 	public async Task RendersMultipleLifecyclesWithProductNameForEach() =>
 		await Docs.ConvertsToNewLlm(
 			"""
@@ -349,7 +349,7 @@ public class AppliesSwitchDirective : DocumentTest
 		::::
 		""";
 
-	[Fact(DisplayName = "renders applies-switch with human-readable applies-to")]
+	[Test, DisplayName("renders applies-switch with human-readable applies-to")]
 	public async Task RendersAppliesSwitchWithHumanReadableAppliesTo() =>
 		await Docs.ConvertsToNewLlm(
 			"""
@@ -392,7 +392,7 @@ public class AdmonitionDirective : DocumentTest
 		:::
 		""";
 
-	[Fact(DisplayName = "renders correctly")]
+	[Test, DisplayName("renders correctly")]
 	public async Task RendersCorrectly() =>
 		await Docs.ConvertsToNewLlm(
 			"""
@@ -448,7 +448,7 @@ public class AdmonitionDirectiveWithAppliesTo : DocumentTest
 		:::
 		""";
 
-	[Fact(DisplayName = "renders correctly with applies_to information")]
+	[Test, DisplayName("renders correctly with applies_to information")]
 	public async Task RendersCorrectlyWithAppliesToInformation() =>
 		await Docs.ConvertsToNewLlm(
 			"""
@@ -486,7 +486,7 @@ public class AdmonitionDirectiveWithMultipleLifecycles : DocumentTest
 		:::
 		""";
 
-	[Fact(DisplayName = "renders multiple lifecycles with product name for each")]
+	[Test, DisplayName("renders multiple lifecycles with product name for each")]
 	public async Task RendersMultipleLifecyclesWithProductNameForEach() =>
 		await Docs.ConvertsToNewLlm(
 			"""
@@ -508,7 +508,7 @@ public class ImageDirective : DocumentTest
 		```
 		""";
 
-	[Fact(DisplayName = "converts to standard markdown image")]
+	[Test, DisplayName("converts to standard markdown image")]
 	public async Task ConvertsToStandardMarkdownImage() =>
 		await Docs.ConvertsToNewLlm("""
 
@@ -532,7 +532,7 @@ public class IncludeDirective : GeneratorTest
 			"""),
 		];
 
-	[Fact(DisplayName = "handles include directives appropriately")]
+	[Test, DisplayName("handles include directives appropriately")]
 	public async Task HandlesIncludeDirectivesAppropriately() =>
 		await Docs.ConvertsToNewLlm("""
 
@@ -560,7 +560,7 @@ public class MultipleElements : DocumentTest
 		| Cell 1 | Cell 2 |
 		""";
 
-	[Fact(DisplayName = "converts complex document to clean markdown")]
+	[Test, DisplayName("converts complex document to clean markdown")]
 	public async Task ConvertsComplexDocumentToCleanMarkdown() =>
 		await Docs.ConvertsToNewLlm(
 			"""
@@ -599,7 +599,7 @@ public class DirectiveInListShouldBeIndentedCorrectly : DocumentTest
 
 		""";
 
-	[Fact(DisplayName = "rendered correctly")]
+	[Test, DisplayName("rendered correctly")]
 	public async Task RenderedCorrectly() =>
 		await Docs.ConvertsToNewLlm(
 			"""
@@ -635,7 +635,7 @@ public class Tabs : DocumentTest
 		::::
 		""";
 
-	[Fact(DisplayName = "rendered correctly")]
+	[Test, DisplayName("rendered correctly")]
 	public async Task RenderedCorrectly() =>
 		await Docs.ConvertsToNewLlm(
 			"""
@@ -668,7 +668,7 @@ public class Comments : DocumentTest
 		This text is also visible
 		""";
 
-	[Fact(DisplayName = "rendered correctly")]
+	[Test, DisplayName("rendered correctly")]
 	public async Task RenderedCorrectly() => await Docs.ConvertsToNewLlm("This text is visible\nThis text is also visible");
 }
 
@@ -681,7 +681,7 @@ public class Dropdown : DocumentTest
 		:::
 		""";
 
-	[Fact(DisplayName = "rendered correctly")]
+	[Test, DisplayName("rendered correctly")]
 	public async Task RenderedCorrectly() =>
 		await Docs.ConvertsToNewLlm(
 			"""
@@ -703,7 +703,7 @@ public class DropdownWithAppliesTo : DocumentTest
 		:::
 		""";
 
-	[Fact(DisplayName = "rendered correctly")]
+	[Test, DisplayName("rendered correctly")]
 	public async Task RenderedCorrectly() =>
 		await Docs.ConvertsToNewLlm(
 			"""
@@ -731,7 +731,7 @@ public class DefinitionList : DocumentTest
 		     ```
 		""";
 
-	[Fact(DisplayName = "rendered correctly")]
+	[Test, DisplayName("rendered correctly")]
 	public async Task RenderedCorrectly() =>
 		await Docs.ConvertsToNewLlm(
 			"""
@@ -760,7 +760,7 @@ public class ImageInline : DocumentTest
 		![elasticsearch](images/64x64_Color_elasticsearch-logo-color-64px.png "elasticsearch =50%")
 		""";
 
-	[Fact(DisplayName = "rendered correctly")]
+	[Test, DisplayName("rendered correctly")]
 	public async Task RenderedCorrectly() =>
 		await Docs.ConvertsToNewLlm(
 			"""
@@ -776,7 +776,7 @@ public class KbdRole : DocumentTest
 		{kbd}`cmd+enter`
 		""";
 
-	[Fact(DisplayName = "rendered correctly")]
+	[Test, DisplayName("rendered correctly")]
 	public async Task RenderedCorrectly() => await Docs.ConvertsToNewLlm("""
 
 		<kbd>Cmd</kbd> + <kbd>Enter</kbd>
@@ -800,7 +800,7 @@ public class CodeblockInList : DocumentTest
 		     ```
 		""";
 
-	[Fact(DisplayName = "rendered correctly")]
+	[Test, DisplayName("rendered correctly")]
 	public async Task RenderedCorrectly() =>
 		await Docs.ConvertsToNewLlm(
 			"""
@@ -833,7 +833,7 @@ public class Substitutions : DocumentTest
 		This is not a substitution: {{not-found}}
 		""";
 
-	[Fact(DisplayName = "rendered correctly")]
+	[Test, DisplayName("rendered correctly")]
 	public async Task RenderedCorrectly() =>
 		await Docs.ConvertsToNewLlm(
 			"""
@@ -862,7 +862,7 @@ public class SubstitutionInCodeblock : DocumentTest
 		```
 		""";
 
-	[Fact(DisplayName = "substitution in codeblock is only replaced when subs=true")]
+	[Test, DisplayName("substitution in codeblock is only replaced when subs=true")]
 	public async Task SubstitutionInCodeblockIsOnlyReplacedWhenSubsIsTrue() =>
 		await Docs.ConvertsToNewLlm(
 			"""
@@ -892,7 +892,7 @@ public class MermaidCodeBlock : DocumentTest
 		```
 		""";
 
-	[Fact(DisplayName = "renders mermaid as code block")]
+	[Test, DisplayName("renders mermaid as code block")]
 	public async Task RendersMermaidAsCodeBlock() =>
 		await Docs.ConvertsToNewLlm(
 			"""
@@ -921,7 +921,7 @@ public class SubstitutionInHeading : DocumentTest
 		## Hello, {{world}}!
 		""";
 
-	[Fact(DisplayName = "renders correctly")]
+	[Test, DisplayName("renders correctly")]
 	public async Task RendersCorrectly() => await Docs.ConvertsToNewLlm("""
 
 		## Hello, World!
@@ -967,7 +967,7 @@ public class SettingsDirective : GeneratorTest
 			),
 		];
 
-	[Fact(DisplayName = "renders settings as markdown headings")]
+	[Test, DisplayName("renders settings as markdown headings")]
 	public async Task RendersSettingsAsMarkdownHeadings() =>
 		await Docs.ConvertsToNewLlm(
 			"""
@@ -1008,7 +1008,7 @@ public class SettingsDirective : GeneratorTest
 		"""
 		);
 
-	[Fact(DisplayName = "renders group headings one level deeper than preceding markdown heading")]
+	[Test, DisplayName("renders group headings one level deeper than preceding markdown heading")]
 	public async Task RendersGroupHeadingsOneLevelDeeperThanPrecedingMarkdownHeading()
 	{
 		var scenario = Setup.Generate([
@@ -1069,7 +1069,7 @@ public class LinksInParagraphs : DocumentTest
 		This is a paragraph with a [link to docs](https://www.elastic.co/docs/deploy-manage/security) in it.
 		""";
 
-	[Fact(DisplayName = "renders links without duplication")]
+	[Test, DisplayName("renders links without duplication")]
 	public async Task RendersLinksWithoutDuplication() =>
 		await Docs.ConvertsToNewLlm(
 			"This is a paragraph with a [link to docs](https://www.elastic.co/docs/deploy-manage/security) in it.\n"
@@ -1086,7 +1086,7 @@ public class LinksInTables : DocumentTest
 		| [Authentication realms](https://www.elastic.co/docs/deploy-manage/users-roles) | Available |
 		""";
 
-	[Fact(DisplayName = "renders links in table cells without duplication")]
+	[Test, DisplayName("renders links in table cells without duplication")]
 	public async Task RendersLinksInTableCellsWithoutDuplication() =>
 		await Docs.ConvertsToNewLlm(
 			"""
@@ -1108,7 +1108,7 @@ public class MultipleLinksInTableCells : DocumentTest
 		| Security | [Config](https://example.com/config) and [Auth](https://example.com/auth) |
 		""";
 
-	[Fact(DisplayName = "renders multiple links in same cell without duplication")]
+	[Test, DisplayName("renders multiple links in same cell without duplication")]
 	public async Task RendersMultipleLinksInSameCellWithoutDuplication() =>
 		await Docs.ConvertsToNewLlm(
 			"""
@@ -1130,7 +1130,7 @@ public class LinksWithFormattingInTables : DocumentTest
 		| [*Italic link*](https://example.com/italic) | Another |
 		""";
 
-	[Fact(DisplayName = "renders formatted links in table cells correctly")]
+	[Test, DisplayName("renders formatted links in table cells correctly")]
 	public async Task RendersFormattedLinksInTableCellsCorrectly() =>
 		await Docs.ConvertsToNewLlm(
 			"""
@@ -1154,7 +1154,7 @@ public class BoldAndItalicInTables : DocumentTest
 		| Both | This is **bold** and *italic* |
 		""";
 
-	[Fact(DisplayName = "renders bold and italic in table cells without duplication")]
+	[Test, DisplayName("renders bold and italic in table cells without duplication")]
 	public async Task RendersBoldAndItalicInTableCellsWithoutDuplication() =>
 		await Docs.ConvertsToNewLlm(
 			"""
@@ -1178,7 +1178,7 @@ public class CodeInlineInTables : DocumentTest
 		| `git commit` | Commits changes |
 		""";
 
-	[Fact(DisplayName = "renders code inline in table cells correctly")]
+	[Test, DisplayName("renders code inline in table cells correctly")]
 	public async Task RendersCodeInlineInTableCellsCorrectly() =>
 		await Docs.ConvertsToNewLlm(
 			"""
@@ -1200,7 +1200,7 @@ public class ImagesInTables : DocumentTest
 		| ![logo](https://example.com/logo.png) | Logo |
 		""";
 
-	[Fact(DisplayName = "renders images in table cells without duplication")]
+	[Test, DisplayName("renders images in table cells without duplication")]
 	public async Task RendersImagesInTableCellsWithoutDuplication() =>
 		await Docs.ConvertsToNewLlm(
 			"""
@@ -1232,7 +1232,7 @@ public class CsvIncludeDirective : GeneratorTest
 			),
 		];
 
-	[Fact(DisplayName = "renders csv as markdown table")]
+	[Test, DisplayName("renders csv as markdown table")]
 	public async Task RendersCsvAsMarkdownTable() =>
 		await Docs.ConvertsToNewLlm(
 			"""
@@ -1266,7 +1266,7 @@ public class CsvIncludeDirectiveWithCaption : GeneratorTest
 			),
 		];
 
-	[Fact(DisplayName = "renders csv with caption as bold title")]
+	[Test, DisplayName("renders csv with caption as bold title")]
 	public async Task RendersCsvWithCaptionAsBoldTitle() =>
 		await Docs.ConvertsToNewLlm(
 			"""
@@ -1298,7 +1298,7 @@ public class CsvIncludeDirectiveWithCustomSeparator : GeneratorTest
 			"""),
 		];
 
-	[Fact(DisplayName = "parses csv with custom separator")]
+	[Test, DisplayName("parses csv with custom separator")]
 	public async Task ParsesCsvWithCustomSeparator() =>
 		await Docs.ConvertsToNewLlm(
 			"""

@@ -16,7 +16,7 @@ public class ReadSubFromYamlFrontmatter : DocumentTest
 		not a comment
 		""";
 
-	[Fact(DisplayName = "validate HTML: replace substitution")]
+	[Test, DisplayName("validate HTML: replace substitution")]
 	public async Task ValidateHtml() =>
 		await Docs.ConvertsToHtml("""
 		<p>The following should be subbed: Hello World!
@@ -41,10 +41,10 @@ public class RequiresValidSyntaxAndKeyToBeFound : DocumentTest
 		The following should be subbed too: {{ hello-world }}
 		""";
 
-	[Fact(DisplayName = "emits an error when sub key is not found")]
+	[Test, DisplayName("emits an error when sub key is not found")]
 	public async Task EmitsError() => await Docs.HasError("key {valid-key} is undefined");
 
-	[Fact(DisplayName = "validate HTML: leaves non subs alone")]
+	[Test, DisplayName("validate HTML: leaves non subs alone")]
 	public async Task ValidateHtml() =>
 		await Docs.ConvertsToHtml(
 			"""

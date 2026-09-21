@@ -10,7 +10,7 @@ public class InlineLinkWithMailto : MarkdownTest
 		[email me](mailto:fake-email@elastic.co)
 		""";
 
-	[Fact(DisplayName = "validate HTML")]
+	[Test, DisplayName("validate HTML")]
 	public async Task ValidateHtml() =>
 		await Docs.ConvertsToHtml("""
 		<p>
@@ -18,10 +18,10 @@ public class InlineLinkWithMailto : MarkdownTest
 		</p>
 		""");
 
-	[Fact(DisplayName = "has no errors")]
+	[Test, DisplayName("has no errors")]
 	public async Task HasNoErrors() => await Docs.HasNoErrors();
 
-	[Fact(DisplayName = "has no warning")]
+	[Test, DisplayName("has no warning")]
 	public async Task HasNoWarnings() => await Docs.HasNoWarnings();
 }
 
@@ -31,7 +31,7 @@ public class InlineLinkWithMailtoNotAllowedExternalHost : MarkdownTest
 		[email me](mailto:fake-email@somehost.co)
 		""";
 
-	[Fact(DisplayName = "validate HTML")]
+	[Test, DisplayName("validate HTML")]
 	public async Task ValidateHtml() =>
 		await Docs.ConvertsToHtml("""
 		<p>
@@ -39,10 +39,10 @@ public class InlineLinkWithMailtoNotAllowedExternalHost : MarkdownTest
 		</p>
 		""");
 
-	[Fact(DisplayName = "has no errors")]
+	[Test, DisplayName("has no errors")]
 	public async Task HasNoErrors() => await Docs.HasNoErrors();
 
-	[Fact(DisplayName = "has error")]
+	[Test, DisplayName("has error")]
 	public async Task HasError() => await Docs.HasWarning("mailto links should be to elastic.co domains.");
 }
 
@@ -52,9 +52,9 @@ public class EmptyLinkShouldResultInAnError : MarkdownTest
 		[email me]()
 		""";
 
-	[Fact(DisplayName = "has error")]
+	[Test, DisplayName("has error")]
 	public async Task HasError() => await Docs.HasError("Found empty url");
 
-	[Fact(DisplayName = "has no warnings")]
+	[Test, DisplayName("has no warnings")]
 	public async Task HasNoWarnings() => await Docs.HasNoWarnings();
 }

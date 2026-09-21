@@ -30,7 +30,7 @@ public class ReadSubFromYamlFrontmatter : DocumentTest
 		* M.M+1: {{versions.stack | M.M+1 }}
 		""";
 
-	[Fact(DisplayName = "validate HTML: replace substitution")]
+	[Test, DisplayName("validate HTML: replace substitution")]
 	public async Task ValidateHtml() =>
 		await Docs.ConvertsToHtml(
 			"""

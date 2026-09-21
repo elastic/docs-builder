@@ -22,7 +22,7 @@ public class ApplyDefaultsToAll : AuthoringTest
 			applies_to:
 			""");
 
-	[Fact(DisplayName = "apply matches expected")]
+	[Test, DisplayName("apply matches expected")]
 	public async Task ApplyMatchesExpected() => await Docs.AppliesTo(null);
 }
 
@@ -35,7 +35,7 @@ public class ApplyDefaultToTopLevelArguments : AuthoringTest
 			   serverless:
 			""");
 
-	[Fact(DisplayName = "apply matches expected")]
+	[Test, DisplayName("apply matches expected")]
 	public async Task ApplyMatchesExpected() =>
 		await Docs.AppliesTo(new ApplicableTo
 		{
@@ -51,7 +51,7 @@ public class ParsesServerlessAsStringToSetAllProjects : AuthoringTest
 			   serverless: ga
 			""");
 
-	[Fact(DisplayName = "apply matches expected")]
+	[Test, DisplayName("apply matches expected")]
 	public async Task ApplyMatchesExpected()
 	{
 		var expectedAvailability = Applies("ga");
@@ -77,7 +77,7 @@ public class ParsesServerlessVectorDatabaseProject : AuthoringTest
 			      vectordb: ga
 			""");
 
-	[Fact(DisplayName = "apply matches expected")]
+	[Test, DisplayName("apply matches expected")]
 	public async Task ApplyMatchesExpected() =>
 		await Docs.AppliesTo(new ApplicableTo { Serverless = new ServerlessProjectApplicability { VectorDatabase = Applies("ga") } });
 }
@@ -89,7 +89,7 @@ public class ParsesTopLevelVectordbAsServerlessProject : AuthoringTest
 			   vectordb: ga
 			""");
 
-	[Fact(DisplayName = "apply matches expected")]
+	[Test, DisplayName("apply matches expected")]
 	public async Task ApplyMatchesExpected() =>
 		await Docs.AppliesTo(new ApplicableTo { Serverless = new ServerlessProjectApplicability { VectorDatabase = Applies("ga") } });
 }
@@ -103,7 +103,7 @@ public class ServerlessShorthandWithTopLevelProjectOverride : AuthoringTest
 			   vectordb: preview
 			""");
 
-	[Fact(DisplayName = "overrides only the specified serverless project")]
+	[Test, DisplayName("overrides only the specified serverless project")]
 	public async Task OverridesOnlySpecifiedProject()
 	{
 		var expectedAvailability = Applies("ga");
@@ -128,7 +128,7 @@ public class EmptyServerlessShorthandWithTopLevelProjectOverride
 
 	private static readonly Scenario Subsequent = FrontMatter.WithYaml("applies_to:\n   serverless:\n");
 
-	[Fact(DisplayName = "does not mutate shared serverless defaults")]
+	[Test, DisplayName("does not mutate shared serverless defaults")]
 	public async Task DoesNotMutateSharedDefaults()
 	{
 		var expectedAll = Applies("all");
@@ -169,7 +169,7 @@ public class ParsesServerlessProjects : AuthoringTest
 			"""
 		);
 
-	[Fact(DisplayName = "apply matches expected")]
+	[Test, DisplayName("apply matches expected")]
 	public async Task ApplyMatchesExpected() =>
 		await Docs.AppliesTo(new ApplicableTo
 		{
@@ -190,7 +190,7 @@ public class ParsesStack : AuthoringTest
 			   stack: ga 9.1
 			""");
 
-	[Fact(DisplayName = "apply matches expected")]
+	[Test, DisplayName("apply matches expected")]
 	public async Task ApplyMatchesExpected() => await Docs.AppliesTo(new ApplicableTo { Stack = Applies("ga 9.1.0") });
 }
 
@@ -201,7 +201,7 @@ public class ParsesDeploymentAsStringToSetAllDeploymentTargets : AuthoringTest
 			   deployment: ga
 			""");
 
-	[Fact(DisplayName = "apply matches expected")]
+	[Test, DisplayName("apply matches expected")]
 	public async Task ApplyMatchesExpected()
 	{
 		var expectedAvailability = Applies("ga");
@@ -232,7 +232,7 @@ public class ParsesDeploymentTypesAsIndividualProperties : AuthoringTest
 			"""
 		);
 
-	[Fact(DisplayName = "apply matches expected")]
+	[Test, DisplayName("apply matches expected")]
 	public async Task ApplyMatchesExpected() =>
 		await Docs.AppliesTo(new ApplicableTo
 		{
@@ -255,7 +255,7 @@ public class ParsesEchAsAliasForEss : AuthoringTest
 			      ech: ga
 			""");
 
-	[Fact(DisplayName = "apply matches expected")]
+	[Test, DisplayName("apply matches expected")]
 	public async Task ApplyMatchesExpected() =>
 		await Docs.AppliesTo(new ApplicableTo { Deployment = new DeploymentApplicability { Ess = Applies("ga") } });
 }
@@ -274,7 +274,7 @@ public class ParsesEchAlongsideOtherDeploymentTypes : AuthoringTest
 			"""
 		);
 
-	[Fact(DisplayName = "apply matches expected")]
+	[Test, DisplayName("apply matches expected")]
 	public async Task ApplyMatchesExpected() =>
 		await Docs.AppliesTo(new ApplicableTo
 		{
@@ -300,11 +300,11 @@ public class BothEssAndEchDefinedUsesEchValueAndWarns : AuthoringTest
 			"""
 		);
 
-	[Fact(DisplayName = "ech value wins")]
+	[Test, DisplayName("ech value wins")]
 	public async Task EchValueWins() =>
 		await Docs.AppliesTo(new ApplicableTo { Deployment = new DeploymentApplicability { Ess = Applies("beta") } });
 
-	[Fact(DisplayName = "emits warning about both being defined")]
+	[Test, DisplayName("emits warning about both being defined")]
 	public async Task EmitsWarning() => await Docs.HasWarning("Both 'ess' and 'ech' are defined");
 }
 
@@ -317,7 +317,7 @@ public class ParsesEchAtTopLevel : AuthoringTest
 			   stack: ga 9.1
 			""");
 
-	[Fact(DisplayName = "apply matches expected")]
+	[Test, DisplayName("apply matches expected")]
 	public async Task ApplyMatchesExpected() =>
 		await Docs.AppliesTo(new ApplicableTo
 		{
@@ -333,7 +333,7 @@ public class ParsesProductComingDeprecated : AuthoringTest
 			   product: coming 9.5
 			""");
 
-	[Fact(DisplayName = "should warn of deprecated lifecycle state")]
+	[Test, DisplayName("should warn of deprecated lifecycle state")]
 	public async Task WarnOfDeprecatedLifecycle() => await Docs.HasHint("The 'coming' lifecycle is deprecated and will be removed");
 }
 
@@ -345,7 +345,7 @@ public class ParsesProductPlanned : AuthoringTest
 			   product: planned 9.5
 			""");
 
-	[Fact(DisplayName = "should warn of deprecated lifecycle state")]
+	[Test, DisplayName("should warn of deprecated lifecycle state")]
 	public async Task WarnOfDeprecatedLifecycle() => await Docs.HasHint("The 'planned' lifecycle is deprecated and will be removed");
 }
 
@@ -357,7 +357,7 @@ public class ParsesProductRemoved : AuthoringTest
 			   product: removed 9.5
 			""");
 
-	[Fact(DisplayName = "apply matches expected")]
+	[Test, DisplayName("apply matches expected")]
 	public async Task ApplyMatchesExpected() =>
 		await Docs.AppliesTo(new ApplicableTo { Product = new AppliesCollection([(Applicab)"removed 9.5"]) });
 }
@@ -370,7 +370,7 @@ public class ParsesProductMultiple : AuthoringTest
 			   product: preview 9.5, removed 9.7
 			""");
 
-	[Fact(DisplayName = "apply matches expected")]
+	[Test, DisplayName("apply matches expected")]
 	public async Task ApplyMatchesExpected() => await Docs.AppliesTo(new ApplicableTo { Product = Applies("removed 9.7, preview 9.5") });
 }
 
@@ -395,7 +395,7 @@ public class LenientToDefiningTypesAtTopLevel : AuthoringTest
 			"""
 		);
 
-	[Fact(DisplayName = "apply matches expected")]
+	[Test, DisplayName("apply matches expected")]
 	public async Task ApplyMatchesExpected() =>
 		await Docs.AppliesTo(new ApplicableTo
 		{
@@ -425,7 +425,7 @@ public class ParsesEmptyAppliesToAsNull : AuthoringTest
 			applies_to:
 			""");
 
-	[Fact(DisplayName = "does not render label")]
+	[Test, DisplayName("does not render label")]
 	public async Task DoesNotRenderLabel() => await Docs.AppliesTo(null);
 }
 
@@ -446,7 +446,7 @@ public class ParsesAppliesToWithMultipleCategoriesInAnyOrder : AuthoringTest
 			"""
 		);
 
-	[Fact(DisplayName = "parses all categories regardless of YAML order")]
+	[Test, DisplayName("parses all categories regardless of YAML order")]
 	public async Task ParsesAllCategoriesRegardlessOfOrder() =>
 		await Docs.AppliesTo(new ApplicableTo
 		{
@@ -472,7 +472,7 @@ public class DeploymentTypesAreRenderedInCorrectOrder : AuthoringTest
 			"""
 		);
 
-	[Fact(DisplayName = "deployment types are rendered in ESS ECK ECE Self order")]
+	[Test, DisplayName("deployment types are rendered in ESS ECK ECE Self order")]
 	public async Task DeploymentTypesRenderedInOrder() =>
 		await Docs.AppliesTo(new ApplicableTo
 		{
@@ -494,7 +494,7 @@ public class SortsAppliesToVersionsInDescendingOrder : AuthoringTest
 			   stack: preview 8.18.6, ga 9.2, beta 9.1, preview 9.0.6
 			""");
 
-	[Fact(DisplayName = "versions are sorted highest to lowest")]
+	[Test, DisplayName("versions are sorted highest to lowest")]
 	public async Task VersionsSortedHighestToLowest() =>
 		await Docs.AppliesTo(new ApplicableTo
 		{
@@ -514,27 +514,27 @@ public class SortsGaBeforeAll : AuthoringTest
 			   stack: ga, all
 			""");
 
-	[Fact(DisplayName = "versioned items are sorted first, non-versioned items last")]
+	[Test, DisplayName("versioned items are sorted first, non-versioned items last")]
 	public async Task VersionedItemsSortedFirst() =>
 		await Docs.AppliesTo(new ApplicableTo { Stack = new AppliesCollection([(Applicab)"ga", (Applicab)"all",]), });
 }
 
 public class ApplicabilityComparisons
 {
-	[Fact(DisplayName = "equals")]
+	[Test, DisplayName("equals")]
 	public void ApplicabilityEquals() => ((Applicab)"ga").Should().Be((Applicab)"ga");
 
-	[Fact(DisplayName = "not equals")]
+	[Test, DisplayName("not equals")]
 	public void ApplicabilityNotEquals() => ((Applicab)"ga").Should().NotBe((Applicab)"all");
 
-	[Fact(DisplayName = "any version beats no version")]
+	[Test, DisplayName("any version beats no version")]
 	public void AnyVersionBeatsNoVersion()
 	{
 		((Applicab)"ga 8.1.0" > (Applicab)"ga").Should().BeTrue();
 		((Applicab)"all" < (Applicab)"ga 8.1.0").Should().BeTrue();
 	}
 
-	[Fact(DisplayName = "comparison on version number only")]
+	[Test, DisplayName("comparison on version number only")]
 	public void ComparisonOnVersionNumberOnly()
 	{
 		((Applicab)"ga 8.1.0" < (Applicab)"beta 8.2.0").Should().BeTrue();
@@ -550,7 +550,7 @@ public class SortsAppliesToWithMixedVersionedAndNonVersionedItems : AuthoringTes
 			   stack: ga 8.18.6, ga, ga 9.1.2, all, ga 8.19.2
 			""");
 
-	[Fact(DisplayName = "versioned items are sorted first, non-versioned items last")]
+	[Test, DisplayName("versioned items are sorted first, non-versioned items last")]
 	public async Task VersionedItemsSortedFirst() =>
 		await Docs.AppliesTo(new ApplicableTo
 		{
@@ -572,7 +572,7 @@ public class SortsAppliesToWithPatchVersionsCorrectly : AuthoringTest
 			   stack: ga 9.1, ga 9.1.1, ga 9.0.5
 			""");
 
-	[Fact(DisplayName = "patch versions are sorted correctly")]
+	[Test, DisplayName("patch versions are sorted correctly")]
 	public async Task PatchVersionsSortedCorrectly() =>
 		await Docs.AppliesTo(new ApplicableTo
 		{
@@ -588,7 +588,7 @@ public class SortsAppliesToWithMajorVersionsCorrectly : AuthoringTest
 			   stack: ga 3.x, ga 5.x
 			""");
 
-	[Fact(DisplayName = "major versions are sorted correctly")]
+	[Test, DisplayName("major versions are sorted correctly")]
 	public async Task MajorVersionsSortedCorrectly() =>
 		await Docs.AppliesTo(new ApplicableTo { Stack = new AppliesCollection([(Applicab)"ga 5.x", (Applicab)"ga 3.x",]), });
 }
@@ -600,7 +600,7 @@ public class ServerlessStringWithVersionEmitsError : AuthoringTest
 			   serverless: ga 9.5
 			""");
 
-	[Fact(DisplayName = "emits error for versioned serverless")]
+	[Test, DisplayName("emits error for versioned serverless")]
 	public async Task EmitsErrorForVersionedServerless() => await Docs.HasError("Can't specify a version for 'serverless'");
 }
 
@@ -613,7 +613,7 @@ public class ServerlessProjectWithVersionEmitsError : AuthoringTest
 			      elasticsearch: ga 9.5
 			""");
 
-	[Fact(DisplayName = "emits error for versioned elasticsearch project")]
+	[Test, DisplayName("emits error for versioned elasticsearch project")]
 	public async Task EmitsError() => await Docs.HasError("Can't specify a version for 'elasticsearch'");
 }
 
@@ -626,7 +626,7 @@ public class ServerlessVectorDatabaseWithVersionEmitsError : AuthoringTest
 			      vectordb: ga 9.5
 			""");
 
-	[Fact(DisplayName = "emits error for versioned vector database project")]
+	[Test, DisplayName("emits error for versioned vector database project")]
 	public async Task EmitsError() => await Docs.HasError("Can't specify a version for 'vectordb'");
 }
 
@@ -639,7 +639,7 @@ public class DeploymentEssWithVersionEmitsError : AuthoringTest
 			      ess: ga 9.5
 			""");
 
-	[Fact(DisplayName = "emits error for versioned ess")]
+	[Test, DisplayName("emits error for versioned ess")]
 	public async Task EmitsError() => await Docs.HasError("Can't specify a version for 'ess'");
 }
 
@@ -652,7 +652,7 @@ public class DeploymentEchWithVersionEmitsError : AuthoringTest
 			      ech: preview 9.5
 			""");
 
-	[Fact(DisplayName = "emits error for versioned ech")]
+	[Test, DisplayName("emits error for versioned ech")]
 	public async Task EmitsError() => await Docs.HasError("Can't specify a version for 'ech'");
 }
 
@@ -665,7 +665,7 @@ public class TopLevelEchWithVersionEmitsError : AuthoringTest
 			   stack: ga 9.1
 			""");
 
-	[Fact(DisplayName = "emits error for versioned top level ech")]
+	[Test, DisplayName("emits error for versioned top level ech")]
 	public async Task EmitsError() => await Docs.HasError("Can't specify a version for 'ech'");
 }
 
@@ -677,6 +677,6 @@ public class DeploymentStringShorthandWithVersionEmitsErrorForEss : AuthoringTes
 			   deployment: ga 9.0.0
 			""");
 
-	[Fact(DisplayName = "emits error because ess does not support versions")]
+	[Test, DisplayName("emits error because ess does not support versions")]
 	public async Task EmitsError() => await Docs.HasError("Can't specify a version for 'ess'");
 }

@@ -22,7 +22,7 @@ public class PiggyBackOffYamlFormatting : MarkdownTest
 		```
 		""";
 
-	[Fact(DisplayName = "parses to AppliesDirective")]
+	[Test, DisplayName("parses to AppliesDirective")]
 	public async Task ParsesAppliesDirective()
 	{
 		var parsesTask = Docs.Converts("index.md").Parses<AppliesToDirectiveType>();
@@ -53,7 +53,7 @@ public class PlainBlock : MarkdownTest
 		```
 		""";
 
-	[Fact(DisplayName = "parses to AppliesDirective")]
+	[Test, DisplayName("parses to AppliesDirective")]
 	public async Task ParsesAppliesDirective()
 	{
 		var parsesTask = Docs.Converts("index.md").Parses<AppliesToDirectiveType>();
@@ -79,10 +79,10 @@ public class WarnsOnOldSyntax : MarkdownTest
 		```
 		""";
 
-	[Fact(DisplayName = "has no errors")]
+	[Test, DisplayName("has no errors")]
 	public async Task HasNoErrors() => await Docs.HasNoErrors();
 
-	[Fact(DisplayName = "warns on bad syntax")]
+	[Test, DisplayName("warns on bad syntax")]
 	public async Task WarnsOnBadSyntax() => await Docs.HasWarning("Applies block does not use valid yaml keys: :hosted");
 }
 
@@ -94,9 +94,9 @@ public class WarnsOnInvalidKeys : MarkdownTest
 		```
 		""";
 
-	[Fact(DisplayName = "has no errors")]
+	[Test, DisplayName("has no errors")]
 	public async Task HasNoErrors() => await Docs.HasNoErrors();
 
-	[Fact(DisplayName = "warns on bad syntax")]
+	[Test, DisplayName("warns on bad syntax")]
 	public async Task WarnsOnBadSyntax() => await Docs.HasWarning("Applies block does not support the following keys: hosted");
 }

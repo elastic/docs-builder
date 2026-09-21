@@ -12,13 +12,13 @@ public class HeroWithTitleOnly : MarkdownTest
 		:::
 		""";
 
-	[Fact(DisplayName = "renders the title as an h1")]
+	[Test, DisplayName("renders the title as an h1")]
 	public async Task RendersTitleAsH1() => await Docs.ConvertsToContainingHtml("""<h1>Elasticsearch documentation hub</h1>""");
 
-	[Fact(DisplayName = "renders the fixed eyebrow")]
+	[Test, DisplayName("renders the fixed eyebrow")]
 	public async Task RendersFixedEyebrow() => await Docs.ConvertsToContainingHtml("""<span>Browse all Elastic docs</span>""");
 
-	[Fact(DisplayName = "has no errors")]
+	[Test, DisplayName("has no errors")]
 	public async Task HasNoErrors() => await Docs.HasNoErrors();
 }
 
@@ -31,7 +31,7 @@ public class HeroWithoutATitle : MarkdownTest
 		:::
 		""";
 
-	[Fact(DisplayName = "errors")]
+	[Test, DisplayName("errors")]
 	public async Task Errors() => await Docs.HasError("{hero} requires a `:title:` option.");
 }
 
@@ -45,10 +45,10 @@ public class HeroWithADescription : MarkdownTest
 		:::
 		""";
 
-	[Fact(DisplayName = "renders inline markup in the description")]
+	[Test, DisplayName("renders inline markup in the description")]
 	public async Task RendersInlineMarkup() => await Docs.ConvertsToContainingHtml("""<strong>Elasticsearch</strong>""");
 
-	[Fact(DisplayName = "has no errors")]
+	[Test, DisplayName("has no errors")]
 	public async Task HasNoErrors() => await Docs.HasNoErrors();
 }
 
@@ -61,11 +61,11 @@ public class HeroWithAnUnknownIconKey : MarkdownTest
 		:::
 		""";
 
-	[Fact(DisplayName = "falls back to a letter chip")]
+	[Test, DisplayName("falls back to a letter chip")]
 	public async Task FallsBackToLetterChip() =>
 		await Docs.ConvertsToContainingHtml("""<span class="hub-hero-icon" aria-hidden="true">N</span>""");
 
-	[Fact(DisplayName = "has no errors")]
+	[Test, DisplayName("has no errors")]
 	public async Task HasNoErrors() => await Docs.HasNoErrors();
 }
 
@@ -83,7 +83,7 @@ public class HeroWithAnchorActions : MarkdownTest
 	// Actions render as buttons, and no button on the site carries an arrow, not even
 	// an anchor action that jumps within the page. The assertion starts at the section,
 	// because the pretty-printer only matches from the outermost element of the output.
-	[Fact(DisplayName = "renders both actions as buttons without an arrow")]
+	[Test, DisplayName("renders both actions as buttons without an arrow")]
 	public async Task RendersBothActionsAsButtons() =>
 		await Docs.ConvertsToContainingHtml(
 			"""
@@ -117,7 +117,7 @@ public class HeroWithAnchorActions : MarkdownTest
 		"""
 		);
 
-	[Fact(DisplayName = "has no errors")]
+	[Test, DisplayName("has no errors")]
 	public async Task HasNoErrors() => await Docs.HasNoErrors();
 }
 
@@ -135,7 +135,7 @@ public class HeroWithAnExternalAction : MarkdownTest
 	// assertion starts at the section, because the pretty-printer only matches from the
 	// outermost element of the directive output. It also strips `preload`, so the absence
 	// of preloading on an external action cannot be asserted here.
-	[Fact(DisplayName = "opens in a new tab")]
+	[Test, DisplayName("opens in a new tab")]
 	public async Task OpensInANewTab() =>
 		await Docs.ConvertsToContainingHtml(
 			"""
@@ -164,7 +164,7 @@ public class HeroWithAnExternalAction : MarkdownTest
 		"""
 		);
 
-	[Fact(DisplayName = "has no errors")]
+	[Test, DisplayName("has no errors")]
 	public async Task HasNoErrors() => await Docs.HasNoErrors();
 }
 
@@ -178,7 +178,7 @@ public class HeroWithAnInternalAction : MarkdownTest
 		:::
 		""";
 
-	[Fact(DisplayName = "strips the markdown extension and does not open a new tab")]
+	[Test, DisplayName("strips the markdown extension and does not open a new tab")]
 	public async Task StripsExtensionAndNoNewTab() =>
 		await Docs.ConvertsToContainingHtml(
 			"""
@@ -207,7 +207,7 @@ public class HeroWithAnInternalAction : MarkdownTest
 		"""
 		);
 
-	[Fact(DisplayName = "has no errors")]
+	[Test, DisplayName("has no errors")]
 	public async Task HasNoErrors() => await Docs.HasNoErrors();
 }
 
@@ -221,7 +221,7 @@ public class HeroWithARelativeActionUrl : MarkdownTest
 		:::
 		""";
 
-	[Fact(DisplayName = "rejects a relative path")]
+	[Test, DisplayName("rejects a relative path")]
 	public async Task RejectsRelativePath() => await Docs.HasError("must be an absolute path starting with `/`");
 }
 
@@ -235,7 +235,7 @@ public class HeroWithAMalformedAction : MarkdownTest
 		:::
 		""";
 
-	[Fact(DisplayName = "errors")]
+	[Test, DisplayName("errors")]
 	public async Task Errors() => await Docs.HasError("must be a markdown link");
 }
 
@@ -253,7 +253,7 @@ public class HeroWithACrossLinkAction : MarkdownTest
 	// so it must not open in a new tab. Inline links make the same distinction. The assertion
 	// snapshots the section rather than looking for target="_blank" anywhere on the page,
 	// because site chrome carries that attribute too.
-	[Fact(DisplayName = "does not open in a new tab")]
+	[Test, DisplayName("does not open in a new tab")]
 	public async Task DoesNotOpenInNewTab() =>
 		await Docs.ConvertsToContainingHtml(
 			"""
@@ -282,7 +282,7 @@ public class HeroWithACrossLinkAction : MarkdownTest
 		"""
 		);
 
-	[Fact(DisplayName = "has no errors")]
+	[Test, DisplayName("has no errors")]
 	public async Task HasNoErrors() => await Docs.HasNoErrors();
 }
 
@@ -300,7 +300,7 @@ public class HubLayoutWithoutAHero : DocumentTest
 		""";
 
 	// The hub layout removes the page H1, so {hero} is the only thing that can title the page.
-	[Fact(DisplayName = "errors")]
+	[Test, DisplayName("errors")]
 	public async Task Errors() => await Docs.HasError("A page with `layout: hub` requires a {hero} directive.");
 }
 
@@ -317,6 +317,6 @@ public class HubLayoutWithAHero : DocumentTest
 		:::
 		""";
 
-	[Fact(DisplayName = "has no errors")]
+	[Test, DisplayName("has no errors")]
 	public async Task HasNoErrors() => await Docs.HasNoErrors();
 }

@@ -24,7 +24,7 @@ public class ProductsFrontMatterInHtml : AuthoringTest
 			  - id: ecctl
 			""");
 
-	[Fact(DisplayName = "includes products meta tags when products are specified")]
+	[Test, DisplayName("includes products meta tags when products are specified")]
 	public async Task IncludesProductsMetaTags() =>
 		await Docs.Converts("index.md").ContainsHtml(
 			"""
@@ -33,7 +33,7 @@ public class ProductsFrontMatterInHtml : AuthoringTest
 			"""
 		);
 
-	[Fact(DisplayName = "does not include products meta tags when no products are specified")]
+	[Test, DisplayName("does not include products meta tags when no products are specified")]
 	public async Task DoesNotIncludeProductsMetaTags()
 	{
 		var noProducts = Setup.Document(
@@ -58,7 +58,7 @@ public class ProductsFrontMatterInLlmMarkdown : AuthoringTest
 			  - id: ecctl
 			""");
 
-	[Fact(DisplayName = "includes products in frontmatter when products are specified")]
+	[Test, DisplayName("includes products in frontmatter when products are specified")]
 	public async Task IncludesProductsInFrontMatter()
 	{
 		var file = await Docs.Converts("index.md").MarkdownFile();
@@ -72,7 +72,7 @@ public class ProductsFrontMatterInLlmMarkdown : AuthoringTest
 		ids.Should().Contain("ecctl");
 	}
 
-	[Fact(DisplayName = "does not include products in frontmatter when no products are specified")]
+	[Test, DisplayName("does not include products in frontmatter when no products are specified")]
 	public async Task DoesNotIncludeProducts()
 	{
 		var noProducts = Setup.Document(
@@ -113,11 +113,11 @@ public class DocsetProductsMerging : AuthoringTest
 
 	protected override Scenario Scenario => DocsetOnly; // satisfies abstract; tests run on static scenarios
 
-	[Fact(DisplayName = "docset products appear in HTML when no frontmatter products")]
+	[Test, DisplayName("docset products appear in HTML when no frontmatter products")]
 	public async Task DocsetProductsAppearInHtml() =>
 		await DocsetOnly.Converts("index.md").ContainsRawHtml("""<meta class="elastic" name="product_name" content="Elasticsearch"/>""");
 
-	[Fact(DisplayName = "docset products merge with frontmatter products")]
+	[Test, DisplayName("docset products merge with frontmatter products")]
 	public async Task DocsetProductsMergeWithFrontmatter() =>
 		await DocsetAndFrontmatter.Converts("index.md").ContainsHtml(
 			"""

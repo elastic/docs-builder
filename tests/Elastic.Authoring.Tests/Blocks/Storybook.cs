@@ -11,7 +11,7 @@ public class StorybookMissingReference : MarkdownTest
 		:::
 		""";
 
-	[Fact(DisplayName = "has error")]
+	[Test, DisplayName("has error")]
 	public async Task HasError() => await Docs.HasError("requires :id: or :project:");
 }
 
@@ -24,6 +24,6 @@ public class StorybookMissingRegistry : MarkdownTest
 		:::
 		""";
 
-	[Fact(DisplayName = "has error")]
+	[Test, DisplayName("has error")]
 	public async Task HasError() => await Docs.HasError("requires docset.yml storybook.registry");
 }

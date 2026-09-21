@@ -4,13 +4,12 @@
 
 using AwesomeAssertions;
 using Elastic.Documentation.Search.Highlighting;
-using Xunit;
 
 namespace Elastic.Documentation.Api.Infrastructure.Tests.Adapters.Search;
 
 public class StringHighlightExtensionsTests
 {
-	[Fact]
+	[Test]
 	public void EmptyTokensReturnsOriginalText()
 	{
 		var text = "Hello world";
@@ -19,7 +18,7 @@ public class StringHighlightExtensionsTests
 		result.Should().Be(text);
 	}
 
-	[Fact]
+	[Test]
 	public void EmptyTextReturnsEmptyString()
 	{
 		var result = "".HighlightTokens(["test"]);
@@ -27,7 +26,7 @@ public class StringHighlightExtensionsTests
 		result.Should().BeEmpty();
 	}
 
-	[Fact]
+	[Test]
 	public void NullTextReturnsNull()
 	{
 		string? text = null;
@@ -36,7 +35,7 @@ public class StringHighlightExtensionsTests
 		result.Should().BeNull();
 	}
 
-	[Fact]
+	[Test]
 	public void SingleTokenHighlightsMatch()
 	{
 		var text = "Hello world";
@@ -45,7 +44,7 @@ public class StringHighlightExtensionsTests
 		result.Should().Be("Hello <mark>world</mark>");
 	}
 
-	[Fact]
+	[Test]
 	public void SingleTokenHighlightsFirstCharacter()
 	{
 		var text = "Aggregations are useful";
@@ -54,7 +53,7 @@ public class StringHighlightExtensionsTests
 		result.Should().Be("<mark>Ag</mark>gregations are useful");
 	}
 
-	[Fact]
+	[Test]
 	public void SingleTokenCaseInsensitiveMatch()
 	{
 		var text = "Hello WORLD";
@@ -63,7 +62,7 @@ public class StringHighlightExtensionsTests
 		result.Should().Be("Hello <mark>WORLD</mark>");
 	}
 
-	[Fact]
+	[Test]
 	public void SingleTokenPreservesOriginalCase()
 	{
 		var text = "Hello WoRlD";
@@ -72,7 +71,7 @@ public class StringHighlightExtensionsTests
 		result.Should().Be("Hello <mark>WoRlD</mark>");
 	}
 
-	[Fact]
+	[Test]
 	public void SingleTokenMultipleOccurrences()
 	{
 		var text = "test one test two test";
@@ -81,7 +80,7 @@ public class StringHighlightExtensionsTests
 		result.Should().Be("<mark>test</mark> one <mark>test</mark> two <mark>test</mark>");
 	}
 
-	[Fact]
+	[Test]
 	public void MultipleTokensHighlightsAll()
 	{
 		var text = "Hello world from here";
@@ -90,7 +89,7 @@ public class StringHighlightExtensionsTests
 		result.Should().Be("<mark>Hello</mark> <mark>world</mark> from here");
 	}
 
-	[Fact]
+	[Test]
 	public void AlreadyHighlightedTokenSkipsDoubleHighlighting()
 	{
 		var text = "Hello <mark>world</mark> again";
@@ -99,7 +98,7 @@ public class StringHighlightExtensionsTests
 		result.Should().Be("Hello <mark>world</mark> again");
 	}
 
-	[Fact]
+	[Test]
 	public void TokenInsideMarkTagNotHighlighted()
 	{
 		var text = "<mark>hello world</mark> and world outside";
@@ -108,7 +107,7 @@ public class StringHighlightExtensionsTests
 		result.Should().Be("<mark>hello world</mark> and <mark>world</mark> outside");
 	}
 
-	[Fact]
+	[Test]
 	public void SingleCharTokensHighlighted()
 	{
 		var text = "a b c test";
@@ -117,7 +116,7 @@ public class StringHighlightExtensionsTests
 		result.Should().Be("<mark>a</mark> <mark>b</mark> c <mark>test</mark>");
 	}
 
-	[Fact]
+	[Test]
 	public void TokenNotFoundReturnsOriginal()
 	{
 		var text = "Hello world";
@@ -126,7 +125,7 @@ public class StringHighlightExtensionsTests
 		result.Should().Be(text);
 	}
 
-	[Fact]
+	[Test]
 	public void MixedHighlightedAndUnhighlighted()
 	{
 		var text = "<mark>elastic</mark>search documentation";
@@ -135,7 +134,7 @@ public class StringHighlightExtensionsTests
 		result.Should().Be("<mark>elastic</mark>search <mark>documentation</mark>");
 	}
 
-	[Fact]
+	[Test]
 	public void TokenAtStartOfText()
 	{
 		var text = "Elasticsearch is great";
@@ -144,7 +143,7 @@ public class StringHighlightExtensionsTests
 		result.Should().Be("<mark>Elasticsearch</mark> is great");
 	}
 
-	[Fact]
+	[Test]
 	public void TokenAtEndOfText()
 	{
 		var text = "Search with Elasticsearch";
@@ -153,7 +152,7 @@ public class StringHighlightExtensionsTests
 		result.Should().Be("Search with <mark>Elasticsearch</mark>");
 	}
 
-	[Fact]
+	[Test]
 	public void PartialTokenInsideExistingMarkNotDoubleHighlighted()
 	{
 		var text = "<mark>dotnet</mark> is a framework";
@@ -163,7 +162,7 @@ public class StringHighlightExtensionsTests
 		result.Should().Be("<mark>dotnet</mark> is a framework");
 	}
 
-	[Fact]
+	[Test]
 	public void ConsecutiveTokensWithoutSpace()
 	{
 		var text = "HelloWorld";
@@ -172,7 +171,7 @@ public class StringHighlightExtensionsTests
 		result.Should().Be("<mark>Hello</mark><mark>World</mark>");
 	}
 
-	[Fact]
+	[Test]
 	public void OverlappingTokensFirstWins()
 	{
 		var text = "testing";
@@ -182,7 +181,7 @@ public class StringHighlightExtensionsTests
 		result.Should().Contain("<mark>test</mark>");
 	}
 
-	[Fact]
+	[Test]
 	public void SpecialCharactersInTextHandledCorrectly()
 	{
 		var text = "C# and .NET framework";
@@ -191,7 +190,7 @@ public class StringHighlightExtensionsTests
 		result.Should().Be("C# and .<mark>NET</mark> framework");
 	}
 
-	[Fact]
+	[Test]
 	public void MultipleMarksWithTokenBetween()
 	{
 		var text = "<mark>first</mark> middle <mark>last</mark>";
@@ -200,7 +199,7 @@ public class StringHighlightExtensionsTests
 		result.Should().Be("<mark>first</mark> <mark>middle</mark> <mark>last</mark>");
 	}
 
-	[Fact]
+	[Test]
 	public void EmptyTokenInArrayIgnored()
 	{
 		var text = "Hello world";
@@ -209,7 +208,7 @@ public class StringHighlightExtensionsTests
 		result.Should().Be("Hello <mark>world</mark>");
 	}
 
-	[Fact]
+	[Test]
 	public void TokenMatchingMarkTagNotBroken()
 	{
 		// Edge case: what if someone searches for "mark"?
@@ -219,7 +218,7 @@ public class StringHighlightExtensionsTests
 		result.Should().Be("The <mark>mark</mark> element is used for highlighting");
 	}
 
-	[Fact]
+	[Test]
 	public void NestedMarkTagsHandledCorrectly()
 	{
 		// This shouldn't happen in practice but let's make sure we don't break
@@ -229,7 +228,7 @@ public class StringHighlightExtensionsTests
 		result.Should().Be(text);
 	}
 
-	[Fact]
+	[Test]
 	public void LongTextWithManyMatchesPerformsWell()
 	{
 		var text = string.Join(" ", Enumerable.Repeat("elasticsearch kibana logstash beats", 100));
@@ -240,7 +239,7 @@ public class StringHighlightExtensionsTests
 		result.Should().NotContain("<mark>logstash</mark>");
 	}
 
-	[Fact]
+	[Test]
 	public void UnicodeTextHandledCorrectly()
 	{
 		var text = "日本語 elasticsearch テスト";
@@ -249,7 +248,7 @@ public class StringHighlightExtensionsTests
 		result.Should().Be("日本語 <mark>elasticsearch</mark> テスト");
 	}
 
-	[Fact]
+	[Test]
 	public void TokenWithUppercaseMarkStillWorks()
 	{
 		var text = "Hello <MARK>world</MARK> test";
@@ -259,7 +258,7 @@ public class StringHighlightExtensionsTests
 		result.Should().Be("Hello <MARK>world</MARK> test");
 	}
 
-	[Fact]
+	[Test]
 	public void RealWorldExampleSearchResults()
 	{
 		var text = "Elasticsearch is a distributed, RESTful search and analytics engine";
@@ -268,7 +267,7 @@ public class StringHighlightExtensionsTests
 		result.Should().Be("<mark>Elasticsearch</mark> is a distributed, RESTful <mark>search</mark> and analytics engine");
 	}
 
-	[Fact]
+	[Test]
 	public void RealWorldExamplePartiallyHighlighted()
 	{
 		var text = "Learn about <mark>Elasticsearch</mark> and how to use search effectively";
@@ -277,7 +276,7 @@ public class StringHighlightExtensionsTests
 		result.Should().Be("Learn about <mark>Elasticsearch</mark> and how to use <mark>search</mark> effectively");
 	}
 
-	[Fact]
+	[Test]
 	public void StartOfStringHighlight()
 	{
 		var text = "<mark>APM</mark> Architecture for AWS Lambda";
@@ -286,7 +285,7 @@ public class StringHighlightExtensionsTests
 		result.Should().Be("<mark>APM</mark> <mark>Ar</mark>chitecture for AWS Lambda");
 	}
 
-	[Fact]
+	[Test]
 	public void StartOfStringHighlight2()
 	{
 		var text = "APM Architecture for AWS Lambda";
@@ -296,7 +295,7 @@ public class StringHighlightExtensionsTests
 		result.Should().Be("<mark>A</mark>PM <mark>A</mark>rchitecture for <mark>A</mark>WS Lambda");
 	}
 
-	[Fact]
+	[Test]
 	public void IgnoreOtherHtml()
 	{
 		var text = "<>APM<> Architecture for AWS Lambda";
@@ -305,7 +304,7 @@ public class StringHighlightExtensionsTests
 		result.Should().Be("<><mark>APM</mark><> Architecture for AWS Lambda");
 	}
 
-	[Fact]
+	[Test]
 	public void HighlightInsideNonMarkHtml()
 	{
 		// Only <mark> tags are protected, other HTML tags get their content highlighted
@@ -315,7 +314,7 @@ public class StringHighlightExtensionsTests
 		result.Should().Be("<<mark>APM</mark>> Architecture for AWS Lambda");
 	}
 
-	[Fact]
+	[Test]
 	public void PartiallyHighlightedTitleHighlightsRemaining()
 	{
 		var text = "<mark>Elastic</mark>search cluster management";
@@ -324,7 +323,7 @@ public class StringHighlightExtensionsTests
 		result.Should().Be("<mark>Elastic</mark><mark>search</mark> <mark>cluster</mark> management");
 	}
 
-	[Fact]
+	[Test]
 	public void PartiallyHighlightedMiddleHighlightsAround()
 	{
 		var text = "Learn <mark>Elasticsearch</mark> basics today";
@@ -333,7 +332,7 @@ public class StringHighlightExtensionsTests
 		result.Should().Be("<mark>Learn</mark> <mark>Elasticsearch</mark> <mark>basics</mark> <mark>today</mark>");
 	}
 
-	[Fact]
+	[Test]
 	public void MultiplePartialHighlightsHighlightsGaps()
 	{
 		var text = "<mark>APM</mark> and <mark>logging</mark> for observability";
@@ -342,7 +341,7 @@ public class StringHighlightExtensionsTests
 		result.Should().Be("<mark>APM</mark> <mark>and</mark> <mark>logging</mark> for <mark>observability</mark>");
 	}
 
-	[Fact]
+	[Test]
 	public void BrokenMarkTagArkFragmentHandledSafely()
 	{
 		// Malformed HTML with "ark>" fragment
@@ -352,7 +351,7 @@ public class StringHighlightExtensionsTests
 		result.Should().Be("This has ark> in it and some <mark>test</mark> content");
 	}
 
-	[Fact]
+	[Test]
 	public void BrokenMarkTagMaFragmentHandledSafely()
 	{
 		// Malformed HTML with "</ma" fragment
@@ -362,7 +361,7 @@ public class StringHighlightExtensionsTests
 		result.Should().Be("This has </ma in it and some <mark>test</mark> content");
 	}
 
-	[Fact]
+	[Test]
 	public void BrokenMarkTagMarkWithoutCloseHandledSafely()
 	{
 		// Unclosed <mark> tag
@@ -373,7 +372,7 @@ public class StringHighlightExtensionsTests
 		result.Should().Be("This has <mark>unclosed and test content");
 	}
 
-	[Fact]
+	[Test]
 	public void BrokenMarkTagCloseWithoutOpenHandledSafely()
 	{
 		// </mark> without opening tag
@@ -383,7 +382,7 @@ public class StringHighlightExtensionsTests
 		result.Should().Be("This has </mark> <mark>orphan</mark> and <mark>test</mark> content");
 	}
 
-	[Fact]
+	[Test]
 	public void BrokenMarkTagPartialOpenTagHandledSafely()
 	{
 		// Partial "<mar" without completion
@@ -394,7 +393,7 @@ public class StringHighlightExtensionsTests
 		result.Should().Be("This has <mar and <mark>test</mark> content");
 	}
 
-	[Fact]
+	[Test]
 	public void BrokenMarkTagJustAngleBracketsHandledSafely()
 	{
 		var text = "Use < and > for comparisons and test values";
@@ -403,7 +402,7 @@ public class StringHighlightExtensionsTests
 		result.Should().Be("Use < and > for comparisons and <mark>test</mark> values");
 	}
 
-	[Fact]
+	[Test]
 	public void PartialHighlightTokenSpansHighlightBoundary()
 	{
 		// Token "search" spans from outside to inside highlighted area
@@ -413,7 +412,7 @@ public class StringHighlightExtensionsTests
 		result.Should().Be("<mark>full</mark><mark>text</mark><mark>search</mark> capabilities");
 	}
 
-	[Fact]
+	[Test]
 	public void PartialHighlightAdjacentMarks()
 	{
 		var text = "<mark>hello</mark><mark>world</mark> test";
@@ -422,7 +421,7 @@ public class StringHighlightExtensionsTests
 		result.Should().Be("<mark>hello</mark><mark>world</mark> <mark>test</mark>");
 	}
 
-	[Fact]
+	[Test]
 	public void PartialHighlightNestedLookingContent()
 	{
 		// Content that looks like it could be nested (but isn't valid HTML)
@@ -435,7 +434,7 @@ public class StringHighlightExtensionsTests
 
 	// ========== Synonyms Tests ==========
 
-	[Fact]
+	[Test]
 	public void SynonymsNullDictionaryHighlightsOnlyTokens()
 	{
 		var text = "Kubernetes cluster management";
@@ -444,7 +443,7 @@ public class StringHighlightExtensionsTests
 		result.Should().Be("<mark>Kubernetes</mark> cluster management");
 	}
 
-	[Fact]
+	[Test]
 	public void SynonymsEmptyDictionaryHighlightsOnlyTokens()
 	{
 		var text = "Kubernetes cluster management";
@@ -454,7 +453,7 @@ public class StringHighlightExtensionsTests
 		result.Should().Be("<mark>Kubernetes</mark> cluster management");
 	}
 
-	[Fact]
+	[Test]
 	public void SynonymsHighlightsBothTokenAndSynonym()
 	{
 		var text = "Kubernetes and k8s are the same thing";
@@ -464,7 +463,7 @@ public class StringHighlightExtensionsTests
 		result.Should().Be("<mark>Kubernetes</mark> and <mark>k8s</mark> are the same thing");
 	}
 
-	[Fact]
+	[Test]
 	public void SynonymsHighlightsMultipleSynonyms()
 	{
 		var text = "Use Elasticsearch or ES or elastic for search";
@@ -474,7 +473,7 @@ public class StringHighlightExtensionsTests
 		result.Should().Be("Use <mark>Elasticsearch</mark> or <mark>ES</mark> or <mark>elastic</mark> for search");
 	}
 
-	[Fact]
+	[Test]
 	public void SynonymsCaseInsensitiveLookup()
 	{
 		var text = "K8S is short for kubernetes";
@@ -484,7 +483,7 @@ public class StringHighlightExtensionsTests
 		result.Should().Be("<mark>K8S</mark> is short for <mark>kubernetes</mark>");
 	}
 
-	[Fact]
+	[Test]
 	public void SynonymsTokenNotInDictionary()
 	{
 		var text = "Logstash is a pipeline tool";
@@ -494,7 +493,7 @@ public class StringHighlightExtensionsTests
 		result.Should().Be("<mark>Logstash</mark> is a pipeline tool");
 	}
 
-	[Fact]
+	[Test]
 	public void SynonymsEmptySynonymArrayIgnored()
 	{
 		var text = "Elasticsearch is powerful";
@@ -504,7 +503,7 @@ public class StringHighlightExtensionsTests
 		result.Should().Be("<mark>Elasticsearch</mark> is powerful");
 	}
 
-	[Fact]
+	[Test]
 	public void SynonymsEmptyStringsInArrayIgnored()
 	{
 		var text = "Kubernetes and k8s cluster";
@@ -514,7 +513,7 @@ public class StringHighlightExtensionsTests
 		result.Should().Be("<mark>Kubernetes</mark> and <mark>k8s</mark> cluster");
 	}
 
-	[Fact]
+	[Test]
 	public void SynonymsMultipleTokensWithDifferentSynonyms()
 	{
 		var text = "Deploy k8s with es and ml for machine learning";
@@ -529,7 +528,7 @@ public class StringHighlightExtensionsTests
 		result.Should().Be("Deploy <mark>k8s</mark> with <mark>es</mark> and ml for machine learning");
 	}
 
-	[Fact]
+	[Test]
 	public void SynonymsAlreadyHighlightedSynonymNotDoubleHighlighted()
 	{
 		var text = "Use <mark>k8s</mark> for Kubernetes deployments";
@@ -539,7 +538,7 @@ public class StringHighlightExtensionsTests
 		result.Should().Be("Use <mark>k8s</mark> for <mark>Kubernetes</mark> deployments");
 	}
 
-	[Fact]
+	[Test]
 	public void SynonymsBiDirectionalLookup()
 	{
 		// Simulating bi-directional synonyms (as used in SearchConfiguration.SynonymBiDirectional)
@@ -554,7 +553,7 @@ public class StringHighlightExtensionsTests
 		result.Should().Be("Search with <mark>k8s</mark> or <mark>kubernetes</mark> in your cluster");
 	}
 
-	[Fact]
+	[Test]
 	public void SynonymsMultipleOccurrencesOfSynonym()
 	{
 		var text = "k8s here and k8s there but also kubernetes";
@@ -564,7 +563,7 @@ public class StringHighlightExtensionsTests
 		result.Should().Be("<mark>k8s</mark> here and <mark>k8s</mark> there but also <mark>kubernetes</mark>");
 	}
 
-	[Fact]
+	[Test]
 	public void SynonymsRealWorldElasticSearchExample()
 	{
 		var text = "Configure ES cluster settings in Elasticsearch for elastic cloud";
@@ -574,7 +573,7 @@ public class StringHighlightExtensionsTests
 		result.Should().Be("Configure <mark>ES</mark> cluster settings in <mark>Elasticsearch</mark> for <mark>elastic</mark> cloud");
 	}
 
-	[Fact]
+	[Test]
 	public void SynonymsRealWorldMachineLearningExample()
 	{
 		var text = "ML models for machine learning in the ml node";
@@ -585,7 +584,7 @@ public class StringHighlightExtensionsTests
 		result.Should().Be("<mark>ML</mark> models for <mark>machine learning</mark> in the <mark>ml</mark> node");
 	}
 
-	[Fact]
+	[Test]
 	public void SynonymsSynonymInsideMarkTagNotHighlighted()
 	{
 		var text = "<mark>kubernetes and k8s</mark> are popular";
@@ -596,7 +595,7 @@ public class StringHighlightExtensionsTests
 		result.Should().Be("<mark>kubernetes and k8s</mark> are popular");
 	}
 
-	[Fact]
+	[Test]
 	public void SynonymsMixedHighlightedAndUnhighlightedSynonyms()
 	{
 		var text = "<mark>k8s</mark> and kubernetes cluster";
@@ -606,7 +605,7 @@ public class StringHighlightExtensionsTests
 		result.Should().Be("<mark>k8s</mark> and <mark>kubernetes</mark> cluster");
 	}
 
-	[Fact]
+	[Test]
 	public void SynonymsPreservesOriginalCaseForSynonym()
 	{
 		var text = "Use K8S for your deployments";
@@ -617,7 +616,7 @@ public class StringHighlightExtensionsTests
 		result.Should().Be("Use <mark>K8S</mark> for your deployments");
 	}
 
-	[Fact]
+	[Test]
 	public void SynonymsWithSpecialCharacters()
 	{
 		var text = "Use ES|QL or esql for queries";
@@ -627,7 +626,7 @@ public class StringHighlightExtensionsTests
 		result.Should().Be("Use <mark>ES|QL</mark> or <mark>esql</mark> for queries");
 	}
 
-	[Fact]
+	[Test]
 	public void SynonymsPartialMatchNotHighlighted()
 	{
 		// Synonym "k8s" should not match "ak8s" (middle of word) but should match "k8ss" (starts with k8s)
@@ -642,7 +641,7 @@ public class StringHighlightExtensionsTests
 		result.Should().Be("<mark>k8s</mark>s is not <mark>k8s</mark> and ak8s is wrong");
 	}
 
-	[Fact]
+	[Test]
 	public void SynonymsHardReplacements()
 	{
 		var text = "ES|QL is esql and not EQL";

@@ -42,7 +42,7 @@ public class AgentBuilderStreamTransformerTests
 	public AgentBuilderStreamTransformerTests() =>
 		_transformer = new AgentBuilderStreamTransformer(NullLogger<AgentBuilderStreamTransformer>.Instance);
 
-	[Fact]
+	[Test]
 	public async Task TransformAsyncWithRealAgentBuilderPayloadParsesAllEventTypes()
 	{
 		// Arrange - Real Agent Builder SSE stream
@@ -121,7 +121,7 @@ public class AgentBuilderStreamTransformerTests
 		complete.FullContent.Should().Be("Hello world");
 	}
 
-	[Fact]
+	[Test]
 	public async Task TransformAsyncWithKeepAliveCommentsSkipsThem()
 	{
 		// Arrange
@@ -150,7 +150,7 @@ public class AgentBuilderStreamTransformerTests
 		events[0].Should().BeOfType<AskAiEvent.MessageChunk>();
 	}
 
-	[Fact]
+	[Test]
 	public async Task TransformAsyncWithMultilineDataFieldsAccumulatesCorrectly()
 	{
 		// Arrange
@@ -183,7 +183,7 @@ public class LlmGatewayStreamTransformerTests
 	public LlmGatewayStreamTransformerTests() =>
 		_transformer = new LlmGatewayStreamTransformer(NullLogger<LlmGatewayStreamTransformer>.Instance);
 
-	[Fact]
+	[Test]
 	public async Task TransformAsyncWithRealLlmGatewayPayloadParsesAllEventTypes()
 	{
 		// Arrange - Real LLM Gateway SSE stream
@@ -259,7 +259,7 @@ public class LlmGatewayStreamTransformerTests
 		events[6].Should().BeOfType<AskAiEvent.ConversationEnd>();
 	}
 
-	[Fact]
+	[Test]
 	public async Task TransformAsyncWithEmptyDataLinesSkipsThem()
 	{
 		// Arrange
@@ -292,7 +292,7 @@ public class LlmGatewayStreamTransformerTests
 		events[1].Should().BeOfType<AskAiEvent.ConversationEnd>();
 	}
 
-	[Fact]
+	[Test]
 	public async Task TransformAsyncSkipsModelLifecycleEvents()
 	{
 		// Arrange
@@ -325,39 +325,33 @@ public class LlmGatewayStreamTransformerTests
 /// These tests ensure consistency across different transformer implementations.
 /// Adding a new transformer? Just add it to StreamTransformerTestCases() and these tests will automatically run against it.
 /// </summary>
-#pragma warning disable xUnit1045 // IStreamTransformer is not serializable but tests work fine
 public class StreamTransformerCommonBehaviorTests
 {
-	public static TheoryData<string, IStreamTransformer, string> StreamTransformerTestCases() =>
-		new()
-		{
-			{
-				"AgentBuilderStreamTransformer",
-				new AgentBuilderStreamTransformer(NullLogger<AgentBuilderStreamTransformer>.Instance),
-				// Agent Builder SSE format for conversation_id_set
-				"""
-				event: conversation_id_set
-				data: {"data":{"conversation_id":"360222c5-76aa-405a-8316-703e1061b621"}}
+	public static IEnumerable<(string, IStreamTransformer, string)> StreamTransformerTestCases()
+	{
+		yield return ("AgentBuilderStreamTransformer", new AgentBuilderStreamTransformer(
+			NullLogger<AgentBuilderStreamTransformer>.Instance
+		),
+		// Agent Builder SSE format for conversation_id_set
+		"""
+			event: conversation_id_set
+			data: {"data":{"conversation_id":"360222c5-76aa-405a-8316-703e1061b621"}}
 
-				event: message_chunk
-				data: {"data":{"text_chunk":"test"}}
+			event: message_chunk
+			data: {"data":{"text_chunk":"test"}}
 
-				"""
-			},
-			{
-				"LlmGatewayStreamTransformer",
-				new LlmGatewayStreamTransformer(NullLogger<LlmGatewayStreamTransformer>.Instance),
-				// LLM Gateway SSE format - minimal events
-				"""
-				event: agent_stream_output
-				data: [null, {"type":"ai_message_chunk","id":"1","timestamp":1234567890,"data":{"content":"test"}}]
+			""");
+		yield return ("LlmGatewayStreamTransformer", new LlmGatewayStreamTransformer(NullLogger<LlmGatewayStreamTransformer>.Instance),
+		// LLM Gateway SSE format - minimal events
+		"""
+			event: agent_stream_output
+			data: [null, {"type":"ai_message_chunk","id":"1","timestamp":1234567890,"data":{"content":"test"}}]
 
-				"""
-			}
-		};
+			""");
+	}
 
-	[Theory]
-	[MemberData(nameof(StreamTransformerTestCases))]
+	[Test]
+	[MethodDataSource(nameof(StreamTransformerTestCases))]
 	public async Task TransformAsyncWhenIsNewConversationEmitsConversationStartEvent(
 		string transformerName,
 		IStreamTransformer transformer,
@@ -385,8 +379,8 @@ public class StreamTransformerCommonBehaviorTests
 			.NotBeNullOrEmpty($"{transformerName} should have a non-empty conversation ID in ConversationStart event");
 	}
 
-	[Theory]
-	[MemberData(nameof(StreamTransformerTestCases))]
+	[Test]
+	[MethodDataSource(nameof(StreamTransformerTestCases))]
 	public async Task TransformAsyncConversationStartEventHasValidTimestamp(
 		string transformerName,
 		IStreamTransformer transformer,
@@ -415,8 +409,8 @@ public class StreamTransformerCommonBehaviorTests
 		conversationStart.Timestamp.Should().BeGreaterThan(0, $"{transformerName} ConversationStart should have a valid timestamp");
 	}
 
-	[Theory]
-	[MemberData(nameof(StreamTransformerTestCases))]
+	[Test]
+	[MethodDataSource(nameof(StreamTransformerTestCases))]
 	public async Task TransformAsyncConversationStartEventHasValidId(string transformerName, IStreamTransformer transformer, string sseData)
 	{
 		// Arrange
@@ -441,4 +435,3 @@ public class StreamTransformerCommonBehaviorTests
 		conversationStart.Id.Should().NotBeNullOrEmpty($"{transformerName} ConversationStart should have a non-empty event ID");
 	}
 }
-#pragma warning restore xUnit1045

@@ -17,7 +17,7 @@ public class StaticPathToImage : MarkdownTest
 		:::
 		""";
 
-	[Fact(DisplayName = "validate src is anchored")]
+	[Test, DisplayName("validate src is anchored")]
 	public async Task ValidateSrcIsAnchored() =>
 		await Docs.ConvertsToContainingHtml(
 			"""
@@ -55,7 +55,7 @@ public class SupportsUrlPathPrefix : GeneratorTest
 			)
 		];
 
-	[Fact(DisplayName = "validate image src contains prefix")]
+	[Test, DisplayName("validate image src contains prefix")]
 	public async Task ValidateImageSrcContainsPrefix() =>
 		await Docs.ConvertsToContainingHtml(
 			"""
@@ -63,7 +63,7 @@ public class SupportsUrlPathPrefix : GeneratorTest
 		"""
 		);
 
-	[Fact(DisplayName = "validate image src contains prefix when referenced relatively")]
+	[Test, DisplayName("validate image src contains prefix when referenced relatively")]
 	public async Task ValidateRelativeReference() =>
 		await Docs.Converts("folder/relative.md").ContainsHtml(
 			"""
@@ -71,7 +71,7 @@ public class SupportsUrlPathPrefix : GeneratorTest
 			"""
 		);
 
-	[Fact(DisplayName = "has no errors")]
+	[Test, DisplayName("has no errors")]
 	public async Task HasNoErrors() => await Docs.HasNoErrors();
 }
 
@@ -94,7 +94,7 @@ public class ImageRefOutOfScope : GeneratorTest
 			)
 		];
 
-	[Fact(DisplayName = "validate image src contains prefix and is anchored to documentation scope root")]
+	[Test, DisplayName("validate image src contains prefix and is anchored to documentation scope root")]
 	public async Task ValidateSrcAnchored() =>
 		await Docs.ConvertsToContainingHtml(
 			"""
@@ -102,7 +102,7 @@ public class ImageRefOutOfScope : GeneratorTest
 		"""
 		);
 
-	[Fact(DisplayName = "emits an error image reference is outside of documentation scope")]
+	[Test, DisplayName("emits an error image reference is outside of documentation scope")]
 	public async Task EmitsError() => await Docs.HasError("./img/observability.png` does not exist. resolved to");
 }
 
@@ -115,7 +115,7 @@ public class EmptyAltAttribute : MarkdownTest
 		:::
 		""";
 
-	[Fact(DisplayName = "validate empty alt attribute")]
+	[Test, DisplayName("validate empty alt attribute")]
 	public async Task ValidateEmptyAlt() =>
 		await Docs.ConvertsToContainingHtml("""
 		<img loading="lazy" alt src="/img/some-image.png" style="width: 250px;">

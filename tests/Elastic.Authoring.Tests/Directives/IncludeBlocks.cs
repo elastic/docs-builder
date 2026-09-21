@@ -32,7 +32,7 @@ public class IncludeHoistsAnchorsAndTableOfContents : GeneratorTest
 			),
 		];
 
-	[Fact(DisplayName = "validate index.md HTML includes snippet")]
+	[Test, DisplayName("validate index.md HTML includes snippet")]
 	public async Task ValidateIndexHtml() =>
 		await Docs.Converts("index.md").ToHtml(
 			"""
@@ -43,7 +43,7 @@ public class IncludeHoistsAnchorsAndTableOfContents : GeneratorTest
 			"""
 		);
 
-	[Fact(DisplayName = "validate test-links.md HTML includes snippet")]
+	[Test, DisplayName("validate test-links.md HTML includes snippet")]
 	public async Task ValidateTestLinksHtml() =>
 		await Docs.Converts("test-links.md").ToHtml(
 			"""
@@ -55,7 +55,7 @@ public class IncludeHoistsAnchorsAndTableOfContents : GeneratorTest
 			"""
 		);
 
-	[Fact(DisplayName = "validate index.md includes table of contents")]
+	[Test, DisplayName("validate index.md includes table of contents")]
 	public async Task ValidateTableOfContents()
 	{
 		var page = await Docs.Converts("index.md").MarkdownFile();
@@ -63,7 +63,7 @@ public class IncludeHoistsAnchorsAndTableOfContents : GeneratorTest
 		page.PageTableOfContent.Should().ContainKey("aa");
 	}
 
-	[Fact(DisplayName = "has no errors")]
+	[Test, DisplayName("has no errors")]
 	public async Task HasNoErrors() => await Docs.HasNoErrors();
 }
 
@@ -92,6 +92,6 @@ public class IncludeCanContainLinksToParentPagesIncludes : GeneratorTest
 			"""),
 		];
 
-	[Fact(DisplayName = "has no errors")]
+	[Test, DisplayName("has no errors")]
 	public async Task HasNoErrors() => await Docs.HasNoErrors();
 }

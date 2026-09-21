@@ -14,7 +14,7 @@ public class InlineAnchorInTheMiddle : MarkdownTest
 		this is *regular* text and this $$$is-an-inline-anchor$$$ and this continues to be regular text
 		""";
 
-	[Fact(DisplayName = "validate HTML")]
+	[Test, DisplayName("validate HTML")]
 	public async Task ValidateHtml() =>
 		await Docs.ConvertsToHtml(
 			"""
@@ -24,7 +24,7 @@ public class InlineAnchorInTheMiddle : MarkdownTest
 		"""
 		);
 
-	[Fact(DisplayName = "has no errors")]
+	[Test, DisplayName("has no errors")]
 	public async Task HasNoErrors() => await Docs.HasNoErrors();
 }
 
@@ -62,16 +62,16 @@ public class InlineAnchorsEmbeddedInDefinitionLists : GeneratorTest
 			)
 		];
 
-	[Fact(DisplayName = "emits nested inline anchor")]
+	[Test, DisplayName("emits nested inline anchor")]
 	public async Task EmitsNestedInlineAnchor() => await Docs.ConvertsToContainingHtml("""<a id="dfs-query-then-fetch"></a>""");
 
-	[Fact(DisplayName = "emits definition list block anchor")]
+	[Test, DisplayName("emits definition list block anchor")]
 	public async Task EmitsDefinitionListBlockAnchor() => await Docs.ConvertsToContainingHtml("""<a id="search-type"></a>""");
 
-	[Fact(DisplayName = "has no errors")]
+	[Test, DisplayName("has no errors")]
 	public async Task HasNoErrors() => await Docs.HasNoErrors();
 
-	[Fact(DisplayName = "minimal parse sees two inline anchors")]
+	[Test, DisplayName("minimal parse sees two inline anchors")]
 	public async Task MinimalParseSeesInlineAnchors()
 	{
 		var anchors = await Docs.Converts("index.md").ParsesMinimal<InlineAnchor>();
@@ -105,16 +105,16 @@ public class InlineAnchorsEmbeddedInIndentedCode : GeneratorTest
 			)
 		];
 
-	[Fact(DisplayName = "emits nested inline anchor")]
+	[Test, DisplayName("emits nested inline anchor")]
 	public async Task EmitsNestedInlineAnchor() => await Docs.ConvertsToContainingHtml("""<a id="dfs-query-then-fetch"></a>""");
 
-	[Fact(DisplayName = "emits definition list block anchor")]
+	[Test, DisplayName("emits definition list block anchor")]
 	public async Task EmitsDefinitionListBlockAnchor() => await Docs.ConvertsToContainingHtml("""<a id="search-type"></a>""");
 
-	[Fact(DisplayName = "has no errors")]
+	[Test, DisplayName("has no errors")]
 	public async Task HasNoErrors() => await Docs.HasNoErrors();
 
-	[Fact(DisplayName = "minimal parse sees two inline anchors")]
+	[Test, DisplayName("minimal parse sees two inline anchors")]
 	public async Task MinimalParseSeesInlineAnchors()
 	{
 		var anchors = await Docs.Converts("index.md").ParsesMinimal<InlineAnchor>();

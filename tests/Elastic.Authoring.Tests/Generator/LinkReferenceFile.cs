@@ -24,7 +24,7 @@ public class TwoPagesWithAnchorsEndUpInArtifact : GeneratorTest
 			Page("file.md", "*hello* world"),
 		];
 
-	[Fact(DisplayName = "validate index.md HTML")]
+	[Test, DisplayName("validate index.md HTML")]
 	public async Task ValidateIndexHtml() =>
 		await Docs.Converts("index.md").ToHtml(
 			"""
@@ -47,13 +47,13 @@ public class TwoPagesWithAnchorsEndUpInArtifact : GeneratorTest
 			"""
 		);
 
-	[Fact(DisplayName = "validate file.md HTML")]
+	[Test, DisplayName("validate file.md HTML")]
 	public async Task ValidateFileMdHtml() => await Docs.Converts("file.md").ToHtml("<p><em>hello</em>world</p>");
 
-	[Fact(DisplayName = "has no errors")]
+	[Test, DisplayName("has no errors")]
 	public async Task HasNoErrors() => await Docs.HasNoErrors();
 
-	[Fact(DisplayName = "validate links.json")]
+	[Test, DisplayName("validate links.json")]
 	public async Task ValidateLinksJson() =>
 		await Docs.ConvertsToJson(
 			".artifacts/docs/html/links.json",

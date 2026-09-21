@@ -11,6 +11,6 @@ public class CommentedLine : MarkdownTest
 		not a comment
 		""";
 
-	[Fact(DisplayName = "validate HTML: commented line should not be emitted")]
+	[Test, DisplayName("validate HTML: commented line should not be emitted")]
 	public async Task ValidateHtml() => await Docs.ConvertsToHtml("""<p>not a comment</p>""");
 }
