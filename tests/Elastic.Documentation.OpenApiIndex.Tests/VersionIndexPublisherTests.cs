@@ -46,7 +46,7 @@ public class VersionIndexPublisherTests
 		A.CallTo(() => _s3Client.GetObjectAsync(A<GetObjectRequest>._, A<Cancel>._)).Returns(new GetObjectResponse
 		{
 			ETag = etag,
-			ResponseStream = new MemoryStream(Encoding.UTF8.GetBytes(body))
+			ResponseStream = new ReadOnlyMemoryStream(Encoding.UTF8.GetBytes(body))
 		});
 
 	[Fact]

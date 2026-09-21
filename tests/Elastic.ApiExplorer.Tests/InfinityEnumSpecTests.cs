@@ -18,7 +18,7 @@ public class InfinityEnumSpecTests
 			Path.Combine(AppContext.BaseDirectory, "TestData", "infinity-enum.yaml"),
 			TestContext.Current.CancellationToken
 		);
-		await using var stream = new MemoryStream(Encoding.UTF8.GetBytes(yaml));
+		await using var stream = new ReadOnlyMemoryStream(Encoding.UTF8.GetBytes(yaml));
 		var document = await OpenApiReader.Instance.ReadAsync(stream, "infinity-enum.yaml");
 		document.Should().NotBeNull();
 
