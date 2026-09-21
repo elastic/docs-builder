@@ -11,7 +11,11 @@ phantoms:
   - toc: docs-content://release-notes/elasticsearch-clients
   - toc: docs-content://release-notes/apm-agents
   - toc: docs-content://
+  - toc: docs-content://products
   - toc: cloud://release-notes
+  # Temporary: elastic-agent renames reference/edot-collector → reference/otel-collector (elastic/elastic-agent#16022).
+  # Remove this phantom and update the nav entry below once that PR merges.
+  - toc: elastic-agent://reference/otel-collector
 
 toc:
   #############
@@ -23,6 +27,7 @@ toc:
   - toc: explore-analyze
   - toc: deploy-manage
   - toc: cloud-account
+    navigation_title: Manage your Cloud account
   - toc: troubleshoot
 
 
@@ -117,7 +122,7 @@ toc:
           # https://github.com/elastic/apm-agent-android/blob/main/docs/release-notes/toc.yml
           - toc: apm-agent-android://release-notes
             path_prefix: release-notes/edot/sdks/android
-          # EDOT Cloud Forwarder for AWS
+          # Elastic Cloud Forwarder for AWS
           # https://github.com/elastic/edot-cloud-forwarder-aws/blob/main/docs/release-notes/toc.yml
           - toc: edot-cloud-forwarder-aws://release-notes
             path_prefix: release-notes/edot/cloud-forwarder/aws
@@ -605,6 +610,11 @@ toc:
               - toc: ecs-logging-ruby://reference
                 path_prefix: reference/ecs/logging/ruby
                 # Children include the entire AsciiDoc book
+
+      # Elastic CLI
+      # https://github.com/elastic/cli/blob/main/docs/docset.yml
+      - toc: cli://
+        path_prefix: reference/elastic-cli
 
       # Machine learning (FKA Data analysis)
       # https://github.com/elastic/docs-content/blob/main/reference/machine-learning/toc.yml

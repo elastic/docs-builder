@@ -25,7 +25,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <RazorSlice Include="**/*.cshtml" Exclude="**/_ViewImports.cshtml" />
+    <RazorSlice Include="**/*.cshtml" Exclude="$(DefaultItemExcludes);$(DefaultExcludesInProjectFolder);**/_ViewImports.cshtml" />
   </ItemGroup>
 
   <!-- source https://www.meziantou.net/running-npm-tasks-when-building-a-dotnet-project.htm -->

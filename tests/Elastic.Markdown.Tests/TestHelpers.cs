@@ -4,26 +4,53 @@
 
 using System.Collections.Frozen;
 using System.IO.Abstractions;
+using System.IO.Abstractions.TestingHelpers;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.LegacyUrlMappings;
 using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Configuration.Search;
 using Elastic.Documentation.Configuration.Versions;
+using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.Versions;
 
 namespace Elastic.Markdown.Tests;
 
 public static class TestHelpers
 {
-	public static IConfigurationContext CreateConfigurationContext(IFileSystem fileSystem, VersionsConfiguration? versionsConfiguration = null, ProductsConfiguration? productsConfiguration = null)
+	/// <summary>
+	/// Resolves a <see cref="DocumentationFileSystem"/> over <paramref name="fileSystem"/> for tests
+	/// that only need a scoped FS without real git data. Ensures a stub <c>.git</c> directory exists
+	/// at the working-directory root (no <c>config</c> file) so
+	/// <c>GitCheckoutInformationFactory.IsLegacyTestWithoutGitLayout</c> returns the well-known
+	/// canned test instance instead of failing.
+	/// </summary>
+	public static DocumentationFileSystem CreateDocumentationFileSystem(
+		MockFileSystem fileSystem,
+		IDirectoryInfo? invocation = null,
+		GitCheckoutInformation? git = null
+	)
+	{
+		var gitPath = Path.Join(Paths.WorkingDirectoryRoot.FullName, ".git");
+		if (!fileSystem.Directory.Exists(gitPath))
+			fileSystem.Directory.CreateDirectory(gitPath);
+		invocation ??= fileSystem.DirectoryInfo.New(Path.Join(Paths.WorkingDirectoryRoot.FullName, "docs"));
+		return DocumentationFileSystem.Resolve(invocation, new DocumentationScopeOptions { Inner = fileSystem, Git = git });
+	}
+
+	public static IConfigurationContext CreateConfigurationContext(
+		IFileSystem fileSystem,
+		VersionsConfiguration? versionsConfiguration = null,
+		ProductsConfiguration? productsConfiguration = null
+	)
 	{
 		versionsConfiguration ??= new VersionsConfiguration
 		{
 			VersioningSystems = new Dictionary<VersioningSystemId, VersioningSystem>
 			{
 				{
-					VersioningSystemId.Stack, new VersioningSystem
+					VersioningSystemId.Stack,
+					new VersioningSystem
 					{
 						Id = VersioningSystemId.Stack,
 						Current = new SemVersion(8, 0, 0),
@@ -31,36 +58,20 @@ public static class TestHelpers
 					}
 				},
 				{
-					VersioningSystemId.Self, new VersioningSystem
-					{
-						Id = VersioningSystemId.Self,
-						Current = new SemVersion(8, 0, 0),
-						Base = new SemVersion(8, 0, 0)
-					}
+					VersioningSystemId.Self,
+					new VersioningSystem { Id = VersioningSystemId.Self, Current = new SemVersion(8, 0, 0), Base = new SemVersion(8, 0, 0) }
 				},
 				{
-					VersioningSystemId.Ess, new VersioningSystem
-					{
-						Id = VersioningSystemId.Ess,
-						Current = new SemVersion(8, 0, 0),
-						Base = new SemVersion(8, 0, 0)
-					}
+					VersioningSystemId.Ess,
+					new VersioningSystem { Id = VersioningSystemId.Ess, Current = new SemVersion(8, 0, 0), Base = new SemVersion(8, 0, 0) }
 				},
 				{
-					VersioningSystemId.Eck, new VersioningSystem
-					{
-						Id = VersioningSystemId.Eck,
-						Current = new SemVersion(8, 0, 0),
-						Base = new SemVersion(8, 0, 0)
-					}
+					VersioningSystemId.Eck,
+					new VersioningSystem { Id = VersioningSystemId.Eck, Current = new SemVersion(8, 0, 0), Base = new SemVersion(8, 0, 0) }
 				},
 				{
-					VersioningSystemId.Ece, new VersioningSystem
-					{
-						Id = VersioningSystemId.Ece,
-						Current = new SemVersion(8, 0, 0),
-						Base = new SemVersion(8, 0, 0)
-					}
+					VersioningSystemId.Ece,
+					new VersioningSystem { Id = VersioningSystemId.Ece, Current = new SemVersion(8, 0, 0), Base = new SemVersion(8, 0, 0) }
 				}
 			},
 		};
@@ -69,7 +80,8 @@ public static class TestHelpers
 			var products = new Dictionary<string, Product>
 			{
 				{
-					"elasticsearch", new Product
+					"elasticsearch",
+					new Product
 					{
 						Id = "elasticsearch",
 						DisplayName = "Elasticsearch",
@@ -77,7 +89,8 @@ public static class TestHelpers
 					}
 				},
 				{
-					"kibana", new Product
+					"kibana",
+					new Product
 					{
 						Id = "kibana",
 						DisplayName = "Kibana",
@@ -85,7 +98,8 @@ public static class TestHelpers
 					}
 				},
 				{
-					"apm", new Product
+					"apm",
+					new Product
 					{
 						Id = "apm",
 						DisplayName = "APM",
@@ -93,7 +107,8 @@ public static class TestHelpers
 					}
 				},
 				{
-					"apm-agent", new Product
+					"apm-agent",
+					new Product
 					{
 						Id = "apm-agent",
 						DisplayName = "APM Agent",
@@ -111,11 +126,11 @@ public static class TestHelpers
 		var search = new SearchConfiguration { Synonyms = [], Rules = [], DiminishTerms = [] };
 		return new ConfigurationContext
 		{
-			Endpoints = new DocumentationEndpoints
-			{
-				Elasticsearch = ElasticsearchEndpoint.Default,
-			},
-			ConfigurationFileProvider = new ConfigurationFileProvider(new TestLoggerFactory(TestContext.Current.TestOutputHelper), fileSystem),
+			Endpoints = new DocumentationEndpoints { Elasticsearch = ElasticsearchEndpoint.Default, },
+			ConfigurationFileProvider = new ConfigurationFileProvider(
+				new TestLoggerFactory(TestContext.Current.TestOutputHelper),
+				new ConfigurationFileSystem(fileSystem)
+			),
 			VersionsConfiguration = versionsConfiguration,
 			ProductsConfiguration = productsConfiguration,
 			SearchConfiguration = search,

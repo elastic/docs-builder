@@ -5,6 +5,7 @@
 using Elastic.ApiExplorer.Infrastructure;
 using Elastic.ApiExplorer.Model;
 using Elastic.ApiExplorer.Operations;
+using Elastic.Documentation.Site.Icons;
 using Microsoft.OpenApi;
 
 namespace Elastic.ApiExplorer.Landing;
@@ -16,4 +17,11 @@ public class LandingViewModel(ApiRenderContext context) : ApiViewModel(context)
 
 	/// <summary>Flattened overview table rows; built before the slice renders.</summary>
 	public required IReadOnlyList<ApiOverviewRow> OverviewRows { get; init; }
+
+	public string JsonUrl { get; } = ApiOutputPaths.JsonUrl(context.CurrentNavigation.Url);
+	public string YamlUrl { get; } = ApiOutputPaths.YamlUrl(context.CurrentNavigation.Url);
+
+	public string? IconSvg { get; } = ProductIcons.Get(context.Product?.Id ?? context.CurrentApiKey);
+
+	protected override string BreadcrumbCurrentTitle => ApiInfo.Title ?? CurrentNavigationItem.NavigationTitle;
 }

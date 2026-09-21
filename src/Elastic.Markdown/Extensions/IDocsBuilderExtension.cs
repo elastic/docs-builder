@@ -29,7 +29,9 @@ public interface IDocsBuilderExtension
 	bool TryGetDocumentationFileBySlug(DocumentationSet documentationSet, string slug, out DocumentationFile? documentationFile);
 
 	/// Allows the extension to discover more documentation files for <see cref="DocumentationSet"/>
-	IReadOnlyCollection<(IFileInfo, DocumentationFile)> ScanDocumentationFiles(Func<IFileInfo, IDirectoryInfo, DocumentationFile> defaultFileHandling);
+	IReadOnlyCollection<(IFileInfo, DocumentationFile)> ScanDocumentationFiles(
+		Func<IFileInfo, IDirectoryInfo, DocumentationFile> defaultFileHandling
+	);
 
 	MarkdownFile? CreateMarkdownFile(IFileInfo file, IDirectoryInfo sourceDirectory, MarkdownParser markdownParser);
 

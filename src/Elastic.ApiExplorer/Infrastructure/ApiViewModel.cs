@@ -7,7 +7,6 @@ using Elastic.ApiExplorer.Operations;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
-using Elastic.Documentation.Configuration.Builder;
 using Elastic.Documentation.Extensions;
 using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Site;
@@ -22,27 +21,48 @@ public record ApiTocItem(string Heading, string Slug, int Level = 2);
 public record ApiLayoutViewModel : GlobalLayoutViewModel
 {
 	public required IReadOnlyList<ApiTocItem> TocItems { get; init; }
+
+	/// <summary>When set, operation pages render examples in the right rail instead of the in-page TOC.</summary>
+	public OperationExamplesPanelModel? ExamplesPanel { get; init; }
+
+	public required ApiBreadcrumbTrail Breadcrumbs { get; init; }
+	public IReadOnlyList<ApiVersionSwitcherItem> VersionSwitcherItems { get; init; } = [];
+	public IReadOnlyList<ApiVersionSwitcherItem> HubSwitcherItems { get; init; } = [];
+	public required string MarkdownUrl { get; init; }
+
+	/// <summary>
+	/// Preload hint for API links. Body already hx-boosts into <c>#main-container</c>,
+	/// so the examples rail swaps with the article without a dedicated OOB provider.
+	/// </summary>
+	public string HxAttributes => $" preload=\"{Htmx.Preload}\"";
 }
 
 public abstract class ApiViewModel(ApiRenderContext context)
 {
 	public string NavigationHtml { get; } = context?.NavigationHtml ?? string.Empty;
-	public StaticFileContentHashProvider StaticFileContentHashProvider { get; } = context?.StaticFileContentHashProvider ?? throw new ArgumentNullException(nameof(context), "StaticFileContentHashProvider cannot be null");
-	public INavigationItem CurrentNavigationItem { get; } = context?.CurrentNavigation ?? throw new ArgumentNullException(nameof(context), "CurrentNavigation cannot be null");
-	public IMarkdownStringRenderer MarkdownRenderer { get; } = context?.MarkdownRenderer ?? throw new ArgumentNullException(nameof(context), "MarkdownRenderer cannot be null");
-	public BuildContext BuildContext { get; } = context?.BuildContext ?? throw new ArgumentNullException(nameof(context), "BuildContext cannot be null");
-	public OpenApiDocument Document { get; } = context?.Model ?? throw new ArgumentNullException(nameof(context), "OpenApiDocument cannot be null");
+	public StaticFileContentHashProvider StaticFileContentHashProvider { get; } = context?.StaticFileContentHashProvider
+		?? throw new ArgumentNullException(nameof(context), "StaticFileContentHashProvider cannot be null");
+	public INavigationItem CurrentNavigationItem { get; } = context?.CurrentNavigation
+		?? throw new ArgumentNullException(nameof(context), "CurrentNavigation cannot be null");
+	public IMarkdownStringRenderer MarkdownRenderer { get; } = context?.MarkdownRenderer
+		?? throw new ArgumentNullException(nameof(context), "MarkdownRenderer cannot be null");
+	public BuildContext BuildContext { get; } = context?.BuildContext
+		?? throw new ArgumentNullException(nameof(context), "BuildContext cannot be null");
+	public OpenApiDocument Document { get; } = context?.Model
+		?? throw new ArgumentNullException(nameof(context), "OpenApiDocument cannot be null");
 
 	/// <summary>Current API render context (OpenAPI model, nav, optional logging).</summary>
 	protected ApiRenderContext RenderContext { get; } = context ?? throw new ArgumentNullException(nameof(context));
 
-
-	public HtmlString RenderMarkdown(string? markdown) => ApiMarkdown.Render(MarkdownRenderer, markdown);
+	public HtmlString RenderMarkdown(string? markdown) => ApiMarkdown.Render(RenderContext, markdown);
 
 	protected virtual IReadOnlyList<ApiTocItem> GetTocItems() => [];
 
 	/// <summary>When set, drives <see cref="GlobalLayoutViewModel.Title"/> for this page (e.g. intro/outro markdown). Does not affect <see cref="GlobalLayoutViewModel.HeaderTitle"/> which stays as the API product name.</summary>
 	protected virtual string? LayoutPageTitle => null;
+
+	/// <summary>Last breadcrumb label. Defaults to <see cref="LayoutPageTitle"/> or the nav title.</summary>
+	protected virtual string BreadcrumbCurrentTitle => LayoutPageTitle ?? CurrentNavigationItem.NavigationTitle;
 
 	private string? GetGitHubDocsUrl()
 	{
@@ -57,9 +77,7 @@ public abstract class ApiViewModel(ApiRenderContext context)
 	{
 		var docTitle = Document.Info?.Title ?? "API Documentation";
 		var pageTitle = LayoutPageTitle;
-		var documentTitle = pageTitle is not null
-			? $"{pageTitle} | {docTitle}"
-			: docTitle;
+		var documentTitle = pageTitle is not null ? $"{pageTitle} | {docTitle}" : docTitle;
 
 		return new()
 		{
@@ -71,15 +89,25 @@ public abstract class ApiViewModel(ApiRenderContext context)
 			Previous = null,
 			Next = null,
 			NavigationHtml = NavigationHtml,
+			NavigationActiveUrl = CurrentNavigationItem.Url,
 			UrlPathPrefix = BuildContext.UrlPathPrefix,
 			AllowIndexing = BuildContext.AllowIndexing,
 			CanonicalBaseUrl = BuildContext.CanonicalBaseUrl,
-			GoogleTagManager = new GoogleTagManagerConfiguration(),
-			Optimizely = new OptimizelyConfiguration(),
-			Features = new FeatureFlags([]),
+			GoogleTagManager = BuildContext.GoogleTagManager,
+			Optimizely = BuildContext.Optimizely,
+			Features = BuildContext.Configuration.Features,
 			StaticFileContentHashProvider = StaticFileContentHashProvider,
 			BuildType = BuildContext.BuildType,
+			PageFeedbackSurface = "api",
 			TocItems = GetTocItems(),
+			Breadcrumbs = ApiBreadcrumbBuilder.Build(CurrentNavigationItem, BreadcrumbCurrentTitle, Document.Info?.Title),
+			VersionSwitcherItems = RenderContext.VersionSwitcherItems,
+			HubSwitcherItems = ApiHubSwitcher.Build(
+				RenderContext.CatalogEntries,
+				RenderContext.CurrentApiKey,
+				$"{ApiUrlBuilder.ApiRoot(BuildContext.UrlPathPrefix)}/"
+			),
+			MarkdownUrl = ApiOutputPaths.MarkdownUrl(CurrentNavigationItem.Url),
 			// Header properties for isolated mode
 			HeaderTitle = docTitle,
 			HeaderVersion = Document.Info?.Version ?? "1.0",

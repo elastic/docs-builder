@@ -8,6 +8,7 @@ using Cysharp.IO;
 using Elastic.Documentation.Diagnostics;
 using Errata;
 using Spectre.Console;
+using Spectre.Console.Rendering;
 using Diagnostic = Elastic.Documentation.Diagnostics.Diagnostic;
 
 namespace Documentation.Builder.Diagnostics.Console;
@@ -24,9 +25,7 @@ public class CustomDiagnosticsFormatter : DiagnosticFormatter
 
 		if (diagnostic.Category != null)
 		{
-			_ = builder.Append("[b]")
-				.Append(diagnostic.Category.EscapeMarkup())
-				.Append("[/]");
+			_ = builder.Append("[b]").Append(diagnostic.Category.EscapeMarkup()).Append("[/]");
 		}
 
 		if (diagnostic.Code != null)
@@ -39,20 +38,13 @@ public class CustomDiagnosticsFormatter : DiagnosticFormatter
 			_ = builder.Append("]]");
 		}
 
-		if (!string.IsNullOrWhiteSpace(diagnostic.Category)
-			|| !string.IsNullOrWhiteSpace(diagnostic.Code))
+		if (!string.IsNullOrWhiteSpace(diagnostic.Category) || !string.IsNullOrWhiteSpace(diagnostic.Code))
 			_ = builder.Append("[white]: [/]");
 
 		var i = 0;
 		foreach (var line in diagnostic.Message.EscapeMarkup().Split('\n'))
 		{
-			_ = i == 0
-				? builder.Append("[white]")
-					.Append(line)
-					.Append("[/]")
-				: builder.AppendLine("[white]")
-					.Append(line)
-					.Append("[/]");
+			_ = i == 0 ? builder.Append("[white]").Append(line).Append("[/]") : builder.AppendLine("[white]").Append(line).Append("[/]");
 			i++;
 		}
 
@@ -96,18 +88,41 @@ public class ErrataFileSourceRepository : ISourceRepository
 		return true;
 	}
 
-	public void WriteDiagnosticsToConsole(IReadOnlyCollection<Diagnostic> errors, IReadOnlyCollection<Diagnostic> warnings, List<Diagnostic> hints)
+	public void WriteDiagnosticsToConsole(
+		IReadOnlyCollection<Diagnostic> errors,
+		IReadOnlyCollection<Diagnostic> warnings,
+		List<Diagnostic> hints
+	)
 	{
+		// Fileless/global diagnostics (File == "") have no source location and no Errata label.
+		// Errata's Report.Render collapses embedded newlines in the message headline, making
+		// multi-line exception messages and stack traces unreadable. Route them by severity;
+		// only file-anchored diagnostics go to Errata.
+		var fileless = FilelessDiagnosticClassifier.Group(errors.Concat(warnings).Concat(hints));
+
+		var fileErrors = errors.Where(d => !string.IsNullOrEmpty(d.File)).ToArray();
+		var fileWarnings = warnings.Where(d => !string.IsNullOrEmpty(d.File)).ToArray();
+		var fileHints = hints.Where(d => !string.IsNullOrEmpty(d.File)).ToList();
+
 		var report = new Report(this);
-		var limited = errors
-			.Concat(warnings)
-			.OrderBy(d => d.Severity switch { Severity.Error => 0, Severity.Warning => 1, Severity.Hint => 2, _ => 3 })
+		var limited = fileErrors
+			.Concat(fileWarnings)
+			.OrderBy(
+				d =>
+					d.Severity switch
+					{
+						Severity.Error => 0,
+						Severity.Warning => 1,
+						Severity.Hint => 2,
+						_ => 3
+					}
+			)
 			.Take(100)
 			.ToArray();
 
-		// show hints if we don't have plenty of errors/warnings to show
+		// show file-anchored hints if we don't have plenty of errors/warnings to show
 		if (limited.Length < 100)
-			limited = limited.Concat(hints).Take(100).ToArray();
+			limited = limited.Concat(fileHints).Take(100).ToArray();
 
 		foreach (var item in limited)
 		{
@@ -145,17 +160,73 @@ public class ErrataFileSourceRepository : ISourceRepository
 			_ = report.AddDiagnostic(d);
 		}
 
-		var totalErrorCount = errors.Count + warnings.Count;
+		var totalFileCount = fileErrors.Length + fileWarnings.Length;
 
 		AnsiConsole.WriteLine();
-		if (totalErrorCount <= 0)
+
+		if (!fileless.IsEmpty)
+			DisplayFilelessDiagnostics(fileless);
+
+		if (totalFileCount <= 0)
 		{
-			if (hints.Count > 0)
-				DisplayHintsOnly(report, hints);
+			if (fileHints.Count > 0)
+				DisplayHintsOnly(report, fileHints);
 			return;
 		}
 
-		DisplayErrorAndWarningSummary(report, totalErrorCount, limited);
+		DisplayErrorAndWarningSummary(report, totalFileCount, limited);
+	}
+
+	private static void DisplayFilelessDiagnostics(FilelessDiagnosticGroups groups)
+	{
+		foreach (var diagnostic in groups.Exceptions)
+			DisplayExceptionPanel(diagnostic);
+
+		DisplayFilelessLines("Errors", "red", groups.Errors);
+		DisplayFilelessLines("Warnings", "blue", groups.Warnings);
+		DisplayFilelessLines("Hints", "yellow", groups.Hints);
+	}
+
+	private static void DisplayExceptionPanel(Diagnostic diagnostic)
+	{
+		var lines = diagnostic.Message.ReplaceLineEndings("\n").Split('\n', StringSplitOptions.RemoveEmptyEntries);
+		var headline = lines.Length > 0 ? lines[0] : diagnostic.Message;
+		var rows = new List<IRenderable> { new Markup($"[bold red]{headline.EscapeMarkup()}[/]") };
+		if (lines.Length > 1)
+			rows.Add(new Markup(string.Join("\n", lines[1..]).EscapeMarkup()));
+
+		var panel = new Panel(new Rows(rows))
+		{
+			Header = new PanelHeader("Unhandled exception"),
+			Border = BoxBorder.Rounded,
+			BorderStyle = Style.Parse("red"),
+			Padding = new Padding(2, 1)
+		};
+		AnsiConsole.Write(panel);
+		AnsiConsole.WriteLine();
+	}
+
+	private static void DisplayFilelessLines(string header, string color, Diagnostic[] diagnostics)
+	{
+		if (diagnostics.Length == 0)
+			return;
+
+		AnsiConsole.MarkupLine($"[bold {color}]{header}[/]");
+		foreach (var diagnostic in diagnostics)
+		{
+			var lines = diagnostic.Message.ReplaceLineEndings("\n").Split('\n', StringSplitOptions.RemoveEmptyEntries);
+			if (lines.Length == 0)
+			{
+				AnsiConsole.MarkupLine($"  [{color}]{diagnostic.Message.EscapeMarkup()}[/]");
+				continue;
+			}
+
+			AnsiConsole.MarkupLine($"  [{color}]{lines[0].EscapeMarkup()}[/]");
+			foreach (var line in lines.Skip(1))
+				AnsiConsole.MarkupLine($"  {line.EscapeMarkup()}");
+		}
+
+		AnsiConsole.WriteLine();
 	}
 
 	private static void DisplayHintsOnly(Report report, List<Diagnostic> hints)
@@ -164,10 +235,7 @@ public class ErrataFileSourceRepository : ISourceRepository
 		AnsiConsole.WriteLine();
 		AnsiConsole.WriteLine();
 		// Render the report
-		report.Render(AnsiConsole.Console, new ReportSettings
-		{
-			Formatter = new CustomDiagnosticsFormatter()
-		});
+		report.Render(AnsiConsole.Console, new ReportSettings { Formatter = new CustomDiagnosticsFormatter() });
 
 		AnsiConsole.WriteLine();
 		AnsiConsole.WriteLine();
@@ -184,16 +252,15 @@ public class ErrataFileSourceRepository : ISourceRepository
 		AnsiConsole.WriteLine();
 		AnsiConsole.WriteLine();
 		// Render the report
-		report.Render(AnsiConsole.Console, new ReportSettings
-		{
-			Formatter = new CustomDiagnosticsFormatter()
-		});
+		report.Render(AnsiConsole.Console, new ReportSettings { Formatter = new CustomDiagnosticsFormatter() });
 
 		AnsiConsole.WriteLine();
 		AnsiConsole.WriteLine();
 
 		if (totalErrorCount > limited.Length)
-			AnsiConsole.Write(new Markup($"	[bold]Only shown the first [yellow]{limited.Length}[/] diagnostics out of [yellow]{totalErrorCount}[/][/]"));
+			AnsiConsole.Write(
+				new Markup($"	[bold]Only shown the first [yellow]{limited.Length}[/] diagnostics out of [yellow]{totalErrorCount}[/][/]")
+			);
 
 		AnsiConsole.WriteLine();
 	}

@@ -11,14 +11,19 @@ namespace Elastic.Markdown.Tests.Directives;
 /// <summary>Tests for the <c>:release-dates:</c> directive option.</summary>
 public class ChangelogReleaseDatesOptionDefaultOffTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogReleaseDatesOptionDefaultOffTests(ITestOutputHelper output) : base(output,
-		// language=markdown
-		"""
+	public ChangelogReleaseDatesOptionDefaultOffTests(ITestOutputHelper output) : base(
+			output,
+			// language=markdown
+			"""
 		:::{changelog}
 		:::
-		""") => FileSystem.AddFile("docs/changelog/bundles/1.34.0.yaml", new MockFileData(
-			// language=yaml
-			"""
+		"""
+		) =>
+		FileSystem.AddFile(
+			"docs/changelog/bundles/1.34.0.yaml",
+			new MockFileData(
+				// language=yaml
+				"""
 			products:
 			- product: apm-agent-dotnet
 			  target: 1.34.0
@@ -31,32 +36,36 @@ public class ChangelogReleaseDatesOptionDefaultOffTests : DirectiveTest<Changelo
 			    target: 1.34.0
 			  prs:
 			  - "500"
-			"""));
+			"""
+			)
+		);
 
 	[Fact]
-	public void ReleaseDatesDisabledByDefault() =>
-		Block!.ReleaseDatesEnabled.Should().BeFalse();
+	public void ReleaseDatesDisabledByDefault() => Block!.ReleaseDatesEnabled.Should().BeFalse();
 
 	[Fact]
-	public void OmitsReleasedLineWhenFlagOmitted() =>
-		Html.Should().NotContain("Released:");
+	public void OmitsReleasedLineWhenFlagOmitted() => Html.Should().NotContain("Released:");
 
 	[Fact]
-	public void StillRendersEntries() =>
-		Html.Should().Contain("Add tracing improvements");
+	public void StillRendersEntries() => Html.Should().Contain("Add tracing improvements");
 }
 
 public class ChangelogReleaseDatesOptionEnabledTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogReleaseDatesOptionEnabledTests(ITestOutputHelper output) : base(output,
-		// language=markdown
-		"""
+	public ChangelogReleaseDatesOptionEnabledTests(ITestOutputHelper output) : base(
+			output,
+			// language=markdown
+			"""
 		:::{changelog}
 		:release-dates:
 		:::
-		""") => FileSystem.AddFile("docs/changelog/bundles/1.34.0.yaml", new MockFileData(
-			// language=yaml
-			"""
+		"""
+		) =>
+		FileSystem.AddFile(
+			"docs/changelog/bundles/1.34.0.yaml",
+			new MockFileData(
+				// language=yaml
+				"""
 			products:
 			- product: apm-agent-dotnet
 			  target: 1.34.0
@@ -69,28 +78,33 @@ public class ChangelogReleaseDatesOptionEnabledTests : DirectiveTest<ChangelogBl
 			    target: 1.34.0
 			  prs:
 			  - "500"
-			"""));
+			"""
+			)
+		);
 
 	[Fact]
-	public void ReleaseDatesEnabledWhenFlagPresent() =>
-		Block!.ReleaseDatesEnabled.Should().BeTrue();
+	public void ReleaseDatesEnabledWhenFlagPresent() => Block!.ReleaseDatesEnabled.Should().BeTrue();
 
 	[Fact]
-	public void RendersReleasedLineWhenBundleHasReleaseDate() =>
-		Html.Should().Contain("Released: April 9, 2026");
+	public void RendersReleasedLineWhenBundleHasReleaseDate() => Html.Should().Contain("Released: April 9, 2026");
 }
 
 public class ChangelogReleaseDatesOptionEnabledWithoutBundleDateTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogReleaseDatesOptionEnabledWithoutBundleDateTests(ITestOutputHelper output) : base(output,
-		// language=markdown
-		"""
+	public ChangelogReleaseDatesOptionEnabledWithoutBundleDateTests(ITestOutputHelper output) : base(
+			output,
+			// language=markdown
+			"""
 		:::{changelog}
 		:release-dates:
 		:::
-		""") => FileSystem.AddFile("docs/changelog/bundles/9.3.0.yaml", new MockFileData(
-			// language=yaml
-			"""
+		"""
+		) =>
+		FileSystem.AddFile(
+			"docs/changelog/bundles/9.3.0.yaml",
+			new MockFileData(
+				// language=yaml
+				"""
 			products:
 			- product: elasticsearch
 			  target: 9.3.0
@@ -102,23 +116,29 @@ public class ChangelogReleaseDatesOptionEnabledWithoutBundleDateTests : Directiv
 			    target: 9.3.0
 			  prs:
 			  - "100"
-			"""));
+			"""
+			)
+		);
 
 	[Fact]
-	public void OmitsReleasedLineWhenBundleHasNoReleaseDate() =>
-		Html.Should().NotContain("Released:");
+	public void OmitsReleasedLineWhenBundleHasNoReleaseDate() => Html.Should().NotContain("Released:");
 }
 
 public class ChangelogReleaseDatesOptionDescriptionStillRendersTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogReleaseDatesOptionDescriptionStillRendersTests(ITestOutputHelper output) : base(output,
-		// language=markdown
-		"""
+	public ChangelogReleaseDatesOptionDescriptionStillRendersTests(ITestOutputHelper output) : base(
+			output,
+			// language=markdown
+			"""
 		:::{changelog}
 		:::
-		""") => FileSystem.AddFile("docs/changelog/bundles/1.34.0.yaml", new MockFileData(
-			// language=yaml
-			"""
+		"""
+		) =>
+		FileSystem.AddFile(
+			"docs/changelog/bundles/1.34.0.yaml",
+			new MockFileData(
+				// language=yaml
+				"""
 			products:
 			- product: apm-agent-dotnet
 			  target: 1.34.0
@@ -133,13 +153,13 @@ public class ChangelogReleaseDatesOptionDescriptionStillRendersTests : Directive
 			    target: 1.34.0
 			  prs:
 			  - "500"
-			"""));
+			"""
+			)
+		);
 
 	[Fact]
-	public void OmitsReleasedLineWhenFlagOmitted() =>
-		Html.Should().NotContain("Released:");
+	public void OmitsReleasedLineWhenFlagOmitted() => Html.Should().NotContain("Released:");
 
 	[Fact]
-	public void RendersBundleDescription() =>
-		Html.Should().Contain("This release includes tracing improvements and bug fixes.");
+	public void RendersBundleDescription() => Html.Should().Contain("This release includes tracing improvements and bug fixes.");
 }

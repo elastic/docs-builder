@@ -5,13 +5,15 @@ import { config } from './config'
 import { initCopyButton } from './copybutton'
 import { initHighlight } from './hljs'
 import { initImageCarousel } from './image-carousel'
+import { initListing } from './listing'
 import { initMermaid } from './mermaid'
 import { openDetailsWithAnchor } from './open-details-with-anchor'
 import { initNav } from './pages-nav'
+import { initPrivacyConsent } from './privacy-consent'
+import { initSecondaryNav } from './secondary-nav'
 import { initSmoothScroll } from './smooth-scroll'
 import { initTable } from './table'
 import { initTabs } from './tabs'
-import { initializeOtel } from './telemetry/instrumentation'
 import { logError, logInfo } from './telemetry/logging'
 import {
     ATTR_CTA_NAME,
@@ -23,6 +25,7 @@ import {
     ATTR_URL_FULL,
 } from './telemetry/semconv'
 import { initTocNav } from './toc-nav'
+import { loadWebComponents } from './web-components/loadWebComponents'
 import {
     getPathFromUrl,
     isExternalDocsUrl,
@@ -36,28 +39,32 @@ import { UAParser } from 'ua-parser-js'
 const DOCS_BUILDER_VERSION =
     process.env.DOCS_BUILDER_VERSION?.trim() ?? '0.0.0-dev'
 
-// Initialize OpenTelemetry FIRST, before any other code runs (when enabled)
-// This must happen early so all subsequent code is instrumented
-if (config.telemetryEnabled) {
-    initializeOtel({
-        serviceName: config.serviceName,
-        serviceVersion: DOCS_BUILDER_VERSION,
-        baseUrl: config.rootPath,
-        debug: false,
-    })
+// Initialize OpenTelemetry before the web components when telemetry is enabled, so
+// their instrumented work runs after init. The OTel SDK is dynamically imported, so
+// pages built with telemetry disabled never fetch it.
+async function bootstrap() {
+    if (config.telemetryEnabled) {
+        const { initializeOtel } = await import('./telemetry/instrumentation')
+        initializeOtel({
+            serviceName: config.serviceName,
+            serviceVersion: DOCS_BUILDER_VERSION,
+            baseUrl: config.rootPath,
+            debug: false,
+        })
+    }
+
+    if (config.buildType === 'isolated' || config.airGapped) {
+        import('./isolated')
+    } else if (config.buildType === 'codex') {
+        import('./codex')
+    }
 }
 
-// Dynamically import web components after telemetry is initialized.
-// Parcel code-splits these into separate chunks loaded on demand.
-import('./web-components/VersionDropdown')
-import('./web-components/AppliesToPopover')
-import('./web-components/Diagnostics/DiagnosticsComponent')
-import('./web-components/StorybookStory/StorybookStoryComponent')
+const bootstrapPromise = bootstrap()
 
-if (config.buildType === 'isolated' || config.airGapped) {
-    import('./isolated')
-} else if (config.buildType === 'codex') {
-    import('./codex')
+async function initWebComponents() {
+    await bootstrapPromise
+    await loadWebComponents()
 }
 
 const { getOS } = new UAParser()
@@ -189,6 +196,7 @@ function initCtaImpressions() {
 // Initialize on initial page load
 document.addEventListener('DOMContentLoaded', function () {
     runInitSteps([
+        ['loadWebComponents', initWebComponents],
         ['initMath', initMath],
         ['initMermaid', initMermaid],
         ['initCtaImpressions', initCtaImpressions],
@@ -197,6 +205,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
 document.addEventListener('htmx:load', function () {
     runInitSteps([
+        ['loadWebComponents', initWebComponents],
         ['initTocNav', initTocNav],
         ['initHighlight', initHighlight],
         ['initCopyButton', initCopyButton],
@@ -209,6 +218,7 @@ document.addEventListener('htmx:load', function () {
         ['initSmoothScroll', initSmoothScroll],
         ['openDetailsWithAnchor', openDetailsWithAnchor],
         ['initImageCarousel', initImageCarousel],
+        ['initListing', initListing],
         ['initTable', initTable],
         ['initApiDocs', initApiDocs],
         ['applyEditParam', applyEditParam],
@@ -229,6 +239,8 @@ function handleCtaActivation(event: MouseEvent) {
     logCtaEvent('cta_clicked', cta)
 }
 document.addEventListener('click', handleCtaActivation)
+initPrivacyConsent()
+initSecondaryNav()
 // 'auxclick' with button 1 covers middle-click (open in new tab), which does NOT
 // fire 'click' per the DOM spec - without this those opens went untracked. Button 2
 // (right-click / context menu) also fires auxclick but isn't a real engagement.
@@ -290,10 +302,20 @@ document.addEventListener('htmx:beforeRequest', function (event: HtmxEvent) {
     }
 })
 
-// Boosted navigations swap the whole <body>; scroll to top like a normal page load
+// Boosted navigations swap #main-container. show:none on <body> stops HTMX
+// from scrolling the container into view (that jumps the page up to the
+// horizontal tabs). Instant window reset still matches a full page load.
 document.body.addEventListener('htmx:afterSwap', function (event: HtmxEvent) {
-    if (event.target === document.body) {
-        window.scrollTo(0, 0)
+    const target = event.target
+    if (
+        target === document.body ||
+        (target instanceof Element &&
+            (target.id === 'main-container' ||
+                target.id === 'content-container'))
+    ) {
+        if (window.scrollY !== 0) {
+            window.scrollTo(0, 0)
+        }
     }
 })
 

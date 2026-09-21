@@ -17,6 +17,7 @@
     <PackageReference Include="Microsoft.OpenApi"/>
     <PackageReference Include="RazorSlices"/>
     <PackageReference Include="Utf8StreamReader"/>
+    <PackageReference Include="YamlDotNet"/>
   </ItemGroup>
 
   <ItemGroup>

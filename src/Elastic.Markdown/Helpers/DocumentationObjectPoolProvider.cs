@@ -18,19 +18,33 @@ internal static class DocumentationObjectPoolProvider
 	private static readonly ObjectPoolProvider PoolProvider = new DefaultObjectPoolProvider();
 
 	public static readonly ObjectPool<StringBuilder> StringBuilderPool = PoolProvider.CreateStringBuilderPool(256, 4 * 1024);
-	public static readonly ObjectPool<ReusableStringWriter> StringWriterPool = PoolProvider.Create(new ReusableStringWriterPooledObjectPolicy());
+	public static readonly ObjectPool<ReusableStringWriter> StringWriterPool = PoolProvider.Create(
+		new ReusableStringWriterPooledObjectPolicy()
+	);
 	public static readonly ObjectPool<HtmlRenderSubscription> HtmlRendererPool = PoolProvider.Create(new HtmlRendererPooledObjectPolicy());
-	private static readonly ObjectPool<LlmMarkdownRenderSubscription> LlmMarkdownRendererPool = PoolProvider.Create(new LlmMarkdownRendererPooledObjectPolicy());
-	private static readonly ObjectPool<PlainTextRenderSubscription> PlainTextRendererPool = PoolProvider.Create(new PlainTextRendererPooledObjectPolicy());
+	private static readonly ObjectPool<LlmMarkdownRenderSubscription> LlmMarkdownRendererPool = PoolProvider.Create(
+		new LlmMarkdownRendererPooledObjectPolicy()
+	);
+	private static readonly ObjectPool<PlainTextRenderSubscription> PlainTextRendererPool = PoolProvider.Create(
+		new PlainTextRendererPooledObjectPolicy()
+	);
 
-	public static string UseLlmMarkdownRenderer<TContext>(IDocumentationConfigurationContext buildContext, TContext context, Action<LlmMarkdownRenderer, TContext> action) =>
-		UseLlmMarkdownRenderer(buildContext, linkUrlRewriter: null, context, action);
+	public static string UseLlmMarkdownRenderer<TContext>(
+		IDocumentationConfigurationContext buildContext,
+		TContext context,
+		Action<LlmMarkdownRenderer, TContext> action
+	) => UseLlmMarkdownRenderer(buildContext, linkUrlRewriter: null, context, action);
 
 	/// <summary>
 	/// Same as <see cref="UseLlmMarkdownRenderer{TContext}(IDocumentationConfigurationContext,TContext,Action{LlmMarkdownRenderer,TContext})"/>
 	/// but allows overriding link URL resolution (e.g. for the OKF exporter's bundle-relative links).
 	/// </summary>
-	public static string UseLlmMarkdownRenderer<TContext>(IDocumentationConfigurationContext buildContext, Func<string?, string?>? linkUrlRewriter, TContext context, Action<LlmMarkdownRenderer, TContext> action)
+	public static string UseLlmMarkdownRenderer<TContext>(
+		IDocumentationConfigurationContext buildContext,
+		Func<string?, string?>? linkUrlRewriter,
+		TContext context,
+		Action<LlmMarkdownRenderer, TContext> action
+	)
 	{
 		var subscription = LlmMarkdownRendererPool.Get();
 		subscription.SetBuildContext(buildContext);
@@ -48,7 +62,11 @@ internal static class DocumentationObjectPoolProvider
 		}
 	}
 
-	public static string UsePlainTextRenderer<TContext>(IDocumentationConfigurationContext buildContext, TContext context, Action<PlainTextRenderer, TContext> action)
+	public static string UsePlainTextRenderer<TContext>(
+		IDocumentationConfigurationContext buildContext,
+		TContext context,
+		Action<PlainTextRenderer, TContext> action
+	)
 	{
 		var subscription = PlainTextRendererPool.Get();
 		subscription.SetBuildContext(buildContext);
@@ -131,10 +149,7 @@ internal static class DocumentationObjectPoolProvider
 			var stringBuilder = StringBuilderPool.Get();
 			using var stringWriter = StringWriterPool.Get();
 			stringWriter.SetStringBuilder(stringBuilder);
-			var renderer = new LlmMarkdownRenderer(stringWriter)
-			{
-				BuildContext = null!
-			};
+			var renderer = new LlmMarkdownRenderer(stringWriter) { BuildContext = null! };
 			return new LlmMarkdownRenderSubscription { LlmMarkdownRenderer = renderer, RentedStringBuilder = stringBuilder };
 		}
 
@@ -178,10 +193,7 @@ internal static class DocumentationObjectPoolProvider
 			var stringBuilder = StringBuilderPool.Get();
 			using var stringWriter = StringWriterPool.Get();
 			stringWriter.SetStringBuilder(stringBuilder);
-			var renderer = new PlainTextRenderer(stringWriter)
-			{
-				BuildContext = null!
-			};
+			var renderer = new PlainTextRenderer(stringWriter) { BuildContext = null! };
 			return new PlainTextRenderSubscription { PlainTextRenderer = renderer, RentedStringBuilder = stringBuilder };
 		}
 

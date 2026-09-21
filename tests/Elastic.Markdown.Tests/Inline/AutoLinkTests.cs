@@ -12,8 +12,10 @@ namespace Elastic.Markdown.Tests.Inline;
 /// <summary>
 /// Base class for autolink tests that expect a LinkInline to be found.
 /// </summary>
-public abstract class AutoLinkTestBase(ITestOutputHelper output, [LanguageInjection("markdown")] string content)
-	: InlineTest<LinkInline>(output, content)
+public abstract class AutoLinkTestBase(ITestOutputHelper output, [LanguageInjection("markdown")] string content) : InlineTest<LinkInline>(
+	output,
+	content
+)
 {
 	[Fact]
 	public void ParsesBlock() => Block.Should().NotBeNull();
@@ -22,29 +24,28 @@ public abstract class AutoLinkTestBase(ITestOutputHelper output, [LanguageInject
 /// <summary>
 /// Base class for autolink tests that expect NO LinkInline to be found.
 /// </summary>
-public abstract class AutoLinkNotFoundTestBase(ITestOutputHelper output, [LanguageInjection("markdown")] string content)
-	: InlineTest(output, content)
+public abstract class AutoLinkNotFoundTestBase(ITestOutputHelper output, [LanguageInjection("markdown")] string content) : InlineTest(
+	output,
+	content
+)
 {
 }
 
-public class BasicAutoLinkTests(ITestOutputHelper output) : AutoLinkTestBase(output,
-"""
+public class BasicAutoLinkTests(ITestOutputHelper output) : AutoLinkTestBase(output, """
 Check out https://docs.test.io for more info.
-"""
-)
+""")
 {
 	[Fact]
 	public void GeneratesHtml() =>
-		Html.Should().Contain(
-			"""<a href="https://docs.test.io" target="_blank" rel="noopener noreferrer">https://docs.test.io</a>"""
-		);
+		Html.Should().Contain("""<a href="https://docs.test.io" target="_blank" rel="noopener noreferrer">https://docs.test.io</a>""");
 
 	[Fact]
 	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
 }
 
-public class AutoLinkWithPathTests(ITestOutputHelper output) : AutoLinkTestBase(output,
-"""
+public class AutoLinkWithPathTests(ITestOutputHelper output) : AutoLinkTestBase(
+	output,
+	"""
 Visit https://docs.test.io/path/to/page for details.
 """
 )
@@ -59,8 +60,9 @@ Visit https://docs.test.io/path/to/page for details.
 	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
 }
 
-public class AutoLinkWithQueryStringTests(ITestOutputHelper output) : AutoLinkTestBase(output,
-"""
+public class AutoLinkWithQueryStringTests(ITestOutputHelper output) : AutoLinkTestBase(
+	output,
+	"""
 See https://docs.test.io/search?q=test&page=1 for results.
 """
 )
@@ -75,8 +77,9 @@ See https://docs.test.io/search?q=test&page=1 for results.
 	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
 }
 
-public class AutoLinkWithAnchorTests(ITestOutputHelper output) : AutoLinkTestBase(output,
-"""
+public class AutoLinkWithAnchorTests(ITestOutputHelper output) : AutoLinkTestBase(
+	output,
+	"""
 Jump to https://docs.test.io/page#section for the section.
 """
 )
@@ -91,60 +94,57 @@ Jump to https://docs.test.io/page#section for the section.
 	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
 }
 
-public class AutoLinkTrailingPeriodTests(ITestOutputHelper output) : AutoLinkTestBase(output,
-"""
+public class AutoLinkTrailingPeriodTests(ITestOutputHelper output) : AutoLinkTestBase(output, """
 Check out https://docs.test.io.
-"""
-)
+""")
 {
 	[Fact]
 	public void ExcludesTrailingPeriod() =>
-		Html.Should().Contain(
-			"""<a href="https://docs.test.io" target="_blank" rel="noopener noreferrer">https://docs.test.io</a>."""
-		);
+		Html.Should().Contain("""<a href="https://docs.test.io" target="_blank" rel="noopener noreferrer">https://docs.test.io</a>.""");
 
 	[Fact]
 	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
 }
 
-public class AutoLinkTrailingCommaTests(ITestOutputHelper output) : AutoLinkTestBase(output,
-"""
+public class AutoLinkTrailingCommaTests(ITestOutputHelper output) : AutoLinkTestBase(
+	output,
+	"""
 Visit https://first.test.io, https://second.test.io, or https://third.test.io for info.
 """
 )
 {
 	[Fact]
 	public void ExcludesTrailingCommas() =>
-		Html.Should().Contain(
-			"""<a href="https://first.test.io" target="_blank" rel="noopener noreferrer">https://first.test.io</a>,"""
-		).And.Contain(
-			"""<a href="https://second.test.io" target="_blank" rel="noopener noreferrer">https://second.test.io</a>,"""
-		).And.Contain(
-			"""<a href="https://third.test.io" target="_blank" rel="noopener noreferrer">https://third.test.io</a>"""
-		);
+		Html
+			.Should()
+			.Contain("""<a href="https://first.test.io" target="_blank" rel="noopener noreferrer">https://first.test.io</a>,""")
+			.And
+			.Contain("""<a href="https://second.test.io" target="_blank" rel="noopener noreferrer">https://second.test.io</a>,""")
+			.And
+			.Contain("""<a href="https://third.test.io" target="_blank" rel="noopener noreferrer">https://third.test.io</a>""");
 
 	[Fact]
 	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
 }
 
-public class AutoLinkInParenthesesTests(ITestOutputHelper output) : AutoLinkTestBase(output,
-"""
+public class AutoLinkInParenthesesTests(ITestOutputHelper output) : AutoLinkTestBase(
+	output,
+	"""
 See the docs (https://docs.test.io) for details.
 """
 )
 {
 	[Fact]
 	public void ExcludesClosingParen() =>
-		Html.Should().Contain(
-			"""(<a href="https://docs.test.io" target="_blank" rel="noopener noreferrer">https://docs.test.io</a>)"""
-		);
+		Html.Should().Contain("""(<a href="https://docs.test.io" target="_blank" rel="noopener noreferrer">https://docs.test.io</a>)""");
 
 	[Fact]
 	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
 }
 
-public class AutoLinkWithBalancedParensTests(ITestOutputHelper output) : AutoLinkTestBase(output,
-"""
+public class AutoLinkWithBalancedParensTests(ITestOutputHelper output) : AutoLinkTestBase(
+	output,
+	"""
 Check https://en.wikipedia.org/wiki/Rust_(programming_language) for more.
 """
 )
@@ -159,8 +159,9 @@ Check https://en.wikipedia.org/wiki/Rust_(programming_language) for more.
 	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
 }
 
-public class AutoLinkElasticDocsHintTests(ITestOutputHelper output) : AutoLinkTestBase(output,
-"""
+public class AutoLinkElasticDocsHintTests(ITestOutputHelper output) : AutoLinkTestBase(
+	output,
+	"""
 See https://www.elastic.co/docs/deploy-manage for deployment info.
 """
 )
@@ -172,18 +173,20 @@ See https://www.elastic.co/docs/deploy-manage for deployment info.
 		);
 
 	[Fact]
-	public void EmitsHint()
-	{
-		Collector.Diagnostics.Should().ContainSingle(d =>
-			d.Severity == Severity.Hint &&
-			d.Message.Contains("elastic.co/docs") &&
-			d.Message.Contains("crosslink or relative link")
-		);
-	}
+	public void EmitsHint() =>
+		Collector
+			.Diagnostics
+			.Should()
+			.ContainSingle(
+				d => d.Severity == Severity.Hint && d.Message.Contains("elastic.co/docs") && d.Message.Contains(
+					"crosslink or relative link"
+				)
+			);
 }
 
-public class AutoLinkInCodeBlockTests(ITestOutputHelper output) : AutoLinkNotFoundTestBase(output,
-"""
+public class AutoLinkInCodeBlockTests(ITestOutputHelper output) : AutoLinkNotFoundTestBase(
+	output,
+	"""
 ```
 https://docs.test.io/should/not/be/linked
 ```
@@ -191,79 +194,83 @@ https://docs.test.io/should/not/be/linked
 )
 {
 	[Fact]
-	public void DoesNotCreateLink() =>
-		Html.Should().NotContain("<a href=");
+	public void DoesNotCreateLink() => Html.Should().NotContain("<a href=");
 
 	[Fact]
 	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
 }
 
-public class AutoLinkInInlineCodeTests(ITestOutputHelper output) : AutoLinkNotFoundTestBase(output,
-"""
+public class AutoLinkInInlineCodeTests(ITestOutputHelper output) : AutoLinkNotFoundTestBase(
+	output,
+	"""
 Use the URL `https://docs.test.io/api` in your config.
 """
 )
 {
 	[Fact]
 	public void DoesNotCreateLinkInInlineCode() =>
-		Html.Should().Contain("<code>https://docs.test.io/api</code>")
-			.And.NotContain("""<a href="https://docs.test.io/api""");
+		Html.Should().Contain("<code>https://docs.test.io/api</code>").And.NotContain("""<a href="https://docs.test.io/api""");
 
 	[Fact]
 	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
 }
 
-public class AutoLinkDoesNotMatchHttpTests(ITestOutputHelper output) : AutoLinkNotFoundTestBase(output,
-"""
+public class AutoLinkDoesNotMatchHttpTests(ITestOutputHelper output) : AutoLinkNotFoundTestBase(
+	output,
+	"""
 This http://docs.test.io should not be autolinked.
 """
 )
 {
 	[Fact]
-	public void DoesNotCreateLink() =>
-		Html.Should().NotContain("<a href=");
+	public void DoesNotCreateLink() => Html.Should().NotContain("<a href=");
 
 	[Fact]
 	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
 }
 
-public class AutoLinkWithStandardLinkTests(ITestOutputHelper output) : AutoLinkTestBase(output,
-"""
+public class AutoLinkWithStandardLinkTests(ITestOutputHelper output) : AutoLinkTestBase(
+	output,
+	"""
 Visit [Docs](https://docs.test.io) or https://other.test.io for more.
 """
 )
 {
 	[Fact]
 	public void BothLinksWork() =>
-		Html.Should().Contain(
-			"""<a href="https://docs.test.io" target="_blank" rel="noopener noreferrer">Docs</a>"""
-		).And.Contain(
-			"""<a href="https://other.test.io" target="_blank" rel="noopener noreferrer">https://other.test.io</a>"""
-		);
+		Html
+			.Should()
+			.Contain("""<a href="https://docs.test.io" target="_blank" rel="noopener noreferrer">Docs</a>""")
+			.And
+			.Contain("""<a href="https://other.test.io" target="_blank" rel="noopener noreferrer">https://other.test.io</a>""");
 
 	[Fact]
 	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
 }
 
 // Regression test for elastic/docs-builder#3317: no nested <a> when a URL is the link text.
-public class AutoLinkInsideLinkTextTests(ITestOutputHelper output) : AutoLinkTestBase(output,
-"""
+public class AutoLinkInsideLinkTextTests(ITestOutputHelper output) : AutoLinkTestBase(
+	output,
+	"""
 Upload to a service like [https://gist.github.com](https://gist.github.com).
 """
 )
 {
 	[Fact]
 	public void DoesNotCreateNestedAnchor() =>
-		Html.Should().Contain(
-			"""<a href="https://gist.github.com" target="_blank" rel="noopener noreferrer">https://gist.github.com</a>"""
-		).And.NotMatchRegex(@"<a\b[^>]*><a\b");
+		Html
+			.Should()
+			.Contain("""<a href="https://gist.github.com" target="_blank" rel="noopener noreferrer">https://gist.github.com</a>""")
+			.And
+			.NotMatchRegex(@"<a\b[^>]*><a\b");
 
 	[Fact]
 	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
 }
 
-public class AutoLinkInsideLinkTextWithSurroundingTextTests(ITestOutputHelper output) : AutoLinkTestBase(output,
-"""
+public class AutoLinkInsideLinkTextWithSurroundingTextTests(ITestOutputHelper output) : AutoLinkTestBase(
+	output,
+	"""
 See [the page at https://example.test.io for details](https://docs.test.io).
 """
 )
@@ -279,8 +286,9 @@ See [the page at https://example.test.io for details](https://docs.test.io).
 }
 
 // Verify that image-inside-link is unaffected by the IsNestedInsideLink guard (images bypass it via the IsImage branch).
-public class ImageInsideLinkTests(ITestOutputHelper output) : InlineTest<LinkInline>(output,
-"""
+public class ImageInsideLinkTests(ITestOutputHelper output) : InlineTest<LinkInline>(
+	output,
+	"""
 [![alt text](https://example.com/image.png)](https://example.com)
 """
 )
@@ -290,24 +298,28 @@ public class ImageInsideLinkTests(ITestOutputHelper output) : InlineTest<LinkInl
 		Html.Should().Contain("""<a href="https://example.com" target="_blank" rel="noopener noreferrer">""");
 
 	[Fact]
-	public void RendersImage() =>
-		Html.Should().Contain("<img src=\"https://example.com/image.png\"");
+	public void RendersImage() => Html.Should().Contain("<img src=\"https://example.com/image.png\"");
 
 	[Fact]
 	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
 }
 
-public class MultipleAutoLinksTests(ITestOutputHelper output) : AutoLinkTestBase(output,
-"""
+public class MultipleAutoLinksTests(ITestOutputHelper output) : AutoLinkTestBase(
+	output,
+	"""
 First https://first.com then https://second.com and finally https://third.com are all linked.
 """
 )
 {
 	[Fact]
 	public void AllLinksAreCreated() =>
-		Html.Should().Contain("""<a href="https://first.com""")
-			.And.Contain("""<a href="https://second.com""")
-			.And.Contain("""<a href="https://third.com""");
+		Html
+			.Should()
+			.Contain("""<a href="https://first.com""")
+			.And
+			.Contain("""<a href="https://second.com""")
+			.And
+			.Contain("""<a href="https://third.com""");
 
 	[Fact]
 	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
@@ -315,112 +327,108 @@ First https://first.com then https://second.com and finally https://third.com ar
 
 // === Exclusion rule tests ===
 
-public class AutoLinkWithPortExclusionTests(ITestOutputHelper output) : AutoLinkNotFoundTestBase(output,
-"""
+public class AutoLinkWithPortExclusionTests(ITestOutputHelper output) : AutoLinkNotFoundTestBase(
+	output,
+	"""
 Connect to https://www.elastic.co:443/guide for the guide.
 """
 )
 {
 	[Fact]
-	public void DoesNotCreateLinkForUrlWithPort() =>
-		Html.Should().NotContain("<a href=")
-			.And.Contain("https://www.elastic.co:443/guide");
+	public void DoesNotCreateLinkForUrlWithPort() => Html.Should().NotContain("<a href=").And.Contain("https://www.elastic.co:443/guide");
 
 	[Fact]
 	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
 }
 
-public class AutoLinkLocalhostExclusionTests(ITestOutputHelper output) : AutoLinkNotFoundTestBase(output,
-"""
+public class AutoLinkLocalhostExclusionTests(ITestOutputHelper output) : AutoLinkNotFoundTestBase(
+	output,
+	"""
 Check https://localhost/api for the local API.
 """
 )
 {
 	[Fact]
-	public void DoesNotCreateLinkForLocalhost() =>
-		Html.Should().NotContain("<a href=")
-			.And.Contain("https://localhost/api");
+	public void DoesNotCreateLinkForLocalhost() => Html.Should().NotContain("<a href=").And.Contain("https://localhost/api");
 
 	[Fact]
 	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
 }
 
-public class AutoLinkLoopbackExclusionTests(ITestOutputHelper output) : AutoLinkNotFoundTestBase(output,
-"""
+public class AutoLinkLoopbackExclusionTests(ITestOutputHelper output) : AutoLinkNotFoundTestBase(
+	output,
+	"""
 Test at https://127.0.0.1/health for health check.
 """
 )
 {
 	[Fact]
-	public void DoesNotCreateLinkForLoopback() =>
-		Html.Should().NotContain("<a href=")
-			.And.Contain("https://127.0.0.1/health");
+	public void DoesNotCreateLinkForLoopback() => Html.Should().NotContain("<a href=").And.Contain("https://127.0.0.1/health");
 
 	[Fact]
 	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
 }
 
-public class AutoLinkExampleDomainExclusionTests(ITestOutputHelper output) : AutoLinkNotFoundTestBase(output,
-"""
+public class AutoLinkExampleDomainExclusionTests(ITestOutputHelper output) : AutoLinkNotFoundTestBase(
+	output,
+	"""
 See https://example.com/docs for examples.
 """
 )
 {
 	[Fact]
-	public void DoesNotCreateLinkForExampleDomain() =>
-		Html.Should().NotContain("<a href=")
-			.And.Contain("https://example.com/docs");
+	public void DoesNotCreateLinkForExampleDomain() => Html.Should().NotContain("<a href=").And.Contain("https://example.com/docs");
 
 	[Fact]
 	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
 }
 
-public class AutoLinkExampleSubdomainExclusionTests(ITestOutputHelper output) : AutoLinkNotFoundTestBase(output,
-"""
+public class AutoLinkExampleSubdomainExclusionTests(ITestOutputHelper output) : AutoLinkNotFoundTestBase(
+	output,
+	"""
 Visit https://system.example.com/setup for setup.
 """
 )
 {
 	[Fact]
 	public void DoesNotCreateLinkForExampleSubdomain() =>
-		Html.Should().NotContain("<a href=")
-			.And.Contain("https://system.example.com/setup");
+		Html.Should().NotContain("<a href=").And.Contain("https://system.example.com/setup");
 
 	[Fact]
 	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
 }
 
-public class AutoLinkTemplatePlaceholderExclusionTests(ITestOutputHelper output) : AutoLinkNotFoundTestBase(output,
-"""
+public class AutoLinkTemplatePlaceholderExclusionTests(ITestOutputHelper output) : AutoLinkNotFoundTestBase(
+	output,
+	"""
 Use https://{{cluster_id}}.es.test.co/api for your cluster.
 """
 )
 {
 	[Fact]
-	public void DoesNotCreateLinkForTemplatePlaceholder() =>
-		Html.Should().NotContain("<a href=")
-			.And.Contain("https://");
+	public void DoesNotCreateLinkForTemplatePlaceholder() => Html.Should().NotContain("<a href=").And.Contain("https://");
 
 	// Note: We expect an error because {{cluster_id}} is an undefined substitution key,
 	// but the important assertion is that the URL is not autolinked.
 }
 
-public class AutoLinkAsciiDocStyleExclusionTests(ITestOutputHelper output) : AutoLinkNotFoundTestBase(output,
-"""
+public class AutoLinkAsciiDocStyleExclusionTests(ITestOutputHelper output) : AutoLinkNotFoundTestBase(
+	output,
+	"""
 See https://www.iana.org/assignments[IANA for assignments.
 """
 )
 {
 	[Fact]
-	public void DoesNotCreateLinkForAsciiDocStyle() =>
-		Html.Should().NotContain("""<a href="https://www.iana.org/assignments[IANA""");
+	public void DoesNotCreateLinkForAsciiDocStyle() => Html.Should().NotContain("""<a href="https://www.iana.org/assignments[IANA""");
 
 	[Fact]
 	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
 }
 
-public class AutoLinkValidUrlStillWorksTests(ITestOutputHelper output) : AutoLinkTestBase(output,
-"""
+public class AutoLinkValidUrlStillWorksTests(ITestOutputHelper output) : AutoLinkTestBase(
+	output,
+	"""
 Check https://www.elastic.co/guide for docs.
 """
 )

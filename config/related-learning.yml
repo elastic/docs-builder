@@ -1,0 +1,31 @@
+links:
+  apm-with-elastic:
+    title: APM with Elastic
+    url: https://www.elastic.co/training/apm-with-elastic
+  elastic-agent:
+    title: Elastic Agent
+    url: https://www.elastic.co/training/elastic-agent
+  index-basics:
+    title: Index Basics
+    url: https://www.elastic.co/training/index-basics
+  data-types-and-mappings:
+    title: Data Types and Mappings
+    url: https://www.elastic.co/training/data-types-and-mappings
+  rag-foundation:
+    title: RAG Foundation
+    url: https://www.elastic.co/training/rag-foundation
+  rag-beyond-basics:
+    title: Beyond RAG Basics
+    url: https://www.elastic.co/blog/beyond-rag-basics
+  rag-build-system:
+    title: Building a RAG system with Gemma, Hugging Face, and Elasticsearch
+    url: https://www.elastic.co/search-labs/blog/building-a-rag-system-with-gemma-hugging-face-elasticsearch
+  rag-build-agentic:
+    title: Building an agentic RAG tool with Elasticsearch and Langchain
+    url: https://www.elastic.co/search-labs/blog/rag-agent-tool-elasticsearch-langchain
+  semantic-search-foundation:
+    title: Semantic Search Foundation
+    url: https://www.elastic.co/training/semantic-search-foundation
+  semantic-search-text-embedding:
+    title: Semantic search text embedding
+    url: https://www.elastic.co/training/semantic-search-text-embedding

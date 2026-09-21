@@ -11,7 +11,7 @@ namespace Elastic.Markdown.Myst.Directives.Button;
 public class ButtonViewModel : DirectiveViewModel
 {
 	/// <summary>
-	/// Button variant: "primary" (filled) or "secondary" (outlined).
+	/// Button variant: "primary" (filled), "secondary" (outlined), or "neutral" (outlined, monochrome).
 	/// </summary>
 	public required string Type { get; init; }
 

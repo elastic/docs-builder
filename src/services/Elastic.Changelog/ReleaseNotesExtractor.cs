@@ -17,7 +17,8 @@ public static partial class ReleaseNotesExtractor
 	[GeneratedRegex(@"(\r?\n){3,}", RegexOptions.None)]
 	private static partial Regex MultipleNewlinesRegex();
 
-	[GeneratedRegex(@"(?:\n|^)\s*#*\s*release[\s-]?notes?[:\s-]*(.*?)(?:(\r?\n|\r){2}|$|((\r?\n|\r)\s*#+))", RegexOptions.IgnoreCase | RegexOptions.Singleline)]
+	[GeneratedRegex(@"(?:\n|^)\s*#*\s*release[\s-]?notes?[:\s-]*(.*?)(?:(\r?\n|\r){2}|$|((\r?\n|\r)\s*#+))", RegexOptions.IgnoreCase
+		| RegexOptions.Singleline)]
 	private static partial Regex ReleaseNoteRegex();
 
 	/// <summary>

@@ -25,8 +25,7 @@ public static class PublishBlockerExtensions
 	/// Checks if an entry type matches the blocker's type list.
 	/// </summary>
 	public static bool MatchesType(this PublishBlocker blocker, string entryTypeName) =>
-		blocker.Types?.Count > 0 &&
-		blocker.Types.Any(t => t.Equals(entryTypeName, StringComparison.OrdinalIgnoreCase));
+		blocker.Types?.Count > 0 && blocker.Types.Any(t => t.Equals(entryTypeName, StringComparison.OrdinalIgnoreCase));
 
 	/// <summary>
 	/// Gets the preferred area for subsection grouping when publish rules with areas are active.
@@ -59,12 +58,9 @@ public static class PublishBlockerExtensions
 
 		return blocker.MatchAreas switch
 		{
-			MatchMode.All => entryAreas.All(area =>
-				blocker.Areas.Any(listed => listed.Equals(area, StringComparison.OrdinalIgnoreCase))),
-			MatchMode.Conjunction => blocker.Areas.All(listed =>
-				entryAreas.Any(e => e.Equals(listed, StringComparison.OrdinalIgnoreCase))),
-			_ => entryAreas.Any(area =>
-				blocker.Areas.Any(listed => listed.Equals(area, StringComparison.OrdinalIgnoreCase)))
+			MatchMode.All => entryAreas.All(area => blocker.Areas.Any(listed => listed.Equals(area, StringComparison.OrdinalIgnoreCase))),
+			MatchMode.Conjunction => blocker.Areas.All(listed => entryAreas.Any(e => e.Equals(listed, StringComparison.OrdinalIgnoreCase))),
+			_ => entryAreas.Any(area => blocker.Areas.Any(listed => listed.Equals(area, StringComparison.OrdinalIgnoreCase)))
 		};
 	}
 

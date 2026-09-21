@@ -22,7 +22,8 @@ public static class VersionsConfigurationExtensions
 				Id = ToVersioningSystemId(kvp.Key),
 				Base = ToSemVersion(kvp.Value.Base),
 				Current = ToSemVersion(kvp.Value.Current)
-			});
+			}
+		);
 		var config = new VersionsConfiguration { VersioningSystems = versions };
 
 		return config;
@@ -64,4 +65,3 @@ internal sealed record VersioningSystemDto
 	[YamlMember(Alias = "current")]
 	public string Current { get; set; } = string.Empty;
 }
-

@@ -8,10 +8,10 @@ using System.Text.RegularExpressions;
 using Elastic.Changelog.GitHub;
 using Elastic.Documentation.Configuration.Changelog;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.ReleaseNotes;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
-using Nullean.ScopedFileSystem;
 
 namespace Elastic.Changelog.Bundling;
 
@@ -83,11 +83,13 @@ public static partial class ProfileFilterResolver
 		string profileName,
 		string? profileArgument,
 		ChangelogConfiguration? config,
-		ScopedFileSystem fileSystem,
+		IChangelogFileSystem fileSystem,
 		ILogger? logger,
 		Cancel ctx,
 		string? profileReport = null,
-		IGitHubReleaseService? releaseService = null)
+		IGitHubReleaseService? releaseService = null,
+		IGitHubCommitRangeService? commitRangeService = null
+	)
 	{
 		if (config?.Bundle?.Profiles == null || !config.Bundle.Profiles.TryGetValue(profileName, out var profile))
 		{
@@ -97,17 +99,40 @@ public static partial class ProfileFilterResolver
 
 		if (string.IsNullOrWhiteSpace(profileArgument))
 		{
-			collector.EmitError(string.Empty, $"Profile '{profileName}' requires a version number or promotion report URL as the second argument");
+			collector.EmitError(
+				string.Empty,
+				$"Profile '{profileName}' requires a version number or promotion report URL as the second argument"
+			);
 			return null;
 		}
 
 		// Handle github_release source before the generic argument-type detection
 		if (string.Equals(profile.Source, "github_release", StringComparison.OrdinalIgnoreCase))
-			return await ResolveFromGitHubReleaseAsync(collector, profileName, profileArgument, profileReport, profile, config, releaseService, logger, ctx);
+			return await ResolveFromGitHubReleaseAsync(
+				collector,
+				profileName,
+				profileArgument,
+				profileReport,
+				profile,
+				config,
+				releaseService,
+				commitRangeService,
+				logger,
+				ctx
+			);
 
 		// When a separate report argument is provided, profileArgument is always the version
 		if (profileReport != null)
-			return await ResolveWithSeparateReportAsync(collector, profileName, profileArgument, profileReport, profile, fileSystem, logger, ctx);
+			return await ResolveWithSeparateReportAsync(
+				collector,
+				profileName,
+				profileArgument,
+				profileReport,
+				profile,
+				fileSystem,
+				logger,
+				ctx
+			);
 
 		// Auto-detect argument type
 		var argType = PromotionReportParser.DetectArgumentType(profileArgument);
@@ -158,9 +183,7 @@ public static partial class ProfileFilterResolver
 
 		// Substitute {version} and {lifecycle} in the products pattern
 		var lifecycle = VersionLifecycleInference.InferLifecycle(version);
-		var productsPattern = profile.Products?
-			.Replace("{version}", version)
-			.Replace("{lifecycle}", lifecycle);
+		var productsPattern = profile.Products?.Replace("{version}", version).Replace("{lifecycle}", lifecycle);
 
 		// If we have PRs, issues, or file paths from a file/report, return those directly
 		if (prsFromReport != null)
@@ -201,20 +224,22 @@ public static partial class ProfileFilterResolver
 		string profileArgument,
 		string profileReport,
 		BundleProfile profile,
-		ScopedFileSystem fileSystem,
+		IChangelogFileSystem fileSystem,
 		ILogger? logger,
-		Cancel ctx)
+		Cancel ctx
+	)
 	{
 		// profileArgument must be a version string, not a file/URL
 		var argType = PromotionReportParser.DetectArgumentType(profileArgument);
-		if (argType == ProfileArgumentType.PromotionReportUrl ||
-			(argType == ProfileArgumentType.Version && fileSystem.File.Exists(profileArgument)))
+		if (
+			argType == ProfileArgumentType.PromotionReportUrl
+			|| (argType == ProfileArgumentType.Version && fileSystem.File.Exists(profileArgument))
+		)
 		{
 			collector.EmitError(
 				string.Empty,
 				"When two arguments are provided, the first must be a version string and the second must be a promotion report or URL list file. " +
-				$"'{profileArgument}' looks like a report path or URL. " +
-				$"Did you mean: {profileName} <version> {profileArgument}?"
+					$"'{profileArgument}' looks like a report path or URL. " + $"Did you mean: {profileName} <version> {profileArgument}?"
 			);
 			return null;
 		}
@@ -225,7 +250,7 @@ public static partial class ProfileFilterResolver
 			collector.EmitError(
 				string.Empty,
 				$"Profile '{profileName}' has a 'products' pattern configured. " +
-				"A promotion report, URL list file, or path list file cannot be combined with a products pattern filter."
+					"A promotion report, URL list file, or path list file cannot be combined with a products pattern filter."
 			);
 			return null;
 		}
@@ -268,8 +293,8 @@ public static partial class ProfileFilterResolver
 				collector.EmitError(
 					string.Empty,
 					$"The third argument '{profileReport}' must be a promotion report URL, a local HTML file, a URL list file, or a path list file. " +
-					"Use a URL (https://...), a local .html file, a text file containing fully-qualified GitHub PR/issue URLs, " +
-					"or a text file containing changelog YAML paths (.yaml/.yml)."
+						"Use a URL (https://...), a local .html file, a text file containing fully-qualified GitHub PR/issue URLs, " +
+						"or a text file containing changelog YAML paths (.yaml/.yml)."
 				);
 				return null;
 		}
@@ -282,8 +307,9 @@ public static partial class ProfileFilterResolver
 	internal static async Task<ListFileResult?> ResolveListFileAsync(
 		IDiagnosticsCollector collector,
 		string filePath,
-		ScopedFileSystem fileSystem,
-		Cancel ctx)
+		IChangelogFileSystem fileSystem,
+		Cancel ctx
+	)
 	{
 		var content = await fileSystem.File.ReadAllTextAsync(filePath, ctx);
 		var lines = content
@@ -303,8 +329,8 @@ public static partial class ProfileFilterResolver
 
 		foreach (var line in lines)
 		{
-			var isHttp = line.StartsWith("https://", StringComparison.OrdinalIgnoreCase) ||
-				line.StartsWith("http://", StringComparison.OrdinalIgnoreCase);
+			var isHttp = line.StartsWith("https://", StringComparison.OrdinalIgnoreCase)
+				|| line.StartsWith("http://", StringComparison.OrdinalIgnoreCase);
 
 			if (isHttp)
 			{
@@ -317,8 +343,8 @@ public static partial class ProfileFilterResolver
 					collector.EmitError(
 						filePath,
 						$"File must contain GitHub pull request or issue URLs " +
-						$"(e.g. https://github.com/owner/repo/pull/123 or https://github.com/owner/repo/issues/456), " +
-						$"or changelog YAML paths (.yaml/.yml). Not a recognized URL: {line}"
+							$"(e.g. https://github.com/owner/repo/pull/123 or https://github.com/owner/repo/issues/456), " +
+							$"or changelog YAML paths (.yaml/.yml). Not a recognized URL: {line}"
 					);
 					return null;
 				}
@@ -332,7 +358,7 @@ public static partial class ProfileFilterResolver
 				collector.EmitError(
 					filePath,
 					$"File must contain fully-qualified GitHub URLs (e.g. https://github.com/owner/repo/pull/123) " +
-					$"or changelog YAML paths (.yaml/.yml). Numbers and short forms are not allowed. Found: {line}"
+						$"or changelog YAML paths (.yaml/.yml). Numbers and short forms are not allowed. Found: {line}"
 				);
 				return null;
 			}
@@ -351,12 +377,10 @@ public static partial class ProfileFilterResolver
 		if (hasPaths)
 			return new ListFileResult(null, null, lines);
 
-		return hasPrs
-			? new ListFileResult(lines, null, null)
-			: new ListFileResult(null, lines, null);
+		return hasPrs ? new ListFileResult(lines, null, null) : new ListFileResult(null, lines, null);
 	}
 
-	private static ProfileArgumentType DetectLocalFileType(ScopedFileSystem fileSystem, string path) =>
+	private static ProfileArgumentType DetectLocalFileType(IChangelogFileSystem fileSystem, string path) =>
 		fileSystem.Path.GetExtension(path).ToLowerInvariant() is ".html" or ".htm"
 			? ProfileArgumentType.PromotionReportFile
 			: ProfileArgumentType.UrlListFile;
@@ -370,7 +394,8 @@ public static partial class ProfileFilterResolver
 	internal static bool TryParseProfileProducts(
 		string pattern,
 		[NotNullWhen(true)] out List<ProductArgument>? products,
-		[NotNullWhen(false)] out string? errorMessage)
+		[NotNullWhen(false)] out string? errorMessage
+	)
 	{
 		products = null;
 		errorMessage = null;
@@ -393,9 +418,8 @@ public static partial class ProfileFilterResolver
 
 			if (parts.Length > 3)
 			{
-				errorMessage =
-					"Each product entry must have at most three space-separated fields (product, target, lifecycle). " +
-					$"Too many values in segment: '{entry}'.";
+				errorMessage = "Each product entry must have at most three space-separated fields (product, target, lifecycle). "
+					+ $"Too many values in segment: '{entry}'.";
 				return false;
 			}
 
@@ -424,15 +448,17 @@ public static partial class ProfileFilterResolver
 		BundleProfile profile,
 		ChangelogConfiguration? config,
 		IGitHubReleaseService? releaseService,
+		IGitHubCommitRangeService? commitRangeService,
 		ILogger? logger,
-		Cancel ctx)
+		Cancel ctx
+	)
 	{
 		if (!string.IsNullOrWhiteSpace(profile.Products))
 		{
 			collector.EmitError(
 				string.Empty,
 				$"Profile '{profileName}': 'source: github_release' cannot be combined with a 'products' filter. " +
-				"Remove the 'products' field or change the source."
+					"Remove the 'products' field or change the source."
 			);
 			return null;
 		}
@@ -442,29 +468,40 @@ public static partial class ProfileFilterResolver
 			collector.EmitError(
 				string.Empty,
 				$"Profile '{profileName}': 'source: github_release' does not accept a third positional argument. " +
-				"The PR list is sourced automatically from the GitHub release. " +
-				"To override the lifecycle in 'output_products', hardcode the value instead of using {{lifecycle}} " +
-				"(for example, output_products: \"apm-agent-dotnet {{version}} preview\")."
+					"The PR list is sourced automatically from the GitHub release. " +
+					"To override the lifecycle in 'output_products', hardcode the value instead of using {{lifecycle}} " +
+					"(for example, output_products: \"apm-agent-dotnet {{version}} preview\")."
 			);
 			return null;
 		}
 
 		if (releaseService == null)
 		{
-			collector.EmitError(string.Empty, $"Profile '{profileName}': a GitHub release service is required for 'source: github_release'.");
+			collector.EmitError(
+				string.Empty,
+				$"Profile '{profileName}': a GitHub release service is required for 'source: github_release'."
+			);
+			return null;
+		}
+
+		if (commitRangeService == null)
+		{
+			collector.EmitError(string.Empty, $"Profile '{profileName}': a commit-range service is required for 'source: github_release'.");
 			return null;
 		}
 
 		// Resolve repo and owner: profile-level overrides bundle-level defaults
+#pragma warning disable CS0618
 		var repo = profile.Repo ?? config?.Bundle?.Repo;
 		var owner = profile.Owner ?? config?.Bundle?.Owner ?? "elastic";
+#pragma warning restore CS0618
 
 		if (string.IsNullOrWhiteSpace(repo))
 		{
 			collector.EmitError(
 				string.Empty,
 				$"Profile '{profileName}': 'source: github_release' requires a GitHub repository name. " +
-				"Set 'repo' on the profile or on the top-level 'bundle' configuration."
+					"Set 'repo' on the profile or on the top-level 'bundle' configuration."
 			);
 			return null;
 		}
@@ -477,31 +514,67 @@ public static partial class ProfileFilterResolver
 			collector.EmitError(
 				string.Empty,
 				$"Profile '{profileName}': failed to fetch release '{profileArgument}' from {owner}/{repo}. " +
-				"Ensure the repository exists and the version tag is valid."
+					"Ensure the repository exists and the version tag is valid."
 			);
 			return null;
 		}
 
 		logger?.LogInformation("Fetched release {Tag} from {Owner}/{Repo}", release.TagName, owner, repo);
 
-		var parsed = ReleaseNoteParser.Parse(release.Body);
-		logger?.LogInformation("Detected release note format: {Format}, found {Count} PR references", parsed.Format, parsed.PrReferences.Count);
-
-		if (parsed.PrReferences.Count == 0)
+		var previousTag = await releaseService.FetchPreviousTagAsync(owner, repo, release.TagName, ctx);
+		if (previousTag == null)
 		{
-			collector.EmitWarning(string.Empty, $"Profile '{profileName}': no PR references found in release '{release.TagName}'. The bundle will be empty.");
+			collector.EmitError(
+				string.Empty,
+				$"Profile '{profileName}': GitHub could not determine the previous release before '{release.TagName}' in {owner}/{repo}. Cannot derive PR list from commit range."
+			);
 			return null;
 		}
 
-		var prUrls = parsed.PrReferences
-			.Select(pr => $"https://github.com/{owner}/{repo}/pull/{pr.PrNumber}")
-			.ToArray();
+		logger?.LogInformation(
+			"Resolving PRs via commit range {PrevTag}..{Tag} for {Owner}/{Repo}",
+			previousTag,
+			release.TagName,
+			owner,
+			repo
+		);
+
+		var resolution = await commitRangeService.ResolvePullRequestsAsync(
+			collector,
+			new CommitRangeArguments { Owner = owner, Repo = repo, StartRef = previousTag, EndRef = release.TagName },
+			ctx
+		);
+		if (resolution == null)
+		{
+			collector.EmitError(
+				string.Empty,
+				$"Profile '{profileName}': failed to resolve PR list from commit range {previousTag}..{release.TagName}."
+			);
+			return null;
+		}
+
+		if (resolution.PullRequests.Count == 0)
+		{
+			collector.EmitWarning(
+				string.Empty,
+				$"Profile '{profileName}': no PRs found in commit range {previousTag}..{release.TagName}. The bundle will be empty."
+			);
+			return null;
+		}
+
+		var prUrls = resolution.PullRequests.Select(pr => pr.Url).ToArray();
 
 		var version = ChangelogTextUtilities.ExtractBaseVersion(release.TagName);
 		// Infer lifecycle from the raw tag before base-version extraction so that pre-release suffixes
 		// (e.g. "-preview.1", "-beta.1") are preserved for {lifecycle} substitution in output_products/output.
 		var lifecycle = VersionLifecycleInference.InferLifecycle(release.TagName);
-		logger?.LogInformation("Resolved {Count} PR URLs from release {Tag} (version: {Version}, lifecycle: {Lifecycle})", prUrls.Length, release.TagName, version, lifecycle);
+		logger?.LogInformation(
+			"Resolved {Count} PR(s) from commit range for release {Tag} (version: {Version}, lifecycle: {Lifecycle})",
+			prUrls.Length,
+			release.TagName,
+			version,
+			lifecycle
+		);
 
 		return new ProfileFilterResult { Prs = prUrls, Version = version, Lifecycle = lifecycle };
 	}
