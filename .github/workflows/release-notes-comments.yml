@@ -1,0 +1,21 @@
+name: Release notes comments
+
+# Posts (and updates) the sticky changelog comment on a pull request. The comment action
+# reads the `changelog-decision` artifact produced by the validate job in release-notes.yml,
+# so this has to run as a `workflow_run` follow-up: a pull_request job from a fork cannot be
+# granted `pull-requests: write`.
+
+on:
+  workflow_run:
+    workflows: [Release notes]
+    types: [completed]
+
+permissions: {}
+
+jobs:
+  comment:
+    if: github.event.workflow_run.event == 'pull_request'
+    permissions:
+      pull-requests: write
+      actions: read
+    uses: elastic/docs-actions/.github/workflows/release-notes-comments.yml@v1
