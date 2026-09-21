@@ -15,7 +15,10 @@ public sealed record BundleDto
 	public List<BundledProductDto>? Products { get; set; }
 	/// <summary>
 	/// Optional introductory description text for this bundle.
+	/// Empty string is the clear-intro sentinel and must be emitted; null is omitted (inherit).
+	/// Overrides the serializer's OmitEmptyCollections, which would otherwise drop <c>""</c>.
 	/// </summary>
+	[YamlMember(DefaultValuesHandling = DefaultValuesHandling.OmitNull)]
 	public string? Description { get; set; }
 	/// <summary>
 	/// Optional release date for this bundle.
@@ -83,6 +86,7 @@ public sealed record BundledEntryDto
 	public string? Pr { get; set; }
 	public List<string>? Prs { get; set; }
 	public List<string>? Issues { get; set; }
+	public string? Link { get; set; }
 }
 
 /// <summary>

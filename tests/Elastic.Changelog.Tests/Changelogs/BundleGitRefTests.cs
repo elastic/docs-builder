@@ -26,7 +26,8 @@ public class BundleGitRefTests(ITestOutputHelper output) : ChangelogTestBase(out
 
 	// Pool entry named by PR number (the CI naming scheme for private repos): matches PR 100 by file name.
 	// language=yaml
-	private const string PoolEntryByName = """
+	private const string PoolEntryByName =
+		"""
 		title: Faster hosted search
 		type: feature
 		products:
@@ -37,7 +38,8 @@ public class BundleGitRefTests(ITestOutputHelper output) : ChangelogTestBase(out
 
 	// Pool entry with a non-numeric name: matches PR 200 only via its prs reference.
 	// language=yaml
-	private const string PoolEntryByPrs = """
+	private const string PoolEntryByPrs =
+		"""
 		title: Sturdier snapshots
 		type: bug-fix
 		products:
@@ -52,46 +54,43 @@ public class BundleGitRefTests(ITestOutputHelper output) : ChangelogTestBase(out
 	private const string RegistryJson =
 		"""{ "schema_version": 1, "product": "widget", "bundles": [ { "file": "100.yaml" }, { "file": "sturdier-snapshots.yaml" } ] }""";
 
-	private StubHandler PoolHandler() => new(req =>
-	{
-		var path = req.RequestUri!.AbsolutePath;
-		if (path.EndsWith("/registry.json", StringComparison.Ordinal))
-			return Json(RegistryJson);
-		if (path.EndsWith("100.yaml", StringComparison.Ordinal))
-			return Yaml(PoolEntryByName);
-		if (path.EndsWith("sturdier-snapshots.yaml", StringComparison.Ordinal))
-			return Yaml(PoolEntryByPrs);
-		return new HttpResponseMessage(HttpStatusCode.NotFound);
-	});
+	private StubHandler PoolHandler() =>
+		new(req =>
+		{
+			var path = req.RequestUri!.AbsolutePath;
+			if (path.EndsWith("/registry.json", StringComparison.Ordinal))
+				return Json(RegistryJson);
+			if (path.EndsWith("100.yaml", StringComparison.Ordinal))
+				return Yaml(PoolEntryByName);
+			if (path.EndsWith("sturdier-snapshots.yaml", StringComparison.Ordinal))
+				return Yaml(PoolEntryByPrs);
+			return new HttpResponseMessage(HttpStatusCode.NotFound);
+		});
 
 	private CdnChangelogEntryFetcher Fetcher(StubHandler handler) =>
 		new(new TestLoggerFactory(Output), handler, sleep: (_, _) => Task.CompletedTask);
 
-	private static CommitRangePullRequest RangePr(int number) => new()
-	{
-		Number = number,
-		Url = $"https://github.com/elastic/widget/pull/{number}",
-		CommitShas = [$"sha-{number}"]
-	};
+	private static CommitRangePullRequest RangePr(int number) =>
+		new() { Number = number, Url = $"https://github.com/elastic/widget/pull/{number}", CommitShas = [$"sha-{number}"] };
 
 	private static IGitHubCommitRangeService RangeService(params int[] prNumbers)
 	{
 		var service = A.Fake<IGitHubCommitRangeService>();
-		_ = A.CallTo(() => service.ResolvePullRequestsAsync(A<IDiagnosticsCollector>._, A<CommitRangeArguments>._, A<Cancel>._))
-			.Returns(new CommitRangeResolution
-			{
-				TotalCommits = prNumbers.Length,
-				PullRequests = prNumbers.Select(RangePr).ToList(),
-				CommitsWithoutPullRequest = []
-			});
+		_ = A.CallTo(
+			() => service.ResolvePullRequestsAsync(A<IDiagnosticsCollector>._, A<CommitRangeArguments>._, A<Cancel>._)
+		).Returns(new CommitRangeResolution
+		{
+			TotalCommits = prNumbers.Length,
+			PullRequests = prNumbers.Select(RangePr).ToList(),
+			CommitsWithoutPullRequest = []
+		});
 		return service;
 	}
 
 	private async Task<string> WriteProfileConfig(string outputDir)
 	{
 		// language=yaml
-		var configContent =
-			"""
+		var configContent = """
 			pivot:
 			  types:
 			    feature: ">feature"
@@ -104,7 +103,10 @@ public class BundleGitRefTests(ITestOutputHelper output) : ChangelogTestBase(out
 			  profiles:
 			    promotion:
 			      output_products: "cloud-hosted {version}"
-			""".Replace("PLACEHOLDER", outputDir);
+			""".Replace(
+			"PLACEHOLDER",
+			outputDir
+		);
 
 		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog.yml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
@@ -115,9 +117,9 @@ public class BundleGitRefTests(ITestOutputHelper output) : ChangelogTestBase(out
 	private ChangelogBundlingService Service(
 		StubHandler handler,
 		IGitHubCommitRangeService rangeService,
-		IGitHubPrService? prService = null) =>
-		new(LoggerFactory, FileSystem, ConfigurationContext, null, Fetcher(handler),
-			prService ?? A.Fake<IGitHubPrService>(), rangeService);
+		IGitHubPrService? prService = null
+	) =>
+		new(LoggerFactory, FileSystem, ConfigurationContext, null, Fetcher(handler), prService ?? A.Fake<IGitHubPrService>(), rangeService);
 
 	[Fact]
 	public async Task ProfileMode_PoolFirstWithInferredFallback_WritesBundleWithGitRef()
@@ -130,16 +132,18 @@ public class BundleGitRefTests(ITestOutputHelper output) : ChangelogTestBase(out
 		// synthesized from PR metadata (release-note text + label-derived type). PR 400: metadata
 		// unavailable — reported missing, bundle still ships.
 		var prService = A.Fake<IGitHubPrService>();
-		_ = A.CallTo(() => prService.FetchPrInfoAsync("https://github.com/elastic/widget/pull/300", A<string?>._, A<string?>._, A<Cancel>._))
-			.Returns(new GitHubPrInfo
-			{
-				Title = "Sharper autocomplete",
-				Body = "Some context.\n\n## Release Note\nAutocomplete now ranks recent indices first.\n\nInternal details.",
-				Labels = [">feature"],
-				LinkedIssues = []
-			});
-		_ = A.CallTo(() => prService.FetchPrInfoAsync("https://github.com/elastic/widget/pull/400", A<string?>._, A<string?>._, A<Cancel>._))
-			.Returns((GitHubPrInfo?)null);
+		_ = A.CallTo(
+			() => prService.FetchPrInfoAsync("https://github.com/elastic/widget/pull/300", A<string?>._, A<string?>._, A<Cancel>._)
+		).Returns(new GitHubPrInfo
+		{
+			Title = "Sharper autocomplete",
+			Body = "Some context.\n\n## Release Note\nAutocomplete now ranks recent indices first.\n\nInternal details.",
+			Labels = [">feature"],
+			LinkedIssues = []
+		});
+		_ = A.CallTo(
+			() => prService.FetchPrInfoAsync("https://github.com/elastic/widget/pull/400", A<string?>._, A<string?>._, A<Cancel>._)
+		).Returns((GitHubPrInfo?)null);
 
 		var service = Service(PoolHandler(), RangeService(100, 200, 300, 400), prService);
 
@@ -154,13 +158,15 @@ public class BundleGitRefTests(ITestOutputHelper output) : ChangelogTestBase(out
 
 		var result = await service.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
 
-		result.Should().BeTrue($"Errors: {string.Join("; ", Collector.Diagnostics.Where(d => d.Severity == Severity.Error).Select(d => d.Message))}");
+		result.Should().BeTrue(
+			$"Errors: {string.Join("; ", Collector.Diagnostics.Where(d => d.Severity == Severity.Error).Select(d => d.Message))}"
+		);
 		Collector.Errors.Should().Be(0);
 
-		// No profile output pattern → the standardized {product}-{version}.yaml convention applies.
+		// No profile output pattern → {repo}-{product}-{version}.yaml when bundle.repo is set.
 		var outputFiles = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
 		outputFiles.Should().ContainSingle();
-		FileSystem.Path.GetFileName(outputFiles[0]).Should().Be("cloud-hosted-2026-08-13.yaml");
+		FileSystem.Path.GetFileName(outputFiles[0]).Should().Be("widget-cloud-hosted-2026-08-13.yaml");
 
 		var bundle = await FileSystem.File.ReadAllTextAsync(outputFiles[0], TestContext.Current.CancellationToken);
 
@@ -178,8 +184,10 @@ public class BundleGitRefTests(ITestOutputHelper output) : ChangelogTestBase(out
 		bundle.Should().Contain($"git_ref: {EndRef}");
 
 		// PR 400 is reported, not silently dropped.
-		Collector.Diagnostics.Should().Contain(d =>
-			d.Severity == Severity.Warning && d.Message.Contains("pull/400") && d.Message.Contains("could not be fetched"));
+		Collector
+			.Diagnostics
+			.Should()
+			.Contain(d => d.Severity == Severity.Warning && d.Message.Contains("pull/400") && d.Message.Contains("could not be fetched"));
 	}
 
 	[Fact]
@@ -213,17 +221,12 @@ public class BundleGitRefTests(ITestOutputHelper output) : ChangelogTestBase(out
 	{
 		var service = Service(PoolHandler(), RangeService());
 
-		var input = new BundleChangelogsArguments
-		{
-			Repo = "widget",
-			StartGitRef = StartRef
-		};
+		var input = new BundleChangelogsArguments { Repo = "widget", StartGitRef = StartRef };
 
 		var result = await service.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
 
 		result.Should().BeFalse();
-		Collector.Diagnostics.Should().Contain(d =>
-			d.Severity == Severity.Error && d.Message.Contains("must be provided together"));
+		Collector.Diagnostics.Should().Contain(d => d.Severity == Severity.Error && d.Message.Contains("must be provided together"));
 	}
 
 	[Fact]
@@ -242,8 +245,10 @@ public class BundleGitRefTests(ITestOutputHelper output) : ChangelogTestBase(out
 		var result = await service.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
 
 		result.Should().BeFalse();
-		Collector.Diagnostics.Should().Contain(d =>
-			d.Severity == Severity.Error && d.Message.Contains("cannot be combined with other filter sources"));
+		Collector
+			.Diagnostics
+			.Should()
+			.Contain(d => d.Severity == Severity.Error && d.Message.Contains("cannot be combined with other filter sources"));
 	}
 
 	[Fact]
@@ -253,8 +258,7 @@ public class BundleGitRefTests(ITestOutputHelper output) : ChangelogTestBase(out
 		FileSystem.Directory.CreateDirectory(outputDir);
 
 		// language=yaml
-		var configContent =
-			"""
+		var configContent = """
 			bundle:
 			  output_directory: PLACEHOLDER
 			  repo: widget
@@ -262,7 +266,10 @@ public class BundleGitRefTests(ITestOutputHelper output) : ChangelogTestBase(out
 			  profiles:
 			    filtered:
 			      products: "cloud-hosted {version} *"
-			""".Replace("PLACEHOLDER", outputDir);
+			""".Replace(
+			"PLACEHOLDER",
+			outputDir
+		);
 		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog.yml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
 		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
@@ -281,8 +288,7 @@ public class BundleGitRefTests(ITestOutputHelper output) : ChangelogTestBase(out
 		var result = await service.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
 
 		result.Should().BeFalse();
-		Collector.Diagnostics.Should().Contain(d =>
-			d.Severity == Severity.Error && d.Message.Contains("products pattern"));
+		Collector.Diagnostics.Should().Contain(d => d.Severity == Severity.Error && d.Message.Contains("products pattern"));
 	}
 
 	[Fact]
@@ -293,14 +299,13 @@ public class BundleGitRefTests(ITestOutputHelper output) : ChangelogTestBase(out
 		var configPath = await WriteProfileConfig(outputDir);
 
 		var prService = A.Fake<IGitHubPrService>();
-		_ = A.CallTo(() => prService.FetchPrInfoAsync(A<string>._, A<string?>._, A<string?>._, A<Cancel>._))
-			.Returns(new GitHubPrInfo
-			{
-				Title = "Unlabeled change",
-				Body = "No release note block here.",
-				Labels = ["unmapped-label"],
-				LinkedIssues = []
-			});
+		_ = A.CallTo(() => prService.FetchPrInfoAsync(A<string>._, A<string?>._, A<string?>._, A<Cancel>._)).Returns(new GitHubPrInfo
+		{
+			Title = "Unlabeled change",
+			Body = "No release note block here.",
+			Labels = ["unmapped-label"],
+			LinkedIssues = []
+		});
 
 		var service = Service(PoolHandler(), RangeService(999), prService);
 
@@ -315,22 +320,23 @@ public class BundleGitRefTests(ITestOutputHelper output) : ChangelogTestBase(out
 
 		var result = await service.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
 
-		result.Should().BeTrue($"Errors: {string.Join("; ", Collector.Diagnostics.Where(d => d.Severity == Severity.Error).Select(d => d.Message))}");
+		result.Should().BeTrue(
+			$"Errors: {string.Join("; ", Collector.Diagnostics.Where(d => d.Severity == Severity.Error).Select(d => d.Message))}"
+		);
 
 		var outputFiles = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
 		outputFiles.Should().ContainSingle();
 		var bundle = await FileSystem.File.ReadAllTextAsync(outputFiles[0], TestContext.Current.CancellationToken);
 		bundle.Should().Contain("Unlabeled change");
 		bundle.Should().Contain("type: other");
-		Collector.Diagnostics.Should().Contain(d =>
-			d.Severity == Severity.Warning && d.Message.Contains("defaulting to 'other'"));
+		Collector.Diagnostics.Should().Contain(d => d.Severity == Severity.Warning && d.Message.Contains("defaulting to 'other'"));
 	}
 
 	[Fact]
 	public async Task Plan_GitRefProfileWithoutOutputPattern_ResolvesConventionalPathAndNetworkNeeds()
 	{
 		// The bundle-create CI action relies on --plan's output_path to locate the generated file,
-		// so the plan must mirror the {product}-{version}.yaml convention of the real run.
+		// so the plan must mirror the {repo}-{product}-{version}.yaml convention of the real run.
 		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
 		FileSystem.Directory.CreateDirectory(outputDir);
 		var configPath = await WriteProfileConfig(outputDir);
@@ -352,7 +358,7 @@ public class BundleGitRefTests(ITestOutputHelper output) : ChangelogTestBase(out
 		plan.NeedsNetwork.Should().BeTrue();
 		plan.NeedsGithubToken.Should().BeTrue();
 		plan.OutputPath.Should().NotBeNull();
-		FileSystem.Path.GetFileName(plan.OutputPath).Should().Be("cloud-hosted-2026-08-13.yaml");
+		FileSystem.Path.GetFileName(plan.OutputPath).Should().Be("widget-cloud-hosted-2026-08-13.yaml");
 	}
 
 	[Fact]
@@ -365,9 +371,26 @@ public class BundleGitRefTests(ITestOutputHelper output) : ChangelogTestBase(out
 			TotalCommits = 3,
 			Rows =
 			[
-				new GitRangePrReportRow { Number = 100, Url = "https://github.com/elastic/widget/pull/100", Source = GitRangePrSourceKind.Pool, EntryFileNames = ["100.yaml"] },
-				new GitRangePrReportRow { Number = 300, Url = "https://github.com/elastic/widget/pull/300", Source = GitRangePrSourceKind.InferredPrBody, EntryFileNames = ["300.yaml"] },
-				new GitRangePrReportRow { Number = 400, Url = "https://github.com/elastic/widget/pull/400", Source = GitRangePrSourceKind.Missing }
+				new GitRangePrReportRow
+				{
+					Number = 100,
+					Url = "https://github.com/elastic/widget/pull/100",
+					Source = GitRangePrSourceKind.Pool,
+					EntryFileNames = ["100.yaml"]
+				},
+				new GitRangePrReportRow
+				{
+					Number = 300,
+					Url = "https://github.com/elastic/widget/pull/300",
+					Source = GitRangePrSourceKind.InferredPrBody,
+					EntryFileNames = ["300.yaml"]
+				},
+				new GitRangePrReportRow
+				{
+					Number = 400,
+					Url = "https://github.com/elastic/widget/pull/400",
+					Source = GitRangePrSourceKind.Missing
+				}
 			],
 			CommitsWithoutPullRequest = ["deadbeef"]
 		};
@@ -388,7 +411,7 @@ public class BundleGitRefTests(ITestOutputHelper output) : ChangelogTestBase(out
 	[InlineData("sturdier-snapshots.yaml", new int[0])]
 	[InlineData("1755000000-my-title.yaml", new[] { 1755000000 })]
 	public void ParseLeadingPrNumbers_CoversNamingSchemes(string fileName, int[] expected) =>
-		GitRangeEntryResolver.ParseLeadingPrNumbers(fileName).Should().Equal(expected);
+		ChangelogPrIdentity.ParseLeadingPrNumbers(fileName).Should().Equal(expected);
 
 	private static HttpResponseMessage Json(string body) =>
 		new(HttpStatusCode.OK) { Content = new StringContent(body, System.Text.Encoding.UTF8, "application/json") };

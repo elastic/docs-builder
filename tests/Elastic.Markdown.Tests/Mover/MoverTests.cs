@@ -6,9 +6,7 @@ using AwesomeAssertions;
 using Elastic.Documentation.Refactor;
 using Elastic.Markdown.Tests.DocSet;
 
-
 namespace Elastic.Markdown.Tests.Mover;
-
 
 public class MoverTests(ITestOutputHelper output) : NavigationTestsBase(output)
 {
@@ -26,7 +24,6 @@ public class MoverTests(ITestOutputHelper output) : NavigationTestsBase(output)
 
 		var linkModifications = mover.LinkModifications[changeSet];
 		linkModifications.Should().HaveCount(3);
-
 
 		Path.GetRelativePath(".", linkModifications[0].SourceFile).Should().Be(Path.Join("mover", "first-page.md"));
 		linkModifications[0].OldLink.Should().Be("[Link to second page](second-page.md)");

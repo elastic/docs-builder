@@ -33,8 +33,7 @@ public class GfmRenderTests(ITestOutputHelper output) : RenderChangelogTestBase(
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(bundleFile)!);
 
 		// language=yaml
-		var bundleHeader =
-			"""
+		var bundleHeader = """
 			products:
 			  - product: elasticsearch
 			    target: 9.2.0
@@ -140,18 +139,19 @@ public class GfmRenderTests(ITestOutputHelper output) : RenderChangelogTestBase(
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(bundleFile)!);
 
 		// language=yaml
-		var bundleHeader =
-			"""
+		var bundleHeader = """
 			products:
 			  - product: elasticsearch
 			    target: 9.2.0
 			""";
-		var bundleContent = CreateResolvedBundleContent(bundleHeader,
+		var bundleContent = CreateResolvedBundleContent(
+			bundleHeader,
 			("feature.yaml", feature),
 			("breaking.yaml", breakingChange),
 			("deprecation.yaml", deprecation),
 			("bugfix.yaml", bugFix),
-			("known-issue.yaml", knownIssue));
+			("known-issue.yaml", knownIssue)
+		);
 		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current.CancellationToken);
 
 		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
@@ -232,15 +232,16 @@ public class GfmRenderTests(ITestOutputHelper output) : RenderChangelogTestBase(
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(bundleFile)!);
 
 		// language=yaml
-		var bundleHeader =
-			"""
+		var bundleHeader = """
 			products:
 			  - product: elasticsearch
 			    target: 9.2.0
 			""";
-		var bundleContent = CreateResolvedBundleContent(bundleHeader,
+		var bundleContent = CreateResolvedBundleContent(
+			bundleHeader,
 			("highlight.yaml", highlightedFeature),
-			("normal.yaml", normalFeature));
+			("normal.yaml", normalFeature)
+		);
 		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current.CancellationToken);
 
 		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
@@ -300,8 +301,7 @@ public class GfmRenderTests(ITestOutputHelper output) : RenderChangelogTestBase(
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(bundleFile)!);
 
 		// language=yaml
-		var bundleHeader =
-			"""
+		var bundleHeader = """
 			products:
 			  - product: elasticsearch
 			    target: 9.2.0

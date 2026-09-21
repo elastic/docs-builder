@@ -26,11 +26,7 @@ public sealed class CloudFrontCacheInvalidator(IAmazonCloudFront cloudFrontClien
 			InvalidationBatch = new InvalidationBatch
 			{
 				CallerReference = callerReference,
-				Paths = new Paths
-				{
-					Quantity = paths.Count,
-					Items = [.. paths]
-				}
+				Paths = new Paths { Quantity = paths.Count, Items = [.. paths] }
 			}
 		};
 

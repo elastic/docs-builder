@@ -137,9 +137,9 @@ public record SearchDocumentBase : ISearchDocument
 	[JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
 	public string? AiShortSummary { get; set; }
 
-	[AiField("3-8 keywords representing a realistic search query a user would type. Always include the " +
-		"relevant Elastic product/brand token (e.g. Elasticsearch, Kibana, Observability, Security) when " +
-		"the page is about a product concept, so brand-qualified queries like \"elasticsearch security\" prefix-match.")]
+	[AiField("3-8 keywords representing a realistic search query a user would type. Always include the "
+		+ "relevant Elastic product/brand token (e.g. Elasticsearch, Kibana, Observability, Security) when "
+		+ "the page is about a product concept, so brand-qualified queries like \"elasticsearch security\" prefix-match.")]
 	[Keyword]
 	[JsonPropertyName("ai_search_query")]
 	[JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]

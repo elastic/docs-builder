@@ -48,19 +48,22 @@ public class IndexMarkdownRenderer(IChangelogFileSystem fileSystem) : MarkdownRe
 			_ = sb.AppendLine(context.BundleDescription);
 		}
 
-
-		var hasAnyEntries = features.Count > 0 || enhancements.Count > 0 || security.Count > 0 || bugFixes.Count > 0 || docs.Count > 0 || regressions.Count > 0 || other.Count > 0;
+		var hasAnyEntries = features.Count > 0
+			|| enhancements.Count > 0
+			|| security.Count > 0
+			|| bugFixes.Count > 0
+			|| docs.Count > 0
+			|| regressions.Count > 0
+			|| other.Count > 0;
 
 		// Helper to check if all entries in a collection are hidden
 		bool AllEntriesHidden(IReadOnlyCollection<ChangelogEntry> entries) =>
-			entries.Count > 0 && entries.All(entry =>
-				ChangelogRenderUtilities.ShouldHideEntry(entry, context.FeatureIdsToHide, context));
+			entries.Count > 0 && entries.All(entry => ChangelogRenderUtilities.ShouldHideEntry(entry, context.FeatureIdsToHide, context));
 
 		// Check if each category has visible entries
-		var hasVisibleFeatures = (features.Count > 0 || enhancements.Count > 0) &&
-			!(AllEntriesHidden(features) && AllEntriesHidden(enhancements));
-		var hasVisibleFixes = (security.Count > 0 || bugFixes.Count > 0) &&
-			!(AllEntriesHidden(security) && AllEntriesHidden(bugFixes));
+		var hasVisibleFeatures = (features.Count > 0 || enhancements.Count > 0)
+			&& !(AllEntriesHidden(features) && AllEntriesHidden(enhancements));
+		var hasVisibleFixes = (security.Count > 0 || bugFixes.Count > 0) && !(AllEntriesHidden(security) && AllEntriesHidden(bugFixes));
 		var hasVisibleDocs = docs.Count > 0 && !AllEntriesHidden(docs);
 		var hasVisibleRegressions = regressions.Count > 0 && !AllEntriesHidden(regressions);
 		var hasVisibleOther = other.Count > 0 && !AllEntriesHidden(other);
@@ -72,7 +75,10 @@ public class IndexMarkdownRenderer(IChangelogFileSystem fileSystem) : MarkdownRe
 			if (features.Count > 0 || enhancements.Count > 0)
 			{
 				var combined = features.Concat(enhancements).ToList();
-				_ = sb.AppendLine(InvariantCulture, $"### Features and enhancements [{context.Repo}-{context.TitleSlug}-features-enhancements]");
+				_ = sb.AppendLine(
+					InvariantCulture,
+					$"### Features and enhancements [{context.Repo}-{context.TitleSlug}-features-enhancements]"
+				);
 				RenderEntriesByArea(sb, combined, context);
 			}
 
@@ -120,10 +126,7 @@ public class IndexMarkdownRenderer(IChangelogFileSystem fileSystem) : MarkdownRe
 		await WriteOutputFileAsync(context.OutputDir, context.TitleSlug, sb.ToString(), ctx);
 	}
 
-	private static void RenderEntriesByArea(
-		StringBuilder sb,
-		IReadOnlyCollection<ChangelogEntry> entries,
-		ChangelogRenderContext context)
+	private static void RenderEntriesByArea(StringBuilder sb, IReadOnlyCollection<ChangelogEntry> entries, ChangelogRenderContext context)
 	{
 		var groupedByArea = context.Subsections
 			? entries.GroupBy(e => ChangelogRenderUtilities.GetComponent(e, context)).OrderBy(g => g.Key).ToList()
@@ -131,8 +134,9 @@ public class IndexMarkdownRenderer(IChangelogFileSystem fileSystem) : MarkdownRe
 		foreach (var areaGroup in groupedByArea)
 		{
 			// Check if all entries in this area group are hidden
-			var allEntriesHidden = areaGroup.All(entry =>
-				ChangelogRenderUtilities.ShouldHideEntry(entry, context.FeatureIdsToHide, context));
+			var allEntriesHidden = areaGroup.All(
+				entry => ChangelogRenderUtilities.ShouldHideEntry(entry, context.FeatureIdsToHide, context)
+			);
 
 			if (context.Subsections && !string.IsNullOrWhiteSpace(areaGroup.Key))
 			{

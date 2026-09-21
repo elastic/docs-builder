@@ -30,7 +30,6 @@ internal sealed class CodexIndexCommand(
 	/// <para>Run after <c>codex build</c>. Streams documents from all included documentation sets to the cluster.</para>
 	/// </remarks>
 	/// <param name="config">Path to the <c>codex.yml</c> configuration file.</param>
-
 	[RequiresAuth]
 	public async Task<int> Index(
 		GlobalCliOptions _,
@@ -55,9 +54,10 @@ internal sealed class CodexIndexCommand(
 		}
 
 		var service = new CodexIndexService(logFactory, configurationContext);
-		serviceInvoker.AddCommand(service, (codexContext, cloneResult, fs, es),
-			static async (s, col, state, c) =>
-				await s.Index(state.codexContext, state.cloneResult, state.fs, state.es, c)
+		serviceInvoker.AddCommand(
+			service,
+			(codexContext, cloneResult, fs, es),
+			static async (s, col, state, c) => await s.Index(state.codexContext, state.cloneResult, state.fs, state.es, c)
 		);
 
 		return await serviceInvoker.InvokeAsync(ct);

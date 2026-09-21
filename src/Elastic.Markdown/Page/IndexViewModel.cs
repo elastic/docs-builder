@@ -124,13 +124,18 @@ public class VersionDropDownItemViewModel
 					Name = versionGroup.Key,
 					Href = null,
 					IsDisabled = false,
-					Children = versionGroup.Value.Select(v => new VersionDropDownItemViewModel
-					{
-						Name = v,
-						Href = legacyPageMappings.First(x => x.Version == v).ToString(),
-						IsDisabled = !legacyPageMappings.First(x => x.Version == v).Exists,
-						Children = null
-					}).ToArray()
+					Children = versionGroup
+						.Value
+						.Select(
+							v => new VersionDropDownItemViewModel
+							{
+								Name = v,
+								Href = legacyPageMappings.First(x => x.Version == v).ToString(),
+								IsDisabled = !legacyPageMappings.First(x => x.Version == v).Exists,
+								Children = null
+							}
+						)
+						.ToArray()
 				});
 			}
 			else

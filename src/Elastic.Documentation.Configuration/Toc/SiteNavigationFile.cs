@@ -23,13 +23,19 @@ public interface ISiteNavigationEntry
 	IReadOnlyCollection<SiteTableOfContentsRef> Children { get; }
 }
 
+/// <summary>A link entry within a <c>dropdown:</c> section.</summary>
+public record SiteDropdownLinkRef(string Title, string Url);
+
 public record SiteSectionRef(
 	string Title,
 	string? ExternalUrl,
-	IReadOnlyCollection<SiteTableOfContentsRef> Children
+	IReadOnlyCollection<SiteTableOfContentsRef> Children,
+	IReadOnlyCollection<SiteDropdownLinkRef> DropdownLinks
 ) : ISiteNavigationEntry
 {
 	public bool IsExternal => ExternalUrl is not null;
+	/// <summary>True when the section carries a dropdown list instead of tree children.</summary>
+	public bool IsDropdown => DropdownLinks.Count > 0;
 }
 
 [YamlSerializable]
@@ -140,8 +146,17 @@ public class SiteTableOfContents : List<ISiteNavigationEntry>;
 /// When <c>true</c>, the resolved navigation node is marked as an island from the assembler side.
 /// OR-ed with any <c>island: true</c> the content set already declares — can only enable, never disable.
 /// </param>
-public record SiteTableOfContentsRef(Uri Source, string PathPrefix, IReadOnlyCollection<SiteTableOfContentsRef> Children, bool Island = false)
-	: ISiteNavigationEntry, ITableOfContentsItem
+/// <param name="NavigationTitle">
+/// Optional assembler-side label for this TOC root. When set, replaces the index page title
+/// in the assembled navigation (dropdowns, back-links, sidebar root row). Does not change the page H1.
+/// </param>
+public record SiteTableOfContentsRef(
+	Uri Source,
+	string PathPrefix,
+	IReadOnlyCollection<SiteTableOfContentsRef> Children,
+	bool Island = false,
+	string? NavigationTitle = null
+) : ISiteNavigationEntry, ITableOfContentsItem
 {
 	// For site-level TOC refs, the Path is the path prefix (where it will be mounted in the site)
 	public string PathRelativeToDocumentationSet => PathPrefix;
@@ -207,6 +222,35 @@ public class SiteTableOfContentsCollectionYamlConverter : IYamlTypeConverter
 					}
 					value = childrenList;
 				}
+				else if (key.Value is "dropdown")
+				{
+					var dropdownList = new List<SiteDropdownLinkRef>();
+					_ = parser.Consume<SequenceStart>();
+					while (!parser.TryConsume<SequenceEnd>(out _))
+					{
+						if (!parser.TryConsume<MappingStart>(out _))
+							continue;
+						string? itemTitle = null;
+						string? itemUrl = null;
+						while (!parser.TryConsume<MappingEnd>(out _))
+						{
+							var itemKey = parser.Consume<Scalar>();
+							if (parser.Accept<Scalar>(out var itemValue))
+							{
+								_ = parser.MoveNext();
+								if (itemKey.Value is "title")
+									itemTitle = itemValue.Value;
+								else if (itemKey.Value is "url")
+									itemUrl = itemValue.Value;
+							}
+							else
+								parser.SkipThisAndNestedEvents();
+						}
+						if (itemTitle is not null && itemUrl is not null)
+							dropdownList.Add(new SiteDropdownLinkRef(itemTitle, itemUrl));
+					}
+					value = dropdownList;
+				}
 				else
 					parser.SkipThisAndNestedEvents();
 			}
@@ -218,11 +262,14 @@ public class SiteTableOfContentsCollectionYamlConverter : IYamlTypeConverter
 
 		if (dictionary.TryGetValue("section", out var sectionTitleVal) && sectionTitleVal is string sectionTitle)
 		{
-			var externalUrl = dictionary.TryGetValue("external", out var extVal) && extVal is string e && !string.IsNullOrEmpty(e) ? e : null;
-			IReadOnlyCollection<SiteTableOfContentsRef> children = dictionary.TryGetValue("children", out var childrenObj) && childrenObj is List<SiteTableOfContentsRef> refs
-				? refs
-				: [];
-			return new SiteSectionRef(sectionTitle, externalUrl, children);
+			var externalUrl = dictionary.TryGetValue("external", out var extVal) && extVal is string e && !string.IsNullOrEmpty(e)
+				? e
+				: null;
+			IReadOnlyCollection<SiteTableOfContentsRef> children = dictionary.TryGetValue("children", out var childrenObj)
+				&& childrenObj is List<SiteTableOfContentsRef> refs ? refs : [];
+			IReadOnlyCollection<SiteDropdownLinkRef> dropdownLinks = dictionary.TryGetValue("dropdown", out var dropdownObj)
+				&& dropdownObj is List<SiteDropdownLinkRef> dLinks ? dLinks : [];
+			return new SiteSectionRef(sectionTitle, externalUrl, children, dropdownLinks);
 		}
 
 		if (dictionary.TryGetValue("toc", out var tocPath) && tocPath is string sourceString)
@@ -232,28 +279,28 @@ public class SiteTableOfContentsCollectionYamlConverter : IYamlTypeConverter
 			if (!Uri.TryCreate(uriString, UriKind.Absolute, out var source))
 				throw new InvalidOperationException($"Invalid TOC source: '{sourceString}' could not be parsed as a URI");
 
-			var pathPrefix = dictionary.TryGetValue("path_prefix", out var pathValue) && pathValue is string path
-				? path
-				: string.Empty;
+			var pathPrefix = dictionary.TryGetValue("path_prefix", out var pathValue) && pathValue is string path ? path : string.Empty;
 
-			IReadOnlyCollection<SiteTableOfContentsRef> children = dictionary.TryGetValue("children", out var childrenObj2) && childrenObj2 is List<SiteTableOfContentsRef> tocRefs
-				? tocRefs
-				: [];
+			IReadOnlyCollection<SiteTableOfContentsRef> children = dictionary.TryGetValue("children", out var childrenObj2)
+				&& childrenObj2 is List<SiteTableOfContentsRef> tocRefs ? tocRefs : [];
 
-			var island = dictionary.TryGetValue("island", out var islandObj) && islandObj is string islandStr
-				&& bool.TryParse(islandStr, out var islandBool) && islandBool;
+			var island = dictionary.TryGetValue("island", out var islandObj)
+				&& islandObj is string islandStr
+				&& bool.TryParse(islandStr, out var islandBool)
+				&& islandBool;
 
-			return new SiteTableOfContentsRef(source, pathPrefix, children, island);
+			var navigationTitle = dictionary.TryGetValue("navigation_title", out var titleObj)
+				&& titleObj is string title
+				&& !string.IsNullOrWhiteSpace(title) ? title : null;
+
+			return new SiteTableOfContentsRef(source, pathPrefix, children, island, navigationTitle);
 		}
 
 		var keys = string.Join(", ", dictionary.Keys.Select(k => $"'{k}'"));
-		throw new YamlException(
-			$"toc entry has no 'toc:' key and will be ignored. " +
-			$"Found keys: {keys}. Check for typos.");
+		throw new YamlException($"toc entry has no 'toc:' key and will be ignored. " + $"Found keys: {keys}. Check for typos.");
 	}
 
-	public void WriteYaml(IEmitter emitter, object? value, Type type, ObjectSerializer serializer) =>
-		serializer.Invoke(value, type);
+	public void WriteYaml(IEmitter emitter, object? value, Type type, ObjectSerializer serializer) => serializer.Invoke(value, type);
 }
 
 public class SiteTableOfContentsRefYamlConverter : IYamlTypeConverter
@@ -307,26 +354,26 @@ public class SiteTableOfContentsRefYamlConverter : IYamlTypeConverter
 			if (!Uri.TryCreate(uriString, UriKind.Absolute, out var source))
 				throw new InvalidOperationException($"Invalid TOC source: '{sourceString}' could not be parsed as a URI");
 
-			var pathPrefix = dictionary.TryGetValue("path_prefix", out var pathValue) && pathValue is string path
-				? path
-				: string.Empty;
+			var pathPrefix = dictionary.TryGetValue("path_prefix", out var pathValue) && pathValue is string path ? path : string.Empty;
 
-			IReadOnlyCollection<SiteTableOfContentsRef> children = dictionary.TryGetValue("children", out var childrenObj) && childrenObj is List<SiteTableOfContentsRef> tocRefs
-				? tocRefs
-				: [];
+			IReadOnlyCollection<SiteTableOfContentsRef> children = dictionary.TryGetValue("children", out var childrenObj)
+				&& childrenObj is List<SiteTableOfContentsRef> tocRefs ? tocRefs : [];
 
-			var island = dictionary.TryGetValue("island", out var islandObj) && islandObj is string islandStr
-				&& bool.TryParse(islandStr, out var islandBool) && islandBool;
+			var island = dictionary.TryGetValue("island", out var islandObj)
+				&& islandObj is string islandStr
+				&& bool.TryParse(islandStr, out var islandBool)
+				&& islandBool;
 
-			return new SiteTableOfContentsRef(source, pathPrefix, children, island);
+			var navigationTitle = dictionary.TryGetValue("navigation_title", out var titleObj)
+				&& titleObj is string title
+				&& !string.IsNullOrWhiteSpace(title) ? title : null;
+
+			return new SiteTableOfContentsRef(source, pathPrefix, children, island, navigationTitle);
 		}
 
 		var keys = string.Join(", ", dictionary.Keys.Select(k => $"'{k}'"));
-		throw new YamlException(
-			$"toc entry has no 'toc:' key and will be ignored. " +
-			$"Found keys: {keys}. Check for typos.");
+		throw new YamlException($"toc entry has no 'toc:' key and will be ignored. " + $"Found keys: {keys}. Check for typos.");
 	}
 
-	public void WriteYaml(IEmitter emitter, object? value, Type type, ObjectSerializer serializer) =>
-		serializer.Invoke(value, type);
+	public void WriteYaml(IEmitter emitter, object? value, Type type, ObjectSerializer serializer) => serializer.Invoke(value, type);
 }

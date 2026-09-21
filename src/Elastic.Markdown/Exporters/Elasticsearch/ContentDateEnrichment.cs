@@ -21,7 +21,8 @@ public class ContentDateEnrichment(
 	ElasticsearchOperations operations,
 	ILogger logger,
 	string buildType,
-	string environment)
+	string environment
+)
 {
 	private readonly string _lookupAlias = $"docs-{buildType}-content-dates-{environment}";
 
@@ -88,15 +89,10 @@ public class ContentDateEnrichment(
 		{
 			["bool"] = new JsonObject
 			{
-				["must_not"] = new JsonArray(
-					new JsonObject
-					{
-						["range"] = new JsonObject
-						{
-							["content_last_updated"] = new JsonObject { ["gt"] = "1970-01-01T00:00:00Z" }
-						}
-					}
-				)
+				["must_not"] = new JsonArray(new JsonObject
+				{
+					["range"] = new JsonObject { ["content_last_updated"] = new JsonObject { ["gt"] = "1970-01-01T00:00:00Z" } }
+				})
 			}
 		}
 	}.ToJsonString();
@@ -110,8 +106,7 @@ public class ContentDateEnrichment(
 		logger.LogInformation("Content date resolution complete for {Index}", indexAlias);
 	}
 
-	private string GenerateStagingName() =>
-		$"{_lookupAlias}-{DateTime.UtcNow:yyyyMMddHHmmss}-{Guid.NewGuid().ToString("N")[..8]}";
+	private string GenerateStagingName() => $"{_lookupAlias}-{DateTime.UtcNow:yyyyMMddHHmmss}-{Guid.NewGuid().ToString("N")[..8]}";
 
 	private async Task<string?> ResolveBackingIndexAsync(Cancel ct)
 	{
@@ -125,8 +120,7 @@ public class ContentDateEnrichment(
 			return null;
 
 		if (!response.ApiCallDetails.HasSuccessfulStatusCode)
-			throw new InvalidOperationException(
-				$"Failed to resolve alias {_lookupAlias}: {response.ApiCallDetails.DebugInformation}");
+			throw new InvalidOperationException($"Failed to resolve alias {_lookupAlias}: {response.ApiCallDetails.DebugInformation}");
 
 		var json = JsonNode.Parse(response.Body);
 		var indices = json?.AsObject().Select(kv => kv.Key).ToList() ?? [];
@@ -135,8 +129,10 @@ public class ContentDateEnrichment(
 		{
 			0 => null,
 			1 => indices[0],
-			_ => throw new InvalidOperationException(
-				$"Alias {_lookupAlias} points to multiple indices ({string.Join(", ", indices)}); expected exactly one")
+			_ =>
+				throw new InvalidOperationException(
+					$"Alias {_lookupAlias} points to multiple indices ({string.Join(", ", indices)}); expected exactly one"
+				)
 		};
 	}
 
@@ -178,7 +174,8 @@ public class ContentDateEnrichment(
 		);
 		if (!response.ApiCallDetails.HasSuccessfulStatusCode)
 			throw new InvalidOperationException(
-				$"Failed to create content date lookup index {indexName}: {response.ApiCallDetails.DebugInformation}");
+				$"Failed to create content date lookup index {indexName}: {response.ApiCallDetails.DebugInformation}"
+			);
 
 		logger.LogInformation("Created content date lookup index {Index}", indexName);
 	}
@@ -188,10 +185,7 @@ public class ContentDateEnrichment(
 		var addAction = new JsonObject { ["add"] = new JsonObject { ["index"] = newIndex, ["alias"] = _lookupAlias } };
 
 		var actions = oldIndex != null
-			? new JsonArray(
-				new JsonObject { ["remove"] = new JsonObject { ["index"] = oldIndex, ["alias"] = _lookupAlias } },
-				addAction
-			)
+			? new JsonArray(new JsonObject { ["remove"] = new JsonObject { ["index"] = oldIndex, ["alias"] = _lookupAlias } }, addAction)
 			: [(JsonNode)addAction];
 
 		var body = new JsonObject { ["actions"] = actions };
@@ -204,7 +198,8 @@ public class ContentDateEnrichment(
 
 		if (!response.ApiCallDetails.HasSuccessfulStatusCode)
 			throw new InvalidOperationException(
-				$"Failed to swap alias {_lookupAlias} to {newIndex}: {response.ApiCallDetails.DebugInformation}");
+				$"Failed to swap alias {_lookupAlias} to {newIndex}: {response.ApiCallDetails.DebugInformation}"
+			);
 
 		logger.LogInformation("Swapped alias {Alias} from {OldIndex} to {NewIndex}", _lookupAlias, oldIndex ?? "(none)", newIndex);
 	}
@@ -242,17 +237,14 @@ public class ContentDateEnrichment(
 		}
 
 		// Same-hash policy already exists — the definition is identical, safe to reuse
-		var errorType = response.Body != null
-			? JsonNode.Parse(response.Body)?["error"]?["type"]?.GetValue<string>()
-			: null;
+		var errorType = response.Body != null ? JsonNode.Parse(response.Body)?["error"]?["type"]?.GetValue<string>() : null;
 		if (errorType == "resource_already_exists_exception")
 		{
 			logger.LogInformation("Enrich policy {Policy} already exists, continuing", PolicyName);
 			return;
 		}
 
-		throw new InvalidOperationException(
-			$"Failed to create enrich policy {PolicyName}: {response.ApiCallDetails.DebugInformation}");
+		throw new InvalidOperationException($"Failed to create enrich policy {PolicyName}: {response.ApiCallDetails.DebugInformation}");
 	}
 
 	private string ComputePolicyHash()
@@ -262,15 +254,16 @@ public class ContentDateEnrichment(
 		return Convert.ToHexString(hash)[..8].ToLowerInvariant();
 	}
 
-	private JsonObject BuildPolicyBody() => new()
-	{
-		["match"] = new JsonObject
+	private JsonObject BuildPolicyBody() =>
+		new()
 		{
-			["indices"] = _lookupAlias,
-			["match_field"] = "url",
-			["enrich_fields"] = new JsonArray("content_hash", "content_last_updated")
-		}
-	};
+			["match"] = new JsonObject
+			{
+				["indices"] = _lookupAlias,
+				["match_field"] = "url",
+				["enrich_fields"] = new JsonArray("content_hash", "content_last_updated")
+			}
+		};
 
 	private async Task CleanupOldPoliciesAsync(Cancel ct)
 	{
@@ -304,7 +297,11 @@ public class ContentDateEnrichment(
 			if (deleteResponse.ApiCallDetails.HasSuccessfulStatusCode)
 				logger.LogInformation("Deleted old enrich policy {Policy}", name);
 			else
-				logger.LogWarning("Failed to delete old enrich policy {Policy}: {Info}", name, deleteResponse.ApiCallDetails.DebugInformation);
+				logger.LogWarning(
+					"Failed to delete old enrich policy {Policy}: {Info}",
+					name,
+					deleteResponse.ApiCallDetails.DebugInformation
+				);
 		}
 	}
 
@@ -318,7 +315,8 @@ public class ContentDateEnrichment(
 
 		if (!response.ApiCallDetails.HasSuccessfulStatusCode)
 			throw new InvalidOperationException(
-				$"Failed to execute enrich policy {PolicyName}: {response.ApiCallDetails.DebugInformation}");
+				$"Failed to execute enrich policy {PolicyName}: {response.ApiCallDetails.DebugInformation}"
+			);
 
 		logger.LogInformation("Executed enrich policy {Policy}", PolicyName);
 	}
@@ -329,14 +327,7 @@ public class ContentDateEnrichment(
 		{
 			["description"] = "Resolves content_last_updated via enrich policy lookup on content_hash",
 			["processors"] = new JsonArray(
-				new JsonObject
-				{
-					["set"] = new JsonObject
-					{
-						["field"] = "content_last_updated",
-						["value"] = "{{{_ingest.timestamp}}}"
-					}
-				},
+				new JsonObject { ["set"] = new JsonObject { ["field"] = "content_last_updated", ["value"] = "{{{_ingest.timestamp}}}" } },
 				new JsonObject
 				{
 					["enrich"] = new JsonObject
@@ -353,7 +344,8 @@ public class ContentDateEnrichment(
 					["script"] = new JsonObject
 					{
 						["lang"] = "painless",
-						["source"] = """
+						["source"] =
+							"""
 							def lookup = ctx._content_date_lookup;
 							if (lookup != null && lookup.content_hash != null && lookup.content_hash == ctx.content_hash) {
 								ctx.content_last_updated = lookup.content_last_updated;
@@ -373,7 +365,8 @@ public class ContentDateEnrichment(
 
 		if (!response.ApiCallDetails.HasSuccessfulStatusCode)
 			throw new InvalidOperationException(
-				$"Failed to create ingest pipeline {PipelineName}: {response.ApiCallDetails.DebugInformation}");
+				$"Failed to create ingest pipeline {PipelineName}: {response.ApiCallDetails.DebugInformation}"
+			);
 
 		logger.LogInformation("Created ingest pipeline {Pipeline}", PipelineName);
 	}
@@ -387,8 +380,7 @@ public class ContentDateEnrichment(
 		);
 
 		if (!response.ApiCallDetails.HasSuccessfulStatusCode)
-			throw new InvalidOperationException(
-				$"Failed to refresh index {indexName}: {response.ApiCallDetails.DebugInformation}");
+			throw new InvalidOperationException($"Failed to refresh index {indexName}: {response.ApiCallDetails.DebugInformation}");
 
 		logger.LogInformation("Refreshed index {Index}", indexName);
 	}
@@ -402,15 +394,8 @@ public class ContentDateEnrichment(
 				["index"] = sourceAlias,
 				["_source"] = new JsonArray("url", "content_hash", "content_last_updated")
 			},
-			["dest"] = new JsonObject
-			{
-				["index"] = destIndex
-			},
-			["script"] = new JsonObject
-			{
-				["lang"] = "painless",
-				["source"] = "ctx._id = ctx._source.url.sha256().substring(0, 16)"
-			}
+			["dest"] = new JsonObject { ["index"] = destIndex },
+			["script"] = new JsonObject { ["lang"] = "painless", ["source"] = "ctx._id = ctx._source.url.sha256().substring(0, 16)" }
 		};
 
 		await operations.ReindexAsync(sourceAlias, PostData.String(reindexBody.ToJsonString()), destIndex, ct);

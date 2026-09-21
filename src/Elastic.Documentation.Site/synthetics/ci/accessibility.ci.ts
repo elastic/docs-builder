@@ -1,12 +1,14 @@
 import AxeBuilder from '@axe-core/playwright'
 import { journey, step } from '@elastic/synthetics'
 
-const docsPaths = [
-    '/docs',
-    '/docs/get-started',
-    '/docs/get-started/deployment-options',
-    '/docs/deploy-manage/deploy/elastic-cloud',
-    '/docs/reference',
+// Paths relative to the docs root (params.docsRoot). No leading /docs prefix —
+// docsRoot already resolves to the docs homepage for all environments.
+const docsRelativePaths = [
+    '',
+    '/get-started',
+    '/get-started/deployment-options',
+    '/deploy-manage/deploy/elastic-cloud',
+    '/reference',
 ]
 
 const wcagTags = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']
@@ -53,9 +55,10 @@ function reportViolations(path: string, violations: AxeViolation[]) {
 }
 
 journey('CI accessibility audit', ({ page, params }) => {
-    for (const path of docsPaths) {
-        step(`Audit ${path}`, async () => {
-            await page.goto(`${params.baseUrl}${path}`, {
+    const docsRoot = params.docsRoot as string
+    for (const path of docsRelativePaths) {
+        step(`Audit ${docsRoot}${path}`, async () => {
+            await page.goto(`${docsRoot}${path}`, {
                 timeout: 60000,
                 waitUntil: 'load',
             })

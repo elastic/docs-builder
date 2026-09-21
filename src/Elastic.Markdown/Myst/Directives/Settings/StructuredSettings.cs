@@ -82,8 +82,7 @@ public record Setting
 	[YamlMember(Alias = "options")]
 	public AllowedValue[]? Options { get; set; }
 
-	public ApplicableTo? ResolveAppliesTo(ApplicableTo? inheritedAppliesTo) =>
-		AppliesTo ?? LegacyAppliesTo ?? inheritedAppliesTo;
+	public ApplicableTo? ResolveAppliesTo(ApplicableTo? inheritedAppliesTo) => AppliesTo ?? LegacyAppliesTo ?? inheritedAppliesTo;
 }
 
 [YamlSerializable]
@@ -106,37 +105,40 @@ public enum SettingMutability
 
 public static class SettingDisplay
 {
-	public static string? FormatDefault(object? value) =>
-		value switch
-		{
-			null => null,
-			string s => string.IsNullOrWhiteSpace(s) ? null : s,
-			bool b => b ? "true" : "false",
-			IFormattable f => f.ToString(null, CultureInfo.InvariantCulture),
-			_ => value.ToString()
-		};
+	public static string? FormatDefault(object? value) => value switch
+	{
+		null => null,
+		string s => string.IsNullOrWhiteSpace(s) ? null : s,
+		bool b => b ? "true" : "false",
+		IFormattable f => f.ToString(null, CultureInfo.InvariantCulture),
+		_ => value.ToString()
+	};
 }
 
 public static class DeploymentFilter
 {
 	/// <summary>Valid filter tokens accepted by the <c>:deployment:</c> directive option.</summary>
-	public static readonly IReadOnlySet<string> ValidValues =
-		new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "ech", "ece", "eck", "self" };
+	public static readonly IReadOnlySet<string> ValidValues = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+	{
+		"ech",
+		"ece",
+		"eck",
+		"self"
+	};
 
 	/// <summary>
 	/// Returns the <see cref="AppliesCollection"/> for the given deployment filter key,
 	/// mapping the canonical <c>ech</c> token to the <c>ess</c> model field.
 	/// Returns <c>null</c> when the deployment type is not mentioned (i.e. not available).
 	/// </summary>
-	public static AppliesCollection? GetForDeployment(this DeploymentApplicability deployment, string key) =>
-		key.ToLowerInvariant() switch
-		{
-			"ech" => deployment.Ess,
-			"ece" => deployment.Ece,
-			"eck" => deployment.Eck,
-			"self" => deployment.Self,
-			_ => null
-		};
+	public static AppliesCollection? GetForDeployment(this DeploymentApplicability deployment, string key) => key.ToLowerInvariant() switch
+	{
+		"ech" => deployment.Ess,
+		"ece" => deployment.Ece,
+		"eck" => deployment.Eck,
+		"self" => deployment.Self,
+		_ => null
+	};
 
 	/// <summary>
 	/// Returns <c>true</c> when the setting should be shown for the given deployment filter.
@@ -162,8 +164,11 @@ public static class DeploymentFilter
 
 	/// <summary>Returns <c>true</c> when at least one setting (recursively) in <paramref name="settings"/> is visible.</summary>
 	public static bool AnyVisible(Setting[] settings, string deploymentFilter, ApplicableTo? inheritedAppliesTo) =>
-		settings.Any(s =>
-			s.IsVisibleForDeployment(deploymentFilter, inheritedAppliesTo) ||
-			AnyVisible(s.Settings, deploymentFilter, s.ResolveAppliesTo(inheritedAppliesTo))
+		settings.Any(
+			s => s.IsVisibleForDeployment(deploymentFilter, inheritedAppliesTo) || AnyVisible(
+				s.Settings,
+				deploymentFilter,
+				s.ResolveAppliesTo(inheritedAppliesTo)
+			)
 		);
 }

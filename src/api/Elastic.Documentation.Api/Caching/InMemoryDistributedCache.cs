@@ -52,6 +52,5 @@ public sealed class InMemoryDistributedCache : IDistributedCache
 	/// Checks if a cache entry has expired.
 	/// Clean Code: Single-purpose helper method with intention-revealing name.
 	/// </summary>
-	private static bool IsExpired(CacheEntry entry) =>
-		entry.ExpiresAt <= DateTimeOffset.UtcNow;
+	private static bool IsExpired(CacheEntry entry) => entry.ExpiresAt <= DateTimeOffset.UtcNow;
 }

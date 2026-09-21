@@ -26,7 +26,7 @@ type ``agent skill with url`` () =
 	<div class="agent-skill-content">
 		<div class="agent-skill-text">
 			<p>A skill is available to help AI agents with this topic.</p>
-			<p><a href="/explore-analyze/ai-features/agent-skills#available-skills">Learn more about agent skills for Elastic</a></p>
+			<p><a href="https://www.elastic.co/docs/explore-analyze/ai-features/agent-skills#available-skills">Learn more about agent skills for Elastic</a></p>
 		</div>
 		<button type="button" class="agent-skill-button" data-copy-text="npx skills add elastic/agent-skills@elasticsearch-esql">
 			<svg class="agent-skill-button-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
@@ -64,7 +64,7 @@ This skill helps agents write and optimize ES|QL queries.
 		<div class="agent-skill-text">
 			<p>A skill is available to help AI agents with this topic.</p>
 			<p>This skill helps agents write and optimize ES|QL queries.</p>
-			<p><a href="/explore-analyze/ai-features/agent-skills#available-skills">Learn more about agent skills for Elastic</a></p>
+			<p><a href="https://www.elastic.co/docs/explore-analyze/ai-features/agent-skills#available-skills">Learn more about agent skills for Elastic</a></p>
 		</div>
 		<button type="button" class="agent-skill-button" data-copy-text="npx skills add elastic/agent-skills@elasticsearch-esql">
 			<svg class="agent-skill-button-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">

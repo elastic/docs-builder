@@ -50,8 +50,7 @@ public class OutputFormatTests(ITestOutputHelper output) : RenderChangelogTestBa
 
 		var bundleFile = FileSystem.Path.Join(bundleDir, "bundle.yaml");
 		// language=yaml
-		var bundleHeader =
-			"""
+		var bundleHeader = """
 			products:
 			  - product: elasticsearch
 			    target: 9.2.0
@@ -107,8 +106,7 @@ public class OutputFormatTests(ITestOutputHelper output) : RenderChangelogTestBa
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(bundleFile)!);
 
 		// language=yaml
-		var bundleHeader =
-			"""
+		var bundleHeader = """
 			products:
 			  - product: elasticsearch
 			    target: 9.2.0
@@ -205,16 +203,17 @@ public class OutputFormatTests(ITestOutputHelper output) : RenderChangelogTestBa
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(bundleFile)!);
 
 		// language=yaml
-		var bundleHeader =
-			"""
+		var bundleHeader = """
 			products:
 			  - product: elasticsearch
 			    target: 9.2.0
 			""";
-		var bundleContent = CreateResolvedBundleContent(bundleHeader,
+		var bundleContent = CreateResolvedBundleContent(
+			bundleHeader,
 			("1755268130-feature.yaml", featureChangelog),
 			("1755268140-bugfix.yaml", bugFixChangelog),
-			("1755268150-breaking.yaml", breakingChangeChangelog));
+			("1755268150-breaking.yaml", breakingChangeChangelog)
+		);
 		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current.CancellationToken);
 
 		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
@@ -261,8 +260,9 @@ public class OutputFormatTests(ITestOutputHelper output) : RenderChangelogTestBa
 
 		// Verify asciidoc list format (entries should start with *)
 		var lines = asciidocContent.Split('\n');
-		var entryLines = lines
-			.Where(l => l.TrimStart().StartsWith("* ", StringComparison.Ordinal) && !l.TrimStart().StartsWith("* *", StringComparison.Ordinal)).ToList();
+		var entryLines = lines.Where(
+			l => l.TrimStart().StartsWith("* ", StringComparison.Ordinal) && !l.TrimStart().StartsWith("* *", StringComparison.Ordinal)
+		).ToList();
 		entryLines.Should().HaveCountGreaterThanOrEqualTo(3, "should have at least 3 changelog entries");
 
 		// Verify no invalid markdown syntax (like ##) is present

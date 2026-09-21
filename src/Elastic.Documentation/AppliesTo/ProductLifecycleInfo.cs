@@ -20,29 +20,25 @@ public static class ProductLifecycleInfo
 	/// <summary>
 	/// Gets the metadata for a given lifecycle state.
 	/// </summary>
-	public static LifecycleMetadata GetMetadata(ProductLifecycle lifecycle) =>
-		Metadata.GetValueOrDefault(lifecycle, FallbackMetadata);
+	public static LifecycleMetadata GetMetadata(ProductLifecycle lifecycle) => Metadata.GetValueOrDefault(lifecycle, FallbackMetadata);
 
 	/// <summary>
 	/// Gets the short name for a lifecycle (e.g., "Preview", "Beta", "GA").
 	/// Used for badge CSS classes and compact display.
 	/// </summary>
-	public static string GetShortName(ProductLifecycle lifecycle) =>
-		GetMetadata(lifecycle).ShortName;
+	public static string GetShortName(ProductLifecycle lifecycle) => GetMetadata(lifecycle).ShortName;
 
 	/// <summary>
 	/// Gets the full display text for a lifecycle (e.g., "Generally available", "Preview").
 	/// Used in popover availability text.
 	/// </summary>
-	public static string GetDisplayText(ProductLifecycle lifecycle) =>
-		GetMetadata(lifecycle).DisplayText;
+	public static string GetDisplayText(ProductLifecycle lifecycle) => GetMetadata(lifecycle).DisplayText;
 
 	/// <summary>
 	/// Gets the sort order for a lifecycle (lower = higher priority).
 	/// GA=0, Beta=1, Preview=2, etc.
 	/// </summary>
-	public static int GetOrder(ProductLifecycle lifecycle) =>
-		GetMetadata(lifecycle).Order;
+	public static int GetOrder(ProductLifecycle lifecycle) => GetMetadata(lifecycle).Order;
 
 	private static readonly LifecycleMetadata FallbackMetadata = new("", "", 999);
 
@@ -60,4 +56,3 @@ public static class ProductLifecycleInfo
 		[ProductLifecycle.Discontinued] = new("Discontinued", "Discontinued", 9),
 	};
 }
-

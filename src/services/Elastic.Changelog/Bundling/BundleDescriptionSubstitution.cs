@@ -27,7 +27,8 @@ internal static class BundleDescriptionSubstitution
 		string? lifecycle,
 		string? owner,
 		string? repo,
-		bool validateResolvable = false)
+		bool validateResolvable = false
+	)
 	{
 		if (string.IsNullOrEmpty(description))
 			return description;

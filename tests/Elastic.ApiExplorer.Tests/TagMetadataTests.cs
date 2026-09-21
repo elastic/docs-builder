@@ -25,7 +25,8 @@ public class TagMetadataTests
 	public async Task ApiTag_WithXDisplayName_UsesDisplayNameForNavigation()
 	{
 		// Arrange - minimal OpenAPI spec with x-displayName and multiple tags to trigger TagNavigationItem creation
-		var openApiJson = /*lang=json,strict*/ """
+		var openApiJson = /*lang=json,strict*/
+			"""
 		{
 		  "openapi": "3.0.3",
 		  "info": {
@@ -98,7 +99,8 @@ public class TagMetadataTests
 	public async Task ApiTag_WithoutXDisplayName_FallsBackToCanonicalName()
 	{
 		// Arrange - spec without x-displayName, multiple tags to trigger TagNavigationItem creation
-		var openApiJson = /*lang=json,strict*/ """
+		var openApiJson = /*lang=json,strict*/
+			"""
 		{
 		  "openapi": "3.0.3",
 		  "info": {
@@ -157,7 +159,8 @@ public class TagMetadataTests
 	public async Task ApiTag_WithMultipleTagsAndDisplayNames_ParsesCorrectly()
 	{
 		// Arrange - multiple tags with different display name scenarios
-		var openApiJson = /*lang=json,strict*/ """
+		var openApiJson = /*lang=json,strict*/
+			"""
 		{
 		  "openapi": "3.0.3",
 		  "info": {
@@ -227,7 +230,8 @@ public class TagMetadataTests
 	public async Task ApiTag_StableNavigationIds_UsesCanonicalTagName()
 	{
 		// Arrange - tag where display name differs significantly from canonical name, multiple tags for TagNavigationItem creation
-		var openApiJson = /*lang=json,strict*/ """
+		var openApiJson = /*lang=json,strict*/
+			"""
 		{
 		  "openapi": "3.0.3",
 		  "info": {
@@ -281,11 +285,19 @@ public class TagMetadataTests
 		tagNavItem.Id.Should().NotBe("Machine Learning Anomaly Detection APIs"); // Not the display name
 	}
 
-	private static async Task<(OpenApiGenerator generator, OpenApiDocument document)> CreateGeneratorWithSpec(string openApiJson)
+	private static async Task<(OpenApiGenerator generator, OpenApiDocument document)> CreateGeneratorWithSpec(
+		string openApiJson,
+		bool apiNavGroupingEnabled = false
+	)
 	{
 		var collector = new DiagnosticsCollector([]);
 		var configurationContext = TestHelpers.CreateConfigurationContext(new FileSystem());
-		var context = new BuildContext(collector, DocumentationFileSystem.Resolve(Paths.WorkingDirectoryRoot.FullName), configurationContext);
+		var context = new BuildContext(
+			collector,
+			DocumentationFileSystem.Resolve(Paths.WorkingDirectoryRoot.FullName),
+			configurationContext
+		);
+		context.Configuration.Features.ApiNavGroupingEnabled = apiNavGroupingEnabled;
 
 		var generator = new OpenApiGenerator(NullLoggerFactory.Instance, context, NoopMarkdownStringRenderer.Instance);
 
@@ -339,7 +351,8 @@ public class TagMetadataTests
 	public async Task Tags_WithMixedDisplayNames_SortedAlphabeticallyByDisplayName()
 	{
 		// Arrange - spec with mixed x-displayName and canonical names
-		var openApiJson = /*lang=json*/ """
+		var openApiJson = /*lang=json*/
+			"""
 		{
 		  "openapi": "3.0.3",
 		  "info": {
@@ -391,8 +404,6 @@ public class TagMetadataTests
 		var navigation = generator.CreateNavigation("test", openApiDocument);
 
 		// Assert - should be sorted alphabetically by display name: "Animal Zoo", "charlie", "Fruit Store"
-		navigation.NavigationItems.Should().HaveCount(3);
-
 		var tagItems = navigation.NavigationItems.OfType<TagNavigationItem>().ToList();
 		tagItems.Should().HaveCount(3);
 
@@ -406,7 +417,8 @@ public class TagMetadataTests
 	public async Task Tags_CaseInsensitiveSorting_WorksCorrectly()
 	{
 		// Arrange - spec with case variations
-		var openApiJson = /*lang=json*/ """
+		var openApiJson = /*lang=json*/
+			"""
 		{
 		  "openapi": "3.0.3",
 		  "info": {
@@ -459,7 +471,8 @@ public class TagMetadataTests
 	public async Task Tags_OnlyCanonicalNames_SortedAlphabetically()
 	{
 		// Arrange - spec with no x-displayName values
-		var openApiJson = /*lang=json*/ """
+		var openApiJson = /*lang=json*/
+			"""
 		{
 		  "openapi": "3.0.3",
 		  "info": {
@@ -524,7 +537,8 @@ public class TagMetadataTests
 	public async Task Tags_WithinClassification_SortedCorrectly()
 	{
 		// Arrange - x-tagGroups (Redocly-style) drives classification; sort tags by display name within a group
-		var openApiJson = /*lang=json,strict*/ """
+		var openApiJson = /*lang=json,strict*/
+			"""
 		{
 		  "openapi": "3.0.3",
 		  "info": {
@@ -596,7 +610,7 @@ public class TagMetadataTests
 		}
 		""";
 
-		var (generator, openApiDocument) = await CreateGeneratorWithSpec(openApiJson);
+		var (generator, openApiDocument) = await CreateGeneratorWithSpec(openApiJson, apiNavGroupingEnabled: true);
 
 		// Act
 		var navigation = generator.CreateNavigation("elasticsearch", openApiDocument);
@@ -617,7 +631,8 @@ public class TagMetadataTests
 	[Fact]
 	public async Task XTagGroups_Classification_Url_PointsToApiOverview_NotFirstTag()
 	{
-		var openApiJson = /*lang=json,strict*/ """
+		var openApiJson = /*lang=json,strict*/
+			"""
 		{
 		  "openapi": "3.0.3",
 		  "info": { "title": "ES", "version": "1.0" },
@@ -638,11 +653,12 @@ public class TagMetadataTests
 		}
 		""";
 
-		var (generator, openApiDocument) = await CreateGeneratorWithSpec(openApiJson);
+		var (generator, openApiDocument) = await CreateGeneratorWithSpec(openApiJson, apiNavGroupingEnabled: true);
 		var navigation = generator.CreateNavigation("elasticsearch", openApiDocument);
 
 		var expectedOverviewUrl = navigation.Index.Url;
-		var informationGroup = navigation.NavigationItems
+		var informationGroup = navigation
+			.NavigationItems
 			.OfType<ClassificationNavigationItem>()
 			.First(c => c.NavigationTitle == "Information");
 		informationGroup.Url.Should().Be(expectedOverviewUrl);
@@ -655,7 +671,8 @@ public class TagMetadataTests
 	[Fact]
 	public async Task WithoutXTagGroups_ElasticsearchTitle_UsesFlatTagNavigation()
 	{
-		var openApiJson = /*lang=json,strict*/ """
+		var openApiJson = /*lang=json,strict*/
+			"""
 		{
 		  "openapi": "3.0.3",
 		  "info": {
@@ -695,7 +712,8 @@ public class TagMetadataTests
 	[Fact]
 	public async Task XTagGroups_ClassificationOrder_FollowsSpecOrder()
 	{
-		var openApiJson = /*lang=json,strict*/ """
+		var openApiJson = /*lang=json,strict*/
+			"""
 		{
 		  "openapi": "3.0.3",
 		  "info": { "title": "Order Test", "version": "1.0.0" },
@@ -735,13 +753,10 @@ public class TagMetadataTests
 		}
 		""";
 
-		var (generator, openApiDocument) = await CreateGeneratorWithSpec(openApiJson);
+		var (generator, openApiDocument) = await CreateGeneratorWithSpec(openApiJson, apiNavGroupingEnabled: true);
 		var navigation = generator.CreateNavigation("test", openApiDocument);
 
-		var titles = navigation.NavigationItems
-			.OfType<ClassificationNavigationItem>()
-			.Select(c => c.NavigationTitle)
-			.ToList();
+		var titles = navigation.NavigationItems.OfType<ClassificationNavigationItem>().Select(c => c.NavigationTitle).ToList();
 
 		titles.Should().Equal("Z Group", "A Group", "B Group");
 	}
@@ -750,7 +765,8 @@ public class TagMetadataTests
 	public async Task XTagGroups_OrphanTag_AssignsUnknownGroup()
 	{
 		// Two unlisted tags so the "unknown" classification has multiple tags; each is still a TagNavigationItem.
-		var openApiJson = /*lang=json,strict*/ """
+		var openApiJson = /*lang=json,strict*/
+			"""
 		{
 		  "openapi": "3.0.3",
 		  "info": { "title": "Orphan Test", "version": "1.0.0" },
@@ -788,7 +804,7 @@ public class TagMetadataTests
 		}
 		""";
 
-		var (generator, openApiDocument) = await CreateGeneratorWithSpec(openApiJson);
+		var (generator, openApiDocument) = await CreateGeneratorWithSpec(openApiJson, apiNavGroupingEnabled: true);
 		var navigation = generator.CreateNavigation("test", openApiDocument);
 
 		var classifications = navigation.NavigationItems.OfType<ClassificationNavigationItem>().ToList();
@@ -809,7 +825,8 @@ public class TagMetadataTests
 	[Fact]
 	public async Task Single_Tag_Still_Creates_TagNavigationItem()
 	{
-		var openApiJson = /*lang=json,strict*/ """
+		var openApiJson = /*lang=json,strict*/
+			"""
 		{
 		  "openapi": "3.0.3",
 		  "info": { "title": "Solo", "version": "1.0" },
@@ -840,34 +857,27 @@ public class TagMetadataTests
 	}
 
 	[Fact]
-	public void GenerateTagMoniker_DataStream_Uses_Hyphen()
-	{
-		ApiUrlBuilder.TagMoniker("data stream").Should().Be("endpoint-data-stream");
-	}
+	public void GenerateTagMoniker_DataStream_Uses_Hyphen() => ApiUrlBuilder.TagMoniker("data stream").Should().Be("endpoint-data-stream");
 
 	[Theory]
 	[InlineData("bulk", "/_bulk", "operation-bulk")]
 	[InlineData("cat-aliases", "/_cat/aliases", "operation-cat-aliases")]
 	[InlineData(null, "/indices/{index}/_search", "operation-indices-index-_search")]
-	public void OperationMoniker_MatchesBumpShScheme(string? operationId, string route, string expected)
-	{
+	public void OperationMoniker_MatchesBumpShScheme(string? operationId, string route, string expected) =>
 		ApiUrlBuilder.OperationMoniker(operationId, route).Should().Be(expected);
-	}
 
 	[Theory]
 	[InlineData("cat", "endpoint-cat")]
 	[InlineData("health_report", "endpoint-health_report")]
 	[InlineData("APM agent configuration", "endpoint-apm-agent-configuration")]
 	[InlineData("Elastic Package Manager (EPM)", "endpoint-elastic-package-manager-epm")]
-	public void TagMoniker_MatchesBumpShScheme(string tagName, string expected)
-	{
-		ApiUrlBuilder.TagMoniker(tagName).Should().Be(expected);
-	}
+	public void TagMoniker_MatchesBumpShScheme(string tagName, string expected) => ApiUrlBuilder.TagMoniker(tagName).Should().Be(expected);
 
 	[Fact]
 	public async Task Tag_Url_Uses_Group_Segment()
 	{
-		var openApiJson = /*lang=json,strict*/ """
+		var openApiJson = /*lang=json,strict*/
+			"""
 		{
 		  "openapi": "3.0.3",
 		  "info": { "title": "T", "version": "1.0" },
@@ -892,7 +902,8 @@ public class TagMetadataTests
 	[Fact]
 	public async Task Operation_Url_Uses_Operation_Segment()
 	{
-		var openApiJson = /*lang=json,strict*/ """
+		var openApiJson = /*lang=json,strict*/
+			"""
 		{
 		  "openapi": "3.0.3",
 		  "info": { "title": "T", "version": "1.0" },
@@ -912,7 +923,8 @@ public class TagMetadataTests
 		var (generator, openApiDocument) = await CreateGeneratorWithSpec(openApiJson);
 		var navigation = generator.CreateNavigation("elasticsearch", openApiDocument);
 
-		var operation = navigation.NavigationItems
+		var operation = navigation
+			.NavigationItems
 			.OfType<TagNavigationItem>()
 			.Single()
 			.NavigationItems
@@ -925,7 +937,8 @@ public class TagMetadataTests
 	[Fact]
 	public async Task Tag_Landing_Parses_Description_And_ExternalDocs_Like_Elasticsearch_Connector_Tag()
 	{
-		var openApiJson = /*lang=json,strict*/ """
+		var openApiJson = /*lang=json,strict*/
+			"""
 		{
 		  "openapi": "3.0.3",
 		  "info": { "title": "ES", "version": "1.0" },
@@ -963,7 +976,8 @@ public class TagMetadataTests
 	[Fact]
 	public async Task CreateNavigation_Throws_When_Two_Tag_Names_Normalize_To_Same_Url_Segment()
 	{
-		var openApiJson = /*lang=json,strict*/ """
+		var openApiJson = /*lang=json,strict*/
+			"""
 		{
 		  "openapi": "3.0.3",
 		  "info": { "title": "X", "version": "1.0" },
@@ -978,8 +992,6 @@ public class TagMetadataTests
 		var (generator, openApiDocument) = await CreateGeneratorWithSpec(openApiJson);
 
 		var act = () => generator.CreateNavigation("test", openApiDocument);
-		act.Should()
-			.Throw<InvalidOperationException>()
-			.WithMessage("*tag URL segment conflict*");
+		act.Should().Throw<InvalidOperationException>().WithMessage("*tag URL segment conflict*");
 	}
 }

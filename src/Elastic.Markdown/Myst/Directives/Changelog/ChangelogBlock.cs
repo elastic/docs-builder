@@ -108,6 +108,13 @@ public class ChangelogBlock(DirectiveBlockParser parser, ParserContext context) 
 	public string? VersionFilter { get; private set; }
 
 	/// <summary>
+	/// When set (the <c>:since_version:</c> option), bundles at or before this version are excluded from
+	/// the rendered output. Useful when older versions are already hardcoded on the page and the directive
+	/// is used to backfill newer releases from S3/CDN.
+	/// </summary>
+	public string? SinceVersion { get; private set; }
+
+	/// <summary>
 	/// Loaded and parsed bundles, sorted by version (semver descending).
 	/// </summary>
 	public IReadOnlyList<LoadedBundle> LoadedBundles { get; private set; } = [];
@@ -212,7 +219,9 @@ public class ChangelogBlock(DirectiveBlockParser parser, ParserContext context) 
 		ConfigPath = Prop("config");
 		var productOpt = Prop("product");
 		if (!string.IsNullOrWhiteSpace(productOpt))
-			this.EmitWarning("The :product: option is deprecated and has no effect. The directive does not apply rules.publish. Move type/area filtering to rules.bundle so it applies at bundle time.");
+			this.EmitWarning(
+				"The :product: option is deprecated and has no effect. The directive does not apply rules.publish. Move type/area filtering to rules.bundle so it applies at bundle time."
+			);
 		ProductId = productOpt;
 		TypeFilter = ParseTypeFilter();
 		LoadConfiguration();
@@ -223,19 +232,21 @@ public class ChangelogBlock(DirectiveBlockParser parser, ParserContext context) 
 		ReleaseDatesEnabled = PropBool("release-dates");
 		HighlightsEnabled = PropBool("highlights");
 		VersionFilter = Prop("version") is { Length: > 0 } v ? v.Trim() : null;
+		SinceVersion = Prop("since_version") is { Length: > 0 } sv ? sv.Trim() : null;
 
+		// Backward-compat: explicit :cdn: option takes priority over the argument-based parsing.
 		if (Properties?.ContainsKey("cdn") == true)
 		{
 			// :cdn: takes an explicit product, or may be valueless to infer the product from the
 			// repository that holds the doc (the common case where the repo name is the product id).
-			var product = Prop("cdn") is { Length: > 0 } explicitProduct
-				? explicitProduct.Trim()
-				: InferCdnProductFromRepository();
+			var isAutoInferred = Prop("cdn") is not { Length: > 0 };
+			var product = isAutoInferred ? InferCdnProductFromRepository() : Prop("cdn")!.Trim();
 
 			if (string.IsNullOrWhiteSpace(product))
 			{
 				this.EmitError(
-					"The :cdn: product could not be inferred from the repository; specify it explicitly, e.g. ':cdn: elasticsearch'.");
+					"The :cdn: product could not be inferred from the repository; specify it explicitly, e.g. ':cdn: elasticsearch'."
+				);
 				return;
 			}
 
@@ -246,11 +257,60 @@ public class ChangelogBlock(DirectiveBlockParser parser, ParserContext context) 
 				return;
 			}
 
+			// Warn when the author also supplied a folder argument — it is ignored because :cdn: takes priority.
+			if (!string.IsNullOrWhiteSpace(Arguments))
+				this.EmitWarning("The bundles folder argument is ignored when :cdn: is set; bundles are sourced from the CDN.");
+
 			CdnProduct = product;
-			LoadCdnBundles(product);
+			LoadCdnBundles(product, isAutoInferred);
 			return;
 		}
 
+		// TODO: This argument parsing (path vs product name) needs refactoring when all usages are
+		// updated to explicit product names. At that point the '/' check and local-path support can
+		// be removed.
+		if (!string.IsNullOrWhiteSpace(Arguments) && Arguments.StartsWith('/'))
+		{
+			// Path argument — still honored in all build types for backward compatibility.
+			// In non-isolated builds a deprecation warning is emitted; the local path is still used
+			// so existing repos with committed bundle files continue to work until they migrate to
+			// an explicit product name.
+			// TODO: Once all usages are migrated, restrict path arguments to isolated builds only.
+			if (Build.BuildType != BuildType.Isolated)
+			{
+				this.EmitWarning(
+					"Local bundle path argument is deprecated in non-local builds. " +
+						"Migrate to an explicit product name (e.g. '::{changelog} elasticsearch') so CDN is used instead."
+				);
+			}
+
+			ExtractBundlesFolderPath();
+			if (Found)
+				LoadAndCacheBundles();
+			return;
+		}
+
+		// Explicit product name as argument: use CDN with that product.
+		// TODO: Once path-argument usages are migrated, the no-argument case below should also
+		// default to CDN (inferring the product from the repository), replacing local-folder discovery.
+		if (!string.IsNullOrWhiteSpace(Arguments))
+		{
+			var argProduct = Arguments.Trim();
+
+			if (!IsValidCdnProduct(argProduct))
+			{
+				this.EmitError($"Invalid CDN product '{argProduct}'. Product names must match [a-zA-Z0-9_-]+.");
+				return;
+			}
+
+			CdnProduct = argProduct;
+			LoadCdnBundles(argProduct);
+			return;
+		}
+
+		// No argument and no :cdn: option: fall back to local folder discovery (existing behavior).
+		// This preserves backward compatibility for bare {changelog} directives until all repos
+		// have declared release_notes in docset.yml and migrated to an explicit product name.
 		ExtractBundlesFolderPath();
 		if (Found)
 			LoadAndCacheBundles();
@@ -273,8 +333,7 @@ public class ChangelogBlock(DirectiveBlockParser parser, ParserContext context) 
 
 	private ChangelogLinkVisibility EmitInvalidLinkVisibilityWarning(string value)
 	{
-		this.EmitWarning(
-			$"Invalid :link-visibility: value '{value}'. Valid values are: auto, keep-links, hide-links. Using auto.");
+		this.EmitWarning($"Invalid :link-visibility: value '{value}'. Valid values are: auto, keep-links, hide-links. Using auto.");
 		return ChangelogLinkVisibility.Auto;
 	}
 
@@ -297,7 +356,8 @@ public class ChangelogBlock(DirectiveBlockParser parser, ParserContext context) 
 	private ChangelogDescriptionVisibility EmitInvalidDescriptionVisibilityWarning(string value)
 	{
 		this.EmitWarning(
-			$"Invalid :description-visibility: value '{value}'. Valid values are: auto, keep-descriptions, keep-highlight-descriptions, hide-descriptions. Using auto.");
+			$"Invalid :description-visibility: value '{value}'. Valid values are: auto, keep-descriptions, keep-highlight-descriptions, hide-descriptions. Using auto."
+		);
 		return ChangelogDescriptionVisibility.Auto;
 	}
 
@@ -327,13 +387,16 @@ public class ChangelogBlock(DirectiveBlockParser parser, ParserContext context) 
 	private ChangelogTypeFilter EmitLegacyHighlightTypeWarning()
 	{
 		this.EmitWarning(
-			"Invalid :type: value 'highlight'. Highlights are controlled with :highlights: (not :type:). Using default behavior.");
+			"Invalid :type: value 'highlight'. Highlights are controlled with :highlights: (not :type:). Using default behavior."
+		);
 		return ChangelogTypeFilter.Default;
 	}
 
 	private ChangelogTypeFilter EmitInvalidTypeFilterWarning(string typeValue)
 	{
-		this.EmitWarning($"Invalid :type: value '{typeValue}'. Valid values are: all, breaking-change, deprecation, known-issue. Using default behavior.");
+		this.EmitWarning(
+			$"Invalid :type: value '{typeValue}'. Valid values are: all, breaking-change, deprecation, known-issue. Using default behavior."
+		);
 		return ChangelogTypeFilter.Default;
 	}
 
@@ -373,7 +436,9 @@ public class ChangelogBlock(DirectiveBlockParser parser, ParserContext context) 
 			return;
 		}
 
-		var bundles = Build.ReadFileSystem.Directory
+		var bundles = Build
+			.ReadFileSystem
+			.Directory
 			.EnumerateFiles(BundlesFolderPath, "*.yaml")
 			.Concat(Build.ReadFileSystem.Directory.EnumerateFiles(BundlesFolderPath, "*.yml"))
 			.ToList();
@@ -403,8 +468,7 @@ public class ChangelogBlock(DirectiveBlockParser parser, ParserContext context) 
 	/// Both explicit <c>:config:</c> paths and auto-discovered candidates are validated
 	/// against this same root.
 	/// </summary>
-	private IDirectoryInfo ConfigTrustRoot =>
-		Build.DocumentationCheckoutDirectory;
+	private IDirectoryInfo ConfigTrustRoot => Build.DocumentationCheckoutDirectory;
 
 	private string? ResolveConfigPath()
 	{
@@ -423,11 +487,7 @@ public class ChangelogBlock(DirectiveBlockParser parser, ParserContext context) 
 		}
 
 		// Auto-discover: try .yml and .yaml in each candidate location.
-		string[] relativePaths =
-		[
-			"changelog.yml", "changelog.yaml",
-			"../changelog.yml", "../changelog.yaml"
-		];
+		string[] relativePaths = ["changelog.yml", "changelog.yaml", "../changelog.yml", "../changelog.yaml"];
 
 		return relativePaths
 			.Select(rel => Path.GetFullPath(Build.DocumentationSourceDirectory.ResolvePathFrom(rel)))
@@ -483,9 +543,13 @@ public class ChangelogBlock(DirectiveBlockParser parser, ParserContext context) 
 	{
 		try
 		{
-			// Try to load assembler configuration to get private repositories
+			// Try to load assembler configuration to get private repositories.
+			// Use AllPrivateRepositoryNames rather than PrivateRepositories.Keys: PrivateRepositories
+			// excludes skip:true entries (because the cross-link fetcher has no link index for them),
+			// but skip:true means "does not publish docs", not "is public". Repos like kibana-team
+			// (private:true, skip:true) must still have their links hidden at render time.
 			var assemblerConfig = AssemblyConfiguration.Create(Build.ConfigurationFileProvider);
-			foreach (var repoName in assemblerConfig.PrivateRepositories.Keys)
+			foreach (var repoName in assemblerConfig.AllPrivateRepositoryNames)
 				_ = PrivateRepositories.Add(repoName);
 		}
 		catch
@@ -505,25 +569,45 @@ public class ChangelogBlock(DirectiveBlockParser parser, ParserContext context) 
 		// Load bundles using the BundleLoader service
 		// Emit errors (not warnings) for missing file references so the build fails fast
 		// rather than silently omitting entries from the rendered output.
-		var loadedBundles = loader.LoadBundles(
-			BundlesFolderPath,
-			msg => this.EmitError(msg));
+		var loadedBundles = loader.LoadBundles(BundlesFolderPath, msg => this.EmitError(msg));
 
 		ApplyLoadedBundles(loadedBundles);
 	}
 
-	private void LoadCdnBundles(string product)
+	private void LoadCdnBundles(string product, bool isAutoInferred = false)
 	{
-		// Product validity is checked by the caller before CdnProduct is assigned.
-		if (!string.IsNullOrWhiteSpace(Arguments))
-			this.EmitWarning("The bundles folder argument is ignored when :cdn: is set; bundles are sourced from the CDN.");
-
-		// :cdn: is a selector over release notes prefetched at build startup. A product must be declared
-		// under `release_notes` in docset.yml; otherwise its bundles were never fetched.
+		// :cdn: is a selector over release notes prefetched at build startup.
 		if (!Context.ReleaseNotesResolver.IsDeclared(product))
 		{
-			this.EmitError(
-				$"The :cdn: product '{product}' is not declared in docset.yml. Add it under 'release_notes:', for example:\n  release_notes:\n    - product: {product}");
+			if (!isAutoInferred)
+			{
+				this.EmitError(
+					$"The :cdn: product '{product}' is not declared in docset.yml. Add it under 'release_notes:', for example:\n  release_notes:\n    - product: {product}"
+				);
+				return;
+			}
+
+			// Auto-inferred products are fetched best-effort. Inferred bundles are not promoted into
+			// DeclaredProducts to avoid cross-repo contamination in assembler runs (one repo's successful
+			// inference must not suppress the undeclared-product error for an explicit :cdn: in another).
+			// Check BundlesByProduct directly: bundles are present when the CDN fetch succeeded.
+			if (Context.ReleaseNotesResolver.TryGetBundles(product, out var inferredBundles) && inferredBundles.Count > 0)
+			{
+				ApplyLoadedBundles(inferredBundles);
+				Found = LoadedBundles.Count > 0;
+				return;
+			}
+
+			// No bundles available. Emit a hint only for the 404 case (not yet published) — for other
+			// CDN errors a warning was already emitted during prefetch, so no extra message is needed.
+			if (Context.ReleaseNotesResolver.IsNotFound(product))
+			{
+				this.EmitHint(
+					$"No CDN bundles found for auto-inferred product '{product}'. " +
+						$"The changelog will render empty until bundles are published. " +
+						$"To suppress this hint, declare it explicitly under 'release_notes:' in docset.yml."
+				);
+			}
 			return;
 		}
 
@@ -534,13 +618,11 @@ public class ChangelogBlock(DirectiveBlockParser parser, ParserContext context) 
 
 	private void ApplyLoadedBundles(IReadOnlyList<LoadedBundle> loadedBundles)
 	{
-		var filteredBundles = FilterByVersion(loadedBundles);
+		var filteredBundles = FilterBySinceVersion(FilterUnreleasedVersions(FilterByVersion(loadedBundles)));
 
 		// Sort by version (descending - newest first)
 		// Supports both semver (e.g., "9.3.0") and date-based (e.g., "2025-08-05") versions
-		var sortedBundles = filteredBundles
-			.OrderByDescending(b => VersionOrDate.Parse(b.Version))
-			.ToList();
+		var sortedBundles = filteredBundles.OrderByDescending(b => VersionOrDate.Parse(b.Version)).ToList();
 
 		// Always merge bundles with the same target version
 		// (e.g., Cloud Serverless with multiple repos contributing to a single dated release)
@@ -554,15 +636,86 @@ public class ChangelogBlock(DirectiveBlockParser parser, ParserContext context) 
 		}
 	}
 
+	/// <summary>
+	/// Prestage visibility filtering (release-notes onboarding RFC, B1): Prestage bundles are
+	/// uploaded to S3 weeks before release day, so CDN-mode rendering must not show bundles whose
+	/// target version the published content source has not released yet. Production publishes the
+	/// <see cref="ContentSource.Current"/> content source, where only versions at or below the
+	/// versioning system's current release render; staging publishes <see cref="ContentSource.Next"/>
+	/// and keeps them visible, enabling pre-release review. The versions.yml bump on release day
+	/// then makes staged bundles visible on production automatically. Local/isolated builds (no
+	/// content source) and date-based/versionless products are never filtered.
+	/// </summary>
+	private IReadOnlyList<LoadedBundle> FilterUnreleasedVersions(IReadOnlyList<LoadedBundle> bundles)
+	{
+		if (CdnProduct is null || Build.ContentSource != ContentSource.Current)
+			return bundles;
+
+		var versioningSystem = Build.ProductsConfiguration.Products.TryGetValue(CdnProduct, out var product)
+			? product.VersioningSystem
+			: null;
+		if (versioningSystem is null || versioningSystem.IsVersionless)
+			return bundles;
+
+		var visible = new List<LoadedBundle>(bundles.Count);
+		foreach (var bundle in bundles)
+		{
+			if (SemVersion.TryParse(bundle.Version, out var target) && target > versioningSystem.Current)
+			{
+				this.EmitHint(
+					$"Hiding changelog bundle '{CdnProduct} {bundle.Version}': it targets a version newer than the current release ({versioningSystem.Current}) and this build publishes the 'current' content source."
+				);
+				continue;
+			}
+
+			visible.Add(bundle);
+		}
+
+		return visible;
+	}
+
+	/// <summary>
+	/// Filters bundles at or before the optional <c>:since_version:</c> threshold. Bundles whose version
+	/// is ≤ <see cref="SinceVersion"/> are excluded so the directive only shows newer releases — useful
+	/// when older versions are already hardcoded on the page and the directive backfills from S3/CDN.
+	/// </summary>
+	private IReadOnlyList<LoadedBundle> FilterBySinceVersion(IReadOnlyList<LoadedBundle> bundles)
+	{
+		if (SinceVersion is not { Length: > 0 } since)
+			return bundles;
+
+		var sinceVd = VersionOrDate.Parse(since);
+		if (sinceVd.Raw is not null)
+		{
+			this.EmitWarning(
+				$":since_version: '{since}' is not a valid semver or date (YYYY-MM-DD / YYYY-MM) — filter will not be applied."
+			);
+			return bundles;
+		}
+
+		var visible = new List<LoadedBundle>(bundles.Count);
+		foreach (var bundle in bundles)
+		{
+			var bundleVd = VersionOrDate.Parse(bundle.Version);
+			if (bundleVd <= sinceVd)
+			{
+				this.EmitHint($"Hiding changelog bundle '{bundle.Version}': it is at or before the :since_version: filter '{since}'.");
+				continue;
+			}
+
+			visible.Add(bundle);
+		}
+
+		return visible;
+	}
+
 	/// <summary>Filters bundles by the optional <c>:version:</c> value; warns and renders empty when nothing matches.</summary>
 	private IReadOnlyList<LoadedBundle> FilterByVersion(IReadOnlyList<LoadedBundle> bundles)
 	{
 		if (VersionFilter is not { Length: > 0 } version)
 			return bundles;
 
-		var matched = bundles
-			.Where(b => ChangelogVersionMatch.Matches(version, b.Version, b.FilePath))
-			.ToList();
+		var matched = bundles.Where(b => ChangelogVersionMatch.Matches(version, b.Version, b.FilePath)).ToList();
 
 		if (matched.Count == 0 && bundles.Count > 0)
 			this.EmitWarning($"No changelog bundle matches :version: '{version}'.");
@@ -570,8 +723,7 @@ public class ChangelogBlock(DirectiveBlockParser parser, ParserContext context) 
 		return matched;
 	}
 
-	private static bool IsValidCdnProduct(string product) =>
-		product.Length > 0 && product.All(c => char.IsAsciiLetterOrDigit(c) || c is '_' or '-');
+	private static bool IsValidCdnProduct(string product) => ReleaseNotesFetcher.IsValidCdnProductId(product);
 
 	/// <summary>Infers the CDN product for a valueless <c>:cdn:</c> from the repo, mapped to its canonical id via products.yml.</summary>
 	private string? InferCdnProductFromRepository()
@@ -598,12 +750,20 @@ public class ChangelogBlock(DirectiveBlockParser parser, ParserContext context) 
 			var entriesByType = GetFilteredEntryCounts(bundle);
 			var shouldInclude = CreateTypeFilterPredicate();
 
-			if (!dedicatedPage && shouldInclude(ChangelogEntryType.BreakingChange) && entriesByType.ContainsKey(ChangelogEntryType.BreakingChange))
+			if (
+				!dedicatedPage
+				&& shouldInclude(ChangelogEntryType.BreakingChange)
+				&& entriesByType.ContainsKey(ChangelogEntryType.BreakingChange)
+			)
 				yield return $"{repo}-{anchorSlug}-breaking-changes";
 
-			if (!dedicatedPage && HighlightsEnabled &&
-				ChangelogInlineRenderer.GetFilteredEntries(bundle, PublishBlocker, HideFeatures, TypeFilter)
-					.Any(e => e.Highlight == true))
+			if (
+				!dedicatedPage
+				&& HighlightsEnabled
+				&& ChangelogInlineRenderer.GetFilteredEntries(bundle, PublishBlocker, HideFeatures, TypeFilter).Any(
+					e => e.Highlight == true
+				)
+			)
 				yield return $"{repo}-{anchorSlug}-highlights";
 
 			if (!dedicatedPage && shouldInclude(ChangelogEntryType.Security) && entriesByType.ContainsKey(ChangelogEntryType.Security))
@@ -612,12 +772,16 @@ public class ChangelogBlock(DirectiveBlockParser parser, ParserContext context) 
 			if (!dedicatedPage && shouldInclude(ChangelogEntryType.KnownIssue) && entriesByType.ContainsKey(ChangelogEntryType.KnownIssue))
 				yield return $"{repo}-{anchorSlug}-known-issues";
 
-			if (!dedicatedPage && shouldInclude(ChangelogEntryType.Deprecation) && entriesByType.ContainsKey(ChangelogEntryType.Deprecation))
+			if (
+				!dedicatedPage && shouldInclude(ChangelogEntryType.Deprecation) && entriesByType.ContainsKey(ChangelogEntryType.Deprecation)
+			)
 				yield return $"{repo}-{anchorSlug}-deprecations";
 
-			if (!dedicatedPage && shouldInclude(ChangelogEntryType.Feature) &&
-				(entriesByType.ContainsKey(ChangelogEntryType.Feature) ||
-				 entriesByType.ContainsKey(ChangelogEntryType.Enhancement)))
+			if (
+				!dedicatedPage
+				&& shouldInclude(ChangelogEntryType.Feature)
+				&& (entriesByType.ContainsKey(ChangelogEntryType.Feature) || entriesByType.ContainsKey(ChangelogEntryType.Enhancement))
+			)
 				yield return $"{repo}-{anchorSlug}-features-enhancements";
 
 			if (!dedicatedPage && shouldInclude(ChangelogEntryType.BugFix) && entriesByType.ContainsKey(ChangelogEntryType.BugFix))
@@ -637,28 +801,31 @@ public class ChangelogBlock(DirectiveBlockParser parser, ParserContext context) 
 	/// <summary>
 	/// Creates a predicate that returns true if the given entry type should be included based on the TypeFilter.
 	/// </summary>
-	private Func<ChangelogEntryType, bool> CreateTypeFilterPredicate() =>
-		TypeFilter switch
-		{
-			ChangelogTypeFilter.All => _ => true,
-			ChangelogTypeFilter.BreakingChange => type => type == ChangelogEntryType.BreakingChange,
-			ChangelogTypeFilter.Deprecation => type => type == ChangelogEntryType.Deprecation,
-			ChangelogTypeFilter.KnownIssue => type => type == ChangelogEntryType.KnownIssue,
-			_ => type => !SeparatedTypes.Contains(type) // Default: exclude separated types
-		};
+	private Func<ChangelogEntryType, bool> CreateTypeFilterPredicate() => TypeFilter switch
+	{
+		ChangelogTypeFilter.All => _ => true,
+		ChangelogTypeFilter.BreakingChange => type => type == ChangelogEntryType.BreakingChange,
+		ChangelogTypeFilter.Deprecation => type => type == ChangelogEntryType.Deprecation,
+		ChangelogTypeFilter.KnownIssue => type => type == ChangelogEntryType.KnownIssue,
+		_ =>
+			type =>
+				!SeparatedTypes.Contains(type) // Default: exclude separated types
+
+	};
 
 	/// <summary>
 	/// Returns entry counts by type after applying publish blocker, hide-features, and type filters.
 	/// This ensures the TOC and generated anchors match what the renderer actually outputs.
 	/// </summary>
 	private Dictionary<ChangelogEntryType, int> GetFilteredEntryCounts(LoadedBundle bundle) =>
-		ChangelogInlineRenderer.GetFilteredEntries(bundle, PublishBlocker, HideFeatures, TypeFilter)
+		ChangelogInlineRenderer
+			.GetFilteredEntries(bundle, PublishBlocker, HideFeatures, TypeFilter)
 			.GroupBy(e => e.Type)
 			.ToDictionary(g => g.Key, g => g.Count());
 
 	private bool BundleContributesToNavigation(LoadedBundle bundle) =>
 		ChangelogInlineRenderer.BundleHasRenderableEntries(bundle, PublishBlocker, HideFeatures, TypeFilter)
-		|| ChangelogInlineRenderer.ShouldRenderEmptyBundleMetadata(TypeFilter, bundle.Data?.Description);
+			|| ChangelogInlineRenderer.ShouldRenderEmptyBundleMetadata(TypeFilter, bundle.Data?.Description);
 
 	private IEnumerable<PageTocItem> ComputeTableOfContent()
 	{
@@ -673,14 +840,10 @@ public class ChangelogBlock(DirectiveBlockParser parser, ParserContext context) 
 			var anchorSlug = titleSlug.Slugify();
 			var repo = bundle.Repo;
 			var displayVersion = VersionOrDate.FormatDisplayVersion(bundle.Version);
+
 			string SectionSlug(string suffix) => $"{repo}-{anchorSlug}-{suffix}".Slugify();
 
-			yield return new PageTocItem
-			{
-				Heading = displayVersion,
-				Slug = displayVersion.Slugify(),
-				Level = 2
-			};
+			yield return new PageTocItem { Heading = displayVersion, Slug = displayVersion.Slugify(), Level = 2 };
 
 			if (dedicatedPage)
 				continue;
@@ -689,50 +852,27 @@ public class ChangelogBlock(DirectiveBlockParser parser, ParserContext context) 
 			var shouldInclude = CreateTypeFilterPredicate();
 
 			if (shouldInclude(ChangelogEntryType.BreakingChange) && entriesByType.ContainsKey(ChangelogEntryType.BreakingChange))
-				yield return new PageTocItem
-				{
-					Heading = "Breaking changes",
-					Slug = SectionSlug("breaking-changes"),
-					Level = 3
-				};
+				yield return new PageTocItem { Heading = "Breaking changes", Slug = SectionSlug("breaking-changes"), Level = 3 };
 
-			var hasHighlights = ChangelogInlineRenderer.GetFilteredEntries(bundle, PublishBlocker, HideFeatures, TypeFilter)
-				.Any(e => e.Highlight == true);
+			var hasHighlights = ChangelogInlineRenderer.GetFilteredEntries(bundle, PublishBlocker, HideFeatures, TypeFilter).Any(
+				e => e.Highlight == true
+			);
 			if (hasHighlights && HighlightsEnabled)
-				yield return new PageTocItem
-				{
-					Heading = "Highlights",
-					Slug = SectionSlug("highlights"),
-					Level = 3
-				};
+				yield return new PageTocItem { Heading = "Highlights", Slug = SectionSlug("highlights"), Level = 3 };
 
 			if (shouldInclude(ChangelogEntryType.Security) && entriesByType.ContainsKey(ChangelogEntryType.Security))
-				yield return new PageTocItem
-				{
-					Heading = "Security",
-					Slug = SectionSlug("security"),
-					Level = 3
-				};
+				yield return new PageTocItem { Heading = "Security", Slug = SectionSlug("security"), Level = 3 };
 
 			if (shouldInclude(ChangelogEntryType.KnownIssue) && entriesByType.ContainsKey(ChangelogEntryType.KnownIssue))
-				yield return new PageTocItem
-				{
-					Heading = "Known issues",
-					Slug = SectionSlug("known-issues"),
-					Level = 3
-				};
+				yield return new PageTocItem { Heading = "Known issues", Slug = SectionSlug("known-issues"), Level = 3 };
 
 			if (shouldInclude(ChangelogEntryType.Deprecation) && entriesByType.ContainsKey(ChangelogEntryType.Deprecation))
-				yield return new PageTocItem
-				{
-					Heading = "Deprecations",
-					Slug = SectionSlug("deprecations"),
-					Level = 3
-				};
+				yield return new PageTocItem { Heading = "Deprecations", Slug = SectionSlug("deprecations"), Level = 3 };
 
-			if (shouldInclude(ChangelogEntryType.Feature) &&
-				(entriesByType.ContainsKey(ChangelogEntryType.Feature) ||
-				 entriesByType.ContainsKey(ChangelogEntryType.Enhancement)))
+			if (
+				shouldInclude(ChangelogEntryType.Feature)
+				&& (entriesByType.ContainsKey(ChangelogEntryType.Feature) || entriesByType.ContainsKey(ChangelogEntryType.Enhancement))
+			)
 				yield return new PageTocItem
 				{
 					Heading = "Features and enhancements",
@@ -741,36 +881,16 @@ public class ChangelogBlock(DirectiveBlockParser parser, ParserContext context) 
 				};
 
 			if (shouldInclude(ChangelogEntryType.BugFix) && entriesByType.ContainsKey(ChangelogEntryType.BugFix))
-				yield return new PageTocItem
-				{
-					Heading = "Fixes",
-					Slug = SectionSlug("fixes"),
-					Level = 3
-				};
+				yield return new PageTocItem { Heading = "Fixes", Slug = SectionSlug("fixes"), Level = 3 };
 
 			if (shouldInclude(ChangelogEntryType.Docs) && entriesByType.ContainsKey(ChangelogEntryType.Docs))
-				yield return new PageTocItem
-				{
-					Heading = "Documentation",
-					Slug = SectionSlug("docs"),
-					Level = 3
-				};
+				yield return new PageTocItem { Heading = "Documentation", Slug = SectionSlug("docs"), Level = 3 };
 
 			if (shouldInclude(ChangelogEntryType.Regression) && entriesByType.ContainsKey(ChangelogEntryType.Regression))
-				yield return new PageTocItem
-				{
-					Heading = "Regressions",
-					Slug = SectionSlug("regressions"),
-					Level = 3
-				};
+				yield return new PageTocItem { Heading = "Regressions", Slug = SectionSlug("regressions"), Level = 3 };
 
 			if (shouldInclude(ChangelogEntryType.Other) && entriesByType.ContainsKey(ChangelogEntryType.Other))
-				yield return new PageTocItem
-				{
-					Heading = "Other changes",
-					Slug = SectionSlug("other"),
-					Level = 3
-				};
+				yield return new PageTocItem { Heading = "Other changes", Slug = SectionSlug("other"), Level = 3 };
 		}
 	}
 }

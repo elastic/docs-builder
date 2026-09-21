@@ -20,11 +20,7 @@ using Nullean.Argh.Documentation;
 namespace Documentation.Builder.Commands.Codex;
 
 /// <summary>Sync built codex output to S3 using a two-step plan/apply workflow.</summary>
-internal sealed class CodexSyncCommand(
-	IDiagnosticsCollector collector,
-	ILoggerFactory logFactory,
-	ICoreService githubActionsService
-)
+internal sealed class CodexSyncCommand(IDiagnosticsCollector collector, ILoggerFactory logFactory, ICoreService githubActionsService)
 {
 	/// <summary>Compute a diff of what would change when deploying to S3 and write it to a plan file.</summary>
 	/// <remarks>
@@ -50,13 +46,24 @@ internal sealed class CodexSyncCommand(
 		[ExpandUserProfile, RejectSymbolicLinks] FileInfo? @out = null,
 		float? deleteThreshold = null,
 		string[]? exclude = null,
-		CancellationToken ct = default)
+		CancellationToken ct = default
+	)
 	{
 		await using var serviceInvoker = new ServiceInvoker(collector);
 		var (context, service) = LoadContext(config);
 		var excludePatterns = exclude ?? [];
-		serviceInvoker.AddCommand(service, (context, s3BucketName, @out, deleteThreshold, excludePatterns),
-			static async (s, collector, state, ctx) => await s.Plan(collector, state.context, state.s3BucketName, state.@out?.FullName ?? "", state.deleteThreshold, state.excludePatterns, ctx)
+		serviceInvoker.AddCommand(
+			service,
+			(context, s3BucketName, @out, deleteThreshold, excludePatterns),
+			static async (s, collector, state, ctx) => await s.Plan(
+				collector,
+				state.context,
+				state.s3BucketName,
+				state.@out?.FullName ?? "",
+				state.deleteThreshold,
+				state.excludePatterns,
+				ctx
+			)
 		);
 		return await serviceInvoker.InvokeAsync(ct);
 	}
@@ -75,12 +82,21 @@ internal sealed class CodexSyncCommand(
 		[Argument, Existing, ExpandUserProfile, RejectSymbolicLinks, FileExtensions(Extensions = "yml,yaml")] FileInfo config,
 		string s3BucketName,
 		[Existing, ExpandUserProfile, RejectSymbolicLinks, FileExtensions(Extensions = "json,plan")] FileInfo planFile,
-		CancellationToken ct = default)
+		CancellationToken ct = default
+	)
 	{
 		await using var serviceInvoker = new ServiceInvoker(collector);
 		var (context, service) = LoadContext(config);
-		serviceInvoker.AddCommand(service, (context, s3BucketName, planFile),
-			static async (s, collector, state, ctx) => await s.Apply(collector, state.context, state.s3BucketName, state.planFile.FullName, ctx)
+		serviceInvoker.AddCommand(
+			service,
+			(context, s3BucketName, planFile),
+			static async (s, collector, state, ctx) => await s.Apply(
+				collector,
+				state.context,
+				state.s3BucketName,
+				state.planFile.FullName,
+				ctx
+			)
 		);
 		return await serviceInvoker.InvokeAsync(ct);
 	}
@@ -89,7 +105,9 @@ internal sealed class CodexSyncCommand(
 	{
 		var fs = new CodexFileSystem(config.FullName);
 		var codexConfig = CodexConfiguration.Load(fs.ConfigurationFile);
-		return (new CodexContext(codexConfig, fs.ConfigurationFile, collector, fs),
-			new IncrementalDeployService(logFactory, githubActionsService));
+		return (new CodexContext(codexConfig, fs.ConfigurationFile, collector, fs), new IncrementalDeployService(
+			logFactory,
+			githubActionsService
+		));
 	}
 }

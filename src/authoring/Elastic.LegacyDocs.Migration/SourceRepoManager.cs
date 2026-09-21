@@ -53,8 +53,7 @@ public class SourceRepoManager(SourceRepoOptions options, ILogger logger)
 		return result;
 	}
 
-	public async Task<IReadOnlyList<ResolvedSource>> ResolveSourcesAsync(
-		LegacyBook book, BranchRef version, CancellationToken ct = default)
+	public async Task<IReadOnlyList<ResolvedSource>> ResolveSourcesAsync(LegacyBook book, BranchRef version, CancellationToken ct = default)
 	{
 		var results = new List<ResolvedSource>();
 		var versionLabel = version.VersionLabel;
@@ -105,11 +104,9 @@ public class SourceRepoManager(SourceRepoOptions options, ILogger logger)
 	private static string ResolveBranch(LegacySource source, string versionLabel, string defaultGitBranch) =>
 		source.MapBranches.TryGetValue(versionLabel, out var mapped) ? mapped : defaultGitBranch;
 
-	private string BareClonePath(string repoName) =>
-		Path.Combine(options.ReposDirectory, $"{repoName}.git");
+	private string BareClonePath(string repoName) => Path.Combine(options.ReposDirectory, $"{repoName}.git");
 
-	private string WorktreePath(string repoName, string gitBranch) =>
-		Path.Combine(options.ReposDirectory, repoName, gitBranch);
+	private string WorktreePath(string repoName, string gitBranch) => Path.Combine(options.ReposDirectory, repoName, gitBranch);
 
 	private async Task EnsureBareCloneAsync(string repoName, CancellationToken ct)
 	{
@@ -158,7 +155,17 @@ public class SourceRepoManager(SourceRepoOptions options, ILogger logger)
 
 		logger.LogInformation("Creating worktree {Repo}@{Branch}...", repoName, resolvedBranch);
 		_ = Directory.CreateDirectory(Path.GetDirectoryName(worktreePath)!);
-		await ExecGitInAsync(barePath, allowFailure: false, ct, "worktree", "add", "--detach", worktreePath, resolvedBranch, "--no-checkout");
+		await ExecGitInAsync(
+			barePath,
+			allowFailure: false,
+			ct,
+			"worktree",
+			"add",
+			"--detach",
+			worktreePath,
+			resolvedBranch,
+			"--no-checkout"
+		);
 
 		await ApplySparseCheckoutAsync(repoName, worktreePath, ct);
 
@@ -204,21 +211,14 @@ public class SourceRepoManager(SourceRepoOptions options, ILogger logger)
 
 	private static async Task<bool> TryExecGitInAsync(string workingDirectory, CancellationToken ct, params string[] args)
 	{
-		var arguments = new ExecArguments("git", args)
-		{
-			WorkingDirectory = workingDirectory,
-			ValidExitCodeClassifier = _ => true
-		};
+		var arguments = new ExecArguments("git", args) { WorkingDirectory = workingDirectory, ValidExitCodeClassifier = _ => true };
 		var exitCode = await Proc.ExecAsync(arguments, ct);
 		return exitCode == 0;
 	}
 
 	private static async Task ExecGitAsync(CancellationToken ct, params string[] args)
 	{
-		var arguments = new ExecArguments("git", args)
-		{
-			ValidExitCodeClassifier = _ => true
-		};
+		var arguments = new ExecArguments("git", args) { ValidExitCodeClassifier = _ => true };
 		var exitCode = await Proc.ExecAsync(arguments, ct);
 		if (exitCode != 0)
 			throw new InvalidOperationException($"git {args[0]} failed with exit code {exitCode}");
@@ -226,15 +226,10 @@ public class SourceRepoManager(SourceRepoOptions options, ILogger logger)
 
 	private static async Task ExecGitInAsync(string workingDirectory, bool allowFailure, CancellationToken ct, params string[] args)
 	{
-		var arguments = new ExecArguments("git", args)
-		{
-			WorkingDirectory = workingDirectory,
-			ValidExitCodeClassifier = _ => true
-		};
+		var arguments = new ExecArguments("git", args) { WorkingDirectory = workingDirectory, ValidExitCodeClassifier = _ => true };
 		var exitCode = await Proc.ExecAsync(arguments, ct);
 		if (exitCode != 0 && !allowFailure)
-			throw new InvalidOperationException(
-				$"git {args[0]} failed with exit code {exitCode} in {workingDirectory}");
+			throw new InvalidOperationException($"git {args[0]} failed with exit code {exitCode} in {workingDirectory}");
 	}
 
 	/// <summary>Extracts the top-level directory from a source path for sparse checkout.</summary>

@@ -19,9 +19,7 @@ public class ChangelogMarkdownRenderer(IChangelogFileSystem fileSystem)
 	public async Task RenderAsync(ChangelogRenderContext context, Cancel ctx)
 	{
 		// Check if there are any highlighted entries
-		var hasHighlights = context.EntriesByType.Values
-			.SelectMany(e => e)
-			.Any(e => e.Highlight == true);
+		var hasHighlights = context.EntriesByType.Values.SelectMany(e => e).Any(e => e.Highlight == true);
 
 		var renderers = new List<IChangelogMarkdownRenderer>
 		{

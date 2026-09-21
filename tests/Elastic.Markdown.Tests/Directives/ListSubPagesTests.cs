@@ -8,8 +8,7 @@ using Elastic.Markdown.Myst.Directives.SubPages;
 
 namespace Elastic.Markdown.Tests.Directives;
 
-public class ListSubPagesTests(ITestOutputHelper output) : DirectiveTest<ListSubPagesBlock>(output,
-"""
+public class ListSubPagesTests(ITestOutputHelper output) : DirectiveTest<ListSubPagesBlock>(output, """
 :::{list-sub-pages}
 :::
 """)
@@ -34,12 +33,8 @@ public class ListSubPagesTests(ITestOutputHelper output) : DirectiveTest<ListSub
 	}
 
 	[Fact]
-	public void SubPagesContainTitlesAndUrls()
-	{
-		Block!.SubPages.Should().OnlyContain(p =>
-			!string.IsNullOrEmpty(p.Title) &&
-			!string.IsNullOrEmpty(p.Url));
-	}
+	public void SubPagesContainTitlesAndUrls() =>
+		Block!.SubPages.Should().OnlyContain(p => !string.IsNullOrEmpty(p.Title) && !string.IsNullOrEmpty(p.Url));
 
 	[Fact]
 	public void RendersListWithLinks()
@@ -50,16 +45,17 @@ public class ListSubPagesTests(ITestOutputHelper output) : DirectiveTest<ListSub
 	}
 }
 
-public class ListSubPagesWithDescriptionsTests(ITestOutputHelper output) : DirectiveTest<ListSubPagesBlock>(output,
-"""
+public class ListSubPagesWithDescriptionsTests(ITestOutputHelper output) : DirectiveTest<ListSubPagesBlock>(
+	output,
+	"""
 :::{list-sub-pages}
 :::
-""")
+"""
+)
 {
 	protected override void AddToFileSystem(MockFileSystem fileSystem)
 	{
-		fileSystem.AddFile("docs/page1.md", new MockFileData(
-"""
+		fileSystem.AddFile("docs/page1.md", new MockFileData("""
 ---
 description: First page description
 ---
@@ -79,17 +75,16 @@ Content.
 	}
 
 	[Fact]
-	public void RendersDescriptionInOutput()
-	{
-		Html.Should().Contain("First page description");
-	}
+	public void RendersDescriptionInOutput() => Html.Should().Contain("First page description");
 }
 
-public class ListSubPagesWithFolderSiblingTests(ITestOutputHelper output) : DirectiveTest<ListSubPagesBlock>(output,
-"""
+public class ListSubPagesWithFolderSiblingTests(ITestOutputHelper output) : DirectiveTest<ListSubPagesBlock>(
+	output,
+	"""
 :::{list-sub-pages}
 :::
-""")
+"""
+)
 {
 	protected override void AddToFileSystem(MockFileSystem fileSystem)
 	{

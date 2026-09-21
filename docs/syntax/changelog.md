@@ -1,15 +1,24 @@
 # Changelog
 
-The `{changelog}` directive renders all changelog bundles from a folder directly in your documentation pages. This is designed for release notes pages that primarily consist of changelog content.
+The `{changelog}` directive renders changelog bundles directly in your documentation pages. This is designed for release notes pages that primarily consist of changelog content.
 
 ## Syntax
+
+Pass an explicit product name to source bundles from the public changelog CDN:
+
+```markdown
+:::{changelog} elasticsearch
+:::
+```
+
+Without an argument the directive reads from the local `changelog/bundles/` folder (same behavior as before this feature was added):
 
 ```markdown
 :::{changelog}
 :::
 ```
 
-Or with a custom bundles folder:
+A `/`-prefixed argument is a local path override — deprecated in non-isolated builds and will be removed once all usages migrate to an explicit product name:
 
 ```markdown
 :::{changelog} /path/to/bundles
@@ -30,8 +39,9 @@ The directive supports the following options:
 | `:highlights:` | Emit a dedicated highlights section for entries with `highlight: true` (entries still appear under their type sections) | false |
 | `:release-dates:` | Render the bundle `release-date` field as _Released: …_ after the version heading | false |
 | `:config: path` | Path to `changelog.yml` configuration | auto-discover |
-| `:cdn: [product]` | Render bundles for a product that is declared under `release_notes` in `docset.yml` and prefetched from the public changelog CDN. The product is optional and inferred from the current repository when omitted | (local folder) |
+| `:cdn: [product]` | **Legacy.** Equivalent to passing the product name as the directive argument. Still supported for backward compatibility. | (argument or repo) |
 | `:version: target` | Render only the single bundle matching this target/version | (all versions) |
+| `:since_version: ver` | Exclude all bundles at or before this version. Useful when older versions are already hardcoded on the page and the directive backfills newer releases from the CDN. | (all versions) |
 
 ### Example with options
 
@@ -191,6 +201,8 @@ Both explicit and auto-discovered paths must resolve within the repository check
 
 #### `:cdn:` [cdn]
 
+> **Legacy option.** The preferred form is to pass the product name as the directive argument: `::{changelog} elasticsearch`. The `:cdn:` option continues to work and takes priority over the argument when both are present.
+
 Renders bundles for a single **product** that the docset sources from the public changelog CDN, so a docset can show release notes without vendoring bundle YAML. The directive is a *selector*: it renders bundles that docs-builder prefetched at startup, so the product must first be declared under [`release_notes`](#declaring-cdn-backed-products) in `docset.yml`.
 
 ```yaml
@@ -199,13 +211,22 @@ release_notes:
   - product: elasticsearch
 ```
 
+Preferred (new) form:
+
+```markdown
+:::{changelog} elasticsearch
+:::
+```
+
+Legacy form (still supported):
+
 ```markdown
 :::{changelog}
 :cdn: elasticsearch
 :::
 ```
 
-The value names a product defined in [`products.yml`](https://github.com/elastic/docs-builder/blob/main/config/products.yml) (syntactically it must match `[a-zA-Z0-9_-]+`). The value is **optional**: leave it blank to infer the product from the repository that holds the doc. The repository name is mapped to its canonical product ID via `products.yml` (for example the `elastic-otel-java` repo renders the `edot-java` product).
+The product names a product defined in [`products.yml`](https://github.com/elastic/docs-builder/blob/main/config/products.yml) (syntactically it must match `[a-zA-Z0-9_-]+`). When `:cdn:` is present without a value, the product is inferred from the repository that holds the doc. The repository name is mapped to its canonical product ID via `products.yml` (for example the `elastic-otel-java` repo renders the `edot-java` product):
 
 ```markdown
 :::{changelog}
@@ -220,6 +241,16 @@ With `:link-visibility: auto` (the default), PR and issue links from CDN bundles
 The CDN base URL is build configuration, not authored per page: it defaults to the public changelog bundles distribution and can be overridden with the `DOCS_BUILDER_CHANGELOG_CDN` environment variable (an absolute `http`/`https` URL) for staging or local testing.
 
 Bundles are fetched **once at build startup** for every declared product, not per directive. If a declared product's registry cannot be fetched the build fails; an individual bundle that is missing from the CDN is skipped with a warning. For the full design — including the manifest format and infrastructure — see [Changelog bundle registry and CDN delivery](/development/changelog-bundle-registry.md).
+
+##### Unreleased-version visibility [unreleased-version-visibility]
+
+Prestage products commit and upload their release bundles **before** release day, so the CDN can hold bundles for versions that are not yet released. CDN-mode rendering filters those out based on the build's content source:
+
+- On **production** (the `current` content source), a bundle whose target version is newer than the product's current release in `versions.yml` is hidden (with a hint diagnostic).
+- On **staging** (the `next` content source), staged bundles remain visible, enabling pre-release review.
+- Local and isolated builds render everything.
+
+The `versions.yml` bump on release day automatically makes staged bundles visible on production. Products without a semver versioning system (date-based targets such as `cloud-serverless`) are never filtered.
 
 ##### Declaring CDN-backed products [declaring-cdn-backed-products]
 
@@ -254,6 +285,20 @@ This works for both local-folder and `:cdn:` sources. In `:cdn:` mode it filters
 ```
 
 If no bundle matches, the directive renders nothing and emits a warning (it does not fall back to showing all versions).
+
+#### `:since_version:` [since-version]
+
+Excludes all bundles whose version is **at or before** the given value. This is useful when older release notes are already hardcoded on the page and the directive should only backfill newer releases from the CDN.
+
+```markdown
+:::{changelog} elasticsearch
+:since_version: 8.17.0
+:::
+```
+
+The example above renders only bundles for versions newer than `8.17.0`. Bundles at exactly `8.17.0` are also excluded. Works with both semver (`8.17.0`) and date-based (`2025-08-05`) versions.
+
+Each excluded bundle emits a hint diagnostic naming the bundle and filter threshold.
 
 ## Filtering entries with bundle rules
 
@@ -313,20 +358,23 @@ Bundles with the same target version/date are automatically merged into a single
 
 ### Amend bundle merging
 
-Bundles can have associated **amend files** that follow the naming pattern `{bundle-name}.amend-{N}.yaml` (e.g., `9.3.0.amend-1.yaml`). When loading bundles, the directive automatically discovers and merges amend files with their parent bundles.
+Bundles can have associated **amend files**. Numbered sidecars use `{bundle-name}.amend-{N}.yaml` (for example `9.3.0.amend-1.yaml`). The changelog scrubber may also write `{bundle-name}.amend-notes.yaml` for notes that arrived after the parent shipped. When loading bundles, the directive discovers both kinds and merges them with their parent.
 
-This allows you to add or remove late changes to a release without modifying the original bundle file:
+This lets you add or remove late changes to a release without modifying the original bundle file:
 
 ```
 bundles/
-├── 9.3.0.yaml           # Parent bundle
-├── 9.3.0.amend-1.yaml   # First amend (auto-merged with parent)
-└── 9.3.0.amend-2.yaml   # Second amend (auto-merged with parent)
+├── 9.3.0.yaml                 # Parent bundle
+├── 9.3.0.amend-1.yaml         # First numbered amend (auto-merged with parent)
+├── 9.3.0.amend-2.yaml         # Second numbered amend (auto-merged with parent)
+└── 9.3.0.amend-notes.yaml     # Lambda-owned notes sidecar (auto-merged last)
 ```
 
-Amend files may contain `entries` (additions) and `exclude-entries` (removals). Within each amend file, exclusions are applied before additions. Amend files are processed in numeric order.
+Amend files may contain `entries` (additions), `exclude-entries` (removals), and an optional bundle `description`. Within each amend file, exclusions are applied before additions. Numbered amends are processed in numeric order, then `.amend-notes`. Do not create `.amend-notes` files yourself; see [](/cli/changelog/bundle-amend.md).
 
-All entries from the parent and amend bundles are rendered together as a single release section. The parent bundle's metadata (products, hide-features, repo) is preserved.
+If a numbered amend sets `description`, that text replaces the parent bundle's intro (an empty value clears it). Numbered amends that omit `description` leave the intro unchanged. The `.amend-notes` sidecar never changes the intro.
+
+All entries from the parent and amend bundles are rendered together as a single release section. The parent bundle's metadata (`products`, `hide-features`, `repo`) is preserved except for `description`, which follows the numbered-amend patch rules above.
 
 ## Default folder structure
 
@@ -344,7 +392,7 @@ docs/
 └── release-notes.md          # Page with :::{changelog}
 ```
 
-The `bundle.directory` and `bundle.output_directory` settings in `changelog.yml` apply to the `changelog bundle` and `changelog gh-release` CLI commands. The directive's bundles folder is controlled by its first argument or defaults to `changelog/bundles/` relative to the docset root.
+The `bundle.directory` and `bundle.output_directory` settings in `changelog.yml` apply to the `changelog bundle` and `changelog gh-release` CLI commands. A profile `output_directory` replaces the global bundle output folder for that profile only. The directive's bundles folder is independent: it is the first argument, or `changelog/bundles/` relative to the docset root, and it is **not** recursive. Point the directive at the same folder the profile writes to (for example `docs/releases/cloud-serverless`) so the page only loads that product's bundles.
 
 ## Version ordering
 
@@ -421,7 +469,7 @@ This prevents silent data loss where changelog entries would be quietly omitted 
 
 To fix this, re-create the bundle with `docs-builder changelog bundle` so every entry is embedded.
 
-`bundle-amend --remove` only applies when the source changelog file is still available (for example, to drop an entry from the effective bundle before you delete the file with `changelog remove`).
+`bundle-amend --remove` excludes an entry from the effective bundle. When the changelog exists on the CDN (or still on disk), the command matches it by file name and checksum. Use `--force` to match by file name only when the checksum differs or no YAML can be sourced.
 
 ## Example
 

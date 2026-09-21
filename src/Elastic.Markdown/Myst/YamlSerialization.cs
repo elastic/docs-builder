@@ -67,8 +67,7 @@ internal class ListingFrontMatterConverter : IYamlTypeConverter
 		return result;
 	}
 
-	public void WriteYaml(IEmitter emitter, object? value, Type type, ObjectSerializer serializer) =>
-		serializer.Invoke(value, type);
+	public void WriteYaml(IEmitter emitter, object? value, Type type, ObjectSerializer serializer) => serializer.Invoke(value, type);
 }
 
 [YamlStaticContext]

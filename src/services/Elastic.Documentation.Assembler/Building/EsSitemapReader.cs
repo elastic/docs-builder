@@ -35,7 +35,8 @@ public class EsSitemapReader(DistributedTransport transport, ILogger logger, str
 
 				if (!response.ApiCallDetails.HasSuccessfulStatusCode)
 					throw new InvalidOperationException(
-						$"ES search failed (page {page}): {response.ApiCallDetails.HttpStatusCode} {response.ApiCallDetails.DebugInformation}");
+						$"ES search failed (page {page}): {response.ApiCallDetails.HttpStatusCode} {response.ApiCallDetails.DebugInformation}"
+					);
 
 				var root = response.Body;
 
@@ -66,7 +67,9 @@ public class EsSitemapReader(DistributedTransport transport, ILogger logger, str
 						if (url is null || lastUpdatedStr is null)
 							continue;
 
-						if (!DateTimeOffset.TryParse(lastUpdatedStr, CultureInfo.InvariantCulture, DateTimeStyles.None, out var lastUpdated))
+						if (
+							!DateTimeOffset.TryParse(lastUpdatedStr, CultureInfo.InvariantCulture, DateTimeStyles.None, out var lastUpdated)
+						)
 						{
 							logger.LogWarning("Sitemap: skipping {Url}, unparseable content_last_updated: {Value}", url, lastUpdatedStr);
 							continue;
@@ -78,8 +81,8 @@ public class EsSitemapReader(DistributedTransport transport, ILogger logger, str
 
 				page++;
 				logger.LogInformation("Sitemap: fetched page {Page} ({Hits} hits)", page, hitCount);
-
-			} while (hitCount == PageSize);
+			}
+			while (hitCount == PageSize);
 		}
 		finally
 		{
@@ -90,12 +93,12 @@ public class EsSitemapReader(DistributedTransport transport, ILogger logger, str
 
 	private async Task<string> OpenPitAsync(Cancel ct)
 	{
-		var response = await transport.PostAsync<DynamicResponse>(
-			$"/{indexName}/_pit?keep_alive={PitKeepAlive}", PostData.Empty, ct);
+		var response = await transport.PostAsync<DynamicResponse>($"/{indexName}/_pit?keep_alive={PitKeepAlive}", PostData.Empty, ct);
 
 		if (!response.ApiCallDetails.HasSuccessfulStatusCode)
 			throw new InvalidOperationException(
-				$"Failed to open PIT on {indexName}: {response.ApiCallDetails.HttpStatusCode} {response.ApiCallDetails.DebugInformation}");
+				$"Failed to open PIT on {indexName}: {response.ApiCallDetails.HttpStatusCode} {response.ApiCallDetails.DebugInformation}"
+			);
 
 		var pitId = response.Body.Get<string>("id");
 		if (string.IsNullOrEmpty(pitId))
@@ -136,17 +139,10 @@ public class EsSitemapReader(DistributedTransport transport, ILogger logger, str
 			{
 				["bool"] = new JsonObject
 				{
-					["must_not"] = new JsonArray(new JsonObject
-					{
-						["term"] = new JsonObject { ["hidden"] = true }
-					})
+					["must_not"] = new JsonArray(new JsonObject { ["term"] = new JsonObject { ["hidden"] = true } })
 				}
 			},
-			["pit"] = new JsonObject
-			{
-				["id"] = pitId,
-				["keep_alive"] = PitKeepAlive
-			},
+			["pit"] = new JsonObject { ["id"] = pitId, ["keep_alive"] = PitKeepAlive },
 			["sort"] = new JsonArray(new JsonObject { ["url"] = "asc" })
 		};
 

@@ -7,8 +7,9 @@ using Elastic.Markdown.Myst.Directives.Tabs;
 
 namespace Elastic.Markdown.Tests.Directives;
 
-public class TabTests(ITestOutputHelper output) : DirectiveTest<TabSetBlock>(output,
-"""
+public class TabTests(ITestOutputHelper output) : DirectiveTest<TabSetBlock>(
+	output,
+	"""
 :::::{tab-set}
 
 ::::{tab-item} Admonition
@@ -52,8 +53,9 @@ Frank Herbert  |Dune           |604            |1965-06-01T00:00:00.000Z
 	}
 }
 
-public class MultipleTabTests(ITestOutputHelper output) : DirectiveTest<TabSetBlock>(output,
-"""
+public class MultipleTabTests(ITestOutputHelper output) : DirectiveTest<TabSetBlock>(
+	output,
+	"""
 :::::{tab-set}
 ::::{tab-item} Admonition
 :::{tip}
@@ -92,8 +94,9 @@ Tabs are easy. You can even embed other directives like the admonition you see h
 	}
 }
 
-public class GroupTabTests(ITestOutputHelper output) : DirectiveTest<TabSetBlock>(output,
-"""
+public class GroupTabTests(ITestOutputHelper output) : DirectiveTest<TabSetBlock>(
+	output,
+	"""
 ::::{tab-set}
 :group: languages
 :::{tab-item} Java

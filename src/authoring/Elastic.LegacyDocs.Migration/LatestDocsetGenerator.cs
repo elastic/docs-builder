@@ -21,7 +21,8 @@ public class LatestDocsetGenerator(ILogger<LatestDocsetGenerator> logger)
 
 	public async Task GenerateAsync(LegacyConf conf, LatestGeneratorOptions options, CancellationToken ct = default)
 	{
-		var books = conf.Contents
+		var books = conf
+			.Contents
 			.SelectMany(c => c.Sections)
 			.Where(b => options.BookFilter is null || b.Prefix == options.BookFilter)
 			.ToList();
@@ -46,8 +47,7 @@ public class LatestDocsetGenerator(ILogger<LatestDocsetGenerator> logger)
 
 	private async Task ProcessBook(LegacyBook book, LatestGeneratorOptions options, CancellationToken ct)
 	{
-		var currentBranch = book.Branches.FirstOrDefault(b => b.VersionLabel == book.Current)
-			?? new BranchRef(book.Current);
+		var currentBranch = book.Branches.FirstOrDefault(b => b.VersionLabel == book.Current) ?? new BranchRef(book.Current);
 
 		var sources = await options.RepoManager.ResolveSourcesAsync(book, currentBranch, ct);
 		if (sources.Count == 0)
@@ -68,20 +68,12 @@ public class LatestDocsetGenerator(ILogger<LatestDocsetGenerator> logger)
 		var basePath = Path.GetDirectoryName(indexPath) ?? primarySource.LocalPath;
 		var parserOptions = new AsciidocParserOptions
 		{
-			Attributes = new Dictionary<string, string>
-			{
-				["branch"] = book.Current,
-				["doc-tests-src"] = primarySource.LocalPath
-			}
+			Attributes = new Dictionary<string, string> { ["branch"] = book.Current, ["doc-tests-src"] = primarySource.LocalPath }
 		};
 		var parser = new AsciidocParser(parserOptions);
 		var document = parser.Parse(content, basePath);
 
-		var emitterOptions = new MarkdownEmitterOptions
-		{
-			BookPrefix = book.Prefix,
-			Version = book.Current
-		};
+		var emitterOptions = new MarkdownEmitterOptions { BookPrefix = book.Prefix, Version = book.Current };
 		var emitter = new MarkdownEmitter(emitterOptions);
 		var pages = PageChunker.Chunk(document, book.Chunk, emitter);
 
@@ -107,7 +99,6 @@ public class LatestDocsetGenerator(ILogger<LatestDocsetGenerator> logger)
 		YamlWriter.WriteDocsetYaml(Path.Combine(docsDir, "docset.yml"), projectName, ["."]);
 		YamlWriter.WriteTocYaml(Path.Combine(docsDir, "toc.yml"), fileEntries);
 
-		logger.LogInformation("Wrote {PageCount} pages for {RepoName}/docs (project: {Project})",
-			pages.Count, repoName, projectName);
+		logger.LogInformation("Wrote {PageCount} pages for {RepoName}/docs (project: {Project})", pages.Count, repoName, projectName);
 	}
 }

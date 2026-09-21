@@ -24,6 +24,7 @@ public class ImageViewModel : DirectiveViewModel
 	public string UniqueImageId =>
 		field ??= string.IsNullOrEmpty(ImageUrl)
 			? Guid.NewGuid().ToString("N")[..8] // fallback to a random ID if ImageUrl is null or empty
+
 			: ShortId.Create(ImageUrl);
 	public required string? Screenshot { get; init; }
 

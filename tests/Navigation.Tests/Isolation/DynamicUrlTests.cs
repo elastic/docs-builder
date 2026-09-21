@@ -18,7 +18,8 @@ public class DynamicUrlTests(ITestOutputHelper output) : DocumentationSetNavigat
 	public void DynamicUrlUpdatesWhenRootUrlChanges()
 	{
 		// language=yaml
-		var yaml = """
+		var yaml =
+			"""
 		           project: 'test-project'
 		           toc:
 		             - folder: setup
@@ -60,7 +61,8 @@ public class DynamicUrlTests(ITestOutputHelper output) : DocumentationSetNavigat
 	public void UrlRootPropagatesCorrectlyThroughFolders()
 	{
 		// language=yaml
-		var yaml = """
+		var yaml =
+			"""
 		           project: 'test-project'
 		           toc:
 		             - folder: outer
@@ -92,7 +94,8 @@ public class DynamicUrlTests(ITestOutputHelper output) : DocumentationSetNavigat
 	public void FolderWithoutIndexUsesFirstChildUrl()
 	{
 		// language=yaml
-		var yaml = """
+		var yaml =
+			"""
 		           project: 'test-project'
 		           toc:
 		             - folder: guides
@@ -117,7 +120,8 @@ public class DynamicUrlTests(ITestOutputHelper output) : DocumentationSetNavigat
 	public void FolderWithoutIndexUsesFirstVisibleChildUrlWhenHiddenChildComesFirst()
 	{
 		// language=yaml
-		var yaml = """
+		var yaml =
+			"""
 		           project: 'test-project'
 		           toc:
 		             - folder: guides
@@ -144,7 +148,8 @@ public class DynamicUrlTests(ITestOutputHelper output) : DocumentationSetNavigat
 	public void FolderWithoutIndexAndOnlyHiddenChildrenIsHidden()
 	{
 		// language=yaml
-		var yaml = """
+		var yaml =
+			"""
 		           project: 'test-project'
 		           toc:
 		             - folder: guides
@@ -169,7 +174,8 @@ public class DynamicUrlTests(ITestOutputHelper output) : DocumentationSetNavigat
 	public void FolderWithNestedChildren()
 	{
 		// language=yaml
-		var yaml = """
+		var yaml =
+			"""
 		           project: 'test-project'
 		           toc:
 		             - folder: guides
@@ -205,7 +211,8 @@ public class DynamicUrlTests(ITestOutputHelper output) : DocumentationSetNavigat
 	public void FolderWithNestedDeeplinkedChildren()
 	{
 		// language=yaml
-		var yaml = """
+		var yaml =
+			"""
 		           project: 'test-project'
 		           toc:
 		             - folder: guides
@@ -241,7 +248,8 @@ public class DynamicUrlTests(ITestOutputHelper output) : DocumentationSetNavigat
 	public void FolderWithNestedDeeplinkedOfIndexChildren()
 	{
 		// language=yaml
-		var yaml = """
+		var yaml =
+			"""
 		           project: 'test-project'
 		           toc:
 		             - folder: guides
@@ -277,7 +285,8 @@ public class DynamicUrlTests(ITestOutputHelper output) : DocumentationSetNavigat
 	public void FolderWithIndexUsesOwnUrl()
 	{
 		// language=yaml
-		var yaml = """
+		var yaml =
+			"""
 		           project: 'test-project'
 		           toc:
 		             - folder: guides
@@ -302,7 +311,8 @@ public class DynamicUrlTests(ITestOutputHelper output) : DocumentationSetNavigat
 	public void UrlRootChangesForTableOfContentsNavigation()
 	{
 		// language=yaml
-		var yaml = """
+		var yaml =
+			"""
 		           project: 'test-project'
 		           toc:
 		             - folder: guides

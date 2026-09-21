@@ -53,8 +53,8 @@ public class SiteExtraFieldLexicalConfig : IConfigureElasticsearch<SiteDocumentW
 	public AnalysisBuilder ConfigureAnalysis(AnalysisBuilder analysis) => analysis;
 	public IReadOnlyDictionary<string, string>? IndexSettings => null;
 
-	public MappingsBuilder<SiteDocumentWithExtraField> ConfigureMappings(MappingsBuilder<SiteDocumentWithExtraField> mappings) => mappings
-		.AddSearchDocumentMappings();
+	public MappingsBuilder<SiteDocumentWithExtraField> ConfigureMappings(MappingsBuilder<SiteDocumentWithExtraField> mappings) =>
+		mappings.AddSearchDocumentMappings();
 }
 
 public class SiteExtraAiFieldLexicalConfig : IConfigureElasticsearch<SiteDocumentWithExtraAiField>
@@ -62,8 +62,8 @@ public class SiteExtraAiFieldLexicalConfig : IConfigureElasticsearch<SiteDocumen
 	public AnalysisBuilder ConfigureAnalysis(AnalysisBuilder analysis) => analysis;
 	public IReadOnlyDictionary<string, string>? IndexSettings => null;
 
-	public MappingsBuilder<SiteDocumentWithExtraAiField> ConfigureMappings(MappingsBuilder<SiteDocumentWithExtraAiField> mappings) => mappings
-		.AddSearchDocumentMappings();
+	public MappingsBuilder<SiteDocumentWithExtraAiField> ConfigureMappings(MappingsBuilder<SiteDocumentWithExtraAiField> mappings) =>
+		mappings.AddSearchDocumentMappings();
 }
 
 public class GuideExtraFieldLexicalConfig : IConfigureElasticsearch<GuideDocumentWithExtraField>
@@ -71,8 +71,8 @@ public class GuideExtraFieldLexicalConfig : IConfigureElasticsearch<GuideDocumen
 	public AnalysisBuilder ConfigureAnalysis(AnalysisBuilder analysis) => analysis;
 	public IReadOnlyDictionary<string, string>? IndexSettings => null;
 
-	public MappingsBuilder<GuideDocumentWithExtraField> ConfigureMappings(MappingsBuilder<GuideDocumentWithExtraField> mappings) => mappings
-		.AddSearchDocumentMappings();
+	public MappingsBuilder<GuideDocumentWithExtraField> ConfigureMappings(MappingsBuilder<GuideDocumentWithExtraField> mappings) =>
+		mappings.AddSearchDocumentMappings();
 }
 
 public class GuideExtraAiFieldLexicalConfig : IConfigureElasticsearch<GuideDocumentWithExtraAiField>
@@ -80,8 +80,8 @@ public class GuideExtraAiFieldLexicalConfig : IConfigureElasticsearch<GuideDocum
 	public AnalysisBuilder ConfigureAnalysis(AnalysisBuilder analysis) => analysis;
 	public IReadOnlyDictionary<string, string>? IndexSettings => null;
 
-	public MappingsBuilder<GuideDocumentWithExtraAiField> ConfigureMappings(MappingsBuilder<GuideDocumentWithExtraAiField> mappings) => mappings
-		.AddSearchDocumentMappings();
+	public MappingsBuilder<GuideDocumentWithExtraAiField> ConfigureMappings(MappingsBuilder<GuideDocumentWithExtraAiField> mappings) =>
+		mappings.AddSearchDocumentMappings();
 }
 
 // -- Test mapping contexts --------------------------------------------------
@@ -91,11 +91,7 @@ public class GuideExtraAiFieldLexicalConfig : IConfigureElasticsearch<GuideDocum
 /// Hash should match the real context.
 /// </summary>
 [ElasticsearchMappingContext]
-[Index<SiteDocument>(
-	NameTemplate = "site-{type}.lexical-{env}",
-	DatePattern = "yyyy.MM.dd.HHmmss",
-	Configuration = typeof(SiteLexicalConfig)
-)]
+[Index<SiteDocument>(NameTemplate = "site-{type}.lexical-{env}", DatePattern = "yyyy.MM.dd.HHmmss", Configuration = typeof(SiteLexicalConfig))]
 public static partial class TestSiteMappingContext;
 
 /// <summary>
@@ -103,47 +99,27 @@ public static partial class TestSiteMappingContext;
 /// Hash should match the real context.
 /// </summary>
 [ElasticsearchMappingContext]
-[Index<GuideDocument>(
-	NameTemplate = "guide-{type}.lexical-{env}",
-	DatePattern = "yyyy.MM.dd.HHmmss",
-	Configuration = typeof(GuideLexicalConfig)
-)]
+[Index<GuideDocument>(NameTemplate = "guide-{type}.lexical-{env}", DatePattern = "yyyy.MM.dd.HHmmss", Configuration = typeof(GuideLexicalConfig))]
 public static partial class TestGuideMappingContext;
 
 /// <summary>SiteDocument + extra keyword field. Hash must differ from base.</summary>
 [ElasticsearchMappingContext]
-[Index<SiteDocumentWithExtraField>(
-	NameTemplate = "site-{type}.lexical-{env}",
-	DatePattern = "yyyy.MM.dd.HHmmss",
-	Configuration = typeof(SiteExtraFieldLexicalConfig)
-)]
+[Index<SiteDocumentWithExtraField>(NameTemplate = "site-{type}.lexical-{env}", DatePattern = "yyyy.MM.dd.HHmmss", Configuration = typeof(SiteExtraFieldLexicalConfig))]
 public static partial class SiteExtraFieldMappingContext;
 
 /// <summary>SiteDocument + extra AI field. Hash must differ from base.</summary>
 [ElasticsearchMappingContext]
-[Index<SiteDocumentWithExtraAiField>(
-	NameTemplate = "site-{type}.lexical-{env}",
-	DatePattern = "yyyy.MM.dd.HHmmss",
-	Configuration = typeof(SiteExtraAiFieldLexicalConfig)
-)]
+[Index<SiteDocumentWithExtraAiField>(NameTemplate = "site-{type}.lexical-{env}", DatePattern = "yyyy.MM.dd.HHmmss", Configuration = typeof(SiteExtraAiFieldLexicalConfig))]
 public static partial class SiteExtraAiFieldMappingContext;
 
 /// <summary>GuideDocument + extra keyword field. Hash must differ from base.</summary>
 [ElasticsearchMappingContext]
-[Index<GuideDocumentWithExtraField>(
-	NameTemplate = "guide-{type}.lexical-{env}",
-	DatePattern = "yyyy.MM.dd.HHmmss",
-	Configuration = typeof(GuideExtraFieldLexicalConfig)
-)]
+[Index<GuideDocumentWithExtraField>(NameTemplate = "guide-{type}.lexical-{env}", DatePattern = "yyyy.MM.dd.HHmmss", Configuration = typeof(GuideExtraFieldLexicalConfig))]
 public static partial class GuideExtraFieldMappingContext;
 
 /// <summary>GuideDocument + extra AI field. Hash must differ from base.</summary>
 [ElasticsearchMappingContext]
-[Index<GuideDocumentWithExtraAiField>(
-	NameTemplate = "guide-{type}.lexical-{env}",
-	DatePattern = "yyyy.MM.dd.HHmmss",
-	Configuration = typeof(GuideExtraAiFieldLexicalConfig)
-)]
+[Index<GuideDocumentWithExtraAiField>(NameTemplate = "guide-{type}.lexical-{env}", DatePattern = "yyyy.MM.dd.HHmmss", Configuration = typeof(GuideExtraAiFieldLexicalConfig))]
 public static partial class GuideExtraAiFieldMappingContext;
 
 // -- Tests ------------------------------------------------------------------
@@ -154,47 +130,47 @@ public class MappingHashTests
 
 	[Fact]
 	public void SiteDocument_SameConfig_ProducesSameHash() =>
-		TestSiteMappingContext.SiteDocument.Hash
-			.Should().Be(SiteMappingContext.SiteDocument.Hash);
+		TestSiteMappingContext.SiteDocument.Hash.Should().Be(SiteMappingContext.SiteDocument.Hash);
 
 	[Fact]
 	public void GuideDocument_SameConfig_ProducesSameHash() =>
-		TestGuideMappingContext.GuideDocument.Hash
-			.Should().Be(GuideMappingContext.GuideDocument.Hash);
+		TestGuideMappingContext.GuideDocument.Hash.Should().Be(GuideMappingContext.GuideDocument.Hash);
 
 	// ── Adding a keyword field changes the hash ───────────────────────────────
 
 	[Fact]
 	public void SiteDocument_ExtraField_ChangesHash() =>
-		SiteExtraFieldMappingContext.SiteDocumentWithExtraField.Hash
-			.Should().NotBe(SiteMappingContext.SiteDocument.Hash);
+		SiteExtraFieldMappingContext.SiteDocumentWithExtraField.Hash.Should().NotBe(SiteMappingContext.SiteDocument.Hash);
 
 	[Fact]
 	public void GuideDocument_ExtraField_ChangesHash() =>
-		GuideExtraFieldMappingContext.GuideDocumentWithExtraField.Hash
-			.Should().NotBe(GuideMappingContext.GuideDocument.Hash);
+		GuideExtraFieldMappingContext.GuideDocumentWithExtraField.Hash.Should().NotBe(GuideMappingContext.GuideDocument.Hash);
 
 	// ── Adding an AI field changes the hash ───────────────────────────────────
 
 	[Fact]
 	public void SiteDocument_ExtraAiField_ChangesHash() =>
-		SiteExtraAiFieldMappingContext.SiteDocumentWithExtraAiField.Hash
-			.Should().NotBe(SiteMappingContext.SiteDocument.Hash);
+		SiteExtraAiFieldMappingContext.SiteDocumentWithExtraAiField.Hash.Should().NotBe(SiteMappingContext.SiteDocument.Hash);
 
 	[Fact]
 	public void GuideDocument_ExtraAiField_ChangesHash() =>
-		GuideExtraAiFieldMappingContext.GuideDocumentWithExtraAiField.Hash
-			.Should().NotBe(GuideMappingContext.GuideDocument.Hash);
+		GuideExtraAiFieldMappingContext.GuideDocumentWithExtraAiField.Hash.Should().NotBe(GuideMappingContext.GuideDocument.Hash);
 
 	// ── Extra field vs extra AI field are different from each other ────────────
 
 	[Fact]
 	public void SiteDocument_ExtraField_DiffersFrom_ExtraAiField() =>
-		SiteExtraFieldMappingContext.SiteDocumentWithExtraField.Hash
-			.Should().NotBe(SiteExtraAiFieldMappingContext.SiteDocumentWithExtraAiField.Hash);
+		SiteExtraFieldMappingContext
+			.SiteDocumentWithExtraField
+			.Hash
+			.Should()
+			.NotBe(SiteExtraAiFieldMappingContext.SiteDocumentWithExtraAiField.Hash);
 
 	[Fact]
 	public void GuideDocument_ExtraField_DiffersFrom_ExtraAiField() =>
-		GuideExtraFieldMappingContext.GuideDocumentWithExtraField.Hash
-			.Should().NotBe(GuideExtraAiFieldMappingContext.GuideDocumentWithExtraAiField.Hash);
+		GuideExtraFieldMappingContext
+			.GuideDocumentWithExtraField
+			.Hash
+			.Should()
+			.NotBe(GuideExtraAiFieldMappingContext.GuideDocumentWithExtraAiField.Hash);
 }

@@ -9,22 +9,23 @@ using Markdig.Syntax.Inlines;
 
 namespace Elastic.Markdown.Tests.Inline;
 
-public abstract class AnchorLinkTestBase(ITestOutputHelper output, [LanguageInjection("markdown")] string content)
-	: InlineTest<LinkInline>(output,
-$"""
+public abstract class AnchorLinkTestBase(ITestOutputHelper output, [LanguageInjection("markdown")] string content) : InlineTest<LinkInline>(
+	output,
+	$"""
 ## Hello world
 
 A paragraph
 
 {content}
 
-""")
+"""
+)
 {
 	protected override void AddToFileSystem(MockFileSystem fileSystem)
 	{
 		// language=markdown
 		var inclusion =
-"""
+			"""
 # Special Requirements
 
 ## Sub Requirements
@@ -45,27 +46,22 @@ These are new requirements
 		fileSystem.AddFile(@"docs/testing/req.md", inclusion);
 		fileSystem.AddFile(@"docs/_static/img/observability.png", new MockFileData(""));
 	}
-
 }
 
-public class InPageAnchorTests(ITestOutputHelper output) : AnchorLinkTestBase(output,
-"""
+public class InPageAnchorTests(ITestOutputHelper output) : AnchorLinkTestBase(output, """
 [Hello](#hello-world)
-"""
-)
+""")
 {
 	[Fact]
-	public void GeneratesHtml() =>
-		Html.ShouldContainHtml(
-			"""<p><a href="#hello-world">Hello</a></p>"""
-		);
+	public void GeneratesHtml() => Html.ShouldContainHtml("""<p><a href="#hello-world">Hello</a></p>""");
 
 	[Fact]
 	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
 }
 
-public class ExternalPageAnchorTests(ITestOutputHelper output) : AnchorLinkTestBase(output,
-"""
+public class ExternalPageAnchorTests(ITestOutputHelper output) : AnchorLinkTestBase(
+	output,
+	"""
 [Sub Requirements](testing/req.md#sub-requirements)
 """
 )
@@ -81,9 +77,9 @@ public class ExternalPageAnchorTests(ITestOutputHelper output) : AnchorLinkTestB
 	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
 }
 
-
-public class ExternalPageCustomAnchorTests(ITestOutputHelper output) : AnchorLinkTestBase(output,
-"""
+public class ExternalPageCustomAnchorTests(ITestOutputHelper output) : AnchorLinkTestBase(
+	output,
+	"""
 [Sub Requirements](testing/req.md#new-reqs)
 """
 )
@@ -99,8 +95,9 @@ public class ExternalPageCustomAnchorTests(ITestOutputHelper output) : AnchorLin
 	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
 }
 
-public class ExternalPageAnchorAutoTitleTests(ITestOutputHelper output) : AnchorLinkTestBase(output,
-"""
+public class ExternalPageAnchorAutoTitleTests(ITestOutputHelper output) : AnchorLinkTestBase(
+	output,
+	"""
 [](testing/req.md#sub-requirements)
 """
 )
@@ -115,26 +112,21 @@ public class ExternalPageAnchorAutoTitleTests(ITestOutputHelper output) : Anchor
 	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
 }
 
-
-public class InPageBadAnchorTests(ITestOutputHelper output) : AnchorLinkTestBase(output,
-"""
+public class InPageBadAnchorTests(ITestOutputHelper output) : AnchorLinkTestBase(output, """
 [Hello](#hello-world2)
-"""
-)
+""")
 {
 	[Fact]
-	public void GeneratesHtml() =>
-		Html.ShouldContainHtml(
-			"""<p><a href="#hello-world2">Hello</a></p>"""
-		);
+	public void GeneratesHtml() => Html.ShouldContainHtml("""<p><a href="#hello-world2">Hello</a></p>""");
 
 	[Fact]
-	public void HasError() => Collector.Diagnostics.Should().HaveCount(1)
-		.And.Contain(d => d.Message.Contains("`hello-world2` does not exist"));
+	public void HasError() =>
+		Collector.Diagnostics.Should().HaveCount(1).And.Contain(d => d.Message.Contains("`hello-world2` does not exist"));
 }
 
-public class ExternalPageBadAnchorTests(ITestOutputHelper output) : AnchorLinkTestBase(output,
-"""
+public class ExternalPageBadAnchorTests(ITestOutputHelper output) : AnchorLinkTestBase(
+	output,
+	"""
 [Sub Requirements](testing/req.md#sub-requirements2)
 """
 )
@@ -146,12 +138,12 @@ public class ExternalPageBadAnchorTests(ITestOutputHelper output) : AnchorLinkTe
 		);
 
 	[Fact]
-	public void HasError() => Collector.Diagnostics.Should().HaveCount(1)
-		.And.Contain(d => d.Message.Contains("`sub-requirements2` does not exist"));
+	public void HasError() =>
+		Collector.Diagnostics.Should().HaveCount(1).And.Contain(d => d.Message.Contains("`sub-requirements2` does not exist"));
 }
 
-
-public class NestedHeadingTest(ITestOutputHelper output) : AnchorLinkTestBase(output,
+public class NestedHeadingTest(ITestOutputHelper output) : AnchorLinkTestBase(
+	output,
 	"""
 	[Heading inside dropdown](testing/req.md#heading-inside-dropdown)
 	"""
@@ -166,36 +158,39 @@ public class NestedHeadingTest(ITestOutputHelper output) : AnchorLinkTestBase(ou
 	public void HasError() => Collector.Diagnostics.Should().HaveCount(0);
 }
 
-public class MissingMdExtensionTests(ITestOutputHelper output) : AnchorLinkTestBase(output,
-"""
+public class MissingMdExtensionTests(ITestOutputHelper output) : AnchorLinkTestBase(output, """
 [Link](testing/req)
-"""
-)
+""")
 {
 	[Fact]
-	public void HasMdExtensionHintError() => Collector.Diagnostics.Should().HaveCount(1)
-		.And.Contain(d => d.Message.Contains("Did you forget to add the .md extension?"));
+	public void HasMdExtensionHintError() =>
+		Collector.Diagnostics.Should().HaveCount(1).And.Contain(d => d.Message.Contains("Did you forget to add the .md extension?"));
 }
 
-public class MissingMdExtensionWithAnchorTests(ITestOutputHelper output) : AnchorLinkTestBase(output,
-"""
+public class MissingMdExtensionWithAnchorTests(ITestOutputHelper output) : AnchorLinkTestBase(
+	output,
+	"""
 [Link](testing/req#sub-requirements)
 """
 )
 {
 	[Fact]
-	public void HasMdExtensionHintError() => Collector.Diagnostics.Should().HaveCount(1)
-		.And.Contain(d => d.Message.Contains("Did you forget to add the .md extension?"));
+	public void HasMdExtensionHintError() =>
+		Collector.Diagnostics.Should().HaveCount(1).And.Contain(d => d.Message.Contains("Did you forget to add the .md extension?"));
 }
 
-public class MissingFileNoMdHintTests(ITestOutputHelper output) : AnchorLinkTestBase(output,
-"""
+public class MissingFileNoMdHintTests(ITestOutputHelper output) : AnchorLinkTestBase(output, """
 [Link](testing/nonexistent)
-"""
-)
+""")
 {
 	[Fact]
-	public void HasGenericNotFoundError() => Collector.Diagnostics.Should().HaveCount(1)
-		.And.Contain(d => d.Message.Contains("does not exist"))
-		.And.NotContain(d => d.Message.Contains("Did you forget to add the .md extension?"));
+	public void HasGenericNotFoundError() =>
+		Collector
+			.Diagnostics
+			.Should()
+			.HaveCount(1)
+			.And
+			.Contain(d => d.Message.Contains("does not exist"))
+			.And
+			.NotContain(d => d.Message.Contains("Did you forget to add the .md extension?"));
 }

@@ -36,10 +36,7 @@ public class ChangelogGfmRenderer(IChangelogFileSystem fileSystem) : MarkdownRen
 		var knownIssues = entriesByType.GetValueOrDefault(KnownIssue, []);
 
 		// Check for highlights
-		var highlights = entriesByType.Values
-			.SelectMany(e => e)
-			.Where(e => e.Highlight == true)
-			.ToList();
+		var highlights = entriesByType.Values.SelectMany(e => e).Where(e => e.Highlight == true).ToList();
 
 		var sb = new StringBuilder();
 
@@ -64,8 +61,7 @@ public class ChangelogGfmRenderer(IChangelogFileSystem fileSystem) : MarkdownRen
 
 		// Helper to check if all entries in a collection are hidden
 		bool AllEntriesHidden(IReadOnlyCollection<ChangelogEntry> entries) =>
-			entries.Count > 0 && entries.All(entry =>
-				ChangelogRenderUtilities.ShouldHideEntry(entry, context.FeatureIdsToHide, context));
+			entries.Count > 0 && entries.All(entry => ChangelogRenderUtilities.ShouldHideEntry(entry, context.FeatureIdsToHide, context));
 
 		// Render highlights first if any exist
 		if (highlights.Count > 0)
@@ -148,17 +144,17 @@ public class ChangelogGfmRenderer(IChangelogFileSystem fileSystem) : MarkdownRen
 		}
 
 		// Check if we have any visible content
-		var hasAnyVisibleContent = highlights.Count > 0 ||
-			(!AllEntriesHidden(features) && features.Count > 0) ||
-			(!AllEntriesHidden(enhancements) && enhancements.Count > 0) ||
-			(!AllEntriesHidden(breakingChanges) && breakingChanges.Count > 0) ||
-			(!AllEntriesHidden(deprecations) && deprecations.Count > 0) ||
-			(!AllEntriesHidden(security) && security.Count > 0) ||
-			(!AllEntriesHidden(bugFixes) && bugFixes.Count > 0) ||
-			(!AllEntriesHidden(knownIssues) && knownIssues.Count > 0) ||
-			(!AllEntriesHidden(docs) && docs.Count > 0) ||
-			(!AllEntriesHidden(regressions) && regressions.Count > 0) ||
-			(!AllEntriesHidden(other) && other.Count > 0);
+		var hasAnyVisibleContent = highlights.Count > 0
+			|| (!AllEntriesHidden(features) && features.Count > 0)
+			|| (!AllEntriesHidden(enhancements) && enhancements.Count > 0)
+			|| (!AllEntriesHidden(breakingChanges) && breakingChanges.Count > 0)
+			|| (!AllEntriesHidden(deprecations) && deprecations.Count > 0)
+			|| (!AllEntriesHidden(security) && security.Count > 0)
+			|| (!AllEntriesHidden(bugFixes) && bugFixes.Count > 0)
+			|| (!AllEntriesHidden(knownIssues) && knownIssues.Count > 0)
+			|| (!AllEntriesHidden(docs) && docs.Count > 0)
+			|| (!AllEntriesHidden(regressions) && regressions.Count > 0)
+			|| (!AllEntriesHidden(other) && other.Count > 0);
 
 		if (!hasAnyVisibleContent)
 		{
@@ -169,10 +165,7 @@ public class ChangelogGfmRenderer(IChangelogFileSystem fileSystem) : MarkdownRen
 		await WriteOutputFileAsync(context.OutputDir, context.TitleSlug, sb.ToString(), ctx);
 	}
 
-	private static void RenderEntriesByArea(
-		StringBuilder sb,
-		IReadOnlyCollection<ChangelogEntry> entries,
-		ChangelogRenderContext context)
+	private static void RenderEntriesByArea(StringBuilder sb, IReadOnlyCollection<ChangelogEntry> entries, ChangelogRenderContext context)
 	{
 		var groupedByArea = context.Subsections
 			? entries.GroupBy(e => ChangelogRenderUtilities.GetComponent(e, context)).OrderBy(g => g.Key).ToList()
@@ -181,8 +174,9 @@ public class ChangelogGfmRenderer(IChangelogFileSystem fileSystem) : MarkdownRen
 		foreach (var areaGroup in groupedByArea)
 		{
 			// Check if all entries in this area group are hidden
-			var allEntriesHidden = areaGroup.All(entry =>
-				ChangelogRenderUtilities.ShouldHideEntry(entry, context.FeatureIdsToHide, context));
+			var allEntriesHidden = areaGroup.All(
+				entry => ChangelogRenderUtilities.ShouldHideEntry(entry, context.FeatureIdsToHide, context)
+			);
 
 			if (context.Subsections && !string.IsNullOrWhiteSpace(areaGroup.Key))
 			{

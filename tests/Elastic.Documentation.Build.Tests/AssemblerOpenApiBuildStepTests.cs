@@ -25,7 +25,8 @@ public class AssemblerOpenApiBuildStepTests : IDisposable
 {
 	private readonly List<ScopedTempDirectory> _tempDirectories = [];
 
-	private static readonly string MinimalAssemblerYaml = """
+	private static readonly string MinimalAssemblerYaml =
+		"""
 		environments:
 		  prod:
 		    uri: https://www.elastic.co
@@ -59,17 +60,22 @@ public class AssemblerOpenApiBuildStepTests : IDisposable
 			collector,
 			assembleFs,
 			tempDirectory.FullName,
-			outputDirectory);
+			outputDirectory
+		);
 		var assembleSources = AssembleSources.ForTests(context, FrozenDictionary<string, AssemblerDocumentationSet>.Empty);
 
 		await AssemblerOpenApiBuildStep.BuildAsync(
 			NullLoggerFactory.Instance,
 			context,
 			assembleSources,
-			TestContext.Current.CancellationToken);
+			TestContext.Current.CancellationToken
+		);
 
-		fileSystem.Directory.Exists(fileSystem.Path.Join(outputDirectory, "docs", "api"))
-			.Should().BeFalse("OpenAPI generation must not run when the feature flag is disabled");
+		fileSystem
+			.Directory
+			.Exists(fileSystem.Path.Join(outputDirectory, "docs", "api"))
+			.Should()
+			.BeFalse("OpenAPI generation must not run when the feature flag is disabled");
 	}
 
 	[Fact]
@@ -89,17 +95,22 @@ public class AssemblerOpenApiBuildStepTests : IDisposable
 			collector,
 			assembleFs,
 			tempDirectory.FullName,
-			outputDirectory);
+			outputDirectory
+		);
 		var assembleSources = AssembleSources.ForTests(context, FrozenDictionary<string, AssemblerDocumentationSet>.Empty);
 
 		await AssemblerOpenApiBuildStep.BuildAsync(
 			NullLoggerFactory.Instance,
 			context,
 			assembleSources,
-			TestContext.Current.CancellationToken);
+			TestContext.Current.CancellationToken
+		);
 
-		fileSystem.Directory.Exists(fileSystem.Path.Join(outputDirectory, "docs", "api"))
-			.Should().BeFalse("OpenAPI generation must not run without API declarations");
+		fileSystem
+			.Directory
+			.Exists(fileSystem.Path.Join(outputDirectory, "docs", "api"))
+			.Should()
+			.BeFalse("OpenAPI generation must not run without API declarations");
 	}
 
 	[Fact]
@@ -143,7 +154,6 @@ public class AssemblerOpenApiBuildStepTests : IDisposable
 		GC.SuppressFinalize(this);
 	}
 
-
 	private static void InitializeGitCheckout(IFileSystem fileSystem, string checkoutRoot)
 	{
 		var gitDir = fileSystem.Path.Join(checkoutRoot, ".git");
@@ -158,10 +168,7 @@ public class AssemblerOpenApiBuildStepTests : IDisposable
 		return tempDirectory.Directory;
 	}
 
-	private AssemblerDocumentationSet CreateDocumentationSet(
-		string repositoryName,
-		string? apiKey,
-		DiagnosticsCollector collector)
+	private AssemblerDocumentationSet CreateDocumentationSet(string repositoryName, string? apiKey, DiagnosticsCollector collector)
 	{
 		var fileSystem = new FileSystem();
 		var configurationContext = TestHelpers.CreateConfigurationContext(fileSystem);
@@ -199,7 +206,8 @@ public class AssemblerOpenApiBuildStepTests : IDisposable
 			collector,
 			assembleFs,
 			checkoutRoot.FullName,
-			outputDirectory);
+			outputDirectory
+		);
 		var checkout = new Checkout
 		{
 			Repository = new Repository { Name = repositoryName, Origin = $"elastic/{repositoryName}" },
@@ -213,6 +221,7 @@ public class AssemblerOpenApiBuildStepTests : IDisposable
 			NoopCrossLinkResolver.Instance,
 			new ReleaseNotesResolver(),
 			configurationContext,
-			ExportOptions.Default);
+			ExportOptions.Default
+		);
 	}
 }

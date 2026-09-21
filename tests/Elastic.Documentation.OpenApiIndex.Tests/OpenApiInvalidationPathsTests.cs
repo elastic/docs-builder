@@ -21,21 +21,13 @@ public class OpenApiInvalidationPathsTests
 	{
 		var paths = OpenApiInvalidationPaths.Build(["elastic/elasticsearch/8.16/openapi.json"]);
 
-		paths.Should().BeEquivalentTo(
-		[
-			"/index.json",
-			"/elastic/elasticsearch/8.16/openapi.json"
-		]);
+		paths.Should().BeEquivalentTo(["/index.json", "/elastic/elasticsearch/8.16/openapi.json"]);
 	}
 
 	[Fact]
 	public void Build_DeduplicatesRepeatedKeys()
 	{
-		var paths = OpenApiInvalidationPaths.Build(
-		[
-			"elastic/elasticsearch/8.16/openapi.json",
-			"elastic/elasticsearch/8.16/openapi.json"
-		]);
+		var paths = OpenApiInvalidationPaths.Build(["elastic/elasticsearch/8.16/openapi.json", "elastic/elasticsearch/8.16/openapi.json"]);
 
 		paths.Should().HaveCount(2);
 	}

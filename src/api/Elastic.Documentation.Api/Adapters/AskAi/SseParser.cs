@@ -101,6 +101,5 @@ public static class SseParser
 	}
 }
 
-
 [JsonSerializable(typeof(SseEvent))]
 internal sealed partial class SseSerializerContext : JsonSerializerContext;

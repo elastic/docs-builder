@@ -10,7 +10,10 @@ namespace Elastic.Documentation.Search;
 /// <summary>Canonical Elasticsearch field names used by the shared query builder.</summary>
 public static class QueryFieldNames
 {
-	private static DocumentationMappingContext.DocumentationDocumentResolver Doc { get; } = DocumentationMappingContext.DocumentationDocument;
+	private static DocumentationMappingContext.DocumentationDocumentResolver Doc
+	{
+		get;
+	} = DocumentationMappingContext.DocumentationDocument;
 
 	public static string ContentType { get; } = Doc.Fields.ContentType;
 	public static string Section { get; } = Doc.Fields.Section;
