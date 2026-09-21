@@ -10,14 +10,11 @@ using Elastic.Markdown.Tests.Directives;
 
 namespace Elastic.Markdown.Tests.FileInclusion;
 
-public class LiteralIncludeUsingPropertyTests(ITestOutputHelper output) : DirectiveTest<IncludeBlock>(
-	output,
-	"""
+public class LiteralIncludeUsingPropertyTests() : DirectiveTest<IncludeBlock>("""
 :::{include} _snippets/test.txt
 :literal: true
 :::
-"""
-)
+""")
 {
 	protected override void AddToFileSystem(MockFileSystem fileSystem)
 	{
@@ -26,20 +23,17 @@ public class LiteralIncludeUsingPropertyTests(ITestOutputHelper output) : Direct
 		fileSystem.AddFile(@"docs/_snippets/test.txt", inclusion);
 	}
 
-	[Fact]
+	[Test]
 	public void ParsesBlock() => Block.Should().NotBeNull();
 
-	[Fact]
+	[Test]
 	public void IncludesInclusionHtml() => Html.Should().Be("*Hello world*");
 }
 
-public class LiteralIncludeTests(ITestOutputHelper output) : DirectiveTest<IncludeBlock>(
-	output,
-	"""
+public class LiteralIncludeTests() : DirectiveTest<IncludeBlock>("""
 :::{literalinclude} _snippets/test.md
 :::
-"""
-)
+""")
 {
 	protected override void AddToFileSystem(MockFileSystem fileSystem)
 	{
@@ -48,24 +42,21 @@ public class LiteralIncludeTests(ITestOutputHelper output) : DirectiveTest<Inclu
 		fileSystem.AddFile(@"docs/_snippets/test.md", inclusion);
 	}
 
-	[Fact]
+	[Test]
 	public void ParsesBlock() => Block.Should().NotBeNull();
 
-	[Fact]
+	[Test]
 	public void IncludesInclusionHtml() => Html.Should().Be("*Hello world*");
 }
 
-public class LiteralIncludeRelativeTraversalBlocked(ITestOutputHelper output) : DirectiveTest<IncludeBlock>(
-	output,
-	"""
+public class LiteralIncludeRelativeTraversalBlocked() : DirectiveTest<IncludeBlock>("""
 :::{literalinclude} ../../../outside.txt
 :::
-"""
-)
+""")
 {
 	protected override void AddToFileSystem(MockFileSystem fileSystem) => fileSystem.AddFile(@"outside.txt", "some content");
 
-	[Fact]
+	[Test]
 	public void EmitsError()
 	{
 		Collector.Diagnostics.Should().NotBeNullOrEmpty();
@@ -76,17 +67,14 @@ public class LiteralIncludeRelativeTraversalBlocked(ITestOutputHelper output) : 
 	}
 }
 
-public class LiteralIncludeAbsoluteTraversalBlocked(ITestOutputHelper output) : DirectiveTest<IncludeBlock>(
-	output,
-	"""
+public class LiteralIncludeAbsoluteTraversalBlocked() : DirectiveTest<IncludeBlock>("""
 :::{literalinclude} /../../../outside.txt
 :::
-"""
-)
+""")
 {
 	protected override void AddToFileSystem(MockFileSystem fileSystem) => fileSystem.AddFile(@"outside.txt", "some content");
 
-	[Fact]
+	[Test]
 	public void EmitsError()
 	{
 		Collector.Diagnostics.Should().NotBeNullOrEmpty();
@@ -97,17 +85,14 @@ public class LiteralIncludeAbsoluteTraversalBlocked(ITestOutputHelper output) : 
 	}
 }
 
-public class LiteralIncludeHiddenDirectoryBlocked(ITestOutputHelper output) : DirectiveTest<IncludeBlock>(
-	output,
-	"""
+public class LiteralIncludeHiddenDirectoryBlocked() : DirectiveTest<IncludeBlock>("""
 :::{literalinclude} .config/data.txt
 :::
-"""
-)
+""")
 {
 	protected override void AddToFileSystem(MockFileSystem fileSystem) => fileSystem.AddFile(@"docs/.config/data.txt", "some content");
 
-	[Fact]
+	[Test]
 	public void EmitsError()
 	{
 		Collector.Diagnostics.Should().NotBeNullOrEmpty();

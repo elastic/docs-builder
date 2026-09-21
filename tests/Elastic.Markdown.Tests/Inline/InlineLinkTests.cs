@@ -10,8 +10,7 @@ using Markdig.Syntax.Inlines;
 
 namespace Elastic.Markdown.Tests.Inline;
 
-public abstract class LinkTestBase(ITestOutputHelper output, [LanguageInjection("markdown")] string content) : InlineTest<LinkInline>(
-	output,
+public abstract class LinkTestBase([LanguageInjection("markdown")] string content) : InlineTest<LinkInline>(
 	content,
 	new Dictionary<string, string>
 	{
@@ -20,7 +19,7 @@ public abstract class LinkTestBase(ITestOutputHelper output, [LanguageInjection(
 	}
 )
 {
-	[Fact]
+	[Test]
 	public void ParsesBlock() => Block.Should().NotBeNull();
 
 	protected override void AddToFileSystem(MockFileSystem fileSystem)
@@ -36,89 +35,89 @@ To follow this tutorial you will need to install the following components:
 	}
 }
 
-public class InlineLinkTests(ITestOutputHelper output) : LinkTestBase(output, """
+public class InlineLinkTests() : LinkTestBase("""
 [Elasticsearch](/_static/img/observability.png)
 """)
 {
-	[Fact]
+	[Test]
 	public void GeneratesHtml() =>
 		Html.ShouldContainHtml(
 			"""<p><a href="/docs/_static/img/observability.png" hx-get="/docs/_static/img/observability.png" hx-select-oob="#content-container,#toc-nav" hx-swap="none" hx-push-url="true" hx-indicator="#htmx-indicator" preload="mousedown">Elasticsearch</a></p>"""
 		);
 
-	[Fact]
+	[Test]
 	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
 }
 
-public class LinkToPageTests(ITestOutputHelper output) : LinkTestBase(output, """
+public class LinkToPageTests() : LinkTestBase("""
 [Requirements](testing/req.md)
 """)
 {
-	[Fact]
+	[Test]
 	public void GeneratesHtml() =>
 		Html.ShouldContainHtml(
 			"""<p><a href="/docs/testing/req" hx-get="/docs/testing/req" hx-select-oob="#content-container,#toc-nav" hx-swap="none" hx-push-url="true" hx-indicator="#htmx-indicator" preload="mousedown">Requirements</a></p>"""
 		);
 
-	[Fact]
+	[Test]
 	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
 
-	[Fact]
+	[Test]
 	public void EmitsCrossLink() => Collector.CrossLinks.Should().HaveCount(0);
 }
 
-public class InsertPageTitleTests(ITestOutputHelper output) : LinkTestBase(output, """
+public class InsertPageTitleTests() : LinkTestBase("""
 [](testing/req.md)
 """)
 {
-	[Fact]
+	[Test]
 	public void GeneratesHtml() =>
 		Html.ShouldContainHtml(
 			"""<p><a href="/docs/testing/req" hx-get="/docs/testing/req" hx-select-oob="#content-container,#toc-nav" hx-swap="none" hx-push-url="true" hx-indicator="#htmx-indicator" preload="mousedown">Special Requirements</a></p>"""
 		);
 
-	[Fact]
+	[Test]
 	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
 
-	[Fact]
+	[Test]
 	public void EmitsCrossLink() => Collector.CrossLinks.Should().HaveCount(0);
 }
 
-public class RepositoryLinksTest(ITestOutputHelper output) : LinkTestBase(output, """
+public class RepositoryLinksTest() : LinkTestBase("""
 	[test][test]
 
 	[test]: testing/req.md
 	""")
 {
-	[Fact]
+	[Test]
 	public void GeneratesHtml() =>
 		Html.ShouldContainHtml(
 			"""<p><a href="/docs/testing/req" hx-get="/docs/testing/req" hx-select-oob="#content-container,#toc-nav" hx-swap="none" hx-push-url="true" hx-indicator="#htmx-indicator" preload="mousedown">test</a></p>"""
 		);
 
-	[Fact]
+	[Test]
 	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
 
-	[Fact]
+	[Test]
 	public void EmitsCrossLink() => Collector.CrossLinks.Should().HaveCount(0);
 }
 
-public class CrossLinkReferenceTest(ITestOutputHelper output) : LinkTestBase(output, """
+public class CrossLinkReferenceTest() : LinkTestBase("""
 	[test][test]
 
 	[test]: kibana://index.md
 	""")
 {
-	[Fact]
+	[Test]
 	public void GeneratesHtml() =>
 		Html.ShouldContainHtml(
 			"""<p><a href="https://docs-v3-preview.elastic.dev/elastic/kibana/tree/main/" target="_blank" rel="noopener noreferrer">test</a></p>"""
 		);
 
-	[Fact]
+	[Test]
 	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
 
-	[Fact]
+	[Test]
 	public void EmitsCrossLink()
 	{
 		Collector.CrossLinks.Should().HaveCount(1);
@@ -126,22 +125,22 @@ public class CrossLinkReferenceTest(ITestOutputHelper output) : LinkTestBase(out
 	}
 }
 
-public class CrossLinkTest(ITestOutputHelper output) : LinkTestBase(output, """
+public class CrossLinkTest() : LinkTestBase("""
 
 	Go to [test](kibana://index.md)
 	""")
 {
-	[Fact]
+	[Test]
 	public void GeneratesHtml() =>
 		// language=html
 		Html.Should().Contain(
 			"""<p>Go to <a href="https://docs-v3-preview.elastic.dev/elastic/kibana/tree/main/" target="_blank" rel="noopener noreferrer">test</a></p>"""
 		);
 
-	[Fact]
+	[Test]
 	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
 
-	[Fact]
+	[Test]
 	public void EmitsCrossLink()
 	{
 		Collector.CrossLinks.Should().HaveCount(1);
@@ -149,23 +148,23 @@ public class CrossLinkTest(ITestOutputHelper output) : LinkTestBase(output, """
 	}
 }
 
-public class CrossLinkEmptyTextTest(ITestOutputHelper output) : LinkTestBase(output, """
+public class CrossLinkEmptyTextTest() : LinkTestBase("""
 
 	Go to [](kibana://index.md)
 	""")
 {
-	[Fact]
+	[Test]
 	public void GeneratesHtml() =>
 		// language=html - empty crosslinks now emit an error
 		Html.Should().Contain(
 			"""<p>Go to <a href="https://docs-v3-preview.elastic.dev/elastic/kibana/tree/main/" target="_blank" rel="noopener noreferrer"></a></p>"""
 		);
 
-	[Fact]
+	[Test]
 	public void HasError() =>
 		Collector.Diagnostics.Should().Contain(d => d.Severity == Severity.Error && d.Message.Contains("empty link text"));
 
-	[Fact]
+	[Test]
 	public void EmitsCrossLink()
 	{
 		Collector.CrossLinks.Should().HaveCount(1);
@@ -173,26 +172,23 @@ public class CrossLinkEmptyTextTest(ITestOutputHelper output) : LinkTestBase(out
 	}
 }
 
-public class CrossLinkEmptyTextNoTitleTest(ITestOutputHelper output) : LinkTestBase(
-	output,
-	"""
+public class CrossLinkEmptyTextNoTitleTest() : LinkTestBase("""
 
 	Go to [](kibana://get-started/index.md)
-	"""
-)
+	""")
 {
-	[Fact]
+	[Test]
 	public void GeneratesHtml() =>
 		// language=html - empty crosslinks emit an error; isolated builds get target=_blank
 		Html.Should().Contain(
 			"""<p>Go to <a href="https://docs-v3-preview.elastic.dev/elastic/kibana/tree/main/get-started" target="_blank" rel="noopener noreferrer"></a></p>"""
 		);
 
-	[Fact]
+	[Test]
 	public void HasError() =>
 		Collector.Diagnostics.Should().Contain(d => d.Severity == Severity.Error && d.Message.Contains("empty link text"));
 
-	[Fact]
+	[Test]
 	public void EmitsCrossLink()
 	{
 		Collector.CrossLinks.Should().HaveCount(1);
@@ -200,14 +196,13 @@ public class CrossLinkEmptyTextNoTitleTest(ITestOutputHelper output) : LinkTestB
 	}
 }
 
-public class LinkWithUnresolvedInterpolationError(ITestOutputHelper output) : LinkTestBase(
-	output,
+public class LinkWithUnresolvedInterpolationError() : LinkTestBase(
 	"""
 	[global search field]({{this-variable-does-not-exist}}/introduction.html#kibana-navigation-search)
 	"""
 )
 {
-	[Fact]
+	[Test]
 	public void HasErrors()
 	{
 		Collector.Diagnostics.Should().HaveCount(1);
@@ -223,31 +218,25 @@ public class LinkWithUnresolvedInterpolationError(ITestOutputHelper output) : Li
 	}
 }
 
-public class ExternalLinksWithInterpolationSuccess(ITestOutputHelper output) : LinkTestBase(
-	output,
-	"""
+public class ExternalLinksWithInterpolationSuccess() : LinkTestBase("""
 	[link to app]({{some-url-with-a-version}})
-	"""
-)
+	""")
 {
-	[Fact]
+	[Test]
 	public void GeneratesHtml() =>
 		Html.ShouldContainHtml(
 			"""<p><a href="https://github.com/elastic/fake-repo/tree/v1.17.0" target="_blank" rel="noopener noreferrer">link to app</a></p>"""
 		);
 
-	[Fact]
+	[Test]
 	public void HasNoWarningsOrErrors() => Collector.Diagnostics.Should().HaveCount(0);
 }
 
-public class InternalLinksWithInterpolationWarning(ITestOutputHelper output) : LinkTestBase(
-	output,
-	"""
+public class InternalLinksWithInterpolationWarning() : LinkTestBase("""
 	[link to app]({{some-url-path-prefix}}/hello-world)
-	"""
-)
+	""")
 {
-	[Fact]
+	[Test]
 	public void HasWarnings()
 	{
 		Collector.Diagnostics.Should().HaveCount(1);
@@ -263,35 +252,31 @@ public class InternalLinksWithInterpolationWarning(ITestOutputHelper output) : L
 	}
 }
 
-public class NonExistingLinks(ITestOutputHelper output) : LinkTestBase(output, """
+public class NonExistingLinks() : LinkTestBase("""
 	[Non Existing Link](/non-existing.md)
 	""")
 {
-	[Fact]
+	[Test]
 	public void HasErrors() => Collector.Diagnostics.Where(d => d.Severity == Severity.Error).Should().HaveCount(1);
 
-	[Fact]
+	[Test]
 	public void HasNoWarning() => Collector.Diagnostics.Where(d => d.Severity == Severity.Warning).Should().HaveCount(0);
 }
 
-public class CommentedNonExistingLinks(ITestOutputHelper output) : LinkTestBase(
-	output,
-	"""
+public class CommentedNonExistingLinks() : LinkTestBase("""
 	% [Non Existing Link](/non-existing.md)
-	"""
-)
+	""")
 {
-	[Fact]
+	[Test]
 	public void GeneratesHtml() =>
 		// language=html
 		Html.Should().BeNullOrWhiteSpace();
 
-	[Fact]
+	[Test]
 	public void HasErrors() => Collector.Diagnostics.Should().HaveCount(0);
 }
 
-public class CommentedNonExistingLinks2(ITestOutputHelper output) : LinkTestBase(
-	output,
+public class CommentedNonExistingLinks2() : LinkTestBase(
 	"""
 	% Hello, this is a [Non Existing Link](/non-existing.md).
 	Links:
@@ -301,7 +286,7 @@ public class CommentedNonExistingLinks2(ITestOutputHelper output) : LinkTestBase
 	"""
 )
 {
-	[Fact]
+	[Test]
 	public void GeneratesHtml() =>
 		Html.ShouldBeHtml(
 			"""
@@ -315,12 +300,11 @@ public class CommentedNonExistingLinks2(ITestOutputHelper output) : LinkTestBase
 			"""
 		);
 
-	[Fact]
+	[Test]
 	public void HasErrors() => Collector.Diagnostics.Should().HaveCount(0);
 }
 
-public class NonExistingLinkShouldFail(ITestOutputHelper output) : LinkTestBase(
-	output,
+public class NonExistingLinkShouldFail() : LinkTestBase(
 	"""
 	[Non Existing Link](/non-existing.md)
 	- [Non Existing Link](/non-existing.md)
@@ -329,57 +313,52 @@ public class NonExistingLinkShouldFail(ITestOutputHelper output) : LinkTestBase(
 	"""
 )
 {
-	[Fact]
+	[Test]
 	public void HasErrors() => Collector.Diagnostics.Should().HaveCount(3);
 }
 
-public class CursorProtocolLinkTest(ITestOutputHelper output) : LinkTestBase(
-	output,
+public class CursorProtocolLinkTest() : LinkTestBase(
 	"""
 	[Install with Cursor](cursor://anysphere.cursor-deeplink/mcp/install?name=elastic&config=eyJmb28iOiJiYXIifQ==)
 	"""
 )
 {
-	[Fact]
+	[Test]
 	public void GeneratesHtml() => Html.Should().Contain("""href="cursor://""");
 
-	[Fact]
+	[Test]
 	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
 
-	[Fact]
+	[Test]
 	public void EmitsNoCrossLinks() => Collector.CrossLinks.Should().HaveCount(0);
 }
 
-public class VscodeProtocolLinkTest(ITestOutputHelper output) : LinkTestBase(
-	output,
-	"""
+public class VscodeProtocolLinkTest() : LinkTestBase("""
 	[Install VS Code Extension](vscode:extension/elastic.elasticsearch)
-	"""
-)
+	""")
 {
-	[Fact]
+	[Test]
 	public void GeneratesHtml() => Html.Should().Contain("""href="vscode:""");
 
-	[Fact]
+	[Test]
 	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
 
-	[Fact]
+	[Test]
 	public void EmitsNoCrossLinks() => Collector.CrossLinks.Should().HaveCount(0);
 }
 
-public class VscodeInsidersProtocolLinkTest(ITestOutputHelper output) : LinkTestBase(
-	output,
+public class VscodeInsidersProtocolLinkTest() : LinkTestBase(
 	"""
 	[Install with VS Code Insiders](vscode-insiders:mcp/install?%7B%22name%22%3A%22oblt-cli%22%7D)
 	"""
 )
 {
-	[Fact]
+	[Test]
 	public void GeneratesHtml() => Html.Should().Contain("""href="vscode-insiders:""");
 
-	[Fact]
+	[Test]
 	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
 
-	[Fact]
+	[Test]
 	public void EmitsNoCrossLinks() => Collector.CrossLinks.Should().HaveCount(0);
 }

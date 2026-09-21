@@ -17,7 +17,7 @@ public class DocumentationDocumentSerializationTests
 {
 	private readonly JsonSerializerOptions _options = new(SourceGenerationContext.Default.Options);
 
-	[Fact]
+	[Test]
 	public void SerializeDocumentWithStackAppliesToProducesCorrectJson()
 	{
 		var doc = new DocumentationDocument
@@ -48,7 +48,7 @@ public class DocumentationDocumentSerializationTests
 		stackEntry.GetProperty("version").GetString().Should().Be("all");
 	}
 
-	[Fact]
+	[Test]
 	public void SerializeDocumentWithDeploymentAppliesToProducesCorrectJson()
 	{
 		var doc = new DocumentationDocument
@@ -90,7 +90,7 @@ public class DocumentationDocumentSerializationTests
 		eceEntry.GetProperty("version").GetString().Should().Be("3.5+");
 	}
 
-	[Fact]
+	[Test]
 	public void SerializeDocumentWithServerlessAppliesToProducesCorrectJson()
 	{
 		var doc = new DocumentationDocument
@@ -144,7 +144,7 @@ public class DocumentationDocumentSerializationTests
 		vectorDatabaseEntry.GetProperty("version").GetString().Should().Be("all");
 	}
 
-	[Fact]
+	[Test]
 	public void SerializeDocumentWithProductAppliesToProducesCorrectJson()
 	{
 		var doc = new DocumentationDocument
@@ -174,7 +174,7 @@ public class DocumentationDocumentSerializationTests
 		productEntry.GetProperty("version").GetString().Should().Be("2.0+");
 	}
 
-	[Fact]
+	[Test]
 	public void SerializeDocumentWithProductApplicabilityProducesCorrectJson()
 	{
 		var doc = new DocumentationDocument
@@ -220,7 +220,7 @@ public class DocumentationDocumentSerializationTests
 		nodeEntry.GetProperty("version").GetString().Should().Be("2.0+");
 	}
 
-	[Fact]
+	[Test]
 	public void SerializeDocumentWithComplexAppliesToProducesCorrectJson()
 	{
 		var doc = new DocumentationDocument
@@ -253,7 +253,7 @@ public class DocumentationDocumentSerializationTests
 		appliesArray.Should().Contain(e => e.GetProperty("type").GetString() == "serverless");
 	}
 
-	[Fact]
+	[Test]
 	public void SerializeDocumentWithNullAppliesToOmitsField()
 	{
 		var doc = new DocumentationDocument
@@ -280,7 +280,7 @@ public class DocumentationDocumentSerializationTests
 		}
 	}
 
-	[Fact]
+	[Test]
 	public void SerializeDocumentWithEmptyAppliesToProducesEmptyArray()
 	{
 		var doc = new DocumentationDocument
@@ -301,7 +301,7 @@ public class DocumentationDocumentSerializationTests
 		appliesTo.GetArrayLength().Should().Be(0);
 	}
 
-	[Fact]
+	[Test]
 	public void RoundTripDocumentWithAppliesToPreservesData()
 	{
 		var originalApplies = new ApplicableTo
@@ -351,7 +351,7 @@ public class DocumentationDocumentSerializationTests
 		deserialized.ContentType.Should().Be(original.ContentType);
 	}
 
-	[Fact]
+	[Test]
 	public void SerializeDocumentationDocument_IncludesContentType_MatchingType()
 	{
 		foreach (var type in new[] { "doc", "api" })
@@ -367,7 +367,7 @@ public class DocumentationDocumentSerializationTests
 		}
 	}
 
-	[Fact]
+	[Test]
 	public void ContentType_FromJson_Overrides_Type()
 	{
 		var json =
@@ -391,7 +391,7 @@ public class DocumentationDocumentSerializationTests
 		deserialized.ContentType.Should().Be("archived-docs");
 	}
 
-	[Fact]
+	[Test]
 	public void SerializeDocumentWithMultipleApplicabilitiesPerTypeProducesMultipleArrayEntries()
 	{
 		var doc = new DocumentationDocument
@@ -429,7 +429,7 @@ public class DocumentationDocumentSerializationTests
 		lifecycles.Should().Contain("deprecated");
 	}
 
-	[Fact]
+	[Test]
 	public void SerializeDocument_IncludesSourceUrlAsSnakeCaseKeyword()
 	{
 		var doc = new DocumentationDocument
@@ -450,7 +450,7 @@ public class DocumentationDocumentSerializationTests
 			.Be("https://github.com/elastic/docs-content/blob/main/docs/some-page.md");
 	}
 
-	[Fact]
+	[Test]
 	public void SerializeDocument_OmitsSourceUrlWhenNull()
 	{
 		var doc = new DocumentationDocument { Path = "/docs/some-page", Title = "Some Page", SearchTitle = "Some Page", SourceUrl = null };

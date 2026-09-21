@@ -10,12 +10,12 @@ using Elastic.Markdown.IO;
 
 namespace Elastic.Markdown.Tests;
 
-public class OutputDirectoryTests(ITestOutputHelper output)
+public class OutputDirectoryTests()
 {
-	[Fact]
+	[Test]
 	public async Task CreatesDefaultOutputDirectory()
 	{
-		var logger = new TestLoggerFactory(output);
+		var logger = new TestLoggerFactory();
 		var fileSystem = new MockFileSystem(
 			new Dictionary<string, MockFileData>
 			{
@@ -32,23 +32,23 @@ toc:
 			},
 			new MockFileSystemOptions { CurrentDirectory = Paths.WorkingDirectoryRoot.FullName }
 		);
-		await using var collector = new DiagnosticsCollector([]).StartAsync(TestContext.Current.CancellationToken);
+		await using var collector = new DiagnosticsCollector([]).StartAsync(TestContext.Current!.Execution.CancellationToken);
 		var configurationContext = TestHelpers.CreateConfigurationContext(fileSystem);
 		var context = new BuildContext(collector, TestHelpers.CreateDocumentationFileSystem(fileSystem), configurationContext);
 		var linkResolver = new TestCrossLinkResolver();
 		var set = new DocumentationSet(context, logger, linkResolver);
 		var generator = new DocumentationGenerator(set, logger);
 
-		await generator.GenerateAll(TestContext.Current.CancellationToken);
-		await collector.StopAsync(TestContext.Current.CancellationToken);
+		await generator.GenerateAll(TestContext.Current!.Execution.CancellationToken);
+		await collector.StopAsync(TestContext.Current!.Execution.CancellationToken);
 
 		fileSystem.Directory.Exists(".artifacts").Should().BeTrue();
 	}
 
-	[Fact]
+	[Test]
 	public void FilesWithSnippetsInNameNotTreatedAsSnippets()
 	{
-		var logger = new TestLoggerFactory(output);
+		var logger = new TestLoggerFactory();
 		var fileSystem = new MockFileSystem(
 			new Dictionary<string, MockFileData>
 			{
@@ -67,7 +67,7 @@ toc:
 			},
 			new MockFileSystemOptions { CurrentDirectory = Paths.WorkingDirectoryRoot.FullName }
 		);
-		var collector = new TestDiagnosticsCollector(output);
+		var collector = new TestDiagnosticsCollector();
 		var configurationContext = TestHelpers.CreateConfigurationContext(fileSystem);
 		var context = new BuildContext(collector, TestHelpers.CreateDocumentationFileSystem(fileSystem), configurationContext);
 		var linkResolver = new TestCrossLinkResolver();
@@ -76,23 +76,23 @@ toc:
 		set.MarkdownFiles.Should().Contain(f => f.RelativePath.EndsWith("top_snippets.md"));
 	}
 
-	[Theory]
-	[MemberData(nameof(ValidFileNames))]
+	[Test]
+	[MethodDataSource(nameof(ValidFileNames))]
 	public void OutputFileValidationValidNames(string fileName)
 	{
 		var valid = DocumentationGenerator.IsValidFileName(fileName);
 		valid.Should().BeTrue($"'{fileName}' should be a valid filename");
 	}
 
-	[Theory]
-	[MemberData(nameof(InvalidFileNames))]
+	[Test]
+	[MethodDataSource(nameof(InvalidFileNames))]
 	public void OutputFileValidationInvalidNames(string fileName)
 	{
 		var valid = DocumentationGenerator.IsValidFileName(fileName);
 		valid.Should().BeFalse($"'{fileName}' should be an invalid filename");
 	}
 
-	public static TheoryData<string> ValidFileNames =>
+	public static IEnumerable<string> ValidFileNames =>
 		[
 			"test.md",
 			"file.txt",
@@ -162,7 +162,7 @@ toc:
 			"c++.md"
 		];
 
-	public static TheoryData<string> InvalidFileNames =>
+	public static IEnumerable<string> InvalidFileNames =>
 		[
 			"Test.md",
 			"FILE.md",

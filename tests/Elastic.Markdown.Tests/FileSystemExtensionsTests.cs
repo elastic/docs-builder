@@ -15,7 +15,7 @@ namespace Elastic.Markdown.Tests;
 
 public class FileSystemExtensionsTest
 {
-	[Fact]
+	[Test]
 	public void IsSubPathOfTests()
 	{
 		var fs = new MockFileSystem();
@@ -37,7 +37,7 @@ public class FileSystemExtensionsTest
 		}
 	}
 
-	[Fact]
+	[Test]
 	public void HasParentTests()
 	{
 		var fs = new MockFileSystem();

@@ -14,8 +14,7 @@ namespace Elastic.Markdown.Tests.Directives;
 /// </summary>
 public class ChangelogPrivateLinkBugTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogPrivateLinkBugTests(ITestOutputHelper output) : base(
-			output,
+	public ChangelogPrivateLinkBugTests() : base(
 			// language=markdown
 			"""
 		:::{changelog}
@@ -48,7 +47,7 @@ public class ChangelogPrivateLinkBugTests : DirectiveTest<ChangelogBlock>
 			)
 		);
 
-	[Fact]
+	[Test]
 	public void DoesNotRenderIncompleteForMoreInformationSentence()
 	{
 		var markdown = ChangelogInlineRenderer.RenderChangelogMarkdown(Block!);
@@ -61,7 +60,7 @@ public class ChangelogPrivateLinkBugTests : DirectiveTest<ChangelogBlock>
 		markdown.Should().NotContain("check.");
 	}
 
-	[Fact]
+	[Test]
 	public void StillRendersEntryWithoutLinkSection()
 	{
 		var markdown = ChangelogInlineRenderer.RenderChangelogMarkdown(Block!);
@@ -81,8 +80,7 @@ public class ChangelogPrivateLinkBugTests : DirectiveTest<ChangelogBlock>
 /// </summary>
 public class ChangelogMixedLinkBugTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogMixedLinkBugTests(ITestOutputHelper output) : base(
-			output,
+	public ChangelogMixedLinkBugTests() : base(
 			// language=markdown
 			"""
 		:::{changelog}
@@ -116,7 +114,7 @@ public class ChangelogMixedLinkBugTests : DirectiveTest<ChangelogBlock>
 			)
 		);
 
-	[Fact]
+	[Test]
 	public void RendersForMoreInformationWithOnlyVisibleLinks()
 	{
 		var markdown = ChangelogInlineRenderer.RenderChangelogMarkdown(Block!);
@@ -139,8 +137,7 @@ public class ChangelogMixedLinkBugTests : DirectiveTest<ChangelogBlock>
 /// </summary>
 public class ChangelogNoLinksTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogNoLinksTests(ITestOutputHelper output) : base(
-			output,
+	public ChangelogNoLinksTests() : base(
 			// language=markdown
 			"""
 		:::{changelog}
@@ -169,7 +166,7 @@ public class ChangelogNoLinksTests : DirectiveTest<ChangelogBlock>
 			)
 		);
 
-	[Fact]
+	[Test]
 	public void DoesNotRenderForMoreInformationSection()
 	{
 		var markdown = ChangelogInlineRenderer.RenderChangelogMarkdown(Block!);

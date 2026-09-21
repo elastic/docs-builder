@@ -9,11 +9,7 @@ using Markdig.Syntax.Inlines;
 
 namespace Elastic.Markdown.Tests.Inline;
 
-public abstract class DirectiveBlockLinkTests(
-	ITestOutputHelper output,
-	[LanguageInjection("markdown")] string content
-) : InlineTest<LinkInline>(
-	output,
+public abstract class DirectiveBlockLinkTests([LanguageInjection("markdown")] string content) : InlineTest<LinkInline>(
 	$$"""
 :::{warning}
 :name: caution_ref
@@ -41,29 +37,26 @@ This is an 'important' admonition
 	}
 }
 
-public class InPageDirectiveLinkTests(ITestOutputHelper output) : DirectiveBlockLinkTests(output, """
+public class InPageDirectiveLinkTests() : DirectiveBlockLinkTests("""
 [Hello](#caution_ref)
 """)
 {
-	[Fact]
+	[Test]
 	public void GeneratesHtml() =>
 		// language=html
 		Html.ShouldContainHtml("""<p><a href="#caution_ref">Hello</a></p>""");
 
-	[Fact]
+	[Test]
 	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
 }
 
-public class ExternalDirectiveLinkTests(ITestOutputHelper output) : DirectiveBlockLinkTests(
-	output,
-	"""
+public class ExternalDirectiveLinkTests() : DirectiveBlockLinkTests("""
 [Sub Requirements](testing/req.md#hint_ref)
-"""
-)
+""")
 {
-	[Fact]
+	[Test]
 	public void GeneratesHtml() => Html.ShouldContainHtml("""<p><a href="/docs/testing/req#hint_ref">Sub Requirements</a></p>""");
 
-	[Fact]
+	[Test]
 	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
 }

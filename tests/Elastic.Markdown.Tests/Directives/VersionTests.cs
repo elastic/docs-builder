@@ -9,8 +9,7 @@ using Elastic.Markdown.Myst.Directives.Version;
 
 namespace Elastic.Markdown.Tests.Directives;
 
-public abstract class VersionTests(ITestOutputHelper output, string directive) : DirectiveTest<VersionBlock>(
-	output,
+public abstract class VersionTests(string directive) : DirectiveTest<VersionBlock>(
 	$$"""
 :::{{{directive}}} 1.0.1-beta1 more information
 Version brief summary
@@ -19,42 +18,41 @@ A regular paragraph.
 """
 )
 {
-	[Fact]
+	[Test]
 	public void ParsesAdmonitionBlock() => Block.Should().NotBeNull();
 
-	[Fact]
+	[Test]
 	public void SetsCorrectDirectiveType() => Block!.Directive.Should().Be(directive);
 
-	[Fact]
+	[Test]
 	public void SetsVersion() => Block!.Version.Should().Be(new SemVersion(1, 0, 1, "beta1"));
 }
 
-public class VersionAddedTests(ITestOutputHelper output) : VersionTests(output, "versionadded")
+public class VersionAddedTests() : VersionTests("versionadded")
 {
-	[Fact]
+	[Test]
 	public void SetsTitle() => Block!.Title.Should().Be("Version Added (1.0.1-beta1): more information");
 }
 
-public class VersionChangedTests(ITestOutputHelper output) : VersionTests(output, "versionchanged")
+public class VersionChangedTests() : VersionTests("versionchanged")
 {
-	[Fact]
+	[Test]
 	public void SetsTitle() => Block!.Title.Should().Be("Version Changed (1.0.1-beta1): more information");
 }
 
-public class VersionRemovedTests(ITestOutputHelper output) : VersionTests(output, "versionremoved")
+public class VersionRemovedTests() : VersionTests("versionremoved")
 {
-	[Fact]
+	[Test]
 	public void SetsTitle() => Block!.Title.Should().Be("Version Removed (1.0.1-beta1): more information");
 }
 
-public class VersionDeprectatedTests(ITestOutputHelper output) : VersionTests(output, "deprecated")
+public class VersionDeprectatedTests() : VersionTests("deprecated")
 {
-	[Fact]
+	[Test]
 	public void SetsTitle() => Block!.Title.Should().Be("Deprecated (1.0.1-beta1): more information");
 }
 
-public abstract class VersionValidationTests(ITestOutputHelper output, string version) : DirectiveTest<VersionBlock>(
-	output,
+public abstract class VersionValidationTests(string version) : DirectiveTest<VersionBlock>(
 	$$"""
 :::{versionchanged} {{version}} more information
 Version brief summary
@@ -63,25 +61,25 @@ A regular paragraph.
 """
 );
 
-public class SimpleVersion(ITestOutputHelper output) : VersionValidationTests(output, "7.17")
+public class SimpleVersion() : VersionValidationTests("7.17")
 {
-	[Fact]
+	[Test]
 	public void SetsVersion() => Block!.Version.Should().Be(new SemVersion(7, 17, 0));
 
-	[Fact]
+	[Test]
 	public void HasNoError() => Collector.Diagnostics.Should().BeEmpty();
 }
 
-public class MajorVersionOnly(ITestOutputHelper output) : VersionValidationTests(output, "8")
+public class MajorVersionOnly() : VersionValidationTests("8")
 {
-	[Fact]
+	[Test]
 	public void HasError() =>
 		Collector.Diagnostics.Should().HaveCount(1).And.Contain(d => d.Message.Contains("'8' is not a valid version"));
 }
 
-public class BranchVersion(ITestOutputHelper output) : VersionValidationTests(output, "8.x")
+public class BranchVersion() : VersionValidationTests("8.x")
 {
-	[Fact]
+	[Test]
 	public void HasError() =>
 		Collector.Diagnostics.Should().HaveCount(1).And.Contain(d => d.Message.Contains("'8.x' is not a valid version"));
 }

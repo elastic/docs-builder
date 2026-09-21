@@ -17,8 +17,7 @@ namespace Elastic.Markdown.Tests.Directives;
 /// (staging), and never filters local/isolated builds or products without a semver versioning
 /// system. The test versions configuration pins stack current to 8.0.0.
 /// </summary>
-public abstract class ChangelogVersionVisibilityTestBase(ITestOutputHelper output) : DirectiveTest<ChangelogBlock>(
-	output,
+public abstract class ChangelogVersionVisibilityTestBase() : DirectiveTest<ChangelogBlock>(
 	// language=markdown
 	"""
 	:::{changelog}
@@ -70,27 +69,27 @@ public abstract class ChangelogVersionVisibilityTestBase(ITestOutputHelper outpu
 		);
 }
 
-public class ChangelogVisibilityOnProductionTests(ITestOutputHelper output) : ChangelogVersionVisibilityTestBase(output)
+public class ChangelogVisibilityOnProductionTests() : ChangelogVersionVisibilityTestBase()
 {
 	protected override ContentSource? GetContentSource() => ContentSource.Current;
 
-	[Fact]
+	[Test]
 	public void HidesBundlesTargetingUnreleasedVersions()
 	{
 		Html.Should().Contain(ReleasedTitle);
 		Html.Should().NotContain(UnreleasedTitle, "8.1.0 is newer than the current release (8.0.0) and production publishes 'current'");
 	}
 
-	[Fact]
+	[Test]
 	public void EmitsHintForHiddenBundle() =>
 		Collector.Diagnostics.Should().Contain(d => d.Severity == Severity.Hint && d.Message.Contains("elasticsearch 8.1.0"));
 }
 
-public class ChangelogVisibilityOnStagingTests(ITestOutputHelper output) : ChangelogVersionVisibilityTestBase(output)
+public class ChangelogVisibilityOnStagingTests() : ChangelogVersionVisibilityTestBase()
 {
 	protected override ContentSource? GetContentSource() => ContentSource.Next;
 
-	[Fact]
+	[Test]
 	public void ShowsUnreleasedBundlesForPreReleaseReview()
 	{
 		Html.Should().Contain(ReleasedTitle);
@@ -98,11 +97,11 @@ public class ChangelogVisibilityOnStagingTests(ITestOutputHelper output) : Chang
 	}
 }
 
-public class ChangelogVisibilityOnIsolatedBuildTests(ITestOutputHelper output) : ChangelogVersionVisibilityTestBase(output)
+public class ChangelogVisibilityOnIsolatedBuildTests() : ChangelogVersionVisibilityTestBase()
 {
 	// No override: isolated/local builds have no content source and render everything.
 
-	[Fact]
+	[Test]
 	public void ShowsAllBundles()
 	{
 		Html.Should().Contain(ReleasedTitle);
@@ -114,8 +113,7 @@ public class ChangelogVisibilityOnIsolatedBuildTests(ITestOutputHelper output) :
 /// Products without a registered semver versioning system (date-promotion products, products not in
 /// products.yml) are never filtered — their targets are dates or unknown schemes, not stack versions.
 /// </summary>
-public class ChangelogVisibilityUnversionedProductTests(ITestOutputHelper output) : DirectiveTest<ChangelogBlock>(
-	output,
+public class ChangelogVisibilityUnversionedProductTests() : DirectiveTest<ChangelogBlock>(
 	// language=markdown
 	"""
 	:::{changelog}
@@ -148,6 +146,6 @@ public class ChangelogVisibilityUnversionedProductTests(ITestOutputHelper output
 				""")
 		);
 
-	[Fact]
+	[Test]
 	public void DoesNotFilterProductsWithoutVersioningSystem() => Html.Should().Contain("Future-looking change");
 }

@@ -11,7 +11,7 @@ namespace Elastic.Markdown.Tests.Directives;
 /// <summary>Unit tests for <see cref="ChangelogInlineRenderer.ShouldHideEntryDescriptionsForRepo"/>.</summary>
 public class ChangelogShouldHideEntryDescriptionsTests
 {
-	[Fact]
+	[Test]
 	public void HideDescriptions_AlwaysReturnsTrue()
 	{
 		var privateRepos = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "x" };
@@ -25,7 +25,7 @@ public class ChangelogShouldHideEntryDescriptionsTests
 		result.Should().BeTrue();
 	}
 
-	[Fact]
+	[Test]
 	public void KeepDescriptions_AlwaysReturnsFalse()
 	{
 		var result = ChangelogInlineRenderer.ShouldHideEntryDescriptionsForRepo(
@@ -37,7 +37,7 @@ public class ChangelogShouldHideEntryDescriptionsTests
 		result.Should().BeFalse();
 	}
 
-	[Fact]
+	[Test]
 	public void KeepHighlightDescriptions_AlwaysReturnsTrue()
 	{
 		// Default path hides descriptions; Highlights section overrides separately in the renderer.
@@ -50,7 +50,7 @@ public class ChangelogShouldHideEntryDescriptionsTests
 		result.Should().BeTrue();
 	}
 
-	[Fact]
+	[Test]
 	public void Auto_WithEmptyPrivateRepos_HidesBodies()
 	{
 		var result = ChangelogInlineRenderer.ShouldHideEntryDescriptionsForRepo("kibana", [], ChangelogDescriptionVisibility.Auto);
@@ -58,7 +58,7 @@ public class ChangelogShouldHideEntryDescriptionsTests
 		result.Should().BeTrue();
 	}
 
-	[Fact]
+	[Test]
 	public void Auto_WithPublicRepoOnly_HidesBodies()
 	{
 		var privateRepos = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "secret-repo" };
@@ -72,7 +72,7 @@ public class ChangelogShouldHideEntryDescriptionsTests
 		result.Should().BeTrue();
 	}
 
-	[Fact]
+	[Test]
 	public void Auto_WithPrivateRepo_ShowsBodies()
 	{
 		var privateRepos = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "kibana" };
@@ -86,7 +86,7 @@ public class ChangelogShouldHideEntryDescriptionsTests
 		result.Should().BeFalse();
 	}
 
-	[Fact]
+	[Test]
 	public void Auto_WithMergedBundle_OnePrivateConstituent_ShowsBodies()
 	{
 		var privateRepos = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "kibana" };
@@ -100,7 +100,7 @@ public class ChangelogShouldHideEntryDescriptionsTests
 		result.Should().BeFalse();
 	}
 
-	[Fact]
+	[Test]
 	public void Auto_WithMergedBundle_AllPublicConstituents_HidesBodies()
 	{
 		var privateRepos = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "other-private" };
@@ -118,13 +118,10 @@ public class ChangelogShouldHideEntryDescriptionsTests
 /// <summary>
 /// Omitting :description-visibility: defaults to <see cref="ChangelogDescriptionVisibility.Auto"/>.
 /// </summary>
-public class ChangelogDescriptionVisibilityDefaultTests(ITestOutputHelper output) : DirectiveTest<ChangelogBlock>(
-	output,
-	"""
+public class ChangelogDescriptionVisibilityDefaultTests() : DirectiveTest<ChangelogBlock>("""
 	:::{changelog}
 	:::
-	"""
-)
+	""")
 {
 	protected override void AddToFileSystem(MockFileSystem fileSystem) =>
 		fileSystem.AddFile(
@@ -145,24 +142,21 @@ public class ChangelogDescriptionVisibilityDefaultTests(ITestOutputHelper output
 			)
 		);
 
-	[Fact]
+	[Test]
 	public void PropertyDefaultsToAuto() => Block!.DescriptionVisibility.Should().Be(ChangelogDescriptionVisibility.Auto);
 
 	/// <summary>Public bundle with no assembler private repos ⇒ auto hides record bodies.</summary>
-	[Fact]
+	[Test]
 	public void HtmlOmitsBodyTextForPublicBundle() => Html.Should().NotContain("BODY_DEFAULT_AUTO_VISIBILITY");
 
-	[Fact]
+	[Test]
 	public void HtmlStillRendersTitles() => Html.Should().Contain("Feature delta");
 }
 
-public class ChangelogDescriptionVisibilityAutoShowsForPrivateRepoTests(ITestOutputHelper output) : DirectiveTest<ChangelogBlock>(
-	output,
-	"""
+public class ChangelogDescriptionVisibilityAutoShowsForPrivateRepoTests() : DirectiveTest<ChangelogBlock>("""
 	:::{changelog}
 	:::
-	"""
-)
+	""")
 {
 	protected override void AddToFileSystem(MockFileSystem fileSystem) =>
 		fileSystem.AddFile(
@@ -183,20 +177,20 @@ public class ChangelogDescriptionVisibilityAutoShowsForPrivateRepoTests(ITestOut
 			)
 		);
 
-	public override async ValueTask InitializeAsync()
+	public override async Task InitializeAsync()
 	{
 		await base.InitializeAsync();
 		_ = Block!.PrivateRepositories.Add("elasticsearch");
 	}
 
-	[Fact]
+	[Test]
 	public void MarkdownIncludesBodyTextWhenRepoIsPrivateForAutoMode()
 	{
 		var markdown = ChangelogInlineRenderer.RenderChangelogMarkdown(Block!);
 		markdown.Should().Contain("BODY_PRIVATE_VISIBILITY_TEST");
 	}
 
-	[Fact]
+	[Test]
 	public void MarkdownRendersTitle()
 	{
 		var markdown = ChangelogInlineRenderer.RenderChangelogMarkdown(Block!);
@@ -204,8 +198,7 @@ public class ChangelogDescriptionVisibilityAutoShowsForPrivateRepoTests(ITestOut
 	}
 }
 
-public class ChangelogDescriptionVisibilityKeepExplicitTests(ITestOutputHelper output) : DirectiveTest<ChangelogBlock>(
-	output,
+public class ChangelogDescriptionVisibilityKeepExplicitTests() : DirectiveTest<ChangelogBlock>(
 	"""
 	:::{changelog}
 	:description-visibility: keep-descriptions
@@ -232,12 +225,11 @@ public class ChangelogDescriptionVisibilityKeepExplicitTests(ITestOutputHelper o
 			)
 		);
 
-	[Fact]
+	[Test]
 	public void KeepsBodyOnFullyPublicRepos() => Html.Should().Contain("BODY_KEEP_VISIBILITY");
 }
 
-public class ChangelogDescriptionVisibilityHideExplicitTests(ITestOutputHelper output) : DirectiveTest<ChangelogBlock>(
-	output,
+public class ChangelogDescriptionVisibilityHideExplicitTests() : DirectiveTest<ChangelogBlock>(
 	"""
 	:::{changelog}
 	:description-visibility: hide-descriptions
@@ -264,10 +256,10 @@ public class ChangelogDescriptionVisibilityHideExplicitTests(ITestOutputHelper o
 			)
 		);
 
-	[Fact]
+	[Test]
 	public void OmitBody() => Html.Should().NotContain("BODY_HIDE_VISIBILITY");
 
-	[Fact]
+	[Test]
 	public void MarkdownRendersTitlesWithoutBodies()
 	{
 		var markdown = ChangelogInlineRenderer.RenderChangelogMarkdown(Block!);
@@ -276,8 +268,7 @@ public class ChangelogDescriptionVisibilityHideExplicitTests(ITestOutputHelper o
 	}
 }
 
-public class ChangelogDescriptionVisibilityInvalidTests(ITestOutputHelper output) : DirectiveTest<ChangelogBlock>(
-	output,
+public class ChangelogDescriptionVisibilityInvalidTests() : DirectiveTest<ChangelogBlock>(
 	"""
 	:::{changelog}
 	:description-visibility: nonsense-value
@@ -304,12 +295,12 @@ public class ChangelogDescriptionVisibilityInvalidTests(ITestOutputHelper output
 			)
 		);
 
-	[Fact]
+	[Test]
 	public void FallsBackToAuto() => Block!.DescriptionVisibility.Should().Be(ChangelogDescriptionVisibility.Auto);
 
-	[Fact]
+	[Test]
 	public void EmitsWarning() => Collector.Warnings.Should().BeGreaterThan(0);
 
-	[Fact]
+	[Test]
 	public void AutoTreatsFullyPublic_AsHideBody() => Html.Should().NotContain("BODY_INVALID_VISIBILITY");
 }

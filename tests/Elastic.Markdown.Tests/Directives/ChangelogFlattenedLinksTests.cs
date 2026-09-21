@@ -14,8 +14,7 @@ namespace Elastic.Markdown.Tests.Directives;
 /// </summary>
 public class ChangelogFlattenedLinksTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogFlattenedLinksTests(ITestOutputHelper output) : base(
-			output,
+	public ChangelogFlattenedLinksTests() : base(
 			// language=markdown
 			"""
 		:::{changelog}
@@ -46,7 +45,7 @@ public class ChangelogFlattenedLinksTests : DirectiveTest<ChangelogBlock>
 			)
 		);
 
-	[Fact]
+	[Test]
 	public void FlattenedDeprecationRendersMultipleLinksWithoutOuterBrackets()
 	{
 		var markdown = ChangelogInlineRenderer.RenderChangelogMarkdown(Block!);
@@ -58,7 +57,7 @@ public class ChangelogFlattenedLinksTests : DirectiveTest<ChangelogBlock>
 		markdown.Should().NotContain("[#268942, #202446]");
 	}
 
-	[Fact]
+	[Test]
 	public void FlattenedDeprecationRendersClickableLinkHtml()
 	{
 		Html.Should().Contain("href=\"https://github.com/elastic/elasticsearch/pull/268942\"");

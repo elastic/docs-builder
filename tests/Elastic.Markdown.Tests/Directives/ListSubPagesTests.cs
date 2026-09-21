@@ -8,7 +8,7 @@ using Elastic.Markdown.Myst.Directives.SubPages;
 
 namespace Elastic.Markdown.Tests.Directives;
 
-public class ListSubPagesTests(ITestOutputHelper output) : DirectiveTest<ListSubPagesBlock>(output, """
+public class ListSubPagesTests() : DirectiveTest<ListSubPagesBlock>("""
 :::{list-sub-pages}
 :::
 """)
@@ -19,24 +19,24 @@ public class ListSubPagesTests(ITestOutputHelper output) : DirectiveTest<ListSub
 		fileSystem.AddFile("docs/page2.md", new MockFileData("# Page Two\n\nContent."));
 	}
 
-	[Fact]
+	[Test]
 	public void ParsesListSubPagesBlock() => Block.Should().NotBeNull();
 
-	[Fact]
+	[Test]
 	public void SetsCorrectDirectiveType() => Block!.Directive.Should().Be("list-sub-pages");
 
-	[Fact]
+	[Test]
 	public void ResolvesSubPagesFromNavigation()
 	{
 		Block!.SubPages.Should().NotBeNull();
 		Block.SubPages.Should().HaveCount(2);
 	}
 
-	[Fact]
+	[Test]
 	public void SubPagesContainTitlesAndUrls() =>
 		Block!.SubPages.Should().OnlyContain(p => !string.IsNullOrEmpty(p.Title) && !string.IsNullOrEmpty(p.Url));
 
-	[Fact]
+	[Test]
 	public void RendersListWithLinks()
 	{
 		Html.Should().Contain("list-sub-pages");
@@ -45,13 +45,10 @@ public class ListSubPagesTests(ITestOutputHelper output) : DirectiveTest<ListSub
 	}
 }
 
-public class ListSubPagesWithDescriptionsTests(ITestOutputHelper output) : DirectiveTest<ListSubPagesBlock>(
-	output,
-	"""
+public class ListSubPagesWithDescriptionsTests() : DirectiveTest<ListSubPagesBlock>("""
 :::{list-sub-pages}
 :::
-"""
-)
+""")
 {
 	protected override void AddToFileSystem(MockFileSystem fileSystem)
 	{
@@ -66,7 +63,7 @@ Content.
 		fileSystem.AddFile("docs/page2.md", new MockFileData("# Page Two\n\nContent."));
 	}
 
-	[Fact]
+	[Test]
 	public void IncludesDescriptionWhenPresent()
 	{
 		var pageWithDescription = Block!.SubPages.FirstOrDefault(p => p.Description is not null);
@@ -74,17 +71,14 @@ Content.
 		pageWithDescription!.Description.Should().Be("First page description");
 	}
 
-	[Fact]
+	[Test]
 	public void RendersDescriptionInOutput() => Html.Should().Contain("First page description");
 }
 
-public class ListSubPagesWithFolderSiblingTests(ITestOutputHelper output) : DirectiveTest<ListSubPagesBlock>(
-	output,
-	"""
+public class ListSubPagesWithFolderSiblingTests() : DirectiveTest<ListSubPagesBlock>("""
 :::{list-sub-pages}
 :::
-"""
-)
+""")
 {
 	protected override void AddToFileSystem(MockFileSystem fileSystem)
 	{

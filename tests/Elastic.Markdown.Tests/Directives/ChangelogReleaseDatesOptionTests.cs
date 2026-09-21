@@ -11,8 +11,7 @@ namespace Elastic.Markdown.Tests.Directives;
 /// <summary>Tests for the <c>:release-dates:</c> directive option.</summary>
 public class ChangelogReleaseDatesOptionDefaultOffTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogReleaseDatesOptionDefaultOffTests(ITestOutputHelper output) : base(
-			output,
+	public ChangelogReleaseDatesOptionDefaultOffTests() : base(
 			// language=markdown
 			"""
 		:::{changelog}
@@ -40,20 +39,19 @@ public class ChangelogReleaseDatesOptionDefaultOffTests : DirectiveTest<Changelo
 			)
 		);
 
-	[Fact]
+	[Test]
 	public void ReleaseDatesDisabledByDefault() => Block!.ReleaseDatesEnabled.Should().BeFalse();
 
-	[Fact]
+	[Test]
 	public void OmitsReleasedLineWhenFlagOmitted() => Html.Should().NotContain("Released:");
 
-	[Fact]
+	[Test]
 	public void StillRendersEntries() => Html.Should().Contain("Add tracing improvements");
 }
 
 public class ChangelogReleaseDatesOptionEnabledTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogReleaseDatesOptionEnabledTests(ITestOutputHelper output) : base(
-			output,
+	public ChangelogReleaseDatesOptionEnabledTests() : base(
 			// language=markdown
 			"""
 		:::{changelog}
@@ -82,17 +80,16 @@ public class ChangelogReleaseDatesOptionEnabledTests : DirectiveTest<ChangelogBl
 			)
 		);
 
-	[Fact]
+	[Test]
 	public void ReleaseDatesEnabledWhenFlagPresent() => Block!.ReleaseDatesEnabled.Should().BeTrue();
 
-	[Fact]
+	[Test]
 	public void RendersReleasedLineWhenBundleHasReleaseDate() => Html.Should().Contain("Released: April 9, 2026");
 }
 
 public class ChangelogReleaseDatesOptionEnabledWithoutBundleDateTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogReleaseDatesOptionEnabledWithoutBundleDateTests(ITestOutputHelper output) : base(
-			output,
+	public ChangelogReleaseDatesOptionEnabledWithoutBundleDateTests() : base(
 			// language=markdown
 			"""
 		:::{changelog}
@@ -120,14 +117,13 @@ public class ChangelogReleaseDatesOptionEnabledWithoutBundleDateTests : Directiv
 			)
 		);
 
-	[Fact]
+	[Test]
 	public void OmitsReleasedLineWhenBundleHasNoReleaseDate() => Html.Should().NotContain("Released:");
 }
 
 public class ChangelogReleaseDatesOptionDescriptionStillRendersTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogReleaseDatesOptionDescriptionStillRendersTests(ITestOutputHelper output) : base(
-			output,
+	public ChangelogReleaseDatesOptionDescriptionStillRendersTests() : base(
 			// language=markdown
 			"""
 		:::{changelog}
@@ -157,9 +153,9 @@ public class ChangelogReleaseDatesOptionDescriptionStillRendersTests : Directive
 			)
 		);
 
-	[Fact]
+	[Test]
 	public void OmitsReleasedLineWhenFlagOmitted() => Html.Should().NotContain("Released:");
 
-	[Fact]
+	[Test]
 	public void RendersBundleDescription() => Html.Should().Contain("This release includes tracing improvements and bug fixes.");
 }

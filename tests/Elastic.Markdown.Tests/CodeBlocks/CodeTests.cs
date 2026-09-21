@@ -8,8 +8,7 @@ using Elastic.Markdown.Tests.Inline;
 
 namespace Elastic.Markdown.Tests.CodeBlocks;
 
-public abstract class CodeBlockTests(ITestOutputHelper output, string directive, string? language = null) : BlockTest<EnhancedCodeBlock>(
-	output,
+public abstract class CodeBlockTests(string directive, string? language = null) : BlockTest<EnhancedCodeBlock>(
 	$$"""
 ```{{directive}} {{language}}
 var x = 1;
@@ -18,30 +17,30 @@ A regular paragraph.
 """
 )
 {
-	[Fact]
+	[Test]
 	public void ParsesAdmonitionBlock() => Block.Should().NotBeNull();
 }
 
-public class CodeBlockDirectiveTests(ITestOutputHelper output) : CodeBlockTests(output, "{code-block}", "csharp")
+public class CodeBlockDirectiveTests() : CodeBlockTests("{code-block}", "csharp")
 {
-	[Fact]
+	[Test]
 	public void SetsLanguage() => Block!.Language.Should().Be("csharp");
 }
 
-public class CodeTests(ITestOutputHelper output) : CodeBlockTests(output, "{code}", "python")
+public class CodeTests() : CodeBlockTests("{code}", "python")
 {
-	[Fact]
+	[Test]
 	public void SetsLanguage() => Block!.Language.Should().Be("python");
 }
 
-public class SourceCodeTests(ITestOutputHelper output) : CodeBlockTests(output, "{sourcecode}", "java")
+public class SourceCodeTests() : CodeBlockTests("{sourcecode}", "java")
 {
-	[Fact]
+	[Test]
 	public void SetsLanguage() => Block!.Language.Should().Be("java");
 }
 
-public class RawMarkdownCodeBlockTests(ITestOutputHelper output) : CodeBlockTests(output, "javascript")
+public class RawMarkdownCodeBlockTests() : CodeBlockTests("javascript")
 {
-	[Fact]
+	[Test]
 	public void SetsLanguage() => Block!.Language.Should().Be("javascript");
 }

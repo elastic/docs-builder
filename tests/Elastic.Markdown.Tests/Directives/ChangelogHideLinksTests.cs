@@ -15,7 +15,7 @@ namespace Elastic.Markdown.Tests.Directives;
 /// </summary>
 public class ChangelogShouldHideLinksForRepoTests
 {
-	[Fact]
+	[Test]
 	public void ReturnsTrue_WhenSingleRepoIsPrivate()
 	{
 		var privateRepos = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "private-repo" };
@@ -25,7 +25,7 @@ public class ChangelogShouldHideLinksForRepoTests
 		result.Should().BeTrue();
 	}
 
-	[Fact]
+	[Test]
 	public void ReturnsFalse_WhenSingleRepoIsNotPrivate()
 	{
 		var privateRepos = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "other-repo" };
@@ -35,7 +35,7 @@ public class ChangelogShouldHideLinksForRepoTests
 		result.Should().BeFalse();
 	}
 
-	[Fact]
+	[Test]
 	public void ReturnsFalse_WhenPrivateReposIsEmpty()
 	{
 		var privateRepos = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -45,7 +45,7 @@ public class ChangelogShouldHideLinksForRepoTests
 		result.Should().BeFalse();
 	}
 
-	[Fact]
+	[Test]
 	public void ReturnsTrue_WhenMergedRepoContainsPrivateRepo()
 	{
 		// Merged bundle repos are joined with '+'
@@ -56,7 +56,7 @@ public class ChangelogShouldHideLinksForRepoTests
 		result.Should().BeTrue();
 	}
 
-	[Fact]
+	[Test]
 	public void ReturnsFalse_WhenMergedRepoContainsNoPrivateRepos()
 	{
 		var privateRepos = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "other-private" };
@@ -66,7 +66,7 @@ public class ChangelogShouldHideLinksForRepoTests
 		result.Should().BeFalse();
 	}
 
-	[Fact]
+	[Test]
 	public void IsCaseInsensitive_ForRepoNames()
 	{
 		var privateRepos = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "Private-Repo" };
@@ -76,7 +76,7 @@ public class ChangelogShouldHideLinksForRepoTests
 		result.Should().BeTrue();
 	}
 
-	[Fact]
+	[Test]
 	public void HandlesWhitespace_InMergedRepoNames()
 	{
 		var privateRepos = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "private-repo" };
@@ -93,8 +93,7 @@ public class ChangelogShouldHideLinksForRepoTests
 /// </summary>
 public class ChangelogLinksDefaultBehaviorTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogLinksDefaultBehaviorTests(ITestOutputHelper output) : base(
-			output,
+	public ChangelogLinksDefaultBehaviorTests() : base(
 			// language=markdown
 			"""
 		:::{changelog}
@@ -124,13 +123,13 @@ public class ChangelogLinksDefaultBehaviorTests : DirectiveTest<ChangelogBlock>
 			)
 		);
 
-	[Fact]
+	[Test]
 	public void PrivateRepositoriesPropertyIsAccessible() =>
 		// The PrivateRepositories property should be accessible
 		// (may contain repos from embedded assembler.yml)
 		Block!.PrivateRepositories.Should().NotBeNull();
 
-	[Fact]
+	[Test]
 	public void LoadPrivateRepositories_IncludesSkipTruePrivateRepos()
 	{
 		// kibana-team is marked private: true, skip: true in the embedded assembler.yml.
@@ -139,7 +138,7 @@ public class ChangelogLinksDefaultBehaviorTests : DirectiveTest<ChangelogBlock>
 		Block!.PrivateRepositories.Should().Contain("kibana-team");
 	}
 
-	[Fact]
+	[Test]
 	public void RendersPrLinksForPublicRepo()
 	{
 		// elasticsearch is a public repo, so PR link should be visible in the output
@@ -147,7 +146,7 @@ public class ChangelogLinksDefaultBehaviorTests : DirectiveTest<ChangelogBlock>
 		Html.Should().Contain("github.com");
 	}
 
-	[Fact]
+	[Test]
 	public void RendersIssueLinksForPublicRepo()
 	{
 		// elasticsearch is public, so issue links should be visible
@@ -162,8 +161,7 @@ public class ChangelogLinksDefaultBehaviorTests : DirectiveTest<ChangelogBlock>
 /// </summary>
 public class ChangelogLinksHiddenForPrivateRepoTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogLinksHiddenForPrivateRepoTests(ITestOutputHelper output) : base(
-			output,
+	public ChangelogLinksHiddenForPrivateRepoTests() : base(
 			// language=markdown
 			"""
 		:::{changelog}
@@ -193,17 +191,17 @@ public class ChangelogLinksHiddenForPrivateRepoTests : DirectiveTest<ChangelogBl
 			)
 		);
 
-	public override async ValueTask InitializeAsync()
+	public override async Task InitializeAsync()
 	{
 		await base.InitializeAsync();
 		// Simulate that 'elasticsearch' is a private repository
 		Block!.PrivateRepositories.Add("elasticsearch");
 	}
 
-	[Fact]
+	[Test]
 	public void PrivateRepositoriesContainsConfiguredRepo() => Block!.PrivateRepositories.Should().Contain("elasticsearch");
 
-	[Fact]
+	[Test]
 	public void HidesPrLinksForPrivateRepo()
 	{
 		// Re-render after setting private repos
@@ -215,7 +213,7 @@ public class ChangelogLinksHiddenForPrivateRepoTests : DirectiveTest<ChangelogBl
 		markdown.Should().Contain("%"); // Links are commented out
 	}
 
-	[Fact]
+	[Test]
 	public void HidesIssueLinksForPrivateRepo()
 	{
 		// Re-render after setting private repos
@@ -234,8 +232,7 @@ public class ChangelogLinksHiddenForPrivateRepoTests : DirectiveTest<ChangelogBl
 /// </summary>
 public class ChangelogLinksHiddenInDetailedEntriesTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogLinksHiddenInDetailedEntriesTests(ITestOutputHelper output) : base(
-			output,
+	public ChangelogLinksHiddenInDetailedEntriesTests() : base(
 			// language=markdown
 			"""
 		:::{changelog}
@@ -280,14 +277,14 @@ public class ChangelogLinksHiddenInDetailedEntriesTests : DirectiveTest<Changelo
 			)
 		);
 
-	public override async ValueTask InitializeAsync()
+	public override async Task InitializeAsync()
 	{
 		await base.InitializeAsync();
 		// Simulate that 'elasticsearch' is a private repository
 		Block!.PrivateRepositories.Add("elasticsearch");
 	}
 
-	[Fact]
+	[Test]
 	public void HidesLinksInBreakingChangesSection()
 	{
 		var markdown = ChangelogInlineRenderer.RenderChangelogMarkdown(Block!);
@@ -298,7 +295,7 @@ public class ChangelogLinksHiddenInDetailedEntriesTests : DirectiveTest<Changelo
 		markdown.Should().Contain("%"); // Links are commented out
 	}
 
-	[Fact]
+	[Test]
 	public void HidesLinksInDeprecationsSection()
 	{
 		var markdown = ChangelogInlineRenderer.RenderChangelogMarkdown(Block!);
@@ -309,7 +306,7 @@ public class ChangelogLinksHiddenInDetailedEntriesTests : DirectiveTest<Changelo
 		markdown.Should().Contain("%"); // Links are commented out
 	}
 
-	[Fact]
+	[Test]
 	public void RendersImpactAndActionSections()
 	{
 		var markdown = ChangelogInlineRenderer.RenderChangelogMarkdown(Block!);
@@ -327,8 +324,7 @@ public class ChangelogLinksHiddenInDetailedEntriesTests : DirectiveTest<Changelo
 /// </summary>
 public class ChangelogLinksShownForPublicRepoTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogLinksShownForPublicRepoTests(ITestOutputHelper output) : base(
-			output,
+	public ChangelogLinksShownForPublicRepoTests() : base(
 			// language=markdown
 			"""
 		:::{changelog}
@@ -355,14 +351,14 @@ public class ChangelogLinksShownForPublicRepoTests : DirectiveTest<ChangelogBloc
 			)
 		);
 
-	public override async ValueTask InitializeAsync()
+	public override async Task InitializeAsync()
 	{
 		await base.InitializeAsync();
 		// Configure a different repo as private - not elasticsearch
 		Block!.PrivateRepositories.Add("private-internal-repo");
 	}
 
-	[Fact]
+	[Test]
 	public void ShowsPrLinksForPublicRepo()
 	{
 		var markdown = ChangelogInlineRenderer.RenderChangelogMarkdown(Block!);
@@ -380,8 +376,7 @@ public class ChangelogLinksShownForPublicRepoTests : DirectiveTest<ChangelogBloc
 /// </summary>
 public class ChangelogLinksWithMergedBundlesTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogLinksWithMergedBundlesTests(ITestOutputHelper output) : base(
-			output,
+	public ChangelogLinksWithMergedBundlesTests() : base(
 			// language=markdown
 			"""
 		:::{changelog}
@@ -431,14 +426,14 @@ public class ChangelogLinksWithMergedBundlesTests : DirectiveTest<ChangelogBlock
 		);
 	}
 
-	public override async ValueTask InitializeAsync()
+	public override async Task InitializeAsync()
 	{
 		await base.InitializeAsync();
 		// Kibana is a private repo
 		Block!.PrivateRepositories.Add("kibana");
 	}
 
-	[Fact]
+	[Test]
 	public void MergedBundleRepoContainsBothRepos()
 	{
 		// Bundles with same target version are merged, repo names combined with '+'
@@ -448,7 +443,7 @@ public class ChangelogLinksWithMergedBundlesTests : DirectiveTest<ChangelogBlock
 		Block!.LoadedBundles[0].Repo.Should().Contain("+");
 	}
 
-	[Fact]
+	[Test]
 	public void MergedBundle_TocSlug_MatchesHeadingId()
 	{
 		var section = Block!.GeneratedTableOfContent.Single(t => t.Level == 3);
@@ -457,7 +452,7 @@ public class ChangelogLinksWithMergedBundlesTests : DirectiveTest<ChangelogBlock
 		Html.Should().Contain($"id=\"{section.Slug}\"");
 	}
 
-	[Fact]
+	[Test]
 	public void HidesLinksWhenAnyMergedRepoIsPrivate()
 	{
 		var markdown = ChangelogInlineRenderer.RenderChangelogMarkdown(Block!);
@@ -475,8 +470,7 @@ public class ChangelogLinksWithMergedBundlesTests : DirectiveTest<ChangelogBlock
 /// </summary>
 public class ChangelogLinksWithMergedPublicReposTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogLinksWithMergedPublicReposTests(ITestOutputHelper output) : base(
-			output,
+	public ChangelogLinksWithMergedPublicReposTests() : base(
 			// language=markdown
 			"""
 		:::{changelog}
@@ -526,14 +520,14 @@ public class ChangelogLinksWithMergedPublicReposTests : DirectiveTest<ChangelogB
 		);
 	}
 
-	public override async ValueTask InitializeAsync()
+	public override async Task InitializeAsync()
 	{
 		await base.InitializeAsync();
 		// Only unrelated repos are private - elasticsearch and kibana are public
 		Block!.PrivateRepositories.Add("some-other-private-repo");
 	}
 
-	[Fact]
+	[Test]
 	public void ShowsLinksWhenAllMergedReposArePublic()
 	{
 		var markdown = ChangelogInlineRenderer.RenderChangelogMarkdown(Block!);
@@ -553,8 +547,7 @@ public class ChangelogLinksWithMergedPublicReposTests : DirectiveTest<ChangelogB
 /// </summary>
 public class ChangelogLinkVisibilityKeepLinksTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogLinkVisibilityKeepLinksTests(ITestOutputHelper output) : base(
-			output,
+	public ChangelogLinkVisibilityKeepLinksTests() : base(
 			// language=markdown
 			"""
 		:::{changelog}
@@ -582,16 +575,16 @@ public class ChangelogLinkVisibilityKeepLinksTests : DirectiveTest<ChangelogBloc
 			)
 		);
 
-	public override async ValueTask InitializeAsync()
+	public override async Task InitializeAsync()
 	{
 		await base.InitializeAsync();
 		Block!.PrivateRepositories.Add("elasticsearch");
 	}
 
-	[Fact]
+	[Test]
 	public void LinkVisibilityIsParsedAsKeepLinks() => Block!.LinkVisibility.Should().Be(ChangelogLinkVisibility.KeepLinks);
 
-	[Fact]
+	[Test]
 	public void ShowsLinksEvenWhenRepoIsPrivate()
 	{
 		var markdown = ChangelogInlineRenderer.RenderChangelogMarkdown(Block!);
@@ -607,8 +600,7 @@ public class ChangelogLinkVisibilityKeepLinksTests : DirectiveTest<ChangelogBloc
 /// </summary>
 public class ChangelogLinkVisibilityHideLinksTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogLinkVisibilityHideLinksTests(ITestOutputHelper output) : base(
-			output,
+	public ChangelogLinkVisibilityHideLinksTests() : base(
 			// language=markdown
 			"""
 		:::{changelog}
@@ -636,10 +628,10 @@ public class ChangelogLinkVisibilityHideLinksTests : DirectiveTest<ChangelogBloc
 			)
 		);
 
-	[Fact]
+	[Test]
 	public void LinkVisibilityIsParsedAsHideLinks() => Block!.LinkVisibility.Should().Be(ChangelogLinkVisibility.HideLinks);
 
-	[Fact]
+	[Test]
 	public void HidesLinksEvenWhenRepoIsPublic()
 	{
 		var markdown = ChangelogInlineRenderer.RenderChangelogMarkdown(Block!);
@@ -654,8 +646,7 @@ public class ChangelogLinkVisibilityHideLinksTests : DirectiveTest<ChangelogBloc
 /// </summary>
 public class ChangelogLinkVisibilityAutoTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogLinkVisibilityAutoTests(ITestOutputHelper output) : base(
-			output,
+	public ChangelogLinkVisibilityAutoTests() : base(
 			// language=markdown
 			"""
 		:::{changelog}
@@ -683,10 +674,10 @@ public class ChangelogLinkVisibilityAutoTests : DirectiveTest<ChangelogBlock>
 			)
 		);
 
-	[Fact]
+	[Test]
 	public void LinkVisibilityIsParsedAsAuto() => Block!.LinkVisibility.Should().Be(ChangelogLinkVisibility.Auto);
 
-	[Fact]
+	[Test]
 	public void ShowsLinksWhenRepoIsPublic()
 	{
 		var markdown = ChangelogInlineRenderer.RenderChangelogMarkdown(Block!);
@@ -701,8 +692,7 @@ public class ChangelogLinkVisibilityAutoTests : DirectiveTest<ChangelogBlock>
 /// </summary>
 public class ChangelogLinkVisibilityDefaultTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogLinkVisibilityDefaultTests(ITestOutputHelper output) : base(
-			output,
+	public ChangelogLinkVisibilityDefaultTests() : base(
 			// language=markdown
 			"""
 		:::{changelog}
@@ -729,7 +719,7 @@ public class ChangelogLinkVisibilityDefaultTests : DirectiveTest<ChangelogBlock>
 			)
 		);
 
-	[Fact]
+	[Test]
 	public void LinkVisibilityDefaultsToAuto() => Block!.LinkVisibility.Should().Be(ChangelogLinkVisibility.Auto);
 }
 
@@ -738,8 +728,7 @@ public class ChangelogLinkVisibilityDefaultTests : DirectiveTest<ChangelogBlock>
 /// </summary>
 public class ChangelogLinkVisibilityInvalidTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogLinkVisibilityInvalidTests(ITestOutputHelper output) : base(
-			output,
+	public ChangelogLinkVisibilityInvalidTests() : base(
 			// language=markdown
 			"""
 		:::{changelog}
@@ -767,10 +756,10 @@ public class ChangelogLinkVisibilityInvalidTests : DirectiveTest<ChangelogBlock>
 			)
 		);
 
-	[Fact]
+	[Test]
 	public void LinkVisibilityFallsBackToAuto() => Block!.LinkVisibility.Should().Be(ChangelogLinkVisibility.Auto);
 
-	[Fact]
+	[Test]
 	public void EmitsWarning() => Collector.Warnings.Should().BeGreaterThan(0);
 }
 
@@ -778,8 +767,7 @@ public class ChangelogLinkVisibilityInvalidTests : DirectiveTest<ChangelogBlock>
 /// CDN-sourced bundles are scrubbed for public delivery; :link-visibility: auto keeps links even when
 /// assembler.yml marks source repos private (including merged bundles with a private constituent).
 /// </summary>
-public class ChangelogCdnLinkVisibilityAutoTests(ITestOutputHelper output) : DirectiveTest<ChangelogBlock>(
-	output,
+public class ChangelogCdnLinkVisibilityAutoTests() : DirectiveTest<ChangelogBlock>(
 	// language=markdown
 	"""
 		:::{changelog}
@@ -830,14 +818,14 @@ public class ChangelogCdnLinkVisibilityAutoTests(ITestOutputHelper output) : Dir
 				""")
 		);
 
-	public override async ValueTask InitializeAsync()
+	public override async Task InitializeAsync()
 	{
 		await base.InitializeAsync();
 		Block!.PrivateRepositories.Add("cloud");
 		Block!.PrivateRepositories.Add("kibana");
 	}
 
-	[Fact]
+	[Test]
 	public void ShowsLinksForMergedCdnBundleWhenAuto()
 	{
 		var markdown = ChangelogInlineRenderer.RenderChangelogMarkdown(Block!);
