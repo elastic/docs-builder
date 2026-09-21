@@ -73,7 +73,6 @@ public static class IDirectoryInfoExtensions
 	private static bool? CaseSensitiveOsCheck;
 	public static bool IsCaseSensitiveFileSystem
 	{
-
 		get
 		{
 			// heuristic to determine if the OS is case-sensitive
@@ -85,7 +84,6 @@ public static class IDirectoryInfoExtensions
 				var culture = CultureInfo.CurrentCulture;
 				CaseSensitiveOsCheck = !Directory.Exists(tmp.ToUpper(culture)) || !Directory.Exists(tmp.ToLower(culture));
 				return CaseSensitiveOsCheck ?? false;
-
 			}
 			catch
 			{
@@ -95,7 +93,6 @@ public static class IDirectoryInfoExtensions
 			}
 		}
 	}
-
 
 	/// Validates <paramref name="directory"/> is subdirectory of <paramref name="parentDirectory"/>
 	public static bool IsSubPathOf(this IDirectoryInfo directory, IDirectoryInfo parentDirectory)
@@ -111,7 +108,8 @@ public static class IDirectoryInfoExtensions
 			if (string.Equals(parent.FullName, parentDirectory.FullName, cmp))
 				return true;
 			parent = parent.Parent;
-		} while (parent != null);
+		}
+		while (parent != null);
 
 		return false;
 	}
@@ -141,8 +139,10 @@ public static class IDirectoryInfoExtensions
 		for (var i = 0; i < roots.Count; i++)
 		{
 			if (IsSubPath(candidate, roots[i], fs)) // candidate already covered by an existing (wider) root
+
 				return;
 			if (IsSubPath(roots[i], candidate, fs)) // candidate is wider; it supersedes the existing root
+
 			{
 				roots[i] = candidate;
 				return;
@@ -164,13 +164,18 @@ public static class IDirectoryInfoExtensions
 			if (string.Equals(parent.Name, parentName, comparison))
 				return true;
 			parent = parent.Parent;
-		} while (parent != null);
+		}
+		while (parent != null);
 
 		return false;
 	}
 
 	/// Gets the first  <paramref name="parentName"/>, parent of <paramref name="directory"/>
-	public static IDirectoryInfo? GetParent(this IDirectoryInfo directory, string parentName, StringComparison comparison = OrdinalIgnoreCase)
+	public static IDirectoryInfo? GetParent(
+		this IDirectoryInfo directory,
+		string parentName,
+		StringComparison comparison = OrdinalIgnoreCase
+	)
 	{
 		if (string.Equals(directory.Name, parentName, comparison))
 			return directory;
@@ -180,7 +185,8 @@ public static class IDirectoryInfoExtensions
 			if (string.Equals(parent.Name, parentName, comparison))
 				return parent;
 			parent = parent.Parent;
-		} while (parent != null);
+		}
+		while (parent != null);
 
 		return null;
 	}

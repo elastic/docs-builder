@@ -52,7 +52,8 @@ internal sealed class CheckForUpdatesMiddleware(ILogger<CheckForUpdatesMiddlewar
 			return;
 		}
 
-		var assemblyVersion = Assembly.GetExecutingAssembly()
+		var assemblyVersion = Assembly
+			.GetExecutingAssembly()
 			.GetCustomAttributes<AssemblyInformationalVersionAttribute>()
 			.FirstOrDefault()?.InformationalVersion;
 
@@ -67,7 +68,11 @@ internal sealed class CheckForUpdatesMiddleware(ILogger<CheckForUpdatesMiddlewar
 			return;
 
 		_logger.LogInformation("");
-		_logger.LogInformation("A new version of docs-builder is available: {Latest} (currently on {Current})", latestVersion, currentSemVersion);
+		_logger.LogInformation(
+			"A new version of docs-builder is available: {Latest} (currently on {Current})",
+			latestVersion,
+			currentSemVersion
+		);
 		_logger.LogInformation("  {LatestVersionUrl}", latestVersionUrl);
 		_logger.LogInformation("Read more about updating: https://elastic.github.io/docs-builder/contribute/locally#step-one");
 	}

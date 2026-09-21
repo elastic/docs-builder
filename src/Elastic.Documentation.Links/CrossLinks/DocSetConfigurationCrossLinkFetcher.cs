@@ -15,8 +15,8 @@ public class DocSetConfigurationCrossLinkFetcher(
 	ILoggerFactory logFactory,
 	ConfigurationFile configuration,
 	ILinkIndexReader? linkIndexProvider = null,
-	ILinkIndexReader? codexLinkIndexReader = null)
-	: CrossLinkFetcher(logFactory, linkIndexProvider ?? Aws3LinkIndexReader.CreateAnonymous())
+	ILinkIndexReader? codexLinkIndexReader = null
+) : CrossLinkFetcher(logFactory, linkIndexProvider ?? Aws3LinkIndexReader.CreateAnonymous())
 {
 	private readonly ILogger _logger = logFactory.CreateLogger(nameof(DocSetConfigurationCrossLinkFetcher));
 	private readonly ILinkIndexReader? _codexReader = codexLinkIndexReader;

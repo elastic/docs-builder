@@ -23,8 +23,7 @@ public class StripMarkdown_PlainTextInput_ReturnsInputUnchanged
 public class StripMarkdown_EscapedAsterisks_StripsEscapes
 {
 	[Fact]
-	public void UnescapesBackslashEscapedSpans() =>
-		@"\*literal\*".StripMarkdown().Should().Be("*literal*");
+	public void UnescapesBackslashEscapedSpans() => @"\*literal\*".StripMarkdown().Should().Be("*literal*");
 }
 
 public class StripMarkdown_MarkdownInput_StripsFormatting
@@ -34,6 +33,5 @@ public class StripMarkdown_MarkdownInput_StripsFormatting
 	[InlineData("**bold text**", "bold text")]
 	[InlineData("_italic text_", "italic text")]
 	[InlineData("[link text](https://example.com)", "link text")]
-	public void RemovesMarkdownSyntax(string input, string expected) =>
-		input.StripMarkdown().Should().Be(expected);
+	public void RemovesMarkdownSyntax(string input, string expected) => input.StripMarkdown().Should().Be(expected);
 }

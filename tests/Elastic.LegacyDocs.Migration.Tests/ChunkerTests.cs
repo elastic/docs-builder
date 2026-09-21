@@ -15,16 +15,16 @@ namespace Elastic.LegacyDocs.Migration.Tests;
 /// </summary>
 public class ChunkerTests
 {
-	private static MarkdownEmitter Emitter() =>
-		new(new MarkdownEmitterOptions { BookPrefix = "test", Version = "1.0" });
+	private static MarkdownEmitter Emitter() => new(new MarkdownEmitterOptions { BookPrefix = "test", Version = "1.0" });
 
-	private static Elastic.LegacyDocs.Migration.Asciidoc.Ast.AsciidocDocument Parse(string content, Dictionary<string, string>? files = null)
+	private static Elastic.LegacyDocs.Migration.Asciidoc.Ast.AsciidocDocument Parse(
+		string content,
+		Dictionary<string, string>? files = null
+	)
 	{
 		var opts = new AsciidocParserOptions
 		{
-			FileReader = files is not null
-				? path => files.TryGetValue(path, out var c) ? c : null
-				: null
+			FileReader = files is not null ? path => files.TryGetValue(path, out var c) ? c : null : null
 		};
 		return new AsciidocParser(opts).Parse(content, "/base");
 	}
@@ -61,12 +61,14 @@ public class ChunkerTests
 		//       == Index and search…        (Level 1 ≤ 2 → child page)
 		var files = new Dictionary<string, string>
 		{
-			["/base/index.adoc"] = """
+			["/base/index.adoc"] =
+				"""
                 = Elasticsearch Guide
 
                 include::quickstart.adoc[]
                 """,
-			["/base/quickstart.adoc"] = """
+			["/base/quickstart.adoc"] =
+				"""
                 [[quickstart]]
                 = Quick starts
 
@@ -113,13 +115,15 @@ public class ChunkerTests
 
                 include::setup.adoc[]
                 """,
-			["/base/setup.adoc"] = """
+			["/base/setup.adoc"] =
+				"""
                 [[setup]]
                 == Installing Elasticsearch
 
                 include::targz.adoc[]
                 """,
-			["/base/targz.adoc"] = """
+			["/base/targz.adoc"] =
+				"""
                 [[targz]]
                 === Install from archive on Linux
 
@@ -140,7 +144,7 @@ public class ChunkerTests
 		setup.Children.Should().HaveCount(1);
 		var targz = setup.Children[0];
 		targz.Slug.Should().Be("targz");
-		targz.Children.Should().BeEmpty();                       // no further child pages
+		targz.Children.Should().BeEmpty(); // no further child pages
 		targz.MarkdownContent.Should().Contain("Intro text");
 		targz.MarkdownContent.Should().Contain("## Next steps"); // Level 3, rebased: effective=3-2=1 → ##
 	}
@@ -158,7 +162,8 @@ public class ChunkerTests
 
                 include::getting-started.adoc[]
                 """,
-			["/base/getting-started.adoc"] = """
+			["/base/getting-started.adoc"] =
+				"""
                 [[getting-started]]
                 == Index and search data using Elasticsearch APIs
 
@@ -187,7 +192,8 @@ public class ChunkerTests
 
                 include::mypage.adoc[]
                 """,
-			["/base/mypage.adoc"] = """
+			["/base/mypage.adoc"] =
+				"""
                 [[mypage]]
                 == My Page
 
@@ -216,7 +222,8 @@ public class ChunkerTests
 
                 include::install.adoc[]
                 """,
-			["/base/install.adoc"] = """
+			["/base/install.adoc"] =
+				"""
                 == Install from Archive on Linux/MacOS
 
                 Content.
@@ -236,7 +243,8 @@ public class ChunkerTests
 		// Two included files with the same section id would collide; the second gets _2.
 		var files = new Dictionary<string, string>
 		{
-			["/base/index.adoc"] = """
+			["/base/index.adoc"] =
+				"""
                 = Book
 
                 include::a.adoc[]
@@ -283,24 +291,28 @@ public class ChunkerTests
 
                 include::migration/index.adoc[]
                 """,
-			["/base/migration/index.adoc"] = """
+			["/base/migration/index.adoc"] =
+				"""
                 include::intro.adoc[]
                 include::migrate-1.adoc[]
                 include::migrate-2.adoc[]
                 """,
-			["/base/migration/intro.adoc"] = """
+			["/base/migration/intro.adoc"] =
+				"""
                 [[migration-guide]]
                 = Migration guide
 
                 Intro text.
                 """,
-			["/base/migration/migrate-1.adoc"] = """
+			["/base/migration/migrate-1.adoc"] =
+				"""
                 [[migrating-1]]
                 == Migrating to 1.0
 
                 Migration 1 content.
                 """,
-			["/base/migration/migrate-2.adoc"] = """
+			["/base/migration/migrate-2.adoc"] =
+				"""
                 [[migrating-2]]
                 == Migrating to 2.0
 
@@ -332,11 +344,7 @@ public class ChunkerTests
 			new()
 			{
 				File = "quickstart.md",
-				Children =
-				[
-					new TocEntry { File = "getting-started.md" },
-					new TocEntry { File = "full-text.md" }
-				]
+				Children = [new TocEntry { File = "getting-started.md" }, new TocEntry { File = "full-text.md" }]
 			},
 		};
 

@@ -26,8 +26,7 @@ namespace Elastic.Markdown.Myst.Directives.Hub;
 /// :::
 /// </code>
 /// </example>
-public class LinkCardBlock(DirectiveBlockParser parser, ParserContext context)
-	: DirectiveBlock(parser, context), IBlockTitle
+public class LinkCardBlock(DirectiveBlockParser parser, ParserContext context) : DirectiveBlock(parser, context), IBlockTitle
 {
 	public override string Directive => "link-card";
 

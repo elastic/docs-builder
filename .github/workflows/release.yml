@@ -51,12 +51,13 @@ jobs:
       # Required for `actions/attest-build-provenance`
       id-token: write
       attestations: write
+      artifact-metadata: write
     outputs:
       full-version: ${{ steps.bootstrap.outputs.full-version }}
       major-version: ${{ steps.bootstrap.outputs.major-version }}
 
     steps:
-      - uses: actions/checkout@v7.0.1
+      - uses: actions/checkout@v7
         with:
           ref: ${{ needs.release-drafter.outputs.tag_name }}
           persist-credentials: false
@@ -298,7 +299,7 @@ jobs:
       major-version: ${{ steps.bootstrap.outputs.major-version }}
 
     steps:
-      - uses: actions/checkout@v7.0.1
+      - uses: actions/checkout@v7
         with:
           ref: ${{ needs.release-drafter.outputs.tag_name }}
           persist-credentials: false

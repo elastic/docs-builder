@@ -8,24 +8,30 @@ using RazorSlices;
 
 namespace Elastic.Documentation.Site.Navigation;
 
-public class IsolatedBuildNavigationHtmlWriter(BuildContext context, IRootNavigationItem<INavigationModel, INavigationItem> siteRoot)
-	: INavigationHtmlWriter
+public class IsolatedBuildNavigationHtmlWriter(
+	BuildContext context,
+	IRootNavigationItem<INavigationModel, INavigationItem> siteRoot,
+	IReadOnlyList<NavigationSelectOption>? versionSwitcher = null
+) : INavigationHtmlWriter
 {
 	private readonly NavigationRenderCache _renderedNavigationCache = new();
 
 	public async Task<NavigationRenderResult> RenderNavigation(
 		IRootNavigationItem<INavigationModel, INavigationItem> currentRootNavigation,
 		INavigationItem currentNavigationItem,
-		Cancel ctx = default)
+		Cancel ctx = default
+	)
 	{
 		var renderRoot = currentNavigationItem.FindIslandRoot() ?? SelectNavigationRoot(currentRootNavigation);
 
 		if (renderRoot is not INodeNavigationItem<INavigationModel, INavigationItem> group)
 			return NavigationRenderResult.Empty;
 
-		return await _renderedNavigationCache.GetOrRenderAsync(
+		var rendered = await _renderedNavigationCache.GetOrRenderAsync(
 			renderRoot,
-			() => ((INavigationHtmlWriter)this).Render(CreateNavigationModel(group), ctx));
+			() => ((INavigationHtmlWriter)this).Render(CreateNavigationModel(group), ctx)
+		);
+		return NavigationCurrentMarker.Apply(rendered, currentNavigationItem);
 	}
 
 	/// <summary>
@@ -34,7 +40,8 @@ public class IsolatedBuildNavigationHtmlWriter(BuildContext context, IRootNaviga
 	/// or when primary nav/dropdown features are enabled.
 	/// </summary>
 	private IRootNavigationItem<INavigationModel, INavigationItem> SelectNavigationRoot(
-		IRootNavigationItem<INavigationModel, INavigationItem> requestedRoot)
+		IRootNavigationItem<INavigationModel, INavigationItem> requestedRoot
+	)
 	{
 		var useRequestedRoot = requestedRoot != siteRoot
 			|| context.Configuration.Features.PrimaryNavEnabled
@@ -49,11 +56,14 @@ public class IsolatedBuildNavigationHtmlWriter(BuildContext context, IRootNaviga
 		// correctly lists all sections even when renderRoot is a nested island.
 		var topLevelItems = siteRoot.NavigationItems.OfType<INodeNavigationItem<INavigationModel, INavigationItem>>().ToList();
 		var isUsingDropdown = context.Configuration.Features.PrimaryNavEnabled || siteRoot.IsUsingNavigationDropdown;
-		return NavigationRenderModel.Create(
+		var model = NavigationRenderModel.Create(
 			tree: renderRoot,
 			topLevelItems: topLevelItems,
 			isUsingNavigationDropdown: isUsingDropdown,
 			isPrimaryNavEnabled: context.Configuration.Features.PrimaryNavEnabled,
-			isGlobalAssemblyBuild: false);
+			isGlobalAssemblyBuild: false,
+			navigationPreviewEnabled: context.Configuration.Features.NavigationPreviewEnabled
+		);
+		return versionSwitcher is { Count: > 0 } ? model with { VersionSwitcher = versionSwitcher } : model;
 	}
 }

@@ -66,10 +66,14 @@ public class ErrorHandlingTests(ITestOutputHelper output) : RenderChangelogTestB
 		// Assert
 		result.Should().BeFalse();
 		Collector.Errors.Should().BeGreaterThan(0);
-		Collector.Diagnostics.Should().Contain(d =>
-			d.Severity == Severity.Error &&
-			d.Message.Contains("Entry '1755268130-feature.yaml' in bundle has no inline content: title and type are required") &&
-			d.Message.Contains("Re-create the bundle with 'changelog bundle'"));
+		Collector
+			.Diagnostics
+			.Should()
+			.Contain(
+				d => d.Severity == Severity.Error && d.Message.Contains(
+					"Entry '1755268130-feature.yaml' in bundle has no inline content: title and type are required"
+				) && d.Message.Contains("Re-create the bundle with 'changelog bundle'")
+			);
 	}
 
 	[Fact]
@@ -81,8 +85,7 @@ public class ErrorHandlingTests(ITestOutputHelper output) : RenderChangelogTestB
 
 		var bundleFile = FileSystem.Path.Join(bundleDir, "bundle.yaml");
 		// language=yaml
-		var bundleContent =
-			"""
+		var bundleContent = """
 			invalid_field: value
 			""";
 		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current.CancellationToken);
@@ -99,7 +102,10 @@ public class ErrorHandlingTests(ITestOutputHelper output) : RenderChangelogTestB
 		// Assert
 		result.Should().BeFalse();
 		Collector.Errors.Should().BeGreaterThan(0);
-		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("No changelog entries to render") || d.Message.Contains("Failed to deserialize"));
+		Collector
+			.Diagnostics
+			.Should()
+			.Contain(d => d.Message.Contains("No changelog entries to render") || d.Message.Contains("Failed to deserialize"));
 	}
 
 	[Fact]
@@ -134,9 +140,14 @@ public class ErrorHandlingTests(ITestOutputHelper output) : RenderChangelogTestB
 		// Assert
 		result.Should().BeFalse();
 		Collector.Errors.Should().BeGreaterThan(0);
-		Collector.Diagnostics.Should().Contain(d =>
-			d.Severity == Severity.Error &&
-			d.Message.Contains("Entry 'Feature without products' in bundle is missing required field: products"));
+		Collector
+			.Diagnostics
+			.Should()
+			.Contain(
+				d => d.Severity == Severity.Error && d.Message.Contains(
+					"Entry 'Feature without products' in bundle is missing required field: products"
+				)
+			);
 	}
 
 	[Fact]
@@ -227,9 +238,13 @@ public class ErrorHandlingTests(ITestOutputHelper output) : RenderChangelogTestB
 		// Assert
 		result.Should().BeFalse();
 		Collector.Errors.Should().BeGreaterThan(0);
-		Collector.Diagnostics.Should().Contain(d =>
-			d.Severity == Severity.Error &&
-			d.Message.Contains("Unknown type feature") &&
-			d.Message.Contains("has no inline content: title and type are required"));
+		Collector
+			.Diagnostics
+			.Should()
+			.Contain(
+				d => d.Severity == Severity.Error && d.Message.Contains("Unknown type feature") && d.Message.Contains(
+					"has no inline content: title and type are required"
+				)
+			);
 	}
 }

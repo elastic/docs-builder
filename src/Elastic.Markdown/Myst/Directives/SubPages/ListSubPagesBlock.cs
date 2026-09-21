@@ -31,13 +31,14 @@ public class ListSubPagesBlock(DirectiveBlockParser parser, ParserContext contex
 		var subPages = new List<SubPageEntry>();
 		var sourcePath = context.MarkdownParentPath ?? context.MarkdownSourcePath;
 		var document = context.TryFindDocument(sourcePath);
-		if (document is IDocumentationFile docFile &&
-			context.NavigationTraversable.NavigationDocumentationFileLookup.TryGetValue(docFile, out var lookupResult))
+		if (
+			document is IDocumentationFile docFile
+			&& context.NavigationTraversable.NavigationDocumentationFileLookup.TryGetValue(docFile, out var lookupResult)
+		)
 		{
 			// When current page is the index of a node, lookup returns the node (not the leaf). Use that node's NavigationItems as siblings.
-			var parent = lookupResult is INodeNavigationItem<INavigationModel, INavigationItem> indexNode && indexNode.Index.Model == docFile
-				? indexNode
-				: lookupResult.Parent;
+			var parent = lookupResult is INodeNavigationItem<INavigationModel, INavigationItem> indexNode
+				&& indexNode.Index.Model == docFile ? indexNode : lookupResult.Parent;
 
 			var currentUrl = lookupResult.Url;
 			if (parent is not null)
@@ -47,7 +48,8 @@ public class ListSubPagesBlock(DirectiveBlockParser parser, ParserContext contex
 					var description = item switch
 					{
 						ILeafNavigationItem<IDocumentationFile> leaf => leaf.Model.Description,
-						INodeNavigationItem<INavigationModel, INavigationItem> node when node.Index.Model is IDocumentationFile doc => doc.Description,
+						INodeNavigationItem<INavigationModel, INavigationItem> node when node.Index.Model is IDocumentationFile doc =>
+							doc.Description,
 						_ => null
 					};
 

@@ -14,10 +14,7 @@ using Nullean.ScopedFileSystem;
 
 namespace Elastic.Documentation.Refactor;
 
-public class MoveFileService(
-	ILoggerFactory logFactory,
-	IConfigurationContext configurationContext
-) : IService
+public class MoveFileService(ILoggerFactory logFactory, IConfigurationContext configurationContext) : IService
 {
 	public async Task<bool> Move(
 		IDiagnosticsCollector collector,

@@ -27,7 +27,7 @@ The body is **YAML, not markdown**. The directive expects a fixed schema and ren
 title: Writing content             # required, the card heading
 link: /getting-started/serve.md    # optional, makes the title clickable
 description: One short blurb.      # optional
-icon: elasticsearch                # optional, product-keyed inline SVG
+icon: elasticsearch                # optional, product-keyed inline SVG (elasticsearch, kibana, observability, security, vectordb)
 variant: es                        # optional accent: es, obs, or sec
 links:                             # optional, the card's links
   - label: Pages and links
@@ -41,7 +41,7 @@ sub-list, so every group of links reads the same way wherever it appears.
 
 `variant: es`, `obs`, or `sec` adds a left border in the matching solution colour. Use it for solution cards.
 
-`icon` takes the same product keys as [`{hero}`](hero.md): `elasticsearch`, `kibana`, `observability`, `security`.
+`icon` takes the same product keys as [`{hero}`](hero.md), including the serverless and Cloud aliases that reuse a stack or Cloud mark.
 
 ## Inside `{explore}`
 

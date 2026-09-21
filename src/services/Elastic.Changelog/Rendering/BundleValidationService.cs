@@ -24,7 +24,8 @@ public class BundleValidationService(ILoggerFactory logFactory, IFileSystem file
 	public async Task<BundleValidationResult> ValidateBundlesAsync(
 		IDiagnosticsCollector collector,
 		IReadOnlyCollection<BundleInput> bundles,
-		Cancel ctx)
+		Cancel ctx
+	)
 	{
 		var bundleDataList = new List<ValidatedBundle>();
 		var seenFileNames = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
@@ -66,11 +67,7 @@ public class BundleValidationService(ILoggerFactory logFactory, IFileSystem file
 			if (!result)
 				return CreateInvalidResult(bundleDataList, seenFileNames, seenPrs);
 
-			bundleDataList.Add(new ValidatedBundle
-			{
-				Data = bundledData,
-				Input = bundleInput
-			});
+			bundleDataList.Add(new ValidatedBundle { Data = bundledData, Input = bundleInput });
 		}
 
 		// Check for duplicate file names across bundles
@@ -89,7 +86,8 @@ public class BundleValidationService(ILoggerFactory logFactory, IFileSystem file
 		IDiagnosticsCollector collector,
 		Bundle mainBundle,
 		IReadOnlyList<string> amendFiles,
-		Cancel ctx)
+		Cancel ctx
+	)
 	{
 		var amendBundles = new List<Bundle>();
 
@@ -104,7 +102,8 @@ public class BundleValidationService(ILoggerFactory logFactory, IFileSystem file
 					"Merging amend file {AmendFile} ({AddCount} additions, {ExcludeCount} exclusions)",
 					amendFile,
 					amendBundle.Entries.Count,
-					amendBundle.ExcludeEntries.Count);
+					amendBundle.ExcludeEntries.Count
+				);
 			}
 			catch (YamlException yamlEx)
 			{
@@ -147,7 +146,8 @@ public class BundleValidationService(ILoggerFactory logFactory, IFileSystem file
 		BundleInput bundleInput,
 		Bundle bundledData,
 		Dictionary<string, List<string>> seenFileNames,
-		Dictionary<string, List<string>> seenPrs)
+		Dictionary<string, List<string>> seenPrs
+	)
 	{
 		var fileNamesInThisBundle = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 		var allValid = true;
@@ -184,15 +184,18 @@ public class BundleValidationService(ILoggerFactory logFactory, IFileSystem file
 		IDiagnosticsCollector collector,
 		string bundleFile,
 		BundledEntry entry,
-		Dictionary<string, List<string>> seenPrs)
+		Dictionary<string, List<string>> seenPrs
+	)
 	{
 		// Bundles are always self-contained: an entry without inline content is invalid.
 		if (string.IsNullOrWhiteSpace(entry.Title) || entry.Type == null)
 		{
 			var entryName = !string.IsNullOrWhiteSpace(entry.File?.Name) ? entry.File.Name : entry.Title ?? "<unnamed>";
-			collector.EmitError(bundleFile,
+			collector.EmitError(
+				bundleFile,
 				$"Entry '{entryName}' in bundle has no inline content: title and type are required. " +
-				"Re-create the bundle with 'changelog bundle'.");
+					"Re-create the bundle with 'changelog bundle'."
+			);
 			return false;
 		}
 
@@ -222,14 +225,18 @@ public class BundleValidationService(ILoggerFactory logFactory, IFileSystem file
 	private static void EmitDuplicateWarnings(
 		IDiagnosticsCollector collector,
 		Dictionary<string, List<string>> seenFileNames,
-		Dictionary<string, List<string>> seenPrs)
+		Dictionary<string, List<string>> seenPrs
+	)
 	{
 		// Check for duplicate file names across bundles
 		foreach (var (fileName, bundleFiles) in seenFileNames.Where(kvp => kvp.Value.Count > 1))
 		{
 			var uniqueBundles = bundleFiles.Distinct().ToList();
 			if (uniqueBundles.Count > 1)
-				collector.EmitWarning(string.Empty, $"Changelog file '{fileName}' appears in multiple bundles: {string.Join(", ", uniqueBundles)}");
+				collector.EmitWarning(
+					string.Empty,
+					$"Changelog file '{fileName}' appears in multiple bundles: {string.Join(", ", uniqueBundles)}"
+				);
 		}
 
 		// Check for duplicate PRs
@@ -244,12 +251,6 @@ public class BundleValidationService(ILoggerFactory logFactory, IFileSystem file
 	private static BundleValidationResult CreateInvalidResult(
 		List<ValidatedBundle> bundles,
 		Dictionary<string, List<string>> seenFileNames,
-		Dictionary<string, List<string>> seenPrs) =>
-		new()
-		{
-			IsValid = false,
-			Bundles = bundles,
-			SeenFileNames = seenFileNames,
-			SeenPrs = seenPrs
-		};
+		Dictionary<string, List<string>> seenPrs
+	) => new() { IsValid = false, Bundles = bundles, SeenFileNames = seenFileNames, SeenPrs = seenPrs };
 }

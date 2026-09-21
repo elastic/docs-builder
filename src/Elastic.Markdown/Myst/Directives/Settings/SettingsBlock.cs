@@ -43,8 +43,7 @@ public class SettingsBlock(DirectiveBlockParser parser, ParserContext context) :
 	public int GroupHeadingLevel => _groupHeadingLevel ??= CalculateGroupHeadingLevel();
 
 	/// <inheritdoc />
-	public override IEnumerable<string> GeneratedAnchors =>
-		_generatedAnchors ??= LoadGeneratedAnchors();
+	public override IEnumerable<string> GeneratedAnchors => _generatedAnchors ??= LoadGeneratedAnchors();
 
 	/// <summary>Right-rail and in-page TOC entries for each settings group.</summary>
 	public IEnumerable<PageTocItem> GeneratedTableOfContent
@@ -55,18 +54,15 @@ public class SettingsBlock(DirectiveBlockParser parser, ParserContext context) :
 				return [];
 
 			var level = GroupHeadingLevel;
-			return settings.Groups
-				.Where(g => ActiveDeploymentFilter is null ||
-					DeploymentFilter.AnyVisible(g.Settings, ActiveDeploymentFilter, null))
-				.Select(g => new PageTocItem
-				{
-					Heading = g.Name ?? string.Empty,
-					Slug = SettingsViewModel.GroupHeadingSlug(g),
-					Level = level
-				}).Where(t => !string.IsNullOrEmpty(t.Slug));
+			return settings
+				.Groups
+				.Where(g => ActiveDeploymentFilter is null || DeploymentFilter.AnyVisible(g.Settings, ActiveDeploymentFilter, null))
+				.Select(
+					g => new PageTocItem { Heading = g.Name ?? string.Empty, Slug = SettingsViewModel.GroupHeadingSlug(g), Level = level }
+				)
+				.Where(t => !string.IsNullOrEmpty(t.Slug));
 		}
 	}
-
 
 	//TODO add all options from
 	//https://mystmd.org/guide/directives#directive-include
@@ -140,9 +136,7 @@ public class SettingsBlock(DirectiveBlockParser parser, ParserContext context) :
 		var trimmed = raw.Trim().ToLowerInvariant();
 		if (!DeploymentFilter.ValidValues.Contains(trimmed))
 		{
-			this.EmitWarning(
-				$"Unknown deployment filter '{raw}'. Valid values are: {string.Join(", ", DeploymentFilter.ValidValues)}."
-			);
+			this.EmitWarning($"Unknown deployment filter '{raw}'. Valid values are: {string.Join(", ", DeploymentFilter.ValidValues)}.");
 			return;
 		}
 
@@ -248,8 +242,7 @@ public class SettingsBlock(DirectiveBlockParser parser, ParserContext context) :
 
 		foreach (var group in yaml.Groups)
 		{
-			var groupVisible = deploymentFilter is null ||
-				DeploymentFilter.AnyVisible(group.Settings, deploymentFilter, null);
+			var groupVisible = deploymentFilter is null || DeploymentFilter.AnyVisible(group.Settings, deploymentFilter, null);
 			if (!groupVisible)
 				continue;
 
@@ -277,5 +270,3 @@ public class SettingsBlock(DirectiveBlockParser parser, ParserContext context) :
 		}
 	}
 }
-
-

@@ -60,8 +60,7 @@ public static partial class GitCheckoutInformationFactory
 		else
 		{
 			var gitFile = fileSystem.FileInfo.New(gitDirPath);
-			if (!Paths.TryReadGitDirPointer(fileSystem, gitFile, out var resolvedGitDir)
-				|| resolvedGitDir is null)
+			if (!Paths.TryReadGitDirPointer(fileSystem, gitFile, out var resolvedGitDir) || resolvedGitDir is null)
 				return GitCheckoutInformation.Unavailable;
 
 			gitDir = resolvedGitDir;
@@ -75,9 +74,7 @@ public static partial class GitCheckoutInformationFactory
 		}
 
 		var headPath = fileSystem.Path.Join(gitDir.FullName, "HEAD");
-		var headText = fileSystem.File.Exists(headPath)
-			? fileSystem.File.ReadAllText(headPath).Trim()
-			: null;
+		var headText = fileSystem.File.Exists(headPath) ? fileSystem.File.ReadAllText(headPath).Trim() : null;
 
 		if (headText is null)
 			return GitCheckoutInformation.Unavailable;
@@ -93,6 +90,7 @@ public static partial class GitCheckoutInformationFactory
 				gitRef = fileSystem.File.ReadAllText(refFilePath).Trim();
 			else if (TryResolvePackedRef(fileSystem, gitDir, refPath, out var packedSha))
 				gitRef = packedSha; // loose ref file absent — ref lives in packed-refs instead
+
 			else
 				gitRef = headText; // symbolic ref not yet written (new empty repo) — use the ref name itself
 		}
@@ -168,8 +166,7 @@ public static partial class GitCheckoutInformationFactory
 	{
 		var gitPath = fileSystem.Path.Join(source.FullName, ".git");
 		var noGitEntry = !fileSystem.Directory.Exists(gitPath) && !fileSystem.File.Exists(gitPath);
-		var gitDirWithoutConfig = fileSystem.Directory.Exists(gitPath)
-			&& !fileSystem.File.Exists(fileSystem.Path.Join(gitPath, "config"));
+		var gitDirWithoutConfig = fileSystem.Directory.Exists(gitPath) && !fileSystem.File.Exists(fileSystem.Path.Join(gitPath, "config"));
 		return noGitEntry || gitDirWithoutConfig;
 	}
 

@@ -4,7 +4,9 @@
 
 using System.Collections.Frozen;
 using System.Diagnostics;
+using System.Text;
 using Elastic.ApiExplorer;
+using Elastic.ApiExplorer.Infrastructure;
 using Elastic.ApiExplorer.Landing;
 using Elastic.ApiExplorer.Model;
 using Elastic.Documentation;
@@ -21,11 +23,12 @@ namespace Elastic.Documentation.Assembler.Building;
 /// </summary>
 public static class AssemblerOpenApiBuildStep
 {
-	public static async Task BuildAsync(
+	public static async Task<IReadOnlyList<ApiCatalogEntry>> BuildAsync(
 		ILoggerFactory logFactory,
 		AssembleContext assembleContext,
 		AssembleSources assembleSources,
-		Cancel ctx)
+		Cancel ctx
+	)
 	{
 		var logger = logFactory.CreateLogger(typeof(AssemblerOpenApiBuildStep));
 		var env = assembleContext.Environment;
@@ -36,19 +39,34 @@ public static class AssemblerOpenApiBuildStep
 		if (!features.AssemblerApiExplorerEnabled)
 		{
 			logger.LogInformation("Skipping OpenAPI generation: assembler-api-explorer feature flag is disabled");
-			return;
+			return [];
 		}
 
 		var owners = DiscoverApiOwners(assembleSources.AssembleSets, assembleContext.Collector);
 		if (owners.Count == 0)
 		{
 			logger.LogInformation("Skipping OpenAPI generation: no API declarations found in assembled docsets");
-			return;
+			return [];
 		}
 
 		var stopwatch = Stopwatch.StartNew();
 		var catalogEntries = new List<ApiCatalogEntry>();
 		using var versionIndexClient = new VersionIndexClient();
+
+		var hubEntries = new List<ApiCatalogEntry>();
+		var seenKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+		foreach (var owner in owners)
+		{
+			var declared = ApiHubSwitcher.CollectDeclaredEntries(
+				owner.Set.BuildContext.UrlPathPrefix,
+				owner.Set.BuildContext.Configuration.ApiConfigurations
+			);
+			foreach (var entry in declared)
+			{
+				if (seenKeys.Add(entry.Key))
+					hubEntries.Add(entry);
+			}
+		}
 
 		foreach (var owner in owners)
 		{
@@ -58,8 +76,9 @@ public static class AssemblerOpenApiBuildStep
 				logFactory,
 				owner.Set.BuildContext,
 				generator.MarkdownStringRenderer,
-				versionIndexClient);
-			var entries = await openApiGenerator.GenerateProducts(ctx).ConfigureAwait(false);
+				versionIndexClient
+			);
+			var entries = await openApiGenerator.GenerateProducts(hubEntries: hubEntries, ctx).ConfigureAwait(false);
 			catalogEntries.AddRange(entries);
 		}
 
@@ -70,20 +89,35 @@ public static class AssemblerOpenApiBuildStep
 				logFactory,
 				catalogContext,
 				new DocumentationGenerator(owners[0].Set.DocumentationSet, logFactory).MarkdownStringRenderer,
-				versionIndexClient);
+				versionIndexClient
+			);
 			await catalogGenerator.GenerateCatalog(catalogEntries, ctx).ConfigureAwait(false);
+			await WriteApiLlmsTxt(assembleContext, catalogEntries, ctx).ConfigureAwait(false);
 		}
 
 		stopwatch.Stop();
 		logger.LogInformation(
 			"Finished generating OpenAPI pages under {OutputDirectory} in {DurationMs} ms",
 			assembleContext.OutputWithPathPrefixDirectory.FullName,
-			stopwatch.ElapsedMilliseconds);
+			stopwatch.ElapsedMilliseconds
+		);
+		return catalogEntries;
+	}
+
+	private static async Task WriteApiLlmsTxt(AssembleContext assembleContext, IReadOnlyList<ApiCatalogEntry> catalogEntries, Cancel ctx)
+	{
+		var canonicalBaseUrl = new Uri(assembleContext.Environment.Uri);
+		var content = new LlmsNavigationEnhancer().GenerateApiHubIndex(catalogEntries, canonicalBaseUrl);
+		var directory = assembleContext.WriteFileSystem.Path.Join(assembleContext.OutputWithPathPrefixDirectory.FullName, "api");
+		_ = assembleContext.WriteFileSystem.Directory.CreateDirectory(directory);
+		var path = assembleContext.WriteFileSystem.Path.Join(directory, "llms.txt");
+		await assembleContext.WriteFileSystem.File.WriteAllTextAsync(path, content, Encoding.UTF8, ctx).ConfigureAwait(false);
 	}
 
 	internal static IReadOnlyList<AssemblerApiOwner> DiscoverApiOwners(
 		FrozenDictionary<string, AssemblerDocumentationSet> assembleSets,
-		IDiagnosticsCollector collector)
+		IDiagnosticsCollector collector
+	)
 	{
 		var keyOwners = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 		var owners = new List<AssemblerApiOwner>();
@@ -99,7 +133,8 @@ public static class AssemblerOpenApiBuildStep
 				if (keyOwners.TryGetValue(apiKey, out var existingRepository))
 				{
 					collector.EmitGlobalError(
-						$"Duplicate API key '{apiKey}' declared in {existingRepository} and {set.Checkout.Repository.Name}");
+						$"Duplicate API key '{apiKey}' declared in {existingRepository} and {set.Checkout.Repository.Name}"
+					);
 					continue;
 				}
 
@@ -112,9 +147,7 @@ public static class AssemblerOpenApiBuildStep
 		return owners;
 	}
 
-	private static void ApplyFeatureFlags(
-		AssemblerDocumentationSet set,
-		IReadOnlyDictionary<string, bool> featureFlags)
+	private static void ApplyFeatureFlags(AssemblerDocumentationSet set, IReadOnlyDictionary<string, bool> featureFlags)
 	{
 		foreach (var (key, value) in featureFlags)
 			set.BuildContext.Configuration.Features.Set(key, value);

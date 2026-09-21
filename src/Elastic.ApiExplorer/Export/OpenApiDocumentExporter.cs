@@ -24,9 +24,7 @@ namespace Elastic.ApiExplorer.Export;
 /// <summary>
 /// Exports OpenAPI specifications from CloudFront URLs and converts them to DocumentationDocument instances.
 /// </summary>
-public partial class OpenApiDocumentExporter(
-	VersionsConfiguration versionsConfiguration,
-	IDocumentInferrerService? documentInferrer = null)
+public partial class OpenApiDocumentExporter(VersionsConfiguration versionsConfiguration, IDocumentInferrerService? documentInferrer = null)
 {
 	private static readonly HttpClient HttpClient = new();
 
@@ -36,16 +34,16 @@ public partial class OpenApiDocumentExporter(
 	[GeneratedRegex(@"Added in (\d+\.\d+\.\d+)", RegexOptions.IgnoreCase)]
 	private static partial Regex AddedInVersionRegex();
 
-	[GeneratedRegex(@"<span class=""operation-verb (\w+)"">(\w+)</span>\s*<span class=""operation-path"">([^<]+)</span>", RegexOptions.IgnoreCase)]
-	private static partial Regex OperationVerbPathRegex();
-
 	/// <summary>
 	/// Fetches and processes both Elasticsearch and Kibana OpenAPI specifications.
 	/// </summary>
 	/// <param name="limitPerSource">Optional limit of documents to return per source (Elasticsearch and Kibana)</param>
 	/// <param name="ctx">Cancellation token</param>
 	/// <returns>Enumerable of DocumentationDocument instances for all endpoints</returns>
-	public async IAsyncEnumerable<DocumentationDocument> ExportDocuments(int? limitPerSource = null, [EnumeratorCancellation] Cancel ctx = default)
+	public async IAsyncEnumerable<DocumentationDocument> ExportDocuments(
+		int? limitPerSource = null,
+		[EnumeratorCancellation] Cancel ctx = default
+	)
 	{
 		// Process Elasticsearch API
 		var elasticsearchCount = 0;
@@ -71,10 +69,7 @@ public partial class OpenApiDocumentExporter(
 	/// <summary>
 	/// Fetches OpenAPI spec from a URL and converts it to DocumentationDocument instances.
 	/// </summary>
-	private async IAsyncEnumerable<DocumentationDocument> ExportFromUrl(
-		string url,
-		string product,
-		[EnumeratorCancellation] Cancel ctx)
+	private async IAsyncEnumerable<DocumentationDocument> ExportFromUrl(string url, string product, [EnumeratorCancellation] Cancel ctx)
 	{
 		var openApiDocument = await FetchOpenApiDocument(url, ctx);
 		if (openApiDocument == null)
@@ -140,7 +135,7 @@ public partial class OpenApiDocumentExporter(
 				// append the raw operation id (e.g. "_bulk") so the REST endpoint name is searchable —
 				// keep it verbatim (no case/underscore normalization) since that's exactly what users type.
 				var searchTitle = $"{title} - {operationId}";
-				var description = TransformOperationListToMarkdown(operation.Value.Description);
+				var description = ApiMarkdown.TransformOperationListToMarkdown(operation.Value.Description);
 
 				// Build body content from operation details
 				var bodyBuilder = new StringBuilder();
@@ -169,11 +164,8 @@ public partial class OpenApiDocumentExporter(
 				var body = bodyBuilder.ToString();
 
 				// Extract tags as headings
-				var headings = operation.Value.Tags?
-					.Select(t => t.Name)
-					.Where(n => !string.IsNullOrEmpty(n))
-					.OfType<string>()
-					.ToArray() ?? [];
+				var headings = operation.Value.Tags?.Select(t => t.Name).Where(n => !string.IsNullOrEmpty(n)).OfType<string>().ToArray()
+					?? [];
 
 				// Extract ApplicableTo from x-state
 				var applies = ExtractApplicableTo(operation.Value);
@@ -199,11 +191,10 @@ public partial class OpenApiDocumentExporter(
 					],
 					Product = inference?.Product?.Id,
 					RelatedProducts = inference?.RelatedProducts.Count > 0
-						? inference.RelatedProducts.Select(p => new IndexedProduct
-						{
-							Id = p.Id,
-							Repository = p.Repository ?? inference.Repository
-						}).ToArray()
+						? inference
+							.RelatedProducts
+							.Select(p => new IndexedProduct { Id = p.Id, Repository = p.Repository ?? inference.Repository })
+							.ToArray()
 						: null
 				};
 			}
@@ -277,20 +268,13 @@ public partial class OpenApiDocumentExporter(
 		var version = ParseVersion(stateValue);
 
 		// Create Applicability instance
-		var applicability = new Applicability
-		{
-			Lifecycle = lifecycle,
-			Version = version
-		};
+		var applicability = new Applicability { Lifecycle = lifecycle, Version = version };
 
 		// Create AppliesCollection
 		var appliesCollection = new AppliesCollection([applicability]);
 
 		// Return ApplicableTo with Stack set
-		return new ApplicableTo
-		{
-			Stack = appliesCollection
-		};
+		return new ApplicableTo { Stack = appliesCollection };
 	}
 
 	/// <summary>
@@ -328,65 +312,5 @@ public partial class OpenApiDocumentExporter(
 
 		var versionString = match.Groups[1].Value;
 		return VersionSpec.TryParse(versionString, out var version) ? version : null;
-	}
-
-	/// <summary>
-	/// Transforms HTML operation lists in descriptions to markdown format.
-	/// Detects "**All methods and paths for this operation:**" followed by HTML divs/spans
-	/// and converts them to a markdown list appended at the end.
-	/// </summary>
-	private static string TransformOperationListToMarkdown(string? description)
-	{
-		if (string.IsNullOrEmpty(description))
-			return description ?? string.Empty;
-
-		// Check if description starts with the operations list header
-		if (!description.Contains("**All methods and paths for this operation:**"))
-			return description;
-
-		// Extract all operation verb and path pairs
-		var matches = OperationVerbPathRegex().Matches(description);
-		if (matches.Count == 0)
-			return description;
-
-		// Find where the HTML content starts and ends
-		var htmlStartIndex = description.IndexOf("<div>", StringComparison.Ordinal);
-		var lastMatchEnd = matches[^1].Index + matches[^1].Length;
-
-		// Find the last closing div after the last match
-		var htmlEndIndex = description.IndexOf("</div>", lastMatchEnd, StringComparison.Ordinal);
-		if (htmlEndIndex == -1 || htmlStartIndex == -1)
-			return description;
-
-		// Build the clean description without HTML
-		var beforeHtml = description[..htmlStartIndex].Trim();
-		var afterHtml = description[(htmlEndIndex + 6)..].Trim();
-
-		// Build markdown list
-		var markdownList = new StringBuilder();
-		_ = markdownList.AppendLine();
-		_ = markdownList.AppendLine();
-
-		foreach (Match match in matches)
-		{
-			var verb = match.Groups[2].Value.ToUpperInvariant();
-			var path = match.Groups[3].Value;
-			_ = markdownList.AppendLine($"- **{verb}** `{path}`");
-		}
-
-		// Combine: clean description (before + after HTML) + markdown list at the end
-		var result = new StringBuilder();
-		_ = result.Append(beforeHtml);
-		if (!string.IsNullOrWhiteSpace(afterHtml))
-		{
-			_ = result.AppendLine();
-			_ = result.AppendLine();
-			_ = result.Append(afterHtml);
-		}
-
-		// Append markdown list at the end
-		_ = result.Append(markdownList);
-
-		return result.ToString().Trim();
 	}
 }

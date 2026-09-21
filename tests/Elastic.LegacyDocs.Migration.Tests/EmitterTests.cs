@@ -83,7 +83,8 @@ public class EmitterTests
 	public void CrossRef_InMultiLineParagraph_WithBacktick_IsEmittedCorrectly()
 	{
 		// Multi-line paragraph where xref with backtick in text is on one line
-		var asciidoc = "= T\n\nIt can be combined\nwith token filters like <<analysis-lowercase-tokenfilter,`lowercase`>> to\nnormalise the analysed terms.\n";
+		var asciidoc =
+			"= T\n\nIt can be combined\nwith token filters like <<analysis-lowercase-tokenfilter,`lowercase`>> to\nnormalise the analysed terms.\n";
 		var md = Emit(asciidoc);
 		md.Should().NotContain("<<");
 		md.Should().Contain("[`lowercase`]");
@@ -93,7 +94,8 @@ public class EmitterTests
 	public void CrossRef_AfterDLItemWithBlankLineSeparator_IsEmittedCorrectly()
 	{
 		// Description list where term is followed by blank line, then description paragraph containing xref
-		var asciidoc = "= T\n\n<<term-anchor,Term>>::\n\nIt can be combined with token filters like <<analysis-lowercase-tokenfilter,`lowercase`>> to\nnormalise the analysed terms.\n";
+		var asciidoc =
+			"= T\n\n<<term-anchor,Term>>::\n\nIt can be combined with token filters like <<analysis-lowercase-tokenfilter,`lowercase`>> to\nnormalise the analysed terms.\n";
 		var md = Emit(asciidoc);
 		md.Should().NotContain("<<");
 		md.Should().Contain("[`lowercase`]");
@@ -103,7 +105,8 @@ public class EmitterTests
 	public void CrossRef_InMultiLineParagraph_WithCurlyQuotes_IsEmittedCorrectly()
 	{
 		// Paragraph using AsciiDoc curly-quotes ``...'' before the xref line
-		var asciidoc = "= T\n\nIn order to use scrolling, the initial search request should specify the\n`scroll` parameter in the query string, which tells Elasticsearch how long it\nshould keep the ``search context'' alive (see <<scroll-search-context>>), eg `?scroll=1m`.\n";
+		var asciidoc =
+			"= T\n\nIn order to use scrolling, the initial search request should specify the\n`scroll` parameter in the query string, which tells Elasticsearch how long it\nshould keep the ``search context'' alive (see <<scroll-search-context>>), eg `?scroll=1m`.\n";
 		var md = Emit(asciidoc);
 		md.Should().NotContain("<<");
 		md.Should().Contain("[scroll-search-context]");
@@ -230,7 +233,7 @@ public class EmitterTests
 		md.Should().Contain("```json");
 		md.Should().Contain(/*lang=json,strict*/ "{\"hello\":\"world\"}");
 		// If the block closes, Next section becomes a real heading; if not, it's inside code block
-		md.Should().NotContain("==== Next section");  // raw AsciiDoc must not appear
+		md.Should().NotContain("==== Next section"); // raw AsciiDoc must not appear
 	}
 
 	[Fact]
@@ -250,7 +253,8 @@ public class EmitterTests
 	public void CodeBlock_LongDashDelimiter_IsTreatedAsCodeFence()
 	{
 		// Watcher 2.4 docs use 50-dash lines as code block delimiters (valid AsciiDoc: 4+ dashes).
-		var adoc = "= T\n\n[source,js]\n--------------------------------------------------\n\"input\": {}\n--------------------------------------------------\n\nNormal paragraph.\n";
+		var adoc =
+			"= T\n\n[source,js]\n--------------------------------------------------\n\"input\": {}\n--------------------------------------------------\n\nNormal paragraph.\n";
 		var md = Emit(adoc);
 		md.Should().Contain("```");
 		md.Should().Contain("\"input\": {}");
@@ -262,7 +266,8 @@ public class EmitterTests
 	public void CodeBlock_LongDashDelimiter_InNestedSection_IsTreatedAsCodeFence()
 	{
 		// Watcher 2.4 docs: code blocks with 50-dash delimiters inside nested sections (== > === > ====).
-		var adoc = string.Join("\n",
+		var adoc = string.Join(
+			"\n",
 			"= Doc",
 			"",
 			"[[top]]",
@@ -282,7 +287,8 @@ public class EmitterTests
 			"--------------------------------------------------",
 			"",
 			"Normal paragraph.",
-			"");
+			""
+		);
 		var md = Emit(adoc);
 		md.Should().Contain("```");
 		md.Should().Contain("\"key\": \"value\"");

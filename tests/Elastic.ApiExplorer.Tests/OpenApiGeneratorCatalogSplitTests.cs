@@ -36,11 +36,19 @@ public class OpenApiGeneratorCatalogSplitTests
 		using var versionIndexClient = new VersionIndexClient(BaseUri, MultiVersionHandler(), sleep: (_, _) => Task.CompletedTask);
 		var reader = CreateSequentialReader(SpecDocument("Elasticsearch main"));
 		var generator = new OpenApiGenerator(
-			NullLoggerFactory.Instance, context, NoopMarkdownStringRenderer.Instance, versionIndexClient, reader);
+			NullLoggerFactory.Instance,
+			context,
+			NoopMarkdownStringRenderer.Instance,
+			versionIndexClient,
+			reader
+		);
 
-		var entries = await generator.GenerateProducts(TestContext.Current.CancellationToken);
+		var entries = await generator.GenerateProducts(ctx: TestContext.Current.CancellationToken);
 
 		entries.Should().ContainSingle();
+		entries[0].ProductId.Should().Be("elasticsearch");
+		entries[0].Description.Should().Be("A **distributed** [search](https://example.com) engine.\n\nMore detail.");
+		entries[0].CatalogCategories.Should().Equal("ece", "ess", "self");
 		context.WriteFileSystem.File.Exists(Path.Join(outputRoot, "api", "doc", "elasticsearch", "index.html")).Should().BeTrue();
 		context.WriteFileSystem.File.Exists(Path.Join(outputRoot, "api", "index.html")).Should().BeFalse();
 	}
@@ -51,17 +59,34 @@ public class OpenApiGeneratorCatalogSplitTests
 		var outputRoot = Path.Join(Paths.WorkingDirectoryRoot.FullName, $"api-catalog-split-{Guid.NewGuid():N}");
 		var context = CreateGenerateContext(outputRoot);
 		using var versionIndexClient = new VersionIndexClient(BaseUri, MultiVersionHandler(), sleep: (_, _) => Task.CompletedTask);
-		var generator = new OpenApiGenerator(
-			NullLoggerFactory.Instance, context, NoopMarkdownStringRenderer.Instance, versionIndexClient);
+		var generator = new OpenApiGenerator(NullLoggerFactory.Instance, context, NoopMarkdownStringRenderer.Instance, versionIndexClient);
 		var entries = new List<ApiCatalogEntry>
 		{
-			new("elasticsearch", "Elasticsearch", "/docs/api/doc/elasticsearch/"),
-			new("kibana", "Kibana", "/docs/api/doc/kibana/")
+			new("elasticsearch", "Elasticsearch", "/docs/api/doc/elasticsearch/", "elasticsearch", "A distributed search engine."),
+			new("kibana", "Kibana", "/docs/api/doc/kibana/", "kibana")
 		};
 
 		await generator.GenerateCatalog(entries, TestContext.Current.CancellationToken);
 
-		context.WriteFileSystem.File.Exists(Path.Join(outputRoot, "api", "index.html")).Should().BeTrue();
+		var catalogPath = Path.Join(outputRoot, "api", "index.html");
+		context.WriteFileSystem.File.Exists(catalogPath).Should().BeTrue();
+		var html = await context.WriteFileSystem.File.ReadAllTextAsync(catalogPath, TestContext.Current.CancellationToken);
+		html.Should().Contain("<h1>API catalog</h1>");
+		html.Should().Contain("api-catalog-grid");
+		html.Should().Contain("listing-root");
+		html.Should().NotContain("listing-filter-input");
+		html.Should().NotContain("hub-card");
+		html.Should().NotContain("hub-page");
+		html.Should().Contain("<a class=\"api-catalog-card-main\" href=\"/docs/api/doc/elasticsearch/\">");
+		html.Should().Contain("<a class=\"api-catalog-card-main\" href=\"/docs/api/doc/kibana/\">");
+		html.Should().Contain("A distributed search engine.");
+		html.Should().Contain(">REST<");
+		html.Should().Contain("<code class=\"api-catalog-card-key\">elasticsearch</code>");
+		html.Should().Contain("href=\"/docs/api/doc/elasticsearch.json\" download");
+		html.Should().Contain("href=\"/docs/api/doc/elasticsearch.yaml\" download");
+		html.Should().NotContain("listing-group-chips");
+		html.Should().NotContain("markdown-content");
+		html.Should().NotContain("id=\"pages-nav\"");
 	}
 
 	[Fact]
@@ -72,12 +97,89 @@ public class OpenApiGeneratorCatalogSplitTests
 		using var versionIndexClient = new VersionIndexClient(BaseUri, MultiVersionHandler(), sleep: (_, _) => Task.CompletedTask);
 		var reader = CreateSequentialReader(SpecDocument("Elasticsearch main"));
 		var generator = new OpenApiGenerator(
-			NullLoggerFactory.Instance, context, NoopMarkdownStringRenderer.Instance, versionIndexClient, reader);
+			NullLoggerFactory.Instance,
+			context,
+			NoopMarkdownStringRenderer.Instance,
+			versionIndexClient,
+			reader
+		);
 
 		await generator.Generate(TestContext.Current.CancellationToken);
 
-		context.WriteFileSystem.File.Exists(Path.Join(outputRoot, "api", "doc", "elasticsearch", "index.html")).Should().BeTrue();
-		context.WriteFileSystem.File.Exists(Path.Join(outputRoot, "api", "index.html")).Should().BeTrue();
+		var productHtml = context.WriteFileSystem.File.ReadAllText(Path.Join(outputRoot, "api", "doc", "elasticsearch", "index.html"));
+		var catalogHtml = context.WriteFileSystem.File.ReadAllText(Path.Join(outputRoot, "api", "index.html"));
+		productHtml.Should().Contain("id=\"api-hub-switcher\"");
+		productHtml.Should().Contain("Back to hub");
+		catalogHtml.Should().NotContain("id=\"api-hub-switcher\"");
+		catalogHtml.Should().Contain("listing-group-chips");
+		catalogHtml.Should().Contain("data-group=\"self\"");
+		catalogHtml.Should().Contain("Self-managed");
+		context.WriteFileSystem.File.Exists(Path.Join(outputRoot, "api", "doc", "elasticsearch.md")).Should().BeTrue();
+		context.WriteFileSystem.File.Exists(Path.Join(outputRoot, "api.md")).Should().BeTrue();
+	}
+
+	[Fact]
+	public async Task GenerateProducts_WithHubEntries_WritesSiblingApisOnProductPage()
+	{
+		var outputRoot = Path.Join(Paths.WorkingDirectoryRoot.FullName, $"api-catalog-split-{Guid.NewGuid():N}");
+		var context = CreateGenerateContext(outputRoot);
+		using var versionIndexClient = new VersionIndexClient(BaseUri, MultiVersionHandler(), sleep: (_, _) => Task.CompletedTask);
+		var reader = CreateSequentialReader(SpecDocument("Elasticsearch main"));
+		var generator = new OpenApiGenerator(
+			NullLoggerFactory.Instance,
+			context,
+			NoopMarkdownStringRenderer.Instance,
+			versionIndexClient,
+			reader
+		);
+		var hubEntries = new List<ApiCatalogEntry>
+		{
+			new("elasticsearch", "Elasticsearch", "/docs/api/doc/elasticsearch/"),
+			new("kibana", "Kibana", "/docs/api/doc/kibana/")
+		};
+
+		_ = await generator.GenerateProducts(hubEntries, TestContext.Current.CancellationToken);
+
+		var productHtml = context.WriteFileSystem.File.ReadAllText(Path.Join(outputRoot, "api", "doc", "elasticsearch", "index.html"));
+		productHtml.Should().Contain("id=\"api-hub-switcher\"");
+		productHtml.Should().Contain("<option value=\"/docs/api/\">Back to hub</option>");
+		productHtml.Should().Contain("<option value=\"/docs/api/doc/elasticsearch/\" selected>Elasticsearch</option>");
+		productHtml.Should().Contain("<option value=\"/docs/api/doc/kibana/\">Kibana</option>");
+	}
+
+	[Fact]
+	public async Task GenerateCatalog_RendersUsedCategoryChipsOnly()
+	{
+		var outputRoot = Path.Join(Paths.WorkingDirectoryRoot.FullName, $"api-catalog-split-{Guid.NewGuid():N}");
+		var context = CreateGenerateContext(outputRoot);
+		using var versionIndexClient = new VersionIndexClient(BaseUri, MultiVersionHandler(), sleep: (_, _) => Task.CompletedTask);
+		var generator = new OpenApiGenerator(NullLoggerFactory.Instance, context, NoopMarkdownStringRenderer.Instance, versionIndexClient);
+		var entries = new List<ApiCatalogEntry>
+		{
+			new("elasticsearch", "Elasticsearch", "/docs/api/doc/elasticsearch/", "elasticsearch") { CatalogCategories = ["self", "ess"] },
+			new("serverless", "Elasticsearch Serverless", "/docs/api/doc/serverless/", "elasticsearch")
+			{
+				CatalogCategories = ["serverless"]
+			},
+			new("connect", "Cloud Connect", "/docs/api/doc/connect/", "cloud")
+		};
+
+		await generator.GenerateCatalog(entries, TestContext.Current.CancellationToken);
+
+		var html = await context
+			.WriteFileSystem
+			.File
+			.ReadAllTextAsync(Path.Join(outputRoot, "api", "index.html"), TestContext.Current.CancellationToken);
+		html.Should().Contain("listing-group-chips");
+		html.Should().Contain("data-group=\"ess\"");
+		html.Should().Contain("data-group=\"self\"");
+		html.Should().Contain("data-group=\"serverless\"");
+		html.Should().NotContain("data-group=\"ece\"");
+		html.Should().Contain("data-listing-groups=\"ess self\"");
+		html.Should().Contain("data-listing-groups=\"serverless\"");
+		html.Should().Contain("Elastic Cloud Hosted");
+		html.Should().Contain("Self-managed");
+		html.Should().Contain("No APIs match your filter.");
 	}
 
 	private static BuildContext CreateGenerateContext(string outputRoot)
@@ -87,11 +189,17 @@ public class OpenApiGeneratorCatalogSplitTests
 		var product = TestHelpers.CreateProduct("elasticsearch", stack.GetVersioningSystem(VersioningSystemId.Stack));
 		var repoRoot = Path.Join(Paths.WorkingDirectoryRoot.FullName, $"api-catalog-split-repo-{Guid.NewGuid():N}");
 		var configPath = Path.Join(repoRoot, "docs", "docset.yml");
-		var docsetYaml = """
+		var docsetYaml =
+			"""
 			api:
 			  elasticsearch:
 			    - spec: elasticsearch-openapi.json
 			      product: elasticsearch
+			      catalog:
+			        categories:
+			          - self
+			          - ece
+			          - ess
 			""";
 		var fs = new MockFileSystem(new MockFileSystemOptions { CurrentDirectory = Paths.WorkingDirectoryRoot.FullName });
 		fs.AddDirectory(Path.Join(repoRoot, ".git"));
@@ -100,57 +208,66 @@ public class OpenApiGeneratorCatalogSplitTests
 		{
 			Products = new[] { product }.ToFrozenDictionary(p => p.Id, StringComparer.OrdinalIgnoreCase),
 			PublicReferenceProducts = new[] { product }.ToFrozenDictionary(p => p.Id, StringComparer.OrdinalIgnoreCase),
-			ProductDisplayNames = new Dictionary<string, string> { [product.Id] = product.DisplayName ?? product.Id }
-				.ToFrozenDictionary(StringComparer.OrdinalIgnoreCase)
+			ProductDisplayNames = new Dictionary<string, string> { [product.Id] = product.DisplayName ?? product.Id }.ToFrozenDictionary(
+				StringComparer.OrdinalIgnoreCase
+			)
 		};
 		var configurationContext = TestHelpers.CreateConfigurationContext(fs, stack, products);
 
-		return new BuildContext(collector,
-			DocumentationFileSystem.Resolve(repoRoot, new DocumentationScopeOptions
-			{
-				ConfigurationFile = configPath,
-				Output = outputRoot,
-				Git = new GitCheckoutInformation
+		return new BuildContext(
+			collector,
+			DocumentationFileSystem.Resolve(
+				repoRoot,
+				new DocumentationScopeOptions
 				{
-					Branch = "main",
-					Remote = "https://github.com/elastic/elasticsearch.git",
-					Ref = "refs/heads/main"
-				},
-				Inner = fs
-			}),
-			configurationContext)
-		{
-			UrlPathPrefix = "docs"
-		};
+					ConfigurationFile = configPath,
+					Output = outputRoot,
+					Git = new GitCheckoutInformation
+					{
+						Branch = "main",
+						Remote = "https://github.com/elastic/elasticsearch.git",
+						Ref = "refs/heads/main"
+					},
+					Inner = fs
+				}
+			),
+			configurationContext
+		)
+		{ UrlPathPrefix = "docs" };
 	}
 
-	private static OpenApiDocument SpecDocument(string title) => new()
-	{
-		Info = new OpenApiInfo { Title = title, Version = "1.0" },
-		Paths = new OpenApiPaths
+	private static OpenApiDocument SpecDocument(string title) =>
+		new()
 		{
-			["/ping"] = new OpenApiPathItem
+			Info = new OpenApiInfo
 			{
-				Operations = new Dictionary<HttpMethod, OpenApiOperation>
+				Title = title,
+				Version = "1.0",
+				Description = "A **distributed** [search](https://example.com) engine.\n\nMore detail."
+			},
+			Paths = new OpenApiPaths
+			{
+				["/ping"] = new OpenApiPathItem
 				{
-					[HttpMethod.Get] = new()
+					Operations = new Dictionary<HttpMethod, OpenApiOperation>
 					{
-						OperationId = "ping",
-						Tags = new HashSet<OpenApiTagReference> { new("core") },
-						Responses = new OpenApiResponses { ["200"] = new OpenApiResponse { Description = "ok" } }
+						[HttpMethod.Get] = new()
+						{
+							OperationId = "ping",
+							Tags = new HashSet<OpenApiTagReference> { new("core") },
+							Responses = new OpenApiResponses { ["200"] = new OpenApiResponse { Description = "ok" } }
+						}
 					}
 				}
-			}
-		},
-		Tags = new HashSet<OpenApiTag> { new() { Name = "core" } }
-	};
+			},
+			Tags = new HashSet<OpenApiTag> { new() { Name = "core" } }
+		};
 
 	private static IOpenApiSpecificationReader CreateSequentialReader(params OpenApiDocument[] documents)
 	{
 		var queue = new Queue<OpenApiDocument>(documents);
 		var reader = A.Fake<IOpenApiSpecificationReader>();
-		A.CallTo(() => reader.ReadAsync(A<Stream>._, A<string>._))
-			.ReturnsLazily(_ => Task.FromResult<OpenApiDocument?>(queue.Dequeue()));
+		A.CallTo(() => reader.ReadAsync(A<Stream>._, A<string>._)).ReturnsLazily(_ => Task.FromResult<OpenApiDocument?>(queue.Dequeue()));
 		return reader;
 	}
 
@@ -159,7 +276,8 @@ public class OpenApiGeneratorCatalogSplitTests
 		{
 			if (request.RequestUri!.AbsolutePath.EndsWith("index.json", StringComparison.Ordinal))
 			{
-				return IndexResponse(/*lang=json,strict*/ $$"""
+				return IndexResponse(/*lang=json,strict*/
+					$$"""
 					{
 						"{{repository}}": {
 							"elasticsearch-openapi.json": {
@@ -167,7 +285,8 @@ public class OpenApiGeneratorCatalogSplitTests
 							}
 						}
 					}
-					""");
+					"""
+				);
 			}
 
 			return SpecResponse();
@@ -176,12 +295,16 @@ public class OpenApiGeneratorCatalogSplitTests
 	private static HttpResponseMessage IndexResponse(string body) =>
 		new(HttpStatusCode.OK) { Content = new StringContent(body, System.Text.Encoding.UTF8, "application/json") };
 
-	private static HttpResponseMessage SpecResponse() => new(HttpStatusCode.OK)
-	{
-		Content = new StringContent(
-			/*lang=json,strict*/ """{"openapi":"3.1.0","info":{"title":"Spec","version":"1.0"},"paths":{}}""",
-			System.Text.Encoding.UTF8, "application/json")
-	};
+	private static HttpResponseMessage SpecResponse() =>
+		new(HttpStatusCode.OK)
+		{
+			Content = new StringContent(
+				/*lang=json,strict*/
+				"""{"openapi":"3.1.0","info":{"title":"Spec","version":"1.0"},"paths":{}}""",
+				System.Text.Encoding.UTF8,
+				"application/json"
+			)
+		};
 
 	private sealed class StubHandler(Func<HttpRequestMessage, HttpResponseMessage> responder) : HttpMessageHandler
 	{

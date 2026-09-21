@@ -24,10 +24,7 @@ internal sealed class SourcingConfiguration
 		if (ContentStack is not null)
 			return ContentStack;
 
-		var config = new ConfigurationBuilder()
-			.AddUserSecrets("docs-builder")
-			.AddEnvironmentVariables()
-			.Build();
+		var config = new ConfigurationBuilder().AddUserSecrets("docs-builder").AddEnvironmentVariables().Build();
 		return ContentStackConfiguration.CreateFromConfiguration(config);
 	}
 	public required ElasticsearchEndpoint Elasticsearch { get; init; }
@@ -44,15 +41,9 @@ internal sealed class SourcingConfiguration
 	public string ElasticsearchEnvironment { get; init; } = "dev";
 	public string BuildType { get; init; } = "public";
 
-	public static SourcingConfiguration CreateFromEnvironment(
-		string? esUrl = null,
-		string? esApiKey = null
-	)
+	public static SourcingConfiguration CreateFromEnvironment(string? esUrl = null, string? esApiKey = null)
 	{
-		var config = new ConfigurationBuilder()
-			.AddUserSecrets("docs-builder")
-			.AddEnvironmentVariables()
-			.Build();
+		var config = new ConfigurationBuilder().AddUserSecrets("docs-builder").AddEnvironmentVariables().Build();
 
 		var csConfig = ContentStackConfiguration.TryCreateFromConfiguration(config);
 

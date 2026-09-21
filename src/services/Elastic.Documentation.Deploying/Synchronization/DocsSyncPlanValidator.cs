@@ -31,7 +31,9 @@ public class DocsSyncPlanValidator(ILoggerFactory logFactory)
 		var deleteRatio = (float)plan.DeleteRequests.Count / plan.TotalRemoteFiles;
 		if (plan.TotalRemoteFiles == 0)
 		{
-			_logger.LogInformation("No files discovered in S3, assuming a clean bucket resetting delete threshold to `0.0' as our plan should not have ANY deletions");
+			_logger.LogInformation(
+				"No files discovered in S3, assuming a clean bucket resetting delete threshold to `0.0' as our plan should not have ANY deletions"
+			);
 			deleteThreshold = 0.0f;
 		}
 		// if the total remote files are less than or equal to 100, we enforce a higher ratio of 0.8
@@ -41,12 +43,13 @@ public class DocsSyncPlanValidator(ILoggerFactory logFactory)
 			_logger.LogInformation("Plan has less than 100 total remote files ensuring delete threshold is at minimum 0.8");
 			deleteThreshold = Math.Max(deleteThreshold, 0.8f);
 		}
-
 		// if the total remote files are less than or equal to 1000, we enforce a higher ratio of 0.5
 		// this allows newer assembled documentation to be in a higher state of flux
 		else if (plan.TotalRemoteFiles <= 1000)
 		{
-			_logger.LogInformation("Plan has less than 1000 but more than a 100 total remote files ensuring delete threshold is at minimum 0.5");
+			_logger.LogInformation(
+				"Plan has less than 1000 but more than a 100 total remote files ensuring delete threshold is at minimum 0.5"
+			);
 			deleteThreshold = Math.Max(deleteThreshold, 0.5f);
 		}
 

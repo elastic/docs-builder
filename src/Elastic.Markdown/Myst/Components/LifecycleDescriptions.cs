@@ -41,40 +41,29 @@ public static class LifecycleDescriptions
 			"This functionality is in technical preview and is ready for evaluation. Use with caution in production; it is not recommended for mission-critical workloads. Elastic will work to fix any issues, but features in technical preview are not subject to the support SLA of official GA features. Specific Support terms apply.",
 		[(ProductLifecycle.TechnicalPreview, false)] =
 			"We plan to add this functionality in a future {product} update. Subject to changes.",
-
 		// Experimental
 		[(ProductLifecycle.Experimental, true)] =
 			"This functionality is experimental and is not ready for production usage. Experimental features may change or be removed at any time. Elastic will work to fix any issues, but experimental features are not subject to the support SLA of official GA features. Specific Support terms apply.",
-		[(ProductLifecycle.Experimental, false)] =
-			"We plan to add this functionality in a future {product} update. Subject to changes.",
-
+		[(ProductLifecycle.Experimental, false)] = "We plan to add this functionality in a future {product} update. Subject to changes.",
 		// Beta
 		[(ProductLifecycle.Beta, true)] =
 			"This functionality is in beta and is not ready for production usage. For beta features, the design and code is less mature than official GA features and is being provided as-is with no warranties. Beta features are not subject to the support SLA of official GA features. Specific Support terms apply.",
-		[(ProductLifecycle.Beta, false)] =
-			"We plan to add this functionality in a future {product} update. Subject to changes.",
-
+		[(ProductLifecycle.Beta, false)] = "We plan to add this functionality in a future {product} update. Subject to changes.",
 		// GA
-		[(ProductLifecycle.GenerallyAvailable, true)] =
-			"This functionality is generally available and ready for production usage.",
+		[(ProductLifecycle.GenerallyAvailable, true)] = "This functionality is generally available and ready for production usage.",
 		[(ProductLifecycle.GenerallyAvailable, false)] =
 			"We plan to add this functionality in a future {product} update. Subject to changes.",
-
 		// Deprecated
 		[(ProductLifecycle.Deprecated, true)] =
 			"This functionality is deprecated. You can still use it, but it'll be removed in a future {product} update.",
 		[(ProductLifecycle.Deprecated, false)] =
 			"This functionality is planned to be deprecated in a future {product} update. Subject to changes.",
-
 		// Removed
 		[(ProductLifecycle.Removed, true)] =
 			"This functionality was removed. You can no longer use it if you're running on this version or a later one.",
 		[(ProductLifecycle.Removed, false)] =
 			"This functionality is planned to be removed in an upcoming {product} update. Subject to changes.",
-
 		// Unavailable
-		[(ProductLifecycle.Unavailable, true)] =
-			"This functionality is not available in {product}."
+		[(ProductLifecycle.Unavailable, true)] = "This functionality is not available in {product}."
 	};
 }
-

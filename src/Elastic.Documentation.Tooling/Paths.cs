@@ -43,8 +43,7 @@ public static class Paths
 			bool hasGit;
 			try
 			{
-				hasGit = directory.GetDirectories(".git").Length > 0
-						  || directory.GetFiles(".git").Length > 0;
+				hasGit = directory.GetDirectories(".git").Length > 0 || directory.GetFiles(".git").Length > 0;
 			}
 			catch (DirectoryNotFoundException)
 			{
@@ -102,8 +101,7 @@ public static class Paths
 			// directory, which is several levels below the solution root).
 			if (directory.GetFiles("*.slnx").Length > 0)
 				return directory;
-			var hasGit = directory.GetDirectories(".git").Length > 0
-					  || directory.GetFiles(".git").Length > 0;
+			var hasGit = directory.GetDirectories(".git").Length > 0 || directory.GetFiles(".git").Length > 0;
 			if (hasGit)
 			{
 				if (depth <= 1)
@@ -169,10 +167,9 @@ public static class Paths
 	{
 		string[] files = ["docset.yml", "_docset.yml"];
 		string[] knownFolders = [rootPath.FullName, Path.Join(rootPath.FullName, "docs")];
-		var mostLikelyTargets =
-			from file in files
-			from folder in knownFolders
-			select Path.Join(folder, file);
+		var mostLikelyTargets = from file in files
+								from folder in knownFolders
+								select Path.Join(folder, file);
 
 		return mostLikelyTargets.FirstOrDefault(readFileSystem.File.Exists);
 	}
@@ -184,10 +181,8 @@ public static class Paths
 		if (configurationPath is not null)
 			return (configurationPath.Directory!, configurationPath);
 
-		configurationPath = rootPath
-			.EnumerateFiles("*docset.yml", SearchOption.AllDirectories)
-			.FirstOrDefault()
-		?? throw new Exception($"Can not locate docset.yml file in '{rootPath}'");
+		configurationPath = rootPath.EnumerateFiles("*docset.yml", SearchOption.AllDirectories).FirstOrDefault()
+			?? throw new Exception($"Can not locate docset.yml file in '{rootPath}'");
 
 		var docsFolder = configurationPath.Directory ?? throw new Exception($"Can not locate docset.yml file in '{rootPath}'");
 

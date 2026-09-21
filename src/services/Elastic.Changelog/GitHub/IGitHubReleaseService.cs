@@ -79,11 +79,7 @@ public interface IGitHubReleaseService
 	/// <param name="version">Version tag or "latest" (null defaults to latest)</param>
 	/// <param name="ctx">Cancellation token</param>
 	/// <returns>Release information or null if fetch fails</returns>
-	Task<GitHubReleaseInfo?> FetchReleaseAsync(
-		string owner,
-		string repo,
-		string? version,
-		CancellationToken ctx = default);
+	Task<GitHubReleaseInfo?> FetchReleaseAsync(string owner, string repo, string? version, CancellationToken ctx = default);
 
 	/// <summary>
 	/// Fetches the most recent releases from GitHub, newest first
@@ -93,11 +89,23 @@ public interface IGitHubReleaseService
 	/// <param name="count">Maximum number of releases to fetch</param>
 	/// <param name="ctx">Cancellation token</param>
 	/// <returns>The releases, or an empty list if the fetch fails</returns>
-	Task<IReadOnlyList<GitHubReleaseInfo>> FetchReleasesAsync(
-		string owner,
-		string repo,
-		int count,
-		CancellationToken ctx = default);
+	Task<IReadOnlyList<GitHubReleaseInfo>> FetchReleasesAsync(string owner, string repo, int count, CancellationToken ctx = default);
+
+	/// <summary>
+	/// Determines the tag name of the release immediately preceding <paramref name="currentTag"/> in the same
+	/// release line (same prefix and semver major version).
+	/// <para>
+	/// Uses <c>POST /repos/{owner}/{repo}/releases/generate-notes</c> as the primary path — GitHub's own
+	/// algorithm handles interleaved multi-version histories. Falls back to paginating the releases list
+	/// (compatible with <c>contents: read</c> tokens) when generate-notes requires higher permissions.
+	/// </para>
+	/// <para>
+	/// When the tag carries a prefix (e.g. <c>agent-v1.2.0</c>), only releases sharing that prefix are
+	/// considered. When the tag is semver, only releases with the same major version are considered.
+	/// </para>
+	/// </summary>
+	/// <returns>The previous tag name, or <c>null</c> if none can be determined.</returns>
+	Task<string?> FetchPreviousTagAsync(string owner, string repo, string currentTag, CancellationToken ctx = default);
 
 	/// <summary>
 	/// Downloads a release asset's content as text

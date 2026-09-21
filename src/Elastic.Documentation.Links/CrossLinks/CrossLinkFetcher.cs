@@ -66,7 +66,11 @@ public record FetchedCrossLinks
 	};
 }
 
-public abstract class CrossLinkFetcher(ILoggerFactory logFactory, ILinkIndexReader linkIndexProvider, ApplicationDataFileSystem? fileSystem = null) : IDisposable
+public abstract class CrossLinkFetcher(
+	ILoggerFactory logFactory,
+	ILinkIndexReader linkIndexProvider,
+	ApplicationDataFileSystem? fileSystem = null
+) : IDisposable
 {
 	protected ILogger Logger { get; } = logFactory.CreateLogger(nameof(CrossLinkFetcher));
 	private readonly IFileSystem _fileSystem = fileSystem ?? new ApplicationDataFileSystem();
@@ -101,13 +105,15 @@ public abstract class CrossLinkFetcher(ILoggerFactory logFactory, ILinkIndexRead
 		return GetNextContentSourceLinkIndexEntry(repositoryLinks, repository);
 	}
 
-	protected static LinkRegistryEntry GetNextContentSourceLinkIndexEntry(IDictionary<string, LinkRegistryEntry> repositoryLinks, string repository)
+	protected static LinkRegistryEntry GetNextContentSourceLinkIndexEntry(
+		IDictionary<string, LinkRegistryEntry> repositoryLinks,
+		string repository
+	)
 	{
-		var linkIndexEntry =
-			(repositoryLinks.TryGetValue("main", out var link)
-				? link
-				: repositoryLinks.TryGetValue("master", out link) ? link : null)
-				?? throw new Exception($"Repository {repository} found in link index, but no main or master branch found");
+		var linkIndexEntry = (repositoryLinks.TryGetValue("main", out var link)
+			? link
+			: repositoryLinks.TryGetValue("master", out link) ? link : null)
+			?? throw new Exception($"Repository {repository} found in link index, but no main or master branch found");
 		return linkIndexEntry;
 	}
 
@@ -136,7 +142,8 @@ public abstract class CrossLinkFetcher(ILoggerFactory logFactory, ILinkIndexRead
 		ILinkIndexReader reader,
 		string repository,
 		LinkRegistryEntry linkRegistryEntry,
-		Cancel ctx)
+		Cancel ctx
+	)
 	{
 		var linkReference = await TryGetCachedLinkReference(repository, linkRegistryEntry);
 		if (linkReference is not null)
@@ -158,7 +165,8 @@ public abstract class CrossLinkFetcher(ILoggerFactory logFactory, ILinkIndexRead
 		ILinkIndexReader reader,
 		string repository,
 		CrossLinkFetcher fetcher,
-		Cancel ctx)
+		Cancel ctx
+	)
 	{
 		var linkIndex = await reader.GetRegistry(ctx);
 		if (!linkIndex.Repositories.TryGetValue(repository, out var repositoryLinks))
@@ -209,7 +217,6 @@ public abstract class CrossLinkFetcher(ILoggerFactory logFactory, ILinkIndexRead
 			}
 		}
 		return null;
-
 	}
 
 	public void Dispose()

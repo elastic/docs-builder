@@ -71,6 +71,13 @@ public class ApiProductEntry
 	public List<ApiEntryChild> Children { get; set; } = [];
 
 	/// <summary>
+	/// Optional catalog grouping. Categories identify filter chips only; they do not
+	/// claim versioned availability.
+	/// </summary>
+	[YamlMember(Alias = "catalog")]
+	public ApiCatalogSettings? Catalog { get; set; }
+
+	/// <summary>
 	/// 1-based line of this entry's mapping start in the source YAML. Populated by
 	/// <see cref="ApiConfigurationConverter"/>; used to attribute diagnostics that have no more
 	/// specific location, such as a missing <c>product:</c> key.
@@ -117,6 +124,22 @@ public class ApiProductEntry
 
 	public bool HasSpec => !string.IsNullOrWhiteSpace(Spec);
 	public bool HasProduct => !string.IsNullOrWhiteSpace(Product);
+}
+
+/// <summary>
+/// Category-only catalog metadata under <c>catalog:</c> on an API entry.
+/// </summary>
+[YamlSerializable]
+public class ApiCatalogSettings
+{
+	[YamlMember(Alias = "categories")]
+	public List<string> Categories { get; set; } = [];
+
+	[YamlIgnore]
+	public int? Line { get; set; }
+
+	[YamlIgnore]
+	public int? Column { get; set; }
 }
 
 /// <summary>
@@ -180,11 +203,65 @@ public class ResolvedApiConfiguration
 	public List<IFileInfo> Children { get; init; } = [];
 
 	/// <summary>
-	/// Gets all child Markdown file paths that should be excluded from normal HTML generation.
+	/// The <c>api/&lt;key&gt;/</c> directory for this product, whether or not it exists yet.
+	/// Supplemental <c>op-*.md</c> / <c>tag-*.md</c> files are discovered from here.
+	/// </summary>
+	public IDirectoryInfo? ApiContentDirectory { get; init; }
+
+	/// <summary>
+	/// Normalized catalog categories (<c>ece</c>, <c>ess</c>, <c>self</c>, <c>serverless</c>).
+	/// Empty when the API is unclassified and appears only under All.
+	/// </summary>
+	public IReadOnlyList<string> CatalogCategories { get; init; } = [];
+
+	/// <summary>
+	/// Whether <paramref name="fileName"/> is an auto-discovered supplemental file
+	/// (<c>op-*.md</c> or <c>tag-*.md</c>), including version-suffixed names.
+	/// </summary>
+	public static bool IsSupplementalFileName(string fileName)
+	{
+		var name = Path.GetFileName(fileName);
+		return name.StartsWith("op-", StringComparison.OrdinalIgnoreCase) || name.StartsWith("tag-", StringComparison.OrdinalIgnoreCase);
+	}
+
+	/// <summary>
+	/// Markdown paths that must not be rendered by the normal HTML pipeline:
+	/// explicit <c>children:</c> pages and convention supplemental files.
 	/// </summary>
 	public IEnumerable<string> GetMarkdownPathsToExclude(string documentationSourceDirectoryFullName)
 	{
+		var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 		foreach (var file in Children)
-			yield return Path.GetRelativePath(documentationSourceDirectoryFullName, file.FullName).Replace(Path.DirectorySeparatorChar, '/');
+		{
+			var relative = ToRelativeMarkdownPath(file, documentationSourceDirectoryFullName);
+			if (seen.Add(relative))
+				yield return relative;
+		}
+
+		foreach (var file in EnumerateApiMarkdownFiles())
+		{
+			if (!IsSupplementalFileName(file.Name))
+				continue;
+			var relative = ToRelativeMarkdownPath(file, documentationSourceDirectoryFullName);
+			if (seen.Add(relative))
+				yield return relative;
+		}
 	}
+
+	/// <summary>Top-level Markdown files under <see cref="ApiContentDirectory"/>, when the folder exists.</summary>
+	public IEnumerable<IFileInfo> EnumerateApiMarkdownFiles()
+	{
+		if (ApiContentDirectory is not { } dir)
+			yield break;
+
+		dir.Refresh();
+		if (!dir.Exists)
+			yield break;
+
+		foreach (var file in dir.EnumerateFiles("*.md"))
+			yield return file;
+	}
+
+	private static string ToRelativeMarkdownPath(IFileInfo file, string documentationSourceDirectoryFullName) =>
+		Path.GetRelativePath(documentationSourceDirectoryFullName, file.FullName).Replace(Path.DirectorySeparatorChar, '/');
 }

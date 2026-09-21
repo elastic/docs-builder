@@ -62,6 +62,19 @@ describe('cardIsVisible predicate', () => {
         }
         expect(cardIsVisible('title', '', state)).toBe(false)
     })
+
+    it('matches a card that belongs to any of several groups', () => {
+        const state: ListingFilterState = {
+            query: '',
+            activeGroups: new Set(['self']),
+        }
+        expect(
+            cardIsVisible('elasticsearch elasticsearch', 'ess self', state)
+        ).toBe(true)
+        expect(
+            cardIsVisible('elasticsearch elasticsearch', 'serverless', state)
+        ).toBe(false)
+    })
 })
 
 // ---------------------------------------------------------------------------
@@ -153,7 +166,7 @@ describe('initListing DOM behaviour', () => {
         expect(visible[0].dataset.listingGroup).toBe('draft')
     })
 
-    it('allows selecting multiple group chips independently', () => {
+    it('replaces the selection when another chip is clicked', () => {
         const acceptedChip = document.querySelector<HTMLButtonElement>(
             '[data-group="accepted"]'
         )!
@@ -163,10 +176,30 @@ describe('initListing DOM behaviour', () => {
         acceptedChip.click()
         draftChip.click()
 
-        // Both groups visible, ungrouped hidden
+        const visible = visibleCards()
+        expect(visible).toHaveLength(1)
+        expect(visible[0].dataset.listingGroup).toBe('draft')
+        expect(acceptedChip.getAttribute('aria-pressed')).toBe('false')
+        expect(draftChip.getAttribute('aria-pressed')).toBe('true')
+    })
+
+    it('adds a chip when clicked with Cmd or Ctrl', () => {
+        const acceptedChip = document.querySelector<HTMLButtonElement>(
+            '[data-group="accepted"]'
+        )!
+        const draftChip = document.querySelector<HTMLButtonElement>(
+            '[data-group="draft"]'
+        )!
+        acceptedChip.click()
+        draftChip.dispatchEvent(
+            new MouseEvent('click', { bubbles: true, metaKey: true })
+        )
+
         const visible = visibleCards()
         expect(visible).toHaveLength(3)
         expect(visible.every((c) => c.dataset.listingGroup !== '')).toBe(true)
+        expect(acceptedChip.getAttribute('aria-pressed')).toBe('true')
+        expect(draftChip.getAttribute('aria-pressed')).toBe('true')
     })
 
     it('deselects a chip by clicking it again', () => {
@@ -240,5 +273,72 @@ describe('initListing DOM behaviour', () => {
             '.listing-no-results'
         )!
         expect(noResults.classList.contains('hidden')).toBe(true)
+    })
+
+    it('sets aria-pressed on chips', () => {
+        const draftChip = document.querySelector<HTMLButtonElement>(
+            '[data-group="draft"]'
+        )!
+        const allChip =
+            document.querySelector<HTMLButtonElement>('.listing-chip-all')!
+
+        draftChip.click()
+        expect(draftChip.getAttribute('aria-pressed')).toBe('true')
+        expect(allChip.getAttribute('aria-pressed')).toBe('false')
+
+        allChip.click()
+        expect(draftChip.getAttribute('aria-pressed')).toBe('false')
+        expect(allChip.getAttribute('aria-pressed')).toBe('true')
+    })
+})
+
+function buildMultiGroupListingHtml() {
+    return `
+        <div class="listing-root" data-listing-total="2">
+          <div class="listing-filter-bar">
+            <input class="listing-filter-input" type="search" />
+            <div class="listing-group-chips">
+              <button class="listing-chip listing-chip-all listing-chip-active" data-group="">All</button>
+              <button class="listing-chip" data-group="self">Self-managed</button>
+              <button class="listing-chip" data-group="serverless">Serverless</button>
+            </div>
+          </div>
+          <article data-listing-title="elasticsearch elasticsearch" data-listing-groups="self ess">Elasticsearch</article>
+          <article data-listing-title="serverless api" data-listing-groups="serverless">Serverless</article>
+          <p class="listing-no-results hidden">No APIs match your filter.</p>
+        </div>
+    `
+}
+
+describe('initListing multi-group cards', () => {
+    beforeEach(() => {
+        document.body.innerHTML = buildMultiGroupListingHtml()
+        initListing()
+    })
+
+    it('shows a multi-group card when one of its groups is selected', () => {
+        document
+            .querySelector<HTMLButtonElement>('[data-group="self"]')!
+            .click()
+
+        const visible = Array.from(
+            document.querySelectorAll<HTMLElement>('[data-listing-title]')
+        ).filter((c) => c.style.display !== 'none')
+        expect(visible).toHaveLength(1)
+        expect(visible[0].dataset.listingTitle).toContain('elasticsearch')
+    })
+
+    it('filters multi-group cards by title or key text', () => {
+        const input = document.querySelector<HTMLInputElement>(
+            '.listing-filter-input'
+        )!
+        input.value = 'elasticsearch'
+        input.dispatchEvent(new Event('input'))
+
+        const visible = Array.from(
+            document.querySelectorAll<HTMLElement>('[data-listing-title]')
+        ).filter((c) => c.style.display !== 'none')
+        expect(visible).toHaveLength(1)
+        expect(visible[0].dataset.listingGroups).toBe('self ess')
     })
 })

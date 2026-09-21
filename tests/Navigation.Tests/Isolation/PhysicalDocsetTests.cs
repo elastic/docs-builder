@@ -29,11 +29,21 @@ public class PhysicalDocsetTests(ITestOutputHelper output)
 		var configPath = fileSystem.FileInfo.New(docsetPath);
 
 		var context = new TestDocumentationSetContext(fileSystem, docsDir, outputDir, configPath, output, "docs-builder");
-		var docSet = DocumentationSetFile.LoadAndResolve(context.Collector, configPath, context.ReadFileSystem as ScopedFileSystem, noSuppress: [HintType.DeepLinkingVirtualFile]);
+		var docSet = DocumentationSetFile.LoadAndResolve(
+			context.Collector,
+			configPath,
+			context.ReadFileSystem as ScopedFileSystem,
+			noSuppress: [HintType.DeepLinkingVirtualFile]
+		);
 
 		_ = context.Collector.StartAsync(TestContext.Current.CancellationToken);
 
-		var navigation = new DocumentationSetNavigation<TestDocumentationFile>(docSet, context, TestDocumentationFileFactory.Instance, crossLinkResolver: TestCrossLinkResolver.Instance);
+		var navigation = new DocumentationSetNavigation<TestDocumentationFile>(
+			docSet,
+			context,
+			TestDocumentationFileFactory.Instance,
+			crossLinkResolver: TestCrossLinkResolver.Instance
+		);
 
 		await context.Collector.StopAsync(TestContext.Current.CancellationToken);
 
@@ -69,7 +79,11 @@ public class PhysicalDocsetTests(ITestOutputHelper output)
 		var configPath = fileSystem.FileInfo.New(docsetPath);
 
 		var context = new TestDocumentationSetContext(fileSystem, docsDir, outputDir, configPath, output, "docs-builder");
-		var docSet = DocumentationSetFile.LoadAndResolve(context.Collector, configPath, DocumentationFileSystem.Resolve(Paths.WorkingDirectoryRoot.FullName));
+		var docSet = DocumentationSetFile.LoadAndResolve(
+			context.Collector,
+			configPath,
+			DocumentationFileSystem.Resolve(Paths.WorkingDirectoryRoot.FullName)
+		);
 		_ = context.Collector.StartAsync(TestContext.Current.CancellationToken);
 
 		var navigation = new DocumentationSetNavigation<TestDocumentationFile>(docSet, context, TestDocumentationFileFactory.Instance);
@@ -77,7 +91,9 @@ public class PhysicalDocsetTests(ITestOutputHelper output)
 		await context.Collector.StopAsync(TestContext.Current.CancellationToken);
 
 		// Find the documentation folder by URL
-		var documentationFolder = navigation.NavigationItems.OfType<FolderNavigation<TestDocumentationFile>>()
+		var documentationFolder = navigation
+			.NavigationItems
+			.OfType<FolderNavigation<TestDocumentationFile>>()
 			.FirstOrDefault(f => f.Url == "/documentation");
 		documentationFolder.Should().NotBeNull();
 
@@ -95,7 +111,11 @@ public class PhysicalDocsetTests(ITestOutputHelper output)
 		var configPath = fileSystem.FileInfo.New(docsetPath);
 
 		var context = new TestDocumentationSetContext(fileSystem, docsDir, outputDir, configPath, output, "docs-builder");
-		var docSet = DocumentationSetFile.LoadAndResolve(context.Collector, configPath, DocumentationFileSystem.Resolve(Paths.WorkingDirectoryRoot.FullName));
+		var docSet = DocumentationSetFile.LoadAndResolve(
+			context.Collector,
+			configPath,
+			DocumentationFileSystem.Resolve(Paths.WorkingDirectoryRoot.FullName)
+		);
 		_ = context.Collector.StartAsync(TestContext.Current.CancellationToken);
 
 		var navigation = new DocumentationSetNavigation<TestDocumentationFile>(docSet, context, TestDocumentationFileFactory.Instance);
@@ -111,7 +131,9 @@ public class PhysicalDocsetTests(ITestOutputHelper output)
 		fileRefs.Count.Should().Be(fileRefs.Distinct().Count(), "should not have duplicate file references");
 
 		// development is a toc: reference
-		var developmentToc = navigation.NavigationItems.OfType<TableOfContentsNavigation<TestDocumentationFile>>()
+		var developmentToc = navigation
+			.NavigationItems
+			.OfType<TableOfContentsNavigation<TestDocumentationFile>>()
 			.FirstOrDefault(t => t.Url == "/development");
 		developmentToc.Should().NotBeNull();
 		developmentToc.NavigationItems.Should().NotBeEmpty();
@@ -127,7 +149,11 @@ public class PhysicalDocsetTests(ITestOutputHelper output)
 		var configPath = fileSystem.FileInfo.New(docsetPath);
 
 		var context = new TestDocumentationSetContext(fileSystem, docsDir, outputDir, configPath, output, "docs-builder");
-		var docSet = DocumentationSetFile.LoadAndResolve(context.Collector, configPath, DocumentationFileSystem.Resolve(Paths.WorkingDirectoryRoot.FullName));
+		var docSet = DocumentationSetFile.LoadAndResolve(
+			context.Collector,
+			configPath,
+			DocumentationFileSystem.Resolve(Paths.WorkingDirectoryRoot.FullName)
+		);
 		_ = context.Collector.StartAsync(TestContext.Current.CancellationToken);
 
 		var navigation = new DocumentationSetNavigation<TestDocumentationFile>(docSet, context, TestDocumentationFileFactory.Instance);
@@ -155,7 +181,12 @@ public class PhysicalDocsetTests(ITestOutputHelper output)
 		var docSet = DocumentationSetFile.LoadAndResolve(context.Collector, configPath);
 		_ = context.Collector.StartAsync(TestContext.Current.CancellationToken);
 
-		var navigation = new DocumentationSetNavigation<TestDocumentationFile>(docSet, context, TestDocumentationFileFactory.Instance, crossLinkResolver: TestCrossLinkResolver.Instance);
+		var navigation = new DocumentationSetNavigation<TestDocumentationFile>(
+			docSet,
+			context,
+			TestDocumentationFileFactory.Instance,
+			crossLinkResolver: TestCrossLinkResolver.Instance
+		);
 
 		await context.Collector.StopAsync(TestContext.Current.CancellationToken);
 
@@ -189,8 +220,9 @@ public class PhysicalDocsetTests(ITestOutputHelper output)
 		interfaces.Count.Should().Be(concrete.Count);
 	}
 
-	private static List<INavigationItem> QueryAllAdheringTo<TModel>(INodeNavigationItem<TModel, INavigationItem> navigation)
-		where TModel : class, INavigationModel
+	private static List<INavigationItem> QueryAllAdheringTo<TModel>(
+		INodeNavigationItem<TModel, INavigationItem> navigation
+	) where TModel : class, INavigationModel
 	{
 		var result = new List<INavigationItem> { navigation, navigation.Index };
 		foreach (var item in navigation.NavigationItems)

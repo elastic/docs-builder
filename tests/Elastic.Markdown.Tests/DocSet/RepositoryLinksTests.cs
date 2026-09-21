@@ -16,17 +16,13 @@ public class RepositoryLinksTests : NavigationTestsBase
 	private RepositoryLinks Reference { get; }
 
 	[Fact]
-	public void ShouldNotBeNull() =>
-		Reference.Should().NotBeNull();
+	public void ShouldNotBeNull() => Reference.Should().NotBeNull();
 
 	[Fact]
-	public void EmitsLinks() =>
-		Reference.Links.Should().NotBeNullOrEmpty();
+	public void EmitsLinks() => Reference.Links.Should().NotBeNullOrEmpty();
 
 	[Fact]
-	public void ShouldNotIncludeSnippets() =>
-		Reference.Links.Should().NotContain(l => l.Key.Contains("_snippets/"));
-
+	public void ShouldNotIncludeSnippets() => Reference.Links.Should().NotContain(l => l.Key.Contains("_snippets/"));
 }
 
 public class GitCheckoutInformationTests(ITestOutputHelper output) : NavigationTestsBase(output)
@@ -56,12 +52,7 @@ public class LinkReferenceSerializationTests
 	{
 		var linkReference = new RepositoryLinks
 		{
-			Origin = new GitCheckoutInformation
-			{
-				Branch = "branch",
-				Remote = "remote",
-				Ref = "ref"
-			},
+			Origin = new GitCheckoutInformation { Branch = "branch", Remote = "remote", Ref = "ref" },
 			UrlPathPrefix = "",
 			Links = [],
 			CrossLinks = [],
@@ -83,7 +74,8 @@ public class LinkReferenceSerializationTests
 			  "cross_links": [],
 			  "redirects": null
 			}
-			""");
+			"""
+		);
 	}
 
 	[Fact]
@@ -109,5 +101,4 @@ public class LinkReferenceSerializationTests
 		var linkReference = RepositoryLinks.Deserialize(json);
 		linkReference.Origin.Ref.Should().Be("ref");
 	}
-
 }

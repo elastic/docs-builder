@@ -33,8 +33,7 @@ public class TitleTargetTests(ITestOutputHelper output) : RenderChangelogTestBas
 
 		var bundleFile = FileSystem.Path.Join(bundleDir, "bundle.yaml");
 		// language=yaml
-		var bundleHeader =
-			"""
+		var bundleHeader = """
 			products:
 			  - product: elasticsearch
 			""";
@@ -57,10 +56,14 @@ public class TitleTargetTests(ITestOutputHelper output) : RenderChangelogTestBas
 		result.Should().BeTrue();
 		Collector.Errors.Should().Be(0);
 		Collector.Warnings.Should().BeGreaterThan(0);
-		Collector.Diagnostics.Should().Contain(d =>
-			d.Severity == Severity.Warning &&
-			d.Message.Contains("No --title option provided") &&
-			d.Message.Contains("default to 'unknown'"));
+		Collector
+			.Diagnostics
+			.Should()
+			.Contain(
+				d => d.Severity == Severity.Warning && d.Message.Contains("No --title option provided") && d.Message.Contains(
+					"default to 'unknown'"
+				)
+			);
 	}
 
 	[Fact]
@@ -85,8 +88,7 @@ public class TitleTargetTests(ITestOutputHelper output) : RenderChangelogTestBas
 
 		var bundleFile = FileSystem.Path.Join(bundleDir, "bundle.yaml");
 		// language=yaml
-		var bundleHeader =
-			"""
+		var bundleHeader = """
 			products:
 			  - product: elasticsearch
 			""";
@@ -99,7 +101,8 @@ public class TitleTargetTests(ITestOutputHelper output) : RenderChangelogTestBas
 		{
 			Bundles = [new BundleInput { BundleFile = bundleFile }],
 			Output = outputDir,
-			Title = "9.2.0" // Title is provided
+			Title =
+				"9.2.0" // Title is provided
 		};
 
 		// Act
@@ -109,9 +112,7 @@ public class TitleTargetTests(ITestOutputHelper output) : RenderChangelogTestBas
 		result.Should().BeTrue();
 		Collector.Errors.Should().Be(0);
 		// Should not have warning about missing title
-		Collector.Diagnostics.Should().NotContain(d =>
-			d.Severity == Severity.Warning &&
-			d.Message.Contains("No --title option provided"));
+		Collector.Diagnostics.Should().NotContain(d => d.Severity == Severity.Warning && d.Message.Contains("No --title option provided"));
 	}
 
 	[Fact]
@@ -137,8 +138,7 @@ public class TitleTargetTests(ITestOutputHelper output) : RenderChangelogTestBas
 
 		var bundleFile = FileSystem.Path.Join(bundleDir, "bundle.yaml");
 		// language=yaml
-		var bundleHeader =
-			"""
+		var bundleHeader = """
 			products:
 			  - product: elasticsearch
 			    target: 2026-05-04
@@ -194,8 +194,7 @@ public class TitleTargetTests(ITestOutputHelper output) : RenderChangelogTestBas
 
 		var bundleFile = FileSystem.Path.Join(bundleDir, "bundle.yaml");
 		// language=yaml
-		var bundleHeader =
-			"""
+		var bundleHeader = """
 			products:
 			  - product: elasticsearch
 			    target: 2026-05
@@ -251,8 +250,7 @@ public class TitleTargetTests(ITestOutputHelper output) : RenderChangelogTestBas
 
 		var bundleFile = FileSystem.Path.Join(bundleDir, "bundle.yaml");
 		// language=yaml
-		var bundleHeader =
-			"""
+		var bundleHeader = """
 			products:
 			  - product: elasticsearch
 			    target: 2026-05-04
@@ -266,7 +264,8 @@ public class TitleTargetTests(ITestOutputHelper output) : RenderChangelogTestBas
 		{
 			Bundles = [new BundleInput { BundleFile = bundleFile }],
 			Output = outputDir,
-			Title = "2026-05-04" // Explicit title provided - should stay literal
+			Title =
+				"2026-05-04" // Explicit title provided - should stay literal
 		};
 
 		// Act

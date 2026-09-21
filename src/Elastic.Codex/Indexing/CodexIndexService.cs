@@ -18,10 +18,7 @@ namespace Elastic.Codex.Indexing;
 /// Configures ES endpoint options using the shared <see cref="ElasticsearchEndpointConfigurator"/>
 /// and delegates to <see cref="CodexBuildService.BuildAll"/> with the Elasticsearch exporter.
 /// </summary>
-public class CodexIndexService(
-	ILoggerFactory logFactory,
-	IConfigurationContext configurationContext
-) : IService
+public class CodexIndexService(ILoggerFactory logFactory, IConfigurationContext configurationContext) : IService
 {
 	/// <summary>
 	/// Index codex documentation to Elasticsearch.
@@ -31,7 +28,8 @@ public class CodexIndexService(
 		CodexCloneResult cloneResult,
 		ScopedFileSystem fileSystem,
 		ElasticsearchIndexOptions esOptions,
-		Cancel ctx = default)
+		Cancel ctx = default
+	)
 	{
 		var cfg = configurationContext.Endpoints.Elasticsearch;
 		await ElasticsearchEndpointConfigurator.ApplyAsync(cfg, esOptions, codexContext.Collector, fileSystem, ctx);

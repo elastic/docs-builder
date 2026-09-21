@@ -5,22 +5,28 @@
  *
  * Open/close is native <details>. Closing on outside click or Escape is not,
  * so that lives in secondary-nav.ts.
+ *
+ * Panel chrome and motion match EuiPopover (Borealis): no visible light-mode
+ * border, medium drop-shadow via filter, opacity + translateY with bounce.
+ * Visibility is driven by `.is-open` (added on rAF) so the panel can transition
+ * instead of popping in from the UA `display:none` on closed <details>.
  */
 
 @layer components {
 	.secondary-nav-dropdown {
 		position: relative;
-		display: inline-flex;
-		align-items: center;
+		display: flex;
+		align-items: stretch;
+		height: 100%;
 	}
 
 	/* The nav bar uses overflow-x:auto for horizontal tab scrolling, which
 	   also clips vertically and would cut off an open dropdown. Let the menu
-	   escape only while a dropdown is open. */
-	.secondary-nav-scroll-container:has(.secondary-nav-dropdown[open]) {
-		/* !important to win over the Tailwind `overflow-x-auto` utility,
-		   which sits in a higher cascade layer. */
-		overflow: visible !important;
+	   escape while open or still animating out. */
+	.secondary-nav-scroll-container:has(.secondary-nav-dropdown[open]),
+	.secondary-nav-scroll-container:has(.secondary-nav-dropdown.is-open),
+	.secondary-nav-scroll-container:has(.secondary-nav-dropdown.is-closing) {
+		overflow: visible;
 	}
 
 	.secondary-nav-dropdown summary {
@@ -30,58 +36,104 @@
 		display: none;
 	}
 
-	.secondary-nav-dropdown-chevron {
+	.secondary-nav-icon.secondary-nav-dropdown-chevron {
 		flex-shrink: 0;
-		color: var(--color-grey-60);
+		color: #516381;
 		transition: transform 0.15s ease;
 	}
-	.secondary-nav-dropdown[open] .secondary-nav-dropdown-chevron {
+	.secondary-nav-dropdown[open] .secondary-nav-dropdown-chevron,
+	.secondary-nav-dropdown.is-open .secondary-nav-dropdown-chevron {
 		transform: rotate(180deg);
+	}
+
+	/* Beat the UA `details:not([open]) > :not(summary) { display: none }` so
+	   opacity/transform can actually transition. */
+	details.secondary-nav-dropdown > .secondary-nav-dropdown-menu {
+		display: flex;
+		content-visibility: visible;
 	}
 
 	.secondary-nav-dropdown-menu {
 		position: absolute;
-		top: calc(100% + 4px);
+		/* Same visual gap as EuiPopover on the 32px version trigger: that
+		   button sits 12px above the bar bottom, with a 12px EUI offset.
+		   This menu is positioned from the 56px tab, so extra offset is 0. */
+		top: 100%;
 		left: 0;
-		min-width: 220px;
-		max-width: 320px;
+		box-sizing: border-box;
+		width: 175px;
 		z-index: 50;
-		display: none;
 		flex-direction: column;
-		padding: 6px 0;
-		background: var(--color-white);
-		border: 1px solid var(--color-grey-20);
-		border-radius: 6px;
-		box-shadow: 0 8px 24px rgb(0 0 0 / 0.08);
-		font-weight: 500;
+		padding: 8px;
+		background: #fff;
+		border: 0;
+		border-radius: 4px;
+		box-shadow: none;
+		/* Borealis euiShadowMedium as filter (EuiPopover hasShadow=false). */
+		filter: drop-shadow(0 0 2px rgb(43 57 79 / 0.16))
+			drop-shadow(0 3px 10px rgb(43 57 79 / 0.1))
+			drop-shadow(0 6px 14px rgb(43 57 79 / 0.06));
+		font-family: var(--font-body);
+		font-size: 14px;
+		font-weight: 400;
+		line-height: 20px;
+		color: #1d2a3e;
+		opacity: 0;
+		visibility: hidden;
+		pointer-events: none;
+		backface-visibility: hidden;
+		transform: translateY(0) translateZ(0);
+		transition:
+			opacity 350ms cubic-bezier(0.34, 1.61, 0.7, 1),
+			transform 450ms cubic-bezier(0.34, 1.61, 0.7, 1),
+			visibility 0s linear 350ms;
 	}
-	.secondary-nav-dropdown[open] .secondary-nav-dropdown-menu {
-		display: flex;
+	.secondary-nav-dropdown.is-open .secondary-nav-dropdown-menu {
+		opacity: 1;
+		visibility: visible;
+		pointer-events: auto;
+		transform: translateY(-8px) translateZ(0);
+		transition:
+			opacity 350ms cubic-bezier(0.34, 1.61, 0.7, 1),
+			transform 450ms cubic-bezier(0.34, 1.61, 0.7, 1),
+			visibility 0s;
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.secondary-nav-dropdown-menu,
+		.secondary-nav-dropdown.is-open .secondary-nav-dropdown-menu {
+			transition: none;
+			transform: translateY(0) translateZ(0);
+		}
 	}
 
 	.secondary-nav-dropdown-group-label {
-		padding: 8px 14px 4px 14px;
+		padding: 6px 8px;
 		font-size: 12px;
-		font-weight: 700;
-		color: var(--color-grey-80);
+		font-weight: 600;
+		line-height: 20px;
+		color: #516381;
 		user-select: none;
-	}
-	.secondary-nav-dropdown-group-label:not(:first-child) {
-		margin-top: 4px;
-		border-top: 1px solid var(--color-grey-15, var(--color-grey-20));
-		padding-top: 10px;
 	}
 
 	.secondary-nav-dropdown-link {
-		display: block;
-		padding: 6px 14px;
+		display: flex;
+		align-items: center;
+		padding: 6px 8px;
+		border-radius: 4px;
 		font-size: 14px;
-		color: var(--color-ink-dark);
+		line-height: 20px;
+		font-weight: 400;
+		color: #1d2a3e;
 		text-decoration: none;
-		transition: background-color 0.12s ease;
 	}
-	.secondary-nav-dropdown-link:hover {
-		background: var(--color-grey-10);
-		color: var(--color-blue-elastic);
+	.secondary-nav-dropdown-link:hover,
+	.secondary-nav-dropdown-link:focus-visible {
+		background: #f6f9fc;
+		color: #1d2a3e;
+	}
+	.secondary-nav-dropdown-link:focus-visible {
+		outline: 2px solid #0b64dd;
+		outline-offset: -2px;
 	}
 }

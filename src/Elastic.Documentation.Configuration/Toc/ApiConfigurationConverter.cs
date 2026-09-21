@@ -25,15 +25,16 @@ namespace Elastic.Documentation.Configuration.Toc;
 /// </summary>
 public class ApiConfigurationConverter : IYamlTypeConverter
 {
-	private const string ShapeGuidance =
-		"Use the single-entry sequence form instead:\n" +
-		"  <key>:\n" +
-		"    - spec: <path>       # required; its basename resolves the remote version index\n" +
-		"      product: <id>      # required, must match a products.yml entry\n" +
-		"      repository: <org/repo> # optional; only needed if the spec is published from a\n" +
-		"                              # different repo than the current checkout\n" +
-		"      children:          # optional\n" +
-		"        - file: getting-started.md";
+	private const string ShapeGuidance = "Use the single-entry sequence form instead:\n"
+		+ "  <key>:\n"
+		+ "    - spec: <path>       # required; its basename resolves the remote version index\n"
+		+ "      product: <id>      # required, must match a products.yml entry\n"
+		+ "      repository: <org/repo> # optional; only needed if the spec is published from a\n"
+		+ "                              # different repo than the current checkout\n"
+		+ "      children:          # optional\n"
+		+ "        - file: getting-started.md\n"
+		+ "      catalog:           # optional; category chips on the API catalog\n"
+		+ "        categories: [self, ece, ess, serverless]";
 
 	public bool Accepts(Type type) => type == typeof(ApiProductSequence) || type == typeof(ApiProductEntry);
 
@@ -44,8 +45,11 @@ public class ApiConfigurationConverter : IYamlTypeConverter
 	{
 		if (parser.Current is not SequenceStart)
 		{
-			throw new YamlException(parser.Current?.Start ?? Mark.Empty, parser.Current?.End ?? Mark.Empty,
-				$"API configuration for this key must be a sequence with exactly one entry. {ShapeGuidance}");
+			throw new YamlException(
+				parser.Current?.Start ?? Mark.Empty,
+				parser.Current?.End ?? Mark.Empty,
+				$"API configuration for this key must be a sequence with exactly one entry. {ShapeGuidance}"
+			);
 		}
 
 		_ = parser.MoveNext(); // consume SequenceStart
@@ -61,18 +65,17 @@ public class ApiConfigurationConverter : IYamlTypeConverter
 	{
 		if (parser.Current is not MappingStart)
 		{
-			throw new YamlException(parser.Current?.Start ?? Mark.Empty, parser.Current?.End ?? Mark.Empty,
-				$"Each API entry must be a mapping with 'spec', 'product', and optional 'children' keys. {ShapeGuidance}");
+			throw new YamlException(
+				parser.Current?.Start ?? Mark.Empty,
+				parser.Current?.End ?? Mark.Empty,
+				$"Each API entry must be a mapping with 'spec', 'product', and optional 'children' keys. {ShapeGuidance}"
+			);
 		}
 
 		var entryStart = parser.Current.Start;
 		_ = parser.MoveNext(); // consume MappingStart
 
-		var entry = new ApiProductEntry
-		{
-			Line = (int)entryStart.Line,
-			Column = (int)entryStart.Column
-		};
+		var entry = new ApiProductEntry { Line = (int)entryStart.Line, Column = (int)entryStart.Column };
 
 		while (parser.Current is not MappingEnd)
 		{
@@ -127,9 +130,15 @@ public class ApiConfigurationConverter : IYamlTypeConverter
 				case "children":
 					entry.Children = ReadChildren(parser);
 					break;
+				case "catalog":
+					entry.Catalog = ReadCatalog(parser);
+					break;
 				case "file":
-					throw new YamlException(key.Start, key.End,
-						$"'file:' entries directly in the api sequence (legacy intro/outro shape) are no longer supported. {ShapeGuidance}");
+					throw new YamlException(
+						key.Start,
+						key.End,
+						$"'file:' entries directly in the api sequence (legacy intro/outro shape) are no longer supported. {ShapeGuidance}"
+					);
 				default:
 					// Forward-compatible: ignore unrecognized keys rather than failing the whole build.
 					parser.SkipThisAndNestedEvents();
@@ -138,6 +147,53 @@ public class ApiConfigurationConverter : IYamlTypeConverter
 		}
 		_ = parser.MoveNext(); // consume MappingEnd
 		return entry;
+	}
+
+	private static ApiCatalogSettings? ReadCatalog(IParser parser)
+	{
+		if (parser.Current is not MappingStart)
+		{
+			parser.SkipThisAndNestedEvents();
+			return null;
+		}
+
+		var start = parser.Current.Start;
+		_ = parser.MoveNext();
+		var catalog = new ApiCatalogSettings { Line = (int)start.Line, Column = (int)start.Column };
+		while (parser.Current is not MappingEnd)
+		{
+			var key = parser.Consume<Scalar>();
+			if (key.Value == "categories")
+				catalog.Categories = ReadStringSequence(parser);
+			else
+				parser.SkipThisAndNestedEvents();
+		}
+		_ = parser.MoveNext();
+		return catalog;
+	}
+
+	private static List<string> ReadStringSequence(IParser parser)
+	{
+		var values = new List<string>();
+		if (parser.Current is not SequenceStart)
+		{
+			parser.SkipThisAndNestedEvents();
+			return values;
+		}
+
+		_ = parser.MoveNext();
+		while (parser.Current is not SequenceEnd)
+		{
+			if (parser.Current is Scalar scalar)
+			{
+				values.Add(scalar.Value);
+				_ = parser.MoveNext();
+			}
+			else
+				parser.SkipThisAndNestedEvents();
+		}
+		_ = parser.MoveNext();
+		return values;
 	}
 
 	private static List<ApiEntryChild> ReadChildren(IParser parser)

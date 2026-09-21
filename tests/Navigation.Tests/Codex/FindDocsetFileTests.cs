@@ -16,8 +16,7 @@ public class FindDocsetFileTests
 
 	private static readonly string RepoRoot = Path.Join(Paths.WorkingDirectoryRoot.FullName, "repo");
 
-	private static CheckoutsFileSystem CreateScopedFs(MockFileSystem mockFs) =>
-		CheckoutsFileSystem.FromWorkingDirectory(mockFs);
+	private static CheckoutsFileSystem CreateScopedFs(MockFileSystem mockFs) => CheckoutsFileSystem.FromWorkingDirectory(mockFs);
 
 	[Fact]
 	public void StandardPath_Found()

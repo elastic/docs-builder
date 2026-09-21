@@ -14,7 +14,8 @@ public static class MockFileSystemExtensions
 		IDirectoryInfo root,
 		Dictionary<string, string>? globalVariables = null,
 		IReadOnlyList<string>? products = null,
-		string? extraYaml = null)
+		string? extraYaml = null
+	)
 	{
 		// language=yaml
 		var yaml = new StringWriter();
@@ -31,8 +32,7 @@ public static class MockFileSystemExtensions
 		yaml.WriteLine("  - docs-content");
 		yaml.WriteLine("  - kibana");
 		yaml.WriteLine("toc:");
-		var markdownFiles = fileSystem.Directory
-			.EnumerateFiles(root.FullName, "*.md", SearchOption.AllDirectories);
+		var markdownFiles = fileSystem.Directory.EnumerateFiles(root.FullName, "*.md", SearchOption.AllDirectories);
 		foreach (var markdownFile in markdownFiles)
 		{
 			if (markdownFile.Contains($"{Path.DirectorySeparatorChar}_snippets{Path.DirectorySeparatorChar}"))

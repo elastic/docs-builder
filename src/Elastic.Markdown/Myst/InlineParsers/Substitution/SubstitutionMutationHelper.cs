@@ -97,13 +97,12 @@ public static class SubstitutionMutationHelper
 	}
 
 	// These methods match the exact implementation in SubstitutionRenderer
-	private static string Capitalize(string input) =>
-		input switch
-		{
-			null => string.Empty,
-			"" => string.Empty,
-			_ => string.Concat(input[0].ToString().ToUpper(), input.AsSpan(1))
-		};
+	private static string Capitalize(string input) => input switch
+	{
+		null => string.Empty,
+		"" => string.Empty,
+		_ => string.Concat(input[0].ToString().ToUpper(), input.AsSpan(1))
+	};
 
 	private static string ToKebabCase(string str) => JsonNamingPolicy.KebabCaseLower.ConvertName(str).Replace(" ", string.Empty);
 

@@ -2,13 +2,14 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using System.Diagnostics;
 using System.IO.Abstractions;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
+using Elastic.Documentation.ExternalCommands;
 using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.Links;
 using Nullean.ScopedFileSystem;
+using ProcNet;
 
 namespace Elastic.Documentation.LinkIndex;
 
@@ -19,9 +20,16 @@ namespace Elastic.Documentation.LinkIndex;
 public class GitLinkIndexReader : ILinkIndexReader, IDisposable
 {
 	private const string LinkIndexOrigin = "elastic/codex-link-index";
-	private static readonly string CloneDirectory = Path.Join(
-		Paths.ApplicationData.FullName,
-		"codex-link-index");
+	private static readonly string CloneDirectory = Path.Join(Paths.ApplicationData.FullName, "codex-link-index");
+
+	private static readonly Dictionary<string, string> GitEnvironmentVars = new() { { "GIT_EDITOR", "true" } };
+
+	// Fetch retries up to 3 times with exponential back-off, each bounded by the CI default timeout.
+	private static readonly RetryPolicy FetchRetry = new(
+		MaxAttempts: 3,
+		BaseDelay: TimeSpan.FromSeconds(5),
+		AttemptTimeout: GitTimeouts.CiDefault
+	);
 
 	private readonly string _environment;
 	private readonly IFileSystem _fileSystem;
@@ -37,7 +45,10 @@ public class GitLinkIndexReader : ILinkIndexReader, IDisposable
 		IEnvironmentVariables? environmentVariables = null)
 	{
 		if (string.IsNullOrWhiteSpace(environment))
-			throw new ArgumentException("Environment must be specified in the codex configuration (e.g., 'internal', 'security').", nameof(environment));
+			throw new ArgumentException(
+				"Environment must be specified in the codex configuration (e.g., 'internal', 'security').",
+				nameof(environment)
+			);
 
 		_environment = environment;
 		_fileSystem = fileSystem ?? new ApplicationDataFileSystem();
@@ -71,7 +82,9 @@ public class GitLinkIndexReader : ILinkIndexReader, IDisposable
 		EnsureSafeRelativePath(_environment, nameof(_environment));
 		var registryPath = Path.Join(CloneDirectory, _environment, "link-index.json");
 		if (!_fileSystem.File.Exists(registryPath))
-			throw new FileNotFoundException($"Link index registry not found at {registryPath}. Ensure the codex-link-index repository has {_environment}/link-index.json.");
+			throw new FileNotFoundException(
+				$"Link index registry not found at {registryPath}. Ensure the codex-link-index repository has {_environment}/link-index.json."
+			);
 
 		var json = await _fileSystem.File.ReadAllTextAsync(registryPath, cancellationToken);
 		return LinkRegistry.Deserialize(json);
@@ -103,7 +116,8 @@ public class GitLinkIndexReader : ILinkIndexReader, IDisposable
 			{
 				if (!_fileSystem.Directory.Exists(gitDir))
 					throw new InvalidOperationException(
-						$"Codex link index not found at {CloneDirectory}. Run 'docs-builder codex clone' first.");
+						$"Codex link index not found at {CloneDirectory}. Run 'docs-builder codex clone' first."
+					);
 				_ensuredClone = true;
 				return;
 			}
@@ -119,7 +133,7 @@ public class GitLinkIndexReader : ILinkIndexReader, IDisposable
 				RunGit(CloneDirectory, "remote", "add", "origin", gitUrl);
 			}
 
-			RunGit(CloneDirectory, "fetch", "--no-tags", "--prune", "--depth", "1", "origin", "HEAD");
+			RunGitWithRetry(CloneDirectory, FetchRetry, "fetch", "--no-tags", "--prune", "--depth", "1", "origin", "HEAD");
 			RunGit(CloneDirectory, "checkout", "--force", "FETCH_HEAD");
 
 			_ensuredClone = true;
@@ -143,38 +157,60 @@ public class GitLinkIndexReader : ILinkIndexReader, IDisposable
 		return $"git@github.com:{LinkIndexOrigin}.git";
 	}
 
-	private void RunGit(string workingDirectory, params string[] args)
+	/// <summary>
+	/// Runs a git command with a retry policy. Throws <see cref="InvalidOperationException"/> on exhaustion.
+	/// </summary>
+	private void RunGitWithRetry(string workingDirectory, RetryPolicy policy, params string[] args)
 	{
-		var startInfo = new ProcessStartInfo
+		var failure = CommandRetry.Invoke(policy, invoke: () => ExecGit(
+			workingDirectory,
+			args,
+			policy.AttemptTimeout
+		), delay: d => Thread.Sleep(d), onRetry: f =>
 		{
-			FileName = "git",
-			WorkingDirectory = workingDirectory,
-			UseShellExecute = false,
-			RedirectStandardOutput = true,
-			RedirectStandardError = true,
-			CreateNoWindow = true
-		};
-		foreach (var arg in args)
-			startInfo.ArgumentList.Add(arg);
-		startInfo.Environment["GIT_EDITOR"] = "true";
+			GitLocks.ClearStale(
+				_fileSystem,
+				workingDirectory,
+				l => Console.Error.WriteLine($"[git {string.Join(" ", args)}] Removed stale lock file {l}")
+			);
+			Console.Error.WriteLine($"[git {string.Join(" ", args)}] {f}; retrying…");
+		});
 
-		using var process = Process.Start(startInfo) ?? throw new InvalidOperationException("Failed to start git process.");
-
-		var stderr = process.StandardError.ReadToEnd();
-		_ = process.StandardOutput.ReadToEnd();
-		process.WaitForExit();
-
-		if (process.ExitCode != 0)
-			throw new InvalidOperationException(DescribeCloneFailure(
-				stderr,
+		if (failure is not null)
+			throw new InvalidOperationException(DescribeGitFailure(
+				$"Git command failed after {policy.MaxAttempts} attempts (last: {failure.Value}).",
 				_environmentVariables.IsRunningOnCI,
-				!string.IsNullOrEmpty(_environmentVariables.GetEnvironmentVariable("GITHUB_TOKEN"))));
+				!string.IsNullOrEmpty(_environmentVariables.GetEnvironmentVariable("GITHUB_TOKEN"))
+			));
 	}
 
-	private static string DescribeCloneFailure(string gitStderr, bool onActions, bool hasToken)
+	/// <summary>
+	/// Runs a single git command with no retry. Throws <see cref="InvalidOperationException"/> on failure.
+	/// </summary>
+	private void RunGit(string workingDirectory, params string[] args)
 	{
-		var message = $"Git clone failed: {gitStderr.Trim()}";
+		var exitCode = ExecGit(workingDirectory, args, timeout: null);
+		if (exitCode != 0)
+			throw new InvalidOperationException(DescribeGitFailure(
+				$"Git command failed (exit {exitCode}): git {string.Join(" ", args)}",
+				_environmentVariables.IsRunningOnCI,
+				!string.IsNullOrEmpty(_environmentVariables.GetEnvironmentVariable("GITHUB_TOKEN"))
+			));
+	}
 
+	private static int ExecGit(string workingDirectory, string[] args, TimeSpan? timeout)
+	{
+		var arguments = new ExecArguments("git", args)
+		{
+			WorkingDirectory = workingDirectory,
+			Environment = GitEnvironmentVars,
+			Timeout = timeout
+		};
+		return Proc.Exec(arguments);
+	}
+
+	private static string DescribeGitFailure(string message, bool onActions, bool hasToken)
+	{
 		if (onActions && !hasToken)
 			return $"{message}{Environment.NewLine}{Environment.NewLine}"
 				+ "GitHub Actions did not provide GITHUB_TOKEN for the private Elastic Internal Docs link index."

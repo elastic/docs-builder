@@ -40,30 +40,50 @@ public class SpaceNormalizerParser : InlineParser
 	private static readonly char[] CharactersToRemove =
 	[
 		'\u000B', // Line Tabulation (\v) - <VT>
+
 		'\u000C', // Form Feed (\f) - <FF>
+
 		'\u0085', // Next Line
+
 		'\u1680', // Ogham Space Mark
+
 		'\u180E', // Mongolian Vowel Separator - <MVS>
+
 		'\ufeff', // Zero Width No-Break Space - <BOM>
+
 		'\u200B', // Zero Width Space - <ZWSP>
+
 		'\u2028', // Line Separator
-		'\u2029'  // Paragraph Separator
+
+		'\u2029' // Paragraph Separator
+
 	];
 
 	// Characters to replace with regular spaces (visible but problematic)
 	private static readonly char[] CharactersToReplace =
 	[
 		'\u2000', // En Quad
+
 		'\u2001', // Em Quad
+
 		'\u2002', // En Space - <ENSP>
+
 		'\u2003', // Em Space - <EMSP>
+
 		'\u2004', // Tree-Per-Em
+
 		'\u2005', // Four-Per-Em
+
 		'\u2006', // Six-Per-Em
+
 		'\u2008', // Punctuation Space - <PUNCSP>
+
 		'\u2009', // Thin Space
+
 		'\u200A', // Hair Space
-		'\u3000'  // Ideographic Space
+
+		'\u3000' // Ideographic Space
+
 	];
 
 	// Combined list of characters that need fixing (removed or replaced)
@@ -92,7 +112,11 @@ public class SpaceNormalizerParser : InlineParser
 			if (!FilesWithHintEmitted.Contains(filePath))
 			{
 				_ = FilesWithHintEmitted.Add(filePath);
-				processor.EmitHint(processor.Inline, 1, "Irregular space detected. Run 'docs-builder format --write' to automatically fix all instances.");
+				processor.EmitHint(
+					processor.Inline,
+					1,
+					"Irregular space detected. Run 'docs-builder format --write' to automatically fix all instances."
+				);
 			}
 		}
 
@@ -108,6 +132,5 @@ public class IrregularSpace : LeafInline
 
 public class SpaceNormalizerRenderer : HtmlObjectRenderer<IrregularSpace>
 {
-	protected override void Write(HtmlRenderer renderer, IrregularSpace obj) =>
-		renderer.Write(' ');
+	protected override void Write(HtmlRenderer renderer, IrregularSpace obj) => renderer.Write(' ');
 }
