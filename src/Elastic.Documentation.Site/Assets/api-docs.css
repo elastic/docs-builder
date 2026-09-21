@@ -1730,6 +1730,47 @@ a.type-linked:hover {
 }
 
 /* Operation description — same body copy as property/query descriptions (14/20, #516381) */
+.api-description-url-label {
+	margin: 0 0 0.5rem;
+	font-size: 12px;
+	font-weight: 500;
+	color: var(--color-subdued, #516381);
+}
+
+.api-description-url-listing {
+	margin-bottom: 1rem;
+
+	.api-method {
+		height: 18px;
+		font-size: 10px;
+		line-height: 12px;
+		padding: 0 4px;
+		gap: 2px;
+		border-radius: 5px;
+	}
+
+	.api-method-icon {
+		width: 9px;
+		height: 9px;
+	}
+
+	.api-method-icon svg {
+		width: 9px;
+		height: 9px;
+	}
+
+	.api-url {
+		margin-left: 0;
+		color: #516381;
+		font-family:
+			'Roboto Mono', ui-monospace, SFMono-Regular, Menlo, Monaco,
+			Consolas, monospace;
+		font-size: 13px;
+		font-weight: 300;
+		line-height: 20px;
+	}
+}
+
 .api-operation-description {
 	color: var(--color-subdued, #516381);
 	font-family: var(--font-body, Inter, ui-sans-serif, system-ui, sans-serif);
@@ -2457,7 +2498,8 @@ button.example-response-tab:focus-visible {
 	border-bottom: 1px solid var(--color-grey-20);
 }
 
-.api-catalog-header h1 {
+.api-catalog-header h1,
+.api-landing-heading h1 {
 	margin: 0;
 	font-size: var(--text-4xl);
 	font-weight: 700;
@@ -2611,4 +2653,16 @@ button.example-response-tab:focus-visible {
 .api-catalog-card-actions a:hover,
 .api-catalog-card-actions a:focus-visible {
 	text-decoration: underline;
+}
+
+.api-landing-heading {
+	display: flex;
+	align-items: center;
+	column-gap: 14px;
+}
+
+.api-landing-icon,
+.api-landing-icon svg {
+	width: auto;
+	height: 40px;
 }

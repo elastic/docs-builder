@@ -88,6 +88,11 @@ products:
     features:
       public-reference: false
       release-notes: on-release
+  docs-playground-release-notes-tagged-workflow:
+    display: 'Release Notes Playground (Tagged Workflow)'
+    features:
+      public-reference: false
+      release-notes: on-release
   ecs:
     display: 'Elastic Common Schema (ECS)'
   ecs-logging:
@@ -165,8 +170,10 @@ products:
       release-notes: false
   elastic-docs:
     display: 'Elastic Documentation'
+    repository: 'docs-content'
     features:
       public-reference: false
+      release-notes: on-release
   elastic-maps-server:
     display: 'Elastic Maps Server'
     versioning: 'stack'

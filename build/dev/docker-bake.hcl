@@ -32,6 +32,24 @@ target "runtime" {
   tags     = ["${IMAGE_REPOSITORY}:${IMAGE_TAG}"]
 }
 
+target "mcp" {
+  context    = "."
+  dockerfile = "src/api/Elastic.Documentation.Mcp.Remote/Dockerfile"
+  tags       = ["${IMAGE_REPOSITORY}:mcp"]
+
+  cache-from = CACHE_REPOSITORY != "" ? ["type=registry,ref=${CACHE_REPOSITORY}-mcp"] : []
+  cache-to   = CACHE_REPOSITORY != "" ? ["type=registry,ref=${CACHE_REPOSITORY}-mcp,mode=max"] : []
+}
+
+target "api" {
+  context    = "."
+  dockerfile = "src/api/Elastic.Documentation.Api/Dockerfile"
+  tags       = ["${IMAGE_REPOSITORY}:api"]
+
+  cache-from = CACHE_REPOSITORY != "" ? ["type=registry,ref=${CACHE_REPOSITORY}-api"] : []
+  cache-to   = CACHE_REPOSITORY != "" ? ["type=registry,ref=${CACHE_REPOSITORY}-api,mode=max"] : []
+}
+
 group "all" {
-  targets = ["tooling", "runtime"]
+  targets = ["tooling", "runtime", "mcp", "api"]
 }
