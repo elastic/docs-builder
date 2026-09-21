@@ -15,7 +15,7 @@ namespace Elastic.ApiExplorer.Tests;
 
 public class OperationExamplesPanelRenderingTests
 {
-	[Fact]
+	[Test]
 	public async Task Render_PutsExampleSelectInTheRequestHeader()
 	{
 		var model = new OperationExamplesPanelModel
@@ -71,7 +71,7 @@ public class OperationExamplesPanelRenderingTests
 		html.Should().NotContain("max-[1023px]:hidden");
 	}
 
-	[Fact]
+	[Test]
 	public async Task Render_SingleScenario_OmitsExamplesSwitcher()
 	{
 		var html = await _OperationExamplesPanel.Create(new OperationExamplesPanelModel
@@ -96,7 +96,7 @@ public class OperationExamplesPanelRenderingTests
 		html.Should().NotContain("max-[1023px]:hidden");
 	}
 
-	[Fact]
+	[Test]
 	public async Task Render_RequestAndResponse_ShareTheCodeCardClass()
 	{
 		var request = await _ApiCodeSample.Create(new ApiCodeSampleModel("rail-one", [new("JSON", "{}", "language-json")])).RenderAsync(
@@ -117,7 +117,7 @@ public class OperationExamplesPanelRenderingTests
 		response.Should().Contain("example-block--response");
 	}
 
-	[Fact]
+	[Test]
 	public async Task Render_RequestHeader_ShowsMethodChipAndRoute_NotLanguage()
 	{
 		var html = await _ApiCodeSample.Create(
@@ -144,7 +144,7 @@ public class OperationExamplesPanelRenderingTests
 		html.Should().NotContain("api-code-sample-label");
 	}
 
-	[Fact]
+	[Test]
 	public async Task Render_ScenarioContent_PassesMethodAndRouteToRequestCard()
 	{
 		var html = await _ExampleScenarioContent.Create(new ExampleScenario
@@ -161,7 +161,7 @@ public class OperationExamplesPanelRenderingTests
 		html.Should().NotContain("api-code-sample-label");
 	}
 
-	[Fact]
+	[Test]
 	public async Task Render_ResponseHeader_DoesNotIncludeScenarioSelect()
 	{
 		var html = await _ExampleScenarioContent.Create(new ExampleScenario

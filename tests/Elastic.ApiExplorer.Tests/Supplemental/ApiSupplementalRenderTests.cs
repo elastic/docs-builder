@@ -25,7 +25,7 @@ public class ApiSupplementalRenderTests(ApiExplorerFixture fixture) : IClassFixt
 	private const string SpecQueryQDescription = "A query in the Lucene query string syntax.";
 	private const string SpecFieldsDescription = "A field or list of fields to return, exercising the X | X[] simple-union path.";
 
-	[Fact]
+	[Test]
 	public async Task Operation_NoHeadings_ReplacesDescription()
 	{
 		var nav = SearchOperation();
@@ -37,7 +37,7 @@ public class ApiSupplementalRenderTests(ApiExplorerFixture fixture) : IClassFixt
 		html.Should().NotContain(SpecOperationDescription);
 	}
 
-	[Fact]
+	[Test]
 	public async Task Operation_DescriptionHeading_ReplacesDescriptionAndKeepsGeneratedSections()
 	{
 		var nav = SearchOperation();
@@ -65,7 +65,7 @@ public class ApiSupplementalRenderTests(ApiExplorerFixture fixture) : IClassFixt
 		html.Should().Contain(SpecQueryQDescription);
 	}
 
-	[Fact]
+	[Test]
 	public async Task Operation_QueryParameters_RenderCollapsedWithNameSummary()
 	{
 		var nav = SearchOperation();
@@ -78,7 +78,7 @@ public class ApiSupplementalRenderTests(ApiExplorerFixture fixture) : IClassFixt
 		html.Should().Contain("data-param-item");
 	}
 
-	[Fact]
+	[Test]
 	public async Task Operation_Authorization_RendersPillsUnderEndpoint()
 	{
 		var nav = SearchOperation();
@@ -97,7 +97,7 @@ public class ApiSupplementalRenderTests(ApiExplorerFixture fixture) : IClassFixt
 		markdown.Should().NotContain("## Authorization");
 	}
 
-	[Fact]
+	[Test]
 	public async Task Operation_Prerequisites_RendersCollapsedWhenMultipleItems()
 	{
 		var nav = SearchOperation();
@@ -109,7 +109,7 @@ public class ApiSupplementalRenderTests(ApiExplorerFixture fixture) : IClassFixt
 		html.Should().Contain("api-param-section-title\">Prerequisites</span>");
 	}
 
-	[Fact]
+	[Test]
 	public async Task Operation_PathParameters_SingleItem_RendersWithoutCollapse()
 	{
 		var nav = SearchOperation();
@@ -120,7 +120,7 @@ public class ApiSupplementalRenderTests(ApiExplorerFixture fixture) : IClassFixt
 		html.Should().NotContain("aria-controls=\"parameters-list\"");
 	}
 
-	[Fact]
+	[Test]
 	public async Task Operation_PathParameters_RequiredBadgeIsSiblingOfAnchor()
 	{
 		var nav = SearchOperation();
@@ -129,7 +129,7 @@ public class ApiSupplementalRenderTests(ApiExplorerFixture fixture) : IClassFixt
 		html.Should().MatchRegex("""id="path-index"[\s\S]*?</a>\s*<span class="required type-status">required</span>""");
 	}
 
-	[Fact]
+	[Test]
 	public async Task Operation_NestedProperties_UseShowPropertiesDisclosure()
 	{
 		var nav = SearchOperation();
@@ -140,7 +140,7 @@ public class ApiSupplementalRenderTests(ApiExplorerFixture fixture) : IClassFixt
 		html.Should().NotContain("toggle-label\">Hide ");
 	}
 
-	[Fact]
+	[Test]
 	public async Task Operation_Request_RendersCollapsedWithNameSummaryAndNoJsonBadge()
 	{
 		var nav = SearchOperation();
@@ -154,7 +154,7 @@ public class ApiSupplementalRenderTests(ApiExplorerFixture fixture) : IClassFixt
 		html.Should().NotContain("content-type-badge");
 	}
 
-	[Fact]
+	[Test]
 	public async Task Operation_EmptySpecDescription_ShowsSupplemental()
 	{
 		var src = SearchOperation();
@@ -172,7 +172,7 @@ public class ApiSupplementalRenderTests(ApiExplorerFixture fixture) : IClassFixt
 		html.Should().Contain("id=\"description\"");
 	}
 
-	[Fact]
+	[Test]
 	public async Task Operation_NoMatchingFile_KeepsSpecDescription()
 	{
 		var nav = SearchOperation();
@@ -181,7 +181,7 @@ public class ApiSupplementalRenderTests(ApiExplorerFixture fixture) : IClassFixt
 		html.Should().Contain(SpecOperationDescription);
 	}
 
-	[Fact]
+	[Test]
 	public async Task Operation_PostSections_RenderAfterGeneratedContent()
 	{
 		var nav = SearchOperation();
@@ -220,7 +220,7 @@ public class ApiSupplementalRenderTests(ApiExplorerFixture fixture) : IClassFixt
 			.BeLessThan(html.IndexOf("id=\"common-patterns\"", StringComparison.Ordinal));
 	}
 
-	[Fact]
+	[Test]
 	public async Task Operation_PostSections_HonorExplicitIdsAndSkipReservedAnchors()
 	{
 		var nav = SearchOperation();
@@ -266,7 +266,7 @@ public class ApiSupplementalRenderTests(ApiExplorerFixture fixture) : IClassFixt
 		html.Should().Contain("SUPP_OP_BEST_2");
 	}
 
-	[Fact]
+	[Test]
 	public void SplitHeading_ReadsExplicitId()
 	{
 		var (title, id) = ApiPostSection.SplitHeading("Errors {#errors-guide}");
@@ -274,7 +274,7 @@ public class ApiSupplementalRenderTests(ApiExplorerFixture fixture) : IClassFixt
 		id.Should().Be("errors-guide");
 	}
 
-	[Fact]
+	[Test]
 	public void ResolveAnchor_ReservedId_GetsSuffix()
 	{
 		var used = ApiPostSection.OperationReservedAnchors.ToHashSet(StringComparer.Ordinal);
@@ -282,7 +282,7 @@ public class ApiSupplementalRenderTests(ApiExplorerFixture fixture) : IClassFixt
 		ApiPostSection.ResolveAnchor("Responses", null, used).Should().Be("responses-3");
 	}
 
-	[Fact]
+	[Test]
 	public async Task Operation_ParameterOverrides_ReplaceListedPathAndQueryOnly()
 	{
 		var nav = SearchOperation();
@@ -316,7 +316,7 @@ public class ApiSupplementalRenderTests(ApiExplorerFixture fixture) : IClassFixt
 		html.Should().NotContain("UNKNOWN_PARAM_OVERRIDE");
 	}
 
-	[Fact]
+	[Test]
 	public async Task Operation_RequestBodyOverride_ReplacesListedFieldOnly()
 	{
 		var nav = SearchOperation();
@@ -335,7 +335,7 @@ public class ApiSupplementalRenderTests(ApiExplorerFixture fixture) : IClassFixt
 		html.Should().Contain(SpecFieldsDescription);
 	}
 
-	[Fact]
+	[Test]
 	public async Task Tag_NoHeadings_ReplacesDescription()
 	{
 		var nav = SearchTag();
@@ -345,7 +345,7 @@ public class ApiSupplementalRenderTests(ApiExplorerFixture fixture) : IClassFixt
 		html.Should().NotContain(SpecTagDescription);
 	}
 
-	[Fact]
+	[Test]
 	public async Task Tag_DescriptionHeading_ReplacesDescriptionAndKeepsOverview()
 	{
 		var nav = SearchTag();
@@ -381,7 +381,7 @@ public class ApiSupplementalRenderTests(ApiExplorerFixture fixture) : IClassFixt
 			.BeLessThan(html.IndexOf("api-overview", StringComparison.Ordinal));
 	}
 
-	[Fact]
+	[Test]
 	public async Task Tag_OverviewRows_LinkTheTitleNotTheMethodPath()
 	{
 		var nav = SearchTag();
@@ -392,7 +392,7 @@ public class ApiSupplementalRenderTests(ApiExplorerFixture fixture) : IClassFixt
 		html.Should().NotContain("api-url-list-item-landing");
 	}
 
-	[Fact]
+	[Test]
 	public async Task Tag_EmptySpecDescription_ShowsSupplemental()
 	{
 		var nav = SearchTag();
@@ -402,7 +402,7 @@ public class ApiSupplementalRenderTests(ApiExplorerFixture fixture) : IClassFixt
 		html.Should().Contain("SUPP_TAG_EMPTY_SPEC");
 	}
 
-	[Fact]
+	[Test]
 	public async Task Tag_NoMatchingFile_KeepsSpecDescription()
 	{
 		var nav = SearchTag();
@@ -411,7 +411,7 @@ public class ApiSupplementalRenderTests(ApiExplorerFixture fixture) : IClassFixt
 		html.Should().Contain(SpecTagDescription);
 	}
 
-	[Fact]
+	[Test]
 	public void RequestBodyOverride_MatchesPropertyNameOnRequestTreeOnly()
 	{
 		var schema = fixture.Document.Components!.Schemas!["fixture.SearchRequestBody"];

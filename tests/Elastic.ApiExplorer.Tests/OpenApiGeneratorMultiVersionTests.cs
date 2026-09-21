@@ -90,7 +90,7 @@ public class OpenApiGeneratorMultiVersionTests
 			Tags = new HashSet<OpenApiTag> { new() { Name = "core" } }
 		};
 
-	[Fact]
+	[Test]
 	public async Task ResolveDocumentsForProduct_MultiMajorIndex_ResolvesMainAndNumericVersions()
 	{
 		var collector = new DiagnosticsCollector([]);
@@ -109,7 +109,7 @@ public class OpenApiGeneratorMultiVersionTests
 		var documents = (await generator.ResolveDocumentsForProduct(
 			"elasticsearch",
 			ApiConfig(product),
-			TestContext.Current.CancellationToken
+			TestContext.Current!.Execution.CancellationToken
 		)).Documents;
 
 		documents.Should().HaveCount(3);
@@ -128,7 +128,7 @@ public class OpenApiGeneratorMultiVersionTests
 		);
 	}
 
-	[Fact]
+	[Test]
 	public async Task ResolveDocumentsForProduct_VersionlessProduct_RendersMainOnly()
 	{
 		var collector = new DiagnosticsCollector([]);
@@ -151,7 +151,7 @@ public class OpenApiGeneratorMultiVersionTests
 		var documents = (await generator.ResolveDocumentsForProduct(
 			"cloud-serverless",
 			apiConfig,
-			TestContext.Current.CancellationToken
+			TestContext.Current!.Execution.CancellationToken
 		)).Documents;
 
 		documents.Should().ContainSingle();
@@ -159,7 +159,7 @@ public class OpenApiGeneratorMultiVersionTests
 		ApiUrlBuilder.ProductSuffix("cloud-serverless", documents[0].Version.Moniker).Should().Be("cloud-serverless");
 	}
 
-	[Fact]
+	[Test]
 	public async Task ResolveDocumentsForProduct_LocalMainAndRemoteHistoricalVersions_ResolvesAllTrees()
 	{
 		var collector = new DiagnosticsCollector([]);
@@ -179,7 +179,7 @@ public class OpenApiGeneratorMultiVersionTests
 		var documents = (await generator.ResolveDocumentsForProduct(
 			"elasticsearch",
 			ApiConfig(product, localFile),
-			TestContext.Current.CancellationToken
+			TestContext.Current!.Execution.CancellationToken
 		)).Documents;
 
 		documents.Should().HaveCount(3);
@@ -193,7 +193,7 @@ public class OpenApiGeneratorMultiVersionTests
 		);
 	}
 
-	[Fact]
+	[Test]
 	public async Task ResolveDocumentsForProduct_MainFetchFails_DoesNotMarkOlderSpecForUnmatchedBaseFiles()
 	{
 		var collector = new DiagnosticsCollector([]);
@@ -228,14 +228,14 @@ public class OpenApiGeneratorMultiVersionTests
 		var resolved = await generator.ResolveDocumentsForProduct(
 			"elasticsearch",
 			ApiConfig(product),
-			TestContext.Current.CancellationToken
+			TestContext.Current!.Execution.CancellationToken
 		);
 
 		resolved.Documents.Select(d => d.Version.Moniker).Should().BeEquivalentTo(["9", "8"]);
 		resolved.UnmatchedBaseFilesMoniker.Should().BeNull();
 	}
 
-	[Fact]
+	[Test]
 	public void CreateNavigation_VersionedSuffix_UsesVersionPrefixedUrls()
 	{
 		var collector = new DiagnosticsCollector([]);
@@ -256,7 +256,7 @@ public class OpenApiGeneratorMultiVersionTests
 		operation.Url.Should().Be("/api/doc/elasticsearch/v8/operation/operation-ping");
 	}
 
-	[Fact]
+	[Test]
 	public async Task Generate_WritesDistinctOutputTreesForMainAndReleasedMajors()
 	{
 		var collector = new DiagnosticsCollector([]);
@@ -272,7 +272,7 @@ public class OpenApiGeneratorMultiVersionTests
 		);
 		var generator = CreateGenerator(context, versionIndexClient, reader);
 
-		await generator.Generate(TestContext.Current.CancellationToken);
+		await generator.Generate(TestContext.Current!.Execution.CancellationToken);
 
 		context.WriteFileSystem.File.Exists(Path.Join(outputRoot, "api", "doc", "elasticsearch", "index.html")).Should().BeTrue();
 		context

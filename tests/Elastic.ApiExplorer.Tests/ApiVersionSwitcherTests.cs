@@ -11,7 +11,7 @@ namespace Elastic.ApiExplorer.Tests;
 
 public class ApiVersionSwitcherTests
 {
-	[Fact]
+	[Test]
 	public void Build_SingleVersion_ReturnsEmpty()
 	{
 		var items = ApiVersionSwitcher.Build("", "elasticsearch", ["main"], "main");
@@ -19,7 +19,7 @@ public class ApiVersionSwitcherTests
 		items.Should().BeEmpty();
 	}
 
-	[Fact]
+	[Test]
 	public void Build_MultipleVersions_OrdersCurrentMajorFirstAndMarksCurrent()
 	{
 		var items = ApiVersionSwitcher.Build("", "elasticsearch", ["main", "9", "8"], "8");
@@ -30,7 +30,7 @@ public class ApiVersionSwitcherTests
 		items.Single(i => i.Selected).Label.Should().Be("v8");
 	}
 
-	[Fact]
+	[Test]
 	public void Build_CurrentMain_LabelsItLatest()
 	{
 		var items = ApiVersionSwitcher.Build("", "elasticsearch", ["main", "9", "8"], "main");
@@ -39,7 +39,7 @@ public class ApiVersionSwitcherTests
 		items.Single(i => i.Selected).Label.Should().Be("latest");
 	}
 
-	[Fact]
+	[Test]
 	public void CurrentVersionLabel_PrefersProductVersioningBase()
 	{
 		var items = ApiVersionSwitcher.Build("", "elasticsearch", ["main", "8"], "main");
@@ -49,7 +49,7 @@ public class ApiVersionSwitcherTests
 		label.Should().Be("9.0+");
 	}
 
-	[Fact]
+	[Test]
 	public void SerializeDropdownItems_EmitsDocsDropdownShape()
 	{
 		var items = ApiVersionSwitcher.Build("", "elasticsearch", ["main", "9", "8"], "main");

@@ -25,7 +25,7 @@ public class ReaderTests
 		return fileSystem.FileInfo.New(path);
 	}
 
-	[Fact]
+	[Test]
 	public async Task Reads()
 	{
 		var x = await OpenApiReader.Instance.ReadAsync(LocalSpecFile());
@@ -34,11 +34,11 @@ public class ReaderTests
 		x.BaseUri.Should().NotBeNull();
 	}
 
-	[Theory]
-	[InlineData("json", /*lang=json,strict*/  """{"openapi":"3.1.0","info":{"title":"Test","version":"1.0"},"paths":{}}""")]
-	[InlineData("yaml", "openapi: 3.1.0\ninfo:\n  title: Test\n  version: 1.0\npaths: {}")]
-	[InlineData("json", /*lang=json,strict*/  """{"swagger":"2.0","info":{"title":"Test","version":"1"},"paths":{},"host":"example.com","basePath":"/"}""")]
-	[InlineData("yaml", "swagger: \"2.0\"\ninfo:\n  title: Test\n  version: \"1\"\nhost: example.com\nbasePath: /\npaths: {}")]
+	[Test]
+	[Arguments("json", /*lang=json,strict*/  """{"openapi":"3.1.0","info":{"title":"Test","version":"1.0"},"paths":{}}""")]
+	[Arguments("yaml", "openapi: 3.1.0\ninfo:\n  title: Test\n  version: 1.0\npaths: {}")]
+	[Arguments("json", /*lang=json,strict*/  """{"swagger":"2.0","info":{"title":"Test","version":"1"},"paths":{},"host":"example.com","basePath":"/"}""")]
+	[Arguments("yaml", "swagger: \"2.0\"\ninfo:\n  title: Test\n  version: \"1\"\nhost: example.com\nbasePath: /\npaths: {}")]
 	public async Task ReadsStream(string extension, string specification)
 	{
 		var stream = new MemoryStream(Encoding.UTF8.GetBytes(specification));
@@ -49,7 +49,7 @@ public class ReaderTests
 		document.Info.Title.Should().Be("Test");
 	}
 
-	[Fact]
+	[Test]
 	public async Task ReadsSwagger20Fixture()
 	{
 		var path = Path.Combine(AppContext.BaseDirectory, "TestData", "swagger-2.0-sample.json");
@@ -67,7 +67,7 @@ public class ReaderTests
 		document.Components?.SecuritySchemes.Should().ContainKey("basicAuth");
 	}
 
-	[Fact]
+	[Test]
 	public async Task ReadAsync_Yaml_QuotedNumericVersion_NotCoercedToNumber()
 	{
 		// Regression: a quoted "2.0" YAML scalar was coerced to the JSON number 2 by WriteScalar,
@@ -82,7 +82,7 @@ public class ReaderTests
 		doc!.Info.Title.Should().Be("QuotedVersion");
 	}
 
-	[Fact]
+	[Test]
 	public async Task Navigation()
 	{
 		var collector = new DiagnosticsCollector([]);

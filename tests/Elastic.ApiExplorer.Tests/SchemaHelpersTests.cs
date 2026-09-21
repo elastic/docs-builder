@@ -9,77 +9,77 @@ namespace Elastic.ApiExplorer.Tests;
 
 public class SchemaHelpersTests
 {
-	[Theory]
-	[InlineData("string")]
-	[InlineData("number")]
-	[InlineData("boolean")]
-	[InlineData("object")]
-	[InlineData("strings")]
+	[Test]
+	[Arguments("string")]
+	[Arguments("number")]
+	[Arguments("boolean")]
+	[Arguments("object")]
+	[Arguments("strings")]
 	public void PrimitiveCssClassOrNull_Group1Atoms_ReturnsTypePrimitive(string name) =>
 		SchemaHelpers.PrimitiveCssClassOrNull(name).Should().Be("type-primitive");
 
-	[Theory]
-	[InlineData("Field")]
-	[InlineData("TaskSettings")]
-	[InlineData("string[]")]
-	[InlineData(null)]
+	[Test]
+	[Arguments("Field")]
+	[Arguments("TaskSettings")]
+	[Arguments("string[]")]
+	[Arguments(null)]
 	public void PrimitiveCssClassOrNull_NonAtoms_ReturnsNull(string? name) => SchemaHelpers.PrimitiveCssClassOrNull(name).Should().BeNull();
 
-	[Theory]
-	[InlineData("Field")]
-	[InlineData("Id")]
-	[InlineData("uint")]
+	[Test]
+	[Arguments("Field")]
+	[Arguments("Id")]
+	[Arguments("uint")]
 	public void ValueCssClassOrNull_Group2Aliases_ReturnsTypeValue(string name) =>
 		SchemaHelpers.ValueCssClassOrNull(name).Should().Be("type-value");
 
-	[Theory]
-	[InlineData("string")]
-	[InlineData("TaskSettings")]
-	[InlineData(null)]
+	[Test]
+	[Arguments("string")]
+	[Arguments("TaskSettings")]
+	[Arguments(null)]
 	public void ValueCssClassOrNull_NonAliases_ReturnsNull(string? name) => SchemaHelpers.ValueCssClassOrNull(name).Should().BeNull();
 
-	[Fact]
+	[Test]
 	public void TypeAtomCssClassOrNull_PrefersPrimitiveOverValue() =>
 		SchemaHelpers.TypeAtomCssClassOrNull("string").Should().Be("type-primitive");
 
-	[Fact]
+	[Test]
 	public void TypeAtomCssClassOrNull_Alias_ReturnsTypeValue() => SchemaHelpers.TypeAtomCssClassOrNull("Field").Should().Be("type-value");
 
-	[Fact]
+	[Test]
 	public void TypeAtomCssClassOrNull_NamedObject_ReturnsTypeObject() =>
 		SchemaHelpers.TypeAtomCssClassOrNull("TaskSettings").Should().Be("type-object");
 
-	[Fact]
+	[Test]
 	public void TypeAtomCssClassOrNull_LinkedContainer_ReturnsTypeLinked() =>
 		SchemaHelpers.TypeAtomCssClassOrNull("QueryContainer").Should().Be("type-linked");
 
-	[Fact]
+	[Test]
 	public void TypeAtomCssClassOrNull_Unknown_ReturnsNull() => SchemaHelpers.TypeAtomCssClassOrNull("unknown").Should().BeNull();
 
-	[Theory]
-	[InlineData("string | string[]")]
-	[InlineData("string[]")]
-	[InlineData("string to HighlightField")]
+	[Test]
+	[Arguments("string | string[]")]
+	[Arguments("string[]")]
+	[Arguments("string to HighlightField")]
 	public void TypeAtomCssClassOrNull_CompoundFormula_ReturnsNull(string name) =>
 		SchemaHelpers.TypeAtomCssClassOrNull(name).Should().BeNull();
 
-	[Fact]
+	[Test]
 	public void UnionOptionClasses_NamedObject_IncludesTypeObject() =>
 		SchemaHelpers.UnionOptionClasses(true, "TaskSettings").Should().Be("union-type-option type-object");
 
-	[Fact]
+	[Test]
 	public void UnionOptionClasses_LinkedContainer_IncludesTypeLinked() =>
 		SchemaHelpers.UnionOptionClasses(true, "AggregationContainer").Should().Be("union-type-option type-linked");
 
-	[Fact]
+	[Test]
 	public void UnionOptionClasses_PrimitiveTypeOption_IncludesTypePrimitive() =>
 		SchemaHelpers.UnionOptionClasses(true, "string").Should().Be("union-type-option type-primitive");
 
-	[Fact]
+	[Test]
 	public void UnionOptionClasses_ValueTypeOption_IncludesTypeValue() =>
 		SchemaHelpers.UnionOptionClasses(true, "Field").Should().Be("union-type-option type-value");
 
-	[Fact]
+	[Test]
 	public void UnionOptionClasses_Literal_DoesNotIncludeTypePrimitive() =>
 		SchemaHelpers.UnionOptionClasses(false, "false_positive").Should().Be("union-option");
 

@@ -20,7 +20,7 @@ public class CodeSampleTests
 		return operation;
 	}
 
-	[Fact]
+	[Test]
 	public void CodeSamples_ReturnsEmptyList_WhenExtensionIsMissing()
 	{
 		var operation = new OpenApiOperation();
@@ -30,7 +30,7 @@ public class CodeSampleTests
 		result.Should().BeEmpty();
 	}
 
-	[Fact]
+	[Test]
 	public void CodeSamples_ParsesValidSamples()
 	{
 		var samples = new JsonArray(
@@ -49,7 +49,7 @@ public class CodeSampleTests
 		result[1].HighlightClass.Should().Be("language-curl");
 	}
 
-	[Fact]
+	[Test]
 	public void CodeSamples_OrdersConsoleFirst()
 	{
 		var samples = new JsonArray(
@@ -65,7 +65,7 @@ public class CodeSampleTests
 		result[0].Language.Should().Be("Console");
 	}
 
-	[Fact]
+	[Test]
 	public void CodeSamples_IncludesAllLanguagesWithConsoleFirst()
 	{
 		var samples = new JsonArray(
@@ -83,7 +83,7 @@ public class CodeSampleTests
 		result.Skip(1).Select(s => s.Language).Should().BeEquivalentTo(["Python", "curl", "Ruby"]);
 	}
 
-	[Fact]
+	[Test]
 	public void CodeSamples_SkipsEntriesWithMissingSource()
 	{
 		var samples = new JsonArray(
@@ -99,7 +99,7 @@ public class CodeSampleTests
 		result[0].Language.Should().Be("Console");
 	}
 
-	[Fact]
+	[Test]
 	public void CodeSamples_SkipsEntriesWithMissingLang()
 	{
 		var samples = new JsonArray(
@@ -114,7 +114,7 @@ public class CodeSampleTests
 		result[0].Language.Should().Be("Console");
 	}
 
-	[Fact]
+	[Test]
 	public void CodeSamples_HandlesEmptyArray()
 	{
 		var samples = new JsonArray();
@@ -125,30 +125,30 @@ public class CodeSampleTests
 		result.Should().BeEmpty();
 	}
 
-	[Theory]
-	[InlineData("Console", "language-console")]
-	[InlineData("curl", "language-curl")]
-	[InlineData("Python", "language-python")]
-	[InlineData("JavaScript", "language-javascript")]
-	[InlineData("Ruby", "language-ruby")]
-	[InlineData("PHP", "language-php")]
-	[InlineData("Java", "language-java")]
-	[InlineData("Go", "language-go")]
-	[InlineData("TypeScript", "language-typescript")]
+	[Test]
+	[Arguments("Console", "language-console")]
+	[Arguments("curl", "language-curl")]
+	[Arguments("Python", "language-python")]
+	[Arguments("JavaScript", "language-javascript")]
+	[Arguments("Ruby", "language-ruby")]
+	[Arguments("PHP", "language-php")]
+	[Arguments("Java", "language-java")]
+	[Arguments("Go", "language-go")]
+	[Arguments("TypeScript", "language-typescript")]
 	public void GetHighlightClass_MapsLanguagesCorrectly(string language, string expected) =>
 		CodeSample.GetHighlightClass(language).Should().Be(expected);
 
-	[Theory]
-	[InlineData(/*lang=json,strict*/ """{"ok":true}""", "language-json")]
-	[InlineData(/*lang=json,strict*/ """[{"id":1}]""", "language-json")]
-	[InlineData(/*lang=json*/ "  \n{ \"a\": 1 }", "language-json")]
-	[InlineData("event: message\ndata: [DONE]", "language-plaintext")]
-	[InlineData("", "language-plaintext")]
-	[InlineData(null, "language-plaintext")]
+	[Test]
+	[Arguments(/*lang=json,strict*/ """{"ok":true}""", "language-json")]
+	[Arguments(/*lang=json,strict*/ """[{"id":1}]""", "language-json")]
+	[Arguments(/*lang=json*/ "  \n{ \"a\": 1 }", "language-json")]
+	[Arguments("event: message\ndata: [DONE]", "language-plaintext")]
+	[Arguments("", "language-plaintext")]
+	[Arguments(null, "language-plaintext")]
 	public void HighlightClassForExampleBody_DetectsJsonVsOther(string? source, string expected) =>
 		CodeSample.HighlightClassForExampleBody(source).Should().Be(expected);
 
-	[Fact]
+	[Test]
 	public void CodeSamples_SetsCorrectHighlightClass()
 	{
 		var samples = new JsonArray(new JsonObject { ["lang"] = "curl", ["source"] = "curl -X GET \"$ELASTICSEARCH_URL/_search\"" });
@@ -159,7 +159,7 @@ public class CodeSampleTests
 		result[0].HighlightClass.Should().Be("language-curl");
 	}
 
-	[Fact]
+	[Test]
 	public void CodeSamples_FormatsSingleLineCurl()
 	{
 		const string source =
@@ -176,29 +176,29 @@ public class CodeSampleTests
 		result[0].Source.Should().Contain("\"service\"");
 	}
 
-	[Fact]
+	[Test]
 	public void CurlSourceFormatter_LeavesMultilineUnchanged()
 	{
 		var source = "curl -X GET \\\n  \"$ELASTICSEARCH_URL/_search\"";
 		CurlSourceFormatter.Format(source).Should().Be(source);
 	}
 
-	[Theory]
-	[InlineData("language-json", "highlight-json")]
-	[InlineData("language-bash", "highlight-bash")]
-	[InlineData("language-console", "highlight-console")]
-	[InlineData("language-python", "highlight-python")]
+	[Test]
+	[Arguments("language-json", "highlight-json")]
+	[Arguments("language-bash", "highlight-bash")]
+	[Arguments("language-console", "highlight-console")]
+	[Arguments("language-python", "highlight-python")]
 	public void GetHighlightGroupClass_MapsLanguageClassToHighlightClass(string input, string expected) =>
 		CodeSample.GetHighlightGroupClass(input).Should().Be(expected);
 
-	[Fact]
+	[Test]
 	public void GetHighlightGroupClass_HandlesNonLanguageClass() =>
 		CodeSample.GetHighlightGroupClass("some-other-class").Should().Be("highlight-plaintext");
 
-	[Fact]
+	[Test]
 	public void GetHighlightGroupClass_HandlesEmptyInput() => CodeSample.GetHighlightGroupClass("").Should().Be("highlight-plaintext");
 
-	[Fact]
+	[Test]
 	public void GetHighlightGroupClass_HandlesLanguagePrefixOnly() =>
 		CodeSample.GetHighlightGroupClass("language-").Should().Be("highlight-plaintext");
 }

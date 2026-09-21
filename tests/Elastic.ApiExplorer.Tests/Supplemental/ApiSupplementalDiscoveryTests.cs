@@ -13,7 +13,7 @@ public class ApiSupplementalDiscoveryTests
 {
 	private const string Folder = "/docs/api/fixture";
 
-	[Fact]
+	[Test]
 	public void Discover_MissingFolder_ReturnsEmpty()
 	{
 		var fs = new MockFileSystem();
@@ -28,7 +28,7 @@ public class ApiSupplementalDiscoveryTests
 		result.VersionSuffixed.Should().BeEmpty();
 	}
 
-	[Fact]
+	[Test]
 	public void Discover_NullFolder_ReturnsEmpty()
 	{
 		var result = ApiSupplementalDiscovery.Discover(null, ["search"], ["search"]);
@@ -36,7 +36,7 @@ public class ApiSupplementalDiscoveryTests
 		result.Operations.Should().BeEmpty();
 	}
 
-	[Fact]
+	[Test]
 	public void Discover_MatchesExactOperationId()
 	{
 		var folder = FolderWith("op-search.md", "op-getAlertingHealth.md", "op-cluster-health.md");
@@ -47,7 +47,7 @@ public class ApiSupplementalDiscoveryTests
 		result.Unmatched.Select(f => f.Name).Should().ContainSingle().Which.Should().Be("op-cluster-health.md");
 	}
 
-	[Fact]
+	[Test]
 	public void Discover_DoesNotMatchDifferentCasing()
 	{
 		var folder = FolderWith("op-getalertinghealth.md");
@@ -58,7 +58,7 @@ public class ApiSupplementalDiscoveryTests
 		result.Unmatched.Select(f => f.Name).Should().ContainSingle().Which.Should().Be("op-getalertinghealth.md");
 	}
 
-	[Fact]
+	[Test]
 	public void Discover_MatchesTagUrlSlug()
 	{
 		var folder = FolderWith("tag-ml-anomaly.md", "tag-health_report.md", "tag-apm-agent-configuration.md");
@@ -71,7 +71,7 @@ public class ApiSupplementalDiscoveryTests
 		result.Unmatched.Should().BeEmpty();
 	}
 
-	[Fact]
+	[Test]
 	public void Discover_IgnoresNonConventionFiles()
 	{
 		var folder = FolderWith("random-notes.md", "getting-started.md", "op-search.md");
@@ -82,7 +82,7 @@ public class ApiSupplementalDiscoveryTests
 		result.Operations.Should().ContainKey("search");
 	}
 
-	[Fact]
+	[Test]
 	public void Discover_UnmatchedConventionFile_IsNotAnError()
 	{
 		var folder = FolderWith("op-does-not-exist.md");
@@ -93,7 +93,7 @@ public class ApiSupplementalDiscoveryTests
 		result.Operations.Should().BeEmpty();
 	}
 
-	[Fact]
+	[Test]
 	public void Discover_VersionSuffixedFile_IsClassifiedSeparately()
 	{
 		var folder = FolderWith("op-search.v8.md", "op-search.md");
@@ -105,7 +105,7 @@ public class ApiSupplementalDiscoveryTests
 		result.Unmatched.Should().BeEmpty();
 	}
 
-	[Fact]
+	[Test]
 	public void Discover_TagSlugCollision_IsRecordedAndFileUnmatched()
 	{
 		var folder = FolderWith("tag-foo-bar.md");
@@ -118,7 +118,7 @@ public class ApiSupplementalDiscoveryTests
 		result.Unmatched.Should().ContainSingle(f => f.Name == "tag-foo-bar.md");
 	}
 
-	[Fact]
+	[Test]
 	public async Task Discover_FixtureDocument_MatchesSearchAndDocsGet()
 	{
 		var folder = FolderWith("op-search.md", "op-docs-get.md", "tag-search.md", "random-notes.md");
@@ -134,7 +134,7 @@ public class ApiSupplementalDiscoveryTests
 		result.Ignored.Should().ContainSingle(f => f.Name == "random-notes.md");
 	}
 
-	[Fact]
+	[Test]
 	public async Task Discover_InlineOperationTagsWithoutDocumentTags_MatchTagFile()
 	{
 		var folder = FolderWith("tag-search.md");

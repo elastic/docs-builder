@@ -22,7 +22,7 @@ namespace Elastic.ApiExplorer.Tests;
 
 public partial class ApiPagesNavRenderingTests
 {
-	[Fact]
+	[Test]
 	public async Task Render_HostsTheVersionSwitcherAheadOfTheTree()
 	{
 		var model = CreateLayoutModel(
@@ -50,7 +50,7 @@ public partial class ApiPagesNavRenderingTests
 			.BeLessThan(html.IndexOf("<nav>tree</nav>", StringComparison.Ordinal));
 	}
 
-	[Fact]
+	[Test]
 	public async Task Render_MarksOnlyCurrentHubProductSelected()
 	{
 		var model = CreateLayoutModel(
@@ -75,7 +75,7 @@ public partial class ApiPagesNavRenderingTests
 		CountSelectedOptions(html).Should().Be(1);
 	}
 
-	[Fact]
+	[Test]
 	public async Task Render_Assembler_OmitsTheHubSwitcher()
 	{
 		var model = CreateLayoutModel(
@@ -95,7 +95,7 @@ public partial class ApiPagesNavRenderingTests
 		html.Should().NotContain("<option");
 	}
 
-	[Fact]
+	[Test]
 	public async Task Render_PreservesTheNavAcrossHtmxSwapsWhenPreviewEnabled()
 	{
 		var model = CreateLayoutModel(
@@ -110,7 +110,7 @@ public partial class ApiPagesNavRenderingTests
 		html.Should().Contain("hx-preserve");
 	}
 
-	[Fact]
+	[Test]
 	public async Task Render_ShowsJumpToPageOnAssemblerBuilds()
 	{
 		var model = CreateLayoutModel(
@@ -132,7 +132,7 @@ public partial class ApiPagesNavRenderingTests
 			.BeLessThan(html.IndexOf("navigation-search", StringComparison.Ordinal));
 	}
 
-	[Fact]
+	[Test]
 	public async Task Render_ShowsJumpToPageWhenNavigationPreviewIsOn()
 	{
 		var model = CreateLayoutModel(
@@ -148,7 +148,7 @@ public partial class ApiPagesNavRenderingTests
 		html.Should().Contain("hx-preserve");
 	}
 
-	[Fact]
+	[Test]
 	public async Task Render_OmitsJumpToPageOnIsolatedBuilds()
 	{
 		var model = CreateLayoutModel("/api/doc/elasticsearch/", "/api/doc/elasticsearch.md", buildType: BuildType.Isolated);
@@ -158,7 +158,7 @@ public partial class ApiPagesNavRenderingTests
 		html.Should().NotContain("navigation-search");
 	}
 
-	[Fact]
+	[Test]
 	public async Task Render_OmitsJumpToPageWhenAirGapped()
 	{
 		var model = CreateLayoutModel(

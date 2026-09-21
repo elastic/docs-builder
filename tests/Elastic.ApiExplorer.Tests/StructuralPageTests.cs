@@ -14,7 +14,7 @@ namespace Elastic.ApiExplorer.Tests;
 
 public class StructuralPageTests(ApiExplorerFixture fixture) : IClassFixture<ApiExplorerFixture>
 {
-	[Fact]
+	[Test]
 	public void CreateNavigation_IncludesAuthenticationAndServersPages()
 	{
 		var items = fixture.Walk().ToArray();
@@ -36,7 +36,7 @@ public class StructuralPageTests(ApiExplorerFixture fixture) : IClassFixture<Api
 		servers.NavigationTitle.Should().Be("Servers");
 	}
 
-	[Fact]
+	[Test]
 	public void Create_EmptyDocument_OmitsAuthenticationAndServersPages()
 	{
 		var items = CreateItems(new OpenApiDocument { Info = new OpenApiInfo { Title = "t", Version = "1" } });
@@ -44,7 +44,7 @@ public class StructuralPageTests(ApiExplorerFixture fixture) : IClassFixture<Api
 		items.Should().BeEmpty();
 	}
 
-	[Fact]
+	[Test]
 	public void Create_NoSchemes_OmitsAuthenticationPage()
 	{
 		var document = new OpenApiDocument
@@ -58,7 +58,7 @@ public class StructuralPageTests(ApiExplorerFixture fixture) : IClassFixture<Api
 		items.Should().NotContain(item => item.Model.Kind == ApiStructuralKind.Authentication);
 	}
 
-	[Fact]
+	[Test]
 	public void Create_NoServers_OmitsServersPage()
 	{
 		var document = new OpenApiDocument
@@ -89,7 +89,7 @@ public class StructuralPageTests(ApiExplorerFixture fixture) : IClassFixture<Api
 		return StructuralNavigationItem.Create(urlPathPrefix: null, "fixture", root, document);
 	}
 
-	[Fact]
+	[Test]
 	public void ReadSchemes_MapsFixtureApiKey()
 	{
 		var schemes = StructuralViewModel.ReadSchemes(RenderContext());
@@ -100,7 +100,7 @@ public class StructuralPageTests(ApiExplorerFixture fixture) : IClassFixture<Api
 		schemes.Select(scheme => scheme.Id).Should().Contain(["apiKey", "basicAuth", "bearerAuth"]);
 	}
 
-	[Fact]
+	[Test]
 	public void ReadServers_MapsFixtureServer()
 	{
 		var servers = StructuralViewModel.ReadServers(fixture.Document);
@@ -110,7 +110,7 @@ public class StructuralPageTests(ApiExplorerFixture fixture) : IClassFixture<Api
 		servers[0].Description.Should().Be("Fixture server");
 	}
 
-	[Fact]
+	[Test]
 	public async Task AuthenticationPage_WritesCommonMarkFromSchemes()
 	{
 		var item = fixture.Walk().OfType<StructuralNavigationItem>().Single(n => n.Model.Kind == ApiStructuralKind.Authentication);
@@ -121,7 +121,7 @@ public class StructuralPageTests(ApiExplorerFixture fixture) : IClassFixture<Api
 		markdown.Should().Contain("Authorization: <value>");
 	}
 
-	[Fact]
+	[Test]
 	public async Task ServersPage_WritesCommonMarkFromServers()
 	{
 		var item = fixture.Walk().OfType<StructuralNavigationItem>().Single(n => n.Model.Kind == ApiStructuralKind.Servers);
@@ -131,7 +131,7 @@ public class StructuralPageTests(ApiExplorerFixture fixture) : IClassFixture<Api
 		markdown.Should().Contain("`https://fixture.example.com` (Fixture server)");
 	}
 
-	[Fact]
+	[Test]
 	public void ReadSchemes_EmptyDocument_ReturnsNoSchemes()
 	{
 		var context = RenderContext(document: new OpenApiDocument { Info = new OpenApiInfo { Title = "t", Version = "1" } });

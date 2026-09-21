@@ -20,7 +20,7 @@ namespace Elastic.ApiExplorer.Tests;
 
 public class ApiTocRenderingTests
 {
-	[Fact]
+	[Test]
 	public async Task Render_EmptyToc_OmitsViewAsMarkdownLink()
 	{
 		var html = await Render([]);
@@ -31,7 +31,7 @@ public class ApiTocRenderingTests
 		html.Should().NotContain("On this page");
 	}
 
-	[Fact]
+	[Test]
 	public async Task Render_WithTocItems_IncludesHeadings()
 	{
 		var html = await Render([new ApiTocItem("Paths", "paths")]);

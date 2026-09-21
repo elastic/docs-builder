@@ -12,6 +12,7 @@ using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.Navigation;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.OpenApi;
+using TUnit.Core.Interfaces;
 
 namespace Elastic.ApiExplorer.Tests;
 
@@ -32,13 +33,13 @@ public sealed class PassthroughMarkdownRenderer : IMarkdownStringRenderer
 /// <summary>
 /// Loads the fixture spec and builds its navigation tree once for all tests sharing the fixture.
 /// </summary>
-public sealed class ApiExplorerFixture : IAsyncLifetime
+public sealed class ApiExplorerFixture : IAsyncInitializer, IAsyncDisposable
 {
 	public BuildContext Context { get; private set; } = null!;
 	public OpenApiDocument Document { get; private set; } = null!;
 	public LandingNavigationItem Navigation { get; private set; } = null!;
 
-	public async ValueTask InitializeAsync()
+	public async Task InitializeAsync()
 	{
 		var realFs = new FileSystem();
 		var configurationContext = TestHelpers.CreateConfigurationContext(realFs);

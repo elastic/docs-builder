@@ -121,7 +121,7 @@ public class OpenApiDocumentExporterTests
 		);
 	}
 
-	[Fact]
+	[Test]
 	public async Task DescriptionWithHtmlShouldHaveTagsStrippedForSearchIndex()
 	{
 		// Arrange

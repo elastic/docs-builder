@@ -22,7 +22,7 @@ namespace Elastic.ApiExplorer.Tests;
 
 public class ApiNavParityTests
 {
-	[Fact]
+	[Test]
 	public async Task CreateNavigation_XTagGroupsWithMultipleGroups_Default_TagsHangOffLanding()
 	{
 		var openApiJson = /*lang=json,strict*/
@@ -104,7 +104,7 @@ public class ApiNavParityTests
 		ordered[2].Should().BeOfType<TagNavigationItem>().Which.NavigationTitle.Should().Be("search");
 	}
 
-	[Fact]
+	[Test]
 	public async Task CreateNavigation_SharedSummaryOperations_Default_EachOperationIsVisible()
 	{
 		var (generator, document) = await CreateGeneratorWithSpec(SharedSummarySpec);
@@ -130,7 +130,7 @@ public class ApiNavParityTests
 		operations.Select(op => op.Url).Should().Equal("/api/doc/test/operation/operation-op-a", "/api/doc/test/operation/operation-op-b");
 	}
 
-	[Fact]
+	[Test]
 	public async Task CreateNavigation_SharedSummaryOperations_GroupingEnabled_CollapsesIntoHiddenEndpoint()
 	{
 		var (generator, document) = await CreateGeneratorWithSpec(SharedSummarySpec, apiNavGroupingEnabled: true);
@@ -153,7 +153,7 @@ public class ApiNavParityTests
 		operations.Select(op => op.Url).Should().Equal("/api/doc/test/operation/operation-op-a", "/api/doc/test/operation/operation-op-b");
 	}
 
-	[Fact]
+	[Test]
 	public async Task CreateNavigation_QueryContainerSchema_Default_OmitsTypesNav()
 	{
 		var (generator, document) = await CreateGeneratorWithSpec(QueryContainerSpec);
@@ -162,7 +162,7 @@ public class ApiNavParityTests
 		navigation.NavigationItems.OfType<SchemaCategoryNavigationItem>().Should().BeEmpty();
 	}
 
-	[Fact]
+	[Test]
 	public async Task CreateNavigation_QueryContainerSchema_GroupingEnabled_AddsTypesNav()
 	{
 		var (generator, document) = await CreateGeneratorWithSpec(QueryContainerSpec, apiNavGroupingEnabled: true);
