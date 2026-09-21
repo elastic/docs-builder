@@ -24,6 +24,13 @@ public interface IReleaseNotesResolver
 	bool IsNotFound(string product);
 
 	/// <summary>
+	/// Whether <paramref name="product"/> was explicitly declared under <c>release_notes</c> in
+	/// docset.yml but returned HTTP 404 during prefetch — no bundles have been published yet.
+	/// A 404 for a declared product is a warning (product is registered, no release cut yet).
+	/// </summary>
+	bool IsNotFoundDeclared(string product);
+
+	/// <summary>
 	/// Gets the prefetched bundles for <paramref name="product"/>. Returns false when the product was not
 	/// declared (or not fetched); a declared product with no usable bundles returns true with an empty list.
 	/// </summary>
@@ -45,6 +52,9 @@ public sealed class NoopReleaseNotesResolver : IReleaseNotesResolver
 
 	/// <inheritdoc />
 	public bool IsNotFound(string product) => false;
+
+	/// <inheritdoc />
+	public bool IsNotFoundDeclared(string product) => false;
 
 	/// <inheritdoc />
 	public bool TryGetBundles(string product, out IReadOnlyList<LoadedBundle> bundles)
@@ -71,6 +81,9 @@ public sealed class ReleaseNotesResolver(FetchedReleaseNotes? fetched = null) : 
 
 	/// <inheritdoc />
 	public bool IsNotFound(string product) => _fetched.NotFoundInferredProducts.Contains(product);
+
+	/// <inheritdoc />
+	public bool IsNotFoundDeclared(string product) => _fetched.NotFoundDeclaredProducts.Contains(product);
 
 	/// <inheritdoc />
 	public bool TryGetBundles(string product, out IReadOnlyList<LoadedBundle> bundles)
