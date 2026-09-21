@@ -10,7 +10,6 @@ using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.ReleaseNotes;
 using Elastic.Documentation.Diagnostics;
 using FakeItEasy;
-using Xunit;
 
 namespace Elastic.Changelog.Tests.Changelogs.Create;
 
@@ -18,7 +17,7 @@ namespace Elastic.Changelog.Tests.Changelogs.Create;
 /// Tests for 'changelog add --release-version' behaviour, implemented via
 /// <see cref="GitHubReleaseChangelogService"/> with <see cref="CreateChangelogsFromReleaseArguments.CreateBundle"/> = false.
 /// </summary>
-public class ReleaseVersionTests(ITestOutputHelper output) : ChangelogTestBase(output)
+public class ReleaseVersionTests() : ChangelogTestBase()
 {
 	private readonly IGitHubReleaseService _mockReleaseService = A.Fake<IGitHubReleaseService>();
 	private readonly IGitHubPrService _mockPrService = A.Fake<IGitHubPrService>();
@@ -28,7 +27,7 @@ public class ReleaseVersionTests(ITestOutputHelper output) : ChangelogTestBase(o
 	// the default CdnChangelogEntryFetcher hits ChangelogCdn's real production base URL — offline
 	// or sandboxed test runs must never make that call, so every test here gets an all-404 handler.
 	private readonly CdnChangelogEntryFetcher _offlineEntryFetcher = new(
-		new TestLoggerFactory(output),
+		new TestLoggerFactory(),
 		new OfflinePoolHandler(),
 		sleep: (_, _) => Task.CompletedTask
 	);
@@ -81,7 +80,7 @@ public class ReleaseVersionTests(ITestOutputHelper output) : ChangelogTestBase(o
 	// Validation: no PR refs in release notes
 	// -----------------------------------------------------------------------
 
-	[Fact]
+	[Test]
 	public async Task ReleaseVersion_WithNoMatchingPrs_EmitsWarningAndSucceeds()
 	{
 		// Arrange — commit range returns zero PRs
@@ -97,7 +96,7 @@ public class ReleaseVersionTests(ITestOutputHelper output) : ChangelogTestBase(o
 		};
 
 		// Act
-		var result = await service.CreateChangelogsFromRelease(Collector, input, TestContext.Current.CancellationToken);
+		var result = await service.CreateChangelogsFromRelease(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		result.Success.Should().BeTrue();
@@ -108,7 +107,7 @@ public class ReleaseVersionTests(ITestOutputHelper output) : ChangelogTestBase(o
 	// CreateBundle = false: no bundle file is written
 	// -----------------------------------------------------------------------
 
-	[Fact]
+	[Test]
 	public async Task ReleaseVersion_WithValidRelease_CreatesChangelogFiles_AndNoBundleFile()
 	{
 		// Arrange — two PRs from the commit range
@@ -133,7 +132,7 @@ public class ReleaseVersionTests(ITestOutputHelper output) : ChangelogTestBase(o
 		};
 
 		// Act
-		var result = await service.CreateChangelogsFromRelease(Collector, input, TestContext.Current.CancellationToken);
+		var result = await service.CreateChangelogsFromRelease(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		result.Success.Should().BeTrue();
@@ -151,7 +150,7 @@ public class ReleaseVersionTests(ITestOutputHelper output) : ChangelogTestBase(o
 	// CreateBundle = true (default): bundle file is written
 	// -----------------------------------------------------------------------
 
-	[Fact]
+	[Test]
 	public async Task GhRelease_WithValidRelease_CreatesBundleFile()
 	{
 		// Arrange — one PR from the commit range
@@ -176,7 +175,7 @@ public class ReleaseVersionTests(ITestOutputHelper output) : ChangelogTestBase(o
 		};
 
 		// Act
-		var result = await service.CreateChangelogsFromRelease(Collector, input, TestContext.Current.CancellationToken);
+		var result = await service.CreateChangelogsFromRelease(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		result.Success.Should().BeTrue();
@@ -192,7 +191,7 @@ public class ReleaseVersionTests(ITestOutputHelper output) : ChangelogTestBase(o
 	// Latest tag: FetchReleaseAsync is called with "latest"
 	// -----------------------------------------------------------------------
 
-	[Fact]
+	[Test]
 	public async Task ReleaseVersion_Latest_CallsFetchWithLatestTag()
 	{
 		// Arrange — "latest" resolves to v9.2.0; commit range returns zero PRs
@@ -208,7 +207,7 @@ public class ReleaseVersionTests(ITestOutputHelper output) : ChangelogTestBase(o
 		};
 
 		// Act
-		_ = await service.CreateChangelogsFromRelease(Collector, input, TestContext.Current.CancellationToken);
+		_ = await service.CreateChangelogsFromRelease(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		A.CallTo(
@@ -220,7 +219,7 @@ public class ReleaseVersionTests(ITestOutputHelper output) : ChangelogTestBase(o
 	// Release fetch failure
 	// -----------------------------------------------------------------------
 
-	[Fact]
+	[Test]
 	public async Task ReleaseVersion_FetchFailure_ReturnsError()
 	{
 		// Arrange
@@ -238,7 +237,7 @@ public class ReleaseVersionTests(ITestOutputHelper output) : ChangelogTestBase(o
 		};
 
 		// Act
-		var result = await service.CreateChangelogsFromRelease(Collector, input, TestContext.Current.CancellationToken);
+		var result = await service.CreateChangelogsFromRelease(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		result.Success.Should().BeFalse();
@@ -249,7 +248,7 @@ public class ReleaseVersionTests(ITestOutputHelper output) : ChangelogTestBase(o
 	// Unknown repository: no product found
 	// -----------------------------------------------------------------------
 
-	[Fact]
+	[Test]
 	public async Task ReleaseVersion_UnknownRepo_ReturnsError()
 	{
 		// Arrange – "unknown-repo" is not registered in ConfigurationContext.ProductsConfiguration
@@ -263,7 +262,7 @@ public class ReleaseVersionTests(ITestOutputHelper output) : ChangelogTestBase(o
 		};
 
 		// Act
-		var result = await service.CreateChangelogsFromRelease(Collector, input, TestContext.Current.CancellationToken);
+		var result = await service.CreateChangelogsFromRelease(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		result.Success.Should().BeFalse();
@@ -277,7 +276,7 @@ public class ReleaseVersionTests(ITestOutputHelper output) : ChangelogTestBase(o
 	// it passes Output = null to the service, which then uses "./changelogs".
 	// -----------------------------------------------------------------------
 
-	[Fact]
+	[Test]
 	public async Task ReleaseVersion_OutputNull_ServiceUsesChangelogsDefault()
 	{
 		// Arrange — one PR, no explicit output dir
@@ -307,7 +306,7 @@ public class ReleaseVersionTests(ITestOutputHelper output) : ChangelogTestBase(o
 			};
 
 			// Act
-			var result = await service.CreateChangelogsFromRelease(Collector, input, TestContext.Current.CancellationToken);
+			var result = await service.CreateChangelogsFromRelease(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 			// Assert – service resolves output to <cwd>/changelogs
 			result.Success.Should().BeTrue();

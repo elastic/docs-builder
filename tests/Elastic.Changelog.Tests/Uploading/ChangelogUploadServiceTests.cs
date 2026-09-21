@@ -31,12 +31,12 @@ public class ChangelogUploadServiceTests
 	private readonly TestDiagnosticsCollector _collector;
 	private readonly string _changelogDir;
 
-	public ChangelogUploadServiceTests(ITestOutputHelper output)
+	public ChangelogUploadServiceTests()
 	{
 		_mockFileSystem = new MockFileSystem(new MockFileSystemOptions { CurrentDirectory = Paths.WorkingDirectoryRoot.FullName });
 		_fileSystem = ChangelogFileSystem.FromWorkingDirectory(_mockFileSystem);
 		_service = new ChangelogUploadService(NullLoggerFactory.Instance, fileSystem: _fileSystem, s3Client: _s3Client);
-		_collector = new TestDiagnosticsCollector(output);
+		_collector = new TestDiagnosticsCollector();
 		_changelogDir = _mockFileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog");
 		_mockFileSystem.Directory.CreateDirectory(_changelogDir);
 	}
@@ -48,7 +48,7 @@ public class ChangelogUploadServiceTests
 		return path;
 	}
 
-	[Fact]
+	[Test]
 	public void DiscoverUploadTargets_SingleEntry_MapsToPoolScopedKey()
 	{
 		// language=yaml
@@ -73,12 +73,12 @@ public class ChangelogUploadServiceTests
 		_collector.Errors.Should().Be(0);
 	}
 
-	[Theory]
+	[Test]
 	// Branch stored verbatim: dots (release trains) and slashes (feature branches) become real key segments.
-	[InlineData("8.x", "changelog/elastic/elasticsearch/8.x/entry.yaml")]
-	[InlineData("9.0", "changelog/elastic/elasticsearch/9.0/entry.yaml")]
-	[InlineData("feature/foo", "changelog/elastic/elasticsearch/feature/foo/entry.yaml")]
-	[InlineData("release/8.x", "changelog/elastic/elasticsearch/release/8.x/entry.yaml")]
+	[Arguments("8.x", "changelog/elastic/elasticsearch/8.x/entry.yaml")]
+	[Arguments("9.0", "changelog/elastic/elasticsearch/9.0/entry.yaml")]
+	[Arguments("feature/foo", "changelog/elastic/elasticsearch/feature/foo/entry.yaml")]
+	[Arguments("release/8.x", "changelog/elastic/elasticsearch/release/8.x/entry.yaml")]
 	public void DiscoverUploadTargets_BranchWithDotsOrSlashes_MapsVerbatim(string branch, string expectedKey)
 	{
 		// language=yaml
@@ -99,7 +99,7 @@ public class ChangelogUploadServiceTests
 		_collector.Errors.Should().Be(0);
 	}
 
-	[Fact]
+	[Test]
 	public void DiscoverUploadTargets_ExternalOrg_MapsToPoolScopedKey()
 	{
 		// An acquired company keeping its own GitHub org still gets a faithful pool.
@@ -121,7 +121,7 @@ public class ChangelogUploadServiceTests
 		_collector.Errors.Should().Be(0);
 	}
 
-	[Fact]
+	[Test]
 	public void DiscoverUploadTargets_EntryWithMultipleProducts_StillSingleRepoKey()
 	{
 		// Option AD: entries are stored once per authoring repo, regardless of how many products they
@@ -148,7 +148,7 @@ public class ChangelogUploadServiceTests
 		targets[0].S3Key.Should().Be("changelog/elastic/kibana/main/fix.yaml");
 	}
 
-	[Fact]
+	[Test]
 	public void DiscoverUploadTargets_EntryWithNoProducts_StillUploaded()
 	{
 		// Author foreknowledge of consuming products is no longer required: an entry with no products is
@@ -171,7 +171,7 @@ public class ChangelogUploadServiceTests
 		_collector.Errors.Should().Be(0);
 	}
 
-	[Fact]
+	[Test]
 	public void DiscoverUploadTargets_MissingRepo_EmitsErrorAndReturnsEmpty()
 	{
 		// language=yaml
@@ -191,7 +191,7 @@ public class ChangelogUploadServiceTests
 		_collector.Errors.Should().BeGreaterThan(0);
 	}
 
-	[Fact]
+	[Test]
 	public void DiscoverUploadTargets_MissingOwner_EmitsErrorAndReturnsEmpty()
 	{
 		// language=yaml
@@ -211,7 +211,7 @@ public class ChangelogUploadServiceTests
 		_collector.Errors.Should().BeGreaterThan(0);
 	}
 
-	[Fact]
+	[Test]
 	public void DiscoverUploadTargets_MissingBranch_EmitsErrorAndReturnsEmpty()
 	{
 		// language=yaml
@@ -231,11 +231,11 @@ public class ChangelogUploadServiceTests
 		_collector.Errors.Should().BeGreaterThan(0);
 	}
 
-	[Theory]
-	[InlineData("bad repo")]
-	[InlineData("..")]
-	[InlineData(".")]
-	[InlineData("owner/repo")]
+	[Test]
+	[Arguments("bad repo")]
+	[Arguments("..")]
+	[Arguments(".")]
+	[Arguments("owner/repo")]
 	public void DiscoverUploadTargets_InvalidRepo_EmitsError(string repo)
 	{
 		// language=yaml
@@ -255,11 +255,11 @@ public class ChangelogUploadServiceTests
 		_collector.Errors.Should().BeGreaterThan(0);
 	}
 
-	[Theory]
+	[Test]
 	// Org is a GitHub login: no dots, no slashes, no spaces.
-	[InlineData("bad org")]
-	[InlineData("acme.corp")]
-	[InlineData("acme/corp")]
+	[Arguments("bad org")]
+	[Arguments("acme.corp")]
+	[Arguments("acme/corp")]
 	public void DiscoverUploadTargets_InvalidOrg_EmitsError(string org)
 	{
 		// language=yaml
@@ -279,12 +279,12 @@ public class ChangelogUploadServiceTests
 		_collector.Errors.Should().BeGreaterThan(0);
 	}
 
-	[Theory]
+	[Test]
 	// Branch segments reject traversal, empty parts, and out-of-class characters.
-	[InlineData("bad branch")]
-	[InlineData("..")]
-	[InlineData("feature/..")]
-	[InlineData("feature//foo")]
+	[Arguments("bad branch")]
+	[Arguments("..")]
+	[Arguments("feature/..")]
+	[Arguments("feature//foo")]
 	public void DiscoverUploadTargets_InvalidBranch_EmitsError(string branch)
 	{
 		// language=yaml
@@ -304,7 +304,7 @@ public class ChangelogUploadServiceTests
 		_collector.Errors.Should().BeGreaterThan(0);
 	}
 
-	[Fact]
+	[Test]
 	public void DiscoverUploadTargets_EmptyDirectory_ReturnsEmpty()
 	{
 		var targets = _service.DiscoverUploadTargets(_collector, _changelogDir, "elastic", "elasticsearch", "main");
@@ -313,7 +313,7 @@ public class ChangelogUploadServiceTests
 		_collector.Errors.Should().Be(0);
 	}
 
-	[Fact]
+	[Test]
 	public void DiscoverUploadTargets_MultipleFiles_DiscoversAllUnderRepo()
 	{
 		// language=yaml
@@ -348,11 +348,11 @@ public class ChangelogUploadServiceTests
 		targets.Should().Contain(t => t.S3Key == "changelog/elastic/elasticsearch/main/second.yaml");
 	}
 
-	[Theory]
-	[InlineData("elasticsearch-net")]
-	[InlineData("cloud_hosted")]
-	[InlineData("apm-agent-dotnet")]
-	[InlineData("docs.elastic")]
+	[Test]
+	[Arguments("elasticsearch-net")]
+	[Arguments("cloud_hosted")]
+	[Arguments("apm-agent-dotnet")]
+	[Arguments("docs.elastic")]
 	public void DiscoverUploadTargets_RepoWithHyphensDotsUnderscores_Accepted(string repo)
 	{
 		// language=yaml
@@ -376,7 +376,7 @@ public class ChangelogUploadServiceTests
 		_collector.Warnings.Should().Be(0);
 	}
 
-	[Fact]
+	[Test]
 	public async Task Upload_WithValidChangelogs_UploadsToS3()
 	{
 		// language=yaml
@@ -409,7 +409,7 @@ public class ChangelogUploadServiceTests
 			Repo = "elasticsearch",
 			Branch = "main"
 		};
-		var ct = TestContext.Current.CancellationToken;
+		var ct = TestContext.Current!.Execution.CancellationToken;
 		var result = await _service.Upload(_collector, args, ct);
 
 		result.Should().BeTrue();
@@ -425,7 +425,7 @@ public class ChangelogUploadServiceTests
 		).MustHaveHappenedOnceExactly();
 	}
 
-	[Fact]
+	[Test]
 	public async Task Upload_ChangelogWithoutRepo_FailsWithoutS3Calls()
 	{
 		// language=yaml
@@ -452,7 +452,7 @@ public class ChangelogUploadServiceTests
 			Branch = "main"
 			// Repo intentionally unset.
 		};
-		var ct = TestContext.Current.CancellationToken;
+		var ct = TestContext.Current!.Execution.CancellationToken;
 		var result = await _service.Upload(_collector, args, ct);
 
 		result.Should().BeFalse();
@@ -461,7 +461,7 @@ public class ChangelogUploadServiceTests
 		A.CallTo(() => _s3Client.PutObjectAsync(A<PutObjectRequest>._, A<CancellationToken>._)).MustNotHaveHappened();
 	}
 
-	[Fact]
+	[Test]
 	public async Task Upload_EmptyDirectory_ReturnsTrue()
 	{
 		var args = new ChangelogUploadArguments
@@ -474,7 +474,7 @@ public class ChangelogUploadServiceTests
 			Repo = "elasticsearch",
 			Branch = "main"
 		};
-		var ct = TestContext.Current.CancellationToken;
+		var ct = TestContext.Current!.Execution.CancellationToken;
 		var result = await _service.Upload(_collector, args, ct);
 
 		result.Should().BeTrue();
@@ -483,7 +483,7 @@ public class ChangelogUploadServiceTests
 		A.CallTo(() => _s3Client.PutObjectAsync(A<PutObjectRequest>._, A<CancellationToken>._)).MustNotHaveHappened();
 	}
 
-	[Fact]
+	[Test]
 	public async Task Upload_WithFailedUpload_ReturnsFalseAndEmitsError()
 	{
 		// language=yaml
@@ -518,14 +518,14 @@ public class ChangelogUploadServiceTests
 			Repo = "elasticsearch",
 			Branch = "main"
 		};
-		var ct = TestContext.Current.CancellationToken;
+		var ct = TestContext.Current!.Execution.CancellationToken;
 		var result = await _service.Upload(_collector, args, ct);
 
 		result.Should().BeFalse();
 		_collector.Errors.Should().BeGreaterThan(0);
 	}
 
-	[Fact]
+	[Test]
 	public async Task Upload_ElasticsearchTarget_SkipsWithoutS3Calls()
 	{
 		AddChangelog(
@@ -547,7 +547,7 @@ public class ChangelogUploadServiceTests
 			S3BucketName = "test-bucket",
 			Directory = _changelogDir
 		};
-		var ct = TestContext.Current.CancellationToken;
+		var ct = TestContext.Current!.Execution.CancellationToken;
 		var result = await _service.Upload(_collector, args, ct);
 
 		result.Should().BeTrue();
@@ -555,7 +555,7 @@ public class ChangelogUploadServiceTests
 		A.CallTo(() => _s3Client.PutObjectAsync(A<PutObjectRequest>._, A<CancellationToken>._)).MustNotHaveHappened();
 	}
 
-	[Fact]
+	[Test]
 	public async Task Upload_BundleArtifactType_UploadsToS3()
 	{
 		var bundleDir = _mockFileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "releases");
@@ -597,7 +597,7 @@ public class ChangelogUploadServiceTests
 			S3BucketName = "test-bucket",
 			Directory = bundleDir
 		};
-		var ct = TestContext.Current.CancellationToken;
+		var ct = TestContext.Current!.Execution.CancellationToken;
 		var result = await _service.Upload(_collector, args, ct);
 
 		result.Should().BeTrue();
@@ -613,7 +613,7 @@ public class ChangelogUploadServiceTests
 		).MustHaveHappenedOnceExactly();
 	}
 
-	[Fact]
+	[Test]
 	public void DiscoverBundleUploadTargets_MapsToArtifactRootKey()
 	{
 		var bundleDir = _mockFileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "releases");
@@ -647,7 +647,7 @@ public class ChangelogUploadServiceTests
 		_collector.Errors.Should().Be(0);
 	}
 
-	[Fact]
+	[Test]
 	public void CollectBundleScanDirectories_IncludesGlobalAndProfileDirectories()
 	{
 		var config = new ChangelogConfiguration
@@ -666,7 +666,7 @@ public class ChangelogUploadServiceTests
 		ChangelogUploadService.CollectBundleScanDirectories(null, config).Should().Equal("docs/releases", "docs/releases/cloud-serverless");
 	}
 
-	[Fact]
+	[Test]
 	public void CollectBundleScanDirectories_ExplicitDirectory_IgnoresConfig()
 	{
 		var config = new ChangelogConfiguration { Bundle = new BundleConfiguration { OutputDirectory = "docs/releases" } };
@@ -674,7 +674,7 @@ public class ChangelogUploadServiceTests
 		ChangelogUploadService.CollectBundleScanDirectories("custom/out", config).Should().Equal("custom/out");
 	}
 
-	[Fact]
+	[Test]
 	public void DiscoverBundleUploadTargets_ProfileSubdirectory_IsFoundWhenThatDirectoryIsScanned()
 	{
 		var root = _mockFileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
@@ -727,7 +727,7 @@ public class ChangelogUploadServiceTests
 		targets.Should().Contain(t => t.S3Key == "bundle/kibana/kibana-kibana-9.3.0.yaml");
 	}
 
-	[Fact]
+	[Test]
 	public void DiscoverBundleUploadTargets_MultipleProducts_CreatesTargetPerProduct()
 	{
 		var bundleDir = _mockFileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "releases");
@@ -763,7 +763,7 @@ public class ChangelogUploadServiceTests
 		targets.Should().Contain(t => t.S3Key == "bundle/kibana/stack-9.2.0.yaml");
 	}
 
-	[Fact]
+	[Test]
 	public void DiscoverBundleUploadTargets_EmptyDirectory_ReturnsEmpty()
 	{
 		var bundleDir = _mockFileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "releases");
@@ -774,7 +774,7 @@ public class ChangelogUploadServiceTests
 		targets.Should().BeEmpty();
 	}
 
-	[Fact]
+	[Test]
 	public void DiscoverBundleUploadTargets_AmendWithProducts_MapsToProductKey()
 	{
 		var bundleDir = _mockFileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "releases");
@@ -808,7 +808,7 @@ public class ChangelogUploadServiceTests
 		_collector.Warnings.Should().Be(0);
 	}
 
-	[Fact]
+	[Test]
 	public void DiscoverBundleUploadTargets_LegacyAmendWithoutProducts_DerivesDestinationFromParent()
 	{
 		var bundleDir = _mockFileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "releases");
@@ -857,7 +857,7 @@ public class ChangelogUploadServiceTests
 		_collector.Warnings.Should().Be(0);
 	}
 
-	[Fact]
+	[Test]
 	public void DiscoverBundleUploadTargets_OrphanLegacyAmend_WarnsAndSkips()
 	{
 		var bundleDir = _mockFileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "releases");
@@ -884,7 +884,7 @@ public class ChangelogUploadServiceTests
 		_collector.Warnings.Should().BeGreaterThan(0);
 	}
 
-	[Fact]
+	[Test]
 	public async Task Upload_BundleArtifactType_DoesNotWriteRegistry()
 	{
 		var bundleDir = _mockFileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "releases");
@@ -925,7 +925,7 @@ public class ChangelogUploadServiceTests
 			S3BucketName = "test-bucket",
 			Directory = bundleDir
 		};
-		var ct = TestContext.Current.CancellationToken;
+		var ct = TestContext.Current!.Execution.CancellationToken;
 		var result = await _service.Upload(_collector, args, ct);
 
 		result.Should().BeTrue();
@@ -948,7 +948,7 @@ public class ChangelogUploadServiceTests
 		).MustNotHaveHappened();
 	}
 
-	[Fact]
+	[Test]
 	public async Task Upload_ChangelogArtifactType_DoesNotWriteRegistry()
 	{
 		// language=yaml
@@ -984,7 +984,7 @@ public class ChangelogUploadServiceTests
 			Repo = "elasticsearch",
 			Branch = "main"
 		};
-		var ct = TestContext.Current.CancellationToken;
+		var ct = TestContext.Current!.Execution.CancellationToken;
 		var result = await _service.Upload(_collector, args, ct);
 
 		result.Should().BeTrue();
@@ -1008,7 +1008,7 @@ public class ChangelogUploadServiceTests
 
 	// --- Canonical key derivation tests
 
-	[Fact]
+	[Test]
 	public void DeriveCanonicalFileNameAndMarkers_FullPrUrl_UsesMinPrAsCanonicalKey()
 	{
 		var entry = new ChangelogEntry { Prs = ["https://github.com/elastic/elasticsearch/pull/12345"] };
@@ -1019,7 +1019,7 @@ public class ChangelogUploadServiceTests
 		markers.Should().BeEmpty();
 	}
 
-	[Fact]
+	[Test]
 	public void DeriveCanonicalFileNameAndMarkers_MultiPrEntry_ReturnsMinAndMarkersForRest()
 	{
 		var entry = new ChangelogEntry
@@ -1046,7 +1046,7 @@ public class ChangelogUploadServiceTests
 		}
 	}
 
-	[Fact]
+	[Test]
 	public void DeriveCanonicalFileNameAndMarkers_NoPrs_FallsBackToFileName()
 	{
 		var entry = new ChangelogEntry { Title = "No PRs" };
@@ -1057,7 +1057,7 @@ public class ChangelogUploadServiceTests
 		markers.Should().BeEmpty();
 	}
 
-	[Fact]
+	[Test]
 	public void DiscoverUploadTargets_EntryWithFullPrUrl_UsesCanonicalKey()
 	{
 		// language=yaml
@@ -1081,7 +1081,7 @@ public class ChangelogUploadServiceTests
 		_collector.Warnings.Should().Be(0);
 	}
 
-	[Fact]
+	[Test]
 	public void DiscoverUploadTargets_NoteFile_PassesThroughVerbatim()
 	{
 		// language=yaml
@@ -1108,7 +1108,7 @@ public class ChangelogUploadServiceTests
 			);
 	}
 
-	[Fact]
+	[Test]
 	public void DiscoverUploadTargets_MultiPrEntry_AddsMarkerTargets()
 	{
 		// language=yaml
@@ -1138,7 +1138,7 @@ public class ChangelogUploadServiceTests
 		markerEntry.Link.Should().Be("100");
 	}
 
-	[Fact]
+	[Test]
 	public async Task Upload_NoOverwrite_WhenRemoteDiffers_ReturnsFalseAndEmitsRemoteYaml()
 	{
 		const string remoteYaml =
@@ -1179,7 +1179,7 @@ public class ChangelogUploadServiceTests
 			Branch = "main",
 			NoOverwrite = true
 		};
-		var ct = TestContext.Current.CancellationToken;
+		var ct = TestContext.Current!.Execution.CancellationToken;
 		var result = await _service.Upload(_collector, args, ct);
 
 		result.Should().BeFalse();
@@ -1201,7 +1201,7 @@ public class ChangelogUploadServiceTests
 		A.CallTo(() => _s3Client.PutObjectAsync(A<PutObjectRequest>._, A<CancellationToken>._)).MustNotHaveHappened();
 	}
 
-	[Fact]
+	[Test]
 	public async Task Upload_NoOverwrite_MixedNewAndExisting_UploadsNewAndRefusesExisting()
 	{
 		AddChangelog(
@@ -1256,7 +1256,7 @@ public class ChangelogUploadServiceTests
 			Branch = "main",
 			NoOverwrite = true
 		};
-		var ct = TestContext.Current.CancellationToken;
+		var ct = TestContext.Current!.Execution.CancellationToken;
 		var result = await _service.Upload(_collector, args, ct);
 
 		result.Should().BeFalse();
@@ -1274,7 +1274,7 @@ public class ChangelogUploadServiceTests
 		).MustNotHaveHappened();
 	}
 
-	[Fact]
+	[Test]
 	public async Task Upload_NoOverwrite_MultiPrMarker_ExplainsAliasNotFullChangelog()
 	{
 		var localPath = AddChangelog(
@@ -1321,7 +1321,7 @@ public class ChangelogUploadServiceTests
 			Branch = "main",
 			NoOverwrite = true
 		};
-		var ct = TestContext.Current.CancellationToken;
+		var ct = TestContext.Current!.Execution.CancellationToken;
 		var result = await _service.Upload(_collector, args, ct);
 
 		result.Should().BeFalse();

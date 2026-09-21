@@ -30,7 +30,7 @@ public class ChangelogEntryValidatorTests
 	// Title rules
 	// ─────────────────────────────────────────────────────────────────────────────────────────────
 
-	[Fact]
+	[Test]
 	public void Validate_MissingTitle_ProducesError()
 	{
 		var entry = ParseYaml("type: feature\nproducts:\n  - product: elasticsearch");
@@ -38,7 +38,7 @@ public class ChangelogEntryValidatorTests
 		findings.Should().ContainSingle(f => f.Severity == FindingSeverity.Error && f.Message.Contains("title is required"));
 	}
 
-	[Fact]
+	[Test]
 	public void Validate_TitleOver80Chars_ProducesWarning()
 	{
 		var longTitle = new string('x', 81);
@@ -47,7 +47,7 @@ public class ChangelogEntryValidatorTests
 		findings.Should().ContainSingle(f => f.Severity == FindingSeverity.Warning && f.Message.Contains("title exceeds 80 characters"));
 	}
 
-	[Fact]
+	[Test]
 	public void Validate_TitleExactly80Chars_NoWarning()
 	{
 		var title = new string('x', 80);
@@ -60,7 +60,7 @@ public class ChangelogEntryValidatorTests
 	// Products rules
 	// ─────────────────────────────────────────────────────────────────────────────────────────────
 
-	[Fact]
+	[Test]
 	public void Validate_MissingProducts_ProducesError()
 	{
 		var entry = ParseYaml("type: feature\ntitle: Test");
@@ -68,7 +68,7 @@ public class ChangelogEntryValidatorTests
 		findings.Should().ContainSingle(f => f.Severity == FindingSeverity.Error && f.Message.Contains("products is required"));
 	}
 
-	[Fact]
+	[Test]
 	public void Validate_UnknownProduct_ProducesError()
 	{
 		var entry = ParseYaml("type: feature\ntitle: Test\nproducts:\n  - product: no-such-product");
@@ -79,7 +79,7 @@ public class ChangelogEntryValidatorTests
 		);
 	}
 
-	[Fact]
+	[Test]
 	public void Validate_KnownProduct_NoProductError()
 	{
 		var entry = ParseYaml("type: feature\ntitle: Test\nproducts:\n  - product: elasticsearch");
@@ -88,7 +88,7 @@ public class ChangelogEntryValidatorTests
 		findings.Should().NotContain(f => f.Message.Contains("not in the list of available products"));
 	}
 
-	[Fact]
+	[Test]
 	public void Validate_ProductVersionsSet_ProducesError()
 	{
 		var entry = ParseYaml("type: feature\ntitle: Test\nproducts:\n  - product: elasticsearch\n    versions: [\"9.2.0\"]");
@@ -98,7 +98,7 @@ public class ChangelogEntryValidatorTests
 		);
 	}
 
-	[Fact]
+	[Test]
 	public void Validate_InvalidLifecycle_ProducesError()
 	{
 		var entry = ParseYaml("type: feature\ntitle: Test\nproducts:\n  - product: elasticsearch\n    lifecycle: nonexistent-lifecycle");
@@ -112,7 +112,7 @@ public class ChangelogEntryValidatorTests
 	// Type rules
 	// ─────────────────────────────────────────────────────────────────────────────────────────────
 
-	[Fact]
+	[Test]
 	public void Validate_MissingType_ProducesError()
 	{
 		var entry = ParseYaml("title: Test\nproducts:\n  - product: elasticsearch");
@@ -120,7 +120,7 @@ public class ChangelogEntryValidatorTests
 		findings.Should().ContainSingle(f => f.Severity == FindingSeverity.Error && f.Message.Contains("type is required"));
 	}
 
-	[Fact]
+	[Test]
 	public void Validate_MissingType_WithLabelDerived_ProducesLabelAwareError()
 	{
 		var entry = ParseYaml("title: Test\nproducts:\n  - product: elasticsearch");
@@ -128,7 +128,7 @@ public class ChangelogEntryValidatorTests
 		findings.Should().ContainSingle(f => f.Severity == FindingSeverity.Error && f.Message.Contains("type: feature"));
 	}
 
-	[Fact]
+	[Test]
 	public void Validate_UnrecognisedType_ProducesError()
 	{
 		var entry = ParseYaml("type: not-a-type\ntitle: Test\nproducts:\n  - product: elasticsearch");
@@ -136,7 +136,7 @@ public class ChangelogEntryValidatorTests
 		findings.Should().ContainSingle(f => f.Severity == FindingSeverity.Error && f.Message.Contains("not recognised"));
 	}
 
-	[Fact]
+	[Test]
 	public void Validate_TypeMismatchesLabel_ProducesError()
 	{
 		var entry = ParseYaml("type: bug-fix\ntitle: Test\nproducts:\n  - product: elasticsearch");
@@ -146,7 +146,7 @@ public class ChangelogEntryValidatorTests
 		);
 	}
 
-	[Fact]
+	[Test]
 	public void Validate_TypeMatchesLabel_NoTypeMismatch()
 	{
 		var entry = ParseYaml("type: feature\ntitle: Test\nproducts:\n  - product: elasticsearch");
@@ -158,7 +158,7 @@ public class ChangelogEntryValidatorTests
 	// Subtype rules
 	// ─────────────────────────────────────────────────────────────────────────────────────────────
 
-	[Fact]
+	[Test]
 	public void Validate_InvalidSubtype_ProducesError()
 	{
 		var entry = ParseYaml("type: breaking-change\ntitle: Test\nproducts:\n  - product: elasticsearch\nsubtype: not-a-subtype");
@@ -168,7 +168,7 @@ public class ChangelogEntryValidatorTests
 		);
 	}
 
-	[Fact]
+	[Test]
 	public void Validate_SubtypeOnNonBreakingChange_ProducesWarning()
 	{
 		// Get a valid subtype from defaults
@@ -184,7 +184,7 @@ public class ChangelogEntryValidatorTests
 	// Areas rules
 	// ─────────────────────────────────────────────────────────────────────────────────────────────
 
-	[Fact]
+	[Test]
 	public void Validate_InvalidArea_ProducesError()
 	{
 		var configWithAreas = Config with { Areas = ["query-dsl", "mappings"] };
@@ -199,7 +199,7 @@ public class ChangelogEntryValidatorTests
 	// Marker / link: rules
 	// ─────────────────────────────────────────────────────────────────────────────────────────────
 
-	[Fact]
+	[Test]
 	public void Validate_MarkerWithOtherFields_ProducesError()
 	{
 		var entry = ParseYaml("link: https://example.com\ntitle: Should not be here");
@@ -207,7 +207,7 @@ public class ChangelogEntryValidatorTests
 		findings.Should().ContainSingle(f => f.Severity == FindingSeverity.Error && f.Message.Contains("marker entries"));
 	}
 
-	[Fact]
+	[Test]
 	public void Validate_MarkerOnly_NoErrors()
 	{
 		var entry = ParseYaml("link: https://example.com");
@@ -215,7 +215,7 @@ public class ChangelogEntryValidatorTests
 		findings.Should().NotContain(f => f.Severity == FindingSeverity.Error);
 	}
 
-	[Fact]
+	[Test]
 	public void Validate_SourceRedirectInEntry_ProducesError()
 	{
 		var entry = ParseYaml("type: feature\ntitle: Test\nproducts:\n  - product: elasticsearch\nsource-redirect: true");
@@ -227,7 +227,7 @@ public class ChangelogEntryValidatorTests
 	// Description length
 	// ─────────────────────────────────────────────────────────────────────────────────────────────
 
-	[Fact]
+	[Test]
 	public void Validate_DescriptionOver600Chars_ProducesWarning()
 	{
 		var longDesc = new string('x', 601);
@@ -243,7 +243,7 @@ public class ChangelogEntryValidatorTests
 	// Valid entry
 	// ─────────────────────────────────────────────────────────────────────────────────────────────
 
-	[Fact]
+	[Test]
 	public void Validate_ValidMinimalEntry_NoFindings()
 	{
 		var entry = ParseYaml("type: feature\ntitle: Test\nproducts:\n  - product: elasticsearch");
@@ -256,40 +256,40 @@ public class ChangelogEntryValidatorTests
 	// Filename validation
 	// ─────────────────────────────────────────────────────────────────────────────────────────────
 
-	[Theory]
-	[InlineData("docs/changelog/42.yaml")]
-	[InlineData("docs/changelog/42.yml")]
-	[InlineData("docs/changelog/42-my-feature.yaml")]
-	[InlineData("docs/changelog/1234-fix-something-long.yaml")]
+	[Test]
+	[Arguments("docs/changelog/42.yaml")]
+	[Arguments("docs/changelog/42.yml")]
+	[Arguments("docs/changelog/42-my-feature.yaml")]
+	[Arguments("docs/changelog/1234-fix-something-long.yaml")]
 	public void ValidateFilename_ValidConvention_NoFindings(string filePath)
 	{
 		var findings = ChangelogEntryValidator.ValidateFilename(filePath);
 		findings.Should().BeEmpty();
 	}
 
-	[Theory]
-	[InlineData("docs/changelog/my-feature.yaml")]
-	[InlineData("docs/changelog/changelog.yaml")]
-	[InlineData("docs/changelog/fix42.yaml")]
+	[Test]
+	[Arguments("docs/changelog/my-feature.yaml")]
+	[Arguments("docs/changelog/changelog.yaml")]
+	[Arguments("docs/changelog/fix42.yaml")]
 	public void ValidateFilename_InvalidConvention_ProducesError(string filePath)
 	{
 		var findings = ChangelogEntryValidator.ValidateFilename(filePath);
 		findings.Should().ContainSingle(f => f.Severity == FindingSeverity.Error && f.Message.Contains("must start with a PR number"));
 	}
 
-	[Theory]
-	[InlineData("docs/changelog/42.yaml", 42)]
-	[InlineData("docs/changelog/100-feature.yaml", 100)]
-	[InlineData("docs/changelog/9999-x.yml", 9999)]
+	[Test]
+	[Arguments("docs/changelog/42.yaml", 42)]
+	[Arguments("docs/changelog/100-feature.yaml", 100)]
+	[Arguments("docs/changelog/9999-x.yml", 9999)]
 	public void TryParseFilenameAsPrNumber_ValidFilename_ReturnsNumber(string filePath, int expected)
 	{
 		ChangelogEntryValidator.TryParseFilenameAsPrNumber(filePath, out var prNumber).Should().BeTrue();
 		prNumber.Should().Be(expected);
 	}
 
-	[Theory]
-	[InlineData("docs/changelog/feature.yaml")]
-	[InlineData("docs/changelog/changelog.yml")]
+	[Test]
+	[Arguments("docs/changelog/feature.yaml")]
+	[Arguments("docs/changelog/changelog.yml")]
 	public void TryParseFilenameAsPrNumber_InvalidFilename_ReturnsFalse(string filePath) =>
 		ChangelogEntryValidator.TryParseFilenameAsPrNumber(filePath, out _).Should().BeFalse();
 
@@ -297,7 +297,7 @@ public class ChangelogEntryValidatorTests
 	// pr: field cross-check against filename
 	// ─────────────────────────────────────────────────────────────────────────────────────────────
 
-	[Fact]
+	[Test]
 	public void Validate_PrFieldMatchesFilename_NoError()
 	{
 		var entry = ParseYaml("pr: 42\ntype: feature\ntitle: Test\nproducts:\n  - product: elasticsearch");
@@ -305,7 +305,7 @@ public class ChangelogEntryValidatorTests
 		findings.Should().NotContain(f => f.Message.Contains("does not match"));
 	}
 
-	[Fact]
+	[Test]
 	public void Validate_PrFieldMismatchesFilename_ProducesError()
 	{
 		var entry = ParseYaml("pr: 99\ntype: feature\ntitle: Test\nproducts:\n  - product: elasticsearch");
@@ -317,7 +317,7 @@ public class ChangelogEntryValidatorTests
 		);
 	}
 
-	[Fact]
+	[Test]
 	public void Validate_PrFieldAbsent_NoFilenameError()
 	{
 		var entry = ParseYaml("type: feature\ntitle: Test\nproducts:\n  - product: elasticsearch");

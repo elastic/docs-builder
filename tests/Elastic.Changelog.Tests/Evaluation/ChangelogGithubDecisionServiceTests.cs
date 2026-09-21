@@ -10,7 +10,7 @@ using Elastic.Documentation.Configuration;
 
 namespace Elastic.Changelog.Tests.Evaluation;
 
-public class ChangelogGithubDecisionServiceTests(ITestOutputHelper output) : ChangelogTestBase(output)
+public class ChangelogGithubDecisionServiceTests() : ChangelogTestBase()
 {
 	private static readonly string Root = Paths.WorkingDirectoryRoot.FullName;
 
@@ -42,7 +42,7 @@ public class ChangelogGithubDecisionServiceTests(ITestOutputHelper output) : Cha
 			MaintainerCanModify = false
 		};
 
-	[Fact]
+	[Test]
 	public async Task RecordDecision_MetadataExists_UpdatesCommitOutcomeAndFile()
 	{
 		await WriteMetadata(BaseMetadata());
@@ -63,7 +63,7 @@ public class ChangelogGithubDecisionServiceTests(ITestOutputHelper output) : Cha
 		updated.CommittedFile.Should().Be("docs/changelog/42.yaml");
 	}
 
-	[Fact]
+	[Test]
 	public async Task RecordDecision_MetadataNotFound_ReturnsTrueWithoutCrashing()
 	{
 		var service = CreateService();
@@ -78,7 +78,7 @@ public class ChangelogGithubDecisionServiceTests(ITestOutputHelper output) : Cha
 		result.Should().BeTrue();
 	}
 
-	[Fact]
+	[Test]
 	public async Task RecordDecision_Roundtrip_PreservesAllOtherFields()
 	{
 		var original = BaseMetadata(prNumber: 99) with

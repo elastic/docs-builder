@@ -28,7 +28,7 @@ public class ShallowRegistryReconcilerTests
 			metrics: _metrics
 		);
 
-	private Cancel Ctx => TestContext.Current.CancellationToken;
+	private Cancel Ctx => TestContext.Current!.Execution.CancellationToken;
 
 	private static ChangelogScope BundleScope(string product)
 	{
@@ -53,7 +53,7 @@ public class ShallowRegistryReconcilerTests
 		_ = _s3.Seed(PublicBucket, key, JsonSerializer.Serialize(map, ShallowRegistryJsonContext.Default.SortedDictionaryStringString));
 	}
 
-	[Fact]
+	[Test]
 	public async Task Reconcile_AbsentMap_SeedsEveryFolderFromAFullTreeListing()
 	{
 		// First deploy: no map exists yet, so a single touched folder heals the whole tree.
@@ -66,7 +66,7 @@ public class ShallowRegistryReconcilerTests
 		Map(BundleMapKey).Keys.Should().BeEquivalentTo("elasticsearch", "kibana");
 	}
 
-	[Fact]
+	[Test]
 	public async Task Reconcile_ExistingMap_PatchesOnlyTheTouchedFolders()
 	{
 		// Untouched folders keep their recorded value even when stale — their own events (or the
@@ -82,7 +82,7 @@ public class ShallowRegistryReconcilerTests
 		map["kibana"].Should().Be("stale-token");
 	}
 
-	[Fact]
+	[Test]
 	public async Task Reconcile_TokenChangesWhenAnyFileChangesOrIsDeleted()
 	{
 		// The token digests the whole listing rather than echoing one object's ETag: deleting an
@@ -100,7 +100,7 @@ public class ShallowRegistryReconcilerTests
 		Map(BundleMapKey)["elasticsearch"].Should().NotBe(before);
 	}
 
-	[Fact]
+	[Test]
 	public async Task Reconcile_UnchangedFolder_SkipsTheWrite()
 	{
 		_ = _s3.Seed(PublicBucket, "bundle/elasticsearch/es-9.1.0.yaml", "one");
@@ -114,7 +114,7 @@ public class ShallowRegistryReconcilerTests
 		_metrics.ShallowRegistryUnchanged.Should().Be(1);
 	}
 
-	[Fact]
+	[Test]
 	public async Task Reconcile_EmptiedFolder_IsRemovedFromTheMap()
 	{
 		_ = _s3.Seed(PublicBucket, "bundle/kibana/kb-9.1.0.yaml", "keep");
@@ -125,7 +125,7 @@ public class ShallowRegistryReconcilerTests
 		Map(BundleMapKey).Keys.Should().BeEquivalentTo("kibana");
 	}
 
-	[Fact]
+	[Test]
 	public async Task Reconcile_EmptiedTree_DeletesTheMapConditionally()
 	{
 		SeedMap(BundleMapKey, ("elasticsearch", "token"));
@@ -136,7 +136,7 @@ public class ShallowRegistryReconcilerTests
 		_s3.Deletes.Should().ContainSingle().Which.IfMatch.Should().NotBeNullOrEmpty();
 	}
 
-	[Fact]
+	[Test]
 	public async Task Reconcile_PoolBranchWithSlash_DoesNotSweepNestedPools()
 	{
 		// Branches are stored verbatim, so the / delimiter is what keeps the "main" pool from
@@ -154,7 +154,7 @@ public class ShallowRegistryReconcilerTests
 		map["elastic/repo/main/feature"].Should().NotBe("seed").And.NotBe(afterParent);
 	}
 
-	[Fact]
+	[Test]
 	public async Task Reconcile_UnparseableMap_IsRebuiltFromTheTreeListing()
 	{
 		_ = _s3.Seed(PublicBucket, "bundle/elasticsearch/es-9.1.0.yaml", "one");
@@ -175,7 +175,7 @@ public class ShallowRegistryReconcilerTests
 			.Be(corruptETag, "the conditional write must replace exactly the corrupt map that was read");
 	}
 
-	[Fact]
+	[Test]
 	public async Task Reconcile_PutLosingTheRace_RereadsAndRetries()
 	{
 		_ = _s3.Seed(PublicBucket, "bundle/elasticsearch/es-9.1.0.yaml", "one");
@@ -196,7 +196,7 @@ public class ShallowRegistryReconcilerTests
 		map.Should().ContainKey("kibana", "the concurrent writer's entry was re-read and preserved");
 	}
 
-	[Fact]
+	[Test]
 	public async Task Reconcile_ExhaustedConditionalRetries_Throws()
 	{
 		_ = _s3.Seed(PublicBucket, "bundle/elasticsearch/es-9.1.0.yaml", "one");
@@ -208,7 +208,7 @@ public class ShallowRegistryReconcilerTests
 		_ = await act.Should().ThrowAsync<ReconcileConflictException>();
 	}
 
-	[Fact]
+	[Test]
 	public async Task Reconcile_NoTouchedFolders_IsANoOp()
 	{
 		await _reconciler.ReconcileAsync(ChangelogScopeKind.Bundle, [], Ctx);
@@ -217,7 +217,7 @@ public class ShallowRegistryReconcilerTests
 		_s3.Puts.Should().BeEmpty();
 	}
 
-	[Fact]
+	[Test]
 	public async Task Reconcile_MismatchedScopeKind_IsRejected()
 	{
 		var act = async () => await _reconciler.ReconcileAsync(ChangelogScopeKind.Bundle, [PoolScope("elastic", "repo", "main")], Ctx);

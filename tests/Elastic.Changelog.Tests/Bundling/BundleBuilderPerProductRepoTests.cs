@@ -9,9 +9,9 @@ using Elastic.Documentation.ReleaseNotes;
 
 namespace Elastic.Changelog.Tests.Bundling;
 
-public class BundleBuilderPerProductRepoTests(ITestOutputHelper output)
+public class BundleBuilderPerProductRepoTests()
 {
-	private readonly TestDiagnosticsCollector _collector = new(output);
+	private readonly TestDiagnosticsCollector _collector = new();
 	private readonly BundleBuilder _builder = new();
 
 	private static MatchedChangelogFile MakeEntry(string productId, string version = "9.0.0") =>
@@ -28,7 +28,7 @@ public class BundleBuilderPerProductRepoTests(ITestOutputHelper output)
 			}
 		};
 
-	[Fact]
+	[Test]
 	public void BuildBundle_StampsAuthoringRepoOnEveryProduct()
 	{
 		var entries = new[] { MakeEntry("cloud-hosted"), MakeEntry("cloud-serverless") };
@@ -41,7 +41,7 @@ public class BundleBuilderPerProductRepoTests(ITestOutputHelper output)
 		products.All(p => p.Repo == "elasticsearch").Should().BeTrue("products[].repo is the authoring repo, not products.yml");
 	}
 
-	[Fact]
+	[Test]
 	public void BuildBundle_CloudServerless_UsesAuthoringRepoNotCatalogCloud()
 	{
 		var entries = new[] { MakeEntry("cloud-serverless") };
@@ -52,7 +52,7 @@ public class BundleBuilderPerProductRepoTests(ITestOutputHelper output)
 		result.Data!.Products[0].Repo.Should().Be("elasticsearch");
 	}
 
-	[Fact]
+	[Test]
 	public void BuildBundle_CloudServerless_KibanaAuthoringRepo()
 	{
 		var entries = new[] { MakeEntry("cloud-serverless") };
@@ -63,7 +63,7 @@ public class BundleBuilderPerProductRepoTests(ITestOutputHelper output)
 		result.Data!.Products[0].Repo.Should().Be("kibana");
 	}
 
-	[Fact]
+	[Test]
 	public void BuildBundle_WithoutAuthoringRepo_OmitsRepo()
 	{
 		var entries = new[] { MakeEntry("cloud-serverless") };
@@ -74,7 +74,7 @@ public class BundleBuilderPerProductRepoTests(ITestOutputHelper output)
 		result.Data!.Products[0].Repo.Should().BeNull();
 	}
 
-	[Fact]
+	[Test]
 	public void BuildBundle_OutputProducts_StampsAuthoringRepo()
 	{
 		var entries = new[] { MakeEntry("elasticsearch") };
