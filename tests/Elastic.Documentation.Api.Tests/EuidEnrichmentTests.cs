@@ -10,6 +10,7 @@ using Elastic.Documentation.Api.AskAi;
 using Elastic.Documentation.Api.Tests.Fixtures;
 using FakeItEasy;
 using Microsoft.Extensions.DependencyInjection;
+using TUnit.Core.Interfaces;
 
 namespace Elastic.Documentation.Api.Tests;
 
@@ -17,14 +18,14 @@ namespace Elastic.Documentation.Api.Tests;
 /// Integration tests for euid cookie enrichment in OpenTelemetry traces and logging.
 /// Uses WebApplicationFactory to test the real API configuration with mocked AskAi services.
 /// </summary>
-public class EuidEnrichmentTests : IAsyncLifetime
+public class EuidEnrichmentTests : IAsyncInitializer, IAsyncDisposable
 {
 	private const string OtlpEndpoint = "http://localhost:4318";
 
-	public ValueTask InitializeAsync()
+	public Task InitializeAsync()
 	{
 		Environment.SetEnvironmentVariable("OTEL_EXPORTER_OTLP_ENDPOINT", OtlpEndpoint);
-		return ValueTask.CompletedTask;
+		return Task.CompletedTask;
 	}
 
 	public ValueTask DisposeAsync()
@@ -38,7 +39,7 @@ public class EuidEnrichmentTests : IAsyncLifetime
 	/// Test that verifies euid cookie is added to both HTTP span and custom AskAi span,
 	/// and appears in log entries - using the real API configuration.
 	/// </summary>
-	[Fact]
+	[Test]
 	public async Task AskAiEndpointPropagatatesEuidToAllSpansAndLogs()
 	{
 		// Arrange
@@ -91,7 +92,7 @@ public class EuidEnrichmentTests : IAsyncLifetime
 			"application/json"
 		);
 
-		using var response = await client.SendAsync(request, TestContext.Current.CancellationToken);
+		using var response = await client.SendAsync(request, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert - Response is successful
 		response.IsSuccessStatusCode.Should().BeTrue();
