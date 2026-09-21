@@ -16,6 +16,11 @@
     <MinVerDefaultPreReleaseIdentifiers>canary.0</MinVerDefaultPreReleaseIdentifiers>
     <MinVerMinimumMajorMinor>0.1</MinVerMinimumMajorMinor>
     <LangVersion>preview</LangVersion>
+    <!-- Opt all async methods into the Runtime Async codegen path.
+         .NET 11 ships the BCL compiled runtime-async=on; this flag extends coverage to user code.
+         Has no observable IL effect in preview 7 — state machines are still generated — but is
+         forward-compatible: when the Roslyn implementation lands (expected GA), the flag is already here. -->
+    <Features>runtime-async</Features>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <UseArtifactsOutput>true</UseArtifactsOutput>
     <SolutionRoot>$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), build.sh))</SolutionRoot>
