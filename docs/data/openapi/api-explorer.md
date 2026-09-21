@@ -4,7 +4,11 @@ navigation_title: API Explorer
 
 # API Explorer
 
-The API Explorer renders OpenAPI specifications as interactive API documentation. When you configure it in your content set, `docs-builder` automatically generates pages for each API operation, request and response schemas, shared type definitions, and inline examples.
+The API Explorer renders OpenAPI specifications as interactive API documentation. When you configure it in your content set, `docs-builder` automatically generates a product landing page, `/authentication` and `/servers` pages, tag and operation pages, request and response schemas, shared type definitions, and inline examples.
+
+The assembler also writes a combined **API catalog** at `/docs/api/`: a grid of product cards on its own layout (no API sidebar). Each card opens the HTML landing page and includes REST and category badges plus JSON and YAML downloads. Markdown, JSON, and YAML stay on the product landing page and in the catalog Markdown export. The card shows `info.description`, clamped to three lines.
+
+The catalog reuses listing filter chips. A click selects one category. Cmd or Ctrl click adds or removes categories. Categories are discovery labels only. They do not claim versioned availability. An API with no `catalog.categories` appears only when **All** is selected. The filter bar shows only categories that at least one API uses. Filter state is not stored in the URL.
 
 :::{warning}
 This feature is still under development and the functionality described on this page might change.
@@ -12,90 +16,75 @@ This feature is still under development and the functionality described on this 
 
 ## Configure the API Explorer
 
-Add the `api` key to your `docset.yml` file to enable the API Explorer. The key maps product names to OpenAPI JSON specification files.
-Paths are relative to the folder that contains `docset.yml`.
-
-### Basic configuration
+Add the `api` key to your `docset.yml` file to enable the API Explorer. Each product key takes a
+single-entry sequence with a required `spec:` and `product:`, and optional `repository:`,
+`children:`, and `catalog:`:
 
 ```yaml
 api:
-  elasticsearch: elasticsearch-openapi.json
-  kibana: kibana-openapi.json
+  elasticsearch:
+    - spec: elasticsearch-openapi.json
+      product: elasticsearch
+  kibana:
+    - spec: kibana-openapi.json
+      product: kibana
 ```
 
 Each product key produces its own section of API documentation. For example, `elasticsearch` generates pages under `/api/elasticsearch/` and `kibana` generates pages under `/api/kibana/`.
 
 The `api` key is only valid in `docset.yml`. You can't use it in `toc.yml` files.
 
-### Advanced configuration with intro and outro pages
+### `spec:` (required)
 
-You can add custom Markdown content before and after the auto-generated API documentation using a sequence format:
+A path to an OpenAPI spec file, relative to the folder that contains `docset.yml`. `spec:` serves
+two purposes at once:
+
+- If a file exists at that path, {{dbuild}} renders it directly. This is the common setup for a
+  docset that carries its own spec file.
+- Its basename (for example `elasticsearch-openapi.json`) is always used to look up this API's
+  entry in the remote version index, whether or not the file exists locally. See
+  [Remote spec resolution](#remote-spec-resolution).
+
+### `product:` (required)
+
+A product id defined in `products.yml`. This binds the API to that product's versioning system
+and display name. The build fails with a suggestion if `product:` doesn't match a known product id.
+
+### `repository:` (optional)
+
+An `org/repo` override (for example `elastic/elasticsearch-specification`) used to look up this
+API in the remote version index, instead of the current checkout's own GitHub remote. Set this
+whenever the repository that publishes the OpenAPI spec differs from the repository the docset
+itself builds from:
+
+```yaml
+api:
+  elasticsearch:
+    - spec: elasticsearch-openapi.json
+      product: elasticsearch
+      repository: elastic/elasticsearch-specification
+```
+
+Most docsets omit `repository:` — it's only needed for this cross-repo case. When omitted,
+{{dbuild}} derives the repository from the current checkout's GitHub remote.
+
+### `children:` (optional)
+
+Explicit hand-written pages rendered under `api/<key>/`, in the declared order:
 
 ```yaml
 api:
   kibana:
-    - file: kibana-intro.md
     - spec: kibana-openapi.json
-    - file: kibana-additional-notes.md
+      product: kibana
+      children:
+        - file: kibana-api-overview.md
 ```
 
-This configuration creates a navigation structure where:
+`children:` is the only way to inject hand-written content into an API reference section:
 
-1. **Intro pages** (before the first `spec`) appear at the top of the sidebar
-2. **Generated API content** (operations, tags, types) appears in the middle
-3. **Outro pages** (after the spec) appear at the bottom
-
-#### Intro and outro page features:
-
-- **Full Myst support**: Intro/outro pages support the full range of Myst Markdown features including cross-links, substitutions, and directives
-- **Automatic exclusion**: No need to add intro/outro files to the `exclude:` list - they're automatically excluded from normal HTML generation
-- **URL collision detection**: Build fails if intro/outro page names conflict with reserved API Explorer segments (`types/`, `tags/`) or operation names
-
-#### Multiple intro/outro pages
-
-You can include multiple intro and outro pages:
-
-```yaml
-api:
-  kibana:
-    - file: introduction.md
-    - file: getting-started.md
-    - spec: kibana-openapi.json
-    - file: examples.md
-    - file: troubleshooting.md
-```
-
-#### Sample intro page
-
-Here's a sample intro page (`kibana-intro.md`):
-
-```markdown
-# Kibana APIs
-
-Welcome to the Kibana API documentation. These APIs allow you to manage Kibana programmatically.
-
-## Before you begin
-
-Make sure you have:
-
-- A running Kibana instance
-- Valid authentication credentials
-- Understanding of RESTful API principles
-```
-
-:::{important}
-Intro and outro Markdown files must not use a slug that would collide with the reserved API Explorer segments like `types` and `tags`.
-:::
-
-## What you can extend (and what you can't)
-
-`file:` entries in the `api:` sequence add standalone pages to the API navigation. They are the
-only way to inject hand-written content into an API reference section:
-
-- **Intro pages** (before the spec) and **outro pages** (after the spec) are fully rendered
-  Markdown pages with access to all MyST directives, substitutions, and cross-links.
-- Intro/outro files are automatically excluded from normal HTML generation — you do not need to
-  add them to the `exclude:` list.
+- Child pages are fully rendered Markdown with access to all MyST directives, substitutions, and cross-links.
+- Child files are automatically excluded from normal HTML generation — you do not need to add them to the `exclude:` list.
 
 **What you cannot do today:** there is no way to override or augment an individual operation,
 tag, schema, or parameter description using a local Markdown file. Every description for generated
@@ -104,35 +93,149 @@ per-parameter enrichment see the [CLI reference](../cli-schema/index.md), which 
 fine-grained supplemental mechanism as a reference model for what future API augmentation could
 look like.
 
-### Intro/outro file naming and validation
+#### Child file naming and validation
 
 A file's URL slug is derived from its filename: lowercase, with spaces and underscores replaced by
 hyphens, and the `.md` extension removed. For example, `Getting-Started.md` becomes the slug
 `getting-started`.
 
-The following slugs are reserved and cannot be used as intro/outro file names:
+The following slugs are reserved and cannot be used as child file names:
 
 | Reserved slug | Reason |
 |---|---|
 | `types` | API Explorer uses this path for schema type pages |
-| `tags` | API Explorer uses this path for tag landing pages |
+| `group` | Tag landing pages use `/group/` |
+| `operation` | Operation pages use `/operation/` |
+| `authentication` | Each API product has an `/authentication` page |
+| `servers` | Each API product has a `/servers` page |
 
 Additionally, the slug must not match any operation moniker already generated by the spec. The
 build fails with a descriptive error if either collision occurs, naming the conflicting file and
 the reserved or operation segment.
 
-If the same slug is produced by two different intro/outro files in the same product, the build
+If the same slug is produced by two different child files in the same product, the build
 also fails with a duplicate-slug error.
+
+### `catalog:` (optional)
+
+Use this when an API should appear under one or more catalog chips on the API catalog page. An
+API may list several categories. The same identifiers are used in `applies_to`, but a category
+here does not mean the API is generally available for every version of that deployment.
+
+```yaml
+api:
+  elasticsearch:
+    - spec: elasticsearch-openapi.json
+      product: elasticsearch
+      catalog:
+        categories:
+          - self
+          - ece
+          - ess
+```
+
+`catalog.categories:` accepts:
+
+- `self` → Self-managed
+- `ece` → Elastic Cloud Enterprise
+- `ess` or `ech` → Elastic Cloud Hosted
+- `serverless` → Serverless
+
+Unknown values fail the build. Omit `catalog:` to keep the API visible only under **All**.
 
 ### One spec per product
 
-Each product key in the `api:` block must have **exactly one** `spec:` entry. The build fails
-if a product sequence contains zero or more than one spec. Multiple specs per product are not
-currently supported.
+Each product key in the `api:` block must have **exactly one** entry, with **exactly one**
+`spec:`. The build fails if a product sequence is empty or has more than one entry. Multiple
+specs per product are not currently supported.
+
+Product pages show an API product switcher in the left navigation. The list includes every declared API and a Back to hub option.
+
+## Remote spec resolution
+
+When `spec:` does not resolve to a file on disk, {{dbuild}} resolves the current (`main`) version
+of that spec remotely through a CloudFront-backed version index shared by every Elastic repository
+that publishes OpenAPI specs.
+
+### How specs are published
+
+Each repository publishes its OpenAPI spec under a stable object key in a shared bucket:
+
+```
+<org>/<repo>/<branch>/<spec-name>.<ext>
+```
+
+For example, Elasticsearch's spec is published from a separate specification repository, at keys
+like `elastic/elasticsearch-specification/main/elasticsearch.json` and
+`elastic/elasticsearch-specification/8.19/elasticsearch.json`.
+
+### The version index
+
+A single root `index.json` manifest maps every published spec to its highest-minor branch per
+major. It is keyed by `org/repo`, then by spec basename (matching `spec:`'s basename), then by
+version moniker (`main`, `9`, `8`, ...):
+
+```json
+{
+  "elastic/elasticsearch-specification": {
+    "elasticsearch.json": {
+      "main": { "version": "main" },
+      "9": { "version": "9.5" },
+      "8": { "version": "8.19" }
+    }
+  }
+}
+```
+
+{{dbuild}} fetches this manifest once per build from
+`https://d29hkgsdo66d1n.cloudfront.net/index.json`, then looks up the `org/repo` (from
+`repository:`, falling back to the current checkout's GitHub remote) and the `spec:` basename to
+find this API's versions. Spec objects are fetched at
+`{base}/{org}/{repo}/{version}/{spec-basename}`.
+
+If the API has no local spec file and the `org/repo` or spec basename does not have a matching
+entry in the index, the build fails with an error naming the API and what was missing. If a local
+spec file is also configured, that error becomes a warning instead, and the build falls back to
+rendering the local file.
+
+For versioned products, {{dbuild}} renders every resolved version from the index:
+
+| Index moniker | URL path | Role |
+|---|---|---|
+| `main` | `/api/doc/<key>/` | Canonical current-major tree |
+| `9`, `8`, … | `/api/doc/<key>/v9/`, `/api/doc/<key>/v8/`, … | Released major snapshots |
+
+The numeric `9` entry is a frozen v9 snapshot. It is distinct from the moving `main` entry.
+When a local spec file exists, it overrides only the `main` moniker. Older majors still resolve
+remotely through the index.
+
+Versionless products (`versioning: serverless` and similar) render only the unversioned
+`/api/doc/<key>/` path even when the index lists historical monikers. When more than one
+version is rendered, API pages show a simple version dropdown at the top of the left navigation
+rail. The dropdown links to each version's landing page.
+
+### Smoke-test every CloudFront spec locally
+
+The docs-builder dev docset ships six API keys that mirror every spec currently listed
+in the live version index. They have no local spec files, so `docs-builder serve` fetches each one
+from CloudFront:
+
+| URL path | Index entry |
+|---|---|
+| `/api/elasticsearch/` | `elastic/elasticsearch-specification` → `elasticsearch.json` |
+| `/api/elasticsearch-serverless/` | `elastic/elasticsearch-specification` → `elasticsearch-serverless.json` |
+| `/api/kibana/` | `elastic/kibana` → `kibana.yaml` |
+| `/api/kibana-serverless/` | `elastic/kibana` → `kibana-serverless.yaml` |
+| `/api/cloud-connect/` | `elastic/cloud-connected-api` → `cloud-connect.yml` |
+| `/api/cloud-serverless/` | `elastic/serverless-api-specification` → `elastic-cloud-serverless.yml` |
+
+Run `docs-builder serve` (without `--watch`) and open any path above.
 
 ## Place your spec files
 
-OpenAPI specification files must be in JSON format and located in the same folder as your `docset.yml` (or in a subfolder of it). The path you specify in `api` is resolved relative to the `docset.yml` location.
+To carry a spec locally, place the OpenAPI specification file in the same folder as your
+`docset.yml` (or in a subfolder of it). The path you specify in `spec:` is resolved relative to
+the `docset.yml` location.
 
 For example, if your content set is structured like this:
 
@@ -149,8 +252,12 @@ Your `docset.yml` references the specs as follows:
 
 ```yaml
 api:
-  elasticsearch: elasticsearch-openapi.json
-  kibana: kibana-openapi.json
+  elasticsearch:
+    - spec: elasticsearch-openapi.json
+      product: elasticsearch
+  kibana:
+    - spec: kibana-openapi.json
+      product: kibana
 ```
 
 ## When the API Explorer runs
@@ -182,7 +289,7 @@ The API Explorer generates the following types of pages from your OpenAPI spec:
 - **Landing page**: An overview of the API grouped by tag
 - **Tag landing pages**: One page per tag that lists operations in that tag, with the tag's display name, optional OpenAPI `description` (CommonMark), and optional `externalDocs` link
 - **Operation pages**: One page per API operation, with the HTTP method, path, parameters, request body, response schemas, and examples
-- **Schema type pages**: Dedicated pages for complex shared types such as `QueryContainer` and `AggregationContainer`
+- **Schema type pages**: Dedicated pages for complex shared types such as `QueryContainer` and `AggregationContainer`. On operation pages, those properties link to that page.
 
 ## OpenAPI extensions
 
@@ -209,9 +316,11 @@ The `x-codeSamples` extension is a JSON array of objects, each with a `lang` and
 ]
 ```
 
-The code samples appear in a standalone "Code Examples" section on every operation page that has the extension, regardless of HTTP method. This means GET, DELETE, and other operations without a request body also display language tabs when `x-codeSamples` are present. When multiple languages are available, they appear as tabs. The selected language persists across operations and page navigations. When only one language is available, the example renders without a tab selector.
+Code samples appear in the right-hand **Examples** rail on every operation page that has the extension, regardless of HTTP method. When an operation also declares multiple named request/response `examples`, the rail builds **scenarios from request examples** (matched to response examples by title/summary) and exposes a `<select>` to switch between those request variants. Response examples whose titles do not match any request (typical error payloads) are shared across those scenarios as extra **status-code tabs** (for example `200`, `400`) on the light response card, without replacing a scenario-specific body for the same status. When there are no request examples, named response-only examples collapse into a single scenario so status tabs stay primary. Multi-language `x-codeSamples` render inside a code box with a language label and `<select>` in the header, attached to the scenario whose request body matches the Console sample. When a scenario has request JSON but no `x-codeSamples`, that JSON uses the same request code card (label `JSON`). There is no separate "Request" heading in the rail — only the **Examples** heading when multiple scenarios exist. Request and response code boxes show a non-selectable line-number gutter (selection and copy omit the numbers). Response bodies that are JSON objects/arrays use the Figma Card/Code token colors (black structure, green strings, blue booleans, maroon numbers); other payloads such as SSE streams stay plaintext so highlighting does not invent misleading colors. Single-line `curl` samples are reformatted for display (method and URL on the first line, one flag per line, with `\` continuations). OpenAPI example `description` text is not shown in the rail (the code samples and response JSON carry the content).
 
-Console is treated as the default language and appears first in the tab order when present.
+When an operation has **no** `x-codeSamples`, the API Explorer synthesizes a minimal **Console** and **curl** sample from the HTTP method, path, required query parameters, required headers (for example `kbn-xsrf`), and the document `servers` URL so the examples rail is never empty. Author-provided `x-codeSamples` always win over these synthetic samples. When the rail has samples (or request examples) but the operation declares response status codes without example bodies, the rail still shows status-code tabs: responses with no content render **No body**, and responses that declare a content type/schema but no example render **No example**.
+
+When there is only a single scenario (or only `x-codeSamples` / synthetic samples), the rail skips the scenario selector. The selected language persists across operations and page navigations. Console is treated as the default language and appears first in the language selector when present.
 
 ### Prerequisites [x-req-auth]
 
@@ -236,8 +345,32 @@ Each non-empty string becomes one item in the prerequisites list (leading and tr
 
 
 When prerequisites are present, **Prerequisites** also appears in the on-page table of contents (after **Paths**).
+When the section has more than one item, it renders collapsed with a one-line name summary (same accordion as Query Parameters).
 When the extension is missing, empty, or not a JSON array, the section is omitted.
 Malformed values are skipped and the build may log a warning.
+
+`x-req-auth` is independent of OpenAPI `security` / `securitySchemes`. Privilege lines go in **Prerequisites**; HTTP schemes go in **Authorization**.
+
+### Authorization
+
+The API Explorer reads OpenAPI `security` on the operation, or the document-level `security` when the operation omits the field.
+An empty operation `security: []` is an explicit override to none and hides the section.
+
+Each listed scheme is resolved against `components.securitySchemes`. Only these labels are shown, in first-seen order and de-duplicated:
+
+| OpenAPI scheme | Label |
+|---|---|
+| `type: apiKey` | `Api key` |
+| `type: http`, `scheme: basic` | `Basic` |
+| `type: http`, `scheme: bearer` | `Bearer` |
+
+Other scheme types (`oauth2`, `openIdConnect`, `mutualTLS`, HTTP digest, unknown HTTP schemes) are omitted.
+OpenAPI treats items in the `security` array as OR and keys inside one object as AND; the page flattens those groups into a unique label list.
+
+When schemes are present, **Authorization** appears as a section heading (same visual weight as **Prerequisites**) and in the on-page table of contents.
+When the section has more than one scheme, it renders collapsed with a one-line name summary.
+
+The same accordion applies to **Parameters**, **Query Parameters**, and **Request** when those sections have more than one item. A single-item section stays expanded as a plain heading.
 
 ### Tag labels [x-displayname]
 
@@ -272,7 +405,7 @@ If two different canonical tag names normalize to the same tag landing page URL,
 
 ### Tag groups [x-taggroups]
 
-Use the document-level `x-tagGroups` extension (from [Redocly](https://redocly.com/docs-legacy/api-reference-docs/specification-extensions/x-tag-groups)) to define how tags are grouped in the API Explorer sidebar. Each group has a display `name` and a list of tag `name` values that belong to it. Group order in the array is the order of top-level sections in the navigation.
+The document-level `x-tagGroups` extension (from [Redocly](https://redocly.com/docs-legacy/api-reference-docs/specification-extensions/x-tag-groups)) names groups of tags. Each group has a display `name` and a list of tag `name` values.
 
 ```json
 {
@@ -292,9 +425,13 @@ Use the document-level `x-tagGroups` extension (from [Redocly](https://redocly.c
 }
 ```
 
-**Behavior:**
+The default sidebar matches bump.sh. Tags are top-level folders. Each OpenAPI operation is a visible child of its tag.
+
+Classification folders, collapsing operations that share a grouping key into one endpoint, and Types pages require `FEATURE_API_NAV_GROUPING` (the `api-nav-grouping` feature flag). That flag is off by default.
+
+When the flag is on:
 
 - When `x-tagGroups` is present and valid, the API Explorer uses it as an additional level of grouping in the sidebar.
-- In the navigation tree, a group's section title links to the **main API overview** for that product (it is not a separate page and does not point at the first tag in the group; tag landings stay under `.../tags/...` only for tags).
-- When `x-tagGroups` is absent, tags are listed directly under the API root in a single flat layer.
-- Any operation tag that is not listed under any group is still included: it appears under a fallback section named `unknown`, and the build logs a warning so you can fix the spec.
+- A group's section title links to the main API overview for that product. It is not a separate page and does not point at the first tag in the group. Tag landings stay under `/group/`.
+- When `x-tagGroups` is absent, tags are listed directly under the API root.
+- Any operation tag that is not listed under any group is still included. It appears under a fallback section named `unknown`, and the build logs a warning so you can fix the spec.

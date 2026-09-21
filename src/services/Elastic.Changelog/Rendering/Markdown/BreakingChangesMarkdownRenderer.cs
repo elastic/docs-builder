@@ -5,8 +5,8 @@
 using System.IO.Abstractions;
 using System.Text;
 using Elastic.Documentation;
+using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.ReleaseNotes;
-using Nullean.ScopedFileSystem;
 using static System.Globalization.CultureInfo;
 using static Elastic.Documentation.ReleaseNotes.ChangelogEntryType;
 
@@ -15,7 +15,7 @@ namespace Elastic.Changelog.Rendering.Markdown;
 /// <summary>
 /// Renderer for the breaking-changes.md changelog file
 /// </summary>
-public class BreakingChangesMarkdownRenderer(ScopedFileSystem fileSystem) : MarkdownRendererBase(fileSystem)
+public class BreakingChangesMarkdownRenderer(IChangelogFileSystem fileSystem) : MarkdownRendererBase(fileSystem)
 {
 	/// <inheritdoc />
 	public override string OutputFileName => "breaking-changes.md";
@@ -29,8 +29,8 @@ public class BreakingChangesMarkdownRenderer(ScopedFileSystem fileSystem) : Mark
 		_ = sb.AppendLine(InvariantCulture, $"## {context.Title} [{context.Repo}-{context.TitleSlug}-breaking-changes]");
 
 		// Check if all entries are hidden
-		var allEntriesHidden = breakingChanges.Count > 0 && breakingChanges.All(entry =>
-			ChangelogRenderUtilities.ShouldHideEntry(entry, context.FeatureIdsToHide, context));
+		var allEntriesHidden = breakingChanges.Count > 0
+			&& breakingChanges.All(entry => ChangelogRenderUtilities.ShouldHideEntry(entry, context.FeatureIdsToHide, context));
 
 		if (breakingChanges.Count > 0)
 		{
@@ -42,8 +42,9 @@ public class BreakingChangesMarkdownRenderer(ScopedFileSystem fileSystem) : Mark
 			foreach (var group in groupedEntries)
 			{
 				// Check if all entries in this group are hidden
-				var allGroupEntriesHidden = group.All(entry =>
-					ChangelogRenderUtilities.ShouldHideEntry(entry, context.FeatureIdsToHide, context));
+				var allGroupEntriesHidden = group.All(
+					entry => ChangelogRenderUtilities.ShouldHideEntry(entry, context.FeatureIdsToHide, context)
+				);
 
 				if (context.Subsections && !string.IsNullOrWhiteSpace(group.Key))
 				{
@@ -73,15 +74,19 @@ public class BreakingChangesMarkdownRenderer(ScopedFileSystem fileSystem) : Mark
 						_ = sb.AppendLine();
 						RenderPrIssueLinks(sb, new PrIssueLinkOptions(entry, entryRepo, entryOwner, entryHideLinks));
 
-						_ = sb.AppendLine(!string.IsNullOrWhiteSpace(entry.Impact)
-							? "**Impact**<br>" + entry.Impact
-							: "% **Impact**<br>_Add a description of the impact_");
+						_ = sb.AppendLine(
+							!string.IsNullOrWhiteSpace(entry.Impact)
+								? "**Impact**<br>" + entry.Impact
+								: "% **Impact**<br>_Add a description of the impact_"
+						);
 
 						_ = sb.AppendLine();
 
-						_ = sb.AppendLine(!string.IsNullOrWhiteSpace(entry.Action)
-							? "**Action**<br>" + entry.Action
-							: "% **Action**<br>_Add a description of the what action to take_");
+						_ = sb.AppendLine(
+							!string.IsNullOrWhiteSpace(entry.Action)
+								? "**Action**<br>" + entry.Action
+								: "% **Action**<br>_Add a description of the what action to take_"
+						);
 
 						_ = sb.AppendLine("::::");
 					}
@@ -100,7 +105,10 @@ public class BreakingChangesMarkdownRenderer(ScopedFileSystem fileSystem) : Mark
 						}
 
 						// PR/Issue links with "For more information" pattern - indented for list continuation
-						RenderPrIssueLinks(sb, new PrIssueLinkOptions(entry, entryRepo, entryOwner, entryHideLinks, IndentForListItem: true));
+						RenderPrIssueLinks(
+							sb,
+							new PrIssueLinkOptions(entry, entryRepo, entryOwner, entryHideLinks, IndentForListItem: true)
+						);
 
 						// Impact and Action sections - indented for list continuation
 						if (!string.IsNullOrWhiteSpace(entry.Impact))

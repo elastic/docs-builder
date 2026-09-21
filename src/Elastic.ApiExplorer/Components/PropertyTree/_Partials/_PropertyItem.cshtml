@@ -4,30 +4,23 @@
 }
 <div class="property-item depth-@Model.Depth @(Model.IsLast ? "last-sibling" : "") @(hasChildren ? "has-children" : "") @(Model.IsCollapsible ? (Model.DefaultExpanded ? "expanded" : "collapsed") : "") @(Model.ShowDeprecatedBadge ? "deprecated" : "")">
 	<dt id="@Model.AnchorId">
-		<a href="#@Model.AnchorId">
+		<a class="property-anchor" href="#@Model.AnchorId">
+			<span class="property-anchor-icon" aria-hidden="true"></span>
 			<code>@Model.Name</code>
-			@(await RenderPartialAsync<_SchemaType, TypeAnnotation>(Model.Type))
-			@if (Model.IsRequest && Model.IsRequired)
-			{
-				<span class="required">required</span>
-			}
-			else if (!Model.IsRequest && !Model.IsRequired)
-			{
-				<span class="optional">optional</span>
-			}
-			@if (Model.IsRecursive)
-			{
-				@(await RenderPartialAsync<_RecursiveBadge>())
-			}
-			@if (Model.ShowDeprecatedBadge)
-			{
-				<span class="deprecated-badge">deprecated</span>
-			}
+		</a>
+		@(await RenderPartialAsync<_SchemaType, TypeAnnotation>(Model.Type))
+		@if (Model.IsRequired)
+		{
+			<span class="required @SchemaHelpers.StatusCssClass">required</span>
+		}
+		@if (Model.ShowDeprecatedBadge)
+		{
+			<span class="deprecated-badge @SchemaHelpers.StatusCssClass">deprecated</span>
+		}
 		@if (Model.Availability is not null)
 		{
 			@(await RenderPartialAsync<_AppliesToBadge, Elastic.ApiExplorer.Infrastructure.AppliesToBadgeDisplay>(new Elastic.ApiExplorer.Infrastructure.AppliesToBadgeDisplay(Model.Availability, IsInline: true)))
 		}
-		</a>
 	</dt>
 	@if (Model.HasDescription)
 	{
@@ -43,7 +36,6 @@
 			</a>
 		</dd>
 	}
-	@(await RenderPartialAsync<_ValidationConstraints, IReadOnlyList<ConstraintDisplay>>(Model.Constraints))
 	@if (Model.EnumValues.Count > 0)
 	{
 		<dd class="enum-values">
@@ -66,30 +58,6 @@
 				}
 			</dd>
 		}
-		else if (Model.Union.Kind == UnionDisplayKind.SimpleArrayUnion)
-		{
-			<dd class="union-inline-row">
-				<span class="values-label">One of:</span>
-				<span class="union-inline-options">
-					<span class="union-inline-option">
-						@if (Model.Union.SimpleUnionIsObject)
-						{
-							<span class="object-icon">{}</span>
-						}
-						<code class="schema-type"><span>@Model.Union.SimpleUnionValueTypePrefix@Model.Union.SimpleUnionBaseName</span></code>
-					</span>
-					<span class="union-inline-separator">or</span>
-					<span class="union-inline-option">
-						<span class="array-icon">[]</span>
-						@if (Model.Union.SimpleUnionIsObject)
-						{
-							<span class="object-icon">{}</span>
-						}
-						<code class="schema-type"><span>@Model.Union.SimpleUnionValueTypePrefix@Model.Union.SimpleUnionBaseName</span></code>
-					</span>
-				</span>
-			</dd>
-		}
 		else if (Model.Union.Kind == UnionDisplayKind.Badges)
 		{
 			<dd class="union-options">
@@ -105,7 +73,7 @@
 					{
 						<span class="union-inline-separator">or</span>
 					}
-					<code class="@(badge.IsTypeOption ? "union-type-option" : "union-option")">@badge.Text</code>
+					<code class="@SchemaHelpers.UnionOptionClasses(badge.IsTypeOption, badge.Text)">@badge.Text</code>
 				}
 			</dd>
 		}
@@ -114,21 +82,15 @@
 	{
 		<dd class="primitive-array">
 			<span class="values-label">Array of:</span>
-			<code class="primitive-type">@Model.ArrayItemTypeName</code>
-		</dd>
-	}
-	@if (Model.TypeLink is not null)
-	{
-		<dd class="type-link-description">
-			<a href="@Model.TypeLink.Url" data-hx-boost="false">See @Model.TypeLink.TypeName type →</a>
+			<code class="primitive-type @SchemaHelpers.TypeAtomCssClassOrNull(Model.ArrayItemTypeName)">@Model.ArrayItemTypeName</code>
 		</dd>
 	}
 	@if (Model.IsCollapsible)
 	{
 		<dd class="expand-toggle-row">
-			<button class="expand-toggle" aria-expanded="@(Model.DefaultExpanded ? "true" : "false")" aria-controls="@Model.AnchorId-children" title="@(Model.DefaultExpanded ? "Collapse" : "Expand") @Model.NestedCount properties">
+			<button class="expand-toggle" aria-expanded="@(Model.DefaultExpanded ? "true" : "false")" aria-controls="@Model.AnchorId-children">
 				<span class="toggle-icon">@(Model.DefaultExpanded ? "−" : "+")</span>
-				<span class="toggle-label">@(Model.DefaultExpanded ? "Hide" : "Show") @Model.NestedCount properties</span>
+				<span class="toggle-label">@(Model.DefaultExpanded ? "hide" : "show") properties</span>
 			</button>
 		</dd>
 	}
@@ -145,9 +107,9 @@
 						@if (dict.IsCollapsible)
 						{
 							<dd class="expand-toggle-row">
-								<button class="expand-toggle" aria-expanded="@(dict.DefaultExpanded ? "true" : "false")" aria-controls="@dict.KeyAnchorId-children" title="@(dict.DefaultExpanded ? "Collapse" : "Expand") @dict.NestedCount properties">
+								<button class="expand-toggle" aria-expanded="@(dict.DefaultExpanded ? "true" : "false")" aria-controls="@dict.KeyAnchorId-children">
 									<span class="toggle-icon">@(dict.DefaultExpanded ? "−" : "+")</span>
-									<span class="toggle-label">@(dict.DefaultExpanded ? "Hide" : "Show") @dict.NestedCount properties</span>
+									<span class="toggle-label">@(dict.DefaultExpanded ? "hide" : "show") properties</span>
 								</button>
 							</dd>
 						}

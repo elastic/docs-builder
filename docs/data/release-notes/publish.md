@@ -53,11 +53,13 @@ For example, update your existing release note page to include a directive like 
 :::{changelog} /path/to/bundles
 :type: all <1>
 :subsections: <2>
+:highlights: <3>
 :::
 ```
 
 1. If you have separate release note pages for each type, you can edit this option to show the appropriate subset on each page.
 2. You can choose to group the changelogs by their `areas`. Otherwise, they are grouped only by `type`.
+3. Add `:highlights:` when you want a dedicated Highlights section for entries with `highlight: true` (those entries still appear under their type sections).
 
 There are also options that affect whether to use dropdowns, include descriptions, hide links, and more.
 For full documentation and examples, refer to the [{changelog} directive syntax reference](/syntax/changelog.md).

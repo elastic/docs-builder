@@ -8,8 +8,14 @@ namespace Elastic.Markdown;
 
 public enum MarkdownPageLayout
 {
-	[EnumMember(Value = "landing-page")] LandingPage,
-	[EnumMember(Value = "not-found")] NotFound,
-	[EnumMember(Value = "archive")] Archive,
-	[EnumMember(Value = "full-search")] FullSearch
+	[EnumMember(Value = "landing-page")]
+	LandingPage,
+	[EnumMember(Value = "not-found")]
+	NotFound,
+	[EnumMember(Value = "archive")]
+	Archive,
+	[EnumMember(Value = "full-search")]
+	FullSearch,
+	[EnumMember(Value = "hub")]
+	Hub
 }

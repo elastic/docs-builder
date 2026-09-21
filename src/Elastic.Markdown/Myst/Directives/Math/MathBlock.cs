@@ -84,8 +84,14 @@ public class MathBlock(DirectiveBlockParser parser, ParserContext context) : Dir
 
 		// Check for block-level math expressions (heuristics)
 		// If content contains line breaks or complex expressions, likely display math
-		if (content.Contains('\n') || content.Contains("\\frac") || content.Contains("\\sum") ||
-			content.Contains("\\int") || content.Contains("\\lim") || content.Contains("\\begin"))
+		if (
+			content.Contains('\n')
+			|| content.Contains("\\frac")
+			|| content.Contains("\\sum")
+			|| content.Contains("\\int")
+			|| content.Contains("\\lim")
+			|| content.Contains("\\begin")
+		)
 			return true;
 
 		return false;

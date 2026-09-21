@@ -152,10 +152,14 @@ Configures API Explorer sections from OpenAPI specifications. Only valid in `doc
 
 ```yaml
 api:
-  elasticsearch: elasticsearch-openapi.json
+  elasticsearch:
+    - spec: elasticsearch-openapi.json
+      product: elasticsearch
   kibana:
-    - file: kibana-intro.md
     - spec: kibana-openapi.json
+      product: kibana
+      children:
+        - file: kibana-api-overview.md
 ```
 
 See [API Explorer](/data/openapi/api-explorer.md) for full details.
@@ -163,6 +167,22 @@ See [API Explorer](/data/openapi/api-explorer.md) for full details.
 ## `cta`
 
 Defines named call-to-action templates for the right-hand sidebar. See [CTA](../cta.md).
+
+## `default_cta`
+
+Registers a named CTA template as the default for every page listed in this navigation file. Available on both `docset.yml` and nested `toc.yml` files. The template must be declared under the `cta` map in `docset.yml`.
+
+`default_cta` can also be set on an individual `file:` or `folder:` entry inside `toc`, where it applies to that entry and every page beneath it:
+
+```yaml
+toc:
+  - file: observability.md
+    default_cta: observability
+    children:
+      - folder: observability
+```
+
+See [CTA](../cta.md).
 
 ## `suppress`
 

@@ -47,21 +47,30 @@ products:
   cloud-enterprise:
     display: 'Elastic Cloud Enterprise'
     versioning: 'ece'
+    repository: 'cloud'
   cloud-hosted:
     display: 'Elastic Cloud Hosted'
     versioning: 'ech'
+    repository: 'cloud'
   cloud-kubernetes:
     display: 'Elastic Cloud on Kubernetes'
     versioning: 'eck'
   cloud-serverless:
     display: 'Elastic Cloud Serverless'
     versioning: 'serverless'
+    repository: 'cloud'
   cloud-terraform:
     display: 'Elastic Cloud Terraform Provider'
     versioning: 'cloud-terraform'
   terraform-google-edot-cf:
-    display: 'Terraform Google EDOT CF'
+    display: 'Terraform Google Elastic Cloud Forwarder'
     versioning: 'terraform-google-edot-cf'
+  connectors:
+    display: 'Elastic Connectors'
+    versioning: 'stack'
+    features:
+      public-reference: false
+      release-notes: false
   curator:
     display: 'Elasticsearch Curator'
   docs-builder:
@@ -69,6 +78,16 @@ products:
     repository: 'docs-builder'
     features:
       public-reference: false
+  docs-playground-release-notes-changelogs:
+    display: 'Release Notes Playground (Changelogs)'
+    features:
+      public-reference: false
+      release-notes: prestage
+  docs-playground-release-notes-tagged:
+    display: 'Release Notes Playground (Tagged)'
+    features:
+      public-reference: false
+      release-notes: on-release
   ecs:
     display: 'Elastic Common Schema (ECS)'
   ecs-logging:
@@ -94,13 +113,13 @@ products:
   ecs-logging-ruby:
     display: 'ECS Logging Ruby'
   edot-cf:
-    display: 'EDOT Cloud Forwarder'
+    display: 'Elastic Cloud Forwarder'
     versioning: 'stack'
   edot-sdk:
     display: 'Elastic Distribution of OpenTelemetry SDK'
     versioning: 'all'
   edot-collector:
-    display: 'Elastic Distribution of OpenTelemetry Collector'
+    display: 'Elastic Agent'
     versioning: 'stack'
   edot-ios:
     display: 'Elastic Distribution of OpenTelemetry iOS'
@@ -127,21 +146,41 @@ products:
     display: 'Elastic Distribution of OpenTelemetry Python'
     repository: 'elastic-otel-python'
   edot-cf-aws:
-    display: 'EDOT Cloud Forwarder for AWS'
+    display: 'Elastic Cloud Forwarder for AWS'
   edot-cf-azure:
-    display: 'EDOT Cloud Forwarder for Azure'
+    display: 'Elastic Cloud Forwarder for Azure'
   edot-cf-gcp:
-    display: 'EDOT Cloud Forwarder for GCP'
+    display: 'Elastic Cloud Forwarder for GCP'
   eland:
     display: 'Eland'
     versioning: 'stack'
   elastic-agent:
     display: 'Elastic Agent'
     versioning: 'stack'
-  elastic-docs:
-    display: 'Elastic Documentation'
+  elastic-defend:
+    display: 'Elastic Defend'
+    versioning: 'stack'
     features:
       public-reference: false
+      release-notes: false
+  elastic-docs:
+    display: 'Elastic Documentation'
+    repository: 'docs-content'
+    features:
+      public-reference: false
+      release-notes: on-release
+  elastic-maps-server:
+    display: 'Elastic Maps Server'
+    versioning: 'stack'
+    features:
+      public-reference: false
+      release-notes: false
+  elastic-package-registry:
+    display: 'Elastic Package Registry'
+    repository: 'package-registry'
+    features:
+      public-reference: false
+      release-notes: false
   elastic-serverless-forwarder:
     display: 'Elastic Serverless Forwarder'
     versioning: 'esf'
@@ -190,6 +229,11 @@ products:
     display: 'Elasticsearch for Apache Hadoop'
     repository: 'elasticsearch-hadoop'
     versioning: 'stack'
+  enterprise-search:
+    display: 'Elastic Enterprise Search'
+    features:
+      public-reference: false
+      release-notes: false
   ess:
     display: 'Elastic Cloud Hosted'
     versioning: 'all'
@@ -247,6 +291,14 @@ products:
   serverless-security:
     display: 'Elastic Security Serverless'
     versioning: 'all'
+  serverless-vector-database:
+    display: 'Elasticsearch Vector Database Serverless'
+    versioning: 'serverless'
+  synthetics-recorder:
+    display: 'Elastic Synthetics Recorder'
+    features:
+      public-reference: false
+      release-notes: false
   transport-go:
     display: 'Elastic Transport Go'
     repository: 'elastic-transport-go'

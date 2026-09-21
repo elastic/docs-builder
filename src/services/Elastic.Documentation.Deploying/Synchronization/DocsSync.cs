@@ -90,8 +90,8 @@ public record SyncPlan
 	public static string Serialize(SyncPlan plan) => JsonSerializer.Serialize(plan, SyncSerializerContext.Default.SyncPlan);
 
 	public static SyncPlan Deserialize(string json) =>
-		JsonSerializer.Deserialize(json, SyncSerializerContext.Default.SyncPlan) ??
-		throw new JsonException("Failed to deserialize SyncPlan from JSON");
+		JsonSerializer.Deserialize(json, SyncSerializerContext.Default.SyncPlan)
+			?? throw new JsonException("Failed to deserialize SyncPlan from JSON");
 }
 
 [JsonSourceGenerationOptions(WriteIndented = true, UseStringEnumConverter = true)]

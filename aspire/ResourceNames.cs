@@ -9,7 +9,6 @@ public static class ResourceNames
 	public const string AssemblerClone = "assembler-clone";
 	public const string AssemblerBuild = "assembler-build";
 	public const string AssemblerServe = "assembler-serve";
-	public const string ElasticsearchLocal = "elasticsearch-local";
 	public const string ElasticsearchRemote = "elasticsearch-remote";
 	public const string Api = "api";
 	public const string RemoteMcp = "remote-mcp";

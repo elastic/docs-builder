@@ -109,11 +109,7 @@ public record GroupIndexPage(string NavigationTitle) : IDocumentationFile
 /// Leaf navigation item for a group's index (landing) page.
 /// </summary>
 [DebuggerDisplay("{Url}")]
-public class GroupIndexLeaf(
-	GroupIndexPage model,
-	string url,
-	GroupNavigation groupRoot
-) : ILeafNavigationItem<IDocumentationFile>
+public class GroupIndexLeaf(GroupIndexPage model, string url, GroupNavigation groupRoot) : ILeafNavigationItem<IDocumentationFile>
 {
 	/// <inheritdoc />
 	public IDocumentationFile Model { get; } = model;
@@ -153,10 +149,7 @@ public record GroupLinkPage(string NavigationTitle, string Url) : IDocumentation
 /// Leaf in the codex nav that links to a group landing page (/g/slug).
 /// </summary>
 [DebuggerDisplay("{Url}")]
-public class GroupLinkLeaf(
-	GroupLinkPage model,
-	CodexNavigation codexRoot
-) : ILeafNavigationItem<IDocumentationFile>
+public class GroupLinkLeaf(GroupLinkPage model, CodexNavigation codexRoot) : ILeafNavigationItem<IDocumentationFile>
 {
 	/// <inheritdoc />
 	public IDocumentationFile Model { get; } = model;

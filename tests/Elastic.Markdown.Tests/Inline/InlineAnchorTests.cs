@@ -11,7 +11,8 @@ using Markdig.Syntax.Inlines;
 
 namespace Elastic.Markdown.Tests.Inline;
 
-public class InlineAnchorTests(ITestOutputHelper output) : LeafTest<InlineAnchor>(output,
+public class InlineAnchorTests(ITestOutputHelper output) : LeafTest<InlineAnchor>(
+	output,
 	"""
 	this is regular text and this $$$is-an-inline-anchor$$$ and this continues to be regular text
 	"""
@@ -31,7 +32,8 @@ public class InlineAnchorTests(ITestOutputHelper output) : LeafTest<InlineAnchor
 		);
 }
 
-public class InlineAnchorAtStartTests(ITestOutputHelper output) : LeafTest<InlineAnchor>(output,
+public class InlineAnchorAtStartTests(ITestOutputHelper output) : LeafTest<InlineAnchor>(
+	output,
 	"""
 	$$$is-an-inline-anchor$$$ and this continues to be regular text
 	"""
@@ -47,12 +49,11 @@ public class InlineAnchorAtStartTests(ITestOutputHelper output) : LeafTest<Inlin
 	[Fact]
 	public void GeneratesAttributesInHtml() =>
 		// language=html
-		Html.Should().Be(
-			"""<p><a id="is-an-inline-anchor"></a> and this continues to be regular text</p>"""
-		);
+		Html.Should().Be("""<p><a id="is-an-inline-anchor"></a> and this continues to be regular text</p>""");
 }
 
-public class InlineAnchorAtEndTests(ITestOutputHelper output) : LeafTest<InlineAnchor>(output,
+public class InlineAnchorAtEndTests(ITestOutputHelper output) : LeafTest<InlineAnchor>(
+	output,
 	"""
 	this is regular text and this $$$is-an-inline-anchor$$$
 	"""
@@ -68,12 +69,11 @@ public class InlineAnchorAtEndTests(ITestOutputHelper output) : LeafTest<InlineA
 	[Fact]
 	public void GeneratesAttributesInHtml() =>
 		// language=html
-		Html.ShouldContainHtml(
-			"""<p>this is regular text and this <a id="is-an-inline-anchor"></a></p>"""
-		);
+		Html.ShouldContainHtml("""<p>this is regular text and this <a id="is-an-inline-anchor"></a></p>""");
 }
 
-public class BadStartInlineAnchorTests(ITestOutputHelper output) : BlockTest<ParagraphBlock>(output,
+public class BadStartInlineAnchorTests(ITestOutputHelper output) : BlockTest<ParagraphBlock>(
+	output,
 	"""
 	this is regular text and this $$is-an-inline-anchor$$$
 	"""
@@ -82,12 +82,11 @@ public class BadStartInlineAnchorTests(ITestOutputHelper output) : BlockTest<Par
 	[Fact]
 	public void GeneratesAttributesInHtml() =>
 		// language=html
-		Html.Should().Contain(
-			"""<p>this is regular text and this $$is-an-inline-anchor$$$</p>"""
-		);
+		Html.Should().Contain("""<p>this is regular text and this $$is-an-inline-anchor$$$</p>""");
 }
 
-public class BadEndInlineAnchorTests(ITestOutputHelper output) : BlockTest<ParagraphBlock>(output,
+public class BadEndInlineAnchorTests(ITestOutputHelper output) : BlockTest<ParagraphBlock>(
+	output,
 	"""
 	this is regular text and this $$$is-an-inline-anchor$$
 	"""
@@ -96,16 +95,12 @@ public class BadEndInlineAnchorTests(ITestOutputHelper output) : BlockTest<Parag
 	[Fact]
 	public void GeneratesAttributesInHtml() =>
 		// language=html
-		Html.ShouldContainHtml(
-			"""<p>this is regular text and this $$$is-an-inline-anchor$$</p>"""
-		);
+		Html.ShouldContainHtml("""<p>this is regular text and this $$$is-an-inline-anchor$$</p>""");
 }
 
-public class InlineAnchorInHeading(ITestOutputHelper output) : BlockTest<HeadingBlock>(output,
-	"""
+public class InlineAnchorInHeading(ITestOutputHelper output) : BlockTest<HeadingBlock>(output, """
 	## Hello world $$$my-anchor$$$
-	"""
-)
+	""")
 {
 	[Fact]
 	public void GeneratesAttributesInHtml() =>
@@ -118,11 +113,9 @@ public class InlineAnchorInHeading(ITestOutputHelper output) : BlockTest<Heading
 		);
 }
 
-public class ExplicitSlugInHeader(ITestOutputHelper output) : BlockTest<HeadingBlock>(output,
-	"""
+public class ExplicitSlugInHeader(ITestOutputHelper output) : BlockTest<HeadingBlock>(output, """
 	## Hello world [#my-anchor]
-	"""
-)
+	""")
 {
 	[Fact]
 	public void GeneratesAttributesInHtml() =>
@@ -136,10 +129,12 @@ public class ExplicitSlugInHeader(ITestOutputHelper output) : BlockTest<HeadingB
 		);
 }
 
-
-public abstract class InlineAnchorLinkTestBase(ITestOutputHelper output, [LanguageInjection("markdown")] string content)
-	: InlineTest<LinkInline>(output,
-$"""
+public abstract class InlineAnchorLinkTestBase(
+	ITestOutputHelper output,
+	[LanguageInjection("markdown")] string content
+) : InlineTest<LinkInline>(
+	output,
+	$"""
 ## Hello world
 
 A paragraph
@@ -148,13 +143,14 @@ A paragraph
 
 $$$same-page-anchor$$$
 
-""")
+"""
+)
 {
 	protected override void AddToFileSystem(MockFileSystem fileSystem)
 	{
 		// language=markdown
 		var inclusion =
-"""
+			"""
 # Special Requirements
 
 ## Sub Requirements
@@ -170,28 +166,24 @@ With a custom anchor that exists temporarily. $$$custom-anchor$$$
 		fileSystem.AddFile(@"docs/testing/req.md", inclusion);
 		fileSystem.AddFile(@"docs/_static/img/observability.png", new MockFileData(""));
 	}
-
 }
 
-public class InlineAnchorCanBeLinkedToo(ITestOutputHelper output) : InlineAnchorLinkTestBase(output,
-"""
+public class InlineAnchorCanBeLinkedToo(ITestOutputHelper output) : InlineAnchorLinkTestBase(output, """
 [Hello](#same-page-anchor)
-"""
-)
+""")
 {
 	[Fact]
 	public void GeneratesHtml() =>
 		// language=html
-		Html.ShouldContainHtml(
-			"""<p><a href="#same-page-anchor">Hello</a></p>"""
-		);
+		Html.ShouldContainHtml("""<p><a href="#same-page-anchor">Hello</a></p>""");
 
 	[Fact]
 	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
 }
 
-public class ExternalPageInlineAnchorCanBeLinkedToo(ITestOutputHelper output) : InlineAnchorLinkTestBase(output,
-"""
+public class ExternalPageInlineAnchorCanBeLinkedToo(ITestOutputHelper output) : InlineAnchorLinkTestBase(
+	output,
+	"""
 [Sub Requirements](testing/req.md#custom-anchor)
 """
 )

@@ -14,5 +14,4 @@ namespace Elastic.Documentation.Search;
 /// error rather than a permanent failure.
 /// </para>
 /// </summary>
-public class SearchUnavailableException(string message, Exception? innerException = null)
-	: Exception(message, innerException);
+public class SearchUnavailableException(string message, Exception? innerException = null) : Exception(message, innerException);

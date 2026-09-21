@@ -7,10 +7,14 @@ using System.IO.Abstractions;
 
 namespace Elastic.Documentation.Diagnostics;
 
-public class DiagnosticsCollector(IReadOnlyCollection<IDiagnosticsOutput> outputs)
-	: IDiagnosticsCollector
+public class DiagnosticsCollector(
+	IReadOnlyCollection<IDiagnosticsOutput> outputs,
+	TimeProvider? timeProvider = null
+) : IDiagnosticsCollector
 {
 	public DiagnosticsChannel Channel { get; } = new();
+
+	public TimeProvider TimeProvider { get; } = timeProvider ?? TimeProvider.System;
 
 	private int _errors;
 	private int _warnings;
@@ -26,6 +30,9 @@ public class DiagnosticsCollector(IReadOnlyCollection<IDiagnosticsOutput> output
 	// never runs. StopAsync uses this to decide whether awaiting _started is
 	// meaningful or whether the channel is guaranteed to have no drainer.
 	private volatile bool _readerStarted;
+	// True while a Drain() pass is executing. Set before TryRead, cleared after the
+	// while loop exits, so WaitForDrain knows items dequeued but not yet output-written.
+	private volatile bool _draining;
 
 	public HashSet<string> OffendingFiles { get; } = [];
 
@@ -36,6 +43,10 @@ public class DiagnosticsCollector(IReadOnlyCollection<IDiagnosticsOutput> output
 	public bool NoHints { get; set; }
 
 	public bool IsStarted => _readerStarted;
+
+	public bool IsStartRequested => _started is not null;
+
+	public bool IsDraining => _draining;
 
 	public virtual DiagnosticsCollector StartAsync(Cancel ctx)
 	{
@@ -49,30 +60,34 @@ public class DiagnosticsCollector(IReadOnlyCollection<IDiagnosticsOutput> output
 	{
 		if (_started is not null)
 			return _started;
-		_started = Task.Run(async () =>
-		{
-			_ = await Channel.WaitToWrite(cancellationToken);
-			_readerStarted = true;
-			while (!Channel.CancellationToken.IsCancellationRequested)
+		_started = Task.Run(
+			async () =>
 			{
-				try
+				_ = await Channel.WaitToWrite(cancellationToken);
+				_readerStarted = true;
+				while (!Channel.CancellationToken.IsCancellationRequested)
 				{
-					while (await Channel.Reader.WaitToReadAsync(Channel.CancellationToken))
-						Drain();
+					try
+					{
+						while (await Channel.Reader.WaitToReadAsync(Channel.CancellationToken))
+							Drain();
+					}
+					catch
+					{
+						//ignore
+					}
 				}
-				catch
-				{
-					//ignore
-				}
-			}
 
-			Drain();
-		}, cancellationToken);
+				Drain();
+			},
+			cancellationToken
+		);
 		return _started;
 	}
 
 	private void Drain()
 	{
+		_draining = true;
 		while (Channel.Reader.TryRead(out var item))
 		{
 			if (item.Severity == Severity.Hint && NoHints)
@@ -82,6 +97,7 @@ public class DiagnosticsCollector(IReadOnlyCollection<IDiagnosticsOutput> output
 			foreach (var output in outputs)
 				output.Write(item);
 		}
+		_draining = false;
 	}
 
 	protected void IncrementSeverityCount(Diagnostic item)
@@ -131,20 +147,16 @@ public class DiagnosticsCollector(IReadOnlyCollection<IDiagnosticsOutput> output
 	}
 
 	public void Emit(Severity severity, string file, string message) =>
-		Write(new Diagnostic
-		{
-			Severity = severity,
-			File = file,
-			Message = message
-		});
+		Write(new Diagnostic { Severity = severity, File = file, Message = message });
 
-	public void EmitError(string file, string message, string specificErrorMessage) => Emit(Severity.Error, file, $"{message}{Environment.NewLine}{specificErrorMessage}");
+	public void EmitError(string file, string message, string specificErrorMessage) =>
+		Emit(Severity.Error, file, $"{message}{Environment.NewLine}{specificErrorMessage}");
 
 	public void EmitError(string file, string message, Exception? e = null)
 	{
 		message = message
-				+ (e != null ? Environment.NewLine + e : string.Empty)
-				+ (e?.InnerException != null ? Environment.NewLine + e.InnerException : string.Empty);
+			+ (e != null ? Environment.NewLine + e : string.Empty)
+			+ (e?.InnerException != null ? Environment.NewLine + e.InnerException : string.Empty);
 		Emit(Severity.Error, file, message);
 	}
 
@@ -165,6 +177,5 @@ public class DiagnosticsCollector(IReadOnlyCollection<IDiagnosticsOutput> output
 		GC.SuppressFinalize(this);
 	}
 
-	public void CollectUsedSubstitutionKey(ReadOnlySpan<char> key) =>
-		_ = InUseSubstitutionKeys.TryAdd(key.ToString(), true);
+	public void CollectUsedSubstitutionKey(ReadOnlySpan<char> key) => _ = InUseSubstitutionKeys.TryAdd(key.ToString(), true);
 }

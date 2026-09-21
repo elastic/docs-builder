@@ -30,8 +30,6 @@ public static class ChangelogCdn
 	{
 		var configured = Environment.GetEnvironmentVariable(BaseUrlEnvironmentVariable);
 		var raw = string.IsNullOrWhiteSpace(configured) ? DefaultBaseUrl : configured;
-		return Uri.TryCreate(raw, UriKind.Absolute, out var uri) && uri.Scheme is "http" or "https"
-			? uri
-			: null;
+		return Uri.TryCreate(raw, UriKind.Absolute, out var uri) && uri.Scheme is "http" or "https" ? uri : null;
 	}
 }

@@ -18,7 +18,8 @@ public class GitRemoteConfigurationReaderTests
 			new("""
 			    [remote "origin"]
 			    	url = git@github.com:elastic/kibana.git
-			    """));
+			    """)
+		);
 
 		var ok = GitRemoteConfigurationReader.TryReadOriginUrl(fs, "/repo", out var url);
 
@@ -30,18 +31,15 @@ public class GitRemoteConfigurationReaderTests
 	public void TryReadOriginUrl_GitWorktreeFile_ResolvesGitDir()
 	{
 		var fs = new MockFileSystem();
-		fs.AddFile(
-			"/wt/.git",
-			new("gitdir: /main/.git/worktrees/wt\n"));
-		fs.AddFile(
-			"/main/.git/worktrees/wt/commondir",
-			new("../..\n"));
+		fs.AddFile("/wt/.git", new("gitdir: /main/.git/worktrees/wt\n"));
+		fs.AddFile("/main/.git/worktrees/wt/commondir", new("../..\n"));
 		fs.AddFile(
 			"/main/.git/config",
 			new("""
 			    [remote "origin"]
 			    	url = https://github.com/elastic/kibana.git
-			    """));
+			    """)
+		);
 
 		var ok = GitRemoteConfigurationReader.TryReadOriginUrl(fs, "/wt", out var url);
 
@@ -53,9 +51,7 @@ public class GitRemoteConfigurationReaderTests
 	public void TryReadOriginUrl_GitWorktreeFile_MissingCommondir_ReturnsFalse()
 	{
 		var fs = new MockFileSystem();
-		fs.AddFile(
-			"/wt/.git",
-			new("gitdir: /main/.git/worktrees/wt\n"));
+		fs.AddFile("/wt/.git", new("gitdir: /main/.git/worktrees/wt\n"));
 
 		var ok = GitRemoteConfigurationReader.TryReadOriginUrl(fs, "/wt", out var url);
 

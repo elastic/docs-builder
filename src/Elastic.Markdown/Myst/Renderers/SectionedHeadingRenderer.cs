@@ -12,23 +12,13 @@ namespace Elastic.Markdown.Myst.Renderers;
 
 public class SectionedHeadingRenderer : HtmlObjectRenderer<HeadingBlock>
 {
-	private static readonly string[] HeadingTexts =
-	[
-		"h1",
-		"h2",
-		"h3",
-		"h4",
-		"h5",
-		"h6"
-	];
+	private static readonly string[] HeadingTexts = ["h1", "h2", "h3", "h4", "h5", "h6"];
 
 	protected override void Write(HtmlRenderer renderer, HeadingBlock obj)
 	{
 		var index = obj.Level - 1;
 		var headings = HeadingTexts;
-		var headingText = ((uint)index < (uint)headings.Length)
-			? headings[index]
-			: $"h{obj.Level}";
+		var headingText = ((uint)index < (uint)headings.Length) ? headings[index] : $"h{obj.Level}";
 
 		var header = obj.GetData("header") as string;
 		var anchor = obj.GetData("anchor") as string;
@@ -39,7 +29,8 @@ public class SectionedHeadingRenderer : HtmlObjectRenderer<HeadingBlock>
 
 		var slug = slugTarget.Slugify();
 
-		_ = renderer.Write(@"<div class=""heading-wrapper"" id=""")
+		_ = renderer
+			.Write(@"<div class=""heading-wrapper"" id=""")
 			.Write(slug)
 			.Write(@""">")
 			.Write('<')

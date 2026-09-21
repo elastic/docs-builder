@@ -23,6 +23,21 @@ public interface IDiagnosticsCollector : IAsyncDisposable
 	/// True once the background reader is actively draining the channel.
 	bool IsStarted { get; }
 
+	/// True if StartAsync has been called and a reader task is pending or running,
+	/// even if the background delegate has not yet executed. Distinguishes "start was
+	/// requested but hasn't scheduled yet" from "StartAsync was never called at all".
+	bool IsStartRequested { get; }
+
+	/// True while a Drain() pass is actively executing — items may have been dequeued
+	/// from the channel but output writes may not yet be complete. WaitForDrain uses this
+	/// to avoid returning in the window between TryRead (makes TryPeek false) and
+	/// the subsequent output.Write calls finishing.
+	bool IsDraining { get; }
+
+	/// Time source for drain waits and their timeouts; tests supply a fake to
+	/// exercise timeout paths in virtual time instead of wall-clock time.
+	TimeProvider TimeProvider { get; }
+
 	Task StartAsync(Cancel cancellationToken);
 	Task StopAsync(Cancel cancellationToken);
 
@@ -56,20 +71,39 @@ public interface IDiagnosticsCollector : IAsyncDisposable
 	{
 		if (!IsStarted)
 		{
-			throw new InvalidOperationException(
-				"WaitForDrain called on a collector that was never started; no reader is draining the channel. " +
-				"Call StartAsync first or dispose the collector to drain synchronously.");
+			// If StartAsync was never called, throw immediately — there is no pending reader.
+			if (!IsStartRequested)
+			{
+				throw new InvalidOperationException(
+					"WaitForDrain called on a collector that was never started; no reader is draining the channel. " +
+						"Call StartAsync first or dispose the collector to drain synchronously."
+				);
+			}
+
+			// StartAsync was called but the Task.Run delegate hasn't been picked up by the
+			// thread pool yet (_readerStarted = true hasn't run). Spin briefly to let it start.
+			// In practice this resolves in < 1ms; the 2s deadline is a safety net.
+			var waitStart = TimeProvider.GetTimestamp();
+			while (!IsStarted)
+			{
+				await Task.Delay(TimeSpan.FromMilliseconds(10), TimeProvider);
+				if (TimeProvider.GetElapsedTime(waitStart) > TimeSpan.FromSeconds(2))
+					throw new InvalidOperationException(
+						"WaitForDrain timed out waiting for the background reader to start. " +
+							"StartAsync was called but the reader delegate did not start within the deadline."
+					);
+			}
 		}
 
-		var start = DateTime.UtcNow;
-		while (Channel.Reader.TryPeek(out _))
+		var start = TimeProvider.GetTimestamp();
+		// Poll until the channel is empty AND no Drain() pass is in progress.
+		// Checking only TryPeek is insufficient: TryRead dequeues the item (making TryPeek false)
+		// before output.Write is called, so WaitForDrain can return before outputs are written.
+		while (Channel.Reader.TryPeek(out _) || IsDraining)
 		{
-			await Task.Delay(10);
-			var now = DateTime.UtcNow;
-			if (now - start > TimeSpan.FromSeconds(2))
+			await Task.Delay(TimeSpan.FromMilliseconds(10), TimeProvider);
+			if (TimeProvider.GetElapsedTime(start) > TimeSpan.FromSeconds(2))
 				throw new Exception("Could not iterate over all diagnostic messages in a timely fashion");
 		}
 	}
-
-
 }

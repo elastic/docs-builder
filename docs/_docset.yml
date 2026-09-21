@@ -3,6 +3,7 @@ max_toc_depth: 2
 dev_docs: true
 cross_links:
   - docs-content
+  - elasticsearch
 exclude:
   - '_*.md'
 subs:
@@ -38,6 +39,40 @@ subs:
 features:
   primary-nav: false
 
+# Isolated fixtures. Keys stay prefixed so assembler preview does not collide
+# with docs-content (this checkout is still loaded even with skip: true).
+# Isolated serve (no --watch): /api/doc/docs-builder-elasticsearch/, /api/doc/docs-builder-kibana/, …
+api:
+  docs-builder-elasticsearch:
+    - spec: elasticsearch.json
+      product: elasticsearch
+      repository: elastic/elasticsearch-specification
+      catalog:
+        categories:
+          - self
+          - ece
+          - ess
+  docs-builder-elasticsearch-serverless:
+    - spec: elasticsearch-serverless.json
+      product: serverless-elasticsearch
+      repository: elastic/elasticsearch-specification
+  docs-builder-kibana:
+    - spec: kibana.yaml
+      product: kibana
+      repository: elastic/kibana
+  docs-builder-kibana-serverless:
+    - spec: kibana-serverless.yaml
+      product: kibana
+      repository: elastic/kibana
+  docs-builder-cloud-connect:
+    - spec: cloud-connect.yml
+      product: ess
+      repository: elastic/cloud-connected-api
+  docs-builder-cloud-serverless:
+    - spec: elastic-cloud-serverless.yml
+      product: cloud-serverless
+      repository: elastic/serverless-api-specification
+
 cta:
   docs-builder:
     button:
@@ -51,13 +86,6 @@ cta:
 suppress:
   - AutolinkElasticCoDocs
   - DeepLinkingVirtualFile
-
-api:
-  elasticsearch: elasticsearch-openapi-docs.json
-  kibana:
-    - file: kibana-api-overview.md
-    - spec: kibana-openapi.json
-  dashboard: dashboard-openapi.json
 
 toc:
   - file: index.md
@@ -87,6 +115,7 @@ toc:
       - file: applies-switch.md
       - file: automated_settings.md
       - file: buttons.md
+      - file: card-group.md
       - file: changelog.md
       - file: code.md
       - file: comments.md
@@ -94,14 +123,20 @@ toc:
       - file: csv-include.md
       - file: dropdowns.md
       - file: definition-lists.md
+      - file: explore.md
       - file: file_inclusion.md
       - file: footnotes.md
       - file: frontmatter.md
+      - file: get-started.md
+      - file: hero.md
+      - file: hub-pages.md
       - file: icons.md
       - file: images.md
       - file: videos.md
       - file: kbd.md
+      - file: link-card.md
       - file: math.md
+      - file: vector-sizing-calculator.md
       - file: diagrams.md
       - file: lists.md
       - file: task-lists.md
@@ -110,6 +145,7 @@ toc:
       - file: links.md
       - file: list-sub-pages.md
       - file: page-card.md
+      - file: related-learning.md
       - file: stepper.md
       - file: substitutions.md
       - file: version-variables.md
@@ -117,6 +153,15 @@ toc:
       - file: tables.md
       - file: tabs.md
       - file: titles.md
+      - file: whats-new.md
+
+  # Examples
+  - folder: examples
+    children:
+      - file: index.md
+      - folder: products
+        children:
+          - file: docs-builder.md
 
   # Documentation builds
   - folder: documentation
@@ -168,6 +213,7 @@ toc:
         children:
           - file: index.md
           - file: products.md
+          - file: related-learning.md
           - file: versions.md
           - file: synonyms.md
           - file: legacy-url-mappings.md
@@ -185,6 +231,7 @@ toc:
         children:
           - file: index.md
           - file: api-explorer.md
+          - file: supplemental.md
       - folder: cli-schema
         children:
           - file: index.md

@@ -35,8 +35,6 @@ public class DirectiveParagraphParser : ParagraphBlockParser
 			return base.TryContinue(processor, block);
 
 		var line = lines[0];
-		return line.Slice.AsSpan().StartsWith(':')
-			? BlockState.BreakDiscard
-			: base.TryContinue(processor, block);
+		return line.Slice.AsSpan().StartsWith(':') ? BlockState.BreakDiscard : base.TryContinue(processor, block);
 	}
 }

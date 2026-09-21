@@ -170,8 +170,7 @@ public class YamlStreamReader(IFileInfo source, IDiagnosticsCollector collector)
 	public void EmitWarning(string message, YamlNode? node) =>
 		EmitWarning(message, node?.Start, node?.End, (node as YamlScalarNode)?.Value?.Length);
 
-	public void EmitError(string message, Exception e) =>
-		Collector.EmitError(Source.FullName, message, e);
+	public void EmitError(string message, Exception e) => Collector.EmitError(Source.FullName, message, e);
 
 	private void EmitError(string message, Mark? start = null, Mark? end = null, int? length = null)
 	{

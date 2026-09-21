@@ -283,9 +283,11 @@ const AppliesToPopover = ({
                                 height: 6px;
                                 border-right: 2px solid currentColor;
                                 border-bottom: 2px solid currentColor;
-                                transform: ${isItemOpen
-                                    ? 'rotate(45deg)'
-                                    : 'rotate(-45deg)'};
+                                transform: ${
+                                    isItemOpen
+                                        ? 'rotate(45deg)'
+                                        : 'rotate(-45deg)'
+                                };
                                 margin-right: 8px;
                                 transition: transform 0.15s ease;
                             }

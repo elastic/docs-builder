@@ -30,12 +30,10 @@ public class SettingsViewModel
 	public string? ActiveDeploymentFilter { get; init; }
 
 	public bool IsGroupVisible(SettingsGrouping group) =>
-		ActiveDeploymentFilter is null ||
-		DeploymentFilter.AnyVisible(group.Settings, ActiveDeploymentFilter, null);
+		ActiveDeploymentFilter is null || DeploymentFilter.AnyVisible(group.Settings, ActiveDeploymentFilter, null);
 
 	public bool IsSettingVisible(Setting setting, ApplicableTo? inheritedAppliesTo) =>
-		ActiveDeploymentFilter is null ||
-		setting.IsVisibleForDeployment(ActiveDeploymentFilter, inheritedAppliesTo);
+		ActiveDeploymentFilter is null || setting.IsVisibleForDeployment(ActiveDeploymentFilter, inheritedAppliesTo);
 
 	public string RenderAppliesToInline(ApplicableTo? appliesTo) =>
 		RenderAppliesToPlacement(appliesTo, ApplicabilityBadgePlacement.Combined);
@@ -93,9 +91,7 @@ public class SettingsViewModel
 
 	/// <summary>Stable HTML id / in-page TOC slug for a settings YAML group heading.</summary>
 	public static string GroupHeadingSlug(SettingsGrouping group) =>
-		string.IsNullOrWhiteSpace(group.Id)
-			? (group.Name ?? string.Empty).Slugify()
-			: group.Id;
+		string.IsNullOrWhiteSpace(group.Id) ? (group.Name ?? string.Empty).Slugify() : group.Id;
 
 	public static string ComposeSettingName(string? parentName, string? settingName)
 	{
@@ -112,7 +108,5 @@ public class SettingsViewModel
 
 	/// <summary>Stable HTML fragment for a setting: YAML <c>id</c> when present, otherwise slugified composed name.</summary>
 	public static string SettingFragmentId(Setting setting, string composedDisplayName) =>
-		string.IsNullOrWhiteSpace(setting.Id)
-			? composedDisplayName.Replace('.', '-').Slugify()
-			: setting.Id;
+		string.IsNullOrWhiteSpace(setting.Id) ? composedDisplayName.Replace('.', '-').Slugify() : setting.Id;
 }

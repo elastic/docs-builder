@@ -12,8 +12,8 @@ function getSchedule(env: string) {
 
 /**
  * Walks the main navigation paths and, along the way, verifies the htmx
- * navigation model: boosted links do a whole-body swap with hx-preserve
- * islands. A `window` marker set on first load survives an htmx swap but
+ * navigation model: boosted links swap #main-container (article + sidebar).
+ * A `window` marker set on first load survives an htmx swap but
  * not a full page load, so it distinguishes SPA navigation from a reload.
  */
 journey('navigation test', ({ page, params }) => {
@@ -23,9 +23,9 @@ journey('navigation test', ({ page, params }) => {
         tags: [`env:${params.environment}`],
     })
 
-    const host = params.baseUrl
-    step(`Go to ${host}`, async () => {
-        await page.goto(`${host}/docs`, {
+    const docsRoot = params.docsRoot as string
+    step(`Go to ${docsRoot}`, async () => {
+        await page.goto(docsRoot, {
             timeout: 60000,
             waitUntil: 'domcontentloaded',
         })
@@ -58,7 +58,7 @@ journey('navigation test', ({ page, params }) => {
             .getByRole('link', { name: 'Elastic Fundamentals' })
             .first()
             .click()
-        await expect(page).toHaveURL(`${host}/docs/get-started`)
+        await expect(page).toHaveURL(`${docsRoot}/get-started`)
         await expect(page).toHaveTitle(/Elastic fundamentals/)
         await expect(
             page.getByRole('heading', { name: 'Elastic fundamentals' })
@@ -140,6 +140,7 @@ journey('navigation test', ({ page, params }) => {
     )
 
     step('Click on "deployment options" in nav', async () => {
+<<<<<<< HEAD
         // Expand a collapsed nav section so we can assert its state survives
         const expandedId = await page.evaluate(() => {
             const button = document.querySelector<HTMLButtonElement>(
@@ -149,23 +150,27 @@ journey('navigation test', ({ page, params }) => {
             return button?.getAttribute('aria-controls') ?? null
         })
 
+=======
+>>>>>>> origin/main
         await page
             .getByRole('link', { name: 'Deployment options' })
             .first()
             .click()
         await expect(page).toHaveURL(
-            `${host}/docs/get-started/deployment-options`
+            `${docsRoot}/get-started/deployment-options`
         )
         await expect(page).toHaveTitle(/Deployment options/)
         await expect(
             page.getByRole('heading', { name: 'Deployment options' })
         ).toBeVisible()
 
-        // Same-group navigation: no reload, nav tree DOM (and state) preserved
-        const state = await page.evaluate((id) => {
+        // Same-group navigation: no reload. The sidebar is hx-preserve'd, so
+        // expand/collapse stays; only the article swap is visible.
+        const state = await page.evaluate(() => {
             const navTree = document.querySelector('[id^="nav-tree"]')
             return {
                 noReload: window['__synthNoReload'] === true,
+<<<<<<< HEAD
                 navTreePreserved: navTree?.['__synthOriginal'] === true,
                 sectionStillExpanded: id
                     ? document
@@ -174,11 +179,18 @@ journey('navigation test', ({ page, params }) => {
                           )
                           ?.getAttribute('aria-expanded') === 'true'
                     : null,
+=======
+                navStillPresent: navTree !== null,
+>>>>>>> origin/main
             }
-        }, expandedId)
+        })
         expect(state.noReload).toBe(true)
+<<<<<<< HEAD
         expect(state.navTreePreserved).toBe(true)
         if (expandedId) expect(state.sectionStillExpanded).toBe(true)
+=======
+        expect(state.navStillPresent).toBe(true)
+>>>>>>> origin/main
     })
 
     step('Click on "Elastic Cloud" in markdown content', async () => {
@@ -191,28 +203,35 @@ journey('navigation test', ({ page, params }) => {
             .first()
             .click()
         await expect(page).toHaveURL(
-            `${host}/docs/deploy-manage/deploy/elastic-cloud`
+            `${docsRoot}/deploy-manage/deploy/elastic-cloud`
         )
         await expect(page).toHaveTitle(/Elastic Cloud/)
 
-        // Cross-group navigation: still no reload, but the nav tree is replaced
+        // Same Guides tree on both pages. Collapsed folders are detached, so
+        // wait for initNav to mark the new current path (that also reattaches
+        // the deploy-manage ancestors) before inspecting the live tree.
+        await expect(
+            page.locator(
+                '#pages-nav a.sidebar-link.current[href*="/deploy-manage/"]'
+            )
+        ).toBeVisible()
+
+        // Cross-group navigation: still no reload. htmx preserves identical
+        // trees by id, so only require a fresh node when the tree id changes.
         const state = await page.evaluate(() => {
             const navTree = document.querySelector('[id^="nav-tree"]')
             return {
                 noReload: window['__synthNoReload'] === true,
                 treeId: navTree?.id,
                 treeIsNewNode: navTree?.['__synthOriginal'] === undefined,
-                treeShowsNewGroup:
-                    navTree?.querySelector('a[href*="/deploy-manage/"]') !==
-                    null,
             }
         })
         expect(state.noReload).toBe(true)
-        expect(state.treeId).not.toBe(treeIdBefore)
-        expect(state.treeIsNewNode).toBe(true)
-        expect(state.treeShowsNewGroup).toBe(true)
+        if (state.treeId !== treeIdBefore)
+            expect(state.treeIsNewNode).toBe(true)
     })
 
+<<<<<<< HEAD
     step('Use dropdown to navigate to reference', async () => {
         const pagesDropdown = page.locator('#pages-dropdown')
         const dropdownButton = pagesDropdown.getByRole('button', {
@@ -225,10 +244,47 @@ journey('navigation test', ({ page, params }) => {
 
         await dropdownButton.click()
         await pagesDropdown
+=======
+    step('Navigate to reference via top nav', async () => {
+        await page
+            .locator('#secondary-nav')
+>>>>>>> origin/main
             .getByRole('link', { name: 'Reference', exact: true })
             .click()
-        await expect(page).toHaveURL(`${host}/docs/reference`)
+        await expect(page).toHaveURL(`${docsRoot}/reference`)
     })
+
+    step(
+        'Sidebar click reaches Elasticsearch and back restores Reference',
+        async () => {
+            await page
+                .locator('#pages-nav a[href$="/reference/elasticsearch"]')
+                .first()
+                .click()
+            await expect(page).toHaveURL(/\/reference\/elasticsearch/)
+            await expect(
+                page.locator(
+                    '#pages-nav a.sidebar-link.current[href*="/reference/elasticsearch"]'
+                )
+            ).toBeVisible()
+
+            // The hub page itself has no row in the tree, so nothing is
+            // current after back; the tree is visible and the old current
+            // marker is gone.
+            await page.goBack()
+            await expect(page).toHaveURL(/\/reference\/?$/)
+            await expect(
+                page
+                    .locator('#pages-nav a[href$="/reference/elasticsearch"]')
+                    .first()
+            ).toBeVisible()
+            await expect(
+                page.locator(
+                    '#pages-nav a.sidebar-link.current[href*="/reference/elasticsearch"]'
+                )
+            ).toHaveCount(0)
+        }
+    )
 
     step(
         'Global nav script executed only once across navigations',
@@ -246,20 +302,20 @@ journey('navigation test', ({ page, params }) => {
     )
 
     step('/docs/api link triggers a full page load, not htmx', async () => {
-        await page.evaluate(() => {
+        const apiUrl = `${docsRoot}/api/`
+        await page.evaluate((href) => {
             const a = document.createElement('a')
-            a.href = '/docs/api/'
+            a.href = href
             a.id = 'synthetic-api-link'
             a.textContent = 'api'
             document.querySelector('#content-container')?.appendChild(a)
-        })
+        }, apiUrl)
         // A full page load is a navigation request; an htmx request would be an
         // XHR carrying the ?v= cache-buster. Status doesn't matter (404 locally).
         const [request] = await Promise.all([
-            page.waitForRequest(
-                (req) => req.url().startsWith(`${host}/docs/api/`),
-                { timeout: 30000 }
-            ),
+            page.waitForRequest((req) => req.url().startsWith(apiUrl), {
+                timeout: 30000,
+            }),
             page.locator('#synthetic-api-link').click(),
         ])
         expect(request.isNavigationRequest()).toBe(true)

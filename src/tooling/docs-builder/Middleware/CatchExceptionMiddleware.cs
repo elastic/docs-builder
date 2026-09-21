@@ -8,8 +8,10 @@ using Nullean.Argh.Middleware;
 
 namespace Documentation.Builder.Middleware;
 
-internal sealed class CatchExceptionMiddleware(ILogger<CatchExceptionMiddleware> logger, IDiagnosticsCollector collector)
-	: ICommandMiddleware
+internal sealed class CatchExceptionMiddleware(
+	ILogger<CatchExceptionMiddleware> logger,
+	IDiagnosticsCollector collector
+) : ICommandMiddleware
 {
 	private bool _cancelKeyPressed;
 

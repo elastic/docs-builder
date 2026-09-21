@@ -23,9 +23,7 @@ public static partial class ChangelogTextUtilities
 			return string.Empty;
 
 		// Capitalize first letter and ensure ends with period
-		var result = text.Length < 2
-			? char.ToUpperInvariant(text[0]).ToString()
-			: char.ToUpperInvariant(text[0]) + text[1..];
+		var result = text.Length < 2 ? char.ToUpperInvariant(text[0]).ToString() : char.ToUpperInvariant(text[0]) + text[1..];
 		if (!result.EndsWith('.'))
 			result += ".";
 		return result;
@@ -59,9 +57,7 @@ public static partial class ChangelogTextUtilities
 		if (string.IsNullOrWhiteSpace(area))
 			return string.Empty;
 
-		var result = area.Length < 2
-			? char.ToUpperInvariant(area[0]).ToString()
-			: char.ToUpperInvariant(area[0]) + area[1..];
+		var result = area.Length < 2 ? char.ToUpperInvariant(area[0]).ToString() : char.ToUpperInvariant(area[0]) + area[1..];
 		return result.Replace("-", " ");
 	}
 
@@ -73,9 +69,7 @@ public static partial class ChangelogTextUtilities
 		if (string.IsNullOrWhiteSpace(subtype))
 			return string.Empty;
 
-		var result = subtype.Length < 2
-			? char.ToUpperInvariant(subtype[0]).ToString()
-			: char.ToUpperInvariant(subtype[0]) + subtype[1..];
+		var result = subtype.Length < 2 ? char.ToUpperInvariant(subtype[0]).ToString() : char.ToUpperInvariant(subtype[0]) + subtype[1..];
 		return result.Replace("-", " ");
 	}
 
@@ -84,7 +78,8 @@ public static partial class ChangelogTextUtilities
 	/// </summary>
 	public static string SanitizeFilename(string input)
 	{
-		var sanitized = input.ToLowerInvariant()
+		var sanitized = input
+			.ToLowerInvariant()
 			.Replace(" ", "-")
 			.Replace("/", "-")
 			.Replace("\\", "-")
@@ -132,10 +127,7 @@ public static partial class ChangelogTextUtilities
 		if (span.Length > 0 && span[0] == ':')
 			span = span[1..].TrimStart();
 
-		if (removedBracketPrefix &&
-			span.Length >= 2 &&
-			span[0] == '-' &&
-			char.IsWhiteSpace(span[1]))
+		if (removedBracketPrefix && span.Length >= 2 && span[0] == '-' && char.IsWhiteSpace(span[1]))
 			span = span[2..].TrimStart();
 
 		return span.ToString();
@@ -168,16 +160,27 @@ public static partial class ChangelogTextUtilities
 	public static int? ExtractPrNumber(string prUrl, string? defaultOwner = null, string? defaultRepo = null)
 	{
 		// Handle full URL: https://github.com/owner/repo/pull/123
-		if (prUrl.StartsWith("https://github.com/", StringComparison.OrdinalIgnoreCase) ||
-			prUrl.StartsWith("http://github.com/", StringComparison.OrdinalIgnoreCase))
+		if (
+			prUrl.StartsWith("https://github.com/", StringComparison.OrdinalIgnoreCase)
+			|| prUrl.StartsWith("http://github.com/", StringComparison.OrdinalIgnoreCase)
+		)
 		{
-			var uri = new Uri(prUrl);
-			var segments = uri.Segments;
-			// segments[0] is "/", segments[1] is "owner/", segments[2] is "repo/", segments[3] is "pull/", segments[4] is "123"
-			if (segments.Length >= 5 &&
-				segments[3].Equals("pull/", StringComparison.OrdinalIgnoreCase) &&
-				int.TryParse(segments[4].TrimEnd('/'), out var prNum))
-				return prNum;
+			try
+			{
+				var uri = new Uri(prUrl);
+				var segments = uri.Segments;
+				// segments[0] is "/", segments[1] is "owner/", segments[2] is "repo/", segments[3] is "pull/", segments[4] is "123"
+				if (
+					segments.Length >= 5
+					&& segments[3].Equals("pull/", StringComparison.OrdinalIgnoreCase)
+					&& int.TryParse(segments[4].TrimEnd('/'), out var prNum)
+				)
+					return prNum;
+			}
+			catch (UriFormatException)
+			{
+				// Malformed URL; fall through to return null.
+			}
 		}
 
 		// Handle short format: owner/repo#123
@@ -190,8 +193,7 @@ public static partial class ChangelogTextUtilities
 		}
 
 		// Handle just a PR number when owner/repo are provided
-		if (int.TryParse(prUrl, out var prNumber) &&
-			!string.IsNullOrWhiteSpace(defaultOwner) && !string.IsNullOrWhiteSpace(defaultRepo))
+		if (int.TryParse(prUrl, out var prNumber) && !string.IsNullOrWhiteSpace(defaultOwner) && !string.IsNullOrWhiteSpace(defaultRepo))
 			return prNumber;
 
 		return null;
@@ -202,14 +204,18 @@ public static partial class ChangelogTextUtilities
 	/// </summary>
 	public static int? ExtractIssueNumber(string issueUrl, string? defaultOwner = null, string? defaultRepo = null)
 	{
-		if (issueUrl.StartsWith("https://github.com/", StringComparison.OrdinalIgnoreCase) ||
-			issueUrl.StartsWith("http://github.com/", StringComparison.OrdinalIgnoreCase))
+		if (
+			issueUrl.StartsWith("https://github.com/", StringComparison.OrdinalIgnoreCase)
+			|| issueUrl.StartsWith("http://github.com/", StringComparison.OrdinalIgnoreCase)
+		)
 		{
 			var uri = new Uri(issueUrl);
 			var segments = uri.Segments;
-			if (segments.Length >= 5 &&
-				segments[3].Equals("issues/", StringComparison.OrdinalIgnoreCase) &&
-				int.TryParse(segments[4].TrimEnd('/'), out var issueNum))
+			if (
+				segments.Length >= 5
+				&& segments[3].Equals("issues/", StringComparison.OrdinalIgnoreCase)
+				&& int.TryParse(segments[4].TrimEnd('/'), out var issueNum)
+			)
 				return issueNum;
 		}
 
@@ -221,14 +227,46 @@ public static partial class ChangelogTextUtilities
 				return issueNum;
 		}
 
-		if (int.TryParse(issueUrl, out var issueNumber) &&
-			!string.IsNullOrWhiteSpace(defaultOwner) && !string.IsNullOrWhiteSpace(defaultRepo))
+		if (
+			int.TryParse(issueUrl, out var issueNumber)
+			&& !string.IsNullOrWhiteSpace(defaultOwner)
+			&& !string.IsNullOrWhiteSpace(defaultRepo)
+		)
 			return issueNumber;
 
 		return null;
 	}
 
 	private const string PrivateReferenceSentinelPrefix = "# PRIVATE:";
+
+	/// <summary>
+	/// Unwraps a <c># PRIVATE:</c> sentinel to the underlying PR or issue reference.
+	/// Returns the trimmed original when the value is not a sentinel.
+	/// </summary>
+	public static string? StripPrivateReferenceSentinel(string? reference)
+	{
+		if (string.IsNullOrWhiteSpace(reference))
+			return null;
+
+		var trimmed = reference.Trim();
+		if (!trimmed.StartsWith(PrivateReferenceSentinelPrefix, StringComparison.OrdinalIgnoreCase))
+			return trimmed;
+
+		var underlying = trimmed[PrivateReferenceSentinelPrefix.Length..].Trim();
+		return string.IsNullOrWhiteSpace(underlying) ? null : underlying;
+	}
+
+	/// <summary>
+	/// Unwraps <c># PRIVATE:</c> sentinels in a reference list. Empty after stripping are omitted.
+	/// </summary>
+	public static string[]? StripPrivateReferenceSentinels(IReadOnlyList<string>? references)
+	{
+		if (references is not { Count: > 0 })
+			return null;
+
+		var stripped = references.Select(StripPrivateReferenceSentinel).Where(r => !string.IsNullOrWhiteSpace(r)).Select(r => r!).ToArray();
+		return stripped.Length == 0 ? null : stripped;
+	}
 
 	/// <summary>
 	/// Returns the first repository segment from a bundle <paramref name="repo"/> string
@@ -261,8 +299,10 @@ public static partial class ChangelogTextUtilities
 		if (trimmed.StartsWith(PrivateReferenceSentinelPrefix, StringComparison.OrdinalIgnoreCase))
 			return false;
 
-		if (trimmed.StartsWith("https://github.com/", StringComparison.OrdinalIgnoreCase) ||
-			trimmed.StartsWith("http://github.com/", StringComparison.OrdinalIgnoreCase))
+		if (
+			trimmed.StartsWith("https://github.com/", StringComparison.OrdinalIgnoreCase)
+			|| trimmed.StartsWith("http://github.com/", StringComparison.OrdinalIgnoreCase)
+		)
 		{
 			try
 			{
@@ -275,10 +315,12 @@ public static partial class ChangelogTextUtilities
 					return true;
 				}
 
-				if (segments.Length == 4 &&
-					(segments[2].Equals("pull", StringComparison.OrdinalIgnoreCase) ||
-					 segments[2].Equals("issues", StringComparison.OrdinalIgnoreCase)) &&
-					int.TryParse(segments[3], out _))
+				if (
+					segments.Length == 4
+					&& (segments[2].Equals("pull", StringComparison.OrdinalIgnoreCase)
+						|| segments[2].Equals("issues", StringComparison.OrdinalIgnoreCase))
+					&& int.TryParse(segments[3], out _)
+				)
 				{
 					owner = segments[0];
 					repo = segments[1];
@@ -516,9 +558,7 @@ public static partial class ChangelogTextUtilities
 			return (null, string.Empty);
 
 		var parts = repository.Split('/');
-		return parts.Length >= 2
-			? (parts[0], parts[1])
-			: (null, parts[0]);
+		return parts.Length >= 2 ? (parts[0], parts[1]) : (null, parts[0]);
 	}
 
 	[GeneratedRegex(@"[^a-z0-9]+", RegexOptions.None)]

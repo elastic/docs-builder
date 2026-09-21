@@ -13,10 +13,7 @@ namespace Elastic.SiteSearch.Cli.ContentStack;
 /// </summary>
 internal sealed class RateLimitingHandler(RateLimiter limiter) : DelegatingHandler
 {
-	protected override async Task<HttpResponseMessage> SendAsync(
-		HttpRequestMessage request,
-		CancellationToken ct
-	)
+	protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken ct)
 	{
 		using var lease = await limiter.AcquireAsync(1, ct);
 		if (!lease.IsAcquired)

@@ -2,4 +2,5 @@
 
 :::{changelog}
 :type: all
+:highlights:
 :::

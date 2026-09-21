@@ -2,8 +2,8 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using Elastic.Documentation.Mcp.Remote;
 using AwesomeAssertions;
+using Elastic.Documentation.Mcp.Remote;
 
 namespace Mcp.Remote.Tests;
 
@@ -58,6 +58,12 @@ public class McpServerInstructionTests
 	}
 
 	[Fact]
+	public void PublicProfile_ServiceName_IsDocsMcp() => McpServerProfile.Public.ServiceName.Should().Be("docs-mcp");
+
+	[Fact]
+	public void InternalProfile_ServiceName_IsCodexMcp() => McpServerProfile.Internal.ServiceName.Should().Be("codex-mcp");
+
+	[Fact]
 	public void Resolve_WithPublic_ReturnsPublicProfile()
 	{
 		var profile = McpServerProfile.Resolve("public");
@@ -88,9 +94,7 @@ public class McpServerInstructionTests
 	{
 		var act = () => McpServerProfile.Resolve("unknown");
 
-		act.Should().Throw<ArgumentException>()
-			.WithMessage("*Unknown MCP server profile*")
-			.WithParameterName("name");
+		act.Should().Throw<ArgumentException>().WithMessage("*Unknown MCP server profile*").WithParameterName("name");
 	}
 
 	[Fact]
@@ -98,8 +102,9 @@ public class McpServerInstructionTests
 	{
 		var instructions = McpServerProfile.Public.ComposeServerInstructions();
 
-		var expected = """
-			Use this server to search, retrieve, and analyze Elastic product documentation published at elastic.co/docs.
+		var expected =
+			"""
+			Use this server to search, retrieve, and analyze Elastic product documentation published at elastic.co/docs. All content covers version 9 and later.
 
 			<triggers>
 			Use the server when the user:
@@ -125,7 +130,8 @@ public class McpServerInstructionTests
 	{
 		var instructions = McpServerProfile.Internal.ComposeServerInstructions();
 
-		var expected = """
+		var expected =
+			"""
 			Use this server to search and retrieve Elastic internal documentation: team processes, run books, architecture, and other internal knowledge.
 
 			<triggers>

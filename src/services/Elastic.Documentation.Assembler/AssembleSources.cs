@@ -32,6 +32,8 @@ public class AssembleSources
 
 	public PublishEnvironmentUriResolver UriResolver { get; }
 
+	public ICrossLinkResolver CrossLinkResolver { get; }
+
 	public static async Task<AssembleSources> AssembleAsync(
 		ILoggerFactory logFactory,
 		AssembleContext context,
@@ -70,16 +72,45 @@ public class AssembleSources
 			availableExporters
 		);
 
-		var declaredProducts = sources.AssembleSets.Values
+		var declaredProducts = sources
+			.AssembleSets
+			.Values
 			.SelectMany(s => s.BuildContext.Configuration.ReleaseNotesProducts)
 			.Distinct(StringComparer.Ordinal)
 			.ToArray();
-		if (declaredProducts.Length > 0)
+
+		// Infer CDN products from each assembled repo's name — same logic as PrefetchAsync for single builds.
+		// Repos without a products.yml entry fall back to the repo name itself (which may or may not be a
+		// valid CDN product; IsValidCdnProductId filters out anything that could not be a real product path).
+		var inferredProducts = sources
+			.AssembleSets
+			.Values
+			.Select(
+				s => configurationContext.ProductsConfiguration.GetProductByRepositoryName(s.Checkout.Repository.Name)?.Id ?? s
+					.Checkout
+					.Repository
+					.Name
+			)
+			.Where(ReleaseNotesFetcher.IsValidCdnProductId)
+			.Except(declaredProducts, StringComparer.Ordinal)
+			.Distinct(StringComparer.Ordinal)
+			.ToArray();
+
+		if (declaredProducts.Length > 0 || inferredProducts.Length > 0)
 		{
 			var releaseNotesFetcher = new ReleaseNotesFetcher(logFactory, context.ReadFileSystem);
-			var fetched = await releaseNotesFetcher.FetchAsync(context.Collector, declaredProducts, ctx).ConfigureAwait(false);
+			var fetched = await releaseNotesFetcher.FetchAsync(
+				context.Collector,
+				declaredProducts,
+				inferredProducts.Length > 0 ? inferredProducts : null,
+				ctx
+			).ConfigureAwait(false);
 			releaseNotesResolver.Populate(fetched);
-			logger.LogInformation("  AssembleAsync: Fetched release notes for {Count} product(s)", declaredProducts.Length);
+			logger.LogInformation(
+				"  AssembleAsync: Fetched release notes for {Declared} declared + {Inferred} inferred product(s)",
+				declaredProducts.Length,
+				inferredProducts.Length
+			);
 		}
 
 		foreach (var (_, set) in sources.AssembleSets)
@@ -89,6 +120,19 @@ public class AssembleSources
 		}
 
 		return sources;
+	}
+
+	internal static AssembleSources ForTests(AssembleContext context, FrozenDictionary<string, AssemblerDocumentationSet> assembleSets) =>
+		new(context, assembleSets);
+
+	private AssembleSources(AssembleContext context, FrozenDictionary<string, AssemblerDocumentationSet> assembleSets)
+	{
+		AssembleContext = context;
+		AssembleSets = assembleSets;
+		NavigationTocMappings = FrozenDictionary<Uri, NavigationTocMapping>.Empty;
+		LegacyUrlMappings = context.LegacyUrlMappings;
+		UriResolver = new PublishEnvironmentUriResolver(NavigationTocMappings, context.Environment);
+		CrossLinkResolver = NoopCrossLinkResolver.Instance;
 	}
 
 	private AssembleSources(
@@ -107,10 +151,21 @@ public class AssembleSources
 		NavigationTocMappings = navigationTocMappings;
 		LegacyUrlMappings = legacyUrlMappings;
 		UriResolver = uriResolver;
+		CrossLinkResolver = crossLinkResolver;
 		AssembleContext = assembleContext;
 		AssembleSets = checkouts
 			.Where(c => c.Repository is { Skip: false })
-			.Select(c => new AssemblerDocumentationSet(logFactory, assembleContext, c, crossLinkResolver, releaseNotesResolver, configurationContext, availableExporters))
+			.Select(
+				c => new AssemblerDocumentationSet(
+					logFactory,
+					assembleContext,
+					c,
+					crossLinkResolver,
+					releaseNotesResolver,
+					configurationContext,
+					availableExporters
+				)
+			)
 			.ToDictionary(s => s.Checkout.Repository.Name, s => s)
 			.ToFrozenDictionary();
 	}
@@ -172,6 +227,7 @@ public class AssembleSources
 			string? parent,
 			int depth,
 			int order, //TODO Remove this parameter
+
 			Uri? topLevelSource,
 			Uri? parentSource
 		)
@@ -179,11 +235,15 @@ public class AssembleSources
 			string? repository = null;
 			string? source = null;
 			string? pathPrefix = null;
+			var isSection = false;
 			foreach (var entry in tocEntry.Children)
 			{
 				var key = ((YamlScalarNode)entry.Key).Value;
 				switch (key)
 				{
+					case "section":
+						isSection = true;
+						break;
 					case "toc":
 						source = reader.ReadString(entry);
 						if (source.AsSpan().IndexOf("://") == -1)
@@ -212,7 +272,20 @@ public class AssembleSources
 			}
 
 			if (source is null)
+			{
+				// section: entries have no source; descend into their children so the children's
+				// sources are registered in NavigationTocMappings.
+				if (isSection)
+				{
+					foreach (var entry in tocEntry.Children)
+					{
+						var key = ((YamlScalarNode)entry.Key).Value;
+						if (key == "children")
+							ReadTocBlocks(entries, reader, entry, parent, depth, topLevelSource, parentSource);
+					}
+				}
 				return;
+			}
 
 			source = source.EndsWith("://", StringComparison.OrdinalIgnoreCase) ? source : source.TrimEnd('/') + "/";
 			if (!Uri.TryCreate(source, UriKind.Absolute, out var sourceUri))
@@ -223,17 +296,16 @@ public class AssembleSources
 
 			var sourcePrefix = $"{sourceUri.Host}/{sourceUri.AbsolutePath.TrimStart('/')}";
 			if (string.IsNullOrEmpty(pathPrefix))
-				reader.EmitError($"Path prefix is not defined for: {source}, falling back to {sourcePrefix} which may be incorrect", tocEntry);
+				reader.EmitError(
+					$"Path prefix is not defined for: {source}, falling back to {sourcePrefix} which may be incorrect",
+					tocEntry
+				);
 
 			pathPrefix ??= sourcePrefix;
 			topLevelSource ??= sourceUri;
 			parentSource ??= sourceUri;
 
-			var tocTopLevelMapping = new NavigationTocMapping
-			{
-				Source = sourceUri,
-				SourcePathPrefix = pathPrefix,
-			};
+			var tocTopLevelMapping = new NavigationTocMapping { Source = sourceUri, SourcePathPrefix = pathPrefix, };
 			entries.Add(new KeyValuePair<Uri, NavigationTocMapping>(sourceUri, tocTopLevelMapping));
 
 			foreach (var entry in tocEntry.Children)

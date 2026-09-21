@@ -8,8 +8,8 @@ using Elastic.Documentation.Assembler;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.FileSystems;
 using Microsoft.Extensions.Logging.Abstractions;
-using Nullean.ScopedFileSystem;
 
 namespace Elastic.Documentation.IntegrationTests;
 
@@ -26,11 +26,15 @@ public class PublicOnlyAssemblerConfigurationTests
 			FileSystem.Path.Join(Paths.GetSolutionDirectory()!.FullName, ".artifacts", "checkouts")
 		);
 		Collector = new DiagnosticsCollector([]);
-		var configurationFileProvider = new ConfigurationFileProvider(NullLoggerFactory.Instance, FileSystem, skipPrivateRepositories: true);
+		var configurationFileProvider = new ConfigurationFileProvider(
+			NullLoggerFactory.Instance,
+			new ConfigurationFileSystem(FileSystem),
+			skipPrivateRepositories: true
+		);
 		var configurationContext = TestHelpers.CreateConfigurationContext(FileSystem, configurationFileProvider: configurationFileProvider);
 		var config = AssemblyConfiguration.Create(configurationContext.ConfigurationFileProvider);
-		var scopedFs = FileSystemFactory.ScopeCurrentWorkingDirectory(FileSystem);
-		Context = new AssembleContext(config, configurationContext, "dev", Collector, scopedFs, scopedFs, CheckoutDirectory.FullName, null);
+		var assembleFs = CheckoutsFileSystem.FromWorkingDirectory(FileSystem);
+		Context = new AssembleContext(config, configurationContext, "dev", Collector, assembleFs, CheckoutDirectory.FullName, null);
 	}
 
 	[Fact]
@@ -41,10 +45,8 @@ public class PublicOnlyAssemblerConfigurationTests
 		config.PrivateRepositories.Should().NotBeEmpty().And.ContainKey("cloud");
 		var cloud = config.PrivateRepositories["cloud"];
 		cloud.Should().NotBeNull();
-		cloud.GitReferenceCurrent.Should().NotBeNullOrEmpty()
-			.And.Be("master");
+		cloud.GitReferenceCurrent.Should().NotBeNullOrEmpty().And.Be("master");
 	}
-
 }
 
 public class AssemblerConfigurationTests : IAsyncLifetime
@@ -66,8 +68,8 @@ public class AssemblerConfigurationTests : IAsyncLifetime
 		Collector = new DiagnosticsCollector([]);
 		var configurationContext = TestHelpers.CreateConfigurationContext(FileSystem);
 		var config = AssemblyConfiguration.Create(configurationContext.ConfigurationFileProvider);
-		var scopedFs = FileSystemFactory.ScopeCurrentWorkingDirectory(FileSystem);
-		Context = new AssembleContext(config, configurationContext, "dev", Collector, scopedFs, scopedFs, CheckoutDirectory.FullName, null);
+		var assembleFs2 = CheckoutsFileSystem.FromWorkingDirectory(FileSystem);
+		Context = new AssembleContext(config, configurationContext, "dev", Collector, assembleFs2, CheckoutDirectory.FullName, null);
 	}
 
 	[Fact]
@@ -85,8 +87,7 @@ public class AssemblerConfigurationTests : IAsyncLifetime
 	public void ReadsContentSource()
 	{
 		var environments = Context.Configuration.Environments;
-		environments.Should().NotBeEmpty()
-			.And.ContainKey("prod");
+		environments.Should().NotBeEmpty().And.ContainKey("prod");
 
 		var prod = environments["prod"];
 		prod.ContentSource.Should().Be(ContentSource.Current);
@@ -96,11 +97,31 @@ public class AssemblerConfigurationTests : IAsyncLifetime
 	}
 
 	[Fact]
+	public void StagingEnvironment_EnablesAssemblerApiExplorerFlag() => AssertEnvironmentEnablesAssemblerApiExplorer("staging");
+
+	[Fact]
+	public void PreviewEnvironment_EnablesAssemblerApiExplorerFlag() => AssertEnvironmentEnablesAssemblerApiExplorer("preview");
+
+	private void AssertEnvironmentEnablesAssemblerApiExplorer(string environmentName)
+	{
+		var environment = Context.Configuration.Environments[environmentName];
+
+		environment.FeatureFlags.Should().ContainKey("ASSEMBLER_API_EXPLORER").WhoseValue.Should().BeTrue();
+	}
+
+	[Fact]
+	public void ProdEnvironment_DoesNotEnableAssemblerApiExplorerFlag()
+	{
+		var prod = Context.Configuration.Environments["prod"];
+
+		prod.FeatureFlags.Should().NotContainKey("ASSEMBLER_API_EXPLORER");
+	}
+
+	[Fact]
 	public void ReadsVersions()
 	{
 		var config = Context.Configuration;
-		config.SharedConfigurations.Should().NotBeEmpty()
-			.And.ContainKey("stack");
+		config.SharedConfigurations.Should().NotBeEmpty().And.ContainKey("stack");
 
 		config.SharedConfigurations["stack"].GitReferenceEdge.Should().NotBeNullOrEmpty();
 
@@ -110,20 +131,15 @@ public class AssemblerConfigurationTests : IAsyncLifetime
 
 		// test defaults
 		var apmServer = config.ReferenceRepositories["apm-server"];
-		apmServer.GitReferenceNext.Should().NotBeNullOrEmpty()
-			.And.Be("main");
-		apmServer.GitReferenceCurrent.Should().NotBeNullOrEmpty()
-			.And.Be("main");
-		apmServer.GitReferenceEdge.Should().NotBeNullOrEmpty()
-			.And.Be("main");
+		apmServer.GitReferenceNext.Should().NotBeNullOrEmpty().And.Be("main");
+		apmServer.GitReferenceCurrent.Should().NotBeNullOrEmpty().And.Be("main");
+		apmServer.GitReferenceEdge.Should().NotBeNullOrEmpty().And.Be("main");
 
 		var beats = config.ReferenceRepositories["beats"];
-		beats.GitReferenceCurrent.Should().NotBeNullOrEmpty()
-			.And.NotBe("main");
+		beats.GitReferenceCurrent.Should().NotBeNullOrEmpty().And.NotBe("main");
 
 		var curator = config.ReferenceRepositories["curator"];
-		curator.GitReferenceCurrent.Should().NotBeNullOrEmpty()
-			.And.Be("master");
+		curator.GitReferenceCurrent.Should().NotBeNullOrEmpty().And.Be("master");
 	}
 
 	/// <inheritdoc />

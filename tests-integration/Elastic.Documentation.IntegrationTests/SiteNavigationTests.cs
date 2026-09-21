@@ -11,11 +11,11 @@ using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Navigation.Assembler;
 using Elastic.Markdown.IO;
 using Microsoft.Extensions.Logging.Abstractions;
-using Nullean.ScopedFileSystem;
 
 namespace Elastic.Documentation.IntegrationTests;
 
@@ -44,8 +44,8 @@ public class SiteNavigationTests : IAsyncLifetime
 		Collector = new DiagnosticsCollector([]);
 		var configurationContext = TestHelpers.CreateConfigurationContext(FileSystem);
 		var config = AssemblyConfiguration.Create(configurationContext.ConfigurationFileProvider);
-		var scopedFs = FileSystemFactory.ScopeCurrentWorkingDirectory(FileSystem);
-		Context = new AssembleContext(config, configurationContext, "dev", Collector, scopedFs, scopedFs, CheckoutDirectory.FullName, null);
+		var assembleFs = CheckoutsFileSystem.FromWorkingDirectory(FileSystem);
+		Context = new AssembleContext(config, configurationContext, "dev", Collector, assembleFs, CheckoutDirectory.FullName, null);
 	}
 
 	private Checkout CreateCheckout(IFileSystem fs, Repository repository)
@@ -56,11 +56,7 @@ public class SiteNavigationTests : IAsyncLifetime
 			: fs.DirectoryInfo.New(fs.Path.Join(CheckoutDirectory.FullName, name));
 		return new Checkout
 		{
-			Repository = new Repository
-			{
-				Name = name,
-				Origin = $"elastic/{name}"
-			},
+			Repository = new Repository { Name = name, Origin = $"elastic/{name}" },
 			HeadReference = Guid.NewGuid().ToString(),
 			Directory = path
 		};
@@ -70,18 +66,22 @@ public class SiteNavigationTests : IAsyncLifetime
 	{
 		_ = Collector.StartAsync(TestContext.Current.CancellationToken);
 
-		var repos = Context.Configuration.AvailableRepositories
-			.Where(kv => !kv.Value.Skip)
-			.Select(kv => kv.Value)
-			.ToArray();
+		var repos = Context.Configuration.AvailableRepositories.Where(kv => !kv.Value.Skip).Select(kv => kv.Value).ToArray();
 		var checkouts = repos.Select(r => CreateCheckout(FileSystem, r)).ToArray();
 		var configurationContext = TestHelpers.CreateConfigurationContext(new FileSystem());
 		var assembleSources = await AssembleSources.AssembleAsync(
-			NullLoggerFactory.Instance, Context, checkouts, configurationContext, ExportOptions.Default, TestContext.Current.CancellationToken
+			NullLoggerFactory.Instance,
+			Context,
+			checkouts,
+			configurationContext,
+			ExportOptions.Default,
+			TestContext.Current.CancellationToken
 		);
 
 		var navigationFileInfo = configurationContext.ConfigurationFileProvider.NavigationFile;
-		var siteNavigationFile = SiteNavigationFile.Deserialize(await FileSystem.File.ReadAllTextAsync(navigationFileInfo.FullName, TestContext.Current.CancellationToken));
+		var siteNavigationFile = SiteNavigationFile.Deserialize(
+			await FileSystem.File.ReadAllTextAsync(navigationFileInfo.FullName, TestContext.Current.CancellationToken)
+		);
 		var documentationSets = assembleSources.AssembleSets.Values.Select(s => s.DocumentationSet.Navigation).ToArray();
 		var navigation = new SiteNavigation(siteNavigationFile, Context, documentationSets, Context.Environment.PathPrefix);
 
@@ -98,11 +98,13 @@ public class SiteNavigationTests : IAsyncLifetime
 		var fileSystem = new FileSystem();
 		var configurationContext = TestHelpers.CreateConfigurationContext(fileSystem);
 		var config = AssemblyConfiguration.Create(configurationContext.ConfigurationFileProvider);
-		var scopedFileSystem = FileSystemFactory.ScopeCurrentWorkingDirectory(fileSystem);
-		var context = new AssembleContext(config, configurationContext, "dev", collector, scopedFileSystem, scopedFileSystem, null, null);
+		var assembleFs2 = CheckoutsFileSystem.FromWorkingDirectory(fileSystem);
+		var context = new AssembleContext(config, configurationContext, "dev", collector, assembleFs2);
 
 		var navigationFileInfo = configurationContext.ConfigurationFileProvider.NavigationFile;
-		var siteNavigationFile = SiteNavigationFile.Deserialize(await FileSystem.File.ReadAllTextAsync(navigationFileInfo.FullName, TestContext.Current.CancellationToken));
+		var siteNavigationFile = SiteNavigationFile.Deserialize(
+			await FileSystem.File.ReadAllTextAsync(navigationFileInfo.FullName, TestContext.Current.CancellationToken)
+		);
 
 		var declaredSources = SiteNavigationFile.GetAllDeclaredSources(siteNavigationFile);
 		declaredSources.Should().NotBeEmpty();
@@ -119,7 +121,6 @@ public class SiteNavigationTests : IAsyncLifetime
 		navigation.Nodes.Should().NotBeEmpty();
 		navigation.Nodes.Should().ContainKey(new Uri("detection-rules://"));
 	}
-
 
 	[Fact]
 	public async Task ParsesReferences()
@@ -147,8 +148,6 @@ public class SiteNavigationTests : IAsyncLifetime
 		// Verify that the resolved navigation has the expected items
 		navigation.NavigationItems.Should().NotBeNull();
 	}
-
-
 
 	[Fact]
 	public async Task ParsesSiteNavigation()
@@ -191,15 +190,17 @@ public class SiteNavigationTests : IAsyncLifetime
 		var fs = new FileSystem();
 		var configurationContext = TestHelpers.CreateConfigurationContext(fs);
 		var config = AssemblyConfiguration.Create(configurationContext.ConfigurationFileProvider);
-		var scopedFs = FileSystemFactory.ScopeCurrentWorkingDirectory(fs);
-		var assembleContext = new AssembleContext(config, configurationContext, "prod", collector, scopedFs, scopedFs, null, null);
-		var repos = assembleContext.Configuration.AvailableRepositories
-			.Where(kv => !kv.Value.Skip)
-			.Select(kv => kv.Value)
-			.ToArray();
+		var assembleFs3 = CheckoutsFileSystem.FromWorkingDirectory(fs);
+		var assembleContext = new AssembleContext(config, configurationContext, "prod", collector, assembleFs3);
+		var repos = assembleContext.Configuration.AvailableRepositories.Where(kv => !kv.Value.Skip).Select(kv => kv.Value).ToArray();
 		var checkouts = repos.Select(r => CreateCheckout(fs, r)).ToArray();
 		var assembleSources = await AssembleSources.AssembleAsync(
-			NullLoggerFactory.Instance, assembleContext, checkouts, configurationContext, ExportOptions.Default, TestContext.Current.CancellationToken
+			NullLoggerFactory.Instance,
+			assembleContext,
+			checkouts,
+			configurationContext,
+			ExportOptions.Default,
+			TestContext.Current.CancellationToken
 		);
 
 		var uriResolver = assembleSources.UriResolver;
