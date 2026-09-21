@@ -53,20 +53,20 @@ public sealed class ScrubberProcessor(
 		/// <summary>True for a pool manifest copied verbatim; false for YAML content that is scrubbed.</summary>
 		public bool PassThrough { get; } = passThrough;
 
-		public HashSet<string> MessageIds { get; } = [with(StringComparer.Ordinal)];
+		public HashSet<string> MessageIds { get; } = new(StringComparer.Ordinal);
 	}
 
 	private sealed class GroupWork(ChangelogScope scope)
 	{
 		public ChangelogScope Scope { get; } = scope;
-		public HashSet<string> MessageIds { get; } = [with(StringComparer.Ordinal)];
+		public HashSet<string> MessageIds { get; } = new(StringComparer.Ordinal);
 	}
 
 	private sealed class ShallowWork(ChangelogScopeKind kind)
 	{
 		public ChangelogScopeKind Kind { get; } = kind;
-		public Dictionary<string, ChangelogScope> Scopes { get; } = [with(StringComparer.Ordinal)];
-		public HashSet<string> MessageIds { get; } = [with(StringComparer.Ordinal)];
+		public Dictionary<string, ChangelogScope> Scopes { get; } = new(StringComparer.Ordinal);
+		public HashSet<string> MessageIds { get; } = new(StringComparer.Ordinal);
 	}
 
 	/// <summary>

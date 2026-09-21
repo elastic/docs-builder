@@ -103,6 +103,9 @@ public record ApiResponseContent
 
 	/// <summary>Item properties when the response is an array of objects.</summary>
 	public required ApiPropertyList? ArrayItemProperties { get; init; }
+
+	/// <summary>Expanded oneOf/anyOf variants when the response body is a union of objects.</summary>
+	public ApiUnionVariants? UnionVariants { get; init; }
 }
 
 /// <summary>A response header with its type annotation precomputed.</summary>
@@ -125,6 +128,9 @@ public record ApiResponse
 	public required IReadOnlyList<ApiResponseContent> Contents { get; init; }
 	public required IReadOnlyList<ApiResponseHeader> Headers { get; init; }
 }
+
+/// <summary>Status-code accordion under the Responses heading.</summary>
+public record ResponsesBlockModel(IReadOnlyList<ApiResponse> Responses, Func<string?, HtmlString> RenderMarkdown);
 
 /// <summary>
 /// Everything structural an operation page renders, precomputed before the view runs.
@@ -726,23 +732,48 @@ public partial record OperationPageModel
 	{
 		var scope = new PropertyTreeScope { Prefix = $"res-{statusCode}" };
 		var properties = builder.BuildPropertyList(responseSchema, scope);
-
-		// For arrays, check if the item type has properties we should render
-		ApiPropertyList? arrayItemProperties = null;
-		if (properties is null && analyzer.GetTypeInfo(responseSchema).IsArray)
-		{
-			var arrayItemSchema = ResolveArrayItems(responseSchema, analyzer);
-			if (arrayItemSchema is not null)
-				arrayItemProperties = builder.BuildPropertyList(arrayItemSchema, scope);
-		}
+		var arrayItemProperties = properties is null ? BuildArrayItemProperties(responseSchema, scope, analyzer, builder) : null;
+		var unionVariants = properties is null && arrayItemProperties is null
+			? BuildResponseUnionVariants(responseSchema, statusCode, analyzer, builder)
+			: null;
 
 		return new ApiResponseContent
 		{
 			ContentType = contentType,
 			Type = builder.Describe(responseSchema),
 			Properties = properties,
-			ArrayItemProperties = arrayItemProperties
+			ArrayItemProperties = arrayItemProperties,
+			UnionVariants = unionVariants
 		};
+	}
+
+	private static ApiPropertyList? BuildArrayItemProperties(
+		IOpenApiSchema responseSchema,
+		PropertyTreeScope scope,
+		SchemaAnalyzer analyzer,
+		ApiPropertyTreeBuilder builder
+	)
+	{
+		if (!analyzer.GetTypeInfo(responseSchema).IsArray)
+			return null;
+
+		var arrayItemSchema = ResolveArrayItems(responseSchema, analyzer);
+		return arrayItemSchema is null ? null : builder.BuildPropertyList(arrayItemSchema, scope);
+	}
+
+	private static ApiUnionVariants? BuildResponseUnionVariants(
+		IOpenApiSchema responseSchema,
+		string statusCode,
+		SchemaAnalyzer analyzer,
+		ApiPropertyTreeBuilder builder
+	)
+	{
+		var typeInfo = analyzer.GetTypeInfo(responseSchema);
+		if (typeInfo is not { IsUnion: true, AnyOfOptions.Count: > 0 })
+			return null;
+
+		var schemas = typeInfo.AnyOfOptions.Where(static o => o.Schema is not null).Select(static o => o.Schema!).ToList();
+		return schemas.Count == 0 ? null : builder.BuildUnionVariantsForSchemas(schemas, $"res-{statusCode}", ancestors: null);
 	}
 
 	private static IReadOnlyList<string> NamesOf(IEnumerable<string?> names) => [.. names.OfType<string>().Where(static n => n.Length > 0)];

@@ -26,6 +26,41 @@
 			</div>
 		</li>
 	}
+	else if (item.Kind == NavigationRenderNodeKind.Heading)
+	{
+		<li class="nav-folder">
+			<div class="peer nav-folder-peer w-full">
+				@if (item.ShowToggle)
+				{
+					<input
+						id="@item.Id"
+						type="checkbox"
+						class="hidden"
+						tabindex="-1"
+						aria-hidden="true">
+					<label for="@item.Id" class="sidebar-link nav-folder-link nav-v2-link">
+						<span class="nav-v2-nav-text">@item.NavigationTitle</span>
+						@if (item.Badge is not null) { <span class="nav-badge nav-badge-@item.Badge">@item.Badge</span> }
+						<span class="nav-folder-chevron" aria-hidden="true">
+							<svg class="nav-chevron" viewBox="0 0 16 16"><use href="#icon-chevron-down"/></svg>
+						</span>
+					</label>
+				}
+				else
+				{
+					<span class="sidebar-link nav-folder-link nav-v2-link">
+						<span class="nav-v2-nav-text">@item.NavigationTitle</span>
+						@if (item.Badge is not null) { <span class="nav-badge nav-badge-@item.Badge">@item.Badge</span> }
+					</span>
+				}
+			</div>
+			<div class="nav-subtree-clip">
+				<ul class="nav-subtree">
+					@await RenderPartialAsync(_TocTreeNav.Create(item.NavigationItems))
+				</ul>
+			</div>
+		</li>
+	}
 	else
 	{
 		<li class="nav-folder">

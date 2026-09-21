@@ -14,7 +14,9 @@ public enum NavigationRenderNodeKind
 {
 	Leaf,
 	Node,
-	Island
+	Island,
+	/// <summary>OpenAPI <c>x-tagGroups</c> / docs <c>label:</c> — expand-only, no page URL.</summary>
+	Heading
 }
 
 /// <summary>A fully resolved navigation tree node; the only tree data the nav templates consume.</summary>
@@ -354,13 +356,15 @@ public sealed record NavigationRenderModel
 				Id = node.Id
 			};
 		}
+
+		var isHeading = node is ISidebarHeadingNavigationItem;
 		return new NavigationRenderNode
 		{
-			Kind = NavigationRenderNodeKind.Node,
+			Kind = isHeading ? NavigationRenderNodeKind.Heading : NavigationRenderNodeKind.Node,
 			IsTopLevel = isTopLevel,
 			NavigationTitle = navigationTitle,
 			Badge = badge,
-			Url = node.Url,
+			Url = isHeading ? "" : node.Url,
 			Id = node.Id,
 			IsMultiOperation = node is IMultiOperationNavigationItem,
 			ShowToggle = !node.NavigationItems.All(n => n.Hidden),

@@ -21,22 +21,47 @@ function setDisclosureToggle(
     if (label) label.textContent = `${expanded ? 'hide' : 'show'} ${noun}`
 }
 
-/**
- * Expand a response fields panel (and ancestors if nested later).
- */
-function expandResponseFields(container: HTMLElement): void {
-    const toggleBtn = container.querySelector<HTMLButtonElement>(
-        ':scope > .response-fields-toggle'
+function setUntilFoundHidden(
+    element: HTMLElement | null,
+    hidden: boolean
+): void {
+    if (!element) return
+    if (!hidden) {
+        element.removeAttribute('hidden')
+        return
+    }
+    element.setAttribute(
+        'hidden',
+        supportsHiddenUntilFound ? 'until-found' : ''
     )
-    const body = container.querySelector<HTMLElement>(
-        ':scope > .response-fields-body'
+}
+
+function expandResponsePanel(panel: HTMLElement): void {
+    const toggleBtn = panel.querySelector<HTMLButtonElement>(
+        ':scope > .response-status-toggle'
+    )
+    const body = panel.querySelector<HTMLElement>(
+        ':scope > .response-panel-body'
     )
 
-    container.classList.remove('collapsed')
-    container.classList.add('expanded')
-    setDisclosureToggle(toggleBtn, true, 'fields')
+    panel.classList.remove('collapsed')
+    panel.classList.add('expanded')
+    toggleBtn?.setAttribute('aria-expanded', 'true')
+    setUntilFoundHidden(body, false)
+}
 
-    if (body) body.removeAttribute('hidden')
+function collapseResponsePanel(panel: HTMLElement): void {
+    const toggleBtn = panel.querySelector<HTMLButtonElement>(
+        ':scope > .response-status-toggle'
+    )
+    const body = panel.querySelector<HTMLElement>(
+        ':scope > .response-panel-body'
+    )
+
+    panel.classList.remove('expanded')
+    panel.classList.add('collapsed')
+    toggleBtn?.setAttribute('aria-expanded', 'false')
+    setUntilFoundHidden(body, true)
 }
 
 /**
@@ -71,6 +96,9 @@ function expandPropertyItem(propertyItem: HTMLElement): void {
             expandPropertyItem(parentItem)
         }
     }
+
+    const responsePanel = propertyItem.closest<HTMLElement>('.response-panel')
+    if (responsePanel) expandResponsePanel(responsePanel)
 }
 
 /**
@@ -205,6 +233,8 @@ function expandParamSectionForHash(): void {
     const target = document.getElementById(id)
     const section = target?.closest<HTMLElement>('[data-param-section]')
     if (section) expandParamSection(section)
+    const panel = target?.closest<HTMLElement>('.response-panel')
+    if (panel) expandResponsePanel(panel)
 }
 
 /**
@@ -251,13 +281,13 @@ function initOperationView(section: HTMLElement): void {
 
         section
             .querySelectorAll<HTMLElement>(
-                '.response-fields-body[hidden="until-found"]'
+                '.response-panel-body[hidden="until-found"]'
             )
-            .forEach((fieldsBody) => {
-                fieldsBody.addEventListener('beforematch', function () {
-                    const container = fieldsBody.parentElement
-                    if (container?.classList.contains('response-fields')) {
-                        expandResponseFields(container)
+            .forEach((panelBody) => {
+                panelBody.addEventListener('beforematch', function () {
+                    const panel = panelBody.parentElement
+                    if (panel?.classList.contains('response-panel')) {
+                        expandResponsePanel(panel)
                     }
                 })
             })
@@ -426,34 +456,20 @@ function initGlobalClickHandlers(): void {
             return
         }
 
-        const responseFieldsToggle = target.closest<HTMLButtonElement>(
-            '.response-fields-toggle'
+        const responseStatusToggle = target.closest<HTMLButtonElement>(
+            '.response-status-toggle'
         )
-        if (responseFieldsToggle) {
+        if (responseStatusToggle) {
             e.preventDefault()
             e.stopPropagation()
 
-            const container =
-                responseFieldsToggle.closest<HTMLElement>('.response-fields')
-            if (!container) return
+            const panel =
+                responseStatusToggle.closest<HTMLElement>('.response-panel')
+            if (!panel) return
 
-            const isExpanded = container.classList.contains('expanded')
-            const body = container.querySelector<HTMLElement>(
-                ':scope > .response-fields-body'
-            )
-
-            if (isExpanded) {
-                container.classList.remove('expanded')
-                container.classList.add('collapsed')
-                setDisclosureToggle(responseFieldsToggle, false, 'fields')
-                if (body && supportsHiddenUntilFound) {
-                    body.setAttribute('hidden', 'until-found')
-                } else if (body) {
-                    body.setAttribute('hidden', '')
-                }
-            } else {
-                expandResponseFields(container)
-            }
+            if (panel.classList.contains('expanded'))
+                collapseResponsePanel(panel)
+            else expandResponsePanel(panel)
             return
         }
 
@@ -738,68 +754,6 @@ function initApiScenarioSelects(): void {
     })
 }
 
-const API_RESPONSE_STATUS_CLASSES = [
-    'status-success',
-    'status-error',
-    'status-info',
-] as const
-
-function applyApiResponsePanel(widget: HTMLElement, statusCode: string): void {
-    const select = widget.querySelector<HTMLSelectElement>(
-        '.api-responses-select'
-    )
-    if (select) {
-        const hasOption = Array.from(select.options).some(
-            (option) => option.value === statusCode
-        )
-        if (hasOption) select.value = statusCode
-
-        const selected = select.selectedOptions[0]
-        const statusClass = selected?.dataset.statusClass
-        select.classList.remove(...API_RESPONSE_STATUS_CLASSES)
-        if (
-            statusClass === 'success' ||
-            statusClass === 'error' ||
-            statusClass === 'info'
-        )
-            select.classList.add(`status-${statusClass}`)
-
-        const contentType = selected?.dataset.contentType?.trim() ?? ''
-        const tag = widget.querySelector<HTMLElement>(
-            '[data-response-content-type]'
-        )
-        if (tag) {
-            tag.textContent = contentType
-            tag.toggleAttribute('hidden', contentType.length === 0)
-        }
-    }
-
-    widget
-        .querySelectorAll<HTMLElement>('.response-panel[data-status]')
-        .forEach((panel) => {
-            panel.toggleAttribute('hidden', panel.dataset.status !== statusCode)
-        })
-}
-
-let apiResponsesSelectDelegated = false
-
-/**
- * Status <select> next to the Responses section title. Switches which response
- * panel is visible. Not persisted — statuses differ per operation.
- */
-function initApiResponsesSelects(): void {
-    if (apiResponsesSelectDelegated) return
-    apiResponsesSelectDelegated = true
-    document.addEventListener('change', (event) => {
-        const select = (event.target as HTMLElement | null)?.closest(
-            '.api-responses-select'
-        )
-        if (!(select instanceof HTMLSelectElement)) return
-        const widget = select.closest<HTMLElement>('[data-api-responses]')
-        if (widget) applyApiResponsePanel(widget, select.value)
-    })
-}
-
 function countApiCodeLines(text: string): number {
     if (!text) return 1
     const parts = text.split(/\r?\n/)
@@ -817,9 +771,7 @@ function initApiCodeLineNumbers(): void {
     if (!panel) return
 
     panel
-        .querySelectorAll<HTMLElement>(
-            '.api-code-sample pre code, .example-block--response pre code'
-        )
+        .querySelectorAll<HTMLElement>('.api-code-card pre code')
         .forEach((code) => {
             const pre = code.parentElement
             if (!(pre instanceof HTMLPreElement)) return
@@ -925,7 +877,6 @@ export function initApiDocs(): void {
     initApiCodeLanguageSelects()
     initApiResponseStatusTabs()
     initApiScenarioSelects()
-    initApiResponsesSelects()
     // After initHighlight — gutters need final textContent line counts
     initApiCodeLineNumbers()
 

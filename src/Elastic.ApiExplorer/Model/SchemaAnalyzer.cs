@@ -320,14 +320,11 @@ public class SchemaAnalyzer(OpenApiDocument document, string? currentPageType = 
 			{
 				var typeName = SchemaHelpers.FormatSchemaName(refId);
 				var isArray = schema.Type?.HasFlag(JsonSchemaType.Array) ?? false;
-
-				// Check if this is a value type - either from the known list or by detecting it's a primitive alias
-				var isValueType = SchemaHelpers.IsValueType(typeName);
-				var primitiveAliasType = !isValueType ? SchemaHelpers.GetPrimitiveAliasType(schemaRef) : null;
-				if (!string.IsNullOrEmpty(primitiveAliasType))
-					isValueType = true;
-
-				var valueTypeBase = isValueType ? (primitiveAliasType ?? SchemaHelpers.GetValueTypeBase(schemaRef) ?? "string") : null;
+				var named = ClassifyNamedSchema(typeName, schemaRef);
+				typeName = named.TypeName;
+				var isValueType = named.IsValueType;
+				var valueTypeBase = named.ValueTypeBase;
+				var schemaRefId = named.IsPrimitiveAlias ? null : refId;
 				var hasLink = IsLinkedType(typeName);
 
 				// Check if the schema reference is an enum or union
@@ -406,9 +403,9 @@ public class SchemaAnalyzer(OpenApiDocument document, string? currentPageType = 
 
 				return new TypeInfo(
 					typeName,
-					refId,
+					schemaRefId,
 					isArray,
-					!isValueType && !isEnum,
+					!isValueType && !isEnum && !named.IsPrimitiveAlias,
 					isValueType,
 					valueTypeBase,
 					hasLink,
@@ -477,15 +474,17 @@ public class SchemaAnalyzer(OpenApiDocument document, string? currentPageType = 
 				if (!string.IsNullOrEmpty(refId))
 				{
 					var typeName = SchemaHelpers.FormatSchemaName(refId);
-					var isValueType = SchemaHelpers.IsValueType(typeName);
-					var primitiveAliasType = !isValueType ? SchemaHelpers.GetPrimitiveAliasType(refSchemas[0]) : null;
-					if (!string.IsNullOrEmpty(primitiveAliasType))
-						isValueType = true;
-					var valueTypeBase = isValueType
-						? (primitiveAliasType ?? SchemaHelpers.GetValueTypeBase(refSchemas[0]) ?? "string")
-						: null;
-					var hasLink = IsLinkedType(typeName);
-					return new TypeInfo(typeName, refId, false, !isValueType, isValueType, valueTypeBase, hasLink, null);
+					var named = ClassifyNamedSchema(typeName, refSchemas[0]);
+					return new TypeInfo(
+						named.TypeName,
+						named.IsPrimitiveAlias ? null : refId,
+						false,
+						!named.IsValueType && !named.IsPrimitiveAlias,
+						named.IsValueType,
+						named.ValueTypeBase,
+						IsLinkedType(named.TypeName),
+						null
+					);
 				}
 			}
 		}
@@ -551,4 +550,22 @@ public class SchemaAnalyzer(OpenApiDocument document, string? currentPageType = 
 
 		return new TypeInfo("object", null, false, true, false, null, false, null);
 	}
+
+	/// <summary>
+	/// Known domain aliases (<c>Field</c>, <c>Id</c>) keep their name. Codegen wrappers that are
+	/// only a primitive (<c>Security_Lists_API_ListDescription</c>) collapse to that primitive.
+	/// </summary>
+	private static NamedSchemaKind ClassifyNamedSchema(string typeName, IOpenApiSchema schema)
+	{
+		if (SchemaHelpers.IsValueType(typeName))
+			return new NamedSchemaKind(typeName, true, SchemaHelpers.GetValueTypeBase(schema) ?? "string", false);
+
+		var primitiveAlias = SchemaHelpers.GetPrimitiveAliasType(schema);
+		if (!string.IsNullOrEmpty(primitiveAlias))
+			return new NamedSchemaKind(primitiveAlias, false, null, true);
+
+		return new NamedSchemaKind(typeName, false, null, false);
+	}
+
+	private readonly record struct NamedSchemaKind(string TypeName, bool IsValueType, string? ValueTypeBase, bool IsPrimitiveAlias);
 }

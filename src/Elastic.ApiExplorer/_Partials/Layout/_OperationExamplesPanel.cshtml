@@ -1,13 +1,14 @@
 @using Elastic.ApiExplorer.Operations
 @using Elastic.Documentation.Site.Navigation
 @inherits RazorSlice<OperationExamplesPanelModel>
-@* Visibility/layout at ≥1024px comes from #api-examples-panel rules in api-docs.css (not Tailwind lg:). *@
-<aside id="api-examples-panel" class="api-examples-panel shrink-0 w-full px-6 max-[1023px]:hidden min-[1024px]:px-0">
+@* ≥1024px: right rail (api-docs.css). Below that: in-flow column under the article. *@
+<aside id="api-examples-panel" class="api-examples-panel shrink-0 w-full">
 	<nav class="api-examples-panel-nav markdown-content simple-scrollbar">
 		@if (Model.Scenarios.Count > 0)
 		{
 			@if (Model.Scenarios.Count == 1)
 			{
+				<h4 class="section-header api-examples-heading api-examples-heading--stacked">Examples</h4>
 				<div class="api-examples-body">
 					@(await RenderPartialAsync<_ExampleScenarioContent, ExampleScenario>(Model.Scenarios[0]))
 				</div>

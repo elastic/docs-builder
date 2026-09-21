@@ -268,7 +268,7 @@ public class GitHubReleaseChangelogService(
 		public required string OutputDir { get; init; }
 		public required bool WarnOnTypeMismatch { get; init; }
 		public required IReadOnlyList<GitRangeEntryResolver.ChangelogPoolCandidate> PoolCandidates { get; init; }
-		public HashSet<string> WrittenPoolFiles { get; } = [with(StringComparer.Ordinal)];
+		public HashSet<string> WrittenPoolFiles { get; } = new(StringComparer.Ordinal);
 	}
 
 	/// <summary>

@@ -96,6 +96,50 @@ public class TocTreeRenderingTests
 	}
 
 	[Fact]
+	public async Task HeadingRow_IsALabelNotAPageLink()
+	{
+		var model = new NavigationRenderModel
+		{
+			IsUsingNavigationDropdown = false,
+			CurrentTopLevelNavigationTitle = "API",
+			CurrentTopLevelUrl = "/api/doc/es/",
+			DropdownItems = [],
+			BackLinks = [],
+			Tree =
+			[
+				new NavigationRenderNode
+				{
+					Kind = NavigationRenderNodeKind.Heading,
+					IsTopLevel = true,
+					NavigationTitle = "Search & Document APIs",
+					Url = "",
+					Id = "search-docs",
+					ShowToggle = true,
+					NavigationItems =
+					[
+						new NavigationRenderNode
+						{
+							Kind = NavigationRenderNodeKind.Leaf,
+							IsTopLevel = false,
+							NavigationTitle = "Run a search",
+							Url = "/api/doc/es/operation/operation-search"
+						}
+					]
+				}
+			],
+			ContentHash = "heading",
+			NavigationPreviewEnabled = true
+		};
+
+		var html = await _TocTree.Create(model).RenderAsync(cancellationToken: TestContext.Current.CancellationToken);
+
+		html.Should().Contain("<label for=\"search-docs\"");
+		html.Should().Contain("Search &amp; Document APIs");
+		html.Should().NotContain("href=\"/api/doc/es/\"");
+		html.Should().Contain("href=\"/api/doc/es/operation/operation-search\"");
+	}
+
+	[Fact]
 	public async Task IslandStub_UsesTheForwardArrowNotTheFolderChevron()
 	{
 		var model = new NavigationRenderModel

@@ -31,7 +31,7 @@
 	@if (Model.ExternalDocs is not null)
 	{
 		<dd class="external-docs-row">
-			<a href="@Model.ExternalDocs.Url" class="docs-reference-btn docs-reference-btn-sm" @(Model.ExternalDocs.IsElasticDocs ? "" : "target=\"_blank\" rel=\"noopener\"")>
+			<a href="@Model.ExternalDocs.Url" class="docs-reference-btn" @(Model.ExternalDocs.IsElasticDocs ? "" : "target=\"_blank\" rel=\"noopener\"")>
 				@Model.ExternalDocs.LinkText
 			</a>
 		</dd>

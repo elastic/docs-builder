@@ -138,6 +138,22 @@
 }
 
 /* API breadcrumbs — Figma APIs 10087:3195 (EuiBreadcrumbs Page). On all API pages. */
+.api-pages-nav-toggle {
+	display: inline-flex;
+	align-items: center;
+	margin: 0 0 12px;
+	padding: 0;
+	border: 0;
+	background: none;
+	color: #1d2a3e;
+}
+
+@media (min-width: 768px) {
+	.api-pages-nav-toggle {
+		display: none;
+	}
+}
+
 #markdown-content .api-breadcrumbs {
 	margin: 0 0 16px;
 	color: var(--color-subdued, #516381);
@@ -483,6 +499,12 @@
 	}
 }
 
+#elastic-api-v3 h4.section-header.responses-header,
+#schema-definition h4.section-header.responses-header {
+	padding-bottom: 0;
+	border-bottom: 0;
+}
+
 .responses-header.section-header {
 	@apply justify-start gap-3;
 }
@@ -491,98 +513,210 @@
 	@apply shrink-0;
 }
 
-.responses-meta {
-	@apply ml-auto inline-flex items-center gap-2;
-}
-
-.api-responses-select,
-.api-responses-status {
-	@apply font-mono text-sm font-semibold;
-	border: 0;
-	background: transparent;
-	padding: 0;
-	margin: 0;
-	box-shadow: none;
-}
-
-.api-responses-select {
-	@apply cursor-pointer appearance-none pr-4;
-	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12' fill='none'%3E%3Cpath d='M3 4.5L6 7.5L9 4.5' stroke='%23516381' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
-	background-repeat: no-repeat;
-	background-position: right 0 center;
-	background-size: 0.625rem;
-
-	&:focus-visible {
-		outline: 2px solid var(--color-blue-elastic, #0b64dd);
-		outline-offset: 2px;
-	}
-}
-
-.api-responses-select.status-success,
-.api-responses-status.status-success {
-	@apply text-green-90;
-}
-
-.api-responses-select.status-error,
-.api-responses-status.status-error {
-	@apply text-red-90;
-}
-
-.api-responses-select.status-info,
-.api-responses-status.status-info {
-	@apply text-blue-elastic;
-}
-
-.api-responses-select:hover {
-	filter: brightness(0.82);
+.responses-list {
+	display: flex;
+	flex-direction: column;
+	gap: 0;
+	margin-top: 16px;
+	overflow: visible;
+	isolation: isolate;
+	background-color: #fff;
+	border: 1px solid #cad3e2;
+	border-radius: 16px;
 }
 
 .response-panel {
-	@apply mt-3;
+	display: flex;
+	flex-direction: column;
+	align-items: stretch;
+	width: 100%;
+	gap: 0;
+}
+
+.response-panel + .response-panel {
+	border-top: 1px solid #cad3e2;
+}
+
+.response-panel:first-child {
+	border-radius: 16px 16px 0 0;
+}
+
+.response-panel:last-child {
+	border-radius: 0 0 16px 16px;
+}
+
+.response-panel:only-child {
+	border-radius: 16px;
+}
+
+.response-status-toggle {
+	display: flex;
+	box-sizing: border-box;
+	align-items: center;
+	gap: 8px;
+	width: 100%;
+	margin: 0;
+	padding: 8px 12px;
+	border: 0;
+	border-radius: 0;
+	background: transparent;
+	color: inherit;
+	font: inherit;
+	text-align: left;
+	cursor: pointer;
+	transition:
+		background-color 0.12s ease,
+		color 0.12s ease;
+}
+
+.response-status-toggle:hover {
+	background-color: #ecf1f9;
+	color: #1d2a3e;
+}
+
+.response-status-toggle:hover .response-description {
+	color: #1d2a3e;
+}
+
+.response-status-toggle:focus-visible {
+	outline: 2px solid var(--color-blue-elastic, #0b64dd);
+	outline-offset: -2px;
+}
+
+.response-status-chip {
+	display: inline-flex;
+	flex-shrink: 0;
+	align-items: center;
+	justify-content: center;
+	box-sizing: border-box;
+	height: 24px;
+	padding: 0 8px;
+	border: 1px solid;
+	border-radius: 8px;
+	font-family: var(--font-body, Inter, ui-sans-serif, system-ui, sans-serif);
+	font-size: 12px;
+	font-weight: 500;
+	line-height: 16px;
+}
+
+.response-status-chip.status-success {
+	background-color: #c9f3e3;
+	border-color: #aee8d2;
+	color: #008a5e;
+}
+
+.response-status-chip.status-error {
+	background-color: #fdddd8;
+	border-color: #ffc9c2;
+	color: #c61e25;
+}
+
+.response-status-chip.status-info {
+	background-color: #d9e8ff;
+	border-color: #bfdbff;
+	color: #0b64dd;
+}
+
+.response-panel.expanded
+	> .response-status-toggle
+	.response-status-chip.status-success {
+	background-color: #aee8d2;
+	border-color: #008a5e;
+}
+
+.response-panel.expanded
+	> .response-status-toggle
+	.response-status-chip.status-error {
+	background-color: #ffc9c2;
+	border-color: #c61e25;
+}
+
+.response-panel.expanded
+	> .response-status-toggle
+	.response-status-chip.status-info {
+	background-color: #bfdbff;
+	border-color: #0b64dd;
+}
+
+.response-panel:first-child > .response-status-toggle {
+	border-radius: 16px 16px 0 0;
+}
+
+.response-panel:last-child:not(.expanded) > .response-status-toggle {
+	border-radius: 0 0 16px 16px;
+}
+
+.response-panel:only-child:not(.expanded) > .response-status-toggle {
+	border-radius: 16px;
+}
+
+.response-panel:only-child.expanded > .response-status-toggle {
+	border-radius: 16px 16px 0 0;
+}
+
+.response-panel.expanded {
+	position: relative;
+	z-index: 2;
+}
+
+.response-panel-body {
+	box-sizing: border-box;
+	width: 100%;
+	padding: 0 12px 12px;
+	border: 0;
+	overflow: visible;
+}
+
+.responses-list .property-list dt .property-anchor-icon {
+	z-index: 4;
+}
+
+.response-panel.collapsed > .response-panel-body:not([hidden='until-found']) {
+	display: none;
+}
+
+.response-panel.expanded > .response-panel-body {
+	display: block;
+}
+
+.response-panel-body[hidden='until-found'] {
+	display: none;
+	border: 0;
+	padding: 0;
+	margin: 0;
 }
 
 .response-description {
-	@apply text-grey-80 mt-0 mb-0 text-sm;
+	margin: 0;
+	min-width: 0;
+	flex: 1 1 auto;
+	color: #516381;
+	font-size: 14px;
+	font-weight: 400;
+	line-height: 20px;
+	text-align: left;
+	transition: color 0.12s ease;
 }
 
 .content-type-tag {
-	@apply text-blue-elastic bg-blue-elastic-10 shrink-0 rounded px-1 py-0.5 text-xs font-medium;
+	margin-left: auto;
+	flex-shrink: 0;
+	color: #798eaf;
+	font-size: 12px;
+	font-weight: 400;
+	line-height: 16px;
+	background: none;
 }
 
-.response-fields {
-	@apply mt-2;
-}
-
-.response-fields-toggle,
 .property-list .expand-toggle,
 .union-expand-toggle .expand-toggle,
 .union-group-toggle {
 	@apply text-grey-80 hover:text-grey-120 inline-flex cursor-pointer items-center gap-1 border-0 bg-transparent p-0 text-sm;
 }
 
-.response-fields-toggle .toggle-icon,
 .expand-toggle .toggle-icon,
 .union-group-toggle .toggle-icon {
 	@apply font-mono font-semibold;
-}
-
-.response-fields-body {
-	@apply border-grey-20 mt-2 rounded-sm border px-3 py-2;
-}
-
-.response-fields.collapsed > .response-fields-body:not([hidden='until-found']) {
-	display: none;
-}
-
-.response-fields.expanded > .response-fields-body {
-	display: block;
-}
-
-.response-fields-body[hidden='until-found'] {
-	display: none;
-	border: 0;
-	padding: 0;
-	margin: 0;
 }
 
 /* Property list — Figma APIs 10079:2948 (Query Parameters / properties) */
@@ -653,7 +787,7 @@
 
 		> a.property-anchor > code,
 		> code {
-			color: #6b3c9f;
+			color: var(--color-ink-navy, #111c2c);
 			font-family:
 				'Roboto Mono', ui-monospace, SFMono-Regular, Menlo, Monaco,
 				Consolas, monospace;
@@ -697,6 +831,10 @@
 			color: inherit;
 			font-size: inherit;
 			line-height: inherit;
+		}
+
+		p:not(:first-of-type) {
+			margin-top: 8px;
 		}
 
 		/* Hide empty dd elements */
@@ -950,11 +1088,6 @@
 	display: none;
 }
 
-#elastic-api-v3 .api-param-section.collapsed > h4.section-header {
-	border-bottom: 0;
-	padding-bottom: 0;
-}
-
 .api-param-summary {
 	display: flex;
 	align-items: center;
@@ -1003,7 +1136,7 @@
 }
 
 .api-param-summary-item code {
-	color: #6b3c9f;
+	color: var(--color-ink-navy, #111c2c);
 	font-family:
 		'Roboto Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
 		monospace;
@@ -1099,6 +1232,8 @@ a.type-linked:hover {
 	padding: 0;
 	background-color: transparent;
 	border-radius: 0;
+	font-size: 13px;
+	line-height: 16px;
 }
 
 .deprecated-badge.type-status,
@@ -1137,13 +1272,22 @@ a.type-linked:hover {
 	border-radius: 0;
 	background-color: transparent;
 	color: #516381;
-	font-family: var(--font-body, Inter, ui-sans-serif, system-ui, sans-serif);
-	font-size: 12px;
+	font-family:
+		'Roboto Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+		monospace;
+	font-size: 13px;
 	font-weight: 500;
 	line-height: 16px;
+	letter-spacing: -0.4px;
+	word-spacing: -4px;
 	white-space: nowrap;
 	vertical-align: middle;
 	mix-blend-mode: normal;
+}
+
+.property-list code.schema-type a,
+.schema-type a {
+	letter-spacing: normal;
 }
 
 .schema-type-sep {
@@ -1192,33 +1336,50 @@ a.type-linked:hover {
 	@apply text-yellow-90 bg-yellow-10 border-yellow-30 rounded border px-1 py-0.5 text-xs font-medium;
 }
 
-/* Reference documentation button */
-.docs-reference-btn {
-	@apply inline-flex items-center gap-2 px-4 py-2 text-sm font-medium;
-	@apply bg-blue-elastic-10 text-blue-elastic border-blue-elastic-30 rounded-md border;
-	@apply hover:bg-blue-elastic-20 hover:border-blue-elastic-40 transition-colors;
+/* Reference documentation link — text + 1px rule, not a button */
+.markdown-content a.docs-reference-btn,
+a.docs-reference-btn {
+	display: inline-block;
+	width: fit-content;
+	max-width: 100%;
 	margin-top: 0.75rem;
-}
-.docs-reference-btn::before {
-	content: '📖';
-	font-size: 1em;
-}
-/* External links get an arrow indicator */
-.docs-reference-btn[target='_blank']::after {
-	content: '↗';
-	font-size: 0.85em;
-	margin-left: 0.25rem;
+	padding: 0;
+	border: none;
+	border-bottom: 1px solid #0b64dd;
+	border-radius: 0;
+	background: none;
+	color: #1d2a3e;
+	font-family: var(--font-body, Inter, ui-sans-serif, system-ui, sans-serif);
+	font-size: 14px;
+	font-weight: 500;
+	line-height: 20px;
+	text-decoration: none;
+	transition: none;
 }
 
-/* Smaller variant for property rows */
-.docs-reference-btn-sm {
-	@apply px-3 py-1.5 text-xs;
-	margin-top: 0.5rem;
+.markdown-content a.docs-reference-btn:hover,
+a.docs-reference-btn:hover {
+	background: none;
+	color: #0b64dd;
+	text-decoration: none;
+}
+
+.markdown-content a.docs-reference-btn::before,
+a.docs-reference-btn::before,
+.markdown-content a.docs-reference-btn[target='_blank']:not(:has(img))::after,
+a.docs-reference-btn[target='_blank']::after,
+a.docs-reference-btn::after {
+	content: none;
+	display: none;
 }
 
 /* Container for external docs in property items */
 .external-docs-row {
 	margin-top: 0.25rem;
+}
+
+.external-docs-row .docs-reference-btn {
+	margin-top: 0;
 }
 
 /* Legacy external documentation link (keeping for backwards compat) */
@@ -1714,6 +1875,11 @@ a.type-linked:hover {
 	padding-top: 0;
 }
 
+/* Single-scenario pages have no rail heading on desktop; show one when stacked. */
+#api-examples-panel .api-examples-heading--stacked {
+	display: none;
+}
+
 /* Section header */
 .section-header {
 	display: flex;
@@ -1781,28 +1947,46 @@ a.type-linked:hover {
 	}
 }
 
-/* Example blocks — response card chrome.
-   Request / x-codeSamples (.api-code-sample) uses the same light card. */
-.example-block {
+/* Shared Card/Code (Figma APIs 10002:17729). Request and response both carry .api-code-card.
+   The rail is excluded from markdown/code.css, so these tokens win without !important. */
+.api-code-card {
+	--api-code-bg: #fff;
+	--api-code-border: #cad3e2;
+	--api-code-halo: #f6f9fc;
+	--api-code-radius: 16px;
+	--api-code-text: #1d2a3e;
+	--api-code-muted: #516381;
+	--api-code-string: #047471;
+	--api-code-boolean: #0b64dd;
+	--api-code-number: #a11262;
+	--api-code-gutter: #798eaf;
+	--api-code-success: #22863a;
+	--api-code-font:
+		'Roboto Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+		monospace;
+	--api-code-size: 14px;
+	--api-code-leading: 20px;
+	--api-code-pad-block: 1.5rem;
+	--api-code-max-height: min(20rem, 40vh);
+	overflow: hidden;
+	position: relative;
 	margin-bottom: 24px;
+	background-color: var(--api-code-bg);
+	color: var(--api-code-text);
+	border: 1px solid var(--api-code-border);
+	border-radius: var(--api-code-radius);
+	/* Same halo as .nav-select — 2px page-tint ring, not a drop-shadow. */
+	box-shadow: 0 0 0 2px var(--api-code-halo);
+}
+
+.example-block {
 	position: relative;
 }
 
-/* Response card — Figma Card/Code light chrome (APIs 10002:17729) */
-.example-block--response {
-	--api-response-text: #1d2a3e;
-	--api-response-string: #047471;
-	--api-response-boolean: #0b64dd;
-	--api-response-number: #a11262;
-	overflow: hidden;
-	background-color: #f6f9fc;
-	border: 1px solid #e3e8f2;
-	border-radius: 16px;
-}
-
-.example-block--response .example-block-header {
+.api-code-card .example-block-header,
+.api-code-card .api-code-sample-header {
 	@apply flex min-w-0 items-center gap-3 px-3 py-2;
-	border-bottom: 1px solid #e3e8f2;
+	border-bottom: 1px solid var(--api-code-border);
 }
 
 /* Status-code tabs; copy stays pinned on the right */
@@ -1815,18 +1999,18 @@ a.type-linked:hover {
 
 .example-response-tab {
 	@apply shrink-0 cursor-pointer border-0 bg-transparent p-0 text-sm font-medium whitespace-nowrap;
-	color: #516381;
+	color: var(--api-code-muted);
 	line-height: 20px;
 }
 
 .example-response-tab.is-active {
-	color: #1d2a3e;
+	color: var(--api-code-text);
 	font-weight: 600;
 	cursor: default;
 }
 
 button.example-response-tab:not(.is-active):hover {
-	color: #1d2a3e;
+	color: var(--api-code-text);
 }
 
 button.example-response-tab:focus-visible {
@@ -1835,20 +2019,21 @@ button.example-response-tab:focus-visible {
 	border-radius: 2px;
 }
 
-.example-block--response .example-empty {
+.api-code-card .example-empty {
 	margin: 0;
 	padding: 12px 16px;
 	font-size: 13px;
 	line-height: 1.4;
-	color: #516381;
+	color: var(--api-code-muted);
 	font-style: italic;
 }
 
-.example-block-actions {
+.example-block-actions,
+.api-code-sample-actions {
 	@apply ml-auto flex shrink-0 items-center gap-2;
 }
 
-.example-block--response .example-block-actions .copybtn.copybtn--in-header {
+.api-code-card .copybtn.copybtn--in-header {
 	position: static;
 	top: auto;
 	right: auto;
@@ -1856,140 +2041,66 @@ button.example-response-tab:focus-visible {
 	height: 16px;
 	opacity: 1;
 	background-color: transparent;
-	color: #516381;
+	color: var(--api-code-muted);
 	border-radius: 0;
 }
 
-.example-block--response
-	.example-block-actions
-	.copybtn.copybtn--in-header:hover {
-	color: #1d2a3e;
+.api-code-card .copybtn.copybtn--in-header:hover {
+	color: var(--api-code-text);
 }
 
-.example-block--response
-	.example-block-actions
-	.copybtn.copybtn--in-header.success {
+.api-code-card .copybtn.copybtn--in-header.success {
 	background-color: transparent;
-	color: #22863a;
+	color: var(--api-code-success);
 }
 
-.example-block--response
-	.example-block-actions
-	.copybtn.copybtn--in-header
-	svg {
+.api-code-card .copybtn.copybtn--in-header svg {
 	width: 16px;
 	height: 16px;
 	padding: 0;
 }
 
-.example-block--response
-	.example-block-actions
-	.copybtn.copybtn--in-header.o-tooltip--left:after {
-	background-color: #1d2a3e;
-	color: #f6f9fc;
+.api-code-card .copybtn.copybtn--in-header.o-tooltip--left:after {
+	background-color: var(--api-code-text);
+	color: var(--api-code-bg);
 	transform: translateX(-102%) translateY(0);
 }
 
-.example-block--response .example-block-body .highlight {
-	@apply mt-0;
+.api-code-card .highlight {
+	margin-top: 0;
 }
 
-/* Figma Card/Code tokens: black structure, green strings, blue bools, maroon numbers.
-   Beat `.markdown-content .hljs { color: blue-elastic-30 }` (same 0,2,0 + !important)
-   by including .markdown-content in the selector — the examples rail uses that class. */
-.markdown-content .example-block--response pre code,
-#api-examples-panel .example-block--response pre code,
-.markdown-content .api-code-sample pre code,
-#api-examples-panel .api-code-sample pre code {
-	background-color: transparent !important;
-	color: var(--api-response-text) !important;
-	font-family:
-		'Roboto Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
-		monospace;
-	font-size: 14px;
-	line-height: 20px;
+/* Structure (keys, braces, comments, GET) inherits --api-code-text. Only values are colored. */
+.api-code-card pre code {
+	display: block;
+	background-color: transparent;
+	color: var(--api-code-text);
+	font-family: var(--api-code-font);
+	font-size: var(--api-code-size);
+	line-height: var(--api-code-leading);
+	font-weight: 400;
+	padding: var(--api-code-pad-block) 1rem;
+	border: 0;
+	border-radius: 0;
+	mix-blend-mode: unset;
+}
+
+.api-code-card .hljs,
+.api-code-card [class^='hljs-'] {
+	color: var(--api-code-text);
 	font-weight: 400;
 }
 
-.markdown-content .example-block--response .hljs,
-.markdown-content .example-block--response .hljs-attr,
-.markdown-content .example-block--response .hljs-punctuation,
-.markdown-content .example-block--response .hljs-subst,
-.markdown-content .example-block--response .hljs-bullet,
-.markdown-content .example-block--response .hljs-section,
-.markdown-content .example-block--response .hljs-title,
-.markdown-content .example-block--response .hljs-name,
-.markdown-content .example-block--response .hljs-type,
-.markdown-content .example-block--response .hljs-params,
-.markdown-content .example-block--response .hljs-meta,
-.markdown-content .example-block--response .hljs-built_in,
-.markdown-content .example-block--response .hljs-comment,
-.markdown-content .example-block--response .hljs-quote,
-#api-examples-panel .example-block--response .hljs,
-#api-examples-panel .example-block--response [class^='hljs-'],
-.markdown-content .api-code-sample .hljs,
-.markdown-content .api-code-sample .hljs-attr,
-.markdown-content .api-code-sample .hljs-punctuation,
-.markdown-content .api-code-sample .hljs-subst,
-.markdown-content .api-code-sample .hljs-bullet,
-.markdown-content .api-code-sample .hljs-section,
-.markdown-content .api-code-sample .hljs-title,
-.markdown-content .api-code-sample .hljs-name,
-.markdown-content .api-code-sample .hljs-type,
-.markdown-content .api-code-sample .hljs-params,
-.markdown-content .api-code-sample .hljs-meta,
-.markdown-content .api-code-sample .hljs-built_in,
-.markdown-content .api-code-sample .hljs-comment,
-.markdown-content .api-code-sample .hljs-quote,
-#api-examples-panel .api-code-sample .hljs,
-#api-examples-panel .api-code-sample [class^='hljs-'] {
-	color: var(--api-response-text) !important;
+.api-code-card .hljs-string {
+	color: var(--api-code-string);
 }
 
-.markdown-content .example-block--response .hljs-string,
-#api-examples-panel .example-block--response .hljs-string,
-.markdown-content .api-code-sample .hljs-string,
-#api-examples-panel .api-code-sample .hljs-string {
-	color: var(--api-response-string) !important;
+.api-code-card .hljs-literal {
+	color: var(--api-code-boolean);
 }
 
-.markdown-content .example-block--response .hljs-literal,
-.markdown-content .example-block--response .hljs-keyword,
-#api-examples-panel .example-block--response .hljs-literal,
-#api-examples-panel .example-block--response .hljs-keyword,
-.markdown-content .api-code-sample .hljs-literal,
-#api-examples-panel .api-code-sample .hljs-literal {
-	color: var(--api-response-boolean) !important;
-}
-
-.markdown-content .example-block--response .hljs-number,
-#api-examples-panel .example-block--response .hljs-number,
-.markdown-content .api-code-sample .hljs-number,
-#api-examples-panel .api-code-sample .hljs-number {
-	color: var(--api-response-number) !important;
-}
-
-/* Beat docs `.markdown-content .hljs` (blue-elastic-30) and `.hljs-keyword`
-   (python `from=`). `span` covers tokens that are not `.hljs *` descendants. */
-.api-page-shell #api-examples-panel .api-code-sample pre code,
-.api-page-shell #api-examples-panel .api-code-sample pre code *,
-.api-page-shell #api-examples-panel .api-code-sample span {
-	color: #1d2a3e !important;
-}
-
-.api-page-shell #api-examples-panel .api-code-sample .hljs-string,
-.api-page-shell #api-examples-panel .api-code-sample .hljs-string * {
-	color: #047471 !important;
-}
-
-.api-page-shell #api-examples-panel .api-code-sample .hljs-literal,
-.api-page-shell #api-examples-panel .api-code-sample .hljs-literal * {
-	color: #0b64dd !important;
-}
-
-.api-page-shell #api-examples-panel .api-code-sample .hljs-number,
-.api-page-shell #api-examples-panel .api-code-sample .hljs-number * {
-	color: #a11262 !important;
+.api-code-card .hljs-number {
+	color: var(--api-code-number);
 }
 
 /* API page shell: same max width as docs; right column only when examples exist */
@@ -1997,9 +2108,41 @@ button.example-response-tab:focus-visible {
 	max-width: var(--max-layout-width);
 }
 
-@media (min-width: 768px) {
+/* 48px is the two-rail desktop gutter. Below 1024 the page is sidebar + one column. */
+@media (min-width: 768px) and (max-width: 1023px) {
+	.api-page-shell > .grid {
+		column-gap: 16px;
+	}
+}
+
+@media (min-width: 1024px) {
 	.api-page-shell > .grid {
 		column-gap: 48px;
+	}
+}
+
+/* Below 1024px the panel stays in the flex-col flow (after the article). Do not hide it.
+   Flush with the article — the cards have their own chrome. */
+@media (max-width: 1023px) {
+	#api-examples-panel.api-examples-panel {
+		min-width: 0;
+		margin: 0;
+		padding: 0;
+	}
+
+	#api-examples-panel .api-examples-panel-nav {
+		padding: 0;
+	}
+
+	#api-examples-panel h4.section-header.api-examples-heading,
+	#api-examples-panel h4.section-header.api-examples-heading--stacked {
+		display: flex;
+		padding: 1.5rem 0 0.75rem;
+		margin: 0;
+	}
+
+	#api-examples-panel .api-code-card:last-child {
+		margin-bottom: 0;
 	}
 }
 
@@ -2128,52 +2271,53 @@ button.example-response-tab:focus-visible {
 	}
 }
 
-/* Cap tall samples so individual code boxes scroll instead of growing forever */
-#api-examples-panel .highlight pre code {
-	max-height: min(20rem, 40vh);
-	overflow-x: auto;
-	overflow-y: auto;
-}
-
-/* Line-number gutter (sibling <pre>): excluded from selection/copy.
-   Override markdown `pre { display:grid }` — that grid was desyncing gutter vs code rows.
-   width:max-content keeps long lines from wrapping (horizontal scroll instead). */
-#api-examples-panel .api-code-lines {
-	display: flex;
-	align-items: flex-start;
-	min-width: 0;
-	max-height: min(20rem, 40vh);
+/* Cap tall samples so the card scrolls instead of growing forever */
+#api-examples-panel .api-code-card .highlight pre code {
+	max-height: var(--api-code-max-height);
 	overflow: auto;
 }
 
-#api-examples-panel .api-code-sample .api-code-lines {
-	max-height: min(22rem, 45vh);
+/* Line-number gutter (sibling <pre>): excluded from selection/copy.
+   display:block beats leftover docs `pre { display:grid }` if any still leak. */
+#api-examples-panel .api-code-card .api-code-lines {
+	display: flex;
+	align-items: flex-start;
+	min-width: 0;
+	max-height: var(--api-code-max-height);
+	overflow: auto;
 }
 
-#api-examples-panel .api-code-lines > pre {
-	display: block !important;
+#api-examples-panel .api-code-card .api-code-lines > pre {
+	display: block;
 	margin: 0;
 }
 
-#api-examples-panel .api-code-lines > pre:not(.api-code-line-gutter) {
+#api-examples-panel
+	.api-code-card
+	.api-code-lines
+	> pre:not(.api-code-line-gutter) {
 	flex: 1 1 auto;
 	width: max-content;
 	min-width: 100%;
 }
 
-#api-examples-panel .api-code-lines > pre:not(.api-code-line-gutter) code {
+#api-examples-panel
+	.api-code-card
+	.api-code-lines
+	> pre:not(.api-code-line-gutter)
+	code {
 	display: block;
 	width: max-content;
 	min-width: 100%;
-	max-height: none !important;
-	overflow: visible !important;
-	padding-left: 0.5rem !important;
-	white-space: pre !important;
-	word-break: normal !important;
-	overflow-wrap: normal !important;
+	max-height: none;
+	overflow: visible;
+	padding: var(--api-code-pad-block) 1rem var(--api-code-pad-block) 0.5rem;
+	white-space: pre;
+	word-break: normal;
+	overflow-wrap: normal;
 }
 
-#api-examples-panel .api-code-line-gutter {
+#api-examples-panel .api-code-card .api-code-line-gutter {
 	flex: 0 0 auto;
 	margin: 0;
 	border: 0;
@@ -2184,62 +2328,20 @@ button.example-response-tab:focus-visible {
 	text-align: right;
 	font-variant-numeric: tabular-nums;
 	white-space: pre;
-	padding: 1.5rem 0.5rem 1.5rem 1rem;
-	color: #798eaf;
-}
-
-#api-examples-panel .api-code-sample .api-code-line-gutter {
-	padding-top: calc(var(--spacing) * 4);
-	padding-bottom: 1.5rem;
-	color: var(--api-code-muted);
-}
-
-#api-examples-panel .example-block--response .api-code-line-gutter,
-#api-examples-panel .api-code-sample .api-code-line-gutter {
-	font-family:
-		'Roboto Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
-		monospace;
-	font-size: 14px;
-	line-height: 20px;
+	padding: var(--api-code-pad-block) 0.5rem var(--api-code-pad-block) 1rem;
+	color: var(--api-code-gutter);
+	font-family: var(--api-code-font);
+	font-size: var(--api-code-size);
+	line-height: var(--api-code-leading);
 }
 
 #api-examples-panel .nav-select-dropdown {
 	width: 100%;
 }
 
-/* Code sample widget — same light Card/Code chrome as .example-block--response */
-.api-code-sample {
-	--api-response-text: #1d2a3e;
-	--api-response-string: #047471;
-	--api-response-boolean: #0b64dd;
-	--api-response-number: #a11262;
-	--api-code-bg: #f6f9fc;
-	--api-code-text: #1d2a3e;
-	--api-code-muted: #516381;
-	--api-code-accent: #0b64dd;
-	--api-code-string: #047471;
-	--api-code-param: #1d2a3e;
-	--api-code-number: #a11262;
-	@apply overflow-hidden;
-	border-radius: 16px;
-	margin-bottom: 24px;
-	background-color: var(--api-code-bg);
-	color: var(--api-code-text);
-	border: 1px solid #e3e8f2;
-}
-
-.api-code-sample-header {
-	@apply flex min-w-0 items-center justify-between gap-2 px-3 py-2;
-	border-bottom: 1px solid #e3e8f2;
-}
-
 .api-code-sample-label {
 	@apply text-sm font-medium;
 	color: var(--api-code-muted);
-}
-
-.api-code-sample-actions {
-	@apply ml-auto flex shrink-0 items-center gap-2;
 }
 
 /* Compact native select — not EUI/Tywin; sized to match response-tab header height */
@@ -2272,68 +2374,8 @@ button.example-response-tab:focus-visible {
 	}
 }
 
-.api-code-sample-actions .copybtn.copybtn--in-header {
-	position: static;
-	top: auto;
-	right: auto;
-	width: 16px;
-	height: 16px;
-	opacity: 1;
-	background-color: transparent;
-	color: var(--api-code-muted);
-	border-radius: 0;
-}
-
-.api-code-sample-actions .copybtn.copybtn--in-header:hover {
-	color: var(--api-code-text);
-}
-
-.api-code-sample-actions .copybtn.copybtn--in-header.success {
-	background-color: transparent;
-	color: #22863a;
-}
-
-.api-code-sample-actions .copybtn.copybtn--in-header svg {
-	width: 16px;
-	height: 16px;
-	padding: 0;
-}
-
-.api-code-sample-actions .copybtn.copybtn--in-header.o-tooltip--left:after {
-	background-color: #1d2a3e;
-	color: #f6f9fc;
-	transform: translateX(-102%) translateY(0);
-}
-
 .api-code-sample-body {
 	min-width: 0;
-}
-
-.api-code-sample .highlight {
-	@apply mt-0;
-}
-
-.api-code-sample .highlight pre code {
-	@apply rounded-none!;
-	padding-top: calc(var(--spacing) * 4) !important;
-	background-color: transparent !important;
-	color: var(--api-code-text) !important;
-}
-
-/* Neutralize markdown/code.css bold tokens so all syntax shares weight 400 */
-.api-code-sample .hljs,
-.api-code-sample [class^='hljs-'],
-.example-block--response .hljs,
-.example-block--response [class^='hljs-'] {
-	font-weight: 400 !important;
-}
-
-#api-examples-panel .api-code-sample .highlight pre code {
-	max-height: min(22rem, 45vh);
-}
-
-#api-examples-panel .api-code-sample .api-code-lines pre code {
-	max-height: none !important;
 }
 
 /*
@@ -2440,7 +2482,7 @@ button.example-response-tab:focus-visible {
 /* Hide button on smaller screens where TOC is hidden */
 @media (max-width: 1023px) {
 	.examples-jump-btn {
-		right: 2rem;
+		display: none;
 	}
 }
 

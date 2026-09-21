@@ -119,6 +119,15 @@ public class ApiSupplementalRenderTests(ApiExplorerFixture fixture) : IClassFixt
 	}
 
 	[Fact]
+	public async Task Operation_PathParameters_RequiredBadgeIsSiblingOfAnchor()
+	{
+		var nav = SearchOperation();
+		var html = await RenderAsync(nav.Model, nav);
+
+		html.Should().MatchRegex("""id="path-index"[\s\S]*?</a>\s*<span class="required type-status">required</span>""");
+	}
+
+	[Fact]
 	public async Task Operation_NestedProperties_UseShowPropertiesDisclosure()
 	{
 		var nav = SearchOperation();
