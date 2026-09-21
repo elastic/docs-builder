@@ -70,10 +70,42 @@
 
 	.applies.applies-block {
 		@apply border-b-grey-20 flex flex-wrap gap-2 border-b-1 pb-4;
-		/* One badge row before applies-to-popover hydrates (border-box). */
-		min-height: calc(
-			1.875rem + 1rem + 1px
-		); /* 30px badge + pb-4 + border */
+
+		/*
+		 * Undefined/empty hosts are display:contents and collapse to 0×0.
+		 * Size them like a badge until React fills them so flex-wrap (and the
+		 * height below the title) matches hydration on every width.
+		 */
+		applies-to-popover:not(:defined),
+		applies-to-popover:empty {
+			@apply border-grey-20 inline-flex items-center rounded-full border-[1px] bg-white pt-1.5 pr-3 pb-1.5 pl-3 text-xs text-nowrap;
+
+			&::before {
+				content: attr(badge-key);
+			}
+
+			&[show-lifecycle-name='true'][show-version='true']::after {
+				content: attr(lifecycle-name) ' ' attr(badge-version);
+			}
+
+			&[show-lifecycle-name='true'][show-version='false']::after {
+				content: attr(lifecycle-name) ' ' attr(badge-lifecycle-text);
+			}
+
+			&[show-lifecycle-name='false'][show-version='true']::after {
+				content: attr(badge-version);
+			}
+
+			&[show-lifecycle-name='false'][show-version='false'][badge-lifecycle-text]:not(
+					[badge-lifecycle-text='']
+				)::after {
+				content: attr(badge-lifecycle-text);
+			}
+
+			&::after {
+				@apply border-grey-20 ml-2 border-l-[1px] pl-2;
+			}
+		}
 	}
 
 	.applies.applies-inline {
