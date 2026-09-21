@@ -1,0 +1,7 @@
+prs:
+- https://github.com/elastic/docs-builder/pull/4168
+type: bug-fix
+products:
+- product: docs-builder
+  lifecycle: ga
+title: Use bundle.output_directory as default output path in gh-release mode
