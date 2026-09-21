@@ -1,7 +1,0 @@
-prs:
-- https://github.com/elastic/docs-builder/pull/4120
-type: bug-fix
-products:
-- product: docs-builder
-  lifecycle: ga
-title: Support notes-product-version.json indices
