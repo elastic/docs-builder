@@ -32,29 +32,24 @@ public record AuthenticationSchemeDisplay(
 
 public record ApiServerDisplay(string Url, string? Description);
 
-public record ApiStructuralPage(ApiStructuralKind Kind) : IApiModel
+public record ApiStructuralPage(ApiStructuralKind Kind) : IApiModel<StructuralViewModel>
 {
 	public string Title => Kind == ApiStructuralKind.Authentication ? "Authentication" : "Servers";
 
-	public object? CreatePageModel(ApiRenderContext context) => StructuralViewModel.Create(this, context);
+	public StructuralViewModel? CreatePageModel(ApiRenderContext context) => StructuralViewModel.Create(this, context);
 
-	public async Task RenderAsync(FileSystemStream stream, ApiRenderContext context, object? pageModel, Cancel ctx = default)
+	public async Task RenderAsync(FileSystemStream stream, ApiRenderContext context, StructuralViewModel? pageModel, Cancel ctx = default)
 	{
-		var viewModel = pageModel as StructuralViewModel ?? StructuralViewModel.Create(this, context);
+		var viewModel = pageModel ?? StructuralViewModel.Create(this, context);
 		var slice = StructuralView.Create(viewModel);
 		await slice.RenderAsync(stream, cancellationToken: ctx);
 	}
 
-	public async Task RenderAsync(FileSystemStream stream, ApiRenderContext context, Cancel ctx = default) =>
-		await RenderAsync(stream, context, null, ctx);
-
-	public Task<string?> RenderCommonMarkAsync(ApiRenderContext context, object? pageModel, Cancel ctx = default)
+	public Task<string?> RenderCommonMarkAsync(ApiRenderContext context, StructuralViewModel? pageModel, Cancel ctx = default)
 	{
-		var viewModel = pageModel as StructuralViewModel ?? StructuralViewModel.Create(this, context);
+		var viewModel = pageModel ?? StructuralViewModel.Create(this, context);
 		return Task.FromResult<string?>(StructuralCommonMark.Write(viewModel));
 	}
-
-	public Task<string?> RenderCommonMarkAsync(ApiRenderContext context, Cancel ctx = default) => RenderCommonMarkAsync(context, null, ctx);
 }
 
 public class StructuralNavigationItem : ILeafNavigationItem<ApiStructuralPage>
