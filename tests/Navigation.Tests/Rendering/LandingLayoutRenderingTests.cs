@@ -10,55 +10,46 @@ using Elastic.Documentation.Configuration.Builder;
 using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Navigation;
+using Elastic.Documentation.Navigation.Assembler;
 using Elastic.Documentation.Navigation.Tests.Isolation;
 using Elastic.Documentation.Site;
 using Elastic.Documentation.Site.FileProviders;
 using Elastic.Documentation.Versions;
 using Elastic.Markdown;
-using Elastic.Markdown.Layout;
 using RazorSlices;
 
 namespace Elastic.Documentation.Navigation.Tests.Rendering;
 
-public class TableOfContentsRenderingTests(ITestOutputHelper output) : DocumentationSetNavigationTestBase(output)
+public class LandingLayoutRenderingTests(ITestOutputHelper output) : DocumentationSetNavigationTestBase(output)
 {
 	[Fact]
-	public async Task Assembler_FlagOff_RendersVersionDropdown()
+	public async Task LandingPage_OmitsEmptyMobileHamburger()
 	{
-		var html = await Render(BuildType.Assembler, showVersionDropdown: true, navigationPreviewEnabled: false);
+		var html = await RenderLanding(navigationPreviewEnabled: false);
 
+		html.Should().Contain("Elastic Docs");
+		html.Should().NotContain("pages-nav-hamburger");
+		html.Should().NotContain("id=\"pages-nav\"");
+	}
+
+	[Fact]
+	public async Task LandingPage_WithNavigationPreview_RendersMobileDrawer()
+	{
+		var html = await RenderLanding(navigationPreviewEnabled: true);
+
+		html.Should().Contain("pages-nav-hamburger");
+		html.Should().Contain("id=\"pages-nav\"");
+		html.Should().Contain("secondary-nav-mobile-menu");
 		html.Should().Contain("<version-dropdown");
-		html.Should().Contain("data-testid=\"docs-version-dropdown\"");
-		html.Should().Contain("flex-row-reverse");
-		html.Should().Contain("justify-between");
-		html.Should().Contain("<div class=\"lg:mb-4\">");
-		html.Should().NotContain("hidden md:block");
 	}
 
-	[Fact]
-	public async Task Assembler_FlagOn_OmitsVersionDropdown()
-	{
-		var html = await Render(BuildType.Assembler, showVersionDropdown: true, navigationPreviewEnabled: true);
-
-		html.Should().NotContain("<version-dropdown");
-		html.Should().NotContain("data-testid=\"docs-version-dropdown\"");
-	}
-
-	[Fact]
-	public async Task Isolated_OmitsVersionDropdown()
-	{
-		var html = await Render(BuildType.Isolated, showVersionDropdown: false, navigationPreviewEnabled: false);
-
-		html.Should().NotContain("<version-dropdown");
-		html.Should().NotContain("data-testid=\"docs-version-dropdown\"");
-	}
-
-	private async Task<string> Render(BuildType buildType, bool showVersionDropdown, bool navigationPreviewEnabled)
+	private async Task<string> RenderLanding(bool navigationPreviewEnabled)
 	{
 		var fileSystem = new MockFileSystem();
 		fileSystem.AddDirectory("/docs");
 		var context = CreateContext(fileSystem);
-		var currentNavItem = new StubNavigationItem("/docs/");
+		var siteRoot = new MockSiteNavigationRoot(new TopNavRenderModel([new TopNavLinkItem("Reference", "/docs/reference/", false)]));
+		var currentNavItem = new StubNavigationItem("/docs/") { Parent = siteRoot };
 
 		var model = new MarkdownLayoutViewModel
 		{
@@ -78,28 +69,28 @@ public class TableOfContentsRenderingTests(ITestOutputHelper output) : Documenta
 			GoogleTagManager = new GoogleTagManagerConfiguration(),
 			Optimizely = new OptimizelyConfiguration(),
 			StaticFileContentHashProvider = new StaticFileContentHashProvider(new EmbeddedOrPhysicalFileProvider(context)),
-			BuildType = buildType,
-			ShowVersionDropdown = showVersionDropdown,
-			AllVersionsUrl = "/docs/versions/",
-			CurrentVersion = "8.19",
+			BuildType = BuildType.Assembler,
+			ShowVersionDropdown = true,
+			AllVersionsUrl = "/docs/release-versioning/all-versions",
+			CurrentVersion = "9.5.3",
 			VersionDropdownSerializedModel = "[]",
 			GithubEditUrl = null,
-			MarkdownUrl = "/docs/page.md",
+			MarkdownUrl = "/docs/index.md",
 			HideEditThisPage = true,
 			ReportIssueUrl = null,
 			Breadcrumbs = [],
 			PageTocItems = [],
-			Layout = null,
+			Layout = MarkdownPageLayout.LandingPage,
 			VersioningSystem = new VersioningSystem
 			{
 				Id = VersioningSystemId.Stack,
-				Base = new SemVersion(8, 0, 0),
-				Current = new SemVersion(8, 19, 0)
+				Base = new SemVersion(9, 0, 0),
+				Current = new SemVersion(9, 5, 3)
 			},
 			Cta = Cta.Default
 		};
 
-		return await _TableOfContents.Create(model).RenderAsync(cancellationToken: TestContext.Current.CancellationToken);
+		return await _Layout.Create(model).RenderAsync(cancellationToken: TestContext.Current.CancellationToken);
 	}
 
 	private sealed record StubNavigationItem(string Url) : INavigationItem
@@ -109,5 +100,21 @@ public class TableOfContentsRenderingTests(ITestOutputHelper output) : Documenta
 		public INodeNavigationItem<INavigationModel, INavigationItem>? Parent { get; set; }
 		public bool Hidden => false;
 		public int NavigationIndex { get; set; }
+	}
+
+	private sealed class MockSiteNavigationRoot(
+		TopNavRenderModel? topNav
+	) : INodeNavigationItem<INavigationModel, INavigationItem>, ISiteNavigationRoot
+	{
+		public TopNavRenderModel? TopNav { get; } = topNav;
+		public string Id => "mock-site";
+		public string Url => "/";
+		public string NavigationTitle => "Mock Site";
+		public IRootNavigationItem<INavigationModel, INavigationItem> NavigationRoot => null!;
+		public INodeNavigationItem<INavigationModel, INavigationItem>? Parent { get; set; }
+		public bool Hidden => false;
+		public int NavigationIndex { get; set; }
+		public ILeafNavigationItem<INavigationModel> Index => null!;
+		public IReadOnlyCollection<INavigationItem> NavigationItems => [];
 	}
 }
