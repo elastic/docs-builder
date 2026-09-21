@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Collections.Frozen;
 using Elastic.Documentation.Navigation;
 
 namespace Elastic.Documentation.Site.Navigation;
@@ -21,6 +22,21 @@ public static class NavigationCurrentMarker
 		if (string.IsNullOrEmpty(result.Html) || string.IsNullOrEmpty(currentUrl))
 			return result;
 
+		var target = NormalizePath(currentUrl);
+
+		// Fast path: use the pre-built sidebar index (O(1) lookup + one splice).
+		// The index is built once when the navigation HTML is rendered and shared across all pages.
+		if (result.SidebarIndex is { } index)
+		{
+			if (!index.TryGetValue(target, out var entry))
+				return result; // this URL has no sidebar row — nothing to stamp
+
+			var spliced = string.Concat(result.Html.AsSpan(0, entry.TagStart), entry.ModifiedTag, result.Html.AsSpan(entry.TagEnd));
+			return result with { Html = spliced };
+		}
+
+		// Fallback: linear scan.  Preserves behaviour for NavigationRenderResult instances built
+		// without going through INavigationHtmlWriter.Render (e.g. test stubs, serve mode).
 		var html = Apply(result.Html, currentUrl);
 		return ReferenceEquals(html, result.Html) ? result : result with { Html = html };
 	}
@@ -61,6 +77,49 @@ public static class NavigationCurrentMarker
 		}
 
 		return updated ?? html;
+	}
+
+	/// <summary>
+	/// Scans <paramref name="html"/> once and builds a map of normalized href → pre-computed splice
+	/// info for every <c>sidebar-link</c> anchor.  Called once per navigation root when the HTML is
+	/// first rendered; the result is stored on <see cref="NavigationRenderResult.SidebarIndex"/>
+	/// and reused for every page that shares the same sidebar.
+	/// </summary>
+	internal static IReadOnlyDictionary<string, SidebarLinkEntry> BuildSidebarIndex(string html)
+	{
+		Dictionary<string, SidebarLinkEntry>? index = null;
+		var searchFrom = 0;
+
+		while (true)
+		{
+			var tagStart = html.IndexOf("<a ", searchFrom, StringComparison.Ordinal);
+			if (tagStart < 0)
+				break;
+
+			var tagEnd = html.IndexOf('>', tagStart);
+			if (tagEnd < 0)
+				break;
+
+			searchFrom = tagEnd + 1;
+			var tag = html[tagStart..tagEnd];
+			if (!tag.Contains("sidebar-link", StringComparison.Ordinal))
+				continue;
+
+			var href = GetQuotedAttribute(tag, "href");
+			if (href is null)
+				continue;
+
+			var normalized = NormalizePath(href);
+			var modifiedTag = WithCurrentClass(tag);
+			if (modifiedTag.Equals(tag, StringComparison.Ordinal))
+				continue; // already has 'current' or no class attribute to modify
+
+			index ??= [];
+			// Last occurrence wins for duplicate hrefs (degenerate sidebars).
+			index[normalized] = new SidebarLinkEntry(tagStart, modifiedTag, tagEnd);
+		}
+
+		return index?.ToFrozenDictionary() ?? FrozenDictionary<string, SidebarLinkEntry>.Empty;
 	}
 
 	/// <summary>
