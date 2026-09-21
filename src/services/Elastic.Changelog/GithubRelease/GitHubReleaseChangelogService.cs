@@ -215,7 +215,12 @@ public class GitHubReleaseChangelogService(
 			var cdnBranch = config.Bundle?.Branch ?? "main";
 
 			// 8. Process each PR and create changelog files
-			var outputDir = input.Output ?? _fileSystem.Path.Join(_fileSystem.Directory.GetCurrentDirectory(), "changelogs");
+			// Mirror the plan step's fallback chain so the actual output path matches what
+			// `changelog bundle --plan` predicts when --output is not supplied by the caller.
+			var outputDir = input.Output
+				?? config.Bundle?.OutputDirectory
+				?? config.Bundle?.Directory
+				?? _fileSystem.Path.Join(_fileSystem.Directory.GetCurrentDirectory(), "changelogs");
 			if (!_fileSystem.Directory.Exists(outputDir))
 				_ = _fileSystem.Directory.CreateDirectory(outputDir);
 
