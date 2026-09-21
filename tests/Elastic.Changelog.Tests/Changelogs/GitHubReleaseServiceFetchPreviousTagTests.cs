@@ -554,10 +554,10 @@ public class GitHubReleaseServiceFetchPreviousTagTests(ITestOutputHelper output)
 			return Json(ReleasesJson("v1.0.0-rc.2", "v1.0.0-RC.10", "v1.0.0-RC.1"));
 		});
 		var result = await Service(handler).FetchPreviousTagAsync(Owner, Repo, "v1.0.0-rc.2");
-		result.Should().Be(
-			"v1.0.0-RC.10",
-			"ASCII order is case-sensitive: RC < rc, so both RC tags are below rc.2; RC.10 is the highest of the two"
-		);
+		result
+			.Tag
+			.Should()
+			.Be("v1.0.0-RC.10", "ASCII order is case-sensitive: RC < rc, so both RC tags are below rc.2; RC.10 is the highest of the two");
 	}
 
 	[Fact]
@@ -573,10 +573,13 @@ public class GitHubReleaseServiceFetchPreviousTagTests(ITestOutputHelper output)
 			return Json(ReleasesJson("v1.0.0-rc.2+build.7", "v1.0.0-rc.1", "v1.0.0-rc.0"));
 		});
 		var result = await Service(handler).FetchPreviousTagAsync(Owner, Repo, "v1.0.0-rc.2+build.7");
-		result.Should().Be(
-			"v1.0.0-rc.1",
-			"build metadata is stripped before comparison; rc.2+build.7 == rc.2 in precedence, so it cannot be its own predecessor"
-		);
+		result
+			.Tag
+			.Should()
+			.Be(
+				"v1.0.0-rc.1",
+				"build metadata is stripped before comparison; rc.2+build.7 == rc.2 in precedence, so it cannot be its own predecessor"
+			);
 	}
 
 	[Fact]
