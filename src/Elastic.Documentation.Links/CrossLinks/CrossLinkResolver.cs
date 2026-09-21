@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information
 
 using System.Collections.Frozen;
-using System.Diagnostics.CodeAnalysis;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Builder;
 
@@ -11,7 +10,7 @@ namespace Elastic.Documentation.Links.CrossLinks;
 
 public interface ICrossLinkResolver
 {
-	bool TryResolve(Action<string> errorEmitter, Uri crossLinkUri, [NotNullWhen(true)] out Uri? resolvedUri);
+	LinkResolution Resolve(Uri crossLinkUri);
 	IUriEnvironmentResolver UriResolver { get; }
 
 	/// <summary>
@@ -27,11 +26,7 @@ public class NoopCrossLinkResolver : ICrossLinkResolver
 	public static NoopCrossLinkResolver Instance { get; } = new();
 
 	/// <inheritdoc />
-	public bool TryResolve(Action<string> errorEmitter, Uri crossLinkUri, [NotNullWhen(true)] out Uri? resolvedUri)
-	{
-		resolvedUri = null;
-		return false;
-	}
+	public LinkResolution Resolve(Uri crossLinkUri) => new LinkResolutionUnavailable();
 
 	/// <inheritdoc />
 	public IUriEnvironmentResolver UriResolver { get; } = new IsolatedBuildEnvironmentUriResolver();
@@ -47,8 +42,7 @@ public class CrossLinkResolver(FetchedCrossLinks crossLinks, IUriEnvironmentReso
 	private FetchedCrossLinks _crossLinks = crossLinks;
 	public IUriEnvironmentResolver UriResolver { get; } = uriResolver ?? new IsolatedBuildEnvironmentUriResolver();
 
-	public bool TryResolve(Action<string> errorEmitter, Uri crossLinkUri, [NotNullWhen(true)] out Uri? resolvedUri) =>
-		TryResolve(errorEmitter, _crossLinks, UriResolver, crossLinkUri, out resolvedUri);
+	public LinkResolution Resolve(Uri crossLinkUri) => Resolve(_crossLinks, UriResolver, crossLinkUri);
 
 	/// <inheritdoc />
 	public bool IsDeclaredCrossLinkScheme(string scheme) => _crossLinks.DeclaredRepositories.Contains(scheme);
@@ -61,16 +55,8 @@ public class CrossLinkResolver(FetchedCrossLinks crossLinks, IUriEnvironmentReso
 		return _crossLinks;
 	}
 
-	public static bool TryResolve(
-		Action<string> errorEmitter,
-		FetchedCrossLinks fetchedCrossLinks,
-		IUriEnvironmentResolver uriResolver,
-		Uri crossLinkUri,
-		[NotNullWhen(true)] out Uri? resolvedUri
-	)
+	public static LinkResolution Resolve(FetchedCrossLinks fetchedCrossLinks, IUriEnvironmentResolver uriResolver, Uri crossLinkUri)
 	{
-		resolvedUri = null;
-
 		// First, check if the repository is in the declared repositories list, even if it's not in the link references
 		var isDeclaredRepo = fetchedCrossLinks.DeclaredRepositories.Contains(crossLinkUri.Scheme);
 
@@ -80,16 +66,12 @@ public class CrossLinkResolver(FetchedCrossLinks crossLinks, IUriEnvironmentReso
 			// so let's generate a synthesized URL to avoid blocking development
 			if (isDeclaredRepo)
 			{
-				// Create a synthesized URL for development purposes
 				var path = ToTargetUrlPath((crossLinkUri.Host + '/' + crossLinkUri.AbsolutePath.TrimStart('/')).Trim('/'));
-				resolvedUri = uriResolver.Resolve(crossLinkUri, path);
-				return true;
+				var synthesizedUri = uriResolver.Resolve(crossLinkUri, path);
+				return new LinkSynthesized(synthesizedUri, crossLinkUri.Scheme);
 			}
 
-			errorEmitter(
-				$"'{crossLinkUri.Scheme}' was not found in the cross link index. Ensure it is listed under 'cross_links' in your docset.yml"
-			);
-			return false;
+			return new LinkSchemeNotDeclared(crossLinkUri.Scheme);
 		}
 
 		var originalLookupPath = (crossLinkUri.Host + '/' + crossLinkUri.AbsolutePath.TrimStart('/')).Trim('/');
@@ -99,18 +81,10 @@ public class CrossLinkResolver(FetchedCrossLinks crossLinks, IUriEnvironmentReso
 		if (
 			sourceLinkReference.Redirects is not null && sourceLinkReference.Redirects.TryGetValue(originalLookupPath, out var redirectRule)
 		)
-			return ResolveRedirect(
-				errorEmitter,
-				uriResolver,
-				crossLinkUri,
-				redirectRule,
-				originalLookupPath,
-				fetchedCrossLinks,
-				out resolvedUri
-			);
+			return ResolveRedirect(uriResolver, crossLinkUri, redirectRule, originalLookupPath, fetchedCrossLinks);
 
 		if (sourceLinkReference.Links.TryGetValue(originalLookupPath, out var directLinkMetadata))
-			return ResolveDirectLink(errorEmitter, uriResolver, crossLinkUri, originalLookupPath, directLinkMetadata, out resolvedUri);
+			return ResolveDirectLink(uriResolver, crossLinkUri, originalLookupPath, directLinkMetadata);
 
 		var registryUrl = fetchedCrossLinks.RegistryUrlsByRepository?.GetValueOrDefault(crossLinkUri.Scheme)
 			?? "https://elastic-docs-link-index.s3.us-east-2.amazonaws.com";
@@ -119,21 +93,16 @@ public class CrossLinkResolver(FetchedCrossLinks crossLinks, IUriEnvironmentReso
 			? $"{baseUrl}/{indexEntry.Path}"
 			: BuildFallbackLinksJsonUrl(baseUrl, crossLinkUri.Scheme, fetchedCrossLinks);
 
-		errorEmitter($"'{originalLookupPath}' is not a valid link in the '{crossLinkUri.Scheme}' cross link index: {linksJson}");
-		resolvedUri = null;
-		return false;
+		return new LinkNotInIndex(originalLookupPath, crossLinkUri.Scheme, linksJson);
 	}
 
-	private static bool ResolveDirectLink(
-		Action<string> errorEmitter,
+	private static LinkResolution ResolveDirectLink(
 		IUriEnvironmentResolver uriResolver,
 		Uri crossLinkUri,
 		string lookupPath,
-		LinkMetadata linkMetadata,
-		[NotNullWhen(true)] out Uri? resolvedUri
+		LinkMetadata linkMetadata
 	)
 	{
-		resolvedUri = null;
 		var lookupFragment = crossLinkUri.Fragment;
 		var targetUrlPath = ToTargetUrlPath(lookupPath);
 
@@ -141,29 +110,22 @@ public class CrossLinkResolver(FetchedCrossLinks crossLinks, IUriEnvironmentReso
 		{
 			var anchor = lookupFragment.TrimStart('#');
 			if (linkMetadata.Anchors is null || !linkMetadata.Anchors.Contains(anchor, StringComparer.OrdinalIgnoreCase))
-			{
-				errorEmitter($"'{lookupPath}' has no anchor named: '{lookupFragment}'.");
-				return false;
-			}
+				return new LinkAnchorNotFound(lookupPath, lookupFragment);
 
 			targetUrlPath += lookupFragment;
 		}
 
-		resolvedUri = uriResolver.Resolve(crossLinkUri, targetUrlPath);
-		return true;
+		return new LinkResolved(uriResolver.Resolve(crossLinkUri, targetUrlPath));
 	}
 
-	private static bool ResolveRedirect(
-		Action<string> errorEmitter,
+	private static LinkResolution ResolveRedirect(
 		IUriEnvironmentResolver uriResolver,
 		Uri originalCrossLinkUri,
 		LinkRedirect redirectRule,
 		string originalLookupPath,
-		FetchedCrossLinks fetchedCrossLinks,
-		[NotNullWhen(true)] out Uri? resolvedUri
+		FetchedCrossLinks fetchedCrossLinks
 	)
 	{
-		resolvedUri = null;
 		var originalFragment = originalCrossLinkUri.Fragment.TrimStart('#');
 
 		if (!string.IsNullOrEmpty(originalFragment) && redirectRule.Many is { Length: > 0 })
@@ -177,25 +139,9 @@ public class CrossLinkResolver(FetchedCrossLinks crossLinks, IUriEnvironmentReso
 					continue;
 
 				if (subRule.Anchors.TryGetValue("!", out _))
-					return FinalizeRedirect(
-						errorEmitter,
-						uriResolver,
-						originalCrossLinkUri,
-						subRule.To,
-						null,
-						fetchedCrossLinks,
-						out resolvedUri
-					);
+					return FinalizeRedirect(uriResolver, originalCrossLinkUri, subRule.To, null, fetchedCrossLinks);
 				if (subRule.Anchors.TryGetValue(originalFragment, out var mappedAnchor))
-					return FinalizeRedirect(
-						errorEmitter,
-						uriResolver,
-						originalCrossLinkUri,
-						subRule.To,
-						mappedAnchor,
-						fetchedCrossLinks,
-						out resolvedUri
-					);
+					return FinalizeRedirect(uriResolver, originalCrossLinkUri, subRule.To, mappedAnchor, fetchedCrossLinks);
 			}
 		}
 
@@ -210,46 +156,22 @@ public class CrossLinkResolver(FetchedCrossLinks crossLinks, IUriEnvironmentReso
 			else if (redirectRule.Anchors is null || redirectRule.Anchors.Count == 0)
 				finalTargetFragment = originalFragment;
 			else
-			{
-				errorEmitter(
-					$"Redirect rule for '{originalLookupPath}' in '{originalCrossLinkUri.Scheme}' found, but top-level rule did not handle anchor '#{originalFragment}'."
-				);
-				return false;
-			}
+				return new LinkRedirectAnchorUnhandled(originalLookupPath, originalCrossLinkUri.Scheme, originalFragment);
 		}
 
 		return string.IsNullOrEmpty(redirectRule.To)
-			? FinalizeRedirect(
-				errorEmitter,
-				uriResolver,
-				originalCrossLinkUri,
-				originalLookupPath,
-				finalTargetFragment,
-				fetchedCrossLinks,
-				out resolvedUri
-			)
-			: FinalizeRedirect(
-				errorEmitter,
-				uriResolver,
-				originalCrossLinkUri,
-				redirectRule.To,
-				finalTargetFragment,
-				fetchedCrossLinks,
-				out resolvedUri
-			);
+			? FinalizeRedirect(uriResolver, originalCrossLinkUri, originalLookupPath, finalTargetFragment, fetchedCrossLinks)
+			: FinalizeRedirect(uriResolver, originalCrossLinkUri, redirectRule.To, finalTargetFragment, fetchedCrossLinks);
 	}
 
-	private static bool FinalizeRedirect(
-		Action<string> errorEmitter,
+	private static LinkResolution FinalizeRedirect(
 		IUriEnvironmentResolver uriResolver,
 		Uri originalProcessingUri,
 		string redirectToPath,
 		string? targetFragment,
-		FetchedCrossLinks fetchedCrossLinks,
-		[NotNullWhen(true)] out Uri? resolvedUri
+		FetchedCrossLinks fetchedCrossLinks
 	)
 	{
-		resolvedUri = null;
 		string finalPathForResolver;
 
 		if (
@@ -265,32 +187,19 @@ public class CrossLinkResolver(FetchedCrossLinks crossLinks, IUriEnvironmentReso
 				finalPathForResolver += $"#{targetFragment}";
 
 			if (!fetchedCrossLinks.LinkReferences.TryGetValue(targetCrossUri.Scheme, out var targetLinkReference))
-			{
-				errorEmitter(
-					$"Redirect target '{redirectToPath}' points to repository '{targetCrossUri.Scheme}' for which no links.json was found."
-				);
-				return false;
-			}
+				return new LinkRedirectRepositoryMissing(redirectToPath, targetCrossUri.Scheme);
 
 			if (!targetLinkReference.Links.ContainsKey(lookupPath))
-			{
-				errorEmitter(
-					$"Redirect target '{redirectToPath}' points to file '{lookupPath}' which was not found in repository '{targetCrossUri.Scheme}'s links.json."
-				);
-				return false;
-			}
+				return new LinkRedirectTargetMissing(redirectToPath, lookupPath, targetCrossUri.Scheme);
 
-			resolvedUri = uriResolver.Resolve(targetCrossUri, finalPathForResolver); // Use targetUri for scheme and base
+			return new LinkResolved(uriResolver.Resolve(targetCrossUri, finalPathForResolver));
 		}
-		else
-		{
-			finalPathForResolver = ToTargetUrlPath(redirectToPath);
-			if (!string.IsNullOrEmpty(targetFragment) && targetFragment != "!")
-				finalPathForResolver += $"#{targetFragment}";
 
-			resolvedUri = uriResolver.Resolve(originalProcessingUri, finalPathForResolver); // Use original URI's scheme
-		}
-		return true;
+		finalPathForResolver = ToTargetUrlPath(redirectToPath);
+		if (!string.IsNullOrEmpty(targetFragment) && targetFragment != "!")
+			finalPathForResolver += $"#{targetFragment}";
+
+		return new LinkResolved(uriResolver.Resolve(originalProcessingUri, finalPathForResolver));
 	}
 
 	public static string ToTargetUrlPath(string lookupPath)

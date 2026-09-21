@@ -148,15 +148,11 @@ public class AssemblerBuilder(
 			if (Uri.IsWellFormedUriString(path, UriKind.Absolute)) // Cross-repo links
 
 			{
-				_ = linkResolver.TryResolve(
-					specificErrorMessage => context.Collector.EmitError(
-						path,
-						$"An error occurred while resolving cross-link {path}",
-						specificErrorMessage
-					),
-					new Uri(path),
-					out uri
-				);
+				var crossLinkUri = new Uri(path);
+				var resolution = linkResolver.Resolve(crossLinkUri);
+				uri = resolution.ResolvedUri();
+				if (uri is null)
+					context.Collector.EmitError(path, resolution.ToDiagnosticMessage(crossLinkUri));
 			}
 			else // Relative links
 

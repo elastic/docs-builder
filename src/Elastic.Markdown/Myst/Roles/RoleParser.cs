@@ -13,7 +13,7 @@ using Markdig.Syntax.Inlines;
 namespace Elastic.Markdown.Myst.Roles;
 
 [DebuggerDisplay("{GetType().Name} Line: {Line}, Role: {Role}, Content: {Content}")]
-public abstract class RoleLeaf(string role, string content) : CodeInline(content)
+public closed class RoleLeaf(string role, string content) : CodeInline(content)
 {
 	public string Role => role;
 }

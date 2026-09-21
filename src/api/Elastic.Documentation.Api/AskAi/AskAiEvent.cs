@@ -19,7 +19,7 @@ namespace Elastic.Documentation.Api.AskAi;
 [JsonDerivedType(typeof(Reasoning), typeDiscriminator: "reasoning")]
 [JsonDerivedType(typeof(ConversationEnd), typeDiscriminator: "conversation_end")]
 [JsonDerivedType(typeof(ErrorEvent), typeDiscriminator: "error")]
-public abstract record AskAiEvent(string Id, long Timestamp)
+public closed record class AskAiEvent(string Id, long Timestamp)
 {
 	/// <summary>
 	/// Conversation has started

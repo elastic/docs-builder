@@ -315,15 +315,15 @@ public class DocumentationSetNavigation<TModel> : IDocumentationSetNavigation, I
 		INavigationHomeAccessor homeAccessor
 	)
 	{
-		var title = crossLinkRef.Title ?? crossLinkRef.CrossLinkUri.OriginalString;
-		if (
-			!_crossLinkResolver.TryResolve(
-				s => _context.EmitError(_context.ConfigurationPath, s),
-				crossLinkRef.CrossLinkUri,
-				out var resolvedUri
-			)
-		)
+		var crossLinkUri = crossLinkRef.CrossLinkUri;
+		var title = crossLinkRef.Title ?? crossLinkUri.OriginalString;
+		var resolution = _crossLinkResolver.Resolve(crossLinkUri);
+		var resolvedUri = resolution.ResolvedUri();
+		if (resolvedUri is null)
+		{
+			_context.EmitError(_context.ConfigurationPath, resolution.ToDiagnosticMessage(crossLinkUri));
 			return null;
+		}
 		var model = new CrossLinkModel(resolvedUri, title);
 
 		return new CrossLinkNavigationLeaf(model, resolvedUri.ToString(), crossLinkRef.Hidden, parent, homeAccessor)
