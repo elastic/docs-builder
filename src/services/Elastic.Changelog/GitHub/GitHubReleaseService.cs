@@ -704,16 +704,9 @@ public partial class GitHubReleaseService(
 			var url = $"https://api.github.com/repos/{owner}/{repo}/commits?sha={Uri.EscapeDataString(tagRef)}&per_page=100";
 			_logger.LogDebug("Fetching initial commit for {Owner}/{Repo} at {Tag}: GET {ApiUrl}", owner, repo, tagRef, url);
 
-			using var firstResponse = await _transport.GetAsync(url, ctx);
-			if (!firstResponse.IsSuccessStatusCode)
-			{
-				_logger.LogWarning(
-					"GitHub API {Url} returned HTTP {StatusCode} fetching initial commit",
-					url,
-					(int)firstResponse.StatusCode
-				);
+			using var firstResponse = await GetWithRetryAsync(url, ctx);
+			if (firstResponse is null)
 				return null;
-			}
 
 			var lastPageUrl = ParseLastLinkHeader(firstResponse.Headers);
 			string jsonContent;
@@ -724,16 +717,9 @@ public partial class GitHubReleaseService(
 			}
 			else
 			{
-				using var lastResponse = await _transport.GetAsync(lastPageUrl, ctx);
-				if (!lastResponse.IsSuccessStatusCode)
-				{
-					_logger.LogWarning(
-						"GitHub API {Url} returned HTTP {StatusCode} fetching last page of commits",
-						lastPageUrl,
-						(int)lastResponse.StatusCode
-					);
+				using var lastResponse = await GetWithRetryAsync(lastPageUrl, ctx);
+				if (lastResponse is null)
 					return null;
-				}
 				jsonContent = await lastResponse.Content.ReadAsStringAsync(ctx);
 			}
 

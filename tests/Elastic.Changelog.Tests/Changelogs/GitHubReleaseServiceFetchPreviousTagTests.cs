@@ -955,7 +955,7 @@ public class GitHubReleaseServiceFetchPreviousTagTests(ITestOutputHelper output)
 		// Single page — no Link header — oldest commit is last in the array.
 		var handler = new StubHandler(_ => JsonWithLink(CommitsJson("sha-new", "sha-mid", "sha-old")));
 		var result = await Service(handler).FetchInitialCommitAsync(Owner, Repo, "v1.0.0");
-		result.Tag.Should().Be("sha-old");
+		result.Should().Be("sha-old");
 	}
 
 	[Fact]
@@ -971,7 +971,7 @@ public class GitHubReleaseServiceFetchPreviousTagTests(ITestOutputHelper output)
 				: JsonWithLink(CommitsJson("sha-new", "sha-mid"), lastPageUrl);
 		});
 		var result = await Service(handler).FetchInitialCommitAsync(Owner, Repo, "v1.0.0");
-		result.Tag.Should().Be("sha-initial");
+		result.Should().Be("sha-initial");
 		calls.Should().HaveCount(2);
 		calls[1].Should().Be(lastPageUrl);
 	}
