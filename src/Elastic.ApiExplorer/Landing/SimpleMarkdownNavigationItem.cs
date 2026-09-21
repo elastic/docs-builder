@@ -51,12 +51,10 @@ public class SimpleMarkdownNavigationItem(
 	/// <summary>Throws if the slug collides with reserved API Explorer path segments.</summary>
 	public static void ValidateSlugForCollisions(string slug, string productKey, string filePath)
 	{
-		string[] reservedSegments = ["types", "group", "operation"];
-
-		if (reservedSegments.Contains(slug, StringComparer.OrdinalIgnoreCase))
+		if (ApiUrlBuilder.ReservedChildSegments.Contains(slug, StringComparer.OrdinalIgnoreCase))
 		{
 			throw new InvalidOperationException(
-				$"Markdown file slug '{slug}' (from '{filePath}') conflicts with reserved API Explorer segment in product '{productKey}'. Reserved segments: {string.Join(", ", reservedSegments)}"
+				$"Markdown file slug '{slug}' (from '{filePath}') conflicts with reserved API Explorer segment in product '{productKey}'. Reserved segments: {string.Join(", ", ApiUrlBuilder.ReservedChildSegments)}"
 			);
 		}
 	}

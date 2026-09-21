@@ -121,11 +121,24 @@ internal static class OperationCommonMark
 
 	private static void WriteDescription(StringBuilder markdown, OperationPageModel page, string apiBaseUrl)
 	{
-		if (!string.IsNullOrWhiteSpace(page.DescriptionMarkdown))
+		var hasUrls = page.DescriptionUrls.Count > 0;
+		var hasDesc = !string.IsNullOrWhiteSpace(page.DescriptionMarkdown);
+		if (!hasUrls && !hasDesc && page.ExternalDocs is null)
+			return;
+
+		ApiCommonMark.Heading(markdown, 2, "Description");
+
+		if (hasUrls)
 		{
-			ApiCommonMark.Heading(markdown, 2, "Description");
-			ApiCommonMark.Prepared(markdown, page.DescriptionMarkdown, apiBaseUrl);
+			_ = markdown.AppendLine(ApiMarkdown.OperationListMarkdownHeader);
+			_ = markdown.AppendLine();
+			foreach (var url in page.DescriptionUrls)
+				_ = markdown.AppendLine($"- **{url.Method.ToUpperInvariant()}** `{url.Route}`");
+			_ = markdown.AppendLine();
 		}
+
+		if (hasDesc)
+			ApiCommonMark.Prepared(markdown, page.DescriptionMarkdown, apiBaseUrl);
 
 		if (page.ExternalDocs is { } docs)
 			ApiCommonMark.Paragraph(markdown, ApiCommonMark.Link(docs.LinkText, docs.Url));

@@ -2920,6 +2920,13 @@
             },
             {
               "role": "flag",
+              "name": "pr",
+              "type": "string",
+              "required": false,
+              "summary": "Optional: Alias for --prs that accepts a single pull request URL or PR number. Feeds into --prs. Prefer --prs for multiple values."
+            },
+            {
+              "role": "flag",
               "name": "prs",
               "type": "array",
               "required": false,
@@ -3136,7 +3143,7 @@
           ],
           "name": "bundle",
           "summary": "Aggregate changelog entries matching a filter into a single bundle YAML.",
-          "notes": "Profile-based commands (bundle \u003Cprofile\u003E \u003Cversion|report\u003E [report] [--plan]): filters, paths, repo metadata,\ndescription, hide-features, and release-date behaviour come from changelog.yml. Only --plan is supported\nalongside profile positional arguments; other flags documented below as unsupported in profile-based commands must be set in\nconfiguration instead. Config is auto-discovered from ./changelog.yml or ./docs/changelog.yml. Use\nbundle.release_dates or bundle.profiles.\u003Cname\u003E.release_dates to control auto-population;\n--release-date and --no-release-date require option-based mode.\n\nOption-based mode (no profile argument): exactly one filter must be specified \u2014\n--all, --input-products, --prs, --issues, --release-version, --report, or --files.",
+          "notes": "Profile-based commands (bundle \u003Cprofile\u003E \u003Cversion|report\u003E [report] [--plan]): filters, paths, repo metadata,\ndescription, hide-features, and release-date behaviour come from changelog.yml. --description and\n--description-file are allowed in profile-based commands only when neither bundle.description nor\nthe profile\u0027s description is set. Only --plan is otherwise supported\nalongside profile positional arguments; other flags documented below as unsupported in profile-based commands must be set in\nconfiguration instead. Config is auto-discovered from ./changelog.yml or ./docs/changelog.yml. Use\nbundle.release_dates or bundle.profiles.\u003Cname\u003E.release_dates to control auto-population;\n--release-date and --no-release-date require option-based mode.\n\nOption-based mode (no profile argument): exactly one filter must be specified \u2014\n--all, --input-products, --prs, --issues, --release-version, --report, or --files.",
           "usage": "docs-builder changelog bundle [\u003Cprofile\u003E] [\u003Cprofile-arg\u003E] [\u003Cprofile-report\u003E] [options]",
           "examples": [],
           "parameters": [
@@ -3208,7 +3215,14 @@
               "name": "description",
               "type": "string",
               "required": false,
-              "summary": "Bundle description text with placeholder support ({version}, {lifecycle}, {owner}, {repo}). Overrides bundle.description from config. In option-based mode, placeholders require --output-products. This option is not supported in profile-based commands. The equivalent configuration options are bundle.description or bundle.profiles.\u003Cname\u003E.description."
+              "summary": "Bundle description text with placeholder support ({version}, {lifecycle}, {owner}, {repo}). Overrides bundle.description from config. In option-based mode, placeholders require --output-products. In profile-based commands, allowed only when neither bundle.description nor the profile description is set. Mutually exclusive with --description-file."
+            },
+            {
+              "role": "flag",
+              "name": "description-file",
+              "type": "string",
+              "required": false,
+              "summary": "Path to a UTF-8 file whose contents are the bundle description, or - to read from stdin. Same placeholder rules as --description. Mutually exclusive with --description. In profile-based commands, allowed only when neither bundle.description nor the profile description is set."
             },
             {
               "role": "flag",
@@ -3399,7 +3413,7 @@
             "changelog"
           ],
           "name": "bundle-amend",
-          "summary": "Append or exclude changelog entries in a published bundle without modifying it.",
+          "summary": "Append or exclude changelog entries, or replace the bundle intro description, without modifying the parent file.",
           "notes": "Creates an immutable .amend-N sidecar using the same .yaml or .yml extension\nas the parent. The parent may be a local file (the sidecar is written next to it) or a CDN locator\n/bundle/{product}/{file}.yaml (the sidecar is written under --output,\nbundle.output_directory, or the current directory).\nUpload the sidecar separately with changelog upload --artifact-type bundle.",
           "usage": "docs-builder changelog bundle-amend \u003Cbundle-path\u003E [options]",
           "examples": [],
@@ -3459,6 +3473,28 @@
               "type": "string",
               "required": false,
               "summary": "Optional: Where to write the new sidecar when the parent is a CDN locator. A directory, or a .yaml/.yml path whose file name must be {parent}.amend-N plus the same extension as the parent for the next unused N. Falls back to bundle.output_directory in changelog.yml, then the current directory. Ignored for a local parent."
+            },
+            {
+              "role": "flag",
+              "name": "description",
+              "type": "string",
+              "required": false,
+              "summary": "Optional: Replace the parent bundle\u0027s intro description. Supports {version}, {lifecycle}, {owner}, and {repo} from the parent products. Mutually exclusive with --description-file and --clear-description. May be used without --add/--remove."
+            },
+            {
+              "role": "flag",
+              "name": "description-file",
+              "type": "string",
+              "required": false,
+              "summary": "Optional: Path to a UTF-8 file whose contents replace the parent intro, or - to read from stdin. Same placeholders as --description. Mutually exclusive with --description and --clear-description."
+            },
+            {
+              "role": "flag",
+              "name": "clear-description",
+              "type": "boolean",
+              "required": false,
+              "summary": "Optional: Remove the effective bundle intro. Mutually exclusive with --description and --description-file. May be used without --add/--remove.",
+              "defaultValue": "false"
             },
             {
               "role": "flag",
@@ -3829,14 +3865,6 @@
               "type": "boolean",
               "required": false,
               "summary": "Optional: Remove square brackets and text within them from the beginning of PR titles (e.g., \u0022[Inference API] Title\u0022 becomes \u0022Title\u0022)",
-              "defaultValue": "false"
-            },
-            {
-              "role": "flag",
-              "name": "warn-on-type-mismatch",
-              "type": "boolean",
-              "required": false,
-              "summary": "Optional: Warn when the type inferred from release notes section headers doesn\u0027t match the type derived from PR labels. Defaults to true",
               "defaultValue": "false"
             },
             {
@@ -4922,6 +4950,114 @@
           "path": [
             "changelog"
           ],
+          "name": "unpack",
+          "summary": "Recreate individual changelog YAML files from a bundle using changelog add and changelog note.",
+          "notes": "Writes one file per bundle entry through the same writers as changelog add (PR-anchored)\nand changelog note (no PR, or products with versions). Filenames follow add and note rules,\nnot the bundle file.name provenance. Checksums are not reproduced.\nBundles that were scrubbed during changelog upload (public-bucket copies) have their\nprivate PRs and issues removed, so they are less likely to unpack successfully. Prefer the\nprivate-side bundle YAML.",
+          "usage": "docs-builder changelog unpack \u003Cbundle\u003E [options]",
+          "examples": [],
+          "parameters": [
+            {
+              "role": "positional",
+              "name": "bundle",
+              "type": "string",
+              "required": true,
+              "summary": "Local bundle or amend YAML file to unpack. The file must exist on disk; CDN locators such as /bundle/{product}/{file}.yaml are not accepted. A parent bundle is merged with sibling .amend-* bundles first (same as changelog render). An amend bundle unpacks only that file\u0027s entries; exclude-entries are skipped.",
+              "validations": [
+                {
+                  "kind": "rejectSymbolicLinks"
+                },
+                {
+                  "kind": "existing"
+                },
+                {
+                  "kind": "fileExtensions",
+                  "values": [
+                    "yml",
+                    "yaml"
+                  ]
+                }
+              ]
+            },
+            {
+              "role": "flag",
+              "name": "config",
+              "type": "string",
+              "required": false,
+              "summary": "Path to changelog.yml. Defaults to docs/changelog.yml. Type and area validation uses this configuration.",
+              "validations": [
+                {
+                  "kind": "rejectSymbolicLinks"
+                },
+                {
+                  "kind": "existing"
+                },
+                {
+                  "kind": "fileExtensions",
+                  "values": [
+                    "yml",
+                    "yaml"
+                  ]
+                }
+              ]
+            },
+            {
+              "role": "flag",
+              "name": "output",
+              "type": "string",
+              "required": false,
+              "summary": "Directory for written changelog files. Defaults to bundle.directory in changelog.yml, then the current directory."
+            },
+            {
+              "role": "flag",
+              "name": "concise",
+              "type": "boolean",
+              "required": false,
+              "summary": "Omit schema reference comments from generated YAML, matching changelog add --concise.",
+              "defaultValue": "false"
+            },
+            {
+              "role": "flag",
+              "name": "log-level",
+              "shortName": "l",
+              "type": "enum",
+              "required": false,
+              "summary": "Minimum log level. Default: information",
+              "enumValues": [
+                "trace",
+                "debug",
+                "information",
+                "warning",
+                "error",
+                "critical",
+                "none"
+              ]
+            },
+            {
+              "role": "flag",
+              "name": "config-source",
+              "shortName": "c",
+              "type": "enum",
+              "required": false,
+              "summary": "Override the configuration source: local, remote",
+              "enumValues": [
+                "local",
+                "remote",
+                "embedded"
+              ]
+            },
+            {
+              "role": "flag",
+              "name": "skip-private-repositories",
+              "type": "boolean",
+              "required": false,
+              "summary": "Skip cloning private repositories"
+            }
+          ]
+        },
+        {
+          "path": [
+            "changelog"
+          ],
           "name": "upload",
           "summary": "Upload changelog entries or bundle artifacts to S3 or Elasticsearch.",
           "notes": "Uses content-hash\u2013based incremental transfer \u2014 only changed files are uploaded.\n\n\nChangelog entries are uploaded once under changelog/{org}/{repo}/{branch}/{file}, keyed by the\nauthoring owner (--owner \u003E bundle.owner \u003E git remote), repository (--repo\n\u003E bundle.repo \u003E git remote), and branch (--branch \u003E the current checkout\u0027s\nbranch). The branch is stored verbatim, so a branch\u0027s / become real key separators. Bundles\nare uploaded under bundle/{product}/{file}, product-scoped from the bundle YAML, and do not\nrequire an owner/repo/branch.",
@@ -5009,7 +5145,15 @@
               "name": "skip-etag-check",
               "type": "boolean",
               "required": false,
-              "summary": "Upload every discovered file even when its content hash matches the remote object. Use to re-trigger downstream scrubbers without changing file content.",
+              "summary": "Upload every discovered file even when its content hash matches the remote object. Use to re-trigger downstream scrubbers without changing file content. Mutually exclusive with --no-overwrite.",
+              "defaultValue": "false"
+            },
+            {
+              "role": "flag",
+              "name": "no-overwrite",
+              "type": "boolean",
+              "required": false,
+              "summary": "When a remote object already exists with different content, skip PutObject, warn with the existing YAML, and exit non-zero. New keys are still uploaded. Mutually exclusive with --skip-etag-check.",
               "defaultValue": "false"
             },
             {

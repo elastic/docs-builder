@@ -92,6 +92,22 @@ public interface IGitHubReleaseService
 	Task<IReadOnlyList<GitHubReleaseInfo>> FetchReleasesAsync(string owner, string repo, int count, CancellationToken ctx = default);
 
 	/// <summary>
+	/// Determines the tag name of the release immediately preceding <paramref name="currentTag"/> in the same
+	/// release line (same prefix and semver major version).
+	/// <para>
+	/// Uses <c>POST /repos/{owner}/{repo}/releases/generate-notes</c> as the primary path — GitHub's own
+	/// algorithm handles interleaved multi-version histories. Falls back to paginating the releases list
+	/// (compatible with <c>contents: read</c> tokens) when generate-notes requires higher permissions.
+	/// </para>
+	/// <para>
+	/// When the tag carries a prefix (e.g. <c>agent-v1.2.0</c>), only releases sharing that prefix are
+	/// considered. When the tag is semver, only releases with the same major version are considered.
+	/// </para>
+	/// </summary>
+	/// <returns>The previous tag name, or <c>null</c> if none can be determined.</returns>
+	Task<string?> FetchPreviousTagAsync(string owner, string repo, string currentTag, CancellationToken ctx = default);
+
+	/// <summary>
 	/// Downloads a release asset's content as text
 	/// </summary>
 	/// <param name="asset">The asset to download</param>

@@ -13,6 +13,8 @@ namespace Elastic.Documentation.Integrations.S3;
 public interface IS3EtagCalculator
 {
 	Task<string> CalculateS3ETag(string filePath, Cancel ctx = default);
+
+	string CalculateS3ETag(ReadOnlyMemory<byte> content);
 }
 
 public class S3EtagCalculator(ILoggerFactory logFactory, IFileSystem readFileSystem) : IS3EtagCalculator
@@ -40,8 +42,7 @@ public class S3EtagCalculator(ILoggerFactory logFactory, IFileSystem readFileSys
 			await using var stream = readFileSystem.FileStream.New(filePath, FileMode.Open, FileAccess.Read, FileShare.Read);
 			var smallBuffer = new byte[fileSize];
 			var bytesRead = await stream.ReadAsync(smallBuffer.AsMemory(0, (int)fileSize), ctx);
-			var hash = MD5.HashData(smallBuffer.AsSpan(0, bytesRead));
-			var etag = Convert.ToHexStringLower(hash);
+			var etag = CalculateS3ETag(smallBuffer.AsMemory(0, bytesRead));
 			_etagCache[filePath] = etag;
 			return etag;
 		}
@@ -64,4 +65,7 @@ public class S3EtagCalculator(ILoggerFactory logFactory, IFileSystem readFileSys
 		_etagCache[filePath] = multipartEtag;
 		return multipartEtag;
 	}
+
+	[SuppressMessage("Security", "CA5351:Do Not Use Broken Cryptographic Algorithms")]
+	public string CalculateS3ETag(ReadOnlyMemory<byte> content) => Convert.ToHexStringLower(MD5.HashData(content.Span));
 }

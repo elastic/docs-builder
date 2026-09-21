@@ -297,8 +297,7 @@ bundle:
     #   # Optional: replace bundle.output_directory for this profile (same as --output as a directory).
     #   # The conventional {repo}-{product}-{version}.yaml name is written in this folder.
     #   # output_directory: docs/releases/cloud-serverless
-    #   # Optional: profile-specific GitHub repo name (overrides bundle.repo if set).
-    #   # Only needed when this profile's product ID differs from the repository name.
+    #   # Optional: GitHub repository for link and file name generation (overrides bundle.repo if set)
     #     repo: elasticsearch
     #     owner: elastic
     #   # Feature IDs to hide when bundling with this profile (accepts string or list)

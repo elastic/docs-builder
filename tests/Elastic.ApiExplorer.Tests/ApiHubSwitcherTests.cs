@@ -45,13 +45,13 @@ public class ApiHubSwitcherTests
 			.ContainSingle(e => e.Key == "elasticsearch")
 			.Which
 			.Should()
-			.BeEquivalentTo(new ApiCatalogEntry("elasticsearch", "Elasticsearch", "/api/doc/elasticsearch/"));
+			.BeEquivalentTo(new ApiCatalogEntry("elasticsearch", "Elasticsearch", "/api/doc/elasticsearch/", "elasticsearch"));
 		entries
 			.Should()
 			.ContainSingle(e => e.Key == "kibana")
 			.Which
 			.Should()
-			.BeEquivalentTo(new ApiCatalogEntry("kibana", "Kibana", "/api/doc/kibana/"));
+			.BeEquivalentTo(new ApiCatalogEntry("kibana", "Kibana", "/api/doc/kibana/", "kibana"));
 	}
 
 	[Fact]
@@ -105,8 +105,27 @@ public class ApiHubSwitcherTests
 		items.Single(i => i.Selected).Label.Should().Be("Elasticsearch");
 	}
 
-	private static ResolvedApiConfiguration Config(string key, string displayName) =>
-		new() { ProductKey = key, Product = new Product { Id = key, DisplayName = displayName }, SpecFileName = $"{key}.json" };
+	[Fact]
+	public void CollectDeclaredEntries_PreservesCatalogCategories()
+	{
+		var configs = new Dictionary<string, ResolvedApiConfiguration>
+		{
+			["elasticsearch"] = Config("elasticsearch", "Elasticsearch", ["self", "ess"])
+		};
+
+		var entries = ApiHubSwitcher.CollectDeclaredEntries("", configs);
+
+		entries.Should().ContainSingle().Which.CatalogCategories.Should().Equal("self", "ess");
+	}
+
+	private static ResolvedApiConfiguration Config(string key, string displayName, IReadOnlyList<string>? categories = null) =>
+		new()
+		{
+			ProductKey = key,
+			Product = new Product { Id = key, DisplayName = displayName },
+			SpecFileName = $"{key}.json",
+			CatalogCategories = categories ?? []
+		};
 
 	private static ApiCatalogEntry Entry(string key, string title) => new(key, title, $"/api/doc/{key}/");
 }

@@ -194,7 +194,7 @@ internal static class DirectiveLinkValidator
 		return true;
 	}
 
-	private static (string Path, string? Anchor) SplitAnchor(string url)
+	public static (string Path, string? Anchor) SplitAnchor(string url)
 	{
 		var hash = url.IndexOf('#');
 		return hash < 0 ? (url, null) : (url[..hash], url[hash..]);

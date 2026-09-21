@@ -45,6 +45,8 @@ public class SimpleMarkdownNavigationItemTests
 	[InlineData("types", "types")]
 	[InlineData("group", "group")]
 	[InlineData("operation", "operation")]
+	[InlineData("authentication", "authentication")]
+	[InlineData("servers", "servers")]
 	public void ValidateSlugForCollisions_ThrowsForReservedSegments(string slug, string reservedSegment)
 	{
 		var act = () => SimpleMarkdownNavigationItem.ValidateSlugForCollisions(slug, "elasticsearch", "/docs/file.md");

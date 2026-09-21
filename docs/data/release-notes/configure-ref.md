@@ -52,7 +52,7 @@ These settings are relevant to one or all of the `changelog bundle`, `changelog 
 | `bundle.output_directory` | Output directory for bundled files (default: `docs/releases`). Conventional `{repo}-{product}-{version}.yaml` names are written here in profile mode (unless the profile sets `output_directory`) and in option mode when `--output` is omitted. Passing `--output` as a directory, or setting a profile `output_directory`, writes that same file name in the directory you specify instead. |
 | `bundle.owner`            | Default GitHub repository owner (for example, `elastic`). Also the org segment of uploaded changelog-entry keys (`changelog/{org}/{repo}/{branch}/...`) and CDN entry sourcing. |
 | `bundle.release_dates`    | When `true`, bundles include a `release-date` field (default: true). |
-| `bundle.repo`             | Default GitHub repository name (for example, `elasticsearch`). Used by the `{changelog}` directive to generate correct PR and issue links, to scope uploaded changelog-entry keys (`changelog/{org}/{repo}/{branch}/...`) and CDN entry sourcing, and as the `{repo}` segment of bundle file names (`{repo}-{product}-{version}.yaml`). Only needed when the product ID doesn't match the GitHub repository name (or to override the git remote). |
+| `bundle.repo`             | GitHub repository name for link and file name generation (for example, `elasticsearch`). Written to `products[].repo` so `{changelog}` can resolve bare PR and issue numbers. Also the `{repo}` segment of `{repo}-{product}-{version}.yaml` names, and the repo segment of uploaded changelog-entry keys (`changelog/{org}/{repo}/{branch}/...`) and CDN entry sourcing. Derived from `GITHUB_REPOSITORY` or git `origin` when omitted. |
 | `bundle.use_local_changelogs` | When `true`, always source entries from the local folder and never from the CDN (default: `false`). Refer to [Entry sourcing](#bundle-entry-sourcing). |
 
 :::
@@ -109,6 +109,10 @@ bundle:
 
 The `|` (pipe) preserves line breaks and is ideal for Markdown-formatted text. Avoid using `>` (greater than) for descriptions as it folds line breaks into spaces, making lists and paragraphs difficult to format correctly.
 
+Generated bundle YAML from `changelog bundle` and `changelog bundle-amend` writes multiline `description` values as `|` literals.
+
+To change the intro of an already-created bundle without re-running `changelog bundle`, use [](/cli/changelog/bundle-amend.md) with `--description` or `--description-file`.
+
 ### Bundle profiles [bundle-profiles]
 
 Named profiles enable you to run commands repeatedly with consistent options.
@@ -158,8 +162,9 @@ These settings are located in the `bundle.profiles.<name>` section of the config
 
 `repo`
 :   Overrides [bundle.repo](#bundle-basic).
-:   Required when `source: github_release` is used and `bundle.repo` is not set.
-:   Also the `{repo}` segment of the conventional bundle file name.
+:   Required for `source: github_release` profiles, unless `bundle.repo` is already set. For all other profiles, it's optional.
+:   Also the `{repo}` segment of the conventional bundle file name and the `products[].repo` value in the bundle YAML.
+:   This is the GitHub repository you ran the command in, not `products.yml` `repository:`.
 
 `source`
 :   Derive the list of changelogs from the specified source.
@@ -264,7 +269,7 @@ Also controls how the `changelog add` command maps GitHub labels to various chan
 :::
 
 :::{note}
-Type and subtype values must match the available values defined in [ChangelogEntryType.cs](https://github.com/elastic/docs-builder/blob/main/src/Elastic.Documentation/ChangelogEntryType.cs) and [ChangelogEntrySubtype.cs](https://github.com/elastic/docs-builder/blob/main/src/Elastic.Documentation/ChangelogEntrySubtype.cs).
+Type and subtype values must match the available values defined in [ChangelogEntryType.cs](https://github.com/elastic/docs-builder/blob/main/src/Elastic.Documentation/ReleaseNotes/ChangelogEntryType.cs) and [ChangelogEntrySubtype.cs](https://github.com/elastic/docs-builder/blob/main/src/Elastic.Documentation/ReleaseNotes/ChangelogEntrySubtype.cs).
 :::
 
 The following example demonstrates some GitHub label mappings in the `pivot` section of the changelog configuration file:

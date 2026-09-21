@@ -233,6 +233,7 @@ function expandParamSectionForHash(): void {
     const target = document.getElementById(id)
     const section = target?.closest<HTMLElement>('[data-param-section]')
     if (section) expandParamSection(section)
+    if (section) expandParamSection(section)
     const panel = target?.closest<HTMLElement>('.response-panel')
     if (panel) expandResponsePanel(panel)
 }

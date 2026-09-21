@@ -58,6 +58,7 @@ If you already have automated release notes for GitHub releases, you can use the
 
      These files don't have `prs` and thus don't appear in a release's PR list.
      The `products[].versions` are used to add these files to release bundles automatically.
+     After you upload a note, if that product version's bundle has already shipped, the scrubber attaches it without `changelog bundle-amend --add`. Taking a note off a published bundle is incomplete: there is no command that unpublishes the pool file. Refer to [](/data/release-notes/bundle.md#changelog-bundle-notes-after-ship).
      :::
 
      Title, type, and products (including version or date) are the minimal details required when you are not deriving details from a PR.
@@ -66,9 +67,17 @@ If you already have automated release notes for GitHub releases, you can use the
     Any command strings that contain special characters (such as backquotes) must be preceded with a backslash escape character (`\`).
     :::
 
-    For the most up-to-date command syntax, use the `-h` option or refer to [](/cli/changelog/add.md) and [](/cli/changelog/note.md).
+     For the most up-to-date command syntax, use the `-h` option or refer to [](/cli/changelog/add.md) and [](/cli/changelog/note.md).
 
 1. [Review the output file](#review).
+
+## Recreate changelog files from a bundle [unpack]
+
+If the original changelog files were deleted after bundling, you can recreate them from a bundle with [`changelog unpack`](/cli/changelog/unpack.md). The command maps each entry onto `changelog add` or `changelog note`; it does not restore original checksums or comments.
+
+:::{tip}
+Use local bundles or bundles downloaded from the private CDN. Bundles scrubbed during [`changelog upload`](/cli/changelog/upload.md) drop private PRs and issues, which means the `unpack` command will generate incomplete changelogs.
+:::
 
 ## Create changelogs from GitHub actions [github-actions]
 
@@ -108,7 +117,7 @@ For content guidelines, go to [Changelogs](https://www.elastic.co/docs/contribut
 Some of the fields in the schema accept only a specific set of values:
 
 - Product values must exist in [products.yml](https://github.com/elastic/docs-builder/blob/main/config/products.yml).
-- Type, subtype, and lifecycle values must match the available values defined in [ChangelogEntryType.cs](https://github.com/elastic/docs-builder/blob/main/src/Elastic.Documentation/ChangelogEntryType.cs), [ChangelogEntrySubtype.cs](https://github.com/elastic/docs-builder/blob/main/src/Elastic.Documentation/ChangelogEntrySubtype.cs), and [Lifecycle.cs](https://github.com/elastic/docs-builder/blob/main/src/Elastic.Documentation/Lifecycle.cs) respectively.
+- Type, subtype, and lifecycle values must match the available values defined in [ChangelogEntryType.cs](https://github.com/elastic/docs-builder/blob/main/src/Elastic.Documentation/ReleaseNotes/ChangelogEntryType.cs), [ChangelogEntrySubtype.cs](https://github.com/elastic/docs-builder/blob/main/src/Elastic.Documentation/ReleaseNotes/ChangelogEntrySubtype.cs), and [Lifecycle.cs](https://github.com/elastic/docs-builder/blob/main/src/Elastic.Documentation/Lifecycle.cs) respectively.
 
 You can further limit the possible values with the [products](/data/release-notes/configure-ref.md#products) and [lifecycles](/data/release-notes/configure-ref.md#lifecycles) options in the changelog configuration file.
 :::
