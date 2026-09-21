@@ -26,6 +26,7 @@ public class ReleaseNotesFetcherTests
 		collector.Warnings.Should().Be(0);
 		collector.Hints.Should().Be(1);
 		result.NotFoundDeclaredProducts.Should().ContainSingle().Which.Should().Be("docs-builder");
+		result.DeclaredProducts.Should().ContainSingle().Which.Should().Be("docs-builder");
 	}
 
 	private sealed class NotFoundHandler : HttpMessageHandler
