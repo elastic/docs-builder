@@ -70,6 +70,7 @@
 
 	.applies.applies-block {
 		@apply border-b-grey-20 flex flex-wrap gap-2 border-b-1 pb-4;
+		min-height: 47px;
 	}
 
 	.applies.applies-inline {

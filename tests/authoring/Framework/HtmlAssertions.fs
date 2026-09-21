@@ -101,10 +101,6 @@ actual: {actual}
             l.RemoveAttribute "preload" |> ignore
         )
 
-        // Light-DOM children are a hydration fallback; attribute snapshots ignore them.
-        element.QuerySelectorAll("applies-to-popover")
-        |> Seq.iter (fun p -> p.InnerHtml <- "")
-
         use sw = new StringWriter()
         let formatter = PrettyMarkupFormatter()
         element.Children

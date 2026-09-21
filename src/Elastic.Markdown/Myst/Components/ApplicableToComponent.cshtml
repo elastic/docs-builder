@@ -16,35 +16,5 @@
 		popover-data='@(Model.ShowTooltip && item.RenderData.PopoverData is not null ? new HtmlString(JsonSerializer.Serialize(item.RenderData.PopoverData, ViewModelSerializerContext.Default.PopoverData)) : new HtmlString(""))'
 		show-popover="@Model.ShowTooltip.ToString().ToLowerInvariant()"
 		is-inline="@Model.Inline.ToString().ToLowerInvariant()"
-	>
-		<span class="applicable-info" aria-hidden="true">
-			<span class="applicable-name">@item.Key</span>
-			@if (item.ShowSeparator)
-			{
-				<span class="applicable-separator"></span>
-			}
-			<span class="applicable-meta applicable-meta-@item.RenderData.LifecycleClass">
-				@if (item.RenderData.ShowLifecycleName)
-				{
-					<span class="applicable-lifecycle applicable-lifecycle-@item.RenderData.LifecycleClass">@item.RenderData.LifecycleName</span>
-				}
-				@if (item.RenderData.ShowVersion)
-				{
-					<span class="applicable-version applicable-version-@item.RenderData.LifecycleClass">@item.RenderData.Version</span>
-				}
-				else
-				{
-					@item.RenderData.BadgeLifecycleText
-				}
-				@if (item.RenderData.HasMultipleLifecycles)
-				{
-					<span class="applicable-ellipsis">
-						<span class="applicable-ellipsis__dot"></span>
-						<span class="applicable-ellipsis__dot"></span>
-						<span class="applicable-ellipsis__dot"></span>
-					</span>
-				}
-			</span>
-		</span>
-	</applies-to-popover>
+	></applies-to-popover>
 }
