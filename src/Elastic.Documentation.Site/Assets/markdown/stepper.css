@@ -11,7 +11,7 @@
 		/* Matches markdown heading styles without using a heading element.
 		   Used when `{stepper}` sets `:toc: false`. */
 		.step-title {
-			@apply font-sans text-ink-dark;
+			@apply text-ink-dark font-sans;
 			line-height: 1.2em;
 
 			a {
