@@ -1,10 +1,16 @@
 # Changelog configuration for docs-builder's own release notes.
 #
-# docs-builder publishes its release notes with the `changelog gh-release` flow:
-# the `Release` workflow (release-drafter) publishes a GitHub release, and
-# `.github/workflows/changelog-publish.yml` turns that release into a CDN-hosted
-# bundle. There are no hand-authored entry files — entries are derived from the
-# release's PRs and their labels.
+# docs-builder is an "on-release" repository (config/products.yml). The three shared
+# workflows in .github/workflows/release-notes*.yml drive it:
+#
+#   release-notes.yml               validates the type label on every PR, and uploads
+#                                   entries to the changelog pool on every push to main
+#   release-notes-comments.yml      posts the sticky changelog comment on the PR
+#   release-notes-changelog-file.yml  commits docs/changelog/{pr}.yaml to the PR branch
+#
+# At release time, release.yml bundles the tag with `changelog gh-release` and uploads the
+# bundle to S3. A checked-in entry wins over synthesized PR text, so fork PRs (which get no
+# committed entry) still land in the bundle, just with less control over the wording.
 #
 # Generated with `docs-builder changelog init`, then edited for this repo.
 
@@ -22,16 +28,30 @@ pivot:
     # Maintenance/automation labels (chore, dependencies, automation, ci, redesign)
     # are intentionally not mapped — they're excluded from release notes below.
 
-# Controls which PRs become changelog entries.
 rules:
-  # `changelog:skip` is already dropped from the release body by release-drafter
-  # (exclude-labels); the rest keep maintenance/automation churn out of the notes.
+  # Controls which PRs get a changelog entry. `changelog validate-labels` (the PR gate in
+  # release-notes.yml) reads this too: a PR carrying one of these labels resolves to
+  # "skipped" instead of failing for a missing type label. Every label that
+  # required-labels.yml allows is therefore either mapped in pivot.types or listed here.
   create:
     exclude: "changelog:skip, chore, dependencies, automation, ci, redesign"
 
+  # Controls what survives into a bundle. `rules.create` does not apply at bundle time, and
+  # `changelog gh-release` reads entry types from the release body's section headers, where
+  # Maintenance, Chore, Automation, CI, and Redesign all map to `other`
+  # (src/services/Elastic.Changelog/GitHub/ReleaseNoteParser.cs). Dropping `other` keeps
+  # that churn out of the published notes.
+  bundle:
+    exclude_types: "other"
+
 # Bundle defaults (owner/repo/link_allow_repos seeded by `changelog init`).
 bundle:
+  # Bundles are written here at release time. The directory is not checked in (.gitignore
+  # matches `[Rr]eleases/`); `changelog upload` tolerates it being absent.
   output_directory: docs/releases
+  # Entry pool. Scanned top-level only, so docs/changelog/examples and docs/changelog/bundles
+  # are not picked up as entries.
+  directory: docs/changelog
   owner: elastic
   repo: docs-builder
   # Keep only docs-builder's own PR/issue links in bundles; anything else
