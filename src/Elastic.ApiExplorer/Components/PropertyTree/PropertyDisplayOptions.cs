@@ -6,6 +6,7 @@ using Elastic.ApiExplorer.Model;
 using Elastic.ApiExplorer.Operations;
 using Elastic.Documentation.Configuration.Versions;
 using Microsoft.AspNetCore.Html;
+using Microsoft.OpenApi;
 
 namespace Elastic.ApiExplorer.Components.PropertyTree;
 
@@ -39,4 +40,12 @@ public record PropertyDisplayOptions
 	public CollapseMode CollapseMode { get; init; } = CollapseMode.AlwaysCollapsed;
 	public int MaxDepth { get; init; } = SchemaHelpers.MaxDepth;
 	public VersionsConfiguration? VersionsConfiguration { get; init; }
+
+	/// <summary>
+	/// Optional cross-page cache for <c>$ref</c> → resolved schema lookups, shared across all pages
+	/// in one generation unit.  When set, <see cref="ApiPropertyTreeBuilder"/> forwards it to each
+	/// <see cref="SchemaAnalyzer"/> it creates so component schemas are looked up in
+	/// <c>OpenApiDocument.Components</c> at most once per unit rather than on every proxy access.
+	/// </summary>
+	internal Dictionary<string, IOpenApiSchema?>? SchemaResolveCache { get; init; }
 }
