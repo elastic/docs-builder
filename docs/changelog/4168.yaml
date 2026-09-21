@@ -1,7 +1,0 @@
-prs:
-- https://github.com/elastic/docs-builder/pull/4168
-type: bug-fix
-products:
-- product: docs-builder
-  lifecycle: ga
-title: Fix gh-release output path and first-release fallback
