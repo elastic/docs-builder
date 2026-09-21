@@ -12,17 +12,35 @@ namespace Elastic.Documentation.Configuration.Tests;
 public class RelatedLearningConfigurationTests
 {
 	[Fact]
-	public void EmbeddedCatalog_LoadsStarterTrainingIds()
+	public void EmbeddedCatalog_LoadsWithCompleteEntries()
 	{
 		var config = LoadEmbeddedCatalog();
 
-		config.TryGet("apm-with-elastic", out var apm).Should().BeTrue();
-		apm!.Title.Should().Be("APM with Elastic");
-		apm.Url.Should().Be("https://www.elastic.co/training/apm-with-elastic");
+		config.Links.Should().NotBeEmpty();
+		foreach (var (id, link) in config.Links)
+		{
+			id.Should().NotBeNullOrWhiteSpace();
+			link.Id.Should().Be(id);
+			link.Title.Should().NotBeNullOrWhiteSpace();
+			Uri.TryCreate(link.Url, UriKind.Absolute, out var uri).Should().BeTrue($"link '{id}' url '{link.Url}' should be absolute");
+			uri!.Scheme.Should().BeOneOf(Uri.UriSchemeHttps, Uri.UriSchemeHttp);
+		}
+	}
 
-		config.TryGet("elastic-agent", out _).Should().BeTrue();
-		config.TryGet("index-basics", out _).Should().BeTrue();
-		config.TryGet("data-types-and-mappings", out _).Should().BeTrue();
+	[Fact]
+	public void Parse_QuotedTitleWithColonAndAmpersand_Succeeds()
+	{
+		var config = RelatedLearningConfiguration.Parse(
+			"""
+			links:
+			  sample:
+			    title: "Beyond basics: Hugging Face & Elasticsearch"
+			    url: https://www.elastic.co/blog/sample
+			"""
+		);
+
+		config.TryGet("sample", out var link).Should().BeTrue();
+		link!.Title.Should().Be("Beyond basics: Hugging Face & Elasticsearch");
 	}
 
 	[Fact]
