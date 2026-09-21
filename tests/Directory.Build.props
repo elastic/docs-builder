@@ -4,28 +4,36 @@
   <Import Project="$([MSBuild]::GetPathOfFileAbove('Directory.Build.props', '$(MSBuildThisFileDirectory)../'))"/>
   <PropertyGroup>
     <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
-    <UseMicrosoftTestingPlatformRunner>false</UseMicrosoftTestingPlatformRunner>
-    <DisableTestingPlatformServerCapability>true</DisableTestingPlatformServerCapability>
     <NoWarn>CA1822;CA1707;xUnit1004</NoWarn>
 
     <IsPackable>false</IsPackable>
     <IsTestProject>true</IsTestProject>
     <OutputType>Exe</OutputType>
 
+    <!-- Explicitly off for xUnit projects; MTP and TUnit set these via their own targets -->
+    <UseMicrosoftTestingPlatformRunner Condition="'$(UseTUnit)' != 'true'">false</UseMicrosoftTestingPlatformRunner>
+    <!-- Prevents Microsoft.Testing.Platform from defaulting IsTestingPlatformApplication=true,
+         which causes MTP.MSBuild 2.3.3 to block VSTest on .NET 10 -->
+    <IsTestingPlatformApplication Condition="'$(UseTUnit)' != 'true'">false</IsTestingPlatformApplication>
+
   </PropertyGroup>
-  <ItemGroup>
+  <!-- xUnit packages — used when a project has not yet migrated to TUnit -->
+  <ItemGroup Condition="'$(UseTUnit)' != 'true'">
     <PackageReference Include="Microsoft.NET.Test.Sdk" />
     <PackageReference Include="xunit.v3" />
     <PackageReference Include="xunit.runner.visualstudio" />
     <PackageReference Include="GitHubActionsTestLogger" />
-    <PackageReference Include="Microsoft.Testing.Platform" />
+    <Using Include="Xunit"/>
+  </ItemGroup>
 
-    <PackageReference Include="AwesomeAssertions" />
-    <PackageReference Include="JetBrains.Annotations" />
-    <PackageReference Include="System.IO.Abstractions.TestingHelpers" />
+  <!-- TUnit packages — set <UseTUnit>true</UseTUnit> in the project to migrate -->
+  <ItemGroup Condition="'$(UseTUnit)' == 'true'">
+    <PackageReference Include="TUnit" />
   </ItemGroup>
 
   <ItemGroup>
-    <Using Include="Xunit"/>
+    <PackageReference Include="AwesomeAssertions" />
+    <PackageReference Include="JetBrains.Annotations" />
+    <PackageReference Include="System.IO.Abstractions.TestingHelpers" />
   </ItemGroup>
 </Project>

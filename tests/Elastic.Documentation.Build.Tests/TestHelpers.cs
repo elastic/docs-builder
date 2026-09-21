@@ -72,7 +72,7 @@ public static class TestHelpers
 		return new ConfigurationContext
 		{
 			Endpoints = new DocumentationEndpoints { Elasticsearch = ElasticsearchEndpoint.Default, },
-			ConfigurationFileProvider = new ConfigurationFileProvider(new TestLoggerFactory(null), new ConfigurationFileSystem(fileSystem)),
+			ConfigurationFileProvider = new ConfigurationFileProvider(new TestLoggerFactory(), new ConfigurationFileSystem(fileSystem)),
 			VersionsConfiguration = versionsConfiguration,
 			ProductsConfiguration = productsConfiguration,
 			SearchConfiguration = search,
@@ -146,15 +146,15 @@ public sealed class NullCoreService : ICoreService
 }
 #pragma warning restore IDE0060
 
-public class TestLoggerFactory(ITestOutputHelper? output) : ILoggerFactory
+public class TestLoggerFactory : ILoggerFactory
 {
 	public void AddProvider(ILoggerProvider provider) { }
-	public ILogger CreateLogger(string categoryName) => new TestLogger(output);
+	public ILogger CreateLogger(string categoryName) => new TestLogger();
 
 	public void Dispose() => GC.SuppressFinalize(this);
 }
 
-public class TestLogger(ITestOutputHelper? output) : ILogger
+public class TestLogger : ILogger
 {
 	public IDisposable? BeginScope<TState>(TState state) where TState : notnull => null;
 	public bool IsEnabled(LogLevel logLevel) => true;
@@ -164,5 +164,5 @@ public class TestLogger(ITestOutputHelper? output) : ILogger
 		TState state,
 		Exception? exception,
 		Func<TState, Exception?, string> formatter
-	) => output?.WriteLine($"[{logLevel}] {formatter(state, exception)}");
+	) => TestContext.Current?.Output.WriteLine($"[{logLevel}] {formatter(state, exception)}");
 }

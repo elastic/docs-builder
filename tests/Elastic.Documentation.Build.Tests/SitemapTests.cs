@@ -12,7 +12,7 @@ namespace Elastic.Documentation.Build.Tests;
 
 public class SitemapTests
 {
-	[Fact]
+	[Test]
 	public void Generate_WritesValidSitemapXml_WithCorrectLastModDates()
 	{
 		// Arrange
@@ -47,7 +47,7 @@ public class SitemapTests
 		urls[1].Element(ns + "lastmod")!.Value.Should().Contain("2025-07-20");
 	}
 
-	[Fact]
+	[Test]
 	public void Generate_CreatesOutputDirectory_WhenItDoesNotExist()
 	{
 		// Arrange
@@ -63,7 +63,7 @@ public class SitemapTests
 		fs.File.Exists(fs.Path.Join("/nonexistent/output", "sitemap.xml")).Should().BeTrue();
 	}
 
-	[Fact]
+	[Test]
 	public void Generate_OrdersUrlsAlphabetically()
 	{
 		// Arrange
@@ -86,7 +86,7 @@ public class SitemapTests
 		locs.Should().BeInAscendingOrder();
 	}
 
-	[Fact]
+	[Test]
 	public void Generate_ReturnsEntryCountAndFileSize()
 	{
 		// Arrange
@@ -103,7 +103,7 @@ public class SitemapTests
 		result.FileSizeBytes.Should().BeGreaterThan(0);
 	}
 
-	[Fact]
+	[Test]
 	public void Generate_ThrowsWhenEntryCountExceedsLimit()
 	{
 		// Arrange
@@ -119,7 +119,7 @@ public class SitemapTests
 		act.Should().Throw<InvalidOperationException>().WithMessage("*exceeds the sitemap protocol limit*");
 	}
 
-	[Fact]
+	[Test]
 	public void Generate_DoesNotThrowAtExactLimit()
 	{
 		// Arrange
@@ -135,7 +135,7 @@ public class SitemapTests
 		act.Should().NotThrow();
 	}
 
-	[Fact]
+	[Test]
 	public void Generate_ExcludesApiDocsFromSitemap()
 	{
 		// Arrange
@@ -166,7 +166,7 @@ public class SitemapTests
 		locs.Should().Contain("https://www.elastic.co/docs/kibana/dashboard");
 	}
 
-	[Fact]
+	[Test]
 	public void BuildSearchBody_FirstPage_HasPitButNoSearchAfter()
 	{
 		// Act
@@ -180,7 +180,7 @@ public class SitemapTests
 		json.Should().NotContain("search_after");
 	}
 
-	[Fact]
+	[Test]
 	public void BuildSearchBody_SubsequentPage_IncludesSearchAfter()
 	{
 		// Act
@@ -191,7 +191,7 @@ public class SitemapTests
 		json.Should().Contain("/docs/last-url");
 	}
 
-	[Fact]
+	[Test]
 	public void BuildSearchBody_EscapesSpecialCharactersInPitId()
 	{
 		// Act
