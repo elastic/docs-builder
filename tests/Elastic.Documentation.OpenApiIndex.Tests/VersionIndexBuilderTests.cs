@@ -8,7 +8,7 @@ namespace Elastic.Documentation.OpenApiIndex.Tests;
 
 public class VersionIndexBuilderTests
 {
-	[Fact]
+	[Test]
 	public void Build_SingleVersion_CreatesMajorEntry()
 	{
 		var index = VersionIndexBuilder.Build(["elastic/elasticsearch/8.16/openapi.json"]).Index;
@@ -17,7 +17,7 @@ public class VersionIndexBuilderTests
 		index["elastic/elasticsearch"]["openapi.json"]["8"].Version.Should().Be("8.16");
 	}
 
-	[Fact]
+	[Test]
 	public void Build_NewMajorAddedToExistingIndex_CreatesSeparateEntry()
 	{
 		var index = VersionIndexBuilder.Build(["elastic/elasticsearch/8.16/openapi.json", "elastic/elasticsearch/9.0/openapi.json"]).Index;
@@ -28,7 +28,7 @@ public class VersionIndexBuilderTests
 		byMajor["9"].Version.Should().Be("9.0");
 	}
 
-	[Fact]
+	[Test]
 	public void Build_MinorBumpWithinExistingMajor_KeepsHighestMinor()
 	{
 		var index = VersionIndexBuilder.Build(["elastic/elasticsearch/8.16/openapi.json", "elastic/elasticsearch/8.17/openapi.json"]).Index;
@@ -36,7 +36,7 @@ public class VersionIndexBuilderTests
 		index["elastic/elasticsearch"]["openapi.json"]["8"].Version.Should().Be("8.17");
 	}
 
-	[Fact]
+	[Test]
 	public void Build_OutOfOrderArrival_HigherMinorListedBeforeLower_KeepsHighestMinor()
 	{
 		var index = VersionIndexBuilder.Build(["elastic/elasticsearch/8.17/openapi.json", "elastic/elasticsearch/8.16/openapi.json"]).Index;
@@ -44,7 +44,7 @@ public class VersionIndexBuilderTests
 		index["elastic/elasticsearch"]["openapi.json"]["8"].Version.Should().Be("8.17");
 	}
 
-	[Fact]
+	[Test]
 	public void Build_MainVersion_CreatesMainEntry()
 	{
 		var index = VersionIndexBuilder.Build(["elastic/elasticsearch/main/openapi.json"]).Index;
@@ -52,7 +52,7 @@ public class VersionIndexBuilderTests
 		index["elastic/elasticsearch"]["openapi.json"]["main"].Version.Should().Be("main");
 	}
 
-	[Fact]
+	[Test]
 	public void Build_MasterVersion_IndexesUnderMainWithMasterObjectKey()
 	{
 		var index = VersionIndexBuilder.Build(["elastic/cloud/master/cloud.json"]).Index;
@@ -62,7 +62,7 @@ public class VersionIndexBuilderTests
 		byMajor["main"].Version.Should().Be("master");
 	}
 
-	[Fact]
+	[Test]
 	public void Build_MainAndMasterBothPublished_MainWins()
 	{
 		var index = VersionIndexBuilder.Build(["elastic/cloud/master/cloud.json", "elastic/cloud/main/cloud.json"]).Index;
@@ -72,7 +72,7 @@ public class VersionIndexBuilderTests
 		byMajor["main"].Version.Should().Be("main");
 	}
 
-	[Fact]
+	[Test]
 	public void Build_MainAndReleaseVersions_KeepsBothSeparately()
 	{
 		var index = VersionIndexBuilder.Build(["elastic/elasticsearch/main/openapi.json", "elastic/elasticsearch/8.16/openapi.json"]).Index;
@@ -83,7 +83,7 @@ public class VersionIndexBuilderTests
 		byMajor["8"].Version.Should().Be("8.16");
 	}
 
-	[Fact]
+	[Test]
 	public void Build_MultipleSpecFilesInSameRepo_IndexesEachIndependently()
 	{
 		// Two spec files from one repo may share a version: they are separate objects in the bucket.
@@ -95,7 +95,7 @@ public class VersionIndexBuilderTests
 		byFile["kibana-serverless.json"]["8"].Version.Should().Be("8.16");
 	}
 
-	[Fact]
+	[Test]
 	public void Build_MultipleRepos_KeepsSeparateEntriesPerRepo()
 	{
 		var index = VersionIndexBuilder.Build(["elastic/elasticsearch/8.16/openapi.json", "elastic/kibana/8.16/kibana.json"]).Index;
@@ -105,29 +105,29 @@ public class VersionIndexBuilderTests
 		index["elastic/kibana"]["kibana.json"]["8"].Version.Should().Be("8.16");
 	}
 
-	[Fact]
+	[Test]
 	public void Build_EmptyKeys_ReturnsEmptyIndex() => VersionIndexBuilder.Build([]).Index.Should().BeEmpty();
 
-	[Theory]
-	[InlineData("elastic/elasticsearch/openapi.json")] // missing version segment
+	[Test]
+	[Arguments("elastic/elasticsearch/openapi.json")] // missing version segment
 
-	[InlineData("elastic/elasticsearch/8.16/nested/openapi.json")] // too many segments
+	[Arguments("elastic/elasticsearch/8.16/nested/openapi.json")] // too many segments
 
-	[InlineData("elastic//8.16/openapi.json")] // empty repo segment
+	[Arguments("elastic//8.16/openapi.json")] // empty repo segment
 
-	[InlineData("elastic/elasticsearch/8.16/")] // empty file segment
+	[Arguments("elastic/elasticsearch/8.16/")] // empty file segment
 
-	[InlineData("elastic/elasticsearch/not-a-branch/openapi.json")] // not main, master, or <major>.<minor>
+	[Arguments("elastic/elasticsearch/not-a-branch/openapi.json")] // not main, master, or <major>.<minor>
 
-	[InlineData("elastic/elasticsearch/8/openapi.json")] // missing minor
+	[Arguments("elastic/elasticsearch/8/openapi.json")] // missing minor
 
-	[InlineData("elastic/elasticsearch/8./openapi.json")] // missing minor after the dot
+	[Arguments("elastic/elasticsearch/8./openapi.json")] // missing minor after the dot
 
-	[InlineData("elastic/elasticsearch/8.x/openapi.json")] // non-numeric minor
+	[Arguments("elastic/elasticsearch/8.x/openapi.json")] // non-numeric minor
 
-	[InlineData("elastic/elasticsearch/.16/openapi.json")] // missing major
+	[Arguments("elastic/elasticsearch/.16/openapi.json")] // missing major
 
-	[InlineData("elastic/elasticsearch/+8.16/openapi.json")] // signed major
+	[Arguments("elastic/elasticsearch/+8.16/openapi.json")] // signed major
 
 	public void Build_KeyOfUnexpectedShape_IsReportedAndSkipped(string key)
 	{
@@ -137,7 +137,7 @@ public class VersionIndexBuilderTests
 		invalidKeys.Should().ContainSingle().Which.Should().Be(key);
 	}
 
-	[Fact]
+	[Test]
 	public void Build_MixOfValidAndInvalidKeys_IndexesValidAndReportsInvalidOnly()
 	{
 		var (index, invalidKeys) = VersionIndexBuilder.Build([

@@ -25,7 +25,7 @@ namespace Elastic.Documentation.Deploying.Tests;
 
 public class DocsSyncTests
 {
-	[Fact]
+	[Test]
 	public async Task TestPlan()
 	{
 		// Arrange
@@ -97,18 +97,18 @@ public class DocsSyncTests
 		plan.DeleteRequests.Should().Contain(i => i.DestinationPath == "docs/delete.md");
 	}
 
-	[Theory]
-	[InlineData(0, 10_000, 10_000, 0, 10_000, 0.2, false)]
-	[InlineData(8_000, 10_000, 10_000, 0, 2000, 0.2, true)]
-	[InlineData(7900, 10_000, 10_000, 0, 2100, 0.2, false)]
-	[InlineData(10_000, 0, 10_000, 10_000, 0, 0.2, true)]
-	[InlineData(2000, 0, 2000, 2000, 0, 0.2, true)]
+	[Test]
+	[Arguments(0, 10_000, 10_000, 0, 10_000, 0.2, false)]
+	[Arguments(8_000, 10_000, 10_000, 0, 2000, 0.2, true)]
+	[Arguments(7900, 10_000, 10_000, 0, 2100, 0.2, false)]
+	[Arguments(10_000, 0, 10_000, 10_000, 0, 0.2, true)]
+	[Arguments(2000, 0, 2000, 2000, 0, 0.2, true)]
 	// When total files to sync is lower than 100 we enforce a minimum ratio of 0.8
-	[InlineData(20, 40, 40, 0, 20, 0.2, true)]
-	[InlineData(19, 100, 100, 0, 81, 0.2, false)]
+	[Arguments(20, 40, 40, 0, 20, 0.2, true)]
+	[Arguments(19, 100, 100, 0, 81, 0.2, false)]
 	// When total files to sync is lower than 1000 we enforce a minimum ratio of 0.5
-	[InlineData(200, 400, 400, 0, 200, 0.2, true)]
-	[InlineData(199, 1000, 1000, 0, 801, 0.2, false)]
+	[Arguments(200, 400, 400, 0, 200, 0.2, true)]
+	[Arguments(199, 1000, 1000, 0, 801, 0.2, false)]
 	public async Task ValidateAdditionsPlan(
 		int localFiles,
 		int remoteFiles,
@@ -141,15 +141,15 @@ public class DocsSyncTests
 			.Be(valid, $"Delete ratio is {validationResult.DeleteRatio} when maximum is {validationResult.DeleteThreshold}");
 	}
 
-	[Theory]
-	[InlineData(10_000, 0, 10_000, 0, 0, 0.2, true)]
-	[InlineData(2000, 0, 2000, 0, 0, 0.2, true)]
-	[InlineData(0, 10_000, 10_000, 0, 10_000, 0.2, false)]
-	[InlineData(0, 10_000, 10_000, 0, 10_000, 1.0, false)]
-	[InlineData(20, 10_000, 10_000, 20, 9980, 0.2, false)]
-	[InlineData(20, 10_000, 10_000, 20, 9980, 1.0, true)]
-	[InlineData(8_000, 10_000, 10_000, 8000, 2000, 0.2, true)]
-	[InlineData(7900, 10_000, 10_000, 7900, 2100, 0.2, false)]
+	[Test]
+	[Arguments(10_000, 0, 10_000, 0, 0, 0.2, true)]
+	[Arguments(2000, 0, 2000, 0, 0, 0.2, true)]
+	[Arguments(0, 10_000, 10_000, 0, 10_000, 0.2, false)]
+	[Arguments(0, 10_000, 10_000, 0, 10_000, 1.0, false)]
+	[Arguments(20, 10_000, 10_000, 20, 9980, 0.2, false)]
+	[Arguments(20, 10_000, 10_000, 20, 9980, 1.0, true)]
+	[Arguments(8_000, 10_000, 10_000, 8000, 2000, 0.2, true)]
+	[Arguments(7900, 10_000, 10_000, 7900, 2100, 0.2, false)]
 	public async Task ValidateUpdatesPlan(
 		int localFiles,
 		int remoteFiles,
@@ -234,7 +234,7 @@ public class DocsSyncTests
 		return (validator, planStrategy, plan);
 	}
 
-	[Fact]
+	[Test]
 	public async Task TestApply()
 	{
 		// Arrange
