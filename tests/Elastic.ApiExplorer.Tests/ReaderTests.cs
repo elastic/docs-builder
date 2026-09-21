@@ -40,7 +40,7 @@ public class ReaderTests
 	[Arguments("yaml", "swagger: \"2.0\"\ninfo:\n  title: Test\n  version: \"1\"\nhost: example.com\nbasePath: /\npaths: {}")]
 	public async Task ReadsStream(string extension, string specification)
 	{
-		var stream = new MemoryStream(Encoding.UTF8.GetBytes(specification));
+		var stream = new ReadOnlyMemoryStream(Encoding.UTF8.GetBytes(specification));
 
 		var document = await OpenApiReader.Instance.ReadAsync(stream, $"openapi.{extension}");
 

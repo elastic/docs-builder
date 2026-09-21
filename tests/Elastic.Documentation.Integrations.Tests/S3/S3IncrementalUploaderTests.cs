@@ -244,7 +244,7 @@ public class S3IncrementalUploaderTests
 
 		A.CallTo(() => _s3Client.GetObjectAsync(A<GetObjectRequest>._, A<Cancel>._)).Returns(new GetObjectResponse
 		{
-			ResponseStream = new MemoryStream(Encoding.UTF8.GetBytes(remoteYaml))
+			ResponseStream = new ReadOnlyMemoryStream(Encoding.UTF8.GetBytes(remoteYaml))
 		});
 
 		var uploader = CreateUploader();
@@ -318,7 +318,7 @@ public class S3IncrementalUploaderTests
 
 		A.CallTo(() => _s3Client.GetObjectAsync(A<GetObjectRequest>._, A<Cancel>._)).Returns(new GetObjectResponse
 		{
-			ResponseStream = new MemoryStream(Encoding.UTF8.GetBytes(remoteYaml))
+			ResponseStream = new ReadOnlyMemoryStream(Encoding.UTF8.GetBytes(remoteYaml))
 		});
 
 		var uploader = CreateUploader();
@@ -353,7 +353,7 @@ public class S3IncrementalUploaderTests
 
 		A.CallTo(() => _s3Client.GetObjectAsync(A<GetObjectRequest>._, A<Cancel>._)).Returns(new GetObjectResponse
 		{
-			ResponseStream = new MemoryStream("link: 1"u8.ToArray())
+			ResponseStream = new ReadOnlyMemoryStream("link: 1"u8.ToArray())
 		});
 
 		var uploader = CreateUploader();
@@ -433,7 +433,7 @@ public class S3IncrementalUploaderTests
 
 		A.CallTo(() => _s3Client.GetObjectAsync(A<GetObjectRequest>._, A<Cancel>._)).Returns(new GetObjectResponse
 		{
-			ResponseStream = new MemoryStream("link: 100"u8.ToArray())
+			ResponseStream = new ReadOnlyMemoryStream("link: 100"u8.ToArray())
 		});
 
 		var uploader = CreateUploader();
