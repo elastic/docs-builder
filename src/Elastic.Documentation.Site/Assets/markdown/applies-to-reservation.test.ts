@@ -8,6 +8,7 @@ describe('applies-block pre-hydration reservation', () => {
         expect(css).toContain('applies-to-popover:not(:defined)')
         expect(css).toContain('applies-to-popover:empty')
         expect(css).toContain('attr(badge-key)')
+        expect(css).toContain("[has-multiple-lifecycles='true']")
         expect(css).not.toMatch(/min-height:\s*calc\(\s*1\.875rem/)
     })
 })

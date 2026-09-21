@@ -105,6 +105,15 @@
 			&::after {
 				@apply border-grey-20 ml-2 border-l-[1px] pl-2;
 			}
+
+			/*
+			 * Hydrated badges append .applicable-ellipsis after the meta
+			 * (gap-1.5 + px-0.5 + 3×size-1 + 2×gap-0.5). Without that
+			 * width, a multi-lifecycle badge can wrap only after hydration.
+			 */
+			&[has-multiple-lifecycles='true'] {
+				padding-right: calc(var(--spacing) * 9.5);
+			}
 		}
 	}
 
