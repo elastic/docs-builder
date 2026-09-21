@@ -7,20 +7,16 @@ WORKDIR /app
 
 RUN rpm --import https://packages.microsoft.com/keys/microsoft.asc
 
-RUN dnf update -y
-RUN dnf install -y npm
-RUN dnf install -y git
-RUN dnf install -y clang
+RUN dnf update -y \
+    && dnf install -y git clang libicu nodejs22 nodejs22-npm
 
-## temporary see: https://github.com/amazonlinux/amazon-linux-2023/issues/1025
-RUN dnf install -y tar
-RUN dnf install -y findutils
-RUN curl -L https://dot.net/v1/dotnet-install.sh -o dotnet-install.sh
-RUN chmod +x ./dotnet-install.sh
-RUN ./dotnet-install.sh
+# dotnet-install.sh requires tar and findutils, not present in the AL2023 base image
+# see: https://github.com/amazonlinux/amazon-linux-2023/issues/1025
+RUN dnf install -y tar findutils \
+    && curl -L https://dot.net/v1/dotnet-install.sh -o dotnet-install.sh \
+    && chmod +x ./dotnet-install.sh \
+    && ./dotnet-install.sh
 ENV PATH="$PATH:/root/.dotnet"
-ENV DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=1
-# /end temporary
 
 COPY . .
 
@@ -39,5 +35,6 @@ WORKDIR /app
 COPY --from=base /app/publish/ /app/
 RUN chmod +x /app/docs-builder-api
 EXPOSE 8080
-ENV ASPNETCORE_URLS=http://+:8080
+ENV ASPNETCORE_URLS=http://+:8080 \
+    DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=1
 ENTRYPOINT ["/app/docs-builder-api"]
