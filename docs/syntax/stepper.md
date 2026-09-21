@@ -205,6 +205,25 @@ To see how dynamic mapping works, add a new document to the `books` index with a
 
 Stepper step titles automatically appear in the page's "On this page" table of contents (ToC) sidebar, making it easier for users to navigate directly to specific steps.
 
+To keep those titles in the procedure and out of the table of contents, set `:toc: false`. See [Omit steps from the table of contents](#omit-steps-from-the-table-of-contents).
+
+### Omit steps from the table of contents
+
+Set `:toc: false` on `{stepper}` when step titles should not be headings. The titles keep the same size and weight as the heading level the stepper would have used. They are not HTML headings, and they do not appear in **On this page**. Each step still has an anchor, so you can link to it.
+
+The default is to include step titles in the table of contents.
+
+```markdown
+:::::{stepper}
+:toc: false
+
+::::{step} Install
+First install the dependencies.
+::::
+
+:::::
+```
+
 ### Nested steppers
 
 When steppers are nested inside other directive components (like `{tab-set}`, `{dropdown}`, or other containers), their step titles are **not** included in the ToC to avoid duplicate or competing headings across multiple tabs or links to content that might be collapsed or hidden.
