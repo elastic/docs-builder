@@ -65,7 +65,8 @@ Two watch loops are available depending on what you're working on:
 
 Monitors code, Razor template files, and frontend assets for a **single documentation set**.
 Markdown files refresh via live reload without a recompile. Code or layout changes relaunch
-the server automatically. Web assets are rebuilt by `parcel watch` in the background.
+the server automatically. Web assets are rebuilt by `vite build --watch` in the background
+and do not require a recompilation.
 
 ### Full assembled-site watch (assembler, navigation, multi-repo)
 

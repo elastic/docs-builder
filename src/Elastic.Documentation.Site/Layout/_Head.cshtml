@@ -29,7 +29,7 @@
 	@* hx-history=false stops new snapshots but still restores sessionStorage
 	   leftovers from older pages, which keeps the previous island tree. *@
 	<script>try{sessionStorage.removeItem("htmx-history-cache")}catch(e){}</script>
-	<script src="@Model.Static("main.js")" defer></script>
+	<script type="module" src="@Model.Static("main.js")"></script>
 	@if (Model.BuildType == BuildType.Assembler && !Model.Features.AirGappedEnabled)
 	{
 		@* In <head> so head-support's merge keeps the identical tag across htmx navigations

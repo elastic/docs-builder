@@ -5,6 +5,7 @@
 
 .artifacts
 .superset
+tasks/
 .claude/*
 !.claude/settings.json
 !.claude/skills/

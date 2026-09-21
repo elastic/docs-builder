@@ -11,6 +11,7 @@
     <InterceptorsPreviewNamespaces>$(InterceptorsPreviewNamespaces);Microsoft.AspNetCore.Http.Generated</InterceptorsPreviewNamespaces>
     <IsPublishable>true</IsPublishable>
     <EnableDefaultRazorSlices>false</EnableDefaultRazorSlices>
+    <SkipNpmBuild Condition="'$(SkipNpmBuild)' == ''">false</SkipNpmBuild>
   </PropertyGroup>
   
   <ItemGroup>
@@ -35,7 +36,17 @@
     The first time the task is executed. Then, it only runs when you change the package.json file.
     Documentation: https://learn.microsoft.com/en-us/visualstudio/msbuild/incremental-builds?WT.mc_id=DT-MVP-5003978
  -->
-  <Target Name="NpmInstall" Inputs="package.json" Outputs="node_modules/.install-stamp">
+  <Target Name="EnsureSkipNpmBuildArtifacts"
+          BeforeTargets="NpmInstall;NpmRunBuild"
+          Condition="'$(SkipNpmBuild)' == 'true'">
+    <Error Condition="!Exists('_static/main.js') Or !Exists('_static/styles.css')"
+           Text="SkipNpmBuild is set but _static/main.js or _static/styles.css is missing. Run a full frontend build first." />
+  </Target>
+
+  <Target Name="NpmInstall"
+          Condition="'$(DesignTimeBuild)' != 'true' And '$(SkipNpmBuild)' != 'true'"
+          Inputs="package.json;package-lock.json"
+          Outputs="node_modules/.install-stamp">
     <Exec Command="npm ci" WorkingDirectory="$(MSBuildThisFileDirectory)" ConsoleToMsBuild="true" />
 
     <!-- Write the stamp file, so incremental builds work -->
@@ -57,8 +68,7 @@
     <NpmBuildInputFiles Include="package-lock.json" />
     <NpmBuildInputFiles Include="tsconfig.json" />
     <NpmBuildInputFiles Include="tailwind.config.js" />
-    <NpmBuildInputFiles Include=".parcelrc" />
-    <NpmBuildInputFiles Include=".postcssrc" />
+    <NpmBuildInputFiles Include="vite.config.ts" />
   </ItemGroup>
   <!-- Tailwind scans these directories for utility class usage (see tailwind.config.js content paths).
        Resolved inside a target so external cshtml files don't appear in the IDE's project tree. -->
@@ -73,6 +83,7 @@
   <Target Name="NpmRunBuild"
           DependsOnTargets="NpmInstall;MinVer;CollectExternalCshtmlInputs"
           BeforeTargets="BeforeBuild"
+          Condition="'$(DesignTimeBuild)' != 'true' And '$(SkipNpmBuild)' != 'true'"
           Inputs="@(NpmBuildInputFiles)"
           Outputs="_static/.build-stamp;_static/main.js;_static/styles.css">
     <Message Text="Building frontend with version: $(MinVerVersion)" Importance="high" />
@@ -86,31 +97,40 @@
     <Touch Files="_static/.build-stamp" AlwaysCreate="true" />
   </Target>
 
-  <!-- Clean old hashed assets before each frontend build to avoid accumulating stale files.
-       Without this, multiple Parcel runs (e.g. across dotnet build vs dotnet run) can leave
-       old hashed filenames in _static; all get embedded and then copied to assembler output,
-       causing duplicated JS/CSS with different hashes in the final _static folder. -->
-  <Target Name="CleanOldHashedAssets" BeforeTargets="NpmRunBuild" Condition="'$(IsPublishing)' == 'true'">
+  <Target Name="CleanGeneratedStaticAssets"
+          BeforeTargets="NpmRunBuild"
+          Condition="'$(DesignTimeBuild)' != 'true' And '$(SkipNpmBuild)' != 'true'">
+    <RemoveDir Directories="_static/assets" Condition="Exists('_static/assets')" />
     <ItemGroup>
-      <OldHashedFiles Include="_static/*.????????*.js" />
-      <OldHashedFiles Include="_static/*.????????*.css" />
-      <OldHashedFiles Include="_static/*.????????*.js.map" />
-      <OldHashedFiles Include="_static/*.????????*.css.map" />
+      <GeneratedStaticFiles Include="_static/main.js" />
+      <GeneratedStaticFiles Include="_static/main.js.map" />
+      <GeneratedStaticFiles Include="_static/styles.css" />
+      <GeneratedStaticFiles Include="_static/styles.css.map" />
+      <GeneratedStaticFiles Include="_static/assembler.css" />
+      <GeneratedStaticFiles Include="_static/assembler.css.map" />
+      <GeneratedStaticFiles Include="_static/isolated.css" />
+      <GeneratedStaticFiles Include="_static/isolated.css.map" />
+      <GeneratedStaticFiles Include="_static/codex.css" />
+      <GeneratedStaticFiles Include="_static/codex.css.map" />
+      <ViteGeneratedFiles Include="_static/asset-*" />
+      <ViteGeneratedFiles Include="_static/chunk-*" />
+      <OldHashedBundles Include="_static/*.????????*.js" />
+      <OldHashedBundles Include="_static/*.????????*.css" />
     </ItemGroup>
-    <Delete Files="@(OldHashedFiles)" ContinueOnError="true" />
+    <Delete Files="@(GeneratedStaticFiles);@(ViteGeneratedFiles);@(OldHashedBundles)" ContinueOnError="true" />
   </Target>
 
-  <Target Name="EmbedGeneratedAssets" AfterTargets="NpmRunBuild">
+  <Target Name="EmbedGeneratedAssets" DependsOnTargets="NpmRunBuild" BeforeTargets="BeforeBuild">
     <ItemGroup>
-      <EmbeddedResource Include="_static/*.js" Watch="false" />
-      <EmbeddedResource Include="_static/*.js.map" Watch="false" Condition="'$(Configuration)' == 'Debug'" />
-      <EmbeddedResource Include="_static/*.css" Watch="false" />
-      <EmbeddedResource Include="_static/*.css.map" Watch="false" Condition="'$(Configuration)' == 'Debug'" />
-      <EmbeddedResource Include="_static/*.svg" Watch="false" />
-      <EmbeddedResource Include="_static/*.png" Watch="false" />
-      <EmbeddedResource Include="_static/*.ttf" Watch="false" />
-      <EmbeddedResource Include="_static/*.woff" Watch="false" />
-      <EmbeddedResource Include="_static/*.woff2" Watch="false" />
+      <EmbeddedResource Include="_static/**/*.js" Watch="false" />
+      <EmbeddedResource Include="_static/**/*.js.map" Watch="false" Condition="'$(Configuration)' == 'Debug'" />
+      <EmbeddedResource Include="_static/**/*.css" Watch="false" />
+      <EmbeddedResource Include="_static/**/*.css.map" Watch="false" Condition="'$(Configuration)' == 'Debug'" />
+      <EmbeddedResource Include="_static/**/*.svg" Watch="false" />
+      <EmbeddedResource Include="_static/**/*.png" Watch="false" />
+      <EmbeddedResource Include="_static/**/*.ttf" Watch="false" />
+      <EmbeddedResource Include="_static/**/*.woff" Watch="false" />
+      <EmbeddedResource Include="_static/**/*.woff2" Watch="false" />
     </ItemGroup>
   </Target>
 

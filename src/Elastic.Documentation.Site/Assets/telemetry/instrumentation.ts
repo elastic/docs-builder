@@ -156,11 +156,7 @@ function registerFetchInstrumentation(): void {
                 propagateTraceHeaderCorsUrls: [
                     new RegExp(`${window.location.origin}/.*`),
                 ],
-                ignoreUrls: [
-                    /_api\/v1\/o\/.*/,
-                    /_api\/v1\/?$/,
-                    /__parcel_code_frame$/,
-                ],
+                ignoreUrls: [/_api\/v1\/o\/.*/, /_api\/v1\/?$/],
             }),
         ],
     })

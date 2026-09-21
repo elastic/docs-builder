@@ -8,7 +8,6 @@ WORKDIR /app
 RUN rpm --import https://packages.microsoft.com/keys/microsoft.asc
 
 RUN dnf update -y
-RUN dnf install -y npm
 RUN dnf install -y git
 RUN dnf install -y clang
 
