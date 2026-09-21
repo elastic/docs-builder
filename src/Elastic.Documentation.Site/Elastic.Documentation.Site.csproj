@@ -76,6 +76,16 @@
           Inputs="@(NpmBuildInputFiles)"
           Outputs="_static/.build-stamp;_static/main.js;_static/styles.css">
     <Message Text="Building frontend with version: $(MinVerVersion)" Importance="high" />
+    <!-- Parcel does not empty distDir. Delete hashed outputs here, inside the skippable
+         target, so incremental builds keep current chunks and a real rebuild cannot
+         accumulate stale maps into the AOT binary. -->
+    <ItemGroup>
+      <OldHashedFiles Include="_static/*.????????*.js" />
+      <OldHashedFiles Include="_static/*.????????*.css" />
+      <OldHashedFiles Include="_static/*.????????*.js.map" />
+      <OldHashedFiles Include="_static/*.????????*.css.map" />
+    </ItemGroup>
+    <Delete Files="@(OldHashedFiles)" ContinueOnError="true" />
     <Exec Command="npm run build"
           WorkingDirectory="$(MSBuildThisFileDirectory)"
           ConsoleToMsBuild="true"
@@ -84,20 +94,6 @@
     </Exec>
     <!-- Write the stamp file, so incremental builds work -->
     <Touch Files="_static/.build-stamp" AlwaysCreate="true" />
-  </Target>
-
-  <!-- Clean old hashed assets before each frontend build to avoid accumulating stale files.
-       Without this, multiple Parcel runs (e.g. across dotnet build vs dotnet run) can leave
-       old hashed filenames in _static; all get embedded and then copied to assembler output,
-       causing duplicated JS/CSS with different hashes in the final _static folder. -->
-  <Target Name="CleanOldHashedAssets" BeforeTargets="NpmRunBuild" Condition="'$(IsPublishing)' == 'true'">
-    <ItemGroup>
-      <OldHashedFiles Include="_static/*.????????*.js" />
-      <OldHashedFiles Include="_static/*.????????*.css" />
-      <OldHashedFiles Include="_static/*.????????*.js.map" />
-      <OldHashedFiles Include="_static/*.????????*.css.map" />
-    </ItemGroup>
-    <Delete Files="@(OldHashedFiles)" ContinueOnError="true" />
   </Target>
 
   <Target Name="EmbedGeneratedAssets" AfterTargets="NpmRunBuild">
