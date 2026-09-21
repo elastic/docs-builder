@@ -601,12 +601,11 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 #pragma warning disable CS0618
 				if (!string.IsNullOrWhiteSpace(profileYaml.Source))
 				{
-					collector.EmitError(
+					collector.EmitWarning(
 						configPath,
-						$"bundle.profiles.{profileName}.source: 'source: github_release' is removed. " +
+						$"bundle.profiles.{profileName}.source is deprecated. " +
 							"Use bundle.releases.github to map release tags to profiles instead."
 					);
-					return null;
 				}
 
 				if (!string.IsNullOrWhiteSpace(profileYaml.OutputProducts))

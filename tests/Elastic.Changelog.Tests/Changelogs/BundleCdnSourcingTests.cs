@@ -518,10 +518,8 @@ public class BundleCdnSourcingTests(ITestOutputHelper output) : ChangelogTestBas
 	}
 
 	[Fact]
-	public async Task ProfileSourceGithubRelease_IsRejectedAtConfigLoad()
+	public async Task ProfileSourceGithubRelease_EmitsDeprecationWarning()
 	{
-		// 'source: github_release' is removed — config load must fail with a clear error directing
-		// authors to use bundle.releases.github instead.
 		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
 		FileSystem.Directory.CreateDirectory(outputDir);
 
@@ -544,15 +542,15 @@ public class BundleCdnSourcingTests(ITestOutputHelper output) : ChangelogTestBas
 		var configLoader = new ChangelogConfigurationLoader(LoggerFactory, ConfigurationContext, FileSystem);
 		var config = await configLoader.LoadChangelogConfigurationRequired(Collector, configPath, TestContext.Current.CancellationToken);
 
-		config.Should().BeNull();
-		Collector.Errors.Should().Be(1);
+		config.Should().NotBeNull();
+		Collector.Errors.Should().Be(0);
 		Collector
 			.Diagnostics
 			.Should()
 			.Contain(
-				d => d.Severity == Severity.Error && d.Message.Contains("source: github_release") && d.Message.Contains(
-					"bundle.releases.github"
-				)
+				d => d.Severity == Severity.Warning && d.Message.Contains("source") && d.Message.Contains(
+					"deprecated"
+				) && d.Message.Contains("bundle.releases.github")
 			);
 	}
 

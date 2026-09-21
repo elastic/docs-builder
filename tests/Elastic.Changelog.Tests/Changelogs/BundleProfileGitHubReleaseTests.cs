@@ -10,7 +10,7 @@ using Elastic.Documentation.Diagnostics;
 namespace Elastic.Changelog.Tests.Changelogs;
 
 /// <summary>
-/// Validates that <c>source: github_release</c> is rejected with a clear error.
+/// Validates that <c>source: github_release</c> emits a deprecation warning.
 /// Use <c>bundle.releases.github</c> to map release tags to profiles instead.
 /// </summary>
 public class BundleProfileGitHubReleaseTests : ChangelogTestBase
@@ -18,7 +18,7 @@ public class BundleProfileGitHubReleaseTests : ChangelogTestBase
 	public BundleProfileGitHubReleaseTests(ITestOutputHelper output) : base(output) { }
 
 	[Fact]
-	public async Task SourceGithubRelease_IsRemovedHardError()
+	public async Task SourceGithubRelease_EmitsDeprecationWarning()
 	{
 		// language=yaml
 		var configContent =
@@ -37,15 +37,15 @@ public class BundleProfileGitHubReleaseTests : ChangelogTestBase
 		var loader = new ChangelogConfigurationLoader(LoggerFactory, ConfigurationContext, FileSystem);
 		var config = await loader.LoadChangelogConfigurationRequired(Collector, configPath, TestContext.Current.CancellationToken);
 
-		config.Should().BeNull();
-		Collector.Errors.Should().Be(1);
+		config.Should().NotBeNull();
+		Collector.Errors.Should().Be(0);
 		Collector
 			.Diagnostics
 			.Should()
 			.Contain(
-				d => d.Severity == Severity.Error && d.Message.Contains("source: github_release") && d.Message.Contains(
-					"bundle.releases.github"
-				)
+				d => d.Severity == Severity.Warning && d.Message.Contains("source") && d.Message.Contains(
+					"deprecated"
+				) && d.Message.Contains("bundle.releases.github")
 			);
 	}
 }
