@@ -86,8 +86,9 @@ public class SchemaAnalyzer(
 		if (schema is OpenApiSchemaReference schemaRef)
 		{
 			var resolved = ResolveSchema(schemaRef);
-			// If we got back the same proxy (couldn't resolve), fall through to direct property reads below
-			if (!ReferenceEquals(resolved, schemaRef))
+			// Only recurse when we have a concrete resolved schema; null means external ref or
+			// unresolvable — fall through so the proxy's own property reads are used as a fallback.
+			if (resolved is not null && !ReferenceEquals(resolved, schemaRef))
 				return GetSchemaProperties(resolved);
 		}
 
