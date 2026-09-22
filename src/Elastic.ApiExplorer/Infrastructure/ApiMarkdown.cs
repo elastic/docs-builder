@@ -26,7 +26,24 @@ public static partial class ApiMarkdown
 		var rewritten = Prepare(markdown, context.CurrentNavigation.NavigationRoot.Url);
 		var source = CreateVirtualSource(context);
 		var html = context.MarkdownRenderer.RenderApiDescription(rewritten, source);
-		return new HtmlString(html);
+		return new HtmlString(SanitizeHtml(html));
+	}
+
+	/// <summary>
+	/// Strips executable HTML from rendered description output. Removes dangerous block elements
+	/// (script, style, iframe, …) including their content, event handler attributes (on*),
+	/// and javascript:/data:/vbscript: URI schemes from href and src attributes.
+	/// Keeps bump.sh formatting tags (span, div, a, br) intact.
+	/// </summary>
+	internal static string SanitizeHtml(string html)
+	{
+		if (string.IsNullOrEmpty(html))
+			return html;
+
+		var result = DangerousBlockPattern().Replace(html, string.Empty);
+		result = EventHandlerAttrPattern().Replace(result, string.Empty);
+		result = DangerousUrlSchemePattern().Replace(result, "$1blocked:$3");
+		return result;
 	}
 
 	/// <summary>
@@ -79,10 +96,42 @@ public static partial class ApiMarkdown
 	[GeneratedRegex(@"\{\{\{?[^}]+\}?\}\}")]
 	private static partial Regex MustachePattern();
 
+	// Strips block elements and their entire content (script, style, iframe, object, embed, form, base).
+	[GeneratedRegex(@"<(script|style|iframe|object|embed|form|base)\b[^>]*>.*?</\1\s*>|<(script|style|iframe|object|embed|form|base)\b[^>]*/?>", RegexOptions.IgnoreCase
+		| RegexOptions.Singleline)]
+	private static partial Regex DangerousBlockPattern();
+
+	// Strips on* event-handler attributes (e.g. onerror="...", onclick='...', onload=foo).
+	[GeneratedRegex(@"\s+on[a-z]\w*\s*=\s*(?:""[^""]*""|'[^']*'|[^\s>""'`=]*)", RegexOptions.IgnoreCase)]
+	private static partial Regex EventHandlerAttrPattern();
+
+	// Rewrites javascript:, data:, and vbscript: URI schemes inside href/src attributes to "blocked:".
+	[GeneratedRegex(@"((?:href|src|action|formaction)\s*=\s*[""'])(javascript|data|vbscript):", RegexOptions.IgnoreCase)]
+	private static partial Regex DangerousUrlSchemePattern();
+
+	// Replaces block/break HTML tags with a space so adjacent words stay separated after tag removal.
+	[GeneratedRegex(@"</?(?:br|p|div|li|ul|ol|h[1-6]|blockquote|pre|hr|tr|td|th)\b[^>]*>", RegexOptions.IgnoreCase)]
+	private static partial Regex BlockTagPattern();
+
+	// Strips remaining HTML tags after the block-tag whitespace pass.
 	[GeneratedRegex(@"<[^>]+>")]
 	private static partial Regex HtmlTagPattern();
 
-	/// <summary>Strips HTML tags from a description for use in plain-text contexts such as search indexing.</summary>
-	internal static string StripHtml(string? description) =>
-		string.IsNullOrEmpty(description) ? string.Empty : HtmlTagPattern().Replace(description, string.Empty);
+	/// <summary>
+	/// Strips HTML from a description for plain-text contexts such as search indexing.
+	/// Block and break tags are replaced with a space so word boundaries are preserved;
+	/// the remaining tags are then removed.
+	/// </summary>
+	internal static string StripHtml(string? description)
+	{
+		if (string.IsNullOrEmpty(description))
+			return string.Empty;
+
+		var spaced = BlockTagPattern().Replace(description, " ");
+		var stripped = HtmlTagPattern().Replace(spaced, string.Empty);
+		return WhitespaceCollapsePattern().Replace(stripped, " ").Trim();
+	}
+
+	[GeneratedRegex(@"[ \t]{2,}")]
+	private static partial Regex WhitespaceCollapsePattern();
 }
