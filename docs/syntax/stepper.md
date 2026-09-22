@@ -213,12 +213,31 @@ Set `:toc: false` on `{stepper}` when step titles should not be headings. The ti
 
 The default is to include step titles in the table of contents.
 
+This stepper is rendered on the page. Its titles are not listed in **On this page**. [Prepare the project](#prepare-the-project) still opens the first step.
+
+:::::{stepper}
+:toc: false
+
+::::{step} Prepare the project
+Install the dependencies before you build.
+::::
+
+::::{step} Build the project
+Run the production build.
+::::
+
+:::::
+
 ```markdown
 :::::{stepper}
 :toc: false
 
-::::{step} Install
-First install the dependencies.
+::::{step} Prepare the project
+Install the dependencies before you build.
+::::
+
+::::{step} Build the project
+Run the production build.
 ::::
 
 :::::
