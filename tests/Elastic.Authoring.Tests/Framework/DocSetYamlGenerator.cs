@@ -207,7 +207,8 @@ public static class DocSetYamlGenerator
 			switch (value)
 			{
 				case YamlScalarNode scalar:
-					AddLocal(scalar.Value ?? string.Empty, result);
+					var scalarTarget = string.IsNullOrEmpty(scalar.Value) ? "index.md" : scalar.Value;
+					AddLocal(scalarTarget, result);
 					break;
 
 				case YamlMappingNode mapping:
