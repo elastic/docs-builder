@@ -141,14 +141,20 @@ public sealed class ScrubberProcessor(
 			try
 			{
 				var notesByProduct = await notesReconciler.ReconcileRepoAsync(work.Scope, ctx);
-				var touchedProducts = await noteAmendReconciler.ReconcileAsync(work.Scope, notesByProduct, ctx);
-				foreach (var product in touchedProducts)
+				var amend = await noteAmendReconciler.ReconcileAsync(work.Scope, notesByProduct, ctx);
+				foreach (var product in amend.TouchedProducts)
 				{
 					if (!ChangelogScope.TryCreateBundle(product, out var bundleScope))
 						continue;
 					_ = await reconciler.ReconcileGroupAsync(bundleScope, ctx);
 					foreach (var messageId in work.MessageIds)
 						AddShallow(shallowWork, bundleScope, messageId);
+					foreach (var empty in amend.EmptyProductIndexes)
+					{
+						if (!string.Equals(empty.Product, product, StringComparison.Ordinal))
+							continue;
+						await notesReconciler.DeleteIndexAsync(empty.Key, ctx);
+					}
 				}
 			}
 			catch (Exception e) when (e is not OperationCanceledException)
