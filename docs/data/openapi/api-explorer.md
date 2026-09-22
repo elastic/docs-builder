@@ -218,9 +218,8 @@ remotely through the index.
 Versionless products (`versioning: serverless` and similar) render only the unversioned
 `/api/doc/<key>/` path even when the index lists historical monikers. When more than one
 version is rendered, assembler API pages show the same `version-dropdown` as Docs on the
-far right of the grey secondary top bar. The button uses the product's current-major label
-(`v9.0+ (Current)` for stack), and the menu lists `main` plus each frozen major
-(`9.x`, `8.x`). Isolated builds keep a left-nav switcher with the same labels.
+far right of the grey secondary top bar. The current tree is labeled `latest`, and each
+frozen major is `v9`, `v8`. Isolated builds keep a left-nav switcher with the same labels.
 
 ### Smoke-test every CloudFront spec locally
 

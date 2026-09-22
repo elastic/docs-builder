@@ -27,9 +27,8 @@ public class ApiLayoutVersionDropdownTests
 		layout.ShowVersionDropdown.Should().BeFalse();
 		layout.ShowLegacyBarVersionDropdown.Should().BeFalse();
 		layout.CurrentVersion.Should().Be("9.0+");
-		layout.VersionDropdownSerializedModel.Should().Contain("\"name\":\"9.0");
-		layout.VersionDropdownSerializedModel.Should().Contain("\"name\":\"9.x\"");
-		layout.VersionDropdownSerializedModel.Should().NotContain("Latest");
+		layout.VersionDropdownSerializedModel.Should().Contain("\"name\":\"latest\"");
+		layout.VersionDropdownSerializedModel.Should().Contain("\"name\":\"v9\"");
 		layout.ApiCatalogUrl.Should().Be("/api/");
 		layout.SpecJsonUrl.Should().Be("/api/doc/elasticsearch.json");
 		layout.SpecYamlUrl.Should().Be("/api/doc/elasticsearch.yaml");
@@ -87,8 +86,7 @@ public class ApiLayoutVersionDropdownTests
 		{ BuildType = buildType, UrlPathPrefix = buildType == BuildType.Assembler ? "/docs" : null };
 		var stack = TestHelpers.CreateStackVersionsConfiguration(currentMajor: 9);
 		var product = TestHelpers.CreateProduct("elasticsearch", stack.GetVersioningSystem(VersioningSystemId.Stack));
-		var switcherItems = items
-			?? ApiVersionSwitcher.Build("", "elasticsearch", ["main", "9", "8"], "main", versioning: product.VersioningSystem);
+		var switcherItems = items ?? ApiVersionSwitcher.Build("", "elasticsearch", ["main", "9", "8"], "main");
 		var renderContext = new ApiRenderContext(
 			context,
 			new OpenApiDocument { Info = new OpenApiInfo { Title = "Elasticsearch API", Version = "9.0.0" } },

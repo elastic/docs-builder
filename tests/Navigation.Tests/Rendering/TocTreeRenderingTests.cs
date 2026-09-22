@@ -231,9 +231,9 @@ public class TocTreeRenderingTests
 			BackLinks = [],
 			VersionSwitcher =
 			[
-				new NavigationSelectOption("Latest", "/api/doc/elasticsearch/", Selected: false),
-				new NavigationSelectOption("9.x", "/api/doc/elasticsearch/v9/", Selected: true),
-				new NavigationSelectOption("8.x", "/api/doc/elasticsearch/v8/", Selected: false)
+				new NavigationSelectOption("latest", "/api/doc/elasticsearch/", Selected: false),
+				new NavigationSelectOption("v9", "/api/doc/elasticsearch/v9/", Selected: true),
+				new NavigationSelectOption("v8", "/api/doc/elasticsearch/v8/", Selected: false)
 			],
 			Tree =
 			[

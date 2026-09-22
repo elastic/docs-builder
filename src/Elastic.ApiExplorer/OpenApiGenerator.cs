@@ -131,13 +131,7 @@ public class OpenApiGenerator(
 		var highestMajor = monikers.Max(TryParseMajor);
 		foreach (var versioned in versionedDocuments)
 		{
-			var switcherItems = ApiVersionSwitcher.Build(
-				context.UrlPathPrefix,
-				prefix,
-				monikers,
-				versioned.Version.Moniker,
-				versioning: apiConfig.Product.VersioningSystem
-			);
+			var switcherItems = ApiVersionSwitcher.Build(context.UrlPathPrefix, prefix, monikers, versioned.Version.Moniker);
 			var apiUrlSuffix = ApiUrlBuilder.ProductSuffix(prefix, versioned.Version.Moniker);
 			await GenerateApiProduct(
 				new(

@@ -14,43 +14,22 @@ public static class ApiVersionSwitcher
 		string? urlPathPrefix,
 		string apiKey,
 		IReadOnlyList<string> monikers,
-		string currentMoniker,
-		VersioningSystem? versioning = null
+		string currentMoniker
 	)
 	{
 		if (monikers.Count <= 1)
 			return [];
 
-		var currentLabel = CurrentVersionLabel(versioning, monikers) ?? "Latest";
 		return monikers
 			.OrderByDescending(m => m == "main" ? int.MaxValue : ParseMajor(m))
 			.Select(
 				m => new ApiVersionSwitcherItem(
-					Label: m == "main" ? currentLabel : $"{m}.x",
+					Label: m == "main" ? "latest" : $"v{m}",
 					Url: $"{ApiUrlBuilder.ProductRoot(urlPathPrefix, ApiUrlBuilder.ProductSuffix(apiKey, m))}/",
 					Selected: m == currentMoniker
 				)
 			)
 			.ToArray();
-	}
-
-	/// <summary>
-	/// Docs button label is <c>v{this} (Current)</c>. Prefer the product's versioning base
-	/// (<c>9.0+</c> for stack), then the highest numeric OpenAPI moniker.
-	/// </summary>
-	public static string? CurrentVersionLabel(VersioningSystem? versioning, IReadOnlyList<string> monikers)
-	{
-		if (versioning is { IsVersionless: false })
-			return $"{versioning.Base.Major}.{versioning.Base.Minor}+";
-
-		var major = 0;
-		foreach (var moniker in monikers)
-		{
-			if (int.TryParse(moniker, out var parsed) && parsed > major)
-				major = parsed;
-		}
-
-		return major > 0 ? $"{major}.0+" : null;
 	}
 
 	public static string? CurrentVersionLabel(VersioningSystem? versioning, IReadOnlyList<ApiVersionSwitcherItem> items)

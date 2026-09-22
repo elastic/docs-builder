@@ -29,9 +29,9 @@ public partial class ApiPagesNavRenderingTests
 			"/api/doc/elasticsearch/v9/",
 			"/api/doc/elasticsearch/v9.md",
 			versionSwitcherItems: [
-				new("9.0+", "/api/doc/elasticsearch/", Selected: false),
-				new("9.x", "/api/doc/elasticsearch/v9/", Selected: true),
-				new("8.x", "/api/doc/elasticsearch/v8/", Selected: false),
+				new("latest", "/api/doc/elasticsearch/", Selected: false),
+				new("v9", "/api/doc/elasticsearch/v9/", Selected: true),
+				new("v8", "/api/doc/elasticsearch/v8/", Selected: false),
 			]
 		);
 
@@ -117,8 +117,8 @@ public partial class ApiPagesNavRenderingTests
 			"/api/doc/elasticsearch/",
 			"/api/doc/elasticsearch.md",
 			versionSwitcherItems: [
-				new("9.0+", "/api/doc/elasticsearch/", Selected: true),
-				new("8.x", "/api/doc/elasticsearch/v8/", Selected: false),
+				new("latest", "/api/doc/elasticsearch/", Selected: true),
+				new("v8", "/api/doc/elasticsearch/v8/", Selected: false),
 			],
 			buildType: BuildType.Assembler
 		);

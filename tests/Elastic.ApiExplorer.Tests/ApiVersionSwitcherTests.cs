@@ -25,24 +25,26 @@ public class ApiVersionSwitcherTests
 		var items = ApiVersionSwitcher.Build("", "elasticsearch", ["main", "9", "8"], "8");
 
 		items.Should().HaveCount(3);
-		items.Select(i => i.Label).Should().Equal("9.0+", "9.x", "8.x");
+		items.Select(i => i.Label).Should().Equal("latest", "v9", "v8");
 		items.Select(i => i.Url).Should().Equal("/api/doc/elasticsearch/", "/api/doc/elasticsearch/v9/", "/api/doc/elasticsearch/v8/");
-		items.Single(i => i.Selected).Label.Should().Be("8.x");
+		items.Single(i => i.Selected).Label.Should().Be("v8");
 	}
 
 	[Fact]
-	public void Build_WithStackVersioning_UsesBaseMinorPlusForMain()
+	public void Build_CurrentMain_LabelsItLatest()
 	{
-		var items = ApiVersionSwitcher.Build("", "elasticsearch", ["main", "9", "8"], "main", versioning: StackVersioning());
+		var items = ApiVersionSwitcher.Build("", "elasticsearch", ["main", "9", "8"], "main");
 
-		items.Select(i => i.Label).Should().Equal("9.0+", "9.x", "8.x");
-		items.Single(i => i.Selected).Label.Should().Be("9.0+");
+		items.Select(i => i.Label).Should().Equal("latest", "v9", "v8");
+		items.Single(i => i.Selected).Label.Should().Be("latest");
 	}
 
 	[Fact]
 	public void CurrentVersionLabel_PrefersProductVersioningBase()
 	{
-		var label = ApiVersionSwitcher.CurrentVersionLabel(StackVersioning(), ["main", "8"]);
+		var items = ApiVersionSwitcher.Build("", "elasticsearch", ["main", "8"], "main");
+
+		var label = ApiVersionSwitcher.CurrentVersionLabel(StackVersioning(), items);
 
 		label.Should().Be("9.0+");
 	}
@@ -54,11 +56,11 @@ public class ApiVersionSwitcherTests
 
 		var json = ApiVersionSwitcher.SerializeDropdownItems(items);
 
-		json.Should().Contain("\"name\":\"9.0");
+		json.Should().Contain("\"name\":\"latest\"");
+		json.Should().Contain("\"name\":\"v9\"");
 		json.Should().Contain("\"href\":\"/api/doc/elasticsearch/\"");
 		json.Should().Contain("\"href\":\"/api/doc/elasticsearch/v9/\"");
 		json.Should().Contain("\"disabled\":false");
-		json.Should().NotContain("Latest");
 	}
 
 	private static VersioningSystem StackVersioning() =>
