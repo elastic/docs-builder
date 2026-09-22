@@ -83,8 +83,15 @@ public sealed record PreviousTagResult
 	/// <summary>Predecessor found.</summary>
 	public static PreviousTagResult Found(string tag) => new() { Tag = tag, Status = PreviousTagStatus.Found };
 
-	/// <summary>All APIs scanned successfully; no predecessor exists in the same release line.</summary>
+	/// <summary>All APIs scanned successfully; no predecessor exists anywhere in the repository.</summary>
 	public static PreviousTagResult FirstRelease { get; } = new() { Status = PreviousTagStatus.FirstRelease };
+
+	/// <summary>
+	/// All APIs scanned successfully; no predecessor exists in the same major/prefix line, but other releases
+	/// exist in the repository (e.g. v9.x releases exist but this is the first v10.x).
+	/// The initial-commit fallback must NOT be used here — using it would pull in the entire repository history.
+	/// </summary>
+	public static PreviousTagResult FirstReleaseInLine { get; } = new() { Status = PreviousTagStatus.FirstReleaseInLine };
 
 	/// <summary>An API or transport failure prevented a definitive answer; result is indeterminate.</summary>
 	public static PreviousTagResult LookupFailed { get; } = new() { Status = PreviousTagStatus.LookupFailed };
@@ -95,6 +102,7 @@ public enum PreviousTagStatus
 {
 	Found,
 	FirstRelease,
+	FirstReleaseInLine,
 	LookupFailed
 }
 

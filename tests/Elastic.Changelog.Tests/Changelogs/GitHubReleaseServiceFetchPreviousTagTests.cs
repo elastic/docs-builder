@@ -108,12 +108,13 @@ public class GitHubReleaseServiceFetchPreviousTagTests(ITestOutputHelper output)
 	}
 
 	[Fact]
-	public async Task FetchPreviousTag_InterleavedMajorVersions_NoPreviousInSameMajor_ReturnsFirstRelease()
+	public async Task FetchPreviousTag_InterleavedMajorVersions_NoPreviousInSameMajor_ReturnsFirstReleaseInLine()
 	{
-		// v2.0.0 is the first v2 release; v1.9.0 should NOT be returned.
+		// v2.0.0 is the first v2 release; v1.9.0 should NOT be returned, but its presence
+		// means the repo has prior history — returning FirstReleaseInLine avoids the initial-commit fallback.
 		var handler = new StubHandler(_ => Json(ReleasesJson("v2.1.0", "v2.0.0", "v1.9.0", "v1.8.0")));
 		var result = await Service(handler).FetchPreviousTagAsync(Owner, Repo, "v2.0.0");
-		result.Should().Be(PreviousTagResult.FirstRelease);
+		result.Should().Be(PreviousTagResult.FirstReleaseInLine);
 	}
 
 	[Fact]
@@ -153,9 +154,10 @@ public class GitHubReleaseServiceFetchPreviousTagTests(ITestOutputHelper output)
 	public async Task FetchPreviousTag_PrefixWithDash_MajorVersionIsolation()
 	{
 		// agent-v2.0.0 first in v2 line; agent-v1.x should NOT be returned.
+		// agent-v1.9.0 in a different major signals prior history → FirstReleaseInLine.
 		var handler = new StubHandler(_ => Json(ReleasesJson("agent-v2.1.0", "agent-v2.0.0", "agent-v1.9.0")));
 		var result = await Service(handler).FetchPreviousTagAsync(Owner, Repo, "agent-v2.0.0");
-		result.Should().Be(PreviousTagResult.FirstRelease);
+		result.Should().Be(PreviousTagResult.FirstReleaseInLine);
 	}
 
 	[Fact]
@@ -497,9 +499,9 @@ public class GitHubReleaseServiceFetchPreviousTagTests(ITestOutputHelper output)
 		var handler = new StubHandler(
 			req => req.RequestUri!.PathAndQuery.Contains("/tags") ? Json(TagsJson("v2.0.0", "v1.9.0", "v1.8.0")) : Json("[]")
 		);
-		// v2.0.0 is the first v2 release; no prior v2.x → FirstRelease even though v1.9.0 exists.
+		// v2.0.0 is the first v2 release; v1.9.0 in a different major signals prior history → FirstReleaseInLine.
 		var result = await Service(handler).FetchPreviousTagAsync(Owner, Repo, "v2.0.0");
-		result.Should().Be(PreviousTagResult.FirstRelease);
+		result.Should().Be(PreviousTagResult.FirstReleaseInLine);
 	}
 
 	// ─────────────────────────────────────────────────────────────────────────
@@ -832,7 +834,8 @@ public class GitHubReleaseServiceFetchPreviousTagTests(ITestOutputHelper output)
 		});
 
 		var result = await Service(handler).FetchPreviousTagAsync(Owner, Repo, "v4.0.0");
-		result.Should().Be(PreviousTagResult.FirstRelease);
+		// v3.x.x releases exist in a different major → FirstReleaseInLine, not FirstRelease.
+		result.Should().Be(PreviousTagResult.FirstReleaseInLine);
 		// Requests: releases page 1, releases page 2 (partial → stop), tags page 1 (empty → stop)
 		requestCount.Should().Be(3, "full scan: no bail fires for X.0.0 — all release pages and tags checked");
 	}
@@ -926,7 +929,8 @@ public class GitHubReleaseServiceFetchPreviousTagTests(ITestOutputHelper output)
 		});
 
 		var result = await Service(handler).FetchPreviousTagAsync(Owner, Repo, "v4.0.0");
-		result.Should().Be(PreviousTagResult.FirstRelease);
+		// v3.x.x tags in a different major → FirstReleaseInLine.
+		result.Should().Be(PreviousTagResult.FirstReleaseInLine);
 		// 1 releases page (empty) + 2 tags pages (full scan, no bail)
 		requestCount.Should().Be(3);
 	}

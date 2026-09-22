@@ -150,7 +150,7 @@ public partial class GitHubReleaseService(
 			var (currentPrefix, currentMajor, currentIsPreRelease) = ParseTagIdentity(currentTag);
 			var currentVersion = ParseTagVersion(currentTag);
 
-			var (releasesTag, releasesFailed) = await ScanReleasesForPreviousTagAsync(
+			var (releasesTag, releasesFailed, releasesSawAny) = await ScanReleasesForPreviousTagAsync(
 				owner,
 				repo,
 				currentTag,
@@ -164,7 +164,7 @@ public partial class GitHubReleaseService(
 				return PreviousTagResult.Found(releasesTag);
 
 			_logger.LogDebug("Releases API yielded no predecessor for {CurrentTag}; trying git tags API", currentTag);
-			var (tagsTag, tagsFailed) = await ScanTagsApiForPreviousTagAsync(
+			var (tagsTag, tagsFailed, tagsSawAny) = await ScanTagsApiForPreviousTagAsync(
 				owner,
 				repo,
 				currentTag,
@@ -181,6 +181,11 @@ public partial class GitHubReleaseService(
 			if (releasesFailed || tagsFailed)
 				return PreviousTagResult.LookupFailed;
 
+			// If we saw releases/tags in other lines (e.g. v9.x exists but this is the first v10.x),
+			// do not fall back to the initial commit — using it would pull in the entire repository history.
+			if (releasesSawAny || tagsSawAny)
+				return PreviousTagResult.FirstReleaseInLine;
+
 			return PreviousTagResult.FirstRelease;
 		}
 		catch (HttpRequestException ex)
@@ -195,7 +200,7 @@ public partial class GitHubReleaseService(
 		}
 	}
 
-	private async Task<(string? Tag, bool Failed)> ScanReleasesForPreviousTagAsync(
+	private async Task<(string? Tag, bool Failed, bool SawAny)> ScanReleasesForPreviousTagAsync(
 		string owner,
 		string repo,
 		string currentTag,
@@ -209,6 +214,7 @@ public partial class GitHubReleaseService(
 		const int pageSize = 100;
 		var page = 1;
 		var foundCurrent = false;
+		var sawAny = false;
 		string? bestMatch = null;
 		SemVer? bestSemver = null;
 
@@ -219,7 +225,7 @@ public partial class GitHubReleaseService(
 
 			using var response = await GetWithRetryAsync(url, ctx);
 			if (response is null)
-				return (null, true);
+				return (null, true, sawAny);
 
 			var jsonContent = await response.Content.ReadAsStringAsync(ctx);
 			var releases = JsonSerializer.Deserialize(jsonContent, GitHubReleaseJsonContext.Default.GitHubReleaseResponseArray);
@@ -242,7 +248,23 @@ public partial class GitHubReleaseService(
 					var (candidatePrefix, _, _) = ParseTagIdentity(tagName);
 					if (!string.Equals(candidatePrefix, currentPrefix, StringComparison.OrdinalIgnoreCase))
 						continue;
-					return (r.TagName, false);
+					return (r.TagName, false, true);
+				}
+
+				// Track if any release shares our prefix but belongs to a different major version.
+				// This distinguishes "no predecessor in this repo" from "no predecessor in this major line".
+				if (!sawAny && !string.Equals(tagName, currentTag, StringComparison.OrdinalIgnoreCase))
+				{
+					var (cPrefix, cMajor, _) = ParseTagIdentity(tagName);
+					if (
+						string.Equals(cPrefix, currentPrefix, StringComparison.OrdinalIgnoreCase)
+						&& currentMajor >= 0
+						&& cMajor >= 0
+						&& cMajor != currentMajor
+					)
+					{
+						sawAny = true;
+					}
 				}
 
 				// Semver: accumulate the highest candidate strictly below the current version.
@@ -257,7 +279,7 @@ public partial class GitHubReleaseService(
 					bestMatch = r.TagName;
 					// Definitive exact predecessor found — no tag can rank higher and still be below current.
 					if (IsDefiniteExactPredecessor(candidateVersion.Value, currentVersion.Value))
-						return (bestMatch, false);
+						return (bestMatch, false, true);
 				}
 			}
 
@@ -270,10 +292,10 @@ public partial class GitHubReleaseService(
 			page++;
 		}
 
-		return (bestMatch, false);
+		return (bestMatch, false, sawAny);
 	}
 
-	private async Task<(string? Tag, bool Failed)> ScanTagsApiForPreviousTagAsync(
+	private async Task<(string? Tag, bool Failed, bool SawAny)> ScanTagsApiForPreviousTagAsync(
 		string owner,
 		string repo,
 		string currentTag,
@@ -287,6 +309,7 @@ public partial class GitHubReleaseService(
 		const int pageSize = 100;
 		var page = 1;
 		var foundCurrent = false;
+		var sawAny = false;
 		string? bestMatch = null;
 		SemVer? bestSemver = null;
 
@@ -297,7 +320,7 @@ public partial class GitHubReleaseService(
 
 			using var response = await GetWithRetryAsync(url, ctx);
 			if (response is null)
-				return (null, true);
+				return (null, true, sawAny);
 
 			var jsonContent = await response.Content.ReadAsStringAsync(ctx);
 			var tags = JsonSerializer.Deserialize(jsonContent, GitHubReleaseJsonContext.Default.GitHubTagResponseArray);
@@ -319,7 +342,22 @@ public partial class GitHubReleaseService(
 					var (candidatePrefix, _, _) = ParseTagIdentity(tagName);
 					if (!string.Equals(candidatePrefix, currentPrefix, StringComparison.OrdinalIgnoreCase))
 						continue;
-					return (t.Name, false);
+					return (t.Name, false, true);
+				}
+
+				// Track if any tag shares our prefix but belongs to a different major version.
+				if (!sawAny && !string.Equals(tagName, currentTag, StringComparison.OrdinalIgnoreCase))
+				{
+					var (cPrefix, cMajor, _) = ParseTagIdentity(tagName);
+					if (
+						string.Equals(cPrefix, currentPrefix, StringComparison.OrdinalIgnoreCase)
+						&& currentMajor >= 0
+						&& cMajor >= 0
+						&& cMajor != currentMajor
+					)
+					{
+						sawAny = true;
+					}
 				}
 
 				if (!IsSemverCandidate(tagName, currentTag, currentPrefix, currentMajor, currentIsPreRelease, out var candidateVersion))
@@ -332,7 +370,7 @@ public partial class GitHubReleaseService(
 					bestSemver = candidateVersion;
 					bestMatch = t.Name;
 					if (IsDefiniteExactPredecessor(bestSemver.Value, currentVersion.Value))
-						return (bestMatch, false);
+						return (bestMatch, false, true);
 				}
 			}
 
@@ -344,7 +382,7 @@ public partial class GitHubReleaseService(
 			page++;
 		}
 
-		return (bestMatch, false);
+		return (bestMatch, false, sawAny);
 	}
 
 	/// <summary>

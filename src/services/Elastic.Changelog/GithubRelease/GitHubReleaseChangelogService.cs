@@ -324,6 +324,17 @@ public class GitHubReleaseChangelogService(
 			return null;
 		}
 
+		if (lookup.Status == PreviousTagStatus.FirstReleaseInLine)
+		{
+			collector.EmitError(
+				string.Empty,
+				$"'{currentTag}' is the first release in its major/prefix line in {owner}/{repo}, " +
+					"but earlier releases exist in the repository. Specify a start ref explicitly " +
+					"(e.g. the latest tag from the previous major) so the commit range does not " + "include unrelated history."
+			);
+			return null;
+		}
+
 		string previousTag;
 		if (lookup.Tag is not null)
 		{
@@ -331,8 +342,8 @@ public class GitHubReleaseChangelogService(
 		}
 		else
 		{
-			// Genuine first release — fall back to the initial commit so the range covers all
-			// PR merges up to this tag rather than failing entirely.
+			// Genuine first release in the repository — fall back to the initial commit so the range
+			// covers all PR merges up to this tag rather than failing entirely.
 			var initialCommit = await _releaseService.FetchInitialCommitAsync(owner, repo, currentTag, ctx);
 			if (initialCommit is null)
 			{
