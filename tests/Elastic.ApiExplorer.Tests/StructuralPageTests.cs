@@ -12,7 +12,8 @@ using Microsoft.OpenApi;
 
 namespace Elastic.ApiExplorer.Tests;
 
-public class StructuralPageTests(ApiExplorerFixture fixture) : IClassFixture<ApiExplorerFixture>
+[ClassDataSource<ApiExplorerFixture>(Shared = SharedType.PerClass)]
+public class StructuralPageTests(ApiExplorerFixture fixture)
 {
 	[Test]
 	public void CreateNavigation_IncludesAuthenticationAndServersPages()

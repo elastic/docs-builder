@@ -8,8 +8,7 @@ using Elastic.Markdown.Myst.Directives.Stepper;
 
 namespace Elastic.Markdown.Tests.Directives;
 
-public class StepperTocDefaultTests(ITestOutputHelper output) : DirectiveTest<StepperBlock>(
-	output,
+public class StepperTocDefaultTests() : DirectiveTest<StepperBlock>(
 	"""
 :::::{stepper}
 
@@ -40,8 +39,7 @@ First install the dependencies.
 	}
 }
 
-public class StepperTocFalseTests(ITestOutputHelper output) : DirectiveTest<StepperBlock>(
-	output,
+public class StepperTocFalseTests() : DirectiveTest<StepperBlock>(
 	"""
 :::::{stepper}
 :toc: false
@@ -73,8 +71,7 @@ First install the dependencies.
 	}
 }
 
-public class StepperTocFalseKeepsInternalHeadingsTests(ITestOutputHelper output) : DirectiveTest<StepperBlock>(
-	output,
+public class StepperTocFalseKeepsInternalHeadingsTests() : DirectiveTest<StepperBlock>(
 	"""
 ## Section
 
@@ -107,8 +104,7 @@ Some content under the internal heading.
 	}
 }
 
-public class StepperTocFalseNoPrecedingHeadingTests(ITestOutputHelper output) : DirectiveTest<StepperBlock>(
-	output,
+public class StepperTocFalseNoPrecedingHeadingTests() : DirectiveTest<StepperBlock>(
 	"""
 	---
 	title: Outline level

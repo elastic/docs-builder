@@ -11,7 +11,8 @@ using Elastic.Documentation.Site.FileProviders;
 
 namespace Elastic.ApiExplorer.Tests;
 
-public class OperationDeprecatedBadgeRenderingTests(ApiExplorerFixture fixture) : IClassFixture<ApiExplorerFixture>
+[ClassDataSource<ApiExplorerFixture>(Shared = SharedType.PerClass)]
+public class OperationDeprecatedBadgeRenderingTests(ApiExplorerFixture fixture)
 {
 	[Test]
 	public async Task Render_DeprecatedOperation_ShowsBadgeOnTitleNotOnMethod()
