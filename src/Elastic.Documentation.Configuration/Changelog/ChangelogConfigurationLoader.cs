@@ -694,6 +694,11 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 			github = [];
 			foreach (var (tag, profile) in yaml.Github)
 			{
+				if (string.IsNullOrWhiteSpace(profile))
+				{
+					collector.EmitError(configPath, $"bundle.releases.github['{tag}']: must map to a non-empty profile name.");
+					return null;
+				}
 				if (profiles == null || !profiles.ContainsKey(profile))
 				{
 					collector.EmitError(
@@ -712,6 +717,11 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 			products = [];
 			foreach (var (product, profile) in yaml.Products)
 			{
+				if (string.IsNullOrWhiteSpace(profile))
+				{
+					collector.EmitError(configPath, $"bundle.releases.products['{product}']: must map to a non-empty profile name.");
+					return null;
+				}
 				var normalizedProduct = product.Replace('_', '-');
 				if (!validProductIds.Contains(normalizedProduct))
 				{
