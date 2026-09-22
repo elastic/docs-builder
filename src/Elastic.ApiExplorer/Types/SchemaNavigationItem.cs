@@ -16,18 +16,26 @@ namespace Elastic.ApiExplorer.Types;
 
 public record ApiSchema(string SchemaId, string DisplayName, string Category, IOpenApiSchema Schema) : IApiModel
 {
-	public async Task RenderAsync(FileSystemStream stream, ApiRenderContext context, Cancel ctx = default)
+	public object? CreatePageModel(ApiRenderContext context) => SchemaPageModel.Create(this, context);
+
+	public async Task RenderAsync(FileSystemStream stream, ApiRenderContext context, object? pageModel, Cancel ctx = default)
 	{
-		var viewModel = new SchemaViewModel(context) { Schema = this, Page = SchemaPageModel.Create(this, context) };
+		var page = pageModel as SchemaPageModel ?? SchemaPageModel.Create(this, context);
+		var viewModel = new SchemaViewModel(context) { Schema = this, Page = page };
 		var slice = SchemaView.Create(viewModel);
 		await slice.RenderAsync(stream, cancellationToken: ctx);
 	}
 
-	public Task<string?> RenderCommonMarkAsync(ApiRenderContext context, Cancel ctx = default)
+	public async Task RenderAsync(FileSystemStream stream, ApiRenderContext context, Cancel ctx = default) =>
+		await RenderAsync(stream, context, null, ctx);
+
+	public Task<string?> RenderCommonMarkAsync(ApiRenderContext context, object? pageModel, Cancel ctx = default)
 	{
-		var page = SchemaPageModel.Create(this, context);
+		var page = pageModel as SchemaPageModel ?? SchemaPageModel.Create(this, context);
 		return Task.FromResult<string?>(SchemaCommonMark.Write(this, page, context));
 	}
+
+	public Task<string?> RenderCommonMarkAsync(ApiRenderContext context, Cancel ctx = default) => RenderCommonMarkAsync(context, null, ctx);
 }
 
 public class SchemaNavigationItem : ILeafNavigationItem<ApiSchema>

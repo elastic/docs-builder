@@ -161,6 +161,12 @@ export const ATTR_NAVIGATION_SEARCH_HAD_SELECTION =
     'navigation_search.had_selection'
 
 /**
+ * Which Jump to page surface emitted the event
+ * @example "api"
+ */
+export const ATTR_NAVIGATION_SEARCH_SURFACE = 'navigation_search.surface'
+
+/**
  * Navigation method used (keyboard or mouse)
  * @example "keyboard" | "mouse"
  */

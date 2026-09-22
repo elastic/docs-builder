@@ -53,6 +53,26 @@ public class VersionIndexBuilderTests
 	}
 
 	[Fact]
+	public void Build_MasterVersion_IndexesUnderMainWithMasterObjectKey()
+	{
+		var index = VersionIndexBuilder.Build(["elastic/cloud/master/cloud.json"]).Index;
+
+		var byMajor = index["elastic/cloud"]["cloud.json"];
+		byMajor.Should().ContainSingle().Which.Key.Should().Be("main");
+		byMajor["main"].Version.Should().Be("master");
+	}
+
+	[Fact]
+	public void Build_MainAndMasterBothPublished_MainWins()
+	{
+		var index = VersionIndexBuilder.Build(["elastic/cloud/master/cloud.json", "elastic/cloud/main/cloud.json"]).Index;
+
+		var byMajor = index["elastic/cloud"]["cloud.json"];
+		byMajor.Should().ContainSingle().Which.Key.Should().Be("main");
+		byMajor["main"].Version.Should().Be("main");
+	}
+
+	[Fact]
 	public void Build_MainAndReleaseVersions_KeepsBothSeparately()
 	{
 		var index = VersionIndexBuilder.Build(["elastic/elasticsearch/main/openapi.json", "elastic/elasticsearch/8.16/openapi.json"]).Index;
@@ -97,7 +117,7 @@ public class VersionIndexBuilderTests
 
 	[InlineData("elastic/elasticsearch/8.16/")] // empty file segment
 
-	[InlineData("elastic/elasticsearch/master/openapi.json")] // not "main" or <major>.<minor>
+	[InlineData("elastic/elasticsearch/not-a-branch/openapi.json")] // not main, master, or <major>.<minor>
 
 	[InlineData("elastic/elasticsearch/8/openapi.json")] // missing minor
 
@@ -123,10 +143,10 @@ public class VersionIndexBuilderTests
 		var (index, invalidKeys) = VersionIndexBuilder.Build([
 			"elastic/elasticsearch/8.16/openapi.json",
 			"not-a-valid-key",
-			"elastic/elasticsearch/master/openapi.json"
+			"elastic/elasticsearch/not-a-branch/openapi.json"
 		]);
 
 		index["elastic/elasticsearch"]["openapi.json"]["8"].Version.Should().Be("8.16");
-		invalidKeys.Should().BeEquivalentTo(["not-a-valid-key", "elastic/elasticsearch/master/openapi.json"]);
+		invalidKeys.Should().BeEquivalentTo(["not-a-valid-key", "elastic/elasticsearch/not-a-branch/openapi.json"]);
 	}
 }

@@ -1,6 +1,6 @@
 Aggregates changelog YAML files matching a filter into a single bundle file. The bundle is the artifact used by the `{changelog}` directive and `docs-builder changelog render` to produce release notes.
 
-The command has **two mutually exclusive modes**. You cannot mix them: supplying a profile name on the command line disables all filter and output flags (refer to [Options](#options) for equivalent changelog configuration settings).
+The command has **two mutually exclusive modes**. You cannot mix filter flags with a profile name (refer to [Options](#options) for equivalent changelog configuration settings). `--description` and `--description-file` are allowed with a profile only when the profile and `bundle.description` do not already define an intro.
 
 ## Profile-based mode
 
@@ -83,6 +83,19 @@ docs-builder changelog bundle \
   --output docs/releases/serverless/2026-07-07.yaml \
   --output-products "cloud-serverless 2026-07-07"
 ```
+
+## Bundle description [changelog-bundle-description]
+
+`--description` and `--description-file` set the bundle intro rendered after the release heading. `--description-file` is a UTF-8 file, or `-` to read stdin. The two flags are mutually exclusive.
+
+In option-based mode they override `bundle.description`. In profile-based commands they are allowed only when neither `bundle.description` nor the profile `description` is set.
+
+```sh
+docs-builder changelog bundle es-release 1.12.0 \
+  --description-file .ci/changelog-bundle-description.md
+```
+
+Multiline Markdown is serialized as a YAML literal block (`|`). To change the intro after the bundle exists, use [](/cli/changelog/bundle-amend.md).
 
 ## Commit-range mode [git-ref-mode]
 

@@ -126,6 +126,11 @@ public class TocItemYamlConverter : IYamlTypeConverter
 		// Capture exclude list for folder auto-discovery
 		var exclude = dictionary.TryGetValue("exclude", out var excludeObj) && excludeObj is string[] excludeArr ? excludeArr : null;
 
+		// Capture default_cta for file: and folder: entries; validated against docset.yml templates during resolution
+		var defaultCta = dictionary.TryGetValue("default_cta", out var defaultCtaObj) && defaultCtaObj is string defaultCtaStr
+			? defaultCtaStr
+			: null;
+
 		// Check for listing (listing: <folder>) — a glob-driven auto-discovered nav entry with generated index.
 		// Must come before folder: and file: so those keys can still appear on the entry as children context.
 		if (dictionary.TryGetValue("listing", out var listingPath) && listingPath is string listing)
@@ -193,7 +198,7 @@ public class TocItemYamlConverter : IYamlTypeConverter
 			// Return a FolderRef with the index file and children
 			// The folder path can be deep (e.g., "guides/getting-started"), that's OK
 			// PathRelativeToContainer will be set during resolution
-			return new FolderRef(folder, folder, folderChildren, placeholderContext, sort, exclude);
+			return new FolderRef(folder, folder, folderChildren, placeholderContext, sort, exclude, defaultCta);
 		}
 		if (
 			dictionary.TryGetValue("detection_rules", out var detectionRulesObj)
@@ -220,23 +225,23 @@ public class TocItemYamlConverter : IYamlTypeConverter
 		if (dictionary.TryGetValue("file", out var filePathOnly) && filePathOnly is string fileOnly)
 		{
 			if (fileOnly == "index.md")
-				return new IndexFileRef(fileOnly, fileOnly, false, children, placeholderContext);
+				return new IndexFileRef(fileOnly, fileOnly, false, children, placeholderContext, defaultCta);
 
 			// Sugar: childless "file: subdir/index.md" → single-page folder, so it isn't silently dropped competing for the parent's index slot.
 			if (children.Count == 0 && fileOnly.EndsWith("/index.md", StringComparison.Ordinal))
 			{
 				var indexFolderPath = fileOnly[..^"/index.md".Length];
 				var indexFile = new FolderIndexFileRef("index.md", "index.md", false, [], placeholderContext);
-				return new DeepLinkedFolderRef(indexFolderPath, indexFolderPath, [indexFile], placeholderContext);
+				return new DeepLinkedFolderRef(indexFolderPath, indexFolderPath, [indexFile], placeholderContext, defaultCta);
 			}
 
-			return new FileRef(fileOnly, fileOnly, false, children, placeholderContext);
+			return new FileRef(fileOnly, fileOnly, false, children, placeholderContext, defaultCta);
 		}
 
 		if (dictionary.TryGetValue("hidden", out var hiddenPath) && hiddenPath is string p)
 			return p == "index.md"
-				? new IndexFileRef(p, p, true, children, placeholderContext)
-				: new FileRef(p, p, true, children, placeholderContext);
+				? new IndexFileRef(p, p, true, children, placeholderContext, defaultCta)
+				: new FileRef(p, p, true, children, placeholderContext, defaultCta);
 
 		// Check for crosslink reference
 		if (dictionary.TryGetValue("crosslink", out var crosslink) && crosslink is string crosslinkStr)
@@ -249,7 +254,7 @@ public class TocItemYamlConverter : IYamlTypeConverter
 		// Check for folder reference
 		// PathRelativeToContainer will be set during resolution
 		if (dictionary.TryGetValue("folder", out var folderPathOnly) && folderPathOnly is string folderOnly)
-			return new FolderRef(folderOnly, folderOnly, children, placeholderContext, sort, exclude);
+			return new FolderRef(folderOnly, folderOnly, children, placeholderContext, sort, exclude, defaultCta);
 
 		// Check for toc reference
 		// PathRelativeToContainer will be set during resolution

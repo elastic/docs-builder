@@ -239,7 +239,8 @@ public class ChangelogBlock(DirectiveBlockParser parser, ParserContext context) 
 		{
 			// :cdn: takes an explicit product, or may be valueless to infer the product from the
 			// repository that holds the doc (the common case where the repo name is the product id).
-			var product = Prop("cdn") is { Length: > 0 } explicitProduct ? explicitProduct.Trim() : InferCdnProductFromRepository();
+			var isAutoInferred = Prop("cdn") is not { Length: > 0 };
+			var product = isAutoInferred ? InferCdnProductFromRepository() : Prop("cdn")!.Trim();
 
 			if (string.IsNullOrWhiteSpace(product))
 			{
@@ -261,7 +262,7 @@ public class ChangelogBlock(DirectiveBlockParser parser, ParserContext context) 
 				this.EmitWarning("The bundles folder argument is ignored when :cdn: is set; bundles are sourced from the CDN.");
 
 			CdnProduct = product;
-			LoadCdnBundles(product);
+			LoadCdnBundles(product, isAutoInferred);
 			return;
 		}
 
@@ -573,14 +574,48 @@ public class ChangelogBlock(DirectiveBlockParser parser, ParserContext context) 
 		ApplyLoadedBundles(loadedBundles);
 	}
 
-	private void LoadCdnBundles(string product)
+	private void LoadCdnBundles(string product, bool isAutoInferred = false)
 	{
-		// :cdn: is a selector over release notes prefetched at build startup. A product must be declared
-		// under `release_notes` in docset.yml; otherwise its bundles were never fetched.
+		// :cdn: is a selector over release notes prefetched at build startup.
 		if (!Context.ReleaseNotesResolver.IsDeclared(product))
 		{
-			this.EmitError(
-				$"The :cdn: product '{product}' is not declared in docset.yml. Add it under 'release_notes:', for example:\n  release_notes:\n    - product: {product}"
+			if (!isAutoInferred)
+			{
+				this.EmitError(
+					$"The :cdn: product '{product}' is not declared in docset.yml. Add it under 'release_notes:', for example:\n  release_notes:\n    - product: {product}"
+				);
+				return;
+			}
+
+			// Auto-inferred products are fetched best-effort. Inferred bundles are not promoted into
+			// DeclaredProducts to avoid cross-repo contamination in assembler runs (one repo's successful
+			// inference must not suppress the undeclared-product error for an explicit :cdn: in another).
+			// Check BundlesByProduct directly: bundles are present when the CDN fetch succeeded.
+			if (Context.ReleaseNotesResolver.TryGetBundles(product, out var inferredBundles) && inferredBundles.Count > 0)
+			{
+				ApplyLoadedBundles(inferredBundles);
+				Found = LoadedBundles.Count > 0;
+				return;
+			}
+
+			// No bundles available. Emit a hint only for the 404 case (not yet published) — for other
+			// CDN errors a warning was already emitted during prefetch, so no extra message is needed.
+			if (Context.ReleaseNotesResolver.IsNotFound(product))
+			{
+				this.EmitHint(
+					$"No CDN bundles found for auto-inferred product '{product}'. " +
+						$"The changelog will render empty until bundles are published. " +
+						$"To suppress this hint, declare it explicitly under 'release_notes:' in docset.yml."
+				);
+			}
+			return;
+		}
+
+		if (Context.ReleaseNotesResolver.IsNotFoundDeclared(product))
+		{
+			this.EmitHint(
+				$"'{product}' is registered in products.yml but has no CDN bundles yet. " +
+					$"The changelog will render empty until the first release is published."
 			);
 			return;
 		}
@@ -697,8 +732,7 @@ public class ChangelogBlock(DirectiveBlockParser parser, ParserContext context) 
 		return matched;
 	}
 
-	private static bool IsValidCdnProduct(string product) =>
-		product.Length > 0 && product.All(c => char.IsAsciiLetterOrDigit(c) || c is '_' or '-');
+	private static bool IsValidCdnProduct(string product) => ReleaseNotesFetcher.IsValidCdnProductId(product);
 
 	/// <summary>Infers the CDN product for a valueless <c>:cdn:</c> from the repo, mapped to its canonical id via products.yml.</summary>
 	private string? InferCdnProductFromRepository()

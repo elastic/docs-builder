@@ -609,6 +609,57 @@ public class BundleLoaderTests(ITestOutputHelper output)
 	}
 
 	[Fact]
+	public void LoadBundles_NumberedExcludeThenNotesReadd_KeepsEntry()
+	{
+		var bundlesFolder = "/docs/changelog/bundles";
+		_fileSystem.Directory.CreateDirectory(bundlesFolder);
+
+		// language=yaml
+		var parentBundle =
+			"""
+			products:
+			  - product: elasticsearch
+			    target: 9.3.0
+			description: Parent intro
+			entries:
+			  - title: Shipped feature
+			    type: feature
+			    file:
+			      name: shipped.yaml
+			      checksum: aaa
+			""";
+		// language=yaml
+		var numberedExclude =
+			"""
+			exclude-entries:
+			  - file:
+			      name: shipped.yaml
+			      checksum: aaa
+			""";
+		// language=yaml
+		var amendNotes =
+			"""
+			products: []
+			description: Notes sidecar must not win
+			entries:
+			  - title: Late readd
+			    type: security
+			    file:
+			      name: shipped.yaml
+			      checksum: aaa
+			""";
+		_fileSystem.File.WriteAllText($"{bundlesFolder}/9.3.0.yaml", parentBundle);
+		_fileSystem.File.WriteAllText($"{bundlesFolder}/9.3.0.amend-1.yaml", numberedExclude);
+		_fileSystem.File.WriteAllText($"{bundlesFolder}/9.3.0.amend-notes.yaml", amendNotes);
+
+		var bundles = CreateService().LoadBundles(bundlesFolder, EmitWarning);
+
+		bundles.Should().HaveCount(1);
+		bundles[0].Entries.Select(e => e.Title).Should().Equal("Late readd");
+		bundles[0].Data.Description.Should().Be("Parent intro");
+	}
+
+	[Fact]
 	public void LoadBundles_AmendFileWithoutParent_RemainsStandalone()
 	{
 		// Arrange
@@ -1104,7 +1155,178 @@ public class BundleLoaderTests(ITestOutputHelper output)
 	}
 
 	[Fact]
-	public void LoadBundles_DescriptionSerializesAndDeserializesCorrectly()
+	public void LoadBundles_AmendDescription_ReplacesParentIntro()
+	{
+		var bundlesFolder = "/docs/changelog/bundles";
+		_fileSystem.Directory.CreateDirectory(bundlesFolder);
+
+		// language=yaml
+		var parentBundle =
+			"""
+			products:
+			  - product: elasticsearch
+			    target: 9.3.0
+			description: Original intro
+			entries:
+			  - title: Original feature
+			    type: feature
+			""";
+		// language=yaml
+		var amendBundle = """
+			products: []
+			description: |
+			  Replacement intro
+			""";
+		_fileSystem.File.WriteAllText($"{bundlesFolder}/9.3.0.yaml", parentBundle);
+		_fileSystem.File.WriteAllText($"{bundlesFolder}/9.3.0.amend-1.yaml", amendBundle);
+
+		var bundles = CreateService().LoadBundles(bundlesFolder, EmitWarning);
+
+		bundles.Should().HaveCount(1);
+		bundles[0].Data.Description?.TrimEnd().Should().Be("Replacement intro");
+		bundles[0].Entries.Should().ContainSingle(e => e.Title == "Original feature");
+		_warnings.Should().BeEmpty();
+	}
+
+	[Fact]
+	public void LoadBundles_AmendWithoutDescription_InheritsParentIntro()
+	{
+		var bundlesFolder = "/docs/changelog/bundles";
+		_fileSystem.Directory.CreateDirectory(bundlesFolder);
+
+		// language=yaml
+		var parentBundle =
+			"""
+			products:
+			  - product: elasticsearch
+			    target: 9.3.0
+			description: Keep this intro
+			entries:
+			  - title: Original feature
+			    type: feature
+			""";
+		// language=yaml
+		var amendBundle =
+			"""
+			products: []
+			entries:
+			  - title: Late addition
+			    type: enhancement
+			""";
+		_fileSystem.File.WriteAllText($"{bundlesFolder}/9.3.0.yaml", parentBundle);
+		_fileSystem.File.WriteAllText($"{bundlesFolder}/9.3.0.amend-1.yaml", amendBundle);
+
+		var bundles = CreateService().LoadBundles(bundlesFolder, EmitWarning);
+
+		bundles.Should().HaveCount(1);
+		bundles[0].Data.Description.Should().Be("Keep this intro");
+		bundles[0].Entries.Should().HaveCount(2);
+	}
+
+	[Fact]
+	public void LoadBundles_AmendNotesDescription_DoesNotReplaceParentIntro()
+	{
+		var bundlesFolder = "/docs/changelog/bundles";
+		_fileSystem.Directory.CreateDirectory(bundlesFolder);
+
+		// language=yaml
+		var parentBundle =
+			"""
+			products:
+			  - product: elasticsearch
+			    target: 9.3.0
+			description: Parent intro
+			entries:
+			  - title: Original feature
+			    type: feature
+			""";
+		// language=yaml
+		var amendNotes =
+			"""
+			products: []
+			description: Notes sidecar must not win
+			entries:
+			  - title: Late note
+			    type: security
+			""";
+		_fileSystem.File.WriteAllText($"{bundlesFolder}/9.3.0.yaml", parentBundle);
+		_fileSystem.File.WriteAllText($"{bundlesFolder}/9.3.0.amend-notes.yaml", amendNotes);
+
+		var bundles = CreateService().LoadBundles(bundlesFolder, EmitWarning);
+
+		bundles.Should().HaveCount(1);
+		bundles[0].Data.Description.Should().Be("Parent intro");
+		bundles[0].Entries.Select(e => e.Title).Should().Equal("Original feature", "Late note");
+	}
+
+	[Fact]
+	public void LoadBundles_EmptyAmendDescription_ClearsParentIntro()
+	{
+		var bundlesFolder = "/docs/changelog/bundles";
+		_fileSystem.Directory.CreateDirectory(bundlesFolder);
+
+		// language=yaml
+		var parentBundle =
+			"""
+			products:
+			  - product: elasticsearch
+			    target: 9.3.0
+			description: Original intro
+			entries:
+			  - title: Original feature
+			    type: feature
+			""";
+		_fileSystem.File.WriteAllText($"{bundlesFolder}/9.3.0.yaml", parentBundle);
+		_fileSystem.File.WriteAllText($"{bundlesFolder}/9.3.0.amend-1.yaml", "products: []\ndescription: \"\"\n");
+
+		var bundles = CreateService().LoadBundles(bundlesFolder, EmitWarning);
+
+		bundles.Should().HaveCount(1);
+		bundles[0].Data.Description.Should().BeNull();
+	}
+
+	[Fact]
+	public void SerializeBundle_EmptyDescription_EmitsClearSentinel()
+	{
+		var yaml = ReleaseNotesSerialization.SerializeBundle(new Bundle
+		{
+			Products = [new BundledProduct { ProductId = "elasticsearch", Target = "9.3.0" }],
+			Description = ""
+		});
+
+		yaml.Should().Contain("description: \"\"");
+		ReleaseNotesSerialization.DeserializeBundle(yaml).Description.Should().BeEmpty();
+	}
+
+	[Fact]
+	public void SerializeBundle_EmptyDescriptionWithoutProducts_RoundTripsClearSentinel()
+	{
+		var yaml = ReleaseNotesSerialization.SerializeBundle(new Bundle { Description = "" });
+
+		yaml.Should().Contain("description: \"\"");
+		yaml.Should().NotContain("{");
+		ReleaseNotesSerialization.DeserializeBundle(yaml).Description.Should().BeEmpty();
+	}
+
+	[Fact]
+	public void SerializeBundle_DescriptionWithControlCharacter_StaysParseable()
+	{
+		// A block scalar writes content raw, so a control character in a multiline description used to
+		// land in the file unescaped and the bundle no longer parsed.
+		var description = "Upstream deps\n" + (char)0 + "See the blog";
+
+		var yaml = ReleaseNotesSerialization.SerializeBundle(new Bundle
+		{
+			Products = [new BundledProduct { ProductId = "elasticsearch", Target = "9.3.0" }],
+			Description = description
+		});
+
+		yaml.Should().NotContain("description: |");
+		ReleaseNotesSerialization.DeserializeBundle(yaml).Description.Should().Be(description);
+	}
+
+	[Fact]
+	public void LoadBundles_DescriptionSerializesAsLiteralBlock()
 	{
 		// Arrange - Test round-trip serialization of description field
 		var bundlesFolder = "/docs/changelog/bundles";
@@ -1138,6 +1360,8 @@ public class BundleLoaderTests(ITestOutputHelper output)
 		};
 
 		var serializedYaml = ReleaseNotesSerialization.SerializeBundle(originalBundle);
+		serializedYaml.Should().Contain("description: |");
+		serializedYaml.Should().NotContain("description: >");
 		_fileSystem.File.WriteAllText($"{bundlesFolder}/9.3.0.yaml", serializedYaml);
 
 		var service = CreateService();

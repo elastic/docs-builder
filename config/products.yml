@@ -65,6 +65,12 @@ products:
   terraform-google-edot-cf:
     display: 'Terraform Google Elastic Cloud Forwarder'
     versioning: 'terraform-google-edot-cf'
+  connectors:
+    display: 'Elastic Connectors'
+    versioning: 'stack'
+    features:
+      public-reference: false
+      release-notes: false
   curator:
     display: 'Elasticsearch Curator'
   docs-builder:
@@ -72,6 +78,9 @@ products:
     repository: 'docs-builder'
     features:
       public-reference: false
+      # Bundles are cut at release time from the GitHub release. Omitting the key resolves
+      # to the same path; it is spelled out so `changelog validate-onboarding` reads true.
+      release-notes: on-release
   docs-playground-release-notes-changelogs:
     display: 'Release Notes Playground (Changelogs)'
     features:
@@ -79,6 +88,11 @@ products:
       release-notes: prestage
   docs-playground-release-notes-tagged:
     display: 'Release Notes Playground (Tagged)'
+    features:
+      public-reference: false
+      release-notes: on-release
+  docs-playground-release-notes-tagged-workflow:
+    display: 'Release Notes Playground (Tagged Workflow)'
     features:
       public-reference: false
       release-notes: on-release
@@ -151,10 +165,30 @@ products:
   elastic-agent:
     display: 'Elastic Agent'
     versioning: 'stack'
-  elastic-docs:
-    display: 'Elastic Documentation'
+  elastic-defend:
+    display: 'Elastic Defend'
+    versioning: 'stack'
     features:
       public-reference: false
+      release-notes: false
+  elastic-docs:
+    display: 'Elastic Documentation'
+    repository: 'docs-content'
+    features:
+      public-reference: false
+      release-notes: on-release
+  elastic-maps-server:
+    display: 'Elastic Maps Server'
+    versioning: 'stack'
+    features:
+      public-reference: false
+      release-notes: false
+  elastic-package-registry:
+    display: 'Elastic Package Registry'
+    repository: 'package-registry'
+    features:
+      public-reference: false
+      release-notes: false
   elastic-serverless-forwarder:
     display: 'Elastic Serverless Forwarder'
     versioning: 'esf'
@@ -203,6 +237,11 @@ products:
     display: 'Elasticsearch for Apache Hadoop'
     repository: 'elasticsearch-hadoop'
     versioning: 'stack'
+  enterprise-search:
+    display: 'Elastic Enterprise Search'
+    features:
+      public-reference: false
+      release-notes: false
   ess:
     display: 'Elastic Cloud Hosted'
     versioning: 'all'
@@ -263,6 +302,11 @@ products:
   serverless-vector-database:
     display: 'Elasticsearch Vector Database Serverless'
     versioning: 'serverless'
+  synthetics-recorder:
+    display: 'Elastic Synthetics Recorder'
+    features:
+      public-reference: false
+      release-notes: false
   transport-go:
     display: 'Elastic Transport Go'
     repository: 'elastic-transport-go'

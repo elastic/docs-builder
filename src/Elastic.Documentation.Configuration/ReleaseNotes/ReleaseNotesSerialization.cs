@@ -9,7 +9,9 @@ using System.Text.RegularExpressions;
 using Elastic.Documentation.Configuration.Serialization;
 using Elastic.Documentation.ReleaseNotes;
 using Elastic.Documentation.Text;
+using YamlDotNet.Core;
 using YamlDotNet.Serialization;
+using YamlDotNet.Serialization.EventEmitters;
 using YamlDotNet.Serialization.NamingConventions;
 
 namespace Elastic.Documentation.Configuration.ReleaseNotes;
@@ -36,6 +38,7 @@ public static partial class ReleaseNotesSerialization
 		.ConfigureDefaultValuesHandling(DefaultValuesHandling.OmitNull | DefaultValuesHandling.OmitEmptyCollections)
 		.WithQuotingNecessaryStrings()
 		.DisableAliases()
+		.WithEventEmitter(inner => new MultilineLiteralEventEmitter(inner))
 		.Build();
 
 	/// <summary>
@@ -438,6 +441,42 @@ public static partial class ReleaseNotesSerialization
 		"conjunction" => MatchMode.Conjunction,
 		_ => null
 	};
+
+	/// <summary>
+	/// Emits multiline strings as YAML literal block scalars (<c>|</c>) so lists and paragraphs
+	/// keep their newlines instead of being folded (<c>&gt;</c>).
+	/// </summary>
+	private sealed class MultilineLiteralEventEmitter(IEventEmitter nextEmitter) : ChainedEventEmitter(nextEmitter)
+	{
+		public override void Emit(ScalarEventInfo eventInfo, IEmitter emitter)
+		{
+			if (eventInfo.Source.Value is string value)
+			{
+				if (!IsBlockSafe(value))
+					eventInfo.Style = ScalarStyle.DoubleQuoted;
+				else if (value.Contains('\n'))
+					eventInfo.Style = ScalarStyle.Literal;
+			}
+
+			base.Emit(eventInfo, emitter);
+		}
+
+		/// <summary>
+		/// Both block styles write their content raw, so a control character that is not a line break or a
+		/// tab lands in the file unescaped and the document no longer parses. Those values take the
+		/// double-quoted style instead, which escapes the character.
+		/// </summary>
+		private static bool IsBlockSafe(string value)
+		{
+			foreach (var c in value)
+			{
+				if (c is < ' ' and not ('\n' or '\r' or '\t'))
+					return false;
+			}
+
+			return true;
+		}
+	}
 }
 
 /// <summary>

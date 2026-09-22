@@ -22,14 +22,10 @@ import {
 import {
     LoggerProvider,
     BatchLogRecordProcessor,
-    type LogRecordProcessor,
-    type SdkLogRecord,
 } from '@opentelemetry/sdk-logs'
 import {
     WebTracerProvider,
     BatchSpanProcessor,
-    SpanProcessor,
-    Span,
 } from '@opentelemetry/sdk-trace-web'
 import {
     ATTR_SERVICE_NAME,
@@ -134,11 +130,10 @@ function initializeTracing(
     })
 
     const spanProcessor = new BatchSpanProcessor(traceExporter)
-    const euidProcessor = new EuidSpanProcessor()
 
     traceProvider = new WebTracerProvider({
         resource,
-        spanProcessors: [euidProcessor, spanProcessor],
+        spanProcessors: [spanProcessor],
     })
 
     traceProvider.register({
@@ -179,11 +174,10 @@ function initializeLogging(
     const batchLogProcessor = new BatchLogRecordProcessor({
         exporter: logExporter,
     })
-    const euidLogProcessor = new EuidLogRecordProcessor()
 
     loggerProvider = new LoggerProvider({
         resource,
-        processors: [euidLogProcessor, batchLogProcessor],
+        processors: [batchLogProcessor],
     })
 
     logs.setGlobalLoggerProvider(loggerProvider)
@@ -280,49 +274,6 @@ function logInitializationSuccess(config: ResolvedConfig): void {
 
 function logInitializationError(error: unknown): void {
     console.error('[OTEL] Failed to initialize OpenTelemetry:', error)
-}
-
-function getCookie(name: string): string | null {
-    const value = `; ${document.cookie}`
-    const parts = value.split(`; ${name}=`)
-    if (parts.length === 2) return parts.pop()?.split(';').shift() || null
-    return null
-}
-
-class EuidSpanProcessor implements SpanProcessor {
-    onStart(span: Span): void {
-        const euid = getCookie('euid')
-        if (euid) {
-            span.setAttribute('user.euid', euid)
-        }
-    }
-
-    onEnd(): void {}
-
-    shutdown(): Promise<void> {
-        return Promise.resolve()
-    }
-
-    forceFlush(): Promise<void> {
-        return Promise.resolve()
-    }
-}
-
-class EuidLogRecordProcessor implements LogRecordProcessor {
-    onEmit(logRecord: SdkLogRecord): void {
-        const euid = getCookie('euid')
-        if (euid) {
-            logRecord.setAttribute('user.euid', euid)
-        }
-    }
-
-    shutdown(): Promise<void> {
-        return Promise.resolve()
-    }
-
-    forceFlush(): Promise<void> {
-        return Promise.resolve()
-    }
 }
 
 /**

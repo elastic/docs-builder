@@ -19,8 +19,7 @@ using Microsoft.OpenApi;
 namespace Elastic.ApiExplorer.Navigation;
 
 /// <summary>
-/// Builds the navigation tree for one API product: classifications from x-tagGroups, tags,
-/// endpoints grouped by x-namespace/x-api-name, schema type pages and intro/outro markdown pages.
+/// Builds the navigation tree for one API product: tags, operations, and intro/outro markdown pages.
 /// </summary>
 public class ApiNavigationBuilder(ILogger logger, BuildContext context)
 {
@@ -110,7 +109,8 @@ public class ApiNavigationBuilder(ILogger logger, BuildContext context)
 		}
 
 		var topLevelNavigationItems = new List<IApiGroupingNavigationItem<IApiGroupingModel, INavigationItem>>();
-		var hasClassifications = classifications.Count > 1;
+		var groupingEnabled = context.Configuration.Features.ApiNavGroupingEnabled;
+		var hasClassifications = groupingEnabled && classifications.Count > 1;
 		foreach (var classification in classifications)
 		{
 			if (hasClassifications)
@@ -133,8 +133,8 @@ public class ApiNavigationBuilder(ILogger logger, BuildContext context)
 			else
 				CreateTagNavigationItems(apiUrlSuffix, classification, rootNavigation, rootNavigation, topLevelNavigationItems);
 		}
-		// Add schema type pages for shared types
-		CreateSchemaNavigationItems(apiUrlSuffix, openApiDocument, rootNavigation, topLevelNavigationItems);
+		if (groupingEnabled)
+			CreateSchemaNavigationItems(apiUrlSuffix, openApiDocument, rootNavigation, topLevelNavigationItems);
 
 		// Add explicit children declared via 'children:' below the landing page and before the
 		// generated OpenAPI groups, in declared order.
@@ -222,9 +222,10 @@ public class ApiNavigationBuilder(ILogger logger, BuildContext context)
 		List<IEndpointOrOperationNavigationItem> endpointNavigationItems
 	)
 	{
+		var groupingEnabled = context.Configuration.Features.ApiNavGroupingEnabled;
 		foreach (var endpoint in tag.Endpoints)
 		{
-			if (endpoint.Operations.Count > 1)
+			if (groupingEnabled && endpoint.Operations.Count > 1)
 			{
 				var endpointNavigationItem = new EndpointNavigationItem(endpoint, rootNavigation, parentNavigationItem);
 				var operationNavigationItems = new List<OperationNavigationItem>();
@@ -245,15 +246,17 @@ public class ApiNavigationBuilder(ILogger logger, BuildContext context)
 			}
 			else
 			{
-				var operation = endpoint.Operations.First();
-				var operationNavigationItem = new OperationNavigationItem(
-					context.UrlPathPrefix,
-					apiUrlSuffix,
-					operation,
-					rootNavigation,
-					parentNavigationItem
-				);
-				endpointNavigationItems.Add(operationNavigationItem);
+				foreach (var operation in endpoint.Operations)
+				{
+					var operationNavigationItem = new OperationNavigationItem(
+						context.UrlPathPrefix,
+						apiUrlSuffix,
+						operation,
+						rootNavigation,
+						parentNavigationItem
+					);
+					endpointNavigationItems.Add(operationNavigationItem);
+				}
 			}
 		}
 	}
