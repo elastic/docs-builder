@@ -31,20 +31,18 @@ public class ApiMarkdownSanitizationTests
 	}
 
 	[Fact]
-	public void SanitizeHtml_JavascriptHref_IsBlocked()
+	public void SanitizeHtml_JavascriptHref_IsRemoved()
 	{
 		var result = ApiMarkdown.SanitizeHtml("<a href=\"javascript:alert(1)\">click</a>");
 		result.Should().NotContain("javascript:");
-		result.Should().Contain("blocked:");
 		result.Should().Contain("click");
 	}
 
 	[Fact]
-	public void SanitizeHtml_DataUriInSrc_IsBlocked()
+	public void SanitizeHtml_DataUriInSrc_IsRemoved()
 	{
-		var result = ApiMarkdown.SanitizeHtml("<img src=\"data:text/html,<script>alert(1)</script>\">");
+		var result = ApiMarkdown.SanitizeHtml("<img src=\"data:text/html,payload\">");
 		result.Should().NotContain("data:");
-		result.Should().Contain("blocked:");
 	}
 
 	[Fact]

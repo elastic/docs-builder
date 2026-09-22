@@ -8,6 +8,7 @@ using Elastic.ApiExplorer.Model;
 using Elastic.ApiExplorer.Operations;
 using Elastic.Documentation;
 using Elastic.Documentation.Extensions;
+using Ganss.Xss;
 using Microsoft.AspNetCore.Html;
 
 namespace Elastic.ApiExplorer.Infrastructure;
@@ -29,21 +30,125 @@ public static partial class ApiMarkdown
 		return new HtmlString(SanitizeHtml(html));
 	}
 
+	// Allowlist sanitizer: permits only the tags and attributes produced by bump.sh and
+	// standard Markdig HTML output. Everything else — script, on*, javascript: hrefs, etc.
+	// — is stripped by the library's built-in XSS engine (backed by AngleSharp).
+	private static readonly HtmlSanitizer Sanitizer = BuildSanitizer();
+
+	private static HtmlSanitizer BuildSanitizer()
+	{
+		var s = new HtmlSanitizer();
+
+		// Tags present in bump.sh descriptions and standard Markdig output.
+		s.AllowedTags.Clear();
+		foreach (var tag in new[]
+		{
+			"a",
+			"abbr",
+			"b",
+			"blockquote",
+			"br",
+			"caption",
+			"cite",
+			"code",
+			"col",
+			"colgroup",
+			"dd",
+			"del",
+			"details",
+			"dfn",
+			"div",
+			"dl",
+			"dt",
+			"em",
+			"figcaption",
+			"figure",
+			"h1",
+			"h2",
+			"h3",
+			"h4",
+			"h5",
+			"h6",
+			"hr",
+			"i",
+			"img",
+			"ins",
+			"kbd",
+			"li",
+			"mark",
+			"ol",
+			"p",
+			"pre",
+			"q",
+			"s",
+			"samp",
+			"small",
+			"span",
+			"strong",
+			"sub",
+			"summary",
+			"sup",
+			"table",
+			"tbody",
+			"td",
+			"tfoot",
+			"th",
+			"thead",
+			"tr",
+			"u",
+			"ul",
+			"var"
+		})
+			_ = s.AllowedTags.Add(tag);
+
+		// Attributes safe for the above tags.
+		s.AllowedAttributes.Clear();
+		foreach (var attr in new[]
+		{
+			"class",
+			"id",
+			"href",
+			"src",
+			"alt",
+			"title",
+			"width",
+			"height",
+			"colspan",
+			"rowspan",
+			"scope",
+			"start",
+			"type",
+			"reversed",
+			"aria-label",
+			"aria-hidden",
+			"role",
+			"lang",
+			"dir",
+			"target",
+			"rel"
+		})
+			_ = s.AllowedAttributes.Add(attr);
+
+		// Only https/http/mailto schemes in href/src; javascript:, data:, vbscript: are rejected.
+		s.AllowedSchemes.Clear();
+		_ = s.AllowedSchemes.Add("https");
+		_ = s.AllowedSchemes.Add("http");
+		_ = s.AllowedSchemes.Add("mailto");
+
+		return s;
+	}
+
 	/// <summary>
-	/// Strips executable HTML from rendered description output. Removes dangerous block elements
-	/// (script, style, iframe, …) including their content, event handler attributes (on*),
-	/// and javascript:/data:/vbscript: URI schemes from href and src attributes.
-	/// Keeps bump.sh formatting tags (span, div, a, br) intact.
+	/// Sanitizes rendered description HTML through an allowlist before it is emitted as
+	/// <see cref="HtmlString"/>. Only tags and attributes produced by bump.sh and standard
+	/// Markdig output are kept; script, on*, javascript:/data: URIs and similar are removed.
 	/// </summary>
 	internal static string SanitizeHtml(string html)
 	{
 		if (string.IsNullOrEmpty(html))
 			return html;
 
-		var result = DangerousBlockPattern().Replace(html, string.Empty);
-		result = EventHandlerAttrPattern().Replace(result, string.Empty);
-		result = DangerousUrlSchemePattern().Replace(result, "$1blocked:$3");
-		return result;
+		return Sanitizer.Sanitize(html);
 	}
 
 	/// <summary>
@@ -95,19 +200,6 @@ public static partial class ApiMarkdown
 	// Regex to match mustache-style patterns like {{var}} or {{{var}}} that conflict with docs-builder substitutions
 	[GeneratedRegex(@"\{\{\{?[^}]+\}?\}\}")]
 	private static partial Regex MustachePattern();
-
-	// Strips block elements and their entire content (script, style, iframe, object, embed, form, base).
-	[GeneratedRegex(@"<(script|style|iframe|object|embed|form|base)\b[^>]*>.*?</\1\s*>|<(script|style|iframe|object|embed|form|base)\b[^>]*/?>", RegexOptions.IgnoreCase
-		| RegexOptions.Singleline)]
-	private static partial Regex DangerousBlockPattern();
-
-	// Strips on* event-handler attributes (e.g. onerror="...", onclick='...', onload=foo).
-	[GeneratedRegex(@"\s+on[a-z]\w*\s*=\s*(?:""[^""]*""|'[^']*'|[^\s>""'`=]*)", RegexOptions.IgnoreCase)]
-	private static partial Regex EventHandlerAttrPattern();
-
-	// Rewrites javascript:, data:, and vbscript: URI schemes inside href/src attributes to "blocked:".
-	[GeneratedRegex(@"((?:href|src|action|formaction)\s*=\s*[""'])(javascript|data|vbscript):", RegexOptions.IgnoreCase)]
-	private static partial Regex DangerousUrlSchemePattern();
 
 	// Replaces block/break HTML tags with a space so adjacent words stay separated after tag removal.
 	[GeneratedRegex(@"</?(?:br|p|div|li|ul|ol|h[1-6]|blockquote|pre|hr|tr|td|th)\b[^>]*>", RegexOptions.IgnoreCase)]
