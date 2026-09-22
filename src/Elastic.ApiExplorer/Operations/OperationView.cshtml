@@ -14,7 +14,10 @@
 
 @* Intro spans both columns (title + paths); reference column starts below. *@
 <header class="api-page-intro">
-	<h1>@operation.Summary</h1>
+	<div class="api-page-heading">
+		<h1>@operation.Summary</h1>
+		@(await RenderPartialAsync<_PageActions, string>(LayoutModel.MarkdownUrl))
+	</div>
 	@if (operation.Deprecated || pageModel.IsBeta)
 	{
 		<div class="api-title-badges">
@@ -50,8 +53,7 @@
 		{
 			var method = overload.Model.OperationType.ToString().ToLowerInvariant();
 			var isCurrent = overload.Model.Route == Model.Operation.Route && overload.Model.OperationType == Model.Operation.OperationType;
-			var isDeprecated = overload.Model.Operation?.Deprecated == true;
-			<li class="api-url-list-item@(isDeprecated ? " deprecated" : "")">
+			<li class="api-url-list-item">
 				<label class="api-url-row@(isCurrent ? " current" : "")">
 					@if (pageModel.HasMultipleOverloads)
 					{
@@ -66,12 +68,8 @@
 							@(isCurrent ? "checked" : null) />
 					}
 					@(await RenderPartialAsync<_HttpMethodBadge, string>(method))
-					<span class="api-url@(isDeprecated ? " deprecated-path" : "")">@overload.Model.Route</span>
+					<span class="api-url">@overload.Model.Route</span>
 					@(await RenderPartialAsync<_EndpointCopyButton, string>(overload.Model.Route))
-					@if (isDeprecated)
-					{
-						<span class="deprecated-badge type-status">deprecated</span>
-					}
 				</label>
 			</li>
 		}
@@ -166,15 +164,15 @@
 					<a class="property-anchor" href="#path-@path.Name">
 						<span class="property-anchor-icon" aria-hidden="true"></span>
 						<code>@path.Name</code>
-						@if (path.Required)
-						{
-							<span class="required type-status">required</span>
-						}
-						@if (path.Deprecated is true)
-						{
-							<span class="deprecated-badge type-status">deprecated</span>
-						}
 					</a>
+					@if (path.Required)
+					{
+						<span class="required type-status">required</span>
+					}
+					@if (path.Deprecated is true)
+					{
+						<span class="deprecated-badge type-status">deprecated</span>
+					}
 				</dt>
 			<dd>@path.DescriptionHtml</dd>
 		</div>
@@ -284,127 +282,7 @@
 
 	@if (pageModel.Responses.Count > 0)
 	{
-		var isSingleResponse = pageModel.Responses.Count == 1;
-		var selectedResponse = pageModel.Responses[0];
-		var selectedContentType = selectedResponse.FirstContentType;
-		<div class="responses-block" data-api-responses>
-			<h4 class="section-header responses-header" id="responses" data-section="responses">
-				<span class="responses-title">Response</span>
-				<span class="responses-meta">
-					@if (isSingleResponse)
-					{
-						<span class="api-responses-status status-@selectedResponse.StatusClass">@selectedResponse.StatusCode</span>
-					}
-					else
-					{
-						<select class="api-responses-select status-@selectedResponse.StatusClass" aria-label="Response status">
-							@for (var i = 0; i < pageModel.Responses.Count; i++)
-							{
-								var option = pageModel.Responses[i];
-								if (i == 0)
-								{
-									<option
-										value="@option.StatusCode"
-										data-status-class="@option.StatusClass"
-										data-content-type="@option.FirstContentType"
-										selected>@option.StatusCode</option>
-								}
-								else
-								{
-									<option
-										value="@option.StatusCode"
-										data-status-class="@option.StatusClass"
-										data-content-type="@option.FirstContentType">@option.StatusCode</option>
-								}
-							}
-						</select>
-					}
-					<span
-						class="content-type-tag"
-						data-response-content-type
-						hidden="@(string.IsNullOrEmpty(selectedContentType) ? "hidden" : null)">@selectedContentType</span>
-				</span>
-			</h4>
-			@for (var i = 0; i < pageModel.Responses.Count; i++)
-			{
-				var response = pageModel.Responses[i];
-				var fieldsId = $"response-{response.StatusCode}-fields";
-				<div class="response-panel" data-status="@response.StatusCode" hidden="@(i == 0 ? null : "hidden")">
-					@if (!string.IsNullOrEmpty(response.Response.Description))
-					{
-						<p class="response-description">@response.Response.Description</p>
-					}
-					@if (response.Contents.Count > 0)
-					{
-						<div class="response-fields collapsed" data-response-fields>
-							<button
-								type="button"
-								class="response-fields-toggle"
-								aria-expanded="false"
-								aria-controls="@fieldsId">
-								<span class="toggle-icon">+</span>
-								<span class="toggle-label">show fields</span>
-							</button>
-							<div
-								class="response-fields-body"
-								id="@fieldsId"
-								hidden="until-found">
-								@foreach (var content in response.Contents)
-								{
-									if (content.Properties is not null)
-									{
-										@(await RenderPartialAsync<_PropertyList, ApiPropertyList>(content.Properties))
-									}
-									else if (content.ArrayItemProperties is not null)
-									{
-										<p>Response Type: @(await RenderPartialAsync<_SchemaType, TypeAnnotation>(content.Type))</p>
-										@(await RenderPartialAsync<_PropertyList, ApiPropertyList>(content.ArrayItemProperties))
-									}
-									else
-									{
-										<p>Response Type: @(await RenderPartialAsync<_SchemaType, TypeAnnotation>(content.Type))</p>
-									}
-								}
-							</div>
-						</div>
-					}
-					@if (response.Headers.Count > 0)
-					{
-						<div class="response-headers">
-							<h5>Response Headers</h5>
-							<dl class="property-list">
-								@foreach (var header in response.Headers)
-								{
-									<div class="header-item">
-										<dt id="header-@response.StatusCode-@header.Name">
-											<a href="#header-@response.StatusCode-@header.Name">
-												<code>@header.Name</code>
-												@if (header.Type != null)
-												{
-													@(await RenderPartialAsync<_SchemaType, TypeAnnotation>(header.Type))
-												}
-												@if (header.Header?.Required == true)
-												{
-													<span class="required type-status">required</span>
-												}
-												@if (header.Header?.Deprecated == true)
-												{
-													<span class="deprecated-badge type-status">deprecated</span>
-												}
-											</a>
-										</dt>
-										@if (!string.IsNullOrEmpty(header.Header?.Description))
-										{
-											<dd>@Model.RenderMarkdown(header.Header.Description)</dd>
-										}
-									</div>
-								}
-							</dl>
-						</div>
-					}
-				</div>
-			}
-		</div>
+		@(await RenderPartialAsync<_ResponsesBlock, ResponsesBlockModel>(new ResponsesBlockModel(pageModel.Responses, Model.RenderMarkdown)))
 	}
 	@foreach (var extra in pageModel.PostSections)
 	{

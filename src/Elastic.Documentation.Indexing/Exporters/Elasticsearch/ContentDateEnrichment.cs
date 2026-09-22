@@ -9,7 +9,7 @@ using Elastic.Transport;
 using Elastic.Transport.Products.Elasticsearch;
 using Microsoft.Extensions.Logging;
 
-namespace Elastic.Markdown.Exporters.Elasticsearch;
+namespace Elastic.Documentation.Indexing.Exporters.Elasticsearch;
 
 /// <summary>
 /// Manages content-date tracking via an Elasticsearch enrich policy and ingest pipeline.

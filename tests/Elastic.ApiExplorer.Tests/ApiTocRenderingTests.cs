@@ -21,11 +21,13 @@ namespace Elastic.ApiExplorer.Tests;
 public class ApiTocRenderingTests
 {
 	[Fact]
-	public async Task Render_EmptyToc_IncludesViewAsMarkdownLink()
+	public async Task Render_EmptyToc_OmitsViewAsMarkdownLink()
 	{
 		var html = await Render([]);
 
-		html.Should().Contain("""<a href="/api/doc/elasticsearch/v9.md" class="link text-sm" target="_blank">""");
+		html.Should().NotContain("View as Markdown");
+		html.Should().NotContain("view-as-markdown");
+		html.Should().NotContain("/api/doc/elasticsearch/v9.md");
 		html.Should().NotContain("On this page");
 	}
 

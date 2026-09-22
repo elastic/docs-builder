@@ -1,0 +1,90 @@
+@inherits RazorSlice<Elastic.ApiExplorer.Operations.ResponsesBlockModel>
+@{
+	var responses = Model.Responses;
+	var title = responses.Count == 1 ? "Response" : "Responses";
+}
+<div class="responses-block" data-api-responses>
+	<h4 class="section-header responses-header" id="responses" data-section="responses">
+		<span class="responses-title">@title</span>
+	</h4>
+	<div class="responses-list">
+		@for (var i = 0; i < responses.Count; i++)
+		{
+			var response = responses[i];
+			var bodyId = $"response-{response.StatusCode}-fields";
+			<div class="response-panel collapsed" data-status="@response.StatusCode">
+				<button
+					type="button"
+					class="response-status-toggle"
+					aria-expanded="false"
+					aria-controls="@bodyId">
+					<span class="response-status-chip status-@response.StatusClass">@response.StatusCode</span>
+					@if (!string.IsNullOrEmpty(response.Response.Description))
+					{
+						<span class="response-description">@response.Response.Description</span>
+					}
+					@if (i == 0 && !string.IsNullOrEmpty(response.FirstContentType))
+					{
+						<span class="content-type-tag">@response.FirstContentType</span>
+					}
+				</button>
+				<div class="response-panel-body" id="@bodyId" hidden="until-found">
+					@foreach (var content in response.Contents)
+					{
+						if (content.Properties is not null)
+						{
+							@(await RenderPartialAsync<_PropertyList, ApiPropertyList>(content.Properties))
+						}
+						else if (content.UnionVariants is { Variants.Count: > 0 } unionVariants)
+						{
+							@(await RenderPartialAsync<_UnionOptions, ApiUnionVariants>(unionVariants))
+						}
+						else if (content.ArrayItemProperties is not null)
+						{
+							<p>Response Type: @(await RenderPartialAsync<_SchemaType, TypeAnnotation>(content.Type))</p>
+							@(await RenderPartialAsync<_PropertyList, ApiPropertyList>(content.ArrayItemProperties))
+						}
+						else
+						{
+							<p>Response Type: @(await RenderPartialAsync<_SchemaType, TypeAnnotation>(content.Type))</p>
+						}
+					}
+					@if (response.Headers.Count > 0)
+					{
+						<div class="response-headers">
+							<h5>Response Headers</h5>
+							<dl class="property-list">
+								@foreach (var header in response.Headers)
+								{
+									<div class="header-item">
+										<dt id="header-@response.StatusCode-@header.Name">
+											<a class="property-anchor" href="#header-@response.StatusCode-@header.Name">
+												<code>@header.Name</code>
+											</a>
+											@if (header.Type != null)
+											{
+												@(await RenderPartialAsync<_SchemaType, TypeAnnotation>(header.Type))
+											}
+											@if (header.Header?.Required == true)
+											{
+												<span class="required type-status">required</span>
+											}
+											@if (header.Header?.Deprecated == true)
+											{
+												<span class="deprecated-badge type-status">deprecated</span>
+											}
+										</dt>
+										@if (!string.IsNullOrEmpty(header.Header?.Description))
+										{
+											<dd>@Model.RenderMarkdown(header.Header.Description)</dd>
+										}
+									</div>
+								}
+							</dl>
+						</div>
+					}
+				</div>
+			</div>
+		}
+	</div>
+</div>
