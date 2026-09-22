@@ -57,7 +57,7 @@ npm run compile:check   # TypeScript type check only
 
 Tests live in `tests/` (unit) and `tests-integration/` (integration).
 
-- **C#**: TUnit · AwesomeAssertions · FakeItEasy across all test projects. All unit test projects use TUnit (`<UseTUnit>true</UseTUnit>` in their csproj). Write new tests using TUnit APIs: `[Test]`, `[Arguments(...)]`, `[MethodDataSource(nameof(X))]`. Integration tests (`tests-integration/`) still use xUnit v3.
+- **C#**: TUnit · AwesomeAssertions · FakeItEasy across all test projects. All unit test projects use TUnit (wired centrally via `tests/Directory.Build.props`; no per-project flag needed). Write new tests using TUnit APIs: `[Test]`, `[Arguments(...)]`, `[MethodDataSource(nameof(X))]`. Integration tests (`tests-integration/`) still use xUnit v3.
 - **TypeScript**: Jest
 - **Integration**: clones real repos, runs full assembler — only run when integration files change
 

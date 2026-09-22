@@ -201,7 +201,7 @@ public class VersionInferenceTests
 		return applicability;
 	}
 
-	[Test, DisplayName("ProductApplicabilityToProductId returns correct product ID for product {0}")]
+	[Test]
 	[MethodDataSource(nameof(ProductApplicabilityOptionsAsList))]
 	public void InferVersionReturnsCorrectVersioningForAllProductApplicabilityProperties(
 		string productApplicabilityEntry,
