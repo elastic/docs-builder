@@ -139,15 +139,15 @@ public class OpenApiGenerator(
 		var monikers = versionedDocuments.Select(v => v.Version.Moniker).ToArray();
 		var highestMajor = monikers.Max(TryParseMajor);
 
-		// Fan out each moniker (main + numeric majors) within this product in parallel.
-		// Each moniker gets an independent ApiRenderContext, navigation tree, and navigation
-		// HTML writer, so there is no shared mutable state between concurrent versions.
-		await Parallel.ForEachAsync(versionedDocuments, new ParallelOptions
+		// Each moniker gets an independent ApiRenderContext, navigation tree and navigation HTML
+		// writer, so there is no shared mutable state between concurrent versions.  Version monikers
+		// are rendered sequentially within a product to avoid oversubscribing the thread pool:
+		// the outer Parallel.ForEachAsync in GenerateProducts already fans out all product×version
+		// units concurrently, so a second level of parallelism here would multiply concurrency to
+		// ProcessorCount² rather than keeping it at ProcessorCount.
+		foreach (var versioned in versionedDocuments)
 		{
-			CancellationToken = ctx,
-			MaxDegreeOfParallelism = Environment.ProcessorCount
-		}, async (versioned, token) =>
-		{
+			ctx.ThrowIfCancellationRequested();
 			var switcherItems = ApiVersionSwitcher.Build(context.UrlPathPrefix, prefix, monikers, versioned.Version.Moniker);
 			var apiUrlSuffix = ApiUrlBuilder.ProductSuffix(prefix, versioned.Version.Moniker);
 			await GenerateApiProduct(
@@ -162,9 +162,9 @@ public class OpenApiGenerator(
 					CatalogEntries: hubEntries,
 					CurrentApiKey: prefix
 				),
-				token
+				ctx
 			).ConfigureAwait(false);
-		}).ConfigureAwait(false);
+		}
 
 		var canonical = versionedDocuments.FirstOrDefault(v => v.Version.Moniker == "main") ?? versionedDocuments[0];
 		var title = canonical.Document.Info?.Title ?? apiConfig.Product.DisplayName ?? prefix;
