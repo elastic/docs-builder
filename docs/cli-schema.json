@@ -4045,7 +4045,7 @@
           ],
           "name": "init",
           "summary": "Create changelog.yml and the changelog/releases directory structure.",
-          "notes": "Discovers the docs folder via docset.yml; falls back to creating PATH/docs.\nWhen changelog.yml already exists, updates only the paths specified via  or .\nSeeds bundle.owner, bundle.repo, and bundle.link_allow_repos from the git remote origin when available.",
+          "notes": "Discovers the docs folder via docset.yml; falls back to creating PATH/docs.\nWhen changelog.yml already exists, updates only the paths specified via  or .",
           "usage": "docs-builder changelog init [options]",
           "examples": [],
           "parameters": [
@@ -4084,35 +4084,6 @@
                   "kind": "rejectSymbolicLinks"
                 }
               ]
-            },
-            {
-              "role": "flag",
-              "name": "owner",
-              "type": "string",
-              "required": false,
-              "summary": "GitHub owner for seeding bundle defaults. Overrides the value inferred from git remote origin."
-            },
-            {
-              "role": "flag",
-              "name": "repo",
-              "type": "string",
-              "required": false,
-              "summary": "GitHub repository name for seeding bundle defaults. Overrides the value inferred from git remote origin."
-            },
-            {
-              "role": "flag",
-              "name": "mode",
-              "type": "string",
-              "required": false,
-              "summary": "Onboarding mode: gh-release (bundle from GitHub release notes, no per-PR entries), changelog-auto (per-PR entries, automated bundle at release), or changelog-manual (per-PR entries, manual bundling). Defaults to changelog-manual behaviour when omitted."
-            },
-            {
-              "role": "flag",
-              "name": "workflows",
-              "type": "boolean",
-              "required": false,
-              "summary": "When set, generates the three release-notes-*.yml GitHub Actions caller files under .github/workflows/.",
-              "defaultValue": "false"
             },
             {
               "role": "flag",

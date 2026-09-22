@@ -37,7 +37,6 @@
 
   <ItemGroup>
     <EmbeddedResource Include="..\..\..\config\changelog.example.yml" Link="changelog.example.yml" LogicalName="Documentation.Builder.changelog.example.yml" />
-    <EmbeddedResource Include="..\..\..\config\changelog.example-gh-release.yml" Link="changelog.example-gh-release.yml" LogicalName="Documentation.Builder.changelog.example-gh-release.yml" />
   </ItemGroup>
 
   <ItemGroup>
