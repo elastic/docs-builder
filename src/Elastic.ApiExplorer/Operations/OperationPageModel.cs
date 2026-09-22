@@ -169,8 +169,6 @@ public partial record OperationPageModel
 	/// <summary>Effective auth scheme badges. Empty when the spec declares no schemes.</summary>
 	public required IReadOnlyList<AuthSchemeBadge> AuthSchemes { get; init; }
 
-	public IReadOnlyList<string> AuthSchemeNames => NamesOf(AuthSchemes.Select(static s => s.Label));
-
 	public static OperationPageModel Create(ApiOperation apiOperation, ApiRenderContext context)
 	{
 		var operation = apiOperation.Operation;
@@ -253,7 +251,11 @@ public partial record OperationPageModel
 			ShowResponseExamples = responseExamples.Count > 0,
 			Scenarios = scenarios,
 			ExamplesAnchor = examplesAnchor,
-			AuthSchemes = OpenApiAuthSchemeResolver.Resolve(operation, document)
+			AuthSchemes = OpenApiAuthSchemeResolver.Resolve(
+				operation,
+				document,
+				$"{context.CurrentNavigation.NavigationRoot.Url.TrimEnd('/')}/{ApiUrlBuilder.AuthenticationSegment}"
+			)
 		};
 	}
 
