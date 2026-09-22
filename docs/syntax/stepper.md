@@ -267,7 +267,9 @@ For example, a stepper that follows an `##` heading renders each step title as `
 
 ### Headings inside steps
 
-You can add sub-headings inside a step to organise longer content. Each heading must be **at least one level deeper** than the step's rendered level. If you write a heading at the same level as the step (or higher), the build automatically adjusts it to the correct level and emits a hint diagnostic pointing to the offending line.
+You can add sub-headings inside a step to organise longer content. When the step title is a heading, each heading inside the step must be **at least one level deeper** than that title. If you write a heading at the same level as the step, or higher, the build adjusts it and emits a hint on that line.
+
+With `:toc: false`, a heading inside the step must be deeper than the heading above the stepper. A stepper under an `##` heading has titles that use the size of an `h3`. A `###` heading inside a step is valid, because the title is not in the outline. A heading at the same level as the heading above the stepper, or higher, is adjusted and a hint is emitted.
 
 The following example intentionally uses the wrong heading level to demonstrate the auto-correction. This stepper follows a `###` heading, so its steps render as `####`. The `####` sub-heading inside the step is at the same level as the step itself — it is auto-adjusted to `#####` and a hint is emitted:
 
