@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using AwesomeAssertions;
-using AwesomeAssertions.Execution;
+using TUnit.Assertions.Exceptions;
 
 namespace Elastic.Markdown.Tests;
 
@@ -22,6 +22,6 @@ public class PrettyHtmlExtensionsTests
 
 		var act = () => actual.ShouldContainHtml(expected);
 
-		act.Should().Throw<AssertionFailedException>();
+		act.Should().Throw<AssertionException>();
 	}
 }
