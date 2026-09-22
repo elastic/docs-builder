@@ -50,7 +50,6 @@ public class ApiTocRenderingTests
 		var navigationItem = new LandingNavigationItem("/api/doc/elasticsearch/v9/").Index;
 		var model = new ApiLayoutViewModel
 		{
-			DocsBuilderVersion = "test",
 			DocSetName = "Api Explorer",
 			Description = string.Empty,
 			CurrentNavigationItem = navigationItem,
