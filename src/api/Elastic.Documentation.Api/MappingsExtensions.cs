@@ -308,7 +308,7 @@ public static class MappingsExtension
 		}
 
 		var client = factory.CreateClient("OtlpProxy");
-		var response = await client.SendAsync(request, ct);
+		using var response = await client.SendAsync(request, ct);
 		return Results.StatusCode((int)response.StatusCode);
 	}
 }
