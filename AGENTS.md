@@ -57,16 +57,15 @@ npm run compile:check   # TypeScript type check only
 
 Tests live in `tests/` (unit) and `tests-integration/` (integration).
 
-- **C#**: xUnit v3 · AwesomeAssertions · FakeItEasy is the current stack across every test project. TUnit is the elastic/dotnet org's target standard and the intended destination for a future migration, but no project has moved yet — don't write new tests against TUnit APIs until that migration actually happens.
+- **C#**: xUnit v3 · AwesomeAssertions · FakeItEasy across all test projects. TUnit is the elastic/dotnet org's target standard and the next migration target, but no project has moved yet — don't write new tests against TUnit APIs until that migration actually happens.
 - **TypeScript**: Jest
-- **F# authoring**: `tests/authoring/`
 - **Integration**: clones real repos, runs full assembler — only run when integration files change
 
 Use the `/test` skill to pick the right test project automatically. A change to product code should land with a test that exercises it — the mapping from changed source to test project (mirrored by `/test`):
 
 | Changed path | Test project / command |
 |---|---|
-| `src/Elastic.Markdown/` | `dotnet test tests/Elastic.Markdown.Tests/` |
+| `src/Elastic.Markdown/` | `dotnet test tests/Elastic.Markdown.Tests/` and `dotnet test tests/Elastic.Authoring.Tests/` |
 | `src/Elastic.Documentation.Configuration/` | `dotnet test tests/Elastic.Documentation.Configuration.Tests/` |
 | `src/Elastic.Documentation.Navigation/` | `dotnet test tests/Navigation.Tests/` (prefix dropped) |
 | `src/Elastic.Documentation.Indexing/` | `dotnet test tests/Elastic.Documentation.Indexing.Tests/` |
