@@ -252,6 +252,7 @@ toc:
           - file: index.md
           - file: overview.md
             children:
+              - file: onboard.md
               - file: configure.md
                 children:
                   - file: configure-ref.md
