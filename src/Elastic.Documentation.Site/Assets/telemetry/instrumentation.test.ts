@@ -1,4 +1,3 @@
- 
 const mockStartBrowserSdk = jest.fn(() => ({ forceFlush: jest.fn() }))
 
 jest.mock('@elastic/opentelemetry-browser', () => ({
