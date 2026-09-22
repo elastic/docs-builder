@@ -62,17 +62,9 @@ public class ApiNavParityTests
 				"/api/doc/elasticsearch/group/endpoint-search"
 			);
 
-		var structural = navigation.NavigationItems.OfType<StructuralNavigationItem>().ToList();
-		structural.Should().Contain(
-			item => item.Model.Kind == ApiStructuralKind.Authentication && item.Url == "/api/doc/elasticsearch/authentication"
-		);
-		structural.Should().Contain(item => item.Model.Kind == ApiStructuralKind.Servers && item.Url == "/api/doc/elasticsearch/servers");
-
-		var ordered = navigation.NavigationItems.ToList();
-		ordered[0].Should().BeOfType<StructuralNavigationItem>().Which.Model.Kind.Should().Be(ApiStructuralKind.Authentication);
-		ordered[1].Should().BeOfType<StructuralNavigationItem>().Which.Model.Kind.Should().Be(ApiStructuralKind.Servers);
-		ordered[2].Should().BeOfType<SidebarSeparatorNavigationItem>();
-		ordered.Skip(3).Should().AllBeOfType<TagNavigationItem>();
+		navigation.NavigationItems.OfType<StructuralNavigationItem>().Should().BeEmpty();
+		navigation.NavigationItems.OfType<SidebarSeparatorNavigationItem>().Should().BeEmpty();
+		navigation.NavigationItems.Should().AllBeOfType<TagNavigationItem>();
 
 		var model = NavigationRenderModel.Create(
 			navigation,
@@ -83,8 +75,33 @@ public class ApiNavParityTests
 			navigationPreviewEnabled: true
 		);
 		model.RootIndex!.NavigationTitle.Should().Be("Api Overview");
-		model.TreeHasSeparator.Should().BeTrue();
-		model.Tree.Select(NodeLabel).Should().Equal("Authentication", "Servers", "---", "Task management", "Watcher", "search");
+		model.TreeHasSeparator.Should().BeFalse();
+		model.Tree.Select(NodeLabel).Should().Equal("Task management", "Watcher", "search");
+	}
+
+	[Fact]
+	public async Task CreateNavigation_WithServers_SeparatesIntroPagesFromEndpoints()
+	{
+		var openApiJson = /*lang=json,strict*/
+			"""
+			{
+			  "openapi": "3.0.3",
+			  "info": { "title": "ES", "version": "1.0" },
+			  "servers": [ { "url": "https://example.com" } ],
+			  "paths": {
+			    "/a": { "get": { "operationId": "a1", "tags": ["search"], "responses": { "200": { "description": "ok" } } } }
+			  },
+			  "tags": [ { "name": "search" } ]
+			}
+			""";
+
+		var (generator, document) = await CreateGeneratorWithSpec(openApiJson);
+		var navigation = generator.CreateNavigation("elasticsearch", document);
+		var ordered = navigation.NavigationItems.ToList();
+
+		ordered[0].Should().BeOfType<StructuralNavigationItem>().Which.Model.Kind.Should().Be(ApiStructuralKind.Servers);
+		ordered[1].Should().BeOfType<SidebarSeparatorNavigationItem>();
+		ordered[2].Should().BeOfType<TagNavigationItem>().Which.NavigationTitle.Should().Be("search");
 	}
 
 	[Fact]
