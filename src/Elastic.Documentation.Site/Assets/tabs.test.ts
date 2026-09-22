@@ -40,10 +40,10 @@ const LANGUAGES = [
 
 const selects = () =>
     Array.from(document.querySelectorAll<HTMLSelectElement>('.tabs-select'))
-const checkedIn = (tabsIndex: number) =>
-    document
-        .querySelectorAll<HTMLElement>('.tabs')
-        [tabsIndex].querySelector<HTMLInputElement>('.tabs-input:checked')!.id
+const checkedIn = (tabsIndex: number) => {
+    const set = document.querySelectorAll<HTMLElement>('.tabs')[tabsIndex]
+    return set.querySelector<HTMLInputElement>('.tabs-input:checked')!.id
+}
 
 beforeEach(() => {
     window.sessionStorage.clear()
