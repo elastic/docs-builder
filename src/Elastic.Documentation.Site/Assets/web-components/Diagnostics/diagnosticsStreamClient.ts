@@ -66,7 +66,7 @@ export function disconnectFromDiagnosticsStream(): void {
 }
 
 async function pollDiagnosticsState(): Promise<void> {
-    pollAbort?.abort()
+    if (pollAbort) return
     const abort = new AbortController()
     pollAbort = abort
     try {
@@ -87,6 +87,8 @@ async function pollDiagnosticsState(): Promise<void> {
         if (closed || (err instanceof Error && err.name === 'AbortError'))
             return
         useDiagnosticsStore.getState().setConnected(false)
+    } finally {
+        if (pollAbort === abort) pollAbort = null
     }
 }
 

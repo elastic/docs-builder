@@ -69,6 +69,26 @@ describe('diagnosticsStreamClient', () => {
         expect(globalThis.fetch).toHaveBeenCalledTimes(2)
     })
 
+    it('does not cancel an in-flight poll when the next tick is due', async () => {
+        let signal: AbortSignal | undefined
+        globalThis.fetch = jest
+            .fn()
+            .mockImplementation((_url, init: RequestInit) => {
+                signal = init.signal ?? undefined
+                return new Promise(() => undefined)
+            })
+
+        connectToDiagnosticsStream()
+        jest.runOnlyPendingTimers()
+        await Promise.resolve()
+
+        jest.advanceTimersByTime(3000)
+        await Promise.resolve()
+
+        expect(globalThis.fetch).toHaveBeenCalledTimes(1)
+        expect(signal?.aborted).toBe(false)
+    })
+
     it('stops polling on disconnect', async () => {
         connectToDiagnosticsStream()
         jest.runOnlyPendingTimers()
