@@ -151,27 +151,12 @@ let private runTests (testSuite: TestSuite) _ =
     if List.isEmpty projects then
         failwithf "No test projects found under %A" directories
 
-    let isTUnit (project: string) =
-        File.ReadAllText(project).Contains("<UseTUnit>true</UseTUnit>")
-
     let runOne (project: string) =
-        if isTUnit project then
-            let name =
-                Path.GetFileNameWithoutExtension(project)
-                |> Option.ofObj
-                |> Option.defaultValue ""
-            let dir = (Paths.ArtifactPath $"bin/{name}/release").FullName
-            let exe =
-                match OS.Current with
-                | Windows -> Path.Combine(dir, $"{name}.exe")
-                | _ -> Path.Combine(dir, name)
-            exec { exit_code_of exe [] } = 0
-        else
-            exec {
-                exit_code_of "dotnet" (
-                    [ "test"; project; "-c"; "release"; "--no-restore"; "--no-build" ]
-                )
-            } = 0
+        exec {
+            exit_code_of "dotnet" (
+                [ "test"; project; "-c"; "release"; "--no-restore"; "--no-build" ]
+            )
+        } = 0
 
     let failures = projects |> List.filter (fun p -> not (runOne p))
     if not (List.isEmpty failures) then

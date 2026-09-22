@@ -4,34 +4,17 @@
   <Import Project="$([MSBuild]::GetPathOfFileAbove('Directory.Build.props', '$(MSBuildThisFileDirectory)../'))"/>
   <PropertyGroup>
     <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
-    <NoWarn>CA1822;CA1707;xUnit1004</NoWarn>
-
-    <IsPackable>false</IsPackable>
+    <NoWarn>CA1822;CA1707</NoWarn>
     <IsTestProject>true</IsTestProject>
-    <OutputType>Exe</OutputType>
-
-    <!-- Explicitly off for xUnit projects; MTP and TUnit set these via their own targets -->
-    <UseMicrosoftTestingPlatformRunner Condition="'$(UseTUnit)' != 'true'">false</UseMicrosoftTestingPlatformRunner>
-    <!-- Prevents Microsoft.Testing.Platform from defaulting IsTestingPlatformApplication=true,
-         which causes MTP.MSBuild 2.3.3 to block VSTest on .NET 10 -->
-    <IsTestingPlatformApplication Condition="'$(UseTUnit)' != 'true'">false</IsTestingPlatformApplication>
-
   </PropertyGroup>
-  <!-- xUnit packages — used when a project has not yet migrated to TUnit -->
-  <ItemGroup Condition="'$(UseTUnit)' != 'true'">
-    <PackageReference Include="Microsoft.NET.Test.Sdk" />
-    <PackageReference Include="xunit.v3" />
-    <PackageReference Include="xunit.runner.visualstudio" />
-    <PackageReference Include="GitHubActionsTestLogger" />
-    <Using Include="Xunit"/>
-  </ItemGroup>
 
-  <!-- TUnit packages — set <UseTUnit>true</UseTUnit> in the project to migrate -->
-  <ItemGroup Condition="'$(UseTUnit)' == 'true'">
+  <PropertyGroup Condition="'$(IsTestProject)' == 'true'">
+    <IsPackable>false</IsPackable>
+    <OutputType>Exe</OutputType>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(IsTestProject)' == 'true'">
     <PackageReference Include="TUnit" />
-  </ItemGroup>
-
-  <ItemGroup>
     <PackageReference Include="AwesomeAssertions" />
     <PackageReference Include="JetBrains.Annotations" />
     <PackageReference Include="System.IO.Abstractions.TestingHelpers" />

@@ -2,7 +2,6 @@
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
     <RootNamespace>Elastic.SiteSearch.Tests</RootNamespace>
-    <UseTUnit>true</UseTUnit>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="AutoBogus" />
