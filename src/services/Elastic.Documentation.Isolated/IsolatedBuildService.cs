@@ -13,6 +13,7 @@ using Elastic.Documentation.Configuration.Inference;
 using Elastic.Documentation.Configuration.ReleaseNotes;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.FileSystems;
+using Elastic.Documentation.Indexing.Exporters;
 using Elastic.Documentation.LinkIndex;
 using Elastic.Documentation.Links;
 using Elastic.Documentation.Links.CrossLinks;

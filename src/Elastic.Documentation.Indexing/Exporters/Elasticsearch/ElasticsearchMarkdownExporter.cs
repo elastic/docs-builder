@@ -18,10 +18,11 @@ using Elastic.Ingest.Elasticsearch;
 using Elastic.Ingest.Elasticsearch.Enrichment;
 using Elastic.Ingest.Elasticsearch.Indices;
 using Elastic.Mapping;
+using Elastic.Markdown.Exporters;
 using Elastic.Transport;
 using Microsoft.Extensions.Logging;
 
-namespace Elastic.Markdown.Exporters.Elasticsearch;
+namespace Elastic.Documentation.Indexing.Exporters.Elasticsearch;
 
 public partial class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposable
 {

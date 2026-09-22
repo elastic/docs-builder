@@ -12,12 +12,13 @@ using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Search;
 using Elastic.Documentation.Search.Contract;
 using Elastic.Ingest.Elasticsearch.Indices;
+using Elastic.Markdown.Exporters;
 using Markdig.Syntax;
 using Microsoft.Extensions.Logging;
 using static System.StringSplitOptions;
 using MarkdownParser = Markdig.Parsers.MarkdownParser;
 
-namespace Elastic.Markdown.Exporters.Elasticsearch;
+namespace Elastic.Documentation.Indexing.Exporters.Elasticsearch;
 
 public partial class ElasticsearchMarkdownExporter
 {

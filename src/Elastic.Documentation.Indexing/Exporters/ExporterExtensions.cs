@@ -4,11 +4,12 @@
 
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
-using Elastic.Markdown.Exporters.Elasticsearch;
+using Elastic.Documentation.Indexing.Exporters.Elasticsearch;
+using Elastic.Markdown.Exporters;
 using Elastic.Markdown.Exporters.Pagefind;
 using Microsoft.Extensions.Logging;
 
-namespace Elastic.Markdown.Exporters;
+namespace Elastic.Documentation.Indexing.Exporters;
 
 public static class ExporterExtensions
 {
