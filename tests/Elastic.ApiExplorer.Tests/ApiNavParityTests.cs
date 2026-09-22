@@ -12,6 +12,8 @@ using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.FileSystems;
+using Elastic.Documentation.Navigation;
+using Elastic.Documentation.Site.Navigation;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.OpenApi;
 using Microsoft.OpenApi.Reader;
@@ -65,6 +67,24 @@ public class ApiNavParityTests
 			item => item.Model.Kind == ApiStructuralKind.Authentication && item.Url == "/api/doc/elasticsearch/authentication"
 		);
 		structural.Should().Contain(item => item.Model.Kind == ApiStructuralKind.Servers && item.Url == "/api/doc/elasticsearch/servers");
+
+		var ordered = navigation.NavigationItems.ToList();
+		ordered[0].Should().BeOfType<StructuralNavigationItem>().Which.Model.Kind.Should().Be(ApiStructuralKind.Authentication);
+		ordered[1].Should().BeOfType<StructuralNavigationItem>().Which.Model.Kind.Should().Be(ApiStructuralKind.Servers);
+		ordered[2].Should().BeOfType<SidebarSeparatorNavigationItem>();
+		ordered.Skip(3).Should().AllBeOfType<TagNavigationItem>();
+
+		var model = NavigationRenderModel.Create(
+			navigation,
+			[],
+			isUsingNavigationDropdown: false,
+			isPrimaryNavEnabled: false,
+			isGlobalAssemblyBuild: false,
+			navigationPreviewEnabled: true
+		);
+		model.RootIndex!.NavigationTitle.Should().Be("Api Overview");
+		model.TreeHasSeparator.Should().BeTrue();
+		model.Tree.Select(NodeLabel).Should().Equal("Authentication", "Servers", "---", "Task management", "Watcher", "search");
 	}
 
 	[Fact]
@@ -214,4 +234,7 @@ public class ApiNavParityTests
 
 		return (generator, result.Document!);
 	}
+
+	private static string NodeLabel(NavigationRenderNode node) =>
+		node.Kind == NavigationRenderNodeKind.Separator ? "---" : node.NavigationTitle;
 }

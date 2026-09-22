@@ -57,6 +57,11 @@ public record ExampleScenario
 	public string? RequestExternalValue { get; init; }
 	public IReadOnlyList<ExampleResponse> Responses { get; init; } = [];
 	public IReadOnlyList<CodeSample> CodeSamples { get; init; } = [];
+	public string? HttpMethod { get; init; }
+	public string? Route { get; init; }
+
+	/// <summary>Choices for the request-header example picker. Empty hides the picker.</summary>
+	public IReadOnlyList<ApiSelectOption> ExampleOptions { get; init; } = [];
 
 	/// <summary>Request JSON is omitted when code samples already embed the request body.</summary>
 	public bool ShowRequest => (RequestJson is not null || !string.IsNullOrEmpty(RequestExternalValue)) && CodeSamples.Count == 0;
@@ -199,7 +204,11 @@ public partial record OperationPageModel
 
 		var requestExamples = MapExamples(operation.RequestBody?.Content?.FirstOrDefault().Value?.Examples, options.RenderMarkdown);
 		var responseExamples = MapResponseExamples(operation.Responses, options.RenderMarkdown);
-		var scenarios = EnsureResponseTabs(BuildExampleScenarios(requestExamples, responseExamples, codeSamples), operation.Responses);
+		var scenarios = WithOperationIdentity(
+			EnsureResponseTabs(BuildExampleScenarios(requestExamples, responseExamples, codeSamples), operation.Responses),
+			apiOperation.OperationType.ToString().ToLowerInvariant(),
+			apiOperation.Route
+		);
 		var examplesAnchor = scenarios.Count > 0 ? "examples" : null;
 
 		var requestContentEntry = operation.RequestBody?.Content?.FirstOrDefault();
@@ -263,10 +272,16 @@ public partial record OperationPageModel
 		};
 	}
 
+	internal static IReadOnlyList<ExampleScenario> WithOperationIdentity(
+		IReadOnlyList<ExampleScenario> scenarios,
+		string httpMethod,
+		string route
+	) => [.. scenarios.Select(s => s with { HttpMethod = httpMethod, Route = route })];
+
 	/// <summary>
 	/// Groups OpenAPI examples into rail scenarios:
 	/// <list type="bullet">
-	/// <item>Request examples define scenario variants (the rail <c>select</c>).</item>
+	/// <item>Request examples define scenario variants (the Examples header <c>select</c>).</item>
 	/// <item>Response examples whose title matches a request join that scenario.</item>
 	/// <item>Unmatched response examples (typical error statuses) are shared across
 	/// those request scenarios as extra status-code tabs, without overwriting a

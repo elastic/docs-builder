@@ -1,44 +1,28 @@
 @using Elastic.ApiExplorer.Operations
-@using Elastic.Documentation.Site.Navigation
 @inherits RazorSlice<OperationExamplesPanelModel>
 @* ≥1024px: right rail (api-docs.css). Below that: in-flow column under the article. *@
 <aside id="api-examples-panel" class="api-examples-panel shrink-0 w-full">
 	<nav class="api-examples-panel-nav markdown-content simple-scrollbar">
-		@if (Model.Scenarios.Count > 0)
+		@if (Model.Scenarios.Count == 1)
 		{
-			@if (Model.Scenarios.Count == 1)
-			{
-				<h4 class="section-header api-examples-heading api-examples-heading--stacked">Examples</h4>
-				<div class="api-examples-body">
-					@(await RenderPartialAsync<_ExampleScenarioContent, ExampleScenario>(Model.Scenarios[0]))
-				</div>
-			}
-			else
-			{
-				<div class="api-examples-scenarios" data-api-scenarios>
-					<h4 class="section-header api-examples-heading">Examples</h4>
-					<div class="api-examples-scenario-header">
-						@{
-							var scenarioOptions = Model.Scenarios
-								.Select((scenario, i) => new NavigationSelectOption(scenario.Title, scenario.TabId, i == 0))
-								.ToArray();
-						}
-						@await RenderPartialAsync(_NavSelect.Create(new NavigationSelectModel(
-							"api-examples-scenario-switcher",
-							"Example",
-							scenarioOptions,
-							UseLinks: false
-						)))
+			<div class="api-examples-body">
+				@(await RenderPartialAsync<_ExampleScenarioContent, ExampleScenario>(Model.Scenarios[0]))
+			</div>
+		}
+		else if (Model.Scenarios.Count > 1)
+		{
+			<div class="api-examples-scenarios" data-api-scenarios>
+				@for (var i = 0; i < Model.Scenarios.Count; i++)
+				{
+					var scenario = Model.Scenarios[i];
+					var options = Model.Scenarios
+						.Select(choice => new ApiSelectOption(choice.Title, choice.TabId, choice.TabId == scenario.TabId))
+						.ToArray();
+					<div class="api-examples-scenario-panel api-examples-body" data-scenario="@scenario.TabId" hidden="@(i == 0 ? null : "hidden")">
+						@(await RenderPartialAsync<_ExampleScenarioContent, ExampleScenario>(scenario with { ExampleOptions = options }))
 					</div>
-					@for (var i = 0; i < Model.Scenarios.Count; i++)
-					{
-						var scenario = Model.Scenarios[i];
-						<div class="api-examples-scenario-panel api-examples-body" data-scenario="@scenario.TabId" hidden="@(i == 0 ? null : "hidden")">
-							@(await RenderPartialAsync<_ExampleScenarioContent, ExampleScenario>(scenario))
-						</div>
-					}
-				</div>
-			}
+				}
+			</div>
 		}
 	</nav>
 </aside>

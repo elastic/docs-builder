@@ -15,7 +15,10 @@
 }
 
 <section id="schema-definition">
-	<h1>@schema.DisplayName</h1>
+	<div class="api-page-heading">
+		<h1>@schema.DisplayName</h1>
+		@(await RenderPartialAsync<_PageActions, string>(LayoutModel.MarkdownUrl))
+	</div>
 	<p class="schema-id"><code>@schema.SchemaId</code></p>
 
 	@if (!string.IsNullOrEmpty(pageModel.DictionaryTypeName))

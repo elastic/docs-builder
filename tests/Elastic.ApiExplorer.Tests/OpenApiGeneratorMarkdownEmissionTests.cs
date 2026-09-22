@@ -153,10 +153,15 @@ public class OpenApiGeneratorMarkdownEmissionTests(ApiExplorerFixture fixture) :
 
 		html.Should().Contain("""<link rel="alternate" type="text/markdown" href="/api/doc/elasticsearch.md" title="Markdown export"/>""");
 		html.Should().Contain("View as Markdown");
+		html.Should().Contain("Copy page");
+		html.Should().Contain("api-page-actions");
 		operationHtml.Should().Contain(
 			"""<link rel="alternate" type="text/markdown" href="/api/doc/elasticsearch/operation/operation-search.md" title="Markdown export"/>"""
 		);
 		operationHtml.Should().Contain("View as Markdown");
+		operationHtml.Should().Contain("Copy page");
+		operationHtml.Should().Contain("api-page-heading");
+		operationHtml.Should().Contain("api-page-actions-split");
 	}
 
 	[Fact]

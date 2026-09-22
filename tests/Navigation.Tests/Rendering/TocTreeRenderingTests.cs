@@ -262,4 +262,114 @@ public class TocTreeRenderingTests
 		html.Should().NotContain("<select");
 		html.Should().NotContain("<option");
 	}
+
+	[Fact]
+	public async Task TreeSeparator_RendersAfterIntroLeaves()
+	{
+		var model = new NavigationRenderModel
+		{
+			IsUsingNavigationDropdown = false,
+			CurrentTopLevelNavigationTitle = "APIs",
+			CurrentTopLevelUrl = "/api/doc/elasticsearch/",
+			DropdownItems = [],
+			BackLinks = [],
+			RootIndex = new NavigationRenderNode
+			{
+				Kind = NavigationRenderNodeKind.Leaf,
+				IsTopLevel = true,
+				NavigationTitle = "Api Overview",
+				Url = "/api/doc/elasticsearch/"
+			},
+			Tree =
+			[
+				new NavigationRenderNode
+				{
+					Kind = NavigationRenderNodeKind.Leaf,
+					IsTopLevel = true,
+					NavigationTitle = "Authentication",
+					Url = "/api/doc/elasticsearch/authentication"
+				},
+				new NavigationRenderNode { Kind = NavigationRenderNodeKind.Separator, IsTopLevel = true, NavigationTitle = "", Url = "" },
+				new NavigationRenderNode
+				{
+					Kind = NavigationRenderNodeKind.Node,
+					IsTopLevel = true,
+					NavigationTitle = "search",
+					Url = "/api/doc/elasticsearch/group/endpoint-search",
+					Id = "search",
+					ShowToggle = true
+				}
+			],
+			ContentHash = "api-intro-separator",
+			NavigationPreviewEnabled = true
+		};
+
+		var html = await _TocTree.Create(model).RenderAsync(cancellationToken: TestContext.Current.CancellationToken);
+
+		html.Should().Contain("Api Overview");
+		html.Should().Contain("Authentication");
+		html.Should().Contain("search");
+		html.Should().Contain("nav-v2-separator");
+		CountSeparators(html).Should().Be(1);
+
+		var overview = html.IndexOf("Api Overview", StringComparison.Ordinal);
+		var auth = html.IndexOf("Authentication", StringComparison.Ordinal);
+		var separator = html.IndexOf("nav-v2-separator", StringComparison.Ordinal);
+		var search = html.IndexOf(">search<", StringComparison.Ordinal);
+		overview.Should().BeLessThan(auth);
+		auth.Should().BeLessThan(separator);
+		separator.Should().BeLessThan(search);
+	}
+
+	[Fact]
+	public async Task RootIndex_WithoutTreeSeparator_KeepsAutomaticDivider()
+	{
+		var model = new NavigationRenderModel
+		{
+			IsUsingNavigationDropdown = false,
+			CurrentTopLevelNavigationTitle = "Docs",
+			CurrentTopLevelUrl = "/",
+			DropdownItems = [],
+			BackLinks = [],
+			RootIndex = new NavigationRenderNode
+			{
+				Kind = NavigationRenderNodeKind.Leaf,
+				IsTopLevel = true,
+				NavigationTitle = "Home",
+				Url = "/"
+			},
+			Tree =
+			[
+				new NavigationRenderNode
+				{
+					Kind = NavigationRenderNodeKind.Leaf,
+					IsTopLevel = true,
+					NavigationTitle = "Setup",
+					Url = "/setup"
+				}
+			],
+			ContentHash = "root-index-divider",
+			NavigationPreviewEnabled = true
+		};
+
+		var html = await _TocTree.Create(model).RenderAsync(cancellationToken: TestContext.Current.CancellationToken);
+
+		html.Should().Contain("Home");
+		html.Should().Contain("Setup");
+		html.Should().Contain("nav-v2-separator");
+		CountSeparators(html).Should().Be(1);
+	}
+
+	private static int CountSeparators(string html)
+	{
+		var count = 0;
+		var index = 0;
+		while ((index = html.IndexOf("nav-v2-separator", index, StringComparison.Ordinal)) >= 0)
+		{
+			count++;
+			index += "nav-v2-separator".Length;
+		}
+
+		return count;
+	}
 }

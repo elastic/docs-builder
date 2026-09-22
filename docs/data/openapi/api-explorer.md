@@ -150,7 +150,10 @@ Each product key in the `api:` block must have **exactly one** entry, with **exa
 `spec:`. The build fails if a product sequence is empty or has more than one entry. Multiple
 specs per product are not currently supported.
 
-Product pages show an API product switcher in the left navigation. The list includes every declared API and a Back to hub option.
+Product pages show an API product switcher on the far right of the grey secondary
+top bar, immediately before the version picker. Isolated builds keep a product
+`<select>` at the top of the left navigation. The list includes every declared API
+and a Back to hub option.
 
 ## Remote spec resolution
 
@@ -212,8 +215,10 @@ remotely through the index.
 
 Versionless products (`versioning: serverless` and similar) render only the unversioned
 `/api/doc/<key>/` path even when the index lists historical monikers. When more than one
-version is rendered, API pages show a simple version dropdown at the top of the left navigation
-rail. The dropdown links to each version's landing page.
+version is rendered, assembler API pages show the same `version-dropdown` as Docs on the
+far right of the grey secondary top bar. The button uses the product's current-major label
+(`v9.0+ (Current)` for stack), and the menu lists `main` plus each frozen major
+(`9.x`, `8.x`). Isolated builds keep a left-nav switcher with the same labels.
 
 ### Smoke-test every CloudFront spec locally
 
@@ -317,7 +322,7 @@ The `x-codeSamples` extension is a JSON array of objects, each with a `lang` and
 ]
 ```
 
-Code samples appear in the right-hand **Examples** rail on every operation page that has the extension, regardless of HTTP method. Below 1024px the rail is not hidden: it stacks as a single column under the operation reference. Below 768px the API sidebar uses the same hamburger checkbox as docs pages (`#pages-nav-hamburger`). When an operation also declares multiple named request/response `examples`, the rail builds **scenarios from request examples** (matched to response examples by title/summary) and exposes a `<select>` to switch between those request variants. Response examples whose titles do not match any request (typical error payloads) are shared across those scenarios as extra **status-code tabs** (for example `200`, `400`) on the light response card, without replacing a scenario-specific body for the same status. When there are no request examples, named response-only examples collapse into a single scenario so status tabs stay primary. Multi-language `x-codeSamples` render inside a code box with a language label and `<select>` in the header, attached to the scenario whose request body matches the Console sample. When a scenario has request JSON but no `x-codeSamples`, that JSON uses the same request code card (label `JSON`). There is no separate "Request" heading in the rail — only the **Examples** heading when multiple scenarios exist. Request and response code boxes show a non-selectable line-number gutter (selection and copy omit the numbers). Response bodies that are JSON objects/arrays use the Figma Card/Code token colors (black structure, green strings, blue booleans, maroon numbers); other payloads such as SSE streams stay plaintext so highlighting does not invent misleading colors. Single-line `curl` samples are reformatted for display (method and URL on the first line, one flag per line, with `\` continuations). OpenAPI example `description` text is not shown in the rail (the code samples and response JSON carry the content).
+Code samples appear in the right-hand **Examples** rail on every operation page that has the extension, regardless of HTTP method. Below 1024px the rail is not hidden: it stacks as a single column under the operation reference. Below 768px the API sidebar uses the same hamburger checkbox as docs pages (`#pages-nav-hamburger`). When an operation also declares multiple named request/response `examples`, the rail builds **scenarios from request examples** (matched to response examples by title/summary) and exposes a header-only **Examples** card with a chrome-less `<select>` to switch between those request variants. Response examples whose titles do not match any request (typical error payloads) are shared across those scenarios as extra **status-code tabs** (for example `200`, `400`) on the light response card, without replacing a scenario-specific body for the same status. When there are no request examples, named response-only examples collapse into a single scenario so status tabs stay primary. Multi-language `x-codeSamples` render inside a code box with a method chip, endpoint, and language `<select>` in the header, attached to the scenario whose request body matches the Console sample. When a scenario has request JSON but no `x-codeSamples`, that JSON uses the same request code card. The rail has no standalone **Examples** heading: the label lives in the header-only card when there are multiple scenarios. Request and response code boxes show a non-selectable line-number gutter (selection and copy omit the numbers). Response bodies that are JSON objects/arrays use the Figma Card/Code token colors (black structure, green strings, blue booleans, maroon numbers); other payloads such as SSE streams stay plaintext so highlighting does not invent misleading colors. Single-line `curl` samples are reformatted for display (method and URL on the first line, one flag per line, with `\` continuations). OpenAPI example `description` text is not shown in the rail (the code samples and response JSON carry the content).
 
 When an operation has **no** `x-codeSamples`, the API Explorer synthesizes a minimal **Console** and **curl** sample from the HTTP method, path, required query parameters, required headers (for example `kbn-xsrf`), and the document `servers` URL so the examples rail is never empty. Author-provided `x-codeSamples` always win over these synthetic samples. When the rail has samples (or request examples) but the operation declares response status codes without example bodies, the rail still shows status-code tabs: responses with no content render **No body**, and responses that declare a content type/schema but no example render **No example**.
 
@@ -426,7 +431,7 @@ The document-level `x-tagGroups` extension (from [Redocly](https://redocly.com/d
 }
 ```
 
-The default sidebar matches bump.sh. Tags are top-level folders. Each OpenAPI operation is a visible child of its tag.
+The default sidebar matches bump.sh. The product overview, Authentication, Servers, and any `children:` markdown pages sit in one group. A divider separates that group from tag folders. Each OpenAPI operation is a visible child of its tag.
 
 Classification folders, collapsing operations that share a grouping key into one endpoint, and Types pages require `FEATURE_API_NAV_GROUPING` (the `api-nav-grouping` feature flag). That flag is off by default.
 

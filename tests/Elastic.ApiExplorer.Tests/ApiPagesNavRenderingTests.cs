@@ -29,7 +29,7 @@ public partial class ApiPagesNavRenderingTests
 			"/api/doc/elasticsearch/v9/",
 			"/api/doc/elasticsearch/v9.md",
 			versionSwitcherItems: [
-				new("Latest", "/api/doc/elasticsearch/", Selected: false),
+				new("9.0+", "/api/doc/elasticsearch/", Selected: false),
 				new("9.x", "/api/doc/elasticsearch/v9/", Selected: true),
 				new("8.x", "/api/doc/elasticsearch/v8/", Selected: false),
 			]
@@ -38,7 +38,8 @@ public partial class ApiPagesNavRenderingTests
 		var html = await _ApiPagesNav.Create(model).RenderAsync(cancellationToken: TestContext.Current.CancellationToken);
 
 		html.Should().Contain("<nav>tree</nav>");
-		html.Should().Contain("View as Markdown");
+		html.Should().NotContain("View as Markdown");
+		html.Should().NotContain("view-as-markdown");
 		html.Should().NotContain("api-version-switcher");
 		html.Should().NotContain("<select");
 		html.Should().NotContain("<option");
@@ -71,6 +72,26 @@ public partial class ApiPagesNavRenderingTests
 	}
 
 	[Fact]
+	public async Task Render_Assembler_OmitsTheHubSwitcher()
+	{
+		var model = CreateLayoutModel(
+			"/api/doc/elasticsearch/",
+			"/api/doc/elasticsearch.md",
+			hubSwitcherItems: [
+				new("Back to hub", "/api/", Selected: false),
+				new("Elasticsearch", "/api/doc/elasticsearch/", Selected: true),
+			],
+			buildType: BuildType.Assembler
+		);
+
+		var html = await _ApiPagesNav.Create(model).RenderAsync(cancellationToken: TestContext.Current.CancellationToken);
+
+		html.Should().NotContain("api-hub-switcher");
+		html.Should().NotContain("<select");
+		html.Should().NotContain("<option");
+	}
+
+	[Fact]
 	public async Task Render_PreservesTheNavAcrossHtmxSwapsWhenPreviewEnabled()
 	{
 		var model = CreateLayoutModel(
@@ -90,7 +111,8 @@ public partial class ApiPagesNavRenderingTests
 		string markdownUrl,
 		IReadOnlyList<ApiVersionSwitcherItem>? versionSwitcherItems = null,
 		IReadOnlyList<ApiVersionSwitcherItem>? hubSwitcherItems = null,
-		FeatureFlags? features = null
+		FeatureFlags? features = null,
+		BuildType buildType = BuildType.Isolated
 	)
 	{
 		var fs = new FileSystem();
@@ -114,6 +136,7 @@ public partial class ApiPagesNavRenderingTests
 			GoogleTagManager = new GoogleTagManagerConfiguration(),
 			Optimizely = new OptimizelyConfiguration(),
 			Features = features ?? new FeatureFlags([]),
+			BuildType = buildType,
 			StaticFileContentHashProvider = new StaticFileContentHashProvider(new EmbeddedOrPhysicalFileProvider(context)),
 			TocItems = [],
 			MarkdownUrl = markdownUrl,

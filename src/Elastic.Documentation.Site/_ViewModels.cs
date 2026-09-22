@@ -13,6 +13,7 @@ using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Navigation.Assembler;
 using Elastic.Documentation.Site.FileProviders;
+using Elastic.Documentation.Site.Navigation;
 
 namespace Elastic.Documentation.Site;
 
@@ -96,6 +97,20 @@ public record GlobalLayoutViewModel
 	public string? AllVersionsUrl { get; init; }
 
 	public bool ShowVersionDropdown { get; init; }
+
+	/// <summary>
+	/// When true, the flag-off grey secondary nav renders <c>version-dropdown</c> on the far right.
+	/// API explorer sets this because it has no Docs TOC picker. Docs pages leave it false so
+	/// the picker stays in the right rail.
+	/// </summary>
+	public bool ShowLegacyBarVersionDropdown { get; init; }
+
+	/// <summary>
+	/// API product choices for the flag-off grey secondary nav, rendered immediately before
+	/// the version picker. Empty on Docs pages and on isolated API builds (those keep the
+	/// sidebar <c>&lt;select&gt;</c>).
+	/// </summary>
+	public IReadOnlyList<NavigationSelectOption> LegacyBarProductSwitcher { get; init; } = [];
 
 	/// <summary>
 	/// When the current page is a hidden nav item (e.g. an individual detection rule page),

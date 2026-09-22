@@ -44,7 +44,8 @@ internal sealed record ApiProductGeneration(
 /// <remarks>
 /// For versioned products, renders the canonical <c>main</c> tree at the unversioned path plus one
 /// full tree per released numeric major at <c>/vN/</c>. Versionless products render only
-/// <c>main</c>. When more than one version is rendered, pages include a left-nav version switcher.
+/// <c>main</c>. When more than one version is rendered, assembler pages host the Docs
+/// <c>version-dropdown</c> on the secondary top bar. Isolated builds keep a left-nav switcher.
 /// </remarks>
 public class OpenApiGenerator(
 	ILoggerFactory logFactory,
@@ -130,7 +131,13 @@ public class OpenApiGenerator(
 		var highestMajor = monikers.Max(TryParseMajor);
 		foreach (var versioned in versionedDocuments)
 		{
-			var switcherItems = ApiVersionSwitcher.Build(context.UrlPathPrefix, prefix, monikers, versioned.Version.Moniker);
+			var switcherItems = ApiVersionSwitcher.Build(
+				context.UrlPathPrefix,
+				prefix,
+				monikers,
+				versioned.Version.Moniker,
+				versioning: apiConfig.Product.VersioningSystem
+			);
 			var apiUrlSuffix = ApiUrlBuilder.ProductSuffix(prefix, versioned.Version.Moniker);
 			await GenerateApiProduct(
 				new(
@@ -385,6 +392,9 @@ public class OpenApiGenerator(
 		Cancel ctx
 	)
 	{
+		if (currentNavigation is ISidebarSeparatorNavigationItem)
+			return;
+
 		if (currentNavigation is INodeNavigationItem<IApiModel, INavigationItem> node)
 		{
 			if (currentNavigation is not ClassificationNavigationItem)

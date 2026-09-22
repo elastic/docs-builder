@@ -189,11 +189,12 @@ else
 		<div class="
 					w-full
 					max-w-(--max-layout-width) flex mx-auto justify-between items-center
-					px-4 py-6">
+					px-4 py-6 overflow-visible">
 			<div class="flex gap-2 flex-nowrap items-center font-sans font-semibold text-sm text-ink-light md:text-base">
 				<a href="@docsHomeUrl"
 				   class="text-lg leading-[1em] hover:text-blue-elastic active:text-blue-elastic-100">Docs</a>
 			</div>
+			<div class="flex items-center gap-6 min-w-0">
 			<ul class="flex gap-6 font-sans font-semibold text-sm text-ink-light md:text-base">
 				<li class="text-nowrap hover:text-blue-elastic active:text-blue-elastic-100">
 					<a
@@ -219,7 +220,41 @@ else
 						Reference
 					</a>
 				</li>
+			@if (Model.LegacyBarProductSwitcher.Count > 0)
+			{
+				var currentProduct = Model.LegacyBarProductSwitcher.FirstOrDefault(static i => i.Selected)
+					?? Model.LegacyBarProductSwitcher[0];
+				<li class="text-nowrap hover:text-blue-elastic active:text-blue-elastic-100">
+					<details class="secondary-nav-dropdown secondary-nav-legacy-product" id="api-hub-switcher">
+						<summary aria-label="API product">
+							<span>@currentProduct.Label</span>
+							<span class="nav-select__chevron" aria-hidden="true">
+								<svg viewBox="0 0 16 16"><use href="#icon-chevron-down"/></svg>
+							</span>
+						</summary>
+						<div class="secondary-nav-dropdown-menu" aria-label="API product">
+							@foreach (var option in Model.LegacyBarProductSwitcher)
+							{
+								var selectedClass = option.Selected ? " secondary-nav-dropdown-link--selected" : "";
+								<a class="secondary-nav-dropdown-link@(selectedClass)"
+								   href="@option.Value"
+								   preload="mousedown"
+								   hx-boost="false">@option.Label</a>
+							}
+						</div>
+					</details>
+				</li>
+			}
 			</ul>
+			@if (Model.ShowLegacyBarVersionDropdown)
+			{
+				<div class="secondary-nav-legacy-actions">
+					<version-dropdown data-testid="docs-version-dropdown" all-versions-url="@Model.AllVersionsUrl" current-version='@(Model.CurrentVersion)' items='@(new HtmlString(Model.VersionDropdownSerializedModel))'>
+						<div class="h-8">@*height of dropdown button*@</div>
+					</version-dropdown>
+				</div>
+			}
+			</div>
 		</div>
 	</nav>
 </div>

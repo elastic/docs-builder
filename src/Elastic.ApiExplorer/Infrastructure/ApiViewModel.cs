@@ -11,6 +11,7 @@ using Elastic.Documentation.Extensions;
 using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Site;
 using Elastic.Documentation.Site.FileProviders;
+using Elastic.Documentation.Site.Navigation;
 using Microsoft.AspNetCore.Html;
 using Microsoft.OpenApi;
 
@@ -78,6 +79,10 @@ public abstract class ApiViewModel(ApiRenderContext context)
 		var docTitle = Document.Info?.Title ?? "API Documentation";
 		var pageTitle = LayoutPageTitle;
 		var documentTitle = pageTitle is not null ? $"{pageTitle} | {docTitle}" : docTitle;
+		var catalogUrl = $"{ApiUrlBuilder.ApiRoot(BuildContext.UrlPathPrefix)}/";
+
+		var hubItems = ApiHubSwitcher.Build(RenderContext.CatalogEntries, RenderContext.CurrentApiKey, catalogUrl);
+		var assembler = BuildContext.BuildType == BuildType.Assembler;
 
 		return new()
 		{
@@ -100,14 +105,25 @@ public abstract class ApiViewModel(ApiRenderContext context)
 			BuildType = BuildContext.BuildType,
 			PageFeedbackSurface = "api",
 			TocItems = GetTocItems(),
-			Breadcrumbs = ApiBreadcrumbBuilder.Build(CurrentNavigationItem, BreadcrumbCurrentTitle, Document.Info?.Title),
-			VersionSwitcherItems = RenderContext.VersionSwitcherItems,
-			HubSwitcherItems = ApiHubSwitcher.Build(
-				RenderContext.CatalogEntries,
-				RenderContext.CurrentApiKey,
-				$"{ApiUrlBuilder.ApiRoot(BuildContext.UrlPathPrefix)}/"
+			Breadcrumbs = ApiBreadcrumbBuilder.Build(
+				CurrentNavigationItem,
+				BreadcrumbCurrentTitle,
+				Document.Info?.Title,
+				catalogUrl: catalogUrl
 			),
+			VersionSwitcherItems = RenderContext.VersionSwitcherItems,
+			HubSwitcherItems = hubItems,
+			LegacyBarProductSwitcher = assembler
+				? [.. hubItems.Select(static i => new NavigationSelectOption(i.Label, i.Url, i.Selected))]
+				: [],
 			MarkdownUrl = ApiOutputPaths.MarkdownUrl(CurrentNavigationItem.Url),
+			ShowVersionDropdown = RenderContext.VersionSwitcherItems.Count > 1,
+			ShowLegacyBarVersionDropdown = RenderContext.VersionSwitcherItems.Count > 1,
+			CurrentVersion = ApiVersionSwitcher.CurrentVersionLabel(
+				RenderContext.Product?.VersioningSystem,
+				RenderContext.VersionSwitcherItems
+			),
+			VersionDropdownSerializedModel = ApiVersionSwitcher.SerializeDropdownItems(RenderContext.VersionSwitcherItems),
 			// Header properties for isolated mode
 			HeaderTitle = docTitle,
 			HeaderVersion = Document.Info?.Version ?? "1.0",

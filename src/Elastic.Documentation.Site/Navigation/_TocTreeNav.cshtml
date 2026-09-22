@@ -2,7 +2,11 @@
 @inherits RazorSlice<IReadOnlyList<Elastic.Documentation.Site.Navigation.NavigationRenderNode>>
 @foreach (var item in Model)
 {
-	if (item.Kind == NavigationRenderNodeKind.Leaf)
+	if (item.Kind == NavigationRenderNodeKind.Separator)
+	{
+		<li role="separator" class="nav-v2-separator"><hr></li>
+	}
+	else if (item.Kind == NavigationRenderNodeKind.Leaf)
 	{
 		<li class="flex group/li">
 			<a href="@item.Url" class="sidebar-link nav-link nav-v2-link">

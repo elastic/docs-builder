@@ -31,8 +31,10 @@ else
 						<article id="markdown-content" class="content-container markdown-content min-w-0">
 							<input type="checkbox" class="hidden" id="pages-nav-hamburger">
 							@await RenderPartialAsync(_ApiPagesNavToggle.Create())
-							@(await RenderPartialAsync<_ApiBreadcrumbs, ApiBreadcrumbsView>(
-								new ApiBreadcrumbsView(Model.Breadcrumbs, Model.HxAttributes)))
+							<div class="api-page-toolbar">
+								@(await RenderPartialAsync<_ApiBreadcrumbs, ApiBreadcrumbsView>(
+									new ApiBreadcrumbsView(Model.Breadcrumbs, Model.HxAttributes)))
+							</div>
 							@await RenderBodyAsync()
 						</article>
 						@await RenderPartialAsync(_PageFeedback.Create(Model))

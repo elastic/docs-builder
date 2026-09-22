@@ -455,4 +455,14 @@
 	version-dropdown {
 		display: inline-flex;
 	}
+
+	.secondary-nav-legacy-actions {
+		display: flex;
+		flex-shrink: 0;
+		align-items: center;
+	}
+
+	.secondary-nav-legacy-actions version-dropdown {
+		flex-shrink: 0;
+	}
 }

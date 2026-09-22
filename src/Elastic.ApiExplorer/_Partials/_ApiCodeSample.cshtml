@@ -1,28 +1,39 @@
 @inherits RazorSlice<ApiCodeSampleModel>
 @{
 	var selectId = $"{Model.IdPrefix}-lang";
-	var initialLanguage = Model.Samples[0].Language;
 }
 <div class="api-code-card api-code-sample" data-api-code-sample>
 	<div class="api-code-sample-header">
-		<span class="api-code-sample-label">@initialLanguage</span>
+		<div class="api-code-sample-title">
+			@if (!string.IsNullOrEmpty(Model.HttpMethod))
+			{
+				@(await RenderPartialAsync<_HttpMethodBadge, string>(Model.HttpMethod))
+			}
+			@if (!string.IsNullOrEmpty(Model.Route))
+			{
+				<span class="api-url">@Model.Route</span>
+			}
+		</div>
 		<div class="api-code-sample-actions">
+			@if (Model.Examples is { Count: > 1 })
+			{
+				@(await RenderPartialAsync<_ApiSelect, ApiSelectModel>(new ApiSelectModel
+				{
+					AriaLabel = "Example",
+					Options = Model.Examples,
+					ExtraClass = "api-scenario-select"
+				}))
+			}
 			@if (Model.Samples.Count > 1)
 			{
-				<select id="@selectId" class="api-code-sample-lang" data-sync-group="api-language" aria-label="Language">
-					@for (var i = 0; i < Model.Samples.Count; i++)
-					{
-						var sample = Model.Samples[i];
-						if (i == 0)
-						{
-							<option value="@sample.Language" selected>@sample.Language</option>
-						}
-						else
-						{
-							<option value="@sample.Language">@sample.Language</option>
-						}
-					}
-				</select>
+				@(await RenderPartialAsync<_ApiSelect, ApiSelectModel>(new ApiSelectModel
+				{
+					AriaLabel = "Language",
+					Options = [.. Model.Samples.Select((sample, i) => new ApiSelectOption(sample.Language, sample.Language, i == 0))],
+					ExtraClass = "api-code-sample-lang",
+					Id = selectId,
+					SyncGroup = "api-language"
+				}))
 			}
 		</div>
 	</div>

@@ -68,6 +68,32 @@ public class ApiBreadcrumbBuilderTests
 	}
 
 	[Fact]
+	public void Collect_WithCatalogUrl_PrependsApisLink()
+	{
+		var root = Node("/api/es", "Api Overview", parent: null);
+		var op = Leaf("/api/es/search-op", "search", root);
+
+		var crumbs = ApiBreadcrumbBuilder.Collect(op, "Run a search", "Elasticsearch API", catalogUrl: "/api/");
+
+		crumbs.Select(c => c.Title).Should().Equal("APIs", "Elasticsearch API", "Run a search");
+		crumbs[0].Url.Should().Be("/api/");
+		crumbs[0].IsCurrent.Should().BeFalse();
+		crumbs[^1].IsCurrent.Should().BeTrue();
+	}
+
+	[Fact]
+	public void Collect_OnCatalogPage_DoesNotPrependApis()
+	{
+		var catalog = Leaf("/api/", "API catalog", parent: null);
+
+		var crumbs = ApiBreadcrumbBuilder.Collect(catalog, "API catalog", "API catalog", catalogUrl: "/api/");
+
+		crumbs.Should().ContainSingle();
+		crumbs[0].Title.Should().Be("API catalog");
+		crumbs[0].IsCurrent.Should().BeTrue();
+	}
+
+	[Fact]
 	public void Build_SingleCrumb_ShowsCurrent()
 	{
 		var landing = Leaf("/api/es", "Api Overview", parent: null);
@@ -75,37 +101,24 @@ public class ApiBreadcrumbBuilderTests
 		var trail = ApiBreadcrumbBuilder.Build(landing, "Elasticsearch API", "Elasticsearch API");
 
 		trail.IsEmpty.Should().BeFalse();
-		trail.Head.Should().ContainSingle();
-		trail.Head[0].Title.Should().Be("Elasticsearch API");
-		trail.Head[0].IsCurrent.Should().BeTrue();
+		trail.Items.Should().ContainSingle();
+		trail.Items[0].Title.Should().Be("Elasticsearch API");
+		trail.Items[0].IsCurrent.Should().BeTrue();
 	}
 
 	[Fact]
-	public void Split_FourItems_NoOverflow()
+	public void Build_KeepsEveryCrumbForResponsiveCollapse()
 	{
-		var items = Titles("a", "b", "c", "d");
+		var root = Node("/api/es", "Api Overview", parent: null);
+		var tag = Node("/api/es/search", "Search", root);
+		var op = Leaf("/api/es/search-op", "search", tag);
 
-		var trail = ApiBreadcrumbBuilder.Split(items);
+		var trail = ApiBreadcrumbBuilder.Build(op, "Run a search", "Elasticsearch API", catalogUrl: "/api/");
 
-		trail.HasOverflow.Should().BeFalse();
-		trail.Head.Select(c => c.Title).Should().Equal("a", "b", "c", "d");
-		trail.Tail.Should().BeEmpty();
+		trail.Items.Select(c => c.Title).Should().Equal("APIs", "Elasticsearch API", "Search", "Run a search");
+		trail.Items[0].Url.Should().Be("/api/");
+		trail.Items[^1].IsCurrent.Should().BeTrue();
 	}
-
-	[Fact]
-	public void Split_FiveItems_FirstTwoOverflowLastTwo()
-	{
-		var items = Titles("a", "b", "c", "d", "e");
-
-		var trail = ApiBreadcrumbBuilder.Split(items);
-
-		trail.Head.Select(c => c.Title).Should().Equal("a", "b");
-		trail.Overflow.Select(c => c.Title).Should().Equal("c");
-		trail.Tail.Select(c => c.Title).Should().Equal("d", "e");
-	}
-
-	private static IReadOnlyList<ApiBreadcrumb> Titles(params string[] titles) =>
-		titles.Select((t, i) => new ApiBreadcrumb(t, i == titles.Length - 1 ? null : $"/{t}")).ToArray();
 
 	private static INodeNavigationItem<INavigationModel, INavigationItem> Node(
 		string url,

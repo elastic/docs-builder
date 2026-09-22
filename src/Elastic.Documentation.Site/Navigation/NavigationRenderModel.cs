@@ -16,7 +16,9 @@ public enum NavigationRenderNodeKind
 	Node,
 	Island,
 	/// <summary>OpenAPI <c>x-tagGroups</c> / docs <c>label:</c> — expand-only, no page URL.</summary>
-	Heading
+	Heading,
+	/// <summary>Visual divider between intro pages and the rest of the tree.</summary>
+	Separator
 }
 
 /// <summary>A fully resolved navigation tree node; the only tree data the nav templates consume.</summary>
@@ -94,6 +96,11 @@ public sealed record NavigationRenderModel
 	public required string ContentHash { get; init; }
 	/// <summary>Whether the NAVIGATION_PREVIEW feature flag is enabled; drives nav-v2 vs legacy tree rendering.</summary>
 	public bool NavigationPreviewEnabled { get; init; }
+	/// <summary>
+	/// True when <see cref="Tree"/> already owns a divider. <c>_TocTree</c> then skips the
+	/// automatic rule after <see cref="RootIndex"/> so overview stays with the intro pages.
+	/// </summary>
+	public bool TreeHasSeparator => Tree.Any(static n => n.Kind == NavigationRenderNodeKind.Separator);
 
 	public static NavigationRenderModel Create(
 		INodeNavigationItem<INavigationModel, INavigationItem> tree,
@@ -333,6 +340,18 @@ public sealed record NavigationRenderModel
 				continue;
 			if (item.Parent is not null && item.Parent.Index == item)
 				continue;
+
+			if (item is ISidebarSeparatorNavigationItem)
+			{
+				yield return new NavigationRenderNode
+				{
+					Kind = NavigationRenderNodeKind.Separator,
+					IsTopLevel = isTopLevel,
+					NavigationTitle = "",
+					Url = ""
+				};
+				continue;
+			}
 
 			if (item is INodeNavigationItem<INavigationModel, INavigationItem> { NavigationItems.Count: > 0 } node)
 				yield return CreateNode(node, isTopLevel);

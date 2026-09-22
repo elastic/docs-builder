@@ -14,7 +14,10 @@
 
 @* Intro spans both columns (title + paths); reference column starts below. *@
 <header class="api-page-intro">
-	<h1>@operation.Summary</h1>
+	<div class="api-page-heading">
+		<h1>@operation.Summary</h1>
+		@(await RenderPartialAsync<_PageActions, string>(LayoutModel.MarkdownUrl))
+	</div>
 	@if (operation.Deprecated || pageModel.IsBeta)
 	{
 		<div class="api-title-badges">
@@ -50,8 +53,7 @@
 		{
 			var method = overload.Model.OperationType.ToString().ToLowerInvariant();
 			var isCurrent = overload.Model.Route == Model.Operation.Route && overload.Model.OperationType == Model.Operation.OperationType;
-			var isDeprecated = overload.Model.Operation?.Deprecated == true;
-			<li class="api-url-list-item@(isDeprecated ? " deprecated" : "")">
+			<li class="api-url-list-item">
 				<label class="api-url-row@(isCurrent ? " current" : "")">
 					@if (pageModel.HasMultipleOverloads)
 					{
@@ -66,12 +68,8 @@
 							@(isCurrent ? "checked" : null) />
 					}
 					@(await RenderPartialAsync<_HttpMethodBadge, string>(method))
-					<span class="api-url@(isDeprecated ? " deprecated-path" : "")">@overload.Model.Route</span>
+					<span class="api-url">@overload.Model.Route</span>
 					@(await RenderPartialAsync<_EndpointCopyButton, string>(overload.Model.Route))
-					@if (isDeprecated)
-					{
-						<span class="deprecated-badge type-status">deprecated</span>
-					}
 				</label>
 			</li>
 		}

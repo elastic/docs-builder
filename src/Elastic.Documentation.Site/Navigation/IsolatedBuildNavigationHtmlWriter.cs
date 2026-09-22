@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Navigation;
 using RazorSlices;
@@ -64,6 +65,8 @@ public class IsolatedBuildNavigationHtmlWriter(
 			isGlobalAssemblyBuild: false,
 			navigationPreviewEnabled: context.Configuration.Features.NavigationPreviewEnabled
 		);
-		return versionSwitcher is { Count: > 0 } ? model with { VersionSwitcher = versionSwitcher } : model;
+		return context.BuildType != BuildType.Assembler && versionSwitcher is { Count: > 0 }
+			? model with { VersionSwitcher = versionSwitcher }
+			: model;
 	}
 }

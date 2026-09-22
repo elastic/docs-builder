@@ -3,6 +3,8 @@
  * Handles expand/collapse toggles, scroll state, and find-in-page support
  * for both OperationView and SchemaView pages.
  */
+import { initApiBreadcrumbs } from './api-breadcrumbs'
+import { decorateApiCodeTokens } from './api-code-tokens'
 import { applyParamSummaryFit } from './api-param-summary'
 
 // Check if hidden="until-found" is supported (for find-in-page in collapsed sections)
@@ -584,6 +586,39 @@ function initGlobalClickHandlers(): void {
 
 const apiLanguageStorageKey = 'tab-id-api-language'
 
+function apiSelectOptions(dropdown: Element): HTMLElement[] {
+    return Array.from(
+        dropdown.querySelectorAll<HTMLElement>('[role="option"][data-value]')
+    )
+}
+
+function apiSelectValue(dropdown: Element): string | undefined {
+    return dropdown.querySelector<HTMLElement>(
+        '[role="option"][aria-selected="true"]'
+    )?.dataset.value
+}
+
+function setApiSelectValue(dropdown: Element, value: string): boolean {
+    const options = apiSelectOptions(dropdown)
+    const match = options.find((option) => option.dataset.value === value)
+    if (!match) return false
+
+    options.forEach((option) => {
+        const selected = option === match
+        option.classList.toggle('is-selected', selected)
+        option.setAttribute('aria-selected', selected ? 'true' : 'false')
+    })
+
+    const label = dropdown.querySelector<HTMLElement>('.api-select-value')
+    if (label) label.textContent = match.textContent?.trim() ?? value
+    return true
+}
+
+function closeApiSelect(option: HTMLElement): void {
+    const dropdown = option.closest<HTMLDetailsElement>('details.api-select')
+    if (dropdown) dropdown.open = false
+}
+
 function applyApiCodeLanguage(
     root: ParentNode,
     language: string,
@@ -591,27 +626,34 @@ function applyApiCodeLanguage(
 ): void {
     root.querySelectorAll<HTMLElement>('[data-api-code-sample]').forEach(
         (widget) => {
-            const select = widget.querySelector<HTMLSelectElement>(
-                '.api-code-sample-lang'
+            const panels = Array.from(
+                widget.querySelectorAll<HTMLElement>('.api-code-sample-panel')
             )
+            const dropdown = widget.querySelector('.api-code-sample-lang')
+            const hasLanguage = panels.some(
+                (panel) => panel.dataset.lang === language
+            )
+            // Examples that only ship JSON (or another single sample) keep that
+            // body. Applying a language they don't have hid every panel and left
+            // a header-only card.
             let effectiveLanguage = language
-            if (select) {
-                const hasOption = Array.from(select.options).some(
-                    (option) => option.value === language
-                )
-                if (hasOption) select.value = language
-                effectiveLanguage = select.value
+            if (!hasLanguage) {
+                effectiveLanguage =
+                    (dropdown ? apiSelectValue(dropdown) : undefined) ??
+                    panels.find((panel) => !panel.hasAttribute('hidden'))
+                        ?.dataset.lang ??
+                    panels[0]?.dataset.lang ??
+                    language
+            } else if (dropdown) {
+                setApiSelectValue(dropdown, language)
             }
 
-            const label = widget.querySelector('.api-code-sample-label')
-            if (label) label.textContent = effectiveLanguage
-
-            widget
-                .querySelectorAll<HTMLElement>('.api-code-sample-panel')
-                .forEach((panel) => {
-                    const match = panel.dataset.lang === effectiveLanguage
-                    panel.toggleAttribute('hidden', !match)
-                })
+            panels.forEach((panel) => {
+                panel.toggleAttribute(
+                    'hidden',
+                    panel.dataset.lang !== effectiveLanguage
+                )
+            })
 
             widget
                 .querySelectorAll<HTMLButtonElement>(
@@ -631,13 +673,11 @@ function applyApiCodeLanguage(
 let apiCodeLanguageSelectDelegated = false
 
 /**
- * Language <select> in API code-sample headers. Persists via sessionStorage.
+ * Language picker in API code-sample headers. Persists via sessionStorage.
  */
-function initApiCodeLanguageSelects(): void {
-    const selects = document.querySelectorAll<HTMLSelectElement>(
-        '.api-code-sample-lang'
-    )
-    if (selects.length === 0) return
+export function initApiCodeLanguageSelects(): void {
+    const dropdowns = document.querySelectorAll('.api-code-sample-lang')
+    if (dropdowns.length === 0) return
 
     const saved = window.sessionStorage.getItem(apiLanguageStorageKey)
     if (saved) {
@@ -646,13 +686,13 @@ function initApiCodeLanguageSelects(): void {
 
     if (apiCodeLanguageSelectDelegated) return
     apiCodeLanguageSelectDelegated = true
-    document.addEventListener('change', (event) => {
-        const select = (event.target as HTMLElement | null)?.closest(
-            '.api-code-sample-lang'
+    document.addEventListener('click', (event) => {
+        const option = (event.target as HTMLElement | null)?.closest(
+            '.api-code-sample-lang [role="option"][data-value]'
         )
-        if (select instanceof HTMLSelectElement) {
-            applyApiCodeLanguage(document, select.value, true)
-        }
+        if (!(option instanceof HTMLElement) || !option.dataset.value) return
+        closeApiSelect(option)
+        applyApiCodeLanguage(document, option.dataset.value, true)
     })
 }
 
@@ -715,43 +755,29 @@ function applyApiScenario(widget: HTMLElement, scenarioId: string): void {
             panel.toggleAttribute('hidden', !match)
         })
 
-    const dropdown = widget.querySelector<HTMLDetailsElement>(
-        '.nav-select-dropdown'
-    )
-    if (!dropdown) return
-
-    const options = dropdown.querySelectorAll<HTMLElement>(
-        '.nav-select-option[data-scenario]'
-    )
-    let selectedLabel = ''
-    for (const option of options) {
-        const selected = option.dataset.scenario === scenarioId
-        option.classList.toggle('nav-select-option--selected', selected)
-        option.setAttribute('aria-selected', selected ? 'true' : 'false')
-        if (selected) selectedLabel = option.textContent?.trim() ?? ''
-    }
-    const value = dropdown.querySelector('.nav-select__value')
-    if (value && selectedLabel) value.textContent = selectedLabel
-    dropdown.open = false
+    widget
+        .querySelectorAll('.api-scenario-select')
+        .forEach((dropdown) => setApiSelectValue(dropdown, scenarioId))
 }
 
 let apiScenarioSelectDelegated = false
 
 /**
- * Scenario picker in the examples rail. Switches which example panel is visible.
- * Not persisted — scenario ids/titles differ per operation.
+ * Scenario picker in the Examples header card. Switches the request+response
+ * pair. Not persisted — scenario ids/titles differ per operation.
  */
-function initApiScenarioSelects(): void {
+export function initApiScenarioSelects(): void {
     // Always register delegation once — pickers may appear after HTMX navigation.
     if (apiScenarioSelectDelegated) return
     apiScenarioSelectDelegated = true
     document.addEventListener('click', (event) => {
         const option = (event.target as HTMLElement | null)?.closest(
-            '.nav-select-option[data-scenario]'
+            '.api-scenario-select [role="option"][data-value]'
         )
-        if (!(option instanceof HTMLElement) || !option.dataset.scenario) return
+        if (!(option instanceof HTMLElement) || !option.dataset.value) return
         const widget = option.closest<HTMLElement>('[data-api-scenarios]')
-        if (widget) applyApiScenario(widget, option.dataset.scenario)
+        closeApiSelect(option)
+        if (widget) applyApiScenario(widget, option.dataset.value)
     })
 }
 
@@ -803,16 +829,17 @@ function initApiCodeLineNumbers(): void {
         })
 }
 
-const apiEndpointCopyIcon = `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
-		<path stroke-linecap="round" stroke-linejoin="round" d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 0 0 2.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 0 0-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 0 0 .75-.75 2.25 2.25 0 0 0-.1-.664m-5.8 0A2.251 2.251 0 0 1 13.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25ZM6.75 12h.008v.008H6.75V12Zm0 3h.008v.008H6.75V15Zm0 3h.008v.008H6.75V18Z" />
+const apiEndpointCopyIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+		<path fill-rule="evenodd" clip-rule="evenodd" d="M6 1C5.44771 1 5 1.44772 5 2V10C5 10.5523 5.44772 11 6 11H14C14.5523 11 15 10.5523 15 10V2C15 1.44771 14.5523 1 14 1H6ZM6 2L14 2V10H6V2Z" fill="currentColor"/>
+		<path d="M2 5H4V6H2V14H10V12H11V14C11 14.5523 10.5523 15 10 15H2C1.44772 15 1 14.5523 1 14V6C1 5.44772 1.44771 5 2 5Z" fill="currentColor"/>
 	</svg>`
 
-const apiEndpointCheckIcon = `<svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-check" width="16" height="16" viewBox="0 0 24 24" stroke-width="2" stroke="#22863a" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-  <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-  <path d="M5 12l5 5l10 -10" />
+const apiEndpointCheckIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+  <path fill="currentColor" fill-rule="evenodd" d="M6.5 12.242 2.354 8.096l.707-.707L6.5 10.828l6.44-6.44.707.708-7.147 7.146Z"/>
 </svg>`
 
 let apiEndpointCopyInitialized = false
+let apiPageActionsInitialized = false
 
 function closestEndpointCopyButton(
     target: EventTarget | null
@@ -867,6 +894,51 @@ function initApiEndpointCopy(): void {
     )
 }
 
+function closestCopyPageTrigger(
+    target: EventTarget | null
+): HTMLElement | null {
+    if (!(target instanceof Element)) return null
+    const trigger = target.closest<HTMLElement>('[data-copy-page]')
+    return trigger?.dataset.copyPage ? trigger : null
+}
+
+async function copyPageMarkdown(
+    url: string,
+    root: Element | null
+): Promise<void> {
+    const response = await fetch(url)
+    if (!response.ok) throw new Error(`Copy page failed: ${response.status}`)
+    const text = await response.text()
+    await navigator.clipboard.writeText(text)
+    const label = root?.querySelector<HTMLElement>('.api-page-actions-label')
+    if (!label) return
+    const original = label.textContent
+    label.textContent = 'Copied!'
+    window.setTimeout(() => {
+        if (original) label.textContent = original
+    }, 1500)
+}
+
+export function initApiPageActions(): void {
+    if (apiPageActionsInitialized) return
+    apiPageActionsInitialized = true
+
+    document.addEventListener('click', (event) => {
+        const trigger = closestCopyPageTrigger(event.target)
+        if (!trigger || !trigger.dataset.copyPage) return
+
+        event.preventDefault()
+        const root = trigger.closest('.api-page-actions')
+        const dropdown = root?.querySelector<HTMLDetailsElement>(
+            '.api-page-actions-dropdown'
+        )
+        if (dropdown) dropdown.open = false
+        void copyPageMarkdown(trigger.dataset.copyPage, root).catch((error) => {
+            console.error(error)
+        })
+    })
+}
+
 /**
  * Initialize API documentation interactivity
  * Call this after page load or HTMX content swap
@@ -878,7 +950,10 @@ export function initApiDocs(): void {
     initApiCodeLanguageSelects()
     initApiResponseStatusTabs()
     initApiScenarioSelects()
+    initApiPageActions()
+    initApiBreadcrumbs()
     // After initHighlight — gutters need final textContent line counts
+    decorateApiCodeTokens()
     initApiCodeLineNumbers()
 
     // Check for OperationView page - initialize view-specific features
