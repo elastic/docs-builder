@@ -4,7 +4,7 @@
 
 using static Elastic.Authoring.Tests.Framework.TestFile;
 
-namespace Elastic.Authoring.Tests.Blocks.ImageBlocks;
+namespace Elastic.Authoring.Tests.Blocks;
 
 public class StaticPathToImage : MarkdownTest
 {

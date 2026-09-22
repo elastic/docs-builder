@@ -8,7 +8,7 @@ using Elastic.Documentation.AppliesTo;
 // Alias needed: file namespace contains 'Applicability' as a segment, which shadows the type.
 using Applicab = Elastic.Documentation.AppliesTo.Applicability;
 
-namespace Elastic.Authoring.Tests.Applicability.AppliesToFrontMatter;
+namespace Elastic.Authoring.Tests.Applicability;
 
 // Helper: wraps YAML under applies_to: in a document front matter
 static file class FrontMatter

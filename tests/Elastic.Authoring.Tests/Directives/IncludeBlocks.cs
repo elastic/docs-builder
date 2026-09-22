@@ -4,7 +4,7 @@
 
 using AwesomeAssertions;
 
-namespace Elastic.Authoring.Tests.Directives.IncludeBlocks;
+namespace Elastic.Authoring.Tests.Directives;
 
 public class IncludeHoistsAnchorsAndTableOfContents : GeneratorTest
 {

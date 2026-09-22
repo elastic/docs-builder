@@ -2,7 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-namespace Elastic.Authoring.Tests.Blocks.PageCards;
+namespace Elastic.Authoring.Tests.Blocks;
 
 // {page-card} moved onto the shared DirectiveLinkValidator. These tests pin the contract it
 // had before that move: relative links resolve against the source file, and no file-existence

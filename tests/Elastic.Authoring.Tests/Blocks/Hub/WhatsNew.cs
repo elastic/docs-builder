@@ -2,7 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-namespace Elastic.Authoring.Tests.Blocks.Hub.WhatsNew;
+namespace Elastic.Authoring.Tests.Blocks.Hub;
 
 // The :product: path reads hub-whats-new.yml from the documentation set root. The authoring
 // harness builds from a temporary set with no such file, so these cover the inline-body path

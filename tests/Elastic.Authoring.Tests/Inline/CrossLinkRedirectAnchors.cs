@@ -4,7 +4,7 @@
 
 using Elastic.Authoring.Tests.Framework;
 
-namespace Elastic.Authoring.Tests.Inline.CrossLinkRedirectAnchors;
+namespace Elastic.Authoring.Tests.Inline;
 
 public class Scenario1ComplexRedirectMappingWithAnchorDropping
 {

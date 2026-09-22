@@ -8,7 +8,7 @@ using Elastic.Documentation.AppliesTo;
 // Alias needed: file namespace contains 'AppliesToDirective' as a segment, which shadows the type.
 using AppliesToDirectiveType = Elastic.Markdown.Myst.Directives.AppliesTo.AppliesToDirective;
 
-namespace Elastic.Authoring.Tests.Applicability.AppliesToDirective;
+namespace Elastic.Authoring.Tests.Applicability;
 
 public class PiggyBackOffYamlFormatting : MarkdownTest
 {

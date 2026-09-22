@@ -2,7 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-namespace Elastic.Authoring.Tests.Blocks.Hub.CardsAndExplore;
+namespace Elastic.Authoring.Tests.Blocks.Hub;
 
 // {card-group} and {link-card} render two ways. Which one is decided entirely by whether an
 // {explore} ancestor is present, not by any option. These tests pin both modes and the

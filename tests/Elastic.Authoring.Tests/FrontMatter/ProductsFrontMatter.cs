@@ -4,7 +4,7 @@
 
 using AwesomeAssertions;
 
-namespace Elastic.Authoring.Tests.FrontMatter.ProductsFrontMatter;
+namespace Elastic.Authoring.Tests.FrontMatter;
 
 static file class FrontMatterHelper
 {

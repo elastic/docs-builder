@@ -5,7 +5,7 @@
 using AwesomeAssertions;
 using Elastic.Markdown.Myst.InlineParsers;
 
-namespace Elastic.Authoring.Tests.Inline.InlineAnchors;
+namespace Elastic.Authoring.Tests.Inline;
 
 public class InlineAnchorInTheMiddle : MarkdownTest
 {

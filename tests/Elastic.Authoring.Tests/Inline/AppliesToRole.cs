@@ -6,7 +6,7 @@ using AwesomeAssertions;
 using Elastic.Documentation.AppliesTo;
 using AppliesToRole = Elastic.Markdown.Myst.Roles.AppliesTo.AppliesToRole;
 
-namespace Elastic.Authoring.Tests.Inline.AppliesToRoleTests;
+namespace Elastic.Authoring.Tests.Inline;
 
 public class ParsesInlineAppliesToRole : MarkdownTest
 {
