@@ -6,6 +6,7 @@ using Markdig.Syntax.Inlines;
 
 namespace Elastic.Markdown.Tests.Inline;
 
+[InheritsTests]
 public class InlineImageTest() : InlineTest<LinkInline>("""
 ![Elasticsearch](/_static/img/observability.png)
 """)
@@ -19,6 +20,7 @@ public class InlineImageTest() : InlineTest<LinkInline>("""
 		Html.ShouldContainHtml("""<p><img src="/docs/_static/img/observability.png" alt="Elasticsearch" title="Elasticsearch" /></p>""");
 }
 
+[InheritsTests]
 public class RelativeInlineImageTest() : InlineTest<LinkInline>("""
 ![Elasticsearch](_static/img/observability.png)
 """)
@@ -33,6 +35,7 @@ public class RelativeInlineImageTest() : InlineTest<LinkInline>("""
 }
 
 // Test image sizing with space before =
+[InheritsTests]
 public class InlineImageWithSizingSpaceBeforeTest() : InlineTest<LinkInline>(
 	"""
 ![Elasticsearch](/_static/img/observability.png " =50%")
@@ -51,6 +54,7 @@ public class InlineImageWithSizingSpaceBeforeTest() : InlineTest<LinkInline>(
 }
 
 // Test image sizing without space before =
+[InheritsTests]
 public class InlineImageWithSizingNoSpaceBeforeTest() : InlineTest<LinkInline>(
 	"""
 ![Elasticsearch](/_static/img/observability.png "=50%")
@@ -69,6 +73,7 @@ public class InlineImageWithSizingNoSpaceBeforeTest() : InlineTest<LinkInline>(
 }
 
 // Test image sizing with pixels
+[InheritsTests]
 public class InlineImageWithPixelSizingTest() : InlineTest<LinkInline>("""
 ![Elasticsearch](/_static/img/observability.png "=250x330")
 """)
@@ -85,6 +90,7 @@ public class InlineImageWithPixelSizingTest() : InlineTest<LinkInline>("""
 }
 
 // Test image sizing with title and sizing — explicit title in markdown is ignored; alt text is always used as title
+[InheritsTests]
 public class InlineImageWithTitleAndSizingTest() : InlineTest<LinkInline>(
 	"""
 ![Elasticsearch](/_static/img/observability.png "My Title =50%")
@@ -103,6 +109,7 @@ public class InlineImageWithTitleAndSizingTest() : InlineTest<LinkInline>(
 }
 
 // Test image sizing with width only
+[InheritsTests]
 public class InlineImageWithWidthOnlyTest() : InlineTest<LinkInline>("""
 ![Elasticsearch](/_static/img/observability.png "=250")
 """)

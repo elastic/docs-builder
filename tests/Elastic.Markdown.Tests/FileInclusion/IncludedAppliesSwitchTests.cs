@@ -13,6 +13,7 @@ namespace Elastic.Markdown.Tests.FileInclusion;
 /// Tests that when the same snippet containing applies-switch is included multiple times,
 /// each include generates unique IDs to avoid HTML ID collisions.
 /// </summary>
+[InheritsTests]
 public class IncludedAppliesSwitchTests() : DirectiveTest<IncludeBlock>(
 	"""
 :::{include} _snippets/applies-switch.md
@@ -63,6 +64,7 @@ Content for Serverless
 /// <summary>
 /// Tests that a snippet with multiple applies-switches generates unique IDs for each one.
 /// </summary>
+[InheritsTests]
 public class IncludedMultipleAppliesSwitchTests() : DirectiveTest<IncludeBlock>("""
 :::{include} _snippets/multi-applies-switch.md
 :::

@@ -8,6 +8,7 @@ using Elastic.Markdown.Myst.InlineParsers.Substitution;
 
 namespace Elastic.Markdown.Tests.Inline;
 
+[InheritsTests]
 public class SubstitutionTest() : LeafTest<SubstitutionLeaf>(
 	"""
 ---
@@ -56,6 +57,7 @@ not a {substitution}
 			.Contain("""{{valid-key}}""");
 }
 
+[InheritsTests]
 public class SubstitutionInCodeBlockTest() : BlockTest<EnhancedCodeBlock>(
 	"""
 ---
@@ -319,6 +321,7 @@ sub:
 	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
 }
 
+[InheritsTests]
 public class MutationOperatorsInCodeBlocksTest() : BlockTest<EnhancedCodeBlock>(
 	"""
 ---

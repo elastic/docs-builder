@@ -10,6 +10,7 @@ using Elastic.Markdown.Tests.Directives;
 
 namespace Elastic.Markdown.Tests.FileInclusion;
 
+[InheritsTests]
 public class LiteralIncludeUsingPropertyTests() : DirectiveTest<IncludeBlock>("""
 :::{include} _snippets/test.txt
 :literal: true
@@ -30,6 +31,7 @@ public class LiteralIncludeUsingPropertyTests() : DirectiveTest<IncludeBlock>(""
 	public void IncludesInclusionHtml() => Html.Should().Be("*Hello world*");
 }
 
+[InheritsTests]
 public class LiteralIncludeTests() : DirectiveTest<IncludeBlock>("""
 :::{literalinclude} _snippets/test.md
 :::
@@ -49,6 +51,7 @@ public class LiteralIncludeTests() : DirectiveTest<IncludeBlock>("""
 	public void IncludesInclusionHtml() => Html.Should().Be("*Hello world*");
 }
 
+[InheritsTests]
 public class LiteralIncludeRelativeTraversalBlocked() : DirectiveTest<IncludeBlock>("""
 :::{literalinclude} ../../../outside.txt
 :::
@@ -67,6 +70,7 @@ public class LiteralIncludeRelativeTraversalBlocked() : DirectiveTest<IncludeBlo
 	}
 }
 
+[InheritsTests]
 public class LiteralIncludeAbsoluteTraversalBlocked() : DirectiveTest<IncludeBlock>("""
 :::{literalinclude} /../../../outside.txt
 :::
@@ -85,6 +89,7 @@ public class LiteralIncludeAbsoluteTraversalBlocked() : DirectiveTest<IncludeBlo
 	}
 }
 
+[InheritsTests]
 public class LiteralIncludeHiddenDirectoryBlocked() : DirectiveTest<IncludeBlock>("""
 :::{literalinclude} .config/data.txt
 :::

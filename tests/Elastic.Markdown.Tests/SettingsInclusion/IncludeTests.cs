@@ -11,6 +11,7 @@ using Elastic.Markdown.Tests.Directives;
 
 namespace Elastic.Markdown.Tests.SettingsInclusion;
 
+[InheritsTests]
 public class IncludeTests() : DirectiveTest<SettingsBlock>(
 	$$"""
 :::{settings} /{{SettingsPath.Replace("docs/", "")}}
@@ -38,6 +39,7 @@ public class IncludeTests() : DirectiveTest<SettingsBlock>(
 	public void IncludesInclusionHtml() => Html.Should().Contain("xpack.encryptedSavedObjects.encryptionKey");
 }
 
+[InheritsTests]
 public class RandomFileEmitsAnError() : DirectiveTest<SettingsBlock>("""
 :::{settings} _snippets/test.md
 :::
@@ -60,6 +62,7 @@ public class RandomFileEmitsAnError() : DirectiveTest<SettingsBlock>("""
 	}
 }
 
+[InheritsTests]
 public class NewSchemaRendersMetadataAndNestedSettings() : DirectiveTest<SettingsBlock>("""
 :::{settings} _settings/new-schema.yml
 :::
@@ -117,6 +120,7 @@ groups:
 	public void NestedSettingAnchorIncludesParentPrefix() => Html.Should().Contain("id=\"xpack-actions-customhostsettingsn-url\"");
 }
 
+[InheritsTests]
 public class LegacySourceBlocksRenderAsMarkdownCode() : DirectiveTest<SettingsBlock>("""
 :::{settings} _settings/legacy-source.yml
 :::
@@ -152,6 +156,7 @@ groups:
 	}
 }
 
+[InheritsTests]
 public class SettingsTopMatterAndTitlesRender() : DirectiveTest<SettingsBlock>("""
 :::{settings} _settings/top-matter.yml
 ::::
@@ -190,6 +195,7 @@ groups:
 	}
 }
 
+[InheritsTests]
 public class SettingsApplicabilityRowsPreferUsefulBadges() : DirectiveTest<SettingsBlock>(
 	"""
 :::{settings} _settings/applicability-rows.yml
@@ -254,6 +260,7 @@ groups:
 /// - console.ui.enabled        → ech: unavailable, self: ga → ECH hidden
 /// Settings with no applies_to at all (universally available) are also visible.
 /// </summary>
+[InheritsTests]
 public class DeploymentFilterEchOnKibanaGeneralSettings() : DirectiveTest<SettingsBlock>(
 	$$"""
 :::{settings} /{{GeneralSettingsPath.Replace("docs/", "")}}
@@ -283,6 +290,7 @@ public class DeploymentFilterEchOnKibanaGeneralSettings() : DirectiveTest<Settin
 /// it must be treated as unavailable for ECH — "missing means unavailable".
 /// Uses the real kibana-general-settings.yml which has self-only and ech:unavailable patterns.
 /// </summary>
+[InheritsTests]
 public class DeploymentFilterEchMissingMeansUnavailable() : DirectiveTest<SettingsBlock>(
 	"""
 :::{settings} _settings/self-only.yml
@@ -325,6 +333,7 @@ groups:
 	public void ShowsSettingWithNoAppliesTo() => Html.Should().Contain("no.applies.to.setting");
 }
 
+[InheritsTests]
 public class DeploymentFilterWithUnknownValueEmitsWarning() : DirectiveTest<SettingsBlock>(
 	$$"""
 :::{settings} /{{GeneralSettingsPath.Replace("docs/", "")}}
@@ -350,6 +359,7 @@ public class DeploymentFilterWithUnknownValueEmitsWarning() : DirectiveTest<Sett
 	public void StillRendersAllSettingsWhenFilterIsInvalid() => Html.Should().Contain("execution_context.enabled");
 }
 
+[InheritsTests]
 public class AppliesToInlineRoleInDescriptionRendersAsBadge() : DirectiveTest<SettingsBlock>(
 	"""
 :::{settings} _settings/applies-to-in-description.yml
@@ -392,6 +402,7 @@ groups:
 /// The test stack current is 8.0.0 (see <see cref="TestHelpers.CreateConfigurationContext"/>),
 /// so <c>stack: ga 9.5</c> is unreleased.
 /// </summary>
+[InheritsTests]
 public class HidesSupportedOnLineWhenStackIsFullyPlanned() : DirectiveTest<SettingsBlock>(
 	"""
 :::{settings} _settings/stack-fully-planned.yml
@@ -440,6 +451,7 @@ groups:
 /// A setting whose stack is released today (<c>stack: ga 7.0</c> with test current 8.0.0)
 /// must continue to render the "Supported on" line with ECH and Self-managed badges.
 /// </summary>
+[InheritsTests]
 public class KeepsSupportedOnLineWhenStackIsReleased() : DirectiveTest<SettingsBlock>(
 	"""
 :::{settings} _settings/stack-released.yml
@@ -480,6 +492,7 @@ groups:
 /// (e.g. <c>stack: ga 7.0, deprecated 9.0</c>) is still usable today,
 /// so the "Supported on" line must remain visible.
 /// </summary>
+[InheritsTests]
 public class KeepsSupportedOnLineWhenStackHasMixedReleaseAndFutureVersions() : DirectiveTest<SettingsBlock>(
 	"""
 :::{settings} _settings/stack-mixed-versions.yml

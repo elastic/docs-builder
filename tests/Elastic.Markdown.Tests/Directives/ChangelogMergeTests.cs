@@ -12,6 +12,7 @@ namespace Elastic.Markdown.Tests.Directives;
 /// Tests for automatic merging of bundles with the same target version/date.
 /// Merging is now the default behavior (no longer requires `:merge:` option).
 /// </summary>
+[InheritsTests]
 public class ChangelogMergeSameTargetTests : DirectiveTest<ChangelogBlock>
 {
 	public ChangelogMergeSameTargetTests() : base(
@@ -192,6 +193,7 @@ public class ChangelogMergeSameTargetTests : DirectiveTest<ChangelogBlock>
 /// <summary>
 /// Tests that bundles with different target versions remain separate (not merged).
 /// </summary>
+[InheritsTests]
 public class ChangelogMergeDifferentTargetsTests : DirectiveTest<ChangelogBlock>
 {
 	public ChangelogMergeDifferentTargetsTests() : base(
@@ -294,6 +296,7 @@ public class ChangelogMergeDifferentTargetsTests : DirectiveTest<ChangelogBlock>
 /// <summary>
 /// Tests that merging works correctly with a single bundle (no actual merge needed).
 /// </summary>
+[InheritsTests]
 public class ChangelogMergeSingleBundleTests : DirectiveTest<ChangelogBlock>
 {
 	public ChangelogMergeSingleBundleTests() : base(
@@ -350,6 +353,7 @@ public class ChangelogMergeSingleBundleTests : DirectiveTest<ChangelogBlock>
 /// <summary>
 /// Tests that merging preserves sort order when bundles have both semver and date-based versions.
 /// </summary>
+[InheritsTests]
 public class ChangelogMergeMixedVersionTypesTests : DirectiveTest<ChangelogBlock>
 {
 	public ChangelogMergeMixedVersionTypesTests() : base(

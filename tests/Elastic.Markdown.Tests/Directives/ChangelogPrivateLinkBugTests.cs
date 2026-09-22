@@ -12,6 +12,7 @@ namespace Elastic.Markdown.Tests.Directives;
 /// Tests for the bug where entries with only PRIVATE PR/issue references
 /// produce incomplete "For more information, check." sentences.
 /// </summary>
+[InheritsTests]
 public class ChangelogPrivateLinkBugTests : DirectiveTest<ChangelogBlock>
 {
 	public ChangelogPrivateLinkBugTests() : base(
@@ -78,6 +79,7 @@ public class ChangelogPrivateLinkBugTests : DirectiveTest<ChangelogBlock>
 /// <summary>
 /// Test mixed scenarios with both private and public links
 /// </summary>
+[InheritsTests]
 public class ChangelogMixedLinkBugTests : DirectiveTest<ChangelogBlock>
 {
 	public ChangelogMixedLinkBugTests() : base(
@@ -135,6 +137,7 @@ public class ChangelogMixedLinkBugTests : DirectiveTest<ChangelogBlock>
 /// <summary>
 /// Test entries with no PR/issue references at all
 /// </summary>
+[InheritsTests]
 public class ChangelogNoLinksTests : DirectiveTest<ChangelogBlock>
 {
 	public ChangelogNoLinksTests() : base(

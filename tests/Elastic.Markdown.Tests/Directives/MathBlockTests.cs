@@ -8,6 +8,7 @@ using Elastic.Markdown.Myst.Directives.Math;
 
 namespace Elastic.Markdown.Tests.Directives;
 
+[InheritsTests]
 public class MathBlockTests() : DirectiveTest<MathBlock>("""
 :::{math}
 E = mc^2
@@ -30,6 +31,7 @@ E = mc^2
 	public void RendersMathSpan() => Html.Should().Contain("<span class=\"math\">E = mc^2</span>");
 }
 
+[InheritsTests]
 public class MathBlockDisplayMathTests() : DirectiveTest<MathBlock>(
 	"""
 :::{math}
@@ -53,6 +55,7 @@ public class MathBlockDisplayMathTests() : DirectiveTest<MathBlock>(
 	public void RendersDisplayMathDiv() => Html.Should().Contain("<div class=\"math\">");
 }
 
+[InheritsTests]
 public class MathBlockWithLabelTests() : DirectiveTest<MathBlock>("""
 :::{math}
 :label: einstein-mass-energy
@@ -70,6 +73,7 @@ E = mc^2
 	public void RendersWithId() => Html.Should().Contain("id=\"einstein-mass-energy\"");
 }
 
+[InheritsTests]
 public class MathBlockEmptyTests() : DirectiveTest<MathBlock>("""
 :::{math}
 :::
@@ -87,6 +91,7 @@ public class MathBlockEmptyTests() : DirectiveTest<MathBlock>("""
 	}
 }
 
+[InheritsTests]
 public class MathBlockComplexExpressionTests() : DirectiveTest<MathBlock>(
 	"""
 :::{math}

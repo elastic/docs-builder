@@ -10,6 +10,7 @@ using Elastic.Markdown.Myst.Directives.CsvInclude;
 
 namespace Elastic.Markdown.Tests.Directives;
 
+[InheritsTests]
 public class CsvIncludeTests : DirectiveTest<CsvIncludeBlock>
 {
 	public CsvIncludeTests() : base("""
@@ -56,6 +57,7 @@ Bob Johnson,35,Chicago")
 	public void UsesCommaAsDefaultSeparator() => Block!.Separator.Should().Be(",");
 }
 
+[InheritsTests]
 public class CsvIncludeWithOptionsTests : DirectiveTest<CsvIncludeBlock>
 {
 	public CsvIncludeWithOptionsTests() : base("""
@@ -89,6 +91,7 @@ Jane Smith;25;Los Angeles"));
 	}
 }
 
+[InheritsTests]
 public class CsvIncludeWithQuotesTests : DirectiveTest<CsvIncludeBlock>
 {
 	public CsvIncludeWithQuotesTests() : base("""
@@ -119,6 +122,7 @@ Jane Smith,""Product Manager, Lead"",Los Angeles"
 	}
 }
 
+[InheritsTests]
 public class CsvIncludeWithEscapedQuotesTests : DirectiveTest<CsvIncludeBlock>
 {
 	public CsvIncludeWithEscapedQuotesTests() : base("""
@@ -187,6 +191,7 @@ public class CsvIncludeWithHtmlBreaksTests() : DirectiveTest("""
 	}
 }
 
+[InheritsTests]
 public class CsvIncludeNotFoundTests() : DirectiveTest<CsvIncludeBlock>("""
 :::{csv-include} missing-file.csv
 :::
@@ -203,6 +208,7 @@ public class CsvIncludeNotFoundTests() : DirectiveTest<CsvIncludeBlock>("""
 	}
 }
 
+[InheritsTests]
 public class CsvIncludeNoArgumentTests() : DirectiveTest<CsvIncludeBlock>("""
 :::{csv-include}
 :::

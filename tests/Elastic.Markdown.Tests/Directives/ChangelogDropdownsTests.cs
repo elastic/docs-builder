@@ -14,6 +14,7 @@ namespace Elastic.Markdown.Tests.Directives;
 /// are rendered as flattened bulleted lists.
 /// With :dropdowns:, they render as Myst dropdown sections.
 /// </summary>
+[InheritsTests]
 public class ChangelogDropdownsDefaultTests : DirectiveTest<ChangelogBlock>
 {
 	public ChangelogDropdownsDefaultTests() : base(
@@ -95,6 +96,7 @@ public class ChangelogDropdownsDefaultTests : DirectiveTest<ChangelogBlock>
 /// <summary>
 /// Tests for explicit :dropdowns: - should render separated types as Myst dropdown sections.
 /// </summary>
+[InheritsTests]
 public class ChangelogDropdownsEnabledTests : DirectiveTest<ChangelogBlock>
 {
 	public ChangelogDropdownsEnabledTests() : base(
@@ -159,6 +161,7 @@ public class ChangelogDropdownsEnabledTests : DirectiveTest<ChangelogBlock>
 /// <summary>
 /// Tests interaction between :dropdowns: and :description-visibility: for flattened rendering.
 /// </summary>
+[InheritsTests]
 public class ChangelogDropdownsWithHiddenDescriptionsTests : DirectiveTest<ChangelogBlock>
 {
 	public ChangelogDropdownsWithHiddenDescriptionsTests() : base(
@@ -212,6 +215,7 @@ public class ChangelogDropdownsWithHiddenDescriptionsTests : DirectiveTest<Chang
 /// <summary>
 /// Tests interaction between :dropdowns: and :description-visibility: for dropdown rendering.
 /// </summary>
+[InheritsTests]
 public class ChangelogDropdownsEnabledWithHiddenDescriptionsTests : DirectiveTest<ChangelogBlock>
 {
 	public ChangelogDropdownsEnabledWithHiddenDescriptionsTests() : base(
@@ -267,6 +271,7 @@ public class ChangelogDropdownsEnabledWithHiddenDescriptionsTests : DirectiveTes
 /// <summary>
 /// Tests that :dropdowns: works with different separated types (deprecations, known issues).
 /// </summary>
+[InheritsTests]
 public class ChangelogDropdownsWithDifferentTypesTests : DirectiveTest<ChangelogBlock>
 {
 	public ChangelogDropdownsWithDifferentTypesTests() : base(
@@ -347,6 +352,7 @@ public class ChangelogDropdownsWithDifferentTypesTests : DirectiveTest<Changelog
 /// <summary>
 /// Tests that :dropdowns: works with different separated types using explicit dropdown rendering.
 /// </summary>
+[InheritsTests]
 public class ChangelogDropdownsExplicitWithDifferentTypesTests : DirectiveTest<ChangelogBlock>
 {
 	public ChangelogDropdownsExplicitWithDifferentTypesTests() : base(
@@ -419,6 +425,7 @@ public class ChangelogDropdownsExplicitWithDifferentTypesTests : DirectiveTest<C
 /// <summary>
 /// Changelog-generated dropdown titles pass through the dropdown parser, which strips inline markdown markers.
 /// </summary>
+[InheritsTests]
 public class ChangelogDropdownsPlainTextTitleTests : DirectiveTest<ChangelogBlock>
 {
 	public ChangelogDropdownsPlainTextTitleTests() : base(

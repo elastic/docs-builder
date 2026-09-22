@@ -8,6 +8,7 @@ using Elastic.Markdown.Myst.Directives;
 
 namespace Elastic.Markdown.Tests.Directives;
 
+[InheritsTests]
 public abstract class UnsupportedDirectiveTests(string directive) : DirectiveTest<UnsupportedDirectiveBlock>(
 	$$"""
 Content before bad directive
@@ -37,20 +38,29 @@ A regular paragraph.
 	}
 }
 
+[InheritsTests]
 public class BibliographyDirectiveTests() : UnsupportedDirectiveTests("bibliography");
 
+[InheritsTests]
 public class BlockQuoteDirectiveTests() : UnsupportedDirectiveTests("blockquote");
 
+[InheritsTests]
 public class FrameDirectiveTests() : UnsupportedDirectiveTests("iframe");
 
+[InheritsTests]
 public class CsvTableDirectiveTests() : UnsupportedDirectiveTests("csv-table");
 
+[InheritsTests]
 public class MystDirectiveDirectiveTests() : UnsupportedDirectiveTests("myst");
 
+[InheritsTests]
 public class TopicDirectiveTests() : UnsupportedDirectiveTests("topic");
 
+[InheritsTests]
 public class ExerciseDirectiveTest() : UnsupportedDirectiveTests("exercise");
 
+[InheritsTests]
 public class SolutionDirectiveTests() : UnsupportedDirectiveTests("solution");
 
+[InheritsTests]
 public class TocTreeDirectiveTests() : UnsupportedDirectiveTests("solution");

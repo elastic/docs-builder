@@ -15,6 +15,7 @@ namespace Elastic.Markdown.Tests.Directives;
 /// The version heading anchor must therefore be the Slugify of the display name
 /// ("november-2025"), NOT the raw key ("2025-11").
 /// </summary>
+[InheritsTests]
 public class ChangelogYearMonthAnchorNavigationTests : DirectiveTest<ChangelogBlock>
 {
 	public ChangelogYearMonthAnchorNavigationTests() : base(
@@ -119,6 +120,7 @@ public class ChangelogYearMonthAnchorNavigationTests : DirectiveTest<ChangelogBl
 /// Full-date versions display as "Month D, Year" (e.g. "August 5, 2025").
 /// The version heading anchor must be the Slugify of that display name ("august-5-2025").
 /// </summary>
+[InheritsTests]
 public class ChangelogFullDateAnchorNavigationTests : DirectiveTest<ChangelogBlock>
 {
 	public ChangelogFullDateAnchorNavigationTests() : base(
@@ -200,6 +202,7 @@ public class ChangelogFullDateAnchorNavigationTests : DirectiveTest<ChangelogBlo
 /// dashes.  The TOC slug and heading-wrapper id must therefore both be "9-3-0",
 /// not "9.3.0".
 /// </summary>
+[InheritsTests]
 public class ChangelogSemverAnchorNavigationTests : DirectiveTest<ChangelogBlock>
 {
 	public ChangelogSemverAnchorNavigationTests() : base(
@@ -302,6 +305,7 @@ public class ChangelogSemverAnchorNavigationTests : DirectiveTest<ChangelogBlock
 /// as both the display text and the slug base.  Slugify should preserve safe
 /// characters (alphanumeric + hyphens) so the TOC slug and HTML id agree.
 /// </summary>
+[InheritsTests]
 public class ChangelogRawVersionAnchorNavigationTests : DirectiveTest<ChangelogBlock>
 {
 	public ChangelogRawVersionAnchorNavigationTests() : base(
@@ -371,6 +375,7 @@ public class ChangelogRawVersionAnchorNavigationTests : DirectiveTest<ChangelogB
 /// version-level and sub-section-level TOC item must independently link to a
 /// real heading in the HTML.  This is the end-to-end "right-nav works" check.
 /// </summary>
+[InheritsTests]
 public class ChangelogMultiVersionAnchorNavigationTests : DirectiveTest<ChangelogBlock>
 {
 	public ChangelogMultiVersionAnchorNavigationTests() : base(

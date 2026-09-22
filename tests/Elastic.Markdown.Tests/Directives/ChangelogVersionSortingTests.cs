@@ -8,6 +8,7 @@ using Elastic.Markdown.Myst.Directives.Changelog;
 
 namespace Elastic.Markdown.Tests.Directives;
 
+[InheritsTests]
 public class ChangelogDateVersionedBundlesTests : DirectiveTest<ChangelogBlock>
 {
 	public ChangelogDateVersionedBundlesTests() : base(
@@ -112,6 +113,7 @@ public class ChangelogDateVersionedBundlesTests : DirectiveTest<ChangelogBlock>
 	}
 }
 
+[InheritsTests]
 public class ChangelogMixedVersionTypesTests : DirectiveTest<ChangelogBlock>
 {
 	public ChangelogMixedVersionTypesTests() : base(
@@ -251,6 +253,7 @@ public class ChangelogMixedVersionTypesTests : DirectiveTest<ChangelogBlock>
 /// Verifies that headings render as "Month Year" (e.g., "December 2025") and that
 /// slugs/anchors retain the original yyyy-MM format.
 /// </summary>
+[InheritsTests]
 public class ChangelogYearMonthVersionTests : DirectiveTest<ChangelogBlock>
 {
 	public ChangelogYearMonthVersionTests() : base(
@@ -403,6 +406,7 @@ public class ChangelogYearMonthVersionTests : DirectiveTest<ChangelogBlock>
 	}
 }
 
+[InheritsTests]
 public class ChangelogRawVersionFallbackTests : DirectiveTest<ChangelogBlock>
 {
 	public ChangelogRawVersionFallbackTests() : base(

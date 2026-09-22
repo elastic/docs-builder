@@ -10,6 +10,7 @@ using JetBrains.Annotations;
 
 namespace Elastic.Markdown.Tests.CodeBlocks;
 
+[InheritsTests]
 public abstract class CodeBlockCallOutTests(
 	string language,
 	[LanguageInjection("csharp")] string code,
@@ -30,6 +31,7 @@ public abstract class CodeBlockCallOutTests(
 	public void SetsLanguage() => Block!.Language.Should().Be("csharp");
 }
 
+[InheritsTests]
 public class MagicCalOuts() : CodeBlockCallOutTests(
 	"csharp",
 	"""
@@ -48,6 +50,7 @@ var z = y - 2; // another callout
 	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
 }
 
+[InheritsTests]
 public class MagicCallOutWithFormatting() : CodeBlockCallOutTests(
 	"csharp",
 	"""
@@ -72,6 +75,7 @@ var x = 1; // this uses `formatting` and a [link](testing/req.md)
 	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
 }
 
+[InheritsTests]
 public class ClassicCallOutsRequiresContent() : CodeBlockCallOutTests("csharp", """
 var x = 1; <1>
 var y = x - 2;
@@ -92,6 +96,7 @@ var z = y - 2; <2>
 			.OnlyContain(c => c.Message.StartsWith("Code block with annotations is not followed by any content"));
 }
 
+[InheritsTests]
 public class ClassicCallOutsNotFollowedByList() : CodeBlockCallOutTests(
 	"csharp",
 	"""
@@ -118,6 +123,7 @@ var z = y - 2; <2>
 			.OnlyContain(c => c.Message.StartsWith("Code block with annotations is not followed by a list"));
 }
 
+[InheritsTests]
 public class ClassicCallOutsFollowedByAListWithOneParagraph() : CodeBlockCallOutTests(
 	"csharp",
 	"""
@@ -162,6 +168,7 @@ var z = y - 2; <2>
 	public void AllowsAParagraphInBetween() => Collector.Diagnostics.Should().BeEmpty();
 }
 
+[InheritsTests]
 public class ClassicCallOutsFollowedByListButWithTwoParagraphs() : CodeBlockCallOutTests(
 	"csharp",
 	"""
@@ -194,6 +201,7 @@ BLOCK TWO
 			.OnlyContain(c => c.Message.StartsWith("More than one content block between code block with annotations and its list"));
 }
 
+[InheritsTests]
 public class ClassicCallOutsFollowedByListWithWrongCoung() : CodeBlockCallOutTests(
 	"csharp",
 	"""
@@ -220,6 +228,7 @@ var z = y - 2; <2>
 			.OnlyContain(c => c.Message.StartsWith("Code block has 2 callouts but the following list only has 1"));
 }
 
+[InheritsTests]
 public class ClassicCallOutsReuseHighlights() : CodeBlockCallOutTests(
 	"csharp",
 	"""
@@ -245,6 +254,7 @@ var z = y - 2; <2>
 	public void RequiresContentToFollow() => Collector.Diagnostics.Should().BeEmpty();
 }
 
+[InheritsTests]
 public class ClassicCallOutWithTheRightListItems() : CodeBlockCallOutTests(
 	"csharp",
 	"""
@@ -312,6 +322,7 @@ service:
 	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
 }
 
+[InheritsTests]
 public class MultipleCalloutsInOneLine() : CodeBlockCallOutTests(
 	"csharp",
 	"""
@@ -333,6 +344,7 @@ public class MultipleCalloutsInOneLine() : CodeBlockCallOutTests(
 	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
 }
 
+[InheritsTests]
 public class CodeBlockWithChevronInsideCode() : CodeBlockCallOutTests(
 	"csharp",
 	"""
@@ -357,6 +369,7 @@ public class CodeBlockWithChevronInsideCode() : CodeBlockCallOutTests(
 	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
 }
 
+[InheritsTests]
 public class CodeBlockWithCommentBlocksThenList() : CodeBlockCallOutTests(
 	"csharp",
 	"""
@@ -392,6 +405,7 @@ var z = y - 2; <2>
 		);
 }
 
+[InheritsTests]
 public class CodeBlockWithMultipleCommentTypesThenList() : CodeBlockCallOutTests(
 	"csharp",
 	"""
@@ -415,6 +429,7 @@ var z = y - 2; <2>
 	public void HandlesCommentBlocksCorrectly() => Collector.Diagnostics.Should().BeEmpty();
 }
 
+[InheritsTests]
 public class CodeBlockWithCommentBlocksParagraphThenList() : CodeBlockCallOutTests(
 	"csharp",
 	"""
@@ -452,6 +467,7 @@ var z = y - 2; <2>
 		);
 }
 
+[InheritsTests]
 public class CodeBlockWithCommentBlocksTwoParagraphsThenList() : CodeBlockCallOutTests(
 	"csharp",
 	"""
@@ -484,6 +500,7 @@ var z = y - 2; <2>
 			.OnlyContain(c => c.Message.StartsWith("More than one content block between code block with annotations and its list"));
 }
 
+[InheritsTests]
 public class CodeBlockWithManyCommentBlocksNoList() : CodeBlockCallOutTests(
 	"csharp",
 	"""
@@ -511,6 +528,7 @@ var z = y - 2; <2>
 			.OnlyContain(c => c.Message.StartsWith("Code block with annotations is not followed by a list"));
 }
 
+[InheritsTests]
 public class CodeBlockWithCommentsAfterList() : CodeBlockCallOutTests(
 	"csharp",
 	"""

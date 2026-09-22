@@ -11,6 +11,7 @@ using Elastic.Markdown.Tests.Directives;
 
 namespace Elastic.Markdown.Tests.FileInclusion;
 
+[InheritsTests]
 public class IncludeHeadingOrderTests() : DirectiveTest<IncludeBlock>(
 	"""
 ## One
@@ -67,6 +68,7 @@ public class IncludeHeadingOrderTests() : DirectiveTest<IncludeBlock>(
 	}
 }
 
+[InheritsTests]
 public class IncludeBeforeHeadingsOrderTests() : DirectiveTest<IncludeBlock>(
 	"""
 :::{include} _snippets/test.md
@@ -127,6 +129,7 @@ public class IncludeBeforeHeadingsOrderTests() : DirectiveTest<IncludeBlock>(
 	}
 }
 
+[InheritsTests]
 public class IncludeInMiddleOfHeadingsOrderTests() : DirectiveTest<IncludeBlock>(
 	"""
 ## One
@@ -201,6 +204,7 @@ public class IncludeInMiddleOfHeadingsOrderTests() : DirectiveTest<IncludeBlock>
 	}
 }
 
+[InheritsTests]
 public class IncludeWithStepperOrderTests() : DirectiveTest<IncludeBlock>(
 	"""
 ## One
@@ -285,6 +289,7 @@ Content for step seven.
 	}
 }
 
+[InheritsTests]
 public class StepperBeforeIncludeOrderTests() : DirectiveTest<IncludeBlock>(
 	"""
 :::::{stepper}
@@ -366,6 +371,7 @@ Another step from included content.
 /// Tests that stepper steps in included snippets inherit the correct heading level
 /// from the parent document's context. This is the key test for the DocumentTraversal fix.
 /// </summary>
+[InheritsTests]
 public class StepperInIncludeHeadingLevelTests() : DirectiveTest<IncludeBlock>(
 	"""
 ## Main Heading
@@ -431,6 +437,7 @@ Second step content.
 /// <summary>
 /// Tests stepper heading levels with a deeper heading context (### before include).
 /// </summary>
+[InheritsTests]
 public class StepperInIncludeWithH3ContextTests() : DirectiveTest<IncludeBlock>(
 	"""
 ## Main Heading
@@ -490,6 +497,7 @@ Step content.
 /// <summary>
 /// Tests stepper in snippet when there's no preceding heading (should default to h2).
 /// </summary>
+[InheritsTests]
 public class StepperInIncludeWithNoHeadingContextTests() : DirectiveTest<IncludeBlock>(
 	"""
 :::{include} _snippets/stepper-snippet.md
@@ -537,6 +545,7 @@ No heading before this include.
 /// Tests that stepper steps in snippets respect their own snippet's heading structure
 /// and are NOT adjusted when the snippet has its own preceding heading.
 /// </summary>
+[InheritsTests]
 public class StepperInSnippetWithOwnHeadingTests() : DirectiveTest<IncludeBlock>(
 	"""
 ## Parent Heading
@@ -598,6 +607,7 @@ Step content.
 /// <summary>
 /// Tests that stepper steps are capped at h6 even when preceding heading would push them deeper.
 /// </summary>
+[InheritsTests]
 public class StepperInSnippetWithH6CappingTests() : DirectiveTest<IncludeBlock>(
 	"""
 ## H2
@@ -646,6 +656,7 @@ Step content.
 /// <summary>
 /// Tests multiple includes with different heading contexts to ensure each is adjusted independently.
 /// </summary>
+[InheritsTests]
 public class MultipleIncludesWithDifferentContextsTests() : DirectiveTest<IncludeBlock>(
 	"""
 ## First Section
@@ -724,6 +735,7 @@ Second step content.
 /// their heading levels based on preceding headings. This ensures our changes didn't break
 /// the existing behavior for steppers in the main document.
 /// </summary>
+[InheritsTests]
 public class StepperInMainDocumentTests() : DirectiveTest<StepperBlock>(
 	"""
 ## Main Heading
@@ -795,6 +807,7 @@ Step after h2 heading.
 /// Tests that a heading at the same level as a step is auto-adjusted to one level deeper
 /// and that a hint diagnostic is emitted pointing to the heading.
 /// </summary>
+[InheritsTests]
 public class StepperWithInternalHeadingAtSameLevelTests() : DirectiveTest<StepperBlock>(
 	"""
 ## Section
@@ -859,6 +872,7 @@ This step should still be at the same level as First Step.
 /// <summary>
 /// Tests that a heading already deeper than the step level is left untouched (no adjustment, no hint).
 /// </summary>
+[InheritsTests]
 public class StepperWithDeepInternalHeadingTests() : DirectiveTest<StepperBlock>(
 	"""
 ## Section
@@ -900,6 +914,7 @@ Already deeper than the step.
 /// <summary>
 /// Tests stepper steps at the beginning of a document (no preceding heading).
 /// </summary>
+[InheritsTests]
 public class StepperAtDocumentStartTests() : DirectiveTest<StepperBlock>(
 	"""
 :::::{stepper}
@@ -948,6 +963,7 @@ Another step at the beginning.
 /// This directly guards the single-pass position index: if the index is wrong, the stepper levels
 /// in the second include will reflect the first include's heading context instead of the correct one.
 /// </summary>
+[InheritsTests]
 public class MultipleIncludesInterleavedWithHeadingsTests() : DirectiveTest<IncludeBlock>(
 	"""
 ## Section A

@@ -9,6 +9,7 @@ using JetBrains.Annotations;
 
 namespace Elastic.Markdown.Tests.CodeBlocks;
 
+[InheritsTests]
 public abstract class ConsoleCodeBlockTests([LanguageInjection("markdown")] string markdown) : BlockTest<EnhancedCodeBlock>(markdown)
 {
 	[Test]
@@ -18,6 +19,7 @@ public abstract class ConsoleCodeBlockTests([LanguageInjection("markdown")] stri
 	public void SetsLanguage() => Block!.Language.Should().Be("json");
 }
 
+[InheritsTests]
 public class SingleConsoleApiCallTests() : ConsoleCodeBlockTests(
 	"""
 ```console
@@ -51,6 +53,7 @@ GET /mydocuments/_search
 	public void HasNoErrors() => Collector.Diagnostics.Should().BeEmpty();
 }
 
+[InheritsTests]
 public class MultipleConsoleApiCallsTests() : ConsoleCodeBlockTests(
 	"""
 ```console
@@ -101,6 +104,7 @@ POST /mydocuments/_doc
 	public void HasNoErrors() => Collector.Diagnostics.Should().BeEmpty();
 }
 
+[InheritsTests]
 public class ConsoleWithDifferentHttpVerbsTests() : ConsoleCodeBlockTests(
 	"""
 ```console
@@ -134,6 +138,7 @@ DELETE /api/users/123
 	public void HasNoErrors() => Collector.Diagnostics.Should().BeEmpty();
 }
 
+[InheritsTests]
 public class ConsoleWithCalloutsTests() : ConsoleCodeBlockTests(
 	"""
 ```console
@@ -167,6 +172,7 @@ POST /mydocuments/_doc
 	public void HasNoErrors() => Collector.Diagnostics.Should().BeEmpty();
 }
 
+[InheritsTests]
 public class ConsoleWithEmptyLinesTests() : ConsoleCodeBlockTests(
 	"""
 ```console
@@ -195,6 +201,7 @@ POST /api/test
 	public void HasNoErrors() => Collector.Diagnostics.Should().BeEmpty();
 }
 
+[InheritsTests]
 public class ConsoleWithOnlyHeadersTests() : ConsoleCodeBlockTests(
 	"""
 ```console
@@ -220,6 +227,7 @@ DELETE /api/cleanup
 	public void HasNoErrors() => Collector.Diagnostics.Should().BeEmpty();
 }
 
+[InheritsTests]
 public class ConsoleWithCalloutsOnHttpVerbsTests() : ConsoleCodeBlockTests(
 	"""
 ```console
@@ -277,6 +285,7 @@ POST /api/users <2>
 	public void HasNoErrors() => Collector.Diagnostics.Should().BeEmpty();
 }
 
+[InheritsTests]
 public class ConsoleWithCalloutsInJsonContentTests() : ConsoleCodeBlockTests(
 	"""
 ```console
@@ -342,6 +351,7 @@ GET my-index-000001/_mapping <3>
 	public void HasNoErrors() => Collector.Diagnostics.Should().BeEmpty();
 }
 
+[InheritsTests]
 public class ConsoleWithHtmlCharsTests() : ConsoleCodeBlockTests(
 	"""
 ```console

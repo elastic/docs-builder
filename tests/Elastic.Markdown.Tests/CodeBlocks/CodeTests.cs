@@ -8,6 +8,7 @@ using Elastic.Markdown.Tests.Inline;
 
 namespace Elastic.Markdown.Tests.CodeBlocks;
 
+[InheritsTests]
 public abstract class CodeBlockTests(string directive, string? language = null) : BlockTest<EnhancedCodeBlock>(
 	$$"""
 ```{{directive}} {{language}}
@@ -21,24 +22,28 @@ A regular paragraph.
 	public void ParsesAdmonitionBlock() => Block.Should().NotBeNull();
 }
 
+[InheritsTests]
 public class CodeBlockDirectiveTests() : CodeBlockTests("{code-block}", "csharp")
 {
 	[Test]
 	public void SetsLanguage() => Block!.Language.Should().Be("csharp");
 }
 
+[InheritsTests]
 public class CodeTests() : CodeBlockTests("{code}", "python")
 {
 	[Test]
 	public void SetsLanguage() => Block!.Language.Should().Be("python");
 }
 
+[InheritsTests]
 public class SourceCodeTests() : CodeBlockTests("{sourcecode}", "java")
 {
 	[Test]
 	public void SetsLanguage() => Block!.Language.Should().Be("java");
 }
 
+[InheritsTests]
 public class RawMarkdownCodeBlockTests() : CodeBlockTests("javascript")
 {
 	[Test]

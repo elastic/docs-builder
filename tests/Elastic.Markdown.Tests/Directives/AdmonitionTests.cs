@@ -7,6 +7,7 @@ using Elastic.Markdown.Myst.Directives.Admonition;
 
 namespace Elastic.Markdown.Tests.Directives;
 
+[InheritsTests]
 public abstract class AdmonitionBaseTests(string directive) : DirectiveTest<AdmonitionBlock>(
 	$$"""
 :::{{{directive}}}
@@ -23,30 +24,35 @@ A regular paragraph.
 	public void SetsCorrectAdmonitionType() => Block!.Admonition.Should().Be(directive);
 }
 
+[InheritsTests]
 public class WarningTests() : AdmonitionBaseTests("warning")
 {
 	[Test]
 	public void SetsTitle() => Block!.Title.Should().Be("Warning");
 }
 
+[InheritsTests]
 public class NoteTests() : AdmonitionBaseTests("note")
 {
 	[Test]
 	public void SetsTitle() => Block!.Title.Should().Be("Note");
 }
 
+[InheritsTests]
 public class TipTests() : AdmonitionBaseTests("tip")
 {
 	[Test]
 	public void SetsTitle() => Block!.Title.Should().Be("Tip");
 }
 
+[InheritsTests]
 public class ImportantTests() : AdmonitionBaseTests("important")
 {
 	[Test]
 	public void SetsTitle() => Block!.Title.Should().Be("Important");
 }
 
+[InheritsTests]
 public class NoteTitleTests() : DirectiveTest<AdmonitionBlock>(
 	"""
 ```{note} This is my custom note
@@ -63,6 +69,7 @@ A regular paragraph.
 	public void SetsCustomTitle() => Block!.Title.Should().Be("Note This is my custom note");
 }
 
+[InheritsTests]
 public class AdmonitionTitleTests() : DirectiveTest<AdmonitionBlock>(
 	"""
 ```{admonition} This is my custom title
@@ -79,6 +86,7 @@ A regular paragraph.
 	public void SetsCustomTitle() => Block!.Title.Should().Be("This is my custom title");
 }
 
+[InheritsTests]
 public class DropdownTitleTests() : DirectiveTest<AdmonitionBlock>(
 	"""
 :::{dropdown} This is my custom dropdown
@@ -99,6 +107,7 @@ A regular paragraph.
 	public void SetsDropdownOpen() => Block!.DropdownOpen.Should().BeTrue();
 }
 
+[InheritsTests]
 public class DropdownPlainTextTitleTests() : DirectiveTest<AdmonitionBlock>(
 	"""
 :::{dropdown} Deprecate `elastic.apm` settings
@@ -118,6 +127,7 @@ Dropdown body content.
 	}
 }
 
+[InheritsTests]
 public class DropdownPlainTextBoldTitleTests() : DirectiveTest<AdmonitionBlock>(
 	"""
 :::{dropdown} Disable **Save** button
@@ -137,6 +147,7 @@ Dropdown body content.
 	}
 }
 
+[InheritsTests]
 public class DropdownPlainTextItalicTitleTests() : DirectiveTest<AdmonitionBlock>(
 	"""
 :::{dropdown} Use _italic_ emphasis
@@ -156,6 +167,7 @@ Dropdown body content.
 	}
 }
 
+[InheritsTests]
 public class DropdownAppliesToTests() : DirectiveTest<AdmonitionBlock>(
 	"""
 :::{dropdown} This is my custom dropdown
@@ -179,6 +191,7 @@ A regular paragraph.
 	public void ParsesAppliesTo() => Block!.AppliesTo.Should().NotBeNull();
 }
 
+[InheritsTests]
 public class DropdownPropertyParsingTests() : DirectiveTest<AdmonitionBlock>(
 	"""
 :::{dropdown} Test Dropdown
@@ -203,6 +216,7 @@ A regular paragraph.
 	public void SetsCrossReferenceName() => Block!.CrossReferenceName.Should().Be("test-dropdown");
 }
 
+[InheritsTests]
 public class DropdownNestedContentTests() : DirectiveTest<AdmonitionBlock>(
 	"""
 ::::{dropdown} Nested Content Test
@@ -267,6 +281,7 @@ A regular paragraph.
 	}
 }
 
+[InheritsTests]
 public class DropdownComplexPropertyTests() : DirectiveTest<AdmonitionBlock>(
 	"""
 :::{dropdown} Complex Properties Test
@@ -291,6 +306,7 @@ A regular paragraph.
 	}
 }
 
+[InheritsTests]
 public class NoteAppliesToTests() : DirectiveTest<AdmonitionBlock>(
 	"""
 :::{note}
@@ -323,6 +339,7 @@ A regular paragraph.
 	}
 }
 
+[InheritsTests]
 public class WarningAppliesToTests() : DirectiveTest<AdmonitionBlock>(
 	"""
 :::{warning}
@@ -355,6 +372,7 @@ A regular paragraph.
 	}
 }
 
+[InheritsTests]
 public class TipAppliesToTests() : DirectiveTest<AdmonitionBlock>(
 	"""
 :::{tip}
@@ -387,6 +405,7 @@ A regular paragraph.
 	}
 }
 
+[InheritsTests]
 public class ImportantAppliesToTests() : DirectiveTest<AdmonitionBlock>(
 	"""
 :::{important}
@@ -419,6 +438,7 @@ A regular paragraph.
 	}
 }
 
+[InheritsTests]
 public class AdmonitionAppliesToTests() : DirectiveTest<AdmonitionBlock>(
 	"""
 :::{admonition} Custom Admonition

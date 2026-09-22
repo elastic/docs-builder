@@ -10,6 +10,7 @@ using Elastic.Markdown.Myst.Directives.Storybook;
 
 namespace Elastic.Markdown.Tests.Directives;
 
+[InheritsTests]
 public abstract class StorybookRegistryTest(string content) : DirectiveTest<StorybookBlock>(content)
 {
 	protected override void AddToFileSystem(MockFileSystem fileSystem) =>
@@ -77,6 +78,7 @@ storybook:
 		""";
 }
 
+[InheritsTests]
 public class StorybookInlineIdTests() : StorybookRegistryTest(
 	"""
 :::{storybook}
@@ -125,6 +127,7 @@ internal sealed class TestEnvironmentVariables : IEnvironmentVariables
 	public bool IsRunningOnCI => false;
 }
 
+[InheritsTests]
 public class StorybookInterpolatedRegistryTests() : StorybookRegistryTest(
 	"""
 :::{storybook}
@@ -144,6 +147,7 @@ storybook:
 	public void ResolvesDefaultWhenEnvironmentVariableUnset() => Block!.StoryId.Should().Be("ai-components-aibutton--default");
 }
 
+[InheritsTests]
 public class StorybookDisallowedRegistryVariableTests() : StorybookRegistryTest(
 	"""
 :::{storybook}
@@ -169,6 +173,7 @@ storybook:
 			.Contain(d => d.Severity == Severity.Warning && d.Message.Contains("not allow-listed for interpolation"));
 }
 
+[InheritsTests]
 public class StorybookStructuredReferenceTests() : StorybookRegistryTest(
 	"""
 :::{storybook}
@@ -184,6 +189,7 @@ public class StorybookStructuredReferenceTests() : StorybookRegistryTest(
 	public void ResolvesComponentAndStory() => Block!.StoryId.Should().Be("ai-components-aibutton--default");
 }
 
+[InheritsTests]
 public class StorybookStructuredReferenceWrongStorybookTests() : StorybookRegistryTest(
 	"""
 :::{storybook}
@@ -202,6 +208,7 @@ public class StorybookStructuredReferenceWrongStorybookTests() : StorybookRegist
 			.Contain(d => d.Message.Contains("does not contain id 'kibana:content_management:ai-components-aibutton--default'"));
 }
 
+[InheritsTests]
 public class StorybookBareIdTests() : StorybookRegistryTest("""
 :::{storybook}
 :id: ai-components-aibutton--default
@@ -212,6 +219,7 @@ public class StorybookBareIdTests() : StorybookRegistryTest("""
 	public void ResolvesFromConfiguredRegistry() => Block!.StoryId.Should().Be("ai-components-aibutton--default");
 }
 
+[InheritsTests]
 public class StorybookIframeTests() : StorybookRegistryTest("""
 :::{storybook}
 :id: kibana:shared_ux:components-callout--info
@@ -229,6 +237,7 @@ public class StorybookIframeTests() : StorybookRegistryTest("""
 	}
 }
 
+[InheritsTests]
 public class StorybookBodyTests() : StorybookRegistryTest(
 	"""
 :::{storybook}
@@ -242,6 +251,7 @@ Supporting details for this story.
 	public void RendersBodyContent() => Html.Should().Contain("Supporting details for this story.");
 }
 
+[InheritsTests]
 public class StorybookInvalidHeightTests() : StorybookRegistryTest(
 	"""
 :::{storybook}
@@ -263,6 +273,7 @@ public class StorybookInvalidHeightTests() : StorybookRegistryTest(
 	}
 }
 
+[InheritsTests]
 public class StorybookMissingRegistryTests() : DirectiveTest<StorybookBlock>(
 	"""
 :::{storybook}
@@ -275,6 +286,7 @@ public class StorybookMissingRegistryTests() : DirectiveTest<StorybookBlock>(
 	public void EmitsError() => Collector.Diagnostics.Should().Contain(d => d.Message.Contains("requires docset.yml storybook.registry"));
 }
 
+[InheritsTests]
 public class StorybookMissingIdTests() : StorybookRegistryTest("""
 :::{storybook}
 :::
@@ -284,6 +296,7 @@ public class StorybookMissingIdTests() : StorybookRegistryTest("""
 	public void EmitsError() => Collector.Diagnostics.Should().Contain(d => d.Message.Contains("requires :id: or :project:"));
 }
 
+[InheritsTests]
 public class StorybookPositionalArgumentWarningTests() : StorybookRegistryTest(
 	"""
 :::{storybook} /storybook/ignored

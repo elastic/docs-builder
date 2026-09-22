@@ -12,6 +12,7 @@ using Elastic.Markdown.Tests.Inline;
 
 namespace Elastic.Markdown.Tests.Assembler;
 
+[InheritsTests]
 /// <summary>
 /// Navigation relies on hx-boost targeting #main-container, so markdown links must
 /// not carry per-link htmx attributes. Cross-links stay same-site (no target=_blank).
@@ -50,6 +51,7 @@ public class AssemblerHtmxMarkdownLinkTests() : LinkTestBase("Go to [test](kiban
 	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
 }
 
+[InheritsTests]
 /// <summary>Internal links in assembler carry no per-link htmx attributes.</summary>
 public class AssemblerHtmxInternalLinkTests() : LinkTestBase("[Requirements](testing/req.md)")
 {
@@ -74,6 +76,7 @@ public class AssemblerHtmxInternalLinkTests() : LinkTestBase("[Requirements](tes
 	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
 }
 
+[InheritsTests]
 /// <summary>Absolute path links in assembler carry no per-link htmx attributes.</summary>
 public class AssemblerHtmxAbsolutePathLinkTests() : LinkTestBase("""
 [Elasticsearch](/_static/img/observability.png)
@@ -101,6 +104,7 @@ public class AssemblerHtmxAbsolutePathLinkTests() : LinkTestBase("""
 	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
 }
 
+[InheritsTests]
 /// <summary>Reference-style internal links in assembler carry no per-link htmx attributes.</summary>
 public class AssemblerHtmxReferenceLinkTests() : LinkTestBase("""
 [test][test]
@@ -129,6 +133,7 @@ public class AssemblerHtmxReferenceLinkTests() : LinkTestBase("""
 	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
 }
 
+[InheritsTests]
 /// <summary>Empty-text cross-links in assembler carry no per-link htmx attributes (and emit error).</summary>
 public class AssemblerHtmxEmptyTextCrossLinkTests() : LinkTestBase("""
 
@@ -164,6 +169,7 @@ Go to [](kibana://index.md)
 	}
 }
 
+[InheritsTests]
 /// <summary>Insert-page-title links (empty text, internal target) carry no per-link htmx attributes.</summary>
 public class AssemblerHtmxInsertPageTitleTests() : LinkTestBase("""
 [](testing/req.md)
@@ -190,6 +196,7 @@ public class AssemblerHtmxInsertPageTitleTests() : LinkTestBase("""
 	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
 }
 
+[InheritsTests]
 /// <summary>HTTP links in assembler get target="_blank" and no htmx attributes.</summary>
 public class AssemblerHtmxExternalLinkTests() : LinkTestBase("""
 [link to app]({{some-url-with-a-version}})

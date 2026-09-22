@@ -8,6 +8,7 @@ using Elastic.Markdown.Myst.Directives.RelatedLearning;
 
 namespace Elastic.Markdown.Tests.Directives;
 
+[InheritsTests]
 public class RelatedLearningBasicTests() : DirectiveTest<RelatedLearningBlock>("""
 :::{related-learning} apm-with-elastic
 :::
@@ -72,6 +73,7 @@ public class RelatedLearningBasicTests() : DirectiveTest<RelatedLearningBlock>("
 	}
 }
 
+[InheritsTests]
 public class RelatedLearningOrderTests() : DirectiveTest<RelatedLearningBlock>(
 	"""
 :::{related-learning} index-basics, apm-with-elastic
@@ -90,6 +92,7 @@ public class RelatedLearningOrderTests() : DirectiveTest<RelatedLearningBlock>(
 	}
 }
 
+[InheritsTests]
 public class RelatedLearningHeadingOverrideTests() : DirectiveTest<RelatedLearningBlock>(
 	"""
 :::{related-learning} elastic-agent
@@ -123,6 +126,7 @@ public class RelatedLearningHeadingOverrideTests() : DirectiveTest<RelatedLearni
 	}
 }
 
+[InheritsTests]
 public class RelatedLearningUnknownIdTests() : DirectiveTest<RelatedLearningBlock>("""
 :::{related-learning} not-a-module
 :::
@@ -141,6 +145,7 @@ public class RelatedLearningUnknownIdTests() : DirectiveTest<RelatedLearningBloc
 	}
 }
 
+[InheritsTests]
 public class RelatedLearningDuplicateIdTests() : DirectiveTest<RelatedLearningBlock>(
 	"""
 :::{related-learning} apm-with-elastic, apm-with-elastic
@@ -159,6 +164,7 @@ public class RelatedLearningDuplicateIdTests() : DirectiveTest<RelatedLearningBl
 	}
 }
 
+[InheritsTests]
 public class RelatedLearningEmptyIdsTests() : DirectiveTest<RelatedLearningBlock>("""
 :::{related-learning}
 :::

@@ -16,6 +16,7 @@ namespace Elastic.Markdown.Tests.Directives;
 /// The navigation lookup mirrors what DiagnosticLinkInlineParser.UpdateLinkUrl does for
 /// ordinary inline links.
 /// </summary>
+[InheritsTests]
 public class PageCardRelativeMdLinkTests() : DirectiveTest<PageCardBlock>("""
 	:::{page-card} [Other page](./other-page.md)
 	:::
@@ -36,6 +37,7 @@ public class PageCardRelativeMdLinkTests() : DirectiveTest<PageCardBlock>("""
 /// The docset-relative path alone would yield /other-page; only the navigation lookup knows
 /// about the rehomed prefix. This is the case that broke CLI reference links on the live site.
 /// </summary>
+[InheritsTests]
 public class PageCardRehomedDocsetLinkTests() : DirectiveTest<PageCardBlock>(
 	"""
 	:::{page-card} [Other page](./other-page.md)
@@ -63,6 +65,7 @@ public class PageCardRehomedDocsetLinkTests() : DirectiveTest<PageCardBlock>(
 /// An anchored link must still resolve through the navigation lookup: the anchor is not part of
 /// the file path, so it has to be split off before probing and re-appended afterwards.
 /// </summary>
+[InheritsTests]
 public class PageCardRehomedAnchoredLinkTests() : DirectiveTest<PageCardBlock>(
 	"""
 	:::{page-card} [Install](./other-page.md#install)
@@ -87,6 +90,7 @@ public class PageCardRehomedAnchoredLinkTests() : DirectiveTest<PageCardBlock>(
 }
 
 /// <summary>Namespace-style link (no .md extension) probes for /index.md variant.</summary>
+[InheritsTests]
 public class PageCardRelativeFolderLinkTests() : DirectiveTest<PageCardBlock>("""
 	:::{page-card} [Sub section](./subdir)
 	:::
@@ -103,6 +107,7 @@ public class PageCardRelativeFolderLinkTests() : DirectiveTest<PageCardBlock>(""
 }
 
 /// <summary>Absolute HTTP URLs are rejected with an error.</summary>
+[InheritsTests]
 public class PageCardAbsoluteUrlErrorTests() : DirectiveTest<PageCardBlock>(
 	"""
 	:::{page-card} [External](https://example.com/page)

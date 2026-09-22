@@ -10,6 +10,7 @@ using Elastic.Markdown.Tests.Directives;
 
 namespace Elastic.Markdown.Tests.FileInclusion;
 
+[InheritsTests]
 public class IncludeTests() : DirectiveTest<IncludeBlock>("""
 :::{include} _snippets/test.md
 :::
@@ -29,6 +30,7 @@ public class IncludeTests() : DirectiveTest<IncludeBlock>("""
 	public void IncludesInclusionHtml() => Html.ShouldBeHtml("<p><em>Hello world</em></p>");
 }
 
+[InheritsTests]
 public class IncludeSubstitutionTests() : DirectiveTest<IncludeBlock>("""
 ---
 sub:
@@ -52,6 +54,7 @@ sub:
 	public void InclusionInheritsYamlContext() => Html.Should().Contain("Hello bar").And.Be("<p><em>Hello bar</em></p>");
 }
 
+[InheritsTests]
 public class IncludeNotFoundTests() : DirectiveTest<IncludeBlock>("""
 :::{include} _snippets/notfound.md
 :::
@@ -72,6 +75,7 @@ public class IncludeNotFoundTests() : DirectiveTest<IncludeBlock>("""
 	}
 }
 
+[InheritsTests]
 public class IncludeRequiresArgument() : DirectiveTest<IncludeBlock>("""
 :::{include}
 :::
@@ -92,6 +96,7 @@ public class IncludeRequiresArgument() : DirectiveTest<IncludeBlock>("""
 	}
 }
 
+[InheritsTests]
 public class IncludeNeedsToLiveInSpecialFolder() : DirectiveTest<IncludeBlock>("""
 ```{include} test.md
 ```
@@ -121,6 +126,7 @@ public class IncludeNeedsToLiveInSpecialFolder() : DirectiveTest<IncludeBlock>("
 	}
 }
 
+[InheritsTests]
 public class IncludeRelativeTraversalBlocked() : DirectiveTest<IncludeBlock>("""
 :::{include} ../../../outside.txt
 :::
@@ -139,6 +145,7 @@ public class IncludeRelativeTraversalBlocked() : DirectiveTest<IncludeBlock>("""
 	}
 }
 
+[InheritsTests]
 public class CanNotIncludeItself() : DirectiveTest<IncludeBlock>("""
 ```{include} _snippets/test.md
 ```

@@ -13,6 +13,7 @@ namespace Elastic.Markdown.Tests.Directives;
 /// All local paths must be prefixed with '/' (docset-root-relative).
 /// Non-'/' arguments are interpreted as CDN product names.
 /// </summary>
+[InheritsTests]
 public class ChangelogBundlesFolderRelativePathTests : DirectiveTest<ChangelogBlock>
 {
 	public ChangelogBundlesFolderRelativePathTests() : base(
@@ -53,6 +54,7 @@ public class ChangelogBundlesFolderRelativePathTests : DirectiveTest<ChangelogBl
 	public void RendersContent() => Html.Should().Contain("Test feature");
 }
 
+[InheritsTests]
 public class ChangelogBundlesFolderDocsetRootRelativeTests : DirectiveTest<ChangelogBlock>
 {
 	public ChangelogBundlesFolderDocsetRootRelativeTests() : base(
@@ -96,6 +98,7 @@ public class ChangelogBundlesFolderDocsetRootRelativeTests : DirectiveTest<Chang
 	public void RendersContent() => Html.Should().Contain("Another feature");
 }
 
+[InheritsTests]
 public class ChangelogConfigRelativePathTests : DirectiveTest<ChangelogBlock>
 {
 	public ChangelogConfigRelativePathTests() : base(
@@ -164,6 +167,7 @@ public class ChangelogConfigRelativePathTests : DirectiveTest<ChangelogBlock>
 	}
 }
 
+[InheritsTests]
 public class ChangelogConfigDocsetRootRelativePathTests : DirectiveTest<ChangelogBlock>
 {
 	public ChangelogConfigDocsetRootRelativePathTests() : base(
@@ -230,6 +234,7 @@ public class ChangelogConfigDocsetRootRelativePathTests : DirectiveTest<Changelo
 	}
 }
 
+[InheritsTests]
 public class ChangelogBundlesFolderNestedRelativePathTests : DirectiveTest<ChangelogBlock>
 {
 	public ChangelogBundlesFolderNestedRelativePathTests() : base(
@@ -279,6 +284,7 @@ public class ChangelogBundlesFolderNestedRelativePathTests : DirectiveTest<Chang
 /// The implementation correctly handles this by checking StartsWith('/') before IsPathRooted,
 /// ensuring our docset-root-relative convention takes precedence.
 /// </remarks>
+[InheritsTests]
 public class ChangelogPathEdgeCaseTests : DirectiveTest<ChangelogBlock>
 {
 	public ChangelogPathEdgeCaseTests() : base(
@@ -315,6 +321,7 @@ public class ChangelogPathEdgeCaseTests : DirectiveTest<ChangelogBlock>
 	public void RendersContent() => Html.Should().Contain("Edge case feature");
 }
 
+[InheritsTests]
 public class ChangelogConfigAndBundlesRelativePathsTests : DirectiveTest<ChangelogBlock>
 {
 	public ChangelogConfigAndBundlesRelativePathsTests() : base(

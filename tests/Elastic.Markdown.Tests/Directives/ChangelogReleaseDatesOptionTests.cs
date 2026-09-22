@@ -9,6 +9,7 @@ using Elastic.Markdown.Myst.Directives.Changelog;
 namespace Elastic.Markdown.Tests.Directives;
 
 /// <summary>Tests for the <c>:release-dates:</c> directive option.</summary>
+[InheritsTests]
 public class ChangelogReleaseDatesOptionDefaultOffTests : DirectiveTest<ChangelogBlock>
 {
 	public ChangelogReleaseDatesOptionDefaultOffTests() : base(
@@ -49,6 +50,7 @@ public class ChangelogReleaseDatesOptionDefaultOffTests : DirectiveTest<Changelo
 	public void StillRendersEntries() => Html.Should().Contain("Add tracing improvements");
 }
 
+[InheritsTests]
 public class ChangelogReleaseDatesOptionEnabledTests : DirectiveTest<ChangelogBlock>
 {
 	public ChangelogReleaseDatesOptionEnabledTests() : base(
@@ -87,6 +89,7 @@ public class ChangelogReleaseDatesOptionEnabledTests : DirectiveTest<ChangelogBl
 	public void RendersReleasedLineWhenBundleHasReleaseDate() => Html.Should().Contain("Released: April 9, 2026");
 }
 
+[InheritsTests]
 public class ChangelogReleaseDatesOptionEnabledWithoutBundleDateTests : DirectiveTest<ChangelogBlock>
 {
 	public ChangelogReleaseDatesOptionEnabledWithoutBundleDateTests() : base(
@@ -121,6 +124,7 @@ public class ChangelogReleaseDatesOptionEnabledWithoutBundleDateTests : Directiv
 	public void OmitsReleasedLineWhenBundleHasNoReleaseDate() => Html.Should().NotContain("Released:");
 }
 
+[InheritsTests]
 public class ChangelogReleaseDatesOptionDescriptionStillRendersTests : DirectiveTest<ChangelogBlock>
 {
 	public ChangelogReleaseDatesOptionDescriptionStillRendersTests() : base(

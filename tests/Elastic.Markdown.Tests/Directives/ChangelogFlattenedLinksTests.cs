@@ -12,6 +12,7 @@ namespace Elastic.Markdown.Tests.Directives;
 /// Regression tests for PR/issue link formatting in flattened separated-type changelog output
 /// (breaking changes, deprecations, known issues, highlights without <c>:dropdowns:</c>).
 /// </summary>
+[InheritsTests]
 public class ChangelogFlattenedLinksTests : DirectiveTest<ChangelogBlock>
 {
 	public ChangelogFlattenedLinksTests() : base(

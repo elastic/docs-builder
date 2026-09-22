@@ -15,6 +15,7 @@ namespace Elastic.Markdown.Tests.Directives;
 /// so a file-reference-only entry is invalid and builds fail fast rather than silently
 /// omitting changelog entries.
 /// </summary>
+[InheritsTests]
 public class ChangelogEntryWithoutInlineContentTests : DirectiveTest<ChangelogBlock>
 {
 	public ChangelogEntryWithoutInlineContentTests() : base(
@@ -83,6 +84,7 @@ public class ChangelogEntryWithoutInlineContentTests : DirectiveTest<ChangelogBl
 /// Tests that the changelog directive loads bundles with inline (resolved) entries without
 /// diagnostics — files being absent from disk is irrelevant.
 /// </summary>
+[InheritsTests]
 public class ChangelogInlineEntriesNoErrorTests : DirectiveTest<ChangelogBlock>
 {
 	public ChangelogInlineEntriesNoErrorTests() : base(

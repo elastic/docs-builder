@@ -11,6 +11,7 @@ using Markdig.Syntax.Inlines;
 
 namespace Elastic.Markdown.Tests.Inline;
 
+[InheritsTests]
 public class InlineAnchorTests() : LeafTest<InlineAnchor>(
 	"""
 	this is regular text and this $$$is-an-inline-anchor$$$ and this continues to be regular text
@@ -31,6 +32,7 @@ public class InlineAnchorTests() : LeafTest<InlineAnchor>(
 		);
 }
 
+[InheritsTests]
 public class InlineAnchorAtStartTests() : LeafTest<InlineAnchor>(
 	"""
 	$$$is-an-inline-anchor$$$ and this continues to be regular text
@@ -50,6 +52,7 @@ public class InlineAnchorAtStartTests() : LeafTest<InlineAnchor>(
 		Html.Should().Be("""<p><a id="is-an-inline-anchor"></a> and this continues to be regular text</p>""");
 }
 
+[InheritsTests]
 public class InlineAnchorAtEndTests() : LeafTest<InlineAnchor>("""
 	this is regular text and this $$$is-an-inline-anchor$$$
 	""")
@@ -67,6 +70,7 @@ public class InlineAnchorAtEndTests() : LeafTest<InlineAnchor>("""
 		Html.ShouldContainHtml("""<p>this is regular text and this <a id="is-an-inline-anchor"></a></p>""");
 }
 
+[InheritsTests]
 public class BadStartInlineAnchorTests() : BlockTest<ParagraphBlock>("""
 	this is regular text and this $$is-an-inline-anchor$$$
 	""")
@@ -77,6 +81,7 @@ public class BadStartInlineAnchorTests() : BlockTest<ParagraphBlock>("""
 		Html.Should().Contain("""<p>this is regular text and this $$is-an-inline-anchor$$$</p>""");
 }
 
+[InheritsTests]
 public class BadEndInlineAnchorTests() : BlockTest<ParagraphBlock>("""
 	this is regular text and this $$$is-an-inline-anchor$$
 	""")
@@ -87,6 +92,7 @@ public class BadEndInlineAnchorTests() : BlockTest<ParagraphBlock>("""
 		Html.ShouldContainHtml("""<p>this is regular text and this $$$is-an-inline-anchor$$</p>""");
 }
 
+[InheritsTests]
 public class InlineAnchorInHeading() : BlockTest<HeadingBlock>("""
 	## Hello world $$$my-anchor$$$
 	""")
@@ -102,6 +108,7 @@ public class InlineAnchorInHeading() : BlockTest<HeadingBlock>("""
 		);
 }
 
+[InheritsTests]
 public class ExplicitSlugInHeader() : BlockTest<HeadingBlock>("""
 	## Hello world [#my-anchor]
 	""")
@@ -118,6 +125,7 @@ public class ExplicitSlugInHeader() : BlockTest<HeadingBlock>("""
 		);
 }
 
+[InheritsTests]
 public abstract class InlineAnchorLinkTestBase([LanguageInjection("markdown")] string content) : InlineTest<LinkInline>(
 	$"""
 ## Hello world
@@ -153,6 +161,7 @@ With a custom anchor that exists temporarily. $$$custom-anchor$$$
 	}
 }
 
+[InheritsTests]
 public class InlineAnchorCanBeLinkedToo() : InlineAnchorLinkTestBase("""
 [Hello](#same-page-anchor)
 """)
@@ -166,6 +175,7 @@ public class InlineAnchorCanBeLinkedToo() : InlineAnchorLinkTestBase("""
 	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
 }
 
+[InheritsTests]
 public class ExternalPageInlineAnchorCanBeLinkedToo() : InlineAnchorLinkTestBase("""
 [Sub Requirements](testing/req.md#custom-anchor)
 """)

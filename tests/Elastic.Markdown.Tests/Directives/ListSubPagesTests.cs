@@ -8,6 +8,7 @@ using Elastic.Markdown.Myst.Directives.SubPages;
 
 namespace Elastic.Markdown.Tests.Directives;
 
+[InheritsTests]
 public class ListSubPagesTests() : DirectiveTest<ListSubPagesBlock>("""
 :::{list-sub-pages}
 :::
@@ -45,6 +46,7 @@ public class ListSubPagesTests() : DirectiveTest<ListSubPagesBlock>("""
 	}
 }
 
+[InheritsTests]
 public class ListSubPagesWithDescriptionsTests() : DirectiveTest<ListSubPagesBlock>("""
 :::{list-sub-pages}
 :::
@@ -75,6 +77,7 @@ Content.
 	public void RendersDescriptionInOutput() => Html.Should().Contain("First page description");
 }
 
+[InheritsTests]
 public class ListSubPagesWithFolderSiblingTests() : DirectiveTest<ListSubPagesBlock>("""
 :::{list-sub-pages}
 :::

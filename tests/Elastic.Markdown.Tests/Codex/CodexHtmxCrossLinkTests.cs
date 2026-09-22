@@ -12,6 +12,7 @@ using Elastic.Markdown.Tests.Inline;
 
 namespace Elastic.Markdown.Tests.Codex;
 
+[InheritsTests]
 /// <summary>Codex cross-links resolve to path-only URLs; navigation relies on hx-boost targeting #main-container, so links carry no per-link htmx attributes.</summary>
 public class CodexHtmxCrossLinkTests() : LinkTestBase("Go to [test](kibana://index.md)")
 {
@@ -49,6 +50,7 @@ public class CodexHtmxCrossLinkTests() : LinkTestBase("Go to [test](kibana://ind
 	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
 }
 
+[InheritsTests]
 /// <summary>Isolated cross-links resolve to absolute URLs with target=_blank and no htmx.</summary>
 public class IsolatedCodexCrossLinkTests() : LinkTestBase("Go to [test](kibana://index.md)")
 {

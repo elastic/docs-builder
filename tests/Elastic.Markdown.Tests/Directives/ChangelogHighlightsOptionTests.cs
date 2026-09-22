@@ -58,6 +58,7 @@ static file class ChangelogHighlightsFixtures
 }
 
 /// <summary>Default (omitted) :highlights: — inline only, no Highlights section.</summary>
+[InheritsTests]
 public class ChangelogHighlightsOptionDefaultOffTests : DirectiveTest<ChangelogBlock>
 {
 	public ChangelogHighlightsOptionDefaultOffTests() : base(
@@ -96,6 +97,7 @@ public class ChangelogHighlightsOptionDefaultOffTests : DirectiveTest<ChangelogB
 }
 
 /// <summary>:highlights: with default type filter — Highlights section plus type sections, no separated types.</summary>
+[InheritsTests]
 public class ChangelogHighlightsOptionEnabledTests : DirectiveTest<ChangelogBlock>
 {
 	public ChangelogHighlightsOptionEnabledTests() : base(
@@ -137,6 +139,7 @@ public class ChangelogHighlightsOptionEnabledTests : DirectiveTest<ChangelogBloc
 }
 
 /// <summary>:highlights: + :type: all — Highlights section and separated types.</summary>
+[InheritsTests]
 public class ChangelogHighlightsOptionWithTypeAllTests : DirectiveTest<ChangelogBlock>
 {
 	public ChangelogHighlightsOptionWithTypeAllTests() : base(
@@ -159,6 +162,7 @@ public class ChangelogHighlightsOptionWithTypeAllTests : DirectiveTest<Changelog
 }
 
 /// <summary>:type: all without :highlights: — no Highlights section (breaking change from prior All behavior).</summary>
+[InheritsTests]
 public class ChangelogHighlightsOptionTypeAllWithoutFlagTests : DirectiveTest<ChangelogBlock>
 {
 	public ChangelogHighlightsOptionTypeAllWithoutFlagTests() : base(
@@ -181,6 +185,7 @@ public class ChangelogHighlightsOptionTypeAllWithoutFlagTests : DirectiveTest<Ch
 }
 
 /// <summary>Legacy :type: highlight warns and falls back to default.</summary>
+[InheritsTests]
 public class ChangelogHighlightsLegacyTypeHighlightTests : DirectiveTest<ChangelogBlock>
 {
 	public ChangelogHighlightsLegacyTypeHighlightTests() : base(
@@ -220,6 +225,7 @@ public class ChangelogHighlightsLegacyTypeHighlightTests : DirectiveTest<Changel
 }
 
 /// <summary>:highlights: + :description-visibility: keep-descriptions shows bodies in the Highlights section.</summary>
+[InheritsTests]
 public class ChangelogHighlightsOptionWithDescriptionsTests : DirectiveTest<ChangelogBlock>
 {
 	public ChangelogHighlightsOptionWithDescriptionsTests() : base(
@@ -239,6 +245,7 @@ public class ChangelogHighlightsOptionWithDescriptionsTests : DirectiveTest<Chan
 /// <summary>
 /// :highlights: + keep-highlight-descriptions — prose only under Highlights; type sections stay title/links.
 /// </summary>
+[InheritsTests]
 public class ChangelogKeepHighlightDescriptionsTests : DirectiveTest<ChangelogBlock>
 {
 	public ChangelogKeepHighlightDescriptionsTests() : base(
@@ -300,6 +307,7 @@ public class ChangelogKeepHighlightDescriptionsTests : DirectiveTest<ChangelogBl
 }
 
 /// <summary>keep-highlight-descriptions without :highlights: hides descriptions everywhere.</summary>
+[InheritsTests]
 public class ChangelogKeepHighlightDescriptionsWithoutHighlightsTests : DirectiveTest<ChangelogBlock>
 {
 	public ChangelogKeepHighlightDescriptionsWithoutHighlightsTests() : base(

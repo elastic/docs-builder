@@ -8,6 +8,7 @@ using Elastic.Markdown.Myst.Directives.Stepper;
 
 namespace Elastic.Markdown.Tests.Directives;
 
+[InheritsTests]
 public class StepperTocDefaultTests() : DirectiveTest<StepperBlock>(
 	"""
 :::::{stepper}
@@ -39,6 +40,7 @@ First install the dependencies.
 	}
 }
 
+[InheritsTests]
 public class StepperTocFalseTests() : DirectiveTest<StepperBlock>(
 	"""
 :::::{stepper}
@@ -71,6 +73,7 @@ First install the dependencies.
 	}
 }
 
+[InheritsTests]
 public class StepperTocFalseKeepsInternalHeadingsTests() : DirectiveTest<StepperBlock>(
 	"""
 ## Section
@@ -104,6 +107,7 @@ Some content under the internal heading.
 	}
 }
 
+[InheritsTests]
 public class StepperTocFalseNoPrecedingHeadingTests() : DirectiveTest<StepperBlock>(
 	"""
 	---

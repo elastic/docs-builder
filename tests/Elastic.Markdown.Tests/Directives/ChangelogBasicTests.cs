@@ -13,6 +13,7 @@ using Elastic.Markdown.Myst.Directives.Changelog;
 
 namespace Elastic.Markdown.Tests.Directives;
 
+[InheritsTests]
 public class ChangelogBasicTests : DirectiveTest<ChangelogBlock>
 {
 	public ChangelogBasicTests() : base(
@@ -83,6 +84,7 @@ public class ChangelogBasicTests : DirectiveTest<ChangelogBlock>
 	}
 }
 
+[InheritsTests]
 public class ChangelogExcludeAmendTests : DirectiveTest<ChangelogBlock>
 {
 	public ChangelogExcludeAmendTests() : base(
@@ -156,6 +158,7 @@ public class ChangelogExcludeAmendTests : DirectiveTest<ChangelogBlock>
 	}
 }
 
+[InheritsTests]
 public class ChangelogMultipleBundlesTests : DirectiveTest<ChangelogBlock>
 {
 	public ChangelogMultipleBundlesTests() : base(
@@ -256,6 +259,7 @@ public class ChangelogMultipleBundlesTests : DirectiveTest<ChangelogBlock>
 /// Verifies the <c>:version:</c> option filters local-folder bundles down to the single matching
 /// target, leaving the others out of both the loaded set and the rendered output.
 /// </summary>
+[InheritsTests]
 public class ChangelogVersionFilterTests : DirectiveTest<ChangelogBlock>
 {
 	public ChangelogVersionFilterTests() : base(
@@ -326,6 +330,7 @@ public class ChangelogVersionFilterTests : DirectiveTest<ChangelogBlock>
 /// Verifies a <c>:version:</c> value that matches no bundle renders nothing and warns instead of
 /// silently falling back to all versions.
 /// </summary>
+[InheritsTests]
 public class ChangelogVersionFilterNoMatchTests : DirectiveTest<ChangelogBlock>
 {
 	public ChangelogVersionFilterNoMatchTests() : base(
@@ -364,6 +369,7 @@ public class ChangelogVersionFilterNoMatchTests : DirectiveTest<ChangelogBlock>
 		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("No changelog bundle matches :version:"));
 }
 
+[InheritsTests]
 public class ChangelogCustomPathTests : DirectiveTest<ChangelogBlock>
 {
 	public ChangelogCustomPathTests() : base(
@@ -413,6 +419,7 @@ public class ChangelogCustomPathTests : DirectiveTest<ChangelogBlock>
 /// assigned to the block and before any network access, so this test exercises the wiring without
 /// touching the CDN.
 /// </summary>
+[InheritsTests]
 public class ChangelogCdnInvalidProductTests() : DirectiveTest<ChangelogBlock>(
 	// language=markdown
 	"""
@@ -442,6 +449,7 @@ public class ChangelogCdnInvalidProductTests() : DirectiveTest<ChangelogBlock>(
 /// instead of hitting the network. Regression guard: the HTML renderer previously gated on the
 /// (CDN-null) local bundles folder path and silently emitted an empty body.
 /// </summary>
+[InheritsTests]
 public class ChangelogCdnRenderTests() : DirectiveTest<ChangelogBlock>(
 	// language=markdown
 	"""
@@ -491,6 +499,7 @@ public class ChangelogCdnRenderTests() : DirectiveTest<ChangelogBlock>(
 /// Verifies <c>:cdn:</c> combined with <c>:version:</c> renders only the matching prefetched bundle.
 /// Version filtering is applied to the injected resolver's bundles, so no network access occurs.
 /// </summary>
+[InheritsTests]
 public class ChangelogCdnVersionFilterTests() : DirectiveTest<ChangelogBlock>(
 	// language=markdown
 	"""
@@ -559,6 +568,7 @@ public class ChangelogCdnVersionFilterTests() : DirectiveTest<ChangelogBlock>(
 /// <c>.git</c> marker present the mock git checkout reports the repository as <c>docs-builder</c>, so
 /// the directive selects that product from the injected resolver.
 /// </summary>
+[InheritsTests]
 public class ChangelogCdnInferredProductTests() : DirectiveTest<ChangelogBlock>(
 	// language=markdown
 	"""
@@ -612,6 +622,7 @@ public class ChangelogCdnInferredProductTests() : DirectiveTest<ChangelogBlock>(
 /// A valueless <c>:cdn:</c> must fail with a clear error when the product cannot be inferred (no git
 /// information available), rather than silently rendering empty.
 /// </summary>
+[InheritsTests]
 public class ChangelogCdnInferredProductUnavailableTests() : DirectiveTest<ChangelogBlock>(
 	// language=markdown
 	"""
@@ -636,6 +647,7 @@ public class ChangelogCdnInferredProductUnavailableTests() : DirectiveTest<Chang
 /// A <c>:cdn:</c> product that is not declared under <c>release_notes</c> in docset.yml must fail with a
 /// clear error (the bundles were never prefetched), pointing the author at the declaration to add.
 /// </summary>
+[InheritsTests]
 public class ChangelogCdnUndeclaredProductTests() : DirectiveTest<ChangelogBlock>(
 	// language=markdown
 	"""
@@ -676,6 +688,7 @@ internal static class ChangelogCdnTestResolver
 	}
 }
 
+[InheritsTests]
 public class ChangelogNotFoundTests() : DirectiveTest<ChangelogBlock>(
 	// language=markdown
 	"""
@@ -695,6 +708,7 @@ public class ChangelogNotFoundTests() : DirectiveTest<ChangelogBlock>(
 	}
 }
 
+[InheritsTests]
 public class ChangelogDefaultPathMissingTests() : DirectiveTest<ChangelogBlock>(
 	// language=markdown
 	"""
@@ -716,6 +730,7 @@ public class ChangelogDefaultPathMissingTests() : DirectiveTest<ChangelogBlock>(
 /// Tests for breaking changes rendering.
 /// Breaking changes should always render on the page when using :type: all.
 /// </summary>
+[InheritsTests]
 public class ChangelogWithBreakingChangesTests : DirectiveTest<ChangelogBlock>
 {
 	public ChangelogWithBreakingChangesTests() : base(
@@ -770,6 +785,7 @@ public class ChangelogWithBreakingChangesTests : DirectiveTest<ChangelogBlock>
 /// Tests for deprecations rendering.
 /// Deprecations should always render on the page when using :type: all.
 /// </summary>
+[InheritsTests]
 public class ChangelogWithDeprecationsTests : DirectiveTest<ChangelogBlock>
 {
 	public ChangelogWithDeprecationsTests() : base(
@@ -811,6 +827,7 @@ public class ChangelogWithDeprecationsTests : DirectiveTest<ChangelogBlock>
 	}
 }
 
+[InheritsTests]
 public class ChangelogEmptyBundleTests : DirectiveTest<ChangelogBlock>
 {
 	public ChangelogEmptyBundleTests() : base(
@@ -841,6 +858,7 @@ public class ChangelogEmptyBundleTests : DirectiveTest<ChangelogBlock>
 	}
 }
 
+[InheritsTests]
 public class ChangelogEmptyFolderTests : DirectiveTest<ChangelogBlock>
 {
 	public ChangelogEmptyFolderTests() : base(
@@ -864,6 +882,7 @@ public class ChangelogEmptyFolderTests : DirectiveTest<ChangelogBlock>
 	}
 }
 
+[InheritsTests]
 public class ChangelogAbsolutePathTests : DirectiveTest<ChangelogBlock>
 {
 	public ChangelogAbsolutePathTests() : base(
@@ -904,6 +923,7 @@ public class ChangelogAbsolutePathTests : DirectiveTest<ChangelogBlock>
 /// Tests the section order - critical types (breaking changes, security, known issues, deprecations)
 /// should appear BEFORE features/fixes when using :type: all.
 /// </summary>
+[InheritsTests]
 public class ChangelogSectionOrderTests : DirectiveTest<ChangelogBlock>
 {
 	public ChangelogSectionOrderTests() : base(
@@ -1020,6 +1040,7 @@ public class ChangelogSectionOrderTests : DirectiveTest<ChangelogBlock>
 /// <summary>
 /// Tests header levels: ## (h2) for versions, ### (h3) for sections.
 /// </summary>
+[InheritsTests]
 public class ChangelogHeaderLevelsTests : DirectiveTest<ChangelogBlock>
 {
 	public ChangelogHeaderLevelsTests() : base(
@@ -1100,6 +1121,7 @@ public class ChangelogHeaderLevelsTests : DirectiveTest<ChangelogBlock>
 /// the rendered output does not concatenate them without a separator.
 /// Regression test for: "allowlist.This PR introduces..." (no space between title and description).
 /// </summary>
+[InheritsTests]
 public class ChangelogTitleDescriptionSpacingTests : DirectiveTest<ChangelogBlock>
 {
 	public ChangelogTitleDescriptionSpacingTests() : base(
@@ -1142,6 +1164,7 @@ public class ChangelogTitleDescriptionSpacingTests : DirectiveTest<ChangelogBloc
 /// <summary>
 /// Verifies that when a bundle has a release-date field, it is rendered in the output.
 /// </summary>
+[InheritsTests]
 public class ChangelogReleaseDateTests : DirectiveTest<ChangelogBlock>
 {
 	public ChangelogReleaseDateTests() : base(
@@ -1183,6 +1206,7 @@ public class ChangelogReleaseDateTests : DirectiveTest<ChangelogBlock>
 /// <summary>
 /// Verifies that when a bundle has no release-date field, no "Released:" text appears.
 /// </summary>
+[InheritsTests]
 public class ChangelogNoReleaseDateTests : DirectiveTest<ChangelogBlock>
 {
 	public ChangelogNoReleaseDateTests() : base(
@@ -1219,6 +1243,7 @@ public class ChangelogNoReleaseDateTests : DirectiveTest<ChangelogBlock>
 /// <summary>
 /// Verifies that both release-date and description render together.
 /// </summary>
+[InheritsTests]
 public class ChangelogReleaseDateWithDescriptionTests : DirectiveTest<ChangelogBlock>
 {
 	public ChangelogReleaseDateWithDescriptionTests() : base(

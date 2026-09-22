@@ -7,6 +7,7 @@ using Elastic.Markdown.Myst.Directives.AgentSkill;
 
 namespace Elastic.Markdown.Tests.Directives;
 
+[InheritsTests]
 public class AgentSkillTests() : DirectiveTest<AgentSkillBlock>(
 	"""
 :::{agent-skill}
@@ -64,6 +65,7 @@ A regular paragraph.
 	public void DoesNotRenderLinkButton() => Html.Should().NotContain("Get the skill");
 }
 
+[InheritsTests]
 public class AgentSkillWithBodyTests() : DirectiveTest<AgentSkillBlock>(
 	"""
 :::{agent-skill}
@@ -88,6 +90,7 @@ A regular paragraph.
 	public void StillRendersCopyButton() => Html.Should().Contain("Copy install command");
 }
 
+[InheritsTests]
 public class AgentSkillMissingUrlTests() : DirectiveTest<AgentSkillBlock>("""
 :::{agent-skill}
 :::
@@ -98,6 +101,7 @@ A regular paragraph.
 	public void EmitsError() => Collector.Diagnostics.Should().Contain(d => d.Message.Contains("requires a :url: property"));
 }
 
+[InheritsTests]
 public class AgentSkillRelativeUrlTests() : DirectiveTest<AgentSkillBlock>(
 	"""
 :::{agent-skill}
@@ -111,6 +115,7 @@ A regular paragraph.
 	public void EmitsError() => Collector.Diagnostics.Should().Contain(d => d.Message.Contains("must be an absolute URL"));
 }
 
+[InheritsTests]
 public class AgentSkillNoSkillNameTests() : DirectiveTest<AgentSkillBlock>(
 	"""
 :::{agent-skill}

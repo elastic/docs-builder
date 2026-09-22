@@ -17,6 +17,7 @@ namespace Elastic.Markdown.Tests.Directives;
 /// (staging), and never filters local/isolated builds or products without a semver versioning
 /// system. The test versions configuration pins stack current to 8.0.0.
 /// </summary>
+[InheritsTests]
 public abstract class ChangelogVersionVisibilityTestBase() : DirectiveTest<ChangelogBlock>(
 	// language=markdown
 	"""
@@ -69,6 +70,7 @@ public abstract class ChangelogVersionVisibilityTestBase() : DirectiveTest<Chang
 		);
 }
 
+[InheritsTests]
 public class ChangelogVisibilityOnProductionTests() : ChangelogVersionVisibilityTestBase()
 {
 	protected override ContentSource? GetContentSource() => ContentSource.Current;
@@ -85,6 +87,7 @@ public class ChangelogVisibilityOnProductionTests() : ChangelogVersionVisibility
 		Collector.Diagnostics.Should().Contain(d => d.Severity == Severity.Hint && d.Message.Contains("elasticsearch 8.1.0"));
 }
 
+[InheritsTests]
 public class ChangelogVisibilityOnStagingTests() : ChangelogVersionVisibilityTestBase()
 {
 	protected override ContentSource? GetContentSource() => ContentSource.Next;
@@ -97,6 +100,7 @@ public class ChangelogVisibilityOnStagingTests() : ChangelogVersionVisibilityTes
 	}
 }
 
+[InheritsTests]
 public class ChangelogVisibilityOnIsolatedBuildTests() : ChangelogVersionVisibilityTestBase()
 {
 	// No override: isolated/local builds have no content source and render everything.
@@ -113,6 +117,7 @@ public class ChangelogVisibilityOnIsolatedBuildTests() : ChangelogVersionVisibil
 /// Products without a registered semver versioning system (date-promotion products, products not in
 /// products.yml) are never filtered — their targets are dates or unknown schemes, not stack versions.
 /// </summary>
+[InheritsTests]
 public class ChangelogVisibilityUnversionedProductTests() : DirectiveTest<ChangelogBlock>(
 	// language=markdown
 	"""

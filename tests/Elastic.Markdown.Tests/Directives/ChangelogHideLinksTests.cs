@@ -91,6 +91,7 @@ public class ChangelogShouldHideLinksForRepoTests
 /// <summary>
 /// Tests that links are shown for public repositories.
 /// </summary>
+[InheritsTests]
 public class ChangelogLinksDefaultBehaviorTests : DirectiveTest<ChangelogBlock>
 {
 	public ChangelogLinksDefaultBehaviorTests() : base(
@@ -159,6 +160,7 @@ public class ChangelogLinksDefaultBehaviorTests : DirectiveTest<ChangelogBlock>
 /// Tests that links are hidden when the bundle's repository is marked as private.
 /// Uses internal setter to simulate private repo detection from assembler.yml.
 /// </summary>
+[InheritsTests]
 public class ChangelogLinksHiddenForPrivateRepoTests : DirectiveTest<ChangelogBlock>
 {
 	public ChangelogLinksHiddenForPrivateRepoTests() : base(
@@ -230,6 +232,7 @@ public class ChangelogLinksHiddenForPrivateRepoTests : DirectiveTest<ChangelogBl
 /// Tests link hiding behavior with detailed entries (breaking changes, deprecations).
 /// Uses :type: all to show breaking changes and deprecations.
 /// </summary>
+[InheritsTests]
 public class ChangelogLinksHiddenInDetailedEntriesTests : DirectiveTest<ChangelogBlock>
 {
 	public ChangelogLinksHiddenInDetailedEntriesTests() : base(
@@ -322,6 +325,7 @@ public class ChangelogLinksHiddenInDetailedEntriesTests : DirectiveTest<Changelo
 /// <summary>
 /// Tests that links are shown for public repos even when some private repos are configured.
 /// </summary>
+[InheritsTests]
 public class ChangelogLinksShownForPublicRepoTests : DirectiveTest<ChangelogBlock>
 {
 	public ChangelogLinksShownForPublicRepoTests() : base(
@@ -374,6 +378,7 @@ public class ChangelogLinksShownForPublicRepoTests : DirectiveTest<ChangelogBloc
 /// <summary>
 /// Tests link hiding with merged bundles where one repo is private.
 /// </summary>
+[InheritsTests]
 public class ChangelogLinksWithMergedBundlesTests : DirectiveTest<ChangelogBlock>
 {
 	public ChangelogLinksWithMergedBundlesTests() : base(
@@ -468,6 +473,7 @@ public class ChangelogLinksWithMergedBundlesTests : DirectiveTest<ChangelogBlock
 /// <summary>
 /// Tests that merged bundles with only public repos show links.
 /// </summary>
+[InheritsTests]
 public class ChangelogLinksWithMergedPublicReposTests : DirectiveTest<ChangelogBlock>
 {
 	public ChangelogLinksWithMergedPublicReposTests() : base(
@@ -545,6 +551,7 @@ public class ChangelogLinksWithMergedPublicReposTests : DirectiveTest<ChangelogB
 /// <summary>
 /// Tests that :link-visibility: keep-links shows links even when the source repo is private.
 /// </summary>
+[InheritsTests]
 public class ChangelogLinkVisibilityKeepLinksTests : DirectiveTest<ChangelogBlock>
 {
 	public ChangelogLinkVisibilityKeepLinksTests() : base(
@@ -598,6 +605,7 @@ public class ChangelogLinkVisibilityKeepLinksTests : DirectiveTest<ChangelogBloc
 /// <summary>
 /// Tests that :link-visibility: hide-links hides links even when the source repo is public.
 /// </summary>
+[InheritsTests]
 public class ChangelogLinkVisibilityHideLinksTests : DirectiveTest<ChangelogBlock>
 {
 	public ChangelogLinkVisibilityHideLinksTests() : base(
@@ -644,6 +652,7 @@ public class ChangelogLinkVisibilityHideLinksTests : DirectiveTest<ChangelogBloc
 /// <summary>
 /// Tests that :link-visibility: auto (and default/unset) uses the standard private-repo logic.
 /// </summary>
+[InheritsTests]
 public class ChangelogLinkVisibilityAutoTests : DirectiveTest<ChangelogBlock>
 {
 	public ChangelogLinkVisibilityAutoTests() : base(
@@ -690,6 +699,7 @@ public class ChangelogLinkVisibilityAutoTests : DirectiveTest<ChangelogBlock>
 /// <summary>
 /// Tests that omitting :link-visibility: defaults to Auto.
 /// </summary>
+[InheritsTests]
 public class ChangelogLinkVisibilityDefaultTests : DirectiveTest<ChangelogBlock>
 {
 	public ChangelogLinkVisibilityDefaultTests() : base(
@@ -726,6 +736,7 @@ public class ChangelogLinkVisibilityDefaultTests : DirectiveTest<ChangelogBlock>
 /// <summary>
 /// Tests that an invalid :link-visibility: value falls back to Auto with a warning.
 /// </summary>
+[InheritsTests]
 public class ChangelogLinkVisibilityInvalidTests : DirectiveTest<ChangelogBlock>
 {
 	public ChangelogLinkVisibilityInvalidTests() : base(
@@ -767,6 +778,7 @@ public class ChangelogLinkVisibilityInvalidTests : DirectiveTest<ChangelogBlock>
 /// CDN-sourced bundles are scrubbed for public delivery; :link-visibility: auto keeps links even when
 /// assembler.yml marks source repos private (including merged bundles with a private constituent).
 /// </summary>
+[InheritsTests]
 public class ChangelogCdnLinkVisibilityAutoTests() : DirectiveTest<ChangelogBlock>(
 	// language=markdown
 	"""

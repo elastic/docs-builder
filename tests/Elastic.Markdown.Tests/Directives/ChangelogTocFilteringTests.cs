@@ -12,6 +12,7 @@ namespace Elastic.Markdown.Tests.Directives;
 /// Verifies that the directive does not apply publish blockers. Previously blocked entries
 /// (docs, other) should appear in the TOC, anchors, and HTML output.
 /// </summary>
+[InheritsTests]
 public class ChangelogPublishBlockerFiltersTocTests : DirectiveTest<ChangelogBlock>
 {
 	public ChangelogPublishBlockerFiltersTocTests() : base(
@@ -131,6 +132,7 @@ public class ChangelogPublishBlockerFiltersTocTests : DirectiveTest<ChangelogBlo
 /// When all entries of a certain type are hidden via feature-id, the corresponding section
 /// should not appear in the TOC or anchors.
 /// </summary>
+[InheritsTests]
 public class ChangelogHideFeaturesFiltersTocTests : DirectiveTest<ChangelogBlock>
 {
 	public ChangelogHideFeaturesFiltersTocTests() : base(
@@ -221,6 +223,7 @@ public class ChangelogHideFeaturesFiltersTocTests : DirectiveTest<ChangelogBlock
 /// <summary>
 /// Tests that partial filtering retains the section when some (but not all) entries are filtered.
 /// </summary>
+[InheritsTests]
 public class ChangelogPartialFilterRetainsTocTests : DirectiveTest<ChangelogBlock>
 {
 	public ChangelogPartialFilterRetainsTocTests() : base(
@@ -285,6 +288,7 @@ public class ChangelogPartialFilterRetainsTocTests : DirectiveTest<ChangelogBloc
 /// <summary>
 /// Tests that publish blocker and hide-features work together to filter the TOC.
 /// </summary>
+[InheritsTests]
 public class ChangelogCombinedFiltersFilterTocTests : DirectiveTest<ChangelogBlock>
 {
 	public ChangelogCombinedFiltersFilterTocTests() : base(
@@ -394,6 +398,7 @@ public class ChangelogCombinedFiltersFilterTocTests : DirectiveTest<ChangelogBlo
 /// Verifies that the directive does not apply area-based publish blockers.
 /// Previously blocked entries (Internal area) should appear in the TOC and anchors.
 /// </summary>
+[InheritsTests]
 public class ChangelogPublishBlockerAreaFiltersTocTests : DirectiveTest<ChangelogBlock>
 {
 	public ChangelogPublishBlockerAreaFiltersTocTests() : base(
@@ -495,6 +500,7 @@ public class ChangelogPublishBlockerAreaFiltersTocTests : DirectiveTest<Changelo
 /// Tests that when ALL entries across ALL types in a bundle are filtered out by hide-features
 /// and the bundle has no description, the version is omitted from the TOC and rendered output.
 /// </summary>
+[InheritsTests]
 public class ChangelogAllEntriesFilteredTocTests : DirectiveTest<ChangelogBlock>
 {
 	public ChangelogAllEntriesFilteredTocTests() : base(
@@ -557,6 +563,7 @@ public class ChangelogAllEntriesFilteredTocTests : DirectiveTest<ChangelogBlock>
 /// Tests TOC filtering across multiple bundles. Each bundle should independently
 /// filter its sections based on which entries survive filtering.
 /// </summary>
+[InheritsTests]
 public class ChangelogMultipleBundlesTocFilteringTests : DirectiveTest<ChangelogBlock>
 {
 	public ChangelogMultipleBundlesTocFilteringTests() : base(

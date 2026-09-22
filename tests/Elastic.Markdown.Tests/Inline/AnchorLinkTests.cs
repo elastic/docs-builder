@@ -9,6 +9,7 @@ using Markdig.Syntax.Inlines;
 
 namespace Elastic.Markdown.Tests.Inline;
 
+[InheritsTests]
 public abstract class AnchorLinkTestBase([LanguageInjection("markdown")] string content) : InlineTest<LinkInline>(
 	$"""
 ## Hello world
@@ -47,6 +48,7 @@ These are new requirements
 	}
 }
 
+[InheritsTests]
 public class InPageAnchorTests() : AnchorLinkTestBase("""
 [Hello](#hello-world)
 """)
@@ -58,6 +60,7 @@ public class InPageAnchorTests() : AnchorLinkTestBase("""
 	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
 }
 
+[InheritsTests]
 public class ExternalPageAnchorTests() : AnchorLinkTestBase("""
 [Sub Requirements](testing/req.md#sub-requirements)
 """)
@@ -73,6 +76,7 @@ public class ExternalPageAnchorTests() : AnchorLinkTestBase("""
 	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
 }
 
+[InheritsTests]
 public class ExternalPageCustomAnchorTests() : AnchorLinkTestBase("""
 [Sub Requirements](testing/req.md#new-reqs)
 """)
@@ -88,6 +92,7 @@ public class ExternalPageCustomAnchorTests() : AnchorLinkTestBase("""
 	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
 }
 
+[InheritsTests]
 public class ExternalPageAnchorAutoTitleTests() : AnchorLinkTestBase("""
 [](testing/req.md#sub-requirements)
 """)
@@ -102,6 +107,7 @@ public class ExternalPageAnchorAutoTitleTests() : AnchorLinkTestBase("""
 	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
 }
 
+[InheritsTests]
 public class InPageBadAnchorTests() : AnchorLinkTestBase("""
 [Hello](#hello-world2)
 """)
@@ -114,6 +120,7 @@ public class InPageBadAnchorTests() : AnchorLinkTestBase("""
 		Collector.Diagnostics.Should().HaveCount(1).And.Contain(d => d.Message.Contains("`hello-world2` does not exist"));
 }
 
+[InheritsTests]
 public class ExternalPageBadAnchorTests() : AnchorLinkTestBase("""
 [Sub Requirements](testing/req.md#sub-requirements2)
 """)
@@ -129,6 +136,7 @@ public class ExternalPageBadAnchorTests() : AnchorLinkTestBase("""
 		Collector.Diagnostics.Should().HaveCount(1).And.Contain(d => d.Message.Contains("`sub-requirements2` does not exist"));
 }
 
+[InheritsTests]
 public class NestedHeadingTest() : AnchorLinkTestBase("""
 	[Heading inside dropdown](testing/req.md#heading-inside-dropdown)
 	""")
@@ -142,6 +150,7 @@ public class NestedHeadingTest() : AnchorLinkTestBase("""
 	public void HasError() => Collector.Diagnostics.Should().HaveCount(0);
 }
 
+[InheritsTests]
 public class MissingMdExtensionTests() : AnchorLinkTestBase("""
 [Link](testing/req)
 """)
@@ -151,6 +160,7 @@ public class MissingMdExtensionTests() : AnchorLinkTestBase("""
 		Collector.Diagnostics.Should().HaveCount(1).And.Contain(d => d.Message.Contains("Did you forget to add the .md extension?"));
 }
 
+[InheritsTests]
 public class MissingMdExtensionWithAnchorTests() : AnchorLinkTestBase("""
 [Link](testing/req#sub-requirements)
 """)
@@ -160,6 +170,7 @@ public class MissingMdExtensionWithAnchorTests() : AnchorLinkTestBase("""
 		Collector.Diagnostics.Should().HaveCount(1).And.Contain(d => d.Message.Contains("Did you forget to add the .md extension?"));
 }
 
+[InheritsTests]
 public class MissingFileNoMdHintTests() : AnchorLinkTestBase("""
 [Link](testing/nonexistent)
 """)

@@ -7,6 +7,7 @@ using Elastic.Markdown.Myst.Directives.AppliesSwitch;
 
 namespace Elastic.Markdown.Tests.Directives;
 
+[InheritsTests]
 public class ApplicabilitySwitchTests() : DirectiveTest<AppliesSwitchBlock>(
 	"""
 :::::{applies-switch}
@@ -69,6 +70,7 @@ This feature has been removed from Elastic Cloud Enterprise.
 
 // Reproduces the real-world case: a % comment block between {applies-switch} and
 // the first {applies-item} previously pushed all item indices to 1, 2, 3.
+[InheritsTests]
 public class ApplicabilitySwitchWithCommentTests() : DirectiveTest<AppliesSwitchBlock>(
 	"""
 :::::{applies-switch}
@@ -100,6 +102,7 @@ Content B
 	public void FirstItemRendersChecked() => Html.Should().Contain("applies-switch-input\" checked=\"checked\"");
 }
 
+[InheritsTests]
 public class MultipleApplicabilitySwitchTests() : DirectiveTest<AppliesSwitchBlock>(
 	"""
 :::::{applies-switch}
@@ -136,6 +139,7 @@ Content for preview version
 	}
 }
 
+[InheritsTests]
 public class GroupApplicabilitySwitchTests() : DirectiveTest<AppliesSwitchBlock>(
 	"""
 ::::{applies-switch}

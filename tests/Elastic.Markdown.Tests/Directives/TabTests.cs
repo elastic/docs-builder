@@ -7,6 +7,7 @@ using Elastic.Markdown.Myst.Directives.Tabs;
 
 namespace Elastic.Markdown.Tests.Directives;
 
+[InheritsTests]
 public class TabTests() : DirectiveTest<TabSetBlock>(
 	"""
 :::::{tab-set}
@@ -52,6 +53,7 @@ Frank Herbert  |Dune           |604            |1965-06-01T00:00:00.000Z
 	}
 }
 
+[InheritsTests]
 public class MultipleTabTests() : DirectiveTest<TabSetBlock>(
 	"""
 :::::{tab-set}
@@ -92,6 +94,7 @@ Tabs are easy. You can even embed other directives like the admonition you see h
 	}
 }
 
+[InheritsTests]
 public class GroupTabTests() : DirectiveTest<TabSetBlock>(
 	"""
 ::::{tab-set}

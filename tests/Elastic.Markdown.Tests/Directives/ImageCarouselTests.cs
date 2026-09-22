@@ -9,6 +9,7 @@ using Elastic.Markdown.Myst.Directives.Image;
 
 namespace Elastic.Markdown.Tests.Directives;
 
+[InheritsTests]
 public class ImageCarouselBlockTests() : DirectiveTest<ImageCarouselBlock>(
 	"""
 :::{carousel}
@@ -55,6 +56,7 @@ public class ImageCarouselBlockTests() : DirectiveTest<ImageCarouselBlock>(
 	}
 }
 
+[InheritsTests]
 public class ImageCarouselWithSmallHeightTests() : DirectiveTest<ImageCarouselBlock>(
 	"""
 :::{carousel}
@@ -77,6 +79,7 @@ public class ImageCarouselWithSmallHeightTests() : DirectiveTest<ImageCarouselBl
 	}
 }
 
+[InheritsTests]
 public class ImageCarouselWithAutoHeightTests() : DirectiveTest<ImageCarouselBlock>(
 	"""
 :::{carousel}
@@ -99,6 +102,7 @@ public class ImageCarouselWithAutoHeightTests() : DirectiveTest<ImageCarouselBlo
 	}
 }
 
+[InheritsTests]
 public class ImageCarouselWithInvalidHeightTests() : DirectiveTest<ImageCarouselBlock>(
 	"""
 :::{carousel}
@@ -126,6 +130,7 @@ public class ImageCarouselWithInvalidHeightTests() : DirectiveTest<ImageCarousel
 	}
 }
 
+[InheritsTests]
 public class ImageCarouselWithoutImagesTests() : DirectiveTest<ImageCarouselBlock>("""
 :::{carousel}
 :::
@@ -143,6 +148,7 @@ public class ImageCarouselWithoutImagesTests() : DirectiveTest<ImageCarouselBloc
 	}
 }
 
+[InheritsTests]
 public class ImageCarouselMinimalTests() : DirectiveTest<ImageCarouselBlock>(
 	"""
 :::{carousel}
@@ -166,6 +172,7 @@ public class ImageCarouselMinimalTests() : DirectiveTest<ImageCarouselBlock>(
 	}
 }
 
+[InheritsTests]
 public class ImageCarouselWithMissingImageTests() : DirectiveTest<ImageCarouselBlock>(
 	"""
 :::{carousel}

@@ -12,6 +12,7 @@ namespace Elastic.Markdown.Tests.Inline;
 /// <summary>
 /// Base class for autolink tests that expect a LinkInline to be found.
 /// </summary>
+[InheritsTests]
 public abstract class AutoLinkTestBase([LanguageInjection("markdown")] string content) : InlineTest<LinkInline>(content)
 {
 	[Test]
@@ -25,6 +26,7 @@ public abstract class AutoLinkNotFoundTestBase([LanguageInjection("markdown")] s
 {
 }
 
+[InheritsTests]
 public class BasicAutoLinkTests() : AutoLinkTestBase("""
 Check out https://docs.test.io for more info.
 """)
@@ -37,6 +39,7 @@ Check out https://docs.test.io for more info.
 	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
 }
 
+[InheritsTests]
 public class AutoLinkWithPathTests() : AutoLinkTestBase("""
 Visit https://docs.test.io/path/to/page for details.
 """)
@@ -51,6 +54,7 @@ Visit https://docs.test.io/path/to/page for details.
 	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
 }
 
+[InheritsTests]
 public class AutoLinkWithQueryStringTests() : AutoLinkTestBase("""
 See https://docs.test.io/search?q=test&page=1 for results.
 """)
@@ -65,6 +69,7 @@ See https://docs.test.io/search?q=test&page=1 for results.
 	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
 }
 
+[InheritsTests]
 public class AutoLinkWithAnchorTests() : AutoLinkTestBase("""
 Jump to https://docs.test.io/page#section for the section.
 """)
@@ -79,6 +84,7 @@ Jump to https://docs.test.io/page#section for the section.
 	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
 }
 
+[InheritsTests]
 public class AutoLinkTrailingPeriodTests() : AutoLinkTestBase("""
 Check out https://docs.test.io.
 """)
@@ -91,6 +97,7 @@ Check out https://docs.test.io.
 	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
 }
 
+[InheritsTests]
 public class AutoLinkTrailingCommaTests() : AutoLinkTestBase(
 	"""
 Visit https://first.test.io, https://second.test.io, or https://third.test.io for info.
@@ -111,6 +118,7 @@ Visit https://first.test.io, https://second.test.io, or https://third.test.io fo
 	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
 }
 
+[InheritsTests]
 public class AutoLinkInParenthesesTests() : AutoLinkTestBase("""
 See the docs (https://docs.test.io) for details.
 """)
@@ -123,6 +131,7 @@ See the docs (https://docs.test.io) for details.
 	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
 }
 
+[InheritsTests]
 public class AutoLinkWithBalancedParensTests() : AutoLinkTestBase(
 	"""
 Check https://en.wikipedia.org/wiki/Rust_(programming_language) for more.
@@ -139,6 +148,7 @@ Check https://en.wikipedia.org/wiki/Rust_(programming_language) for more.
 	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
 }
 
+[InheritsTests]
 public class AutoLinkElasticDocsHintTests() : AutoLinkTestBase("""
 See https://www.elastic.co/docs/deploy-manage for deployment info.
 """)
@@ -197,6 +207,7 @@ This http://docs.test.io should not be autolinked.
 	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
 }
 
+[InheritsTests]
 public class AutoLinkWithStandardLinkTests() : AutoLinkTestBase(
 	"""
 Visit [Docs](https://docs.test.io) or https://other.test.io for more.
@@ -215,6 +226,7 @@ Visit [Docs](https://docs.test.io) or https://other.test.io for more.
 	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
 }
 
+[InheritsTests]
 // Regression test for elastic/docs-builder#3317: no nested <a> when a URL is the link text.
 public class AutoLinkInsideLinkTextTests() : AutoLinkTestBase(
 	"""
@@ -234,6 +246,7 @@ Upload to a service like [https://gist.github.com](https://gist.github.com).
 	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
 }
 
+[InheritsTests]
 public class AutoLinkInsideLinkTextWithSurroundingTextTests() : AutoLinkTestBase(
 	"""
 See [the page at https://example.test.io for details](https://docs.test.io).
@@ -251,6 +264,7 @@ See [the page at https://example.test.io for details](https://docs.test.io).
 }
 
 // Verify that image-inside-link is unaffected by the IsNestedInsideLink guard (images bypass it via the IsImage branch).
+[InheritsTests]
 public class ImageInsideLinkTests() : InlineTest<LinkInline>("""
 [![alt text](https://example.com/image.png)](https://example.com)
 """)
@@ -266,6 +280,7 @@ public class ImageInsideLinkTests() : InlineTest<LinkInline>("""
 	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
 }
 
+[InheritsTests]
 public class MultipleAutoLinksTests() : AutoLinkTestBase(
 	"""
 First https://first.com then https://second.com and finally https://third.com are all linked.
@@ -370,6 +385,7 @@ See https://www.iana.org/assignments[IANA for assignments.
 	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
 }
 
+[InheritsTests]
 public class AutoLinkValidUrlStillWorksTests() : AutoLinkTestBase("""
 Check https://www.elastic.co/guide for docs.
 """)

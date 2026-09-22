@@ -8,6 +8,7 @@ using Elastic.Markdown.Myst.Directives.Changelog;
 
 namespace Elastic.Markdown.Tests.Directives;
 
+[InheritsTests]
 public class ChangelogConfigLoadAutoDiscoverTests : DirectiveTest<ChangelogBlock>
 {
 	public ChangelogConfigLoadAutoDiscoverTests() : base(
@@ -97,6 +98,7 @@ public class ChangelogConfigLoadAutoDiscoverTests : DirectiveTest<ChangelogBlock
 	public void RendersKnownIssuesSection() => Html.Should().Contain("Known issues");
 }
 
+[InheritsTests]
 public class ChangelogConfigLoadExplicitPathTests : DirectiveTest<ChangelogBlock>
 {
 	public ChangelogConfigLoadExplicitPathTests() : base(
@@ -167,6 +169,7 @@ public class ChangelogConfigLoadExplicitPathTests : DirectiveTest<ChangelogBlock
 	}
 }
 
+[InheritsTests]
 public class ChangelogConfigLoadFromDocsSubfolderTests : DirectiveTest<ChangelogBlock>
 {
 	public ChangelogConfigLoadFromDocsSubfolderTests() : base(
@@ -231,6 +234,7 @@ public class ChangelogConfigLoadFromDocsSubfolderTests : DirectiveTest<Changelog
 	}
 }
 
+[InheritsTests]
 public class ChangelogConfigNotFoundTests : DirectiveTest<ChangelogBlock>
 {
 	public ChangelogConfigNotFoundTests() : base(
@@ -270,6 +274,7 @@ public class ChangelogConfigNotFoundTests : DirectiveTest<ChangelogBlock>
 	public void NoErrorsEmittedForMissingConfig() => Collector.Diagnostics.Should().NotContain(d => d.Message.Contains("changelog.yml"));
 }
 
+[InheritsTests]
 public class ChangelogConfigExplicitPathNotFoundTests : DirectiveTest<ChangelogBlock>
 {
 	public ChangelogConfigExplicitPathNotFoundTests() : base(
@@ -311,6 +316,7 @@ public class ChangelogConfigExplicitPathNotFoundTests : DirectiveTest<ChangelogB
 	public void RendersAllEntriesWhenConfigNotFound() => Html.Should().Contain("Regular feature");
 }
 
+[InheritsTests]
 public class ChangelogConfigPriorityTests : DirectiveTest<ChangelogBlock>
 {
 	public ChangelogConfigPriorityTests() : base(
@@ -397,6 +403,7 @@ public class ChangelogConfigPriorityTests : DirectiveTest<ChangelogBlock>
 	}
 }
 
+[InheritsTests]
 public class ChangelogConfigEmptyBlockTests : DirectiveTest<ChangelogBlock>
 {
 	public ChangelogConfigEmptyBlockTests() : base(
@@ -450,6 +457,7 @@ public class ChangelogConfigEmptyBlockTests : DirectiveTest<ChangelogBlock>
 	public void RendersAllEntriesWhenNoBlockSection() => Html.Should().Contain("Regular feature");
 }
 
+[InheritsTests]
 public class ChangelogConfigMixedBlockersTests : DirectiveTest<ChangelogBlock>
 {
 	public ChangelogConfigMixedBlockersTests() : base(
@@ -542,6 +550,7 @@ public class ChangelogConfigMixedBlockersTests : DirectiveTest<ChangelogBlock>
 	}
 }
 
+[InheritsTests]
 public class ChangelogProductFallbackSingleProductTests() : DirectiveTest<ChangelogBlock>(
 	// language=markdown
 	"""
@@ -625,6 +634,7 @@ public class ChangelogProductFallbackSingleProductTests() : DirectiveTest<Change
 	}
 }
 
+[InheritsTests]
 public class ChangelogProductFallbackMultipleProductsTests() : DirectiveTest<ChangelogBlock>(
 	// language=markdown
 	"""
@@ -698,6 +708,7 @@ public class ChangelogProductFallbackMultipleProductsTests() : DirectiveTest<Cha
 	}
 }
 
+[InheritsTests]
 public class ChangelogProductExplicitOptionOverridesDocsetTests() : DirectiveTest<ChangelogBlock>(
 	// language=markdown
 	"""

@@ -52,6 +52,7 @@ public class CodeBlockArgumentsClassTests
 	}
 }
 
+[InheritsTests]
 public abstract class CodeBlockArgumentsTests(
 	string language,
 	string arguments,
@@ -66,6 +67,7 @@ public abstract class CodeBlockArgumentsTests(
 		 """
 );
 
+[InheritsTests]
 public class DisabledCallouts() : CodeBlockArgumentsTests(
 	"csharp",
 	"callouts=false",
@@ -83,6 +85,7 @@ public class DisabledCallouts() : CodeBlockArgumentsTests(
 	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
 }
 
+[InheritsTests]
 public class EnabledCallouts() : CodeBlockArgumentsTests(
 	"csharp",
 	"callouts=true",
@@ -101,6 +104,7 @@ public class EnabledCallouts() : CodeBlockArgumentsTests(
 	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
 }
 
+[InheritsTests]
 public class EnabledSubstitutions() : CodeBlockArgumentsTests(
 	"csharp",
 	"subs=true",
@@ -119,6 +123,7 @@ public class EnabledSubstitutions() : CodeBlockArgumentsTests(
 	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
 }
 
+[InheritsTests]
 public class DisabledSubstitutions() : CodeBlockArgumentsTests(
 	"csharp",
 	"subs=false",
@@ -137,6 +142,7 @@ public class DisabledSubstitutions() : CodeBlockArgumentsTests(
 	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
 }
 
+[InheritsTests]
 public class MultipleArguments() : CodeBlockArgumentsTests(
 	"csharp",
 	"subs=true, callouts=false",

@@ -9,6 +9,7 @@ using Elastic.Markdown.Myst.Directives.Image;
 
 namespace Elastic.Markdown.Tests.Directives;
 
+[InheritsTests]
 public class ImageBlockTests() : DirectiveTest<ImageBlock>(
 	"""
 :::{image} img/observability.png
@@ -41,6 +42,7 @@ public class ImageBlockTests() : DirectiveTest<ImageBlock>(
 	}
 }
 
+[InheritsTests]
 public class AllowedExternalHostTests() : DirectiveTest<ImageBlock>(
 	"""
 :::{image} https://images.contentstack.io/v3/assets/bltefdd0b53724fa2ce/blt/example.gif
@@ -60,6 +62,7 @@ public class AllowedExternalHostTests() : DirectiveTest<ImageBlock>(
 	}
 }
 
+[InheritsTests]
 public class FigureTests() : DirectiveTest<ImageBlock>(
 	"""
 :::{figure} https://github.com/rowanc1/pics/blob/main/sunset.png?raw=true

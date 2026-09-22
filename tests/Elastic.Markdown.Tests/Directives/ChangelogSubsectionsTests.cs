@@ -8,6 +8,7 @@ using Elastic.Markdown.Myst.Directives.Changelog;
 
 namespace Elastic.Markdown.Tests.Directives;
 
+[InheritsTests]
 public class ChangelogSubsectionsDisabledByDefaultTests : DirectiveTest<ChangelogBlock>
 {
 	public ChangelogSubsectionsDisabledByDefaultTests() : base(
@@ -68,6 +69,7 @@ public class ChangelogSubsectionsDisabledByDefaultTests : DirectiveTest<Changelo
 	}
 }
 
+[InheritsTests]
 public class ChangelogSubsectionsEnabledTests : DirectiveTest<ChangelogBlock>
 {
 	public ChangelogSubsectionsEnabledTests() : base(
@@ -129,6 +131,7 @@ public class ChangelogSubsectionsEnabledTests : DirectiveTest<ChangelogBlock>
 	}
 }
 
+[InheritsTests]
 public class ChangelogSubsectionsExplicitFalseTests : DirectiveTest<ChangelogBlock>
 {
 	public ChangelogSubsectionsExplicitFalseTests() : base(
@@ -176,6 +179,7 @@ public class ChangelogSubsectionsExplicitFalseTests : DirectiveTest<ChangelogBlo
 /// Tests that when :subsections: is enabled and no publish rules with areas exist,
 /// entries with multiple areas use the first area (unchanged behavior).
 /// </summary>
+[InheritsTests]
 public class ChangelogSubsectionsNoAreaRulesTests : DirectiveTest<ChangelogBlock>
 {
 	public ChangelogSubsectionsNoAreaRulesTests() : base(

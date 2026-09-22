@@ -7,6 +7,7 @@ using Elastic.Markdown.Myst.Directives.Button;
 
 namespace Elastic.Markdown.Tests.Directives;
 
+[InheritsTests]
 public class ButtonBlockTests() : DirectiveTest<ButtonBlock>("""
 :::{button}
 [Get Started](/get-started)
@@ -32,6 +33,7 @@ public class ButtonBlockTests() : DirectiveTest<ButtonBlock>("""
 	public void RendersButtonText() => Html.Should().Contain("Get Started");
 }
 
+[InheritsTests]
 public class ButtonSecondaryTests() : DirectiveTest<ButtonBlock>("""
 :::{button}
 :type: secondary
@@ -46,6 +48,7 @@ public class ButtonSecondaryTests() : DirectiveTest<ButtonBlock>("""
 	public void RendersSecondaryClass() => Html.Should().Contain("doc-button-secondary");
 }
 
+[InheritsTests]
 public class ButtonNeutralTests() : DirectiveTest<ButtonBlock>(
 	"""
 :::{button}
@@ -65,6 +68,7 @@ public class ButtonNeutralTests() : DirectiveTest<ButtonBlock>(
 	public void EmitsNoErrors() => Collector.Diagnostics.Should().BeEmpty();
 }
 
+[InheritsTests]
 public class ButtonNeutralVariantAliasTests() : DirectiveTest<ButtonBlock>(
 	"""
 :::{button}
@@ -78,6 +82,7 @@ public class ButtonNeutralVariantAliasTests() : DirectiveTest<ButtonBlock>(
 	public void ParsesNeutralTypeFromVariantAlias() => Block!.Type.Should().Be("neutral");
 }
 
+[InheritsTests]
 public class ButtonNeutralInGroupTests() : DirectiveTest<ButtonGroupBlock>(
 	"""
 ::::{button-group}
@@ -99,6 +104,7 @@ public class ButtonNeutralInGroupTests() : DirectiveTest<ButtonGroupBlock>(
 	public void RendersPrimaryAlongsideNeutral() => Html.Should().Contain("doc-button-primary");
 }
 
+[InheritsTests]
 public class ButtonAlignmentTests() : DirectiveTest<ButtonBlock>("""
 :::{button}
 :align: center
@@ -113,6 +119,7 @@ public class ButtonAlignmentTests() : DirectiveTest<ButtonBlock>("""
 	public void RendersWrapperWithAlignClass() => Html.Should().Contain("doc-button-wrapper doc-button-primary doc-button-center");
 }
 
+[InheritsTests]
 public class ButtonExternalTests() : DirectiveTest<ButtonBlock>("""
 :::{button}
 [GitHub](https://github.com/elastic)
@@ -126,6 +133,7 @@ public class ButtonExternalTests() : DirectiveTest<ButtonBlock>("""
 	public void RendersNoopenerNoreferrer() => Html.Should().Contain("rel=\"noopener noreferrer\"");
 }
 
+[InheritsTests]
 public class ButtonReferenceLinkTests() : DirectiveTest<ButtonBlock>(
 	"""
 :::{button}
@@ -146,6 +154,7 @@ public class ButtonReferenceLinkTests() : DirectiveTest<ButtonBlock>(
 	public void EmitsNoErrors() => Collector.Diagnostics.Should().BeEmpty();
 }
 
+[InheritsTests]
 public class ButtonInvalidTypeTests() : DirectiveTest<ButtonBlock>("""
 :::{button}
 :type: invalid
@@ -161,6 +170,7 @@ public class ButtonInvalidTypeTests() : DirectiveTest<ButtonBlock>("""
 	public void FallsBackToPrimary() => Block!.Type.Should().Be("primary");
 }
 
+[InheritsTests]
 public class ButtonGroupTests() : DirectiveTest<ButtonGroupBlock>(
 	"""
 ::::{button-group}
@@ -192,6 +202,7 @@ public class ButtonGroupTests() : DirectiveTest<ButtonGroupBlock>(
 	public void RendersSecondaryButton() => Html.Should().Contain("doc-button-secondary");
 }
 
+[InheritsTests]
 public class ButtonGroupAlignmentTests() : DirectiveTest<ButtonGroupBlock>(
 	"""
 ::::{button-group}
@@ -210,6 +221,7 @@ public class ButtonGroupAlignmentTests() : DirectiveTest<ButtonGroupBlock>(
 	public void RendersGroupAlignClass() => Html.Should().Contain("doc-button-group-center");
 }
 
+[InheritsTests]
 public class ButtonInGroupTests() : DirectiveTest<ButtonBlock>("""
 ::::{button-group}
 :::{button}
@@ -228,6 +240,7 @@ public class ButtonInGroupTests() : DirectiveTest<ButtonBlock>("""
 	public void RendersButtonItem() => Html.Should().Contain("doc-button-item");
 }
 
+[InheritsTests]
 public class ButtonCrossLinkTests() : DirectiveTest<ButtonBlock>("""
 :::{button}
 [Kibana Docs](kibana://api/index.md)
@@ -241,6 +254,7 @@ public class ButtonCrossLinkTests() : DirectiveTest<ButtonBlock>("""
 	public void RendersLinkHref() => Html.Should().Contain("href=\"");
 }
 
+[InheritsTests]
 public class ButtonCursorProtocolTests() : DirectiveTest<ButtonBlock>(
 	"""
 :::{button}
@@ -259,6 +273,7 @@ public class ButtonCursorProtocolTests() : DirectiveTest<ButtonBlock>(
 	public void EmitsNoErrors() => Collector.Diagnostics.Should().BeEmpty();
 }
 
+[InheritsTests]
 public class ButtonVscodeProtocolTests() : DirectiveTest<ButtonBlock>(
 	"""
 :::{button}
@@ -277,6 +292,7 @@ public class ButtonVscodeProtocolTests() : DirectiveTest<ButtonBlock>(
 	public void EmitsNoErrors() => Collector.Diagnostics.Should().BeEmpty();
 }
 
+[InheritsTests]
 public class ButtonVscodeInsidersProtocolTests() : DirectiveTest<ButtonBlock>(
 	"""
 :::{button}
@@ -295,6 +311,7 @@ public class ButtonVscodeInsidersProtocolTests() : DirectiveTest<ButtonBlock>(
 	public void EmitsNoErrors() => Collector.Diagnostics.Should().BeEmpty();
 }
 
+[InheritsTests]
 public class ButtonEmptyTests() : DirectiveTest<ButtonBlock>("""
 :::{button}
 :::
@@ -304,6 +321,7 @@ public class ButtonEmptyTests() : DirectiveTest<ButtonBlock>("""
 	public void EmitsErrorForEmptyContent() => Collector.Diagnostics.Should().ContainSingle(d => d.Message.Contains("requires a link"));
 }
 
+[InheritsTests]
 public class ButtonPlainTextTests() : DirectiveTest<ButtonBlock>("""
 :::{button}
 Just some text without a link
@@ -315,6 +333,7 @@ Just some text without a link
 		Collector.Diagnostics.Should().ContainSingle(d => d.Message.Contains("must contain only a single Markdown link"));
 }
 
+[InheritsTests]
 public class ButtonMultipleLinksTests() : DirectiveTest<ButtonBlock>("""
 :::{button}
 [Link One](/one) and [Link Two](/two)
@@ -326,6 +345,7 @@ public class ButtonMultipleLinksTests() : DirectiveTest<ButtonBlock>("""
 		Collector.Diagnostics.Should().ContainSingle(d => d.Message.Contains("must contain only a single Markdown link"));
 }
 
+[InheritsTests]
 public class ButtonNestedDirectiveTests() : DirectiveTest<ButtonBlock>("""
 :::{button}
 ::::{note}

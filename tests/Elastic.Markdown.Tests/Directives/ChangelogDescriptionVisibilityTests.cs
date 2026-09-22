@@ -118,6 +118,7 @@ public class ChangelogShouldHideEntryDescriptionsTests
 /// <summary>
 /// Omitting :description-visibility: defaults to <see cref="ChangelogDescriptionVisibility.Auto"/>.
 /// </summary>
+[InheritsTests]
 public class ChangelogDescriptionVisibilityDefaultTests() : DirectiveTest<ChangelogBlock>("""
 	:::{changelog}
 	:::
@@ -153,6 +154,7 @@ public class ChangelogDescriptionVisibilityDefaultTests() : DirectiveTest<Change
 	public void HtmlStillRendersTitles() => Html.Should().Contain("Feature delta");
 }
 
+[InheritsTests]
 public class ChangelogDescriptionVisibilityAutoShowsForPrivateRepoTests() : DirectiveTest<ChangelogBlock>("""
 	:::{changelog}
 	:::
@@ -198,6 +200,7 @@ public class ChangelogDescriptionVisibilityAutoShowsForPrivateRepoTests() : Dire
 	}
 }
 
+[InheritsTests]
 public class ChangelogDescriptionVisibilityKeepExplicitTests() : DirectiveTest<ChangelogBlock>(
 	"""
 	:::{changelog}
@@ -229,6 +232,7 @@ public class ChangelogDescriptionVisibilityKeepExplicitTests() : DirectiveTest<C
 	public void KeepsBodyOnFullyPublicRepos() => Html.Should().Contain("BODY_KEEP_VISIBILITY");
 }
 
+[InheritsTests]
 public class ChangelogDescriptionVisibilityHideExplicitTests() : DirectiveTest<ChangelogBlock>(
 	"""
 	:::{changelog}
@@ -268,6 +272,7 @@ public class ChangelogDescriptionVisibilityHideExplicitTests() : DirectiveTest<C
 	}
 }
 
+[InheritsTests]
 public class ChangelogDescriptionVisibilityInvalidTests() : DirectiveTest<ChangelogBlock>(
 	"""
 	:::{changelog}

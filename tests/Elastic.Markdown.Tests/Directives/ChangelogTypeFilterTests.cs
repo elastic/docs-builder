@@ -16,6 +16,7 @@ namespace Elastic.Markdown.Tests.Directives;
 /// With :type: deprecation, only deprecations are shown.
 /// With :type: known-issue, only known issues are shown.
 /// </summary>
+[InheritsTests]
 public class ChangelogTypeFilterDefaultTests : DirectiveTest<ChangelogBlock>
 {
 	public ChangelogTypeFilterDefaultTests() : base(
@@ -124,6 +125,7 @@ public class ChangelogTypeFilterDefaultTests : DirectiveTest<ChangelogBlock>
 /// <summary>
 /// Tests for :type: all - shows all entry types including separated types.
 /// </summary>
+[InheritsTests]
 public class ChangelogTypeFilterAllTests : DirectiveTest<ChangelogBlock>
 {
 	public ChangelogTypeFilterAllTests() : base(
@@ -236,6 +238,7 @@ public class ChangelogTypeFilterAllTests : DirectiveTest<ChangelogBlock>
 /// <summary>
 /// Tests for :type: breaking-change - shows only breaking changes.
 /// </summary>
+[InheritsTests]
 public class ChangelogTypeFilterBreakingChangeTests : DirectiveTest<ChangelogBlock>
 {
 	public ChangelogTypeFilterBreakingChangeTests() : base(
@@ -310,6 +313,7 @@ public class ChangelogTypeFilterBreakingChangeTests : DirectiveTest<ChangelogBlo
 /// <summary>
 /// Tests for :type: deprecation - shows only deprecations.
 /// </summary>
+[InheritsTests]
 public class ChangelogTypeFilterDeprecationTests : DirectiveTest<ChangelogBlock>
 {
 	public ChangelogTypeFilterDeprecationTests() : base(
@@ -383,6 +387,7 @@ public class ChangelogTypeFilterDeprecationTests : DirectiveTest<ChangelogBlock>
 /// <summary>
 /// Tests for :type: known-issue - shows only known issues.
 /// </summary>
+[InheritsTests]
 public class ChangelogTypeFilterKnownIssueTests : DirectiveTest<ChangelogBlock>
 {
 	public ChangelogTypeFilterKnownIssueTests() : base(
@@ -456,6 +461,7 @@ public class ChangelogTypeFilterKnownIssueTests : DirectiveTest<ChangelogBlock>
 /// <summary>
 /// Tests for invalid :type: values - should emit warning and use default behavior.
 /// </summary>
+[InheritsTests]
 public class ChangelogTypeFilterInvalidTests : DirectiveTest<ChangelogBlock>
 {
 	public ChangelogTypeFilterInvalidTests() : base(
@@ -514,6 +520,7 @@ public class ChangelogTypeFilterInvalidTests : DirectiveTest<ChangelogBlock>
 /// <summary>
 /// Tests for case-insensitive :type: values.
 /// </summary>
+[InheritsTests]
 public class ChangelogTypeFilterCaseInsensitiveTests : DirectiveTest<ChangelogBlock>
 {
 	public ChangelogTypeFilterCaseInsensitiveTests() : base(
@@ -568,6 +575,7 @@ public class ChangelogTypeFilterCaseInsensitiveTests : DirectiveTest<ChangelogBl
 /// <summary>
 /// Tests for combining :type: with other options like :subsections:.
 /// </summary>
+[InheritsTests]
 public class ChangelogTypeFilterWithSubsectionsTests : DirectiveTest<ChangelogBlock>
 {
 	public ChangelogTypeFilterWithSubsectionsTests() : base(
@@ -640,6 +648,7 @@ public class ChangelogTypeFilterWithSubsectionsTests : DirectiveTest<ChangelogBl
 /// <summary>
 /// Tests that :type: filter affects generated anchors correctly.
 /// </summary>
+[InheritsTests]
 public class ChangelogTypeFilterGeneratedAnchorsTests : DirectiveTest<ChangelogBlock>
 {
 	public ChangelogTypeFilterGeneratedAnchorsTests() : base(
@@ -693,6 +702,7 @@ public class ChangelogTypeFilterGeneratedAnchorsTests : DirectiveTest<ChangelogB
 /// <summary>
 /// Tests that :type: filter affects table of contents correctly.
 /// </summary>
+[InheritsTests]
 public class ChangelogTypeFilterTableOfContentsTests : DirectiveTest<ChangelogBlock>
 {
 	public ChangelogTypeFilterTableOfContentsTests() : base(
@@ -747,6 +757,7 @@ public class ChangelogTypeFilterTableOfContentsTests : DirectiveTest<ChangelogBl
 /// <summary>
 /// Tests that empty bundles are omitted when type filter excludes all entries.
 /// </summary>
+[InheritsTests]
 public class ChangelogTypeFilterEmptyKnownIssueTests : DirectiveTest<ChangelogBlock>
 {
 	public ChangelogTypeFilterEmptyKnownIssueTests() : base(
@@ -788,6 +799,7 @@ public class ChangelogTypeFilterEmptyKnownIssueTests : DirectiveTest<ChangelogBl
 /// <summary>
 /// Tests that empty result shows breaking-change-specific message when using breaking-change filter.
 /// </summary>
+[InheritsTests]
 public class ChangelogTypeFilterEmptyBreakingChangeTests : DirectiveTest<ChangelogBlock>
 {
 	public ChangelogTypeFilterEmptyBreakingChangeTests() : base(
@@ -829,6 +841,7 @@ public class ChangelogTypeFilterEmptyBreakingChangeTests : DirectiveTest<Changel
 /// <summary>
 /// Tests that empty result shows deprecation-specific message when using deprecation filter.
 /// </summary>
+[InheritsTests]
 public class ChangelogTypeFilterEmptyDeprecationTests : DirectiveTest<ChangelogBlock>
 {
 	public ChangelogTypeFilterEmptyDeprecationTests() : base(
@@ -870,6 +883,7 @@ public class ChangelogTypeFilterEmptyDeprecationTests : DirectiveTest<ChangelogB
 /// <summary>
 /// Tests that empty result shows generic message when using default filter.
 /// </summary>
+[InheritsTests]
 public class ChangelogTypeFilterEmptyDefaultTests : DirectiveTest<ChangelogBlock>
 {
 	public ChangelogTypeFilterEmptyDefaultTests() : base(
@@ -913,6 +927,7 @@ public class ChangelogTypeFilterEmptyDefaultTests : DirectiveTest<ChangelogBlock
 /// <summary>
 /// Tests that empty result shows generic message when using "all" filter with empty bundle.
 /// </summary>
+[InheritsTests]
 public class ChangelogTypeFilterEmptyAllTests : DirectiveTest<ChangelogBlock>
 {
 	public ChangelogTypeFilterEmptyAllTests() : base(
@@ -947,6 +962,7 @@ public class ChangelogTypeFilterEmptyAllTests : DirectiveTest<ChangelogBlock>
 /// <summary>
 /// Tests that only bundles with matching entries render when multiple bundles are loaded.
 /// </summary>
+[InheritsTests]
 public class ChangelogTypeFilterMixedBundlesEmptyOmissionTests : DirectiveTest<ChangelogBlock>
 {
 	public ChangelogTypeFilterMixedBundlesEmptyOmissionTests() : base(
@@ -1013,6 +1029,7 @@ public class ChangelogTypeFilterMixedBundlesEmptyOmissionTests : DirectiveTest<C
 /// <summary>
 /// Tests that :type: all preserves bundle description when there are no entries.
 /// </summary>
+[InheritsTests]
 public class ChangelogEmptyBundleWithDescriptionTests : DirectiveTest<ChangelogBlock>
 {
 	public ChangelogEmptyBundleWithDescriptionTests() : base(
@@ -1050,6 +1067,7 @@ public class ChangelogEmptyBundleWithDescriptionTests : DirectiveTest<ChangelogB
 /// <summary>
 /// Tests that release-date alone does not preserve an otherwise empty release on general pages.
 /// </summary>
+[InheritsTests]
 public class ChangelogEmptyBundleWithReleaseDateOnlyTests : DirectiveTest<ChangelogBlock>
 {
 	public ChangelogEmptyBundleWithReleaseDateOnlyTests() : base(
@@ -1085,6 +1103,7 @@ public class ChangelogEmptyBundleWithReleaseDateOnlyTests : DirectiveTest<Change
 /// <summary>
 /// Tests that dedicated type pages omit empty bundles even when they have a description.
 /// </summary>
+[InheritsTests]
 public class ChangelogDedicatedPageIgnoresDescriptionTests : DirectiveTest<ChangelogBlock>
 {
 	public ChangelogDedicatedPageIgnoresDescriptionTests() : base(
@@ -1128,6 +1147,7 @@ public class ChangelogDedicatedPageIgnoresDescriptionTests : DirectiveTest<Chang
 /// <summary>
 /// Tests that :subsections: area grouping works on dedicated deprecation pages without a section H3.
 /// </summary>
+[InheritsTests]
 public class ChangelogDedicatedPageWithSubsectionsTests : DirectiveTest<ChangelogBlock>
 {
 	public ChangelogDedicatedPageWithSubsectionsTests() : base(

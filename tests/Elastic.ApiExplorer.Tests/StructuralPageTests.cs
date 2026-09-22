@@ -115,7 +115,7 @@ public class StructuralPageTests(ApiExplorerFixture fixture)
 	public async Task AuthenticationPage_WritesCommonMarkFromSchemes()
 	{
 		var item = fixture.Walk().OfType<StructuralNavigationItem>().Single(n => n.Model.Kind == ApiStructuralKind.Authentication);
-		var markdown = await item.Model.RenderCommonMarkAsync(RenderContext(item), null, TestContext.Current.CancellationToken);
+		var markdown = await item.Model.RenderCommonMarkAsync(RenderContext(item), TestContext.Current!.Execution.CancellationToken);
 
 		markdown.Should().Contain("# Authentication");
 		markdown.Should().Contain("## Api key (apiKey)");
@@ -126,7 +126,7 @@ public class StructuralPageTests(ApiExplorerFixture fixture)
 	public async Task ServersPage_WritesCommonMarkFromServers()
 	{
 		var item = fixture.Walk().OfType<StructuralNavigationItem>().Single(n => n.Model.Kind == ApiStructuralKind.Servers);
-		var markdown = await item.Model.RenderCommonMarkAsync(RenderContext(item), null, TestContext.Current.CancellationToken);
+		var markdown = await item.Model.RenderCommonMarkAsync(RenderContext(item), TestContext.Current!.Execution.CancellationToken);
 
 		markdown.Should().Contain("# Servers");
 		markdown.Should().Contain("`https://fixture.example.com` (Fixture server)");

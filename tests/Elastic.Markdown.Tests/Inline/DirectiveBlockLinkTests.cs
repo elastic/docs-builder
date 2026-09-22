@@ -9,6 +9,7 @@ using Markdig.Syntax.Inlines;
 
 namespace Elastic.Markdown.Tests.Inline;
 
+[InheritsTests]
 public abstract class DirectiveBlockLinkTests([LanguageInjection("markdown")] string content) : InlineTest<LinkInline>(
 	$$"""
 :::{warning}
@@ -37,6 +38,7 @@ This is an 'important' admonition
 	}
 }
 
+[InheritsTests]
 public class InPageDirectiveLinkTests() : DirectiveBlockLinkTests("""
 [Hello](#caution_ref)
 """)
@@ -50,6 +52,7 @@ public class InPageDirectiveLinkTests() : DirectiveBlockLinkTests("""
 	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
 }
 
+[InheritsTests]
 public class ExternalDirectiveLinkTests() : DirectiveBlockLinkTests("""
 [Sub Requirements](testing/req.md#hint_ref)
 """)

@@ -10,6 +10,7 @@ using Markdig.Syntax.Inlines;
 
 namespace Elastic.Markdown.Tests.Inline;
 
+[InheritsTests]
 public abstract class LinkTestBase([LanguageInjection("markdown")] string content) : InlineTest<LinkInline>(
 	content,
 	new Dictionary<string, string>
@@ -35,6 +36,7 @@ To follow this tutorial you will need to install the following components:
 	}
 }
 
+[InheritsTests]
 public class InlineLinkTests() : LinkTestBase("""
 [Elasticsearch](/_static/img/observability.png)
 """)
@@ -49,6 +51,7 @@ public class InlineLinkTests() : LinkTestBase("""
 	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
 }
 
+[InheritsTests]
 public class LinkToPageTests() : LinkTestBase("""
 [Requirements](testing/req.md)
 """)
@@ -66,6 +69,7 @@ public class LinkToPageTests() : LinkTestBase("""
 	public void EmitsCrossLink() => Collector.CrossLinks.Should().HaveCount(0);
 }
 
+[InheritsTests]
 public class InsertPageTitleTests() : LinkTestBase("""
 [](testing/req.md)
 """)
@@ -83,6 +87,7 @@ public class InsertPageTitleTests() : LinkTestBase("""
 	public void EmitsCrossLink() => Collector.CrossLinks.Should().HaveCount(0);
 }
 
+[InheritsTests]
 public class RepositoryLinksTest() : LinkTestBase("""
 	[test][test]
 
@@ -102,6 +107,7 @@ public class RepositoryLinksTest() : LinkTestBase("""
 	public void EmitsCrossLink() => Collector.CrossLinks.Should().HaveCount(0);
 }
 
+[InheritsTests]
 public class CrossLinkReferenceTest() : LinkTestBase("""
 	[test][test]
 
@@ -125,6 +131,7 @@ public class CrossLinkReferenceTest() : LinkTestBase("""
 	}
 }
 
+[InheritsTests]
 public class CrossLinkTest() : LinkTestBase("""
 
 	Go to [test](kibana://index.md)
@@ -148,6 +155,7 @@ public class CrossLinkTest() : LinkTestBase("""
 	}
 }
 
+[InheritsTests]
 public class CrossLinkEmptyTextTest() : LinkTestBase("""
 
 	Go to [](kibana://index.md)
@@ -172,6 +180,7 @@ public class CrossLinkEmptyTextTest() : LinkTestBase("""
 	}
 }
 
+[InheritsTests]
 public class CrossLinkEmptyTextNoTitleTest() : LinkTestBase("""
 
 	Go to [](kibana://get-started/index.md)
@@ -196,6 +205,7 @@ public class CrossLinkEmptyTextNoTitleTest() : LinkTestBase("""
 	}
 }
 
+[InheritsTests]
 public class LinkWithUnresolvedInterpolationError() : LinkTestBase(
 	"""
 	[global search field]({{this-variable-does-not-exist}}/introduction.html#kibana-navigation-search)
@@ -218,6 +228,7 @@ public class LinkWithUnresolvedInterpolationError() : LinkTestBase(
 	}
 }
 
+[InheritsTests]
 public class ExternalLinksWithInterpolationSuccess() : LinkTestBase("""
 	[link to app]({{some-url-with-a-version}})
 	""")
@@ -232,6 +243,7 @@ public class ExternalLinksWithInterpolationSuccess() : LinkTestBase("""
 	public void HasNoWarningsOrErrors() => Collector.Diagnostics.Should().HaveCount(0);
 }
 
+[InheritsTests]
 public class InternalLinksWithInterpolationWarning() : LinkTestBase("""
 	[link to app]({{some-url-path-prefix}}/hello-world)
 	""")
@@ -252,6 +264,7 @@ public class InternalLinksWithInterpolationWarning() : LinkTestBase("""
 	}
 }
 
+[InheritsTests]
 public class NonExistingLinks() : LinkTestBase("""
 	[Non Existing Link](/non-existing.md)
 	""")
@@ -263,6 +276,7 @@ public class NonExistingLinks() : LinkTestBase("""
 	public void HasNoWarning() => Collector.Diagnostics.Where(d => d.Severity == Severity.Warning).Should().HaveCount(0);
 }
 
+[InheritsTests]
 public class CommentedNonExistingLinks() : LinkTestBase("""
 	% [Non Existing Link](/non-existing.md)
 	""")
@@ -276,6 +290,7 @@ public class CommentedNonExistingLinks() : LinkTestBase("""
 	public void HasErrors() => Collector.Diagnostics.Should().HaveCount(0);
 }
 
+[InheritsTests]
 public class CommentedNonExistingLinks2() : LinkTestBase(
 	"""
 	% Hello, this is a [Non Existing Link](/non-existing.md).
@@ -304,6 +319,7 @@ public class CommentedNonExistingLinks2() : LinkTestBase(
 	public void HasErrors() => Collector.Diagnostics.Should().HaveCount(0);
 }
 
+[InheritsTests]
 public class NonExistingLinkShouldFail() : LinkTestBase(
 	"""
 	[Non Existing Link](/non-existing.md)
@@ -317,6 +333,7 @@ public class NonExistingLinkShouldFail() : LinkTestBase(
 	public void HasErrors() => Collector.Diagnostics.Should().HaveCount(3);
 }
 
+[InheritsTests]
 public class CursorProtocolLinkTest() : LinkTestBase(
 	"""
 	[Install with Cursor](cursor://anysphere.cursor-deeplink/mcp/install?name=elastic&config=eyJmb28iOiJiYXIifQ==)
@@ -333,6 +350,7 @@ public class CursorProtocolLinkTest() : LinkTestBase(
 	public void EmitsNoCrossLinks() => Collector.CrossLinks.Should().HaveCount(0);
 }
 
+[InheritsTests]
 public class VscodeProtocolLinkTest() : LinkTestBase("""
 	[Install VS Code Extension](vscode:extension/elastic.elasticsearch)
 	""")
@@ -347,6 +365,7 @@ public class VscodeProtocolLinkTest() : LinkTestBase("""
 	public void EmitsNoCrossLinks() => Collector.CrossLinks.Should().HaveCount(0);
 }
 
+[InheritsTests]
 public class VscodeInsidersProtocolLinkTest() : LinkTestBase(
 	"""
 	[Install with VS Code Insiders](vscode-insiders:mcp/install?%7B%22name%22%3A%22oblt-cli%22%7D)

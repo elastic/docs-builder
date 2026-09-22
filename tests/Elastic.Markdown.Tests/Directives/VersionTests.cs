@@ -9,6 +9,7 @@ using Elastic.Markdown.Myst.Directives.Version;
 
 namespace Elastic.Markdown.Tests.Directives;
 
+[InheritsTests]
 public abstract class VersionTests(string directive) : DirectiveTest<VersionBlock>(
 	$$"""
 :::{{{directive}}} 1.0.1-beta1 more information
@@ -28,30 +29,35 @@ A regular paragraph.
 	public void SetsVersion() => Block!.Version.Should().Be(new SemVersion(1, 0, 1, "beta1"));
 }
 
+[InheritsTests]
 public class VersionAddedTests() : VersionTests("versionadded")
 {
 	[Test]
 	public void SetsTitle() => Block!.Title.Should().Be("Version Added (1.0.1-beta1): more information");
 }
 
+[InheritsTests]
 public class VersionChangedTests() : VersionTests("versionchanged")
 {
 	[Test]
 	public void SetsTitle() => Block!.Title.Should().Be("Version Changed (1.0.1-beta1): more information");
 }
 
+[InheritsTests]
 public class VersionRemovedTests() : VersionTests("versionremoved")
 {
 	[Test]
 	public void SetsTitle() => Block!.Title.Should().Be("Version Removed (1.0.1-beta1): more information");
 }
 
+[InheritsTests]
 public class VersionDeprectatedTests() : VersionTests("deprecated")
 {
 	[Test]
 	public void SetsTitle() => Block!.Title.Should().Be("Deprecated (1.0.1-beta1): more information");
 }
 
+[InheritsTests]
 public abstract class VersionValidationTests(string version) : DirectiveTest<VersionBlock>(
 	$$"""
 :::{versionchanged} {{version}} more information
@@ -61,6 +67,7 @@ A regular paragraph.
 """
 );
 
+[InheritsTests]
 public class SimpleVersion() : VersionValidationTests("7.17")
 {
 	[Test]
@@ -70,6 +77,7 @@ public class SimpleVersion() : VersionValidationTests("7.17")
 	public void HasNoError() => Collector.Diagnostics.Should().BeEmpty();
 }
 
+[InheritsTests]
 public class MajorVersionOnly() : VersionValidationTests("8")
 {
 	[Test]
@@ -77,6 +85,7 @@ public class MajorVersionOnly() : VersionValidationTests("8")
 		Collector.Diagnostics.Should().HaveCount(1).And.Contain(d => d.Message.Contains("'8' is not a valid version"));
 }
 
+[InheritsTests]
 public class BranchVersion() : VersionValidationTests("8.x")
 {
 	[Test]
