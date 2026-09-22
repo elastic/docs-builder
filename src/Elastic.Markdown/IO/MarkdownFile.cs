@@ -322,6 +322,7 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 		var stepperTocs = directives
 			.OfType<StepBlock>()
 			.Where(step => !string.IsNullOrEmpty(step.Title))
+			.Where(step => step.RenderAsHeading)
 			.Where(step => !IsNestedInOtherDirective(step))
 			.Select(step =>
 			{

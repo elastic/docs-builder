@@ -12,23 +12,39 @@ public class StepperBlock(DirectiveBlockParser parser, ParserContext context) : 
 {
 	public override string Directive => "stepper";
 
+	/// <summary>
+	/// When <see langword="false"/>, step titles stay in the procedure but are not HTML headings
+	/// and are omitted from the page table of contents. Defaults to <see langword="true"/>.
+	/// </summary>
+	public bool IncludeInToc { get; private set; } = true;
+
 	public override void FinalizeAndValidate(ParserContext context)
 	{
+		// `:toc: false` opts out. An absent property keeps the historical default (in the ToC).
+		IncludeInToc = TryPropBool("toc") ?? true;
+
 		// Calculate the heading level once for the whole stepper and push it to every child
 		// step. All steps share the same preceding-heading context, so there is no need for
 		// each StepBlock to walk the document independently.
-		var stepLevel = CalculatePrecedingHeadingLevel();
+		var precedingLevel = FindPrecedingHeadingLevel();
+		var stepLevel = precedingLevel == 0 ? 2 : System.Math.Min(precedingLevel + 1, 6);
+		// Steps that render as headings occupy stepLevel. Steps that do not are absent from
+		// the outline, so internal headings are subordinate to the preceding real heading.
+		var outlineLevel = IncludeInToc ? stepLevel : (precedingLevel == 0 ? 1 : precedingLevel);
 		foreach (var step in this.OfType<StepBlock>())
 		{
 			step.HeadingLevel = stepLevel;
-			AdjustInternalHeadings(step, stepLevel);
+			step.RenderAsHeading = IncludeInToc;
+			AdjustInternalHeadings(step, outlineLevel, precedingLevel);
 		}
 	}
 
-	// Headings inside a step must be subordinate to the step's own rendered level.
-	// If the author wrote a heading at the same level or higher, adjust it and emit a hint
+	// Headings inside a step must be subordinate to the outline level.
+	// When the step renders as a heading, that level is the step itself.
+	// When it does not, that level is the preceding heading, or h1 when the stepper has none.
+	// If the author wrote a heading at that level or higher, adjust it and emit a hint
 	// so they know what level to use in the source.
-	private void AdjustInternalHeadings(StepBlock step, int stepLevel)
+	private void AdjustInternalHeadings(StepBlock step, int stepLevel, int precedingLevel)
 	{
 		var adjusted = System.Math.Min(stepLevel + 1, 6);
 		foreach (var heading in step.Descendants<HeadingBlock>())
@@ -48,6 +64,16 @@ public class StepperBlock(DirectiveBlockParser parser, ParserContext context) : 
 			}
 
 			var hashes = new string('#', adjusted);
+			// With no heading above the stepper, outline level is h1 even though that heading does not exist.
+			// Name that level. Do not claim a preceding heading is present.
+			var message = step.RenderAsHeading
+				? $"Heading level h{heading.Level} inside a step renders at the same or higher level as the step itself (h{stepLevel}). "
+					+ $"It has been adjusted to h{adjusted} — write it as '{hashes}' to avoid this hint."
+				: precedingLevel == 0
+					? $"Heading level h{heading.Level} inside a step renders at the same or higher level as the outline level for this step (h{stepLevel}). "
+						+ $"It has been adjusted to h{adjusted}. Write it as '{hashes}' to avoid this hint."
+					: $"Heading level h{heading.Level} inside a step renders at the same or higher level as the preceding heading (h{stepLevel}). "
+						+ $"It has been adjusted to h{adjusted}. Write it as '{hashes}' to avoid this hint.";
 			Build.Collector.Write(new Diagnostic
 			{
 				Severity = Severity.Hint,
@@ -55,8 +81,7 @@ public class StepperBlock(DirectiveBlockParser parser, ParserContext context) : 
 				Line = heading.Line + 1,
 				Column = heading.Column,
 				Length = heading.Level,
-				Message = $"Heading level h{heading.Level} inside a step renders at the same or higher level as the step itself (h{stepLevel}). " +
-					$"It has been adjusted to h{adjusted} — write it as '{hashes}' to avoid this hint."
+				Message = message
 			});
 			heading.Level = adjusted;
 		}
@@ -74,7 +99,9 @@ public class StepperBlock(DirectiveBlockParser parser, ParserContext context) : 
 		return false;
 	}
 
-	private int CalculatePrecedingHeadingLevel()
+	// Returns the level of the nearest preceding heading, or 0 when the stepper has none.
+	// Callers add one for the step's own level and cap at h6.
+	private int FindPrecedingHeadingLevel()
 	{
 		// Walk up to the document root so we can search the full flat block list.
 		var root = (ContainerBlock)this;
@@ -88,15 +115,15 @@ public class StepperBlock(DirectiveBlockParser parser, ParserContext context) : 
 		var stepperIndex = allBlocks.IndexOf(this);
 
 		if (stepperIndex == -1)
-			return 2;
+			return 0;
 
 		for (var i = stepperIndex - 1; i >= 0; i--)
 		{
 			if (allBlocks[i] is HeadingBlock heading)
-				return System.Math.Min(heading.Level + 1, 6); // Cap at h6
+				return heading.Level;
 		}
 
-		return 2; // No preceding heading — default to h2
+		return 0;
 	}
 }
 
@@ -106,6 +133,12 @@ public class StepBlock(DirectiveBlockParser parser, ParserContext context) : Dir
 	public string Title { get; private set; } = string.Empty;
 	public string Anchor { get; private set; } = string.Empty;
 	public int HeadingLevel { get; internal set; } = 2; // Set by parent StepperBlock.FinalizeAndValidate
+
+	/// <summary>
+	/// When <see langword="false"/>, the title renders as a non-heading element and is omitted
+	/// from the page table of contents. The anchor is preserved.
+	/// </summary>
+	public bool RenderAsHeading { get; internal set; } = true;
 
 	public override void FinalizeAndValidate(ParserContext context)
 	{
