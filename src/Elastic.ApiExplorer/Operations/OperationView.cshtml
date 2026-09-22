@@ -90,24 +90,9 @@
 	@{
 		var prerequisites = Model.Prerequisites;
 	}
-	@if (!string.IsNullOrWhiteSpace(pageModel.DescriptionMarkdown) || pageModel.DescriptionUrls.Count > 0)
+	@if (!string.IsNullOrWhiteSpace(pageModel.DescriptionMarkdown) || pageModel.ExternalDocs is not null)
 	{
 		<div class="api-operation-description" id="description">
-			@if (pageModel.DescriptionUrls.Count > 0)
-			{
-				<p class="api-description-url-label">@ApiMarkdown.OperationListLabel</p>
-				<ul class="api-url-listing api-description-url-listing">
-					@foreach (var url in pageModel.DescriptionUrls)
-					{
-						<li class="api-url-list-item">
-							<span class="api-url-row">
-								@(await RenderPartialAsync<_HttpMethodBadge, string>(url.Method))
-								<span class="api-url">@url.Route</span>
-							</span>
-						</li>
-					}
-				</ul>
-			}
 			@if (!string.IsNullOrWhiteSpace(pageModel.DescriptionMarkdown))
 			{
 				@(Model.RenderMarkdown(pageModel.DescriptionMarkdown))
