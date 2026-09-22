@@ -686,6 +686,57 @@
           },
           "status": 404
         }
+      },
+      "Security_Lists_API_ListDescription": {
+        "type": "string",
+        "minLength": 1,
+        "description": "A list description."
+      },
+      "Security_Lists_API_ListMetadata": {
+        "type": "object",
+        "description": "Placeholder for metadata about the value list."
+      },
+      "Security_Lists_API_ListType": {
+        "type": "string",
+        "enum": ["keyword", "ip", "ip_range"],
+        "description": "The Elasticsearch data type of the list."
+      },
+      "Security_Lists_API_PlatformErrorResponse": {
+        "type": "object",
+        "properties": {
+          "error": { "type": "string" },
+          "message": { "type": "string" },
+          "statusCode": { "type": "integer" }
+        },
+        "required": ["error", "message", "statusCode"]
+      },
+      "Security_Lists_API_SiemErrorResponse": {
+        "type": "object",
+        "properties": {
+          "message": { "type": "string" },
+          "status_code": { "type": "integer" }
+        },
+        "required": ["message", "status_code"]
+      },
+      "fixture.InvalidInputResponse": {
+        "oneOf": [
+          { "$ref": "#/components/schemas/Security_Lists_API_PlatformErrorResponse" },
+          { "$ref": "#/components/schemas/Security_Lists_API_SiemErrorResponse" }
+        ]
+      },
+      "fixture.ListCreateBody": {
+        "type": "object",
+        "properties": {
+          "description": {
+            "$ref": "#/components/schemas/Security_Lists_API_ListDescription"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/Security_Lists_API_ListMetadata"
+          },
+          "type": {
+            "$ref": "#/components/schemas/Security_Lists_API_ListType"
+          }
+        }
       }
     }
   }

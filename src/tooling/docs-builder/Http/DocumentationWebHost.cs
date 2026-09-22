@@ -17,6 +17,7 @@ using Elastic.Documentation.Http;
 using Elastic.Documentation.Api;
 using Elastic.Documentation.Api.PageFeedback;
 #endif
+using Elastic.ApiExplorer.Infrastructure;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.ServiceDefaults;
@@ -199,6 +200,10 @@ public class DocumentationWebHost
 			(string slug, ReloadableGeneratorState holder, HttpContext http, Cancel ctx) => ServeApiFile(holder, slug, http, ctx)
 		);
 
+		// Assembler / staging paste `/docs/api/...` into Isolated (`:3000` has no `/docs` prefix).
+		_ = _webApplication.MapGet("/docs/api/", (HttpContext http) => RedirectAssemblerApiPath(http, ""));
+		_ = _webApplication.MapGet("/docs/api/{**slug}", (string slug, HttpContext http) => RedirectAssemblerApiPath(http, slug));
+
 #if DEBUG
 		var apiV1 = _webApplication.MapGroup($"{SystemEnvironmentVariables.Instance.ApiPrefix}/v1");
 		apiV1.MapElasticDocsApiEndpoints();
@@ -323,7 +328,11 @@ public class DocumentationWebHost
 
 		var info = _writeFileSystem.FileInfo.New(path);
 		if (!info.Exists)
+		{
+			if (TryRedirectIsolatedFixtureAlias(http, apiRoot, outputRoot, trimmed, specMime, wantsMarkdown) is { } redirect)
+				return redirect;
 			return Results.NotFound();
+		}
 
 		var contents = await _writeFileSystem.File.ReadAllTextAsync(info.FullName, ctx);
 		if (specMime is not null)
@@ -341,6 +350,40 @@ public class DocumentationWebHost
 				return "text/yaml";
 			return null;
 		}
+	}
+
+	private static IResult RedirectAssemblerApiPath(HttpContext http, string slug)
+	{
+		var location = string.IsNullOrEmpty(slug) ? "/api/" : $"/api/{slug.Trim('/')}";
+		if (http.Request.Path.Value?.EndsWith('/') == true && !location.EndsWith('/'))
+			location += "/";
+		return Results.Redirect(location + http.Request.QueryString);
+	}
+
+	private IResult? TryRedirectIsolatedFixtureAlias(
+		HttpContext http,
+		string apiRoot,
+		string outputRoot,
+		string trimmed,
+		string? specMime,
+		bool wantsMarkdown
+	)
+	{
+		if (!IsolatedApiAliases.TryPrefixedDocSlug(trimmed, out var aliased))
+			return null;
+
+		var aliasPath = specMime is not null
+			? Path.GetFullPath(Path.Join(apiRoot, aliased))
+			: wantsMarkdown ? ApiMarkdownRequest.ResolveFile(apiRoot, aliased) : Path.GetFullPath(Path.Join(apiRoot, aliased, "index.html"));
+		if (!aliasPath.StartsWith(outputRoot + Path.DirectorySeparatorChar, StringComparison.Ordinal))
+			return null;
+		if (!_writeFileSystem.FileInfo.New(aliasPath).Exists)
+			return null;
+
+		var location = $"/api/{aliased}";
+		if (http.Request.Path.Value?.EndsWith('/') == true && !location.EndsWith('/'))
+			location += "/";
+		return Results.Redirect(location + http.Request.QueryString);
 	}
 
 	private static async Task<IResult> ServeDocumentationFile(
@@ -447,10 +490,22 @@ public class DocumentationWebHost
 	{
 		if (LiveReloadConfiguration.Current.LiveReloadEnabled)
 		{
-			//var script = WebsocketScriptInjectionHelper.GetWebSocketClientJavaScript(context, true);
-			//var html = $"<script>\n{script}\n</script>";
-			var html = "\n" + $@"<script src=""{LiveReloadConfiguration.Current.LiveReloadScriptUrl}"" defer></script>";
-			content += html;
+			var scriptUrl = LiveReloadConfiguration.Current.LiveReloadScriptUrl;
+			content +=
+				$$"""
+
+				<script>
+				(function () {
+					function inject() {
+						var s = document.createElement('script');
+						s.src = '{{scriptUrl}}';
+						document.head.appendChild(s);
+					}
+					if (document.readyState === 'complete') setTimeout(inject, 0);
+					else window.addEventListener('load', function () { setTimeout(inject, 0); });
+				})();
+				</script>
+				""";
 		}
 
 		return Results.Content(content, "text/html", encoding, statusCode);

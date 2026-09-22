@@ -1,0 +1,30 @@
+@inherits RazorSlice<ApiSelectModel>
+@{
+	var current = Model.Current;
+	var extraClass = string.IsNullOrEmpty(Model.ExtraClass) ? "" : $" {Model.ExtraClass}";
+	var idAttr = string.IsNullOrEmpty(Model.Id) ? HtmlString.Empty : new HtmlString($" id=\"{Model.Id}\"");
+	var syncAttr = string.IsNullOrEmpty(Model.SyncGroup)
+		? HtmlString.Empty
+		: new HtmlString($" data-sync-group=\"{Model.SyncGroup}\"");
+}
+<details class="api-select nav-select-dropdown@(extraClass)"@idAttr@syncAttr>
+	<summary class="api-select-trigger" aria-label="@Model.AriaLabel">
+		<span class="api-select-value">@current.Label</span>
+		<span class="api-select-chevron" aria-hidden="true">
+			<span class="api-select-chevron-icon">
+				<svg viewBox="0 0 16 16"><use href="#icon-chevron-down"/></svg>
+			</span>
+		</span>
+	</summary>
+	<div class="api-page-actions-menu" role="listbox" aria-label="@Model.AriaLabel">
+		@foreach (var option in Model.Options)
+		{
+			var selectedClass = option.Selected ? " is-selected" : "";
+			<button type="button"
+					class="api-page-actions-option@(selectedClass)"
+					role="option"
+					aria-selected="@(option.Selected ? "true" : "false")"
+					data-value="@option.Value">@option.Label</button>
+		}
+	</div>
+</details>

@@ -206,6 +206,8 @@ internal static class OperationCommonMark
 					ApiCommonMark.Paragraph(markdown, $"Content-Type: `{content.ContentType}`");
 				if (content.Properties is not null)
 					ApiPropertyMarkdown.WriteList(markdown, content.Properties, apiBaseUrl);
+				else if (content.UnionVariants is { Variants.Count: > 0 })
+					ApiPropertyMarkdown.WriteVariants(markdown, content.UnionVariants, apiBaseUrl);
 				else if (content.ArrayItemProperties is not null)
 				{
 					ApiPropertyMarkdown.WriteType(markdown, content.Type);

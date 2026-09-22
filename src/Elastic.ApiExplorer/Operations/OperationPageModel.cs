@@ -54,6 +54,11 @@ public record ExampleScenario
 	public string? RequestExternalValue { get; init; }
 	public IReadOnlyList<ExampleResponse> Responses { get; init; } = [];
 	public IReadOnlyList<CodeSample> CodeSamples { get; init; } = [];
+	public string? HttpMethod { get; init; }
+	public string? Route { get; init; }
+
+	/// <summary>Choices for the request-header example picker. Empty hides the picker.</summary>
+	public IReadOnlyList<ApiSelectOption> ExampleOptions { get; init; } = [];
 
 	/// <summary>Request JSON is omitted when code samples already embed the request body.</summary>
 	public bool ShowRequest => (RequestJson is not null || !string.IsNullOrEmpty(RequestExternalValue)) && CodeSamples.Count == 0;
@@ -103,6 +108,9 @@ public record ApiResponseContent
 
 	/// <summary>Item properties when the response is an array of objects.</summary>
 	public required ApiPropertyList? ArrayItemProperties { get; init; }
+
+	/// <summary>Expanded oneOf/anyOf variants when the response body is a union of objects.</summary>
+	public ApiUnionVariants? UnionVariants { get; init; }
 }
 
 /// <summary>A response header with its type annotation precomputed.</summary>
@@ -125,6 +133,9 @@ public record ApiResponse
 	public required IReadOnlyList<ApiResponseContent> Contents { get; init; }
 	public required IReadOnlyList<ApiResponseHeader> Headers { get; init; }
 }
+
+/// <summary>Status-code accordion under the Responses heading.</summary>
+public record ResponsesBlockModel(IReadOnlyList<ApiResponse> Responses, Func<string?, HtmlString> RenderMarkdown);
 
 /// <summary>
 /// Everything structural an operation page renders, precomputed before the view runs.
@@ -188,7 +199,11 @@ public partial record OperationPageModel
 
 		var requestExamples = MapExamples(operation.RequestBody?.Content?.FirstOrDefault().Value?.Examples, options.RenderMarkdown);
 		var responseExamples = MapResponseExamples(operation.Responses, options.RenderMarkdown);
-		var scenarios = EnsureResponseTabs(BuildExampleScenarios(requestExamples, responseExamples, codeSamples), operation.Responses);
+		var scenarios = WithOperationIdentity(
+			EnsureResponseTabs(BuildExampleScenarios(requestExamples, responseExamples, codeSamples), operation.Responses),
+			apiOperation.OperationType.ToString().ToLowerInvariant(),
+			apiOperation.Route
+		);
 		var examplesAnchor = scenarios.Count > 0 ? "examples" : null;
 
 		var requestContentEntry = operation.RequestBody?.Content?.FirstOrDefault();
@@ -253,10 +268,16 @@ public partial record OperationPageModel
 		};
 	}
 
+	internal static IReadOnlyList<ExampleScenario> WithOperationIdentity(
+		IReadOnlyList<ExampleScenario> scenarios,
+		string httpMethod,
+		string route
+	) => [.. scenarios.Select(s => s with { HttpMethod = httpMethod, Route = route })];
+
 	/// <summary>
 	/// Groups OpenAPI examples into rail scenarios:
 	/// <list type="bullet">
-	/// <item>Request examples define scenario variants (the rail <c>select</c>).</item>
+	/// <item>Request examples define scenario variants (the Examples header <c>select</c>).</item>
 	/// <item>Response examples whose title matches a request join that scenario.</item>
 	/// <item>Unmatched response examples (typical error statuses) are shared across
 	/// those request scenarios as extra status-code tabs, without overwriting a
@@ -731,23 +752,48 @@ public partial record OperationPageModel
 	{
 		var scope = new PropertyTreeScope { Prefix = $"res-{statusCode}" };
 		var properties = builder.BuildPropertyList(responseSchema, scope);
-
-		// For arrays, check if the item type has properties we should render
-		ApiPropertyList? arrayItemProperties = null;
-		if (properties is null && analyzer.GetTypeInfo(responseSchema).IsArray)
-		{
-			var arrayItemSchema = ResolveArrayItems(responseSchema, analyzer);
-			if (arrayItemSchema is not null)
-				arrayItemProperties = builder.BuildPropertyList(arrayItemSchema, scope);
-		}
+		var arrayItemProperties = properties is null ? BuildArrayItemProperties(responseSchema, scope, analyzer, builder) : null;
+		var unionVariants = properties is null && arrayItemProperties is null
+			? BuildResponseUnionVariants(responseSchema, statusCode, analyzer, builder)
+			: null;
 
 		return new ApiResponseContent
 		{
 			ContentType = contentType,
 			Type = builder.Describe(responseSchema),
 			Properties = properties,
-			ArrayItemProperties = arrayItemProperties
+			ArrayItemProperties = arrayItemProperties,
+			UnionVariants = unionVariants
 		};
+	}
+
+	private static ApiPropertyList? BuildArrayItemProperties(
+		IOpenApiSchema responseSchema,
+		PropertyTreeScope scope,
+		SchemaAnalyzer analyzer,
+		ApiPropertyTreeBuilder builder
+	)
+	{
+		if (!analyzer.GetTypeInfo(responseSchema).IsArray)
+			return null;
+
+		var arrayItemSchema = ResolveArrayItems(responseSchema, analyzer);
+		return arrayItemSchema is null ? null : builder.BuildPropertyList(arrayItemSchema, scope);
+	}
+
+	private static ApiUnionVariants? BuildResponseUnionVariants(
+		IOpenApiSchema responseSchema,
+		string statusCode,
+		SchemaAnalyzer analyzer,
+		ApiPropertyTreeBuilder builder
+	)
+	{
+		var typeInfo = analyzer.GetTypeInfo(responseSchema);
+		if (typeInfo is not { IsUnion: true, AnyOfOptions.Count: > 0 })
+			return null;
+
+		var schemas = typeInfo.AnyOfOptions.Where(static o => o.Schema is not null).Select(static o => o.Schema!).ToList();
+		return schemas.Count == 0 ? null : builder.BuildUnionVariantsForSchemas(schemas, $"res-{statusCode}", ancestors: null);
 	}
 
 	private static IReadOnlyList<string> NamesOf(IEnumerable<string?> names) => [.. names.OfType<string>().Where(static n => n.Length > 0)];

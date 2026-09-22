@@ -157,10 +157,13 @@ public class ApiNavigationBuilder(ILogger logger, BuildContext context)
 			StructuralNavigationItem.Create(context.UrlPathPrefix, apiUrlSuffix, rootNavigation, openApiDocument)
 		);
 
-		if (topLevelNavigationItems.Count > 0)
-			finalNavigationItems.AddRange(topLevelNavigationItems);
-		else if (rootNavigation.NavigationItems.Count > 0)
-			finalNavigationItems.AddRange(rootNavigation.NavigationItems);
+		IReadOnlyList<INavigationItem> endpointItems = topLevelNavigationItems.Count > 0
+			? topLevelNavigationItems
+			: rootNavigation.NavigationItems.Count > 0 ? rootNavigation.NavigationItems.ToArray() : [];
+		if (finalNavigationItems.Count > 0 && endpointItems.Count > 0)
+			finalNavigationItems.Add(new SidebarSeparatorNavigationItem(rootNavigation, rootNavigation));
+		if (endpointItems.Count > 0)
+			finalNavigationItems.AddRange(endpointItems);
 
 		rootNavigation.NavigationItems = finalNavigationItems;
 
