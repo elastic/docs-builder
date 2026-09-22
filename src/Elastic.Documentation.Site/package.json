@@ -55,7 +55,9 @@
     }
   },
   "alias": {
-    "uuid": "./node_modules/uuid/dist/index.js"
+    "uuid": "./node_modules/uuid/dist/index.js",
+    "@opentelemetry/browser-instrumentation/experimental/web-vitals": "./node_modules/@opentelemetry/browser-instrumentation/dist/web-vitals/index.js",
+    "@opentelemetry/otlp-exporter-base/browser-http": "./node_modules/@elastic/opentelemetry-browser/node_modules/@opentelemetry/otlp-exporter-base/build/esm/index-browser-http.js"
   },
   "repository": {
     "type": "git",
