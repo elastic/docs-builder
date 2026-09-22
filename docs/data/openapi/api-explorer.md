@@ -151,6 +151,8 @@ specs per product are not currently supported.
 
 Product pages show an API product switcher in the left navigation. The list includes every declared API and a Back to hub option.
 
+Assembler API pages also show a Jump to API box at the top of that sidebar. The box searches API operations only. Isolated and air-gapped builds omit the box. Markdown docs pages do not get it back.
+
 ## Remote spec resolution
 
 When `spec:` does not resolve to a file on disk, {{dbuild}} resolves the current (`main`) version

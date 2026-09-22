@@ -55,9 +55,12 @@ public class OpenApiOperationIdSearchTitleTests
 		docs.Should().HaveCount(1);
 		var doc = docs[0];
 
-		doc.Title.Should().Be("Bulk index or delete documents - Elasticsearch API");
-		doc.SearchTitle.Should().Be("Bulk index or delete documents - Elasticsearch API - _bulk");
+		doc.Title.Should().Be("Bulk index or delete documents");
+		doc.Parents.Should().HaveCount(2);
+		doc.Parents[1].Title.Should().Be("Elasticsearch API");
+		doc.SearchTitle.Should().Be("Bulk index or delete documents - Elasticsearch API - _bulk - PUT /_bulk");
 		doc.SearchTitle.Should().Contain("_bulk");
+		doc.SearchTitle.Should().Contain("PUT /_bulk");
 	}
 
 	private static OpenApiDocument CreateSpecWithSummaryWhitespace(string summary) =>
@@ -88,8 +91,8 @@ public class OpenApiOperationIdSearchTitleTests
 		docs.Should().HaveCount(1);
 		var doc = docs[0];
 
-		doc.Title.Should().Be("Bulk index or delete documents - Elasticsearch API");
-		doc.SearchTitle.Should().Be("Bulk index or delete documents - Elasticsearch API - _bulk");
+		doc.Title.Should().Be("Bulk index or delete documents");
+		doc.SearchTitle.Should().Be("Bulk index or delete documents - Elasticsearch API - _bulk - PUT /_bulk");
 		doc.Title.Should().NotContain("\n");
 		doc.SearchTitle.Should().NotContain("\n");
 	}
@@ -104,6 +107,34 @@ public class OpenApiOperationIdSearchTitleTests
 		docs.Should().HaveCount(1);
 		var doc = docs[0];
 
-		doc.Title.Should().Be("_bulk - Elasticsearch API");
+		doc.Title.Should().Be("_bulk");
+		doc.Title.Should().NotContain("API");
+	}
+
+	[Fact]
+	public void DottedOperationId_IsSearchableAsWrittenAndAsSpaceSeparatedTokens()
+	{
+		var spec = new OpenApiDocument
+		{
+			Paths = new OpenApiPaths
+			{
+				["/{index}"] = new OpenApiPathItem
+				{
+					Operations = new Dictionary<HttpMethod, OpenApiOperation>
+					{
+						[HttpMethod.Get] = new OpenApiOperation { OperationId = "indices.get", Summary = "Get index information" }
+					}
+				}
+			}
+		};
+
+		var docs = new OpenApiDocumentExporter(VersionsConfiguration).ConvertToDocuments(spec, "elasticsearch").ToArray();
+
+		docs.Should().HaveCount(1);
+		var doc = docs[0];
+		doc.Title.Should().Be("Get index information");
+		doc.SearchTitle.Should().Contain("indices.get");
+		doc.SearchTitle.Should().Contain("indices get");
+		doc.SearchTitle.Should().Contain("GET /{index}");
 	}
 }

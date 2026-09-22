@@ -13,8 +13,8 @@ namespace Elastic.Documentation.Configuration.ReleaseNotes;
 /// <summary>
 /// Prefetches CDN changelog bundles for every product declared under <c>release_notes</c> at build
 /// startup, concurrently, mirroring how cross-links are fetched. Explicitly declared products are
-/// strict fail-fast: a 404 fails the build. Auto-inferred products are best-effort: a 404 is silently
-/// skipped and the directive emits a hint instead of an error when it tries to render that product.
+/// strict on real errors, but a CDN 404 is a hint (the product is registered, no release cut yet).
+/// Auto-inferred products are best-effort: a 404 is silently skipped and the directive emits a hint.
 /// </summary>
 public sealed class ReleaseNotesFetcher(ILoggerFactory logFactory, IFileSystem fileSystem, HttpMessageHandler? handler = null)
 {
@@ -25,7 +25,7 @@ public sealed class ReleaseNotesFetcher(ILoggerFactory logFactory, IFileSystem f
 
 	/// <summary>
 	/// Prefetches release notes for all products and returns a ready resolver.
-	/// Explicit products come from <c>release_notes</c> in docset.yml (required, error on 404).
+	/// Explicit products come from <c>release_notes</c> in docset.yml (required; 404 is a hint).
 	/// The product is also inferred from the repository name via products.yml (best-effort, no error on 404).
 	/// </summary>
 	public static async Task<IReleaseNotesResolver> PrefetchAsync(BuildContext context, ILoggerFactory logFactory, Cancel ctx)
@@ -57,8 +57,8 @@ public sealed class ReleaseNotesFetcher(ILoggerFactory logFactory, IFileSystem f
 	}
 
 	/// <summary>
-	/// Fetches bundles for <paramref name="requiredProducts"/> (error on failure) and optionally for
-	/// <paramref name="inferredProducts"/> (no error on 404 — best-effort only, one per assembled repo).
+	/// Fetches bundles for <paramref name="requiredProducts"/> (error on real failure; 404 is a hint)
+	/// and optionally for <paramref name="inferredProducts"/> (no error on 404 — best-effort only).
 	/// </summary>
 	public async Task<FetchedReleaseNotes> FetchAsync(
 		IDiagnosticsCollector collector,
@@ -104,24 +104,22 @@ public sealed class ReleaseNotesFetcher(ILoggerFactory logFactory, IFileSystem f
 			var isRequired = required.Contains(product, StringComparer.Ordinal);
 			var notFound = false;
 			// version: null — prefetch the full set; each directive applies its own :version: filter later.
-			var bundles = await fetcher.FetchAsync(
-				baseUri,
-				product,
-				version: null,
-				emitError: isRequired
-					? msg => collector.EmitError(string.Empty, msg)
-					: msg => collector.EmitWarning(string.Empty, msg), // inferred: real errors become warnings, not build failures
-
-				emitWarning: msg => collector.EmitWarning(string.Empty, msg),
-				ctx,
-				emitNotFound: isRequired
-					? msg => collector.EmitError(string.Empty, msg)
-					: _ =>
-					{
-						notFound = true;
-					} // inferred: 404 is expected — track it so the directive can emit a hint
-
-			).ConfigureAwait(false);
+			var bundles = await fetcher.FetchAsync(baseUri, product, version: null, emitError: isRequired
+				? msg => collector.EmitError(string.Empty, msg)
+				: msg => collector.EmitWarning(string.Empty, msg), // inferred: real errors become warnings, not build failures
+			 emitWarning: msg => collector.EmitWarning(string.Empty, msg), ctx,
+			// 404 for products registered in products.yml is a hint, not an error — products.yml
+			// membership is the authoritative gate; 404 means no release has been cut yet.
+			// 404 for inferred products is silently tracked (hint emitted by the directive).
+			emitNotFound: _ =>
+			{
+				notFound = true;
+				if (isRequired)
+					collector.EmitHint(
+						string.Empty,
+						$"No CDN bundles published yet for '{product}' (registered in products.yml). The changelog will render empty until the first release is published."
+					);
+			}).ConfigureAwait(false);
 			return (product, bundles, isRequired, notFound);
 		});
 
@@ -137,15 +135,16 @@ public sealed class ReleaseNotesFetcher(ILoggerFactory logFactory, IFileSystem f
 		// The directive reaches inferred bundles via TryGetBundles when isAutoInferred is true.
 		var bundleMap = results.Where(r => r.bundles.Count > 0).ToFrozenDictionary(r => r.product, r => r.bundles, StringComparer.Ordinal);
 
-		// Track inferred products that returned HTTP 404 so the directive can emit a "not yet published"
-		// hint rather than staying silently empty.
+		// Track products that returned HTTP 404 so the directive can emit a "not yet published" hint.
 		var notFoundInferred = results.Where(r => !r.isRequired && r.notFound).Select(r => r.product).ToFrozenSet(StringComparer.Ordinal);
+		var notFoundDeclared = results.Where(r => r.isRequired && r.notFound).Select(r => r.product).ToFrozenSet(StringComparer.Ordinal);
 
 		return new FetchedReleaseNotes
 		{
 			BundlesByProduct = bundleMap,
 			DeclaredProducts = declaredSet,
-			NotFoundInferredProducts = notFoundInferred
+			NotFoundInferredProducts = notFoundInferred,
+			NotFoundDeclaredProducts = notFoundDeclared
 		};
 	}
 
