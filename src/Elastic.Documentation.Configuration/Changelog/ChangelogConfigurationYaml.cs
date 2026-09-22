@@ -332,7 +332,8 @@ internal sealed record BundleConfigurationYaml
 	public Dictionary<string, BundleProfileYaml>? Profiles { get; set; }
 
 	/// <summary>
-	/// Release trigger to profile mappings for github, unified, and serverless release types.
+	/// Release trigger to profile mappings. <c>github</c> maps tag globs to profiles;
+	/// <c>unified</c> maps product IDs to profiles for any product-scoped release (versioned stack or date-based).
 	/// </summary>
 	public BundleReleasesYaml? Releases { get; set; }
 }
@@ -417,7 +418,6 @@ internal sealed record BundleReleasesYaml
 {
 	public List<GithubReleaseEntryYaml>? Github { get; set; }
 	public List<UnifiedReleaseEntryYaml>? Unified { get; set; }
-	public ServerlessReleaseYaml? Serverless { get; set; }
 }
 
 /// <summary>
@@ -430,19 +430,11 @@ internal sealed record GithubReleaseEntryYaml
 }
 
 /// <summary>
-/// Maps a product ID to a bundle profile for unified/versioned stack releases.
+/// Maps a product ID to a bundle profile for any product-scoped release (versioned stack or date-based).
 /// </summary>
 internal sealed record UnifiedReleaseEntryYaml
 {
 	public string? Product { get; set; }
-	public string? Profile { get; set; }
-}
-
-/// <summary>
-/// Designates the bundle profile used for serverless releases (no tag/product selector).
-/// </summary>
-internal sealed record ServerlessReleaseYaml
-{
 	public string? Profile { get; set; }
 }
 

@@ -756,29 +756,10 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 			}
 		}
 
-		ServerlessRelease? serverless = null;
-		if (yaml.Serverless != null)
-		{
-			if (string.IsNullOrWhiteSpace(yaml.Serverless.Profile))
-			{
-				collector.EmitError(configPath, "bundle.releases.serverless.profile is required.");
-				return null;
-			}
-			if (profiles == null || !profiles.ContainsKey(yaml.Serverless.Profile))
-			{
-				collector.EmitError(
-					configPath,
-					$"bundle.releases.serverless.profile: '{yaml.Serverless.Profile}' is not defined in bundle.profiles."
-				);
-				return null;
-			}
-			serverless = new ServerlessRelease { Profile = yaml.Serverless.Profile };
-		}
-
-		if (github == null && unified == null && serverless == null)
+		if (github == null && unified == null)
 			return null;
 
-		return new BundleReleases { Github = github, Unified = unified, Serverless = serverless };
+		return new BundleReleases { Github = github, Unified = unified };
 	}
 
 	/// <summary>

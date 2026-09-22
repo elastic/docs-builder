@@ -80,7 +80,8 @@ public record BundleConfiguration
 	public IReadOnlyDictionary<string, BundleProfile>? Profiles { get; init; }
 
 	/// <summary>
-	/// Release trigger to profile mappings for github, unified, and serverless release types.
+	/// Release trigger to profile mappings. <c>github</c> maps tag globs to profiles;
+	/// <c>unified</c> maps product IDs to profiles for any product-scoped release (versioned stack or date-based).
 	/// </summary>
 	public BundleReleases? Releases { get; init; }
 }
@@ -175,13 +176,12 @@ public record BundleProfile
 }
 
 /// <summary>
-/// Release trigger to profile mappings for the three supported release types.
+/// Release trigger to profile mappings.
 /// </summary>
 public record BundleReleases
 {
 	public IReadOnlyList<GithubReleaseEntry>? Github { get; init; }
 	public IReadOnlyList<UnifiedReleaseEntry>? Unified { get; init; }
-	public ServerlessRelease? Serverless { get; init; }
 }
 
 /// <summary>
@@ -194,18 +194,10 @@ public record GithubReleaseEntry
 }
 
 /// <summary>
-/// Maps a product ID to a bundle profile for unified/versioned stack releases.
+/// Maps a product ID to a bundle profile for any product-scoped release (versioned stack or date-based).
 /// </summary>
 public record UnifiedReleaseEntry
 {
 	public required string Product { get; init; }
-	public required string Profile { get; init; }
-}
-
-/// <summary>
-/// Designates the bundle profile used for serverless releases (no tag/product selector).
-/// </summary>
-public record ServerlessRelease
-{
 	public required string Profile { get; init; }
 }

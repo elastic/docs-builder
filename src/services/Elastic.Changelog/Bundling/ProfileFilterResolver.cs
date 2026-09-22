@@ -90,6 +90,18 @@ public static partial class ProfileFilterResolver
 			return null;
 		}
 
+#pragma warning disable CS0618
+		if (!string.IsNullOrWhiteSpace(profile.Source))
+		{
+			collector.EmitError(
+				string.Empty,
+				$"Profile '{profileName}' sets 'source: github_release', which is no longer supported at runtime. " +
+					"Add a bundle.releases.github entry that maps the release tag to this profile and remove the source field."
+			);
+			return null;
+		}
+#pragma warning restore CS0618
+
 		if (string.IsNullOrWhiteSpace(profileArgument))
 		{
 			collector.EmitError(
