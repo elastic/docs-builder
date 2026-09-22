@@ -622,7 +622,7 @@ public partial class ChangelogBundlingService(
 		Cancel ctx
 	)
 	{
-		if (!ValidateProfileOutputs(collector, config))
+		if (!ValidateProfileOutputs(collector, config, input.Profile))
 			return null;
 
 		// Commit-range mode derives its PR list from git; the profile only contributes output
@@ -1124,7 +1124,7 @@ public partial class ChangelogBundlingService(
 		{
 			// Plan must fail the same way the run does when profiles still carry output: patterns
 			// or collide on the conventional target, so CI surfaces the error before the Docker run.
-			if (!ValidateProfileOutputs(collector, config))
+			if (!ValidateProfileOutputs(collector, config, input.Profile))
 				return null;
 
 			if (config?.Bundle?.Profiles?.TryGetValue(input.Profile, out profileDef) == true)
@@ -1330,7 +1330,11 @@ public partial class ChangelogBundlingService(
 	/// explicit <c>output</c> pattern is a hard error, and two profiles sharing the same primary
 	/// output product would collide on the same conventional target, so that is rejected as well.
 	/// </summary>
-	private static bool ValidateProfileOutputs(IDiagnosticsCollector collector, ChangelogConfiguration? config)
+	private static bool ValidateProfileOutputs(
+		IDiagnosticsCollector collector,
+		ChangelogConfiguration? config,
+		string? selectedProfile = null
+	)
 	{
 		if (config?.Bundle?.Profiles is not { Count: > 0 } profiles)
 			return true;
@@ -1338,8 +1342,10 @@ public partial class ChangelogBundlingService(
 		var valid = true;
 		foreach (var (name, profile) in profiles)
 		{
+			// Scope the source: github_release runtime error to the actively selected profile only.
+			// Other profiles may still be mid-migration; load-time already warned about them.
 #pragma warning disable CS0618
-			if (!string.IsNullOrWhiteSpace(profile.Source))
+			if (!string.IsNullOrWhiteSpace(profile.Source) && (selectedProfile == null || name == selectedProfile))
 			{
 				collector.EmitError(
 					string.Empty,
