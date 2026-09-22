@@ -2,7 +2,9 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Text.Json;
 using Elastic.Documentation.Navigation;
+using Elastic.Documentation.Site;
 
 namespace Elastic.ApiExplorer.Infrastructure;
 
@@ -29,9 +31,11 @@ public static class ApiBreadcrumbBuilder
 {
 	public const string CatalogCrumbTitle = "APIs";
 
-	public static ApiBreadcrumbTrail Build(INavigationItem current, string currentTitle, string? rootTitle, string? catalogUrl = null)
+	public static ApiBreadcrumbTrail Build(INavigationItem current, string currentTitle, string? rootTitle, string? catalogUrl = null) =>
+		TrailFrom(Collect(current, currentTitle, rootTitle, catalogUrl));
+
+	internal static ApiBreadcrumbTrail TrailFrom(IReadOnlyList<ApiBreadcrumb> items)
 	{
-		var items = Collect(current, currentTitle, rootTitle, catalogUrl);
 		if (items.Count == 0 || items.All(static crumb => crumb.IsCurrent))
 			return ApiBreadcrumbTrail.Empty;
 		return new ApiBreadcrumbTrail(items);
@@ -67,6 +71,21 @@ public static class ApiBreadcrumbBuilder
 			items.Insert(0, new ApiBreadcrumb(CatalogCrumbTitle, catalogUrl));
 
 		return items;
+	}
+
+	internal static string ToJsonLd(IReadOnlyList<ApiBreadcrumb> crumbs, Uri? canonicalBaseUrl)
+	{
+		var baseUri = canonicalBaseUrl ?? new Uri("http://localhost");
+		var position = 1;
+		var items = crumbs.Select(
+			c => new BreadcrumbListItem
+			{
+				Position = position++,
+				Name = c.Title,
+				Item = c.Url is null ? null : new Uri(baseUri, c.Url).ToString()
+			}
+		).ToList();
+		return JsonSerializer.Serialize(new BreadcrumbsList { ItemListElement = items }, BreadcrumbsContext.Default.BreadcrumbsList);
 	}
 
 	private static bool ShouldPrependCatalog(string? catalogUrl, string currentUrl, IReadOnlyList<ApiBreadcrumb> items)

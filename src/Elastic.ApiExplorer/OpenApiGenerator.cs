@@ -427,10 +427,20 @@ public class OpenApiGenerator(
 		var navigationRenderResult = await navigationRenderer.RenderNavigation(current.NavigationRoot, current, ctx);
 		renderContext = renderContext with { CurrentNavigation = current, NavigationHtml = navigationRenderResult.Html };
 		await using var stream = _writeFileSystem.FileStream.New(outputFile.FullName, FileMode.OpenOrCreate);
-		await page.RenderAsync(stream, renderContext, ctx);
 
+		// Build the expensive page model once and pass it to both render paths so that
+		// OperationPageModel.Create / SchemaPageModel.Create / StructuralViewModel.Create
+		// are not called twice per page (once for HTML, once for CommonMark).
 		if (page is IApiModel apiPage)
-			await WriteCommonMark(current, apiPage, renderContext, ctx).ConfigureAwait(false);
+		{
+			var pageModel = apiPage.CreatePageModel(renderContext);
+			await apiPage.RenderAsync(stream, renderContext, pageModel, ctx);
+			await WriteCommonMark(current, apiPage, renderContext, pageModel, ctx).ConfigureAwait(false);
+		}
+		else
+		{
+			await page.RenderAsync(stream, renderContext, ctx);
+		}
 
 		return outputFile;
 
@@ -441,9 +451,15 @@ public class OpenApiGenerator(
 		}
 	}
 
-	private async Task WriteCommonMark(INavigationItem current, IApiModel page, ApiRenderContext renderContext, Cancel ctx)
+	private async Task WriteCommonMark(
+		INavigationItem current,
+		IApiModel page,
+		ApiRenderContext renderContext,
+		object? pageModel,
+		Cancel ctx
+	)
 	{
-		var markdown = await page.RenderCommonMarkAsync(renderContext, ctx).ConfigureAwait(false);
+		var markdown = await page.RenderCommonMarkAsync(renderContext, pageModel, ctx).ConfigureAwait(false);
 		if (string.IsNullOrEmpty(markdown))
 			return;
 

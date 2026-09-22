@@ -35,6 +35,8 @@ public record ApiLayoutViewModel : GlobalLayoutViewModel
 
 	public required string MarkdownUrl { get; init; }
 
+	public string? ProductName { get; init; }
+
 	/// <summary>
 	/// Preload hint for API links. Body already hx-boosts into <c>#main-container</c>,
 	/// so the examples rail swaps with the article without a dedicated OOB provider.
@@ -69,6 +71,9 @@ public abstract class ApiViewModel(ApiRenderContext context)
 	/// <summary>Last breadcrumb label. Defaults to <see cref="LayoutPageTitle"/> or the nav title.</summary>
 	protected virtual string BreadcrumbCurrentTitle => LayoutPageTitle ?? CurrentNavigationItem.NavigationTitle;
 
+	/// <summary>Raw markdown used for the meta description. Excerpted before it reaches the layout.</summary>
+	protected virtual string? LayoutPageDescription => null;
+
 	private string? GetGitHubDocsUrl()
 	{
 		var repo = BuildContext.Git.RepositoryName;
@@ -89,12 +94,13 @@ public abstract class ApiViewModel(ApiRenderContext context)
 		var assembler = BuildContext.BuildType == BuildType.Assembler;
 		var specRootUrl = CurrentNavigationItem.NavigationRoot.Url;
 		var onCatalog = SameUrl(specRootUrl, catalogUrl) || SameUrl(CurrentNavigationItem.Url, catalogUrl);
+		var crumbs = ApiBreadcrumbBuilder.Collect(CurrentNavigationItem, BreadcrumbCurrentTitle, Document.Info?.Title, catalogUrl);
 
 		return new()
 		{
 			DocsBuilderVersion = ShortId.Create(BuildContext.Version),
 			DocSetName = "Api Explorer",
-			Description = "",
+			Description = ApiSeoDescription.Excerpt(LayoutPageDescription) ?? "",
 			Title = documentTitle,
 			CurrentNavigationItem = CurrentNavigationItem,
 			Previous = null,
@@ -111,12 +117,9 @@ public abstract class ApiViewModel(ApiRenderContext context)
 			BuildType = BuildContext.BuildType,
 			PageFeedbackSurface = "api",
 			TocItems = GetTocItems(),
-			Breadcrumbs = ApiBreadcrumbBuilder.Build(
-				CurrentNavigationItem,
-				BreadcrumbCurrentTitle,
-				Document.Info?.Title,
-				catalogUrl: catalogUrl
-			),
+			Breadcrumbs = ApiBreadcrumbBuilder.TrailFrom(crumbs),
+			StructuredBreadcrumbsJson = ApiBreadcrumbBuilder.ToJsonLd(crumbs, BuildContext.CanonicalBaseUrl),
+			ProductName = RenderContext.Product?.DisplayName,
 			VersionSwitcherItems = RenderContext.VersionSwitcherItems,
 			HubSwitcherItems = hubItems,
 			LegacyBarProductSwitcher = assembler

@@ -23,19 +23,27 @@ public record ApiOperation(
 {
 	string IHttpMethodNavigationModel.HttpMethod => OperationType.Method.ToLowerInvariant();
 
-	public async Task RenderAsync(FileSystemStream stream, ApiRenderContext context, Cancel ctx = default)
+	public object? CreatePageModel(ApiRenderContext context) => OperationPageModel.Create(this, context);
+
+	public async Task RenderAsync(FileSystemStream stream, ApiRenderContext context, object? pageModel, Cancel ctx = default)
 	{
-		var viewModel = new OperationViewModel(context) { Operation = this, Page = OperationPageModel.Create(this, context) };
+		var page = pageModel as OperationPageModel ?? OperationPageModel.Create(this, context);
+		var viewModel = new OperationViewModel(context) { Operation = this, Page = page };
 		var slice = OperationView.Create(viewModel);
 		await slice.RenderAsync(stream, cancellationToken: ctx);
 	}
 
-	public Task<string?> RenderCommonMarkAsync(ApiRenderContext context, Cancel ctx = default)
+	public async Task RenderAsync(FileSystemStream stream, ApiRenderContext context, Cancel ctx = default) =>
+		await RenderAsync(stream, context, null, ctx);
+
+	public Task<string?> RenderCommonMarkAsync(ApiRenderContext context, object? pageModel, Cancel ctx = default)
 	{
-		var page = OperationPageModel.Create(this, context);
+		var page = pageModel as OperationPageModel ?? OperationPageModel.Create(this, context);
 		var prerequisites = OpenApiXReqAuthParser.TryGetPrerequisiteLines(Operation, context.ApiExplorerLog, Route, Operation.OperationId);
 		return Task.FromResult<string?>(OperationCommonMark.Write(this, page, prerequisites, context));
 	}
+
+	public Task<string?> RenderCommonMarkAsync(ApiRenderContext context, Cancel ctx = default) => RenderCommonMarkAsync(context, null, ctx);
 }
 
 public class OperationNavigationItem : ILeafNavigationItem<ApiOperation>, IEndpointOrOperationNavigationItem
