@@ -261,12 +261,13 @@ public class NoteAmendReconcilerTests
 
 		// No notes for this version (note was deleted from the pool).
 		var notesByProduct = NotesByProduct(Product, Version);
-		var touched = await _reconciler.ReconcileAsync(NotesScope(), notesByProduct, TestContext.Current.CancellationToken);
+		var outcome = await _reconciler.ReconcileAsync(NotesScope(), notesByProduct, TestContext.Current.CancellationToken);
 
 		_s3.Exists(PublicBucket, AmendNotesKey(parent)).Should().BeFalse("stale amend sidecar must be deleted when no notes remain");
 		_s3.Deletes.Select(d => d.Key).Should().Contain(AmendNotesKey(parent));
-		_s3.Deletes.Select(d => d.Key).Should().Contain(ChangelogKeys.NotesIndexKey(Org, Repo, Product, Version));
-		touched.Should().Equal(Product);
+		_s3.Deletes.Select(d => d.Key).Should().NotContain(ProductIndexKey());
+		outcome.TouchedProducts.Should().Equal(Product);
+		outcome.EmptyProductIndexes.Should().Equal(new NoteAmendEmptyIndex(Product, ProductIndexKey()));
 	}
 
 	[Fact]
@@ -277,10 +278,11 @@ public class NoteAmendReconcilerTests
 		_s3.Seed(PublicBucket, BundleKey(parent), ParentBundleYaml("main/pr-100.yaml"));
 
 		var notesByProduct = NotesByProduct(Product, Version);
-		var touched = await _reconciler.ReconcileAsync(NotesScope(), notesByProduct, TestContext.Current.CancellationToken);
+		var outcome = await _reconciler.ReconcileAsync(NotesScope(), notesByProduct, TestContext.Current.CancellationToken);
 
 		_s3.Exists(PublicBucket, AmendNotesKey(parent)).Should().BeFalse();
-		touched.Should().Equal(Product);
+		outcome.TouchedProducts.Should().Equal(Product);
+		outcome.EmptyProductIndexes.Should().Equal(new NoteAmendEmptyIndex(Product, ProductIndexKey()));
 	}
 
 	[Fact]
@@ -334,11 +336,12 @@ public class NoteAmendReconcilerTests
 		notesByProduct.Should().ContainKey("kibana");
 		_s3.Exists(PublicBucket, ChangelogKeys.NotesIndexKey(Org, Repo, Product, Version)).Should().BeTrue();
 
-		var touched = await _reconciler.ReconcileAsync(NotesScope(), notesByProduct, TestContext.Current.CancellationToken);
+		var outcome = await _reconciler.ReconcileAsync(NotesScope(), notesByProduct, TestContext.Current.CancellationToken);
 
 		_s3.Exists(PublicBucket, AmendNotesKey(parent)).Should().BeFalse();
-		touched.Should().Contain(Product);
-		_s3.Exists(PublicBucket, ChangelogKeys.NotesIndexKey(Org, Repo, Product, Version)).Should().BeFalse();
+		outcome.TouchedProducts.Should().Contain(Product);
+		_s3.Exists(PublicBucket, ChangelogKeys.NotesIndexKey(Org, Repo, Product, Version)).Should().BeTrue();
+		outcome.EmptyProductIndexes.Should().Contain(new NoteAmendEmptyIndex(Product, ProductIndexKey()));
 		_s3.Exists(PublicBucket, "bundle/kibana/kibana-9.3.0.amend-notes.yaml").Should().BeFalse();
 	}
 
@@ -498,9 +501,10 @@ public class NoteAmendReconcilerTests
 		_s3.Seed(PublicBucket, NoteKey("main", "note-ece.yml"), eceNoteYaml);
 
 		var notesByProduct = NotesByProduct(ece, version, "main/note-ece.yml");
-		var touched = await _reconciler.ReconcileAsync(NotesScope(), notesByProduct, TestContext.Current.CancellationToken);
+		var outcome = await _reconciler.ReconcileAsync(NotesScope(), notesByProduct, TestContext.Current.CancellationToken);
 
-		touched.Should().Equal(ece);
+		outcome.TouchedProducts.Should().Equal(ece);
+		outcome.EmptyProductIndexes.Should().BeEmpty();
 		_s3.Exists(PublicBucket, $"bundle/{ece}/cloud-4.2.0.amend-notes.yaml").Should().BeTrue();
 		_s3.ContentOf(PublicBucket, $"bundle/{hosted}/{hostedSidecar}").Should().Be(hostedSidecarYaml);
 		_s3.Deletes.Should().NotContain(d => d.Key.Contains($"bundle/{hosted}/", StringComparison.Ordinal));
