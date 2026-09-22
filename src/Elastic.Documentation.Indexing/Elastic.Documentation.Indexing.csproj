@@ -5,13 +5,21 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <IsAotCompatible>true</IsAotCompatible>
+    <InvariantGlobalization>true</InvariantGlobalization>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
-    <NoWarn>$(NoWarn);CS1591;CS1573;CS1572;CS1571;CS1570;CS1574</NoWarn>
+    <!-- IDE0130: namespace-folder mismatch is intentional — exporter namespaces are kept as Elastic.Markdown.* for call-site compat -->
+    <NoWarn>$(NoWarn);CS1591;CS1573;CS1572;CS1571;CS1570;CS1574;IDE0130</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="Elastic.Ingest.Elasticsearch" />
+    <PackageReference Include="Elastic.Mapping" />
     <PackageReference Include="Microsoft.Extensions.Logging" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Elastic.Markdown\Elastic.Markdown.csproj" />
+    <ProjectReference Include="..\Elastic.Documentation.Configuration\Elastic.Documentation.Configuration.csproj" />
   </ItemGroup>
 
   <ItemGroup>
