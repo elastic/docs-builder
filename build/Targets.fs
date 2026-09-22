@@ -151,12 +151,23 @@ let private runTests (testSuite: TestSuite) _ =
     if List.isEmpty projects then
         failwithf "No test projects found under %A" directories
 
+    let unitTestsRoot = Path.Combine(Paths.Root.FullName, "tests")
+
+    // TUnit (MTP) projects in tests/ use InvokeTestingPlatform; xUnit projects in
+    // tests-integration/ still use VSTest via dotnet test.
     let runOne (project: string) =
-        exec {
-            exit_code_of "dotnet" (
-                [ "test"; project; "-c"; "release"; "--no-restore"; "--no-build" ]
-            )
-        } = 0
+        if project.StartsWith(unitTestsRoot) then
+            exec {
+                exit_code_of "dotnet" (
+                    [ "msbuild"; project; "-t:InvokeTestingPlatform"; "-p:Configuration=release"; "-p:VSTestNoBuild=true" ]
+                )
+            } = 0
+        else
+            exec {
+                exit_code_of "dotnet" (
+                    [ "test"; project; "-c"; "release"; "--no-restore"; "--no-build" ]
+                )
+            } = 0
 
     let failures = projects |> List.filter (fun p -> not (runOne p))
     if not (List.isEmpty failures) then

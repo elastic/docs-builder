@@ -22,6 +22,6 @@ public class PrettyHtmlExtensionsTests
 
 		var act = () => actual.ShouldContainHtml(expected);
 
-		act.Should().Throw<Exception>();
+		act.Should().Throw<AssertionFailedException>();
 	}
 }
