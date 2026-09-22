@@ -9,7 +9,10 @@ import {
 import { useGlobalKeyboardShortcut } from './useGlobalKeyboardShortcut'
 import { useIsNavigationSearchCooldownActive } from './useNavigationSearchCooldown'
 import { useNavigationSearchKeyboardNavigation } from './useNavigationSearchKeyboardNavigation'
-import { useNavigationSearchQuery } from './useNavigationSearchQuery'
+import {
+    useNavigationSearchQuery,
+    type TypeFilter,
+} from './useNavigationSearchQuery'
 import { useNavigationSearchTelemetry } from './useNavigationSearchTelemetry'
 import {
     EuiInputPopover,
@@ -27,11 +30,13 @@ import { useRef, useState, useEffect } from 'react'
 interface Props {
     placeholder?: string
     size?: 's' | 'm' | 'l'
+    typeFilter?: TypeFilter
 }
 
 export const NavigationSearch = ({
     placeholder = 'Jump to page',
     size = 'm',
+    typeFilter = 'all',
 }: Props) => {
     const { euiTheme } = useEuiTheme()
     const isMobile = useIsWithinMaxBreakpoint('s')
@@ -41,7 +46,7 @@ export const NavigationSearch = ({
     const selectedIndex = useSelectedIndex()
     const { setSearchTerm } = useSearchActions()
     const isSearchCooldownActive = useIsNavigationSearchCooldownActive()
-    const { isLoading, isFetching, data } = useNavigationSearchQuery()
+    const { isLoading, isFetching, data } = useNavigationSearchQuery(typeFilter)
     const { trackOpened, trackClosed } = useNavigationSearchTelemetry()
 
     const results = data?.results ?? []
@@ -191,6 +196,7 @@ export const NavigationSearch = ({
                         isKeyboardNavigating={isKeyboardNavigating}
                         onMouseMove={handleMouseMove}
                         onResultClick={handleResultClick}
+                        typeFilter={typeFilter}
                     />
                 </div>
             )}
@@ -211,12 +217,14 @@ interface SearchDropdownContentProps {
     isKeyboardNavigating: React.MutableRefObject<boolean>
     onMouseMove: () => void
     onResultClick: () => void
+    typeFilter: TypeFilter
 }
 
 const SearchDropdownContent = ({
     isKeyboardNavigating,
     onMouseMove,
     onResultClick,
+    typeFilter,
 }: SearchDropdownContentProps) => {
     return (
         <>
@@ -224,6 +232,7 @@ const SearchDropdownContent = ({
                 isKeyboardNavigating={isKeyboardNavigating}
                 onMouseMove={onMouseMove}
                 onResultClick={onResultClick}
+                typeFilter={typeFilter}
             />
             <SearchDropdownFooter />
         </>

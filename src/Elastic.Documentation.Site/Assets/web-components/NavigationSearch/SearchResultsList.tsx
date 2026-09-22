@@ -6,6 +6,7 @@ import { useSearchTerm } from './navigationSearch.store'
 import {
     useNavigationSearchQuery,
     SearchResultItem,
+    type TypeFilter,
 } from './useNavigationSearchQuery'
 import { useNavigationSearchTelemetry } from './useNavigationSearchTelemetry'
 import {
@@ -26,17 +27,19 @@ export interface SearchResultsListProps {
     isKeyboardNavigating: MutableRefObject<boolean>
     onMouseMove: () => void
     onResultClick: () => void
+    typeFilter?: TypeFilter
 }
 
 export const SearchResultsList = ({
     isKeyboardNavigating,
     onMouseMove,
     onResultClick,
+    typeFilter = 'all',
 }: SearchResultsListProps) => {
     const { euiTheme } = useEuiTheme()
     const selectedIndex = useSelectedIndex()
     const { setSelectedIndex } = useSearchActions()
-    const { isLoading, data } = useNavigationSearchQuery()
+    const { isLoading, data } = useNavigationSearchQuery(typeFilter)
     const containerRef = useRef<HTMLDivElement>(null)
     const searchTerm = useSearchTerm()
     const { trackResultClicked } = useNavigationSearchTelemetry()

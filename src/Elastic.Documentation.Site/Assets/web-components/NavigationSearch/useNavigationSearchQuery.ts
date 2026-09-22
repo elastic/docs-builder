@@ -15,11 +15,7 @@ import {
     isRateLimitError,
 } from '../shared/errorHandling'
 import { ApiError } from '../shared/errorHandling'
-import {
-    usePageNumber,
-    useSearchTerm,
-    useTypeFilter,
-} from './navigationSearch.store'
+import { usePageNumber, useSearchTerm } from './navigationSearch.store'
 import {
     useIsNavigationSearchAwaitingNewInput,
     useNavigationSearchCooldownActions,
@@ -65,10 +61,11 @@ export const SearchResponse = z.object({
 
 export type SearchResponse = z.infer<typeof SearchResponse>
 
-export const useNavigationSearchQuery = () => {
+export type TypeFilter = 'all' | 'docs' | 'api'
+
+export const useNavigationSearchQuery = (typeFilter: TypeFilter) => {
     const searchTerm = useSearchTerm()
     const pageNumber = usePageNumber() + 1
-    const typeFilter = useTypeFilter()
     const trimmedSearchTerm = searchTerm.trim()
     const debouncedSearchTerm = useDebounce(trimmedSearchTerm, 300)
     const isCooldownActive = useIsNavigationSearchCooldownActive()

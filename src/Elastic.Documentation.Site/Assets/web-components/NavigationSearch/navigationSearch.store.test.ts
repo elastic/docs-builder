@@ -3,7 +3,6 @@ import { act } from 'react'
 
 describe('navigationSearch.store', () => {
     beforeEach(() => {
-        // Reset store state before each test
         act(() => {
             navigationSearchStore.getState().actions.clearSearchTerm()
         })
@@ -68,20 +67,6 @@ describe('navigationSearch.store', () => {
         it('should have empty search term on initialization', () => {
             // Assert
             expect(navigationSearchStore.getState().searchTerm).toBe('')
-        })
-    })
-
-    describe('setTypeFilter', () => {
-        it('stores docs and api filters, never doc', () => {
-            act(() => {
-                navigationSearchStore.getState().actions.setTypeFilter('docs')
-            })
-            expect(navigationSearchStore.getState().typeFilter).toBe('docs')
-
-            act(() => {
-                navigationSearchStore.getState().actions.setTypeFilter('api')
-            })
-            expect(navigationSearchStore.getState().typeFilter).toBe('api')
         })
     })
 })
