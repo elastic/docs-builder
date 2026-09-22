@@ -253,7 +253,9 @@ public partial class ConfigurationFileProvider : IDisposable
 	{
 		try
 		{
-			var cutoff = DateTime.UtcNow.AddHours(-24);
+			// 1-hour cutoff: no normal build or test run lasts that long, so any directory
+			// older than this cannot still be in active use by the process that created it.
+			var cutoff = DateTime.UtcNow.AddHours(-1);
 			foreach (var dir in Directory.EnumerateDirectories(parentDir))
 			{
 				try
