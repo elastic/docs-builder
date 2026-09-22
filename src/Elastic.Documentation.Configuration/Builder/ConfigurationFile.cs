@@ -57,10 +57,10 @@ public record ConfigurationFile
 
 	public HashSet<Product> Products { get; private set; } = [];
 
-	private readonly Dictionary<string, string> _substitutions = new(StringComparer.OrdinalIgnoreCase);
+	private readonly Dictionary<string, string> _substitutions = [with(StringComparer.OrdinalIgnoreCase)];
 	public IReadOnlyDictionary<string, string> Substitutions => _substitutions;
 
-	private readonly Dictionary<string, bool> _features = new(StringComparer.OrdinalIgnoreCase);
+	private readonly Dictionary<string, bool> _features = [with(StringComparer.OrdinalIgnoreCase)];
 
 	[field: AllowNull, MaybeNull]
 	public FeatureFlags Features => field ??= new FeatureFlags(_features);
@@ -249,7 +249,7 @@ public record ConfigurationFile
 			_tocDefaultCtas = docSetFile.TocDefaultCtas;
 
 			// Process features
-			_features = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
+			_features = [with(StringComparer.OrdinalIgnoreCase)];
 			if (docSetFile.Features.PrimaryNav.HasValue)
 				_features["primary-nav"] = docSetFile.Features.PrimaryNav.Value;
 			if (docSetFile.Features.DisableGithubEditLink.HasValue)

@@ -861,7 +861,7 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 		Dictionary<string, BundlePerProductRule>? byProduct = null;
 		if (yaml.Products is { Count: > 0 })
 		{
-			byProduct = new Dictionary<string, BundlePerProductRule>(StringComparer.OrdinalIgnoreCase);
+			byProduct = [with(StringComparer.OrdinalIgnoreCase)];
 			foreach (var (productKey, productYaml) in yaml.Products)
 			{
 				var productIds = productKey.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
@@ -1101,7 +1101,7 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 		Dictionary<string, CreateRules>? byProduct = null;
 		if (yaml.Products is { Count: > 0 })
 		{
-			byProduct = new Dictionary<string, CreateRules>(StringComparer.OrdinalIgnoreCase);
+			byProduct = [with(StringComparer.OrdinalIgnoreCase)];
 			foreach (var (productKey, productYaml) in yaml.Products)
 			{
 				var productIds = productKey.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
@@ -1174,7 +1174,7 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 		Dictionary<string, PublishBlocker>? byProduct = null;
 		if (yaml.Products is { Count: > 0 })
 		{
-			byProduct = new Dictionary<string, PublishBlocker>(StringComparer.OrdinalIgnoreCase);
+			byProduct = [with(StringComparer.OrdinalIgnoreCase)];
 			foreach (var (productKey, productYaml) in yaml.Products)
 			{
 				var productIds = productKey.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);

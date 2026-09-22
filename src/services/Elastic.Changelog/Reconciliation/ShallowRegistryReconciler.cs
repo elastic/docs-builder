@@ -172,7 +172,7 @@ public sealed class ShallowRegistryReconciler(
 
 				if (!folders.TryGetValue(scope.Group, out var files))
 				{
-					files = new SortedDictionary<string, string>(StringComparer.Ordinal);
+					files = [with(StringComparer.Ordinal)];
 					folders[scope.Group] = files;
 				}
 				files[file] = NormalizeETag(obj.ETag);
