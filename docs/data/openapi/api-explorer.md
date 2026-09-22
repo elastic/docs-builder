@@ -155,6 +155,8 @@ top bar, immediately before the version picker. Isolated builds keep a product
 `<select>` at the top of the left navigation. The list includes every declared API
 and a Back to hub option.
 
+Assembler API pages also show a Jump to API box at the top of that sidebar. The box searches API operations only. Isolated and air-gapped builds omit the box. Markdown docs pages do not get it back.
+
 ## Remote spec resolution
 
 When `spec:` does not resolve to a file on disk, {{dbuild}} resolves the current (`main`) version

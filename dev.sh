@@ -22,11 +22,17 @@ _ensure_mcp() {
     || _bake --load mcp
 }
 
+_ensure_api() {
+  docker image inspect docs-builder:api >/dev/null 2>&1 \
+    || _bake --load api
+}
+
 case "${1:-help}" in
   help|--help|-h)
     echo "Usage: ./dev.sh <command>"
     echo ""
     echo "  build                Build the dev Docker images"
+    echo "  build-api            Build only the docs API Docker image"
     echo "  build-mcp            Build only the MCP server Docker image"
     echo "  rebuild              Rebuild the dev Docker images without cache"
     echo "  serve                Serve docs at http://localhost:3000 with hot reload"
@@ -34,6 +40,9 @@ case "${1:-help}" in
     echo "  stop                 Stop the development server"
     echo "  docs                 Build the current documentation set"
     echo "  test                 Run the unit-test suite (delegates to ./build.sh unit-test)"
+    echo "  serve-api            Run the docs API at http://localhost:8081"
+    echo "  serve-api-detached   Run the docs API in the background"
+    echo "  stop-api             Stop the docs API"
     echo "  serve-mcp            Run the MCP server at http://localhost:8080 (public profile)"
     echo "  serve-mcp-internal   Run the MCP server at http://localhost:8080 (internal profile)"
     echo "  serve-mcp-detached   Run the MCP server in the background"
@@ -43,8 +52,11 @@ case "${1:-help}" in
   build)
     _bake --load all
     ;;
+  build-api)
+    _bake --load api "${@:2}"
+    ;;
   build-mcp)
-    _bake --load mcp
+    _bake --load mcp "${@:2}"
     ;;
   rebuild)
     _bake --no-cache --load all
@@ -67,6 +79,17 @@ case "${1:-help}" in
   test)
     _ensure_tooling
     _compose run --rm tests
+    ;;
+  serve-api)
+    _ensure_api
+    _compose up --no-build api
+    ;;
+  serve-api-detached)
+    _ensure_api
+    _compose up --no-build -d api
+    ;;
+  stop-api)
+    _compose stop api
     ;;
   serve-mcp)
     _ensure_mcp

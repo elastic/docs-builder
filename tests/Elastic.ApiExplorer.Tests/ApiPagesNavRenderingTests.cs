@@ -106,6 +106,57 @@ public partial class ApiPagesNavRenderingTests
 		html.Should().Contain("hx-preserve");
 	}
 
+	[Fact]
+	public async Task Render_ShowsJumpToPageOnAssemblerBuilds()
+	{
+		var model = CreateLayoutModel("/api/doc/elasticsearch/", "/api/doc/elasticsearch.md", buildType: BuildType.Assembler);
+
+		var html = await _ApiPagesNav.Create(model).RenderAsync(cancellationToken: TestContext.Current.CancellationToken);
+
+		html.Should().Contain("<navigation-search type=\"api\" placeholder=\"Jump to API\"></navigation-search>");
+	}
+
+	[Fact]
+	public async Task Render_ShowsJumpToPageWhenNavigationPreviewIsOn()
+	{
+		var model = CreateLayoutModel(
+			"/api/doc/elasticsearch/",
+			"/api/doc/elasticsearch.md",
+			features: new FeatureFlags(new Dictionary<string, bool> { ["navigation-preview"] = true }),
+			buildType: BuildType.Assembler
+		);
+
+		var html = await _ApiPagesNav.Create(model).RenderAsync(cancellationToken: TestContext.Current.CancellationToken);
+
+		html.Should().Contain("<navigation-search type=\"api\" placeholder=\"Jump to API\"></navigation-search>");
+		html.Should().Contain("hx-preserve");
+	}
+
+	[Fact]
+	public async Task Render_OmitsJumpToPageOnIsolatedBuilds()
+	{
+		var model = CreateLayoutModel("/api/doc/elasticsearch/", "/api/doc/elasticsearch.md", buildType: BuildType.Isolated);
+
+		var html = await _ApiPagesNav.Create(model).RenderAsync(cancellationToken: TestContext.Current.CancellationToken);
+
+		html.Should().NotContain("navigation-search");
+	}
+
+	[Fact]
+	public async Task Render_OmitsJumpToPageWhenAirGapped()
+	{
+		var model = CreateLayoutModel(
+			"/api/doc/elasticsearch/",
+			"/api/doc/elasticsearch.md",
+			features: new FeatureFlags(new Dictionary<string, bool> { ["air-gapped"] = true }),
+			buildType: BuildType.Assembler
+		);
+
+		var html = await _ApiPagesNav.Create(model).RenderAsync(cancellationToken: TestContext.Current.CancellationToken);
+
+		html.Should().NotContain("navigation-search");
+	}
+
 	private static ApiLayoutViewModel CreateLayoutModel(
 		string navigationUrl,
 		string markdownUrl,
@@ -143,6 +194,7 @@ public partial class ApiPagesNavRenderingTests
 			Breadcrumbs = ApiBreadcrumbTrail.Empty,
 			VersionSwitcherItems = versionSwitcherItems ?? [],
 			HubSwitcherItems = hubSwitcherItems ?? [],
+			BuildType = buildType,
 		};
 	}
 
