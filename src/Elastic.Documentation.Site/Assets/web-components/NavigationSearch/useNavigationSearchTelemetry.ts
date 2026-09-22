@@ -23,7 +23,7 @@ import {
     ATTR_ERROR_TYPE,
     ATTR_EXCEPTION_MESSAGE,
 } from '../../telemetry/semconv'
-import { useTypeFilter } from './navigationSearch.store'
+import { type TypeFilter } from './useNavigationSearchQuery'
 import { useCallback } from 'react'
 
 export type NavigationSearchTrigger = 'keyboard_shortcut' | 'focus' | 'click'
@@ -63,8 +63,9 @@ interface ErrorParams {
     errorMessage: string
 }
 
-export const useNavigationSearchTelemetry = () => {
-    const typeFilter = useTypeFilter()
+export const useNavigationSearchTelemetry = (
+    typeFilter: TypeFilter = 'all'
+) => {
     const surface = typeFilter === 'api' ? 'api' : undefined
 
     const trackOpened = useCallback(

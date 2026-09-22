@@ -5,7 +5,6 @@ import {
     useSearchTerm,
     useSearchActions,
     useSelectedIndex,
-    useTypeFilter,
 } from './navigationSearch.store'
 import { useGlobalKeyboardShortcut } from './useGlobalKeyboardShortcut'
 import { useIsNavigationSearchCooldownActive } from './useNavigationSearchCooldown'
@@ -48,7 +47,8 @@ export const NavigationSearch = ({
     const { setSearchTerm } = useSearchActions()
     const isSearchCooldownActive = useIsNavigationSearchCooldownActive()
     const { isLoading, isFetching, data } = useNavigationSearchQuery(typeFilter)
-    const { trackOpened, trackClosed } = useNavigationSearchTelemetry()
+    const { trackOpened, trackClosed } =
+        useNavigationSearchTelemetry(typeFilter)
 
     const results = data?.results ?? []
     const hasContent = !!searchTerm.trim()
@@ -74,6 +74,7 @@ export const NavigationSearch = ({
         isLoading: isSearching,
         onClose: () => setIsPopoverOpen(false),
         onNavigate: handleResultClick,
+        typeFilter,
     })
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -241,16 +242,15 @@ const SearchDropdownContent = ({
                 onResultClick={onResultClick}
                 typeFilter={typeFilter}
             />
-            <SearchDropdownFooter />
+            <SearchDropdownFooter typeFilter={typeFilter} />
         </>
     )
 }
 
-const SearchDropdownFooter = () => {
+const SearchDropdownFooter = ({ typeFilter }: { typeFilter: TypeFilter }) => {
     const { euiTheme } = useEuiTheme()
     const { fontSize: sFontsize, lineHeight: sLineHeight } = useEuiFontSize('s')
     const isMobile = useIsWithinMaxBreakpoint('s')
-    const typeFilter = useTypeFilter()
     const shortcuts =
         typeFilter === 'api' ? API_KEYBOARD_SHORTCUTS : KEYBOARD_SHORTCUTS
 

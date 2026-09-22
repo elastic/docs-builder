@@ -76,7 +76,6 @@ const renderWithProviders = (ui: React.ReactElement) => {
 // Helper to reset all stores
 const resetStores = () => {
     navigationSearchStore.getState().actions.clearSearchTerm()
-    navigationSearchStore.getState().actions.setTypeFilter('all')
     cooldownStore.setState({
         cooldowns: {
             search: { cooldown: null, awaitingNewInput: false },
@@ -319,8 +318,7 @@ describe('Navigation Search Result Click Tracking', () => {
     })
 
     it('includes navigation_search.surface=api on opened, closed, and result_clicked', async () => {
-        navigationSearchStore.getState().actions.setTypeFilter('api')
-        renderWithProviders(<NavigationSearch />)
+        renderWithProviders(<NavigationSearch typeFilter="api" />)
         const input = screen.getByPlaceholderText(/jump to/i)
 
         await userEvent.click(input)
@@ -342,7 +340,7 @@ describe('Navigation Search Result Click Tracking', () => {
         )
 
         const props = createResultsListProps()
-        renderWithProviders(<SearchResultsList {...props} />)
+        renderWithProviders(<SearchResultsList {...props} typeFilter="api" />)
         await userEvent.click(screen.getByText('Elasticsearch Guide'))
         expect(logging.logInfo).toHaveBeenCalledWith(
             'navigation_search_result_clicked',

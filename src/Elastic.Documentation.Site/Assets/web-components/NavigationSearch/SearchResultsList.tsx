@@ -5,8 +5,6 @@ import {
     useSelectedIndex,
     useSearchActions,
     useSearchTerm,
-    useTypeFilter,
-    type TypeFilter,
 } from './navigationSearch.store'
 import {
     useNavigationSearchQuery,
@@ -64,8 +62,7 @@ export const SearchResultsList = ({
     const { isLoading, data } = useNavigationSearchQuery(typeFilter)
     const containerRef = useRef<HTMLDivElement>(null)
     const searchTerm = useSearchTerm()
-    const typeFilter = useTypeFilter()
-    const { trackResultClicked } = useNavigationSearchTelemetry()
+    const { trackResultClicked } = useNavigationSearchTelemetry(typeFilter)
 
     const results = data?.results ?? []
     const isInitialLoading = isLoading && !data
@@ -148,6 +145,7 @@ export const SearchResultsList = ({
                     onMouseEnter={() => handleMouseEnter(index)}
                     onMouseMove={() => handleItemMouseMove(index)}
                     onClick={() => handleResultClick(result, index)}
+                    typeFilter={typeFilter}
                 />
             ))}
         </div>
@@ -162,6 +160,7 @@ interface SearchResultRowProps {
     onMouseEnter: () => void
     onMouseMove: () => void
     onClick: () => void
+    typeFilter: TypeFilter
 }
 
 const SearchResultRow = ({
@@ -172,12 +171,11 @@ const SearchResultRow = ({
     onMouseEnter,
     onMouseMove,
     onClick,
+    typeFilter,
 }: SearchResultRowProps) => {
     const { euiTheme } = useEuiTheme()
     const isMobile = useIsWithinMaxBreakpoint('s')
     const { ref, href } = useHtmxLink(result.url)
-
-    const typeFilter = useTypeFilter()
     const breadcrumbItems = useMemo(
         () =>
             navigationSearchBreadcrumbs(
