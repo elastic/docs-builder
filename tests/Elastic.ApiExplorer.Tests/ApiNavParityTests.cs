@@ -60,11 +60,7 @@ public class ApiNavParityTests
 				"/api/doc/elasticsearch/group/endpoint-search"
 			);
 
-		var structural = navigation.NavigationItems.OfType<StructuralNavigationItem>().ToList();
-		structural.Should().Contain(
-			item => item.Model.Kind == ApiStructuralKind.Authentication && item.Url == "/api/doc/elasticsearch/authentication"
-		);
-		structural.Should().Contain(item => item.Model.Kind == ApiStructuralKind.Servers && item.Url == "/api/doc/elasticsearch/servers");
+		navigation.NavigationItems.OfType<StructuralNavigationItem>().Should().BeEmpty();
 	}
 
 	[Fact]
