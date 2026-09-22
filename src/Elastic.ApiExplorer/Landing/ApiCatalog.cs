@@ -21,6 +21,7 @@ public sealed record ApiCatalogEntry(string Key, string Title, string Url, strin
 public class ApiCatalog : IApiGroupingModel
 {
 	public const string PageTitle = "API catalog";
+	public const string PageDescription = "API products in this documentation set.";
 
 	public required IReadOnlyList<ApiCatalogEntry> Entries { get; init; }
 

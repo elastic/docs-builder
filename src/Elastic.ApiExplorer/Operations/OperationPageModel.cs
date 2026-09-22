@@ -165,20 +165,19 @@ public partial record OperationPageModel
 	/// <summary>Effective auth scheme badges. Empty when the spec declares no schemes.</summary>
 	public required IReadOnlyList<AuthSchemeBadge> AuthSchemes { get; init; }
 
-	public IReadOnlyList<string> AuthSchemeNames => NamesOf(AuthSchemes.Select(static s => s.Label));
-
 	public static OperationPageModel Create(ApiOperation apiOperation, ApiRenderContext context)
 	{
 		var operation = apiOperation.Operation;
 		var document = context.Model;
-		var analyzer = new SchemaAnalyzer(document);
+		var analyzer = new SchemaAnalyzer(document, resolveCache: context.SchemaResolveCache);
 		var supplemental = operation.OperationId is { Length: > 0 } operationId
 			&& context.OperationSupplemental.TryGetValue(operationId, out var doc) ? doc : null;
 		var options = new PropertyDisplayOptions
 		{
 			RenderMarkdown = markdown => ApiMarkdown.Render(context, markdown),
 			ApiRootUrl = context.CurrentNavigation.NavigationRoot.Url,
-			VersionsConfiguration = context.BuildContext.VersionsConfiguration
+			VersionsConfiguration = context.BuildContext.VersionsConfiguration,
+			SchemaResolveCache = context.SchemaResolveCache
 		};
 		var builder = new ApiPropertyTreeBuilder(document, options);
 
@@ -246,7 +245,11 @@ public partial record OperationPageModel
 			ShowResponseExamples = responseExamples.Count > 0,
 			Scenarios = scenarios,
 			ExamplesAnchor = examplesAnchor,
-			AuthSchemes = OpenApiAuthSchemeResolver.Resolve(operation, document)
+			AuthSchemes = OpenApiAuthSchemeResolver.Resolve(
+				operation,
+				document,
+				$"{context.CurrentNavigation.NavigationRoot.Url.TrimEnd('/')}/{ApiUrlBuilder.AuthenticationSegment}"
+			)
 		};
 	}
 

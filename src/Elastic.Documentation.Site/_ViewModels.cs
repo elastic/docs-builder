@@ -37,10 +37,12 @@ public record CodexBreadcrumb(string Title, string? Url);
 
 public record GlobalLayoutViewModel
 {
-	public required string DocsBuilderVersion { get; init; }
 	public required string DocSetName { get; init; }
 	public string Title { get; set; } = "Elastic Documentation";
 	public required string Description { get; init; }
+
+	/// <summary>JSON-LD <c>BreadcrumbList</c>. Emitted from the shared head when set.</summary>
+	public string? StructuredBreadcrumbsJson { get; init; }
 
 	public required INavigationItem CurrentNavigationItem { get; init; }
 	public required INavigationItem? Previous { get; init; }

@@ -330,7 +330,7 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 		BundleConfiguration? bundleConfig = null;
 		if (yamlConfig.Bundle != null)
 		{
-			bundleConfig = ParseBundleConfiguration(collector, configPath, yamlConfig.Bundle);
+			bundleConfig = ParseBundleConfiguration(collector, configPath, yamlConfig.Bundle, validProductIds);
 			if (bundleConfig == null)
 				return null;
 		}
@@ -515,7 +515,8 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 	private static BundleConfiguration? ParseBundleConfiguration(
 		IDiagnosticsCollector collector,
 		string configPath,
-		BundleConfigurationYaml yaml
+		BundleConfigurationYaml yaml,
+		HashSet<string> validProductIds
 	)
 	{
 		if (yaml.Resolve != null)
@@ -588,28 +589,77 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 		Dictionary<string, BundleProfile>? profiles = null;
 		if (yaml.Profiles is { Count: > 0 })
 		{
-			profiles = yaml.Profiles.ToDictionary(
-				kvp => kvp.Key,
-				kvp => kvp.Value is null
-					? new BundleProfile()
-					: new BundleProfile
-					{
-						Products = kvp.Value.Products,
-#pragma warning disable CS0618 // Output stays parseable for one release cycle so ValidateProfileOutputs can emit an actionable error
-						Output = kvp.Value.Output,
+			profiles = [];
+			foreach (var (profileName, profileYaml) in yaml.Profiles)
+			{
+				if (profileYaml is null)
+				{
+					profiles[profileName] = new BundleProfile();
+					continue;
+				}
+
+#pragma warning disable CS0618
+				if (!string.IsNullOrWhiteSpace(profileYaml.Source))
+				{
+					collector.EmitWarning(
+						configPath,
+						$"bundle.profiles.{profileName}.source is deprecated. " +
+							"Use bundle.releases.github to map release tags to profiles instead."
+					);
+				}
+
+				if (!string.IsNullOrWhiteSpace(profileYaml.OutputProducts))
+					collector.EmitWarning(
+						configPath,
+						$"bundle.profiles.{profileName}.output_products is deprecated. Use 'product: <id>' instead."
+					);
+
+				if (!string.IsNullOrWhiteSpace(profileYaml.OutputDirectory))
+					collector.EmitWarning(
+						configPath,
+						$"bundle.profiles.{profileName}.output_directory is deprecated. The output directory is derived automatically as bundle.output_directory/{{product}}."
+					);
 #pragma warning restore CS0618
-						OutputDirectory = kvp.Value.OutputDirectory,
-						OutputProducts = kvp.Value.OutputProducts,
-						Description = kvp.Value.Description,
-						Repo = kvp.Value.Repo,
-						Owner = kvp.Value.Owner,
-						Branch = kvp.Value.Branch,
-						HideFeatures = kvp.Value.HideFeatures?.Values,
-						ReleaseDates = kvp.Value.ReleaseDates,
-						Source = kvp.Value.Source
+
+				string? product = null;
+				if (!string.IsNullOrWhiteSpace(profileYaml.Product))
+				{
+					var normalizedProduct = profileYaml.Product.Replace('_', '-');
+					if (!validProductIds.Contains(normalizedProduct))
+					{
+						var availableProducts = string.Join(", ", validProductIds.OrderBy(p => p));
+						collector.EmitError(
+							configPath,
+							$"bundle.profiles.{profileName}.product: '{profileYaml.Product}' is not in products.yml. Available products: {availableProducts}"
+						);
+						return null;
 					}
-			);
+					product = normalizedProduct;
+				}
+
+#pragma warning disable CS0618
+				profiles[profileName] = new BundleProfile
+				{
+					Product = product,
+					Products = profileYaml.Products,
+					Output = profileYaml.Output,
+					OutputDirectory = profileYaml.OutputDirectory,
+					OutputProducts = profileYaml.OutputProducts,
+					Description = profileYaml.Description,
+					Repo = profileYaml.Repo,
+					Owner = profileYaml.Owner,
+					Branch = profileYaml.Branch,
+					HideFeatures = profileYaml.HideFeatures?.Values,
+					ReleaseDates = profileYaml.ReleaseDates,
+					Source = profileYaml.Source
+				};
+#pragma warning restore CS0618
+			}
 		}
+
+		var releases = ParseBundleReleases(collector, configPath, yaml.Releases, profiles, validProductIds);
+		if (releases == null && collector.Errors > 0)
+			return null;
 
 		return new BundleConfiguration
 		{
@@ -622,8 +672,90 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 			Branch = yaml.Branch,
 			ReleaseDates = yaml.ReleaseDates,
 			LinkAllowRepos = linkAllowRepos,
-			Profiles = profiles
+			Profiles = profiles,
+			Releases = releases
 		};
+	}
+
+	private static BundleReleases? ParseBundleReleases(
+		IDiagnosticsCollector collector,
+		string configPath,
+		BundleReleasesYaml? yaml,
+		Dictionary<string, BundleProfile>? profiles,
+		HashSet<string> validProductIds
+	)
+	{
+		if (yaml == null)
+			return null;
+
+		Dictionary<string, string>? github = null;
+		if (yaml.Github is { Count: > 0 })
+		{
+			github = [];
+			foreach (var (tag, profile) in yaml.Github)
+			{
+				if (string.IsNullOrWhiteSpace(profile))
+				{
+					collector.EmitError(configPath, $"bundle.releases.github['{tag}']: must map to a non-empty profile name.");
+					return null;
+				}
+				if (profiles == null || !profiles.ContainsKey(profile))
+				{
+					collector.EmitError(
+						configPath,
+						$"bundle.releases.github['{tag}']: profile '{profile}' is not defined in bundle.profiles."
+					);
+					return null;
+				}
+				github[tag] = profile;
+			}
+		}
+
+		Dictionary<string, string>? products = null;
+		if (yaml.Products is { Count: > 0 })
+		{
+			products = [];
+			foreach (var (product, profile) in yaml.Products)
+			{
+				if (string.IsNullOrWhiteSpace(profile))
+				{
+					collector.EmitError(configPath, $"bundle.releases.products['{product}']: must map to a non-empty profile name.");
+					return null;
+				}
+				var normalizedProduct = product.Replace('_', '-');
+				if (!validProductIds.Contains(normalizedProduct))
+				{
+					var available = string.Join(", ", validProductIds.OrderBy(p => p));
+					collector.EmitError(
+						configPath,
+						$"bundle.releases.products key '{product}' is not in products.yml. Available products: {available}"
+					);
+					return null;
+				}
+				if (products.ContainsKey(normalizedProduct))
+				{
+					collector.EmitError(
+						configPath,
+						$"bundle.releases.products: duplicate normalized key '{normalizedProduct}' (from '{product}'). Use only one spelling per product."
+					);
+					return null;
+				}
+				if (profiles == null || !profiles.ContainsKey(profile))
+				{
+					collector.EmitError(
+						configPath,
+						$"bundle.releases.products['{product}']: profile '{profile}' is not defined in bundle.profiles."
+					);
+					return null;
+				}
+				products[normalizedProduct] = profile;
+			}
+		}
+
+		if (github == null && products == null)
+			return null;
+
+		return new BundleReleases { Github = github, Products = products };
 	}
 
 	/// <summary>

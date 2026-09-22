@@ -7,7 +7,6 @@ using Elastic.ApiExplorer.Operations;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
-using Elastic.Documentation.Extensions;
 using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Site;
 using Elastic.Documentation.Site.FileProviders;
@@ -33,6 +32,8 @@ public record ApiLayoutViewModel : GlobalLayoutViewModel
 	public bool ShowJumpToPage => BuildType == BuildType.Assembler && !Features.AirGappedEnabled;
 
 	public required string MarkdownUrl { get; init; }
+
+	public string? ProductName { get; init; }
 
 	/// <summary>
 	/// Preload hint for API links. Body already hx-boosts into <c>#main-container</c>,
@@ -68,6 +69,9 @@ public abstract class ApiViewModel(ApiRenderContext context)
 	/// <summary>Last breadcrumb label. Defaults to <see cref="LayoutPageTitle"/> or the nav title.</summary>
 	protected virtual string BreadcrumbCurrentTitle => LayoutPageTitle ?? CurrentNavigationItem.NavigationTitle;
 
+	/// <summary>Raw markdown used for the meta description. Excerpted before it reaches the layout.</summary>
+	protected virtual string? LayoutPageDescription => null;
+
 	private string? GetGitHubDocsUrl()
 	{
 		var repo = BuildContext.Git.RepositoryName;
@@ -82,12 +86,12 @@ public abstract class ApiViewModel(ApiRenderContext context)
 		var docTitle = Document.Info?.Title ?? "API Documentation";
 		var pageTitle = LayoutPageTitle;
 		var documentTitle = pageTitle is not null ? $"{pageTitle} | {docTitle}" : docTitle;
+		var crumbs = ApiBreadcrumbBuilder.Collect(CurrentNavigationItem, BreadcrumbCurrentTitle, Document.Info?.Title);
 
 		return new()
 		{
-			DocsBuilderVersion = ShortId.Create(BuildContext.Version),
 			DocSetName = "Api Explorer",
-			Description = "",
+			Description = ApiSeoDescription.Excerpt(LayoutPageDescription) ?? "",
 			Title = documentTitle,
 			CurrentNavigationItem = CurrentNavigationItem,
 			Previous = null,
@@ -104,7 +108,9 @@ public abstract class ApiViewModel(ApiRenderContext context)
 			BuildType = BuildContext.BuildType,
 			PageFeedbackSurface = "api",
 			TocItems = GetTocItems(),
-			Breadcrumbs = ApiBreadcrumbBuilder.Build(CurrentNavigationItem, BreadcrumbCurrentTitle, Document.Info?.Title),
+			Breadcrumbs = ApiBreadcrumbBuilder.Split(crumbs),
+			StructuredBreadcrumbsJson = ApiBreadcrumbBuilder.ToJsonLd(crumbs, BuildContext.CanonicalBaseUrl),
+			ProductName = RenderContext.Product?.DisplayName,
 			VersionSwitcherItems = RenderContext.VersionSwitcherItems,
 			HubSwitcherItems = ApiHubSwitcher.Build(
 				RenderContext.CatalogEntries,
