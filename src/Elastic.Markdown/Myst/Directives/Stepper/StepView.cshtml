@@ -2,7 +2,7 @@
 <li class="step">
 	@if (!string.IsNullOrEmpty(Model.Title) && !Model.RenderAsHeading)
 	{
-		<div id="@Model.Anchor" class="step-title step-title-@Model.HeadingLevel">
+		<div id="@Model.Anchor" class="step-title step-title-@Model.HeadingLevel" role="heading" aria-level="@Model.HeadingLevel">
 			<a href="#@Model.Anchor">@Model.RenderTitle()</a>
 		</div>
 	}

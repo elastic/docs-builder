@@ -36,6 +36,7 @@ First install the dependencies.
 		Html.Should().Contain("<h2");
 		Html.Should().Contain("id=\"install\"");
 		Html.Should().NotContain("step-title");
+		Html.Should().NotContain("role=\"heading\"");
 	}
 }
 
@@ -65,6 +66,8 @@ First install the dependencies.
 	{
 		Html.Should().NotContain("<h2");
 		Html.Should().Contain("class=\"step-title step-title-2\"");
+		Html.Should().Contain("role=\"heading\"");
+		Html.Should().Contain("aria-level=\"2\"");
 		Html.Should().Contain("id=\"install\"");
 		Html.Should().Contain("Install");
 	}

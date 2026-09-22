@@ -209,7 +209,7 @@ To keep those titles in the procedure and out of the table of contents, set `:to
 
 ### Omit steps from the table of contents
 
-Set `:toc: false` on `{stepper}` when step titles should not be headings. A title is still one level deeper than the heading above the stepper, the same rule as a normal step. Under an `##` heading, the title uses the size and weight of an `h3`. The title is a `div` with that styling, so it does not appear in **On this page**. Each step still has an anchor, so you can link to it.
+Set `:toc: false` on `{stepper}` when step titles should not be headings. A title is still one level deeper than the heading above the stepper, the same rule as a normal step. Under an `##` heading, the title uses the size and weight of an `h3`. The title is a `div` with that styling, so it does not appear in **On this page**. Assistive technologies still treat it as a heading at that level. Each step still has an anchor, so you can link to it.
 
 The default is to include step titles in the table of contents.
 
