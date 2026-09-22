@@ -64,7 +64,7 @@ public class ProductsFrontMatterInLlmMarkdown : AuthoringTest
 		var file = await Docs.Converts("index.md").MarkdownFile();
 		var frontMatter = file.YamlFrontMatter;
 		frontMatter.Should().NotBeNull();
-		var products = frontMatter!.Products;
+		var products = frontMatter.Products;
 		products.Should().NotBeNull();
 		products.Count.Should().Be(2);
 		var ids = products.Select(p => p.Id).ToHashSet();

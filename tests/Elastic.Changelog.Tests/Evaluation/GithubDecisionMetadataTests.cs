@@ -186,7 +186,7 @@ public class GithubDecisionMetadataTests
 		deserialized.Should().NotBeNull();
 		deserialized.Gate.Should().Be(ValidationGate.Entries);
 		deserialized.EntryFindings.Should().HaveCount(2);
-		deserialized.EntryFindings![0].File.Should().Be("docs/changelog/42.yaml");
+		deserialized.EntryFindings[0].File.Should().Be("docs/changelog/42.yaml");
 		deserialized.EntryFindings[0].Severity.Should().Be("Error");
 		deserialized.EntryFindings[0].Message.Should().Be("title is required");
 		deserialized.EntryFindings[1].Severity.Should().Be("Warning");

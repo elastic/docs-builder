@@ -18,6 +18,7 @@ public class GitHubReleaseServiceFetchPreviousTagTests() : ChangelogTestBase()
 {
 	private const string Owner = "elastic";
 	private const string Repo = "elasticsearch";
+	private static readonly string[] first = new[] { "v4.2.0", "v4.1.2" };
 
 	private GitHubReleaseService Service(StubHandler handler, Func<int, TimeSpan>? retryDelay = null) =>
 		new(new TestLoggerFactory(), new GitHubApiTransport(handler, "test-token"), retryDelay);
@@ -377,9 +378,7 @@ public class GitHubReleaseServiceFetchPreviousTagTests() : ChangelogTestBase()
 		// Backport scenario: v4.1.2 was backported (created most recently) and appears on page 1,
 		// but v4.1.9 (the true highest patch in v4.1.*) was created earlier and lands on page 2.
 		// X.Y.0 lookups do a full scan so that no candidate on a later page is missed.
-		var page1Tags = new[] { "v4.2.0", "v4.1.2" }.Concat(
-			Enumerable.Range(0, 98).Select(i => $"v3.{97 - i}.0")
-		).ToArray(); // 100 items — full page
+		var page1Tags = first.Concat(Enumerable.Range(0, 98).Select(i => $"v3.{97 - i}.0")).ToArray(); // 100 items — full page
 		var page2Tags = new[] { "v4.1.9", "v4.1.0" }; // partial — scan stops naturally here
 
 		var requestCount = 0;
@@ -647,11 +646,12 @@ public class GitHubReleaseServiceFetchPreviousTagTests() : ChangelogTestBase()
 		// Page 1 succeeds with v4.1.2. Page 2 fails with 502.
 		// v4.1.9 would have been on page 2 — returning v4.1.2 would be silently wrong.
 		// The scan must return null so the caller surfaces the error rather than using an incomplete result.
-		var page1Tags = new[] { "v4.2.0", "v4.1.2" }.Concat(
+		var page1Tags = first.Concat(
 			Enumerable.Range(0, 98).Select(i => $"v3.{97 - i}.0")
 		).ToArray(); // 100 items — full page forces pagination
 
-		var noDelay = (Func<int, TimeSpan>)(_ => TimeSpan.Zero);
+		TimeSpan noDelay(int _) => TimeSpan.Zero;
+
 		var handler = new StubHandler(req =>
 		{
 			if (req.RequestUri!.PathAndQuery.Contains("/tags"))
@@ -675,7 +675,9 @@ public class GitHubReleaseServiceFetchPreviousTagTests() : ChangelogTestBase()
 		var page2Tags = new[] { "v4.1.9", "v4.1.0" };
 
 		var page2Attempts = 0;
-		var noDelay = (Func<int, TimeSpan>)(_ => TimeSpan.Zero);
+
+		TimeSpan noDelay(int _) => TimeSpan.Zero;
+
 		var handler = new StubHandler(req =>
 		{
 			if (req.RequestUri!.PathAndQuery.Contains("/tags"))
@@ -702,7 +704,9 @@ public class GitHubReleaseServiceFetchPreviousTagTests() : ChangelogTestBase()
 		var page1Tags = Enumerable.Range(0, 100).Select(i => $"v3.{99 - i}.0").ToArray();
 
 		var page2Attempts = 0;
-		var noDelay = (Func<int, TimeSpan>)(_ => TimeSpan.Zero);
+
+		TimeSpan noDelay(int _) => TimeSpan.Zero;
+
 		var handler = new StubHandler(req =>
 		{
 			if (req.RequestUri!.PathAndQuery.Contains("/tags"))

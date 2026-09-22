@@ -146,7 +146,7 @@ public class GitHubCommentServiceTests()
 		postedBody.Should().NotBeNull();
 		// The posted body is JSON; System.Text.Json encodes the emoji as Unicode escapes,
 		// so assert on the surrounding ASCII text instead of the emoji character itself.
-		postedBody!.Should().Contain("Changelog").And.Contain("Content");
+		postedBody.Should().Contain("Changelog").And.Contain("Content");
 	}
 
 	[Test]
@@ -165,7 +165,7 @@ public class GitHubCommentServiceTests()
 		await Service(handler).UpsertStickyCommentAsync(Owner, Repo, PrNumber, "hello");
 
 		postedJson.Should().NotBeNull();
-		postedJson!.Should().Contain("\"body\"").And.NotContain("\"Body\"");
+		postedJson.Should().Contain("\"body\"").And.NotContain("\"Body\"");
 	}
 
 	private sealed class StubHandler(Func<HttpRequestMessage, HttpResponseMessage> responder) : HttpMessageHandler

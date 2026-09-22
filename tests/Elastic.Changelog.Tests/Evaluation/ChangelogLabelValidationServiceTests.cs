@@ -115,7 +115,7 @@ public class ChangelogLabelValidationServiceTests() : ChangelogTestBase()
 
 		var metadata = await ReadMetadata();
 		metadata.Should().NotBeNull();
-		metadata!.PrNumber.Should().Be(42);
+		metadata.PrNumber.Should().Be(42);
 		metadata.HeadRef.Should().Be("feature/test");
 		metadata.Status.Should().Be("ok");
 	}
@@ -155,7 +155,7 @@ public class ChangelogLabelValidationServiceTests() : ChangelogTestBase()
 
 		var metadata = await ReadMetadata();
 		metadata.Should().NotBeNull();
-		metadata!.PrNumber.Should().Be(42);
+		metadata.PrNumber.Should().Be(42);
 		metadata.Status.Should().Be("no-label");
 	}
 }

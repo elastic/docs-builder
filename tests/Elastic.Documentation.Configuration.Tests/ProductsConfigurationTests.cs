@@ -127,7 +127,7 @@ public class ProductsConfigurationTests
 		var product = config.GetProductByRepositoryName("elasticsearch");
 
 		product.Should().NotBeNull();
-		product!.Id.Should().Be("elasticsearch");
+		product.Id.Should().Be("elasticsearch");
 	}
 
 	[Test]

@@ -59,7 +59,7 @@ public class ChangelogGithubDecisionServiceTests() : ChangelogTestBase()
 		result.Should().BeTrue();
 		var updated = await ReadMetadata();
 		updated.Should().NotBeNull();
-		updated!.CommitOutcome.Should().Be(CommitOutcome.Committed);
+		updated.CommitOutcome.Should().Be(CommitOutcome.Committed);
 		updated.CommittedFile.Should().Be("docs/changelog/42.yaml");
 	}
 
