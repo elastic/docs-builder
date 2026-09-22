@@ -30,7 +30,7 @@ public sealed record PropertyTreeScope
 
 public class ApiPropertyTreeBuilder(OpenApiDocument document, PropertyDisplayOptions options, string? currentPageType = null)
 {
-	private readonly SchemaAnalyzer _analyzer = new(document, currentPageType);
+	private readonly SchemaAnalyzer _analyzer = new(document, currentPageType, options.SchemaResolveCache);
 
 	/// <summary>One renderable property before its display fields are derived.</summary>
 	private sealed record PropertyRow(

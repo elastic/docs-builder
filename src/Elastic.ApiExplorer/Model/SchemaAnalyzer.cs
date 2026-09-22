@@ -16,31 +16,61 @@ namespace Elastic.ApiExplorer.Model;
 /// </remarks>
 /// <param name="document">The OpenAPI document for resolving schema references.</param>
 /// <param name="currentPageType">Optional current page type to prevent self-linking on schema pages.</param>
-public class SchemaAnalyzer(OpenApiDocument document, string? currentPageType = null)
+/// <param name="resolveCache">
+/// Optional cross-page cache for <c>$ref</c> resolutions.  When supplied (keyed by <c>refId</c>, value is the
+/// resolved concrete schema or <c>null</c> when unresolvable) each unique component schema is looked up in
+/// <see cref="OpenApiDocument.Components"/> only once across all pages that share the cache rather than on
+/// every proxy property access.
+/// </param>
+public class SchemaAnalyzer(
+	OpenApiDocument document,
+	string? currentPageType = null,
+	Dictionary<string, IOpenApiSchema?>? resolveCache = null
+)
 {
+	// Per-unit schema resolve cache; shared (by reference) across all pages that use the same ApiRenderContext.
+	// Falls back to a fresh per-instance dict when no external cache is provided.
+	private readonly Dictionary<string, IOpenApiSchema?> _cache = resolveCache ?? [];
+
 	/// <summary>
 	/// Checks if a type should link to its container page, considering the current page.
 	/// </summary>
 	private bool IsLinkedType(string typeName) => SchemaHelpers.ShouldLinkToContainerPage(typeName, currentPageType);
 
 	/// <summary>
-	/// Resolves a schema reference to its target schema.
+	/// Resolves a schema reference to its concrete target, using a per-unit cache to avoid repeated
+	/// <c>ResolveReference</c> calls through the OpenAPI workspace.
 	/// </summary>
+	/// <returns>
+	/// The concrete <see cref="IOpenApiSchema"/> from <c>Components.Schemas</c> for local refs,
+	/// the proxy (<see cref="OpenApiSchemaReference"/>) for external or unresolvable refs,
+	/// or <paramref name="schema"/> unchanged when it is not a reference.
+	/// </returns>
 	public IOpenApiSchema? ResolveSchema(IOpenApiSchema? schema)
 	{
 		if (schema is null)
 			return null;
 
-		// If it's a reference, resolve from Components.Schemas
-		if (schema is OpenApiSchemaReference schemaRef)
-		{
-			var refId = schemaRef.Reference.Id;
-			if (!string.IsNullOrEmpty(refId) && document.Components?.Schemas?.TryGetValue(refId, out var resolved) == true)
-				return resolved;
-			return schemaRef;
-		}
+		if (schema is not OpenApiSchemaReference schemaRef)
+			return schema;
 
-		return schema;
+		var refId = schemaRef.Reference.Id;
+		if (string.IsNullOrEmpty(refId))
+			return schemaRef;
+
+		// External $refs (e.g. ../common.yaml#/components/schemas/Error) may share the same Id with
+		// a local component schema. Skip the cache for external refs but return the proxy so
+		// callers can still traverse through it (Target resolves via the OpenAPI workspace).
+		if (!string.IsNullOrEmpty(schemaRef.Reference.ExternalResource))
+			return schemaRef;
+
+		if (_cache.TryGetValue(refId, out var cached))
+			return cached ?? schemaRef;
+
+		IOpenApiSchema? resolved = null;
+		_ = document.Components?.Schemas?.TryGetValue(refId, out resolved);
+		_cache[refId] = resolved;
+		return resolved ?? schemaRef;
 	}
 
 	/// <summary>
@@ -51,21 +81,16 @@ public class SchemaAnalyzer(OpenApiDocument document, string? currentPageType = 
 		if (schema is null)
 			return null;
 
-		// Handle schema references - resolve to get actual properties
+		// For schema references resolve directly to avoid proxy reads:
+		// each proxy property access on OpenApiSchemaReference calls ResolveReference internally,
+		// so reading .Properties through the proxy is equivalent to re-resolving the $ref on every call.
 		if (schema is OpenApiSchemaReference schemaRef)
 		{
-			// OpenApiSchemaReference proxies to the target schema
-			// Try direct property access first (proxied)
-			if (schemaRef.Properties is { Count: > 0 })
-				return schemaRef.Properties;
-
-			// Try resolving via Reference.Id
-			var refId = schemaRef.Reference.Id;
-			if (!string.IsNullOrEmpty(refId) && document.Components?.Schemas?.TryGetValue(refId, out var resolvedSchema) == true)
-			{
-				return GetSchemaProperties(resolvedSchema);
-			}
-			// Fall through to try other schema properties
+			var resolved = ResolveSchema(schemaRef);
+			// Only recurse when we have a concrete resolved schema; null means external ref or
+			// unresolvable — fall through so the proxy's own property reads are used as a fallback.
+			if (resolved is not null && !ReferenceEquals(resolved, schemaRef))
+				return GetSchemaProperties(resolved);
 		}
 
 		// Direct properties
@@ -98,24 +123,12 @@ public class SchemaAnalyzer(OpenApiDocument document, string? currentPageType = 
 
 		IList<IOpenApiSchema>? unionSchemas = null;
 
-		// First try the schema directly (OpenApiSchemaReference proxies OneOf/AnyOf)
-		if (schema.OneOf is { Count: > 0 })
-			unionSchemas = schema.OneOf;
-		else if (schema.AnyOf is { Count: > 0 })
-			unionSchemas = schema.AnyOf;
-
-		// If not found and it's a reference, resolve and try again
-		if (unionSchemas == null && schema is OpenApiSchemaReference schemaRef)
-		{
-			var refId = schemaRef.Reference.Id;
-			if (!string.IsNullOrEmpty(refId) && document.Components?.Schemas?.TryGetValue(refId, out var resolved) == true)
-			{
-				if (resolved.OneOf is { Count: > 0 })
-					unionSchemas = resolved.OneOf;
-				else if (resolved.AnyOf is { Count: > 0 })
-					unionSchemas = resolved.AnyOf;
-			}
-		}
+		// Resolve references to avoid proxy reads (each proxy access calls ResolveReference internally)
+		var target = ResolveSchema(schema) ?? schema;
+		if (target.OneOf is { Count: > 0 })
+			unionSchemas = target.OneOf;
+		else if (target.AnyOf is { Count: > 0 })
+			unionSchemas = target.AnyOf;
 
 		if (unionSchemas == null)
 			return result;
@@ -319,31 +332,31 @@ public class SchemaAnalyzer(OpenApiDocument document, string? currentPageType = 
 			if (!string.IsNullOrEmpty(refId))
 			{
 				var typeName = SchemaHelpers.FormatSchemaName(refId);
-				var isArray = schema.Type?.HasFlag(JsonSchemaType.Array) ?? false;
-				var named = ClassifyNamedSchema(typeName, schemaRef);
+
+				// Resolve the $ref once. Reading any property through OpenApiSchemaReference calls
+				// ResolveReference internally on every access, so we resolve here and read structural
+				// fields (Type, Enum, OneOf, AnyOf, Items, Properties) off the concrete schema.
+				// Description/Title/ReadOnly/WriteOnly intentionally stay on the proxy because
+				// OpenAPI 3.1 allows sibling keywords alongside $ref to override those fields.
+				var resolvedTarget = ResolveSchema(schemaRef) ?? schemaRef;
+				var isArray = resolvedTarget.Type?.HasFlag(JsonSchemaType.Array) ?? false;
+				var named = ClassifyNamedSchema(typeName, resolvedTarget);
 				typeName = named.TypeName;
 				var isValueType = named.IsValueType;
 				var valueTypeBase = named.ValueTypeBase;
 				var schemaRefId = named.IsPrimitiveAlias ? null : refId;
 				var hasLink = IsLinkedType(typeName);
 
-				// Check if the schema reference is an enum or union
-				// OpenApiSchemaReference proxies to resolved schema properties
-				var isEnum = schemaRef.Enum is { Count: > 0 };
-				var isUnion = !isEnum && (schemaRef.OneOf is { Count: > 0 } || schemaRef.AnyOf is { Count: > 0 });
-				var enumValues = isEnum ? schemaRef.Enum?.Select(e => e.ToString()).ToArray() : null;
+				// Check if the schema reference is an enum or union — read from the resolved target
+				var isEnum = resolvedTarget.Enum is { Count: > 0 };
+				var isUnion = !isEnum && (resolvedTarget.OneOf is { Count: > 0 } || resolvedTarget.AnyOf is { Count: > 0 });
+				var enumValues = isEnum ? resolvedTarget.Enum?.Select(e => e.ToString()).ToArray() : null;
 
 				// Check if the referenced type is an array of primitives
 				string? arrayItemType = null;
 				if (isArray)
 				{
-					// Try getting Items from the proxy first
-					var itemSchema = schemaRef.Items;
-
-					// If Items is null, try resolving the schema explicitly
-					if (itemSchema is null && document.Components?.Schemas?.TryGetValue(refId, out var resolvedArraySchema) == true)
-						itemSchema = resolvedArraySchema.Items;
-
+					var itemSchema = resolvedTarget.Items;
 					if (itemSchema is not null)
 					{
 						var itemInfo = GetTypeInfo(itemSchema);
@@ -358,7 +371,7 @@ public class SchemaAnalyzer(OpenApiDocument document, string? currentPageType = 
 				List<UnionOption>? anyOfOptions = null;
 				if (isUnion)
 				{
-					var unionSchemas = schemaRef.OneOf is { Count: > 0 } ? schemaRef.OneOf : schemaRef.AnyOf;
+					var unionSchemas = resolvedTarget.OneOf is { Count: > 0 } ? resolvedTarget.OneOf : resolvedTarget.AnyOf;
 					var options = new List<string>();
 					var anyOfList = new List<UnionOption>();
 					foreach (var s in unionSchemas ?? [])

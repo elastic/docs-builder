@@ -15,9 +15,6 @@ using Microsoft.OpenApi;
 
 namespace Elastic.ApiExplorer.Operations;
 
-/// <summary>A verb+path pair extracted from the OpenAPI description's HTML operation list.</summary>
-public record DescriptionUrlItem(string Method, string Route);
-
 /// <summary>A request/response example with its markdown description prerendered.</summary>
 public record ExampleDisplay(
 	string Title,
@@ -161,7 +158,6 @@ public partial record OperationPageModel
 
 	public IReadOnlyList<string> RequestPropertyNames => NamesOf((RequestProperties?.Items ?? []).Select(static p => p.Name));
 	public required string? DescriptionMarkdown { get; init; }
-	public required IReadOnlyList<DescriptionUrlItem> DescriptionUrls { get; init; }
 	public required IReadOnlyList<ApiPostSection> PostSections { get; init; }
 	public required string RequestContentType { get; init; }
 	public required ApiPropertyList? RequestProperties { get; init; }
@@ -184,14 +180,15 @@ public partial record OperationPageModel
 	{
 		var operation = apiOperation.Operation;
 		var document = context.Model;
-		var analyzer = new SchemaAnalyzer(document);
+		var analyzer = new SchemaAnalyzer(document, resolveCache: context.SchemaResolveCache);
 		var supplemental = operation.OperationId is { Length: > 0 } operationId
 			&& context.OperationSupplemental.TryGetValue(operationId, out var doc) ? doc : null;
 		var options = new PropertyDisplayOptions
 		{
 			RenderMarkdown = markdown => ApiMarkdown.Render(context, markdown),
 			ApiRootUrl = context.CurrentNavigation.NavigationRoot.Url,
-			VersionsConfiguration = context.BuildContext.VersionsConfiguration
+			VersionsConfiguration = context.BuildContext.VersionsConfiguration,
+			SchemaResolveCache = context.SchemaResolveCache
 		};
 		var builder = new ApiPropertyTreeBuilder(document, options);
 
@@ -219,9 +216,7 @@ public partial record OperationPageModel
 			externalDocs = new ExternalDocLink(url, ApiPropertyTreeBuilder.IsElasticDocsUrl(url));
 		}
 
-		var rawDescription = supplemental?.DescriptionOr(operation.Description) ?? operation.Description;
-		var (descriptionMarkdown, descriptionUrlTuples) = ApiMarkdown.ExtractOperationList(rawDescription);
-		var descriptionUrls = descriptionUrlTuples.Select(static u => new DescriptionUrlItem(u.Method, u.Route)).ToArray();
+		var descriptionMarkdown = supplemental?.DescriptionOr(operation.Description) ?? operation.Description;
 
 		return new OperationPageModel
 		{
@@ -255,7 +250,6 @@ public partial record OperationPageModel
 				)
 				: null,
 			DescriptionMarkdown = descriptionMarkdown,
-			DescriptionUrls = descriptionUrls,
 			PostSections = ApiPostSection.From(context, supplemental?.PostSections ?? []),
 			RequestType = requestSchema is not null ? builder.Describe(requestSchema) : null,
 			Responses = BuildResponses(operation, analyzer, builder),
