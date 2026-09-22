@@ -138,14 +138,19 @@ public partial class GitHubReleaseService(
 	}
 
 	/// <inheritdoc />
-	public async Task<string?> FetchPreviousTagAsync(string owner, string repo, string currentTag, CancellationToken ctx = default)
+	public async Task<PreviousTagResult> FetchPreviousTagAsync(
+		string owner,
+		string repo,
+		string currentTag,
+		CancellationToken ctx = default
+	)
 	{
 		try
 		{
 			var (currentPrefix, currentMajor, currentIsPreRelease) = ParseTagIdentity(currentTag);
 			var currentVersion = ParseTagVersion(currentTag);
 
-			var result = await ScanReleasesForPreviousTagAsync(
+			var (releasesTag, releasesFailed, releasesSawAny) = await ScanReleasesForPreviousTagAsync(
 				owner,
 				repo,
 				currentTag,
@@ -155,11 +160,11 @@ public partial class GitHubReleaseService(
 				currentVersion,
 				ctx
 			);
-			if (result is not null)
-				return result;
+			if (releasesTag is not null)
+				return PreviousTagResult.Found(releasesTag);
 
 			_logger.LogDebug("Releases API yielded no predecessor for {CurrentTag}; trying git tags API", currentTag);
-			return await ScanTagsApiForPreviousTagAsync(
+			var (tagsTag, tagsFailed, tagsSawAny) = await ScanTagsApiForPreviousTagAsync(
 				owner,
 				repo,
 				currentTag,
@@ -169,20 +174,33 @@ public partial class GitHubReleaseService(
 				currentVersion,
 				ctx
 			);
+			if (tagsTag is not null)
+				return PreviousTagResult.Found(tagsTag);
+
+			// Both scans completed. If either had a transport failure, the result is indeterminate.
+			if (releasesFailed || tagsFailed)
+				return PreviousTagResult.LookupFailed;
+
+			// If we saw releases/tags in other lines (e.g. v9.x exists but this is the first v10.x),
+			// do not fall back to the initial commit — using it would pull in the entire repository history.
+			if (releasesSawAny || tagsSawAny)
+				return PreviousTagResult.FirstReleaseInLine;
+
+			return PreviousTagResult.FirstRelease;
 		}
 		catch (HttpRequestException ex)
 		{
 			_logger.LogWarning(ex, "HTTP error scanning for previous tag of {CurrentTag}", currentTag);
-			return null;
+			return PreviousTagResult.LookupFailed;
 		}
 		catch (TaskCanceledException)
 		{
 			_logger.LogWarning("Request timeout scanning for previous tag of {CurrentTag}", currentTag);
-			return null;
+			return PreviousTagResult.LookupFailed;
 		}
 	}
 
-	private async Task<string?> ScanReleasesForPreviousTagAsync(
+	private async Task<(string? Tag, bool Failed, bool SawAny)> ScanReleasesForPreviousTagAsync(
 		string owner,
 		string repo,
 		string currentTag,
@@ -196,6 +214,7 @@ public partial class GitHubReleaseService(
 		const int pageSize = 100;
 		var page = 1;
 		var foundCurrent = false;
+		var sawAny = false;
 		string? bestMatch = null;
 		SemVer? bestSemver = null;
 
@@ -206,7 +225,7 @@ public partial class GitHubReleaseService(
 
 			using var response = await GetWithRetryAsync(url, ctx);
 			if (response is null)
-				return null;
+				return (null, true, sawAny);
 
 			var jsonContent = await response.Content.ReadAsStringAsync(ctx);
 			var releases = JsonSerializer.Deserialize(jsonContent, GitHubReleaseJsonContext.Default.GitHubReleaseResponseArray);
@@ -229,7 +248,23 @@ public partial class GitHubReleaseService(
 					var (candidatePrefix, _, _) = ParseTagIdentity(tagName);
 					if (!string.Equals(candidatePrefix, currentPrefix, StringComparison.OrdinalIgnoreCase))
 						continue;
-					return r.TagName;
+					return (r.TagName, false, true);
+				}
+
+				// Track if any release shares our prefix but belongs to a different major version.
+				// This distinguishes "no predecessor in this repo" from "no predecessor in this major line".
+				if (!sawAny && !string.Equals(tagName, currentTag, StringComparison.OrdinalIgnoreCase))
+				{
+					var (cPrefix, cMajor, _) = ParseTagIdentity(tagName);
+					if (
+						string.Equals(cPrefix, currentPrefix, StringComparison.OrdinalIgnoreCase)
+						&& currentMajor >= 0
+						&& cMajor >= 0
+						&& cMajor != currentMajor
+					)
+					{
+						sawAny = true;
+					}
 				}
 
 				// Semver: accumulate the highest candidate strictly below the current version.
@@ -244,7 +279,7 @@ public partial class GitHubReleaseService(
 					bestMatch = r.TagName;
 					// Definitive exact predecessor found — no tag can rank higher and still be below current.
 					if (IsDefiniteExactPredecessor(candidateVersion.Value, currentVersion.Value))
-						return bestMatch;
+						return (bestMatch, false, true);
 				}
 			}
 
@@ -257,10 +292,10 @@ public partial class GitHubReleaseService(
 			page++;
 		}
 
-		return bestMatch;
+		return (bestMatch, false, sawAny);
 	}
 
-	private async Task<string?> ScanTagsApiForPreviousTagAsync(
+	private async Task<(string? Tag, bool Failed, bool SawAny)> ScanTagsApiForPreviousTagAsync(
 		string owner,
 		string repo,
 		string currentTag,
@@ -274,6 +309,7 @@ public partial class GitHubReleaseService(
 		const int pageSize = 100;
 		var page = 1;
 		var foundCurrent = false;
+		var sawAny = false;
 		string? bestMatch = null;
 		SemVer? bestSemver = null;
 
@@ -284,7 +320,7 @@ public partial class GitHubReleaseService(
 
 			using var response = await GetWithRetryAsync(url, ctx);
 			if (response is null)
-				return null;
+				return (null, true, sawAny);
 
 			var jsonContent = await response.Content.ReadAsStringAsync(ctx);
 			var tags = JsonSerializer.Deserialize(jsonContent, GitHubReleaseJsonContext.Default.GitHubTagResponseArray);
@@ -306,7 +342,22 @@ public partial class GitHubReleaseService(
 					var (candidatePrefix, _, _) = ParseTagIdentity(tagName);
 					if (!string.Equals(candidatePrefix, currentPrefix, StringComparison.OrdinalIgnoreCase))
 						continue;
-					return t.Name;
+					return (t.Name, false, true);
+				}
+
+				// Track if any tag shares our prefix but belongs to a different major version.
+				if (!sawAny && !string.Equals(tagName, currentTag, StringComparison.OrdinalIgnoreCase))
+				{
+					var (cPrefix, cMajor, _) = ParseTagIdentity(tagName);
+					if (
+						string.Equals(cPrefix, currentPrefix, StringComparison.OrdinalIgnoreCase)
+						&& currentMajor >= 0
+						&& cMajor >= 0
+						&& cMajor != currentMajor
+					)
+					{
+						sawAny = true;
+					}
 				}
 
 				if (!IsSemverCandidate(tagName, currentTag, currentPrefix, currentMajor, currentIsPreRelease, out var candidateVersion))
@@ -319,7 +370,7 @@ public partial class GitHubReleaseService(
 					bestSemver = candidateVersion;
 					bestMatch = t.Name;
 					if (IsDefiniteExactPredecessor(bestSemver.Value, currentVersion.Value))
-						return bestMatch;
+						return (bestMatch, false, true);
 				}
 			}
 
@@ -331,7 +382,7 @@ public partial class GitHubReleaseService(
 			page++;
 		}
 
-		return bestMatch;
+		return (bestMatch, false, sawAny);
 	}
 
 	/// <summary>
@@ -671,8 +722,137 @@ public partial class GitHubReleaseService(
 		public string? Name { get; set; }
 	}
 
+	private sealed class GitHubCommitResponse
+	{
+		[JsonPropertyName("sha")]
+		public string? Sha { get; set; }
+	}
+
+	private sealed class GitHubGitCommitParent
+	{
+		[JsonPropertyName("sha")]
+		public string? Sha { get; set; }
+	}
+
+	private sealed class GitHubGitCommitResponse
+	{
+		[JsonPropertyName("sha")]
+		public string? Sha { get; set; }
+
+		[JsonPropertyName("parents")]
+		public List<GitHubGitCommitParent>? Parents { get; set; }
+	}
+
 	[JsonSerializable(typeof(GitHubReleaseResponse))]
 	[JsonSerializable(typeof(GitHubReleaseResponse[]))]
 	[JsonSerializable(typeof(GitHubTagResponse[]))]
+	[JsonSerializable(typeof(GitHubCommitResponse[]))]
+	[JsonSerializable(typeof(GitHubGitCommitResponse))]
 	private sealed partial class GitHubReleaseJsonContext : JsonSerializerContext;
+
+	/// <inheritdoc />
+	public async Task<string?> FetchInitialCommitAsync(string owner, string repo, string tagRef, CancellationToken ctx = default)
+	{
+		try
+		{
+			var url = $"https://api.github.com/repos/{owner}/{repo}/commits?sha={Uri.EscapeDataString(tagRef)}&per_page=100";
+			_logger.LogDebug("Fetching initial commit for {Owner}/{Repo} at {Tag}: GET {ApiUrl}", owner, repo, tagRef, url);
+
+			using var firstResponse = await GetWithRetryAsync(url, ctx);
+			if (firstResponse is null)
+				return null;
+
+			var lastPageUrl = ParseLastLinkHeader(firstResponse.Headers);
+			string jsonContent;
+
+			if (lastPageUrl is null)
+			{
+				jsonContent = await firstResponse.Content.ReadAsStringAsync(ctx);
+			}
+			else
+			{
+				using var lastResponse = await GetWithRetryAsync(lastPageUrl, ctx);
+				if (lastResponse is null)
+					return null;
+				jsonContent = await lastResponse.Content.ReadAsStringAsync(ctx);
+			}
+
+			var commits = JsonSerializer.Deserialize(jsonContent, GitHubReleaseJsonContext.Default.GitHubCommitResponseArray);
+			var candidate = commits is { Length: > 0 } ? commits[^1].Sha : null;
+
+			if (candidate is null)
+			{
+				_logger.LogWarning("No commits found in {Owner}/{Repo} at ref {Tag}", owner, repo, tagRef);
+				return null;
+			}
+
+			// Walk parents to find the true DAG root. The date-ordered commits page can end on a
+			// non-root commit when branches with old commit dates were merged before tagging.
+			var root = await WalkToRootAsync(owner, repo, candidate, ctx);
+			if (root is null)
+			{
+				_logger.LogWarning("Parent-walk could not reach root for {Owner}/{Repo}; result is indeterminate", owner, repo);
+				return null;
+			}
+
+			_logger.LogDebug("Initial commit SHA for {Owner}/{Repo}: {Sha}", owner, repo, root);
+			return root;
+		}
+		catch (HttpRequestException ex)
+		{
+			_logger.LogWarning(ex, "HTTP error fetching initial commit for {Owner}/{Repo}", owner, repo);
+			return null;
+		}
+		catch (TaskCanceledException)
+		{
+			_logger.LogWarning("Request timeout fetching initial commit for {Owner}/{Repo}", owner, repo);
+			return null;
+		}
+	}
+
+	/// <summary>
+	/// Walks the first-parent chain from <paramref name="startSha"/> until a commit with no parents is
+	/// found (the DAG root). Bounded at 100 hops to cap API usage on deep histories.
+	/// Returns <c>null</c> when any API call fails or the bound is exceeded.
+	/// </summary>
+	private async Task<string?> WalkToRootAsync(string owner, string repo, string startSha, CancellationToken ctx)
+	{
+		var current = startSha;
+		var visited = new HashSet<string>(StringComparer.Ordinal);
+
+		while (visited.Add(current))
+		{
+			var url = $"https://api.github.com/repos/{owner}/{repo}/git/commits/{current}";
+			using var response = await GetWithRetryAsync(url, ctx);
+			if (response is null)
+				return null;
+
+			var json = await response.Content.ReadAsStringAsync(ctx);
+			var commit = JsonSerializer.Deserialize(json, GitHubReleaseJsonContext.Default.GitHubGitCommitResponse);
+			if (commit?.Parents is null or { Count: 0 })
+				return current;
+
+			var next = commit.Parents[0].Sha;
+			if (next is null)
+				return current;
+
+			current = next;
+		}
+
+		// Git DAGs are acyclic — reaching here means the API returned a cycle, which should not happen.
+		_logger.LogWarning("Parent-walk detected a cycle at {Sha} for {Owner}/{Repo}", current, owner, repo);
+		return null;
+	}
+
+	private static string? ParseLastLinkHeader(System.Net.Http.Headers.HttpResponseHeaders headers)
+	{
+		if (!headers.TryGetValues("Link", out var values))
+			return null;
+		var linkHeader = string.Join(", ", values);
+		var match = LastLinkRegex().Match(linkHeader);
+		return match.Success ? match.Groups["url"].Value : null;
+	}
+
+	[GeneratedRegex(@"<(?<url>[^>]+)>;\s*rel=""last""")]
+	private static partial Regex LastLinkRegex();
 }

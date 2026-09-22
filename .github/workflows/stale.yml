@@ -17,8 +17,8 @@ jobs:
     steps:
       - uses: actions/stale@v11
         with:
-          days-before-stale: 90
-          days-before-close: 14
+          days-before-stale: 180
+          days-before-close: 21
           stale-issue-label: stale
           stale-pr-label: stale
           close-issue-label: closed-stale
@@ -27,8 +27,10 @@ jobs:
           exempt-pr-labels: "never-stale"
           exempt-draft-pr: false
           stale-issue-message: >
-            This issue is stale because it has been open 90 days with no activity.
-            Remove the `stale` label, or leave a comment, or this will be closed in 14 days.
+            This issue is stale because it has been open 180 days with no activity.
+            Remove the `stale` label, leave a comment, or add the `never-stale` label, or this
+            will be closed in 21 days.
           stale-pr-message: >
-            This pull request is stale because it has been open 90 days with no activity.
-            Remove the `stale` label, or leave a comment, or this will be closed in 14 days.
+            This pull request is stale because it has been open 180 days with no activity.
+            Remove the `stale` label, leave a comment, or add the `never-stale` label, or this
+            will be closed in 21 days.

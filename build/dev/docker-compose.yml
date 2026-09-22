@@ -50,6 +50,31 @@ services:
       - node-modules:/src/src/Elastic.Documentation.Site/node_modules
       - serve-artifacts:/src/.artifacts
 
+  # Run the docs API locally. Start with `./dev.sh serve-api` and connect
+  # an API client to http://localhost:8081.
+  api:
+    image: docs-builder:api
+    ports:
+      - "127.0.0.1:8081:8080"
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+    volumes:
+      - api-artifacts:/app/.artifacts
+
+  # Run the MCP server locally. Start with `./dev.sh serve-mcp` and connect
+  # an MCP client to http://localhost:8080/docs/_mcp.
+  #
+  # Pass MCP_SERVER_PROFILE=internal to switch to the internal docs profile.
+  mcp:
+    image: docs-builder:mcp
+    ports:
+      - "127.0.0.1:8080:8080"
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      MCP_SERVER_PROFILE: ${MCP_SERVER_PROFILE:-public}
+    volumes:
+      - mcp-artifacts:/app/.artifacts
+
 volumes:
   npm-cache:
   nuget-packages:
@@ -57,3 +82,5 @@ volumes:
   test-artifacts:
   serve-artifacts:
   build-artifacts:
+  api-artifacts:
+  mcp-artifacts:

@@ -19,12 +19,12 @@ describe('assemblerStrategy with a non-default rootPath', () => {
         expect(assemblerStrategy.getPathFromUrl('/pricing')).toBe(null)
     })
 
-    it('still excludes the /api sub-app under the prefixed root', () => {
+    it('allows the /api sub-app under the prefixed root through HTMX', () => {
         expect(
             assemblerStrategy.isExternalDocsUrl(
                 '/elastic/docs-builder/docs/3634/api/elasticsearch'
             )
-        ).toBe(true)
+        ).toBe(false)
     })
 
     it('accepts absolute self-links on non-elastic.co hosts (previews)', () => {

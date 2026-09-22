@@ -42,6 +42,9 @@ public record GlobalLayoutViewModel
 	public string Title { get; set; } = "Elastic Documentation";
 	public required string Description { get; init; }
 
+	/// <summary>JSON-LD <c>BreadcrumbList</c>. Emitted from the shared head when set.</summary>
+	public string? StructuredBreadcrumbsJson { get; init; }
+
 	public required INavigationItem CurrentNavigationItem { get; init; }
 	public required INavigationItem? Previous { get; init; }
 	public required INavigationItem? Next { get; init; }
@@ -69,6 +72,23 @@ public record GlobalLayoutViewModel
 					return siteRoot.TopNav;
 			}
 			return null;
+		}
+	}
+
+	/// <summary>
+	/// True when the mobile pages drawer has something to show: a nav tree,
+	/// or (with <c>navigation-preview</c>) section tabs or a version picker.
+	/// </summary>
+	public bool HasMobilePagesNavContent
+	{
+		get
+		{
+			if (!string.IsNullOrWhiteSpace(NavigationHtml))
+				return true;
+			if (!Features.NavigationPreviewEnabled)
+				return false;
+			var hasTopNavLinks = TopNav?.Items.OfType<TopNavLinkItem>().Any() == true;
+			return hasTopNavLinks || ShowVersionDropdown;
 		}
 	}
 
