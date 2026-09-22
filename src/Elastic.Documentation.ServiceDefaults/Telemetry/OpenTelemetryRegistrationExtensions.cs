@@ -39,6 +39,11 @@ public static class OpenTelemetryRegistrationExtensions
 		if (!useOtlpExporter)
 			return builder;
 
+		// The OTLP specification designates HTTP/protobuf as the default transport.
+		// Default here so callers can still override via OTEL_EXPORTER_OTLP_PROTOCOL.
+		if (string.IsNullOrEmpty(Environment.GetEnvironmentVariable("OTEL_EXPORTER_OTLP_PROTOCOL")))
+			Environment.SetEnvironmentVariable("OTEL_EXPORTER_OTLP_PROTOCOL", "http/protobuf");
+
 		var environment = builder.Configuration["ENVIRONMENT"];
 		var serviceName = registration.ServiceName;
 
