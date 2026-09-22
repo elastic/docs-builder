@@ -89,7 +89,9 @@ public class GhReleaseExtractionParityTests(ITestOutputHelper output) : Changelo
 			Body = ""
 		});
 
-		A.CallTo(() => _releaseService.FetchPreviousTagAsync("elastic", "elasticsearch", "v9.2.0", A<Cancel>._)).Returns("v9.1.0");
+		A.CallTo(() => _releaseService.FetchPreviousTagAsync("elastic", "elasticsearch", "v9.2.0", A<Cancel>._)).Returns(
+			PreviousTagResult.Found("v9.1.0")
+		);
 
 		var prs = prNumbers.Select(
 			n => new CommitRangePullRequest

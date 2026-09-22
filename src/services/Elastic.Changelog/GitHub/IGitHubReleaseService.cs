@@ -67,6 +67,46 @@ public record GitHubReleaseInfo
 }
 
 /// <summary>
+/// Result of a previous-release tag lookup.
+/// Distinguishes a confirmed "no predecessor" (first release) from an indeterminate API failure.
+/// </summary>
+public sealed record PreviousTagResult
+{
+	private PreviousTagResult() { }
+
+	/// <summary>The predecessor tag name. Non-null only when <see cref="Status"/> is <see cref="PreviousTagStatus.Found"/>.</summary>
+	public string? Tag { get; private init; }
+
+	/// <summary>The outcome of the lookup.</summary>
+	public PreviousTagStatus Status { get; private init; }
+
+	/// <summary>Predecessor found.</summary>
+	public static PreviousTagResult Found(string tag) => new() { Tag = tag, Status = PreviousTagStatus.Found };
+
+	/// <summary>All APIs scanned successfully; no predecessor exists anywhere in the repository.</summary>
+	public static PreviousTagResult FirstRelease { get; } = new() { Status = PreviousTagStatus.FirstRelease };
+
+	/// <summary>
+	/// All APIs scanned successfully; no predecessor exists in the same major/prefix line, but other releases
+	/// exist in the repository (e.g. v9.x releases exist but this is the first v10.x).
+	/// The initial-commit fallback must NOT be used here — using it would pull in the entire repository history.
+	/// </summary>
+	public static PreviousTagResult FirstReleaseInLine { get; } = new() { Status = PreviousTagStatus.FirstReleaseInLine };
+
+	/// <summary>An API or transport failure prevented a definitive answer; result is indeterminate.</summary>
+	public static PreviousTagResult LookupFailed { get; } = new() { Status = PreviousTagStatus.LookupFailed };
+}
+
+/// <summary>Outcome of a <see cref="PreviousTagResult"/> lookup.</summary>
+public enum PreviousTagStatus
+{
+	Found,
+	FirstRelease,
+	FirstReleaseInLine,
+	LookupFailed
+}
+
+/// <summary>
 /// Service interface for fetching release information from GitHub
 /// </summary>
 public interface IGitHubReleaseService
@@ -104,8 +144,13 @@ public interface IGitHubReleaseService
 	/// considered. When the tag is semver, only releases with the same major version are considered.
 	/// </para>
 	/// </summary>
-	/// <returns>The previous tag name, or <c>null</c> if none can be determined.</returns>
-	Task<string?> FetchPreviousTagAsync(string owner, string repo, string currentTag, CancellationToken ctx = default);
+	/// <returns>
+	/// <see cref="PreviousTagResult.Found"/> when a predecessor tag was found,
+	/// <see cref="PreviousTagResult.FirstRelease"/> when the scans completed successfully but no predecessor
+	/// exists in the same release line, or <see cref="PreviousTagResult.LookupFailed"/> when an API or
+	/// transport failure prevented a definitive answer.
+	/// </returns>
+	Task<PreviousTagResult> FetchPreviousTagAsync(string owner, string repo, string currentTag, CancellationToken ctx = default);
 
 	/// <summary>
 	/// Downloads a release asset's content as text
@@ -114,4 +159,15 @@ public interface IGitHubReleaseService
 	/// <param name="ctx">Cancellation token</param>
 	/// <returns>The asset content, or null if the download fails</returns>
 	Task<string?> DownloadAssetTextAsync(GitHubReleaseAsset asset, CancellationToken ctx = default);
+
+	/// <summary>
+	/// Fetches the SHA of the oldest commit reachable from <paramref name="tagRef"/> in the repository.
+	/// Used as a fallback start-ref when no previous release exists (i.e., this is the very first release).
+	/// </summary>
+	/// <param name="owner">Repository owner</param>
+	/// <param name="repo">Repository name</param>
+	/// <param name="tagRef">The tag or ref to walk back from</param>
+	/// <param name="ctx">Cancellation token</param>
+	/// <returns>The initial commit SHA, or <c>null</c> if it cannot be determined.</returns>
+	Task<string?> FetchInitialCommitAsync(string owner, string repo, string tagRef, CancellationToken ctx = default);
 }
