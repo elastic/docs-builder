@@ -111,7 +111,7 @@ public class OpenApiOperationIdSearchTitleTests
 		doc.Title.Should().NotContain("API");
 	}
 
-	[Fact]
+	[Test]
 	public void DottedOperationId_IsSearchableAsWrittenAndAsSpaceSeparatedTokens()
 	{
 		var spec = new OpenApiDocument

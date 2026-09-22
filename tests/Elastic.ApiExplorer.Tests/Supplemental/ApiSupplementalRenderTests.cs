@@ -17,7 +17,8 @@ using Microsoft.OpenApi;
 
 namespace Elastic.ApiExplorer.Tests.Supplemental;
 
-public class ApiSupplementalRenderTests(ApiExplorerFixture fixture) : IClassFixture<ApiExplorerFixture>
+[ClassDataSource<ApiExplorerFixture>(Shared = SharedType.PerClass)]
+public class ApiSupplementalRenderTests(ApiExplorerFixture fixture)
 {
 	private const string SpecOperationDescription = "Returns hits that match the query defined in the request.";
 	private const string SpecTagDescription = "Operations that run *queries* against fixture data.";
@@ -453,13 +454,13 @@ public class ApiSupplementalRenderTests(ApiExplorerFixture fixture) : IClassFixt
 		var renderContext = RenderContext(navigation, operations, tags);
 		var fs = new MockFileSystem();
 		await using (var stream = fs.FileStream.New("/out.html", FileMode.Create, FileAccess.Write))
-			await model.RenderAsync(stream, renderContext, TestContext.Current.CancellationToken);
+			await model.RenderAsync(stream, renderContext, TestContext.Current!.Execution.CancellationToken);
 
 		return fs.File.ReadAllText("/out.html");
 	}
 
 	private async Task<string> RenderCommonMarkAsync(IApiModel model, INavigationItem navigation) =>
-		await model.RenderCommonMarkAsync(RenderContext(navigation), TestContext.Current.CancellationToken) ?? "";
+		await model.RenderCommonMarkAsync(RenderContext(navigation), TestContext.Current!.Execution.CancellationToken) ?? "";
 
 	private ApiRenderContext RenderContext(
 		INavigationItem navigation,

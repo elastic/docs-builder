@@ -10,10 +10,12 @@ namespace Elastic.ApiExplorer.Tests;
 
 public class EndpointCopyButtonRenderingTests
 {
-	[Fact]
+	[Test]
 	public async Task Render_UsesTheEuiCopyIcon()
 	{
-		var html = await _EndpointCopyButton.Create("/_search").RenderAsync(cancellationToken: TestContext.Current.CancellationToken);
+		var html = await _EndpointCopyButton.Create("/_search").RenderAsync(
+			cancellationToken: TestContext.Current!.Execution.CancellationToken
+		);
 
 		html.Should().Contain("api-url-copy");
 		html.Should().Contain("data-copy=\"/_search\"");

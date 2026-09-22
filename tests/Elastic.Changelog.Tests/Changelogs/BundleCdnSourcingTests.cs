@@ -7,6 +7,7 @@ using AwesomeAssertions;
 using Elastic.Changelog.Bundling;
 using Elastic.Changelog.GitHub;
 using Elastic.Documentation.Configuration;
+using Elastic.Documentation.Configuration.Changelog;
 using Elastic.Documentation.Configuration.ReleaseNotes;
 using Elastic.Documentation.Diagnostics;
 using FakeItEasy;
@@ -77,7 +78,7 @@ public class BundleCdnSourcingTests() : ChangelogTestBase()
 	{
 		// Probe-based: each PR URL is probed as {pr}.yaml directly; no registry.json is read.
 		var handler = ProbeHandler();
-		var service = new ChangelogBundlingService(LoggerFactory, FileSystem, null, null, Fetcher(handler));
+		var service = new ChangelogBundlingService(LoggerFactory, FileSystem, null, Fetcher(handler));
 		var output = OutputPath();
 
 		var input = new BundleChangelogsArguments
@@ -108,7 +109,7 @@ public class BundleCdnSourcingTests() : ChangelogTestBase()
 	public async Task OptionMode_OwnerAndBranchOverride_ProbesFromThatPool()
 	{
 		var handler = ProbeHandler();
-		var service = new ChangelogBundlingService(LoggerFactory, FileSystem, null, null, Fetcher(handler));
+		var service = new ChangelogBundlingService(LoggerFactory, FileSystem, null, Fetcher(handler));
 		var output = OutputPath();
 
 		var input = new BundleChangelogsArguments
@@ -141,7 +142,7 @@ public class BundleCdnSourcingTests() : ChangelogTestBase()
 	public async Task OptionMode_OwnerFromCombinedRepo_ProbesFromThatPool()
 	{
 		var handler = ProbeHandler();
-		var service = new ChangelogBundlingService(LoggerFactory, FileSystem, null, null, Fetcher(handler));
+		var service = new ChangelogBundlingService(LoggerFactory, FileSystem, null, Fetcher(handler));
 		var output = OutputPath();
 
 		var input = new BundleChangelogsArguments
@@ -181,7 +182,7 @@ public class BundleCdnSourcingTests() : ChangelogTestBase()
 		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current!.Execution.CancellationToken);
 
 		var handler = ProbeHandler();
-		var service = new ChangelogBundlingService(LoggerFactory, FileSystem, ConfigurationContext, null, Fetcher(handler));
+		var service = new ChangelogBundlingService(LoggerFactory, FileSystem, ConfigurationContext, Fetcher(handler));
 		var output = OutputPath();
 
 		var input = new BundleChangelogsArguments { Config = configPath, Output = output, All = true };
@@ -220,7 +221,7 @@ public class BundleCdnSourcingTests() : ChangelogTestBase()
 		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current!.Execution.CancellationToken);
 
 		var handler = ProbeHandler();
-		var service = new ChangelogBundlingService(LoggerFactory, FileSystem, ConfigurationContext, null, Fetcher(handler));
+		var service = new ChangelogBundlingService(LoggerFactory, FileSystem, ConfigurationContext, Fetcher(handler));
 		var output = OutputPath();
 
 		var input = new BundleChangelogsArguments
@@ -244,7 +245,7 @@ public class BundleCdnSourcingTests() : ChangelogTestBase()
 	[Test]
 	public async Task CdnAll_ReturnsError()
 	{
-		var service = new ChangelogBundlingService(LoggerFactory, FileSystem, null, null, Fetcher());
+		var service = new ChangelogBundlingService(LoggerFactory, FileSystem, null, Fetcher());
 
 		var input = new BundleChangelogsArguments { All = true, Output = OutputPath(), Repo = "elasticsearch" };
 
@@ -260,7 +261,7 @@ public class BundleCdnSourcingTests() : ChangelogTestBase()
 	[Test]
 	public async Task CdnInputProducts_ReturnsError()
 	{
-		var service = new ChangelogBundlingService(LoggerFactory, FileSystem, null, null, Fetcher());
+		var service = new ChangelogBundlingService(LoggerFactory, FileSystem, null, Fetcher());
 
 		var input = new BundleChangelogsArguments
 		{
@@ -281,7 +282,7 @@ public class BundleCdnSourcingTests() : ChangelogTestBase()
 	[Test]
 	public async Task CdnIssues_ReturnsError()
 	{
-		var service = new ChangelogBundlingService(LoggerFactory, FileSystem, null, null, Fetcher());
+		var service = new ChangelogBundlingService(LoggerFactory, FileSystem, null, Fetcher());
 
 		var input = new BundleChangelogsArguments
 		{
@@ -312,7 +313,7 @@ public class BundleCdnSourcingTests() : ChangelogTestBase()
 			return new HttpResponseMessage(HttpStatusCode.NotFound); // 999 has no entry
 		});
 		var fetcher = new CdnChangelogEntryFetcher(new TestLoggerFactory(), handler, sleep: (_, _) => Task.CompletedTask);
-		var service = new ChangelogBundlingService(LoggerFactory, FileSystem, null, null, fetcher);
+		var service = new ChangelogBundlingService(LoggerFactory, FileSystem, null, fetcher);
 		var output = OutputPath();
 
 		var result = await service.BundleChangelogs(
@@ -356,7 +357,7 @@ public class BundleCdnSourcingTests() : ChangelogTestBase()
 			return new HttpResponseMessage(HttpStatusCode.NotFound);
 		});
 		var fetcher = new CdnChangelogEntryFetcher(new TestLoggerFactory(), handler, maxAttempts: 4, sleep: (_, _) => Task.CompletedTask);
-		var service = new ChangelogBundlingService(LoggerFactory, FileSystem, null, null, fetcher);
+		var service = new ChangelogBundlingService(LoggerFactory, FileSystem, null, fetcher);
 
 		var result = await service.BundleChangelogs(
 			Collector,
@@ -389,7 +390,7 @@ public class BundleCdnSourcingTests() : ChangelogTestBase()
 			return new HttpResponseMessage(HttpStatusCode.NotFound);
 		});
 		var fetcher = new CdnChangelogEntryFetcher(new TestLoggerFactory(), handler, sleep: (_, _) => Task.CompletedTask);
-		var service = new ChangelogBundlingService(LoggerFactory, FileSystem, null, null, fetcher);
+		var service = new ChangelogBundlingService(LoggerFactory, FileSystem, null, fetcher);
 
 		var output = OutputPath();
 		var result = await service.BundleChangelogs(
@@ -426,7 +427,7 @@ public class BundleCdnSourcingTests() : ChangelogTestBase()
 			return new HttpResponseMessage(HttpStatusCode.NotFound);
 		});
 		var fetcher = new CdnChangelogEntryFetcher(new TestLoggerFactory(), handler, sleep: (_, _) => Task.CompletedTask);
-		var service = new ChangelogBundlingService(LoggerFactory, FileSystem, null, null, fetcher);
+		var service = new ChangelogBundlingService(LoggerFactory, FileSystem, null, fetcher);
 
 		var output = OutputPath();
 		var result = await service.BundleChangelogs(
@@ -462,7 +463,7 @@ public class BundleCdnSourcingTests() : ChangelogTestBase()
 			return new HttpResponseMessage(HttpStatusCode.NotFound);
 		});
 		var fetcher = new CdnChangelogEntryFetcher(new TestLoggerFactory(), handler, sleep: (_, _) => Task.CompletedTask);
-		var service = new ChangelogBundlingService(LoggerFactory, FileSystem, null, null, fetcher);
+		var service = new ChangelogBundlingService(LoggerFactory, FileSystem, null, fetcher);
 
 		var result = await service.BundleChangelogs(
 			Collector,
@@ -491,7 +492,7 @@ public class BundleCdnSourcingTests() : ChangelogTestBase()
 			return new HttpResponseMessage(HttpStatusCode.NotFound); // 100.yaml missing
 		});
 		var fetcher = new CdnChangelogEntryFetcher(new TestLoggerFactory(), handler, sleep: (_, _) => Task.CompletedTask);
-		var service = new ChangelogBundlingService(LoggerFactory, FileSystem, null, null, fetcher);
+		var service = new ChangelogBundlingService(LoggerFactory, FileSystem, null, fetcher);
 
 		var result = await service.BundleChangelogs(
 			Collector,
@@ -512,11 +513,8 @@ public class BundleCdnSourcingTests() : ChangelogTestBase()
 	}
 
 	[Test]
-	public async Task ProfileGitHubRelease_ScopesByOutputProductsAndFiltersByReleasePrs()
+	public async Task ProfileSourceGithubRelease_EmitsDeprecationWarning()
 	{
-		// A github_release profile resolves the authoring repo from the profile (to scope the CDN entry
-		// pool) and the PR filter from the release body. Only the entry referenced by the release survives.
-		var releaseService = A.Fake<IGitHubReleaseService>();
 		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
 		FileSystem.Directory.CreateDirectory(outputDir);
 
@@ -524,12 +522,10 @@ public class BundleCdnSourcingTests() : ChangelogTestBase()
 		var configContent = """
 			bundle:
 			  output_directory: PLACEHOLDER
-			  owner: elastic
 			  profiles:
 			    es-release:
 			      source: github_release
-			      repo: elasticsearch
-			      output_products: "elasticsearch {version} {lifecycle}"
+			      product: elasticsearch
 			""".Replace(
 			"PLACEHOLDER",
 			outputDir
@@ -538,54 +534,23 @@ public class BundleCdnSourcingTests() : ChangelogTestBase()
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
 		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current!.Execution.CancellationToken);
 
-		A.CallTo(
-			() => releaseService.FetchReleaseAsync("elastic", "elasticsearch", "9.3.0", TestContext.Current!.Execution.CancellationToken)
-		).Returns(new GitHubReleaseInfo { TagName = "v9.3.0", Name = "9.3.0", Body = "" });
-
-		A.CallTo(() => releaseService.FetchPreviousTagAsync("elastic", "elasticsearch", "v9.3.0", A<Cancel>._)).Returns("v9.2.0");
-
-		var commitRangeService = A.Fake<IGitHubCommitRangeService>();
-		A.CallTo(
-			() => commitRangeService.ResolvePullRequestsAsync(
-				A<IDiagnosticsCollector>._,
-				A<CommitRangeArguments>.That.Matches(
-					a => a.Owner == "elastic" && a.Repo == "elasticsearch" && a.StartRef == "v9.2.0" && a.EndRef == "v9.3.0"
-				),
-				A<Cancel>._
-			)
-		).Returns(new CommitRangeResolution
-		{
-			TotalCommits = 1,
-			PullRequests =
-			[
-				new CommitRangePullRequest { Number = 100, Url = "https://github.com/elastic/elasticsearch/pull/100", CommitShas = ["abc"] }
-			],
-			CommitsWithoutPullRequest = []
-		});
-
-		var service = new ChangelogBundlingService(
-			LoggerFactory,
-			FileSystem,
-			ConfigurationContext,
-			releaseService,
-			Fetcher(),
-			commitRangeService: commitRangeService
+		var configLoader = new ChangelogConfigurationLoader(LoggerFactory, ConfigurationContext, FileSystem);
+		var config = await configLoader.LoadChangelogConfigurationRequired(
+			Collector,
+			configPath,
+			TestContext.Current!.Execution.CancellationToken
 		);
 
-		var input = new BundleChangelogsArguments { Profile = "es-release", ProfileArgument = "9.3.0", Config = configPath };
-
-		var result = await service.BundleChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
-
-		result.Should().BeTrue(
-			$"Errors: {string.Join("; ", Collector.Diagnostics.Where(d => d.Severity == Severity.Error).Select(d => d.Message))}"
-		);
+		config.Should().NotBeNull();
 		Collector.Errors.Should().Be(0);
-
-		var outputFiles = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
-		outputFiles.Should().NotBeEmpty();
-		var bundle = await FileSystem.File.ReadAllTextAsync(outputFiles[0], TestContext.Current!.Execution.CancellationToken);
-		bundle.Should().Contain("Alpha");
-		bundle.Should().NotContain("Bravo");
+		Collector
+			.Diagnostics
+			.Should()
+			.Contain(
+				d => d.Severity == Severity.Warning && d.Message.Contains("source") && d.Message.Contains(
+					"deprecated"
+				) && d.Message.Contains("bundle.releases.github")
+			);
 	}
 
 	// language=yaml
@@ -655,7 +620,7 @@ public class BundleCdnSourcingTests() : ChangelogTestBase()
 		});
 
 		var fetcher = new CdnChangelogEntryFetcher(new TestLoggerFactory(), handler, sleep: (_, _) => Task.CompletedTask);
-		var service = new ChangelogBundlingService(LoggerFactory, FileSystem, null, null, fetcher);
+		var service = new ChangelogBundlingService(LoggerFactory, FileSystem, null, fetcher);
 		var output = OutputPath();
 
 		var input = new BundleChangelogsArguments
@@ -707,7 +672,7 @@ public class BundleCdnSourcingTests() : ChangelogTestBase()
 		});
 
 		var fetcher = new CdnChangelogEntryFetcher(new TestLoggerFactory(), handler, sleep: (_, _) => Task.CompletedTask);
-		var service = new ChangelogBundlingService(LoggerFactory, FileSystem, null, null, fetcher);
+		var service = new ChangelogBundlingService(LoggerFactory, FileSystem, null, fetcher);
 		var output = OutputPath();
 
 		var input = new BundleChangelogsArguments
@@ -755,7 +720,7 @@ public class BundleCdnSourcingTests() : ChangelogTestBase()
 		});
 
 		var fetcher = new CdnChangelogEntryFetcher(new TestLoggerFactory(), handler, sleep: (_, _) => Task.CompletedTask);
-		var service = new ChangelogBundlingService(LoggerFactory, FileSystem, null, null, fetcher);
+		var service = new ChangelogBundlingService(LoggerFactory, FileSystem, null, fetcher);
 		var output = OutputPath();
 
 		var input = new BundleChangelogsArguments

@@ -13,7 +13,7 @@ namespace Elastic.ApiExplorer.Tests;
 
 public class OperationDeprecatedBadgeRenderingTests(ApiExplorerFixture fixture) : IClassFixture<ApiExplorerFixture>
 {
-	[Fact]
+	[Test]
 	public async Task Render_DeprecatedOperation_ShowsBadgeOnTitleNotOnMethod()
 	{
 		var nav = fixture.Walk().OfType<OperationNavigationItem>().First(n => n.Model.Operation.OperationId == "docs-get-source");

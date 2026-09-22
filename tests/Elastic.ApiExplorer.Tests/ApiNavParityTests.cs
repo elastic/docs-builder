@@ -79,7 +79,7 @@ public class ApiNavParityTests
 		model.Tree.Select(NodeLabel).Should().Equal("Task management", "Watcher", "search");
 	}
 
-	[Fact]
+	[Test]
 	public async Task CreateNavigation_WithServers_SeparatesIntroPagesFromEndpoints()
 	{
 		var openApiJson = /*lang=json,strict*/

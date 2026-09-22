@@ -70,6 +70,6 @@ public class ApiTocRenderingTests
 			Breadcrumbs = ApiBreadcrumbTrail.Empty,
 		};
 
-		return await _ApiToc.Create(model).RenderAsync(cancellationToken: TestContext.Current.CancellationToken);
+		return await _ApiToc.Create(model).RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
 	}
 }

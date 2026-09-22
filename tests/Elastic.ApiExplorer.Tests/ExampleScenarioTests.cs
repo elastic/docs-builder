@@ -250,7 +250,7 @@ public class ExampleScenarioTests
 			.Be("An abbreviated response when requesting cluster nodes information.");
 	}
 
-	[Fact]
+	[Test]
 	public void WithOperationIdentity_StampsMethodAndRouteOnEveryScenario()
 	{
 		var scenarios = OperationPageModel.WithOperationIdentity(

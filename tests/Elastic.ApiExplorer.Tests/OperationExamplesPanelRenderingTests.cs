@@ -43,7 +43,9 @@ public class OperationExamplesPanelRenderingTests
 			]
 		};
 
-		var html = await _OperationExamplesPanel.Create(model).RenderAsync(cancellationToken: TestContext.Current.CancellationToken);
+		var html = await _OperationExamplesPanel.Create(model).RenderAsync(
+			cancellationToken: TestContext.Current!.Execution.CancellationToken
+		);
 
 		html.Should().Contain("data-api-scenarios");
 		html.Should().Contain("api-code-sample-header");
@@ -85,7 +87,7 @@ public class OperationExamplesPanelRenderingTests
 					Responses = [new ExampleResponse { StatusCode = "200", JsonValue = "{}" }]
 				}
 			]
-		}).RenderAsync(cancellationToken: TestContext.Current.CancellationToken);
+		}).RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
 
 		html.Should().Contain("id=\"api-examples-panel\"");
 		html.Should().Contain("example-block--response");
@@ -100,7 +102,7 @@ public class OperationExamplesPanelRenderingTests
 	public async Task Render_RequestAndResponse_ShareTheCodeCardClass()
 	{
 		var request = await _ApiCodeSample.Create(new ApiCodeSampleModel("rail-one", [new("JSON", "{}", "language-json")])).RenderAsync(
-			cancellationToken: TestContext.Current.CancellationToken
+			cancellationToken: TestContext.Current!.Execution.CancellationToken
 		);
 
 		request.Should().Contain("api-code-card");
@@ -111,7 +113,7 @@ public class OperationExamplesPanelRenderingTests
 			Title = "Match all",
 			TabId = "match-all",
 			Responses = [new ExampleResponse { StatusCode = "200", JsonValue = "{}" }]
-		}).RenderAsync(cancellationToken: TestContext.Current.CancellationToken);
+		}).RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
 
 		response.Should().Contain("api-code-card");
 		response.Should().Contain("example-block--response");
@@ -127,7 +129,7 @@ public class OperationExamplesPanelRenderingTests
 				"get",
 				"/_search"
 			)
-		).RenderAsync(cancellationToken: TestContext.Current.CancellationToken);
+		).RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
 
 		html.Should().Contain("api-code-sample-title");
 		html.Should().Contain("api-method-get");
@@ -154,7 +156,7 @@ public class OperationExamplesPanelRenderingTests
 			HttpMethod = "post",
 			Route = "/_search",
 			CodeSamples = [new("Console", "POST /_search", "language-console")]
-		}).RenderAsync(cancellationToken: TestContext.Current.CancellationToken);
+		}).RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
 
 		html.Should().Contain("api-method-post");
 		html.Should().Contain("/_search");
@@ -169,7 +171,7 @@ public class OperationExamplesPanelRenderingTests
 			Title = "Match all",
 			TabId = "match-all",
 			Responses = [new ExampleResponse { StatusCode = "200", JsonValue = "{}" }]
-		}).RenderAsync(cancellationToken: TestContext.Current.CancellationToken);
+		}).RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
 
 		html.Should().Contain("example-block--response");
 		html.Should().Contain("example-response-tab-label");

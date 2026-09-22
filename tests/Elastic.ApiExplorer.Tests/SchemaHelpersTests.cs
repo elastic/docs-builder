@@ -83,27 +83,27 @@ public class SchemaHelpersTests
 	public void UnionOptionClasses_Literal_DoesNotIncludeTypePrimitive() =>
 		SchemaHelpers.UnionOptionClasses(false, "false_positive").Should().Be("union-option");
 
-	[Theory]
-	[InlineData("Security_Lists_API_ListMetadata")]
-	[InlineData("Security_Lists_API_ListType")]
-	[InlineData("Cases_case_description")]
+	[Test]
+	[Arguments("Security_Lists_API_ListMetadata")]
+	[Arguments("Security_Lists_API_ListType")]
+	[Arguments("Cases_case_description")]
 	public void IsInternalSchemaName_CodegenIds_ReturnsTrue(string name) => SchemaHelpers.IsInternalSchemaName(name).Should().BeTrue();
 
-	[Theory]
-	[InlineData("Field")]
-	[InlineData("SearchMode")]
-	[InlineData("QueryContainer")]
-	[InlineData("string")]
-	[InlineData("Field | Field[]")]
-	[InlineData(null)]
+	[Test]
+	[Arguments("Field")]
+	[Arguments("SearchMode")]
+	[Arguments("QueryContainer")]
+	[Arguments("string")]
+	[Arguments("Field | Field[]")]
+	[Arguments(null)]
 	public void IsInternalSchemaName_ReadableNames_ReturnsFalse(string? name) =>
 		SchemaHelpers.IsInternalSchemaName(name).Should().BeFalse();
 
-	[Theory]
-	[InlineData("Security_Lists_API_PlatformErrorResponse", "PlatformErrorResponse")]
-	[InlineData("Security_Lists_API_SiemErrorResponse", "SiemErrorResponse")]
-	[InlineData("Field", "Field")]
-	[InlineData("QueryContainer", "QueryContainer")]
+	[Test]
+	[Arguments("Security_Lists_API_PlatformErrorResponse", "PlatformErrorResponse")]
+	[Arguments("Security_Lists_API_SiemErrorResponse", "SiemErrorResponse")]
+	[Arguments("Field", "Field")]
+	[Arguments("QueryContainer", "QueryContainer")]
 	public void ReadableSchemaName_CodegenIds_UsesLastSegment(string input, string expected) =>
 		SchemaHelpers.ReadableSchemaName(input).Should().Be(expected);
 }

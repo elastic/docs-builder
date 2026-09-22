@@ -83,7 +83,7 @@ public class AuthSchemeTests
 		badges.Select(b => b.PillLabel).Should().Equal("Api key auth", "Basic auth", "Bearer auth");
 	}
 
-	[Fact]
+	[Test]
 	public async Task Resolve_WithAuthenticationUrl_AppendsLowercasedSchemeAnchors()
 	{
 		var (op, doc) = await Load(EsShapedSpec(operationSecurity: null));

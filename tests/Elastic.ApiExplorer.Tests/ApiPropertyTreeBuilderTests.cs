@@ -11,7 +11,8 @@ using Microsoft.OpenApi;
 
 namespace Elastic.ApiExplorer.Tests;
 
-public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture) : IClassFixture<ApiExplorerFixture>
+[ClassDataSource<ApiExplorerFixture>(Shared = SharedType.PerClass)]
+public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture)
 {
 	private ApiPropertyTreeBuilder CreateBuilder(string? currentPageType = null, CollapseMode collapseMode = CollapseMode.AlwaysCollapsed)
 	{

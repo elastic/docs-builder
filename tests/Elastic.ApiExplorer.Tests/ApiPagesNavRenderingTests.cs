@@ -35,7 +35,7 @@ public partial class ApiPagesNavRenderingTests
 			]
 		);
 
-		var html = await _ApiPagesNav.Create(model).RenderAsync(cancellationToken: TestContext.Current.CancellationToken);
+		var html = await _ApiPagesNav.Create(model).RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
 
 		html.Should().Contain("id=\"api-version-switcher\"");
 		html.Should().Contain("aria-selected=\"true\"");
@@ -63,7 +63,7 @@ public partial class ApiPagesNavRenderingTests
 			]
 		);
 
-		var html = await _ApiPagesNav.Create(model).RenderAsync(cancellationToken: TestContext.Current.CancellationToken);
+		var html = await _ApiPagesNav.Create(model).RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
 
 		html.Should().Contain("id=\"api-hub-switcher\"");
 		html.Should().NotContain("api-version-switcher");
@@ -88,7 +88,7 @@ public partial class ApiPagesNavRenderingTests
 			buildType: BuildType.Assembler
 		);
 
-		var html = await _ApiPagesNav.Create(model).RenderAsync(cancellationToken: TestContext.Current.CancellationToken);
+		var html = await _ApiPagesNav.Create(model).RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
 
 		html.Should().NotContain("api-hub-switcher");
 		html.Should().NotContain("<select");
@@ -104,7 +104,7 @@ public partial class ApiPagesNavRenderingTests
 			features: new FeatureFlags(new Dictionary<string, bool> { ["navigation-preview"] = true })
 		);
 
-		var html = await _ApiPagesNav.Create(model).RenderAsync(cancellationToken: TestContext.Current.CancellationToken);
+		var html = await _ApiPagesNav.Create(model).RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
 
 		html.Should().Contain("id=\"pages-nav\"");
 		html.Should().Contain("hx-preserve");
@@ -123,7 +123,7 @@ public partial class ApiPagesNavRenderingTests
 			buildType: BuildType.Assembler
 		);
 
-		var html = await _ApiPagesNav.Create(model).RenderAsync(cancellationToken: TestContext.Current.CancellationToken);
+		var html = await _ApiPagesNav.Create(model).RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
 
 		html.Should().Contain("<navigation-search type=\"api\" placeholder=\"Jump to API\"></navigation-search>");
 		html
@@ -142,7 +142,7 @@ public partial class ApiPagesNavRenderingTests
 			buildType: BuildType.Assembler
 		);
 
-		var html = await _ApiPagesNav.Create(model).RenderAsync(cancellationToken: TestContext.Current.CancellationToken);
+		var html = await _ApiPagesNav.Create(model).RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
 
 		html.Should().Contain("<navigation-search type=\"api\" placeholder=\"Jump to API\"></navigation-search>");
 		html.Should().Contain("hx-preserve");
@@ -153,7 +153,7 @@ public partial class ApiPagesNavRenderingTests
 	{
 		var model = CreateLayoutModel("/api/doc/elasticsearch/", "/api/doc/elasticsearch.md", buildType: BuildType.Isolated);
 
-		var html = await _ApiPagesNav.Create(model).RenderAsync(cancellationToken: TestContext.Current.CancellationToken);
+		var html = await _ApiPagesNav.Create(model).RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
 
 		html.Should().NotContain("navigation-search");
 	}
@@ -168,7 +168,7 @@ public partial class ApiPagesNavRenderingTests
 			buildType: BuildType.Assembler
 		);
 
-		var html = await _ApiPagesNav.Create(model).RenderAsync(cancellationToken: TestContext.Current.CancellationToken);
+		var html = await _ApiPagesNav.Create(model).RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
 
 		html.Should().NotContain("navigation-search");
 	}
