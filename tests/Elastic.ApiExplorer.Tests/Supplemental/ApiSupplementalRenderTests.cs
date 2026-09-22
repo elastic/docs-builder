@@ -79,22 +79,20 @@ public class ApiSupplementalRenderTests(ApiExplorerFixture fixture) : IClassFixt
 	}
 
 	[Fact]
-	public async Task Operation_Authorization_RendersPillsUnderEndpoint()
+	public async Task Operation_Authorization_RendersCollapsedWhenMultipleSchemes()
 	{
 		var nav = SearchOperation();
 		var html = await RenderAsync(nav.Model, nav);
-		var markdown = await RenderCommonMarkAsync(nav.Model, nav);
 
-		html.Should().Contain("class=\"api-security-badges\"");
-		html.Should().Contain("href=\"/api/doc/fixture/authentication#apikey\">Api key auth</a>");
-		html.Should().Contain("href=\"/api/doc/fixture/authentication#basicauth\">Basic auth</a>");
-		html.Should().Contain("href=\"/api/doc/fixture/authentication#bearerauth\">Bearer auth</a>");
-		html.Should().NotContain("id=\"authorization\"");
-		html.Should().NotContain("auth-scheme-item");
-		markdown.Should().Contain("[Api key auth](/api/doc/fixture/authentication#apikey)");
-		markdown.Should().Contain("[Basic auth](/api/doc/fixture/authentication#basicauth)");
-		markdown.Should().Contain("[Bearer auth](/api/doc/fixture/authentication#bearerauth)");
-		markdown.Should().NotContain("## Authorization");
+		html.Should().Contain("id=\"authorization\"");
+		html.Should().Contain("id=\"authorization-list\"");
+		html.Should().Contain("aria-controls=\"authorization-list\"");
+		html.Should().Contain("api-param-section-title\">Authorization</span>");
+		html.Should().Contain("auth-scheme-item");
+		html.Should().Contain("Api key");
+		html.Should().Contain("Basic");
+		html.Should().Contain("Bearer");
+		html.Should().NotContain("security-requirements");
 	}
 
 	[Fact]
@@ -441,23 +439,11 @@ public class ApiSupplementalRenderTests(ApiExplorerFixture fixture) : IClassFixt
 		IReadOnlyDictionary<string, ApiSupplementalDoc>? tags = null
 	)
 	{
-		var renderContext = RenderContext(navigation, operations, tags);
-		var fs = new MockFileSystem();
-		await using (var stream = fs.FileStream.New("/out.html", FileMode.Create, FileAccess.Write))
-			await model.RenderAsync(stream, renderContext, TestContext.Current.CancellationToken);
-
-		return fs.File.ReadAllText("/out.html");
-	}
-
-	private async Task<string> RenderCommonMarkAsync(IApiModel model, INavigationItem navigation) =>
-		await model.RenderCommonMarkAsync(RenderContext(navigation), TestContext.Current.CancellationToken) ?? "";
-
-	private ApiRenderContext RenderContext(
-		INavigationItem navigation,
-		IReadOnlyDictionary<string, ApiSupplementalDoc>? operations = null,
-		IReadOnlyDictionary<string, ApiSupplementalDoc>? tags = null
-	) =>
-		new(fixture.Context, fixture.Document, new StaticFileContentHashProvider(new EmbeddedOrPhysicalFileProvider(fixture.Context)))
+		var renderContext = new ApiRenderContext(
+			fixture.Context,
+			fixture.Document,
+			new StaticFileContentHashProvider(new EmbeddedOrPhysicalFileProvider(fixture.Context))
+		)
 		{
 			NavigationHtml = string.Empty,
 			CurrentNavigation = navigation,
@@ -465,4 +451,11 @@ public class ApiSupplementalRenderTests(ApiExplorerFixture fixture) : IClassFixt
 			OperationSupplemental = operations ?? new Dictionary<string, ApiSupplementalDoc>(),
 			TagSupplemental = tags ?? new Dictionary<string, ApiSupplementalDoc>()
 		};
+
+		var fs = new MockFileSystem();
+		await using (var stream = fs.FileStream.New("/out.html", FileMode.Create, FileAccess.Write))
+			await model.RenderAsync(stream, renderContext, TestContext.Current.CancellationToken);
+
+		return fs.File.ReadAllText("/out.html");
+	}
 }

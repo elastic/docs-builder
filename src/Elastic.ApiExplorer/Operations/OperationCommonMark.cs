@@ -26,8 +26,8 @@ internal static class OperationCommonMark
 		WriteBadges(markdown, operation, page);
 		WriteServers(markdown, page);
 		WritePaths(markdown, apiOperation, page);
-		WriteSecurity(markdown, page);
 		WritePrerequisites(markdown, prerequisites, apiBaseUrl);
+		WriteSecurity(markdown, page);
 		WritePathParameters(markdown, page, apiBaseUrl);
 		WriteDescription(markdown, page, apiBaseUrl);
 		WriteQueryParameters(markdown, page, apiBaseUrl);
@@ -139,8 +139,9 @@ internal static class OperationCommonMark
 		if (page.AuthSchemes.Count == 0)
 			return;
 
+		ApiCommonMark.Heading(markdown, 2, "Authorization");
 		foreach (var scheme in page.AuthSchemes)
-			_ = markdown.AppendLine($"- {ApiCommonMark.Link(scheme.PillLabel, scheme.Href)}");
+			_ = markdown.AppendLine($"- `{scheme.Label}`");
 		_ = markdown.AppendLine();
 	}
 
