@@ -3,15 +3,18 @@
 // See the LICENSE file in the project root for more information
 
 using System.Diagnostics;
+using System.Net.Http.Headers;
 using System.Text.Json;
 using Elastic.Documentation.Api.AskAi;
 using Elastic.Documentation.Api.PageFeedback;
 using Elastic.Documentation.Search;
+using Elastic.Documentation.ServiceDefaults.Telemetry;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Logging;
+using ServiceTelemetry = Elastic.Documentation.ServiceDefaults.Telemetry.TelemetryConstants;
 
 namespace Elastic.Documentation.Api;
 
@@ -26,6 +29,7 @@ public static class MappingsExtension
 		MapFullSearch(group);
 		MapChanges(group);
 		MapPageFeedback(group);
+		MapOtlpProxy(group);
 	}
 
 	private static void MapAskAiEndpoint(IEndpointRouteBuilder group)
@@ -256,4 +260,55 @@ public static class MappingsExtension
 
 	private static string? SanitizeForLog(string? value) =>
 		value?.Replace("\r", "", StringComparison.Ordinal).Replace("\n", "", StringComparison.Ordinal);
+
+	// Accepts OTLP telemetry from the browser (sent by @elastic/opentelemetry-browser) and
+	// forwards it to the configured OTel collector. Synthetic traffic is dropped here so the
+	// collector never sees it. Requests are silently discarded when no collector is configured
+	// (e.g. local dev without OTEL_EXPORTER_OTLP_ENDPOINT set).
+	private static void MapOtlpProxy(IEndpointRouteBuilder group)
+	{
+		_ = group.MapPost(
+			"/traces",
+			(HttpContext ctx, IHttpClientFactory factory, Cancel ct) => ForwardOtlpSignal(ctx, factory, "traces", ct)
+		).DisableAntiforgery();
+
+		_ = group.MapPost(
+			"/logs",
+			(HttpContext ctx, IHttpClientFactory factory, Cancel ct) => ForwardOtlpSignal(ctx, factory, "logs", ct)
+		).DisableAntiforgery();
+	}
+
+	private static async Task<IResult> ForwardOtlpSignal(HttpContext ctx, IHttpClientFactory factory, string signal, Cancel ct)
+	{
+		if (ctx.Request.Headers.ContainsKey(ServiceTelemetry.SyntheticMonitorHeaderName))
+			return Results.NoContent();
+
+		var collectorBase = Environment.GetEnvironmentVariable("OTEL_EXPORTER_OTLP_ENDPOINT");
+		if (string.IsNullOrWhiteSpace(collectorBase))
+			return Results.StatusCode(StatusCodes.Status503ServiceUnavailable);
+
+		var request = new HttpRequestMessage(HttpMethod.Post, $"{collectorBase.TrimEnd('/')}/v1/{signal}")
+		{
+			Content = new StreamContent(ctx.Request.Body),
+		};
+
+		if (ctx.Request.ContentType is { } contentType)
+			request.Content.Headers.ContentType = MediaTypeHeaderValue.Parse(contentType);
+
+		// Forward any auth headers the collector requires (OTEL_EXPORTER_OTLP_HEADERS=key=value,key=value)
+		var otlpHeaders = Environment.GetEnvironmentVariable("OTEL_EXPORTER_OTLP_HEADERS");
+		if (!string.IsNullOrWhiteSpace(otlpHeaders))
+		{
+			foreach (var header in otlpHeaders.Split(','))
+			{
+				var eq = header.IndexOf('=', StringComparison.Ordinal);
+				if (eq > 0)
+					_ = request.Headers.TryAddWithoutValidation(header[..eq].Trim(), header[(eq + 1)..].Trim());
+			}
+		}
+
+		var client = factory.CreateClient("OtlpProxy");
+		var response = await client.SendAsync(request, ct);
+		return Results.StatusCode((int)response.StatusCode);
+	}
 }
