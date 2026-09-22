@@ -4,13 +4,10 @@
 		id="pages-nav"
 		@(Model.Features.NavigationPreviewEnabled ? "hx-preserve" : "")
 		class="sidebar-nav h-full simple-scrollbar">
-		@{
-			var showJumpToPage = Model.BuildType == BuildType.Assembler && !Model.Features.AirGappedEnabled;
-		}
-		@if (showJumpToPage || Model.HubSwitcherItems.Count > 0)
+		@if (Model.ShowJumpToPage || Model.HubSwitcherItems.Count > 0)
 		{
 			<div class="sticky top-0 z-10 bg-white px-4 pt-4 pb-2 flex flex-col gap-2">
-				@if (showJumpToPage)
+				@if (Model.ShowJumpToPage)
 				{
 					<navigation-search type="api" placeholder="Jump to API"></navigation-search>
 				}
