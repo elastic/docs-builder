@@ -122,7 +122,7 @@ public class McpServerInstructionTests
 			</tool_guidance>
 			""";
 
-		instructions.Should().Be(expected);
+		instructions.Should().Be(expected.ReplaceLineEndings("\n"));
 	}
 
 	[Test]
@@ -148,7 +148,7 @@ public class McpServerInstructionTests
 			</tool_guidance>
 			""";
 
-		instructions.Should().Be(expected);
+		instructions.Should().Be(expected.ReplaceLineEndings("\n"));
 	}
 
 	private static List<string> ExtractBullets(string instructions) =>
