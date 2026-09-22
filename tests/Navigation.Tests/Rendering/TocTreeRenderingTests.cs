@@ -220,7 +220,7 @@ public class TocTreeRenderingTests
 	}
 
 	[Fact]
-	public async Task VersionSwitcher_RendersInBackChromeWithoutBooleanSelected()
+	public async Task VersionSwitcher_StaysOutOfTheTree()
 	{
 		var model = new NavigationRenderModel
 		{
@@ -251,16 +251,8 @@ public class TocTreeRenderingTests
 
 		var html = await _TocTree.Create(model).RenderAsync(cancellationToken: TestContext.Current.CancellationToken);
 
-		html.Should().Contain("pages-nav-v2__back-chrome");
-		html.Should().Contain("id=\"api-version-switcher\"");
-		html.Should().Contain("class=\"nav-select\"");
-		html.Should().Contain("href=\"/api/doc/elasticsearch/v9/\"");
-		html.Should().Contain("aria-selected=\"true\"");
-		html.Should().Contain("aria-selected=\"false\"");
-		html.Should().NotContain("selected=\"False\"");
-		html.Should().NotContain("selected=\"True\"");
-		html.Should().NotContain("<select");
-		html.Should().NotContain("<option");
+		html.Should().NotContain("api-version-switcher");
+		html.Should().NotContain("pages-nav-v2__back-chrome");
 	}
 
 	[Fact]

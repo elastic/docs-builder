@@ -87,6 +87,8 @@ public abstract class ApiViewModel(ApiRenderContext context)
 
 		var hubItems = ApiHubSwitcher.Build(RenderContext.CatalogEntries, RenderContext.CurrentApiKey, catalogUrl);
 		var assembler = BuildContext.BuildType == BuildType.Assembler;
+		var specRootUrl = CurrentNavigationItem.NavigationRoot.Url;
+		var onCatalog = SameUrl(specRootUrl, catalogUrl) || SameUrl(CurrentNavigationItem.Url, catalogUrl);
 
 		return new()
 		{
@@ -120,9 +122,12 @@ public abstract class ApiViewModel(ApiRenderContext context)
 			LegacyBarProductSwitcher = assembler
 				? [.. hubItems.Select(static i => new NavigationSelectOption(i.Label, i.Url, i.Selected))]
 				: [],
+			ApiCatalogUrl = catalogUrl,
+			SpecJsonUrl = onCatalog ? null : ApiOutputPaths.JsonUrl(specRootUrl),
+			SpecYamlUrl = onCatalog ? null : ApiOutputPaths.YamlUrl(specRootUrl),
 			MarkdownUrl = ApiOutputPaths.MarkdownUrl(CurrentNavigationItem.Url),
-			ShowVersionDropdown = RenderContext.VersionSwitcherItems.Count > 1,
-			ShowLegacyBarVersionDropdown = RenderContext.VersionSwitcherItems.Count > 1,
+			ShowVersionDropdown = false,
+			ShowLegacyBarVersionDropdown = false,
 			CurrentVersion = ApiVersionSwitcher.CurrentVersionLabel(
 				RenderContext.Product?.VersioningSystem,
 				RenderContext.VersionSwitcherItems
@@ -137,5 +142,12 @@ public abstract class ApiViewModel(ApiRenderContext context)
 			GitHubDocsUrl = GetGitHubDocsUrl(),
 			GitHubRef = BuildContext.Git.GitHubRef
 		};
+	}
+
+	private static bool SameUrl(string? left, string? right)
+	{
+		if (left is null || right is null)
+			return false;
+		return string.Equals(left.TrimEnd('/'), right.TrimEnd('/'), StringComparison.Ordinal);
 	}
 }

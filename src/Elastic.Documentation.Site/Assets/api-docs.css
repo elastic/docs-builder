@@ -1198,6 +1198,21 @@
 	overflow-x: visible;
 }
 
+/* A wide sample must scroll inside its block. Otherwise it grows the layout
+   viewport, and the fixed mobile drawer (width: 80%) becomes wider than the screen. */
+@media (max-width: 767px) {
+	.api-page-main .markdown-content pre,
+	.api-page-main .markdown-content pre code {
+		min-width: 0;
+		max-width: 100%;
+	}
+
+	#api-examples-panel .api-code-card {
+		max-width: 100%;
+		overflow-x: auto;
+	}
+}
+
 .api-param-section-header.section-header {
 	display: flex;
 	align-items: center;

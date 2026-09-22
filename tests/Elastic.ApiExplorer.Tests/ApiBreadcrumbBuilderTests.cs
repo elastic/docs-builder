@@ -94,16 +94,13 @@ public class ApiBreadcrumbBuilderTests
 	}
 
 	[Fact]
-	public void Build_SingleCrumb_ShowsCurrent()
+	public void Build_SingleCrumb_IsEmpty()
 	{
 		var landing = Leaf("/api/es", "Api Overview", parent: null);
 
 		var trail = ApiBreadcrumbBuilder.Build(landing, "Elasticsearch API", "Elasticsearch API");
 
-		trail.IsEmpty.Should().BeFalse();
-		trail.Items.Should().ContainSingle();
-		trail.Items[0].Title.Should().Be("Elasticsearch API");
-		trail.Items[0].IsCurrent.Should().BeTrue();
+		trail.IsEmpty.Should().BeTrue();
 	}
 
 	[Fact]

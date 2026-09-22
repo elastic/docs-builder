@@ -266,7 +266,7 @@ public class OpenApiGenerator(
 	{
 		var catalogUrl = $"{ApiUrlBuilder.ApiRoot(context.UrlPathPrefix)}/";
 		var navigation = new ApiCatalogNavigationItem(catalogUrl, entries);
-		var navigationRenderer = new IsolatedBuildNavigationHtmlWriter(context, navigation);
+		var navigationRenderer = new IsolatedBuildNavigationHtmlWriter(context, navigation, suppressNavigationDropdown: true);
 
 		var renderContext = new ApiRenderContext(context, CatalogDocument, _contentHashProvider)
 		{
@@ -297,7 +297,8 @@ public class OpenApiGenerator(
 		var navigationRenderer = new IsolatedBuildNavigationHtmlWriter(
 			context,
 			navigation,
-			MapVersionSwitcher(generation.VersionSwitcherItems)
+			MapVersionSwitcher(generation.VersionSwitcherItems),
+			suppressNavigationDropdown: true
 		);
 
 		var operations = ApiSupplementalDoc.Load(discovery.Operations);

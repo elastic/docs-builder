@@ -23,7 +23,7 @@ namespace Elastic.ApiExplorer.Tests;
 public partial class ApiPagesNavRenderingTests
 {
 	[Fact]
-	public async Task Render_DoesNotHostTheVersionSwitcher()
+	public async Task Render_HostsTheVersionSwitcherAheadOfTheTree()
 	{
 		var model = CreateLayoutModel(
 			"/api/doc/elasticsearch/v9/",
@@ -37,13 +37,17 @@ public partial class ApiPagesNavRenderingTests
 
 		var html = await _ApiPagesNav.Create(model).RenderAsync(cancellationToken: TestContext.Current.CancellationToken);
 
-		html.Should().Contain("<nav>tree</nav>");
-		html.Should().NotContain("View as Markdown");
-		html.Should().NotContain("view-as-markdown");
-		html.Should().NotContain("api-version-switcher");
+		html.Should().Contain("id=\"api-version-switcher\"");
+		html.Should().Contain("aria-selected=\"true\"");
+		html.Should().Contain("aria-selected=\"false\"");
+		html.Should().NotContain("selected=\"False\"");
+		html.Should().NotContain("selected=\"True\"");
 		html.Should().NotContain("<select");
 		html.Should().NotContain("<option");
-		html.Should().NotContain("hx-preserve");
+		html
+			.IndexOf("id=\"api-version-switcher\"", StringComparison.Ordinal)
+			.Should()
+			.BeLessThan(html.IndexOf("<nav>tree</nav>", StringComparison.Ordinal));
 	}
 
 	[Fact]
@@ -109,11 +113,23 @@ public partial class ApiPagesNavRenderingTests
 	[Fact]
 	public async Task Render_ShowsJumpToPageOnAssemblerBuilds()
 	{
-		var model = CreateLayoutModel("/api/doc/elasticsearch/", "/api/doc/elasticsearch.md", buildType: BuildType.Assembler);
+		var model = CreateLayoutModel(
+			"/api/doc/elasticsearch/",
+			"/api/doc/elasticsearch.md",
+			versionSwitcherItems: [
+				new("9.0+", "/api/doc/elasticsearch/", Selected: true),
+				new("8.x", "/api/doc/elasticsearch/v8/", Selected: false),
+			],
+			buildType: BuildType.Assembler
+		);
 
 		var html = await _ApiPagesNav.Create(model).RenderAsync(cancellationToken: TestContext.Current.CancellationToken);
 
 		html.Should().Contain("<navigation-search type=\"api\" placeholder=\"Jump to API\"></navigation-search>");
+		html
+			.IndexOf("id=\"api-version-switcher\"", StringComparison.Ordinal)
+			.Should()
+			.BeLessThan(html.IndexOf("navigation-search", StringComparison.Ordinal));
 	}
 
 	[Fact]

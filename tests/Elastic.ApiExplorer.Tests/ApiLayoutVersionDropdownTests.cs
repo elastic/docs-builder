@@ -20,16 +20,19 @@ namespace Elastic.ApiExplorer.Tests;
 public class ApiLayoutVersionDropdownTests
 {
 	[Fact]
-	public void CreateGlobalLayoutModel_WiresDocsVersionDropdownForAssembler()
+	public void CreateGlobalLayoutModel_KeepsVersionOffTheTopBar()
 	{
 		var layout = CreateLayout();
 
-		layout.ShowVersionDropdown.Should().BeTrue();
-		layout.ShowLegacyBarVersionDropdown.Should().BeTrue();
+		layout.ShowVersionDropdown.Should().BeFalse();
+		layout.ShowLegacyBarVersionDropdown.Should().BeFalse();
 		layout.CurrentVersion.Should().Be("9.0+");
 		layout.VersionDropdownSerializedModel.Should().Contain("\"name\":\"9.0");
 		layout.VersionDropdownSerializedModel.Should().Contain("\"name\":\"9.x\"");
 		layout.VersionDropdownSerializedModel.Should().NotContain("Latest");
+		layout.ApiCatalogUrl.Should().Be("/api/");
+		layout.SpecJsonUrl.Should().Be("/api/doc/elasticsearch.json");
+		layout.SpecYamlUrl.Should().Be("/api/doc/elasticsearch.yaml");
 	}
 
 	[Fact]

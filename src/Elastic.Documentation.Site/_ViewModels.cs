@@ -36,6 +36,9 @@ public record FrontendConfig(
 /// <summary>Single breadcrumb item for the codex sub-header.</summary>
 public record CodexBreadcrumb(string Title, string? Url);
 
+/// <summary>JSON and YAML downloads for the whole OpenAPI spec of the current API.</summary>
+public sealed record ApiSpecDownload(string JsonUrl, string YamlUrl);
+
 public record GlobalLayoutViewModel
 {
 	public required string DocsBuilderVersion { get; init; }
@@ -100,17 +103,25 @@ public record GlobalLayoutViewModel
 
 	/// <summary>
 	/// When true, the flag-off grey secondary nav renders <c>version-dropdown</c> on the far right.
-	/// API explorer sets this because it has no Docs TOC picker. Docs pages leave it false so
-	/// the picker stays in the right rail.
+	/// Docs pages leave it false so the picker stays in the right rail. API explorer leaves it
+	/// false too: the version picker lives in the API sidebar.
 	/// </summary>
 	public bool ShowLegacyBarVersionDropdown { get; init; }
 
 	/// <summary>
-	/// API product choices for the flag-off grey secondary nav, rendered immediately before
-	/// the version picker. Empty on Docs pages and on isolated API builds (those keep the
-	/// sidebar <c>&lt;select&gt;</c>).
+	/// API product choices for the flag-off grey secondary nav. Empty on Docs pages and on
+	/// isolated API builds (those keep the sidebar <c>&lt;select&gt;</c>).
 	/// </summary>
 	public IReadOnlyList<NavigationSelectOption> LegacyBarProductSwitcher { get; init; } = [];
+
+	/// <summary>API catalog URL. Set on API explorer pages so the top bar home link reads APIs.</summary>
+	public string? ApiCatalogUrl { get; init; }
+
+	/// <summary>Whole-spec JSON download. Null on Docs pages and on the API catalog.</summary>
+	public string? SpecJsonUrl { get; init; }
+
+	/// <summary>Whole-spec YAML download. Null on Docs pages and on the API catalog.</summary>
+	public string? SpecYamlUrl { get; init; }
 
 	/// <summary>
 	/// When the current page is a hidden nav item (e.g. an individual detection rule page),

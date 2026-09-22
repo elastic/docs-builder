@@ -404,8 +404,12 @@
 
 	.nav-select-menu {
 		box-sizing: border-box;
+		position: absolute;
+		top: calc(100% + 4px);
+		left: 0;
+		z-index: 30;
 		width: 100%;
-		margin-top: 4px;
+		margin-top: 0;
 		padding: 8px;
 		background: #fff;
 		border: 0;

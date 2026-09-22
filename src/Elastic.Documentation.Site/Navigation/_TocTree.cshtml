@@ -50,7 +50,7 @@
 			</div>
 		}
 		</div>
-		@if (Model.BackLinks.Count > 0 || Model.VersionSwitcher.Count > 1)
+		@if (Model.BackLinks.Count > 0)
 		{
 			<div class="pages-nav-v2__back-chrome">
 				@foreach (var back in Model.BackLinks)
@@ -62,14 +62,6 @@
 						</svg>
 						<span>@back.Title</span>
 					</a>
-				}
-				@if (Model.VersionSwitcher.Count > 1)
-				{
-					@await RenderPartialAsync(_NavSelect.Create(new NavigationSelectModel(
-						"api-version-switcher",
-						"API version",
-						Model.VersionSwitcher
-					)))
 				}
 			</div>
 		}
@@ -171,7 +163,7 @@ else
 			</div>
 		}
 		</div>
-		@if (Model.BackLinks.Count > 0 || Model.VersionSwitcher.Count > 1)
+		@if (Model.BackLinks.Count > 0)
 		{
 			<div class="flex flex-col px-4 py-2 border-b border-grey-20 gap-2">
 				@foreach (var back in Model.BackLinks)
@@ -183,14 +175,6 @@ else
 						</svg>
 						<span>@back.Title</span>
 					</a>
-				}
-				@if (Model.VersionSwitcher.Count > 1)
-				{
-					@await RenderPartialAsync(_NavSelect.Create(new NavigationSelectModel(
-						"api-version-switcher",
-						"API version",
-						Model.VersionSwitcher
-					)))
 				}
 			</div>
 		}

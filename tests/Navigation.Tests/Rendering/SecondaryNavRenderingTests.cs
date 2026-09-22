@@ -291,6 +291,28 @@ public class SecondaryNavRenderingTests(ITestOutputHelper output) : Documentatio
 	}
 
 	[Fact]
+	public async Task ApiChromeUsesCatalogHomeAndSpecDownload()
+	{
+		var model = CreateModel(TopNav, "/docs/api/doc/elasticsearch/", navigationPreviewEnabled: false) with
+		{
+			PageFeedbackSurface = "api",
+			ApiCatalogUrl = "/docs/api/",
+			SpecJsonUrl = "/docs/api/doc/elasticsearch.json",
+			SpecYamlUrl = "/docs/api/doc/elasticsearch.yaml",
+			LegacyBarProductSwitcher = [new NavigationSelectOption("Elasticsearch", "/docs/api/doc/elasticsearch/", true)]
+		};
+
+		var html = await _SecondaryNav.Create(model).RenderAsync(cancellationToken: TestContext.Current.CancellationToken);
+
+		html.Should().Contain(">APIs</a>");
+		html.Should().NotContain("Release notes").And.NotContain("Troubleshoot").And.NotContain("Reference");
+		html.Should().Contain("Download source");
+		html.Should().Contain("href=\"/docs/api/doc/elasticsearch.json\"").And.Contain("download");
+		html.Should().Contain("href=\"/docs/api/doc/elasticsearch.yaml\"");
+		html.Should().NotContain("<version-dropdown");
+	}
+
+	[Fact]
 	public async Task UnrelatedPagesLeaveEveryItemInactive()
 	{
 		var html = await Render(TopNav, currentUrl: "/docs/troubleshoot/");

@@ -6,8 +6,11 @@
 	// Active tab: compare the current page's NavigationRoot.Id against each tab's SectionId.
 	// The site root (SiteNavigation) has an Id that matches no tab, so homepage gets no active tab.
 	var currentSectionId = Model.CurrentNavigationItem.NavigationRoot?.Id;
-	var docsHomeUrl = Model.Link("/");
+	var apiChrome = Model.PageFeedbackSurface == "api";
+	var docsHomeUrl = apiChrome && !string.IsNullOrEmpty(Model.ApiCatalogUrl) ? Model.ApiCatalogUrl : Model.Link("/");
+	var homeLabel = apiChrome ? "APIs" : "Docs";
 	var navigationPreviewEnabled = Model.Features.NavigationPreviewEnabled;
+	var hasSpecDownload = !string.IsNullOrEmpty(Model.SpecJsonUrl) && !string.IsNullOrEmpty(Model.SpecYamlUrl);
 
 	string? IconId(string title) => title switch
 	{
@@ -38,8 +41,10 @@
 				<div class="secondary-nav-scroll-container">
 				<a href="@docsHomeUrl"
 				   class="secondary-nav-home"
-				   preload="mousedown">Docs</a>
+				   preload="mousedown">@homeLabel</a>
 				<ul class="secondary-nav-list">
+					@if (!apiChrome)
+					{
 					@foreach (var item in topNav.Items)
 					{
 						var isActive = item.IsActive(currentSectionId);
@@ -117,14 +122,22 @@
 							</li>
 						}
 					}
+					}
 				</ul>
 				</div>
-				@if (Model.ShowVersionDropdown)
+				@if (Model.ShowVersionDropdown || hasSpecDownload)
 				{
 					<div class="secondary-nav-actions">
+						@if (hasSpecDownload)
+						{
+							@await RenderPartialAsync(_ApiDownloadSource.Create(new ApiSpecDownload(Model.SpecJsonUrl!, Model.SpecYamlUrl!)))
+						}
+						@if (Model.ShowVersionDropdown)
+						{
 						<version-dropdown data-testid="docs-version-dropdown" all-versions-url="@Model.AllVersionsUrl" current-version='@(Model.CurrentVersion)' items='@(new HtmlString(Model.VersionDropdownSerializedModel))'>
 							<div class="h-8">@*height of dropdown button*@</div>
 						</version-dropdown>
+						}
 					</div>
 				}
 			</div>
@@ -135,8 +148,10 @@
 			<div class="secondary-nav-bar secondary-nav-bar--desktop">
 				<a href="@docsHomeUrl"
 				   class="secondary-nav-home"
-				   preload="mousedown">Docs</a>
+				   preload="mousedown">@homeLabel</a>
 				<ul class="secondary-nav-list">
+					@if (!apiChrome)
+					{
 					<li class="secondary-nav-item">
 						<a href="@Model.Link("/release-notes/")"
 						   preload="mousedown"
@@ -167,13 +182,21 @@
 							</span>
 						</a>
 					</li>
+					}
 				</ul>
-				@if (Model.ShowVersionDropdown)
+				@if (Model.ShowVersionDropdown || hasSpecDownload)
 				{
 					<div class="secondary-nav-actions">
+						@if (hasSpecDownload)
+						{
+							@await RenderPartialAsync(_ApiDownloadSource.Create(new ApiSpecDownload(Model.SpecJsonUrl!, Model.SpecYamlUrl!)))
+						}
+						@if (Model.ShowVersionDropdown)
+						{
 						<version-dropdown data-testid="docs-version-dropdown" all-versions-url="@Model.AllVersionsUrl" current-version='@(Model.CurrentVersion)' items='@(new HtmlString(Model.VersionDropdownSerializedModel))'>
 							<div class="h-8">@*height of dropdown button*@</div>
 						</version-dropdown>
+						}
 					</div>
 				}
 			</div>
@@ -192,10 +215,12 @@ else
 					px-4 py-6 overflow-visible">
 			<div class="flex gap-2 flex-nowrap items-center font-sans font-semibold text-sm text-ink-light md:text-base">
 				<a href="@docsHomeUrl"
-				   class="text-lg leading-[1em] hover:text-blue-elastic active:text-blue-elastic-100">Docs</a>
+				   class="text-lg leading-[1em] hover:text-blue-elastic active:text-blue-elastic-100">@homeLabel</a>
 			</div>
 			<div class="flex items-center gap-6 min-w-0">
 			<ul class="flex gap-6 font-sans font-semibold text-sm text-ink-light md:text-base">
+				@if (!apiChrome)
+				{
 				<li class="text-nowrap hover:text-blue-elastic active:text-blue-elastic-100">
 					<a
 						href="@Model.Link("/release-notes/")"
@@ -220,6 +245,7 @@ else
 						Reference
 					</a>
 				</li>
+				}
 			@if (Model.LegacyBarProductSwitcher.Count > 0)
 			{
 				var currentProduct = Model.LegacyBarProductSwitcher.FirstOrDefault(static i => i.Selected)
@@ -243,6 +269,12 @@ else
 							}
 						</div>
 					</details>
+				</li>
+			}
+			@if (hasSpecDownload)
+			{
+				<li class="text-nowrap hover:text-blue-elastic active:text-blue-elastic-100">
+					@await RenderPartialAsync(_ApiDownloadSource.Create(new ApiSpecDownload(Model.SpecJsonUrl!, Model.SpecYamlUrl!)))
 				</li>
 			}
 			</ul>

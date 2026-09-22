@@ -32,7 +32,9 @@ public static class ApiBreadcrumbBuilder
 	public static ApiBreadcrumbTrail Build(INavigationItem current, string currentTitle, string? rootTitle, string? catalogUrl = null)
 	{
 		var items = Collect(current, currentTitle, rootTitle, catalogUrl);
-		return items.Count == 0 ? ApiBreadcrumbTrail.Empty : new ApiBreadcrumbTrail(items);
+		if (items.Count == 0 || items.All(static crumb => crumb.IsCurrent))
+			return ApiBreadcrumbTrail.Empty;
+		return new ApiBreadcrumbTrail(items);
 	}
 
 	internal static IReadOnlyList<ApiBreadcrumb> Collect(

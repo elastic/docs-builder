@@ -74,8 +74,8 @@ public sealed record NavigationRenderModel
 	/// </summary>
 	public required IReadOnlyList<IslandBackLink> BackLinks { get; init; }
 	/// <summary>
-	/// API version choices rendered in the same chrome as <see cref="BackLinks"/>.
-	/// Empty when the page is not versioned or only one version exists.
+	/// API version choices carried with the nav model. The sidebar chrome renders the
+	/// control from the layout model, ahead of Jump to API, so the tree leaves this unused.
 	/// </summary>
 	public IReadOnlyList<NavigationSelectOption> VersionSwitcher { get; init; } = [];
 	/// <summary>
