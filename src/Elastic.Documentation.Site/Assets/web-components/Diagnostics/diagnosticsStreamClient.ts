@@ -27,6 +27,7 @@ const STATE_URL = '/_api/diagnostics/state'
 const POLL_MS = 1500
 
 let closed = true
+let connectionGeneration = 0
 let pollTimer: ReturnType<typeof setInterval> | null = null
 let pollAbort: AbortController | null = null
 let diagnosticIdCounter = 0
@@ -43,8 +44,9 @@ function afterDocumentLoad(callback: () => void): void {
 export function connectToDiagnosticsStream(): void {
     disconnectFromDiagnosticsStream()
     closed = false
+    const generation = ++connectionGeneration
     afterDocumentLoad(() => {
-        if (closed) return
+        if (closed || generation !== connectionGeneration) return
         void pollDiagnosticsState()
         pollTimer = setInterval(() => {
             void pollDiagnosticsState()
