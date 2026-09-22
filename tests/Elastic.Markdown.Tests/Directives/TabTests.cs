@@ -175,3 +175,90 @@ Content for C# tab
 		items[2].SyncKey.Should().Be("csharp");
 	}
 }
+
+public class LanguagesGroupRendersAsDropdownTests(ITestOutputHelper output) : DirectiveTest<TabSetBlock>(
+	output,
+	"""
+::::{tab-set}
+:group: languages
+:::{tab-item} Java
+:sync: java
+Content for Java tab
+:::
+
+:::{tab-item} Golang
+:sync: golang
+Content for Golang tab
+:::
+::::
+"""
+)
+{
+	[Fact]
+	public void DefaultsToDropdownForLanguages() => Block!.RenderAsDropdown().Should().BeTrue();
+}
+
+public class OtherGroupsRenderAsTabsTests(ITestOutputHelper output) : DirectiveTest<TabSetBlock>(
+	output,
+	"""
+::::{tab-set}
+:group: operating-systems
+:::{tab-item} macOS
+:sync: macos
+Content for macOS tab
+:::
+
+:::{tab-item} Windows
+:sync: windows
+Content for Windows tab
+:::
+::::
+"""
+)
+{
+	[Fact]
+	public void DefaultsToTabsForOtherGroups() => Block!.RenderAsDropdown().Should().BeFalse();
+}
+
+public class ExplicitDropdownOptInTests(ITestOutputHelper output) : DirectiveTest<TabSetBlock>(
+	output,
+	"""
+::::{tab-set}
+:dropdown: true
+:::{tab-item} One
+Content for tab one
+:::
+
+:::{tab-item} Two
+Content for tab two
+:::
+::::
+"""
+)
+{
+	[Fact]
+	public void OptsInWithoutAGroup() => Block!.RenderAsDropdown().Should().BeTrue();
+}
+
+public class ExplicitDropdownOptOutTests(ITestOutputHelper output) : DirectiveTest<TabSetBlock>(
+	output,
+	"""
+::::{tab-set}
+:group: languages
+:dropdown: false
+:::{tab-item} Java
+:sync: java
+Content for Java tab
+:::
+
+:::{tab-item} Golang
+:sync: golang
+Content for Golang tab
+:::
+::::
+"""
+)
+{
+	[Fact]
+	public void OptsOutOfTheLanguagesDefault() => Block!.RenderAsDropdown().Should().BeFalse();
+}

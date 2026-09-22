@@ -578,7 +578,20 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 
 	private static void WriteTabSet(HtmlRenderer renderer, TabSetBlock block)
 	{
-		var slice = TabSetView.Create(new TabSetViewModel { DirectiveBlock = block });
+		// The dropdown rendering needs the option list up front, which only the children carry.
+		var options = block
+			.OfType<TabItemBlock>()
+			.Select(i => new TabSetOption(i.Title, $"tabs-item-{i.TabSetIndex}-{i.Index}", i.SyncKey))
+			.ToArray();
+
+		var slice = TabSetView.Create(new TabSetViewModel
+		{
+			DirectiveBlock = block,
+			RenderAsDropdown = block.RenderAsDropdown(),
+			TabSetIndex = block.FindIndex(),
+			GroupKey = block.GetGroupKey(),
+			Options = options
+		});
 		RenderRazorSlice(slice, renderer);
 	}
 

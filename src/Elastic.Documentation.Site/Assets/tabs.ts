@@ -83,10 +83,66 @@ function onSDLabelClick(this: HTMLLabelElement) {
         if (label.previousElementSibling instanceof HTMLInputElement) {
             label.previousElementSibling.checked = true
         }
+        // A synced tab-set may be rendered as a dropdown; keep its <select> aligned.
+        syncSelectToLabel(label)
     }
+    syncSelectToLabel(this)
     window.sessionStorage.setItem(storageKeyPrefix + group, id)
+}
+
+/**
+ * Point the tab-set's <select> (if it has one) at the tab the label belongs to.
+ */
+function syncSelectToLabel(label: HTMLElement) {
+    const select = label
+        .closest('.tabs')
+        ?.querySelector<HTMLSelectElement>('.tabs-select')
+    const target = label.getAttribute('for')
+    if (select && target) {
+        select.value = target
+    }
+}
+
+/**
+ * Reveal the <select> rendered for dropdown tab-sets and wire it to the radio
+ * inputs that actually drive the panels. The tab strip is the no-JS fallback,
+ * so the dropdown only takes over once this runs.
+ */
+function initDropdowns() {
+    document.querySelectorAll<HTMLElement>('.tabs-dropdown').forEach((tabs) => {
+        const select = tabs.querySelector<HTMLSelectElement>('.tabs-select')
+        if (!select) return
+
+        const wrapper = select.closest<HTMLElement>('.tabs-select-wrapper')
+        if (wrapper) {
+            wrapper.hidden = false
+        }
+        tabs.classList.add('tabs-dropdown-active')
+
+        // The checked input is the source of truth — it may have been restored
+        // from sessionStorage or a URL param by ready().
+        const checked = tabs.querySelector<HTMLInputElement>(
+            '.tabs-input:checked'
+        )
+        if (checked) {
+            select.value = checked.id
+        }
+
+        select.addEventListener('change', () => {
+            const input = document.getElementById(select.value)
+            if (!(input instanceof HTMLInputElement)) return
+            input.checked = true
+
+            // Reuse the label's sync logic so other tab-sets in the same group follow.
+            const label = input.nextElementSibling
+            if (label instanceof HTMLLabelElement) {
+                onSDLabelClick.call(label)
+            }
+        })
+    })
 }
 
 export function initTabs() {
     ready()
+    initDropdowns()
 }
