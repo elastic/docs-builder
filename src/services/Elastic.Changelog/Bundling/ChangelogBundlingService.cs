@@ -681,7 +681,9 @@ public partial class ChangelogBundlingService(
 				outputPath = JoinProfileOutputPath(config, input, fileName);
 			}
 
-			// Parse output_products pattern with version/lifecycle substitution
+			// Parse output_products pattern with version/lifecycle substitution.
+			// When only the new product: field is set, synthesize an equivalent single-product list
+			// so BuildBundle() gets deterministic product scoping without requiring output_products.
 #pragma warning disable CS0618
 			if (!string.IsNullOrWhiteSpace(profile.OutputProducts))
 			{
@@ -706,6 +708,13 @@ public partial class ChangelogBundlingService(
 				}
 
 				outputProducts = parsedOutputProducts;
+			}
+			else if (!string.IsNullOrWhiteSpace(profile.Product))
+			{
+				outputProducts =
+				[
+					new ProductArgument { Product = profile.Product, Target = filterResult.Version, Lifecycle = resolvedLifecycle }
+				];
 			}
 
 			// Profile-level repo/owner/branch takes precedence; fall back to bundle-level defaults
@@ -1328,6 +1337,18 @@ public partial class ChangelogBundlingService(
 		var valid = true;
 		foreach (var (name, profile) in profiles)
 		{
+#pragma warning disable CS0618
+			if (!string.IsNullOrWhiteSpace(profile.Source))
+			{
+				collector.EmitError(
+					string.Empty,
+					$"Profile '{name}' sets 'source: github_release', which is no longer supported at runtime. " +
+						"Add a bundle.releases.github entry that maps the release tag to this profile and remove the source field."
+				);
+				valid = false;
+			}
+#pragma warning restore CS0618
+
 #pragma warning disable CS0618 // intentionally reading the obsolete field to reject profiles that still set it
 			if (!string.IsNullOrWhiteSpace(profile.Output))
 #pragma warning restore CS0618
