@@ -91,6 +91,16 @@ public class ApiMarkdownSanitizationTests
 	}
 
 	[Fact]
+	public void StripHtml_UnknownElement_SurroundingTextIsPreserved()
+	{
+		// AngleSharp parses <index> as an unknown HTML element. The tag name itself is not a
+		// text node (same as any HTML parser), but the text nodes around it are preserved.
+		var result = ApiMarkdown.StripHtml("Use <index> pattern to query.");
+		result.Should().NotContain("<index>", "angle brackets should be removed");
+		result.Should().Contain("pattern to query", "text after the unknown element is kept");
+	}
+
+	[Fact]
 	public void StripHtml_NullAndEmpty_ReturnEmpty()
 	{
 		ApiMarkdown.StripHtml(null).Should().BeEmpty();

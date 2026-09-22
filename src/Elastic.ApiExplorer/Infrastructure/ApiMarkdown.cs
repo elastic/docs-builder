@@ -3,7 +3,10 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions;
+using System.Text;
 using System.Text.RegularExpressions;
+using AngleSharp.Dom;
+using AngleSharp.Html.Parser;
 using Elastic.ApiExplorer.Model;
 using Elastic.ApiExplorer.Operations;
 using Elastic.Documentation;
@@ -93,27 +96,66 @@ public static partial class ApiMarkdown
 	[GeneratedRegex(@"\{\{\{?[^}]+\}?\}\}")]
 	private static partial Regex MustachePattern();
 
-	// Replaces block/break HTML tags with a space so adjacent words stay separated after tag removal.
-	[GeneratedRegex(@"</?(?:br|p|div|li|ul|ol|h[1-6]|blockquote|pre|hr|tr|td|th)\b[^>]*>", RegexOptions.IgnoreCase)]
-	private static partial Regex BlockTagPattern();
+	private static readonly HtmlParser DescriptionParser = new();
 
-	// Strips remaining HTML tags after the block-tag whitespace pass.
-	[GeneratedRegex(@"<[^>]+>")]
-	private static partial Regex HtmlTagPattern();
+	// Tags that represent block or break boundaries: a space is injected before descending.
+	private static readonly HashSet<string> BlockElements =
+	[
+		with(StringComparer.OrdinalIgnoreCase),
+		"br",
+		"p",
+		"div",
+		"li",
+		"ul",
+		"ol",
+		"h1",
+		"h2",
+		"h3",
+		"h4",
+		"h5",
+		"h6",
+		"blockquote",
+		"pre",
+		"hr",
+		"tr",
+		"td",
+		"th"
+	];
 
 	/// <summary>
-	/// Strips HTML from a description for plain-text contexts such as search indexing.
-	/// Block and break tags are replaced with a space so word boundaries are preserved;
-	/// the remaining tags are then removed.
+	/// Extracts plain text from an HTML description for search indexing.
+	/// Uses AngleSharp's DOM so only real HTML nodes are removed; non-HTML
+	/// angle-bracket sequences like <c>&lt;index&gt;</c> are preserved as text.
+	/// Block and break elements inject a space so word boundaries are not lost.
 	/// </summary>
 	internal static string StripHtml(string? description)
 	{
 		if (string.IsNullOrEmpty(description))
 			return string.Empty;
 
-		var spaced = BlockTagPattern().Replace(description, " ");
-		var stripped = HtmlTagPattern().Replace(spaced, string.Empty);
-		return WhitespaceCollapsePattern().Replace(stripped, " ").Trim();
+		using var document = DescriptionParser.ParseDocument(description);
+		var body = document.Body;
+		if (body is null)
+			return string.Empty;
+
+		var sb = new StringBuilder();
+		AppendText(body, sb);
+		return WhitespaceCollapsePattern().Replace(sb.ToString(), " ").Trim();
+	}
+
+	private static void AppendText(INode node, StringBuilder sb)
+	{
+		foreach (var child in node.ChildNodes)
+		{
+			if (child.NodeType == NodeType.Text)
+				_ = sb.Append(child.TextContent);
+			else if (child is IElement element)
+			{
+				if (BlockElements.Contains(element.LocalName))
+					_ = sb.Append(' ');
+				AppendText(element, sb);
+			}
+		}
 	}
 
 	[GeneratedRegex(@"[ \t]{2,}")]
