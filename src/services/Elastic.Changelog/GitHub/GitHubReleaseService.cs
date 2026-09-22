@@ -779,10 +779,10 @@ public partial class GitHubReleaseService(
 	/// </summary>
 	private async Task<string?> WalkToRootAsync(string owner, string repo, string startSha, CancellationToken ctx)
 	{
-		const int maxHops = 100;
 		var current = startSha;
+		var visited = new HashSet<string>(StringComparer.Ordinal);
 
-		for (var hop = 0; hop < maxHops; hop++)
+		while (visited.Add(current))
 		{
 			var url = $"https://api.github.com/repos/{owner}/{repo}/git/commits/{current}";
 			using var response = await GetWithRetryAsync(url, ctx);
@@ -794,10 +794,15 @@ public partial class GitHubReleaseService(
 			if (commit?.Parents is null or { Count: 0 })
 				return current;
 
-			current = commit.Parents[0].Sha ?? current;
+			var next = commit.Parents[0].Sha;
+			if (next is null)
+				return current;
+
+			current = next;
 		}
 
-		_logger.LogWarning("Parent-walk exceeded {MaxHops} hops for {Owner}/{Repo}", maxHops, owner, repo);
+		// Git DAGs are acyclic — reaching here means the API returned a cycle, which should not happen.
+		_logger.LogWarning("Parent-walk detected a cycle at {Sha} for {Owner}/{Repo}", current, owner, repo);
 		return null;
 	}
 
