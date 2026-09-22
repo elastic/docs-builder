@@ -26,12 +26,33 @@ import { useRef, useMemo, MutableRefObject, useEffect } from 'react'
 const RESULTS_MAX_HEIGHT = 465
 const BREADCRUMB_SEPARATOR = ' / '
 
+export const formatApiProductCrumb = (title: string) => {
+    if (/ API$/i.test(title)) {
+        return title
+    }
+
+    const displayName = title
+        .split(/[-_]/)
+        .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(' ')
+    return `${displayName} API`
+}
+
 export const navigationSearchBreadcrumbs = (
     parents: SearchResultItem['parents'],
     typeFilter: TypeFilter,
     buildType: string
 ) => {
-    if (buildType === 'codex' || typeFilter === 'api') {
+    if (typeFilter === 'api') {
+        return [
+            'API',
+            ...parents
+                .slice(1)
+                .map((parent) => formatApiProductCrumb(parent.title)),
+        ]
+    }
+
+    if (buildType === 'codex') {
         return parents.map((parent) => parent.title)
     }
 
