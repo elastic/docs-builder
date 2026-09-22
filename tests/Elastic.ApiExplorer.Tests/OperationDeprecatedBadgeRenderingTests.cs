@@ -42,7 +42,7 @@ public class OperationDeprecatedBadgeRenderingTests(ApiExplorerFixture fixture) 
 
 		var fs = new MockFileSystem();
 		await using (var stream = fs.FileStream.New("/out.html", FileMode.Create, FileAccess.Write))
-			await nav.Model.RenderAsync(stream, renderContext, TestContext.Current.CancellationToken);
+			await nav.Model.RenderAsync(stream, renderContext, null, TestContext.Current.CancellationToken);
 
 		return fs.File.ReadAllText("/out.html");
 	}
