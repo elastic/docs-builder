@@ -1,15 +1,5 @@
 import { EuiLoadingSpinner, useEuiTheme } from '@elastic/eui'
 import { css } from '@emotion/react'
-import { useMemo } from 'react'
-import { UAParser } from 'ua-parser-js'
-
-const useIsMac = () => {
-    return useMemo(() => {
-        const parser = new UAParser()
-        const os = parser.getOS().name?.toLowerCase() ?? ''
-        return os.includes('mac')
-    }, [])
-}
 
 const CustomSearchIcon = () => {
     const { euiTheme } = useEuiTheme()
@@ -60,7 +50,6 @@ export const SearchInput = ({
     isLoading,
 }: SearchInputProps) => {
     const { euiTheme } = useEuiTheme()
-    const isMac = useIsMac()
 
     return (
         <div
@@ -108,10 +97,6 @@ export const SearchInput = ({
                         )
                         ${size === 's' ? euiTheme.size.s : euiTheme.size.m};
                     padding-left: 34px;
-                    padding-right: calc(
-                        ${euiTheme.size.m} + ${isMac ? '2ch' : '4ch'} +
-                            ${euiTheme.size.m}
-                    );
                     border: 1px solid ${euiTheme.colors.borderBasePlain};
                     border-radius: ${euiTheme.border.radius.medium};
                     background: ${euiTheme.colors.backgroundBaseSubdued};
@@ -129,21 +114,6 @@ export const SearchInput = ({
                     }
                 `}
             />
-
-            <span
-                css={css`
-                    position: absolute;
-                    right: ${euiTheme.size.m};
-                    display: inline-flex;
-                    align-items: center;
-                    pointer-events: none;
-                    color: ${euiTheme.colors.textDisabled};
-                    font-size: ${euiTheme.font.scale.s * euiTheme.base}px;
-                    line-height: ${euiTheme.base * 1.25}px;
-                `}
-            >
-                {isMac ? '⌘K' : 'Ctrl+K'}
-            </span>
         </div>
     )
 }
