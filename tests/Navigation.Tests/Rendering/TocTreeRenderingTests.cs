@@ -352,6 +352,51 @@ public class TocTreeRenderingTests
 		CountSeparators(html).Should().Be(1);
 	}
 
+	[Fact]
+	public async Task LegacyHeadingRow_RendersTitleWithoutAnEmptyLink()
+	{
+		var model = new NavigationRenderModel
+		{
+			IsUsingNavigationDropdown = false,
+			CurrentTopLevelNavigationTitle = "API",
+			CurrentTopLevelUrl = "/api/doc/es/",
+			DropdownItems = [],
+			BackLinks = [],
+			Tree =
+			[
+				new NavigationRenderNode
+				{
+					Kind = NavigationRenderNodeKind.Heading,
+					IsTopLevel = true,
+					NavigationTitle = "Search & Document APIs",
+					Url = "",
+					Id = "search-docs",
+					ShowToggle = true,
+					NavigationItems =
+					[
+						new NavigationRenderNode
+						{
+							Kind = NavigationRenderNodeKind.Leaf,
+							IsTopLevel = false,
+							NavigationTitle = "Run a search",
+							Url = "/api/doc/es/operation/operation-search"
+						}
+					]
+				}
+			],
+			ContentHash = "legacy-heading",
+			NavigationPreviewEnabled = false
+		};
+
+		var html = await _TocTree.Create(model).RenderAsync(cancellationToken: TestContext.Current.CancellationToken);
+
+		html.Should().Contain("Search &amp; Document APIs");
+		html.Should().NotContain("href=\"\"");
+		html.Should().Contain("href=\"/api/doc/es/operation/operation-search\"");
+		var titleAt = html.IndexOf("Search &amp; Document APIs", StringComparison.Ordinal);
+		html[..titleAt].Should().NotContain("<a ");
+	}
+
 	private static int CountSeparators(string html)
 	{
 		var count = 0;
