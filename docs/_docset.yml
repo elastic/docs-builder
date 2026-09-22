@@ -253,6 +253,10 @@ toc:
           - file: overview.md
             children:
               - file: onboard.md
+                children:
+                  - file: onboard-ad-hoc.md
+                  - file: onboard-unified.md
+                  - file: onboard-serverless.md
               - file: configure.md
                 children:
                   - file: configure-ref.md
