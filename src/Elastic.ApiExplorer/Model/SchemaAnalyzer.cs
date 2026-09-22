@@ -42,8 +42,9 @@ public class SchemaAnalyzer(
 	/// <c>ResolveReference</c> calls through the OpenAPI workspace.
 	/// </summary>
 	/// <returns>
-	/// The concrete <see cref="IOpenApiSchema"/> from <c>Components.Schemas</c>, or the original
-	/// <paramref name="schema"/> when it is not a reference or the reference cannot be resolved.
+	/// The concrete <see cref="IOpenApiSchema"/> from <c>Components.Schemas</c>, or <c>null</c>
+	/// when the reference is external (callers fall back to the proxy) or cannot be resolved.
+	/// Returns <paramref name="schema"/> unchanged when it is not a reference.
 	/// </returns>
 	public IOpenApiSchema? ResolveSchema(IOpenApiSchema? schema)
 	{
@@ -56,6 +57,11 @@ public class SchemaAnalyzer(
 		var refId = schemaRef.Reference.Id;
 		if (string.IsNullOrEmpty(refId))
 			return schemaRef;
+
+		// External $refs (e.g. ../common.yaml#/components/schemas/Error) may share the same Id with
+		// a local component schema. Only cache local refs, which are unambiguous by Id alone.
+		if (!string.IsNullOrEmpty(schemaRef.Reference.ExternalResource))
+			return null;
 
 		if (_cache.TryGetValue(refId, out var cached))
 			return cached ?? schemaRef;
