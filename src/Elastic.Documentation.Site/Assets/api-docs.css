@@ -1859,6 +1859,11 @@ a.type-linked:hover {
 		line-height: 20px;
 		vertical-align: middle;
 	}
+
+	/* Space the URL listing block away from the prose that follows it */
+	div:has(.operation-path) {
+		margin-bottom: 1.5rem;
+	}
 }
 
 /* Example blocks — response card chrome.
