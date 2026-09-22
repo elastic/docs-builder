@@ -149,9 +149,9 @@ The `{table}` directive's `:matrix:` option highlights the whole row *and* colum
 
 ## Filterable table
 
-The `{table}` directive's `:filterable:` option adds a search box and per-column facet dropdowns above the table, so readers can narrow long tables without scrolling. Free-text search matches across every column, and facet dropdowns are generated automatically for columns that have a small number of repeated values (for example a type or status column). Facets combine with search using AND semantics, and a live "Showing N of M" count is announced to assistive technologies.
+The `{table}` directive's `:filterable:` option adds a search box above the table, plus a dropdown filter for each column that has a small number of repeated values — for example a type or status column. Search matches text in every column. Search and filters combine — each one you set narrows the results further. A live "Showing N of M" count is announced to assistive technologies.
 
-The table is rendered server-side and stays fully usable without JavaScript; the controls are added only as a progressive enhancement and are hidden when printing.
+The table is rendered server-side and stays fully usable without JavaScript, because the controls are added only as a progressive enhancement. The filter inputs don't print. A filter stays applied when you print, so a printed filtered table keeps its "Showing N of M" count to show that rows are missing.
 
 :::::{tab-set}
 

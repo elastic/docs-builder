@@ -231,6 +231,14 @@
 			@apply my-0 max-h-[calc(90vh-4rem)] overflow-auto;
 		}
 
+		/* .table-modal-content is items-end, so a flex item sizes to its own
+		   content - a wide table would stretch the host past the dialog and
+		   carry its controls off the left edge. Pin the host to the dialog's
+		   width so .table-wrapper's overflow does the scrolling instead. */
+		filterable-table {
+			@apply flex w-full min-w-0 flex-col;
+		}
+
 		thead th {
 			@apply bg-grey-10 sticky top-0 z-1;
 		}
@@ -242,15 +250,31 @@
 		display: none !important;
 	}
 
-	/* Filter controls are interactive-only; hide them when printing. */
-	.filterable-table-controls {
+	/* The filter inputs are interactive-only, so they never print. The
+	   "Showing N of M" count does, because `hidden` rows stay hidden on
+	   paper - without the count a filtered table prints as a silent subset
+	   that reads like the complete table. An unfiltered table prints with no
+	   controls at all, since there is nothing to disclose. */
+	.filterable-table-search,
+	.filterable-table-facet {
+		display: none !important;
+	}
+
+	filterable-table:not([data-filtered='true']) .filterable-table-controls {
 		display: none !important;
 	}
 }
 
-/* Controls injected by the filterable-table web component (`{table}` :filterable:).
-   Plain CSS (no @apply) so the prototype has no dependency on design tokens. */
+/* Controls injected by the filterable-table web component (`{table}` :filterable:). */
 @layer components {
+	/* A custom element is display:inline by default. The host wraps a
+	   block-level table, and the fullscreen dialog sizes its contents from
+	   this element - left inline, a wide table sizes the whole subtree to its
+	   own width and pushes the controls outside the dialog. */
+	filterable-table {
+		display: block;
+	}
+
 	.filterable-table-controls {
 		display: flex;
 		flex-wrap: wrap;
@@ -262,7 +286,7 @@
 	.filterable-table-search {
 		min-width: 16rem;
 		padding: 0.375rem 0.625rem;
-		border: 1px solid var(--color-grey-30, #d3dae6);
+		border: 1px solid var(--color-grey-30);
 		border-radius: 6px;
 		font-size: 0.875rem;
 	}
@@ -276,7 +300,7 @@
 
 	.filterable-table-facet select {
 		padding: 0.25rem 0.5rem;
-		border: 1px solid var(--color-grey-30, #d3dae6);
+		border: 1px solid var(--color-grey-30);
 		border-radius: 6px;
 		font-size: 0.875rem;
 	}
@@ -284,6 +308,6 @@
 	.filterable-table-status {
 		margin-inline-start: auto;
 		font-size: 0.8125rem;
-		color: var(--color-grey-70, #69707d);
+		color: var(--color-grey-100);
 	}
 }

@@ -146,6 +146,75 @@ public class TableDirectiveWithoutMatrixTests(ITestOutputHelper output) : Direct
 	public void DoesNotRenderMatrixClass() => Html.Should().NotContain("table-matrix");
 }
 
+public class TableDirectiveFilterableTests(ITestOutputHelper output) : DirectiveTest<TableDirectiveBlock>(
+	output,
+	"""
+:::{table}
+:filterable:
+
+| head a | head b |
+| --- | --- |
+| a | b |
+:::
+"""
+)
+{
+	[Fact]
+	public void ParsesFilterableOption() => Block!.Filterable.Should().BeTrue();
+
+	[Fact]
+	public void WrapsTableInHostElement()
+	{
+		Html.Should().Contain("<filterable-table>");
+		Html.Should().Contain("</filterable-table>");
+	}
+
+	[Fact]
+	public void KeepsServerRenderedTableInsideHost() => Html.Should().Contain("<filterable-table><div class=\"table-wrapper\"");
+}
+
+public class TableDirectiveWithoutFilterableTests(ITestOutputHelper output) : DirectiveTest<TableDirectiveBlock>(
+	output,
+	"""
+:::{table}
+| head a | head b |
+| --- | --- |
+| a | b |
+:::
+"""
+)
+{
+	[Fact]
+	public void DoesNotParseFilterableOption() => Block!.Filterable.Should().BeFalse();
+
+	[Fact]
+	public void DoesNotWrapTable() => Html.Should().NotContain("filterable-table");
+}
+
+public class TableDirectiveFilterableWithMatrixAndWidthsTests(ITestOutputHelper output) : DirectiveTest<TableDirectiveBlock>(
+	output,
+	"""
+:::{table}
+:filterable:
+:matrix:
+:widths: 4-8
+
+| head a | head b |
+| --- | --- |
+| a | b |
+:::
+"""
+)
+{
+	[Fact]
+	public void ComposesWithMatrixAndWidths()
+	{
+		Html.Should().Contain("<filterable-table><div class=\"table-wrapper table-matrix\"");
+		Html.Should().Contain("colgroup");
+		Html.Should().Contain("table-layout:fixed");
+	}
+}
+
 public class TableDirectiveWidthCountMismatchTests(ITestOutputHelper output) : DirectiveTest<TableDirectiveBlock>(
 	output,
 	"""

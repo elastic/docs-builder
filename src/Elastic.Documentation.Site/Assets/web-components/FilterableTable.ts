@@ -4,15 +4,26 @@
 
 // Progressive-enhancement custom element for the `{table}` directive's
 // `:filterable:` option. The server renders a normal, fully-usable table; when
-// this module loads, it wraps that table with a search box and per-column facet
-// dropdowns (auto-generated for low-cardinality columns) and shows/hides rows
-// client-side. No framework is required, so there is no hydration cost and the
-// table degrades gracefully when JavaScript is unavailable.
+// this module loads, it wraps that table with a search box and per-column
+// dropdown filters (auto-generated for low-cardinality columns) and shows/hides
+// rows client-side. No framework is required, so there is no hydration cost and
+// the table degrades gracefully when JavaScript is unavailable.
 
-// Columns with at most this many distinct values become facet dropdowns.
+// Columns with at most this many distinct values become dropdown filters.
 const FACET_MAX_DISTINCT = 12
 
+// Sibling web components render their own text lazily - an `applies_to` badge
+// column is empty markup until AppliesToPopover loads - so the values this
+// element reads on upgrade can still be blank. Re-derive the dropdowns once the
+// table has stopped changing for this long.
+const SETTLE_MS = 150
+
+// ...and stop watching after this, so later reader interaction (badge popovers,
+// htmx swaps) can never trigger a rebuild while someone is using the filters.
+const WATCH_CEILING_MS = 5000
+
 type Facet = { colIndex: number; select: HTMLSelectElement }
+type FacetSpec = { colIndex: number; label: string; values: string[] }
 
 class FilterableTableElement extends HTMLElement {
     private table: HTMLTableElement | null = null
@@ -20,6 +31,10 @@ class FilterableTableElement extends HTMLElement {
     private searchInput: HTMLInputElement | null = null
     private facets: Facet[] = []
     private status: HTMLElement | null = null
+    private controls: HTMLElement | null = null
+    private facetSignature = ''
+    private observer: MutationObserver | null = null
+    private settleTimer = 0
 
     connectedCallback(): void {
         // Guard against double-initialization (e.g. htmx re-scans).
@@ -30,7 +45,13 @@ class FilterableTableElement extends HTMLElement {
         this.rows = Array.from(tbody.rows)
         this.buildControls()
         this.applyFilters()
+        this.watchLateContent(tbody)
         this.dataset.enhanced = 'true'
+    }
+
+    disconnectedCallback(): void {
+        window.clearTimeout(this.settleTimer)
+        this.stopWatching()
     }
 
     private headerLabels(): string[] {
@@ -49,6 +70,25 @@ class FilterableTableElement extends HTMLElement {
         return Array.from(values).sort((a, b) => a.localeCompare(b))
     }
 
+    /** The dropdowns the current table content warrants, in column order. */
+    private facetSpecs(): FacetSpec[] {
+        const specs: FacetSpec[] = []
+        this.headerLabels().forEach((label, colIndex) => {
+            const values = this.distinctValues(colIndex)
+            // Only offer a dropdown for columns that partition the data
+            // meaningfully: at least two values, not too many to scan, and not
+            // one-per-row (which is a key column, not a category).
+            if (
+                values.length < 2 ||
+                values.length > FACET_MAX_DISTINCT ||
+                values.length >= this.rows.length
+            )
+                return
+            specs.push({ colIndex, label, values })
+        })
+        return specs
+    }
+
     private buildControls(): void {
         const controls = document.createElement('div')
         controls.className = 'filterable-table-controls'
@@ -62,39 +102,87 @@ class FilterableTableElement extends HTMLElement {
         controls.appendChild(search)
         this.searchInput = search
 
-        this.headerLabels().forEach((label, colIndex) => {
-            const distinct = this.distinctValues(colIndex)
-            // Only facet columns that partition the data meaningfully.
-            if (
-                distinct.length < 2 ||
-                distinct.length > FACET_MAX_DISTINCT ||
-                distinct.length >= this.rows.length
-            )
-                return
-
-            const wrapper = document.createElement('label')
-            wrapper.className = 'filterable-table-facet'
-            wrapper.append(`${label}: `)
-
-            const select = document.createElement('select')
-            select.setAttribute('aria-label', `Filter by ${label}`)
-            select.append(new Option('All', ''))
-            for (const value of distinct)
-                select.append(new Option(value, value))
-            select.addEventListener('change', () => this.applyFilters())
-
-            wrapper.appendChild(select)
-            controls.appendChild(wrapper)
-            this.facets.push({ colIndex, select })
-        })
-
         const status = document.createElement('span')
         status.className = 'filterable-table-status'
+        status.setAttribute('role', 'status')
         status.setAttribute('aria-live', 'polite')
         controls.appendChild(status)
         this.status = status
 
+        this.controls = controls
         this.insertBefore(controls, this.firstChild)
+        this.renderFacets()
+    }
+
+    /**
+     * Builds the dropdowns, or rebuilds them when late-rendering content has
+     * changed what the columns contain. A no-op when nothing changed, so
+     * incidental DOM churn costs nothing.
+     */
+    private renderFacets(): void {
+        const controls = this.controls
+        const status = this.status
+        if (!controls || !status) return
+
+        const specs = this.facetSpecs()
+        const signature = JSON.stringify(specs)
+        if (signature === this.facetSignature) return
+        this.facetSignature = signature
+
+        // Carry over what the reader had chosen, where it still exists.
+        const selected = new Map(
+            this.facets.map((f) => [f.colIndex, f.select.value])
+        )
+        for (const facet of this.facets) facet.select.closest('label')?.remove()
+        this.facets = []
+
+        for (const spec of specs) {
+            const wrapper = document.createElement('label')
+            wrapper.className = 'filterable-table-facet'
+            wrapper.append(`${spec.label}: `)
+
+            const select = document.createElement('select')
+            select.setAttribute('aria-label', `Filter by ${spec.label}`)
+            select.append(new Option('All', ''))
+            for (const value of spec.values)
+                select.append(new Option(value, value))
+
+            const previous = selected.get(spec.colIndex)
+            if (previous && spec.values.includes(previous))
+                select.value = previous
+            select.addEventListener('change', () => this.applyFilters())
+
+            wrapper.appendChild(select)
+            // Keep the count last in the control row.
+            controls.insertBefore(wrapper, status)
+            this.facets.push({ colIndex: spec.colIndex, select })
+        }
+    }
+
+    private watchLateContent(tbody: HTMLTableSectionElement): void {
+        if (typeof MutationObserver === 'undefined') return
+        this.observer = new MutationObserver(() => {
+            window.clearTimeout(this.settleTimer)
+            this.settleTimer = window.setTimeout(() => {
+                const body = this.table?.tBodies[0]
+                if (body) this.rows = Array.from(body.rows)
+                this.renderFacets()
+                this.applyFilters()
+            }, SETTLE_MS)
+        })
+        // Attributes are deliberately not observed: applyFilters() toggles
+        // `hidden` on rows, which would otherwise re-enter this callback.
+        this.observer.observe(tbody, {
+            childList: true,
+            characterData: true,
+            subtree: true,
+        })
+        window.setTimeout(() => this.stopWatching(), WATCH_CEILING_MS)
+    }
+
+    private stopWatching(): void {
+        this.observer?.disconnect()
+        this.observer = null
     }
 
     private applyFilters(): void {
@@ -118,8 +206,15 @@ class FilterableTableElement extends HTMLElement {
             if (show) visible++
         }
 
-        if (this.status)
-            this.status.textContent = `Showing ${visible} of ${this.rows.length}`
+        // Drives the print rule: a printed copy of a filtered table keeps its
+        // count, so it can't be mistaken for the complete table.
+        this.dataset.filtered = String(visible < this.rows.length)
+
+        const text = `Showing ${visible} of ${this.rows.length}`
+        // Only touch the live region when the count really changed, so typing
+        // doesn't queue one announcement per keystroke.
+        if (this.status && this.status.textContent !== text)
+            this.status.textContent = text
     }
 }
 
