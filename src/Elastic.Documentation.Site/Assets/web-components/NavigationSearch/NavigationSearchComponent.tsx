@@ -2,12 +2,15 @@ import { config } from '../../config'
 import '../../eui-icons-cache'
 import { sharedQueryClient } from '../shared/queryClient'
 import { NavigationSearch } from './NavigationSearch'
-import { useSearchActions, type TypeFilter } from './navigationSearch.store'
+import {
+    navigationSearchStore,
+    type TypeFilter,
+} from './navigationSearch.store'
 import { EuiHorizontalRule, EuiProvider, useEuiTheme } from '@elastic/eui'
 import { css } from '@emotion/react'
 import r2wc from '@r2wc/react-to-web-component'
 import { QueryClientProvider, useQuery } from '@tanstack/react-query'
-import { StrictMode, useEffect } from 'react'
+import { StrictMode } from 'react'
 
 interface NavigationSearchProps {
     placeholder?: string
@@ -44,12 +47,14 @@ const NavigationSearchInner = ({
     type,
 }: NavigationSearchProps) => {
     const { euiTheme } = useEuiTheme()
-    const { setTypeFilter } = useSearchActions()
     const typeFilter = parseTypeFilter(type)
 
-    useEffect(() => {
-        setTypeFilter(typeFilter)
-    }, [setTypeFilter, typeFilter])
+    // A cached health check mounts NavigationSearch on this render. An effect
+    // would run after that child's query, so a leftover search term would
+    // request with the previous filter.
+    if (navigationSearchStore.getState().typeFilter !== typeFilter) {
+        navigationSearchStore.getState().actions.setTypeFilter(typeFilter)
+    }
 
     const { data: isApiAvailable } = useQuery({
         queryKey: ['api-health'],

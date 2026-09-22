@@ -65,6 +65,19 @@ describe('NavigationSearchWrapper type attribute', () => {
         })
     })
 
+    it('filters the first query when health is cached and a search term is already set', async () => {
+        sharedQueryClient.setQueryData(['api-health'], true)
+        navigationSearchStore.getState().actions.setSearchTerm('_bulk')
+
+        render(<NavigationSearchWrapper type="api" />)
+
+        await waitFor(() => {
+            const urls = searchRequestUrls()
+            expect(urls.length).toBeGreaterThan(0)
+            expect(urls.every((url) => url.includes('type=api'))).toBe(true)
+        })
+    })
+
     it('leaves the query unfiltered when type is omitted', async () => {
         render(<NavigationSearchWrapper />)
 
