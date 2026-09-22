@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Collections.Concurrent;
 using System.Net;
 using System.Text.Json;
 using Amazon.S3;
@@ -57,18 +58,19 @@ public sealed class NoteAmendReconciler(
 	/// product×version just vanished from the notes index; amend still runs so sidecars can drop.
 	/// </summary>
 	/// <returns>
-	/// Product ids that had an amend-notes write, skip-unchanged, or delete (including when the
-	/// sidecar was already absent). Callers rebuild those products' <c>registry.json</c> and the
-	/// bundle shallow map. Products that were not in the notes map are not returned and are not swept.
+	/// Products that had an amend-notes write, skip-unchanged, or delete (including when the
+	/// sidecar was already absent), plus empty product-scoped notes-index keys to delete after
+	/// those products' registry rebuild succeeds. Products that were not in the notes map are
+	/// not returned and are not swept.
 	/// </returns>
-	public async Task<IReadOnlyList<string>> ReconcileAsync(
+	public async Task<NoteAmendOutcome> ReconcileAsync(
 		ChangelogScope notesScope,
 		IReadOnlyDictionary<string, IReadOnlyDictionary<string, IReadOnlyList<NoteIndexEntry>>> notesByProduct,
 		Cancel ctx
 	)
 	{
 		if (notesByProduct.Count == 0)
-			return [];
+			return new NoteAmendOutcome([], []);
 
 		var groupParts = notesScope.Group.Split('/');
 		var (org, repo) = (groupParts[0], groupParts[1]);
@@ -95,11 +97,11 @@ public sealed class NoteAmendReconciler(
 				_ = touched.Add(product);
 		}
 
-		await RewriteNotesIndexesAsync(org, repo, notesByProduct, seqMap, touched, ctx);
-		return [.. touched];
+		var emptyIndexes = await RewriteNotesIndexesAsync(org, repo, notesByProduct, seqMap, touched, ctx);
+		return new NoteAmendOutcome([.. touched], emptyIndexes);
 	}
 
-	private async Task RewriteNotesIndexesAsync(
+	private async Task<IReadOnlyList<NoteAmendEmptyIndex>> RewriteNotesIndexesAsync(
 		string org,
 		string repo,
 		IReadOnlyDictionary<string, IReadOnlyDictionary<string, IReadOnlyList<NoteIndexEntry>>> notesByProduct,
@@ -109,6 +111,7 @@ public sealed class NoteAmendReconciler(
 	)
 	{
 		var productWrites = notesByProduct.SelectMany(p => p.Value.Select(v => (Product: p.Key, Version: v.Key, Notes: v.Value))).ToList();
+		var emptyIndexes = new ConcurrentBag<NoteAmendEmptyIndex>();
 
 		await Parallel.ForEachAsync(productWrites, new ParallelOptions
 		{
@@ -120,7 +123,7 @@ public sealed class NoteAmendReconciler(
 			if (write.Notes.Count == 0)
 			{
 				if (touchedProducts.Contains(write.Product))
-					await notesIndexReconciler.DeleteIndexAsync(indexKey, ct);
+					emptyIndexes.Add(new NoteAmendEmptyIndex(write.Product, indexKey));
 				return;
 			}
 
@@ -140,6 +143,8 @@ public sealed class NoteAmendReconciler(
 			var indexKey = ChangelogKeys.NotesIndexKey(org, repo, version);
 			await notesIndexReconciler.WriteIndexAsync(indexKey, updatedEntries, ctx);
 		}
+
+		return [.. emptyIndexes];
 	}
 
 	private static List<NoteIndexEntry> WithSeqs(IReadOnlyList<NoteIndexEntry> notes, IReadOnlyDictionary<string, int> seqs) =>
@@ -553,3 +558,12 @@ public sealed class NoteAmendReconciler(
 		return slash >= 0 ? normalized[(slash + 1)..] : normalized;
 	}
 }
+
+/// <summary>
+/// Products whose amend sidecar was written, skipped as unchanged, or deleted, plus product-scoped
+/// notes-index keys that are empty and must be deleted after those products' registry rebuild succeeds.
+/// </summary>
+public sealed record NoteAmendOutcome(IReadOnlyList<string> TouchedProducts, IReadOnlyList<NoteAmendEmptyIndex> EmptyProductIndexes);
+
+/// <summary>A product-scoped notes index with no remaining notes.</summary>
+public sealed record NoteAmendEmptyIndex(string Product, string Key);

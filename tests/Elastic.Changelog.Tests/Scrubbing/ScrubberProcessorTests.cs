@@ -2,7 +2,9 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Net;
 using System.Text.Json;
+using Amazon.S3;
 using AwesomeAssertions;
 using Elastic.Changelog.Reconciliation;
 using Elastic.Changelog.Scrubbing;
@@ -567,6 +569,52 @@ public class ScrubberProcessorTests
 			)!;
 		hostedRegistry.Bundles.Select(b => b.File).Should().BeEquivalentTo([parent, hostedSidecar]);
 		_metrics.GroupReconciles.Should().Be(1);
+	}
+
+	[Fact]
+	public async Task Process_LastNoteRemoved_RegistryWriteFailure_LeavesProductScopedIndex_ThenRetryDeletes()
+	{
+		_ = A.CallTo(() => _scrubber.ScrubAsync(A<string>._, A<string>._, A<Cancel>._)).ReturnsLazily(
+			(string _, string content, Cancel _) => Task.FromResult(new ScrubResult { Content = content })
+		);
+
+		const string product = "elasticsearch";
+		const string version = "9.0.0";
+		const string parent = "elasticsearch-9.0.0.yaml";
+		const string sidecar = "elasticsearch-9.0.0.amend-notes.yaml";
+		const string noteKey = "changelog/elastic/elasticsearch/main/note-late.yml";
+		var productIndex = ChangelogKeys.NotesIndexKey("elastic", "elasticsearch", product, version);
+		var registryKey = $"bundle/{product}/registry.json";
+
+		_s3.Seed(PublicBucket, $"bundle/{product}/{parent}", ProductParentBundle(product, version, "main/pr-100.yaml"));
+		_s3.Seed(PublicBucket, registryKey, ProductRegistryJson(product, version, parent, sidecar));
+		_s3.Seed(PublicBucket, $"bundle/{product}/{sidecar}", ProductParentBundle(product, version, "main/note-late.yml"));
+		_s3.Seed(
+			PublicBucket,
+			productIndex,
+			/*lang=json,strict*/
+			"""{"schema_version":1,"product":"elasticsearch","version":"9.0.0","notes":[{"path":"main/note-late.yml","bundle_seq":2}]}"""
+		);
+		_s3.Seed(
+			PublicBucket,
+			"changelog/elastic/elasticsearch/notes-9.0.0.json",
+			/*lang=json,strict*/
+			"""{"schema_version":1,"notes":[{"path":"main/note-late.yml","bundle_seq":2}]}"""
+		);
+
+		_s3.PutFault =
+			key => key == registryKey ? new AmazonS3Exception("unavailable") { StatusCode = HttpStatusCode.InternalServerError } : null;
+
+		var failed = await _processor.ProcessAsync([Message("ObjectRemoved:Delete", noteKey)], Ctx);
+		failed.Should().NotBeEmpty();
+		_s3.Exists(PublicBucket, $"bundle/{product}/{sidecar}").Should().BeFalse();
+		_s3.Exists(PublicBucket, productIndex).Should().BeTrue();
+
+		_s3.PutFault = null;
+		var failedRetry = await _processor.ProcessAsync([Message("ObjectRemoved:Delete", noteKey)], Ctx);
+		failedRetry.Should().BeEmpty();
+		_s3.Exists(PublicBucket, productIndex).Should().BeFalse();
+		PublicManifest(registryKey).Bundles.Select(b => b.File).Should().Equal(parent);
 	}
 
 	private static string ProductRegistryJson(string product, string version, params string[] files)

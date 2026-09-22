@@ -407,8 +407,8 @@ public sealed class NotesIndexReconciler(
 	}
 
 	/// <summary>
-	/// Deletes a notes-index object. A missing key is success so amend can drop a vanished
-	/// product's index after the sidecar work without racing a prior delete.
+	/// Deletes a notes-index object. A missing key is success so a retry can drop a vanished
+	/// product's index after registry rebuild without racing a prior delete.
 	/// </summary>
 	public async Task DeleteIndexAsync(string key, Cancel ctx)
 	{
