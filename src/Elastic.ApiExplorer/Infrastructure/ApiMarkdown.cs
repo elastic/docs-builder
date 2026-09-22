@@ -30,126 +30,18 @@ public static partial class ApiMarkdown
 		return new HtmlString(SanitizeHtml(html));
 	}
 
-	// Allowlist sanitizer: permits only the tags and attributes produced by bump.sh and
-	// standard Markdig HTML output. Everything else — script, on*, javascript: hrefs, etc.
-	// — is stripped by the library's built-in XSS engine (backed by AngleSharp).
-	private static readonly HtmlSanitizer Sanitizer = BuildSanitizer();
+	// HtmlSanitizer defaults already cover all standard HTML tags and exclude script/on*/etc.
+	// Add class so bump.sh verb/path badges (class="operation-verb get") are kept.
+	private static readonly HtmlSanitizer Sanitizer = new();
 
-	private static HtmlSanitizer BuildSanitizer()
-	{
-		var s = new HtmlSanitizer();
-
-		// Tags present in bump.sh descriptions and standard Markdig output.
-		s.AllowedTags.Clear();
-		foreach (var tag in new[]
-		{
-			"a",
-			"abbr",
-			"b",
-			"blockquote",
-			"br",
-			"caption",
-			"cite",
-			"code",
-			"col",
-			"colgroup",
-			"dd",
-			"del",
-			"details",
-			"dfn",
-			"div",
-			"dl",
-			"dt",
-			"em",
-			"figcaption",
-			"figure",
-			"h1",
-			"h2",
-			"h3",
-			"h4",
-			"h5",
-			"h6",
-			"hr",
-			"i",
-			"img",
-			"ins",
-			"kbd",
-			"li",
-			"mark",
-			"ol",
-			"p",
-			"pre",
-			"q",
-			"s",
-			"samp",
-			"small",
-			"span",
-			"strong",
-			"sub",
-			"summary",
-			"sup",
-			"table",
-			"tbody",
-			"td",
-			"tfoot",
-			"th",
-			"thead",
-			"tr",
-			"u",
-			"ul",
-			"var"
-		})
-			_ = s.AllowedTags.Add(tag);
-
-		// Attributes safe for the above tags.
-		s.AllowedAttributes.Clear();
-		foreach (var attr in new[]
-		{
-			"class",
-			"id",
-			"href",
-			"src",
-			"alt",
-			"title",
-			"width",
-			"height",
-			"colspan",
-			"rowspan",
-			"scope",
-			"start",
-			"type",
-			"reversed",
-			"aria-label",
-			"aria-hidden",
-			"role",
-			"lang",
-			"dir",
-			"target",
-			"rel"
-		})
-			_ = s.AllowedAttributes.Add(attr);
-
-		// Only https/http/mailto schemes in href/src; javascript:, data:, vbscript: are rejected.
-		s.AllowedSchemes.Clear();
-		_ = s.AllowedSchemes.Add("https");
-		_ = s.AllowedSchemes.Add("http");
-		_ = s.AllowedSchemes.Add("mailto");
-
-		return s;
-	}
+	static ApiMarkdown() => Sanitizer.AllowedAttributes.Add("class");
 
 	/// <summary>
 	/// Sanitizes rendered description HTML through an allowlist before it is emitted as
-	/// <see cref="HtmlString"/>. Only tags and attributes produced by bump.sh and standard
-	/// Markdig output are kept; script, on*, javascript:/data: URIs and similar are removed.
+	/// <see cref="HtmlString"/>. Relies on <see cref="HtmlSanitizer"/> defaults (99 allowed
+	/// tags, safe attributes, http/https schemes only) with <c>class</c> added for bump.sh badges.
 	/// </summary>
-	internal static string SanitizeHtml(string html)
-	{
-		if (string.IsNullOrEmpty(html))
-			return html;
-
-		return Sanitizer.Sanitize(html);
-	}
+	internal static string SanitizeHtml(string html) => string.IsNullOrEmpty(html) ? html : Sanitizer.Sanitize(html);
 
 	/// <summary>
 	/// Keeps CommonMark readable: escape mustache substitutions and rewrite intra-API links.
