@@ -1,7 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <TargetFramework>net10.0</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
         <AssemblyName>Elastic.Documentation.Search</AssemblyName>
@@ -17,7 +16,6 @@
 
     <ItemGroup>
       <PackageReference Include="Elastic.Clients.Elasticsearch" />
-      <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
       <PackageReference Include="Microsoft.Extensions.Logging" />
     </ItemGroup>
 

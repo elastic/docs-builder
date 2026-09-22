@@ -1,0 +1,9 @@
+<Project>
+  <!-- MTP.MSBuild 2.x blocks dotnet test via VSTest on SDK 10+ when IsTestingPlatformApplication=true.
+       Setting it false here (after all package targets) restores the VSTest path so
+       xunit.runner.visualstudio can run tests normally. The MTP auto-generated entry point is
+       still compiled in; the xunit runner selects MTP or console mode at startup via CLI args. -->
+  <PropertyGroup>
+    <IsTestingPlatformApplication>false</IsTestingPlatformApplication>
+  </PropertyGroup>
+</Project>

@@ -34,9 +34,5 @@ public sealed record FetchedReleaseNotes
 	/// </summary>
 	public FrozenSet<string> NotFoundDeclaredProducts { get; init; } = [];
 
-	public static FetchedReleaseNotes Empty { get; } = new()
-	{
-		BundlesByProduct = FrozenDictionary<string, IReadOnlyList<LoadedBundle>>.Empty,
-		DeclaredProducts = []
-	};
+	public static FetchedReleaseNotes Empty { get; } = new() { BundlesByProduct = [], DeclaredProducts = [] };
 }

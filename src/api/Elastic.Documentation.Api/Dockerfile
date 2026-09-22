@@ -15,7 +15,7 @@ RUN dnf update -y \
 RUN dnf install -y tar findutils \
     && curl -L https://dot.net/v1/dotnet-install.sh -o dotnet-install.sh \
     && chmod +x ./dotnet-install.sh \
-    && ./dotnet-install.sh
+    && ./dotnet-install.sh --channel 11.0
 ENV PATH="$PATH:/root/.dotnet"
 
 COPY . .
