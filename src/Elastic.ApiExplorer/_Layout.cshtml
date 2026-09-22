@@ -7,6 +7,11 @@
 		if (name == GlobalSections.Head)
 		{
 			<link rel="alternate" type="text/markdown" href="@(Model.MarkdownUrl)" title="Markdown export"/>
+			@if (!string.IsNullOrEmpty(Model.ProductName))
+			{
+				<meta class="elastic" name="product_name" content="@Model.ProductName"/>
+				<meta name="DC.subject" content="@Model.ProductName"/>
+			}
 		}
 		return Task.CompletedTask;
 	}

@@ -2,7 +2,9 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Text.Json;
 using Elastic.Documentation.Navigation;
+using Elastic.Documentation.Site;
 
 namespace Elastic.ApiExplorer.Infrastructure;
 
@@ -35,13 +37,8 @@ public static class ApiBreadcrumbBuilder
 {
 	public const int MaxVisible = 4;
 
-	public static ApiBreadcrumbTrail Build(INavigationItem current, string currentTitle, string? rootTitle)
-	{
-		var items = Collect(current, currentTitle, rootTitle);
-		if (items.Count == 0)
-			return ApiBreadcrumbTrail.Empty;
-		return Split(items);
-	}
+	public static ApiBreadcrumbTrail Build(INavigationItem current, string currentTitle, string? rootTitle) =>
+		Split(Collect(current, currentTitle, rootTitle));
 
 	internal static IReadOnlyList<ApiBreadcrumb> Collect(INavigationItem current, string currentTitle, string? rootTitle)
 	{
@@ -64,6 +61,21 @@ public static class ApiBreadcrumbBuilder
 		var currentLabel = string.IsNullOrWhiteSpace(currentTitle) ? current.NavigationTitle : currentTitle;
 		items.Add(new ApiBreadcrumb(currentLabel, null));
 		return items;
+	}
+
+	internal static string ToJsonLd(IReadOnlyList<ApiBreadcrumb> crumbs, Uri? canonicalBaseUrl)
+	{
+		var baseUri = canonicalBaseUrl ?? new Uri("http://localhost");
+		var position = 1;
+		var items = crumbs.Select(
+			c => new BreadcrumbListItem
+			{
+				Position = position++,
+				Name = c.Title,
+				Item = c.Url is null ? null : new Uri(baseUri, c.Url).ToString()
+			}
+		).ToList();
+		return JsonSerializer.Serialize(new BreadcrumbsList { ItemListElement = items }, BreadcrumbsContext.Default.BreadcrumbsList);
 	}
 
 	internal static ApiBreadcrumbTrail Split(IReadOnlyList<ApiBreadcrumb> items)

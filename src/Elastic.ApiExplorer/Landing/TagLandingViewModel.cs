@@ -43,4 +43,6 @@ public class TagLandingViewModel(ApiRenderContext context) : ApiViewModel(contex
 
 	/// <inheritdoc />
 	protected override string? LayoutPageTitle => Tag.DisplayName;
+
+	protected override string? LayoutPageDescription => DescriptionMarkdown;
 }
