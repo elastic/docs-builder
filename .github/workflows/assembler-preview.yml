@@ -115,7 +115,17 @@ jobs:
           aws configure set default.s3.max_concurrent_requests "${AWS_S3_MAX_CONCURRENT_REQUESTS}"
           aws configure set default.s3.max_queue_size "${AWS_S3_MAX_QUEUE_SIZE}"
 
-          aws s3 sync .artifacts/assembly/${ASSEMBLER_PREVIEW_PATH_PREFIX} "s3://elastic-docs-v3-website-preview/${ASSEMBLER_PREVIEW_PATH_PREFIX}" --delete --no-follow-symlinks
+          # Pre-compress all non-zip files so aws s3 sync ships ~120 MB instead of ~2 GiB.
+          # Zip bundles (llm.zip, okf.zip) are already compressed; syncing them with
+          # content-encoding:gzip would prevent clients from decoding them correctly.
+          find ".artifacts/assembly/${ASSEMBLER_PREVIEW_PATH_PREFIX}" -type f ! -name "*.zip" -print0 \
+            | xargs -0 -P "$(nproc)" -I{} sh -c 'tmp=$(mktemp "$1.tmp.XXXXXX") && gzip -9 -n -c "$1" > "$tmp" && mv -f "$tmp" "$1"' _ {}
+
+          # Sync compressed files with gzip content-encoding; sync zip downloads separately.
+          aws s3 sync ".artifacts/assembly/${ASSEMBLER_PREVIEW_PATH_PREFIX}" "s3://elastic-docs-v3-website-preview/${ASSEMBLER_PREVIEW_PATH_PREFIX}" \
+            --delete --no-follow-symlinks --content-encoding gzip --exclude "*.zip"
+          aws s3 sync ".artifacts/assembly/${ASSEMBLER_PREVIEW_PATH_PREFIX}" "s3://elastic-docs-v3-website-preview/${ASSEMBLER_PREVIEW_PATH_PREFIX}" \
+            --delete --no-follow-symlinks --exclude "*" --include "*.zip"
           aws cloudfront create-invalidation \
             --distribution-id EKT7LT5PM8RKS \
             --paths "/${ASSEMBLER_PREVIEW_PATH_PREFIX}" "/${ASSEMBLER_PREVIEW_PATH_PREFIX}/*"
