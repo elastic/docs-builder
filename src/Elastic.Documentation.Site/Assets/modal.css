@@ -1,9 +1,21 @@
 .modal {
-	@apply fixed inset-0 z-50 flex hidden items-center justify-center bg-black/50;
+	@apply fixed inset-0 z-50 m-auto max-h-none max-w-none items-center justify-center border-0 bg-transparent p-0;
+	width: 100%;
+	height: 100%;
+}
+
+.modal[open] {
+	display: flex;
+}
+
+.modal::backdrop {
+	background: rgb(0 0 0 / 50%);
 }
 
 .modal-content {
 	@apply relative w-full max-w-3xl items-center rounded-lg bg-white p-6 shadow-lg;
+	max-height: calc(100vh - 2rem);
+	overflow: auto;
 }
 
 .modal-content figure {
@@ -23,11 +35,15 @@
 }
 
 .modal-close {
-	@apply absolute top-2 right-4 cursor-pointer transition-colors;
+	@apply text-ink-dark hover:text-ink absolute top-2 right-2 z-10 flex min-h-10 min-w-10 cursor-pointer items-center justify-center rounded-sm bg-white text-2xl font-bold transition-colors;
+}
 
-	& > a {
-		@apply text-ink-dark hover:text-ink text-2xl font-bold no-underline;
-	}
+.image-dialog-trigger {
+	@apply cursor-zoom-in border-0 bg-transparent p-0 text-left;
+}
+
+body:has(dialog.modal[open]) {
+	overflow: hidden;
 }
 
 /* Search or Ask AI animation for secondary buttons */

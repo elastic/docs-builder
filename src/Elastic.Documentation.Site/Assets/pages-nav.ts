@@ -3,6 +3,8 @@ import { throttle } from 'lodash'
 import { $optional, $$optional } from 'select-dom'
 
 const NAV_STATE_KEY = 'nav-expanded'
+let controlsInitialized = false
+let pagesNavTrigger: HTMLButtonElement | null = null
 
 /** Folder clips and height animation follow the preview shell, not a body class. */
 function isNavigationPreview(node?: ParentNode | EventTarget | null) {
@@ -32,11 +34,19 @@ function saveNavState(nav: HTMLElement) {
     }
     collect(nav)
     detachedPanels.get(nav)?.forEach((panel) => collect(panel))
-    const expanded = [...ids]
+    $$optional<HTMLButtonElement>(
+        'button[data-nav-toggle][aria-expanded="true"]',
+        nav
+    ).forEach((button) => {
+        const controlledId = button.getAttribute('aria-controls')
+        if (controlledId) {
+            ids.add(controlledId)
+        }
+    })
     try {
         sessionStorage.setItem(
             expandedStorageKey(nav),
-            JSON.stringify(expanded)
+            JSON.stringify([...ids])
         )
     } catch {
         /* private mode */
@@ -61,6 +71,17 @@ function findFolderInput(nav: HTMLElement, id: string) {
     return null
 }
 
+function setExpanded(button: HTMLButtonElement, expanded: boolean) {
+    const controlledId = button.getAttribute('aria-controls')
+    if (!controlledId) return
+
+    const controlled = document.getElementById(controlledId)
+    if (!controlled) return
+
+    button.setAttribute('aria-expanded', expanded.toString())
+    controlled.hidden = !expanded
+}
+
 function restoreNavState(nav: HTMLElement) {
     let raw: string | null
     try {
@@ -72,6 +93,19 @@ function restoreNavState(nav: HTMLElement) {
     try {
         const ids: string[] = JSON.parse(raw)
         for (const id of ids) {
+            const button =
+                $optional(
+                    `button[data-nav-toggle][aria-controls="${CSS.escape(id)}"]`,
+                    nav
+                ) ??
+                $optional(
+                    `button[data-nav-toggle][aria-controls="${CSS.escape(`nav-subtree-${id}`)}"]`,
+                    nav
+                )
+            if (button instanceof HTMLButtonElement) {
+                setExpanded(button, true)
+                continue
+            }
             const input = findFolderInput(nav, id)
             if (input) {
                 input.checked = true
@@ -82,6 +116,15 @@ function restoreNavState(nav: HTMLElement) {
     }
 }
 
+<<<<<<< HEAD
+function expandAllParents(navItem: HTMLElement) {
+    let parent: HTMLLIElement | null | undefined = navItem?.closest('li')
+    while (parent) {
+        const button = parent.querySelector(
+            ':scope > div > button[data-nav-toggle]'
+        )
+        if (button instanceof HTMLButtonElement) setExpanded(button, true)
+=======
 function clearNavState(nav: ParentNode) {
     try {
         sessionStorage.removeItem(expandedStorageKey(nav))
@@ -479,10 +522,120 @@ function expandAllParents(navItem: HTMLElement) {
                 snapFolderOpen(panel)
             }
         }
+>>>>>>> origin/main
         parent = parent.parentElement?.closest('li')
     }
 }
 
+<<<<<<< HEAD
+function setPagesNavOpen(open: boolean, restoreFocus = false) {
+    const panel = document.querySelector('[data-pages-nav-panel]')
+    const backdrop = document.querySelector('[data-pages-nav-backdrop]')
+    if (!(panel instanceof HTMLElement)) return
+
+    panel.dataset.open = open.toString()
+    if (backdrop instanceof HTMLButtonElement) backdrop.hidden = !open
+    document.body.classList.toggle('overflow-hidden', open)
+    $$optional<HTMLButtonElement>('[data-pages-nav-open]').forEach((button) =>
+        button.setAttribute('aria-expanded', open.toString())
+    )
+
+    if (open) {
+        const closeButton = panel.querySelector('[data-pages-nav-close]')
+        if (closeButton instanceof HTMLButtonElement) closeButton.focus()
+    } else if (restoreFocus) {
+        pagesNavTrigger?.focus()
+    }
+}
+
+function initializeControls() {
+    if (controlsInitialized) return
+    controlsInitialized = true
+
+    document.addEventListener('click', (event) => {
+        if (!(event.target instanceof Element)) return
+
+        const openDropdown = document.querySelector(
+            '[data-pages-dropdown-toggle][aria-expanded="true"]'
+        )
+        if (
+            openDropdown instanceof HTMLButtonElement &&
+            !event.target.closest('#pages-dropdown')
+        ) {
+            setExpanded(openDropdown, false)
+        }
+
+        const openButton = event.target.closest('[data-pages-nav-open]')
+        if (openButton instanceof HTMLButtonElement) {
+            pagesNavTrigger = openButton
+            setPagesNavOpen(true)
+            return
+        }
+
+        if (
+            event.target.closest('[data-pages-nav-close]') ||
+            event.target.closest('[data-pages-nav-backdrop]')
+        ) {
+            setPagesNavOpen(false, true)
+            return
+        }
+
+        const navToggle = event.target.closest('[data-nav-toggle]')
+        if (navToggle instanceof HTMLButtonElement) {
+            setExpanded(
+                navToggle,
+                navToggle.getAttribute('aria-expanded') !== 'true'
+            )
+            const pagesNav = $optional('#pages-nav')
+            if (isDevMode() && pagesNav) saveNavState(pagesNav)
+            return
+        }
+
+        const dropdownToggle = event.target.closest(
+            '[data-pages-dropdown-toggle]'
+        )
+        if (dropdownToggle instanceof HTMLButtonElement) {
+            setExpanded(
+                dropdownToggle,
+                dropdownToggle.getAttribute('aria-expanded') !== 'true'
+            )
+        }
+    })
+
+    document.addEventListener('focusin', (event) => {
+        if (
+            event.target instanceof Element &&
+            !event.target.closest('#pages-dropdown')
+        ) {
+            const openDropdown = document.querySelector(
+                '[data-pages-dropdown-toggle][aria-expanded="true"]'
+            )
+            if (openDropdown instanceof HTMLButtonElement) {
+                setExpanded(openDropdown, false)
+            }
+        }
+    })
+
+    document.addEventListener('keydown', (event) => {
+        if (event.key !== 'Escape') return
+
+        if (document.querySelector('dialog[data-image-dialog][open]')) return
+
+        const openDropdown = document.querySelector(
+            '[data-pages-dropdown-toggle][aria-expanded="true"]'
+        )
+        if (openDropdown instanceof HTMLButtonElement) {
+            setExpanded(openDropdown, false)
+            openDropdown.focus()
+            return
+        }
+
+        const panel = document.querySelector('[data-pages-nav-panel]')
+        if (panel instanceof HTMLElement && panel.dataset.open === 'true') {
+            setPagesNavOpen(false, true)
+        }
+    })
+=======
 function currentInNav(nav: HTMLElement) {
     const live = $optional('.current', nav)
     if (live instanceof HTMLElement) {
@@ -503,6 +656,7 @@ function currentInNav(nav: HTMLElement) {
 
 function getNavScrollContainer(nav: HTMLElement) {
     return nav.querySelector<HTMLElement>('.pages-nav-v2__scroll') ?? nav
+>>>>>>> origin/main
 }
 
 function scrollCurrentNaviItemIntoViewImpl(nav: HTMLElement) {
@@ -559,6 +713,8 @@ export const scrollCurrentNaviItemIntoView = throttle(
     { leading: false, trailing: true }
 )
 
+<<<<<<< HEAD
+=======
 /**
  * Prevents focus-based dropdowns from closing before link navigation completes.
  * Without this, clicking a link inside the dropdown would transfer focus away,
@@ -1192,12 +1348,48 @@ function ensureNavStatePersist() {
     })
 }
 
+>>>>>>> origin/main
 export function initNav() {
+    initializeControls()
+
     const pagesNav = $optional('#pages-nav')
     if (!pagesNav) {
         return
     }
 
+<<<<<<< HEAD
+    if (isDevMode()) {
+        restoreNavState(pagesNav)
+    }
+
+    // Remove current class from all nav items before marking new ones
+    const currentNavItems = $$optional('.current', pagesNav)
+    currentNavItems.forEach((el) => {
+        el.classList.remove('current')
+    })
+
+    // Normalize pathname by removing trailing slash to handle both URL variants
+    const pathname = window.location.pathname.replace(/\/$/, '')
+
+    // When the page is a hidden nav item (e.g. an individual detection rule), the server
+    // emits docs:nav-active pointing to the nearest visible ancestor so we can highlight it.
+    const navActiveMeta = document.querySelector<HTMLMetaElement>(
+        'meta[name="docs:nav-active"]'
+    )
+    const activePathname = navActiveMeta?.content ?? pathname
+
+    const navItems = $$optional(
+        'a[href="' + activePathname + '"], a[href="' + activePathname + '/"]',
+        pagesNav
+    )
+    navItems.forEach((el) => {
+        el.classList.add('current')
+    })
+    scrollCurrentNaviItemIntoView(pagesNav)
+
+    if (isDevMode()) {
+        saveNavState(pagesNav)
+=======
     const dropdownActiveAnchor = $optional(
         '#pages-dropdown a.pages-dropdown_active'
     )
@@ -1231,6 +1423,7 @@ export function initNav() {
     if (currentNavItem && !holdFolderAnim) {
         expandAllParents(currentNavItem)
         applyAncestorHighlight(pagesNav)
+>>>>>>> origin/main
     }
     if (!holdFolderAnim) {
         syncFolderPanels(pagesNav)

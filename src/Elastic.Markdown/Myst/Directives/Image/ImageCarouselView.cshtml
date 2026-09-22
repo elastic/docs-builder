@@ -20,10 +20,15 @@
         @for (int i = 0; i < Model.Images.Count; i++)
         {
             var image = Model.Images[i];
+            var dialogLabel = string.IsNullOrEmpty(image.Alt) ? "Image preview" : $"Image preview: {image.Alt}";
             <div class="carousel-slide" data-index="@i" @(i == 0 ? "data-active=true" : "")>
-                <a class="carousel-image-reference reference internal image-reference" href="javascript:void(0)" data-modal-id="modal-@(image.UniqueImageId)">
+                <button type="button"
+                    class="carousel-image-reference reference internal image-reference image-dialog-trigger"
+                    data-image-dialog-open
+                    aria-controls="modal-@(image.UniqueImageId)"
+                    aria-label="@dialogLabel">
                     <img title="@image.Title" alt="@(image.Alt ?? "")" src="@image.ImageUrl" style="@image.Style" />
-                </a>
+                </button>
             </div>
         }
     </div>
@@ -57,18 +62,15 @@
 @for (int i = 0; i < Model.Images.Count; i++)
 {
     var image = Model.Images[i];
-    <div id="modal-@(image.UniqueImageId)" class="modal"
-        onclick="document.querySelector('#modal-@(image.UniqueImageId) .modal-content').contains(event.target) ? void(0) : document.getElementById('modal-@(image.UniqueImageId)').style.display='none'">
+    var dialogLabel = string.IsNullOrEmpty(image.Alt) ? "Image preview" : $"Image preview: {image.Alt}";
+    <dialog id="modal-@(image.UniqueImageId)" class="modal" data-image-dialog aria-label="@dialogLabel">
         <div class="modal-content">
-            <span class="modal-close">
-                <a href="javascript:void(0);" class="close-button"
-                    onclick="document.getElementById('modal-@(image.UniqueImageId)').style.display='none'">
-                    &times;
-                </a>
-            </span>
-            <a class="reference internal image-reference" href="@image.ImageUrl" target="_blank">
+            <button type="button" class="modal-close" data-image-dialog-close aria-label="Close image preview">
+                <span aria-hidden="true">&times;</span>
+            </button>
+            <a class="reference internal image-reference" href="@image.ImageUrl" target="_blank" rel="noopener" aria-label="Open full-size image in a new tab">
                 <img title="@image.Title" alt="@(image.Alt ?? "")" src="@image.ImageUrl" />
             </a>
         </div>
-    </div>
+    </dialog>
 }

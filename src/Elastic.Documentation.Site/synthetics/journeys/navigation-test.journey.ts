@@ -70,6 +70,39 @@ journey('navigation test', ({ page, params }) => {
         })
     })
 
+    step('Use accessible page navigation and image dialog', async () => {
+        const skipLink = page.getByRole('link', {
+            name: 'Skip to main content',
+        })
+        await skipLink.focus()
+        await skipLink.press('Enter')
+        await expect(page.locator('#main-container')).toBeFocused()
+
+        await expect(
+            page.getByRole('navigation', { name: 'Documentation sections' })
+        ).toBeAttached()
+        await expect(
+            page.getByRole('navigation', {
+                name: 'Page tools and contents',
+            })
+        ).toBeAttached()
+
+        const imageTrigger = page.getByRole('button', {
+            name: 'Image preview: The Elastic platform',
+        })
+        await imageTrigger.click()
+        const dialog = page.getByRole('dialog', {
+            name: 'Image preview: The Elastic platform',
+        })
+        await expect(dialog).toBeVisible()
+        await expect(
+            dialog.getByRole('button', { name: 'Close image preview' })
+        ).toBeFocused()
+        await page.keyboard.press('Escape')
+        await expect(dialog).toBeHidden()
+        await expect(imageTrigger).toBeFocused()
+    })
+
     step(
         'Main content keeps its column while pages nav is absent',
         async () => {
@@ -107,6 +140,18 @@ journey('navigation test', ({ page, params }) => {
     )
 
     step('Click on "deployment options" in nav', async () => {
+<<<<<<< HEAD
+        // Expand a collapsed nav section so we can assert its state survives
+        const expandedId = await page.evaluate(() => {
+            const button = document.querySelector<HTMLButtonElement>(
+                '[id^="nav-tree"] button[data-nav-toggle][aria-expanded="false"]'
+            )
+            button?.click()
+            return button?.getAttribute('aria-controls') ?? null
+        })
+
+=======
+>>>>>>> origin/main
         await page
             .getByRole('link', { name: 'Deployment options' })
             .first()
@@ -125,11 +170,27 @@ journey('navigation test', ({ page, params }) => {
             const navTree = document.querySelector('[id^="nav-tree"]')
             return {
                 noReload: window['__synthNoReload'] === true,
+<<<<<<< HEAD
+                navTreePreserved: navTree?.['__synthOriginal'] === true,
+                sectionStillExpanded: id
+                    ? document
+                          .querySelector(
+                              `button[data-nav-toggle][aria-controls="${CSS.escape(id)}"]`
+                          )
+                          ?.getAttribute('aria-expanded') === 'true'
+                    : null,
+=======
                 navStillPresent: navTree !== null,
+>>>>>>> origin/main
             }
         })
         expect(state.noReload).toBe(true)
+<<<<<<< HEAD
+        expect(state.navTreePreserved).toBe(true)
+        if (expandedId) expect(state.sectionStillExpanded).toBe(true)
+=======
         expect(state.navStillPresent).toBe(true)
+>>>>>>> origin/main
     })
 
     step('Click on "Elastic Cloud" in markdown content', async () => {
@@ -170,9 +231,24 @@ journey('navigation test', ({ page, params }) => {
             expect(state.treeIsNewNode).toBe(true)
     })
 
+<<<<<<< HEAD
+    step('Use dropdown to navigate to reference', async () => {
+        const pagesDropdown = page.locator('#pages-dropdown')
+        const dropdownButton = pagesDropdown.getByRole('button', {
+            name: 'Choose a documentation section',
+        })
+        await dropdownButton.click()
+        await expect(page.locator('#pages-dropdown-menu')).toBeVisible()
+        await page.locator('#markdown-content').click()
+        await expect(page.locator('#pages-dropdown-menu')).toBeHidden()
+
+        await dropdownButton.click()
+        await pagesDropdown
+=======
     step('Navigate to reference via top nav', async () => {
         await page
             .locator('#secondary-nav')
+>>>>>>> origin/main
             .getByRole('link', { name: 'Reference', exact: true })
             .click()
         await expect(page).toHaveURL(`${docsRoot}/reference`)

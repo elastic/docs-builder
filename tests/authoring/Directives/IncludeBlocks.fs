@@ -35,7 +35,7 @@ type ``include hoists anchors and table of contents`` () =
         generator |> converts "index.md" |> toHtml """
             <h1>A Document that lives at the root</h1>
             <div class="heading-wrapper" id="aa">
-                <h2><a class="headerlink" href="#aa">header from snippet</a></h2>
+                <h2><a class="headerlink" href="#aa">header from snippet<span class="headerlink-marker" aria-hidden="true">#</span></a></h2>
             </div>
         """
 
@@ -44,7 +44,7 @@ type ``include hoists anchors and table of contents`` () =
         generator |> converts "test-links.md" |> toHtml """
             <h1>parent.md</h1>
             <div class="heading-wrapper" id="some-header">
-                <h2><a class="headerlink" href="#some-header">some header</a></h2>
+                <h2><a class="headerlink" href="#some-header">some header<span class="headerlink-marker" aria-hidden="true">#</span></a></h2>
             </div>
             <p><a href="/#aa">link to root with included anchor</a></p>
        """
