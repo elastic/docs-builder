@@ -1165,7 +1165,7 @@ public class ChangelogUploadServiceTests
 		).Returns(new GetObjectMetadataResponse { ETag = "\"stale-etag\"" });
 		A.CallTo(() => _s3Client.GetObjectAsync(A<GetObjectRequest>._, A<CancellationToken>._)).Returns(new GetObjectResponse
 		{
-			ResponseStream = new MemoryStream(System.Text.Encoding.UTF8.GetBytes(remoteYaml))
+			ResponseStream = new ReadOnlyMemoryStream(System.Text.Encoding.UTF8.GetBytes(remoteYaml))
 		});
 
 		var args = new ChangelogUploadArguments
@@ -1241,7 +1241,7 @@ public class ChangelogUploadServiceTests
 		).Throws(new AmazonS3Exception("Not Found") { StatusCode = HttpStatusCode.NotFound });
 		A.CallTo(() => _s3Client.GetObjectAsync(A<GetObjectRequest>._, A<CancellationToken>._)).Returns(new GetObjectResponse
 		{
-			ResponseStream = new MemoryStream("title: remote elasticsearch\n"u8.ToArray())
+			ResponseStream = new ReadOnlyMemoryStream("title: remote elasticsearch\n"u8.ToArray())
 		});
 		A.CallTo(() => _s3Client.PutObjectAsync(A<PutObjectRequest>._, A<CancellationToken>._)).Returns(new PutObjectResponse());
 
@@ -1304,7 +1304,7 @@ public class ChangelogUploadServiceTests
 		).Returns(new GetObjectMetadataResponse { ETag = "\"marker-etag\"" });
 		A.CallTo(() => _s3Client.GetObjectAsync(A<GetObjectRequest>._, A<CancellationToken>._)).Returns(new GetObjectResponse
 		{
-			ResponseStream = new MemoryStream("""
+			ResponseStream = new ReadOnlyMemoryStream("""
 				link: "100"
 				"""u8.ToArray())
 		});

@@ -39,7 +39,7 @@ public class ReaderTests
 	[InlineData("yaml", "openapi: 3.1.0\ninfo:\n  title: Test\n  version: 1.0\npaths: {}")]
 	public async Task ReadsStream(string extension, string specification)
 	{
-		var stream = new MemoryStream(Encoding.UTF8.GetBytes(specification));
+		var stream = new ReadOnlyMemoryStream(Encoding.UTF8.GetBytes(specification));
 
 		var document = await OpenApiReader.Instance.ReadAsync(stream, $"openapi.{extension}");
 

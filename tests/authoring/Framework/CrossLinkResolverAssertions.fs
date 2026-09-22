@@ -110,19 +110,14 @@ module CrossLinkResolverAssertions =
     let private baseExpectedUrl = $"https://docs-v3-preview.elastic.dev/elastic/{repoName}/tree/main"
 
     let resolvesTo (inputUrl: string) (expectedPathWithOptionalAnchor: string) =
-        let mutable errors = List.empty
-        let errorEmitter (msg: string) = errors <- msg :: errors
         let inputUri = Uri(inputUrl)
-        let mutable resolvedUri : Uri = Unchecked.defaultof<Uri>
+        let resolution = CrossLinkResolver.Resolve(fetchedLinks, uriResolver, inputUri)
+        let resolvedUri = resolution.ResolvedUri()
 
-        let success = CrossLinkResolver.TryResolve(Action<_>(errorEmitter), fetchedLinks, uriResolver, inputUri, &resolvedUri)
-
-        if not errors.IsEmpty then
-            failwithf $"Resolution for '%s{inputUrl}' failed with errors: %A{errors}"
-
-        test <@ success @>
         match box resolvedUri with
-        | null -> failwithf $"Resolved URI was null for input '%s{inputUrl}' even though TryResolve returned true."
+        | null ->
+            let diagnostic = resolution.ToDiagnosticMessage(inputUri)
+            failwithf $"Resolution for '%s{inputUrl}' failed: %s{diagnostic}"
         | _ ->
             let expectedFullUrl = baseExpectedUrl + expectedPathWithOptionalAnchor
             test <@ resolvedUri.ToString() = expectedFullUrl @>

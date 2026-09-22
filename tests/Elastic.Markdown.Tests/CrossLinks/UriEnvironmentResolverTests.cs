@@ -215,11 +215,11 @@ public class CodexCrossRepoRedirectTests
 		var resolver = new Elastic.Markdown.Tests.TestCodexCrossLinkResolver(useRelativePaths: true);
 		var crossRepoUri = new Uri("kibana://get-started/index.md", UriKind.Absolute);
 
-		var success = resolver.TryResolve(_ => { }, crossRepoUri, out var resolvedUri);
+		var resolution = resolver.Resolve(crossRepoUri);
+		var resolvedUri = resolution.ResolvedUri();
 
-		success.Should().BeTrue();
 		resolvedUri.Should().NotBeNull();
-		resolvedUri.IsAbsoluteUri.Should().BeFalse();
+		resolvedUri!.IsAbsoluteUri.Should().BeFalse();
 		resolvedUri.ToString().Should().Be("/r/kibana/get-started");
 	}
 }
@@ -260,22 +260,17 @@ public class CrossLinkResolverFallbackUrlTests
 			DocSetRegistry.Internal
 		);
 
-		string? emittedError = null;
 		var resolver = new IsolatedBuildEnvironmentUriResolver();
-		var success = CrossLinkResolver.TryResolve(
-			s => emittedError = s,
-			crossLinks,
-			resolver,
-			new Uri("platform-observability-team://index.md", UriKind.Absolute),
-			out _
-		);
+		var crossLinkUri = new Uri("platform-observability-team://index.md", UriKind.Absolute);
+		var resolution = CrossLinkResolver.Resolve(crossLinks, resolver, crossLinkUri);
+		var resolvedUri = resolution.ResolvedUri();
+		var diagnosticMessage = resolution.ToDiagnosticMessage(crossLinkUri);
 
-		success.Should().BeFalse();
-		emittedError.Should().NotBeNull();
-		emittedError.Should().Contain(
+		resolvedUri.Should().BeNull();
+		diagnosticMessage.Should().Contain(
 			"https://github.com/elastic/codex-link-index/blob/main/internal/elastic/platform-observability-team/links.json"
 		);
-		emittedError.Should().NotContain("/main/links.json");
+		diagnosticMessage.Should().NotContain("/main/links.json");
 	}
 
 	[Fact]
@@ -287,18 +282,15 @@ public class CrossLinkResolverFallbackUrlTests
 			DocSetRegistry.Public
 		);
 
-		string? emittedError = null;
 		var resolver = new IsolatedBuildEnvironmentUriResolver();
-		var success = CrossLinkResolver.TryResolve(
-			s => emittedError = s,
-			crossLinks,
-			resolver,
-			new Uri("docs-content://index.md", UriKind.Absolute),
-			out _
-		);
+		var crossLinkUri = new Uri("docs-content://index.md", UriKind.Absolute);
+		var resolution = CrossLinkResolver.Resolve(crossLinks, resolver, crossLinkUri);
+		var resolvedUri = resolution.ResolvedUri();
+		var diagnosticMessage = resolution.ToDiagnosticMessage(crossLinkUri);
 
-		success.Should().BeFalse();
-		emittedError.Should().NotBeNull();
-		emittedError.Should().Contain("https://elastic-docs-link-index.s3.us-east-2.amazonaws.com/elastic/docs-content/main/links.json");
+		resolvedUri.Should().BeNull();
+		diagnosticMessage.Should().Contain(
+			"https://elastic-docs-link-index.s3.us-east-2.amazonaws.com/elastic/docs-content/main/links.json"
+		);
 	}
 }

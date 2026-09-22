@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information
 
 using System.Collections.Frozen;
-using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using Elastic.Documentation.Links.CrossLinks;
 using Elastic.Documentation.Navigation;
@@ -36,12 +35,9 @@ public class StepViewModel : DirectiveViewModel
 	public class StepCrossLinkResolver : ICrossLinkResolver
 	{
 		public static StepCrossLinkResolver Instance { get; } = new();
+
 		/// <inheritdoc />
-		public bool TryResolve(Action<string> errorEmitter, Uri crossLinkUri, [NotNullWhen(true)] out Uri? resolvedUri)
-		{
-			resolvedUri = null;
-			return false;
-		}
+		public LinkResolution Resolve(Uri crossLinkUri) => new LinkResolutionUnavailable();
 
 		/// <inheritdoc />
 		public IUriEnvironmentResolver UriResolver { get; } = new IsolatedBuildEnvironmentUriResolver();

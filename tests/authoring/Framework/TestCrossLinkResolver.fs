@@ -86,8 +86,8 @@ type TestCrossLinkResolver (config: ConfigurationFile) =
 
         member this.UriResolver = uriResolver
 
-        member this.TryResolve(errorEmitter, crossLinkUri, [<Out>]resolvedUri : byref<Uri|null>) =
-            CrossLinkResolver.TryResolve(errorEmitter, crossLinks, uriResolver, crossLinkUri, &resolvedUri)
+        member this.Resolve(crossLinkUri) =
+            CrossLinkResolver.Resolve(crossLinks, uriResolver, crossLinkUri)
 
         member this.IsDeclaredCrossLinkScheme(scheme) =
             declared.Contains(scheme)

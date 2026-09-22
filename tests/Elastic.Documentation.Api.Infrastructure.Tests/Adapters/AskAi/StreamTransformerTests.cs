@@ -76,7 +76,7 @@ public class AgentBuilderStreamTransformerTests
 
 			""";
 
-		var inputStream = new MemoryStream(Encoding.UTF8.GetBytes(sseData));
+		var inputStream = new ReadOnlyMemoryStream(Encoding.UTF8.GetBytes(sseData));
 
 		// Act - No generated ID (Agent Builder handles IDs in stream)
 		var outputStream = await _transformer.TransformAsync(inputStream, generatedConversationId: null, null, CancellationToken.None);
@@ -139,7 +139,7 @@ public class AgentBuilderStreamTransformerTests
 
 			""";
 
-		var inputStream = new MemoryStream(Encoding.UTF8.GetBytes(sseData));
+		var inputStream = new ReadOnlyMemoryStream(Encoding.UTF8.GetBytes(sseData));
 
 		// Act
 		var outputStream = await _transformer.TransformAsync(inputStream, generatedConversationId: null, null, CancellationToken.None);
@@ -163,7 +163,7 @@ public class AgentBuilderStreamTransformerTests
 
 			""";
 
-		var inputStream = new MemoryStream(Encoding.UTF8.GetBytes(sseData));
+		var inputStream = new ReadOnlyMemoryStream(Encoding.UTF8.GetBytes(sseData));
 
 		// Act
 		var outputStream = await _transformer.TransformAsync(inputStream, generatedConversationId: null, null, CancellationToken.None);
@@ -212,7 +212,7 @@ public class LlmGatewayStreamTransformerTests
 
 			""";
 
-		var inputStream = new MemoryStream(Encoding.UTF8.GetBytes(sseData));
+		var inputStream = new ReadOnlyMemoryStream(Encoding.UTF8.GetBytes(sseData));
 
 		// Act - Simulate new conversation to get ConversationStart event
 		var testConversationId = Guid.NewGuid().ToString();
@@ -279,7 +279,7 @@ public class LlmGatewayStreamTransformerTests
 
 			""";
 
-		var inputStream = new MemoryStream(Encoding.UTF8.GetBytes(sseData));
+		var inputStream = new ReadOnlyMemoryStream(Encoding.UTF8.GetBytes(sseData));
 
 		// Act - Simulate new conversation
 		var testConversationId = Guid.NewGuid().ToString();
@@ -306,7 +306,7 @@ public class LlmGatewayStreamTransformerTests
 
 			""";
 
-		var inputStream = new MemoryStream(Encoding.UTF8.GetBytes(sseData));
+		var inputStream = new ReadOnlyMemoryStream(Encoding.UTF8.GetBytes(sseData));
 
 		// Act - Simulate new conversation
 		var testConversationId = Guid.NewGuid().ToString();
@@ -365,7 +365,7 @@ public class StreamTransformerCommonBehaviorTests
 	)
 	{
 		// Arrange
-		var inputStream = new MemoryStream(Encoding.UTF8.GetBytes(sseData));
+		var inputStream = new ReadOnlyMemoryStream(Encoding.UTF8.GetBytes(sseData));
 		var testConversationId = Guid.NewGuid().ToString();
 
 		// Act - Pass isNewConversation: true to simulate new conversation
@@ -394,7 +394,7 @@ public class StreamTransformerCommonBehaviorTests
 	)
 	{
 		// Arrange
-		var inputStream = new MemoryStream(Encoding.UTF8.GetBytes(sseData));
+		var inputStream = new ReadOnlyMemoryStream(Encoding.UTF8.GetBytes(sseData));
 		var testConversationId = Guid.NewGuid().ToString();
 
 		// Act
@@ -420,7 +420,7 @@ public class StreamTransformerCommonBehaviorTests
 	public async Task TransformAsyncConversationStartEventHasValidId(string transformerName, IStreamTransformer transformer, string sseData)
 	{
 		// Arrange
-		var inputStream = new MemoryStream(Encoding.UTF8.GetBytes(sseData));
+		var inputStream = new ReadOnlyMemoryStream(Encoding.UTF8.GetBytes(sseData));
 		var testConversationId = Guid.NewGuid().ToString();
 
 		// Act

@@ -301,7 +301,7 @@ internal sealed class MockHttpMessageHandler : HttpMessageHandler
 
 	public void SetResponse(string content, string contentType)
 	{
-		var stream = new MemoryStream(Encoding.UTF8.GetBytes(content));
+		var stream = new ReadOnlyMemoryStream(Encoding.UTF8.GetBytes(content));
 		_responseToReturn = new HttpResponseMessage(HttpStatusCode.OK)
 		{
 			Content = new StreamContent(stream)

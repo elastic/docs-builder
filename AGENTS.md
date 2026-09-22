@@ -124,7 +124,9 @@ Beyond what `.editorconfig` can check:
 - **Complexity**: max 5–7 branches per method. Extract named helpers rather than nesting.
 - **Early returns**: guard clauses first, happy path last.
 - **Parameters**: max 4 — use a record/options object beyond that. Boolean params must be named at call sites.
-- **Collections**: never return `null` — return `[]`. Use the TryGet pattern for lookups.
+- **Collections**: never return `null` — return `[]`.
+- **Results**: a method with more than one outcome returns a `union` — not `bool` + `out`, not a `bool Success` + a nullable payload, not a `(bool, T?)` tuple. Case types are top-level; prefix with the union name only when the bare name would be too generic at a match site (e.g. `LinkResolved` not `Resolved`). The one documented exception is a genuine keyed lookup, where `bool TryGetX(key, out value)` with `false` meaning "absent" is idiomatic and sufficient. If the `out` parameter carries an error message or an exception, it is not a lookup — use a union. Never assign a meaningful value to an `out` parameter on the failure path. Exhaustive switches over unions are enforced by CS8509, which this repo already treats as an error (`TreatWarningsAsErrors=true`).
+- **Sealed hierarchies**: annotate an `abstract` type as `closed` instead when all its subtypes live in the same assembly and the set is intentionally finite. `closed` is implicitly abstract — remove the `abstract` keyword. Wire types that use `[JsonPolymorphic]` use `closed`, not `union` — `closed` does not change the serialization representation; `union` does.
 - **Testing**: xUnit v3 with AwesomeAssertions fluent style is the current standard (see Testing section — TUnit is a future migration target, not yet used). Method naming: `Method_Scenario_Expected`.
 - **Comments**: only when *why* is non-obvious. No `#region`. No multi-paragraph docstrings.
 

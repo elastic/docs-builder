@@ -302,7 +302,7 @@ public class TagMetadataTests
 		var generator = new OpenApiGenerator(NullLoggerFactory.Instance, context, NoopMarkdownStringRenderer.Instance);
 
 		// Parse the OpenAPI spec directly from JSON using a stream
-		using var stream = new MemoryStream(System.Text.Encoding.UTF8.GetBytes(openApiJson));
+		using var stream = new ReadOnlyMemoryStream(System.Text.Encoding.UTF8.GetBytes(openApiJson));
 		var settings = new OpenApiReaderSettings { LeaveStreamOpen = false };
 		var result = await OpenApiDocument.LoadAsync(stream, settings: settings);
 

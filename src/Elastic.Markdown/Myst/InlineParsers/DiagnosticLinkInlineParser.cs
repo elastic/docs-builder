@@ -9,6 +9,7 @@ using System.Text.RegularExpressions;
 using Elastic.Documentation;
 using Elastic.Documentation.Extensions;
 using Elastic.Documentation.Links;
+using Elastic.Documentation.Links.CrossLinks;
 using Elastic.Markdown.Diagnostics;
 using Elastic.Markdown.Helpers;
 using Elastic.Markdown.IO;
@@ -192,12 +193,18 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 		if (url != null)
 			context.Build.Collector.EmitCrossLink(url);
 
-		if (context.CrossLinkResolver.TryResolve(s => processor.EmitError(link, s), uri, out var resolvedUri))
+		var resolution = context.CrossLinkResolver.Resolve(uri);
+		if (resolution is LinkResolutionUnavailable)
+			return;
+		var resolvedUri = resolution.ResolvedUri();
+		if (resolvedUri is not null)
 		{
 			link.Url = resolvedUri.ToString();
 			if (resolvedUri.IsAbsoluteUri && context.Build.BuildType == BuildType.Isolated)
 				link.SetData("isCrossLink", false);
 		}
+		else
+			processor.EmitError(link, resolution.ToDiagnosticMessage(uri));
 
 		// Emit error for empty link text in crosslinks
 		if (link.FirstChild == null)
