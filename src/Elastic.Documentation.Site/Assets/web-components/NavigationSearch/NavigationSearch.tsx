@@ -47,7 +47,8 @@ export const NavigationSearch = ({
     const { setSearchTerm } = useSearchActions()
     const isSearchCooldownActive = useIsNavigationSearchCooldownActive()
     const { isLoading, isFetching, data } = useNavigationSearchQuery(typeFilter)
-    const { trackOpened, trackClosed } = useNavigationSearchTelemetry()
+    const { trackOpened, trackClosed } =
+        useNavigationSearchTelemetry(typeFilter)
 
     const results = data?.results ?? []
     const hasContent = !!searchTerm.trim()
@@ -73,6 +74,7 @@ export const NavigationSearch = ({
         isLoading: isSearching,
         onClose: () => setIsPopoverOpen(false),
         onNavigate: handleResultClick,
+        typeFilter,
     })
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -213,6 +215,12 @@ const KEYBOARD_SHORTCUTS = [
     { keys: ['Esc'], label: 'Close' },
 ]
 
+const API_KEYBOARD_SHORTCUTS = [
+    { keys: ['returnKey'], label: 'Jump to API' },
+    { keys: ['sortUp', 'sortDown'], label: 'Navigate' },
+    { keys: ['Esc'], label: 'Close' },
+]
+
 interface SearchDropdownContentProps {
     isKeyboardNavigating: React.MutableRefObject<boolean>
     onMouseMove: () => void
@@ -234,15 +242,17 @@ const SearchDropdownContent = ({
                 onResultClick={onResultClick}
                 typeFilter={typeFilter}
             />
-            <SearchDropdownFooter />
+            <SearchDropdownFooter typeFilter={typeFilter} />
         </>
     )
 }
 
-const SearchDropdownFooter = () => {
+const SearchDropdownFooter = ({ typeFilter }: { typeFilter: TypeFilter }) => {
     const { euiTheme } = useEuiTheme()
     const { fontSize: sFontsize, lineHeight: sLineHeight } = useEuiFontSize('s')
     const isMobile = useIsWithinMaxBreakpoint('s')
+    const shortcuts =
+        typeFilter === 'api' ? API_KEYBOARD_SHORTCUTS : KEYBOARD_SHORTCUTS
 
     return (
         <div
@@ -306,7 +316,7 @@ const SearchDropdownFooter = () => {
                         gap: ${euiTheme.size.base};
                     `}
                 >
-                    {KEYBOARD_SHORTCUTS.map((shortcut, index) => (
+                    {shortcuts.map((shortcut, index) => (
                         <KeyboardShortcutItem
                             key={index}
                             keys={shortcut.keys}

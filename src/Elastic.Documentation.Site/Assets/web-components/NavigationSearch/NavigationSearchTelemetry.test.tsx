@@ -316,4 +316,37 @@ describe('Navigation Search Result Click Tracking', () => {
             })
         )
     })
+
+    it('includes navigation_search.surface=api on opened, closed, and result_clicked', async () => {
+        renderWithProviders(<NavigationSearch typeFilter="api" />)
+        const input = screen.getByPlaceholderText(/jump to/i)
+
+        await userEvent.click(input)
+        expect(logging.logInfo).toHaveBeenCalledWith(
+            'navigation_search_opened',
+            expect.objectContaining({
+                'navigation_search.surface': 'api',
+            })
+        )
+
+        await userEvent.type(input, 'bulk')
+        jest.clearAllMocks()
+        await userEvent.keyboard('{Escape}')
+        expect(logging.logInfo).toHaveBeenCalledWith(
+            'navigation_search_closed',
+            expect.objectContaining({
+                'navigation_search.surface': 'api',
+            })
+        )
+
+        const props = createResultsListProps()
+        renderWithProviders(<SearchResultsList {...props} typeFilter="api" />)
+        await userEvent.click(screen.getByText('Elasticsearch Guide'))
+        expect(logging.logInfo).toHaveBeenCalledWith(
+            'navigation_search_result_clicked',
+            expect.objectContaining({
+                'navigation_search.surface': 'api',
+            })
+        )
+    })
 })
