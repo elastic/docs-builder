@@ -287,8 +287,10 @@
 /*
  * Labeled HTTP method chips on operation/overview pages — Figma APIs node 10067:6424.
  * Icon + uppercase label, 24px tall, 8px radius. Sidebar glyphs stay in .nav-v2-api-method.
+ * .api-operation-description .operation-verb shares the same base; size overrides live there.
  */
-.api-method {
+.api-method,
+.api-operation-description .operation-verb {
 	display: inline-flex;
 	flex-shrink: 0;
 	align-items: center;
@@ -335,29 +337,37 @@
 	transform: rotate(180deg);
 }
 
-.api-method-get {
+.api-method-get,
+.api-operation-description .operation-verb.get {
 	background-color: #c9f3e3;
 	border-color: #aee8d2;
 	color: #008a5e;
 }
-.api-method-post {
+.api-method-post,
+.api-operation-description .operation-verb.post {
 	background-color: #d9e8ff;
 	border-color: #bfdbff;
 	color: #0b64dd;
 }
 .api-method-put,
-.api-method-patch {
+.api-method-patch,
+.api-operation-description .operation-verb.put,
+.api-operation-description .operation-verb.patch {
 	background-color: #ffdebf;
 	border-color: #ffcda1;
 	color: #ed6723;
 }
-.api-method-delete {
+.api-method-delete,
+.api-operation-description .operation-verb.delete {
 	background-color: #fdddd8;
 	border-color: #ffc9c2;
 	color: #c61e25;
 }
 .api-method-head,
-.api-method-options {
+.api-method-options,
+.api-operation-description .operation-verb.head,
+.api-operation-description .operation-verb.options,
+.api-operation-description .operation-verb {
 	background-color: #fff;
 	border-color: #cad3e2;
 	color: #5a6d8c;
@@ -1791,61 +1801,14 @@ a.type-linked:hover {
 		text-decoration: underline;
 	}
 
-	/* bump.sh HTML classes that slip through into OAS description HTML.
-	   Styled to match .api-method / .api-url but at the smaller size used
-	   in .api-description-url-listing (18 px badge, 13 px path). */
+	/* bump.sh verb badge — inherits .api-method base and color rules; only size differs */
 	.operation-verb {
-		display: inline-flex;
-		flex-shrink: 0;
-		align-items: center;
-		justify-content: center;
-		box-sizing: border-box;
 		height: 18px;
 		padding: 0 4px;
-		border: 1px solid;
 		border-radius: 5px;
-		font-family: var(
-			--font-body,
-			Inter,
-			ui-sans-serif,
-			system-ui,
-			sans-serif
-		);
 		font-size: 10px;
-		font-weight: 500;
 		line-height: 12px;
-		text-transform: uppercase;
-		white-space: nowrap;
 		vertical-align: middle;
-		/* default: neutral gray (HEAD/OPTIONS/unknown) */
-		background-color: #fff;
-		border-color: #cad3e2;
-		color: #5a6d8c;
-	}
-
-	.operation-verb.get {
-		background-color: #c9f3e3;
-		border-color: #aee8d2;
-		color: #008a5e;
-	}
-
-	.operation-verb.post {
-		background-color: #d9e8ff;
-		border-color: #bfdbff;
-		color: #0b64dd;
-	}
-
-	.operation-verb.put,
-	.operation-verb.patch {
-		background-color: #ffdebf;
-		border-color: #ffcda1;
-		color: #ed6723;
-	}
-
-	.operation-verb.delete {
-		background-color: #fdddd8;
-		border-color: #ffc9c2;
-		color: #c61e25;
 	}
 
 	.operation-path {
