@@ -190,7 +190,6 @@ public partial class ApiPagesNavRenderingTests
 		);
 		return new()
 		{
-			DocsBuilderVersion = "test",
 			DocSetName = "Api Explorer",
 			Description = string.Empty,
 			CurrentNavigationItem = new LandingNavigationItem(navigationUrl).Index,

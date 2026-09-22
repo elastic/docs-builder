@@ -53,7 +53,6 @@ public class LandingLayoutRenderingTests(ITestOutputHelper output) : Documentati
 
 		var model = new MarkdownLayoutViewModel
 		{
-			DocsBuilderVersion = "test",
 			DocSetName = "test",
 			Description = "",
 			CurrentNavigationItem = currentNavItem,
