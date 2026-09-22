@@ -118,8 +118,7 @@ public class BundleGitRefTests(ITestOutputHelper output) : ChangelogTestBase(out
 		StubHandler handler,
 		IGitHubCommitRangeService rangeService,
 		IGitHubPrService? prService = null
-	) =>
-		new(LoggerFactory, FileSystem, ConfigurationContext, null, Fetcher(handler), prService ?? A.Fake<IGitHubPrService>(), rangeService);
+	) => new(LoggerFactory, FileSystem, ConfigurationContext, Fetcher(handler), prService ?? A.Fake<IGitHubPrService>(), rangeService);
 
 	[Fact]
 	public async Task ProfileMode_PoolFirstWithInferredFallback_WritesBundleWithGitRef()

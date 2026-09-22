@@ -574,8 +574,10 @@ public class ChangelogUploadService(
 		AddUnique(dirs, seen, config?.Bundle?.OutputDirectory);
 		if (config?.Bundle?.Profiles != null)
 		{
+#pragma warning disable CS0618
 			foreach (var profile in config.Bundle.Profiles.Values)
 				AddUnique(dirs, seen, profile.OutputDirectory);
+#pragma warning restore CS0618
 		}
 
 		if (dirs.Count == 0)
