@@ -205,7 +205,7 @@ public class ApiNavParityTests
 		context.Configuration.Features.ApiNavGroupingEnabled = apiNavGroupingEnabled;
 		var generator = new OpenApiGenerator(NullLoggerFactory.Instance, context, NoopMarkdownStringRenderer.Instance);
 
-		using var stream = new MemoryStream(System.Text.Encoding.UTF8.GetBytes(openApiJson));
+		using var stream = new ReadOnlyMemoryStream(System.Text.Encoding.UTF8.GetBytes(openApiJson));
 		var settings = new OpenApiReaderSettings { LeaveStreamOpen = false };
 		var result = await OpenApiDocument.LoadAsync(stream, settings: settings);
 		var parseErrors = result.Diagnostic?.Errors;
