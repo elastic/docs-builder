@@ -175,14 +175,15 @@ public partial record OperationPageModel
 	{
 		var operation = apiOperation.Operation;
 		var document = context.Model;
-		var analyzer = new SchemaAnalyzer(document);
+		var analyzer = new SchemaAnalyzer(document, resolveCache: context.SchemaResolveCache);
 		var supplemental = operation.OperationId is { Length: > 0 } operationId
 			&& context.OperationSupplemental.TryGetValue(operationId, out var doc) ? doc : null;
 		var options = new PropertyDisplayOptions
 		{
 			RenderMarkdown = markdown => ApiMarkdown.Render(context, markdown),
 			ApiRootUrl = context.CurrentNavigation.NavigationRoot.Url,
-			VersionsConfiguration = context.BuildContext.VersionsConfiguration
+			VersionsConfiguration = context.BuildContext.VersionsConfiguration,
+			SchemaResolveCache = context.SchemaResolveCache
 		};
 		var builder = new ApiPropertyTreeBuilder(document, options);
 
