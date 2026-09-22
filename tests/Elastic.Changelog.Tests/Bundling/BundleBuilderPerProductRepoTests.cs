@@ -9,10 +9,16 @@ using Elastic.Documentation.ReleaseNotes;
 
 namespace Elastic.Changelog.Tests.Bundling;
 
-public class BundleBuilderPerProductRepoTests()
+public class BundleBuilderPerProductRepoTests() : IAsyncDisposable
 {
 	private readonly TestDiagnosticsCollector _collector = new();
 	private readonly BundleBuilder _builder = new();
+
+	public async ValueTask DisposeAsync()
+	{
+		await _collector.DisposeAsync();
+		GC.SuppressFinalize(this);
+	}
 
 	private static MatchedChangelogFile MakeEntry(string productId, string version = "9.0.0") =>
 		new()

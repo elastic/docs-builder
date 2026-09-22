@@ -327,13 +327,12 @@ public class LlmGatewayStreamTransformerTests
 /// </summary>
 public class StreamTransformerCommonBehaviorTests
 {
-	public static IEnumerable<(string, IStreamTransformer, string)> StreamTransformerTestCases()
+	public static IEnumerable<Func<(string, IStreamTransformer, string)>> StreamTransformerTestCases()
 	{
-		yield return ("AgentBuilderStreamTransformer", new AgentBuilderStreamTransformer(
-			NullLogger<AgentBuilderStreamTransformer>.Instance
-		),
-		// Agent Builder SSE format for conversation_id_set
-		"""
+		yield return () =>
+			("AgentBuilderStreamTransformer", new AgentBuilderStreamTransformer(NullLogger<AgentBuilderStreamTransformer>.Instance),
+			// Agent Builder SSE format for conversation_id_set
+			"""
 			event: conversation_id_set
 			data: {"data":{"conversation_id":"360222c5-76aa-405a-8316-703e1061b621"}}
 
@@ -341,9 +340,10 @@ public class StreamTransformerCommonBehaviorTests
 			data: {"data":{"text_chunk":"test"}}
 
 			""");
-		yield return ("LlmGatewayStreamTransformer", new LlmGatewayStreamTransformer(NullLogger<LlmGatewayStreamTransformer>.Instance),
-		// LLM Gateway SSE format - minimal events
-		"""
+		yield return () =>
+			("LlmGatewayStreamTransformer", new LlmGatewayStreamTransformer(NullLogger<LlmGatewayStreamTransformer>.Instance),
+			// LLM Gateway SSE format - minimal events
+			"""
 			event: agent_stream_output
 			data: [null, {"type":"ai_message_chunk","id":"1","timestamp":1234567890,"data":{"content":"test"}}]
 

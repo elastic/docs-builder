@@ -332,7 +332,6 @@ public class BundleOutputConventionTests() : ChangelogTestBase()
 			Entry,
 			TestContext.Current!.Execution.CancellationToken
 		);
-		_changelogDir = changelogDir;
 
 		var configPath = FileSystem.Path.Join(gitRoot, "docs", "changelog.yml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);

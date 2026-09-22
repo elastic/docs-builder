@@ -22,7 +22,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 namespace Elastic.Changelog.Tests.Uploading;
 
 [SuppressMessage("Usage", "CA1001:Types that own disposable fields should be disposable")]
-public class ChangelogUploadServiceTests
+public class ChangelogUploadServiceTests : IAsyncDisposable
 {
 	private readonly MockFileSystem _mockFileSystem;
 	private readonly ChangelogFileSystem _fileSystem;
@@ -39,6 +39,12 @@ public class ChangelogUploadServiceTests
 		_collector = new TestDiagnosticsCollector();
 		_changelogDir = _mockFileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog");
 		_mockFileSystem.Directory.CreateDirectory(_changelogDir);
+	}
+
+	public async ValueTask DisposeAsync()
+	{
+		await _collector.DisposeAsync();
+		GC.SuppressFinalize(this);
 	}
 
 	private string AddChangelog(string fileName, string yaml)
@@ -650,6 +656,7 @@ public class ChangelogUploadServiceTests
 	[Test]
 	public void CollectBundleScanDirectories_IncludesGlobalAndProfileDirectories()
 	{
+#pragma warning disable CS0618
 		var config = new ChangelogConfiguration
 		{
 			Bundle = new BundleConfiguration
@@ -662,6 +669,7 @@ public class ChangelogUploadServiceTests
 				}
 			}
 		};
+#pragma warning restore CS0618
 
 		ChangelogUploadService.CollectBundleScanDirectories(null, config).Should().Equal("docs/releases", "docs/releases/cloud-serverless");
 	}
@@ -711,6 +719,7 @@ public class ChangelogUploadServiceTests
 			.ContainSingle(t => t.S3Key.Contains("kibana-kibana-9.3.0.yaml"));
 		_service.DiscoverBundleUploadTargets(_collector, globalDir).Should().NotContain(t => t.LocalPath == nestedPath);
 
+#pragma warning disable CS0618
 		var config = new ChangelogConfiguration
 		{
 			Bundle = new BundleConfiguration
@@ -719,6 +728,7 @@ public class ChangelogUploadServiceTests
 				Profiles = new Dictionary<string, BundleProfile> { ["serverless-release"] = new() { OutputDirectory = profileDir } }
 			}
 		};
+#pragma warning restore CS0618
 		var scanDirs = ChangelogUploadService.CollectBundleScanDirectories(null, config);
 		var targets = scanDirs.SelectMany(d => _service.DiscoverBundleUploadTargets(_collector, d)).ToList();
 

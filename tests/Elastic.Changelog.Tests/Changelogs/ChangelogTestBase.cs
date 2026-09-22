@@ -137,6 +137,7 @@ public abstract class ChangelogTestBase : IDisposable
 
 	public void Dispose()
 	{
+		Collector.DisposeAsync().AsTask().GetAwaiter().GetResult();
 		LoggerFactory.Dispose();
 		GC.SuppressFinalize(this);
 	}

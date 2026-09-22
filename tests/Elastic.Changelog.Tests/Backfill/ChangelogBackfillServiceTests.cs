@@ -14,8 +14,7 @@ using Nullean.ScopedFileSystem;
 
 namespace Elastic.Changelog.Tests.Backfill;
 
-[SuppressMessage("Usage", "CA1001:Types that own disposable fields should be disposable")]
-public class ChangelogBackfillServiceTests
+public class ChangelogBackfillServiceTests : IAsyncDisposable
 {
 	private static readonly string[] InScopeVersions = ["1.10.0", "1.9.0", "1.7.0", "1.4.1"];
 
@@ -32,6 +31,13 @@ public class ChangelogBackfillServiceTests
 		_httpHandler = new StubHandler(
 			_ => new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(ReleaseNotesFixture.Markdown) }
 		);
+	}
+
+	public async ValueTask DisposeAsync()
+	{
+		await _collector.DisposeAsync();
+		_httpHandler.Dispose();
+		GC.SuppressFinalize(this);
 	}
 
 	private ChangelogBackfillService CreateService() => new(NullLoggerFactory.Instance, _fileSystem, _httpHandler);

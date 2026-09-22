@@ -10,10 +10,16 @@ using Elastic.Documentation.Diagnostics;
 
 namespace Elastic.Changelog.Tests.Bundling;
 
-public class ValidateBundleRepoTests()
+public class ValidateBundleRepoTests() : IAsyncDisposable
 {
 	private readonly TestDiagnosticsCollector _collector = new();
 	private readonly MockFileSystem _fileSystem = new();
+
+	public async ValueTask DisposeAsync()
+	{
+		await _collector.DisposeAsync();
+		GC.SuppressFinalize(this);
+	}
 
 	[Test]
 	public void ValidateBundleRepo_UnsetBundleRepo_EmitsNothing()

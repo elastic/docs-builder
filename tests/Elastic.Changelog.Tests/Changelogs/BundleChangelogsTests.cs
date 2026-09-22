@@ -6344,7 +6344,9 @@ public class BundleChangelogsTests : ChangelogTestBase
 			All = true,
 			Output = outputPath,
 			OutputProducts = [new() { Product = "cloud-serverless", Target = "2026-09-08", Lifecycle = "ga" }],
+#pragma warning disable CS0618
 			LinkAllowRepos = ["elastic/elasticsearch"]
+#pragma warning restore CS0618
 		};
 
 		var result = await service.BundleChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);

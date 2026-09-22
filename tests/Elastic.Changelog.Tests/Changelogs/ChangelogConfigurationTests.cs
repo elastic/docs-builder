@@ -957,8 +957,10 @@ public class ChangelogConfigurationTests() : ChangelogTestBase()
 			config.Should().NotBeNull();
 			Collector.Errors.Should().Be(0);
 			config.Bundle.Should().NotBeNull();
+#pragma warning disable CS0618
 			config.Bundle.Repo.Should().Be("apm-agent-dotnet");
 			config.Bundle.Owner.Should().Be("elastic");
+#pragma warning restore CS0618
 			config.Bundle.Directory.Should().Be("docs/changelog");
 		}
 		finally

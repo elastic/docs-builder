@@ -18,7 +18,8 @@ public class GitHubReleaseServiceFetchPreviousTagTests() : ChangelogTestBase()
 {
 	private const string Owner = "elastic";
 	private const string Repo = "elasticsearch";
-	private static readonly string[] first = new[] { "v4.2.0", "v4.1.2" };
+	private static readonly string[] Page1StartTags = ["v4.2.0", "v4.1.2"];
+	private static readonly string[] Page1PatchTags = ["v4.2.0", "v4.1.0", "v4.1.1"];
 
 	private GitHubReleaseService Service(StubHandler handler, Func<int, TimeSpan>? retryDelay = null) =>
 		new(new TestLoggerFactory(), new GitHubApiTransport(handler, "test-token"), retryDelay);
@@ -378,7 +379,7 @@ public class GitHubReleaseServiceFetchPreviousTagTests() : ChangelogTestBase()
 		// Backport scenario: v4.1.2 was backported (created most recently) and appears on page 1,
 		// but v4.1.9 (the true highest patch in v4.1.*) was created earlier and lands on page 2.
 		// X.Y.0 lookups do a full scan so that no candidate on a later page is missed.
-		var page1Tags = first.Concat(Enumerable.Range(0, 98).Select(i => $"v3.{97 - i}.0")).ToArray(); // 100 items — full page
+		var page1Tags = Page1StartTags.Concat(Enumerable.Range(0, 98).Select(i => $"v3.{97 - i}.0")).ToArray(); // 100 items — full page
 		var page2Tags = new[] { "v4.1.9", "v4.1.0" }; // partial — scan stops naturally here
 
 		var requestCount = 0;
@@ -646,11 +647,11 @@ public class GitHubReleaseServiceFetchPreviousTagTests() : ChangelogTestBase()
 		// Page 1 succeeds with v4.1.2. Page 2 fails with 502.
 		// v4.1.9 would have been on page 2 — returning v4.1.2 would be silently wrong.
 		// The scan must return null so the caller surfaces the error rather than using an incomplete result.
-		var page1Tags = first.Concat(
+		var page1Tags = Page1StartTags.Concat(
 			Enumerable.Range(0, 98).Select(i => $"v3.{97 - i}.0")
 		).ToArray(); // 100 items — full page forces pagination
 
-		TimeSpan noDelay(int _) => TimeSpan.Zero;
+		static TimeSpan NoDelay(int _) => TimeSpan.Zero;
 
 		var handler = new StubHandler(req =>
 		{
@@ -660,7 +661,7 @@ public class GitHubReleaseServiceFetchPreviousTagTests() : ChangelogTestBase()
 			return query["page"] == "2" ? new HttpResponseMessage(HttpStatusCode.BadGateway) : Json(ReleasesJson(page1Tags));
 		});
 
-		var result = await Service(handler, noDelay).FetchPreviousTagAsync(Owner, Repo, "v4.2.0");
+		var result = await Service(handler, NoDelay).FetchPreviousTagAsync(Owner, Repo, "v4.2.0");
 		result.Should().Be(
 			PreviousTagResult.LookupFailed,
 			"a mid-pagination failure is indeterminate — returning a partial result would be silently wrong"
@@ -676,7 +677,7 @@ public class GitHubReleaseServiceFetchPreviousTagTests() : ChangelogTestBase()
 
 		var page2Attempts = 0;
 
-		TimeSpan noDelay(int _) => TimeSpan.Zero;
+		static TimeSpan NoDelay(int _) => TimeSpan.Zero;
 
 		var handler = new StubHandler(req =>
 		{
@@ -692,7 +693,7 @@ public class GitHubReleaseServiceFetchPreviousTagTests() : ChangelogTestBase()
 				: Json(ReleasesJson(page2Tags)); // 4th attempt succeeds
 		});
 
-		var result = await Service(handler, noDelay).FetchPreviousTagAsync(Owner, Repo, "v4.2.0");
+		var result = await Service(handler, NoDelay).FetchPreviousTagAsync(Owner, Repo, "v4.2.0");
 		result.Tag.Should().Be("v4.1.9", "retry recovered from 3 transient 502s and completed the scan on the 4th attempt");
 		page2Attempts.Should().Be(4, "page 2 was attempted 4 times — 3 failing, 1 succeeding (1 initial + 3 retries)");
 	}
@@ -705,7 +706,7 @@ public class GitHubReleaseServiceFetchPreviousTagTests() : ChangelogTestBase()
 
 		var page2Attempts = 0;
 
-		TimeSpan noDelay(int _) => TimeSpan.Zero;
+		static TimeSpan NoDelay(int _) => TimeSpan.Zero;
 
 		var handler = new StubHandler(req =>
 		{
@@ -718,7 +719,7 @@ public class GitHubReleaseServiceFetchPreviousTagTests() : ChangelogTestBase()
 			return new HttpResponseMessage(HttpStatusCode.BadGateway);
 		});
 
-		var result = await Service(handler, noDelay).FetchPreviousTagAsync(Owner, Repo, "v4.2.0");
+		var result = await Service(handler, NoDelay).FetchPreviousTagAsync(Owner, Repo, "v4.2.0");
 		result.Should().Be(PreviousTagResult.LookupFailed, "budget exhausted after 4 attempts — result is indeterminate");
 		page2Attempts.Should().Be(4, "page 2 is tried 4 times before the budget is exhausted");
 	}
@@ -777,7 +778,7 @@ public class GitHubReleaseServiceFetchPreviousTagTests() : ChangelogTestBase()
 		// v4.2.0 → X.Y.0 lookup requires a full scan (no early bail), because backport patches
 		// may appear on later pages. Page 1 is full (100 items) and contains v4.1.0 and v4.1.1.
 		// Page 2 is empty — scan ends naturally.
-		var page1Tags = new[] { "v4.2.0", "v4.1.0", "v4.1.1" }.Concat(Enumerable.Range(0, 97).Select(i => $"v3.{96 - i}.0")).ToArray();
+		var page1Tags = Page1PatchTags.Concat(Enumerable.Range(0, 97).Select(i => $"v3.{96 - i}.0")).ToArray();
 
 		var requestCount = 0;
 		var handler = new StubHandler(req =>
@@ -897,7 +898,7 @@ public class GitHubReleaseServiceFetchPreviousTagTests() : ChangelogTestBase()
 	{
 		// No releases. Tags API page 1 (full) contains v4.1.0 and v4.1.1; page 2 is empty.
 		// X.Y.0 lookups do a full scan — pagination ends on the empty page 2.
-		var tagsPage1 = new[] { "v4.2.0", "v4.1.0", "v4.1.1" }.Concat(Enumerable.Range(0, 97).Select(i => $"v3.{96 - i}.0")).ToArray();
+		var tagsPage1 = Page1PatchTags.Concat(Enumerable.Range(0, 97).Select(i => $"v3.{96 - i}.0")).ToArray();
 
 		var requestCount = 0;
 		var handler = new StubHandler(req =>

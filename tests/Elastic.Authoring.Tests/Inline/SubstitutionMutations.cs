@@ -4,7 +4,7 @@
 
 namespace Elastic.Authoring.Tests.Inline;
 
-public class ReadSubFromYamlFrontmatter : DocumentTest
+public class ReadSubMutationsFromYamlFrontmatter : DocumentTest
 {
 	protected override string Document =>
 		"""

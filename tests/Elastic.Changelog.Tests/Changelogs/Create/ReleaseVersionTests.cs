@@ -43,6 +43,9 @@ public class ReleaseVersionTests() : ChangelogTestBase()
 			entryFetcher: _offlineEntryFetcher
 		);
 
+	[After(Test)]
+	public void DisposeEntryFetcher() => _offlineEntryFetcher.Dispose();
+
 	private string CreateOutputDirectory() => FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
 
 	/// <summary>Stubs the release service and commit range service for a standard elasticsearch v9.2.0 release.</summary>
