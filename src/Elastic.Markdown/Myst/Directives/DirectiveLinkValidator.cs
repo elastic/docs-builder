@@ -140,6 +140,8 @@ internal static class DirectiveLinkValidator
 
 		context.Build.Collector.EmitCrossLink(original);
 		var resolution = resolver.Resolve(uri);
+		if (resolution is LinkResolutionUnavailable)
+			return original;
 		var resolvedUri = resolution.ResolvedUri();
 		if (resolvedUri is null)
 		{

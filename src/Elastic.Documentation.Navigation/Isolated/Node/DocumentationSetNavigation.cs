@@ -318,6 +318,8 @@ public class DocumentationSetNavigation<TModel> : IDocumentationSetNavigation, I
 		var crossLinkUri = crossLinkRef.CrossLinkUri;
 		var title = crossLinkRef.Title ?? crossLinkUri.OriginalString;
 		var resolution = _crossLinkResolver.Resolve(crossLinkUri);
+		if (resolution is LinkResolutionUnavailable)
+			return null;
 		var resolvedUri = resolution.ResolvedUri();
 		if (resolvedUri is null)
 		{

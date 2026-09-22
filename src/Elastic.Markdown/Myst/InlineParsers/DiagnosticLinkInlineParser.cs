@@ -194,6 +194,8 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 			context.Build.Collector.EmitCrossLink(url);
 
 		var resolution = context.CrossLinkResolver.Resolve(uri);
+		if (resolution is LinkResolutionUnavailable)
+			return;
 		var resolvedUri = resolution.ResolvedUri();
 		if (resolvedUri is not null)
 		{
