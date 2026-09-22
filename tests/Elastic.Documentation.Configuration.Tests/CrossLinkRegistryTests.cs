@@ -140,6 +140,7 @@ public class CrossLinkRegistryTests
 		public IFileInfo ConfigurationPath => configurationPath;
 		public BuildType BuildType => BuildType.Isolated;
 		public IDirectoryInfo DocumentationSourceDirectory => documentationSourceDirectory;
+		public IDirectoryInfo DocumentationCheckoutDirectory => documentationSourceDirectory;
 		public GitCheckoutInformation Git => GitCheckoutInformationFactory.Create(documentationSourceDirectory, fileSystem);
 		public IEnvironmentVariables Environment => SystemEnvironmentVariables.Instance;
 	}

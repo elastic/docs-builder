@@ -68,7 +68,11 @@ api:
 Most docsets omit `repository:` — it's only needed for this cross-repo case. When omitted,
 {{dbuild}} derives the repository from the current checkout's GitHub remote.
 
+<<<<<<< HEAD
+Each key takes a sequence with exactly one entry. That entry requires `spec:` and `product:`. `local_spec:`, `repository:`, and `children:` are optional. See [Reference](#reference).
+=======
 ### `children:` (optional)
+>>>>>>> origin/main
 
 Explicit hand-written pages rendered under `api/<key>/`, in the declared order:
 
@@ -101,7 +105,107 @@ hyphens, and the `.md` extension removed. For example, `Getting-Started.md` beco
 
 The following slugs are reserved and cannot be used as child file names:
 
+<<<<<<< HEAD
+[http://localhost:3000/api/doc/docs-builder-elasticsearch/operation/operation-async-search-get/](http://localhost:3000/api/doc/docs-builder-elasticsearch/operation/operation-async-search-get/)
+
+That file:
+
+- replaces the spec description
+- overrides the `keep_alive` and `id` parameter text
+- appends a **When to poll** section after the generated reference
+
+Heading rules, tag files, and `children:` pages are in [Writing supplemental content](./supplemental.md).
+
+::::
+
+::::{step} Override one major version
+
+If one major needs different text, add a `.vN.md` file next to the base file. This repository does not ship a `.vN.md` file. The pattern is:
+
+```text
+api/elasticsearch/
+  op-search.md
+  op-search.v8.md
+```
+
+The unversioned `/api/doc/<key>/` tree uses the overlay of the highest numeric major that this product renders. Merge rules are in [Writing supplemental content](./supplemental.md#version-specific-files).
+
+::::
+
+::::{step} Read the build error, then fix the file
+
+If the file name does not match an `operationId`, the build fails. If a parameter key is not in the spec, the build also fails.
+
+```text
+API supplemental file 'op-nope.md' does not match any operationId in the latest spec
+API supplemental: Parameter 'typo' not found in operation 'async-search-get' in the latest spec
+```
+
+Fix the file. Then rebuild. More messages are in [Writing supplemental content](./supplemental.md#validation-errors).
+
+::::
+
+:::::
+
+## Reference
+
+| `docset.yml` key | Required | Description |
+|---|---|---|
+| `spec:` | yes | The hosted spec basename used to look up the remote version index, for example `elasticsearch-openapi.json`. If no `local_spec:` is set and a file with this name exists next to `docset.yml`, {{dbuild}} also uses it as an implicit local override for `main`. |
+| `local_spec:` | no | Path to a local OpenAPI file, relative to `docset.yml`, that may sit anywhere in the same git checkout. When present, {{dbuild}} renders it for `main`. |
+| `product:` | yes | A product id from `products.yml`. This binds the API to that product's versioning system. |
+| `repository:` | no | `org/repo` used to look up the version index. Set this when the spec is published from a different GitHub repository than the docset. |
+| `children:` | no | Extra Markdown pages under `api/<key>/`, in declared order. See [children:](./supplemental.md#children-pages). |
+
+Each product key must have exactly one sequence entry. That entry must have exactly one `spec:`. An empty sequence fails the build. A sequence with more than one entry also fails the build.
+
+### `spec:`
+
+The basename always looks up the version index, whether or not a local file exists. See [Remote spec resolution](#remote-spec-resolution).
+
+If you omit `local_spec:` and a file with this name exists next to `docset.yml` (or in a subfolder of it), {{dbuild}} uses that file as an implicit local override for `main`. A missing implicit file stays silent and the hosted spec is used.
+
+### `local_spec:`
+
+A path to a local OpenAPI file, relative to the folder that contains `docset.yml`. The file may sit anywhere in the same git checkout. An absolute path is allowed only when it stays under the checkout root.
+
+When the file exists, {{dbuild}} uses it for the current (`main`) version. When the file is missing, {{dbuild}} emits a warning and renders the hosted spec named in `spec:`.
+
+```yaml
+api:
+  elasticsearch:
+    - spec: elasticsearch.json
+      local_spec: ../output/openapi/elasticsearch.json
+      product: elasticsearch
+      repository: elastic/elasticsearch-specification
+```
+
+Do not set `local_spec:` in a docset that never carries a local file — a missing implicit `spec:` file stays silent and uses the hosted spec.
+
+### `product:`
+
+If `product:` is not a known product id, the build fails. The error includes a suggestion.
+
+### `repository:`
+
+This repository sets `repository: elastic/elasticsearch-specification` because the spec is published from that repository, not from `elastic/docs-builder`.
+
+If you omit `repository:`, {{dbuild}} uses the GitHub remote of the current checkout.
+
+### `children:`
+
+`children:` adds full Markdown pages under the product root. Supplemental `op-*.md` and `tag-*.md` files are not `children:` pages. They merge into generated operation and tag pages.
+
+{{dbuild}} does not emit child files as normal docset HTML. Do not add them to `exclude:`.
+
+## Page URLs
+
+`{key}` is the `api:` map key. It is not the `product:` id.
+
+| Page | Path |
+=======
 | Reserved slug | Reason |
+>>>>>>> origin/main
 |---|---|
 | `types` | API Explorer uses this path for schema type pages |
 | `group` | Tag landing pages use `/group/` |
@@ -155,9 +259,13 @@ Assembler API pages also show a Jump to API box at the top of that sidebar. The 
 
 ## Remote spec resolution
 
+<<<<<<< HEAD
+A local file is in use when `local_spec:` points at an existing file, or when `local_spec:` is omitted and a file exists at the docset-relative `spec:` path. When no local file is in use, {{dbuild}} fetches `main` from a CloudFront version index. Repositories that publish OpenAPI specs share this index.
+=======
 When `spec:` does not resolve to a file on disk, {{dbuild}} resolves the current (`main`) version
 of that spec remotely through a CloudFront-backed version index shared by every Elastic repository
 that publishes OpenAPI specs.
+>>>>>>> origin/main
 
 ### How specs are published
 

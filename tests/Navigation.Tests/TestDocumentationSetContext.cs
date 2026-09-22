@@ -104,6 +104,7 @@ public class TestDocumentationSetContext : IDocumentationSetContext
 	public DocumentationWriteFileSystem WriteFileSystem { get; }
 	public IDirectoryInfo OutputDirectory { get; }
 	public IDirectoryInfo DocumentationSourceDirectory { get; }
+	public IDirectoryInfo DocumentationCheckoutDirectory => DocumentationSourceDirectory;
 	public GitCheckoutInformation Git { get; }
 	public IFileInfo ConfigurationPath { get; }
 	public IEnvironmentVariables Environment { get; init; } = SystemEnvironmentVariables.Instance;
