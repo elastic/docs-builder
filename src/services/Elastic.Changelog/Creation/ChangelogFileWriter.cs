@@ -321,7 +321,7 @@ public class ChangelogFileWriter(IFileSystem fileSystem, ILogger logger)
 			#   (Max 600 characters).
 
 			# feature-id:
-			#   An optional string to associate a feature or enhanceent with a
+			#   An optional string to associate a feature or enhancement with a
 			#   unique feature flag.
 
 			# highlight:

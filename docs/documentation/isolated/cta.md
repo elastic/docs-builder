@@ -40,7 +40,57 @@ cta:
 ---
 ```
 
-If a page omits `cta`, or its `id` doesn't match a template defined in `docset.yml`, it falls back to the built-in `trial` CTA. An unknown `id` also emits a build warning.
+If a page omits `cta`, the template registered as the default for its navigation file (if any) applies; otherwise it falls back to the built-in `trial` CTA. An unknown `id` emits a build warning and is ignored.
+
+## Register a default CTA on a navigation file
+
+To apply a template to every page listed in a `docset.yml` or nested `toc.yml` without editing each file, set `default_cta` to a template name declared in `docset.yml`:
+
+```yaml
+# solutions/observability/toc.yml
+default_cta: observability
+toc:
+  - file: index.md
+  - file: apps/apm.md
+```
+
+```yaml
+# docset.yml
+cta:
+  observability:
+    button:
+      label: Get started free
+      url: https://cloud.elastic.co/serverless-registration?onboarding_token=observability
+    benefits:
+      - "14-day free trial"
+```
+
+- `default_cta` is available on both `docset.yml` and nested `toc.yml` files.
+- Pages inherit the nearest `default_cta` from their navigation file. A nested `toc.yml` can override the value from a parent navigation file.
+- A page's `cta` frontmatter always takes precedence over a navigation default.
+- Each page can only be registered with one default CTA; listing the same page twice with different defaults is a build error.
+
+## Register a default CTA on a navigation entry
+
+When sibling sections share one navigation file, set `default_cta` on an individual `file:` or `folder:` entry instead. The template applies to that entry and every page beneath it:
+
+```yaml
+# solutions/toc.yml
+toc:
+  - file: index.md
+  - file: observability.md
+    default_cta: observability
+    children:
+      - folder: observability
+  - file: security.md
+    default_cta: security
+    children:
+      - folder: security
+```
+
+Here `solutions/index.md` keeps the built-in `trial` CTA, while `observability.md` and everything under `solutions/observability/` use the `observability` template.
+
+When several defaults apply to a page, the one declared closest to the page in the navigation tree wins. An entry's `default_cta` overrides the `default_cta` of the `toc.yml` that lists it, and a nested `toc.yml` inside that entry overrides the entry. A page's own `cta` frontmatter always comes first, and pages with no default anywhere use the built-in `trial` CTA.
 
 ## Click and impression tracking
 

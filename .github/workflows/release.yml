@@ -57,7 +57,7 @@ jobs:
       major-version: ${{ steps.bootstrap.outputs.major-version }}
 
     steps:
-      - uses: actions/checkout@v7.0.1
+      - uses: actions/checkout@v7
         with:
           ref: ${{ needs.release-drafter.outputs.tag_name }}
           persist-credentials: false
@@ -299,7 +299,7 @@ jobs:
       major-version: ${{ steps.bootstrap.outputs.major-version }}
 
     steps:
-      - uses: actions/checkout@v7.0.1
+      - uses: actions/checkout@v7
         with:
           ref: ${{ needs.release-drafter.outputs.tag_name }}
           persist-credentials: false
@@ -343,7 +343,6 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
-      id-token: write
     steps:
       - name: Publish release
         env:
@@ -353,6 +352,16 @@ jobs:
         run: |
           gh release edit "$TAG_NAME" --draft=false --latest --repo "$REPO"
 
+  # Notification runs after publish-release but is decoupled from the bundle jobs.
+  # A dispatch failure must not prevent a published tag from getting its release-notes bundle.
+  notify-docs-internal-workflows:
+    needs:
+      - release-drafter
+      - publish-release
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+    steps:
       - name: Fetch ephemeral GitHub token
         id: fetch-ephemeral-token
         uses: elastic/ci-gh-actions/fetch-github-token@v1
@@ -368,6 +377,63 @@ jobs:
             -f event_type=docs-builder-released \
             -F client_payload[tag_name]="$TAG_NAME"
 
+  # Build and publish the release-notes bundle for this tag.
+  #
+  # These two jobs live here rather than in the `release-notes.yml` caller (which gates its
+  # bundle job on `on: release`) because the release above is published with GITHUB_TOKEN,
+  # and GitHub does not start workflow runs from GITHUB_TOKEN-created events. Running them
+  # inside the release workflow keeps the bundle tied to the tag that was just cut.
+  #
+  # The split into create + publish mirrors elastic/docs-actions: the create job holds no
+  # AWS credentials and hands the bundle over as an artifact, and only the publish job
+  # assumes the OIDC upload role.
+  create-release-notes-bundle:
+    needs:
+      - release-drafter
+      - publish-release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read
+      pull-requests: read
+    outputs:
+      bundle-path: ${{ steps.create.outputs.bundle-path }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ needs.release-drafter.outputs.tag_name }}
+          persist-credentials: false
+
+      - name: Create bundle
+        id: create
+        uses: elastic/docs-actions/changelog/bundle-create-version@v1
+        with:
+          config: docs/changelog.yml
+          version: ${{ needs.release-drafter.outputs.tag_name }}
+          repo: ${{ github.event.repository.name }}
+          owner: ${{ github.repository_owner }}
+
+  publish-release-notes-bundle:
+    needs:
+      - release-drafter
+      - create-release-notes-bundle
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+      packages: read
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ needs.release-drafter.outputs.tag_name }}
+          persist-credentials: false
+
+      - name: Publish bundle to S3
+        uses: elastic/docs-actions/changelog/bundle-publish@v1
+        with:
+          config: docs/changelog.yml
+          bundle-path: ${{ needs.create-release-notes-bundle.outputs.bundle-path }}
+
   notify-failure:
     needs:
       - release-drafter
@@ -380,6 +446,9 @@ jobs:
       - deploy-changelog-scrubber-lambda-prod
       - release
       - publish-release
+      - notify-docs-internal-workflows
+      - create-release-notes-bundle
+      - publish-release-notes-bundle
     if: always() && contains(needs.*.result, 'failure')
     runs-on: ubuntu-slim
     permissions:

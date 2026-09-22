@@ -543,12 +543,41 @@ public class BundleCdnSourcingTests(ITestOutputHelper output) : ChangelogTestBas
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
 		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
 
-		var releaseBody = "* Alpha by @user in https://github.com/elastic/elasticsearch/pull/100\n";
 		A.CallTo(
 			() => releaseService.FetchReleaseAsync("elastic", "elasticsearch", "9.3.0", TestContext.Current.CancellationToken)
-		).Returns(new GitHubReleaseInfo { TagName = "v9.3.0", Name = "9.3.0", Body = releaseBody });
+		).Returns(new GitHubReleaseInfo { TagName = "v9.3.0", Name = "9.3.0", Body = "" });
 
-		var service = new ChangelogBundlingService(LoggerFactory, FileSystem, ConfigurationContext, releaseService, Fetcher());
+		A.CallTo(() => releaseService.FetchPreviousTagAsync("elastic", "elasticsearch", "v9.3.0", A<Cancel>._)).Returns(
+			PreviousTagResult.Found("v9.2.0")
+		);
+
+		var commitRangeService = A.Fake<IGitHubCommitRangeService>();
+		A.CallTo(
+			() => commitRangeService.ResolvePullRequestsAsync(
+				A<IDiagnosticsCollector>._,
+				A<CommitRangeArguments>.That.Matches(
+					a => a.Owner == "elastic" && a.Repo == "elasticsearch" && a.StartRef == "v9.2.0" && a.EndRef == "v9.3.0"
+				),
+				A<Cancel>._
+			)
+		).Returns(new CommitRangeResolution
+		{
+			TotalCommits = 1,
+			PullRequests =
+			[
+				new CommitRangePullRequest { Number = 100, Url = "https://github.com/elastic/elasticsearch/pull/100", CommitShas = ["abc"] }
+			],
+			CommitsWithoutPullRequest = []
+		});
+
+		var service = new ChangelogBundlingService(
+			LoggerFactory,
+			FileSystem,
+			ConfigurationContext,
+			releaseService,
+			Fetcher(),
+			commitRangeService: commitRangeService
+		);
 
 		var input = new BundleChangelogsArguments { Profile = "es-release", ProfileArgument = "9.3.0", Config = configPath };
 

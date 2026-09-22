@@ -87,7 +87,8 @@ public static partial class ProfileFilterResolver
 		ILogger? logger,
 		Cancel ctx,
 		string? profileReport = null,
-		IGitHubReleaseService? releaseService = null
+		IGitHubReleaseService? releaseService = null,
+		IGitHubCommitRangeService? commitRangeService = null
 	)
 	{
 		if (config?.Bundle?.Profiles == null || !config.Bundle.Profiles.TryGetValue(profileName, out var profile))
@@ -115,6 +116,7 @@ public static partial class ProfileFilterResolver
 				profile,
 				config,
 				releaseService,
+				commitRangeService,
 				logger,
 				ctx
 			);
@@ -446,6 +448,7 @@ public static partial class ProfileFilterResolver
 		BundleProfile profile,
 		ChangelogConfiguration? config,
 		IGitHubReleaseService? releaseService,
+		IGitHubCommitRangeService? commitRangeService,
 		ILogger? logger,
 		Cancel ctx
 	)
@@ -481,6 +484,12 @@ public static partial class ProfileFilterResolver
 			return null;
 		}
 
+		if (commitRangeService == null)
+		{
+			collector.EmitError(string.Empty, $"Profile '{profileName}': a commit-range service is required for 'source: github_release'.");
+			return null;
+		}
+
 		// Resolve repo and owner: profile-level overrides bundle-level defaults
 #pragma warning disable CS0618
 		var repo = profile.Repo ?? config?.Bundle?.Repo;
@@ -512,30 +521,56 @@ public static partial class ProfileFilterResolver
 
 		logger?.LogInformation("Fetched release {Tag} from {Owner}/{Repo}", release.TagName, owner, repo);
 
-		var parsed = ReleaseNoteParser.Parse(release.Body);
+		var previousTagResult = await releaseService.FetchPreviousTagAsync(owner, repo, release.TagName, ctx);
+		if (previousTagResult.Tag == null)
+		{
+			collector.EmitError(
+				string.Empty,
+				$"Profile '{profileName}': GitHub could not determine the previous release before '{release.TagName}' in {owner}/{repo}. Cannot derive PR list from commit range."
+			);
+			return null;
+		}
+		var previousTag = previousTagResult.Tag;
+
 		logger?.LogInformation(
-			"Detected release note format: {Format}, found {Count} PR references",
-			parsed.Format,
-			parsed.PrReferences.Count
+			"Resolving PRs via commit range {PrevTag}..{Tag} for {Owner}/{Repo}",
+			previousTag,
+			release.TagName,
+			owner,
+			repo
 		);
 
-		if (parsed.PrReferences.Count == 0)
+		var resolution = await commitRangeService.ResolvePullRequestsAsync(
+			collector,
+			new CommitRangeArguments { Owner = owner, Repo = repo, StartRef = previousTag, EndRef = release.TagName },
+			ctx
+		);
+		if (resolution == null)
 		{
-			collector.EmitWarning(
+			collector.EmitError(
 				string.Empty,
-				$"Profile '{profileName}': no PR references found in release '{release.TagName}'. The bundle will be empty."
+				$"Profile '{profileName}': failed to resolve PR list from commit range {previousTag}..{release.TagName}."
 			);
 			return null;
 		}
 
-		var prUrls = parsed.PrReferences.Select(pr => $"https://github.com/{owner}/{repo}/pull/{pr.PrNumber}").ToArray();
+		if (resolution.PullRequests.Count == 0)
+		{
+			collector.EmitWarning(
+				string.Empty,
+				$"Profile '{profileName}': no PRs found in commit range {previousTag}..{release.TagName}. The bundle will be empty."
+			);
+			return null;
+		}
+
+		var prUrls = resolution.PullRequests.Select(pr => pr.Url).ToArray();
 
 		var version = ChangelogTextUtilities.ExtractBaseVersion(release.TagName);
 		// Infer lifecycle from the raw tag before base-version extraction so that pre-release suffixes
 		// (e.g. "-preview.1", "-beta.1") are preserved for {lifecycle} substitution in output_products/output.
 		var lifecycle = VersionLifecycleInference.InferLifecycle(release.TagName);
 		logger?.LogInformation(
-			"Resolved {Count} PR URLs from release {Tag} (version: {Version}, lifecycle: {Lifecycle})",
+			"Resolved {Count} PR(s) from commit range for release {Tag} (version: {Version}, lifecycle: {Lifecycle})",
 			prUrls.Length,
 			release.TagName,
 			version,

@@ -167,6 +167,7 @@ references:
     edge: master
     private: true
 
+  cli:
   curator: *master
   ecctl: *master
 
@@ -237,5 +238,8 @@ references:
     private: true
     skip: true
   docs-playground-release-notes-tagged:
+    private: true
+    skip: true
+  docs-playground-release-notes-tagged-workflow:
     private: true
     skip: true

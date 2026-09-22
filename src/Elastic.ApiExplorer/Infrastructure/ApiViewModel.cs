@@ -27,6 +27,10 @@ public record ApiLayoutViewModel : GlobalLayoutViewModel
 	public required ApiBreadcrumbTrail Breadcrumbs { get; init; }
 	public IReadOnlyList<ApiVersionSwitcherItem> VersionSwitcherItems { get; init; } = [];
 	public IReadOnlyList<ApiVersionSwitcherItem> HubSwitcherItems { get; init; } = [];
+
+	/// <summary>Assembler builds host Jump to API unless the site is air-gapped.</summary>
+	public bool ShowJumpToPage => BuildType == BuildType.Assembler && !Features.AirGappedEnabled;
+
 	public required string MarkdownUrl { get; init; }
 
 	/// <summary>

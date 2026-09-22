@@ -125,8 +125,9 @@ public record BundleChangelogsArguments
 	public bool SuppressReleaseDate { get; init; }
 
 	/// <summary>
-	/// When non-null (including empty), PR/issue links are filtered to this <c>owner/repo</c> allowlist (from changelog.yml <c>bundle.link_allow_repos</c>).
+	/// Obsolete — no longer read. Link sanitization is handled by the scrubber Lambda.
 	/// </summary>
+	[Obsolete("link_allow_repos is no longer read.", error: false)]
 	public IReadOnlyList<string>? LinkAllowRepos { get; init; }
 
 	/// <summary>
@@ -146,6 +147,14 @@ public record BundleChangelogsArguments
 	/// entry source) without writing a bundle. Only valid together with a git ref range.
 	/// </summary>
 	public bool DryRun { get; init; }
+
+	/// <summary>
+	/// Optional callback invoked with the resolved output file path immediately after the bundle
+	/// is written to disk. Used by <c>ChangelogCommand.Bundle</c> to capture the path for GitHub
+	/// Actions output without changing the <see cref="ChangelogBundlingService.BundleChangelogs"/>
+	/// return type (tests that don't need the path leave this null).
+	/// </summary>
+	public Action<string>? OnBundlePathResolved { get; init; }
 }
 
 /// <summary>
@@ -542,40 +551,6 @@ public partial class ChangelogBundlingService(
 			return false;
 
 		var bundleData = buildResult.Data;
-		if (input.LinkAllowRepos != null)
-		{
-			if (
-				!LinkAllowlistSanitizer.TryApplyBundle(
-					collector,
-					bundleData,
-					input.LinkAllowRepos,
-					input.Owner ?? "elastic",
-					productRepo,
-					out var sanitizedBundle,
-					out _
-				)
-			)
-				return false;
-			bundleData = sanitizedBundle;
-
-			if (configurationContext != null && input.LinkAllowRepos.Count > 0)
-			{
-				try
-				{
-					var assemblyYaml = configurationContext.ConfigurationFileProvider.AssemblerFile.ReadToEnd();
-					var assembly = AssemblyConfiguration.Deserialize(assemblyYaml, skipPrivateRepositories: false);
-					LinkAllowlistSanitizer.EmitAssemblerDiagnostics(collector, input.LinkAllowRepos, assembly);
-				}
-				catch (Exception ex) when (ex is not (OutOfMemoryException or StackOverflowException))
-				{
-					collector.EmitWarning(
-						string.Empty,
-						$"Could not load assembler.yml for bundle.link_allow_repos diagnostics: {ex.Message}"
-					);
-				}
-			}
-		}
-
 		// Apply description with placeholder substitution
 		if (!string.IsNullOrEmpty(input.Description))
 		{
@@ -635,6 +610,10 @@ public partial class ChangelogBundlingService(
 		// Write bundle file
 		await WriteBundleFileAsync(bundleData, outputPath, ctx);
 
+		// Notify the caller of the resolved output path (used by ChangelogCommand.Bundle to emit
+		// bundle_path as a GitHub Actions step output so callers don't need to predict the path).
+		input.OnBundlePathResolved?.Invoke(outputPath);
+
 		return true;
 	}
 
@@ -661,7 +640,8 @@ public partial class ChangelogBundlingService(
 				_logger,
 				ctx,
 				input.ProfileReport,
-				_releaseService
+				_releaseService,
+				_commitRangeService
 			);
 
 		if (filterResult == null)
@@ -745,6 +725,9 @@ public partial class ChangelogBundlingService(
 			// Checkout fallback is for {repo}/{owner} text only — keep returned Repo/Owner as
 			// config/CLI so combined owner/repo still supplies the CDN owner.
 			var descriptionTemplate = profile.Description ?? config.Bundle.Description;
+			if (!ValidateProfileDescription(collector, input.Description, descriptionTemplate))
+				return null;
+
 			if (!string.IsNullOrEmpty(descriptionTemplate))
 			{
 				// Validate placeholder usage in profile mode
@@ -806,9 +789,28 @@ public partial class ChangelogBundlingService(
 			Owner = owner,
 			Branch = branch,
 			HideFeatures = mergedHideFeatures,
-			Description = profileDescription,
+			Description = profileDescription ?? input.Description,
 			SuppressReleaseDate = profileSuppressReleaseDate
 		};
+	}
+
+	/// <summary>
+	/// Configuration owns the bundle intro in profile mode, so a CLI description source is only allowed when
+	/// neither <c>bundle.description</c> nor the profile description is set. Presence of the flag is what counts:
+	/// an empty <c>--description</c> is still a supplied source, so this tests for null rather than emptiness.
+	/// Shared by the run path and <see cref="PlanBundleAsync"/> so <c>--plan</c> rejects the same invocations.
+	/// </summary>
+	private static bool ValidateProfileDescription(IDiagnosticsCollector collector, string? cliDescription, string? descriptionTemplate)
+	{
+		if (cliDescription is null || string.IsNullOrEmpty(descriptionTemplate))
+			return true;
+
+		collector.EmitError(
+			string.Empty,
+			"When using a profile, --description and --description-file are not allowed if bundle.description or the profile description is set. " +
+				"Remove the CLI description, or remove the description from changelog.yml."
+		);
+		return false;
 	}
 
 	/// <summary>
@@ -1046,7 +1048,7 @@ public partial class ChangelogBundlingService(
 		var directory = input.Directory ?? config?.Bundle?.Directory ?? _fileSystem.Directory.GetCurrentDirectory();
 
 		if (config?.Bundle == null)
-			return input with { Directory = directory, LinkAllowRepos = null };
+			return input with { Directory = directory };
 
 		// File name is resolved later in ResolveResolvedOutputPath so option-mode can use the
 		// conventional {repo}-{product}-{version}.yaml name. Keep a directory --output as-is.
@@ -1076,8 +1078,7 @@ public partial class ChangelogBundlingService(
 			Owner = owner,
 			Branch = branch,
 			Description = description,
-			SuppressReleaseDate = suppressReleaseDate,
-			LinkAllowRepos = config.Bundle.LinkAllowRepos
+			SuppressReleaseDate = suppressReleaseDate
 		};
 	}
 
@@ -1128,13 +1129,17 @@ public partial class ChangelogBundlingService(
 			if (!ValidateProfileOutputs(collector, config))
 				return null;
 
-			if (
-				config?.Bundle?.Profiles?.TryGetValue(input.Profile, out profileDef) == true
-				&& string.Equals(profileDef.Source, "github_release", StringComparison.OrdinalIgnoreCase)
-			)
+			if (config?.Bundle?.Profiles?.TryGetValue(input.Profile, out profileDef) == true)
 			{
-				needsNetwork = true;
-				needsGithubToken = true;
+				// Mirror the run path so a CI preflight rejects a CLI description that collides with config.
+				if (!ValidateProfileDescription(collector, input.Description, profileDef.Description ?? config.Bundle.Description))
+					return null;
+
+				if (string.Equals(profileDef.Source, "github_release", StringComparison.OrdinalIgnoreCase))
+				{
+					needsNetwork = true;
+					needsGithubToken = true;
+				}
 			}
 		}
 

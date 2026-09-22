@@ -94,7 +94,7 @@ jobs:
     steps:
       - name: Checkout
         if: github.event_name == 'push'
-        uses: actions/checkout@v7.0.1
+        uses: actions/checkout@v7
         with:
           ref: ${{ github.event.pull_request.head.sha || github.ref }}
           persist-credentials: false
@@ -181,10 +181,22 @@ jobs:
               }
             }
 
-            core.setOutput('added_files', added.join(' '));
-            core.setOutput('modified_files', modified.join(' '));
-            core.setOutput('deleted_files', deleted.join(' '));
-            core.setOutput('renamed_files', renamed.join(' '));
+            // When too many files change the joined strings exceed Linux's ARG_MAX,
+            // crashing bash before any step can run. Empty outputs tell the build to
+            // do a full rebuild instead of an incremental one.
+            const MAX_INCREMENTAL_FILES = 500;
+            const total = added.length + modified.length + deleted.length + renamed.length;
+            if (total > MAX_INCREMENTAL_FILES) {
+              core.setOutput('added_files', '');
+              core.setOutput('modified_files', '');
+              core.setOutput('deleted_files', '');
+              core.setOutput('renamed_files', '');
+            } else {
+              core.setOutput('added_files', added.join(' '));
+              core.setOutput('modified_files', modified.join(' '));
+              core.setOutput('deleted_files', deleted.join(' '));
+              core.setOutput('renamed_files', renamed.join(' '));
+            }
 
   build:
     if: github.event.repository.fork == false
@@ -212,7 +224,7 @@ jobs:
         if: >
           env.MATCH == 'true'
           && needs.check.outputs.any_modified != 'false'
-        uses: actions/checkout@v7.0.1
+        uses: actions/checkout@v7
         with:
           ref: ${{ github.event.pull_request.head.sha || github.ref }}
           persist-credentials: false
@@ -416,7 +428,7 @@ jobs:
       pull-requests: write
     steps:
       - name: Comment handbook preview links on PR
-        uses: actions/github-script@v8
+        uses: actions/github-script@v9
         env:
           PATH_PREFIX: ${{ needs.build.outputs.path_prefix }}
           ALL_CHANGED_FILES: ${{ needs.check.outputs.all_changed_files }}

@@ -18,7 +18,7 @@ jobs:
       pull-requests: write
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7.0.1
+      - uses: actions/checkout@v7
         with:
           persist-credentials: false
       - name: Wait for PR to be ready (if just opened)
@@ -26,7 +26,7 @@ jobs:
         run: sleep 30
       - id: get-labels
         run: |
-          labels=$(yq '[.categories[].labels] + .exclude-labels | flatten | unique | sort | @tsv' .github/release-drafter.yml | tr '\t' ',')
+          labels=$(yq '[.categories[].labels] | flatten | unique | sort | @tsv' .github/release-drafter.yml | tr '\t' ',')
           echo "labels=$labels" >> "${GITHUB_OUTPUT}"
       - id: check-labels
         uses: mheap/github-action-required-labels@23e10fde7e062233401931a0eece796cd9bf3177 # v5.6.0
@@ -34,5 +34,5 @@ jobs:
           mode: exactly
           count: 1
           use_regex: false
-          add_comment: true
+          add_comment: false
           labels: ${{ steps.get-labels.outputs.labels }}

@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Collections.Frozen;
 using System.IO.Abstractions;
 using DotNet.Globbing;
 using Elastic.Documentation.Configuration.Products;
@@ -150,6 +151,14 @@ public class DocumentationSetFile : TableOfContentsFile
 	public HashSet<string> FolderExcludedFiles { get; private set; } = [];
 
 	/// <summary>
+	/// Pages registered with a default CTA via <c>default_cta</c> on <c>docset.yml</c>, nested <c>toc.yml</c> files,
+	/// or individual <c>file:</c> / <c>folder:</c> entries.
+	/// Keys are docset-root-relative markdown paths; values are template names from the docset's <c>cta</c> map.
+	/// </summary>
+	[YamlIgnore]
+	public IReadOnlyDictionary<string, string> TocDefaultCtas { get; private set; } = FrozenDictionary<string, string>.Empty;
+
+	/// <summary>
 	/// Loads a DocumentationSetFile from YAML string and recursively resolves all IsolatedTableOfContentsRef items,
 	/// replacing them with their resolved children and ensuring file paths carry over parent paths.
 	/// Validates the table of contents structure and emits diagnostics for issues.
@@ -178,6 +187,7 @@ public class DocumentationSetFile : TableOfContentsFile
 		);
 		// Collect excluded paths so they can be skipped during file processing (not just navigation)
 		docSet.FolderExcludedFiles = CollectFolderExcludedFiles(docSet.TableOfContents);
+		docSet.TocDefaultCtas = CollectTocDefaultCtas(collector, docSet.TableOfContents, docSet.DefaultCta);
 		return docSet;
 	}
 
@@ -204,6 +214,7 @@ public class DocumentationSetFile : TableOfContentsFile
 		{
 			var resolvedItem = item switch
 			{
+				InvalidTocItemRef invalid => EmitInvalidTocItem(collector, invalid, context),
 				IsolatedTableOfContentsRef tocRef =>
 					ResolveIsolatedToc(
 						collector,
@@ -258,6 +269,23 @@ public class DocumentationSetFile : TableOfContentsFile
 		}
 
 		return resolved;
+	}
+
+	private static ITableOfContentsItem? EmitInvalidTocItem(IDiagnosticsCollector collector, InvalidTocItemRef invalid, string context)
+	{
+		var raw = invalid.RawValue;
+		var isYmlFile = raw.EndsWith(".yml", StringComparison.OrdinalIgnoreCase)
+			|| raw.EndsWith(".yaml", StringComparison.OrdinalIgnoreCase);
+
+		var hint = isYmlFile
+			? $" An adjacent '{raw}' next to docset.yml is not supported. Inline its entries directly in docset.yml, or use 'toc: <folder>' to point to a subdirectory that contains a toc.yml."
+			: string.Empty;
+
+		collector.EmitError(
+			context,
+			$"'{raw}' is not a valid toc entry. Each entry must be a mapping with a 'file:', 'folder:', or 'toc:' key.{hint}"
+		);
+		return null;
 	}
 
 	/// <summary>
@@ -379,7 +407,8 @@ public class DocumentationSetFile : TableOfContentsFile
 			tocPathRelativeToContainer,
 			resolvedChildren,
 			parentContext,
-			tocRef.Island || nestedTocFile.Island
+			tocRef.Island || nestedTocFile.Island,
+			nestedTocFile.DefaultCta
 		);
 	}
 
@@ -459,9 +488,10 @@ public class DocumentationSetFile : TableOfContentsFile
 			// Preserve specific types even when there are no children
 			return fileRef switch
 			{
-				FolderIndexFileRef => new FolderIndexFileRef(fullPath, pathRelativeToContainer, fileRef.Hidden, [], context),
-				IndexFileRef => new IndexFileRef(fullPath, pathRelativeToContainer, fileRef.Hidden, [], context),
-				_ => new FileRef(fullPath, pathRelativeToContainer, fileRef.Hidden, [], context)
+				FolderIndexFileRef =>
+					new FolderIndexFileRef(fullPath, pathRelativeToContainer, fileRef.Hidden, [], context, fileRef.DefaultCta),
+				IndexFileRef => new IndexFileRef(fullPath, pathRelativeToContainer, fileRef.Hidden, [], context, fileRef.DefaultCta),
+				_ => new FileRef(fullPath, pathRelativeToContainer, fileRef.Hidden, [], context, fileRef.DefaultCta)
 			};
 		}
 
@@ -522,9 +552,11 @@ public class DocumentationSetFile : TableOfContentsFile
 		// Preserve the specific type when creating the resolved reference
 		return fileRef switch
 		{
-			FolderIndexFileRef => new FolderIndexFileRef(fullPath, pathRelativeToContainer, fileRef.Hidden, resolvedChildren, context),
-			IndexFileRef => new IndexFileRef(fullPath, pathRelativeToContainer, fileRef.Hidden, resolvedChildren, context),
-			_ => new FileRef(fullPath, pathRelativeToContainer, fileRef.Hidden, resolvedChildren, context)
+			FolderIndexFileRef =>
+				new FolderIndexFileRef(fullPath, pathRelativeToContainer, fileRef.Hidden, resolvedChildren, context, fileRef.DefaultCta),
+			IndexFileRef =>
+				new IndexFileRef(fullPath, pathRelativeToContainer, fileRef.Hidden, resolvedChildren, context, fileRef.DefaultCta),
+			_ => new FileRef(fullPath, pathRelativeToContainer, fileRef.Hidden, resolvedChildren, context, fileRef.DefaultCta)
 		};
 	}
 
@@ -691,7 +723,8 @@ public class DocumentationSetFile : TableOfContentsFile
 			fullVirtualRoot,
 			pathRelativeToContainer,
 			context,
-			resolvedChildren
+			resolvedChildren,
+			cliRef.AppliesTo
 		);
 	}
 
@@ -761,7 +794,14 @@ public class DocumentationSetFile : TableOfContentsFile
 				suppressDiagnostics
 			);
 			// Exclude is intentionally not passed through — it only applies to auto-discovery
-			return new FolderRef(fullPath, pathRelativeToContainer, resolvedChildren, context, folderRef.Sort);
+			return new FolderRef(
+				fullPath,
+				pathRelativeToContainer,
+				resolvedChildren,
+				context,
+				folderRef.Sort,
+				DefaultCta: folderRef.DefaultCta
+			);
 		}
 
 		// No children defined - auto-discover .md files in the folder
@@ -777,7 +817,15 @@ public class DocumentationSetFile : TableOfContentsFile
 			explicitSortOrder,
 			folderRef.Exclude
 		);
-		return new FolderRef(fullPath, pathRelativeToContainer, autoDiscoveredChildren, context, folderRef.Sort, folderRef.Exclude);
+		return new FolderRef(
+			fullPath,
+			pathRelativeToContainer,
+			autoDiscoveredChildren,
+			context,
+			folderRef.Sort,
+			folderRef.Exclude,
+			folderRef.DefaultCta
+		);
 	}
 
 	/// <summary>
@@ -844,6 +892,97 @@ public class DocumentationSetFile : TableOfContentsFile
 		// Resolve the children with the folder path as parent to get correct full paths
 		// Auto-discovered items are in the same container as the folder
 		return ResolveTableOfContents(collector, children, baseDirectory, fileSystem, folderPath, containerPath, context);
+	}
+
+	/// <summary>
+	/// Traverses the resolved TOC and collects pages registered with a <c>default_cta</c> from
+	/// <c>docset.yml</c>, nested <c>toc.yml</c> files, or individual <c>file:</c> / <c>folder:</c> entries.
+	/// The nearest declaration wins.
+	/// </summary>
+	private static FrozenDictionary<string, string> CollectTocDefaultCtas(
+		IDiagnosticsCollector collector,
+		IReadOnlyCollection<ITableOfContentsItem> items,
+		string? inheritedDefault
+	)
+	{
+		var defaults = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+		CollectTocDefaultCtas(collector, items, inheritedDefault, defaults);
+		return defaults.ToFrozenDictionary(StringComparer.OrdinalIgnoreCase);
+	}
+
+	private static void CollectTocDefaultCtas(
+		IDiagnosticsCollector collector,
+		IReadOnlyCollection<ITableOfContentsItem> items,
+		string? inheritedDefault,
+		Dictionary<string, string> defaults
+	)
+	{
+		foreach (var item in items)
+		{
+			switch (item)
+			{
+				case FileRef file:
+					var fileDefault = file.DefaultCta ?? inheritedDefault;
+					RegisterTocDefaultCta(collector, file.PathRelativeToDocumentationSet, fileDefault, file.Context, defaults);
+					if (file.Children.Count > 0)
+						CollectTocDefaultCtas(collector, file.Children, fileDefault, defaults);
+					break;
+				case IsolatedTableOfContentsRef toc:
+					CollectTocDefaultCtas(collector, toc.Children, toc.DefaultCta ?? inheritedDefault, defaults);
+					break;
+				case FolderRef folder:
+					CollectTocDefaultCtas(collector, folder.Children, folder.DefaultCta ?? inheritedDefault, defaults);
+					break;
+				case CrossLinkRef crossLink when crossLink.Children.Count > 0:
+					CollectTocDefaultCtas(collector, crossLink.Children, inheritedDefault, defaults);
+					break;
+			}
+		}
+	}
+
+	private static void RegisterTocDefaultCta(
+		IDiagnosticsCollector collector,
+		string relativePath,
+		string? defaultCta,
+		string context,
+		Dictionary<string, string> defaults
+	)
+	{
+		if (string.IsNullOrWhiteSpace(defaultCta))
+			return;
+
+		var normalizedPath = NormalizeDocsetRelativePath(relativePath);
+		if (defaults.TryGetValue(normalizedPath, out var existing) && !existing.Equals(defaultCta, StringComparison.OrdinalIgnoreCase))
+		{
+			collector.EmitError(
+				context,
+				$"'{normalizedPath}' is registered with default CTA '{existing}' and '{defaultCta}'. Each page can only have one default CTA."
+			);
+			return;
+		}
+
+		defaults[normalizedPath] = defaultCta;
+	}
+
+	internal static string NormalizeDocsetRelativePath(string relativePath)
+	{
+		var segments = relativePath.Replace('\\', '/').TrimStart('/').Split('/');
+		var stack = new List<string>(segments.Length);
+		foreach (var segment in segments)
+		{
+			if (segment is "" or ".")
+				continue;
+			if (segment == "..")
+			{
+				if (stack.Count > 0)
+					stack.RemoveAt(stack.Count - 1);
+				continue;
+			}
+
+			stack.Add(segment);
+		}
+
+		return string.Join('/', stack);
 	}
 
 	/// <summary>

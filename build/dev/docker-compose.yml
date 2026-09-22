@@ -1,0 +1,86 @@
+services:
+  # Run a one-shot CLI command, for example:
+  #   ./dev.sh docs
+  #   docker compose run --rm docs-builder inbound-links validate-link-reference
+  docs-builder:
+    image: docs-builder:local
+    working_dir: /workspace
+    volumes:
+      - .:/workspace
+      - build-artifacts:/workspace/.artifacts
+
+  # Run the repository's unit-test suite without installing the .NET SDK on
+  # the host machine. Build the image with `./dev.sh build` first.
+  #
+  # .artifacts/ is mounted as a named volume so dotnet build/test never
+  # writes root-owned bin/, obj/, or TestResults/ into the host checkout.
+  # All .NET outputs go there via UseArtifactsOutput in Directory.Build.props.
+  tests:
+    image: docs-builder:tooling
+    working_dir: /workspace/docs-builder
+    command: ["./build.sh", "unit-test"]
+    volumes:
+      - .:/workspace/docs-builder
+      - nuget-packages:/root/.nuget/packages
+      - npm-cache:/root/.npm
+      - test-artifacts:/workspace/docs-builder/.artifacts
+
+  # Run the development server with dotnet watch. Code changes restart the
+  # CLI, while Markdown and static-file changes use the existing live reload.
+  # Start with `./dev.sh serve` and open http://localhost:3000.
+  #
+  # .artifacts/ and node_modules are mounted as named volumes so dotnet watch
+  # and npm ci never write root-owned files into the host checkout. The
+  # npm-cache volume retains downloaded packages so reinstalls after a
+  # lockfile change are fast.
+  serve:
+    image: docs-builder:tooling
+    working_dir: /src
+    entrypoint: ["sh", "build/dev/serve-entrypoint.sh"]
+    environment:
+      DOCS_BUILDER_BIND_ADDRESS: 0.0.0.0
+      DOTNET_USE_POLLING_FILE_WATCHER: "1"
+      DOTNET_WATCH_SUPPRESS_LAUNCH_BROWSER: "1"
+    ports:
+      - "127.0.0.1:3000:3000"
+    volumes:
+      - .:/src
+      - nuget-packages:/root/.nuget/packages
+      - npm-cache:/root/.npm
+      - node-modules:/src/src/Elastic.Documentation.Site/node_modules
+      - serve-artifacts:/src/.artifacts
+
+  # Run the docs API locally. Start with `./dev.sh serve-api` and connect
+  # an API client to http://localhost:8081.
+  api:
+    image: docs-builder:api
+    ports:
+      - "127.0.0.1:8081:8080"
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+    volumes:
+      - api-artifacts:/app/.artifacts
+
+  # Run the MCP server locally. Start with `./dev.sh serve-mcp` and connect
+  # an MCP client to http://localhost:8080/docs/_mcp.
+  #
+  # Pass MCP_SERVER_PROFILE=internal to switch to the internal docs profile.
+  mcp:
+    image: docs-builder:mcp
+    ports:
+      - "127.0.0.1:8080:8080"
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      MCP_SERVER_PROFILE: ${MCP_SERVER_PROFILE:-public}
+    volumes:
+      - mcp-artifacts:/app/.artifacts
+
+volumes:
+  npm-cache:
+  nuget-packages:
+  node-modules:
+  test-artifacts:
+  serve-artifacts:
+  build-artifacts:
+  api-artifacts:
+  mcp-artifacts:
