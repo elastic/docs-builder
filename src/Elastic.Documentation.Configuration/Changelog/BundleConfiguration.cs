@@ -81,7 +81,7 @@ public record BundleConfiguration
 
 	/// <summary>
 	/// Release trigger to profile mappings. <c>github</c> maps tag globs to profiles;
-	/// <c>unified</c> maps product IDs to profiles for any product-scoped release (versioned stack or date-based).
+	/// <c>products</c> maps product IDs to profiles for any product-scoped release (versioned stack or date-based).
 	/// </summary>
 	public BundleReleases? Releases { get; init; }
 }
@@ -180,24 +180,14 @@ public record BundleProfile
 /// </summary>
 public record BundleReleases
 {
-	public IReadOnlyList<GithubReleaseEntry>? Github { get; init; }
-	public IReadOnlyList<UnifiedReleaseEntry>? Unified { get; init; }
-}
+	/// <summary>
+	/// Maps GitHub release tag glob patterns to profiles. Key is the tag glob; value is the profile name.
+	/// </summary>
+	public IReadOnlyDictionary<string, string>? Github { get; init; }
 
-/// <summary>
-/// Maps a GitHub release tag glob pattern to a bundle profile.
-/// </summary>
-public record GithubReleaseEntry
-{
-	public required string Tag { get; init; }
-	public required string Profile { get; init; }
-}
-
-/// <summary>
-/// Maps a product ID to a bundle profile for any product-scoped release (versioned stack or date-based).
-/// </summary>
-public record UnifiedReleaseEntry
-{
-	public required string Product { get; init; }
-	public required string Profile { get; init; }
+	/// <summary>
+	/// Maps product IDs to profiles for any product-scoped release (versioned stack or date-based).
+	/// Key is the product ID; value is the profile name.
+	/// </summary>
+	public IReadOnlyDictionary<string, string>? Products { get; init; }
 }

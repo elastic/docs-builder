@@ -688,78 +688,56 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 		if (yaml == null)
 			return null;
 
-		List<GithubReleaseEntry>? github = null;
+		Dictionary<string, string>? github = null;
 		if (yaml.Github is { Count: > 0 })
 		{
 			github = [];
-			for (var i = 0; i < yaml.Github.Count; i++)
+			foreach (var (tag, profile) in yaml.Github)
 			{
-				var entry = yaml.Github[i];
-				if (string.IsNullOrWhiteSpace(entry.Tag))
-				{
-					collector.EmitError(configPath, $"bundle.releases.github[{i}].tag is required.");
-					return null;
-				}
-				if (string.IsNullOrWhiteSpace(entry.Profile))
-				{
-					collector.EmitError(configPath, $"bundle.releases.github[{i}].profile is required.");
-					return null;
-				}
-				if (profiles == null || !profiles.ContainsKey(entry.Profile))
+				if (profiles == null || !profiles.ContainsKey(profile))
 				{
 					collector.EmitError(
 						configPath,
-						$"bundle.releases.github[{i}].profile: '{entry.Profile}' is not defined in bundle.profiles."
+						$"bundle.releases.github['{tag}']: profile '{profile}' is not defined in bundle.profiles."
 					);
 					return null;
 				}
-				github.Add(new GithubReleaseEntry { Tag = entry.Tag, Profile = entry.Profile });
+				github[tag] = profile;
 			}
 		}
 
-		List<UnifiedReleaseEntry>? unified = null;
-		if (yaml.Unified is { Count: > 0 })
+		Dictionary<string, string>? products = null;
+		if (yaml.Products is { Count: > 0 })
 		{
-			unified = [];
-			for (var i = 0; i < yaml.Unified.Count; i++)
+			products = [];
+			foreach (var (product, profile) in yaml.Products)
 			{
-				var entry = yaml.Unified[i];
-				if (string.IsNullOrWhiteSpace(entry.Product))
-				{
-					collector.EmitError(configPath, $"bundle.releases.unified[{i}].product is required.");
-					return null;
-				}
-				if (string.IsNullOrWhiteSpace(entry.Profile))
-				{
-					collector.EmitError(configPath, $"bundle.releases.unified[{i}].profile is required.");
-					return null;
-				}
-				var normalizedProduct = entry.Product.Replace('_', '-');
+				var normalizedProduct = product.Replace('_', '-');
 				if (!validProductIds.Contains(normalizedProduct))
 				{
 					var available = string.Join(", ", validProductIds.OrderBy(p => p));
 					collector.EmitError(
 						configPath,
-						$"bundle.releases.unified[{i}].product: '{entry.Product}' is not in products.yml. Available products: {available}"
+						$"bundle.releases.products key '{product}' is not in products.yml. Available products: {available}"
 					);
 					return null;
 				}
-				if (profiles == null || !profiles.ContainsKey(entry.Profile))
+				if (profiles == null || !profiles.ContainsKey(profile))
 				{
 					collector.EmitError(
 						configPath,
-						$"bundle.releases.unified[{i}].profile: '{entry.Profile}' is not defined in bundle.profiles."
+						$"bundle.releases.products['{product}']: profile '{profile}' is not defined in bundle.profiles."
 					);
 					return null;
 				}
-				unified.Add(new UnifiedReleaseEntry { Product = normalizedProduct, Profile = entry.Profile });
+				products[normalizedProduct] = profile;
 			}
 		}
 
-		if (github == null && unified == null)
+		if (github == null && products == null)
 			return null;
 
-		return new BundleReleases { Github = github, Unified = unified };
+		return new BundleReleases { Github = github, Products = products };
 	}
 
 	/// <summary>

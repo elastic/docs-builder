@@ -333,7 +333,7 @@ internal sealed record BundleConfigurationYaml
 
 	/// <summary>
 	/// Release trigger to profile mappings. <c>github</c> maps tag globs to profiles;
-	/// <c>unified</c> maps product IDs to profiles for any product-scoped release (versioned stack or date-based).
+	/// <c>products</c> maps product IDs to profiles for any product-scoped release (versioned stack or date-based).
 	/// </summary>
 	public BundleReleasesYaml? Releases { get; set; }
 }
@@ -416,26 +416,16 @@ internal sealed record BundleProfileYaml
 /// </summary>
 internal sealed record BundleReleasesYaml
 {
-	public List<GithubReleaseEntryYaml>? Github { get; set; }
-	public List<UnifiedReleaseEntryYaml>? Unified { get; set; }
-}
+	/// <summary>
+	/// Maps GitHub release tag glob patterns to profiles. Key is the tag glob; value is the profile name.
+	/// </summary>
+	public Dictionary<string, string>? Github { get; set; }
 
-/// <summary>
-/// Maps a GitHub release tag glob pattern to a bundle profile.
-/// </summary>
-internal sealed record GithubReleaseEntryYaml
-{
-	public string? Tag { get; set; }
-	public string? Profile { get; set; }
-}
-
-/// <summary>
-/// Maps a product ID to a bundle profile for any product-scoped release (versioned stack or date-based).
-/// </summary>
-internal sealed record UnifiedReleaseEntryYaml
-{
-	public string? Product { get; set; }
-	public string? Profile { get; set; }
+	/// <summary>
+	/// Maps product IDs to profiles for any product-scoped release (versioned stack or date-based).
+	/// Key is the product ID; value is the profile name.
+	/// </summary>
+	public Dictionary<string, string>? Products { get; set; }
 }
 
 /// <summary>
