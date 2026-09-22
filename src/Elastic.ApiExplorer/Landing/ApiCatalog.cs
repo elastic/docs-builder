@@ -32,6 +32,9 @@ public class ApiCatalog : IApiGroupingModel
 
 	public Task<string?> RenderCommonMarkAsync(ApiRenderContext context, Cancel ctx = default) =>
 		Task.FromResult<string?>(LandingCommonMark.Catalog(Entries));
+
+	public Task<string?> RenderCommonMarkAsync(ApiRenderContext context, object? pageModel, Cancel ctx = default) =>
+		Task.FromResult<string?>(LandingCommonMark.Catalog(Entries));
 }
 
 public class ApiCatalogNavigationItem : IRootNavigationItem<ApiCatalog, INavigationItem>, INavigationItem

@@ -903,8 +903,8 @@ internal sealed partial class ChangelogCommands(
 					return 1;
 				}
 
-				var previousTag = await releaseService.FetchPreviousTagAsync(resolvedOwner, resolvedRepo, release.TagName, ctx);
-				if (previousTag == null)
+				var previousTagResult = await releaseService.FetchPreviousTagAsync(resolvedOwner, resolvedRepo, release.TagName, ctx);
+				if (previousTagResult.Tag == null)
 				{
 					collector.EmitError(
 						string.Empty,
@@ -912,6 +912,7 @@ internal sealed partial class ChangelogCommands(
 					);
 					return 1;
 				}
+				var previousTag = previousTagResult.Tag;
 
 				var resolution = await commitRangeService.ResolvePullRequestsAsync(
 					collector,
@@ -1388,8 +1389,8 @@ internal sealed partial class ChangelogCommands(
 				return 1;
 			}
 
-			var previousTag = await releaseService.FetchPreviousTagAsync(resolvedOwner, resolvedRepo, release.TagName, ctx);
-			if (previousTag == null)
+			var previousTagResult = await releaseService.FetchPreviousTagAsync(resolvedOwner, resolvedRepo, release.TagName, ctx);
+			if (previousTagResult.Tag == null)
 			{
 				collector.EmitError(
 					string.Empty,
@@ -1397,6 +1398,7 @@ internal sealed partial class ChangelogCommands(
 				);
 				return 1;
 			}
+			var previousTag = previousTagResult.Tag;
 
 			var resolution = await commitRangeService.ResolvePullRequestsAsync(
 				collector,
