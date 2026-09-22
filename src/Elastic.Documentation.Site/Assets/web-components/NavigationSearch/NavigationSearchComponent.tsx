@@ -2,10 +2,7 @@ import { config } from '../../config'
 import '../../eui-icons-cache'
 import { sharedQueryClient } from '../shared/queryClient'
 import { NavigationSearch } from './NavigationSearch'
-import {
-    navigationSearchStore,
-    type TypeFilter,
-} from './navigationSearch.store'
+import { type TypeFilter } from './useNavigationSearchQuery'
 import { EuiHorizontalRule, EuiProvider, useEuiTheme } from '@elastic/eui'
 import { css } from '@emotion/react'
 import r2wc from '@r2wc/react-to-web-component'
@@ -49,13 +46,6 @@ const NavigationSearchInner = ({
     const { euiTheme } = useEuiTheme()
     const typeFilter = parseTypeFilter(type)
 
-    // A cached health check mounts NavigationSearch on this render. An effect
-    // would run after that child's query, so a leftover search term would
-    // request with the previous filter.
-    if (navigationSearchStore.getState().typeFilter !== typeFilter) {
-        navigationSearchStore.getState().actions.setTypeFilter(typeFilter)
-    }
-
     const { data: isApiAvailable } = useQuery({
         queryKey: ['api-health'],
         queryFn: async () => {
@@ -86,6 +76,7 @@ const NavigationSearchInner = ({
                     placeholder ??
                     (typeFilter === 'api' ? 'Jump to API' : undefined)
                 }
+                typeFilter={typeFilter}
             />
             <EuiHorizontalRule
                 margin="none"

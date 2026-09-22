@@ -35,7 +35,6 @@ describe('NavigationSearchWrapper type attribute', () => {
     beforeEach(() => {
         sharedQueryClient.clear()
         navigationSearchStore.getState().actions.clearSearchTerm()
-        navigationSearchStore.getState().actions.setTypeFilter('all')
         global.fetch = jest.fn().mockImplementation((input: RequestInfo) => {
             const url = String(input)
             if (url.includes('/v1/navigation-search')) {

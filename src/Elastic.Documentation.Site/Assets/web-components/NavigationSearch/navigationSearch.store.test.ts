@@ -5,7 +5,6 @@ describe('navigationSearch.store', () => {
     beforeEach(() => {
         act(() => {
             navigationSearchStore.getState().actions.clearSearchTerm()
-            navigationSearchStore.getState().actions.setTypeFilter('all')
         })
     })
 
@@ -62,37 +61,12 @@ describe('navigationSearch.store', () => {
             // Assert
             expect(navigationSearchStore.getState().searchTerm).toBe('')
         })
-
-        it('keeps the type filter when clearing the search term', () => {
-            act(() => {
-                navigationSearchStore.getState().actions.setTypeFilter('api')
-                navigationSearchStore.getState().actions.setSearchTerm('_bulk')
-                navigationSearchStore.getState().actions.clearSearchTerm()
-            })
-
-            expect(navigationSearchStore.getState().typeFilter).toBe('api')
-            expect(navigationSearchStore.getState().searchTerm).toBe('')
-        })
     })
 
     describe('initial state', () => {
         it('should have empty search term on initialization', () => {
             // Assert
             expect(navigationSearchStore.getState().searchTerm).toBe('')
-        })
-    })
-
-    describe('setTypeFilter', () => {
-        it('stores docs and api filters, never doc', () => {
-            act(() => {
-                navigationSearchStore.getState().actions.setTypeFilter('docs')
-            })
-            expect(navigationSearchStore.getState().typeFilter).toBe('docs')
-
-            act(() => {
-                navigationSearchStore.getState().actions.setTypeFilter('api')
-            })
-            expect(navigationSearchStore.getState().typeFilter).toBe('api')
         })
     })
 })
