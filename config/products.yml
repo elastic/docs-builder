@@ -78,6 +78,9 @@ products:
     repository: 'docs-builder'
     features:
       public-reference: false
+      # Bundles are cut at release time from the GitHub release. Omitting the key resolves
+      # to the same path; it is spelled out so `changelog validate-onboarding` reads true.
+      release-notes: on-release
   docs-playground-release-notes-changelogs:
     display: 'Release Notes Playground (Changelogs)'
     features:
@@ -85,6 +88,11 @@ products:
       release-notes: prestage
   docs-playground-release-notes-tagged:
     display: 'Release Notes Playground (Tagged)'
+    features:
+      public-reference: false
+      release-notes: on-release
+  docs-playground-release-notes-tagged-workflow:
+    display: 'Release Notes Playground (Tagged Workflow)'
     features:
       public-reference: false
       release-notes: on-release
@@ -165,8 +173,10 @@ products:
       release-notes: false
   elastic-docs:
     display: 'Elastic Documentation'
+    repository: 'docs-content'
     features:
       public-reference: false
+      release-notes: on-release
   elastic-maps-server:
     display: 'Elastic Maps Server'
     versioning: 'stack'

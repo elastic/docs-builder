@@ -240,3 +240,6 @@ references:
   docs-playground-release-notes-tagged:
     private: true
     skip: true
+  docs-playground-release-notes-tagged-workflow:
+    private: true
+    skip: true
