@@ -8,7 +8,7 @@ using Elastic.Transport;
 using Elastic.Transport.Products.Elasticsearch;
 using Microsoft.Extensions.Logging;
 
-namespace Elastic.Markdown.Exporters.Elasticsearch;
+namespace Elastic.Documentation.Indexing.Exporters.Elasticsearch;
 
 /// <summary>
 /// Shared Elasticsearch operations with retry logic and async task management.
