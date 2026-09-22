@@ -7,8 +7,7 @@
     <IsAotCompatible>true</IsAotCompatible>
     <InvariantGlobalization>true</InvariantGlobalization>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
-    <!-- IDE0130: namespace-folder mismatch is intentional — exporter namespaces are kept as Elastic.Markdown.* for call-site compat -->
-    <NoWarn>$(NoWarn);CS1591;CS1573;CS1572;CS1571;CS1570;CS1574;IDE0130</NoWarn>
+    <NoWarn>$(NoWarn);CS1591;CS1573;CS1572;CS1571;CS1570;CS1574</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
@@ -25,6 +24,9 @@
   <ItemGroup>
     <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
       <_Parameter1>Elastic.Documentation.Indexing.Tests</_Parameter1>
+    </AssemblyAttribute>
+    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
+      <_Parameter1>Elastic.Markdown.Tests</_Parameter1>
     </AssemblyAttribute>
   </ItemGroup>
 
