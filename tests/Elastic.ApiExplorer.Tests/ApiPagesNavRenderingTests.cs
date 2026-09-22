@@ -194,7 +194,6 @@ public partial class ApiPagesNavRenderingTests
 			Breadcrumbs = ApiBreadcrumbTrail.Empty,
 			VersionSwitcherItems = versionSwitcherItems ?? [],
 			HubSwitcherItems = hubSwitcherItems ?? [],
-			BuildType = buildType,
 		};
 	}
 
