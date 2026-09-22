@@ -9,14 +9,14 @@ import {
 import { useGlobalKeyboardShortcut } from './useGlobalKeyboardShortcut'
 import { useIsNavigationSearchCooldownActive } from './useNavigationSearchCooldown'
 import { useNavigationSearchKeyboardNavigation } from './useNavigationSearchKeyboardNavigation'
-import { useNavigationSearchQuery } from './useNavigationSearchQuery'
+import {
+    useNavigationSearchQuery,
+    type TypeFilter,
+} from './useNavigationSearchQuery'
 import { useNavigationSearchTelemetry } from './useNavigationSearchTelemetry'
 import {
     EuiInputPopover,
     useEuiTheme,
-    useEuiFontSize,
-    EuiBetaBadge,
-    EuiLink,
     EuiIcon,
     EuiText,
     useIsWithinMaxBreakpoint,
@@ -27,11 +27,13 @@ import { useRef, useState, useEffect } from 'react'
 interface Props {
     placeholder?: string
     size?: 's' | 'm' | 'l'
+    typeFilter?: TypeFilter
 }
 
 export const NavigationSearch = ({
     placeholder = 'Jump to page',
     size = 'm',
+    typeFilter = 'all',
 }: Props) => {
     const { euiTheme } = useEuiTheme()
     const isMobile = useIsWithinMaxBreakpoint('s')
@@ -41,8 +43,9 @@ export const NavigationSearch = ({
     const selectedIndex = useSelectedIndex()
     const { setSearchTerm } = useSearchActions()
     const isSearchCooldownActive = useIsNavigationSearchCooldownActive()
-    const { isLoading, isFetching, data } = useNavigationSearchQuery()
-    const { trackOpened, trackClosed } = useNavigationSearchTelemetry()
+    const { isLoading, isFetching, data } = useNavigationSearchQuery(typeFilter)
+    const { trackOpened, trackClosed } =
+        useNavigationSearchTelemetry(typeFilter)
 
     const results = data?.results ?? []
     const hasContent = !!searchTerm.trim()
@@ -68,6 +71,7 @@ export const NavigationSearch = ({
         isLoading: isSearching,
         onClose: () => setIsPopoverOpen(false),
         onNavigate: handleResultClick,
+        typeFilter,
     })
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -191,6 +195,7 @@ export const NavigationSearch = ({
                         isKeyboardNavigating={isKeyboardNavigating}
                         onMouseMove={handleMouseMove}
                         onResultClick={handleResultClick}
+                        typeFilter={typeFilter}
                     />
                 </div>
             )}
@@ -198,11 +203,14 @@ export const NavigationSearch = ({
     )
 }
 
-const FEEDBACK_URL =
-    'https://github.com/elastic/docs-eng-team/issues/new?template=search-or-ask-ai-feedback.yml'
-
 const KEYBOARD_SHORTCUTS = [
     { keys: ['returnKey'], label: 'Jump to' },
+    { keys: ['sortUp', 'sortDown'], label: 'Navigate' },
+    { keys: ['Esc'], label: 'Close' },
+]
+
+const API_KEYBOARD_SHORTCUTS = [
+    { keys: ['returnKey'], label: 'Jump to API' },
     { keys: ['sortUp', 'sortDown'], label: 'Navigate' },
     { keys: ['Esc'], label: 'Close' },
 ]
@@ -211,12 +219,14 @@ interface SearchDropdownContentProps {
     isKeyboardNavigating: React.MutableRefObject<boolean>
     onMouseMove: () => void
     onResultClick: () => void
+    typeFilter: TypeFilter
 }
 
 const SearchDropdownContent = ({
     isKeyboardNavigating,
     onMouseMove,
     onResultClick,
+    typeFilter,
 }: SearchDropdownContentProps) => {
     return (
         <>
@@ -224,23 +234,29 @@ const SearchDropdownContent = ({
                 isKeyboardNavigating={isKeyboardNavigating}
                 onMouseMove={onMouseMove}
                 onResultClick={onResultClick}
+                typeFilter={typeFilter}
             />
-            <SearchDropdownFooter />
+            <SearchDropdownFooter typeFilter={typeFilter} />
         </>
     )
 }
 
-const SearchDropdownFooter = () => {
+const SearchDropdownFooter = ({ typeFilter }: { typeFilter: TypeFilter }) => {
     const { euiTheme } = useEuiTheme()
-    const { fontSize: sFontsize, lineHeight: sLineHeight } = useEuiFontSize('s')
     const isMobile = useIsWithinMaxBreakpoint('s')
+    const shortcuts =
+        typeFilter === 'api' ? API_KEYBOARD_SHORTCUTS : KEYBOARD_SHORTCUTS
+
+    if (isMobile) {
+        return null
+    }
 
     return (
         <div
             css={css`
                 display: flex;
                 align-items: center;
-                justify-content: space-between;
+                justify-content: flex-end;
                 min-height: 40px;
                 box-sizing: content-box;
                 border-top: 1px solid ${euiTheme.colors.borderBaseSubdued};
@@ -249,63 +265,16 @@ const SearchDropdownFooter = () => {
                 border-bottom-left-radius: ${euiTheme.size.s};
                 padding-inline: ${euiTheme.size.base};
                 padding-block: ${euiTheme.size.xs};
+                gap: ${euiTheme.size.base};
             `}
         >
-            <div
-                css={css`
-                    display: flex;
-                    align-items: center;
-                    gap: ${euiTheme.size.s};
-                `}
-            >
-                <EuiBetaBadge
-                    color="accent"
-                    label="ALPHA"
-                    size="s"
-                    anchorProps={{
-                        css: css`
-                            display: inline-flex;
-                            align-items: center;
-                        `,
-                    }}
+            {shortcuts.map((shortcut, index) => (
+                <KeyboardShortcutItem
+                    key={index}
+                    keys={shortcut.keys}
+                    label={shortcut.label}
                 />
-                <span
-                    css={css`
-                        font-size: ${euiTheme.size.m};
-                        color: ${euiTheme.colors.textDisabled};
-                    `}
-                >
-                    ·
-                </span>
-                <EuiLink
-                    href={FEEDBACK_URL}
-                    target="_blank"
-                    external
-                    css={css`
-                        font-size: ${sFontsize};
-                        line-height: ${sLineHeight};
-                    `}
-                >
-                    Give feedback
-                </EuiLink>
-            </div>
-            {!isMobile && (
-                <div
-                    css={css`
-                        display: flex;
-                        align-items: center;
-                        gap: ${euiTheme.size.base};
-                    `}
-                >
-                    {KEYBOARD_SHORTCUTS.map((shortcut, index) => (
-                        <KeyboardShortcutItem
-                            key={index}
-                            keys={shortcut.keys}
-                            label={shortcut.label}
-                        />
-                    ))}
-                </div>
-            )}
+            ))}
         </div>
     )
 }

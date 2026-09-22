@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions;
+using System.Text;
 using System.Text.RegularExpressions;
 using Elastic.ApiExplorer.Model;
 using Elastic.ApiExplorer.Operations;
@@ -78,4 +79,75 @@ public static partial class ApiMarkdown
 	// Regex to match mustache-style patterns like {{var}} or {{{var}}} that conflict with docs-builder substitutions
 	[GeneratedRegex(@"\{\{\{?[^}]+\}?\}\}")]
 	private static partial Regex MustachePattern();
+
+	internal const string OperationListLabel = "All methods and paths for this operation:";
+	internal const string OperationListMarkdownHeader = "**All methods and paths for this operation:**";
+
+	[GeneratedRegex(@"<span class=""operation-verb (\w+)"">(\w+)</span>\s*<span class=""operation-path"">([^<]+)</span>", RegexOptions.IgnoreCase)]
+	private static partial Regex OperationVerbPathRegex();
+
+	/// <summary>
+	/// Extracts the "All methods and paths for this operation" HTML block from an OpenAPI
+	/// description, returning both the cleaned description and the parsed verb/path pairs.
+	/// Returns the original description and an empty list when no such block is found.
+	/// </summary>
+	internal static (string Description, IReadOnlyList<(string Method, string Route)> Urls) ExtractOperationList(string? description)
+	{
+		if (string.IsNullOrEmpty(description))
+			return (description ?? string.Empty, []);
+
+		if (!description.Contains(OperationListMarkdownHeader, StringComparison.Ordinal))
+			return (description, []);
+
+		var matches = OperationVerbPathRegex().Matches(description);
+		if (matches.Count == 0)
+			return (description, []);
+
+		var htmlStartIndex = description.IndexOf("<div>", StringComparison.Ordinal);
+		var lastMatchEnd = matches[^1].Index + matches[^1].Length;
+		var htmlEndIndex = description.IndexOf("</div>", lastMatchEnd, StringComparison.Ordinal);
+		if (htmlEndIndex == -1 || htmlStartIndex == -1)
+			return (description, []);
+
+		// Strip the header line and HTML block; keep any text that follows
+		var headerStart = description.LastIndexOf(OperationListMarkdownHeader, htmlStartIndex, StringComparison.Ordinal);
+		var beforeHeader = headerStart > 0 ? description[..headerStart].Trim() : string.Empty;
+		var afterHtml = description[(htmlEndIndex + 6)..].Trim();
+
+		var cleanDescription = (beforeHeader, afterHtml) switch
+		{
+			({ Length: 0 }, _) => afterHtml,
+			(_, { Length: 0 }) => beforeHeader,
+			_ => $"{beforeHeader}\n\n{afterHtml}"
+		};
+
+		var urls = matches.Select(static m => (Method: m.Groups[1].Value.ToLowerInvariant(), Route: m.Groups[3].Value.Trim())).ToArray();
+
+		return (cleanDescription.Trim(), urls);
+	}
+
+	/// <summary>
+	/// Transforms HTML operation lists in descriptions to markdown format.
+	/// Used by the search export pipeline where only markdown output is needed.
+	/// </summary>
+	internal static string TransformOperationListToMarkdown(string? description)
+	{
+		var (clean, urls) = ExtractOperationList(description);
+		if (urls.Count == 0)
+			return clean;
+
+		var result = new StringBuilder();
+		if (!string.IsNullOrWhiteSpace(clean))
+		{
+			_ = result.AppendLine(clean);
+			_ = result.AppendLine();
+		}
+
+		_ = result.AppendLine(OperationListMarkdownHeader);
+		_ = result.AppendLine();
+		foreach (var (method, route) in urls)
+			_ = result.AppendLine($"- **{method.ToUpperInvariant()}** `{route}`");
+
+		return result.ToString().Trim();
+	}
 }

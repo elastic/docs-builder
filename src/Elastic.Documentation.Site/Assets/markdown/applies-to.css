@@ -70,6 +70,13 @@
 
 	.applies.applies-block {
 		@apply border-b-grey-20 flex flex-wrap gap-2 border-b-1 pb-4;
+
+		/* display:contents collapses hosts without a badge; a box lets several wrap. */
+		applies-to-popover:not(:has(.applicable-info)) {
+			display: inline-block;
+			min-height: 30px;
+			min-width: 47px;
+		}
 	}
 
 	.applies.applies-inline {

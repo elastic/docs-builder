@@ -79,4 +79,16 @@ public class S3EtagCalculatorTests
 
 		etagA.Should().NotBe(etagB);
 	}
+
+	[Fact]
+	[SuppressMessage("Security", "CA5351:Do Not Use Broken Cryptographic Algorithms")]
+	public void CalculateS3ETag_Bytes_ReturnsMd5Hex()
+	{
+		var content = "link: 100"u8.ToArray();
+		var expected = Convert.ToHexStringLower(MD5.HashData(content));
+
+		var etag = _calculator.CalculateS3ETag(content);
+
+		etag.Should().Be(expected);
+	}
 }

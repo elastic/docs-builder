@@ -1,0 +1,62 @@
+name: Release notes backfill
+
+# Builds and publishes a changelog bundle for a release tag that already shipped.
+# Replaces the workflow_dispatch escape hatch that changelog-publish.yml used to provide.
+# The release-time path lives in release.yml; this workflow only exists for past tags.
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release tag to bundle (for example, 1.58.0).'
+        type: string
+        required: true
+
+permissions: {}
+
+concurrency:
+  group: release-notes-backfill-${{ inputs.version }}
+  cancel-in-progress: false
+
+jobs:
+  bundle:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read
+      pull-requests: read
+    outputs:
+      bundle-path: ${{ steps.create.outputs.bundle-path }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.version }}
+          persist-credentials: false
+
+      - name: Create bundle
+        id: create
+        uses: elastic/docs-actions/changelog/bundle-create-version@v1
+        with:
+          config: docs/changelog.yml
+          version: ${{ inputs.version }}
+          repo: ${{ github.event.repository.name }}
+          owner: ${{ github.repository_owner }}
+
+  bundle-publish:
+    needs: bundle
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+      packages: read
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.version }}
+          persist-credentials: false
+
+      - name: Publish bundle to S3
+        uses: elastic/docs-actions/changelog/bundle-publish@v1
+        with:
+          config: docs/changelog.yml
+          bundle-path: ${{ needs.bundle.outputs.bundle-path }}
