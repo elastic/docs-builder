@@ -4,7 +4,7 @@
 
 using System.Text.Json.Serialization;
 
-namespace Elastic.Markdown;
+namespace Elastic.Documentation.Site;
 
 // Model structure based on https://developers.google.com/search/docs/appearance/structured-data/breadcrumb#json-ld
 public record BreadcrumbsList
