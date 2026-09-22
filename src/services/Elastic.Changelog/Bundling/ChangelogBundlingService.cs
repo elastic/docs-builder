@@ -740,13 +740,14 @@ public partial class ChangelogBundlingService(
 				var hasOwnerRepoPlaceholder = descriptionTemplate.Contains("{owner}") || descriptionTemplate.Contains("{repo}");
 
 #pragma warning disable CS0618
-				if (hasVersionPlaceholder && filterResult.Version == "unknown" && string.IsNullOrEmpty(profile.OutputProducts))
+				var hasProductBinding = !string.IsNullOrWhiteSpace(profile.Product) || !string.IsNullOrEmpty(profile.OutputProducts);
 #pragma warning restore CS0618
+				if (hasVersionPlaceholder && filterResult.Version == "unknown" && !hasProductBinding)
 				{
 					collector.EmitError(
 						string.Empty,
 						$"Profile '{input.Profile}' uses {{version}} or {{lifecycle}} placeholders in description but no version is available for substitution. " +
-							"Either provide a version argument, or add 'output_products' pattern to the profile configuration."
+							"Either provide a version argument, or set 'product' (or the deprecated 'output_products') on the profile configuration."
 					);
 					return null;
 				}

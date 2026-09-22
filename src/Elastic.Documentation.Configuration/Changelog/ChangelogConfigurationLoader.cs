@@ -732,6 +732,14 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 					);
 					return null;
 				}
+				if (products.ContainsKey(normalizedProduct))
+				{
+					collector.EmitError(
+						configPath,
+						$"bundle.releases.products: duplicate normalized key '{normalizedProduct}' (from '{product}'). Use only one spelling per product."
+					);
+					return null;
+				}
 				if (profiles == null || !profiles.ContainsKey(profile))
 				{
 					collector.EmitError(
