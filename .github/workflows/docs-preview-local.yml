@@ -369,6 +369,10 @@ jobs:
           AWS_RETRY_MODE: standard
           AWS_MAX_ATTEMPTS: 6
         run: |
+          # Stash redirects.json before compression — the Deploy redirects step reads it as plain JSON.
+          [ -f .artifacts/docs/html/redirects.json ] \
+            && cp .artifacts/docs/html/redirects.json /tmp/redirects.json
+
           # Pre-compress the entire output tree in place so aws s3 sync ships ~120 MB instead of ~2 GiB.
           # --content-encoding gzip applies sync-wide, so one pass keeps --delete semantics correct.
           # gzip -n omits the timestamp so identical content produces identical bytes (deterministic).
@@ -391,8 +395,8 @@ jobs:
         # Don't block the preview deploy on it; treat a permissions gap as a follow-up, not an outage.
         continue-on-error: true
         run: |
-          if [ -f .artifacts/docs/html/redirects.json ]; then
-            dotnet run --no-build -c release --project src/tooling/docs-builder -- assembler deploy update-redirects --no-delete preview --redirectsFile .artifacts/docs/html/redirects.json
+          if [ -f /tmp/redirects.json ]; then
+            dotnet run --no-build -c release --project src/tooling/docs-builder -- assembler deploy update-redirects --no-delete preview --redirectsFile /tmp/redirects.json
           fi
 
       - name: Update Link Index
