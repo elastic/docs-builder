@@ -1729,48 +1729,6 @@ a.type-linked:hover {
 	font-weight: 500;
 }
 
-/* Operation description — same body copy as property/query descriptions (14/20, #516381) */
-.api-description-url-label {
-	margin: 0 0 0.5rem;
-	font-size: 12px;
-	font-weight: 500;
-	color: var(--color-subdued, #516381);
-}
-
-.api-description-url-listing {
-	margin-bottom: 1rem;
-
-	.api-method {
-		height: 18px;
-		font-size: 10px;
-		line-height: 12px;
-		padding: 0 4px;
-		gap: 2px;
-		border-radius: 5px;
-	}
-
-	.api-method-icon {
-		width: 9px;
-		height: 9px;
-	}
-
-	.api-method-icon svg {
-		width: 9px;
-		height: 9px;
-	}
-
-	.api-url {
-		margin-left: 0;
-		color: #516381;
-		font-family:
-			'Roboto Mono', ui-monospace, SFMono-Regular, Menlo, Monaco,
-			Consolas, monospace;
-		font-size: 13px;
-		font-weight: 300;
-		line-height: 20px;
-	}
-}
-
 .api-operation-description {
 	color: var(--color-subdued, #516381);
 	font-family: var(--font-body, Inter, ui-sans-serif, system-ui, sans-serif);
@@ -1831,6 +1789,75 @@ a.type-linked:hover {
 	a:hover,
 	a.reference:hover {
 		text-decoration: underline;
+	}
+
+	/* bump.sh HTML classes that slip through into OAS description HTML.
+	   Styled to match .api-method / .api-url but at the smaller size used
+	   in .api-description-url-listing (18 px badge, 13 px path). */
+	.operation-verb {
+		display: inline-flex;
+		flex-shrink: 0;
+		align-items: center;
+		justify-content: center;
+		box-sizing: border-box;
+		height: 18px;
+		padding: 0 4px;
+		border: 1px solid;
+		border-radius: 5px;
+		font-family: var(
+			--font-body,
+			Inter,
+			ui-sans-serif,
+			system-ui,
+			sans-serif
+		);
+		font-size: 10px;
+		font-weight: 500;
+		line-height: 12px;
+		text-transform: uppercase;
+		white-space: nowrap;
+		vertical-align: middle;
+		/* default: neutral gray (HEAD/OPTIONS/unknown) */
+		background-color: #fff;
+		border-color: #cad3e2;
+		color: #5a6d8c;
+	}
+
+	.operation-verb.get {
+		background-color: #c9f3e3;
+		border-color: #aee8d2;
+		color: #008a5e;
+	}
+
+	.operation-verb.post {
+		background-color: #d9e8ff;
+		border-color: #bfdbff;
+		color: #0b64dd;
+	}
+
+	.operation-verb.put,
+	.operation-verb.patch {
+		background-color: #ffdebf;
+		border-color: #ffcda1;
+		color: #ed6723;
+	}
+
+	.operation-verb.delete {
+		background-color: #fdddd8;
+		border-color: #ffc9c2;
+		color: #c61e25;
+	}
+
+	.operation-path {
+		margin-left: 4px;
+		color: #516381;
+		font-family:
+			'Roboto Mono', ui-monospace, SFMono-Regular, Menlo, Monaco,
+			Consolas, monospace;
+		font-size: 13px;
+		font-weight: 300;
+		line-height: 20px;
+		vertical-align: middle;
 	}
 }
 
