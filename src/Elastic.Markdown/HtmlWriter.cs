@@ -15,6 +15,7 @@ using Elastic.Documentation.Site.FileProviders;
 using Elastic.Documentation.Site.Navigation;
 using Elastic.Markdown.Extensions.DetectionRules;
 using Elastic.Markdown.IO;
+using Elastic.Markdown.Myst;
 using Elastic.Markdown.Page;
 using Markdig.Syntax;
 using RazorSlices;
@@ -55,15 +56,17 @@ public class HtmlWriter(
 		RenderCore(markdown, source, stripFirstHeadingLevel1: false);
 
 	/// <inheritdoc />
-	public string RenderApiDescription(string markdown, IFileInfo? source) =>
-		RenderCore(markdown, source, stripFirstHeadingLevel1: true, skipValidation: true);
-
-	private string RenderCore(string markdown, IFileInfo? source, bool stripFirstHeadingLevel1, bool skipValidation = false)
+	public string RenderApiDescription(string markdown, IFileInfo? source)
 	{
 		source ??= DocumentationSet.Context.ConfigurationPath;
-		var parsed = skipValidation
-			? DocumentationSet.MarkdownParser.ParseApiDescriptionString(markdown, source)
-			: DocumentationSet.MarkdownParser.ParseStringAsync(markdown, source, null);
+		var parsed = DocumentationSet.MarkdownParser.ParseApiDescriptionString(markdown, source);
+		return MarkdownFile.CreateHtml(parsed, stripFirstHeadingLevel1: true, MarkdownParser.ApiDescriptionPipeline);
+	}
+
+	private string RenderCore(string markdown, IFileInfo? source, bool stripFirstHeadingLevel1)
+	{
+		source ??= DocumentationSet.Context.ConfigurationPath;
+		var parsed = DocumentationSet.MarkdownParser.ParseStringAsync(markdown, source, null);
 		return MarkdownFile.CreateHtml(parsed, stripFirstHeadingLevel1);
 	}
 

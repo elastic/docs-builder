@@ -1820,6 +1820,18 @@ a.type-linked:hover {
 	b {
 		font-weight: 600;
 	}
+
+	/* Anchor links rendered from OAS HTML descriptions — bump.sh uses a "reference" class */
+	a,
+	a.reference {
+		color: var(--color-blue-elastic, #0b64dd);
+		text-decoration: none;
+	}
+
+	a:hover,
+	a.reference:hover {
+		text-decoration: underline;
+	}
 }
 
 /* Example blocks — response card chrome.
