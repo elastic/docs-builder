@@ -70,4 +70,18 @@ describe('navigationSearch.store', () => {
             expect(navigationSearchStore.getState().searchTerm).toBe('')
         })
     })
+
+    describe('setTypeFilter', () => {
+        it('stores docs and api filters, never doc', () => {
+            act(() => {
+                navigationSearchStore.getState().actions.setTypeFilter('docs')
+            })
+            expect(navigationSearchStore.getState().typeFilter).toBe('docs')
+
+            act(() => {
+                navigationSearchStore.getState().actions.setTypeFilter('api')
+            })
+            expect(navigationSearchStore.getState().typeFilter).toBe('api')
+        })
+    })
 })
