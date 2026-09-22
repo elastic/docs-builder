@@ -299,6 +299,14 @@ jobs:
           && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
         uses: elastic/docs-builder/.github/actions/bootstrap@main
 
+      - name: Build
+        if: >
+          env.MATCH == 'true'
+          && needs.check.outputs.any_modified != 'false'
+          && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
+        run: |
+          dotnet build -c release src/tooling/docs-builder
+
       - name: 'Validate redirect rules'
         if: >
           env.MATCH == 'true'
@@ -306,7 +314,7 @@ jobs:
           && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
         continue-on-error: true
         run: |
-          dotnet run --project src/tooling/docs-builder -- diff validate
+          dotnet run --no-build -c release --project src/tooling/docs-builder -- diff validate
 
       - name: Build documentation
         id: internal-docs-build
@@ -315,7 +323,7 @@ jobs:
           && needs.check.outputs.any_modified != 'false'
           && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
         run: |
-          dotnet run --project src/tooling/docs-builder -- --strict --path-prefix "${PATH_PREFIX}"
+          dotnet run --no-build -c release --project src/tooling/docs-builder -- --strict --path-prefix "${PATH_PREFIX}"
 
       - name: 'Validate inbound links'
         if: >
@@ -325,7 +333,7 @@ jobs:
           && steps.internal-docs-build.outputs.skip != 'true'
           && needs.check.outputs.any_modified != 'false'
         run: |
-          dotnet run --project src/tooling/docs-builder -- inbound-links validate-link-reference
+          dotnet run --no-build -c release --project src/tooling/docs-builder -- inbound-links validate-link-reference
 
       - name: 'Validate local path prefixes against those claimed by global navigation.yml'
         id: internal-validate-path-prefixes
@@ -337,7 +345,7 @@ jobs:
           && steps.internal-docs-build.outcome != 'skipped'
           && needs.check.outputs.any_modified != 'false'
         run: |
-          dotnet run --project src/tooling/docs-builder -- assembler navigation validate-link-reference
+          dotnet run --no-build -c release --project src/tooling/docs-builder -- assembler navigation validate-link-reference
 
       - uses: elastic/docs-builder/.github/actions/aws-auth@main
         if: >
@@ -361,7 +369,13 @@ jobs:
           AWS_RETRY_MODE: standard
           AWS_MAX_ATTEMPTS: 6
         run: |
-          aws s3 sync .artifacts/docs/html "s3://elastic-docs-v3-website-preview${PATH_PREFIX}" --delete --no-follow-symlinks
+          # Pre-compress the entire output tree in place so aws s3 sync ships ~120 MB instead of ~2 GiB.
+          # --content-encoding gzip applies sync-wide, so one pass keeps --delete semantics correct.
+          # gzip -n omits the timestamp so identical content produces identical bytes (deterministic).
+          find .artifacts/docs/html -type f -print0 \
+            | xargs -0 -P "$(nproc)" -I{} sh -c 'gzip -9 -n -c "$1" > "$1.gz" && mv -f "$1.gz" "$1"' _ {}
+          aws s3 sync .artifacts/docs/html "s3://elastic-docs-v3-website-preview${PATH_PREFIX}" \
+            --delete --no-follow-symlinks --content-encoding gzip
           aws cloudfront create-invalidation \
             --distribution-id EKT7LT5PM8RKS \
             --paths "${PATH_PREFIX}" "${PATH_PREFIX}/*"
@@ -378,7 +392,7 @@ jobs:
         continue-on-error: true
         run: |
           if [ -f .artifacts/docs/html/redirects.json ]; then
-            dotnet run --project src/tooling/docs-builder -- assembler deploy update-redirects --no-delete preview --redirectsFile .artifacts/docs/html/redirects.json
+            dotnet run --no-build -c release --project src/tooling/docs-builder -- assembler deploy update-redirects --no-delete preview --redirectsFile .artifacts/docs/html/redirects.json
           fi
 
       - name: Update Link Index
