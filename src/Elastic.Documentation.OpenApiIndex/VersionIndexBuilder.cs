@@ -16,7 +16,6 @@ namespace Elastic.Documentation.OpenApiIndex;
 /// </summary>
 public static class VersionIndexBuilder
 {
-	// Must stay equal to ApiSpecVersion.LatestIndexKey. The projects do not reference each other.
 	private const string LatestKey = "main";
 
 	/// <summary>

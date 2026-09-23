@@ -143,12 +143,6 @@ public class OpenApiGenerator(
 		var specVersions = versionedDocuments.Select(v => v.Version.SpecVersion).ToArray();
 		var highestMajor = specVersions.Max(v => v.TryGetMajor(out var major) ? major : default(int?));
 
-		// Each version gets an independent ApiRenderContext, navigation tree and navigation HTML
-		// writer, so there is no shared mutable state between concurrent versions.  Versions
-		// are rendered sequentially within a product to avoid oversubscribing the thread pool:
-		// the outer Parallel.ForEachAsync in GenerateProducts already fans out all product×version
-		// units concurrently, so a second level of parallelism here would multiply concurrency to
-		// ProcessorCount² rather than keeping it at ProcessorCount.
 		foreach (var versioned in versionedDocuments)
 		{
 			ctx.ThrowIfCancellationRequested();
@@ -180,12 +174,6 @@ public class OpenApiGenerator(
 		};
 	}
 
-	/// <summary>
-	/// Resolves every OpenAPI document to render for one API key, including canonical latest
-	/// and released numeric majors. Returns empty documents when nothing could be resolved.
-	/// <see cref="ResolvedProductDocuments.UnmatchedBaseFilesVersion"/> is the declared latest
-	/// version only when that document actually resolved.
-	/// </summary>
 	internal async Task<ResolvedProductDocuments> ResolveDocumentsForProduct(string apiKey, ResolvedApiConfiguration apiConfig, Cancel ctx)
 	{
 		var versionless = IsVersionlessProduct(apiConfig.Product);
@@ -250,10 +238,6 @@ public class OpenApiGenerator(
 
 	private static bool IsVersionlessProduct(Product product) => product.VersioningSystem?.IsVersionless == true;
 
-	/// <summary>
-	/// Released majors map 1:1. Latest uses the highest rendered numeric major so the
-	/// unversioned URL matches the current-major overlay (the one page CLI authors expect).
-	/// </summary>
 	internal static int? SupplementalMajor(ApiSpecVersion version, int? highestNumericMajor) =>
 		version.TryGetMajor(out var major) ? major : highestNumericMajor;
 
