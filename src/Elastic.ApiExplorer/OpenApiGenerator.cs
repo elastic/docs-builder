@@ -61,6 +61,13 @@ public class OpenApiGenerator(
 	private readonly StaticFileContentHashProvider _contentHashProvider = new(new EmbeddedOrPhysicalFileProvider(context));
 	private readonly VersionIndexClient _versionIndexClient = versionIndexClient ?? new VersionIndexClient();
 	private readonly IOpenApiSpecificationReader _openApiReader = openApiReader ?? OpenApiReader.Instance;
+	private readonly ConcurrentDictionary<string, string> _aliasRedirects = new(StringComparer.OrdinalIgnoreCase);
+
+	/// <summary>
+	/// Alias URL → canonical URL pairs collected during generation. Populated only when
+	/// <c>aliases:</c> is declared on an API entry; callers merge these into <c>redirects.json</c>.
+	/// </summary>
+	public IReadOnlyDictionary<string, string> AliasRedirects => _aliasRedirects;
 
 	public LandingNavigationItem CreateNavigation(
 		string apiUrlSuffix,
@@ -350,7 +357,7 @@ public class OpenApiGenerator(
 		await RenderNavigationItems(renderContext, navigationRenderer, navigation, ctx).ConfigureAwait(false);
 		await WriteSpecDownloads(navigation, generation.Document, ctx).ConfigureAwait(false);
 		if (generation.Moniker == "main" && generation.ApiConfig is { Aliases.Count: > 0 } apiConfigWithAliases)
-			await WriteAliasRedirectPages(generation.CurrentApiKey!, apiConfigWithAliases.Aliases, navigation, ctx).ConfigureAwait(false);
+			CollectAliasRedirects(generation.CurrentApiKey!, apiConfigWithAliases.Aliases, navigation);
 	}
 
 	private static IReadOnlyList<string> CollectPageUrls(INavigationItem navigation)
@@ -373,7 +380,7 @@ public class OpenApiGenerator(
 				CollectPageUrlsRecursive(child, urls);
 	}
 
-	private async Task WriteAliasRedirectPages(string apiKey, IReadOnlyList<string> aliases, INavigationItem navigation, Cancel ctx)
+	private void CollectAliasRedirects(string apiKey, IReadOnlyList<string> aliases, INavigationItem navigation)
 	{
 		var urls = CollectPageUrls(navigation);
 		var canonicalRoot = ApiUrlBuilder.ProductRoot(context.UrlPathPrefix, apiKey);
@@ -388,26 +395,9 @@ public class OpenApiGenerator(
 					continue;
 
 				var suffix = trimmed[canonicalRoot.Length..];
-				await WriteAliasRedirectHtml(aliasRoot + suffix, trimmed, ctx).ConfigureAwait(false);
+				_aliasRedirects[aliasRoot + suffix] = trimmed;
 			}
 		}
-	}
-
-	private async Task WriteAliasRedirectHtml(string aliasUrl, string canonicalUrl, Cancel ctx)
-	{
-		var htmlFile = _writeFileSystem.FileInfo.New(
-			Path.Join(context.OutputDirectory.FullName, ApiOutputPaths.RelativeHtmlFile(aliasUrl, context.UrlPathPrefix))
-		);
-		try
-		{
-			htmlFile.Directory!.Create();
-		}
-		catch (IOException) { }
-
-		var encodedUrl = System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(canonicalUrl);
-		var html =
-			$"""<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><title>Redirecting…</title><script>window.location.replace('{encodedUrl}')</script></head><body></body></html>""";
-		await _writeFileSystem.File.WriteAllTextAsync(htmlFile.FullName, html, ctx).ConfigureAwait(false);
 	}
 
 	private async Task WriteSpecDownloads(INavigationItem landing, OpenApiDocument document, Cancel ctx)

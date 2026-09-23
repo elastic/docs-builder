@@ -24,7 +24,7 @@ public class OpenApiGeneratorAliasRedirectTests(ApiExplorerFixture fixture) : IC
 	private static readonly Uri BaseUri = new("https://cdn.example/");
 
 	[Fact]
-	public async Task Generate_WithAlias_WritesRedirectPagesAtAliasPath()
+	public async Task Generate_WithAlias_CollectsAliasRedirects()
 	{
 		var outputRoot = Path.Join(Paths.WorkingDirectoryRoot.FullName, $"api-alias-{Guid.NewGuid():N}");
 		var context = CreateGenerateContext(outputRoot);
@@ -44,16 +44,15 @@ public class OpenApiGeneratorAliasRedirectTests(ApiExplorerFixture fixture) : IC
 		var canonicalLanding = Path.Join(outputRoot, "api", "doc", "cloud-serverless", "index.html");
 		var aliasLanding = Path.Join(outputRoot, "api", "doc", "elastic-cloud-serverless", "index.html");
 
-		write.Exists(canonicalLanding).Should().BeTrue();
-		write.Exists(aliasLanding).Should().BeTrue();
+		write.Exists(canonicalLanding).Should().BeTrue("canonical landing page must exist");
+		write.Exists(aliasLanding).Should().BeFalse("alias path must not have its own HTML file");
 
-		var aliasHtml = await write.ReadAllTextAsync(aliasLanding, TestContext.Current.CancellationToken);
-		aliasHtml.Should().Contain("window.location.replace");
-		aliasHtml.Should().Contain("/api/doc/cloud-serverless");
+		generator.AliasRedirects.Should().ContainKey("/api/doc/elastic-cloud-serverless");
+		generator.AliasRedirects["/api/doc/elastic-cloud-serverless"].Should().Be("/api/doc/cloud-serverless");
 	}
 
 	[Fact]
-	public async Task Generate_WithAlias_DoesNotWriteRedirectForVersionedMonikers()
+	public async Task Generate_WithAlias_OmitsVersionedAliasRedirects()
 	{
 		var outputRoot = Path.Join(Paths.WorkingDirectoryRoot.FullName, $"api-alias-versioned-{Guid.NewGuid():N}");
 		var context = CreateGenerateContext(outputRoot);
@@ -69,10 +68,8 @@ public class OpenApiGeneratorAliasRedirectTests(ApiExplorerFixture fixture) : IC
 
 		await generator.Generate(TestContext.Current.CancellationToken);
 
-		// cloud-serverless is versionless so only main is rendered; no /v{N}/ alias dirs should exist
-		var write = context.WriteFileSystem.File;
-		var unexpectedVersionedAlias = Path.Join(outputRoot, "api", "doc", "elastic-cloud-serverless", "v1");
-		context.WriteFileSystem.Directory.Exists(unexpectedVersionedAlias).Should().BeFalse();
+		// cloud-serverless is versionless so only main is rendered; no /v{N}/ alias entries should exist
+		generator.AliasRedirects.Keys.Should().NotContain(k => k.Contains("/v", StringComparison.OrdinalIgnoreCase));
 	}
 
 	private static BuildContext CreateGenerateContext(string outputRoot)
