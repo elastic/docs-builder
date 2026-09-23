@@ -3,7 +3,10 @@
 @using FontPreloader = Elastic.Documentation.Site.FileProviders.FontPreloader
 	<meta charset="utf-8">
 	<title>@Model.Title</title>
-	<meta name="description" content="@Model.Description">
+	@if (!string.IsNullOrEmpty(Model.Description))
+	{
+		<meta name="description" content="@Model.Description">
+	}
 	@if (Model.Optimizely.Enabled && !string.IsNullOrEmpty(Model.Optimizely.Id))
 	{
 		<script src="https://cdn.optimizely.com/js/@(Model.Optimizely.Id).js"></script>
@@ -64,7 +67,16 @@
 	<meta name="docs:current-section" content="@(Model.CurrentNavigationItem.NavigationRoot?.Id ?? "")">
 	<meta property="og:type" content="website"/>
 	<meta property="og:title" content="@Model.Title"/>
-	<meta property="og:description" content="@Model.Description"/>
+	@if (!string.IsNullOrEmpty(Model.Description))
+	{
+		<meta property="og:description" content="@Model.Description"/>
+	}
+	@if (!string.IsNullOrEmpty(Model.StructuredBreadcrumbsJson))
+	{
+		<script type="application/ld+json">
+		@(new HtmlString(Model.StructuredBreadcrumbsJson))
+		</script>
+	}
 	@if (Model.Branding is null)
 	{
 		<meta property="og:image" content="https://www.elastic.co/static-res/images/social_media_default.png"/>

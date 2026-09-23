@@ -64,8 +64,7 @@ describe('NavigationSearchWrapper type attribute', () => {
         })
     })
 
-    it('filters the first query when health is cached and a search term is already set', async () => {
-        sharedQueryClient.setQueryData(['api-health'], true)
+    it('filters the first query when a search term is already set', async () => {
         navigationSearchStore.getState().actions.setSearchTerm('_bulk')
 
         render(<NavigationSearchWrapper type="api" />)

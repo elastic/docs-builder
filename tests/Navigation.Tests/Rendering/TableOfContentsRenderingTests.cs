@@ -62,7 +62,6 @@ public class TableOfContentsRenderingTests(ITestOutputHelper output) : Documenta
 
 		var model = new MarkdownLayoutViewModel
 		{
-			DocsBuilderVersion = "test",
 			DocSetName = "test",
 			Description = "",
 			CurrentNavigationItem = currentNavItem,

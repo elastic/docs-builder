@@ -322,6 +322,7 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 		var stepperTocs = directives
 			.OfType<StepBlock>()
 			.Where(step => !string.IsNullOrEmpty(step.Title))
+			.Where(step => step.RenderAsHeading)
 			.Where(step => !IsNestedInOtherDirective(step))
 			.Select(step =>
 			{
@@ -463,7 +464,7 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 		}
 	}
 
-	public static string CreateHtml(MarkdownDocument document, bool stripFirstHeadingLevel1 = true)
+	public static string CreateHtml(MarkdownDocument document, bool stripFirstHeadingLevel1 = true, MarkdownPipeline? renderPipeline = null)
 	{
 		// We manually render title and optionally append an applies block embedded in yaml front matter.
 		if (stripFirstHeadingLevel1)
@@ -473,7 +474,7 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 				_ = document.Remove(h1);
 		}
 
-		var html = document.ToHtml(MarkdownParser.Pipeline);
+		var html = document.ToHtml(renderPipeline ?? MarkdownParser.Pipeline);
 		return InsertFootnotesHeading(html);
 	}
 

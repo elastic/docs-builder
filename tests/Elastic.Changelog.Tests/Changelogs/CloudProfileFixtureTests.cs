@@ -159,7 +159,7 @@ public class CloudProfileFixtureTests(ITestOutputHelper output) : ChangelogTestB
 		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
 
 		var handler = RepoPoolHandler();
-		var service = new ChangelogBundlingService(LoggerFactory, FileSystem, ConfigurationContext, null, Fetcher(handler));
+		var service = new ChangelogBundlingService(LoggerFactory, FileSystem, ConfigurationContext, Fetcher(handler));
 
 		var input = new BundleChangelogsArguments { Profile = "wh-monthly", ProfileArgument = "2026-05", Config = configPath };
 

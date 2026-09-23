@@ -132,6 +132,8 @@ jobs:
           rm docs/cli-schema.json.tmp
 
       - name: Test
+        env:
+          VSTEST_CONNECTION_TIMEOUT: "300"
         run: dotnet run --project build -c release -- unit-test
 
       - name: Publish AOT

@@ -24,4 +24,6 @@ public class LandingViewModel(ApiRenderContext context) : ApiViewModel(context)
 	public string? IconSvg { get; } = ProductIcons.Get(context.Product?.Id ?? context.CurrentApiKey);
 
 	protected override string BreadcrumbCurrentTitle => ApiInfo.Title ?? CurrentNavigationItem.NavigationTitle;
+
+	protected override string? LayoutPageDescription => ApiInfo.Description;
 }

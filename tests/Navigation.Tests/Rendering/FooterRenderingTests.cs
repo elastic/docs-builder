@@ -57,7 +57,6 @@ public class FooterRenderingTests(ITestOutputHelper output) : DocumentationSetNa
 
 		var model = new GlobalLayoutViewModel
 		{
-			DocsBuilderVersion = "test",
 			DocSetName = "test",
 			Description = "",
 			CurrentNavigationItem = new StubNavigationItem("/docs/"),

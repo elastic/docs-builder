@@ -19,7 +19,10 @@ public class AuthSchemeTests
 	{
 		var (op, doc) = await Load(EsShapedSpec(operationSecurity: null));
 
-		OpenApiAuthSchemeResolver.Resolve(op, doc).Select(b => b.Label).Should().Equal("Api key", "Basic", "Bearer");
+		var badges = OpenApiAuthSchemeResolver.Resolve(op, doc);
+
+		badges.Select(b => b.Id).Should().Equal("apiKeyAuth", "basicAuth", "bearerAuth");
+		badges.Select(b => b.PillLabel).Should().Equal("Api key auth", "Basic auth", "Bearer auth");
 	}
 
 	[Fact]
@@ -27,7 +30,10 @@ public class AuthSchemeTests
 	{
 		var (op, doc) = await Load(EsShapedSpec(operationSecurity: """{ "apiKeyAuth": [] }"""));
 
-		OpenApiAuthSchemeResolver.Resolve(op, doc).Select(b => b.Label).Should().Equal("Api key");
+		var badges = OpenApiAuthSchemeResolver.Resolve(op, doc);
+
+		badges.Select(b => b.Id).Should().Equal("apiKeyAuth");
+		badges.Select(b => b.PillLabel).Should().Equal("Api key auth");
 	}
 
 	[Fact]
@@ -71,7 +77,26 @@ public class AuthSchemeTests
 		doc.Should().NotBeNull();
 		var search = doc!.Paths!["/_search"].Operations![HttpMethod.Get]!;
 
-		OpenApiAuthSchemeResolver.Resolve(search, doc).Select(b => b.Label).Should().Equal("Api key", "Basic", "Bearer");
+		var badges = OpenApiAuthSchemeResolver.Resolve(search, doc);
+
+		badges.Select(b => b.Id).Should().Equal("apiKeyAuth", "basicAuth", "bearerAuth");
+		badges.Select(b => b.PillLabel).Should().Equal("Api key auth", "Basic auth", "Bearer auth");
+	}
+
+	[Fact]
+	public async Task Resolve_WithAuthenticationUrl_AppendsLowercasedSchemeAnchors()
+	{
+		var (op, doc) = await Load(EsShapedSpec(operationSecurity: null));
+		var badges = OpenApiAuthSchemeResolver.Resolve(op, doc, "/api/doc/elasticsearch/authentication");
+
+		badges
+			.Select(b => b.Href)
+			.Should()
+			.Equal(
+				"/api/doc/elasticsearch/authentication#apikeyauth",
+				"/api/doc/elasticsearch/authentication#basicauth",
+				"/api/doc/elasticsearch/authentication#bearerauth"
+			);
 	}
 
 	private static string EsShapedSpec(string? operationSecurity)

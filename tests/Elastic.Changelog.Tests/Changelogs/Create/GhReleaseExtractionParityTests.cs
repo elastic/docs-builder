@@ -89,7 +89,9 @@ public class GhReleaseExtractionParityTests(ITestOutputHelper output) : Changelo
 			Body = ""
 		});
 
-		A.CallTo(() => _releaseService.FetchPreviousTagAsync("elastic", "elasticsearch", "v9.2.0", A<Cancel>._)).Returns("v9.1.0");
+		A.CallTo(() => _releaseService.FetchPreviousTagAsync("elastic", "elasticsearch", "v9.2.0", A<Cancel>._)).Returns(
+			PreviousTagResult.Found("v9.1.0")
+		);
 
 		var prs = prNumbers.Select(
 			n => new CommitRangePullRequest
@@ -320,6 +322,38 @@ public class GhReleaseExtractionParityTests(ITestOutputHelper output) : Changelo
 		var content = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current.CancellationToken);
 		content.Should().NotContain("description:");
 		content.Should().Contain("Fix query parsing edge case");
+		Collector
+			.Diagnostics
+			.Should()
+			.Contain(
+				d => d.Severity == Severity.Hint && d.Message.Contains("No release note description was found", StringComparison.Ordinal)
+			);
+	}
+
+	[Fact]
+	public async Task PrBodyReleaseNote_WithTrailingParagraph_EmitsHint()
+	{
+		ArrangeRelease();
+		_ = A.CallTo(() => _prService.FetchPrInfoAsync(A<string>._, A<string?>._, A<string?>._, A<Cancel>._)).Returns(new GitHubPrInfo
+		{
+			Title = "Fix query parsing edge case",
+			Body = "## Release note\nFirst paragraph.\n\nSecond paragraph.",
+			Labels = [],
+			LinkedIssues = []
+		});
+		var outputDir = OutputDir();
+
+		var result = await Service(EmptyPool()).CreateChangelogsFromRelease(
+			Collector,
+			Input(outputDir),
+			TestContext.Current.CancellationToken
+		);
+
+		result.Success.Should().BeTrue();
+		Collector
+			.Diagnostics
+			.Should()
+			.Contain(d => d.Severity == Severity.Hint && d.Message.Contains("Only the first paragraph was used", StringComparison.Ordinal));
 	}
 
 	[Fact]

@@ -14,7 +14,11 @@ public enum NavigationRenderNodeKind
 {
 	Leaf,
 	Node,
-	Island
+	Island,
+	/// <summary>OpenAPI <c>x-tagGroups</c> / docs <c>label:</c> — expand-only, no page URL.</summary>
+	Heading,
+	/// <summary>Visual divider between intro pages and the rest of the tree.</summary>
+	Separator
 }
 
 /// <summary>A fully resolved navigation tree node; the only tree data the nav templates consume.</summary>
@@ -70,8 +74,8 @@ public sealed record NavigationRenderModel
 	/// </summary>
 	public required IReadOnlyList<IslandBackLink> BackLinks { get; init; }
 	/// <summary>
-	/// API version choices rendered in the same chrome as <see cref="BackLinks"/>.
-	/// Empty when the page is not versioned or only one version exists.
+	/// API version choices carried with the nav model. The sidebar chrome renders the
+	/// control from the layout model, ahead of Jump to API, so the tree leaves this unused.
 	/// </summary>
 	public IReadOnlyList<NavigationSelectOption> VersionSwitcher { get; init; } = [];
 	/// <summary>
@@ -92,6 +96,11 @@ public sealed record NavigationRenderModel
 	public required string ContentHash { get; init; }
 	/// <summary>Whether the NAVIGATION_PREVIEW feature flag is enabled; drives nav-v2 vs legacy tree rendering.</summary>
 	public bool NavigationPreviewEnabled { get; init; }
+	/// <summary>
+	/// True when <see cref="Tree"/> already owns a divider. <c>_TocTree</c> then skips the
+	/// automatic rule after <see cref="RootIndex"/> so overview stays with the intro pages.
+	/// </summary>
+	public bool TreeHasSeparator => Tree.Any(static n => n.Kind == NavigationRenderNodeKind.Separator);
 
 	public static NavigationRenderModel Create(
 		INodeNavigationItem<INavigationModel, INavigationItem> tree,
@@ -332,6 +341,18 @@ public sealed record NavigationRenderModel
 			if (item.Parent is not null && item.Parent.Index == item)
 				continue;
 
+			if (item is ISidebarSeparatorNavigationItem)
+			{
+				yield return new NavigationRenderNode
+				{
+					Kind = NavigationRenderNodeKind.Separator,
+					IsTopLevel = isTopLevel,
+					NavigationTitle = "",
+					Url = ""
+				};
+				continue;
+			}
+
 			if (item is INodeNavigationItem<INavigationModel, INavigationItem> { NavigationItems.Count: > 0 } node)
 				yield return CreateNode(node, isTopLevel);
 			else if (item is INodeNavigationItem<INavigationModel, INavigationItem> or ILeafNavigationItem<INavigationModel>)
@@ -354,13 +375,15 @@ public sealed record NavigationRenderModel
 				Id = node.Id
 			};
 		}
+
+		var isHeading = node is ISidebarHeadingNavigationItem;
 		return new NavigationRenderNode
 		{
-			Kind = NavigationRenderNodeKind.Node,
+			Kind = isHeading ? NavigationRenderNodeKind.Heading : NavigationRenderNodeKind.Node,
 			IsTopLevel = isTopLevel,
 			NavigationTitle = navigationTitle,
 			Badge = badge,
-			Url = node.Url,
+			Url = isHeading ? "" : node.Url,
 			Id = node.Id,
 			IsMultiOperation = node is IMultiOperationNavigationItem,
 			ShowToggle = !node.NavigationItems.All(n => n.Hidden),

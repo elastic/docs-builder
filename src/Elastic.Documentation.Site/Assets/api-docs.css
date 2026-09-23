@@ -105,6 +105,8 @@
 	width: 16px;
 	height: 16px;
 	padding: 0;
+	stroke: none;
+	fill: currentColor;
 }
 
 .api-page-intro .api-url-copy.copybtn.o-tooltip--left:after {
@@ -124,6 +126,13 @@
 	line-height: 20px;
 }
 
+.api-page-intro .api-security-badges {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	margin-top: 12px;
+}
+
 /* Operation / group page title — Figma APIs 10079:2802 */
 .api-page-intro h1,
 #elastic-api-v3 h1 {
@@ -137,8 +146,216 @@
 	letter-spacing: 0;
 }
 
+.api-page-heading {
+	display: flex;
+	align-items: center;
+	gap: 16px;
+	min-width: 0;
+	overflow: visible;
+}
+
+.api-page-heading > h1 {
+	flex: 1 1 auto;
+	min-width: 0;
+}
+
+.api-page-toolbar {
+	display: flex;
+	align-items: center;
+	gap: 16px;
+	min-width: 0;
+	margin: 0 0 16px;
+}
+
+.api-page-toolbar .api-breadcrumbs {
+	flex: 1 1 auto;
+	min-width: 0;
+	margin: 0;
+	overflow: hidden;
+}
+
+.api-page-actions {
+	position: relative;
+	z-index: 6;
+	flex-shrink: 0;
+	margin-left: auto;
+}
+
+.api-page-actions-split {
+	display: inline-flex;
+	align-items: stretch;
+	height: 32px;
+	overflow: visible;
+	border: 1px solid #cad3e2;
+	border-radius: 8px;
+	background: #fff;
+	box-shadow: none;
+	color: #1d2a3e;
+	font-family: var(--font-body, Inter, ui-sans-serif, system-ui, sans-serif);
+	font-size: 14px;
+	line-height: 20px;
+}
+
+.api-page-actions-button,
+.api-page-actions-chevron {
+	margin: 0;
+	border: 0;
+	background: transparent;
+	color: inherit;
+	font: inherit;
+	cursor: pointer;
+}
+
+.api-page-actions-button {
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+	padding: 0 12px;
+	border-radius: 7px 0 0 7px;
+	white-space: nowrap;
+}
+
+.api-page-actions-chevron {
+	box-sizing: border-box;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 32px;
+	padding: 0;
+	border-left: 1px solid #cad3e2;
+	border-radius: 0 7px 7px 0;
+	list-style: none;
+}
+
+.api-page-actions-chevron::-webkit-details-marker {
+	display: none;
+}
+
+.api-page-actions-button:hover,
+.api-page-actions-chevron:hover {
+	background: #f6f9fc;
+}
+
+.api-page-actions-button:focus-visible,
+.api-page-actions-chevron:focus-visible,
+.api-page-actions-option:focus-visible {
+	outline: 2px solid #0b64dd;
+	outline-offset: -2px;
+}
+
+.api-page-actions-chevron-icon {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 12px;
+	height: 12px;
+	color: #516381;
+	transition: transform 0.15s ease;
+}
+
+.api-page-actions-chevron-icon svg {
+	display: block;
+	width: 12px;
+	height: 12px;
+}
+
+.api-page-actions details.api-page-actions-dropdown,
+.api-page-actions details.nav-select-dropdown {
+	position: relative;
+	display: flex;
+	width: auto;
+	overflow: visible;
+}
+
+.api-page-actions-dropdown[open] .api-page-actions-chevron-icon,
+.api-page-actions-dropdown.is-open .api-page-actions-chevron-icon {
+	transform: rotate(180deg);
+}
+
+.api-page-actions-menu {
+	box-sizing: border-box;
+	position: absolute;
+	top: calc(100% + 6px);
+	right: 0;
+	z-index: 40;
+	width: max-content;
+	min-width: 196px;
+	margin: 0;
+	padding: 8px;
+	background: #fff;
+	border: 0;
+	border-radius: 4px;
+	filter: drop-shadow(0 0 2px rgb(43 57 79 / 0.16))
+		drop-shadow(0 3px 10px rgb(43 57 79 / 0.1))
+		drop-shadow(0 6px 14px rgb(43 57 79 / 0.06));
+	font-family: var(--font-body, Inter, ui-sans-serif, system-ui, sans-serif);
+	font-size: 14px;
+	font-weight: 400;
+	line-height: 20px;
+	color: #1d2a3e;
+}
+
+.api-page-actions-icon {
+	display: block;
+	flex-shrink: 0;
+	width: 16px;
+	height: 16px;
+	color: #798eaf;
+}
+
+.api-page-actions-option {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	width: 100%;
+	margin: 0;
+	padding: 6px 8px;
+	border: 0;
+	border-radius: 4px;
+	background: transparent;
+	font: inherit;
+	color: #1d2a3e;
+	text-align: left;
+	text-decoration: none;
+	cursor: pointer;
+}
+
+.api-page-actions-option:hover {
+	background: #f6f9fc;
+	color: #1d2a3e;
+}
+
+.markdown-content .api-page-actions a.api-page-actions-option,
+.markdown-content .api-breadcrumbs a.api-page-actions-option {
+	color: #1d2a3e;
+	text-decoration: none;
+}
+
+.markdown-content
+	.api-page-actions
+	a.api-page-actions-option[target='_blank']::after,
+.markdown-content .api-breadcrumbs a.api-page-actions-option::after {
+	content: none;
+}
+
 /* API breadcrumbs — Figma APIs 10087:3195 (EuiBreadcrumbs Page). On all API pages. */
-#markdown-content .api-breadcrumbs {
+.api-pages-nav-toggle {
+	display: inline-flex;
+	align-items: center;
+	margin: 0 0 12px;
+	padding: 0;
+	border: 0;
+	background: none;
+	color: #1d2a3e;
+}
+
+@media (min-width: 768px) {
+	.api-pages-nav-toggle {
+		display: none;
+	}
+}
+
+.api-breadcrumbs {
 	margin: 0 0 16px;
 	color: var(--color-subdued, #516381);
 	font-family: var(--font-body, Inter, ui-sans-serif, system-ui, sans-serif);
@@ -147,21 +364,29 @@
 	line-height: 20px;
 }
 
-#markdown-content .api-breadcrumbs ol {
+.api-breadcrumbs ol {
 	display: flex;
-	flex-wrap: wrap;
+	flex-wrap: nowrap;
 	align-items: center;
+	min-width: 0;
 	margin: 0;
 	padding: 0;
 	list-style: none;
 }
 
-#markdown-content .api-breadcrumbs li {
+.api-breadcrumbs li {
 	margin: 0;
 	list-style: none;
+	flex-shrink: 0;
 }
 
-#markdown-content .api-breadcrumbs a {
+.api-breadcrumbs__item[data-crumb='end'] {
+	flex: 0 1 auto;
+	min-width: 0;
+	max-width: 100%;
+}
+
+.api-breadcrumbs a {
 	color: var(--color-subdued, #516381);
 	font-family: inherit;
 	font-size: inherit;
@@ -169,68 +394,54 @@
 	line-height: inherit;
 	text-decoration: underline;
 	text-underline-offset: 2px;
+	white-space: nowrap;
 }
 
-#markdown-content .api-breadcrumbs a:hover {
+.api-breadcrumbs a:hover {
 	color: #1d2a3e;
 }
 
-#markdown-content .api-breadcrumbs a[target='_blank']::after {
+.api-breadcrumbs a[target='_blank']::after {
 	content: none;
 }
 
-#markdown-content .api-breadcrumbs__current {
+.api-breadcrumbs__current {
+	display: block;
+	overflow: hidden;
 	color: var(--color-subdued, #516381);
+	text-overflow: ellipsis;
+	white-space: nowrap;
 }
 
-#markdown-content .api-breadcrumbs__sep {
+.api-breadcrumbs__sep {
 	padding: 0 8px;
 	color: var(--color-subdued, #516381);
 }
 
-#markdown-content .api-breadcrumbs__overflow {
+.api-breadcrumbs__overflow {
 	position: relative;
 }
 
-#markdown-content .api-breadcrumbs__overflow summary {
+.api-breadcrumbs__overflow-dropdown {
+	position: relative;
+	display: flex;
+}
+
+.api-breadcrumbs__overflow summary {
 	display: inline-flex;
 	align-items: center;
-	gap: 2px;
 	cursor: pointer;
 	list-style: none;
 	color: inherit;
 }
 
-#markdown-content .api-breadcrumbs__overflow summary::-webkit-details-marker {
+.api-breadcrumbs__overflow summary::-webkit-details-marker {
 	display: none;
 }
 
-#markdown-content .api-breadcrumbs__chevron {
-	display: block;
-	flex-shrink: 0;
-	fill: none;
-	stroke: currentColor;
-	stroke-width: 1.5;
-}
-
-#markdown-content .api-breadcrumbs__overflow ul {
-	position: absolute;
-	z-index: 20;
-	top: calc(100% + 4px);
+.api-breadcrumbs__overflow .api-page-actions-menu {
 	left: 0;
-	margin: 0;
-	padding: 8px;
-	list-style: none;
-	background: #fff;
-	border: 1px solid #e3e8f2;
-	border-radius: 4px;
-	min-width: 12rem;
-	box-shadow: 0 4px 12px rgb(17 28 44 / 8%);
-}
-
-#markdown-content .api-breadcrumbs__overflow ul li {
-	margin: 0;
-	padding: 4px 8px;
+	right: auto;
 }
 
 .api-overview {
@@ -287,8 +498,10 @@
 /*
  * Labeled HTTP method chips on operation/overview pages — Figma APIs node 10067:6424.
  * Icon + uppercase label, 24px tall, 8px radius. Sidebar glyphs stay in .nav-v2-api-method.
+ * .api-operation-description .operation-verb shares the same base; size overrides live there.
  */
-.api-method {
+.api-method,
+.api-operation-description .operation-verb {
 	display: inline-flex;
 	flex-shrink: 0;
 	align-items: center;
@@ -335,29 +548,37 @@
 	transform: rotate(180deg);
 }
 
-.api-method-get {
+.api-method-get,
+.api-operation-description .operation-verb.get {
 	background-color: #c9f3e3;
 	border-color: #aee8d2;
 	color: #008a5e;
 }
-.api-method-post {
+.api-method-post,
+.api-operation-description .operation-verb.post {
 	background-color: #d9e8ff;
 	border-color: #bfdbff;
 	color: #0b64dd;
 }
 .api-method-put,
-.api-method-patch {
+.api-method-patch,
+.api-operation-description .operation-verb.put,
+.api-operation-description .operation-verb.patch {
 	background-color: #ffdebf;
 	border-color: #ffcda1;
 	color: #ed6723;
 }
-.api-method-delete {
+.api-method-delete,
+.api-operation-description .operation-verb.delete {
 	background-color: #fdddd8;
 	border-color: #ffc9c2;
 	color: #c61e25;
 }
 .api-method-head,
-.api-method-options {
+.api-method-options,
+.api-operation-description .operation-verb.head,
+.api-operation-description .operation-verb.options,
+.api-operation-description .operation-verb {
 	background-color: #fff;
 	border-color: #cad3e2;
 	color: #5a6d8c;
@@ -483,6 +704,12 @@
 	}
 }
 
+#elastic-api-v3 h4.section-header.responses-header,
+#schema-definition h4.section-header.responses-header {
+	padding-bottom: 0;
+	border-bottom: 0;
+}
+
 .responses-header.section-header {
 	@apply justify-start gap-3;
 }
@@ -491,98 +718,210 @@
 	@apply shrink-0;
 }
 
-.responses-meta {
-	@apply ml-auto inline-flex items-center gap-2;
-}
-
-.api-responses-select,
-.api-responses-status {
-	@apply font-mono text-sm font-semibold;
-	border: 0;
-	background: transparent;
-	padding: 0;
-	margin: 0;
-	box-shadow: none;
-}
-
-.api-responses-select {
-	@apply cursor-pointer appearance-none pr-4;
-	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12' fill='none'%3E%3Cpath d='M3 4.5L6 7.5L9 4.5' stroke='%23516381' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
-	background-repeat: no-repeat;
-	background-position: right 0 center;
-	background-size: 0.625rem;
-
-	&:focus-visible {
-		outline: 2px solid var(--color-blue-elastic, #0b64dd);
-		outline-offset: 2px;
-	}
-}
-
-.api-responses-select.status-success,
-.api-responses-status.status-success {
-	@apply text-green-90;
-}
-
-.api-responses-select.status-error,
-.api-responses-status.status-error {
-	@apply text-red-90;
-}
-
-.api-responses-select.status-info,
-.api-responses-status.status-info {
-	@apply text-blue-elastic;
-}
-
-.api-responses-select:hover {
-	filter: brightness(0.82);
+.responses-list {
+	display: flex;
+	flex-direction: column;
+	gap: 0;
+	margin-top: 16px;
+	overflow: visible;
+	isolation: isolate;
+	background-color: #fff;
+	border: 1px solid #cad3e2;
+	border-radius: 16px;
 }
 
 .response-panel {
-	@apply mt-3;
+	display: flex;
+	flex-direction: column;
+	align-items: stretch;
+	width: 100%;
+	gap: 0;
+}
+
+.response-panel + .response-panel {
+	border-top: 1px solid #cad3e2;
+}
+
+.response-panel:first-child {
+	border-radius: 16px 16px 0 0;
+}
+
+.response-panel:last-child {
+	border-radius: 0 0 16px 16px;
+}
+
+.response-panel:only-child {
+	border-radius: 16px;
+}
+
+.response-status-toggle {
+	display: flex;
+	box-sizing: border-box;
+	align-items: center;
+	gap: 8px;
+	width: 100%;
+	margin: 0;
+	padding: 8px 12px;
+	border: 0;
+	border-radius: 0;
+	background: transparent;
+	color: inherit;
+	font: inherit;
+	text-align: left;
+	cursor: pointer;
+	transition:
+		background-color 0.12s ease,
+		color 0.12s ease;
+}
+
+.response-status-toggle:hover {
+	background-color: #ecf1f9;
+	color: #1d2a3e;
+}
+
+.response-status-toggle:hover .response-description {
+	color: #1d2a3e;
+}
+
+.response-status-toggle:focus-visible {
+	outline: 2px solid var(--color-blue-elastic, #0b64dd);
+	outline-offset: -2px;
+}
+
+.response-status-chip {
+	display: inline-flex;
+	flex-shrink: 0;
+	align-items: center;
+	justify-content: center;
+	box-sizing: border-box;
+	height: 24px;
+	padding: 0 8px;
+	border: 1px solid;
+	border-radius: 8px;
+	font-family: var(--font-body, Inter, ui-sans-serif, system-ui, sans-serif);
+	font-size: 12px;
+	font-weight: 500;
+	line-height: 16px;
+}
+
+.response-status-chip.status-success {
+	background-color: #c9f3e3;
+	border-color: #aee8d2;
+	color: #008a5e;
+}
+
+.response-status-chip.status-error {
+	background-color: #fdddd8;
+	border-color: #ffc9c2;
+	color: #c61e25;
+}
+
+.response-status-chip.status-info {
+	background-color: #d9e8ff;
+	border-color: #bfdbff;
+	color: #0b64dd;
+}
+
+.response-panel.expanded
+	> .response-status-toggle
+	.response-status-chip.status-success {
+	background-color: #aee8d2;
+	border-color: #008a5e;
+}
+
+.response-panel.expanded
+	> .response-status-toggle
+	.response-status-chip.status-error {
+	background-color: #ffc9c2;
+	border-color: #c61e25;
+}
+
+.response-panel.expanded
+	> .response-status-toggle
+	.response-status-chip.status-info {
+	background-color: #bfdbff;
+	border-color: #0b64dd;
+}
+
+.response-panel:first-child > .response-status-toggle {
+	border-radius: 16px 16px 0 0;
+}
+
+.response-panel:last-child:not(.expanded) > .response-status-toggle {
+	border-radius: 0 0 16px 16px;
+}
+
+.response-panel:only-child:not(.expanded) > .response-status-toggle {
+	border-radius: 16px;
+}
+
+.response-panel:only-child.expanded > .response-status-toggle {
+	border-radius: 16px 16px 0 0;
+}
+
+.response-panel.expanded {
+	position: relative;
+	z-index: 2;
+}
+
+.response-panel-body {
+	box-sizing: border-box;
+	width: 100%;
+	padding: 0 12px 12px;
+	border: 0;
+	overflow: visible;
+}
+
+.responses-list .property-list dt .property-anchor-icon {
+	z-index: 4;
+}
+
+.response-panel.collapsed > .response-panel-body:not([hidden='until-found']) {
+	display: none;
+}
+
+.response-panel.expanded > .response-panel-body {
+	display: block;
+}
+
+.response-panel-body[hidden='until-found'] {
+	display: none;
+	border: 0;
+	padding: 0;
+	margin: 0;
 }
 
 .response-description {
-	@apply text-grey-80 mt-0 mb-0 text-sm;
+	margin: 0;
+	min-width: 0;
+	flex: 1 1 auto;
+	color: #516381;
+	font-size: 14px;
+	font-weight: 400;
+	line-height: 20px;
+	text-align: left;
+	transition: color 0.12s ease;
 }
 
 .content-type-tag {
-	@apply text-blue-elastic bg-blue-elastic-10 shrink-0 rounded px-1 py-0.5 text-xs font-medium;
+	margin-left: auto;
+	flex-shrink: 0;
+	color: #798eaf;
+	font-size: 12px;
+	font-weight: 400;
+	line-height: 16px;
+	background: none;
 }
 
-.response-fields {
-	@apply mt-2;
-}
-
-.response-fields-toggle,
 .property-list .expand-toggle,
 .union-expand-toggle .expand-toggle,
 .union-group-toggle {
 	@apply text-grey-80 hover:text-grey-120 inline-flex cursor-pointer items-center gap-1 border-0 bg-transparent p-0 text-sm;
 }
 
-.response-fields-toggle .toggle-icon,
 .expand-toggle .toggle-icon,
 .union-group-toggle .toggle-icon {
 	@apply font-mono font-semibold;
-}
-
-.response-fields-body {
-	@apply border-grey-20 mt-2 rounded-sm border px-3 py-2;
-}
-
-.response-fields.collapsed > .response-fields-body:not([hidden='until-found']) {
-	display: none;
-}
-
-.response-fields.expanded > .response-fields-body {
-	display: block;
-}
-
-.response-fields-body[hidden='until-found'] {
-	display: none;
-	border: 0;
-	padding: 0;
-	margin: 0;
 }
 
 /* Property list — Figma APIs 10079:2948 (Query Parameters / properties) */
@@ -653,7 +992,7 @@
 
 		> a.property-anchor > code,
 		> code {
-			color: #6b3c9f;
+			color: var(--color-ink-navy, #111c2c);
 			font-family:
 				'Roboto Mono', ui-monospace, SFMono-Regular, Menlo, Monaco,
 				Consolas, monospace;
@@ -699,6 +1038,10 @@
 			line-height: inherit;
 		}
 
+		p:not(:first-of-type) {
+			margin-top: 8px;
+		}
+
 		/* Hide empty dd elements */
 		&:empty {
 			display: none;
@@ -715,7 +1058,6 @@
 		&.depth-0 {
 			margin-top: 0;
 			padding-bottom: 16px;
-			border-bottom: 1px solid #e3e8f2;
 		}
 
 		&.depth-1 {
@@ -874,6 +1216,21 @@
 	overflow-x: visible;
 }
 
+/* A wide sample must scroll inside its block. Otherwise it grows the layout
+   viewport, and the fixed mobile drawer (width: 80%) becomes wider than the screen. */
+@media (max-width: 767px) {
+	.api-page-main .markdown-content pre,
+	.api-page-main .markdown-content pre code {
+		min-width: 0;
+		max-width: 100%;
+	}
+
+	#api-examples-panel .api-code-card {
+		max-width: 100%;
+		overflow-x: auto;
+	}
+}
+
 .api-param-section-header.section-header {
 	display: flex;
 	align-items: center;
@@ -950,11 +1307,6 @@
 	display: none;
 }
 
-#elastic-api-v3 .api-param-section.collapsed > h4.section-header {
-	border-bottom: 0;
-	padding-bottom: 0;
-}
-
 .api-param-summary {
 	display: flex;
 	align-items: center;
@@ -1003,7 +1355,7 @@
 }
 
 .api-param-summary-item code {
-	color: #6b3c9f;
+	color: var(--color-ink-navy, #111c2c);
 	font-family:
 		'Roboto Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
 		monospace;
@@ -1089,6 +1441,7 @@
 #elastic-api-v3 .schema-type a[href]:hover,
 #schema-definition .schema-type a[href]:hover,
 .schema-type a[href]:hover,
+.api-page-intro .api-security-badges a[href]:hover,
 a.type-linked:hover {
 	text-decoration: underline;
 	text-underline-offset: 2px;
@@ -1099,6 +1452,8 @@ a.type-linked:hover {
 	padding: 0;
 	background-color: transparent;
 	border-radius: 0;
+	font-size: 13px;
+	line-height: 16px;
 }
 
 .deprecated-badge.type-status,
@@ -1107,7 +1462,8 @@ a.type-linked:hover {
 }
 
 /* Type badge — Figma APIs 10079:2957 (boolean / string / read). Not markdown code. */
-.property-list .api-type-badge {
+.property-list .api-type-badge,
+.api-page-intro .api-security-badges .api-type-badge {
 	display: inline-flex;
 	align-items: center;
 	box-sizing: border-box;
@@ -1124,6 +1480,7 @@ a.type-linked:hover {
 	white-space: nowrap;
 	vertical-align: middle;
 	mix-blend-mode: normal;
+	text-decoration: none;
 }
 
 .property-list code.schema-type,
@@ -1137,13 +1494,22 @@ a.type-linked:hover {
 	border-radius: 0;
 	background-color: transparent;
 	color: #516381;
-	font-family: var(--font-body, Inter, ui-sans-serif, system-ui, sans-serif);
-	font-size: 12px;
+	font-family:
+		'Roboto Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+		monospace;
+	font-size: 13px;
 	font-weight: 500;
 	line-height: 16px;
+	letter-spacing: -0.4px;
+	word-spacing: -4px;
 	white-space: nowrap;
 	vertical-align: middle;
 	mix-blend-mode: normal;
+}
+
+.property-list code.schema-type a,
+.schema-type a {
+	letter-spacing: normal;
 }
 
 .schema-type-sep {
@@ -1192,33 +1558,50 @@ a.type-linked:hover {
 	@apply text-yellow-90 bg-yellow-10 border-yellow-30 rounded border px-1 py-0.5 text-xs font-medium;
 }
 
-/* Reference documentation button */
-.docs-reference-btn {
-	@apply inline-flex items-center gap-2 px-4 py-2 text-sm font-medium;
-	@apply bg-blue-elastic-10 text-blue-elastic border-blue-elastic-30 rounded-md border;
-	@apply hover:bg-blue-elastic-20 hover:border-blue-elastic-40 transition-colors;
+/* Reference documentation link — text + 1px rule, not a button */
+.markdown-content a.docs-reference-btn,
+a.docs-reference-btn {
+	display: inline-block;
+	width: fit-content;
+	max-width: 100%;
 	margin-top: 0.75rem;
-}
-.docs-reference-btn::before {
-	content: '📖';
-	font-size: 1em;
-}
-/* External links get an arrow indicator */
-.docs-reference-btn[target='_blank']::after {
-	content: '↗';
-	font-size: 0.85em;
-	margin-left: 0.25rem;
+	padding: 0;
+	border: none;
+	border-bottom: 1px solid #0b64dd;
+	border-radius: 0;
+	background: none;
+	color: #1d2a3e;
+	font-family: var(--font-body, Inter, ui-sans-serif, system-ui, sans-serif);
+	font-size: 14px;
+	font-weight: 500;
+	line-height: 20px;
+	text-decoration: none;
+	transition: none;
 }
 
-/* Smaller variant for property rows */
-.docs-reference-btn-sm {
-	@apply px-3 py-1.5 text-xs;
-	margin-top: 0.5rem;
+.markdown-content a.docs-reference-btn:hover,
+a.docs-reference-btn:hover {
+	background: none;
+	color: #0b64dd;
+	text-decoration: none;
+}
+
+.markdown-content a.docs-reference-btn::before,
+a.docs-reference-btn::before,
+.markdown-content a.docs-reference-btn[target='_blank']:not(:has(img))::after,
+a.docs-reference-btn[target='_blank']::after,
+a.docs-reference-btn::after {
+	content: none;
+	display: none;
 }
 
 /* Container for external docs in property items */
 .external-docs-row {
 	margin-top: 0.25rem;
+}
+
+.external-docs-row .docs-reference-btn {
+	margin-top: 0;
 }
 
 /* Legacy external documentation link (keeping for backwards compat) */
@@ -1714,6 +2097,11 @@ a.type-linked:hover {
 	padding-top: 0;
 }
 
+/* Single-scenario pages have no rail heading on desktop; show one when stacked. */
+#api-examples-panel .api-examples-heading--stacked {
+	display: none;
+}
+
 /* Section header */
 .section-header {
 	display: flex;
@@ -1727,48 +2115,6 @@ a.type-linked:hover {
 .content-type-badge {
 	@apply text-grey-60 bg-grey-10 ml-2 rounded px-2 py-0.5 text-xs;
 	font-weight: 500;
-}
-
-/* Operation description — same body copy as property/query descriptions (14/20, #516381) */
-.api-description-url-label {
-	margin: 0 0 0.5rem;
-	font-size: 12px;
-	font-weight: 500;
-	color: var(--color-subdued, #516381);
-}
-
-.api-description-url-listing {
-	margin-bottom: 1rem;
-
-	.api-method {
-		height: 18px;
-		font-size: 10px;
-		line-height: 12px;
-		padding: 0 4px;
-		gap: 2px;
-		border-radius: 5px;
-	}
-
-	.api-method-icon {
-		width: 9px;
-		height: 9px;
-	}
-
-	.api-method-icon svg {
-		width: 9px;
-		height: 9px;
-	}
-
-	.api-url {
-		margin-left: 0;
-		color: #516381;
-		font-family:
-			'Roboto Mono', ui-monospace, SFMono-Regular, Menlo, Monaco,
-			Consolas, monospace;
-		font-size: 13px;
-		font-weight: 300;
-		line-height: 20px;
-	}
 }
 
 .api-operation-description {
@@ -1820,54 +2166,221 @@ a.type-linked:hover {
 	b {
 		font-weight: 600;
 	}
+
+	/* Anchor links rendered from OAS HTML descriptions — bump.sh uses a "reference" class */
+	a,
+	a.reference {
+		color: var(--color-blue-elastic, #0b64dd);
+		text-decoration: none;
+	}
+
+	a:hover,
+	a.reference:hover {
+		text-decoration: underline;
+	}
+
+	/* bump.sh verb badge — inherits .api-method base and color rules; only size differs */
+	.operation-verb {
+		height: 18px;
+		padding: 0 4px;
+		border-radius: 5px;
+		font-size: 10px;
+		line-height: 12px;
+		vertical-align: middle;
+	}
+
+	.operation-path {
+		margin-left: 4px;
+		color: #516381;
+		font-family:
+			'Roboto Mono', ui-monospace, SFMono-Regular, Menlo, Monaco,
+			Consolas, monospace;
+		font-size: 13px;
+		font-weight: 300;
+		line-height: 20px;
+		vertical-align: middle;
+	}
+
+	/* Space the URL listing block away from the prose that follows it */
+	div:has(.operation-path) {
+		margin-bottom: 1.5rem;
+	}
 }
 
-/* Example blocks — response card chrome.
-   Request / x-codeSamples (.api-code-sample) uses the same light card. */
-.example-block {
+/* Shared Card/Code (Figma APIs 10202:2716). Request and response both carry .api-code-card.
+   Token roles:
+   --api-code-text    text/paragraph          chrome (titles, copy hover)
+   --api-code-syntax  punctuation / signs    = ( ) { } . ;
+   --api-code-keyword const / await / search
+   --api-code-variable identifiers           response, client
+   --api-code-property object keys + numbers
+   --api-code-muted   text/disabled           inactive tabs, comments, copy icon
+   --api-code-accent  borders/strong/primary  active tab + underline
+   --api-code-string  string values
+   --api-code-boolean true / false / null
+   --api-code-number  numeric literals (same as property)
+   --api-code-gutter  borders/base/disabled   line numbers
+   --api-code-header  same as body (white)
+   --api-code-bg      card fill (white) */
+.api-code-card {
+	--api-code-bg: #fff;
+	--api-code-header: #fff;
+	--api-code-border: #e3e8f2;
+	--api-code-radius: 16px;
+	--api-code-text: #1d2a3e;
+	--api-code-syntax: #6b3c9f;
+	--api-code-keyword: #c61e25;
+	--api-code-variable: #c24411;
+	--api-code-property: #825803;
+	--api-code-muted: #798eaf;
+	--api-code-accent: #0b64dd;
+	--api-code-string: #008a5e;
+	--api-code-boolean: #c24411;
+	--api-code-number: #825803;
+	--api-code-gutter: #cad3e2;
+	--api-code-success: #22863a;
+	--api-code-font:
+		'Roboto Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+		monospace;
+	--api-code-size: 14px;
+	--api-code-leading: 20px;
+	--api-code-pad-block: 1.5rem;
+	--api-code-max-height: none;
+	overflow: visible;
+	position: relative;
 	margin-bottom: 24px;
+	background-color: var(--api-code-bg);
+	color: var(--api-code-text);
+	border: 1px solid var(--api-code-border);
+	border-radius: var(--api-code-radius);
+	box-shadow: none;
+}
+
+/* Match sidebar `.pages-nav-v2__scroll` thumb (#e3e8f2 / hover #c5cedb). */
+.api-code-card .api-code-sample-body,
+.api-code-card .example-block-body {
+	scrollbar-width: thin;
+	scrollbar-color: #e3e8f2 transparent;
+}
+
+.api-code-card .api-code-sample-body::-webkit-scrollbar,
+.api-code-card .example-block-body::-webkit-scrollbar {
+	width: 8px;
+	height: 8px;
+}
+
+.api-code-card .api-code-sample-body::-webkit-scrollbar-track,
+.api-code-card .example-block-body::-webkit-scrollbar-track {
+	background: transparent;
+}
+
+.api-code-card .api-code-sample-body::-webkit-scrollbar-thumb,
+.api-code-card .example-block-body::-webkit-scrollbar-thumb {
+	background-color: #e3e8f2;
+	border-radius: 9999px;
+}
+
+.api-code-card .api-code-sample-body::-webkit-scrollbar-thumb:hover,
+.api-code-card .example-block-body::-webkit-scrollbar-thumb:hover {
+	background-color: #c5cedb;
+}
+
+.example-block {
 	position: relative;
 }
 
-/* Response card — Figma Card/Code light chrome (APIs 10002:17729) */
-.example-block--response {
-	--api-response-text: #1d2a3e;
-	--api-response-string: #047471;
-	--api-response-boolean: #0b64dd;
-	--api-response-number: #a11262;
-	overflow: hidden;
-	background-color: #f6f9fc;
-	border: 1px solid #e3e8f2;
-	border-radius: 16px;
+.api-code-card .example-block-header,
+.api-code-card .api-code-sample-header {
+	display: flex;
+	min-width: 0;
+	flex-shrink: 0;
+	align-items: center;
+	gap: 8px;
+	box-sizing: border-box;
+	height: 48px;
+	max-height: 48px;
+	padding: 0 16px;
+	background-color: var(--api-code-header);
+	border-bottom: 1px solid var(--api-code-border);
+	border-radius: var(--api-code-radius) var(--api-code-radius) 0 0;
+	overflow: visible;
 }
 
-.example-block--response .example-block-header {
-	@apply flex min-w-0 items-center gap-3 px-3 py-2;
-	border-bottom: 1px solid #e3e8f2;
+.api-code-card .example-block-header {
+	overflow: visible;
 }
 
-/* Status-code tabs; copy stays pinned on the right */
+.api-code-card .api-code-sample-body,
+.api-code-card .example-block-body {
+	border-radius: 0 0 var(--api-code-radius) var(--api-code-radius);
+}
+
+/* Status-code tabs; active underline sits on top of the header/body divider. */
 .example-response-tabs {
-	@apply flex min-w-0 flex-1 items-center gap-6 overflow-x-auto;
+	display: flex;
+	min-width: 0;
+	flex: 1;
+	align-items: stretch;
+	align-self: stretch;
+	gap: 8px;
+	height: calc(100% + 1px);
+	margin-bottom: -1px;
+	overflow-x: auto;
 	scrollbar-width: thin;
-	scrollbar-color: #c5cdd8 transparent;
+	scrollbar-color: #e3e8f2 transparent;
 	-webkit-overflow-scrolling: touch;
 }
 
 .example-response-tab {
-	@apply shrink-0 cursor-pointer border-0 bg-transparent p-0 text-sm font-medium whitespace-nowrap;
-	color: #516381;
-	line-height: 20px;
+	box-sizing: border-box;
+	display: flex;
+	flex-direction: column;
+	align-items: flex-start;
+	justify-content: center;
+	flex-shrink: 0;
+	height: 100%;
+	margin: 0;
+	cursor: pointer;
+	border: 0;
+	border-bottom: 2px solid transparent;
+	background: transparent;
+	/* 3px top vs 0 bottom recovers the 2px underline so the label centers in the 48px header. */
+	padding: 3px 4px 0;
+	font-family: var(--font-body, Inter, ui-sans-serif, system-ui, sans-serif);
+	font-size: 14px;
+	font-weight: 400;
+	line-height: 16px;
+	white-space: nowrap;
+	color: var(--api-code-muted);
+	transition:
+		color 0.08s ease,
+		font-weight 0.08s ease;
+}
+
+.example-response-tab-label {
+	display: inline-block;
+	padding: 2px 4px;
+	border-radius: 6px;
+	transition:
+		background-color 0.08s ease,
+		color 0.08s ease;
 }
 
 .example-response-tab.is-active {
-	color: #1d2a3e;
+	position: relative;
+	z-index: 1;
+	color: var(--api-code-accent);
+	border-bottom-color: var(--api-code-accent);
 	font-weight: 600;
-	cursor: default;
+	cursor: pointer;
 }
 
 button.example-response-tab:not(.is-active):hover {
 	color: #1d2a3e;
+}
+
+button.example-response-tab:hover .example-response-tab-label {
+	background-color: #f6f9fc;
 }
 
 button.example-response-tab:focus-visible {
@@ -1876,12 +2389,564 @@ button.example-response-tab:focus-visible {
 	border-radius: 2px;
 }
 
+.api-code-card .example-empty {
+	margin: 0;
+	padding: 12px 16px;
+	font-size: 13px;
+	line-height: 1.4;
+	color: var(--api-code-muted);
+	font-style: italic;
+}
+
+.example-block-actions,
+.api-code-sample-actions {
+	@apply ml-auto flex shrink-0 items-center gap-1;
+}
+
+.api-code-card .copybtn.copybtn--in-header {
+	position: static;
+	top: auto;
+	right: auto;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	box-sizing: border-box;
+	width: 24px;
+	height: 24px;
+	opacity: 1;
+	background-color: #fff;
+	color: var(--api-code-muted);
+	border: 1px solid #e3e8f2;
+	border-radius: 6px;
+}
+
+.api-code-card .copybtn.copybtn--in-header:hover {
+	background-color: #f6f9fc;
+	color: var(--api-code-muted);
+}
+
+.api-code-card .copybtn.copybtn--in-header.success {
+	background-color: transparent;
+	color: var(--api-code-success);
+}
+
+.api-code-card .copybtn.copybtn--in-header svg {
+	width: 12px;
+	height: 12px;
+	padding: 0;
+	stroke: none;
+	fill: currentColor;
+}
+
+.api-code-card .copybtn.copybtn--in-header.o-tooltip--left:after {
+	background-color: var(--api-code-text);
+	color: var(--api-code-bg);
+	transform: translateX(-102%) translateY(0);
+}
+
+.api-code-card .highlight {
+	margin-top: 0;
+}
+
+/* Structure (keys, braces, GET) uses --api-code-syntax. Values get their own tokens. */
+.api-code-card pre code {
+	display: block;
+	background-color: transparent;
+	color: var(--api-code-syntax);
+	font-family: var(--api-code-font);
+	font-size: var(--api-code-size);
+	line-height: var(--api-code-leading);
+	font-weight: 400;
+	padding: var(--api-code-pad-block) 1rem;
+	border: 0;
+	border-radius: 0;
+	mix-blend-mode: unset;
+}
+
+.api-code-card .hljs,
+.api-code-card [class^='hljs-'] {
+	color: var(--api-code-syntax);
+	font-weight: 400;
+}
+
+.api-code-card .hljs-comment,
+.api-code-card .hljs-quote {
+	color: var(--api-code-muted);
+}
+
+.api-code-card .hljs-keyword,
+.api-code-card .hljs-title,
+.api-code-card .function_,
+.api-code-card .hljs-built_in {
+	color: var(--api-code-keyword);
+}
+
+.api-code-card .hljs-variable {
+	color: var(--api-code-variable);
+}
+
+.api-code-card .hljs-attr,
+.api-code-card .hljs-params {
+	color: var(--api-code-property);
+}
+
+.api-code-card .hljs-string {
+	color: var(--api-code-string);
+}
+
+.api-code-card .hljs-string.hljs-attr {
+	color: var(--api-code-property);
+}
+
+.api-code-card .hljs-literal {
+	color: var(--api-code-boolean);
+}
+
+.api-code-card .hljs-number {
+	color: var(--api-code-number);
+}
+
+.api-code-card .hljs-punctuation {
+	color: var(--api-code-syntax);
+}
+
+/* API page shell: same max width as docs; right column only when examples exist */
+.api-page-shell {
+	max-width: var(--max-layout-width);
+}
+
+/* 48px is the two-rail desktop gutter. Below 1024 the page is sidebar + one column. */
+@media (min-width: 768px) and (max-width: 1023px) {
+	.api-page-shell > .grid {
+		column-gap: 16px;
+	}
+}
+
+@media (min-width: 1024px) {
+	.api-page-shell > .grid {
+		column-gap: 48px;
+	}
+}
+
+/* Below 1024px the panel stays in the flex-col flow (after the article). Do not hide it.
+   Flush with the article — the cards have their own chrome. */
+@media (max-width: 1023px) {
+	#api-examples-panel.api-examples-panel {
+		min-width: 0;
+		margin: 0;
+		padding: 0;
+	}
+
+	#api-examples-panel .api-examples-panel-nav {
+		padding: 0;
+	}
+
+	#api-examples-panel h4.section-header.api-examples-heading,
+	#api-examples-panel h4.section-header.api-examples-heading--stacked {
+		display: flex;
+		padding: 1.5rem 0 0.75rem;
+		margin: 0;
+	}
+
+	#api-examples-panel .api-code-card:last-child {
+		margin-bottom: 0;
+	}
+}
+
+@media (min-width: 1024px) {
+	/* Prefer :has() over a server class on this wrapper: htmx swaps #api-examples-panel
+	   oob but does not remount .api-content-grid, so a toggled --examples class goes stale.
+	   Must set display:grid here — Tailwind lg:grid is 1280px and left the rail stacked
+	   under the reference column between 1024 and 1280. */
+	.api-content-grid:has(#api-examples-panel.api-examples-panel) {
+		display: grid;
+		grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+		column-gap: 24px;
+		/* Rows size to content so the examples rail can position:sticky while the page scrolls */
+	}
+
+	/* Flatten wrappers so intro/reference become grid items next to the examples rail */
+	.api-content-grid:has(#api-examples-panel.api-examples-panel)
+		> .api-page-main,
+	.api-content-grid:has(#api-examples-panel.api-examples-panel)
+		> .api-page-main
+		> #content-container,
+	.api-content-grid:has(#api-examples-panel.api-examples-panel)
+		> .api-page-main
+		> #content-container
+		> #markdown-content {
+		display: contents;
+	}
+
+	.api-content-grid:has(#api-examples-panel.api-examples-panel)
+		.api-page-toolbar {
+		grid-column: 1 / -1;
+		grid-row: 1;
+		min-width: 0;
+		padding-top: calc(
+			var(--spacing) * 6
+		); /* replaces .api-page-main pt-6 lost to contents */
+	}
+
+	.api-content-grid:has(#api-examples-panel.api-examples-panel)
+		.api-page-intro {
+		grid-column: 1 / -1;
+		grid-row: 2;
+		min-width: 0;
+		padding-top: 0;
+		padding-right: 0;
+	}
+
+	.api-content-grid:has(#api-examples-panel.api-examples-panel)
+		.api-page-reference {
+		grid-column: 1;
+		grid-row: 3;
+		min-width: 0;
+		padding-bottom: calc(var(--spacing) * 12); /* replaces main pb-12 */
+	}
+
+	/* Examples rail: hug content, cap at viewport under the intro */
+	#api-examples-panel {
+		--api-examples-rail-padding: calc(
+			var(--spacing) * 6
+		); /* match content pt-6 */
+		grid-column: 2;
+		grid-row: 3;
+		position: sticky;
+		top: var(--offset-top);
+		align-self: start;
+		box-sizing: border-box;
+		height: min(max-content, calc(100vh - var(--offset-top)));
+		max-height: calc(100vh - var(--offset-top));
+		padding-block: var(--api-examples-rail-padding);
+		overflow: hidden;
+		display: flex;
+		flex-direction: column;
+	}
+
+	#api-examples-panel .api-examples-panel-nav {
+		flex: 0 1 auto;
+		min-height: 0;
+		max-height: none;
+		overflow: visible;
+		display: flex;
+		flex-direction: column;
+	}
+
+	/* Size to content; shrink only when the rail hits max-height */
+	#api-examples-panel .api-examples-body,
+	#api-examples-panel .api-examples-scenarios {
+		flex: 0 1 auto;
+		min-height: 0;
+		display: flex;
+		flex-direction: column;
+		flex-wrap: nowrap;
+		overflow: visible;
+	}
+
+	#api-examples-panel .api-examples-heading {
+		flex-shrink: 0;
+		border-bottom: none;
+		padding-top: 0;
+		padding-bottom: 1rem;
+		margin-top: 0;
+	}
+
+	#api-examples-panel .api-examples-scenario-header {
+		flex-shrink: 0;
+		margin-bottom: calc(var(--spacing) * 3);
+	}
+
+	#api-examples-panel .api-examples-scenario-panel {
+		display: flex;
+		flex: 0 1 auto;
+		min-height: 0;
+		flex-direction: column;
+	}
+
+	#api-examples-panel .api-examples-scenario-panel[hidden] {
+		display: none !important;
+	}
+
+	#api-examples-panel .api-examples-body {
+		display: flex;
+		flex: 0 1 auto;
+		min-height: 0;
+		flex-direction: column;
+		overflow: visible;
+		border: 0;
+		padding: 0;
+	}
+
+	#api-examples-panel .api-code-card {
+		display: flex;
+		flex: 0 1 auto;
+		min-height: 0;
+		flex-direction: column;
+	}
+
+	#api-examples-panel .api-code-card:last-child {
+		margin-bottom: 0;
+	}
+
+	#api-examples-panel .api-code-sample-body,
+	#api-examples-panel .example-block-body {
+		flex: 0 1 auto;
+		min-height: 0;
+		overflow: auto;
+	}
+}
+
+/* Cap tall samples so the card scrolls instead of growing forever */
+#api-examples-panel .api-code-card .highlight pre code {
+	max-height: none;
+}
+
+/* Line-number gutter (sibling <pre>): excluded from selection/copy.
+   display:block beats leftover docs `pre { display:grid }` if any still leak. */
+#api-examples-panel .api-code-card .api-code-lines {
+	display: flex;
+	align-items: flex-start;
+	min-width: 0;
+	max-height: none;
+	overflow: visible;
+}
+
+#api-examples-panel .api-code-card .api-code-lines > pre {
+	display: block;
+	margin: 0;
+}
+
+#api-examples-panel
+	.api-code-card
+	.api-code-lines
+	> pre:not(.api-code-line-gutter) {
+	flex: 1 0 auto;
+	width: max-content;
+	min-width: 0;
+}
+
+#api-examples-panel
+	.api-code-card
+	.api-code-lines
+	> pre:not(.api-code-line-gutter)
+	code {
+	display: block;
+	width: max-content;
+	min-width: 0;
+	max-height: none;
+	overflow: visible;
+	padding: var(--api-code-pad-block) 1rem var(--api-code-pad-block) 0.5rem;
+	white-space: pre;
+	word-break: normal;
+	overflow-wrap: normal;
+}
+
+#api-examples-panel .api-code-card .api-code-line-gutter {
+	flex: 0 0 auto;
+	margin: 0;
+	border: 0;
+	background: transparent;
+	user-select: none;
+	-webkit-user-select: none;
+	pointer-events: none;
+	text-align: right;
+	font-variant-numeric: tabular-nums;
+	white-space: pre;
+	padding: var(--api-code-pad-block) 0.5rem var(--api-code-pad-block) 1rem;
+	color: var(--api-code-gutter);
+	font-family: var(--api-code-font);
+	font-size: var(--api-code-size);
+	line-height: var(--api-code-leading);
+}
+
+#api-examples-panel .nav-select-dropdown {
+	width: auto;
+}
+
+.api-code-sample-title {
+	display: flex;
+	min-width: 0;
+	flex: 1;
+	align-items: center;
+	gap: 8px;
+	overflow: hidden;
+}
+
+.api-code-sample-title .api-url {
+	margin-left: 0;
+	overflow: hidden;
+	color: var(--api-code-muted);
+	font-family:
+		'Roboto Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+		monospace;
+	font-size: 12px;
+	font-weight: 300;
+	line-height: 20px;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+/* Language / scenario trigger stays text + chevron. The open menu matches Copy page. */
+.api-select {
+	position: relative;
+	z-index: 6;
+	display: inline-flex;
+	flex-shrink: 0;
+	max-width: 100%;
+}
+
+.api-select.nav-select-dropdown {
+	width: auto;
+}
+
+.api-select-trigger {
+	box-sizing: border-box;
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+	max-width: 100%;
+	height: 24px;
+	margin: 0;
+	padding: 0 8px;
+	border: 1px solid #e3e8f2;
+	border-radius: 6px;
+	background: #fff;
+	color: var(--api-code-muted, #798eaf);
+	font-family: var(--font-sans, Inter, ui-sans-serif, system-ui, sans-serif);
+	font-size: 14px;
+	font-weight: 400;
+	line-height: 20px;
+	cursor: pointer;
+	list-style: none;
+}
+
+.api-select-trigger::-webkit-details-marker {
+	display: none;
+}
+
+.api-select-value {
+	min-width: 0;
+	max-width: 12rem;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.api-select-chevron {
+	display: inline-flex;
+	flex-shrink: 0;
+	align-items: center;
+	justify-content: center;
+	width: 12px;
+	height: 12px;
+	color: inherit;
+}
+
+.api-select-chevron-icon {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 12px;
+	height: 12px;
+	transition: transform 0.15s ease;
+}
+
+.api-select-chevron-icon svg {
+	display: block;
+	width: 12px;
+	height: 12px;
+}
+
+.api-select-trigger:hover {
+	background: #f6f9fc;
+}
+
+.api-select-trigger:focus-visible {
+	outline: 2px solid var(--api-code-accent, #0b64dd);
+	outline-offset: 1px;
+}
+
+.api-select[open] .api-select-chevron-icon,
+.api-select.is-open .api-select-chevron-icon {
+	transform: rotate(180deg);
+}
+
+.api-select .api-page-actions-option.is-selected,
+.api-select .api-page-actions-option[aria-selected='true'] {
+	font-weight: 600;
+}
+
+.api-code-card:has(.api-select[open]),
+.api-code-card:has(.api-select.is-open) {
+	z-index: 7;
+}
+
+.api-code-sample-body {
+	min-width: 0;
+}
+
+/*
+ * API tabs — forked from markdown/tabs.css so API pages can diverge
+ * without affecting Myst ::::{tabs} elsewhere. Child class names
+ * (tabs-input / tabs-label / tabs-content) stay shared for tabs.ts sync.
+ */
+.api-tabs {
+	@apply relative mt-4 flex flex-wrap overflow-hidden;
+
+	.tabs-label {
+		@apply text-ink-light border-grey-20 z-20 -mb-[1px] flex cursor-pointer items-center border-1 px-6 py-2;
+		&:not(:nth-of-type(1)) {
+			margin-left: -1px;
+		}
+
+		&:hover {
+			@apply bg-grey-10 border-b-1 border-b-black text-black;
+		}
+	}
+
+	.tabs-input {
+		@apply absolute opacity-0;
+	}
+
+	.tabs-content {
+		@apply border-grey-20 z-0 order-99 hidden w-full border-1 px-6 pt-2 pb-6;
+	}
+
+	.tabs-input:checked + .tabs-label + .tabs-content {
+		@apply block;
+	}
+
+	.tabs-input:checked + .tabs-label,
+	.tabs-label:active {
+		@apply border-b-blue-elastic text-blue-elastic border-b-1;
+	}
+
+	.tabs-input:focus-visible + .tabs-label {
+		outline: var(--outline-size) var(--outline-style) var(--outline-color);
+		outline-offset: var(--outline-offset, var(--outline-size));
+	}
+}
+
+/* Right-rail examples panel (Scalar-style operation layout) */
+.api-examples-panel {
+	@apply font-body;
+}
+
+/* Response card aliases the shared Card/Code tokens for the hljs !important rules. */
+.example-block--response {
+	--api-response-text: var(--api-code-syntax);
+	--api-response-string: var(--api-code-string);
+	--api-response-boolean: var(--api-code-boolean);
+	--api-response-number: var(--api-code-number);
+}
+
 .example-block--response .example-empty {
 	margin: 0;
 	padding: 12px 16px;
 	font-size: 13px;
 	line-height: 1.4;
-	color: #516381;
+	color: var(--api-code-muted);
 	font-style: italic;
 }
 
@@ -1889,54 +2954,11 @@ button.example-response-tab:focus-visible {
 	@apply ml-auto flex shrink-0 items-center gap-2;
 }
 
-.example-block--response .example-block-actions .copybtn.copybtn--in-header {
-	position: static;
-	top: auto;
-	right: auto;
-	width: 16px;
-	height: 16px;
-	opacity: 1;
-	background-color: transparent;
-	color: #516381;
-	border-radius: 0;
-}
-
-.example-block--response
-	.example-block-actions
-	.copybtn.copybtn--in-header:hover {
-	color: #1d2a3e;
-}
-
-.example-block--response
-	.example-block-actions
-	.copybtn.copybtn--in-header.success {
-	background-color: transparent;
-	color: #22863a;
-}
-
-.example-block--response
-	.example-block-actions
-	.copybtn.copybtn--in-header
-	svg {
-	width: 16px;
-	height: 16px;
-	padding: 0;
-}
-
-.example-block--response
-	.example-block-actions
-	.copybtn.copybtn--in-header.o-tooltip--left:after {
-	background-color: #1d2a3e;
-	color: #f6f9fc;
-	transform: translateX(-102%) translateY(0);
-}
-
 .example-block--response .example-block-body .highlight {
 	@apply mt-0;
 }
 
-/* Figma Card/Code tokens: black structure, green strings, blue bools, maroon numbers.
-   Beat `.markdown-content .hljs { color: blue-elastic-30 }` (same 0,2,0 + !important)
+/* Beat `.markdown-content .hljs { color: blue-elastic-30 }` (same 0,2,0 + !important)
    by including .markdown-content in the selector — the examples rail uses that class. */
 .markdown-content .example-block--response pre code,
 #api-examples-panel .example-block--response pre code,
@@ -1987,6 +3009,54 @@ button.example-response-tab:focus-visible {
 	color: var(--api-response-text) !important;
 }
 
+.markdown-content .example-block--response .hljs-comment,
+.markdown-content .example-block--response .hljs-quote,
+#api-examples-panel .example-block--response .hljs-comment,
+#api-examples-panel .example-block--response .hljs-quote,
+.markdown-content .api-code-sample .hljs-comment,
+.markdown-content .api-code-sample .hljs-quote,
+#api-examples-panel .api-code-sample .hljs-comment,
+#api-examples-panel .api-code-sample .hljs-quote {
+	color: var(--api-code-muted) !important;
+}
+
+.markdown-content .example-block--response .hljs-keyword,
+.markdown-content .example-block--response .hljs-title,
+.markdown-content .example-block--response .function_,
+.markdown-content .example-block--response .hljs-built_in,
+#api-examples-panel .example-block--response .hljs-keyword,
+#api-examples-panel .example-block--response .hljs-title,
+#api-examples-panel .example-block--response .function_,
+#api-examples-panel .example-block--response .hljs-built_in,
+.markdown-content .api-code-sample .hljs-keyword,
+.markdown-content .api-code-sample .hljs-title,
+.markdown-content .api-code-sample .function_,
+.markdown-content .api-code-sample .hljs-built_in,
+#api-examples-panel .api-code-sample .hljs-keyword,
+#api-examples-panel .api-code-sample .hljs-title,
+#api-examples-panel .api-code-sample .function_,
+#api-examples-panel .api-code-sample .hljs-built_in {
+	color: var(--api-code-keyword) !important;
+}
+
+.markdown-content .example-block--response .hljs-variable,
+#api-examples-panel .example-block--response .hljs-variable,
+.markdown-content .api-code-sample .hljs-variable,
+#api-examples-panel .api-code-sample .hljs-variable {
+	color: var(--api-code-variable) !important;
+}
+
+.markdown-content .example-block--response .hljs-attr,
+.markdown-content .example-block--response .hljs-params,
+#api-examples-panel .example-block--response .hljs-attr,
+#api-examples-panel .example-block--response .hljs-params,
+.markdown-content .api-code-sample .hljs-attr,
+.markdown-content .api-code-sample .hljs-params,
+#api-examples-panel .api-code-sample .hljs-attr,
+#api-examples-panel .api-code-sample .hljs-params {
+	color: var(--api-code-property) !important;
+}
+
 .markdown-content .example-block--response .hljs-string,
 #api-examples-panel .example-block--response .hljs-string,
 .markdown-content .api-code-sample .hljs-string,
@@ -1994,10 +3064,15 @@ button.example-response-tab:focus-visible {
 	color: var(--api-response-string) !important;
 }
 
+.markdown-content .example-block--response .hljs-string.hljs-attr,
+#api-examples-panel .example-block--response .hljs-string.hljs-attr,
+.markdown-content .api-code-sample .hljs-string.hljs-attr,
+#api-examples-panel .api-code-sample .hljs-string.hljs-attr {
+	color: var(--api-code-property) !important;
+}
+
 .markdown-content .example-block--response .hljs-literal,
-.markdown-content .example-block--response .hljs-keyword,
 #api-examples-panel .example-block--response .hljs-literal,
-#api-examples-panel .example-block--response .hljs-keyword,
 .markdown-content .api-code-sample .hljs-literal,
 #api-examples-panel .api-code-sample .hljs-literal {
 	color: var(--api-response-boolean) !important;
@@ -2010,27 +3085,73 @@ button.example-response-tab:focus-visible {
 	color: var(--api-response-number) !important;
 }
 
+.markdown-content .example-block--response .hljs-punctuation,
+#api-examples-panel .example-block--response .hljs-punctuation,
+.markdown-content .api-code-sample .hljs-punctuation,
+#api-examples-panel .api-code-sample .hljs-punctuation {
+	color: var(--api-code-syntax) !important;
+}
+
 /* Beat docs `.markdown-content .hljs` (blue-elastic-30) and `.hljs-keyword`
    (python `from=`). `span` covers tokens that are not `.hljs *` descendants. */
-.api-page-shell #api-examples-panel .api-code-sample pre code,
-.api-page-shell #api-examples-panel .api-code-sample pre code *,
-.api-page-shell #api-examples-panel .api-code-sample span {
-	color: #1d2a3e !important;
+.api-page-shell #api-examples-panel .api-code-sample-body pre code,
+.api-page-shell #api-examples-panel .api-code-sample-body pre code *,
+.api-page-shell #api-examples-panel .api-code-sample-body span {
+	color: var(--api-code-syntax) !important;
+}
+
+.api-page-shell #api-examples-panel .api-code-sample .hljs-comment,
+.api-page-shell #api-examples-panel .api-code-sample .hljs-comment *,
+.api-page-shell #api-examples-panel .api-code-sample .hljs-quote,
+.api-page-shell #api-examples-panel .api-code-sample .hljs-quote * {
+	color: var(--api-code-muted) !important;
+}
+
+.api-page-shell #api-examples-panel .api-code-sample .hljs-keyword,
+.api-page-shell #api-examples-panel .api-code-sample .hljs-keyword *,
+.api-page-shell #api-examples-panel .api-code-sample .hljs-title,
+.api-page-shell #api-examples-panel .api-code-sample .hljs-title *,
+.api-page-shell #api-examples-panel .api-code-sample .function_,
+.api-page-shell #api-examples-panel .api-code-sample .hljs-built_in,
+.api-page-shell #api-examples-panel .api-code-sample .hljs-built_in * {
+	color: var(--api-code-keyword) !important;
+}
+
+.api-page-shell #api-examples-panel .api-code-sample .hljs-variable,
+.api-page-shell #api-examples-panel .api-code-sample .hljs-variable * {
+	color: var(--api-code-variable) !important;
+}
+
+.api-page-shell #api-examples-panel .api-code-sample .hljs-attr,
+.api-page-shell #api-examples-panel .api-code-sample .hljs-attr *,
+.api-page-shell #api-examples-panel .api-code-sample .hljs-params,
+.api-page-shell #api-examples-panel .api-code-sample .hljs-params * {
+	color: var(--api-code-property) !important;
 }
 
 .api-page-shell #api-examples-panel .api-code-sample .hljs-string,
 .api-page-shell #api-examples-panel .api-code-sample .hljs-string * {
-	color: #047471 !important;
+	color: var(--api-code-string) !important;
+}
+
+.api-page-shell #api-examples-panel .api-code-sample .hljs-string.hljs-attr,
+.api-page-shell #api-examples-panel .api-code-sample .hljs-string.hljs-attr * {
+	color: var(--api-code-property) !important;
 }
 
 .api-page-shell #api-examples-panel .api-code-sample .hljs-literal,
 .api-page-shell #api-examples-panel .api-code-sample .hljs-literal * {
-	color: #0b64dd !important;
+	color: var(--api-code-boolean) !important;
 }
 
 .api-page-shell #api-examples-panel .api-code-sample .hljs-number,
 .api-page-shell #api-examples-panel .api-code-sample .hljs-number * {
-	color: #a11262 !important;
+	color: var(--api-code-number) !important;
+}
+
+.api-page-shell #api-examples-panel .api-code-sample .hljs-punctuation,
+.api-page-shell #api-examples-panel .api-code-sample .hljs-punctuation * {
+	color: var(--api-code-syntax) !important;
 }
 
 /* API page shell: same max width as docs; right column only when examples exist */
@@ -2070,7 +3191,7 @@ button.example-response-tab:focus-visible {
 	}
 
 	.api-content-grid:has(#api-examples-panel.api-examples-panel)
-		.api-breadcrumbs {
+		.api-page-toolbar {
 		grid-column: 1 / -1;
 		grid-row: 1;
 		min-width: 0;
@@ -2096,7 +3217,7 @@ button.example-response-tab:focus-visible {
 		padding-bottom: calc(var(--spacing) * 12); /* replaces main pb-12 */
 	}
 
-	/* Viewport-locked examples rail: full browser height under the intro */
+	/* Examples rail: hug content, cap at viewport under the intro */
 	#api-examples-panel {
 		--api-examples-rail-padding: calc(
 			var(--spacing) * 6
@@ -2107,7 +3228,7 @@ button.example-response-tab:focus-visible {
 		top: var(--offset-top);
 		align-self: start;
 		box-sizing: border-box;
-		height: calc(100vh - var(--offset-top));
+		height: min(max-content, calc(100vh - var(--offset-top)));
 		max-height: calc(100vh - var(--offset-top));
 		padding-block: var(--api-examples-rail-padding);
 		overflow: hidden;
@@ -2116,23 +3237,23 @@ button.example-response-tab:focus-visible {
 	}
 
 	#api-examples-panel .api-examples-panel-nav {
-		flex: 1 1 auto;
+		flex: 0 1 auto;
 		min-height: 0;
 		max-height: none;
-		overflow: hidden;
+		overflow: visible;
 		display: flex;
 		flex-direction: column;
 	}
 
-	/* Fill remaining rail height with the examples body / scenario switcher */
+	/* Size to content; shrink only when the rail hits max-height */
 	#api-examples-panel .api-examples-body,
 	#api-examples-panel .api-examples-scenarios {
-		flex: 1 1 auto;
+		flex: 0 1 auto;
 		min-height: 0;
 		display: flex;
 		flex-direction: column;
 		flex-wrap: nowrap;
-		overflow: hidden;
+		overflow: visible;
 	}
 
 	#api-examples-panel .api-examples-heading {
@@ -2149,8 +3270,10 @@ button.example-response-tab:focus-visible {
 	}
 
 	#api-examples-panel .api-examples-scenario-panel {
-		flex: 1 1 auto;
+		display: flex;
+		flex: 0 1 auto;
 		min-height: 0;
+		flex-direction: column;
 	}
 
 	#api-examples-panel .api-examples-scenario-panel[hidden] {
@@ -2159,36 +3282,51 @@ button.example-response-tab:focus-visible {
 
 	#api-examples-panel .api-examples-body {
 		display: flex;
-		flex: 1 1 auto;
+		flex: 0 1 auto;
 		min-height: 0;
 		flex-direction: column;
-		overflow-x: hidden;
-		overflow-y: auto;
+		overflow: visible;
 		border: 0;
 		padding: 0;
 	}
+
+	#api-examples-panel .api-code-card {
+		display: flex;
+		flex: 0 1 auto;
+		min-height: 0;
+		flex-direction: column;
+	}
+
+	#api-examples-panel .api-code-card:last-child {
+		margin-bottom: 0;
+	}
+
+	#api-examples-panel .api-code-sample-body,
+	#api-examples-panel .example-block-body {
+		flex: 0 1 auto;
+		min-height: 0;
+		overflow: auto;
+	}
 }
 
-/* Cap tall samples so individual code boxes scroll instead of growing forever */
 #api-examples-panel .highlight pre code {
-	max-height: min(20rem, 40vh);
-	overflow-x: auto;
-	overflow-y: auto;
+	max-height: none;
+	overflow: visible;
 }
 
 /* Line-number gutter (sibling <pre>): excluded from selection/copy.
    Override markdown `pre { display:grid }` — that grid was desyncing gutter vs code rows.
-   width:max-content keeps long lines from wrapping (horizontal scroll instead). */
+   width:max-content keeps long lines from wrapping (horizontal scroll only then). */
 #api-examples-panel .api-code-lines {
 	display: flex;
 	align-items: flex-start;
 	min-width: 0;
-	max-height: min(20rem, 40vh);
-	overflow: auto;
+	max-height: none;
+	overflow: visible;
 }
 
 #api-examples-panel .api-code-sample .api-code-lines {
-	max-height: min(22rem, 45vh);
+	max-height: none;
 }
 
 #api-examples-panel .api-code-lines > pre {
@@ -2197,15 +3335,15 @@ button.example-response-tab:focus-visible {
 }
 
 #api-examples-panel .api-code-lines > pre:not(.api-code-line-gutter) {
-	flex: 1 1 auto;
+	flex: 1 0 auto;
 	width: max-content;
-	min-width: 100%;
+	min-width: 0;
 }
 
 #api-examples-panel .api-code-lines > pre:not(.api-code-line-gutter) code {
 	display: block;
 	width: max-content;
-	min-width: 100%;
+	min-width: 0;
 	max-height: none !important;
 	overflow: visible !important;
 	padding-left: 0.5rem !important;
@@ -2226,13 +3364,13 @@ button.example-response-tab:focus-visible {
 	font-variant-numeric: tabular-nums;
 	white-space: pre;
 	padding: 1.5rem 0.5rem 1.5rem 1rem;
-	color: #798eaf;
+	color: var(--api-code-gutter);
 }
 
 #api-examples-panel .api-code-sample .api-code-line-gutter {
 	padding-top: calc(var(--spacing) * 4);
 	padding-bottom: 1.5rem;
-	color: var(--api-code-muted);
+	color: var(--api-code-gutter);
 }
 
 #api-examples-panel .example-block--response .api-code-line-gutter,
@@ -2245,88 +3383,23 @@ button.example-response-tab:focus-visible {
 }
 
 #api-examples-panel .nav-select-dropdown {
-	width: 100%;
+	width: auto;
 }
 
-/* Code sample widget — same light Card/Code chrome as .example-block--response */
+/* Code sample widget — same Card/Code chrome as .example-block--response */
 .api-code-sample {
-	--api-response-text: #1d2a3e;
-	--api-response-string: #047471;
-	--api-response-boolean: #0b64dd;
-	--api-response-number: #a11262;
-	--api-code-bg: #f6f9fc;
-	--api-code-text: #1d2a3e;
-	--api-code-muted: #516381;
-	--api-code-accent: #0b64dd;
-	--api-code-string: #047471;
-	--api-code-param: #1d2a3e;
-	--api-code-number: #a11262;
-	@apply overflow-hidden;
-	border-radius: 16px;
-	margin-bottom: 24px;
-	background-color: var(--api-code-bg);
-	color: var(--api-code-text);
-	border: 1px solid #e3e8f2;
-}
-
-.api-code-sample-header {
-	@apply flex min-w-0 items-center justify-between gap-2 px-3 py-2;
-	border-bottom: 1px solid #e3e8f2;
-}
-
-.api-code-sample-label {
-	@apply text-sm font-medium;
-	color: var(--api-code-muted);
+	--api-response-text: var(--api-code-syntax);
+	--api-response-string: var(--api-code-string);
+	--api-response-boolean: var(--api-code-boolean);
+	--api-response-number: var(--api-code-number);
 }
 
 .api-code-sample-actions {
-	@apply ml-auto flex shrink-0 items-center gap-2;
-}
-
-/* Compact native select — not EUI/Tywin; sized to match response-tab header height */
-.api-code-sample-lang {
-	@apply cursor-pointer appearance-none rounded-sm border px-1.5 pr-6 text-xs font-medium;
-	height: 1.5rem; /* 24px — aligns with .example-response-tab line-height + header rhythm */
-	line-height: 1.25rem;
-	padding-block: 0;
-	color: var(--api-code-muted);
-	background-color: #fff;
-	border-color: #d3dae6;
-	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12' fill='none'%3E%3Cpath d='M3 4.5L6 7.5L9 4.5' stroke='%23516381' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
-	background-repeat: no-repeat;
-	background-position: right 0.35rem center;
-	background-size: 0.625rem;
-
-	&:hover {
-		background-color: #f5f7fa;
-		border-color: #98a2b3;
-	}
-
-	&:focus-visible {
-		outline: 2px solid var(--color-blue-elastic, #0b64dd);
-		outline-offset: 1px;
-	}
-
-	option {
-		color: #1e2227;
-		background: #fff;
-	}
-}
-
-.api-code-sample-actions .copybtn.copybtn--in-header {
-	position: static;
-	top: auto;
-	right: auto;
-	width: 16px;
-	height: 16px;
-	opacity: 1;
-	background-color: transparent;
-	color: var(--api-code-muted);
-	border-radius: 0;
+	@apply ml-auto flex shrink-0 items-center gap-1;
 }
 
 .api-code-sample-actions .copybtn.copybtn--in-header:hover {
-	color: var(--api-code-text);
+	color: var(--api-code-muted);
 }
 
 .api-code-sample-actions .copybtn.copybtn--in-header.success {
@@ -2335,9 +3408,11 @@ button.example-response-tab:focus-visible {
 }
 
 .api-code-sample-actions .copybtn.copybtn--in-header svg {
-	width: 16px;
-	height: 16px;
+	width: 12px;
+	height: 12px;
 	padding: 0;
+	stroke: none;
+	fill: currentColor;
 }
 
 .api-code-sample-actions .copybtn.copybtn--in-header.o-tooltip--left:after {
@@ -2358,7 +3433,7 @@ button.example-response-tab:focus-visible {
 	@apply rounded-none!;
 	padding-top: calc(var(--spacing) * 4) !important;
 	background-color: transparent !important;
-	color: var(--api-code-text) !important;
+	color: var(--api-code-syntax) !important;
 }
 
 /* Neutralize markdown/code.css bold tokens so all syntax shares weight 400 */
@@ -2370,7 +3445,7 @@ button.example-response-tab:focus-visible {
 }
 
 #api-examples-panel .api-code-sample .highlight pre code {
-	max-height: min(22rem, 45vh);
+	max-height: none;
 }
 
 #api-examples-panel .api-code-sample .api-code-lines pre code {
@@ -2481,7 +3556,7 @@ button.example-response-tab:focus-visible {
 /* Hide button on smaller screens where TOC is hidden */
 @media (max-width: 1023px) {
 	.examples-jump-btn {
-		right: 2rem;
+		display: none;
 	}
 }
 

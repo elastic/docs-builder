@@ -1,0 +1,149 @@
+// Licensed to Elasticsearch B.V under one or more agreements.
+// Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
+// See the LICENSE file in the project root for more information
+
+using AwesomeAssertions;
+using Elastic.Documentation.Diagnostics;
+using Elastic.Markdown.Myst.Directives.Stepper;
+
+namespace Elastic.Markdown.Tests.Directives;
+
+public class StepperTocDefaultTests(ITestOutputHelper output) : DirectiveTest<StepperBlock>(
+	output,
+	"""
+:::::{stepper}
+
+::::{step} Install
+First install the dependencies.
+::::
+
+:::::
+"""
+)
+{
+	[Fact]
+	public void Toc_WhenDefault_IncludesStepTitle()
+	{
+		var toc = File.PageTableOfContent.Values.ToList();
+		toc.Should().ContainSingle();
+		toc[0].Heading.Should().Be("Install");
+		toc[0].IsStepperStep.Should().BeTrue();
+	}
+
+	[Fact]
+	public void Render_WhenDefault_UsesHeadingElement()
+	{
+		Html.Should().Contain("<h2");
+		Html.Should().Contain("id=\"install\"");
+		Html.Should().NotContain("step-title");
+		Html.Should().NotContain("role=\"heading\"");
+	}
+}
+
+public class StepperTocFalseTests(ITestOutputHelper output) : DirectiveTest<StepperBlock>(
+	output,
+	"""
+:::::{stepper}
+:toc: false
+
+::::{step} Install
+First install the dependencies.
+::::
+
+:::::
+"""
+)
+{
+	[Fact]
+	public void Toc_WhenTocFalse_OmitsStepTitle()
+	{
+		File.PageTableOfContent.Should().BeEmpty();
+		Block!.IncludeInToc.Should().BeFalse();
+	}
+
+	[Fact]
+	public void Render_WhenTocFalse_UsesDiv()
+	{
+		Html.Should().NotContain("<h2");
+		Html.Should().Contain("class=\"step-title step-title-2\"");
+		Html.Should().Contain("role=\"heading\"");
+		Html.Should().Contain("aria-level=\"2\"");
+		Html.Should().Contain("id=\"install\"");
+		Html.Should().Contain("Install");
+	}
+}
+
+public class StepperTocFalseKeepsInternalHeadingsTests(ITestOutputHelper output) : DirectiveTest<StepperBlock>(
+	output,
+	"""
+## Section
+
+:::::{stepper}
+:toc: false
+
+::::{step} First
+### Internal
+
+Some content under the internal heading.
+::::
+
+:::::
+"""
+)
+{
+	[Fact]
+	public void Toc_WhenTocFalse_KeepsInternalHeading()
+	{
+		var toc = File.PageTableOfContent.Values.Select(item => item.Heading).ToList();
+		toc.Should().Equal("Section", "Internal");
+	}
+
+	[Fact]
+	public void Render_WhenTocFalse_KeepsInternalHeadingLevel()
+	{
+		Html.Should().Contain("<h3");
+		Html.Should().NotContain("<h4");
+		Html.Should().Contain("class=\"step-title step-title-3\"");
+	}
+}
+
+public class StepperTocFalseNoPrecedingHeadingTests(ITestOutputHelper output) : DirectiveTest<StepperBlock>(
+	output,
+	"""
+	---
+	title: Outline level
+	---
+
+	:::::{stepper}
+	:toc: false
+
+	::::{step} First
+	# Too high
+
+	Body.
+	::::
+
+	:::::
+	"""
+)
+{
+	[Fact]
+	public void Hint_WhenNoPrecedingHeading_NamesOutlineLevel()
+	{
+		var hint = Collector
+			.Diagnostics
+			.Should()
+			.ContainSingle(d => d.Severity == Severity.Hint && d.Message.Contains("Heading level h1"))
+			.Which;
+		hint.Message.Should().Contain("outline level for this step (h1)");
+		hint.Message.Should().NotContain("preceding heading");
+	}
+
+	[Fact]
+	public void Render_WhenNoPrecedingHeading_AdjustsInternalHeading()
+	{
+		Html.Should().Contain("<h2");
+		Html.Should().NotContain("<h1");
+		Html.Should().Contain("class=\"step-title step-title-2\"");
+	}
+}

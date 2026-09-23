@@ -863,6 +863,7 @@ public class TagMetadataTests
 	[InlineData("bulk", "/_bulk", "operation-bulk")]
 	[InlineData("cat-aliases", "/_cat/aliases", "operation-cat-aliases")]
 	[InlineData(null, "/indices/{index}/_search", "operation-indices-index-_search")]
+	[InlineData("get-agent-builder-a2a-agentid.json", "/api/agent_builder/a2a/{agentId}.json", "operation-get-agent-builder-a2a-agentid-json")]
 	public void OperationMoniker_MatchesBumpShScheme(string? operationId, string route, string expected) =>
 		ApiUrlBuilder.OperationMoniker(operationId, route).Should().Be(expected);
 

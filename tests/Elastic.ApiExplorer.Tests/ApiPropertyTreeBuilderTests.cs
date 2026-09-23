@@ -138,6 +138,53 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture) : IClassFix
 	}
 
 	[Fact]
+	public void Describe_PrimitiveAlias_HidesCodegenName()
+	{
+		var builder = CreateBuilder();
+
+		var annotation = builder.Describe(Schema("fixture.ListCreateBody").Properties!["description"]);
+
+		annotation.Text.Should().Be("string · min: 1");
+		annotation.Spans.Should().Contain(s => s.Text == "string" && s.CssClass == SchemaHelpers.PrimitiveCssClass);
+		annotation.Spans.Should().NotContain(s => s.Text.Contains("Security_Lists", StringComparison.Ordinal));
+		annotation.Spans.Should().NotContain(s => s.CssClass != null && s.CssClass.Contains("type-value"));
+	}
+
+	[Fact]
+	public void Describe_CodegenObject_HidesSchemaName()
+	{
+		var builder = CreateBuilder();
+
+		var annotation = builder.Describe(Schema("fixture.ListCreateBody").Properties!["meta"]);
+
+		annotation.Text.Should().Be("object");
+		annotation.Spans.Should().Contain(s => s.Text == "object" && s.CssClass == SchemaHelpers.PrimitiveCssClass);
+		annotation.Spans.Should().NotContain(s => s.Text.Contains("Security_Lists", StringComparison.Ordinal));
+	}
+
+	[Fact]
+	public void Describe_CodegenEnum_HidesSchemaName()
+	{
+		var builder = CreateBuilder();
+
+		var annotation = builder.Describe(Schema("fixture.ListCreateBody").Properties!["type"]);
+
+		annotation.Text.Should().Be("enum");
+		annotation.Spans.Should().Contain(s => s.Text == "enum" && s.CssClass == SchemaHelpers.WrapperEnumCssClass);
+		annotation.Spans.Should().NotContain(s => s.Text.Contains("Security_Lists", StringComparison.Ordinal));
+	}
+
+	[Fact]
+	public void Describe_NamedEnum_KeepsSchemaName()
+	{
+		var builder = CreateBuilder();
+
+		var annotation = builder.Describe(Schema("fixture.SearchRequestBody").Properties!["mode"]);
+
+		annotation.Text.Should().Be("enum SearchMode");
+	}
+
+	[Fact]
 	public void Describe_SimpleArrayUnion_SplitsFormulaIntoAtoms()
 	{
 		var builder = CreateBuilder();
@@ -210,6 +257,20 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture) : IClassFix
 		variants!.Variants.Should().HaveCount(2);
 		variants.ShouldCollapse.Should().BeFalse();
 		variants.Variants.Select(v => v.DisplayName).Should().BeEquivalentTo(["TermsAggregate", "MaxAggregate"]);
+	}
+
+	[Fact]
+	public void BuildUnionVariantsForSchemas_CodegenOneOf_UsesReadableNames()
+	{
+		var builder = CreateBuilder();
+		var schema = Schema("fixture.InvalidInputResponse");
+
+		var variants = builder.BuildUnionVariantsForSchemas(schema.OneOf!, "res-400", null);
+
+		variants.Should().NotBeNull();
+		variants!.Variants.Select(v => v.DisplayName).Should().BeEquivalentTo(["PlatformErrorResponse", "SiemErrorResponse"]);
+		variants.Variants.Should().AllSatisfy(v => v.ShowProperties.Should().BeTrue());
+		variants.ShouldCollapse.Should().BeFalse();
 	}
 
 	[Fact]

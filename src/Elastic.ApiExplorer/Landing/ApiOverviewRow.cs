@@ -110,6 +110,8 @@ public static class ApiOverviewBuilder
 						Url = structuralPage.Url
 					});
 					break;
+				case ISidebarSeparatorNavigationItem:
+					break;
 				default:
 					throw new InvalidOperationException($"Unexpected type: {navigationItem.GetType().FullName}");
 			}

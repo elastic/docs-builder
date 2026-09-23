@@ -99,7 +99,7 @@
   </Folder>
   <Folder Name="/tests/">
     <File Path="tests/Directory.Build.props" />
-    <Project Path="tests/authoring/authoring.fsproj" />
+    <Project Path="tests/Elastic.Authoring.Tests/Elastic.Authoring.Tests.csproj" />
     <Project Path="tests/Elastic.ApiExplorer.Tests/Elastic.ApiExplorer.Tests.csproj" />
     <Project Path="tests/Elastic.Documentation.Api.Infrastructure.Tests/Elastic.Documentation.Api.Infrastructure.Tests.csproj" />
     <Project Path="tests/Elastic.Documentation.Api.Tests/Elastic.Documentation.Api.Tests.csproj" />

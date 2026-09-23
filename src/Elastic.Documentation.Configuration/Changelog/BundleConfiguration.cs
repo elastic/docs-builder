@@ -78,6 +78,12 @@ public record BundleConfiguration
 	/// Named bundle profiles for different release scenarios.
 	/// </summary>
 	public IReadOnlyDictionary<string, BundleProfile>? Profiles { get; init; }
+
+	/// <summary>
+	/// Release trigger to profile mappings. <c>github</c> maps tag globs to profiles;
+	/// <c>products</c> maps product IDs to profiles for any product-scoped release (versioned stack or date-based).
+	/// </summary>
+	public BundleReleases? Releases { get; init; }
 }
 
 /// <summary>
@@ -86,6 +92,11 @@ public record BundleConfiguration
 /// </summary>
 public record BundleProfile
 {
+	/// <summary>
+	/// Target product ID for this profile. Validated against products.yml. Replaces output_products.
+	/// </summary>
+	public string? Product { get; init; }
+
 	/// <summary>
 	/// Product filter pattern for input changelogs.
 	/// Format: "product {version} {lifecycle}" where placeholders are substituted at runtime.
@@ -106,18 +117,15 @@ public record BundleProfile
 	public string? Output { get; init; }
 
 	/// <summary>
-	/// Profile-specific output directory. Replaces <see cref="BundleConfiguration.OutputDirectory"/>
-	/// for this profile the same way option-mode <c>--output</c> as a directory replaces it. The
-	/// conventional <c>{repo}-{product}-{version}.yaml</c> name is joined onto this path. A
-	/// <c>.yml</c>/<c>.yaml</c> value is a hard error (use of free-form filenames is what
-	/// <see cref="Output"/> used to allow).
+	/// Profile-specific output directory. Deprecated: derived automatically as bundle.output_directory/{product}.
 	/// </summary>
+	[Obsolete("Profile output_directory is derived automatically as bundle.output_directory/{product}. Remove this field.")]
 	public string? OutputDirectory { get; init; }
 
 	/// <summary>
-	/// Output products pattern. When set, overrides the products array derived from matched changelogs.
-	/// Supports {version} and {lifecycle} placeholders.
+	/// Output products pattern. Deprecated: use 'product' instead.
 	/// </summary>
+	[Obsolete("Use 'product' instead. 'output_products' will be removed in a future version.")]
 	public string? OutputProducts { get; init; }
 
 	/// <summary>
@@ -161,9 +169,25 @@ public record BundleProfile
 	public bool? ReleaseDates { get; init; }
 
 	/// <summary>
-	/// Profile source type. When set to <c>"github_release"</c>, the profile fetches
-	/// PR references directly from a GitHub release and uses them as the bundle filter.
-	/// Mutually exclusive with <see cref="Products"/>.
+	/// Profile source type. Removed — use bundle.releases.github to map release tags to profiles.
 	/// </summary>
+	[Obsolete("'source: github_release' is removed. Use bundle.releases.github to map release tags to profiles.")]
 	public string? Source { get; init; }
+}
+
+/// <summary>
+/// Release trigger to profile mappings.
+/// </summary>
+public record BundleReleases
+{
+	/// <summary>
+	/// Maps GitHub release tag glob patterns to profiles. Key is the tag glob; value is the profile name.
+	/// </summary>
+	public IReadOnlyDictionary<string, string>? Github { get; init; }
+
+	/// <summary>
+	/// Maps product IDs to profiles for any product-scoped release (versioned stack or date-based).
+	/// Key is the product ID; value is the profile name.
+	/// </summary>
+	public IReadOnlyDictionary<string, string>? Products { get; init; }
 }

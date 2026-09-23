@@ -118,8 +118,7 @@ public class BundleGitRefTests(ITestOutputHelper output) : ChangelogTestBase(out
 		StubHandler handler,
 		IGitHubCommitRangeService rangeService,
 		IGitHubPrService? prService = null
-	) =>
-		new(LoggerFactory, FileSystem, ConfigurationContext, null, Fetcher(handler), prService ?? A.Fake<IGitHubPrService>(), rangeService);
+	) => new(LoggerFactory, FileSystem, ConfigurationContext, Fetcher(handler), prService ?? A.Fake<IGitHubPrService>(), rangeService);
 
 	[Fact]
 	public async Task ProfileMode_PoolFirstWithInferredFallback_WritesBundleWithGitRef()
@@ -179,6 +178,10 @@ public class BundleGitRefTests(ITestOutputHelper output) : ChangelogTestBase(out
 		bundle.Should().Contain("Sharper autocomplete");
 		bundle.Should().Contain("Autocomplete now ranks recent indices first.");
 		bundle.Should().Contain("name: 300.yaml");
+		Collector
+			.Diagnostics
+			.Should()
+			.Contain(d => d.Severity == Severity.Hint && d.Message.Contains("Only the first paragraph was used", StringComparison.Ordinal));
 
 		// The published endpoint ref is recorded as bundle metadata.
 		bundle.Should().Contain($"git_ref: {EndRef}");
@@ -330,6 +333,12 @@ public class BundleGitRefTests(ITestOutputHelper output) : ChangelogTestBase(out
 		bundle.Should().Contain("Unlabeled change");
 		bundle.Should().Contain("type: other");
 		Collector.Diagnostics.Should().Contain(d => d.Severity == Severity.Warning && d.Message.Contains("defaulting to 'other'"));
+		Collector
+			.Diagnostics
+			.Should()
+			.Contain(
+				d => d.Severity == Severity.Hint && d.Message.Contains("No release note description was found", StringComparison.Ordinal)
+			);
 	}
 
 	[Fact]

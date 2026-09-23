@@ -63,7 +63,7 @@ public partial class MarkdownParser(BuildContext build, IParserResolvers resolve
 		ParseMarkdownStringAsync(markdown, path, matter, originalSourcePath, Pipeline);
 
 	public MarkdownDocument ParseApiDescriptionString(string markdown, IFileInfo path) =>
-		ParseMarkdownStringAsync(Build, Resolvers, markdown, path, null, null, Pipeline, skipValidation: true);
+		ParseMarkdownStringAsync(Build, Resolvers, markdown, path, null, null, ApiDescriptionPipeline, skipValidation: true);
 
 	public MarkdownDocument MinimalParseStringAsync(string markdown, IFileInfo path, YamlFrontMatter? matter) =>
 		ParseMarkdownStringAsync(markdown, path, matter, MinimalPipeline);
@@ -243,6 +243,49 @@ public partial class MarkdownParser(BuildContext build, IParserResolvers resolve
 				.UseEnhancedCodeBlocks()
 				.UseHtmxLinkInlineRenderer()
 				.DisableHtml()
+				.UseSpaceNormalizer()
+				.UseHardBreaks();
+			_ = builder.BlockParsers.TryRemove<IndentedCodeBlockParser>();
+			field = builder.Build();
+			return field;
+		}
+	}
+
+	/// <summary>
+	/// A variant of <see cref="Pipeline"/> that keeps raw HTML intact instead of escaping it.
+	/// Used when rendering OAS <c>description</c> fields, which can contain HTML markup
+	/// such as <c>&lt;br&gt;</c> tags and anchor links authored against bump.sh conventions.
+	/// </summary>
+	[field: AllowNull, MaybeNull]
+	public static MarkdownPipeline ApiDescriptionPipeline
+	{
+		get
+		{
+			if (field is not null)
+				return field;
+
+			var builder = new MarkdownPipelineBuilder()
+				.UseInlineAnchors()
+				.UsePreciseSourceLocation()
+				.UseFootnotes()
+				.UseAutoLinks()
+				.UseHeadingsWithSlugs()
+				.UseEmphasisExtras(EmphasisExtraOptions.Default)
+				.UseSubstitutionInlineCode()
+				.UseInlineAppliesTo()
+				.UseInlineIcons()
+				.UseInlineKbd()
+				.UseInlineMath()
+				.UseSubstitution()
+				.UseComments()
+				.UseYamlFrontMatter()
+				.UsePipeTables()
+				.UseTaskLists()
+				.UseDirectives()
+				.UseDefinitionLists()
+				.UseDefinitionTermAnchors()
+				.UseEnhancedCodeBlocks()
+				.UseHtmxLinkInlineRenderer()
 				.UseSpaceNormalizer()
 				.UseHardBreaks();
 			_ = builder.BlockParsers.TryRemove<IndentedCodeBlockParser>();

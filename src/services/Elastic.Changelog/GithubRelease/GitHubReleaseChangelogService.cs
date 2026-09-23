@@ -215,7 +215,12 @@ public class GitHubReleaseChangelogService(
 			var cdnBranch = config.Bundle?.Branch ?? "main";
 
 			// 8. Process each PR and create changelog files
-			var outputDir = input.Output ?? _fileSystem.Path.Join(_fileSystem.Directory.GetCurrentDirectory(), "changelogs");
+			// Mirror the plan step's fallback chain so the actual output path matches what
+			// `changelog bundle --plan` predicts when --output is not supplied by the caller.
+			var outputDir = input.Output
+				?? config.Bundle?.OutputDirectory
+				?? config.Bundle?.Directory
+				?? _fileSystem.Path.Join(_fileSystem.Directory.GetCurrentDirectory(), "changelogs");
 			if (!_fileSystem.Directory.Exists(outputDir))
 				_ = _fileSystem.Directory.CreateDirectory(outputDir);
 
@@ -307,16 +312,58 @@ public class GitHubReleaseChangelogService(
 		Cancel ctx
 	)
 	{
-		var previousTag = await _releaseService.FetchPreviousTagAsync(owner, repo, currentTag, ctx);
+		var lookup = await _releaseService.FetchPreviousTagAsync(owner, repo, currentTag, ctx);
 
-		if (previousTag == null)
+		if (lookup.Status == PreviousTagStatus.LookupFailed)
 		{
 			collector.EmitError(
 				string.Empty,
-				$"GitHub could not determine the previous release before '{currentTag}' in {owner}/{repo}. " +
-					"Cannot derive PR list from commit range. Ensure at least one prior release exists in the same major version line."
+				$"GitHub could not determine the previous release before '{currentTag}' in {owner}/{repo} " +
+					"due to an API or transport failure. Cannot derive PR list from commit range."
 			);
 			return null;
+		}
+
+		if (lookup.Status == PreviousTagStatus.FirstReleaseInLine)
+		{
+			collector.EmitError(
+				string.Empty,
+				$"'{currentTag}' is the first release in its major/prefix line in {owner}/{repo}, " +
+					"but earlier releases exist in the repository. Specify a start ref explicitly " +
+					"(e.g. the latest tag from the previous major) so the commit range does not " + "include unrelated history."
+			);
+			return null;
+		}
+
+		string previousTag;
+		if (lookup.Tag is not null)
+		{
+			previousTag = lookup.Tag;
+		}
+		else
+		{
+			// Genuine first release in the repository — fall back to the initial commit so the range
+			// covers all PR merges up to this tag rather than failing entirely.
+			var initialCommit = await _releaseService.FetchInitialCommitAsync(owner, repo, currentTag, ctx);
+			if (initialCommit is null)
+			{
+				collector.EmitError(
+					string.Empty,
+					$"No previous release found for '{currentTag}' in {owner}/{repo}, " +
+						"and could not fetch the repository's initial commit as a fallback. " + "Cannot derive PR list from commit range."
+				);
+				return null;
+			}
+
+			_logger.LogInformation(
+				"No previous release found for {CurrentTag} in {Owner}/{Repo} — treating as first release; " +
+					"comparing all commits from initial commit {InitialSha}",
+				currentTag,
+				owner,
+				repo,
+				initialCommit
+			);
+			previousTag = initialCommit;
 		}
 
 		_logger.LogInformation(
@@ -420,7 +467,13 @@ public class GitHubReleaseChangelogService(
 		if (context.StripTitlePrefix)
 			title = ChangelogTextUtilities.StripSquareBracketPrefix(title);
 
-		var description = config.Extract.ReleaseNotes ? ReleaseNotesExtractor.FindReleaseNote(prInfo?.Body) : null;
+		string? description = null;
+		if (config.Extract.ReleaseNotes)
+		{
+			var extraction = ReleaseNotesExtractor.ExtractReleaseNote(prInfo?.Body);
+			description = extraction.Content;
+			ReleaseNoteExtractionDiagnostics.EmitHint(collector, pr.Url, pr.Number, extraction);
+		}
 		var issues = config.Extract.Issues && prInfo?.LinkedIssues is { Count: > 0 } linkedIssues ? linkedIssues.ToList() : null;
 
 		var changelogData = new ChangelogEntry
