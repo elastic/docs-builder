@@ -3,8 +3,33 @@
 // See the LICENSE file in the project root for more information
 
 using System.Text.RegularExpressions;
+using Elastic.Documentation.Diagnostics;
 
 namespace Elastic.Changelog;
+
+/// <summary>The extracted release note text and information about omitted trailing content.</summary>
+public sealed record ReleaseNoteExtractionResult(string? Content, bool WasTruncated);
+
+internal static class ReleaseNoteExtractionDiagnostics
+{
+	public static void EmitHint(IDiagnosticsCollector collector, string source, int prNumber, ReleaseNoteExtractionResult extraction)
+	{
+		if (extraction.Content == null)
+		{
+			collector.EmitHint(
+				source,
+				$"No release note description was found for PR #{prNumber}. Add a 'Release note' section to the PR body if the entry needs more detail than its title."
+			);
+		}
+		else if (extraction.WasTruncated)
+		{
+			collector.EmitHint(
+				source,
+				$"The release note description for PR #{prNumber} contains content after the first paragraph or heading. Only the first paragraph was used."
+			);
+		}
+	}
+}
 
 /// <summary>
 /// Utility class for extracting release notes from PR descriptions
@@ -51,10 +76,17 @@ public static partial class ReleaseNotesExtractor
 	/// </summary>
 	/// <param name="markdown">The PR description body</param>
 	/// <returns>The extracted release note content, or null if not found</returns>
-	public static string? FindReleaseNote(string? markdown)
+	public static string? FindReleaseNote(string? markdown) => ExtractReleaseNote(markdown).Content;
+
+	/// <summary>
+	/// Extracts release note content and reports when later PR body content was not included.
+	/// </summary>
+	/// <param name="markdown">The PR description body.</param>
+	/// <returns>The extraction result.</returns>
+	public static ReleaseNoteExtractionResult ExtractReleaseNote(string? markdown)
 	{
 		if (string.IsNullOrWhiteSpace(markdown))
-			return null;
+			return new ReleaseNoteExtractionResult(null, false);
 
 		// Strip HTML comments first to avoid extracting template instructions
 		var cleanedMarkdown = StripHtmlComments(markdown);
@@ -70,9 +102,11 @@ public static partial class ReleaseNotesExtractor
 		if (match.Success && match.Groups.Count > 1)
 		{
 			var releaseNote = match.Groups[1].Value.Trim();
-			return string.IsNullOrWhiteSpace(releaseNote) ? null : releaseNote;
+			var content = string.IsNullOrWhiteSpace(releaseNote) ? null : releaseNote;
+			var remainingContent = cleanedMarkdown[(match.Index + match.Length)..];
+			return new ReleaseNoteExtractionResult(content, content != null && !string.IsNullOrWhiteSpace(remainingContent));
 		}
 
-		return null;
+		return new ReleaseNoteExtractionResult(null, false);
 	}
 }
