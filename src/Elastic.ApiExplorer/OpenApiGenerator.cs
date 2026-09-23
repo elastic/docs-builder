@@ -349,6 +349,65 @@ public class OpenApiGenerator(
 
 		await RenderNavigationItems(renderContext, navigationRenderer, navigation, ctx).ConfigureAwait(false);
 		await WriteSpecDownloads(navigation, generation.Document, ctx).ConfigureAwait(false);
+		if (generation.Moniker == "main" && generation.ApiConfig is { Aliases.Count: > 0 } apiConfigWithAliases)
+			await WriteAliasRedirectPages(generation.CurrentApiKey!, apiConfigWithAliases.Aliases, navigation, ctx).ConfigureAwait(false);
+	}
+
+	private static IReadOnlyList<string> CollectPageUrls(INavigationItem navigation)
+	{
+		var urls = new List<string>();
+		CollectPageUrlsRecursive(navigation, urls);
+		return urls;
+	}
+
+	private static void CollectPageUrlsRecursive(INavigationItem item, List<string> urls)
+	{
+		if (item is ISidebarSeparatorNavigationItem)
+			return;
+
+		if (item is not ClassificationNavigationItem)
+			urls.Add(item.Url);
+
+		if (item is INodeNavigationItem<INavigationModel, INavigationItem> node)
+			foreach (var child in node.NavigationItems)
+				CollectPageUrlsRecursive(child, urls);
+	}
+
+	private async Task WriteAliasRedirectPages(string apiKey, IReadOnlyList<string> aliases, INavigationItem navigation, Cancel ctx)
+	{
+		var urls = CollectPageUrls(navigation);
+		var canonicalRoot = ApiUrlBuilder.ProductRoot(context.UrlPathPrefix, apiKey);
+
+		foreach (var alias in aliases)
+		{
+			var aliasRoot = ApiUrlBuilder.ProductRoot(context.UrlPathPrefix, alias);
+			foreach (var canonicalUrl in urls)
+			{
+				var trimmed = canonicalUrl.TrimEnd('/');
+				if (!trimmed.StartsWith(canonicalRoot, StringComparison.OrdinalIgnoreCase))
+					continue;
+
+				var suffix = trimmed[canonicalRoot.Length..];
+				await WriteAliasRedirectHtml(aliasRoot + suffix, trimmed, ctx).ConfigureAwait(false);
+			}
+		}
+	}
+
+	private async Task WriteAliasRedirectHtml(string aliasUrl, string canonicalUrl, Cancel ctx)
+	{
+		var htmlFile = _writeFileSystem.FileInfo.New(
+			Path.Join(context.OutputDirectory.FullName, ApiOutputPaths.RelativeHtmlFile(aliasUrl, context.UrlPathPrefix))
+		);
+		try
+		{
+			htmlFile.Directory!.Create();
+		}
+		catch (IOException) { }
+
+		var encodedUrl = System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(canonicalUrl);
+		var html =
+			$"""<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><title>Redirecting…</title><script>window.location.replace('{encodedUrl}')</script></head><body></body></html>""";
+		await _writeFileSystem.File.WriteAllTextAsync(htmlFile.FullName, html, ctx).ConfigureAwait(false);
 	}
 
 	private async Task WriteSpecDownloads(INavigationItem landing, OpenApiDocument document, Cancel ctx)

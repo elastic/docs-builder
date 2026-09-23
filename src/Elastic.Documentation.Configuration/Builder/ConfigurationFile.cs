@@ -634,7 +634,8 @@ public record ConfigurationFile
 			Repository = repository,
 			Children = children,
 			ApiContentDirectory = apiContentDirectory,
-			CatalogCategories = ResolveCatalogCategories(productKey, entry, context)
+			CatalogCategories = ResolveCatalogCategories(productKey, entry, context),
+			Aliases = entry.Aliases.AsReadOnly()
 		};
 	}
 

@@ -133,6 +133,9 @@ public class ApiConfigurationConverter : IYamlTypeConverter
 				case "catalog":
 					entry.Catalog = ReadCatalog(parser);
 					break;
+				case "aliases":
+					entry.Aliases = ReadStringSequence(parser);
+					break;
 				case "file":
 					throw new YamlException(
 						key.Start,
