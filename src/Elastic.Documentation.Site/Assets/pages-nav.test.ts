@@ -10,7 +10,6 @@ import {
     pinPagesNavScroll,
     shouldRetargetArticleSwap,
     shouldRetargetApiContentSwap,
-    syncCodexBreadcrumbsFromResponse,
     syncPagesNavFromResponse,
 } from './pages-nav'
 
@@ -750,68 +749,6 @@ describe('navSurfaceKey', () => {
             navSurfaceKey(document)
         )
         expect(incomingNavSurfaceKey('<html><body></body></html>')).toBe('')
-    })
-})
-
-function codexPage(crumb: string | null): string {
-    const breadcrumbs = crumb
-        ? `<div id="codex-breadcrumbs"><a href="/">${crumb}</a></div>`
-        : ''
-    return `<div id="main-container">${breadcrumbs}<main id="content-container" class="md:col-start-2"></main></div>`
-}
-
-describe('syncCodexBreadcrumbsFromResponse', () => {
-    it('replaces the sub-header when a search result changes group', () => {
-        document.body.innerHTML = codexPage('Elasticsearch')
-
-        const replaced = syncCodexBreadcrumbsFromResponse(
-            `<html><body>${codexPage('Kibana')}</body></html>`
-        )
-
-        expect(replaced).toBe(true)
-        expect(document.querySelector('#codex-breadcrumbs')?.textContent).toBe(
-            'Kibana'
-        )
-    })
-
-    it('removes the sub-header when the target page has none', () => {
-        document.body.innerHTML = codexPage('Elasticsearch')
-
-        const replaced = syncCodexBreadcrumbsFromResponse(
-            `<html><body>${codexPage(null)}</body></html>`
-        )
-
-        expect(replaced).toBe(true)
-        expect(document.querySelector('#codex-breadcrumbs')).toBeNull()
-    })
-
-    it('inserts the sub-header when the target page has one', () => {
-        document.body.innerHTML = codexPage(null)
-
-        const replaced = syncCodexBreadcrumbsFromResponse(
-            `<html><body>${codexPage('Kibana')}</body></html>`
-        )
-
-        expect(replaced).toBe(true)
-        expect(
-            document.querySelector('#main-container')?.firstElementChild?.id
-        ).toBe('codex-breadcrumbs')
-        expect(document.querySelector('#codex-breadcrumbs')?.textContent).toBe(
-            'Kibana'
-        )
-    })
-
-    it('leaves the sub-header alone when the response is only the article column', () => {
-        document.body.innerHTML = codexPage('Elasticsearch')
-
-        const replaced = syncCodexBreadcrumbsFromResponse(
-            '<main id="content-container" class="md:col-start-2"></main>'
-        )
-
-        expect(replaced).toBe(false)
-        expect(document.querySelector('#codex-breadcrumbs')?.textContent).toBe(
-            'Elasticsearch'
-        )
     })
 })
 

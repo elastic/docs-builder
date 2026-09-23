@@ -850,47 +850,6 @@ export function syncPagesNavFromResponse(
     return true
 }
 
-function htmlContainsMainContainer(html: string) {
-    return (
-        html.includes('id="main-container"') ||
-        html.includes("id='main-container'")
-    )
-}
-
-export function syncCodexBreadcrumbsFromResponse(
-    responseHtml: string,
-    root: ParentNode = document
-): boolean {
-    if (!htmlContainsMainContainer(responseHtml)) {
-        return false
-    }
-    const current = root.querySelector('#codex-breadcrumbs')
-    const incoming = new DOMParser()
-        .parseFromString(responseHtml, 'text/html')
-        .querySelector('#codex-breadcrumbs')
-    if (!incoming) {
-        current?.remove()
-        return current !== null
-    }
-    if (current?.innerHTML === incoming.innerHTML) {
-        return false
-    }
-    const liveDocument =
-        (current instanceof Element ? current.ownerDocument : null) ??
-        (root instanceof Document ? root : document)
-    const next = liveDocument.importNode(incoming, true)
-    if (current) {
-        current.replaceWith(next)
-        return true
-    }
-    const main = root.querySelector('#main-container')
-    if (!main) {
-        return false
-    }
-    main.insertBefore(next, main.firstChild)
-    return true
-}
-
 function clearHtmxHistoryCache() {
     try {
         sessionStorage.removeItem('htmx-history-cache')
@@ -1031,9 +990,6 @@ function keepLiveNav() {
 function onAfterSwap(event: Event) {
     const html = responseHtmlFromSwap(event) || lastSwapHtml
     lastSwapHtml = ''
-    if (html) {
-        syncCodexBreadcrumbsFromResponse(html)
-    }
     const current = document.querySelector('#pages-nav')
     if (
         current &&
