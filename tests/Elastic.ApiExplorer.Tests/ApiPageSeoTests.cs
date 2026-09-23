@@ -7,8 +7,10 @@ using AwesomeAssertions;
 using Elastic.ApiExplorer.Infrastructure;
 using Elastic.ApiExplorer.Operations;
 using Elastic.ApiExplorer.Types;
+using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Site;
 using Elastic.Documentation.Site.FileProviders;
+using FakeItEasy;
 
 namespace Elastic.ApiExplorer.Tests;
 
@@ -25,6 +27,10 @@ public class ApiPageSeoTests(ApiExplorerFixture fixture) : IClassFixture<ApiExpl
 
 		layout.Title.Should().Be("Run a search | Fixture API");
 		layout.Description.Should().Be("Returns hits that match the query defined in the request.");
+		layout.Breadcrumbs[0].NavigationTitle.Should().Be("APIs");
+		layout.Breadcrumbs[0].Url.Should().Be("/api/");
+		layout.Breadcrumbs.Should().Contain(b => b.NavigationTitle == "Fixture API");
+		layout.Breadcrumbs.Should().NotContain(b => b.NavigationTitle == "Api Overview");
 	}
 
 	[Fact]
@@ -71,14 +77,13 @@ public class ApiPageSeoTests(ApiExplorerFixture fixture) : IClassFixture<ApiExpl
 	[Fact]
 	public void ToJsonLd_AbsolutizesParentsAndOmitsCurrentItem()
 	{
-		ApiBreadcrumb[] crumbs =
+		INavigationItem[] parents =
 		[
-			new("Elasticsearch API", "/docs/api/elasticsearch"),
-			new("Search", "/docs/api/elasticsearch/group/search"),
-			new("Run a search", null)
+			Crumb("/docs/api/elasticsearch", "Elasticsearch API"),
+			Crumb("/docs/api/elasticsearch/group/search", "Search")
 		];
 
-		var json = ApiBreadcrumbBuilder.ToJsonLd(crumbs, new Uri("https://www.elastic.co"));
+		var json = BreadcrumbJson.Serialize(parents, "Run a search", new Uri("https://www.elastic.co"));
 		var list = JsonSerializer.Deserialize(json, BreadcrumbsContext.Default.BreadcrumbsList);
 
 		list.Should().NotBeNull();
@@ -93,7 +98,15 @@ public class ApiPageSeoTests(ApiExplorerFixture fixture) : IClassFixture<ApiExpl
 		list.ItemListElement[2].Item.Should().BeNull();
 	}
 
-	private ApiRenderContext RenderContext(Elastic.Documentation.Navigation.INavigationItem current) =>
+	private static INavigationItem Crumb(string url, string title)
+	{
+		var item = A.Fake<INavigationItem>();
+		A.CallTo(() => item.Url).Returns(url);
+		A.CallTo(() => item.NavigationTitle).Returns(title);
+		return item;
+	}
+
+	private ApiRenderContext RenderContext(INavigationItem current) =>
 		new(fixture.Context, fixture.Document, new StaticFileContentHashProvider(new EmbeddedOrPhysicalFileProvider(fixture.Context)))
 		{
 			NavigationHtml = string.Empty,

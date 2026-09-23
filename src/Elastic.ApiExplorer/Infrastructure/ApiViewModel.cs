@@ -25,7 +25,7 @@ public record ApiLayoutViewModel : GlobalLayoutViewModel
 	/// <summary>When set, operation pages render examples in the right rail instead of the in-page TOC.</summary>
 	public OperationExamplesPanelModel? ExamplesPanel { get; init; }
 
-	public required ApiBreadcrumbTrail Breadcrumbs { get; init; }
+	public required INavigationItem[] Breadcrumbs { get; init; }
 	public IReadOnlyList<ApiVersionSwitcherItem> VersionSwitcherItems { get; init; } = [];
 	public IReadOnlyList<ApiVersionSwitcherItem> HubSwitcherItems { get; init; } = [];
 
@@ -67,9 +67,6 @@ public abstract class ApiViewModel(ApiRenderContext context)
 	/// <summary>When set, drives <see cref="GlobalLayoutViewModel.Title"/> for this page (e.g. intro/outro markdown). Does not affect <see cref="GlobalLayoutViewModel.HeaderTitle"/> which stays as the API product name.</summary>
 	protected virtual string? LayoutPageTitle => null;
 
-	/// <summary>Last breadcrumb label. Defaults to <see cref="LayoutPageTitle"/> or the nav title.</summary>
-	protected virtual string BreadcrumbCurrentTitle => LayoutPageTitle ?? CurrentNavigationItem.NavigationTitle;
-
 	/// <summary>Raw markdown used for the meta description. Excerpted before it reaches the layout.</summary>
 	protected virtual string? LayoutPageDescription => null;
 
@@ -93,7 +90,7 @@ public abstract class ApiViewModel(ApiRenderContext context)
 		var assembler = BuildContext.BuildType == BuildType.Assembler;
 		var specRootUrl = CurrentNavigationItem.NavigationRoot.Url;
 		var onCatalog = SameUrl(specRootUrl, catalogUrl) || SameUrl(CurrentNavigationItem.Url, catalogUrl);
-		var crumbs = ApiBreadcrumbBuilder.Collect(CurrentNavigationItem, BreadcrumbCurrentTitle, Document.Info?.Title, catalogUrl);
+		var breadcrumbs = ApiBreadcrumbs.Build(CurrentNavigationItem, catalogUrl, docTitle, onCatalog: onCatalog);
 
 		return new()
 		{
@@ -115,8 +112,12 @@ public abstract class ApiViewModel(ApiRenderContext context)
 			BuildType = BuildContext.BuildType,
 			PageFeedbackSurface = "api",
 			TocItems = GetTocItems(),
-			Breadcrumbs = ApiBreadcrumbBuilder.TrailFrom(crumbs),
-			StructuredBreadcrumbsJson = ApiBreadcrumbBuilder.ToJsonLd(crumbs, BuildContext.CanonicalBaseUrl),
+			Breadcrumbs = breadcrumbs,
+			StructuredBreadcrumbsJson = BreadcrumbJson.Serialize(
+				breadcrumbs,
+				LayoutPageTitle ?? ApiBreadcrumbs.CurrentPageName(CurrentNavigationItem, docTitle),
+				BuildContext.CanonicalBaseUrl
+			),
 			ProductName = RenderContext.Product?.DisplayName,
 			VersionSwitcherItems = RenderContext.VersionSwitcherItems,
 			HubSwitcherItems = hubItems,

@@ -3,7 +3,6 @@
  * Handles expand/collapse toggles, scroll state, and find-in-page support
  * for both OperationView and SchemaView pages.
  */
-import { initApiBreadcrumbs } from './api-breadcrumbs'
 import { decorateApiCodeTokens } from './api-code-tokens'
 import { applyParamSummaryFit } from './api-param-summary'
 
@@ -951,7 +950,6 @@ export function initApiDocs(): void {
     initApiResponseStatusTabs()
     initApiScenarioSelects()
     initApiPageActions()
-    initApiBreadcrumbs()
     // After initHighlight — gutters need final textContent line counts
     decorateApiCodeTokens()
     initApiCodeLineNumbers()

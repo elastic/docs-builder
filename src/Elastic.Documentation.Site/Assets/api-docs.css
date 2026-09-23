@@ -160,18 +160,10 @@
 }
 
 .api-page-toolbar {
-	display: flex;
-	align-items: center;
-	gap: 16px;
 	min-width: 0;
-	margin: 0 0 16px;
-}
-
-.api-page-toolbar .api-breadcrumbs {
-	flex: 1 1 auto;
-	min-width: 0;
-	margin: 0;
-	overflow: hidden;
+	margin-bottom: calc(
+		var(--spacing) * 6
+	); /* docs h1 mt-6; API headings set margin: 0 */
 }
 
 .api-page-actions {
@@ -325,24 +317,21 @@
 	color: #1d2a3e;
 }
 
-.markdown-content .api-page-actions a.api-page-actions-option,
-.markdown-content .api-breadcrumbs a.api-page-actions-option {
+.markdown-content .api-page-actions a.api-page-actions-option {
 	color: #1d2a3e;
 	text-decoration: none;
 }
 
 .markdown-content
 	.api-page-actions
-	a.api-page-actions-option[target='_blank']::after,
-.markdown-content .api-breadcrumbs a.api-page-actions-option::after {
+	a.api-page-actions-option[target='_blank']::after {
 	content: none;
 }
 
-/* API breadcrumbs — Figma APIs 10087:3195 (EuiBreadcrumbs Page). On all API pages. */
 .api-pages-nav-toggle {
 	display: inline-flex;
 	align-items: center;
-	margin: 0 0 12px;
+	margin: calc(var(--spacing) * 6) 0 12px; /* replaces .api-page-main pt-6 above the mobile toggle */
 	padding: 0;
 	border: 0;
 	background: none;
@@ -353,95 +342,6 @@
 	.api-pages-nav-toggle {
 		display: none;
 	}
-}
-
-.api-breadcrumbs {
-	margin: 0 0 16px;
-	color: var(--color-subdued, #516381);
-	font-family: var(--font-body, Inter, ui-sans-serif, system-ui, sans-serif);
-	font-size: 14px;
-	font-weight: 400;
-	line-height: 20px;
-}
-
-.api-breadcrumbs ol {
-	display: flex;
-	flex-wrap: nowrap;
-	align-items: center;
-	min-width: 0;
-	margin: 0;
-	padding: 0;
-	list-style: none;
-}
-
-.api-breadcrumbs li {
-	margin: 0;
-	list-style: none;
-	flex-shrink: 0;
-}
-
-.api-breadcrumbs__item[data-crumb='end'] {
-	flex: 0 1 auto;
-	min-width: 0;
-	max-width: 100%;
-}
-
-.api-breadcrumbs a {
-	color: var(--color-subdued, #516381);
-	font-family: inherit;
-	font-size: inherit;
-	font-weight: 400;
-	line-height: inherit;
-	text-decoration: underline;
-	text-underline-offset: 2px;
-	white-space: nowrap;
-}
-
-.api-breadcrumbs a:hover {
-	color: #1d2a3e;
-}
-
-.api-breadcrumbs a[target='_blank']::after {
-	content: none;
-}
-
-.api-breadcrumbs__current {
-	display: block;
-	overflow: hidden;
-	color: var(--color-subdued, #516381);
-	text-overflow: ellipsis;
-	white-space: nowrap;
-}
-
-.api-breadcrumbs__sep {
-	padding: 0 8px;
-	color: var(--color-subdued, #516381);
-}
-
-.api-breadcrumbs__overflow {
-	position: relative;
-}
-
-.api-breadcrumbs__overflow-dropdown {
-	position: relative;
-	display: flex;
-}
-
-.api-breadcrumbs__overflow summary {
-	display: inline-flex;
-	align-items: center;
-	cursor: pointer;
-	list-style: none;
-	color: inherit;
-}
-
-.api-breadcrumbs__overflow summary::-webkit-details-marker {
-	display: none;
-}
-
-.api-breadcrumbs__overflow .api-page-actions-menu {
-	left: 0;
-	right: auto;
 }
 
 .api-overview {
@@ -2553,150 +2453,6 @@ button.example-response-tab:focus-visible {
 	}
 }
 
-@media (min-width: 1024px) {
-	/* Prefer :has() over a server class on this wrapper: htmx swaps #api-examples-panel
-	   oob but does not remount .api-content-grid, so a toggled --examples class goes stale.
-	   Must set display:grid here — Tailwind lg:grid is 1280px and left the rail stacked
-	   under the reference column between 1024 and 1280. */
-	.api-content-grid:has(#api-examples-panel.api-examples-panel) {
-		display: grid;
-		grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-		column-gap: 24px;
-		/* Rows size to content so the examples rail can position:sticky while the page scrolls */
-	}
-
-	/* Flatten wrappers so intro/reference become grid items next to the examples rail */
-	.api-content-grid:has(#api-examples-panel.api-examples-panel)
-		> .api-page-main,
-	.api-content-grid:has(#api-examples-panel.api-examples-panel)
-		> .api-page-main
-		> #content-container,
-	.api-content-grid:has(#api-examples-panel.api-examples-panel)
-		> .api-page-main
-		> #content-container
-		> #markdown-content {
-		display: contents;
-	}
-
-	.api-content-grid:has(#api-examples-panel.api-examples-panel)
-		.api-page-toolbar {
-		grid-column: 1 / -1;
-		grid-row: 1;
-		min-width: 0;
-		padding-top: calc(
-			var(--spacing) * 6
-		); /* replaces .api-page-main pt-6 lost to contents */
-	}
-
-	.api-content-grid:has(#api-examples-panel.api-examples-panel)
-		.api-page-intro {
-		grid-column: 1 / -1;
-		grid-row: 2;
-		min-width: 0;
-		padding-top: 0;
-		padding-right: 0;
-	}
-
-	.api-content-grid:has(#api-examples-panel.api-examples-panel)
-		.api-page-reference {
-		grid-column: 1;
-		grid-row: 3;
-		min-width: 0;
-		padding-bottom: calc(var(--spacing) * 12); /* replaces main pb-12 */
-	}
-
-	/* Examples rail: hug content, cap at viewport under the intro */
-	#api-examples-panel {
-		--api-examples-rail-padding: calc(
-			var(--spacing) * 6
-		); /* match content pt-6 */
-		grid-column: 2;
-		grid-row: 3;
-		position: sticky;
-		top: var(--offset-top);
-		align-self: start;
-		box-sizing: border-box;
-		height: min(max-content, calc(100vh - var(--offset-top)));
-		max-height: calc(100vh - var(--offset-top));
-		padding-block: var(--api-examples-rail-padding);
-		overflow: hidden;
-		display: flex;
-		flex-direction: column;
-	}
-
-	#api-examples-panel .api-examples-panel-nav {
-		flex: 0 1 auto;
-		min-height: 0;
-		max-height: none;
-		overflow: visible;
-		display: flex;
-		flex-direction: column;
-	}
-
-	/* Size to content; shrink only when the rail hits max-height */
-	#api-examples-panel .api-examples-body,
-	#api-examples-panel .api-examples-scenarios {
-		flex: 0 1 auto;
-		min-height: 0;
-		display: flex;
-		flex-direction: column;
-		flex-wrap: nowrap;
-		overflow: visible;
-	}
-
-	#api-examples-panel .api-examples-heading {
-		flex-shrink: 0;
-		border-bottom: none;
-		padding-top: 0;
-		padding-bottom: 1rem;
-		margin-top: 0;
-	}
-
-	#api-examples-panel .api-examples-scenario-header {
-		flex-shrink: 0;
-		margin-bottom: calc(var(--spacing) * 3);
-	}
-
-	#api-examples-panel .api-examples-scenario-panel {
-		display: flex;
-		flex: 0 1 auto;
-		min-height: 0;
-		flex-direction: column;
-	}
-
-	#api-examples-panel .api-examples-scenario-panel[hidden] {
-		display: none !important;
-	}
-
-	#api-examples-panel .api-examples-body {
-		display: flex;
-		flex: 0 1 auto;
-		min-height: 0;
-		flex-direction: column;
-		overflow: visible;
-		border: 0;
-		padding: 0;
-	}
-
-	#api-examples-panel .api-code-card {
-		display: flex;
-		flex: 0 1 auto;
-		min-height: 0;
-		flex-direction: column;
-	}
-
-	#api-examples-panel .api-code-card:last-child {
-		margin-bottom: 0;
-	}
-
-	#api-examples-panel .api-code-sample-body,
-	#api-examples-panel .example-block-body {
-		flex: 0 1 auto;
-		min-height: 0;
-		overflow: auto;
-	}
-}
-
 /* Cap tall samples so the card scrolls instead of growing forever */
 #api-examples-panel .api-code-card .highlight pre code {
 	max-height: none;
@@ -3174,6 +2930,7 @@ button.example-response-tab:focus-visible {
 		display: grid;
 		grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
 		column-gap: 24px;
+		align-content: start; /* parent stretches this box to the viewport; don't pour the leftover into the breadcrumb row */
 		/* Rows size to content so the examples rail can position:sticky while the page scrolls */
 	}
 
@@ -3195,9 +2952,9 @@ button.example-response-tab:focus-visible {
 		grid-column: 1 / -1;
 		grid-row: 1;
 		min-width: 0;
-		padding-top: calc(
-			var(--spacing) * 6
-		); /* replaces .api-page-main pt-6 lost to contents */
+		margin-bottom: calc(
+			var(--spacing) * 2
+		); /* + gap-y-4 row gap = docs h1 mt-6 */
 	}
 
 	.api-content-grid:has(#api-examples-panel.api-examples-panel)
