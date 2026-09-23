@@ -111,7 +111,7 @@ public partial class DefaultSearchService<TDocument>(
 		);
 
 		var apiVersion = string.IsNullOrWhiteSpace(request.ApiVersion) ? LatestApiVersion : request.ApiVersion;
-		Query scopedQuery = new BoolQuery { Must = [lexicalQuery], Filter = [RestrictApiDocuments(apiVersion, includeMissing: false)] };
+		Query scopedQuery = new BoolQuery { Must = [lexicalQuery], Filter = [RestrictApiDocuments(apiVersion)] };
 
 		Query? postFilter = null;
 		if (!string.IsNullOrWhiteSpace(request.TypeFilter))
@@ -322,18 +322,19 @@ public partial class DefaultSearchService<TDocument>(
 
 		// TODO: applies_to nested filters for DeploymentFilter / VersionFilter.
 
-		filters.Add(RestrictApiDocuments(LatestApiVersion, includeMissing: true));
+		filters.Add(RestrictApiDocuments(LatestApiVersion));
 
 		return new BoolQuery { Must = [baseQuery], Filter = filters };
 	}
 
 	/// <summary>
 	/// Only API documents carry <c>api_version</c>, so a match on it or its absence is enough to keep
-	/// every non-API document. <paramref name="includeMissing"/> also keeps API docs indexed before the field existed.
+	/// every non-API document. API docs indexed before the field existed count as <c>latest</c>, so a
+	/// <c>latest</c> scope keeps them and a <c>vN</c> scope does not.
 	/// </summary>
-	private static Query RestrictApiDocuments(string version, bool includeMissing)
+	private static Query RestrictApiDocuments(string version)
 	{
-		Query passthrough = includeMissing
+		Query passthrough = version == LatestApiVersion
 			? new BoolQuery { MustNot = [new ExistsQuery { Field = QueryFieldNames.ApiVersion }] }
 			: new BoolQuery { MustNot = [new TermQuery { Field = QueryFieldNames.ContentType, Value = "api" }] };
 
