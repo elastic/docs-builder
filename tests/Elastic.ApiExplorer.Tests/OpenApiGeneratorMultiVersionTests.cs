@@ -170,9 +170,9 @@ public class OpenApiGeneratorMultiVersionTests
 		var localDocument = SpecDocument("Elasticsearch local main");
 		using var versionIndexClient = new VersionIndexClient(BaseUri, MultiVersionHandler(), sleep: (_, _) => Task.CompletedTask);
 		var reader = A.Fake<IOpenApiSpecificationReader>();
-		A.CallTo(() => reader.ReadAsync(localFile)).Returns(localDocument);
-		A.CallTo(() => reader.ReadAsync(A<Stream>._, "elasticsearch-openapi.json")).ReturnsLazily(
-			(Stream _, string _) => SpecDocument("Elasticsearch remote")
+		A.CallTo(() => reader.ReadAsync(localFile, A<IDiagnosticsCollector?>._)).Returns(localDocument);
+		A.CallTo(() => reader.ReadAsync(A<Stream>._, "elasticsearch-openapi.json", A<IDiagnosticsCollector?>._)).ReturnsLazily(
+			(Stream _, string _, IDiagnosticsCollector? _) => SpecDocument("Elasticsearch remote")
 		);
 		var generator = CreateGenerator(context, versionIndexClient, reader);
 
@@ -186,8 +186,11 @@ public class OpenApiGeneratorMultiVersionTests
 		documents.Should().ContainSingle(d => d.Version.Moniker == "main" && d.Document == localDocument);
 		documents.Should().ContainSingle(d => d.Version.Moniker == "9");
 		documents.Should().ContainSingle(d => d.Version.Moniker == "8");
-		A.CallTo(() => reader.ReadAsync(localFile)).MustHaveHappenedOnceExactly();
-		A.CallTo(() => reader.ReadAsync(A<Stream>._, "elasticsearch-openapi.json")).MustHaveHappened(2, Times.Exactly);
+		A.CallTo(() => reader.ReadAsync(localFile, A<IDiagnosticsCollector?>._)).MustHaveHappenedOnceExactly();
+		A.CallTo(() => reader.ReadAsync(A<Stream>._, "elasticsearch-openapi.json", A<IDiagnosticsCollector?>._)).MustHaveHappened(
+			2,
+			Times.Exactly
+		);
 	}
 
 	[Fact]
@@ -363,7 +366,9 @@ public class OpenApiGeneratorMultiVersionTests
 	{
 		var queue = new Queue<OpenApiDocument>(documents);
 		var reader = A.Fake<IOpenApiSpecificationReader>();
-		A.CallTo(() => reader.ReadAsync(A<Stream>._, A<string>._)).ReturnsLazily(_ => Task.FromResult<OpenApiDocument?>(queue.Dequeue()));
+		A.CallTo(() => reader.ReadAsync(A<Stream>._, A<string>._, A<IDiagnosticsCollector?>._)).ReturnsLazily(
+			_ => Task.FromResult<OpenApiDocument?>(queue.Dequeue())
+		);
 		return reader;
 	}
 

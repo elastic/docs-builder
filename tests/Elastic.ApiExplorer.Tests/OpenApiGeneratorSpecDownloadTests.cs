@@ -159,7 +159,9 @@ public class OpenApiGeneratorSpecDownloadTests(ApiExplorerFixture fixture) : ICl
 	{
 		var queue = new Queue<OpenApiDocument>(documents);
 		var reader = A.Fake<IOpenApiSpecificationReader>();
-		A.CallTo(() => reader.ReadAsync(A<Stream>._, A<string>._)).ReturnsLazily(_ => Task.FromResult<OpenApiDocument?>(queue.Dequeue()));
+		A.CallTo(() => reader.ReadAsync(A<Stream>._, A<string>._, A<IDiagnosticsCollector?>._)).ReturnsLazily(
+			_ => Task.FromResult<OpenApiDocument?>(queue.Dequeue())
+		);
 		return reader;
 	}
 

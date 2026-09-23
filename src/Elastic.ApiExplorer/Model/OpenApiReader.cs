@@ -5,8 +5,10 @@
 using System.Globalization;
 using System.IO.Abstractions;
 using System.Text.Json;
+using Elastic.Documentation.Diagnostics;
 using Microsoft.OpenApi;
 using Microsoft.OpenApi.Reader;
+using YamlDotNet.Core;
 using YamlDotNet.RepresentationModel;
 
 namespace Elastic.ApiExplorer.Model;
@@ -22,7 +24,9 @@ public sealed class OpenApiReader : IOpenApiSpecificationReader
 	private static bool SupportsSpecFileName(string specFileName) =>
 		Path.GetExtension(specFileName).ToLowerInvariant() is ".json" or ".yaml" or ".yml";
 
-	public async Task<OpenApiDocument?> ReadAsync(IFileInfo openApiSpecification)
+	private static bool IsJsonFileName(string specFileName) => Path.GetExtension(specFileName).ToLowerInvariant() is ".json";
+
+	public async Task<OpenApiDocument?> ReadAsync(IFileInfo openApiSpecification, IDiagnosticsCollector? collector = null)
 	{
 		if (!openApiSpecification.Exists)
 			return null;
@@ -31,7 +35,7 @@ public sealed class OpenApiReader : IOpenApiSpecificationReader
 			return null;
 
 		await using var fs = openApiSpecification.OpenRead();
-		return await ReadAsync(fs, openApiSpecification.Name);
+		return await ReadAsync(fs, openApiSpecification.Name, collector);
 	}
 
 	/// <summary>
@@ -39,23 +43,39 @@ public sealed class OpenApiReader : IOpenApiSpecificationReader
 	/// <see cref="VersionIndexClient.FetchSpecStreamAsync"/>. Closes <paramref name="stream"/> when done.
 	/// </summary>
 	/// <remarks>
-	/// All supported spec formats (.json, .yaml, .yml) are parsed with YamlDotNet. JSON is a subset of
-	/// YAML 1.2, so one parser covers both. Microsoft.OpenApi accepts JSON input only, so the parsed
-	/// tree is serialized to JSON before <see cref="OpenApiDocument.LoadAsync"/> runs.
+	/// JSON specs are passed directly to Microsoft.OpenApi. YAML specs (.yaml / .yml) are first parsed
+	/// by YamlDotNet and re-serialized to JSON because Microsoft.OpenApi accepts JSON only.
+	/// Microsoft.OpenApi auto-detects the spec version from the root <c>openapi</c> / <c>swagger</c>
+	/// property, so both OpenAPI 3.x and Swagger 2.0 documents are supported.
 	/// </remarks>
-	public async Task<OpenApiDocument?> ReadAsync(Stream stream, string specFileName)
+	public async Task<OpenApiDocument?> ReadAsync(Stream stream, string specFileName, IDiagnosticsCollector? collector = null)
 	{
 		if (!SupportsSpecFileName(specFileName))
 			return null;
 
-		await using var jsonStream = await ParseSpecToJsonStreamAsync(stream).ConfigureAwait(false);
-
 		var settings = new OpenApiReaderSettings { LeaveStreamOpen = false, RuleSet = ValidationRuleSet.GetEmptyRuleSet() };
-		var openApiDocument = await OpenApiDocument.LoadAsync(jsonStream, JsonFormat, settings: settings);
-		return openApiDocument.Document;
+
+		ReadResult result;
+		if (IsJsonFileName(specFileName))
+		{
+			result = await OpenApiDocument.LoadAsync(stream, settings: settings);
+		}
+		else
+		{
+			await using var jsonStream = await ParseYamlToJsonStreamAsync(stream).ConfigureAwait(false);
+			result = await OpenApiDocument.LoadAsync(jsonStream, JsonFormat, settings: settings);
+		}
+
+		if (collector is not null && result.Diagnostic?.Errors is { Count: > 0 } errors)
+		{
+			foreach (var error in errors)
+				collector.EmitGlobalError(error.Message);
+		}
+
+		return result.Document;
 	}
 
-	private static async Task<MemoryStream> ParseSpecToJsonStreamAsync(Stream specStream)
+	private static async Task<MemoryStream> ParseYamlToJsonStreamAsync(Stream specStream)
 	{
 		using var reader = new StreamReader(specStream, leaveOpen: false);
 		var yaml = new YamlStream();
@@ -108,6 +128,15 @@ public sealed class OpenApiReader : IOpenApiSpecificationReader
 			return;
 		}
 
+		// Only plain (unquoted) scalars carry implicit YAML typing. A quoted scalar is always a string
+		// and must not be coerced — "2.0" quoted would otherwise become the JSON number 2, breaking
+		// Swagger 2.0 version detection in Microsoft.OpenApi's ParsingContext.
+		if (scalar.Style is not ScalarStyle.Plain)
+		{
+			writer.WriteStringValue(value);
+			return;
+		}
+
 		if (bool.TryParse(value, out var boolean))
 		{
 			writer.WriteBooleanValue(boolean);
@@ -120,6 +149,8 @@ public sealed class OpenApiReader : IOpenApiSpecificationReader
 			return;
 		}
 
+		// The IsFinite guard exists for YAML specs that contain Infinity or NaN (e.g. enum regression
+		// tests). Those must round-trip as strings to avoid JSON serialization failures downstream.
 		if (double.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out var number) && double.IsFinite(number))
 		{
 			writer.WriteNumberValue(number);
