@@ -123,8 +123,8 @@ public partial class OpenApiDocumentExporter(VersionsConfiguration versionsConfi
 				if (!ShouldIncludeOperation(operation.Value))
 					continue;
 
-				var operationMoniker = ApiUrlBuilder.OperationMoniker(operationId, path.Key);
-				var url = $"{productUrl}/operation/{operationMoniker}";
+				var operationSegment = ApiUrlBuilder.OperationSegment(operationId, path.Key);
+				var url = $"{productUrl}/operation/{operationSegment}";
 
 				var productLabel = ProductApiLabel(product);
 				// Trim: spec summaries occasionally carry stray leading/trailing whitespace or a

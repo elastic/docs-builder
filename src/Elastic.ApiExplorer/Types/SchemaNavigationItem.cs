@@ -47,8 +47,8 @@ public class SchemaNavigationItem : ILeafNavigationItem<ApiSchema>
 		Model = apiSchema;
 		NavigationTitle = apiSchema.DisplayName;
 		Parent = parent;
-		var moniker = ApiUrlBuilder.SchemaMoniker(apiSchema.SchemaId);
-		Url = $"{ApiUrlBuilder.ProductRoot(urlPathPrefix, apiUrlSuffix)}/types/{moniker}";
+		var segment = ApiUrlBuilder.SchemaSegment(apiSchema.SchemaId);
+		Url = $"{ApiUrlBuilder.ProductRoot(urlPathPrefix, apiUrlSuffix)}/types/{segment}";
 		Id = ShortId.Create(Url);
 	}
 

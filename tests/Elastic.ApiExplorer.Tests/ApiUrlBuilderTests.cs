@@ -4,18 +4,22 @@
 
 using AwesomeAssertions;
 using Elastic.ApiExplorer.Infrastructure;
+using Elastic.ApiExplorer.Model;
 
 namespace Elastic.ApiExplorer.Tests;
 
 public class ApiUrlBuilderTests
 {
 	[Theory]
-	[InlineData("elasticsearch", "main", "elasticsearch")]
-	[InlineData("elasticsearch", "9", "elasticsearch/v9")]
-	[InlineData("elasticsearch", "8", "elasticsearch/v8")]
-	[InlineData("kibana", "10", "kibana/v10")]
-	public void ProductSuffix_MapsVersionMonikersToPathSuffixes(string apiKey, string versionMoniker, string expected) =>
-		ApiUrlBuilder.ProductSuffix(apiKey, versionMoniker).Should().Be(expected);
+	[InlineData("elasticsearch", null, "elasticsearch")]
+	[InlineData("elasticsearch", 9, "elasticsearch/v9")]
+	[InlineData("elasticsearch", 8, "elasticsearch/v8")]
+	[InlineData("kibana", 10, "kibana/v10")]
+	public void ProductSuffix_MapsSpecVersionsToPathSuffixes(string apiKey, int? major, string expected)
+	{
+		var version = major is { } value ? ApiSpecVersion.Major(value) : ApiSpecVersion.Latest;
+		ApiUrlBuilder.ProductSuffix(apiKey, version).Should().Be(expected);
+	}
 
 	[Theory]
 	[InlineData("", "elasticsearch", "/api/doc/elasticsearch")]

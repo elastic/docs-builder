@@ -9,7 +9,7 @@ using Elastic.ApiExplorer.Operations;
 namespace Elastic.ApiExplorer.Infrastructure;
 
 /// <summary>
-/// The single source of URL path segments (monikers) for API explorer pages.
+/// The single source of URL path segments for API explorer pages.
 /// </summary>
 public static partial class ApiUrlBuilder
 {
@@ -18,18 +18,18 @@ public static partial class ApiUrlBuilder
 	public static string ProductRoot(string? urlPathPrefix, string apiUrlSuffix) => $"{ApiRoot(urlPathPrefix)}/doc/{apiUrlSuffix}";
 
 	/// <summary>
-	/// URL path suffix for one API product version: <c>{key}</c> for <c>main</c>,
-	/// <c>{key}/v{N}</c> for released numeric majors from the version index.
+	/// URL path suffix for one API product version: <c>{key}</c> for latest,
+	/// <c>{key}/v{N}</c> for a released major.
 	/// </summary>
-	public static string ProductSuffix(string apiKey, string versionMoniker) =>
-		versionMoniker == "main" ? apiKey : $"{apiKey}/v{versionMoniker}";
+	public static string ProductSuffix(string apiKey, ApiSpecVersion version) =>
+		version.TryGetMajor(out var major) ? $"{apiKey}/v{major}" : apiKey;
 
 	/// <summary>
 	/// Deterministic URL leaf for an operation page under <c>.../operation/</c>: lowercase
 	/// <c>operation-{id}</c> when an operation id is present, otherwise derived from the route.
 	/// Dots become hyphens so a trailing <c>.json</c> stays a path segment.
 	/// </summary>
-	public static string OperationMoniker(string? operationId, string route)
+	public static string OperationSegment(string? operationId, string route)
 	{
 		var id = !string.IsNullOrWhiteSpace(operationId)
 			? operationId
@@ -39,7 +39,7 @@ public static partial class ApiUrlBuilder
 	}
 
 	/// <summary>Deterministic URL segment for a schema type page under <c>.../types/</c>.</summary>
-	public static string SchemaMoniker(string schemaId) => schemaId.Replace('.', '-').ToLowerInvariant();
+	public static string SchemaSegment(string schemaId) => schemaId.Replace('.', '-').ToLowerInvariant();
 
 	/// <summary>
 	/// URL slug for a tag, without the <c>endpoint-</c> prefix. Spaces become hyphens and the
@@ -62,7 +62,7 @@ public static partial class ApiUrlBuilder
 	}
 
 	/// <summary>Deterministic URL leaf for <c>.../group/{segment}</c> from the canonical tag name.</summary>
-	public static string TagMoniker(string? tagName) => $"endpoint-{TagSlug(tagName)}";
+	public static string EndpointSegment(string? tagName) => $"endpoint-{TagSlug(tagName)}";
 
 	public const string AuthenticationSegment = "authentication";
 	public const string ServersSegment = "servers";

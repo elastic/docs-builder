@@ -141,7 +141,7 @@ public static class SchemaHelpers
 			"Aggregate" => "_types.aggregations.Aggregate",
 			_ => null
 		};
-		return schemaId is null ? null : $"{apiRootUrl.TrimEnd('/')}/types/{ApiUrlBuilder.SchemaMoniker(schemaId)}";
+		return schemaId is null ? null : $"{apiRootUrl.TrimEnd('/')}/types/{ApiUrlBuilder.SchemaSegment(schemaId)}";
 	}
 
 	/// <summary>

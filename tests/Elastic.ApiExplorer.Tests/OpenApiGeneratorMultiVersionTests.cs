@@ -113,17 +113,20 @@ public class OpenApiGeneratorMultiVersionTests
 		)).Documents;
 
 		documents.Should().HaveCount(3);
-		documents.Select(d => d.Version.Moniker).Should().BeEquivalentTo(["main", "9", "8"]);
+		documents
+			.Select(d => d.Version.SpecVersion)
+			.Should()
+			.BeEquivalentTo([ApiSpecVersion.Latest, ApiSpecVersion.Major(9), ApiSpecVersion.Major(8)]);
 		documents.Should().ContainSingle(
-			d => ApiUrlBuilder.ProductSuffix("elasticsearch", d.Version.Moniker) == "elasticsearch" && d.Document.Info.Title ==
+			d => ApiUrlBuilder.ProductSuffix("elasticsearch", d.Version.SpecVersion) == "elasticsearch" && d.Document.Info.Title ==
 				"Elasticsearch main"
 		);
 		documents.Should().ContainSingle(
-			d => ApiUrlBuilder.ProductSuffix("elasticsearch", d.Version.Moniker) == "elasticsearch/v9" && d.Document.Info.Title ==
+			d => ApiUrlBuilder.ProductSuffix("elasticsearch", d.Version.SpecVersion) == "elasticsearch/v9" && d.Document.Info.Title ==
 				"Elasticsearch 9"
 		);
 		documents.Should().ContainSingle(
-			d => ApiUrlBuilder.ProductSuffix("elasticsearch", d.Version.Moniker) == "elasticsearch/v8" && d.Document.Info.Title ==
+			d => ApiUrlBuilder.ProductSuffix("elasticsearch", d.Version.SpecVersion) == "elasticsearch/v8" && d.Document.Info.Title ==
 				"Elasticsearch 8"
 		);
 	}
@@ -155,8 +158,8 @@ public class OpenApiGeneratorMultiVersionTests
 		)).Documents;
 
 		documents.Should().ContainSingle();
-		documents[0].Version.Moniker.Should().Be("main");
-		ApiUrlBuilder.ProductSuffix("cloud-serverless", documents[0].Version.Moniker).Should().Be("cloud-serverless");
+		documents[0].Version.SpecVersion.Should().Be(ApiSpecVersion.Latest);
+		ApiUrlBuilder.ProductSuffix("cloud-serverless", documents[0].Version.SpecVersion).Should().Be("cloud-serverless");
 	}
 
 	[Fact]
@@ -183,9 +186,9 @@ public class OpenApiGeneratorMultiVersionTests
 		)).Documents;
 
 		documents.Should().HaveCount(3);
-		documents.Should().ContainSingle(d => d.Version.Moniker == "main" && d.Document == localDocument);
-		documents.Should().ContainSingle(d => d.Version.Moniker == "9");
-		documents.Should().ContainSingle(d => d.Version.Moniker == "8");
+		documents.Should().ContainSingle(d => d.Version.SpecVersion == ApiSpecVersion.Latest && d.Document == localDocument);
+		documents.Should().ContainSingle(d => d.Version.SpecVersion == ApiSpecVersion.Major(9));
+		documents.Should().ContainSingle(d => d.Version.SpecVersion == ApiSpecVersion.Major(8));
 		A.CallTo(() => reader.ReadAsync(localFile)).MustHaveHappenedOnceExactly();
 		A.CallTo(() => reader.ReadAsync(A<Stream>._, "elasticsearch-openapi.json")).MustHaveHappened(2, Times.Exactly);
 	}
@@ -228,8 +231,8 @@ public class OpenApiGeneratorMultiVersionTests
 			TestContext.Current.CancellationToken
 		);
 
-		resolved.Documents.Select(d => d.Version.Moniker).Should().BeEquivalentTo(["9", "8"]);
-		resolved.UnmatchedBaseFilesMoniker.Should().BeNull();
+		resolved.Documents.Select(d => d.Version.SpecVersion).Should().BeEquivalentTo([ApiSpecVersion.Major(9), ApiSpecVersion.Major(8)]);
+		resolved.UnmatchedBaseFilesVersion.Should().BeNull();
 	}
 
 	[Fact]

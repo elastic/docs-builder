@@ -100,7 +100,7 @@ public class VersionIndexClientTests
 			.ContainSingle()
 			.Which
 			.Should()
-			.Match<ResolvedApiVersion>(v => v.Moniker == "main" && v.IsLocal && v.LocalFile == localFile);
+			.Match<ResolvedApiVersion>(v => v.SpecVersion == ApiSpecVersion.Latest && v.IsLocal && v.LocalFile == localFile);
 		collector.Errors.Should().Be(0);
 		collector.Warnings.Should().Be(0);
 	}
@@ -137,12 +137,50 @@ public class VersionIndexClientTests
 
 		versions.Should().HaveCount(3);
 		versions.Should().ContainSingle(
-			v => v.Moniker == "main" && !v.IsLocal && v.ObjectKey == "elastic/elasticsearch/main/elasticsearch-openapi.json"
+			v => v.SpecVersion == ApiSpecVersion.Latest && !v.IsLocal && v.ObjectKey ==
+				"elastic/elasticsearch/main/elasticsearch-openapi.json"
 		);
-		versions.Should().ContainSingle(v => v.Moniker == "9" && v.Version == "9.4");
-		versions.Should().ContainSingle(v => v.Moniker == "8" && v.Version == "8.19");
+		versions.Should().ContainSingle(v => v.SpecVersion == ApiSpecVersion.Major(9) && v.Branch == "9.4");
+		versions.Should().ContainSingle(v => v.SpecVersion == ApiSpecVersion.Major(8) && v.Branch == "8.19");
 		collector.Errors.Should().Be(0);
 		collector.Warnings.Should().Be(0);
+	}
+
+	[Fact]
+	public async Task ResolveVersionsAsync_UnknownIndexKey_SkippedWithWarning()
+	{
+		var handler = new StubHandler(
+			_ => IndexResponse(
+				/*lang=json,strict*/
+				"""
+			{
+				"elastic/elasticsearch": {
+					"elasticsearch-openapi.json": {
+						"main": { "version": "main" },
+						"9": { "version": "9.4" },
+						"next": { "version": "next" }
+					}
+				}
+			}
+			"""
+			)
+		);
+		using var client = CreateClient(handler);
+		var collector = new CapturingDiagnosticsCollector();
+
+		var versions = await client.ResolveVersionsAsync(
+			GitFor("https://github.com/elastic/elasticsearch.git"),
+			"elasticsearch",
+			ApiConfig(),
+			collector,
+			TestContext.Current.CancellationToken
+		);
+
+		versions.Should().HaveCount(2);
+		versions.Should().ContainSingle(v => v.SpecVersion == ApiSpecVersion.Latest);
+		versions.Should().ContainSingle(v => v.SpecVersion == ApiSpecVersion.Major(9) && v.Branch == "9.4");
+		collector.Errors.Should().Be(0);
+		collector.WarningMessages.Should().ContainSingle(m => m.Contains("'next'") && m.Contains("skipping"));
 	}
 
 	[Fact]
@@ -176,7 +214,8 @@ public class VersionIndexClientTests
 		);
 
 		versions.Should().ContainSingle(
-			v => v.Moniker == "main" && v.ObjectKey == "elastic/elasticsearch-specification/main/elasticsearch-openapi.json"
+			v => v.SpecVersion == ApiSpecVersion.Latest && v.ObjectKey ==
+				"elastic/elasticsearch-specification/main/elasticsearch-openapi.json"
 		);
 		collector.Errors.Should().Be(0);
 	}
@@ -270,12 +309,12 @@ public class VersionIndexClientTests
 			TestContext.Current.CancellationToken
 		);
 
-		var main = versions.Should().ContainSingle(v => v.Moniker == "main").Subject;
+		var main = versions.Should().ContainSingle(v => v.SpecVersion == ApiSpecVersion.Latest).Subject;
 		main.IsLocal.Should().BeTrue();
 		main.LocalFile.Should().Be(localFile);
 		main.ObjectKey.Should().BeNull();
 
-		var v8 = versions.Should().ContainSingle(v => v.Moniker == "8").Subject;
+		var v8 = versions.Should().ContainSingle(v => v.SpecVersion == ApiSpecVersion.Major(8)).Subject;
 		v8.IsLocal.Should().BeFalse();
 		v8.ObjectKey.Should().Be("elastic/elasticsearch/8.19/elasticsearch-openapi.json");
 	}
@@ -315,7 +354,12 @@ public class VersionIndexClientTests
 			TestContext.Current.CancellationToken
 		);
 
-		versions.Should().ContainSingle().Which.Should().Match<ResolvedApiVersion>(v => v.Moniker == "main" && v.IsLocal);
+		versions
+			.Should()
+			.ContainSingle()
+			.Which
+			.Should()
+			.Match<ResolvedApiVersion>(v => v.SpecVersion == ApiSpecVersion.Latest && v.IsLocal);
 		collector.WarningMessages.Should().ContainSingle(m => m.Contains("declares no repositories"));
 	}
 
@@ -360,7 +404,7 @@ public class VersionIndexClientTests
 			.ContainSingle()
 			.Which
 			.Should()
-			.Match<ResolvedApiVersion>(v => v.Moniker == "main" && v.IsLocal && v.LocalFile == localFile);
+			.Match<ResolvedApiVersion>(v => v.SpecVersion == ApiSpecVersion.Latest && v.IsLocal && v.LocalFile == localFile);
 		collector.Errors.Should().Be(0);
 		collector.WarningMessages.Should().ContainSingle(m => m.Contains("could not be fetched"));
 	}
@@ -458,8 +502,8 @@ public class VersionIndexClientTests
 		var collector = new CapturingDiagnosticsCollector();
 		var version = new ResolvedApiVersion
 		{
-			Moniker = "8",
-			Version = "8.19",
+			SpecVersion = ApiSpecVersion.Major(8),
+			Branch = "8.19",
 			IsLocal = false,
 			ObjectKey = "elastic/elasticsearch/8.19/elasticsearch-openapi.json"
 		};
@@ -481,8 +525,8 @@ public class VersionIndexClientTests
 		var collector = new CapturingDiagnosticsCollector();
 		var version = new ResolvedApiVersion
 		{
-			Moniker = "8",
-			Version = "8.19",
+			SpecVersion = ApiSpecVersion.Major(8),
+			Branch = "8.19",
 			IsLocal = false,
 			ObjectKey = "elastic/elasticsearch/8.19/elasticsearch-openapi.json"
 		};

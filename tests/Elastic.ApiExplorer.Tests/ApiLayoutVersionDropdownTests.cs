@@ -6,6 +6,7 @@ using System.IO.Abstractions;
 using AwesomeAssertions;
 using Elastic.ApiExplorer.Infrastructure;
 using Elastic.ApiExplorer.Landing;
+using Elastic.ApiExplorer.Model;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
@@ -86,7 +87,13 @@ public class ApiLayoutVersionDropdownTests
 		{ BuildType = buildType, UrlPathPrefix = buildType == BuildType.Assembler ? "/docs" : null };
 		var stack = TestHelpers.CreateStackVersionsConfiguration(currentMajor: 9);
 		var product = TestHelpers.CreateProduct("elasticsearch", stack.GetVersioningSystem(VersioningSystemId.Stack));
-		var switcherItems = items ?? ApiVersionSwitcher.Build("", "elasticsearch", ["main", "9", "8"], "main");
+		var switcherItems = items
+			?? ApiVersionSwitcher.Build(
+				"",
+				"elasticsearch",
+				[ApiSpecVersion.Latest, ApiSpecVersion.Major(9), ApiSpecVersion.Major(8)],
+				ApiSpecVersion.Latest
+			);
 		var renderContext = new ApiRenderContext(
 			context,
 			new OpenApiDocument { Info = new OpenApiInfo { Title = "Elasticsearch API", Version = "9.0.0" } },

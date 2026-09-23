@@ -60,7 +60,7 @@ public class ApiNavigationBuilder(ILogger logger, BuildContext context)
 			.ToArray();
 
 		var distinctTagNames = ops.Select(o => o.Tag ?? "unknown").Distinct().ToList();
-		var tagNameToUrlSegment = BuildTagMonikerMap(distinctTagNames);
+		var tagNameToUrlSegment = BuildEndpointSegmentMap(distinctTagNames);
 
 		// intermediate grouping of models to create the navigation tree
 		// this is two-phased because we need to know if an endpoint has one or more operations
@@ -374,14 +374,14 @@ public class ApiNavigationBuilder(ILogger logger, BuildContext context)
 		return ordered;
 	}
 
-	private static IReadOnlyDictionary<string, string> BuildTagMonikerMap(IReadOnlyList<string> distinctTagNames)
+	private static IReadOnlyDictionary<string, string> BuildEndpointSegmentMap(IReadOnlyList<string> distinctTagNames)
 	{
 		var toSegment = new Dictionary<string, string>(StringComparer.Ordinal);
 		var segmentToTagName = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
 		foreach (var name in distinctTagNames)
 		{
-			var segment = ApiUrlBuilder.TagMoniker(name);
+			var segment = ApiUrlBuilder.EndpointSegment(name);
 			if (segmentToTagName.TryGetValue(segment, out var existing) && !string.Equals(existing, name, StringComparison.Ordinal))
 			{
 				throw new InvalidOperationException(

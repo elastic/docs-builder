@@ -29,6 +29,24 @@ public class VersionIndexBuilderTests
 	}
 
 	[Fact]
+	public void Build_PaddedMajor_IndexesUnderCanonicalDigits()
+	{
+		var index = VersionIndexBuilder.Build(["elastic/elasticsearch/09.4/openapi.json"]).Index;
+
+		var byMajor = index["elastic/elasticsearch"]["openapi.json"];
+		byMajor.Should().ContainSingle().Which.Key.Should().Be("9");
+		byMajor["9"].Version.Should().Be("09.4");
+	}
+
+	[Fact]
+	public void Build_PaddedAndUnpaddedSameMajor_KeepsHighestMinor()
+	{
+		var index = VersionIndexBuilder.Build(["elastic/elasticsearch/09.4/openapi.json", "elastic/elasticsearch/9.5/openapi.json"]).Index;
+
+		index["elastic/elasticsearch"]["openapi.json"]["9"].Version.Should().Be("9.5");
+	}
+
+	[Fact]
 	public void Build_MinorBumpWithinExistingMajor_KeepsHighestMinor()
 	{
 		var index = VersionIndexBuilder.Build(["elastic/elasticsearch/8.16/openapi.json", "elastic/elasticsearch/8.17/openapi.json"]).Index;

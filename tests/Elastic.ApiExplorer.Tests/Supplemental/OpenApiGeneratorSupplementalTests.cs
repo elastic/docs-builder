@@ -5,6 +5,7 @@
 using System.IO.Abstractions.TestingHelpers;
 using AwesomeAssertions;
 using Elastic.ApiExplorer.Landing;
+using Elastic.ApiExplorer.Model;
 using Elastic.ApiExplorer.Supplemental;
 using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Configuration.Toc;
@@ -71,11 +72,15 @@ public class OpenApiGeneratorSupplementalTests(ApiExplorerFixture fixture) : ICl
 		nav8.NavigationItems.OfType<SimpleMarkdownNavigationItem>().Select(n => n.Slug).Should().Equal("getting-started");
 	}
 
-	[Theory]
-	[InlineData("8", 9, 8)]
-	[InlineData("9", 9, 9)]
-	[InlineData("main", 9, 9)]
-	[InlineData("main", null, null)]
-	public void SupplementalMajor_NumericOrMainUsesHighest(string moniker, int? highest, int? expected) =>
-		OpenApiGenerator.SupplementalMajor(moniker, highest).Should().Be(expected);
+	[Fact]
+	public void SupplementalMajor_ReleasedMajor_ReturnsThatMajor() =>
+		OpenApiGenerator.SupplementalMajor(ApiSpecVersion.Major(8), 9).Should().Be(8);
+
+	[Fact]
+	public void SupplementalMajor_Latest_UsesHighestNumeric() =>
+		OpenApiGenerator.SupplementalMajor(ApiSpecVersion.Latest, 9).Should().Be(9);
+
+	[Fact]
+	public void SupplementalMajor_LatestWithoutNumeric_ReturnsNull() =>
+		OpenApiGenerator.SupplementalMajor(ApiSpecVersion.Latest, null).Should().BeNull();
 }

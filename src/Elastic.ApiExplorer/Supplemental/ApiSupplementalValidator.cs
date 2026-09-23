@@ -12,7 +12,7 @@ namespace Elastic.ApiExplorer.Supplemental;
 internal sealed record ApiSupplementalValidationRequest(
 	OpenApiDocument Document,
 	IDiagnosticsCollector Collector,
-	string Moniker,
+	ApiSpecVersion Version,
 	bool EmitUnmatchedBaseFiles
 );
 
@@ -24,7 +24,7 @@ internal static class ApiSupplementalValidator
 			EmitUnmatched(discovery.Unmatched, request.Collector, "the latest spec");
 
 		var (operationsById, tagNames) = ApiSupplementalDiscovery.CollectEntities(request.Document);
-		if (int.TryParse(request.Moniker, out var major))
+		if (request.Version.TryGetMajor(out var major))
 		{
 			var (uniqueBySlug, _) = ApiSupplementalDiscovery.IndexTags(tagNames);
 			var tagSlugs = new HashSet<string>(uniqueBySlug.Keys, StringComparer.Ordinal);
@@ -86,7 +86,7 @@ internal static class ApiSupplementalValidator
 	)
 	{
 		var analyzer = new SchemaAnalyzer(request.Document);
-		var specLabel = SpecLabel(request.Moniker);
+		var specLabel = SpecLabel(request.Version);
 		foreach (var (operationId, file) in operationFiles)
 		{
 			if (!operationsById.TryGetValue(operationId, out var operation))
@@ -96,7 +96,7 @@ internal static class ApiSupplementalValidator
 		}
 	}
 
-	private static string SpecLabel(string moniker) => int.TryParse(moniker, out var major) ? $"version {major}" : "the latest spec";
+	private static string SpecLabel(ApiSpecVersion version) => version.TryGetMajor(out var major) ? $"version {major}" : "the latest spec";
 
 	private static void ValidateFileOverrides(
 		IFileInfo file,
