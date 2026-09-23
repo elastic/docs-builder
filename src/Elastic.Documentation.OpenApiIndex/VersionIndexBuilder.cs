@@ -88,15 +88,13 @@ public static class VersionIndexBuilder
 		if (dot <= 0 || dot == version.Length - 1)
 			return false;
 
-		// NumberStyles.None, so a segment carrying a sign or surrounding whitespace cannot reach the index
-		// under a key that no longer matches the text it was parsed from.
 		if (
-			!int.TryParse(version[..dot], NumberStyles.None, CultureInfo.InvariantCulture, out _)
+			!int.TryParse(version[..dot], NumberStyles.None, CultureInfo.InvariantCulture, out var majorNumber)
 			|| !int.TryParse(version[(dot + 1)..], NumberStyles.None, CultureInfo.InvariantCulture, out minor)
 		)
 			return false;
 
-		major = version[..dot];
+		major = majorNumber.ToString(CultureInfo.InvariantCulture);
 		return true;
 	}
 }
