@@ -57,20 +57,15 @@ internal sealed partial class ChangelogCommands(
 	/// <remarks>
 	/// Discovers the docs folder via <c>docset.yml</c>; falls back to creating <c>PATH/docs</c>.
 	/// When <c>changelog.yml</c> already exists, updates only the paths specified via <see paramref="changelogDir"/> or <see paramref="bundlesDir"/>.
-	/// Seeds <c>bundle.owner</c>, <c>bundle.repo</c>, and <c>bundle.link_allow_repos</c> from the git remote origin when available.
 	/// </remarks>
 	/// <param name="path">Repository root. Defaults to <c>cwd</c>.</param>
 	/// <param name="changelogDir">Changelog entry directory. Defaults to <c>docs/changelog</c>.</param>
 	/// <param name="bundlesDir">Bundle output directory. Defaults to <c>docs/releases</c>.</param>
-	/// <param name="owner">GitHub owner for seeding bundle defaults. Overrides the value inferred from git remote origin.</param>
-	/// <param name="repo">GitHub repository name for seeding bundle defaults. Overrides the value inferred from git remote origin.</param>
 	[NoOptionsInjection]
 	public Task<int> Init(
 		[ExpandUserProfile, RejectSymbolicLinks] DirectoryInfo? path = null,
 		[ExpandUserProfile, RejectSymbolicLinks] DirectoryInfo? changelogDir = null,
-		[ExpandUserProfile, RejectSymbolicLinks] DirectoryInfo? bundlesDir = null,
-		string? owner = null,
-		string? repo = null
+		[ExpandUserProfile, RejectSymbolicLinks] DirectoryInfo? bundlesDir = null
 	)
 	{
 		var rootPath = path?.FullName ?? Path.GetFullPath(".");
@@ -145,8 +140,6 @@ internal sealed partial class ChangelogCommands(
 				var outputValue = GetPathForConfig(repoRoot, bundlesPath);
 				content = content.Replace("output_directory: docs/releases", $"output_directory: {outputValue}");
 			}
-
-			content = ApplyChangelogInitBundleRepoSeed(content, owner, repo, repoRoot);
 
 			try
 			{
@@ -2321,16 +2314,6 @@ internal sealed partial class ChangelogCommands(
 			return $"\"{pathForConfig.Replace("\"", "\\\"")}\"";
 
 		return pathForConfig;
-	}
-
-	private string ApplyChangelogInitBundleRepoSeed(string content, string? ownerCli, string? repoCli, string repoRoot)
-	{
-		string? gitOwner = null;
-		string? gitRepo = null;
-		if (GitRemoteConfigurationReader.TryReadOriginUrl(_fileSystem, repoRoot, out var originUrl))
-			_ = GitHubRemoteParser.TryParseGitHubComOwnerRepo(originUrl, out gitOwner, out gitRepo);
-
-		return ChangelogTemplateSeeder.ApplyBundleRepoSeed(content, ownerCli, repoCli, gitOwner, gitRepo);
 	}
 
 	private async Task<BundleDescriptionInputResult> ResolveBundleDescription(
