@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information
 
 using AwesomeAssertions;
-using Elastic.ApiExplorer.Infrastructure;
 using Elastic.Documentation.Navigation;
 using FakeItEasy;
 
@@ -12,109 +11,49 @@ namespace Elastic.ApiExplorer.Tests;
 public class ApiBreadcrumbBuilderTests
 {
 	[Fact]
-	public void Collect_ParentChain_RootTitleThenCurrent()
+	public void Parents_Chain_IsRootFirstAndOmitsCurrent()
 	{
 		var root = Node("/api/es", "Api Overview", parent: null);
 		var tag = Node("/api/es/search", "Search", root);
 		var op = Leaf("/api/es/search-op", "search", tag);
 
-		var crumbs = ApiBreadcrumbBuilder.Collect(op, "Run a search", "Elasticsearch API");
+		var crumbs = op.BreadcrumbParents();
 
-		crumbs.Should().HaveCount(3);
-		crumbs[0].Title.Should().Be("Elasticsearch API");
-		crumbs[0].Url.Should().Be("/api/es");
-		crumbs[1].Title.Should().Be("Search");
-		crumbs[1].Url.Should().Be("/api/es/search");
-		crumbs[2].Title.Should().Be("Run a search");
-		crumbs[2].IsCurrent.Should().BeTrue();
+		crumbs.Select(c => c.NavigationTitle).Should().Equal("Api Overview", "Search");
+		crumbs.Select(c => c.Url).Should().Equal("/api/es", "/api/es/search");
 	}
 
 	[Fact]
-	public void Collect_SameTitleAsCurrent_Skipped()
+	public void Parents_SameTitleAsCurrent_IsKept()
 	{
 		var root = Node("/api/es", "Api Overview", parent: null);
 		var endpoint = Node("/api/es/search", "Run a search", root);
 		var op = Leaf("/api/es/search-1", "search", endpoint);
 
-		var crumbs = ApiBreadcrumbBuilder.Collect(op, "Run a search", "Elasticsearch API");
-
-		crumbs.Select(c => c.Title).Should().Equal("Elasticsearch API", "Run a search");
+		op.BreadcrumbParents().Select(c => c.NavigationTitle).Should().Equal("Api Overview", "Run a search");
 	}
 
 	[Fact]
-	public void Collect_HiddenParent_Skipped()
+	public void Parents_HiddenParent_IsKept()
 	{
 		var root = Node("/api/es", "Api Overview", parent: null);
 		var hidden = Node("/api/es/hidden", "Hidden", root, hidden: true);
 		var op = Leaf("/api/es/op", "op", hidden);
 
-		var crumbs = ApiBreadcrumbBuilder.Collect(op, "Op", "Elasticsearch API");
-
-		crumbs.Select(c => c.Title).Should().Equal("Elasticsearch API", "Op");
+		op.BreadcrumbParents().Select(c => c.NavigationTitle).Should().Equal("Api Overview", "Hidden");
 	}
 
 	[Fact]
-	public void Collect_TagLanding_ClassificationThenCurrent()
+	public void Parents_DuplicateUrl_KeepsNearest()
 	{
 		var root = Node("/api/es", "Api Overview", parent: null);
 		var classification = Node("/api/es", "Search & Document APIs", root);
 		var tag = Node("/api/es/tags/search/", "Search", classification);
 
-		var crumbs = ApiBreadcrumbBuilder.Collect(tag, "Search", "Elasticsearch API");
+		var crumbs = tag.BreadcrumbParents();
 
-		crumbs.Select(c => c.Title).Should().Equal("Search & Document APIs", "Search");
+		crumbs.Select(c => c.NavigationTitle).Should().Equal("Search & Document APIs");
 		crumbs[0].Url.Should().Be("/api/es");
-		crumbs[1].IsCurrent.Should().BeTrue();
-	}
-
-	[Fact]
-	public void Collect_WithCatalogUrl_PrependsApisLink()
-	{
-		var root = Node("/api/es", "Api Overview", parent: null);
-		var op = Leaf("/api/es/search-op", "search", root);
-
-		var crumbs = ApiBreadcrumbBuilder.Collect(op, "Run a search", "Elasticsearch API", catalogUrl: "/api/");
-
-		crumbs.Select(c => c.Title).Should().Equal("APIs", "Elasticsearch API", "Run a search");
-		crumbs[0].Url.Should().Be("/api/");
-		crumbs[0].IsCurrent.Should().BeFalse();
-		crumbs[^1].IsCurrent.Should().BeTrue();
-	}
-
-	[Fact]
-	public void Collect_OnCatalogPage_DoesNotPrependApis()
-	{
-		var catalog = Leaf("/api/", "API catalog", parent: null);
-
-		var crumbs = ApiBreadcrumbBuilder.Collect(catalog, "API catalog", "API catalog", catalogUrl: "/api/");
-
-		crumbs.Should().ContainSingle();
-		crumbs[0].Title.Should().Be("API catalog");
-		crumbs[0].IsCurrent.Should().BeTrue();
-	}
-
-	[Fact]
-	public void Build_SingleCrumb_IsEmpty()
-	{
-		var landing = Leaf("/api/es", "Api Overview", parent: null);
-
-		var trail = ApiBreadcrumbBuilder.Build(landing, "Elasticsearch API", "Elasticsearch API");
-
-		trail.IsEmpty.Should().BeTrue();
-	}
-
-	[Fact]
-	public void Build_KeepsEveryCrumbForResponsiveCollapse()
-	{
-		var root = Node("/api/es", "Api Overview", parent: null);
-		var tag = Node("/api/es/search", "Search", root);
-		var op = Leaf("/api/es/search-op", "search", tag);
-
-		var trail = ApiBreadcrumbBuilder.Build(op, "Run a search", "Elasticsearch API", catalogUrl: "/api/");
-
-		trail.Items.Select(c => c.Title).Should().Equal("APIs", "Elasticsearch API", "Search", "Run a search");
-		trail.Items[0].Url.Should().Be("/api/");
-		trail.Items[^1].IsCurrent.Should().BeTrue();
 	}
 
 	private static INodeNavigationItem<INavigationModel, INavigationItem> Node(

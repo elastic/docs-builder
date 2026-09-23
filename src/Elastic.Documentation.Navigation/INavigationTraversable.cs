@@ -29,6 +29,8 @@ public static class NavigationExtensions
 			return [.. parents];
 		}
 
+		public INavigationItem[] BreadcrumbParents() => navigationItem.GetParents().Reverse().ToArray();
+
 		public int NavigationDepth => navigationItem.GetParents().Length;
 
 		public string? NavigationSection

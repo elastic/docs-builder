@@ -37,8 +37,7 @@ else
 							<input type="checkbox" class="hidden" id="pages-nav-hamburger">
 							@await RenderPartialAsync(_ApiPagesNavToggle.Create())
 							<div class="api-page-toolbar">
-								@(await RenderPartialAsync<_ApiBreadcrumbs, ApiBreadcrumbsView>(
-									new ApiBreadcrumbsView(Model.Breadcrumbs, Model.HxAttributes)))
+								@(await RenderPartialAsync(_Breadcrumbs.Create(new BreadcrumbsView(Model.Breadcrumbs, Model.BuildType))))
 							</div>
 							@await RenderBodyAsync()
 						</article>

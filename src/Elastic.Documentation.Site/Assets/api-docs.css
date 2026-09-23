@@ -167,13 +167,6 @@
 	margin: 0 0 16px;
 }
 
-.api-page-toolbar .api-breadcrumbs {
-	flex: 1 1 auto;
-	min-width: 0;
-	margin: 0;
-	overflow: hidden;
-}
-
 .api-page-actions {
 	position: relative;
 	z-index: 6;
@@ -325,20 +318,17 @@
 	color: #1d2a3e;
 }
 
-.markdown-content .api-page-actions a.api-page-actions-option,
-.markdown-content .api-breadcrumbs a.api-page-actions-option {
+.markdown-content .api-page-actions a.api-page-actions-option {
 	color: #1d2a3e;
 	text-decoration: none;
 }
 
 .markdown-content
 	.api-page-actions
-	a.api-page-actions-option[target='_blank']::after,
-.markdown-content .api-breadcrumbs a.api-page-actions-option::after {
+	a.api-page-actions-option[target='_blank']::after {
 	content: none;
 }
 
-/* API breadcrumbs — Figma APIs 10087:3195 (EuiBreadcrumbs Page). On all API pages. */
 .api-pages-nav-toggle {
 	display: inline-flex;
 	align-items: center;
@@ -353,95 +343,6 @@
 	.api-pages-nav-toggle {
 		display: none;
 	}
-}
-
-.api-breadcrumbs {
-	margin: 0 0 16px;
-	color: var(--color-subdued, #516381);
-	font-family: var(--font-body, Inter, ui-sans-serif, system-ui, sans-serif);
-	font-size: 14px;
-	font-weight: 400;
-	line-height: 20px;
-}
-
-.api-breadcrumbs ol {
-	display: flex;
-	flex-wrap: nowrap;
-	align-items: center;
-	min-width: 0;
-	margin: 0;
-	padding: 0;
-	list-style: none;
-}
-
-.api-breadcrumbs li {
-	margin: 0;
-	list-style: none;
-	flex-shrink: 0;
-}
-
-.api-breadcrumbs__item[data-crumb='end'] {
-	flex: 0 1 auto;
-	min-width: 0;
-	max-width: 100%;
-}
-
-.api-breadcrumbs a {
-	color: var(--color-subdued, #516381);
-	font-family: inherit;
-	font-size: inherit;
-	font-weight: 400;
-	line-height: inherit;
-	text-decoration: underline;
-	text-underline-offset: 2px;
-	white-space: nowrap;
-}
-
-.api-breadcrumbs a:hover {
-	color: #1d2a3e;
-}
-
-.api-breadcrumbs a[target='_blank']::after {
-	content: none;
-}
-
-.api-breadcrumbs__current {
-	display: block;
-	overflow: hidden;
-	color: var(--color-subdued, #516381);
-	text-overflow: ellipsis;
-	white-space: nowrap;
-}
-
-.api-breadcrumbs__sep {
-	padding: 0 8px;
-	color: var(--color-subdued, #516381);
-}
-
-.api-breadcrumbs__overflow {
-	position: relative;
-}
-
-.api-breadcrumbs__overflow-dropdown {
-	position: relative;
-	display: flex;
-}
-
-.api-breadcrumbs__overflow summary {
-	display: inline-flex;
-	align-items: center;
-	cursor: pointer;
-	list-style: none;
-	color: inherit;
-}
-
-.api-breadcrumbs__overflow summary::-webkit-details-marker {
-	display: none;
-}
-
-.api-breadcrumbs__overflow .api-page-actions-menu {
-	left: 0;
-	right: auto;
 }
 
 .api-overview {
