@@ -24,7 +24,7 @@ function tabSet(
     const items = options
         .map(
             (o, i) =>
-                `<input class="tabs-input" ${i === 0 ? 'checked' : ''} id="${inputId(i)}" name="tabs-set-${index}" type="radio">
+                `<input class="tabs-input" ${i === 0 ? 'checked' : ''} id="${inputId(i)}" name="tabs-set-${index}" type="radio" tabindex="0">
                  <label class="tabs-label" data-sync-id="${o.sync ?? ''}" data-sync-group="${group ?? ''}" for="${inputId(i)}">${o.title}</label>
                  <div class="tabs-content"></div>`
         )
@@ -145,5 +145,35 @@ describe('dropdown tab sets', () => {
                 .querySelector('.tabs')!
                 .classList.contains('tabs-dropdown-active')
         ).toBe(false)
+    })
+})
+
+describe('keyboard reachability of the fallback radios', () => {
+    const radios = () =>
+        Array.from(document.querySelectorAll<HTMLInputElement>('.tabs-input'))
+
+    it('takes the hidden radios out of the tab order in dropdown mode', () => {
+        document.body.innerHTML = tabSet(1, LANGUAGES, {
+            group: 'languages',
+            dropdown: true,
+        })
+        expect(radios().every((r) => r.tabIndex === 0)).toBe(true)
+
+        initTabs()
+
+        // The tab strip is hidden, so reaching a radio would flip the panel
+        // without the <select> knowing about it.
+        expect(radios().every((r) => r.tabIndex === -1)).toBe(true)
+        expect(
+            radios().every((r) => r.getAttribute('aria-hidden') === 'true')
+        ).toBe(true)
+    })
+
+    it('leaves the radios reachable when the tab strip is still visible', () => {
+        document.body.innerHTML = tabSet(1, LANGUAGES, { group: 'languages' })
+        initTabs()
+
+        expect(radios().every((r) => r.tabIndex === 0)).toBe(true)
+        expect(radios().some((r) => r.hasAttribute('aria-hidden'))).toBe(false)
     })
 })

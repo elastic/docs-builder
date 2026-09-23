@@ -119,6 +119,17 @@ function initDropdowns() {
         }
         tabs.classList.add('tabs-dropdown-active')
 
+        // The radios still drive the panels, but the <select> is now the only
+        // control a user should reach. They are opacity-0 rather than removed,
+        // so without this a keyboard user can tab onto an invisible radio and
+        // arrow through it, flipping the panel behind the select's back.
+        tabs.querySelectorAll<HTMLInputElement>(':scope > .tabs-input').forEach(
+            (input) => {
+                input.tabIndex = -1
+                input.setAttribute('aria-hidden', 'true')
+            }
+        )
+
         // The checked input is the source of truth — it may have been restored
         // from sessionStorage or a URL param by ready().
         const checked = tabs.querySelector<HTMLInputElement>(
