@@ -151,12 +151,22 @@ let private runTests (testSuite: TestSuite) _ =
     if List.isEmpty projects then
         failwithf "No test projects found under %A" directories
 
+    let integrationRoot = Path.Combine(Paths.Root.FullName, "tests-integration")
+
+    // Integration test projects stay on xUnit v3 (VSTest) and cannot use `dotnet test`
+    // when global.json enforces "runner": "Microsoft.Testing.Platform" for unit tests.
+    // Run them as executables directly so the SDK enforcement doesn't apply.
     let runOne (project: string) =
-        exec {
-            exit_code_of "dotnet" (
-                [ "test"; project; "-c"; "release"; "--no-restore"; "--no-build" ]
-            )
-        } = 0
+        if project.StartsWith(integrationRoot) then
+            let name = Path.GetFileNameWithoutExtension(project) |> string
+            let dll = Path.Combine(Paths.Root.FullName, ".artifacts", "bin", name, "release", name + ".dll")
+            exec { exit_code_of "dotnet" [ "exec"; dll ] } = 0
+        else
+            exec {
+                exit_code_of "dotnet" (
+                    [ "test"; project; "-c"; "release"; "--no-restore"; "--no-build" ]
+                )
+            } = 0
 
     let failures = projects |> List.filter (fun p -> not (runOne p))
     if not (List.isEmpty failures) then
