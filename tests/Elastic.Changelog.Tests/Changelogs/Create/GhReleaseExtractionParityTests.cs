@@ -336,7 +336,7 @@ public class GhReleaseExtractionParityTests() : ChangelogTestBase()
 			);
 	}
 
-	[Fact]
+	[Test]
 	public async Task PrBodyReleaseNote_WithTrailingParagraph_EmitsHint()
 	{
 		ArrangeRelease();
