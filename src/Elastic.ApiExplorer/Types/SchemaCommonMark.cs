@@ -57,10 +57,10 @@ internal static class SchemaCommonMark
 			ApiPropertyMarkdown.WriteType(markdown, page.AdditionalPropertiesType);
 		}
 
-		if (openApiSchema.Example is not null)
+		if (openApiSchema.Examples is { Count: > 0 } examples)
 		{
 			ApiCommonMark.Heading(markdown, 2, "Example");
-			ApiCommonMark.Fence(markdown, "json", openApiSchema.Example.ToString());
+			ApiCommonMark.Fence(markdown, "json", examples[0].ToString());
 		}
 
 		return markdown.ToString();

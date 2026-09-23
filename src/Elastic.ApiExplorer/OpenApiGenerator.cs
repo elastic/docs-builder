@@ -134,7 +134,12 @@ public class OpenApiGenerator(
 	{
 		var resolved = await ResolveDocumentsForProduct(prefix, apiConfig, ctx).ConfigureAwait(false);
 		if (resolved.Documents.Count == 0)
+		{
+			context.Collector.EmitGlobalWarning(
+				$"API '{prefix}': no documents could be loaded from the spec — check earlier errors for details."
+			);
 			return null;
+		}
 
 		var versionedDocuments = resolved.Documents;
 		var monikers = versionedDocuments.Select(v => v.Version.Moniker).ToArray();
@@ -225,7 +230,7 @@ public class OpenApiGenerator(
 
 	private async Task<ResolvedProductDocuments> ResolveLocalMainOnly(IFileInfo localFile)
 	{
-		var document = await _openApiReader.ReadAsync(localFile).ConfigureAwait(false);
+		var document = await _openApiReader.ReadAsync(localFile, context.Collector).ConfigureAwait(false);
 		if (document is null)
 			return new([], null);
 
@@ -260,13 +265,13 @@ public class OpenApiGenerator(
 	)
 	{
 		if (version.IsLocal)
-			return await _openApiReader.ReadAsync(version.LocalFile!).ConfigureAwait(false);
+			return await _openApiReader.ReadAsync(version.LocalFile!, context.Collector).ConfigureAwait(false);
 
 		var stream = await _versionIndexClient.FetchSpecStreamAsync(apiKey, version, context.Collector, ctx).ConfigureAwait(false);
 		if (stream is null)
 			return null;
 
-		return await _openApiReader.ReadAsync(stream, apiConfig.SpecFileName).ConfigureAwait(false);
+		return await _openApiReader.ReadAsync(stream, apiConfig.SpecFileName, context.Collector).ConfigureAwait(false);
 	}
 
 	private static readonly OpenApiDocument CatalogDocument = new()
