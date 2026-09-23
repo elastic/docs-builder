@@ -30,7 +30,7 @@ public sealed record PropertyTreeScope
 
 public class ApiPropertyTreeBuilder(OpenApiDocument document, PropertyDisplayOptions options, string? currentPageType = null)
 {
-	private readonly SchemaAnalyzer _analyzer = new(document, currentPageType);
+	private readonly SchemaAnalyzer _analyzer = new(document, currentPageType, options.SchemaResolveCache);
 
 	/// <summary>One renderable property before its display fields are derived.</summary>
 	private sealed record PropertyRow(
@@ -407,7 +407,9 @@ public class ApiPropertyTreeBuilder(OpenApiDocument document, PropertyDisplayOpt
 
 		if (sortedOptions.Length > 0 || expansion.HasUnionOptions)
 		{
-			var badgeOptions = expansion.HasUnionOptions ? [] : sortedOptions;
+			var badgeOptions = expansion.HasUnionOptions
+				? []
+				: sortedOptions.Where(static o => !SchemaHelpers.IsInternalSchemaName(o)).ToArray();
 			return new UnionDisplay
 			{
 				Kind = UnionDisplayKind.Badges,
@@ -629,7 +631,9 @@ public class ApiPropertyTreeBuilder(OpenApiDocument document, PropertyDisplayOpt
 
 			variants.Add(new ApiUnionVariant
 			{
-				DisplayName = variant.IsArray && variant.Name.EndsWith("[]") ? variant.Name[..^2] : variant.Name,
+				DisplayName = SchemaHelpers.ReadableSchemaName(
+					variant.IsArray && variant.Name.EndsWith("[]") ? variant.Name[..^2] : variant.Name
+				),
 				IsArrayVariant = variant.IsArray,
 				IsObjectType = variant.IsObject,
 				AnchorId = optionId,
@@ -723,7 +727,7 @@ public class ApiPropertyTreeBuilder(OpenApiDocument document, PropertyDisplayOpt
 		{
 			AppendArrayPrefix(spans);
 			AppendArrayKeywordSpans(spans, typeInfo, hasActualProperties);
-			spans.Add(NamedTypeSpan(typeName, typeInfo.SchemaRef, typeInfo.IsValueType));
+			AppendDisplayedTypeName(spans, typeInfo, hasActualProperties);
 			return new TypeAnnotation(spans);
 		}
 
@@ -737,7 +741,7 @@ public class ApiPropertyTreeBuilder(OpenApiDocument document, PropertyDisplayOpt
 
 		if (typeInfo.HasLink)
 			AppendObjectIcon(spans);
-		spans.Add(NamedTypeSpan(typeName, typeInfo.SchemaRef, typeInfo.IsValueType));
+		AppendDisplayedTypeName(spans, typeInfo, hasActualProperties);
 		return new TypeAnnotation(spans);
 	}
 
@@ -795,7 +799,36 @@ public class ApiPropertyTreeBuilder(OpenApiDocument document, PropertyDisplayOpt
 		spans.Add(new TypeSpan(" to ", Bare: true));
 		if (typeInfo.HasLink || hasActualProperties)
 			AppendObjectIcon(spans);
-		spans.Add(NamedTypeSpan(valueTypeName, null));
+		AppendInternalOrNamed(spans, valueTypeName, typeInfo.HasLink || hasActualProperties);
+	}
+
+	private static void AppendDisplayedTypeName(List<TypeSpan> spans, TypeInfo typeInfo, bool hasActualProperties)
+	{
+		var typeName = typeInfo.TypeName ?? "unknown";
+		if (!SchemaHelpers.IsInternalSchemaName(typeName))
+		{
+			spans.Add(NamedTypeSpan(typeName, typeInfo.SchemaRef, typeInfo.IsValueType));
+			return;
+		}
+
+		if (typeInfo.IsEnum || typeInfo.IsUnion || typeInfo.IsValueType || typeInfo.HasLink)
+			return;
+		if (typeInfo.IsObject && hasActualProperties)
+			return;
+
+		spans.Add(new TypeSpan("object", SchemaHelpers.PrimitiveCssClass));
+	}
+
+	private static void AppendInternalOrNamed(List<TypeSpan> spans, string typeName, bool labeledAlready)
+	{
+		if (!SchemaHelpers.IsInternalSchemaName(typeName))
+		{
+			spans.Add(NamedTypeSpan(typeName, null));
+			return;
+		}
+
+		if (!labeledAlready)
+			spans.Add(new TypeSpan("object", SchemaHelpers.PrimitiveCssClass));
 	}
 
 	private static void AppendWrapperKeyword(List<TypeSpan> spans, string keyword, string cssClass)
@@ -819,12 +852,12 @@ public class ApiPropertyTreeBuilder(OpenApiDocument document, PropertyDisplayOpt
 	{
 		if (!part.EndsWith("[]", StringComparison.Ordinal))
 		{
-			spans.Add(NamedTypeSpan(part, null));
+			AppendInternalOrNamed(spans, part, labeledAlready: false);
 			return;
 		}
 
 		AppendArrayPrefix(spans);
-		spans.Add(NamedTypeSpan(part[..^2], null));
+		AppendInternalOrNamed(spans, part[..^2], labeledAlready: false);
 	}
 
 	private static TypeSpan NamedTypeSpan(string typeName, string? schemaRef, bool isValueType = false)

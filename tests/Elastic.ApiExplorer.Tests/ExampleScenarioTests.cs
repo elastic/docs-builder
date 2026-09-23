@@ -249,4 +249,23 @@ public class ExampleScenarioTests
 			.Should()
 			.Be("An abbreviated response when requesting cluster nodes information.");
 	}
+
+	[Fact]
+	public void WithOperationIdentity_StampsMethodAndRouteOnEveryScenario()
+	{
+		var scenarios = OperationPageModel.WithOperationIdentity(
+			[
+				new ExampleScenario { Title = "Match all", TabId = "match-all" },
+				new ExampleScenario { Title = "Query string", TabId = "query-string" }
+			],
+			"get",
+			"/_search"
+		);
+
+		scenarios.Should().AllSatisfy(s =>
+		{
+			s.HttpMethod.Should().Be("get");
+			s.Route.Should().Be("/_search");
+		});
+	}
 }

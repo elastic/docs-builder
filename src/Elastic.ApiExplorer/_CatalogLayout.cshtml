@@ -22,6 +22,10 @@ else
 <div id="main-container" class="flex flex-col items-center">
 	<div class="max-w-(--max-layout-width) w-full px-6">
 		<main id="content-container" class="w-full pb-12">
+			<div class="api-page-toolbar">
+				@(await RenderPartialAsync<_ApiBreadcrumbs, ApiBreadcrumbsView>(
+					new ApiBreadcrumbsView(Model.Breadcrumbs, Model.HxAttributes)))
+			</div>
 			@await RenderBodyAsync()
 			@await RenderPartialAsync(_PageFeedback.Create(Model))
 		</main>

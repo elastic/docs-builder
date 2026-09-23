@@ -79,6 +79,12 @@ if (!iconCopy) {
 </svg>`
 }
 
+// EUI copy (Figma APIs 10202:4933). Keep 16×16 root; the header button is the 40×40 hit target.
+const iconCopyEui = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+  <path fill-rule="evenodd" clip-rule="evenodd" d="M6 1C5.44771 1 5 1.44772 5 2V10C5 10.5523 5.44772 11 6 11H14C14.5523 11 15 10.5523 15 10V2C15 1.44771 14.5523 1 14 1H6ZM6 2L14 2V10H6V2Z" fill="currentColor"/>
+  <path d="M2 5H4V6H2V14H10V12H11V14C11 14.5523 10.5523 15 10 15H2C1.44772 15 1 14.5523 1 14V6C1 5.44772 1.44771 5 2 5Z" fill="currentColor"/>
+</svg>`
+
 const codeCellId = (index: number, prefix: string) => `${prefix}${index}`
 
 // Changes tooltip text for a moment, then changes it back
@@ -97,10 +103,10 @@ const temporarilyChangeTooltip = (el, oldText, newText) => {
 }
 
 // Changes the copy button icon for two seconds, then changes it back
-const temporarilyChangeIcon = (el) => {
+const temporarilyChangeIcon = (el, icon = iconCopy) => {
     el.innerHTML = iconCheck
     setTimeout(() => {
-        el.innerHTML = iconCopy
+        el.innerHTML = icon
     }, timeoutIcon)
 }
 
@@ -122,7 +128,15 @@ const addCopyButtonToCodeCells = (
         clipboardButton.className = 'copybtn o-tooltip--left'
         clipboardButton.setAttribute('data-tooltip', messages[locale]['copy'])
         clipboardButton.setAttribute('data-clipboard-target', `#${id}`)
-        clipboardButton.innerHTML = iconCopy
+        const responseActions = codeCell
+            .closest('.example-block--response')
+            ?.querySelector('.example-block-actions')
+        const codeSampleActions = codeCell
+            .closest('[data-api-code-sample]')
+            ?.querySelector('.api-code-sample-actions')
+        const headerActions = responseActions || codeSampleActions
+        const headerIcon = headerActions ? iconCopyEui : iconCopy
+        clipboardButton.innerHTML = headerIcon
         clipboardButton.onclick = async () => {
             try {
                 const text = copyTargetText(clipboardButton, baseElement)
@@ -132,19 +146,13 @@ const addCopyButtonToCodeCells = (
                     messages[locale]['copy'],
                     messages[locale]['copy_success']
                 )
-                temporarilyChangeIcon(clipboardButton)
+                temporarilyChangeIcon(clipboardButton, headerIcon)
             } catch (error) {
                 console.error(error)
             }
         }
 
         // API example cards: mount copy in the card header (right), not over the code.
-        const responseActions = codeCell
-            .closest('.example-block--response')
-            ?.querySelector('.example-block-actions')
-        const codeSampleActions = codeCell
-            .closest('[data-api-code-sample]')
-            ?.querySelector('.api-code-sample-actions')
         if (responseActions) {
             clipboardButton.classList.add('copybtn--in-header')
             const panel = codeCell.closest('.example-response-panel')

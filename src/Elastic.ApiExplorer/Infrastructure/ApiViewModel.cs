@@ -7,10 +7,10 @@ using Elastic.ApiExplorer.Operations;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
-using Elastic.Documentation.Extensions;
 using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Site;
 using Elastic.Documentation.Site.FileProviders;
+using Elastic.Documentation.Site.Navigation;
 using Microsoft.AspNetCore.Html;
 using Microsoft.OpenApi;
 
@@ -33,6 +33,8 @@ public record ApiLayoutViewModel : GlobalLayoutViewModel
 	public bool ShowJumpToPage => BuildType == BuildType.Assembler && !Features.AirGappedEnabled;
 
 	public required string MarkdownUrl { get; init; }
+
+	public string? ProductName { get; init; }
 
 	/// <summary>
 	/// Preload hint for API links. Body already hx-boosts into <c>#main-container</c>,
@@ -68,6 +70,9 @@ public abstract class ApiViewModel(ApiRenderContext context)
 	/// <summary>Last breadcrumb label. Defaults to <see cref="LayoutPageTitle"/> or the nav title.</summary>
 	protected virtual string BreadcrumbCurrentTitle => LayoutPageTitle ?? CurrentNavigationItem.NavigationTitle;
 
+	/// <summary>Raw markdown used for the meta description. Excerpted before it reaches the layout.</summary>
+	protected virtual string? LayoutPageDescription => null;
+
 	private string? GetGitHubDocsUrl()
 	{
 		var repo = BuildContext.Git.RepositoryName;
@@ -82,12 +87,18 @@ public abstract class ApiViewModel(ApiRenderContext context)
 		var docTitle = Document.Info?.Title ?? "API Documentation";
 		var pageTitle = LayoutPageTitle;
 		var documentTitle = pageTitle is not null ? $"{pageTitle} | {docTitle}" : docTitle;
+		var catalogUrl = $"{ApiUrlBuilder.ApiRoot(BuildContext.UrlPathPrefix)}/";
+
+		var hubItems = ApiHubSwitcher.Build(RenderContext.CatalogEntries, RenderContext.CurrentApiKey, catalogUrl);
+		var assembler = BuildContext.BuildType == BuildType.Assembler;
+		var specRootUrl = CurrentNavigationItem.NavigationRoot.Url;
+		var onCatalog = SameUrl(specRootUrl, catalogUrl) || SameUrl(CurrentNavigationItem.Url, catalogUrl);
+		var crumbs = ApiBreadcrumbBuilder.Collect(CurrentNavigationItem, BreadcrumbCurrentTitle, Document.Info?.Title, catalogUrl);
 
 		return new()
 		{
-			DocsBuilderVersion = ShortId.Create(BuildContext.Version),
 			DocSetName = "Api Explorer",
-			Description = "",
+			Description = ApiSeoDescription.Excerpt(LayoutPageDescription) ?? "",
 			Title = documentTitle,
 			CurrentNavigationItem = CurrentNavigationItem,
 			Previous = null,
@@ -104,14 +115,25 @@ public abstract class ApiViewModel(ApiRenderContext context)
 			BuildType = BuildContext.BuildType,
 			PageFeedbackSurface = "api",
 			TocItems = GetTocItems(),
-			Breadcrumbs = ApiBreadcrumbBuilder.Build(CurrentNavigationItem, BreadcrumbCurrentTitle, Document.Info?.Title),
+			Breadcrumbs = ApiBreadcrumbBuilder.TrailFrom(crumbs),
+			StructuredBreadcrumbsJson = ApiBreadcrumbBuilder.ToJsonLd(crumbs, BuildContext.CanonicalBaseUrl),
+			ProductName = RenderContext.Product?.DisplayName,
 			VersionSwitcherItems = RenderContext.VersionSwitcherItems,
-			HubSwitcherItems = ApiHubSwitcher.Build(
-				RenderContext.CatalogEntries,
-				RenderContext.CurrentApiKey,
-				$"{ApiUrlBuilder.ApiRoot(BuildContext.UrlPathPrefix)}/"
-			),
+			HubSwitcherItems = hubItems,
+			LegacyBarProductSwitcher = assembler
+				? [.. hubItems.Select(static i => new NavigationSelectOption(i.Label, i.Url, i.Selected))]
+				: [],
+			ApiCatalogUrl = catalogUrl,
+			SpecJsonUrl = onCatalog ? null : ApiOutputPaths.JsonUrl(specRootUrl),
+			SpecYamlUrl = onCatalog ? null : ApiOutputPaths.YamlUrl(specRootUrl),
 			MarkdownUrl = ApiOutputPaths.MarkdownUrl(CurrentNavigationItem.Url),
+			ShowVersionDropdown = false,
+			ShowLegacyBarVersionDropdown = false,
+			CurrentVersion = ApiVersionSwitcher.CurrentVersionLabel(
+				RenderContext.Product?.VersioningSystem,
+				RenderContext.VersionSwitcherItems
+			),
+			VersionDropdownSerializedModel = ApiVersionSwitcher.SerializeDropdownItems(RenderContext.VersionSwitcherItems),
 			// Header properties for isolated mode
 			HeaderTitle = docTitle,
 			HeaderVersion = Document.Info?.Version ?? "1.0",
@@ -121,5 +143,12 @@ public abstract class ApiViewModel(ApiRenderContext context)
 			GitHubDocsUrl = GetGitHubDocsUrl(),
 			GitHubRef = BuildContext.Git.GitHubRef
 		};
+	}
+
+	private static bool SameUrl(string? left, string? right)
+	{
+		if (left is null || right is null)
+			return false;
+		return string.Equals(left.TrimEnd('/'), right.TrimEnd('/'), StringComparison.Ordinal);
 	}
 }

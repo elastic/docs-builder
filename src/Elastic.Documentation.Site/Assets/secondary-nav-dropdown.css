@@ -136,4 +136,37 @@
 		outline: 2px solid #0b64dd;
 		outline-offset: -2px;
 	}
+
+	.secondary-nav-dropdown-link--selected {
+		font-weight: 600;
+	}
+
+	/* Grey top bar: same text chrome as Release notes / Reference, EUI panel on open. */
+	.secondary-nav-legacy-product {
+		display: inline-flex;
+		align-items: center;
+		height: auto;
+	}
+
+	.secondary-nav-legacy-product > summary {
+		display: inline-flex;
+		align-items: center;
+		gap: 4px;
+		cursor: pointer;
+		font: inherit;
+		color: inherit;
+	}
+
+	.secondary-nav-legacy-product .secondary-nav-dropdown-menu {
+		left: auto;
+		right: 0;
+		min-width: 175px;
+		width: max-content;
+		max-width: 16rem;
+	}
+
+	.secondary-nav-legacy-product[open] .nav-select__chevron,
+	.secondary-nav-legacy-product.is-open .nav-select__chevron {
+		transform: rotate(180deg);
+	}
 }

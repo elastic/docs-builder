@@ -4,12 +4,12 @@
 @* Example OpenAPI descriptions are omitted from the rail — they often restate the call
    or narrate the sample; the code blocks carry the useful content. *@
 
-@* Two independently styleable blocks in the rail:
+@* Two widgets, one card: .api-code-card styles chrome + syntax for both.
    1. .api-code-sample — multi-language x-codeSamples, or fallback request JSON
    2. .example-block--response — response JSON (status-code tabs) *@
 @if (Model.CodeSamples.Count > 0)
 {
-	@(await RenderPartialAsync<_ApiCodeSample, ApiCodeSampleModel>(new ApiCodeSampleModel($"rail-{Model.TabId}", Model.CodeSamples)))
+	@(await RenderPartialAsync<_ApiCodeSample, ApiCodeSampleModel>(new ApiCodeSampleModel($"rail-{Model.TabId}", Model.CodeSamples, Model.HttpMethod, Model.Route, Model.ExampleOptions)))
 }
 else if (Model.ShowRequest && Model.RequestJson is not null)
 {
@@ -17,7 +17,7 @@ else if (Model.ShowRequest && Model.RequestJson is not null)
 	{
 		new CodeSample("JSON", Model.RequestJson, "language-json")
 	};
-	@(await RenderPartialAsync<_ApiCodeSample, ApiCodeSampleModel>(new ApiCodeSampleModel($"rail-{Model.TabId}-request", requestSamples)))
+	@(await RenderPartialAsync<_ApiCodeSample, ApiCodeSampleModel>(new ApiCodeSampleModel($"rail-{Model.TabId}-request", requestSamples, Model.HttpMethod, Model.Route, Model.ExampleOptions)))
 }
 
 @if (Model.ShowRequest && !string.IsNullOrEmpty(Model.RequestExternalValue))
@@ -28,7 +28,7 @@ else if (Model.ShowRequest && Model.RequestJson is not null)
 @if (Model.ShowResponse)
 {
 	var responses = Model.Responses;
-	<div class="example-block example-block--response" data-api-response-samples>
+	<div class="api-code-card example-block example-block--response" data-api-response-samples>
 		<div class="example-block-header">
 			<div class="example-response-tabs" role="tablist" aria-label="Response status">
 				@for (var i = 0; i < responses.Count; i++)
@@ -42,7 +42,7 @@ else if (Model.ShowRequest && Model.RequestJson is not null)
 						data-status="@response.StatusCode"
 						aria-selected="@(selected ? "true" : "false")"
 						tabindex="@(selected ? "0" : "-1")">
-						@response.StatusCode
+						<span class="example-response-tab-label">@response.StatusCode</span>
 					</button>
 				}
 			</div>

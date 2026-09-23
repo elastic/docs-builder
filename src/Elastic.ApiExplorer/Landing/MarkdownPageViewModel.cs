@@ -18,6 +18,10 @@ public class MarkdownPageViewModel(ApiRenderContext context) : ApiViewModel(cont
 
 	public required HtmlString BodyHtml { get; init; }
 
+	public string? DescriptionMarkdown { get; init; }
+
 	/// <inheritdoc />
 	protected override string? LayoutPageTitle => PageTitle;
+
+	protected override string? LayoutPageDescription => DescriptionMarkdown;
 }

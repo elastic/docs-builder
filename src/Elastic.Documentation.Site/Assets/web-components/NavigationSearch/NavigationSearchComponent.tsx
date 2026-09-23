@@ -6,7 +6,7 @@ import { type TypeFilter } from './useNavigationSearchQuery'
 import { EuiHorizontalRule, EuiProvider, useEuiTheme } from '@elastic/eui'
 import { css } from '@emotion/react'
 import r2wc from '@r2wc/react-to-web-component'
-import { QueryClientProvider, useQuery } from '@tanstack/react-query'
+import { QueryClientProvider } from '@tanstack/react-query'
 import { StrictMode } from 'react'
 
 interface NavigationSearchProps {
@@ -46,20 +46,7 @@ const NavigationSearchInner = ({
     const { euiTheme } = useEuiTheme()
     const typeFilter = parseTypeFilter(type)
 
-    const { data: isApiAvailable } = useQuery({
-        queryKey: ['api-health'],
-        queryFn: async () => {
-            const response = await fetch(`${config.apiBasePath}/v1/`, {
-                method: 'POST',
-            })
-            return response.ok
-        },
-        staleTime: 60 * 60 * 1000, // 60 minutes
-        retry: false,
-        enabled: config.buildType !== 'codex' && !config.airGapped,
-    })
-
-    if (config.airGapped || (!isApiAvailable && config.buildType !== 'codex')) {
+    if (config.airGapped) {
         return null
     }
 

@@ -3,9 +3,9 @@
 // See the LICENSE file in the project root for more information
 
 using AwesomeAssertions;
+using Elastic.Documentation.Indexing.Exporters.Elasticsearch;
 using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Search.Contract;
-using Elastic.Markdown.Exporters.Elasticsearch;
 
 namespace Elastic.Markdown.Tests.Search;
 

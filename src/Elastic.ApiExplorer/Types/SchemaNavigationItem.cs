@@ -14,18 +14,21 @@ using RazorSlices;
 
 namespace Elastic.ApiExplorer.Types;
 
-public record ApiSchema(string SchemaId, string DisplayName, string Category, IOpenApiSchema Schema) : IApiModel
+public record ApiSchema(string SchemaId, string DisplayName, string Category, IOpenApiSchema Schema) : IApiModel<SchemaPageModel>
 {
-	public async Task RenderAsync(FileSystemStream stream, ApiRenderContext context, Cancel ctx = default)
+	public SchemaPageModel? CreatePageModel(ApiRenderContext context) => SchemaPageModel.Create(this, context);
+
+	public async Task RenderAsync(FileSystemStream stream, ApiRenderContext context, SchemaPageModel? pageModel, Cancel ctx = default)
 	{
-		var viewModel = new SchemaViewModel(context) { Schema = this, Page = SchemaPageModel.Create(this, context) };
+		var page = pageModel ?? SchemaPageModel.Create(this, context);
+		var viewModel = new SchemaViewModel(context) { Schema = this, Page = page };
 		var slice = SchemaView.Create(viewModel);
 		await slice.RenderAsync(stream, cancellationToken: ctx);
 	}
 
-	public Task<string?> RenderCommonMarkAsync(ApiRenderContext context, Cancel ctx = default)
+	public Task<string?> RenderCommonMarkAsync(ApiRenderContext context, SchemaPageModel? pageModel, Cancel ctx = default)
 	{
-		var page = SchemaPageModel.Create(this, context);
+		var page = pageModel ?? SchemaPageModel.Create(this, context);
 		return Task.FromResult<string?>(SchemaCommonMark.Write(this, page, context));
 	}
 }

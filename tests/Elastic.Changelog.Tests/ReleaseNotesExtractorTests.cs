@@ -201,6 +201,33 @@ public class ReleaseNotesExtractorTests
 	}
 
 	[Fact]
+	public void ExtractReleaseNote_ContentAfterFirstParagraph_ReportsTruncation()
+	{
+		// language=markdown
+		var prBody = """
+			## Release note
+
+			First paragraph.
+
+			Second paragraph.
+			""";
+
+		var result = ReleaseNotesExtractor.ExtractReleaseNote(prBody);
+
+		result.Content.Should().Be("First paragraph.");
+		result.WasTruncated.Should().BeTrue();
+	}
+
+	[Fact]
+	public void ExtractReleaseNote_NoTrailingContent_DoesNotReportTruncation()
+	{
+		var result = ReleaseNotesExtractor.ExtractReleaseNote("Release note: Complete description.");
+
+		result.Content.Should().Be("Complete description.");
+		result.WasTruncated.Should().BeFalse();
+	}
+
+	[Fact]
 	public void FindReleaseNote_WithExactly120Characters_ReturnsContent()
 	{
 		// Arrange

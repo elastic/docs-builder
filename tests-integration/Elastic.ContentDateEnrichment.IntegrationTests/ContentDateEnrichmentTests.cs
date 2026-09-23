@@ -12,11 +12,12 @@ using Elastic.Documentation.Search;
 using Elastic.Documentation.Search.Contract;
 using Elastic.Documentation.Search.Contract.Mapping;
 using Elastic.Ingest.Elasticsearch;
-using Elastic.Markdown.Exporters.Elasticsearch;
 using Elastic.Transport;
 using Elastic.Transport.Products.Elasticsearch;
 using Microsoft.Extensions.Logging;
 using Xunit;
+using ContentDateEnrichmentService = Elastic.Documentation.Indexing.Exporters.Elasticsearch.ContentDateEnrichment;
+using ElasticsearchOperationsService = Elastic.Documentation.Indexing.Exporters.Elasticsearch.ElasticsearchOperations;
 using ElasticsearchTransportConfig = Elastic.Transport.Products.Elasticsearch.ElasticsearchConfiguration;
 
 namespace Elastic.ContentDateEnrichment.IntegrationTests;
@@ -65,13 +66,13 @@ public class ContentDateEnrichmentTests(ElasticsearchFixture fixture, ITestOutpu
 {
 	private readonly DistributedTransport _transport = fixture.Transport;
 
-	private Elastic.Markdown.Exporters.Elasticsearch.ContentDateEnrichment CreateEnrichment(string testName)
+	private ContentDateEnrichmentService CreateEnrichment(string testName)
 	{
 		var loggerFactory = LoggerFactory.Create(b => b.AddXUnit(output));
 		var logger = loggerFactory.CreateLogger<ContentDateEnrichmentTests>();
-		var operations = new ElasticsearchOperations(_transport, logger);
+		var operations = new ElasticsearchOperationsService(_transport, logger);
 		// Each test uses a unique buildType to isolate its pipeline/lookup infrastructure
-		return new Elastic.Markdown.Exporters.Elasticsearch.ContentDateEnrichment(_transport, operations, logger, testName, "test");
+		return new ContentDateEnrichmentService(_transport, operations, logger, testName, "test");
 	}
 
 	/// <summary>
@@ -82,7 +83,7 @@ public class ContentDateEnrichmentTests(ElasticsearchFixture fixture, ITestOutpu
 	/// the same scripted-upsert path that production uses on subsequent deploys.
 	/// </summary>
 	private async Task<IngestChannel<DocumentationDocument>> CreateChannelAsync(
-		Elastic.Markdown.Exporters.Elasticsearch.ContentDateEnrichment enrichment,
+		ContentDateEnrichmentService enrichment,
 		string testName,
 		string? indexNameOverride = null
 	)

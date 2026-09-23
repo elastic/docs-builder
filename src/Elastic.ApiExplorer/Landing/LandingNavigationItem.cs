@@ -15,26 +15,28 @@ namespace Elastic.ApiExplorer.Landing;
 
 public class ApiLanding : IApiGroupingModel
 {
-	public async Task RenderAsync(FileSystemStream stream, ApiRenderContext context, Cancel ctx = default)
+	public object? CreatePageModel(ApiRenderContext context) => ApiOverviewBuilder.Build(context.CurrentNavigation.NavigationRoot);
+
+	public async Task RenderAsync(FileSystemStream stream, ApiRenderContext context, object? pageModel, Cancel ctx = default)
 	{
-		var viewModel = new LandingViewModel(context)
-		{
-			Landing = this,
-			ApiInfo = context.Model.Info,
-			OverviewRows = ApiOverviewBuilder.Build(context.CurrentNavigation.NavigationRoot)
-		};
+		var overviewRows = pageModel as IReadOnlyList<ApiOverviewRow> ?? ApiOverviewBuilder.Build(context.CurrentNavigation.NavigationRoot);
+		var viewModel = new LandingViewModel(context) { Landing = this, ApiInfo = context.Model.Info, OverviewRows = overviewRows };
 		var slice = LandingView.Create(viewModel);
 		await slice.RenderAsync(stream, cancellationToken: ctx);
 	}
 
-	public Task<string?> RenderCommonMarkAsync(ApiRenderContext context, Cancel ctx = default) =>
-		Task.FromResult<string?>(
-			LandingCommonMark.Product(
-				context.Model.Info,
-				ApiOverviewBuilder.Build(context.CurrentNavigation.NavigationRoot),
-				context.CurrentNavigation.NavigationRoot.Url
-			)
+	public async Task RenderAsync(FileSystemStream stream, ApiRenderContext context, Cancel ctx = default) =>
+		await RenderAsync(stream, context, null, ctx);
+
+	public Task<string?> RenderCommonMarkAsync(ApiRenderContext context, object? pageModel, Cancel ctx = default)
+	{
+		var overviewRows = pageModel as IReadOnlyList<ApiOverviewRow> ?? ApiOverviewBuilder.Build(context.CurrentNavigation.NavigationRoot);
+		return Task.FromResult<string?>(
+			LandingCommonMark.Product(context.Model.Info, overviewRows, context.CurrentNavigation.NavigationRoot.Url)
 		);
+	}
+
+	public Task<string?> RenderCommonMarkAsync(ApiRenderContext context, Cancel ctx = default) => RenderCommonMarkAsync(context, null, ctx);
 }
 
 public class LandingNavigationItem : IApiGroupingNavigationItem<ApiLanding, INavigationItem>, IRootNavigationItem<ApiLanding, INavigationItem>

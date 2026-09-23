@@ -23,26 +23,31 @@ namespace Elastic.ApiExplorer.Tests;
 public partial class ApiPagesNavRenderingTests
 {
 	[Fact]
-	public async Task Render_DoesNotHostTheVersionSwitcher()
+	public async Task Render_HostsTheVersionSwitcherAheadOfTheTree()
 	{
 		var model = CreateLayoutModel(
 			"/api/doc/elasticsearch/v9/",
 			"/api/doc/elasticsearch/v9.md",
 			versionSwitcherItems: [
-				new("Latest", "/api/doc/elasticsearch/", Selected: false),
-				new("9.x", "/api/doc/elasticsearch/v9/", Selected: true),
-				new("8.x", "/api/doc/elasticsearch/v8/", Selected: false),
+				new("latest", "/api/doc/elasticsearch/", Selected: false),
+				new("v9", "/api/doc/elasticsearch/v9/", Selected: true),
+				new("v8", "/api/doc/elasticsearch/v8/", Selected: false),
 			]
 		);
 
 		var html = await _ApiPagesNav.Create(model).RenderAsync(cancellationToken: TestContext.Current.CancellationToken);
 
-		html.Should().Contain("<nav>tree</nav>");
-		html.Should().Contain("View as Markdown");
-		html.Should().NotContain("api-version-switcher");
+		html.Should().Contain("id=\"api-version-switcher\"");
+		html.Should().Contain("aria-selected=\"true\"");
+		html.Should().Contain("aria-selected=\"false\"");
+		html.Should().NotContain("selected=\"False\"");
+		html.Should().NotContain("selected=\"True\"");
 		html.Should().NotContain("<select");
 		html.Should().NotContain("<option");
-		html.Should().NotContain("hx-preserve");
+		html
+			.IndexOf("id=\"api-version-switcher\"", StringComparison.Ordinal)
+			.Should()
+			.BeLessThan(html.IndexOf("<nav>tree</nav>", StringComparison.Ordinal));
 	}
 
 	[Fact]
@@ -71,6 +76,26 @@ public partial class ApiPagesNavRenderingTests
 	}
 
 	[Fact]
+	public async Task Render_Assembler_OmitsTheHubSwitcher()
+	{
+		var model = CreateLayoutModel(
+			"/api/doc/elasticsearch/",
+			"/api/doc/elasticsearch.md",
+			hubSwitcherItems: [
+				new("Back to hub", "/api/", Selected: false),
+				new("Elasticsearch", "/api/doc/elasticsearch/", Selected: true),
+			],
+			buildType: BuildType.Assembler
+		);
+
+		var html = await _ApiPagesNav.Create(model).RenderAsync(cancellationToken: TestContext.Current.CancellationToken);
+
+		html.Should().NotContain("api-hub-switcher");
+		html.Should().NotContain("<select");
+		html.Should().NotContain("<option");
+	}
+
+	[Fact]
 	public async Task Render_PreservesTheNavAcrossHtmxSwapsWhenPreviewEnabled()
 	{
 		var model = CreateLayoutModel(
@@ -88,11 +113,23 @@ public partial class ApiPagesNavRenderingTests
 	[Fact]
 	public async Task Render_ShowsJumpToPageOnAssemblerBuilds()
 	{
-		var model = CreateLayoutModel("/api/doc/elasticsearch/", "/api/doc/elasticsearch.md", buildType: BuildType.Assembler);
+		var model = CreateLayoutModel(
+			"/api/doc/elasticsearch/",
+			"/api/doc/elasticsearch.md",
+			versionSwitcherItems: [
+				new("latest", "/api/doc/elasticsearch/", Selected: true),
+				new("v8", "/api/doc/elasticsearch/v8/", Selected: false),
+			],
+			buildType: BuildType.Assembler
+		);
 
 		var html = await _ApiPagesNav.Create(model).RenderAsync(cancellationToken: TestContext.Current.CancellationToken);
 
 		html.Should().Contain("<navigation-search type=\"api\" placeholder=\"Jump to API\"></navigation-search>");
+		html
+			.IndexOf("id=\"api-version-switcher\"", StringComparison.Ordinal)
+			.Should()
+			.BeLessThan(html.IndexOf("navigation-search", StringComparison.Ordinal));
 	}
 
 	[Fact]
@@ -153,7 +190,6 @@ public partial class ApiPagesNavRenderingTests
 		);
 		return new()
 		{
-			DocsBuilderVersion = "test",
 			DocSetName = "Api Explorer",
 			Description = string.Empty,
 			CurrentNavigationItem = new LandingNavigationItem(navigationUrl).Index,
@@ -166,13 +202,13 @@ public partial class ApiPagesNavRenderingTests
 			GoogleTagManager = new GoogleTagManagerConfiguration(),
 			Optimizely = new OptimizelyConfiguration(),
 			Features = features ?? new FeatureFlags([]),
+			BuildType = buildType,
 			StaticFileContentHashProvider = new StaticFileContentHashProvider(new EmbeddedOrPhysicalFileProvider(context)),
 			TocItems = [],
 			MarkdownUrl = markdownUrl,
 			Breadcrumbs = ApiBreadcrumbTrail.Empty,
 			VersionSwitcherItems = versionSwitcherItems ?? [],
 			HubSwitcherItems = hubSwitcherItems ?? [],
-			BuildType = buildType,
 		};
 	}
 

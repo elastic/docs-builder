@@ -17,7 +17,6 @@
   
   <ItemGroup>
     <PackageReference Include="DotNet.Glob" />
-    <PackageReference Include="Elastic.Ingest.Elasticsearch" />
     <PackageReference Include="Generator.Equals" />
     <PackageReference Include="Markdig" />
     <PackageReference Include="Mermaider" />
@@ -43,7 +42,6 @@
     <ProjectReference Include="..\Elastic.Documentation\Elastic.Documentation.csproj" />
     <ProjectReference Include="..\Elastic.Documentation.Tooling\Elastic.Documentation.Tooling.csproj" />
     <ProjectReference Include="..\Elastic.Documentation.Configuration\Elastic.Documentation.Configuration.csproj" />
-    <ProjectReference Include="..\Elastic.Documentation.Indexing\Elastic.Documentation.Indexing.csproj" />
     <ProjectReference Include="..\Elastic.Documentation.Navigation\Elastic.Documentation.Navigation.csproj" />
   </ItemGroup>
 

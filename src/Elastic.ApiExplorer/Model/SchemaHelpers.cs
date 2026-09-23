@@ -227,6 +227,35 @@ public static class SchemaHelpers
 	public static bool IsCompoundTypeName(string? name) =>
 		!string.IsNullOrEmpty(name) && (name.Contains('|') || name.Contains(' ') || name.EndsWith("[]", StringComparison.Ordinal));
 
+	/// <summary>
+	/// Codegen schema ids keep underscores (<c>Security_Lists_API_ListMetadata</c>). Elasticsearch
+	/// display names are the last dotted segment and do not.
+	/// </summary>
+	public static bool IsInternalSchemaName(string? name) =>
+		!string.IsNullOrEmpty(name)
+			&& name.Contains('_', StringComparison.Ordinal)
+			&& !IsCompoundTypeName(name)
+			&& !IsPrimitiveDisplayName(name);
+
+	/// <summary>
+	/// Last meaningful segment of a codegen id (<c>Security_Lists_API_PlatformErrorResponse</c> →
+	/// <c>PlatformErrorResponse</c>). Readable names are returned unchanged.
+	/// </summary>
+	public static string ReadableSchemaName(string? typeName)
+	{
+		if (string.IsNullOrEmpty(typeName) || !IsInternalSchemaName(typeName))
+			return typeName ?? "";
+
+		var parts = typeName.Split('_', StringSplitOptions.RemoveEmptyEntries);
+		for (var i = parts.Length - 1; i >= 0; i--)
+		{
+			if (!parts[i].Equals("API", StringComparison.Ordinal))
+				return parts[i];
+		}
+
+		return typeName;
+	}
+
 	/// <summary>Group class for a type atom: primitive → value → linked → named object.</summary>
 	public static string? TypeAtomCssClassOrNull(string? name) =>
 		PrimitiveCssClassOrNull(name) ?? ValueCssClassOrNull(name) ?? LinkedCssClassOrNull(name) ?? ObjectCssClassOrNull(name);
@@ -256,8 +285,9 @@ public static class SchemaHelpers
 	}
 
 	/// <summary>
-	/// Determines if a schema is a "primitive alias" - a named type that simply wraps a primitive type.
-	/// This detects types like "Cases_case_description" that are defined as just "type: string".
+	/// Determines if a schema is a named wrapper around a primitive (<c>type: string</c> with no
+	/// properties, composition, or enum). Kibana codegen ids such as
+	/// <c>Security_Lists_API_ListDescription</c> match this; they render as the primitive only.
 	/// </summary>
 	/// <param name="schema">The schema to check (typically a resolved schema reference).</param>
 	/// <returns>The primitive type name if this is a primitive alias, null otherwise.</returns>

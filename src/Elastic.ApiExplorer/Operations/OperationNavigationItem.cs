@@ -19,20 +19,23 @@ public record ApiOperation(
 	string Route,
 	IOpenApiPathItem Path,
 	string ApiName
-) : IApiModel, IHttpMethodNavigationModel
+) : IApiModel<OperationPageModel>, IHttpMethodNavigationModel
 {
 	string IHttpMethodNavigationModel.HttpMethod => OperationType.Method.ToLowerInvariant();
 
-	public async Task RenderAsync(FileSystemStream stream, ApiRenderContext context, Cancel ctx = default)
+	public OperationPageModel? CreatePageModel(ApiRenderContext context) => OperationPageModel.Create(this, context);
+
+	public async Task RenderAsync(FileSystemStream stream, ApiRenderContext context, OperationPageModel? pageModel, Cancel ctx = default)
 	{
-		var viewModel = new OperationViewModel(context) { Operation = this, Page = OperationPageModel.Create(this, context) };
+		var page = pageModel ?? OperationPageModel.Create(this, context);
+		var viewModel = new OperationViewModel(context) { Operation = this, Page = page };
 		var slice = OperationView.Create(viewModel);
 		await slice.RenderAsync(stream, cancellationToken: ctx);
 	}
 
-	public Task<string?> RenderCommonMarkAsync(ApiRenderContext context, Cancel ctx = default)
+	public Task<string?> RenderCommonMarkAsync(ApiRenderContext context, OperationPageModel? pageModel, Cancel ctx = default)
 	{
-		var page = OperationPageModel.Create(this, context);
+		var page = pageModel ?? OperationPageModel.Create(this, context);
 		var prerequisites = OpenApiXReqAuthParser.TryGetPrerequisiteLines(Operation, context.ApiExplorerLog, Route, Operation.OperationId);
 		return Task.FromResult<string?>(OperationCommonMark.Write(this, page, prerequisites, context));
 	}

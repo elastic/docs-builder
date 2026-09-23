@@ -72,12 +72,12 @@ internal static class ApiMarkdownFrontMatter
 		var apiBaseUrl = context.CurrentNavigation.NavigationRoot.Url;
 		return page switch
 		{
-			ApiCatalog => "API products in this documentation set.",
+			ApiCatalog => ApiCatalog.PageDescription,
 			ApiLanding => FirstLine(ApiMarkdown.Prepare(context.Model.Info?.Description, apiBaseUrl)),
 			ApiTag tag => FirstLine(ApiMarkdown.Prepare(TagDescription(tag, context), apiBaseUrl)),
 			ApiOperation operation => FirstLine(ApiMarkdown.Prepare(OperationDescription(operation, context), apiBaseUrl)),
 			ApiSchema schema => FirstLine(ApiMarkdown.Prepare(schema.Schema.Description, apiBaseUrl)),
-			SimpleMarkdownNavigationItem => FirstParagraph(body),
+			SimpleMarkdownNavigationItem => ApiSeoDescription.FirstParagraph(body),
 			_ => null
 		};
 	}
@@ -107,34 +107,6 @@ internal static class ApiMarkdownFrontMatter
 		}
 
 		return null;
-	}
-
-	private static string? FirstParagraph(string markdown)
-	{
-		using var reader = new StringReader(markdown);
-		var buffer = new StringBuilder();
-		while (reader.ReadLine() is { } line)
-		{
-			if (line.StartsWith('#'))
-			{
-				if (buffer.Length > 0)
-					break;
-				continue;
-			}
-
-			if (string.IsNullOrWhiteSpace(line))
-			{
-				if (buffer.Length > 0)
-					break;
-				continue;
-			}
-
-			if (buffer.Length > 0)
-				_ = buffer.Append(' ');
-			_ = buffer.Append(line.Trim());
-		}
-
-		return buffer.Length == 0 ? null : buffer.ToString();
 	}
 
 	private static string? FirstLine(string? text)

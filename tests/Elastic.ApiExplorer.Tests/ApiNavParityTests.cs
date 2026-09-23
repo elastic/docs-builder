@@ -12,6 +12,8 @@ using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.FileSystems;
+using Elastic.Documentation.Navigation;
+using Elastic.Documentation.Site.Navigation;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.OpenApi;
 using Microsoft.OpenApi.Reader;
@@ -60,11 +62,46 @@ public class ApiNavParityTests
 				"/api/doc/elasticsearch/group/endpoint-search"
 			);
 
-		var structural = navigation.NavigationItems.OfType<StructuralNavigationItem>().ToList();
-		structural.Should().Contain(
-			item => item.Model.Kind == ApiStructuralKind.Authentication && item.Url == "/api/doc/elasticsearch/authentication"
+		navigation.NavigationItems.OfType<StructuralNavigationItem>().Should().BeEmpty();
+		navigation.NavigationItems.OfType<SidebarSeparatorNavigationItem>().Should().BeEmpty();
+		navigation.NavigationItems.Should().AllBeOfType<TagNavigationItem>();
+
+		var model = NavigationRenderModel.Create(
+			navigation,
+			[],
+			isUsingNavigationDropdown: false,
+			isPrimaryNavEnabled: false,
+			isGlobalAssemblyBuild: false,
+			navigationPreviewEnabled: true
 		);
-		structural.Should().Contain(item => item.Model.Kind == ApiStructuralKind.Servers && item.Url == "/api/doc/elasticsearch/servers");
+		model.RootIndex!.NavigationTitle.Should().Be("Api Overview");
+		model.TreeHasSeparator.Should().BeFalse();
+		model.Tree.Select(NodeLabel).Should().Equal("Task management", "Watcher", "search");
+	}
+
+	[Fact]
+	public async Task CreateNavigation_WithServers_SeparatesIntroPagesFromEndpoints()
+	{
+		var openApiJson = /*lang=json,strict*/
+			"""
+			{
+			  "openapi": "3.0.3",
+			  "info": { "title": "ES", "version": "1.0" },
+			  "servers": [ { "url": "https://example.com" } ],
+			  "paths": {
+			    "/a": { "get": { "operationId": "a1", "tags": ["search"], "responses": { "200": { "description": "ok" } } } }
+			  },
+			  "tags": [ { "name": "search" } ]
+			}
+			""";
+
+		var (generator, document) = await CreateGeneratorWithSpec(openApiJson);
+		var navigation = generator.CreateNavigation("elasticsearch", document);
+		var ordered = navigation.NavigationItems.ToList();
+
+		ordered[0].Should().BeOfType<StructuralNavigationItem>().Which.Model.Kind.Should().Be(ApiStructuralKind.Servers);
+		ordered[1].Should().BeOfType<SidebarSeparatorNavigationItem>();
+		ordered[2].Should().BeOfType<TagNavigationItem>().Which.NavigationTitle.Should().Be("search");
 	}
 
 	[Fact]
@@ -214,4 +251,7 @@ public class ApiNavParityTests
 
 		return (generator, result.Document!);
 	}
+
+	private static string NodeLabel(NavigationRenderNode node) =>
+		node.Kind == NavigationRenderNodeKind.Separator ? "---" : node.NavigationTitle;
 }
