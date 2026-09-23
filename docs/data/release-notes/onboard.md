@@ -121,7 +121,7 @@ Add the workflow files that your repository needs:
 
 - `.github/workflows/release-notes.yml` is required. It validates pull requests and synchronizes release note data.
 - `.github/workflows/release-notes-comments.yml` is optional. Add it if you want the automation to explain validation results in pull request comments.
-- `.github/workflows/release-notes-changelog-file.yml` is optional. Add it only if you enable `require-changelog-file` and require each pull request to include a `changelog/*.yml` file.
+- `.github/workflows/release-notes-changelog-file.yml` is optional. Add it only if you enable `require-changelog-file` and require each pull request to include a changelog entry file in the configured `bundle.directory`. The default location is `docs/changelog/*.yml`.
 
 Use the following table to decide whether to require a changelog file:
 

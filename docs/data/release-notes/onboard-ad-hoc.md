@@ -60,7 +60,7 @@ jobs:
     uses: elastic/docs-actions/.github/workflows/release-notes.yml@v1
 ```
 
-Build and publish the bundle in the workflow that publishes the release. Replace `create-release` with the job that creates your GitHub release.
+Build and publish the bundle in the workflow that publishes the release. Replace `create-release` with the job that creates your GitHub release. That job must expose the published release tag as a job output named `tag`.
 
 ```yaml
   create-release-notes-bundle:
