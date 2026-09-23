@@ -45,82 +45,27 @@ describe('ModalSearch', () => {
         })
     })
 
-    it('keeps the result link mounted until the HTMX request finishes', () => {
+    it('stays mounted during an HTMX request and closes after the swap', () => {
         renderModalSearch()
 
         act(() => {
             modalSearchStore.getState().actions.openModal()
         })
+
+        act(() => {
+            document.dispatchEvent(new CustomEvent('htmx:beforeSend'))
+        })
         expect(
             screen.getByRole('button', { name: 'Close search modal' })
         ).toBeInTheDocument()
 
-        const result = document.createElement('a')
-        result.setAttribute('data-search-result-index', '0')
-
         act(() => {
-            document.dispatchEvent(
-                new CustomEvent('htmx:beforeSend', {
-                    detail: { elt: result },
-                })
-            )
+            document.dispatchEvent(new CustomEvent('htmx:afterSwap'))
         })
-
-        expect(modalSearchStore.getState().isOpen).toBe(true)
-        expect(
-            screen.getByRole('button', {
-                name: 'Close search modal',
-                hidden: true,
-            })
-        ).toBeInTheDocument()
+        expect(modalSearchStore.getState().isOpen).toBe(false)
         expect(
             screen.queryByRole('button', { name: 'Close search modal' })
         ).not.toBeInTheDocument()
-
-        act(() => {
-            document.dispatchEvent(
-                new CustomEvent('htmx:afterRequest', {
-                    detail: { elt: result, successful: true },
-                })
-            )
-        })
-
-        expect(modalSearchStore.getState().isOpen).toBe(false)
-        expect(
-            screen.queryByRole('button', {
-                name: 'Close search modal',
-                hidden: true,
-            })
-        ).not.toBeInTheDocument()
-    })
-
-    it('shows the modal again when a result navigation fails', () => {
-        renderModalSearch()
-
-        act(() => {
-            modalSearchStore.getState().actions.openModal()
-        })
-
-        const result = document.createElement('a')
-        result.setAttribute('data-search-result-index', '0')
-
-        act(() => {
-            document.dispatchEvent(
-                new CustomEvent('htmx:beforeSend', {
-                    detail: { elt: result },
-                })
-            )
-            document.dispatchEvent(
-                new CustomEvent('htmx:afterRequest', {
-                    detail: { elt: result, successful: false },
-                })
-            )
-        })
-
-        expect(modalSearchStore.getState().isOpen).toBe(true)
-        expect(
-            screen.getByRole('button', { name: 'Close search modal' })
-        ).toBeInTheDocument()
     })
 
     it('does not offer Ask AI in an isolated build', () => {
