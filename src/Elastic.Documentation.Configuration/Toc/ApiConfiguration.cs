@@ -78,6 +78,12 @@ public class ApiProductEntry
 	public ApiCatalogSettings? Catalog { get; set; }
 
 	/// <summary>
+	/// Legacy API root slugs that should redirect to this product's canonical URL tree.
+	/// </summary>
+	[YamlMember(Alias = "aliases")]
+	public List<string> Aliases { get; set; } = [];
+
+	/// <summary>
 	/// 1-based line of this entry's mapping start in the source YAML. Populated by
 	/// <see cref="ApiConfigurationConverter"/>; used to attribute diagnostics that have no more
 	/// specific location, such as a missing <c>product:</c> key.
@@ -213,6 +219,12 @@ public class ResolvedApiConfiguration
 	/// Empty when the API is unclassified and appears only under All.
 	/// </summary>
 	public IReadOnlyList<string> CatalogCategories { get; init; } = [];
+
+	/// <summary>
+	/// Legacy API root slugs that must redirect to this product's canonical URL tree.
+	/// The generator writes redirect pages at each alias path for the <c>main</c> moniker only.
+	/// </summary>
+	public IReadOnlyList<string> Aliases { get; init; } = [];
 
 	/// <summary>
 	/// Whether <paramref name="fileName"/> is an auto-discovered supplemental file
