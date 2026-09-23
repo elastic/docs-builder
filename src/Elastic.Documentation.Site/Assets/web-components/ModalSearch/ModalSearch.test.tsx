@@ -52,9 +52,17 @@ describe('ModalSearch', () => {
             modalSearchStore.getState().actions.openModal()
         })
 
+        const result = document.createElement('a')
+        result.setAttribute('data-search-result-index', '0')
+
         act(() => {
-            document.dispatchEvent(new CustomEvent('htmx:beforeSend'))
+            document.dispatchEvent(
+                new CustomEvent('htmx:beforeSend', {
+                    detail: { elt: result },
+                })
+            )
         })
+        expect(modalSearchStore.getState().isOpen).toBe(true)
         expect(
             screen.getByRole('button', { name: 'Close search modal' })
         ).toBeInTheDocument()
