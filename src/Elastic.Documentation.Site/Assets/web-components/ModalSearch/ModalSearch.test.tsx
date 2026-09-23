@@ -45,7 +45,7 @@ describe('ModalSearch', () => {
         })
     })
 
-    it('closes before an HTMX navigation swaps the page', () => {
+    it('keeps the result link mounted until the HTMX request finishes', () => {
         renderModalSearch()
 
         act(() => {
@@ -66,10 +66,61 @@ describe('ModalSearch', () => {
             )
         })
 
-        expect(modalSearchStore.getState().isOpen).toBe(false)
+        expect(modalSearchStore.getState().isOpen).toBe(true)
+        expect(
+            screen.getByRole('button', {
+                name: 'Close search modal',
+                hidden: true,
+            })
+        ).toBeInTheDocument()
         expect(
             screen.queryByRole('button', { name: 'Close search modal' })
         ).not.toBeInTheDocument()
+
+        act(() => {
+            document.dispatchEvent(
+                new CustomEvent('htmx:afterRequest', {
+                    detail: { elt: result, successful: true },
+                })
+            )
+        })
+
+        expect(modalSearchStore.getState().isOpen).toBe(false)
+        expect(
+            screen.queryByRole('button', {
+                name: 'Close search modal',
+                hidden: true,
+            })
+        ).not.toBeInTheDocument()
+    })
+
+    it('shows the modal again when a result navigation fails', () => {
+        renderModalSearch()
+
+        act(() => {
+            modalSearchStore.getState().actions.openModal()
+        })
+
+        const result = document.createElement('a')
+        result.setAttribute('data-search-result-index', '0')
+
+        act(() => {
+            document.dispatchEvent(
+                new CustomEvent('htmx:beforeSend', {
+                    detail: { elt: result },
+                })
+            )
+            document.dispatchEvent(
+                new CustomEvent('htmx:afterRequest', {
+                    detail: { elt: result, successful: false },
+                })
+            )
+        })
+
+        expect(modalSearchStore.getState().isOpen).toBe(true)
+        expect(
+            screen.getByRole('button', { name: 'Close search modal' })
+        ).toBeInTheDocument()
     })
 
     it('does not offer Ask AI in an isolated build', () => {

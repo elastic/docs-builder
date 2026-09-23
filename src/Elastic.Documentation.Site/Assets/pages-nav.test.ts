@@ -774,40 +774,6 @@ describe('shouldRetargetArticleSwap', () => {
             )
         ).toBe(false)
     })
-
-    it('keeps the full swap when the Codex sub-header changes group', () => {
-        document.body.innerHTML = `
-            <div id="codex-breadcrumbs"><a href="/g/elasticsearch">Elasticsearch</a></div>
-            <main id="content-container" class="min-w-0 md:col-start-2"></main>
-        `
-        const response = `
-            <div id="main-container">
-                <div id="codex-breadcrumbs"><a href="/g/kibana">Kibana</a></div>
-                <main id="content-container" class="min-w-0 md:col-start-2"></main>
-            </div>
-        `
-        expect(
-            shouldRetargetArticleSwap(
-                document.getElementById('content-container'),
-                response
-            )
-        ).toBe(false)
-    })
-
-    it('retargets when the Codex sub-header is the same group', () => {
-        const bar =
-            '<div id="codex-breadcrumbs"><a href="/g/elasticsearch">Elasticsearch</a></div>'
-        document.body.innerHTML = `
-            ${bar}
-            <main id="content-container" class="min-w-0 md:col-start-2"></main>
-        `
-        expect(
-            shouldRetargetArticleSwap(
-                document.getElementById('content-container'),
-                `<div id="main-container">${bar}<main id="content-container" class="min-w-0 md:col-start-2"></main></div>`
-            )
-        ).toBe(true)
-    })
 })
 
 describe('shouldRetargetApiContentSwap', () => {

@@ -875,10 +875,6 @@ export function incomingNavSurfaceKey(html: string): string {
     return `${treeId}::${heading}`
 }
 
-function codexSubHeaderMarkup(root: ParentNode | null): string | null {
-    return root?.querySelector('#codex-breadcrumbs')?.innerHTML ?? null
-}
-
 /** Docs article/hub pages put the article in `#content-container` with `md:col-start-2`. */
 export function shouldRetargetArticleSwap(
     current: Element | null,
@@ -891,16 +887,9 @@ export function shouldRetargetArticleSwap(
     ) {
         return false
     }
-    if (
-        !responseHtml.includes('id="content-container"') ||
-        !responseHtml.includes('md:col-start-2')
-    ) {
-        return false
-    }
-    const incoming = new DOMParser().parseFromString(responseHtml, 'text/html')
     return (
-        codexSubHeaderMarkup(current.ownerDocument) ===
-        codexSubHeaderMarkup(incoming)
+        responseHtml.includes('id="content-container"') &&
+        responseHtml.includes('md:col-start-2')
     )
 }
 

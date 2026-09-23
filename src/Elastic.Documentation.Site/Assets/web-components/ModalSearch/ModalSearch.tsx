@@ -31,7 +31,7 @@ import {
     useEuiFontSize,
 } from '@elastic/eui'
 import { css } from '@emotion/react'
-import { useEffect, useCallback } from 'react'
+import { useEffect, useCallback, useState } from 'react'
 
 const SEARCH_KEYBOARD_SHORTCUTS = [
     { keys: ['returnKey'], label: 'Select' },
@@ -360,11 +360,21 @@ const ModalSearchTrigger = ({
     )
 }
 
+function searchResultTrigger(event: Event): HTMLElement | undefined {
+    const trigger = (event as CustomEvent).detail?.elt as
+        HTMLElement | undefined
+    if (!trigger?.hasAttribute('data-search-result-index')) {
+        return undefined
+    }
+    return trigger
+}
+
 export const ModalSearch = ({
     placeholder = 'Search',
     size = 'm',
 }: ModalSearchProps) => {
     const isOpen = useModalIsOpen()
+    const [navigationPending, setNavigationPending] = useState(false)
     const { openModal, closeModal } = useModalSearchActions()
     const { trackOpened } = useModalSearchTelemetry()
     const euiThemeContext = useEuiTheme()
@@ -414,23 +424,36 @@ export const ModalSearch = ({
     }, [isOpen])
 
     useEffect(() => {
-        if (!isOpen) return
+        if (!isOpen) {
+            setNavigationPending(false)
+            return
+        }
 
-        const handleBeforeSend = (event: CustomEvent) => {
-            const trigger = event.detail?.elt as HTMLElement | undefined
-            if (trigger?.hasAttribute('data-search-result-index')) {
-                closeModal()
+        // Keep the result link mounted until htmx has read hx-select and hx-swap.
+        const handleBeforeSend = (event: Event) => {
+            if (searchResultTrigger(event)) {
+                setNavigationPending(true)
             }
         }
 
-        document.addEventListener(
-            'htmx:beforeSend',
-            handleBeforeSend as EventListener
-        )
+        const handleAfterRequest = (event: Event) => {
+            if (!searchResultTrigger(event)) {
+                return
+            }
+            if ((event as CustomEvent).detail?.successful === true) {
+                closeModal()
+                return
+            }
+            setNavigationPending(false)
+        }
+
+        document.addEventListener('htmx:beforeSend', handleBeforeSend)
+        document.addEventListener('htmx:afterRequest', handleAfterRequest)
         return () => {
+            document.removeEventListener('htmx:beforeSend', handleBeforeSend)
             document.removeEventListener(
-                'htmx:beforeSend',
-                handleBeforeSend as EventListener
+                'htmx:afterRequest',
+                handleAfterRequest
             )
         }
     }, [isOpen, closeModal])
@@ -454,6 +477,7 @@ export const ModalSearch = ({
             {isOpen && (
                 <EuiPortal>
                     <div
+                        hidden={navigationPending}
                         onClick={handleBackdropClick}
                         css={css`
                             position: fixed;
