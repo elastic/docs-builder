@@ -6,7 +6,7 @@ navigation_title: Onboard a repo
 
 To automate your release notes, you need to onboard your repository first. After you finish, every labelled pull request in the repo is included in your product's release notes.
 
-Before starting, make sure your product is registered in [products.yml](https://github.com/elastic/docs-builder/blob/main/config/products.yml). If it is not, ask in `#docs-eng` to add it.
+Before starting, make sure your product is registered in [products.yml](https://github.com/elastic/docs-builder/blob/main/config/products.yml). If it is not, add it before you continue.
 
 :::::::{stepper}
 
@@ -27,7 +27,9 @@ Add a CI check to your repository that requires exactly one type label on every 
 
 ::::::{step} Add a changelog configuration file
 
-Create the `docs/changelog.yml` file. The following configuration is generally enough:
+Create a `docs` directory in your repository if it does not exist. Then create the `docs/changelog.yml` file and copy the following configuration into it. Replace the example labels with labels from your repository.
+
+This configuration is generally enough for automated changelog entry creation:
 
 ```yaml
 pivot:
@@ -44,6 +46,15 @@ rules:
 ```
 
 Labels for the `feature`, `bug-fix`, and `breaking-change` types are required. The configuration is rejected if any of them is missing, or if a type key is not a supported type. Add `enhancement`, `docs`, or other types only when you use them.
+
+You can also map pull request labels to release note areas. Areas are optional:
+
+```yaml
+pivot:
+  areas:
+    Search: "area:search"
+    Security: "area:security"
+```
 
 `rules.create.exclude` is the list of labels that mean no entry is needed. A pull request with one of these labels is recorded as skipped. The check passes, and no entry is created.
 
@@ -70,9 +81,8 @@ Write the product IDs and their pull request labels as a list. A release note en
 ```yaml
 pivot:
   products:
-    kibana: "Team:Kibana"
-    observability: "Team:Obs"
-    security: "Team:Security"
+    cloud-enterprise: "@Product:ECE"
+    cloud-hosted: "@Product:ECH"
 ```
 
 Each product must be a product ID from [products.yml](https://github.com/elastic/docs-builder/blob/main/config/products.yml). An ID that is not in that file is rejected, and the error lists every ID you can use.
@@ -82,15 +92,18 @@ If a pull request carries none of these labels, the check fails and asks for one
 ```yaml
 products:
   default:
-    - product: kibana
+    - product: cloud-enterprise
+    - product: cloud-hosted
 ```
+
+Every product in this list is added when no product label matches.
 
 `lifecycle` is optional and defaults to `ga`. Set it when the product is not yet generally available:
 
 ```yaml
 products:
   default:
-    - product: kibana
+    - product: cloud-enterprise
       lifecycle: beta
 ```
 
@@ -98,7 +111,7 @@ The supported values are `preview`, `beta`, `ga`, and `experimental`.
 :::
 ::::
 :::{tip}
-For every available setting, refer to [Configuration reference](/data/release-notes/configure-ref.md) and to the annotated [changelog.example.yml](https://github.com/elastic/docs-builder/blob/main/config/changelog.example.yml) template.
+For more ways to create and maintain this file, refer to [Create a changelog configuration file](/data/release-notes/configure.md#changelog-settings). For every available setting, refer to [Configuration reference](/data/release-notes/configure-ref.md) and to the annotated [changelog.example.yml](https://github.com/elastic/docs-builder/blob/main/config/changelog.example.yml) template.
 :::
 ::::::
 
@@ -109,6 +122,15 @@ Add the workflow files that your repository needs:
 - `.github/workflows/release-notes.yml` is required. It validates pull requests and synchronizes release note data.
 - `.github/workflows/release-notes-comments.yml` is optional. Add it if you want the automation to explain validation results in pull request comments.
 - `.github/workflows/release-notes-changelog-file.yml` is optional. Add it only if you enable `require-changelog-file` and require each pull request to include a `changelog/*.yml` file.
+
+Use the following table to decide whether to require a changelog file:
+
+| Choice | Benefits | Costs |
+| --- | --- | --- |
+| Do not require a file (recommended) | Contributors only add a label and write a clear pull request title. This option also works well for forked pull requests. | The pull request title and optional `## Release note` section provide the published text. |
+| Require a file | Contributors can review and edit the complete release note as version-controlled YAML. | Every pull request needs an extra file. Automation that writes to pull request branches needs more permissions and cannot write to branches in forks. |
+
+Most repositories should not require a file. Contributors can still add one when they need a longer description.
 
 Your release process determines the contents of `release-notes.yml`. Choose that process in the next step.
 ::::::
@@ -142,6 +164,6 @@ When one paragraph is not enough, a contributor can commit a changelog entry fil
 
 Release notes published before you onboard are not migrated automatically. Automation only covers pull requests merged after your repo is onboarded.
 
-Older notes can often be converted. The docs team runs a job that reads your product's published release notes page and turns each entry back into changelog data, so your history ends up in the same format as everything published from now on. The job only knows how to read products on a list kept in the docs-builder source, and that list is separate from `products.yml`. Being registered for release notes therefore does not mean your history can be converted. Ask in `#docs-eng` to find out whether your product is on the list, and to have the job run for you.
+Older notes can often be converted. A backfill job reads a product's published release notes page and turns each entry back into changelog data. The job supports a fixed list of products in the docs-builder source. This list is separate from `products.yml`. Product registration therefore does not guarantee support for historical migration.
 
 To rebuild one past release rather than your whole history, add a `release-notes-backfill.yml` workflow in your repo. It works for any tag that already has a GitHub release. Products promoted by date, such as serverless, do not have those releases, so the workflow does not apply to them.
