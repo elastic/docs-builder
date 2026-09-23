@@ -43,6 +43,17 @@ public class ApiBreadcrumbsRenderingTests
 	}
 
 	[Fact]
+	public async Task Render_IsolatedSingleParent_IsShownWhenRequested()
+	{
+		var html = await _Breadcrumbs.Create(
+			new BreadcrumbsView([Crumb("/api/", "APIs")], BuildType.Isolated, ShowSingle: true)
+		).RenderAsync(cancellationToken: TestContext.Current.CancellationToken);
+
+		html.Should().Contain("id=\"breadcrumbs\"");
+		html.Should().Contain("href=\"/api/\"");
+	}
+
+	[Fact]
 	public async Task Render_AssemblerSingleParent_IsShown()
 	{
 		var html = await Render([Crumb("/api/", "APIs")], BuildType.Assembler);

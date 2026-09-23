@@ -90,7 +90,7 @@ public abstract class ApiViewModel(ApiRenderContext context)
 		var assembler = BuildContext.BuildType == BuildType.Assembler;
 		var specRootUrl = CurrentNavigationItem.NavigationRoot.Url;
 		var onCatalog = SameUrl(specRootUrl, catalogUrl) || SameUrl(CurrentNavigationItem.Url, catalogUrl);
-		var breadcrumbs = CurrentNavigationItem.BreadcrumbParents();
+		var breadcrumbs = ApiBreadcrumbs.Build(CurrentNavigationItem, catalogUrl, docTitle, onCatalog: onCatalog);
 
 		return new()
 		{
@@ -115,7 +115,7 @@ public abstract class ApiViewModel(ApiRenderContext context)
 			Breadcrumbs = breadcrumbs,
 			StructuredBreadcrumbsJson = BreadcrumbJson.Serialize(
 				breadcrumbs,
-				LayoutPageTitle ?? CurrentNavigationItem.NavigationTitle,
+				LayoutPageTitle ?? ApiBreadcrumbs.CurrentPageName(CurrentNavigationItem, docTitle),
 				BuildContext.CanonicalBaseUrl
 			),
 			ProductName = RenderContext.Product?.DisplayName,

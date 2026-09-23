@@ -36,7 +36,8 @@ else
 						<input type="checkbox" class="hidden" id="pages-nav-hamburger">
 						@await RenderPartialAsync(_ApiPagesNavToggle.Create())
 						<div class="api-page-toolbar">
-							@(await RenderPartialAsync(_Breadcrumbs.Create(new BreadcrumbsView(Model.Breadcrumbs, Model.BuildType))))
+							@* Isolated docs hide a one-item trail. The spec landing's only crumb is the catalog. *@
+							@(await RenderPartialAsync(_Breadcrumbs.Create(new BreadcrumbsView(Model.Breadcrumbs, Model.BuildType, ShowSingle: true))))
 						</div>
 						<article id="markdown-content" class="content-container markdown-content min-w-0">
 							@await RenderBodyAsync()

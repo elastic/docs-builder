@@ -5,7 +5,7 @@
 		t.StartsWith("[ns]", StringComparison.Ordinal) ? t[4..] :
 		t.StartsWith("[cmd]", StringComparison.Ordinal) ? t[5..] : t;
 }
-@if (Model.Items.Count > 0 && (Model.Items.Count > 1 || Model.BuildType != BuildType.Isolated))
+@if (Model.Items.Count > 0 && (Model.ShowSingle || Model.Items.Count > 1 || Model.BuildType != BuildType.Isolated))
 {
 <ol id="breadcrumbs" class="flex flex-wrap gap-1 items-center w-full pt-6">
 	@for (var i = 0; i < Model.Items.Count; i++)

@@ -6,4 +6,8 @@ using Elastic.Documentation.Navigation;
 
 namespace Elastic.Documentation.Site.Layout;
 
-public sealed record BreadcrumbsView(IReadOnlyList<INavigationItem> Items, Elastic.Documentation.BuildType BuildType);
+public sealed record BreadcrumbsView(
+	IReadOnlyList<INavigationItem> Items,
+	Elastic.Documentation.BuildType BuildType,
+	bool ShowSingle = false
+);
