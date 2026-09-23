@@ -76,7 +76,7 @@ Nothing to configure. The product is inferred from the repository name: any prod
 
 :::{tab-item} More than one product
 
-Write the product IDs and their pull request labels as a list. A release note entry gets every product whose label is on the pull request:
+Write the product IDs and their pull request labels as key/value mappings. A release note entry gets every product whose label is on the pull request:
 
 ```yaml
 pivot:
