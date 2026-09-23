@@ -11,11 +11,14 @@ namespace Elastic.Documentation.OpenApiIndex;
 /// bucket, keeping the highest minor published for each major. Keys are expected in the shape written by
 /// <c>elastic/docs-actions/openapi/upload</c>: <c>{org}/{repo}/{version}/{fileName}</c>, where
 /// <c>version</c> is the publishing branch: <c>main</c>, <c>master</c>, or a validated
-/// <c>{major}.{minor}</c> release version. <c>master</c> indexes under the <c>main</c> moniker so
+/// <c>{major}.{minor}</c> release version. <c>master</c> indexes under the <c>main</c> key so
 /// a repo keeps its real branch name in the object key without every workflow overriding it.
 /// </summary>
 public static class VersionIndexBuilder
 {
+	// Must stay equal to ApiSpecVersion.LatestIndexKey. The projects do not reference each other.
+	private const string LatestKey = "main";
+
 	/// <summary>
 	/// Returns the index, plus any keys that did not match the expected shape. Such a key cannot have come
 	/// from the version-validating uploader, so it is reported and skipped rather than failing the build.
@@ -73,10 +76,10 @@ public static class VersionIndexBuilder
 	{
 		// Both default-branch names share the "main" key. If a repo somehow publishes from both,
 		// the higher minor wins like any other collision, so main beats master.
-		if (version is "main" or "master")
+		if (version is LatestKey or "master")
 		{
-			major = "main";
-			minor = version == "main" ? 1 : 0;
+			major = LatestKey;
+			minor = version == LatestKey ? 1 : 0;
 			return true;
 		}
 

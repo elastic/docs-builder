@@ -3,14 +3,14 @@
 // See the LICENSE file in the project root for more information
 
 // index.json at the root of the elastic-docs-openapi-specs bucket, keyed by "org/repo", then by spec
-// file basename, then by version moniker ("main", "9", "8", ...).
+// file basename, then by version-index key ("main", "9", "8", ...).
 global using RootVersionIndex = System.Collections.Generic.Dictionary<string, System.Collections.Generic.Dictionary<string, System.Collections.Generic.Dictionary<string, Elastic.ApiExplorer.Model.VersionIndexEntry>>>;
 
 using System.Text.Json.Serialization;
 
 namespace Elastic.ApiExplorer.Model;
 
-/// <summary>One moniker's entry under an <c>org/repo</c> and spec file in a <see cref="RootVersionIndex"/>.</summary>
+/// <summary>One version-index entry under an <c>org/repo</c> and spec file in a <see cref="RootVersionIndex"/>.</summary>
 public sealed record VersionIndexEntry
 {
 	/// <summary>

@@ -4,6 +4,7 @@
 
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using Elastic.ApiExplorer.Model;
 using Elastic.Documentation.Configuration.Versions;
 
 namespace Elastic.ApiExplorer.Infrastructure;
@@ -13,20 +14,20 @@ public static class ApiVersionSwitcher
 	public static IReadOnlyList<ApiVersionSwitcherItem> Build(
 		string? urlPathPrefix,
 		string apiKey,
-		IReadOnlyList<string> monikers,
-		string currentMoniker
+		IReadOnlyList<ApiSpecVersion> versions,
+		ApiSpecVersion current
 	)
 	{
-		if (monikers.Count <= 1)
+		if (versions.Count <= 1)
 			return [];
 
-		return monikers
-			.OrderByDescending(m => m == "main" ? int.MaxValue : ParseMajor(m))
+		return versions
+			.OrderDescending()
 			.Select(
-				m => new ApiVersionSwitcherItem(
-					Label: m == "main" ? "latest" : $"v{m}",
-					Url: $"{ApiUrlBuilder.ProductRoot(urlPathPrefix, ApiUrlBuilder.ProductSuffix(apiKey, m))}/",
-					Selected: m == currentMoniker
+				v => new ApiVersionSwitcherItem(
+					Label: v.TryGetMajor(out var major) ? $"v{major}" : "latest",
+					Url: $"{ApiUrlBuilder.ProductRoot(urlPathPrefix, ApiUrlBuilder.ProductSuffix(apiKey, v))}/",
+					Selected: v == current
 				)
 			)
 			.ToArray();
@@ -54,8 +55,6 @@ public static class ApiVersionSwitcher
 		var payload = items.Select(static i => new ApiVersionDropdownJsonItem(i.Label, i.Url, false, null)).ToArray();
 		return JsonSerializer.Serialize(payload, ApiVersionDropdownJsonContext.Default.ApiVersionDropdownJsonItemArray);
 	}
-
-	private static int ParseMajor(string moniker) => int.TryParse(moniker, out var major) ? major : 0;
 }
 
 internal sealed record ApiVersionDropdownJsonItem(string Name, string? Href, bool Disabled, ApiVersionDropdownJsonItem[]? Children);

@@ -55,8 +55,8 @@ public class OperationNavigationItem : ILeafNavigationItem<ApiOperation>, IEndpo
 		Model = apiOperation;
 		NavigationTitle = apiOperation.ApiName;
 		Parent = parent;
-		var moniker = ApiUrlBuilder.OperationMoniker(apiOperation.Operation.OperationId, apiOperation.Route);
-		Url = $"{ApiUrlBuilder.ProductRoot(urlPathPrefix, apiUrlSuffix)}/operation/{moniker}";
+		var segment = ApiUrlBuilder.OperationSegment(apiOperation.Operation.OperationId, apiOperation.Route);
+		Url = $"{ApiUrlBuilder.ProductRoot(urlPathPrefix, apiUrlSuffix)}/operation/{segment}";
 		Id = ShortId.Create(Url);
 	}
 

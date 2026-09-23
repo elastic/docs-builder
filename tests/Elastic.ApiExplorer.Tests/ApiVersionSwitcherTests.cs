@@ -4,6 +4,7 @@
 
 using AwesomeAssertions;
 using Elastic.ApiExplorer.Infrastructure;
+using Elastic.ApiExplorer.Model;
 using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Versions;
 
@@ -14,7 +15,7 @@ public class ApiVersionSwitcherTests
 	[Fact]
 	public void Build_SingleVersion_ReturnsEmpty()
 	{
-		var items = ApiVersionSwitcher.Build("", "elasticsearch", ["main"], "main");
+		var items = ApiVersionSwitcher.Build("", "elasticsearch", [ApiSpecVersion.Latest], ApiSpecVersion.Latest);
 
 		items.Should().BeEmpty();
 	}
@@ -22,7 +23,12 @@ public class ApiVersionSwitcherTests
 	[Fact]
 	public void Build_MultipleVersions_OrdersCurrentMajorFirstAndMarksCurrent()
 	{
-		var items = ApiVersionSwitcher.Build("", "elasticsearch", ["main", "9", "8"], "8");
+		var items = ApiVersionSwitcher.Build(
+			"",
+			"elasticsearch",
+			[ApiSpecVersion.Latest, ApiSpecVersion.Major(9), ApiSpecVersion.Major(8)],
+			ApiSpecVersion.Major(8)
+		);
 
 		items.Should().HaveCount(3);
 		items.Select(i => i.Label).Should().Equal("latest", "v9", "v8");
@@ -33,7 +39,12 @@ public class ApiVersionSwitcherTests
 	[Fact]
 	public void Build_CurrentMain_LabelsItLatest()
 	{
-		var items = ApiVersionSwitcher.Build("", "elasticsearch", ["main", "9", "8"], "main");
+		var items = ApiVersionSwitcher.Build(
+			"",
+			"elasticsearch",
+			[ApiSpecVersion.Latest, ApiSpecVersion.Major(9), ApiSpecVersion.Major(8)],
+			ApiSpecVersion.Latest
+		);
 
 		items.Select(i => i.Label).Should().Equal("latest", "v9", "v8");
 		items.Single(i => i.Selected).Label.Should().Be("latest");
@@ -42,7 +53,7 @@ public class ApiVersionSwitcherTests
 	[Fact]
 	public void CurrentVersionLabel_PrefersProductVersioningBase()
 	{
-		var items = ApiVersionSwitcher.Build("", "elasticsearch", ["main", "8"], "main");
+		var items = ApiVersionSwitcher.Build("", "elasticsearch", [ApiSpecVersion.Latest, ApiSpecVersion.Major(8)], ApiSpecVersion.Latest);
 
 		var label = ApiVersionSwitcher.CurrentVersionLabel(StackVersioning(), items);
 
@@ -52,7 +63,12 @@ public class ApiVersionSwitcherTests
 	[Fact]
 	public void SerializeDropdownItems_EmitsDocsDropdownShape()
 	{
-		var items = ApiVersionSwitcher.Build("", "elasticsearch", ["main", "9", "8"], "main");
+		var items = ApiVersionSwitcher.Build(
+			"",
+			"elasticsearch",
+			[ApiSpecVersion.Latest, ApiSpecVersion.Major(9), ApiSpecVersion.Major(8)],
+			ApiSpecVersion.Latest
+		);
 
 		var json = ApiVersionSwitcher.SerializeDropdownItems(items);
 

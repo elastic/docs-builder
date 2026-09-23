@@ -857,22 +857,24 @@ public class TagMetadataTests
 	}
 
 	[Fact]
-	public void GenerateTagMoniker_DataStream_Uses_Hyphen() => ApiUrlBuilder.TagMoniker("data stream").Should().Be("endpoint-data-stream");
+	public void GenerateEndpointSegment_DataStream_Uses_Hyphen() =>
+		ApiUrlBuilder.EndpointSegment("data stream").Should().Be("endpoint-data-stream");
 
 	[Theory]
 	[InlineData("bulk", "/_bulk", "operation-bulk")]
 	[InlineData("cat-aliases", "/_cat/aliases", "operation-cat-aliases")]
 	[InlineData(null, "/indices/{index}/_search", "operation-indices-index-_search")]
 	[InlineData("get-agent-builder-a2a-agentid.json", "/api/agent_builder/a2a/{agentId}.json", "operation-get-agent-builder-a2a-agentid-json")]
-	public void OperationMoniker_MatchesBumpShScheme(string? operationId, string route, string expected) =>
-		ApiUrlBuilder.OperationMoniker(operationId, route).Should().Be(expected);
+	public void OperationSegment_MatchesBumpShScheme(string? operationId, string route, string expected) =>
+		ApiUrlBuilder.OperationSegment(operationId, route).Should().Be(expected);
 
 	[Theory]
 	[InlineData("cat", "endpoint-cat")]
 	[InlineData("health_report", "endpoint-health_report")]
 	[InlineData("APM agent configuration", "endpoint-apm-agent-configuration")]
 	[InlineData("Elastic Package Manager (EPM)", "endpoint-elastic-package-manager-epm")]
-	public void TagMoniker_MatchesBumpShScheme(string tagName, string expected) => ApiUrlBuilder.TagMoniker(tagName).Should().Be(expected);
+	public void EndpointSegment_MatchesBumpShScheme(string tagName, string expected) =>
+		ApiUrlBuilder.EndpointSegment(tagName).Should().Be(expected);
 
 	[Fact]
 	public async Task Tag_Url_Uses_Group_Segment()

@@ -17,7 +17,7 @@ Model/                   The semantic layer over Microsoft.OpenAPI. Spec loading
                          interpretation ($ref resolution, allOf flattening, type classification:
                          SchemaAnalyzer, TypeInfo, SchemaHelpers). No HTML, no URLs, no views.
 Infrastructure/          Shared rendering plumbing every page needs: ApiRenderContext, ApiViewModel
-                         (base layout view model), ApiMarkdown, ApiUrlBuilder (all URL monikers),
+                         (base layout view model), ApiMarkdown, ApiUrlBuilder (URL segments),
                          IApiModel ("model renders itself" contract), availability badges,
                          SectionHeader/ApiCodeBlockModel partial models.
 Navigation/              Navigation tree assembly (ApiNavigationBuilder) and nav helpers.
@@ -69,7 +69,8 @@ that slice's `_Partials/`; only genuinely cross-slice partials live in the root 
 | Schema interpretation ($ref, allOf, type classification) | `Model/SchemaAnalyzer.cs` / `TypeInfo` |
 | How property rows display (badges, collapse, unions) | `Components/PropertyTree/` |
 | New shared widget used by 2+ pages | New folder under `Components/` |
-| URL/moniker scheme | `Infrastructure/ApiUrlBuilder.cs` |
+| Version-index key | `Model/ApiSpecVersion.cs` |
+| URL segments | `Infrastructure/ApiUrlBuilder.cs` |
 | Navigation tree shape | `Navigation/ApiNavigationBuilder.cs` |
 | Search export | `Export/` |
 

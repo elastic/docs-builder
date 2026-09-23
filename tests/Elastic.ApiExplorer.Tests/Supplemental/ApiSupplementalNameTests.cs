@@ -43,15 +43,15 @@ public class ApiSupplementalNameTests
 	public void TagSlug_MatchesExpectedFileStem(string tagName, string expectedStem)
 	{
 		ApiUrlBuilder.TagSlug(tagName).Should().Be(expectedStem);
-		ApiUrlBuilder.TagMoniker(tagName).Should().Be($"endpoint-{expectedStem}");
+		ApiUrlBuilder.EndpointSegment(tagName).Should().Be($"endpoint-{expectedStem}");
 	}
 
 	[Fact]
 	public void TagSlug_EmptyName_IsUnknown()
 	{
 		ApiUrlBuilder.TagSlug("").Should().Be("unknown");
-		ApiUrlBuilder.TagMoniker("").Should().Be("endpoint-unknown");
-		ApiUrlBuilder.TagMoniker(null).Should().Be("endpoint-unknown");
+		ApiUrlBuilder.EndpointSegment("").Should().Be("endpoint-unknown");
+		ApiUrlBuilder.EndpointSegment(null).Should().Be("endpoint-unknown");
 	}
 
 	[Theory]

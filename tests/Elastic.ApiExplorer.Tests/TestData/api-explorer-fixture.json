@@ -322,7 +322,7 @@
     "/_fixture/cleanup": {
       "delete": {
         "summary": "Clean up fixture data",
-        "description": "Removes all fixture data. Has no operation id on purpose so the route-derived moniker path is exercised.",
+        "description": "Removes all fixture data. Has no operation id on purpose so the route-derived segment path is exercised.",
         "x-beta": true,
         "tags": ["misc"],
         "responses": {

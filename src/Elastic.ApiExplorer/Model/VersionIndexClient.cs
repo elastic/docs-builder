@@ -12,15 +12,15 @@ using Elastic.Documentation.Diagnostics;
 namespace Elastic.ApiExplorer.Model;
 
 /// <summary>
-/// One version-index moniker (<c>main</c>, <c>9</c>, <c>8</c>, ...), resolved to either the docset's
-/// local override file or a remote object key fetched through CloudFront.
+/// One version-index key (<see cref="ApiSpecVersion.Latest"/>, <see cref="ApiSpecVersion.Major"/>),
+/// resolved to either the docset's local override file or a remote object key fetched through CloudFront.
 /// </summary>
 public sealed record ResolvedApiVersion
 {
-	public required string Moniker { get; init; }
+	public required ApiSpecVersion SpecVersion { get; init; }
 
 	/// <summary>The branch segment from the index entry, used to build the remote object key.</summary>
-	public required string Version { get; init; }
+	public required string Branch { get; init; }
 
 	/// <summary>True when this version renders from <see cref="LocalFile"/> rather than <see cref="ObjectKey"/>.</summary>
 	public required bool IsLocal { get; init; }
@@ -129,21 +129,46 @@ public sealed class VersionIndexClient : IDisposable
 		}
 
 		var resolved = new List<ResolvedApiVersion>(versions.Count);
-		foreach (var (moniker, entry) in versions)
+		foreach (var (indexKey, entry) in versions)
 		{
-			if (moniker == "main" && apiConfig.LocalSpecFile is { } localFile)
+			if (!ApiSpecVersion.TryParse(indexKey, out var specVersion))
 			{
-				resolved.Add(new ResolvedApiVersion { Moniker = moniker, Version = entry.Version, IsLocal = true, LocalFile = localFile });
+				collector.EmitGlobalWarning(
+					$"Version index key '{indexKey}' for spec '{apiConfig.SpecFileName}' under repository '{repository}' " +
+						"is neither 'main' nor a major number; skipping it."
+				);
+				continue;
+			}
+
+			if (specVersion.IsLatest && apiConfig.LocalSpecFile is { } localFile)
+			{
+				resolved.Add(new ResolvedApiVersion
+				{
+					SpecVersion = specVersion,
+					Branch = entry.Version,
+					IsLocal = true,
+					LocalFile = localFile
+				});
 				continue;
 			}
 
 			resolved.Add(new ResolvedApiVersion
 			{
-				Moniker = moniker,
-				Version = entry.Version,
+				SpecVersion = specVersion,
+				Branch = entry.Version,
 				IsLocal = false,
 				ObjectKey = $"{repository}/{entry.Version}/{apiConfig.SpecFileName}"
 			});
+		}
+
+		if (resolved.Count == 0)
+		{
+			return MissingEntryFallback(
+				apiKey,
+				apiConfig,
+				$"Version index at {_indexUri} has no recognizable versions for spec '{apiConfig.SpecFileName}' under repository '{repository}'",
+				collector
+			);
 		}
 
 		return resolved;
@@ -158,7 +183,7 @@ public sealed class VersionIndexClient : IDisposable
 	{
 		if (version.ObjectKey is not { } objectKey)
 			throw new InvalidOperationException(
-				$"Version '{version.Moniker}' of API '{apiKey}' is local; read {nameof(ResolvedApiVersion.LocalFile)} instead."
+				$"Version '{version.SpecVersion}' of API '{apiKey}' is local; read {nameof(ResolvedApiVersion.LocalFile)} instead."
 			);
 
 		var uri = new Uri(_baseUri, objectKey);
@@ -182,13 +207,13 @@ public sealed class VersionIndexClient : IDisposable
 		}
 
 		collector.EmitGlobalWarning(
-			$"Could not fetch spec '{objectKey}' for version '{version.Moniker}' of API '{apiKey}' from {uri} after {attempts} attempt(s): {lastError}. Skipping this version."
+			$"Could not fetch spec '{objectKey}' for version '{version.SpecVersion}' of API '{apiKey}' from {uri} after {attempts} attempt(s): {lastError}. Skipping this version."
 		);
 		return null;
 	}
 
 	private static ResolvedApiVersion LocalMain(IFileInfo localFile) =>
-		new() { Moniker = "main", Version = "main", IsLocal = true, LocalFile = localFile };
+		new() { SpecVersion = ApiSpecVersion.Latest, Branch = "main", IsLocal = true, LocalFile = localFile };
 
 	private static IReadOnlyList<ResolvedApiVersion> NoRepositoryFallback(
 		string apiKey,
