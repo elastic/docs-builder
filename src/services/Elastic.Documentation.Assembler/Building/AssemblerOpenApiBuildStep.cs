@@ -23,7 +23,7 @@ namespace Elastic.Documentation.Assembler.Building;
 /// </summary>
 public static class AssemblerOpenApiBuildStep
 {
-	public static async Task<IReadOnlyList<ApiCatalogEntry>> BuildAsync(
+	public static async Task<AssemblerOpenApiBuildResult> BuildAsync(
 		ILoggerFactory logFactory,
 		AssembleContext assembleContext,
 		AssembleSources assembleSources,
@@ -39,18 +39,19 @@ public static class AssemblerOpenApiBuildStep
 		if (!features.AssemblerApiExplorerEnabled)
 		{
 			logger.LogInformation("Skipping OpenAPI generation: assembler-api-explorer feature flag is disabled");
-			return [];
+			return new AssemblerOpenApiBuildResult([], new Dictionary<string, string>());
 		}
 
 		var owners = DiscoverApiOwners(assembleSources.AssembleSets, assembleContext.Collector);
 		if (owners.Count == 0)
 		{
 			logger.LogInformation("Skipping OpenAPI generation: no API declarations found in assembled docsets");
-			return [];
+			return new AssemblerOpenApiBuildResult([], new Dictionary<string, string>());
 		}
 
 		var stopwatch = Stopwatch.StartNew();
 		var catalogEntries = new List<ApiCatalogEntry>();
+		var allAliasRedirects = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 		using var versionIndexClient = new VersionIndexClient();
 
 		var hubEntries = new List<ApiCatalogEntry>();
@@ -80,6 +81,8 @@ public static class AssemblerOpenApiBuildStep
 			);
 			var entries = await openApiGenerator.GenerateProducts(hubEntries: hubEntries, ctx).ConfigureAwait(false);
 			catalogEntries.AddRange(entries);
+			foreach (var (from, to) in openApiGenerator.AliasRedirects)
+				allAliasRedirects[from] = to;
 		}
 
 		if (catalogEntries.Count > 0)
@@ -101,7 +104,7 @@ public static class AssemblerOpenApiBuildStep
 			assembleContext.OutputWithPathPrefixDirectory.FullName,
 			stopwatch.ElapsedMilliseconds
 		);
-		return catalogEntries;
+		return new AssemblerOpenApiBuildResult([.. catalogEntries], allAliasRedirects);
 	}
 
 	private static async Task WriteApiLlmsTxt(AssembleContext assembleContext, IReadOnlyList<ApiCatalogEntry> catalogEntries, Cancel ctx)
@@ -155,3 +158,8 @@ public static class AssemblerOpenApiBuildStep
 }
 
 internal sealed record AssemblerApiOwner(AssemblerDocumentationSet Set);
+
+public sealed record AssemblerOpenApiBuildResult(
+	IReadOnlyList<ApiCatalogEntry> CatalogEntries,
+	IReadOnlyDictionary<string, string> AliasRedirects
+);
