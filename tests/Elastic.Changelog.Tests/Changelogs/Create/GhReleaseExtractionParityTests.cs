@@ -352,7 +352,7 @@ public class GhReleaseExtractionParityTests() : ChangelogTestBase()
 		var result = await Service(EmptyPool()).CreateChangelogsFromRelease(
 			Collector,
 			Input(outputDir),
-			TestContext.Current.CancellationToken
+			TestContext.Current!.Execution.CancellationToken
 		);
 
 		result.Success.Should().BeTrue();
