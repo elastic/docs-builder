@@ -18,6 +18,37 @@ describe('navigationSearchBreadcrumbs', () => {
         ).toEqual(['API', 'Elasticsearch API'])
     })
 
+    it('keeps v8 and latest version crumbs unformatted', () => {
+        expect(
+            navigationSearchBreadcrumbs(
+                [
+                    { url: '/docs/api', title: 'API' },
+                    {
+                        url: '/docs/api/doc/elasticsearch/v8',
+                        title: 'Elasticsearch API',
+                    },
+                    { url: '/docs/api/doc/elasticsearch/v8', title: 'v8' },
+                ],
+                'api',
+                'assembler'
+            )
+        ).toEqual(['API', 'Elasticsearch API', 'v8'])
+        expect(
+            navigationSearchBreadcrumbs(
+                [
+                    { url: '/docs/api', title: 'API' },
+                    {
+                        url: '/docs/api/doc/elasticsearch',
+                        title: 'Elasticsearch API',
+                    },
+                    { url: '/docs/api/doc/elasticsearch', title: 'latest' },
+                ],
+                'api',
+                'assembler'
+            )
+        ).toEqual(['API', 'Elasticsearch API', 'latest'])
+    })
+
     it('keeps an already labelled product crumb', () => {
         expect(
             navigationSearchBreadcrumbs(

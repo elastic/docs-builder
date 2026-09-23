@@ -36,4 +36,5 @@ public static class QueryFieldNames
 	public static string AiRagSummarySemanticText { get; } = $"{Doc.Fields.AiRagOptimizedSummary}.semantic_text";
 	public static string AiQuestionsSemanticText { get; } = $"{Doc.Fields.AiQuestions}.semantic_text";
 	public static string RelatedProductsId { get; } = $"{Doc.Fields.RelatedProducts}.id";
+	public static string ApiVersion { get; } = Doc.Fields.ApiVersion;
 }

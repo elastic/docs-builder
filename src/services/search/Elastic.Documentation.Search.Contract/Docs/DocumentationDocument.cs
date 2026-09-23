@@ -23,6 +23,14 @@ public record DocumentationDocument : SearchDocumentBase
 	[JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
 	public string? Product { get; set; }
 
+	/// <summary>
+	/// API Explorer major (<c>latest</c> or <c>v8</c>). Null on markdown docs pages.
+	/// </summary>
+	[Keyword(Normalizer = "keyword_normalizer")]
+	[JsonPropertyName("api_version")]
+	[JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+	public string? ApiVersion { get; set; }
+
 	/// <summary>All related products discovered through inference (primary + cross-references).</summary>
 	[JsonPropertyName("related_products")]
 	[JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]

@@ -252,7 +252,7 @@ public partial class ElasticsearchMarkdownExporter
 
 		var exporter = new OpenApiDocumentExporter(_versionsConfiguration, _inferService);
 
-		await foreach (var doc in exporter.ExportDocuments(limitPerSource: null, ctx))
+		await foreach (var doc in exporter.ExportDocuments(_collector, limitPerSource: null, ctx))
 		{
 			var document = MarkdownParser.Parse(doc.Body ?? string.Empty);
 

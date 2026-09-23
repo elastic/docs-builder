@@ -93,7 +93,14 @@ public abstract class ApiViewModel(ApiRenderContext context)
 		var assembler = BuildContext.BuildType == BuildType.Assembler;
 		var specRootUrl = CurrentNavigationItem.NavigationRoot.Url;
 		var onCatalog = SameUrl(specRootUrl, catalogUrl) || SameUrl(CurrentNavigationItem.Url, catalogUrl);
-		var crumbs = ApiBreadcrumbBuilder.Collect(CurrentNavigationItem, BreadcrumbCurrentTitle, Document.Info?.Title, catalogUrl);
+		var selectedVersion = RenderContext.VersionSwitcherItems.FirstOrDefault(static i => i.Selected);
+		var crumbs = ApiBreadcrumbBuilder.Collect(
+			CurrentNavigationItem,
+			BreadcrumbCurrentTitle,
+			Document.Info?.Title,
+			catalogUrl,
+			selectedVersion
+		);
 
 		return new()
 		{

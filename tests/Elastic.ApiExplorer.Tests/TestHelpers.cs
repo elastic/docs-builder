@@ -17,6 +17,7 @@ using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.Versions;
 using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.OpenApi;
 
 namespace Elastic.ApiExplorer.Tests;
 
@@ -98,4 +99,20 @@ public static class TestHelpers
 
 	public static Product CreateProduct(string id, VersioningSystem versioningSystem, string? displayName = null) =>
 		new() { Id = id, DisplayName = displayName ?? id, VersioningSystem = versioningSystem };
+
+	/// <summary>A one-operation spec: <c>PUT /_bulk</c> with operation id <c>_bulk</c>.</summary>
+	public static OpenApiDocument CreateBulkSpec(string summary = "Bulk index or delete documents") =>
+		new()
+		{
+			Paths = new OpenApiPaths
+			{
+				["/_bulk"] = new OpenApiPathItem
+				{
+					Operations = new Dictionary<HttpMethod, OpenApiOperation>
+					{
+						[HttpMethod.Put] = new OpenApiOperation { OperationId = "_bulk", Summary = summary }
+					}
+				}
+			}
+		};
 }

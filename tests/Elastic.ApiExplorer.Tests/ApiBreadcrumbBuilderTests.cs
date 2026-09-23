@@ -104,6 +104,47 @@ public class ApiBreadcrumbBuilderTests
 	}
 
 	[Fact]
+	public void Collect_SelectedVersion_InsertsAfterProductRoot()
+	{
+		var root = Node("/api/doc/es/v8/", "Api Overview", parent: null);
+		var tag = Node("/api/doc/es/v8/search", "Search", root);
+		var op = Leaf("/api/doc/es/v8/search-op", "search", tag);
+		var version = new ApiVersionSwitcherItem("v8", "/api/doc/es/v8/", Selected: true);
+
+		var crumbs = ApiBreadcrumbBuilder.Collect(op, "Run a search", "Elasticsearch API", catalogUrl: "/api/", version: version);
+
+		crumbs.Select(c => c.Title).Should().Equal("APIs", "Elasticsearch API", "v8", "Search", "Run a search");
+		crumbs[2].Url.Should().Be("/api/doc/es/v8/");
+		crumbs[2].IsCurrent.Should().BeFalse();
+		crumbs[^1].IsCurrent.Should().BeTrue();
+	}
+
+	[Fact]
+	public void Collect_EmptyVersionSwitcher_DoesNotInsertVersion()
+	{
+		var root = Node("/api/doc/es/", "Api Overview", parent: null);
+		var op = Leaf("/api/doc/es/search-op", "search", root);
+
+		var crumbs = ApiBreadcrumbBuilder.Collect(op, "Run a search", "Elasticsearch API", catalogUrl: "/api/");
+
+		crumbs.Select(c => c.Title).Should().Equal("APIs", "Elasticsearch API", "Run a search");
+	}
+
+	[Fact]
+	public void Collect_OnVersionLanding_VersionIsCurrent()
+	{
+		var landing = Leaf("/api/doc/es/v8/", "Api Overview", parent: null);
+		var version = new ApiVersionSwitcherItem("v8", "/api/doc/es/v8/", Selected: true);
+
+		var crumbs = ApiBreadcrumbBuilder.Collect(landing, "Elasticsearch API", "Elasticsearch API", catalogUrl: "/api/", version: version);
+
+		crumbs.Select(c => c.Title).Should().Equal("APIs", "Elasticsearch API", "v8");
+		crumbs[1].Url.Should().Be("/api/doc/es/v8/");
+		crumbs[1].IsCurrent.Should().BeFalse();
+		crumbs[2].IsCurrent.Should().BeTrue();
+	}
+
+	[Fact]
 	public void Build_KeepsEveryCrumbForResponsiveCollapse()
 	{
 		var root = Node("/api/es", "Api Overview", parent: null);

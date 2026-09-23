@@ -157,6 +157,12 @@ and a Back to hub option.
 
 Assembler API pages also show a Jump to API box at the top of that sidebar. The box searches API operations only. Isolated and air-gapped builds omit the box. Markdown docs pages do not get it back.
 
+Jump to API returns operations from one API major at a time. A version token in the query
+(`8`, `v8`, `8.x`, or `8.5`) selects that major and is removed from the search terms, so
+`_async_search 8.5` finds the v8 `_async_search` operation. Without a token, the scope follows the
+current page: a `/v8/` page searches `v8`, and any other page searches `latest`. Each result row
+shows the matching major (`latest` or `v8`) after the product name.
+
 ## Remote spec resolution
 
 When `spec:` does not resolve to a file on disk, {{dbuild}} resolves the current (`main`) version
@@ -220,6 +226,8 @@ Versionless products (`versioning: serverless` and similar) render only the unve
 version is rendered, assembler API pages show the same `version-dropdown` as Docs on the
 far right of the grey secondary top bar. The current tree is labeled `latest`, and each
 frozen major is `v9`, `v8`. Isolated builds keep a left-nav switcher with the same labels.
+The page breadcrumb shows the same label after the product name, so `APIs / Elasticsearch API / v8 / Search`
+tells the reader which major they are on. A product with a single version has no version crumb.
 
 ### Smoke-test every CloudFront spec locally
 

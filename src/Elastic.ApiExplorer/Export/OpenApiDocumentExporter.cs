@@ -12,103 +12,114 @@ using Elastic.ApiExplorer.Operations;
 using Elastic.Documentation;
 using Elastic.Documentation.AppliesTo;
 using Elastic.Documentation.Configuration.Inference;
+using Elastic.Documentation.Configuration.Products;
+using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Configuration.Versions;
+using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Search;
 using Elastic.Documentation.Search.Contract;
 using Elastic.Documentation.Versions;
 using Microsoft.OpenApi;
-using Microsoft.OpenApi.Reader;
 
 namespace Elastic.ApiExplorer.Export;
 
 /// <summary>
-/// Exports OpenAPI specifications from CloudFront URLs and converts them to DocumentationDocument instances.
+/// Exports versioned OpenAPI specifications from the version index and converts them to
+/// <see cref="DocumentationDocument"/> instances.
 /// </summary>
-public partial class OpenApiDocumentExporter(VersionsConfiguration versionsConfiguration, IDocumentInferrerService? documentInferrer = null)
+public partial class OpenApiDocumentExporter(
+	VersionsConfiguration versionsConfiguration,
+	IDocumentInferrerService? documentInferrer = null,
+	VersionIndexClient? versionIndexClient = null,
+	IOpenApiSpecificationReader? openApiReader = null
+)
 {
-	private static readonly HttpClient HttpClient = new();
+	private static readonly ResolvedApiConfiguration[] Sources =
+	[
+		Source("elasticsearch", "elasticsearch.json", "elastic/elasticsearch-specification"),
+		Source("kibana", "kibana.yaml", "elastic/kibana")
+	];
 
-	private const string ElasticsearchOpenApiUrl = "https://d31bhlox0wglh.cloudfront.net/elasticsearch-openapi-docs.json";
-	private const string KibanaOpenApiUrl = "https://d31bhlox0wglh.cloudfront.net/kibana-openapi.json";
+	private readonly VersionIndexClient _versionIndexClient = versionIndexClient ?? new VersionIndexClient();
+	private readonly IOpenApiSpecificationReader _openApiReader = openApiReader ?? OpenApiReader.Instance;
 
 	[GeneratedRegex(@"Added in (\d+\.\d+\.\d+)", RegexOptions.IgnoreCase)]
 	private static partial Regex AddedInVersionRegex();
 
 	/// <summary>
-	/// Fetches and processes both Elasticsearch and Kibana OpenAPI specifications.
+	/// Fetches every version of the Elasticsearch and Kibana OpenAPI specifications listed in the
+	/// version index and converts them to search documents.
 	/// </summary>
+	/// <param name="collector">Receives version-index and spec-fetch diagnostics</param>
 	/// <param name="limitPerSource">Optional limit of documents to return per source (Elasticsearch and Kibana)</param>
 	/// <param name="ctx">Cancellation token</param>
-	/// <returns>Enumerable of DocumentationDocument instances for all endpoints</returns>
 	public async IAsyncEnumerable<DocumentationDocument> ExportDocuments(
+		IDiagnosticsCollector collector,
 		int? limitPerSource = null,
 		[EnumeratorCancellation] Cancel ctx = default
 	)
 	{
-		// Process Elasticsearch API
-		var elasticsearchCount = 0;
-		await foreach (var doc in ExportFromUrl(ElasticsearchOpenApiUrl, "elasticsearch", ctx))
+		foreach (var source in Sources)
 		{
-			yield return doc;
-			elasticsearchCount++;
-			if (limitPerSource.HasValue && elasticsearchCount >= limitPerSource.Value)
-				break;
-		}
-
-		// Process Kibana API
-		var kibanaCount = 0;
-		await foreach (var doc in ExportFromUrl(KibanaOpenApiUrl, "kibana", ctx))
-		{
-			yield return doc;
-			kibanaCount++;
-			if (limitPerSource.HasValue && kibanaCount >= limitPerSource.Value)
-				break;
+			var count = 0;
+			await foreach (var doc in ExportProductVersions(collector, source, ctx).ConfigureAwait(false))
+			{
+				yield return doc;
+				count++;
+				if (limitPerSource.HasValue && count >= limitPerSource.Value)
+					break;
+			}
 		}
 	}
 
-	/// <summary>
-	/// Fetches OpenAPI spec from a URL and converts it to DocumentationDocument instances.
-	/// </summary>
-	private async IAsyncEnumerable<DocumentationDocument> ExportFromUrl(string url, string product, [EnumeratorCancellation] Cancel ctx)
+	private async IAsyncEnumerable<DocumentationDocument> ExportProductVersions(
+		IDiagnosticsCollector collector,
+		ResolvedApiConfiguration source,
+		[EnumeratorCancellation] Cancel ctx
+	)
 	{
-		var openApiDocument = await FetchOpenApiDocument(url, ctx);
-		if (openApiDocument == null)
-			yield break;
+		var versions = await _versionIndexClient.ResolveVersionsAsync(
+			GitCheckoutInformation.Unavailable,
+			source.ProductKey,
+			source,
+			collector,
+			ctx
+		).ConfigureAwait(false);
 
-		foreach (var doc in ConvertToDocuments(openApiDocument, product))
-			yield return doc;
-	}
-
-	/// <summary>
-	/// Fetches and parses an OpenAPI document from a URL.
-	/// </summary>
-	private static async Task<OpenApiDocument?> FetchOpenApiDocument(string url, Cancel ctx)
-	{
-		try
+		foreach (var version in versions)
 		{
-			var response = await HttpClient.GetAsync(url, ctx);
-			_ = response.EnsureSuccessStatusCode();
+			var stream = await _versionIndexClient.FetchSpecStreamAsync(source.ProductKey, version, collector, ctx).ConfigureAwait(false);
+			if (stream is null)
+				continue;
 
-			await using var stream = await response.Content.ReadAsStreamAsync(ctx);
-			var settings = new OpenApiReaderSettings { LeaveStreamOpen = false, RuleSet = ValidationRuleSet.GetEmptyRuleSet() };
-			var openApiDocument = await OpenApiDocument.LoadAsync(stream, settings: settings, cancellationToken: ctx);
+			var document = await _openApiReader.ReadAsync(stream, source.SpecFileName).ConfigureAwait(false);
+			if (document is null)
+				continue;
 
-			return openApiDocument.Document;
-		}
-		catch (Exception ex)
-		{
-			Console.Error.WriteLine($"Failed to fetch OpenAPI document from {url}: {ex.Message}");
-			return null;
+			foreach (var doc in ConvertToDocuments(document, source.ProductKey, version.Moniker))
+				yield return doc;
 		}
 	}
+
+	private static ResolvedApiConfiguration Source(string productKey, string specFileName, string repository) =>
+		new()
+		{
+			ProductKey = productKey,
+			Product = new Product { Id = productKey, DisplayName = productKey },
+			SpecFileName = specFileName,
+			Repository = repository
+		};
 
 	/// <summary>
 	/// Converts an OpenAPI document to DocumentationDocument instances.
 	/// Internal (rather than private) so tests can exercise it against an in-memory spec.
 	/// </summary>
-	internal IEnumerable<DocumentationDocument> ConvertToDocuments(OpenApiDocument openApiDocument, string product)
+	internal IEnumerable<DocumentationDocument> ConvertToDocuments(OpenApiDocument openApiDocument, string product, string moniker = "main")
 	{
-		var productUrl = ApiUrlBuilder.ProductRoot("/docs", product);
+		var productUrl = ApiUrlBuilder.ProductRoot("/docs", ApiUrlBuilder.ProductSuffix(product, moniker));
+		var versionLabel = ApiVersionSwitcher.Label(moniker);
+		var productLabel = ProductApiLabel(product);
+		var inference = documentInferrer?.InferForOpenApi(product);
 
 		foreach (var path in openApiDocument.Paths)
 		{
@@ -120,13 +131,12 @@ public partial class OpenApiDocumentExporter(VersionsConfiguration versionsConfi
 				var operationId = operation.Value.OperationId ?? GenerateOperationId(operation.Key, path.Key);
 
 				// Check x-state extension for version filtering
-				if (!ShouldIncludeOperation(operation.Value))
+				if (!ShouldIncludeOperation(operation.Value, moniker))
 					continue;
 
 				var operationMoniker = ApiUrlBuilder.OperationMoniker(operationId, path.Key);
 				var url = $"{productUrl}/operation/{operationMoniker}";
 
-				var productLabel = ProductApiLabel(product);
 				// Trim: spec summaries occasionally carry stray leading/trailing whitespace or a
 				// trailing newline, which would otherwise flow verbatim into the indexed title.
 				var summary = operation.Value.Summary?.Trim();
@@ -146,7 +156,7 @@ public partial class OpenApiDocumentExporter(VersionsConfiguration versionsConfi
 					_ = bodyBuilder.AppendLine();
 				}
 
-				_ = bodyBuilder.AppendLine($"**Method:** {operation.Key.ToString().ToUpperInvariant()}");
+				_ = bodyBuilder.AppendLine($"**Method:** {method}");
 				_ = bodyBuilder.AppendLine($"**Path:** {path.Key}");
 				_ = bodyBuilder.AppendLine();
 
@@ -168,9 +178,6 @@ public partial class OpenApiDocumentExporter(VersionsConfiguration versionsConfi
 				// Extract ApplicableTo from x-state
 				var applies = ExtractApplicableTo(operation.Value);
 
-				// Infer product and repository metadata
-				var inference = documentInferrer?.InferForOpenApi(product);
-
 				yield return new DocumentationDocument
 				{
 					ContentType = "api",
@@ -182,10 +189,12 @@ public partial class OpenApiDocumentExporter(VersionsConfiguration versionsConfi
 					Headings = headings,
 					Links = [],
 					Applies = applies?.ToAppliesTo(),
+					ApiVersion = versionLabel,
 					Parents =
 					[
 						new ParentDocument { Title = "API", Path = "/docs/api" },
-						new ParentDocument { Title = productLabel, Path = productUrl }
+						new ParentDocument { Title = productLabel, Path = productUrl },
+						new ParentDocument { Title = versionLabel, Path = productUrl }
 					],
 					Product = inference?.Product?.Id,
 					RelatedProducts = inference?.RelatedProducts.Count > 0
@@ -202,8 +211,12 @@ public partial class OpenApiDocumentExporter(VersionsConfiguration versionsConfi
 	/// <summary>
 	/// Determines if an operation should be included based on its x-state extension.
 	/// </summary>
-	private bool ShouldIncludeOperation(OpenApiOperation operation)
+	private bool ShouldIncludeOperation(OpenApiOperation operation, string moniker)
 	{
+		// "Added in" is measured against the current Stack release; a frozen major's spec already is that version's operation set.
+		if (moniker != "main")
+			return true;
+
 		// Try to get x-state extension
 		if (operation.Extensions == null || !operation.Extensions.TryGetValue("x-state", out var stateExtension))
 			return true; // No x-state, safe to include

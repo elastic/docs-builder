@@ -116,11 +116,18 @@ public static class MappingsExtension
 			[FromQuery(Name = "q")] string query,
 			[FromQuery(Name = "page")] int? pageNumber,
 			[FromQuery(Name = "type")] string? typeFilter,
+			[FromQuery(Name = "api_version")] string? apiVersion,
 			INavigationSearchService navigationSearchService,
 			Cancel ctx
 		) =>
 		{
-			var request = new NavigationSearchRequest { Query = query, PageNumber = pageNumber ?? 1, TypeFilter = typeFilter };
+			var request = new NavigationSearchRequest
+			{
+				Query = query,
+				PageNumber = pageNumber ?? 1,
+				TypeFilter = typeFilter,
+				ApiVersion = apiVersion
+			};
 			var response = await navigationSearchService.NavigationSearchAsync(request, ctx);
 			return Results.Ok(response);
 		});
