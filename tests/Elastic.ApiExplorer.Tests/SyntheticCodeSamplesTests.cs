@@ -38,7 +38,7 @@ public class SyntheticCodeSamplesTests
 					Name = "kbn-xsrf",
 					In = ParameterLocation.Header,
 					Required = true,
-					Schema = new OpenApiSchema { Example = "true" }
+					Schema = new OpenApiSchema { Examples = [System.Text.Json.Nodes.JsonValue.Create("true")] }
 				}
 			]
 		};
