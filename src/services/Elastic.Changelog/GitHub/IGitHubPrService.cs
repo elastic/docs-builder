@@ -58,4 +58,10 @@ public interface IGitHubPrService
 		IReadOnlyList<int> numbers,
 		CancellationToken ctx = default
 	);
+
+	/// <summary>
+	/// Fetches the raw text content of a file from a repository's default branch.
+	/// Returns null when the file does not exist (404) or the request fails.
+	/// </summary>
+	Task<string?> FetchFileContentAsync(string owner, string repo, string path, CancellationToken ctx = default);
 }
