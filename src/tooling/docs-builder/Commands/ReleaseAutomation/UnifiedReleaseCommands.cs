@@ -70,7 +70,7 @@ internal sealed class UnifiedReleaseCommands(
 			.ProductsConfiguration
 			.Products
 			.Values
-			.Where(p => p.Features.ReleaseNotes == ReleaseNotesPath.Prestage)
+			.Where(p => p.Features.ReleaseNotes == ReleaseNotesPath.DailyReleasableArtifacts)
 			.ToArray();
 
 		if (prestageProducts.Length == 0)
@@ -269,7 +269,7 @@ internal sealed class UnifiedReleaseCommands(
 		// Profile mode auto-discovers changelog.yml from CWD.
 		var arguments = new BundleChangelogsArguments
 		{
-			Profile = "prestage-release",
+			Profile = "dra-release",
 			ProfileArgument = version,
 			OutputDirectory = outputDirectory,
 		};

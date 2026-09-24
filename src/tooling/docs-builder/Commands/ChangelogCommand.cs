@@ -2479,9 +2479,9 @@ internal sealed partial class ChangelogCommands(
 		return await serviceInvoker.InvokeAsync(ctx);
 	}
 
-	/// <summary>Validate that every product registered with <c>features.release-notes: prestage</c> has the required onboarding files in its repository.</summary>
+	/// <summary>Validate that every product registered with <c>features.release-notes: dra</c> or <c>on-release</c> has the required onboarding files in its repository.</summary>
 	/// <remarks>
-	/// Probes each Prestage product's repository (resolved from <c>products.yml</c>: the product key
+	/// Probes each DRA or on-release product's repository (resolved from <c>products.yml</c>: the product key
 	/// or its <c>repository:</c> override) via the GitHub contents API for the changelog
 	/// configuration (<c>docs/changelog.yml</c> or <c>changelog.yml</c>) and the
 	/// <c>changelog-validate</c>, <c>changelog-submit</c>, <c>changelog-upload</c>, and

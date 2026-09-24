@@ -101,9 +101,9 @@ public static class ProductExtensions
 	/// <summary>
 	/// Resolves <c>features.release-notes</c> into an onboarding path. Backward compatible with the
 	/// historical boolean flag: omitted/<c>true</c> mean on-release participation, <c>false</c> opts
-	/// out; the strings <c>prestage</c>/<c>dra</c>/<c>on-release</c> select the path explicitly.
-	/// Unknown future values are tolerated and treated as <c>on-release</c> so that a newer
-	/// <c>config/products.yml</c> does not crash an older released binary.
+	/// out; <c>dra</c> (or the legacy alias <c>prestage</c>) and <c>on-release</c> select the path
+	/// explicitly. Unknown future values are tolerated and treated as <c>on-release</c> so that a
+	/// newer <c>config/products.yml</c> does not crash an older released binary.
 	/// </summary>
 	/// <returns>The resolved path and an optional warning message for unknown values.</returns>
 	private static (ReleaseNotesPath Path, string? Warning) ResolveReleaseNotesPath(
@@ -124,7 +124,7 @@ public static class ProductExtensions
 
 		return value.ToLowerInvariant() switch
 		{
-			"prestage" or "dra" => (ReleaseNotesPath.Prestage, null),
+			"dra" or "prestage" => (ReleaseNotesPath.DailyReleasableArtifacts, null), // prestage = legacy alias
 			"on-release" => (ReleaseNotesPath.OnRelease, null),
 			_ =>
 				(ReleaseNotesPath.OnRelease, $"Product '{productId}' has unrecognised 'release-notes' value '{value}'; treating as 'on-release'. Allowed values: true, false, dra, on-release.")
@@ -152,7 +152,7 @@ internal sealed record ProductDto
 
 	/// <summary>
 	/// Feature values are strings so <c>release-notes</c> accepts both the historical booleans and
-	/// the <c>prestage</c>/<c>on-release</c> path names; parsing happens in <see cref="ProductExtensions"/>.
+	/// the <c>dra</c>/<c>on-release</c> path names; parsing happens in <see cref="ProductExtensions"/>.
 	/// </summary>
 	[YamlMember(Alias = "features")]
 	public Dictionary<string, string>? Features { get; set; }
