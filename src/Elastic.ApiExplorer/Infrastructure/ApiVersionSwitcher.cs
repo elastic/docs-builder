@@ -24,13 +24,16 @@ public static class ApiVersionSwitcher
 			.OrderByDescending(m => m == "main" ? int.MaxValue : ParseMajor(m))
 			.Select(
 				m => new ApiVersionSwitcherItem(
-					Label: m == "main" ? "latest" : $"v{m}",
+					Label: Label(m),
 					Url: $"{ApiUrlBuilder.ProductRoot(urlPathPrefix, ApiUrlBuilder.ProductSuffix(apiKey, m))}/",
 					Selected: m == currentMoniker
 				)
 			)
 			.ToArray();
 	}
+
+	/// <summary>Switcher / breadcrumb / search label for a version-index moniker.</summary>
+	public static string Label(string moniker) => moniker == "main" ? "latest" : $"v{moniker}";
 
 	public static string? CurrentVersionLabel(VersioningSystem? versioning, IReadOnlyList<ApiVersionSwitcherItem> items)
 	{

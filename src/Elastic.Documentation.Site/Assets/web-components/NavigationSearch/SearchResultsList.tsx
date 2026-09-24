@@ -44,11 +44,16 @@ export const navigationSearchBreadcrumbs = (
     buildType: string
 ) => {
     if (typeFilter === 'api') {
+        // parents: [API, product, version?] — only the product crumb needs the " API" suffix.
         return [
             'API',
             ...parents
                 .slice(1)
-                .map((parent) => formatApiProductCrumb(parent.title)),
+                .map((parent, index) =>
+                    index === 0
+                        ? formatApiProductCrumb(parent.title)
+                        : parent.title
+                ),
         ]
     }
 

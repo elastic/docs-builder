@@ -3,15 +3,18 @@
 // See the LICENSE file in the project root for more information
 
 using System.Collections.Concurrent;
+using System.Net;
 using AwesomeAssertions;
 using Elastic.ApiExplorer.Export;
 using Elastic.ApiExplorer.Model;
 using Elastic.ApiExplorer.Operations;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration.Versions;
+using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Search;
 using Elastic.Documentation.Search.Contract;
 using Elastic.Documentation.Versions;
+using FakeItEasy;
 using static System.StringComparison;
 
 namespace Elastic.ApiExplorer.Tests;
@@ -46,7 +49,11 @@ public class OpenApiDocumentExporterTests
 
 		// Act - Collect all documents, tracking source
 		var documents = new List<(string Url, string Source)>();
-		await foreach (var doc in exporter.ExportDocuments(limitPerSource, TestContext.Current.CancellationToken))
+		await foreach (var doc in exporter.ExportDocuments(
+			new DiagnosticsCollector([]),
+			limitPerSource,
+			TestContext.Current.CancellationToken
+		))
 		{
 			if (!string.IsNullOrEmpty(doc.Path))
 			{
@@ -122,6 +129,43 @@ public class OpenApiDocumentExporterTests
 	}
 
 	[Fact]
+	public async Task ExportDocuments_EmitsOneDocumentPerVersionIndexMoniker()
+	{
+		const string versionIndex = /*lang=json,strict*/
+			"""
+			{
+				"elastic/elasticsearch-specification": {
+					"elasticsearch.json": {
+						"main": { "version": "main" },
+						"8": { "version": "8.19" }
+					}
+				}
+			}
+			""";
+		// The reader is faked, so every response (index and spec) can carry the same body.
+		var handler = new StubHandler(_ => new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(versionIndex) });
+		var reader = A.Fake<IOpenApiSpecificationReader>();
+		A.CallTo(() => reader.ReadAsync(A<Stream>._, A<string>._)).Returns(TestHelpers.CreateBulkSpec());
+		using var versionIndexClient = new VersionIndexClient(new Uri("https://cdn.example/"), handler);
+		var exporter = new OpenApiDocumentExporter(
+			TestHelpers.CreateStackVersionsConfiguration(currentMajor: 9, currentMinor: 2),
+			versionIndexClient: versionIndexClient,
+			openApiReader: reader
+		);
+
+		var ct = TestContext.Current.CancellationToken;
+		var documents = await exporter.ExportDocuments(new DiagnosticsCollector([]), ctx: ct).ToListAsync(ct);
+
+		documents
+			.Select(d => (d.ApiVersion, d.Path))
+			.Should()
+			.BeEquivalentTo([
+				("latest", "/docs/api/doc/elasticsearch/operation/operation-_bulk"),
+				("v8", "/docs/api/doc/elasticsearch/v8/operation/operation-_bulk")
+			]);
+	}
+
+	[Fact]
 	public async Task DescriptionWithHtmlShouldHaveTagsStrippedForSearchIndex()
 	{
 		// Arrange
@@ -145,7 +189,11 @@ public class OpenApiDocumentExporterTests
 
 		// Act — collect documents whose raw OAS description contains HTML (operation list block)
 		var documents = new List<DocumentationDocument>();
-		await foreach (var doc in exporter.ExportDocuments(limitPerSource: 100, TestContext.Current.CancellationToken))
+		await foreach (var doc in exporter.ExportDocuments(
+			new DiagnosticsCollector([]),
+			limitPerSource: 100,
+			TestContext.Current.CancellationToken
+		))
 		{
 			if (doc.Description != null && doc.Description.Contains("All methods and paths for this operation"))
 				documents.Add(doc);
@@ -159,5 +207,11 @@ public class OpenApiDocumentExporterTests
 			doc.Description.Should().NotContain("<div>", "HTML tags should be stripped for the search index");
 			doc.Description.Should().NotContain("<span", "HTML tags should be stripped for the search index");
 		}
+	}
+
+	private sealed class StubHandler(Func<HttpRequestMessage, HttpResponseMessage> responder) : HttpMessageHandler
+	{
+		protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) =>
+			Task.FromResult(responder(request));
 	}
 }

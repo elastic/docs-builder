@@ -16,6 +16,7 @@ import {
 } from '../shared/errorHandling'
 import { ApiError } from '../shared/errorHandling'
 import { usePageNumber, useSearchTerm } from './navigationSearch.store'
+import { parseApiVersionScope } from './parseApiVersionScope'
 import {
     useIsNavigationSearchAwaitingNewInput,
     useNavigationSearchCooldownActions,
@@ -89,40 +90,52 @@ export const useNavigationSearchQuery = (typeFilter: TypeFilter) => {
         !isCooldownActive &&
         !awaitingNewInput
 
+    const pathname =
+        typeof window === 'undefined' ? '' : window.location.pathname
+    const scoped =
+        typeFilter === 'api'
+            ? parseApiVersionScope(debouncedSearchTerm, pathname)
+            : { query: debouncedSearchTerm, apiVersion: undefined }
+
     const query = useQuery<SearchResponse, ApiError>({
         queryKey: [
             'navigation-search',
             {
-                searchTerm: debouncedSearchTerm.toLowerCase(),
+                searchTerm: scoped.query.toLowerCase(),
                 pageNumber,
                 typeFilter,
+                apiVersion: scoped.apiVersion,
             },
         ],
         queryFn: async ({ signal }) => {
-            // Don't create span for empty searches
-            if (!debouncedSearchTerm || debouncedSearchTerm.length < 1) {
-                return SearchResponse.parse({
+            // Return an empty page rather than letting keepPreviousData show stale results.
+            if (!scoped.query) {
+                return {
                     results: [],
                     totalResults: 0,
-                })
+                    pageCount: 0,
+                    pageNumber,
+                    pageSize: 0,
+                } satisfies SearchResponse
             }
 
             return traceSpan('navigation_search', async (span) => {
                 // Track Navigation Search query (even if backend response is cached by CloudFront)
-                span.setAttribute(
-                    ATTR_NAVIGATION_SEARCH_QUERY,
-                    debouncedSearchTerm
-                )
+                span.setAttribute(ATTR_NAVIGATION_SEARCH_QUERY, scoped.query)
                 span.setAttribute('navigation_search.page', pageNumber)
 
                 const params = new URLSearchParams({
-                    q: debouncedSearchTerm,
+                    q: scoped.query,
                     page: pageNumber.toString(),
                 })
 
                 // Only add type filter if not 'all'
                 if (typeFilter !== 'all') {
                     params.set('type', typeFilter)
+                }
+
+                if (scoped.apiVersion) {
+                    params.set('api_version', scoped.apiVersion)
                 }
 
                 const response = await fetch(
@@ -153,9 +166,9 @@ export const useNavigationSearchQuery = (typeFilter: TypeFilter) => {
                 // Track zero results for quality analysis
                 if (searchResponse.totalResults === 0) {
                     logInfo('navigation_search_zero_results', {
-                        [ATTR_NAVIGATION_SEARCH_QUERY]: debouncedSearchTerm,
+                        [ATTR_NAVIGATION_SEARCH_QUERY]: scoped.query,
                         [ATTR_NAVIGATION_SEARCH_QUERY_LENGTH]:
-                            debouncedSearchTerm.length,
+                            scoped.query.length,
                         [ATTR_NAVIGATION_SEARCH_RESULTS_TOTAL]: 0,
                     })
                 }
@@ -176,26 +189,27 @@ export const useNavigationSearchQuery = (typeFilter: TypeFilter) => {
             queryKey: [
                 'navigation-search',
                 {
-                    searchTerm: debouncedSearchTerm.toLowerCase(),
+                    searchTerm: scoped.query.toLowerCase(),
                     pageNumber,
                     typeFilter,
+                    apiVersion: scoped.apiVersion,
                 },
             ],
         })
-    }, [queryClient, debouncedSearchTerm, pageNumber, typeFilter])
+    }, [queryClient, scoped.query, scoped.apiVersion, pageNumber, typeFilter])
 
     // Track errors for observability
     useEffect(() => {
         if (query.error && isApiError(query.error)) {
             if (isRateLimitError(query.error)) {
                 logWarn('navigation_search_rate_limited', {
-                    [ATTR_NAVIGATION_SEARCH_QUERY]: debouncedSearchTerm,
+                    [ATTR_NAVIGATION_SEARCH_QUERY]: scoped.query,
                     [ATTR_NAVIGATION_SEARCH_RETRY_AFTER]:
                         query.error.retryAfter ?? 0,
                 })
             } else {
                 logWarn('navigation_search_error', {
-                    [ATTR_NAVIGATION_SEARCH_QUERY]: debouncedSearchTerm,
+                    [ATTR_NAVIGATION_SEARCH_QUERY]: scoped.query,
                     [ATTR_ERROR_TYPE]: `${query.error.statusCode}`,
                     'error.message': query.error.message,
                 })
@@ -203,7 +217,7 @@ export const useNavigationSearchQuery = (typeFilter: TypeFilter) => {
         } else if (query.error) {
             const err = query.error as Error
             logError('navigation_search_parse_error', {
-                [ATTR_NAVIGATION_SEARCH_QUERY]: debouncedSearchTerm,
+                [ATTR_NAVIGATION_SEARCH_QUERY]: scoped.query,
                 [ATTR_ERROR_TYPE]: err.name,
                 'error.message': err.message,
             })
@@ -212,7 +226,7 @@ export const useNavigationSearchQuery = (typeFilter: TypeFilter) => {
                 err
             )
         }
-    }, [query.error, debouncedSearchTerm])
+    }, [query.error, scoped.query])
 
     return {
         ...query,

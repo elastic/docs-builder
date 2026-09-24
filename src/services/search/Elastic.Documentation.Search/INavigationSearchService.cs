@@ -15,6 +15,7 @@ public record NavigationSearchRequest
 	public int PageNumber { get; init; } = 1;
 	public int PageSize { get; init; } = 20;
 	public string? TypeFilter { get; init; }
+	public string? ApiVersion { get; init; }
 }
 
 public record NavigationSearchResponse

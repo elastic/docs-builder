@@ -338,6 +338,19 @@ public class MappingStructureTests
 		fields.GetProperty("prefix").GetProperty("analyzer").GetString().Should().Be("hierarchy_analyzer");
 	}
 
+	// ── api_version: [Keyword] with keyword_normalizer, DocumentationDocument only ──
+
+	[Fact]
+	public void DocumentationDocument_MappingJson_ContainsApiVersion()
+	{
+		var json = DocumentationMappingContext.DocumentationDocument.GetMappingJson();
+		using var doc = JsonDocument.Parse(json);
+		var apiVersion = doc.RootElement.GetProperty("properties").GetProperty("api_version");
+
+		apiVersion.GetProperty("type").GetString().Should().Be("keyword");
+		apiVersion.GetProperty("normalizer").GetString().Should().Be("keyword_normalizer");
+	}
+
 	// ── Unified index (WebsiteSearchDocument) merges in DocumentationDocument's
 	// applies_to topology, which it has no C# property for ─────────────────────
 

@@ -45,7 +45,8 @@ public static class ApiBreadcrumbBuilder
 		INavigationItem current,
 		string currentTitle,
 		string? rootTitle,
-		string? catalogUrl = null
+		string? catalogUrl = null,
+		ApiVersionSwitcherItem? version = null
 	)
 	{
 		var items = new List<ApiBreadcrumb>();
@@ -67,6 +68,7 @@ public static class ApiBreadcrumbBuilder
 		var currentLabel = string.IsNullOrWhiteSpace(currentTitle) ? current.NavigationTitle : currentTitle;
 		items.Add(new ApiBreadcrumb(currentLabel, null));
 
+		InsertVersionCrumb(items, version, current.Url);
 		if (ShouldPrependCatalog(catalogUrl, current.Url, items))
 			items.Insert(0, new ApiBreadcrumb(CatalogCrumbTitle, catalogUrl));
 
@@ -86,6 +88,18 @@ public static class ApiBreadcrumbBuilder
 			}
 		).ToList();
 		return JsonSerializer.Serialize(new BreadcrumbsList { ItemListElement = items }, BreadcrumbsContext.Default.BreadcrumbsList);
+	}
+
+	/// <summary>Runs before the catalog prepend so the product root is always <c>items[0]</c>.</summary>
+	private static void InsertVersionCrumb(List<ApiBreadcrumb> items, ApiVersionSwitcherItem? version, string currentUrl)
+	{
+		if (version is null)
+			return;
+
+		var versionIsCurrent = SameUrl(version.Url, currentUrl);
+		items.Insert(1, new ApiBreadcrumb(version.Label, versionIsCurrent ? null : version.Url));
+		if (versionIsCurrent && items[0].IsCurrent)
+			items[0] = items[0] with { Url = version.Url };
 	}
 
 	private static bool ShouldPrependCatalog(string? catalogUrl, string currentUrl, IReadOnlyList<ApiBreadcrumb> items)

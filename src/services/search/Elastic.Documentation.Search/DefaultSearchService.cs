@@ -30,6 +30,7 @@ public partial class DefaultSearchService<TDocument>(
 {
 	private const string PreTag = "<mark>";
 	private const string PostTag = "</mark>";
+	private const string LatestApiVersion = "latest";
 
 	private static readonly string[] AutocompleteSourceIncludes =
 	[
@@ -109,6 +110,9 @@ public partial class DefaultSearchService<TDocument>(
 			searchConfig.RulesetName
 		);
 
+		var apiVersion = string.IsNullOrWhiteSpace(request.ApiVersion) ? LatestApiVersion : request.ApiVersion;
+		Query scopedQuery = new BoolQuery { Must = [lexicalQuery], Filter = [RestrictApiDocuments(apiVersion)] };
+
 		Query? postFilter = null;
 		if (!string.IsNullOrWhiteSpace(request.TypeFilter))
 			postFilter = new TermQuery { Field = QueryFieldNames.ContentType, Value = request.TypeFilter };
@@ -120,7 +124,7 @@ public partial class DefaultSearchService<TDocument>(
 					.Indices(indexAlias)
 					.From(Math.Max(request.PageNumber - 1, 0) * request.PageSize)
 					.Size(request.PageSize)
-					.Query(lexicalQuery)
+					.Query(scopedQuery)
 					.Aggregations(agg => agg.Add("type", a => a.Terms(t => t.Field(QueryFieldNames.ContentType))))
 					.Source(sf => sf.Filter(f => f.Includes(AutocompleteSourceIncludes)))
 					.Highlight(
@@ -318,10 +322,27 @@ public partial class DefaultSearchService<TDocument>(
 
 		// TODO: applies_to nested filters for DeploymentFilter / VersionFilter.
 
-		if (filters.Count == 0)
-			return baseQuery;
+		filters.Add(RestrictApiDocuments(LatestApiVersion));
 
 		return new BoolQuery { Must = [baseQuery], Filter = filters };
+	}
+
+	/// <summary>
+	/// Only API documents carry <c>api_version</c>, so a match on it or its absence is enough to keep
+	/// every non-API document. API docs indexed before the field existed count as <c>latest</c>, so a
+	/// <c>latest</c> scope keeps them and a <c>vN</c> scope does not.
+	/// </summary>
+	private static Query RestrictApiDocuments(string version)
+	{
+		Query passthrough = version == LatestApiVersion
+			? new BoolQuery { MustNot = [new ExistsQuery { Field = QueryFieldNames.ApiVersion }] }
+			: new BoolQuery { MustNot = [new TermQuery { Field = QueryFieldNames.ContentType, Value = "api" }] };
+
+		return new BoolQuery
+		{
+			Should = [passthrough, new TermQuery { Field = QueryFieldNames.ApiVersion, Value = version }],
+			MinimumShouldMatch = 1
+		};
 	}
 
 	private static void ApplySorting(SearchRequestDescriptor<TDocument> descriptor, SortMode sortBy)

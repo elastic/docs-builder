@@ -19,74 +19,39 @@ namespace Elastic.ApiExplorer.Tests;
 /// </summary>
 public class OpenApiOperationIdSearchTitleTests
 {
-	private static readonly VersionsConfiguration VersionsConfiguration = new()
-	{
-		VersioningSystems = new Dictionary<VersioningSystemId, VersioningSystem>
-		{
-			{
-				VersioningSystemId.Stack,
-				new VersioningSystem { Id = VersioningSystemId.Stack, Base = new SemVersion(8, 0, 0), Current = new SemVersion(9, 2, 0) }
-			}
-		}
-	};
-
-	private static OpenApiDocument CreateBulkSpec() =>
-		new()
-		{
-			Paths = new OpenApiPaths
-			{
-				["/_bulk"] = new OpenApiPathItem
-				{
-					Operations = new Dictionary<HttpMethod, OpenApiOperation>
-					{
-						[HttpMethod.Put] = new OpenApiOperation { OperationId = "_bulk", Summary = "Bulk index or delete documents" }
-					}
-				}
-			}
-		};
+	private static readonly VersionsConfiguration VersionsConfiguration = TestHelpers.CreateStackVersionsConfiguration(
+		currentMajor: 9,
+		currentMinor: 2
+	);
 
 	[Fact]
 	public void BulkOperation_SearchTitleContainsTheRawOperationIdWithUnderscore()
 	{
 		var exporter = new OpenApiDocumentExporter(VersionsConfiguration);
 
-		var docs = exporter.ConvertToDocuments(CreateBulkSpec(), "elasticsearch").ToArray();
+		var docs = exporter.ConvertToDocuments(TestHelpers.CreateBulkSpec(), "elasticsearch").ToArray();
 
 		docs.Should().HaveCount(1);
 		var doc = docs[0];
 
 		doc.Title.Should().Be("Bulk index or delete documents");
-		doc.Parents.Should().HaveCount(2);
+		doc.ApiVersion.Should().Be("latest");
+		doc.Path.Should().Be("/docs/api/doc/elasticsearch/operation/operation-_bulk");
+		doc.Parents.Should().HaveCount(3);
 		doc.Parents[1].Title.Should().Be("Elasticsearch API");
+		doc.Parents[2].Title.Should().Be("latest");
+		doc.Parents[2].Path.Should().Be("/docs/api/doc/elasticsearch");
 		doc.SearchTitle.Should().Be("Bulk index or delete documents - Elasticsearch API - _bulk - PUT /_bulk");
 		doc.SearchTitle.Should().Contain("_bulk");
 		doc.SearchTitle.Should().Contain("PUT /_bulk");
 	}
-
-	private static OpenApiDocument CreateSpecWithSummaryWhitespace(string summary) =>
-		new()
-		{
-			Paths = new OpenApiPaths
-			{
-				["/_bulk"] = new OpenApiPathItem
-				{
-					Operations = new Dictionary<HttpMethod, OpenApiOperation>
-					{
-						[HttpMethod.Put] = new OpenApiOperation { OperationId = "_bulk", Summary = summary }
-					}
-				}
-			}
-		};
 
 	[Fact]
 	public void Operation_SummaryWithTrailingNewline_DoesNotLeakIntoTitleOrSearchTitle()
 	{
 		var exporter = new OpenApiDocumentExporter(VersionsConfiguration);
 
-		var docs = exporter.ConvertToDocuments(
-			CreateSpecWithSummaryWhitespace("Bulk index or delete documents\n"),
-			"elasticsearch"
-		).ToArray();
+		var docs = exporter.ConvertToDocuments(TestHelpers.CreateBulkSpec("Bulk index or delete documents\n"), "elasticsearch").ToArray();
 
 		docs.Should().HaveCount(1);
 		var doc = docs[0];
@@ -102,7 +67,7 @@ public class OpenApiOperationIdSearchTitleTests
 	{
 		var exporter = new OpenApiDocumentExporter(VersionsConfiguration);
 
-		var docs = exporter.ConvertToDocuments(CreateSpecWithSummaryWhitespace("   "), "elasticsearch").ToArray();
+		var docs = exporter.ConvertToDocuments(TestHelpers.CreateBulkSpec("   "), "elasticsearch").ToArray();
 
 		docs.Should().HaveCount(1);
 		var doc = docs[0];
@@ -136,5 +101,20 @@ public class OpenApiOperationIdSearchTitleTests
 		doc.SearchTitle.Should().Contain("indices.get");
 		doc.SearchTitle.Should().Contain("indices get");
 		doc.SearchTitle.Should().Contain("GET /{index}");
+	}
+
+	[Fact]
+	public void NumericMoniker_WritesVersionedPathAndV8Parent()
+	{
+		var docs = new OpenApiDocumentExporter(VersionsConfiguration)
+			.ConvertToDocuments(TestHelpers.CreateBulkSpec(), "elasticsearch", "8")
+			.ToArray();
+
+		docs.Should().HaveCount(1);
+		var doc = docs[0];
+		doc.ApiVersion.Should().Be("v8");
+		doc.Path.Should().Be("/docs/api/doc/elasticsearch/v8/operation/operation-_bulk");
+		doc.Parents.Select(p => p.Title).Should().Equal("API", "Elasticsearch API", "v8");
+		doc.Parents[2].Path.Should().Be("/docs/api/doc/elasticsearch/v8");
 	}
 }

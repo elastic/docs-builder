@@ -32,7 +32,8 @@ public partial class NavigationSearchService(
 				Query = request.Query,
 				PageNumber = request.PageNumber,
 				PageSize = request.PageSize,
-				TypeFilter = request.TypeFilter
+				TypeFilter = request.TypeFilter,
+				ApiVersion = request.ApiVersion
 			},
 			ctx
 		);

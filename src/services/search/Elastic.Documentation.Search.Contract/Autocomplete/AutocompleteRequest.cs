@@ -17,4 +17,10 @@ public record AutocompleteRequest
 
 	/// <summary>Single <c>content_type</c> filter, applied as a post_filter.</summary>
 	public string? TypeFilter { get; init; }
+
+	/// <summary>
+	/// API Explorer major (<c>latest</c>, <c>v8</c>). When omitted, API hits are restricted to
+	/// <c>latest</c> so modal search stays one operation per endpoint.
+	/// </summary>
+	public string? ApiVersion { get; init; }
 }
