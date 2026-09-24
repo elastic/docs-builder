@@ -122,6 +122,7 @@ internal sealed class UnifiedReleaseCommands(
 		var manifest = await FetchManifestAsync(http, manifestUrl, ctx);
 		if (manifest is null)
 		{
+			_logger.LogError("Failed to fetch build manifest from {ManifestUrl}", manifestUrl);
 			collector.EmitError(string.Empty, $"Failed to fetch build manifest from {manifestUrl}");
 			return 1;
 		}
@@ -245,12 +246,14 @@ internal sealed class UnifiedReleaseCommands(
 
 		if (release is null)
 		{
+			_logger.LogError("Version {Version} not found in the release schedule ({Url})", version, FutureReleasesUrl);
 			collector.EmitError(string.Empty, $"Version '{version}' not found in the release schedule ({FutureReleasesUrl}).");
 			return null;
 		}
 
 		if (!release.HasBuildCandidate || release.LatestBuildCandidate is not { } bc)
 		{
+			_logger.LogError("No build candidate has been cut for {Version} yet", version);
 			collector.EmitError(
 				string.Empty,
 				$"No build candidate has been cut for {version} yet. " + $"Use 'preview' to bundle against the latest SNAPSHOT."
@@ -314,11 +317,10 @@ internal sealed class UnifiedReleaseCommands(
 		var changelogYaml = await FetchChangelogConfigAsync(http, repoKey, commitHash, ctx);
 		if (changelogYaml is null)
 		{
-			collector.EmitError(
-				string.Empty,
-				$"Product '{productId}' (repo: elastic/{repoKey}@{commitHash[..8]}) has no changelog.yml. " +
-					"Add docs/changelog.yml or changelog.yml to the repository to opt into DRA bundling."
-			);
+			var msg = $"Product '{productId}' (repo: elastic/{repoKey}@{commitHash[..8]}) has no changelog.yml — "
+				+ "add docs/changelog.yml or changelog.yml to the repository to opt into DRA bundling.";
+			_logger.LogError("{Message}", msg);
+			collector.EmitError(string.Empty, msg);
 			return 1;
 		}
 
