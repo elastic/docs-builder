@@ -414,7 +414,7 @@ public class DocsSyncTests
 			DeleteRequests = []
 		};
 		var planPath = Path.Join(outputDirectory, "sync-plan.json");
-		await fileSystem.File.WriteAllTextAsync(planPath, SyncPlan.Serialize(plan), TestContext.Current.CancellationToken);
+		await fileSystem.File.WriteAllTextAsync(planPath, SyncPlan.Serialize(plan), CancellationToken.None);
 		A.CallTo(() => mockTransferUtility.UploadAsync(A<TransferUtilityUploadRequest>._, A<Cancel>._)).Throws(
 			new AmazonS3Exception("Access denied")
 		);
