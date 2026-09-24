@@ -2,7 +2,9 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Net;
 using System.Text.Json;
+using Amazon.S3;
 using AwesomeAssertions;
 using Elastic.Changelog.Reconciliation;
 using Elastic.Changelog.Scrubbing;
@@ -515,6 +517,133 @@ public class ScrubberProcessorTests
 		// The notes index was written (reconciler dual-writes notes-9.0.0.json and notes-elasticsearch-9.0.0.json)
 		_s3.Exists(PublicBucket, "changelog/elastic/elasticsearch/notes-9.0.0.json").Should().BeTrue();
 		_s3.Exists(PublicBucket, "changelog/elastic/elasticsearch/notes-elasticsearch-9.0.0.json").Should().BeTrue();
+	}
+
+	[Fact]
+	public async Task Process_NoteFile_ListsAmendNotesOnThatProductOnly()
+	{
+		_ = A.CallTo(() => _scrubber.ScrubAsync(A<string>._, A<string>._, A<Cancel>._)).ReturnsLazily(
+			(string _, string content, Cancel _) => Task.FromResult(new ScrubResult { Content = content })
+		);
+
+		const string ece = "cloud-enterprise";
+		const string hosted = "cloud-hosted";
+		const string version = "4.2.0";
+		const string parent = "cloud-4.2.0.yaml";
+		const string hostedSidecar = "cloud-4.2.0.amend-notes.yaml";
+
+		_s3.Seed(PublicBucket, $"bundle/{ece}/{parent}", ProductParentBundle(ece, version, "main/pr-100.yaml"));
+		_s3.Seed(PublicBucket, $"bundle/{hosted}/{parent}", ProductParentBundle(hosted, version, "main/pr-hosted.yaml"));
+		_s3.Seed(PublicBucket, $"bundle/{ece}/registry.json", ProductRegistryJson(ece, version, parent));
+		_s3.Seed(PublicBucket, $"bundle/{hosted}/registry.json", ProductRegistryJson(hosted, version, parent, hostedSidecar));
+		var hostedSidecarYaml = ProductParentBundle(hosted, version, "main/note-hosted.yml");
+		_s3.Seed(PublicBucket, $"bundle/{hosted}/{hostedSidecar}", hostedSidecarYaml);
+
+		const string noteYaml =
+			"""
+			title: ECE known issue
+			type: known-issue
+			products:
+			  - product: cloud-enterprise
+			    versions: [4.2.0]
+			""";
+		_s3.Seed(PrivateBucket, "changelog/elastic/cloud/main/note-ece.yml", noteYaml);
+
+		var failed = await _processor.ProcessAsync([Message("ObjectCreated:Put", "changelog/elastic/cloud/main/note-ece.yml")], Ctx);
+
+		failed.Should().BeEmpty();
+		_s3.Exists(PublicBucket, $"bundle/{ece}/cloud-4.2.0.amend-notes.yaml").Should().BeTrue();
+		_s3.ContentOf(PublicBucket, $"bundle/{hosted}/{hostedSidecar}").Should().Be(hostedSidecarYaml);
+
+		var eceRegistry =
+			JsonSerializer.Deserialize(
+				_s3.ContentOf(PublicBucket, $"bundle/{ece}/registry.json"),
+				ChangelogRegistryJsonContext.Default.ChangelogRegistry
+			)!;
+		eceRegistry.Bundles.Select(b => b.File).Should().BeEquivalentTo([parent, "cloud-4.2.0.amend-notes.yaml"]);
+
+		var hostedRegistry =
+			JsonSerializer.Deserialize(
+				_s3.ContentOf(PublicBucket, $"bundle/{hosted}/registry.json"),
+				ChangelogRegistryJsonContext.Default.ChangelogRegistry
+			)!;
+		hostedRegistry.Bundles.Select(b => b.File).Should().BeEquivalentTo([parent, hostedSidecar]);
+		_metrics.GroupReconciles.Should().Be(1);
+	}
+
+	[Fact]
+	public async Task Process_LastNoteRemoved_RegistryWriteFailure_LeavesProductScopedIndex_ThenRetryDeletes()
+	{
+		_ = A.CallTo(() => _scrubber.ScrubAsync(A<string>._, A<string>._, A<Cancel>._)).ReturnsLazily(
+			(string _, string content, Cancel _) => Task.FromResult(new ScrubResult { Content = content })
+		);
+
+		const string product = "elasticsearch";
+		const string version = "9.0.0";
+		const string parent = "elasticsearch-9.0.0.yaml";
+		const string sidecar = "elasticsearch-9.0.0.amend-notes.yaml";
+		const string noteKey = "changelog/elastic/elasticsearch/main/note-late.yml";
+		var productIndex = ChangelogKeys.NotesIndexKey("elastic", "elasticsearch", product, version);
+		var registryKey = $"bundle/{product}/registry.json";
+
+		_s3.Seed(PublicBucket, $"bundle/{product}/{parent}", ProductParentBundle(product, version, "main/pr-100.yaml"));
+		_s3.Seed(PublicBucket, registryKey, ProductRegistryJson(product, version, parent, sidecar));
+		_s3.Seed(PublicBucket, $"bundle/{product}/{sidecar}", ProductParentBundle(product, version, "main/note-late.yml"));
+		_s3.Seed(
+			PublicBucket,
+			productIndex,
+			/*lang=json,strict*/
+			"""{"schema_version":1,"product":"elasticsearch","version":"9.0.0","notes":[{"path":"main/note-late.yml","bundle_seq":2}]}"""
+		);
+		_s3.Seed(
+			PublicBucket,
+			"changelog/elastic/elasticsearch/notes-9.0.0.json",
+			/*lang=json,strict*/
+			"""{"schema_version":1,"notes":[{"path":"main/note-late.yml","bundle_seq":2}]}"""
+		);
+
+		_s3.PutFault =
+			key => key == registryKey ? new AmazonS3Exception("unavailable") { StatusCode = HttpStatusCode.InternalServerError } : null;
+
+		var failed = await _processor.ProcessAsync([Message("ObjectRemoved:Delete", noteKey)], Ctx);
+		failed.Should().NotBeEmpty();
+		_s3.Exists(PublicBucket, $"bundle/{product}/{sidecar}").Should().BeFalse();
+		_s3.Exists(PublicBucket, productIndex).Should().BeTrue();
+
+		_s3.PutFault = null;
+		var failedRetry = await _processor.ProcessAsync([Message("ObjectRemoved:Delete", noteKey)], Ctx);
+		failedRetry.Should().BeEmpty();
+		_s3.Exists(PublicBucket, productIndex).Should().BeFalse();
+		PublicManifest(registryKey).Bundles.Select(b => b.File).Should().Equal(parent);
+	}
+
+	private static string ProductRegistryJson(string product, string version, params string[] files)
+	{
+		var bundles = files.Select(f => new ChangelogRegistryBundle { File = f, Target = version }).ToList();
+		return JsonSerializer.Serialize(
+			new ChangelogRegistry { Product = product, Bundles = bundles },
+			ChangelogRegistryJsonContext.Default.ChangelogRegistry
+		);
+	}
+
+	private static string ProductParentBundle(string product, string version, params string[] entryFileNames)
+	{
+		var bundle = new Bundle
+		{
+			Products = [new BundledProduct(product, target: version, lifecycle: Lifecycle.Ga)],
+			Entries =
+			[
+				.. entryFileNames.Select(
+					n => new BundledEntry
+					{
+						File = new BundledFile { Name = n, Checksum = "abc123" },
+						Title = $"Entry for {n}",
+						Type = ChangelogEntryType.BugFix
+					}
+				)
+			]
+		};
+		return ReleaseNotesSerialization.SerializeBundle(bundle);
 	}
 
 	[Fact]

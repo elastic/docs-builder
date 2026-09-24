@@ -71,11 +71,15 @@ narrowed reconciliation to the bundle tree):
 - **Amend-notes sidecars** — `bundle/{product}/{parent}.amend-notes.yaml`, also **public bucket
   only**, authored by the scrubber Lambda's `NoteAmendReconciler`. When a note is uploaded after
   its release bundle has already shipped, the reconciler generates one aggregate sidecar per
-  published bundle that lists all such late notes. The Lambda rebuilds it from current state on
-  every reconcile, so redelivered events never produce duplicate amends. `{changelog}` `:cdn:` and
-  `changelog render` merge this sidecar into the parent the same way as numbered `.amend-{N}`
-  files, after those numbered amends. The `.amend-notes` suffix
-  is **reserved** — do not create files with that suffix manually; see
+  published bundle that lists all such late notes **for that product**. The Lambda rebuilds it
+  from current state on every reconcile, so redelivered events never produce duplicate amends.
+  After a write, skip-unchanged, or delete of that sidecar, the same pass rebuilds
+  `bundle/{product}/registry.json` and the bundle shallow map so `{changelog}` `:cdn:` can
+  discover it. An empty product-scoped notes index is removed only after that registry
+  rebuild succeeds. Other products at the same version are not walked and their sidecars are not
+  deleted. `{changelog}` `:cdn:` and `changelog render` merge this sidecar into the parent the
+  same way as numbered `.amend-{N}` files, after those numbered amends. The `.amend-notes`
+  suffix is **reserved** — do not create files with that suffix manually; see
   [](/cli/changelog/bundle-amend.md). Public copies track private-bucket create and delete
   events. Authors cannot issue those deletes through docs-builder today: `changelog upload`
   does not delete objects, and `changelog remove` is local-only. For the author-facing
@@ -169,8 +173,9 @@ amend sidecars. Do not hand-edit `notes-{version}.json` or `.amend-notes` sideca
 delete pool objects through docs-builder today.
 
 A 404 on both the product-scoped index and the legacy version-union index means "no notes
-published for this product and version". An empty `notes` array never appears on a successfully
-reconciled index — the index is deleted rather than emptied, following the same
+published for this product and version". An empty `notes` array is not the durable form of a
+successfully reconciled index: after sidecar work and a successful product registry rebuild,
+the empty product-scoped index is deleted rather than rewritten empty, following the same
 [absent ≠ empty](#absent-empty) rule as the bundle registry. Until older clients stop reading
 `notes-{version}.json`, the Lambda keeps that key while any note still declares the version.
 
