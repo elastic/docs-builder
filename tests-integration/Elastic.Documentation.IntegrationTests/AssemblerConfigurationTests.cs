@@ -10,6 +10,7 @@ using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.FileSystems;
 using Microsoft.Extensions.Logging.Abstractions;
+using TUnit.Core.Interfaces;
 
 namespace Elastic.Documentation.IntegrationTests;
 
