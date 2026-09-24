@@ -93,16 +93,26 @@ public static class ChangelogKeys
 	public static string ChangelogRegistryKey(string poolGroup) => $"{ChangelogPrefix}{poolGroup}/{RegistryFileName}";
 
 	/// <summary>
-	/// The notes-index key for one release version within a repo: <c>changelog/{org}/{repo}/notes-{version}.json</c>.
-	/// Repo-level and branch-agnostic — all notes for a version, regardless of which branch they were authored on.
+	/// The legacy notes-index key for one release version within a repo:
+	/// <c>changelog/{org}/{repo}/notes-{version}.json</c>.
+	/// Repo-level and branch-agnostic — the union of notes for that version across every product.
 	/// </summary>
 	/// <remarks>
 	/// The slug in the key is the release version (e.g. <c>9.3.0</c> or <c>2026-05-15</c>).
 	/// Previously this parameter was named <c>target</c> to match the obsolete <c>target:</c> YAML field;
 	/// it was renamed to <c>version</c> when that field was replaced by <c>versions:</c> on notes.
-	/// The key layout (<c>notes-{slug}.json</c>) is unchanged — no migration is needed.
+	/// Older <c>changelog bundle</c> clients still GET this key; the scrubber dual-writes it
+	/// alongside <see cref="NotesIndexKey(string, string, string, string)"/>.
 	/// </remarks>
 	public static string NotesIndexKey(string org, string repo, string version) => $"{ChangelogPrefix}{org}/{repo}/notes-{version}.json";
+
+	/// <summary>
+	/// The product-scoped notes-index key:
+	/// <c>changelog/{org}/{repo}/notes-{product}-{version}.json</c>.
+	/// Constructed from the two segments; callers must not parse the slug back apart.
+	/// </summary>
+	public static string NotesIndexKey(string org, string repo, string product, string version) =>
+		$"{ChangelogPrefix}{org}/{repo}/notes-{product}-{version}.json";
 
 	/// <summary>
 	/// The S3 prefix that covers all branches and notes indexes of one repo: <c>changelog/{org}/{repo}/</c>.
@@ -112,8 +122,9 @@ public static class ChangelogKeys
 
 	/// <summary>
 	/// Returns true when <paramref name="key"/> is a notes-index key of the form
-	/// <c>changelog/{org}/{repo}/notes-{target}.json</c> (exactly two group segments, then
-	/// a <c>notes-</c>-prefixed JSON file with a non-empty target slug).
+	/// <c>changelog/{org}/{repo}/notes-{slug}.json</c> (exactly two group segments, then
+	/// a <c>notes-</c>-prefixed JSON file with a non-empty slug). Covers both the legacy
+	/// <c>notes-{version}.json</c> shape and the product-scoped <c>notes-{product}-{version}.json</c> shape.
 	/// </summary>
 	public static bool IsNotesIndex(string key)
 	{

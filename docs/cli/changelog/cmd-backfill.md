@@ -8,7 +8,7 @@ For each product in scope the command:
 2. Parses each `## {version}` section into typed entries. Unrecognized `### …` subsections whose body is bullets become `Other`-typed entries; prose subsections are preserved in the bundle description.
 3. Writes bundle YAML to `{output}/{product}/changelog/bundles/{version}.yaml`.
 4. Writes per-entry YAML files: `{pr}.yaml` for entries that reference a pull request, `note-{slug}.yaml` for entries with no PR reference.
-5. Writes `notes-{target}.json` per version listing all `note-*.yaml` files for that target (the notes registry).
+5. Writes `notes-{target}.json` per version listing all `note-*.yaml` files for that target (the notes registry). This is a **local** backfill artifact, not the CDN dual-write layout (`notes-{product}-{version}.json` plus legacy `notes-{version}.json`).
 6. Prints a per-product report including entry counts and no-PR rates.
 
 The primary use case is measuring how much published release-notes content cannot be traced back to a PR — determining how much historical content needs the PR-less "note" format from [docs-eng-team#789](https://github.com/elastic/docs-eng-team/issues/789).
