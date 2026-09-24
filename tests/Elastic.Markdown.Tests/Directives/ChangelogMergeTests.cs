@@ -12,10 +12,10 @@ namespace Elastic.Markdown.Tests.Directives;
 /// Tests for automatic merging of bundles with the same target version/date.
 /// Merging is now the default behavior (no longer requires `:merge:` option).
 /// </summary>
+[InheritsTests]
 public class ChangelogMergeSameTargetTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogMergeSameTargetTests(ITestOutputHelper output) : base(
-			output,
+	public ChangelogMergeSameTargetTests() : base(
 			// language=markdown
 			"""
 		:::{changelog}
@@ -119,13 +119,13 @@ public class ChangelogMergeSameTargetTests : DirectiveTest<ChangelogBlock>
 		);
 	}
 
-	[Fact]
+	[Test]
 	public void MergesBundlesWithSameTargetByDefault() =>
 		// Three bundles with 2025-08-05 should be merged into one
 		// Plus one bundle with 2025-08-01 = 2 total bundles
 		Block!.LoadedBundles.Should().HaveCount(2);
 
-	[Fact]
+	[Test]
 	public void MergedBundleContainsAllEntries()
 	{
 		// The 2025-08-05 merged bundle should have 4 entries (1 + 2 + 1)
@@ -134,7 +134,7 @@ public class ChangelogMergeSameTargetTests : DirectiveTest<ChangelogBlock>
 		aug5Bundle!.Entries.Should().HaveCount(4);
 	}
 
-	[Fact]
+	[Test]
 	public void MergedBundleHasCombinedRepoName()
 	{
 		var aug5Bundle = Block!.LoadedBundles.FirstOrDefault(b => b.Version == "2025-08-05");
@@ -146,7 +146,7 @@ public class ChangelogMergeSameTargetTests : DirectiveTest<ChangelogBlock>
 		aug5Bundle.Repo.Should().Contain("+");
 	}
 
-	[Fact]
+	[Test]
 	public void RendersOnlyOneVersionHeaderPerMergedTarget()
 	{
 		// Should render only one version header for 2025-08-05, not three separate ones
@@ -158,7 +158,7 @@ public class ChangelogMergeSameTargetTests : DirectiveTest<ChangelogBlock>
 		aug01Count.Should().Be(1, "Should have exactly 1 version header for August 1, 2025");
 	}
 
-	[Fact]
+	[Test]
 	public void RendersAllEntriesFromMergedBundles()
 	{
 		Html.Should().Contain("Kibana feature for August 5th");
@@ -167,7 +167,7 @@ public class ChangelogMergeSameTargetTests : DirectiveTest<ChangelogBlock>
 		Html.Should().Contain("Serverless feature for August 5th");
 	}
 
-	[Fact]
+	[Test]
 	public void MaintainsCorrectDateOrder()
 	{
 		// August 5, 2025 should appear before August 1, 2025 (descending order)
@@ -193,10 +193,10 @@ public class ChangelogMergeSameTargetTests : DirectiveTest<ChangelogBlock>
 /// <summary>
 /// Tests that bundles with different target versions remain separate (not merged).
 /// </summary>
+[InheritsTests]
 public class ChangelogMergeDifferentTargetsTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogMergeDifferentTargetsTests(ITestOutputHelper output) : base(
-			output,
+	public ChangelogMergeDifferentTargetsTests() : base(
 			// language=markdown
 			"""
 		:::{changelog}
@@ -266,14 +266,14 @@ public class ChangelogMergeDifferentTargetsTests : DirectiveTest<ChangelogBlock>
 		);
 	}
 
-	[Fact]
+	[Test]
 	public void KeepsDifferentTargetsSeparate()
 	{
 		// All three bundles have different targets, so no merging should happen
 		Block!.LoadedBundles.Should().HaveCount(3);
 	}
 
-	[Fact]
+	[Test]
 	public void RendersAllVersionsSeparately()
 	{
 		Html.Should().Contain("9.3.0");
@@ -281,7 +281,7 @@ public class ChangelogMergeDifferentTargetsTests : DirectiveTest<ChangelogBlock>
 		Html.Should().Contain("9.1.0");
 	}
 
-	[Fact]
+	[Test]
 	public void MaintainsSemverOrder()
 	{
 		var idx93 = Html.IndexOf("9.3.0", StringComparison.Ordinal);
@@ -296,10 +296,10 @@ public class ChangelogMergeDifferentTargetsTests : DirectiveTest<ChangelogBlock>
 /// <summary>
 /// Tests that merging works correctly with a single bundle (no actual merge needed).
 /// </summary>
+[InheritsTests]
 public class ChangelogMergeSingleBundleTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogMergeSingleBundleTests(ITestOutputHelper output) : base(
-			output,
+	public ChangelogMergeSingleBundleTests() : base(
 			// language=markdown
 			"""
 		:::{changelog}
@@ -333,16 +333,16 @@ public class ChangelogMergeSingleBundleTests : DirectiveTest<ChangelogBlock>
 			)
 		);
 
-	[Fact]
+	[Test]
 	public void SingleBundleRemainsUnchanged() => Block!.LoadedBundles.Should().HaveCount(1);
 
-	[Fact]
+	[Test]
 	public void SingleBundleHasCorrectVersion() => Block!.LoadedBundles[0].Version.Should().Be("9.3.0");
 
-	[Fact]
+	[Test]
 	public void SingleBundleHasAllEntries() => Block!.LoadedBundles[0].Entries.Should().HaveCount(2);
 
-	[Fact]
+	[Test]
 	public void SingleBundleRendersCorrectly()
 	{
 		Html.Should().Contain("Feature in 9.3.0");
@@ -353,10 +353,10 @@ public class ChangelogMergeSingleBundleTests : DirectiveTest<ChangelogBlock>
 /// <summary>
 /// Tests that merging preserves sort order when bundles have both semver and date-based versions.
 /// </summary>
+[InheritsTests]
 public class ChangelogMergeMixedVersionTypesTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogMergeMixedVersionTypesTests(ITestOutputHelper output) : base(
-			output,
+	public ChangelogMergeMixedVersionTypesTests() : base(
 			// language=markdown
 			"""
 		:::{changelog}
@@ -407,14 +407,14 @@ public class ChangelogMergeMixedVersionTypesTests : DirectiveTest<ChangelogBlock
 		);
 	}
 
-	[Fact]
+	[Test]
 	public void MixedVersionTypesRemainSeparate()
 	{
 		// Semver and date-based versions should not be merged
 		Block!.LoadedBundles.Should().HaveCount(2);
 	}
 
-	[Fact]
+	[Test]
 	public void RendersAllVersions()
 	{
 		Html.Should().Contain("9.3.0");

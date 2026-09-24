@@ -13,14 +13,14 @@ namespace Elastic.Documentation.Configuration.Tests.ReleaseNotes;
 
 public class ReleaseNotesFetcherTests
 {
-	[Fact]
+	[Test]
 	public async Task FetchAsync_RequiredProductWithoutPublishedBundles_EmitsHint()
 	{
 		await using var collector = new DiagnosticsCollector([]);
 		using var handler = new NotFoundHandler();
 		var fetcher = new ReleaseNotesFetcher(NullLoggerFactory.Instance, new MockFileSystem(), handler);
 
-		var result = await fetcher.FetchAsync(collector, ["docs-builder"], ctx: TestContext.Current.CancellationToken);
+		var result = await fetcher.FetchAsync(collector, ["docs-builder"], ctx: TestContext.Current!.Execution.CancellationToken);
 
 		collector.Errors.Should().Be(0);
 		collector.Warnings.Should().Be(0);

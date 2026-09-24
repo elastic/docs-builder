@@ -2,7 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-namespace Elastic.Authoring.Tests.Blocks.Admonitions;
+namespace Elastic.Authoring.Tests.Blocks;
 
 public class AdmonitionInList : MarkdownTest
 {
@@ -13,7 +13,7 @@ public class AdmonitionInList : MarkdownTest
 		  :::::
 		""";
 
-	[Fact(DisplayName = "validate HTML")]
+	[Test, DisplayName("validate HTML")]
 	public async Task ValidateHtml() =>
 		await Docs.ConvertsToHtml(
 			"""
@@ -32,7 +32,7 @@ public class AdmonitionInList : MarkdownTest
 		"""
 		);
 
-	[Fact(DisplayName = "has no errors")]
+	[Test, DisplayName("has no errors")]
 	public async Task HasNoErrors() => await Docs.HasNoErrors();
 }
 
@@ -62,7 +62,7 @@ public class AdmonitionWithAppliesTo : MarkdownTest
 		:::
 		""";
 
-	[Fact(DisplayName = "validate HTML")]
+	[Test, DisplayName("validate HTML")]
 	public async Task ValidateHtml() =>
 		await Docs.ConvertsToHtml(
 			@"
@@ -121,7 +121,7 @@ public class AdmonitionWithAppliesTo : MarkdownTest
 "
 		);
 
-	[Fact(DisplayName = "has no errors")]
+	[Test, DisplayName("has no errors")]
 	public async Task HasNoErrors() => await Docs.HasNoErrors();
 }
 
@@ -141,7 +141,7 @@ public class NestedAdmonitionInList : MarkdownTest
 		:::
 		""";
 
-	[Fact(DisplayName = "validate HTML")]
+	[Test, DisplayName("validate HTML")]
 	public async Task ValidateHtml() =>
 		await Docs.ConvertsToHtml(
 			"""
@@ -172,7 +172,7 @@ public class NestedAdmonitionInList : MarkdownTest
 		"""
 		);
 
-	[Fact(DisplayName = "has no errors")]
+	[Test, DisplayName("has no errors")]
 	public async Task HasNoErrors() => await Docs.HasNoErrors();
 }
 
@@ -194,7 +194,7 @@ public class NestedAdmonitionInListWithHeading : MarkdownTest
 		:::
 		""";
 
-	[Fact(DisplayName = "validate HTML")]
+	[Test, DisplayName("validate HTML")]
 	public async Task ValidateHtml() =>
 		await Docs.ConvertsToHtml(
 			"""
@@ -230,7 +230,7 @@ public class NestedAdmonitionInListWithHeading : MarkdownTest
 		"""
 		);
 
-	[Fact(DisplayName = "has no errors")]
+	[Test, DisplayName("has no errors")]
 	public async Task HasNoErrors() => await Docs.HasNoErrors();
 }
 
@@ -252,7 +252,7 @@ public class NestedAdmonitionInListWithHeadingInsideAdmonition : MarkdownTest
 		:::::
 		""";
 
-	[Fact(DisplayName = "validate HTML")]
+	[Test, DisplayName("validate HTML")]
 	public async Task ValidateHtml() =>
 		await Docs.ConvertsToHtml(
 			"""
@@ -288,6 +288,6 @@ public class NestedAdmonitionInListWithHeadingInsideAdmonition : MarkdownTest
 		"""
 		);
 
-	[Fact(DisplayName = "has no errors")]
+	[Test, DisplayName("has no errors")]
 	public async Task HasNoErrors() => await Docs.HasNoErrors();
 }

@@ -11,12 +11,12 @@ using Elastic.Markdown.IO;
 
 namespace Elastic.Markdown.Tests;
 
-public class BrandingCopyTests(ITestOutputHelper output)
+public class BrandingCopyTests()
 {
-	[Fact]
+	[Test]
 	public async Task CopyBrandingResources_SeparateFileSystems_DoesNotThrow()
 	{
-		var logger = new TestLoggerFactory(output);
+		var logger = new TestLoggerFactory();
 
 		var fs = new MockFileSystem(
 			new Dictionary<string, MockFileData>
@@ -38,7 +38,7 @@ branding:
 			new MockFileSystemOptions { CurrentDirectory = Paths.WorkingDirectoryRoot.FullName }
 		);
 
-		await using var collector = new DiagnosticsCollector([]).StartAsync(TestContext.Current.CancellationToken);
+		await using var collector = new DiagnosticsCollector([]).StartAsync(TestContext.Current!.Execution.CancellationToken);
 		var configurationContext = TestHelpers.CreateConfigurationContext(fs);
 		var context = new BuildContext(collector, TestHelpers.CreateDocumentationFileSystem(fs), configurationContext);
 
@@ -46,8 +46,8 @@ branding:
 		var set = new DocumentationSet(context, logger, linkResolver);
 		var generator = new DocumentationGenerator(set, logger);
 
-		await generator.GenerateAll(TestContext.Current.CancellationToken);
-		await collector.StopAsync(TestContext.Current.CancellationToken);
+		await generator.GenerateAll(TestContext.Current!.Execution.CancellationToken);
+		await collector.StopAsync(TestContext.Current!.Execution.CancellationToken);
 
 		var outputStaticDir = Path.Join(set.OutputDirectory.FullName, "_static");
 		fs.File.Exists(Path.Join(outputStaticDir, "logo.svg")).Should().BeTrue();

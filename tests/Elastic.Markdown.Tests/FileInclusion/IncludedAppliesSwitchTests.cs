@@ -13,8 +13,8 @@ namespace Elastic.Markdown.Tests.FileInclusion;
 /// Tests that when the same snippet containing applies-switch is included multiple times,
 /// each include generates unique IDs to avoid HTML ID collisions.
 /// </summary>
-public class IncludedAppliesSwitchTests(ITestOutputHelper output) : DirectiveTest<IncludeBlock>(
-	output,
+[InheritsTests]
+public class IncludedAppliesSwitchTests() : DirectiveTest<IncludeBlock>(
 	"""
 :::{include} _snippets/applies-switch.md
 :::
@@ -43,10 +43,10 @@ Content for Serverless
 		fileSystem.AddFile(@"docs/_snippets/applies-switch.md", snippet);
 	}
 
-	[Fact]
+	[Test]
 	public void ParsesBlock() => Block.Should().NotBeNull();
 
-	[Fact]
+	[Test]
 	public void EachIncludeHasUniqueIds()
 	{
 		// First include at line 2: (2 * 1000) + 0 = 2000
@@ -64,13 +64,11 @@ Content for Serverless
 /// <summary>
 /// Tests that a snippet with multiple applies-switches generates unique IDs for each one.
 /// </summary>
-public class IncludedMultipleAppliesSwitchTests(ITestOutputHelper output) : DirectiveTest<IncludeBlock>(
-	output,
-	"""
+[InheritsTests]
+public class IncludedMultipleAppliesSwitchTests() : DirectiveTest<IncludeBlock>("""
 :::{include} _snippets/multi-applies-switch.md
 :::
-"""
-)
+""")
 {
 	protected override void AddToFileSystem(MockFileSystem fileSystem)
 	{
@@ -94,10 +92,10 @@ Second switch - Serverless
 		fileSystem.AddFile(@"docs/_snippets/multi-applies-switch.md", snippet);
 	}
 
-	[Fact]
+	[Test]
 	public void ParsesBlock() => Block.Should().NotBeNull();
 
-	[Fact]
+	[Test]
 	public void EachAppliesSwitchHasUniqueIds()
 	{
 		// Include at line 2, first applies-switch at line 0: (2 * 1000) + 0 = 2000

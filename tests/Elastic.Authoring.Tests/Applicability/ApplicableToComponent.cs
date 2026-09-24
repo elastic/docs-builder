@@ -8,7 +8,7 @@ using Elastic.Documentation.AppliesTo;
 // Alias needed: file namespace contains 'AppliesToDirective' as a segment, which shadows the type.
 using AppliesToDirectiveType = Elastic.Markdown.Myst.Directives.AppliesTo.AppliesToDirective;
 
-namespace Elastic.Authoring.Tests.Applicability.ApplicableToComponent;
+namespace Elastic.Authoring.Tests.Applicability;
 
 public class StackGaFutureApplicability : MarkdownTest
 {
@@ -18,7 +18,7 @@ public class StackGaFutureApplicability : MarkdownTest
 		```
 		""";
 
-	[Fact(DisplayName = "parses to AppliesDirective")]
+	[Test, DisplayName("parses to AppliesDirective")]
 	public async Task ParsesAppliesDirective()
 	{
 		var parsesTask = Docs.Converts("index.md").Parses<AppliesToDirectiveType>();
@@ -26,7 +26,7 @@ public class StackGaFutureApplicability : MarkdownTest
 		await parsesTask.AppliesToDirective(new ApplicableTo { Stack = Applies("ga 9.0.0") });
 	}
 
-	[Fact(DisplayName = "renders GA with version")]
+	[Test, DisplayName("renders GA with version")]
 	public async Task RendersGaWithVersion() =>
 		await Docs.ConvertsToHtml(
 			@"
@@ -46,7 +46,7 @@ public class StackPreviewFutureVersion : MarkdownTest
 		```
 		""";
 
-	[Fact(DisplayName = "renders preview future version as planned")]
+	[Test, DisplayName("renders preview future version as planned")]
 	public async Task RendersPreviewFutureVersionAsPlanned() =>
 		await Docs.ConvertsToHtml(
 			@"
@@ -66,7 +66,7 @@ public class StackBetaFutureVersion : MarkdownTest
 		```
 		""";
 
-	[Fact(DisplayName = "renders beta future version")]
+	[Test, DisplayName("renders beta future version")]
 	public async Task RendersBetaFutureVersion() =>
 		await Docs.ConvertsToHtml(
 			@"
@@ -86,7 +86,7 @@ public class StackExperimentalFutureVersion : MarkdownTest
 		```
 		""";
 
-	[Fact(DisplayName = "parses to AppliesDirective")]
+	[Test, DisplayName("parses to AppliesDirective")]
 	public async Task ParsesAppliesDirective()
 	{
 		var parsesTask = Docs.Converts("index.md").Parses<AppliesToDirectiveType>();
@@ -94,7 +94,7 @@ public class StackExperimentalFutureVersion : MarkdownTest
 		await parsesTask.AppliesToDirective(new ApplicableTo { Stack = Applies("experimental 9.1.0") });
 	}
 
-	[Fact(DisplayName = "renders experimental future version as planned")]
+	[Test, DisplayName("renders experimental future version as planned")]
 	public async Task RendersExperimentalFutureVersionAsPlanned() =>
 		await Docs.ConvertsToHtml(
 			@"
@@ -114,7 +114,7 @@ public class StackPlannedDeprecation : MarkdownTest
 		```
 		""";
 
-	[Fact(DisplayName = "renders deprecation planned")]
+	[Test, DisplayName("renders deprecation planned")]
 	public async Task RendersDeprecationPlanned() =>
 		await Docs.ConvertsToHtml(
 			@"
@@ -134,7 +134,7 @@ public class StackRemovalPlanned : MarkdownTest
 		```
 		""";
 
-	[Fact(DisplayName = "renders planned for removal")]
+	[Test, DisplayName("renders planned for removal")]
 	public async Task RendersPlannedForRemoval() =>
 		await Docs.ConvertsToHtml(
 			@"
@@ -154,7 +154,7 @@ public class StackGaNoVersion : MarkdownTest
 		```
 		""";
 
-	[Fact(DisplayName = "renders ga without version in badge or popover")]
+	[Test, DisplayName("renders ga without version in badge or popover")]
 	public async Task RendersGaWithoutVersionInBadgeOrPopover() =>
 		await Docs.ConvertsToHtml(
 			@"
@@ -174,7 +174,7 @@ public class ServerlessGa : MarkdownTest
 		```
 		""";
 
-	[Fact(DisplayName = "renders serverless ga")]
+	[Test, DisplayName("renders serverless ga")]
 	public async Task RendersServerlessGa() =>
 		await Docs.ConvertsToHtml(
 			@"
@@ -197,7 +197,7 @@ public class ServerlessIndividualProjects : MarkdownTest
 		```
 		""";
 
-	[Fact(DisplayName = "renders serverless individual projects")]
+	[Test, DisplayName("renders serverless individual projects")]
 	public async Task RendersServerlessIndividualProjects() =>
 		await Docs.ConvertsToHtml(
 			@"
@@ -222,7 +222,7 @@ public class ServerlessVectorDatabase : MarkdownTest
 		```
 		""";
 
-	[Fact(DisplayName = "renders serverless vector database")]
+	[Test, DisplayName("renders serverless vector database")]
 	public async Task RendersServerlessVectorDatabase() =>
 		await Docs.ConvertsToHtml(
 			@"
@@ -242,7 +242,7 @@ public class DeploymentEce : MarkdownTest
 		```
 		""";
 
-	[Fact(DisplayName = "renders ECE deployment")]
+	[Test, DisplayName("renders ECE deployment")]
 	public async Task RendersEceDeployment() =>
 		await Docs.ConvertsToHtml(
 			@"
@@ -263,7 +263,7 @@ public class DeploymentEck : MarkdownTest
 		```
 		""";
 
-	[Fact(DisplayName = "renders ECK deployment")]
+	[Test, DisplayName("renders ECK deployment")]
 	public async Task RendersEckDeployment() =>
 		await Docs.ConvertsToHtml(
 			@"
@@ -285,7 +285,7 @@ public class DeploymentEss : MarkdownTest
 		```
 		""";
 
-	[Fact(DisplayName = "renders ECH deployment")]
+	[Test, DisplayName("renders ECH deployment")]
 	public async Task RendersEchDeployment() =>
 		await Docs.ConvertsToHtml(
 			@"
@@ -306,7 +306,7 @@ public class DeploymentSelfManaged : MarkdownTest
 		```
 		""";
 
-	[Fact(DisplayName = "renders self-managed deployment")]
+	[Test, DisplayName("renders self-managed deployment")]
 	public async Task RendersSelfManagedDeployment() =>
 		await Docs.ConvertsToHtml(
 			@"
@@ -328,7 +328,7 @@ public class ApmAgentsFutureVersions : MarkdownTest
 		```
 		""";
 
-	[Fact(DisplayName = "renders APM agents planned")]
+	[Test, DisplayName("renders APM agents planned")]
 	public async Task RendersApmAgentsPlanned() =>
 		await Docs.ConvertsToHtml(
 			@"
@@ -355,7 +355,7 @@ public class EdotAgentsFutureVersions : MarkdownTest
 		```
 		""";
 
-	[Fact(DisplayName = "renders EDOT agents planned")]
+	[Test, DisplayName("renders EDOT agents planned")]
 	public async Task RendersEdotAgentsPlanned() =>
 		await Docs.ConvertsToHtml(
 			@"
@@ -379,7 +379,7 @@ public class MixedUnreleasedLifecyclesFallsBackToPlanned : MarkdownTest
 		```
 		""";
 
-	[Fact(DisplayName = "renders Planned when GA and Preview are both unreleased")]
+	[Test, DisplayName("renders Planned when GA and Preview are both unreleased")]
 	public async Task RendersPlannedWhenGaAndPreviewAreBothUnreleased() =>
 		await Docs.ConvertsToHtml(
 			@"
@@ -399,7 +399,7 @@ public class DeprecationPlanned : MarkdownTest
 		```
 		""";
 
-	[Fact(DisplayName = "renders deprecation planned for future version")]
+	[Test, DisplayName("renders deprecation planned for future version")]
 	public async Task RendersDeprecationPlannedForFutureVersion() =>
 		await Docs.ConvertsToHtml(
 			@"
@@ -419,7 +419,7 @@ public class RemovalPlanned : MarkdownTest
 		```
 		""";
 
-	[Fact(DisplayName = "renders removal planned for future version")]
+	[Test, DisplayName("renders removal planned for future version")]
 	public async Task RendersRemovalPlannedForFutureVersion() =>
 		await Docs.ConvertsToHtml(
 			@"
@@ -439,7 +439,7 @@ public class UnavailableLifecycle : MarkdownTest
 		```
 		""";
 
-	[Fact(DisplayName = "renders unavailable")]
+	[Test, DisplayName("renders unavailable")]
 	public async Task RendersUnavailable() =>
 		await Docs.ConvertsToHtml(
 			@"
@@ -459,7 +459,7 @@ public class ProductAllVersions : MarkdownTest
 		```
 		""";
 
-	[Fact(DisplayName = "renders product all versions")]
+	[Test, DisplayName("renders product all versions")]
 	public async Task RendersProductAllVersions() =>
 		await Docs.ConvertsToHtml(
 			@"
@@ -478,7 +478,7 @@ public class ProductPreview : MarkdownTest
 		```
 		""";
 
-	[Fact(DisplayName = "renders product preview")]
+	[Test, DisplayName("renders product preview")]
 	public async Task RendersProductPreview() =>
 		await Docs.ConvertsToHtml(
 			@"
@@ -507,7 +507,7 @@ public class ComplexMixedScenario : MarkdownTest
 		```
 		""";
 
-	[Fact(DisplayName = "renders complex mixed scenario")]
+	[Test, DisplayName("renders complex mixed scenario")]
 	public async Task RendersComplexMixedScenario() =>
 		await Docs.ConvertsToHtml(
 			@"
@@ -542,7 +542,7 @@ public class StackAndEceFutureVersions : MarkdownTest
 		```
 		""";
 
-	[Fact(DisplayName = "renders stack and ece planned")]
+	[Test, DisplayName("renders stack and ece planned")]
 	public async Task RendersStackAndEcePlanned() =>
 		await Docs.ConvertsToHtml(
 			@"
@@ -564,7 +564,7 @@ public class StackEmptyDefaultsToGa : MarkdownTest
 		```
 		""";
 
-	[Fact(DisplayName = "no version defaults to ga")]
+	[Test, DisplayName("no version defaults to ga")]
 	public async Task NoVersionDefaultsToGa() =>
 		await Docs.ConvertsToHtml(
 			@"
@@ -592,7 +592,7 @@ public class AllProductsFutureVersionCoverage : MarkdownTest
 		```
 		""";
 
-	[Fact(DisplayName = "renders VersioningSystemId coverage")]
+	[Test, DisplayName("renders VersioningSystemId coverage")]
 	public async Task RendersVersioningSystemIdCoverage() =>
 		await Docs.ConvertsToHtml(
 			@"
@@ -617,7 +617,7 @@ public class GaWithBetaUsesVersionInference : MarkdownTest
 		```
 		""";
 
-	[Fact(DisplayName = "renders multiple lifecycles with ellipsis and shows GA lifecycle")]
+	[Test, DisplayName("renders multiple lifecycles with ellipsis and shows GA lifecycle")]
 	public async Task RendersMultipleLifecyclesWithEllipsisAndShowsGaLifecycle() =>
 		await Docs.ConvertsToHtml(
 			@"
@@ -637,7 +637,7 @@ public class StackGaReleasedVersion : MarkdownTest
 		```
 		""";
 
-	[Fact(DisplayName = "renders ga since released version")]
+	[Test, DisplayName("renders ga since released version")]
 	public async Task RendersGaSinceReleasedVersion() =>
 		await Docs.ConvertsToHtml(
 			@"
@@ -657,7 +657,7 @@ public class StackPreviewReleasedVersion : MarkdownTest
 		```
 		""";
 
-	[Fact(DisplayName = "renders preview since released version")]
+	[Test, DisplayName("renders preview since released version")]
 	public async Task RendersPreviewSinceReleasedVersion() =>
 		await Docs.ConvertsToHtml(
 			@"
@@ -677,7 +677,7 @@ public class StackBetaReleasedVersion : MarkdownTest
 		```
 		""";
 
-	[Fact(DisplayName = "renders beta since released version")]
+	[Test, DisplayName("renders beta since released version")]
 	public async Task RendersBetaSinceReleasedVersion() =>
 		await Docs.ConvertsToHtml(
 			@"
@@ -697,7 +697,7 @@ public class StackDeprecatedReleasedVersion : MarkdownTest
 		```
 		""";
 
-	[Fact(DisplayName = "renders deprecated since released version")]
+	[Test, DisplayName("renders deprecated since released version")]
 	public async Task RendersDeprecatedSinceReleasedVersion() =>
 		await Docs.ConvertsToHtml(
 			@"
@@ -717,7 +717,7 @@ public class StackRemovedReleasedVersion : MarkdownTest
 		```
 		""";
 
-	[Fact(DisplayName = "renders removed in released version")]
+	[Test, DisplayName("renders removed in released version")]
 	public async Task RendersRemovedInReleasedVersion() =>
 		await Docs.ConvertsToHtml(
 			@"
@@ -737,7 +737,7 @@ public class StackGaExactVersionReleased : MarkdownTest
 		```
 		""";
 
-	[Fact(DisplayName = "renders ga in exact released version")]
+	[Test, DisplayName("renders ga in exact released version")]
 	public async Task RendersGaInExactReleasedVersion() =>
 		await Docs.ConvertsToHtml(
 			@"
@@ -757,7 +757,7 @@ public class StackGaRangeBothReleased : MarkdownTest
 		```
 		""";
 
-	[Fact(DisplayName = "renders ga from-to when both ends released")]
+	[Test, DisplayName("renders ga from-to when both ends released")]
 	public async Task RendersGaFromToWhenBothEndsReleased() =>
 		await Docs.ConvertsToHtml(
 			@"
@@ -777,7 +777,7 @@ public class StackGaRangeMaxUnreleased : MarkdownTest
 		```
 		""";
 
-	[Fact(DisplayName = "renders ga since min when max unreleased")]
+	[Test, DisplayName("renders ga since min when max unreleased")]
 	public async Task RendersGaSinceMinWhenMaxUnreleased() =>
 		await Docs.ConvertsToHtml(
 			@"
@@ -797,7 +797,7 @@ public class PreviewAndGaBothReleased : MarkdownTest
 		```
 		""";
 
-	[Fact(DisplayName = "renders ga badge with both lifecycles in popover")]
+	[Test, DisplayName("renders ga badge with both lifecycles in popover")]
 	public async Task RendersGaBadgeWithBothLifecyclesInPopover() =>
 		await Docs.ConvertsToHtml(
 			@"
@@ -817,7 +817,7 @@ public class ExplicitPatchVersionWithExclamationMark : MarkdownTest
 		```
 		""";
 
-	[Fact(DisplayName = "renders patch version when explicitly requested with exclamation mark")]
+	[Test, DisplayName("renders patch version when explicitly requested with exclamation mark")]
 	public async Task RendersPatchVersionWhenExplicitlyRequestedWithExclamationMark() =>
 		await Docs.ConvertsToHtml(
 			@"
@@ -837,7 +837,7 @@ public class PatchVersionHiddenWithoutExclamationMark : MarkdownTest
 		```
 		""";
 
-	[Fact(DisplayName = "hides patch version when no exclamation mark used")]
+	[Test, DisplayName("hides patch version when no exclamation mark used")]
 	public async Task HidesPatchVersionWhenNoExclamationMarkUsed() =>
 		await Docs.ConvertsToHtml(
 			@"
@@ -857,7 +857,7 @@ public class RangeWithExplicitPatchOnBothEnds : MarkdownTest
 		```
 		""";
 
-	[Fact(DisplayName = "renders range with patch versions when both have exclamation marks")]
+	[Test, DisplayName("renders range with patch versions when both have exclamation marks")]
 	public async Task RendersRangeWithPatchVersionsWhenBothHaveExclamationMarks() =>
 		await Docs.ConvertsToHtml(
 			@"
@@ -877,7 +877,7 @@ public class RangeWithExplicitPatchOnlyOnMinimumVersion : MarkdownTest
 		```
 		""";
 
-	[Fact(DisplayName = "renders range with patch on mininum version only when explicit operator is used")]
+	[Test, DisplayName("renders range with patch on mininum version only when explicit operator is used")]
 	public async Task RendersRangeWithPatchOnMinimumVersionOnlyWhenExplicitOperatorIsUsed() =>
 		await Docs.ConvertsToHtml(
 			@"
@@ -897,7 +897,7 @@ public class RangeWithExplicitPatchOnlyOnMaximumVersion : MarkdownTest
 		```
 		""";
 
-	[Fact(DisplayName = "renders range with patch on maxinum version only when explicit operator is used")]
+	[Test, DisplayName("renders range with patch on maxinum version only when explicit operator is used")]
 	public async Task RendersRangeWithPatchOnMaximumVersionOnlyWhenExplicitOperatorIsUsed() =>
 		await Docs.ConvertsToHtml(
 			@"
@@ -917,7 +917,7 @@ public class ExactVersionWithExplicitPatch : MarkdownTest
 		```
 		""";
 
-	[Fact(DisplayName = "renders exact version with patch when explicit operator is used")]
+	[Test, DisplayName("renders exact version with patch when explicit operator is used")]
 	public async Task RendersExactVersionWithPatchWhenExplicitOperatorIsUsed() =>
 		await Docs.ConvertsToHtml(
 			@"

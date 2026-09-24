@@ -10,9 +10,9 @@ using FakeItEasy;
 
 namespace Elastic.Changelog.Tests.Changelogs.Create;
 
-public class NoteCreationTests(ITestOutputHelper output) : CreateChangelogTestBase(output)
+public class NoteCreationTests() : CreateChangelogTestBase()
 {
-	[Fact]
+	[Test]
 	public async Task CreateNote_WithAllRequiredFields_WritesNoteFile()
 	{
 		var service = CreateService();
@@ -27,7 +27,7 @@ public class NoteCreationTests(ITestOutputHelper output) : CreateChangelogTestBa
 			IsNote = true
 		};
 
-		var result = await service.CreateNote(Collector, input, TestContext.Current.CancellationToken);
+		var result = await service.CreateNote(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		result.Should().BeTrue(
 			$"Errors: {string.Join("; ", Collector.Diagnostics.Where(d => d.Severity == Severity.Error).Select(d => d.Message))}"
@@ -37,12 +37,12 @@ public class NoteCreationTests(ITestOutputHelper output) : CreateChangelogTestBa
 		var files = FileSystem.Directory.GetFiles(outputDir, "*.yml");
 		files.Should().HaveCount(1);
 		FileSystem.Path.GetFileName(files[0]).Should().StartWith("note-");
-		var content = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current.CancellationToken);
+		var content = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current!.Execution.CancellationToken);
 		content.Should().Contain("Slow rollover fix");
 		content.Should().Contain("bug-fix");
 	}
 
-	[Fact]
+	[Test]
 	public async Task CreateNote_ProductWithoutTarget_ReturnsError()
 	{
 		var service = CreateService();
@@ -56,7 +56,7 @@ public class NoteCreationTests(ITestOutputHelper output) : CreateChangelogTestBa
 			IsNote = true
 		};
 
-		var result = await service.CreateNote(Collector, input, TestContext.Current.CancellationToken);
+		var result = await service.CreateNote(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		result.Should().BeFalse();
 		Collector
@@ -65,7 +65,7 @@ public class NoteCreationTests(ITestOutputHelper output) : CreateChangelogTestBa
 			.Contain(d => d.Severity == Severity.Error && d.Message.Contains("elasticsearch") && d.Message.Contains("version"));
 	}
 
-	[Fact]
+	[Test]
 	public async Task CreateNote_EmptyTarget_ReturnsError()
 	{
 		var service = CreateService();
@@ -79,7 +79,7 @@ public class NoteCreationTests(ITestOutputHelper output) : CreateChangelogTestBa
 			IsNote = true
 		};
 
-		var result = await service.CreateNote(Collector, input, TestContext.Current.CancellationToken);
+		var result = await service.CreateNote(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		result.Should().BeFalse();
 		Collector
@@ -88,7 +88,7 @@ public class NoteCreationTests(ITestOutputHelper output) : CreateChangelogTestBa
 			.Contain(d => d.Severity == Severity.Error && d.Message.Contains("elasticsearch") && d.Message.Contains("version"));
 	}
 
-	[Fact]
+	[Test]
 	public async Task CreateNote_NameOverridesSlug_UsesProvidedName()
 	{
 		var service = CreateService();
@@ -104,7 +104,7 @@ public class NoteCreationTests(ITestOutputHelper output) : CreateChangelogTestBa
 			NoteName = "tsdb-gap"
 		};
 
-		var result = await service.CreateNote(Collector, input, TestContext.Current.CancellationToken);
+		var result = await service.CreateNote(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		result.Should().BeTrue(
 			$"Errors: {string.Join("; ", Collector.Diagnostics.Where(d => d.Severity == Severity.Error).Select(d => d.Message))}"
@@ -114,7 +114,7 @@ public class NoteCreationTests(ITestOutputHelper output) : CreateChangelogTestBa
 		FileSystem.Path.GetFileName(files[0]).Should().Be("note-tsdb-gap.yml");
 	}
 
-	[Fact]
+	[Test]
 	public async Task CreateNote_TitleSlugIsFilename_WhenNameAbsent()
 	{
 		var service = CreateService();
@@ -129,7 +129,7 @@ public class NoteCreationTests(ITestOutputHelper output) : CreateChangelogTestBa
 			IsNote = true
 		};
 
-		var result = await service.CreateNote(Collector, input, TestContext.Current.CancellationToken);
+		var result = await service.CreateNote(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		result.Should().BeTrue(
 			$"Errors: {string.Join("; ", Collector.Diagnostics.Where(d => d.Severity == Severity.Error).Select(d => d.Message))}"
@@ -139,7 +139,7 @@ public class NoteCreationTests(ITestOutputHelper output) : CreateChangelogTestBa
 		FileSystem.Path.GetFileName(files[0]).Should().Be("note-fix-slow-rollover.yml");
 	}
 
-	[Fact]
+	[Test]
 	public async Task CreateNote_NumericPrWithoutOwnerRepo_ReturnsError()
 	{
 		var service = CreateService();
@@ -154,7 +154,7 @@ public class NoteCreationTests(ITestOutputHelper output) : CreateChangelogTestBa
 			IsNote = true
 		};
 
-		var result = await service.CreateNote(Collector, input, TestContext.Current.CancellationToken);
+		var result = await service.CreateNote(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		result.Should().BeFalse();
 		Collector
@@ -163,7 +163,7 @@ public class NoteCreationTests(ITestOutputHelper output) : CreateChangelogTestBa
 			.Contain(d => d.Severity == Severity.Error && d.Message.Contains("--owner") && d.Message.Contains("--repo"));
 	}
 
-	[Fact]
+	[Test]
 	public async Task CreateNote_NumericIssueWithoutOwnerRepo_ReturnsError()
 	{
 		var service = CreateService();
@@ -178,7 +178,7 @@ public class NoteCreationTests(ITestOutputHelper output) : CreateChangelogTestBa
 			IsNote = true
 		};
 
-		var result = await service.CreateNote(Collector, input, TestContext.Current.CancellationToken);
+		var result = await service.CreateNote(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		result.Should().BeFalse();
 		Collector
@@ -187,7 +187,7 @@ public class NoteCreationTests(ITestOutputHelper output) : CreateChangelogTestBa
 			.Contain(d => d.Severity == Severity.Error && d.Message.Contains("--owner") && d.Message.Contains("--repo"));
 	}
 
-	[Fact]
+	[Test]
 	public async Task CreateNote_WithPrs_AllowedWithoutError()
 	{
 		var service = CreateService();
@@ -204,7 +204,7 @@ public class NoteCreationTests(ITestOutputHelper output) : CreateChangelogTestBa
 			NoteName = "known-limitation"
 		};
 
-		var result = await service.CreateNote(Collector, input, TestContext.Current.CancellationToken);
+		var result = await service.CreateNote(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		result.Should().BeTrue(
 			$"Errors: {string.Join("; ", Collector.Diagnostics.Where(d => d.Severity == Severity.Error).Select(d => d.Message))}"
@@ -213,11 +213,11 @@ public class NoteCreationTests(ITestOutputHelper output) : CreateChangelogTestBa
 		var files = FileSystem.Directory.GetFiles(outputDir, "*.yml");
 		files.Should().HaveCount(1);
 		FileSystem.Path.GetFileName(files[0]).Should().Be("note-known-limitation.yml");
-		var content = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current.CancellationToken);
+		var content = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current!.Execution.CancellationToken);
 		content.Should().Contain("pull/12345");
 	}
 
-	[Fact]
+	[Test]
 	public async Task CreateNote_MixedNumericAndUrlPrWithoutOwnerRepo_ReturnsError()
 	{
 		var service = CreateService();
@@ -232,7 +232,7 @@ public class NoteCreationTests(ITestOutputHelper output) : CreateChangelogTestBa
 			IsNote = true
 		};
 
-		var result = await service.CreateNote(Collector, input, TestContext.Current.CancellationToken);
+		var result = await service.CreateNote(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		result.Should().BeFalse();
 		Collector
@@ -241,7 +241,7 @@ public class NoteCreationTests(ITestOutputHelper output) : CreateChangelogTestBa
 			.Contain(d => d.Severity == Severity.Error && d.Message.Contains("--owner") && d.Message.Contains("--repo"));
 	}
 
-	[Fact]
+	[Test]
 	public async Task CreateNote_MixedNumericAndUrlIssueWithoutOwnerRepo_ReturnsError()
 	{
 		var service = CreateService();
@@ -256,7 +256,7 @@ public class NoteCreationTests(ITestOutputHelper output) : CreateChangelogTestBa
 			IsNote = true
 		};
 
-		var result = await service.CreateNote(Collector, input, TestContext.Current.CancellationToken);
+		var result = await service.CreateNote(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		result.Should().BeFalse();
 		Collector
@@ -265,7 +265,7 @@ public class NoteCreationTests(ITestOutputHelper output) : CreateChangelogTestBa
 			.Contain(d => d.Severity == Severity.Error && d.Message.Contains("--owner") && d.Message.Contains("--repo"));
 	}
 
-	[Fact]
+	[Test]
 	public async Task CreateNote_InCI_ExtractionDisabledByCli_ClearsCIDescription()
 	{
 		// language=yaml
@@ -308,7 +308,7 @@ public class NoteCreationTests(ITestOutputHelper output) : CreateChangelogTestBa
 			ExtractReleaseNotes = false
 		};
 
-		var result = await service.CreateNote(Collector, input, TestContext.Current.CancellationToken);
+		var result = await service.CreateNote(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		result.Should().BeTrue(
 			$"Errors: {string.Join("; ", Collector.Diagnostics.Where(d => d.Severity == Severity.Error).Select(d => d.Message))}"
@@ -316,7 +316,7 @@ public class NoteCreationTests(ITestOutputHelper output) : CreateChangelogTestBa
 		Collector.Errors.Should().Be(0);
 		var files = FileSystem.Directory.GetFiles(outputDir, "*.yml");
 		files.Should().HaveCount(1);
-		var content = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current.CancellationToken);
+		var content = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current!.Execution.CancellationToken);
 		content.Should().NotContain("CI injected description that should be suppressed");
 	}
 }

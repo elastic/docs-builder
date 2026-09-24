@@ -24,7 +24,7 @@ public class NavigationEnrichmentTests
 	private static DocumentationDocument NewDoc() =>
 		new() { Path = "/docs/reference/some-page", Title = "Some Page", SearchTitle = "Some Page" };
 
-	[Fact]
+	[Test]
 	public void LandingPageRoot_GetsLowDepthAndNonDefaultToc()
 	{
 		var root = new FakeRootNavigationItem { NavigationTitle = "Reference" };
@@ -38,7 +38,7 @@ public class NavigationEnrichmentTests
 		doc.Section.Should().Be("reference");
 	}
 
-	[Fact]
+	[Test]
 	public void ReleaseNotesRoot_IsDampenedRelativeToOtherRootsAtTheSameDepth()
 	{
 		var releaseNotesRoot = new FakeRootNavigationItem
@@ -65,7 +65,7 @@ public class NavigationEnrichmentTests
 		releaseNotesDoc.Navigation.TableOfContents.Should().BeGreaterThan(otherDoc.Navigation.TableOfContents);
 	}
 
-	[Fact]
+	[Test]
 	public void SectionNode_GetsFixedNonDefaultToc()
 	{
 		var root = new FakeRootNavigationItem { NavigationTitle = "Reference" };
@@ -79,7 +79,7 @@ public class NavigationEnrichmentTests
 		doc.Navigation.TableOfContents.Should().Be(50);
 	}
 
-	[Fact]
+	[Test]
 	public void DeepLeafPage_GetsStructuralDepthAndNonDefaultToc()
 	{
 		var root = new FakeRootNavigationItem { NavigationTitle = "Reference" };
@@ -95,7 +95,7 @@ public class NavigationEnrichmentTests
 		doc.Section.Should().Be("elasticsearch");
 	}
 
-	[Fact]
+	[Test]
 	public void NoNavigation_OpenApiPath_FallsBackToExplicitNonPenaltyValues()
 	{
 		var doc = NewDoc();
@@ -109,7 +109,7 @@ public class NavigationEnrichmentTests
 		doc.Navigation.TableOfContents.Should().NotBe(PenaltyDefault);
 	}
 
-	[Fact]
+	[Test]
 	public void ApiContentType_OverridesNavigationSectionRegardlessOfNavigation()
 	{
 		var root = new FakeRootNavigationItem { NavigationTitle = "Reference" };

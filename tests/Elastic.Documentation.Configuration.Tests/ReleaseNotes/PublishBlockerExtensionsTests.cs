@@ -15,7 +15,7 @@ public class PublishBlockerExtensionsTests
 {
 	// --- No rules ---
 
-	[Fact]
+	[Test]
 	public void ShouldBlock_ReturnsFalse_WhenNoBlockingRules()
 	{
 		var blocker = new PublishBlocker();
@@ -26,7 +26,7 @@ public class PublishBlockerExtensionsTests
 
 	// --- Exclude types (default mode) ---
 
-	[Fact]
+	[Test]
 	public void ShouldBlock_ExcludeType_Blocks_WhenTypeMatches()
 	{
 		var blocker = new PublishBlocker { Types = ["regression", "known-issue"], TypesMode = FieldMode.Exclude };
@@ -35,7 +35,7 @@ public class PublishBlockerExtensionsTests
 		blocker.ShouldBlock(entry).Should().BeTrue();
 	}
 
-	[Fact]
+	[Test]
 	public void ShouldBlock_ExcludeType_Allows_WhenTypeDoesNotMatch()
 	{
 		var blocker = new PublishBlocker { Types = ["regression", "known-issue"], TypesMode = FieldMode.Exclude };
@@ -44,7 +44,7 @@ public class PublishBlockerExtensionsTests
 		blocker.ShouldBlock(entry).Should().BeFalse();
 	}
 
-	[Fact]
+	[Test]
 	public void ShouldBlock_ExcludeType_IsCaseInsensitive()
 	{
 		var blocker = new PublishBlocker { Types = ["REGRESSION"], TypesMode = FieldMode.Exclude };
@@ -55,7 +55,7 @@ public class PublishBlockerExtensionsTests
 
 	// --- Include types ---
 
-	[Fact]
+	[Test]
 	public void ShouldBlock_IncludeType_Allows_WhenTypeMatches()
 	{
 		var blocker = new PublishBlocker { Types = ["feature", "bug-fix"], TypesMode = FieldMode.Include };
@@ -64,7 +64,7 @@ public class PublishBlockerExtensionsTests
 		blocker.ShouldBlock(entry).Should().BeFalse();
 	}
 
-	[Fact]
+	[Test]
 	public void ShouldBlock_IncludeType_Blocks_WhenTypeDoesNotMatch()
 	{
 		var blocker = new PublishBlocker { Types = ["feature", "bug-fix"], TypesMode = FieldMode.Include };
@@ -73,7 +73,7 @@ public class PublishBlockerExtensionsTests
 		blocker.ShouldBlock(entry).Should().BeTrue();
 	}
 
-	[Fact]
+	[Test]
 	public void ShouldBlock_IncludeType_IsCaseInsensitive()
 	{
 		var blocker = new PublishBlocker { Types = ["FEATURE"], TypesMode = FieldMode.Include };
@@ -84,7 +84,7 @@ public class PublishBlockerExtensionsTests
 
 	// --- Exclude areas + match any (default) ---
 
-	[Fact]
+	[Test]
 	public void ShouldBlock_ExcludeArea_MatchAny_Blocks_WhenAnyAreaMatches()
 	{
 		var blocker = new PublishBlocker { Areas = ["Internal"], AreasMode = FieldMode.Exclude, MatchAreas = MatchMode.Any };
@@ -93,7 +93,7 @@ public class PublishBlockerExtensionsTests
 		blocker.ShouldBlock(entry).Should().BeTrue();
 	}
 
-	[Fact]
+	[Test]
 	public void ShouldBlock_ExcludeArea_MatchAny_Allows_WhenNoAreaMatches()
 	{
 		var blocker = new PublishBlocker { Areas = ["Internal"], AreasMode = FieldMode.Exclude, MatchAreas = MatchMode.Any };
@@ -102,7 +102,7 @@ public class PublishBlockerExtensionsTests
 		blocker.ShouldBlock(entry).Should().BeFalse();
 	}
 
-	[Fact]
+	[Test]
 	public void ShouldBlock_ExcludeArea_IsCaseInsensitive()
 	{
 		var blocker = new PublishBlocker { Areas = ["INTERNAL"], AreasMode = FieldMode.Exclude };
@@ -113,7 +113,7 @@ public class PublishBlockerExtensionsTests
 
 	// --- Exclude areas + match all ---
 
-	[Fact]
+	[Test]
 	public void ShouldBlock_ExcludeArea_MatchAll_Blocks_WhenAllAreasMatch()
 	{
 		var blocker = new PublishBlocker { Areas = ["Internal", "Search"], AreasMode = FieldMode.Exclude, MatchAreas = MatchMode.All };
@@ -122,7 +122,7 @@ public class PublishBlockerExtensionsTests
 		blocker.ShouldBlock(entry).Should().BeTrue();
 	}
 
-	[Fact]
+	[Test]
 	public void ShouldBlock_ExcludeArea_MatchAll_Allows_WhenNotAllAreasMatch()
 	{
 		var blocker = new PublishBlocker { Areas = ["Internal"], AreasMode = FieldMode.Exclude, MatchAreas = MatchMode.All };
@@ -135,7 +135,7 @@ public class PublishBlockerExtensionsTests
 
 	// --- Include areas + match any ---
 
-	[Fact]
+	[Test]
 	public void ShouldBlock_IncludeArea_MatchAny_Allows_WhenAnyAreaMatches()
 	{
 		var blocker = new PublishBlocker { Areas = ["Search", "Monitoring"], AreasMode = FieldMode.Include, MatchAreas = MatchMode.Any };
@@ -144,7 +144,7 @@ public class PublishBlockerExtensionsTests
 		blocker.ShouldBlock(entry).Should().BeFalse();
 	}
 
-	[Fact]
+	[Test]
 	public void ShouldBlock_IncludeArea_MatchAny_Blocks_WhenNoAreaMatches()
 	{
 		var blocker = new PublishBlocker { Areas = ["Search", "Monitoring"], AreasMode = FieldMode.Include, MatchAreas = MatchMode.Any };
@@ -155,7 +155,7 @@ public class PublishBlockerExtensionsTests
 
 	// --- Include areas + match all ---
 
-	[Fact]
+	[Test]
 	public void ShouldBlock_IncludeArea_MatchAll_Allows_WhenAllAreasInIncludeList()
 	{
 		var blocker = new PublishBlocker
@@ -170,7 +170,7 @@ public class PublishBlockerExtensionsTests
 		blocker.ShouldBlock(entry).Should().BeFalse();
 	}
 
-	[Fact]
+	[Test]
 	public void ShouldBlock_IncludeArea_MatchAll_Blocks_WhenNotAllAreasInIncludeList()
 	{
 		var blocker = new PublishBlocker { Areas = ["Search"], AreasMode = FieldMode.Include, MatchAreas = MatchMode.All };
@@ -182,7 +182,7 @@ public class PublishBlockerExtensionsTests
 
 	// --- Entry with no areas ---
 
-	[Fact]
+	[Test]
 	public void ShouldBlock_ExcludeArea_ReturnsFalse_WhenEntryHasNoAreas()
 	{
 		var blocker = new PublishBlocker { Areas = ["Internal"], AreasMode = FieldMode.Exclude };
@@ -191,7 +191,7 @@ public class PublishBlockerExtensionsTests
 		blocker.ShouldBlock(entry).Should().BeFalse();
 	}
 
-	[Fact]
+	[Test]
 	public void ShouldBlock_IncludeArea_ReturnsTrue_WhenEntryHasNoAreas()
 	{
 		// Include mode with no entry areas → entry doesn't match the include list → blocked
@@ -203,7 +203,7 @@ public class PublishBlockerExtensionsTests
 
 	// --- Mixed modes (exclude_types + include_areas) ---
 
-	[Fact]
+	[Test]
 	public void ShouldBlock_MixedModes_BlockedByExcludeType()
 	{
 		var blocker = new PublishBlocker
@@ -219,7 +219,7 @@ public class PublishBlockerExtensionsTests
 		blocker.ShouldBlock(entry).Should().BeTrue();
 	}
 
-	[Fact]
+	[Test]
 	public void ShouldBlock_MixedModes_BlockedByIncludeArea()
 	{
 		var blocker = new PublishBlocker
@@ -235,7 +235,7 @@ public class PublishBlockerExtensionsTests
 		blocker.ShouldBlock(entry).Should().BeTrue();
 	}
 
-	[Fact]
+	[Test]
 	public void ShouldBlock_MixedModes_Allowed_WhenTypeNotExcludedAndAreaIncluded()
 	{
 		var blocker = new PublishBlocker
@@ -253,7 +253,7 @@ public class PublishBlockerExtensionsTests
 
 	// --- MatchesType ---
 
-	[Fact]
+	[Test]
 	public void MatchesType_ReturnsTrue_WhenTypeInList()
 	{
 		var blocker = new PublishBlocker { Types = ["feature", "bug-fix"] };
@@ -261,7 +261,7 @@ public class PublishBlockerExtensionsTests
 		blocker.MatchesType("feature").Should().BeTrue();
 	}
 
-	[Fact]
+	[Test]
 	public void MatchesType_ReturnsFalse_WhenTypeNotInList()
 	{
 		var blocker = new PublishBlocker { Types = ["feature", "bug-fix"] };
@@ -269,7 +269,7 @@ public class PublishBlockerExtensionsTests
 		blocker.MatchesType("regression").Should().BeFalse();
 	}
 
-	[Fact]
+	[Test]
 	public void MatchesType_ReturnsFalse_WhenNoTypes()
 	{
 		var blocker = new PublishBlocker();
@@ -279,7 +279,7 @@ public class PublishBlockerExtensionsTests
 
 	// --- MatchesArea ---
 
-	[Fact]
+	[Test]
 	public void MatchesArea_MatchAny_ReturnsTrue_WhenAnyAreaInList()
 	{
 		var blocker = new PublishBlocker { Areas = ["Search", "Internal"], MatchAreas = MatchMode.Any };
@@ -287,7 +287,7 @@ public class PublishBlockerExtensionsTests
 		blocker.MatchesArea(["Search", "Other"]).Should().BeTrue();
 	}
 
-	[Fact]
+	[Test]
 	public void MatchesArea_MatchAny_ReturnsFalse_WhenNoAreaInList()
 	{
 		var blocker = new PublishBlocker { Areas = ["Search", "Internal"], MatchAreas = MatchMode.Any };
@@ -295,7 +295,7 @@ public class PublishBlockerExtensionsTests
 		blocker.MatchesArea(["Other", "External"]).Should().BeFalse();
 	}
 
-	[Fact]
+	[Test]
 	public void MatchesArea_MatchAll_ReturnsTrue_WhenAllEntryAreasInList()
 	{
 		var blocker = new PublishBlocker { Areas = ["Search", "Internal", "Monitoring"], MatchAreas = MatchMode.All };
@@ -303,7 +303,7 @@ public class PublishBlockerExtensionsTests
 		blocker.MatchesArea(["Search", "Internal"]).Should().BeTrue();
 	}
 
-	[Fact]
+	[Test]
 	public void MatchesArea_MatchAll_ReturnsFalse_WhenNotAllEntryAreasInList()
 	{
 		var blocker = new PublishBlocker { Areas = ["Search"], MatchAreas = MatchMode.All };
@@ -311,7 +311,7 @@ public class PublishBlockerExtensionsTests
 		blocker.MatchesArea(["Search", "Internal"]).Should().BeFalse();
 	}
 
-	[Fact]
+	[Test]
 	public void MatchesArea_MatchConjunction_ReturnsTrue_WhenAllListedAreasOnEntry()
 	{
 		var blocker = new PublishBlocker { Areas = ["Search", "Internal"], MatchAreas = MatchMode.Conjunction };
@@ -320,7 +320,7 @@ public class PublishBlockerExtensionsTests
 		blocker.MatchesArea(["Search", "Internal", "Monitoring"]).Should().BeTrue();
 	}
 
-	[Fact]
+	[Test]
 	public void MatchesArea_MatchConjunction_ReturnsFalse_WhenAnyListedAreaMissingFromEntry()
 	{
 		var blocker = new PublishBlocker { Areas = ["Search", "Internal"], MatchAreas = MatchMode.Conjunction };
@@ -328,7 +328,7 @@ public class PublishBlockerExtensionsTests
 		blocker.MatchesArea(["Search"]).Should().BeFalse();
 	}
 
-	[Fact]
+	[Test]
 	public void MatchesArea_ReturnsFalse_WhenNoAreas()
 	{
 		var blocker = new PublishBlocker();
@@ -336,7 +336,7 @@ public class PublishBlockerExtensionsTests
 		blocker.MatchesArea(["Search"]).Should().BeFalse();
 	}
 
-	[Fact]
+	[Test]
 	public void MatchesArea_ReturnsFalse_WhenEntryAreasNull()
 	{
 		var blocker = new PublishBlocker { Areas = ["Search"] };
@@ -344,7 +344,7 @@ public class PublishBlockerExtensionsTests
 		blocker.MatchesArea(null).Should().BeFalse();
 	}
 
-	[Fact]
+	[Test]
 	public void MatchesArea_ReturnsFalse_WhenEntryAreasEmpty()
 	{
 		var blocker = new PublishBlocker { Areas = ["Search"] };
@@ -354,7 +354,7 @@ public class PublishBlockerExtensionsTests
 
 	// --- HasBlockingRules ---
 
-	[Fact]
+	[Test]
 	public void HasBlockingRules_ReturnsFalse_WhenEmpty()
 	{
 		var blocker = new PublishBlocker();
@@ -362,7 +362,7 @@ public class PublishBlockerExtensionsTests
 		blocker.HasBlockingRules.Should().BeFalse();
 	}
 
-	[Fact]
+	[Test]
 	public void HasBlockingRules_ReturnsTrue_WhenTypesSet()
 	{
 		var blocker = new PublishBlocker { Types = ["feature"] };
@@ -370,7 +370,7 @@ public class PublishBlockerExtensionsTests
 		blocker.HasBlockingRules.Should().BeTrue();
 	}
 
-	[Fact]
+	[Test]
 	public void HasBlockingRules_ReturnsTrue_WhenAreasSet()
 	{
 		var blocker = new PublishBlocker { Areas = ["Search"] };
@@ -380,7 +380,7 @@ public class PublishBlockerExtensionsTests
 
 	// --- Plan examples from area matching table ---
 
-	[Fact]
+	[Test]
 	public void PlanExample_ExcludeAreas_MatchAny_EntryWithMatchingArea_Blocked()
 	{
 		// exclude_areas: [Internal], match: any, entry areas: ["Search", "Internal"] → Blocked
@@ -390,7 +390,7 @@ public class PublishBlockerExtensionsTests
 		blocker.ShouldBlock(entry).Should().BeTrue();
 	}
 
-	[Fact]
+	[Test]
 	public void PlanExample_ExcludeAreas_MatchAll_NotAllMatch_Allowed()
 	{
 		// exclude_areas: [Internal], match: all, entry areas: ["Search", "Internal"] → Allowed
@@ -400,7 +400,7 @@ public class PublishBlockerExtensionsTests
 		blocker.ShouldBlock(entry).Should().BeFalse();
 	}
 
-	[Fact]
+	[Test]
 	public void PlanExample_IncludeAreas_MatchAny_SearchMatches_Allowed()
 	{
 		// include_areas: [Search], match: any, entry areas: ["Search", "Internal"] → Allowed
@@ -410,7 +410,7 @@ public class PublishBlockerExtensionsTests
 		blocker.ShouldBlock(entry).Should().BeFalse();
 	}
 
-	[Fact]
+	[Test]
 	public void PlanExample_IncludeAreas_MatchAll_InternalNotInList_Blocked()
 	{
 		// include_areas: [Search], match: all, entry areas: ["Search", "Internal"] → Blocked
@@ -420,7 +420,7 @@ public class PublishBlockerExtensionsTests
 		blocker.ShouldBlock(entry).Should().BeTrue();
 	}
 
-	[Fact]
+	[Test]
 	public void ShouldBlock_ExcludeArea_MatchConjunction_Blocks_WhenAllListedAreasPresent()
 	{
 		var blocker = new PublishBlocker
@@ -434,7 +434,7 @@ public class PublishBlockerExtensionsTests
 		blocker.ShouldBlock(entry).Should().BeTrue();
 	}
 
-	[Fact]
+	[Test]
 	public void ShouldBlock_ExcludeArea_MatchConjunction_Allows_WhenAnyListedAreaMissing()
 	{
 		var blocker = new PublishBlocker
@@ -448,7 +448,7 @@ public class PublishBlockerExtensionsTests
 		blocker.ShouldBlock(entry).Should().BeFalse();
 	}
 
-	[Fact]
+	[Test]
 	public void ShouldBlock_IncludeArea_MatchConjunction_Allows_WhenAllListedAreasPresent()
 	{
 		var blocker = new PublishBlocker
@@ -462,7 +462,7 @@ public class PublishBlockerExtensionsTests
 		blocker.ShouldBlock(entry).Should().BeFalse();
 	}
 
-	[Fact]
+	[Test]
 	public void ShouldBlock_IncludeArea_MatchConjunction_Blocks_WhenAnyListedAreaMissing()
 	{
 		var blocker = new PublishBlocker
@@ -478,7 +478,7 @@ public class PublishBlockerExtensionsTests
 
 	// --- GetPreferredArea ---
 
-	[Fact]
+	[Test]
 	public void GetPreferredArea_WhenNoAreas_ReturnsEmpty()
 	{
 		var blocker = new PublishBlocker { Areas = ["Search"], AreasMode = FieldMode.Include };
@@ -487,7 +487,7 @@ public class PublishBlockerExtensionsTests
 		blocker.GetPreferredArea(entry).Should().BeEmpty();
 	}
 
-	[Fact]
+	[Test]
 	public void GetPreferredArea_WhenNullBlocker_ReturnsFirstArea()
 	{
 		PublishBlocker? blocker = null;
@@ -496,7 +496,7 @@ public class PublishBlockerExtensionsTests
 		PublishBlockerExtensions.GetPreferredArea(blocker, entry).Should().Be("Search");
 	}
 
-	[Fact]
+	[Test]
 	public void GetPreferredArea_WhenBlockerHasNoAreas_ReturnsFirstArea()
 	{
 		var blocker = new PublishBlocker { Types = ["docs"], TypesMode = FieldMode.Exclude };
@@ -505,7 +505,7 @@ public class PublishBlockerExtensionsTests
 		blocker.GetPreferredArea(entry).Should().Be("Search");
 	}
 
-	[Fact]
+	[Test]
 	public void GetPreferredArea_IncludeAreas_ReturnsFirstIncludedArea()
 	{
 		var blocker = new PublishBlocker { Areas = ["Security", "Monitoring"], AreasMode = FieldMode.Include };
@@ -515,7 +515,7 @@ public class PublishBlockerExtensionsTests
 		blocker.GetPreferredArea(entry).Should().Be("Monitoring");
 	}
 
-	[Fact]
+	[Test]
 	public void GetPreferredArea_ExcludeAreas_ReturnsFirstNonExcludedArea()
 	{
 		var blocker = new PublishBlocker { Areas = ["Search"], AreasMode = FieldMode.Exclude };
@@ -525,7 +525,7 @@ public class PublishBlockerExtensionsTests
 		blocker.GetPreferredArea(entry).Should().Be("Monitoring");
 	}
 
-	[Fact]
+	[Test]
 	public void GetPreferredArea_IncludeAreas_NoMatch_FallsBackToFirstArea()
 	{
 		var blocker = new PublishBlocker { Areas = ["Internal"], AreasMode = FieldMode.Include };
@@ -535,7 +535,7 @@ public class PublishBlockerExtensionsTests
 		blocker.GetPreferredArea(entry).Should().Be("Search");
 	}
 
-	[Fact]
+	[Test]
 	public void GetPreferredArea_ExcludeAreas_AllExcluded_FallsBackToFirstArea()
 	{
 		var blocker = new PublishBlocker { Areas = ["Search", "Monitoring", "Security"], AreasMode = FieldMode.Exclude };
@@ -545,7 +545,7 @@ public class PublishBlockerExtensionsTests
 		blocker.GetPreferredArea(entry).Should().Be("Search");
 	}
 
-	[Fact]
+	[Test]
 	public void GetPreferredArea_IsCaseInsensitive()
 	{
 		var blocker = new PublishBlocker { Areas = ["MONITORING"], AreasMode = FieldMode.Include };

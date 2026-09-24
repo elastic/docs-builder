@@ -12,7 +12,7 @@ namespace Mcp.Remote.Tests;
 
 public class McpToolTelemetryTests
 {
-	[Fact]
+	[Test]
 	public void ResolveToolName_UsesProfilePlaceholders()
 	{
 		var template = "find_{scope}related_{resource}";
@@ -28,7 +28,7 @@ public class McpToolTelemetryTests
 		resolved.Should().Be(expected);
 	}
 
-	[Fact]
+	[Test]
 	public void SetPayloadMetadata_SetsArgCountKeysAndStringLengths()
 	{
 		using var listener = CreateListener();
@@ -51,7 +51,7 @@ public class McpToolTelemetryTests
 		tags.ContainsKey("mcp.payload.pageNumber.length").Should().BeFalse();
 	}
 
-	[Fact]
+	[Test]
 	public void StartActivity_UsesInternalKind()
 	{
 		using var listener = CreateListener();
@@ -61,7 +61,7 @@ public class McpToolTelemetryTests
 		activity.Kind.Should().Be(ActivityKind.Internal);
 	}
 
-	[Fact]
+	[Test]
 	public void MarkSuccess_SetsSuccessTagAndOkStatus()
 	{
 		using var listener = CreateListener();
@@ -75,7 +75,7 @@ public class McpToolTelemetryTests
 		activity.Status.Should().Be(ActivityStatusCode.Ok);
 	}
 
-	[Fact]
+	[Test]
 	public void MarkFailure_SetsFailureTagsAndErrorStatus()
 	{
 		using var listener = CreateListener();
@@ -93,7 +93,7 @@ public class McpToolTelemetryTests
 		activity.StatusDescription.Should().Be("gateway failed");
 	}
 
-	[Fact]
+	[Test]
 	public void MarkCancelled_SetsCancelledTagAndErrorStatus()
 	{
 		using var listener = CreateListener();

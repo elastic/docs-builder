@@ -18,7 +18,7 @@ public class LlmsNavigationEnhancerTests
 		new("elasticsearch", "Elasticsearch", "/docs/api/doc/elasticsearch/")
 	];
 
-	[Fact]
+	[Test]
 	public void GenerateApiHubIndex_ListsSortedLandingMarkdownUrls()
 	{
 		var text = new LlmsNavigationEnhancer().GenerateApiHubIndex(Catalog, CanonicalBaseUrl);
@@ -30,7 +30,7 @@ public class LlmsNavigationEnhancerTests
 		text.IndexOf("elasticsearch.md", StringComparison.Ordinal).Should().BeLessThan(text.IndexOf("kibana.md", StringComparison.Ordinal));
 	}
 
-	[Fact]
+	[Test]
 	public void GenerateApiSection_StartsWithApisHeadingAndSameLinks()
 	{
 		var text = new LlmsNavigationEnhancer().GenerateApiSection(Catalog, CanonicalBaseUrl);
@@ -40,11 +40,11 @@ public class LlmsNavigationEnhancerTests
 		text.Should().Contain("* [Kibana](https://www.elastic.co/docs/api/doc/kibana.md)");
 	}
 
-	[Fact]
+	[Test]
 	public void GenerateApiHubIndex_EmptyCatalog_ReturnsEmpty() =>
 		new LlmsNavigationEnhancer().GenerateApiHubIndex([], CanonicalBaseUrl).Should().BeEmpty();
 
-	[Fact]
+	[Test]
 	public void GenerateApiSection_EmptyCatalog_ReturnsEmpty() =>
 		new LlmsNavigationEnhancer().GenerateApiSection([], CanonicalBaseUrl).Should().BeEmpty();
 }

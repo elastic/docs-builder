@@ -10,7 +10,6 @@ using AngleSharp.Html.Parser;
 using DiffPlex.DiffBuilder;
 using DiffPlex.DiffBuilder.Model;
 using JetBrains.Annotations;
-using Xunit.Sdk;
 
 namespace Elastic.Authoring.Tests.Framework;
 
@@ -195,7 +194,7 @@ internal static class HtmlAssertions
 			return;
 
 		var textDiff = Diff(expected, actual);
-		throw new XunitException(
+		throw new AwesomeAssertions.Execution.AssertionFailedException(
 			$"""
 Html was not equal
 -- DIFF --
@@ -226,7 +225,7 @@ Html was not equal
 		var prettyActual = PrettyHtml(actual.Html, "section#elastic-docs-v3");
 
 		if (!prettyActual.Contains(prettyExpected, StringComparison.Ordinal))
-			throw new XunitException(
+			throw new AwesomeAssertions.Execution.AssertionFailedException(
 				$"""
 Expected html to contain:
 {prettyExpected}
@@ -242,7 +241,7 @@ But was not found in:
 	internal static void ContainsRawHtml(string expected, MarkdownResult actual)
 	{
 		if (!actual.Html.Contains(expected, StringComparison.Ordinal))
-			throw new XunitException(
+			throw new AwesomeAssertions.Execution.AssertionFailedException(
 				$"""
 Expected html to contain:
 {expected}
@@ -258,7 +257,7 @@ But it was not found in:
 	internal static void DoesNotContainHtml(string expected, MarkdownResult actual)
 	{
 		if (actual.Html.Contains(expected, StringComparison.Ordinal))
-			throw new XunitException(
+			throw new AwesomeAssertions.Execution.AssertionFailedException(
 				$"""
 Expected html NOT to contain:
 {expected}
@@ -276,7 +275,7 @@ But it was found in:
 
 	private static MarkdownResult FindIndexMd(GeneratorResults results) =>
 		results.MarkdownResults.FirstOrDefault(r => r.File.RelativePath == "index.md")
-			?? throw new XunitException("Could not find 'index.md' in generator results");
+			?? throw new AwesomeAssertions.Execution.AssertionFailedException("Could not find 'index.md' in generator results");
 
 	[DebuggerStepThrough]
 	internal static void ConvertsToHtml([LanguageInjection("html")] string expected, GeneratorResults results) =>

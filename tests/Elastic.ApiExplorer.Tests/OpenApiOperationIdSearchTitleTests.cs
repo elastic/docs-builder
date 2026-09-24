@@ -45,7 +45,7 @@ public class OpenApiOperationIdSearchTitleTests
 			}
 		};
 
-	[Fact]
+	[Test]
 	public void BulkOperation_SearchTitleContainsTheRawOperationIdWithUnderscore()
 	{
 		var exporter = new OpenApiDocumentExporter(VersionsConfiguration);
@@ -78,7 +78,7 @@ public class OpenApiOperationIdSearchTitleTests
 			}
 		};
 
-	[Fact]
+	[Test]
 	public void Operation_SummaryWithTrailingNewline_DoesNotLeakIntoTitleOrSearchTitle()
 	{
 		var exporter = new OpenApiDocumentExporter(VersionsConfiguration);
@@ -97,7 +97,7 @@ public class OpenApiOperationIdSearchTitleTests
 		doc.SearchTitle.Should().NotContain("\n");
 	}
 
-	[Fact]
+	[Test]
 	public void Operation_BlankSummary_FallsBackToOperationId()
 	{
 		var exporter = new OpenApiDocumentExporter(VersionsConfiguration);
@@ -111,7 +111,7 @@ public class OpenApiOperationIdSearchTitleTests
 		doc.Title.Should().NotContain("API");
 	}
 
-	[Fact]
+	[Test]
 	public void DottedOperationId_IsSearchableAsWrittenAndAsSpaceSeparatedTokens()
 	{
 		var spec = new OpenApiDocument

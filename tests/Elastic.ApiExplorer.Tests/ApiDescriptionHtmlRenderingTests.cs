@@ -13,7 +13,7 @@ namespace Elastic.ApiExplorer.Tests;
 /// </summary>
 public class ApiDescriptionHtmlRenderingTests
 {
-	[Fact]
+	[Test]
 	public void ApiDescriptionPipeline_RendersHtmlTags_NotLiteralText()
 	{
 		var markdown = "Some text.<br>\n\nNext paragraph.";
@@ -23,7 +23,7 @@ public class ApiDescriptionHtmlRenderingTests
 		html.Should().NotContain("&lt;br&gt;");
 	}
 
-	[Fact]
+	[Test]
 	public void ApiDescriptionPipeline_RendersAnchorLinks_NotEscapedText()
 	{
 		var markdown = """See <a href="https://example.com" class="reference">the docs</a> for more.""";
@@ -33,7 +33,7 @@ public class ApiDescriptionHtmlRenderingTests
 		html.Should().NotContain("&lt;a href");
 	}
 
-	[Fact]
+	[Test]
 	public void StandardPipeline_EscapesHtmlBlocks()
 	{
 		// Verify the standard pipeline still disables HTML blocks — don't regress that behaviour.

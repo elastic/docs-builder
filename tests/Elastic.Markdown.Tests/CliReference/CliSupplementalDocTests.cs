@@ -10,7 +10,7 @@ namespace Elastic.Markdown.Tests.CliReference;
 
 public class CliSupplementalDocTests
 {
-	[Fact]
+	[Test]
 	public void RootPage_DoesNotEmitFrontMatter()
 	{
 		// Generator no longer owns frontmatter — BuildMarkdown() in CliRootFile/CliNamespaceFile/
@@ -32,7 +32,7 @@ public class CliSupplementalDocTests
 		markdown.Should().NotContain("---");
 	}
 
-	[Fact]
+	[Test]
 	public void SupplementalDoc_ExtractsFrontMatterForBuildMarkdown()
 	{
 		// CliRootFile.BuildMarkdown() prepends supplemental.FrontMatter before the generated body.
@@ -54,7 +54,7 @@ public class CliSupplementalDocTests
 		supplemental.FrontMatter.Should().Contain("stack: preview");
 	}
 
-	[Fact]
+	[Test]
 	public void SupplementalDoc_FrontMatterPrependProducesValidMarkdown()
 	{
 		// Simulates what BuildMarkdown() does: prepend FrontMatter before the generated body.
@@ -77,7 +77,7 @@ public class CliSupplementalDocTests
 		(combined.Split("---").Length - 1).Should().Be(2);
 	}
 
-	[Fact]
+	[Test]
 	public void RootPage_StripsFrontMatterBeforeParsingDescription()
 	{
 		var schema = CreateSchema();

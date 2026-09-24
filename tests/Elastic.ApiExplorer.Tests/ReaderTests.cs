@@ -25,7 +25,7 @@ public class ReaderTests
 		return fileSystem.FileInfo.New(path);
 	}
 
-	[Fact]
+	[Test]
 	public async Task Reads()
 	{
 		var x = await OpenApiReader.Instance.ReadAsync(LocalSpecFile());
@@ -34,9 +34,11 @@ public class ReaderTests
 		x.BaseUri.Should().NotBeNull();
 	}
 
-	[Theory]
-	[InlineData("json", /*lang=json,strict*/  """{"openapi":"3.1.0","info":{"title":"Test","version":"1.0"},"paths":{}}""")]
-	[InlineData("yaml", "openapi: 3.1.0\ninfo:\n  title: Test\n  version: 1.0\npaths: {}")]
+	[Test]
+	[Arguments("json", /*lang=json,strict*/  """{"openapi":"3.1.0","info":{"title":"Test","version":"1.0"},"paths":{}}""")]
+	[Arguments("yaml", "openapi: 3.1.0\ninfo:\n  title: Test\n  version: 1.0\npaths: {}")]
+	[Arguments("json", /*lang=json,strict*/  """{"swagger":"2.0","info":{"title":"Test","version":"1"},"paths":{},"host":"example.com","basePath":"/"}""")]
+	[Arguments("yaml", "swagger: \"2.0\"\ninfo:\n  title: Test\n  version: \"1\"\nhost: example.com\nbasePath: /\npaths: {}")]
 	public async Task ReadsStream(string extension, string specification)
 	{
 		var stream = new MemoryStream(Encoding.UTF8.GetBytes(specification));
@@ -47,7 +49,40 @@ public class ReaderTests
 		document.Info.Title.Should().Be("Test");
 	}
 
-	[Fact]
+	[Test]
+	public async Task ReadsSwagger20Fixture()
+	{
+		var path = Path.Combine(AppContext.BaseDirectory, "TestData", "swagger-2.0-sample.json");
+		var fileSystem = new FileSystem();
+		var fileInfo = fileSystem.FileInfo.New(path);
+
+		var document = await OpenApiReader.Instance.ReadAsync(fileInfo);
+
+		document.Should().NotBeNull();
+		document.Info.Title.Should().Be("Sample API");
+		document.Paths.Should().ContainKey("/deployments");
+		document.Paths.Should().ContainKey("/deployments/{id}");
+		document.Paths.Should().ContainKey("/users/login");
+		document.Components?.SecuritySchemes.Should().ContainKey("apiKey");
+		document.Components?.SecuritySchemes.Should().ContainKey("basicAuth");
+	}
+
+	[Test]
+	public async Task ReadAsync_Yaml_QuotedNumericVersion_NotCoercedToNumber()
+	{
+		// Regression: a quoted "2.0" YAML scalar was coerced to the JSON number 2 by WriteScalar,
+		// causing Microsoft.OpenApi's version detector to see "2" instead of "2.0" and fail to parse
+		// the document as Swagger 2.0.
+		const string yaml = "swagger: \"2.0\"\ninfo:\n  title: QuotedVersion\n  version: \"1\"\nhost: h\nbasePath: /\npaths: {}";
+		var stream = new MemoryStream(Encoding.UTF8.GetBytes(yaml));
+
+		var doc = await OpenApiReader.Instance.ReadAsync(stream, "spec.yaml");
+
+		doc.Should().NotBeNull("a quoted '2.0' YAML scalar must not be coerced to the JSON number 2");
+		doc!.Info.Title.Should().Be("QuotedVersion");
+	}
+
+	[Test]
 	public async Task Navigation()
 	{
 		var collector = new DiagnosticsCollector([]);

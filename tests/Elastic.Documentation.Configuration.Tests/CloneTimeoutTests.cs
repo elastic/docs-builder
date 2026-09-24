@@ -13,11 +13,11 @@ public class CloneTimeoutTests
 	private static AssemblyConfiguration Deserialize(string refsYaml) =>
 		AssemblyConfiguration.Deserialize($"narrative:\nreferences:\n{refsYaml}");
 
-	[Theory]
-	[InlineData("30s", 30)]
-	[InlineData("2m", 120)]
-	[InlineData("15m", 900)]
-	[InlineData("1s", 1)]
+	[Test]
+	[Arguments("30s", 30)]
+	[Arguments("2m", 120)]
+	[Arguments("15m", 900)]
+	[Arguments("1s", 1)]
 	public void CloneTimeout_ValidDuration_Deserializes(string input, int expectedSeconds)
 	{
 		var config = Deserialize($"  my-repo:\n    clone_timeout: {input}");
@@ -27,7 +27,7 @@ public class CloneTimeoutTests
 		timeout.Value.TotalSeconds.Should().Be(expectedSeconds);
 	}
 
-	[Fact]
+	[Test]
 	public void CloneTimeout_Absent_IsNull()
 	{
 		var config = Deserialize("  my-repo:");
@@ -35,7 +35,7 @@ public class CloneTimeoutTests
 		config.ReferenceRepositories["my-repo"].CloneTimeout.Should().BeNull();
 	}
 
-	[Fact]
+	[Test]
 	public void CloneTimeout_OnNarrative_Deserializes()
 	{
 		var config = AssemblyConfiguration.Deserialize("narrative:\n  clone_timeout: 15m\nreferences:\n  some-repo:");
@@ -43,12 +43,12 @@ public class CloneTimeoutTests
 		config.Narrative.CloneTimeout.Should().Be(TimeSpan.FromMinutes(15));
 	}
 
-	[Theory]
-	[InlineData("1h")]
-	[InlineData("90")]
-	[InlineData("0m")]
-	[InlineData("0s")]
-	[InlineData("-5m")]
+	[Test]
+	[Arguments("1h")]
+	[Arguments("90")]
+	[Arguments("0m")]
+	[Arguments("0s")]
+	[Arguments("-5m")]
 	public void CloneTimeout_InvalidDuration_ThrowsYamlException(string input)
 	{
 		var act = () => Deserialize($"  my-repo:\n    clone_timeout: {input}");

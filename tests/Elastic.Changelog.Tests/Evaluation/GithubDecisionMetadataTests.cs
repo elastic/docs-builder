@@ -12,7 +12,7 @@ namespace Elastic.Changelog.Tests.Evaluation;
 
 public class GithubDecisionMetadataTests
 {
-	[Fact]
+	[Test]
 	public void SerializationRoundTrip_WithAllFields_PreservesValues()
 	{
 		var metadata = new GithubDecisionMetadata
@@ -70,7 +70,7 @@ public class GithubDecisionMetadataTests
 		deserialized.CreateRules.ByProduct.Should().ContainKey("elasticsearch");
 	}
 
-	[Fact]
+	[Test]
 	public void SerializationRoundTrip_WithNullOptionalFields_PreservesNulls()
 	{
 		var metadata = new GithubDecisionMetadata
@@ -102,7 +102,7 @@ public class GithubDecisionMetadataTests
 		deserialized.CreateRules.Should().BeNull();
 	}
 
-	[Fact]
+	[Test]
 	public void Serialization_UsesSnakeCasePropertyNames()
 	{
 		var metadata = new GithubDecisionMetadata
@@ -137,7 +137,7 @@ public class GithubDecisionMetadataTests
 		json.Should().NotContain("\"CanCommit\"");
 	}
 
-	[Fact]
+	[Test]
 	public void Serialization_EnumsUseStringValues()
 	{
 		var metadata = new GithubDecisionMetadata
@@ -160,7 +160,7 @@ public class GithubDecisionMetadataTests
 		json.Should().Contain("\"Committed\"");
 	}
 
-	[Fact]
+	[Test]
 	public void SerializationRoundTrip_WithEntryFindings_PreservesFindings()
 	{
 		var metadata = new GithubDecisionMetadata
@@ -186,13 +186,13 @@ public class GithubDecisionMetadataTests
 		deserialized.Should().NotBeNull();
 		deserialized.Gate.Should().Be(ValidationGate.Entries);
 		deserialized.EntryFindings.Should().HaveCount(2);
-		deserialized.EntryFindings![0].File.Should().Be("docs/changelog/42.yaml");
+		deserialized.EntryFindings[0].File.Should().Be("docs/changelog/42.yaml");
 		deserialized.EntryFindings[0].Severity.Should().Be("Error");
 		deserialized.EntryFindings[0].Message.Should().Be("title is required");
 		deserialized.EntryFindings[1].Severity.Should().Be("Warning");
 	}
 
-	[Fact]
+	[Test]
 	public void Deserialization_OldMetadataWithoutEntryFindings_EntryFindingsNull()
 	{
 		const string legacyJson =
@@ -215,7 +215,7 @@ public class GithubDecisionMetadataTests
 		deserialized.Gate.Should().BeNull();
 	}
 
-	[Fact]
+	[Test]
 	public void Deserialization_OldMetadataWithoutCommitOutcomeFields_Succeeds()
 	{
 		// Verify wire-safety: a metadata.json written before the CommitOutcome/CommittedFile

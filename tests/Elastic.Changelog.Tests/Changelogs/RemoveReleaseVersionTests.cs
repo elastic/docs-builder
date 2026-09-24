@@ -23,7 +23,7 @@ public class RemoveReleaseVersionTests : ChangelogTestBase
 	private readonly ChangelogRemoveService _removeService;
 	private readonly string _changelogDir;
 
-	public RemoveReleaseVersionTests(ITestOutputHelper output) : base(output)
+	public RemoveReleaseVersionTests() : base()
 	{
 		_removeService = new ChangelogRemoveService(LoggerFactory, FileSystem, ConfigurationContext);
 		_changelogDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
@@ -34,7 +34,7 @@ public class RemoveReleaseVersionTests : ChangelogTestBase
 	// Core flow: release → PR list → remove matching changelogs
 	// -----------------------------------------------------------------------
 
-	[Fact]
+	[Test]
 	public async Task ReleaseVersion_RemovesMatchingChangelogs()
 	{
 		// Arrange – two changelog files each referencing a specific PR
@@ -100,7 +100,7 @@ public class RemoveReleaseVersionTests : ChangelogTestBase
 		var prUrls = await ResolveReleasePrUrls("elastic", "elasticsearch", "v9.2.0");
 		var input = new ChangelogRemoveArguments { Directory = _changelogDir, Prs = prUrls };
 
-		var result = await _removeService.RemoveChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await _removeService.RemoveChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		result.Should().BeTrue();
@@ -112,7 +112,7 @@ public class RemoveReleaseVersionTests : ChangelogTestBase
 		FileSystem.File.Exists(FileSystem.Path.Join(_changelogDir, "pr-99999.yaml")).Should().BeTrue("PR 99999 is not in the release");
 	}
 
-	[Fact]
+	[Test]
 	public async Task ReleaseVersion_DryRun_DoesNotDeleteFiles()
 	{
 		// Arrange
@@ -140,7 +140,7 @@ public class RemoveReleaseVersionTests : ChangelogTestBase
 		var input = new ChangelogRemoveArguments { Directory = _changelogDir, Prs = prUrls, DryRun = true };
 
 		// Act
-		var result = await _removeService.RemoveChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await _removeService.RemoveChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert – file must still exist after a dry run
 		result.Should().BeTrue();
@@ -152,7 +152,7 @@ public class RemoveReleaseVersionTests : ChangelogTestBase
 	// No PR refs in release notes — no changelogs removed
 	// -----------------------------------------------------------------------
 
-	[Fact]
+	[Test]
 	public async Task ReleaseVersion_WithNoMatchingPrs_EmitsWarning()
 	{
 		// Arrange – release body has no PR references
@@ -165,7 +165,7 @@ public class RemoveReleaseVersionTests : ChangelogTestBase
 			"elastic",
 			"elasticsearch",
 			"v9.2.0",
-			TestContext.Current.CancellationToken
+			TestContext.Current!.Execution.CancellationToken
 		);
 		var parsed = ReleaseNoteParser.Parse(release!.Body);
 
@@ -177,7 +177,7 @@ public class RemoveReleaseVersionTests : ChangelogTestBase
 	// Release fetch failure
 	// -----------------------------------------------------------------------
 
-	[Fact]
+	[Test]
 	public async Task ReleaseVersion_FetchFailure_ReturnsNull()
 	{
 		// Arrange
@@ -190,7 +190,7 @@ public class RemoveReleaseVersionTests : ChangelogTestBase
 			"elastic",
 			"elasticsearch",
 			"v9.2.0",
-			TestContext.Current.CancellationToken
+			TestContext.Current!.Execution.CancellationToken
 		);
 
 		// Assert – command returns error on null release
@@ -201,7 +201,7 @@ public class RemoveReleaseVersionTests : ChangelogTestBase
 	// Latest tag: FetchReleaseAsync is called with "latest"
 	// -----------------------------------------------------------------------
 
-	[Fact]
+	[Test]
 	public async Task ReleaseVersion_Latest_CallsFetchWithLatestTag()
 	{
 		// Arrange
@@ -210,7 +210,12 @@ public class RemoveReleaseVersionTests : ChangelogTestBase
 		).Returns(new GitHubReleaseInfo { TagName = "v9.2.0", Name = "9.2.0", Body = "No PR references." });
 
 		// Act
-		_ = await _mockReleaseService.FetchReleaseAsync("elastic", "elasticsearch", "latest", TestContext.Current.CancellationToken);
+		_ = await _mockReleaseService.FetchReleaseAsync(
+			"elastic",
+			"elasticsearch",
+			"latest",
+			TestContext.Current!.Execution.CancellationToken
+		);
 
 		// Assert
 		A.CallTo(
@@ -222,7 +227,7 @@ public class RemoveReleaseVersionTests : ChangelogTestBase
 	// Release with partial match: only changelogs referencing release PRs are removed
 	// -----------------------------------------------------------------------
 
-	[Fact]
+	[Test]
 	public async Task ReleaseVersion_OnlyRemovesChangelogsMatchingReleasePrs()
 	{
 		// Arrange – three changelogs; release only references two
@@ -282,7 +287,7 @@ public class RemoveReleaseVersionTests : ChangelogTestBase
 		var input = new ChangelogRemoveArguments { Directory = _changelogDir, Prs = prUrls };
 
 		// Act
-		var result = await _removeService.RemoveChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await _removeService.RemoveChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		result.Should().BeTrue();
@@ -299,13 +304,13 @@ public class RemoveReleaseVersionTests : ChangelogTestBase
 	private async Task WriteChangelog(string filename, string content)
 	{
 		var path = FileSystem.Path.Join(_changelogDir, filename);
-		await FileSystem.File.WriteAllTextAsync(path, content, Encoding.UTF8, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(path, content, Encoding.UTF8, TestContext.Current!.Execution.CancellationToken);
 	}
 
 	/// <summary>Fetches a release and extracts full PR URLs, mirroring the command's logic.</summary>
 	private async Task<string[]> ResolveReleasePrUrls(string owner, string repo, string version)
 	{
-		var release = await _mockReleaseService.FetchReleaseAsync(owner, repo, version, TestContext.Current.CancellationToken);
+		var release = await _mockReleaseService.FetchReleaseAsync(owner, repo, version, TestContext.Current!.Execution.CancellationToken);
 		var parsed = ReleaseNoteParser.Parse(release!.Body);
 		return parsed.PrReferences.Select(r => $"https://github.com/{owner}/{repo}/pull/{r.PrNumber}").ToArray();
 	}

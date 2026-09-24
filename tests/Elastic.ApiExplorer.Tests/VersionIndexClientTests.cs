@@ -41,7 +41,7 @@ public class VersionIndexClientTests
 		return fs.FileInfo.New("/docs/elasticsearch-openapi.json");
 	}
 
-	[Fact]
+	[Test]
 	public async Task ResolveVersionsAsync_AlwaysFetchesTheRootIndexAtBucketRoot()
 	{
 		var handler = new StubHandler(_ => IndexResponse("{}"));
@@ -53,13 +53,13 @@ public class VersionIndexClientTests
 			"elasticsearch",
 			ApiConfig(),
 			collector,
-			TestContext.Current.CancellationToken
+			TestContext.Current!.Execution.CancellationToken
 		);
 
 		handler.RequestedPaths.Should().ContainSingle().Which.Should().Be("/index.json");
 	}
 
-	[Fact]
+	[Test]
 	public async Task ResolveVersionsAsync_NoLocalSpec_NoRepository_EmitsErrorAndReturnsEmpty()
 	{
 		var handler = new StubHandler(_ => new HttpResponseMessage(HttpStatusCode.OK));
@@ -71,7 +71,7 @@ public class VersionIndexClientTests
 			"elasticsearch",
 			ApiConfig(),
 			collector,
-			TestContext.Current.CancellationToken
+			TestContext.Current!.Execution.CancellationToken
 		);
 
 		versions.Should().BeEmpty();
@@ -79,7 +79,7 @@ public class VersionIndexClientTests
 		handler.RequestedPaths.Should().BeEmpty("no repository means there is nothing to look up, so the index is never fetched");
 	}
 
-	[Fact]
+	[Test]
 	public async Task ResolveVersionsAsync_LocalSpec_NoRepository_ReturnsLocalMainOnly()
 	{
 		var handler = new StubHandler(_ => new HttpResponseMessage(HttpStatusCode.OK));
@@ -92,7 +92,7 @@ public class VersionIndexClientTests
 			"elasticsearch",
 			ApiConfig(localFile),
 			collector,
-			TestContext.Current.CancellationToken
+			TestContext.Current!.Execution.CancellationToken
 		);
 
 		versions
@@ -105,7 +105,7 @@ public class VersionIndexClientTests
 		collector.Warnings.Should().Be(0);
 	}
 
-	[Fact]
+	[Test]
 	public async Task ResolveVersionsAsync_MultipleRemoteVersions_ResolvesAllFromIndex()
 	{
 		var handler = new StubHandler(
@@ -132,7 +132,7 @@ public class VersionIndexClientTests
 			"elasticsearch",
 			ApiConfig(),
 			collector,
-			TestContext.Current.CancellationToken
+			TestContext.Current!.Execution.CancellationToken
 		);
 
 		versions.Should().HaveCount(3);
@@ -145,7 +145,7 @@ public class VersionIndexClientTests
 		collector.Warnings.Should().Be(0);
 	}
 
-	[Fact]
+	[Test]
 	public async Task ResolveVersionsAsync_RepositoryOverride_UsedInsteadOfGitRemote()
 	{
 		var handler = new StubHandler(
@@ -172,7 +172,7 @@ public class VersionIndexClientTests
 			"elasticsearch",
 			ApiConfig(repository: "elastic/elasticsearch-specification"),
 			collector,
-			TestContext.Current.CancellationToken
+			TestContext.Current!.Execution.CancellationToken
 		);
 
 		versions.Should().ContainSingle(
@@ -181,7 +181,7 @@ public class VersionIndexClientTests
 		collector.Errors.Should().Be(0);
 	}
 
-	[Fact]
+	[Test]
 	public async Task ResolveVersionsAsync_RepositoryNotInIndex_NoLocalSpec_EmitsErrorAndReturnsEmpty()
 	{
 		var handler = new StubHandler(
@@ -198,14 +198,14 @@ public class VersionIndexClientTests
 			"elasticsearch",
 			ApiConfig(),
 			collector,
-			TestContext.Current.CancellationToken
+			TestContext.Current!.Execution.CancellationToken
 		);
 
 		versions.Should().BeEmpty();
 		collector.ErrorMessages.Should().ContainSingle(m => m.Contains("no entry for repository 'elastic/elasticsearch'"));
 	}
 
-	[Fact]
+	[Test]
 	public async Task ResolveVersionsAsync_SpecNotUnderRepository_NoLocalSpec_EmitsErrorAndReturnsEmpty()
 	{
 		var handler = new StubHandler(
@@ -230,7 +230,7 @@ public class VersionIndexClientTests
 			"elasticsearch",
 			ApiConfig(),
 			collector,
-			TestContext.Current.CancellationToken
+			TestContext.Current!.Execution.CancellationToken
 		);
 
 		versions.Should().BeEmpty();
@@ -240,7 +240,7 @@ public class VersionIndexClientTests
 			.ContainSingle(m => m.Contains("no entry for spec 'elasticsearch-openapi.json'") && m.Contains("elastic/elasticsearch"));
 	}
 
-	[Fact]
+	[Test]
 	public async Task ResolveVersionsAsync_LocalSpecPresent_MainUsesLocalFileNotRemoteKey()
 	{
 		var handler = new StubHandler(
@@ -267,7 +267,7 @@ public class VersionIndexClientTests
 			"elasticsearch",
 			ApiConfig(localFile),
 			collector,
-			TestContext.Current.CancellationToken
+			TestContext.Current!.Execution.CancellationToken
 		);
 
 		var main = versions.Should().ContainSingle(v => v.Moniker == "main").Subject;
@@ -280,7 +280,7 @@ public class VersionIndexClientTests
 		v8.ObjectKey.Should().Be("elastic/elasticsearch/8.19/elasticsearch-openapi.json");
 	}
 
-	[Fact]
+	[Test]
 	public async Task ResolveVersionsAsync_EmptyIndex_NoLocalSpec_EmitsErrorAndReturnsEmpty()
 	{
 		var handler = new StubHandler(_ => IndexResponse("{}"));
@@ -292,14 +292,14 @@ public class VersionIndexClientTests
 			"elasticsearch",
 			ApiConfig(),
 			collector,
-			TestContext.Current.CancellationToken
+			TestContext.Current!.Execution.CancellationToken
 		);
 
 		versions.Should().BeEmpty();
 		collector.ErrorMessages.Should().ContainSingle(m => m.Contains("declares no repositories"));
 	}
 
-	[Fact]
+	[Test]
 	public async Task ResolveVersionsAsync_EmptyIndex_WithLocalSpec_ReturnsLocalMainWithWarning()
 	{
 		var handler = new StubHandler(_ => IndexResponse("{}"));
@@ -312,14 +312,14 @@ public class VersionIndexClientTests
 			"elasticsearch",
 			ApiConfig(localFile),
 			collector,
-			TestContext.Current.CancellationToken
+			TestContext.Current!.Execution.CancellationToken
 		);
 
 		versions.Should().ContainSingle().Which.Should().Match<ResolvedApiVersion>(v => v.Moniker == "main" && v.IsLocal);
 		collector.WarningMessages.Should().ContainSingle(m => m.Contains("declares no repositories"));
 	}
 
-	[Fact]
+	[Test]
 	public async Task ResolveVersionsAsync_IndexFetchFails_NoLocalSpec_EmitsErrorAndReturnsEmpty()
 	{
 		var handler = new StubHandler(_ => new HttpResponseMessage(HttpStatusCode.NotFound));
@@ -331,7 +331,7 @@ public class VersionIndexClientTests
 			"elasticsearch",
 			ApiConfig(),
 			collector,
-			TestContext.Current.CancellationToken
+			TestContext.Current!.Execution.CancellationToken
 		);
 
 		versions.Should().BeEmpty();
@@ -339,7 +339,7 @@ public class VersionIndexClientTests
 		handler.RequestedPaths.Should().ContainSingle("a missing index is not a transient failure");
 	}
 
-	[Fact]
+	[Test]
 	public async Task ResolveVersionsAsync_IndexFetchFails_WithLocalSpec_FallsBackToLocalMainWithWarning()
 	{
 		var handler = new StubHandler(_ => new HttpResponseMessage(HttpStatusCode.NotFound));
@@ -352,7 +352,7 @@ public class VersionIndexClientTests
 			"elasticsearch",
 			ApiConfig(localFile),
 			collector,
-			TestContext.Current.CancellationToken
+			TestContext.Current!.Execution.CancellationToken
 		);
 
 		versions
@@ -365,7 +365,7 @@ public class VersionIndexClientTests
 		collector.WarningMessages.Should().ContainSingle(m => m.Contains("could not be fetched"));
 	}
 
-	[Fact]
+	[Test]
 	public async Task ResolveVersionsAsync_IndexRecoversAfterRetry_ReturnsVersions()
 	{
 		var attempts = 0;
@@ -385,7 +385,7 @@ public class VersionIndexClientTests
 			"elasticsearch",
 			ApiConfig(),
 			collector,
-			TestContext.Current.CancellationToken
+			TestContext.Current!.Execution.CancellationToken
 		);
 
 		versions.Should().ContainSingle();
@@ -393,7 +393,7 @@ public class VersionIndexClientTests
 		attempts.Should().Be(2);
 	}
 
-	[Fact]
+	[Test]
 	public async Task ResolveVersionsAsync_CalledForMultipleApis_FetchesTheRootIndexOnlyOnce()
 	{
 		var handler = new StubHandler(
@@ -420,7 +420,7 @@ public class VersionIndexClientTests
 			"elasticsearch",
 			ApiConfig(),
 			collector,
-			TestContext.Current.CancellationToken
+			TestContext.Current!.Execution.CancellationToken
 		);
 		var kibanaConfig = new ResolvedApiConfiguration
 		{
@@ -434,7 +434,7 @@ public class VersionIndexClientTests
 			"kibana",
 			kibanaConfig,
 			collector,
-			TestContext.Current.CancellationToken
+			TestContext.Current!.Execution.CancellationToken
 		);
 
 		esVersions.Should().ContainSingle();
@@ -448,7 +448,7 @@ public class VersionIndexClientTests
 			.Be("/index.json", "the second call should reuse the first call's cached root index");
 	}
 
-	[Fact]
+	[Test]
 	public async Task FetchSpecStreamAsync_HappyPath_ReturnsContent()
 	{
 		var handler = new StubHandler(
@@ -464,16 +464,21 @@ public class VersionIndexClientTests
 			ObjectKey = "elastic/elasticsearch/8.19/elasticsearch-openapi.json"
 		};
 
-		var stream = await client.FetchSpecStreamAsync("elasticsearch", version, collector, TestContext.Current.CancellationToken);
+		var stream = await client.FetchSpecStreamAsync(
+			"elasticsearch",
+			version,
+			collector,
+			TestContext.Current!.Execution.CancellationToken
+		);
 
 		stream.Should().NotBeNull();
 		using var reader = new StreamReader(stream);
-		(await reader.ReadToEndAsync(TestContext.Current.CancellationToken)).Should().Contain("openapi");
+		(await reader.ReadToEndAsync(TestContext.Current!.Execution.CancellationToken)).Should().Contain("openapi");
 		handler.RequestedPaths.Should().ContainSingle().Which.Should().Be("/elastic/elasticsearch/8.19/elasticsearch-openapi.json");
 		collector.Warnings.Should().Be(0);
 	}
 
-	[Fact]
+	[Test]
 	public async Task FetchSpecStreamAsync_PersistentFailure_EmitsWarningAndReturnsNull()
 	{
 		var handler = new StubHandler(_ => new HttpResponseMessage(HttpStatusCode.NotFound));
@@ -487,7 +492,12 @@ public class VersionIndexClientTests
 			ObjectKey = "elastic/elasticsearch/8.19/elasticsearch-openapi.json"
 		};
 
-		var stream = await client.FetchSpecStreamAsync("elasticsearch", version, collector, TestContext.Current.CancellationToken);
+		var stream = await client.FetchSpecStreamAsync(
+			"elasticsearch",
+			version,
+			collector,
+			TestContext.Current!.Execution.CancellationToken
+		);
 
 		stream.Should().BeNull();
 		collector.WarningMessages.Should().ContainSingle(m => m.Contains('8') && m.Contains("Skipping this version"));

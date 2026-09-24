@@ -11,7 +11,7 @@ namespace Elastic.ApiExplorer.Tests;
 
 public class ApiBreadcrumbsRenderingTests
 {
-	[Fact]
+	[Test]
 	public async Task Render_PinsFirstAndCurrent_AndOffersOverflowForMiddleCrumbs()
 	{
 		var trail = new ApiBreadcrumbTrail([
@@ -22,7 +22,7 @@ public class ApiBreadcrumbsRenderingTests
 		]);
 
 		var html = await _ApiBreadcrumbs.Create(new ApiBreadcrumbsView(trail, "")).RenderAsync(
-			cancellationToken: TestContext.Current.CancellationToken
+			cancellationToken: TestContext.Current!.Execution.CancellationToken
 		);
 
 		html.Should().Contain("api-breadcrumbs");
@@ -43,13 +43,13 @@ public class ApiBreadcrumbsRenderingTests
 		html.Should().Contain("api-page-actions-menu");
 	}
 
-	[Fact]
+	[Test]
 	public async Task Render_TwoCrumbs_OmitsOverflowSlot()
 	{
 		var trail = new ApiBreadcrumbTrail([new("APIs", "/api/"), new("Elasticsearch API", null)]);
 
 		var html = await _ApiBreadcrumbs.Create(new ApiBreadcrumbsView(trail, "")).RenderAsync(
-			cancellationToken: TestContext.Current.CancellationToken
+			cancellationToken: TestContext.Current!.Execution.CancellationToken
 		);
 
 		html.Should().Contain("data-crumb=\"start\"");

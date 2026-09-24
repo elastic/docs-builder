@@ -14,7 +14,7 @@ using Elastic.Documentation.Navigation.Tests.Isolation;
 
 namespace Elastic.Documentation.Navigation.Tests.Assembler;
 
-public class SiteNavigationTests(ITestOutputHelper output)
+public class SiteNavigationTests()
 {
 	private TestDocumentationSetContext CreateContext(MockFileSystem? fileSystem = null)
 	{
@@ -23,10 +23,10 @@ public class SiteNavigationTests(ITestOutputHelper output)
 		var outputDir = fileSystem.DirectoryInfo.New("/output");
 		var configPath = fileSystem.FileInfo.New("/docs/navigation.yml");
 
-		return new TestDocumentationSetContext(fileSystem, sourceDir, outputDir, configPath, output);
+		return new TestDocumentationSetContext(fileSystem, sourceDir, outputDir, configPath);
 	}
 
-	[Fact]
+	[Test]
 	public void ConstructorCreatesSiteNavigation()
 	{
 		// language=yaml
@@ -43,7 +43,7 @@ public class SiteNavigationTests(ITestOutputHelper output)
 		var fileSystem = SiteNavigationTestFixture.CreateMultiRepositoryFileSystem();
 
 		// Create DocumentationSetNavigation instances for the referenced repos
-		var observabilityContext = SiteNavigationTestFixture.CreateContext(fileSystem, "/checkouts/current/observability", output);
+		var observabilityContext = SiteNavigationTestFixture.CreateContext(fileSystem, "/checkouts/current/observability");
 		var observabilityDocset = DocumentationSetFile.LoadAndResolve(
 			observabilityContext.Collector,
 			fileSystem.FileInfo.New("/checkouts/current/observability/docs/docset.yml"),
@@ -55,7 +55,7 @@ public class SiteNavigationTests(ITestOutputHelper output)
 			GenericDocumentationFileFactory.Instance
 		);
 
-		var searchContext = SiteNavigationTestFixture.CreateContext(fileSystem, "/checkouts/current/serverless-search", output);
+		var searchContext = SiteNavigationTestFixture.CreateContext(fileSystem, "/checkouts/current/serverless-search");
 		var searchDocset = DocumentationSetFile.LoadAndResolve(
 			searchContext.Collector,
 			fileSystem.FileInfo.New("/checkouts/current/serverless-search/docs/docset.yml"),
@@ -69,7 +69,7 @@ public class SiteNavigationTests(ITestOutputHelper output)
 
 		var documentationSets = new List<IDocumentationSetNavigation> { observabilityNav, searchNav };
 
-		var siteContext = SiteNavigationTestFixture.CreateContext(fileSystem, "/checkouts/current/observability", output);
+		var siteContext = SiteNavigationTestFixture.CreateContext(fileSystem, "/checkouts/current/observability");
 		var navigation = new SiteNavigation(siteNavFile, siteContext, documentationSets, sitePrefix: null);
 
 		navigation.Should().NotBeNull();
@@ -78,7 +78,7 @@ public class SiteNavigationTests(ITestOutputHelper output)
 		navigation.NavigationItems.Should().HaveCount(2);
 	}
 
-	[Fact]
+	[Test]
 	public void SiteNavigationWithNestedChildren()
 	{
 		// language=yaml
@@ -98,7 +98,7 @@ public class SiteNavigationTests(ITestOutputHelper output)
 		var fileSystem = SiteNavigationTestFixture.CreateMultiRepositoryFileSystem();
 
 		// Create DocumentationSetNavigation for platform
-		var platformContext = SiteNavigationTestFixture.CreateContext(fileSystem, "/checkouts/current/platform", output);
+		var platformContext = SiteNavigationTestFixture.CreateContext(fileSystem, "/checkouts/current/platform");
 		var platformDocset = DocumentationSetFile.LoadAndResolve(
 			platformContext.Collector,
 			fileSystem.FileInfo.New("/checkouts/current/platform/docs/docset.yml"),
@@ -112,7 +112,7 @@ public class SiteNavigationTests(ITestOutputHelper output)
 
 		var documentationSets = new List<IDocumentationSetNavigation> { platformNav };
 
-		var siteContext = SiteNavigationTestFixture.CreateContext(fileSystem, "/checkouts/current/platform", output);
+		var siteContext = SiteNavigationTestFixture.CreateContext(fileSystem, "/checkouts/current/platform");
 		var navigation = new SiteNavigation(siteNavFile, siteContext, documentationSets, sitePrefix: null);
 
 		navigation.NavigationItems.Should().HaveCount(1);
@@ -121,17 +121,17 @@ public class SiteNavigationTests(ITestOutputHelper output)
 		platform.Should().NotBeNull();
 	}
 
-	[Theory]
-	[InlineData(null, "/")]
-	[InlineData("", "/")]
-	[InlineData("docs", "/docs")]
-	[InlineData("/docs", "/docs")]
-	[InlineData("docs/", "/docs")]
-	[InlineData("/docs/", "/docs")]
-	[InlineData("api/docs", "/api/docs")]
-	[InlineData("/api/docs", "/api/docs")]
-	[InlineData("api/docs/", "/api/docs")]
-	[InlineData("/api/docs/", "/api/docs")]
+	[Test]
+	[Arguments(null, "/")]
+	[Arguments("", "/")]
+	[Arguments("docs", "/docs")]
+	[Arguments("/docs", "/docs")]
+	[Arguments("docs/", "/docs")]
+	[Arguments("/docs/", "/docs")]
+	[Arguments("api/docs", "/api/docs")]
+	[Arguments("/api/docs", "/api/docs")]
+	[Arguments("api/docs/", "/api/docs")]
+	[Arguments("/api/docs/", "/api/docs")]
 	public void SitePrefixNormalizesSlashes(string? sitePrefix, string expectedRootUrl)
 	{
 		// language=yaml
@@ -145,7 +145,7 @@ public class SiteNavigationTests(ITestOutputHelper output)
 		var siteNavFile = SiteNavigationFile.Deserialize(yaml);
 		var fileSystem = SiteNavigationTestFixture.CreateMultiRepositoryFileSystem();
 
-		var observabilityContext = SiteNavigationTestFixture.CreateContext(fileSystem, "/checkouts/current/observability", output);
+		var observabilityContext = SiteNavigationTestFixture.CreateContext(fileSystem, "/checkouts/current/observability");
 		var observabilityDocset = DocumentationSetFile.LoadAndResolve(
 			observabilityContext.Collector,
 			fileSystem.FileInfo.New("/checkouts/current/observability/docs/docset.yml"),
@@ -159,24 +159,24 @@ public class SiteNavigationTests(ITestOutputHelper output)
 
 		var documentationSets = new List<IDocumentationSetNavigation> { observabilityNav };
 
-		var siteContext = SiteNavigationTestFixture.CreateContext(fileSystem, "/checkouts/current/observability", output);
+		var siteContext = SiteNavigationTestFixture.CreateContext(fileSystem, "/checkouts/current/observability");
 		var navigation = new SiteNavigation(siteNavFile, siteContext, documentationSets, sitePrefix);
 
 		navigation.Should().NotBeNull();
 		navigation.Url.Should().Be(expectedRootUrl, $"sitePrefix '{sitePrefix}' should normalize to '{expectedRootUrl}'");
 	}
 
-	[Theory]
-	[InlineData(null, "/observability")]
-	[InlineData("", "/observability")]
-	[InlineData("docs", "/docs/observability")]
-	[InlineData("/docs", "/docs/observability")]
-	[InlineData("docs/", "/docs/observability")]
-	[InlineData("/docs/", "/docs/observability")]
-	[InlineData("api/docs", "/api/docs/observability")]
-	[InlineData("/api/docs", "/api/docs/observability")]
-	[InlineData("api/docs/", "/api/docs/observability")]
-	[InlineData("/api/docs/", "/api/docs/observability")]
+	[Test]
+	[Arguments(null, "/observability")]
+	[Arguments("", "/observability")]
+	[Arguments("docs", "/docs/observability")]
+	[Arguments("/docs", "/docs/observability")]
+	[Arguments("docs/", "/docs/observability")]
+	[Arguments("/docs/", "/docs/observability")]
+	[Arguments("api/docs", "/api/docs/observability")]
+	[Arguments("/api/docs", "/api/docs/observability")]
+	[Arguments("api/docs/", "/api/docs/observability")]
+	[Arguments("/api/docs/", "/api/docs/observability")]
 	public void SitePrefixAppliedToNavigationItemUrls(string? sitePrefix, string expectedObservabilityUrl)
 	{
 		// language=yaml
@@ -190,7 +190,7 @@ public class SiteNavigationTests(ITestOutputHelper output)
 		var siteNavFile = SiteNavigationFile.Deserialize(yaml);
 		var fileSystem = SiteNavigationTestFixture.CreateMultiRepositoryFileSystem();
 
-		var observabilityContext = SiteNavigationTestFixture.CreateContext(fileSystem, "/checkouts/current/observability", output);
+		var observabilityContext = SiteNavigationTestFixture.CreateContext(fileSystem, "/checkouts/current/observability");
 		var observabilityDocset = DocumentationSetFile.LoadAndResolve(
 			observabilityContext.Collector,
 			fileSystem.FileInfo.New("/checkouts/current/observability/docs/docset.yml"),
@@ -204,7 +204,7 @@ public class SiteNavigationTests(ITestOutputHelper output)
 
 		var documentationSets = new List<IDocumentationSetNavigation> { observabilityNav };
 
-		var siteContext = SiteNavigationTestFixture.CreateContext(fileSystem, "/checkouts/current/observability", output);
+		var siteContext = SiteNavigationTestFixture.CreateContext(fileSystem, "/checkouts/current/observability");
 		var navigation = new SiteNavigation(siteNavFile, siteContext, documentationSets, sitePrefix);
 
 		navigation.NavigationItems.Should().HaveCount(1);
@@ -215,7 +215,7 @@ public class SiteNavigationTests(ITestOutputHelper output)
 			.Be(expectedObservabilityUrl, $"sitePrefix '{sitePrefix}' should result in URL '{expectedObservabilityUrl}'");
 	}
 
-	[Fact]
+	[Test]
 	public void NavigationNodeIdsAreUniqueAcrossDocsets()
 	{
 		// This test verifies that navigation node IDs are unique even when
@@ -262,7 +262,7 @@ public class SiteNavigationTests(ITestOutputHelper output)
 		fileSystem.AddFile($"{productBDir}/docs/getting-started/tutorial.md", new MockFileData("# Tutorial B"));
 
 		// Create navigation for both docsets
-		var productAContext = SiteNavigationTestFixture.CreateContext(fileSystem, productADir, output);
+		var productAContext = SiteNavigationTestFixture.CreateContext(fileSystem, productADir);
 		var productADocsetFile = DocumentationSetFile.LoadAndResolve(
 			productAContext.Collector,
 			fileSystem.FileInfo.New($"{productADir}/docs/docset.yml"),
@@ -274,7 +274,7 @@ public class SiteNavigationTests(ITestOutputHelper output)
 			GenericDocumentationFileFactory.Instance
 		);
 
-		var productBContext = SiteNavigationTestFixture.CreateContext(fileSystem, productBDir, output);
+		var productBContext = SiteNavigationTestFixture.CreateContext(fileSystem, productBDir);
 		var productBDocsetFile = DocumentationSetFile.LoadAndResolve(
 			productBContext.Collector,
 			fileSystem.FileInfo.New($"{productBDir}/docs/docset.yml"),
@@ -318,7 +318,7 @@ public class SiteNavigationTests(ITestOutputHelper output)
 		                  """;
 		var siteNavFile = SiteNavigationFile.Deserialize(siteNavYaml);
 		var documentationSets = new List<IDocumentationSetNavigation> { productANav, productBNav };
-		var siteContext = SiteNavigationTestFixture.CreateContext(fileSystem, productADir, output);
+		var siteContext = SiteNavigationTestFixture.CreateContext(fileSystem, productADir);
 		var siteNavigation = new SiteNavigation(siteNavFile, siteContext, documentationSets, sitePrefix: null);
 
 		// Use production YieldAll() to collect all navigation items
@@ -337,12 +337,12 @@ public class SiteNavigationTests(ITestOutputHelper output)
 		);
 	}
 
-	[Theory]
-	[InlineData(null, "/observability", "/search")]
-	[InlineData("docs", "/docs/observability", "/docs/search")]
-	[InlineData("/docs", "/docs/observability", "/docs/search")]
-	[InlineData("docs/", "/docs/observability", "/docs/search")]
-	[InlineData("/docs/", "/docs/observability", "/docs/search")]
+	[Test]
+	[Arguments(null, "/observability", "/search")]
+	[Arguments("docs", "/docs/observability", "/docs/search")]
+	[Arguments("/docs", "/docs/observability", "/docs/search")]
+	[Arguments("docs/", "/docs/observability", "/docs/search")]
+	[Arguments("/docs/", "/docs/observability", "/docs/search")]
 	public void SitePrefixAppliedToMultipleNavigationItems(string? sitePrefix, string expectedObsUrl, string expectedSearchUrl)
 	{
 		// language=yaml
@@ -358,7 +358,7 @@ public class SiteNavigationTests(ITestOutputHelper output)
 		var siteNavFile = SiteNavigationFile.Deserialize(yaml);
 		var fileSystem = SiteNavigationTestFixture.CreateMultiRepositoryFileSystem();
 
-		var observabilityContext = SiteNavigationTestFixture.CreateContext(fileSystem, "/checkouts/current/observability", output);
+		var observabilityContext = SiteNavigationTestFixture.CreateContext(fileSystem, "/checkouts/current/observability");
 		var observabilityDocset = DocumentationSetFile.LoadAndResolve(
 			observabilityContext.Collector,
 			fileSystem.FileInfo.New("/checkouts/current/observability/docs/docset.yml"),
@@ -370,7 +370,7 @@ public class SiteNavigationTests(ITestOutputHelper output)
 			GenericDocumentationFileFactory.Instance
 		);
 
-		var searchContext = SiteNavigationTestFixture.CreateContext(fileSystem, "/checkouts/current/serverless-search", output);
+		var searchContext = SiteNavigationTestFixture.CreateContext(fileSystem, "/checkouts/current/serverless-search");
 		var searchDocset = DocumentationSetFile.LoadAndResolve(
 			searchContext.Collector,
 			fileSystem.FileInfo.New("/checkouts/current/serverless-search/docs/docset.yml"),
@@ -384,7 +384,7 @@ public class SiteNavigationTests(ITestOutputHelper output)
 
 		var documentationSets = new List<IDocumentationSetNavigation> { observabilityNav, searchNav };
 
-		var siteContext = SiteNavigationTestFixture.CreateContext(fileSystem, "/checkouts/current/observability", output);
+		var siteContext = SiteNavigationTestFixture.CreateContext(fileSystem, "/checkouts/current/observability");
 		var navigation = new SiteNavigation(siteNavFile, siteContext, documentationSets, sitePrefix);
 
 		navigation.NavigationItems.Should().HaveCount(2);

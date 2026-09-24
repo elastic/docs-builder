@@ -12,11 +12,12 @@ using Microsoft.OpenApi;
 
 namespace Elastic.ApiExplorer.Tests.Supplemental;
 
-public class ApiSupplementalValidationTests(ApiExplorerFixture fixture) : IClassFixture<ApiExplorerFixture>
+[ClassDataSource<ApiExplorerFixture>(Shared = SharedType.PerClass)]
+public class ApiSupplementalValidationTests(ApiExplorerFixture fixture)
 {
 	private const string Folder = "/docs/api/fixture";
 
-	[Fact]
+	[Test]
 	public void Validate_UnmatchedOperationFileOnLatest_EmitsErrorNamingFile()
 	{
 		var collector = Validate(FolderWith(("op-does-not-exist.md", "# supplemental")), fixture.Document, "main");
@@ -27,7 +28,7 @@ public class ApiSupplementalValidationTests(ApiExplorerFixture fixture) : IClass
 			.ContainSingle(m => m.Contains("op-does-not-exist.md") && m.Contains("does not match any operationId in the latest spec"));
 	}
 
-	[Fact]
+	[Test]
 	public void Validate_UnmatchedTagFileOnLatest_EmitsError()
 	{
 		var collector = Validate(FolderWith(("tag-does-not-exist.md", "# supplemental")), fixture.Document, "main");
@@ -38,7 +39,7 @@ public class ApiSupplementalValidationTests(ApiExplorerFixture fixture) : IClass
 			.ContainSingle(m => m.Contains("tag-does-not-exist.md") && m.Contains("does not match any tag in the latest spec"));
 	}
 
-	[Fact]
+	[Test]
 	public void Validate_IgnoredFileOnLatest_EmitsNoError()
 	{
 		var collector = Validate(FolderWith(("random-notes.md", "# notes")), fixture.Document, "main");
@@ -46,7 +47,7 @@ public class ApiSupplementalValidationTests(ApiExplorerFixture fixture) : IClass
 		collector.Errors.Should().Be(0);
 	}
 
-	[Fact]
+	[Test]
 	public void Validate_KnownOperationWithNoUnknownKeys_EmitsNoError()
 	{
 		var collector = Validate(FolderWith(("op-search.md", "Returns hits that match the query.")), fixture.Document, "main");
@@ -54,7 +55,7 @@ public class ApiSupplementalValidationTests(ApiExplorerFixture fixture) : IClass
 		collector.Errors.Should().Be(0);
 	}
 
-	[Fact]
+	[Test]
 	public void Validate_UnknownParameterOnLatest_EmitsErrorNamingOperationAndParameter()
 	{
 		var collector = Validate(
@@ -74,7 +75,7 @@ public class ApiSupplementalValidationTests(ApiExplorerFixture fixture) : IClass
 			.ContainSingle(m => m.Contains("Parameter 'nope'") && m.Contains("operation 'search'") && m.Contains("the latest spec"));
 	}
 
-	[Fact]
+	[Test]
 	public void Validate_UnknownRequestBodyFieldOnLatest_EmitsError()
 	{
 		var collector = Validate(
@@ -109,7 +110,7 @@ public class ApiSupplementalValidationTests(ApiExplorerFixture fixture) : IClass
 			.Contain("the latest spec");
 	}
 
-	[Fact]
+	[Test]
 	public void Validate_NestedRequestBodyField_EmitsNoError()
 	{
 		var collector = Validate(
@@ -128,7 +129,7 @@ public class ApiSupplementalValidationTests(ApiExplorerFixture fixture) : IClass
 		collector.Errors.Should().Be(0);
 	}
 
-	[Fact]
+	[Test]
 	public void Validate_ListedRealParameter_EmitsNoError()
 	{
 		var collector = Validate(
@@ -147,7 +148,7 @@ public class ApiSupplementalValidationTests(ApiExplorerFixture fixture) : IClass
 		collector.Errors.Should().Be(0);
 	}
 
-	[Fact]
+	[Test]
 	public void Validate_UnmatchedBaseFileOnOlderVersion_EmitsNoError()
 	{
 		var collector = Validate(FolderWith(("op-search.md", "# supplemental")), SpecWith("ping"), "8");
@@ -155,7 +156,7 @@ public class ApiSupplementalValidationTests(ApiExplorerFixture fixture) : IClass
 		collector.Errors.Should().Be(0);
 	}
 
-	[Fact]
+	[Test]
 	public void Validate_UnmatchedBaseFileWhenLatestIsNumeric_EmitsError()
 	{
 		var collector = Validate(
@@ -171,7 +172,7 @@ public class ApiSupplementalValidationTests(ApiExplorerFixture fixture) : IClass
 			.ContainSingle(m => m.Contains("op-does-not-exist.md") && m.Contains("does not match any operationId in the latest spec"));
 	}
 
-	[Fact]
+	[Test]
 	public void Validate_UnmatchedBaseFileWhenLatestMonikerIsNonNumeric_EmitsError()
 	{
 		var collector = Validate(
@@ -187,7 +188,7 @@ public class ApiSupplementalValidationTests(ApiExplorerFixture fixture) : IClass
 			.ContainSingle(m => m.Contains("op-does-not-exist.md") && m.Contains("does not match any operationId in the latest spec"));
 	}
 
-	[Fact]
+	[Test]
 	public void Validate_UnknownParameterOnNonNumericLatest_EmitsError()
 	{
 		var collector = Validate(
@@ -207,7 +208,7 @@ public class ApiSupplementalValidationTests(ApiExplorerFixture fixture) : IClass
 			.ContainSingle(m => m.Contains("Parameter 'nope'") && m.Contains("operation 'search'") && m.Contains("the latest spec"));
 	}
 
-	[Fact]
+	[Test]
 	public void Validate_UnknownParameterOnOlderVersionMatchedBaseFile_EmitsError()
 	{
 		var collector = Validate(
@@ -227,7 +228,7 @@ public class ApiSupplementalValidationTests(ApiExplorerFixture fixture) : IClass
 			.ContainSingle(m => m.Contains("Parameter 'pretty'") && m.Contains("operation 'search'") && m.Contains("version 8"));
 	}
 
-	[Fact]
+	[Test]
 	public void Validate_VersionSuffixedUnknownOperation_EmitsErrorNamingVersion()
 	{
 		var collector = Validate(FolderWith(("op-nope.v8.md", "# supplemental")), SpecWith("ping"), "8");
@@ -238,7 +239,7 @@ public class ApiSupplementalValidationTests(ApiExplorerFixture fixture) : IClass
 			.ContainSingle(m => m.Contains("op-nope.v8.md") && m.Contains("does not match any operationId in version 8"));
 	}
 
-	[Fact]
+	[Test]
 	public void Validate_VersionSuffixedMatchingOperation_EmitsNoUnmatchedError()
 	{
 		var collector = Validate(FolderWith(("op-search.v8.md", "Returns hits that match the query.")), fixture.Document, "8");
@@ -246,7 +247,7 @@ public class ApiSupplementalValidationTests(ApiExplorerFixture fixture) : IClass
 		collector.Errors.Should().Be(0);
 	}
 
-	[Fact]
+	[Test]
 	public void Validate_VersionSuffixedUnknownTag_EmitsErrorNamingVersion()
 	{
 		var collector = Validate(FolderWith(("tag-nope.v8.md", "# supplemental")), SpecWith("ping"), "8");
@@ -257,7 +258,7 @@ public class ApiSupplementalValidationTests(ApiExplorerFixture fixture) : IClass
 			.ContainSingle(m => m.Contains("tag-nope.v8.md") && m.Contains("does not match any tag in version 8"));
 	}
 
-	[Fact]
+	[Test]
 	public void Validate_VersionSuffixedTagSlugCollision_EmitsError()
 	{
 		var spec = SpecWith("ping");
@@ -271,7 +272,7 @@ public class ApiSupplementalValidationTests(ApiExplorerFixture fixture) : IClass
 			.ContainSingle(m => m.Contains("tag-foo-bar.v8.md") && m.Contains("does not match any tag in version 8"));
 	}
 
-	[Fact]
+	[Test]
 	public void Validate_VersionSuffixedUnknownParameter_EmitsError()
 	{
 		var collector = Validate(

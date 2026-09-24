@@ -10,9 +10,9 @@ using Elastic.Documentation.Extensions;
 
 namespace Elastic.Documentation.Navigation.Tests.Isolation;
 
-public class FolderSortOrderTests(ITestOutputHelper output) : DocumentationSetNavigationTestBase(output)
+public class FolderSortOrderTests() : DocumentationSetNavigationTestBase()
 {
-	[Fact]
+	[Test]
 	public void FolderWithDefaultSortOrderIsAscending()
 	{
 		// language=yaml
@@ -43,7 +43,7 @@ public class FolderSortOrderTests(ITestOutputHelper output) : DocumentationSetNa
 		);
 	}
 
-	[Fact]
+	[Test]
 	public void FolderWithSortDescendingOrdersFilesZToA()
 	{
 		// language=yaml
@@ -75,7 +75,7 @@ public class FolderSortOrderTests(ITestOutputHelper output) : DocumentationSetNa
 		);
 	}
 
-	[Fact]
+	[Test]
 	public void FolderWithSortDescendingLongFormOrdersFilesZToA()
 	{
 		// language=yaml
@@ -107,7 +107,7 @@ public class FolderSortOrderTests(ITestOutputHelper output) : DocumentationSetNa
 		);
 	}
 
-	[Fact]
+	[Test]
 	public void FolderWithSortAscendingExplicitOrdersFilesAToZ()
 	{
 		// language=yaml
@@ -139,7 +139,7 @@ public class FolderSortOrderTests(ITestOutputHelper output) : DocumentationSetNa
 		);
 	}
 
-	[Fact]
+	[Test]
 	public void FolderWithSortDescendingPlacesIndexMdFirst()
 	{
 		// language=yaml
@@ -172,7 +172,7 @@ public class FolderSortOrderTests(ITestOutputHelper output) : DocumentationSetNa
 		fileNames[3].Should().Be("api-versions/v1.md");
 	}
 
-	[Fact]
+	[Test]
 	public void FolderWithFileAndSortDescendingPreservesSortOrder()
 	{
 		// language=yaml
@@ -196,7 +196,7 @@ public class FolderSortOrderTests(ITestOutputHelper output) : DocumentationSetNa
 		folderItem.Sort.Should().Be("desc");
 	}
 
-	[Fact]
+	[Test]
 	public void FolderWithExplicitChildrenIgnoresSortOrder()
 	{
 		// language=yaml
@@ -228,7 +228,7 @@ public class FolderSortOrderTests(ITestOutputHelper output) : DocumentationSetNa
 		);
 	}
 
-	[Fact]
+	[Test]
 	public void FolderWithUnrecognizedSortValueEmitsError()
 	{
 		// language=yaml
@@ -251,7 +251,7 @@ public class FolderSortOrderTests(ITestOutputHelper output) : DocumentationSetNa
 		context.Diagnostics.Should().Contain(d => d.Severity == Severity.Error && d.Message.Contains("Unknown sort order 'newest'"));
 	}
 
-	[Fact]
+	[Test]
 	public void FolderSortUsesNaturalOrderForVersionNumbers()
 	{
 		// language=yaml
@@ -283,7 +283,7 @@ public class FolderSortOrderTests(ITestOutputHelper output) : DocumentationSetNa
 		);
 	}
 
-	[Fact]
+	[Test]
 	public void FolderSortDescendingUsesNaturalOrderForVersionNumbers()
 	{
 		// language=yaml

@@ -28,7 +28,7 @@ public class S3IncrementalUploaderTests
 
 	private string UniquePath(string name) => _fileSystem.Path.Join(_fileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), name);
 
-	[Fact]
+	[Test]
 	public async Task Upload_NewFile_UploadsSuccessfully()
 	{
 		var path = UniquePath("entry.yaml");
@@ -42,7 +42,7 @@ public class S3IncrementalUploaderTests
 		A.CallTo(() => _s3Client.PutObjectAsync(A<PutObjectRequest>._, A<Cancel>._)).Returns(new PutObjectResponse());
 
 		var uploader = CreateUploader();
-		var ct = TestContext.Current.CancellationToken;
+		var ct = TestContext.Current!.Execution.CancellationToken;
 		var result = await uploader.Upload([new UploadTarget(path, "elasticsearch/changelog/entry.yaml")], ctx: ct);
 
 		result.Uploaded.Should().Be(1);
@@ -62,7 +62,7 @@ public class S3IncrementalUploaderTests
 		).MustHaveHappenedOnceExactly();
 	}
 
-	[Fact]
+	[Test]
 	public async Task Upload_UnchangedFile_SkipsUpload()
 	{
 		var content = "unchanged changelog"u8.ToArray();
@@ -76,7 +76,7 @@ public class S3IncrementalUploaderTests
 		});
 
 		var uploader = CreateUploader();
-		var ct = TestContext.Current.CancellationToken;
+		var ct = TestContext.Current!.Execution.CancellationToken;
 		var result = await uploader.Upload([new UploadTarget(path, "kibana/changelog/entry.yaml")], ctx: ct);
 
 		result.Uploaded.Should().Be(0);
@@ -89,7 +89,7 @@ public class S3IncrementalUploaderTests
 		A.CallTo(() => _s3Client.PutObjectAsync(A<PutObjectRequest>._, A<Cancel>._)).MustNotHaveHappened();
 	}
 
-	[Fact]
+	[Test]
 	public async Task Upload_UnchangedFile_WithSkipEtagCheck_Uploads()
 	{
 		var content = "unchanged changelog"u8.ToArray();
@@ -105,7 +105,7 @@ public class S3IncrementalUploaderTests
 		A.CallTo(() => _s3Client.PutObjectAsync(A<PutObjectRequest>._, A<Cancel>._)).Returns(new PutObjectResponse());
 
 		var uploader = CreateUploader();
-		var ct = TestContext.Current.CancellationToken;
+		var ct = TestContext.Current!.Execution.CancellationToken;
 		var result = await uploader.Upload([new UploadTarget(path, "kibana/changelog/entry.yaml")], skipEtagCheck: true, ctx: ct);
 
 		result.Uploaded.Should().Be(1);
@@ -126,7 +126,7 @@ public class S3IncrementalUploaderTests
 		).MustHaveHappenedOnceExactly();
 	}
 
-	[Fact]
+	[Test]
 	public async Task Upload_ChangedFile_UploadsNewVersion()
 	{
 		var path = UniquePath("entry.yaml");
@@ -140,7 +140,7 @@ public class S3IncrementalUploaderTests
 		A.CallTo(() => _s3Client.PutObjectAsync(A<PutObjectRequest>._, A<Cancel>._)).Returns(new PutObjectResponse());
 
 		var uploader = CreateUploader();
-		var ct = TestContext.Current.CancellationToken;
+		var ct = TestContext.Current!.Execution.CancellationToken;
 		var result = await uploader.Upload([new UploadTarget(path, "elasticsearch/changelog/entry.yaml")], ctx: ct);
 
 		result.Uploaded.Should().Be(1);
@@ -150,7 +150,7 @@ public class S3IncrementalUploaderTests
 		result.Failed.Should().Be(0);
 	}
 
-	[Fact]
+	[Test]
 	public async Task Upload_S3PutFails_CountsAsFailure()
 	{
 		var path = UniquePath("entry.yaml");
@@ -167,7 +167,7 @@ public class S3IncrementalUploaderTests
 		});
 
 		var uploader = CreateUploader();
-		var ct = TestContext.Current.CancellationToken;
+		var ct = TestContext.Current!.Execution.CancellationToken;
 		var result = await uploader.Upload([new UploadTarget(path, "elasticsearch/changelog/entry.yaml")], ctx: ct);
 
 		result.Uploaded.Should().Be(0);
@@ -175,7 +175,7 @@ public class S3IncrementalUploaderTests
 		result.Failed.Should().Be(1);
 	}
 
-	[Fact]
+	[Test]
 	public async Task Upload_MixedTargets_ReportsCorrectCounts()
 	{
 		var newPath = UniquePath("new.yaml");
@@ -201,7 +201,7 @@ public class S3IncrementalUploaderTests
 		A.CallTo(() => _s3Client.PutObjectAsync(A<PutObjectRequest>._, A<Cancel>._)).Returns(new PutObjectResponse());
 
 		var uploader = CreateUploader();
-		var ct = TestContext.Current.CancellationToken;
+		var ct = TestContext.Current!.Execution.CancellationToken;
 		var result = await uploader.Upload(
 			[new UploadTarget(newPath, "es/changelog/new.yaml"), new UploadTarget(unchangedPath, "es/changelog/unchanged.yaml")],
 			ctx: ct
@@ -214,11 +214,11 @@ public class S3IncrementalUploaderTests
 		result.Failed.Should().Be(0);
 	}
 
-	[Fact]
+	[Test]
 	public async Task Upload_EmptyList_ReturnsZeroCounts()
 	{
 		var uploader = CreateUploader();
-		var ct = TestContext.Current.CancellationToken;
+		var ct = TestContext.Current!.Execution.CancellationToken;
 		var result = await uploader.Upload([], ctx: ct);
 
 		result.Uploaded.Should().Be(0);
@@ -230,7 +230,7 @@ public class S3IncrementalUploaderTests
 		result.Conflicts.Should().BeEmpty();
 	}
 
-	[Fact]
+	[Test]
 	public async Task Upload_ChangedFile_WithNoOverwrite_SkipsPutAndRecordsRemoteContent()
 	{
 		var path = UniquePath("entry.yaml");
@@ -248,7 +248,7 @@ public class S3IncrementalUploaderTests
 		});
 
 		var uploader = CreateUploader();
-		var ct = TestContext.Current.CancellationToken;
+		var ct = TestContext.Current!.Execution.CancellationToken;
 		var result = await uploader.Upload(
 			[new UploadTarget(path, "changelog/elastic/elasticsearch/main/entry.yaml")],
 			new S3UploadOptions { NoOverwrite = true },
@@ -266,7 +266,7 @@ public class S3IncrementalUploaderTests
 		A.CallTo(() => _s3Client.PutObjectAsync(A<PutObjectRequest>._, A<Cancel>._)).MustNotHaveHappened();
 	}
 
-	[Fact]
+	[Test]
 	public async Task Upload_NewFile_WithNoOverwrite_Uploads()
 	{
 		var path = UniquePath("entry.yaml");
@@ -280,7 +280,7 @@ public class S3IncrementalUploaderTests
 		A.CallTo(() => _s3Client.PutObjectAsync(A<PutObjectRequest>._, A<Cancel>._)).Returns(new PutObjectResponse());
 
 		var uploader = CreateUploader();
-		var ct = TestContext.Current.CancellationToken;
+		var ct = TestContext.Current!.Execution.CancellationToken;
 		var result = await uploader.Upload(
 			[new UploadTarget(path, "elasticsearch/changelog/entry.yaml")],
 			new S3UploadOptions { NoOverwrite = true },
@@ -299,7 +299,7 @@ public class S3IncrementalUploaderTests
 		).MustHaveHappenedOnceExactly();
 	}
 
-	[Fact]
+	[Test]
 	public async Task Upload_NoOverwrite_WhenPutPreconditionFails_CountsAsNotOverwritten()
 	{
 		var path = UniquePath("entry.yaml");
@@ -322,7 +322,7 @@ public class S3IncrementalUploaderTests
 		});
 
 		var uploader = CreateUploader();
-		var ct = TestContext.Current.CancellationToken;
+		var ct = TestContext.Current!.Execution.CancellationToken;
 		var result = await uploader.Upload(
 			[new UploadTarget(path, "elasticsearch/changelog/entry.yaml")],
 			new S3UploadOptions { NoOverwrite = true },
@@ -335,7 +335,7 @@ public class S3IncrementalUploaderTests
 		result.Conflicts[0].RemoteContent.Should().Be(remoteYaml);
 	}
 
-	[Fact]
+	[Test]
 	public async Task Upload_NoOverwrite_WhenPutConflicts_CountsAsNotOverwritten()
 	{
 		var path = UniquePath("entry.yaml");
@@ -357,7 +357,7 @@ public class S3IncrementalUploaderTests
 		});
 
 		var uploader = CreateUploader();
-		var ct = TestContext.Current.CancellationToken;
+		var ct = TestContext.Current!.Execution.CancellationToken;
 		var result = await uploader.Upload(
 			[new UploadTarget(path, "elasticsearch/changelog/entry.yaml")],
 			new S3UploadOptions { NoOverwrite = true },
@@ -368,7 +368,7 @@ public class S3IncrementalUploaderTests
 		result.NotOverwritten.Should().Be(1);
 	}
 
-	[Fact]
+	[Test]
 	public async Task Upload_NoOverwrite_WhenGetObjectFails_StillRefusesPut()
 	{
 		var path = UniquePath("entry.yaml");
@@ -385,7 +385,7 @@ public class S3IncrementalUploaderTests
 		});
 
 		var uploader = CreateUploader();
-		var ct = TestContext.Current.CancellationToken;
+		var ct = TestContext.Current!.Execution.CancellationToken;
 		var result = await uploader.Upload(
 			[new UploadTarget(path, "elasticsearch/changelog/entry.yaml")],
 			new S3UploadOptions { NoOverwrite = true },
@@ -397,7 +397,7 @@ public class S3IncrementalUploaderTests
 		A.CallTo(() => _s3Client.PutObjectAsync(A<PutObjectRequest>._, A<Cancel>._)).MustNotHaveHappened();
 	}
 
-	[Fact]
+	[Test]
 	public async Task Upload_InlineMarker_WithNoOverwriteWhenUnchanged_SkipsPut()
 	{
 		const string marker = "link: 100";
@@ -409,7 +409,7 @@ public class S3IncrementalUploaderTests
 		});
 
 		var uploader = CreateUploader();
-		var ct = TestContext.Current.CancellationToken;
+		var ct = TestContext.Current!.Execution.CancellationToken;
 		var result = await uploader.Upload(
 			[new UploadTarget(string.Empty, "changelog/elastic/elasticsearch/main/200.yaml", marker)],
 			new S3UploadOptions { NoOverwrite = true },
@@ -423,7 +423,7 @@ public class S3IncrementalUploaderTests
 		A.CallTo(() => _s3Client.GetObjectAsync(A<GetObjectRequest>._, A<Cancel>._)).MustNotHaveHappened();
 	}
 
-	[Fact]
+	[Test]
 	public async Task Upload_InlineMarker_WithNoOverwriteWhenExists_SkipsPut()
 	{
 		A.CallTo(() => _s3Client.GetObjectMetadataAsync(A<GetObjectMetadataRequest>._, A<Cancel>._)).Returns(new GetObjectMetadataResponse
@@ -437,7 +437,7 @@ public class S3IncrementalUploaderTests
 		});
 
 		var uploader = CreateUploader();
-		var ct = TestContext.Current.CancellationToken;
+		var ct = TestContext.Current!.Execution.CancellationToken;
 		var result = await uploader.Upload(
 			[new UploadTarget(string.Empty, "changelog/elastic/elasticsearch/main/200.yaml", "link: 100")],
 			new S3UploadOptions { NoOverwrite = true },
@@ -450,7 +450,7 @@ public class S3IncrementalUploaderTests
 		A.CallTo(() => _s3Client.PutObjectAsync(A<PutObjectRequest>._, A<Cancel>._)).MustNotHaveHappened();
 	}
 
-	[Fact]
+	[Test]
 	public async Task Upload_InlineMarker_Unchanged_SkipsUpload()
 	{
 		const string marker = "link: 100";
@@ -462,7 +462,7 @@ public class S3IncrementalUploaderTests
 		});
 
 		var uploader = CreateUploader();
-		var ct = TestContext.Current.CancellationToken;
+		var ct = TestContext.Current!.Execution.CancellationToken;
 		var result = await uploader.Upload(
 			[new UploadTarget(string.Empty, "changelog/elastic/elasticsearch/main/200.yaml", marker)],
 			ctx: ct
@@ -473,7 +473,7 @@ public class S3IncrementalUploaderTests
 		A.CallTo(() => _s3Client.PutObjectAsync(A<PutObjectRequest>._, A<Cancel>._)).MustNotHaveHappened();
 	}
 
-	[Fact]
+	[Test]
 	public async Task Upload_InlineMarker_Unchanged_WithSkipEtagCheck_Uploads()
 	{
 		const string marker = "link: 100";
@@ -487,7 +487,7 @@ public class S3IncrementalUploaderTests
 		A.CallTo(() => _s3Client.PutObjectAsync(A<PutObjectRequest>._, A<Cancel>._)).Returns(new PutObjectResponse());
 
 		var uploader = CreateUploader();
-		var ct = TestContext.Current.CancellationToken;
+		var ct = TestContext.Current!.Execution.CancellationToken;
 		var result = await uploader.Upload(
 			[new UploadTarget(string.Empty, "changelog/elastic/elasticsearch/main/200.yaml", marker)],
 			skipEtagCheck: true,
@@ -499,7 +499,7 @@ public class S3IncrementalUploaderTests
 		A.CallTo(() => _s3Client.PutObjectAsync(A<PutObjectRequest>._, A<Cancel>._)).MustHaveHappenedOnceExactly();
 	}
 
-	[Fact]
+	[Test]
 	public async Task Upload_InlineMarker_MissingKey_UploadsAsNew()
 	{
 		A.CallTo(() => _s3Client.GetObjectMetadataAsync(A<GetObjectMetadataRequest>._, A<Cancel>._)).Throws(new AmazonS3Exception(
@@ -510,7 +510,7 @@ public class S3IncrementalUploaderTests
 		A.CallTo(() => _s3Client.PutObjectAsync(A<PutObjectRequest>._, A<Cancel>._)).Returns(new PutObjectResponse());
 
 		var uploader = CreateUploader();
-		var ct = TestContext.Current.CancellationToken;
+		var ct = TestContext.Current!.Execution.CancellationToken;
 		var result = await uploader.Upload(
 			[new UploadTarget(string.Empty, "changelog/elastic/elasticsearch/main/200.yaml", "link: 100")],
 			ctx: ct

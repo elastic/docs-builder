@@ -12,9 +12,9 @@ using Elastic.Documentation.ReleaseNotes;
 namespace Elastic.Changelog.Tests.Backfill;
 
 [SuppressMessage("Usage", "CA1001:Types that own disposable fields should be disposable")]
-public class ReleaseNotesPageParserTests(ITestOutputHelper output)
+public class ReleaseNotesPageParserTests()
 {
-	private readonly TestDiagnosticsCollector _collector = new(output);
+	private readonly TestDiagnosticsCollector _collector = new();
 
 	private IReadOnlyList<MigratedRelease> ParseFixture() =>
 		ReleaseNotesPageParser.Parse(_collector, ReleaseNotesFixture.Markdown, "fixture.md", ReleaseNotesFixture.Scope);
@@ -26,7 +26,7 @@ public class ReleaseNotesPageParserTests(ITestOutputHelper output)
 		return release;
 	}
 
-	[Fact]
+	[Test]
 	public void Parse_RealisticPage_ParsesEveryVersionSection()
 	{
 		var releases = ParseFixture();
@@ -35,7 +35,7 @@ public class ReleaseNotesPageParserTests(ITestOutputHelper output)
 		_collector.Errors.Should().Be(0);
 	}
 
-	[Fact]
+	[Test]
 	public void Parse_VersionSection_MapsProductTargetLifecycleAndReleaseDate()
 	{
 		var release = ParseFixtureVersion("1.9.0");
@@ -49,7 +49,7 @@ public class ReleaseNotesPageParserTests(ITestOutputHelper output)
 		release.Bundle.ReleaseDate.Should().Be(new DateOnly(2026, 2, 9));
 	}
 
-	[Fact]
+	[Test]
 	public void Parse_TypedSubsections_MapToEntryTypes()
 	{
 		var release = ParseFixtureVersion("1.9.0");
@@ -69,7 +69,7 @@ public class ReleaseNotesPageParserTests(ITestOutputHelper output)
 		ParseFixtureVersion("1.4.1").Bundle.Entries.Should().ContainSingle().Which.Type.Should().Be(ChangelogEntryType.BugFix);
 	}
 
-	[Fact]
+	[Test]
 	public void Parse_BarePrReference_ResolvesAgainstScopeRepoAndCleansTitle()
 	{
 		var entry = ParseFixtureVersion("1.9.0").Bundle.Entries[0];
@@ -78,10 +78,10 @@ public class ReleaseNotesPageParserTests(ITestOutputHelper output)
 		entry.Prs.Should().Equal("https://github.com/elastic/elastic-otel-java/pull/958");
 	}
 
-	[Theory]
-	[InlineData(0, "Inferred spans can now be disabled and re-enabled via central config", "https://github.com/elastic/elastic-otel-java/pull/838")]
-	[InlineData(1, "The agent config is now logged on startup", "https://github.com/elastic/elastic-otel-java/pull/835")]
-	[InlineData(2, "add header support for OpAMP integration", "https://github.com/elastic/elastic-otel-java/pull/848")]
+	[Test]
+	[Arguments(0, "Inferred spans can now be disabled and re-enabled via central config", "https://github.com/elastic/elastic-otel-java/pull/838")]
+	[Arguments(1, "The agent config is now logged on startup", "https://github.com/elastic/elastic-otel-java/pull/835")]
+	[Arguments(2, "add header support for OpAMP integration", "https://github.com/elastic/elastic-otel-java/pull/848")]
 	public void Parse_MarkdownPrLinkVariants_ExtractUrlAndCleanTitle(int index, string expectedTitle, string expectedPr)
 	{
 		var entries = ParseFixtureVersion("1.7.0").Bundle.Entries;
@@ -90,7 +90,7 @@ public class ReleaseNotesPageParserTests(ITestOutputHelper output)
 		entries[index].Prs.Should().Equal(expectedPr);
 	}
 
-	[Fact]
+	[Test]
 	public void Parse_EntryWithoutPrReference_HasNoPrs()
 	{
 		var entry = ParseFixtureVersion("1.4.1").Bundle.Entries.Single(e => e.Type == ChangelogEntryType.BugFix);
@@ -99,7 +99,7 @@ public class ReleaseNotesPageParserTests(ITestOutputHelper output)
 		entry.Prs.Should().BeNull();
 	}
 
-	[Fact]
+	[Test]
 	public void Parse_EntryProducts_CarryTheScopeProduct()
 	{
 		var entries = ParseFixtureVersion("1.7.0").Bundle.Entries;
@@ -107,7 +107,7 @@ public class ReleaseNotesPageParserTests(ITestOutputHelper output)
 		entries.Should().AllSatisfy(e => e.Products.Should().ContainSingle().Which.ProductId.Should().Be("edot-java"));
 	}
 
-	[Fact]
+	[Test]
 	public void Parse_TrailingProseAfterEntries_GoesToDescriptionNotEntries()
 	{
 		var release = ParseFixtureVersion("1.7.0");
@@ -118,7 +118,7 @@ public class ReleaseNotesPageParserTests(ITestOutputHelper output)
 		release.Bundle.Description.Should().Contain("opentelemetry-javaagent: [2.21.0]");
 	}
 
-	[Fact]
+	[Test]
 	public void Parse_ProseOnlyRelease_ProducesDescriptionOnlyBundle()
 	{
 		var release = ParseFixtureVersion("1.10.0");
@@ -129,7 +129,7 @@ public class ReleaseNotesPageParserTests(ITestOutputHelper output)
 		release.Bundle.Description.Should().Contain("opentelemetry-sdk: [1.60.1]");
 	}
 
-	[Fact]
+	[Test]
 	public void Parse_UnrecognizedSubsection_PreservedInDescriptionWithWarning()
 	{
 		var release = ParseFixtureVersion("1.4.1");
@@ -139,7 +139,7 @@ public class ReleaseNotesPageParserTests(ITestOutputHelper output)
 		_collector.Diagnostics.Should().Contain(d => d.Message.Contains("Unrecognized subsection"));
 	}
 
-	[Fact]
+	[Test]
 	public void Parse_CommentTemplateLines_NeverProduceContent()
 	{
 		var releases = ParseFixture();
@@ -148,7 +148,7 @@ public class ReleaseNotesPageParserTests(ITestOutputHelper output)
 		releases.Should().AllSatisfy(r => r.Bundle.Description?.Should().NotContain("% "));
 	}
 
-	[Fact]
+	[Test]
 	public void Parse_NonVersionHeading_SkippedWithWarning()
 	{
 		var markdown =
@@ -167,7 +167,7 @@ public class ReleaseNotesPageParserTests(ITestOutputHelper output)
 		_collector.Diagnostics.Should().Contain(d => d.Message.Contains("not a recognizable version"));
 	}
 
-	[Fact]
+	[Test]
 	public void Parse_MappedBundle_SerializesToLoadableBundleYaml()
 	{
 		var release = ParseFixtureVersion("1.9.0");
@@ -182,18 +182,18 @@ public class ReleaseNotesPageParserTests(ITestOutputHelper output)
 		roundTripped.Entries[0].Prs.Should().Equal("https://github.com/elastic/elastic-otel-java/pull/958");
 	}
 
-	[Theory]
-	[InlineData("Features and enhancements", ChangelogEntryType.Enhancement)]
-	[InlineData("Features", ChangelogEntryType.Feature)]
-	[InlineData("Bug fixes", ChangelogEntryType.BugFix)]
-	[InlineData("Fixes", ChangelogEntryType.BugFix)]
-	[InlineData("Breaking changes", ChangelogEntryType.BreakingChange)]
-	[InlineData("Deprecations", ChangelogEntryType.Deprecation)]
-	[InlineData("Known issues", ChangelogEntryType.KnownIssue)]
-	[InlineData("Security", ChangelogEntryType.Security)]
-	[InlineData("Regressions", ChangelogEntryType.Regression)]
-	[InlineData("Docs", ChangelogEntryType.Docs)]
-	[InlineData("Other", ChangelogEntryType.Other)]
+	[Test]
+	[Arguments("Features and enhancements", ChangelogEntryType.Enhancement)]
+	[Arguments("Features", ChangelogEntryType.Feature)]
+	[Arguments("Bug fixes", ChangelogEntryType.BugFix)]
+	[Arguments("Fixes", ChangelogEntryType.BugFix)]
+	[Arguments("Breaking changes", ChangelogEntryType.BreakingChange)]
+	[Arguments("Deprecations", ChangelogEntryType.Deprecation)]
+	[Arguments("Known issues", ChangelogEntryType.KnownIssue)]
+	[Arguments("Security", ChangelogEntryType.Security)]
+	[Arguments("Regressions", ChangelogEntryType.Regression)]
+	[Arguments("Docs", ChangelogEntryType.Docs)]
+	[Arguments("Other", ChangelogEntryType.Other)]
 	public void Parse_SectionType_MapsAllKnownTypes(string sectionHeading, ChangelogEntryType expectedType)
 	{
 		var markdown =
@@ -208,10 +208,10 @@ public class ReleaseNotesPageParserTests(ITestOutputHelper output)
 		releases.Should().ContainSingle().Which.Bundle.Entries.Should().ContainSingle().Which.Type.Should().Be(expectedType);
 	}
 
-	[Theory]
-	[InlineData("Performance improvements")] // contains no known keyword substring
+	[Test]
+	[Arguments("Performance improvements")] // contains no known keyword substring
 
-	[InlineData("Infrastructure changes")]
+	[Arguments("Infrastructure changes")]
 	public void Parse_SubstringFallback_UnrecognizedHeadingWithBullets_BecomesOtherEntries(string sectionHeading)
 	{
 		var markdown =
@@ -229,7 +229,7 @@ public class ReleaseNotesPageParserTests(ITestOutputHelper output)
 		releases.Should().ContainSingle();
 	}
 
-	[Fact]
+	[Test]
 	public void Parse_UnrecognizedSectionWithBullets_BecomesOtherEntries()
 	{
 		var markdown =
@@ -249,7 +249,7 @@ public class ReleaseNotesPageParserTests(ITestOutputHelper output)
 		release.Bundle.Description.Should().BeNullOrEmpty("bullets should not flow to description");
 	}
 
-	[Fact]
+	[Test]
 	public void Parse_UnrecognizedSectionWithProse_FlowsToDescription()
 	{
 		// "Upgrade notes" section from fixture — prose content → Description (existing behavior)
@@ -260,7 +260,7 @@ public class ReleaseNotesPageParserTests(ITestOutputHelper output)
 		_collector.Diagnostics.Should().Contain(d => d.Message.Contains("Unrecognized subsection"));
 	}
 
-	[Fact]
+	[Test]
 	public void Parse_AreaHeading_CapturedOnEntries()
 	{
 		var markdown =
@@ -282,7 +282,7 @@ public class ReleaseNotesPageParserTests(ITestOutputHelper output)
 		entries[2].Areas.Should().Equal("Metrics");
 	}
 
-	[Fact]
+	[Test]
 	public void Parse_BoldAreaPrefix_ExtractedFromBulletText()
 	{
 		var markdown =
@@ -301,7 +301,7 @@ public class ReleaseNotesPageParserTests(ITestOutputHelper output)
 		entries[1].Areas.Should().Equal("Tracing");
 	}
 
-	[Fact]
+	[Test]
 	public void Parse_AreaResets_OnNewSubsection()
 	{
 		var markdown =
@@ -321,7 +321,7 @@ public class ReleaseNotesPageParserTests(ITestOutputHelper output)
 		entries[1].Areas.Should().BeNull("area resets on new ### subsection");
 	}
 
-	[Fact]
+	[Test]
 	public void Parse_CrossReference_Skipped()
 	{
 		var markdown =
@@ -340,7 +340,7 @@ public class ReleaseNotesPageParserTests(ITestOutputHelper output)
 		releases[0].Bundle.Description.Should().NotContain("For the Elastic Foo");
 	}
 
-	[Fact]
+	[Test]
 	public void Parse_LifecycleFromAppliesTo_OverridesScopeDefault()
 	{
 		var markdown =
@@ -358,7 +358,7 @@ public class ReleaseNotesPageParserTests(ITestOutputHelper output)
 		product.Lifecycle.Should().Be(Lifecycle.Preview);
 	}
 
-	[Fact]
+	[Test]
 	public void Parse_DefaultLifecycleApplied_WhenNoAppliesToLine()
 	{
 		var markdown =
@@ -375,7 +375,7 @@ public class ReleaseNotesPageParserTests(ITestOutputHelper output)
 		product.Lifecycle.Should().Be(Lifecycle.Beta);
 	}
 
-	[Fact]
+	[Test]
 	public void Parse_SiteSourceScope_BarePrRefNotResolved()
 	{
 		var markdown = """

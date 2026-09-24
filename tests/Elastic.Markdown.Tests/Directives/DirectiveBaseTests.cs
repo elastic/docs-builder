@@ -11,27 +11,27 @@ using Elastic.Markdown.IO;
 using Elastic.Markdown.Myst.Directives;
 using JetBrains.Annotations;
 using Markdig.Syntax;
+using TUnit.Core.Interfaces;
 
 namespace Elastic.Markdown.Tests.Directives;
 
-public abstract class DirectiveTest<TDirective>(ITestOutputHelper output, [LanguageInjection("markdown")] string content) : DirectiveTest(
-	output,
+public abstract class DirectiveTest<TDirective>([LanguageInjection("markdown")] string content) : DirectiveTest(
 	content
 ) where TDirective : DirectiveBlock
 {
 	protected TDirective? Block { get; private set; }
 
-	public override async ValueTask InitializeAsync()
+	public override async Task InitializeAsync()
 	{
 		await base.InitializeAsync();
 		Block = Document.Descendants<TDirective>().FirstOrDefault();
 	}
 
-	[Fact]
+	[Test]
 	public void BlockIsNotNull() => Block.Should().NotBeNull();
 }
 
-public abstract class DirectiveTest : IAsyncLifetime
+public abstract class DirectiveTest : IAsyncInitializer, IAsyncDisposable
 {
 	protected MarkdownFile File { get; }
 	protected string Html { get; private set; }
@@ -42,9 +42,9 @@ public abstract class DirectiveTest : IAsyncLifetime
 
 	private bool TestingFullDocument { get; }
 
-	protected DirectiveTest(ITestOutputHelper output, [LanguageInjection("markdown")] string content)
+	protected DirectiveTest([LanguageInjection("markdown")] string content)
 	{
-		var logger = new TestLoggerFactory(output);
+		var logger = new TestLoggerFactory();
 
 		TestingFullDocument = string.IsNullOrEmpty(content) || content.StartsWith("---", StringComparison.OrdinalIgnoreCase);
 		var documentContents = TestingFullDocument
@@ -68,7 +68,7 @@ public abstract class DirectiveTest : IAsyncLifetime
 		var root = FileSystem.DirectoryInfo.New(Path.Join(Paths.WorkingDirectoryRoot.FullName, "docs/"));
 		// ReSharper disable once VirtualMemberCallInConstructor
 		FileSystem.GenerateDocSetYaml(root, products: GetDocsetProducts(), extraYaml: GetDocsetExtraYaml());
-		Collector = new TestDiagnosticsCollector(output);
+		Collector = new TestDiagnosticsCollector();
 		var configurationContext = TestHelpers.CreateConfigurationContext(FileSystem);
 		// ReSharper disable once VirtualMemberCallInConstructor
 		var environment = GetEnvironment();
@@ -119,12 +119,12 @@ public abstract class DirectiveTest : IAsyncLifetime
 	/// </summary>
 	protected virtual ContentSource? GetContentSource() => null;
 
-	public virtual async ValueTask InitializeAsync()
+	public virtual async Task InitializeAsync()
 	{
-		_ = Collector.StartAsync(TestContext.Current.CancellationToken);
+		_ = Collector.StartAsync(TestContext.Current!.Execution.CancellationToken);
 
-		await Set.ResolveDirectoryTree(TestContext.Current.CancellationToken);
-		Document = await File.ParseFullAsync(Set.TryFindDocumentByRelativePath, TestContext.Current.CancellationToken);
+		await Set.ResolveDirectoryTree(TestContext.Current!.Execution.CancellationToken);
+		Document = await File.ParseFullAsync(Set.TryFindDocumentByRelativePath, TestContext.Current!.Execution.CancellationToken);
 		var html = MarkdownFile.CreateHtml(Document).AsSpan();
 		var find = "</section>";
 		var start = html.IndexOf(find, StringComparison.Ordinal);
@@ -132,7 +132,7 @@ public abstract class DirectiveTest : IAsyncLifetime
 			? html[(start + find.Length)..].ToString().Trim(Environment.NewLine.ToCharArray())
 			: html.ToString().Trim(Environment.NewLine.ToCharArray());
 
-		await Collector.StopAsync(TestContext.Current.CancellationToken);
+		await Collector.StopAsync(TestContext.Current!.Execution.CancellationToken);
 	}
 
 	/// <summary>

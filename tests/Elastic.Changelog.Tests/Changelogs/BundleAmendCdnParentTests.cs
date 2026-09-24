@@ -11,7 +11,7 @@ using Elastic.Documentation.Diagnostics;
 
 namespace Elastic.Changelog.Tests.Changelogs;
 
-public class BundleAmendCdnParentTests(ITestOutputHelper output) : ChangelogTestBase(output)
+public class BundleAmendCdnParentTests() : ChangelogTestBase()
 {
 	// language=yaml
 	private const string ExistingEntry =
@@ -33,7 +33,7 @@ public class BundleAmendCdnParentTests(ITestOutputHelper output) : ChangelogTest
 		    target: 9.3.0
 		""";
 
-	[Fact]
+	[Test]
 	public async Task Amend_CdnParent_WritesAmend1UnderOutput()
 	{
 		var outputDir = CreateDir();
@@ -48,7 +48,7 @@ public class BundleAmendCdnParentTests(ITestOutputHelper output) : ChangelogTest
 				AddFiles = ["/changelog/elastic/elasticsearch/main/late.yaml"],
 				Output = outputDir
 			},
-			TestContext.Current.CancellationToken
+			TestContext.Current!.Execution.CancellationToken
 		);
 
 		result.Should().BeTrue($"Errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}");
@@ -57,12 +57,12 @@ public class BundleAmendCdnParentTests(ITestOutputHelper output) : ChangelogTest
 		handler.RequestedPaths.Should().NotContain(p => p.EndsWith("/9.4.0.yaml", StringComparison.Ordinal));
 		var amendPath = FileSystem.Path.Join(outputDir, "9.3.0.amend-1.yaml");
 		FileSystem.File.Exists(amendPath).Should().BeTrue();
-		var amend = await FileSystem.File.ReadAllTextAsync(amendPath, TestContext.Current.CancellationToken);
+		var amend = await FileSystem.File.ReadAllTextAsync(amendPath, TestContext.Current!.Execution.CancellationToken);
 		amend.Should().Contain("title: Late addition");
 		amend.Should().Contain("name: late.yaml");
 	}
 
-	[Fact]
+	[Test]
 	public async Task Amend_CdnParent_ExistingCdnAmend_WritesAmend2()
 	{
 		var outputDir = CreateDir();
@@ -76,7 +76,7 @@ public class BundleAmendCdnParentTests(ITestOutputHelper output) : ChangelogTest
 		var result = await service.AmendBundle(
 			Collector,
 			new AmendBundleArguments { BundlePath = "/bundle/elasticsearch/9.3.0.yaml", AddFiles = ["late.yaml"], Output = outputDir },
-			TestContext.Current.CancellationToken
+			TestContext.Current!.Execution.CancellationToken
 		);
 
 		result.Should().BeTrue($"Errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}");
@@ -85,14 +85,14 @@ public class BundleAmendCdnParentTests(ITestOutputHelper output) : ChangelogTest
 		FileSystem.File.Exists(FileSystem.Path.Join(outputDir, "9.3.0.amend-2.yaml")).Should().BeTrue();
 	}
 
-	[Fact]
+	[Test]
 	public async Task Amend_CdnParent_LocalSiblingAmend_WritesAmend2()
 	{
 		var outputDir = CreateDir();
 		await FileSystem.File.WriteAllTextAsync(
 			FileSystem.Path.Join(outputDir, "9.3.0.amend-1.yaml"),
 			AmendSidecarYaml("local-prior.yaml"),
-			TestContext.Current.CancellationToken
+			TestContext.Current!.Execution.CancellationToken
 		);
 		var handler = CombinedHandler(parentYaml: ParentBundleYaml("existing.yaml", ExistingEntry), lateYaml: LateEntry);
 		var service = Service(handler);
@@ -100,28 +100,28 @@ public class BundleAmendCdnParentTests(ITestOutputHelper output) : ChangelogTest
 		var result = await service.AmendBundle(
 			Collector,
 			new AmendBundleArguments { BundlePath = "/bundle/elasticsearch/9.3.0.yaml", AddFiles = ["late.yaml"], Output = outputDir },
-			TestContext.Current.CancellationToken
+			TestContext.Current!.Execution.CancellationToken
 		);
 
 		result.Should().BeTrue($"Errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}");
 		FileSystem.File.Exists(FileSystem.Path.Join(outputDir, "9.3.0.amend-2.yaml")).Should().BeTrue();
 	}
 
-	[Fact]
+	[Test]
 	public async Task Amend_LocalParent_StillWritesBesideParent_IgnoringOutput()
 	{
 		var bundlePath = await WriteLocalParentAsync();
 		var outputDir = CreateDir();
 		var localDir = CreateDir();
 		var localFile = FileSystem.Path.Join(localDir, "late.yaml");
-		await FileSystem.File.WriteAllTextAsync(localFile, LateEntry, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(localFile, LateEntry, TestContext.Current!.Execution.CancellationToken);
 		var handler = new StubHandler(_ => new HttpResponseMessage(HttpStatusCode.NotFound));
 		var service = Service(handler);
 
 		var result = await service.AmendBundle(
 			Collector,
 			new AmendBundleArguments { BundlePath = bundlePath, AddFiles = [localFile], ForceLocal = true, Output = outputDir },
-			TestContext.Current.CancellationToken
+			TestContext.Current!.Execution.CancellationToken
 		);
 
 		result.Should().BeTrue($"Errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}");
@@ -131,7 +131,7 @@ public class BundleAmendCdnParentTests(ITestOutputHelper output) : ChangelogTest
 		Collector.Diagnostics.Should().Contain(d => d.Severity == Severity.Warning && d.Message.Contains("--output is ignored"));
 	}
 
-	[Fact]
+	[Test]
 	public async Task Amend_LocalParent_MissingFile_FailsWithoutWriting()
 	{
 		var outputDir = CreateDir();
@@ -146,7 +146,7 @@ public class BundleAmendCdnParentTests(ITestOutputHelper output) : ChangelogTest
 				AddFiles = ["late.yaml"],
 				Output = outputDir
 			},
-			TestContext.Current.CancellationToken
+			TestContext.Current!.Execution.CancellationToken
 		);
 
 		result.Should().BeFalse();
@@ -154,7 +154,7 @@ public class BundleAmendCdnParentTests(ITestOutputHelper output) : ChangelogTest
 		FileSystem.Directory.GetFiles(outputDir).Should().BeEmpty();
 	}
 
-	[Fact]
+	[Test]
 	public async Task Amend_CdnParent_UnknownBundleFile_FailsWithoutWriting()
 	{
 		var outputDir = CreateDir();
@@ -164,7 +164,7 @@ public class BundleAmendCdnParentTests(ITestOutputHelper output) : ChangelogTest
 		var result = await service.AmendBundle(
 			Collector,
 			new AmendBundleArguments { BundlePath = "/bundle/elasticsearch/missing.yaml", AddFiles = ["late.yaml"], Output = outputDir },
-			TestContext.Current.CancellationToken
+			TestContext.Current!.Execution.CancellationToken
 		);
 
 		result.Should().BeFalse();
@@ -172,7 +172,7 @@ public class BundleAmendCdnParentTests(ITestOutputHelper output) : ChangelogTest
 		FileSystem.Directory.GetFiles(outputDir).Should().BeEmpty();
 	}
 
-	[Fact]
+	[Test]
 	public async Task Amend_CdnParent_AmendSidecarAsParent_FailsWithoutWriting()
 	{
 		var outputDir = CreateDir();
@@ -187,7 +187,7 @@ public class BundleAmendCdnParentTests(ITestOutputHelper output) : ChangelogTest
 				AddFiles = ["late.yaml"],
 				Output = outputDir
 			},
-			TestContext.Current.CancellationToken
+			TestContext.Current!.Execution.CancellationToken
 		);
 
 		result.Should().BeFalse();
@@ -196,7 +196,7 @@ public class BundleAmendCdnParentTests(ITestOutputHelper output) : ChangelogTest
 		FileSystem.Directory.GetFiles(outputDir).Should().BeEmpty();
 	}
 
-	[Fact]
+	[Test]
 	public void DiscoverAmendFiles_IgnoresSiblingSidecarWithDifferentExtension()
 	{
 		var bundleDir = CreateDir();
@@ -212,7 +212,7 @@ public class BundleAmendCdnParentTests(ITestOutputHelper output) : ChangelogTest
 		amendFiles.Should().ContainSingle().Which.Should().EndWith("9.3.0.amend-1.yml");
 	}
 
-	[Fact]
+	[Test]
 	public void DiscoverAmendFiles_NumberedBeforeNotesSidecar()
 	{
 		var bundleDir = CreateDir();
@@ -227,7 +227,7 @@ public class BundleAmendCdnParentTests(ITestOutputHelper output) : ChangelogTest
 		amendFiles.Select(FileSystem.Path.GetFileName).Should().Equal("9.3.0.amend-1.yaml", "9.3.0.amend-2.yaml", "9.3.0.amend-notes.yaml");
 	}
 
-	[Fact]
+	[Test]
 	public async Task Amend_CdnParent_YmlExtension_IgnoresMismatchedExtensionSidecar_WritesAmend1()
 	{
 		var outputDir = CreateDir();
@@ -245,17 +245,17 @@ public class BundleAmendCdnParentTests(ITestOutputHelper output) : ChangelogTest
 		var result = await service.AmendBundle(
 			Collector,
 			new AmendBundleArguments { BundlePath = "/bundle/elasticsearch/9.3.0.yml", AddFiles = ["late.yaml"], Output = outputDir },
-			TestContext.Current.CancellationToken
+			TestContext.Current!.Execution.CancellationToken
 		);
 
 		result.Should().BeTrue($"Errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}");
 		var amendPath = FileSystem.Path.Join(outputDir, "9.3.0.amend-1.yml");
 		FileSystem.File.Exists(amendPath).Should().BeTrue();
-		var amend = await FileSystem.File.ReadAllTextAsync(amendPath, TestContext.Current.CancellationToken);
+		var amend = await FileSystem.File.ReadAllTextAsync(amendPath, TestContext.Current!.Execution.CancellationToken);
 		amend.Should().NotContain("unrelated.yaml", "the mismatched-extension sidecar must not be merged in");
 	}
 
-	[Fact]
+	[Test]
 	public async Task Amend_LocalFileMatchingLocatorShape_PrefersCdnParent()
 	{
 		var outputDir = CreateDir();
@@ -264,7 +264,7 @@ public class BundleAmendCdnParentTests(ITestOutputHelper output) : ChangelogTest
 		await FileSystem.File.WriteAllTextAsync(
 			FileSystem.Path.Join(shadowedDir, "9.3.0.yaml"),
 			"this on-disk file must not be read; locator syntax takes precedence",
-			TestContext.Current.CancellationToken
+			TestContext.Current!.Execution.CancellationToken
 		);
 		var handler = CombinedHandler(parentYaml: ParentBundleYaml("existing.yaml", ExistingEntry), lateYaml: LateEntry);
 		var service = Service(handler);
@@ -272,7 +272,7 @@ public class BundleAmendCdnParentTests(ITestOutputHelper output) : ChangelogTest
 		var result = await service.AmendBundle(
 			Collector,
 			new AmendBundleArguments { BundlePath = "bundle/elasticsearch/9.3.0.yaml", AddFiles = ["late.yaml"], Output = outputDir },
-			TestContext.Current.CancellationToken
+			TestContext.Current!.Execution.CancellationToken
 		);
 
 		result.Should().BeTrue($"Errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}");
@@ -286,7 +286,7 @@ public class BundleAmendCdnParentTests(ITestOutputHelper output) : ChangelogTest
 		FileSystem.File.Exists(FileSystem.Path.Join(outputDir, "9.3.0.amend-1.yaml")).Should().BeTrue();
 	}
 
-	[Fact]
+	[Test]
 	public async Task Amend_LocalParent_Symlink_FailsWithoutWriting()
 	{
 		var bundleDir = CreateDir();
@@ -294,7 +294,7 @@ public class BundleAmendCdnParentTests(ITestOutputHelper output) : ChangelogTest
 		await FileSystem.File.WriteAllTextAsync(
 			realBundlePath,
 			ParentBundleYaml("existing.yaml", ExistingEntry),
-			TestContext.Current.CancellationToken
+			TestContext.Current!.Execution.CancellationToken
 		);
 		var symlinkPath = FileSystem.Path.Join(bundleDir, "bundle.yaml");
 		FileSystem.File.CreateSymbolicLink(symlinkPath, realBundlePath);
@@ -304,7 +304,7 @@ public class BundleAmendCdnParentTests(ITestOutputHelper output) : ChangelogTest
 		var result = await service.AmendBundle(
 			Collector,
 			new AmendBundleArguments { BundlePath = symlinkPath, AddFiles = ["late.yaml"], ForceLocal = true },
-			TestContext.Current.CancellationToken
+			TestContext.Current!.Execution.CancellationToken
 		);
 
 		result.Should().BeFalse();
@@ -312,7 +312,7 @@ public class BundleAmendCdnParentTests(ITestOutputHelper output) : ChangelogTest
 		handler.RequestedPaths.Should().BeEmpty();
 	}
 
-	[Fact]
+	[Test]
 	public async Task Amend_BadPathShape_FailsWithoutWriting()
 	{
 		var outputDir = CreateDir();
@@ -327,7 +327,7 @@ public class BundleAmendCdnParentTests(ITestOutputHelper output) : ChangelogTest
 				AddFiles = ["late.yaml"],
 				Output = outputDir
 			},
-			TestContext.Current.CancellationToken
+			TestContext.Current!.Execution.CancellationToken
 		);
 
 		result.Should().BeFalse();
@@ -357,7 +357,7 @@ public class BundleAmendCdnParentTests(ITestOutputHelper output) : ChangelogTest
 		await FileSystem.File.WriteAllTextAsync(
 			bundlePath,
 			ParentBundleYaml("existing.yaml", ExistingEntry),
-			TestContext.Current.CancellationToken
+			TestContext.Current!.Execution.CancellationToken
 		);
 		return bundlePath;
 	}

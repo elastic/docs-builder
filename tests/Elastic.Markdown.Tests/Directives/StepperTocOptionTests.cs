@@ -8,8 +8,8 @@ using Elastic.Markdown.Myst.Directives.Stepper;
 
 namespace Elastic.Markdown.Tests.Directives;
 
-public class StepperTocDefaultTests(ITestOutputHelper output) : DirectiveTest<StepperBlock>(
-	output,
+[InheritsTests]
+public class StepperTocDefaultTests() : DirectiveTest<StepperBlock>(
 	"""
 :::::{stepper}
 
@@ -21,7 +21,7 @@ First install the dependencies.
 """
 )
 {
-	[Fact]
+	[Test]
 	public void Toc_WhenDefault_IncludesStepTitle()
 	{
 		var toc = File.PageTableOfContent.Values.ToList();
@@ -30,7 +30,7 @@ First install the dependencies.
 		toc[0].IsStepperStep.Should().BeTrue();
 	}
 
-	[Fact]
+	[Test]
 	public void Render_WhenDefault_UsesHeadingElement()
 	{
 		Html.Should().Contain("<h2");
@@ -40,8 +40,8 @@ First install the dependencies.
 	}
 }
 
-public class StepperTocFalseTests(ITestOutputHelper output) : DirectiveTest<StepperBlock>(
-	output,
+[InheritsTests]
+public class StepperTocFalseTests() : DirectiveTest<StepperBlock>(
 	"""
 :::::{stepper}
 :toc: false
@@ -54,14 +54,14 @@ First install the dependencies.
 """
 )
 {
-	[Fact]
+	[Test]
 	public void Toc_WhenTocFalse_OmitsStepTitle()
 	{
 		File.PageTableOfContent.Should().BeEmpty();
 		Block!.IncludeInToc.Should().BeFalse();
 	}
 
-	[Fact]
+	[Test]
 	public void Render_WhenTocFalse_UsesDiv()
 	{
 		Html.Should().NotContain("<h2");
@@ -73,8 +73,8 @@ First install the dependencies.
 	}
 }
 
-public class StepperTocFalseKeepsInternalHeadingsTests(ITestOutputHelper output) : DirectiveTest<StepperBlock>(
-	output,
+[InheritsTests]
+public class StepperTocFalseKeepsInternalHeadingsTests() : DirectiveTest<StepperBlock>(
 	"""
 ## Section
 
@@ -91,14 +91,14 @@ Some content under the internal heading.
 """
 )
 {
-	[Fact]
+	[Test]
 	public void Toc_WhenTocFalse_KeepsInternalHeading()
 	{
 		var toc = File.PageTableOfContent.Values.Select(item => item.Heading).ToList();
 		toc.Should().Equal("Section", "Internal");
 	}
 
-	[Fact]
+	[Test]
 	public void Render_WhenTocFalse_KeepsInternalHeadingLevel()
 	{
 		Html.Should().Contain("<h3");
@@ -107,8 +107,8 @@ Some content under the internal heading.
 	}
 }
 
-public class StepperTocFalseNoPrecedingHeadingTests(ITestOutputHelper output) : DirectiveTest<StepperBlock>(
-	output,
+[InheritsTests]
+public class StepperTocFalseNoPrecedingHeadingTests() : DirectiveTest<StepperBlock>(
 	"""
 	---
 	title: Outline level
@@ -127,7 +127,7 @@ public class StepperTocFalseNoPrecedingHeadingTests(ITestOutputHelper output) : 
 	"""
 )
 {
-	[Fact]
+	[Test]
 	public void Hint_WhenNoPrecedingHeading_NamesOutlineLevel()
 	{
 		var hint = Collector
@@ -139,7 +139,7 @@ public class StepperTocFalseNoPrecedingHeadingTests(ITestOutputHelper output) : 
 		hint.Message.Should().NotContain("preceding heading");
 	}
 
-	[Fact]
+	[Test]
 	public void Render_WhenNoPrecedingHeading_AdjustsInternalHeading()
 	{
 		Html.Should().Contain("<h2");

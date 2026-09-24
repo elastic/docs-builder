@@ -9,9 +9,9 @@ using Elastic.Documentation.Diagnostics;
 
 namespace Elastic.Changelog.Tests.Changelogs.Render;
 
-public class ErrorHandlingTests(ITestOutputHelper output) : RenderChangelogTestBase(output)
+public class ErrorHandlingTests() : RenderChangelogTestBase()
 {
-	[Fact]
+	[Test]
 	public async Task RenderChangelogs_WithMissingBundleFile_ReturnsError()
 	{
 		// Arrange
@@ -24,7 +24,7 @@ public class ErrorHandlingTests(ITestOutputHelper output) : RenderChangelogTestB
 		};
 
 		// Act
-		var result = await Service.RenderChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await Service.RenderChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		result.Should().BeFalse();
@@ -32,7 +32,7 @@ public class ErrorHandlingTests(ITestOutputHelper output) : RenderChangelogTestB
 		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("Bundle file does not exist"));
 	}
 
-	[Fact]
+	[Test]
 	public async Task RenderChangelogs_EntryWithOnlyFileBlock_EmitsNoInlineContentError()
 	{
 		// Arrange — a file-only entry (no inline title/type) is invalid: bundles are
@@ -52,7 +52,7 @@ public class ErrorHandlingTests(ITestOutputHelper output) : RenderChangelogTestB
 			      name: 1755268130-feature.yaml
 			      checksum: abc123
 			""";
-		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current!.Execution.CancellationToken);
 
 		var input = new RenderChangelogsArguments
 		{
@@ -61,7 +61,7 @@ public class ErrorHandlingTests(ITestOutputHelper output) : RenderChangelogTestB
 		};
 
 		// Act
-		var result = await Service.RenderChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await Service.RenderChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		result.Should().BeFalse();
@@ -76,7 +76,7 @@ public class ErrorHandlingTests(ITestOutputHelper output) : RenderChangelogTestB
 			);
 	}
 
-	[Fact]
+	[Test]
 	public async Task RenderChangelogs_WithInvalidBundleStructure_ReturnsError()
 	{
 		// Arrange
@@ -88,7 +88,7 @@ public class ErrorHandlingTests(ITestOutputHelper output) : RenderChangelogTestB
 		var bundleContent = """
 			invalid_field: value
 			""";
-		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current!.Execution.CancellationToken);
 
 		var input = new RenderChangelogsArguments
 		{
@@ -97,7 +97,7 @@ public class ErrorHandlingTests(ITestOutputHelper output) : RenderChangelogTestB
 		};
 
 		// Act
-		var result = await Service.RenderChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await Service.RenderChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		result.Should().BeFalse();
@@ -108,7 +108,7 @@ public class ErrorHandlingTests(ITestOutputHelper output) : RenderChangelogTestB
 			.Contain(d => d.Message.Contains("No changelog entries to render") || d.Message.Contains("Failed to deserialize"));
 	}
 
-	[Fact]
+	[Test]
 	public async Task RenderChangelogs_EntryMissingProducts_EmitsError()
 	{
 		// Arrange — inline entry has title and type but no products
@@ -126,7 +126,7 @@ public class ErrorHandlingTests(ITestOutputHelper output) : RenderChangelogTestB
 			  - type: feature
 			    title: Feature without products
 			""";
-		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current!.Execution.CancellationToken);
 
 		var input = new RenderChangelogsArguments
 		{
@@ -135,7 +135,7 @@ public class ErrorHandlingTests(ITestOutputHelper output) : RenderChangelogTestB
 		};
 
 		// Act
-		var result = await Service.RenderChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await Service.RenderChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		result.Should().BeFalse();
@@ -150,7 +150,7 @@ public class ErrorHandlingTests(ITestOutputHelper output) : RenderChangelogTestB
 			);
 	}
 
-	[Fact]
+	[Test]
 	public async Task RenderChangelogs_WithResolvedEntry_ValidatesAndRenders()
 	{
 		// Arrange
@@ -173,7 +173,7 @@ public class ErrorHandlingTests(ITestOutputHelper output) : RenderChangelogTestB
 			    prs:
 			    - "100"
 			""";
-		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current!.Execution.CancellationToken);
 
 		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
 
@@ -185,7 +185,7 @@ public class ErrorHandlingTests(ITestOutputHelper output) : RenderChangelogTestB
 		};
 
 		// Act
-		var result = await Service.RenderChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await Service.RenderChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		result.Should().BeTrue();
@@ -194,11 +194,11 @@ public class ErrorHandlingTests(ITestOutputHelper output) : RenderChangelogTestB
 		var indexFile = FileSystem.Path.Join(outputDir, "9.2.0", "index.md");
 		FileSystem.File.Exists(indexFile).Should().BeTrue();
 
-		var indexContent = await FileSystem.File.ReadAllTextAsync(indexFile, TestContext.Current.CancellationToken);
+		var indexContent = await FileSystem.File.ReadAllTextAsync(indexFile, TestContext.Current!.Execution.CancellationToken);
 		indexContent.Should().Contain("Resolved feature");
 	}
 
-	[Fact]
+	[Test]
 	public async Task RenderChangelogs_WithUnknownType_EmitsError()
 	{
 		// Arrange — an unrecognized type string deserializes to a null type,
@@ -221,7 +221,7 @@ public class ErrorHandlingTests(ITestOutputHelper output) : RenderChangelogTestB
 			        target: 9.2.0
 			    description: This has an unknown type
 			""";
-		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current!.Execution.CancellationToken);
 
 		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
 
@@ -233,7 +233,7 @@ public class ErrorHandlingTests(ITestOutputHelper output) : RenderChangelogTestB
 		};
 
 		// Act
-		var result = await Service.RenderChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await Service.RenderChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		result.Should().BeFalse();

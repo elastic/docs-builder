@@ -28,7 +28,7 @@ public class OpenApiGeneratorCatalogSplitTests
 {
 	private static readonly Uri BaseUri = new("https://cdn.example/");
 
-	[Fact]
+	[Test]
 	public async Task GenerateProducts_DoesNotWriteCatalogPage()
 	{
 		var outputRoot = Path.Join(Paths.WorkingDirectoryRoot.FullName, $"api-catalog-split-{Guid.NewGuid():N}");
@@ -43,7 +43,7 @@ public class OpenApiGeneratorCatalogSplitTests
 			reader
 		);
 
-		var entries = await generator.GenerateProducts(ctx: TestContext.Current.CancellationToken);
+		var entries = await generator.GenerateProducts(ctx: TestContext.Current!.Execution.CancellationToken);
 
 		entries.Should().ContainSingle();
 		entries[0].ProductId.Should().Be("elasticsearch");
@@ -53,7 +53,7 @@ public class OpenApiGeneratorCatalogSplitTests
 		context.WriteFileSystem.File.Exists(Path.Join(outputRoot, "api", "index.html")).Should().BeFalse();
 	}
 
-	[Fact]
+	[Test]
 	public async Task GenerateCatalog_WritesCombinedCatalogFromMultipleEntries()
 	{
 		var outputRoot = Path.Join(Paths.WorkingDirectoryRoot.FullName, $"api-catalog-split-{Guid.NewGuid():N}");
@@ -66,11 +66,11 @@ public class OpenApiGeneratorCatalogSplitTests
 			new("kibana", "Kibana", "/docs/api/doc/kibana/", "kibana")
 		};
 
-		await generator.GenerateCatalog(entries, TestContext.Current.CancellationToken);
+		await generator.GenerateCatalog(entries, TestContext.Current!.Execution.CancellationToken);
 
 		var catalogPath = Path.Join(outputRoot, "api", "index.html");
 		context.WriteFileSystem.File.Exists(catalogPath).Should().BeTrue();
-		var html = await context.WriteFileSystem.File.ReadAllTextAsync(catalogPath, TestContext.Current.CancellationToken);
+		var html = await context.WriteFileSystem.File.ReadAllTextAsync(catalogPath, TestContext.Current!.Execution.CancellationToken);
 		html.Should().Contain("<h1>API catalog</h1>");
 		html.Should().Contain("api-catalog-grid");
 		html.Should().Contain("listing-root");
@@ -89,7 +89,7 @@ public class OpenApiGeneratorCatalogSplitTests
 		html.Should().NotContain("id=\"pages-nav\"");
 	}
 
-	[Fact]
+	[Test]
 	public async Task GenerateProducts_LandingHeading_ShowsSpecTitleAndProductMark()
 	{
 		var outputRoot = Path.Join(Paths.WorkingDirectoryRoot.FullName, $"api-catalog-split-{Guid.NewGuid():N}");
@@ -104,19 +104,22 @@ public class OpenApiGeneratorCatalogSplitTests
 			reader
 		);
 
-		_ = await generator.GenerateProducts(ctx: TestContext.Current.CancellationToken);
+		_ = await generator.GenerateProducts(ctx: TestContext.Current!.Execution.CancellationToken);
 
 		var html = await context
 			.WriteFileSystem
 			.File
-			.ReadAllTextAsync(Path.Join(outputRoot, "api", "doc", "elasticsearch", "index.html"), TestContext.Current.CancellationToken);
+			.ReadAllTextAsync(
+				Path.Join(outputRoot, "api", "doc", "elasticsearch", "index.html"),
+				TestContext.Current!.Execution.CancellationToken
+			);
 		html.Should().Contain("api-landing-heading");
 		html.Should().Contain("<h1>Elasticsearch main</h1>");
 		html.Should().Contain("<span class=\"api-landing-icon\">");
 		html.Should().Contain("viewBox=\"8 4.9995 47.7276 54.001\"");
 	}
 
-	[Fact]
+	[Test]
 	public async Task Generate_StillWritesProductsAndCatalog()
 	{
 		var outputRoot = Path.Join(Paths.WorkingDirectoryRoot.FullName, $"api-catalog-split-{Guid.NewGuid():N}");
@@ -131,7 +134,7 @@ public class OpenApiGeneratorCatalogSplitTests
 			reader
 		);
 
-		await generator.Generate(TestContext.Current.CancellationToken);
+		await generator.Generate(TestContext.Current!.Execution.CancellationToken);
 
 		var productHtml = context.WriteFileSystem.File.ReadAllText(Path.Join(outputRoot, "api", "doc", "elasticsearch", "index.html"));
 		var catalogHtml = context.WriteFileSystem.File.ReadAllText(Path.Join(outputRoot, "api", "index.html"));
@@ -145,7 +148,7 @@ public class OpenApiGeneratorCatalogSplitTests
 		context.WriteFileSystem.File.Exists(Path.Join(outputRoot, "api.md")).Should().BeTrue();
 	}
 
-	[Fact]
+	[Test]
 	public async Task GenerateProducts_WithHubEntries_WritesSiblingApisOnProductPage()
 	{
 		var outputRoot = Path.Join(Paths.WorkingDirectoryRoot.FullName, $"api-catalog-split-{Guid.NewGuid():N}");
@@ -165,7 +168,7 @@ public class OpenApiGeneratorCatalogSplitTests
 			new("kibana", "Kibana", "/docs/api/doc/kibana/")
 		};
 
-		_ = await generator.GenerateProducts(hubEntries, TestContext.Current.CancellationToken);
+		_ = await generator.GenerateProducts(hubEntries, TestContext.Current!.Execution.CancellationToken);
 
 		var productHtml = context.WriteFileSystem.File.ReadAllText(Path.Join(outputRoot, "api", "doc", "elasticsearch", "index.html"));
 		productHtml.Should().Contain("id=\"api-hub-switcher\"");
@@ -174,7 +177,7 @@ public class OpenApiGeneratorCatalogSplitTests
 		productHtml.Should().Contain("<option value=\"/docs/api/doc/kibana/\">Kibana</option>");
 	}
 
-	[Fact]
+	[Test]
 	public async Task GenerateCatalog_RendersUsedCategoryChipsOnly()
 	{
 		var outputRoot = Path.Join(Paths.WorkingDirectoryRoot.FullName, $"api-catalog-split-{Guid.NewGuid():N}");
@@ -191,12 +194,12 @@ public class OpenApiGeneratorCatalogSplitTests
 			new("connect", "Cloud Connect", "/docs/api/doc/connect/", "cloud")
 		};
 
-		await generator.GenerateCatalog(entries, TestContext.Current.CancellationToken);
+		await generator.GenerateCatalog(entries, TestContext.Current!.Execution.CancellationToken);
 
 		var html = await context
 			.WriteFileSystem
 			.File
-			.ReadAllTextAsync(Path.Join(outputRoot, "api", "index.html"), TestContext.Current.CancellationToken);
+			.ReadAllTextAsync(Path.Join(outputRoot, "api", "index.html"), TestContext.Current!.Execution.CancellationToken);
 		html.Should().Contain("listing-group-chips");
 		html.Should().Contain("data-group=\"ess\"");
 		html.Should().Contain("data-group=\"self\"");
@@ -294,7 +297,9 @@ public class OpenApiGeneratorCatalogSplitTests
 	{
 		var queue = new Queue<OpenApiDocument>(documents);
 		var reader = A.Fake<IOpenApiSpecificationReader>();
-		A.CallTo(() => reader.ReadAsync(A<Stream>._, A<string>._)).ReturnsLazily(_ => Task.FromResult<OpenApiDocument?>(queue.Dequeue()));
+		A.CallTo(() => reader.ReadAsync(A<Stream>._, A<string>._, A<IDiagnosticsCollector?>._)).ReturnsLazily(
+			_ => Task.FromResult<OpenApiDocument?>(queue.Dequeue())
+		);
 		return reader;
 	}
 

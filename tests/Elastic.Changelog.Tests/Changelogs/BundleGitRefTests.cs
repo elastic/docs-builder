@@ -19,7 +19,7 @@ namespace Elastic.Changelog.Tests.Changelogs;
 /// inferred-from-PR-metadata precedence, the bundle records <c>git_ref</c>, and dry-run
 /// reports without writing.
 /// </summary>
-public class BundleGitRefTests(ITestOutputHelper output) : ChangelogTestBase(output)
+public class BundleGitRefTests() : ChangelogTestBase()
 {
 	private const string StartRef = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa1";
 	private const string EndRef = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa2";
@@ -68,7 +68,7 @@ public class BundleGitRefTests(ITestOutputHelper output) : ChangelogTestBase(out
 		});
 
 	private CdnChangelogEntryFetcher Fetcher(StubHandler handler) =>
-		new(new TestLoggerFactory(Output), handler, sleep: (_, _) => Task.CompletedTask);
+		new(new TestLoggerFactory(), handler, sleep: (_, _) => Task.CompletedTask);
 
 	private static CommitRangePullRequest RangePr(int number) =>
 		new() { Number = number, Url = $"https://github.com/elastic/widget/pull/{number}", CommitShas = [$"sha-{number}"] };
@@ -110,7 +110,7 @@ public class BundleGitRefTests(ITestOutputHelper output) : ChangelogTestBase(out
 
 		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog.yml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
-		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current!.Execution.CancellationToken);
 		return configPath;
 	}
 
@@ -120,7 +120,7 @@ public class BundleGitRefTests(ITestOutputHelper output) : ChangelogTestBase(out
 		IGitHubPrService? prService = null
 	) => new(LoggerFactory, FileSystem, ConfigurationContext, Fetcher(handler), prService ?? A.Fake<IGitHubPrService>(), rangeService);
 
-	[Fact]
+	[Test]
 	public async Task ProfileMode_PoolFirstWithInferredFallback_WritesBundleWithGitRef()
 	{
 		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
@@ -155,7 +155,7 @@ public class BundleGitRefTests(ITestOutputHelper output) : ChangelogTestBase(out
 			EndGitRef = EndRef
 		};
 
-		var result = await service.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await service.BundleChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		result.Should().BeTrue(
 			$"Errors: {string.Join("; ", Collector.Diagnostics.Where(d => d.Severity == Severity.Error).Select(d => d.Message))}"
@@ -167,7 +167,7 @@ public class BundleGitRefTests(ITestOutputHelper output) : ChangelogTestBase(out
 		outputFiles.Should().ContainSingle();
 		FileSystem.Path.GetFileName(outputFiles[0]).Should().Be("widget-cloud-hosted-2026-08-13.yaml");
 
-		var bundle = await FileSystem.File.ReadAllTextAsync(outputFiles[0], TestContext.Current.CancellationToken);
+		var bundle = await FileSystem.File.ReadAllTextAsync(outputFiles[0], TestContext.Current!.Execution.CancellationToken);
 
 		// Pool entries win over inference.
 		bundle.Should().Contain("Faster hosted search");
@@ -193,7 +193,7 @@ public class BundleGitRefTests(ITestOutputHelper output) : ChangelogTestBase(out
 			.Contain(d => d.Severity == Severity.Warning && d.Message.Contains("pull/400") && d.Message.Contains("could not be fetched"));
 	}
 
-	[Fact]
+	[Test]
 	public async Task ProfileMode_DryRun_ResolvesButWritesNothing()
 	{
 		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
@@ -212,27 +212,27 @@ public class BundleGitRefTests(ITestOutputHelper output) : ChangelogTestBase(out
 			DryRun = true
 		};
 
-		var result = await service.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await service.BundleChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		result.Should().BeTrue();
 		Collector.Errors.Should().Be(0);
 		FileSystem.Directory.GetFiles(outputDir, "*.yaml").Should().BeEmpty("dry-run must not write a bundle");
 	}
 
-	[Fact]
+	[Test]
 	public async Task StartRefWithoutEndRef_Errors()
 	{
 		var service = Service(PoolHandler(), RangeService());
 
 		var input = new BundleChangelogsArguments { Repo = "widget", StartGitRef = StartRef };
 
-		var result = await service.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await service.BundleChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		result.Should().BeFalse();
 		Collector.Diagnostics.Should().Contain(d => d.Severity == Severity.Error && d.Message.Contains("must be provided together"));
 	}
 
-	[Fact]
+	[Test]
 	public async Task GitRefCombinedWithOtherFilter_Errors()
 	{
 		var service = Service(PoolHandler(), RangeService());
@@ -245,7 +245,7 @@ public class BundleGitRefTests(ITestOutputHelper output) : ChangelogTestBase(out
 			Prs = ["https://github.com/elastic/widget/pull/1"]
 		};
 
-		var result = await service.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await service.BundleChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		result.Should().BeFalse();
 		Collector
@@ -254,7 +254,7 @@ public class BundleGitRefTests(ITestOutputHelper output) : ChangelogTestBase(out
 			.Contain(d => d.Severity == Severity.Error && d.Message.Contains("cannot be combined with other filter sources"));
 	}
 
-	[Fact]
+	[Test]
 	public async Task ProfileWithProductsPattern_Errors()
 	{
 		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
@@ -275,7 +275,7 @@ public class BundleGitRefTests(ITestOutputHelper output) : ChangelogTestBase(out
 		);
 		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog.yml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
-		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current!.Execution.CancellationToken);
 
 		var service = Service(PoolHandler(), RangeService());
 
@@ -288,13 +288,13 @@ public class BundleGitRefTests(ITestOutputHelper output) : ChangelogTestBase(out
 			EndGitRef = EndRef
 		};
 
-		var result = await service.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await service.BundleChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		result.Should().BeFalse();
 		Collector.Diagnostics.Should().Contain(d => d.Severity == Severity.Error && d.Message.Contains("products pattern"));
 	}
 
-	[Fact]
+	[Test]
 	public async Task InferredEntry_NoTypeLabel_DefaultsToOtherWithWarning()
 	{
 		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
@@ -321,7 +321,7 @@ public class BundleGitRefTests(ITestOutputHelper output) : ChangelogTestBase(out
 			EndGitRef = EndRef
 		};
 
-		var result = await service.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await service.BundleChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		result.Should().BeTrue(
 			$"Errors: {string.Join("; ", Collector.Diagnostics.Where(d => d.Severity == Severity.Error).Select(d => d.Message))}"
@@ -329,7 +329,7 @@ public class BundleGitRefTests(ITestOutputHelper output) : ChangelogTestBase(out
 
 		var outputFiles = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
 		outputFiles.Should().ContainSingle();
-		var bundle = await FileSystem.File.ReadAllTextAsync(outputFiles[0], TestContext.Current.CancellationToken);
+		var bundle = await FileSystem.File.ReadAllTextAsync(outputFiles[0], TestContext.Current!.Execution.CancellationToken);
 		bundle.Should().Contain("Unlabeled change");
 		bundle.Should().Contain("type: other");
 		Collector.Diagnostics.Should().Contain(d => d.Severity == Severity.Warning && d.Message.Contains("defaulting to 'other'"));
@@ -341,7 +341,7 @@ public class BundleGitRefTests(ITestOutputHelper output) : ChangelogTestBase(out
 			);
 	}
 
-	[Fact]
+	[Test]
 	public async Task Plan_GitRefProfileWithoutOutputPattern_ResolvesConventionalPathAndNetworkNeeds()
 	{
 		// The bundle-create CI action relies on --plan's output_path to locate the generated file,
@@ -361,7 +361,12 @@ public class BundleGitRefTests(ITestOutputHelper output) : ChangelogTestBase(out
 			EndGitRef = EndRef
 		};
 
-		var plan = await service.PlanBundleAsync(Collector, input, hasReleaseVersion: false, TestContext.Current.CancellationToken);
+		var plan = await service.PlanBundleAsync(
+			Collector,
+			input,
+			hasReleaseVersion: false,
+			TestContext.Current!.Execution.CancellationToken
+		);
 
 		plan.Should().NotBeNull();
 		plan.NeedsNetwork.Should().BeTrue();
@@ -370,7 +375,7 @@ public class BundleGitRefTests(ITestOutputHelper output) : ChangelogTestBase(out
 		FileSystem.Path.GetFileName(plan.OutputPath).Should().Be("widget-cloud-hosted-2026-08-13.yaml");
 	}
 
-	[Fact]
+	[Test]
 	public void GitRangeReport_ToMarkdown_ListsPrSourcesAndOrphanCommits()
 	{
 		var report = new GitRangeBundleReport
@@ -413,12 +418,12 @@ public class BundleGitRefTests(ITestOutputHelper output) : ChangelogTestBase(out
 		markdown.Should().Contain("- `deadbeef`");
 	}
 
-	[Theory]
-	[InlineData("100.yaml", new[] { 100 })]
-	[InlineData("100-200.yaml", new[] { 100, 200 })]
-	[InlineData("123-bug-fix-some-slug.yaml", new[] { 123 })]
-	[InlineData("sturdier-snapshots.yaml", new int[0])]
-	[InlineData("1755000000-my-title.yaml", new[] { 1755000000 })]
+	[Test]
+	[Arguments("100.yaml", new[] { 100 })]
+	[Arguments("100-200.yaml", new[] { 100, 200 })]
+	[Arguments("123-bug-fix-some-slug.yaml", new[] { 123 })]
+	[Arguments("sturdier-snapshots.yaml", new int[0])]
+	[Arguments("1755000000-my-title.yaml", new[] { 1755000000 })]
 	public void ParseLeadingPrNumbers_CoversNamingSchemes(string fileName, int[] expected) =>
 		ChangelogPrIdentity.ParseLeadingPrNumbers(fileName).Should().Equal(expected);
 

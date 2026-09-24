@@ -12,7 +12,7 @@ using FakeItEasy;
 
 namespace Elastic.Changelog.Tests.Evaluation;
 
-public class ChangelogLabelValidationServiceTests(ITestOutputHelper output) : ChangelogTestBase(output)
+public class ChangelogLabelValidationServiceTests() : ChangelogTestBase()
 {
 	private static readonly string Root = Paths.WorkingDirectoryRoot.FullName;
 	private readonly ICoreService _mockCore = A.Fake<ICoreService>();
@@ -71,7 +71,7 @@ public class ChangelogLabelValidationServiceTests(ITestOutputHelper output) : Ch
 
 	private void VerifyOutputSet(string name, string value) => A.CallTo(() => _mockCore.SetOutputAsync(name, value)).MustHaveHappened();
 
-	[Fact]
+	[Test]
 	public async Task ValidateLabels_MatchingTypeLabel_ReturnsTrue()
 	{
 		await WriteConfig(MinimalConfig);
@@ -82,7 +82,7 @@ public class ChangelogLabelValidationServiceTests(ITestOutputHelper output) : Ch
 		VerifyOutputSet("status", "ok");
 	}
 
-	[Fact]
+	[Test]
 	public async Task ValidateLabels_NoMatchingLabel_ReturnsFalse()
 	{
 		await WriteConfig(MinimalConfig);
@@ -93,7 +93,7 @@ public class ChangelogLabelValidationServiceTests(ITestOutputHelper output) : Ch
 		VerifyOutputSet("status", "no-label");
 	}
 
-	[Fact]
+	[Test]
 	public async Task ValidateLabels_SkipLabelPresent_ReturnsSkipped()
 	{
 		await WriteConfig(ConfigWithExcludeRule);
@@ -104,7 +104,7 @@ public class ChangelogLabelValidationServiceTests(ITestOutputHelper output) : Ch
 		VerifyOutputSet("status", "skipped");
 	}
 
-	[Fact]
+	[Test]
 	public async Task ValidateLabels_OnCI_WithPrNumber_WritesMetadataFile()
 	{
 		await WriteConfig(MinimalConfig);
@@ -115,12 +115,12 @@ public class ChangelogLabelValidationServiceTests(ITestOutputHelper output) : Ch
 
 		var metadata = await ReadMetadata();
 		metadata.Should().NotBeNull();
-		metadata!.PrNumber.Should().Be(42);
+		metadata.PrNumber.Should().Be(42);
 		metadata.HeadRef.Should().Be("feature/test");
 		metadata.Status.Should().Be("ok");
 	}
 
-	[Fact]
+	[Test]
 	public async Task ValidateLabels_NotOnCI_DoesNotWriteMetadataFile()
 	{
 		await WriteConfig(MinimalConfig);
@@ -132,7 +132,7 @@ public class ChangelogLabelValidationServiceTests(ITestOutputHelper output) : Ch
 		RunnerTempFileSystem.File.Exists(MetadataPath).Should().BeFalse();
 	}
 
-	[Fact]
+	[Test]
 	public async Task ValidateLabels_OnCI_NoPrNumber_DoesNotWriteMetadataFile()
 	{
 		await WriteConfig(MinimalConfig);
@@ -144,7 +144,7 @@ public class ChangelogLabelValidationServiceTests(ITestOutputHelper output) : Ch
 		RunnerTempFileSystem.File.Exists(MetadataPath).Should().BeFalse();
 	}
 
-	[Fact]
+	[Test]
 	public async Task ValidateLabels_NoLabel_OnCI_WritesMetadataWithNoLabelStatus()
 	{
 		await WriteConfig(MinimalConfig);
@@ -155,7 +155,7 @@ public class ChangelogLabelValidationServiceTests(ITestOutputHelper output) : Ch
 
 		var metadata = await ReadMetadata();
 		metadata.Should().NotBeNull();
-		metadata!.PrNumber.Should().Be(42);
+		metadata.PrNumber.Should().Be(42);
 		metadata.Status.Should().Be("no-label");
 	}
 }

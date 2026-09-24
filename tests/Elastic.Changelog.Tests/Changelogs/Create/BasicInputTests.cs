@@ -7,9 +7,9 @@ using Elastic.Changelog.Creation;
 
 namespace Elastic.Changelog.Tests.Changelogs.Create;
 
-public class BasicInputTests(ITestOutputHelper output) : CreateChangelogTestBase(output)
+public class BasicInputTests() : CreateChangelogTestBase()
 {
-	[Fact]
+	[Test]
 	public async Task CreateChangelog_WithBasicInput_CreatesValidYamlFile()
 	{
 		// Arrange
@@ -26,13 +26,13 @@ public class BasicInputTests(ITestOutputHelper output) : CreateChangelogTestBase
 		};
 
 		// Act
-		var result = await service.CreateChangelog(Collector, input, TestContext.Current.CancellationToken);
+		var result = await service.CreateChangelog(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		if (!result)
 		{
 			foreach (var diagnostic in Collector.Diagnostics)
-				Output.WriteLine($"{diagnostic.Severity}: {diagnostic.Message}");
+				TestContext.Current?.Output.WriteLine($"{diagnostic.Severity}: {diagnostic.Message}");
 		}
 
 		result.Should().BeTrue();
@@ -45,7 +45,7 @@ public class BasicInputTests(ITestOutputHelper output) : CreateChangelogTestBase
 		var files = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
 		files.Should().HaveCount(1);
 
-		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current.CancellationToken);
+		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current!.Execution.CancellationToken);
 		yamlContent.Should().Contain("title: Add new search feature");
 		yamlContent.Should().Contain("type: feature");
 		yamlContent.Should().Contain("product: elasticsearch");
@@ -54,7 +54,7 @@ public class BasicInputTests(ITestOutputHelper output) : CreateChangelogTestBase
 		yamlContent.Should().Contain("description: This is a new search feature");
 	}
 
-	[Fact]
+	[Test]
 	public async Task CreateChangelog_WithMultipleProducts_CreatesValidYaml()
 	{
 		// Arrange
@@ -74,13 +74,13 @@ public class BasicInputTests(ITestOutputHelper output) : CreateChangelogTestBase
 		};
 
 		// Act
-		var result = await service.CreateChangelog(Collector, input, TestContext.Current.CancellationToken);
+		var result = await service.CreateChangelog(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		if (!result)
 		{
 			foreach (var diagnostic in Collector.Diagnostics)
-				Output.WriteLine($"{diagnostic.Severity}: {diagnostic.Message}");
+				TestContext.Current?.Output.WriteLine($"{diagnostic.Severity}: {diagnostic.Message}");
 		}
 
 		result.Should().BeTrue();
@@ -91,7 +91,7 @@ public class BasicInputTests(ITestOutputHelper output) : CreateChangelogTestBase
 		if (!FileSystem.Directory.Exists(outputDir))
 			FileSystem.Directory.CreateDirectory(outputDir);
 		var files = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
-		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current.CancellationToken);
+		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current!.Execution.CancellationToken);
 		yamlContent.Should().Contain("products:");
 		// Should contain both products
 		var elasticsearchIndex = yamlContent.IndexOf("product: elasticsearch", StringComparison.Ordinal);
@@ -100,7 +100,7 @@ public class BasicInputTests(ITestOutputHelper output) : CreateChangelogTestBase
 		kibanaIndex.Should().BeGreaterThan(-1);
 	}
 
-	[Fact]
+	[Test]
 	public async Task CreateChangelog_WithBreakingChangeAndSubtype_CreatesValidYaml()
 	{
 		// Arrange
@@ -119,13 +119,13 @@ public class BasicInputTests(ITestOutputHelper output) : CreateChangelogTestBase
 		};
 
 		// Act
-		var result = await service.CreateChangelog(Collector, input, TestContext.Current.CancellationToken);
+		var result = await service.CreateChangelog(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		if (!result)
 		{
 			foreach (var diagnostic in Collector.Diagnostics)
-				Output.WriteLine($"{diagnostic.Severity}: {diagnostic.Message}");
+				TestContext.Current?.Output.WriteLine($"{diagnostic.Severity}: {diagnostic.Message}");
 		}
 
 		result.Should().BeTrue();
@@ -136,7 +136,7 @@ public class BasicInputTests(ITestOutputHelper output) : CreateChangelogTestBase
 		if (!FileSystem.Directory.Exists(outputDir))
 			FileSystem.Directory.CreateDirectory(outputDir);
 		var files = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
-		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current.CancellationToken);
+		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current!.Execution.CancellationToken);
 		yamlContent.Should().Contain("type: breaking-change");
 		yamlContent.Should().Contain("subtype: api");
 		yamlContent.Should().Contain("impact: API clients will need to update");
