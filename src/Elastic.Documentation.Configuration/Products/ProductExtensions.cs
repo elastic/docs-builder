@@ -37,6 +37,7 @@ public static class ProductExtensions
 				DisplayName = kvp.Value.Display,
 				VersioningSystem = versioningSystem,
 				Repository = kvp.Value.Repository ?? kvp.Key,
+				DraArtifact = kvp.Value.DraArtifact,
 				Features = features
 			};
 		});
@@ -149,6 +150,13 @@ internal sealed record ProductDto
 	public string? Versioning { get; set; }
 
 	public string? Repository { get; set; }
+
+	/// <summary>
+	/// The DRA manifest artifact key. When set, the bundle command looks up this key in the build
+	/// manifest instead of <c>repository ?? id</c>. Leave unset when the artifact name matches the
+	/// repository name.
+	/// </summary>
+	public string? DraArtifact { get; set; }
 
 	/// <summary>
 	/// Feature values are strings so <c>release-notes</c> accepts both the historical booleans and

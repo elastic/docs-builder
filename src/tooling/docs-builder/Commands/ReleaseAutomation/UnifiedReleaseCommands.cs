@@ -145,17 +145,25 @@ internal sealed class UnifiedReleaseCommands(
 
 		foreach (var product in prestageProducts)
 		{
+			// DRA manifest key: prefer explicit dra-artifact, then repository, then product id.
+			var artifactKey = (product.DraArtifact ?? product.Repository ?? product.Id).ToLowerInvariant();
+			// GitHub repo for changelog.yml lookup: prefer repository, then product id.
 			var repoKey = (product.Repository ?? product.Id).ToLowerInvariant();
 
-			if (!manifest.Projects.TryGetValue(repoKey, out var project) || string.IsNullOrEmpty(project.CommitHash))
+			if (!manifest.Projects.TryGetValue(artifactKey, out var project) || string.IsNullOrEmpty(project.CommitHash))
 			{
-				_logger.LogWarning("Skipping '{Product}': repo key '{RepoKey}' not found in the build manifest.", product.Id, repoKey);
+				_logger.LogWarning(
+					"Skipping '{Product}': artifact key '{ArtifactKey}' not found in the build manifest.",
+					product.Id,
+					artifactKey
+				);
 				continue;
 			}
 
 			_logger.LogInformation(
-				"Bundling '{Product}' (repo key: '{RepoKey}', commit: {Commit})...",
+				"Bundling '{Product}' (artifact: '{ArtifactKey}', repo: '{RepoKey}', commit: {Commit})...",
 				product.Id,
+				artifactKey,
 				repoKey,
 				project.CommitHash[..8]
 			);

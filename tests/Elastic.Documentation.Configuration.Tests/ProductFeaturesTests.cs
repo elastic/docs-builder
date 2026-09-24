@@ -108,6 +108,44 @@ public class ProductFeaturesTests
 	}
 
 	[Test]
+	public void DraArtifact_WhenSet_IsDistinctFromRepository()
+	{
+		var config = ParseProducts(
+			"""
+			products:
+			  widget:
+			    display: 'Widget'
+			    versioning: 'stack'
+			    repository: 'widget-src'
+			    dra_artifact: 'widget-artifact'
+			    features:
+			      release-notes: dra
+			"""
+		);
+
+		var product = config.Products["widget"];
+		product.Repository.Should().Be("widget-src");
+		product.DraArtifact.Should().Be("widget-artifact");
+	}
+
+	[Test]
+	public void DraArtifact_WhenOmitted_IsNull()
+	{
+		var config = ParseProducts(
+			"""
+			products:
+			  widget:
+			    display: 'Widget'
+			    versioning: 'stack'
+			    features:
+			      release-notes: dra
+			"""
+		);
+
+		config.Products["widget"].DraArtifact.Should().BeNull();
+	}
+
+	[Test]
 	[Arguments("true", ReleaseNotesPath.OnRelease)]
 	[Arguments("false", ReleaseNotesPath.None)]
 	[Arguments("dra", ReleaseNotesPath.DailyReleasableArtifacts)]

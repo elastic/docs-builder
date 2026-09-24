@@ -147,5 +147,13 @@ public record Product
 	public required string DisplayName { get; init; }
 	public VersioningSystem? VersioningSystem { get; init; }
 	public string? Repository { get; init; }
+
+	/// <summary>
+	/// The key used to look up this product in the DRA build manifest.
+	/// When null the manifest lookup falls back to <see cref="Repository"/> then <see cref="Id"/>.
+	/// Set this when the artifact name in the DRA manifest differs from the repository name.
+	/// </summary>
+	public string? DraArtifact { get; init; }
+
 	public ProductFeatures Features { get; init; } = ProductFeatures.All;
 }
