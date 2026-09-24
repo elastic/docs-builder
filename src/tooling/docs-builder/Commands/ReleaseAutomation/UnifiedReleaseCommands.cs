@@ -58,6 +58,7 @@ internal sealed class UnifiedReleaseCommands(
 	/// Directory where bundle YAML files are written.
 	/// Defaults to <c>./bundles</c> relative to the current working directory.
 	/// </param>
+	[Hidden]
 	[NoOptionsInjection]
 	public async Task<int> Bundle(
 		[Argument] string versionOrPreview,
@@ -114,7 +115,8 @@ internal sealed class UnifiedReleaseCommands(
 			(resolvedVersion, manifestUrl) = result.Value;
 		}
 
-		_logger.LogInformation("Resolved version: {Version}, manifest: {ManifestUrl}", resolvedVersion, manifestUrl);
+		_logger.LogInformation("Resolved version: {Version}", resolvedVersion);
+		_logger.LogInformation("Manifest: {ManifestUrl}", manifestUrl);
 
 		// Fetch the manifest to get per-product commit hashes
 		var manifest = await FetchManifestAsync(http, manifestUrl, ctx);
@@ -124,9 +126,17 @@ internal sealed class UnifiedReleaseCommands(
 			return 1;
 		}
 
+		_logger.LogInformation(
+			"Manifest contains {Count} project(s): {Projects}",
+			manifest.Projects.Count,
+			string.Join(", ", manifest.Projects.Keys)
+		);
+
 		var output = outputDir ?? new DirectoryInfo(Path.Combine(Directory.GetCurrentDirectory(), "bundles"));
 		if (!output.Exists)
 			output.Create();
+
+		_logger.LogInformation("Output directory: {OutputDir}", output.FullName);
 
 		var fileSystem = ChangelogFileSystem.FromWorkingDirectory();
 		var bundleService = new ChangelogBundlingService(logFactory, fileSystem, configurationContext);
@@ -139,20 +149,23 @@ internal sealed class UnifiedReleaseCommands(
 
 			if (!manifest.Projects.TryGetValue(repoKey, out var project) || string.IsNullOrEmpty(project.CommitHash))
 			{
-				_logger.LogWarning(
-					"Product '{Product}' (repo key '{RepoKey}') not found in the build manifest. Skipping.",
-					product.Id,
-					repoKey
-				);
+				_logger.LogWarning("Skipping '{Product}': repo key '{RepoKey}' not found in the build manifest.", product.Id, repoKey);
 				continue;
 			}
 
-			_logger.LogInformation("Bundling {Product} at commit {Commit}...", product.Id, project.CommitHash[..8]);
+			_logger.LogInformation(
+				"Bundling '{Product}' (repo key: '{RepoKey}', commit: {Commit})...",
+				product.Id,
+				repoKey,
+				project.CommitHash[..8]
+			);
 
 			var result = await BundleProductAsync(bundleService, resolvedVersion, output.FullName, ctx);
 
 			if (result != 0)
 				exitCode = result;
+			else
+				_logger.LogInformation("Bundled '{Product}' successfully.", product.Id);
 		}
 
 		return exitCode;
