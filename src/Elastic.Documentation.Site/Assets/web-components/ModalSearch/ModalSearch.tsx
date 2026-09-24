@@ -415,24 +415,8 @@ export const ModalSearch = ({
 
     useEffect(() => {
         if (!isOpen) return
-
-        const handleBeforeSend = (event: CustomEvent) => {
-            const trigger = event.detail?.elt as HTMLElement | undefined
-            if (trigger?.hasAttribute('data-search-result-index')) {
-                closeModal()
-            }
-        }
-
-        document.addEventListener(
-            'htmx:beforeSend',
-            handleBeforeSend as EventListener
-        )
-        return () => {
-            document.removeEventListener(
-                'htmx:beforeSend',
-                handleBeforeSend as EventListener
-            )
-        }
+        document.addEventListener('htmx:afterSwap', closeModal)
+        return () => document.removeEventListener('htmx:afterSwap', closeModal)
     }, [isOpen, closeModal])
 
     const handleBackdropClick = useCallback(
