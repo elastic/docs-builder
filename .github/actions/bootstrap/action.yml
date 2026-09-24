@@ -61,6 +61,6 @@ runs:
     - uses: actions/cache@v6
       with:
         path: src/Elastic.Documentation.Site/node_modules
-        key: node-modules-${{ runner.os }}-${{ hashFiles('src/Elastic.Documentation.Site/package-lock.json') }}
+        key: node-modules-${{ runner.os }}-${{ hashFiles('src/Elastic.Documentation.Site/package-lock.json', '.nvmrc') }}
         restore-keys: |
           node-modules-${{ runner.os }}-
