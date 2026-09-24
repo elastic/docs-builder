@@ -6756,6 +6756,86 @@
         }
       ],
       "namespaces": []
+    },
+    {
+      "segment": "release",
+      "summary": "Release automation commands.",
+      "options": [],
+      "commands": [],
+      "namespaces": [
+        {
+          "segment": "unified",
+          "summary": "Unified release automation commands.",
+          "options": [],
+          "commands": [
+            {
+              "path": [
+                "release",
+                "unified"
+              ],
+              "name": "bundle",
+              "summary": "Generate changelog bundles for all prestage products at the given version or for the next upcoming release.",
+              "notes": "When versionOrPreview is \u0022preview\u0022, the command resolves the next upcoming\nversion automatically:\n\n  - If a build candidate has been cut (appears in future-releases.json with a non-empty\n  build_candidates dict), the BC manifest anchors the git refs.\n  - Otherwise the latest SNAPSHOT from snapshots.elastic.co/latest/master.json is used,\n  keeping a preview PR open well before the BC is cut.\n\n\n\n\nWhen a specific version is given (e.g. 9.5.5), the command looks up the version in\nfuture-releases.json and uses the latest BC manifest. Exits with an error if no BC\nhas been cut yet.\n\n\n\nOnly products with features.release-notes: prestage in products.yml are bundled.\nBundle files are written to outputDir.",
+              "usage": "docs-builder release unified bundle \u003Cversion-or-preview\u003E [options]",
+              "examples": [],
+              "parameters": [
+                {
+                  "role": "positional",
+                  "name": "version-or-preview",
+                  "type": "string",
+                  "required": true,
+                  "summary": "A specific version string (e.g. 9.5.5) or the literal \u0022preview\u0022 to target\nthe next upcoming release."
+                },
+                {
+                  "role": "flag",
+                  "name": "output-dir",
+                  "type": "string",
+                  "required": false,
+                  "summary": "Directory where bundle YAML files are written.\nDefaults to ./bundles relative to the current working directory."
+                },
+                {
+                  "role": "flag",
+                  "name": "log-level",
+                  "shortName": "l",
+                  "type": "enum",
+                  "required": false,
+                  "summary": "Minimum log level. Default: information",
+                  "enumValues": [
+                    "trace",
+                    "debug",
+                    "information",
+                    "warning",
+                    "error",
+                    "critical",
+                    "none"
+                  ]
+                },
+                {
+                  "role": "flag",
+                  "name": "config-source",
+                  "shortName": "c",
+                  "type": "enum",
+                  "required": false,
+                  "summary": "Override the configuration source: local, remote",
+                  "enumValues": [
+                    "local",
+                    "remote",
+                    "embedded"
+                  ]
+                },
+                {
+                  "role": "flag",
+                  "name": "skip-private-repositories",
+                  "type": "boolean",
+                  "required": false,
+                  "summary": "Skip cloning private repositories"
+                }
+              ]
+            }
+          ],
+          "namespaces": []
+        }
+      ]
     }
   ]
 }
