@@ -100,22 +100,17 @@
           Condition="'$(DesignTimeBuild)' != 'true' And '$(SkipNpmBuild)' != 'true'">
     <RemoveDir Directories="_static/assets" Condition="Exists('_static/assets')" />
     <ItemGroup>
-      <GeneratedStaticFiles Include="_static/main.js" />
-      <GeneratedStaticFiles Include="_static/main.js.map" />
-      <GeneratedStaticFiles Include="_static/styles.css" />
-      <GeneratedStaticFiles Include="_static/styles.css.map" />
-      <GeneratedStaticFiles Include="_static/assembler.css" />
-      <GeneratedStaticFiles Include="_static/assembler.css.map" />
-      <GeneratedStaticFiles Include="_static/isolated.css" />
-      <GeneratedStaticFiles Include="_static/isolated.css.map" />
-      <GeneratedStaticFiles Include="_static/codex.css" />
-      <GeneratedStaticFiles Include="_static/codex.css.map" />
+      <!-- Only remove content-hashed chunk/asset files from prior Vite runs so they
+           don't accumulate across builds. Do NOT list the stable named outputs here
+           (main.js, styles.css, etc.) — deleting them before NpmRunBuild's incremental
+           output check would force a full npm run build on every dotnet build invocation
+           even when no source files changed. -->
       <ViteGeneratedFiles Include="_static/asset-*" />
       <ViteGeneratedFiles Include="_static/chunk-*" />
       <OldHashedBundles Include="_static/*.????????*.js" />
       <OldHashedBundles Include="_static/*.????????*.css" />
     </ItemGroup>
-    <Delete Files="@(GeneratedStaticFiles);@(ViteGeneratedFiles);@(OldHashedBundles)" ContinueOnError="true" />
+    <Delete Files="@(ViteGeneratedFiles);@(OldHashedBundles)" ContinueOnError="true" />
   </Target>
 
   <Target Name="EmbedGeneratedAssets" DependsOnTargets="NpmRunBuild" BeforeTargets="BeforeBuild">
