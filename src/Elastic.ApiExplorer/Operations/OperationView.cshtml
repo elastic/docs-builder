@@ -74,15 +74,6 @@
 			</li>
 		}
 	</ul>
-	@if (pageModel.AuthSchemes.Count > 0)
-	{
-		<div class="api-security-badges">
-			@foreach (var scheme in pageModel.AuthSchemes)
-			{
-				<a class="api-type-badge" href="@scheme.Href">@scheme.PillLabel</a>
-			}
-		</div>
-	}
 </header>
 <section id="elastic-api-v3" class="api-page-reference">
 	@{
@@ -136,6 +127,32 @@
 					{
 						@Model.RenderMarkdown(row.Label)
 					}
+				</dt>
+			</div>
+		}
+		</dl>
+		</div>
+		</div>
+	}
+	@if (pageModel.AuthSchemes.Count > 0)
+	{
+		var collapseAuth = ParamSectionHeader.ShouldCollapse(pageModel.AuthSchemes.Count);
+		<div @ParamSectionHeader.WrapAttributes(collapseAuth)>
+		@if (collapseAuth)
+		{
+			@(await RenderPartialAsync<_ParamSectionHeader, ParamSectionHeader>(new ParamSectionHeader("Authorization", "authorization", pageModel.AuthSchemeNames)))
+		}
+		else
+		{
+			@(await RenderPartialAsync<_SectionHeader, SectionHeader>(new SectionHeader("Authorization", "authorization")))
+		}
+		<div @ParamSectionHeader.BodyAttributes(collapseAuth, "authorization-list")>
+		<dl class="property-list">
+		@foreach (var scheme in pageModel.AuthSchemes)
+		{
+			<div class="auth-scheme-item">
+				<dt>
+					<code>@scheme.Label</code>
 				</dt>
 			</div>
 		}

@@ -126,13 +126,6 @@
 	line-height: 20px;
 }
 
-.api-page-intro .api-security-badges {
-	display: flex;
-	flex-wrap: wrap;
-	gap: 8px;
-	margin-top: 12px;
-}
-
 /* Operation / group page title — Figma APIs 10079:2802 */
 .api-page-intro h1,
 #elastic-api-v3 h1 {
@@ -1441,7 +1434,6 @@
 #elastic-api-v3 .schema-type a[href]:hover,
 #schema-definition .schema-type a[href]:hover,
 .schema-type a[href]:hover,
-.api-page-intro .api-security-badges a[href]:hover,
 a.type-linked:hover {
 	text-decoration: underline;
 	text-underline-offset: 2px;
@@ -1462,8 +1454,7 @@ a.type-linked:hover {
 }
 
 /* Type badge — Figma APIs 10079:2957 (boolean / string / read). Not markdown code. */
-.property-list .api-type-badge,
-.api-page-intro .api-security-badges .api-type-badge {
+.property-list .api-type-badge {
 	display: inline-flex;
 	align-items: center;
 	box-sizing: border-box;
@@ -1480,7 +1471,6 @@ a.type-linked:hover {
 	white-space: nowrap;
 	vertical-align: middle;
 	mix-blend-mode: normal;
-	text-decoration: none;
 }
 
 .property-list code.schema-type,
