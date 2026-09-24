@@ -341,7 +341,7 @@ public class DocsSyncTests
 		);
 	}
 
-	[Fact]
+	[Test]
 	public async Task TestApply_DeleteRequests_ChunksDeletesAtS3Limit()
 	{
 		IReadOnlyCollection<IDiagnosticsOutput> diagnosticsOutputs = [];
@@ -383,7 +383,7 @@ public class DocsSyncTests
 		deleteBatches.Should().OnlyContain(r => r.Objects.Count <= 1000);
 	}
 
-	[Fact]
+	[Test]
 	public async Task Apply_UploadFailure_ReturnsFalse()
 	{
 		IReadOnlyCollection<IDiagnosticsOutput> diagnosticsOutputs = [];
