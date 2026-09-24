@@ -433,7 +433,8 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 		{
 			DirectiveBlock = block,
 			ColumnWidths = block.ColumnWidths,
-			Matrix = block.Matrix
+			Matrix = block.Matrix,
+			Filterable = block.Filterable
 		});
 		RenderRazorSlice(slice, renderer);
 	}
