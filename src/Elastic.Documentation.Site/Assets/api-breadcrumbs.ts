@@ -134,7 +134,7 @@ function measureOverflow(overflow: HTMLElement): number {
     return width
 }
 
-const observed = new WeakSet<Element>()
+const observedToolbars = new Set<HTMLElement>()
 const resizeObserver =
     typeof ResizeObserver === 'undefined'
         ? null
@@ -149,13 +149,29 @@ const resizeObserver =
               }
           })
 
+function releaseDetachedToolbars(): void {
+    if (!resizeObserver) return
+
+    for (const toolbar of observedToolbars) {
+        if (toolbar.isConnected) continue
+        resizeObserver.unobserve(toolbar)
+        observedToolbars.delete(toolbar)
+    }
+}
+
 export function initApiBreadcrumbs(): void {
-    document.querySelectorAll('.api-page-toolbar').forEach((toolbar) => {
-        if (resizeObserver && !observed.has(toolbar)) {
-            observed.add(toolbar)
-            resizeObserver.observe(toolbar)
-        }
-        const nav = toolbar.querySelector<HTMLElement>('[data-api-breadcrumbs]')
-        if (nav) applyBreadcrumbCollapse(nav)
-    })
+    releaseDetachedToolbars()
+
+    document
+        .querySelectorAll<HTMLElement>('.api-page-toolbar')
+        .forEach((toolbar) => {
+            if (resizeObserver && !observedToolbars.has(toolbar)) {
+                observedToolbars.add(toolbar)
+                resizeObserver.observe(toolbar)
+            }
+            const nav = toolbar.querySelector<HTMLElement>(
+                '[data-api-breadcrumbs]'
+            )
+            if (nav) applyBreadcrumbCollapse(nav)
+        })
 }
