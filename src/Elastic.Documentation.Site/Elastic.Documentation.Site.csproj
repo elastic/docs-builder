@@ -39,8 +39,8 @@
   <Target Name="EnsureSkipNpmBuildArtifacts"
           BeforeTargets="NpmInstall;NpmRunBuild"
           Condition="'$(SkipNpmBuild)' == 'true'">
-    <Error Condition="!Exists('_static/main.js') Or !Exists('_static/styles.css')"
-           Text="SkipNpmBuild is set but _static/main.js or _static/styles.css is missing. Run a full frontend build first." />
+    <Error Condition="!Exists('_static/main.js') Or !Exists('_static/styles.css') Or !Exists('_static/assembler.css') Or !Exists('_static/isolated.css') Or !Exists('_static/codex.css')"
+           Text="SkipNpmBuild is set but one or more _static artifacts are missing. Run a full frontend build first." />
   </Target>
 
   <Target Name="NpmInstall"
