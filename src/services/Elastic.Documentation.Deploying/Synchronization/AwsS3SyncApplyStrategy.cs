@@ -198,25 +198,25 @@ public partial class AwsS3SyncApplyStrategy(
 				MaxDegreeOfParallelism = uploadConcurrency
 			}, async (upload, token) =>
 			{
-				var operation = addPaths.Contains(upload.LocalPath) ? "add" : "update";
-				var fileSize = context.WriteFileSystem.FileInfo.New(upload.LocalPath).Length;
-				var extension = Path.GetExtension(upload.DestinationPath).ToLowerInvariant();
-
-				FileSizeHistogram.Record(fileSize);
-				if (!string.IsNullOrEmpty(extension))
-					FilesByExtensionCounter.Add(1, new("operation", operation), new("extension", extension));
-				LogFileOperation(_logger, operation, upload.DestinationPath, fileSize);
-
-				var request = new TransferUtilityUploadRequest
-				{
-					BucketName = bucketName,
-					FilePath = upload.LocalPath,
-					Key = upload.DestinationPath,
-					PartSize = S3EtagCalculator.PartSize
-				};
-				request.UploadProgressEvent += DisplayUploadProgress;
 				try
 				{
+					var operation = addPaths.Contains(upload.LocalPath) ? "add" : "update";
+					var fileSize = context.WriteFileSystem.FileInfo.New(upload.LocalPath).Length;
+					var extension = Path.GetExtension(upload.DestinationPath).ToLowerInvariant();
+
+					FileSizeHistogram.Record(fileSize);
+					if (!string.IsNullOrEmpty(extension))
+						FilesByExtensionCounter.Add(1, new("operation", operation), new("extension", extension));
+					LogFileOperation(_logger, operation, upload.DestinationPath, fileSize);
+
+					var request = new TransferUtilityUploadRequest
+					{
+						BucketName = bucketName,
+						FilePath = upload.LocalPath,
+						Key = upload.DestinationPath,
+						PartSize = S3EtagCalculator.PartSize
+					};
+					request.UploadProgressEvent += DisplayUploadProgress;
 					await transferUtility.UploadAsync(request, token);
 					_ = Interlocked.Increment(ref uploadedCount);
 				}
