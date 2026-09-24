@@ -355,9 +355,10 @@ internal sealed record BundleProfileYaml
 	public string? Products { get; set; }
 
 	/// <summary>
-	/// Output filename pattern.
-	/// Supports {version} placeholder.
+	/// Legacy output filename pattern. Deprecated: names are derived as
+	/// <c>{repo}-{product}-{version}.yaml</c>. The value is ignored.
 	/// </summary>
+	[Obsolete("Deprecated: bundle output names are derived by convention as '{repo}-{product}-{version}.yaml'. Remove this field.")]
 	public string? Output { get; set; }
 
 	/// <summary>
