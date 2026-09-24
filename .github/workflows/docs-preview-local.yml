@@ -369,17 +369,25 @@ jobs:
           AWS_RETRY_MODE: standard
           AWS_MAX_ATTEMPTS: 6
         run: |
-          # Stash redirects.json before compression — the Deploy redirects step reads it as plain JSON.
+          # Stash plain-JSON files read by downstream steps before compression rewrites them.
           [ -f .artifacts/docs/html/redirects.json ] \
             && cp .artifacts/docs/html/redirects.json /tmp/redirects.json
+          [ -f .artifacts/docs/html/links.json ] \
+            && cp .artifacts/docs/html/links.json /tmp/links.json
 
-          # Pre-compress the entire output tree in place so aws s3 sync ships ~120 MB instead of ~2 GiB.
-          # --content-encoding gzip applies sync-wide, so one pass keeps --delete semantics correct.
+          # Pre-compress all non-zip files in place; zip bundles (llm.zip, okf.zip) are already
+          # compressed and must not be served with content-encoding:gzip or clients can't decode them.
           # gzip -n omits the timestamp so identical content produces identical bytes (deterministic).
-          find .artifacts/docs/html -type f -print0 \
-            | xargs -0 -P "$(nproc)" -I{} sh -c 'gzip -9 -n -c "$1" > "$1.gz" && mv -f "$1.gz" "$1"' _ {}
+          find .artifacts/docs/html -type f ! -name "*.zip" -print0 \
+            | xargs -0 -P "$(nproc)" -I{} sh -c 'tmp=$(mktemp "$1.tmp.XXXXXX") && gzip -9 -n -c "$1" > "$tmp" && mv -f "$tmp" "$1"' _ {}
+
+          # Sync compressed files (all except .zip) with gzip content-encoding.
           aws s3 sync .artifacts/docs/html "s3://elastic-docs-v3-website-preview${PATH_PREFIX}" \
-            --delete --no-follow-symlinks --content-encoding gzip
+            --delete --no-follow-symlinks --content-encoding gzip --exclude "*.zip"
+          # Sync zip downloads separately without content-encoding so clients receive raw zip bytes.
+          aws s3 sync .artifacts/docs/html "s3://elastic-docs-v3-website-preview${PATH_PREFIX}" \
+            --delete --no-follow-symlinks --exclude "*" --include "*.zip"
+
           aws cloudfront create-invalidation \
             --distribution-id EKT7LT5PM8RKS \
             --paths "${PATH_PREFIX}" "${PATH_PREFIX}/*"
@@ -408,6 +416,8 @@ jobs:
             && steps.internal-validate-path-prefixes.outcome == 'success'
           )
         uses: elastic/docs-builder/actions/update-link-index@main
+        with:
+          link_reference_file: /tmp/links.json
 
       - name: Update deployment status
         uses: actions/github-script@v9
