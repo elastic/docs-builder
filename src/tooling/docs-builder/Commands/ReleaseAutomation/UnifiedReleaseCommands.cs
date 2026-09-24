@@ -5,6 +5,7 @@
 using System.Text.Json;
 using Elastic.Changelog.Bundling;
 using Elastic.Documentation.Configuration;
+using Elastic.Documentation.Configuration.Changelog;
 using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.FileSystems;
@@ -324,15 +325,38 @@ internal sealed class UnifiedReleaseCommands(
 			return 1;
 		}
 
-		// Write the fetched config to a temp file so the bundling service can load it.
-		var tempConfig = Path.Combine(Path.GetTempPath(), $"changelog-{repoKey}-{commitHash[..8]}.yml");
+		// Discover the bundle profile name from the fetched changelog.yml.
+		// Each repo names its own profile (e.g. "kibana-release"), so we read the first
+		// declared profile rather than hardcoding a convention.
+		var profiles = ChangelogConfigurationLoader.ReadBundleProfileNames(changelogYaml);
+		if (profiles.Count == 0)
+		{
+			var msg = $"Product '{productId}' (repo: elastic/{repoKey}@{commitHash[..8]}) changelog.yml has no bundle.profiles section. "
+				+ "Add a bundle profile to the changelog.yml to opt into DRA bundling.";
+			_logger.LogError("{Message}", msg);
+			collector.EmitError(string.Empty, msg);
+			return 1;
+		}
+
+		var profileName = profiles[0];
+		if (profiles.Count > 1)
+			_logger.LogWarning(
+				"'{Product}' changelog.yml has {Count} profiles; using the first: '{Profile}'",
+				productId,
+				profiles.Count,
+				profileName
+			);
+
+		// Write the fetched config inside the output directory so it stays within the
+		// ScopedFileSystem that ChangelogBundlingService operates under.
+		var tempConfig = Path.Combine(outputDirectory, $".changelog-{repoKey}-{commitHash[..8]}.yml");
 		await File.WriteAllTextAsync(tempConfig, changelogYaml, ctx);
 
 		try
 		{
 			var arguments = new BundleChangelogsArguments
 			{
-				Profile = "dra-release",
+				Profile = profileName,
 				ProfileArgument = version,
 				OutputDirectory = outputDirectory,
 				Config = tempConfig,
