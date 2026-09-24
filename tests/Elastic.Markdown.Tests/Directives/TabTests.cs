@@ -176,8 +176,8 @@ Content for C# tab
 	}
 }
 
-public class LanguagesGroupRendersAsDropdownTests(ITestOutputHelper output) : DirectiveTest<TabSetBlock>(
-	output,
+[InheritsTests]
+public class LanguagesGroupRendersAsDropdownTests() : DirectiveTest<TabSetBlock>(
 	"""
 ::::{tab-set}
 :group: languages
@@ -194,12 +194,12 @@ Content for Golang tab
 """
 )
 {
-	[Fact]
+	[Test]
 	public void DefaultsToDropdownForLanguages() => Block!.RenderAsDropdown().Should().BeTrue();
 }
 
-public class OtherGroupsRenderAsTabsTests(ITestOutputHelper output) : DirectiveTest<TabSetBlock>(
-	output,
+[InheritsTests]
+public class OtherGroupsRenderAsTabsTests() : DirectiveTest<TabSetBlock>(
 	"""
 ::::{tab-set}
 :group: operating-systems
@@ -216,12 +216,12 @@ Content for Windows tab
 """
 )
 {
-	[Fact]
+	[Test]
 	public void DefaultsToTabsForOtherGroups() => Block!.RenderAsDropdown().Should().BeFalse();
 }
 
-public class ExplicitDropdownOptInTests(ITestOutputHelper output) : DirectiveTest<TabSetBlock>(
-	output,
+[InheritsTests]
+public class ExplicitDropdownOptInTests() : DirectiveTest<TabSetBlock>(
 	"""
 ::::{tab-set}
 :dropdown: true
@@ -236,12 +236,12 @@ Content for tab two
 """
 )
 {
-	[Fact]
+	[Test]
 	public void OptsInWithoutAGroup() => Block!.RenderAsDropdown().Should().BeTrue();
 }
 
-public class ExplicitDropdownOptOutTests(ITestOutputHelper output) : DirectiveTest<TabSetBlock>(
-	output,
+[InheritsTests]
+public class ExplicitDropdownOptOutTests() : DirectiveTest<TabSetBlock>(
 	"""
 ::::{tab-set}
 :group: languages
@@ -259,6 +259,6 @@ Content for Golang tab
 """
 )
 {
-	[Fact]
+	[Test]
 	public void OptsOutOfTheLanguagesDefault() => Block!.RenderAsDropdown().Should().BeFalse();
 }
