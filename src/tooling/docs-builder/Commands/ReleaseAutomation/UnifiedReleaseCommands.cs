@@ -66,8 +66,6 @@ internal sealed class UnifiedReleaseCommands(
 		CancellationToken ctx = default
 	)
 	{
-		_ = collector.StartAsync(ctx);
-
 		var prestageProducts = configurationContext
 			.ProductsConfiguration
 			.Products

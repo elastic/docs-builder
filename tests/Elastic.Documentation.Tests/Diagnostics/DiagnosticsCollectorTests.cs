@@ -68,4 +68,27 @@ public class DiagnosticsCollectorTests
 		collector.Errors.Should().Be(2);
 		collector.Warnings.Should().Be(1);
 	}
+
+	/// <summary>
+	/// Regression: when StartAsync is never called (e.g. a [NoOptionsInjection] command that
+	/// bypasses CatchExceptionMiddleware), StopAsync used to return immediately without draining
+	/// the channel. Items reached HandleItem only if the caller remembered to call StartAsync;
+	/// forgetting it silently swallowed every error message while the count stayed correct.
+	/// </summary>
+	[Fact]
+	public async Task StopAsync_WithoutStartAsync_DrainsSynchronouslyBeforeReturning()
+	{
+		var output = new CapturingOutput();
+		var collector = new DiagnosticsCollector([output]);
+
+		// Emit errors without ever calling StartAsync — simulates a [NoOptionsInjection] command.
+		collector.EmitError("", "first error");
+		collector.EmitError("", "second error");
+
+		await collector.StopAsync(CancellationToken.None);
+
+		// Count was always correct; the fix is that output now also receives the items.
+		collector.Errors.Should().Be(2);
+		output.Received.Should().Be(2);
+	}
 }

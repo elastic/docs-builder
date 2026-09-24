@@ -115,12 +115,14 @@ public class DiagnosticsCollector(
 	public virtual async Task StopAsync(Cancel cancellationToken)
 	{
 		Channel.TryComplete();
-		// StartAsync was never called. Items may sit in the channel but
-		// nobody is coming to drain them — awaiting Channel.Reader.Completion
-		// here would deadlock. Returning is the correct behaviour for
-		// fire-and-forget collectors (the channel dies with the instance).
+		// StartAsync was never called. No background reader is running, but items
+		// may already be in the channel — drain them synchronously so they reach
+		// HandleItem and the outputs before the collector is discarded.
 		if (_started is null)
+		{
+			Drain();
 			return;
+		}
 
 		try
 		{
