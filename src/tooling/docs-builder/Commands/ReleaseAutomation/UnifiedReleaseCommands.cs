@@ -349,7 +349,7 @@ internal sealed class UnifiedReleaseCommands(
 
 		// Write the fetched config inside the output directory so it stays within the
 		// ScopedFileSystem that ChangelogBundlingService operates under.
-		var tempConfig = Path.Combine(outputDirectory, $".changelog-{repoKey}-{commitHash[..8]}.yml");
+		var tempConfig = Path.Combine(outputDirectory, $"changelog-config-{repoKey}-{commitHash[..8]}.yml");
 		await File.WriteAllTextAsync(tempConfig, changelogYaml, ctx);
 
 		try
