@@ -46,7 +46,7 @@ internal sealed class UnifiedReleaseCommands(
 	/// has been cut yet.
 	/// </para>
 	/// <para>
-	/// Only products with <c>features.release-notes: prestage</c> in <c>products.yml</c> are bundled.
+	/// Only products with <c>features.release-notes: dra</c> in <c>products.yml</c> are bundled.
 	/// Bundle files are written to <paramref name="outputDir"/>.
 	/// </para>
 	/// </remarks>
@@ -75,7 +75,7 @@ internal sealed class UnifiedReleaseCommands(
 
 		if (prestageProducts.Length == 0)
 		{
-			_logger.LogWarning("No products with 'release-notes: prestage' found in products.yml. Nothing to bundle.");
+			_logger.LogWarning("No products with 'release-notes: dra' found in products.yml. Nothing to bundle.");
 			return 0;
 		}
 
@@ -160,7 +160,16 @@ internal sealed class UnifiedReleaseCommands(
 				project.CommitHash[..8]
 			);
 
-			var result = await BundleProductAsync(bundleService, resolvedVersion, output.FullName, ctx);
+			var result = await BundleProductAsync(
+				http,
+				bundleService,
+				product.Id,
+				repoKey,
+				project.CommitHash,
+				resolvedVersion,
+				output.FullName,
+				ctx
+			);
 
 			if (result != 0)
 				exitCode = result;
@@ -257,25 +266,75 @@ internal sealed class UnifiedReleaseCommands(
 		}
 	}
 
+	private async Task<string?> FetchChangelogConfigAsync(HttpClient http, string repoKey, string commitHash, CancellationToken ctx)
+	{
+		// Try docs/changelog.yml first, then changelog.yml at the root.
+		var candidates = new[]
+		{
+			$"https://raw.githubusercontent.com/elastic/{repoKey}/{commitHash}/docs/changelog.yml",
+			$"https://raw.githubusercontent.com/elastic/{repoKey}/{commitHash}/changelog.yml",
+		};
+
+		foreach (var url in candidates)
+		{
+			try
+			{
+				var response = await http.GetAsync(url, ctx);
+				if (response.IsSuccessStatusCode)
+					return await response.Content.ReadAsStringAsync(ctx);
+			}
+			catch
+			{
+				// network error — fall through to next candidate
+			}
+		}
+
+		return null;
+	}
+
 	private async Task<int> BundleProductAsync(
+		HttpClient http,
 		ChangelogBundlingService bundleService,
+		string productId,
+		string repoKey,
+		string commitHash,
 		string version,
 		string outputDirectory,
 		CancellationToken ctx
 	)
 	{
-		// changelog.yml must exist in the product repo checkout under docs/changelog.yml.
-		// The workflow is expected to have cloned the product repo and set CWD accordingly.
-		// Profile mode auto-discovers changelog.yml from CWD.
-		var arguments = new BundleChangelogsArguments
+		var changelogYaml = await FetchChangelogConfigAsync(http, repoKey, commitHash, ctx);
+		if (changelogYaml is null)
 		{
-			Profile = "dra-release",
-			ProfileArgument = version,
-			OutputDirectory = outputDirectory,
-		};
+			collector.EmitError(
+				string.Empty,
+				$"Product '{productId}' (repo: elastic/{repoKey}@{commitHash[..8]}) has no changelog.yml. " +
+					"Add docs/changelog.yml or changelog.yml to the repository to opt into DRA bundling."
+			);
+			return 1;
+		}
 
-		var success = await bundleService.BundleChangelogs(collector, arguments, ctx);
-		return success ? 0 : 1;
+		// Write the fetched config to a temp file so the bundling service can load it.
+		var tempConfig = Path.Combine(Path.GetTempPath(), $"changelog-{repoKey}-{commitHash[..8]}.yml");
+		await File.WriteAllTextAsync(tempConfig, changelogYaml, ctx);
+
+		try
+		{
+			var arguments = new BundleChangelogsArguments
+			{
+				Profile = "dra-release",
+				ProfileArgument = version,
+				OutputDirectory = outputDirectory,
+				Config = tempConfig,
+			};
+
+			var success = await bundleService.BundleChangelogs(collector, arguments, ctx);
+			return success ? 0 : 1;
+		}
+		finally
+		{
+			File.Delete(tempConfig);
+		}
 	}
 
 	private async Task<bool> IsReleasedAsync(HttpClient http, string version, CancellationToken ctx)
