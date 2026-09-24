@@ -164,7 +164,7 @@ public class BundleOutputConventionTests(ITestOutputHelper output) : ChangelogTe
 		);
 		FileSystem
 			.File
-			.Exists(FileSystem.Path.Join(_changelogDir, "elasticsearch-9.3.0.yaml"))
+			.Exists(FileSystem.Path.Join(_changelogDir, "elasticsearch", "elasticsearch-9.3.0.yaml"))
 			.Should()
 			.BeTrue("when no authoring repo resolves, names fall back to the unprefixed product-version.yaml convention");
 		Collector
@@ -197,7 +197,7 @@ public class BundleOutputConventionTests(ITestOutputHelper output) : ChangelogTe
 		);
 		FileSystem
 			.File
-			.Exists(FileSystem.Path.Join(_changelogDir, "kibana-cloud-serverless-9.3.0.yaml"))
+			.Exists(FileSystem.Path.Join(_changelogDir, "cloud-serverless", "kibana-cloud-serverless-9.3.0.yaml"))
 			.Should()
 			.BeTrue("authoring repo prefixes the conventional product-version name");
 	}
@@ -252,7 +252,7 @@ public class BundleOutputConventionTests(ITestOutputHelper output) : ChangelogTe
 		result.Should().BeTrue(
 			$"Errors: {string.Join("; ", Collector.Diagnostics.Where(d => d.Severity == Severity.Error).Select(d => d.Message))}"
 		);
-		FileSystem.File.Exists(FileSystem.Path.Join(_changelogDir, "kibana-elasticsearch-9.3.0.yaml")).Should().BeTrue();
+		FileSystem.File.Exists(FileSystem.Path.Join(_changelogDir, "elasticsearch", "kibana-elasticsearch-9.3.0.yaml")).Should().BeTrue();
 	}
 
 	[Fact]
@@ -278,7 +278,7 @@ public class BundleOutputConventionTests(ITestOutputHelper output) : ChangelogTe
 		result.Should().BeTrue(
 			$"Errors: {string.Join("; ", Collector.Diagnostics.Where(d => d.Severity == Severity.Error).Select(d => d.Message))}"
 		);
-		FileSystem.File.Exists(FileSystem.Path.Join(_changelogDir, "kibana-elasticsearch-9.3.0.yaml")).Should().BeTrue();
+		FileSystem.File.Exists(FileSystem.Path.Join(_changelogDir, "elasticsearch", "kibana-elasticsearch-9.3.0.yaml")).Should().BeTrue();
 	}
 
 	[Fact]
@@ -303,7 +303,11 @@ public class BundleOutputConventionTests(ITestOutputHelper output) : ChangelogTe
 		result.Should().BeTrue(
 			$"Errors: {string.Join("; ", Collector.Diagnostics.Where(d => d.Severity == Severity.Error).Select(d => d.Message))}"
 		);
-		FileSystem.File.Exists(FileSystem.Path.Join(_changelogDir, "kibana-cloud-serverless-9.3.0.yaml")).Should().BeTrue();
+		FileSystem
+			.File
+			.Exists(FileSystem.Path.Join(_changelogDir, "cloud-serverless", "kibana-cloud-serverless-9.3.0.yaml"))
+			.Should()
+			.BeTrue();
 	}
 
 	[Fact]
@@ -354,7 +358,11 @@ public class BundleOutputConventionTests(ITestOutputHelper output) : ChangelogTe
 		result.Should().BeTrue(
 			$"Errors: {string.Join("; ", Collector.Diagnostics.Where(d => d.Severity == Severity.Error).Select(d => d.Message))}"
 		);
-		FileSystem.File.Exists(FileSystem.Path.Join(changelogDir, "kibana-cloud-serverless-9.3.0.yaml")).Should().BeTrue();
+		FileSystem
+			.File
+			.Exists(FileSystem.Path.Join(changelogDir, "cloud-serverless", "kibana-cloud-serverless-9.3.0.yaml"))
+			.Should()
+			.BeTrue();
 	}
 
 	[Fact]
@@ -403,7 +411,7 @@ public class BundleOutputConventionTests(ITestOutputHelper output) : ChangelogTe
 		);
 		FileSystem
 			.File
-			.Exists(FileSystem.Path.Join(_changelogDir, "kibana-cloud-serverless-2026-08-27.yaml"))
+			.Exists(FileSystem.Path.Join(_changelogDir, "cloud-serverless", "kibana-cloud-serverless-2026-08-27.yaml"))
 			.Should()
 			.BeTrue("option mode without --output uses the same repo-product-version convention as profile mode");
 	}
@@ -525,7 +533,7 @@ public class BundleOutputConventionTests(ITestOutputHelper output) : ChangelogTe
 		plan
 			.OutputPath
 			.Should()
-			.Be(FileSystem.Path.Join(_changelogDir, "kibana-cloud-serverless-2026-08-27.yaml").OptionalWindowsReplace());
+			.Be(FileSystem.Path.Join(_changelogDir, "cloud-serverless", "kibana-cloud-serverless-2026-08-27.yaml").OptionalWindowsReplace());
 
 		var result = await Service().BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
 		result.Should().BeTrue(
@@ -578,9 +586,9 @@ public class BundleOutputConventionTests(ITestOutputHelper output) : ChangelogTe
 		);
 		FileSystem
 			.File
-			.Exists(FileSystem.Path.Join(_changelogDir, "kibana-kibana-9.3.0.yaml"))
+			.Exists(FileSystem.Path.Join(_changelogDir, "kibana", "kibana-kibana-9.3.0.yaml"))
 			.Should()
-			.BeTrue("a sibling profile without output_directory still uses the global directory");
+			.BeTrue("a sibling profile without output_directory writes to the conventional {output_directory}/{product}/ subfolder");
 	}
 
 	[Fact]
@@ -637,6 +645,51 @@ public class BundleOutputConventionTests(ITestOutputHelper output) : ChangelogTe
 					"{repo}-{product}-{version}.yaml"
 				)
 			);
+	}
+
+	/// <summary>
+	/// Migrated profiles use only <c>product:</c> (no deprecated <c>output_directory</c> or
+	/// <c>output_products</c>). The bundle must land in <c>{output_directory}/{product}/</c> so a
+	/// <c>:::{changelog} /releases/elasticsearch/</c> directive can scope the page to a single product
+	/// — the same layout the S3 CDN uses for <c>bundle/{product}/{file}</c>.
+	/// </summary>
+	[Fact]
+	public async Task ProductField_WritesConventionalNameInProductSubdirectory()
+	{
+		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "releases");
+		FileSystem.Directory.CreateDirectory(outputDir);
+
+		var configPath = await WriteConfig(
+			$"""
+			bundle:
+			  directory: CHANGELOG_DIR
+			  output_directory: {outputDir}
+			  use_local_changelogs: true
+			  repo: elasticsearch
+			  profiles:
+			    es-release:
+			      product: elasticsearch
+			"""
+		);
+
+		var input = new BundleChangelogsArguments { Profile = "es-release", ProfileArgument = "9.3.0", Config = configPath };
+
+		// Plan and run must agree on the path.
+		var plan = await Service().PlanBundleAsync(Collector, input, hasReleaseVersion: false, TestContext.Current.CancellationToken);
+		plan.Should().NotBeNull();
+		plan
+			.OutputPath
+			.Should()
+			.Be(
+				FileSystem.Path.Join(outputDir, "elasticsearch", "elasticsearch-elasticsearch-9.3.0.yaml").OptionalWindowsReplace(),
+				"plan output path must be {output_directory}/{product}/{repo}-{product}-{version}.yaml"
+			);
+
+		var result = await Service().BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		result.Should().BeTrue(
+			$"Errors: {string.Join("; ", Collector.Diagnostics.Where(d => d.Severity == Severity.Error).Select(d => d.Message))}"
+		);
+		FileSystem.File.Exists(plan.OutputPath).Should().BeTrue("--plan output_path matches the actual bundle write location");
 	}
 
 	[Fact]

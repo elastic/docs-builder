@@ -173,7 +173,7 @@ public class CloudProfileFixtureTests(ITestOutputHelper output) : ChangelogTestB
 		// use_local_changelogs: true forces local sourcing; the CDN must not be touched.
 		handler.RequestedPaths.Should().BeEmpty("use_local_changelogs must not reach the CDN");
 
-		var outputFiles = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
+		var outputFiles = FileSystem.Directory.GetFiles(outputDir, "*.yaml", System.IO.SearchOption.AllDirectories);
 		outputFiles.Should().ContainSingle("the monthly profile writes a single bundle file");
 		FileSystem.Path.GetFileName(outputFiles[0]).Should().Be("widget-cloud-hosted-2026-05.yaml");
 

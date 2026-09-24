@@ -79,7 +79,9 @@ public class BundlePlanTests : ChangelogTestBase
 		result
 			.OutputPath
 			.Should()
-			.EndWith(FileSystem.Path.Join("docs", "releases", "elasticsearch-elasticsearch-9.2.0.yaml").OptionalWindowsReplace());
+			.EndWith(
+				FileSystem.Path.Join("docs", "releases", "elasticsearch", "elasticsearch-elasticsearch-9.2.0.yaml").OptionalWindowsReplace()
+			);
 		// The bundle-PR action polls this URL for the scrubbed copy: {base}/bundle/{product}/{file}.
 		result.CdnUrl.Should().Be("https://d10xozp44eyz7q.cloudfront.net/bundle/elasticsearch/elasticsearch-elasticsearch-9.2.0.yaml");
 	}
@@ -244,7 +246,10 @@ public class BundlePlanTests : ChangelogTestBase
 			.OutputPath
 			.Should()
 			.EndWith(
-				FileSystem.Path.Join("docs", "releases", "apm-agent-dotnet-apm-agent-dotnet-1.0.0-beta.1.yaml").OptionalWindowsReplace()
+				FileSystem
+					.Path
+					.Join("docs", "releases", "apm-agent-dotnet", "apm-agent-dotnet-apm-agent-dotnet-1.0.0-beta.1.yaml")
+					.OptionalWindowsReplace()
 			);
 	}
 
@@ -288,7 +293,12 @@ public class BundlePlanTests : ChangelogTestBase
 		result
 			.OutputPath
 			.Should()
-			.EndWith(FileSystem.Path.Join("docs", "releases", "kibana-cloud-serverless-2026-08-27.yaml").OptionalWindowsReplace());
+			.EndWith(
+				FileSystem
+					.Path
+					.Join("docs", "releases", "cloud-serverless", "kibana-cloud-serverless-2026-08-27.yaml")
+					.OptionalWindowsReplace()
+			);
 	}
 
 	[Fact]

@@ -727,6 +727,44 @@ public class ChangelogUploadServiceTests
 		targets.Should().Contain(t => t.S3Key == "bundle/kibana/kibana-kibana-9.3.0.yaml");
 	}
 
+	/// <summary>
+	/// When profiles migrate to <c>product:</c> (no deprecated <c>output_directory</c>), bundles land in
+	/// <c>{output_directory}/{product}/</c>. <see cref="ChangelogUploadService.CollectBundleScanDirectories"/>
+	/// must discover these subdirectories automatically — without a profile <c>output_directory</c> entry —
+	/// by enumerating immediate children of <c>bundle.output_directory</c>.
+	/// </summary>
+	[Fact]
+	public void CollectBundleScanDirectories_AutomaticallyIncludesProductSubdirectories()
+	{
+		var root = _mockFileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
+		var globalDir = _mockFileSystem.Path.Join(root, "docs", "releases");
+		var esDir = _mockFileSystem.Path.Join(globalDir, "elasticsearch");
+		var serverlessDir = _mockFileSystem.Path.Join(globalDir, "cloud-serverless");
+		_mockFileSystem.Directory.CreateDirectory(globalDir);
+		_mockFileSystem.Directory.CreateDirectory(esDir);
+		_mockFileSystem.Directory.CreateDirectory(serverlessDir);
+
+		var config = new ChangelogConfiguration
+		{
+			Bundle = new BundleConfiguration
+			{
+				OutputDirectory = globalDir,
+				// No profile output_directory — migrated profiles use product: only
+				Profiles = new Dictionary<string, BundleProfile>
+				{
+					["elasticsearch-release"] = new() { Product = "elasticsearch" },
+					["serverless-release"] = new() { Product = "cloud-serverless" }
+				}
+			}
+		};
+
+		var dirs = ChangelogUploadService.CollectBundleScanDirectories(null, config, _fileSystem);
+
+		dirs.Should().Contain(globalDir);
+		dirs.Should().Contain(esDir);
+		dirs.Should().Contain(serverlessDir);
+	}
+
 	[Fact]
 	public void DiscoverBundleUploadTargets_MultipleProducts_CreatesTargetPerProduct()
 	{

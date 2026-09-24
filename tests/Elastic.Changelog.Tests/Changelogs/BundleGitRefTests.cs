@@ -163,7 +163,7 @@ public class BundleGitRefTests(ITestOutputHelper output) : ChangelogTestBase(out
 		Collector.Errors.Should().Be(0);
 
 		// No profile output pattern → {repo}-{product}-{version}.yaml when bundle.repo is set.
-		var outputFiles = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
+		var outputFiles = FileSystem.Directory.GetFiles(outputDir, "*.yaml", System.IO.SearchOption.AllDirectories);
 		outputFiles.Should().ContainSingle();
 		FileSystem.Path.GetFileName(outputFiles[0]).Should().Be("widget-cloud-hosted-2026-08-13.yaml");
 
@@ -327,7 +327,7 @@ public class BundleGitRefTests(ITestOutputHelper output) : ChangelogTestBase(out
 			$"Errors: {string.Join("; ", Collector.Diagnostics.Where(d => d.Severity == Severity.Error).Select(d => d.Message))}"
 		);
 
-		var outputFiles = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
+		var outputFiles = FileSystem.Directory.GetFiles(outputDir, "*.yaml", System.IO.SearchOption.AllDirectories);
 		outputFiles.Should().ContainSingle();
 		var bundle = await FileSystem.File.ReadAllTextAsync(outputFiles[0], TestContext.Current.CancellationToken);
 		bundle.Should().Contain("Unlabeled change");

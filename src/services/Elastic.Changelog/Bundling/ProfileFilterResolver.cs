@@ -175,6 +175,12 @@ public static partial class ProfileFilterResolver
 		var lifecycle = VersionLifecycleInference.InferLifecycle(version);
 		var productsPattern = profile.Products?.Replace("{version}", version).Replace("{lifecycle}", lifecycle);
 
+		// When no products: pattern is configured but product: is set, synthesize the filter from it.
+		// This lets a profile with only product: cloud-serverless work end-to-end without requiring
+		// a redundant products: "cloud-serverless {version} {lifecycle}" line.
+		if (string.IsNullOrWhiteSpace(productsPattern) && !string.IsNullOrWhiteSpace(profile.Product))
+			productsPattern = $"{profile.Product} {version} {lifecycle}";
+
 		// If we have PRs, issues, or file paths from a file/report, return those directly
 		if (prsFromReport != null)
 			return new ProfileFilterResult { Prs = prsFromReport, Version = version };
