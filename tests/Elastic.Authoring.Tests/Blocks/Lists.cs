@@ -2,7 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-namespace Elastic.Authoring.Tests.Blocks.Lists;
+namespace Elastic.Authoring.Tests.Blocks;
 
 public class SupportsLooseLists : MarkdownTest
 {
@@ -15,7 +15,7 @@ public class SupportsLooseLists : MarkdownTest
 		   You can purchase credits for a single or multi-year contract. Consumption is on demand, and every month we deduct from your balance based on your usage and contract terms. This allows you to seamlessly expand your usage to the full extent of your requirements and available budget, without any quotas or restrictions.
 		""";
 
-	[Fact(DisplayName = "validate HTML: adds paragraphs")]
+	[Test, DisplayName("validate HTML: adds paragraphs")]
 	public async Task ValidateHtml() =>
 		await Docs.ConvertsToHtml(
 			"""

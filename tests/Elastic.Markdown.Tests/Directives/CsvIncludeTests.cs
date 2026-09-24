@@ -10,9 +10,10 @@ using Elastic.Markdown.Myst.Directives.CsvInclude;
 
 namespace Elastic.Markdown.Tests.Directives;
 
+[InheritsTests]
 public class CsvIncludeTests : DirectiveTest<CsvIncludeBlock>
 {
-	public CsvIncludeTests(ITestOutputHelper output) : base(output, """
+	public CsvIncludeTests() : base("""
 :::{csv-include} test-data.csv
 :::
 """) =>
@@ -25,19 +26,19 @@ Jane Smith,25,Los Angeles
 Bob Johnson,35,Chicago")
 		);
 
-	[Fact]
+	[Test]
 	public void ParsesCsvFileBlock() => Block.Should().NotBeNull();
 
-	[Fact]
+	[Test]
 	public void SetsCorrectDirectiveType() => Block!.Directive.Should().Be("csv-include");
 
-	[Fact]
+	[Test]
 	public void FindsCsvFile() => Block!.Found.Should().BeTrue();
 
-	[Fact]
+	[Test]
 	public void SetsCorrectCsvFilePath() => Block!.CsvFilePath.Should().EndWith("test-data.csv");
 
-	[Fact]
+	[Test]
 	public void ParsesCsvDataCorrectly()
 	{
 		var csvData = CsvReader.ReadCsvFile(
@@ -52,31 +53,30 @@ Bob Johnson,35,Chicago")
 		csvData[3].Should().BeEquivalentTo(["Bob Johnson", "35", "Chicago"]);
 	}
 
-	[Fact]
+	[Test]
 	public void UsesCommaAsDefaultSeparator() => Block!.Separator.Should().Be(",");
 }
 
+[InheritsTests]
 public class CsvIncludeWithOptionsTests : DirectiveTest<CsvIncludeBlock>
 {
-	public CsvIncludeWithOptionsTests(ITestOutputHelper output) : base(
-			output,
-			"""
+	public CsvIncludeWithOptionsTests() : base("""
 :::{csv-include} test-data.csv
 :caption: Sample User Data
 :separator: ;
 :::
-"""
-		) => FileSystem.AddFile("docs/test-data.csv", new MockFileData(@"Name;Age;City
+""") =>
+		FileSystem.AddFile("docs/test-data.csv", new MockFileData(@"Name;Age;City
 John Doe;30;New York
 Jane Smith;25;Los Angeles"));
 
-	[Fact]
+	[Test]
 	public void SetsCaption() => Block!.Caption.Should().Be("Sample User Data");
 
-	[Fact]
+	[Test]
 	public void UsesCustomSeparator() => Block!.Separator.Should().Be(";");
 
-	[Fact]
+	[Test]
 	public void ParsesWithCustomSeparator()
 	{
 		var csvData = CsvReader.ReadCsvFile(
@@ -91,9 +91,10 @@ Jane Smith;25;Los Angeles"));
 	}
 }
 
+[InheritsTests]
 public class CsvIncludeWithQuotesTests : DirectiveTest<CsvIncludeBlock>
 {
-	public CsvIncludeWithQuotesTests(ITestOutputHelper output) : base(output, """
+	public CsvIncludeWithQuotesTests() : base("""
 :::{csv-include} test-data.csv
 :::
 """) =>
@@ -106,7 +107,7 @@ Jane Smith,""Product Manager, Lead"",Los Angeles"
 			)
 		);
 
-	[Fact]
+	[Test]
 	public void HandlesQuotedFieldsWithCommas()
 	{
 		var csvData = CsvReader.ReadCsvFile(
@@ -121,9 +122,10 @@ Jane Smith,""Product Manager, Lead"",Los Angeles"
 	}
 }
 
+[InheritsTests]
 public class CsvIncludeWithEscapedQuotesTests : DirectiveTest<CsvIncludeBlock>
 {
-	public CsvIncludeWithEscapedQuotesTests(ITestOutputHelper output) : base(output, """
+	public CsvIncludeWithEscapedQuotesTests() : base("""
 :::{csv-include} test-data.csv
 :::
 """) =>
@@ -134,7 +136,7 @@ John Doe,""He said """"Hello World"""" today""
 Jane Smith,""She replied """"Goodbye""""")
 		);
 
-	[Fact]
+	[Test]
 	public void HandlesEscapedQuotes()
 	{
 		var csvData = CsvReader.ReadCsvFile(
@@ -149,7 +151,7 @@ Jane Smith,""She replied """"Goodbye""""")
 	}
 }
 
-public class CsvIncludeRenderLinksTests(ITestOutputHelper output) : DirectiveTest(output, """
+public class CsvIncludeRenderLinksTests() : DirectiveTest("""
 ::::{csv-include} test-data.csv
 ::::
 """)
@@ -158,11 +160,11 @@ public class CsvIncludeRenderLinksTests(ITestOutputHelper output) : DirectiveTes
 		fileSystem.AddFile("docs/test-data.csv", new MockFileData(@"Name,Link
 Search,[Text](https://www.google.com)"));
 
-	[Fact]
+	[Test]
 	public void RendersMarkdownLinkAsLink() => Html.Should().Contain(">Text</a>");
 }
 
-public class CsvIncludeWithHtmlBreaksTests(ITestOutputHelper output) : DirectiveTest(output, """
+public class CsvIncludeWithHtmlBreaksTests() : DirectiveTest("""
 ::::{csv-include} test-data.csv
 ::::
 """)
@@ -178,10 +180,10 @@ public class CsvIncludeWithHtmlBreaksTests(ITestOutputHelper output) : Directive
 			)
 		);
 
-	[Fact]
+	[Test]
 	public void RendersHtmlBreaksInCsvCells() => Html.Should().Contain("<br");
 
-	[Fact]
+	[Test]
 	public void RendersLinksWithBreaks()
 	{
 		Html.Should().Contain(">Terms A</a>");
@@ -189,18 +191,16 @@ public class CsvIncludeWithHtmlBreaksTests(ITestOutputHelper output) : Directive
 	}
 }
 
-public class CsvIncludeNotFoundTests(ITestOutputHelper output) : DirectiveTest<CsvIncludeBlock>(
-	output,
-	"""
+[InheritsTests]
+public class CsvIncludeNotFoundTests() : DirectiveTest<CsvIncludeBlock>("""
 :::{csv-include} missing-file.csv
 :::
-"""
-)
+""")
 {
-	[Fact]
+	[Test]
 	public void ReportsFileNotFound() => Block!.Found.Should().BeFalse();
 
-	[Fact]
+	[Test]
 	public void EmitsErrorForMissingFile()
 	{
 		Collector.Diagnostics.Should().NotBeNullOrEmpty();
@@ -208,12 +208,13 @@ public class CsvIncludeNotFoundTests(ITestOutputHelper output) : DirectiveTest<C
 	}
 }
 
-public class CsvIncludeNoArgumentTests(ITestOutputHelper output) : DirectiveTest<CsvIncludeBlock>(output, """
+[InheritsTests]
+public class CsvIncludeNoArgumentTests() : DirectiveTest<CsvIncludeBlock>("""
 :::{csv-include}
 :::
 """)
 {
-	[Fact]
+	[Test]
 	public void EmitsErrorForMissingArgument()
 	{
 		Collector.Diagnostics.Should().NotBeNullOrEmpty();

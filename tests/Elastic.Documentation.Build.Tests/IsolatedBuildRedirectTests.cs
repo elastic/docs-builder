@@ -9,22 +9,22 @@ namespace Elastic.Documentation.Build.Tests;
 
 public class IsolatedBuildRedirectTests
 {
-	[Theory]
-	[InlineData("migration/freeze/gh-action.md", "/en/docs-builder", "/en/docs-builder/migration/freeze/gh-action")]
-	[InlineData("schema-support/cli-schema/index.md", "/en/docs-builder", "/en/docs-builder/schema-support/cli-schema")]
-	[InlineData("index.md", "/en/docs-builder", "/en/docs-builder")]
-	[InlineData("migration/freeze/index.md", "/en/docs-builder", "/en/docs-builder/migration/freeze")]
-	[InlineData("cli/installation.md", "/en/docs-builder", "/en/docs-builder/cli/installation")]
-	[InlineData("index.md", "", "/")]
-	[InlineData("index.md", "/", "/")]
-	[InlineData("migrate/index.md", "", "/migrate")]
-	[InlineData("migrate/index.md", "/", "/migrate")]
+	[Test]
+	[Arguments("migration/freeze/gh-action.md", "/en/docs-builder", "/en/docs-builder/migration/freeze/gh-action")]
+	[Arguments("schema-support/cli-schema/index.md", "/en/docs-builder", "/en/docs-builder/schema-support/cli-schema")]
+	[Arguments("index.md", "/en/docs-builder", "/en/docs-builder")]
+	[Arguments("migration/freeze/index.md", "/en/docs-builder", "/en/docs-builder/migration/freeze")]
+	[Arguments("cli/installation.md", "/en/docs-builder", "/en/docs-builder/cli/installation")]
+	[Arguments("index.md", "", "/")]
+	[Arguments("index.md", "/", "/")]
+	[Arguments("migrate/index.md", "", "/migrate")]
+	[Arguments("migrate/index.md", "/", "/migrate")]
 	public void ToAbsoluteUrl_VariousPaths_ProducesExpectedUrl(string path, string pathPrefix, string expected) =>
 		IsolatedBuildService.ToAbsoluteUrl(path, pathPrefix).Should().Be(expected);
 
-	[Theory]
-	[InlineData("migration/freeze/gh-action.md", "migration/freeze/gh-action.md")]
-	[InlineData("cli/installation.md", "cli/installation.md")]
+	[Test]
+	[Arguments("migration/freeze/gh-action.md", "migration/freeze/gh-action.md")]
+	[Arguments("cli/installation.md", "cli/installation.md")]
 	public void ToAbsoluteUrl_FromAndToEquivalent_SelfRedirectDetected(string path, string to)
 	{
 		var prefix = "/en/docs-builder";

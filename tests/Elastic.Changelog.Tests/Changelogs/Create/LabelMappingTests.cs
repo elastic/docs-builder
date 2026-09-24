@@ -9,9 +9,9 @@ using FakeItEasy;
 
 namespace Elastic.Changelog.Tests.Changelogs.Create;
 
-public class LabelMappingTests(ITestOutputHelper output) : CreateChangelogTestBase(output)
+public class LabelMappingTests() : CreateChangelogTestBase()
 {
-	[Fact]
+	[Test]
 	public async Task CreateChangelog_WithPrOptionAndLabelMapping_MapsLabelsToType()
 	{
 		// Arrange
@@ -48,13 +48,13 @@ public class LabelMappingTests(ITestOutputHelper output) : CreateChangelogTestBa
 		};
 
 		// Act
-		var result = await service.CreateChangelog(Collector, input, TestContext.Current.CancellationToken);
+		var result = await service.CreateChangelog(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		if (!result)
 		{
 			foreach (var diagnostic in Collector.Diagnostics)
-				Output.WriteLine($"{diagnostic.Severity}: {diagnostic.Message}");
+				TestContext.Current?.Output.WriteLine($"{diagnostic.Severity}: {diagnostic.Message}");
 		}
 
 		result.Should().BeTrue();
@@ -65,11 +65,11 @@ public class LabelMappingTests(ITestOutputHelper output) : CreateChangelogTestBa
 		if (!FileSystem.Directory.Exists(outputDir))
 			FileSystem.Directory.CreateDirectory(outputDir);
 		var files = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
-		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current.CancellationToken);
+		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current!.Execution.CancellationToken);
 		yamlContent.Should().Contain("type: bug-fix");
 	}
 
-	[Fact]
+	[Test]
 	public void MapLabelsToProducts_WithProductIdOnly_ParsesCorrectly()
 	{
 		// Arrange
@@ -88,7 +88,7 @@ public class LabelMappingTests(ITestOutputHelper output) : CreateChangelogTestBa
 		result.Should().Contain(p => p.Product == "kibana" && p.Target == null && p.Lifecycle == null);
 	}
 
-	[Fact]
+	[Test]
 	public void MapLabelsToProducts_WithProductAndTarget_ParsesCorrectly()
 	{
 		// Arrange
@@ -104,7 +104,7 @@ public class LabelMappingTests(ITestOutputHelper output) : CreateChangelogTestBa
 		result[0].Lifecycle.Should().BeNull();
 	}
 
-	[Fact]
+	[Test]
 	public void MapLabelsToProducts_WithFullSpec_ParsesCorrectly()
 	{
 		// Arrange
@@ -123,7 +123,7 @@ public class LabelMappingTests(ITestOutputHelper output) : CreateChangelogTestBa
 		result[0].Lifecycle.Should().Be("ga");
 	}
 
-	[Fact]
+	[Test]
 	public void MapLabelsToProducts_WithDuplicateMatchingLabels_DeduplicatesProducts()
 	{
 		// Arrange
@@ -141,7 +141,7 @@ public class LabelMappingTests(ITestOutputHelper output) : CreateChangelogTestBa
 		result[0].Product.Should().Be("elasticsearch");
 	}
 
-	[Fact]
+	[Test]
 	public void MapLabelsToProducts_WithNoMatchingLabels_ReturnsEmpty()
 	{
 		// Arrange
@@ -157,7 +157,7 @@ public class LabelMappingTests(ITestOutputHelper output) : CreateChangelogTestBa
 		result.Should().BeEmpty();
 	}
 
-	[Fact]
+	[Test]
 	public async Task CreateChangelog_WithLabelProductMapping_DerviesProductsFromLabels()
 	{
 		// Arrange
@@ -195,13 +195,13 @@ public class LabelMappingTests(ITestOutputHelper output) : CreateChangelogTestBa
 		};
 
 		// Act
-		var result = await service.CreateChangelog(Collector, input, TestContext.Current.CancellationToken);
+		var result = await service.CreateChangelog(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		if (!result)
 		{
 			foreach (var diagnostic in Collector.Diagnostics)
-				Output.WriteLine($"{diagnostic.Severity}: {diagnostic.Message}");
+				TestContext.Current?.Output.WriteLine($"{diagnostic.Severity}: {diagnostic.Message}");
 		}
 
 		result.Should().BeTrue();
@@ -212,11 +212,11 @@ public class LabelMappingTests(ITestOutputHelper output) : CreateChangelogTestBa
 			FileSystem.Directory.CreateDirectory(outputDir);
 		var files = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
 		files.Should().HaveCount(1);
-		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current.CancellationToken);
+		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current!.Execution.CancellationToken);
 		yamlContent.Should().Contain("- product: elasticsearch");
 	}
 
-	[Fact]
+	[Test]
 	public async Task CreateChangelog_WithLabelProductMapping_MultipleMatchingLabels_AddsAllProducts()
 	{
 		// Arrange
@@ -257,7 +257,7 @@ public class LabelMappingTests(ITestOutputHelper output) : CreateChangelogTestBa
 		};
 
 		// Act
-		var result = await service.CreateChangelog(Collector, input, TestContext.Current.CancellationToken);
+		var result = await service.CreateChangelog(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		result.Should().BeTrue();
@@ -267,12 +267,12 @@ public class LabelMappingTests(ITestOutputHelper output) : CreateChangelogTestBa
 		if (!FileSystem.Directory.Exists(outputDir))
 			FileSystem.Directory.CreateDirectory(outputDir);
 		var files = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
-		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current.CancellationToken);
+		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current!.Execution.CancellationToken);
 		yamlContent.Should().Contain("- product: elasticsearch");
 		yamlContent.Should().Contain("- product: kibana");
 	}
 
-	[Fact]
+	[Test]
 	public async Task CreateChangelog_WithLabelProductMapping_ExplicitProductsOverrideLabels()
 	{
 		// Arrange — PR has label for elasticsearch but --products specifies kibana
@@ -308,7 +308,7 @@ public class LabelMappingTests(ITestOutputHelper output) : CreateChangelogTestBa
 		};
 
 		// Act
-		var result = await service.CreateChangelog(Collector, input, TestContext.Current.CancellationToken);
+		var result = await service.CreateChangelog(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		result.Should().BeTrue();
@@ -318,12 +318,12 @@ public class LabelMappingTests(ITestOutputHelper output) : CreateChangelogTestBa
 		if (!FileSystem.Directory.Exists(outputDir))
 			FileSystem.Directory.CreateDirectory(outputDir);
 		var files = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
-		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current.CancellationToken);
+		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current!.Execution.CancellationToken);
 		yamlContent.Should().Contain("- product: kibana");
 		yamlContent.Should().NotContain("- product: elasticsearch");
 	}
 
-	[Fact]
+	[Test]
 	public async Task CreateChangelog_WithPrOptionAndAreaMapping_MapsLabelsToAreas()
 	{
 		// Arrange
@@ -367,13 +367,13 @@ public class LabelMappingTests(ITestOutputHelper output) : CreateChangelogTestBa
 		};
 
 		// Act
-		var result = await service.CreateChangelog(Collector, input, TestContext.Current.CancellationToken);
+		var result = await service.CreateChangelog(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		if (!result)
 		{
 			foreach (var diagnostic in Collector.Diagnostics)
-				Output.WriteLine($"{diagnostic.Severity}: {diagnostic.Message}");
+				TestContext.Current?.Output.WriteLine($"{diagnostic.Severity}: {diagnostic.Message}");
 		}
 
 		result.Should().BeTrue();
@@ -384,13 +384,13 @@ public class LabelMappingTests(ITestOutputHelper output) : CreateChangelogTestBa
 		if (!FileSystem.Directory.Exists(outputDir))
 			FileSystem.Directory.CreateDirectory(outputDir);
 		var files = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
-		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current.CancellationToken);
+		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current!.Execution.CancellationToken);
 		yamlContent.Should().Contain("areas:");
 		yamlContent.Should().Contain("- security");
 		yamlContent.Should().Contain("- search");
 	}
 
-	[Fact]
+	[Test]
 	public void MapLabelsToAreas_WithAreaNameContainingCommas_PresservesFullName()
 	{
 		// Arrange
@@ -409,7 +409,7 @@ public class LabelMappingTests(ITestOutputHelper output) : CreateChangelogTestBa
 		result.Should().Contain("Search");
 	}
 
-	[Fact]
+	[Test]
 	public async Task CreateChangelog_WithAreaNameContainingCommas_PreservesAreaName()
 	{
 		// Arrange: Area name contains commas
@@ -446,13 +446,13 @@ public class LabelMappingTests(ITestOutputHelper output) : CreateChangelogTestBa
 		};
 
 		// Act
-		var result = await service.CreateChangelog(Collector, input, TestContext.Current.CancellationToken);
+		var result = await service.CreateChangelog(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		if (!result)
 		{
 			foreach (var diagnostic in Collector.Diagnostics)
-				Output.WriteLine($"{diagnostic.Severity}: {diagnostic.Message}");
+				TestContext.Current?.Output.WriteLine($"{diagnostic.Severity}: {diagnostic.Message}");
 		}
 
 		result.Should().BeTrue();
@@ -462,11 +462,11 @@ public class LabelMappingTests(ITestOutputHelper output) : CreateChangelogTestBa
 		if (!FileSystem.Directory.Exists(outputDir))
 			FileSystem.Directory.CreateDirectory(outputDir);
 		var files = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
-		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current.CancellationToken);
+		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current!.Execution.CancellationToken);
 		yamlContent.Should().Contain("- Alerting, connectors, and reporting"); // Full name, not split
 	}
 
-	[Fact]
+	[Test]
 	public async Task CreateChangelog_WithOneLabelMappedToMultipleAreas_AddsAllAreas()
 	{
 		// Arrange: Same label under multiple areas
@@ -504,7 +504,7 @@ public class LabelMappingTests(ITestOutputHelper output) : CreateChangelogTestBa
 		};
 
 		// Act
-		var result = await service.CreateChangelog(Collector, input, TestContext.Current.CancellationToken);
+		var result = await service.CreateChangelog(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		result.Should().BeTrue();
@@ -514,12 +514,12 @@ public class LabelMappingTests(ITestOutputHelper output) : CreateChangelogTestBa
 		if (!FileSystem.Directory.Exists(outputDir))
 			FileSystem.Directory.CreateDirectory(outputDir);
 		var files = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
-		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current.CancellationToken);
+		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current!.Execution.CancellationToken);
 		yamlContent.Should().Contain("- Search");
 		yamlContent.Should().Contain("- Observability");
 	}
 
-	[Fact]
+	[Test]
 	public void MapLabelsToFeatureId_WithSingleMatch_ReturnsFeatureId()
 	{
 		var labelToFeatures = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
@@ -533,7 +533,7 @@ public class LabelMappingTests(ITestOutputHelper output) : CreateChangelogTestBa
 		Collector.Warnings.Should().Be(0);
 	}
 
-	[Fact]
+	[Test]
 	public void MapLabelsToFeatureId_WithDuplicateMatchingLabels_ReturnsSameFeatureIdWithoutWarning()
 	{
 		var labelToFeatures = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
@@ -552,7 +552,7 @@ public class LabelMappingTests(ITestOutputHelper output) : CreateChangelogTestBa
 		Collector.Warnings.Should().Be(0);
 	}
 
-	[Fact]
+	[Test]
 	public void MapLabelsToFeatureId_WithMultipleDistinctMatches_WarnsAndReturnsFirst()
 	{
 		var labelToFeatures = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
@@ -568,7 +568,7 @@ public class LabelMappingTests(ITestOutputHelper output) : CreateChangelogTestBa
 		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("Multiple feature-id values matched"));
 	}
 
-	[Fact]
+	[Test]
 	public void MapLabelsToFeatureId_WithNoMatchingLabels_ReturnsNull()
 	{
 		var labelToFeatures = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
@@ -582,7 +582,7 @@ public class LabelMappingTests(ITestOutputHelper output) : CreateChangelogTestBa
 		Collector.Warnings.Should().Be(0);
 	}
 
-	[Fact]
+	[Test]
 	public async Task CreateChangelog_WithLabelFeatureMapping_DerivesFeatureIdFromLabels()
 	{
 		var prInfo = new GitHubPrInfo { Title = "Add new search API", Labels = ["type:feature", "feature-flag:new-search-api"] };
@@ -614,23 +614,23 @@ public class LabelMappingTests(ITestOutputHelper output) : CreateChangelogTestBa
 			Output = CreateOutputDirectory()
 		};
 
-		var result = await service.CreateChangelog(Collector, input, TestContext.Current.CancellationToken);
+		var result = await service.CreateChangelog(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		if (!result)
 		{
 			foreach (var diagnostic in Collector.Diagnostics)
-				Output.WriteLine($"{diagnostic.Severity}: {diagnostic.Message}");
+				TestContext.Current?.Output.WriteLine($"{diagnostic.Severity}: {diagnostic.Message}");
 		}
 
 		result.Should().BeTrue();
 		Collector.Errors.Should().Be(0);
 
 		var files = FileSystem.Directory.GetFiles(input.Output, "*.yaml");
-		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current.CancellationToken);
+		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current!.Execution.CancellationToken);
 		yamlContent.Should().Contain("feature-id: feature:new-search-api");
 	}
 
-	[Fact]
+	[Test]
 	public async Task CreateChangelog_WithExplicitFeatureId_IgnoresLabelMapping()
 	{
 		var prInfo = new GitHubPrInfo { Title = "Add new search API", Labels = ["type:feature", "feature-flag:new-search-api"] };
@@ -663,18 +663,18 @@ public class LabelMappingTests(ITestOutputHelper output) : CreateChangelogTestBa
 			Output = CreateOutputDirectory()
 		};
 
-		var result = await service.CreateChangelog(Collector, input, TestContext.Current.CancellationToken);
+		var result = await service.CreateChangelog(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		result.Should().BeTrue();
 		Collector.Errors.Should().Be(0);
 
 		var files = FileSystem.Directory.GetFiles(input.Output, "*.yaml");
-		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current.CancellationToken);
+		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current!.Execution.CancellationToken);
 		yamlContent.Should().Contain("feature-id: feature:cli-override");
 		yamlContent.Should().NotContain("feature-id: feature:new-search-api");
 	}
 
-	[Fact]
+	[Test]
 	public async Task CreateChangelog_WithMultipleFeatureLabelMatches_WarnsAndUsesFirst()
 	{
 		var prInfo = new GitHubPrInfo { Title = "Cross-feature change", Labels = ["type:feature", "feature-flag:foo", "feature-flag:bar"] };
@@ -708,7 +708,7 @@ public class LabelMappingTests(ITestOutputHelper output) : CreateChangelogTestBa
 			Output = CreateOutputDirectory()
 		};
 
-		var result = await service.CreateChangelog(Collector, input, TestContext.Current.CancellationToken);
+		var result = await service.CreateChangelog(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		result.Should().BeTrue();
 		Collector.Errors.Should().Be(0);
@@ -716,11 +716,11 @@ public class LabelMappingTests(ITestOutputHelper output) : CreateChangelogTestBa
 		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("Multiple feature-id values matched"));
 
 		var files = FileSystem.Directory.GetFiles(input.Output, "*.yaml");
-		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current.CancellationToken);
+		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current!.Execution.CancellationToken);
 		yamlContent.Should().Contain("feature-id: feature:foo");
 	}
 
-	[Fact]
+	[Test]
 	public async Task CreateChangelog_WithNoMatchingFeatureLabels_OmitsFeatureId()
 	{
 		var prInfo = new GitHubPrInfo { Title = "Unrelated feature", Labels = ["type:feature"] };
@@ -752,13 +752,13 @@ public class LabelMappingTests(ITestOutputHelper output) : CreateChangelogTestBa
 			Output = CreateOutputDirectory()
 		};
 
-		var result = await service.CreateChangelog(Collector, input, TestContext.Current.CancellationToken);
+		var result = await service.CreateChangelog(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		result.Should().BeTrue();
 		Collector.Errors.Should().Be(0);
 
 		var files = FileSystem.Directory.GetFiles(input.Output, "*.yaml");
-		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current.CancellationToken);
+		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current!.Execution.CancellationToken);
 		yamlContent.Split('\n').Should().NotContain(line => line.TrimStart().StartsWith("feature-id:", StringComparison.Ordinal));
 	}
 }

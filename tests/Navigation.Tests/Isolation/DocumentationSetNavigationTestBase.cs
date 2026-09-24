@@ -6,7 +6,7 @@ using System.IO.Abstractions.TestingHelpers;
 
 namespace Elastic.Documentation.Navigation.Tests.Isolation;
 
-public abstract class DocumentationSetNavigationTestBase(ITestOutputHelper output)
+public abstract class DocumentationSetNavigationTestBase
 {
 	protected TestDocumentationSetContext CreateContext(MockFileSystem? fileSystem = null)
 	{
@@ -15,6 +15,6 @@ public abstract class DocumentationSetNavigationTestBase(ITestOutputHelper outpu
 		var outputDir = fileSystem.DirectoryInfo.New("/output");
 		var configPath = fileSystem.FileInfo.New("/docs/docset.yml");
 
-		return new TestDocumentationSetContext(fileSystem, sourceDir, outputDir, configPath, output, "docs-builder");
+		return new TestDocumentationSetContext(fileSystem, sourceDir, outputDir, configPath, "docs-builder");
 	}
 }

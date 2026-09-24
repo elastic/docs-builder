@@ -11,8 +11,8 @@ using Elastic.Markdown.Tests.Directives;
 
 namespace Elastic.Markdown.Tests.FileInclusion;
 
-public class IncludeHeadingOrderTests(ITestOutputHelper output) : DirectiveTest<IncludeBlock>(
-	output,
+[InheritsTests]
+public class IncludeHeadingOrderTests() : DirectiveTest<IncludeBlock>(
 	"""
 ## One
 ### Two
@@ -36,13 +36,13 @@ public class IncludeHeadingOrderTests(ITestOutputHelper output) : DirectiveTest<
 		fileSystem.AddFile(@"docs/_snippets/test.md", inclusion);
 	}
 
-	[Fact]
+	[Test]
 	public void ParsesBlock() => Block.Should().NotBeNull();
 
-	[Fact]
+	[Test]
 	public void IncludesSnippetAfterMainContent() => Html.Should().Contain("Two").And.Contain("Six");
 
-	[Fact]
+	[Test]
 	public void TableOfContentsRespectsOrder()
 	{
 		// Get the table of contents from the file - use values to get them in order
@@ -68,8 +68,8 @@ public class IncludeHeadingOrderTests(ITestOutputHelper output) : DirectiveTest<
 	}
 }
 
-public class IncludeBeforeHeadingsOrderTests(ITestOutputHelper output) : DirectiveTest<IncludeBlock>(
-	output,
+[InheritsTests]
+public class IncludeBeforeHeadingsOrderTests() : DirectiveTest<IncludeBlock>(
 	"""
 :::{include} _snippets/test.md
 :::
@@ -97,10 +97,10 @@ public class IncludeBeforeHeadingsOrderTests(ITestOutputHelper output) : Directi
 		fileSystem.AddFile(@"docs/_snippets/test.md", inclusion);
 	}
 
-	[Fact]
+	[Test]
 	public void ParsesBlock() => Block.Should().NotBeNull();
 
-	[Fact]
+	[Test]
 	public void TableOfContentsRespectsOrderWithIncludeFirst()
 	{
 		// Get the table of contents from the file - use values to get them in order
@@ -129,8 +129,8 @@ public class IncludeBeforeHeadingsOrderTests(ITestOutputHelper output) : Directi
 	}
 }
 
-public class IncludeInMiddleOfHeadingsOrderTests(ITestOutputHelper output) : DirectiveTest<IncludeBlock>(
-	output,
+[InheritsTests]
+public class IncludeInMiddleOfHeadingsOrderTests() : DirectiveTest<IncludeBlock>(
 	"""
 ## One
 ### Two
@@ -157,10 +157,10 @@ public class IncludeInMiddleOfHeadingsOrderTests(ITestOutputHelper output) : Dir
 		fileSystem.AddFile(@"docs/_snippets/test.md", inclusion);
 	}
 
-	[Fact]
+	[Test]
 	public void ParsesBlock() => Block.Should().NotBeNull();
 
-	[Fact]
+	[Test]
 	public void TableOfContentsRespectsOrderWithIncludeInMiddle()
 	{
 		// Get the table of contents from the file - use values to get them in order
@@ -187,7 +187,7 @@ public class IncludeInMiddleOfHeadingsOrderTests(ITestOutputHelper output) : Dir
 		actualOrder.Should().Equal(expectedOrder);
 	}
 
-	[Fact]
+	[Test]
 	public void HeadingLevelsArePreservedFromSnippet()
 	{
 		// Verify that real h2/h3 headings from snippets keep their original levels
@@ -204,8 +204,8 @@ public class IncludeInMiddleOfHeadingsOrderTests(ITestOutputHelper output) : Dir
 	}
 }
 
-public class IncludeWithStepperOrderTests(ITestOutputHelper output) : DirectiveTest<IncludeBlock>(
-	output,
+[InheritsTests]
+public class IncludeWithStepperOrderTests() : DirectiveTest<IncludeBlock>(
 	"""
 ## One
 ### Two
@@ -256,10 +256,10 @@ Content for step seven.
 		fileSystem.AddFile(@"docs/_snippets/test.md", inclusion);
 	}
 
-	[Fact]
+	[Test]
 	public void ParsesBlock() => Block.Should().NotBeNull();
 
-	[Fact]
+	[Test]
 	public void TableOfContentsRespectsOrderWithStepperAndInclude()
 	{
 		// Get the table of contents from the file - use values to get them in order
@@ -289,8 +289,8 @@ Content for step seven.
 	}
 }
 
-public class StepperBeforeIncludeOrderTests(ITestOutputHelper output) : DirectiveTest<IncludeBlock>(
-	output,
+[InheritsTests]
+public class StepperBeforeIncludeOrderTests() : DirectiveTest<IncludeBlock>(
 	"""
 :::::{stepper}
 
@@ -337,10 +337,10 @@ Another step from included content.
 		fileSystem.AddFile(@"docs/_snippets/test.md", inclusion);
 	}
 
-	[Fact]
+	[Test]
 	public void ParsesBlock() => Block.Should().NotBeNull();
 
-	[Fact]
+	[Test]
 	public void TableOfContentsRespectsOrderWithStepperBeforeInclude()
 	{
 		// Get the table of contents from the file - use values to get them in order
@@ -371,8 +371,8 @@ Another step from included content.
 /// Tests that stepper steps in included snippets inherit the correct heading level
 /// from the parent document's context. This is the key test for the DocumentTraversal fix.
 /// </summary>
-public class StepperInIncludeHeadingLevelTests(ITestOutputHelper output) : DirectiveTest<IncludeBlock>(
-	output,
+[InheritsTests]
+public class StepperInIncludeHeadingLevelTests() : DirectiveTest<IncludeBlock>(
 	"""
 ## Main Heading
 
@@ -405,10 +405,10 @@ Second step content.
 		fileSystem.AddFile(@"docs/_snippets/stepper-snippet.md", inclusion);
 	}
 
-	[Fact]
+	[Test]
 	public void ParsesBlock() => Block.Should().NotBeNull();
 
-	[Fact]
+	[Test]
 	public void StepperStepsInSnippetInheritCorrectHeadingLevel()
 	{
 		// Get the table of contents
@@ -437,8 +437,8 @@ Second step content.
 /// <summary>
 /// Tests stepper heading levels with a deeper heading context (### before include).
 /// </summary>
-public class StepperInIncludeWithH3ContextTests(ITestOutputHelper output) : DirectiveTest<IncludeBlock>(
-	output,
+[InheritsTests]
+public class StepperInIncludeWithH3ContextTests() : DirectiveTest<IncludeBlock>(
 	"""
 ## Main Heading
 
@@ -468,10 +468,10 @@ Step content.
 		fileSystem.AddFile(@"docs/_snippets/stepper-snippet.md", inclusion);
 	}
 
-	[Fact]
+	[Test]
 	public void ParsesBlock() => Block.Should().NotBeNull();
 
-	[Fact]
+	[Test]
 	public void StepperStepsInSnippetInheritDeeperHeadingLevel()
 	{
 		var toc = File.PageTableOfContent.Values.ToList();
@@ -497,8 +497,8 @@ Step content.
 /// <summary>
 /// Tests stepper in snippet when there's no preceding heading (should default to h2).
 /// </summary>
-public class StepperInIncludeWithNoHeadingContextTests(ITestOutputHelper output) : DirectiveTest<IncludeBlock>(
-	output,
+[InheritsTests]
+public class StepperInIncludeWithNoHeadingContextTests() : DirectiveTest<IncludeBlock>(
 	"""
 :::{include} _snippets/stepper-snippet.md
 :::
@@ -521,10 +521,10 @@ No heading before this include.
 		fileSystem.AddFile(@"docs/_snippets/stepper-snippet.md", inclusion);
 	}
 
-	[Fact]
+	[Test]
 	public void ParsesBlock() => Block.Should().NotBeNull();
 
-	[Fact]
+	[Test]
 	public void StepperStepsDefaultToH2WhenNoHeadingContext()
 	{
 		var toc = File.PageTableOfContent.Values.ToList();
@@ -545,8 +545,8 @@ No heading before this include.
 /// Tests that stepper steps in snippets respect their own snippet's heading structure
 /// and are NOT adjusted when the snippet has its own preceding heading.
 /// </summary>
-public class StepperInSnippetWithOwnHeadingTests(ITestOutputHelper output) : DirectiveTest<IncludeBlock>(
-	output,
+[InheritsTests]
+public class StepperInSnippetWithOwnHeadingTests() : DirectiveTest<IncludeBlock>(
 	"""
 ## Parent Heading
 
@@ -575,10 +575,10 @@ Step content.
 		fileSystem.AddFile(@"docs/_snippets/stepper-snippet.md", inclusion);
 	}
 
-	[Fact]
+	[Test]
 	public void ParsesBlock() => Block.Should().NotBeNull();
 
-	[Fact]
+	[Test]
 	public void StepperStepRespectsSnippetOwnHeadingStructure()
 	{
 		var toc = File.PageTableOfContent.Values.ToList();
@@ -607,8 +607,8 @@ Step content.
 /// <summary>
 /// Tests that stepper steps are capped at h6 even when preceding heading would push them deeper.
 /// </summary>
-public class StepperInSnippetWithH6CappingTests(ITestOutputHelper output) : DirectiveTest<IncludeBlock>(
-	output,
+[InheritsTests]
+public class StepperInSnippetWithH6CappingTests() : DirectiveTest<IncludeBlock>(
 	"""
 ## H2
 ### H3
@@ -635,10 +635,10 @@ Step content.
 		fileSystem.AddFile(@"docs/_snippets/stepper-snippet.md", inclusion);
 	}
 
-	[Fact]
+	[Test]
 	public void ParsesBlock() => Block.Should().NotBeNull();
 
-	[Fact]
+	[Test]
 	public void StepperStepIsCappedAtH6()
 	{
 		var toc = File.PageTableOfContent.Values.ToList();
@@ -656,8 +656,8 @@ Step content.
 /// <summary>
 /// Tests multiple includes with different heading contexts to ensure each is adjusted independently.
 /// </summary>
-public class MultipleIncludesWithDifferentContextsTests(ITestOutputHelper output) : DirectiveTest<IncludeBlock>(
-	output,
+[InheritsTests]
+public class MultipleIncludesWithDifferentContextsTests() : DirectiveTest<IncludeBlock>(
 	"""
 ## First Section
 
@@ -698,10 +698,10 @@ Second step content.
 		fileSystem.AddFile(@"docs/_snippets/second.md", secondInclusion);
 	}
 
-	[Fact]
+	[Test]
 	public void ParsesBlock() => Block.Should().NotBeNull();
 
-	[Fact]
+	[Test]
 	public void EachIncludeAdjustsBasedOnItsOwnContext()
 	{
 		var toc = File.PageTableOfContent.Values.ToList();
@@ -735,8 +735,8 @@ Second step content.
 /// their heading levels based on preceding headings. This ensures our changes didn't break
 /// the existing behavior for steppers in the main document.
 /// </summary>
-public class StepperInMainDocumentTests(ITestOutputHelper output) : DirectiveTest<StepperBlock>(
-	output,
+[InheritsTests]
+public class StepperInMainDocumentTests() : DirectiveTest<StepperBlock>(
 	"""
 ## Main Heading
 
@@ -766,10 +766,10 @@ Step after h2 heading.
 """
 )
 {
-	[Fact]
+	[Test]
 	public void ParsesBlock() => Block.Should().NotBeNull();
 
-	[Fact]
+	[Test]
 	public void StepperStepsInMainDocumentCalculateCorrectHeadingLevels()
 	{
 		var toc = File.PageTableOfContent.Values.ToList();
@@ -807,8 +807,8 @@ Step after h2 heading.
 /// Tests that a heading at the same level as a step is auto-adjusted to one level deeper
 /// and that a hint diagnostic is emitted pointing to the heading.
 /// </summary>
-public class StepperWithInternalHeadingAtSameLevelTests(ITestOutputHelper output) : DirectiveTest<StepperBlock>(
-	output,
+[InheritsTests]
+public class StepperWithInternalHeadingAtSameLevelTests() : DirectiveTest<StepperBlock>(
 	"""
 ## Section
 
@@ -828,10 +828,10 @@ This step should still be at the same level as First Step.
 """
 )
 {
-	[Fact]
+	[Test]
 	public void ParsesBlock() => Block.Should().NotBeNull();
 
-	[Fact]
+	[Test]
 	public void InternalHeadingIsAdjustedToOneLevelDeeper()
 	{
 		var toc = File.PageTableOfContent.Values.ToList();
@@ -857,7 +857,7 @@ This step should still be at the same level as First Step.
 		toc[3].IsStepperStep.Should().BeTrue();
 	}
 
-	[Fact]
+	[Test]
 	public void HintIsEmittedForAdjustedHeading() =>
 		Collector
 			.Diagnostics
@@ -872,8 +872,8 @@ This step should still be at the same level as First Step.
 /// <summary>
 /// Tests that a heading already deeper than the step level is left untouched (no adjustment, no hint).
 /// </summary>
-public class StepperWithDeepInternalHeadingTests(ITestOutputHelper output) : DirectiveTest<StepperBlock>(
-	output,
+[InheritsTests]
+public class StepperWithDeepInternalHeadingTests() : DirectiveTest<StepperBlock>(
 	"""
 ## Section
 
@@ -889,10 +889,10 @@ Already deeper than the step.
 """
 )
 {
-	[Fact]
+	[Test]
 	public void ParsesBlock() => Block.Should().NotBeNull();
 
-	[Fact]
+	[Test]
 	public void DeepHeadingIsUntouched()
 	{
 		var toc = File.PageTableOfContent.Values.ToList();
@@ -907,15 +907,15 @@ Already deeper than the step.
 		toc[2].Level.Should().Be(4, "h4 inside an h3 step is already valid — no adjustment");
 	}
 
-	[Fact]
+	[Test]
 	public void NoHintEmittedForValidHeading() => Collector.Diagnostics.Should().BeEmpty();
 }
 
 /// <summary>
 /// Tests stepper steps at the beginning of a document (no preceding heading).
 /// </summary>
-public class StepperAtDocumentStartTests(ITestOutputHelper output) : DirectiveTest<StepperBlock>(
-	output,
+[InheritsTests]
+public class StepperAtDocumentStartTests() : DirectiveTest<StepperBlock>(
 	"""
 :::::{stepper}
 
@@ -933,10 +933,10 @@ Another step at the beginning.
 """
 )
 {
-	[Fact]
+	[Test]
 	public void ParsesBlock() => Block.Should().NotBeNull();
 
-	[Fact]
+	[Test]
 	public void StepperStepsAtDocumentStartDefaultToH2()
 	{
 		var toc = File.PageTableOfContent.Values.ToList();
@@ -963,8 +963,8 @@ Another step at the beginning.
 /// This directly guards the single-pass position index: if the index is wrong, the stepper levels
 /// in the second include will reflect the first include's heading context instead of the correct one.
 /// </summary>
-public class MultipleIncludesInterleavedWithHeadingsTests(ITestOutputHelper output) : DirectiveTest<IncludeBlock>(
-	output,
+[InheritsTests]
+public class MultipleIncludesInterleavedWithHeadingsTests() : DirectiveTest<IncludeBlock>(
 	"""
 ## Section A
 
@@ -1016,10 +1016,10 @@ public class MultipleIncludesInterleavedWithHeadingsTests(ITestOutputHelper outp
 		);
 	}
 
-	[Fact]
+	[Test]
 	public void ParsesBlock() => Block.Should().NotBeNull();
 
-	[Fact]
+	[Test]
 	public void GetPrecedingHeadingLevel_UsesCorrectContextForEachInclude()
 	{
 		var toc = File.PageTableOfContent.Values.ToList();

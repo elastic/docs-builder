@@ -11,7 +11,7 @@ public class ApiMarkdownSanitizationTests
 {
 	// ── SanitizeHtml ──────────────────────────────────────────────────────────
 
-	[Fact]
+	[Test]
 	public void SanitizeHtml_ScriptTag_IsRemovedWithContent()
 	{
 		var result = ApiMarkdown.SanitizeHtml("<p>Hello</p><script>alert(1)</script><p>World</p>");
@@ -21,7 +21,7 @@ public class ApiMarkdownSanitizationTests
 		result.Should().Contain("World");
 	}
 
-	[Fact]
+	[Test]
 	public void SanitizeHtml_OnErrorAttribute_IsStripped()
 	{
 		var result = ApiMarkdown.SanitizeHtml("<img src=\"x\" onerror=\"alert(1)\">");
@@ -30,7 +30,7 @@ public class ApiMarkdownSanitizationTests
 		result.Should().Contain("<img");
 	}
 
-	[Fact]
+	[Test]
 	public void SanitizeHtml_JavascriptHref_IsRemoved()
 	{
 		var result = ApiMarkdown.SanitizeHtml("<a href=\"javascript:alert(1)\">click</a>");
@@ -38,14 +38,14 @@ public class ApiMarkdownSanitizationTests
 		result.Should().Contain("click");
 	}
 
-	[Fact]
+	[Test]
 	public void SanitizeHtml_DataUriInSrc_IsRemoved()
 	{
 		var result = ApiMarkdown.SanitizeHtml("<img src=\"data:text/html,payload\">");
 		result.Should().NotContain("data:");
 	}
 
-	[Fact]
+	[Test]
 	public void SanitizeHtml_BumpShFormatting_IsKeptIntact()
 	{
 		const string input = "<span class=\"operation-verb get\">GET</span> <span class=\"operation-path\">/index</span>";
@@ -53,7 +53,7 @@ public class ApiMarkdownSanitizationTests
 		result.Should().Be(input);
 	}
 
-	[Fact]
+	[Test]
 	public void SanitizeHtml_IframeTag_IsRemovedWithContent()
 	{
 		var result = ApiMarkdown.SanitizeHtml("<p>Before</p><iframe src=\"evil.com\"></iframe><p>After</p>");
@@ -64,14 +64,14 @@ public class ApiMarkdownSanitizationTests
 
 	// ── StripHtml ─────────────────────────────────────────────────────────────
 
-	[Fact]
+	[Test]
 	public void StripHtml_BreakTag_InsertsSpaceSoWordsStaySeparated()
 	{
 		var result = ApiMarkdown.StripHtml("foo<br>bar");
 		result.Should().Be("foo bar");
 	}
 
-	[Fact]
+	[Test]
 	public void StripHtml_ParagraphTag_InsertsSpaceBetweenParagraphs()
 	{
 		var result = ApiMarkdown.StripHtml("<p>First</p><p>Second</p>");
@@ -81,7 +81,7 @@ public class ApiMarkdownSanitizationTests
 		result.Should().NotContain("FirstSecond", "words must not merge");
 	}
 
-	[Fact]
+	[Test]
 	public void StripHtml_SpanAndDivTags_AreRemoved()
 	{
 		var result = ApiMarkdown.StripHtml("<div><span class=\"operation-verb get\">GET</span></div>");
@@ -90,7 +90,7 @@ public class ApiMarkdownSanitizationTests
 		result.Should().Contain("GET");
 	}
 
-	[Fact]
+	[Test]
 	public void StripHtml_UnknownElement_SurroundingTextIsPreserved()
 	{
 		// AngleSharp parses <index> as an unknown HTML element. The tag name itself is not a
@@ -100,14 +100,14 @@ public class ApiMarkdownSanitizationTests
 		result.Should().Contain("pattern to query", "text after the unknown element is kept");
 	}
 
-	[Fact]
+	[Test]
 	public void StripHtml_NullAndEmpty_ReturnEmpty()
 	{
 		ApiMarkdown.StripHtml(null).Should().BeEmpty();
 		ApiMarkdown.StripHtml("").Should().BeEmpty();
 	}
 
-	[Fact]
+	[Test]
 	public void StripHtml_PlainText_IsReturnedUnchanged()
 	{
 		var result = ApiMarkdown.StripHtml("No HTML here.");

@@ -15,10 +15,10 @@ namespace Elastic.Markdown.Tests.Directives;
 /// so a file-reference-only entry is invalid and builds fail fast rather than silently
 /// omitting changelog entries.
 /// </summary>
+[InheritsTests]
 public class ChangelogEntryWithoutInlineContentTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogEntryWithoutInlineContentTests(ITestOutputHelper output) : base(
-			output,
+	public ChangelogEntryWithoutInlineContentTests() : base(
 			// language=markdown
 			"""
 		:::{changelog}
@@ -61,7 +61,7 @@ public class ChangelogEntryWithoutInlineContentTests : DirectiveTest<ChangelogBl
 		);
 	}
 
-	[Fact]
+	[Test]
 	public void EmitsErrorNamingBundleAndEntry() =>
 		Collector
 			.Diagnostics
@@ -72,11 +72,11 @@ public class ChangelogEntryWithoutInlineContentTests : DirectiveTest<ChangelogBl
 				) && d.Message.Contains("no inline content")
 			);
 
-	[Fact]
+	[Test]
 	public void ErrorIsNotAWarning() =>
 		Collector.Diagnostics.Should().NotContain(d => d.Severity == Severity.Warning && d.Message.Contains("1234-referenced-entry.yaml"));
 
-	[Fact]
+	[Test]
 	public void NeverLoadsTheReferencedFile() => Block!.LoadedBundles.Should().ContainSingle(b => b.Entries.Count == 0);
 }
 
@@ -84,10 +84,10 @@ public class ChangelogEntryWithoutInlineContentTests : DirectiveTest<ChangelogBl
 /// Tests that the changelog directive loads bundles with inline (resolved) entries without
 /// diagnostics — files being absent from disk is irrelevant.
 /// </summary>
+[InheritsTests]
 public class ChangelogInlineEntriesNoErrorTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogInlineEntriesNoErrorTests(ITestOutputHelper output) : base(
-			output,
+	public ChangelogInlineEntriesNoErrorTests() : base(
 			// language=markdown
 			"""
 		:::{changelog}
@@ -115,9 +115,9 @@ public class ChangelogInlineEntriesNoErrorTests : DirectiveTest<ChangelogBlock>
 			)
 		);
 
-	[Fact]
+	[Test]
 	public void HasNoDiagnostics() => Collector.Diagnostics.Should().BeEmpty();
 
-	[Fact]
+	[Test]
 	public void LoadsEntries() => Block!.LoadedBundles.Should().ContainSingle(b => b.Entries.Count == 1);
 }

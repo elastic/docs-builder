@@ -17,7 +17,7 @@ namespace Elastic.Markdown.Tests.Search;
 /// </summary>
 public class OpenApiSearchTitleTests
 {
-	[Fact]
+	[Test]
 	public void ApiDocs_PreserveTheExporterSSearchTitle()
 	{
 		var doc = new DocumentationDocument
@@ -34,7 +34,7 @@ public class OpenApiSearchTitleTests
 		doc.SearchTitle.Should().Contain("_bulk");
 	}
 
-	[Fact]
+	[Test]
 	public void MarkdownDocs_StillGetTheDerivedSearchTitle()
 	{
 		var doc = new DocumentationDocument

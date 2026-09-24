@@ -10,9 +10,9 @@ using FakeItEasy;
 
 namespace Elastic.Changelog.Tests.Changelogs.Create;
 
-public class BlockingLabelTests(ITestOutputHelper output) : CreateChangelogTestBase(output)
+public class BlockingLabelTests() : CreateChangelogTestBase()
 {
-	[Fact]
+	[Test]
 	public async Task CreateChangelog_WithBlockingLabel_SkipsChangelogCreation()
 	{
 		// Arrange
@@ -51,7 +51,7 @@ public class BlockingLabelTests(ITestOutputHelper output) : CreateChangelogTestB
 		};
 
 		// Act
-		var result = await service.CreateChangelog(Collector, input, TestContext.Current.CancellationToken);
+		var result = await service.CreateChangelog(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		result.Should().BeTrue(); // Should succeed but skip creating changelog
@@ -73,7 +73,7 @@ public class BlockingLabelTests(ITestOutputHelper output) : CreateChangelogTestB
 		files.Should().HaveCount(0); // No files should be created
 	}
 
-	[Fact]
+	[Test]
 	public async Task CreateChangelog_WithBlockingLabelForSpecificProduct_OnlyBlocksForThatProduct()
 	{
 		// Arrange
@@ -116,7 +116,7 @@ public class BlockingLabelTests(ITestOutputHelper output) : CreateChangelogTestB
 		};
 
 		// Act
-		var result = await service.CreateChangelog(Collector, input, TestContext.Current.CancellationToken);
+		var result = await service.CreateChangelog(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		result.Should().BeTrue(); // Should succeed but skip creating changelog due to cloud-serverless blocker
@@ -134,7 +134,7 @@ public class BlockingLabelTests(ITestOutputHelper output) : CreateChangelogTestB
 		files.Should().HaveCount(0); // No files should be created because cloud-serverless blocks it
 	}
 
-	[Fact]
+	[Test]
 	public async Task CreateChangelog_WithCommaSeparatedProductIdsInAddBlockers_ExpandsCorrectly()
 	{
 		// Arrange
@@ -177,7 +177,7 @@ public class BlockingLabelTests(ITestOutputHelper output) : CreateChangelogTestB
 		};
 
 		// Act
-		var result = await service.CreateChangelog(Collector, input, TestContext.Current.CancellationToken);
+		var result = await service.CreateChangelog(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		result.Should().BeTrue(); // Should succeed but skip creating changelog due to blocker
@@ -197,7 +197,7 @@ public class BlockingLabelTests(ITestOutputHelper output) : CreateChangelogTestB
 		files.Should().HaveCount(0); // No files should be created
 	}
 
-	[Fact]
+	[Test]
 	public async Task CreateChangelog_WithLabelDerivedProduct_AppliesProductSpecificCreateRule()
 	{
 		// This test verifies the timing fix: products derived from pivot.products label mapping
@@ -243,7 +243,7 @@ public class BlockingLabelTests(ITestOutputHelper output) : CreateChangelogTestB
 		};
 
 		// Act
-		var result = await service.CreateChangelog(Collector, input, TestContext.Current.CancellationToken);
+		var result = await service.CreateChangelog(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert — product-specific rule should have blocked creation
 		result.Should().BeTrue(); // Succeed but skip
@@ -264,7 +264,7 @@ public class BlockingLabelTests(ITestOutputHelper output) : CreateChangelogTestB
 		files.Should().HaveCount(0);
 	}
 
-	[Fact]
+	[Test]
 	public async Task CreateChangelog_WithAllPrsSkippedByCreateRules_ReturnsSuccessWithoutErrors()
 	{
 		var prInfo = new GitHubPrInfo { Title = "PR with blocking label", Labels = ["type:feature", "skip:releaseNotes"] };
@@ -299,7 +299,7 @@ public class BlockingLabelTests(ITestOutputHelper output) : CreateChangelogTestB
 			Output = outputDir
 		};
 
-		var result = await service.CreateChangelog(Collector, input, TestContext.Current.CancellationToken);
+		var result = await service.CreateChangelog(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		result.Should().BeTrue();
 		Collector.Errors.Should().Be(0);

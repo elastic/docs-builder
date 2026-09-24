@@ -15,9 +15,9 @@ namespace Elastic.Changelog.Tests.Changelogs;
 /// </summary>
 public class BundleProfileGitHubReleaseTests : ChangelogTestBase
 {
-	public BundleProfileGitHubReleaseTests(ITestOutputHelper output) : base(output) { }
+	public BundleProfileGitHubReleaseTests() : base() { }
 
-	[Fact]
+	[Test]
 	public async Task SourceGithubRelease_EmitsDeprecationWarning()
 	{
 		// language=yaml
@@ -32,10 +32,14 @@ public class BundleProfileGitHubReleaseTests : ChangelogTestBase
 
 		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog.yml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
-		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current!.Execution.CancellationToken);
 
 		var loader = new ChangelogConfigurationLoader(LoggerFactory, ConfigurationContext, FileSystem);
-		var config = await loader.LoadChangelogConfigurationRequired(Collector, configPath, TestContext.Current.CancellationToken);
+		var config = await loader.LoadChangelogConfigurationRequired(
+			Collector,
+			configPath,
+			TestContext.Current!.Execution.CancellationToken
+		);
 
 		config.Should().NotBeNull();
 		Collector.Errors.Should().Be(0);

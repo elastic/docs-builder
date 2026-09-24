@@ -9,55 +9,55 @@ namespace Elastic.Changelog.Tests.Utilities;
 
 public class OutputSanitizerTests
 {
-	[Fact]
+	[Test]
 	public void NullInput_ReturnsEmpty() => OutputSanitizer.SanitizeForOutput(null, 100).Should().Be(string.Empty);
 
-	[Fact]
+	[Test]
 	public void EmptyInput_ReturnsEmpty() => OutputSanitizer.SanitizeForOutput(string.Empty, 100).Should().Be(string.Empty);
 
-	[Fact]
+	[Test]
 	public void ZeroMaxLength_ReturnsEmpty() => OutputSanitizer.SanitizeForOutput("anything", 0).Should().Be(string.Empty);
 
-	[Fact]
+	[Test]
 	public void NegativeMaxLength_ReturnsEmpty() => OutputSanitizer.SanitizeForOutput("anything", -1).Should().Be(string.Empty);
 
-	[Fact]
+	[Test]
 	public void PlainAscii_PassesThrough() =>
 		OutputSanitizer.SanitizeForOutput("Add new search API", 100).Should().Be("Add new search API");
 
-	[Fact]
+	[Test]
 	public void PreservesNewlinesAndTabs()
 	{
 		var input = "line1\nline2\twith tab\nline3";
 		OutputSanitizer.SanitizeForOutput(input, 100).Should().Be(input);
 	}
 
-	[Fact]
+	[Test]
 	public void StripsNullBytes() => OutputSanitizer.SanitizeForOutput("hello\0world", 100).Should().Be("helloworld");
 
-	[Fact]
+	[Test]
 	public void StripsCarriageReturn() => OutputSanitizer.SanitizeForOutput("line1\r\nline2", 100).Should().Be("line1\nline2");
 
-	[Theory]
-	[InlineData('\u0001')]
-	[InlineData('\u0007')]
-	[InlineData('\u001b')]
-	[InlineData('\u001f')]
-	[InlineData('\u007f')]
+	[Test]
+	[Arguments('\u0001')]
+	[Arguments('\u0007')]
+	[Arguments('\u001b')]
+	[Arguments('\u001f')]
+	[Arguments('\u007f')]
 	public void StripsC0AndDelControlCharacters(char control)
 	{
 		var input = $"safe{control}value";
 		OutputSanitizer.SanitizeForOutput(input, 100).Should().Be("safevalue");
 	}
 
-	[Fact]
+	[Test]
 	public void TruncatesAtMaxLength()
 	{
 		var input = new string('a', 250);
 		OutputSanitizer.SanitizeForOutput(input, 200).Should().HaveLength(200);
 	}
 
-	[Fact]
+	[Test]
 	public void TruncatesBeforeStrippedCharsAreCounted()
 	{
 		// Stripped characters do not count toward the cap; the result
@@ -66,7 +66,7 @@ public class OutputSanitizerTests
 		OutputSanitizer.SanitizeForOutput(input, 5).Should().Be("abcde");
 	}
 
-	[Fact]
+	[Test]
 	public void TruncationIsCharacterBasedNotByteBased()
 	{
 		// Emoji are surrogate pairs (2 chars each in C#); the cap counts chars,
@@ -76,7 +76,7 @@ public class OutputSanitizerTests
 		result.Should().HaveLength(4);
 	}
 
-	[Fact]
+	[Test]
 	public void GitHubOutputDelimiterMimic_HasControlCharsStripped()
 	{
 		// A hostile PR title that tries to inject a fake GITHUB_OUTPUT line.
@@ -88,14 +88,14 @@ public class OutputSanitizerTests
 		result.Should().NotContain("\u0000");
 	}
 
-	[Fact]
+	[Test]
 	public void RealisticPrTitle_FitsWithinTitleCap()
 	{
 		var input = "[7.17] Backport: improve search aggregation performance for large indices";
 		OutputSanitizer.SanitizeForOutput(input, OutputSanitizer.TitleMaxLength).Should().Be(input);
 	}
 
-	[Fact]
+	[Test]
 	public void HugeBody_TruncatedToDescriptionCap()
 	{
 		var input = new string('x', OutputSanitizer.DescriptionMaxLength * 2);

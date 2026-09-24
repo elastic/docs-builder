@@ -6,7 +6,6 @@ using System.Collections.Frozen;
 using System.Diagnostics.CodeAnalysis;
 using Elastic.Documentation.Links;
 using Elastic.Documentation.Links.CrossLinks;
-using Xunit.Internal;
 
 namespace Elastic.Markdown.Tests;
 
@@ -50,7 +49,8 @@ public class TestCodexCrossLinkResolver : ICrossLinkResolver
 		var declaredRepositories = new HashSet<string>();
 		linkReferences.Add("docs-content", reference);
 		linkReferences.Add("kibana", reference);
-		declaredRepositories.AddRange(["docs-content", "kibana"]);
+		foreach (var r in new[] { "docs-content", "kibana" })
+			declaredRepositories.Add(r);
 
 		var codexRepositories = new HashSet<string> { "docs-content", "kibana" }.ToFrozenSet();
 

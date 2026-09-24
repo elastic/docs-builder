@@ -10,6 +10,7 @@ using Elastic.Documentation.Configuration.Builder;
 using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.Navigation;
 using Elastic.Markdown.IO;
+using TUnit.Core.Interfaces;
 
 namespace Elastic.Markdown.Tests.DocSet;
 
@@ -21,7 +22,7 @@ namespace Elastic.Markdown.Tests.DocSet;
 /// The bug was that HtmlWriter called UrlPath.JoinUrl(UrlPathPrefix, current.Url),
 /// but current.Url already contains the prefix because navigation sets PathPrefix = UrlPathPrefix.
 /// </summary>
-public class ReportIssueUrlTests : IAsyncLifetime
+public class ReportIssueUrlTests : IAsyncInitializer, IAsyncDisposable
 {
 	private static readonly Uri CanonicalBaseUrl = new("https://www.elastic.co/");
 	private const string UrlPathPrefix = "docs";
@@ -29,13 +30,13 @@ public class ReportIssueUrlTests : IAsyncLifetime
 	private DocumentationSet Set { get; }
 	private DocumentationGenerator Generator { get; }
 
-	public ReportIssueUrlTests(ITestOutputHelper output)
+	public ReportIssueUrlTests()
 	{
-		var loggerFactory = new TestLoggerFactory(output);
+		var loggerFactory = new TestLoggerFactory();
 		var mockWriteFs = new MockFileSystem(new MockFileSystemOptions { CurrentDirectory = Paths.WorkingDirectoryRoot.FullName });
 		var invocation = new System.IO.Abstractions.FileSystem().DirectoryInfo.New(Paths.WorkingDirectoryRoot.FullName);
 		var fs = DocumentationFileSystem.Resolve(invocation, new DocumentationScopeOptions { InnerWrite = mockWriteFs });
-		var collector = new TestDiagnosticsCollector(output);
+		var collector = new TestDiagnosticsCollector();
 		var configurationContext = TestHelpers.CreateConfigurationContext(fs.Read);
 
 		var context = new BuildContext(collector, fs, configurationContext)
@@ -49,7 +50,7 @@ public class ReportIssueUrlTests : IAsyncLifetime
 		Generator = new DocumentationGenerator(Set, loggerFactory);
 	}
 
-	public async ValueTask InitializeAsync() => await Generator.ResolveDirectoryTree(default);
+	public async Task InitializeAsync() => await Generator.ResolveDirectoryTree(default);
 
 	public ValueTask DisposeAsync()
 	{
@@ -57,7 +58,7 @@ public class ReportIssueUrlTests : IAsyncLifetime
 		return ValueTask.CompletedTask;
 	}
 
-	[Fact]
+	[Test]
 	public void NavigationItemUrls_WithUrlPathPrefix_AlreadyIncludeThePrefix()
 	{
 		// When UrlPathPrefix = "docs", the navigation PathPrefix is "/docs",
@@ -67,7 +68,7 @@ public class ReportIssueUrlTests : IAsyncLifetime
 		navUrl.Should().StartWith($"/{UrlPathPrefix}");
 	}
 
-	[Fact]
+	[Test]
 	public void ReportIssueUrl_WithUrlPathPrefix_DoesNotDuplicatePrefix()
 	{
 		// Simulate exactly what HtmlWriter does to build the report link parameter:
@@ -81,7 +82,7 @@ public class ReportIssueUrlTests : IAsyncLifetime
 		reportLinkParameter.AbsoluteUri.Should().StartWith($"{CanonicalBaseUrl.AbsoluteUri.TrimEnd('/')}/{UrlPathPrefix}");
 	}
 
-	[Fact]
+	[Test]
 	public void BreadcrumbUrl_WithUrlPathPrefix_DoesNotDuplicatePrefix()
 	{
 		// Simulate what HtmlWriter does for breadcrumb structured data:

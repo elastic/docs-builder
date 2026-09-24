@@ -22,7 +22,7 @@ public class DiagnosticsCollectorTests
 		public void Write(Diagnostic diagnostic) => Received++;
 	}
 
-	[Fact]
+	[Test]
 	public void Write_AfterChannelCompleted_StillIncrementsErrors()
 	{
 		var output = new CapturingOutput();
@@ -39,7 +39,7 @@ public class DiagnosticsCollectorTests
 		output.Received.Should().Be(0);
 	}
 
-	[Fact]
+	[Test]
 	public async Task Write_AfterDisposeAsync_StillIncrementsErrors()
 	{
 		var output = new CapturingOutput();
@@ -54,7 +54,7 @@ public class DiagnosticsCollectorTests
 		output.Received.Should().Be(0);
 	}
 
-	[Fact]
+	[Test]
 	public void Write_MultipleCallsAfterChannelCompleted_AccumulatesCount()
 	{
 		var collector = new DiagnosticsCollector([]);

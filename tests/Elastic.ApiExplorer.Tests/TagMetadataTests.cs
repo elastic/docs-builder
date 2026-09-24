@@ -21,7 +21,7 @@ namespace Elastic.ApiExplorer.Tests;
 
 public class TagMetadataTests
 {
-	[Fact]
+	[Test]
 	public async Task ApiTag_WithXDisplayName_UsesDisplayNameForNavigation()
 	{
 		// Arrange - minimal OpenAPI spec with x-displayName and multiple tags to trigger TagNavigationItem creation
@@ -95,7 +95,7 @@ public class TagMetadataTests
 		apiTag.DisplayName.Should().Be("Task management"); // display name
 	}
 
-	[Fact]
+	[Test]
 	public async Task ApiTag_WithoutXDisplayName_FallsBackToCanonicalName()
 	{
 		// Arrange - spec without x-displayName, multiple tags to trigger TagNavigationItem creation
@@ -155,7 +155,7 @@ public class TagMetadataTests
 		tagNavItem.NavigationTitle.Should().Be("transform");
 	}
 
-	[Fact]
+	[Test]
 	public async Task ApiTag_WithMultipleTagsAndDisplayNames_ParsesCorrectly()
 	{
 		// Arrange - multiple tags with different display name scenarios
@@ -226,7 +226,7 @@ public class TagMetadataTests
 		xpackTag.NavigationTitle.Should().Be("Usage");
 	}
 
-	[Fact]
+	[Test]
 	public async Task ApiTag_StableNavigationIds_UsesCanonicalTagName()
 	{
 		// Arrange - tag where display name differs significantly from canonical name, multiple tags for TagNavigationItem creation
@@ -347,7 +347,7 @@ public class TagMetadataTests
 		return tagItem.Index.Model is ApiTag tag && tag.Name == expectedTagName;
 	}
 
-	[Fact]
+	[Test]
 	public async Task Tags_WithMixedDisplayNames_SortedAlphabeticallyByDisplayName()
 	{
 		// Arrange - spec with mixed x-displayName and canonical names
@@ -413,7 +413,7 @@ public class TagMetadataTests
 		tagItems[2].NavigationTitle.Should().Be("Fruit Store", "Third tag should be 'Fruit Store' (apple with x-displayName)");
 	}
 
-	[Fact]
+	[Test]
 	public async Task Tags_CaseInsensitiveSorting_WorksCorrectly()
 	{
 		// Arrange - spec with case variations
@@ -467,7 +467,7 @@ public class TagMetadataTests
 		tagItems[1].NavigationTitle.Should().Be("beta Service", "Should sort case-insensitively");
 	}
 
-	[Fact]
+	[Test]
 	public async Task Tags_OnlyCanonicalNames_SortedAlphabetically()
 	{
 		// Arrange - spec with no x-displayName values
@@ -533,7 +533,7 @@ public class TagMetadataTests
 		tagItems[2].NavigationTitle.Should().Be("zebra", "Should sort by canonical name");
 	}
 
-	[Fact]
+	[Test]
 	public async Task Tags_WithinClassification_SortedCorrectly()
 	{
 		// Arrange - x-tagGroups (Redocly-style) drives classification; sort tags by display name within a group
@@ -628,7 +628,7 @@ public class TagMetadataTests
 		tagItems[1].NavigationTitle.Should().Be("Watcher API", "Should sort by displayName");
 	}
 
-	[Fact]
+	[Test]
 	public async Task XTagGroups_Classification_Url_PointsToApiOverview_NotFirstTag()
 	{
 		var openApiJson = /*lang=json,strict*/
@@ -668,7 +668,7 @@ public class TagMetadataTests
 		firstTag.Url.Should().Contain("/group/");
 	}
 
-	[Fact]
+	[Test]
 	public async Task WithoutXTagGroups_ElasticsearchTitle_UsesFlatTagNavigation()
 	{
 		var openApiJson = /*lang=json,strict*/
@@ -709,7 +709,7 @@ public class TagMetadataTests
 		navigation.NavigationItems.OfType<TagNavigationItem>().Should().HaveCount(2);
 	}
 
-	[Fact]
+	[Test]
 	public async Task XTagGroups_ClassificationOrder_FollowsSpecOrder()
 	{
 		var openApiJson = /*lang=json,strict*/
@@ -761,7 +761,7 @@ public class TagMetadataTests
 		titles.Should().Equal("Z Group", "A Group", "B Group");
 	}
 
-	[Fact]
+	[Test]
 	public async Task XTagGroups_OrphanTag_AssignsUnknownGroup()
 	{
 		// Two unlisted tags so the "unknown" classification has multiple tags; each is still a TagNavigationItem.
@@ -822,7 +822,7 @@ public class TagMetadataTests
 			.Equal("not_in_any_group", "other_orphan");
 	}
 
-	[Fact]
+	[Test]
 	public async Task Single_Tag_Still_Creates_TagNavigationItem()
 	{
 		var openApiJson = /*lang=json,strict*/
@@ -856,25 +856,25 @@ public class TagMetadataTests
 		tag.Description.Should().Be("Solo tag group.");
 	}
 
-	[Fact]
+	[Test]
 	public void GenerateTagMoniker_DataStream_Uses_Hyphen() => ApiUrlBuilder.TagMoniker("data stream").Should().Be("endpoint-data-stream");
 
-	[Theory]
-	[InlineData("bulk", "/_bulk", "operation-bulk")]
-	[InlineData("cat-aliases", "/_cat/aliases", "operation-cat-aliases")]
-	[InlineData(null, "/indices/{index}/_search", "operation-indices-index-_search")]
-	[InlineData("get-agent-builder-a2a-agentid.json", "/api/agent_builder/a2a/{agentId}.json", "operation-get-agent-builder-a2a-agentid-json")]
+	[Test]
+	[Arguments("bulk", "/_bulk", "operation-bulk")]
+	[Arguments("cat-aliases", "/_cat/aliases", "operation-cat-aliases")]
+	[Arguments(null, "/indices/{index}/_search", "operation-indices-index-_search")]
+	[Arguments("get-agent-builder-a2a-agentid.json", "/api/agent_builder/a2a/{agentId}.json", "operation-get-agent-builder-a2a-agentid-json")]
 	public void OperationMoniker_MatchesBumpShScheme(string? operationId, string route, string expected) =>
 		ApiUrlBuilder.OperationMoniker(operationId, route).Should().Be(expected);
 
-	[Theory]
-	[InlineData("cat", "endpoint-cat")]
-	[InlineData("health_report", "endpoint-health_report")]
-	[InlineData("APM agent configuration", "endpoint-apm-agent-configuration")]
-	[InlineData("Elastic Package Manager (EPM)", "endpoint-elastic-package-manager-epm")]
+	[Test]
+	[Arguments("cat", "endpoint-cat")]
+	[Arguments("health_report", "endpoint-health_report")]
+	[Arguments("APM agent configuration", "endpoint-apm-agent-configuration")]
+	[Arguments("Elastic Package Manager (EPM)", "endpoint-elastic-package-manager-epm")]
 	public void TagMoniker_MatchesBumpShScheme(string tagName, string expected) => ApiUrlBuilder.TagMoniker(tagName).Should().Be(expected);
 
-	[Fact]
+	[Test]
 	public async Task Tag_Url_Uses_Group_Segment()
 	{
 		var openApiJson = /*lang=json,strict*/
@@ -900,7 +900,7 @@ public class TagMetadataTests
 		alpha.Index.Model.Should().BeOfType<ApiTag>().Which.TagUrlSegment.Should().Be("endpoint-alpha");
 	}
 
-	[Fact]
+	[Test]
 	public async Task Operation_Url_Uses_Operation_Segment()
 	{
 		var openApiJson = /*lang=json,strict*/
@@ -935,7 +935,7 @@ public class TagMetadataTests
 		operation.Url.Should().Be("/api/doc/elasticsearch/operation/operation-search-op");
 	}
 
-	[Fact]
+	[Test]
 	public async Task Tag_Landing_Parses_Description_And_ExternalDocs_Like_Elasticsearch_Connector_Tag()
 	{
 		var openApiJson = /*lang=json,strict*/
@@ -974,7 +974,7 @@ public class TagMetadataTests
 		model.ExternalDocs.Description.Should().Be("Learn more.");
 	}
 
-	[Fact]
+	[Test]
 	public async Task CreateNavigation_Throws_When_Two_Tag_Names_Normalize_To_Same_Url_Segment()
 	{
 		var openApiJson = /*lang=json,strict*/

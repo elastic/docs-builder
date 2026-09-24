@@ -42,7 +42,7 @@ public class OpenApiGeneratorCurrentSpecResolutionTests
 	private static ResolvedApiConfiguration ApiConfig(Product product, IFileInfo? localSpecFile = null) =>
 		new() { ProductKey = product.Id, Product = product, SpecFileName = "elasticsearch-openapi.json", LocalSpecFile = localSpecFile };
 
-	[Fact]
+	[Test]
 	public async Task ResolveDocumentsForProduct_VersionlessLocalSpec_RendersLocalFileWithoutNetwork()
 	{
 		var collector = new DiagnosticsCollector([]);
@@ -77,7 +77,7 @@ public class OpenApiGeneratorCurrentSpecResolutionTests
 		var documents = (await generator.ResolveDocumentsForProduct(
 			"cloud-serverless",
 			ApiConfig(product, localFile),
-			TestContext.Current.CancellationToken
+			TestContext.Current!.Execution.CancellationToken
 		)).Documents;
 
 		documents.Should().ContainSingle().Which.Document.Should().BeSameAs(expectedDocument);
@@ -85,7 +85,7 @@ public class OpenApiGeneratorCurrentSpecResolutionTests
 		A.CallTo(() => reader.ReadAsync(localFile, A<IDiagnosticsCollector?>._)).MustHaveHappenedOnceExactly();
 	}
 
-	[Fact]
+	[Test]
 	public async Task ResolveDocumentsForProduct_NoLocalSpec_ResolvesRemoteMainThroughVersionIndex()
 	{
 		var collector = new CapturingDiagnosticsCollector();
@@ -131,7 +131,7 @@ public class OpenApiGeneratorCurrentSpecResolutionTests
 		var documents = (await generator.ResolveDocumentsForProduct(
 			"elasticsearch",
 			ApiConfig(product),
-			TestContext.Current.CancellationToken
+			TestContext.Current!.Execution.CancellationToken
 		)).Documents;
 
 		documents.Should().ContainSingle().Which.Document.Should().BeSameAs(expectedDocument);
@@ -142,7 +142,7 @@ public class OpenApiGeneratorCurrentSpecResolutionTests
 		).MustHaveHappenedOnceExactly();
 	}
 
-	[Fact]
+	[Test]
 	public async Task ResolveDocumentsForProduct_NoLocalSpecAndIndexUnreachable_ReturnsEmptyAndEmitsError()
 	{
 		var collector = new DiagnosticsCollector([]);
@@ -171,7 +171,7 @@ public class OpenApiGeneratorCurrentSpecResolutionTests
 		var documents = (await generator.ResolveDocumentsForProduct(
 			"elasticsearch",
 			ApiConfig(product),
-			TestContext.Current.CancellationToken
+			TestContext.Current!.Execution.CancellationToken
 		)).Documents;
 
 		documents.Should().BeEmpty();

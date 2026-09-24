@@ -18,7 +18,7 @@ public class FindDocsetFileTests
 
 	private static CheckoutsFileSystem CreateScopedFs(MockFileSystem mockFs) => CheckoutsFileSystem.FromWorkingDirectory(mockFs);
 
-	[Fact]
+	[Test]
 	public void StandardPath_Found()
 	{
 		var mockFs = new MockFileSystem(new Dictionary<string, MockFileData>
@@ -32,7 +32,7 @@ public class FindDocsetFileTests
 		result.Name.Should().Be("docset.yml");
 	}
 
-	[Fact]
+	[Test]
 	public void NonStandardPath_FoundViaRecursion()
 	{
 		var mockFs = new MockFileSystem(new Dictionary<string, MockFileData>
@@ -46,7 +46,7 @@ public class FindDocsetFileTests
 		result.Name.Should().Be("docset.yml");
 	}
 
-	[Fact]
+	[Test]
 	public void HiddenDirectory_SkippedByScopedFileSystem()
 	{
 		var mockFs = new MockFileSystem(new Dictionary<string, MockFileData>
@@ -62,7 +62,7 @@ public class FindDocsetFileTests
 		result.Name.Should().Be("docset.yml");
 	}
 
-	[Fact]
+	[Test]
 	public void NoDocset_ReturnsNull()
 	{
 		var mockFs = new MockFileSystem(new Dictionary<string, MockFileData>
@@ -75,7 +75,7 @@ public class FindDocsetFileTests
 		result.Should().BeNull();
 	}
 
-	[Fact]
+	[Test]
 	public void NodeModules_Skipped()
 	{
 		var mockFs = new MockFileSystem(new Dictionary<string, MockFileData>
@@ -88,7 +88,7 @@ public class FindDocsetFileTests
 		result.Should().BeNull();
 	}
 
-	[Fact]
+	[Test]
 	public void MultipleDocsets_PrefersRegistryMatchingEnvironment()
 	{
 		var mockFs = new MockFileSystem(new Dictionary<string, MockFileData>
@@ -103,7 +103,7 @@ public class FindDocsetFileTests
 		result.Directory!.Name.Should().Be("docs-dev");
 	}
 
-	[Fact]
+	[Test]
 	public void MultipleDocsets_NoRegistryMatch_FallsBackToFirstKnownPath()
 	{
 		var mockFs = new MockFileSystem(new Dictionary<string, MockFileData>
@@ -118,7 +118,7 @@ public class FindDocsetFileTests
 		result.Directory!.Name.Should().Be("docs");
 	}
 
-	[Fact]
+	[Test]
 	public void CustomEnvironment_MatchesArbitraryRegistryValueViaRecursion()
 	{
 		var mockFs = new MockFileSystem(new Dictionary<string, MockFileData>

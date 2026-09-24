@@ -8,10 +8,10 @@ using Elastic.Markdown.Myst.Directives.Changelog;
 
 namespace Elastic.Markdown.Tests.Directives;
 
+[InheritsTests]
 public class ChangelogConfigLoadAutoDiscoverTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogConfigLoadAutoDiscoverTests(ITestOutputHelper output) : base(
-			output,
+	public ChangelogConfigLoadAutoDiscoverTests() : base(
 			// language=markdown
 			"""
 		:::{changelog}
@@ -76,10 +76,10 @@ public class ChangelogConfigLoadAutoDiscoverTests : DirectiveTest<ChangelogBlock
 		);
 	}
 
-	[Fact]
+	[Test]
 	public void PublishBlockerIsNull() => Block!.PublishBlocker.Should().BeNull();
 
-	[Fact]
+	[Test]
 	public void RendersAllEntries_NoFiltering()
 	{
 		// Directive does not apply rules.publish; all entries are shown
@@ -88,20 +88,20 @@ public class ChangelogConfigLoadAutoDiscoverTests : DirectiveTest<ChangelogBlock
 		Html.Should().Contain("Known issue");
 	}
 
-	[Fact]
+	[Test]
 	public void RendersFeaturesSection() => Html.Should().Contain("Features and enhancements");
 
-	[Fact]
+	[Test]
 	public void RendersDeprecationsSection() => Html.Should().Contain("Deprecations");
 
-	[Fact]
+	[Test]
 	public void RendersKnownIssuesSection() => Html.Should().Contain("Known issues");
 }
 
+[InheritsTests]
 public class ChangelogConfigLoadExplicitPathTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogConfigLoadExplicitPathTests(ITestOutputHelper output) : base(
-			output,
+	public ChangelogConfigLoadExplicitPathTests() : base(
 			// language=markdown
 			"""
 		:::{changelog}
@@ -154,13 +154,13 @@ public class ChangelogConfigLoadExplicitPathTests : DirectiveTest<ChangelogBlock
 		);
 	}
 
-	[Fact]
+	[Test]
 	public void ConfigPathPropertyIsSet() => Block!.ConfigPath.Should().Be("custom/path/my-changelog.yml");
 
-	[Fact]
+	[Test]
 	public void PublishBlockerIsNull() => Block!.PublishBlocker.Should().BeNull();
 
-	[Fact]
+	[Test]
 	public void RendersAllEntries_NoFiltering()
 	{
 		// Directive does not apply rules.publish; all entries are shown
@@ -169,10 +169,10 @@ public class ChangelogConfigLoadExplicitPathTests : DirectiveTest<ChangelogBlock
 	}
 }
 
+[InheritsTests]
 public class ChangelogConfigLoadFromDocsSubfolderTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogConfigLoadFromDocsSubfolderTests(ITestOutputHelper output) : base(
-			output,
+	public ChangelogConfigLoadFromDocsSubfolderTests() : base(
 			// language=markdown
 			"""
 		:::{changelog}
@@ -222,10 +222,10 @@ public class ChangelogConfigLoadFromDocsSubfolderTests : DirectiveTest<Changelog
 		);
 	}
 
-	[Fact]
+	[Test]
 	public void PublishBlockerIsNull() => Block!.PublishBlocker.Should().BeNull();
 
-	[Fact]
+	[Test]
 	public void RendersAllEntries_NoFiltering()
 	{
 		// Directive does not apply rules.publish; all entries are shown
@@ -234,10 +234,10 @@ public class ChangelogConfigLoadFromDocsSubfolderTests : DirectiveTest<Changelog
 	}
 }
 
+[InheritsTests]
 public class ChangelogConfigNotFoundTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogConfigNotFoundTests(ITestOutputHelper output) : base(
-			output,
+	public ChangelogConfigNotFoundTests() : base(
 			// language=markdown
 			"""
 		:::{changelog}
@@ -264,20 +264,20 @@ public class ChangelogConfigNotFoundTests : DirectiveTest<ChangelogBlock>
 			)
 		);
 
-	[Fact]
+	[Test]
 	public void PublishBlockerIsNullWhenNoConfig() => Block!.PublishBlocker.Should().BeNull();
 
-	[Fact]
+	[Test]
 	public void RendersAllEntriesWhenNoConfig() => Html.Should().Contain("Regular feature");
 
-	[Fact]
+	[Test]
 	public void NoErrorsEmittedForMissingConfig() => Collector.Diagnostics.Should().NotContain(d => d.Message.Contains("changelog.yml"));
 }
 
+[InheritsTests]
 public class ChangelogConfigExplicitPathNotFoundTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogConfigExplicitPathNotFoundTests(ITestOutputHelper output) : base(
-			output,
+	public ChangelogConfigExplicitPathNotFoundTests() : base(
 			// language=markdown
 			"""
 		:::{changelog}
@@ -305,21 +305,21 @@ public class ChangelogConfigExplicitPathNotFoundTests : DirectiveTest<ChangelogB
 			)
 		);
 
-	[Fact]
+	[Test]
 	public void PublishBlockerIsNullWhenExplicitConfigNotFound() => Block!.PublishBlocker.Should().BeNull();
 
-	[Fact]
+	[Test]
 	public void EmitsWarningForMissingExplicitConfig() =>
 		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("nonexistent/config.yml") && d.Message.Contains("not found"));
 
-	[Fact]
+	[Test]
 	public void RendersAllEntriesWhenConfigNotFound() => Html.Should().Contain("Regular feature");
 }
 
+[InheritsTests]
 public class ChangelogConfigPriorityTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogConfigPriorityTests(ITestOutputHelper output) : base(
-			output,
+	public ChangelogConfigPriorityTests() : base(
 			// language=markdown
 			"""
 		:::{changelog}
@@ -393,7 +393,7 @@ public class ChangelogConfigPriorityTests : DirectiveTest<ChangelogBlock>
 		);
 	}
 
-	[Fact]
+	[Test]
 	public void RendersAllEntries_NoPublishFiltering()
 	{
 		// Directive does not apply rules.publish; all entries are shown
@@ -403,10 +403,10 @@ public class ChangelogConfigPriorityTests : DirectiveTest<ChangelogBlock>
 	}
 }
 
+[InheritsTests]
 public class ChangelogConfigEmptyBlockTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogConfigEmptyBlockTests(ITestOutputHelper output) : base(
-			output,
+	public ChangelogConfigEmptyBlockTests() : base(
 			// language=markdown
 			"""
 		:::{changelog}
@@ -450,17 +450,17 @@ public class ChangelogConfigEmptyBlockTests : DirectiveTest<ChangelogBlock>
 		);
 	}
 
-	[Fact]
+	[Test]
 	public void PublishBlockerIsNullWhenNoBlockSection() => Block!.PublishBlocker.Should().BeNull();
 
-	[Fact]
+	[Test]
 	public void RendersAllEntriesWhenNoBlockSection() => Html.Should().Contain("Regular feature");
 }
 
+[InheritsTests]
 public class ChangelogConfigMixedBlockersTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogConfigMixedBlockersTests(ITestOutputHelper output) : base(
-			output,
+	public ChangelogConfigMixedBlockersTests() : base(
 			// language=markdown
 			"""
 		:::{changelog}
@@ -536,10 +536,10 @@ public class ChangelogConfigMixedBlockersTests : DirectiveTest<ChangelogBlock>
 		);
 	}
 
-	[Fact]
+	[Test]
 	public void PublishBlockerIsNull() => Block!.PublishBlocker.Should().BeNull();
 
-	[Fact]
+	[Test]
 	public void RendersAllEntries_NoFiltering()
 	{
 		// Directive does not apply rules.publish; all entries are shown
@@ -550,8 +550,8 @@ public class ChangelogConfigMixedBlockersTests : DirectiveTest<ChangelogBlock>
 	}
 }
 
-public class ChangelogProductFallbackSingleProductTests(ITestOutputHelper output) : DirectiveTest<ChangelogBlock>(
-	output,
+[InheritsTests]
+public class ChangelogProductFallbackSingleProductTests() : DirectiveTest<ChangelogBlock>(
 	// language=markdown
 	"""
 		:::{changelog}
@@ -621,10 +621,10 @@ public class ChangelogProductFallbackSingleProductTests(ITestOutputHelper output
 
 	protected override IReadOnlyList<string>? GetDocsetProducts() => ["kibana"];
 
-	[Fact]
+	[Test]
 	public void PublishBlockerIsNull() => Block!.PublishBlocker.Should().BeNull();
 
-	[Fact]
+	[Test]
 	public void RendersAllEntries_NoFiltering()
 	{
 		// Directive does not apply rules.publish; all entries are shown
@@ -634,8 +634,8 @@ public class ChangelogProductFallbackSingleProductTests(ITestOutputHelper output
 	}
 }
 
-public class ChangelogProductFallbackMultipleProductsTests(ITestOutputHelper output) : DirectiveTest<ChangelogBlock>(
-	output,
+[InheritsTests]
+public class ChangelogProductFallbackMultipleProductsTests() : DirectiveTest<ChangelogBlock>(
 	// language=markdown
 	"""
 		:::{changelog}
@@ -696,10 +696,10 @@ public class ChangelogProductFallbackMultipleProductsTests(ITestOutputHelper out
 	// Docset with multiple products - should fall back to global blocker
 	protected override IReadOnlyList<string>? GetDocsetProducts() => ["elasticsearch", "kibana"];
 
-	[Fact]
+	[Test]
 	public void PublishBlockerIsNull() => Block!.PublishBlocker.Should().BeNull();
 
-	[Fact]
+	[Test]
 	public void RendersAllEntries_NoFiltering()
 	{
 		// Directive does not apply rules.publish; all entries are shown
@@ -708,8 +708,8 @@ public class ChangelogProductFallbackMultipleProductsTests(ITestOutputHelper out
 	}
 }
 
-public class ChangelogProductExplicitOptionOverridesDocsetTests(ITestOutputHelper output) : DirectiveTest<ChangelogBlock>(
-	output,
+[InheritsTests]
+public class ChangelogProductExplicitOptionOverridesDocsetTests() : DirectiveTest<ChangelogBlock>(
 	// language=markdown
 	"""
 		:::{changelog}
@@ -781,17 +781,17 @@ public class ChangelogProductExplicitOptionOverridesDocsetTests(ITestOutputHelpe
 	// Docset has kibana as single product, but directive explicitly requests elasticsearch
 	protected override IReadOnlyList<string>? GetDocsetProducts() => ["kibana"];
 
-	[Fact]
+	[Test]
 	public void ExplicitProductOptionIsSet() => Block!.ProductId.Should().Be("elasticsearch");
 
-	[Fact]
+	[Test]
 	public void PublishBlockerIsNull() => Block!.PublishBlocker.Should().BeNull();
 
-	[Fact]
+	[Test]
 	public void EmitsDeprecationWarningForProductOption() =>
 		Collector.Diagnostics.Should().Contain(d => d.Message.Contains(":product:") && d.Message.Contains("deprecated"));
 
-	[Fact]
+	[Test]
 	public void RendersAllEntries_NoFiltering()
 	{
 		// Directive does not apply rules.publish; all entries are shown

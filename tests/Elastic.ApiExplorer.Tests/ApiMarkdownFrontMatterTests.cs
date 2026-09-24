@@ -9,7 +9,7 @@ namespace Elastic.ApiExplorer.Tests;
 
 public class ApiMarkdownFrontMatterTests
 {
-	[Fact]
+	[Test]
 	public void Write_EmitsLlmAndOkfFields()
 	{
 		var markdown = ApiMarkdownFrontMatter.Write(
@@ -35,7 +35,7 @@ public class ApiMarkdownFrontMatterTests
 		markdown.Should().Contain("# Run a search");
 	}
 
-	[Fact]
+	[Test]
 	public void Write_OmitsOptionalKeysWhenMissing()
 	{
 		var markdown = ApiMarkdownFrontMatter.Write("# API Explorer\n", new ApiPageFrontMatter("API Explorer", null, "/api", null));
@@ -50,7 +50,7 @@ public class ApiMarkdownFrontMatterTests
 		markdown.Should().NotContain("applies_to:");
 	}
 
-	[Fact]
+	[Test]
 	public void StripLeadingFrontMatter_RemovesAuthoredYaml()
 	{
 		var source =

@@ -13,12 +13,12 @@ namespace Elastic.SiteSearch.Tests;
 /// </summary>
 public class IndexTimeSynonymsTests
 {
-	[Fact]
+	[Test]
 	public void Docs_ContainsAggAliasRule() => IndexTimeSynonyms.Docs.Should().Contain("agg, aggs => aggregations");
 
-	[Fact]
+	[Test]
 	public void Docs_ContainsEsqlAliasRule() => IndexTimeSynonyms.Docs.Should().Contain("esql, es|ql => esql");
 
-	[Fact]
+	[Test]
 	public void Docs_ContainsDataStreamsAliasRules() => IndexTimeSynonyms.Docs.Should().Contain("data-streams, data streams, datastreams");
 }

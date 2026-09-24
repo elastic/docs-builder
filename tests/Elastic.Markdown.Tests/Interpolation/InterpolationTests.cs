@@ -9,7 +9,7 @@ namespace Elastic.Markdown.Tests.Interpolation;
 
 public class InterpolationTests
 {
-	[Fact]
+	[Test]
 	public void ReplacesVariables()
 	{
 		var span = "My text {{with-variables}} {{not-defined}}".AsSpan();
@@ -20,7 +20,7 @@ public class InterpolationTests
 		replacement.Should().Be("My text With Variables {{not-defined}}");
 	}
 
-	[Fact]
+	[Test]
 	public void OnlyReplacesDefinedVariables()
 	{
 		var span = "My text {{not-defined}}".AsSpan();

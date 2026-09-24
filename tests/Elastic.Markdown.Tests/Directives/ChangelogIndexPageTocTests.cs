@@ -14,8 +14,7 @@ namespace Elastic.Markdown.Tests.Directives;
 /// Mirrors the elastic-cloud-serverless index page: changelog directive at the top, manual release
 /// sections below. Separated-type changelog TOC entries must survive page-level TOC merging.
 /// </summary>
-public class ChangelogIndexPageTocTests(ITestOutputHelper output) : DirectiveTest(
-	output,
+public class ChangelogIndexPageTocTests() : DirectiveTest(
 	// language=markdown
 	"""
 	# Serverless changelog [elastic-cloud-serverless-changelog]
@@ -67,7 +66,7 @@ public class ChangelogIndexPageTocTests(ITestOutputHelper output) : DirectiveTes
 		);
 	}
 
-	[Fact]
+	[Test]
 	public void ChangelogBlockLoadsBundles()
 	{
 		var block = Document.Descendants<ChangelogBlock>().Single();
@@ -75,7 +74,7 @@ public class ChangelogIndexPageTocTests(ITestOutputHelper output) : DirectiveTes
 		block.LoadedBundles.Should().NotBeEmpty();
 	}
 
-	[Fact]
+	[Test]
 	public void PageTableOfContentsIncludesChangelogDeprecations()
 	{
 		var toc = File.PageTableOfContent.Values.ToList();
@@ -85,7 +84,7 @@ public class ChangelogIndexPageTocTests(ITestOutputHelper output) : DirectiveTes
 		toc.Should().Contain(t => t.Slug == "kibana-2026-05-19-deprecations");
 	}
 
-	[Fact]
+	[Test]
 	public void PageTableOfContentsRetainsManualSections()
 	{
 		var toc = File.PageTableOfContent.Values.ToList();

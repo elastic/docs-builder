@@ -6,7 +6,7 @@ using AwesomeAssertions;
 using Elastic.Documentation.AppliesTo;
 using AppliesToRole = Elastic.Markdown.Myst.Roles.AppliesTo.AppliesToRole;
 
-namespace Elastic.Authoring.Tests.Inline.AppliesToRoleTests;
+namespace Elastic.Authoring.Tests.Inline;
 
 public class ParsesInlineAppliesToRole : MarkdownTest
 {
@@ -15,7 +15,7 @@ public class ParsesInlineAppliesToRole : MarkdownTest
 		This is an inline {applies_to}`stack: preview 9.1` element.
 		""";
 
-	[Fact(DisplayName = "parses to AppliesDirective")]
+	[Test, DisplayName("parses to AppliesDirective")]
 	public async Task ParsesToAppliesDirective()
 	{
 		var directives = await Docs.Converts("index.md").Parses<AppliesToRole>();
@@ -23,7 +23,7 @@ public class ParsesInlineAppliesToRole : MarkdownTest
 		await Task.FromResult(directives).AppliesToDirective(new ApplicableTo { Stack = Applies("preview 9.1.0") });
 	}
 
-	[Fact(DisplayName = "validate HTML: generates link and alt attr")]
+	[Test, DisplayName("validate HTML: generates link and alt attr")]
 	public async Task ValidateHtml() =>
 		await Docs.ConvertsToHtml(
 			@"
@@ -44,7 +44,7 @@ public class ParsesNestedEssMoniker : MarkdownTest
 		This is an inline {applies_to}`ess: preview` element.
 		""";
 
-	[Fact(DisplayName = "parses to AppliesDirective")]
+	[Test, DisplayName("parses to AppliesDirective")]
 	public async Task ParsesToAppliesDirective()
 	{
 		var directives = await Docs.Converts("index.md").Parses<AppliesToRole>();
@@ -63,7 +63,7 @@ public class ParsesNestedEchMonikerAsEss : MarkdownTest
 		This is an inline {applies_to}`ech: preview` element.
 		""";
 
-	[Fact(DisplayName = "parses to AppliesDirective")]
+	[Test, DisplayName("parses to AppliesDirective")]
 	public async Task ParsesToAppliesDirective()
 	{
 		var directives = await Docs.Converts("index.md").Parses<AppliesToRole>();
@@ -82,7 +82,7 @@ public class ParsesPreviewShortcut : MarkdownTest
 		This is an inline {preview}`9.1` element.
 		""";
 
-	[Fact(DisplayName = "parses to AppliesDirective")]
+	[Test, DisplayName("parses to AppliesDirective")]
 	public async Task ParsesToAppliesDirective()
 	{
 		var directives = await Docs.Converts("index.md").Parses<AppliesToRole>();
@@ -100,7 +100,7 @@ public class ParsesAppliesToWithoutVersionInTable : MarkdownTest
 		| test | {applies_to}`ece: removed`   |
 		""";
 
-	[Fact(DisplayName = "parses to AppliesDirective")]
+	[Test, DisplayName("parses to AppliesDirective")]
 	public async Task ParsesToAppliesDirective()
 	{
 		var directives = await Docs.Converts("index.md").Parses<AppliesToRole>();
@@ -118,7 +118,7 @@ public class ParsesAppliesToWithTextAfterwards : MarkdownTest
 		{applies_to}`ece: removed` hello world
 		""";
 
-	[Fact(DisplayName = "parses to AppliesDirective")]
+	[Test, DisplayName("parses to AppliesDirective")]
 	public async Task ParsesToAppliesDirective()
 	{
 		var directives = await Docs.Converts("index.md").Parses<AppliesToRole>();
@@ -136,7 +136,7 @@ public class ParsesMultipleAppliesToInOneLine : MarkdownTest
 		{applies_to}`ece: removed` {applies_to}`ece: removed`
 		""";
 
-	[Fact(DisplayName = "parses to AppliesDirective")]
+	[Test, DisplayName("parses to AppliesDirective")]
 	public async Task ParsesToAppliesDirective()
 	{
 		var directives = await Docs.Converts("index.md").Parses<AppliesToRole>();
@@ -155,7 +155,7 @@ public class RenderPreviewForGaInFutureVersion : MarkdownTest
 		This is an inline {applies_to}`stack: preview 8.0, ga 8.1` element.
 		""";
 
-	[Fact(DisplayName = "parses to AppliesDirective")]
+	[Test, DisplayName("parses to AppliesDirective")]
 	public async Task ParsesToAppliesDirective()
 	{
 		var directives = await Docs.Converts("index.md").Parses<AppliesToRole>();
@@ -163,7 +163,7 @@ public class RenderPreviewForGaInFutureVersion : MarkdownTest
 		await Task.FromResult(directives).AppliesToDirective(new ApplicableTo { Stack = Applies("ga 8.1, preview 8.0") });
 	}
 
-	[Fact(DisplayName = "validate HTML: generates single combined badge")]
+	[Test, DisplayName("validate HTML: generates single combined badge")]
 	public async Task ValidateHtml() =>
 		await Docs.ConvertsToHtml(
 			@"

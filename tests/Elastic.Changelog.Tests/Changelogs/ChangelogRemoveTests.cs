@@ -70,7 +70,7 @@ public class ChangelogRemoveTests : ChangelogTestBase
 		  - https://github.com/elastic/elasticsearch/pull/5001
 		""";
 
-	public ChangelogRemoveTests(ITestOutputHelper output) : base(output)
+	public ChangelogRemoveTests() : base()
 	{
 		Service = new ChangelogRemoveService(LoggerFactory, FileSystem);
 		ServiceWithConfig = new ChangelogRemoveService(LoggerFactory, FileSystem, ConfigurationContext);
@@ -87,7 +87,7 @@ public class ChangelogRemoveTests : ChangelogTestBase
 	private async Task WriteFile(string fileName, string content)
 	{
 		var path = FileSystem.Path.Join(_changelogDir, fileName);
-		await FileSystem.File.WriteAllTextAsync(path, content, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(path, content, TestContext.Current!.Execution.CancellationToken);
 	}
 
 	private bool FileExists(string fileName) => FileSystem.File.Exists(FileSystem.Path.Join(_changelogDir, fileName));
@@ -96,7 +96,7 @@ public class ChangelogRemoveTests : ChangelogTestBase
 	// Basic filter tests
 	// ------------------------------------------------------------------
 
-	[Fact]
+	[Test]
 	public async Task Remove_WithAll_DeletesAllFiles()
 	{
 		await WriteFile("1001-es-feature.yaml", ElasticsearchFeatureYaml);
@@ -104,7 +104,7 @@ public class ChangelogRemoveTests : ChangelogTestBase
 
 		var input = new ChangelogRemoveArguments { Directory = _changelogDir, All = true };
 
-		var result = await Service.RemoveChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await Service.RemoveChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		result.Should().BeTrue();
 		Collector.Errors.Should().Be(0);
@@ -112,7 +112,7 @@ public class ChangelogRemoveTests : ChangelogTestBase
 		FileExists("2001-kibana-feature.yaml").Should().BeFalse();
 	}
 
-	[Fact]
+	[Test]
 	public async Task Remove_WithProducts_DeletesMatchingOnly()
 	{
 		await WriteFile("1001-es-feature.yaml", ElasticsearchFeatureYaml);
@@ -124,7 +124,7 @@ public class ChangelogRemoveTests : ChangelogTestBase
 			Products = [new ProductArgument { Product = "elasticsearch", Target = "*", Lifecycle = "*" }]
 		};
 
-		var result = await Service.RemoveChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await Service.RemoveChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		result.Should().BeTrue();
 		Collector.Errors.Should().Be(0);
@@ -132,7 +132,7 @@ public class ChangelogRemoveTests : ChangelogTestBase
 		FileExists("2001-kibana-feature.yaml").Should().BeTrue("Kibana changelog should be kept");
 	}
 
-	[Fact]
+	[Test]
 	public async Task Remove_WithPrs_DeletesMatchingOnly()
 	{
 		await WriteFile("1001-es-feature.yaml", ElasticsearchFeatureYaml);
@@ -144,7 +144,7 @@ public class ChangelogRemoveTests : ChangelogTestBase
 			Prs = ["https://github.com/elastic/elasticsearch/pull/1001"]
 		};
 
-		var result = await Service.RemoveChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await Service.RemoveChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		result.Should().BeTrue();
 		Collector.Errors.Should().Be(0);
@@ -152,7 +152,7 @@ public class ChangelogRemoveTests : ChangelogTestBase
 		FileExists("2001-kibana-feature.yaml").Should().BeTrue("Unmatched changelog should be kept");
 	}
 
-	[Fact]
+	[Test]
 	public async Task Remove_WithIssues_DeletesMatchingOnly()
 	{
 		await WriteFile("1001-es-feature.yaml", ElasticsearchFeatureYaml);
@@ -164,7 +164,7 @@ public class ChangelogRemoveTests : ChangelogTestBase
 			Issues = ["https://github.com/elastic/elasticsearch/issues/9999"]
 		};
 
-		var result = await Service.RemoveChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await Service.RemoveChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		result.Should().BeTrue();
 		Collector.Errors.Should().Be(0);
@@ -176,7 +176,7 @@ public class ChangelogRemoveTests : ChangelogTestBase
 	// Dry-run
 	// ------------------------------------------------------------------
 
-	[Fact]
+	[Test]
 	public async Task Remove_WithDryRun_DoesNotDelete()
 	{
 		await WriteFile("1001-es-feature.yaml", ElasticsearchFeatureYaml);
@@ -184,7 +184,7 @@ public class ChangelogRemoveTests : ChangelogTestBase
 
 		var input = new ChangelogRemoveArguments { Directory = _changelogDir, All = true, DryRun = true };
 
-		var result = await Service.RemoveChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await Service.RemoveChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		result.Should().BeTrue();
 		Collector.Errors.Should().Be(0);
@@ -196,20 +196,20 @@ public class ChangelogRemoveTests : ChangelogTestBase
 	// Validation
 	// ------------------------------------------------------------------
 
-	[Fact]
+	[Test]
 	public async Task Remove_WithNoFilter_EmitsError()
 	{
 		await WriteFile("1001-es-feature.yaml", ElasticsearchFeatureYaml);
 
 		var input = new ChangelogRemoveArguments { Directory = _changelogDir };
 
-		var result = await Service.RemoveChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await Service.RemoveChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		result.Should().BeFalse();
 		Collector.Diagnostics.Should().ContainSingle(d => d.Severity == Severity.Error && d.Message.Contains("At least one filter option"));
 	}
 
-	[Fact]
+	[Test]
 	public async Task Remove_WithMultipleFilters_EmitsError()
 	{
 		await WriteFile("1001-es-feature.yaml", ElasticsearchFeatureYaml);
@@ -221,7 +221,7 @@ public class ChangelogRemoveTests : ChangelogTestBase
 			Prs = ["https://github.com/elastic/elasticsearch/pull/1001"]
 		};
 
-		var result = await Service.RemoveChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await Service.RemoveChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		result.Should().BeFalse();
 		Collector
@@ -230,7 +230,7 @@ public class ChangelogRemoveTests : ChangelogTestBase
 			.ContainSingle(d => d.Severity == Severity.Error && d.Message.Contains("Multiple filter options cannot be specified together"));
 	}
 
-	[Fact]
+	[Test]
 	public async Task Remove_WithNoMatchingChangelogs_EmitsError()
 	{
 		await WriteFile("2001-kibana-feature.yaml", KibanaFeatureYaml);
@@ -241,7 +241,7 @@ public class ChangelogRemoveTests : ChangelogTestBase
 			Products = [new ProductArgument { Product = "elasticsearch", Target = "*", Lifecycle = "*" }]
 		};
 
-		var result = await Service.RemoveChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await Service.RemoveChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		result.Should().BeFalse();
 		Collector
@@ -254,7 +254,7 @@ public class ChangelogRemoveTests : ChangelogTestBase
 	// Bundles never gate removal (bundles are self-contained)
 	// ------------------------------------------------------------------
 
-	[Fact]
+	[Test]
 	public async Task Remove_WhenBundleCarriesFileProvenance_DeletesWithoutGate()
 	{
 		await WriteFile("1001-es-feature.yaml", ElasticsearchFeatureYaml);
@@ -279,12 +279,12 @@ public class ChangelogRemoveTests : ChangelogTestBase
 			    name: 1001-es-feature.yaml
 			    checksum: {checksum}
 			""",
-			TestContext.Current.CancellationToken
+			TestContext.Current!.Execution.CancellationToken
 		);
 
 		var input = new ChangelogRemoveArguments { Directory = _changelogDir, All = true };
 
-		var result = await Service.RemoveChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await Service.RemoveChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		result.Should().BeTrue("bundles are self-contained; removal is never blocked by them");
 		Collector.Errors.Should().Be(0);
@@ -295,7 +295,7 @@ public class ChangelogRemoveTests : ChangelogTestBase
 	// Profile-based removal tests
 	// ------------------------------------------------------------------
 
-	[Fact]
+	[Test]
 	public async Task Remove_WithProfileAndVersion_DeletesMatchingProducts()
 	{
 		// Arrange — two changelogs for elasticsearch 9.3.0 ga, one for elasticsearch 9.2.0 ga.
@@ -316,7 +316,7 @@ public class ChangelogRemoveTests : ChangelogTestBase
 
 		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog.yml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
-		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current!.Execution.CancellationToken);
 
 		var input = new ChangelogRemoveArguments
 		{
@@ -326,7 +326,7 @@ public class ChangelogRemoveTests : ChangelogTestBase
 			Config = configPath
 		};
 
-		var result = await ServiceWithConfig.RemoveChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await ServiceWithConfig.RemoveChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		result.Should().BeTrue(
 			$"Expected removal to succeed, but got errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}"
@@ -339,7 +339,7 @@ public class ChangelogRemoveTests : ChangelogTestBase
 		FileExists("1002-es-bugfix.yaml").Should().BeTrue("Non-matching file should remain");
 	}
 
-	[Fact]
+	[Test]
 	public async Task Remove_WithProfileAndPromotionReport_DeletesMatchingPrs()
 	{
 		// Arrange — write two changelogs and a promotion report file that mentions only the first PR
@@ -348,7 +348,7 @@ public class ChangelogRemoveTests : ChangelogTestBase
 
 		var reportContent = "<html><body>https://github.com/elastic/elasticsearch/pull/1001</body></html>";
 		var reportPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, $"report-{Guid.NewGuid()}.html");
-		await FileSystem.File.WriteAllTextAsync(reportPath, reportContent, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(reportPath, reportContent, TestContext.Current!.Execution.CancellationToken);
 
 		// language=yaml
 		var configContent =
@@ -361,7 +361,7 @@ public class ChangelogRemoveTests : ChangelogTestBase
 
 		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog.yml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
-		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current!.Execution.CancellationToken);
 
 		var input = new ChangelogRemoveArguments
 		{
@@ -371,7 +371,7 @@ public class ChangelogRemoveTests : ChangelogTestBase
 			Config = configPath
 		};
 
-		var result = await ServiceWithConfig.RemoveChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await ServiceWithConfig.RemoveChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		result.Should().BeTrue(
 			$"Expected removal to succeed, but got errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}"
@@ -381,7 +381,7 @@ public class ChangelogRemoveTests : ChangelogTestBase
 		FileExists("2001-kibana-feature.yaml").Should().BeTrue("Non-matched file should remain");
 	}
 
-	[Fact]
+	[Test]
 	public async Task Remove_WithProfile_UnknownProfile_ReturnsError()
 	{
 		await WriteFile("1001-es-feature.yaml", ElasticsearchFeatureYaml);
@@ -397,7 +397,7 @@ public class ChangelogRemoveTests : ChangelogTestBase
 
 		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog.yml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
-		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current!.Execution.CancellationToken);
 
 		var input = new ChangelogRemoveArguments
 		{
@@ -407,7 +407,7 @@ public class ChangelogRemoveTests : ChangelogTestBase
 			Config = configPath
 		};
 
-		var result = await ServiceWithConfig.RemoveChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await ServiceWithConfig.RemoveChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		result.Should().BeFalse();
 		Collector
@@ -418,7 +418,7 @@ public class ChangelogRemoveTests : ChangelogTestBase
 			);
 	}
 
-	[Fact]
+	[Test]
 	public async Task Remove_WithProfile_MissingProfileArg_ReturnsError()
 	{
 		await WriteFile("1001-es-feature.yaml", ElasticsearchFeatureYaml);
@@ -434,7 +434,7 @@ public class ChangelogRemoveTests : ChangelogTestBase
 
 		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog.yml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
-		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current!.Execution.CancellationToken);
 
 		var input = new ChangelogRemoveArguments
 		{
@@ -444,7 +444,7 @@ public class ChangelogRemoveTests : ChangelogTestBase
 			Config = configPath
 		};
 
-		var result = await ServiceWithConfig.RemoveChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await ServiceWithConfig.RemoveChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		result.Should().BeFalse();
 		Collector
@@ -455,7 +455,7 @@ public class ChangelogRemoveTests : ChangelogTestBase
 			);
 	}
 
-	[Fact]
+	[Test]
 	public async Task Remove_WithProfileMode_MissingConfig_ReturnsErrorWithAdvice()
 	{
 		// Arrange - no config file exists at ./changelog.yml or ./docs/changelog.yml.
@@ -472,7 +472,7 @@ public class ChangelogRemoveTests : ChangelogTestBase
 		};
 
 		// Act
-		var result = await service.RemoveChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await service.RemoveChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		result.Should().BeFalse("Should fail when no config file is found");
@@ -485,7 +485,7 @@ public class ChangelogRemoveTests : ChangelogTestBase
 			);
 	}
 
-	[Fact]
+	[Test]
 	public async Task Remove_WithProfile_NoProductsAndVersionArg_ReturnsSpecificError()
 	{
 		// Profile has no products pattern; passing a version (not a promotion report) should emit
@@ -503,7 +503,7 @@ public class ChangelogRemoveTests : ChangelogTestBase
 
 		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog.yml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
-		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current!.Execution.CancellationToken);
 
 		var input = new ChangelogRemoveArguments
 		{
@@ -513,7 +513,7 @@ public class ChangelogRemoveTests : ChangelogTestBase
 			Config = configPath
 		};
 
-		var result = await ServiceWithConfig.RemoveChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await ServiceWithConfig.RemoveChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		result.Should().BeFalse();
 		Collector
@@ -528,7 +528,7 @@ public class ChangelogRemoveTests : ChangelogTestBase
 
 	// ─── Phase 3: URL list file support for remove ──────────────────────────────────
 
-	[Fact]
+	[Test]
 	public async Task Remove_WithProfile_UrlListFile_PrUrls_RemovesMatchedFiles()
 	{
 		await WriteFile("1001-es-feature.yaml", ElasticsearchFeatureYaml);
@@ -543,7 +543,7 @@ public class ChangelogRemoveTests : ChangelogTestBase
 
 		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog.yml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
-		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current!.Execution.CancellationToken);
 
 		// URL file contains only the ES PR
 		var urlFile = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "prs.txt");
@@ -551,7 +551,7 @@ public class ChangelogRemoveTests : ChangelogTestBase
 		await FileSystem.File.WriteAllTextAsync(
 			urlFile,
 			"https://github.com/elastic/elasticsearch/pull/1001\n",
-			TestContext.Current.CancellationToken
+			TestContext.Current!.Execution.CancellationToken
 		);
 
 		var input = new ChangelogRemoveArguments
@@ -563,7 +563,7 @@ public class ChangelogRemoveTests : ChangelogTestBase
 			DryRun = true
 		};
 
-		var result = await ServiceWithConfig.RemoveChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await ServiceWithConfig.RemoveChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		result.Should().BeTrue($"Errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}");
 		Collector.Errors.Should().Be(0);
@@ -576,7 +576,7 @@ public class ChangelogRemoveTests : ChangelogTestBase
 			.BeTrue("dry-run should not delete files");
 	}
 
-	[Fact]
+	[Test]
 	public async Task Remove_WithProfile_CombinedVersionAndReport_UsesReportForFiltering()
 	{
 		await WriteFile("1001-es-feature.yaml", ElasticsearchFeatureYaml);
@@ -591,14 +591,14 @@ public class ChangelogRemoveTests : ChangelogTestBase
 
 		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog.yml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
-		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current!.Execution.CancellationToken);
 
 		var urlFile = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "prs.txt");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(urlFile)!);
 		await FileSystem.File.WriteAllTextAsync(
 			urlFile,
 			"https://github.com/elastic/elasticsearch/pull/1001\n",
-			TestContext.Current.CancellationToken
+			TestContext.Current!.Execution.CancellationToken
 		);
 
 		var input = new ChangelogRemoveArguments
@@ -613,7 +613,7 @@ public class ChangelogRemoveTests : ChangelogTestBase
 			DryRun = true
 		};
 
-		var result = await ServiceWithConfig.RemoveChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await ServiceWithConfig.RemoveChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		result.Should().BeTrue($"Errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}");
 		Collector.Errors.Should().Be(0);
@@ -621,7 +621,7 @@ public class ChangelogRemoveTests : ChangelogTestBase
 
 	// ─── Phase 4: --report option for option-based remove ────────────────────────────
 
-	[Fact]
+	[Test]
 	public async Task Remove_WithReportOption_ParsesPromotionReportAndFilters()
 	{
 		await WriteFile("1001-es-feature.yaml", ElasticsearchFeatureYaml);
@@ -635,11 +635,11 @@ public class ChangelogRemoveTests : ChangelogTestBase
 			""";
 		var reportFile = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "report.html");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(reportFile)!);
-		await FileSystem.File.WriteAllTextAsync(reportFile, htmlReport, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(reportFile, htmlReport, TestContext.Current!.Execution.CancellationToken);
 
 		var input = new ChangelogRemoveArguments { Directory = _changelogDir, Report = reportFile, DryRun = true };
 
-		var result = await Service.RemoveChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await Service.RemoveChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		result.Should().BeTrue($"Errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}");
 		Collector.Errors.Should().Be(0);
@@ -649,7 +649,7 @@ public class ChangelogRemoveTests : ChangelogTestBase
 	// bundle.repo / bundle.owner config defaults (PR #2791 awareness)
 	// ------------------------------------------------------------------
 
-	[Fact]
+	[Test]
 	public async Task Remove_WithBundleOwnerConfig_UsesConfigOwnerWhenOptionNotSpecified()
 	{
 		// Arrange – changelog references PR as a number; owner must be resolved from config to build URL
@@ -677,7 +677,7 @@ public class ChangelogRemoveTests : ChangelogTestBase
 
 		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog.yml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
-		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current!.Execution.CancellationToken);
 
 		var input = new ChangelogRemoveArguments
 		{
@@ -688,7 +688,7 @@ public class ChangelogRemoveTests : ChangelogTestBase
 		};
 
 		// Act
-		var result = await ServiceWithConfig.RemoveChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await ServiceWithConfig.RemoveChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert – file was matched and removed using the config owner/repo
 		result.Should().BeTrue();
@@ -696,7 +696,7 @@ public class ChangelogRemoveTests : ChangelogTestBase
 		FileExists("pr-42.yaml").Should().BeFalse("changelog should be removed when PR URL matches");
 	}
 
-	[Fact]
+	[Test]
 	public async Task Remove_WithBundleRepoConfig_UsesConfigRepoWhenOptionNotSpecified()
 	{
 		// Arrange – changelog references a PR in myorg/myrepo; service should pick up repo from config
@@ -724,7 +724,7 @@ public class ChangelogRemoveTests : ChangelogTestBase
 
 		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog.yml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
-		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current!.Execution.CancellationToken);
 
 		var input = new ChangelogRemoveArguments
 		{
@@ -735,7 +735,7 @@ public class ChangelogRemoveTests : ChangelogTestBase
 		};
 
 		// Act
-		var result = await ServiceWithConfig.RemoveChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await ServiceWithConfig.RemoveChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		result.Should().BeTrue();
@@ -743,7 +743,7 @@ public class ChangelogRemoveTests : ChangelogTestBase
 		FileExists("pr-55.yaml").Should().BeFalse("changelog matched by PR URL should be removed");
 	}
 
-	[Fact]
+	[Test]
 	public async Task Remove_WithBundleOwnerConfig_CliOwnerTakesPrecedence()
 	{
 		// A CLI --owner value must override the bundle.owner setting in config.
@@ -758,7 +758,7 @@ public class ChangelogRemoveTests : ChangelogTestBase
 
 		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog.yml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
-		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current!.Execution.CancellationToken);
 
 		// Use the actual PR URL in the changelog content so the PR URL filter matches
 		var input = new ChangelogRemoveArguments
@@ -772,7 +772,7 @@ public class ChangelogRemoveTests : ChangelogTestBase
 		};
 
 		// Act
-		var result = await ServiceWithConfig.RemoveChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await ServiceWithConfig.RemoveChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert – CLI owner was used, matching the actual PR URL in the changelog
 		result.Should().BeTrue();
@@ -782,7 +782,7 @@ public class ChangelogRemoveTests : ChangelogTestBase
 
 	// ─── --files / path-list filter ─────────────────────────────────────────────────
 
-	[Fact]
+	[Test]
 	public async Task Remove_WithFiles_DeletesOnlyNamedFiles()
 	{
 		await WriteFile("1001-es-feature.yaml", ElasticsearchFeatureYaml);
@@ -791,14 +791,14 @@ public class ChangelogRemoveTests : ChangelogTestBase
 		var keepPath = FileSystem.Path.Join(_changelogDir, "1001-es-feature.yaml");
 		var input = new ChangelogRemoveArguments { Directory = _changelogDir, Files = [keepPath] };
 
-		var result = await Service.RemoveChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await Service.RemoveChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		result.Should().BeTrue($"Errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}");
 		FileExists("1001-es-feature.yaml").Should().BeFalse();
 		FileExists("2001-kibana-feature.yaml").Should().BeTrue();
 	}
 
-	[Fact]
+	[Test]
 	public async Task Remove_WithProfile_PathListFile_RemovesListedFiles()
 	{
 		await WriteFile("1001-es-feature.yaml", ElasticsearchFeatureYaml);
@@ -813,11 +813,11 @@ public class ChangelogRemoveTests : ChangelogTestBase
 			""";
 		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog.yml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
-		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current!.Execution.CancellationToken);
 
 		var listFile = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "files.txt");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(listFile)!);
-		await FileSystem.File.WriteAllTextAsync(listFile, "1001-es-feature.yaml\n", TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(listFile, "1001-es-feature.yaml\n", TestContext.Current!.Execution.CancellationToken);
 
 		var input = new ChangelogRemoveArguments
 		{
@@ -827,7 +827,7 @@ public class ChangelogRemoveTests : ChangelogTestBase
 			ProfileReport = listFile
 		};
 
-		var result = await ServiceWithConfig.RemoveChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await ServiceWithConfig.RemoveChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		result.Should().BeTrue($"Errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}");
 		FileExists("1001-es-feature.yaml").Should().BeFalse();

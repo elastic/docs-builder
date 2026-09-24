@@ -49,13 +49,13 @@ public class VersionIndexPublisherTests
 			ResponseStream = new MemoryStream(Encoding.UTF8.GetBytes(body))
 		});
 
-	[Fact]
+	[Test]
 	public async Task RefreshAsync_NoPublishedIndex_CreatesWithIfNoneMatch()
 	{
 		GivenBucketContains("elastic/elasticsearch/8.16/openapi.json");
 		GivenNoPublishedIndex();
 
-		await CreatePublisher().RefreshAsync(TestContext.Current.CancellationToken);
+		await CreatePublisher().RefreshAsync(TestContext.Current!.Execution.CancellationToken);
 
 		var put = _puts.Should().ContainSingle().Subject;
 		put.BucketName.Should().Be(BucketName);
@@ -65,13 +65,13 @@ public class VersionIndexPublisherTests
 		put.ContentBody.Should().Be(Index816Json);
 	}
 
-	[Fact]
+	[Test]
 	public async Task RefreshAsync_PublishedIndexIsStale_UpdatesWithIfMatch()
 	{
 		GivenBucketContains("elastic/elasticsearch/8.17/openapi.json");
 		GivenPublishedIndex(Index816Json, "\"stale-etag\"");
 
-		await CreatePublisher().RefreshAsync(TestContext.Current.CancellationToken);
+		await CreatePublisher().RefreshAsync(TestContext.Current!.Execution.CancellationToken);
 
 		var put = _puts.Should().ContainSingle().Subject;
 		put.IfMatch.Should().Be("\"stale-etag\"");
@@ -79,18 +79,18 @@ public class VersionIndexPublisherTests
 		put.ContentBody.Should().Contain("8.17");
 	}
 
-	[Fact]
+	[Test]
 	public async Task RefreshAsync_RebuildMatchesPublishedIndexByteForByte_SkipsWrite()
 	{
 		GivenBucketContains("elastic/elasticsearch/8.16/openapi.json");
 		GivenPublishedIndex(Index816Json);
 
-		await CreatePublisher().RefreshAsync(TestContext.Current.CancellationToken);
+		await CreatePublisher().RefreshAsync(TestContext.Current!.Execution.CancellationToken);
 
 		_puts.Should().BeEmpty();
 	}
 
-	[Fact]
+	[Test]
 	public async Task RefreshAsync_ConditionalWriteConflict_ThrowsWithoutRetrying()
 	{
 		// A conflict means another invocation updated index.json concurrently. RefreshAsync does not retry
@@ -102,36 +102,36 @@ public class VersionIndexPublisherTests
 			StatusCode = HttpStatusCode.PreconditionFailed
 		});
 
-		var act = () => CreatePublisher().RefreshAsync(TestContext.Current.CancellationToken);
+		var act = () => CreatePublisher().RefreshAsync(TestContext.Current!.Execution.CancellationToken);
 
 		await act.Should().ThrowAsync<AmazonS3Exception>();
 		A.CallTo(() => _s3Client.PutObjectAsync(A<PutObjectRequest>._, A<Cancel>._)).MustHaveHappenedOnceExactly();
 	}
 
-	[Fact]
+	[Test]
 	public async Task RefreshAsync_KeyOfUnexpectedShape_IsReturnedAndTheRestIndexed()
 	{
 		GivenBucketContains("elastic/elasticsearch/8.16/openapi.json", "not-a-valid-key");
 		GivenNoPublishedIndex();
 
-		var ignoredKeys = await CreatePublisher().RefreshAsync(TestContext.Current.CancellationToken);
+		var ignoredKeys = await CreatePublisher().RefreshAsync(TestContext.Current!.Execution.CancellationToken);
 
 		ignoredKeys.Should().ContainSingle().Which.Should().Be("not-a-valid-key");
 		_puts.Should().ContainSingle().Which.ContentBody.Should().Contain("8.16");
 	}
 
-	[Fact]
+	[Test]
 	public async Task RefreshAsync_IndexKeyItselfInListing_IsExcludedFromRebuild()
 	{
 		GivenBucketContains("elastic/elasticsearch/8.16/openapi.json", VersionIndexPublisher.IndexKey);
 		GivenNoPublishedIndex();
 
-		var ignoredKeys = await CreatePublisher().RefreshAsync(TestContext.Current.CancellationToken);
+		var ignoredKeys = await CreatePublisher().RefreshAsync(TestContext.Current!.Execution.CancellationToken);
 
 		ignoredKeys.Should().BeEmpty();
 	}
 
-	[Fact]
+	[Test]
 	public async Task RefreshAsync_PaginatedListing_CombinesAllPages()
 	{
 		A.CallTo(
@@ -151,7 +151,7 @@ public class VersionIndexPublisherTests
 		});
 		GivenNoPublishedIndex();
 
-		await CreatePublisher().RefreshAsync(TestContext.Current.CancellationToken);
+		await CreatePublisher().RefreshAsync(TestContext.Current!.Execution.CancellationToken);
 
 		var put = _puts.Should().ContainSingle().Subject;
 		put.ContentBody.Should().Contain("elasticsearch").And.Contain("kibana");

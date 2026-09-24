@@ -9,7 +9,7 @@ namespace Elastic.Documentation.Tests.Diagnostics;
 
 public class FilelessDiagnosticClassifierTests
 {
-	[Fact]
+	[Test]
 	public void LooksLikeException_ErrorWithExceptionDump_IsTrue()
 	{
 		var diagnostic = new Diagnostic
@@ -22,7 +22,7 @@ public class FilelessDiagnosticClassifierTests
 		FilelessDiagnosticClassifier.LooksLikeException(diagnostic).Should().BeTrue();
 	}
 
-	[Fact]
+	[Test]
 	public void LooksLikeException_OrdinaryError_IsFalse()
 	{
 		var diagnostic = new Diagnostic
@@ -35,7 +35,7 @@ public class FilelessDiagnosticClassifierTests
 		FilelessDiagnosticClassifier.LooksLikeException(diagnostic).Should().BeFalse();
 	}
 
-	[Fact]
+	[Test]
 	public void LooksLikeException_WarningContainingExceptionWord_IsFalse()
 	{
 		var diagnostic = new Diagnostic
@@ -48,7 +48,7 @@ public class FilelessDiagnosticClassifierTests
 		FilelessDiagnosticClassifier.LooksLikeException(diagnostic).Should().BeFalse();
 	}
 
-	[Fact]
+	[Test]
 	public void Group_SplitsFilelessDiagnosticsBySeverityAndException()
 	{
 		var exception = new Diagnostic
@@ -71,7 +71,7 @@ public class FilelessDiagnosticClassifierTests
 		groups.IsEmpty.Should().BeFalse();
 	}
 
-	[Fact]
+	[Test]
 	public void Group_EmptyWhenAllDiagnosticsAreFileAnchored()
 	{
 		var groups = FilelessDiagnosticClassifier.Group([
