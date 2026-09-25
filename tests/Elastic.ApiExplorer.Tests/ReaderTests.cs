@@ -68,12 +68,16 @@ public class ReaderTests
 	}
 
 	[Test]
-	public async Task ReadsSwagger20WithInvalidHost_EmitsError()
+	[Arguments("not valid host")]
+	[Arguments("api{{prod.example.com")] // opening brace only — not a complete template placeholder
+
+	[Arguments("{{hostname}}suffix")] // does not end with }}
+
+	public async Task ReadsSwagger20WithInvalidHost_EmitsError(string host)
 	{
-		// A genuinely malformed host (whitespace, embedded scheme, etc.) must remain a hard
-		// error. Only template placeholders ({{...}}) should be downgraded to warnings.
-		const string spec = /*lang=json,strict*/
-			"""{"swagger":"2.0","info":{"title":"T","version":"1"},"host":"not valid host","basePath":"/","paths":{}}""";
+		// Genuinely malformed hosts must remain hard errors. Only a host value that is itself
+		// a complete {{...}} template placeholder (starts with {{ and ends with }}) is downgraded.
+		var spec = $$$"""{"swagger":"2.0","info":{"title":"T","version":"1"},"host":"{{{host}}}","basePath":"/","paths":{}}""";
 		var stream = new MemoryStream(Encoding.UTF8.GetBytes(spec));
 		var collector = new DiagnosticsCollector([]);
 

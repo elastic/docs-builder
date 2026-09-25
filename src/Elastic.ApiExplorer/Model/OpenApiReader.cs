@@ -105,7 +105,9 @@ public sealed class OpenApiReader : IOpenApiSpecificationReader
 			using var doc = JsonDocument.Parse(jsonStream);
 			return doc.RootElement.TryGetProperty("host", out var hostElement)
 				&& hostElement.ValueKind == JsonValueKind.String
-				&& hostElement.GetString()?.Contains("{{") == true;
+				&& hostElement.GetString() is { } host
+				&& host.StartsWith("{{")
+				&& host.EndsWith("}}");
 		}
 		catch
 		{
