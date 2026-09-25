@@ -68,6 +68,27 @@ public class ReaderTests
 	}
 
 	[Test]
+	[Arguments("not valid host")]
+	[Arguments("api{{prod.example.com")] // opening brace only — not a complete template placeholder
+
+	[Arguments("{{hostname}}suffix")] // does not end with }}
+
+	public async Task ReadsSwagger20WithInvalidHost_EmitsError(string host)
+	{
+		// Genuinely malformed hosts must remain hard errors. Only a host value that is itself
+		// a complete {{...}} template placeholder (starts with {{ and ends with }}) is downgraded.
+		var spec = $$$"""{"swagger":"2.0","info":{"title":"T","version":"1"},"host":"{{{host}}}","basePath":"/","paths":{}}""";
+		var stream = new MemoryStream(Encoding.UTF8.GetBytes(spec));
+		var collector = new DiagnosticsCollector([]);
+
+		var document = await OpenApiReader.Instance.ReadAsync(stream, "spec.json", collector);
+
+		document.Should().NotBeNull();
+		collector.Errors.Should().BeGreaterThan(0, "a non-placeholder invalid host must remain a hard error");
+		collector.Warnings.Should().Be(0);
+	}
+
+	[Test]
 	public async Task ReadAsync_Yaml_QuotedNumericVersion_NotCoercedToNumber()
 	{
 		// Regression: a quoted "2.0" YAML scalar was coerced to the JSON number 2 by WriteScalar,
@@ -80,6 +101,29 @@ public class ReaderTests
 
 		doc.Should().NotBeNull("a quoted '2.0' YAML scalar must not be coerced to the JSON number 2");
 		doc!.Info.Title.Should().Be("QuotedVersion");
+	}
+
+	[Test]
+	[Arguments("ece-template-host.json")]
+	[Arguments("ece-template-host.yaml")]
+	public async Task ReadsSwagger20WithTemplateHost_EmitsWarningNotError(string fixture)
+	{
+		// Swagger 2.0 specs such as the ECE API use {{hostname}} as a placeholder value.
+		// Microsoft.OpenApi treats that as an invalid host, but the document still parses
+		// correctly. The reader must downgrade this to a warning so generation is not blocked.
+		// Both JSON and YAML variants are tested because the YAML path converts to JSON first.
+		var path = Path.Combine(AppContext.BaseDirectory, "TestData", fixture);
+		var fileSystem = new FileSystem();
+		var fileInfo = fileSystem.FileInfo.New(path);
+		var collector = new DiagnosticsCollector([]);
+
+		var document = await OpenApiReader.Instance.ReadAsync(fileInfo, collector);
+
+		document.Should().NotBeNull();
+		document!.Info.Title.Should().Be("Elastic Cloud Enterprise API");
+		document.Paths.Should().ContainKey("/account");
+		collector.Errors.Should().Be(0, "an invalid-host placeholder must not be treated as a hard error");
+		collector.Warnings.Should().BeGreaterThan(0, "the invalid-host diagnostic must be emitted as a warning");
 	}
 
 	[Test]
