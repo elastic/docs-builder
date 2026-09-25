@@ -107,13 +107,12 @@ public record BundleProfile
 	public string? Products { get; init; }
 
 	/// <summary>
-	/// Legacy output filename pattern. No longer supported: bundle output names are derived by
+	/// Legacy output filename pattern. Deprecated: bundle output names are derived by
 	/// convention as <c>{repo}-{product}-{version}.yaml</c> from the authoring repo and the profile's
-	/// primary output product (elastic/docs-builder#3774). Any profile setting this is a hard error
-	/// at bundle time; the field remains parseable for one release cycle so authors get an actionable
-	/// error rather than a YAML parse failure.
+	/// primary output product (elastic/docs-builder#3774). The field remains parseable so existing
+	/// configs load; the value is ignored and a load-time warning asks authors to remove it.
 	/// </summary>
-	[Obsolete("No longer supported: bundle output names are derived by convention as '{repo}-{product}-{version}.yaml' from the authoring repo and the profile's output_products. Setting 'output' is a hard error at bundle time.")]
+	[Obsolete("Deprecated: bundle output names are derived by convention as '{repo}-{product}-{version}.yaml' from the authoring repo and the profile's output_products. Remove this field.")]
 	public string? Output { get; init; }
 
 	/// <summary>
