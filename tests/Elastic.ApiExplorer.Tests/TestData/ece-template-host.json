@@ -1,0 +1,42 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "Elastic Cloud Enterprise API",
+    "version": "1",
+    "description": "NOTE: In this documentation, `{{hostname}}` refers to the coordinating host."
+  },
+  "host": "{{hostname}}",
+  "basePath": "/api/v1",
+  "schemes": ["https"],
+  "security": [{ "basicAuth": [] }, { "apiKey": [] }],
+  "securityDefinitions": {
+    "apiKey": { "type": "apiKey", "name": "Authorization", "in": "header" },
+    "basicAuth": { "type": "basic" }
+  },
+  "paths": {
+    "/account": {
+      "get": {
+        "operationId": "get-current-account",
+        "summary": "Fetch current account information",
+        "description": "Fetch current account information.",
+        "tags": ["Accounts"],
+        "produces": ["application/json"],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Account fetched successfully",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "id": { "type": "string" }
+              }
+            }
+          },
+          "404": {
+            "description": "Account not found. (code: `accounts.not_found`)"
+          }
+        }
+      }
+    }
+  }
+}

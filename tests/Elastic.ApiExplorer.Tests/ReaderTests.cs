@@ -83,6 +83,26 @@ public class ReaderTests
 	}
 
 	[Test]
+	public async Task ReadsSwagger20WithTemplateHost_EmitsWarningNotError()
+	{
+		// Swagger 2.0 specs such as the ECE API use {{hostname}} as a placeholder value.
+		// Microsoft.OpenApi treats that as an invalid host, but the document still parses
+		// correctly. The reader must downgrade this to a warning so generation is not blocked.
+		var path = Path.Combine(AppContext.BaseDirectory, "TestData", "ece-template-host.json");
+		var fileSystem = new FileSystem();
+		var fileInfo = fileSystem.FileInfo.New(path);
+		var collector = new DiagnosticsCollector([]);
+
+		var document = await OpenApiReader.Instance.ReadAsync(fileInfo, collector);
+
+		document.Should().NotBeNull();
+		document!.Info.Title.Should().Be("Elastic Cloud Enterprise API");
+		document.Paths.Should().ContainKey("/account");
+		collector.Errors.Should().Be(0, "an invalid-host placeholder must not be treated as a hard error");
+		collector.Warnings.Should().BeGreaterThan(0, "the invalid-host diagnostic must be emitted as a warning");
+	}
+
+	[Test]
 	public async Task Navigation()
 	{
 		var collector = new DiagnosticsCollector([]);
