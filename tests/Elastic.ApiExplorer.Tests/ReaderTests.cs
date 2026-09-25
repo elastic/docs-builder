@@ -100,12 +100,15 @@ public class ReaderTests
 	}
 
 	[Test]
-	public async Task ReadsSwagger20WithTemplateHost_EmitsWarningNotError()
+	[Arguments("ece-template-host.json")]
+	[Arguments("ece-template-host.yaml")]
+	public async Task ReadsSwagger20WithTemplateHost_EmitsWarningNotError(string fixture)
 	{
 		// Swagger 2.0 specs such as the ECE API use {{hostname}} as a placeholder value.
 		// Microsoft.OpenApi treats that as an invalid host, but the document still parses
 		// correctly. The reader must downgrade this to a warning so generation is not blocked.
-		var path = Path.Combine(AppContext.BaseDirectory, "TestData", "ece-template-host.json");
+		// Both JSON and YAML variants are tested because the YAML path converts to JSON first.
+		var path = Path.Combine(AppContext.BaseDirectory, "TestData", fixture);
 		var fileSystem = new FileSystem();
 		var fileInfo = fileSystem.FileInfo.New(path);
 		var collector = new DiagnosticsCollector([]);
