@@ -25,6 +25,7 @@ public class ApiSitemapParityTests
 		client.DefaultRequestHeaders.UserAgent.ParseAdd("docs-builder-api-sitemap-parity-test");
 
 		var productionUrls = await DownloadPageUrls(client, SitemapIndex, cancellationToken);
+		await Assert.That(productionUrls).IsNotEmpty();
 		var auditedUrls = productionUrls.Where(
 			url => !url.AbsolutePath.StartsWith(DiscontinuedObservabilityServerlessPath, StringComparison.Ordinal)
 		).ToArray();
@@ -51,9 +52,16 @@ public class ApiSitemapParityTests
 	{
 		await using var stream = await client.GetStreamAsync(sitemap, ctx);
 		var document = await XDocument.LoadAsync(stream, LoadOptions.None, ctx);
+		var rootName = document.Root?.Name;
+
+		if (rootName != SitemapNamespace + "urlset" && rootName != SitemapNamespace + "sitemapindex")
+			throw new InvalidOperationException(
+				$"Unexpected XML at {sitemap}: root element '{rootName}' is not a sitemap urlset or sitemapindex in namespace '{SitemapNamespace}'."
+			);
+
 		var locations = document.Descendants(SitemapNamespace + "loc").Select(element => new Uri(element.Value)).ToArray();
 
-		if (document.Root?.Name == SitemapNamespace + "urlset")
+		if (rootName == SitemapNamespace + "urlset")
 			return locations.ToHashSet();
 
 		var pages = new HashSet<Uri>();
