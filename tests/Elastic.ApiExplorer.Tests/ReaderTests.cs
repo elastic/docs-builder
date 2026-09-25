@@ -68,6 +68,23 @@ public class ReaderTests
 	}
 
 	[Test]
+	public async Task ReadsSwagger20WithInvalidHost_EmitsError()
+	{
+		// A genuinely malformed host (whitespace, embedded scheme, etc.) must remain a hard
+		// error. Only template placeholders ({{...}}) should be downgraded to warnings.
+		const string spec = /*lang=json,strict*/
+			"""{"swagger":"2.0","info":{"title":"T","version":"1"},"host":"not valid host","basePath":"/","paths":{}}""";
+		var stream = new MemoryStream(Encoding.UTF8.GetBytes(spec));
+		var collector = new DiagnosticsCollector([]);
+
+		var document = await OpenApiReader.Instance.ReadAsync(stream, "spec.json", collector);
+
+		document.Should().NotBeNull();
+		collector.Errors.Should().BeGreaterThan(0, "a non-placeholder invalid host must remain a hard error");
+		collector.Warnings.Should().Be(0);
+	}
+
+	[Test]
 	public async Task ReadAsync_Yaml_QuotedNumericVersion_NotCoercedToNumber()
 	{
 		// Regression: a quoted "2.0" YAML scalar was coerced to the JSON number 2 by WriteScalar,

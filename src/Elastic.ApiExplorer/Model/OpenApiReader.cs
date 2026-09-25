@@ -56,13 +56,22 @@ public sealed class OpenApiReader : IOpenApiSpecificationReader
 		var settings = new OpenApiReaderSettings { LeaveStreamOpen = false, RuleSet = ValidationRuleSet.GetEmptyRuleSet() };
 
 		ReadResult result;
+		bool hasTemplatePlaceholderHost;
+
 		if (IsJsonFileName(specFileName))
 		{
-			result = await OpenApiDocument.LoadAsync(stream, settings: settings);
+			// Buffer so the host value can be inspected before loading.
+			var buffered = new MemoryStream();
+			await stream.CopyToAsync(buffered).ConfigureAwait(false);
+			await stream.DisposeAsync().ConfigureAwait(false);
+			hasTemplatePlaceholderHost = HasTemplatePlaceholderHost(buffered);
+			buffered.Position = 0;
+			result = await OpenApiDocument.LoadAsync(buffered, settings: settings);
 		}
 		else
 		{
-			await using var jsonStream = await ParseYamlToJsonStreamAsync(stream).ConfigureAwait(false);
+			var jsonStream = await ParseYamlToJsonStreamAsync(stream).ConfigureAwait(false);
+			hasTemplatePlaceholderHost = HasTemplatePlaceholderHost(jsonStream);
 			result = await OpenApiDocument.LoadAsync(jsonStream, JsonFormat, settings: settings);
 		}
 
@@ -70,10 +79,12 @@ public sealed class OpenApiReader : IOpenApiSpecificationReader
 		{
 			foreach (var error in errors)
 			{
-				// Swagger 2.0 specs that use template placeholders (e.g. {{hostname}}) produce an
-				// "Invalid host" diagnostic because the value is not a valid URI host. The document
-				// still parses correctly, so treat this as a warning rather than an error.
-				if (error.Message.Contains("Invalid host", StringComparison.OrdinalIgnoreCase))
+				// Swagger 2.0 specs (e.g. the ECE API) may use template placeholders such as
+				// {{hostname}} in the host field. Microsoft.OpenApi rejects that as an invalid
+				// URI host but still returns a complete document. When the spec itself contains
+				// a template placeholder host, downgrade the "Invalid host" diagnostic to a
+				// warning. Any other invalid-host value remains a hard error.
+				if (hasTemplatePlaceholderHost && error.Message.Contains("Invalid host", StringComparison.OrdinalIgnoreCase))
 					collector.EmitGlobalWarning(error.Message);
 				else
 					collector.EmitGlobalError(error.Message);
@@ -81,6 +92,29 @@ public sealed class OpenApiReader : IOpenApiSpecificationReader
 		}
 
 		return result.Document;
+	}
+
+	// Reads the "host" field from a JSON representation of a spec and returns true when the
+	// value contains a template placeholder (e.g. {{hostname}}). Position is restored on exit.
+	private static bool HasTemplatePlaceholderHost(MemoryStream jsonStream)
+	{
+		var savedPosition = jsonStream.Position;
+		jsonStream.Position = 0;
+		try
+		{
+			using var doc = JsonDocument.Parse(jsonStream);
+			return doc.RootElement.TryGetProperty("host", out var hostElement)
+				&& hostElement.ValueKind == JsonValueKind.String
+				&& hostElement.GetString()?.Contains("{{") == true;
+		}
+		catch
+		{
+			return false;
+		}
+		finally
+		{
+			jsonStream.Position = savedPosition;
+		}
 	}
 
 	private static async Task<MemoryStream> ParseYamlToJsonStreamAsync(Stream specStream)
