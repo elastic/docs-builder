@@ -69,7 +69,15 @@ public sealed class OpenApiReader : IOpenApiSpecificationReader
 		if (collector is not null && result.Diagnostic?.Errors is { Count: > 0 } errors)
 		{
 			foreach (var error in errors)
-				collector.EmitGlobalError(error.Message);
+			{
+				// Swagger 2.0 specs that use template placeholders (e.g. {{hostname}}) produce an
+				// "Invalid host" diagnostic because the value is not a valid URI host. The document
+				// still parses correctly, so treat this as a warning rather than an error.
+				if (error.Message.Contains("Invalid host", StringComparison.OrdinalIgnoreCase))
+					collector.EmitGlobalWarning(error.Message);
+				else
+					collector.EmitGlobalError(error.Message);
+			}
 		}
 
 		return result.Document;
