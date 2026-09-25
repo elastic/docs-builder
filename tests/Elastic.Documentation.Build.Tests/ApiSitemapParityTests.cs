@@ -13,10 +13,10 @@ public class ApiSitemapParityTests
 	private static readonly Uri SitemapIndex = new("https://www.elastic.co/docs/api/sitemap_index.xml");
 	private static readonly XNamespace SitemapNamespace = "http://www.sitemaps.org/schemas/sitemap/0.9";
 
-	[Fact]
-	public async Task Build_ContainsEveryProductionApiSitemapPage()
+	[Test]
+	public async Task Build_ContainsEveryProductionApiSitemapPage(CancellationToken cancellationToken)
 	{
-		Assert.SkipUnless(
+		Skip.Unless(
 			Environment.GetEnvironmentVariable("FEATURE_ASSEMBLER_API_EXPLORER") == "true",
 			"Set FEATURE_ASSEMBLER_API_EXPLORER=true to build and verify local API pages"
 		);
@@ -24,7 +24,7 @@ public class ApiSitemapParityTests
 		using var client = new HttpClient { Timeout = TimeSpan.FromMinutes(2) };
 		client.DefaultRequestHeaders.UserAgent.ParseAdd("docs-builder-api-sitemap-parity-test");
 
-		var productionUrls = await DownloadPageUrls(client, SitemapIndex, TestContext.Current.CancellationToken);
+		var productionUrls = await DownloadPageUrls(client, SitemapIndex, cancellationToken);
 		var auditedUrls = productionUrls.Where(
 			url => !url.AbsolutePath.StartsWith(DiscontinuedObservabilityServerlessPath, StringComparison.Ordinal)
 		).ToArray();
@@ -38,8 +38,8 @@ public class ApiSitemapParityTests
 
 		if (missing.Length > 0)
 		{
-			await File.WriteAllLinesAsync(reportPath, missing.Select(url => url.AbsoluteUri), TestContext.Current.CancellationToken);
-			Assert.Skip(
+			await File.WriteAllLinesAsync(reportPath, missing.Select(url => url.AbsoluteUri), cancellationToken);
+			Skip.Test(
 				$"WARNING: {missing.Length} of {auditedUrls.Length} production API pages are not generated locally: " + $"see {reportPath}"
 			);
 		}
