@@ -7,6 +7,7 @@ using Elastic.Documentation.Configuration;
 
 namespace Elastic.Documentation.Build.Tests;
 
+// TODO: Delete this class once the API Explorer migration (elastic/docs-eng-team#436) is finalised.
 public class ApiSitemapParityTests
 {
 	private const string DiscontinuedObservabilityServerlessPath = "/docs/api/doc/observability-serverless";
