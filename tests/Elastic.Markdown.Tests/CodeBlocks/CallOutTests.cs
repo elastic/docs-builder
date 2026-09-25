@@ -97,6 +97,16 @@ var z = y - 2; <2>
 }
 
 [InheritsTests]
+public class ClassicCallOutsOnEmptyLines() : CodeBlockCallOutTests("csharp", """
+  <1>
+  <2>
+""")
+{
+	[Test]
+	public void ParsesMagicCallOuts() => Block!.CallOuts.Should().HaveCount(2);
+}
+
+[InheritsTests]
 public class ClassicCallOutsNotFollowedByList() : CodeBlockCallOutTests(
 	"csharp",
 	"""
