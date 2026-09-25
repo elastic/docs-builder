@@ -20,10 +20,38 @@ public class RepositoryBuildMatchingService(
 	AssemblyConfiguration configuration,
 	IConfigurationContext configurationContext,
 	ICoreService githubActionsService,
-	CheckoutsFileSystem fileSystem
+	CheckoutsFileSystem fileSystem,
+	IPullRequestLookup? pullRequestLookup = null
 ) : IService
 {
 	private readonly ILogger _logger = logFactory.CreateLogger<RepositoryBuildMatchingService>();
+
+	/// <summary>
+	/// Resolves the GitHub token used to walk stacked pull requests: the <c>github_token</c> action input,
+	/// else the <c>GITHUB_TOKEN</c> environment variable. Returns <c>null</c> when neither is set, in which
+	/// case stacked pull requests are not resolved and the match behaves as it always has.
+	/// </summary>
+	private string? ResolveGitHubToken()
+	{
+		var input = githubActionsService.GetInput("github_token");
+		if (!string.IsNullOrWhiteSpace(input))
+			return input;
+		var env = Environment.GetEnvironmentVariable("GITHUB_TOKEN");
+		return string.IsNullOrWhiteSpace(env) ? null : env;
+	}
+
+	private IPullRequestLookup? CreatePullRequestLookup()
+	{
+		if (pullRequestLookup is not null)
+			return pullRequestLookup;
+		var token = ResolveGitHubToken();
+		if (token is null)
+		{
+			_logger.LogInformation("No GitHub token available; stacked pull requests are not resolved");
+			return null;
+		}
+		return new GitHubPullRequestLookup(logFactory, token);
+	}
 
 	private async Task<LinkRegistry> GetRegistryWithRetry(Aws3LinkIndexReader provider, Cancel ctx)
 	{
@@ -84,9 +112,41 @@ public class RepositoryBuildMatchingService(
 		var assembleContext = new AssembleContext(configuration, configurationContext, "dev", collector, fileSystem);
 		var product = assembleContext.ProductsConfiguration.GetProductByRepositoryName(repo);
 		var matches = assembleContext.Configuration.Match(logFactory, repo, refName, product, alreadyPublishing);
-		if (matches is { Current: null, Next: null, Edge: null, Speculative: false })
+		var contentSourceRef = refName;
+		IReadOnlyList<int> stackParents = [];
+
+		if (IsNoMatch(matches))
 		{
 			_logger.LogInformation("'{Repository}' '{BranchOrTag}' combination not found in configuration.", repo, refName);
+
+			// A stacked pull request targets the head branch of another open pull request rather than a
+			// content-source branch. Walk the chain of open pull requests to find the content-source branch
+			// the stack ultimately targets. The pull request's own head is still what gets built; only
+			// eligibility comes from the resolved branch.
+			var lookup = CreatePullRequestLookup();
+			if (lookup is not null)
+			{
+				var resolver = new StackedPullRequestResolver(logFactory, lookup);
+				var resolution = await resolver.Resolve(
+					repo,
+					refName,
+					branch => !IsNoMatch(assembleContext.Configuration.Match(logFactory, repo, branch, product, alreadyPublishing)),
+					ctx
+				);
+				if (resolution.Matched && resolution.ParentPullRequests.Count > 0)
+				{
+					contentSourceRef = resolution.ResolvedBranch;
+					stackParents = resolution.ParentPullRequests;
+					matches = assembleContext.Configuration.Match(logFactory, repo, contentSourceRef, product, alreadyPublishing);
+				}
+			}
+		}
+
+		await githubActionsService.SetOutputAsync("content-source-ref", contentSourceRef);
+		await githubActionsService.SetOutputAsync("stack-parent-prs", string.Join(",", stackParents));
+
+		if (IsNoMatch(matches))
+		{
 			await githubActionsService.SetOutputAsync("content-source-match", "false");
 			await githubActionsService.SetOutputAsync("content-source-next", "false");
 			await githubActionsService.SetOutputAsync("content-source-edge", "false");
@@ -94,6 +154,9 @@ public class RepositoryBuildMatchingService(
 			await githubActionsService.SetOutputAsync("content-source-speculative", "false");
 			return false;
 		}
+
+		// Report the branch that actually matched so the log reads correctly for stacked pull requests.
+		refName = contentSourceRef;
 
 		if (matches.Current is { } current)
 			_logger.LogInformation(
@@ -117,4 +180,7 @@ public class RepositoryBuildMatchingService(
 		await githubActionsService.SetOutputAsync("content-source-speculative", matches.Speculative ? "true" : "false");
 		return true;
 	}
+
+	private static bool IsNoMatch(AssemblyConfiguration.ContentSourceMatch matches) =>
+		matches is { Current: null, Next: null, Edge: null, Speculative: false };
 }

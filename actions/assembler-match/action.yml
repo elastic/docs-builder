@@ -12,10 +12,21 @@ inputs:
   ref_name:
     description: 'The branch or tag name'
     required: true
+  github_token:
+    description: >
+      Optional GitHub token with pull-requests read access. When set and ref_name is not a
+      content source, the action walks the chain of open pull requests from ref_name to find
+      the content-source branch a stacked pull request ultimately targets. When unset, stacked
+      pull requests are not resolved.
+    required: false
 
 outputs:
   content-source-match:
     description: 'true/false indicating the branch matches a content-source'
+  content-source-ref:
+    description: 'The branch that matched. Equal to ref_name unless a stacked pull request was resolved to its root branch.'
+  stack-parent-prs:
+    description: 'Comma-separated numbers of the open pull requests walked through to reach content-source-ref, nearest parent first. Empty when ref_name is not stacked.'
   content-source-next:
     description: "true/false indicating the branch acts as the next content source"
   content-source-current:
