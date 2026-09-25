@@ -5,6 +5,7 @@
 using System.Diagnostics;
 using System.IO.Abstractions;
 using System.Text;
+using System.Text.Json;
 using Actions.Core.Services;
 using Elastic.ApiExplorer.Landing;
 using Elastic.Documentation;
@@ -17,6 +18,7 @@ using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.LegacyDocs;
 using Elastic.Documentation.Navigation.Assembler;
+using Elastic.Documentation.Serialization;
 using Elastic.Documentation.Services;
 using Microsoft.Extensions.Logging;
 
@@ -172,7 +174,10 @@ public class AssemblerBuildService(
 		if (exporters.Contains(Exporter.Html))
 		{
 			var openApiStopwatch = Stopwatch.StartNew();
-			catalogEntries = await AssemblerOpenApiBuildStep.BuildAsync(logFactory, assembleContext, assembleSources, ctx);
+			var openApiResult = await AssemblerOpenApiBuildStep.BuildAsync(logFactory, assembleContext, assembleSources, ctx);
+			catalogEntries = openApiResult.CatalogEntries;
+			if (openApiResult.AliasRedirects.Count > 0)
+				await MergeApiAliasRedirects(assembleContext, openApiResult.AliasRedirects, ctx);
 			openApiStopwatch.Stop();
 			_logger.LogInformation("OpenAPI build step completed in {DurationMs} ms", openApiStopwatch.ElapsedMilliseconds);
 
@@ -261,5 +266,32 @@ public class AssemblerBuildService(
 		var enhancedContent = existingContent + Environment.NewLine + navigationSections + apiSection;
 
 		await context.WriteFileSystem.File.WriteAllTextAsync(llmsTxtPath, enhancedContent, Encoding.UTF8, ctx);
+	}
+
+	private async Task MergeApiAliasRedirects(
+		AssembleContext assembleContext,
+		IReadOnlyDictionary<string, string> apiAliasRedirects,
+		Cancel ctx
+	)
+	{
+		var redirectsFile = assembleContext
+			.WriteFileSystem
+			.FileInfo
+			.New(Path.Join(assembleContext.OutputDirectory.FullName, "redirects.json"));
+		var existing = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+		if (redirectsFile.Exists)
+		{
+			var json = await assembleContext.WriteFileSystem.File.ReadAllTextAsync(redirectsFile.FullName, ctx);
+			var deserialized = JsonSerializer.Deserialize(json, SourceGenerationContext.Default.DictionaryStringString);
+			if (deserialized is not null)
+				existing = deserialized;
+		}
+
+		foreach (var (from, to) in apiAliasRedirects)
+			existing[from] = to;
+
+		var merged = JsonSerializer.Serialize(existing, SourceGenerationContext.Default.DictionaryStringString);
+		await assembleContext.WriteFileSystem.File.WriteAllTextAsync(redirectsFile.FullName, merged, ctx);
+		_logger.LogInformation("Merged {Count} API alias redirects into {Path}", apiAliasRedirects.Count, redirectsFile.FullName);
 	}
 }

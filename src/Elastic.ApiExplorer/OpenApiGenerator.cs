@@ -61,6 +61,13 @@ public class OpenApiGenerator(
 	private readonly StaticFileContentHashProvider _contentHashProvider = new(new EmbeddedOrPhysicalFileProvider(context));
 	private readonly VersionIndexClient _versionIndexClient = versionIndexClient ?? new VersionIndexClient();
 	private readonly IOpenApiSpecificationReader _openApiReader = openApiReader ?? OpenApiReader.Instance;
+	private readonly ConcurrentDictionary<string, string> _aliasRedirects = new(StringComparer.OrdinalIgnoreCase);
+
+	/// <summary>
+	/// Alias URL → canonical URL pairs collected during generation. Populated only when
+	/// <c>aliases:</c> is declared on an API entry; callers merge these into <c>redirects.json</c>.
+	/// </summary>
+	public IReadOnlyDictionary<string, string> AliasRedirects => _aliasRedirects;
 
 	public LandingNavigationItem CreateNavigation(
 		string apiUrlSuffix,
@@ -354,6 +361,48 @@ public class OpenApiGenerator(
 
 		await RenderNavigationItems(renderContext, navigationRenderer, navigation, ctx).ConfigureAwait(false);
 		await WriteSpecDownloads(navigation, generation.Document, ctx).ConfigureAwait(false);
+		if (generation.Moniker == "main" && generation.ApiConfig is { Aliases.Count: > 0 } apiConfigWithAliases)
+			CollectAliasRedirects(generation.CurrentApiKey!, apiConfigWithAliases.Aliases, navigation);
+	}
+
+	private static IReadOnlyList<string> CollectPageUrls(INavigationItem navigation)
+	{
+		var urls = new List<string>();
+		CollectPageUrlsRecursive(navigation, urls);
+		return urls;
+	}
+
+	private static void CollectPageUrlsRecursive(INavigationItem item, List<string> urls)
+	{
+		if (item is ISidebarSeparatorNavigationItem)
+			return;
+
+		if (item is not ClassificationNavigationItem)
+			urls.Add(item.Url);
+
+		if (item is INodeNavigationItem<INavigationModel, INavigationItem> node)
+			foreach (var child in node.NavigationItems)
+				CollectPageUrlsRecursive(child, urls);
+	}
+
+	private void CollectAliasRedirects(string apiKey, IReadOnlyList<string> aliases, INavigationItem navigation)
+	{
+		var urls = CollectPageUrls(navigation);
+		var canonicalRoot = ApiUrlBuilder.ProductRoot(context.UrlPathPrefix, apiKey);
+
+		foreach (var alias in aliases)
+		{
+			var aliasRoot = ApiUrlBuilder.ProductRoot(context.UrlPathPrefix, alias);
+			foreach (var canonicalUrl in urls)
+			{
+				var trimmed = canonicalUrl.TrimEnd('/');
+				if (!trimmed.StartsWith(canonicalRoot, StringComparison.OrdinalIgnoreCase))
+					continue;
+
+				var suffix = trimmed[canonicalRoot.Length..];
+				_aliasRedirects[aliasRoot + suffix] = trimmed;
+			}
+		}
 	}
 
 	private async Task WriteSpecDownloads(INavigationItem landing, OpenApiDocument document, Cancel ctx)
