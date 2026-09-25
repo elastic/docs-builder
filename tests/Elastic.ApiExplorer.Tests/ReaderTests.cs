@@ -106,11 +106,11 @@ public class ReaderTests
 	[Test]
 	[Arguments("ece-template-host.json")]
 	[Arguments("ece-template-host.yaml")]
-	public async Task ReadsSwagger20WithTemplateHost_EmitsWarningNotError(string fixture)
+	public async Task ReadsSwagger20WithTemplateHost_EmitsHintNotError(string fixture)
 	{
 		// Swagger 2.0 specs such as the ECE API use {{hostname}} as a placeholder value.
 		// Microsoft.OpenApi treats that as an invalid host, but the document still parses
-		// correctly. The reader must downgrade this to a warning so generation is not blocked.
+		// correctly. The reader must downgrade this to a hint so generation is not blocked.
 		// Both JSON and YAML variants are tested because the YAML path converts to JSON first.
 		var path = Path.Combine(AppContext.BaseDirectory, "TestData", fixture);
 		var fileSystem = new FileSystem();
@@ -123,7 +123,7 @@ public class ReaderTests
 		document!.Info.Title.Should().Be("Elastic Cloud Enterprise API");
 		document.Paths.Should().ContainKey("/account");
 		collector.Errors.Should().Be(0, "an invalid-host placeholder must not be treated as a hard error");
-		collector.Warnings.Should().BeGreaterThan(0, "the invalid-host diagnostic must be emitted as a warning");
+		collector.Hints.Should().BeGreaterThan(0, "the invalid-host diagnostic must be emitted as a hint");
 	}
 
 	[Test]

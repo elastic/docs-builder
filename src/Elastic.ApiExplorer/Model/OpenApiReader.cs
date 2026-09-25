@@ -85,7 +85,7 @@ public sealed class OpenApiReader : IOpenApiSpecificationReader
 				// a template placeholder host, downgrade the "Invalid host" diagnostic to a
 				// warning. Any other invalid-host value remains a hard error.
 				if (hasTemplatePlaceholderHost && error.Message.Contains("Invalid host", StringComparison.OrdinalIgnoreCase))
-					collector.EmitGlobalWarning(error.Message);
+					collector.EmitGlobalHint(error.Message);
 				else
 					collector.EmitGlobalError(error.Message);
 			}
