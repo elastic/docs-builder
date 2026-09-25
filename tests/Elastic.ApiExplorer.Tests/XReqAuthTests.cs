@@ -14,7 +14,7 @@ public class XReqAuthTests
 {
 	private static string TestDataPath(string fileName) => Path.Join(AppContext.BaseDirectory, "TestData", fileName);
 
-	[Fact]
+	[Test]
 	public async Task TryGetPrerequisiteLines_MinimalOpenApi3Spec_MatchesElasticsearchShape()
 	{
 		var json = /*lang=json,strict*/
@@ -39,11 +39,11 @@ public class XReqAuthTests
 		var jsonPath = Path.Join(Path.GetTempPath(), $"xreqauth-{Guid.NewGuid():N}.json");
 		try
 		{
-			await File.WriteAllTextAsync(jsonPath, json, TestContext.Current.CancellationToken);
+			await File.WriteAllTextAsync(jsonPath, json, TestContext.Current!.Execution.CancellationToken);
 			var loaded = await OpenApiDocument.LoadAsync(
 				jsonPath,
 				new OpenApiReaderSettings { LeaveStreamOpen = false },
-				TestContext.Current.CancellationToken
+				TestContext.Current!.Execution.CancellationToken
 			);
 			var op = loaded.Document!.Paths!["/a"].Operations![HttpMethod.Get]!;
 
@@ -63,7 +63,7 @@ public class XReqAuthTests
 		}
 	}
 
-	[Fact]
+	[Test]
 	public async Task TryGetPrerequisiteLines_EmptyArray_ReturnsNull()
 	{
 		var json = /*lang=json,strict*/
@@ -85,11 +85,11 @@ public class XReqAuthTests
 		var jsonPath = Path.Join(Path.GetTempPath(), $"xreqauth-{Guid.NewGuid():N}.json");
 		try
 		{
-			await File.WriteAllTextAsync(jsonPath, json, TestContext.Current.CancellationToken);
+			await File.WriteAllTextAsync(jsonPath, json, TestContext.Current!.Execution.CancellationToken);
 			var loaded = await OpenApiDocument.LoadAsync(
 				jsonPath,
 				new OpenApiReaderSettings { LeaveStreamOpen = false },
-				TestContext.Current.CancellationToken
+				TestContext.Current!.Execution.CancellationToken
 			);
 			var op = loaded.Document!.Paths!["/a"].Operations![HttpMethod.Get]!;
 
@@ -105,7 +105,7 @@ public class XReqAuthTests
 		}
 	}
 
-	[Fact]
+	[Test]
 	public async Task ElasticsearchSample_CatIndicesOperations_HaveXReqAuth()
 	{
 		var specPath = TestDataPath("elasticsearch-x-req-auth-cat-indices-sample.json");
@@ -114,7 +114,7 @@ public class XReqAuthTests
 		var loaded = await OpenApiDocument.LoadAsync(
 			specPath,
 			new OpenApiReaderSettings { LeaveStreamOpen = false },
-			TestContext.Current.CancellationToken
+			TestContext.Current!.Execution.CancellationToken
 		);
 		var doc = loaded.Document!;
 		var getIndices = doc.Paths!["/_cat/indices"].Operations![HttpMethod.Get]!;
@@ -129,7 +129,7 @@ public class XReqAuthTests
 		b!.Should().NotBeEmpty();
 	}
 
-	[Fact]
+	[Test]
 	public async Task KibanaStyleSample_FirstPathsLackXReqAuth()
 	{
 		var specPath = TestDataPath("kibana-openapi-no-x-req-auth-sample.json");
@@ -138,7 +138,7 @@ public class XReqAuthTests
 		var loaded = await OpenApiDocument.LoadAsync(
 			specPath,
 			new OpenApiReaderSettings { LeaveStreamOpen = false },
-			TestContext.Current.CancellationToken
+			TestContext.Current!.Execution.CancellationToken
 		);
 		var doc = loaded.Document!;
 

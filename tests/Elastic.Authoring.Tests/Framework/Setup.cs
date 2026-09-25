@@ -359,7 +359,7 @@ public static class MarkdownResultTaskExtensions
 	) where T : Elastic.Documentation.AppliesTo.IApplicableToElement
 	{
 		var d = (await directives).FirstOrDefault()
-			?? throw new Xunit.Sdk.XunitException("Could not locate an element for AppliesToDirective");
+			?? throw new AwesomeAssertions.Execution.AssertionFailedException("Could not locate an element for AppliesToDirective");
 		d.AppliesTo.Should().Be(expected);
 	}
 }

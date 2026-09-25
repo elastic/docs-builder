@@ -18,7 +18,7 @@ public class DocumentationSetFileTests
 	// Tests use direct deserialization to test YAML parsing without TOC loading/resolution
 	private DocumentationSetFile Deserialize(string yaml) => ConfigurationFileProvider.Deserializer.Deserialize<DocumentationSetFile>(yaml);
 
-	[Fact]
+	[Test]
 	public void DeserializesBasicProperties()
 	{
 		// language=yaml
@@ -44,7 +44,7 @@ public class DocumentationSetFileTests
 		result.Exclude.Should().HaveCount(2).And.Contain("_*.md").And.Contain("*.tmp");
 	}
 
-	[Fact]
+	[Test]
 	public void DeserializesSubstitutions()
 	{
 		// language=yaml
@@ -64,7 +64,7 @@ public class DocumentationSetFileTests
 		result.Subs.Should().ContainKey("dbuild").WhoseValue.Should().Be("docs-builder");
 	}
 
-	[Fact]
+	[Test]
 	public void DeserializesFeatures()
 	{
 		// language=yaml
@@ -81,7 +81,7 @@ public class DocumentationSetFileTests
 		result.Features.PrimaryNav.Should().BeFalse();
 	}
 
-	[Fact]
+	[Test]
 	public void DeserializesApiConfiguration()
 	{
 		// language=yaml
@@ -104,7 +104,7 @@ public class DocumentationSetFileTests
 		result.Api["kibana"].SingleEntry!.Spec.Should().Be("kibana-openapi.json");
 	}
 
-	[Fact]
+	[Test]
 	public void DeserializesFileReference()
 	{
 		// language=yaml
@@ -131,7 +131,7 @@ public class DocumentationSetFileTests
 			.Be("getting-started.md");
 	}
 
-	[Fact]
+	[Test]
 	public void DeserializesHiddenFileReference()
 	{
 		// language=yaml
@@ -153,7 +153,7 @@ public class DocumentationSetFileTests
 		result.TableOfContents.ElementAt(2).Should().BeOfType<FileRef>().Which.Hidden.Should().BeTrue();
 	}
 
-	[Fact]
+	[Test]
 	public void DeserializesFolderReference()
 	{
 		// language=yaml
@@ -177,7 +177,7 @@ public class DocumentationSetFileTests
 		folder.Children.ElementAt(1).Should().BeOfType<FileRef>().Which.PathRelativeToDocumentationSet.Should().Be("locally.md");
 	}
 
-	[Fact]
+	[Test]
 	public void DeserializesTocReference()
 	{
 		// language=yaml
@@ -204,7 +204,7 @@ public class DocumentationSetFileTests
 			.Be("development");
 	}
 
-	[Fact]
+	[Test]
 	public void DeserializesCrossLinkReference()
 	{
 		// language=yaml
@@ -229,7 +229,7 @@ public class DocumentationSetFileTests
 		crosslink.CrossLinkUri.ToString().Should().Be("docs-content://get-started/introduction.md");
 	}
 
-	[Fact]
+	[Test]
 	public void DeserializesNestedStructure()
 	{
 		// language=yaml
@@ -264,7 +264,7 @@ public class DocumentationSetFileTests
 		nestedFolder.Children.ElementAt(2).Should().BeOfType<FileRef>().Which.PathRelativeToDocumentationSet.Should().Be("navigation.md");
 	}
 
-	[Fact]
+	[Test]
 	public void DeserializesCompleteDocsetYaml()
 	{
 		// language=yaml
@@ -378,7 +378,7 @@ public class DocumentationSetFileTests
 		tocRef.Children.Should().BeEmpty();
 	}
 
-	[Fact]
+	[Test]
 	public void DeserializesFileWithChildren()
 	{
 		// language=yaml
@@ -404,7 +404,7 @@ public class DocumentationSetFileTests
 		guide.Children.ElementAt(2).Should().BeOfType<FileRef>().Which.PathRelativeToDocumentationSet.Should().Be("chapter3.md");
 	}
 
-	[Fact]
+	[Test]
 	public void DeserializesFileWithNestedPathsAsChildren()
 	{
 		// language=yaml
@@ -428,7 +428,7 @@ public class DocumentationSetFileTests
 		guide.Children.ElementAt(1).Should().BeOfType<FileRef>().Which.PathRelativeToDocumentationSet.Should().Be("api/section2.md");
 	}
 
-	[Fact]
+	[Test]
 	public void DeserializesDefaultValues()
 	{
 		// language=yaml
@@ -450,7 +450,7 @@ public class DocumentationSetFileTests
 		result.Features.PrimaryNav.Should().BeNull();
 	}
 
-	[Fact]
+	[Test]
 	public void DeserializesEmptyToc()
 	{
 		// language=yaml
@@ -464,7 +464,7 @@ public class DocumentationSetFileTests
 		result.TableOfContents.Should().BeEmpty();
 	}
 
-	[Fact]
+	[Test]
 	public void DeserializesCrossLinkWithoutTitle()
 	{
 		// language=yaml
@@ -485,7 +485,7 @@ public class DocumentationSetFileTests
 		crosslink.Title.Should().BeNull();
 	}
 
-	[Fact]
+	[Test]
 	public void DeserializesMixedHiddenAndVisibleItems()
 	{
 		// language=yaml
@@ -508,7 +508,7 @@ public class DocumentationSetFileTests
 		result.TableOfContents.ElementAt(3).Should().BeOfType<FileRef>().Which.Hidden.Should().BeTrue();
 	}
 
-	[Fact]
+	[Test]
 	public void DeserializesDeeplyNestedFileWithChildren()
 	{
 		// language=yaml
@@ -536,7 +536,7 @@ public class DocumentationSetFileTests
 		subsection1.Children.Should().BeEmpty();
 	}
 
-	[Fact]
+	[Test]
 	public void DeserializesMultipleExcludePatterns()
 	{
 		// language=yaml
@@ -558,7 +558,7 @@ public class DocumentationSetFileTests
 		result.Exclude.Should().HaveCount(5).And.ContainInOrder("_*.md", "*.tmp", "*.draft", ".DS_Store", "node_modules/**");
 	}
 
-	[Fact]
+	[Test]
 	public void DeserializesMultipleCrossLinks()
 	{
 		// language=yaml
@@ -579,7 +579,7 @@ public class DocumentationSetFileTests
 		result.CrossLinks.Should().HaveCount(4).And.ContainInOrder("elasticsearch", "kibana", "docs-content", "cloud");
 	}
 
-	[Fact]
+	[Test]
 	public void DeserializesFolderWithMixedChildren()
 	{
 		// language=yaml
@@ -605,7 +605,7 @@ public class DocumentationSetFileTests
 		apiFolder.Children.ElementAt(2).Should().BeOfType<FileRef>();
 	}
 
-	[Fact]
+	[Test]
 	public void LoadAndResolvePreservesCliReferenceAppliesTo()
 	{
 		var fileSystem = new MockFileSystem();
@@ -635,7 +635,7 @@ public class DocumentationSetFileTests
 		cliRef.AppliesTo.Serverless.Should().NotBeNull();
 	}
 
-	[Fact]
+	[Test]
 	public void LoadAndResolveResolvesIsolatedTocReferences()
 	{
 		// Create a mock file system with docset and nested TOC files
@@ -770,7 +770,7 @@ public class DocumentationSetFileTests
 			.Be("guides/advanced/patterns.md");
 	}
 
-	[Fact]
+	[Test]
 	public void LoadAndResolvePrependsParentPathsToFileReferences()
 	{
 		var fileSystem = new MockFileSystem();
@@ -837,7 +837,7 @@ public class DocumentationSetFileTests
 			.Be("api/reference.md", "folder path 'api' should be prepended");
 	}
 
-	[Fact]
+	[Test]
 	public void LoadAndResolveSetsContextForAllItems()
 	{
 		var fileSystem = new MockFileSystem();
@@ -891,7 +891,7 @@ public class DocumentationSetFileTests
 	// island: true parsing
 	// ──────────────────────────────────────────────────────────────
 
-	[Fact]
+	[Test]
 	public void DocsetRoot_IslandTrue_Deserializes()
 	{
 		// language=yaml
@@ -908,7 +908,7 @@ public class DocumentationSetFileTests
 		result.Island.Should().BeTrue("island: true at the docset root must survive deserialization");
 	}
 
-	[Fact]
+	[Test]
 	public void DocsetRoot_NoIsland_DefaultsFalse()
 	{
 		// language=yaml
@@ -924,7 +924,7 @@ public class DocumentationSetFileTests
 		result.Island.Should().BeFalse("island defaults to false when omitted");
 	}
 
-	[Fact]
+	[Test]
 	public void InlineTocEntry_IslandTrue_Deserializes()
 	{
 		// language=yaml
@@ -944,7 +944,7 @@ public class DocumentationSetFileTests
 		tocRef.Island.Should().BeTrue("inline island: true must be captured on IsolatedTableOfContentsRef");
 	}
 
-	[Fact]
+	[Test]
 	public void InlineTocEntry_NoIsland_DefaultsFalse()
 	{
 		// language=yaml
@@ -962,7 +962,7 @@ public class DocumentationSetFileTests
 		tocRef.Island.Should().BeFalse("inline island defaults to false when omitted");
 	}
 
-	[Fact]
+	[Test]
 	public void NestedTocYml_IslandTrue_PropagatesToRef()
 	{
 		// island: true in a nested toc.yml root propagates to the IsolatedTableOfContentsRef.Island
@@ -997,7 +997,7 @@ public class DocumentationSetFileTests
 		tocRef.Island.Should().BeTrue("island: true in the nested toc.yml root propagates to the resolved IsolatedTableOfContentsRef");
 	}
 
-	[Fact]
+	[Test]
 	public void InlineTocEntry_IslandTrue_OrSemantics_BothInlineAndTocYml()
 	{
 		// OR semantics: inline island: true + toc.yml island: true both produce Island = true
@@ -1060,7 +1060,7 @@ public class DocumentationSetFileTests
 		Resolve(docsetNoInlineIsland, referenceTocNoIsland).Island.Should().BeFalse("neither set → not island");
 	}
 
-	[Fact]
+	[Test]
 	public void LoadAndResolveSetsPathRelativeToContainerCorrectly()
 	{
 		var fileSystem = new MockFileSystem();

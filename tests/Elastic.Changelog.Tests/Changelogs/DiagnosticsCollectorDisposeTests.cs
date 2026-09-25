@@ -28,7 +28,7 @@ public class DiagnosticsCollectorDisposeTests
 	// StartAsync. Emitting a diagnostic and then disposing deadlocked on
 	// Channel.Reader.Completion because nothing was draining the channel,
 	// causing the lambda to hit its 180s timeout.
-	[Fact]
+	[Test]
 	public async Task DisposeAsync_WithoutStartAsyncAfterEmit_DoesNotHang()
 	{
 		var output = new RecordingOutput();
@@ -47,7 +47,7 @@ public class DiagnosticsCollectorDisposeTests
 		output.Items.Should().BeEmpty("IDiagnosticsOutput sinks are only invoked by the background reader");
 	}
 
-	[Fact]
+	[Test]
 	public async Task StopAsync_WithoutStartAsyncAfterEmit_DoesNotHang()
 	{
 		var output = new RecordingOutput();
@@ -65,7 +65,7 @@ public class DiagnosticsCollectorDisposeTests
 		output.Items.Should().BeEmpty();
 	}
 
-	[Fact]
+	[Test]
 	public async Task DisposeAsync_WithoutStartAsyncAndNoEmissions_DoesNotHang()
 	{
 		var collector = new DiagnosticsCollector([]);
@@ -81,7 +81,7 @@ public class DiagnosticsCollectorDisposeTests
 		collector.Errors.Should().Be(0);
 	}
 
-	[Fact]
+	[Test]
 	public async Task WaitForDrain_WithoutStartAsync_ThrowsImmediately()
 	{
 		var collector = new DiagnosticsCollector([]);
@@ -95,7 +95,7 @@ public class DiagnosticsCollectorDisposeTests
 	// If the service command completes before the thread pool picks up the Task.Run delegate,
 	// _readerStarted is still false when WaitForDrain runs. Previously this threw; now it
 	// waits briefly for the reader to start and then drains successfully.
-	[Fact]
+	[Test]
 	public async Task WaitForDrain_AfterStartAsync_WaitsForReaderEvenIfNotStartedYet()
 	{
 		var output = new RecordingOutput();
@@ -120,7 +120,7 @@ public class DiagnosticsCollectorDisposeTests
 	// A pre-canceled token makes Task.Run return a canceled task without ever executing
 	// the reader delegate: start is requested but the reader never comes up, so WaitForDrain
 	// must hit its 2s deadline. FakeTimeProvider advances that deadline virtually.
-	[Fact]
+	[Test]
 	public async Task WaitForDrain_ReaderNeverStarts_TimesOutInVirtualTime()
 	{
 		var timeProvider = new FakeTimeProvider();
@@ -135,7 +135,10 @@ public class DiagnosticsCollectorDisposeTests
 		for (var i = 0; i < 100 && !drain.IsCompleted; i++)
 		{
 			timeProvider.Advance(TimeSpan.FromMilliseconds(500));
-			await Task.Delay(10, TestContext.Current.CancellationToken); // real delay so the awaiting continuation observes the fired timer
+			await Task.Delay(
+				10,
+				TestContext.Current!.Execution.CancellationToken
+			); // real delay so the awaiting continuation observes the fired timer
 		}
 
 		drain.IsCompleted.Should().BeTrue("the 2s virtual deadline must trip long before 50s of virtual time");

@@ -12,9 +12,9 @@ using Elastic.Documentation.Navigation.Isolated.Node;
 
 namespace Elastic.Documentation.Navigation.Tests.Isolation;
 
-public class ConstructorTests(ITestOutputHelper output) : DocumentationSetNavigationTestBase(output)
+public class ConstructorTests() : DocumentationSetNavigationTestBase()
 {
-	[Fact]
+	[Test]
 	public void ConstructorInitializesRootProperties()
 	{
 		// language=yaml
@@ -41,7 +41,7 @@ public class ConstructorTests(ITestOutputHelper output) : DocumentationSetNaviga
 		navigation.Url.Should().Be("/");
 	}
 
-	[Fact]
+	[Test]
 	public void ConstructorSetsIsUsingNavigationDropdownFromFeatures()
 	{
 		// language=yaml
@@ -64,7 +64,7 @@ public class ConstructorTests(ITestOutputHelper output) : DocumentationSetNaviga
 		navigation.IsUsingNavigationDropdown.Should().BeTrue();
 	}
 
-	[Fact]
+	[Test]
 	public void ConstructorCreatesFileNavigationLeafFromFileRef()
 	{
 		// language=yaml
@@ -91,7 +91,7 @@ public class ConstructorTests(ITestOutputHelper output) : DocumentationSetNaviga
 		fileNav.Parent.Should().BeSameAs(navigation); // Top-level files have DocumentationSetNavigation as parent
 	}
 
-	[Fact]
+	[Test]
 	public void ConstructorCreatesHiddenFileNavigationLeaf()
 	{
 		// language=yaml
@@ -115,7 +115,7 @@ public class ConstructorTests(ITestOutputHelper output) : DocumentationSetNaviga
 		fileNav.Url.Should().Be("/404");
 	}
 
-	[Fact]
+	[Test]
 	public void ConstructorCreatesCrossLinkNavigation()
 	{
 		// language=yaml
@@ -145,7 +145,7 @@ public class ConstructorTests(ITestOutputHelper output) : DocumentationSetNaviga
 		crossLink.Url.Should().Be("https://docs-v3-preview.elastic.dev/elastic/docs-builder/tree/main");
 	}
 
-	[Fact]
+	[Test]
 	public void ConstructorCreatesFolderNavigationWithChildren()
 	{
 		// language=yaml
@@ -179,7 +179,7 @@ public class ConstructorTests(ITestOutputHelper output) : DocumentationSetNaviga
 		secondFile.Url.Should().Be("/setup/install");
 	}
 
-	[Fact]
+	[Test]
 	public void ConstructorCreatesTableOfContentsNavigationWithChildren()
 	{
 		// language=yaml
@@ -215,7 +215,7 @@ public class ConstructorTests(ITestOutputHelper output) : DocumentationSetNaviga
 		file.NavigationRoot.Should().BeSameAs(navigation);
 	}
 
-	[Fact]
+	[Test]
 	public void ConstructorReadsTableOfContentsFromTocYmlFile()
 	{
 		// language=yaml
@@ -255,7 +255,7 @@ public class ConstructorTests(ITestOutputHelper output) : DocumentationSetNaviga
 		reference.Url.Should().Be("/api/reference");
 	}
 
-	[Fact]
+	[Test]
 	public async Task ConstructorProcessesTocYmlItemsBeforeChildrenFromNavigation()
 	{
 		// language=yaml
@@ -282,13 +282,13 @@ public class ConstructorTests(ITestOutputHelper output) : DocumentationSetNaviga
 
 		var context = CreateContext(fileSystem);
 		var docSet = DocumentationSetFile.LoadAndResolve(context.Collector, docSetYaml, fileSystem.NewDirInfo("docs"));
-		_ = context.Collector.StartAsync(TestContext.Current.CancellationToken);
+		_ = context.Collector.StartAsync(TestContext.Current!.Execution.CancellationToken);
 
 		var navigation = new DocumentationSetNavigation<IDocumentationFile>(docSet, context, GenericDocumentationFileFactory.Instance);
 
 		navigation.NavigationItems.Should().HaveCount(0);
 
-		await context.Collector.StopAsync(TestContext.Current.CancellationToken);
+		await context.Collector.StopAsync(TestContext.Current!.Execution.CancellationToken);
 
 		var diagnostics = context.Diagnostics;
 		// We expect 2 errors: one for the TOC validation error, and one from navigation constructor

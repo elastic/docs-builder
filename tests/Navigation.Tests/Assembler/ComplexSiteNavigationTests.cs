@@ -15,9 +15,9 @@ using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Elastic.Documentation.Navigation.Tests.Assembler;
 
-public class ComplexSiteNavigationTests(ITestOutputHelper output)
+public class ComplexSiteNavigationTests()
 {
-	[Fact]
+	[Test]
 	public async Task MultipleSectionsFromSameRepository_UseContentHashesAndCacheByRoot()
 	{
 		// language=yaml
@@ -36,7 +36,7 @@ public class ComplexSiteNavigationTests(ITestOutputHelper output)
 		foreach (var repository in new[] { "observability", "platform" })
 		{
 			var repositoryPath = $"/checkouts/current/{repository}";
-			var context = SiteNavigationTestFixture.CreateAssemblerContext(fileSystem, repositoryPath, output);
+			var context = SiteNavigationTestFixture.CreateAssemblerContext(fileSystem, repositoryPath);
 			var docset = DocumentationSetFile.LoadAndResolve(
 				context.Collector,
 				fileSystem.FileInfo.New($"{repositoryPath}/docs/docset.yml"),
@@ -47,7 +47,7 @@ public class ComplexSiteNavigationTests(ITestOutputHelper output)
 			);
 		}
 
-		var siteContext = SiteNavigationTestFixture.CreateAssemblerContext(fileSystem, "/checkouts/current/observability", output);
+		var siteContext = SiteNavigationTestFixture.CreateAssemblerContext(fileSystem, "/checkouts/current/observability");
 		var siteNavigation = new SiteNavigation(
 			SiteNavigationFile.Deserialize(siteNavYaml),
 			siteContext,
@@ -62,16 +62,16 @@ public class ComplexSiteNavigationTests(ITestOutputHelper output)
 		sections.Should().HaveCount(2);
 
 		var writer = new GlobalNavigationHtmlWriter(NullLoggerFactory.Instance, siteNavigation, siteContext.Collector);
-		var first = await writer.RenderNavigation(sections[0], sections[0].Index, TestContext.Current.CancellationToken);
-		var second = await writer.RenderNavigation(sections[1], sections[1].Index, TestContext.Current.CancellationToken);
-		var firstAgain = await writer.RenderNavigation(sections[0], sections[0].Index, TestContext.Current.CancellationToken);
+		var first = await writer.RenderNavigation(sections[0], sections[0].Index, TestContext.Current!.Execution.CancellationToken);
+		var second = await writer.RenderNavigation(sections[1], sections[1].Index, TestContext.Current!.Execution.CancellationToken);
+		var firstAgain = await writer.RenderNavigation(sections[0], sections[0].Index, TestContext.Current!.Execution.CancellationToken);
 
 		first.Id.Should().NotBe(second.Id);
 		firstAgain.Id.Should().Be(first.Id);
 		firstAgain.Html.Should().Be(first.Html);
 	}
 
-	[Fact]
+	[Test]
 	public void ComplexNavigationWithMultipleNestedTocsAppliesPathPrefixToRootUrls()
 	{
 		// language=yaml
@@ -104,7 +104,7 @@ public class ComplexSiteNavigationTests(ITestOutputHelper output)
 
 		foreach (var repo in repositories)
 		{
-			var context = SiteNavigationTestFixture.CreateAssemblerContext(fileSystem, repo.FullName, output);
+			var context = SiteNavigationTestFixture.CreateAssemblerContext(fileSystem, repo.FullName);
 
 			var docsetPath = fileSystem.File.Exists($"{repo.FullName}/docs/docset.yml")
 				? $"{repo.FullName}/docs/docset.yml"
@@ -120,7 +120,7 @@ public class ComplexSiteNavigationTests(ITestOutputHelper output)
 			documentationSets.Add(navigation);
 		}
 
-		var siteContext = SiteNavigationTestFixture.CreateAssemblerContext(fileSystem, "/checkouts/current/observability", output);
+		var siteContext = SiteNavigationTestFixture.CreateAssemblerContext(fileSystem, "/checkouts/current/observability");
 
 		var siteNavigation = new SiteNavigation(siteNavFile, siteContext, documentationSets, sitePrefix: null);
 
@@ -172,7 +172,7 @@ public class ComplexSiteNavigationTests(ITestOutputHelper output)
 		documentApisFile.NavigationTitle.Should().Be("Document APIs");
 	}
 
-	[Fact]
+	[Test]
 	public void DeeplyNestedNavigationMaintainsPathPrefixThroughoutHierarchy()
 	{
 		// language=YAML - test without specifying children for nested TOCs
@@ -191,7 +191,7 @@ public class ComplexSiteNavigationTests(ITestOutputHelper output)
 		var siteNavFile = SiteNavigationFile.Deserialize(siteNavYaml);
 		var fileSystem = SiteNavigationTestFixture.CreateMultiRepositoryFileSystem();
 
-		var platformContext = SiteNavigationTestFixture.CreateAssemblerContext(fileSystem, "/checkouts/current/platform", output);
+		var platformContext = SiteNavigationTestFixture.CreateAssemblerContext(fileSystem, "/checkouts/current/platform");
 		var platformDocset = DocumentationSetFile.LoadAndResolve(
 			platformContext.Collector,
 			fileSystem.FileInfo.New("/checkouts/current/platform/docs/docset.yml"),
@@ -203,7 +203,7 @@ public class ComplexSiteNavigationTests(ITestOutputHelper output)
 			new DocumentationSetNavigation<IDocumentationFile>(platformDocset, platformContext, GenericDocumentationFileFactory.Instance)
 		};
 
-		var siteContext = SiteNavigationTestFixture.CreateAssemblerContext(fileSystem, "/checkouts/current/platform", output);
+		var siteContext = SiteNavigationTestFixture.CreateAssemblerContext(fileSystem, "/checkouts/current/platform");
 
 		var siteNavigation = new SiteNavigation(siteNavFile, siteContext, documentationSets, sitePrefix: null);
 
@@ -226,7 +226,7 @@ public class ComplexSiteNavigationTests(ITestOutputHelper output)
 		allUrls.Should().OnlyContain(url => url.StartsWith("/docs/platform/"), "all URLs in platform should start with /docs/platform");
 	}
 
-	[Fact]
+	[Test]
 	public void FileNavigationLeafUrlsReflectPathPrefixInDeeplyNestedStructures()
 	{
 		// language=YAML - don't specify children so we can access the actual file leaves
@@ -245,7 +245,7 @@ public class ComplexSiteNavigationTests(ITestOutputHelper output)
 		var siteNavFile = SiteNavigationFile.Deserialize(siteNavYaml);
 		var fileSystem = SiteNavigationTestFixture.CreateMultiRepositoryFileSystem();
 
-		var platformContext = SiteNavigationTestFixture.CreateAssemblerContext(fileSystem, "/checkouts/current/platform", output);
+		var platformContext = SiteNavigationTestFixture.CreateAssemblerContext(fileSystem, "/checkouts/current/platform");
 		var platformDocset = DocumentationSetFile.LoadAndResolve(
 			platformContext.Collector,
 			fileSystem.FileInfo.New("/checkouts/current/platform/docs/docset.yml"),
@@ -257,7 +257,7 @@ public class ComplexSiteNavigationTests(ITestOutputHelper output)
 			new DocumentationSetNavigation<IDocumentationFile>(platformDocset, platformContext, GenericDocumentationFileFactory.Instance)
 		};
 
-		var siteContext = SiteNavigationTestFixture.CreateAssemblerContext(fileSystem, "/checkouts/current/platform", output);
+		var siteContext = SiteNavigationTestFixture.CreateAssemblerContext(fileSystem, "/checkouts/current/platform");
 
 		var siteNavigation = new SiteNavigation(siteNavFile, siteContext, documentationSets, sitePrefix: null);
 
@@ -296,7 +296,7 @@ public class ComplexSiteNavigationTests(ITestOutputHelper output)
 		indexFile.Url.Should().StartWith("/platform");
 	}
 
-	[Fact]
+	[Test]
 	public void FolderNavigationWithinNestedTocsHasCorrectPathPrefix()
 	{
 		// language=YAML - don't specify children so we can access the actual folders
@@ -316,7 +316,7 @@ public class ComplexSiteNavigationTests(ITestOutputHelper output)
 		var siteNavFile = SiteNavigationFile.Deserialize(siteNavYaml);
 		var fileSystem = SiteNavigationTestFixture.CreateMultiRepositoryFileSystem();
 
-		var platformContext = SiteNavigationTestFixture.CreateContext(fileSystem, "/checkouts/current/platform", output);
+		var platformContext = SiteNavigationTestFixture.CreateContext(fileSystem, "/checkouts/current/platform");
 		var platformDocset = DocumentationSetFile.LoadAndResolve(
 			platformContext.Collector,
 			fileSystem.FileInfo.New("/checkouts/current/platform/docs/docset.yml"),
@@ -328,7 +328,7 @@ public class ComplexSiteNavigationTests(ITestOutputHelper output)
 			new DocumentationSetNavigation<IDocumentationFile>(platformDocset, platformContext, GenericDocumentationFileFactory.Instance)
 		};
 
-		var siteContext = SiteNavigationTestFixture.CreateContext(fileSystem, "/checkouts/current/platform", output);
+		var siteContext = SiteNavigationTestFixture.CreateContext(fileSystem, "/checkouts/current/platform");
 
 		var siteNavigation = new SiteNavigation(siteNavFile, siteContext, documentationSets, sitePrefix: null);
 

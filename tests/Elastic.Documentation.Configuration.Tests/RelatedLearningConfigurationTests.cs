@@ -11,7 +11,7 @@ namespace Elastic.Documentation.Configuration.Tests;
 
 public class RelatedLearningConfigurationTests
 {
-	[Fact]
+	[Test]
 	public void EmbeddedCatalog_LoadsWithCompleteEntries()
 	{
 		var config = LoadEmbeddedCatalog();
@@ -27,7 +27,7 @@ public class RelatedLearningConfigurationTests
 		}
 	}
 
-	[Fact]
+	[Test]
 	public void Parse_QuotedTitleWithColonAndAmpersand_Succeeds()
 	{
 		var config = RelatedLearningConfiguration.Parse(
@@ -43,7 +43,7 @@ public class RelatedLearningConfigurationTests
 		link!.Title.Should().Be("Beyond basics: Hugging Face & Elasticsearch");
 	}
 
-	[Fact]
+	[Test]
 	public void TryGet_UnknownId_ReturnsFalse()
 	{
 		var config = LoadEmbeddedCatalog();
@@ -52,7 +52,7 @@ public class RelatedLearningConfigurationTests
 		link.Should().BeNull();
 	}
 
-	[Fact]
+	[Test]
 	public void Parse_MissingTitle_Throws()
 	{
 		var act =
@@ -67,7 +67,7 @@ public class RelatedLearningConfigurationTests
 		act.Should().Throw<InvalidOperationException>().WithMessage("*link 'widget' is missing required 'title'*");
 	}
 
-	[Fact]
+	[Test]
 	public void Parse_MissingUrl_Throws()
 	{
 		var act =
@@ -80,7 +80,7 @@ public class RelatedLearningConfigurationTests
 		act.Should().Throw<InvalidOperationException>().WithMessage("*link 'widget' is missing required 'url'*");
 	}
 
-	[Fact]
+	[Test]
 	public void Parse_RelativeUrl_Throws()
 	{
 		var act =
@@ -96,7 +96,7 @@ public class RelatedLearningConfigurationTests
 		act.Should().Throw<InvalidOperationException>().WithMessage("*invalid url '/training/widget'*");
 	}
 
-	[Fact]
+	[Test]
 	public void Parse_EmptyLinks_ReturnsEmptyCatalog()
 	{
 		var config = RelatedLearningConfiguration.Parse("links: {}");

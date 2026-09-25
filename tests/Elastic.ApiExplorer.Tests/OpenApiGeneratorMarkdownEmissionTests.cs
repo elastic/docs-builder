@@ -22,11 +22,12 @@ using Microsoft.OpenApi;
 
 namespace Elastic.ApiExplorer.Tests;
 
-public class OpenApiGeneratorMarkdownEmissionTests(ApiExplorerFixture fixture) : IClassFixture<ApiExplorerFixture>
+[ClassDataSource<ApiExplorerFixture>(Shared = SharedType.PerClass)]
+public class OpenApiGeneratorMarkdownEmissionTests(ApiExplorerFixture fixture)
 {
 	private static readonly Uri BaseUri = new("https://cdn.example/");
 
-	[Fact]
+	[Test]
 	public async Task Generate_WritesSiblingMarkdownForEveryRenderedPage()
 	{
 		var outputRoot = Path.Join(Paths.WorkingDirectoryRoot.FullName, $"api-md-emit-{Guid.NewGuid():N}");
@@ -41,7 +42,7 @@ public class OpenApiGeneratorMarkdownEmissionTests(ApiExplorerFixture fixture) :
 			reader
 		);
 
-		await generator.Generate(TestContext.Current.CancellationToken);
+		await generator.Generate(TestContext.Current!.Execution.CancellationToken);
 
 		var write = context.WriteFileSystem.File;
 		write.Exists(Path.Join(outputRoot, "api.md")).Should().BeTrue();
@@ -56,7 +57,7 @@ public class OpenApiGeneratorMarkdownEmissionTests(ApiExplorerFixture fixture) :
 			.BeFalse();
 	}
 
-	[Fact]
+	[Test]
 	public async Task Generate_WritesReadableCommonMarkNotHtmlDocument()
 	{
 		var outputRoot = Path.Join(Paths.WorkingDirectoryRoot.FullName, $"api-md-content-{Guid.NewGuid():N}");
@@ -71,23 +72,23 @@ public class OpenApiGeneratorMarkdownEmissionTests(ApiExplorerFixture fixture) :
 			reader
 		);
 
-		await generator.Generate(TestContext.Current.CancellationToken);
+		await generator.Generate(TestContext.Current!.Execution.CancellationToken);
 
 		var landing = await context
 			.WriteFileSystem
 			.File
-			.ReadAllTextAsync(Path.Join(outputRoot, "api", "doc", "elasticsearch.md"), TestContext.Current.CancellationToken);
+			.ReadAllTextAsync(Path.Join(outputRoot, "api", "doc", "elasticsearch.md"), TestContext.Current!.Execution.CancellationToken);
 		var operation = await context
 			.WriteFileSystem
 			.File
 			.ReadAllTextAsync(
 				Path.Join(outputRoot, "api", "doc", "elasticsearch", "operation", "operation-search.md"),
-				TestContext.Current.CancellationToken
+				TestContext.Current!.Execution.CancellationToken
 			);
 		var catalog = await context
 			.WriteFileSystem
 			.File
-			.ReadAllTextAsync(Path.Join(outputRoot, "api.md"), TestContext.Current.CancellationToken);
+			.ReadAllTextAsync(Path.Join(outputRoot, "api.md"), TestContext.Current!.Execution.CancellationToken);
 
 		landing.Should().StartWith("---");
 		landing.Should().Contain("type: api");
@@ -122,7 +123,7 @@ public class OpenApiGeneratorMarkdownEmissionTests(ApiExplorerFixture fixture) :
 		catalog.Should().Contain("[YAML](/api/doc/elasticsearch.yaml)");
 	}
 
-	[Fact]
+	[Test]
 	public async Task Generate_WritesAlternateLinkOnApiHtml()
 	{
 		var outputRoot = Path.Join(Paths.WorkingDirectoryRoot.FullName, $"api-md-alt-{Guid.NewGuid():N}");
@@ -137,18 +138,21 @@ public class OpenApiGeneratorMarkdownEmissionTests(ApiExplorerFixture fixture) :
 			reader
 		);
 
-		await generator.Generate(TestContext.Current.CancellationToken);
+		await generator.Generate(TestContext.Current!.Execution.CancellationToken);
 
 		var html = await context
 			.WriteFileSystem
 			.File
-			.ReadAllTextAsync(Path.Join(outputRoot, "api", "doc", "elasticsearch", "index.html"), TestContext.Current.CancellationToken);
+			.ReadAllTextAsync(
+				Path.Join(outputRoot, "api", "doc", "elasticsearch", "index.html"),
+				TestContext.Current!.Execution.CancellationToken
+			);
 		var operationHtml = await context
 			.WriteFileSystem
 			.File
 			.ReadAllTextAsync(
 				Path.Join(outputRoot, "api", "doc", "elasticsearch", "operation", "operation-search", "index.html"),
-				TestContext.Current.CancellationToken
+				TestContext.Current!.Execution.CancellationToken
 			);
 
 		html.Should().Contain("""<link rel="alternate" type="text/markdown" href="/api/doc/elasticsearch.md" title="Markdown export"/>""");
@@ -164,7 +168,7 @@ public class OpenApiGeneratorMarkdownEmissionTests(ApiExplorerFixture fixture) :
 		operationHtml.Should().Contain("api-page-actions-split");
 	}
 
-	[Fact]
+	[Test]
 	public async Task SimpleMarkdownPage_WritesAuthoredSource()
 	{
 		var introPath = Path.Combine(
@@ -185,7 +189,7 @@ public class OpenApiGeneratorMarkdownEmissionTests(ApiExplorerFixture fixture) :
 		)
 		{ NavigationHtml = string.Empty, CurrentNavigation = item, MarkdownRenderer = PassthroughMarkdownRenderer.Instance };
 
-		var markdown = await item.RenderCommonMarkAsync(renderContext, TestContext.Current.CancellationToken);
+		var markdown = await item.RenderCommonMarkAsync(renderContext, TestContext.Current!.Execution.CancellationToken);
 
 		var wrapped = ApiMarkdownFrontMatter.Wrap(markdown!, item, renderContext, item);
 
@@ -250,7 +254,9 @@ public class OpenApiGeneratorMarkdownEmissionTests(ApiExplorerFixture fixture) :
 	{
 		var queue = new Queue<OpenApiDocument>(documents);
 		var reader = A.Fake<IOpenApiSpecificationReader>();
-		A.CallTo(() => reader.ReadAsync(A<Stream>._, A<string>._)).ReturnsLazily(_ => Task.FromResult<OpenApiDocument?>(queue.Dequeue()));
+		A.CallTo(() => reader.ReadAsync(A<Stream>._, A<string>._, A<IDiagnosticsCollector?>._)).ReturnsLazily(
+			_ => Task.FromResult<OpenApiDocument?>(queue.Dequeue())
+		);
 		return reader;
 	}
 

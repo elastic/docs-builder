@@ -5,7 +5,6 @@
 using System.Diagnostics;
 using System.Text.Json;
 using JetBrains.Annotations;
-using Xunit.Sdk;
 
 namespace Elastic.Authoring.Tests.Framework;
 
@@ -26,7 +25,7 @@ internal static class ResultsAssertions
 		var result = results.MarkdownResults.FirstOrDefault(m => m.File.RelativePath == normalized);
 
 		if (result is null)
-			throw new XunitException($"{path} not part of the markdown results");
+			throw new AwesomeAssertions.Execution.AssertionFailedException($"{path} not part of the markdown results");
 
 		return result;
 	}
@@ -42,7 +41,7 @@ internal static class ResultsAssertions
 		var fs = results.Context.ReadFileSystem;
 		var fi = fs.FileInfo.New(artifactPath);
 		if (!fi.Exists)
-			throw new XunitException($"{artifactPath} is not part of the output");
+			throw new AwesomeAssertions.Execution.AssertionFailedException($"{artifactPath} is not part of the output");
 
 		var actualRaw = fs.File.ReadAllText(fi.FullName);
 		using var actualDoc = JsonDocument.Parse(actualRaw);
@@ -53,6 +52,6 @@ internal static class ResultsAssertions
 
 		var diff = HtmlAssertions.Diff(expectedPretty, actualPretty);
 		if (!string.IsNullOrEmpty(diff))
-			throw new XunitException($"JSON was not equal\n-- DIFF --\n{diff}");
+			throw new AwesomeAssertions.Execution.AssertionFailedException($"JSON was not equal\n-- DIFF --\n{diff}");
 	}
 }

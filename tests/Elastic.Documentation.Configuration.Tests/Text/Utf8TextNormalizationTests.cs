@@ -9,7 +9,7 @@ namespace Elastic.Documentation.Configuration.Tests.Text;
 
 public class Utf8TextNormalizationTests
 {
-	[Fact]
+	[Test]
 	public void StripLeadingUtf8Bom_EmptyString_ReturnsEmpty()
 	{
 		var result = Utf8TextNormalization.StripLeadingUtf8Bom(string.Empty);
@@ -17,7 +17,7 @@ public class Utf8TextNormalizationTests
 		result.Should().Be(string.Empty);
 	}
 
-	[Fact]
+	[Test]
 	public void StripLeadingUtf8Bom_NullString_ReturnsNull()
 	{
 		var result = Utf8TextNormalization.StripLeadingUtf8Bom(null);
@@ -25,7 +25,7 @@ public class Utf8TextNormalizationTests
 		result.Should().BeNull();
 	}
 
-	[Fact]
+	[Test]
 	public void StripLeadingUtf8Bom_StringWithoutBom_ReturnsUnchanged()
 	{
 		const string input = "type: feature\ntitle: Test changelog entry";
@@ -35,7 +35,7 @@ public class Utf8TextNormalizationTests
 		result.Should().BeSameAs(input); // Should return the same instance for efficiency
 	}
 
-	[Fact]
+	[Test]
 	public void StripLeadingUtf8Bom_StringWithSingleLeadingBom_RemovesBom()
 	{
 		const string content = "type: feature\ntitle: Test changelog entry";
@@ -46,7 +46,7 @@ public class Utf8TextNormalizationTests
 		result.Should().Be(content);
 	}
 
-	[Fact]
+	[Test]
 	public void StripLeadingUtf8Bom_StringWithTwoConsecutiveLeadingBoms_RemovesBothBoms()
 	{
 		const string content = "type: feature\ntitle: Test changelog entry";
@@ -57,7 +57,7 @@ public class Utf8TextNormalizationTests
 		result.Should().Be(content);
 	}
 
-	[Fact]
+	[Test]
 	public void StripLeadingUtf8Bom_StringWithThreeConsecutiveLeadingBoms_RemovesAllBoms()
 	{
 		const string content = "type: feature\ntitle: Test changelog entry";
@@ -71,7 +71,7 @@ public class Utf8TextNormalizationTests
 		result.Should().Be(content);
 	}
 
-	[Fact]
+	[Test]
 	public void StripLeadingUtf8Bom_StringOnlyBoms_ReturnsEmpty()
 	{
 		var input = Utf8TextNormalization.Utf8BomChar.ToString() + Utf8TextNormalization.Utf8BomChar;
@@ -81,7 +81,7 @@ public class Utf8TextNormalizationTests
 		result.Should().Be(string.Empty);
 	}
 
-	[Fact]
+	[Test]
 	public void StripLeadingUtf8Bom_StringWithBomInMiddle_DoesNotStripMiddleBom()
 	{
 		var input = $"type: feature{Utf8TextNormalization.Utf8BomChar}title: Test";
@@ -91,7 +91,7 @@ public class Utf8TextNormalizationTests
 		result.Should().Be(input);
 	}
 
-	[Fact]
+	[Test]
 	public void StripLeadingUtf8Bom_StringWithBomAtEnd_DoesNotStripEndBom()
 	{
 		var input = $"type: feature\ntitle: Test{Utf8TextNormalization.Utf8BomChar}";
@@ -101,7 +101,7 @@ public class Utf8TextNormalizationTests
 		result.Should().Be(input);
 	}
 
-	[Fact]
+	[Test]
 	public void HasUtf8Bom_EmptySpan_ReturnsFalse()
 	{
 		var bytes = ReadOnlySpan<byte>.Empty;
@@ -111,7 +111,7 @@ public class Utf8TextNormalizationTests
 		result.Should().BeFalse();
 	}
 
-	[Fact]
+	[Test]
 	public void HasUtf8Bom_TooShortSpan_ReturnsFalse()
 	{
 		var bytes = new ReadOnlySpan<byte>([0xEF, 0xBB]);
@@ -121,7 +121,7 @@ public class Utf8TextNormalizationTests
 		result.Should().BeFalse();
 	}
 
-	[Fact]
+	[Test]
 	public void HasUtf8Bom_ValidBomBytes_ReturnsTrue()
 	{
 		var bytes = new ReadOnlySpan<byte>([0xEF, 0xBB, 0xBF, 0x74, 0x79]);
@@ -131,7 +131,7 @@ public class Utf8TextNormalizationTests
 		result.Should().BeTrue();
 	}
 
-	[Fact]
+	[Test]
 	public void HasUtf8Bom_ExactBomBytes_ReturnsTrue()
 	{
 		var bytes = new ReadOnlySpan<byte>([0xEF, 0xBB, 0xBF]);
@@ -141,7 +141,7 @@ public class Utf8TextNormalizationTests
 		result.Should().BeTrue();
 	}
 
-	[Fact]
+	[Test]
 	public void HasUtf8Bom_InvalidBomBytes_ReturnsFalse()
 	{
 		var bytes = new ReadOnlySpan<byte>([0xEF, 0xBB, 0xBE, 0x74, 0x79]);
@@ -151,7 +151,7 @@ public class Utf8TextNormalizationTests
 		result.Should().BeFalse();
 	}
 
-	[Fact]
+	[Test]
 	public void HasUtf8Bom_NormalTextBytes_ReturnsFalse()
 	{
 		var bytes = new ReadOnlySpan<byte>([0x74, 0x79, 0x70, 0x65]);
@@ -161,9 +161,9 @@ public class Utf8TextNormalizationTests
 		result.Should().BeFalse();
 	}
 
-	[Fact]
+	[Test]
 	public void Utf8BomChar_MatchesExpectedValue() => Utf8TextNormalization.Utf8BomChar.Should().Be('\uFEFF');
 
-	[Fact]
+	[Test]
 	public void Utf8BomBytes_MatchesExpectedSequence() => Utf8TextNormalization.Utf8BomBytes.Should().Equal([0xEF, 0xBB, 0xBF]);
 }

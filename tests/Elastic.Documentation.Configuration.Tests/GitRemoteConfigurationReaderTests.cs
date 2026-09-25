@@ -9,7 +9,7 @@ namespace Elastic.Documentation.Configuration.Tests;
 
 public class GitRemoteConfigurationReaderTests
 {
-	[Fact]
+	[Test]
 	public void TryReadOriginUrl_DotGitDirectory_ReadsConfig()
 	{
 		var fs = new MockFileSystem();
@@ -27,7 +27,7 @@ public class GitRemoteConfigurationReaderTests
 		url.Should().Be("git@github.com:elastic/kibana.git");
 	}
 
-	[Fact]
+	[Test]
 	public void TryReadOriginUrl_GitWorktreeFile_ResolvesGitDir()
 	{
 		var fs = new MockFileSystem();
@@ -47,7 +47,7 @@ public class GitRemoteConfigurationReaderTests
 		url.Should().Be("https://github.com/elastic/kibana.git");
 	}
 
-	[Fact]
+	[Test]
 	public void TryReadOriginUrl_GitWorktreeFile_MissingCommondir_ReturnsFalse()
 	{
 		var fs = new MockFileSystem();

@@ -10,7 +10,8 @@ using Elastic.Markdown.Myst.Directives.Storybook;
 
 namespace Elastic.Markdown.Tests.Directives;
 
-public abstract class StorybookRegistryTest(ITestOutputHelper output, string content) : DirectiveTest<StorybookBlock>(output, content)
+[InheritsTests]
+public abstract class StorybookRegistryTest(string content) : DirectiveTest<StorybookBlock>(content)
 {
 	protected override void AddToFileSystem(MockFileSystem fileSystem) =>
 		fileSystem.AddFile("docs/docs_registry.json", new MockFileData(RegistryJson));
@@ -77,8 +78,8 @@ storybook:
 		""";
 }
 
-public class StorybookInlineIdTests(ITestOutputHelper output) : StorybookRegistryTest(
-	output,
+[InheritsTests]
+public class StorybookInlineIdTests() : StorybookRegistryTest(
 	"""
 :::{storybook}
 :id: kibana:shared_ux:ai-components-aibutton--default
@@ -87,7 +88,7 @@ public class StorybookInlineIdTests(ITestOutputHelper output) : StorybookRegistr
 """
 )
 {
-	[Fact]
+	[Test]
 	public void ResolvesStory()
 	{
 		Block!.Project.Should().Be("kibana");
@@ -102,7 +103,7 @@ public class StorybookInlineIdTests(ITestOutputHelper output) : StorybookRegistr
 		Block.Height.Should().Be(360);
 	}
 
-	[Fact]
+	[Test]
 	public void RendersInlineStory()
 	{
 		Html.Should().Contain("<storybook-story");
@@ -126,8 +127,8 @@ internal sealed class TestEnvironmentVariables : IEnvironmentVariables
 	public bool IsRunningOnCI => false;
 }
 
-public class StorybookInterpolatedRegistryTests(ITestOutputHelper output) : StorybookRegistryTest(
-	output,
+[InheritsTests]
+public class StorybookInterpolatedRegistryTests() : StorybookRegistryTest(
 	"""
 :::{storybook}
 :id: kibana:shared_ux:ai-components-aibutton--default
@@ -142,12 +143,12 @@ storybook:
   registry: ${KIBANA_STORYBOOK_REGISTRY:-docs_registry.json}
 """;
 
-	[Fact]
+	[Test]
 	public void ResolvesDefaultWhenEnvironmentVariableUnset() => Block!.StoryId.Should().Be("ai-components-aibutton--default");
 }
 
-public class StorybookDisallowedRegistryVariableTests(ITestOutputHelper output) : StorybookRegistryTest(
-	output,
+[InheritsTests]
+public class StorybookDisallowedRegistryVariableTests() : StorybookRegistryTest(
 	"""
 :::{storybook}
 :id: kibana:shared_ux:ai-components-aibutton--default
@@ -164,7 +165,7 @@ storybook:
   registry: ${AWS_SECRET_ACCESS_KEY:-docs_registry.json}
 """;
 
-	[Fact]
+	[Test]
 	public void WarnsAndLeavesExpressionLiteral() =>
 		Collector
 			.Diagnostics
@@ -172,8 +173,8 @@ storybook:
 			.Contain(d => d.Severity == Severity.Warning && d.Message.Contains("not allow-listed for interpolation"));
 }
 
-public class StorybookStructuredReferenceTests(ITestOutputHelper output) : StorybookRegistryTest(
-	output,
+[InheritsTests]
+public class StorybookStructuredReferenceTests() : StorybookRegistryTest(
 	"""
 :::{storybook}
 :project: kibana
@@ -184,12 +185,12 @@ public class StorybookStructuredReferenceTests(ITestOutputHelper output) : Story
 """
 )
 {
-	[Fact]
+	[Test]
 	public void ResolvesComponentAndStory() => Block!.StoryId.Should().Be("ai-components-aibutton--default");
 }
 
-public class StorybookStructuredReferenceWrongStorybookTests(ITestOutputHelper output) : StorybookRegistryTest(
-	output,
+[InheritsTests]
+public class StorybookStructuredReferenceWrongStorybookTests() : StorybookRegistryTest(
 	"""
 :::{storybook}
 :project: kibana
@@ -199,7 +200,7 @@ public class StorybookStructuredReferenceWrongStorybookTests(ITestOutputHelper o
 """
 )
 {
-	[Fact]
+	[Test]
 	public void DoesNotFallbackToAnotherStorybook() =>
 		Collector
 			.Diagnostics
@@ -207,29 +208,25 @@ public class StorybookStructuredReferenceWrongStorybookTests(ITestOutputHelper o
 			.Contain(d => d.Message.Contains("does not contain id 'kibana:content_management:ai-components-aibutton--default'"));
 }
 
-public class StorybookBareIdTests(ITestOutputHelper output) : StorybookRegistryTest(
-	output,
-	"""
+[InheritsTests]
+public class StorybookBareIdTests() : StorybookRegistryTest("""
 :::{storybook}
 :id: ai-components-aibutton--default
 :::
-"""
-)
+""")
 {
-	[Fact]
+	[Test]
 	public void ResolvesFromConfiguredRegistry() => Block!.StoryId.Should().Be("ai-components-aibutton--default");
 }
 
-public class StorybookIframeTests(ITestOutputHelper output) : StorybookRegistryTest(
-	output,
-	"""
+[InheritsTests]
+public class StorybookIframeTests() : StorybookRegistryTest("""
 :::{storybook}
 :id: kibana:shared_ux:components-callout--info
 :::
-"""
-)
+""")
 {
-	[Fact]
+	[Test]
 	public void RendersIframeFallback()
 	{
 		Block!.HasInlineStory.Should().BeFalse();
@@ -240,8 +237,8 @@ public class StorybookIframeTests(ITestOutputHelper output) : StorybookRegistryT
 	}
 }
 
-public class StorybookBodyTests(ITestOutputHelper output) : StorybookRegistryTest(
-	output,
+[InheritsTests]
+public class StorybookBodyTests() : StorybookRegistryTest(
 	"""
 :::{storybook}
 :id: kibana:shared_ux:components-callout--info
@@ -250,12 +247,12 @@ Supporting details for this story.
 """
 )
 {
-	[Fact]
+	[Test]
 	public void RendersBodyContent() => Html.Should().Contain("Supporting details for this story.");
 }
 
-public class StorybookInvalidHeightTests(ITestOutputHelper output) : StorybookRegistryTest(
-	output,
+[InheritsTests]
+public class StorybookInvalidHeightTests() : StorybookRegistryTest(
 	"""
 :::{storybook}
 :id: kibana:shared_ux:components-callout--info
@@ -264,7 +261,7 @@ public class StorybookInvalidHeightTests(ITestOutputHelper output) : StorybookRe
 """
 )
 {
-	[Fact]
+	[Test]
 	public void WarnsAndFallsBackToDefaultHeight()
 	{
 		Block!.Height.Should().Be(400);
@@ -276,8 +273,8 @@ public class StorybookInvalidHeightTests(ITestOutputHelper output) : StorybookRe
 	}
 }
 
-public class StorybookMissingRegistryTests(ITestOutputHelper output) : DirectiveTest<StorybookBlock>(
-	output,
+[InheritsTests]
+public class StorybookMissingRegistryTests() : DirectiveTest<StorybookBlock>(
 	"""
 :::{storybook}
 :id: kibana:shared_ux:ai-components-aibutton--default
@@ -285,21 +282,22 @@ public class StorybookMissingRegistryTests(ITestOutputHelper output) : Directive
 """
 )
 {
-	[Fact]
+	[Test]
 	public void EmitsError() => Collector.Diagnostics.Should().Contain(d => d.Message.Contains("requires docset.yml storybook.registry"));
 }
 
-public class StorybookMissingIdTests(ITestOutputHelper output) : StorybookRegistryTest(output, """
+[InheritsTests]
+public class StorybookMissingIdTests() : StorybookRegistryTest("""
 :::{storybook}
 :::
 """)
 {
-	[Fact]
+	[Test]
 	public void EmitsError() => Collector.Diagnostics.Should().Contain(d => d.Message.Contains("requires :id: or :project:"));
 }
 
-public class StorybookPositionalArgumentWarningTests(ITestOutputHelper output) : StorybookRegistryTest(
-	output,
+[InheritsTests]
+public class StorybookPositionalArgumentWarningTests() : StorybookRegistryTest(
 	"""
 :::{storybook} /storybook/ignored
 :id: kibana:shared_ux:components-callout--info
@@ -307,7 +305,7 @@ public class StorybookPositionalArgumentWarningTests(ITestOutputHelper output) :
 """
 )
 {
-	[Fact]
+	[Test]
 	public void EmitsWarning() =>
 		Collector
 			.Diagnostics

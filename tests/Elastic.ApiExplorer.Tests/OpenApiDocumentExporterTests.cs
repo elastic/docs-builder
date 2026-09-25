@@ -21,7 +21,8 @@ public class OpenApiDocumentExporterTests
 	private static readonly HttpClient HttpClient = new();
 	private const string BaseUrl = "https://www.elastic.co";
 
-	[Fact(Skip = "This spams elastic.co, run this manually")]
+	[Test]
+	[Skip("This spams elastic.co, run this manually")]
 	public async Task ExportedDocumentUrlsShouldReturnSuccessStatusCode()
 	{
 		// Arrange
@@ -46,7 +47,7 @@ public class OpenApiDocumentExporterTests
 
 		// Act - Collect all documents, tracking source
 		var documents = new List<(string Url, string Source)>();
-		await foreach (var doc in exporter.ExportDocuments(limitPerSource, TestContext.Current.CancellationToken))
+		await foreach (var doc in exporter.ExportDocuments(limitPerSource, TestContext.Current!.Execution.CancellationToken))
 		{
 			if (!string.IsNullOrEmpty(doc.Path))
 			{
@@ -73,7 +74,7 @@ public class OpenApiDocumentExporterTests
 		await Parallel.ForEachAsync(sample, new ParallelOptions
 		{
 			MaxDegreeOfParallelism = 10,
-			CancellationToken = TestContext.Current.CancellationToken
+			CancellationToken = TestContext.Current!.Execution.CancellationToken
 		}, async (url, ct) =>
 		{
 			var fullUrl = $"{BaseUrl}{url}";
@@ -121,7 +122,7 @@ public class OpenApiDocumentExporterTests
 		);
 	}
 
-	[Fact]
+	[Test]
 	public async Task DescriptionWithHtmlShouldHaveTagsStrippedForSearchIndex()
 	{
 		// Arrange
@@ -145,7 +146,7 @@ public class OpenApiDocumentExporterTests
 
 		// Act — collect documents whose raw OAS description contains HTML (operation list block)
 		var documents = new List<DocumentationDocument>();
-		await foreach (var doc in exporter.ExportDocuments(limitPerSource: 100, TestContext.Current.CancellationToken))
+		await foreach (var doc in exporter.ExportDocuments(limitPerSource: 100, TestContext.Current!.Execution.CancellationToken))
 		{
 			if (doc.Description != null && doc.Description.Contains("All methods and paths for this operation"))
 				documents.Add(doc);

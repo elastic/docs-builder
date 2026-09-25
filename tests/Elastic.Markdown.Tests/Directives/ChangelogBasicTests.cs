@@ -13,10 +13,10 @@ using Elastic.Markdown.Myst.Directives.Changelog;
 
 namespace Elastic.Markdown.Tests.Directives;
 
+[InheritsTests]
 public class ChangelogBasicTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogBasicTests(ITestOutputHelper output) : base(
-			output,
+	public ChangelogBasicTests() : base(
 			// language=markdown
 			"""
 		:::{changelog}
@@ -57,23 +57,23 @@ public class ChangelogBasicTests : DirectiveTest<ChangelogBlock>
 			)
 		);
 
-	[Fact]
+	[Test]
 	public void ParsesChangelogBlock() => Block.Should().NotBeNull();
 
-	[Fact]
+	[Test]
 	public void SetsCorrectDirectiveType() => Block!.Directive.Should().Be("changelog");
 
-	[Fact]
+	[Test]
 	public void FindsBundlesFolder() => Block!.Found.Should().BeTrue();
 
-	[Fact]
+	[Test]
 	public void SetsCorrectBundlesFolderPath() =>
 		Block!.BundlesFolderPath.Should().EndWith("changelog/bundles".Replace('/', Path.DirectorySeparatorChar));
 
-	[Fact]
+	[Test]
 	public void LoadsBundles() => Block!.LoadedBundles.Should().HaveCount(1);
 
-	[Fact]
+	[Test]
 	public void RendersMarkdownContent()
 	{
 		Html.Should().Contain("9.3.0");
@@ -84,10 +84,10 @@ public class ChangelogBasicTests : DirectiveTest<ChangelogBlock>
 	}
 }
 
+[InheritsTests]
 public class ChangelogExcludeAmendTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogExcludeAmendTests(ITestOutputHelper output) : base(
-			output,
+	public ChangelogExcludeAmendTests() : base(
 			// language=markdown
 			"""
 		:::{changelog}
@@ -142,14 +142,14 @@ public class ChangelogExcludeAmendTests : DirectiveTest<ChangelogBlock>
 		);
 	}
 
-	[Fact]
+	[Test]
 	public void RendersWithoutExcludedEntry()
 	{
 		Html.Should().Contain("Keep this feature");
 		Html.Should().NotContain("Remove this feature");
 	}
 
-	[Fact]
+	[Test]
 	public void LoadsMergedEntryCount()
 	{
 		Block!.LoadedBundles.Should().HaveCount(1);
@@ -158,10 +158,10 @@ public class ChangelogExcludeAmendTests : DirectiveTest<ChangelogBlock>
 	}
 }
 
+[InheritsTests]
 public class ChangelogMultipleBundlesTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogMultipleBundlesTests(ITestOutputHelper output) : base(
-			output,
+	public ChangelogMultipleBundlesTests() : base(
 			// language=markdown
 			"""
 		:::{changelog}
@@ -231,10 +231,10 @@ public class ChangelogMultipleBundlesTests : DirectiveTest<ChangelogBlock>
 		);
 	}
 
-	[Fact]
+	[Test]
 	public void LoadsBundles() => Block!.LoadedBundles.Should().HaveCount(3);
 
-	[Fact]
+	[Test]
 	public void RendersInSemverOrder()
 	{
 		// Should be sorted by semver descending: 9.10.0 > 9.3.0 > 9.2.0
@@ -246,7 +246,7 @@ public class ChangelogMultipleBundlesTests : DirectiveTest<ChangelogBlock>
 		idx93.Should().BeLessThan(idx92, "9.3.0 should appear before 9.2.0");
 	}
 
-	[Fact]
+	[Test]
 	public void RendersAllVersions()
 	{
 		Html.Should().Contain("9.10.0");
@@ -259,10 +259,10 @@ public class ChangelogMultipleBundlesTests : DirectiveTest<ChangelogBlock>
 /// Verifies the <c>:version:</c> option filters local-folder bundles down to the single matching
 /// target, leaving the others out of both the loaded set and the rendered output.
 /// </summary>
+[InheritsTests]
 public class ChangelogVersionFilterTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogVersionFilterTests(ITestOutputHelper output) : base(
-			output,
+	public ChangelogVersionFilterTests() : base(
 			// language=markdown
 			"""
 		:::{changelog}
@@ -312,13 +312,13 @@ public class ChangelogVersionFilterTests : DirectiveTest<ChangelogBlock>
 		);
 	}
 
-	[Fact]
+	[Test]
 	public void CapturesVersionOption() => Block!.VersionFilter.Should().Be("9.3.0");
 
-	[Fact]
+	[Test]
 	public void LoadsOnlyMatchingBundle() => Block!.LoadedBundles.Should().ContainSingle().Which.Version.Should().Be("9.3.0");
 
-	[Fact]
+	[Test]
 	public void RendersOnlyMatchingVersion()
 	{
 		Html.Should().Contain("Feature in 9.3.0");
@@ -330,10 +330,10 @@ public class ChangelogVersionFilterTests : DirectiveTest<ChangelogBlock>
 /// Verifies a <c>:version:</c> value that matches no bundle renders nothing and warns instead of
 /// silently falling back to all versions.
 /// </summary>
+[InheritsTests]
 public class ChangelogVersionFilterNoMatchTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogVersionFilterNoMatchTests(ITestOutputHelper output) : base(
-			output,
+	public ChangelogVersionFilterNoMatchTests() : base(
 			// language=markdown
 			"""
 		:::{changelog}
@@ -361,18 +361,18 @@ public class ChangelogVersionFilterNoMatchTests : DirectiveTest<ChangelogBlock>
 			)
 		);
 
-	[Fact]
+	[Test]
 	public void LoadsNoBundles() => Block!.LoadedBundles.Should().BeEmpty();
 
-	[Fact]
+	[Test]
 	public void EmitsWarningForUnmatchedVersion() =>
 		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("No changelog bundle matches :version:"));
 }
 
+[InheritsTests]
 public class ChangelogCustomPathTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogCustomPathTests(ITestOutputHelper output) : base(
-			output,
+	public ChangelogCustomPathTests() : base(
 			// language=markdown
 			"""
 		:::{changelog} /release-notes/bundles
@@ -399,14 +399,14 @@ public class ChangelogCustomPathTests : DirectiveTest<ChangelogBlock>
 			)
 		);
 
-	[Fact]
+	[Test]
 	public void FindsBundlesFolder() => Block!.Found.Should().BeTrue();
 
-	[Fact]
+	[Test]
 	public void SetsCorrectBundlesFolderPath() =>
 		Block!.BundlesFolderPath.Should().EndWith("release-notes/bundles".Replace('/', Path.DirectorySeparatorChar));
 
-	[Fact]
+	[Test]
 	public void RendersContent()
 	{
 		Html.Should().Contain("1.0.0");
@@ -419,8 +419,8 @@ public class ChangelogCustomPathTests : DirectiveTest<ChangelogBlock>
 /// assigned to the block and before any network access, so this test exercises the wiring without
 /// touching the CDN.
 /// </summary>
-public class ChangelogCdnInvalidProductTests(ITestOutputHelper output) : DirectiveTest<ChangelogBlock>(
-	output,
+[InheritsTests]
+public class ChangelogCdnInvalidProductTests() : DirectiveTest<ChangelogBlock>(
 	// language=markdown
 	"""
 	:::{changelog}
@@ -429,13 +429,13 @@ public class ChangelogCdnInvalidProductTests(ITestOutputHelper output) : Directi
 	"""
 )
 {
-	[Fact]
+	[Test]
 	public void DoesNotCaptureInvalidCdnProduct() => Block!.CdnProduct.Should().BeNull();
 
-	[Fact]
+	[Test]
 	public void DoesNotSourceFromLocalFolder() => Block!.BundlesFolderPath.Should().BeNull();
 
-	[Fact]
+	[Test]
 	public void EmitsErrorForInvalidProduct()
 	{
 		Collector.Diagnostics.Should().NotBeNullOrEmpty();
@@ -449,8 +449,8 @@ public class ChangelogCdnInvalidProductTests(ITestOutputHelper output) : Directi
 /// instead of hitting the network. Regression guard: the HTML renderer previously gated on the
 /// (CDN-null) local bundles folder path and silently emitted an empty body.
 /// </summary>
-public class ChangelogCdnRenderTests(ITestOutputHelper output) : DirectiveTest<ChangelogBlock>(
-	output,
+[InheritsTests]
+public class ChangelogCdnRenderTests() : DirectiveTest<ChangelogBlock>(
 	// language=markdown
 	"""
 	:::{changelog}
@@ -483,10 +483,10 @@ public class ChangelogCdnRenderTests(ITestOutputHelper output) : DirectiveTest<C
 				""")
 		);
 
-	[Fact]
+	[Test]
 	public void FoundFromCdn() => Block!.Found.Should().BeTrue();
 
-	[Fact]
+	[Test]
 	public void RendersCdnBundleBody()
 	{
 		Html.Should().Contain("9.4.0");
@@ -499,8 +499,8 @@ public class ChangelogCdnRenderTests(ITestOutputHelper output) : DirectiveTest<C
 /// Verifies <c>:cdn:</c> combined with <c>:version:</c> renders only the matching prefetched bundle.
 /// Version filtering is applied to the injected resolver's bundles, so no network access occurs.
 /// </summary>
-public class ChangelogCdnVersionFilterTests(ITestOutputHelper output) : DirectiveTest<ChangelogBlock>(
-	output,
+[InheritsTests]
+public class ChangelogCdnVersionFilterTests() : DirectiveTest<ChangelogBlock>(
 	// language=markdown
 	"""
 	:::{changelog}
@@ -551,10 +551,10 @@ public class ChangelogCdnVersionFilterTests(ITestOutputHelper output) : Directiv
 				""")
 		);
 
-	[Fact]
+	[Test]
 	public void CapturesVersionFilter() => Block!.VersionFilter.Should().Be("9.4.0");
 
-	[Fact]
+	[Test]
 	public void RendersOnlyMatchingVersion()
 	{
 		Block!.Found.Should().BeTrue();
@@ -568,8 +568,8 @@ public class ChangelogCdnVersionFilterTests(ITestOutputHelper output) : Directiv
 /// <c>.git</c> marker present the mock git checkout reports the repository as <c>docs-builder</c>, so
 /// the directive selects that product from the injected resolver.
 /// </summary>
-public class ChangelogCdnInferredProductTests(ITestOutputHelper output) : DirectiveTest<ChangelogBlock>(
-	output,
+[InheritsTests]
+public class ChangelogCdnInferredProductTests() : DirectiveTest<ChangelogBlock>(
 	// language=markdown
 	"""
 	:::{changelog}
@@ -607,10 +607,10 @@ public class ChangelogCdnInferredProductTests(ITestOutputHelper output) : Direct
 				""")
 		);
 
-	[Fact]
+	[Test]
 	public void InfersProductFromRepository() => Block!.CdnProduct.Should().Be(InferredProduct);
 
-	[Fact]
+	[Test]
 	public void RendersInferredCdnBundleBody()
 	{
 		Block!.Found.Should().BeTrue();
@@ -622,8 +622,8 @@ public class ChangelogCdnInferredProductTests(ITestOutputHelper output) : Direct
 /// A valueless <c>:cdn:</c> must fail with a clear error when the product cannot be inferred (no git
 /// information available), rather than silently rendering empty.
 /// </summary>
-public class ChangelogCdnInferredProductUnavailableTests(ITestOutputHelper output) : DirectiveTest<ChangelogBlock>(
-	output,
+[InheritsTests]
+public class ChangelogCdnInferredProductUnavailableTests() : DirectiveTest<ChangelogBlock>(
 	// language=markdown
 	"""
 	:::{changelog}
@@ -635,7 +635,7 @@ public class ChangelogCdnInferredProductUnavailableTests(ITestOutputHelper outpu
 	// Force Unavailable so InferCdnProductFromRepository() returns null — the "could not be inferred" path.
 	protected override GitCheckoutInformation? GetGitCheckoutInformation() => GitCheckoutInformation.Unavailable;
 
-	[Fact]
+	[Test]
 	public void EmitsErrorWhenProductCannotBeInferred()
 	{
 		Block!.Found.Should().BeFalse();
@@ -647,8 +647,8 @@ public class ChangelogCdnInferredProductUnavailableTests(ITestOutputHelper outpu
 /// A <c>:cdn:</c> product that is not declared under <c>release_notes</c> in docset.yml must fail with a
 /// clear error (the bundles were never prefetched), pointing the author at the declaration to add.
 /// </summary>
-public class ChangelogCdnUndeclaredProductTests(ITestOutputHelper output) : DirectiveTest<ChangelogBlock>(
-	output,
+[InheritsTests]
+public class ChangelogCdnUndeclaredProductTests() : DirectiveTest<ChangelogBlock>(
 	// language=markdown
 	"""
 	:::{changelog}
@@ -657,7 +657,7 @@ public class ChangelogCdnUndeclaredProductTests(ITestOutputHelper output) : Dire
 	"""
 )
 {
-	[Fact]
+	[Test]
 	public void EmitsErrorWhenProductIsNotDeclared()
 	{
 		Block!.Found.Should().BeFalse();
@@ -688,8 +688,8 @@ internal static class ChangelogCdnTestResolver
 	}
 }
 
-public class ChangelogNotFoundTests(ITestOutputHelper output) : DirectiveTest<ChangelogBlock>(
-	output,
+[InheritsTests]
+public class ChangelogNotFoundTests() : DirectiveTest<ChangelogBlock>(
 	// language=markdown
 	"""
 	:::{changelog} /missing-bundles
@@ -697,10 +697,10 @@ public class ChangelogNotFoundTests(ITestOutputHelper output) : DirectiveTest<Ch
 	"""
 )
 {
-	[Fact]
+	[Test]
 	public void ReportsFolderNotFound() => Block!.Found.Should().BeFalse();
 
-	[Fact]
+	[Test]
 	public void EmitsErrorForMissingFolder()
 	{
 		Collector.Diagnostics.Should().NotBeNullOrEmpty();
@@ -708,8 +708,8 @@ public class ChangelogNotFoundTests(ITestOutputHelper output) : DirectiveTest<Ch
 	}
 }
 
-public class ChangelogDefaultPathMissingTests(ITestOutputHelper output) : DirectiveTest<ChangelogBlock>(
-	output,
+[InheritsTests]
+public class ChangelogDefaultPathMissingTests() : DirectiveTest<ChangelogBlock>(
 	// language=markdown
 	"""
 	:::{changelog}
@@ -717,7 +717,7 @@ public class ChangelogDefaultPathMissingTests(ITestOutputHelper output) : Direct
 	"""
 )
 {
-	[Fact]
+	[Test]
 	public void EmitsErrorForMissingDefaultFolder()
 	{
 		// No bundles folder created, so it should emit an error
@@ -730,10 +730,10 @@ public class ChangelogDefaultPathMissingTests(ITestOutputHelper output) : Direct
 /// Tests for breaking changes rendering.
 /// Breaking changes should always render on the page when using :type: all.
 /// </summary>
+[InheritsTests]
 public class ChangelogWithBreakingChangesTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogWithBreakingChangesTests(ITestOutputHelper output) : base(
-			output,
+	public ChangelogWithBreakingChangesTests() : base(
 			// language=markdown
 			"""
 		:::{changelog}
@@ -764,14 +764,14 @@ public class ChangelogWithBreakingChangesTests : DirectiveTest<ChangelogBlock>
 			)
 		);
 
-	[Fact]
+	[Test]
 	public void RendersBreakingChangesSection()
 	{
 		Html.Should().Contain("Breaking changes");
 		Html.Should().Contain("Breaking change in API");
 	}
 
-	[Fact]
+	[Test]
 	public void RendersImpactAndAction()
 	{
 		Html.Should().Contain("Impact");
@@ -785,10 +785,10 @@ public class ChangelogWithBreakingChangesTests : DirectiveTest<ChangelogBlock>
 /// Tests for deprecations rendering.
 /// Deprecations should always render on the page when using :type: all.
 /// </summary>
+[InheritsTests]
 public class ChangelogWithDeprecationsTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogWithDeprecationsTests(ITestOutputHelper output) : base(
-			output,
+	public ChangelogWithDeprecationsTests() : base(
 			// language=markdown
 			"""
 		:::{changelog}
@@ -819,7 +819,7 @@ public class ChangelogWithDeprecationsTests : DirectiveTest<ChangelogBlock>
 			)
 		);
 
-	[Fact]
+	[Test]
 	public void RendersDeprecationsSection()
 	{
 		Html.Should().Contain("Deprecations");
@@ -827,10 +827,10 @@ public class ChangelogWithDeprecationsTests : DirectiveTest<ChangelogBlock>
 	}
 }
 
+[InheritsTests]
 public class ChangelogEmptyBundleTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogEmptyBundleTests(ITestOutputHelper output) : base(
-			output,
+	public ChangelogEmptyBundleTests() : base(
 			// language=markdown
 			"""
 		:::{changelog}
@@ -850,7 +850,7 @@ public class ChangelogEmptyBundleTests : DirectiveTest<ChangelogBlock>
 			)
 		);
 
-	[Fact]
+	[Test]
 	public void OmitsEmptyVersionBlock()
 	{
 		Html.Should().NotContain("No new features, enhancements, or fixes");
@@ -858,10 +858,10 @@ public class ChangelogEmptyBundleTests : DirectiveTest<ChangelogBlock>
 	}
 }
 
+[InheritsTests]
 public class ChangelogEmptyFolderTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogEmptyFolderTests(ITestOutputHelper output) : base(
-			output,
+	public ChangelogEmptyFolderTests() : base(
 			// language=markdown
 			"""
 		:::{changelog}
@@ -871,10 +871,10 @@ public class ChangelogEmptyFolderTests : DirectiveTest<ChangelogBlock>
 		// Create the folder but don't add any YAML files
 		FileSystem.AddDirectory("docs/changelog/bundles");
 
-	[Fact]
+	[Test]
 	public void ReportsFolderEmpty() => Block!.Found.Should().BeFalse();
 
-	[Fact]
+	[Test]
 	public void EmitsErrorForEmptyFolder()
 	{
 		Collector.Diagnostics.Should().NotBeNullOrEmpty();
@@ -882,10 +882,10 @@ public class ChangelogEmptyFolderTests : DirectiveTest<ChangelogBlock>
 	}
 }
 
+[InheritsTests]
 public class ChangelogAbsolutePathTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogAbsolutePathTests(ITestOutputHelper output) : base(
-			output,
+	public ChangelogAbsolutePathTests() : base(
 			// language=markdown
 			"""
 		:::{changelog} /release-notes/bundles
@@ -912,10 +912,10 @@ public class ChangelogAbsolutePathTests : DirectiveTest<ChangelogBlock>
 			)
 		);
 
-	[Fact]
+	[Test]
 	public void FindsBundlesFolderWithAbsolutePath() => Block!.Found.Should().BeTrue();
 
-	[Fact]
+	[Test]
 	public void SetsCorrectBundlesFolderPath() => Block!.BundlesFolderPath.Should().Contain("release-notes");
 }
 
@@ -923,10 +923,10 @@ public class ChangelogAbsolutePathTests : DirectiveTest<ChangelogBlock>
 /// Tests the section order - critical types (breaking changes, security, known issues, deprecations)
 /// should appear BEFORE features/fixes when using :type: all.
 /// </summary>
+[InheritsTests]
 public class ChangelogSectionOrderTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogSectionOrderTests(ITestOutputHelper output) : base(
-			output,
+	public ChangelogSectionOrderTests() : base(
 			// language=markdown
 			"""
 		:::{changelog}
@@ -998,7 +998,7 @@ public class ChangelogSectionOrderTests : DirectiveTest<ChangelogBlock>
 			)
 		);
 
-	[Fact]
+	[Test]
 	public void BreakingChangesAppearsFirst()
 	{
 		var breakingIdx = Html.IndexOf("Breaking changes", StringComparison.Ordinal);
@@ -1009,7 +1009,7 @@ public class ChangelogSectionOrderTests : DirectiveTest<ChangelogBlock>
 		breakingIdx.Should().BeLessThan(fixesIdx, "Breaking changes should appear before Fixes");
 	}
 
-	[Fact]
+	[Test]
 	public void SecurityAppearsBeforeFeatures()
 	{
 		var securityIdx = Html.IndexOf(">Security<", StringComparison.Ordinal);
@@ -1018,7 +1018,7 @@ public class ChangelogSectionOrderTests : DirectiveTest<ChangelogBlock>
 		securityIdx.Should().BeLessThan(featuresIdx, "Security should appear before Features");
 	}
 
-	[Fact]
+	[Test]
 	public void KnownIssuesAppearsBeforeFeatures()
 	{
 		var knownIssuesIdx = Html.IndexOf("Known issues", StringComparison.Ordinal);
@@ -1027,7 +1027,7 @@ public class ChangelogSectionOrderTests : DirectiveTest<ChangelogBlock>
 		knownIssuesIdx.Should().BeLessThan(featuresIdx, "Known issues should appear before Features");
 	}
 
-	[Fact]
+	[Test]
 	public void DeprecationsAppearsBeforeFeatures()
 	{
 		var deprecationsIdx = Html.IndexOf("Deprecations", StringComparison.Ordinal);
@@ -1040,10 +1040,10 @@ public class ChangelogSectionOrderTests : DirectiveTest<ChangelogBlock>
 /// <summary>
 /// Tests header levels: ## (h2) for versions, ### (h3) for sections.
 /// </summary>
+[InheritsTests]
 public class ChangelogHeaderLevelsTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogHeaderLevelsTests(ITestOutputHelper output) : base(
-			output,
+	public ChangelogHeaderLevelsTests() : base(
 			// language=markdown
 			"""
 		:::{changelog}
@@ -1077,7 +1077,7 @@ public class ChangelogHeaderLevelsTests : DirectiveTest<ChangelogBlock>
 			)
 		);
 
-	[Fact]
+	[Test]
 	public void VersionHeaderIsH2()
 	{
 		// Version should be h2
@@ -1085,7 +1085,7 @@ public class ChangelogHeaderLevelsTests : DirectiveTest<ChangelogBlock>
 		Html.Should().Contain("9.3.0");
 	}
 
-	[Fact]
+	[Test]
 	public void OnlyOneH2ForVersion()
 	{
 		// Only one h2 for the version header
@@ -1093,7 +1093,7 @@ public class ChangelogHeaderLevelsTests : DirectiveTest<ChangelogBlock>
 		h2Count.Should().Be(1, "Should have exactly one h2 for the version");
 	}
 
-	[Fact]
+	[Test]
 	public void SectionHeadersAreH3()
 	{
 		// Section headers should be h3 (children of version)
@@ -1121,10 +1121,10 @@ public class ChangelogHeaderLevelsTests : DirectiveTest<ChangelogBlock>
 /// the rendered output does not concatenate them without a separator.
 /// Regression test for: "allowlist.This PR introduces..." (no space between title and description).
 /// </summary>
+[InheritsTests]
 public class ChangelogTitleDescriptionSpacingTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogTitleDescriptionSpacingTests(ITestOutputHelper output) : base(
-			output,
+	public ChangelogTitleDescriptionSpacingTests() : base(
 			// language=markdown
 			"""
 		:::{changelog}
@@ -1151,23 +1151,23 @@ public class ChangelogTitleDescriptionSpacingTests : DirectiveTest<ChangelogBloc
 			)
 		);
 
-	[Fact]
+	[Test]
 	public void RendersTitleText() => Html.Should().Contain("Added missing banner-related Kibana settings to the settings allowlist");
 
-	[Fact]
+	[Test]
 	public void RendersDescriptionText() => Html.Should().Contain("This PR introduces the following settings");
 
-	[Fact]
+	[Test]
 	public void DoesNotConcatenateTitleAndDescriptionWithoutSeparator() => Html.Should().NotContain("allowlist.This PR introduces");
 }
 
 /// <summary>
 /// Verifies that when a bundle has a release-date field, it is rendered in the output.
 /// </summary>
+[InheritsTests]
 public class ChangelogReleaseDateTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogReleaseDateTests(ITestOutputHelper output) : base(
-			output,
+	public ChangelogReleaseDateTests() : base(
 			// language=markdown
 			"""
 		:::{changelog}
@@ -1196,20 +1196,20 @@ public class ChangelogReleaseDateTests : DirectiveTest<ChangelogBlock>
 			)
 		);
 
-	[Fact]
+	[Test]
 	public void RendersReleaseDate() => Html.Should().Contain("Released: April 9, 2026");
 
-	[Fact]
+	[Test]
 	public void RendersEntries() => Html.Should().Contain("Add tracing improvements");
 }
 
 /// <summary>
 /// Verifies that when a bundle has no release-date field, no "Released:" text appears.
 /// </summary>
+[InheritsTests]
 public class ChangelogNoReleaseDateTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogNoReleaseDateTests(ITestOutputHelper output) : base(
-			output,
+	public ChangelogNoReleaseDateTests() : base(
 			// language=markdown
 			"""
 		:::{changelog}
@@ -1236,17 +1236,17 @@ public class ChangelogNoReleaseDateTests : DirectiveTest<ChangelogBlock>
 			)
 		);
 
-	[Fact]
+	[Test]
 	public void DoesNotRenderReleaseDate() => Html.Should().NotContain("Released:");
 }
 
 /// <summary>
 /// Verifies that both release-date and description render together.
 /// </summary>
+[InheritsTests]
 public class ChangelogReleaseDateWithDescriptionTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogReleaseDateWithDescriptionTests(ITestOutputHelper output) : base(
-			output,
+	public ChangelogReleaseDateWithDescriptionTests() : base(
 			// language=markdown
 			"""
 		:::{changelog}
@@ -1277,12 +1277,12 @@ public class ChangelogReleaseDateWithDescriptionTests : DirectiveTest<ChangelogB
 			)
 		);
 
-	[Fact]
+	[Test]
 	public void RendersReleaseDate() => Html.Should().Contain("Released: April 9, 2026");
 
-	[Fact]
+	[Test]
 	public void RendersDescription() => Html.Should().Contain("This release includes tracing improvements and bug fixes.");
 
-	[Fact]
+	[Test]
 	public void RendersEntries() => Html.Should().Contain("Add tracing improvements");
 }

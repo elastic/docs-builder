@@ -9,101 +9,101 @@ namespace Elastic.ApiExplorer.Tests;
 
 public class SchemaHelpersTests
 {
-	[Theory]
-	[InlineData("string")]
-	[InlineData("number")]
-	[InlineData("boolean")]
-	[InlineData("object")]
-	[InlineData("strings")]
+	[Test]
+	[Arguments("string")]
+	[Arguments("number")]
+	[Arguments("boolean")]
+	[Arguments("object")]
+	[Arguments("strings")]
 	public void PrimitiveCssClassOrNull_Group1Atoms_ReturnsTypePrimitive(string name) =>
 		SchemaHelpers.PrimitiveCssClassOrNull(name).Should().Be("type-primitive");
 
-	[Theory]
-	[InlineData("Field")]
-	[InlineData("TaskSettings")]
-	[InlineData("string[]")]
-	[InlineData(null)]
+	[Test]
+	[Arguments("Field")]
+	[Arguments("TaskSettings")]
+	[Arguments("string[]")]
+	[Arguments(null)]
 	public void PrimitiveCssClassOrNull_NonAtoms_ReturnsNull(string? name) => SchemaHelpers.PrimitiveCssClassOrNull(name).Should().BeNull();
 
-	[Theory]
-	[InlineData("Field")]
-	[InlineData("Id")]
-	[InlineData("uint")]
+	[Test]
+	[Arguments("Field")]
+	[Arguments("Id")]
+	[Arguments("uint")]
 	public void ValueCssClassOrNull_Group2Aliases_ReturnsTypeValue(string name) =>
 		SchemaHelpers.ValueCssClassOrNull(name).Should().Be("type-value");
 
-	[Theory]
-	[InlineData("string")]
-	[InlineData("TaskSettings")]
-	[InlineData(null)]
+	[Test]
+	[Arguments("string")]
+	[Arguments("TaskSettings")]
+	[Arguments(null)]
 	public void ValueCssClassOrNull_NonAliases_ReturnsNull(string? name) => SchemaHelpers.ValueCssClassOrNull(name).Should().BeNull();
 
-	[Fact]
+	[Test]
 	public void TypeAtomCssClassOrNull_PrefersPrimitiveOverValue() =>
 		SchemaHelpers.TypeAtomCssClassOrNull("string").Should().Be("type-primitive");
 
-	[Fact]
+	[Test]
 	public void TypeAtomCssClassOrNull_Alias_ReturnsTypeValue() => SchemaHelpers.TypeAtomCssClassOrNull("Field").Should().Be("type-value");
 
-	[Fact]
+	[Test]
 	public void TypeAtomCssClassOrNull_NamedObject_ReturnsTypeObject() =>
 		SchemaHelpers.TypeAtomCssClassOrNull("TaskSettings").Should().Be("type-object");
 
-	[Fact]
+	[Test]
 	public void TypeAtomCssClassOrNull_LinkedContainer_ReturnsTypeLinked() =>
 		SchemaHelpers.TypeAtomCssClassOrNull("QueryContainer").Should().Be("type-linked");
 
-	[Fact]
+	[Test]
 	public void TypeAtomCssClassOrNull_Unknown_ReturnsNull() => SchemaHelpers.TypeAtomCssClassOrNull("unknown").Should().BeNull();
 
-	[Theory]
-	[InlineData("string | string[]")]
-	[InlineData("string[]")]
-	[InlineData("string to HighlightField")]
+	[Test]
+	[Arguments("string | string[]")]
+	[Arguments("string[]")]
+	[Arguments("string to HighlightField")]
 	public void TypeAtomCssClassOrNull_CompoundFormula_ReturnsNull(string name) =>
 		SchemaHelpers.TypeAtomCssClassOrNull(name).Should().BeNull();
 
-	[Fact]
+	[Test]
 	public void UnionOptionClasses_NamedObject_IncludesTypeObject() =>
 		SchemaHelpers.UnionOptionClasses(true, "TaskSettings").Should().Be("union-type-option type-object");
 
-	[Fact]
+	[Test]
 	public void UnionOptionClasses_LinkedContainer_IncludesTypeLinked() =>
 		SchemaHelpers.UnionOptionClasses(true, "AggregationContainer").Should().Be("union-type-option type-linked");
 
-	[Fact]
+	[Test]
 	public void UnionOptionClasses_PrimitiveTypeOption_IncludesTypePrimitive() =>
 		SchemaHelpers.UnionOptionClasses(true, "string").Should().Be("union-type-option type-primitive");
 
-	[Fact]
+	[Test]
 	public void UnionOptionClasses_ValueTypeOption_IncludesTypeValue() =>
 		SchemaHelpers.UnionOptionClasses(true, "Field").Should().Be("union-type-option type-value");
 
-	[Fact]
+	[Test]
 	public void UnionOptionClasses_Literal_DoesNotIncludeTypePrimitive() =>
 		SchemaHelpers.UnionOptionClasses(false, "false_positive").Should().Be("union-option");
 
-	[Theory]
-	[InlineData("Security_Lists_API_ListMetadata")]
-	[InlineData("Security_Lists_API_ListType")]
-	[InlineData("Cases_case_description")]
+	[Test]
+	[Arguments("Security_Lists_API_ListMetadata")]
+	[Arguments("Security_Lists_API_ListType")]
+	[Arguments("Cases_case_description")]
 	public void IsInternalSchemaName_CodegenIds_ReturnsTrue(string name) => SchemaHelpers.IsInternalSchemaName(name).Should().BeTrue();
 
-	[Theory]
-	[InlineData("Field")]
-	[InlineData("SearchMode")]
-	[InlineData("QueryContainer")]
-	[InlineData("string")]
-	[InlineData("Field | Field[]")]
-	[InlineData(null)]
+	[Test]
+	[Arguments("Field")]
+	[Arguments("SearchMode")]
+	[Arguments("QueryContainer")]
+	[Arguments("string")]
+	[Arguments("Field | Field[]")]
+	[Arguments(null)]
 	public void IsInternalSchemaName_ReadableNames_ReturnsFalse(string? name) =>
 		SchemaHelpers.IsInternalSchemaName(name).Should().BeFalse();
 
-	[Theory]
-	[InlineData("Security_Lists_API_PlatformErrorResponse", "PlatformErrorResponse")]
-	[InlineData("Security_Lists_API_SiemErrorResponse", "SiemErrorResponse")]
-	[InlineData("Field", "Field")]
-	[InlineData("QueryContainer", "QueryContainer")]
+	[Test]
+	[Arguments("Security_Lists_API_PlatformErrorResponse", "PlatformErrorResponse")]
+	[Arguments("Security_Lists_API_SiemErrorResponse", "SiemErrorResponse")]
+	[Arguments("Field", "Field")]
+	[Arguments("QueryContainer", "QueryContainer")]
 	public void ReadableSchemaName_CodegenIds_UsesLastSegment(string input, string expected) =>
 		SchemaHelpers.ReadableSchemaName(input).Should().Be(expected);
 }

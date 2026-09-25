@@ -15,9 +15,9 @@ namespace Elastic.Changelog.Tests.Changelogs.Create;
 /// Tests promotion-report parsing feeding <see cref="ChangelogCreationService"/> (same expansion
 /// <c>changelog add --report</c> performs before creation).
 /// </summary>
-public class AddReportOptionTests(ITestOutputHelper output) : CreateChangelogTestBase(output)
+public class AddReportOptionTests() : CreateChangelogTestBase()
 {
-	[Fact]
+	[Test]
 	public async Task CreateChangelog_FromPromotionReportHtmlFile_CreatesOneYamlPerPr()
 	{
 		var html =
@@ -29,7 +29,7 @@ public class AddReportOptionTests(ITestOutputHelper output) : CreateChangelogTes
 			""";
 		var reportFile = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "promotion.html");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(reportFile)!);
-		await FileSystem.File.WriteAllTextAsync(reportFile, html, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(reportFile, html, TestContext.Current!.Execution.CancellationToken);
 
 		var pr1 = new GitHubPrInfo { Title = "First from report", Labels = ["type:feature"] };
 		var pr2 = new GitHubPrInfo { Title = "Second from report", Labels = ["type:bug"] };
@@ -56,7 +56,7 @@ public class AddReportOptionTests(ITestOutputHelper output) : CreateChangelogTes
 		var configPath = await CreateConfigDirectory(configContent);
 
 		var parser = new PromotionReportParser(LoggerFactory, FileSystem);
-		var prUrls = await parser.ParseReportToPrUrlsAsync(Collector, reportFile, TestContext.Current.CancellationToken);
+		var prUrls = await parser.ParseReportToPrUrlsAsync(Collector, reportFile, TestContext.Current!.Execution.CancellationToken);
 		prUrls.Should().NotBeNull();
 		prUrls!.Should().HaveCount(2);
 
@@ -70,7 +70,7 @@ public class AddReportOptionTests(ITestOutputHelper output) : CreateChangelogTes
 			UsePrNumber = true
 		};
 
-		var result = await service.CreateChangelog(Collector, input, TestContext.Current.CancellationToken);
+		var result = await service.CreateChangelog(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		result.Should().BeTrue();
 		Collector.Errors.Should().Be(0);
@@ -82,22 +82,22 @@ public class AddReportOptionTests(ITestOutputHelper output) : CreateChangelogTes
 		Path.GetFileName(files[0]).Should().Be("7001.yaml");
 		Path.GetFileName(files[1]).Should().Be("7002.yaml");
 
-		var yaml1 = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current.CancellationToken);
+		var yaml1 = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current!.Execution.CancellationToken);
 		yaml1.Should().Contain("title: First from report");
 		yaml1.Should().Contain("https://github.com/elastic/elasticsearch/pull/7001");
 
-		var yaml2 = await FileSystem.File.ReadAllTextAsync(files[1], TestContext.Current.CancellationToken);
+		var yaml2 = await FileSystem.File.ReadAllTextAsync(files[1], TestContext.Current!.Execution.CancellationToken);
 		yaml2.Should().Contain("title: Second from report");
 		yaml2.Should().Contain("https://github.com/elastic/elasticsearch/pull/7002");
 	}
 
-	[Fact]
+	[Test]
 	public async Task PromotionReportParser_ReportFileMissing_EmitsError()
 	{
 		var missing = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "nope.html");
 		var parser = new PromotionReportParser(LoggerFactory, FileSystem);
 
-		var prUrls = await parser.ParseReportToPrUrlsAsync(Collector, missing, TestContext.Current.CancellationToken);
+		var prUrls = await parser.ParseReportToPrUrlsAsync(Collector, missing, TestContext.Current!.Execution.CancellationToken);
 
 		prUrls.Should().BeNull();
 		Collector.Errors.Should().BeGreaterThan(0);

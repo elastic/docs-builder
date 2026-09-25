@@ -22,12 +22,6 @@ public sealed class TestDiagnosticsOutput : IDiagnosticsOutput
 {
 	public void Write(Diagnostic diagnostic)
 	{
-		// Resolved per write, not captured in constructor: the collector lives inside the
-		// per-class Scenario cache and outlives any individual test instance.
-		var output = TestContext.Current.TestOutputHelper;
-		if (output is null)
-			return;
-
 		var line = diagnostic.Line ?? 0;
 		var prefix = diagnostic.Severity switch
 		{
@@ -35,7 +29,7 @@ public sealed class TestDiagnosticsOutput : IDiagnosticsOutput
 			Severity.Warning => "Warn ",
 			_ => "Hint "
 		};
-		output.WriteLine($"{prefix}: {diagnostic.Message} ({diagnostic.File}:{line})");
+		TestContext.Current?.Output.WriteLine($"{prefix}: {diagnostic.Message} ({diagnostic.File}:{line})");
 	}
 }
 
@@ -65,14 +59,7 @@ public sealed class TestLogger : ILogger
 		TState state,
 		Exception? exception,
 		Func<TState, Exception?, string> formatter
-	)
-	{
-		// Per-write resolution: the logger may be used after the test that created it has finished.
-		var output = TestContext.Current.TestOutputHelper;
-		if (output is null)
-			return;
-		output.WriteLine(formatter(state, exception));
-	}
+	) => TestContext.Current?.Output.WriteLine(formatter(state, exception));
 }
 
 public sealed class TestLoggerFactory : ILoggerFactory

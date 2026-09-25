@@ -19,11 +19,12 @@ using Microsoft.OpenApi;
 
 namespace Elastic.ApiExplorer.Tests;
 
-public class OpenApiGeneratorSpecDownloadTests(ApiExplorerFixture fixture) : IClassFixture<ApiExplorerFixture>
+[ClassDataSource<ApiExplorerFixture>(Shared = SharedType.PerClass)]
+public class OpenApiGeneratorSpecDownloadTests(ApiExplorerFixture fixture)
 {
 	private static readonly Uri BaseUri = new("https://cdn.example/");
 
-	[Fact]
+	[Test]
 	public async Task Generate_WritesJsonAndYamlSiblingsForProductLanding()
 	{
 		var outputRoot = Path.Join(Paths.WorkingDirectoryRoot.FullName, $"api-spec-emit-{Guid.NewGuid():N}");
@@ -38,7 +39,7 @@ public class OpenApiGeneratorSpecDownloadTests(ApiExplorerFixture fixture) : ICl
 			reader
 		);
 
-		await generator.Generate(TestContext.Current.CancellationToken);
+		await generator.Generate(TestContext.Current!.Execution.CancellationToken);
 
 		var write = context.WriteFileSystem.File;
 		var jsonPath = Path.Join(outputRoot, "api", "doc", "elasticsearch.json");
@@ -46,8 +47,8 @@ public class OpenApiGeneratorSpecDownloadTests(ApiExplorerFixture fixture) : ICl
 		write.Exists(jsonPath).Should().BeTrue();
 		write.Exists(yamlPath).Should().BeTrue();
 
-		var json = await write.ReadAllTextAsync(jsonPath, TestContext.Current.CancellationToken);
-		var yaml = await write.ReadAllTextAsync(yamlPath, TestContext.Current.CancellationToken);
+		var json = await write.ReadAllTextAsync(jsonPath, TestContext.Current!.Execution.CancellationToken);
+		var yaml = await write.ReadAllTextAsync(yamlPath, TestContext.Current!.Execution.CancellationToken);
 
 		json.Should().Contain("\"openapi\"");
 		json.Should().Contain("Fixture API");
@@ -57,7 +58,7 @@ public class OpenApiGeneratorSpecDownloadTests(ApiExplorerFixture fixture) : ICl
 		yaml.Length.Should().BeGreaterThan(100);
 	}
 
-	[Fact]
+	[Test]
 	public async Task Generate_WritesVersionedSpecSiblings()
 	{
 		var outputRoot = Path.Join(Paths.WorkingDirectoryRoot.FullName, $"api-spec-v8-{Guid.NewGuid():N}");
@@ -72,14 +73,14 @@ public class OpenApiGeneratorSpecDownloadTests(ApiExplorerFixture fixture) : ICl
 			reader
 		);
 
-		await generator.Generate(TestContext.Current.CancellationToken);
+		await generator.Generate(TestContext.Current!.Execution.CancellationToken);
 
 		var write = context.WriteFileSystem.File;
 		write.Exists(Path.Join(outputRoot, "api", "doc", "elasticsearch", "v8.json")).Should().BeTrue();
 		write.Exists(Path.Join(outputRoot, "api", "doc", "elasticsearch", "v8.yaml")).Should().BeTrue();
 	}
 
-	[Fact]
+	[Test]
 	public async Task Generate_LandingHtmlContainsDownloadSourceLinks()
 	{
 		var outputRoot = Path.Join(Paths.WorkingDirectoryRoot.FullName, $"api-spec-html-{Guid.NewGuid():N}");
@@ -94,12 +95,15 @@ public class OpenApiGeneratorSpecDownloadTests(ApiExplorerFixture fixture) : ICl
 			reader
 		);
 
-		await generator.Generate(TestContext.Current.CancellationToken);
+		await generator.Generate(TestContext.Current!.Execution.CancellationToken);
 
 		var html = await context
 			.WriteFileSystem
 			.File
-			.ReadAllTextAsync(Path.Join(outputRoot, "api", "doc", "elasticsearch", "index.html"), TestContext.Current.CancellationToken);
+			.ReadAllTextAsync(
+				Path.Join(outputRoot, "api", "doc", "elasticsearch", "index.html"),
+				TestContext.Current!.Execution.CancellationToken
+			);
 
 		html.Should().Contain("Download source");
 		html.Should().Contain("href=\"/api/doc/elasticsearch.json\"");
@@ -159,7 +163,9 @@ public class OpenApiGeneratorSpecDownloadTests(ApiExplorerFixture fixture) : ICl
 	{
 		var queue = new Queue<OpenApiDocument>(documents);
 		var reader = A.Fake<IOpenApiSpecificationReader>();
-		A.CallTo(() => reader.ReadAsync(A<Stream>._, A<string>._)).ReturnsLazily(_ => Task.FromResult<OpenApiDocument?>(queue.Dequeue()));
+		A.CallTo(() => reader.ReadAsync(A<Stream>._, A<string>._, A<IDiagnosticsCollector?>._)).ReturnsLazily(
+			_ => Task.FromResult<OpenApiDocument?>(queue.Dequeue())
+		);
 		return reader;
 	}
 

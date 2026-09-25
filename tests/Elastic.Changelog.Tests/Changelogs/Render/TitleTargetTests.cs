@@ -9,9 +9,9 @@ using Elastic.Documentation.Diagnostics;
 
 namespace Elastic.Changelog.Tests.Changelogs.Render;
 
-public class TitleTargetTests(ITestOutputHelper output) : RenderChangelogTestBase(output)
+public class TitleTargetTests() : RenderChangelogTestBase()
 {
-	[Fact]
+	[Test]
 	public async Task RenderChangelogs_WithoutTitleAndNoTargets_EmitsWarning()
 	{
 		// Arrange
@@ -38,7 +38,7 @@ public class TitleTargetTests(ITestOutputHelper output) : RenderChangelogTestBas
 			  - product: elasticsearch
 			""";
 		var bundleContent = CreateResolvedBundleContent(bundleHeader, ("1755268130-test-feature.yaml", changelog1));
-		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current!.Execution.CancellationToken);
 
 		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
 
@@ -50,7 +50,7 @@ public class TitleTargetTests(ITestOutputHelper output) : RenderChangelogTestBas
 		};
 
 		// Act
-		var result = await Service.RenderChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await Service.RenderChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		result.Should().BeTrue();
@@ -66,7 +66,7 @@ public class TitleTargetTests(ITestOutputHelper output) : RenderChangelogTestBas
 			);
 	}
 
-	[Fact]
+	[Test]
 	public async Task RenderChangelogs_WithTitleAndNoTargets_NoWarning()
 	{
 		// Arrange
@@ -93,7 +93,7 @@ public class TitleTargetTests(ITestOutputHelper output) : RenderChangelogTestBas
 			  - product: elasticsearch
 			""";
 		var bundleContent = CreateResolvedBundleContent(bundleHeader, ("1755268130-test-feature.yaml", changelog1));
-		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current!.Execution.CancellationToken);
 
 		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
 
@@ -106,7 +106,7 @@ public class TitleTargetTests(ITestOutputHelper output) : RenderChangelogTestBas
 		};
 
 		// Act
-		var result = await Service.RenderChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await Service.RenderChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		result.Should().BeTrue();
@@ -115,7 +115,7 @@ public class TitleTargetTests(ITestOutputHelper output) : RenderChangelogTestBas
 		Collector.Diagnostics.Should().NotContain(d => d.Severity == Severity.Warning && d.Message.Contains("No --title option provided"));
 	}
 
-	[Fact]
+	[Test]
 	public async Task RenderChangelogs_WithIsoDateTarget_FormatsDateInHeading()
 	{
 		// Arrange
@@ -144,7 +144,7 @@ public class TitleTargetTests(ITestOutputHelper output) : RenderChangelogTestBas
 			    target: 2026-05-04
 			""";
 		var bundleContent = CreateResolvedBundleContent(bundleHeader, ("1755268130-test-feature.yaml", changelog1));
-		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current!.Execution.CancellationToken);
 
 		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
 
@@ -156,7 +156,7 @@ public class TitleTargetTests(ITestOutputHelper output) : RenderChangelogTestBas
 		};
 
 		// Act
-		var result = await Service.RenderChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await Service.RenderChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		result.Should().BeTrue();
@@ -167,11 +167,11 @@ public class TitleTargetTests(ITestOutputHelper output) : RenderChangelogTestBas
 		FileSystem.File.Exists(indexFile).Should().BeTrue();
 
 		// Check that heading uses formatted date but anchor uses raw date
-		var indexContent = await FileSystem.File.ReadAllTextAsync(indexFile, TestContext.Current.CancellationToken);
+		var indexContent = await FileSystem.File.ReadAllTextAsync(indexFile, TestContext.Current!.Execution.CancellationToken);
 		indexContent.Should().Contain("## May 4, 2026 [elastic-release-notes-2026-05-04]");
 	}
 
-	[Fact]
+	[Test]
 	public async Task RenderChangelogs_WithYearMonthTarget_FormatsDateInHeading()
 	{
 		// Arrange
@@ -200,7 +200,7 @@ public class TitleTargetTests(ITestOutputHelper output) : RenderChangelogTestBas
 			    target: 2026-05
 			""";
 		var bundleContent = CreateResolvedBundleContent(bundleHeader, ("1755268130-test-feature.yaml", changelog1));
-		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current!.Execution.CancellationToken);
 
 		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
 
@@ -212,7 +212,7 @@ public class TitleTargetTests(ITestOutputHelper output) : RenderChangelogTestBas
 		};
 
 		// Act
-		var result = await Service.RenderChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await Service.RenderChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		result.Should().BeTrue();
@@ -223,11 +223,11 @@ public class TitleTargetTests(ITestOutputHelper output) : RenderChangelogTestBas
 		FileSystem.File.Exists(indexFile).Should().BeTrue();
 
 		// Check that heading uses formatted date but anchor uses raw date
-		var indexContent = await FileSystem.File.ReadAllTextAsync(indexFile, TestContext.Current.CancellationToken);
+		var indexContent = await FileSystem.File.ReadAllTextAsync(indexFile, TestContext.Current!.Execution.CancellationToken);
 		indexContent.Should().Contain("## May 2026 [elastic-release-notes-2026-05]");
 	}
 
-	[Fact]
+	[Test]
 	public async Task RenderChangelogs_WithExplicitDateTitle_DoesNotFormatTitle()
 	{
 		// Arrange
@@ -256,7 +256,7 @@ public class TitleTargetTests(ITestOutputHelper output) : RenderChangelogTestBas
 			    target: 2026-05-04
 			""";
 		var bundleContent = CreateResolvedBundleContent(bundleHeader, ("1755268130-test-feature.yaml", changelog1));
-		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current!.Execution.CancellationToken);
 
 		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
 
@@ -269,7 +269,7 @@ public class TitleTargetTests(ITestOutputHelper output) : RenderChangelogTestBas
 		};
 
 		// Act
-		var result = await Service.RenderChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await Service.RenderChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		result.Should().BeTrue();
@@ -280,7 +280,7 @@ public class TitleTargetTests(ITestOutputHelper output) : RenderChangelogTestBas
 		FileSystem.File.Exists(indexFile).Should().BeTrue();
 
 		// Check that heading uses literal title (no formatting applied)
-		var indexContent = await FileSystem.File.ReadAllTextAsync(indexFile, TestContext.Current.CancellationToken);
+		var indexContent = await FileSystem.File.ReadAllTextAsync(indexFile, TestContext.Current!.Execution.CancellationToken);
 		indexContent.Should().Contain("## 2026-05-04 [elastic-release-notes-2026-05-04]");
 	}
 }
