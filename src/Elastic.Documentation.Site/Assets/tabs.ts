@@ -131,9 +131,11 @@ function initDropdowns() {
         )
 
         // The checked input is the source of truth — it may have been restored
-        // from sessionStorage or a URL param by ready().
+        // from sessionStorage or a URL param by ready(). Scoped to this tab
+        // set's own radios: a nested tab set's checked radio can come first in
+        // document order, and its id matches none of our options.
         const checked = tabs.querySelector<HTMLInputElement>(
-            '.tabs-input:checked'
+            ':scope > .tabs-input:checked'
         )
         if (checked) {
             select.value = checked.id

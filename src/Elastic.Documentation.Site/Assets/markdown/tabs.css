@@ -42,12 +42,16 @@
 	 * fallback; tabs.ts adds .tabs-dropdown-active once the <select> is live.
 	 */
 	.tabs.tabs-dropdown-active {
-		.tabs-label {
+		/*
+		 * Direct children only. A tab panel may hold a nested tab set, and
+		 * hiding its labels would leave it with no control at all.
+		 */
+		> .tabs-label {
 			@apply hidden;
 		}
 
 		/* The toolbar above already draws the top border. */
-		.tabs-content {
+		> .tabs-content {
 			@apply border-t-0 pt-4;
 		}
 	}

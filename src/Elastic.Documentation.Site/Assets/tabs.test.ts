@@ -177,3 +177,61 @@ describe('keyboard reachability of the fallback radios', () => {
         expect(radios().some((r) => r.hasAttribute('aria-hidden'))).toBe(false)
     })
 })
+
+describe('dropdown tab sets containing a nested tab set', () => {
+    // Outer tab 2 is the restored one; outer tab 1 holds a nested tab set whose
+    // own first radio is checked and therefore appears earlier in the document.
+    function withNested(): string {
+        const nested = tabSet(
+            9,
+            [
+                { title: 'Query DSL', sync: 'dsl' },
+                { title: 'ES|QL', sync: 'esql' },
+            ],
+            { group: 'query-language' }
+        )
+        const id = (i: number) => `tabs-item-1-${i}`
+        const options = [
+            { title: 'Python', sync: 'python' },
+            { title: 'Java', sync: 'java' },
+        ]
+        const select = `<div class="tabs-select-wrapper" hidden>
+               <select class="tabs-select" data-sync-group="languages">
+                   ${options.map((o, i) => `<option value="${id(i)}" data-sync-id="${o.sync}">${o.title}</option>`).join('')}
+               </select>
+           </div>`
+        const items = options
+            .map(
+                (o, i) =>
+                    `<input class="tabs-input" ${i === 1 ? 'checked' : ''} id="${id(i)}" name="tabs-set-1" type="radio" tabindex="0">
+                     <label class="tabs-label" data-sync-id="${o.sync}" data-sync-group="languages" for="${id(i)}">${o.title}</label>
+                     <div class="tabs-content">${i === 0 ? nested : ''}</div>`
+            )
+            .join('')
+        return `<div class="tabs tabs-dropdown">${select}${items}</div>`
+    }
+
+    it('reads its own checked radio, not a nested one', () => {
+        document.body.innerHTML = withNested()
+        initTabs()
+
+        const select = document.querySelector<HTMLSelectElement>(
+            '.tabs-dropdown > .tabs-select-wrapper > .tabs-select'
+        )!
+        expect(select.value).toBe('tabs-item-1-1')
+        expect(select.selectedOptions[0].textContent).toBe('Java')
+    })
+
+    it('leaves the nested tab set its own radios', () => {
+        document.body.innerHTML = withNested()
+        initTabs()
+
+        const nestedRadios = Array.from(
+            document.querySelectorAll<HTMLInputElement>(
+                '.tabs-content .tabs-input'
+            )
+        )
+        expect(nestedRadios.length).toBeGreaterThan(0)
+        expect(nestedRadios.every((r) => r.tabIndex === 0)).toBe(true)
+    })
+})
