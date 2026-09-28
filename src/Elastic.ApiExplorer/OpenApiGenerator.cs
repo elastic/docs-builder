@@ -401,17 +401,14 @@ public class OpenApiGenerator(
 
 				var suffix = trimmed[canonicalRoot.Length..];
 				var aliasPath = aliasRoot + suffix;
-				if (
-					_aliasRedirects.TryGetValue(aliasPath, out var existing)
-					&& !string.Equals(existing, trimmed, StringComparison.OrdinalIgnoreCase)
-				)
+				_ = _aliasRedirects.AddOrUpdate(aliasPath, trimmed, (key, existingValue) =>
 				{
-					context.Collector.EmitGlobalWarning(
-						$"Alias redirect conflict: '{aliasPath}' already maps to '{existing}'; ignoring new mapping to '{trimmed}' from api: '{apiKey}'."
-					);
-					continue;
-				}
-				_aliasRedirects[aliasPath] = trimmed;
+					if (!string.Equals(existingValue, trimmed, StringComparison.OrdinalIgnoreCase))
+						context.Collector.EmitGlobalWarning(
+							$"Alias redirect conflict: '{key}' already maps to '{existingValue}'; ignoring new mapping to '{trimmed}' from api: '{apiKey}'."
+						);
+					return existingValue;
+				});
 			}
 		}
 	}
