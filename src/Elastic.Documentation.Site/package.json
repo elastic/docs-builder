@@ -100,7 +100,7 @@
     "svgo": "^4.1.0",
     "text-diff": "1.0.1",
     "typescript": "^5.9.3",
-    "typescript-eslint": "8.69.0",
+    "typescript-eslint": "8.70.0",
     "wait-on": "9.1.0"
   },
   "browserslist": [
