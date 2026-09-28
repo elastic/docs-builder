@@ -210,6 +210,36 @@ public partial class MarkdownParser(BuildContext build, IParserResolvers resolve
 		}
 	}
 
+	/// <summary>
+	/// A minimal pipeline for re-parsing markdown generated from changelog bundles.
+	/// Changelog content originates from GitHub PR/issue titles and descriptions, not from
+	/// docs-builder source files, so docs-specific parsers (substitution keys, MyST roles,
+	/// cross-reference link validation) must not run on it.
+	/// </summary>
+	[field: AllowNull, MaybeNull]
+	public static MarkdownPipeline ChangelogPipeline
+	{
+		get
+		{
+			if (field is not null)
+				return field;
+			var builder = new MarkdownPipelineBuilder()
+				.UseFootnotes()
+				.UseAutoLinks()
+				.UseHeadingsWithSlugs()
+				.UseEmphasisExtras(EmphasisExtraOptions.Default)
+				.UsePipeTables()
+				.UseTaskLists()
+				.UseDirectives()
+				.UseDefinitionLists()
+				.UseHardBreaks()
+				.DisableHtml();
+			_ = builder.BlockParsers.TryRemove<IndentedCodeBlockParser>();
+			field = builder.Build();
+			return field;
+		}
+	}
+
 	[field: AllowNull, MaybeNull]
 	public static MarkdownPipeline Pipeline
 	{

@@ -53,13 +53,7 @@ public static class ChangelogInlineRenderer
 			isFirst = false;
 		}
 
-		if (sb.Length == 0)
-			return null;
-
-		// Escape {{ so it isn't re-processed as a substitution key when ParseMarkdownStringAsync
-		// re-parses this generated markdown. Changelog entry text (titles, descriptions) may
-		// contain template-placeholder syntax such as {{hostname}} that should render literally.
-		return sb.ToString().Replace("{{", "&#123;&#123;");
+		return sb.Length == 0 ? null : sb.ToString();
 	}
 
 	/// <summary>
