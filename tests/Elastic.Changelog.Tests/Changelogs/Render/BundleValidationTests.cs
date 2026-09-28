@@ -8,7 +8,7 @@ using Elastic.Documentation.Configuration;
 
 namespace Elastic.Changelog.Tests.Changelogs.Render;
 
-public class BundleValidationTests(ITestOutputHelper output) : RenderChangelogTestBase(output)
+public class BundleValidationTests() : RenderChangelogTestBase()
 {
 	// language=yaml
 	private const string BundleHeader = """
@@ -53,7 +53,7 @@ public class BundleValidationTests(ITestOutputHelper output) : RenderChangelogTe
 		- "103"
 		""";
 
-	[Fact]
+	[Test]
 	public async Task MultipleAmendFiles_AllEntriesMergedAndRendered()
 	{
 		// Arrange — main bundle with 1 entry + 2 amend files with 1 entry each
@@ -71,7 +71,7 @@ public class BundleValidationTests(ITestOutputHelper output) : RenderChangelogTe
 		var input = CreateRenderInput(bundleFile);
 
 		// Act
-		var result = await Service.RenderChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await Service.RenderChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		result.Should().BeTrue();
@@ -82,13 +82,13 @@ public class BundleValidationTests(ITestOutputHelper output) : RenderChangelogTe
 		var outputDir = input.Output ?? throw new InvalidOperationException("Output must be set");
 		var indexFile = FileSystem.Path.Join(outputDir, "9.2.0", "index.md");
 		FileSystem.File.Exists(indexFile).Should().BeTrue("output should be rendered");
-		var content = await FileSystem.File.ReadAllTextAsync(indexFile, TestContext.Current.CancellationToken);
+		var content = await FileSystem.File.ReadAllTextAsync(indexFile, TestContext.Current!.Execution.CancellationToken);
 		content.Should().Contain("Feature one");
 		content.Should().Contain("Feature two");
 		content.Should().Contain("Feature three");
 	}
 
-	[Fact]
+	[Test]
 	public async Task AmendFileEntry_StaleProvenanceChecksum_NoWarning()
 	{
 		// Arrange — the file block is provenance only: a checksum that no longer
@@ -115,12 +115,12 @@ public class BundleValidationTests(ITestOutputHelper output) : RenderChangelogTe
 			    prs:
 			    - "102"
 			""";
-		await FileSystem.File.WriteAllTextAsync(amend1, amendContent, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(amend1, amendContent, TestContext.Current!.Execution.CancellationToken);
 
 		var input = CreateRenderInput(bundleFile);
 
 		// Act
-		var result = await Service.RenderChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await Service.RenderChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		result.Should().BeTrue();
@@ -129,11 +129,11 @@ public class BundleValidationTests(ITestOutputHelper output) : RenderChangelogTe
 
 		var outputDir = input.Output ?? throw new InvalidOperationException("Output must be set");
 		var indexFile = FileSystem.Path.Join(outputDir, "9.2.0", "index.md");
-		var content = await FileSystem.File.ReadAllTextAsync(indexFile, TestContext.Current.CancellationToken);
+		var content = await FileSystem.File.ReadAllTextAsync(indexFile, TestContext.Current!.Execution.CancellationToken);
 		content.Should().Contain("Feature two");
 	}
 
-	[Fact]
+	[Test]
 	public async Task AmendFileEntry_WithInlineContent_MergedAndRendered()
 	{
 		// Arrange — amend entry carries inline content without any file provenance
@@ -156,12 +156,12 @@ public class BundleValidationTests(ITestOutputHelper output) : RenderChangelogTe
 			    prs:
 			    - "200"
 			""";
-		await FileSystem.File.WriteAllTextAsync(amend1, amendContent, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(amend1, amendContent, TestContext.Current!.Execution.CancellationToken);
 
 		var input = CreateRenderInput(bundleFile);
 
 		// Act
-		var result = await Service.RenderChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await Service.RenderChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		result.Should().BeTrue();
@@ -170,11 +170,11 @@ public class BundleValidationTests(ITestOutputHelper output) : RenderChangelogTe
 
 		var outputDir = input.Output ?? throw new InvalidOperationException("Output must be set");
 		var indexFile = FileSystem.Path.Join(outputDir, "9.2.0", "index.md");
-		var content = await FileSystem.File.ReadAllTextAsync(indexFile, TestContext.Current.CancellationToken);
+		var content = await FileSystem.File.ReadAllTextAsync(indexFile, TestContext.Current!.Execution.CancellationToken);
 		content.Should().Contain("Resolved amend feature");
 	}
 
-	[Fact]
+	[Test]
 	public async Task ExcludeAmendFile_OmitsEntryFromRenderedOutput()
 	{
 		var bundleDir = CreateBundleDir();
@@ -196,19 +196,19 @@ public class BundleValidationTests(ITestOutputHelper output) : RenderChangelogTe
 			      name: {file2}
 			      checksum: {ComputeSha1(ChangelogFeature2)}
 			""",
-			TestContext.Current.CancellationToken
+			TestContext.Current!.Execution.CancellationToken
 		);
 
 		var input = CreateRenderInput(bundleFile);
 
-		var result = await Service.RenderChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await Service.RenderChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		result.Should().BeTrue();
 		Collector.Errors.Should().Be(0);
 
 		var outputDir = input.Output ?? throw new InvalidOperationException("Output must be set");
 		var indexFile = FileSystem.Path.Join(outputDir, "9.2.0", "index.md");
-		var content = await FileSystem.File.ReadAllTextAsync(indexFile, TestContext.Current.CancellationToken);
+		var content = await FileSystem.File.ReadAllTextAsync(indexFile, TestContext.Current!.Execution.CancellationToken);
 		content.Should().Contain("Feature one");
 		content.Should().NotContain("Feature two");
 	}
@@ -221,7 +221,7 @@ public class BundleValidationTests(ITestOutputHelper output) : RenderChangelogTe
 	}
 
 	private async Task WriteBundleAsync(string bundlePath, string content) =>
-		await FileSystem.File.WriteAllTextAsync(bundlePath, content, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(bundlePath, content, TestContext.Current!.Execution.CancellationToken);
 
 	private RenderChangelogsArguments CreateRenderInput(string bundleFile) =>
 		new()

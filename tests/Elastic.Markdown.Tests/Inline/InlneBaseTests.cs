@@ -10,63 +10,61 @@ using Elastic.Markdown.IO;
 using JetBrains.Annotations;
 using Markdig.Syntax;
 using Markdig.Syntax.Inlines;
+using TUnit.Core.Interfaces;
 
 namespace Elastic.Markdown.Tests.Inline;
 
-public abstract class LeafTest<TDirective>(ITestOutputHelper output, [LanguageInjection("markdown")] string content) : InlineTest(
-	output,
+public abstract class LeafTest<TDirective>([LanguageInjection("markdown")] string content) : InlineTest(
 	content
 ) where TDirective : LeafInline
 {
 	protected TDirective? Block { get; private set; }
 
-	public override async ValueTask InitializeAsync()
+	public override async Task InitializeAsync()
 	{
 		await base.InitializeAsync();
 		Block = Document.Descendants<TDirective>().FirstOrDefault();
 	}
 
-	[Fact]
+	[Test]
 	public void BlockIsNotNull() => Block.Should().NotBeNull();
 }
 
-public abstract class BlockTest<TDirective>(ITestOutputHelper output, [LanguageInjection("markdown")] string content) : InlineTest(
-	output,
+public abstract class BlockTest<TDirective>([LanguageInjection("markdown")] string content) : InlineTest(
 	content,
 	new Dictionary<string, string> { { "a-variable", "This is a variable" } }
 ) where TDirective : Block
 {
 	protected TDirective? Block { get; private set; }
 
-	public override async ValueTask InitializeAsync()
+	public override async Task InitializeAsync()
 	{
 		await base.InitializeAsync();
 		Block = Document.Descendants<TDirective>().FirstOrDefault();
 	}
 
-	[Fact]
+	[Test]
 	public void BlockIsNotNull() => Block.Should().NotBeNull();
 }
 
 public abstract class InlineTest<TDirective>(
-	ITestOutputHelper output,
 	[LanguageInjection("markdown")] string content,
 	Dictionary<string, string>? globalVariables = null
-) : InlineTest(output, content, globalVariables) where TDirective : ContainerInline
+) : InlineTest(content, globalVariables) where TDirective : ContainerInline
 {
 	protected TDirective? Block { get; private set; }
 
-	public override async ValueTask InitializeAsync()
+	public override async Task InitializeAsync()
 	{
 		await base.InitializeAsync();
 		Block = Document.Descendants<TDirective>().FirstOrDefault();
 	}
 
-	[Fact]
+	[Test]
 	public void BlockIsNotNull() => Block.Should().NotBeNull();
 }
 
-public abstract class InlineTest : IAsyncLifetime
+public abstract class InlineTest : IAsyncInitializer, IAsyncDisposable
 {
 	protected MarkdownFile File { get; }
 	protected string Html { get; private set; }
@@ -77,13 +75,9 @@ public abstract class InlineTest : IAsyncLifetime
 
 	private bool TestingFullDocument { get; }
 
-	protected InlineTest(
-		ITestOutputHelper output,
-		[LanguageInjection("markdown")] string content,
-		Dictionary<string, string>? globalVariables = null
-	)
+	protected InlineTest([LanguageInjection("markdown")] string content, Dictionary<string, string>? globalVariables = null)
 	{
-		var logger = new TestLoggerFactory(output);
+		var logger = new TestLoggerFactory();
 		TestingFullDocument = string.IsNullOrEmpty(content) || content.StartsWith("---", StringComparison.OrdinalIgnoreCase);
 
 		var documentContents = TestingFullDocument
@@ -109,7 +103,7 @@ public abstract class InlineTest : IAsyncLifetime
 		var root = FileSystem.DirectoryInfo.New($"{baseRootPath}/docs/");
 		FileSystem.GenerateDocSetYaml(root, globalVariables);
 
-		Collector = new TestDiagnosticsCollector(output);
+		Collector = new TestDiagnosticsCollector();
 		var configurationContext = TestHelpers.CreateConfigurationContext(FileSystem);
 		var context = CreateBuildContext(Collector, FileSystem, configurationContext);
 		var linkResolver = CreateCrossLinkResolver();
@@ -131,20 +125,20 @@ public abstract class InlineTest : IAsyncLifetime
 		IConfigurationContext configurationContext
 	) => new(collector, TestHelpers.CreateDocumentationFileSystem(fileSystem), configurationContext) { UrlPathPrefix = "/docs" };
 
-	public virtual async ValueTask InitializeAsync()
+	public virtual async Task InitializeAsync()
 	{
-		_ = Collector.StartAsync(TestContext.Current.CancellationToken);
+		_ = Collector.StartAsync(TestContext.Current!.Execution.CancellationToken);
 
-		await Set.ResolveDirectoryTree(TestContext.Current.CancellationToken);
+		await Set.ResolveDirectoryTree(TestContext.Current!.Execution.CancellationToken);
 
-		Document = await File.ParseFullAsync(Set.TryFindDocumentByRelativePath, TestContext.Current.CancellationToken);
+		Document = await File.ParseFullAsync(Set.TryFindDocumentByRelativePath, TestContext.Current!.Execution.CancellationToken);
 		var html = MarkdownFile.CreateHtml(Document).AsSpan();
 		var find = "</h1>\n</section>";
 		var start = html.IndexOf(find, StringComparison.Ordinal);
 		Html = start >= 0 && !TestingFullDocument
 			? html[(start + find.Length)..].ToString().Trim(Environment.NewLine.ToCharArray())
 			: html.ToString().Trim(Environment.NewLine.ToCharArray());
-		await Collector.StopAsync(TestContext.Current.CancellationToken);
+		await Collector.StopAsync(TestContext.Current!.Execution.CancellationToken);
 	}
 
 	public ValueTask DisposeAsync()

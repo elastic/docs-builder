@@ -11,12 +11,12 @@ namespace Elastic.ApiExplorer.Tests;
 
 public class InfinityEnumSpecTests
 {
-	[Fact]
+	[Test]
 	public async Task ReadAndSerialize_InfinityStringEnum_DoesNotThrow()
 	{
 		var yaml = await File.ReadAllTextAsync(
 			Path.Combine(AppContext.BaseDirectory, "TestData", "infinity-enum.yaml"),
-			TestContext.Current.CancellationToken
+			TestContext.Current!.Execution.CancellationToken
 		);
 		await using var stream = new MemoryStream(Encoding.UTF8.GetBytes(yaml));
 		var document = await OpenApiReader.Instance.ReadAsync(stream, "infinity-enum.yaml");
@@ -24,13 +24,21 @@ public class InfinityEnumSpecTests
 
 		await using var json = new MemoryStream();
 		var writeJson =
-			async () => await document.SerializeAsJsonAsync(json, OpenApiSpecVersion.OpenApi3_1, TestContext.Current.CancellationToken);
+			async () => await document.SerializeAsJsonAsync(
+				json,
+				OpenApiSpecVersion.OpenApi3_1,
+				TestContext.Current!.Execution.CancellationToken
+			);
 		await writeJson.Should().NotThrowAsync();
 		Encoding.UTF8.GetString(json.ToArray()).Should().Contain("\"Infinity\"");
 
 		await using var yamlOut = new MemoryStream();
 		var writeYaml =
-			async () => await document.SerializeAsYamlAsync(yamlOut, OpenApiSpecVersion.OpenApi3_1, TestContext.Current.CancellationToken);
+			async () => await document.SerializeAsYamlAsync(
+				yamlOut,
+				OpenApiSpecVersion.OpenApi3_1,
+				TestContext.Current!.Execution.CancellationToken
+			);
 		await writeYaml.Should().NotThrowAsync();
 	}
 }

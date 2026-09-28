@@ -9,9 +9,9 @@ using FakeItEasy;
 
 namespace Elastic.Changelog.Tests.Changelogs.Create;
 
-public class ValidationTests(ITestOutputHelper output) : CreateChangelogTestBase(output)
+public class ValidationTests() : CreateChangelogTestBase()
 {
-	[Fact]
+	[Test]
 	public async Task CreateChangelog_WithPrOptionButNoLabelMapping_ReturnsError()
 	{
 		// Arrange
@@ -46,7 +46,7 @@ public class ValidationTests(ITestOutputHelper output) : CreateChangelogTestBase
 		};
 
 		// Act
-		var result = await service.CreateChangelog(Collector, input, TestContext.Current.CancellationToken);
+		var result = await service.CreateChangelog(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		result.Should().BeFalse();
@@ -54,7 +54,7 @@ public class ValidationTests(ITestOutputHelper output) : CreateChangelogTestBase
 		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("Cannot derive type from PR"));
 	}
 
-	[Fact]
+	[Test]
 	public async Task CreateChangelog_WithInvalidProduct_ReturnsError()
 	{
 		// Arrange
@@ -69,7 +69,7 @@ public class ValidationTests(ITestOutputHelper output) : CreateChangelogTestBase
 		};
 
 		// Act
-		var result = await service.CreateChangelog(Collector, input, TestContext.Current.CancellationToken);
+		var result = await service.CreateChangelog(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		result.Should().BeFalse();
@@ -77,7 +77,7 @@ public class ValidationTests(ITestOutputHelper output) : CreateChangelogTestBase
 		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("is not in the list of available products"));
 	}
 
-	[Fact]
+	[Test]
 	public async Task CreateChangelog_WithInvalidType_ReturnsError()
 	{
 		// Arrange
@@ -92,7 +92,7 @@ public class ValidationTests(ITestOutputHelper output) : CreateChangelogTestBase
 		};
 
 		// Act
-		var result = await service.CreateChangelog(Collector, input, TestContext.Current.CancellationToken);
+		var result = await service.CreateChangelog(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		result.Should().BeFalse();
@@ -100,7 +100,7 @@ public class ValidationTests(ITestOutputHelper output) : CreateChangelogTestBase
 		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("is not in the list of available types"));
 	}
 
-	[Fact]
+	[Test]
 	public async Task CreateChangelog_WithInvalidProductInAddBlockers_ReturnsError()
 	{
 		// Arrange
@@ -136,7 +136,7 @@ public class ValidationTests(ITestOutputHelper output) : CreateChangelogTestBase
 		};
 
 		// Act
-		var result = await service.CreateChangelog(Collector, input, TestContext.Current.CancellationToken);
+		var result = await service.CreateChangelog(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		result.Should().BeFalse();
@@ -147,7 +147,7 @@ public class ValidationTests(ITestOutputHelper output) : CreateChangelogTestBase
 			.Contain(d => d.Message.Contains("invalid-product") && d.Message.Contains("not in available products"));
 	}
 
-	[Fact]
+	[Test]
 	public async Task CreateChangelog_WithRepoMatchingKnownProduct_InfersProduct()
 	{
 		// Arrange — no --products, but --repo matches a known product ID in products.yml
@@ -167,13 +167,13 @@ public class ValidationTests(ITestOutputHelper output) : CreateChangelogTestBase
 		};
 
 		// Act
-		var result = await service.CreateChangelog(Collector, input, TestContext.Current.CancellationToken);
+		var result = await service.CreateChangelog(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		if (!result)
 		{
 			foreach (var diagnostic in Collector.Diagnostics)
-				Output.WriteLine($"{diagnostic.Severity}: {diagnostic.Message}");
+				TestContext.Current?.Output.WriteLine($"{diagnostic.Severity}: {diagnostic.Message}");
 		}
 
 		result.Should().BeTrue();
@@ -181,11 +181,11 @@ public class ValidationTests(ITestOutputHelper output) : CreateChangelogTestBase
 
 		var files = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
 		files.Should().HaveCount(1);
-		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current.CancellationToken);
+		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current!.Execution.CancellationToken);
 		yamlContent.Should().Contain("- product: kibana");
 	}
 
-	[Fact]
+	[Test]
 	public async Task CreateChangelog_WithUnknownRepo_ReturnsProductError()
 	{
 		// Arrange — no --products, --repo value does not match any known product ID
@@ -201,7 +201,7 @@ public class ValidationTests(ITestOutputHelper output) : CreateChangelogTestBase
 		};
 
 		// Act
-		var result = await service.CreateChangelog(Collector, input, TestContext.Current.CancellationToken);
+		var result = await service.CreateChangelog(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		result.Should().BeFalse();
@@ -209,7 +209,7 @@ public class ValidationTests(ITestOutputHelper output) : CreateChangelogTestBase
 		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("product"));
 	}
 
-	[Fact]
+	[Test]
 	public async Task CreateChangelog_WithValidProductInAddBlockers_Succeeds()
 	{
 		// Arrange
@@ -248,13 +248,13 @@ public class ValidationTests(ITestOutputHelper output) : CreateChangelogTestBase
 		};
 
 		// Act
-		var result = await service.CreateChangelog(Collector, input, TestContext.Current.CancellationToken);
+		var result = await service.CreateChangelog(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		if (!result)
 		{
 			foreach (var diagnostic in Collector.Diagnostics)
-				Output.WriteLine($"{diagnostic.Severity}: {diagnostic.Message}");
+				TestContext.Current?.Output.WriteLine($"{diagnostic.Severity}: {diagnostic.Message}");
 		}
 
 		result.Should().BeTrue();

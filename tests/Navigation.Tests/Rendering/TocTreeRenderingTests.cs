@@ -10,7 +10,7 @@ namespace Elastic.Documentation.Navigation.Tests.Rendering;
 
 public class TocTreeRenderingTests
 {
-	[Fact]
+	[Test]
 	public async Task TocTree_RendersFigmaShellWithoutNavV2Hook()
 	{
 		var model = new NavigationRenderModel
@@ -34,7 +34,7 @@ public class TocTreeRenderingTests
 			NavigationPreviewEnabled = true
 		};
 
-		var html = await _TocTree.Create(model).RenderAsync(cancellationToken: TestContext.Current.CancellationToken);
+		var html = await _TocTree.Create(model).RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
 
 		html.Should().Contain("pages-nav-v2-shell");
 		html.Should().Contain("pages-nav-v2__scroll");
@@ -47,7 +47,7 @@ public class TocTreeRenderingTests
 		html.Should().NotContain("hx-preserve");
 	}
 
-	[Fact]
+	[Test]
 	public async Task FolderRow_PutsChevronInsideTheSameLink()
 	{
 		var model = new NavigationRenderModel
@@ -83,7 +83,7 @@ public class TocTreeRenderingTests
 			NavigationPreviewEnabled = true
 		};
 
-		var html = await _TocTree.Create(model).RenderAsync(cancellationToken: TestContext.Current.CancellationToken);
+		var html = await _TocTree.Create(model).RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
 
 		var linkStart = html.IndexOf("href=\"/docs/contribute\"", StringComparison.Ordinal);
 		linkStart.Should().BeGreaterThanOrEqualTo(0);
@@ -95,7 +95,51 @@ public class TocTreeRenderingTests
 		html.Should().Contain("id=\"contribute\"");
 	}
 
-	[Fact]
+	[Test]
+	public async Task HeadingRow_IsALabelNotAPageLink()
+	{
+		var model = new NavigationRenderModel
+		{
+			IsUsingNavigationDropdown = false,
+			CurrentTopLevelNavigationTitle = "API",
+			CurrentTopLevelUrl = "/api/doc/es/",
+			DropdownItems = [],
+			BackLinks = [],
+			Tree =
+			[
+				new NavigationRenderNode
+				{
+					Kind = NavigationRenderNodeKind.Heading,
+					IsTopLevel = true,
+					NavigationTitle = "Search & Document APIs",
+					Url = "",
+					Id = "search-docs",
+					ShowToggle = true,
+					NavigationItems =
+					[
+						new NavigationRenderNode
+						{
+							Kind = NavigationRenderNodeKind.Leaf,
+							IsTopLevel = false,
+							NavigationTitle = "Run a search",
+							Url = "/api/doc/es/operation/operation-search"
+						}
+					]
+				}
+			],
+			ContentHash = "heading",
+			NavigationPreviewEnabled = true
+		};
+
+		var html = await _TocTree.Create(model).RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
+
+		html.Should().Contain("<label for=\"search-docs\"");
+		html.Should().Contain("Search &amp; Document APIs");
+		html.Should().NotContain("href=\"/api/doc/es/\"");
+		html.Should().Contain("href=\"/api/doc/es/operation/operation-search\"");
+	}
+
+	[Test]
 	public async Task IslandStub_UsesTheForwardArrowNotTheFolderChevron()
 	{
 		var model = new NavigationRenderModel
@@ -119,14 +163,14 @@ public class TocTreeRenderingTests
 			NavigationPreviewEnabled = true
 		};
 
-		var html = await _TocTree.Create(model).RenderAsync(cancellationToken: TestContext.Current.CancellationToken);
+		var html = await _TocTree.Create(model).RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
 
 		html.Should().Contain("nav-island-arrow");
 		html.Should().Contain("href=\"#icon-chevron-limit-right\"");
 		html.Should().NotContain("href=\"#icon-chevron-down\"");
 	}
 
-	[Fact]
+	[Test]
 	public async Task IslandOverview_RendersHeadingAndOverviewLeaf()
 	{
 		var model = new NavigationRenderModel
@@ -159,7 +203,7 @@ public class TocTreeRenderingTests
 			NavigationPreviewEnabled = true
 		};
 
-		var html = await _TocTree.Create(model).RenderAsync(cancellationToken: TestContext.Current.CancellationToken);
+		var html = await _TocTree.Create(model).RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
 
 		html.Should().Contain("pages-nav-v2__back");
 		html.Should().Contain("data-nav-heading=\"Elasticsearch\"");
@@ -175,8 +219,8 @@ public class TocTreeRenderingTests
 		html.Should().NotContain("hx-preserve");
 	}
 
-	[Fact]
-	public async Task VersionSwitcher_RendersInBackChromeWithoutBooleanSelected()
+	[Test]
+	public async Task VersionSwitcher_StaysOutOfTheTree()
 	{
 		var model = new NavigationRenderModel
 		{
@@ -187,9 +231,9 @@ public class TocTreeRenderingTests
 			BackLinks = [],
 			VersionSwitcher =
 			[
-				new NavigationSelectOption("Latest", "/api/doc/elasticsearch/", Selected: false),
-				new NavigationSelectOption("9.x", "/api/doc/elasticsearch/v9/", Selected: true),
-				new NavigationSelectOption("8.x", "/api/doc/elasticsearch/v8/", Selected: false)
+				new NavigationSelectOption("latest", "/api/doc/elasticsearch/", Selected: false),
+				new NavigationSelectOption("v9", "/api/doc/elasticsearch/v9/", Selected: true),
+				new NavigationSelectOption("v8", "/api/doc/elasticsearch/v8/", Selected: false)
 			],
 			Tree =
 			[
@@ -205,17 +249,164 @@ public class TocTreeRenderingTests
 			NavigationPreviewEnabled = true
 		};
 
-		var html = await _TocTree.Create(model).RenderAsync(cancellationToken: TestContext.Current.CancellationToken);
+		var html = await _TocTree.Create(model).RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
 
-		html.Should().Contain("pages-nav-v2__back-chrome");
-		html.Should().Contain("id=\"api-version-switcher\"");
-		html.Should().Contain("class=\"nav-select\"");
-		html.Should().Contain("href=\"/api/doc/elasticsearch/v9/\"");
-		html.Should().Contain("aria-selected=\"true\"");
-		html.Should().Contain("aria-selected=\"false\"");
-		html.Should().NotContain("selected=\"False\"");
-		html.Should().NotContain("selected=\"True\"");
-		html.Should().NotContain("<select");
-		html.Should().NotContain("<option");
+		html.Should().NotContain("api-version-switcher");
+		html.Should().NotContain("pages-nav-v2__back-chrome");
+	}
+
+	[Test]
+	public async Task TreeSeparator_RendersAfterIntroLeaves()
+	{
+		var model = new NavigationRenderModel
+		{
+			IsUsingNavigationDropdown = false,
+			CurrentTopLevelNavigationTitle = "APIs",
+			CurrentTopLevelUrl = "/api/doc/elasticsearch/",
+			DropdownItems = [],
+			BackLinks = [],
+			RootIndex = new NavigationRenderNode
+			{
+				Kind = NavigationRenderNodeKind.Leaf,
+				IsTopLevel = true,
+				NavigationTitle = "Api Overview",
+				Url = "/api/doc/elasticsearch/"
+			},
+			Tree =
+			[
+				new NavigationRenderNode
+				{
+					Kind = NavigationRenderNodeKind.Leaf,
+					IsTopLevel = true,
+					NavigationTitle = "Authentication",
+					Url = "/api/doc/elasticsearch/authentication"
+				},
+				new NavigationRenderNode { Kind = NavigationRenderNodeKind.Separator, IsTopLevel = true, NavigationTitle = "", Url = "" },
+				new NavigationRenderNode
+				{
+					Kind = NavigationRenderNodeKind.Node,
+					IsTopLevel = true,
+					NavigationTitle = "search",
+					Url = "/api/doc/elasticsearch/group/endpoint-search",
+					Id = "search",
+					ShowToggle = true
+				}
+			],
+			ContentHash = "api-intro-separator",
+			NavigationPreviewEnabled = true
+		};
+
+		var html = await _TocTree.Create(model).RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
+
+		html.Should().Contain("Api Overview");
+		html.Should().Contain("Authentication");
+		html.Should().Contain("search");
+		html.Should().Contain("nav-v2-separator");
+		CountSeparators(html).Should().Be(1);
+
+		var overview = html.IndexOf("Api Overview", StringComparison.Ordinal);
+		var auth = html.IndexOf("Authentication", StringComparison.Ordinal);
+		var separator = html.IndexOf("nav-v2-separator", StringComparison.Ordinal);
+		var search = html.IndexOf(">search<", StringComparison.Ordinal);
+		overview.Should().BeLessThan(auth);
+		auth.Should().BeLessThan(separator);
+		separator.Should().BeLessThan(search);
+	}
+
+	[Test]
+	public async Task RootIndex_WithoutTreeSeparator_KeepsAutomaticDivider()
+	{
+		var model = new NavigationRenderModel
+		{
+			IsUsingNavigationDropdown = false,
+			CurrentTopLevelNavigationTitle = "Docs",
+			CurrentTopLevelUrl = "/",
+			DropdownItems = [],
+			BackLinks = [],
+			RootIndex = new NavigationRenderNode
+			{
+				Kind = NavigationRenderNodeKind.Leaf,
+				IsTopLevel = true,
+				NavigationTitle = "Home",
+				Url = "/"
+			},
+			Tree =
+			[
+				new NavigationRenderNode
+				{
+					Kind = NavigationRenderNodeKind.Leaf,
+					IsTopLevel = true,
+					NavigationTitle = "Setup",
+					Url = "/setup"
+				}
+			],
+			ContentHash = "root-index-divider",
+			NavigationPreviewEnabled = true
+		};
+
+		var html = await _TocTree.Create(model).RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
+
+		html.Should().Contain("Home");
+		html.Should().Contain("Setup");
+		html.Should().Contain("nav-v2-separator");
+		CountSeparators(html).Should().Be(1);
+	}
+
+	[Test]
+	public async Task LegacyHeadingRow_RendersTitleWithoutAnEmptyLink()
+	{
+		var model = new NavigationRenderModel
+		{
+			IsUsingNavigationDropdown = false,
+			CurrentTopLevelNavigationTitle = "API",
+			CurrentTopLevelUrl = "/api/doc/es/",
+			DropdownItems = [],
+			BackLinks = [],
+			Tree =
+			[
+				new NavigationRenderNode
+				{
+					Kind = NavigationRenderNodeKind.Heading,
+					IsTopLevel = true,
+					NavigationTitle = "Search & Document APIs",
+					Url = "",
+					Id = "search-docs",
+					ShowToggle = true,
+					NavigationItems =
+					[
+						new NavigationRenderNode
+						{
+							Kind = NavigationRenderNodeKind.Leaf,
+							IsTopLevel = false,
+							NavigationTitle = "Run a search",
+							Url = "/api/doc/es/operation/operation-search"
+						}
+					]
+				}
+			],
+			ContentHash = "legacy-heading",
+			NavigationPreviewEnabled = false
+		};
+
+		var html = await _TocTree.Create(model).RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
+
+		html.Should().Contain("Search &amp; Document APIs");
+		html.Should().NotContain("href=\"\"");
+		html.Should().Contain("href=\"/api/doc/es/operation/operation-search\"");
+		var titleAt = html.IndexOf("Search &amp; Document APIs", StringComparison.Ordinal);
+		html[..titleAt].Should().NotContain("<a ");
+	}
+
+	private static int CountSeparators(string html)
+	{
+		var count = 0;
+		var index = 0;
+		while ((index = html.IndexOf("nav-v2-separator", index, StringComparison.Ordinal)) >= 0)
+		{
+			count++;
+			index += "nav-v2-separator".Length;
+		}
+
+		return count;
 	}
 }

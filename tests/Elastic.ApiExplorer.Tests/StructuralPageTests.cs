@@ -4,6 +4,7 @@
 
 using AwesomeAssertions;
 using Elastic.ApiExplorer.Infrastructure;
+using Elastic.ApiExplorer.Landing;
 using Elastic.ApiExplorer.Structural;
 using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Site.FileProviders;
@@ -11,9 +12,10 @@ using Microsoft.OpenApi;
 
 namespace Elastic.ApiExplorer.Tests;
 
-public class StructuralPageTests(ApiExplorerFixture fixture) : IClassFixture<ApiExplorerFixture>
+[ClassDataSource<ApiExplorerFixture>(Shared = SharedType.PerClass)]
+public class StructuralPageTests(ApiExplorerFixture fixture)
 {
-	[Fact]
+	[Test]
 	public void CreateNavigation_IncludesAuthenticationAndServersPages()
 	{
 		var items = fixture.Walk().ToArray();
@@ -35,7 +37,60 @@ public class StructuralPageTests(ApiExplorerFixture fixture) : IClassFixture<Api
 		servers.NavigationTitle.Should().Be("Servers");
 	}
 
-	[Fact]
+	[Test]
+	public void Create_EmptyDocument_OmitsAuthenticationAndServersPages()
+	{
+		var items = CreateItems(new OpenApiDocument { Info = new OpenApiInfo { Title = "t", Version = "1" } });
+
+		items.Should().BeEmpty();
+	}
+
+	[Test]
+	public void Create_NoSchemes_OmitsAuthenticationPage()
+	{
+		var document = new OpenApiDocument
+		{
+			Info = new OpenApiInfo { Title = "t", Version = "1" },
+			Servers = [new OpenApiServer { Url = "https://example.com" }]
+		};
+		var items = CreateItems(document);
+
+		items.Should().ContainSingle(item => item.Model.Kind == ApiStructuralKind.Servers);
+		items.Should().NotContain(item => item.Model.Kind == ApiStructuralKind.Authentication);
+	}
+
+	[Test]
+	public void Create_NoServers_OmitsServersPage()
+	{
+		var document = new OpenApiDocument
+		{
+			Info = new OpenApiInfo { Title = "t", Version = "1" },
+			Components = new OpenApiComponents
+			{
+				SecuritySchemes = new Dictionary<string, IOpenApiSecurityScheme>
+				{
+					["apiKey"] = new OpenApiSecurityScheme
+					{
+						Type = SecuritySchemeType.ApiKey,
+						Name = "Authorization",
+						In = ParameterLocation.Header
+					}
+				}
+			}
+		};
+		var items = CreateItems(document);
+
+		items.Should().ContainSingle(item => item.Model.Kind == ApiStructuralKind.Authentication);
+		items.Should().NotContain(item => item.Model.Kind == ApiStructuralKind.Servers);
+	}
+
+	private static IReadOnlyList<StructuralNavigationItem> CreateItems(OpenApiDocument document)
+	{
+		var root = new LandingNavigationItem("/api/doc/fixture");
+		return StructuralNavigationItem.Create(urlPathPrefix: null, "fixture", root, document);
+	}
+
+	[Test]
 	public void ReadSchemes_MapsFixtureApiKey()
 	{
 		var schemes = StructuralViewModel.ReadSchemes(RenderContext());
@@ -46,7 +101,7 @@ public class StructuralPageTests(ApiExplorerFixture fixture) : IClassFixture<Api
 		schemes.Select(scheme => scheme.Id).Should().Contain(["apiKey", "basicAuth", "bearerAuth"]);
 	}
 
-	[Fact]
+	[Test]
 	public void ReadServers_MapsFixtureServer()
 	{
 		var servers = StructuralViewModel.ReadServers(fixture.Document);
@@ -56,28 +111,28 @@ public class StructuralPageTests(ApiExplorerFixture fixture) : IClassFixture<Api
 		servers[0].Description.Should().Be("Fixture server");
 	}
 
-	[Fact]
+	[Test]
 	public async Task AuthenticationPage_WritesCommonMarkFromSchemes()
 	{
 		var item = fixture.Walk().OfType<StructuralNavigationItem>().Single(n => n.Model.Kind == ApiStructuralKind.Authentication);
-		var markdown = await item.Model.RenderCommonMarkAsync(RenderContext(item), TestContext.Current.CancellationToken);
+		var markdown = await item.Model.RenderCommonMarkAsync(RenderContext(item), null, TestContext.Current!.Execution.CancellationToken);
 
 		markdown.Should().Contain("# Authentication");
 		markdown.Should().Contain("## Api key (apiKey)");
 		markdown.Should().Contain("Authorization: <value>");
 	}
 
-	[Fact]
+	[Test]
 	public async Task ServersPage_WritesCommonMarkFromServers()
 	{
 		var item = fixture.Walk().OfType<StructuralNavigationItem>().Single(n => n.Model.Kind == ApiStructuralKind.Servers);
-		var markdown = await item.Model.RenderCommonMarkAsync(RenderContext(item), TestContext.Current.CancellationToken);
+		var markdown = await item.Model.RenderCommonMarkAsync(RenderContext(item), null, TestContext.Current!.Execution.CancellationToken);
 
 		markdown.Should().Contain("# Servers");
 		markdown.Should().Contain("`https://fixture.example.com` (Fixture server)");
 	}
 
-	[Fact]
+	[Test]
 	public void ReadSchemes_EmptyDocument_ReturnsNoSchemes()
 	{
 		var context = RenderContext(document: new OpenApiDocument { Info = new OpenApiInfo { Title = "t", Version = "1" } });

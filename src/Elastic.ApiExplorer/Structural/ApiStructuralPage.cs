@@ -32,19 +32,24 @@ public record AuthenticationSchemeDisplay(
 
 public record ApiServerDisplay(string Url, string? Description);
 
-public record ApiStructuralPage(ApiStructuralKind Kind) : IApiModel
+public record ApiStructuralPage(ApiStructuralKind Kind) : IApiModel<StructuralViewModel>
 {
 	public string Title => Kind == ApiStructuralKind.Authentication ? "Authentication" : "Servers";
 
-	public async Task RenderAsync(FileSystemStream stream, ApiRenderContext context, Cancel ctx = default)
+	public StructuralViewModel? CreatePageModel(ApiRenderContext context) => StructuralViewModel.Create(this, context);
+
+	public async Task RenderAsync(FileSystemStream stream, ApiRenderContext context, StructuralViewModel? pageModel, Cancel ctx = default)
 	{
-		var viewModel = StructuralViewModel.Create(this, context);
+		var viewModel = pageModel ?? StructuralViewModel.Create(this, context);
 		var slice = StructuralView.Create(viewModel);
 		await slice.RenderAsync(stream, cancellationToken: ctx);
 	}
 
-	public Task<string?> RenderCommonMarkAsync(ApiRenderContext context, Cancel ctx = default) =>
-		Task.FromResult<string?>(StructuralCommonMark.Write(StructuralViewModel.Create(this, context)));
+	public Task<string?> RenderCommonMarkAsync(ApiRenderContext context, StructuralViewModel? pageModel, Cancel ctx = default)
+	{
+		var viewModel = pageModel ?? StructuralViewModel.Create(this, context);
+		return Task.FromResult<string?>(StructuralCommonMark.Write(viewModel));
+	}
 }
 
 public class StructuralNavigationItem : ILeafNavigationItem<ApiStructuralPage>
@@ -76,11 +81,20 @@ public class StructuralNavigationItem : ILeafNavigationItem<ApiStructuralPage>
 	public INodeNavigationItem<INavigationModel, INavigationItem>? Parent { get; set; }
 	public int NavigationIndex { get; set; }
 
-	public static IReadOnlyList<StructuralNavigationItem> Create(string? urlPathPrefix, string apiUrlSuffix, LandingNavigationItem root) =>
-		[
-			new(urlPathPrefix, apiUrlSuffix, new ApiStructuralPage(ApiStructuralKind.Authentication), root, root),
-			new(urlPathPrefix, apiUrlSuffix, new ApiStructuralPage(ApiStructuralKind.Servers), root, root)
-		];
+	public static IReadOnlyList<StructuralNavigationItem> Create(
+		string? urlPathPrefix,
+		string apiUrlSuffix,
+		LandingNavigationItem root,
+		OpenApiDocument document
+	)
+	{
+		var items = new List<StructuralNavigationItem>();
+		if (StructuralViewModel.HasSchemes(document))
+			items.Add(new(urlPathPrefix, apiUrlSuffix, new ApiStructuralPage(ApiStructuralKind.Authentication), root, root));
+		if (StructuralViewModel.ReadServers(document).Count > 0)
+			items.Add(new(urlPathPrefix, apiUrlSuffix, new ApiStructuralPage(ApiStructuralKind.Servers), root, root));
+		return items;
+	}
 }
 
 public class StructuralViewModel(ApiRenderContext context) : ApiViewModel(context)
@@ -112,10 +126,11 @@ public class StructuralViewModel(ApiRenderContext context) : ApiViewModel(contex
 				EmptyMessage = "This API does not declare servers."
 			};
 
+	internal static bool HasSchemes(OpenApiDocument document) => document.Components?.SecuritySchemes is { Count: > 0 };
+
 	internal static IReadOnlyList<AuthenticationSchemeDisplay> ReadSchemes(ApiRenderContext context)
 	{
-		var schemes = context.Model.Components?.SecuritySchemes;
-		if (schemes is not { Count: > 0 })
+		if (context.Model.Components?.SecuritySchemes is not { Count: > 0 } schemes)
 			return [];
 
 		var displays = new List<AuthenticationSchemeDisplay>(schemes.Count);

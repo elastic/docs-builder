@@ -10,15 +10,15 @@ namespace Elastic.Markdown.Tests.AppliesTo;
 
 public class ApplicabilityTryParseTests
 {
-	[Theory]
-	[InlineData("ga", ProductLifecycle.GenerallyAvailable)]
-	[InlineData("GA", ProductLifecycle.GenerallyAvailable)]
-	[InlineData("preview", ProductLifecycle.TechnicalPreview)]
-	[InlineData("tech-preview", ProductLifecycle.TechnicalPreview)]
-	[InlineData("experimental", ProductLifecycle.Experimental)]
-	[InlineData("beta", ProductLifecycle.Beta)]
-	[InlineData("deprecated", ProductLifecycle.Deprecated)]
-	[InlineData("removed", ProductLifecycle.Removed)]
+	[Test]
+	[Arguments("ga", ProductLifecycle.GenerallyAvailable)]
+	[Arguments("GA", ProductLifecycle.GenerallyAvailable)]
+	[Arguments("preview", ProductLifecycle.TechnicalPreview)]
+	[Arguments("tech-preview", ProductLifecycle.TechnicalPreview)]
+	[Arguments("experimental", ProductLifecycle.Experimental)]
+	[Arguments("beta", ProductLifecycle.Beta)]
+	[Arguments("deprecated", ProductLifecycle.Deprecated)]
+	[Arguments("removed", ProductLifecycle.Removed)]
 	public void ValidLifecycleReturnsTrueAndParsesCorrectly(string input, ProductLifecycle expectedLifecycle)
 	{
 		var diagnostics = new List<(Severity, string)>();
@@ -31,11 +31,11 @@ public class ApplicabilityTryParseTests
 		diagnostics.Should().NotContain(d => d.Item1 == Severity.Error);
 	}
 
-	[Theory]
-	[InlineData("ga 8.0", ProductLifecycle.GenerallyAvailable)]
-	[InlineData("beta 9.1.0", ProductLifecycle.Beta)]
-	[InlineData("experimental 9.1.0", ProductLifecycle.Experimental)]
-	[InlineData("preview 10.0+", ProductLifecycle.TechnicalPreview)]
+	[Test]
+	[Arguments("ga 8.0", ProductLifecycle.GenerallyAvailable)]
+	[Arguments("beta 9.1.0", ProductLifecycle.Beta)]
+	[Arguments("experimental 9.1.0", ProductLifecycle.Experimental)]
+	[Arguments("preview 10.0+", ProductLifecycle.TechnicalPreview)]
 	public void ValidLifecycleWithVersionReturnsTrueAndParsesCorrectly(string input, ProductLifecycle expectedLifecycle)
 	{
 		var diagnostics = new List<(Severity, string)>();
@@ -49,15 +49,15 @@ public class ApplicabilityTryParseTests
 		diagnostics.Should().NotContain(d => d.Item1 == Severity.Error);
 	}
 
-	[Theory]
-	[InlineData("9.0")]
-	[InlineData("8.5.0")]
-	[InlineData("10")]
-	[InlineData("v8.0")]
-	[InlineData("invalid")]
-	[InlineData("available")]
-	[InlineData("released")]
-	[InlineData("latest")]
+	[Test]
+	[Arguments("9.0")]
+	[Arguments("8.5.0")]
+	[Arguments("10")]
+	[Arguments("v8.0")]
+	[Arguments("invalid")]
+	[Arguments("available")]
+	[Arguments("released")]
+	[Arguments("latest")]
 	public void InvalidLifecycleReturnsFalseWithDiagnostic(string invalidLifecycle)
 	{
 		var diagnostics = new List<(Severity, string)>();
@@ -71,9 +71,9 @@ public class ApplicabilityTryParseTests
 		diagnostics.First().Item2.Should().Contain(invalidLifecycle.Split(' ')[0]);
 	}
 
-	[Theory]
-	[InlineData("9.0 8.5")]
-	[InlineData("8.0.0 ga")]
+	[Test]
+	[Arguments("9.0 8.5")]
+	[Arguments("8.0.0 ga")]
 	public void VersionAsFirstTokenReturnsFalseWithDiagnostic(string input)
 	{
 		var diagnostics = new List<(Severity, string)>();
@@ -85,12 +85,12 @@ public class ApplicabilityTryParseTests
 		diagnostics.Should().ContainSingle(d => d.Item1 == Severity.Error);
 	}
 
-	[Theory]
-	[InlineData("")]
-	[InlineData("   ")]
-	[InlineData(null)]
-	[InlineData("all")]
-	[InlineData("ALL")]
+	[Test]
+	[Arguments("")]
+	[Arguments("   ")]
+	[Arguments(null)]
+	[Arguments("all")]
+	[Arguments("ALL")]
 	public void EmptyOrAllReturnsGenerallyAvailable(string? input)
 	{
 		var diagnostics = new List<(Severity, string)>();
@@ -105,10 +105,10 @@ public class ApplicabilityTryParseTests
 
 public class AppliesCollectionTryParseTests
 {
-	[Theory]
-	[InlineData("9.0")]
-	[InlineData("8.5.0")]
-	[InlineData("invalid")]
+	[Test]
+	[Arguments("9.0")]
+	[Arguments("8.5.0")]
+	[Arguments("invalid")]
 	public void InvalidLifecycleReturnsFalseWithDiagnostic(string invalidLifecycle)
 	{
 		var diagnostics = new List<(Severity, string)>();
@@ -120,7 +120,7 @@ public class AppliesCollectionTryParseTests
 		diagnostics.First().Item2.Should().Contain("Unknown product lifecycle");
 	}
 
-	[Fact]
+	[Test]
 	public void MultipleItemsWithOneInvalidReturnsTrueButSkipsInvalid()
 	{
 		var diagnostics = new List<(Severity, string)>();
@@ -134,7 +134,7 @@ public class AppliesCollectionTryParseTests
 		diagnostics.Should().ContainSingle(d => d.Item1 == Severity.Error);
 	}
 
-	[Fact]
+	[Test]
 	public void AllInvalidItemsReturnsFalse()
 	{
 		var diagnostics = new List<(Severity, string)>();

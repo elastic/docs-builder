@@ -12,9 +12,9 @@ using Elastic.Documentation.Site.Navigation;
 
 namespace Elastic.Documentation.Navigation.Tests.Rendering;
 
-public class NavigationRenderModelTests(ITestOutputHelper output) : DocumentationSetNavigationTestBase(output)
+public class NavigationRenderModelTests() : DocumentationSetNavigationTestBase()
 {
-	[Fact]
+	[Test]
 	public void EquivalentTrees_ProduceSameContentHash()
 	{
 		// language=yaml
@@ -35,7 +35,7 @@ public class NavigationRenderModelTests(ITestOutputHelper output) : Documentatio
 		first.ContentHash.Should().Be(second.ContentHash);
 	}
 
-	[Fact]
+	[Test]
 	public void DifferentPages_ProduceDifferentContentHashes()
 	{
 		// language=yaml
@@ -60,7 +60,7 @@ public class NavigationRenderModelTests(ITestOutputHelper output) : Documentatio
 		first.ContentHash.Should().NotBe(second.ContentHash);
 	}
 
-	[Fact]
+	[Test]
 	public void ReorderedSiblings_ProduceDifferentContentHashes()
 	{
 		// language=yaml
@@ -87,7 +87,7 @@ public class NavigationRenderModelTests(ITestOutputHelper output) : Documentatio
 		first.ContentHash.Should().NotBe(second.ContentHash);
 	}
 
-	[Fact]
+	[Test]
 	public void HiddenItems_AreExcludedFromTheTree_AndChangeTheContentHash()
 	{
 		// language=yaml
@@ -116,7 +116,7 @@ public class NavigationRenderModelTests(ITestOutputHelper output) : Documentatio
 		hidden.ContentHash.Should().NotBe(visible.ContentHash);
 	}
 
-	[Fact]
+	[Test]
 	public void PrimaryNav_OmitsIndexRow_AndChangesTheContentHash()
 	{
 		// language=yaml
@@ -137,7 +137,7 @@ public class NavigationRenderModelTests(ITestOutputHelper output) : Documentatio
 		withoutIndexRow.ContentHash.Should().NotBe(withIndexRow.ContentHash);
 	}
 
-	[Fact]
+	[Test]
 	public void Nodes_CarryToggleStateAndNavigationItems()
 	{
 		// language=yaml
@@ -164,7 +164,7 @@ public class NavigationRenderModelTests(ITestOutputHelper output) : Documentatio
 	// Island rendering
 	// ──────────────────────────────────────────────────────────────
 
-	[Fact]
+	[Test]
 	public async Task IslandNode_ProjectsAsIslandKind_WithNoChildren()
 	{
 		// language=yaml
@@ -193,14 +193,14 @@ public class NavigationRenderModelTests(ITestOutputHelper output) : Documentatio
 
 		var context = CreateContext(fileSystem);
 		var docSet = DocumentationSetFile.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
-		_ = context.Collector.StartAsync(TestContext.Current.CancellationToken);
+		_ = context.Collector.StartAsync(TestContext.Current!.Execution.CancellationToken);
 		var navigation = new DocumentationSetNavigation<TestDocumentationFile>(
 			docSet,
 			context,
 			TestDocumentationFileFactory.Instance,
 			crossLinkResolver: TestCrossLinkResolver.Instance
 		);
-		await context.Collector.StopAsync(TestContext.Current.CancellationToken);
+		await context.Collector.StopAsync(TestContext.Current!.Execution.CancellationToken);
 
 		var model = NavigationRenderModel.Create(
 			tree: navigation,
@@ -217,7 +217,7 @@ public class NavigationRenderModelTests(ITestOutputHelper output) : Documentatio
 		islandNode.NavigationItems.Should().BeEmpty("island stubs have no subtree in the parent nav");
 	}
 
-	[Fact]
+	[Test]
 	public async Task Create_BuildsBackLinkStack_RootFirst()
 	{
 		// language=yaml
@@ -258,14 +258,14 @@ public class NavigationRenderModelTests(ITestOutputHelper output) : Documentatio
 
 		var context = CreateContext(fileSystem);
 		var docSet = DocumentationSetFile.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
-		_ = context.Collector.StartAsync(TestContext.Current.CancellationToken);
+		_ = context.Collector.StartAsync(TestContext.Current!.Execution.CancellationToken);
 		var navigation = new DocumentationSetNavigation<TestDocumentationFile>(
 			docSet,
 			context,
 			TestDocumentationFileFactory.Instance,
 			crossLinkResolver: TestCrossLinkResolver.Instance
 		);
-		await context.Collector.StopAsync(TestContext.Current.CancellationToken);
+		await context.Collector.StopAsync(TestContext.Current!.Execution.CancellationToken);
 
 		var security = (TableOfContentsNavigation<TestDocumentationFile>)navigation.NavigationItems.ElementAt(0);
 		var rules = (TableOfContentsNavigation<TestDocumentationFile>)security.NavigationItems.ElementAt(0);
@@ -297,7 +297,7 @@ public class NavigationRenderModelTests(ITestOutputHelper output) : Documentatio
 		model.Tree[1].Url.Should().Be("/security/rules/page");
 	}
 
-	[Fact]
+	[Test]
 	public async Task Create_ContentHash_DiffersByTreeStructure()
 	{
 		// Islands with different page trees must produce different hashes even when back links are identical.
@@ -327,14 +327,14 @@ public class NavigationRenderModelTests(ITestOutputHelper output) : Documentatio
 
 		var context = CreateContext(fileSystem);
 		var docSet = DocumentationSetFile.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
-		_ = context.Collector.StartAsync(TestContext.Current.CancellationToken);
+		_ = context.Collector.StartAsync(TestContext.Current!.Execution.CancellationToken);
 		var navigation = new DocumentationSetNavigation<TestDocumentationFile>(
 			docSet,
 			context,
 			TestDocumentationFileFactory.Instance,
 			crossLinkResolver: TestCrossLinkResolver.Instance
 		);
-		await context.Collector.StopAsync(TestContext.Current.CancellationToken);
+		await context.Collector.StopAsync(TestContext.Current!.Execution.CancellationToken);
 
 		var reference = (TableOfContentsNavigation<TestDocumentationFile>)navigation.NavigationItems.ElementAt(0);
 		var model1 = NavigationRenderModel.Create(
@@ -370,14 +370,14 @@ public class NavigationRenderModelTests(ITestOutputHelper output) : Documentatio
 		);
 		var context2 = CreateContext(fileSystem2);
 		var docSet2 = DocumentationSetFile.LoadAndResolve(context2.Collector, yaml2, fileSystem2.NewDirInfo("docs"));
-		_ = context2.Collector.StartAsync(TestContext.Current.CancellationToken);
+		_ = context2.Collector.StartAsync(TestContext.Current!.Execution.CancellationToken);
 		var navigation2 = new DocumentationSetNavigation<TestDocumentationFile>(
 			docSet2,
 			context2,
 			TestDocumentationFileFactory.Instance,
 			crossLinkResolver: TestCrossLinkResolver.Instance
 		);
-		await context2.Collector.StopAsync(TestContext.Current.CancellationToken);
+		await context2.Collector.StopAsync(TestContext.Current!.Execution.CancellationToken);
 
 		var reference2 = (TableOfContentsNavigation<TestDocumentationFile>)navigation2.NavigationItems.ElementAt(0);
 		var model2 = NavigationRenderModel.Create(
@@ -394,7 +394,7 @@ public class NavigationRenderModelTests(ITestOutputHelper output) : Documentatio
 		model2.Tree.Should().Contain(n => n.Url.EndsWith("page-b", StringComparison.Ordinal));
 	}
 
-	[Fact]
+	[Test]
 	public void Create_TopLevelIsland_HasDropdownAndNoBackLinks()
 	{
 		// A top-level section (Parent is nav root, grandparent is null) has the dropdown
@@ -433,7 +433,7 @@ public class NavigationRenderModelTests(ITestOutputHelper output) : Documentatio
 		model.CurrentTopLevelUrl.Should().Be(navigation.Url, "current top-level resolves to itself");
 	}
 
-	[Fact]
+	[Test]
 	public async Task Create_NestedIsland_KeepsTopLevelBackLink_AlongsideDropdown()
 	{
 		// SiteNavigation (nav root) → elasticsearch (island) → clients (island).
@@ -473,14 +473,14 @@ public class NavigationRenderModelTests(ITestOutputHelper output) : Documentatio
 
 		var context = CreateContext(fileSystem);
 		var docSet = DocumentationSetFile.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
-		_ = context.Collector.StartAsync(TestContext.Current.CancellationToken);
+		_ = context.Collector.StartAsync(TestContext.Current!.Execution.CancellationToken);
 		var navigation = new DocumentationSetNavigation<TestDocumentationFile>(
 			docSet,
 			context,
 			TestDocumentationFileFactory.Instance,
 			crossLinkResolver: TestCrossLinkResolver.Instance
 		);
-		await context.Collector.StopAsync(TestContext.Current.CancellationToken);
+		await context.Collector.StopAsync(TestContext.Current!.Execution.CancellationToken);
 
 		var elasticsearch = navigation
 			.NavigationItems
@@ -517,7 +517,7 @@ public class NavigationRenderModelTests(ITestOutputHelper output) : Documentatio
 		model.BackLinks.Should().NotContain(b => b.Url == navigation.Url, "nav root is represented by the dropdown, not a back-link");
 	}
 
-	[Fact]
+	[Test]
 	public async Task Create_ThreeLevelIslands_StacksAncestors_RootFirst()
 	{
 		// reference (island) → clients (island) → dotnet (island).
@@ -569,14 +569,14 @@ public class NavigationRenderModelTests(ITestOutputHelper output) : Documentatio
 
 		var context = CreateContext(fileSystem);
 		var docSet = DocumentationSetFile.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
-		_ = context.Collector.StartAsync(TestContext.Current.CancellationToken);
+		_ = context.Collector.StartAsync(TestContext.Current!.Execution.CancellationToken);
 		var navigation = new DocumentationSetNavigation<TestDocumentationFile>(
 			docSet,
 			context,
 			TestDocumentationFileFactory.Instance,
 			crossLinkResolver: TestCrossLinkResolver.Instance
 		);
-		await context.Collector.StopAsync(TestContext.Current.CancellationToken);
+		await context.Collector.StopAsync(TestContext.Current!.Execution.CancellationToken);
 
 		var reference = navigation
 			.NavigationItems
@@ -601,7 +601,7 @@ public class NavigationRenderModelTests(ITestOutputHelper output) : Documentatio
 		model.BackLinks.Should().NotContain(b => b.Url == navigation.Url);
 	}
 
-	[Fact]
+	[Test]
 	public async Task Create_WithoutDropdown_KeepsFullBackLinkTrail()
 	{
 		// Isolated build without primary nav: back-links include the navigation root.
@@ -622,14 +622,14 @@ public class NavigationRenderModelTests(ITestOutputHelper output) : Documentatio
 
 		var context = CreateContext(fileSystem);
 		var docSet = DocumentationSetFile.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
-		_ = context.Collector.StartAsync(TestContext.Current.CancellationToken);
+		_ = context.Collector.StartAsync(TestContext.Current!.Execution.CancellationToken);
 		var navigation = new DocumentationSetNavigation<TestDocumentationFile>(
 			docSet,
 			context,
 			TestDocumentationFileFactory.Instance,
 			crossLinkResolver: TestCrossLinkResolver.Instance
 		);
-		await context.Collector.StopAsync(TestContext.Current.CancellationToken);
+		await context.Collector.StopAsync(TestContext.Current!.Execution.CancellationToken);
 
 		var clients = navigation.NavigationItems.ElementAt(0).Should().BeOfType<TableOfContentsNavigation<TestDocumentationFile>>().Subject;
 

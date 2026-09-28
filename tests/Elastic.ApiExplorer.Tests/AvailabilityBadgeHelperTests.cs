@@ -16,16 +16,16 @@ namespace Elastic.ApiExplorer.Tests;
 
 public class AvailabilityBadgeHelperTests
 {
-	[Theory]
-	[InlineData("Experimental; added in 9.5.0", "experimental 9.5.0")]
-	[InlineData("Experimental", "experimental")]
-	[InlineData("Technical Preview; added in 9.4.0", "preview 9.4.0")]
-	[InlineData("Generally available; added in 9.1.0", "ga 9.1.0")]
-	[InlineData("Added in 7.7.0", "ga 7.7.0")]
+	[Test]
+	[Arguments("Experimental; added in 9.5.0", "experimental 9.5.0")]
+	[Arguments("Experimental", "experimental")]
+	[Arguments("Technical Preview; added in 9.4.0", "preview 9.4.0")]
+	[Arguments("Generally available; added in 9.1.0", "ga 9.1.0")]
+	[Arguments("Added in 7.7.0", "ga 7.7.0")]
 	public void ProjectToLifecycleFormat_MapsXStateToLifecycleString(string xState, string expected) =>
 		AvailabilityBadgeHelper.ProjectToLifecycleFormat(xState).Should().Be(expected);
 
-	[Fact]
+	[Test]
 	public void FromOperation_ExperimentalXState_ProducesExperimentalBadge()
 	{
 		var operation = new OpenApiOperation

@@ -10,7 +10,7 @@ namespace Elastic.Markdown.Tests.CliReference;
 
 public class CliMarkdownGeneratorTests
 {
-	[Fact]
+	[Test]
 	public void RootPage_UsesTitleOverrideForHeading()
 	{
 		var schema = new CliSchema(
@@ -29,9 +29,9 @@ public class CliMarkdownGeneratorTests
 		markdown.Should().Contain("Interact with Elastic from the command line.");
 	}
 
-	[Theory]
-	[InlineData("")]
-	[InlineData("   ")]
+	[Test]
+	[Arguments("")]
+	[Arguments("   ")]
 	public void RootPage_FallsBackToSchemaNameForBlankTitleOverride(string title)
 	{
 		var schema = new CliSchema(

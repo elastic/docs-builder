@@ -15,7 +15,7 @@ using FakeItEasy;
 
 namespace Elastic.Changelog.Tests.Evaluation;
 
-public class ChangelogEntryValidationServiceTests(ITestOutputHelper output) : ChangelogTestBase(output)
+public class ChangelogEntryValidationServiceTests() : ChangelogTestBase()
 {
 	private static readonly string Root = Paths.WorkingDirectoryRoot.FullName;
 
@@ -50,7 +50,7 @@ public class ChangelogEntryValidationServiceTests(ITestOutputHelper output) : Ch
 			Files = []
 		};
 
-	[Fact]
+	[Test]
 	public async Task ValidateEntries_UnregisteredRepo_ReturnsErrorBeforeAnyGitHubCall()
 	{
 		await WriteConfig(MinimalConfig);
@@ -69,7 +69,7 @@ public class ChangelogEntryValidationServiceTests(ITestOutputHelper output) : Ch
 		A.CallTo(() => prService.FetchChangedFilesAsync(A<string>._, A<string>._, A<int>._, A<CancellationToken>._)).MustNotHaveHappened();
 	}
 
-	[Fact]
+	[Test]
 	public async Task ValidateEntries_AllProductsHaveReleaseNotesDisabled_ReturnsError()
 	{
 		await WriteConfig(MinimalConfig);
@@ -116,7 +116,7 @@ public class ChangelogEntryValidationServiceTests(ITestOutputHelper output) : Ch
 		A.CallTo(() => prService.FetchChangedFilesAsync(A<string>._, A<string>._, A<int>._, A<CancellationToken>._)).MustNotHaveHappened();
 	}
 
-	[Fact]
+	[Test]
 	public async Task ValidateEntries_RegisteredRepoWithReleaseNotes_ProceedsToFileValidation()
 	{
 		await WriteConfig(MinimalConfig);
@@ -161,7 +161,7 @@ public class ChangelogEntryValidationServiceTests(ITestOutputHelper output) : Ch
 		await FileSystem.File.WriteAllTextAsync(fullPath, yaml);
 	}
 
-	[Fact]
+	[Test]
 	public async Task ValidateEntries_ProductRepoHasPr_NoExistenceError()
 	{
 		// Entry references 'apm' whose repo is elastic/apm. PR 42 exists there.
@@ -177,9 +177,9 @@ public class ChangelogEntryValidationServiceTests(ITestOutputHelper output) : Ch
 		await WriteEntryFile("docs/changelog/42.yaml", entryYaml);
 
 		var prService = A.Fake<IGitHubPrService>();
-		A.CallTo(() => prService.CheckPullRequestsExistAsync("elastic", "apm", A<IReadOnlyList<int>>._, A<CancellationToken>._)).Returns(
-			(IReadOnlyDictionary<int, bool>)new Dictionary<int, bool> { { 42, true } }
-		);
+		A.CallTo(
+			() => prService.CheckPullRequestsExistAsync("elastic", "apm", A<IReadOnlyList<int>>._, A<CancellationToken>._)
+		).Returns(new Dictionary<int, bool> { { 42, true } });
 
 		var ctx = ContextWithProductRepo("apm", "elastic/apm");
 		var svc = new ChangelogEntryValidationService(LoggerFactory, ctx, prService, RunnerTempFileSystem);
@@ -196,7 +196,7 @@ public class ChangelogEntryValidationServiceTests(ITestOutputHelper output) : Ch
 		).MustNotHaveHappened();
 	}
 
-	[Fact]
+	[Test]
 	public async Task ValidateEntries_NoProductRepo_FallsBackToSubmittingRepo()
 	{
 		// elasticsearch product has no Repository field — falls back to elastic/elasticsearch.
@@ -213,7 +213,7 @@ public class ChangelogEntryValidationServiceTests(ITestOutputHelper output) : Ch
 		var prService = A.Fake<IGitHubPrService>();
 		A.CallTo(
 			() => prService.CheckPullRequestsExistAsync("elastic", "elasticsearch", A<IReadOnlyList<int>>._, A<CancellationToken>._)
-		).Returns((IReadOnlyDictionary<int, bool>)new Dictionary<int, bool> { { 42, true } });
+		).Returns(new Dictionary<int, bool> { { 42, true } });
 
 		var svc = CreateService(prService);
 		var args = MakeArgs("elasticsearch") with { Files = ["docs/changelog/42.yaml"] };
@@ -226,7 +226,7 @@ public class ChangelogEntryValidationServiceTests(ITestOutputHelper output) : Ch
 		).MustHaveHappenedOnceExactly();
 	}
 
-	[Fact]
+	[Test]
 	public async Task ValidateEntries_UppercaseProductId_ResolvesRepoViaCaseInsensitiveLookup()
 	{
 		// Entry uses "APM" — products.yml keys are lowercase "apm".
@@ -242,9 +242,9 @@ public class ChangelogEntryValidationServiceTests(ITestOutputHelper output) : Ch
 		await WriteEntryFile("docs/changelog/42.yaml", entryYaml);
 
 		var prService = A.Fake<IGitHubPrService>();
-		A.CallTo(() => prService.CheckPullRequestsExistAsync("elastic", "apm", A<IReadOnlyList<int>>._, A<CancellationToken>._)).Returns(
-			(IReadOnlyDictionary<int, bool>)new Dictionary<int, bool> { { 42, true } }
-		);
+		A.CallTo(
+			() => prService.CheckPullRequestsExistAsync("elastic", "apm", A<IReadOnlyList<int>>._, A<CancellationToken>._)
+		).Returns(new Dictionary<int, bool> { { 42, true } });
 
 		var ctx = ContextWithProductRepo("apm", "elastic/apm");
 		var svc = new ChangelogEntryValidationService(LoggerFactory, ctx, prService, RunnerTempFileSystem);
@@ -262,7 +262,7 @@ public class ChangelogEntryValidationServiceTests(ITestOutputHelper output) : Ch
 		).MustNotHaveHappened();
 	}
 
-	[Fact]
+	[Test]
 	public async Task ValidateEntries_BareProductRepo_NormalizesWithOwnerBeforeExistenceCheck()
 	{
 		// products.yml stores bare repo names (e.g. "apm", not "elastic/apm").
@@ -278,9 +278,9 @@ public class ChangelogEntryValidationServiceTests(ITestOutputHelper output) : Ch
 		await WriteEntryFile("docs/changelog/42.yaml", entryYaml);
 
 		var prService = A.Fake<IGitHubPrService>();
-		A.CallTo(() => prService.CheckPullRequestsExistAsync("elastic", "apm", A<IReadOnlyList<int>>._, A<CancellationToken>._)).Returns(
-			(IReadOnlyDictionary<int, bool>)new Dictionary<int, bool> { { 42, true } }
-		);
+		A.CallTo(
+			() => prService.CheckPullRequestsExistAsync("elastic", "apm", A<IReadOnlyList<int>>._, A<CancellationToken>._)
+		).Returns(new Dictionary<int, bool> { { 42, true } });
 
 		// "apm" is a bare name — no slash
 		var ctx = ContextWithProductRepo("apm", "apm");
@@ -296,7 +296,7 @@ public class ChangelogEntryValidationServiceTests(ITestOutputHelper output) : Ch
 		).MustHaveHappenedOnceExactly();
 	}
 
-	[Fact]
+	[Test]
 	public async Task ValidateEntries_AllProductReposMissingPr_EmitsError()
 	{
 		// Entry references 'apm' whose repo is elastic/apm. PR 42 definitively absent there.
@@ -311,9 +311,9 @@ public class ChangelogEntryValidationServiceTests(ITestOutputHelper output) : Ch
 		await WriteEntryFile("docs/changelog/42.yaml", entryYaml);
 
 		var prService = A.Fake<IGitHubPrService>();
-		A.CallTo(() => prService.CheckPullRequestsExistAsync("elastic", "apm", A<IReadOnlyList<int>>._, A<CancellationToken>._)).Returns(
-			(IReadOnlyDictionary<int, bool>)new Dictionary<int, bool> { { 42, false } }
-		);
+		A.CallTo(
+			() => prService.CheckPullRequestsExistAsync("elastic", "apm", A<IReadOnlyList<int>>._, A<CancellationToken>._)
+		).Returns(new Dictionary<int, bool> { { 42, false } });
 
 		var ctx = ContextWithProductRepo("apm", "elastic/apm");
 		var svc = new ChangelogEntryValidationService(LoggerFactory, ctx, prService, RunnerTempFileSystem);

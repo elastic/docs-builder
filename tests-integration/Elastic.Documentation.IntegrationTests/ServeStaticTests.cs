@@ -5,30 +5,30 @@
 using Aspire.Hosting.Testing;
 using AwesomeAssertions;
 using Elastic.Documentation.Aspire;
+using TUnit.Core.Interfaces;
 
 namespace Elastic.Documentation.IntegrationTests;
 
-public class ServeStaticTests(DocumentationFixture fixture, ITestOutputHelper output) : IAsyncLifetime
+[ClassDataSource<DocumentationFixture>(Shared = SharedType.PerAssembly)]
+public class ServeStaticTests(DocumentationFixture fixture) : IAsyncInitializer, IAsyncDisposable
 {
-	[Fact]
+	[Test]
 	public async Task AssertRequestToRootReturnsData()
 	{
 		var client = fixture.DistributedApplication.CreateHttpClient(ResourceNames.AssemblerServe, "http");
-		var root = await client.GetStringAsync("/", TestContext.Current.CancellationToken);
+		var root = await client.GetStringAsync("/", TestContext.Current!.Execution.CancellationToken);
 		_ = root.Should().NotBeNullOrEmpty();
 	}
 
-	/// <inheritdoc />
 	public ValueTask DisposeAsync()
 	{
 		GC.SuppressFinalize(this);
-		if (TestContext.Current.TestState?.Result is not TestResult.Failed)
+		if (TestContext.Current!.Execution.Result?.State is not TestState.Failed)
 			return default;
 		foreach (var resource in fixture.InMemoryLogger.RecordedLogs)
-			output.WriteLine(resource.Message);
+			TestContext.Current?.Output.WriteLine(resource.Message);
 		return default;
 	}
 
-	/// <inheritdoc />
-	public ValueTask InitializeAsync() => default;
+	public Task InitializeAsync() => Task.CompletedTask;
 }
