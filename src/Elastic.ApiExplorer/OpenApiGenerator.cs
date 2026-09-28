@@ -400,7 +400,18 @@ public class OpenApiGenerator(
 					continue;
 
 				var suffix = trimmed[canonicalRoot.Length..];
-				_aliasRedirects[aliasRoot + suffix] = trimmed;
+				var aliasPath = aliasRoot + suffix;
+				if (
+					_aliasRedirects.TryGetValue(aliasPath, out var existing)
+					&& !string.Equals(existing, trimmed, StringComparison.OrdinalIgnoreCase)
+				)
+				{
+					context.Collector.EmitGlobalWarning(
+						$"Alias redirect conflict: '{aliasPath}' already maps to '{existing}'; ignoring new mapping to '{trimmed}' from api: '{apiKey}'."
+					);
+					continue;
+				}
+				_aliasRedirects[aliasPath] = trimmed;
 			}
 		}
 	}

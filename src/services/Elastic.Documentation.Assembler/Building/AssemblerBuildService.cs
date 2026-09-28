@@ -288,7 +288,13 @@ public class AssemblerBuildService(
 		}
 
 		foreach (var (from, to) in apiAliasRedirects)
-			existing[from] = to;
+		{
+			var normalizedFrom = from.TrimEnd('/');
+			var normalizedTo = to.TrimEnd('/');
+			if (string.Equals(normalizedFrom, normalizedTo, StringComparison.OrdinalIgnoreCase))
+				continue;
+			existing[normalizedFrom] = normalizedTo;
+		}
 
 		var merged = JsonSerializer.Serialize(existing, SourceGenerationContext.Default.DictionaryStringString);
 		await assembleContext.WriteFileSystem.File.WriteAllTextAsync(redirectsFile.FullName, merged, ctx);
