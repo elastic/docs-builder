@@ -233,6 +233,7 @@ public partial class MarkdownParser(BuildContext build, IParserResolvers resolve
 				.UseDirectives()
 				.UseDefinitionLists()
 				.UseHardBreaks()
+				.UseComments()
 				.DisableHtml();
 			_ = builder.BlockParsers.TryRemove<IndentedCodeBlockParser>();
 			field = builder.Build();
