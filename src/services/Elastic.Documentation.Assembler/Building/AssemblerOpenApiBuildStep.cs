@@ -82,7 +82,19 @@ public static class AssemblerOpenApiBuildStep
 			var entries = await openApiGenerator.GenerateProducts(hubEntries: hubEntries, ctx).ConfigureAwait(false);
 			catalogEntries.AddRange(entries);
 			foreach (var (from, to) in openApiGenerator.AliasRedirects)
+			{
+				if (
+					allAliasRedirects.TryGetValue(from, out var existingTarget)
+					&& !string.Equals(existingTarget, to, StringComparison.OrdinalIgnoreCase)
+				)
+				{
+					assembleContext.Collector.EmitGlobalWarning(
+						$"Alias redirect conflict across docsets: '{from}' already maps to '{existingTarget}'; ignoring new mapping to '{to}'."
+					);
+					continue;
+				}
 				allAliasRedirects[from] = to;
+			}
 		}
 
 		if (catalogEntries.Count > 0)

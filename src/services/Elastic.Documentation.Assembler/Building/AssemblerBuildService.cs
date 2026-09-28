@@ -166,10 +166,6 @@ public class AssemblerBuildService(
 		if (exporters.Contains(Exporter.LinkMetadata))
 			await cloner.WriteLinkRegistrySnapshot(checkoutResult.LinkRegistrySnapshot, ctx);
 
-		var redirectsPath = Path.Join(assembleContext.OutputDirectory.FullName, "redirects.json");
-		if (assembleContext.WriteFileSystem.File.Exists(redirectsPath))
-			await githubActionsService.SetOutputAsync("redirects-artifact-path", redirectsPath);
-
 		IReadOnlyList<ApiCatalogEntry> catalogEntries = [];
 		if (exporters.Contains(Exporter.Html))
 		{
@@ -206,6 +202,10 @@ public class AssemblerBuildService(
 						"Consider implementing sitemap index files."
 				);
 		}
+
+		var redirectsPath = Path.Join(assembleContext.OutputDirectory.FullName, "redirects.json");
+		if (assembleContext.WriteFileSystem.File.Exists(redirectsPath))
+			await githubActionsService.SetOutputAsync("redirects-artifact-path", redirectsPath);
 
 		if (exporters.Contains(Exporter.LLMText))
 		{
