@@ -128,6 +128,11 @@ public static class SchemaHelpers
 		StringComparer.OrdinalIgnoreCase
 	);
 
+	private static readonly HashSet<string> StructuralTypeNames = new(
+		["anyOf", "oneOf", "allOf", "unknown"],
+		StringComparer.OrdinalIgnoreCase
+	);
+
 	/// <summary>
 	/// Gets the URL for a container type's dedicated page under the given API root
 	/// (e.g. <c>/api/elasticsearch</c>), matching the URLs built by <c>SchemaNavigationItem</c>.
@@ -204,6 +209,18 @@ public static class SchemaHelpers
 	/// Primitive types like "object", "string", etc. should not be used for recursive type detection.
 	/// </summary>
 	public static bool IsPrimitiveTypeName(string typeName) => PrimitiveTypeNames.Contains(typeName);
+
+	/// <summary>
+	/// OpenAPI composition keywords and the unknown fallback. These are not types a reader can look up.
+	/// </summary>
+	public static bool IsStructuralTypeName(string? typeName)
+	{
+		if (string.IsNullOrEmpty(typeName))
+			return false;
+
+		var name = typeName.EndsWith("[]", StringComparison.Ordinal) ? typeName[..^2] : typeName;
+		return StructuralTypeNames.Contains(name);
+	}
 
 	/// <summary>True for JSON primitives and their plural array labels (<c>strings</c>, …).</summary>
 	public static bool IsPrimitiveDisplayName(string? name) => !string.IsNullOrEmpty(name) && PrimitiveDisplayNames.Contains(name);

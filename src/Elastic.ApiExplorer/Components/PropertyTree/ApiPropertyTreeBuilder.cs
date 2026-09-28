@@ -59,7 +59,7 @@ public class ApiPropertyTreeBuilder(OpenApiDocument document, PropertyDisplayOpt
 			if (propSchema is null)
 				continue;
 
-			var typeInfo = _analyzer.GetTypeInfo(propSchema);
+			var typeInfo = WithExpandedUnions(_analyzer.GetTypeInfo(propSchema));
 			var propId = string.IsNullOrEmpty(scope.Prefix) ? name : $"{scope.Prefix}-{name}";
 			var row = new PropertyRow(
 				name,
@@ -92,7 +92,10 @@ public class ApiPropertyTreeBuilder(OpenApiDocument document, PropertyDisplayOpt
 				return new UnionOption(displayName, info.SchemaRef, info.IsObject, s);
 			})
 			.ToList();
-		return BuildUnionVariants(unionOptions, new PropertyTreeScope { Prefix = prefix, Ancestors = ancestors });
+		return BuildUnionVariants(
+			_analyzer.ExpandStructuralUnionOptions(unionOptions),
+			new PropertyTreeScope { Prefix = prefix, Ancestors = ancestors }
+		);
 	}
 
 	/// <summary>The display form (icons, keywords, name) of a schema's type.</summary>
@@ -391,7 +394,11 @@ public class ApiPropertyTreeBuilder(OpenApiDocument document, PropertyDisplayOpt
 			unionOptionNames.AddRange(typeInfo.AnyOfOptions.Select(o => o.Name));
 		if (typeInfo.UnionOptions is not null)
 			unionOptionNames.AddRange(typeInfo.UnionOptions);
-		var sortedOptions = unionOptionNames.Distinct().OrderByDescending(o => o.EndsWith("[]")).ToArray();
+		var sortedOptions = unionOptionNames
+			.Where(name => !SchemaHelpers.IsStructuralTypeName(name))
+			.Distinct()
+			.OrderByDescending(o => o.EndsWith("[]"))
+			.ToArray();
 
 		var allEnumLike = sortedOptions.Length > 0
 			&& sortedOptions.All(
@@ -525,13 +532,13 @@ public class ApiPropertyTreeBuilder(OpenApiDocument document, PropertyDisplayOpt
 	private IReadOnlySet<string> AugmentAncestors(TypeInfo typeInfo, IReadOnlySet<string>? ancestors)
 	{
 		var newAncestors = ancestors is not null ? new HashSet<string>(ancestors) : [];
-		if (string.IsNullOrEmpty(typeInfo.TypeName) || !typeInfo.IsObject)
+		if (string.IsNullOrEmpty(typeInfo.TypeName) || !typeInfo.IsObject || SchemaHelpers.IsStructuralTypeName(typeInfo.TypeName))
 			return newAncestors;
 
 		if (typeInfo is { IsDictionary: true, DictValueSchema: not null })
 		{
 			var dictValueType = _analyzer.GetTypeInfo(typeInfo.DictValueSchema);
-			if (!string.IsNullOrEmpty(dictValueType.TypeName))
+			if (!string.IsNullOrEmpty(dictValueType.TypeName) && !SchemaHelpers.IsStructuralTypeName(dictValueType.TypeName))
 				_ = newAncestors.Add(dictValueType.TypeName);
 		}
 		else
@@ -595,7 +602,22 @@ public class ApiPropertyTreeBuilder(OpenApiDocument document, PropertyDisplayOpt
 	}
 
 	private static bool IsAncestorType(string? typeName, IReadOnlySet<string> ancestors) =>
-		!string.IsNullOrEmpty(typeName) && !SchemaHelpers.IsPrimitiveTypeName(typeName) && ancestors.Contains(typeName);
+		!string.IsNullOrEmpty(typeName)
+			&& !SchemaHelpers.IsPrimitiveTypeName(typeName)
+			&& !SchemaHelpers.IsStructuralTypeName(typeName)
+			&& ancestors.Contains(typeName);
+
+	private TypeInfo WithExpandedUnions(TypeInfo typeInfo)
+	{
+		if (typeInfo.AnyOfOptions is not { Count: > 0 })
+			return typeInfo;
+
+		var expanded = _analyzer.ExpandStructuralUnionOptions(typeInfo.AnyOfOptions);
+		if (ReferenceEquals(expanded, typeInfo.AnyOfOptions))
+			return typeInfo;
+
+		return typeInfo with { AnyOfOptions = expanded.Count > 0 ? expanded : null };
+	}
 
 	private ApiUnionVariants? BuildUnionVariants(List<UnionOption> unionOptions, PropertyTreeScope scope)
 	{
@@ -805,6 +827,13 @@ public class ApiPropertyTreeBuilder(OpenApiDocument document, PropertyDisplayOpt
 	private static void AppendDisplayedTypeName(List<TypeSpan> spans, TypeInfo typeInfo, bool hasActualProperties)
 	{
 		var typeName = typeInfo.TypeName ?? "unknown";
+		// "unknown" stays when it is the only label. anyOf, oneOf, and allOf never do.
+		if (
+			SchemaHelpers.IsStructuralTypeName(typeName)
+			&& (typeInfo.IsUnion || !typeName.Equals("unknown", StringComparison.OrdinalIgnoreCase))
+		)
+			return;
+
 		if (!SchemaHelpers.IsInternalSchemaName(typeName))
 		{
 			spans.Add(NamedTypeSpan(typeName, typeInfo.SchemaRef, typeInfo.IsValueType));
@@ -840,16 +869,24 @@ public class ApiPropertyTreeBuilder(OpenApiDocument document, PropertyDisplayOpt
 	private static void AppendUnionFormulaSpans(List<TypeSpan> spans, string typeName)
 	{
 		var parts = typeName.Split(" | ", StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-		for (var i = 0; i < parts.Length; i++)
+		var wrotePart = false;
+		foreach (var part in parts)
 		{
-			if (i > 0)
+			if (SchemaHelpers.IsStructuralTypeName(part))
+				continue;
+
+			if (wrotePart)
 				spans.Add(new TypeSpan(" | ", Bare: true));
-			AppendUnionPartSpans(spans, parts[i]);
+			AppendUnionPartSpans(spans, part);
+			wrotePart = true;
 		}
 	}
 
 	private static void AppendUnionPartSpans(List<TypeSpan> spans, string part)
 	{
+		if (SchemaHelpers.IsStructuralTypeName(part))
+			return;
+
 		if (!part.EndsWith("[]", StringComparison.Ordinal))
 		{
 			AppendInternalOrNamed(spans, part, labeledAlready: false);
