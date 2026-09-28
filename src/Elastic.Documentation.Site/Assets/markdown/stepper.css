@@ -8,6 +8,41 @@
 			@apply font-sans text-2xl font-semibold text-black no-underline hover:text-black;
 		}
 
+		/* Matches markdown heading styles without using a heading element.
+		   Used when `{stepper}` sets `:toc: false`. */
+		.step-title {
+			@apply text-ink-dark font-sans;
+			line-height: 1.2em;
+
+			a {
+				@apply text-ink-dark hover:text-ink-dark font-sans no-underline;
+			}
+		}
+
+		.step-title-1 {
+			@apply mt-6 text-5xl font-semibold;
+		}
+
+		.step-title-2 {
+			@apply mt-10 text-4xl font-bold;
+		}
+
+		.step-title-3 {
+			@apply mt-8 text-2xl font-bold;
+		}
+
+		.step-title-4 {
+			@apply mt-8 text-xl font-bold;
+		}
+
+		.step-title-5 {
+			@apply mt-8 text-base font-bold;
+		}
+
+		.step-title-6 {
+			@apply mt-8 text-sm font-bold;
+		}
+
 		& > ol {
 			@apply ml-0;
 			counter-reset: stepper;

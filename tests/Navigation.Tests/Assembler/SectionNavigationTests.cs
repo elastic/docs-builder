@@ -17,21 +17,20 @@ namespace Elastic.Documentation.Navigation.Tests.Assembler;
 /// Tests for the <see cref="SectionNavigation"/> tree node created from
 /// <c>section:</c> entries with <c>children:</c> in navigation.yml.
 /// </summary>
-public class SectionNavigationTests(ITestOutputHelper output)
+public class SectionNavigationTests()
 {
 	// ──────────────────────────────────────────────────────────────
 	// Helpers
 	// ──────────────────────────────────────────────────────────────
 
 	private static (SiteNavigation, DocumentationSetNavigation<IDocumentationFile>, DocumentationSetNavigation<IDocumentationFile>) BuildTwoChildSection(
-		ITestOutputHelper output,
 		string siteNavYaml
 	)
 	{
 		var siteNavFile = SiteNavigationFile.Deserialize(siteNavYaml);
 		var fileSystem = SiteNavigationTestFixture.CreateMultiRepositoryFileSystem();
 
-		var obsCtx = SiteNavigationTestFixture.CreateAssemblerContext(fileSystem, "/checkouts/current/observability", output);
+		var obsCtx = SiteNavigationTestFixture.CreateAssemblerContext(fileSystem, "/checkouts/current/observability");
 		var obsDocset = DocumentationSetFile.LoadAndResolve(
 			obsCtx.Collector,
 			fileSystem.FileInfo.New("/checkouts/current/observability/docs/docset.yml"),
@@ -39,7 +38,7 @@ public class SectionNavigationTests(ITestOutputHelper output)
 		);
 		var obsNav = new DocumentationSetNavigation<IDocumentationFile>(obsDocset, obsCtx, GenericDocumentationFileFactory.Instance);
 
-		var searchCtx = SiteNavigationTestFixture.CreateAssemblerContext(fileSystem, "/checkouts/current/serverless-search", output);
+		var searchCtx = SiteNavigationTestFixture.CreateAssemblerContext(fileSystem, "/checkouts/current/serverless-search");
 		var searchDocset = DocumentationSetFile.LoadAndResolve(
 			searchCtx.Collector,
 			fileSystem.FileInfo.New("/checkouts/current/serverless-search/docs/docset.yml"),
@@ -51,7 +50,7 @@ public class SectionNavigationTests(ITestOutputHelper output)
 			GenericDocumentationFileFactory.Instance
 		);
 
-		var siteCtx = SiteNavigationTestFixture.CreateContext(fileSystem, "/checkouts/current/observability", output);
+		var siteCtx = SiteNavigationTestFixture.CreateContext(fileSystem, "/checkouts/current/observability");
 		var navigation = new SiteNavigation(siteNavFile, siteCtx, [obsNav, searchNav], sitePrefix: "/docs");
 		return (navigation, obsNav, searchNav);
 	}
@@ -60,7 +59,7 @@ public class SectionNavigationTests(ITestOutputHelper output)
 	// Tree structure
 	// ──────────────────────────────────────────────────────────────
 
-	[Fact]
+	[Test]
 	public void SectionWithChildren_CreatesSectionNavigationNode()
 	{
 		// language=yaml
@@ -75,7 +74,7 @@ public class SectionNavigationTests(ITestOutputHelper output)
 		                   path_prefix: /search
 		           """;
 
-		var (nav, _, _) = BuildTwoChildSection(output, yaml);
+		var (nav, _, _) = BuildTwoChildSection(yaml);
 
 		// Top-level should have exactly one item: the SectionNavigation
 		nav.NavigationItems.Should().HaveCount(1);
@@ -85,7 +84,7 @@ public class SectionNavigationTests(ITestOutputHelper output)
 		section.NavigationItems.Should().HaveCount(2);
 	}
 
-	[Fact]
+	[Test]
 	public void SectionNavigationNode_IsIsland_AndParentIsSiteNavigation()
 	{
 		// language=yaml
@@ -100,7 +99,7 @@ public class SectionNavigationTests(ITestOutputHelper output)
 		                   path_prefix: /search
 		           """;
 
-		var (nav, _, _) = BuildTwoChildSection(output, yaml);
+		var (nav, _, _) = BuildTwoChildSection(yaml);
 
 		var section = nav.NavigationItems.First().Should().BeOfType<SectionNavigation>().Subject;
 
@@ -109,7 +108,7 @@ public class SectionNavigationTests(ITestOutputHelper output)
 		section.RendersAsIsland().Should().BeTrue("island + non-null parent");
 	}
 
-	[Fact]
+	[Test]
 	public void SectionChildren_AreNotIslands_SectionIsTheIsland()
 	{
 		// language=yaml
@@ -124,7 +123,7 @@ public class SectionNavigationTests(ITestOutputHelper output)
 		                   path_prefix: /search
 		           """;
 
-		var (nav, obsNav, searchNav) = BuildTwoChildSection(output, yaml);
+		var (nav, obsNav, searchNav) = BuildTwoChildSection(yaml);
 
 		var section = nav.NavigationItems.First().Should().BeOfType<SectionNavigation>().Subject;
 
@@ -141,7 +140,7 @@ public class SectionNavigationTests(ITestOutputHelper output)
 	// FindIslandRoot: returns child docset, not the section
 	// ──────────────────────────────────────────────────────────────
 
-	[Fact]
+	[Test]
 	public void FindIslandRoot_FromDeepPage_ReturnsSectionNavigation()
 	{
 		// language=yaml
@@ -156,7 +155,7 @@ public class SectionNavigationTests(ITestOutputHelper output)
 		                   path_prefix: /search
 		           """;
 
-		var (nav, _, _) = BuildTwoChildSection(output, yaml);
+		var (nav, _, _) = BuildTwoChildSection(yaml);
 
 		var section = nav.NavigationItems.First().Should().BeOfType<SectionNavigation>().Subject;
 
@@ -176,7 +175,7 @@ public class SectionNavigationTests(ITestOutputHelper output)
 	// Back-link: section island omits the assembler Docs root
 	// ──────────────────────────────────────────────────────────────
 
-	[Fact]
+	[Test]
 	public void BackLink_FromSectionIsland_OmitsDocs()
 	{
 		// language=yaml
@@ -191,7 +190,7 @@ public class SectionNavigationTests(ITestOutputHelper output)
 		                   path_prefix: /search
 		           """;
 
-		var (nav, _, _) = BuildTwoChildSection(output, yaml);
+		var (nav, _, _) = BuildTwoChildSection(yaml);
 
 		var section = nav.NavigationItems.First().Should().BeOfType<SectionNavigation>().Subject;
 
@@ -214,7 +213,7 @@ public class SectionNavigationTests(ITestOutputHelper output)
 		renderModel.TreeHeading.Should().BeNull("Guides has two toc children, so it stays a list of folders");
 	}
 
-	[Fact]
+	[Test]
 	public void SingleChildSection_FlattensToHeadingAndOverview()
 	{
 		// language=yaml
@@ -227,7 +226,7 @@ public class SectionNavigationTests(ITestOutputHelper output)
 		                   path_prefix: /observability
 		           """;
 
-		var (nav, _, _) = BuildTwoChildSection(output, yaml);
+		var (nav, _, _) = BuildTwoChildSection(yaml);
 		var section = nav.NavigationItems.First().Should().BeOfType<SectionNavigation>().Subject;
 
 		var model = NavigationRenderModel.Create(
@@ -273,7 +272,7 @@ public class SectionNavigationTests(ITestOutputHelper output)
 			.OnlyContain(n => n.RendersAsIsland());
 	}
 
-	[Fact]
+	[Test]
 	public void SingleChildSection_VirtualFileListingChildren_BecomeIslands()
 	{
 		var fileSystem = SiteNavigationTestFixture.CreateMultiRepositoryFileSystem();
@@ -308,14 +307,14 @@ public class SectionNavigationTests(ITestOutputHelper output)
 			        path_prefix: /troubleshoot
 			"""
 		);
-		var obsCtx = SiteNavigationTestFixture.CreateAssemblerContext(fileSystem, "/checkouts/current/observability", output);
+		var obsCtx = SiteNavigationTestFixture.CreateAssemblerContext(fileSystem, "/checkouts/current/observability");
 		var obsDocset = DocumentationSetFile.LoadAndResolve(
 			obsCtx.Collector,
 			fileSystem.FileInfo.New("/checkouts/current/observability/docs/docset.yml"),
 			new CheckoutsFileSystem(fileSystem.DirectoryInfo.New("/checkouts"), inner: fileSystem)
 		);
 		var obsNav = new DocumentationSetNavigation<IDocumentationFile>(obsDocset, obsCtx, GenericDocumentationFileFactory.Instance);
-		var siteCtx = SiteNavigationTestFixture.CreateContext(fileSystem, "/checkouts/current/observability", output);
+		var siteCtx = SiteNavigationTestFixture.CreateContext(fileSystem, "/checkouts/current/observability");
 		var nav = new SiteNavigation(siteNavFile, siteCtx, [obsNav], sitePrefix: "/docs");
 
 		var section = nav.NavigationItems.First().Should().BeOfType<SectionNavigation>().Subject;
@@ -350,7 +349,7 @@ public class SectionNavigationTests(ITestOutputHelper output)
 		islandModel.BackLinks.Should().Contain(l => l.Title == "Troubleshoot");
 	}
 
-	[Fact]
+	[Test]
 	public void NestedAssemblerToc_UnderListing_IsIsland()
 	{
 		var yaml =
@@ -365,7 +364,7 @@ public class SectionNavigationTests(ITestOutputHelper output)
 		                       path_prefix: /release-notes/search
 		           """;
 
-		var (nav, _, searchNav) = BuildTwoChildSection(output, yaml);
+		var (nav, _, searchNav) = BuildTwoChildSection(yaml);
 		var section = nav.NavigationItems.First().Should().BeOfType<SectionNavigation>().Subject;
 
 		searchNav.RendersAsIsland().Should().BeTrue("PromoteSectionListingIslands marks single-listing section children as islands");
@@ -407,7 +406,7 @@ public class SectionNavigationTests(ITestOutputHelper output)
 	// URL invariance: section as root doesn't change child page URLs
 	// ──────────────────────────────────────────────────────────────
 
-	[Fact]
+	[Test]
 	public void ChildPageUrls_AreUnchanged_BySectionParent()
 	{
 		// language=yaml
@@ -437,7 +436,7 @@ public class SectionNavigationTests(ITestOutputHelper output)
 		string[] GetLeafUrls(string siteNavYaml)
 		{
 			var navFile = SiteNavigationFile.Deserialize(siteNavYaml);
-			var obsCtx = SiteNavigationTestFixture.CreateAssemblerContext(fileSystem, "/checkouts/current/observability", output);
+			var obsCtx = SiteNavigationTestFixture.CreateAssemblerContext(fileSystem, "/checkouts/current/observability");
 			var obsDocset = DocumentationSetFile.LoadAndResolve(
 				obsCtx.Collector,
 				fileSystem.FileInfo.New("/checkouts/current/observability/docs/docset.yml"),
@@ -445,7 +444,7 @@ public class SectionNavigationTests(ITestOutputHelper output)
 			);
 			var obsNav = new DocumentationSetNavigation<IDocumentationFile>(obsDocset, obsCtx, GenericDocumentationFileFactory.Instance);
 
-			var searchCtx = SiteNavigationTestFixture.CreateAssemblerContext(fileSystem, "/checkouts/current/serverless-search", output);
+			var searchCtx = SiteNavigationTestFixture.CreateAssemblerContext(fileSystem, "/checkouts/current/serverless-search");
 			var searchDocset = DocumentationSetFile.LoadAndResolve(
 				searchCtx.Collector,
 				fileSystem.FileInfo.New("/checkouts/current/serverless-search/docs/docset.yml"),
@@ -457,7 +456,7 @@ public class SectionNavigationTests(ITestOutputHelper output)
 				GenericDocumentationFileFactory.Instance
 			);
 
-			var siteCtx = SiteNavigationTestFixture.CreateContext(fileSystem, "/checkouts/current/observability", output);
+			var siteCtx = SiteNavigationTestFixture.CreateContext(fileSystem, "/checkouts/current/observability");
 			var siteNav = new SiteNavigation(navFile, siteCtx, [obsNav, searchNav], sitePrefix: "/docs");
 			return [
 				.. siteNav.NavigationIndexedByOrder.Values.OfType<ILeafNavigationItem<IDocumentationFile>>().Select(l => l.Url).Order()
@@ -476,7 +475,7 @@ public class SectionNavigationTests(ITestOutputHelper output)
 	// SectionTopNavBuilder: tab built from section node children
 	// ──────────────────────────────────────────────────────────────
 
-	[Fact]
+	[Test]
 	public void SectionTopNavBuilder_BuildsDropdownTab_WhenDropdownLinksPresent()
 	{
 		// YAML that has both a children section (to give SiteNavigation a valid index)
@@ -497,7 +496,7 @@ public class SectionNavigationTests(ITestOutputHelper output)
 		                   url: solutions/observability
 		           """;
 
-		var (navigation, _, _) = BuildTwoChildSection(output, yaml);
+		var (navigation, _, _) = BuildTwoChildSection(yaml);
 		var navFile = SiteNavigationFile.Deserialize(yaml);
 
 		var renderModel = SectionTopNavBuilder.Build(navigation, navFile);
@@ -519,7 +518,7 @@ public class SectionNavigationTests(ITestOutputHelper output)
 		group.Links[1].Url.Should().Be("/docs/solutions/observability");
 	}
 
-	[Fact]
+	[Test]
 	public void SectionTopNavBuilder_BuildsTab_WithSectionId()
 	{
 		// language=yaml
@@ -534,7 +533,7 @@ public class SectionNavigationTests(ITestOutputHelper output)
 		                   path_prefix: /search
 		           """;
 
-		var (nav, _, _) = BuildTwoChildSection(output, yaml);
+		var (nav, _, _) = BuildTwoChildSection(yaml);
 		var navFile = SiteNavigationFile.Deserialize(yaml);
 
 		var section = nav.NavigationItems.First().Should().BeOfType<SectionNavigation>().Subject;
@@ -551,7 +550,7 @@ public class SectionNavigationTests(ITestOutputHelper output)
 		tab.SectionIds.Should().BeNull("multi-root SectionIds are not needed when the section is the island");
 	}
 
-	[Fact]
+	[Test]
 	public void SectionTopNavBuilder_SkipsStrayTopLevelTocEntries()
 	{
 		// language=yaml
@@ -566,7 +565,7 @@ public class SectionNavigationTests(ITestOutputHelper output)
 		               path_prefix: /search
 		           """;
 
-		var (nav, _, _) = BuildTwoChildSection(output, yaml);
+		var (nav, _, _) = BuildTwoChildSection(yaml);
 		var navFile = SiteNavigationFile.Deserialize(yaml);
 
 		var renderModel = SectionTopNavBuilder.Build(nav, navFile);
@@ -575,7 +574,7 @@ public class SectionNavigationTests(ITestOutputHelper output)
 		renderModel.Items.Should().ContainSingle().Which.Title.Should().Be("Guides");
 	}
 
-	[Fact]
+	[Test]
 	public void TocNavigationTitle_OverridesTheDocsetIndexTitle()
 	{
 		// language=yaml
@@ -591,14 +590,14 @@ public class SectionNavigationTests(ITestOutputHelper output)
 		                   path_prefix: /search
 		           """;
 
-		var (_, obsNav, searchNav) = BuildTwoChildSection(output, yaml);
+		var (_, obsNav, searchNav) = BuildTwoChildSection(yaml);
 
 		obsNav.NavigationTitle.Should().Be("Manage your Cloud account");
 		obsNav.NavigationTitleOverride.Should().Be("Manage your Cloud account");
 		searchNav.NavigationTitleOverride.Should().BeNull();
 	}
 
-	[Fact]
+	[Test]
 	public void TocNavigationTitle_OverridesNestedTableOfContentsTitle()
 	{
 		// language=yaml
@@ -612,7 +611,7 @@ public class SectionNavigationTests(ITestOutputHelper output)
 
 		var siteNavFile = SiteNavigationFile.Deserialize(yaml);
 		var fileSystem = SiteNavigationTestFixture.CreateMultiRepositoryFileSystem();
-		var platformCtx = SiteNavigationTestFixture.CreateAssemblerContext(fileSystem, "/checkouts/current/platform", output);
+		var platformCtx = SiteNavigationTestFixture.CreateAssemblerContext(fileSystem, "/checkouts/current/platform");
 		var platformDocset = DocumentationSetFile.LoadAndResolve(
 			platformCtx.Collector,
 			fileSystem.FileInfo.New("/checkouts/current/platform/docs/docset.yml"),
@@ -623,7 +622,7 @@ public class SectionNavigationTests(ITestOutputHelper output)
 			platformCtx,
 			GenericDocumentationFileFactory.Instance
 		);
-		var siteCtx = SiteNavigationTestFixture.CreateContext(fileSystem, "/checkouts/current/platform", output);
+		var siteCtx = SiteNavigationTestFixture.CreateContext(fileSystem, "/checkouts/current/platform");
 		var nav = new SiteNavigation(siteNavFile, siteCtx, [platformNav], sitePrefix: "/docs");
 
 		var cloudGuide = nav

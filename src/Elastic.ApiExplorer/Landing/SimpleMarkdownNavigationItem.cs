@@ -69,7 +69,8 @@ public class SimpleMarkdownNavigationItem(
 		var viewModel = new MarkdownPageViewModel(context)
 		{
 			PageTitle = NavigationTitle,
-			BodyHtml = new HtmlString(htmlContent ?? string.Empty)
+			BodyHtml = new HtmlString(htmlContent ?? string.Empty),
+			DescriptionMarkdown = ApiSeoDescription.FirstParagraph(ApiMarkdownFrontMatter.StripLeadingFrontMatter(markdownContent))
 		};
 		var slice = MarkdownPageView.Create(viewModel);
 		await slice.RenderAsync(stream, cancellationToken: ctx);
@@ -80,4 +81,8 @@ public class SimpleMarkdownNavigationItem(
 		var markdownContent = await context.BuildContext.ReadFileSystem.File.ReadAllTextAsync(FileInfo.FullName, ctx).ConfigureAwait(false);
 		return ApiMarkdown.Prepare(markdownContent, context.CurrentNavigation.NavigationRoot.Url);
 	}
+
+	// pageModel is unused (no pre-built model for markdown pages); delegate to the real implementation.
+	public Task<string?> RenderCommonMarkAsync(ApiRenderContext context, object? pageModel, Cancel ctx = default) =>
+		RenderCommonMarkAsync(context, ctx);
 }

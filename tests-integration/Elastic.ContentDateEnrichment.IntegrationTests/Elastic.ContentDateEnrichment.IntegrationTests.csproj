@@ -6,6 +6,7 @@
 
   <ItemGroup>
     <ProjectReference Include="$(SolutionRoot)\src\Elastic.Markdown\Elastic.Markdown.csproj" />
+    <ProjectReference Include="$(SolutionRoot)\src\Elastic.Documentation.Indexing\Elastic.Documentation.Indexing.csproj" />
   </ItemGroup>
 
   <ItemGroup>

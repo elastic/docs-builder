@@ -1,0 +1,34 @@
+@inherits RazorSlice<string>
+<div class="api-page-actions" role="group" aria-label="Page actions">
+	<div class="api-page-actions-split">
+		<button type="button" class="api-page-actions-button" data-copy-page="@Model">
+			<svg class="api-page-actions-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+				<path fill-rule="evenodd" clip-rule="evenodd" d="M6 1C5.44771 1 5 1.44772 5 2V10C5 10.5523 5.44772 11 6 11H14C14.5523 11 15 10.5523 15 10V2C15 1.44771 14.5523 1 14 1H6ZM6 2L14 2V10H6V2Z" fill="currentColor"/>
+				<path d="M2 5H4V6H2V14H10V12H11V14C11 14.5523 10.5523 15 10 15H2C1.44772 15 1 14.5523 1 14V6C1 5.44772 1.44771 5 2 5Z" fill="currentColor"/>
+			</svg>
+			<span class="api-page-actions-label">Copy page</span>
+		</button>
+		<details class="api-page-actions-dropdown nav-select-dropdown">
+			<summary class="api-page-actions-chevron" aria-label="More page actions" aria-haspopup="menu">
+				<span class="api-page-actions-chevron-icon" aria-hidden="true">
+					<svg viewBox="0 0 16 16"><use href="#icon-chevron-down"/></svg>
+				</span>
+			</summary>
+			<div class="api-page-actions-menu" role="menu">
+				<button type="button" class="api-page-actions-option" role="menuitem" data-copy-page="@Model">
+					<svg class="api-page-actions-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+						<path fill-rule="evenodd" clip-rule="evenodd" d="M6 1C5.44771 1 5 1.44772 5 2V10C5 10.5523 5.44772 11 6 11H14C14.5523 11 15 10.5523 15 10V2C15 1.44771 14.5523 1 14 1H6ZM6 2L14 2V10H6V2Z" fill="currentColor"/>
+						<path d="M2 5H4V6H2V14H10V12H11V14C11 14.5523 10.5523 15 10 15H2C1.44772 15 1 14.5523 1 14V6C1 5.44772 1.44771 5 2 5Z" fill="currentColor"/>
+					</svg>
+					Copy page
+				</button>
+				<a class="api-page-actions-option" role="menuitem" href="@Model" target="_blank" rel="noopener" hx-boost="false">
+					<svg class="api-page-actions-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 -1 24 24" aria-hidden="true">
+						<path fill="currentColor" d="M22.131725 19.247H1.9386225C1.0239525 19.247 0.25 18.47305 0.25 17.558375v-11.11675c0 -0.914675 0.7739525 -1.688625 1.6886225 -1.688625H22.061375c0.914675 0 1.688625 0.77395 1.688625 1.688625v11.11675c0 0.914675 -0.7036 1.688625 -1.618275 1.688625ZM1.9386225 5.87875c-0.2814375 0 -0.562875 0.281425 -0.562875 0.562875v11.11675c0 0.3518 0.2814375 0.562875 0.562875 0.562875H22.061375c0.3518 0 0.562875 -0.281425 0.562875 -0.562875v-11.11675c0 -0.3518 -0.281425 -0.562875 -0.562875 -0.562875l-20.1227525 0ZM3.62725 15.86975V8.130225h2.2515l2.2515 2.814375 2.251475 -2.814375h2.2515V15.86975h-2.2515V11.437125L8.13025 14.2515l-2.2515 -2.814375V15.86975h-2.2515Zm14.1422 0L14.392225 12.140725h2.251475v-4.0105h2.2515v3.940125h2.2515L17.76945 15.86975Z" stroke-width="0.25"></path>
+					</svg>
+					View as Markdown
+				</a>
+			</div>
+		</details>
+	</div>
+</div>

@@ -390,7 +390,8 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 			DirectiveBlock = block,
 			Title = block.Title,
 			Anchor = block.Anchor,
-			HeadingLevel = block.HeadingLevel
+			HeadingLevel = block.HeadingLevel,
+			RenderAsHeading = block.RenderAsHeading
 		});
 		RenderRazorSlice(slice, renderer);
 	}
@@ -875,10 +876,10 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 			markdown,
 			block.CurrentFile,
 			block.Context.YamlFrontMatter,
-			MarkdownParser.Pipeline
+			MarkdownParser.ChangelogPipeline
 		);
 
-		var html = document.ToHtml(MarkdownParser.Pipeline);
+		var html = document.ToHtml(MarkdownParser.ChangelogPipeline);
 		_ = renderer.Write(html);
 	}
 

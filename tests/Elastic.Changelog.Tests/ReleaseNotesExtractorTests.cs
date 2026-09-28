@@ -8,7 +8,7 @@ namespace Elastic.Changelog.Tests;
 
 public class ReleaseNotesExtractorTests
 {
-	[Fact]
+	[Test]
 	public void FindReleaseNote_WithReleaseNotesColon_ExtractsContent()
 	{
 		// Arrange
@@ -29,7 +29,7 @@ public class ReleaseNotesExtractorTests
 		result.Should().Be("Adds support for new aggregation types");
 	}
 
-	[Fact]
+	[Test]
 	public void FindReleaseNote_WithReleaseNotesDash_ExtractsContent()
 	{
 		// Arrange
@@ -47,7 +47,7 @@ public class ReleaseNotesExtractorTests
 		result.Should().Be("Adds support for new aggregation types");
 	}
 
-	[Fact]
+	[Test]
 	public void FindReleaseNote_WithReleaseNoteSingular_ExtractsContent()
 	{
 		// Arrange
@@ -65,7 +65,7 @@ public class ReleaseNotesExtractorTests
 		result.Should().Be("Adds support for new aggregation types");
 	}
 
-	[Fact]
+	[Test]
 	public void FindReleaseNote_WithMarkdownHeader_ExtractsContent()
 	{
 		// Arrange
@@ -86,7 +86,7 @@ public class ReleaseNotesExtractorTests
 		result.Should().Be("Adds support for new aggregation types");
 	}
 
-	[Fact]
+	[Test]
 	public void FindReleaseNote_WithCaseVariations_ExtractsContent()
 	{
 		// Arrange
@@ -100,7 +100,7 @@ public class ReleaseNotesExtractorTests
 		result.Should().Be("Adds support for new aggregation types");
 	}
 
-	[Fact]
+	[Test]
 	public void FindReleaseNote_WithHyphenatedFormat_ExtractsContent()
 	{
 		// Arrange
@@ -114,7 +114,7 @@ public class ReleaseNotesExtractorTests
 		result.Should().Be("Adds support for new aggregation types");
 	}
 
-	[Fact]
+	[Test]
 	public void FindReleaseNote_WithHtmlComments_StripsComments()
 	{
 		// Arrange
@@ -133,7 +133,7 @@ public class ReleaseNotesExtractorTests
 		result.Should().Be("Adds support for new aggregation types");
 	}
 
-	[Fact]
+	[Test]
 	public void FindReleaseNote_WithNoReleaseNote_ReturnsNull()
 	{
 		// Arrange
@@ -151,7 +151,7 @@ public class ReleaseNotesExtractorTests
 		result.Should().BeNull();
 	}
 
-	[Fact]
+	[Test]
 	public void FindReleaseNote_WithEmptyBody_ReturnsNull()
 	{
 		// Arrange
@@ -165,7 +165,7 @@ public class ReleaseNotesExtractorTests
 		result.Should().BeNull();
 	}
 
-	[Fact]
+	[Test]
 	public void FindReleaseNote_WithNullBody_ReturnsNull()
 	{
 		// Arrange
@@ -178,7 +178,7 @@ public class ReleaseNotesExtractorTests
 		result.Should().BeNull();
 	}
 
-	[Fact]
+	[Test]
 	public void FindReleaseNote_WithMultiLineReleaseNote_ExtractsUntilDoubleNewline()
 	{
 		// Arrange
@@ -200,7 +200,34 @@ public class ReleaseNotesExtractorTests
 		result.Should().Be("This is a multi-line\nrelease note that spans\nmultiple lines");
 	}
 
-	[Fact]
+	[Test]
+	public void ExtractReleaseNote_ContentAfterFirstParagraph_ReportsTruncation()
+	{
+		// language=markdown
+		var prBody = """
+			## Release note
+
+			First paragraph.
+
+			Second paragraph.
+			""";
+
+		var result = ReleaseNotesExtractor.ExtractReleaseNote(prBody);
+
+		result.Content.Should().Be("First paragraph.");
+		result.WasTruncated.Should().BeTrue();
+	}
+
+	[Test]
+	public void ExtractReleaseNote_NoTrailingContent_DoesNotReportTruncation()
+	{
+		var result = ReleaseNotesExtractor.ExtractReleaseNote("Release note: Complete description.");
+
+		result.Content.Should().Be("Complete description.");
+		result.WasTruncated.Should().BeFalse();
+	}
+
+	[Test]
 	public void FindReleaseNote_WithExactly120Characters_ReturnsContent()
 	{
 		// Arrange
@@ -215,7 +242,7 @@ public class ReleaseNotesExtractorTests
 		result.Should().Be(expected);
 	}
 
-	[Fact]
+	[Test]
 	public void FindReleaseNote_With121Characters_ReturnsContent()
 	{
 		// Arrange

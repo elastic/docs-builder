@@ -27,6 +27,8 @@ public class ApiCatalogViewModel(ApiRenderContext context) : ApiViewModel(contex
 
 	public required IReadOnlyList<ApiCatalogCategoryChip> FilterChips { get; init; }
 
+	protected override string? LayoutPageDescription => ApiCatalog.PageDescription;
+
 	public static ApiCatalogViewModel FromEntries(ApiRenderContext context, IReadOnlyList<ApiCatalogEntry> entries)
 	{
 		var tiles = entries.OrderBy(e => e.Key, StringComparer.Ordinal).Select(ToTile).ToArray();

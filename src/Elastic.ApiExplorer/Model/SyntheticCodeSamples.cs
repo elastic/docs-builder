@@ -79,9 +79,9 @@ public static class SyntheticCodeSamples
 
 	private static string HeaderExampleValue(IOpenApiParameter header)
 	{
-		if (header.Schema?.Example is { } example)
+		if (header.Schema?.Examples is { Count: > 0 } headerExamples)
 		{
-			var text = example.ToString()?.Trim('"');
+			var text = headerExamples[0].ToString()?.Trim('"');
 			if (!string.IsNullOrEmpty(text))
 				return text;
 		}

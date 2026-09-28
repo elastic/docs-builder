@@ -10,7 +10,7 @@ using Elastic.Documentation.FileSystems;
 
 namespace Elastic.Documentation.Navigation.Tests.Codex;
 
-public class CodexConfigurationLoaderTests(ITestOutputHelper output)
+public class CodexConfigurationLoaderTests()
 {
 	private const string ValidConfig = """
 		environment: internal
@@ -22,9 +22,9 @@ public class CodexConfigurationLoaderTests(ITestOutputHelper output)
 
 	private CheckoutsFileSystem ScopedFs(MockFileSystem mockFs) => CheckoutsFileSystem.FromWorkingDirectory(mockFs);
 
-	private TestDiagnosticsCollector Collector() => new(output);
+	private TestDiagnosticsCollector Collector() => new();
 
-	[Fact]
+	[Test]
 	public void TryLoad_FileNotFound_ReturnsFalseWithError()
 	{
 		var fs = ScopedFs(new MockFileSystem());
@@ -38,7 +38,7 @@ public class CodexConfigurationLoaderTests(ITestOutputHelper output)
 		collector.Diagnostics.Should().ContainSingle(d => d.Message.Contains("not found"));
 	}
 
-	[Fact]
+	[Test]
 	public void TryLoad_MissingEnvironmentField_ReturnsFalseWithError()
 	{
 		var mockFs = new MockFileSystem(new Dictionary<string, MockFileData>
@@ -56,7 +56,7 @@ public class CodexConfigurationLoaderTests(ITestOutputHelper output)
 		collector.Diagnostics.Should().ContainSingle(d => d.Message.Contains("environment"));
 	}
 
-	[Fact]
+	[Test]
 	public void TryLoad_ValidConfig_ReturnsTrueAndEnvironment()
 	{
 		var mockFs = new MockFileSystem(new Dictionary<string, MockFileData> { { ConfigPath, new MockFileData(ValidConfig) } });
@@ -72,7 +72,7 @@ public class CodexConfigurationLoaderTests(ITestOutputHelper output)
 		environment.Should().Be("internal");
 	}
 
-	[Fact]
+	[Test]
 	public void TryLoad_NoEnvironmentRequired_LoadsSuccessfullyWithoutEnvironment()
 	{
 		var mockFs = new MockFileSystem(new Dictionary<string, MockFileData>
@@ -90,7 +90,7 @@ public class CodexConfigurationLoaderTests(ITestOutputHelper output)
 		config.Should().NotBeNull();
 	}
 
-	[Fact]
+	[Test]
 	public void TryLoad_ScopedFileSystemOutOfScope_ReturnsFalseWithError()
 	{
 		// Simulate the real bug: config lives outside the scoped filesystem.

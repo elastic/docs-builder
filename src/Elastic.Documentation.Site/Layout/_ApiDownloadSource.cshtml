@@ -1,0 +1,13 @@
+@inherits RazorSlice<Elastic.Documentation.Site.ApiSpecDownload>
+<details class="secondary-nav-dropdown secondary-nav-legacy-product" id="api-download-source">
+	<summary aria-label="Download source">
+		<span>Download source</span>
+		<span class="nav-select__chevron" aria-hidden="true">
+			<svg viewBox="0 0 16 16"><use href="#icon-chevron-down"/></svg>
+		</span>
+	</summary>
+	<div class="secondary-nav-dropdown-menu" aria-label="Download source">
+		<a class="secondary-nav-dropdown-link" href="@Model.JsonUrl" download hx-boost="false">JSON</a>
+		<a class="secondary-nav-dropdown-link" href="@Model.YamlUrl" download hx-boost="false">YAML</a>
+	</div>
+</details>

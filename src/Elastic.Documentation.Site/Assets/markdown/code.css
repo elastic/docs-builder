@@ -1,5 +1,6 @@
 @layer components {
-	.markdown-content {
+	/* Examples rail uses .api-code-card (api-docs.css). Do not apply the docs dark theme there. */
+	.markdown-content:not(.api-examples-panel-nav) {
 		.highlight {
 			@apply mt-4;
 		}

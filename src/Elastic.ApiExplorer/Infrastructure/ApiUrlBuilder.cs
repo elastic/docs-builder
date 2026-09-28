@@ -27,6 +27,7 @@ public static partial class ApiUrlBuilder
 	/// <summary>
 	/// Deterministic URL leaf for an operation page under <c>.../operation/</c>: lowercase
 	/// <c>operation-{id}</c> when an operation id is present, otherwise derived from the route.
+	/// Dots become hyphens so a trailing <c>.json</c> stays a path segment.
 	/// </summary>
 	public static string OperationMoniker(string? operationId, string route)
 	{
@@ -34,7 +35,7 @@ public static partial class ApiUrlBuilder
 			? operationId
 			: route.Replace("}", "").Replace("{", "").Replace('/', '-').Trim('-');
 
-		return $"operation-{id.ToLowerInvariant()}";
+		return $"operation-{id.Replace('.', '-').ToLowerInvariant()}";
 	}
 
 	/// <summary>Deterministic URL segment for a schema type page under <c>.../types/</c>.</summary>

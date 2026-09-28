@@ -20,7 +20,7 @@ namespace Mcp.Remote.Tests;
 /// </summary>
 public class McpHandshakeTests
 {
-	[Fact]
+	[Test]
 	public async Task Initialize_PublicProfile_ReturnsCorrectServerInfoAndProtocolVersion()
 	{
 		// Program.cs reads MCP_SERVER_PROFILE via Environment.GetEnvironmentVariable before
@@ -56,11 +56,11 @@ public class McpHandshakeTests
 			// responds with SSE framing (text/event-stream). Extract the JSON from the data: line.
 			using var request = new HttpRequestMessage(HttpMethod.Post, "/docs/_mcp") { Content = content };
 			request.Headers.TryAddWithoutValidation("Accept", "application/json, text/event-stream");
-			using var response = await client.SendAsync(request, TestContext.Current.CancellationToken);
+			using var response = await client.SendAsync(request, TestContext.Current!.Execution.CancellationToken);
 
 			response.StatusCode.Should().Be(HttpStatusCode.OK);
 
-			var rawBody = await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
+			var rawBody = await response.Content.ReadAsStringAsync(TestContext.Current!.Execution.CancellationToken);
 			// SSE format: lines starting with "data: " carry the JSON payload.
 			var jsonLine = rawBody.Split('\n', StringSplitOptions.RemoveEmptyEntries).FirstOrDefault(
 				l => l.StartsWith("data:", StringComparison.Ordinal)

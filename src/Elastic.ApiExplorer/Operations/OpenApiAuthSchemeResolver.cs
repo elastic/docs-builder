@@ -6,11 +6,15 @@ using Microsoft.OpenApi;
 
 namespace Elastic.ApiExplorer.Operations;
 
-public record AuthSchemeBadge(string Label);
+public record AuthSchemeBadge(string Id, string PillLabel, string Href);
 
 public static class OpenApiAuthSchemeResolver
 {
-	public static IReadOnlyList<AuthSchemeBadge> Resolve(OpenApiOperation operation, OpenApiDocument document)
+	public static IReadOnlyList<AuthSchemeBadge> Resolve(
+		OpenApiOperation operation,
+		OpenApiDocument document,
+		string authenticationUrl = ""
+	)
 	{
 		// Omitted operation security is null (inherit). An empty list is an explicit override to none.
 		var requirements = operation.Security ?? document.Security;
@@ -23,10 +27,14 @@ public static class OpenApiAuthSchemeResolver
 		{
 			foreach (var scheme in requirement)
 			{
-				var label = LabelFor(Target(scheme.Key, document));
-				if (label is null || !seen.Add(label))
+				if (scheme.Key is not OpenApiSecuritySchemeReference { Reference.Id: { Length: > 0 } id } || !seen.Add(id))
 					continue;
-				badges.Add(new AuthSchemeBadge(label));
+				var label = LabelFor(Target(scheme.Key, document));
+				if (label is null)
+					continue;
+				var pill = label is "Api key" or "Basic" or "Bearer" ? $"{label} auth" : label;
+				var href = string.IsNullOrEmpty(authenticationUrl) ? "" : $"{authenticationUrl}#{id.ToLowerInvariant()}";
+				badges.Add(new AuthSchemeBadge(id, pill, href));
 			}
 		}
 

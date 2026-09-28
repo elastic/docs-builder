@@ -38,9 +38,9 @@ public class MarkerResolutionTests
 	private static ChangelogFilterCriteria AllEntries() =>
 		new() { IncludeAll = true, ProductFilters = [], PrsToMatch = [], IssuesToMatch = [] };
 
-	private Cancel Ctx => TestContext.Current.CancellationToken;
+	private Cancel Ctx => TestContext.Current!.Execution.CancellationToken;
 
-	[Fact]
+	[Test]
 	public async Task Marker_IsExcludedFromOutput_ParentIncludedOnce()
 	{
 		var matcher = BuildMatcher();
@@ -54,7 +54,7 @@ public class MarkerResolutionTests
 		collector.Errors.Should().Be(0, "no errors when parent is found");
 	}
 
-	[Fact]
+	[Test]
 	public async Task Marker_MissingParent_EmitsError()
 	{
 		var matcher = BuildMatcher();
@@ -66,7 +66,7 @@ public class MarkerResolutionTests
 		collector.Errors.Should().BeGreaterThan(0, "a marker with no parent is a hard error");
 	}
 
-	[Fact]
+	[Test]
 	public async Task Marker_PointingAtAnotherMarker_EmitsError()
 	{
 		var matcher = BuildMatcher();
@@ -83,7 +83,7 @@ public class MarkerResolutionTests
 		collector.Errors.Should().BeGreaterThan(0, "marker chains (depth > 1) must error");
 	}
 
-	[Fact]
+	[Test]
 	public async Task TwoMarkers_SameParent_OneEntryInOutput()
 	{
 		var matcher = BuildMatcher();
@@ -101,7 +101,7 @@ public class MarkerResolutionTests
 		collector.Errors.Should().Be(0);
 	}
 
-	[Fact]
+	[Test]
 	public async Task NoMarkers_NormalEntries_Unaffected()
 	{
 		var matcher = BuildMatcher();

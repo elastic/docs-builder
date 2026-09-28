@@ -8,9 +8,9 @@ using Elastic.Documentation.Navigation;
 
 namespace Elastic.Markdown.Tests.DocSet;
 
-public class BreadCrumbTests(ITestOutputHelper output) : NavigationTestsBase(output)
+public class BreadCrumbTests() : NavigationTestsBase()
 {
-	[Fact]
+	[Test]
 	public void CanQueryParentsSuccessfully()
 	{
 		var documentationSet = Generator.DocumentationSet;

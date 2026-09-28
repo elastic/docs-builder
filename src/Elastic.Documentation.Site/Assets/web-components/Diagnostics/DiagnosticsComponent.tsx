@@ -28,10 +28,15 @@ const DiagnosticsPanelInner: React.FC = () => {
                 zIndex: 9998,
                 display: 'flex',
                 flexDirection: 'column-reverse',
+                pointerEvents: 'none',
             }}
         >
-            <DiagnosticsFooterBar />
-            <ResizableDiagnosticsHud />
+            <div style={{ pointerEvents: 'auto' }}>
+                <DiagnosticsFooterBar />
+            </div>
+            <div style={{ pointerEvents: 'auto' }}>
+                <ResizableDiagnosticsHud />
+            </div>
         </div>
     )
 }

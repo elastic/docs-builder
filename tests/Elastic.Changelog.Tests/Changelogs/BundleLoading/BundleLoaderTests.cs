@@ -9,9 +9,8 @@ using Elastic.Documentation.ReleaseNotes;
 
 namespace Elastic.Changelog.Tests.Changelogs.BundleLoading;
 
-public class BundleLoaderTests(ITestOutputHelper output)
+public class BundleLoaderTests()
 {
-	private readonly ITestOutputHelper _output = output;
 	private readonly MockFileSystem _fileSystem = new();
 	private readonly List<string> _warnings = [];
 
@@ -20,12 +19,12 @@ public class BundleLoaderTests(ITestOutputHelper output)
 	private void EmitWarning(string message)
 	{
 		_warnings.Add(message);
-		_output.WriteLine($"Warning: {message}");
+		TestContext.Current?.Output.WriteLine($"Warning: {message}");
 	}
 
 	#region LoadBundles Tests
 
-	[Fact]
+	[Test]
 	public void LoadBundles_WithValidBundles_ReturnsLoadedBundles()
 	{
 		// Arrange
@@ -61,7 +60,7 @@ public class BundleLoaderTests(ITestOutputHelper output)
 		_warnings.Should().BeEmpty();
 	}
 
-	[Fact]
+	[Test]
 	public void LoadBundles_WithMultipleBundles_ReturnsAllBundles()
 	{
 		// Arrange
@@ -102,7 +101,7 @@ public class BundleLoaderTests(ITestOutputHelper output)
 		_warnings.Should().BeEmpty();
 	}
 
-	[Fact]
+	[Test]
 	public void LoadBundles_WithInvalidYaml_EmitsWarningAndSkips()
 	{
 		// Arrange
@@ -124,7 +123,7 @@ public class BundleLoaderTests(ITestOutputHelper output)
 		_warnings[0].Should().Contain("Failed to parse changelog bundle 'invalid.yaml'");
 	}
 
-	[Fact]
+	[Test]
 	public void LoadBundles_WithNoProducts_UsesFilenameAsVersion()
 	{
 		// Arrange
@@ -156,7 +155,7 @@ public class BundleLoaderTests(ITestOutputHelper output)
 
 	#region ResolveEntries Tests
 
-	[Fact]
+	[Test]
 	public void ResolveEntries_WithInlineEntries_ReturnsEntries()
 	{
 		// Arrange
@@ -180,7 +179,7 @@ public class BundleLoaderTests(ITestOutputHelper output)
 		_warnings.Should().BeEmpty();
 	}
 
-	[Fact]
+	[Test]
 	public void ResolveEntries_WithEntryLackingInlineContent_EmitsWarningNamingBundleAndEntry()
 	{
 		// Arrange - a reference-style entry (file block only, no inline content) is invalid
@@ -210,7 +209,7 @@ public class BundleLoaderTests(ITestOutputHelper output)
 
 	#region FilterEntries Tests
 
-	[Fact]
+	[Test]
 	public void FilterEntries_WithNoFilters_ReturnsAllEntries()
 	{
 		// Arrange
@@ -228,7 +227,7 @@ public class BundleLoaderTests(ITestOutputHelper output)
 		filtered.Should().HaveCount(2);
 	}
 
-	[Fact]
+	[Test]
 	public void FilterEntries_WithPublishBlocker_HidesBlockedTypes()
 	{
 		// Arrange
@@ -250,7 +249,7 @@ public class BundleLoaderTests(ITestOutputHelper output)
 		filtered.Select(e => e.Type).Should().NotContain(ChangelogEntryType.Regression);
 	}
 
-	[Fact]
+	[Test]
 	public void FilterEntries_WithPublishBlocker_HidesBlockedAreas()
 	{
 		// Arrange
@@ -272,7 +271,7 @@ public class BundleLoaderTests(ITestOutputHelper output)
 		filtered[0].Title.Should().Be("Public feature");
 	}
 
-	[Fact]
+	[Test]
 	public void FilterEntries_WithPublishBlocker_CombinesTypeAndAreaBlocking()
 	{
 		// Arrange
@@ -298,7 +297,7 @@ public class BundleLoaderTests(ITestOutputHelper output)
 
 	#region MergeBundlesByTarget Tests
 
-	[Fact]
+	[Test]
 	public void MergeBundlesByTarget_WithSingleBundle_ReturnsSameBundle()
 	{
 		// Arrange
@@ -323,7 +322,7 @@ public class BundleLoaderTests(ITestOutputHelper output)
 		merged[0].Should().BeSameAs(bundles[0]);
 	}
 
-	[Fact]
+	[Test]
 	public void MergeBundlesByTarget_WithDifferentVersions_KeepsSeparate()
 	{
 		// Arrange
@@ -355,7 +354,7 @@ public class BundleLoaderTests(ITestOutputHelper output)
 		merged.Should().HaveCount(2);
 	}
 
-	[Fact]
+	[Test]
 	public void MergeBundlesByTarget_WithSameVersion_MergesEntries()
 	{
 		// Arrange
@@ -391,7 +390,7 @@ public class BundleLoaderTests(ITestOutputHelper output)
 		merged[0].Entries.Select(e => e.Title).Should().Contain(["ES Entry", "Kibana Entry"]);
 	}
 
-	[Fact]
+	[Test]
 	public void MergeBundlesByTarget_PreservesSortOrder()
 	{
 		// Arrange
@@ -413,7 +412,7 @@ public class BundleLoaderTests(ITestOutputHelper output)
 		merged[2].Version.Should().Be("9.1.0");
 	}
 
-	[Fact]
+	[Test]
 	public void MergeBundlesByTarget_WithDateVersions_SortsCorrectly()
 	{
 		// Arrange - Date-based versions for serverless releases
@@ -439,7 +438,7 @@ public class BundleLoaderTests(ITestOutputHelper output)
 
 	#region Amend File Merging Tests
 
-	[Fact]
+	[Test]
 	public void LoadBundles_WithAmendFile_MergesEntriesIntoParentBundle()
 	{
 		// Arrange
@@ -480,7 +479,7 @@ public class BundleLoaderTests(ITestOutputHelper output)
 		_warnings.Should().BeEmpty();
 	}
 
-	[Fact]
+	[Test]
 	public void LoadBundles_WithAmendNotesFile_MergesEntriesIntoParentBundle()
 	{
 		var bundlesFolder = "/docs/changelog/bundles";
@@ -516,7 +515,7 @@ public class BundleLoaderTests(ITestOutputHelper output)
 		_warnings.Should().BeEmpty();
 	}
 
-	[Fact]
+	[Test]
 	public void LoadBundles_WithMultipleAmendFiles_MergesAllIntoParent()
 	{
 		// Arrange
@@ -565,7 +564,7 @@ public class BundleLoaderTests(ITestOutputHelper output)
 		bundles[0].Entries.Select(e => e.Title).Should().Contain(["Original feature", "First amendment", "Second amendment"]);
 	}
 
-	[Fact]
+	[Test]
 	public void LoadBundles_WithExcludeAmendFile_RemovesEntryFromParent()
 	{
 		var bundlesFolder = "/docs/changelog/bundles";
@@ -608,7 +607,7 @@ public class BundleLoaderTests(ITestOutputHelper output)
 		bundles[0].Entries[0].Title.Should().Be("Original feature");
 	}
 
-	[Fact]
+	[Test]
 	public void LoadBundles_NumberedExcludeThenNotesReadd_KeepsEntry()
 	{
 		var bundlesFolder = "/docs/changelog/bundles";
@@ -659,7 +658,7 @@ public class BundleLoaderTests(ITestOutputHelper output)
 		bundles[0].Data.Description.Should().Be("Parent intro");
 	}
 
-	[Fact]
+	[Test]
 	public void LoadBundles_AmendFileWithoutParent_RemainsStandalone()
 	{
 		// Arrange
@@ -688,7 +687,7 @@ public class BundleLoaderTests(ITestOutputHelper output)
 		bundles[0].Entries.Should().HaveCount(1);
 	}
 
-	[Fact]
+	[Test]
 	public void LoadBundles_WithYmlExtension_AmendFileMergesCorrectly()
 	{
 		// Arrange
@@ -727,7 +726,7 @@ public class BundleLoaderTests(ITestOutputHelper output)
 		bundles[0].Entries.Should().HaveCount(2);
 	}
 
-	[Fact]
+	[Test]
 	public void LoadBundles_MixedExtensions_AmendFileMergesWithMatchingParent()
 	{
 		// Arrange
@@ -766,7 +765,7 @@ public class BundleLoaderTests(ITestOutputHelper output)
 		bundles[0].Entries.Should().HaveCount(2);
 	}
 
-	[Fact]
+	[Test]
 	public void LoadBundles_AmendPreservesParentMetadata()
 	{
 		// Arrange
@@ -808,7 +807,7 @@ public class BundleLoaderTests(ITestOutputHelper output)
 		bundles[0].Data.Products.Should().HaveCount(1);
 	}
 
-	[Fact]
+	[Test]
 	public void LoadBundles_MultipleBundlesWithAmends_MergesCorrectly()
 	{
 		// Arrange
@@ -864,7 +863,7 @@ public class BundleLoaderTests(ITestOutputHelper output)
 		bundle920.Entries[0].Title.Should().Be("Feature 9.2.0");
 	}
 
-	[Fact]
+	[Test]
 	public void LoadBundles_DateBasedBundleWithAmend_MergesCorrectly()
 	{
 		// Arrange - serverless-style date-based bundles
@@ -907,7 +906,7 @@ public class BundleLoaderTests(ITestOutputHelper output)
 
 	#region Repository Field Tests
 
-	[Fact]
+	[Test]
 	public void LoadBundles_WithExplicitRepoField_UsesRepoInsteadOfProductId()
 	{
 		// Arrange
@@ -941,7 +940,7 @@ public class BundleLoaderTests(ITestOutputHelper output)
 		_warnings.Should().BeEmpty();
 	}
 
-	[Fact]
+	[Test]
 	public void LoadBundles_WithoutRepoField_FallsBackToProductId()
 	{
 		// Arrange
@@ -974,7 +973,7 @@ public class BundleLoaderTests(ITestOutputHelper output)
 		_warnings.Should().BeEmpty();
 	}
 
-	[Fact]
+	[Test]
 	public void LoadBundles_WithEmptyRepoField_FallsBackToProductId()
 	{
 		// Arrange
@@ -1007,7 +1006,7 @@ public class BundleLoaderTests(ITestOutputHelper output)
 		_warnings.Should().BeEmpty();
 	}
 
-	[Fact]
+	[Test]
 	public void LoadBundles_RepoFieldSerializesAndDeserializesCorrectly()
 	{
 		// Arrange
@@ -1049,7 +1048,7 @@ public class BundleLoaderTests(ITestOutputHelper output)
 
 	#region HideFeatures Tests
 
-	[Fact]
+	[Test]
 	public void LoadBundles_WithHideFeaturesField_LoadsHideFeatures()
 	{
 		// Arrange
@@ -1085,7 +1084,7 @@ public class BundleLoaderTests(ITestOutputHelper output)
 		_warnings.Should().BeEmpty();
 	}
 
-	[Fact]
+	[Test]
 	public void LoadBundles_WithoutHideFeaturesField_ReturnsEmptyHideFeatures()
 	{
 		// Arrange
@@ -1116,7 +1115,7 @@ public class BundleLoaderTests(ITestOutputHelper output)
 		_warnings.Should().BeEmpty();
 	}
 
-	[Fact]
+	[Test]
 	public void LoadBundles_HideFeaturesSerializesAndDeserializesCorrectly()
 	{
 		// Arrange - Test round-trip serialization of hide-features field
@@ -1154,7 +1153,7 @@ public class BundleLoaderTests(ITestOutputHelper output)
 		_warnings.Should().BeEmpty();
 	}
 
-	[Fact]
+	[Test]
 	public void LoadBundles_AmendDescription_ReplacesParentIntro()
 	{
 		var bundlesFolder = "/docs/changelog/bundles";
@@ -1188,7 +1187,7 @@ public class BundleLoaderTests(ITestOutputHelper output)
 		_warnings.Should().BeEmpty();
 	}
 
-	[Fact]
+	[Test]
 	public void LoadBundles_AmendWithoutDescription_InheritsParentIntro()
 	{
 		var bundlesFolder = "/docs/changelog/bundles";
@@ -1223,7 +1222,7 @@ public class BundleLoaderTests(ITestOutputHelper output)
 		bundles[0].Entries.Should().HaveCount(2);
 	}
 
-	[Fact]
+	[Test]
 	public void LoadBundles_AmendNotesDescription_DoesNotReplaceParentIntro()
 	{
 		var bundlesFolder = "/docs/changelog/bundles";
@@ -1259,7 +1258,7 @@ public class BundleLoaderTests(ITestOutputHelper output)
 		bundles[0].Entries.Select(e => e.Title).Should().Equal("Original feature", "Late note");
 	}
 
-	[Fact]
+	[Test]
 	public void LoadBundles_EmptyAmendDescription_ClearsParentIntro()
 	{
 		var bundlesFolder = "/docs/changelog/bundles";
@@ -1285,7 +1284,7 @@ public class BundleLoaderTests(ITestOutputHelper output)
 		bundles[0].Data.Description.Should().BeNull();
 	}
 
-	[Fact]
+	[Test]
 	public void SerializeBundle_EmptyDescription_EmitsClearSentinel()
 	{
 		var yaml = ReleaseNotesSerialization.SerializeBundle(new Bundle
@@ -1298,7 +1297,7 @@ public class BundleLoaderTests(ITestOutputHelper output)
 		ReleaseNotesSerialization.DeserializeBundle(yaml).Description.Should().BeEmpty();
 	}
 
-	[Fact]
+	[Test]
 	public void SerializeBundle_EmptyDescriptionWithoutProducts_RoundTripsClearSentinel()
 	{
 		var yaml = ReleaseNotesSerialization.SerializeBundle(new Bundle { Description = "" });
@@ -1308,7 +1307,7 @@ public class BundleLoaderTests(ITestOutputHelper output)
 		ReleaseNotesSerialization.DeserializeBundle(yaml).Description.Should().BeEmpty();
 	}
 
-	[Fact]
+	[Test]
 	public void SerializeBundle_DescriptionWithControlCharacter_StaysParseable()
 	{
 		// A block scalar writes content raw, so a control character in a multiline description used to
@@ -1325,7 +1324,7 @@ public class BundleLoaderTests(ITestOutputHelper output)
 		ReleaseNotesSerialization.DeserializeBundle(yaml).Description.Should().Be(description);
 	}
 
-	[Fact]
+	[Test]
 	public void LoadBundles_DescriptionSerializesAsLiteralBlock()
 	{
 		// Arrange - Test round-trip serialization of description field
@@ -1380,7 +1379,7 @@ public class BundleLoaderTests(ITestOutputHelper output)
 		_warnings.Should().BeEmpty();
 	}
 
-	[Fact]
+	[Test]
 	public void LoadBundles_DescriptionCanBeNull()
 	{
 		// Arrange - Test that null description is handled correctly
@@ -1416,7 +1415,7 @@ public class BundleLoaderTests(ITestOutputHelper output)
 		_warnings.Should().BeEmpty();
 	}
 
-	[Fact]
+	[Test]
 	public void LoadBundles_ReleaseDateSerializesAndDeserializesCorrectly()
 	{
 		// Arrange - Test round-trip serialization of release-date field
@@ -1452,7 +1451,7 @@ public class BundleLoaderTests(ITestOutputHelper output)
 		_warnings.Should().BeEmpty();
 	}
 
-	[Fact]
+	[Test]
 	public void LoadBundles_ReleaseDateCanBeNull()
 	{
 		var bundlesFolder = "/docs/changelog/bundles";
@@ -1487,7 +1486,7 @@ public class BundleLoaderTests(ITestOutputHelper output)
 		_warnings.Should().BeEmpty();
 	}
 
-	[Fact]
+	[Test]
 	public void LoadBundles_ReleaseDateFromYaml_ParsedCorrectly()
 	{
 		var bundlesFolder = "/docs/changelog/bundles";
@@ -1519,7 +1518,7 @@ public class BundleLoaderTests(ITestOutputHelper output)
 		_warnings.Should().BeEmpty();
 	}
 
-	[Fact]
+	[Test]
 	public void LoadBundles_ReleaseDateInvalidFormat_ParsedAsNull()
 	{
 		var bundlesFolder = "/docs/changelog/bundles";
@@ -1551,7 +1550,7 @@ public class BundleLoaderTests(ITestOutputHelper output)
 		_warnings.Should().BeEmpty();
 	}
 
-	[Fact]
+	[Test]
 	public void MergeBundlesByTarget_ReleaseDatePreserved()
 	{
 		// Arrange - Two bundles with same target, one has release-date
@@ -1599,7 +1598,7 @@ public class BundleLoaderTests(ITestOutputHelper output)
 		merged[0].Data.ReleaseDate.Should().Be(new DateOnly(2026, 4, 9));
 	}
 
-	[Fact]
+	[Test]
 	public void LoadedBundle_HideFeatures_ExposedFromBundleData()
 	{
 		// Arrange - Verify that LoadedBundle.HideFeatures properly exposes Data.HideFeatures
@@ -1621,7 +1620,7 @@ public class BundleLoaderTests(ITestOutputHelper output)
 
 	#region EntriesByType Tests
 
-	[Fact]
+	[Test]
 	public void LoadedBundle_EntriesByType_GroupsCorrectly()
 	{
 		// Arrange

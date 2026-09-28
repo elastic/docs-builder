@@ -26,8 +26,8 @@ internal static class OperationCommonMark
 		WriteBadges(markdown, operation, page);
 		WriteServers(markdown, page);
 		WritePaths(markdown, apiOperation, page);
-		WritePrerequisites(markdown, prerequisites, apiBaseUrl);
 		WriteSecurity(markdown, page);
+		WritePrerequisites(markdown, prerequisites, apiBaseUrl);
 		WritePathParameters(markdown, page, apiBaseUrl);
 		WriteDescription(markdown, page, apiBaseUrl);
 		WriteQueryParameters(markdown, page, apiBaseUrl);
@@ -121,21 +121,11 @@ internal static class OperationCommonMark
 
 	private static void WriteDescription(StringBuilder markdown, OperationPageModel page, string apiBaseUrl)
 	{
-		var hasUrls = page.DescriptionUrls.Count > 0;
 		var hasDesc = !string.IsNullOrWhiteSpace(page.DescriptionMarkdown);
-		if (!hasUrls && !hasDesc && page.ExternalDocs is null)
+		if (!hasDesc && page.ExternalDocs is null)
 			return;
 
 		ApiCommonMark.Heading(markdown, 2, "Description");
-
-		if (hasUrls)
-		{
-			_ = markdown.AppendLine(ApiMarkdown.OperationListMarkdownHeader);
-			_ = markdown.AppendLine();
-			foreach (var url in page.DescriptionUrls)
-				_ = markdown.AppendLine($"- **{url.Method.ToUpperInvariant()}** `{url.Route}`");
-			_ = markdown.AppendLine();
-		}
 
 		if (hasDesc)
 			ApiCommonMark.Prepared(markdown, page.DescriptionMarkdown, apiBaseUrl);
@@ -149,9 +139,8 @@ internal static class OperationCommonMark
 		if (page.AuthSchemes.Count == 0)
 			return;
 
-		ApiCommonMark.Heading(markdown, 2, "Authorization");
 		foreach (var scheme in page.AuthSchemes)
-			_ = markdown.AppendLine($"- `{scheme.Label}`");
+			_ = markdown.AppendLine($"- {ApiCommonMark.Link(scheme.PillLabel, scheme.Href)}");
 		_ = markdown.AppendLine();
 	}
 
@@ -217,6 +206,8 @@ internal static class OperationCommonMark
 					ApiCommonMark.Paragraph(markdown, $"Content-Type: `{content.ContentType}`");
 				if (content.Properties is not null)
 					ApiPropertyMarkdown.WriteList(markdown, content.Properties, apiBaseUrl);
+				else if (content.UnionVariants is { Variants.Count: > 0 })
+					ApiPropertyMarkdown.WriteVariants(markdown, content.UnionVariants, apiBaseUrl);
 				else if (content.ArrayItemProperties is not null)
 				{
 					ApiPropertyMarkdown.WriteType(markdown, content.Type);

@@ -5,10 +5,13 @@
 using System.IO.Abstractions;
 using System.Text;
 using System.Text.RegularExpressions;
+using AngleSharp.Dom;
+using AngleSharp.Html.Parser;
 using Elastic.ApiExplorer.Model;
 using Elastic.ApiExplorer.Operations;
 using Elastic.Documentation;
 using Elastic.Documentation.Extensions;
+using Ganss.Xss;
 using Microsoft.AspNetCore.Html;
 
 namespace Elastic.ApiExplorer.Infrastructure;
@@ -27,8 +30,21 @@ public static partial class ApiMarkdown
 		var rewritten = Prepare(markdown, context.CurrentNavigation.NavigationRoot.Url);
 		var source = CreateVirtualSource(context);
 		var html = context.MarkdownRenderer.RenderApiDescription(rewritten, source);
-		return new HtmlString(html);
+		return new HtmlString(SanitizeHtml(html));
 	}
+
+	// HtmlSanitizer defaults already cover all standard HTML tags and exclude script/on*/etc.
+	// Add class so bump.sh verb/path badges (class="operation-verb get") are kept.
+	private static readonly HtmlSanitizer Sanitizer = new();
+
+	static ApiMarkdown() => Sanitizer.AllowedAttributes.Add("class");
+
+	/// <summary>
+	/// Sanitizes rendered description HTML through an allowlist before it is emitted as
+	/// <see cref="HtmlString"/>. Relies on <see cref="HtmlSanitizer"/> defaults (99 allowed
+	/// tags, safe attributes, http/https schemes only) with <c>class</c> added for bump.sh badges.
+	/// </summary>
+	internal static string SanitizeHtml(string html) => string.IsNullOrEmpty(html) ? html : Sanitizer.Sanitize(html);
 
 	/// <summary>
 	/// Keeps CommonMark readable: escape mustache substitutions and rewrite intra-API links.
@@ -80,74 +96,68 @@ public static partial class ApiMarkdown
 	[GeneratedRegex(@"\{\{\{?[^}]+\}?\}\}")]
 	private static partial Regex MustachePattern();
 
-	internal const string OperationListLabel = "All methods and paths for this operation:";
-	internal const string OperationListMarkdownHeader = "**All methods and paths for this operation:**";
+	private static readonly HtmlParser DescriptionParser = new();
 
-	[GeneratedRegex(@"<span class=""operation-verb (\w+)"">(\w+)</span>\s*<span class=""operation-path"">([^<]+)</span>", RegexOptions.IgnoreCase)]
-	private static partial Regex OperationVerbPathRegex();
+	// Tags that represent block or break boundaries: a space is injected before descending.
+	private static readonly HashSet<string> BlockElements =
+	[
+		with(StringComparer.OrdinalIgnoreCase),
+		"br",
+		"p",
+		"div",
+		"li",
+		"ul",
+		"ol",
+		"h1",
+		"h2",
+		"h3",
+		"h4",
+		"h5",
+		"h6",
+		"blockquote",
+		"pre",
+		"hr",
+		"tr",
+		"td",
+		"th"
+	];
 
 	/// <summary>
-	/// Extracts the "All methods and paths for this operation" HTML block from an OpenAPI
-	/// description, returning both the cleaned description and the parsed verb/path pairs.
-	/// Returns the original description and an empty list when no such block is found.
+	/// Extracts plain text from an HTML description for search indexing.
+	/// Uses AngleSharp's DOM so only real HTML nodes are removed; non-HTML
+	/// angle-bracket sequences like <c>&lt;index&gt;</c> are preserved as text.
+	/// Block and break elements inject a space so word boundaries are not lost.
 	/// </summary>
-	internal static (string Description, IReadOnlyList<(string Method, string Route)> Urls) ExtractOperationList(string? description)
+	internal static string StripHtml(string? description)
 	{
 		if (string.IsNullOrEmpty(description))
-			return (description ?? string.Empty, []);
+			return string.Empty;
 
-		if (!description.Contains(OperationListMarkdownHeader, StringComparison.Ordinal))
-			return (description, []);
+		using var document = DescriptionParser.ParseDocument(description);
+		var body = document.Body;
+		if (body is null)
+			return string.Empty;
 
-		var matches = OperationVerbPathRegex().Matches(description);
-		if (matches.Count == 0)
-			return (description, []);
-
-		var htmlStartIndex = description.IndexOf("<div>", StringComparison.Ordinal);
-		var lastMatchEnd = matches[^1].Index + matches[^1].Length;
-		var htmlEndIndex = description.IndexOf("</div>", lastMatchEnd, StringComparison.Ordinal);
-		if (htmlEndIndex == -1 || htmlStartIndex == -1)
-			return (description, []);
-
-		// Strip the header line and HTML block; keep any text that follows
-		var headerStart = description.LastIndexOf(OperationListMarkdownHeader, htmlStartIndex, StringComparison.Ordinal);
-		var beforeHeader = headerStart > 0 ? description[..headerStart].Trim() : string.Empty;
-		var afterHtml = description[(htmlEndIndex + 6)..].Trim();
-
-		var cleanDescription = (beforeHeader, afterHtml) switch
-		{
-			({ Length: 0 }, _) => afterHtml,
-			(_, { Length: 0 }) => beforeHeader,
-			_ => $"{beforeHeader}\n\n{afterHtml}"
-		};
-
-		var urls = matches.Select(static m => (Method: m.Groups[1].Value.ToLowerInvariant(), Route: m.Groups[3].Value.Trim())).ToArray();
-
-		return (cleanDescription.Trim(), urls);
+		var sb = new StringBuilder();
+		AppendText(body, sb);
+		return WhitespaceCollapsePattern().Replace(sb.ToString(), " ").Trim();
 	}
 
-	/// <summary>
-	/// Transforms HTML operation lists in descriptions to markdown format.
-	/// Used by the search export pipeline where only markdown output is needed.
-	/// </summary>
-	internal static string TransformOperationListToMarkdown(string? description)
+	private static void AppendText(INode node, StringBuilder sb)
 	{
-		var (clean, urls) = ExtractOperationList(description);
-		if (urls.Count == 0)
-			return clean;
-
-		var result = new StringBuilder();
-		if (!string.IsNullOrWhiteSpace(clean))
+		foreach (var child in node.ChildNodes)
 		{
-			_ = result.AppendLine(clean);
-			_ = result.AppendLine();
+			if (child.NodeType == NodeType.Text)
+				_ = sb.Append(child.TextContent);
+			else if (child is IElement element)
+			{
+				if (BlockElements.Contains(element.LocalName))
+					_ = sb.Append(' ');
+				AppendText(element, sb);
+			}
 		}
-
-		_ = result.AppendLine(OperationListMarkdownHeader);
-		_ = result.AppendLine();
-		foreach (var (method, route) in urls)
-			_ = result.AppendLine($"- **{method.ToUpperInvariant()}** `{route}`");
-
-		return result.ToString().Trim();
 	}
+
+	[GeneratedRegex(@"[ \t]{2,}")]
+	private static partial Regex WhitespaceCollapsePattern();
 }

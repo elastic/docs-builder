@@ -53,4 +53,17 @@ public record ApiRenderContext(
 		get;
 		init;
 	} = FrozenDictionary<string, ApiSupplementalDoc>.Empty;
+
+	/// <summary>
+	/// Per-generation-unit cache for resolving OpenAPI <c>$ref</c> identifiers to their concrete
+	/// component schemas.  Shared by reference across all per-page <c>with</c>-copies of this context
+	/// so each component schema is fetched from <see cref="OpenApiDocument.Components"/> only once per
+	/// unit rather than on every proxy property access.
+	/// </summary>
+	/// <remarks>
+	/// Records propagate reference-type properties shallowly via <c>with</c>, so this dictionary is
+	/// the same object instance in the unit context and in every page-level copy derived from it.
+	/// Pages within a unit are still processed sequentially, so no synchronisation is needed.
+	/// </remarks>
+	internal Dictionary<string, IOpenApiSchema?> SchemaResolveCache { get; } = [];
 }
