@@ -16,14 +16,16 @@ using Elastic.Documentation.FileSystems;
 using FakeItEasy;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.OpenApi;
+using TUnit.Core;
 
 namespace Elastic.ApiExplorer.Tests;
 
-public class OpenApiGeneratorAliasRedirectTests(ApiExplorerFixture fixture) : IClassFixture<ApiExplorerFixture>
+[ClassDataSource<ApiExplorerFixture>(Shared = SharedType.PerClass)]
+public class OpenApiGeneratorAliasRedirectTests(ApiExplorerFixture fixture)
 {
 	private static readonly Uri BaseUri = new("https://cdn.example/");
 
-	[Fact]
+	[Test]
 	public async Task Generate_WithAlias_CollectsAliasRedirects()
 	{
 		var outputRoot = Path.Join(Paths.WorkingDirectoryRoot.FullName, $"api-alias-{Guid.NewGuid():N}");
@@ -38,7 +40,7 @@ public class OpenApiGeneratorAliasRedirectTests(ApiExplorerFixture fixture) : IC
 			reader
 		);
 
-		await generator.Generate(TestContext.Current.CancellationToken);
+		await generator.Generate(TestContext.Current!.Execution.CancellationToken);
 
 		var write = context.WriteFileSystem.File;
 		var canonicalLanding = Path.Join(outputRoot, "api", "doc", "cloud-serverless", "index.html");
@@ -51,7 +53,7 @@ public class OpenApiGeneratorAliasRedirectTests(ApiExplorerFixture fixture) : IC
 		generator.AliasRedirects["/api/doc/elastic-cloud-serverless"].Should().Be("/api/doc/cloud-serverless");
 	}
 
-	[Fact]
+	[Test]
 	public async Task Generate_WithAlias_OmitsVersionedAliasRedirects()
 	{
 		var outputRoot = Path.Join(Paths.WorkingDirectoryRoot.FullName, $"api-alias-versioned-{Guid.NewGuid():N}");
@@ -66,7 +68,7 @@ public class OpenApiGeneratorAliasRedirectTests(ApiExplorerFixture fixture) : IC
 			reader
 		);
 
-		await generator.Generate(TestContext.Current.CancellationToken);
+		await generator.Generate(TestContext.Current!.Execution.CancellationToken);
 
 		// cloud-serverless is versionless so only main is rendered; no /v{N}/ alias entries should exist
 		generator.AliasRedirects.Keys.Should().NotContain(k => k.Contains("/v", StringComparison.OrdinalIgnoreCase));
