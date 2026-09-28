@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Text.Json;
 using System.Xml.Linq;
 using Elastic.Documentation.Configuration;
 
@@ -32,8 +33,9 @@ public class ApiSitemapParityTests
 		).ToArray();
 		var outputRoot = Environment.GetEnvironmentVariable("API_SITEMAP_PARITY_OUTPUT")
 			?? Path.Join(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "assembly");
+		var redirects = await LoadRedirects(outputRoot, cancellationToken);
 		var missing = auditedUrls
-			.Where(url => !File.Exists(Path.Join(outputRoot, url.AbsolutePath.TrimStart('/'), "index.html")))
+			.Where(url => !IsCovered(url, outputRoot, redirects))
 			.OrderBy(url => url.AbsoluteUri, StringComparer.Ordinal)
 			.ToArray();
 		var reportPath = Path.Join(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "api-sitemap-missing-pages.txt");
@@ -47,6 +49,30 @@ public class ApiSitemapParityTests
 		}
 
 		File.Delete(reportPath);
+	}
+
+	private static bool IsCovered(Uri url, string outputRoot, IReadOnlyDictionary<string, string> redirects)
+	{
+		var path = url.AbsolutePath.TrimStart('/');
+		if (File.Exists(Path.Join(outputRoot, path, "index.html")))
+			return true;
+
+		var trimmedPath = url.AbsolutePath.TrimEnd('/');
+		if (!redirects.TryGetValue(trimmedPath, out var target))
+			return false;
+
+		return File.Exists(Path.Join(outputRoot, target.TrimStart('/'), "index.html"));
+	}
+
+	private static async Task<IReadOnlyDictionary<string, string>> LoadRedirects(string outputRoot, CancellationToken ctx)
+	{
+		var redirectsPath = Path.Join(outputRoot, "redirects.json");
+		if (!File.Exists(redirectsPath))
+			return new Dictionary<string, string>();
+
+		await using var stream = File.OpenRead(redirectsPath);
+		return await JsonSerializer.DeserializeAsync<Dictionary<string, string>>(stream, cancellationToken: ctx)
+			?? new Dictionary<string, string>();
 	}
 
 	private static async Task<IReadOnlySet<Uri>> DownloadPageUrls(HttpClient client, Uri sitemap, CancellationToken ctx)
