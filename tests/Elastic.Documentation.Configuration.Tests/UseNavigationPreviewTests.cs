@@ -27,7 +27,7 @@ public class UseNavigationPreviewTests
 		return AssemblyConfiguration.Deserialize(yaml, skipPrivateRepositories: true);
 	}
 
-	[Fact]
+	[Test]
 	public void UseNavigationPreview_ReadsPreviewFile()
 	{
 		var fileSystem = new MockFileSystem();
@@ -69,7 +69,7 @@ public class UseNavigationPreviewTests
 		provider.NavigationFile.Should().NotBeNull();
 	}
 
-	[Fact]
+	[Test]
 	public void NavigationPreviewEnabled_ReadsUnderscoredEnvironmentKey()
 	{
 		// Regression guard: the ctor-doesn't-normalize trap.
@@ -81,7 +81,7 @@ public class UseNavigationPreviewTests
 		flags.NavigationPreviewEnabled.Should().BeTrue("ToFeatureFlags() normalizes UPPER_SNAKE keys through Set() before storing them");
 	}
 
-	[Fact]
+	[Test]
 	public void NavigationPreviewEnabled_FalseWhenNotSet()
 	{
 		var env = new PublishEnvironment { FeatureFlags = [] };
@@ -90,7 +90,7 @@ public class UseNavigationPreviewTests
 		flags.NavigationPreviewEnabled.Should().BeFalse("flag must be inert when not declared in the environment");
 	}
 
-	[Fact]
+	[Test]
 	public void ToFeatureFlags_DoesNotAffectOtherFlags()
 	{
 		// NAVIGATION_PREVIEW enabled must not accidentally enable sibling flags
@@ -102,7 +102,7 @@ public class UseNavigationPreviewTests
 		flags.PrimaryNavEnabled.Should().BeFalse();
 	}
 
-	[Fact]
+	[Test]
 	public void UseNavigationPreview_ThenCreateNavigationFile_StripsPrivateReposFromPreview()
 	{
 		// The ordering guarantee: private-repo filtering is applied to the preview content,

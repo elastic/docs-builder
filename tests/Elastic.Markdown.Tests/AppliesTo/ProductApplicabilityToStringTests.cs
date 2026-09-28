@@ -13,7 +13,7 @@ namespace Elastic.Markdown.Tests.AppliesTo;
 
 public class ProductApplicabilityToStringTests
 {
-	[Fact]
+	[Test]
 	public void ProductApplicabilityToStringIncludesAllProperties()
 	{
 		// Create a ProductApplicability with all properties set
@@ -42,7 +42,7 @@ public class ProductApplicabilityToStringTests
 		properties.Should().HaveCount(24, "ProductApplicability should have exactly 24 product properties");
 	}
 
-	[Fact]
+	[Test]
 	public void ProductApplicabilityToStringWithSomePropertiesOnlyIncludesSetProperties()
 	{
 		var productApplicability = new ProductApplicability
@@ -64,7 +64,7 @@ public class ProductApplicabilityToStringTests
 		result.Should().NotContain("curator=");
 	}
 
-	[Fact]
+	[Test]
 	public void ProductApplicabilityToStringEmptyReturnsEmptyString()
 	{
 		var productApplicability = new ProductApplicability();
@@ -74,7 +74,7 @@ public class ProductApplicabilityToStringTests
 		result.Should().Be("");
 	}
 
-	[Fact]
+	[Test]
 	public void ProductApplicabilityToStringPropertyOrderMatchesReflectionOrder()
 	{
 		// This test ensures that properties appear in the order they are defined

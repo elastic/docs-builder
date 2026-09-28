@@ -57,7 +57,7 @@ npm run compile:check   # TypeScript type check only
 
 Tests live in `tests/` (unit) and `tests-integration/` (integration).
 
-- **C#**: xUnit v3 · AwesomeAssertions · FakeItEasy across all test projects. TUnit is the elastic/dotnet org's target standard and the next migration target, but no project has moved yet — don't write new tests against TUnit APIs until that migration actually happens.
+- **C#**: TUnit · AwesomeAssertions · FakeItEasy across all test projects. All test projects (unit and integration) use TUnit (wired centrally via `tests/Directory.Build.props` and `tests-integration/Directory.Build.props`; no per-project flag needed). Write new tests using TUnit APIs: `[Test]`, `[Arguments(...)]`, `[MethodDataSource(nameof(X))]`.
 - **TypeScript**: Jest
 - **Integration**: clones real repos, runs full assembler — only run when integration files change
 
@@ -65,14 +65,14 @@ Use the `/test` skill to pick the right test project automatically. A change to 
 
 | Changed path | Test project / command |
 |---|---|
-| `src/Elastic.Markdown/` | `dotnet test tests/Elastic.Markdown.Tests/` and `dotnet test tests/Elastic.Authoring.Tests/` |
-| `src/Elastic.Documentation.Configuration/` | `dotnet test tests/Elastic.Documentation.Configuration.Tests/` |
-| `src/Elastic.Documentation.Navigation/` | `dotnet test tests/Navigation.Tests/` (prefix dropped) |
-| `src/Elastic.Documentation.Indexing/` | `dotnet test tests/Elastic.Documentation.Indexing.Tests/` |
-| `src/authoring/Elastic.LegacyDocs.Migration/` | `dotnet test tests/Elastic.LegacyDocs.Migration.Tests/` |
-| `src/tooling/essc/` | `dotnet test tests/Elastic.SiteSearch.Tests/` (essc's root namespace is `Elastic.SiteSearch.Cli`) |
-| `src/Elastic.ApiExplorer/` | `dotnet test tests/Elastic.ApiExplorer.Tests/` |
-| `src/services/Elastic.Documentation.Deploying/` | `dotnet test tests/Elastic.Documentation.Deploying.Tests/` |
+| `src/Elastic.Markdown/` | `./build.sh unit-test` (targets `Elastic.Markdown.Tests` and `Elastic.Authoring.Tests`) |
+| `src/Elastic.Documentation.Configuration/` | `./build.sh unit-test` (targets `Elastic.Documentation.Configuration.Tests`) |
+| `src/Elastic.Documentation.Navigation/` | `./build.sh unit-test` (targets `Navigation.Tests`) |
+| `src/Elastic.Documentation.Indexing/` | `./build.sh unit-test` (targets `Elastic.Documentation.Indexing.Tests`) |
+| `src/authoring/Elastic.LegacyDocs.Migration/` | `./build.sh unit-test` (targets `Elastic.LegacyDocs.Migration.Tests`) |
+| `src/tooling/essc/` | `./build.sh unit-test` (targets `Elastic.SiteSearch.Tests`) |
+| `src/Elastic.ApiExplorer/` | `./build.sh unit-test` (targets `Elastic.ApiExplorer.Tests`) |
+| `src/services/Elastic.Documentation.Deploying/` | `./build.sh unit-test` (targets `Elastic.Documentation.Deploying.Tests`) |
 | `src/Elastic.Documentation.Site/` | `cd src/Elastic.Documentation.Site && npm run test` |
 | `tests-integration/` | `./build.sh integrate` |
 | Multiple / uncertain | `./build.sh unit-test` |
@@ -124,7 +124,7 @@ Beyond what `.editorconfig` can check:
 - **Early returns**: guard clauses first, happy path last.
 - **Parameters**: max 4 — use a record/options object beyond that. Boolean params must be named at call sites.
 - **Collections**: never return `null` — return `[]`. Use the TryGet pattern for lookups.
-- **Testing**: xUnit v3 with AwesomeAssertions fluent style is the current standard (see Testing section — TUnit is a future migration target, not yet used). Method naming: `Method_Scenario_Expected`.
+- **Testing**: TUnit with AwesomeAssertions fluent style. Method naming: `Method_Scenario_Expected`.
 - **Comments**: only when *why* is non-obvious. No `#region`. No multi-paragraph docstrings.
 
 Use `/style-review` to check a diff against these rules.

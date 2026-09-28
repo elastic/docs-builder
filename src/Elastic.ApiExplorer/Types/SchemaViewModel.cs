@@ -52,7 +52,7 @@ public class SchemaViewModel(ApiRenderContext context) : ApiViewModel(context)
 			tocItems.Add(new ApiTocItem("Additional Properties", "additional-properties"));
 
 		// Example
-		if (openApiSchema.Example is not null)
+		if (openApiSchema.Examples is { Count: > 0 })
 			tocItems.Add(new ApiTocItem("Example", "example"));
 
 		return tocItems;

@@ -22,9 +22,9 @@ public class MarkerScrubTests
 		["elastic/elasticsearch"]
 	);
 
-	private Cancel Ctx => TestContext.Current.CancellationToken;
+	private Cancel Ctx => TestContext.Current!.Execution.CancellationToken;
 
-	[Fact]
+	[Test]
 	public async Task Marker_OnlyLink_PreservesLinkValue()
 	{
 		const string key = "changelog/elastic/elasticsearch/main/200.yaml";
@@ -38,7 +38,7 @@ public class MarkerScrubTests
 		result.IsMarker.Should().BeTrue();
 	}
 
-	[Fact]
+	[Test]
 	public async Task Marker_OnlyLink_NoTrailingNewline_PreservesLinkValue()
 	{
 		const string key = "changelog/elastic/elasticsearch/main/200.yaml";
@@ -51,7 +51,7 @@ public class MarkerScrubTests
 		result.IsMarker.Should().BeTrue();
 	}
 
-	[Fact]
+	[Test]
 	public async Task Marker_WithTitle_ThrowsInvalidOperation()
 	{
 		const string key = "changelog/elastic/elasticsearch/main/200.yaml";
@@ -65,7 +65,7 @@ public class MarkerScrubTests
 		await act.Should().ThrowAsync<InvalidOperationException>().WithMessage("*link:*content fields*");
 	}
 
-	[Fact]
+	[Test]
 	public async Task Marker_WithType_ThrowsInvalidOperation()
 	{
 		const string key = "changelog/elastic/elasticsearch/main/200.yaml";
@@ -79,7 +79,7 @@ public class MarkerScrubTests
 		await act.Should().ThrowAsync<InvalidOperationException>();
 	}
 
-	[Fact]
+	[Test]
 	public async Task Marker_WithPrs_ThrowsInvalidOperation()
 	{
 		const string key = "changelog/elastic/elasticsearch/main/200.yaml";

@@ -9,24 +9,24 @@ namespace Elastic.ApiExplorer.Tests;
 
 public class ProductIconsTests
 {
-	[Fact]
+	[Test]
 	public void Get_KnownKey_ReturnsSvg() => ProductIcons.Get("elasticsearch").Should().Contain("<svg");
 
-	[Fact]
+	[Test]
 	public void Get_ServerlessAlias_ReusesStackMark()
 	{
 		ProductIcons.Get("serverless-elasticsearch").Should().Be(ProductIcons.Get("elasticsearch"));
 		ProductIcons.Get("serverless-kibana").Should().Be(ProductIcons.Get("kibana"));
 	}
 
-	[Fact]
+	[Test]
 	public void Get_CloudProducts_ReuseCloudMark()
 	{
 		ProductIcons.Get("ess").Should().Contain("<svg");
 		ProductIcons.Get("cloud-serverless").Should().Be(ProductIcons.Get("ess"));
 	}
 
-	[Fact]
+	[Test]
 	public void Get_VectorDatabase_ReturnsOfficialMark()
 	{
 		ProductIcons.Get("vectordb").Should().Contain("<svg");

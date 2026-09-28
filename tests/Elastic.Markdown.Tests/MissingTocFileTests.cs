@@ -10,12 +10,12 @@ using Elastic.Markdown.IO;
 
 namespace Elastic.Markdown.Tests;
 
-public class MissingTocFileTests(ITestOutputHelper output)
+public class MissingTocFileTests()
 {
-	[Fact]
+	[Test]
 	public void TocReferencesMissingFile_DoesNotThrow_AndEmitsClearError()
 	{
-		var logger = new TestLoggerFactory(output);
+		var logger = new TestLoggerFactory();
 		var fileSystem = new MockFileSystem(
 			new Dictionary<string, MockFileData>
 			{
@@ -38,8 +38,8 @@ public class MissingTocFileTests(ITestOutputHelper output)
 			},
 			new MockFileSystemOptions { CurrentDirectory = Paths.WorkingDirectoryRoot.FullName }
 		);
-		var collector = new TestDiagnosticsCollector(output);
-		_ = collector.StartAsync(TestContext.Current.CancellationToken);
+		var collector = new TestDiagnosticsCollector();
+		_ = collector.StartAsync(TestContext.Current!.Execution.CancellationToken);
 		var configurationContext = TestHelpers.CreateConfigurationContext(fileSystem);
 		var context = new BuildContext(collector, TestHelpers.CreateDocumentationFileSystem(fileSystem), configurationContext);
 

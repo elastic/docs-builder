@@ -2,7 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-namespace Elastic.Authoring.Tests.Blocks.Storybook;
+namespace Elastic.Authoring.Tests.Blocks;
 
 public class StorybookMissingReference : MarkdownTest
 {
@@ -11,7 +11,7 @@ public class StorybookMissingReference : MarkdownTest
 		:::
 		""";
 
-	[Fact(DisplayName = "has error")]
+	[Test, DisplayName("has error")]
 	public async Task HasError() => await Docs.HasError("requires :id: or :project:");
 }
 
@@ -24,6 +24,6 @@ public class StorybookMissingRegistry : MarkdownTest
 		:::
 		""";
 
-	[Fact(DisplayName = "has error")]
+	[Test, DisplayName("has error")]
 	public async Task HasError() => await Docs.HasError("requires docset.yml storybook.registry");
 }

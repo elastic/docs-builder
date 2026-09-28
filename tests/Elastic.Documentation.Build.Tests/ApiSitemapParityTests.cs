@@ -7,16 +7,17 @@ using Elastic.Documentation.Configuration;
 
 namespace Elastic.Documentation.Build.Tests;
 
+// TODO: Delete this class once the API Explorer migration (elastic/docs-eng-team#436) is finalised.
 public class ApiSitemapParityTests
 {
 	private const string DiscontinuedObservabilityServerlessPath = "/docs/api/doc/observability-serverless";
 	private static readonly Uri SitemapIndex = new("https://www.elastic.co/docs/api/sitemap_index.xml");
 	private static readonly XNamespace SitemapNamespace = "http://www.sitemaps.org/schemas/sitemap/0.9";
 
-	[Fact]
-	public async Task Build_ContainsEveryProductionApiSitemapPage()
+	[Test]
+	public async Task Build_ContainsEveryProductionApiSitemapPage(CancellationToken cancellationToken)
 	{
-		Assert.SkipUnless(
+		Skip.Unless(
 			Environment.GetEnvironmentVariable("FEATURE_ASSEMBLER_API_EXPLORER") == "true",
 			"Set FEATURE_ASSEMBLER_API_EXPLORER=true to build and verify local API pages"
 		);
@@ -24,7 +25,8 @@ public class ApiSitemapParityTests
 		using var client = new HttpClient { Timeout = TimeSpan.FromMinutes(2) };
 		client.DefaultRequestHeaders.UserAgent.ParseAdd("docs-builder-api-sitemap-parity-test");
 
-		var productionUrls = await DownloadPageUrls(client, SitemapIndex, TestContext.Current.CancellationToken);
+		var productionUrls = await DownloadPageUrls(client, SitemapIndex, cancellationToken);
+		await Assert.That(productionUrls).IsNotEmpty();
 		var auditedUrls = productionUrls.Where(
 			url => !url.AbsolutePath.StartsWith(DiscontinuedObservabilityServerlessPath, StringComparison.Ordinal)
 		).ToArray();
@@ -38,8 +40,8 @@ public class ApiSitemapParityTests
 
 		if (missing.Length > 0)
 		{
-			await File.WriteAllLinesAsync(reportPath, missing.Select(url => url.AbsoluteUri), TestContext.Current.CancellationToken);
-			Assert.Skip(
+			await File.WriteAllLinesAsync(reportPath, missing.Select(url => url.AbsoluteUri), cancellationToken);
+			Skip.Test(
 				$"WARNING: {missing.Length} of {auditedUrls.Length} production API pages are not generated locally: " + $"see {reportPath}"
 			);
 		}
@@ -51,9 +53,16 @@ public class ApiSitemapParityTests
 	{
 		await using var stream = await client.GetStreamAsync(sitemap, ctx);
 		var document = await XDocument.LoadAsync(stream, LoadOptions.None, ctx);
+		var rootName = document.Root?.Name;
+
+		if (rootName != SitemapNamespace + "urlset" && rootName != SitemapNamespace + "sitemapindex")
+			throw new InvalidOperationException(
+				$"Unexpected XML at {sitemap}: root element '{rootName}' is not a sitemap urlset or sitemapindex in namespace '{SitemapNamespace}'."
+			);
+
 		var locations = document.Descendants(SitemapNamespace + "loc").Select(element => new Uri(element.Value)).ToArray();
 
-		if (document.Root?.Name == SitemapNamespace + "urlset")
+		if (rootName == SitemapNamespace + "urlset")
 			return locations.ToHashSet();
 
 		var pages = new HashSet<Uri>();

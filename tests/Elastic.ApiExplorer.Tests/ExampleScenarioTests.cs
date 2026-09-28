@@ -12,7 +12,7 @@ namespace Elastic.ApiExplorer.Tests;
 
 public class ExampleScenarioTests
 {
-	[Fact]
+	[Test]
 	public void BuildExampleScenarios_MergesRequestAndResponseByTitle()
 	{
 		var request = new ExampleDisplay("Multimodal", null, /*lang=json,strict*/  """{"input":[{"type":"image"}]}""", null);
@@ -27,7 +27,7 @@ public class ExampleScenarioTests
 		scenarios[0].Responses[0].JsonValue.Should().Contain("embeddings");
 	}
 
-	[Fact]
+	[Test]
 	public void BuildExampleScenarios_GroupsResponsesByStatusCode()
 	{
 		var ok = new ExampleDisplay("Create", null, /*lang=json,strict*/  """{"ok":true}""", null, "200");
@@ -41,7 +41,7 @@ public class ExampleScenarioTests
 		scenarios[0].Responses[1].JsonValue.Should().Contain("error");
 	}
 
-	[Fact]
+	[Test]
 	public void BuildExampleScenarios_SharesUnmatchedErrorResponsesAcrossRequestScenarios()
 	{
 		var ipRequest = new ExampleDisplay("ip", null, /*lang=json,strict*/  """{"type":"ip"}""", null);
@@ -67,7 +67,7 @@ public class ExampleScenarioTests
 		scenarios[1].Responses[1].JsonValue.Should().Contain("bad");
 	}
 
-	[Fact]
+	[Test]
 	public void BuildExampleScenarios_SharedResponseDoesNotOverwriteScenarioStatus()
 	{
 		var request = new ExampleDisplay("ip", null, /*lang=json,strict*/  """{"type":"ip"}""", null);
@@ -81,7 +81,7 @@ public class ExampleScenarioTests
 		scenarios[0].Responses[0].JsonValue.Should().Contain("scenario");
 	}
 
-	[Fact]
+	[Test]
 	public void BuildExampleScenarios_CollapsesResponseOnlyNamedStatusesIntoOneScenario()
 	{
 		var bad = new ExampleDisplay("badRequest", null, /*lang=json,strict*/  """{"error":"bad"}""", null, "400");
@@ -93,7 +93,7 @@ public class ExampleScenarioTests
 		scenarios[0].Responses.Select(r => r.StatusCode).Should().Equal("400", "401");
 	}
 
-	[Fact]
+	[Test]
 	public void BuildExampleScenarios_AttachesCodeSamplesToMatchingRequestBody()
 	{
 		var multimodal = new ExampleDisplay(
@@ -129,7 +129,7 @@ public class ExampleScenarioTests
 		scenarios[1].ShowRequest.Should().BeTrue();
 	}
 
-	[Fact]
+	[Test]
 	public void BuildExampleScenarios_CodeSamplesOnly_CreatesSingleScenario()
 	{
 		var samples = new[] { new CodeSample("Console", "GET /_search", "language-console") };
@@ -141,7 +141,7 @@ public class ExampleScenarioTests
 		scenarios[0].CodeSamples.Should().Equal(samples);
 	}
 
-	[Fact]
+	[Test]
 	public void EnsureResponseTabs_FillsStatusTabsWhenScenariosHaveNoResponses()
 	{
 		var samples = new[] { new CodeSample("Console", "DELETE /api/dashboards/{id}", "language-console") };
@@ -169,7 +169,7 @@ public class ExampleScenarioTests
 		withTabs[0].ShowResponse.Should().BeTrue();
 	}
 
-	[Fact]
+	[Test]
 	public void EnsureResponseTabs_DoesNotReplaceExistingResponseExamples()
 	{
 		var ok = new ExampleDisplay("Create", null, /*lang=json,strict*/  """{"ok":true}""", null, "200");
@@ -187,7 +187,7 @@ public class ExampleScenarioTests
 		withTabs[0].Responses[0].JsonValue.Should().Contain("ok");
 	}
 
-	[Fact]
+	[Test]
 	public void BuildExampleScenarios_PreservesRequestOrderAsScenarioTabs()
 	{
 		var a = new ExampleDisplay("Alpha", new HtmlString("a"), "{}", null);
@@ -199,7 +199,7 @@ public class ExampleScenarioTests
 		scenarios[0].DescriptionHtml.Should().NotBeNull();
 	}
 
-	[Fact]
+	[Test]
 	public void SanitizeExampleDescription_DropsRunCommandBoilerplate()
 	{
 		var onlyBoilerplate =
@@ -212,7 +212,7 @@ public class ExampleScenarioTests
 		OperationPageModel.SanitizeExampleDescription("Useful context without a command.").Should().Be("Useful context without a command.");
 	}
 
-	[Fact]
+	[Test]
 	public void SanitizeExampleDescription_DropsSuccessfulResponseFromPath()
 	{
 		var onlyBoilerplate = "A successful response from `POST _inference/completion/openai_completions`.";
@@ -226,7 +226,7 @@ public class ExampleScenarioTests
 			.Be("A successful response when performing a chat completion task with tools.");
 	}
 
-	[Fact]
+	[Test]
 	public void SanitizeExampleDescription_DropsExampleBodyForRequest()
 	{
 		var onlyBoilerplate = "An example body for a `PUT _inference/rerank/my-rerank-model` request.";
@@ -236,7 +236,7 @@ public class ExampleScenarioTests
 		OperationPageModel.SanitizeExampleDescription(withNote).Should().Be("Includes a custom `task_settings` block.");
 	}
 
-	[Fact]
+	[Test]
 	public void SanitizeExampleDescription_DropsAbbreviatedResponseFromPath()
 	{
 		var onlyBoilerplate = "An abbreviated response from `GET /my-index-000001/_search_shards`.";
@@ -250,7 +250,7 @@ public class ExampleScenarioTests
 			.Be("An abbreviated response when requesting cluster nodes information.");
 	}
 
-	[Fact]
+	[Test]
 	public void WithOperationIdentity_StampsMethodAndRouteOnEveryScenario()
 	{
 		var scenarios = OperationPageModel.WithOperationIdentity(

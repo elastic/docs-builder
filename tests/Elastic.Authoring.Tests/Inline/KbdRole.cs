@@ -2,7 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-namespace Elastic.Authoring.Tests.Inline.KbdRole;
+namespace Elastic.Authoring.Tests.Inline;
 
 public class RendersSingleKbdRole : MarkdownTest
 {
@@ -10,7 +10,7 @@ public class RendersSingleKbdRole : MarkdownTest
 		{kbd}`cmd`
 		""";
 
-	[Fact(DisplayName = "validate HTML")]
+	[Test, DisplayName("validate HTML")]
 	public async Task ValidateHtml() =>
 		await Docs.ConvertsToHtml("""
 		<p><kbd class="kbd" aria-label="Command"><span class="kbd-icon">⌘</span>Cmd</kbd></p>
@@ -23,7 +23,7 @@ public class RendersSingleCharacterKbdRole : MarkdownTest
 		{kbd}`c`
 		""";
 
-	[Fact(DisplayName = "validate HTML")]
+	[Test, DisplayName("validate HTML")]
 	public async Task ValidateHtml() => await Docs.ConvertsToHtml("""
 		<p><kbd class="kbd">c</kbd></p>
 		""");
@@ -35,7 +35,7 @@ public class RendersCombinedKbdRole : MarkdownTest
 		{kbd}`cmd+shift+c`
 		""";
 
-	[Fact(DisplayName = "validate HTML")]
+	[Test, DisplayName("validate HTML")]
 	public async Task ValidateHtml() =>
 		await Docs.ConvertsToHtml(
 			"""
@@ -50,7 +50,7 @@ public class RendersCombinedKbdRoleWithSpecialCharacters : MarkdownTest
 		{kbd}`ctrl+alt+del`
 		""";
 
-	[Fact(DisplayName = "validate HTML")]
+	[Test, DisplayName("validate HTML")]
 	public async Task ValidateHtml() =>
 		await Docs.ConvertsToHtml(
 			"""
@@ -65,7 +65,7 @@ public class RendersAlternativeKbdRole : MarkdownTest
 		{kbd}`ctrl|cmd+c`
 		""";
 
-	[Fact(DisplayName = "validate HTML")]
+	[Test, DisplayName("validate HTML")]
 	public async Task ValidateHtml() =>
 		await Docs.ConvertsToHtml(
 			"""
@@ -88,7 +88,7 @@ public class RendersKbdPlus : MarkdownTest
 		{kbd}`plus`
 		""";
 
-	[Fact(DisplayName = "validate HTML")]
+	[Test, DisplayName("validate HTML")]
 	public async Task ValidateHtml() => await Docs.ConvertsToHtml("""
 		<p><kbd class="kbd">+</kbd></p>
 		""");
@@ -100,7 +100,7 @@ public class RendersKbdPipe : MarkdownTest
 		{kbd}`pipe`
 		""";
 
-	[Fact(DisplayName = "validate HTML")]
+	[Test, DisplayName("validate HTML")]
 	public async Task ValidateHtml() => await Docs.ConvertsToHtml("""
 		<p><kbd class="kbd" aria-label="Pipe">|</kbd></p>
 		""");

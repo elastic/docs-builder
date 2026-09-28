@@ -11,9 +11,10 @@ using Elastic.Documentation.Site.FileProviders;
 
 namespace Elastic.ApiExplorer.Tests;
 
-public class OperationDeprecatedBadgeRenderingTests(ApiExplorerFixture fixture) : IClassFixture<ApiExplorerFixture>
+[ClassDataSource<ApiExplorerFixture>(Shared = SharedType.PerClass)]
+public class OperationDeprecatedBadgeRenderingTests(ApiExplorerFixture fixture)
 {
-	[Fact]
+	[Test]
 	public async Task Render_DeprecatedOperation_ShowsBadgeOnTitleNotOnMethod()
 	{
 		var nav = fixture.Walk().OfType<OperationNavigationItem>().First(n => n.Model.Operation.OperationId == "docs-get-source");
@@ -42,7 +43,7 @@ public class OperationDeprecatedBadgeRenderingTests(ApiExplorerFixture fixture) 
 
 		var fs = new MockFileSystem();
 		await using (var stream = fs.FileStream.New("/out.html", FileMode.Create, FileAccess.Write))
-			await nav.Model.RenderAsync(stream, renderContext, null, TestContext.Current.CancellationToken);
+			await nav.Model.RenderAsync(stream, renderContext, null, TestContext.Current!.Execution.CancellationToken);
 
 		return fs.File.ReadAllText("/out.html");
 	}

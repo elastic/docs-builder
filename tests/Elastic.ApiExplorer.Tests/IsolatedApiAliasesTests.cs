@@ -9,23 +9,23 @@ namespace Elastic.ApiExplorer.Tests;
 
 public class IsolatedApiAliasesTests
 {
-	[Theory]
-	[InlineData("doc/elasticsearch", "doc/docs-builder-elasticsearch")]
-	[InlineData("doc/elasticsearch/operation/operation-search", "doc/docs-builder-elasticsearch/operation/operation-search")]
-	[InlineData("doc/kibana/operation/operation-post-agent-builder-conversations-conversation-id-attachments", "doc/docs-builder-kibana/operation/operation-post-agent-builder-conversations-conversation-id-attachments")]
-	[InlineData("/doc/elasticsearch/", "doc/docs-builder-elasticsearch")]
+	[Test]
+	[Arguments("doc/elasticsearch", "doc/docs-builder-elasticsearch")]
+	[Arguments("doc/elasticsearch/operation/operation-search", "doc/docs-builder-elasticsearch/operation/operation-search")]
+	[Arguments("doc/kibana/operation/operation-post-agent-builder-conversations-conversation-id-attachments", "doc/docs-builder-kibana/operation/operation-post-agent-builder-conversations-conversation-id-attachments")]
+	[Arguments("/doc/elasticsearch/", "doc/docs-builder-elasticsearch")]
 	public void TryPrefixedDocSlug_ShortProductKey_MapsToFixture(string slug, string expected)
 	{
 		IsolatedApiAliases.TryPrefixedDocSlug(slug, out var prefixed).Should().BeTrue();
 		prefixed.Should().Be(expected);
 	}
 
-	[Theory]
-	[InlineData("doc/docs-builder-elasticsearch")]
-	[InlineData("doc/docs-builder-elasticsearch/operation/operation-search")]
-	[InlineData("api/doc/elasticsearch")]
-	[InlineData("")]
-	[InlineData("doc/")]
+	[Test]
+	[Arguments("doc/docs-builder-elasticsearch")]
+	[Arguments("doc/docs-builder-elasticsearch/operation/operation-search")]
+	[Arguments("api/doc/elasticsearch")]
+	[Arguments("")]
+	[Arguments("doc/")]
 	public void TryPrefixedDocSlug_AlreadyPrefixedOrInvalid_ReturnsFalse(string slug)
 	{
 		IsolatedApiAliases.TryPrefixedDocSlug(slug, out var prefixed).Should().BeFalse();

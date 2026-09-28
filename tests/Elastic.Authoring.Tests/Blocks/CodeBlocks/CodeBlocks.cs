@@ -14,10 +14,10 @@ public class WarnsOnInvalidLanguage : MarkdownTest
 		```
 		""";
 
-	[Fact(DisplayName = "validate HTML: generates link and alt attr")]
+	[Test, DisplayName("validate HTML: generates link and alt attr")]
 	public async Task ValidateHtml() => await Docs.HasWarning("Unknown language: not-a-valid-language");
 
-	[Fact(DisplayName = "parses to EnhancedCodeBlock")]
+	[Test, DisplayName("parses to EnhancedCodeBlock")]
 	public async Task ParsesCodeBlock()
 	{
 		var codeBlocks = await Docs.Converts("index.md").Parses<EnhancedCodeBlock>();

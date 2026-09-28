@@ -20,9 +20,9 @@ using RazorSlices;
 
 namespace Elastic.Documentation.Navigation.Tests.Rendering;
 
-public class LandingLayoutRenderingTests(ITestOutputHelper output) : DocumentationSetNavigationTestBase(output)
+public class LandingLayoutRenderingTests() : DocumentationSetNavigationTestBase()
 {
-	[Fact]
+	[Test]
 	public async Task LandingPage_OmitsEmptyMobileHamburger()
 	{
 		var html = await RenderLanding(navigationPreviewEnabled: false);
@@ -32,7 +32,7 @@ public class LandingLayoutRenderingTests(ITestOutputHelper output) : Documentati
 		html.Should().NotContain("id=\"pages-nav\"");
 	}
 
-	[Fact]
+	[Test]
 	public async Task LandingPage_WithNavigationPreview_RendersMobileDrawer()
 	{
 		var html = await RenderLanding(navigationPreviewEnabled: true);
@@ -89,7 +89,7 @@ public class LandingLayoutRenderingTests(ITestOutputHelper output) : Documentati
 			Cta = Cta.Default
 		};
 
-		return await _Layout.Create(model).RenderAsync(cancellationToken: TestContext.Current.CancellationToken);
+		return await _Layout.Create(model).RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
 	}
 
 	private sealed record StubNavigationItem(string Url) : INavigationItem

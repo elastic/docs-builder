@@ -9,9 +9,9 @@ using Elastic.Documentation.Extensions;
 
 namespace Elastic.Documentation.Navigation.Tests.Isolation;
 
-public class FolderExcludeTests(ITestOutputHelper output) : DocumentationSetNavigationTestBase(output)
+public class FolderExcludeTests() : DocumentationSetNavigationTestBase()
 {
-	[Fact]
+	[Test]
 	public void FolderWithoutExcludeIncludesAllFiles()
 	{
 		// language=yaml
@@ -38,7 +38,7 @@ public class FolderExcludeTests(ITestOutputHelper output) : DocumentationSetNavi
 		fileNames.Should().BeEquivalentTo(["docs/alpha.md", "docs/beta.md", "docs/gamma.md"], options => options.WithStrictOrdering());
 	}
 
-	[Fact]
+	[Test]
 	public void FolderWithExcludeFiltersOutSpecifiedFiles()
 	{
 		// language=yaml
@@ -67,7 +67,7 @@ public class FolderExcludeTests(ITestOutputHelper output) : DocumentationSetNavi
 		fileNames.Should().BeEquivalentTo(["docs/alpha.md", "docs/gamma.md"], options => options.WithStrictOrdering());
 	}
 
-	[Fact]
+	[Test]
 	public void FolderWithExcludeMultipleFiles()
 	{
 		// language=yaml
@@ -97,7 +97,7 @@ public class FolderExcludeTests(ITestOutputHelper output) : DocumentationSetNavi
 		fileNames.Should().BeEquivalentTo(["docs/beta.md"], options => options.WithStrictOrdering());
 	}
 
-	[Fact]
+	[Test]
 	public void FolderWithExcludeIsCaseInsensitive()
 	{
 		// language=yaml
@@ -125,7 +125,7 @@ public class FolderExcludeTests(ITestOutputHelper output) : DocumentationSetNavi
 		fileNames.Should().BeEquivalentTo(["docs/alpha.md"], options => options.WithStrictOrdering());
 	}
 
-	[Fact]
+	[Test]
 	public void FolderWithExcludeCanExcludeIndexMd()
 	{
 		// language=yaml
@@ -156,7 +156,7 @@ public class FolderExcludeTests(ITestOutputHelper output) : DocumentationSetNavi
 		fileNames.Should().BeEquivalentTo(["docs/alpha.md"], options => options.WithStrictOrdering());
 	}
 
-	[Fact]
+	[Test]
 	public void FolderExcludePopulatesFolderExcludedFiles()
 	{
 		// language=yaml
@@ -183,7 +183,7 @@ public class FolderExcludeTests(ITestOutputHelper output) : DocumentationSetNavi
 		docSet.FolderExcludedFiles.Should().BeEquivalentTo(["docs/draft.md", "docs/internal.md"]);
 	}
 
-	[Fact]
+	[Test]
 	public void FolderExcludeCollectsFromNestedFolders()
 	{
 		// language=yaml

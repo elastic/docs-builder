@@ -9,11 +9,11 @@ namespace Elastic.Markdown.Tests.Helpers;
 
 public class StripMarkdown_PlainTextInput_ReturnsInputUnchanged
 {
-	[Theory]
-	[InlineData("Hello World")]
-	[InlineData("en/security/8.17/install-endpoint.md")]
-	[InlineData("Getting started with Elasticsearch")]
-	[InlineData("")]
+	[Test]
+	[Arguments("Hello World")]
+	[Arguments("en/security/8.17/install-endpoint.md")]
+	[Arguments("Getting started with Elasticsearch")]
+	[Arguments("")]
 	public void DoesNotAllocate(string input) =>
 		// For plain-text strings the fast path must return the exact same reference,
 		// avoiding the StringWriter allocation entirely.
@@ -22,16 +22,16 @@ public class StripMarkdown_PlainTextInput_ReturnsInputUnchanged
 
 public class StripMarkdown_EscapedAsterisks_StripsEscapes
 {
-	[Fact]
+	[Test]
 	public void UnescapesBackslashEscapedSpans() => @"\*literal\*".StripMarkdown().Should().Be("*literal*");
 }
 
 public class StripMarkdown_MarkdownInput_StripsFormatting
 {
-	[Theory]
-	[InlineData("`inline code`", "inline code")]
-	[InlineData("**bold text**", "bold text")]
-	[InlineData("_italic text_", "italic text")]
-	[InlineData("[link text](https://example.com)", "link text")]
+	[Test]
+	[Arguments("`inline code`", "inline code")]
+	[Arguments("**bold text**", "bold text")]
+	[Arguments("_italic text_", "italic text")]
+	[Arguments("[link text](https://example.com)", "link text")]
 	public void RemovesMarkdownSyntax(string input, string expected) => input.StripMarkdown().Should().Be(expected);
 }

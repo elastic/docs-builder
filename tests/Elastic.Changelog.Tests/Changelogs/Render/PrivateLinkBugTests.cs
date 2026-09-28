@@ -13,9 +13,9 @@ namespace Elastic.Changelog.Tests.Changelogs.Render;
 /// Tests that CLI rendering does not produce incomplete "For more information, check." sentences
 /// when entries have only PRIVATE PR/issue references.
 /// </summary>
-public class PrivateLinkBugTests(ITestOutputHelper output) : RenderChangelogTestBase(output)
+public class PrivateLinkBugTests() : RenderChangelogTestBase()
 {
-	[Fact]
+	[Test]
 	public async Task RenderChangelogs_WithOnlyPrivateLinks_DoesNotRenderIncompleteForMoreInformationSentence()
 	{
 		// Arrange
@@ -49,7 +49,7 @@ public class PrivateLinkBugTests(ITestOutputHelper output) : RenderChangelogTest
 			    owner: elastic
 			""";
 		var bundleContent = CreateResolvedBundleContent(bundleHeader, ("153728-deprecate-costs-api-v1.yaml", changelog));
-		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current!.Execution.CancellationToken);
 
 		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
 
@@ -61,7 +61,7 @@ public class PrivateLinkBugTests(ITestOutputHelper output) : RenderChangelogTest
 		};
 
 		// Act
-		var result = await Service.RenderChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await Service.RenderChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		result.Should().BeTrue();
@@ -70,7 +70,7 @@ public class PrivateLinkBugTests(ITestOutputHelper output) : RenderChangelogTest
 		var deprecationsFile = FileSystem.Path.Join(outputDir, "9.3.0", "deprecations.md");
 		FileSystem.File.Exists(deprecationsFile).Should().BeTrue();
 
-		var content = await FileSystem.File.ReadAllTextAsync(deprecationsFile, TestContext.Current.CancellationToken);
+		var content = await FileSystem.File.ReadAllTextAsync(deprecationsFile, TestContext.Current!.Execution.CancellationToken);
 
 		// Should not contain the incomplete sentence
 		content.Should().NotContain("For more information, check.");
@@ -84,7 +84,7 @@ public class PrivateLinkBugTests(ITestOutputHelper output) : RenderChangelogTest
 		content.Should().Contain("Follow the migration guide");
 	}
 
-	[Fact]
+	[Test]
 	public async Task RenderChangelogs_WithMixedPrivateAndPublicLinks_RendersOnlyPublicLinks()
 	{
 		// Arrange
@@ -122,7 +122,7 @@ public class PrivateLinkBugTests(ITestOutputHelper output) : RenderChangelogTest
 			    owner: elastic
 			""";
 		var bundleContent = CreateResolvedBundleContent(bundleHeader, ("123456-mixed-links.yaml", changelog));
-		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current!.Execution.CancellationToken);
 
 		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
 
@@ -134,7 +134,7 @@ public class PrivateLinkBugTests(ITestOutputHelper output) : RenderChangelogTest
 		};
 
 		// Act
-		var result = await Service.RenderChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await Service.RenderChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		result.Should().BeTrue();
@@ -143,7 +143,7 @@ public class PrivateLinkBugTests(ITestOutputHelper output) : RenderChangelogTest
 		var breakingChangesFile = FileSystem.Path.Join(outputDir, "9.3.0", "breaking-changes.md");
 		FileSystem.File.Exists(breakingChangesFile).Should().BeTrue();
 
-		var content = await FileSystem.File.ReadAllTextAsync(breakingChangesFile, TestContext.Current.CancellationToken);
+		var content = await FileSystem.File.ReadAllTextAsync(breakingChangesFile, TestContext.Current!.Execution.CancellationToken);
 
 		// Should contain proper "For more information" with only public links
 		content.Should().Contain("For more information, check");
