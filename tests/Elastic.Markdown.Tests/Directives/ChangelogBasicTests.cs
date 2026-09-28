@@ -1286,3 +1286,48 @@ public class ChangelogReleaseDateWithDescriptionTests : DirectiveTest<ChangelogB
 	[Test]
 	public void RendersEntries() => Html.Should().Contain("Add tracing improvements");
 }
+
+/// <summary>
+/// Changelog entry titles or descriptions that contain <c>{{placeholder}}</c> template syntax
+/// must not be treated as substitution keys when the generated markdown is re-parsed.
+/// Regression test for: substitution parser matches {{hostname}} in changelog content and
+/// emits an error that causes Errata to crash when the column position exceeds the source
+/// line length.
+/// </summary>
+[InheritsTests]
+public class ChangelogDoubleBraceEscapeTests : DirectiveTest<ChangelogBlock>
+{
+	public ChangelogDoubleBraceEscapeTests() : base(
+			// language=markdown
+			"""
+		:::{changelog}
+		:::
+		"""
+		) =>
+		FileSystem.AddFile(
+			"docs/changelog/bundles/9.3.0.yaml",
+			new MockFileData(
+				// language=yaml
+				"""
+			products:
+			- product: elasticsearch
+			  target: 9.3.0
+			  lifecycle: ga
+			entries:
+			- title: Fix ECE API ingestion blocked by {{hostname}} template placeholder
+			  type: bug-fix
+			  products:
+			  - product: elasticsearch
+			    target: 9.3.0
+			  prs:
+			  - "123"
+			"""
+			)
+		);
+
+	[Test]
+	public void RendersWithoutErrors() => Collector.Errors.Should().Be(0);
+
+	[Test]
+	public void RendersTitleWithLiteralBraces() => Html.Should().Contain("{{hostname}}");
+}
