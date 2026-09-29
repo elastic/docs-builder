@@ -45,7 +45,7 @@ public record SchemaPageModel
 		if (openApiSchema.ExternalDocs?.Url is not null)
 		{
 			var url = openApiSchema.ExternalDocs.Url.ToString();
-			externalDocs = new ExternalDocLink(url, ApiPropertyTreeBuilder.IsElasticDocsUrl(url));
+			externalDocs = new ExternalDocLink(url, ApiPropertyTreeBuilder.IsElasticDocsUrl(url), openApiSchema.ExternalDocs.Description);
 		}
 
 		return new SchemaPageModel
