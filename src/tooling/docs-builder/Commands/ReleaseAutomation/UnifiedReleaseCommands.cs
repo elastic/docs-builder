@@ -352,8 +352,6 @@ internal sealed class UnifiedReleaseCommands(
 		var tempConfig = Path.Combine(outputDirectory, $"changelog-config-{repoKey}-{commitHash[..8]}.yml");
 		await File.WriteAllTextAsync(tempConfig, changelogYaml, ctx);
 
-		string? resolvedBundlePath = null;
-
 		try
 		{
 			var arguments = new BundleChangelogsArguments
@@ -362,34 +360,10 @@ internal sealed class UnifiedReleaseCommands(
 				ProfileArgument = version,
 				OutputDirectory = outputDirectory,
 				Config = tempConfig,
-				// Capture where the bundler actually wrote the file.
-				// The profile's output_directory (e.g. "docs/releases/kibana") takes precedence
-				// over OutputDirectory in the bundler, so the file may land outside our target dir.
-				OnBundlePathResolved = path => resolvedBundlePath = path,
 			};
 
 			var success = await bundleService.BundleChangelogs(collector, arguments, ctx);
-			if (!success)
-				return 1;
-
-			// Relocate the bundle when the profile directed it somewhere other than outputDirectory.
-			if (
-				resolvedBundlePath is not null
-				&& !string.IsNullOrWhiteSpace(resolvedBundlePath)
-				&& !resolvedBundlePath.StartsWith(outputDirectory, StringComparison.OrdinalIgnoreCase)
-			)
-			{
-				var fileName = Path.GetFileName(resolvedBundlePath);
-				var destination = Path.Combine(outputDirectory, fileName);
-				File.Move(resolvedBundlePath, destination, overwrite: true);
-				_logger.LogInformation("Relocated bundle from '{Source}' to '{Destination}'", resolvedBundlePath, destination);
-			}
-			else if (resolvedBundlePath is not null)
-			{
-				_logger.LogInformation("Bundle written to '{Path}'", resolvedBundlePath);
-			}
-
-			return 0;
+			return success ? 0 : 1;
 		}
 		finally
 		{

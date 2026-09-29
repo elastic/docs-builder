@@ -1290,11 +1290,16 @@ public partial class ChangelogBundlingService(
 	}
 
 	/// <summary>
-	/// Profile <c>output_directory</c> when the invoked profile sets it; otherwise
-	/// <c>bundle.output_directory</c>.
+	/// Explicit <see cref="BundleChangelogsArguments.OutputDirectory"/> when set; otherwise
+	/// the profile's <c>output_directory</c>; otherwise <c>bundle.output_directory</c>.
+	/// Caller-supplied wins so that DRA bundling (and any explicit <c>--output-dir</c>) always
+	/// writes to the requested location rather than the profile's repo-relative default.
 	/// </summary>
 	private static string? ResolveConfiguredOutputDirectory(ChangelogConfiguration? config, BundleChangelogsArguments input)
 	{
+		if (!string.IsNullOrWhiteSpace(input.OutputDirectory))
+			return input.OutputDirectory;
+
 #pragma warning disable CS0618
 		if (
 			!string.IsNullOrWhiteSpace(input.Profile)
