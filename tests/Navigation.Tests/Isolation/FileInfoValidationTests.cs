@@ -16,9 +16,9 @@ namespace Elastic.Documentation.Navigation.Tests.Isolation;
 /// Tests that validate all FileInfo properties on FileNavigationItems resolve to files that actually exist.
 /// These tests ensure that the navigation system correctly creates file references for all scenarios.
 /// </summary>
-public class FileInfoValidationTests(ITestOutputHelper output) : DocumentationSetNavigationTestBase(output)
+public class FileInfoValidationTests() : DocumentationSetNavigationTestBase()
 {
-	[Fact]
+	[Test]
 	public void AllFileNavigationItemsHaveValidFileInfoForSimpleFiles()
 	{
 		// language=yaml
@@ -51,7 +51,7 @@ public class FileInfoValidationTests(ITestOutputHelper output) : DocumentationSe
 		context.Diagnostics.Should().BeEmpty("navigation construction should not emit any diagnostics");
 	}
 
-	[Fact]
+	[Test]
 	public void AllFileNavigationItemsHaveValidFileInfoForVirtualFiles()
 	{
 		// language=yaml
@@ -96,7 +96,7 @@ public class FileInfoValidationTests(ITestOutputHelper output) : DocumentationSe
 		context.Diagnostics.Should().BeEmpty("navigation construction should not emit any diagnostics");
 	}
 
-	[Fact]
+	[Test]
 	public void AllFileNavigationItemsHaveValidFileInfoForFoldersWithFiles()
 	{
 		// language=yaml
@@ -145,7 +145,7 @@ public class FileInfoValidationTests(ITestOutputHelper output) : DocumentationSe
 	/// Tests that files within folders inside nested TOCs have their FileInfo paths resolved correctly.
 	/// This validates that the full path (including folder components) is used for file resolution.
 	/// </summary>
-	[Fact]
+	[Test]
 	public void AllFileNavigationItemsHaveValidFileInfoForDeeplyNestedTocFiles()
 	{
 		// language=yaml
@@ -236,7 +236,7 @@ public class FileInfoValidationTests(ITestOutputHelper output) : DocumentationSe
 	/// Tests that child files of virtual files in nested TOCs have their FileInfo paths resolved correctly.
 	/// This validates that parent virtual file directory components are included in file resolution.
 	/// </summary>
-	[Fact]
+	[Test]
 	public void AllFileNavigationItemsHaveValidFileInfoForComplexMixedStructure()
 	{
 		// language=yaml
@@ -349,7 +349,7 @@ public class FileInfoValidationTests(ITestOutputHelper output) : DocumentationSe
 		context.Diagnostics.Should().BeEmpty("navigation construction should not emit any diagnostics");
 	}
 
-	[Fact]
+	[Test]
 	public void AllFileNavigationItemsHaveValidFileInfoForNestedFolders()
 	{
 		// language=yaml
@@ -392,7 +392,7 @@ public class FileInfoValidationTests(ITestOutputHelper output) : DocumentationSe
 		context.Diagnostics.Should().BeEmpty("navigation construction should not emit any diagnostics");
 	}
 
-	[Fact]
+	[Test]
 	public void AllFileNavigationItemsHaveValidFileInfoForVirtualFilesWithNestedChildren()
 	{
 		// language=yaml

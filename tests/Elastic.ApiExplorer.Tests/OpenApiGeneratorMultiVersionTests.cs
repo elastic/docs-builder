@@ -90,7 +90,7 @@ public class OpenApiGeneratorMultiVersionTests
 			Tags = new HashSet<OpenApiTag> { new() { Name = "core" } }
 		};
 
-	[Fact]
+	[Test]
 	public async Task ResolveDocumentsForProduct_MultiMajorIndex_ResolvesMainAndNumericVersions()
 	{
 		var collector = new DiagnosticsCollector([]);
@@ -109,7 +109,7 @@ public class OpenApiGeneratorMultiVersionTests
 		var documents = (await generator.ResolveDocumentsForProduct(
 			"elasticsearch",
 			ApiConfig(product),
-			TestContext.Current.CancellationToken
+			TestContext.Current!.Execution.CancellationToken
 		)).Documents;
 
 		documents.Should().HaveCount(3);
@@ -128,7 +128,7 @@ public class OpenApiGeneratorMultiVersionTests
 		);
 	}
 
-	[Fact]
+	[Test]
 	public async Task ResolveDocumentsForProduct_VersionlessProduct_RendersMainOnly()
 	{
 		var collector = new DiagnosticsCollector([]);
@@ -151,7 +151,7 @@ public class OpenApiGeneratorMultiVersionTests
 		var documents = (await generator.ResolveDocumentsForProduct(
 			"cloud-serverless",
 			apiConfig,
-			TestContext.Current.CancellationToken
+			TestContext.Current!.Execution.CancellationToken
 		)).Documents;
 
 		documents.Should().ContainSingle();
@@ -159,7 +159,7 @@ public class OpenApiGeneratorMultiVersionTests
 		ApiUrlBuilder.ProductSuffix("cloud-serverless", documents[0].Version.Moniker).Should().Be("cloud-serverless");
 	}
 
-	[Fact]
+	[Test]
 	public async Task ResolveDocumentsForProduct_LocalMainAndRemoteHistoricalVersions_ResolvesAllTrees()
 	{
 		var collector = new DiagnosticsCollector([]);
@@ -170,27 +170,30 @@ public class OpenApiGeneratorMultiVersionTests
 		var localDocument = SpecDocument("Elasticsearch local main");
 		using var versionIndexClient = new VersionIndexClient(BaseUri, MultiVersionHandler(), sleep: (_, _) => Task.CompletedTask);
 		var reader = A.Fake<IOpenApiSpecificationReader>();
-		A.CallTo(() => reader.ReadAsync(localFile)).Returns(localDocument);
-		A.CallTo(() => reader.ReadAsync(A<Stream>._, "elasticsearch-openapi.json")).ReturnsLazily(
-			(Stream _, string _) => SpecDocument("Elasticsearch remote")
+		A.CallTo(() => reader.ReadAsync(localFile, A<IDiagnosticsCollector?>._)).Returns(localDocument);
+		A.CallTo(() => reader.ReadAsync(A<Stream>._, "elasticsearch-openapi.json", A<IDiagnosticsCollector?>._)).ReturnsLazily(
+			(Stream _, string _, IDiagnosticsCollector? _) => SpecDocument("Elasticsearch remote")
 		);
 		var generator = CreateGenerator(context, versionIndexClient, reader);
 
 		var documents = (await generator.ResolveDocumentsForProduct(
 			"elasticsearch",
 			ApiConfig(product, localFile),
-			TestContext.Current.CancellationToken
+			TestContext.Current!.Execution.CancellationToken
 		)).Documents;
 
 		documents.Should().HaveCount(3);
 		documents.Should().ContainSingle(d => d.Version.Moniker == "main" && d.Document == localDocument);
 		documents.Should().ContainSingle(d => d.Version.Moniker == "9");
 		documents.Should().ContainSingle(d => d.Version.Moniker == "8");
-		A.CallTo(() => reader.ReadAsync(localFile)).MustHaveHappenedOnceExactly();
-		A.CallTo(() => reader.ReadAsync(A<Stream>._, "elasticsearch-openapi.json")).MustHaveHappened(2, Times.Exactly);
+		A.CallTo(() => reader.ReadAsync(localFile, A<IDiagnosticsCollector?>._)).MustHaveHappenedOnceExactly();
+		A.CallTo(() => reader.ReadAsync(A<Stream>._, "elasticsearch-openapi.json", A<IDiagnosticsCollector?>._)).MustHaveHappened(
+			2,
+			Times.Exactly
+		);
 	}
 
-	[Fact]
+	[Test]
 	public async Task ResolveDocumentsForProduct_MainFetchFails_DoesNotMarkOlderSpecForUnmatchedBaseFiles()
 	{
 		var collector = new DiagnosticsCollector([]);
@@ -225,14 +228,14 @@ public class OpenApiGeneratorMultiVersionTests
 		var resolved = await generator.ResolveDocumentsForProduct(
 			"elasticsearch",
 			ApiConfig(product),
-			TestContext.Current.CancellationToken
+			TestContext.Current!.Execution.CancellationToken
 		);
 
 		resolved.Documents.Select(d => d.Version.Moniker).Should().BeEquivalentTo(["9", "8"]);
 		resolved.UnmatchedBaseFilesMoniker.Should().BeNull();
 	}
 
-	[Fact]
+	[Test]
 	public void CreateNavigation_VersionedSuffix_UsesVersionPrefixedUrls()
 	{
 		var collector = new DiagnosticsCollector([]);
@@ -253,7 +256,7 @@ public class OpenApiGeneratorMultiVersionTests
 		operation.Url.Should().Be("/api/doc/elasticsearch/v8/operation/operation-ping");
 	}
 
-	[Fact]
+	[Test]
 	public async Task Generate_WritesDistinctOutputTreesForMainAndReleasedMajors()
 	{
 		var collector = new DiagnosticsCollector([]);
@@ -269,7 +272,7 @@ public class OpenApiGeneratorMultiVersionTests
 		);
 		var generator = CreateGenerator(context, versionIndexClient, reader);
 
-		await generator.Generate(TestContext.Current.CancellationToken);
+		await generator.Generate(TestContext.Current!.Execution.CancellationToken);
 
 		context.WriteFileSystem.File.Exists(Path.Join(outputRoot, "api", "doc", "elasticsearch", "index.html")).Should().BeTrue();
 		context
@@ -363,7 +366,9 @@ public class OpenApiGeneratorMultiVersionTests
 	{
 		var queue = new Queue<OpenApiDocument>(documents);
 		var reader = A.Fake<IOpenApiSpecificationReader>();
-		A.CallTo(() => reader.ReadAsync(A<Stream>._, A<string>._)).ReturnsLazily(_ => Task.FromResult<OpenApiDocument?>(queue.Dequeue()));
+		A.CallTo(() => reader.ReadAsync(A<Stream>._, A<string>._, A<IDiagnosticsCollector?>._)).ReturnsLazily(
+			_ => Task.FromResult<OpenApiDocument?>(queue.Dequeue())
+		);
 		return reader;
 	}
 

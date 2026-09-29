@@ -21,23 +21,23 @@ namespace Elastic.Documentation.Configuration.Tests;
 
 public class ApiCatalogCategoryTests
 {
-	[Theory]
-	[InlineData("self", "self")]
-	[InlineData("ECE", "ece")]
-	[InlineData("ess", "ess")]
-	[InlineData("ech", "ess")]
-	[InlineData("ECH", "ess")]
-	[InlineData("serverless", "serverless")]
+	[Test]
+	[Arguments("self", "self")]
+	[Arguments("ECE", "ece")]
+	[Arguments("ess", "ess")]
+	[Arguments("ech", "ess")]
+	[Arguments("ECH", "ess")]
+	[Arguments("serverless", "serverless")]
 	public void TryNormalize_AcceptsCatalogKeysAndAliases(string raw, string canonical) =>
 		ApiCatalogCategory.Normalize(raw).Should().Be(canonical);
 
-	[Theory]
-	[InlineData("eck")]
-	[InlineData("stack")]
-	[InlineData("hosted")]
+	[Test]
+	[Arguments("eck")]
+	[Arguments("stack")]
+	[Arguments("hosted")]
 	public void TryNormalize_RejectsUnknownKeys(string raw) => ApiCatalogCategory.Normalize(raw).Should().BeNull();
 
-	[Fact]
+	[Test]
 	public void DisplayName_UsesCatalogLabels()
 	{
 		ApiCatalogCategory.DisplayName("self").Should().Be("Self-managed");
@@ -49,7 +49,7 @@ public class ApiCatalogCategoryTests
 
 public class ApiProductEntryTests
 {
-	[Fact]
+	[Test]
 	public void HasSpec_And_HasProduct_ReflectPresence()
 	{
 		var entry = new ApiProductEntry { Spec = "api.json", Product = "elasticsearch" };
@@ -58,10 +58,10 @@ public class ApiProductEntryTests
 		entry.HasProduct.Should().BeTrue();
 	}
 
-	[Theory]
-	[InlineData(null)]
-	[InlineData("")]
-	[InlineData("   ")]
+	[Test]
+	[Arguments(null)]
+	[Arguments("")]
+	[Arguments("   ")]
 	public void HasSpec_FalseWhenBlank(string? spec)
 	{
 		var entry = new ApiProductEntry { Spec = spec, Product = "elasticsearch" };
@@ -69,10 +69,10 @@ public class ApiProductEntryTests
 		entry.HasSpec.Should().BeFalse();
 	}
 
-	[Theory]
-	[InlineData(null)]
-	[InlineData("")]
-	[InlineData("   ")]
+	[Test]
+	[Arguments(null)]
+	[Arguments("")]
+	[Arguments("   ")]
 	public void HasProduct_FalseWhenBlank(string? product)
 	{
 		var entry = new ApiProductEntry { Spec = "api.json", Product = product };
@@ -83,7 +83,7 @@ public class ApiProductEntryTests
 
 public class ApiProductSequenceTests
 {
-	[Fact]
+	[Test]
 	public void IsValid_TrueWithExactlyOneEntry()
 	{
 		var sequence = new ApiProductSequence { Entries = [new ApiProductEntry { Product = "elasticsearch" }] };
@@ -92,7 +92,7 @@ public class ApiProductSequenceTests
 		sequence.SingleEntry.Should().NotBeNull();
 	}
 
-	[Fact]
+	[Test]
 	public void IsValid_FalseWhenEmpty()
 	{
 		var sequence = new ApiProductSequence();
@@ -101,7 +101,7 @@ public class ApiProductSequenceTests
 		sequence.SingleEntry.Should().BeNull();
 	}
 
-	[Fact]
+	[Test]
 	public void IsValid_FalseWithMultipleEntries()
 	{
 		var sequence = new ApiProductSequence
@@ -118,7 +118,7 @@ public class ApiConfigurationConverterTests
 {
 	private readonly IDeserializer _deserializer = new DeserializerBuilder().WithTypeConverter(new ApiConfigurationConverter()).Build();
 
-	[Fact]
+	[Test]
 	public void AcceptsStrictEntry_WithSpecProductAndChildren()
 	{
 		const string yaml =
@@ -141,7 +141,7 @@ public class ApiConfigurationConverterTests
 		entry.Children[1].File.Should().Be("authentication.md");
 	}
 
-	[Fact]
+	[Test]
 	public void ConverterAllowsMissingSpec_RequirednessValidatedDownstream()
 	{
 		// The converter only enforces shape (one entry, valid keys). 'spec:' is semantically
@@ -159,7 +159,7 @@ public class ApiConfigurationConverterTests
 		entry.Product.Should().Be("kibana");
 	}
 
-	[Fact]
+	[Test]
 	public void AcceptsStrictEntry_WithoutChildren()
 	{
 		const string yaml = """
@@ -172,7 +172,7 @@ public class ApiConfigurationConverterTests
 		sequence.SingleEntry!.Children.Should().BeEmpty();
 	}
 
-	[Fact]
+	[Test]
 	public void RecordsEntryAndProductMarks()
 	{
 		const string yaml = """
@@ -187,7 +187,7 @@ public class ApiConfigurationConverterTests
 		entry.ProductLine.Should().Be(2);
 	}
 
-	[Fact]
+	[Test]
 	public void SkipsUnknownKeys()
 	{
 		const string yaml =
@@ -202,7 +202,7 @@ public class ApiConfigurationConverterTests
 		sequence.SingleEntry!.Product.Should().Be("elasticsearch");
 	}
 
-	[Fact]
+	[Test]
 	public void MultipleEntries_ParseButAreStructurallyInvalid()
 	{
 		const string yaml =
@@ -219,7 +219,7 @@ public class ApiConfigurationConverterTests
 		sequence.IsValid.Should().BeFalse();
 	}
 
-	[Fact]
+	[Test]
 	public void AcceptsCatalogCategories()
 	{
 		const string yaml =
@@ -239,7 +239,7 @@ public class ApiConfigurationConverterTests
 		sequence.SingleEntry.Catalog!.Categories.Should().Equal("self", "ece", "ess");
 	}
 
-	[Fact]
+	[Test]
 	public void AcceptsCatalogCategories_AsInlineSequence()
 	{
 		const string yaml =
@@ -255,7 +255,7 @@ public class ApiConfigurationConverterTests
 		sequence.SingleEntry!.Catalog!.Categories.Should().Equal("self", "serverless");
 	}
 
-	[Fact]
+	[Test]
 	public void Catalog_IsOptional()
 	{
 		const string yaml = """
@@ -268,7 +268,7 @@ public class ApiConfigurationConverterTests
 		sequence.SingleEntry!.Catalog.Should().BeNull();
 	}
 
-	[Fact]
+	[Test]
 	public void AcceptsRepositoryOverride()
 	{
 		const string yaml =
@@ -283,7 +283,7 @@ public class ApiConfigurationConverterTests
 		sequence.SingleEntry!.Repository.Should().Be("elastic/elasticsearch-specification");
 	}
 
-	[Fact]
+	[Test]
 	public void RepositoryOverride_IsOptional()
 	{
 		const string yaml = """
@@ -296,7 +296,7 @@ public class ApiConfigurationConverterTests
 		sequence.SingleEntry!.Repository.Should().BeNull();
 	}
 
-	[Fact]
+	[Test]
 	public void RejectsLegacyScalarShape()
 	{
 		const string yaml = "elasticsearch-openapi.json";
@@ -306,7 +306,7 @@ public class ApiConfigurationConverterTests
 		act.Should().Throw<YamlException>();
 	}
 
-	[Fact]
+	[Test]
 	public void RejectsLegacyObjectShape()
 	{
 		const string yaml = """
@@ -318,7 +318,7 @@ public class ApiConfigurationConverterTests
 		act.Should().Throw<YamlException>();
 	}
 
-	[Fact]
+	[Test]
 	public void RejectsLegacyIntroSpecOutroSequenceShape()
 	{
 		const string yaml = """
@@ -335,7 +335,7 @@ public class ApiConfigurationConverterTests
 
 public class ConfigurationFileApiTests
 {
-	[Fact]
+	[Test]
 	public void ResolvesLocalSpecProductAndChildren()
 	{
 		var docSetFile = new DocumentationSetFile
@@ -371,7 +371,7 @@ public class ConfigurationFileApiTests
 		resolved.Children[0].Name.Should().Be("getting-started.md");
 	}
 
-	[Fact]
+	[Test]
 	public void ResolvesSpec_WhenLocalFileAbsent_ForRemoteResolution()
 	{
 		// A declared 'spec:' that does not exist on disk is expected, not an error: it means
@@ -396,7 +396,7 @@ public class ConfigurationFileApiTests
 		resolved.LocalSpecFile.Should().BeNull();
 	}
 
-	[Fact]
+	[Test]
 	public void ResolvesSpecFileName_FromBasenameOfNestedPath()
 	{
 		var docSetFile = new DocumentationSetFile
@@ -418,7 +418,7 @@ public class ConfigurationFileApiTests
 		resolved.LocalSpecFile.Should().BeNull();
 	}
 
-	[Fact]
+	[Test]
 	public void EmitsError_WhenSpecMissing()
 	{
 		var docSetFile = new DocumentationSetFile
@@ -435,7 +435,7 @@ public class ConfigurationFileApiTests
 		config.ApiConfigurations.Should().BeNull();
 	}
 
-	[Fact]
+	[Test]
 	public void EmitsError_WhenSpecEscapesDocumentationSourceDirectory()
 	{
 		var docSetFile = new DocumentationSetFile
@@ -452,7 +452,7 @@ public class ConfigurationFileApiTests
 		config.ApiConfigurations.Should().BeNull();
 	}
 
-	[Fact]
+	[Test]
 	public void EmitsError_WhenProductMissing()
 	{
 		var docSetFile = new DocumentationSetFile
@@ -469,7 +469,7 @@ public class ConfigurationFileApiTests
 		config.ApiConfigurations.Should().BeNull();
 	}
 
-	[Fact]
+	[Test]
 	public void EmitsError_WhenProductUnknown()
 	{
 		var docSetFile = new DocumentationSetFile
@@ -489,7 +489,7 @@ public class ConfigurationFileApiTests
 		config.ApiConfigurations.Should().BeNull();
 	}
 
-	[Fact]
+	[Test]
 	public void NormalizesUnderscoreProductId()
 	{
 		var docSetFile = new DocumentationSetFile
@@ -509,7 +509,7 @@ public class ConfigurationFileApiTests
 		config.ApiConfigurations!["dashboard"].Product.Id.Should().Be("under-score-product");
 	}
 
-	[Fact]
+	[Test]
 	public void ResolvesRepositoryOverride()
 	{
 		var docSetFile = new DocumentationSetFile
@@ -537,7 +537,7 @@ public class ConfigurationFileApiTests
 		config.ApiConfigurations!["elasticsearch"].Repository.Should().Be("elastic/elasticsearch-specification");
 	}
 
-	[Fact]
+	[Test]
 	public void ResolvesCatalogCategories_NormalizesAliasAndDedupes()
 	{
 		var docSetFile = new DocumentationSetFile
@@ -565,7 +565,7 @@ public class ConfigurationFileApiTests
 		config.ApiConfigurations!["elasticsearch"].CatalogCategories.Should().Equal("ece", "ess", "self");
 	}
 
-	[Fact]
+	[Test]
 	public void EmitsError_WhenCatalogCategoryUnknown()
 	{
 		var docSetFile = new DocumentationSetFile
@@ -593,7 +593,7 @@ public class ConfigurationFileApiTests
 		config.ApiConfigurations!["elasticsearch"].CatalogCategories.Should().Equal("self");
 	}
 
-	[Fact]
+	[Test]
 	public void CatalogCategories_DefaultEmpty_WhenOmitted()
 	{
 		var docSetFile = new DocumentationSetFile
@@ -613,7 +613,7 @@ public class ConfigurationFileApiTests
 		config.ApiConfigurations!["elasticsearch"].CatalogCategories.Should().BeEmpty();
 	}
 
-	[Fact]
+	[Test]
 	public void Repository_DefaultsToNull_WhenOmitted()
 	{
 		var docSetFile = new DocumentationSetFile
@@ -633,10 +633,10 @@ public class ConfigurationFileApiTests
 		config.ApiConfigurations!["elasticsearch"].Repository.Should().BeNull();
 	}
 
-	[Theory]
-	[InlineData("no-slash")]
-	[InlineData("/leading-slash")]
-	[InlineData("trailing-slash/")]
+	[Test]
+	[Arguments("no-slash")]
+	[Arguments("/leading-slash")]
+	[Arguments("trailing-slash/")]
 	public void EmitsError_WhenRepositoryNotInOrgSlashRepoForm(string repository)
 	{
 		var docSetFile = new DocumentationSetFile
@@ -659,7 +659,7 @@ public class ConfigurationFileApiTests
 		config.ApiConfigurations.Should().BeNull();
 	}
 
-	[Fact]
+	[Test]
 	public void EmitsError_WhenMultipleEntries()
 	{
 		var docSetFile = new DocumentationSetFile
@@ -679,7 +679,7 @@ public class ConfigurationFileApiTests
 		config.ApiConfigurations.Should().BeNull();
 	}
 
-	[Fact]
+	[Test]
 	public void EmitsError_WhenChildFileMissing()
 	{
 		var docSetFile = new DocumentationSetFile
@@ -707,7 +707,7 @@ public class ConfigurationFileApiTests
 		config.ApiConfigurations!["elasticsearch"].Children.Should().BeEmpty();
 	}
 
-	[Fact]
+	[Test]
 	public void EmitsError_WhenChildPathEscapesApiKeyDirectory()
 	{
 		var docSetFile = new DocumentationSetFile
@@ -735,7 +735,7 @@ public class ConfigurationFileApiTests
 		config.ApiConfigurations!["elasticsearch"].Children.Should().BeEmpty();
 	}
 
-	[Fact]
+	[Test]
 	public void EmitsError_WhenChildFileUsesSupplementalName()
 	{
 		var docSetFile = new DocumentationSetFile
@@ -763,7 +763,7 @@ public class ConfigurationFileApiTests
 		config.ApiConfigurations!["elasticsearch"].Children.Should().BeEmpty();
 	}
 
-	[Fact]
+	[Test]
 	public void AcceptsNestedChildWhoseBasenameLooksSupplemental()
 	{
 		var docSetFile = new DocumentationSetFile
@@ -791,7 +791,7 @@ public class ConfigurationFileApiTests
 		config.ApiConfigurations!["elasticsearch"].Children.Should().ContainSingle(f => f.Name == "op-overview.md");
 	}
 
-	[Fact]
+	[Test]
 	public void GetMarkdownPathsToExclude_IncludesChildrenAndSupplementalFiles()
 	{
 		var docSetFile = new DocumentationSetFile
@@ -828,7 +828,7 @@ public class ConfigurationFileApiTests
 		excluded.Should().NotContain("api/elasticsearch/random-notes.md");
 	}
 
-	[Fact]
+	[Test]
 	public void ApiContentDirectory_IsSetToApiKeyFolder()
 	{
 		var docSetFile = new DocumentationSetFile

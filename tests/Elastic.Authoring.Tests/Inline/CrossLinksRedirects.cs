@@ -2,7 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-namespace Elastic.Authoring.Tests.Inline.CrossLinksRedirects;
+namespace Elastic.Authoring.Tests.Inline;
 
 // Base URL used in all redirect assertions
 static file class Constants
@@ -17,7 +17,7 @@ public class LinkToRedirectedPage : MarkdownTest
 		[Was first is now second](docs-content://testing/redirects/first-page-old.md)
 		""";
 
-	[Fact(DisplayName = "validate HTML")]
+	[Test, DisplayName("validate HTML")]
 	public async Task ValidateHtml() =>
 		await Docs.ConvertsToHtml(
 			$"""
@@ -29,10 +29,10 @@ public class LinkToRedirectedPage : MarkdownTest
 		"""
 		);
 
-	[Fact(DisplayName = "has no errors")]
+	[Test, DisplayName("has no errors")]
 	public async Task HasNoErrors() => await Docs.HasNoErrors();
 
-	[Fact(DisplayName = "has no warning")]
+	[Test, DisplayName("has no warning")]
 	public async Task HasNoWarnings() => await Docs.HasNoWarnings();
 }
 
@@ -43,7 +43,7 @@ public class LinkToRedirectedPageWithRenamedAnchor : MarkdownTest
 		[Was first is now second](docs-content://testing/redirects/first-page-old.md#old-anchor)
 		""";
 
-	[Fact(DisplayName = "validate HTML")]
+	[Test, DisplayName("validate HTML")]
 	public async Task ValidateHtml() =>
 		await Docs.ConvertsToHtml(
 			$"""
@@ -55,10 +55,10 @@ public class LinkToRedirectedPageWithRenamedAnchor : MarkdownTest
 		"""
 		);
 
-	[Fact(DisplayName = "has no errors")]
+	[Test, DisplayName("has no errors")]
 	public async Task HasNoErrors() => await Docs.HasNoErrors();
 
-	[Fact(DisplayName = "has no warning")]
+	[Test, DisplayName("has no warning")]
 	public async Task HasNoWarnings() => await Docs.HasNoWarnings();
 }
 
@@ -72,7 +72,7 @@ public class Scenario1MovingAFile : MarkdownTest
 		[Scenario 1](docs-content://testing/redirects/first-page-old.md#old-anchor)
 		""";
 
-	[Fact(DisplayName = "validate HTML")]
+	[Test, DisplayName("validate HTML")]
 	public async Task ValidateHtml() =>
 		await Docs.ConvertsToHtml(
 			$"""
@@ -90,7 +90,7 @@ public class Scenario1BMovingAFile : MarkdownTest
 		[Scenario 1](docs-content://testing/redirects/4th-page.md#yy)
 		""";
 
-	[Fact(DisplayName = "validate HTML")]
+	[Test, DisplayName("validate HTML")]
 	public async Task ValidateHtml() =>
 		await Docs.ConvertsToHtml(
 			$"""
@@ -114,7 +114,7 @@ public class Scenario2SplittingAPageIntoMultipleSmallerPages : MarkdownTest
 		[Scenario 2](docs-content://testing/redirects/second-page-old.md#yy)
 		""";
 
-	[Fact(DisplayName = "validate HTML")]
+	[Test, DisplayName("validate HTML")]
 	public async Task ValidateHtml() =>
 		await Docs.ConvertsToHtml(
 			$"""
@@ -138,7 +138,7 @@ public class Scenario3DeletingASectionOnAPage : MarkdownTest
 		[Scenario 3](docs-content://testing/redirects/third-page.md#removed-anchor)
 		""";
 
-	[Fact(DisplayName = "validate HTML")]
+	[Test, DisplayName("validate HTML")]
 	public async Task ValidateHtml() =>
 		await Docs.ConvertsToHtml(
 			$"""
@@ -160,7 +160,7 @@ public class Scenario3BLinkingToARemovedAnchorOnARedirectedPage : MarkdownTest
 		[Scenario 3 B](docs-content://testing/redirects/second-page-old.md#removed-anchor)
 		""";
 
-	[Fact(DisplayName = "validate HTML")]
+	[Test, DisplayName("validate HTML")]
 	public async Task ValidateHtml() =>
 		await Docs.ConvertsToHtml(
 			$"""
@@ -181,7 +181,7 @@ public class Scenario4DeletingAnEntirePage : MarkdownTest
 		[Scenario 4](docs-content://testing/redirects/7th-page.md#yy)
 		""";
 
-	[Fact(DisplayName = "validate HTML")]
+	[Test, DisplayName("validate HTML")]
 	public async Task ValidateHtml() =>
 		await Docs.ConvertsToHtml(
 			$"""
@@ -199,7 +199,7 @@ public class Scenario4BDeletingAnEntirePageShortSyntax : MarkdownTest
 		[Scenario 4](docs-content://testing/redirects/9th-page.md)
 		""";
 
-	[Fact(DisplayName = "validate HTML")]
+	[Test, DisplayName("validate HTML")]
 	public async Task ValidateHtml() =>
 		await Docs.ConvertsToHtml(
 			$"""
@@ -219,7 +219,7 @@ public class Scenario5DeletingAnEntirePage : MarkdownTest
 		[Scenario 5](docs-content://testing/redirects/6th-page.md#yy)
 		""";
 
-	[Fact(DisplayName = "validate HTML")]
+	[Test, DisplayName("validate HTML")]
 	public async Task ValidateHtml() =>
 		await Docs.ConvertsToHtml(
 			$"""

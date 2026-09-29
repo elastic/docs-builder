@@ -18,7 +18,7 @@ namespace Elastic.Documentation.Configuration.Tests;
 
 public class ConfigurationFileCtaTests
 {
-	[Fact]
+	[Test]
 	public void ResolveCta_FrontmatterId_TakesPrecedenceOverTocDefault()
 	{
 		var docSet = LoadDocSet(
@@ -51,7 +51,7 @@ public class ConfigurationFileCtaTests
 		warning.Should().BeNull();
 	}
 
-	[Fact]
+	[Test]
 	public void ResolveCta_NoFrontmatter_UsesTocDefault()
 	{
 		var docSet = LoadDocSet(
@@ -80,7 +80,7 @@ public class ConfigurationFileCtaTests
 		warning.Should().BeNull();
 	}
 
-	[Fact]
+	[Test]
 	public void ResolveCta_NoFrontmatterAndNoTocDefault_FallsBackToDefault()
 	{
 		var docSet = LoadDocSet(
@@ -104,7 +104,7 @@ public class ConfigurationFileCtaTests
 		warning.Should().BeNull();
 	}
 
-	[Fact]
+	[Test]
 	public void ResolveCta_NestedTocDefault_OverridesParentDefault()
 	{
 		var docSet = LoadDocSet(
@@ -143,7 +143,7 @@ public class ConfigurationFileCtaTests
 		config.ResolveCta(null, "solutions/observability/apps/apm.md", out _).Name.Should().Be("observability");
 	}
 
-	[Fact]
+	[Test]
 	public void ResolveCta_UnknownFrontmatterId_WarnsAndFallsBackToTocDefault()
 	{
 		var docSet = LoadDocSet(
@@ -172,7 +172,7 @@ public class ConfigurationFileCtaTests
 		warning.Should().Contain("does-not-exist").And.Contain("ignored");
 	}
 
-	[Fact]
+	[Test]
 	public void ResolveCta_DocsetDefaultCta_AppliesToRootLevelPages()
 	{
 		var docSet = LoadDocSet(
@@ -196,12 +196,12 @@ public class ConfigurationFileCtaTests
 		cta.Name.Should().Be("observability");
 	}
 
-	[Fact]
+	[Test]
 	public async Task LoadAndResolve_PageClaimedByTwoDefaults_EmitsError()
 	{
 		var recorder = new RecordingDiagnosticsOutput();
 		var collector = new DiagnosticsCollector([recorder]);
-		_ = collector.StartAsync(TestContext.Current.CancellationToken);
+		_ = collector.StartAsync(TestContext.Current!.Execution.CancellationToken);
 
 		_ = LoadDocSet(
 			collector,
@@ -233,7 +233,7 @@ public class ConfigurationFileCtaTests
 			("# Shared", "shared/page.md")
 		);
 
-		await collector.StopAsync(TestContext.Current.CancellationToken);
+		await collector.StopAsync(TestContext.Current!.Execution.CancellationToken);
 
 		recorder
 			.Diagnostics
@@ -241,7 +241,7 @@ public class ConfigurationFileCtaTests
 			.Contain(d => d.Severity == Severity.Error && d.Message.Contains("observability") && d.Message.Contains("security"));
 	}
 
-	[Fact]
+	[Test]
 	public async Task Constructor_UnknownTocDefaultCta_EmitsError()
 	{
 		var docSet = LoadDocSet(
@@ -263,7 +263,7 @@ public class ConfigurationFileCtaTests
 		diagnostics.Should().ContainSingle(d => d.Severity == Severity.Error).Which.Message.Should().Contain("does-not-exist");
 	}
 
-	[Fact]
+	[Test]
 	public void ResolveCta_EntryDefault_AppliesToEntryAndDescendants()
 	{
 		var docSet = LoadDocSet(
@@ -306,7 +306,7 @@ public class ConfigurationFileCtaTests
 		config.ResolveCta(null, "index.md", out _).Name.Should().Be(Cta.DefaultName);
 	}
 
-	[Fact]
+	[Test]
 	public void ResolveCta_EntryDefault_SitsBetweenTocFileAndNestedToc()
 	{
 		var docSet = LoadDocSet(
@@ -391,9 +391,9 @@ public class ConfigurationFileCtaTests
 	{
 		var recorder = new RecordingDiagnosticsOutput();
 		var collector = new DiagnosticsCollector([recorder]);
-		_ = collector.StartAsync(TestContext.Current.CancellationToken);
+		_ = collector.StartAsync(TestContext.Current!.Execution.CancellationToken);
 		var config = CreateConfiguration(docSet, collector);
-		await collector.StopAsync(TestContext.Current.CancellationToken);
+		await collector.StopAsync(TestContext.Current!.Execution.CancellationToken);
 		return (config, recorder.Diagnostics);
 	}
 

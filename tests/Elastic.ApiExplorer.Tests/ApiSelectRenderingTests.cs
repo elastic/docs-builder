@@ -11,7 +11,7 @@ namespace Elastic.ApiExplorer.Tests;
 
 public class ApiSelectRenderingTests
 {
-	[Fact]
+	[Test]
 	public async Task Render_CustomDropdown_MatchesCopyPageMenu()
 	{
 		var html = await _ApiSelect.Create(new ApiSelectModel
@@ -21,7 +21,7 @@ public class ApiSelectRenderingTests
 			SyncGroup = "api-language",
 			ExtraClass = "api-code-sample-lang",
 			Options = [new ApiSelectOption("Console", "Console", true), new ApiSelectOption("Python", "Python", false)]
-		}).RenderAsync(cancellationToken: TestContext.Current.CancellationToken);
+		}).RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
 
 		html.Should().Contain("class=\"api-select nav-select-dropdown api-code-sample-lang\"");
 		html.Should().Contain("id=\"rail-one-lang\"");

@@ -7,8 +7,7 @@ using Elastic.Markdown.Tests.Directives;
 
 namespace Elastic.Markdown.Tests.FrontMatter;
 
-public class YamlFrontMatterTests(ITestOutputHelper output) : DirectiveTest(
-	output,
+public class YamlFrontMatterTests() : DirectiveTest(
 	"""
 ---
 navigation_title: "Documentation Guide"
@@ -20,13 +19,13 @@ sub:
 """
 )
 {
-	[Fact]
+	[Test]
 	public void ReadsTitle() => File.Title.Should().Be("Elastic Docs v3");
 
-	[Fact]
+	[Test]
 	public void ReadsNavigationTitle() => File.NavigationTitle.Should().Be("Documentation Guide");
 
-	[Fact]
+	[Test]
 	public void ReadsSubstitutions()
 	{
 		File.YamlFrontMatter.Should().NotBeNull();
@@ -34,21 +33,20 @@ sub:
 	}
 }
 
-public class EmptyFileWarnsNeedingATitle(ITestOutputHelper output) : DirectiveTest(output, "")
+public class EmptyFileWarnsNeedingATitle() : DirectiveTest("")
 {
-	[Fact]
+	[Test]
 	public void ReadsTitle() => File.Title.Should().Be("index.md");
 
-	[Fact]
+	[Test]
 	public void ReadsNavigationTitle() => File.NavigationTitle.Should().Be("index.md");
 
-	[Fact]
+	[Test]
 	public void WarnsOfNoTitle() =>
 		Collector.Diagnostics.Should().NotBeEmpty().And.Contain(d => d.Message.Contains("Document has no title, using file name as title."));
 }
 
-public class NavigationTitleSupportReplacements(ITestOutputHelper output) : DirectiveTest(
-	output,
+public class NavigationTitleSupportReplacements() : DirectiveTest(
 	"""
 ---
 title: Elastic Docs v3
@@ -59,11 +57,11 @@ sub:
 """
 )
 {
-	[Fact]
+	[Test]
 	public void ReadsNavigationTitle() => File.NavigationTitle.Should().Be("Documentation Guide: value");
 }
 
-public class ProductsSingle(ITestOutputHelper output) : DirectiveTest(output, """
+public class ProductsSingle() : DirectiveTest("""
 	---
 	products:
 	  - id: "apm"
@@ -72,7 +70,7 @@ public class ProductsSingle(ITestOutputHelper output) : DirectiveTest(output, ""
 	# APM
 	""")
 {
-	[Fact]
+	[Test]
 	public void ReadsProducts()
 	{
 		File.YamlFrontMatter.Should().NotBeNull();
@@ -81,9 +79,7 @@ public class ProductsSingle(ITestOutputHelper output) : DirectiveTest(output, ""
 	}
 }
 
-public class ProductsMultiple(ITestOutputHelper output) : DirectiveTest(
-	output,
-	"""
+public class ProductsMultiple() : DirectiveTest("""
 	---
 	products:
 	  - id: "apm"
@@ -91,10 +87,9 @@ public class ProductsMultiple(ITestOutputHelper output) : DirectiveTest(
 	---
 
 	# APM
-	"""
-)
+	""")
 {
-	[Fact]
+	[Test]
 	public void ReadsProducts()
 	{
 		File.YamlFrontMatter.Should().NotBeNull();
@@ -104,19 +99,16 @@ public class ProductsMultiple(ITestOutputHelper output) : DirectiveTest(
 	}
 }
 
-public class ProductsSuggestionWhenMispelled(ITestOutputHelper output) : DirectiveTest(
-	output,
-	"""
+public class ProductsSuggestionWhenMispelled() : DirectiveTest("""
 	---
 	products:
 	  - id: aapm
 	---
 
 	# APM
-	"""
-)
+	""")
 {
-	[Fact]
+	[Test]
 	public void HasErrors()
 	{
 		Collector.Diagnostics.Should().HaveCount(1);
@@ -127,19 +119,16 @@ public class ProductsSuggestionWhenMispelled(ITestOutputHelper output) : Directi
 	}
 }
 
-public class ProductsSuggestionWhenMispelled2(ITestOutputHelper output) : DirectiveTest(
-	output,
-	"""
+public class ProductsSuggestionWhenMispelled2() : DirectiveTest("""
 	---
 	products:
 	  - id: apmagent
 	---
 
 	# APM
-	"""
-)
+	""")
 {
-	[Fact]
+	[Test]
 	public void HasErrors()
 	{
 		Collector.Diagnostics.Should().HaveCount(1);
@@ -150,19 +139,16 @@ public class ProductsSuggestionWhenMispelled2(ITestOutputHelper output) : Direct
 	}
 }
 
-public class ProductsSuggestionWhenCasingError(ITestOutputHelper output) : DirectiveTest(
-	output,
-	"""
+public class ProductsSuggestionWhenCasingError() : DirectiveTest("""
 	---
 	products:
 	  - id: Apm
 	---
 
 	# APM
-	"""
-)
+	""")
 {
-	[Fact]
+	[Test]
 	public void HasErrors()
 	{
 		Collector.Diagnostics.Should().HaveCount(1);
@@ -173,19 +159,16 @@ public class ProductsSuggestionWhenCasingError(ITestOutputHelper output) : Direc
 	}
 }
 
-public class ProductsSuggestionWhenEmpty(ITestOutputHelper output) : DirectiveTest(
-	output,
-	"""
+public class ProductsSuggestionWhenEmpty() : DirectiveTest("""
 	---
 	products:
 	  - id: ""
 	---
 
 	# APM
-	"""
-)
+	""")
 {
-	[Fact]
+	[Test]
 	public void HasErrors()
 	{
 		Collector.Diagnostics.Should().HaveCount(1);
@@ -196,8 +179,7 @@ public class ProductsSuggestionWhenEmpty(ITestOutputHelper output) : DirectiveTe
 	}
 }
 
-public class MappedPagesValidUrl(ITestOutputHelper output) : DirectiveTest(
-	output,
+public class MappedPagesValidUrl() : DirectiveTest(
 	"""
 	---
 	mapped_pages:
@@ -208,12 +190,11 @@ public class MappedPagesValidUrl(ITestOutputHelper output) : DirectiveTest(
 	"""
 )
 {
-	[Fact]
+	[Test]
 	public void NoErrors() => Collector.Diagnostics.Should().BeEmpty();
 }
 
-public class MappedPagesInvalidUrl(ITestOutputHelper output) : DirectiveTest(
-	output,
+public class MappedPagesInvalidUrl() : DirectiveTest(
 	"""
 	---
 	mapped_pages:
@@ -224,7 +205,7 @@ public class MappedPagesInvalidUrl(ITestOutputHelper output) : DirectiveTest(
 	"""
 )
 {
-	[Fact]
+	[Test]
 	public void HasErrors()
 	{
 		Collector.Diagnostics.Should().HaveCount(1);
@@ -239,8 +220,7 @@ public class MappedPagesInvalidUrl(ITestOutputHelper output) : DirectiveTest(
 	}
 }
 
-public class MappedPagesMixedUrls(ITestOutputHelper output) : DirectiveTest(
-	output,
+public class MappedPagesMixedUrls() : DirectiveTest(
 	"""
 	---
 	mapped_pages:
@@ -253,7 +233,7 @@ public class MappedPagesMixedUrls(ITestOutputHelper output) : DirectiveTest(
 	"""
 )
 {
-	[Fact]
+	[Test]
 	public void HasErrorsForInvalidUrl()
 	{
 		Collector.Diagnostics.Should().HaveCount(1);
@@ -268,19 +248,16 @@ public class MappedPagesMixedUrls(ITestOutputHelper output) : DirectiveTest(
 	}
 }
 
-public class MappedPagesEmptyUrl(ITestOutputHelper output) : DirectiveTest(
-	output,
-	"""
+public class MappedPagesEmptyUrl() : DirectiveTest("""
 	---
 	mapped_pages:
 	  - ""
 	---
 
 	# Test Page
-	"""
-)
+	""")
 {
-	[Fact]
+	[Test]
 	public void NoErrorsForEmptyUrl()
 	{
 		// Empty URLs are ignored, no validation error should occur
@@ -288,8 +265,7 @@ public class MappedPagesEmptyUrl(ITestOutputHelper output) : DirectiveTest(
 	}
 }
 
-public class MappedPagesExternalUrl(ITestOutputHelper output) : DirectiveTest(
-	output,
+public class MappedPagesExternalUrl() : DirectiveTest(
 	"""
 	---
 	mapped_pages:
@@ -300,7 +276,7 @@ public class MappedPagesExternalUrl(ITestOutputHelper output) : DirectiveTest(
 	"""
 )
 {
-	[Fact]
+	[Test]
 	public void HasErrorsForExternalUrl()
 	{
 		Collector.Diagnostics.Should().HaveCount(1);
@@ -315,8 +291,7 @@ public class MappedPagesExternalUrl(ITestOutputHelper output) : DirectiveTest(
 	}
 }
 
-public class MappedPagesMalformedUri(ITestOutputHelper output) : DirectiveTest(
-	output,
+public class MappedPagesMalformedUri() : DirectiveTest(
 	"""
 	---
 	mapped_pages:
@@ -327,7 +302,7 @@ public class MappedPagesMalformedUri(ITestOutputHelper output) : DirectiveTest(
 	"""
 )
 {
-	[Fact]
+	[Test]
 	public void HasErrorsForMalformedUri()
 	{
 		Collector.Diagnostics.Should().HaveCount(1);
@@ -342,8 +317,7 @@ public class MappedPagesMalformedUri(ITestOutputHelper output) : DirectiveTest(
 	}
 }
 
-public class MappedPagesInvalidScheme(ITestOutputHelper output) : DirectiveTest(
-	output,
+public class MappedPagesInvalidScheme() : DirectiveTest(
 	"""
 	---
 	mapped_pages:
@@ -354,7 +328,7 @@ public class MappedPagesInvalidScheme(ITestOutputHelper output) : DirectiveTest(
 	"""
 )
 {
-	[Fact]
+	[Test]
 	public void HasErrorsForInvalidScheme()
 	{
 		Collector.Diagnostics.Should().HaveCount(1);
@@ -369,19 +343,16 @@ public class MappedPagesInvalidScheme(ITestOutputHelper output) : DirectiveTest(
 	}
 }
 
-public class MappedPagesNotAbsoluteUri(ITestOutputHelper output) : DirectiveTest(
-	output,
-	"""
+public class MappedPagesNotAbsoluteUri() : DirectiveTest("""
 	---
 	mapped_pages:
 	  - "not-a-uri-at-all"
 	---
 
 	# Test Page
-	"""
-)
+	""")
 {
-	[Fact]
+	[Test]
 	public void HasErrorsForNotAbsoluteUri()
 	{
 		Collector.Diagnostics.Should().HaveCount(1);

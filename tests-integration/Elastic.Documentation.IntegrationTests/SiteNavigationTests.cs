@@ -16,36 +16,33 @@ using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Navigation.Assembler;
 using Elastic.Markdown.IO;
 using Microsoft.Extensions.Logging.Abstractions;
+using TUnit.Core.Interfaces;
 
 namespace Elastic.Documentation.IntegrationTests;
 
-public class SiteNavigationTests : IAsyncLifetime
+[ClassDataSource<DocumentationFixture>(Shared = SharedType.PerAssembly)]
+public class SiteNavigationTests(DocumentationFixture fixture) : IAsyncInitializer, IAsyncDisposable
 {
-	private readonly DocumentationFixture _fixture;
-	private readonly ITestOutputHelper _output;
-	private DiagnosticsCollector Collector { get; }
-	private AssembleContext Context { get; }
-	private FileSystem FileSystem { get; }
-	private IDirectoryInfo CheckoutDirectory { get; }
+	private DiagnosticsCollector Collector { get; } = new DiagnosticsCollector([]);
+	private AssembleContext Context { get; set; } = null!;
+	private FileSystem FileSystem { get; } = new FileSystem();
+	private IDirectoryInfo CheckoutDirectory { get; set; } = null!;
 
 	private bool HasCheckouts() => CheckoutDirectory.Exists;
 
-	public SiteNavigationTests(DocumentationFixture fixture, ITestOutputHelper output)
+	public Task InitializeAsync()
 	{
-		_fixture = fixture;
-		_output = output;
-		FileSystem = new FileSystem();
 		var checkoutDirectory = FileSystem.DirectoryInfo.New(
 			FileSystem.Path.Join(Paths.GetSolutionDirectory()!.FullName, ".artifacts", "checkouts")
 		);
 		CheckoutDirectory = checkoutDirectory.Exists
 			? checkoutDirectory.GetDirectories().FirstOrDefault(d => d.Name is "next" or "current") ?? checkoutDirectory
 			: checkoutDirectory;
-		Collector = new DiagnosticsCollector([]);
 		var configurationContext = TestHelpers.CreateConfigurationContext(FileSystem);
 		var config = AssemblyConfiguration.Create(configurationContext.ConfigurationFileProvider);
 		var assembleFs = CheckoutsFileSystem.FromWorkingDirectory(FileSystem);
 		Context = new AssembleContext(config, configurationContext, "dev", Collector, assembleFs, CheckoutDirectory.FullName, null);
+		return Task.CompletedTask;
 	}
 
 	private Checkout CreateCheckout(IFileSystem fs, Repository repository)
@@ -64,7 +61,7 @@ public class SiteNavigationTests : IAsyncLifetime
 
 	private async Task<(AssembleSources Sources, SiteNavigation Navigation)> Setup()
 	{
-		_ = Collector.StartAsync(TestContext.Current.CancellationToken);
+		_ = Collector.StartAsync(TestContext.Current!.Execution.CancellationToken);
 
 		var repos = Context.Configuration.AvailableRepositories.Where(kv => !kv.Value.Skip).Select(kv => kv.Value).ToArray();
 		var checkouts = repos.Select(r => CreateCheckout(FileSystem, r)).ToArray();
@@ -75,12 +72,12 @@ public class SiteNavigationTests : IAsyncLifetime
 			checkouts,
 			configurationContext,
 			ExportOptions.Default,
-			TestContext.Current.CancellationToken
+			TestContext.Current!.Execution.CancellationToken
 		);
 
 		var navigationFileInfo = configurationContext.ConfigurationFileProvider.NavigationFile;
 		var siteNavigationFile = SiteNavigationFile.Deserialize(
-			await FileSystem.File.ReadAllTextAsync(navigationFileInfo.FullName, TestContext.Current.CancellationToken)
+			await FileSystem.File.ReadAllTextAsync(navigationFileInfo.FullName, TestContext.Current!.Execution.CancellationToken)
 		);
 		var documentationSets = assembleSources.AssembleSets.Values.Select(s => s.DocumentationSet.Navigation).ToArray();
 		var navigation = new SiteNavigation(siteNavigationFile, Context, documentationSets, Context.Environment.PathPrefix);
@@ -88,10 +85,10 @@ public class SiteNavigationTests : IAsyncLifetime
 		return (assembleSources, navigation);
 	}
 
-	[Fact]
+	[Test]
 	public async Task ReadAllPathPrefixes()
 	{
-		Assert.SkipUnless(HasCheckouts(), $"Requires local checkout folder: {CheckoutDirectory.FullName}");
+		Skip.Unless(HasCheckouts(), $"Requires local checkout folder: {CheckoutDirectory.FullName}");
 
 		await using var collector = new DiagnosticsCollector([]);
 
@@ -103,7 +100,7 @@ public class SiteNavigationTests : IAsyncLifetime
 
 		var navigationFileInfo = configurationContext.ConfigurationFileProvider.NavigationFile;
 		var siteNavigationFile = SiteNavigationFile.Deserialize(
-			await FileSystem.File.ReadAllTextAsync(navigationFileInfo.FullName, TestContext.Current.CancellationToken)
+			await FileSystem.File.ReadAllTextAsync(navigationFileInfo.FullName, TestContext.Current!.Execution.CancellationToken)
 		);
 
 		var declaredSources = SiteNavigationFile.GetAllDeclaredSources(siteNavigationFile);
@@ -111,10 +108,10 @@ public class SiteNavigationTests : IAsyncLifetime
 		declaredSources.Should().Contain(new Uri("eland://reference"));
 	}
 
-	[Fact]
+	[Test]
 	public async Task SiteNavigationNodesContainAllDocumentationSets()
 	{
-		Assert.SkipUnless(HasCheckouts(), $"Requires local checkout folder: {CheckoutDirectory.FullName}");
+		Skip.Unless(HasCheckouts(), $"Requires local checkout folder: {CheckoutDirectory.FullName}");
 
 		var (assembleSources, navigation) = await Setup();
 
@@ -122,10 +119,10 @@ public class SiteNavigationTests : IAsyncLifetime
 		navigation.Nodes.Should().ContainKey(new Uri("detection-rules://"));
 	}
 
-	[Fact]
+	[Test]
 	public async Task ParsesReferences()
 	{
-		Assert.SkipUnless(HasCheckouts(), $"Requires local checkout folder: {CheckoutDirectory.FullName}");
+		Skip.Unless(HasCheckouts(), $"Requires local checkout folder: {CheckoutDirectory.FullName}");
 
 		var expectedRoot = new Uri("docs-content://");
 		var dotnetAgentSource = new Uri("apm-agent-dotnet://");
@@ -149,10 +146,10 @@ public class SiteNavigationTests : IAsyncLifetime
 		navigation.NavigationItems.Should().NotBeNull();
 	}
 
-	[Fact]
+	[Test]
 	public async Task ParsesSiteNavigation()
 	{
-		Assert.SkipUnless(HasCheckouts(), $"Requires local checkout folder: {CheckoutDirectory.FullName}");
+		Skip.Unless(HasCheckouts(), $"Requires local checkout folder: {CheckoutDirectory.FullName}");
 
 		var kibanaSource = new Uri("kibana://");
 		var integrationsRepoName = "integrations";
@@ -180,12 +177,12 @@ public class SiteNavigationTests : IAsyncLifetime
 		firstTopLevelItem.NavigationRoot.Should().Be(firstTopLevelItem);
 	}
 
-	[Fact]
+	[Test]
 	public async Task UriResolving()
 	{
-		Assert.SkipUnless(HasCheckouts(), $"Requires local checkout folder: {CheckoutDirectory.FullName}");
+		Skip.Unless(HasCheckouts(), $"Requires local checkout folder: {CheckoutDirectory.FullName}");
 
-		await using var collector = new DiagnosticsCollector([]).StartAsync(TestContext.Current.CancellationToken);
+		await using var collector = new DiagnosticsCollector([]).StartAsync(TestContext.Current!.Execution.CancellationToken);
 
 		var fs = new FileSystem();
 		var configurationContext = TestHelpers.CreateConfigurationContext(fs);
@@ -200,7 +197,7 @@ public class SiteNavigationTests : IAsyncLifetime
 			checkouts,
 			configurationContext,
 			ExportOptions.Default,
-			TestContext.Current.CancellationToken
+			TestContext.Current!.Execution.CancellationToken
 		);
 
 		var uriResolver = assembleSources.UriResolver;
@@ -222,17 +219,13 @@ public class SiteNavigationTests : IAsyncLifetime
 		resolvedUri.Should().Be("https://www.elastic.co/docs/extend/elasticsearch/c/file");
 	}
 
-	/// <inheritdoc />
 	public ValueTask DisposeAsync()
 	{
 		GC.SuppressFinalize(this);
-		if (TestContext.Current.TestState?.Result is not TestResult.Failed)
+		if (TestContext.Current!.Execution.Result?.State is not TestState.Failed)
 			return default;
-		foreach (var resource in _fixture.InMemoryLogger.RecordedLogs.ToList())
-			_output.WriteLine(resource.Message);
+		foreach (var resource in fixture.InMemoryLogger.RecordedLogs.ToList())
+			TestContext.Current?.Output.WriteLine(resource.Message);
 		return default;
 	}
-
-	/// <inheritdoc />
-	public ValueTask InitializeAsync() => default;
 }

@@ -10,7 +10,7 @@ namespace Elastic.ApiExplorer.Tests;
 
 public class SyntheticCodeSamplesTests
 {
-	[Fact]
+	[Test]
 	public void Create_BuildsConsoleAndCurlFromMethodAndPath()
 	{
 		var operation = new OpenApiOperation();
@@ -24,7 +24,7 @@ public class SyntheticCodeSamplesTests
 		samples[1].Source.Should().Contain("/api/dashboards/{id}");
 	}
 
-	[Fact]
+	[Test]
 	public void Create_IncludesRequiredQueryAndHeaders()
 	{
 		var operation = new OpenApiOperation
@@ -38,7 +38,7 @@ public class SyntheticCodeSamplesTests
 					Name = "kbn-xsrf",
 					In = ParameterLocation.Header,
 					Required = true,
-					Schema = new OpenApiSchema { Example = "true" }
+					Schema = new OpenApiSchema { Examples = [System.Text.Json.Nodes.JsonValue.Create("true")] }
 				}
 			]
 		};

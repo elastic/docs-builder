@@ -18,7 +18,7 @@ namespace Elastic.Markdown.Tests.Search;
 /// </summary>
 public class ContentTierClassificationTests
 {
-	[Fact]
+	[Test]
 	public void ReleaseNotesRoot_IsPeripheral()
 	{
 		var root = new FakeRootNavigationItem { NavigationTitle = "Release Notes" };
@@ -28,7 +28,7 @@ public class ContentTierClassificationTests
 		tier.Should().Be(ContentTiers.Peripheral);
 	}
 
-	[Fact]
+	[Test]
 	public void ReleaseNotesUrlWithoutNavigation_IsPeripheral()
 	{
 		var tier = ElasticsearchMarkdownExporter.ClassifyContentTier(null, "/docs/release-notes/8.15.0");
@@ -36,10 +36,10 @@ public class ContentTierClassificationTests
 		tier.Should().Be(ContentTiers.Peripheral);
 	}
 
-	[Theory]
-	[InlineData("deprecated features")]
-	[InlineData("plugins")]
-	[InlineData("glossary")]
+	[Test]
+	[Arguments("deprecated features")]
+	[Arguments("plugins")]
+	[Arguments("glossary")]
 	public void SupplementarySection_IsSupplementary(string sectionTitle)
 	{
 		var root = new FakeRootNavigationItem { NavigationTitle = "Reference" };
@@ -50,7 +50,7 @@ public class ContentTierClassificationTests
 		tier.Should().Be(ContentTiers.Supplementary);
 	}
 
-	[Fact]
+	[Test]
 	public void PluginExtendUrl_IsSupplementary()
 	{
 		var tier = ElasticsearchMarkdownExporter.ClassifyContentTier(null, "/docs/extend/logstash");
@@ -58,10 +58,10 @@ public class ContentTierClassificationTests
 		tier.Should().Be(ContentTiers.Supplementary);
 	}
 
-	[Theory]
-	[InlineData("get started")]
-	[InlineData("getting started")]
-	[InlineData("overview")]
+	[Test]
+	[Arguments("get started")]
+	[Arguments("getting started")]
+	[Arguments("overview")]
 	public void GetStartedOrOverviewSection_IsPrimary(string sectionTitle)
 	{
 		var root = new FakeRootNavigationItem { NavigationTitle = "Reference" };
@@ -72,7 +72,7 @@ public class ContentTierClassificationTests
 		tier.Should().Be(ContentTiers.Primary);
 	}
 
-	[Fact]
+	[Test]
 	public void SectionRootPage_IsPrimary()
 	{
 		var root = new FakeRootNavigationItem { NavigationTitle = "Elasticsearch" };
@@ -82,7 +82,7 @@ public class ContentTierClassificationTests
 		tier.Should().Be(ContentTiers.Primary);
 	}
 
-	[Fact]
+	[Test]
 	public void OrdinaryLeafPage_DefaultsToReference()
 	{
 		var root = new FakeRootNavigationItem { NavigationTitle = "Reference" };
@@ -94,7 +94,7 @@ public class ContentTierClassificationTests
 		tier.Should().Be(ContentTiers.Reference);
 	}
 
-	[Fact]
+	[Test]
 	public void NoNavigation_DefaultsToReference()
 	{
 		var tier = ElasticsearchMarkdownExporter.ClassifyContentTier(null, "/docs/reference/some-page");

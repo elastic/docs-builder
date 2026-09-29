@@ -13,15 +13,15 @@ namespace Mcp.Remote.IntegrationTests;
 /// </summary>
 public class DocumentUrlNormalizerTests
 {
-	[Theory]
-	[InlineData("/docs/deploy-manage/api-keys", "/docs/deploy-manage/api-keys")]
-	[InlineData("deploy-manage/api-keys", "/deploy-manage/api-keys")]
-	[InlineData("https://www.elastic.co/docs/deploy-manage/api-keys", "/docs/deploy-manage/api-keys")]
-	[InlineData("https://docs-v3-preview.elastic.dev/elastic/docs-content/tree/main/deploy-manage/api-keys", "/elastic/docs-content/tree/main/deploy-manage/api-keys")]
-	[InlineData("/docs/deploy-manage/api-keys/", "/docs/deploy-manage/api-keys")]
-	[InlineData("https://www.elastic.co/docs/deploy-manage/api-keys?ref=nav", "/docs/deploy-manage/api-keys")]
-	[InlineData("https://www.elastic.co/docs/deploy-manage/api-keys#section", "/docs/deploy-manage/api-keys")]
-	[InlineData("  /docs/deploy-manage/api-keys  ", "/docs/deploy-manage/api-keys")]
+	[Test]
+	[Arguments("/docs/deploy-manage/api-keys", "/docs/deploy-manage/api-keys")]
+	[Arguments("deploy-manage/api-keys", "/deploy-manage/api-keys")]
+	[Arguments("https://www.elastic.co/docs/deploy-manage/api-keys", "/docs/deploy-manage/api-keys")]
+	[Arguments("https://docs-v3-preview.elastic.dev/elastic/docs-content/tree/main/deploy-manage/api-keys", "/elastic/docs-content/tree/main/deploy-manage/api-keys")]
+	[Arguments("/docs/deploy-manage/api-keys/", "/docs/deploy-manage/api-keys")]
+	[Arguments("https://www.elastic.co/docs/deploy-manage/api-keys?ref=nav", "/docs/deploy-manage/api-keys")]
+	[Arguments("https://www.elastic.co/docs/deploy-manage/api-keys#section", "/docs/deploy-manage/api-keys")]
+	[Arguments("  /docs/deploy-manage/api-keys  ", "/docs/deploy-manage/api-keys")]
 	public void NormalizeUrl_ReturnsExpectedPath(string input, string expected) =>
 		DocumentGateway.NormalizeUrl(input).Should().Be(expected);
 }

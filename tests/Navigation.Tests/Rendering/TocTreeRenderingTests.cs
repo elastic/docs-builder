@@ -10,7 +10,7 @@ namespace Elastic.Documentation.Navigation.Tests.Rendering;
 
 public class TocTreeRenderingTests
 {
-	[Fact]
+	[Test]
 	public async Task TocTree_RendersFigmaShellWithoutNavV2Hook()
 	{
 		var model = new NavigationRenderModel
@@ -34,7 +34,7 @@ public class TocTreeRenderingTests
 			NavigationPreviewEnabled = true
 		};
 
-		var html = await _TocTree.Create(model).RenderAsync(cancellationToken: TestContext.Current.CancellationToken);
+		var html = await _TocTree.Create(model).RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
 
 		html.Should().Contain("pages-nav-v2-shell");
 		html.Should().Contain("pages-nav-v2__scroll");
@@ -47,7 +47,7 @@ public class TocTreeRenderingTests
 		html.Should().NotContain("hx-preserve");
 	}
 
-	[Fact]
+	[Test]
 	public async Task FolderRow_PutsChevronInsideTheSameLink()
 	{
 		var model = new NavigationRenderModel
@@ -83,7 +83,7 @@ public class TocTreeRenderingTests
 			NavigationPreviewEnabled = true
 		};
 
-		var html = await _TocTree.Create(model).RenderAsync(cancellationToken: TestContext.Current.CancellationToken);
+		var html = await _TocTree.Create(model).RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
 
 		var linkStart = html.IndexOf("href=\"/docs/contribute\"", StringComparison.Ordinal);
 		linkStart.Should().BeGreaterThanOrEqualTo(0);
@@ -95,7 +95,7 @@ public class TocTreeRenderingTests
 		html.Should().Contain("id=\"contribute\"");
 	}
 
-	[Fact]
+	[Test]
 	public async Task HeadingRow_IsALabelNotAPageLink()
 	{
 		var model = new NavigationRenderModel
@@ -131,7 +131,7 @@ public class TocTreeRenderingTests
 			NavigationPreviewEnabled = true
 		};
 
-		var html = await _TocTree.Create(model).RenderAsync(cancellationToken: TestContext.Current.CancellationToken);
+		var html = await _TocTree.Create(model).RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
 
 		html.Should().Contain("<label for=\"search-docs\"");
 		html.Should().Contain("Search &amp; Document APIs");
@@ -139,7 +139,7 @@ public class TocTreeRenderingTests
 		html.Should().Contain("href=\"/api/doc/es/operation/operation-search\"");
 	}
 
-	[Fact]
+	[Test]
 	public async Task IslandStub_UsesTheForwardArrowNotTheFolderChevron()
 	{
 		var model = new NavigationRenderModel
@@ -163,14 +163,14 @@ public class TocTreeRenderingTests
 			NavigationPreviewEnabled = true
 		};
 
-		var html = await _TocTree.Create(model).RenderAsync(cancellationToken: TestContext.Current.CancellationToken);
+		var html = await _TocTree.Create(model).RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
 
 		html.Should().Contain("nav-island-arrow");
 		html.Should().Contain("href=\"#icon-chevron-limit-right\"");
 		html.Should().NotContain("href=\"#icon-chevron-down\"");
 	}
 
-	[Fact]
+	[Test]
 	public async Task IslandOverview_RendersHeadingAndOverviewLeaf()
 	{
 		var model = new NavigationRenderModel
@@ -203,7 +203,7 @@ public class TocTreeRenderingTests
 			NavigationPreviewEnabled = true
 		};
 
-		var html = await _TocTree.Create(model).RenderAsync(cancellationToken: TestContext.Current.CancellationToken);
+		var html = await _TocTree.Create(model).RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
 
 		html.Should().Contain("pages-nav-v2__back");
 		html.Should().Contain("data-nav-heading=\"Elasticsearch\"");
@@ -219,7 +219,7 @@ public class TocTreeRenderingTests
 		html.Should().NotContain("hx-preserve");
 	}
 
-	[Fact]
+	[Test]
 	public async Task VersionSwitcher_StaysOutOfTheTree()
 	{
 		var model = new NavigationRenderModel
@@ -249,13 +249,13 @@ public class TocTreeRenderingTests
 			NavigationPreviewEnabled = true
 		};
 
-		var html = await _TocTree.Create(model).RenderAsync(cancellationToken: TestContext.Current.CancellationToken);
+		var html = await _TocTree.Create(model).RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
 
 		html.Should().NotContain("api-version-switcher");
 		html.Should().NotContain("pages-nav-v2__back-chrome");
 	}
 
-	[Fact]
+	[Test]
 	public async Task TreeSeparator_RendersAfterIntroLeaves()
 	{
 		var model = new NavigationRenderModel
@@ -296,7 +296,7 @@ public class TocTreeRenderingTests
 			NavigationPreviewEnabled = true
 		};
 
-		var html = await _TocTree.Create(model).RenderAsync(cancellationToken: TestContext.Current.CancellationToken);
+		var html = await _TocTree.Create(model).RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
 
 		html.Should().Contain("Api Overview");
 		html.Should().Contain("Authentication");
@@ -313,7 +313,7 @@ public class TocTreeRenderingTests
 		separator.Should().BeLessThan(search);
 	}
 
-	[Fact]
+	[Test]
 	public async Task RootIndex_WithoutTreeSeparator_KeepsAutomaticDivider()
 	{
 		var model = new NavigationRenderModel
@@ -344,7 +344,7 @@ public class TocTreeRenderingTests
 			NavigationPreviewEnabled = true
 		};
 
-		var html = await _TocTree.Create(model).RenderAsync(cancellationToken: TestContext.Current.CancellationToken);
+		var html = await _TocTree.Create(model).RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
 
 		html.Should().Contain("Home");
 		html.Should().Contain("Setup");
@@ -352,7 +352,7 @@ public class TocTreeRenderingTests
 		CountSeparators(html).Should().Be(1);
 	}
 
-	[Fact]
+	[Test]
 	public async Task LegacyHeadingRow_RendersTitleWithoutAnEmptyLink()
 	{
 		var model = new NavigationRenderModel
@@ -388,7 +388,7 @@ public class TocTreeRenderingTests
 			NavigationPreviewEnabled = false
 		};
 
-		var html = await _TocTree.Create(model).RenderAsync(cancellationToken: TestContext.Current.CancellationToken);
+		var html = await _TocTree.Create(model).RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
 
 		html.Should().Contain("Search &amp; Document APIs");
 		html.Should().NotContain("href=\"\"");

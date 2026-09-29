@@ -53,33 +53,33 @@ public class BundleFilesFilterTests : ChangelogTestBase
 	private const string CdnRegistryJson =
 		"""{ "schema_version": 1, "product": "elasticsearch", "bundles": [ { "file": "keep.yaml" }, { "file": "skip.yaml" } ] }""";
 
-	public BundleFilesFilterTests(ITestOutputHelper output) : base(output)
+	public BundleFilesFilterTests() : base()
 	{
 		ServiceWithConfig = new(LoggerFactory, FileSystem, ConfigurationContext);
 		_changelogDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
 		FileSystem.Directory.CreateDirectory(_changelogDir);
 	}
 
-	[Fact]
+	[Test]
 	public async Task Bundle_WithFiles_IncludesOnlyNamedEntries()
 	{
 		var keep = FileSystem.Path.Join(_changelogDir, "keep.yaml");
 		var skip = FileSystem.Path.Join(_changelogDir, "skip.yaml");
-		await FileSystem.File.WriteAllTextAsync(keep, EntryKeep, TestContext.Current.CancellationToken);
-		await FileSystem.File.WriteAllTextAsync(skip, EntrySkip, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(keep, EntryKeep, TestContext.Current!.Execution.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(skip, EntrySkip, TestContext.Current!.Execution.CancellationToken);
 
 		var output = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle.yaml");
 		var input = new BundleChangelogsArguments { Directory = _changelogDir, Files = [keep], Output = output, ForceLocal = true };
 
-		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		result.Should().BeTrue($"Errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}");
-		var bundle = await FileSystem.File.ReadAllTextAsync(output, TestContext.Current.CancellationToken);
+		var bundle = await FileSystem.File.ReadAllTextAsync(output, TestContext.Current!.Execution.CancellationToken);
 		bundle.Should().Contain("name: keep.yaml");
 		bundle.Should().NotContain("name: skip.yaml");
 	}
 
-	[Fact]
+	[Test]
 	public async Task Bundle_WithFiles_MissingFile_ReturnsError()
 	{
 		var missing = FileSystem.Path.Join(_changelogDir, "missing.yaml");
@@ -90,17 +90,17 @@ public class BundleFilesFilterTests : ChangelogTestBase
 			Output = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle.yaml")
 		};
 
-		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		result.Should().BeFalse();
 		Collector.Diagnostics.Should().Contain(d => d.Severity == Severity.Error && d.Message.Contains("File does not exist"));
 	}
 
-	[Fact]
+	[Test]
 	public async Task Bundle_WithFilesAndPrs_ReturnsMutualExclusivityError()
 	{
 		var keep = FileSystem.Path.Join(_changelogDir, "keep.yaml");
-		await FileSystem.File.WriteAllTextAsync(keep, EntryKeep, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(keep, EntryKeep, TestContext.Current!.Execution.CancellationToken);
 
 		var input = new BundleChangelogsArguments
 		{
@@ -110,36 +110,36 @@ public class BundleFilesFilterTests : ChangelogTestBase
 			Output = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle.yaml")
 		};
 
-		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		result.Should().BeFalse();
 		Collector.Diagnostics.Should().Contain(d => d.Severity == Severity.Error && d.Message.Contains("Multiple filter options"));
 	}
 
-	[Fact]
+	[Test]
 	public async Task Bundle_WithPathListFile_IncludesListedEntries()
 	{
 		var keep = FileSystem.Path.Join(_changelogDir, "keep.yaml");
 		var skip = FileSystem.Path.Join(_changelogDir, "skip.yaml");
-		await FileSystem.File.WriteAllTextAsync(keep, EntryKeep, TestContext.Current.CancellationToken);
-		await FileSystem.File.WriteAllTextAsync(skip, EntrySkip, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(keep, EntryKeep, TestContext.Current!.Execution.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(skip, EntrySkip, TestContext.Current!.Execution.CancellationToken);
 
 		var listFile = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "files.txt");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(listFile)!);
-		await FileSystem.File.WriteAllTextAsync(listFile, $"{keep}\n", TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(listFile, $"{keep}\n", TestContext.Current!.Execution.CancellationToken);
 
 		var output = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle.yaml");
 		var input = new BundleChangelogsArguments { Directory = _changelogDir, Files = [listFile], Output = output };
 
-		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		result.Should().BeTrue($"Errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}");
-		var bundle = await FileSystem.File.ReadAllTextAsync(output, TestContext.Current.CancellationToken);
+		var bundle = await FileSystem.File.ReadAllTextAsync(output, TestContext.Current!.Execution.CancellationToken);
 		bundle.Should().Contain("name: keep.yaml");
 		bundle.Should().NotContain("name: skip.yaml");
 	}
 
-	[Fact]
+	[Test]
 	public async Task Bundle_WithProfile_PathListFile_FiltersCorrectly()
 	{
 		var configContent =
@@ -151,16 +151,16 @@ public class BundleFilesFilterTests : ChangelogTestBase
 			""";
 		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog.yml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
-		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current!.Execution.CancellationToken);
 
 		var keep = FileSystem.Path.Join(_changelogDir, "keep.yaml");
 		var skip = FileSystem.Path.Join(_changelogDir, "skip.yaml");
-		await FileSystem.File.WriteAllTextAsync(keep, EntryKeep, TestContext.Current.CancellationToken);
-		await FileSystem.File.WriteAllTextAsync(skip, EntrySkip, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(keep, EntryKeep, TestContext.Current!.Execution.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(skip, EntrySkip, TestContext.Current!.Execution.CancellationToken);
 
 		var listFile = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "files.txt");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(listFile)!);
-		await FileSystem.File.WriteAllTextAsync(listFile, "keep.yaml\n", TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(listFile, "keep.yaml\n", TestContext.Current!.Execution.CancellationToken);
 
 		var expectedOutput = FileSystem.Path.Join(_changelogDir, "changelog-bundle.yaml");
 		var input = new BundleChangelogsArguments
@@ -171,15 +171,15 @@ public class BundleFilesFilterTests : ChangelogTestBase
 			ProfileReport = listFile
 		};
 
-		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		result.Should().BeTrue($"Errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}");
-		var bundle = await FileSystem.File.ReadAllTextAsync(expectedOutput, TestContext.Current.CancellationToken);
+		var bundle = await FileSystem.File.ReadAllTextAsync(expectedOutput, TestContext.Current!.Execution.CancellationToken);
 		bundle.Should().Contain("name: keep.yaml");
 		bundle.Should().NotContain("name: skip.yaml");
 	}
 
-	[Fact]
+	[Test]
 	public async Task Bundle_WithProfile_MixedUrlsAndPaths_ReturnsError()
 	{
 		var configContent = """
@@ -189,14 +189,14 @@ public class BundleFilesFilterTests : ChangelogTestBase
 			""";
 		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog.yml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
-		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current!.Execution.CancellationToken);
 
 		var listFile = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "mixed.txt");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(listFile)!);
 		await FileSystem.File.WriteAllTextAsync(
 			listFile,
 			"https://github.com/elastic/elasticsearch/pull/100\nkeep.yaml\n",
-			TestContext.Current.CancellationToken
+			TestContext.Current!.Execution.CancellationToken
 		);
 
 		var input = new BundleChangelogsArguments
@@ -207,19 +207,19 @@ public class BundleFilesFilterTests : ChangelogTestBase
 			ProfileArgument = listFile
 		};
 
-		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		result.Should().BeFalse();
 		Collector.Diagnostics.Should().Contain(d => d.Severity == Severity.Error && d.Message.Contains("not a mix"));
 	}
 
-	[Fact]
+	[Test]
 	public async Task Bundle_WithFiles_RulesBundleStillApplies()
 	{
 		var feature = FileSystem.Path.Join(_changelogDir, "feature.yaml");
 		var bugFix = FileSystem.Path.Join(_changelogDir, "bug-fix.yaml");
-		await FileSystem.File.WriteAllTextAsync(feature, EntryKeep, TestContext.Current.CancellationToken);
-		await FileSystem.File.WriteAllTextAsync(bugFix, EntryBugFix, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(feature, EntryKeep, TestContext.Current!.Execution.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(bugFix, EntryBugFix, TestContext.Current!.Execution.CancellationToken);
 
 		var configContent =
 			$"""
@@ -232,24 +232,24 @@ public class BundleFilesFilterTests : ChangelogTestBase
 			""";
 		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog.yml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
-		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current!.Execution.CancellationToken);
 
 		var output = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle.yaml");
 		var input = new BundleChangelogsArguments { Config = configPath, Files = [feature, bugFix], Output = output };
 
-		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		result.Should().BeTrue($"Errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}");
-		var bundle = await FileSystem.File.ReadAllTextAsync(output, TestContext.Current.CancellationToken);
+		var bundle = await FileSystem.File.ReadAllTextAsync(output, TestContext.Current!.Execution.CancellationToken);
 		bundle.Should().Contain("name: feature.yaml");
 		bundle.Should().NotContain("name: bug-fix.yaml");
 	}
 
-	[Fact]
+	[Test]
 	public async Task Bundle_WithFilesAndForceLocal_SourcesLocalEvenWhenRepoResolves()
 	{
 		var keep = FileSystem.Path.Join(_changelogDir, "keep.yaml");
-		await FileSystem.File.WriteAllTextAsync(keep, EntryKeep, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(keep, EntryKeep, TestContext.Current!.Execution.CancellationToken);
 
 		var configContent =
 			$"""
@@ -259,7 +259,7 @@ public class BundleFilesFilterTests : ChangelogTestBase
 			""";
 		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog.yml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
-		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current!.Execution.CancellationToken);
 
 		var handler = new StubHandler(_ => new HttpResponseMessage(HttpStatusCode.NotFound));
 		var fetcher = new CdnChangelogEntryFetcher(LoggerFactory, handler, sleep: (_, _) => Task.CompletedTask);
@@ -268,15 +268,15 @@ public class BundleFilesFilterTests : ChangelogTestBase
 		var output = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle.yaml");
 		var input = new BundleChangelogsArguments { Config = configPath, Files = [keep], ForceLocal = true, Output = output };
 
-		var result = await service.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await service.BundleChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		result.Should().BeTrue($"Errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}");
 		handler.RequestedPaths.Should().BeEmpty("--force-local must not reach the CDN");
-		var bundle = await FileSystem.File.ReadAllTextAsync(output, TestContext.Current.CancellationToken);
+		var bundle = await FileSystem.File.ReadAllTextAsync(output, TestContext.Current!.Execution.CancellationToken);
 		bundle.Should().Contain("Keep me");
 	}
 
-	[Fact]
+	[Test]
 	public async Task Bundle_WithFiles_RepoResolves_MatchesCdnPoolByFileName()
 	{
 		// Entries exist only in the CDN pool (e.g. a private repo that uploads to S3 without keeping local
@@ -289,18 +289,18 @@ public class BundleFilesFilterTests : ChangelogTestBase
 		var output = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle.yaml");
 		var input = new BundleChangelogsArguments { Config = configPath, Files = ["docs/changelog/keep.yaml"], Output = output };
 
-		var result = await service.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await service.BundleChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		result.Should().BeTrue($"Errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}");
 		// --files uses FetchNamedAsync: direct GET per file, no registry fetch
 		handler.RequestedPaths.Should().Contain("/changelog/elastic/elasticsearch/main/keep.yaml");
 		handler.RequestedPaths.Should().NotContain("/changelog/elastic/elasticsearch/main/registry.json");
-		var bundle = await FileSystem.File.ReadAllTextAsync(output, TestContext.Current.CancellationToken);
+		var bundle = await FileSystem.File.ReadAllTextAsync(output, TestContext.Current!.Execution.CancellationToken);
 		bundle.Should().Contain("name: keep.yaml");
 		bundle.Should().NotContain("name: skip.yaml");
 	}
 
-	[Fact]
+	[Test]
 	public async Task Bundle_WithFiles_CdnPoolMissingRequestedName_FailsBundle()
 	{
 		var configPath = await WriteRepoOnlyConfigAsync();
@@ -313,7 +313,7 @@ public class BundleFilesFilterTests : ChangelogTestBase
 			Output = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle.yaml")
 		};
 
-		var result = await service.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await service.BundleChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		result.Should().BeFalse();
 		// --files uses FetchNamedAsync: a 404 means "entry does not exist in the pool"
@@ -323,7 +323,7 @@ public class BundleFilesFilterTests : ChangelogTestBase
 			.Contain(d => d.Severity == Severity.Error && d.Message.Contains("never-uploaded.yaml") && d.Message.Contains("pool"));
 	}
 
-	[Fact]
+	[Test]
 	public async Task Bundle_WithProfile_PathListFile_RepoResolves_SourcesFromCdn()
 	{
 		// The cloud scenario from docs-eng-team#734: profile mode with a path list file whose entries exist
@@ -340,11 +340,11 @@ public class BundleFilesFilterTests : ChangelogTestBase
 			""";
 		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog.yml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
-		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current!.Execution.CancellationToken);
 
 		var listFile = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "files.txt");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(listFile)!);
-		await FileSystem.File.WriteAllTextAsync(listFile, "keep.yaml\n", TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(listFile, "keep.yaml\n", TestContext.Current!.Execution.CancellationToken);
 
 		var handler = CdnPoolHandler();
 		var service = ServiceWithCdn(handler);
@@ -357,7 +357,7 @@ public class BundleFilesFilterTests : ChangelogTestBase
 			ProfileReport = listFile
 		};
 
-		var result = await service.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await service.BundleChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		result.Should().BeTrue($"Errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}");
 		// --files (via profile report) uses FetchNamedAsync: direct GET per file, no registry fetch
@@ -365,7 +365,7 @@ public class BundleFilesFilterTests : ChangelogTestBase
 		handler.RequestedPaths.Should().NotContain("/changelog/elastic/elasticsearch/main/registry.json");
 		var bundle = await FileSystem.File.ReadAllTextAsync(
 			FileSystem.Path.Join(outputDir, "changelog-bundle.yaml"),
-			TestContext.Current.CancellationToken
+			TestContext.Current!.Execution.CancellationToken
 		);
 		bundle.Should().Contain("name: keep.yaml");
 		bundle.Should().NotContain("name: skip.yaml");
@@ -408,15 +408,15 @@ public class BundleFilesFilterTests : ChangelogTestBase
 			""";
 		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog.yml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
-		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current!.Execution.CancellationToken);
 		return configPath;
 	}
 
-	[Fact]
+	[Test]
 	public async Task Bundle_WithForceLocal_SourcesLocalDespiteResolvableRepo()
 	{
 		var local = FileSystem.Path.Join(_changelogDir, "1-local.yaml");
-		await FileSystem.File.WriteAllTextAsync(local, EntryKeep, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(local, EntryKeep, TestContext.Current!.Execution.CancellationToken);
 
 		var configContent =
 			$"""
@@ -426,7 +426,7 @@ public class BundleFilesFilterTests : ChangelogTestBase
 			""";
 		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog.yml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
-		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current!.Execution.CancellationToken);
 
 		var handler = new StubHandler(_ => new HttpResponseMessage(HttpStatusCode.NotFound));
 		var fetcher = new CdnChangelogEntryFetcher(LoggerFactory, handler, sleep: (_, _) => Task.CompletedTask);
@@ -435,11 +435,11 @@ public class BundleFilesFilterTests : ChangelogTestBase
 		var output = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle.yaml");
 		var input = new BundleChangelogsArguments { Config = configPath, All = true, ForceLocal = true, Output = output };
 
-		var result = await service.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await service.BundleChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		result.Should().BeTrue($"Errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}");
 		handler.RequestedPaths.Should().BeEmpty("--force-local must not reach the CDN");
-		var bundle = await FileSystem.File.ReadAllTextAsync(output, TestContext.Current.CancellationToken);
+		var bundle = await FileSystem.File.ReadAllTextAsync(output, TestContext.Current!.Execution.CancellationToken);
 		bundle.Should().Contain("name: 1-local.yaml");
 	}
 

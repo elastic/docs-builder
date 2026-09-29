@@ -109,6 +109,7 @@
     <Project Path="tests/Elastic.Documentation.Indexing.Tests/Elastic.Documentation.Indexing.Tests.csproj" />
     <Project Path="tests/Elastic.Documentation.LegacyDocs.Tests/Elastic.Documentation.LegacyDocs.Tests.csproj" />
     <Project Path="tests/Elastic.Markdown.Tests/Elastic.Markdown.Tests.csproj" />
+    <Project Path="tests/Mcp.Remote.Tests/Mcp.Remote.Tests.csproj" />
     <Project Path="tests/Navigation.Tests/Navigation.Tests.csproj" />
     <Project Path="tests/Elastic.Changelog.Tests/Elastic.Changelog.Tests.csproj" />
     <Project Path="tests/Elastic.Documentation.Integrations.Tests/Elastic.Documentation.Integrations.Tests.csproj" />

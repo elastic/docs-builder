@@ -10,9 +10,9 @@ using Elastic.Documentation.ReleaseNotes;
 
 namespace Elastic.Changelog.Tests.Changelogs;
 
-public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTestBase(output)
+public class ChangelogConfigurationTests() : ChangelogTestBase()
 {
-	[Fact]
+	[Test]
 	public async Task LoadChangelogConfiguration_WithoutPivot_UsesDefaults()
 	{
 		// Arrange
@@ -27,7 +27,7 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 			lifecycles:
 			  - ga
 			""";
-		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current!.Execution.CancellationToken);
 
 		var originalDir = FileSystem.Directory.GetCurrentDirectory();
 		try
@@ -35,7 +35,7 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 			FileSystem.Directory.SetCurrentDirectory(configDir);
 
 			// Act
-			var config = await configLoader.LoadChangelogConfiguration(Collector, null, TestContext.Current.CancellationToken);
+			var config = await configLoader.LoadChangelogConfiguration(Collector, null, TestContext.Current!.Execution.CancellationToken);
 
 			// Assert
 			config.Should().NotBeNull();
@@ -51,7 +51,7 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 		}
 	}
 
-	[Fact]
+	[Test]
 	public async Task LoadChangelogConfiguration_WithPivotTypes_UsesConfiguredTypes()
 	{
 		// Arrange
@@ -73,7 +73,7 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 			lifecycles:
 			  - ga
 			""";
-		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current!.Execution.CancellationToken);
 
 		var originalDir = FileSystem.Directory.GetCurrentDirectory();
 		try
@@ -81,7 +81,7 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 			FileSystem.Directory.SetCurrentDirectory(configDir);
 
 			// Act
-			var config = await configLoader.LoadChangelogConfiguration(Collector, null, TestContext.Current.CancellationToken);
+			var config = await configLoader.LoadChangelogConfiguration(Collector, null, TestContext.Current!.Execution.CancellationToken);
 
 			// Assert
 			config.Should().NotBeNull();
@@ -101,7 +101,7 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 		}
 	}
 
-	[Fact]
+	[Test]
 	public async Task LoadChangelogConfiguration_WithoutAvailableLifecycles_UsesDefaults()
 	{
 		// Arrange
@@ -121,7 +121,7 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 			    bug-fix:
 			    breaking-change:
 			""";
-		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current!.Execution.CancellationToken);
 
 		var originalDir = FileSystem.Directory.GetCurrentDirectory();
 		try
@@ -129,7 +129,7 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 			FileSystem.Directory.SetCurrentDirectory(configDir);
 
 			// Act
-			var config = await configLoader.LoadChangelogConfiguration(Collector, null, TestContext.Current.CancellationToken);
+			var config = await configLoader.LoadChangelogConfiguration(Collector, null, TestContext.Current!.Execution.CancellationToken);
 
 			// Assert
 			config.Should().NotBeNull();
@@ -146,7 +146,7 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 		}
 	}
 
-	[Fact]
+	[Test]
 	public async Task LoadChangelogConfiguration_WithPivotAreas_ComputesLabelToAreasMapping()
 	{
 		// Arrange
@@ -169,7 +169,7 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 			    Search: ":Search/Search"
 			    Security: ":Security/Security"
 			""";
-		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current!.Execution.CancellationToken);
 
 		var originalDir = FileSystem.Directory.GetCurrentDirectory();
 		try
@@ -177,7 +177,7 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 			FileSystem.Directory.SetCurrentDirectory(configDir);
 
 			// Act
-			var config = await configLoader.LoadChangelogConfiguration(Collector, null, TestContext.Current.CancellationToken);
+			var config = await configLoader.LoadChangelogConfiguration(Collector, null, TestContext.Current!.Execution.CancellationToken);
 
 			// Assert
 			config.Should().NotBeNull();
@@ -199,7 +199,7 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 		}
 	}
 
-	[Fact]
+	[Test]
 	public async Task LoadChangelogConfiguration_WithPivotTypesLabels_ComputesLabelToTypeMapping()
 	{
 		// Arrange
@@ -218,7 +218,7 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 			    bug-fix: ">bug"
 			    feature:
 			""";
-		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current!.Execution.CancellationToken);
 
 		var originalDir = FileSystem.Directory.GetCurrentDirectory();
 		try
@@ -226,7 +226,7 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 			FileSystem.Directory.SetCurrentDirectory(configDir);
 
 			// Act
-			var config = await configLoader.LoadChangelogConfiguration(Collector, null, TestContext.Current.CancellationToken);
+			var config = await configLoader.LoadChangelogConfiguration(Collector, null, TestContext.Current!.Execution.CancellationToken);
 
 			// Assert
 			config.Should().NotBeNull();
@@ -248,7 +248,7 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 		}
 	}
 
-	[Fact]
+	[Test]
 	public async Task LoadChangelogConfiguration_WithInvalidPivotType_ReturnsError()
 	{
 		// Arrange
@@ -268,7 +268,7 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 			    breaking-change:
 			    invalid-type: ">invalid"
 			""";
-		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current!.Execution.CancellationToken);
 
 		var originalDir = FileSystem.Directory.GetCurrentDirectory();
 		try
@@ -276,7 +276,7 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 			FileSystem.Directory.SetCurrentDirectory(configDir);
 
 			// Act
-			var config = await configLoader.LoadChangelogConfiguration(Collector, null, TestContext.Current.CancellationToken);
+			var config = await configLoader.LoadChangelogConfiguration(Collector, null, TestContext.Current!.Execution.CancellationToken);
 
 			// Assert
 			config.Should().BeNull();
@@ -296,7 +296,7 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 		}
 	}
 
-	[Fact]
+	[Test]
 	public async Task LoadChangelogConfiguration_WithMissingRequiredTypes_ReturnsError()
 	{
 		// Arrange
@@ -313,7 +313,7 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 			    feature:
 			    bug-fix:
 			""";
-		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current!.Execution.CancellationToken);
 
 		var originalDir = FileSystem.Directory.GetCurrentDirectory();
 		try
@@ -321,7 +321,7 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 			FileSystem.Directory.SetCurrentDirectory(configDir);
 
 			// Act
-			var config = await configLoader.LoadChangelogConfiguration(Collector, null, TestContext.Current.CancellationToken);
+			var config = await configLoader.LoadChangelogConfiguration(Collector, null, TestContext.Current!.Execution.CancellationToken);
 
 			// Assert
 			config.Should().BeNull();
@@ -337,7 +337,7 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 		}
 	}
 
-	[Fact]
+	[Test]
 	public async Task LoadChangelogConfiguration_WithSubtypesOnNonBreakingChange_ReturnsError()
 	{
 		// Arrange
@@ -359,7 +359,7 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 			    bug-fix:
 			    breaking-change:
 			""";
-		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current!.Execution.CancellationToken);
 
 		var originalDir = FileSystem.Directory.GetCurrentDirectory();
 		try
@@ -367,7 +367,7 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 			FileSystem.Directory.SetCurrentDirectory(configDir);
 
 			// Act
-			var config = await configLoader.LoadChangelogConfiguration(Collector, null, TestContext.Current.CancellationToken);
+			var config = await configLoader.LoadChangelogConfiguration(Collector, null, TestContext.Current!.Execution.CancellationToken);
 
 			// Assert
 			config.Should().BeNull();
@@ -387,7 +387,7 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 		}
 	}
 
-	[Fact]
+	[Test]
 	public async Task LoadChangelogConfiguration_WithSubtypesOnBreakingChange_Succeeds()
 	{
 		// Arrange
@@ -410,7 +410,7 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 			        api: ">api"
 			        behavioral: ">behavioral"
 			""";
-		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current!.Execution.CancellationToken);
 
 		var originalDir = FileSystem.Directory.GetCurrentDirectory();
 		try
@@ -418,7 +418,7 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 			FileSystem.Directory.SetCurrentDirectory(configDir);
 
 			// Act
-			var config = await configLoader.LoadChangelogConfiguration(Collector, null, TestContext.Current.CancellationToken);
+			var config = await configLoader.LoadChangelogConfiguration(Collector, null, TestContext.Current!.Execution.CancellationToken);
 
 			// Assert
 			config.Should().NotBeNull();
@@ -431,7 +431,7 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 		}
 	}
 
-	[Fact]
+	[Test]
 	public async Task LoadChangelogConfiguration_WithInvalidSubtype_ReturnsError()
 	{
 		// Arrange
@@ -453,7 +453,7 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 			      subtypes:
 			        invalid-subtype: ">invalid"
 			""";
-		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current!.Execution.CancellationToken);
 
 		var originalDir = FileSystem.Directory.GetCurrentDirectory();
 		try
@@ -461,7 +461,7 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 			FileSystem.Directory.SetCurrentDirectory(configDir);
 
 			// Act
-			var config = await configLoader.LoadChangelogConfiguration(Collector, null, TestContext.Current.CancellationToken);
+			var config = await configLoader.LoadChangelogConfiguration(Collector, null, TestContext.Current!.Execution.CancellationToken);
 
 			// Assert
 			config.Should().BeNull();
@@ -481,7 +481,7 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 		}
 	}
 
-	[Fact]
+	[Test]
 	public async Task LoadChangelogConfiguration_RulesCreateExclude_AsString_ParsesCorrectly()
 	{
 		// Arrange - rules.create.exclude as comma-separated string
@@ -507,7 +507,7 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 		config.Rules.Create.Mode.Should().Be(FieldMode.Exclude);
 	}
 
-	[Fact]
+	[Test]
 	public async Task LoadChangelogConfiguration_RulesCreateExclude_AsList_ParsesCorrectly()
 	{
 		// Arrange - rules.create.exclude as YAML list
@@ -536,7 +536,7 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 		config.Rules.Create.Mode.Should().Be(FieldMode.Exclude);
 	}
 
-	[Fact]
+	[Test]
 	public async Task LoadChangelogConfiguration_PublishExcludeTypes_AsString_IgnoredAndWarningEmitted()
 	{
 		// Arrange - rules.publish is deprecated and no longer used; verify warning is emitted and Publish is null
@@ -568,7 +568,7 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 			);
 	}
 
-	[Fact]
+	[Test]
 	public async Task LoadChangelogConfiguration_PublishExcludeTypes_AsList_IgnoredAndWarningEmitted()
 	{
 		// Arrange - rules.publish as YAML list is deprecated
@@ -595,7 +595,7 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 		Collector.Warnings.Should().BeGreaterThan(0);
 	}
 
-	[Fact]
+	[Test]
 	public async Task LoadChangelogConfiguration_PublishExcludeAreas_AsString_IgnoredAndWarningEmitted()
 	{
 		// Arrange - rules.publish with areas is deprecated
@@ -620,7 +620,7 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 		Collector.Warnings.Should().BeGreaterThan(0);
 	}
 
-	[Fact]
+	[Test]
 	public async Task LoadChangelogConfiguration_PublishExcludeAreas_AsList_IgnoredAndWarningEmitted()
 	{
 		// Arrange - rules.publish as YAML list is deprecated
@@ -647,7 +647,7 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 		Collector.Warnings.Should().BeGreaterThan(0);
 	}
 
-	[Fact]
+	[Test]
 	public async Task LoadChangelogConfiguration_PivotHighlight_AsString_ParsesCorrectly()
 	{
 		// Arrange - pivot.highlight as comma-separated string
@@ -668,7 +668,7 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 		config.HighlightLabels.Should().BeEquivalentTo([">highlight", ">release-highlight"]);
 	}
 
-	[Fact]
+	[Test]
 	public async Task LoadChangelogConfiguration_PivotHighlight_AsList_ParsesCorrectly()
 	{
 		// Arrange - pivot.highlight as YAML list
@@ -691,7 +691,7 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 		config.HighlightLabels.Should().BeEquivalentTo([">highlight", ">release-highlight"]);
 	}
 
-	[Fact]
+	[Test]
 	public async Task LoadChangelogConfiguration_PivotAreas_AsListValues_ComputesMapping()
 	{
 		// Arrange - pivot.areas with list values instead of comma-separated strings
@@ -727,7 +727,7 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 		config.LabelToAreas[":Security/Security"].Should().ContainSingle().Which.Should().Be("Security");
 	}
 
-	[Fact]
+	[Test]
 	public async Task LoadChangelogConfiguration_TypeLabels_AsList_ComputesMapping()
 	{
 		// Arrange - pivot.types labels as YAML list instead of comma-separated string
@@ -763,7 +763,7 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 		config.LabelToType[">bc"].Should().Be("breaking-change");
 	}
 
-	[Fact]
+	[Test]
 	public async Task LoadChangelogConfiguration_SubtypeLabels_AsList_ParsesCorrectly()
 	{
 		// Arrange - breaking-change subtype labels as YAML list
@@ -797,7 +797,7 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 		breakingChange.Subtypes["behavioral"].Should().Be(">behavioral-breaking");
 	}
 
-	[Fact]
+	[Test]
 	public async Task LoadChangelogConfiguration_ProductCreateExclude_AsList_ParsesCorrectly()
 	{
 		// Arrange - product-specific rules.create.products.*.exclude as YAML list
@@ -829,7 +829,7 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 		config.Rules.Create.ByProduct["elasticsearch"].Mode.Should().Be(FieldMode.Exclude);
 	}
 
-	[Fact]
+	[Test]
 	public async Task LoadChangelogConfiguration_MixedStringAndListForms_ParsesCorrectly()
 	{
 		// Arrange - mix of string and list forms in the same config
@@ -906,13 +906,13 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 		var docsDir = FileSystem.Path.Join(configDir, "docs");
 		FileSystem.Directory.CreateDirectory(docsDir);
 		var configPath = FileSystem.Path.Join(docsDir, "changelog.yml");
-		await FileSystem.File.WriteAllTextAsync(configPath, yamlContent, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(configPath, yamlContent, TestContext.Current!.Execution.CancellationToken);
 
 		var originalDir = FileSystem.Directory.GetCurrentDirectory();
 		try
 		{
 			FileSystem.Directory.SetCurrentDirectory(configDir);
-			return await configLoader.LoadChangelogConfiguration(Collector, null, TestContext.Current.CancellationToken);
+			return await configLoader.LoadChangelogConfiguration(Collector, null, TestContext.Current!.Execution.CancellationToken);
 		}
 		finally
 		{
@@ -925,7 +925,7 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 	// (consumed by 'changelog add --release-version' and 'changelog gh-release' for config fallbacks)
 	// -----------------------------------------------------------------------
 
-	[Fact]
+	[Test]
 	public async Task LoadChangelogConfiguration_BundleSection_ParsesRepoOwnerDirectory()
 	{
 		// Arrange
@@ -943,7 +943,7 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 			  owner: elastic
 			  directory: docs/changelog
 			""",
-			TestContext.Current.CancellationToken
+			TestContext.Current!.Execution.CancellationToken
 		);
 
 		var originalDir = FileSystem.Directory.GetCurrentDirectory();
@@ -951,14 +951,16 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 		{
 			FileSystem.Directory.SetCurrentDirectory(configDir);
 			// Act
-			var config = await configLoader.LoadChangelogConfiguration(Collector, null, TestContext.Current.CancellationToken);
+			var config = await configLoader.LoadChangelogConfiguration(Collector, null, TestContext.Current!.Execution.CancellationToken);
 
 			// Assert
 			config.Should().NotBeNull();
 			Collector.Errors.Should().Be(0);
 			config.Bundle.Should().NotBeNull();
+#pragma warning disable CS0618
 			config.Bundle.Repo.Should().Be("apm-agent-dotnet");
 			config.Bundle.Owner.Should().Be("elastic");
+#pragma warning restore CS0618
 			config.Bundle.Directory.Should().Be("docs/changelog");
 		}
 		finally
@@ -967,7 +969,7 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 		}
 	}
 
-	[Fact]
+	[Test]
 	public async Task LoadChangelogConfiguration_BundleSectionAbsent_BundleIsNull()
 	{
 		// Arrange
@@ -983,7 +985,7 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 			lifecycles:
 			  - ga
 			""",
-			TestContext.Current.CancellationToken
+			TestContext.Current!.Execution.CancellationToken
 		);
 
 		var originalDir = FileSystem.Directory.GetCurrentDirectory();
@@ -991,7 +993,7 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 		{
 			FileSystem.Directory.SetCurrentDirectory(configDir);
 			// Act
-			var config = await configLoader.LoadChangelogConfiguration(Collector, null, TestContext.Current.CancellationToken);
+			var config = await configLoader.LoadChangelogConfiguration(Collector, null, TestContext.Current!.Execution.CancellationToken);
 
 			// Assert
 			config.Should().NotBeNull();
@@ -1004,7 +1006,7 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 		}
 	}
 
-	[Fact]
+	[Test]
 	public async Task LoadChangelogConfiguration_NoConfigFile_ReturnsDefaultWithNullBundle()
 	{
 		// Arrange – no changelog.yml on disk; simulates running from a directory without a config
@@ -1017,7 +1019,7 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 		{
 			FileSystem.Directory.SetCurrentDirectory(configDir);
 			// Act
-			var config = await configLoader.LoadChangelogConfiguration(Collector, null, TestContext.Current.CancellationToken);
+			var config = await configLoader.LoadChangelogConfiguration(Collector, null, TestContext.Current!.Execution.CancellationToken);
 
 			// Assert – ChangelogConfiguration.Default is returned; Bundle is null so CLI fallbacks apply
 			config.Should().NotBeNull("LoadChangelogConfiguration returns Default when no file is found");
@@ -1030,7 +1032,7 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 		}
 	}
 
-	[Fact]
+	[Test]
 	public async Task LoadChangelogConfiguration_BundleSection_ParsesReleaseDates()
 	{
 		// Arrange
@@ -1052,7 +1054,7 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 			    inherit-profile:
 			      output: "inherit-{version}.yaml"
 			""",
-			TestContext.Current.CancellationToken
+			TestContext.Current!.Execution.CancellationToken
 		);
 
 		var originalDir = FileSystem.Directory.GetCurrentDirectory();
@@ -1060,7 +1062,7 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 		{
 			FileSystem.Directory.SetCurrentDirectory(configDir);
 			// Act
-			var config = await configLoader.LoadChangelogConfiguration(Collector, null, TestContext.Current.CancellationToken);
+			var config = await configLoader.LoadChangelogConfiguration(Collector, null, TestContext.Current!.Execution.CancellationToken);
 
 			// Assert
 			config.Should().NotBeNull();
@@ -1082,7 +1084,7 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 		}
 	}
 
-	[Fact]
+	[Test]
 	public async Task LoadChangelogConfiguration_BundleSection_ReleaseDatesDefaultsToNull()
 	{
 		// Arrange
@@ -1101,7 +1103,7 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 			    test-profile:
 			      output: "test-{version}.yaml"
 			""",
-			TestContext.Current.CancellationToken
+			TestContext.Current!.Execution.CancellationToken
 		);
 
 		var originalDir = FileSystem.Directory.GetCurrentDirectory();
@@ -1109,7 +1111,7 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 		{
 			FileSystem.Directory.SetCurrentDirectory(configDir);
 			// Act
-			var config = await configLoader.LoadChangelogConfiguration(Collector, null, TestContext.Current.CancellationToken);
+			var config = await configLoader.LoadChangelogConfiguration(Collector, null, TestContext.Current!.Execution.CancellationToken);
 
 			// Assert
 			config.Should().NotBeNull();
@@ -1125,7 +1127,7 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 		}
 	}
 
-	[Fact]
+	[Test]
 	public async Task LoadChangelogConfiguration_WithPivotProducts_ComputesLabelToProductsMapping()
 	{
 		// Arrange
@@ -1148,7 +1150,7 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 			    'kibana':
 			      - ":stack/kibana"
 			""";
-		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current!.Execution.CancellationToken);
 
 		var originalDir = FileSystem.Directory.GetCurrentDirectory();
 		try
@@ -1156,7 +1158,7 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 			FileSystem.Directory.SetCurrentDirectory(configDir);
 
 			// Act
-			var config = await configLoader.LoadChangelogConfiguration(Collector, null, TestContext.Current.CancellationToken);
+			var config = await configLoader.LoadChangelogConfiguration(Collector, null, TestContext.Current!.Execution.CancellationToken);
 
 			// Assert
 			config.Should().NotBeNull();
@@ -1173,7 +1175,7 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 		}
 	}
 
-	[Fact]
+	[Test]
 	public async Task LoadChangelogConfiguration_WithPivotFeatures_ComputesLabelToFeaturesMapping()
 	{
 		var configLoader = new ChangelogConfigurationLoader(LoggerFactory, ConfigurationContext, FileSystem);
@@ -1195,14 +1197,14 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 			      - ":Feature/NewSearchApi"
 			    'feature:legacy': "legacy-flag"
 			""";
-		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current!.Execution.CancellationToken);
 
 		var originalDir = FileSystem.Directory.GetCurrentDirectory();
 		try
 		{
 			FileSystem.Directory.SetCurrentDirectory(configDir);
 
-			var config = await configLoader.LoadChangelogConfiguration(Collector, null, TestContext.Current.CancellationToken);
+			var config = await configLoader.LoadChangelogConfiguration(Collector, null, TestContext.Current!.Execution.CancellationToken);
 
 			config.Should().NotBeNull();
 			Collector.Errors.Should().Be(0);
@@ -1222,7 +1224,7 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 		}
 	}
 
-	[Fact]
+	[Test]
 	public async Task LoadChangelogConfiguration_WithPivotProducts_ProductSpecWithTarget_PreservesSpec()
 	{
 		// Arrange
@@ -1245,7 +1247,7 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 			    'kibana 9.2.0 ga':
 			      - ":kibana/new-in-9.2"
 			""";
-		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current!.Execution.CancellationToken);
 
 		var originalDir = FileSystem.Directory.GetCurrentDirectory();
 		try
@@ -1253,7 +1255,7 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 			FileSystem.Directory.SetCurrentDirectory(configDir);
 
 			// Act
-			var config = await configLoader.LoadChangelogConfiguration(Collector, null, TestContext.Current.CancellationToken);
+			var config = await configLoader.LoadChangelogConfiguration(Collector, null, TestContext.Current!.Execution.CancellationToken);
 
 			// Assert
 			config.Should().NotBeNull();
@@ -1268,7 +1270,7 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 		}
 	}
 
-	[Fact]
+	[Test]
 	public async Task LoadChangelogConfiguration_WithPivotProducts_InvalidProductId_ReturnsError()
 	{
 		// Arrange
@@ -1289,7 +1291,7 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 			    'not-a-valid-product':
 			      - ":some/label"
 			""";
-		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current!.Execution.CancellationToken);
 
 		var originalDir = FileSystem.Directory.GetCurrentDirectory();
 		try
@@ -1297,7 +1299,7 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 			FileSystem.Directory.SetCurrentDirectory(configDir);
 
 			// Act
-			var config = await configLoader.LoadChangelogConfiguration(Collector, null, TestContext.Current.CancellationToken);
+			var config = await configLoader.LoadChangelogConfiguration(Collector, null, TestContext.Current!.Execution.CancellationToken);
 
 			// Assert
 			config.Should().BeNull();
@@ -1309,7 +1311,7 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 		}
 	}
 
-	[Fact]
+	[Test]
 	public async Task LoadChangelogConfiguration_WithRulesBundle_LoadsCorrectly()
 	{
 		// Arrange
@@ -1327,10 +1329,10 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 			      - kibana
 			    match_products: all
 			""";
-		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current!.Execution.CancellationToken);
 
 		// Act
-		var config = await configLoader.LoadChangelogConfiguration(Collector, configPath, TestContext.Current.CancellationToken);
+		var config = await configLoader.LoadChangelogConfiguration(Collector, configPath, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		config.Should().NotBeNull();
@@ -1342,7 +1344,7 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 		config.Rules.Bundle.IncludeProducts.Should().BeNull();
 	}
 
-	[Fact]
+	[Test]
 	public async Task LoadChangelogConfiguration_WithRulesBundle_MatchProductsConjunction_LoadsCorrectly()
 	{
 		var configLoader = new ChangelogConfigurationLoader(LoggerFactory, ConfigurationContext, FileSystem);
@@ -1357,16 +1359,16 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 			      - kibana
 			    match_products: conjunction
 			""";
-		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current!.Execution.CancellationToken);
 
-		var config = await configLoader.LoadChangelogConfiguration(Collector, configPath, TestContext.Current.CancellationToken);
+		var config = await configLoader.LoadChangelogConfiguration(Collector, configPath, TestContext.Current!.Execution.CancellationToken);
 
 		config.Should().NotBeNull();
 		Collector.Errors.Should().Be(0);
 		config!.Rules!.Bundle!.MatchProducts.Should().Be(MatchMode.Conjunction);
 	}
 
-	[Fact]
+	[Test]
 	public async Task LoadChangelogConfiguration_WithRulesBundle_BothExcludeAndInclude_ReturnsError()
 	{
 		// Arrange
@@ -1381,10 +1383,10 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 			    exclude_products: elasticsearch
 			    include_products: kibana
 			""";
-		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current!.Execution.CancellationToken);
 
 		// Act
-		var config = await configLoader.LoadChangelogConfiguration(Collector, configPath, TestContext.Current.CancellationToken);
+		var config = await configLoader.LoadChangelogConfiguration(Collector, configPath, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		config.Should().BeNull();
@@ -1392,7 +1394,7 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("cannot have both 'exclude_products' and 'include_products'"));
 	}
 
-	[Fact]
+	[Test]
 	public async Task LoadChangelogConfiguration_Filename_Pr_ParsesStrategy()
 	{
 		var config = await LoadConfig("filename: pr");
@@ -1402,7 +1404,7 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 		config.Filename.Should().Be(FilenameStrategy.Pr);
 	}
 
-	[Fact]
+	[Test]
 	public async Task LoadChangelogConfiguration_Filename_Issue_ReturnsError()
 	{
 		var config = await LoadConfig("filename: issue");
@@ -1411,7 +1413,7 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 		Collector.Errors.Should().BeGreaterThan(0);
 	}
 
-	[Fact]
+	[Test]
 	public async Task LoadChangelogConfiguration_Filename_Timestamp_ReturnsError()
 	{
 		var config = await LoadConfig("filename: timestamp");
@@ -1420,7 +1422,7 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 		Collector.Errors.Should().BeGreaterThan(0);
 	}
 
-	[Fact]
+	[Test]
 	public async Task LoadChangelogConfiguration_Filename_Missing_DefaultsToPr()
 	{
 		var config = await LoadConfig("""
@@ -1433,7 +1435,7 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 		config.Filename.Should().Be(FilenameStrategy.Pr);
 	}
 
-	[Fact]
+	[Test]
 	public async Task LoadChangelogConfiguration_Filename_Invalid_ReturnsError()
 	{
 		var config = await LoadConfig("""
@@ -1448,7 +1450,7 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 			.Contain(d => d.Severity == Severity.Error && d.Message.Contains("filename: 'random-value' is not valid"));
 	}
 
-	[Fact]
+	[Test]
 	public async Task LoadChangelogConfiguration_WithRulesBundle_UnknownProductId_ReturnsError()
 	{
 		// Arrange
@@ -1461,10 +1463,10 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 			  bundle:
 			    exclude_products: not-a-real-product
 			""";
-		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current!.Execution.CancellationToken);
 
 		// Act
-		var config = await configLoader.LoadChangelogConfiguration(Collector, configPath, TestContext.Current.CancellationToken);
+		var config = await configLoader.LoadChangelogConfiguration(Collector, configPath, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		config.Should().BeNull();
@@ -1475,7 +1477,7 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 			.Contain(d => d.Message.Contains("'not-a-real-product'") && d.Message.Contains("not in the list of available products"));
 	}
 
-	[Fact]
+	[Test]
 	public async Task LoadChangelogConfiguration_WithRulesPublish_EmitsDeprecationWarning()
 	{
 		// Arrange
@@ -1488,10 +1490,10 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 			  publish:
 			    exclude_types: docs
 			""";
-		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current!.Execution.CancellationToken);
 
 		// Act
-		var config = await configLoader.LoadChangelogConfiguration(Collector, configPath, TestContext.Current.CancellationToken);
+		var config = await configLoader.LoadChangelogConfiguration(Collector, configPath, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert — config loads (backward compat) but warns
 		config.Should().NotBeNull();
@@ -1499,7 +1501,7 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("rules.publish is deprecated"));
 	}
 
-	[Fact]
+	[Test]
 	public async Task LoadChangelogConfiguration_WithRulesBundle_TypeAreaAndProducts_LoadsCorrectly()
 	{
 		// Arrange
@@ -1523,10 +1525,10 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 			          - Search
 			          - Monitoring
 			""";
-		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current!.Execution.CancellationToken);
 
 		// Act
-		var config = await configLoader.LoadChangelogConfiguration(Collector, configPath, TestContext.Current.CancellationToken);
+		var config = await configLoader.LoadChangelogConfiguration(Collector, configPath, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		config.Should().NotBeNull();
@@ -1547,7 +1549,7 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 	// extract section: strip_title_prefix
 	// -----------------------------------------------------------------------
 
-	[Fact]
+	[Test]
 	public async Task LoadChangelogConfiguration_ExtractStripTitlePrefix_True_LoadsCorrectly()
 	{
 		// Arrange
@@ -1563,7 +1565,7 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 		config.Extract.StripTitlePrefix.Should().BeTrue();
 	}
 
-	[Fact]
+	[Test]
 	public async Task LoadChangelogConfiguration_ExtractStripTitlePrefix_False_LoadsCorrectly()
 	{
 		// Arrange
@@ -1579,7 +1581,7 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 		config.Extract.StripTitlePrefix.Should().BeFalse();
 	}
 
-	[Fact]
+	[Test]
 	public async Task LoadChangelogConfiguration_ExtractStripTitlePrefix_Missing_DefaultsFalse()
 	{
 		// Arrange
@@ -1595,7 +1597,7 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 		config.Extract.StripTitlePrefix.Should().BeFalse("default is false");
 	}
 
-	[Fact]
+	[Test]
 	public async Task LoadChangelogConfiguration_ExtractStripTitlePrefix_WithOtherExtractSettings_LoadsCorrectly()
 	{
 		// Arrange
@@ -1621,7 +1623,7 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 	// Per-product product filtering tests
 	// -----------------------------------------------------------------------
 
-	[Fact]
+	[Test]
 	public async Task LoadChangelogConfiguration_WithPerProductProductFiltering_LoadsCorrectly()
 	{
 		// Arrange
@@ -1645,10 +1647,10 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 			          - kibana
 			        match_products: all
 			""";
-		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current!.Execution.CancellationToken);
 
 		// Act
-		var config = await configLoader.LoadChangelogConfiguration(Collector, configPath, TestContext.Current.CancellationToken);
+		var config = await configLoader.LoadChangelogConfiguration(Collector, configPath, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		config.Should().NotBeNull();
@@ -1669,7 +1671,7 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 		cloudHostedRule.IncludeProducts.Should().BeNull();
 	}
 
-	[Fact]
+	[Test]
 	public async Task LoadChangelogConfiguration_WithPerProductProductFiltering_MutualExclusivity_ReturnsError()
 	{
 		// Arrange
@@ -1688,10 +1690,10 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 			        exclude_products:
 			          - kibana
 			""";
-		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current!.Execution.CancellationToken);
 
 		// Act
-		var config = await configLoader.LoadChangelogConfiguration(Collector, configPath, TestContext.Current.CancellationToken);
+		var config = await configLoader.LoadChangelogConfiguration(Collector, configPath, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		config.Should().BeNull();
@@ -1699,7 +1701,7 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("cannot have both 'exclude_products' and 'include_products'"));
 	}
 
-	[Fact]
+	[Test]
 	public async Task LoadChangelogConfiguration_WithPerProductProductFiltering_Mode3_DoesNotEmitGlobalSubsetWarningAsync()
 	{
 		// Arrange — Mode 3 ignores global rules.bundle product lists; per-product lists need not align with globals.
@@ -1721,10 +1723,10 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 			          - elasticsearch
 			          - kibana
 			""";
-		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current!.Execution.CancellationToken);
 
 		// Act
-		var config = await configLoader.LoadChangelogConfiguration(Collector, configPath, TestContext.Current.CancellationToken);
+		var config = await configLoader.LoadChangelogConfiguration(Collector, configPath, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		config.Should().NotBeNull();
@@ -1732,7 +1734,7 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 		Collector.Diagnostics.Should().NotContain(d => d.Message.Contains("not in global include_products", StringComparison.Ordinal));
 	}
 
-	[Fact]
+	[Test]
 	public async Task LoadChangelogConfiguration_WithPerProductProductFiltering_ProductOnlyBlock_LoadsCorrectly()
 	{
 		// Arrange
@@ -1750,10 +1752,10 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 			          - security
 			          - kibana
 			""";
-		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current!.Execution.CancellationToken);
 
 		// Act
-		var config = await configLoader.LoadChangelogConfiguration(Collector, configPath, TestContext.Current.CancellationToken);
+		var config = await configLoader.LoadChangelogConfiguration(Collector, configPath, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		config.Should().NotBeNull();
@@ -1765,7 +1767,7 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 		securityRule.Blocker.Should().BeNull(); // No type/area rules
 	}
 
-	[Fact]
+	[Test]
 	public async Task LoadChangelogConfiguration_WithPerProductProductFiltering_InvalidProductId_ReturnsError()
 	{
 		// Arrange
@@ -1782,10 +1784,10 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 			        include_products:
 			          - invalid-product
 			""";
-		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current!.Execution.CancellationToken);
 
 		// Act
-		var config = await configLoader.LoadChangelogConfiguration(Collector, configPath, TestContext.Current.CancellationToken);
+		var config = await configLoader.LoadChangelogConfiguration(Collector, configPath, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		config.Should().BeNull();
@@ -1793,7 +1795,7 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("'invalid-product' is not in the list of available products"));
 	}
 
-	[Fact]
+	[Test]
 	public async Task LoadChangelogConfiguration_UseLocalChangelogs_DefaultsToFalse()
 	{
 		var configLoader = new ChangelogConfigurationLoader(LoggerFactory, ConfigurationContext, FileSystem);
@@ -1805,16 +1807,16 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 			bundle:
 			  directory: docs/changelog
 			""";
-		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current!.Execution.CancellationToken);
 
-		var config = await configLoader.LoadChangelogConfiguration(Collector, configPath, TestContext.Current.CancellationToken);
+		var config = await configLoader.LoadChangelogConfiguration(Collector, configPath, TestContext.Current!.Execution.CancellationToken);
 
 		config.Should().NotBeNull();
 		Collector.Errors.Should().Be(0);
 		config.Bundle!.UseLocalChangelogs.Should().BeFalse();
 	}
 
-	[Fact]
+	[Test]
 	public async Task LoadChangelogConfiguration_BundleResolve_Deprecated_IgnoredAndWarningEmitted()
 	{
 		// Arrange — bundle.resolve was removed; a config still carrying it must load (no hard parse error) but warn.
@@ -1828,10 +1830,10 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 			  directory: docs/changelog
 			  resolve: true
 			""";
-		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current!.Execution.CancellationToken);
 
 		// Act
-		var config = await configLoader.LoadChangelogConfiguration(Collector, configPath, TestContext.Current.CancellationToken);
+		var config = await configLoader.LoadChangelogConfiguration(Collector, configPath, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		config.Should().NotBeNull();
@@ -1844,7 +1846,7 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 			.Contain(d => d.Severity == Severity.Warning && d.Message.Contains("bundle.resolve is deprecated and ignored"));
 	}
 
-	[Fact]
+	[Test]
 	public async Task LoadChangelogConfiguration_UseLocalChangelogs_True_Parses()
 	{
 		var configLoader = new ChangelogConfigurationLoader(LoggerFactory, ConfigurationContext, FileSystem);
@@ -1858,9 +1860,9 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 			  directory: docs/changelog
 			  use_local_changelogs: true
 			""";
-		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current!.Execution.CancellationToken);
 
-		var config = await configLoader.LoadChangelogConfiguration(Collector, configPath, TestContext.Current.CancellationToken);
+		var config = await configLoader.LoadChangelogConfiguration(Collector, configPath, TestContext.Current!.Execution.CancellationToken);
 
 		config.Should().NotBeNull();
 		Collector.Errors.Should().Be(0);

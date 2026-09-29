@@ -13,7 +13,6 @@ using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.Links;
 using Elastic.Documentation.Links.CrossLinks;
-using Xunit.Sdk;
 
 namespace Elastic.Authoring.Tests.Framework;
 
@@ -93,7 +92,7 @@ public static class CrossLinkResolverAssertions
 		var redirectRules = ParseRedirectsYaml(redirectsYamlSnippet, collector);
 
 		if (collector.Errors > 0)
-			throw new XunitException($"Failed to parse redirects YAML: {collector.Errors} errors");
+			throw new AwesomeAssertions.Execution.AssertionFailedException($"Failed to parse redirects YAML: {collector.Errors} errors");
 
 		var repositoryLinks = new RepositoryLinks
 		{
@@ -187,12 +186,16 @@ public static class CrossLinkResolverAssertions
 		var success = CrossLinkResolver.TryResolve(ErrorEmitter, FetchedLinks, UriResolver, inputUri, out var resolvedUri);
 
 		if (errors.Count > 0)
-			throw new XunitException($"Resolution for '{inputUrl}' failed with errors: {string.Join(", ", errors)}");
+			throw new AwesomeAssertions.Execution.AssertionFailedException(
+				$"Resolution for '{inputUrl}' failed with errors: {string.Join(", ", errors)}"
+			);
 
 		success.Should().BeTrue(because: $"TryResolve should succeed for '{inputUrl}'");
 
 		if (resolvedUri is null)
-			throw new XunitException($"Resolved URI was null for input '{inputUrl}' even though TryResolve returned true.");
+			throw new AwesomeAssertions.Execution.AssertionFailedException(
+				$"Resolved URI was null for input '{inputUrl}' even though TryResolve returned true."
+			);
 
 		var expectedFullUrl = BaseExpectedUrl + expectedPathWithOptionalAnchor;
 		resolvedUri.ToString().Should().Be(expectedFullUrl);

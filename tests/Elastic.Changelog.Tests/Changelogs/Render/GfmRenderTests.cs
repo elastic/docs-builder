@@ -9,9 +9,9 @@ using Elastic.Documentation.Configuration;
 
 namespace Elastic.Changelog.Tests.Changelogs.Render;
 
-public class GfmRenderTests(ITestOutputHelper output) : RenderChangelogTestBase(output)
+public class GfmRenderTests() : RenderChangelogTestBase()
 {
-	[Fact]
+	[Test]
 	public async Task RenderChangelogs_WithGfmFileType_CreatesSingleGfmFile()
 	{
 		// Arrange
@@ -39,7 +39,7 @@ public class GfmRenderTests(ITestOutputHelper output) : RenderChangelogTestBase(
 			    target: 9.2.0
 			""";
 		var bundleContent = CreateResolvedBundleContent(bundleHeader, ("test-feature.yaml", changelog));
-		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current!.Execution.CancellationToken);
 
 		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
 
@@ -52,7 +52,7 @@ public class GfmRenderTests(ITestOutputHelper output) : RenderChangelogTestBase(
 		};
 
 		// Act
-		var result = await Service.RenderChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await Service.RenderChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		result.Should().BeTrue();
@@ -68,7 +68,7 @@ public class GfmRenderTests(ITestOutputHelper output) : RenderChangelogTestBase(
 		FileSystem.File.Exists(indexFile).Should().BeFalse();
 		FileSystem.File.Exists(breakingChangesFile).Should().BeFalse();
 
-		var content = await FileSystem.File.ReadAllTextAsync(outputFile, TestContext.Current.CancellationToken);
+		var content = await FileSystem.File.ReadAllTextAsync(outputFile, TestContext.Current!.Execution.CancellationToken);
 		content.Should().Contain("## 9.2.0");
 		content.Should().Contain("### Features and enhancements");
 		content.Should().Contain("Test feature");
@@ -79,7 +79,7 @@ public class GfmRenderTests(ITestOutputHelper output) : RenderChangelogTestBase(
 		content.Should().NotContain("### Features and enhancements [");
 	}
 
-	[Fact]
+	[Test]
 	public async Task RenderChangelogs_WithGfmFileType_IncludesAllSectionTypes()
 	{
 		// Arrange
@@ -152,7 +152,7 @@ public class GfmRenderTests(ITestOutputHelper output) : RenderChangelogTestBase(
 			("bugfix.yaml", bugFix),
 			("known-issue.yaml", knownIssue)
 		);
-		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current!.Execution.CancellationToken);
 
 		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
 
@@ -165,14 +165,14 @@ public class GfmRenderTests(ITestOutputHelper output) : RenderChangelogTestBase(
 		};
 
 		// Act
-		var result = await Service.RenderChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await Service.RenderChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		result.Should().BeTrue();
 		Collector.Errors.Should().Be(0);
 
 		var outputChangelogPath = FileSystem.Path.Join(outputDir, "9.2.0", "changelog.md");
-		var content = await FileSystem.File.ReadAllTextAsync(outputChangelogPath, TestContext.Current.CancellationToken);
+		var content = await FileSystem.File.ReadAllTextAsync(outputChangelogPath, TestContext.Current!.Execution.CancellationToken);
 
 		// Should include all section types in the proper order
 		content.Should().Contain("### Features and enhancements");
@@ -201,7 +201,7 @@ public class GfmRenderTests(ITestOutputHelper output) : RenderChangelogTestBase(
 		bugFixIndex.Should().BeLessThan(knownIssueIndex);
 	}
 
-	[Fact]
+	[Test]
 	public async Task RenderChangelogs_WithGfmFileType_HandlesHighlights()
 	{
 		// Arrange
@@ -242,7 +242,7 @@ public class GfmRenderTests(ITestOutputHelper output) : RenderChangelogTestBase(
 			("highlight.yaml", highlightedFeature),
 			("normal.yaml", normalFeature)
 		);
-		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current!.Execution.CancellationToken);
 
 		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
 
@@ -255,14 +255,14 @@ public class GfmRenderTests(ITestOutputHelper output) : RenderChangelogTestBase(
 		};
 
 		// Act
-		var result = await Service.RenderChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await Service.RenderChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		result.Should().BeTrue();
 		Collector.Errors.Should().Be(0);
 
 		var highlightsOutputFile = FileSystem.Path.Join(outputDir, "9.2.0", "changelog.md");
-		var content = await FileSystem.File.ReadAllTextAsync(highlightsOutputFile, TestContext.Current.CancellationToken);
+		var content = await FileSystem.File.ReadAllTextAsync(highlightsOutputFile, TestContext.Current!.Execution.CancellationToken);
 
 		// Should include highlights section first
 		content.Should().Contain("### Highlights");
@@ -278,7 +278,7 @@ public class GfmRenderTests(ITestOutputHelper output) : RenderChangelogTestBase(
 		content.Should().Contain("Regular feature");
 	}
 
-	[Fact]
+	[Test]
 	public async Task RenderChangelogs_WithGfmFileType_HandlesDescriptionsAndHideDescriptions()
 	{
 		// Arrange
@@ -307,7 +307,7 @@ public class GfmRenderTests(ITestOutputHelper output) : RenderChangelogTestBase(
 			    target: 9.2.0
 			""";
 		var bundleContent = CreateResolvedBundleContent(bundleHeader, ("feature.yaml", changelog));
-		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current!.Execution.CancellationToken);
 
 		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
 
@@ -322,14 +322,14 @@ public class GfmRenderTests(ITestOutputHelper output) : RenderChangelogTestBase(
 		};
 
 		// Act
-		var result = await Service.RenderChangelogs(Collector, inputWithDescriptions, TestContext.Current.CancellationToken);
+		var result = await Service.RenderChangelogs(Collector, inputWithDescriptions, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		result.Should().BeTrue();
 		Collector.Errors.Should().Be(0);
 
 		var outputChangelogFile = FileSystem.Path.Join(outputDir, "9.2.0", "changelog.md");
-		var content = await FileSystem.File.ReadAllTextAsync(outputChangelogFile, TestContext.Current.CancellationToken);
+		var content = await FileSystem.File.ReadAllTextAsync(outputChangelogFile, TestContext.Current!.Execution.CancellationToken);
 
 		content.Should().Contain("Feature with description");
 		content.Should().Contain("This is a detailed description of the feature.");
@@ -346,19 +346,19 @@ public class GfmRenderTests(ITestOutputHelper output) : RenderChangelogTestBase(
 			HideDescriptions = true
 		};
 
-		var result2 = await Service.RenderChangelogs(Collector, inputWithoutDescriptions, TestContext.Current.CancellationToken);
+		var result2 = await Service.RenderChangelogs(Collector, inputWithoutDescriptions, TestContext.Current!.Execution.CancellationToken);
 
 		result2.Should().BeTrue();
 		Collector.Errors.Should().Be(0);
 		var changelogFile2 = FileSystem.Path.Join(outputDir2, "9.2.0", "changelog.md");
-		var content2 = await FileSystem.File.ReadAllTextAsync(changelogFile2, TestContext.Current.CancellationToken);
+		var content2 = await FileSystem.File.ReadAllTextAsync(changelogFile2, TestContext.Current!.Execution.CancellationToken);
 
 		content2.Should().Contain("Feature with description");
 		content2.Should().NotContain("This is a detailed description of the feature.");
 		content2.Should().NotContain("It spans multiple lines.");
 	}
 
-	[Fact]
+	[Test]
 	public async Task RenderChangelogs_WithGfmFileType_HandlesBundleDescriptionAndReleaseDate()
 	{
 		// Arrange
@@ -387,7 +387,7 @@ public class GfmRenderTests(ITestOutputHelper output) : RenderChangelogTestBase(
 			release-date: "2024-03-15"
 			""";
 		var bundleContent = CreateResolvedBundleContent(bundleHeader, ("feature.yaml", changelog));
-		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current!.Execution.CancellationToken);
 
 		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
 
@@ -400,14 +400,14 @@ public class GfmRenderTests(ITestOutputHelper output) : RenderChangelogTestBase(
 		};
 
 		// Act
-		var result = await Service.RenderChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await Service.RenderChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		result.Should().BeTrue();
 		Collector.Errors.Should().Be(0);
 
 		var finalChangelogFile = FileSystem.Path.Join(outputDir, "9.2.0", "changelog.md");
-		var content = await FileSystem.File.ReadAllTextAsync(finalChangelogFile, TestContext.Current.CancellationToken);
+		var content = await FileSystem.File.ReadAllTextAsync(finalChangelogFile, TestContext.Current!.Execution.CancellationToken);
 
 		// Should include the bundle description and release date
 		content.Should().Contain("## 9.2.0");

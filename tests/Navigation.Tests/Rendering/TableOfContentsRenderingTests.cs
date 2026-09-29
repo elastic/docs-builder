@@ -20,9 +20,9 @@ using RazorSlices;
 
 namespace Elastic.Documentation.Navigation.Tests.Rendering;
 
-public class TableOfContentsRenderingTests(ITestOutputHelper output) : DocumentationSetNavigationTestBase(output)
+public class TableOfContentsRenderingTests() : DocumentationSetNavigationTestBase()
 {
-	[Fact]
+	[Test]
 	public async Task Assembler_FlagOff_RendersVersionDropdown()
 	{
 		var html = await Render(BuildType.Assembler, showVersionDropdown: true, navigationPreviewEnabled: false);
@@ -35,7 +35,7 @@ public class TableOfContentsRenderingTests(ITestOutputHelper output) : Documenta
 		html.Should().NotContain("hidden md:block");
 	}
 
-	[Fact]
+	[Test]
 	public async Task Assembler_FlagOn_OmitsVersionDropdown()
 	{
 		var html = await Render(BuildType.Assembler, showVersionDropdown: true, navigationPreviewEnabled: true);
@@ -44,7 +44,7 @@ public class TableOfContentsRenderingTests(ITestOutputHelper output) : Documenta
 		html.Should().NotContain("data-testid=\"docs-version-dropdown\"");
 	}
 
-	[Fact]
+	[Test]
 	public async Task Isolated_OmitsVersionDropdown()
 	{
 		var html = await Render(BuildType.Isolated, showVersionDropdown: false, navigationPreviewEnabled: false);
@@ -98,7 +98,7 @@ public class TableOfContentsRenderingTests(ITestOutputHelper output) : Documenta
 			Cta = Cta.Default
 		};
 
-		return await _TableOfContents.Create(model).RenderAsync(cancellationToken: TestContext.Current.CancellationToken);
+		return await _TableOfContents.Create(model).RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
 	}
 
 	private sealed record StubNavigationItem(string Url) : INavigationItem

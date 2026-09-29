@@ -35,7 +35,7 @@ namespace Elastic.Documentation.Build.Tests;
 
 public class RedirectKvsDiffTests
 {
-	[Fact]
+	[Test]
 	public void ComputeBatchUpdates_KeyRemovedFromSourced_AppearsInToDelete()
 	{
 		// Reproduces elastic/docs-content#6716: a redirect that was previously pushed
@@ -51,7 +51,7 @@ public class RedirectKvsDiffTests
 		toPut.Should().ContainSingle().Which.Key.Should().Be("/docs/some-other-page");
 	}
 
-	[Fact]
+	[Test]
 	public void ComputeBatchUpdates_KeyOnlyInSourced_IsPutAndNotDeleted()
 	{
 		var sourcedRedirects = new Dictionary<string, string> { ["/docs/new-page"] = "/docs/new-page-target" };
@@ -63,7 +63,7 @@ public class RedirectKvsDiffTests
 		toDelete.Should().BeEmpty();
 	}
 
-	[Fact]
+	[Test]
 	public void ComputeBatchUpdates_KeyInBoth_IsPutAndNotDeleted()
 	{
 		// The current implementation re-puts every sourced entry (even unchanged values).
@@ -78,7 +78,7 @@ public class RedirectKvsDiffTests
 		toDelete.Should().BeEmpty();
 	}
 
-	[Fact]
+	[Test]
 	public void ComputeBatchUpdates_BothEmpty_ProducesEmptyBatches()
 	{
 		var (toPut, toDelete) = RedirectKvsDiff.ComputeBatchUpdates(new Dictionary<string, string>(), new HashSet<string>());
@@ -87,7 +87,7 @@ public class RedirectKvsDiffTests
 		toDelete.Should().BeEmpty();
 	}
 
-	[Fact]
+	[Test]
 	public void ComputeBatchUpdates_OnlyExisting_AllAreDeleted()
 	{
 		// Mirrors a "remove every redirect" intent. The helper itself does not refuse
@@ -101,7 +101,7 @@ public class RedirectKvsDiffTests
 		toDelete.Select(d => d.Key).Should().BeEquivalentTo(existingRedirects);
 	}
 
-	[Fact]
+	[Test]
 	public void ComputeBatchUpdates_AzureIsvRegression_ScenarioEndToEnd()
 	{
 		// Simulates the post-#6716 state: redirects.yml no longer mentions the parent
@@ -142,7 +142,7 @@ public class RedirectKvsDiffTests
 		}
 	}
 
-	[Fact]
+	[Test]
 	public void WouldWipeAllExisting_EmptySourcedAndPopulatedExisting_ReturnsTrue()
 	{
 		var sourced = new Dictionary<string, string>();
@@ -151,7 +151,7 @@ public class RedirectKvsDiffTests
 		RedirectKvsDiff.WouldWipeAllExisting(sourced, existing).Should().BeTrue();
 	}
 
-	[Fact]
+	[Test]
 	public void WouldWipeAllExisting_SourcedHasEntries_ReturnsFalse()
 	{
 		var sourced = new Dictionary<string, string> { ["/docs/a"] = "/docs/b" };
@@ -160,7 +160,7 @@ public class RedirectKvsDiffTests
 		RedirectKvsDiff.WouldWipeAllExisting(sourced, existing).Should().BeFalse();
 	}
 
-	[Fact]
+	[Test]
 	public void WouldWipeAllExisting_BothEmpty_ReturnsFalse()
 	{
 		// Empty in, empty out is not a wipe — it's a no-op on a clean KVS.

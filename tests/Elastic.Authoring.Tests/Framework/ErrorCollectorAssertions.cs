@@ -4,7 +4,6 @@
 
 using System.Diagnostics;
 using Elastic.Documentation.Diagnostics;
-using Xunit.Sdk;
 
 namespace Elastic.Authoring.Tests.Framework;
 
@@ -28,7 +27,7 @@ internal static class ErrorCollectorAssertions
 	{
 		var errors = results.Context.Collector.Errors;
 		if (errors != 0)
-			throw new XunitException(
+			throw new AwesomeAssertions.Execution.AssertionFailedException(
 				$"Expected no errors but found {errors}: " + string.Join(
 					"; ",
 					results.Context.Collector.Diagnostics.Where(d => d.Severity == Severity.Error).Select(d => d.Message)
@@ -41,17 +40,19 @@ internal static class ErrorCollectorAssertions
 	{
 		var errors = results.Context.Collector.Errors;
 		if (errors == 0)
-			throw new XunitException("Expected errors but no errors were logged");
+			throw new AwesomeAssertions.Execution.AssertionFailedException("Expected errors but no errors were logged");
 
 		// Only the first error — mirrors F# List.tryHead
 		var errorDiagnostics = results.Context.Collector.Diagnostics.Where(d => d.Severity == Severity.Error).ToList();
 
 		if (errorDiagnostics.Count == 0)
-			throw new XunitException("Expected errors but no errors were logged");
+			throw new AwesomeAssertions.Execution.AssertionFailedException("Expected errors but no errors were logged");
 
 		var first = errorDiagnostics[0];
 		if (!first.Message.Contains(expected, StringComparison.Ordinal))
-			throw new XunitException($"Expected error containing '{expected}' but first error was: {first.Message}");
+			throw new AwesomeAssertions.Execution.AssertionFailedException(
+				$"Expected error containing '{expected}' but first error was: {first.Message}"
+			);
 	}
 
 	[DebuggerStepThrough]
@@ -59,7 +60,7 @@ internal static class ErrorCollectorAssertions
 	{
 		var warnings = results.Context.Collector.Warnings;
 		if (warnings != 0)
-			throw new XunitException(
+			throw new AwesomeAssertions.Execution.AssertionFailedException(
 				$"Expected no warnings but found {warnings}: " + string.Join(
 					"; ",
 					results.Context.Collector.Diagnostics.Where(d => d.Severity == Severity.Warning).Select(d => d.Message)
@@ -72,17 +73,19 @@ internal static class ErrorCollectorAssertions
 	{
 		var warnings = results.Context.Collector.Warnings;
 		if (warnings == 0)
-			throw new XunitException("Expected warnings but no warnings were logged");
+			throw new AwesomeAssertions.Execution.AssertionFailedException("Expected warnings but no warnings were logged");
 
 		// Only the first warning — mirrors F# List.tryHead
 		var warningDiagnostics = results.Context.Collector.Diagnostics.Where(d => d.Severity == Severity.Warning).ToList();
 
 		if (warningDiagnostics.Count == 0)
-			throw new XunitException("Expected warnings but no warnings were logged");
+			throw new AwesomeAssertions.Execution.AssertionFailedException("Expected warnings but no warnings were logged");
 
 		var first = warningDiagnostics[0];
 		if (!first.Message.Contains(expected, StringComparison.Ordinal))
-			throw new XunitException($"Expected warning containing '{expected}' but first warning was: {first.Message}");
+			throw new AwesomeAssertions.Execution.AssertionFailedException(
+				$"Expected warning containing '{expected}' but first warning was: {first.Message}"
+			);
 	}
 
 	[DebuggerStepThrough]
@@ -90,16 +93,18 @@ internal static class ErrorCollectorAssertions
 	{
 		var hints = results.Context.Collector.Hints;
 		if (hints == 0)
-			throw new XunitException("Expected hints but no hints were logged");
+			throw new AwesomeAssertions.Execution.AssertionFailedException("Expected hints but no hints were logged");
 
 		// Only the first hint — mirrors F# List.tryHead
 		var hintDiagnostics = results.Context.Collector.Diagnostics.Where(d => d.Severity == Severity.Hint).ToList();
 
 		if (hintDiagnostics.Count == 0)
-			throw new XunitException("Expected hints but no hints were logged");
+			throw new AwesomeAssertions.Execution.AssertionFailedException("Expected hints but no hints were logged");
 
 		var first = hintDiagnostics[0];
 		if (!first.Message.Contains(expected, StringComparison.Ordinal))
-			throw new XunitException($"Expected hint containing '{expected}' but first hint was: {first.Message}");
+			throw new AwesomeAssertions.Execution.AssertionFailedException(
+				$"Expected hint containing '{expected}' but first hint was: {first.Message}"
+			);
 	}
 }

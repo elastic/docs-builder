@@ -112,7 +112,7 @@ public class NoteAmendReconcilerTests
 
 	// -----------------------------------------------------------------------------------------
 
-	[Fact]
+	[Test]
 	public async Task LateNote_NoBundleAmendYet_WritesAmendNotesSidecar()
 	{
 		const string parent = "elasticsearch-9.3.0.yaml";
@@ -121,7 +121,7 @@ public class NoteAmendReconcilerTests
 		_s3.Seed(PublicBucket, NoteKey("main", "note-cve.yml"), NoteYaml);
 
 		var notesByVersion = NotesByVersion(Version, "main/note-cve.yml");
-		await _reconciler.ReconcileAsync(NotesScope(), notesByVersion, TestContext.Current.CancellationToken);
+		await _reconciler.ReconcileAsync(NotesScope(), notesByVersion, TestContext.Current!.Execution.CancellationToken);
 
 		// Amend sidecar must have been written.
 		_s3.Exists(PublicBucket, AmendNotesKey(parent)).Should().BeTrue("late note must produce an amend sidecar");
@@ -133,7 +133,7 @@ public class NoteAmendReconcilerTests
 		index.Notes.Should().ContainSingle().Which.BundleSeq.Should().Be(2);
 	}
 
-	[Fact]
+	[Test]
 	public async Task NoteShippedInParent_NoAmendWritten_SeqIsOne()
 	{
 		const string parent = "elasticsearch-9.3.0.yaml";
@@ -143,7 +143,7 @@ public class NoteAmendReconcilerTests
 		_s3.Seed(PublicBucket, NoteKey("main", "note-cve.yml"), NoteYaml);
 
 		var notesByVersion = NotesByVersion(Version, "main/note-cve.yml");
-		await _reconciler.ReconcileAsync(NotesScope(), notesByVersion, TestContext.Current.CancellationToken);
+		await _reconciler.ReconcileAsync(NotesScope(), notesByVersion, TestContext.Current!.Execution.CancellationToken);
 
 		// No amend sidecar should be written.
 		_s3.Exists(PublicBucket, AmendNotesKey(parent)).Should().BeFalse("note already in parent → no amend needed");
@@ -154,7 +154,7 @@ public class NoteAmendReconcilerTests
 		index.Notes.Should().ContainSingle().Which.BundleSeq.Should().Be(1);
 	}
 
-	[Fact]
+	[Test]
 	public async Task NoteShippedInHumanAmend_NoAmendNotesWritten_SeqIsOne()
 	{
 		const string parent = "elasticsearch-9.3.0.yaml";
@@ -181,7 +181,7 @@ public class NoteAmendReconcilerTests
 		_s3.Seed(PublicBucket, NoteKey("main", "note-cve.yml"), NoteYaml);
 
 		var notesByVersion = NotesByVersion(Version, "main/note-cve.yml");
-		await _reconciler.ReconcileAsync(NotesScope(), notesByVersion, TestContext.Current.CancellationToken);
+		await _reconciler.ReconcileAsync(NotesScope(), notesByVersion, TestContext.Current!.Execution.CancellationToken);
 
 		_s3
 			.Exists(PublicBucket, AmendNotesKey(parent))
@@ -193,7 +193,7 @@ public class NoteAmendReconcilerTests
 		index.Notes.Should().ContainSingle().Which.BundleSeq.Should().Be(1);
 	}
 
-	[Fact]
+	[Test]
 	public async Task ParentBundleHasNoFileAnnotations_Skipped_SeqRemainsZero()
 	{
 		const string parent = "elasticsearch-9.3.0.yaml";
@@ -209,7 +209,7 @@ public class NoteAmendReconcilerTests
 		_s3.Seed(PublicBucket, NoteKey("main", "note-cve.yml"), NoteYaml);
 
 		var notesByVersion = NotesByVersion(Version, "main/note-cve.yml");
-		await _reconciler.ReconcileAsync(NotesScope(), notesByVersion, TestContext.Current.CancellationToken);
+		await _reconciler.ReconcileAsync(NotesScope(), notesByVersion, TestContext.Current!.Execution.CancellationToken);
 
 		// No amend written; shipped state is unknown.
 		_s3.Exists(PublicBucket, AmendNotesKey(parent)).Should().BeFalse("unknown shipped state → skip, no amend");
@@ -220,7 +220,7 @@ public class NoteAmendReconcilerTests
 		index.Notes.Should().ContainSingle().Which.BundleSeq.Should().Be(0);
 	}
 
-	[Fact]
+	[Test]
 	public async Task NoteRemovedFromIndex_ExistingAmendSidecarDeleted()
 	{
 		const string parent = "elasticsearch-9.3.0.yaml";
@@ -245,13 +245,13 @@ public class NoteAmendReconcilerTests
 
 		// No notes for this version (note was deleted from the pool).
 		var notesByVersion = NotesByVersion(Version);
-		await _reconciler.ReconcileAsync(NotesScope(), notesByVersion, TestContext.Current.CancellationToken);
+		await _reconciler.ReconcileAsync(NotesScope(), notesByVersion, TestContext.Current!.Execution.CancellationToken);
 
 		_s3.Exists(PublicBucket, AmendNotesKey(parent)).Should().BeFalse("stale amend sidecar must be deleted when no notes remain");
 		_s3.Deletes.Should().ContainSingle().Which.Key.Should().Be(AmendNotesKey(parent));
 	}
 
-	[Fact]
+	[Test]
 	public async Task Idempotent_SameStateRedelivered_NoSecondPut()
 	{
 		const string parent = "elasticsearch-9.3.0.yaml";
@@ -262,12 +262,12 @@ public class NoteAmendReconcilerTests
 		var notesByVersion = NotesByVersion(Version, "main/note-cve.yml");
 
 		// First reconcile → amend sidecar written.
-		await _reconciler.ReconcileAsync(NotesScope(), notesByVersion, TestContext.Current.CancellationToken);
+		await _reconciler.ReconcileAsync(NotesScope(), notesByVersion, TestContext.Current!.Execution.CancellationToken);
 		var putsAfterFirst = _s3.Puts.Count;
 		putsAfterFirst.Should().BeGreaterThan(0, "first pass must write the amend sidecar and the notes index");
 
 		// Second reconcile with the same state → content is identical → no additional PUTs.
-		await _reconciler.ReconcileAsync(NotesScope(), notesByVersion, TestContext.Current.CancellationToken);
+		await _reconciler.ReconcileAsync(NotesScope(), notesByVersion, TestContext.Current!.Execution.CancellationToken);
 		var putsAfterSecond = _s3.Puts.Count;
 
 		// The notes index re-write is idempotent too (same content, conditional PUT is a no-op).
@@ -276,7 +276,7 @@ public class NoteAmendReconcilerTests
 		amendSidecarPuts.Should().Be(1, "amend sidecar must be written exactly once across both passes");
 	}
 
-	[Fact]
+	[Test]
 	public async Task NoBundleForVersion_NoAmend_SeqRemainsZero()
 	{
 		// Registry exists for the product but contains no bundle that matches the version.
@@ -285,7 +285,7 @@ public class NoteAmendReconcilerTests
 		_s3.Seed(PublicBucket, NoteKey("main", "note-cve.yml"), NoteYaml);
 
 		var notesByVersion = NotesByVersion(Version, "main/note-cve.yml");
-		await _reconciler.ReconcileAsync(NotesScope(), notesByVersion, TestContext.Current.CancellationToken);
+		await _reconciler.ReconcileAsync(NotesScope(), notesByVersion, TestContext.Current!.Execution.CancellationToken);
 
 		// No amend sidecar: no matching bundle.
 		_s3.Puts.Should().NotContain(p => p.Key.Contains("amend-notes"), "no matching bundle → no amend possible");
@@ -296,13 +296,13 @@ public class NoteAmendReconcilerTests
 		index.Notes.Should().ContainSingle().Which.BundleSeq.Should().Be(0);
 	}
 
-	[Fact]
+	[Test]
 	public async Task NoProductsInBundleTree_NoAmend()
 	{
 		// Bundle tree is empty (no products listed under bundle/).
 		// No registry.json objects exist, so ListObjectsV2 returns no common prefixes.
 		var notesByVersion = NotesByVersion(Version, "main/note-cve.yml");
-		await _reconciler.ReconcileAsync(NotesScope(), notesByVersion, TestContext.Current.CancellationToken);
+		await _reconciler.ReconcileAsync(NotesScope(), notesByVersion, TestContext.Current!.Execution.CancellationToken);
 
 		_s3.Puts.Should().NotContain(p => p.Key.Contains("amend-notes"));
 	}

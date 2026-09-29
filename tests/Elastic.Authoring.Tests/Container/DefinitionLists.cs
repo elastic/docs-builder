@@ -2,7 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-namespace Elastic.Authoring.Tests.Container.DefinitionLists;
+namespace Elastic.Authoring.Tests.Container;
 
 public class SimpleMultilineDefinitionWithMarkup : MarkdownTest
 {
@@ -14,7 +14,7 @@ public class SimpleMultilineDefinitionWithMarkup : MarkdownTest
 		    Which may contain multiple lines
 		""";
 
-	[Fact(DisplayName = "validate HTML")]
+	[Test, DisplayName("validate HTML")]
 	public async Task ValidateHtml() =>
 		await Docs.ConvertsToHtml(
 			"""
@@ -28,7 +28,7 @@ public class SimpleMultilineDefinitionWithMarkup : MarkdownTest
 		"""
 		);
 
-	[Fact(DisplayName = "has no errors")]
+	[Test, DisplayName("has no errors")]
 	public async Task HasNoErrors() => await Docs.HasNoErrors();
 }
 
@@ -44,7 +44,7 @@ public class DefinitionWithEmbeddedDirectives : MarkdownTest
 		    :::
 		""";
 
-	[Fact(DisplayName = "validate HTML")]
+	[Test, DisplayName("validate HTML")]
 	public async Task ValidateHtml() =>
 		await Docs.ConvertsToHtml(
 			"""
@@ -69,7 +69,7 @@ public class DefinitionWithEmbeddedDirectives : MarkdownTest
 		"""
 		);
 
-	[Fact(DisplayName = "has no errors")]
+	[Test, DisplayName("has no errors")]
 	public async Task HasNoErrors() => await Docs.HasNoErrors();
 }
 
@@ -87,7 +87,7 @@ public class DefinitionPreservesParagraphs : MarkdownTest
 		    Check Using Elastic Consumption Units for billing for more details.
 		""";
 
-	[Fact(DisplayName = "validate HTML")]
+	[Test, DisplayName("validate HTML")]
 	public async Task ValidateHtml() =>
 		await Docs.ConvertsToHtml(
 			"""
@@ -103,6 +103,6 @@ public class DefinitionPreservesParagraphs : MarkdownTest
 		"""
 		);
 
-	[Fact(DisplayName = "has no errors")]
+	[Test, DisplayName("has no errors")]
 	public async Task HasNoErrors() => await Docs.HasNoErrors();
 }

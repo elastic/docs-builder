@@ -11,7 +11,8 @@
 	// Determine which sections exist
 	var hasDescription = !string.IsNullOrEmpty(openApiSchema.Description);
 	var hasEnum = openApiSchema.Enum is { Count: > 0 };
-	var hasExample = openApiSchema.Example is not null;
+	var hasExample = openApiSchema.Examples is { Count: > 0 };
+	var firstExample = hasExample ? openApiSchema.Examples![0] : null;
 }
 
 <section id="schema-definition">
@@ -88,6 +89,6 @@
 	@if (hasExample)
 	{
 		@(await RenderPartialAsync<_SectionHeader, SectionHeader>(new SectionHeader("Example", "example")))
-		@(await RenderPartialAsync<_ApiCodeBlock, ApiCodeBlockModel>(new ApiCodeBlockModel("language-json", openApiSchema.Example!.ToString()!)))
+		@(await RenderPartialAsync<_ApiCodeBlock, ApiCodeBlockModel>(new ApiCodeBlockModel("language-json", firstExample!.ToString()!)))
 	}
 </section>

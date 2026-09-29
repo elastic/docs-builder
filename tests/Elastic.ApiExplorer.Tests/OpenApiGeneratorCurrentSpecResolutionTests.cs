@@ -42,7 +42,7 @@ public class OpenApiGeneratorCurrentSpecResolutionTests
 	private static ResolvedApiConfiguration ApiConfig(Product product, IFileInfo? localSpecFile = null) =>
 		new() { ProductKey = product.Id, Product = product, SpecFileName = "elasticsearch-openapi.json", LocalSpecFile = localSpecFile };
 
-	[Fact]
+	[Test]
 	public async Task ResolveDocumentsForProduct_VersionlessLocalSpec_RendersLocalFileWithoutNetwork()
 	{
 		var collector = new DiagnosticsCollector([]);
@@ -62,7 +62,7 @@ public class OpenApiGeneratorCurrentSpecResolutionTests
 		var localFile = new FileSystem().FileInfo.New(Path.Combine(Paths.WorkingDirectoryRoot.FullName, "docs", "elasticsearch.json"));
 		var expectedDocument = SpecDocument();
 		var reader = A.Fake<IOpenApiSpecificationReader>();
-		A.CallTo(() => reader.ReadAsync(localFile)).Returns(expectedDocument);
+		A.CallTo(() => reader.ReadAsync(localFile, A<IDiagnosticsCollector?>._)).Returns(expectedDocument);
 
 		var handler = new ThrowingHandler();
 		using var versionIndexClient = new VersionIndexClient(BaseUri, handler);
@@ -77,15 +77,15 @@ public class OpenApiGeneratorCurrentSpecResolutionTests
 		var documents = (await generator.ResolveDocumentsForProduct(
 			"cloud-serverless",
 			ApiConfig(product, localFile),
-			TestContext.Current.CancellationToken
+			TestContext.Current!.Execution.CancellationToken
 		)).Documents;
 
 		documents.Should().ContainSingle().Which.Document.Should().BeSameAs(expectedDocument);
 		handler.CallCount.Should().Be(0, "a versionless local spec must short-circuit remote version resolution");
-		A.CallTo(() => reader.ReadAsync(localFile)).MustHaveHappenedOnceExactly();
+		A.CallTo(() => reader.ReadAsync(localFile, A<IDiagnosticsCollector?>._)).MustHaveHappenedOnceExactly();
 	}
 
-	[Fact]
+	[Test]
 	public async Task ResolveDocumentsForProduct_NoLocalSpec_ResolvesRemoteMainThroughVersionIndex()
 	{
 		var collector = new CapturingDiagnosticsCollector();
@@ -117,7 +117,7 @@ public class OpenApiGeneratorCurrentSpecResolutionTests
 		using var versionIndexClient = new VersionIndexClient(BaseUri, handler, sleep: (_, _) => Task.CompletedTask);
 		var expectedDocument = SpecDocument();
 		var reader = A.Fake<IOpenApiSpecificationReader>();
-		A.CallTo(() => reader.ReadAsync(A<Stream>._, "elasticsearch-openapi.json")).Returns(expectedDocument);
+		A.CallTo(() => reader.ReadAsync(A<Stream>._, "elasticsearch-openapi.json", A<IDiagnosticsCollector?>._)).Returns(expectedDocument);
 		var generator = new OpenApiGenerator(
 			NullLoggerFactory.Instance,
 			context,
@@ -131,16 +131,18 @@ public class OpenApiGeneratorCurrentSpecResolutionTests
 		var documents = (await generator.ResolveDocumentsForProduct(
 			"elasticsearch",
 			ApiConfig(product),
-			TestContext.Current.CancellationToken
+			TestContext.Current!.Execution.CancellationToken
 		)).Documents;
 
 		documents.Should().ContainSingle().Which.Document.Should().BeSameAs(expectedDocument);
 		handler.RequestedPaths.Should().BeEquivalentTo(["/index.json", "/elastic/elasticsearch/main/elasticsearch-openapi.json"]);
 		collector.Errors.Should().Be(errorsBeforeResolution, string.Join("; ", collector.ErrorMessages));
-		A.CallTo(() => reader.ReadAsync(A<Stream>._, "elasticsearch-openapi.json")).MustHaveHappenedOnceExactly();
+		A.CallTo(
+			() => reader.ReadAsync(A<Stream>._, "elasticsearch-openapi.json", A<IDiagnosticsCollector?>._)
+		).MustHaveHappenedOnceExactly();
 	}
 
-	[Fact]
+	[Test]
 	public async Task ResolveDocumentsForProduct_NoLocalSpecAndIndexUnreachable_ReturnsEmptyAndEmitsError()
 	{
 		var collector = new DiagnosticsCollector([]);
@@ -169,13 +171,13 @@ public class OpenApiGeneratorCurrentSpecResolutionTests
 		var documents = (await generator.ResolveDocumentsForProduct(
 			"elasticsearch",
 			ApiConfig(product),
-			TestContext.Current.CancellationToken
+			TestContext.Current!.Execution.CancellationToken
 		)).Documents;
 
 		documents.Should().BeEmpty();
 		collector.Errors.Should().BeGreaterThan(errorsBeforeResolution);
-		A.CallTo(() => reader.ReadAsync(A<IFileInfo>._)).MustNotHaveHappened();
-		A.CallTo(() => reader.ReadAsync(A<Stream>._, A<string>._)).MustNotHaveHappened();
+		A.CallTo(() => reader.ReadAsync(A<IFileInfo>._, A<IDiagnosticsCollector?>._)).MustNotHaveHappened();
+		A.CallTo(() => reader.ReadAsync(A<Stream>._, A<string>._, A<IDiagnosticsCollector?>._)).MustNotHaveHappened();
 	}
 
 	private static OpenApiDocument SpecDocument() => new() { Info = new OpenApiInfo { Title = "Elasticsearch API", Version = "9.4" } };

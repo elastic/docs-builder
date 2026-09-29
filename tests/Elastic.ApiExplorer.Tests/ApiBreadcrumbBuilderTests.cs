@@ -11,7 +11,7 @@ namespace Elastic.ApiExplorer.Tests;
 
 public class ApiBreadcrumbBuilderTests
 {
-	[Fact]
+	[Test]
 	public void Collect_ParentChain_RootTitleThenCurrent()
 	{
 		var root = Node("/api/es", "Api Overview", parent: null);
@@ -29,7 +29,7 @@ public class ApiBreadcrumbBuilderTests
 		crumbs[2].IsCurrent.Should().BeTrue();
 	}
 
-	[Fact]
+	[Test]
 	public void Collect_SameTitleAsCurrent_Skipped()
 	{
 		var root = Node("/api/es", "Api Overview", parent: null);
@@ -41,7 +41,7 @@ public class ApiBreadcrumbBuilderTests
 		crumbs.Select(c => c.Title).Should().Equal("Elasticsearch API", "Run a search");
 	}
 
-	[Fact]
+	[Test]
 	public void Collect_HiddenParent_Skipped()
 	{
 		var root = Node("/api/es", "Api Overview", parent: null);
@@ -53,7 +53,7 @@ public class ApiBreadcrumbBuilderTests
 		crumbs.Select(c => c.Title).Should().Equal("Elasticsearch API", "Op");
 	}
 
-	[Fact]
+	[Test]
 	public void Collect_TagLanding_ClassificationThenCurrent()
 	{
 		var root = Node("/api/es", "Api Overview", parent: null);
@@ -67,7 +67,7 @@ public class ApiBreadcrumbBuilderTests
 		crumbs[1].IsCurrent.Should().BeTrue();
 	}
 
-	[Fact]
+	[Test]
 	public void Collect_WithCatalogUrl_PrependsApisLink()
 	{
 		var root = Node("/api/es", "Api Overview", parent: null);
@@ -81,7 +81,7 @@ public class ApiBreadcrumbBuilderTests
 		crumbs[^1].IsCurrent.Should().BeTrue();
 	}
 
-	[Fact]
+	[Test]
 	public void Collect_OnCatalogPage_DoesNotPrependApis()
 	{
 		var catalog = Leaf("/api/", "API catalog", parent: null);
@@ -93,7 +93,7 @@ public class ApiBreadcrumbBuilderTests
 		crumbs[0].IsCurrent.Should().BeTrue();
 	}
 
-	[Fact]
+	[Test]
 	public void Build_SingleCrumb_IsEmpty()
 	{
 		var landing = Leaf("/api/es", "Api Overview", parent: null);
@@ -103,7 +103,7 @@ public class ApiBreadcrumbBuilderTests
 		trail.IsEmpty.Should().BeTrue();
 	}
 
-	[Fact]
+	[Test]
 	public void Build_KeepsEveryCrumbForResponsiveCollapse()
 	{
 		var root = Node("/api/es", "Api Overview", parent: null);
