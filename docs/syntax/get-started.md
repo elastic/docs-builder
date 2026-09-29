@@ -57,8 +57,9 @@ Every field except `title` is optional. The [example hub](../examples/products/d
 
 There is no fixed number. The layout arranges whatever you write:
 
-- A step carrying `options` spans the full row.
+- A step carrying `options` spans the full row, as one chevron with the choices inside it.
 - The remaining steps share the row, three across when they divide by three, two when they are even, so the last row is never short.
+- A step that ends up alone on its row stays the width of one step and is centered.
 - Below a narrow width the steps stack into one column.
 
 Keep the list short enough to read as one path. Four steps still scan. Ten do not.
@@ -74,7 +75,7 @@ A step takes one of three shapes.
   description: Serve the site locally, then publish it.
 ```
 
-**Link.** Add `link` and `link-label`, and the whole step card becomes clickable.
+**Link.** Add `link` and `link-label`. The step shows that label as a text link. The chevron itself is not the link.
 
 ```yaml
 - title: Write your first page
@@ -98,7 +99,7 @@ A step takes one of three shapes.
       url-label: How to publish
 ```
 
-Steps are numbered automatically, in source order. The number sits before the title, because the section describes a sequence and the number is what carries that.
+Steps are numbered automatically, in source order. Each number sits in a badge on the left of its chevron. The number carries the sequence, and a line joins one row to the next.
 
 ## Links
 

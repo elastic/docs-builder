@@ -21,9 +21,9 @@ public class GetStartedWithATitleAndIntro : MarkdownTest
 	public async Task RendersHeading() =>
 		await Docs.ConvertsToContainingHtml("""<h2 class="hub-get-started-title">Get started in 3 steps</h2>""");
 
-	[Test, DisplayName("numbers steps from one, zero padded")]
+	[Test, DisplayName("numbers steps from one")]
 	public async Task NumbersStepsFromOne() =>
-		await Docs.ConvertsToContainingRawHtml("""<span class="hub-get-started-step-num" aria-hidden="true">01</span>""");
+		await Docs.ConvertsToContainingRawHtml("""<span class="hub-get-started-step-num" aria-hidden="true">1</span>""");
 
 	// Nothing renders between the intro and the numbered list. The section is the steps.
 	[Test, DisplayName("renders nothing above the steps")]
@@ -47,8 +47,8 @@ public class GetStartedWithALinkStep : MarkdownTest
 		:::
 		""";
 
-	[Test, DisplayName("makes the whole step clickable")]
-	public async Task MakesStepClickable() => await Docs.ConvertsToContainingHtml("""<span>Start writing</span>""");
+	[Test, DisplayName("renders the step link")]
+	public async Task RendersStepLink() => await Docs.ConvertsToContainingHtml("""<span>Start writing</span>""");
 
 	[Test, DisplayName("has no errors")]
 	public async Task HasNoErrors() => await Docs.HasNoErrors();
@@ -136,8 +136,7 @@ public class GetStartedWithFourSteps : MarkdownTest
 		""";
 
 	[Test, DisplayName("lays the three remaining steps across three tracks")]
-	public async Task LaysRemainingStepsAcrossThreeTracks() =>
-		await Docs.ConvertsToContainingRawHtml("""<ol class="hub-get-started-steps" style="--hub-step-columns: 3">""");
+	public async Task LaysRemainingStepsAcrossThreeTracks() => await Docs.ConvertsToContainingRawHtml("""--hub-step-columns: 3""");
 
 	[Test, DisplayName("has no errors")]
 	public async Task HasNoErrors() => await Docs.HasNoErrors();
@@ -160,8 +159,7 @@ public class GetStartedWithFiveSteps : MarkdownTest
 	// Four steps divide evenly into two rows of two, so they take two tracks rather than
 	// three with a single step stranded on the last row.
 	[Test, DisplayName("pairs four steps into two tracks")]
-	public async Task PairsFourStepsIntoTwoTracks() =>
-		await Docs.ConvertsToContainingRawHtml("""<ol class="hub-get-started-steps" style="--hub-step-columns: 2">""");
+	public async Task PairsFourStepsIntoTwoTracks() => await Docs.ConvertsToContainingRawHtml("""--hub-step-columns: 2""");
 
 	[Test, DisplayName("has no errors")]
 	public async Task HasNoErrors() => await Docs.HasNoErrors();
