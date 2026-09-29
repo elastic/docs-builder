@@ -345,7 +345,7 @@ public class DocumentationSetFile : TableOfContentsFile
 				DocsetPath.From(fullTocPath),
 				ContainerPath.From(tocPathRelativeToContainer),
 				[],
-				parentContext,
+				DeclaringFilePath.From(parentContext),
 				tocRef.Island
 			);
 		}
@@ -400,7 +400,7 @@ public class DocumentationSetFile : TableOfContentsFile
 			DocsetPath.From(fullTocPath),
 			ContainerPath.From(tocPathRelativeToContainer),
 			resolvedChildren,
-			parentContext,
+			DeclaringFilePath.From(parentContext),
 			tocRef.Island || nestedTocFile.Island,
 			nestedTocFile.DefaultCta
 		);
@@ -486,7 +486,7 @@ public class DocumentationSetFile : TableOfContentsFile
 						ContainerPath.From(pathRelativeToContainer),
 						fileRef.Hidden,
 						[],
-						context,
+						DeclaringFilePath.From(context),
 						fileRef.DefaultCta
 					),
 				IndexFileEntry =>
@@ -495,7 +495,7 @@ public class DocumentationSetFile : TableOfContentsFile
 						ContainerPath.From(pathRelativeToContainer),
 						fileRef.Hidden,
 						[],
-						context,
+						DeclaringFilePath.From(context),
 						fileRef.DefaultCta
 					),
 				_ =>
@@ -504,7 +504,7 @@ public class DocumentationSetFile : TableOfContentsFile
 						ContainerPath.From(pathRelativeToContainer),
 						fileRef.Hidden,
 						[],
-						context,
+						DeclaringFilePath.From(context),
 						fileRef.DefaultCta
 					)
 			};
@@ -573,7 +573,7 @@ public class DocumentationSetFile : TableOfContentsFile
 					ContainerPath.From(pathRelativeToContainer),
 					fileRef.Hidden,
 					resolvedChildren,
-					context,
+					DeclaringFilePath.From(context),
 					fileRef.DefaultCta
 				),
 			IndexFileEntry =>
@@ -582,7 +582,7 @@ public class DocumentationSetFile : TableOfContentsFile
 					ContainerPath.From(pathRelativeToContainer),
 					fileRef.Hidden,
 					resolvedChildren,
-					context,
+					DeclaringFilePath.From(context),
 					fileRef.DefaultCta
 				),
 			_ =>
@@ -591,7 +591,7 @@ public class DocumentationSetFile : TableOfContentsFile
 					ContainerPath.From(pathRelativeToContainer),
 					fileRef.Hidden,
 					resolvedChildren,
-					context,
+					DeclaringFilePath.From(context),
 					fileRef.DefaultCta
 				)
 		};
@@ -678,7 +678,7 @@ public class DocumentationSetFile : TableOfContentsFile
 				ContainerPath.From(deprecatedPathRelativeToContainer),
 				false,
 				deprecatedTomlChildren,
-				context
+				DeclaringFilePath.From(context)
 			);
 		}
 
@@ -687,7 +687,7 @@ public class DocumentationSetFile : TableOfContentsFile
 			ContainerPath.From(pathRelativeToContainer),
 			detectionRuleRef.RuleFolders,
 			children,
-			context,
+			DeclaringFilePath.From(context),
 			detectionRuleRef.DeprecatedFile
 		)
 		{ DeprecatedSiblingRef = deprecatedSiblingRef };
@@ -752,7 +752,7 @@ public class DocumentationSetFile : TableOfContentsFile
 			cliRef.NavigationTitle,
 			DocsetPath.From(fullVirtualRoot),
 			ContainerPath.From(pathRelativeToContainer),
-			context,
+			DeclaringFilePath.From(context),
 			resolvedChildren,
 			cliRef.AppliesTo
 		);
@@ -824,7 +824,7 @@ public class DocumentationSetFile : TableOfContentsFile
 				DocsetPath.From(fullPath),
 				ContainerPath.From(pathRelativeToContainer),
 				resolvedChildren,
-				context,
+				DeclaringFilePath.From(context),
 				folderRef.Sort,
 				DefaultCta: folderRef.DefaultCta
 			);
@@ -847,7 +847,7 @@ public class DocumentationSetFile : TableOfContentsFile
 			DocsetPath.From(fullPath),
 			ContainerPath.From(pathRelativeToContainer),
 			autoDiscoveredChildren,
-			context,
+			DeclaringFilePath.From(context),
 			folderRef.Sort,
 			folderRef.Exclude,
 			folderRef.DefaultCta
@@ -1193,7 +1193,9 @@ public class DocumentationSetFile : TableOfContentsFile
 		// Root index (visible) — always emit; ListingDocsBuilderExtension creates a synthetic page if missing.
 		var rootRelPath = $"{fullPath}/index.md";
 		var rootRelContainer = string.IsNullOrEmpty(containerPath) ? rootRelPath : rootRelPath[(containerPath.Length + 1)..];
-		tocItems.Add(new IndexFileRef(DocsetPath.From(rootRelPath), ContainerPath.From(rootRelContainer), false, [], context));
+		tocItems.Add(
+			new IndexFileRef(DocsetPath.From(rootRelPath), ContainerPath.From(rootRelContainer), false, [], DeclaringFilePath.From(context))
+		);
 
 		// Group children
 		foreach (var groupKey in orderedGroups)
@@ -1209,7 +1211,13 @@ public class DocumentationSetFile : TableOfContentsFile
 
 			var groupIdxRelContainer = string.IsNullOrEmpty(containerPath) ? groupIndexPath : groupIndexPath[(containerPath.Length + 1)..];
 			groupChildren.Add(
-				new IndexFileRef(DocsetPath.From(groupIndexPath), ContainerPath.From(groupIdxRelContainer), false, [], context)
+				new IndexFileRef(
+					DocsetPath.From(groupIndexPath),
+					ContainerPath.From(groupIdxRelContainer),
+					false,
+					[],
+					DeclaringFilePath.From(context)
+				)
 			);
 
 			// Content pages (always hidden)
@@ -1217,7 +1225,9 @@ public class DocumentationSetFile : TableOfContentsFile
 			{
 				var relToSet = Path.GetRelativePath(baseDirectory.FullName, file.FullName).Replace('\\', '/');
 				var relToContainer = string.IsNullOrEmpty(containerPath) ? relToSet : relToSet[(containerPath.Length + 1)..];
-				groupChildren.Add(new FileRef(DocsetPath.From(relToSet), ContainerPath.From(relToContainer), true, [], context));
+				groupChildren.Add(
+					new FileRef(DocsetPath.From(relToSet), ContainerPath.From(relToContainer), true, [], DeclaringFilePath.From(context))
+				);
 			}
 
 			tocItems.Add(
@@ -1226,7 +1236,7 @@ public class DocumentationSetFile : TableOfContentsFile
 					DocsetPath.From(fullPath),
 					ContainerPath.From(pathRelativeToContainer),
 					groupChildren,
-					context
+					DeclaringFilePath.From(context)
 				)
 			);
 		}
@@ -1236,7 +1246,9 @@ public class DocumentationSetFile : TableOfContentsFile
 		{
 			var relToSet = Path.GetRelativePath(baseDirectory.FullName, file.FullName).Replace('\\', '/');
 			var relToContainer = string.IsNullOrEmpty(containerPath) ? relToSet : relToSet[(containerPath.Length + 1)..];
-			tocItems.Add(new FileRef(DocsetPath.From(relToSet), ContainerPath.From(relToContainer), true, [], context));
+			tocItems.Add(
+				new FileRef(DocsetPath.From(relToSet), ContainerPath.From(relToContainer), true, [], DeclaringFilePath.From(context))
+			);
 		}
 
 		// Resolve explicit children (from YAML `children:`) last
@@ -1245,7 +1257,13 @@ public class DocumentationSetFile : TableOfContentsFile
 			: [];
 		tocItems.AddRange(explicitChildren);
 
-		return new ListingRef(DocsetPath.From(fullPath), ContainerPath.From(pathRelativeToContainer), tocItems, context, options);
+		return new ListingRef(
+			DocsetPath.From(fullPath),
+			ContainerPath.From(pathRelativeToContainer),
+			tocItems,
+			DeclaringFilePath.From(context),
+			options
+		);
 	}
 
 	/// <summary>
@@ -1262,7 +1280,13 @@ public class DocumentationSetFile : TableOfContentsFile
 	)
 	{
 		if (crossLinkRef.Children.Count == 0)
-			return new CrossLinkRef(crossLinkRef.CrossLinkUri, crossLinkRef.Title, crossLinkRef.Hidden, [], context);
+			return new CrossLinkRef(
+				crossLinkRef.CrossLinkUri,
+				crossLinkRef.Title,
+				crossLinkRef.Hidden,
+				[],
+				DeclaringFilePath.From(context)
+			);
 
 		// For children of cross-links, the container remains the same
 		var resolvedChildren = ResolveTableOfContents(
@@ -1275,7 +1299,13 @@ public class DocumentationSetFile : TableOfContentsFile
 			context
 		);
 
-		return new CrossLinkRef(crossLinkRef.CrossLinkUri, crossLinkRef.Title, crossLinkRef.Hidden, resolvedChildren, context);
+		return new CrossLinkRef(
+			crossLinkRef.CrossLinkUri,
+			crossLinkRef.Title,
+			crossLinkRef.Hidden,
+			resolvedChildren,
+			DeclaringFilePath.From(context)
+		);
 	}
 }
 

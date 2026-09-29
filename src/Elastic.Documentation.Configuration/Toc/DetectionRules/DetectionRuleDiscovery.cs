@@ -58,10 +58,16 @@ internal static class DetectionRuleDiscovery
 				// baseDirectory is 'docs' rules live relative to docs parent '/'
 				var relativePath = Path.GetRelativePath(baseDirectory.Parent!.FullName, f.FullName);
 				if (f.Extension == ".toml")
-					return (TocItem)new DetectionRuleRef(f, DocsetPath.From(relativePath), context);
+					return (TocItem)new DetectionRuleRef(f, DocsetPath.From(relativePath), DeclaringFilePath.From(context));
 
 				// Rule folders are not declared in a toc.yml, so the container path is the docset path.
-				return new FileRef(DocsetPath.From(relativePath), ContainerPath.From(relativePath), false, [], context);
+				return new FileRef(
+					DocsetPath.From(relativePath),
+					ContainerPath.From(relativePath),
+					false,
+					[],
+					DeclaringFilePath.From(context)
+				);
 			})
 			.ToArray();
 
@@ -86,7 +92,7 @@ internal static class DetectionRuleDiscovery
 			.Select(f =>
 			{
 				var relativePath = Path.GetRelativePath(baseDirectory.Parent!.FullName, f.FullName);
-				return (TocItem)new DetectionRuleRef(f, DocsetPath.From(relativePath), context);
+				return (TocItem)new DetectionRuleRef(f, DocsetPath.From(relativePath), DeclaringFilePath.From(context));
 			})
 			.ToArray();
 

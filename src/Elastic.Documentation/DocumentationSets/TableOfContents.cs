@@ -48,7 +48,7 @@ public interface ITableOfContentsItem
 	/// The path to the YAML file (docset.yml or toc.yml) that defined this item.
 	/// This provides context for where the item was declared in the configuration.
 	/// </summary>
-	string Context { get; }
+	DeclaringFilePath Context { get; }
 
 	IReadOnlyList<TocItem> Children { get; }
 }
@@ -119,7 +119,7 @@ public partial record FileRef(
 	ContainerPath PathRelativeToContainer,
 	bool Hidden,
 	[property: OrderedEquality] IReadOnlyList<TocItem> Children,
-	string Context,
+	DeclaringFilePath Context,
 	string? DefaultCta = null
 ) : ITableOfContentsItem;
 
@@ -128,7 +128,7 @@ public record IndexFileRef(
 	ContainerPath PathRelativeToContainer,
 	bool Hidden,
 	IReadOnlyList<TocItem> Children,
-	string Context,
+	DeclaringFilePath Context,
 	string? DefaultCta = null
 ) : FileRef(PathRelativeToDocumentationSet, PathRelativeToContainer, Hidden, Children, Context, DefaultCta);
 
@@ -141,7 +141,7 @@ public record FolderIndexFileRef(
 	ContainerPath PathRelativeToContainer,
 	bool Hidden,
 	IReadOnlyList<TocItem> Children,
-	string Context,
+	DeclaringFilePath Context,
 	string? DefaultCta = null
 ) : IndexFileRef(PathRelativeToDocumentationSet, PathRelativeToContainer, Hidden, Children, Context, DefaultCta);
 
@@ -153,7 +153,7 @@ public record FolderIndexFileRef(
 public partial record DetectionRuleRef(
 	[property: CustomEquality(typeof(FileSystemInfoLocationComparer))] IFileInfo FileInfo,
 	DocsetPath PathRelativeToDocumentationSet,
-	string Context
+	DeclaringFilePath Context
 ) : FileRef(PathRelativeToDocumentationSet, ContainerPath.From(PathRelativeToDocumentationSet), true, [], Context);
 
 /// <summary>
@@ -166,7 +166,7 @@ public partial record DetectionRuleOverviewRef(
 	ContainerPath PathRelativeToContainer,
 	[property: OrderedEquality] IReadOnlyList<string> DetectionRuleFolders,
 	IReadOnlyList<TocItem> Children,
-	string Context,
+	DeclaringFilePath Context,
 	string? DeprecatedFile = null
 ) : FileRef(PathRelativeToDocumentationSet, PathRelativeToContainer, false, Children, Context)
 {
@@ -183,7 +183,7 @@ public partial record CrossLinkRef(
 	string? Title,
 	bool Hidden,
 	[property: OrderedEquality] IReadOnlyList<TocItem> Children,
-	string Context
+	DeclaringFilePath Context
 ) : ITableOfContentsItem
 {
 	// CrossLinks don't have a file system path, so we use the CrossLinkUri as the Path
@@ -201,7 +201,7 @@ public partial record FolderRef(
 	DocsetPath PathRelativeToDocumentationSet,
 	ContainerPath PathRelativeToContainer,
 	[property: OrderedEquality] IReadOnlyList<TocItem> Children,
-	string Context,
+	DeclaringFilePath Context,
 	string? Sort = null,
 	[property: OrderedEquality] IReadOnlyList<string>? Exclude = null,
 	string? DefaultCta = null
@@ -217,7 +217,7 @@ public record DeepLinkedFolderRef(
 	DocsetPath PathRelativeToDocumentationSet,
 	ContainerPath PathRelativeToContainer,
 	IReadOnlyList<TocItem> Children,
-	string Context,
+	DeclaringFilePath Context,
 	string? DefaultCta = null
 ) : FolderRef(PathRelativeToDocumentationSet, PathRelativeToContainer, Children, Context, DefaultCta: DefaultCta);
 
@@ -230,7 +230,7 @@ public partial record IsolatedTableOfContentsRef(
 	DocsetPath PathRelativeToDocumentationSet,
 	ContainerPath PathRelativeToContainer,
 	[property: OrderedEquality] IReadOnlyList<TocItem> Children,
-	string Context,
+	DeclaringFilePath Context,
 	bool Island = false,
 	string? DefaultCta = null
 ) : ITableOfContentsItem;
@@ -287,7 +287,7 @@ public partial record ListingRef(
 	DocsetPath PathRelativeToDocumentationSet,
 	ContainerPath PathRelativeToContainer,
 	[property: OrderedEquality] IReadOnlyList<TocItem> Children,
-	string Context,
+	DeclaringFilePath Context,
 	ListingOptions Options
 ) : ITableOfContentsItem;
 
@@ -298,7 +298,7 @@ public partial record ListingGroupRef(
 	DocsetPath PathRelativeToDocumentationSet,
 	ContainerPath PathRelativeToContainer,
 	[property: OrderedEquality] IReadOnlyList<TocItem> Children,
-	string Context
+	DeclaringFilePath Context
 ) : ITableOfContentsItem;
 
 /// <summary>A CLI reference generated from a <c>cli-schema.json</c>, optionally merged with supplemental docs.</summary>
@@ -310,7 +310,7 @@ public partial record CliReferenceRef(
 	string? NavigationTitle,
 	DocsetPath PathRelativeToDocumentationSet,
 	ContainerPath PathRelativeToContainer,
-	string Context,
+	DeclaringFilePath Context,
 	[property: OrderedEquality] IReadOnlyList<TocItem> Children,
 	[property: DefaultEquality] ApplicableTo? AppliesTo = null
 ) : ITableOfContentsItem;

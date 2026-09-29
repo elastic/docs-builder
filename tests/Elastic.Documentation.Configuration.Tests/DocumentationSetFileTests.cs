@@ -892,20 +892,43 @@ public class DocumentationSetFileTests
 			.BeOfType<IndexFileRef>()
 			.Which
 			.Context
+			.Value
 			.OptionalWindowsReplace()
 			.Should()
 			.Be(docset);
 
 		var guidesFolder = result.TableOfContents.ElementAt(1).Value.Should().BeOfType<FolderRef>().Subject;
-		guidesFolder.Context.Should().Be(docset);
-		guidesFolder.Children.ElementAt(0).Value.Should().BeOfType<FileRef>().Which.Context.OptionalWindowsReplace().Should().Be(docset);
+		guidesFolder.Context.Value.Should().Be(docset);
+		guidesFolder
+			.Children
+			.ElementAt(0)
+			.Value
+			.Should()
+			.BeOfType<FileRef>()
+			.Which
+			.Context
+			.Value
+			.OptionalWindowsReplace()
+			.Should()
+			.Be(docset);
 
 		// The TOC ref itself has context = /docs/docset.yml (where it was referenced)
 		var developmentToc = result.TableOfContents.ElementAt(2).Value.Should().BeOfType<IsolatedTableOfContentsRef>().Subject;
-		developmentToc.Context.OptionalWindowsReplace().Should().Be(docset);
+		developmentToc.Context.Value.OptionalWindowsReplace().Should().Be(docset);
 
 		// But children of the TOC ref should have context = /docs/development/toc.yml (where they were defined)
-		developmentToc.Children.ElementAt(0).Value.Should().BeOfType<FileRef>().Which.Context.OptionalWindowsReplace().Should().Be(toc);
+		developmentToc
+			.Children
+			.ElementAt(0)
+			.Value
+			.Should()
+			.BeOfType<FileRef>()
+			.Which
+			.Context
+			.Value
+			.OptionalWindowsReplace()
+			.Should()
+			.Be(toc);
 	}
 
 	// ──────────────────────────────────────────────────────────────

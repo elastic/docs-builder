@@ -42,3 +42,20 @@ public readonly record struct ContainerPath
 
 	public override string ToString() => Value;
 }
+
+/// <summary>
+/// The absolute path of the <c>docset.yml</c> or <c>toc.yml</c> that declared a table of contents entry; diagnostics
+/// about the entry point at it.
+/// </summary>
+public readonly record struct DeclaringFilePath
+{
+	private DeclaringFilePath(string value) => Value = value;
+
+	public string Value { get; }
+
+	public static DeclaringFilePath From(string absolutePath) => new(absolutePath);
+
+	public static implicit operator string(DeclaringFilePath path) => path.Value;
+
+	public override string ToString() => Value;
+}
