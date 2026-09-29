@@ -4,6 +4,7 @@
 
 using Elastic.ApiExplorer.Landing;
 using Elastic.Documentation.Configuration.Toc;
+using Elastic.Documentation.DocumentationSets;
 
 namespace Elastic.ApiExplorer.Infrastructure;
 

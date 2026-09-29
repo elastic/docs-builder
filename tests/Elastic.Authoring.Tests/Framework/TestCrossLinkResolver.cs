@@ -6,6 +6,7 @@ using System.Collections.Frozen;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using Elastic.Documentation.Configuration.Builder;
+using Elastic.Documentation.DocumentationSets;
 using Elastic.Documentation.Links;
 using Elastic.Documentation.Links.CrossLinks;
 
@@ -24,9 +25,9 @@ public sealed class TestCrossLinkResolver : ICrossLinkResolver
 	private readonly IsolatedBuildEnvironmentUriResolver _uriResolver = new();
 	private readonly FetchedCrossLinks _crossLinks = FetchedCrossLinks.Empty;
 
-	public TestCrossLinkResolver(ConfigurationFile config)
+	public TestCrossLinkResolver(ResolvedDocumentationSet config)
 	{
-		var redirects = RepositoryLinks.SerializeRedirects(config.Redirects);
+		var redirects = RepositoryLinks.SerializeRedirects(config.Redirects is { } r ? new Dictionary<string, LinkRedirect>(r) : null);
 
 		// language=json
 		var json =

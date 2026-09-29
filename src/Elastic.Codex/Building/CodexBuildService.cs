@@ -14,6 +14,7 @@ using Elastic.Documentation.Configuration.Builder;
 using Elastic.Documentation.Configuration.Codex;
 using Elastic.Documentation.Configuration.ReleaseNotes;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.DocumentationSets;
 using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.Indexing.Exporters;
 using Elastic.Documentation.LinkIndex;
@@ -206,7 +207,7 @@ public class CodexBuildService(ILoggerFactory logFactory, IConfigurationContext 
 			ICrossLinkResolver crossLinkResolver;
 			var codexRepos = new HashSet<string> { repoName };
 
-			if (buildContext.Configuration.CrossLinkEntries.Length > 0)
+			if (buildContext.Configuration.CrossLinkEntries.Count > 0)
 			{
 				var fetcher = new DocSetConfigurationCrossLinkFetcher(
 					logFactory,

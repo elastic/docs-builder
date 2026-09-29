@@ -12,6 +12,7 @@ using Elastic.ApiExplorer.Supplemental;
 using Elastic.ApiExplorer.Types;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Toc;
+using Elastic.Documentation.DocumentationSets;
 using Elastic.Documentation.Navigation;
 using Microsoft.Extensions.Logging;
 using Microsoft.OpenApi;
@@ -109,7 +110,7 @@ public class ApiNavigationBuilder(ILogger logger, BuildContext context)
 		}
 
 		var topLevelNavigationItems = new List<IApiGroupingNavigationItem<IApiGroupingModel, INavigationItem>>();
-		var groupingEnabled = context.Configuration.Features.ApiNavGroupingEnabled;
+		var groupingEnabled = context.Features.ApiNavGroupingEnabled;
 		var hasClassifications = groupingEnabled && classifications.Count > 1;
 		foreach (var classification in classifications)
 		{
@@ -225,7 +226,7 @@ public class ApiNavigationBuilder(ILogger logger, BuildContext context)
 		List<IEndpointOrOperationNavigationItem> endpointNavigationItems
 	)
 	{
-		var groupingEnabled = context.Configuration.Features.ApiNavGroupingEnabled;
+		var groupingEnabled = context.Features.ApiNavGroupingEnabled;
 		foreach (var endpoint in tag.Endpoints)
 		{
 			if (groupingEnabled && endpoint.Operations.Count > 1)

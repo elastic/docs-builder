@@ -7,6 +7,7 @@ using Elastic.Documentation.Catalog;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Configuration.Builder;
 using Elastic.Documentation.Configuration.LegacyUrlMappings;
+using Elastic.Documentation.DocumentationSets;
 
 namespace Elastic.Documentation.Configuration.Inference;
 
@@ -57,7 +58,7 @@ public interface IDocumentInferrerService
 	DocumentInferenceResult InferForMarkdown(
 		string repositoryName,
 		IReadOnlyCollection<string>? mappedPages,
-		HashSet<Product> docsetProducts,
+		IReadOnlySet<Product> docsetProducts,
 		IReadOnlyCollection<Product>? frontmatterProducts,
 		ApplicableTo? applicableTo
 	);
@@ -78,7 +79,7 @@ public class DocumentInferrerService(
 	ProductCatalog productsConfiguration,
 	VersioningSystemCatalog versionsConfiguration,
 	LegacyUrlMappingCatalog legacyUrlMappings,
-	ConfigurationFile? configurationFile = null,
+	ResolvedDocumentationSet? configurationFile = null,
 	GitCheckoutInformation? gitCheckout = null,
 	AssemblyConfiguration? assemblyConfiguration = null
 ) : IDocumentInferrerService
@@ -89,14 +90,14 @@ public class DocumentInferrerService(
 	);
 	private readonly ProductInferService _productInferService = new(productsConfiguration, gitCheckout);
 
-	public ConfigurationFile? ConfigurationFile => configurationFile;
+	public ResolvedDocumentationSet? ConfigurationFile => configurationFile;
 	public GitCheckoutInformation? GitCheckout => gitCheckout;
 
 	/// <inheritdoc />
 	public DocumentInferenceResult InferForMarkdown(
 		string repositoryName,
 		IReadOnlyCollection<string>? mappedPages,
-		HashSet<Product> docsetProducts,
+		IReadOnlySet<Product> docsetProducts,
 		IReadOnlyCollection<Product>? frontmatterProducts,
 		ApplicableTo? applicableTo
 	)
@@ -249,7 +250,7 @@ public class NoopDocumentInferrer : IDocumentInferrerService
 	public DocumentInferenceResult InferForMarkdown(
 		string repositoryName,
 		IReadOnlyCollection<string>? mappedPages,
-		HashSet<Product> docsetProducts,
+		IReadOnlySet<Product> docsetProducts,
 		IReadOnlyCollection<Product>? frontmatterProducts,
 		ApplicableTo? applicableTo
 	) => new();

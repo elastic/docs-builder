@@ -1315,30 +1315,3 @@ public class CtaButton
 	[YamlMember(Alias = "url")]
 	public string? Url { get; set; }
 }
-
-/// <summary>
-/// A resolved, validated right-gutter CTA, ready to render. See <see cref="CtaDefinition"/> for the raw
-/// <c>docset.yml</c> shape this is parsed from.
-/// </summary>
-public record Cta
-{
-	/// <summary>Name of the template this was resolved from; <see cref="DefaultName"/> for the built-in default.</summary>
-	public required string Name { get; init; }
-	public required string Label { get; init; }
-	public required string Url { get; init; }
-	public IReadOnlyList<string> Benefits { get; init; } = [];
-
-	/// <summary>The built-in default, reproducing the CTA that renders when no <c>cta:</c> config exists.</summary>
-	public const string DefaultName = "trial";
-
-	/// <summary>Right-gutter card space is limited; benefit bullet lists are capped at this many entries.</summary>
-	public const int MaxBenefits = 3;
-
-	public static Cta Default { get; } = new()
-	{
-		Name = DefaultName,
-		Label = "Get started free",
-		Url = "https://cloud.elastic.co/registration?page=docs&placement=docs-siderail",
-		Benefits = ["14-day free trial", "All features included", "No setup required"]
-	};
-}

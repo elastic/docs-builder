@@ -8,6 +8,7 @@ using Elastic.ApiExplorer.Landing;
 using Elastic.ApiExplorer.Supplemental;
 using Elastic.Documentation.Catalog;
 using Elastic.Documentation.Configuration.Toc;
+using Elastic.Documentation.DocumentationSets;
 using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Elastic.ApiExplorer.Tests.Supplemental;

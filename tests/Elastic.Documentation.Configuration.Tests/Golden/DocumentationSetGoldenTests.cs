@@ -58,7 +58,7 @@ public class DocumentationSetGoldenTests
 		{
 			var docSet = DocumentationSetFile.LoadAndResolve(collector, docsetFile);
 			var context = new GoldenDocumentationSetContext(collector, fs, docsetFile, docsetFile.Directory!);
-			var configuration = new ConfigurationFile(docSet, context, versions, products);
+			var configuration = DocumentationSetResolver.Resolve(docSet, context, versions, products).EmitTo(context.Collector)!;
 			return Obj(("docset", ProjectDocumentationSetFile(docSet)), ("configuration", ProjectConfigurationFile(configuration)));
 		});
 		snapshot["diagnostics"] = DiagnosticList(collector.Diagnostics.Select(NormalizeDocsRoot));
@@ -126,6 +126,15 @@ public class DocumentationSetGoldenTests
 			("folderExcludedFiles", Set(d.FolderExcludedFiles)),
 			("tocDefaultCtas", Map(d.TocDefaultCtas, v => Str(v))),
 			("toc", Arr(d.TableOfContents, ProjectTocItem))
+		);
+
+	private static JsonNode ProjectResolvedBranding(Branding b) =>
+		Obj(
+			("icon", Str(b.Icon)),
+			("headerBg", Str(b.HeaderBg)),
+			("ogImage", Str(b.OgImage)),
+			("favicon", Str(b.Favicon)),
+			("appleTouchIcon", Str(b.AppleTouchIcon))
 		);
 
 	private static JsonNode ProjectBranding(BrandingConfiguration b) =>
@@ -231,7 +240,7 @@ public class DocumentationSetGoldenTests
 
 	// ── ConfigurationFile (resolved against the catalog) ─────────────────────
 
-	private static JsonNode ProjectConfigurationFile(ConfigurationFile c) =>
+	private static JsonNode ProjectConfigurationFile(ResolvedDocumentationSet c) =>
 		Obj(
 			("project", Str(c.Project)),
 			("maxTocDepth", Num(c.MaxTocDepth)),
@@ -246,11 +255,13 @@ public class DocumentationSetGoldenTests
 			("extensions", Set(c.Extensions.Enabled)),
 			("products", Set(c.Products.Select(p => p.Id))),
 			("substitutions", Map(c.Substitutions, v => Str(v))),
-			("features", ProjectFeatures(c.Features)),
+			("features", ProjectFeatures(
+				new FeatureFlags(new Dictionary<string, bool>(c.FeatureToggles, StringComparer.OrdinalIgnoreCase), new EmptyEnvironment())
+			)),
 			("storybookRegistry", Str(c.StorybookRegistry)),
 			("storybookRegistryFallback", Str(c.StorybookRegistryFallback)),
 			("suppressDiagnostics", Set(c.SuppressDiagnostics.Select(h => h.ToString()))),
-			("branding", c.Branding is null ? null : ProjectBranding(c.Branding)),
+			("branding", c.Branding is null ? null : ProjectResolvedBranding(c.Branding)),
 			("ctas", Map(
 				c.Ctas,
 				cta => Obj(

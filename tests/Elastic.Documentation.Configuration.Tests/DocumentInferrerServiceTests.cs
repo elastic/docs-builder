@@ -120,7 +120,7 @@ public class DocumentInferrerServiceTests
 		var result = inferrer.InferForMarkdown(
 			repositoryName: "elasticsearch",
 			mappedPages: null,
-			docsetProducts: [],
+			docsetProducts: new HashSet<Product>(),
 			frontmatterProducts: null,
 			applicableTo: null
 		);
@@ -144,7 +144,7 @@ public class DocumentInferrerServiceTests
 		var result = inferrer.InferForMarkdown(
 			repositoryName: "elastic-otel-java",
 			mappedPages: null,
-			docsetProducts: [],
+			docsetProducts: new HashSet<Product>(),
 			frontmatterProducts: null,
 			applicableTo: null
 		);
@@ -168,7 +168,7 @@ public class DocumentInferrerServiceTests
 		var result = inferrer.InferForMarkdown(
 			repositoryName: "docs-content",
 			mappedPages: mappedPages,
-			docsetProducts: [],
+			docsetProducts: new HashSet<Product>(),
 			frontmatterProducts: null,
 			applicableTo: null
 		);
@@ -194,7 +194,7 @@ public class DocumentInferrerServiceTests
 		var result = inferrer.InferForMarkdown(
 			repositoryName: "docs-content",
 			mappedPages: null,
-			docsetProducts: [],
+			docsetProducts: new HashSet<Product>(),
 			frontmatterProducts: null,
 			applicableTo: applicableTo
 		);
@@ -221,7 +221,7 @@ public class DocumentInferrerServiceTests
 		var result = inferrer.InferForMarkdown(
 			repositoryName: "docs-content",
 			mappedPages: mappedPages,
-			docsetProducts: [],
+			docsetProducts: new HashSet<Product>(),
 			frontmatterProducts: null,
 			applicableTo: applicableTo
 		);
@@ -248,7 +248,7 @@ public class DocumentInferrerServiceTests
 		var result = inferrer.InferForMarkdown(
 			repositoryName: "elasticsearch",
 			mappedPages: null,
-			docsetProducts: [],
+			docsetProducts: new HashSet<Product>(),
 			frontmatterProducts: null,
 			applicableTo: applicableTo
 		);
@@ -276,7 +276,7 @@ public class DocumentInferrerServiceTests
 		var result = inferrer.InferForMarkdown(
 			repositoryName: "kibana",
 			mappedPages: mappedPages,
-			docsetProducts: [],
+			docsetProducts: new HashSet<Product>(),
 			frontmatterProducts: null,
 			applicableTo: applicableTo
 		);
@@ -302,7 +302,7 @@ public class DocumentInferrerServiceTests
 		var result = inferrer.InferForMarkdown(
 			repositoryName: "docs-content",
 			mappedPages: null,
-			docsetProducts: [],
+			docsetProducts: new HashSet<Product>(),
 			frontmatterProducts: frontmatterProducts,
 			applicableTo: null
 		);
@@ -374,7 +374,7 @@ public class DocumentInferrerServiceTests
 		var result = inferrer.InferForMarkdown(
 			repositoryName: "unknown-repo",
 			mappedPages: null,
-			docsetProducts: [],
+			docsetProducts: new HashSet<Product>(),
 			frontmatterProducts: null,
 			applicableTo: null
 		);
@@ -413,7 +413,7 @@ public class DocumentInferrerServiceTests
 		var result = inferrer.InferForMarkdown(
 			repositoryName: "serverless-es",
 			mappedPages: null,
-			docsetProducts: [],
+			docsetProducts: new HashSet<Product>(),
 			frontmatterProducts: null,
 			applicableTo: null
 		);
@@ -496,7 +496,7 @@ public class DocumentInferrerServiceTests
 	{
 		var inferrer = new NoopDocumentInferrer();
 
-		var markdownResult = inferrer.InferForMarkdown("repo", null, [], null, null);
+		var markdownResult = inferrer.InferForMarkdown("repo", null, new HashSet<Product>(), null, null);
 		var openApiResult = inferrer.InferForOpenApi("product");
 
 		markdownResult.Product.Should().BeNull();

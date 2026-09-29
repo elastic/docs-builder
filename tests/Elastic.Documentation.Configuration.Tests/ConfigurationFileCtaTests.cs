@@ -8,8 +8,10 @@ using System.IO.Abstractions.TestingHelpers;
 using AwesomeAssertions;
 using Elastic.Documentation.Catalog;
 using Elastic.Documentation.Configuration.Builder;
+using Elastic.Documentation.Configuration.Loading;
 using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.DocumentationSets;
 using Elastic.Documentation.FileSystems;
 using Nullean.ScopedFileSystem;
 
@@ -378,13 +380,13 @@ public class ConfigurationFileCtaTests
 		return DocumentationSetFile.LoadAndResolve(collector, docsetPath, new ScopedFileSystem(fileSystem, "/docs"));
 	}
 
-	private static ConfigurationFile CreateConfiguration(DocumentationSetFile docSet)
+	private static ResolvedDocumentationSet CreateConfiguration(DocumentationSetFile docSet)
 	{
 		var collector = new DiagnosticsCollector([]);
 		return CreateConfiguration(docSet, collector);
 	}
 
-	private static async Task<(ConfigurationFile Config, IReadOnlyList<Diagnostic> Diagnostics)> CreateConfigurationWithDiagnostics(
+	private static async Task<(ResolvedDocumentationSet Config, IReadOnlyList<Diagnostic> Diagnostics)> CreateConfigurationWithDiagnostics(
 		DocumentationSetFile docSet
 	)
 	{
@@ -396,7 +398,7 @@ public class ConfigurationFileCtaTests
 		return (config, recorder.Diagnostics);
 	}
 
-	private static ConfigurationFile CreateConfiguration(DocumentationSetFile docSet, DiagnosticsCollector collector)
+	private static ResolvedDocumentationSet CreateConfiguration(DocumentationSetFile docSet, DiagnosticsCollector collector)
 	{
 		var fileSystem = new MockFileSystem(new Dictionary<string, MockFileData> { { "/docs/docset.yml", new MockFileData("") } }, "/docs");
 
@@ -412,7 +414,7 @@ public class ConfigurationFileCtaTests
 			ProductDisplayNames = new Dictionary<string, string>().ToFrozenDictionary()
 		};
 
-		return new ConfigurationFile(docSet, context, versionsConfig, productsConfig);
+		return DocumentationSetResolver.Resolve(docSet, context, versionsConfig, productsConfig).EmitTo(context.Collector)!;
 	}
 
 	private sealed class RecordingDiagnosticsOutput : IDiagnosticsOutput

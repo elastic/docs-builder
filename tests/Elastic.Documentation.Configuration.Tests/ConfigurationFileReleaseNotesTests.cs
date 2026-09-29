@@ -8,8 +8,10 @@ using System.IO.Abstractions.TestingHelpers;
 using AwesomeAssertions;
 using Elastic.Documentation.Catalog;
 using Elastic.Documentation.Configuration.Builder;
+using Elastic.Documentation.Configuration.Loading;
 using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.DocumentationSets;
 using Elastic.Documentation.FileSystems;
 
 namespace Elastic.Documentation.Configuration.Tests;
@@ -87,7 +89,7 @@ public class ConfigurationFileReleaseNotesTests
 			ReleaseNotes = [.. products.Select(p => new ReleaseNotesProductReference { Product = p })]
 		};
 
-	private static async Task<(ConfigurationFile Config, IReadOnlyList<Diagnostic> Diagnostics)> CreateConfiguration(
+	private static async Task<(ResolvedDocumentationSet Config, IReadOnlyList<Diagnostic> Diagnostics)> CreateConfiguration(
 		DocumentationSetFile docSet
 	)
 	{
@@ -106,7 +108,7 @@ public class ConfigurationFileReleaseNotesTests
 		var versionsConfig = new VersioningSystemCatalog { VersioningSystems = new Dictionary<VersioningSystemId, VersioningSystem>() };
 		var productsConfig = CreateProductsConfiguration();
 
-		var config = new ConfigurationFile(docSet, context, versionsConfig, productsConfig);
+		var config = DocumentationSetResolver.Resolve(docSet, context, versionsConfig, productsConfig).EmitTo(context.Collector)!;
 		await collector.StopAsync(TestContext.Current!.Execution.CancellationToken);
 		return (config, recorder.Diagnostics);
 	}

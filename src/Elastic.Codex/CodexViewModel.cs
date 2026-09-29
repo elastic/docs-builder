@@ -78,7 +78,7 @@ public abstract class CodexViewModel(CodexRenderContext context)
 			CanonicalBaseUrl = BuildContext.CanonicalBaseUrl,
 			GoogleTagManager = new GoogleTagManagerConfiguration(),
 			Optimizely = new OptimizelyConfiguration(),
-			Features = BuildContext.Configuration.Features,
+			Features = BuildContext.Features,
 			StaticFileContentHashProvider = StaticFileContentHashProvider,
 			BuildType = BuildContext.BuildType,
 			CodexBreadcrumbs = codexBreadcrumbs

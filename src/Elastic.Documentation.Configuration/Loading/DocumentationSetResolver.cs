@@ -2,153 +2,109 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using System.Collections.Frozen;
-using System.Diagnostics.CodeAnalysis;
 using System.IO.Abstractions;
 using DotNet.Globbing;
 using Elastic.Documentation.AppliesTo;
 using Elastic.Documentation.Catalog;
+using Elastic.Documentation.Configuration.Builder;
+using Elastic.Documentation.Configuration.Loading;
 using Elastic.Documentation.Configuration.Suggestions;
 using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.DocumentationSets;
 using Elastic.Documentation.Extensions;
+using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.Links;
 using static Elastic.Documentation.SymlinkValidator;
 
-namespace Elastic.Documentation.Configuration.Builder;
+namespace Elastic.Documentation.Configuration.Loading;
 
-public record ConfigurationFile
+/// <summary>Where a documentation set is read from, and the environment its env-dependent values resolve against.</summary>
+/// <param name="ConfigurationPath">The <c>docset.yml</c> (or <c>_docset.yml</c>).</param>
+/// <param name="SourceDirectory">The documentation source directory that docset-relative paths resolve from.</param>
+public sealed record DocumentationSetSource(
+	IFileInfo ConfigurationPath,
+	IDirectoryInfo SourceDirectory,
+	IDocumentationFileSystem ReadFileSystem,
+	IEnvironmentVariables Environment
+);
+
+/// <summary>
+/// Validates a loaded <c>docset.yml</c> and joins it against the catalog into a <see cref="ResolvedDocumentationSet"/>.
+/// Reads <c>redirects.yml</c>, and checks branding images and API spec paths on disk. Diagnostics come back in the
+/// order they are found, which is the order users have always seen them in.
+/// </summary>
+public static class DocumentationSetResolver
 {
-	private readonly IDocumentationSetContext _context;
-
-	public IFileInfo SourceFile => _context.ConfigurationPath;
-
-	public string? Project { get; }
-
-	private Glob[] Exclude { get; } = [];
-	private string[] Include { get; } = [];
-
-	public string[] CrossLinkRepositories { get; } = [];
-
-	/// <summary>
-	/// Registry for this documentation set. <c>Public</c> uses S3 link index; other values use codex-link-index.
-	/// </summary>
-	public DocSetRegistry Registry { get; } = DocSetRegistry.Public;
-
-	/// <summary>
-	/// Parsed cross-link entries with registry for each target.
-	/// </summary>
-	public CrossLinkEntry[] CrossLinkEntries { get; } = [];
-
-	/// <summary>
-	/// Canonical product ids declared under <c>release_notes</c> whose changelog content is sourced from
-	/// the public CDN. Validated against products.yml; drives startup prefetch for the <c>{changelog}</c>
-	/// directive and CDN sourcing for <c>changelog bundle</c>.
-	/// </summary>
-	public string[] ReleaseNotesProducts { get; } = [];
-
-	/// The maximum depth `toc.yml` files may appear
-	public int MaxTocDepth { get; } = 1;
-
-	public EnabledExtensions Extensions { get; } = new([]);
-
-	public Dictionary<string, LinkRedirect>? Redirects { get; }
-
-	public HashSet<Product> Products { get; private set; } = [];
-
-	private readonly Dictionary<string, string> _substitutions = [with(StringComparer.OrdinalIgnoreCase)];
-	public IReadOnlyDictionary<string, string> Substitutions => _substitutions;
-
-	private readonly Dictionary<string, bool> _features = [with(StringComparer.OrdinalIgnoreCase)];
-
-	[field: AllowNull, MaybeNull]
-	public FeatureFlags Features => field ??= new FeatureFlags(_features, _context.Environment);
-
-	public IDirectoryInfo ScopeDirectory { get; }
-
-	public string? StorybookRegistry { get; }
-
-	/// <summary>
-	/// Environment-independent <c>storybook.registry</c> value (committed default). Non-null only when an allow-listed
-	/// environment variable changed <see cref="StorybookRegistry"/>, so the directive can degrade to the committed
-	/// registry when the environment-supplied one is unreachable (e.g. an ephemeral PR registry that is not yet published).
-	/// </summary>
-	public string? StorybookRegistryFallback { get; }
-
-	/// <summary>
-	/// Resolved API configurations with template and specification file information.
-	/// </summary>
-	public IReadOnlyDictionary<string, ResolvedApiConfiguration>? ApiConfigurations { get; }
-
-	/// <summary>
-	/// Set of diagnostic hint types to suppress for this documentation set.
-	/// </summary>
-	public HashSet<HintType> SuppressDiagnostics { get; } = [];
-
-	/// <summary>
-	/// White-label branding overrides. When non-null, all Elastic-specific chrome is suppressed.
-	/// </summary>
-	public BrandingConfiguration? Branding { get; private set; }
-
-	private readonly Dictionary<string, Cta> _ctas = new(StringComparer.OrdinalIgnoreCase) { [Cta.DefaultName] = Cta.Default };
-
-	// Pages registered with a default CTA via `default_cta` on docset.yml or nested toc.yml files.
-	private readonly IReadOnlyDictionary<string, string> _tocDefaultCtas;
-
-	/// <summary>
-	/// Named right-gutter CTA templates declared under <c>docset.yml</c>'s <c>cta</c> map, keyed by name.
-	/// Always contains at least the built-in <see cref="Cta.DefaultName"/> entry.
-	/// </summary>
-	public IReadOnlyDictionary<string, Cta> Ctas => _ctas;
-
-	/// This is a documentation set not linked to by assembler.
-	/// Setting this to true relaxes a few restrictions such as mixing toc references with file and folder reference
-	public bool DevelopmentDocs { get; }
-
-	// Files excluded via folder-level `exclude` in toc.yml need to be excluded from processing too,
-	// otherwise the builder crashes with "Could not find current in navigation" when rendering them.
-	private HashSet<string> FolderExcludedFiles { get; } = [];
-
-	public bool IsExcluded(string relativePath)
-	{
-		if (Include.Length > 0 && Include.Any(i => i.Equals(relativePath.OptionalWindowsReplace(), StringComparison.OrdinalIgnoreCase)))
-			return false;
-		if (FolderExcludedFiles.Contains(relativePath.OptionalWindowsReplace()))
-			return true;
-		return Exclude.Any(g => g.IsMatch(relativePath));
-	}
-
-	public ConfigurationFile(
+	public static Result<ResolvedDocumentationSet> Resolve(
 		DocumentationSetFile docSetFile,
 		IDocumentationSetContext context,
 		VersioningSystemCatalog versionsConfig,
 		ProductCatalog productsConfig
+	) =>
+		Resolve(
+			docSetFile,
+			new DocumentationSetSource(
+				context.ConfigurationPath,
+				context.DocumentationSourceDirectory,
+				context.ReadFileSystem,
+				context.Environment
+			),
+			versionsConfig,
+			productsConfig
+		);
+
+	public static Result<ResolvedDocumentationSet> Resolve(
+		DocumentationSetFile docSetFile,
+		DocumentationSetSource source,
+		VersioningSystemCatalog versionsConfig,
+		ProductCatalog productsConfig
 	)
 	{
-		_context = context;
-		ScopeDirectory = context.ConfigurationPath.Directory!;
-		_tocDefaultCtas = FrozenDictionary<string, string>.Empty;
+		var context = new ResolutionContext(source);
+		var resolved = ResolveInto(docSetFile, context, versionsConfig, productsConfig);
+		return new Result<ResolvedDocumentationSet>(resolved, context.Buffer.Diagnostics);
+	}
+
+	private static ResolvedDocumentationSet? ResolveInto(
+		DocumentationSetFile docSetFile,
+		ResolutionContext context,
+		VersioningSystemCatalog versionsConfig,
+		ProductCatalog productsConfig
+	)
+	{
+		var empty = new ResolvedDocumentationSet
+		{
+			SourceFile = context.ConfigurationPath,
+			ScopeDirectory = context.ConfigurationPath.Directory!
+		};
 		if (!context.ConfigurationPath.Exists)
 		{
-			Project = "unknown";
 			context.EmitWarning(context.ConfigurationPath, "No configuration file found");
-			return;
+			return empty with { Project = "unknown" };
 		}
 
-		var redirectFile = new RedirectFile(_context);
-		Redirects = redirectFile.Redirects;
+		Dictionary<string, LinkRedirect>? redirects;
+		try
+		{
+			redirects = new RedirectFile(context).Redirects;
+		}
+		catch (Exception)
+		{
+			// RedirectFile has already reported the failure as an error.
+			return null;
+		}
 
 		try
 		{
-			// Read values from DocumentationSetFile
-			Project = docSetFile.Project;
-			MaxTocDepth = docSetFile.MaxTocDepth;
-			DevelopmentDocs = docSetFile.DevDocs;
-
-			// Convert exclude patterns to Glob
-			Exclude = [.. docSetFile.Exclude.Where(s => !string.IsNullOrEmpty(s) && !s.StartsWith('!')).Select(Glob.Parse)];
-			Include = [.. docSetFile.Exclude.Where(s => !string.IsNullOrEmpty(s) && s.StartsWith('!')).Select(s => s.TrimStart('!'))];
-			FolderExcludedFiles = docSetFile.FolderExcludedFiles;
+			// Glob patterns are parsed here so an invalid one fails the load, as it always has; matching lives in IsExcluded.
+			var excludeGlobs = docSetFile.Exclude.Where(s => !string.IsNullOrEmpty(s) && !s.StartsWith('!')).ToArray();
+			_ = excludeGlobs.Select(Glob.Parse).ToArray();
+			var exclusions = new DocumentationSetExclusions(
+				excludeGlobs,
+				[.. docSetFile.Exclude.Where(s => !string.IsNullOrEmpty(s) && s.StartsWith('!')).Select(s => s.TrimStart('!'))],
+				docSetFile.FolderExcludedFiles
+			);
 
 			// Parse registry (null/empty/"public" -> Public)
 			var registry = DocSetRegistry.Public;
@@ -158,10 +114,8 @@ public record ConfigurationFile
 			)
 				registry = parsedRegistry;
 
-			Registry = registry;
-
 			// Parse cross-link entries with optional registry prefix (e.g. public://elasticsearch)
-			CrossLinkEntries = docSetFile
+			var crossLinkEntries = docSetFile
 				.CrossLinks
 				.Where(raw => !string.IsNullOrWhiteSpace(raw))
 				.Select(raw => ParseCrossLinkEntry(raw.Trim(), registry, context.ConfigurationPath, context))
@@ -169,21 +123,13 @@ public record ConfigurationFile
 				.Select(entry => entry!)
 				.ToArray();
 
-			CrossLinkRepositories = CrossLinkEntries.Select(e => e.Repository).ToArray();
-
 			// Parse and validate CDN-backed release-notes product declarations
-			ReleaseNotesProducts = ParseReleaseNotesProducts(docSetFile.ReleaseNotes, productsConfig, context);
+			var releaseNotesProducts = ParseReleaseNotesProducts(docSetFile.ReleaseNotes, productsConfig, context);
 
-			// Extensions - assuming they're not in DocumentationSetFile yet
-			Extensions = new EnabledExtensions(docSetFile.Extensions);
-
-			// Copy suppression settings
-			SuppressDiagnostics = docSetFile.SuppressDiagnostics;
-
-			// Read substitutions
-			_substitutions = new(docSetFile.Subs, StringComparer.OrdinalIgnoreCase);
+			var substitutions = new Dictionary<string, string>(docSetFile.Subs, StringComparer.OrdinalIgnoreCase);
 
 			// Process API configurations
+			Dictionary<string, ResolvedApiConfiguration>? apiConfigurations = null;
 			if (docSetFile.Api.Count > 0)
 			{
 				var apiConfigs = new Dictionary<string, ResolvedApiConfiguration>(StringComparer.OrdinalIgnoreCase);
@@ -194,9 +140,11 @@ public record ConfigurationFile
 						apiConfigs[productKey] = resolvedConfig;
 				}
 
-				ApiConfigurations = apiConfigs.Count > 0 ? apiConfigs : null;
+				apiConfigurations = apiConfigs.Count > 0 ? apiConfigs : null;
 			}
 
+			string? storybookRegistry = null;
+			string? storybookRegistryFallback = null;
 			if (docSetFile.Storybook is not null)
 			{
 				var interpolated = EnvironmentInterpolation.Interpolate(
@@ -207,14 +155,15 @@ public record ConfigurationFile
 						$"'storybook.registry' references environment variable '{name}' which is not allow-listed for interpolation and is left literal. Allowed: {string.Join(", ", EnvironmentInterpolation.AllowedVariables)}."
 					)
 				);
-				StorybookRegistry = interpolated.Value;
-				StorybookRegistryFallback = interpolated.Fallback;
+				storybookRegistry = interpolated.Value;
+				storybookRegistryFallback = interpolated.Fallback;
 			}
 
-			// Process products from docset - resolve ProductLinks to Product objects
+			// Resolve ProductLinks to Product objects; unknown ids are dropped silently, as they always have been
+			var products = new HashSet<Product>();
 			if (docSetFile.Products.Count > 0)
 			{
-				Products =
+				products =
 					docSetFile
 						.Products
 						.Select(link => productsConfig.Products.GetValueOrDefault(link.Id.Replace('_', '-')))
@@ -222,21 +171,22 @@ public record ConfigurationFile
 						.ToHashSet()!;
 			}
 
-			// Process branding with validation
+			Branding? branding = null;
 			if (docSetFile.Branding is not null)
-				Branding = ValidateBranding(docSetFile.Branding, context);
+				branding = ValidateBranding(docSetFile.Branding, context);
 
-			// Process CTA templates - overlays onto (and may override) the built-in 'trial' default
+			// CTA templates overlay onto (and may override) the built-in 'trial' default
+			var ctas = new Dictionary<string, Cta>(StringComparer.OrdinalIgnoreCase) { [Cta.DefaultName] = Cta.Default };
 			foreach (var (name, definition) in docSetFile.Cta)
 			{
 				if (ValidateCta(name, definition, context) is not { } cta)
 					continue;
-				_ctas[name] = cta;
+				ctas[name] = cta;
 			}
 
 			foreach (var (pagePath, ctaName) in docSetFile.TocDefaultCtas)
 			{
-				if (!_ctas.ContainsKey(ctaName))
+				if (!ctas.ContainsKey(ctaName))
 				{
 					context.EmitError(
 						context.ConfigurationPath,
@@ -245,91 +195,80 @@ public record ConfigurationFile
 				}
 			}
 
-			_tocDefaultCtas = docSetFile.TocDefaultCtas;
-
-			// Process features
-			_features = [with(StringComparer.OrdinalIgnoreCase)];
+			var features = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
 			if (docSetFile.Features.PrimaryNav.HasValue)
-				_features["primary-nav"] = docSetFile.Features.PrimaryNav.Value;
+				features["primary-nav"] = docSetFile.Features.PrimaryNav.Value;
 			if (docSetFile.Features.DisableGithubEditLink.HasValue)
-				_features["disable-github-edit-link"] = docSetFile.Features.DisableGithubEditLink.Value;
+				features["disable-github-edit-link"] = docSetFile.Features.DisableGithubEditLink.Value;
 			if (docSetFile.Features.GuideNav.HasValue)
-				_features["guide-nav"] = docSetFile.Features.GuideNav.Value;
+				features["guide-nav"] = docSetFile.Features.GuideNav.Value;
 
 			// primary-nav requires the Elastic global navigation which is not available for white-label builds
-			if (Branding is not null && docSetFile.Features.PrimaryNav is true)
+			if (branding is not null && docSetFile.Features.PrimaryNav is true)
 				context.EmitError(
 					context.ConfigurationPath,
 					"'features.primary-nav' cannot be used together with 'branding': the primary nav requires Elastic global navigation."
 				);
 
-			// Add version substitutions
-			foreach (var (id, system) in versionsConfig.VersioningSystems)
-			{
-				var name = id.ToStringFast(true);
-				var alternativeName = name.Replace('-', '_');
-				_substitutions[$"version.{name}"] = system.Current;
-				_substitutions[$"version.{alternativeName}"] = system.Current;
-				_substitutions[$"version.{name}.base"] = system.Base;
-				_substitutions[$"version.{alternativeName}.base"] = system.Base;
-			}
+			AddVersionSubstitutions(substitutions, versionsConfig);
+			AddProductSubstitutions(substitutions, productsConfig);
 
-			// Add product substitutions (only for products with public-reference feature)
-			foreach (var product in productsConfig.PublicReferenceProducts.Values)
+			return empty with
 			{
-				var alternativeProductId = product.Id.Replace('-', '_');
-				_substitutions[$"product.{product.Id}"] = product.DisplayName;
-				_substitutions[$".{product.Id}"] = product.DisplayName;
-				_substitutions[$"product.{alternativeProductId}"] = product.DisplayName;
-				_substitutions[$".{alternativeProductId}"] = product.DisplayName;
-			}
+				Project = docSetFile.Project,
+				MaxTocDepth = docSetFile.MaxTocDepth,
+				DevelopmentDocs = docSetFile.DevDocs,
+				Exclusions = exclusions,
+				Registry = registry,
+				CrossLinkEntries = crossLinkEntries,
+				CrossLinkRepositories = [.. crossLinkEntries.Select(e => e.Repository)],
+				ReleaseNotesProducts = releaseNotesProducts,
+				Extensions = new EnabledExtensions(docSetFile.Extensions),
+				Redirects = redirects,
+				Products = products,
+				Substitutions = substitutions,
+				FeatureToggles = features,
+				StorybookRegistry = storybookRegistry,
+				StorybookRegistryFallback = storybookRegistryFallback,
+				ApiConfigurations = apiConfigurations,
+				SuppressDiagnostics = docSetFile.SuppressDiagnostics,
+				Branding = branding,
+				Ctas = ctas,
+				TocDefaultCtas = docSetFile.TocDefaultCtas,
+				TableOfContents = docSetFile.TableOfContents
+			};
 		}
 		catch (Exception e)
 		{
 			context.EmitError(context.ConfigurationPath, $"Could not load docset.yml: {e.Message}");
-			throw;
+			return null;
 		}
 	}
 
-	/// <summary>
-	/// Resolves the right-gutter CTA for a page. An explicit, known <c>cta</c> frontmatter <paramref name="id"/>
-	/// always wins. Otherwise the template registered via <c>default_cta</c> on the page's navigation file
-	/// applies, falling back to <see cref="Cta.DefaultName"/>.
-	/// </summary>
-	/// <param name="id">The page's <c>cta.id</c> frontmatter value, if any.</param>
-	/// <param name="relativePath">The page's docset-root-relative source path, used for toc default lookup.</param>
-	/// <param name="warning">Set when <paramref name="id"/> is unknown, so the caller can report it.</param>
-	public Cta ResolveCta(string? id, string? relativePath, out string? warning)
+	private static void AddVersionSubstitutions(Dictionary<string, string> substitutions, VersioningSystemCatalog versionsConfig)
 	{
-		warning = null;
-		if (id is not null)
+		foreach (var (id, system) in versionsConfig.VersioningSystems)
 		{
-			if (Ctas.TryGetValue(id, out var selected))
-				return selected;
-			// Unknown id: warn, then resolve as if the page had no `cta` frontmatter.
-			warning = UnknownCtaWarning(id, Ctas.Keys);
+			var name = id.ToStringFast(true);
+			var alternativeName = name.Replace('-', '_');
+			substitutions[$"version.{name}"] = system.Current;
+			substitutions[$"version.{alternativeName}"] = system.Current;
+			substitutions[$"version.{name}.base"] = system.Base;
+			substitutions[$"version.{alternativeName}.base"] = system.Base;
 		}
-		if (relativePath is { Length: > 0 })
-		{
-			var normalizedPath = DocumentationSetFile.NormalizeDocsetRelativePath(relativePath);
-			if (_tocDefaultCtas.TryGetValue(normalizedPath, out var tocDefault) && Ctas.TryGetValue(tocDefault, out var scoped))
-				return scoped;
-		}
-		return Ctas[Cta.DefaultName];
 	}
 
-	private static string UnknownCtaWarning(string ctaName, IEnumerable<string> knownCtaNames)
+	// Only products with the public-reference feature get substitutions
+	private static void AddProductSubstitutions(Dictionary<string, string> substitutions, ProductCatalog productsConfig)
 	{
-		var known = knownCtaNames.ToHashSet();
-		var hint = new Suggestion(known, ctaName).GetSuggestionQuestion();
-		if (string.IsNullOrEmpty(hint))
+		foreach (var product in productsConfig.PublicReferenceProducts.Values)
 		{
-			hint = known.Count > 1
-				? $"Available: {string.Join(", ", known.Order())}."
-				: "No 'cta' templates are defined in this docset.yml yet. Add one under a top-level 'cta:' map, e.g.:\n"
-					+ "cta:\n  mp:\n    button:\n      label: Get started on MP\n      url: https://example.com\n    benefits:\n      - \"Some benefit\"";
+			var alternativeProductId = product.Id.Replace('-', '_');
+			substitutions[$"product.{product.Id}"] = product.DisplayName;
+			substitutions[$".{product.Id}"] = product.DisplayName;
+			substitutions[$"product.{alternativeProductId}"] = product.DisplayName;
+			substitutions[$".{alternativeProductId}"] = product.DisplayName;
 		}
-		return $"'cta: {ctaName}' does not match any 'cta' template in docset.yml and is ignored. {hint}";
 	}
 
 	private static Cta? ValidateCta(string name, CtaDefinition definition, IDocumentationSetContext context)
@@ -363,17 +302,24 @@ public record ConfigurationFile
 
 	private static readonly HashSet<string> AllowedImageExtensions = [".svg", ".png", ".jpg", ".jpeg", ".gif", ".webp", ".ico"];
 
-	private static BrandingConfiguration ValidateBranding(BrandingConfiguration branding, IDocumentationSetContext context)
+	private static Branding ValidateBranding(BrandingConfiguration branding, IDocumentationSetContext context)
 	{
-		branding.Icon = ValidateBrandingImage(branding.Icon, "branding.icon", context);
-		branding.OgImage = ValidateBrandingImage(branding.OgImage, "branding.og-image", context);
-		branding.Favicon = string.IsNullOrEmpty(branding.Favicon)
+		var icon = ValidateBrandingImage(branding.Icon, "branding.icon", context);
+		var ogImage = ValidateBrandingImage(branding.OgImage, "branding.og-image", context);
+		var favicon = string.IsNullOrEmpty(branding.Favicon)
 			? DiscoverBrandingFile(["favicon.ico", "favicon.png", "favicon.svg"], context)
 			: ValidateBrandingImage(branding.Favicon, "branding.favicon", context);
-		branding.AppleTouchIcon = string.IsNullOrEmpty(branding.AppleTouchIcon)
+		var appleTouchIcon = string.IsNullOrEmpty(branding.AppleTouchIcon)
 			? DiscoverBrandingFile(["apple-touch-icon.png"], context)
 			: ValidateBrandingImage(branding.AppleTouchIcon, "branding.apple-touch-icon", context);
-		return branding;
+		return new Branding
+		{
+			Icon = icon,
+			HeaderBg = branding.HeaderBg,
+			OgImage = ogImage,
+			Favicon = favicon,
+			AppleTouchIcon = appleTouchIcon
+		};
 	}
 
 	private static string? DiscoverBrandingFile(string[] candidates, IDocumentationSetContext context)
@@ -781,5 +727,23 @@ public record ConfigurationFile
 		}
 
 		return new CrossLinkEntry(repository, entryRegistry);
+	}
+
+	/// <summary>
+	/// Adapts the validation helpers, which report through an <see cref="IDocumentationSetContext"/>, to a
+	/// <see cref="Result{T}"/>: everything they emit is buffered instead of reaching the caller's collector.
+	/// </summary>
+	private sealed class ResolutionContext(DocumentationSetSource source) : IDocumentationSetContext
+	{
+		public BufferingDiagnosticsCollector Buffer { get; } = new();
+		public IDiagnosticsCollector Collector => Buffer;
+		public IFileInfo ConfigurationPath => source.ConfigurationPath;
+		public IDocumentationFileSystem ReadFileSystem => source.ReadFileSystem;
+		public IDirectoryInfo DocumentationSourceDirectory => source.SourceDirectory;
+		public IEnvironmentVariables Environment => source.Environment;
+		public DocumentationWriteFileSystem WriteFileSystem => throw new NotSupportedException("Resolution does not write");
+		public IDirectoryInfo OutputDirectory => throw new NotSupportedException("Resolution does not write");
+		public BuildType BuildType => throw new NotSupportedException("Resolution is independent of the build type");
+		public GitCheckoutInformation Git => throw new NotSupportedException("Resolution is independent of the checkout");
 	}
 }

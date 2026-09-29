@@ -22,6 +22,17 @@ public sealed record Result<T>(T? Value, IReadOnlyList<Diagnostic> Diagnostics) 
 	}
 
 	/// <summary>
+	/// For inputs whose errors are reported but do not stop the command (a docset): returns the value even when there
+	/// are errors, and throws only when none could be produced, with the last error's message.
+	/// </summary>
+	public T OrThrowIfMissing() =>
+		Value
+			?? throw new InvalidOperationException(
+				Diagnostics.Where(d => d.Severity == Severity.Error).Select(d => d.Message).LastOrDefault() ??
+					$"Could not load {typeof(T).Name}"
+			);
+
+	/// <summary>
 	/// For configuration that must load for the process to start (global config): returns the value, or throws with the
 	/// first error's message so startup fails exactly as it did when the loaders threw.
 	/// </summary>

@@ -47,7 +47,7 @@ public class DocumentationSet : INavigationTraversable
 
 	public DateTimeOffset LastWrite { get; }
 
-	public ConfigurationFile Configuration { get; }
+	public ResolvedDocumentationSet Configuration { get; }
 
 	public MarkdownParser MarkdownParser { get; }
 
@@ -261,7 +261,9 @@ public class DocumentationSet : INavigationTraversable
 
 	public RepositoryLinks CreateLinkReference()
 	{
-		var redirects = Configuration.Redirects;
+		var redirects = Configuration.Redirects is { } declared
+			? new Dictionary<string, LinkRedirect>(declared, StringComparer.OrdinalIgnoreCase)
+			: null;
 		var crossLinks = Context.Collector.CrossLinks.ToHashSet().OrderBy(l => l).ToArray();
 
 		var leafs = NavigationIndexedByOrder.Values.OfType<ILeafNavigationItem<MarkdownFile>>().ToArray();

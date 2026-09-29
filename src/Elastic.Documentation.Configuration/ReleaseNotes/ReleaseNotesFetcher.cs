@@ -43,7 +43,7 @@ public sealed class ReleaseNotesFetcher(ILoggerFactory logFactory, IFileSystem f
 				inferredProduct = candidate;
 		}
 
-		if (explicitProducts.Length == 0 && inferredProduct is null)
+		if (explicitProducts.Count == 0 && inferredProduct is null)
 			return NoopReleaseNotesResolver.Instance;
 
 		var fetcher = new ReleaseNotesFetcher(logFactory, context.ReadFileSystem);

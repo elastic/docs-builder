@@ -8,8 +8,10 @@ using System.IO.Abstractions.TestingHelpers;
 using AwesomeAssertions;
 using Elastic.Documentation.Catalog;
 using Elastic.Documentation.Configuration.Builder;
+using Elastic.Documentation.Configuration.Loading;
 using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.DocumentationSets;
 using Elastic.Documentation.FileSystems;
 
 namespace Elastic.Documentation.Configuration.Tests;
@@ -53,7 +55,7 @@ public class ConfigurationFileStorybookRegistryTests
 		collector.Warnings.Should().Be(1, "a disallowed interpolation variable must emit exactly one warning");
 	}
 
-	private static ConfigurationFile CreateConfiguration(
+	private static ResolvedDocumentationSet CreateConfiguration(
 		string registry,
 		IEnvironmentVariables environment,
 		DiagnosticsCollector? collector = null
@@ -83,7 +85,7 @@ public class ConfigurationFileStorybookRegistryTests
 			Storybook = new DocumentationSetStorybook { Registry = registry }
 		};
 
-		return new ConfigurationFile(docSet, context, versionsConfig, productsConfig);
+		return DocumentationSetResolver.Resolve(docSet, context, versionsConfig, productsConfig).EmitTo(context.Collector)!;
 	}
 
 	private sealed class MockEnvironment : IEnvironmentVariables

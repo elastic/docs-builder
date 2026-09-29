@@ -8,8 +8,10 @@ using System.IO.Abstractions.TestingHelpers;
 using AwesomeAssertions;
 using Elastic.Documentation.Catalog;
 using Elastic.Documentation.Configuration.Builder;
+using Elastic.Documentation.Configuration.Loading;
 using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.DocumentationSets;
 using Elastic.Documentation.FileSystems;
 
 namespace Elastic.Documentation.Configuration.Tests;
@@ -44,7 +46,7 @@ public class ConfigurationFileExcludeTests
 		config.IsExcluded("reference/query-languages/esql/guide.md").Should().BeFalse();
 	}
 
-	private static ConfigurationFile CreateConfiguration(DocumentationSetFile docSet)
+	private static ResolvedDocumentationSet CreateConfiguration(DocumentationSetFile docSet)
 	{
 		var collector = new DiagnosticsCollector([]);
 		var root = Paths.WorkingDirectoryRoot.FullName;
@@ -63,7 +65,7 @@ public class ConfigurationFileExcludeTests
 			ProductDisplayNames = new Dictionary<string, string>().ToFrozenDictionary()
 		};
 
-		return new ConfigurationFile(docSet, context, versionsConfig, productsConfig);
+		return DocumentationSetResolver.Resolve(docSet, context, versionsConfig, productsConfig).EmitTo(context.Collector)!;
 	}
 
 	private sealed class MockDocumentationSetContext(

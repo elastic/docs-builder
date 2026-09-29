@@ -9,8 +9,10 @@ using AwesomeAssertions;
 using Elastic.Documentation.AppliesTo;
 using Elastic.Documentation.Catalog;
 using Elastic.Documentation.Configuration.Builder;
+using Elastic.Documentation.Configuration.Loading;
 using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.DocumentationSets;
 using Elastic.Documentation.FileSystems;
 using Microsoft.Extensions.Logging.Abstractions;
 using YamlDotNet.Core;
@@ -850,7 +852,7 @@ public class ConfigurationFileApiTests
 
 	private static readonly string[] DefaultProductIds = ["elasticsearch", "kibana"];
 
-	private static (ConfigurationFile Config, DiagnosticsCollector Collector) CreateConfiguration(
+	private static (ResolvedDocumentationSet Config, DiagnosticsCollector Collector) CreateConfiguration(
 		DocumentationSetFile docSet,
 		string[]? extraProducts = null,
 		bool withLocalSpecFile = true,
@@ -887,7 +889,7 @@ public class ConfigurationFileApiTests
 			ProductDisplayNames = new Dictionary<string, string>().ToFrozenDictionary()
 		};
 
-		var config = new ConfigurationFile(docSet, context, versionsConfig, productsConfig);
+		var config = DocumentationSetResolver.Resolve(docSet, context, versionsConfig, productsConfig).EmitTo(context.Collector)!;
 		return (config, collector);
 	}
 

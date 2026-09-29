@@ -5,6 +5,7 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Elastic.Documentation.Serialization;
+using Generator.Equals;
 
 namespace Elastic.Documentation.Links;
 
@@ -19,10 +20,12 @@ public record LinkMetadata
 	public bool Hidden { get; init; }
 }
 
-public record LinkSingleRedirect
+[Equatable]
+public partial record LinkSingleRedirect
 {
 	[JsonPropertyName("anchors")]
 	[JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+	[UnorderedEquality]
 	public IReadOnlyDictionary<string, string?>? Anchors { get; init; }
 
 	[JsonPropertyName("to")]
@@ -30,12 +33,14 @@ public record LinkSingleRedirect
 	public string? To { get; init; }
 }
 
-public record LinkRedirect : LinkSingleRedirect
+[Equatable]
+public partial record LinkRedirect : LinkSingleRedirect
 {
 	public static IReadOnlyDictionary<string, string?> CatchAllAnchors { get; } = new Dictionary<string, string?> { { "!", "!" } };
 
 	[JsonPropertyName("many")]
 	[JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+	[OrderedEquality]
 	public LinkSingleRedirect[]? Many { get; init; }
 }
 

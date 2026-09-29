@@ -5,6 +5,7 @@
 using System.Collections.Frozen;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Builder;
+using Elastic.Documentation.DocumentationSets;
 using Elastic.Documentation.LinkIndex;
 using Microsoft.Extensions.Logging;
 
@@ -13,7 +14,7 @@ namespace Elastic.Documentation.Links.CrossLinks;
 /// Fetches cross-links from all the declared repositories in the docset.yml configuration see <see cref="ConfigurationFile"/>
 public class DocSetConfigurationCrossLinkFetcher(
 	ILoggerFactory logFactory,
-	ConfigurationFile configuration,
+	ResolvedDocumentationSet configuration,
 	ILinkIndexReader? linkIndexProvider = null,
 	ILinkIndexReader? codexLinkIndexReader = null
 ) : CrossLinkFetcher(logFactory, linkIndexProvider ?? Aws3LinkIndexReader.CreateAnonymous())

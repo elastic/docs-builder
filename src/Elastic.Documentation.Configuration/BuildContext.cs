@@ -8,8 +8,10 @@ using Elastic.Documentation;
 using Elastic.Documentation.Catalog;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Configuration.Builder;
+using Elastic.Documentation.Configuration.Loading;
 using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.DocumentationSets;
 using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.Search;
 using Nullean.ScopedFileSystem;
@@ -44,8 +46,14 @@ public record BuildContext : IDocumentationSetContext, IDocumentationConfigurati
 	public IFileInfo ConfigurationPath => FileSystem.Paths.ConfigurationPath;
 	public GitCheckoutInformation Git => FileSystem.Paths.Git;
 
-	public ConfigurationFile Configuration { get; private set; }
+	public ResolvedDocumentationSet Configuration { get; private set; }
 	public DocumentationSetFile ConfigurationYaml { get; set; }
+
+	/// <summary>
+	/// The docset's feature flags: <c>docset.yml</c> toggles, overridable by <c>FEATURE_*</c> environment variables and
+	/// adjusted at runtime by the serve and assembler commands.
+	/// </summary>
+	public FeatureFlags Features { get; private set; }
 
 	public GlobalCatalog Catalog { get; }
 	public ConfigurationFileProvider ConfigurationFileProvider { get; }
@@ -103,18 +111,30 @@ public record BuildContext : IDocumentationSetContext, IDocumentationConfigurati
 			? DocumentationSetFile.LoadAndResolve(collector, ConfigurationPath, fileSystem.Read)
 			: new DocumentationSetFile();
 
-		Configuration = new ConfigurationFile(ConfigurationYaml, this, Catalog.VersioningSystems, Catalog.Products);
+		Configuration = ResolveConfiguration();
+		Features = CreateFeatures();
 	}
+
+	private ResolvedDocumentationSet ResolveConfiguration()
+	{
+		var result = DocumentationSetResolver.Resolve(ConfigurationYaml, this, Catalog.VersioningSystems, Catalog.Products);
+		_ = result.EmitTo(Collector);
+		return result.OrThrowIfMissing();
+	}
+
+	private FeatureFlags CreateFeatures() =>
+		new(new Dictionary<string, bool>(Configuration.FeatureToggles, StringComparer.OrdinalIgnoreCase), Environment);
 
 	/// <summary>Re-reads docset.yml from disk and rebuilds the configuration. Used by the serve command on file changes.</summary>
 	public void ReloadConfiguration()
 	{
-		var previousFeatures = Configuration.Features;
+		var previousFeatures = Features;
 		ConfigurationYaml = ConfigurationPath.Exists
 			? DocumentationSetFile.LoadAndResolve(Collector, ConfigurationPath, ReadFileSystem as ScopedFileSystem)
 			: new DocumentationSetFile();
-		Configuration = new ConfigurationFile(ConfigurationYaml, this, Catalog.VersioningSystems, Catalog.Products);
-		Configuration.Features.DiagnosticsPanelEnabled = previousFeatures.DiagnosticsPanelEnabled;
-		Configuration.Features.PageFeedbackEnabled = previousFeatures.PageFeedbackEnabled;
+		Configuration = ResolveConfiguration();
+		Features = CreateFeatures();
+		Features.DiagnosticsPanelEnabled = previousFeatures.DiagnosticsPanelEnabled;
+		Features.PageFeedbackEnabled = previousFeatures.PageFeedbackEnabled;
 	}
 }

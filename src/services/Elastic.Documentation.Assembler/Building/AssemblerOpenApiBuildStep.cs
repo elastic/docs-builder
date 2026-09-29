@@ -150,7 +150,7 @@ public static class AssemblerOpenApiBuildStep
 	private static void ApplyFeatureFlags(AssemblerDocumentationSet set, IReadOnlyDictionary<string, bool> featureFlags)
 	{
 		foreach (var (key, value) in featureFlags)
-			set.BuildContext.Configuration.Features.Set(key, value);
+			set.BuildContext.Features.Set(key, value);
 	}
 }
 

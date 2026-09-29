@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using Elastic.Documentation.DocumentationSets;
 using System.IO.Abstractions;
 using System.IO.Abstractions.TestingHelpers;
 using System.Net;
@@ -84,9 +85,9 @@ public class DocumentationWebHost
 		_writeFileSystem = docFs.Write;
 		Context = new BuildContext(collector, docFs, configurationContext) { CanonicalBaseUrl = new Uri(hostUrl), };
 
-		Context.Configuration.Features.DiagnosticsPanelEnabled = !noHud;
+		Context.Features.DiagnosticsPanelEnabled = !noHud;
 #if DEBUG
-		Context.Configuration.Features.PageFeedbackEnabled = true;
+		Context.Features.PageFeedbackEnabled = true;
 #endif
 
 		InMemoryBuildState = new InMemoryBuildState(logFactory, configurationContext);
