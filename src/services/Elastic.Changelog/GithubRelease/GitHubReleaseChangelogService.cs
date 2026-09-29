@@ -467,7 +467,13 @@ public class GitHubReleaseChangelogService(
 		if (context.StripTitlePrefix)
 			title = ChangelogTextUtilities.StripSquareBracketPrefix(title);
 
-		var description = config.Extract.ReleaseNotes ? ReleaseNotesExtractor.FindReleaseNote(prInfo?.Body) : null;
+		string? description = null;
+		if (config.Extract.ReleaseNotes)
+		{
+			var extraction = ReleaseNotesExtractor.ExtractReleaseNote(prInfo?.Body);
+			description = extraction.Content;
+			ReleaseNoteExtractionDiagnostics.EmitHint(collector, pr.Url, pr.Number, extraction);
+		}
 		var issues = config.Extract.Issues && prInfo?.LinkedIssues is { Count: > 0 } linkedIssues ? linkedIssues.ToList() : null;
 
 		var changelogData = new ChangelogEntry

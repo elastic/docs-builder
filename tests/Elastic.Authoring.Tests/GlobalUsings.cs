@@ -5,5 +5,3 @@
 global using Elastic.Authoring.Tests.Framework;
 global using static Elastic.Authoring.Tests.Framework.AppliesHelper;
 global using static Elastic.Authoring.Tests.Framework.TestFile;
-
-[assembly: CaptureConsole]

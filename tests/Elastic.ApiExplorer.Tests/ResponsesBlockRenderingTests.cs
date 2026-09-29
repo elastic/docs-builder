@@ -14,7 +14,7 @@ namespace Elastic.ApiExplorer.Tests;
 
 public class ResponsesBlockRenderingTests
 {
-	[Fact]
+	[Test]
 	public async Task Render_MultipleStatuses_UsesClickablePillsInsteadOfSelect()
 	{
 		var html = await RenderHtml(
@@ -44,7 +44,7 @@ public class ResponsesBlockRenderingTests
 		html.Should().NotContain("hidden=\"hidden\"");
 	}
 
-	[Fact]
+	[Test]
 	public async Task Render_SingleStatus_KeepsSingularHeading()
 	{
 		var html = await RenderHtml(Response("200", "success", "Successful response"));
@@ -54,7 +54,7 @@ public class ResponsesBlockRenderingTests
 		html.Should().Contain("aria-controls=\"response-200-fields\"");
 	}
 
-	[Fact]
+	[Test]
 	public async Task Render_OneOfResponse_RendersUnionVariantsInsteadOfTypeLine()
 	{
 		var html = await RenderHtml(new ApiResponse
@@ -96,7 +96,7 @@ public class ResponsesBlockRenderingTests
 	private static async Task<string> RenderHtml(params ApiResponse[] responses)
 	{
 		var model = new ResponsesBlockModel(responses, markdown => new HtmlString(markdown ?? ""));
-		return await _ResponsesBlock.Create(model).RenderAsync(cancellationToken: TestContext.Current.CancellationToken);
+		return await _ResponsesBlock.Create(model).RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
 	}
 
 	private static ApiResponse Response(

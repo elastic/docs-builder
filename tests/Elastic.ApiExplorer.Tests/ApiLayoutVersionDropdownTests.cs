@@ -19,7 +19,7 @@ namespace Elastic.ApiExplorer.Tests;
 
 public class ApiLayoutVersionDropdownTests
 {
-	[Fact]
+	[Test]
 	public void CreateGlobalLayoutModel_KeepsVersionOffTheTopBar()
 	{
 		var layout = CreateLayout();
@@ -34,7 +34,7 @@ public class ApiLayoutVersionDropdownTests
 		layout.SpecYamlUrl.Should().Be("/api/doc/elasticsearch.yaml");
 	}
 
-	[Fact]
+	[Test]
 	public void CreateGlobalLayoutModel_HidesDropdownWhenOnlyOneVersion()
 	{
 		var layout = CreateLayout(items: []);
@@ -44,7 +44,7 @@ public class ApiLayoutVersionDropdownTests
 		layout.VersionDropdownSerializedModel.Should().Be("[]");
 	}
 
-	[Fact]
+	[Test]
 	public void CreateGlobalLayoutModel_WiresProductSwitcherOnAssemblerGreyBar()
 	{
 		var layout = CreateLayout(buildType: BuildType.Assembler, catalogEntries: Catalog);
@@ -56,7 +56,7 @@ public class ApiLayoutVersionDropdownTests
 		layout.HubSwitcherItems.Should().HaveCount(3);
 	}
 
-	[Fact]
+	[Test]
 	public void CreateGlobalLayoutModel_KeepsProductSwitcherOffTheGreyBarInIsolated()
 	{
 		var layout = CreateLayout(catalogEntries: Catalog);

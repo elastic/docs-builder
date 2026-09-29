@@ -54,9 +54,9 @@ public class AssemblyConfigurationMatchTests
 			}
 		};
 
-	[Theory]
-	[InlineData("test-repo")]
-	[InlineData("other/test-repo")]
+	[Test]
+	[Arguments("test-repo")]
+	[Arguments("other/test-repo")]
 	public void InvalidRepositoryFormatReturnsNoMatch(string repository)
 	{
 		var config = CreateConfiguration();
@@ -66,10 +66,10 @@ public class AssemblyConfigurationMatchTests
 		result.Should().BeEquivalentTo(NoMatch);
 	}
 
-	[Theory]
-	[InlineData("main")]
-	[InlineData("master")]
-	[InlineData("8.15")]
+	[Test]
+	[Arguments("main")]
+	[Arguments("master")]
+	[Arguments("8.15")]
 	public void UnknownElasticRepositoryReturnsSpeculativeForIntegrationBranches(string branch)
 	{
 		var config = CreateConfiguration();
@@ -79,7 +79,7 @@ public class AssemblyConfigurationMatchTests
 		result.Should().BeEquivalentTo(Speculative);
 	}
 
-	[Fact]
+	[Test]
 	public void UnknownElasticRepositoryReturnsNoMatchForFeatureBranches()
 	{
 		var config = CreateConfiguration();
@@ -89,10 +89,10 @@ public class AssemblyConfigurationMatchTests
 		result.Should().BeEquivalentTo(NoMatch);
 	}
 
-	[Theory]
-	[InlineData("8.0", ContentSource.Current)]
-	[InlineData("8.1", ContentSource.Next)]
-	[InlineData("main", ContentSource.Edge)]
+	[Test]
+	[Arguments("8.0", ContentSource.Current)]
+	[Arguments("8.1", ContentSource.Next)]
+	[Arguments("main", ContentSource.Edge)]
 	public void MatchesCorrectContentSource(string branch, ContentSource expectedSource)
 	{
 		var config = CreateConfiguration();
@@ -113,7 +113,7 @@ public class AssemblyConfigurationMatchTests
 		result.Should().BeEquivalentTo(expected);
 	}
 
-	[Fact]
+	[Test]
 	public void MatchesMultipleContentSourcesWhenBranchMatchesAll()
 	{
 		var repositories = new Dictionary<string, Repository>
@@ -127,12 +127,12 @@ public class AssemblyConfigurationMatchTests
 		result.Should().BeEquivalentTo(new MatchResult(ContentSource.Current, ContentSource.Next, ContentSource.Edge, false));
 	}
 
-	[Theory]
-	[InlineData("8.15", "8.0", true)] // Greater than current
+	[Test]
+	[Arguments("8.15", "8.0", true)] // Greater than current
 
-	[InlineData("8.15", "8.15", true)] // Equal to current
+	[Arguments("8.15", "8.15", true)] // Equal to current
 
-	[InlineData("8.0", "8.15", false)] // Less than current
+	[Arguments("8.0", "8.15", false)] // Less than current
 
 	public void VersionBranchSpeculativeBuildBasedOnCurrentVersion(string branch, string currentVersion, bool shouldBeSpeculative)
 	{
@@ -147,16 +147,16 @@ public class AssemblyConfigurationMatchTests
 		result.Speculative.Should().Be(shouldBeSpeculative);
 	}
 
-	[Theory]
-	[InlineData("8.16", "8.15", true)] // Greater than product version
+	[Test]
+	[Arguments("8.16", "8.15", true)] // Greater than product version
 
-	[InlineData("8.15", "8.15", false)] // Equal to product version — current is served from main
+	[Arguments("8.15", "8.15", false)] // Equal to product version — current is served from main
 
-	[InlineData("8.14", "8.15", false)] // Previous minor version - but current is not versioned, so no previous minor logic
+	[Arguments("8.14", "8.15", false)] // Previous minor version - but current is not versioned, so no previous minor logic
 
-	[InlineData("8.13", "8.15", false)] // Less than previous minor
+	[Arguments("8.13", "8.15", false)] // Less than previous minor
 
-	[InlineData("8.0", "8.0", false)] // Edge case: equal at minor version 0
+	[Arguments("8.0", "8.0", false)] // Edge case: equal at minor version 0
 
 	public void VersionBranchSpeculativeBuildBasedOnProductVersion(string branch, string productVersion, bool shouldBeSpeculative)
 	{
@@ -173,9 +173,9 @@ public class AssemblyConfigurationMatchTests
 		result.Speculative.Should().Be(shouldBeSpeculative);
 	}
 
-	[Theory]
-	[InlineData("main")]
-	[InlineData("master")]
+	[Test]
+	[Arguments("main")]
+	[Arguments("master")]
 	public void FallbackToSpeculativeBuildForMainOrMasterWhenNoMatch(string branch)
 	{
 		var repositories = new Dictionary<string, Repository>
@@ -192,7 +192,7 @@ public class AssemblyConfigurationMatchTests
 		result.Speculative.Should().BeTrue();
 	}
 
-	[Fact]
+	[Test]
 	public void NoFallbackToSpeculativeBuildForFeatureBranches()
 	{
 		var repositories = new Dictionary<string, Repository>
@@ -206,7 +206,7 @@ public class AssemblyConfigurationMatchTests
 		result.Should().BeEquivalentTo(NoMatch);
 	}
 
-	[Fact]
+	[Test]
 	public void DoesNotFallbackToSpeculativeWhenContentSourceMatched()
 	{
 		var repositories = new Dictionary<string, Repository>
@@ -220,7 +220,7 @@ public class AssemblyConfigurationMatchTests
 		result.Current.Should().Be(ContentSource.Current);
 	}
 
-	[Fact]
+	[Test]
 	public void HandlesInvalidVersionBranchGracefully()
 	{
 		var config = CreateConfiguration();
@@ -230,7 +230,7 @@ public class AssemblyConfigurationMatchTests
 		result.Should().NotBeNull();
 	}
 
-	[Fact]
+	[Test]
 	public void ExtractsRepositoryNameFromFullPath()
 	{
 		var config = CreateConfiguration();
@@ -240,7 +240,7 @@ public class AssemblyConfigurationMatchTests
 		result.Current.Should().Be(ContentSource.Current);
 	}
 
-	[Fact]
+	[Test]
 	public void CurrentVersionMatchAlsoSetsSpeculative()
 	{
 		var repositories = new Dictionary<string, Repository>
@@ -255,10 +255,10 @@ public class AssemblyConfigurationMatchTests
 		result.Speculative.Should().BeTrue();
 	}
 
-	[Theory]
-	[InlineData("9.1", "9.0.0")] // Greater than anchored product version
+	[Test]
+	[Arguments("9.1", "9.0.0")] // Greater than anchored product version
 
-	[InlineData("9.5", "9.0.0")] // Much greater than anchored product version
+	[Arguments("9.5", "9.0.0")] // Much greater than anchored product version
 
 	public void VersionBranchSpeculativeBuildWhenGreaterThanAnchoredProductVersion(string branch, string productVersion)
 	{
@@ -277,14 +277,14 @@ public class AssemblyConfigurationMatchTests
 		result.Speculative.Should().BeTrue();
 	}
 
-	[Theory]
-	[InlineData("8.15", "9.0.0")] // Less than anchored product version
+	[Test]
+	[Arguments("8.15", "9.0.0")] // Less than anchored product version
 
-	[InlineData("7.17", "9.0.0")] // Much less than anchored product version
+	[Arguments("7.17", "9.0.0")] // Much less than anchored product version
 
-	[InlineData("8.0", "9.1.5")] // Less than anchored product version with patch
+	[Arguments("8.0", "9.1.5")] // Less than anchored product version with patch
 
-	[InlineData("9.0", "9.0.0")] // Equal to anchored product version — current is served from main
+	[Arguments("9.0", "9.0.0")] // Equal to anchored product version — current is served from main
 
 	public void VersionBranchNoSpeculativeBuildWhenLessThanOrEqualToAnchoredProductVersionAndNotPreviousMinor(
 		string branch,
@@ -306,12 +306,12 @@ public class AssemblyConfigurationMatchTests
 		result.Speculative.Should().BeFalse();
 	}
 
-	[Theory]
-	[InlineData("9.1", "9.2")] // Previous minor version - current is versioned branch
+	[Test]
+	[Arguments("9.1", "9.2")] // Previous minor version - current is versioned branch
 
-	[InlineData("8.14", "8.15")] // Previous minor version - current is versioned branch
+	[Arguments("8.14", "8.15")] // Previous minor version - current is versioned branch
 
-	[InlineData("10.0", "10.1")] // Previous minor version at major boundary - current is versioned branch
+	[Arguments("10.0", "10.1")] // Previous minor version at major boundary - current is versioned branch
 
 	public void VersionBranchSpeculativeBuildWhenMatchesPreviousMinorVersion(string branch, string currentVersion)
 	{
@@ -326,7 +326,7 @@ public class AssemblyConfigurationMatchTests
 		result.Speculative.Should().BeTrue();
 	}
 
-	[Fact]
+	[Test]
 	public void VersionBranchNoSpeculativeBuildWhenProductVersioningSystemIsNull()
 	{
 		var repositories = new Dictionary<string, Repository>
@@ -347,7 +347,7 @@ public class AssemblyConfigurationMatchTests
 		result.Speculative.Should().BeFalse();
 	}
 
-	[Fact]
+	[Test]
 	public void VersionBranchNoSpeculativeBuildWhenProductIsNull()
 	{
 		var repositories = new Dictionary<string, Repository>
@@ -361,12 +361,12 @@ public class AssemblyConfigurationMatchTests
 		result.Speculative.Should().BeFalse();
 	}
 
-	[Theory]
-	[InlineData("9.1", "9.0.15")] // Anchored to 9.0.0, branch 9.1 > 9.0.0
+	[Test]
+	[Arguments("9.1", "9.0.15")] // Anchored to 9.0.0, branch 9.1 > 9.0.0
 
-	[InlineData("9.1", "9.0.0")] // Anchored to 9.0.0, branch 9.1 > 9.0.0
+	[Arguments("9.1", "9.0.0")] // Anchored to 9.0.0, branch 9.1 > 9.0.0
 
-	[InlineData("9.1", "9.0.1")] // Anchored to 9.0.0, branch 9.1 > 9.0.0
+	[Arguments("9.1", "9.0.1")] // Anchored to 9.0.0, branch 9.1 > 9.0.0
 
 	public void VersionBranchAnchorsProductVersionToMinorZero(string branch, string productVersion)
 	{
@@ -385,10 +385,10 @@ public class AssemblyConfigurationMatchTests
 		result.Speculative.Should().BeTrue();
 	}
 
-	[Theory]
-	[InlineData("8.0", "8.1")] // Previous minor when current is 8.1
+	[Test]
+	[Arguments("8.0", "8.1")] // Previous minor when current is 8.1
 
-	[InlineData("7.17", "8.0")] // NOT previous minor when current is 8.0 (previous would be 7.0, not 7.17)
+	[Arguments("7.17", "8.0")] // NOT previous minor when current is 8.0 (previous would be 7.0, not 7.17)
 
 	public void VersionBranchPreviousMinorCalculationHandlesEdgeCases(string branch, string currentVersion)
 	{
@@ -406,10 +406,10 @@ public class AssemblyConfigurationMatchTests
 		result.Speculative.Should().Be(expectedSpeculative);
 	}
 
-	[Theory]
-	[InlineData("9.1", "9.0.0")] // Greater than anchored product version
+	[Test]
+	[Arguments("9.1", "9.0.0")] // Greater than anchored product version
 
-	[InlineData("9.5", "9.0.0")] // Much greater than anchored product version
+	[Arguments("9.5", "9.0.0")] // Much greater than anchored product version
 
 	public void AlreadyPublishingTruePreventSpeculativeBuildForVersionBranch(string branch, string productVersion)
 	{
@@ -428,10 +428,10 @@ public class AssemblyConfigurationMatchTests
 		result.Speculative.Should().BeFalse();
 	}
 
-	[Theory]
-	[InlineData("9.1", "9.0.0")] // Greater than anchored product version
+	[Test]
+	[Arguments("9.1", "9.0.0")] // Greater than anchored product version
 
-	[InlineData("9.5", "9.0.0")] // Much greater than anchored product version
+	[Arguments("9.5", "9.0.0")] // Much greater than anchored product version
 
 	public void AlreadyPublishingFalseAllowsSpeculativeBuildForVersionBranch(string branch, string productVersion)
 	{
@@ -450,7 +450,7 @@ public class AssemblyConfigurationMatchTests
 		result.Speculative.Should().BeTrue();
 	}
 
-	[Fact]
+	[Test]
 	public void AlreadyPublishingOnlyAffectsVersionBranchesWithoutVersionedCurrent()
 	{
 		var repositories = new Dictionary<string, Repository>
@@ -467,9 +467,9 @@ public class AssemblyConfigurationMatchTests
 		resultFalse.Speculative.Should().BeTrue();
 	}
 
-	[Theory]
-	[InlineData("main")]
-	[InlineData("master")]
+	[Test]
+	[Arguments("main")]
+	[Arguments("master")]
 	public void AlreadyPublishingDoesNotAffectNonVersionBranchesWithFallback(string branch)
 	{
 		var repositories = new Dictionary<string, Repository>

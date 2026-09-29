@@ -9,7 +9,6 @@ using Elastic.Changelog.GitHub;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.ReleaseNotes;
 using FakeItEasy;
-using Xunit;
 
 namespace Elastic.Changelog.Tests.Changelogs;
 
@@ -24,7 +23,7 @@ public class BundleReleaseVersionTests : ChangelogTestBase
 	private readonly ChangelogBundlingService _bundlingService;
 	private readonly string _changelogDir;
 
-	public BundleReleaseVersionTests(ITestOutputHelper output) : base(output)
+	public BundleReleaseVersionTests() : base()
 	{
 		_bundlingService = new ChangelogBundlingService(LoggerFactory, FileSystem, ConfigurationContext);
 		_changelogDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
@@ -38,7 +37,7 @@ public class BundleReleaseVersionTests : ChangelogTestBase
 	// Core flow: release → PR list → bundle
 	// -----------------------------------------------------------------------
 
-	[Fact]
+	[Test]
 	public async Task ReleaseVersion_BundlesMatchingChangelogs()
 	{
 		// Arrange – two changelog files each referencing a specific PR
@@ -89,13 +88,13 @@ public class BundleReleaseVersionTests : ChangelogTestBase
 		var prUrls = await ResolveReleasePrUrls("elastic", "elasticsearch", "v9.2.0");
 		var input = new BundleChangelogsArguments { Directory = _changelogDir, Prs = prUrls, Output = BundleOutputPath() };
 
-		var result = await _bundlingService.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await _bundlingService.BundleChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		result.Should().BeTrue();
 		Collector.Errors.Should().Be(0);
 
-		var bundleContent = await FileSystem.File.ReadAllTextAsync(input.Output, TestContext.Current.CancellationToken);
+		var bundleContent = await FileSystem.File.ReadAllTextAsync(input.Output, TestContext.Current!.Execution.CancellationToken);
 		bundleContent.Should().Contain("pr-12345.yaml");
 		bundleContent.Should().Contain("pr-12346.yaml");
 	}
@@ -104,7 +103,7 @@ public class BundleReleaseVersionTests : ChangelogTestBase
 	// Explicit output products
 	// -----------------------------------------------------------------------
 
-	[Fact]
+	[Test]
 	public async Task ReleaseVersion_ExplicitOutputProducts_SetsBundleProducts()
 	{
 		// Arrange
@@ -147,11 +146,11 @@ public class BundleReleaseVersionTests : ChangelogTestBase
 			Output = BundleOutputPath()
 		};
 
-		var result = await _bundlingService.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await _bundlingService.BundleChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		result.Should().BeTrue();
-		var bundleContent = await FileSystem.File.ReadAllTextAsync(input.Output, TestContext.Current.CancellationToken);
+		var bundleContent = await FileSystem.File.ReadAllTextAsync(input.Output, TestContext.Current!.Execution.CancellationToken);
 		bundleContent.Should().Contain("product: elasticsearch");
 		bundleContent.Should().Contain("product: cloud-hosted");
 	}
@@ -160,7 +159,7 @@ public class BundleReleaseVersionTests : ChangelogTestBase
 	// No PR refs in release notes
 	// -----------------------------------------------------------------------
 
-	[Fact]
+	[Test]
 	public async Task ReleaseVersion_WithNoMatchingPrs_EmitsWarning()
 	{
 		// Arrange
@@ -173,7 +172,7 @@ public class BundleReleaseVersionTests : ChangelogTestBase
 			"elastic",
 			"elasticsearch",
 			"v9.2.0",
-			TestContext.Current.CancellationToken
+			TestContext.Current!.Execution.CancellationToken
 		);
 		var parsed = ReleaseNoteParser.Parse(release!.Body);
 
@@ -188,7 +187,7 @@ public class BundleReleaseVersionTests : ChangelogTestBase
 	// Release fetch failure
 	// -----------------------------------------------------------------------
 
-	[Fact]
+	[Test]
 	public async Task ReleaseVersion_FetchFailure_ReturnsNull()
 	{
 		// Arrange
@@ -201,7 +200,7 @@ public class BundleReleaseVersionTests : ChangelogTestBase
 			"elastic",
 			"elasticsearch",
 			"v9.2.0",
-			TestContext.Current.CancellationToken
+			TestContext.Current!.Execution.CancellationToken
 		);
 
 		// Assert – command returns error on null release
@@ -212,7 +211,7 @@ public class BundleReleaseVersionTests : ChangelogTestBase
 	// Latest tag: FetchReleaseAsync is called with "latest"
 	// -----------------------------------------------------------------------
 
-	[Fact]
+	[Test]
 	public async Task ReleaseVersion_Latest_CallsFetchWithLatestTag()
 	{
 		// Arrange
@@ -221,7 +220,12 @@ public class BundleReleaseVersionTests : ChangelogTestBase
 		).Returns(new GitHubReleaseInfo { TagName = "v9.2.0", Name = "9.2.0", Body = "No PR references." });
 
 		// Act
-		_ = await _mockReleaseService.FetchReleaseAsync("elastic", "elasticsearch", "latest", TestContext.Current.CancellationToken);
+		_ = await _mockReleaseService.FetchReleaseAsync(
+			"elastic",
+			"elasticsearch",
+			"latest",
+			TestContext.Current!.Execution.CancellationToken
+		);
 
 		// Assert
 		A.CallTo(
@@ -236,13 +240,13 @@ public class BundleReleaseVersionTests : ChangelogTestBase
 	private async Task WriteChangelog(string filename, string content)
 	{
 		var path = FileSystem.Path.Join(_changelogDir, filename);
-		await FileSystem.File.WriteAllTextAsync(path, content, Encoding.UTF8, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(path, content, Encoding.UTF8, TestContext.Current!.Execution.CancellationToken);
 	}
 
 	/// <summary>Fetches a release and extracts full PR URLs, mirroring the command's logic.</summary>
 	private async Task<string[]> ResolveReleasePrUrls(string owner, string repo, string version)
 	{
-		var release = await _mockReleaseService.FetchReleaseAsync(owner, repo, version, TestContext.Current.CancellationToken);
+		var release = await _mockReleaseService.FetchReleaseAsync(owner, repo, version, TestContext.Current!.Execution.CancellationToken);
 		var parsed = ReleaseNoteParser.Parse(release!.Body);
 		return parsed.PrReferences.Select(r => $"https://github.com/{owner}/{repo}/pull/{r.PrNumber}").ToArray();
 	}

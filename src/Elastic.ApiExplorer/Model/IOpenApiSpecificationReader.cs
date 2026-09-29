@@ -3,12 +3,13 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions;
+using Elastic.Documentation.Diagnostics;
 using Microsoft.OpenApi;
 
 namespace Elastic.ApiExplorer.Model;
 
 public interface IOpenApiSpecificationReader
 {
-	Task<OpenApiDocument?> ReadAsync(IFileInfo openApiSpecification);
-	Task<OpenApiDocument?> ReadAsync(Stream stream, string specFileName);
+	Task<OpenApiDocument?> ReadAsync(IFileInfo openApiSpecification, IDiagnosticsCollector? collector = null);
+	Task<OpenApiDocument?> ReadAsync(Stream stream, string specFileName, IDiagnosticsCollector? collector = null);
 }

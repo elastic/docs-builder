@@ -34,7 +34,7 @@ public class CdnChangelogEntryFetcherTests
 		return (errors, warnings, errors.Add, warnings.Add);
 	}
 
-	[Fact]
+	[Test]
 	public async Task FetchAsync_HappyPath_ReturnsAllEntriesFromRegistry()
 	{
 		var handler = new StubHandler(
@@ -54,7 +54,7 @@ public class CdnChangelogEntryFetcherTests
 			"main",
 			emitError,
 			emitWarning,
-			TestContext.Current.CancellationToken
+			TestContext.Current!.Execution.CancellationToken
 		);
 
 		errors.Should().BeEmpty();
@@ -69,7 +69,7 @@ public class CdnChangelogEntryFetcherTests
 			.Contain(p => p.EndsWith("/changelog/elastic/elasticsearch/main/1-a.yaml", StringComparison.Ordinal));
 	}
 
-	[Fact]
+	[Test]
 	public async Task FetchAsync_BranchWithSlashes_KeepsBranchSeparatorsInPath()
 	{
 		var handler = new StubHandler(
@@ -89,7 +89,7 @@ public class CdnChangelogEntryFetcherTests
 			"feature/foo",
 			emitError,
 			emitWarning,
-			TestContext.Current.CancellationToken
+			TestContext.Current!.Execution.CancellationToken
 		);
 
 		errors.Should().BeEmpty();
@@ -103,10 +103,10 @@ public class CdnChangelogEntryFetcherTests
 			.Contain(p => p.EndsWith("/changelog/elastic/elasticsearch/feature/foo/1-a.yaml", StringComparison.Ordinal));
 	}
 
-	[Theory]
-	[InlineData("..")]
-	[InlineData("feature/..")]
-	[InlineData("")]
+	[Test]
+	[Arguments("..")]
+	[Arguments("feature/..")]
+	[Arguments("")]
 	public async Task FetchAsync_UnsafeBranch_EmitsErrorAndDoesNotHitCdn(string branch)
 	{
 		// A traversal/empty branch segment must be rejected before any request, so URI normalization
@@ -122,7 +122,7 @@ public class CdnChangelogEntryFetcherTests
 			branch,
 			emitError,
 			emitWarning,
-			TestContext.Current.CancellationToken
+			TestContext.Current!.Execution.CancellationToken
 		);
 
 		entries.Should().BeEmpty();
@@ -130,7 +130,7 @@ public class CdnChangelogEntryFetcherTests
 		handler.RequestedPaths.Should().BeEmpty("validation must happen before any CDN request");
 	}
 
-	[Fact]
+	[Test]
 	public async Task FetchAsync_RegistryNotFound_EmitsErrorAndReturnsEmpty()
 	{
 		var handler = new StubHandler(_ => new HttpResponseMessage(HttpStatusCode.NotFound));
@@ -144,14 +144,14 @@ public class CdnChangelogEntryFetcherTests
 			"main",
 			emitError,
 			emitWarning,
-			TestContext.Current.CancellationToken
+			TestContext.Current!.Execution.CancellationToken
 		);
 
 		entries.Should().BeEmpty();
 		errors.Should().ContainSingle().Which.Should().Contain("registry");
 	}
 
-	[Fact]
+	[Test]
 	public async Task FetchAsync_EntryMissingAfterRetries_EmitsErrorAndReturnsEmpty()
 	{
 		// A registry-listed entry that never appears on the CDN is retried, then escalated to an error
@@ -176,7 +176,7 @@ public class CdnChangelogEntryFetcherTests
 			"main",
 			emitError,
 			emitWarning,
-			TestContext.Current.CancellationToken
+			TestContext.Current!.Execution.CancellationToken
 		);
 
 		entries.Should().BeEmpty();
@@ -188,7 +188,7 @@ public class CdnChangelogEntryFetcherTests
 			.Be(3, "the missing entry should be attempted up to the retry budget before failing");
 	}
 
-	[Fact]
+	[Test]
 	public async Task FetchAsync_EntryRecoversAfterRetry_ReturnsEntry()
 	{
 		// The common scrub/propagation race: the first GET 404s, a retry succeeds. No error, no skip.
@@ -214,7 +214,7 @@ public class CdnChangelogEntryFetcherTests
 			"main",
 			emitError,
 			emitWarning,
-			TestContext.Current.CancellationToken
+			TestContext.Current!.Execution.CancellationToken
 		);
 
 		errors.Should().BeEmpty();
@@ -223,7 +223,7 @@ public class CdnChangelogEntryFetcherTests
 		entryAttempts.Should().Be(2, "the first 404 should be retried and then succeed");
 	}
 
-	[Fact]
+	[Test]
 	public async Task FetchAsync_SchemaVersionTooNew_EmitsError()
 	{
 		var handler = new StubHandler(
@@ -239,14 +239,14 @@ public class CdnChangelogEntryFetcherTests
 			"main",
 			emitError,
 			emitWarning,
-			TestContext.Current.CancellationToken
+			TestContext.Current!.Execution.CancellationToken
 		);
 
 		entries.Should().BeEmpty();
 		errors.Should().ContainSingle().Which.Should().Contain("schema version");
 	}
 
-	[Fact]
+	[Test]
 	public async Task FetchAsync_UnsafeFileName_EmitsWarningAndSkips()
 	{
 		var handler = new StubHandler(
@@ -266,7 +266,7 @@ public class CdnChangelogEntryFetcherTests
 			"main",
 			emitError,
 			emitWarning,
-			TestContext.Current.CancellationToken
+			TestContext.Current!.Execution.CancellationToken
 		);
 
 		errors.Should().BeEmpty();
@@ -274,7 +274,7 @@ public class CdnChangelogEntryFetcherTests
 		warnings.Should().ContainSingle().Which.Should().Contain("escape.yaml");
 	}
 
-	[Fact]
+	[Test]
 	public async Task FetchNotesAsync_IndexAbsent_ReturnsEmptyWithNoError()
 	{
 		// A missing notes index means "no notes for this target" — not a pipeline error.
@@ -288,7 +288,7 @@ public class CdnChangelogEntryFetcherTests
 			"elasticsearch",
 			"9.0.0",
 			emitError,
-			TestContext.Current.CancellationToken
+			TestContext.Current!.Execution.CancellationToken
 		);
 
 		entries.Should().BeEmpty();
@@ -296,7 +296,7 @@ public class CdnChangelogEntryFetcherTests
 		handler.RequestedPaths.Should().ContainSingle().Which.Should().EndWith("/changelog/elastic/elasticsearch/notes-9.0.0.json");
 	}
 
-	[Fact]
+	[Test]
 	public async Task FetchNotesAsync_HappyPath_FetchesAllListedNotes()
 	{
 		var handler = new StubHandler(req =>
@@ -317,7 +317,7 @@ public class CdnChangelogEntryFetcherTests
 			"elasticsearch",
 			"9.0.0",
 			emitError,
-			TestContext.Current.CancellationToken
+			TestContext.Current!.Execution.CancellationToken
 		);
 
 		errors.Should().BeEmpty();
@@ -327,7 +327,7 @@ public class CdnChangelogEntryFetcherTests
 		handler.RequestedPaths.Should().Contain(p => p.EndsWith("/9.0/note-gap.yml", StringComparison.Ordinal));
 	}
 
-	[Fact]
+	[Test]
 	public async Task FetchNotesAsync_ListedNoteNotFound_EmitsErrorAndReturnsEmpty()
 	{
 		// A note listed in the index that cannot be fetched is a hard error — the index promises it exists.
@@ -347,14 +347,14 @@ public class CdnChangelogEntryFetcherTests
 			"elasticsearch",
 			"9.0.0",
 			emitError,
-			TestContext.Current.CancellationToken
+			TestContext.Current!.Execution.CancellationToken
 		);
 
 		entries.Should().BeEmpty();
 		errors.Should().ContainSingle().Which.Should().Contain("note-missing.yml");
 	}
 
-	[Fact]
+	[Test]
 	public async Task FetchNotesAsync_EmptyIndex_ReturnsEmpty()
 	{
 		var handler = new StubHandler(_ => Json(/*lang=json,strict*/ """{"schema_version":1,"notes":[]}"""));
@@ -367,7 +367,7 @@ public class CdnChangelogEntryFetcherTests
 			"elasticsearch",
 			"9.0.0",
 			emitError,
-			TestContext.Current.CancellationToken
+			TestContext.Current!.Execution.CancellationToken
 		);
 
 		entries.Should().BeEmpty();

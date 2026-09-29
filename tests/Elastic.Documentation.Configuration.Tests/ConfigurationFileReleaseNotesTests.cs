@@ -17,7 +17,7 @@ namespace Elastic.Documentation.Configuration.Tests;
 
 public class ConfigurationFileReleaseNotesTests
 {
-	[Fact]
+	[Test]
 	public async Task ReleaseNotes_DeclaredProduct_IsExposedWithoutErrors()
 	{
 		var (config, diagnostics) = await CreateConfiguration(DocSetWithReleaseNotes("elasticsearch"));
@@ -26,7 +26,7 @@ public class ConfigurationFileReleaseNotesTests
 		diagnostics.Should().BeEmpty();
 	}
 
-	[Fact]
+	[Test]
 	public async Task ReleaseNotes_UnderscoreVariant_NormalizesToCanonicalId()
 	{
 		var (config, diagnostics) = await CreateConfiguration(DocSetWithReleaseNotes("edot_java"));
@@ -35,7 +35,7 @@ public class ConfigurationFileReleaseNotesTests
 		diagnostics.Should().BeEmpty();
 	}
 
-	[Fact]
+	[Test]
 	public async Task ReleaseNotes_DuplicateDeclarations_AreDeduplicated()
 	{
 		var (config, diagnostics) = await CreateConfiguration(DocSetWithReleaseNotes("elasticsearch", "elasticsearch"));
@@ -44,7 +44,7 @@ public class ConfigurationFileReleaseNotesTests
 		diagnostics.Should().BeEmpty();
 	}
 
-	[Fact]
+	[Test]
 	public async Task ReleaseNotes_UnknownProduct_EmitsError()
 	{
 		var (config, diagnostics) = await CreateConfiguration(DocSetWithReleaseNotes("not-a-product"));
@@ -53,7 +53,7 @@ public class ConfigurationFileReleaseNotesTests
 		diagnostics.Should().Contain(d => d.Severity == Severity.Error && d.Message.Contains("Unknown 'release_notes' product"));
 	}
 
-	[Fact]
+	[Test]
 	public async Task ReleaseNotes_ProductWithoutReleaseNotesFeature_EmitsError()
 	{
 		var (config, diagnostics) = await CreateConfiguration(DocSetWithReleaseNotes("reference-only"));
@@ -62,7 +62,7 @@ public class ConfigurationFileReleaseNotesTests
 		diagnostics.Should().Contain(d => d.Severity == Severity.Error && d.Message.Contains("does not participate"));
 	}
 
-	[Fact]
+	[Test]
 	public async Task ReleaseNotes_InvalidProductId_EmitsError()
 	{
 		var (config, diagnostics) = await CreateConfiguration(DocSetWithReleaseNotes("bad/slug"));
@@ -71,7 +71,7 @@ public class ConfigurationFileReleaseNotesTests
 		diagnostics.Should().Contain(d => d.Severity == Severity.Error && d.Message.Contains("must match"));
 	}
 
-	[Fact]
+	[Test]
 	public async Task ReleaseNotes_EmptyProductValue_EmitsError()
 	{
 		var (config, diagnostics) = await CreateConfiguration(DocSetWithReleaseNotes("   "));
@@ -94,7 +94,7 @@ public class ConfigurationFileReleaseNotesTests
 	{
 		var recorder = new RecordingDiagnosticsOutput();
 		var collector = new DiagnosticsCollector([recorder]);
-		_ = collector.StartAsync(TestContext.Current.CancellationToken);
+		_ = collector.StartAsync(TestContext.Current!.Execution.CancellationToken);
 
 		var root = Paths.WorkingDirectoryRoot.FullName;
 		var configFilePath = Path.Join(root, "docs", "_docset.yml");
@@ -108,7 +108,7 @@ public class ConfigurationFileReleaseNotesTests
 		var productsConfig = CreateProductsConfiguration();
 
 		var config = new ConfigurationFile(docSet, context, versionsConfig, productsConfig);
-		await collector.StopAsync(TestContext.Current.CancellationToken);
+		await collector.StopAsync(TestContext.Current!.Execution.CancellationToken);
 		return (config, recorder.Diagnostics);
 	}
 

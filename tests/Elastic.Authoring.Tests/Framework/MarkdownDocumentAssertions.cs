@@ -6,7 +6,6 @@ using System.Diagnostics;
 using AwesomeAssertions;
 using Elastic.Documentation.AppliesTo;
 using Markdig.Syntax;
-using Xunit.Sdk;
 
 namespace Elastic.Authoring.Tests.Framework;
 
@@ -27,7 +26,7 @@ internal static class MarkdownDocumentAssertions
 	{
 		var found = actual.Document.Descendants<T>().ToArray();
 		if (found.Length == 0)
-			throw new XunitException($"Could not find {typeof(T).Name} in fully parsed document");
+			throw new AwesomeAssertions.Execution.AssertionFailedException($"Could not find {typeof(T).Name} in fully parsed document");
 		return Task.FromResult(found);
 	}
 
@@ -41,7 +40,7 @@ internal static class MarkdownDocumentAssertions
 	{
 		var found = actual.MinimalParse.Descendants<T>().ToArray();
 		if (found.Length == 0)
-			throw new XunitException($"Could not find {typeof(T).Name} in minimally parsed document");
+			throw new AwesomeAssertions.Execution.AssertionFailedException($"Could not find {typeof(T).Name} in minimally parsed document");
 		return Task.FromResult(found);
 	}
 
@@ -56,9 +55,10 @@ internal static class MarkdownDocumentAssertions
 	internal static void AppliesTo(ApplicableTo? expected, GeneratorResults results)
 	{
 		var result = results.MarkdownResults.FirstOrDefault(r => r.File.RelativePath == "index.md")
-			?? throw new XunitException("Could not find 'index.md' in generator results");
+			?? throw new AwesomeAssertions.Execution.AssertionFailedException("Could not find 'index.md' in generator results");
 
-		var matter = result.File.YamlFrontMatter ?? throw new XunitException($"{result.File.RelativePath} has no YAML front matter");
+		var matter = result.File.YamlFrontMatter
+			?? throw new AwesomeAssertions.Execution.AssertionFailedException($"{result.File.RelativePath} has no YAML front matter");
 
 		// Copy diagnostics from expected onto actual so the Equals comparison ignores them —
 		// this mirrors the F# `applies.Diagnostics <- a.Diagnostics` line exactly.

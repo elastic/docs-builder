@@ -8,7 +8,6 @@ using Elastic.Documentation.AppliesTo;
 using Elastic.Markdown.Exporters;
 using Elastic.Markdown.Myst.Components;
 using JetBrains.Annotations;
-using Xunit.Sdk;
 
 namespace Elastic.Authoring.Tests.Framework;
 
@@ -78,7 +77,7 @@ internal static class LlmMarkdownAssertions
 	internal static void ConvertsToNewLlm([LanguageInjection("markdown")] string expected, GeneratorResults results)
 	{
 		var defaultFile = results.MarkdownResults.FirstOrDefault(r => r.File.RelativePath == "index.md")
-			?? throw new XunitException("Could not find 'index.md' in generator results");
+			?? throw new AwesomeAssertions.Execution.AssertionFailedException("Could not find 'index.md' in generator results");
 
 		var actual = ToLlmMarkdown(defaultFile);
 		var expectedTrimmed = expected.Trim();
@@ -87,7 +86,7 @@ internal static class LlmMarkdownAssertions
 		if (string.IsNullOrEmpty(difference))
 			return;
 
-		throw new XunitException(
+		throw new AwesomeAssertions.Execution.AssertionFailedException(
 			$"""
 LLM text was not equal
 -- DIFF --
@@ -106,7 +105,7 @@ LLM text was not equal
 	internal static void ConvertsToLlmWithMetadata([LanguageInjection("markdown")] string expected, GeneratorResults results)
 	{
 		var defaultFile = results.MarkdownResults.FirstOrDefault(r => r.File.RelativePath == "index.md")
-			?? throw new XunitException("Could not find 'index.md' in generator results");
+			?? throw new AwesomeAssertions.Execution.AssertionFailedException("Could not find 'index.md' in generator results");
 
 		var actual = ToLlmMarkdownWithMetadata(defaultFile);
 		var expectedTrimmed = expected.Trim();
@@ -115,7 +114,7 @@ LLM text was not equal
 		if (string.IsNullOrEmpty(difference))
 			return;
 
-		throw new XunitException(
+		throw new AwesomeAssertions.Execution.AssertionFailedException(
 			$"""
 LLM metadata output was not equal
 -- DIFF --

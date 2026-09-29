@@ -11,7 +11,7 @@ public class EnvironmentInterpolationTests
 	private const string AllowedVar = "KIBANA_STORYBOOK_REGISTRY";
 	private const string DefaultRegistry = "https://ci-artifacts.kibana.dev/storybooks/main/storybook-docs/docs_registry.json";
 
-	[Fact]
+	[Test]
 	public void DefaultIsUsed_WhenAllowedVariableUnset()
 	{
 		var environment = new MockEnvironment();
@@ -22,7 +22,7 @@ public class EnvironmentInterpolationTests
 		result.Fallback.Should().BeNull();
 	}
 
-	[Fact]
+	[Test]
 	public void EnvironmentValueIsUsed_WhenAllowedVariableSet()
 	{
 		const string prRegistry = "https://ci-artifacts.kibana.dev/storybooks/pr-42/storybook-docs/docs_registry.json";
@@ -34,7 +34,7 @@ public class EnvironmentInterpolationTests
 		result.Fallback.Should().Be(DefaultRegistry);
 	}
 
-	[Fact]
+	[Test]
 	public void EmptyEnvironmentValue_FallsBackToDefault()
 	{
 		var environment = new MockEnvironment { [AllowedVar] = "" };
@@ -45,7 +45,7 @@ public class EnvironmentInterpolationTests
 		result.Fallback.Should().BeNull();
 	}
 
-	[Fact]
+	[Test]
 	public void DisallowedVariable_IsNotReadFromEnvironment_AndLeftLiteral()
 	{
 		var environment = new MockEnvironment { ["AWS_SECRET_ACCESS_KEY"] = "super-secret" };
@@ -59,7 +59,7 @@ public class EnvironmentInterpolationTests
 		reported.Should().Be("AWS_SECRET_ACCESS_KEY");
 	}
 
-	[Fact]
+	[Test]
 	public void DisallowedVariableWithDefault_DoesNotResolveToDefault()
 	{
 		var environment = new MockEnvironment();
@@ -69,7 +69,7 @@ public class EnvironmentInterpolationTests
 		result.Value.Should().Be("${SECRET:-fallback}");
 	}
 
-	[Fact]
+	[Test]
 	public void AllowedVariableWithoutDefault_Unset_ResolvesToEmpty()
 	{
 		var environment = new MockEnvironment();
@@ -79,7 +79,7 @@ public class EnvironmentInterpolationTests
 		result.Value.Should().Be("prefix--suffix");
 	}
 
-	[Fact]
+	[Test]
 	public void NoExpression_ReturnsRawUnchanged()
 	{
 		var environment = new MockEnvironment { [AllowedVar] = "ignored" };
@@ -90,7 +90,7 @@ public class EnvironmentInterpolationTests
 		result.Fallback.Should().BeNull();
 	}
 
-	[Fact]
+	[Test]
 	public void NullInput_ReturnsNull()
 	{
 		var result = EnvironmentInterpolation.Interpolate(null, new MockEnvironment());

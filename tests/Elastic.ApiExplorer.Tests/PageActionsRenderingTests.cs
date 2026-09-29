@@ -10,11 +10,11 @@ namespace Elastic.ApiExplorer.Tests;
 
 public class PageActionsRenderingTests
 {
-	[Fact]
+	[Test]
 	public async Task Render_SplitButton_CopiesPageAndOpensMarkdown()
 	{
 		var html = await _PageActions.Create("/api/doc/elasticsearch/operation/operation-search.md").RenderAsync(
-			cancellationToken: TestContext.Current.CancellationToken
+			cancellationToken: TestContext.Current!.Execution.CancellationToken
 		);
 
 		html.Should().Contain("class=\"api-page-actions\"");

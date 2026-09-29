@@ -21,7 +21,7 @@ public class DashboardOpenApiNavigationTests
 	/// Dashboard OpenAPI (single tag for all operations) must populate the API explorer nav.
 	/// Regression: grouped navigation overwrote root items with an empty top-level list.
 	/// </summary>
-	[Fact]
+	[Test]
 	public async Task CreateNavigation_SingleTagOpenApiSpec_HasSidebarItems()
 	{
 		var configurationContext = TestHelpers.CreateConfigurationContext(new FileSystem());

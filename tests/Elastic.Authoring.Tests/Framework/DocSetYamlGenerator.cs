@@ -136,7 +136,7 @@ public static class DocSetYamlGenerator
 		fileSystem.AddFile(Path.Join(mockDocsRoot.FullName, redirectsName), new MockFileData(mergedRedirectYaml));
 
 		// Log chosen name so flakes are diagnosable.
-		TestContext.Current?.TestOutputHelper?.WriteLine($"[DocSetYamlGenerator] Using config file: {configName}");
+		TestContext.Current?.Output.WriteLine($"[DocSetYamlGenerator] Using config file: {configName}");
 	}
 
 	/// <summary>

@@ -134,18 +134,33 @@ let private publishContainers _ =
     createImage "src/tooling/essc/essc.csproj" "website-search-essc"
 
 let private runTests (testSuite: TestSuite) _ =
-    let testFilter =
+    let directories =
         match testSuite with
-        | All -> []
-        | Unit -> ["--filter"; "FullyQualifiedName~.Tests"]
-        | Integration -> ["--filter"; "FullyQualifiedName~.IntegrationTests"]
+        | All -> [ "tests"; "tests-integration" ]
+        | Unit -> [ "tests" ]
+        | Integration -> [ "tests-integration" ]
 
-    exec {
-        run "dotnet" (
-            ["test"; "-c"; "release"; "--no-restore"; "--no-build"; "--logger"; "GitHubActions"]
-            @ testFilter
+    let projects =
+        directories
+        |> List.collect (fun d ->
+            Directory.EnumerateFiles(Path.Combine(Paths.Root.FullName, d), "*.csproj", SearchOption.AllDirectories)
+            |> Seq.sort
+            |> Seq.toList
         )
-    }
+
+    if List.isEmpty projects then
+        failwithf "No test projects found under %A" directories
+
+    let runOne (project: string) =
+        exec {
+            exit_code_of "dotnet" (
+                [ "test"; project; "-c"; "release"; "--no-restore"; "--no-build" ]
+            )
+        } = 0
+
+    let failures = projects |> List.filter (fun p -> not (runOne p))
+    if not (List.isEmpty failures) then
+        failwithf "Test projects failed:\n%s" (String.concat "\n" failures)
     
 let private compressibleExtensions = set [".html"; ".css"; ".js"; ".json"; ".svg"; ".xml"; ".txt"]
 

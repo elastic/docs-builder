@@ -9,15 +9,15 @@ using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Markdown.IO;
 using Elastic.Markdown.Tests.Inline;
-using Xunit;
 
 namespace Elastic.Markdown.Tests.Assembler;
 
+[InheritsTests]
 /// <summary>
 /// Navigation relies on hx-boost targeting #main-container, so markdown links must
 /// not carry per-link htmx attributes. Cross-links stay same-site (no target=_blank).
 /// </summary>
-public class AssemblerHtmxMarkdownLinkTests(ITestOutputHelper output) : LinkTestBase(output, "Go to [test](kibana://index.md)")
+public class AssemblerHtmxMarkdownLinkTests() : LinkTestBase("Go to [test](kibana://index.md)")
 {
 	protected override BuildContext CreateBuildContext(
 		TestDiagnosticsCollector collector,
@@ -30,29 +30,30 @@ public class AssemblerHtmxMarkdownLinkTests(ITestOutputHelper output) : LinkTest
 			BuildType = BuildType.Assembler
 		};
 
-	[Fact]
+	[Test]
 	public void CrossLink_HasNoSelectOobButKeepsPreload()
 	{
 		Html.Should().NotContain("hx-select-oob");
 		Html.Should().Contain("preload=\"mousedown\"");
 	}
 
-	[Fact]
+	[Test]
 	public void CrossLink_NoTargetBlank() => Html.Should().NotContain("target=\"_blank\"");
 
-	[Fact]
+	[Test]
 	public void EmitsCrossLink()
 	{
 		Collector.CrossLinks.Should().HaveCount(1);
 		Collector.CrossLinks.Should().Contain("kibana://index.md");
 	}
 
-	[Fact]
+	[Test]
 	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
 }
 
+[InheritsTests]
 /// <summary>Internal links in assembler carry no per-link htmx attributes.</summary>
-public class AssemblerHtmxInternalLinkTests(ITestOutputHelper output) : LinkTestBase(output, "[Requirements](testing/req.md)")
+public class AssemblerHtmxInternalLinkTests() : LinkTestBase("[Requirements](testing/req.md)")
 {
 	protected override BuildContext CreateBuildContext(
 		TestDiagnosticsCollector collector,
@@ -65,23 +66,21 @@ public class AssemblerHtmxInternalLinkTests(ITestOutputHelper output) : LinkTest
 			BuildType = BuildType.Assembler
 		};
 
-	[Fact]
+	[Test]
 	public void InternalLink_HasNoPerLinkHtmxAttributes() => Html.Should().NotContain("hx-select-oob");
 
-	[Fact]
+	[Test]
 	public void EmitsNoCrossLink() => Collector.CrossLinks.Should().HaveCount(0);
 
-	[Fact]
+	[Test]
 	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
 }
 
+[InheritsTests]
 /// <summary>Absolute path links in assembler carry no per-link htmx attributes.</summary>
-public class AssemblerHtmxAbsolutePathLinkTests(ITestOutputHelper output) : LinkTestBase(
-	output,
-	"""
+public class AssemblerHtmxAbsolutePathLinkTests() : LinkTestBase("""
 [Elasticsearch](/_static/img/observability.png)
-"""
-)
+""")
 {
 	protected override BuildContext CreateBuildContext(
 		TestDiagnosticsCollector collector,
@@ -94,19 +93,20 @@ public class AssemblerHtmxAbsolutePathLinkTests(ITestOutputHelper output) : Link
 			BuildType = BuildType.Assembler
 		};
 
-	[Fact]
+	[Test]
 	public void AbsolutePathLink_HasNoSelectOobButKeepsPreload()
 	{
 		Html.Should().NotContain("hx-select-oob");
 		Html.Should().Contain("preload=\"mousedown\"");
 	}
 
-	[Fact]
+	[Test]
 	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
 }
 
+[InheritsTests]
 /// <summary>Reference-style internal links in assembler carry no per-link htmx attributes.</summary>
-public class AssemblerHtmxReferenceLinkTests(ITestOutputHelper output) : LinkTestBase(output, """
+public class AssemblerHtmxReferenceLinkTests() : LinkTestBase("""
 [test][test]
 
 [test]: testing/req.md
@@ -123,18 +123,19 @@ public class AssemblerHtmxReferenceLinkTests(ITestOutputHelper output) : LinkTes
 			BuildType = BuildType.Assembler
 		};
 
-	[Fact]
+	[Test]
 	public void ReferenceLink_HasNoPerLinkHtmxAttributes() => Html.Should().NotContain("hx-select-oob");
 
-	[Fact]
+	[Test]
 	public void EmitsNoCrossLink() => Collector.CrossLinks.Should().HaveCount(0);
 
-	[Fact]
+	[Test]
 	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
 }
 
+[InheritsTests]
 /// <summary>Empty-text cross-links in assembler carry no per-link htmx attributes (and emit error).</summary>
-public class AssemblerHtmxEmptyTextCrossLinkTests(ITestOutputHelper output) : LinkTestBase(output, """
+public class AssemblerHtmxEmptyTextCrossLinkTests() : LinkTestBase("""
 
 Go to [](kibana://index.md)
 """)
@@ -150,17 +151,17 @@ Go to [](kibana://index.md)
 			BuildType = BuildType.Assembler
 		};
 
-	[Fact]
+	[Test]
 	public void EmptyTextCrossLink_HasNoPerLinkHtmxAttributes() => Html.Should().NotContain("hx-select-oob");
 
-	[Fact]
+	[Test]
 	public void EmptyTextCrossLink_NoTargetBlank() => Html.Should().NotContain("target=\"_blank\"");
 
-	[Fact]
+	[Test]
 	public void HasError() =>
 		Collector.Diagnostics.Should().Contain(d => d.Severity == Severity.Error && d.Message.Contains("empty link text"));
 
-	[Fact]
+	[Test]
 	public void EmitsCrossLink()
 	{
 		Collector.CrossLinks.Should().HaveCount(1);
@@ -168,8 +169,9 @@ Go to [](kibana://index.md)
 	}
 }
 
+[InheritsTests]
 /// <summary>Insert-page-title links (empty text, internal target) carry no per-link htmx attributes.</summary>
-public class AssemblerHtmxInsertPageTitleTests(ITestOutputHelper output) : LinkTestBase(output, """
+public class AssemblerHtmxInsertPageTitleTests() : LinkTestBase("""
 [](testing/req.md)
 """)
 {
@@ -184,23 +186,21 @@ public class AssemblerHtmxInsertPageTitleTests(ITestOutputHelper output) : LinkT
 			BuildType = BuildType.Assembler
 		};
 
-	[Fact]
+	[Test]
 	public void InsertPageTitle_HasNoPerLinkHtmxAttributes() => Html.Should().NotContain("hx-select-oob");
 
-	[Fact]
+	[Test]
 	public void EmitsNoCrossLink() => Collector.CrossLinks.Should().HaveCount(0);
 
-	[Fact]
+	[Test]
 	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
 }
 
+[InheritsTests]
 /// <summary>HTTP links in assembler get target="_blank" and no htmx attributes.</summary>
-public class AssemblerHtmxExternalLinkTests(ITestOutputHelper output) : LinkTestBase(
-	output,
-	"""
+public class AssemblerHtmxExternalLinkTests() : LinkTestBase("""
 [link to app]({{some-url-with-a-version}})
-"""
-)
+""")
 {
 	protected override BuildContext CreateBuildContext(
 		TestDiagnosticsCollector collector,
@@ -213,7 +213,7 @@ public class AssemblerHtmxExternalLinkTests(ITestOutputHelper output) : LinkTest
 			BuildType = BuildType.Assembler
 		};
 
-	[Fact]
+	[Test]
 	public void ExternalLink_DoesNotGetHtmxAttributes_ForAssembler()
 	{
 		// HTTP links get target="_blank", not hx-select-oob
@@ -221,6 +221,6 @@ public class AssemblerHtmxExternalLinkTests(ITestOutputHelper output) : LinkTest
 		Html.Should().NotContain("hx-select-oob");
 	}
 
-	[Fact]
+	[Test]
 	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
 }

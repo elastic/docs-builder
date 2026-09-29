@@ -43,7 +43,7 @@ public class AssemblerOpenApiBuildStepTests : IDisposable
 		references: {}
 		""";
 
-	[Fact]
+	[Test]
 	public async Task BuildAsync_SkipsWhenFeatureFlagDisabled()
 	{
 		var fileSystem = new FileSystem();
@@ -68,7 +68,7 @@ public class AssemblerOpenApiBuildStepTests : IDisposable
 			NullLoggerFactory.Instance,
 			context,
 			assembleSources,
-			TestContext.Current.CancellationToken
+			TestContext.Current!.Execution.CancellationToken
 		);
 
 		fileSystem
@@ -78,7 +78,7 @@ public class AssemblerOpenApiBuildStepTests : IDisposable
 			.BeFalse("OpenAPI generation must not run when the feature flag is disabled");
 	}
 
-	[Fact]
+	[Test]
 	public async Task BuildAsync_SkipsWhenNoApiDeclarationsAndFlagEnabled()
 	{
 		var fileSystem = new FileSystem();
@@ -103,7 +103,7 @@ public class AssemblerOpenApiBuildStepTests : IDisposable
 			NullLoggerFactory.Instance,
 			context,
 			assembleSources,
-			TestContext.Current.CancellationToken
+			TestContext.Current!.Execution.CancellationToken
 		);
 
 		fileSystem
@@ -113,7 +113,7 @@ public class AssemblerOpenApiBuildStepTests : IDisposable
 			.BeFalse("OpenAPI generation must not run without API declarations");
 	}
 
-	[Fact]
+	[Test]
 	public void DiscoverApiOwners_EmitsErrorWhenDuplicateKeysDeclared()
 	{
 		var collector = new DiagnosticsCollector([]);
@@ -130,7 +130,7 @@ public class AssemblerOpenApiBuildStepTests : IDisposable
 		collector.Errors.Should().Be(1);
 	}
 
-	[Fact]
+	[Test]
 	public void DiscoverApiOwners_ReturnsOwnersForSetsWithApiDeclarations()
 	{
 		var collector = new DiagnosticsCollector([]);

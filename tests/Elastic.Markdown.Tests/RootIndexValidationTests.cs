@@ -11,12 +11,12 @@ using Elastic.Markdown.IO;
 
 namespace Elastic.Markdown.Tests;
 
-public class RootIndexValidationTests(ITestOutputHelper output)
+public class RootIndexValidationTests()
 {
-	[Fact]
+	[Test]
 	public void InternalRegistry_MissingIndexMd_EmitsError()
 	{
-		var logger = new TestLoggerFactory(output);
+		var logger = new TestLoggerFactory();
 		var fileSystem = new MockFileSystem(
 			new Dictionary<string, MockFileData>
 			{
@@ -35,8 +35,8 @@ public class RootIndexValidationTests(ITestOutputHelper output)
 			},
 			new MockFileSystemOptions { CurrentDirectory = Paths.WorkingDirectoryRoot.FullName }
 		);
-		var collector = new TestDiagnosticsCollector(output);
-		_ = collector.StartAsync(TestContext.Current.CancellationToken);
+		var collector = new TestDiagnosticsCollector();
+		_ = collector.StartAsync(TestContext.Current!.Execution.CancellationToken);
 		var configurationContext = TestHelpers.CreateConfigurationContext(fileSystem);
 		var context = new BuildContext(collector, TestHelpers.CreateDocumentationFileSystem(fileSystem), configurationContext);
 		_ = new DocumentationSet(context, logger, new TestCrossLinkResolver());
@@ -45,10 +45,10 @@ public class RootIndexValidationTests(ITestOutputHelper output)
 		collector.Diagnostics.Should().Contain(d => d.Severity == Severity.Error && d.Message.Contains("index.md"));
 	}
 
-	[Fact]
+	[Test]
 	public void InternalRegistry_WithIndexMd_NoError()
 	{
-		var logger = new TestLoggerFactory(output);
+		var logger = new TestLoggerFactory();
 		var fileSystem = new MockFileSystem(
 			new Dictionary<string, MockFileData>
 			{
@@ -69,8 +69,8 @@ public class RootIndexValidationTests(ITestOutputHelper output)
 			},
 			new MockFileSystemOptions { CurrentDirectory = Paths.WorkingDirectoryRoot.FullName }
 		);
-		var collector = new TestDiagnosticsCollector(output);
-		_ = collector.StartAsync(TestContext.Current.CancellationToken);
+		var collector = new TestDiagnosticsCollector();
+		_ = collector.StartAsync(TestContext.Current!.Execution.CancellationToken);
 		var configurationContext = TestHelpers.CreateConfigurationContext(fileSystem);
 		var context = new BuildContext(collector, TestHelpers.CreateDocumentationFileSystem(fileSystem), configurationContext);
 		_ = new DocumentationSet(context, logger, new TestCrossLinkResolver());
@@ -78,10 +78,10 @@ public class RootIndexValidationTests(ITestOutputHelper output)
 		collector.Diagnostics.Where(d => d.Severity == Severity.Error && d.Message.Contains("index.md")).Should().BeEmpty();
 	}
 
-	[Fact]
+	[Test]
 	public void PublicRegistry_MissingIndexMd_NoError()
 	{
-		var logger = new TestLoggerFactory(output);
+		var logger = new TestLoggerFactory();
 		var fileSystem = new MockFileSystem(
 			new Dictionary<string, MockFileData>
 			{
@@ -99,8 +99,8 @@ public class RootIndexValidationTests(ITestOutputHelper output)
 			},
 			new MockFileSystemOptions { CurrentDirectory = Paths.WorkingDirectoryRoot.FullName }
 		);
-		var collector = new TestDiagnosticsCollector(output);
-		_ = collector.StartAsync(TestContext.Current.CancellationToken);
+		var collector = new TestDiagnosticsCollector();
+		_ = collector.StartAsync(TestContext.Current!.Execution.CancellationToken);
 		var configurationContext = TestHelpers.CreateConfigurationContext(fileSystem);
 		var context = new BuildContext(collector, TestHelpers.CreateDocumentationFileSystem(fileSystem), configurationContext);
 		_ = new DocumentationSet(context, logger, new TestCrossLinkResolver());

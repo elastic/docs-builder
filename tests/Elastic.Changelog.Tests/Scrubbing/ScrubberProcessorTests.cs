@@ -76,7 +76,7 @@ public class ScrubberProcessorTests
 		);
 	}
 
-	private Cancel Ctx => TestContext.Current.CancellationToken;
+	private Cancel Ctx => TestContext.Current!.Execution.CancellationToken;
 
 	private static int MessageCounter;
 
@@ -100,7 +100,7 @@ public class ScrubberProcessorTests
 	private SortedDictionary<string, string> ShallowMap(string mapKey) =>
 		JsonSerializer.Deserialize(_s3.ContentOf(PublicBucket, mapKey), ShallowRegistryJsonContext.Default.SortedDictionaryStringString)!;
 
-	[Fact]
+	[Test]
 	public async Task Process_CreatedEvent_ScrubsCopiesAndWritesTheGroupManifest()
 	{
 		_ = _s3.Seed(PrivateBucket, "bundle/elasticsearch/es-9.1.0.yaml", "content-1");
@@ -112,7 +112,7 @@ public class ScrubberProcessorTests
 		PublicManifest("bundle/elasticsearch/registry.json").Bundles.Select(b => b.File).Should().Equal("es-9.1.0.yaml");
 	}
 
-	[Fact]
+	[Test]
 	public async Task Process_StaleRemovedEventAfterRecreate_RecopiesInsteadOfDeleting()
 	{
 		// The event type is advisory: the private object exists again, so a late ObjectRemoved
@@ -127,7 +127,7 @@ public class ScrubberProcessorTests
 		_s3.Deletes.Should().NotContain(d => d.Key == "bundle/elasticsearch/es-9.1.0.yaml");
 	}
 
-	[Fact]
+	[Test]
 	public async Task Process_StaleCreatedEventAfterDelete_RemovesThePublicCopyAndManifest()
 	{
 		// Private object is gone; a late ObjectCreated must converge on deletion — and the group
@@ -150,7 +150,7 @@ public class ScrubberProcessorTests
 			.BeFalse("an empty group's manifest is deleted: absent ≠ empty");
 	}
 
-	[Fact]
+	[Test]
 	public async Task Process_BundleRegistryKeyEvents_NeverCopyOrDelete_OnlyTriggerAGroupReconcile()
 	{
 		// The bundle manifest is reconciler-owned. Old CLI versions still write private bundle
@@ -170,7 +170,7 @@ public class ScrubberProcessorTests
 		_s3.GetsFor(PrivateBucket).Should().BeEmpty("the private bundle registry content must never be read for pass-through");
 	}
 
-	[Fact]
+	[Test]
 	public async Task Process_PoolRegistryKeyEvents_AreIgnored()
 	{
 		// Pool registry keys (changelog/{org}/{repo}/{branch}/registry.json) are retired — no client
@@ -187,7 +187,7 @@ public class ScrubberProcessorTests
 		_s3.Puts.Should().BeEmpty("no S3 writes for a retired pool registry event");
 	}
 
-	[Fact]
+	[Test]
 	public async Task Process_PoolRegistryKeyDeleteEvents_AreAlsoIgnored()
 	{
 		// Delete events for the retired pool registry are dropped the same way as creates —
@@ -201,7 +201,7 @@ public class ScrubberProcessorTests
 		_s3.Exists(PublicBucket, poolRegistry).Should().BeTrue("the event was ignored; no delete happened");
 	}
 
-	[Fact]
+	[Test]
 	public async Task Process_PoolYamlEvents_ScrubAndUpdateTheShallowMap_ButWriteNoPoolManifest()
 	{
 		_ = _s3.Seed(PrivateBucket, "changelog/elastic/kibana/main/100.yaml", "entry");
@@ -220,7 +220,7 @@ public class ScrubberProcessorTests
 		map.Should().ContainKey("elastic/kibana/main");
 	}
 
-	[Fact]
+	[Test]
 	public async Task Process_BundleYamlEvents_UpdateTheShallowMapForTheProduct()
 	{
 		_ = _s3.Seed(PrivateBucket, "bundle/elasticsearch/es-9.1.0.yaml", "content");
@@ -232,7 +232,7 @@ public class ScrubberProcessorTests
 		map.Should().ContainKey("elasticsearch");
 	}
 
-	[Fact]
+	[Test]
 	public async Task Process_MultiplePoolsInOneBatch_CoalesceIntoASingleShallowMapWrite()
 	{
 		_ = _s3.Seed(PrivateBucket, "changelog/elastic/kibana/main/100.yaml", "one");
@@ -251,7 +251,7 @@ public class ScrubberProcessorTests
 		ShallowMap("changelog/registry.json").Keys.Should().BeEquivalentTo("elastic/kibana/main", "elastic/elasticsearch/main");
 	}
 
-	[Fact]
+	[Test]
 	public async Task Process_OtherJsonAndNonYamlKeys_AreSkipped()
 	{
 		_ = _s3.Seed(PrivateBucket, "bundle/elasticsearch/stray.json", "{}");
@@ -270,7 +270,7 @@ public class ScrubberProcessorTests
 		_s3.Deletes.Should().BeEmpty();
 	}
 
-	[Fact]
+	[Test]
 	public async Task Process_MultipleEventsForOneKey_CoalesceIntoASingleObjectReconcile()
 	{
 		_ = _s3.Seed(PrivateBucket, "bundle/elasticsearch/es-9.1.0.yaml", "content");
@@ -289,7 +289,7 @@ public class ScrubberProcessorTests
 		_s3.Puts.Where(p => p.Key == "bundle/elasticsearch/es-9.1.0.yaml").Should().ContainSingle();
 	}
 
-	[Fact]
+	[Test]
 	public async Task Process_MultipleKeysInOneGroup_CoalesceIntoASingleGroupReconcile()
 	{
 		_ = _s3.Seed(PrivateBucket, "bundle/elasticsearch/es-9.1.0.yaml", "one");
@@ -311,7 +311,7 @@ public class ScrubberProcessorTests
 		PublicManifest("bundle/elasticsearch/registry.json").Bundles.Should().HaveCount(3);
 	}
 
-	[Fact]
+	[Test]
 	public async Task Process_SourceChangingMidFlight_IsDetectedByPostWriteValidationAndRedone()
 	{
 		// Older-read-writes-last: v2 lands right after our read of v1. The post-write HEAD sees
@@ -330,7 +330,7 @@ public class ScrubberProcessorTests
 		_metrics.ObjectReconcileRetries.Should().Be(1);
 	}
 
-	[Fact]
+	[Test]
 	public async Task Process_CanonicalKeyEntry_WritesToCanonicalPublicKeyAndSourcePointer()
 	{
 		// Scrubber says the private key 12345-fix.yaml should be written to public as 12345.yaml.
@@ -358,7 +358,7 @@ public class ScrubberProcessorTests
 			.Contain("link:", "source pointer must be a link marker pointing to the canonical PR number");
 	}
 
-	[Fact]
+	[Test]
 	public async Task Process_MultiPrEntry_WritesMarkersForNonPrimaryPrs()
 	{
 		// Scrubber returns markers for PRs 200 and 300 pointing to the primary PR 100.
@@ -390,7 +390,7 @@ public class ScrubberProcessorTests
 			.Be("link: \"100\"\n", "marker for PR 300 must be written to public bucket");
 	}
 
-	[Fact]
+	[Test]
 	public async Task Process_FailedObjectReconcile_FailsOnlyItsOwnMessages()
 	{
 		_ = _s3.Seed(PrivateBucket, "bundle/elasticsearch/bad.yaml", "bad");
@@ -408,7 +408,7 @@ public class ScrubberProcessorTests
 		PublicManifest("bundle/kibana/registry.json").Bundles.Should().ContainSingle();
 	}
 
-	[Fact]
+	[Test]
 	public async Task Process_FailedGroupReconcile_FailsEveryContributingMessage()
 	{
 		_ = _s3.Seed(PrivateBucket, "bundle/elasticsearch/es-9.1.0.yaml", "one");
@@ -433,7 +433,7 @@ public class ScrubberProcessorTests
 		);
 	}
 
-	[Fact]
+	[Test]
 	public async Task Process_UnparseableMessageBody_FailsThatMessage()
 	{
 		var garbage = new ScrubberQueueMessage("msg-garbage", "not json at all {");
@@ -443,7 +443,7 @@ public class ScrubberProcessorTests
 		failed.Should().ContainSingle().Which.Should().Be("msg-garbage");
 	}
 
-	[Fact]
+	[Test]
 	public async Task Process_KeyOutsideAnyGroupLayout_IsCopiedButTriggersNoGroupReconcile()
 	{
 		// changelog/{org}/{file} has too few segments for a pool; the object itself still syncs.
@@ -456,7 +456,7 @@ public class ScrubberProcessorTests
 		_metrics.GroupReconciles.Should().Be(0);
 	}
 
-	[Fact]
+	[Test]
 	public async Task Process_BatchMixingObjectAndRegistryEvents_MarksGroupContributionsAcrossBoth()
 	{
 		// A YAML event and a bundle-registry event for the same group coalesce into one group
@@ -476,7 +476,7 @@ public class ScrubberProcessorTests
 		_metrics.GroupReconciles.Should().Be(1);
 	}
 
-	[Fact]
+	[Test]
 	public async Task Process_ClientUploadedNotesIndex_IsRejectedWithNoPublicWrite()
 	{
 		// The notes index is reconciler-owned; a client that uploads notes-*.json must be blocked.
@@ -490,7 +490,7 @@ public class ScrubberProcessorTests
 		_metrics.GroupReconciles.Should().Be(0);
 	}
 
-	[Fact]
+	[Test]
 	public async Task Process_NoteFile_ScrubbedAndNotesReconcileTriggered()
 	{
 		// language=yaml
@@ -516,7 +516,7 @@ public class ScrubberProcessorTests
 		_s3.Exists(PublicBucket, "changelog/elastic/elasticsearch/notes-9.0.0.json").Should().BeTrue();
 	}
 
-	[Fact]
+	[Test]
 	public async Task Process_PassThroughMarker_DoesNotOverwriteExistingCanonicalContent()
 	{
 		// Issue 1: a private marker derived from raw (pre-allowlist) PRs can arrive after the
@@ -538,7 +538,7 @@ public class ScrubberProcessorTests
 			.Be("scrubbed canonical content at 20", "pass-through marker must not overwrite existing canonical content");
 	}
 
-	[Fact]
+	[Test]
 	public async Task Process_DeleteOfNonCanonicalSource_DeletesCanonicalAndMarkersThroughSourcePointer()
 	{
 		// Issue 2: when the private source key is non-canonical (e.g. 12345-fix.yaml), the
@@ -578,7 +578,7 @@ public class ScrubberProcessorTests
 		_s3.Exists(PublicBucket, markerKey).Should().BeFalse("secondary-PR marker must be deleted via DeleteStaleMarkersAsync");
 	}
 
-	[Fact]
+	[Test]
 	public async Task Process_DeleteOfCanonicalEntryWithMarkers_DeletesMarkersBeforeCanonical()
 	{
 		// When the canonical entry's source key is itself the canonical key (numeric filename),
@@ -610,7 +610,7 @@ public class ScrubberProcessorTests
 		_s3.Exists(PublicBucket, marker300).Should().BeFalse("PR-300 marker must be deleted");
 	}
 
-	[Fact]
+	[Test]
 	public async Task Process_DeleteOfNonCanonicalSourceWithPlainMarker_DoesNotDeleteCanonical()
 	{
 		// Regression guard for source-pointer ambiguity: a plain link: marker at a non-numeric key
@@ -632,7 +632,7 @@ public class ScrubberProcessorTests
 			.BeTrue("a plain link: marker must not trigger canonical deletion — only source-redirect: true does");
 	}
 
-	[Fact]
+	[Test]
 	public async Task Process_DeleteOfYmlSourceKey_TracesSourcePointerToCanonical()
 	{
 		// A .yml source key can have a source pointer even though the stem looks numeric.
@@ -656,7 +656,7 @@ public class ScrubberProcessorTests
 			.BeFalse("canonical must be deleted via pointer tracing — .yml stem being numeric must not block this");
 	}
 
-	[Fact]
+	[Test]
 	public async Task Process_DeleteOfNumericYamlSourceKeyWithSourcePointer_TracesPointerToCanonical()
 	{
 		// Comment 4 regression: a numeric .yaml source key (e.g. 12345.yaml) can itself have a

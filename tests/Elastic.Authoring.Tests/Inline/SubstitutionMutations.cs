@@ -2,9 +2,9 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-namespace Elastic.Authoring.Tests.Inline.SubstitutionMutations;
+namespace Elastic.Authoring.Tests.Inline;
 
-public class ReadSubFromYamlFrontmatter : DocumentTest
+public class ReadSubMutationsFromYamlFrontmatter : DocumentTest
 {
 	protected override string Document =>
 		"""
@@ -30,7 +30,7 @@ public class ReadSubFromYamlFrontmatter : DocumentTest
 		* M.M+1: {{versions.stack | M.M+1 }}
 		""";
 
-	[Fact(DisplayName = "validate HTML: replace substitution")]
+	[Test, DisplayName("validate HTML: replace substitution")]
 	public async Task ValidateHtml() =>
 		await Docs.ConvertsToHtml(
 			"""
