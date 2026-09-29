@@ -87,8 +87,10 @@ public class DocumentationSetGoldenTests
 			("exclude", Arr(d.Exclude, e => Str(e))),
 			("extensions", Arr(d.Extensions, e => Str(e))),
 			("subs", Map(d.Subs, v => Str(v))),
+#pragma warning disable CS0618 // the snapshot records obsolete keys too: they are still accepted, and codex still reads description
 			("displayName", Str(d.DisplayName)),
 			("description", Str(d.Description)),
+#pragma warning restore CS0618
 			("icon", Str(d.Icon)),
 			("registry", Str(d.Registry)),
 			("features", Obj(

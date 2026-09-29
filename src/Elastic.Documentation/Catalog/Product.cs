@@ -4,12 +4,15 @@
 
 using System.Collections.Frozen;
 using Elastic.Documentation.Search.Contract;
+using Generator.Equals;
 
 namespace Elastic.Documentation.Catalog;
 
 /// <summary>Every product from <c>products.yml</c>, with lookups by repository and display name. Part of the <see cref="GlobalCatalog"/> aggregate.</summary>
-public sealed record ProductCatalog : IProductNameLookup
+[Equatable]
+public sealed partial record ProductCatalog : IProductNameLookup
 {
+	[UnorderedEquality]
 	public required FrozenDictionary<string, Product> Products { get; init; }
 
 	/// <summary>
@@ -17,11 +20,13 @@ public sealed record ProductCatalog : IProductNameLookup
 	/// applies_to blocks, page frontmatter, and get display-name substitutions.
 	/// When a product has no explicit <c>features</c> map, it is included here by default.
 	/// </summary>
+	[UnorderedEquality]
 	public required FrozenDictionary<string, Product> PublicReferenceProducts { get; init; }
 
 	/// <summary>
 	/// Product id to display name mappings for fast lookups.
 	/// </summary>
+	[UnorderedEquality]
 	public required FrozenDictionary<string, string> ProductDisplayNames { get; init; }
 
 	private FrozenDictionary<string, string>.AlternateLookup<ReadOnlySpan<char>>? _displayNameLookup;
@@ -29,6 +34,7 @@ public sealed record ProductCatalog : IProductNameLookup
 	/// <summary>
 	/// Gets the alternate lookup for span-based product id lookups.
 	/// </summary>
+	[IgnoreEquality]
 	public FrozenDictionary<string, string>.AlternateLookup<ReadOnlySpan<char>> DisplayNameLookup =>
 		_displayNameLookup ??= ProductDisplayNames.GetAlternateLookup<ReadOnlySpan<char>>();
 

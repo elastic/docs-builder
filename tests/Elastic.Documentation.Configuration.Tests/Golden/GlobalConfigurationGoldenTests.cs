@@ -157,7 +157,7 @@ public class GlobalConfigurationGoldenTests
 
 	private static JsonNode ProjectSearch(SearchTuning search) =>
 		Obj(
-			("synonyms", Arr(search.Synonyms, group => Arr(group, s => Str(s)))),
+			("synonyms", Arr(search.Synonyms, group => Arr(group.Terms, s => Str(s)))),
 			("synonymBiDirectional", Map(search.SynonymBiDirectional, targets => Arr(targets, t => Str(t)))),
 			("rules", Arr(
 				search.Rules,

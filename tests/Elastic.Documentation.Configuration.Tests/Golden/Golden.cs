@@ -62,7 +62,7 @@ public static class Golden
 	}
 
 	private static string SourceGoldenDirectory([CallerFilePath] string callerFile = "") =>
-		Path.Join(Path.GetDirectoryName(callerFile)!, "Snapshots");
+		Path.Join(Path.GetDirectoryName(callerFile), "Snapshots");
 
 	/// <summary>Compares <paramref name="actual"/> against the committed snapshot, or rewrites it when GOLDEN_UPDATE=1.</summary>
 	public static async Task AssertMatches(string name, JsonNode actual)

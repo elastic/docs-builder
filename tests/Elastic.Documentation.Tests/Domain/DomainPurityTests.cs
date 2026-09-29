@@ -9,9 +9,10 @@ using Elastic.Documentation.Diagnostics;
 namespace Elastic.Documentation.Tests.Domain;
 
 /// <summary>
-/// The domain model's bounded-context namespaces hold plain data: no file systems, no YAML, no diagnostics collectors.
-/// Loading and I/O live in <c>Elastic.Documentation.Configuration</c>. This keeps every aggregate constructible from
-/// values alone, which is what makes the loaders separable and the model property-testable.
+/// The domain model's bounded-context namespaces hold data, not machinery: no YAML, no logging, no diagnostics
+/// collectors, no raw <c>System.IO</c> handles. Loading lives in <c>Elastic.Documentation.Configuration</c>.
+/// Domain objects may expose <c>System.IO.Abstractions</c> file handles (<c>IFileInfo</c>, <c>IDirectoryInfo</c>) by
+/// design: a resolved documentation set points at real files, and tests supply a <c>MockFileSystem</c>.
 /// </summary>
 public class DomainPurityTests
 {
@@ -29,7 +30,6 @@ public class DomainPurityTests
 
 	private static readonly string[] ForbiddenNamespacePrefixes =
 	[
-		"System.IO.Abstractions",
 		"YamlDotNet",
 		"Nullean.ScopedFileSystem",
 		"Microsoft.Extensions.Logging"

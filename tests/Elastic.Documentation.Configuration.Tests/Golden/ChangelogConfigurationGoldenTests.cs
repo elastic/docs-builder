@@ -80,6 +80,11 @@ public class ChangelogConfigurationGoldenTests
 		await AssertMatches(name, snapshot);
 	}
 
+	private static readonly Type KeyValuePairDefinition = typeof(KeyValuePair<object, object>).GetGenericTypeDefinition();
+
+	private static bool IsSetInterface(Type i) =>
+		i.IsGenericType && (i.GetGenericTypeDefinition() == typeof(ISet<>) || i.GetGenericTypeDefinition() == typeof(IReadOnlySet<>));
+
 	/// <summary>Projects an object graph by its public instance properties, sorted by name; maps are sorted by key.</summary>
 	private static JsonNode? Reflect(object? value, int depth)
 	{
@@ -110,7 +115,7 @@ public class ChangelogConfigurationGoldenTests
 				.Append(type)
 				.Where(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IEnumerable<>))
 				.Select(i => i.GetGenericArguments()[0])
-				.FirstOrDefault(t => t.IsGenericType && t.GetGenericTypeDefinition() == typeof(KeyValuePair<, >));
+				.FirstOrDefault(t => t.IsGenericType && t.GetGenericTypeDefinition() == KeyValuePairDefinition);
 			if (pairType is not null)
 			{
 				var keyProperty = pairType.GetProperty("Key")!;
@@ -122,10 +127,7 @@ public class ChangelogConfigurationGoldenTests
 			}
 			// Sets carry no order; sort them by their projected text so snapshots are stable.
 			var projected = items.Select(i => Reflect(i, depth + 1)).ToList();
-			var isSet = type.GetInterfaces().Any(
-				i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(ISet<>) || i.IsGenericType && i.GetGenericTypeDefinition() ==
-					typeof(IReadOnlySet<>)
-			);
+			var isSet = type.GetInterfaces().Any(IsSetInterface);
 			if (isSet)
 				projected = [.. projected.OrderBy(n => n?.ToJsonString(), StringComparer.Ordinal)];
 			var array = new JsonArray();

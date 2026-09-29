@@ -4,6 +4,7 @@
 
 using System.Collections.Frozen;
 using System.Diagnostics.CodeAnalysis;
+using Generator.Equals;
 
 namespace Elastic.Documentation.Catalog;
 
@@ -11,11 +12,13 @@ namespace Elastic.Documentation.Catalog;
 /// Global catalog of named elastic.co learning destinations. Pages opt in with
 /// the <c>{related-learning}</c> directive by catalog ID.
 /// </summary>
-public sealed record RelatedLearningCatalog
+[Equatable]
+public sealed partial record RelatedLearningCatalog
 {
 	public static RelatedLearningCatalog Empty { get; } = new() { Links = FrozenDictionary<string, RelatedLearningLink>.Empty };
 
 	/// <summary>Catalog entries keyed by ID.</summary>
+	[UnorderedEquality]
 	public required IReadOnlyDictionary<string, RelatedLearningLink> Links { get; init; }
 
 	public bool TryGet(string id, [NotNullWhen(true)] out RelatedLearningLink? link) => Links.TryGetValue(id, out link);

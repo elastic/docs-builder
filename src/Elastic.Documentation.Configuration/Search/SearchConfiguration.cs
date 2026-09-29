@@ -50,7 +50,7 @@ internal static class SearchConfigurationExtensions
 			.Where(s => s.Count > 1)
 			.Select(s => s.ToArray())
 			.GroupBy(s => s[0], StringComparer.OrdinalIgnoreCase)
-			.Select(g => g.First())
+			.Select(g => new SynonymGroup(g.First()))
 			.ToArray();
 		var rules = searchDto.Rules.Select(ParseRule).ToImmutableArray();
 		var diminishTerms = searchDto.DiminishTerms.ToImmutableArray();

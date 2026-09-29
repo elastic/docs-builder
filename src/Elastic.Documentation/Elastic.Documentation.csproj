@@ -12,6 +12,7 @@
 
   <ItemGroup>
     <PackageReference Include="Elastic.Mapping" />
+    <PackageReference Include="Generator.Equals" />
     <PackageReference Include="Microsoft.Extensions.Logging"/>
     <PackageReference Include="NetEscapades.EnumGenerators"/>
     <PackageReference Include="Nullean.ScopedFileSystem" />

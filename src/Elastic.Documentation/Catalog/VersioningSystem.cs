@@ -4,13 +4,16 @@
 
 using System.ComponentModel.DataAnnotations;
 using Elastic.Documentation.Versions;
+using Generator.Equals;
 using NetEscapades.EnumGenerators;
 
 namespace Elastic.Documentation.Catalog;
 
 /// <summary>Every versioning system from <c>versions.yml</c>, keyed by id. Part of the <see cref="GlobalCatalog"/> aggregate.</summary>
-public sealed record VersioningSystemCatalog
+[Equatable]
+public sealed partial record VersioningSystemCatalog
 {
+	[UnorderedEquality]
 	public required IReadOnlyDictionary<VersioningSystemId, VersioningSystem> VersioningSystems { get; init; }
 	public VersioningSystem GetVersioningSystem(VersioningSystemId versioningSystem)
 	{
