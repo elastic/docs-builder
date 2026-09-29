@@ -9,11 +9,13 @@ using Elastic.Documentation.Assembler;
 using Elastic.Documentation.Assembler.Sourcing;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
+using Elastic.Documentation.Configuration.Loading;
 using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Navigation.Assembler;
+using Elastic.Documentation.Publishing;
 using Elastic.Markdown.IO;
 using Microsoft.Extensions.Logging.Abstractions;
 using TUnit.Core.Interfaces;
@@ -39,7 +41,7 @@ public class SiteNavigationTests(DocumentationFixture fixture) : IAsyncInitializ
 			? checkoutDirectory.GetDirectories().FirstOrDefault(d => d.Name is "next" or "current") ?? checkoutDirectory
 			: checkoutDirectory;
 		var configurationContext = TestHelpers.CreateConfigurationContext(FileSystem);
-		var config = AssemblyConfiguration.Create(configurationContext.ConfigurationFileProvider);
+		var config = AssemblyLoader.Create(configurationContext.ConfigurationFileProvider);
 		var assembleFs = CheckoutsFileSystem.FromWorkingDirectory(FileSystem);
 		Context = new AssembleContext(config, configurationContext, "dev", Collector, assembleFs, CheckoutDirectory.FullName, null);
 		return Task.CompletedTask;
@@ -76,7 +78,7 @@ public class SiteNavigationTests(DocumentationFixture fixture) : IAsyncInitializ
 		);
 
 		var navigationFileInfo = configurationContext.ConfigurationFileProvider.NavigationFile;
-		var siteNavigationFile = SiteNavigationFile.Deserialize(
+		var siteNavigationFile = SiteNavigationLoader.Deserialize(
 			await FileSystem.File.ReadAllTextAsync(navigationFileInfo.FullName, TestContext.Current!.Execution.CancellationToken)
 		);
 		var documentationSets = assembleSources.AssembleSets.Values.Select(s => s.DocumentationSet.Navigation).ToArray();
@@ -94,16 +96,16 @@ public class SiteNavigationTests(DocumentationFixture fixture) : IAsyncInitializ
 
 		var fileSystem = new FileSystem();
 		var configurationContext = TestHelpers.CreateConfigurationContext(fileSystem);
-		var config = AssemblyConfiguration.Create(configurationContext.ConfigurationFileProvider);
+		var config = AssemblyLoader.Create(configurationContext.ConfigurationFileProvider);
 		var assembleFs2 = CheckoutsFileSystem.FromWorkingDirectory(fileSystem);
 		var context = new AssembleContext(config, configurationContext, "dev", collector, assembleFs2);
 
 		var navigationFileInfo = configurationContext.ConfigurationFileProvider.NavigationFile;
-		var siteNavigationFile = SiteNavigationFile.Deserialize(
+		var siteNavigationFile = SiteNavigationLoader.Deserialize(
 			await FileSystem.File.ReadAllTextAsync(navigationFileInfo.FullName, TestContext.Current!.Execution.CancellationToken)
 		);
 
-		var declaredSources = SiteNavigationFile.GetAllDeclaredSources(siteNavigationFile);
+		var declaredSources = SiteNavigationDefinition.GetAllDeclaredSources(siteNavigationFile);
 		declaredSources.Should().NotBeEmpty();
 		declaredSources.Should().Contain(new Uri("eland://reference"));
 	}
@@ -186,7 +188,7 @@ public class SiteNavigationTests(DocumentationFixture fixture) : IAsyncInitializ
 
 		var fs = new FileSystem();
 		var configurationContext = TestHelpers.CreateConfigurationContext(fs);
-		var config = AssemblyConfiguration.Create(configurationContext.ConfigurationFileProvider);
+		var config = AssemblyLoader.Create(configurationContext.ConfigurationFileProvider);
 		var assembleFs3 = CheckoutsFileSystem.FromWorkingDirectory(fs);
 		var assembleContext = new AssembleContext(config, configurationContext, "prod", collector, assembleFs3);
 		var repos = assembleContext.Configuration.AvailableRepositories.Where(kv => !kv.Value.Skip).Select(kv => kv.Value).ToArray();
