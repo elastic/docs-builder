@@ -369,6 +369,7 @@ jobs:
           AWS_RETRY_MODE: standard
           AWS_MAX_ATTEMPTS: 6
         run: |
+          set -o pipefail
           # Stash plain-JSON files read by downstream steps before compression rewrites them.
           [ -f .artifacts/docs/html/redirects.json ] \
             && cp .artifacts/docs/html/redirects.json /tmp/redirects.json
