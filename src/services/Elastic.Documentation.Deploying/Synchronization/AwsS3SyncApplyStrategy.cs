@@ -293,23 +293,23 @@ public partial class AwsS3SyncApplyStrategy(
 				try
 				{
 					var response = await s3Client.DeleteObjectsAsync(deleteObjectsRequest, token);
-					if (response.HttpStatusCode != System.Net.HttpStatusCode.OK)
+					// S3 returns 200 even for partial failures; per-key errors live in DeleteErrors.
+					var errors = response.DeleteErrors ?? [];
+					foreach (var error in errors)
 					{
-						_logger.LogError("Delete batch failed with status code {StatusCode}", response.HttpStatusCode);
-						if (response.DeleteErrors is null or { Count: 0 })
-							collector.EmitGlobalError($"Delete batch failed with status code {response.HttpStatusCode}");
-						foreach (var error in response.DeleteErrors ?? Enumerable.Empty<DeleteError>())
-						{
-							_logger.LogError("Failed to delete {Key}: {Message}", error.Key, error.Message);
-							collector.EmitError(error.Key, $"Failed to delete: {error.Message}");
-						}
+						_logger.LogError("Failed to delete {Key}: {Message}", error.Key, error.Message);
+						collector.EmitError(error.Key, $"Failed to delete: {error.Message}");
 					}
-					else
+					if (response.HttpStatusCode != System.Net.HttpStatusCode.OK && errors.Count == 0)
+						collector.EmitGlobalError($"Delete batch failed with status code {response.HttpStatusCode}");
+
+					var successCount = batch.Length - errors.Count;
+					if (successCount > 0)
 					{
-						var currentCount = Interlocked.Add(ref deleteCount, batch.Length);
+						var currentCount = Interlocked.Add(ref deleteCount, successCount);
 						_logger.LogInformation(
 							"Deleted {BatchCount} files ({CurrentCount}/{TotalCount})",
-							batch.Length,
+							successCount,
 							currentCount,
 							deleteRequests.Count
 						);
