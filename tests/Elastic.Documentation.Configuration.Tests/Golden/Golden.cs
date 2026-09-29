@@ -138,8 +138,13 @@ public static class Golden
 			)
 		);
 
-	/// <summary>Captures an exception the way the loader surfaces it today: its type and message.</summary>
-	public static JsonObject Failure(Exception e) => Obj(("exception", Str(e.GetType().Name)), ("message", Str(NormalizePath(e.Message))));
+	/// <summary>
+	/// Captures a failed load by its message. The exception type is an implementation detail: a refactored loader
+	/// may report the same failure as an error diagnostic, but it must keep the message.
+	/// </summary>
+	public static JsonObject Failure(Exception e) => Failure(e.Message);
+
+	public static JsonObject Failure(string message) => Obj(("message", Str(NormalizePath(message))));
 
 	/// <summary>Rewrites machine-specific absolute paths to stable placeholders.</summary>
 	public static string NormalizePath(string value)
