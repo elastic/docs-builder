@@ -85,9 +85,9 @@ public class DocumentationWebHost
 		_writeFileSystem = docFs.Write;
 		Context = new BuildContext(collector, docFs, configurationContext) { CanonicalBaseUrl = new Uri(hostUrl), };
 
-		Context.Features.DiagnosticsPanelEnabled = !noHud;
+		Context.OverrideFeatures(f => f.With("diagnostics-panel", !noHud));
 #if DEBUG
-		Context.Features.PageFeedbackEnabled = true;
+		Context.OverrideFeatures(f => f.With("page-feedback", true));
 #endif
 
 		InMemoryBuildState = new InMemoryBuildState(logFactory, configurationContext);

@@ -297,7 +297,7 @@ public class TagMetadataTests
 			DocumentationFileSystem.Resolve(Paths.WorkingDirectoryRoot.FullName),
 			configurationContext
 		);
-		context.Features.ApiNavGroupingEnabled = apiNavGroupingEnabled;
+		context.OverrideFeatures(f => f.With("api-nav-grouping", apiNavGroupingEnabled));
 
 		var generator = new OpenApiGenerator(NullLoggerFactory.Instance, context, NoopMarkdownStringRenderer.Instance);
 

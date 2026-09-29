@@ -17,7 +17,7 @@ public class FeatureFlagsTests
 	public void AssemblerApiExplorerEnabled_ReadsYamlKey()
 	{
 		var flags = new FeatureFlags([]);
-		flags.Set("ASSEMBLER_API_EXPLORER", true);
+		flags = flags.With("ASSEMBLER_API_EXPLORER", true);
 
 		flags.AssemblerApiExplorerEnabled.Should().BeTrue();
 	}
@@ -53,9 +53,7 @@ public class FeatureFlagsTests
 
 		environment.FeatureFlags.Should().ContainKey("ASSEMBLER_API_EXPLORER").WhoseValue.Should().BeTrue();
 
-		var features = new FeatureFlags([]);
-		foreach (var (key, value) in environment.FeatureFlags)
-			features.Set(key, value);
+		var features = new FeatureFlags([]).With(environment.FeatureFlags);
 		features.AssemblerApiExplorerEnabled.Should().BeTrue();
 	}
 
@@ -67,9 +65,7 @@ public class FeatureFlagsTests
 
 		prod.FeatureFlags.Should().NotContainKey("ASSEMBLER_API_EXPLORER");
 
-		var features = new FeatureFlags([]);
-		foreach (var (key, value) in prod.FeatureFlags)
-			features.Set(key, value);
+		var features = new FeatureFlags([]).With(prod.FeatureFlags);
 		features.AssemblerApiExplorerEnabled.Should().BeFalse();
 	}
 
@@ -85,7 +81,7 @@ public class FeatureFlagsTests
 	public void ApiNavGroupingEnabled_SetEnablesIt()
 	{
 		var flags = new FeatureFlags([]);
-		flags.Set("API_NAV_GROUPING", true);
+		flags = flags.With("API_NAV_GROUPING", true);
 
 		flags.ApiNavGroupingEnabled.Should().BeTrue();
 		flags.PrimaryNavEnabled.Should().BeFalse();
@@ -111,10 +107,40 @@ public class FeatureFlagsTests
 			var environment = config.Environments[environmentName];
 			environment.FeatureFlags.Should().NotContainKey("API_NAV_GROUPING");
 
-			var features = new FeatureFlags([]);
-			foreach (var (key, value) in environment.FeatureFlags)
-				features.Set(key, value);
+			var features = new FeatureFlags([]).With(environment.FeatureFlags);
 			features.ApiNavGroupingEnabled.Should().BeFalse();
 		}
+	}
+
+	[Test]
+	public void With_LeavesTheOriginalUnchanged()
+	{
+		var original = new FeatureFlags([]);
+		var changed = original.With("PRIMARY_NAV", true);
+
+		changed.PrimaryNavEnabled.Should().BeTrue();
+		original.PrimaryNavEnabled.Should().BeFalse();
+	}
+
+	[Test]
+	public void With_KeepsSiblingFlagsAndTheSearchScriptUrl()
+	{
+		var flags = new FeatureFlags(new Dictionary<string, bool> { ["guide-nav"] = true }, new MockEnvironmentVariables())
+			.WithWebsiteSearchScriptUrl("https://example.test/search.js")
+			.With("api-nav-grouping", true);
+
+		flags.GuideNavEnabled.Should().BeTrue();
+		flags.ApiNavGroupingEnabled.Should().BeTrue();
+		flags.PrimaryNavEnabled.Should().BeFalse();
+		flags.WebsiteSearchScriptUrl.Should().Be("https://example.test/search.js");
+	}
+
+	[Test]
+	public void With_EnvironmentVariableStillOverrides()
+	{
+		var environment = new MockEnvironmentVariables();
+		environment.Set("FEATURE_PRIMARY_NAV", "false");
+
+		new FeatureFlags([], environment).With("primary-nav", true).PrimaryNavEnabled.Should().BeFalse();
 	}
 }

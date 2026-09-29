@@ -18,11 +18,5 @@ public static class PublishEnvironmentExtensions
 	/// Use this rather than accessing the raw dictionary so that key normalization and env-var overrides
 	/// are applied consistently with how docset-level flags are processed.
 	/// </summary>
-	public static FeatureFlags ToFeatureFlags(this PublishEnvironment environment)
-	{
-		var flags = new FeatureFlags([]);
-		foreach (var (key, value) in environment.FeatureFlags)
-			flags.Set(key, value);
-		return flags;
-	}
+	public static FeatureFlags ToFeatureFlags(this PublishEnvironment environment) => new FeatureFlags([]).With(environment.FeatureFlags);
 }

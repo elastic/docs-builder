@@ -56,6 +56,12 @@ public record BuildContext : IDocumentationSetContext, IDocumentationConfigurati
 	/// </summary>
 	public FeatureFlags Features { get; private set; }
 
+	/// <summary>
+	/// Layers a runtime override (serve's HUD, an assembler environment's flags) on top of the docset's flags. The one
+	/// place <see cref="Features"/> changes after construction; readers see the new flags from then on.
+	/// </summary>
+	public void OverrideFeatures(Func<FeatureFlags, FeatureFlags> apply) => Features = apply(Features);
+
 	public GlobalCatalog Catalog { get; }
 	public ConfigurationFileProvider ConfigurationFileProvider { get; }
 	public DocumentationEndpoints Endpoints { get; }
@@ -137,8 +143,8 @@ public record BuildContext : IDocumentationSetContext, IDocumentationConfigurati
 		var previousFeatures = Features;
 		ConfigurationYaml = LoadConfigurationYaml(ReadFileSystem as ScopedFileSystem);
 		Configuration = ResolveConfiguration();
-		Features = CreateFeatures();
-		Features.DiagnosticsPanelEnabled = previousFeatures.DiagnosticsPanelEnabled;
-		Features.PageFeedbackEnabled = previousFeatures.PageFeedbackEnabled;
+		Features = CreateFeatures()
+			.With("diagnostics-panel", previousFeatures.DiagnosticsPanelEnabled)
+			.With("page-feedback", previousFeatures.PageFeedbackEnabled);
 	}
 }

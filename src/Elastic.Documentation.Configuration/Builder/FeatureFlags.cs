@@ -9,48 +9,68 @@ namespace Elastic.Documentation.Configuration.Builder;
 /// The variables are read through <see cref="IEnvironmentVariables"/> so tests can supply their own without touching the
 /// process environment.
 /// </summary>
-public class FeatureFlags(Dictionary<string, bool> initFeatureFlags, IEnvironmentVariables? environment = null)
+/// <summary>
+/// The feature flags a build runs with: <c>docset.yml</c> toggles and per-environment <c>feature_flags</c>, each
+/// overridable by a <c>FEATURE_*</c> environment variable. Immutable; runtime overrides build a new instance with
+/// <see cref="With(string, bool)"/>.
+/// </summary>
+public sealed class FeatureFlags
 {
-	private readonly Dictionary<string, bool> _featureFlags = [with(initFeatureFlags)];
-	private readonly IEnvironmentVariables _environment = environment ?? SystemEnvironmentVariables.Instance;
+	private readonly Dictionary<string, bool> _featureFlags;
+	private readonly IEnvironmentVariables _environment;
 
-	public void Set(string key, bool value)
+	public FeatureFlags(Dictionary<string, bool> initFeatureFlags, IEnvironmentVariables? environment = null)
 	{
-		var normalizedKey = key.ToLowerInvariant().Replace('_', '-');
-		_featureFlags[normalizedKey] = value;
+		_featureFlags = [with(initFeatureFlags)];
+		_environment = environment ?? SystemEnvironmentVariables.Instance;
 	}
 
-	public bool PrimaryNavEnabled { get => IsEnabled("primary-nav"); set => _featureFlags["primary-nav"] = value; }
-
-	public bool DisableGitHubEditLink
+	private FeatureFlags(Dictionary<string, bool> featureFlags, IEnvironmentVariables environment, string? websiteSearchScriptUrl)
 	{
-		get => IsEnabled("disable-github-edit-link");
-		set => _featureFlags["disable-github-edit-link"] = value;
+		_featureFlags = featureFlags;
+		_environment = environment;
+		WebsiteSearchScriptUrl = websiteSearchScriptUrl;
 	}
 
-	public bool StagingElasticNavEnabled { get => IsEnabled("staging-elastic-nav"); set => _featureFlags["staging-elastic-nav"] = value; }
-
-	public bool WebsiteSearchEnabled { get => IsEnabled("website-search"); set => _featureFlags["website-search"] = value; }
-
-	public string? WebsiteSearchScriptUrl { get; set; }
-
-	public bool AirGappedEnabled { get => IsEnabled("air-gapped"); set => _featureFlags["air-gapped"] = value; }
-
-	public bool DiagnosticsPanelEnabled { get => IsEnabled("diagnostics-panel"); set => _featureFlags["diagnostics-panel"] = value; }
-
-	public bool AssemblerApiExplorerEnabled
+	/// <summary>A copy with <paramref name="key"/> set; the key normalizes to kebab-case (<c>API_NAV_GROUPING</c> is <c>api-nav-grouping</c>).</summary>
+	public FeatureFlags With(string key, bool value)
 	{
-		get => IsEnabled("assembler-api-explorer");
-		set => _featureFlags["assembler-api-explorer"] = value;
+		var flags = new Dictionary<string, bool>(_featureFlags, _featureFlags.Comparer)
+		{
+			[key.ToLowerInvariant().Replace('_', '-')] = value
+		};
+		return new FeatureFlags(flags, _environment, WebsiteSearchScriptUrl);
 	}
 
-	public bool GuideNavEnabled { get => IsEnabled("guide-nav"); set => _featureFlags["guide-nav"] = value; }
+	/// <summary>A copy with every flag in <paramref name="flags"/> set, in order.</summary>
+	public FeatureFlags With(IEnumerable<KeyValuePair<string, bool>> flags) =>
+		flags.Aggregate(this, (current, flag) => current.With(flag.Key, flag.Value));
 
-	public bool NavigationPreviewEnabled { get => IsEnabled("navigation-preview"); set => _featureFlags["navigation-preview"] = value; }
+	public FeatureFlags WithWebsiteSearchScriptUrl(string? url) => new(_featureFlags, _environment, url);
 
-	public bool PageFeedbackEnabled { get => IsEnabled("page-feedback"); set => _featureFlags["page-feedback"] = value; }
+	public string? WebsiteSearchScriptUrl { get; }
 
-	public bool ApiNavGroupingEnabled { get => IsEnabled("api-nav-grouping"); set => _featureFlags["api-nav-grouping"] = value; }
+	public bool PrimaryNavEnabled => IsEnabled("primary-nav");
+
+	public bool DisableGitHubEditLink => IsEnabled("disable-github-edit-link");
+
+	public bool StagingElasticNavEnabled => IsEnabled("staging-elastic-nav");
+
+	public bool WebsiteSearchEnabled => IsEnabled("website-search");
+
+	public bool AirGappedEnabled => IsEnabled("air-gapped");
+
+	public bool DiagnosticsPanelEnabled => IsEnabled("diagnostics-panel");
+
+	public bool AssemblerApiExplorerEnabled => IsEnabled("assembler-api-explorer");
+
+	public bool GuideNavEnabled => IsEnabled("guide-nav");
+
+	public bool NavigationPreviewEnabled => IsEnabled("navigation-preview");
+
+	public bool PageFeedbackEnabled => IsEnabled("page-feedback");
+
+	public bool ApiNavGroupingEnabled => IsEnabled("api-nav-grouping");
 
 	private bool IsEnabled(string key)
 	{

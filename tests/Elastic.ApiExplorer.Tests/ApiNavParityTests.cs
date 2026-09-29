@@ -239,7 +239,7 @@ public class ApiNavParityTests
 			DocumentationFileSystem.Resolve(Paths.WorkingDirectoryRoot.FullName),
 			configurationContext
 		);
-		context.Features.ApiNavGroupingEnabled = apiNavGroupingEnabled;
+		context.OverrideFeatures(f => f.With("api-nav-grouping", apiNavGroupingEnabled));
 		var generator = new OpenApiGenerator(NullLoggerFactory.Instance, context, NoopMarkdownStringRenderer.Instance);
 
 		using var stream = new MemoryStream(System.Text.Encoding.UTF8.GetBytes(openApiJson));
