@@ -2,6 +2,8 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using Elastic.Documentation.Versions;
+
 namespace Elastic.Documentation.Configuration.ReleaseSchedule;
 
 /// <summary>
@@ -138,9 +140,9 @@ public static class ReleaseTargetResolver
 				return new ReleaseTarget(candidate.Version, bc.ManifestUrl, ReleaseTargetSource.BuildCandidate);
 		}
 
-		if (snapshotPointer is not null)
+		if (snapshotPointer is not null && TryParseVersion(snapshotPointer.Version) is { } sv)
 		{
-			var version = snapshotPointer.Version.Replace("-SNAPSHOT", "", StringComparison.OrdinalIgnoreCase);
+			var version = $"{sv.Major}.{sv.Minor}.{sv.Patch}";
 			if (!gaVersions.Contains(version))
 				return new ReleaseTarget(version, snapshotPointer.ManifestUrl, ReleaseTargetSource.Snapshot);
 		}
@@ -152,14 +154,9 @@ public static class ReleaseTargetResolver
 		past is null ? [] : new HashSet<string>(past.Releases.Select(r => r.Version), StringComparer.OrdinalIgnoreCase);
 
 	/// <summary>
-	/// Parses a <c>major.minor.patch</c> version string into a <see cref="Version"/> for
-	/// numeric comparison. Returns <c>null</c> for malformed strings.
+	/// Parses a semver string (including prerelease suffixes like <c>-SNAPSHOT</c>) into a
+	/// <see cref="SemVersion"/> for numeric comparison. Returns <c>null</c> for malformed strings.
 	/// </summary>
-	public static Version? TryParseVersion(string? versionString)
-	{
-		if (string.IsNullOrEmpty(versionString))
-			return null;
-		var clean = versionString.Split('-')[0];
-		return Version.TryParse(clean, out var v) ? v : null;
-	}
+	public static SemVersion? TryParseVersion(string? versionString) =>
+		!string.IsNullOrEmpty(versionString) && SemVersion.TryParse(versionString, out var v) ? v : null;
 }
