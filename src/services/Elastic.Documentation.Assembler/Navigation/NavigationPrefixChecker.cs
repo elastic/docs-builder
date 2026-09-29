@@ -12,6 +12,7 @@ using Elastic.Documentation.Links;
 using Elastic.Documentation.Links.CrossLinks;
 using Elastic.Documentation.Links.InboundLinks;
 using Elastic.Documentation.Publishing;
+using Elastic.Documentation.Serialization;
 using Microsoft.Extensions.Logging;
 
 namespace Elastic.Documentation.Assembler.Navigation;
@@ -99,7 +100,7 @@ public class NavigationPrefixChecker
 	private async Task FetchAndValidateCrossLinks(
 		IDiagnosticsCollector collector,
 		string? updateRepository,
-		RepositoryLinks? updateReference,
+		LinkManifest? updateReference,
 		Cancel ctx
 	)
 	{
@@ -173,12 +174,12 @@ public class NavigationPrefixChecker
 			&& (candidate.AbsolutePath == phantom.AbsolutePath
 				|| candidate.AbsolutePath.StartsWith(phantom.AbsolutePath.TrimEnd('/') + '/', StringComparison.Ordinal));
 
-	private async Task<RepositoryLinks> ReadLocalLinksJsonAsync(string localLinksJson, Cancel ctx)
+	private async Task<LinkManifest> ReadLocalLinksJsonAsync(string localLinksJson, Cancel ctx)
 	{
 		try
 		{
 			var json = await File.ReadAllTextAsync(localLinksJson, ctx);
-			return RepositoryLinks.Deserialize(json);
+			return LinkJson.DeserializeManifest(json);
 		}
 		catch (Exception e)
 		{

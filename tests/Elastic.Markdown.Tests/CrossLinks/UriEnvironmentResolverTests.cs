@@ -229,7 +229,7 @@ public class CrossLinkResolverFallbackUrlTests
 {
 	private static FetchedCrossLinks BuildFallbackOnlyCrossLinks(string repository, string registryUrl, DocSetRegistry registry)
 	{
-		var emptyRepositoryLinks = new RepositoryLinks
+		var emptyRepositoryLinks = new LinkManifest
 		{
 			Links = [],
 			Origin = new GitCheckoutInformation
@@ -245,7 +245,7 @@ public class CrossLinkResolverFallbackUrlTests
 		return new FetchedCrossLinks
 		{
 			DeclaredRepositories = [repository],
-			LinkReferences = new Dictionary<string, RepositoryLinks> { [repository] = emptyRepositoryLinks }.ToFrozenDictionary(),
+			LinkReferences = new Dictionary<string, LinkManifest> { [repository] = emptyRepositoryLinks }.ToFrozenDictionary(),
 			LinkIndexEntries = new Dictionary<string, LinkRegistryEntry>().ToFrozenDictionary(),
 			RegistryUrlsByRepository = new Dictionary<string, string> { [repository] = registryUrl }.ToFrozenDictionary(),
 			RegistryByRepository = new Dictionary<string, DocSetRegistry> { [repository] = registry }.ToFrozenDictionary()

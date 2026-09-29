@@ -9,7 +9,9 @@ using Elastic.Documentation.Configuration.Codex;
 using Elastic.Documentation.Configuration.Loading;
 using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.DocumentationSets;
+using Elastic.Documentation.Links;
 using Elastic.Documentation.Publishing;
+using Elastic.Documentation.Serialization;
 using static Elastic.Documentation.Configuration.Tests.Golden.Golden;
 using CodexConfiguration = Elastic.Documentation.Codex.CodexConfiguration;
 
@@ -191,5 +193,23 @@ public class AggregateEqualityTests
 			.BeEmpty();
 		first.Should().Be(second);
 		(first! with { HighlightLabels = [.. first.HighlightLabels ?? [], "changed"] }).Should().NotBe(second);
+	}
+
+	private const string ManifestJson =
+		"""
+		{"origin":{"branch":"main","remote":"elastic/docs-builder","ref":"abc"},"url_path_prefix":"/docs","links":{"index.md":{"anchors":["a","b"]}},"cross_links":["kibana://index.md"],"redirects":{"old.md":{"to":"index.md","anchors":{"!":"!"}}}}
+		""";
+
+	[Test]
+	public void LinkManifest_ReadTwice_IsEqual() =>
+		LinkJson.DeserializeManifest(ManifestJson).Should().Be(LinkJson.DeserializeManifest(ManifestJson));
+
+	[Test]
+	public void LinkManifest_OneAnchorAdded_IsNotEqual()
+	{
+		var manifest = LinkJson.DeserializeManifest(ManifestJson);
+		var changed = manifest with { Links = new Dictionary<string, LinkMetadata> { ["index.md"] = new() { Anchors = ["a", "b", "c"] } } };
+
+		changed.Should().NotBe(manifest);
 	}
 }

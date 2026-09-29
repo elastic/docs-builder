@@ -4,14 +4,18 @@
 
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using Elastic.Documentation.Equality;
 using Elastic.Documentation.Serialization;
+using Generator.Equals;
 
 namespace Elastic.Documentation.Links;
 
-public record LinkRegistry
+[Equatable]
+public partial record LinkRegistry
 {
 	/// Map of branch to <see cref="LinkRegistryEntry"/>
 	[JsonPropertyName("repositories")]
+	[UnorderedEquality(typeof(LinkRegistryEntriesComparer))]
 	public required Dictionary<string, Dictionary<string, LinkRegistryEntry>> Repositories { get; init; }
 
 	[JsonIgnore]
@@ -42,13 +46,6 @@ public record LinkRegistry
 		}
 		return this with { Repositories = copiedRepositories };
 	}
-
-	public static LinkRegistry Deserialize(Stream json) => JsonSerializer.Deserialize(json, SourceGenerationContext.Default.LinkRegistry)!;
-
-	public static LinkRegistry Deserialize(string json) => JsonSerializer.Deserialize(json, SourceGenerationContext.Default.LinkRegistry)!;
-
-	public static string Serialize(LinkRegistry registry) =>
-		JsonSerializer.Serialize(registry, SourceGenerationContext.Default.LinkRegistry);
 }
 
 public record LinkRegistryEntry

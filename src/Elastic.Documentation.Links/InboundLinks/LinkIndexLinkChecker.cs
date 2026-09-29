@@ -7,6 +7,7 @@ using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.LinkIndex;
 using Elastic.Documentation.Links.CrossLinks;
+using Elastic.Documentation.Serialization;
 using Elastic.Documentation.Services;
 using Microsoft.Extensions.Logging;
 
@@ -103,7 +104,7 @@ public class LinkIndexService(ILoggerFactory logFactory, IFileSystem fileSystem)
 		try
 		{
 			var json = await fileSystem.File.ReadAllTextAsync(localLinksJson.FullName, ctx);
-			var localLinkReference = RepositoryLinks.Deserialize(json);
+			var localLinkReference = LinkJson.DeserializeManifest(json);
 			crossLinks = resolver.UpdateLinkReference(repository, localLinkReference);
 		}
 		catch (Exception e)

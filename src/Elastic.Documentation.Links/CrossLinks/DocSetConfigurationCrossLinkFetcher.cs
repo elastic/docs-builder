@@ -25,7 +25,7 @@ public class DocSetConfigurationCrossLinkFetcher(
 	public override async Task<FetchedCrossLinks> FetchCrossLinks(Cancel ctx)
 	{
 		Logger.LogInformation("Fetching cross-links for all repositories defined in docset.yml");
-		var linkReferences = new Dictionary<string, RepositoryLinks>();
+		var linkReferences = new Dictionary<string, LinkManifest>();
 		var linkIndexEntries = new Dictionary<string, LinkRegistryEntry>();
 		var registryUrlsByRepository = new Dictionary<string, string>();
 		var registryByRepository = new Dictionary<string, DocSetRegistry>();
@@ -77,7 +77,7 @@ public class DocSetConfigurationCrossLinkFetcher(
 				{
 					linkReferences.Add(
 						entry.Repository,
-						new RepositoryLinks
+						new LinkManifest
 						{
 							Links = [],
 							Origin = new GitCheckoutInformation

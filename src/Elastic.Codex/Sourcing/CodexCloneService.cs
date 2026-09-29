@@ -10,6 +10,7 @@ using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.LinkIndex;
 using Elastic.Documentation.Links;
+using Elastic.Documentation.Serialization;
 using Elastic.Documentation.Services;
 using Microsoft.Extensions.Logging;
 
@@ -54,7 +55,7 @@ public class CodexCloneService(ILoggerFactory logFactory, ILinkIndexReader linkI
 			return null;
 
 		var json = await context.ReadFileSystem.File.ReadAllTextAsync(snapshotFilePath, ctx);
-		var linkRegistry = LinkRegistry.Deserialize(json);
+		var linkRegistry = LinkJson.DeserializeRegistry(json);
 
 		var checkouts = new List<CodexCheckout>();
 		foreach (var subDir in checkoutDir.GetDirectories())
@@ -145,7 +146,7 @@ public class CodexCloneService(ILoggerFactory logFactory, ILinkIndexReader linkI
 
 		var snapshotFilePath = Path.Join(context.CheckoutDirectory.FullName, LinkRegistrySnapshotFileName);
 
-		await context.WriteFileSystem.File.WriteAllTextAsync(snapshotFilePath, LinkRegistry.Serialize(linkRegistry), ctx);
+		await context.WriteFileSystem.File.WriteAllTextAsync(snapshotFilePath, LinkJson.Serialize(linkRegistry), ctx);
 
 		return new CodexCloneResult(checkouts, linkRegistry);
 	}

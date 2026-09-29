@@ -259,7 +259,7 @@ public class DocumentationSet : INavigationTraversable
 		_resolved = true;
 	}
 
-	public RepositoryLinks CreateLinkReference()
+	public LinkManifest CreateLinkReference()
 	{
 		var redirects = Configuration.Redirects is { } declared
 			? new Dictionary<string, LinkRedirect>(declared, StringComparer.OrdinalIgnoreCase)
@@ -290,7 +290,7 @@ public class DocumentationSet : INavigationTraversable
 				return new LinkMetadata { Anchors = anchors, Hidden = tuple.Navigation.ExcludeFromIndexing };
 			});
 
-		return new RepositoryLinks
+		return new LinkManifest
 		{
 			Redirects = redirects,
 			UrlPathPrefix = Context.UrlPathPrefix,

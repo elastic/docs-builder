@@ -45,7 +45,7 @@ public class TestCodexCrossLinkResolver : ICrossLinkResolver
 		           	}
 		           """;
 		var reference = CrossLinkFetcher.Deserialize(json);
-		var linkReferences = new Dictionary<string, RepositoryLinks>();
+		var linkReferences = new Dictionary<string, LinkManifest>();
 		var declaredRepositories = new HashSet<string>();
 		linkReferences.Add("docs-content", reference);
 		linkReferences.Add("kibana", reference);

@@ -14,7 +14,7 @@ namespace Elastic.Documentation.Serialization;
 
 [JsonSourceGenerationOptions(WriteIndented = true, UseStringEnumConverter = true, PropertyNamingPolicy = JsonKnownNamingPolicy.SnakeCaseLower)]
 [JsonSerializable(typeof(GenerationState))]
-[JsonSerializable(typeof(RepositoryLinks))]
+[JsonSerializable(typeof(LinkManifest))]
 [JsonSerializable(typeof(GitCheckoutInformation))]
 [JsonSerializable(typeof(LinkRegistry))]
 [JsonSerializable(typeof(LinkRegistryEntry))]

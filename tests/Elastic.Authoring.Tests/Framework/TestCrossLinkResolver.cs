@@ -9,6 +9,7 @@ using Elastic.Documentation.Configuration.Builder;
 using Elastic.Documentation.DocumentationSets;
 using Elastic.Documentation.Links;
 using Elastic.Documentation.Links.CrossLinks;
+using Elastic.Documentation.Serialization;
 
 namespace Elastic.Authoring.Tests.Framework;
 
@@ -20,14 +21,14 @@ namespace Elastic.Authoring.Tests.Framework;
 /// </summary>
 public sealed class TestCrossLinkResolver : ICrossLinkResolver
 {
-	private readonly Dictionary<string, RepositoryLinks> _references = new();
+	private readonly Dictionary<string, LinkManifest> _references = new();
 	private readonly HashSet<string> _declared = [];
 	private readonly IsolatedBuildEnvironmentUriResolver _uriResolver = new();
 	private readonly FetchedCrossLinks _crossLinks = FetchedCrossLinks.Empty;
 
 	public TestCrossLinkResolver(ResolvedDocumentationSet config)
 	{
-		var redirects = RepositoryLinks.SerializeRedirects(config.Redirects is { } r ? new Dictionary<string, LinkRedirect>(r) : null);
+		var redirects = LinkJson.SerializeRedirects(config.Redirects is { } r ? new Dictionary<string, LinkRedirect>(r) : null);
 
 		// language=json
 		var json =

@@ -9,6 +9,6 @@ namespace Elastic.Documentation.LinkIndex;
 public interface ILinkIndexReader
 {
 	Task<LinkRegistry> GetRegistry(Cancel cancellationToken = default);
-	Task<RepositoryLinks> GetRepositoryLinks(string key, Cancel cancellationToken = default);
+	Task<LinkManifest> GetRepositoryLinks(string key, Cancel cancellationToken = default);
 	string RegistryUrl { get; }
 }

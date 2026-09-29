@@ -10,6 +10,7 @@ using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.LinkIndex;
 using Elastic.Documentation.Links;
 using Elastic.Documentation.Publishing;
+using Elastic.Documentation.Serialization;
 using Microsoft.Extensions.Logging;
 
 // ReSharper disable DuplicateItemInLoggerTemplate
@@ -34,7 +35,7 @@ public class AssemblerRepositorySourcer(ILoggerFactory logFactory, AssembleConte
 		if (!fs.File.Exists(linkRegistrySnapshotPath))
 			throw new FileNotFoundException("Link-index snapshot not found. Run the clone-all command first.", linkRegistrySnapshotPath);
 		var linkRegistrySnapshotStr = File.ReadAllText(linkRegistrySnapshotPath);
-		var linkRegistry = LinkRegistry.Deserialize(linkRegistrySnapshotStr);
+		var linkRegistry = LinkJson.DeserializeRegistry(linkRegistrySnapshotStr);
 		foreach (var repo in repositories.Values)
 		{
 			Paths.ValidateSinglePathSegment(repo.Name, nameof(repo.Name));
@@ -120,7 +121,7 @@ public class AssemblerRepositorySourcer(ILoggerFactory logFactory, AssembleConte
 			.File
 			.WriteAllTextAsync(
 				Path.Join(context.CheckoutDirectory.FullName, CheckoutResult.LinkRegistrySnapshotFileName),
-				LinkRegistry.Serialize(linkRegistry),
+				LinkJson.Serialize(linkRegistry),
 				ctx
 			);
 		return new CheckoutResult { Checkouts = checkouts, LinkRegistrySnapshot = linkRegistry };
@@ -135,7 +136,7 @@ public class AssemblerRepositorySourcer(ILoggerFactory logFactory, AssembleConte
 					.WriteFileSystem
 					.Path
 					.Join(context.OutputWithPathPrefixDirectory.FullName, CheckoutResult.LinkRegistrySnapshotFileName),
-				LinkRegistry.Serialize(linkRegistrySnapshot),
+				LinkJson.Serialize(linkRegistrySnapshot),
 				ctx
 			);
 }

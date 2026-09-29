@@ -20,7 +20,7 @@ public class LinksIndexCrossLinkFetcher(ILoggerFactory logFactory, ILinkIndexRea
 	public override async Task<FetchedCrossLinks> FetchCrossLinks(Cancel ctx)
 	{
 		Logger.LogInformation("Fetching cross-links for all repositories defined in publicized link-index.json link index registry");
-		var linkReferences = new Dictionary<string, RepositoryLinks>();
+		var linkReferences = new Dictionary<string, LinkManifest>();
 		var linkEntries = new Dictionary<string, LinkRegistryEntry>();
 		var declaredRepositories = new HashSet<string>();
 		var linkIndex = await FetchLinkRegistry(ctx);

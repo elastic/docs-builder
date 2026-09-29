@@ -6,6 +6,7 @@ using Amazon.Runtime;
 using Amazon.S3;
 using Amazon.S3.Model;
 using Elastic.Documentation.Links;
+using Elastic.Documentation.Serialization;
 
 namespace Elastic.Documentation.LinkIndex;
 
@@ -32,15 +33,15 @@ public class Aws3LinkIndexReader(
 		var getObjectRequest = new GetObjectRequest { BucketName = bucketName, Key = registryKey };
 		var getObjectResponse = await s3Client.GetObjectAsync(getObjectRequest, cancellationToken);
 		await using var stream = getObjectResponse.ResponseStream;
-		var linkIndex = LinkRegistry.Deserialize(stream);
+		var linkIndex = LinkJson.DeserializeRegistry(stream);
 		return linkIndex with { ETag = getObjectResponse.ETag };
 	}
-	public async Task<RepositoryLinks> GetRepositoryLinks(string key, Cancel cancellationToken)
+	public async Task<LinkManifest> GetRepositoryLinks(string key, Cancel cancellationToken)
 	{
 		var getObjectRequest = new GetObjectRequest { BucketName = bucketName, Key = key };
 		var getObjectResponse = await s3Client.GetObjectAsync(getObjectRequest, cancellationToken);
 		await using var stream = getObjectResponse.ResponseStream;
-		return RepositoryLinks.Deserialize(stream);
+		return LinkJson.DeserializeManifest(stream);
 	}
 
 	public string RegistryUrl { get; } = $"https://{bucketName}.s3.{s3Client.Config.RegionEndpoint.SystemName}.amazonaws.com/{registryKey}";

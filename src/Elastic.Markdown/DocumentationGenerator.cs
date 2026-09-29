@@ -521,7 +521,7 @@ public partial class DocumentationGenerator
 		return CompilationMode.Full;
 	}
 
-	private async Task<RepositoryLinks> GenerateLinkReference(bool writeToDisk, Cancel ctx)
+	private async Task<LinkManifest> GenerateLinkReference(bool writeToDisk, Cancel ctx)
 	{
 		var file = DocumentationSet.LinkReferenceFile;
 		var state = DocumentationSet.CreateLinkReference();
@@ -529,7 +529,7 @@ public partial class DocumentationGenerator
 		{
 			if (!file.Directory!.Exists)
 				file.Directory.Create();
-			var bytes = JsonSerializer.SerializeToUtf8Bytes(state, SourceGenerationContext.Default.RepositoryLinks);
+			var bytes = JsonSerializer.SerializeToUtf8Bytes(state, SourceGenerationContext.Default.LinkManifest);
 			await DocumentationSet.OutputDirectory.FileSystem.File.WriteAllBytesAsync(file.FullName, bytes, ctx);
 		}
 		return state;

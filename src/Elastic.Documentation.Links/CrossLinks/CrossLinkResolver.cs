@@ -54,7 +54,7 @@ public class CrossLinkResolver(FetchedCrossLinks crossLinks, IUriEnvironmentReso
 	/// <inheritdoc />
 	public bool IsDeclaredCrossLinkScheme(string scheme) => _crossLinks.DeclaredRepositories.Contains(scheme);
 
-	public FetchedCrossLinks UpdateLinkReference(string repository, RepositoryLinks repositoryLinks)
+	public FetchedCrossLinks UpdateLinkReference(string repository, LinkManifest repositoryLinks)
 	{
 		var dictionary = _crossLinks.LinkReferences.ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
 		dictionary[repository] = repositoryLinks;

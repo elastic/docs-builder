@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions;
+using Elastic.Documentation.Links;
 
 namespace Elastic.Documentation.Equality;
 
@@ -41,4 +42,33 @@ public sealed class StringListEntryComparer : IEqualityComparer<KeyValuePair<str
 			hash.Add(item, StringComparer.Ordinal);
 		return hash.ToHashCode();
 	}
+}
+
+/// <summary>
+/// Entries of <see cref="LinkRegistry.Repositories"/> (repository to branch to entry): equal when the keys match and the inner dictionaries hold equal values
+/// under the same keys, in any order.
+/// </summary>
+public sealed class LinkRegistryEntriesComparer : IEqualityComparer<KeyValuePair<string, Dictionary<string, LinkRegistryEntry>>>
+{
+	public static LinkRegistryEntriesComparer Default { get; } = new();
+
+	public bool Equals(
+		KeyValuePair<string, Dictionary<string, LinkRegistryEntry>> x,
+		KeyValuePair<string, Dictionary<string, LinkRegistryEntry>> y
+	) =>
+		string.Equals(x.Key, y.Key, StringComparison.Ordinal)
+			&& (ReferenceEquals(x.Value, y.Value)
+				|| (x.Value is not null
+					&& y.Value is not null
+					&& x.Value.Count == y.Value.Count
+					&& x.Value.All(
+						kv => y.Value.TryGetValue(kv.Key, out var other) && EqualityComparer<LinkRegistryEntry>.Default.Equals(
+							kv.Value,
+							other
+						)
+					)));
+
+	// Order-independent: the key and the entry count identify the bucket; Equals settles the rest.
+	public int GetHashCode(KeyValuePair<string, Dictionary<string, LinkRegistryEntry>> obj) =>
+		HashCode.Combine(StringComparer.Ordinal.GetHashCode(obj.Key), obj.Value?.Count ?? 0);
 }
