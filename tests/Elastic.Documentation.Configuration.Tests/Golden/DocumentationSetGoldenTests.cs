@@ -5,7 +5,9 @@
 using System.IO.Abstractions;
 using System.IO.Abstractions.TestingHelpers;
 using System.Text.Json.Nodes;
+using Elastic.Documentation.Catalog;
 using Elastic.Documentation.Configuration.Builder;
+using Elastic.Documentation.Configuration.Loading;
 using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Configuration.Toc.CliReference;
@@ -44,8 +46,9 @@ public class DocumentationSetGoldenTests
 	public async Task DocumentationSet_Baseline_MatchesGolden()
 	{
 		var provider = BaselineProvider();
-		var versions = provider.CreateVersionConfiguration();
-		var products = provider.CreateProducts(versions);
+		var catalog = CatalogLoader.Load(provider).OrThrow();
+		var versions = catalog.VersioningSystems;
+		var products = catalog.Products;
 
 		var fs = CreateDocsTree();
 		var docsetFile = fs.FileInfo.New(Path.Join(DocsRoot, "_docset.yml"));

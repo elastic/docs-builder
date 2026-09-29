@@ -8,7 +8,7 @@ using Elastic.ApiExplorer.Model;
 using Elastic.ApiExplorer.Operations;
 using Elastic.Documentation;
 using Elastic.Documentation.AppliesTo;
-using Elastic.Documentation.Configuration.Versions;
+using Elastic.Documentation.Catalog;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Versions;
 using Microsoft.OpenApi;
@@ -44,19 +44,19 @@ public static partial class AvailabilityBadgeHelper
 	/// Extracts badge data from an OpenAPI operation's x-state extension.
 	/// Returns null when no displayable availability information exists.
 	/// </summary>
-	public static AvailabilityBadgeData? FromOperation(OpenApiOperation operation, VersionsConfiguration? versionsConfig) =>
+	public static AvailabilityBadgeData? FromOperation(OpenApiOperation operation, VersioningSystemCatalog? versionsConfig) =>
 		FromExtensions(operation.Extensions, versionsConfig);
 
 	/// <summary>
 	/// Extracts badge data from an OpenAPI schema's x-state extension.
 	/// Returns null when no displayable availability information exists.
 	/// </summary>
-	public static AvailabilityBadgeData? FromSchema(IOpenApiSchema schema, VersionsConfiguration? versionsConfig) =>
+	public static AvailabilityBadgeData? FromSchema(IOpenApiSchema schema, VersioningSystemCatalog? versionsConfig) =>
 		FromExtensions(schema.Extensions, versionsConfig);
 
 	private static AvailabilityBadgeData? FromExtensions(
 		IDictionary<string, IOpenApiExtension>? extensions,
-		VersionsConfiguration? versionsConfig
+		VersioningSystemCatalog? versionsConfig
 	)
 	{
 		if (extensions is null || !extensions.TryGetValue("x-state", out var stateExtension))
@@ -112,7 +112,7 @@ public static partial class AvailabilityBadgeHelper
 		return lifecycle;
 	}
 
-	private static AvailabilityBadgeData? BuildBadgeData(ApplicableTo applicableTo, VersionsConfiguration? versionsConfig)
+	private static AvailabilityBadgeData? BuildBadgeData(ApplicableTo applicableTo, VersioningSystemCatalog? versionsConfig)
 	{
 		if (applicableTo.Stack is null)
 			return null;
@@ -163,7 +163,7 @@ public static partial class AvailabilityBadgeHelper
 		);
 	}
 
-	private static SemVersion? GetCurrentStackVersion(VersionsConfiguration? versionsConfig)
+	private static SemVersion? GetCurrentStackVersion(VersioningSystemCatalog? versionsConfig)
 	{
 		if (versionsConfig is null)
 			return null;

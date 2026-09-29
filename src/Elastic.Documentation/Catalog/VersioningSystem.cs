@@ -5,12 +5,11 @@
 using System.ComponentModel.DataAnnotations;
 using Elastic.Documentation.Versions;
 using NetEscapades.EnumGenerators;
-using YamlDotNet.Serialization;
 
-namespace Elastic.Documentation.Configuration.Versions;
+namespace Elastic.Documentation.Catalog;
 
-[YamlSerializable]
-public record VersionsConfiguration
+/// <summary>Every versioning system from <c>versions.yml</c>, keyed by id. Part of the <see cref="GlobalCatalog"/> aggregate.</summary>
+public sealed record VersioningSystemCatalog
 {
 	public required IReadOnlyDictionary<VersioningSystemId, VersioningSystem> VersioningSystems { get; init; }
 	public VersioningSystem GetVersioningSystem(VersioningSystemId versioningSystem)
@@ -147,8 +146,8 @@ public enum VersioningSystemId
 	None = -1,
 }
 
-[YamlSerializable]
-public record VersioningSystem
+/// <summary>A version line with a <c>base</c> (first version the docs cover) and a <c>current</c> (latest release).</summary>
+public sealed record VersioningSystem
 {
 	/// <summary>
 	/// The sentinel major version value used for "versionless" products (serverless, cloud, etc.)
@@ -169,10 +168,8 @@ public record VersioningSystem
 
 	public required VersioningSystemId Id { get; init; }
 
-	[YamlMember(Alias = "base")]
 	public required SemVersion Base { get; init; }
 
-	[YamlMember(Alias = "current")]
 	public required SemVersion Current { get; init; }
 
 	public bool IsVersioned() => Base.Major != AllVersions.Instance.Major;

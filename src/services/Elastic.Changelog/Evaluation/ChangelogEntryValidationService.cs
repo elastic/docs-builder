@@ -45,7 +45,7 @@ public class ChangelogEntryValidationService(
 		// ── Onboarding pre-flight ──────────────────────────────────────────────────────────────
 		// Fail fast when the repository is not registered in products.yml — file discovery is
 		// pointless if the pipeline cannot run regardless of what the PR contains.
-		var matchedProducts = configurationContext.ProductsConfiguration.GetProductsByRepositoryName(input.Repo);
+		var matchedProducts = configurationContext.Catalog.Products.GetProductsByRepositoryName(input.Repo);
 		if (matchedProducts.Count == 0)
 		{
 			collector.EmitError(
@@ -128,7 +128,7 @@ public class ChangelogEntryValidationService(
 
 		// ── Known products ────────────────────────────────────────────────────────────────────
 		IReadOnlySet<string>? knownProducts = null;
-		var availableProducts = configurationContext.ProductsConfiguration.Products;
+		var availableProducts = configurationContext.Catalog.Products.Products;
 		if (availableProducts is { Count: > 0 })
 			knownProducts = new HashSet<string>(availableProducts.Keys.Select(k => k.Replace('_', '-')), StringComparer.OrdinalIgnoreCase);
 

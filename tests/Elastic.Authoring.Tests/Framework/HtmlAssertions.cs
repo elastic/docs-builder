@@ -114,7 +114,7 @@ internal static class HtmlAssertions
 
 		return string.Join('\n', diffs.Select(d =>
 		{
-			string label = d switch
+			var label = d switch
 			{
 				NodeDiff nd when nd.Target == DiffTarget.Text && nd.Control.Path.Equals(nd.Test.Path, StringComparison.Ordinal) =>
 					$"The text in {nd.Control.Path} is different.",
@@ -134,7 +134,7 @@ internal static class HtmlAssertions
 				_ => throw new InvalidOperationException($"Unknown diff type detected: {d.GetType()}")
 			};
 
-			string detail = d switch
+			var detail = d switch
 			{
 				NodeDiff nd => NodeDiffText(nd.Control, nd.Test),
 				AttrDiff ad => AttrDiffText(ad.Control, ad.Test),

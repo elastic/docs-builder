@@ -5,12 +5,11 @@
 using System.Text.Json.Serialization;
 using Elastic.Documentation;
 using Elastic.Documentation.AppliesTo;
+using Elastic.Documentation.Catalog;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Configuration.Builder;
 using Elastic.Documentation.Configuration.LegacyUrlMappings;
-using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Configuration.Toc;
-using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Site;
 using Elastic.Documentation.Site.FileProviders;
@@ -65,7 +64,7 @@ public class IndexViewModel
 	public required HashSet<Product> Products { get; init; }
 
 	public required VersioningSystem VersioningSystem { get; init; }
-	public required VersionsConfiguration VersionsConfig { get; init; }
+	public required VersioningSystemCatalog VersionsConfig { get; init; }
 
 	// https://developers.google.com/search/docs/appearance/structured-data/breadcrumb#json-ld
 	public required string StructuredBreadcrumbsJson { get; init; }

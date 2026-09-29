@@ -12,10 +12,9 @@ using Elastic.ApiExplorer.Landing;
 using Elastic.ApiExplorer.Model;
 using Elastic.ApiExplorer.Operations;
 using Elastic.Documentation;
+using Elastic.Documentation.Catalog;
 using Elastic.Documentation.Configuration;
-using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Configuration.Toc;
-using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.FileSystems;
 using FakeItEasy;
@@ -30,8 +29,8 @@ public class OpenApiGeneratorMultiVersionTests
 
 	private static BuildContext CreateContext(
 		DiagnosticsCollector collector,
-		VersionsConfiguration? versionsConfiguration = null,
-		ProductsConfiguration? productsConfiguration = null,
+		VersioningSystemCatalog? versionsConfiguration = null,
+		ProductCatalog? productsConfiguration = null,
 		GitCheckoutInformation? git = null
 	) =>
 		new(
@@ -58,7 +57,7 @@ public class OpenApiGeneratorMultiVersionTests
 			Repository = repository
 		};
 
-	private static ProductsConfiguration ProductsFor(params Product[] products) =>
+	private static ProductCatalog ProductsFor(params Product[] products) =>
 		new()
 		{
 			Products = products.ToFrozenDictionary(p => p.Id, StringComparer.OrdinalIgnoreCase),
@@ -326,8 +325,8 @@ public class OpenApiGeneratorMultiVersionTests
 
 	private static BuildContext CreateGenerateContext(
 		DiagnosticsCollector collector,
-		VersionsConfiguration versionsConfiguration,
-		ProductsConfiguration productsConfiguration,
+		VersioningSystemCatalog versionsConfiguration,
+		ProductCatalog productsConfiguration,
 		string outputRoot,
 		GitCheckoutInformation git
 	)

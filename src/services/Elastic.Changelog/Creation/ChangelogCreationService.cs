@@ -84,7 +84,7 @@ public class ChangelogCreationService(
 	private readonly PrInfoProcessor _prProcessor = new(githubPrService, logFactory.CreateLogger<PrInfoProcessor>());
 	private readonly IssueInfoProcessor _issueProcessor = new(githubPrService, logFactory.CreateLogger<IssueInfoProcessor>());
 	private readonly ChangelogFileWriter _fileWriter = new(fileSystem, logFactory.CreateLogger<ChangelogFileWriter>());
-	private readonly ProductInferService _productInferService = new(configurationContext.ProductsConfiguration);
+	private readonly ProductInferService _productInferService = new(configurationContext.Catalog.Products);
 
 	public async Task<bool> CreateChangelog(IDiagnosticsCollector collector, CreateChangelogArguments input, Cancel ctx)
 	{

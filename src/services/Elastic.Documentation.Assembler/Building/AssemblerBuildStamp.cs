@@ -195,7 +195,7 @@ internal static class AssemblerBuildStampService
 		{
 			sha.AppendData(Encoding.UTF8.GetBytes(file.Name));
 			if (file.Exists)
-				sha.AppendData(File.ReadAllBytes(file.FullName));
+				sha.AppendData(file.FileSystem.File.ReadAllBytes(file.FullName));
 		}
 		return Convert.ToHexString(sha.GetCurrentHash()).ToLowerInvariant();
 	}

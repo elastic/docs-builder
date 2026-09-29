@@ -5,8 +5,8 @@
 using System.Diagnostics.CodeAnalysis;
 using System.IO.Abstractions;
 using Elastic.Documentation.AppliesTo;
+using Elastic.Documentation.Catalog;
 using Elastic.Documentation.Configuration;
-using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Navigation;
 using Elastic.Markdown.Helpers;
@@ -49,11 +49,11 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 		//may be updated by DocumentationGroup.ProcessTocItems
 		//todo refactor mutability of MarkdownFile as a whole
 		ScopeDirectory = build.Configuration.ScopeDirectory;
-		Products = build.ProductsConfiguration;
+		Products = build.Catalog.Products;
 		Title = RelativePath;
 	}
 
-	public ProductsConfiguration Products { get; }
+	public ProductCatalog Products { get; }
 
 	public IDirectoryInfo ScopeDirectory { get; set; }
 

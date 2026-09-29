@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using Elastic.Documentation.AppliesTo;
-using Elastic.Documentation.Configuration.Versions;
+using Elastic.Documentation.Catalog;
 using Elastic.Documentation.Versions;
 using Elastic.Markdown.Helpers;
 using Elastic.Markdown.Myst.Components;
@@ -18,7 +18,7 @@ public class SettingsViewModel
 
 	public required Func<string, string> RenderMarkdown { get; init; }
 
-	public required VersionsConfiguration VersionsConfig { get; init; }
+	public required VersioningSystemCatalog VersionsConfig { get; init; }
 
 	/// <summary>Markdown heading level for each group section (1–6).</summary>
 	public required int GroupHeadingLevel { get; init; }

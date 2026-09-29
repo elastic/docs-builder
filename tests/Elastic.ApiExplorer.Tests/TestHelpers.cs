@@ -9,11 +9,9 @@ using System.Linq;
 using Elastic.ApiExplorer.Model;
 using Elastic.ApiExplorer.Operations;
 using Elastic.Documentation;
+using Elastic.Documentation.Catalog;
 using Elastic.Documentation.Configuration;
-using Elastic.Documentation.Configuration.LegacyUrlMappings;
-using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Configuration.Search;
-using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.Versions;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -24,8 +22,8 @@ public static class TestHelpers
 {
 	public static IConfigurationContext CreateConfigurationContext(
 		IFileSystem fileSystem,
-		VersionsConfiguration? versionsConfiguration = null,
-		ProductsConfiguration? productsConfiguration = null
+		VersioningSystemCatalog? versionsConfiguration = null,
+		ProductCatalog? productsConfiguration = null
 	)
 	{
 		versionsConfiguration ??= CreateStackVersionsConfiguration(currentMajor: 9, currentMinor: 0);
@@ -43,7 +41,7 @@ public static class TestHelpers
 					}
 				}
 			};
-			productsConfiguration = new ProductsConfiguration
+			productsConfiguration = new ProductCatalog
 			{
 				Products = products.ToFrozenDictionary(),
 				PublicReferenceProducts = products.ToFrozenDictionary(),
@@ -55,14 +53,12 @@ public static class TestHelpers
 		{
 			Endpoints = new DocumentationEndpoints { Elasticsearch = ElasticsearchEndpoint.Default, },
 			ConfigurationFileProvider = new ConfigurationFileProvider(NullLoggerFactory.Instance, new ConfigurationFileSystem(fileSystem)),
-			VersionsConfiguration = versionsConfiguration,
-			ProductsConfiguration = productsConfiguration,
-			LegacyUrlMappings = new LegacyUrlMappingConfiguration { Mappings = [] },
+			Catalog = new GlobalCatalog(versionsConfiguration, productsConfiguration, new LegacyUrlMappingCatalog { Mappings = [] }),
 			SearchConfiguration = search
 		};
 	}
 
-	public static VersionsConfiguration CreateStackVersionsConfiguration(int currentMajor, int currentMinor = 0, int patch = 0) =>
+	public static VersioningSystemCatalog CreateStackVersionsConfiguration(int currentMajor, int currentMinor = 0, int patch = 0) =>
 		new()
 		{
 			VersioningSystems = new Dictionary<VersioningSystemId, VersioningSystem>
@@ -79,7 +75,7 @@ public static class TestHelpers
 			},
 		};
 
-	public static VersionsConfiguration CreateVersionlessConfiguration() =>
+	public static VersioningSystemCatalog CreateVersionlessConfiguration() =>
 		new()
 		{
 			VersioningSystems = new Dictionary<VersioningSystemId, VersioningSystem>

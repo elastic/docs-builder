@@ -3,14 +3,14 @@
 // See the LICENSE file in the project root for more information
 
 using Elastic.Documentation;
-using Elastic.Documentation.Configuration.Products;
+using Elastic.Documentation.Catalog;
 
 namespace Elastic.Documentation.Configuration.Inference;
 
 /// <summary>
 /// Service for inferring products from repository names and git context.
 /// </summary>
-public class ProductInferService(ProductsConfiguration productsConfiguration, GitCheckoutInformation? gitCheckout = null)
+public class ProductInferService(ProductCatalog productsConfiguration, GitCheckoutInformation? gitCheckout = null)
 {
 	/// <summary>
 	/// Returns all products that map to <paramref name="repositoryName"/>.

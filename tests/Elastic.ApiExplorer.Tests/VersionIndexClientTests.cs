@@ -8,7 +8,7 @@ using System.Net;
 using AwesomeAssertions;
 using Elastic.ApiExplorer.Model;
 using Elastic.Documentation;
-using Elastic.Documentation.Configuration.Products;
+using Elastic.Documentation.Catalog;
 using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Diagnostics;
 

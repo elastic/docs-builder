@@ -2,14 +2,15 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using Elastic.Documentation.Catalog;
 using Elastic.Documentation.Versions;
 using YamlDotNet.Serialization;
 
 namespace Elastic.Documentation.Configuration.Versions;
 
-public static class VersionsConfigurationExtensions
+internal static class VersionsConfigurationExtensions
 {
-	public static VersionsConfiguration CreateVersionConfiguration(this ConfigurationFileProvider provider)
+	public static VersioningSystemCatalog CreateVersionConfiguration(this ConfigurationFileProvider provider)
 	{
 		var versionFilePath = provider.VersionFile;
 
@@ -24,7 +25,7 @@ public static class VersionsConfigurationExtensions
 				Current = ToSemVersion(kvp.Value.Current)
 			}
 		);
-		var config = new VersionsConfiguration { VersioningSystems = versions };
+		var config = new VersioningSystemCatalog { VersioningSystems = versions };
 
 		return config;
 	}

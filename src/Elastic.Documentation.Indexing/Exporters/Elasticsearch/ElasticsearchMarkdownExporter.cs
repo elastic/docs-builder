@@ -5,9 +5,9 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Elastic.Channels;
+using Elastic.Documentation.Catalog;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Search;
-using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Indexing;
 using Elastic.Documentation.Search;
@@ -41,7 +41,7 @@ public partial class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposa
 	private readonly ElasticsearchTypeContext _lexicalTypeContext;
 	private readonly ElasticsearchTypeContext _semanticTypeContext;
 
-	private readonly VersionsConfiguration _versionsConfiguration;
+	private readonly VersioningSystemCatalog _versionsConfiguration;
 	private readonly IReadOnlyList<string[]> _synonyms;
 	private readonly IReadOnlyCollection<QueryRule> _rules;
 	private readonly string _fixedSynonymsHash;
@@ -78,7 +78,7 @@ public partial class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposa
 		_endpoint = endpoints.Elasticsearch;
 		_buildType = endpoints.BuildType;
 		_environment = endpoints.Environment;
-		_versionsConfiguration = context.VersionsConfiguration;
+		_versionsConfiguration = context.Catalog.VersioningSystems;
 		_synonyms = context.SearchConfiguration.Synonyms;
 		_rules = context.SearchConfiguration.Rules;
 		var es = endpoints.Elasticsearch;

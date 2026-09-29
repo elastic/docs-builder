@@ -6,6 +6,7 @@ using System.Collections.Frozen;
 using System.IO.Abstractions;
 using AwesomeAssertions;
 using Elastic.Documentation.AppliesTo;
+using Elastic.Documentation.Catalog;
 using Elastic.Documentation.Configuration.Inference;
 using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Configuration.Versions;
@@ -52,7 +53,7 @@ public class VersionInferenceTests
 	public static IEnumerable<(string, string)> ProductApplicabilityOptionsAsList =>
 		ProductApplicabilityOptions.Select(kvp => (kvp.Key, kvp.Value));
 
-	private static VersionsConfiguration CreateVersionsConfiguration()
+	private static VersioningSystemCatalog CreateVersionsConfiguration()
 	{
 		var versioningSystems = new Dictionary<VersioningSystemId, VersioningSystem>();
 
@@ -61,13 +62,13 @@ public class VersionInferenceTests
 			versioningSystems[id] = new VersioningSystem { Id = id, Current = new SemVersion(1, 0, 0), Base = new SemVersion(1, 0, 0) };
 		}
 
-		return new VersionsConfiguration { VersioningSystems = versioningSystems };
+		return new VersioningSystemCatalog { VersioningSystems = versioningSystems };
 	}
 
 	/// <summary>
-	/// Creates a ProductsConfiguration with all products needed for testing.
+	/// Creates a ProductCatalog with all products needed for testing.
 	/// </summary>
-	private static ProductsConfiguration CreateProductsConfiguration(VersionsConfiguration versionsConfiguration)
+	private static ProductCatalog CreateProductsConfiguration(VersioningSystemCatalog versionsConfiguration)
 	{
 		var products = new Dictionary<string, Product>();
 
@@ -107,7 +108,7 @@ public class VersionInferenceTests
 			};
 		}
 
-		return new ProductsConfiguration
+		return new ProductCatalog
 		{
 			Products = products.ToFrozenDictionary(),
 			PublicReferenceProducts = products.ToFrozenDictionary(),

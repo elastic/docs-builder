@@ -3,16 +3,13 @@
 // See the LICENSE file in the project root for more information
 
 using System.Collections.Immutable;
-using Elastic.Documentation.Configuration.Products;
+using Elastic.Documentation.Catalog;
 
 namespace Elastic.Documentation.Configuration.LegacyUrlMappings;
 
-public static class LegacyUrlMappingExtensions
+internal static class LegacyUrlMappingExtensions
 {
-	public static LegacyUrlMappingConfiguration CreateLegacyUrlMappings(
-		this ConfigurationFileProvider provider,
-		ProductsConfiguration products
-	)
+	public static LegacyUrlMappingCatalog CreateLegacyUrlMappings(this ConfigurationFileProvider provider, ProductCatalog products)
 	{
 		var legacyUrlMappingsFilePath = provider.LegacyUrlMappingsFile;
 
@@ -29,7 +26,7 @@ public static class LegacyUrlMappingExtensions
 			}
 		);
 
-		return new LegacyUrlMappingConfiguration { Mappings = legacyUrlMappings.ToImmutableList() };
+		return new LegacyUrlMappingCatalog { Mappings = legacyUrlMappings.ToImmutableList() };
 	}
 }
 

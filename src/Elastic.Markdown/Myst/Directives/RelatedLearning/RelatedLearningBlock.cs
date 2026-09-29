@@ -2,7 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using Elastic.Documentation.Configuration.RelatedLearning;
+using Elastic.Documentation.Catalog;
 using Elastic.Markdown.Diagnostics;
 using Elastic.Markdown.Helpers;
 using Markdig.Syntax;
@@ -61,7 +61,7 @@ public class RelatedLearningBlock(DirectiveBlockParser parser, ParserContext con
 			return [];
 		}
 
-		var catalog = context.Build.RelatedLearningConfiguration;
+		var catalog = context.Build.RelatedLearning;
 		var seen = new HashSet<string>(StringComparer.Ordinal);
 		var items = new List<RelatedLearningLink>(ids.Length);
 		foreach (var id in ids)

@@ -231,8 +231,8 @@ Content for removed version
 
 		foreach (var (definition1, definition2) in testCases)
 		{
-			var key1 = AppliesItemBlock.GenerateSyncKey(definition1, Block!.Build.ProductsConfiguration);
-			var key2 = AppliesItemBlock.GenerateSyncKey(definition2, Block!.Build.ProductsConfiguration);
+			var key1 = AppliesItemBlock.GenerateSyncKey(definition1, Block!.Build.Catalog.Products);
+			var key2 = AppliesItemBlock.GenerateSyncKey(definition2, Block!.Build.Catalog.Products);
 			key1.Should().Be(key2, $"Sync keys should be the same for '{definition1}' and '{definition2}'");
 		}
 	}
@@ -254,8 +254,8 @@ Content for removed version
 
 		foreach (var (yamlObject, equivalentSyntax) in testCases)
 		{
-			var key1 = AppliesItemBlock.GenerateSyncKey(yamlObject, Block!.Build.ProductsConfiguration);
-			var key2 = AppliesItemBlock.GenerateSyncKey(equivalentSyntax, Block!.Build.ProductsConfiguration);
+			var key1 = AppliesItemBlock.GenerateSyncKey(yamlObject, Block!.Build.Catalog.Products);
+			var key2 = AppliesItemBlock.GenerateSyncKey(equivalentSyntax, Block!.Build.Catalog.Products);
 			key1.Should().Be(
 				key2,
 				$"Sync keys should be the same for YAML object '{yamlObject}' and equivalent syntax '{equivalentSyntax}'"
@@ -286,7 +286,7 @@ Content for removed version
 
 		foreach (var (definition, expectedKey) in expectedKeys)
 		{
-			var actualKey = AppliesItemBlock.GenerateSyncKey(definition, Block!.Build.ProductsConfiguration);
+			var actualKey = AppliesItemBlock.GenerateSyncKey(definition, Block!.Build.Catalog.Products);
 
 			actualKey.Should().Be(
 				expectedKey,
@@ -297,7 +297,7 @@ Content for removed version
 			// Also verify multiple invocations in this run produce the same key
 			var keys = Enumerable
 				.Range(0, 5)
-				.Select(_ => AppliesItemBlock.GenerateSyncKey(definition, Block!.Build.ProductsConfiguration))
+				.Select(_ => AppliesItemBlock.GenerateSyncKey(definition, Block!.Build.Catalog.Products))
 				.ToList();
 
 			keys.Distinct().Should().HaveCount(1, $"All invocations for '{definition}' should produce identical keys");

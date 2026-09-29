@@ -3,12 +3,10 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions;
+using Elastic.Documentation.Catalog;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
-using Elastic.Documentation.Configuration.LegacyUrlMappings;
-using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Configuration.Search;
-using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Deploying.Synchronization;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.FileSystems;
@@ -17,6 +15,8 @@ namespace Elastic.Documentation.Assembler;
 
 public class AssembleContext : IDocumentationConfigurationContext, IDocsSyncContext
 {
+	private readonly IConfigurationContext _configurationContext;
+
 	public CheckoutsFileSystem ReadFileSystem { get; }
 	public DocumentationWriteFileSystem WriteFileSystem { get; }
 
@@ -25,15 +25,15 @@ public class AssembleContext : IDocumentationConfigurationContext, IDocsSyncCont
 	public AssemblyConfiguration Configuration { get; }
 
 	/// <inheritdoc />
-	public VersionsConfiguration VersionsConfiguration { get; }
+	public GlobalCatalog Catalog { get; }
+
+	public RelatedLearningCatalog RelatedLearning => _configurationContext.RelatedLearning;
 
 	public ConfigurationFileProvider ConfigurationFileProvider { get; }
 
 	/// <inheritdoc />
 	public DocumentationEndpoints Endpoints { get; }
 
-	public ProductsConfiguration ProductsConfiguration { get; }
-	public LegacyUrlMappingConfiguration LegacyUrlMappings { get; }
 	public SearchConfiguration SearchConfiguration { get; }
 
 	// Always use the production URL. In case a page is leaked to a search engine, it should point to the production site.
@@ -78,12 +78,11 @@ public class AssembleContext : IDocumentationConfigurationContext, IDocsSyncCont
 		Configuration = configuration;
 		ConfigurationFileProvider = configurationContext.ConfigurationFileProvider;
 		ConfigurationPath = ConfigurationFileProvider.AssemblerFile;
-		VersionsConfiguration = configurationContext.VersionsConfiguration;
+		_configurationContext = configurationContext;
+		Catalog = configurationContext.Catalog;
 		SearchConfiguration = configurationContext.SearchConfiguration;
 		Endpoints = configurationContext.Endpoints;
 		Endpoints.BuildType = "assembler";
-		ProductsConfiguration = configurationContext.ProductsConfiguration;
-		LegacyUrlMappings = configurationContext.LegacyUrlMappings;
 
 		if (!Configuration.Environments.TryGetValue(environment, out var env))
 			throw new Exception($"Could not find environment {environment}");

@@ -2,7 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using Elastic.Documentation.Configuration.Products;
+using Elastic.Documentation.Catalog;
 using Elastic.Documentation.Search.Common;
 using Elastic.Documentation.Search.Contract;
 using Microsoft.Extensions.DependencyInjection;
@@ -29,10 +29,10 @@ public static class ServicesExtension
 
 		_ = services.AddSingleton<ElasticsearchClientAccessor>();
 
-		// ProductsConfiguration already implements IProductNameLookup; surface it via the
+		// ProductCatalog already implements IProductNameLookup; surface it via the
 		// shared interface so both the inner DefaultSearchService (for aggregation buckets) and
 		// the FullSearchService adapter (for per-hit display names) can resolve it from DI.
-		_ = services.AddScoped<IProductNameLookup>(sp => sp.GetRequiredService<ProductsConfiguration>());
+		_ = services.AddScoped<IProductNameLookup>(sp => sp.GetRequiredService<ProductCatalog>());
 
 		// Inner search service: docs-builder pairs the typed contract with the docs index alias.
 		// SearchQueryConfiguration is a lean projection of the richer docs-builder SearchConfiguration,

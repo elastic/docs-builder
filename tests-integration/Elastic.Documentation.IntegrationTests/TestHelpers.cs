@@ -5,11 +5,9 @@
 using System.Collections.Frozen;
 using System.IO.Abstractions;
 using Elastic.Documentation;
+using Elastic.Documentation.Catalog;
 using Elastic.Documentation.Configuration;
-using Elastic.Documentation.Configuration.LegacyUrlMappings;
-using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Configuration.Search;
-using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.Versions;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -20,9 +18,9 @@ public static class TestHelpers
 {
 	public static IConfigurationContext CreateConfigurationContext(
 		IFileSystem fileSystem,
-		VersionsConfiguration? versionsConfiguration = null,
+		VersioningSystemCatalog? versionsConfiguration = null,
 		ConfigurationFileProvider? configurationFileProvider = null,
-		ProductsConfiguration? productsConfiguration = null
+		ProductCatalog? productsConfiguration = null
 	)
 	{
 		configurationFileProvider ??= new ConfigurationFileProvider(
@@ -30,7 +28,7 @@ public static class TestHelpers
 			new ConfigurationFileSystem(fileSystem),
 			skipPrivateRepositories: true
 		);
-		versionsConfiguration ??= new VersionsConfiguration
+		versionsConfiguration ??= new VersioningSystemCatalog
 		{
 			VersioningSystems = new Dictionary<VersioningSystemId, VersioningSystem>
 			{
@@ -59,7 +57,7 @@ public static class TestHelpers
 					}
 				}
 			};
-			productsConfiguration = new ProductsConfiguration
+			productsConfiguration = new ProductCatalog
 			{
 				Products = products.ToFrozenDictionary(),
 				PublicReferenceProducts = products.ToFrozenDictionary(),
@@ -71,10 +69,8 @@ public static class TestHelpers
 		{
 			Endpoints = new DocumentationEndpoints { Elasticsearch = ElasticsearchEndpoint.Default, },
 			ConfigurationFileProvider = configurationFileProvider,
-			VersionsConfiguration = versionsConfiguration,
-			ProductsConfiguration = productsConfiguration,
+			Catalog = new GlobalCatalog(versionsConfiguration, productsConfiguration, new LegacyUrlMappingCatalog { Mappings = [] }),
 			SearchConfiguration = search,
-			LegacyUrlMappings = new LegacyUrlMappingConfiguration { Mappings = [] },
 		};
 	}
 }

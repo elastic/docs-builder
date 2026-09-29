@@ -8,7 +8,7 @@ using Elastic.ApiExplorer.Export;
 using Elastic.ApiExplorer.Model;
 using Elastic.ApiExplorer.Operations;
 using Elastic.Documentation;
-using Elastic.Documentation.Configuration.Versions;
+using Elastic.Documentation.Catalog;
 using Elastic.Documentation.Search;
 using Elastic.Documentation.Search.Contract;
 using Elastic.Documentation.Versions;
@@ -26,7 +26,7 @@ public class OpenApiDocumentExporterTests
 	public async Task ExportedDocumentUrlsShouldReturnSuccessStatusCode()
 	{
 		// Arrange
-		var versionsConfiguration = new VersionsConfiguration
+		var versionsConfiguration = new VersioningSystemCatalog
 		{
 			VersioningSystems = new Dictionary<VersioningSystemId, VersioningSystem>
 			{
@@ -126,7 +126,7 @@ public class OpenApiDocumentExporterTests
 	public async Task DescriptionWithHtmlShouldHaveTagsStrippedForSearchIndex()
 	{
 		// Arrange
-		var versionsConfiguration = new VersionsConfiguration
+		var versionsConfiguration = new VersioningSystemCatalog
 		{
 			VersioningSystems = new Dictionary<VersioningSystemId, VersioningSystem>
 			{

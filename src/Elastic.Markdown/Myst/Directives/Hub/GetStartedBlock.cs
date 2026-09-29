@@ -39,7 +39,7 @@ public class GetStartedBlock(DirectiveBlockParser parser, ParserContext context)
 
 		try
 		{
-			Data = YamlSerialization.Deserialize<GetStartedData>(yaml, Build.ProductsConfiguration) ?? GetStartedData.Empty;
+			Data = YamlSerialization.Deserialize<GetStartedData>(yaml, Build.Catalog.Products) ?? GetStartedData.Empty;
 		}
 		catch (YamlException ex)
 		{

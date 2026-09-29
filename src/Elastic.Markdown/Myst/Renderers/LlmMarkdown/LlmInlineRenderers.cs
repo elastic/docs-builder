@@ -107,7 +107,7 @@ public class LlmRoleRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, RoleL
 				{
 					var text = LlmApplicabilityHelper.RenderForLlm(
 						appliesToRole.AppliesTo,
-						appliesToRole.BuildContext.VersionsConfiguration
+						appliesToRole.BuildContext.Catalog.VersioningSystems
 					);
 					if (!string.IsNullOrEmpty(text))
 						renderer.Writer.Write(text);

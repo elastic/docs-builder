@@ -5,10 +5,9 @@
 using System.IO.Abstractions;
 using System.Text.Json;
 using Elastic.Documentation;
+using Elastic.Documentation.Catalog;
 using Elastic.Documentation.Configuration.Inference;
 using Elastic.Documentation.Configuration.LegacyUrlMappings;
-using Elastic.Documentation.Configuration.Products;
-using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Extensions;
 using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Site;
@@ -148,7 +147,7 @@ public class HtmlWriter(
 
 		// Get versioning from inference result's product
 		var pageVersioning = inference.Product?.VersioningSystem
-			?? DocumentationSet.Context.VersionsConfiguration?.GetVersioningSystem(VersioningSystemId.Stack)
+			?? DocumentationSet.Context.Catalog.VersioningSystems?.GetVersioningSystem(VersioningSystemId.Stack)
 			?? throw new InvalidOperationException(
 				$"No versioning system available for page '{markdown.RelativePath}'. " +
 					"Ensure VersionsConfiguration contains a Stack versioning system or the inferred product has a VersioningSystem defined."
@@ -211,7 +210,7 @@ public class HtmlWriter(
 			VersionDropdownItems = VersionDropDownItemViewModel.FromLegacyPageMappings(legacyPages?.ToArray()),
 			Products = pageProducts,
 			VersioningSystem = pageVersioning,
-			VersionsConfig = DocumentationSet.Context.VersionsConfiguration,
+			VersionsConfig = DocumentationSet.Context.Catalog.VersioningSystems,
 			StructuredBreadcrumbsJson = structuredBreadcrumbsJsonString,
 			// Git info for isolated header
 			GitBranch = gitBranch != "unavailable" ? gitBranch : null,

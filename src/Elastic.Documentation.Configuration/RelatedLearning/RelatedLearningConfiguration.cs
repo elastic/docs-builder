@@ -3,40 +3,10 @@
 // See the LICENSE file in the project root for more information
 
 using System.Collections.Frozen;
-using System.Diagnostics.CodeAnalysis;
+using Elastic.Documentation.Catalog;
 using YamlDotNet.Serialization;
 
 namespace Elastic.Documentation.Configuration.RelatedLearning;
-
-/// <summary>
-/// Global catalog of named elastic.co learning destinations. Pages opt in with
-/// the <c>{related-learning}</c> directive by catalog ID.
-/// </summary>
-public record RelatedLearningConfiguration
-{
-	public static RelatedLearningConfiguration Empty { get; } = new() { Links = FrozenDictionary<string, RelatedLearningLink>.Empty };
-
-	/// <summary>Catalog entries keyed by ID.</summary>
-	public required IReadOnlyDictionary<string, RelatedLearningLink> Links { get; init; }
-
-	public bool TryGet(string id, [NotNullWhen(true)] out RelatedLearningLink? link) => Links.TryGetValue(id, out link);
-
-	/// <summary>Parses and validates a <c>related-learning.yml</c> document.</summary>
-	public static RelatedLearningConfiguration Parse(string yaml)
-	{
-		var dto = ConfigurationFileProvider.Deserializer.Deserialize<RelatedLearningConfigDto>(yaml)
-			?? throw new InvalidOperationException("related-learning.yml deserialized to null.");
-		return RelatedLearningConfigurationExtensions.FromDto(dto);
-	}
-}
-
-/// <summary>A single named learning destination from <c>related-learning.yml</c>.</summary>
-public record RelatedLearningLink
-{
-	public required string Id { get; init; }
-	public required string Title { get; init; }
-	public required string Url { get; init; }
-}
 
 [YamlSerializable]
 internal sealed class RelatedLearningConfigDto
@@ -55,15 +25,17 @@ internal sealed class RelatedLearningLinkDto
 	public string Url { get; set; } = string.Empty;
 }
 
-public static class RelatedLearningConfigurationExtensions
+internal static class RelatedLearningConfigurationExtensions
 {
-	public static RelatedLearningConfiguration CreateRelatedLearningConfiguration(this ConfigurationFileProvider provider)
+	/// <summary>Parses and validates a <c>related-learning.yml</c> document. Throws on invalid input; <see cref="Loading.RelatedLearningLoader"/> turns that into a diagnostic.</summary>
+	public static RelatedLearningCatalog Parse(string yaml)
 	{
-		using var reader = provider.RelatedLearningFile.OpenText();
-		return RelatedLearningConfiguration.Parse(reader.ReadToEnd());
+		var dto = ConfigurationFileProvider.Deserializer.Deserialize<RelatedLearningConfigDto>(yaml)
+			?? throw new InvalidOperationException("related-learning.yml deserialized to null.");
+		return FromDto(dto);
 	}
 
-	internal static RelatedLearningConfiguration FromDto(RelatedLearningConfigDto dto)
+	internal static RelatedLearningCatalog FromDto(RelatedLearningConfigDto dto)
 	{
 		var links = new Dictionary<string, RelatedLearningLink>(dto.Links.Count, StringComparer.Ordinal);
 		foreach (var (id, linkDto) in dto.Links)
@@ -83,7 +55,7 @@ public static class RelatedLearningConfigurationExtensions
 			links[id] = new RelatedLearningLink { Id = id, Title = linkDto.Title, Url = linkDto.Url };
 		}
 
-		return new RelatedLearningConfiguration { Links = links.ToFrozenDictionary(StringComparer.Ordinal) };
+		return new RelatedLearningCatalog { Links = links.ToFrozenDictionary(StringComparer.Ordinal) };
 	}
 
 	private static bool IsAbsoluteHttpUrl(string url) =>

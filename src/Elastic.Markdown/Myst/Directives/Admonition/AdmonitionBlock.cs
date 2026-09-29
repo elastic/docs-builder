@@ -62,7 +62,7 @@ public class AdmonitionBlock : DirectiveBlock, IBlockTitle, IBlockAppliesTo
 	{
 		try
 		{
-			var applicableTo = YamlSerialization.Deserialize<ApplicableTo>(yaml, Build.ProductsConfiguration);
+			var applicableTo = YamlSerialization.Deserialize<ApplicableTo>(yaml, Build.Catalog.Products);
 			return applicableTo;
 		}
 		catch

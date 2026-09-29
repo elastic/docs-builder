@@ -4,10 +4,8 @@
 
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
-using Elastic.Documentation.Configuration.LegacyUrlMappings;
-using Elastic.Documentation.Configuration.Products;
+using Elastic.Documentation.Configuration.Loading;
 using Elastic.Documentation.Configuration.Search;
-using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.ServiceDefaults.Logging;
 using Microsoft.Extensions.Configuration.Json;
 using Microsoft.Extensions.DependencyInjection;
@@ -65,12 +63,13 @@ public static class AppDefaultsExtensions
 			})
 			.AddConfigurationFileProvider(cliOptions.SkipPrivateRepositories, cliOptions.ConfigSource, (s, p) =>
 			{
-				var versionConfiguration = p.CreateVersionConfiguration();
-				var products = p.CreateProducts(versionConfiguration);
+				// The only place the global catalog is loaded. Its parts are registered too, for services that need one piece.
+				var catalog = CatalogLoader.Load(p).OrThrow();
 				var search = p.CreateSearchConfiguration();
-				_ = s.AddSingleton(p.CreateLegacyUrlMappings(products));
-				_ = s.AddSingleton(products);
-				_ = s.AddSingleton(versionConfiguration);
+				_ = s.AddSingleton(catalog);
+				_ = s.AddSingleton(catalog.VersioningSystems);
+				_ = s.AddSingleton(catalog.Products);
+				_ = s.AddSingleton(catalog.LegacyUrlMappings);
 				_ = s.AddSingleton(search);
 				configure?.Invoke(s, p);
 			})

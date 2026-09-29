@@ -6,10 +6,9 @@ using System.Collections.Frozen;
 using System.IO.Abstractions;
 using System.IO.Abstractions.TestingHelpers;
 using AwesomeAssertions;
+using Elastic.Documentation.Catalog;
 using Elastic.Documentation.Configuration.Builder;
-using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Configuration.Toc;
-using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.FileSystems;
 
@@ -104,7 +103,7 @@ public class ConfigurationFileReleaseNotesTests
 		var docsDir = fileSystem.DirectoryInfo.New(Path.Join(root, "docs"));
 
 		var context = new MockDocumentationSetContext(collector, fileSystem, configPath, docsDir);
-		var versionsConfig = new VersionsConfiguration { VersioningSystems = new Dictionary<VersioningSystemId, VersioningSystem>() };
+		var versionsConfig = new VersioningSystemCatalog { VersioningSystems = new Dictionary<VersioningSystemId, VersioningSystem>() };
 		var productsConfig = CreateProductsConfiguration();
 
 		var config = new ConfigurationFile(docSet, context, versionsConfig, productsConfig);
@@ -118,7 +117,7 @@ public class ConfigurationFileReleaseNotesTests
 		public void Write(Diagnostic diagnostic) => Diagnostics.Add(diagnostic);
 	}
 
-	private static ProductsConfiguration CreateProductsConfiguration()
+	private static ProductCatalog CreateProductsConfiguration()
 	{
 		var products = new Dictionary<string, Product>
 		{
@@ -132,7 +131,7 @@ public class ConfigurationFileReleaseNotesTests
 			}
 		};
 
-		return new ProductsConfiguration
+		return new ProductCatalog
 		{
 			Products = products.ToFrozenDictionary(),
 			PublicReferenceProducts = products.ToFrozenDictionary(),

@@ -82,9 +82,9 @@ public partial class DocumentationGenerator
 		// Use the provided inferrer or create a default one
 		_documentInferrer = documentInferrer
 			?? new DocumentInferrerService(
-				DocumentationSet.Context.ProductsConfiguration,
-				DocumentationSet.Context.VersionsConfiguration,
-				DocumentationSet.Context.LegacyUrlMappings,
+				DocumentationSet.Context.Catalog.Products,
+				DocumentationSet.Context.Catalog.VersioningSystems,
+				DocumentationSet.Context.Catalog.LegacyUrlMappings,
 				DocumentationSet.Configuration,
 				DocumentationSet.Context.Git
 			);

@@ -6,7 +6,7 @@ using AwesomeAssertions;
 using Elastic.ApiExplorer.Export;
 using Elastic.ApiExplorer.Model;
 using Elastic.ApiExplorer.Operations;
-using Elastic.Documentation.Configuration.Versions;
+using Elastic.Documentation.Catalog;
 using Elastic.Documentation.Versions;
 using Microsoft.OpenApi;
 
@@ -19,7 +19,7 @@ namespace Elastic.ApiExplorer.Tests;
 /// </summary>
 public class OpenApiOperationIdSearchTitleTests
 {
-	private static readonly VersionsConfiguration VersionsConfiguration = new()
+	private static readonly VersioningSystemCatalog VersionsConfiguration = new()
 	{
 		VersioningSystems = new Dictionary<VersioningSystemId, VersioningSystem>
 		{

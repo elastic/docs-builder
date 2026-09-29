@@ -8,7 +8,7 @@ using Elastic.ApiExplorer.Infrastructure;
 using Elastic.ApiExplorer.Model;
 using Elastic.ApiExplorer.Operations;
 using Elastic.Documentation;
-using Elastic.Documentation.Configuration.Versions;
+using Elastic.Documentation.Catalog;
 using Elastic.Documentation.Versions;
 using Microsoft.OpenApi;
 
@@ -36,7 +36,7 @@ public class AvailabilityBadgeHelperTests
 			}
 		};
 
-		var versionsConfiguration = new VersionsConfiguration
+		var versionsConfiguration = new VersioningSystemCatalog
 		{
 			VersioningSystems = new Dictionary<VersioningSystemId, VersioningSystem>
 			{

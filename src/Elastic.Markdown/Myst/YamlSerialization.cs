@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using Elastic.Documentation.AppliesTo;
-using Elastic.Documentation.Configuration.Products;
+using Elastic.Documentation.Catalog;
 using Elastic.Documentation.Configuration.Toc;
 using Elastic.Markdown.Myst.Directives.Changelog;
 using Elastic.Markdown.Myst.Directives.Contributors;
@@ -18,7 +18,7 @@ namespace Elastic.Markdown.Myst;
 
 public static class YamlSerialization
 {
-	public static T Deserialize<T>(string yaml, ProductsConfiguration products)
+	public static T Deserialize<T>(string yaml, ProductCatalog products)
 	{
 		var input = new StringReader(yaml);
 

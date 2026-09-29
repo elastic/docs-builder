@@ -6,11 +6,9 @@ using System.Collections.Frozen;
 using System.Diagnostics.CodeAnalysis;
 using System.IO.Abstractions.TestingHelpers;
 using Elastic.Documentation;
+using Elastic.Documentation.Catalog;
 using Elastic.Documentation.Configuration;
-using Elastic.Documentation.Configuration.LegacyUrlMappings;
-using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Configuration.Search;
-using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.Versions;
 using Microsoft.Extensions.Logging;
@@ -41,7 +39,7 @@ public abstract class ChangelogTestBase : IDisposable
 		Collector = new TestDiagnosticsCollector();
 		LoggerFactory = new TestLoggerFactory();
 
-		var versionsConfiguration = new VersionsConfiguration
+		var versionsConfiguration = new VersioningSystemCatalog
 		{
 			VersioningSystems = new Dictionary<VersioningSystemId, VersioningSystem>
 			{
@@ -104,7 +102,7 @@ public abstract class ChangelogTestBase : IDisposable
 				}
 			}
 		};
-		var productsConfiguration = new ProductsConfiguration
+		var productsConfiguration = new ProductCatalog
 		{
 			Products = products.ToFrozenDictionary(),
 			PublicReferenceProducts = products.ToFrozenDictionary(),
@@ -115,10 +113,8 @@ public abstract class ChangelogTestBase : IDisposable
 		{
 			Endpoints = new DocumentationEndpoints { Elasticsearch = ElasticsearchEndpoint.Default, },
 			ConfigurationFileProvider = new ConfigurationFileProvider(NullLoggerFactory.Instance, configFileSystem),
-			VersionsConfiguration = versionsConfiguration,
-			ProductsConfiguration = productsConfiguration,
+			Catalog = new GlobalCatalog(versionsConfiguration, productsConfiguration, new LegacyUrlMappingCatalog { Mappings = [] }),
 			SearchConfiguration = new SearchConfiguration { Synonyms = [], Rules = [], DiminishTerms = [] },
-			LegacyUrlMappings = new LegacyUrlMappingConfiguration { Mappings = [] },
 		};
 	}
 

@@ -187,7 +187,7 @@ public partial record OperationPageModel
 		{
 			RenderMarkdown = markdown => ApiMarkdown.Render(context, markdown),
 			ApiRootUrl = context.CurrentNavigation.NavigationRoot.Url,
-			VersionsConfiguration = context.BuildContext.VersionsConfiguration,
+			VersionsConfiguration = context.BuildContext.Catalog.VersioningSystems,
 			SchemaResolveCache = context.SchemaResolveCache
 		};
 		var builder = new ApiPropertyTreeBuilder(document, options);
@@ -220,7 +220,7 @@ public partial record OperationPageModel
 
 		return new OperationPageModel
 		{
-			Availability = AvailabilityBadgeHelper.FromOperation(operation, context.BuildContext.VersionsConfiguration),
+			Availability = AvailabilityBadgeHelper.FromOperation(operation, context.BuildContext.Catalog.VersioningSystems),
 			IsBeta = OpenApiExtensionReader.IsBeta(operation),
 			ExternalDocs = externalDocs,
 			Servers = servers,

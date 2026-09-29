@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.Text.RegularExpressions;
-using Elastic.Documentation.Configuration.Products;
+using Elastic.Documentation.Catalog;
 using Elastic.Documentation.Extensions;
 using Elastic.Documentation.Versions;
 using Microsoft.Extensions.Logging;

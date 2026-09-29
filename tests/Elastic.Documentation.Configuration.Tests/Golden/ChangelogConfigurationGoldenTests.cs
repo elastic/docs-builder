@@ -6,8 +6,10 @@ using System.Collections;
 using System.IO.Abstractions.TestingHelpers;
 using System.Reflection;
 using System.Text.Json.Nodes;
+using Elastic.Documentation.Catalog;
 using Elastic.Documentation.Configuration.Changelog;
 using Elastic.Documentation.Configuration.LegacyUrlMappings;
+using Elastic.Documentation.Configuration.Loading;
 using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Configuration.Search;
 using Elastic.Documentation.Configuration.Versions;
@@ -41,16 +43,15 @@ public class ChangelogConfigurationGoldenTests
 	private static async Task AssertChangelog(string name, string sourceFile)
 	{
 		var provider = BaselineProvider();
-		var versions = provider.CreateVersionConfiguration();
-		var products = provider.CreateProducts(versions);
+		var catalog = CatalogLoader.Load(provider).OrThrow();
+		var versions = catalog.VersioningSystems;
+		var products = catalog.Products;
 		var context = new ConfigurationContext
 		{
 			Endpoints = new DocumentationEndpoints { Elasticsearch = ElasticsearchEndpoint.Default },
 			ConfigurationFileProvider = provider,
-			VersionsConfiguration = versions,
-			ProductsConfiguration = products,
+			Catalog = new GlobalCatalog(versions, products, new LegacyUrlMappingCatalog { Mappings = [] }),
 			SearchConfiguration = new SearchConfiguration { Synonyms = [], Rules = [], DiminishTerms = [] },
-			LegacyUrlMappings = new LegacyUrlMappingConfiguration { Mappings = [] }
 		};
 
 		const string configPath = "/repo/docs/changelog.yml";

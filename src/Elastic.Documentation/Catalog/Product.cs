@@ -3,13 +3,12 @@
 // See the LICENSE file in the project root for more information
 
 using System.Collections.Frozen;
-using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Search.Contract;
-using YamlDotNet.Serialization;
 
-namespace Elastic.Documentation.Configuration.Products;
+namespace Elastic.Documentation.Catalog;
 
-public record ProductsConfiguration : IProductNameLookup
+/// <summary>Every product from <c>products.yml</c>, with lookups by repository and display name. Part of the <see cref="GlobalCatalog"/> aggregate.</summary>
+public sealed record ProductCatalog : IProductNameLookup
 {
 	public required FrozenDictionary<string, Product> Products { get; init; }
 
@@ -87,12 +86,6 @@ public record ProductsConfiguration : IProductNameLookup
 	}
 }
 
-[YamlSerializable]
-public record ProductLink
-{
-	public string Id { get; set; } = string.Empty;
-}
-
 /// <summary>
 /// The release-notes onboarding path a product follows, declared via <c>features.release-notes</c>
 /// in <c>products.yml</c>. See the release-notes onboarding RFC: a product either commits its final
@@ -112,7 +105,7 @@ public enum ReleaseNotesPath
 }
 
 /// <summary>Declares which docs-builder subsystems a product participates in.</summary>
-public record ProductFeatures
+public sealed record ProductFeatures
 {
 	/// <summary>Product can be referenced in applies_to blocks, page frontmatter, and gets display-name substitutions.</summary>
 	public bool PublicReference { get; init; }
@@ -136,8 +129,8 @@ public record ProductFeatures
 	);
 }
 
-[YamlSerializable]
-public record Product
+/// <summary>A product from <c>products.yml</c>. Its versioning system is resolved while loading the <see cref="GlobalCatalog"/>.</summary>
+public sealed record Product
 {
 	public required string Id { get; init; }
 	public required string DisplayName { get; init; }

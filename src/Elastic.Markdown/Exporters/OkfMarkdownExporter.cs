@@ -8,7 +8,6 @@ using System.IO.Compression;
 using System.Text;
 using Elastic.Documentation.AppliesTo;
 using Elastic.Documentation.Configuration.Inference;
-using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Navigation;
 using Elastic.Markdown.Helpers;
 using Elastic.Markdown.IO;
@@ -369,7 +368,7 @@ public class OkfMarkdownExporter : IMarkdownExporter
 			AppliesTo = appliesTo,
 			Inline = true,
 			ShowTooltip = true,
-			VersionsConfig = buildContext.VersionsConfiguration
+			VersionsConfig = buildContext.Catalog.VersioningSystems
 		};
 
 		var items = viewModel.GetApplicabilityItems();

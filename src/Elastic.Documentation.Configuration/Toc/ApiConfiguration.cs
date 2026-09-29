@@ -170,7 +170,7 @@ public class ResolvedApiConfiguration
 	/// <summary>
 	/// The <c>products.yml</c> product this API key binds to.
 	/// </summary>
-	public required Products.Product Product { get; init; }
+	public required Elastic.Documentation.Catalog.Product Product { get; init; }
 
 	/// <summary>
 	/// The basename (including extension) of the declared <c>spec:</c> value, e.g.

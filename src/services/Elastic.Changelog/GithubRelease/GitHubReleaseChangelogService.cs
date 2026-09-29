@@ -136,7 +136,7 @@ public class GitHubReleaseChangelogService(
 			_logger.LogInformation("Processing GitHub release from {Owner}/{Repo}", owner, repo);
 
 			// 2. Resolve product(s) from repo name via products.yml
-			var products = configurationContext.ProductsConfiguration.GetProductsByRepositoryName(repo);
+			var products = configurationContext.Catalog.Products.GetProductsByRepositoryName(repo);
 			if (products.Count == 0)
 			{
 				collector.EmitError(

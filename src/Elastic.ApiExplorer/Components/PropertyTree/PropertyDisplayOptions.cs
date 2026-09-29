@@ -4,7 +4,7 @@
 
 using Elastic.ApiExplorer.Model;
 using Elastic.ApiExplorer.Operations;
-using Elastic.Documentation.Configuration.Versions;
+using Elastic.Documentation.Catalog;
 using Microsoft.AspNetCore.Html;
 using Microsoft.OpenApi;
 
@@ -39,7 +39,7 @@ public record PropertyDisplayOptions
 	public bool UseHiddenUntilFound { get; init; } = true;
 	public CollapseMode CollapseMode { get; init; } = CollapseMode.AlwaysCollapsed;
 	public int MaxDepth { get; init; } = SchemaHelpers.MaxDepth;
-	public VersionsConfiguration? VersionsConfiguration { get; init; }
+	public VersioningSystemCatalog? VersionsConfiguration { get; init; }
 
 	/// <summary>
 	/// Optional cross-page cache for <c>$ref</c> → resolved schema lookups, shared across all pages

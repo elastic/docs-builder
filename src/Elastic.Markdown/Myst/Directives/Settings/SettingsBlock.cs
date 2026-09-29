@@ -216,7 +216,7 @@ public class SettingsBlock(DirectiveBlockParser parser, ParserContext context) :
 			var yaml = file.FileSystem.File.ReadAllText(file.FullName);
 			CollectSubstitutionUsageFromYaml(yaml, Build);
 			_parsedSettings = PrepareSettingsForRendering(
-				YamlSerialization.Deserialize<YamlSettings>(yaml, Build.ProductsConfiguration),
+				YamlSerialization.Deserialize<YamlSettings>(yaml, Build.Catalog.Products),
 				Context
 			);
 			return _parsedSettings;

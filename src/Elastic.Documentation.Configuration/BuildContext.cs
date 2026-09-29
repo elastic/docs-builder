@@ -5,14 +5,11 @@
 using System.IO.Abstractions;
 using System.Reflection;
 using Elastic.Documentation;
+using Elastic.Documentation.Catalog;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Configuration.Builder;
-using Elastic.Documentation.Configuration.LegacyUrlMappings;
-using Elastic.Documentation.Configuration.Products;
-using Elastic.Documentation.Configuration.RelatedLearning;
 using Elastic.Documentation.Configuration.Search;
 using Elastic.Documentation.Configuration.Toc;
-using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.FileSystems;
 using Nullean.ScopedFileSystem;
@@ -50,12 +47,10 @@ public record BuildContext : IDocumentationSetContext, IDocumentationConfigurati
 	public ConfigurationFile Configuration { get; private set; }
 	public DocumentationSetFile ConfigurationYaml { get; set; }
 
-	public VersionsConfiguration VersionsConfiguration { get; }
+	public GlobalCatalog Catalog { get; }
 	public ConfigurationFileProvider ConfigurationFileProvider { get; }
 	public DocumentationEndpoints Endpoints { get; }
-	public ProductsConfiguration ProductsConfiguration { get; }
-	public RelatedLearningConfiguration RelatedLearningConfiguration { get; }
-	public LegacyUrlMappingConfiguration LegacyUrlMappings { get; }
+	public RelatedLearningCatalog RelatedLearning { get; }
 	public SearchConfiguration SearchConfiguration { get; }
 	public IEnvironmentVariables Environment { get; }
 	public IDiagnosticsCollector Collector { get; }
@@ -96,11 +91,9 @@ public record BuildContext : IDocumentationSetContext, IDocumentationConfigurati
 		AvailableExporters = ExportOptions.Default;
 		Environment = environment ?? SystemEnvironmentVariables.Instance;
 		SearchConfiguration = configurationContext.SearchConfiguration;
-		VersionsConfiguration = configurationContext.VersionsConfiguration;
+		Catalog = configurationContext.Catalog;
 		ConfigurationFileProvider = configurationContext.ConfigurationFileProvider;
-		ProductsConfiguration = configurationContext.ProductsConfiguration;
-		RelatedLearningConfiguration = configurationContext.ConfigurationFileProvider.CreateRelatedLearningConfiguration();
-		LegacyUrlMappings = configurationContext.LegacyUrlMappings;
+		RelatedLearning = configurationContext.RelatedLearning;
 		Endpoints = configurationContext.Endpoints;
 
 		GoogleTagManager = new GoogleTagManagerConfiguration { Enabled = false };
@@ -110,7 +103,7 @@ public record BuildContext : IDocumentationSetContext, IDocumentationConfigurati
 			? DocumentationSetFile.LoadAndResolve(collector, ConfigurationPath, fileSystem.Read)
 			: new DocumentationSetFile();
 
-		Configuration = new ConfigurationFile(ConfigurationYaml, this, VersionsConfiguration, ProductsConfiguration);
+		Configuration = new ConfigurationFile(ConfigurationYaml, this, Catalog.VersioningSystems, Catalog.Products);
 	}
 
 	/// <summary>Re-reads docset.yml from disk and rebuilds the configuration. Used by the serve command on file changes.</summary>
@@ -120,7 +113,7 @@ public record BuildContext : IDocumentationSetContext, IDocumentationConfigurati
 		ConfigurationYaml = ConfigurationPath.Exists
 			? DocumentationSetFile.LoadAndResolve(Collector, ConfigurationPath, ReadFileSystem as ScopedFileSystem)
 			: new DocumentationSetFile();
-		Configuration = new ConfigurationFile(ConfigurationYaml, this, VersionsConfiguration, ProductsConfiguration);
+		Configuration = new ConfigurationFile(ConfigurationYaml, this, Catalog.VersioningSystems, Catalog.Products);
 		Configuration.Features.DiagnosticsPanelEnabled = previousFeatures.DiagnosticsPanelEnabled;
 		Configuration.Features.PageFeedbackEnabled = previousFeatures.PageFeedbackEnabled;
 	}

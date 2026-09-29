@@ -230,7 +230,7 @@ groups:
 		{
 			SettingsCollection = new YamlSettings(),
 			RenderMarkdown = s => s,
-			VersionsConfig = config.VersionsConfiguration,
+			VersionsConfig = config.Catalog.VersioningSystems,
 			GroupHeadingLevel = 2
 		};
 		var appliesTo = new Elastic.Documentation.AppliesTo.ApplicableTo

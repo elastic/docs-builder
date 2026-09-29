@@ -77,7 +77,7 @@ public class PlainTextCodeBlockRenderer : MarkdownObjectRenderer<PlainTextRender
 		{
 			var appliesText = LlmApplicabilityHelper.RenderForLlm(
 				appliesTo.AppliesTo,
-				renderer.BuildContext.VersionsConfiguration,
+				renderer.BuildContext.Catalog.VersioningSystems,
 				useInlineTag: false
 			);
 			if (!string.IsNullOrEmpty(appliesText))
@@ -430,7 +430,7 @@ public class PlainTextDirectiveRenderer : MarkdownObjectRenderer<PlainTextRender
 			var yaml = file.FileSystem.File.ReadAllText(file.FullName);
 			SettingsBlock.CollectSubstitutionUsageFromYaml(yaml, block.Context.Build);
 			settings = SettingsBlock.PrepareSettingsForRendering(
-				YamlSerialization.Deserialize<YamlSettings>(yaml, block.Context.Build.ProductsConfiguration),
+				YamlSerialization.Deserialize<YamlSettings>(yaml, block.Context.Build.Catalog.Products),
 				block.Context
 			);
 		}

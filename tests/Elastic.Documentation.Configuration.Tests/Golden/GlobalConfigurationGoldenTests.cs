@@ -4,9 +4,11 @@
 
 using System.IO.Abstractions.TestingHelpers;
 using System.Text.Json.Nodes;
+using Elastic.Documentation.Catalog;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Configuration.Codex;
 using Elastic.Documentation.Configuration.LegacyUrlMappings;
+using Elastic.Documentation.Configuration.Loading;
 using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Configuration.RelatedLearning;
 using Elastic.Documentation.Configuration.Search;
@@ -28,28 +30,24 @@ public class GlobalConfigurationGoldenTests
 	public async Task Versions_Baseline_MatchesGolden()
 	{
 		var provider = BaselineProvider();
-		await AssertMatches("config-versions", Capture(() => ProjectVersions(provider.CreateVersionConfiguration())));
+		await AssertMatches("config-versions", Capture(() => ProjectVersions(CatalogLoader.Load(provider).OrThrow().VersioningSystems)));
 	}
 
 	[Test]
 	public async Task Products_Baseline_MatchesGolden()
 	{
 		var provider = BaselineProvider();
-		await AssertMatches(
-			"config-products",
-			Capture(() => ProjectProducts(provider.CreateProducts(provider.CreateVersionConfiguration())))
-		);
+		await AssertMatches("config-products", Capture(() => ProjectProducts(CatalogLoader.Load(provider).OrThrow().Products)));
 	}
 
 	[Test]
 	public async Task LegacyUrlMappings_Baseline_MatchesGolden()
 	{
 		var provider = BaselineProvider();
-		await AssertMatches("config-legacy-url-mappings", Capture(() =>
-		{
-			var products = provider.CreateProducts(provider.CreateVersionConfiguration());
-			return ProjectLegacyUrlMappings(provider.CreateLegacyUrlMappings(products));
-		}));
+		await AssertMatches(
+			"config-legacy-url-mappings",
+			Capture(() => ProjectLegacyUrlMappings(CatalogLoader.Load(provider).OrThrow().LegacyUrlMappings))
+		);
 	}
 
 	[Test]
@@ -58,7 +56,7 @@ public class GlobalConfigurationGoldenTests
 		var provider = BaselineProvider();
 		await AssertMatches(
 			"config-related-learning",
-			Capture(() => ProjectRelatedLearning(provider.CreateRelatedLearningConfiguration()))
+			Capture(() => ProjectRelatedLearning(RelatedLearningLoader.Load(provider).OrThrow()))
 		);
 	}
 
@@ -120,7 +118,7 @@ public class GlobalConfigurationGoldenTests
 			("isVersionless", Bool(v.IsVersionless))
 		);
 
-	private static JsonNode ProjectVersions(VersionsConfiguration versions) =>
+	private static JsonNode ProjectVersions(VersioningSystemCatalog versions) =>
 		Obj(("versioningSystems", Map(versions.VersioningSystems, ProjectVersioningSystem)));
 
 	private static JsonNode ProjectProduct(Product p) =>
@@ -135,14 +133,14 @@ public class GlobalConfigurationGoldenTests
 			))
 		);
 
-	private static JsonNode ProjectProducts(ProductsConfiguration products) =>
+	private static JsonNode ProjectProducts(ProductCatalog products) =>
 		Obj(
 			("products", Map(products.Products, ProjectProduct)),
 			("publicReferenceProducts", Set(products.PublicReferenceProducts.Keys)),
 			("displayNames", Map(products.ProductDisplayNames, n => Str(n)))
 		);
 
-	private static JsonNode ProjectLegacyUrlMappings(LegacyUrlMappingConfiguration legacy) =>
+	private static JsonNode ProjectLegacyUrlMappings(LegacyUrlMappingCatalog legacy) =>
 		Obj(
 			("mappings", Arr(
 				legacy.Mappings,
@@ -154,7 +152,7 @@ public class GlobalConfigurationGoldenTests
 			))
 		);
 
-	private static JsonNode ProjectRelatedLearning(RelatedLearningConfiguration related) =>
+	private static JsonNode ProjectRelatedLearning(RelatedLearningCatalog related) =>
 		Obj(("links", Map(related.Links, l => Obj(("id", Str(l.Id)), ("title", Str(l.Title)), ("url", Str(l.Url))))));
 
 	private static JsonNode ProjectSearch(SearchConfiguration search) =>

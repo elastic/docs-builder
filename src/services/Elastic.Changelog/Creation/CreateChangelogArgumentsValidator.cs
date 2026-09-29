@@ -220,7 +220,7 @@ public class CreateChangelogArgumentsValidator(IConfigurationContext configurati
 		}
 
 		// Validate products against products.yml
-		var validProductIds = configurationContext.ProductsConfiguration.Products.Keys.ToHashSet(StringComparer.OrdinalIgnoreCase);
+		var validProductIds = configurationContext.Catalog.Products.Products.Keys.ToHashSet(StringComparer.OrdinalIgnoreCase);
 		foreach (var product in input.Products)
 		{
 			// Normalize product ID (replace underscores with hyphens for comparison)

@@ -4,8 +4,8 @@
 
 using System.Net;
 using Elastic.Changelog.GitHub;
+using Elastic.Documentation.Catalog;
 using Elastic.Documentation.Configuration;
-using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Services;
 using Microsoft.Extensions.Logging;
@@ -70,7 +70,8 @@ public class ChangelogOnboardingValidationService(
 	public async Task<bool> ValidateOnboardingAsync(IDiagnosticsCollector collector, ValidateOnboardingArguments args, Cancel ctx)
 	{
 		var managedProducts = configurationContext
-			.ProductsConfiguration
+			.Catalog
+			.Products
 			.Products
 			.Values
 			.Where(p => p.Features.ReleaseNotes is ReleaseNotesPath.Prestage or ReleaseNotesPath.OnRelease)

@@ -2,7 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using Elastic.Documentation.Configuration.Products;
+using Elastic.Documentation.Catalog;
 using Elastic.Documentation.Configuration.Suggestions;
 using YamlDotNet.Core;
 using YamlDotNet.Core.Events;
@@ -10,7 +10,7 @@ using YamlDotNet.Serialization;
 
 namespace Elastic.Markdown.Myst.FrontMatter;
 
-public class ProductConverter(ProductsConfiguration products) : IYamlTypeConverter
+public class ProductConverter(ProductCatalog products) : IYamlTypeConverter
 {
 	public bool Accepts(Type type) => type == typeof(Product);
 
@@ -51,7 +51,7 @@ public class ProductConverter(ProductsConfiguration products) : IYamlTypeConvert
 	public void WriteYaml(IEmitter emitter, object? value, Type type, ObjectSerializer serializer) => serializer.Invoke(value, type);
 }
 
-public class InvalidProductException(string invalidValue, ProductsConfiguration products) : Exception(
+public class InvalidProductException(string invalidValue, ProductCatalog products) : Exception(
 	$"Invalid products frontmatter value: \"{invalidValue}\"." +
 		(!string.IsNullOrWhiteSpace(invalidValue)
 			? " " + new Suggestion(

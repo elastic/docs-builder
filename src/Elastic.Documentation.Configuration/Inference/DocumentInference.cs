@@ -3,11 +3,10 @@
 // See the LICENSE file in the project root for more information
 
 using Elastic.Documentation.AppliesTo;
+using Elastic.Documentation.Catalog;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Configuration.Builder;
 using Elastic.Documentation.Configuration.LegacyUrlMappings;
-using Elastic.Documentation.Configuration.Products;
-using Elastic.Documentation.Configuration.Versions;
 
 namespace Elastic.Documentation.Configuration.Inference;
 
@@ -76,9 +75,9 @@ public interface IDocumentInferrerService
 /// from various metadata sources with defined priority.
 /// </summary>
 public class DocumentInferrerService(
-	ProductsConfiguration productsConfiguration,
-	VersionsConfiguration versionsConfiguration,
-	LegacyUrlMappingConfiguration legacyUrlMappings,
+	ProductCatalog productsConfiguration,
+	VersioningSystemCatalog versionsConfiguration,
+	LegacyUrlMappingCatalog legacyUrlMappings,
 	ConfigurationFile? configurationFile = null,
 	GitCheckoutInformation? gitCheckout = null,
 	AssemblyConfiguration? assemblyConfiguration = null
@@ -173,7 +172,7 @@ public class DocumentInferrerService(
 	}
 
 	/// <summary>
-	/// Infers product from legacy URL mappings by matching mapped page URLs against LegacyUrlMappingConfiguration.
+	/// Infers product from legacy URL mappings by matching mapped page URLs against LegacyUrlMappingCatalog.
 	/// </summary>
 	private Product? InferProductFromLegacyMappings(IReadOnlyCollection<string>? mappedPages)
 	{

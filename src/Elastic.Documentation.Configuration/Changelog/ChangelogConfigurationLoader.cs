@@ -2,10 +2,10 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using Elastic.Documentation.Catalog;
 using System.IO.Abstractions;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
-using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Configuration.Serialization;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.ReleaseNotes;
@@ -103,7 +103,7 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 		string configPath
 	)
 	{
-		var validProductIds = configurationContext.ProductsConfiguration.Products.Keys.ToHashSet(StringComparer.OrdinalIgnoreCase);
+		var validProductIds = configurationContext.Catalog.Products.Products.Keys.ToHashSet(StringComparer.OrdinalIgnoreCase);
 
 		// Detect old 'block:' key
 		if (yamlConfig.Block != null)
@@ -307,7 +307,7 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 					);
 					return null;
 				}
-				if (configurationContext.ProductsConfiguration.Products.TryGetValue(normalizedProductId, out var product))
+				if (configurationContext.Catalog.Products.Products.TryGetValue(normalizedProductId, out var product))
 					resolvedProducts.Add(product);
 			}
 			products = resolvedProducts;

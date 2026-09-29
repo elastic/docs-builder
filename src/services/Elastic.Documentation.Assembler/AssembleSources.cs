@@ -7,10 +7,10 @@ using System.IO.Abstractions;
 using Elastic.Documentation.Assembler.Links;
 using Elastic.Documentation.Assembler.Navigation;
 using Elastic.Documentation.Assembler.Sourcing;
+using Elastic.Documentation.Catalog;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Configuration.Builder;
-using Elastic.Documentation.Configuration.LegacyUrlMappings;
 using Elastic.Documentation.Configuration.ReleaseNotes;
 using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.LinkIndex;
@@ -28,7 +28,7 @@ public class AssembleSources
 
 	public FrozenDictionary<Uri, NavigationTocMapping> NavigationTocMappings { get; }
 
-	public LegacyUrlMappingConfiguration LegacyUrlMappings { get; }
+	public LegacyUrlMappingCatalog LegacyUrlMappings { get; }
 
 	public PublishEnvironmentUriResolver UriResolver { get; }
 
@@ -65,7 +65,7 @@ public class AssembleSources
 			checkouts,
 			configurationContext,
 			navigationTocMappings,
-			configurationContext.LegacyUrlMappings,
+			configurationContext.Catalog.LegacyUrlMappings,
 			uriResolver,
 			crossLinkResolver,
 			releaseNotesResolver,
@@ -86,7 +86,7 @@ public class AssembleSources
 			.AssembleSets
 			.Values
 			.Select(
-				s => configurationContext.ProductsConfiguration.GetProductByRepositoryName(s.Checkout.Repository.Name)?.Id ?? s
+				s => configurationContext.Catalog.Products.GetProductByRepositoryName(s.Checkout.Repository.Name)?.Id ?? s
 					.Checkout
 					.Repository
 					.Name
@@ -130,7 +130,7 @@ public class AssembleSources
 		AssembleContext = context;
 		AssembleSets = assembleSets;
 		NavigationTocMappings = FrozenDictionary<Uri, NavigationTocMapping>.Empty;
-		LegacyUrlMappings = context.LegacyUrlMappings;
+		LegacyUrlMappings = context.Catalog.LegacyUrlMappings;
 		UriResolver = new PublishEnvironmentUriResolver(NavigationTocMappings, context.Environment);
 		CrossLinkResolver = NoopCrossLinkResolver.Instance;
 	}
@@ -141,7 +141,7 @@ public class AssembleSources
 		Checkout[] checkouts,
 		IConfigurationContext configurationContext,
 		FrozenDictionary<Uri, NavigationTocMapping> navigationTocMappings,
-		LegacyUrlMappingConfiguration legacyUrlMappings,
+		LegacyUrlMappingCatalog legacyUrlMappings,
 		PublishEnvironmentUriResolver uriResolver,
 		ICrossLinkResolver crossLinkResolver,
 		IReleaseNotesResolver releaseNotesResolver,

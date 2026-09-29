@@ -332,7 +332,7 @@ public class ChangelogPrEvaluationService(
 
 	private string? ResolveProductsFromRepo(string repo)
 	{
-		var matched = configurationContext.ProductsConfiguration.GetProductsByRepositoryName(repo);
+		var matched = configurationContext.Catalog.Products.GetProductsByRepositoryName(repo);
 		return matched.Count switch
 		{
 			0 => null,

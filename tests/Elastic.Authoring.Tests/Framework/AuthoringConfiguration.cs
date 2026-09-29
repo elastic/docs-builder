@@ -3,8 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.Collections.Frozen;
-using Elastic.Documentation.Configuration.Products;
-using Elastic.Documentation.Configuration.Versions;
+using Elastic.Documentation.Catalog;
 using Elastic.Documentation.Versions;
 
 namespace Elastic.Authoring.Tests.Framework;
@@ -48,7 +47,7 @@ public static class AuthoringConfiguration
 		VersioningSystemId.EdotCollector
 	];
 
-	public static VersionsConfiguration CreateVersionsConfiguration()
+	public static VersioningSystemCatalog CreateVersionsConfiguration()
 	{
 		var systems = StandardSystems.ToDictionary(
 			id => id,
@@ -61,10 +60,10 @@ public static class AuthoringConfiguration
 			Current = AllVersions.Instance,
 			Base = AllVersions.Instance
 		};
-		return new VersionsConfiguration { VersioningSystems = systems };
+		return new VersioningSystemCatalog { VersioningSystems = systems };
 	}
 
-	public static ProductsConfiguration CreateProductsConfiguration(VersionsConfiguration versionsConfig)
+	public static ProductCatalog CreateProductsConfiguration(VersioningSystemCatalog versionsConfig)
 	{
 		var products = new Dictionary<string, Product>
 		{
@@ -96,7 +95,7 @@ public static class AuthoringConfiguration
 				}
 			}
 		};
-		return new ProductsConfiguration
+		return new ProductCatalog
 		{
 			Products = products.ToFrozenDictionary(),
 			PublicReferenceProducts = products.ToFrozenDictionary(),

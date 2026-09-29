@@ -8,8 +8,8 @@ using AwesomeAssertions;
 using Elastic.Changelog.GitHub;
 using Elastic.Changelog.Onboarding;
 using Elastic.Changelog.Tests.Changelogs;
+using Elastic.Documentation.Catalog;
 using Elastic.Documentation.Configuration;
-using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Diagnostics;
 using FakeItEasy;
 
@@ -24,14 +24,19 @@ public class OnboardingValidationTests() : ChangelogTestBase()
 	private static IConfigurationContext ContextWith(params Product[] products)
 	{
 		var map = products.ToDictionary(p => p.Id, p => p).ToFrozenDictionary();
-		var configuration = new ProductsConfiguration
+		var configuration = new ProductCatalog
 		{
 			Products = map,
 			PublicReferenceProducts = map,
 			ProductDisplayNames = products.ToDictionary(p => p.Id, p => p.DisplayName).ToFrozenDictionary()
 		};
 		var context = A.Fake<IConfigurationContext>();
-		_ = A.CallTo(() => context.ProductsConfiguration).Returns(configuration);
+		var catalog = new GlobalCatalog(
+			new VersioningSystemCatalog { VersioningSystems = new Dictionary<VersioningSystemId, VersioningSystem>() },
+			configuration,
+			new LegacyUrlMappingCatalog { Mappings = [] }
+		);
+		_ = A.CallTo(() => context.Catalog).Returns(catalog);
 		return context;
 	}
 

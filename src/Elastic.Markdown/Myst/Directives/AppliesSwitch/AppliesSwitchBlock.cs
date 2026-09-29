@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using Elastic.Documentation.AppliesTo;
-using Elastic.Documentation.Configuration.Products;
+using Elastic.Documentation.Catalog;
 using Elastic.Documentation.Extensions;
 using Elastic.Markdown.Diagnostics;
 using Elastic.Markdown.Helpers;
@@ -61,7 +61,7 @@ public class AppliesItemBlock(DirectiveBlockParser parser, ParserContext context
 		AppliesSwitchGroupKey = appliesSwitch?.GetGroupKey();
 
 		// Auto-generate sync key from applies_to definition if not provided
-		SyncKey = Prop("sync") ?? GenerateSyncKey(AppliesToDefinition, Build.ProductsConfiguration);
+		SyncKey = Prop("sync") ?? GenerateSyncKey(AppliesToDefinition, Build.Catalog.Products);
 		Selected = PropBool("selected");
 
 		// Parse the ApplicableTo object for IBlockAppliesTo
@@ -73,7 +73,7 @@ public class AppliesItemBlock(DirectiveBlockParser parser, ParserContext context
 	{
 		try
 		{
-			var applicableTo = YamlSerialization.Deserialize<ApplicableTo>(yaml, Build.ProductsConfiguration);
+			var applicableTo = YamlSerialization.Deserialize<ApplicableTo>(yaml, Build.Catalog.Products);
 			return applicableTo;
 		}
 		catch (FormatException e)
@@ -88,7 +88,7 @@ public class AppliesItemBlock(DirectiveBlockParser parser, ParserContext context
 		}
 	}
 
-	public static string GenerateSyncKey(string appliesToDefinition, ProductsConfiguration productsConfiguration)
+	public static string GenerateSyncKey(string appliesToDefinition, ProductCatalog productsConfiguration)
 	{
 		var applicableTo = YamlSerialization.Deserialize<ApplicableTo>(appliesToDefinition, productsConfiguration);
 		// Use ShortId.Create for a stable, deterministic hash based on the normalized ToString()

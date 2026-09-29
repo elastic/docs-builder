@@ -660,9 +660,7 @@ public class ChangelogBlock(DirectiveBlockParser parser, ParserContext context) 
 		if (CdnProduct is null || Build.ContentSource != ContentSource.Current)
 			return bundles;
 
-		var versioningSystem = Build.ProductsConfiguration.Products.TryGetValue(CdnProduct, out var product)
-			? product.VersioningSystem
-			: null;
+		var versioningSystem = Build.Catalog.Products.Products.TryGetValue(CdnProduct, out var product) ? product.VersioningSystem : null;
 		if (versioningSystem is null || versioningSystem.IsVersionless)
 			return bundles;
 
@@ -741,7 +739,7 @@ public class ChangelogBlock(DirectiveBlockParser parser, ParserContext context) 
 			return null;
 
 		var repository = Build.Git.RepositoryName;
-		return Build.ProductsConfiguration.GetProductByRepositoryName(repository)?.Id ?? repository;
+		return Build.Catalog.Products.GetProductByRepositoryName(repository)?.Id ?? repository;
 	}
 
 	private IEnumerable<string> ComputeGeneratedAnchors()

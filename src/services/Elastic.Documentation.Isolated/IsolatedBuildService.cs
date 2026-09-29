@@ -161,9 +161,9 @@ public class IsolatedBuildService(
 			set.ClearOutputDirectory();
 
 		var documentInferrer = new DocumentInferrerService(
-			context.ProductsConfiguration,
-			context.VersionsConfiguration,
-			context.LegacyUrlMappings,
+			context.Catalog.Products,
+			context.Catalog.VersioningSystems,
+			context.Catalog.LegacyUrlMappings,
 			set.Configuration,
 			context.Git
 		);

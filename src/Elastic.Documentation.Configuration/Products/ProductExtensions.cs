@@ -3,20 +3,20 @@
 // See the LICENSE file in the project root for more information
 
 using System.Collections.Frozen;
-using Elastic.Documentation.Configuration.Versions;
+using Elastic.Documentation.Catalog;
 using YamlDotNet.Serialization;
 
 namespace Elastic.Documentation.Configuration.Products;
 
-public static class ProductExtensions
+internal static class ProductExtensions
 {
-	public static ProductsConfiguration CreateProducts(this ConfigurationFileProvider provider, VersionsConfiguration versionsConfiguration)
+	public static ProductCatalog CreateProducts(this ConfigurationFileProvider provider, VersioningSystemCatalog versionsConfiguration)
 	{
 		using var reader = provider.ProductsFile.OpenText();
 		return CreateProducts(reader, versionsConfiguration);
 	}
 
-	internal static ProductsConfiguration CreateProducts(TextReader reader, VersionsConfiguration versionsConfiguration)
+	internal static ProductCatalog CreateProducts(TextReader reader, VersioningSystemCatalog versionsConfiguration)
 	{
 		var productsDto = ConfigurationFileProvider.Deserializer.Deserialize<ProductConfigDto>(reader);
 
@@ -48,7 +48,7 @@ public static class ProductExtensions
 
 		var productDisplayNames = productsDto.Products.ToDictionary(kvp => kvp.Key, kvp => kvp.Value.Display);
 
-		return new ProductsConfiguration
+		return new ProductCatalog
 		{
 			Products = products.ToFrozenDictionary(),
 			PublicReferenceProducts = publicReferenceProducts.ToFrozenDictionary(),
@@ -56,7 +56,7 @@ public static class ProductExtensions
 		};
 	}
 
-	private static VersioningSystem? ResolveVersioningSystem(VersionsConfiguration versionsConfiguration, string id) =>
+	private static VersioningSystem? ResolveVersioningSystem(VersioningSystemCatalog versionsConfiguration, string id) =>
 		VersioningSystemIdExtensions.TryParse(id, out var versioningSystemId, ignoreCase: true, allowMatchingMetadataAttribute: true)
 			? versionsConfiguration.GetVersioningSystem(versioningSystemId)
 			: null;

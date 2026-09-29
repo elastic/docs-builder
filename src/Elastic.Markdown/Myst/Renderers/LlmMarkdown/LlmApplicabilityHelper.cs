@@ -4,7 +4,7 @@
 
 using System.Text;
 using Elastic.Documentation.AppliesTo;
-using Elastic.Documentation.Configuration.Versions;
+using Elastic.Documentation.Catalog;
 using Elastic.Markdown.Myst.Components;
 
 namespace Elastic.Markdown.Myst.Renderers.LlmMarkdown;
@@ -23,23 +23,23 @@ public static class LlmApplicabilityHelper
 	/// <param name="versionsConfig">The versions configuration for determining release status</param>
 	/// <param name="useInlineTag">Whether to wrap in &lt;applies-to&gt; tag (for inline use)</param>
 	/// <returns>A formatted string like "&lt;applies-to&gt;Elastic Stack: GA since 9.1&lt;/applies-to&gt;" or plain text</returns>
-	public static string RenderForLlm(ApplicableTo? appliesTo, VersionsConfiguration versionsConfig, bool useInlineTag = true) =>
+	public static string RenderForLlm(ApplicableTo? appliesTo, VersioningSystemCatalog versionsConfig, bool useInlineTag = true) =>
 		RenderPlacementForLlm(appliesTo, versionsConfig, ApplicabilityBadgePlacement.Combined, useInlineTag);
 
 	/// <summary>Elastic Stack (and generic product) line for settings-style split layout.</summary>
-	public static string RenderStackRowForLlm(ApplicableTo? appliesTo, VersionsConfiguration versionsConfig, bool useInlineTag = true) =>
+	public static string RenderStackRowForLlm(ApplicableTo? appliesTo, VersioningSystemCatalog versionsConfig, bool useInlineTag = true) =>
 		RenderPlacementForLlm(appliesTo, versionsConfig, ApplicabilityBadgePlacement.StackRow, useInlineTag);
 
 	/// <summary>Deployment and serverless line for settings-style split layout.</summary>
 	public static string RenderSupportedOnRowForLlm(
 		ApplicableTo? appliesTo,
-		VersionsConfiguration versionsConfig,
+		VersioningSystemCatalog versionsConfig,
 		bool useInlineTag = true
 	) => RenderPlacementForLlm(appliesTo, versionsConfig, ApplicabilityBadgePlacement.SupportedOnRow, useInlineTag);
 
 	private static string RenderPlacementForLlm(
 		ApplicableTo? appliesTo,
-		VersionsConfiguration versionsConfig,
+		VersioningSystemCatalog versionsConfig,
 		ApplicabilityBadgePlacement placement,
 		bool useInlineTag
 	)

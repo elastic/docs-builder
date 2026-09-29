@@ -4,7 +4,7 @@
 
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using Elastic.Documentation.Configuration.Versions;
+using Elastic.Documentation.Catalog;
 
 namespace Elastic.ApiExplorer.Infrastructure;
 

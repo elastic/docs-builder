@@ -627,7 +627,7 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 	{
 		try
 		{
-			var applicableTo = YamlSerialization.Deserialize<ApplicableTo>(yaml, block.Build.ProductsConfiguration);
+			var applicableTo = YamlSerialization.Deserialize<ApplicableTo>(yaml, block.Build.Catalog.Products);
 			if (applicableTo.Diagnostics is null)
 				return applicableTo;
 			foreach (var (severity, message) in applicableTo.Diagnostics)
@@ -695,7 +695,7 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 		{
 			var yaml = file.FileSystem.File.ReadAllText(file.FullName);
 			settings = SettingsBlock.PrepareSettingsForRendering(
-				YamlSerialization.Deserialize<YamlSettings>(yaml, block.Context.Build.ProductsConfiguration),
+				YamlSerialization.Deserialize<YamlSettings>(yaml, block.Context.Build.Catalog.Products),
 				block.Context
 			);
 		}
@@ -715,7 +715,7 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 		{
 			SettingsCollection = settings,
 			GroupHeadingLevel = block.GroupHeadingLevel,
-			VersionsConfig = block.Build.VersionsConfiguration,
+			VersionsConfig = block.Build.Catalog.VersioningSystems,
 			ActiveDeploymentFilter = block.ActiveDeploymentFilter,
 			RenderMarkdown = s =>
 			{

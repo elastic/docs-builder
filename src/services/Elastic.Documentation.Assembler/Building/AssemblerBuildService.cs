@@ -153,7 +153,7 @@ public class AssemblerBuildService(
 		var legacyPageChecker = new LegacyPageService(logFactory);
 		var historyMapper = new PageLegacyUrlMapper(
 			legacyPageChecker,
-			assembleContext.VersionsConfiguration,
+			assembleContext.Catalog.VersioningSystems,
 			assembleSources.LegacyUrlMappings
 		);
 

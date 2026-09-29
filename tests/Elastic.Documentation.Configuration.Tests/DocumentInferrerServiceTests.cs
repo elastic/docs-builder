@@ -5,17 +5,15 @@
 using System.Collections.Frozen;
 using AwesomeAssertions;
 using Elastic.Documentation.AppliesTo;
+using Elastic.Documentation.Catalog;
 using Elastic.Documentation.Configuration.Inference;
-using Elastic.Documentation.Configuration.LegacyUrlMappings;
-using Elastic.Documentation.Configuration.Products;
-using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Versions;
 
 namespace Elastic.Documentation.Configuration.Tests;
 
 public class DocumentInferrerServiceTests
 {
-	private static VersionsConfiguration CreateVersionsConfiguration()
+	private static VersioningSystemCatalog CreateVersionsConfiguration()
 	{
 		var versioningSystems = new Dictionary<VersioningSystemId, VersioningSystem>();
 
@@ -35,10 +33,10 @@ public class DocumentInferrerServiceTests
 			};
 		}
 
-		return new VersionsConfiguration { VersioningSystems = versioningSystems };
+		return new VersioningSystemCatalog { VersioningSystems = versioningSystems };
 	}
 
-	private static ProductsConfiguration CreateProductsConfiguration(VersionsConfiguration versionsConfiguration)
+	private static ProductCatalog CreateProductsConfiguration(VersioningSystemCatalog versionsConfiguration)
 	{
 		var products = new Dictionary<string, Product>
 		{
@@ -75,7 +73,7 @@ public class DocumentInferrerServiceTests
 			}
 		};
 
-		return new ProductsConfiguration
+		return new ProductCatalog
 		{
 			Products = products.ToFrozenDictionary(),
 			PublicReferenceProducts = products.ToFrozenDictionary(),
@@ -83,7 +81,7 @@ public class DocumentInferrerServiceTests
 		};
 	}
 
-	private static LegacyUrlMappingConfiguration CreateLegacyUrlMappings(ProductsConfiguration productsConfig)
+	private static LegacyUrlMappingCatalog CreateLegacyUrlMappings(ProductCatalog productsConfig)
 	{
 		var mappings = new List<LegacyUrlMapping>
 		{
@@ -107,7 +105,7 @@ public class DocumentInferrerServiceTests
 			}
 		};
 
-		return new LegacyUrlMappingConfiguration { Mappings = mappings };
+		return new LegacyUrlMappingCatalog { Mappings = mappings };
 	}
 
 	[Test]
@@ -402,13 +400,13 @@ public class DocumentInferrerServiceTests
 			}
 		};
 
-		var productsConfig = new ProductsConfiguration
+		var productsConfig = new ProductCatalog
 		{
 			Products = products.ToFrozenDictionary(),
 			PublicReferenceProducts = products.ToFrozenDictionary(),
 			ProductDisplayNames = products.ToDictionary(p => p.Key, p => p.Value.DisplayName).ToFrozenDictionary()
 		};
-		var legacyUrlMappings = new LegacyUrlMappingConfiguration { Mappings = [] };
+		var legacyUrlMappings = new LegacyUrlMappingCatalog { Mappings = [] };
 
 		var inferrer = new DocumentInferrerService(productsConfig, versionsConfig, legacyUrlMappings);
 
