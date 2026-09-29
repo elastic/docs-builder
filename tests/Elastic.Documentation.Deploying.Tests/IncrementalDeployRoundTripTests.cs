@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Collections.Concurrent;
 using System.IO.Abstractions.TestingHelpers;
 using Actions.Core.Services;
 using Amazon.S3;
@@ -123,6 +124,7 @@ public class IncrementalDeployRoundTripTests
 		{
 			HttpStatusCode = System.Net.HttpStatusCode.OK
 		});
+		A.CallTo(() => xfer.UploadAsync(A<TransferUtilityUploadRequest>._, A<Cancel>._)).Returns(Task.CompletedTask);
 
 		var svc = new IncrementalDeployService(new LoggerFactory(), gh, s3, xfer, etagCalculator);
 		return (fs, s3, xfer, gh, svc);
@@ -138,15 +140,12 @@ public class IncrementalDeployRoundTripTests
 		string outputDir
 	)
 	{
-		// Capture the files passed to the upload call
-		var transferredFiles = Array.Empty<string>();
-		A.CallTo(() => xfer.UploadDirectoryAsync(A<TransferUtilityUploadDirectoryRequest>._, A<Cancel>._)).Invokes((
-			TransferUtilityUploadDirectoryRequest request,
-			Cancel _
-		) =>
-		{
-			transferredFiles = fs.Directory.GetFiles(request.Directory, request.SearchPattern, request.SearchOption);
-		});
+		// Capture the per-file upload requests
+		var uploadRequests = new ConcurrentBag<TransferUtilityUploadRequest>();
+		A
+			.CallTo(() => xfer.UploadAsync(A<TransferUtilityUploadRequest>._, A<Cancel>._))
+			.Invokes((TransferUtilityUploadRequest request, Cancel _) => uploadRequests.Add(request))
+			.Returns(Task.CompletedTask);
 
 		var planPath = Path.Join(outputDir, "sync-plan.json");
 
@@ -173,10 +172,14 @@ public class IncrementalDeployRoundTripTests
 		A.CallTo(() => gh.SetOutputAsync("plan-valid", "true")).MustHaveHappenedOnceExactly();
 
 		// Assert — uploads: 3 adds + 1 update; skip.md and remote-only delete.md not uploaded
-		transferredFiles
-			.Select(Path.GetFileName)
+		uploadRequests.Count.Should().Be(4);
+		uploadRequests.Should().OnlyContain(r => r.BucketName == "fake-bucket");
+		uploadRequests.Should().OnlyContain(r => r.PartSize == S3EtagCalculator.PartSize);
+		uploadRequests
+			.Select(r => Path.GetFileName(r.FilePath))
 			.Should()
 			.BeEquivalentTo(["add1.md", "add2.md", "add3.md", "update.md"], "skip.md is unchanged (ETag matches) so it is not re-uploaded");
+		uploadRequests.Select(r => r.Key).Should().BeEquivalentTo(["docs/add1.md", "docs/add2.md", "docs/add3.md", "docs/update.md"]);
 
 		// Assert — deletes: exactly one S3 delete call for docs/delete.md
 		A.CallTo(
@@ -186,8 +189,9 @@ public class IncrementalDeployRoundTripTests
 			)
 		).MustHaveHappenedOnceExactly();
 
-		// Assert — uploads called once
-		A.CallTo(() => xfer.UploadDirectoryAsync(A<TransferUtilityUploadDirectoryRequest>._, A<Cancel>._)).MustHaveHappenedOnceExactly();
+		// Assert — per-file uploads only; no staging directory upload
+		A.CallTo(() => xfer.UploadAsync(A<TransferUtilityUploadRequest>._, A<Cancel>._)).MustHaveHappened();
+		A.CallTo(() => xfer.UploadDirectoryAsync(A<TransferUtilityUploadDirectoryRequest>._, A<Cancel>._)).MustNotHaveHappened();
 	}
 }
 
