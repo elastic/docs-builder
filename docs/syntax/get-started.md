@@ -60,7 +60,7 @@ There is no fixed number. The layout arranges whatever you write:
 - A step carrying `options` spans the full row, as one chevron with the choices inside it.
 - The remaining steps share the row, three across when they divide by three, two when they are even, so the last row is never short.
 - A step that ends up alone on its row stays the width of one step and is centered.
-- Below a narrow width the steps stack into one column.
+- Below a narrow width the steps stack into one column, and the content in each step is centered.
 
 Keep the list short enough to read as one path. Four steps still scan. Ten do not.
 

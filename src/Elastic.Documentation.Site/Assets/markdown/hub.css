@@ -470,8 +470,20 @@
 		.hub-get-started .hub-get-started-step.is-fork {
 			display: flex;
 			flex-direction: column;
-			align-items: flex-start;
+			align-items: center;
+			text-align: center;
 			padding: 18px;
+		}
+		.hub-get-started .hub-get-started-step-body,
+		.hub-get-started .hub-get-started-fork-lead,
+		.hub-get-started .hub-get-started-option {
+			align-self: stretch;
+		}
+		.hub-get-started .hub-get-started-step-arrow,
+		.hub-get-started .hub-get-started-option-link,
+		.hub-get-started .hub-get-started-option-btn,
+		.hub-get-started .hub-get-started-install {
+			align-self: center;
 		}
 		.hub-get-started .hub-get-started-step::before,
 		.hub-get-started .hub-get-started-step.is-flat::before {
