@@ -11,10 +11,10 @@ using Elastic.Documentation.Configuration.LegacyUrlMappings;
 using Elastic.Documentation.Configuration.Loading;
 using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Configuration.RelatedLearning;
-using Elastic.Documentation.Configuration.Search;
 using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.FileSystems;
+using Elastic.Documentation.Search;
 using Microsoft.Extensions.Logging.Abstractions;
 using static Elastic.Documentation.Configuration.Tests.Golden.Golden;
 
@@ -64,7 +64,7 @@ public class GlobalConfigurationGoldenTests
 	public async Task Search_Baseline_MatchesGolden()
 	{
 		var provider = BaselineProvider();
-		await AssertMatches("config-search", Capture(() => ProjectSearch(provider.CreateSearchConfiguration())));
+		await AssertMatches("config-search", Capture(() => ProjectSearch(SearchTuningLoader.Load(provider).OrThrow())));
 	}
 
 	[Test]
@@ -155,7 +155,7 @@ public class GlobalConfigurationGoldenTests
 	private static JsonNode ProjectRelatedLearning(RelatedLearningCatalog related) =>
 		Obj(("links", Map(related.Links, l => Obj(("id", Str(l.Id)), ("title", Str(l.Title)), ("url", Str(l.Url))))));
 
-	private static JsonNode ProjectSearch(SearchConfiguration search) =>
+	private static JsonNode ProjectSearch(SearchTuning search) =>
 		Obj(
 			("synonyms", Arr(search.Synonyms, group => Arr(group, s => Str(s)))),
 			("synonymBiDirectional", Map(search.SynonymBiDirectional, targets => Arr(targets, t => Str(t)))),

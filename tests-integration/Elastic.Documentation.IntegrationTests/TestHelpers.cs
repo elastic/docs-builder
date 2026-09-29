@@ -7,8 +7,8 @@ using System.IO.Abstractions;
 using Elastic.Documentation;
 using Elastic.Documentation.Catalog;
 using Elastic.Documentation.Configuration;
-using Elastic.Documentation.Configuration.Search;
 using Elastic.Documentation.FileSystems;
+using Elastic.Documentation.Search;
 using Elastic.Documentation.Versions;
 using Microsoft.Extensions.Logging.Abstractions;
 
@@ -64,13 +64,13 @@ public static class TestHelpers
 				ProductDisplayNames = products.ToDictionary(p => p.Key, p => p.Value.DisplayName).ToFrozenDictionary()
 			};
 		}
-		var search = new SearchConfiguration { Synonyms = [], Rules = [], DiminishTerms = [] };
+		var search = new SearchTuning { Synonyms = [], Rules = [], DiminishTerms = [] };
 		return new ConfigurationContext
 		{
 			Endpoints = new DocumentationEndpoints { Elasticsearch = ElasticsearchEndpoint.Default, },
 			ConfigurationFileProvider = configurationFileProvider,
 			Catalog = new GlobalCatalog(versionsConfiguration, productsConfiguration, new LegacyUrlMappingCatalog { Mappings = [] }),
-			SearchConfiguration = search,
+			SearchTuning = search,
 		};
 	}
 }

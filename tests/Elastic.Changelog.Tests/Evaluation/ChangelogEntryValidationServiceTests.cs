@@ -101,7 +101,7 @@ public class ChangelogEntryValidationServiceTests() : ChangelogTestBase()
 					ProductDisplayNames = productsDict.ToDictionary(p => p.Key, p => p.Value.DisplayName).ToFrozenDictionary()
 				}
 			},
-			SearchConfiguration = ConfigurationContext.SearchConfiguration
+			SearchTuning = ConfigurationContext.SearchTuning
 		};
 
 		var svc = new ChangelogEntryValidationService(LoggerFactory, silentConfig, prService, RunnerTempFileSystem);
@@ -152,7 +152,7 @@ public class ChangelogEntryValidationServiceTests() : ChangelogTestBase()
 					ProductDisplayNames = products.ToDictionary(p => p.Key, p => p.Value.DisplayName).ToFrozenDictionary()
 				}
 			},
-			SearchConfiguration = ConfigurationContext.SearchConfiguration
+			SearchTuning = ConfigurationContext.SearchTuning
 		};
 	}
 

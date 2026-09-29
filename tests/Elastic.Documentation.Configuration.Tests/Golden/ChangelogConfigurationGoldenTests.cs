@@ -11,8 +11,8 @@ using Elastic.Documentation.Configuration.Changelog;
 using Elastic.Documentation.Configuration.LegacyUrlMappings;
 using Elastic.Documentation.Configuration.Loading;
 using Elastic.Documentation.Configuration.Products;
-using Elastic.Documentation.Configuration.Search;
 using Elastic.Documentation.Configuration.Versions;
+using Elastic.Documentation.Search;
 using Microsoft.Extensions.Logging.Abstractions;
 using static Elastic.Documentation.Configuration.Tests.Golden.Golden;
 
@@ -51,7 +51,7 @@ public class ChangelogConfigurationGoldenTests
 			Endpoints = new DocumentationEndpoints { Elasticsearch = ElasticsearchEndpoint.Default },
 			ConfigurationFileProvider = provider,
 			Catalog = new GlobalCatalog(versions, products, new LegacyUrlMappingCatalog { Mappings = [] }),
-			SearchConfiguration = new SearchConfiguration { Synonyms = [], Rules = [], DiminishTerms = [] },
+			SearchTuning = new SearchTuning { Synonyms = [], Rules = [], DiminishTerms = [] },
 		};
 
 		const string configPath = "/repo/docs/changelog.yml";

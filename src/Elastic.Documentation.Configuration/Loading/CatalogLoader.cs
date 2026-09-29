@@ -6,8 +6,10 @@ using Elastic.Documentation.Catalog;
 using Elastic.Documentation.Configuration.LegacyUrlMappings;
 using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Configuration.RelatedLearning;
+using Elastic.Documentation.Configuration.Search;
 using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.Search;
 
 namespace Elastic.Documentation.Configuration.Loading;
 
@@ -66,6 +68,22 @@ public static class RelatedLearningLoader
 			return Result.Failure<RelatedLearningCatalog>([
 				new Diagnostic { Severity = Severity.Error, File = "related-learning.yml", Message = e.Message }
 			]);
+		}
+	}
+}
+
+/// <summary>Loads the <see cref="SearchTuning"/> aggregate from <c>search.yml</c> (or the legacy <c>synonyms.yml</c>).</summary>
+public static class SearchTuningLoader
+{
+	public static Result<SearchTuning> Load(ConfigurationFileProvider provider)
+	{
+		try
+		{
+			return Result.Success(provider.CreateSearchConfiguration());
+		}
+		catch (Exception e) when (e is not OutOfMemoryException)
+		{
+			return Result.Failure<SearchTuning>([new Diagnostic { Severity = Severity.Error, File = "search.yml", Message = e.Message }]);
 		}
 	}
 }

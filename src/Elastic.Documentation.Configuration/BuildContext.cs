@@ -8,10 +8,10 @@ using Elastic.Documentation;
 using Elastic.Documentation.Catalog;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Configuration.Builder;
-using Elastic.Documentation.Configuration.Search;
 using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.FileSystems;
+using Elastic.Documentation.Search;
 using Nullean.ScopedFileSystem;
 
 namespace Elastic.Documentation.Configuration;
@@ -51,7 +51,7 @@ public record BuildContext : IDocumentationSetContext, IDocumentationConfigurati
 	public ConfigurationFileProvider ConfigurationFileProvider { get; }
 	public DocumentationEndpoints Endpoints { get; }
 	public RelatedLearningCatalog RelatedLearning { get; }
-	public SearchConfiguration SearchConfiguration { get; }
+	public SearchTuning SearchTuning { get; }
 	public IEnvironmentVariables Environment { get; }
 	public IDiagnosticsCollector Collector { get; }
 	public bool Force { get; init; }
@@ -90,7 +90,7 @@ public record BuildContext : IDocumentationSetContext, IDocumentationConfigurati
 		FileSystem = fileSystem;
 		AvailableExporters = ExportOptions.Default;
 		Environment = environment ?? SystemEnvironmentVariables.Instance;
-		SearchConfiguration = configurationContext.SearchConfiguration;
+		SearchTuning = configurationContext.SearchTuning;
 		Catalog = configurationContext.Catalog;
 		ConfigurationFileProvider = configurationContext.ConfigurationFileProvider;
 		RelatedLearning = configurationContext.RelatedLearning;

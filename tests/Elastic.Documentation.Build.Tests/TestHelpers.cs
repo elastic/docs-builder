@@ -11,7 +11,7 @@ using Actions.Core.Services;
 using Actions.Core.Summaries;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
-using Elastic.Documentation.Configuration.Search;
+using Elastic.Documentation.Search;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.Versions;
@@ -66,13 +66,13 @@ public static class TestHelpers
 			};
 		}
 
-		var search = new SearchConfiguration { Synonyms = [], Rules = [], DiminishTerms = [] };
+		var search = new SearchTuning { Synonyms = [], Rules = [], DiminishTerms = [] };
 		return new ConfigurationContext
 		{
 			Endpoints = new DocumentationEndpoints { Elasticsearch = ElasticsearchEndpoint.Default, },
 			ConfigurationFileProvider = new ConfigurationFileProvider(new TestLoggerFactory(), new ConfigurationFileSystem(fileSystem)),
 			Catalog = new GlobalCatalog(versionsConfiguration, productsConfiguration, new LegacyUrlMappingCatalog { Mappings = [] }),
-			SearchConfiguration = search,
+			SearchTuning = search,
 		};
 	}
 }

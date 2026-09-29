@@ -541,7 +541,7 @@ public class StringHighlightExtensionsTests
 	[Test]
 	public void SynonymsBiDirectionalLookup()
 	{
-		// Simulating bi-directional synonyms (as used in SearchConfiguration.SynonymBiDirectional)
+		// Simulating bi-directional synonyms (as used in SearchTuning.SynonymBiDirectional)
 		var text = "Search with k8s or kubernetes in your cluster";
 		var synonyms = new Dictionary<string, string[]>(StringComparer.OrdinalIgnoreCase)
 		{

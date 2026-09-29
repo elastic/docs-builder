@@ -4,7 +4,7 @@
 
 using Elastic.Documentation.Catalog;
 using Elastic.Documentation.Configuration.Loading;
-using Elastic.Documentation.Configuration.Search;
+using Elastic.Documentation.Search;
 
 namespace Elastic.Documentation.Configuration;
 
@@ -17,7 +17,7 @@ public interface IConfigurationContext
 	RelatedLearningCatalog RelatedLearning { get; }
 	ConfigurationFileProvider ConfigurationFileProvider { get; }
 	DocumentationEndpoints Endpoints { get; }
-	SearchConfiguration SearchConfiguration { get; }
+	SearchTuning SearchTuning { get; }
 }
 
 /// Used only to seed <see cref="IConfigurationContext"/> in DI, you primarily want to depend on <see cref="IDocumentationConfigurationContext"/>
@@ -41,7 +41,7 @@ public class ConfigurationContext : IConfigurationContext
 	public required DocumentationEndpoints Endpoints { get; init; }
 
 	/// <inheritdoc />
-	public required SearchConfiguration SearchConfiguration { get; init; }
+	public required SearchTuning SearchTuning { get; init; }
 }
 
 public interface IDocumentationConfigurationContext : IDocumentationContext, IConfigurationContext

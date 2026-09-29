@@ -5,7 +5,6 @@
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Loading;
-using Elastic.Documentation.Configuration.Search;
 using Elastic.Documentation.ServiceDefaults.Logging;
 using Microsoft.Extensions.Configuration.Json;
 using Microsoft.Extensions.DependencyInjection;
@@ -65,7 +64,7 @@ public static class AppDefaultsExtensions
 			{
 				// The only place the global catalog is loaded. Its parts are registered too, for services that need one piece.
 				var catalog = CatalogLoader.Load(p).OrThrow();
-				var search = p.CreateSearchConfiguration();
+				var search = SearchTuningLoader.Load(p).OrThrow();
 				_ = s.AddSingleton(catalog);
 				_ = s.AddSingleton(catalog.VersioningSystems);
 				_ = s.AddSingleton(catalog.Products);

@@ -8,8 +8,8 @@ using System.IO.Abstractions.TestingHelpers;
 using Elastic.Documentation;
 using Elastic.Documentation.Catalog;
 using Elastic.Documentation.Configuration;
-using Elastic.Documentation.Configuration.Search;
 using Elastic.Documentation.FileSystems;
+using Elastic.Documentation.Search;
 using Elastic.Documentation.Versions;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -114,7 +114,7 @@ public abstract class ChangelogTestBase : IDisposable
 			Endpoints = new DocumentationEndpoints { Elasticsearch = ElasticsearchEndpoint.Default, },
 			ConfigurationFileProvider = new ConfigurationFileProvider(NullLoggerFactory.Instance, configFileSystem),
 			Catalog = new GlobalCatalog(versionsConfiguration, productsConfiguration, new LegacyUrlMappingCatalog { Mappings = [] }),
-			SearchConfiguration = new SearchConfiguration { Synonyms = [], Rules = [], DiminishTerms = [] },
+			SearchTuning = new SearchTuning { Synonyms = [], Rules = [], DiminishTerms = [] },
 		};
 	}
 

@@ -8,8 +8,8 @@ using System.IO.Abstractions.TestingHelpers;
 using Elastic.Documentation;
 using Elastic.Documentation.Catalog;
 using Elastic.Documentation.Configuration;
-using Elastic.Documentation.Configuration.Search;
 using Elastic.Documentation.FileSystems;
+using Elastic.Documentation.Search;
 using Elastic.Documentation.Versions;
 using Elastic.Markdown;
 using Elastic.Markdown.IO;
@@ -59,7 +59,7 @@ public static class AuthoringGenerator
 			Catalog = new GlobalCatalog(versionsConfig, productsConfig, new LegacyUrlMappingCatalog { Mappings = [] }),
 			ConfigurationFileProvider = configurationFileProvider,
 			Endpoints = new DocumentationEndpoints { Elasticsearch = ElasticsearchEndpoint.Default },
-			SearchConfiguration = new SearchConfiguration { Synonyms = [], Rules = [], DiminishTerms = [] }
+			SearchTuning = new SearchTuning { Synonyms = [], Rules = [], DiminishTerms = [] }
 		};
 
 		var context = new BuildContext(collector, docFs, configurationContext)
