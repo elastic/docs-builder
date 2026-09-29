@@ -138,8 +138,37 @@ public class GetStartedWithFourSteps : MarkdownTest
 	[Test, DisplayName("lays the three remaining steps across three tracks")]
 	public async Task LaysRemainingStepsAcrossThreeTracks() => await Docs.ConvertsToContainingRawHtml("""--hub-step-columns: 3""");
 
+	[Test, DisplayName("continues the list count on the next row")]
+	public async Task ContinuesTheListCountOnTheNextRow() =>
+		await Docs.ConvertsToContainingRawHtml("""<ol class="hub-get-started-row" start="2">""");
+
+	[Test, DisplayName("marks exactly two options as a fork")]
+	public async Task MarksExactlyTwoOptionsAsAFork() => await Docs.ConvertsToContainingHtml("""is-fork""");
+
 	[Test, DisplayName("has no errors")]
 	public async Task HasNoErrors() => await Docs.HasNoErrors();
+}
+
+public class GetStartedWithThreeOptions : MarkdownTest
+{
+	protected override string Markdown =>
+		"""
+		:::{get-started}
+		title: Get started
+		steps:
+		  - title: Install
+		    options:
+		      - label: Source
+		        code: dotnet build
+		      - label: Container
+		        url: /index.md
+		      - label: Package
+		        url: /index.md
+		:::
+		""";
+
+	[Test, DisplayName("does not use the two-option fork layout")]
+	public async Task DoesNotUseTheTwoOptionForkLayout() => await Docs.DoesNotConvertToContainingHtml("is-fork");
 }
 
 public class GetStartedWithFiveSteps : MarkdownTest

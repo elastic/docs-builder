@@ -19,14 +19,14 @@
 			@foreach (var row in Model.Rows)
 			{
 				var solo = row.Count == 1 && row[0].Options.Count == 0;
-				var fork = row.Count == 1 && row[0].Options.Count > 0;
+				var fork = row.Count == 1 && row[0].Options.Count == 2;
 				var rowClass = "hub-get-started-row" + (solo ? " hub-get-started-row-solo" : "") + (fork ? " hub-get-started-row-fork" : "");
-				<ol class="@rowClass">
+				<ol class="@rowClass" start="@row[0].Number">
 					@for (var index = 0; index < row.Count; index++)
 					{
 						var step = row[index];
 						var flat = row.Count == 1 || (!seenStep && index == 0);
-						var stepClass = "hub-get-started-step" + (flat ? " is-flat" : "") + (step.Options.Count > 0 ? " is-fork" : "");
+						var stepClass = "hub-get-started-step" + (flat ? " is-flat" : "") + (step.Options.Count == 2 ? " is-fork" : "");
 						seenStep = true;
 						<li class="@stepClass">
 							<span class="hub-get-started-step-num" aria-hidden="true">@step.Number</span>
