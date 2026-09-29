@@ -111,6 +111,7 @@ jobs:
           AWS_S3_MAX_CONCURRENT_REQUESTS: 50
           AWS_S3_MAX_QUEUE_SIZE: 20000
         run: |
+          set -o pipefail
           aws configure set default.s3.preferred_transfer_client classic
           aws configure set default.s3.max_concurrent_requests "${AWS_S3_MAX_CONCURRENT_REQUESTS}"
           aws configure set default.s3.max_queue_size "${AWS_S3_MAX_QUEUE_SIZE}"
