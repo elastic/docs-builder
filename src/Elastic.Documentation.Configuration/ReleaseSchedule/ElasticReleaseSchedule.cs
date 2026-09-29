@@ -4,20 +4,20 @@
 
 using System.Text.Json.Serialization;
 
-namespace Documentation.Builder.Commands.ReleaseAutomation;
+namespace Elastic.Documentation.Configuration.ReleaseSchedule;
 
 /// <summary>
 /// Types for the two public Elastic release schedule endpoints:
 ///   https://elastic-release-api.s3.us-west-2.amazonaws.com/public/future-releases.json
 ///   https://elastic-release-api.s3.us-west-2.amazonaws.com/public/past-releases.json
 /// </summary>
-internal sealed record FutureReleasesResponse
+public sealed record FutureReleasesResponse
 {
 	[JsonPropertyName("releases")]
 	public required FutureRelease[] Releases { get; init; }
 }
 
-internal sealed record FutureRelease
+public sealed record FutureRelease
 {
 	[JsonPropertyName("version")]
 	public required string Version { get; init; }
@@ -41,13 +41,13 @@ internal sealed record FutureRelease
 	public BuildCandidateEntry? LatestBuildCandidate => BuildCandidates is { Count: > 0 } ? BuildCandidates.Values.Last() : null;
 }
 
-internal sealed record BcScheduleEntry
+public sealed record BcScheduleEntry
 {
 	[JsonPropertyName("bc_date")]
 	public string? BcDate { get; init; }
 }
 
-internal sealed record BuildCandidateEntry
+public sealed record BuildCandidateEntry
 {
 	[JsonPropertyName("manifest_url")]
 	public required string ManifestUrl { get; init; }
@@ -59,13 +59,13 @@ internal sealed record BuildCandidateEntry
 	public string? DateRemoved { get; init; }
 }
 
-internal sealed record PastReleasesResponse
+public sealed record PastReleasesResponse
 {
 	[JsonPropertyName("releases")]
 	public required PastRelease[] Releases { get; init; }
 }
 
-internal sealed record PastRelease
+public sealed record PastRelease
 {
 	[JsonPropertyName("version")]
 	public required string Version { get; init; }
@@ -82,7 +82,7 @@ internal sealed record PastRelease
 /// https://staging.elastic.co/{build_id}/manifest-{version}.json
 /// https://snapshots.elastic.co/{build_id}/manifest-{version}-SNAPSHOT.json
 /// </summary>
-internal sealed record ElasticBuildManifest
+public sealed record ElasticBuildManifest
 {
 	[JsonPropertyName("version")]
 	public required string Version { get; init; }
@@ -94,7 +94,7 @@ internal sealed record ElasticBuildManifest
 	public required Dictionary<string, ManifestProject> Projects { get; init; }
 }
 
-internal sealed record ManifestProject
+public sealed record ManifestProject
 {
 	[JsonPropertyName("branch")]
 	public string? Branch { get; init; }
@@ -111,7 +111,7 @@ internal sealed record ManifestProject
 ///   https://snapshots.elastic.co/latest/{branch}.json
 ///   https://staging.elastic.co/latest/{branch}.json
 /// </summary>
-internal sealed record LatestBuildPointer
+public sealed record LatestBuildPointer
 {
 	[JsonPropertyName("version")]
 	public required string Version { get; init; }
@@ -122,10 +122,3 @@ internal sealed record LatestBuildPointer
 	[JsonPropertyName("manifest_url")]
 	public required string ManifestUrl { get; init; }
 }
-
-[JsonSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.SnakeCaseLower)]
-[JsonSerializable(typeof(FutureReleasesResponse))]
-[JsonSerializable(typeof(PastReleasesResponse))]
-[JsonSerializable(typeof(ElasticBuildManifest))]
-[JsonSerializable(typeof(LatestBuildPointer))]
-internal sealed partial class ReleaseScheduleJsonContext : JsonSerializerContext;
