@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using Elastic.Documentation.Configuration.Toc;
+using Elastic.Documentation.Publishing;
 
 namespace Elastic.Documentation.Navigation.Assembler;
 
@@ -22,7 +23,7 @@ namespace Elastic.Documentation.Navigation.Assembler;
 /// </summary>
 public static class SectionTopNavBuilder
 {
-	public static TopNavRenderModel? Build(SiteNavigation navigation, SiteNavigationFile navFile)
+	public static TopNavRenderModel? Build(SiteNavigation navigation, SiteNavigationDefinition navFile)
 	{
 		var topLevel = navigation.TopLevelItems;
 		if (navFile.TableOfContents.Count == 0)

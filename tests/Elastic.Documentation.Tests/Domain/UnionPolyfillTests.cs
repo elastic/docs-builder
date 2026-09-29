@@ -17,7 +17,15 @@ public record BaseCase(int Value);
 
 public sealed record DerivedCase(int Value) : BaseCase(Value);
 
-public readonly union HierarchyUnion(BaseCase, CaseB);
+public readonly union HierarchyUnion(BaseCase, CaseB)
+{
+	public string Kind => Value switch
+	{
+		BaseCase => "base",
+		CaseB => "b",
+		_ => "unset"
+	};
+}
 
 /// <summary>
 /// Pins the behavior the domain model relies on from C# unions compiled against the net10 polyfill
@@ -87,4 +95,7 @@ public class UnionPolyfillTests
 #pragma warning restore CA2021
 		unions.Select(u => u.Value).OfType<CaseA>().Should().ContainSingle();
 	}
+
+	[Test]
+	public void Members_DeclaredOnTheUnion_AreCallable() => new HierarchyUnion(new CaseB("x")).Kind.Should().Be("b");
 }

@@ -239,7 +239,7 @@ public class GlobalConfigurationGoldenTests
 			("children", Arr(r.Children, ProjectTocRef))
 		);
 
-	private static JsonNode ProjectSiteEntry(ISiteNavigationEntry entry) => entry switch
+	private static JsonNode ProjectSiteEntry(SiteNavigationEntry entry) => entry switch
 	{
 		SiteTableOfContentsRef mount => ProjectTocRef(mount),
 		SiteSectionRef section =>
@@ -255,15 +255,15 @@ public class GlobalConfigurationGoldenTests
 
 	private static JsonNode ProjectSiteNavigationWithValidation(string yaml, string fileName)
 	{
-		var navigation = SiteNavigationFile.Deserialize(yaml);
+		var navigation = SiteNavigationLoader.Deserialize(yaml);
 		var collector = new CapturingDiagnosticsCollector();
 		var file = new MockFileSystem().FileInfo.New(Path.Join(BaselineDirectory, "config", fileName));
-		var valid = SiteNavigationFile.ValidatePathPrefixes(collector, navigation, file);
+		var valid = SiteNavigationLoader.ValidatePathPrefixes(collector, navigation, file);
 		return Obj(
 			("phantoms", Arr(navigation.Phantoms, p => Str(p.Source))),
 			("toc", Arr(navigation.TableOfContents, ProjectSiteEntry)),
-			("declaredSources", Set(SiteNavigationFile.GetAllDeclaredSources(navigation).Select(u => u.ToString()))),
-			("phantomPrefixes", Set(SiteNavigationFile.GetPhantomPrefixes(navigation).Select(u => u.ToString()))),
+			("declaredSources", Set(SiteNavigationDefinition.GetAllDeclaredSources(navigation).Select(u => u.ToString()))),
+			("phantomPrefixes", Set(SiteNavigationDefinition.GetPhantomPrefixes(navigation).Select(u => u.ToString()))),
 			("pathPrefixesValid", Bool(valid)),
 			("pathPrefixDiagnostics", DiagnosticList(collector.Diagnostics))
 		);

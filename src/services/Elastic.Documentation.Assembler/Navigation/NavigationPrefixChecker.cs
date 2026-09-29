@@ -11,6 +11,7 @@ using Elastic.Documentation.LinkIndex;
 using Elastic.Documentation.Links;
 using Elastic.Documentation.Links.CrossLinks;
 using Elastic.Documentation.Links.InboundLinks;
+using Elastic.Documentation.Publishing;
 using Microsoft.Extensions.Logging;
 
 namespace Elastic.Documentation.Assembler.Navigation;
@@ -43,9 +44,9 @@ public class NavigationPrefixChecker
 	{
 		var navigationFileInfo = context.ConfigurationFileProvider.NavigationFile;
 		var navigationYaml = context.ReadFileSystem.File.ReadAllText(navigationFileInfo.FullName);
-		var siteNavigationFile = SiteNavigationFile.Deserialize(navigationYaml);
+		var siteNavigationFile = SiteNavigationLoader.Deserialize(navigationYaml);
 
-		_phantoms = SiteNavigationFile.GetPhantomPrefixes(siteNavigationFile);
+		_phantoms = SiteNavigationDefinition.GetPhantomPrefixes(siteNavigationFile);
 
 		_repositories = context.Configuration.AvailableRepositories.Values.Select(r => r.Name).ToImmutableHashSet();
 

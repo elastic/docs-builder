@@ -35,7 +35,7 @@ public class SiteNavigation : IRootNavigationItem<IDocumentationFile, INavigatio
 	private readonly string? _sitePrefix;
 
 	public SiteNavigation(
-		SiteNavigationFile siteNavigationFile,
+		SiteNavigationDefinition siteNavigationFile,
 		IDocumentationContext context,
 		IReadOnlyCollection<IDocumentationSetNavigation> documentationSetNavigations,
 		string? sitePrefix,
@@ -52,7 +52,7 @@ public class SiteNavigation : IRootNavigationItem<IDocumentationFile, INavigatio
 		IsUsingNavigationDropdown = false;
 		Phantoms = siteNavigationFile.Phantoms;
 		DeclaredPhantoms = [.. siteNavigationFile.Phantoms.Select(p => new Uri(p.Source))];
-		DeclaredTableOfContents = SiteNavigationFile.GetAllDeclaredSources(siteNavigationFile);
+		DeclaredTableOfContents = SiteNavigationDefinition.GetAllDeclaredSources(siteNavigationFile);
 		NavigationTitle = "Docs";
 
 		_nodes = [];

@@ -9,6 +9,7 @@ using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.Navigation.Assembler;
 using Elastic.Documentation.Navigation.Isolated.Node;
+using Elastic.Documentation.Publishing;
 using Elastic.Documentation.Site.Navigation;
 
 namespace Elastic.Documentation.Navigation.Tests.Assembler;
@@ -27,7 +28,7 @@ public class SectionNavigationTests()
 		string siteNavYaml
 	)
 	{
-		var siteNavFile = SiteNavigationFile.Deserialize(siteNavYaml);
+		var siteNavFile = SiteNavigationLoader.Deserialize(siteNavYaml);
 		var fileSystem = SiteNavigationTestFixture.CreateMultiRepositoryFileSystem();
 
 		var obsCtx = SiteNavigationTestFixture.CreateAssemblerContext(fileSystem, "/checkouts/current/observability");
@@ -298,7 +299,7 @@ public class SectionNavigationTests()
 		fileSystem.AddFile("/checkouts/current/observability/docs/kibana.md", new MockFileData("# Kibana"));
 		fileSystem.AddFile("/checkouts/current/observability/docs/discover.md", new MockFileData("# Discover"));
 
-		var siteNavFile = SiteNavigationFile.Deserialize(
+		var siteNavFile = SiteNavigationLoader.Deserialize(
 			"""
 			toc:
 			  - section: Troubleshoot
@@ -435,7 +436,7 @@ public class SectionNavigationTests()
 
 		string[] GetLeafUrls(string siteNavYaml)
 		{
-			var navFile = SiteNavigationFile.Deserialize(siteNavYaml);
+			var navFile = SiteNavigationLoader.Deserialize(siteNavYaml);
 			var obsCtx = SiteNavigationTestFixture.CreateAssemblerContext(fileSystem, "/checkouts/current/observability");
 			var obsDocset = DocumentationSetFile.LoadAndResolve(
 				obsCtx.Collector,
@@ -497,7 +498,7 @@ public class SectionNavigationTests()
 		           """;
 
 		var (navigation, _, _) = BuildTwoChildSection(yaml);
-		var navFile = SiteNavigationFile.Deserialize(yaml);
+		var navFile = SiteNavigationLoader.Deserialize(yaml);
 
 		var renderModel = SectionTopNavBuilder.Build(navigation, navFile);
 
@@ -534,7 +535,7 @@ public class SectionNavigationTests()
 		           """;
 
 		var (nav, _, _) = BuildTwoChildSection(yaml);
-		var navFile = SiteNavigationFile.Deserialize(yaml);
+		var navFile = SiteNavigationLoader.Deserialize(yaml);
 
 		var section = nav.NavigationItems.First().Should().BeOfType<SectionNavigation>().Subject;
 
@@ -566,7 +567,7 @@ public class SectionNavigationTests()
 		           """;
 
 		var (nav, _, _) = BuildTwoChildSection(yaml);
-		var navFile = SiteNavigationFile.Deserialize(yaml);
+		var navFile = SiteNavigationLoader.Deserialize(yaml);
 
 		var renderModel = SectionTopNavBuilder.Build(nav, navFile);
 
@@ -609,7 +610,7 @@ public class SectionNavigationTests()
 		               navigation_title: Manage your Cloud account
 		           """;
 
-		var siteNavFile = SiteNavigationFile.Deserialize(yaml);
+		var siteNavFile = SiteNavigationLoader.Deserialize(yaml);
 		var fileSystem = SiteNavigationTestFixture.CreateMultiRepositoryFileSystem();
 		var platformCtx = SiteNavigationTestFixture.CreateAssemblerContext(fileSystem, "/checkouts/current/platform");
 		var platformDocset = DocumentationSetFile.LoadAndResolve(

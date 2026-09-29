@@ -2,7 +2,6 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using System.Collections.Immutable;
 using System.IO.Abstractions;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Diagnostics;
@@ -13,47 +12,48 @@ using YamlDotNet.Serialization;
 
 namespace Elastic.Documentation.Configuration.Toc;
 
-public record NavigationTocMapping
-{
-	public required Uri Source { get; init; }
-	public required string SourcePathPrefix { get; init; }
-}
-
-public interface ISiteNavigationEntry
-{
-	IReadOnlyCollection<SiteTableOfContentsRef> Children { get; }
-}
-
-/// <summary>A link entry within a <c>dropdown:</c> section.</summary>
-public record SiteDropdownLinkRef(string Title, string Url);
-
-public record SiteSectionRef(
-	string Title,
-	string? ExternalUrl,
-	IReadOnlyCollection<SiteTableOfContentsRef> Children,
-	IReadOnlyCollection<SiteDropdownLinkRef> DropdownLinks
-) : ISiteNavigationEntry
-{
-	public bool IsExternal => ExternalUrl is not null;
-	/// <summary>True when the section carries a dropdown list instead of tree children.</summary>
-	public bool IsDropdown => DropdownLinks.Count > 0;
-}
-
 [YamlSerializable]
-public class SiteNavigationFile
+internal sealed class SiteNavigationFileDto
 {
 	[YamlMember(Alias = "phantoms")]
-	public IReadOnlyCollection<PhantomRegistration> Phantoms { get; set; } = [];
+	public List<PhantomRegistrationDto> Phantoms { get; set; } = [];
 
 	[YamlMember(Alias = "toc")]
 	public SiteTableOfContents TableOfContents { get; set; } = [];
+}
 
-	public static SiteNavigationFile Deserialize(string yaml) =>
-		ConfigurationFileProvider.Deserializer.Deserialize<SiteNavigationFile>(yaml);
+[YamlSerializable]
+internal sealed class PhantomRegistrationDto
+{
+	[YamlMember(Alias = "toc")]
+	public string Source { get; set; } = null!;
+}
 
-	public static bool ValidatePathPrefixes(IDiagnosticsCollector collector, SiteNavigationFile siteNavigation, IFileInfo navigationFile)
+/// <summary>The top-level <c>toc:</c> entries of <c>navigation.yml</c>, bound by <see cref="SiteTableOfContentsCollectionYamlConverter"/>.</summary>
+public sealed class SiteTableOfContents : List<SiteNavigationEntry>;
+
+/// <summary>Loads <c>navigation.yml</c> into a <see cref="SiteNavigationDefinition"/> and validates it.</summary>
+public static class SiteNavigationLoader
+{
+	/// <summary>Parses <paramref name="yaml"/>. Entries without a <c>toc:</c> key, or with an unparsable source, throw.</summary>
+	public static SiteNavigationDefinition Deserialize(string yaml)
 	{
-		var sourcePathPrefixes = GetAllPathPrefixes(siteNavigation);
+		var dto = ConfigurationFileProvider.Deserializer.Deserialize<SiteNavigationFileDto>(yaml) ?? new SiteNavigationFileDto();
+		return new SiteNavigationDefinition
+		{
+			Phantoms = [.. dto.Phantoms.Select(p => new PhantomRegistration { Source = p.Source })],
+			TableOfContents = dto.TableOfContents
+		};
+	}
+
+	/// <summary>Reports every <c>path_prefix</c> mounted twice; returns whether all were unique.</summary>
+	public static bool ValidatePathPrefixes(
+		IDiagnosticsCollector collector,
+		SiteNavigationDefinition siteNavigation,
+		IFileInfo navigationFile
+	)
+	{
+		var sourcePathPrefixes = SiteNavigationDefinition.GetAllPathPrefixes(siteNavigation);
 		var pathPrefixSet = new HashSet<string>();
 		var valid = true;
 
@@ -70,105 +70,6 @@ public class SiteNavigationFile
 
 		return valid;
 	}
-
-	public static ImmutableHashSet<Uri> GetAllDeclaredSources(SiteNavigationFile siteNavigation)
-	{
-		var set = new HashSet<Uri>();
-		foreach (var entry in siteNavigation.TableOfContents)
-		{
-			if (entry is SiteTableOfContentsRef tocRef)
-				CollectSource(tocRef, set);
-			else
-				foreach (var child in entry.Children)
-					CollectSource(child, set);
-		}
-		return set.ToImmutableHashSet();
-	}
-
-	private static void CollectSource(SiteTableOfContentsRef tocRef, HashSet<Uri> set)
-	{
-		_ = set.Add(tocRef.Source);
-		foreach (var child in tocRef.Children)
-			CollectSource(child, set);
-	}
-
-	private static ImmutableHashSet<Uri> GetAllPathPrefixes(SiteNavigationFile siteNavigation)
-	{
-		var set = new HashSet<Uri>();
-		foreach (var entry in siteNavigation.TableOfContents)
-		{
-			if (entry is SiteTableOfContentsRef tocRef)
-				CollectPathPrefixes(tocRef, set);
-			else
-				foreach (var child in entry.Children)
-					CollectPathPrefixes(child, set);
-		}
-		return set.ToImmutableHashSet();
-	}
-
-	private static void CollectPathPrefixes(SiteTableOfContentsRef tocRef, HashSet<Uri> set)
-	{
-		if (!string.IsNullOrEmpty(tocRef.PathPrefix))
-		{
-			var pathUri = new Uri($"{tocRef.Source.Scheme}://{tocRef.PathPrefix.TrimEnd('/')}/");
-			_ = set.Add(pathUri);
-		}
-
-		foreach (var child in tocRef.Children)
-			CollectPathPrefixes(child, set);
-	}
-
-	public static ImmutableHashSet<Uri> GetPhantomPrefixes(SiteNavigationFile siteNavigation)
-	{
-		var set = new HashSet<Uri>();
-
-		foreach (var phantom in siteNavigation.Phantoms)
-		{
-			var source = phantom.Source;
-			if (!source.Contains("://"))
-				source = ContentSourceMoniker.CreateString(NarrativeRepository.RepositoryName, source);
-
-			_ = set.Add(new Uri(source));
-		}
-
-		return set.ToImmutableHashSet();
-	}
-}
-
-public class PhantomRegistration
-{
-	[YamlMember(Alias = "toc")]
-	public string Source { get; set; } = null!;
-}
-
-public class SiteTableOfContents : List<ISiteNavigationEntry>;
-
-/// <param name="Island">
-/// When <c>true</c>, the resolved navigation node is marked as an island from the assembler side.
-/// OR-ed with any <c>island: true</c> the content set already declares — can only enable, never disable.
-/// </param>
-/// <param name="NavigationTitle">
-/// Optional assembler-side label for this TOC root. When set, replaces the index page title
-/// in the assembled navigation (dropdowns, back-links, sidebar root row). Does not change the page H1.
-/// </param>
-public record SiteTableOfContentsRef(
-	Uri Source,
-	string PathPrefix,
-	IReadOnlyCollection<SiteTableOfContentsRef> Children,
-	bool Island = false,
-	string? NavigationTitle = null
-) : ISiteNavigationEntry
-{
-	// For site-level TOC refs, the Path is the path prefix (where it will be mounted in the site)
-	public string PathRelativeToDocumentationSet => PathPrefix;
-
-	// For site-level TOC refs, PathRelativeToContainer is the same as PathRelativeToDocumentationSet
-	// since they're all defined in the same navigation.yml file
-	public string PathRelativeToContainer => PathPrefix;
-
-	// For site-level TOC refs, the Context is the navigation.yml file path
-	// This will be set during site navigation loading
-	public string Context { get; init; } = "";
 }
 
 public class SiteTableOfContentsCollectionYamlConverter : IYamlTypeConverter
@@ -185,14 +86,14 @@ public class SiteTableOfContentsCollectionYamlConverter : IYamlTypeConverter
 		while (!parser.TryConsume<SequenceEnd>(out _))
 		{
 			var entry = ParseTopLevelEntry(parser, rootDeserializer);
-			if (entry is not null)
-				collection.Add(entry);
+			if (entry.HasValue)
+				collection.Add(entry.Value);
 		}
 
 		return collection;
 	}
 
-	private static ISiteNavigationEntry? ParseTopLevelEntry(IParser parser, ObjectDeserializer rootDeserializer)
+	private static SiteNavigationEntry? ParseTopLevelEntry(IParser parser, ObjectDeserializer rootDeserializer)
 	{
 		if (!parser.TryConsume<MappingStart>(out _))
 			return null;
@@ -266,9 +167,9 @@ public class SiteTableOfContentsCollectionYamlConverter : IYamlTypeConverter
 			var externalUrl = dictionary.TryGetValue("external", out var extVal) && extVal is string e && !string.IsNullOrEmpty(e)
 				? e
 				: null;
-			IReadOnlyCollection<SiteTableOfContentsRef> children = dictionary.TryGetValue("children", out var childrenObj)
+			IReadOnlyList<SiteTableOfContentsRef> children = dictionary.TryGetValue("children", out var childrenObj)
 				&& childrenObj is List<SiteTableOfContentsRef> refs ? refs : [];
-			IReadOnlyCollection<SiteDropdownLinkRef> dropdownLinks = dictionary.TryGetValue("dropdown", out var dropdownObj)
+			IReadOnlyList<SiteDropdownLinkRef> dropdownLinks = dictionary.TryGetValue("dropdown", out var dropdownObj)
 				&& dropdownObj is List<SiteDropdownLinkRef> dLinks ? dLinks : [];
 			return new SiteSectionRef(sectionTitle, externalUrl, children, dropdownLinks);
 		}
@@ -282,7 +183,7 @@ public class SiteTableOfContentsCollectionYamlConverter : IYamlTypeConverter
 
 			var pathPrefix = dictionary.TryGetValue("path_prefix", out var pathValue) && pathValue is string path ? path : string.Empty;
 
-			IReadOnlyCollection<SiteTableOfContentsRef> children = dictionary.TryGetValue("children", out var childrenObj2)
+			IReadOnlyList<SiteTableOfContentsRef> children = dictionary.TryGetValue("children", out var childrenObj2)
 				&& childrenObj2 is List<SiteTableOfContentsRef> tocRefs ? tocRefs : [];
 
 			var island = dictionary.TryGetValue("island", out var islandObj)
@@ -357,7 +258,7 @@ public class SiteTableOfContentsRefYamlConverter : IYamlTypeConverter
 
 			var pathPrefix = dictionary.TryGetValue("path_prefix", out var pathValue) && pathValue is string path ? path : string.Empty;
 
-			IReadOnlyCollection<SiteTableOfContentsRef> children = dictionary.TryGetValue("children", out var childrenObj)
+			IReadOnlyList<SiteTableOfContentsRef> children = dictionary.TryGetValue("children", out var childrenObj)
 				&& childrenObj is List<SiteTableOfContentsRef> tocRefs ? tocRefs : [];
 
 			var island = dictionary.TryGetValue("island", out var islandObj)

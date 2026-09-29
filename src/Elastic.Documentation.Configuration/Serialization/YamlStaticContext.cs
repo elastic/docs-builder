@@ -44,8 +44,8 @@ namespace Elastic.Documentation.Configuration.Serialization;
 [YamlSerializable(typeof(CodexDocSetMetadata))]
 [YamlSerializable(typeof(ReleaseNotesProductReference))]
 [YamlSerializable(typeof(TableOfContentsFile))]
-[YamlSerializable(typeof(SiteNavigationFile))]
-[YamlSerializable(typeof(PhantomRegistration))]
+[YamlSerializable(typeof(SiteNavigationFileDto))]
+[YamlSerializable(typeof(PhantomRegistrationDto))]
 [YamlSerializable(typeof(ProductLink))]
 // Search configuration
 [YamlSerializable(typeof(SearchConfigDto))]

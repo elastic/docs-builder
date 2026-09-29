@@ -9,6 +9,7 @@ using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.Navigation.Assembler;
 using Elastic.Documentation.Navigation.Isolated.Node;
+using Elastic.Documentation.Publishing;
 
 namespace Elastic.Documentation.Navigation.Tests.Assembler;
 
@@ -30,7 +31,7 @@ public class IslandSiteNavigationTests()
 		                      path_prefix: observability
 		                  """;
 
-		var siteNavFile = SiteNavigationFile.Deserialize(siteNavYaml);
+		var siteNavFile = SiteNavigationLoader.Deserialize(siteNavYaml);
 		var fileSystem = SiteNavigationTestFixture.CreateMultiRepositoryFileSystem();
 
 		var obsContext = SiteNavigationTestFixture.CreateAssemblerContext(fileSystem, "/checkouts/current/observability");
@@ -67,7 +68,7 @@ public class IslandSiteNavigationTests()
 		                      island: true
 		                  """;
 
-		var siteNavFile = SiteNavigationFile.Deserialize(siteNavYaml);
+		var siteNavFile = SiteNavigationLoader.Deserialize(siteNavYaml);
 		var fileSystem = SiteNavigationTestFixture.CreateMultiRepositoryFileSystem();
 
 		var obsContext = SiteNavigationTestFixture.CreateAssemblerContext(fileSystem, "/checkouts/current/observability");
@@ -105,7 +106,7 @@ public class IslandSiteNavigationTests()
 		                      path_prefix: observability
 		                  """;
 
-		var siteNavFile = SiteNavigationFile.Deserialize(siteNavYaml);
+		var siteNavFile = SiteNavigationLoader.Deserialize(siteNavYaml);
 		var fileSystem = SiteNavigationTestFixture.CreateMultiRepositoryFileSystem();
 
 		// Inject island: true into the observability docset.yml
@@ -205,7 +206,7 @@ public class IslandSiteNavigationTests()
 		var documentationSets = new List<IDocumentationSetNavigation> { obsNav };
 		var siteContext = SiteNavigationTestFixture.CreateContext(fileSystem, "/checkouts/current/observability");
 		var navigation = new SiteNavigation(
-			SiteNavigationFile.Deserialize(siteNavNoIsland),
+			SiteNavigationLoader.Deserialize(siteNavNoIsland),
 			siteContext,
 			documentationSets,
 			sitePrefix: null
@@ -240,7 +241,7 @@ public class IslandSiteNavigationTests()
 		                          path_prefix: reference/search
 		                  """;
 
-		var siteNavFile = SiteNavigationFile.Deserialize(siteNavYaml);
+		var siteNavFile = SiteNavigationLoader.Deserialize(siteNavYaml);
 		var fileSystem = SiteNavigationTestFixture.CreateMultiRepositoryFileSystem();
 
 		var obsContext = SiteNavigationTestFixture.CreateAssemblerContext(fileSystem, "/checkouts/current/observability");

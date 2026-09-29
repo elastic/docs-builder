@@ -7,6 +7,7 @@ using AwesomeAssertions;
 using Elastic.Documentation.Configuration.Loading;
 using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.DocumentationSets;
+using Elastic.Documentation.Publishing;
 using static Elastic.Documentation.Configuration.Tests.Golden.Golden;
 
 namespace Elastic.Documentation.Configuration.Tests.Golden;
@@ -123,5 +124,29 @@ public class AggregateEqualityTests
 		};
 
 		changed.Should().NotBe(assembly);
+	}
+
+	private static SiteNavigationDefinition LoadBaselineNavigation() =>
+		SiteNavigationLoader.Deserialize(File.ReadAllText(BaselineFile("config", "navigation.yml")));
+
+	[Test]
+	public void SiteNavigation_LoadedTwice_IsEqual() => LoadBaselineNavigation().Should().Be(LoadBaselineNavigation());
+
+	[Test]
+	public void SiteNavigation_OneMountMoved_IsNotEqual()
+	{
+		var navigation = LoadBaselineNavigation();
+		var first = navigation.TableOfContents.OfCase<SiteTableOfContentsRef>().First();
+		var changed = navigation with
+		{
+			TableOfContents =
+			[
+				.. navigation.TableOfContents.Select(
+					e => e.Value == first ? new SiteNavigationEntry(first with { PathPrefix = first.PathPrefix + "/moved" }) : e
+				)
+			]
+		};
+
+		changed.Should().NotBe(navigation);
 	}
 }

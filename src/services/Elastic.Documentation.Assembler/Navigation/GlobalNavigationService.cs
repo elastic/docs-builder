@@ -28,10 +28,10 @@ public class GlobalNavigationService(
 
 		var navigationFileInfo = assembleContext.ConfigurationFileProvider.NavigationFile;
 		var navigationYaml = await fileSystem.File.ReadAllTextAsync(navigationFileInfo.FullName, ctx);
-		var siteNavigationFile = SiteNavigationFile.Deserialize(navigationYaml);
+		var siteNavigationFile = SiteNavigationLoader.Deserialize(navigationYaml);
 
 		// this validates all path prefixes are unique, early exit if duplicates are detected
-		if (!SiteNavigationFile.ValidatePathPrefixes(collector, siteNavigationFile, navigationFileInfo) || collector.Errors > 0)
+		if (!SiteNavigationLoader.ValidatePathPrefixes(collector, siteNavigationFile, navigationFileInfo) || collector.Errors > 0)
 			return false;
 
 		await namespaceChecker.CheckAllPublishedLinks(assembleContext.Collector, ctx);
