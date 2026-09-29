@@ -8,8 +8,8 @@ For details about the equivalent GitHub action, refer to the [docs-actions READM
 
 ## Before you begin
 
-1. Create a changelog configuration file to define all the default behavior and optional profiles and rules. Refer to [](/data/release-notes/configure.md).
-1. Create changelogs that describe all the notable changes. Refer to [](/data/release-notes/create.md).
+1. Create a changelog configuration file to define all the default behavior and optional profiles and rules. Refer to [](/data/release-notes/configure-ref.md).
+1. Create changelogs that describe all the notable changes. Refer to [](/data/release-notes/index.md).
 
 ## Identify your source of truth
 
@@ -33,7 +33,7 @@ Consider your options carefully and discuss with your docs team if necessary.
 
 :::{important}
 Not everything that was shipped will have a changelog.
-For example, you can configure [rules](/data/release-notes/create.md#rules) that control changelog creation for work that's not publicly notable or spans multiple PRs.
+For example, you can configure rules that control changelog creation for work that's not publicly notable or spans multiple PRs.
 
 Your release workflow should not assume there will be a one-to-one mapping between what was shipped and what will be documented.
 :::
@@ -526,4 +526,4 @@ If you are working in a private repo and do not want any pull request or issue l
 
 ## Next steps
 
-After you've created release bundles, you can use them to generate [release docs](/data/release-notes/publish.md).
+After you've created release bundles, you can use them to generate [release docs](/data/release-notes/index.md).
