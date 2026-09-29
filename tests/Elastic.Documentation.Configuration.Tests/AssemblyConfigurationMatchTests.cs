@@ -7,10 +7,11 @@ using Elastic.Documentation.Catalog;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Configuration.Versions;
+using Elastic.Documentation.Publishing;
 using Elastic.Documentation.Versions;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
-using MatchResult = Elastic.Documentation.Configuration.Assembler.AssemblyConfiguration.ContentSourceMatch;
+using MatchResult = Elastic.Documentation.Publishing.AssemblyConfiguration.ContentSourceMatch;
 
 namespace Elastic.Documentation.Configuration.Tests;
 
@@ -28,15 +29,17 @@ public class AssemblyConfigurationMatchTests
 			["test-repo"] = new() { Name = "test-repo", GitReferenceCurrent = "8.0", GitReferenceNext = "8.1", GitReferenceEdge = "main" }
 		};
 
-		var config = new AssemblyConfiguration { ReferenceRepositories = repositories, Narrative = new NarrativeRepository() };
-
-		// Simulate the deserialization process that sets AvailableRepositories
-		config.GetType().GetProperty("AvailableRepositories")!.SetValue(
-			config,
-			repositories.Values.Concat([config.Narrative]).ToDictionary(r => r.Name, r => r)
-		);
-
-		return config;
+		var narrative = new NarrativeRepository();
+		return new AssemblyConfiguration
+		{
+			Narrative = narrative,
+			ReferenceRepositories = repositories,
+			AvailableRepositories = repositories.Values.Concat([narrative]).ToDictionary(r => r.Name, r => r),
+			PrivateRepositories = new Dictionary<string, Repository>(),
+			AllPrivateRepositoryNames = new HashSet<string>(),
+			Environments = new Dictionary<string, PublishEnvironment>(),
+			SharedConfigurations = new Dictionary<string, Repository>()
+		};
 	}
 
 	private static Repository CreateRepository(string current = "8.0", string next = "8.1", string edge = "main") =>

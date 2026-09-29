@@ -6,6 +6,7 @@ using AwesomeAssertions;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Configuration.Builder;
+using Elastic.Documentation.Configuration.Loading;
 using Elastic.Documentation.FileSystems;
 
 namespace Elastic.Documentation.Build.Tests;
@@ -47,7 +48,7 @@ public class FeatureFlagsTests
 
 	private static void AssertEnvironmentEnablesAssemblerApiExplorer(string environmentName)
 	{
-		var config = AssemblyConfiguration.Create(new ConfigurationFileProvider(new TestLoggerFactory(), new ConfigurationFileSystem()));
+		var config = AssemblyLoader.Create(new ConfigurationFileProvider(new TestLoggerFactory(), new ConfigurationFileSystem()));
 		var environment = config.Environments[environmentName];
 
 		environment.FeatureFlags.Should().ContainKey("ASSEMBLER_API_EXPLORER").WhoseValue.Should().BeTrue();
@@ -61,7 +62,7 @@ public class FeatureFlagsTests
 	[Test]
 	public void ProdEnvironment_DoesNotEnableAssemblerApiExplorer()
 	{
-		var config = AssemblyConfiguration.Create(new ConfigurationFileProvider(new TestLoggerFactory(), new ConfigurationFileSystem()));
+		var config = AssemblyLoader.Create(new ConfigurationFileProvider(new TestLoggerFactory(), new ConfigurationFileSystem()));
 		var prod = config.Environments["prod"];
 
 		prod.FeatureFlags.Should().NotContainKey("ASSEMBLER_API_EXPLORER");
@@ -103,7 +104,7 @@ public class FeatureFlagsTests
 	[Test]
 	public void ProdEnvironment_DoesNotEnableApiNavGrouping()
 	{
-		var config = AssemblyConfiguration.Create(new ConfigurationFileProvider(new TestLoggerFactory(), new ConfigurationFileSystem()));
+		var config = AssemblyLoader.Create(new ConfigurationFileProvider(new TestLoggerFactory(), new ConfigurationFileSystem()));
 
 		foreach (var environmentName in new[] { "prod", "staging", "preview" })
 		{

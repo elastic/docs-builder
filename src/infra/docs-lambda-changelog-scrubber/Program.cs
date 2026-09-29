@@ -12,6 +12,7 @@ using Elastic.Changelog.Bundling;
 using Elastic.Changelog.Reconciliation;
 using Elastic.Changelog.Scrubbing;
 using Elastic.Documentation.Configuration.Assembler;
+using Elastic.Documentation.Configuration.Loading;
 using Elastic.Documentation.Lambda.ChangelogScrubber;
 
 var publicBucketName = Environment.GetEnvironmentVariable("PUBLIC_BUCKET_NAME")
@@ -32,7 +33,7 @@ IReadOnlyList<string> BuildAllowlist()
 		?? throw new InvalidOperationException("Embedded assembler.yml not found");
 	using var reader = new StreamReader(stream);
 	var yaml = reader.ReadToEnd();
-	var assembly = AssemblyConfiguration.Deserialize(yaml, skipPrivateRepositories: false);
+	var assembly = AssemblyLoader.Deserialize(yaml, skipPrivateRepositories: false);
 	return LinkAllowlistSanitizer.BuildAllowReposFromAssembler(assembly);
 }
 

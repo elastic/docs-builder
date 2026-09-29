@@ -5,7 +5,9 @@
 using System.IO.Abstractions.TestingHelpers;
 using AwesomeAssertions;
 using Elastic.Documentation.Configuration.Assembler;
+using Elastic.Documentation.Configuration.Loading;
 using Elastic.Documentation.FileSystems;
+using Elastic.Documentation.Publishing;
 using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Elastic.Documentation.Configuration.Tests;
@@ -24,7 +26,7 @@ public class CreateNavigationFileTests
 	{
 		var refsYaml = string.Join("\n", privateRepoNames.Select(name => $"  {name}:\n    private: true"));
 		var yaml = $"narrative:\n  repo: git@github.com:elastic/docs-content.git\nreferences:\n{refsYaml}";
-		return AssemblyConfiguration.Deserialize(yaml, skipPrivateRepositories: true);
+		return AssemblyLoader.Deserialize(yaml, skipPrivateRepositories: true);
 	}
 
 	[Test]
@@ -236,7 +238,7 @@ public class CreateNavigationFileTests
 
 		// Empty config with no private repos
 		var yaml = "narrative:\n  repo: git@github.com:elastic/docs-content.git\nreferences:\n  public-repo:\n    private: false";
-		var config = AssemblyConfiguration.Deserialize(yaml, skipPrivateRepositories: true);
+		var config = AssemblyLoader.Deserialize(yaml, skipPrivateRepositories: true);
 
 		var result = provider.CreateNavigationFile(config);
 

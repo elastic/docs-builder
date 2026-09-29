@@ -6,6 +6,7 @@ using AwesomeAssertions;
 using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Configuration.Toc.CliReference;
 using Elastic.Documentation.DocumentationSets;
+using Elastic.Documentation.Publishing;
 
 namespace Elastic.Documentation.Configuration.Tests;
 

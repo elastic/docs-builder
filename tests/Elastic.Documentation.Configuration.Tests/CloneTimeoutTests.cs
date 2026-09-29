@@ -4,14 +4,15 @@
 
 using AwesomeAssertions;
 using Elastic.Documentation.Configuration.Assembler;
+using Elastic.Documentation.Configuration.Loading;
+using Elastic.Documentation.Publishing;
 using YamlDotNet.Core;
 
 namespace Elastic.Documentation.Configuration.Tests;
 
 public class CloneTimeoutTests
 {
-	private static AssemblyConfiguration Deserialize(string refsYaml) =>
-		AssemblyConfiguration.Deserialize($"narrative:\nreferences:\n{refsYaml}");
+	private static AssemblyConfiguration Deserialize(string refsYaml) => AssemblyLoader.Deserialize($"narrative:\nreferences:\n{refsYaml}");
 
 	[Test]
 	[Arguments("30s", 30)]
@@ -38,7 +39,7 @@ public class CloneTimeoutTests
 	[Test]
 	public void CloneTimeout_OnNarrative_Deserializes()
 	{
-		var config = AssemblyConfiguration.Deserialize("narrative:\n  clone_timeout: 15m\nreferences:\n  some-repo:");
+		var config = AssemblyLoader.Deserialize("narrative:\n  clone_timeout: 15m\nreferences:\n  some-repo:");
 
 		config.Narrative.CloneTimeout.Should().Be(TimeSpan.FromMinutes(15));
 	}

@@ -4,6 +4,7 @@
 
 using System.Collections.Frozen;
 using Elastic.Documentation.Catalog;
+using Elastic.Documentation.Publishing;
 using YamlDotNet.Serialization;
 
 namespace Elastic.Documentation.Configuration.Products;

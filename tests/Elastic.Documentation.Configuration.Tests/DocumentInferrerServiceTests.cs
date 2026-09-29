@@ -7,6 +7,7 @@ using AwesomeAssertions;
 using Elastic.Documentation.AppliesTo;
 using Elastic.Documentation.Catalog;
 using Elastic.Documentation.Configuration.Inference;
+using Elastic.Documentation.Publishing;
 using Elastic.Documentation.Versions;
 
 namespace Elastic.Documentation.Configuration.Tests;

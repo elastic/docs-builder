@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using Elastic.Documentation.Publishing;
 using Elastic.Documentation.DocumentationSets;
 using System.IO.Abstractions;
 using System.IO.Abstractions.TestingHelpers;

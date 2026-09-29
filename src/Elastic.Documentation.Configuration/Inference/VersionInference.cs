@@ -5,6 +5,7 @@
 using Elastic.Documentation.AppliesTo;
 using Elastic.Documentation.Catalog;
 using Elastic.Documentation.Configuration.LegacyUrlMappings;
+using Elastic.Documentation.Publishing;
 using Elastic.Documentation.Versions;
 
 namespace Elastic.Documentation.Configuration.Inference;

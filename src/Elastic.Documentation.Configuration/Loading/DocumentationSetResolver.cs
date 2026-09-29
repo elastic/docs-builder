@@ -15,6 +15,7 @@ using Elastic.Documentation.DocumentationSets;
 using Elastic.Documentation.Extensions;
 using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.Links;
+using Elastic.Documentation.Publishing;
 using static Elastic.Documentation.SymlinkValidator;
 
 namespace Elastic.Documentation.Configuration.Loading;

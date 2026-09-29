@@ -14,6 +14,7 @@ using Elastic.Documentation.Configuration.RelatedLearning;
 using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.FileSystems;
+using Elastic.Documentation.Publishing;
 using Elastic.Documentation.Search;
 using Microsoft.Extensions.Logging.Abstractions;
 using static Elastic.Documentation.Configuration.Tests.Golden.Golden;
@@ -74,7 +75,7 @@ public class GlobalConfigurationGoldenTests
 	{
 		var provider = BaselineProvider(skipPrivateRepositories);
 		var name = skipPrivateRepositories ? "config-assembler-skip-private" : "config-assembler";
-		await AssertMatches(name, Capture(() => ProjectAssembly(AssemblyConfiguration.Create(provider))));
+		await AssertMatches(name, Capture(() => ProjectAssembly(AssemblyLoader.Create(provider))));
 	}
 
 	[Test]
@@ -93,7 +94,7 @@ public class GlobalConfigurationGoldenTests
 		var provider = BaselineProvider(skipPrivateRepositories: true);
 		await AssertMatches("config-navigation-filtered", Capture(() =>
 		{
-			var assembly = AssemblyConfiguration.Create(provider);
+			var assembly = AssemblyLoader.Create(provider);
 			var filtered = provider.CreateNavigationFile(assembly);
 			var yaml = filtered.FileSystem.File.ReadAllText(filtered.FullName);
 			return ProjectSiteNavigationWithValidation(yaml, "navigation.filtered.yml");

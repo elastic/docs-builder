@@ -7,6 +7,7 @@ using AwesomeAssertions;
 using Elastic.Documentation.Assembler.Building;
 using Elastic.Documentation.Assembler.Sourcing;
 using Elastic.Documentation.Configuration.Assembler;
+using Elastic.Documentation.Publishing;
 
 namespace Elastic.Documentation.Build.Tests;
 

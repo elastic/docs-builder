@@ -13,10 +13,12 @@ using Elastic.Documentation.Assembler.Navigation;
 using Elastic.Documentation.Assembler.Sourcing;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
+using Elastic.Documentation.Configuration.Loading;
 using Elastic.Documentation.Configuration.ReleaseNotes;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.Links.CrossLinks;
+using Elastic.Documentation.Publishing;
 using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Elastic.Documentation.Build.Tests;
@@ -49,7 +51,7 @@ public class AssemblerOpenApiBuildStepTests : IDisposable
 		var fileSystem = new FileSystem();
 		var collector = new DiagnosticsCollector([]);
 		var configurationContext = TestHelpers.CreateConfigurationContext(fileSystem);
-		var assemblyConfig = AssemblyConfiguration.Deserialize(MinimalAssemblerYaml);
+		var assemblyConfig = AssemblyLoader.Deserialize(MinimalAssemblerYaml);
 		var tempDirectory = CreateTempDirectory(fileSystem);
 		var outputDirectory = fileSystem.Path.Join(tempDirectory.FullName, "output");
 		var assembleFs = new CheckoutsFileSystem(tempDirectory, output: fileSystem.DirectoryInfo.New(outputDirectory), inner: fileSystem);
@@ -84,7 +86,7 @@ public class AssemblerOpenApiBuildStepTests : IDisposable
 		var fileSystem = new FileSystem();
 		var collector = new DiagnosticsCollector([]);
 		var configurationContext = TestHelpers.CreateConfigurationContext(fileSystem);
-		var assemblyConfig = AssemblyConfiguration.Deserialize(MinimalAssemblerYaml);
+		var assemblyConfig = AssemblyLoader.Deserialize(MinimalAssemblerYaml);
 		var tempDirectory = CreateTempDirectory(fileSystem);
 		var outputDirectory = fileSystem.Path.Join(tempDirectory.FullName, "output");
 		var assembleFs = new CheckoutsFileSystem(tempDirectory, output: fileSystem.DirectoryInfo.New(outputDirectory), inner: fileSystem);
@@ -172,7 +174,7 @@ public class AssemblerOpenApiBuildStepTests : IDisposable
 	{
 		var fileSystem = new FileSystem();
 		var configurationContext = TestHelpers.CreateConfigurationContext(fileSystem);
-		var assemblyConfig = AssemblyConfiguration.Deserialize(MinimalAssemblerYaml);
+		var assemblyConfig = AssemblyLoader.Deserialize(MinimalAssemblerYaml);
 		var scopedCheckoutRoot = new ScopedTempDirectory(fileSystem, "assembler-openapi-owner");
 		_tempDirectories.Add(scopedCheckoutRoot);
 		var checkoutRoot = scopedCheckoutRoot.Directory;

@@ -12,6 +12,7 @@ using Elastic.Documentation.Configuration.ReleaseNotes;
 using Elastic.Documentation.Configuration.Search;
 using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Configuration.Versions;
+using Elastic.Documentation.Publishing;
 using YamlDotNet.Serialization;
 
 namespace Elastic.Documentation.Configuration.Serialization;
@@ -22,12 +23,11 @@ namespace Elastic.Documentation.Configuration.Serialization;
 [YamlSerializable(typeof(CodexGroupDefinition))]
 [YamlSerializable(typeof(CodexDocumentationSetReference))]
 // Assembly configuration
-[YamlSerializable(typeof(AssemblyConfiguration))]
-[YamlSerializable(typeof(Repository))]
-[YamlSerializable(typeof(NarrativeRepository))]
-[YamlSerializable(typeof(PublishEnvironment))]
-[YamlSerializable(typeof(GoogleTagManager))]
-[YamlSerializable(typeof(Optimizely))]
+[YamlSerializable(typeof(AssemblyConfigurationDto))]
+[YamlSerializable(typeof(RepositoryDto))]
+[YamlSerializable(typeof(PublishEnvironmentDto))]
+[YamlSerializable(typeof(GoogleTagManagerDto))]
+[YamlSerializable(typeof(OptimizelyDto))]
 [YamlSerializable(typeof(ContentSource))]
 // Versions configuration
 [YamlSerializable(typeof(VersionsConfigDto))]

@@ -5,6 +5,7 @@
 using AwesomeAssertions;
 using Elastic.Changelog.Bundling;
 using Elastic.Documentation.Configuration.Assembler;
+using Elastic.Documentation.Configuration.Loading;
 using Elastic.Documentation.ReleaseNotes;
 
 namespace Elastic.Changelog.Tests.Changelogs;
@@ -253,7 +254,7 @@ public class LinkAllowlistSanitizerTests() : ChangelogTestBase()
 	[Test]
 	public void EmitAssemblerDiagnostics_MissingRepo_EmitsWarning()
 	{
-		var asm = AssemblyConfiguration.Deserialize("references: {}", skipPrivateRepositories: false);
+		var asm = AssemblyLoader.Deserialize("references: {}", skipPrivateRepositories: false);
 		LinkAllowlistSanitizer.EmitAssemblerDiagnostics(Collector, ["elastic/foo"], asm);
 		Collector.Warnings.Should().BeGreaterThan(0);
 	}
@@ -266,7 +267,7 @@ public class LinkAllowlistSanitizerTests() : ChangelogTestBase()
 			  elastic/foo:
 			    private: true
 			""";
-		var asm = AssemblyConfiguration.Deserialize(yaml, skipPrivateRepositories: false);
+		var asm = AssemblyLoader.Deserialize(yaml, skipPrivateRepositories: false);
 		LinkAllowlistSanitizer.EmitAssemblerDiagnostics(Collector, ["elastic/foo"], asm);
 		Collector.Warnings.Should().BeGreaterThan(0);
 	}
@@ -337,7 +338,7 @@ public class LinkAllowlistSanitizerTests() : ChangelogTestBase()
 			  elastic/old-repo:
 			    skip: true
 			""";
-		var asm = AssemblyConfiguration.Deserialize(yaml, skipPrivateRepositories: false);
+		var asm = AssemblyLoader.Deserialize(yaml, skipPrivateRepositories: false);
 		var allow = LinkAllowlistSanitizer.BuildAllowReposFromAssembler(asm);
 
 		allow.Should().Contain("elastic/elasticsearch");
@@ -361,7 +362,7 @@ public class LinkAllowlistSanitizerTests() : ChangelogTestBase()
 			    private: true
 			    skip: true
 			""";
-		var asm = AssemblyConfiguration.Deserialize(yaml, skipPrivateRepositories: false);
+		var asm = AssemblyLoader.Deserialize(yaml, skipPrivateRepositories: false);
 		var allow = LinkAllowlistSanitizer.BuildAllowReposFromAssembler(asm);
 
 		allow.Should().Contain("elastic/roadmap");
@@ -375,7 +376,7 @@ public class LinkAllowlistSanitizerTests() : ChangelogTestBase()
 			references:
 			  beats: {}
 			""";
-		var asm = AssemblyConfiguration.Deserialize(yaml, skipPrivateRepositories: false);
+		var asm = AssemblyLoader.Deserialize(yaml, skipPrivateRepositories: false);
 		var allow = LinkAllowlistSanitizer.BuildAllowReposFromAssembler(asm);
 
 		allow.Should().Contain("elastic/beats");
@@ -384,7 +385,7 @@ public class LinkAllowlistSanitizerTests() : ChangelogTestBase()
 	[Test]
 	public void BuildAllowReposFromAssembler_EmptyReferences_ReturnsEmpty()
 	{
-		var asm = AssemblyConfiguration.Deserialize("references: {}", skipPrivateRepositories: false);
+		var asm = AssemblyLoader.Deserialize("references: {}", skipPrivateRepositories: false);
 		var allow = LinkAllowlistSanitizer.BuildAllowReposFromAssembler(asm);
 
 		allow.Should().BeEmpty();

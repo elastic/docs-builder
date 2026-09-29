@@ -6,8 +6,10 @@ using System.IO.Abstractions;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
+using Elastic.Documentation.Configuration.Loading;
 using Elastic.Documentation.Configuration.ReleaseNotes;
 using Elastic.Documentation.Extensions;
+using Elastic.Documentation.Publishing;
 using Elastic.Documentation.ReleaseNotes;
 using Elastic.Documentation.Versions;
 using Elastic.Markdown.Diagnostics;
@@ -548,7 +550,7 @@ public class ChangelogBlock(DirectiveBlockParser parser, ParserContext context) 
 			// excludes skip:true entries (because the cross-link fetcher has no link index for them),
 			// but skip:true means "does not publish docs", not "is public". Repos like kibana-team
 			// (private:true, skip:true) must still have their links hidden at render time.
-			var assemblerConfig = AssemblyConfiguration.Create(Build.ConfigurationFileProvider);
+			var assemblerConfig = AssemblyLoader.Create(Build.ConfigurationFileProvider);
 			foreach (var repoName in assemblerConfig.AllPrivateRepositoryNames)
 				_ = PrivateRepositories.Add(repoName);
 		}

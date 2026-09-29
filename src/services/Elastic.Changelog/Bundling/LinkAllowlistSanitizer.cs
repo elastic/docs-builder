@@ -5,6 +5,7 @@
 using System.Text.RegularExpressions;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.Publishing;
 using Elastic.Documentation.ReleaseNotes;
 
 namespace Elastic.Changelog.Bundling;

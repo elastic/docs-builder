@@ -104,4 +104,24 @@ public class AggregateEqualityTests
 
 		changed.Should().NotBe(docset);
 	}
+
+	[Test]
+	public void Assembly_LoadedTwice_IsEqual() =>
+		AssemblyLoader.Load(BaselineProvider()).OrThrow().Should().Be(AssemblyLoader.Load(BaselineProvider()).OrThrow());
+
+	[Test]
+	public void Assembly_OneBranchChanged_IsNotEqual()
+	{
+		var assembly = AssemblyLoader.Load(BaselineProvider()).OrThrow();
+		var (name, repository) = assembly.ReferenceRepositories.First();
+		var changed = assembly with
+		{
+			ReferenceRepositories = assembly.ReferenceRepositories.ToDictionary(
+				kv => kv.Key,
+				kv => kv.Key == name ? repository with { GitReferenceCurrent = repository.GitReferenceCurrent + "-changed" } : kv.Value
+			)
+		};
+
+		changed.Should().NotBe(assembly);
+	}
 }

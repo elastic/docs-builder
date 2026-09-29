@@ -9,6 +9,7 @@ using Documentation.Builder.Commands.Codex;
 using Documentation.Builder.Middleware;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration.Assembler;
+using Elastic.Documentation.Configuration.Loading;
 using Elastic.Documentation.ServiceDefaults;
 using Elastic.Documentation.ServiceDefaults.Telemetry;
 using Microsoft.Extensions.DependencyInjection;
@@ -25,7 +26,7 @@ var builder = Host
 	.CreateApplicationBuilder()
 	.AddDocumentationServiceDefaults(cliOptions ?? new GlobalCliOptions(), (s, p) =>
 	{
-		_ = s.AddSingleton(AssemblyConfiguration.Create(p));
+		_ = s.AddSingleton(AssemblyLoader.Create(p));
 	})
 	.AddDocumentationToolingDefaults()
 	.AddDocumentationOpenTelemetry(new OtelRegistration("docs-builder")

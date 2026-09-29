@@ -8,6 +8,7 @@ using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Configuration.Builder;
 using Elastic.Documentation.Configuration.LegacyUrlMappings;
 using Elastic.Documentation.DocumentationSets;
+using Elastic.Documentation.Publishing;
 
 namespace Elastic.Documentation.Configuration.Inference;
 

@@ -12,6 +12,7 @@ using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Deploying;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.FileSystems;
+using Elastic.Documentation.Publishing;
 using Elastic.Documentation.Services;
 using Microsoft.Extensions.Logging;
 using Nullean.Argh;

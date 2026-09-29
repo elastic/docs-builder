@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using Elastic.Documentation.Configuration.Loading;
 using Elastic.Documentation.Api;
 using Elastic.Documentation.Api.OpenTelemetry;
 using Elastic.Documentation.Configuration;
@@ -21,7 +22,7 @@ try
 		.CreateSlimBuilder(args)
 		.AddDocumentationServiceDefaults((s, p) =>
 		{
-			_ = s.AddSingleton(AssemblyConfiguration.Create(p));
+			_ = s.AddSingleton(AssemblyLoader.Create(p));
 		})
 		.AddDocumentationOpenTelemetry(new OtelRegistration("docs-api") { Tracing = (_, t) => t.AddDocsApiTracing(), })
 		.HealthCheckBuilderExtensions();
