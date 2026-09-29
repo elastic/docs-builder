@@ -107,12 +107,17 @@ public record BuildContext : IDocumentationSetContext, IDocumentationConfigurati
 		GoogleTagManager = new GoogleTagManagerConfiguration { Enabled = false };
 		Optimizely = new OptimizelyConfiguration { Enabled = false };
 
-		ConfigurationYaml = ConfigurationPath.Exists
-			? DocumentationSetFile.LoadAndResolve(collector, ConfigurationPath, fileSystem.Read)
-			: new DocumentationSetFile();
+		ConfigurationYaml = LoadConfigurationYaml(fileSystem.Read);
 
 		Configuration = ResolveConfiguration();
 		Features = CreateFeatures();
+	}
+
+	private DocumentationSetFile LoadConfigurationYaml(ScopedFileSystem? fileSystem)
+	{
+		var result = DocumentationSetLoader.Load(ConfigurationPath, fileSystem);
+		_ = result.EmitTo(Collector);
+		return result.OrThrowIfMissing();
 	}
 
 	private ResolvedDocumentationSet ResolveConfiguration()
@@ -129,9 +134,7 @@ public record BuildContext : IDocumentationSetContext, IDocumentationConfigurati
 	public void ReloadConfiguration()
 	{
 		var previousFeatures = Features;
-		ConfigurationYaml = ConfigurationPath.Exists
-			? DocumentationSetFile.LoadAndResolve(Collector, ConfigurationPath, ReadFileSystem as ScopedFileSystem)
-			: new DocumentationSetFile();
+		ConfigurationYaml = LoadConfigurationYaml(ReadFileSystem as ScopedFileSystem);
 		Configuration = ResolveConfiguration();
 		Features = CreateFeatures();
 		Features.DiagnosticsPanelEnabled = previousFeatures.DiagnosticsPanelEnabled;
