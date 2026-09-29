@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Diagnostics.CodeAnalysis;
 using System.ComponentModel.DataAnnotations;
 using System.IO.Abstractions;
 using System.Linq;
@@ -52,6 +53,11 @@ internal sealed partial class ChangelogCommands(
 	private static partial Regex BundleOutputDirectoryRegex();
 
 	private readonly ChangelogFileSystem _fileSystem = ChangelogFileSystem.FromWorkingDirectory();
+
+	// One loader per command invocation; each subcommand loads changelog.yml through it.
+	[field: AllowNull, MaybeNull]
+	private ChangelogConfigurationLoader ConfigurationLoader =>
+		field ??= new ChangelogConfigurationLoader(logFactory, configurationContext, _fileSystem);
 	private readonly ILogger _logger = logFactory.CreateLogger<ChangelogCommands>();
 	/// <summary>Create <c>changelog.yml</c> and the changelog/releases directory structure.</summary>
 	/// <remarks>
@@ -341,11 +347,7 @@ internal sealed partial class ChangelogCommands(
 		// Load changelog config and apply fallbacks for all modes.
 		// Precedence: CLI option > bundle section in changelog.yml > built-in default.
 		// This applies to --prs, --issues, --release-version, and --report alike.
-		var bundleConfig = await new ChangelogConfigurationLoader(logFactory, configurationContext, _fileSystem).LoadChangelogConfiguration(
-			collector,
-			config?.FullName,
-			ctx
-		);
+		var bundleConfig = await ConfigurationLoader.LoadChangelogConfiguration(collector, config?.FullName, ctx);
 #pragma warning disable CS0618
 		BundleOutputNaming.ValidateBundleRepo(collector, _fileSystem, config?.FullName, bundleConfig?.Bundle?.Repo);
 		var resolvedRepo = !string.IsNullOrWhiteSpace(repo) ? repo : bundleConfig?.Bundle?.Repo;
@@ -623,11 +625,7 @@ internal sealed partial class ChangelogCommands(
 		var ctx = ct;
 		await using var serviceInvoker = new ServiceInvoker(collector);
 
-		var bundleConfig = await new ChangelogConfigurationLoader(logFactory, configurationContext, _fileSystem).LoadChangelogConfiguration(
-			collector,
-			config?.FullName,
-			ctx
-		);
+		var bundleConfig = await ConfigurationLoader.LoadChangelogConfiguration(collector, config?.FullName, ctx);
 #pragma warning disable CS0618
 		BundleOutputNaming.ValidateBundleRepo(collector, _fileSystem, config?.FullName, bundleConfig?.Bundle?.Repo);
 		var resolvedRepo = !string.IsNullOrWhiteSpace(repo) ? repo : bundleConfig?.Bundle?.Repo;
@@ -871,11 +869,7 @@ internal sealed partial class ChangelogCommands(
 			if (!plan)
 			{
 				// Precedence: --repo CLI > bundle.repo config; --owner CLI > bundle.owner config > "elastic"
-				var bundleConfig = await new ChangelogConfigurationLoader(
-					logFactory,
-					configurationContext,
-					_fileSystem
-				).LoadChangelogConfiguration(collector, config?.FullName, ctx);
+				var bundleConfig = await ConfigurationLoader.LoadChangelogConfiguration(collector, config?.FullName, ctx);
 #pragma warning disable CS0618
 				BundleOutputNaming.ValidateBundleRepo(collector, _fileSystem, config?.FullName, bundleConfig?.Bundle?.Repo);
 				var resolvedRepo = !string.IsNullOrWhiteSpace(repo) ? repo : bundleConfig?.Bundle?.Repo;
@@ -1033,7 +1027,7 @@ internal sealed partial class ChangelogCommands(
 				// If the config has no profiles → gh-release mode; otherwise the caller must name a profile.
 				if (plan)
 				{
-					var bundleConfigLoader = new ChangelogConfigurationLoader(logFactory, configurationContext, _fileSystem);
+					var bundleConfigLoader = ConfigurationLoader;
 					var bundleConfig = await bundleConfigLoader.LoadChangelogConfiguration(collector, config?.FullName, ctx);
 
 					var profiles = bundleConfig?.Bundle?.Profiles;
@@ -1357,11 +1351,7 @@ internal sealed partial class ChangelogCommands(
 			}
 
 			// Precedence: --repo CLI > bundle.repo config; --owner CLI > bundle.owner config > "elastic"
-			var bundleConfig = await new ChangelogConfigurationLoader(
-				logFactory,
-				configurationContext,
-				_fileSystem
-			).LoadChangelogConfiguration(collector, config?.FullName, ctx);
+			var bundleConfig = await ConfigurationLoader.LoadChangelogConfiguration(collector, config?.FullName, ctx);
 #pragma warning disable CS0618
 			BundleOutputNaming.ValidateBundleRepo(collector, _fileSystem, config?.FullName, bundleConfig?.Bundle?.Repo);
 			var resolvedRepo = !string.IsNullOrWhiteSpace(repo) ? repo : bundleConfig?.Bundle?.Repo;
@@ -1673,11 +1663,7 @@ internal sealed partial class ChangelogCommands(
 		var ctx = ct;
 		await using var serviceInvoker = new ServiceInvoker(collector);
 
-		var bundleConfig = await new ChangelogConfigurationLoader(logFactory, configurationContext, _fileSystem).LoadChangelogConfiguration(
-			collector,
-			config?.FullName,
-			ctx
-		);
+		var bundleConfig = await ConfigurationLoader.LoadChangelogConfiguration(collector, config?.FullName, ctx);
 		var resolvedOutput = !string.IsNullOrWhiteSpace(output) ? NormalizePath(output) : bundleConfig?.Bundle?.Directory;
 
 		var service = new ChangelogUnpackService(logFactory, _fileSystem, configurationContext);
@@ -1719,11 +1705,7 @@ internal sealed partial class ChangelogCommands(
 		await using var serviceInvoker = new ServiceInvoker(collector);
 
 		// --output CLI > bundle.output_directory > bundle.directory > ./changelogs (service default)
-		var bundleConfig = await new ChangelogConfigurationLoader(logFactory, configurationContext, _fileSystem).LoadChangelogConfiguration(
-			collector,
-			config?.FullName,
-			ctx
-		);
+		var bundleConfig = await ConfigurationLoader.LoadChangelogConfiguration(collector, config?.FullName, ctx);
 		var resolvedOutput = !string.IsNullOrWhiteSpace(output)
 			? output
 			: (bundleConfig?.Bundle?.OutputDirectory ?? bundleConfig?.Bundle?.Directory);
@@ -2604,11 +2586,7 @@ internal sealed partial class ChangelogCommands(
 		CancellationToken ctx
 	)
 	{
-		var bundleConfig = await new ChangelogConfigurationLoader(logFactory, configurationContext, _fileSystem).LoadChangelogConfiguration(
-			collector,
-			configPath,
-			ctx
-		);
+		var bundleConfig = await ConfigurationLoader.LoadChangelogConfiguration(collector, configPath, ctx);
 
 		// Anchor the git fallbacks to the upload source (config file or changelog directory), not the
 		// process cwd, so an out-of-tree --config/--directory resolves the right origin and branch. Both
