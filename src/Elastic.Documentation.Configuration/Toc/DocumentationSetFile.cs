@@ -7,10 +7,10 @@ using System.Collections.Frozen;
 using System.IO.Abstractions;
 using DotNet.Globbing;
 using Elastic.Documentation.Configuration.Products;
-using Elastic.Documentation.Configuration.Toc.CliReference;
 using Elastic.Documentation.Configuration.Toc.DetectionRules;
 using Elastic.Documentation.Configuration.Toc.Listing;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.DocumentationSets;
 using Elastic.Documentation.Extensions;
 using Elastic.Documentation.FileSystems;
 using Nullean.ScopedFileSystem;
@@ -96,21 +96,6 @@ public class DocumentationSetFile : TableOfContentsFile
 	[YamlMember(Alias = "cta")]
 	public Dictionary<string, CtaDefinition> Cta { get; set; } = [];
 
-	public static FileRef[] GetFileRefs(ITableOfContentsItem item)
-	{
-		if (item is FileRef fileRef)
-			return [fileRef];
-		if (item is FolderRef folderRef)
-			return folderRef.Children.SelectMany(GetFileRefs).ToArray();
-		if (item is IsolatedTableOfContentsRef tocRef)
-			return tocRef.Children.SelectMany(GetFileRefs).ToArray();
-		if (item is CrossLinkRef)
-			return [];
-		if (item is CliReferenceRef cliRef2)
-			return cliRef2.Children.SelectMany(GetFileRefs).ToArray();
-		throw new Exception($"Unexpected item type {item.GetType().Name}");
-	}
-
 	private static new DocumentationSetFile Deserialize(string json) =>
 		ConfigurationFileProvider.Deserializer.Deserialize<DocumentationSetFile>(json);
 
@@ -148,6 +133,10 @@ public class DocumentationSetFile : TableOfContentsFile
 	/// File paths excluded from navigation via folder-level <c>exclude</c> in toc.yml.
 	/// These files exist on disk but should not be processed by the builder.
 	/// </summary>
+	/// <summary>The resolved table of contents: every nested toc.yml loaded and every path final.</summary>
+	[YamlIgnore]
+	public IReadOnlyList<TocItem> TableOfContents { get; internal set; } = [];
+
 	[YamlIgnore]
 	public HashSet<string> FolderExcludedFiles { get; private set; } = [];
 
@@ -178,7 +167,7 @@ public class DocumentationSetFile : TableOfContentsFile
 		docSet.SuppressDiagnostics.ExceptWith(noSuppress ?? []);
 		docSet.TableOfContents = ResolveTableOfContents(
 			collector,
-			docSet.TableOfContents,
+			docSet.TocEntries,
 			sourceDirectory,
 			fileSystem,
 			parentPath: "",
@@ -198,9 +187,9 @@ public class DocumentationSetFile : TableOfContentsFile
 	/// Preserves the hierarchy structure without flattening.
 	/// Validates items and emits diagnostics for issues.
 	/// </summary>
-	private static TableOfContents ResolveTableOfContents(
+	private static IReadOnlyList<TocItem> ResolveTableOfContents(
 		IDiagnosticsCollector collector,
-		IReadOnlyCollection<ITableOfContentsItem> items,
+		IReadOnlyList<ITocEntry> items,
 		IDirectoryInfo baseDirectory,
 		IFileSystem fileSystem,
 		string parentPath,
@@ -209,14 +198,14 @@ public class DocumentationSetFile : TableOfContentsFile
 		HashSet<HintType>? suppressDiagnostics = null
 	)
 	{
-		var resolved = new TableOfContents();
+		var resolved = new List<TocItem>();
 
 		foreach (var item in items)
 		{
 			var resolvedItem = item switch
 			{
-				InvalidTocItemRef invalid => EmitInvalidTocItem(collector, invalid, context),
-				IsolatedTableOfContentsRef tocRef =>
+				InvalidTocEntry invalid => EmitInvalidTocItem(collector, invalid, context),
+				NestedTocEntry tocRef =>
 					ResolveIsolatedToc(
 						collector,
 						tocRef,
@@ -227,7 +216,7 @@ public class DocumentationSetFile : TableOfContentsFile
 						context,
 						suppressDiagnostics
 					),
-				DetectionRuleOverviewRef ruleOverviewReference =>
+				DetectionRulesEntry ruleOverviewReference =>
 					ResolveRuleOverviewReference(
 						collector,
 						ruleOverviewReference,
@@ -238,13 +227,13 @@ public class DocumentationSetFile : TableOfContentsFile
 						context,
 						suppressDiagnostics
 					),
-				CliReferenceRef cliRef =>
+				CliReferenceEntry cliRef =>
 					ResolveCliReference(collector, cliRef, baseDirectory, fileSystem, parentPath, containerPath, context),
-				ListingRef listingRef =>
+				ListingEntry listingRef =>
 					ResolveListingRef(collector, listingRef, baseDirectory, fileSystem, parentPath, containerPath, context),
-				FileRef fileRef =>
+				FileEntry fileRef =>
 					ResolveFileRef(collector, fileRef, baseDirectory, fileSystem, parentPath, containerPath, context, suppressDiagnostics),
-				FolderRef folderRef =>
+				FolderEntry folderRef =>
 					ResolveFolderRef(
 						collector,
 						folderRef,
@@ -255,16 +244,18 @@ public class DocumentationSetFile : TableOfContentsFile
 						context,
 						suppressDiagnostics
 					),
-				CrossLinkRef crossLink =>
+				CrossLinkTocEntry crossLink =>
 					ResolveCrossLinkRef(collector, crossLink, baseDirectory, fileSystem, parentPath, containerPath, context),
 				_ => null
 			};
 
-			if (resolvedItem != null)
+			// A pattern on a union matches its case value, so test the Nullable itself.
+			if (resolvedItem.HasValue)
 			{
-				resolved.Add(resolvedItem);
+				var value = resolvedItem.Value;
+				resolved.Add(value);
 				// Emit the deprecated rules overview as a sibling immediately after the active rules ref
-				if (resolvedItem is DetectionRuleOverviewRef { DeprecatedSiblingRef: { } deprecatedSibling })
+				if (value is DetectionRuleOverviewRef { DeprecatedSiblingRef: { } deprecatedSibling })
 					resolved.Add(deprecatedSibling);
 			}
 		}
@@ -272,7 +263,7 @@ public class DocumentationSetFile : TableOfContentsFile
 		return resolved;
 	}
 
-	private static ITableOfContentsItem? EmitInvalidTocItem(IDiagnosticsCollector collector, InvalidTocItemRef invalid, string context)
+	private static TocItem? EmitInvalidTocItem(IDiagnosticsCollector collector, InvalidTocEntry invalid, string context)
 	{
 		var raw = invalid.RawValue;
 		var isYmlFile = raw.EndsWith(".yml", StringComparison.OrdinalIgnoreCase)
@@ -295,9 +286,9 @@ public class DocumentationSetFile : TableOfContentsFile
 	/// The TOC's path is set to the full path (including parent path) for consistency with files and folders.
 	/// </summary>
 #pragma warning disable IDE0060 // Remove unused parameter - suppressDiagnostics is for consistency, nested TOCs use their own suppression config
-	private static ITableOfContentsItem? ResolveIsolatedToc(
+	private static TocItem? ResolveIsolatedToc(
 		IDiagnosticsCollector collector,
-		IsolatedTableOfContentsRef tocRef,
+		NestedTocEntry tocRef,
 		IDirectoryInfo baseDirectory,
 		IFileSystem fileSystem,
 		string parentPath,
@@ -310,7 +301,7 @@ public class DocumentationSetFile : TableOfContentsFile
 		// TOC paths containing '/' are treated as relative to the context file's directory (full paths).
 		// Simple TOC names (no '/') are resolved relative to the parent path in the navigation hierarchy.
 		string fullTocPath;
-		if (tocRef.PathRelativeToDocumentationSet.Contains('/'))
+		if (tocRef.Path.Contains('/'))
 		{
 			// Path contains '/', treat as context-relative (full path from the context file's directory)
 			var contextDir = fileSystem.Path.GetDirectoryName(parentContext) ?? "";
@@ -318,16 +309,12 @@ public class DocumentationSetFile : TableOfContentsFile
 			if (contextRelativePath == ".")
 				contextRelativePath = "";
 
-			fullTocPath = string.IsNullOrEmpty(contextRelativePath)
-				? tocRef.PathRelativeToDocumentationSet
-				: $"{contextRelativePath}/{tocRef.PathRelativeToDocumentationSet}";
+			fullTocPath = string.IsNullOrEmpty(contextRelativePath) ? tocRef.Path : $"{contextRelativePath}/{tocRef.Path}";
 		}
 		else
 		{
 			// Simple name, resolve relative to parent path
-			fullTocPath = string.IsNullOrEmpty(parentPath)
-				? tocRef.PathRelativeToDocumentationSet
-				: $"{parentPath}/{tocRef.PathRelativeToDocumentationSet}";
+			fullTocPath = string.IsNullOrEmpty(parentPath) ? tocRef.Path : $"{parentPath}/{tocRef.Path}";
 		}
 
 		var tocDirectory = fileSystem.DirectoryInfo.New(fileSystem.Path.Join(baseDirectory.FullName, fullTocPath));
@@ -388,7 +375,7 @@ public class DocumentationSetFile : TableOfContentsFile
 		// For children of this TOC, the container path is fullTocPath (they're defined in toc.yml at that location)
 		var resolvedChildren = ResolveTableOfContents(
 			collector,
-			nestedTocFile.TableOfContents,
+			nestedTocFile.TocEntries,
 			baseDirectory,
 			fileSystem,
 			fullTocPath,
@@ -417,9 +404,9 @@ public class DocumentationSetFile : TableOfContentsFile
 	/// Resolves a FileRef by prepending the parent path to the file path and recursively resolving children.
 	/// The parent path provides the correct context for child resolution.
 	/// </summary>
-	private static ITableOfContentsItem ResolveFileRef(
+	private static TocItem ResolveFileRef(
 		IDiagnosticsCollector collector,
-		FileRef fileRef,
+		FileEntry fileRef,
 		IDirectoryInfo baseDirectory,
 		IFileSystem fileSystem,
 		string parentPath,
@@ -428,15 +415,13 @@ public class DocumentationSetFile : TableOfContentsFile
 		HashSet<HintType>? suppressDiagnostics = null
 	)
 	{
-		var fullPath = string.IsNullOrEmpty(parentPath)
-			? fileRef.PathRelativeToDocumentationSet
-			: $"{parentPath}/{fileRef.PathRelativeToDocumentationSet}";
+		var fullPath = string.IsNullOrEmpty(parentPath) ? fileRef.Path : $"{parentPath}/{fileRef.Path}";
 
 		// Special validation for FolderIndexFileRef (folder+file combination)
 		// Validate BEFORE early return so we catch cases with no children
-		if (fileRef is FolderIndexFileRef)
+		if (fileRef is FolderIndexFileEntry)
 		{
-			var fileName = fileRef.PathRelativeToDocumentationSet;
+			var fileName = fileRef.Path;
 			var fileWithoutExtension = fileName.Replace(".md", "");
 
 			// Validate: deep linking is NOT supported for folder+file combination
@@ -489,23 +474,23 @@ public class DocumentationSetFile : TableOfContentsFile
 			// Preserve specific types even when there are no children
 			return fileRef switch
 			{
-				FolderIndexFileRef =>
+				FolderIndexFileEntry =>
 					new FolderIndexFileRef(fullPath, pathRelativeToContainer, fileRef.Hidden, [], context, fileRef.DefaultCta),
-				IndexFileRef => new IndexFileRef(fullPath, pathRelativeToContainer, fileRef.Hidden, [], context, fileRef.DefaultCta),
+				IndexFileEntry => new IndexFileRef(fullPath, pathRelativeToContainer, fileRef.Hidden, [], context, fileRef.DefaultCta),
 				_ => new FileRef(fullPath, pathRelativeToContainer, fileRef.Hidden, [], context, fileRef.DefaultCta)
 			};
 		}
 
 		// Emit hint if file has children and uses deep-linking (path contains '/')
 		// This suggests using 'folder' instead of 'file' would be better
-		if (fileRef.PathRelativeToDocumentationSet.Contains('/') && fileRef.Children.Count > 0 && fileRef is not FolderIndexFileRef)
+		if (fileRef.Path.Contains('/') && fileRef.Children.Count > 0 && fileRef is not FolderIndexFileEntry)
 		{
 			// Check if this hint type should be suppressed
 			if (!suppressDiagnostics.ShouldSuppress(HintType.DeepLinkingVirtualFile))
 			{
 				collector.EmitHint(
 					context,
-					$"File '{fileRef.PathRelativeToDocumentationSet}' uses deep-linking with children. Consider using 'folder' instead of 'file' for better navigation structure. Virtual files are primarily intended to group sibling files together."
+					$"File '{fileRef.Path}' uses deep-linking with children. Consider using 'folder' instead of 'file' for better navigation structure. Virtual files are primarily intended to group sibling files together."
 				);
 			}
 		}
@@ -520,7 +505,7 @@ public class DocumentationSetFile : TableOfContentsFile
 		// - User file with subpath: "clients/getting-started.md" (parentPath="guides") → children resolve to "guides/"
 		// - Folder+file (FolderIndexFileRef): "observability/apm/apm-server/index.md" → children resolve to directory of fullPath
 		string parentPathForChildren;
-		if (fileRef is FolderIndexFileRef)
+		if (fileRef is FolderIndexFileEntry)
 		{
 			// Folder+file combination - extract directory from fullPath
 			var lastSlashIndex = fullPath.LastIndexOf('/');
@@ -553,9 +538,9 @@ public class DocumentationSetFile : TableOfContentsFile
 		// Preserve the specific type when creating the resolved reference
 		return fileRef switch
 		{
-			FolderIndexFileRef =>
+			FolderIndexFileEntry =>
 				new FolderIndexFileRef(fullPath, pathRelativeToContainer, fileRef.Hidden, resolvedChildren, context, fileRef.DefaultCta),
-			IndexFileRef =>
+			IndexFileEntry =>
 				new IndexFileRef(fullPath, pathRelativeToContainer, fileRef.Hidden, resolvedChildren, context, fileRef.DefaultCta),
 			_ => new FileRef(fullPath, pathRelativeToContainer, fileRef.Hidden, resolvedChildren, context, fileRef.DefaultCta)
 		};
@@ -565,9 +550,9 @@ public class DocumentationSetFile : TableOfContentsFile
 	/// Resolves a FolderRef by prepending the parent path to the folder path and recursively resolving children.
 	/// If no children are defined, auto-discovers .md files in the folder directory.
 	/// </summary>
-	private static ITableOfContentsItem ResolveRuleOverviewReference(
+	private static TocItem ResolveRuleOverviewReference(
 		IDiagnosticsCollector collector,
-		DetectionRuleOverviewRef detectionRuleRef,
+		DetectionRulesEntry detectionRuleRef,
 		IDirectoryInfo baseDirectory,
 		IFileSystem fileSystem,
 		string parentPath,
@@ -579,7 +564,7 @@ public class DocumentationSetFile : TableOfContentsFile
 		// Folder paths containing '/' are treated as relative to the context file's directory (full paths).
 		// Simple folder names (no '/') are resolved relative to the parent path in the navigation hierarchy.
 		string fullPath;
-		if (detectionRuleRef.PathRelativeToDocumentationSet.Contains('/'))
+		if (detectionRuleRef.Path.Contains('/'))
 		{
 			// Path contains '/', treat as context-relative (full path from the context file's directory)
 			var contextDir = fileSystem.Path.GetDirectoryName(context) ?? "";
@@ -587,16 +572,12 @@ public class DocumentationSetFile : TableOfContentsFile
 			if (contextRelativePath == ".")
 				contextRelativePath = "";
 
-			fullPath = string.IsNullOrEmpty(contextRelativePath)
-				? detectionRuleRef.PathRelativeToDocumentationSet
-				: $"{contextRelativePath}/{detectionRuleRef.PathRelativeToDocumentationSet}";
+			fullPath = string.IsNullOrEmpty(contextRelativePath) ? detectionRuleRef.Path : $"{contextRelativePath}/{detectionRuleRef.Path}";
 		}
 		else
 		{
 			// Simple name, resolve relative to parent path
-			fullPath = string.IsNullOrEmpty(parentPath)
-				? detectionRuleRef.PathRelativeToDocumentationSet
-				: $"{parentPath}/{detectionRuleRef.PathRelativeToDocumentationSet}";
+			fullPath = string.IsNullOrEmpty(parentPath) ? detectionRuleRef.Path : $"{parentPath}/{detectionRuleRef.Path}";
 		}
 
 		// Calculate PathRelativeToContainer: the folder path relative to its container
@@ -615,11 +596,8 @@ public class DocumentationSetFile : TableOfContentsFile
 		);
 
 		var fileInfo = fileSystem.NewFileInfo(baseDirectory.FullName, fullPath);
-		var tocSourceFolders = detectionRuleRef
-			.DetectionRuleFolders
-			.Select(f => fileSystem.NewDirInfo(fileInfo.Directory!.FullName, f))
-			.ToList();
-		var tomlChildren = DetectionRuleOverviewRef.CreateTableOfContentItems(tocSourceFolders, context, baseDirectory);
+		var tocSourceFolders = detectionRuleRef.RuleFolders.Select(f => fileSystem.NewDirInfo(fileInfo.Directory!.FullName, f)).ToList();
+		var tomlChildren = DetectionRuleDiscovery.CreateTableOfContentItems(tocSourceFolders, context, baseDirectory);
 
 		var children = resolvedChildren.ToList();
 		children.AddRange(tomlChildren);
@@ -639,7 +617,7 @@ public class DocumentationSetFile : TableOfContentsFile
 			var deprecatedPathRelativeToContainer = string.IsNullOrEmpty(containerPath)
 				? deprecatedFullPath
 				: deprecatedFullPath.Substring(containerPath.Length + 1);
-			var deprecatedTomlChildren = DetectionRuleOverviewRef.CreateDeprecatedTableOfContentItems(
+			var deprecatedTomlChildren = DetectionRuleDiscovery.CreateDeprecatedTableOfContentItems(
 				tocSourceFolders,
 				context,
 				baseDirectory
@@ -656,7 +634,7 @@ public class DocumentationSetFile : TableOfContentsFile
 		return new DetectionRuleOverviewRef(
 			fullPath,
 			pathRelativeToContainer,
-			detectionRuleRef.DetectionRuleFolders,
+			detectionRuleRef.RuleFolders,
 			children,
 			context,
 			detectionRuleRef.DeprecatedFile
@@ -664,9 +642,9 @@ public class DocumentationSetFile : TableOfContentsFile
 		{ DeprecatedSiblingRef = deprecatedSiblingRef };
 	}
 
-	private static ITableOfContentsItem? ResolveCliReference(
+	private static TocItem? ResolveCliReference(
 		IDiagnosticsCollector collector,
-		CliReferenceRef cliRef,
+		CliReferenceEntry cliRef,
 		IDirectoryInfo baseDirectory,
 		IFileSystem fileSystem,
 		string parentPath,
@@ -733,9 +711,9 @@ public class DocumentationSetFile : TableOfContentsFile
 	/// Resolves a FolderRef by prepending the parent path to the folder path and recursively resolving children.
 	/// If no children are defined, auto-discovers .md files in the folder directory.
 	/// </summary>
-	private static ITableOfContentsItem ResolveFolderRef(
+	private static TocItem ResolveFolderRef(
 		IDiagnosticsCollector collector,
-		FolderRef folderRef,
+		FolderEntry folderRef,
 		IDirectoryInfo baseDirectory,
 		IFileSystem fileSystem,
 		string parentPath,
@@ -749,7 +727,7 @@ public class DocumentationSetFile : TableOfContentsFile
 		// DeepLinkedFolderRef (the "file: subdir/index.md" sugar) is the exception: it always resolves
 		// relative to the parent, exactly like the FileRef it was expanded from, regardless of '/'.
 		string fullPath;
-		if (folderRef is not DeepLinkedFolderRef && folderRef.PathRelativeToDocumentationSet.Contains('/'))
+		if (folderRef is not DeepLinkedFolderEntry && folderRef.Path.Contains('/'))
 		{
 			// Path contains '/', treat as context-relative (full path from the context file's directory)
 			var contextDir = fileSystem.Path.GetDirectoryName(context) ?? "";
@@ -757,16 +735,12 @@ public class DocumentationSetFile : TableOfContentsFile
 			if (contextRelativePath == ".")
 				contextRelativePath = "";
 
-			fullPath = string.IsNullOrEmpty(contextRelativePath)
-				? folderRef.PathRelativeToDocumentationSet
-				: $"{contextRelativePath}/{folderRef.PathRelativeToDocumentationSet}";
+			fullPath = string.IsNullOrEmpty(contextRelativePath) ? folderRef.Path : $"{contextRelativePath}/{folderRef.Path}";
 		}
 		else
 		{
 			// Simple name (or a DeepLinkedFolderRef), resolve relative to parent path
-			fullPath = string.IsNullOrEmpty(parentPath)
-				? folderRef.PathRelativeToDocumentationSet
-				: $"{parentPath}/{folderRef.PathRelativeToDocumentationSet}";
+			fullPath = string.IsNullOrEmpty(parentPath) ? folderRef.Path : $"{parentPath}/{folderRef.Path}";
 		}
 
 		// Calculate PathRelativeToContainer: the folder path relative to its container
@@ -776,7 +750,7 @@ public class DocumentationSetFile : TableOfContentsFile
 		if (!SortOrderExtensions.TryParse(folderRef.Sort, out var sortOrder) && folderRef.Sort is not null)
 			collector.EmitError(
 				context,
-				$"Unknown sort order '{folderRef.Sort}' for folder '{folderRef.PathRelativeToDocumentationSet}'." +
+				$"Unknown sort order '{folderRef.Sort}' for folder '{folderRef.Path}'." +
 					" Valid values are: asc, ascending, desc, descending."
 			);
 
@@ -834,7 +808,7 @@ public class DocumentationSetFile : TableOfContentsFile
 	/// If index.md exists, it's placed first. Other files are sorted according to the specified sort order.
 	/// Files starting with '_' or '.' are excluded, as well as any files listed in <paramref name="exclude"/>.
 	/// </summary>
-	private static TableOfContents AutoDiscoverFolderFiles(
+	private static IReadOnlyList<TocItem> AutoDiscoverFolderFiles(
 		IDiagnosticsCollector collector,
 		string folderPath,
 		string containerPath,
@@ -842,7 +816,7 @@ public class DocumentationSetFile : TableOfContentsFile
 		IFileSystem fileSystem,
 		string context,
 		SortOrder? sortOrder,
-		IReadOnlyCollection<string>? exclude
+		IReadOnlyList<string>? exclude
 	)
 	{
 		var directoryPath = fileSystem.Path.Join(baseDirectory.FullName, folderPath);
@@ -877,17 +851,16 @@ public class DocumentationSetFile : TableOfContentsFile
 			_ => otherFiles.OrderBy(f => f.Name).ToList()
 		};
 
-		var children = new TableOfContents();
+		var children = new List<ITocEntry>();
 
 		// Add index.md first if it exists
 		if (indexFile != null)
-			children.Add(new IndexFileRef(indexFile.Name, indexFile.Name, false, [], context));
+			children.Add(new IndexFileEntry(indexFile.Name, false, []));
 
 		// Add other files sorted according to the specified order
 		foreach (var file in sortedFiles)
 		{
-			var fileRef = new FileRef(file.Name, file.Name, false, [], context);
-			children.Add(fileRef);
+			children.Add(new FileEntry(file.Name, false, []));
 		}
 
 		// Resolve the children with the folder path as parent to get correct full paths
@@ -902,7 +875,7 @@ public class DocumentationSetFile : TableOfContentsFile
 	/// </summary>
 	private static FrozenDictionary<string, string> CollectTocDefaultCtas(
 		IDiagnosticsCollector collector,
-		IReadOnlyCollection<ITableOfContentsItem> items,
+		IReadOnlyList<TocItem> items,
 		string? inheritedDefault
 	)
 	{
@@ -913,7 +886,7 @@ public class DocumentationSetFile : TableOfContentsFile
 
 	private static void CollectTocDefaultCtas(
 		IDiagnosticsCollector collector,
-		IReadOnlyCollection<ITableOfContentsItem> items,
+		IReadOnlyList<TocItem> items,
 		string? inheritedDefault,
 		Dictionary<string, string> defaults
 	)
@@ -989,13 +962,13 @@ public class DocumentationSetFile : TableOfContentsFile
 	/// <summary>
 	/// Traverses the resolved TOC and collects relative paths of files excluded via folder-level <c>exclude</c>.
 	/// </summary>
-	private static HashSet<string> CollectFolderExcludedFiles(IReadOnlyCollection<ITableOfContentsItem> items)
+	private static HashSet<string> CollectFolderExcludedFiles(IReadOnlyList<TocItem> items)
 	{
 		var excluded = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 		CollectExcluded(items, excluded);
 		return excluded;
 
-		static void CollectExcluded(IReadOnlyCollection<ITableOfContentsItem> items, HashSet<string> result)
+		static void CollectExcluded(IReadOnlyList<TocItem> items, HashSet<string> result)
 		{
 			foreach (var item in items)
 			{
@@ -1023,9 +996,9 @@ public class DocumentationSetFile : TableOfContentsFile
 	/// Resolves a <see cref="ListingRef"/> by glob-matching all content files under the listing folder,
 	/// partitioning them into groups based on frontmatter, and emitting hidden <see cref="FileRef"/>s.
 	/// </summary>
-	private static ITableOfContentsItem? ResolveListingRef(
+	private static TocItem? ResolveListingRef(
 		IDiagnosticsCollector collector,
-		ListingRef listingRef,
+		ListingEntry listingRef,
 		IDirectoryInfo baseDirectory,
 		IFileSystem fileSystem,
 		string parentPath,
@@ -1035,21 +1008,17 @@ public class DocumentationSetFile : TableOfContentsFile
 	{
 		// Resolve the full path (same pattern as ResolveFolderRef)
 		string fullPath;
-		if (listingRef.PathRelativeToDocumentationSet.Contains('/'))
+		if (listingRef.Path.Contains('/'))
 		{
 			var contextDir = fileSystem.Path.GetDirectoryName(context) ?? "";
 			var contextRelativePath = fileSystem.Path.GetRelativePath(baseDirectory.FullName, contextDir);
 			if (contextRelativePath == ".")
 				contextRelativePath = "";
-			fullPath = string.IsNullOrEmpty(contextRelativePath)
-				? listingRef.PathRelativeToDocumentationSet
-				: $"{contextRelativePath}/{listingRef.PathRelativeToDocumentationSet}";
+			fullPath = string.IsNullOrEmpty(contextRelativePath) ? listingRef.Path : $"{contextRelativePath}/{listingRef.Path}";
 		}
 		else
 		{
-			fullPath = string.IsNullOrEmpty(parentPath)
-				? listingRef.PathRelativeToDocumentationSet
-				: $"{parentPath}/{listingRef.PathRelativeToDocumentationSet}";
+			fullPath = string.IsNullOrEmpty(parentPath) ? listingRef.Path : $"{parentPath}/{listingRef.Path}";
 		}
 
 		var pathRelativeToContainer = string.IsNullOrEmpty(containerPath) ? fullPath : fullPath[(containerPath.Length + 1)..];
@@ -1168,7 +1137,7 @@ public class DocumentationSetFile : TableOfContentsFile
 		foreach (var g in groupedFiles.Keys.Where(k => !orderedGroups.Contains(k, StringComparer.OrdinalIgnoreCase)).OrderBy(k => k))
 			orderedGroups.Add(g);
 
-		var tocItems = new List<ITableOfContentsItem>();
+		var tocItems = new List<TocItem>();
 
 		// Root index (visible) — always emit; ListingDocsBuilderExtension creates a synthetic page if missing.
 		var rootRelPath = $"{fullPath}/index.md";
@@ -1185,7 +1154,7 @@ public class DocumentationSetFile : TableOfContentsFile
 			// otherwise to the synthetic path that ListingDocsBuilderExtension will register.
 			var groupIndexPath = $"{fullPath}/{groupKey}/index.md";
 
-			var groupChildren = new List<ITableOfContentsItem>();
+			var groupChildren = new List<TocItem>();
 
 			var groupIdxRelContainer = string.IsNullOrEmpty(containerPath) ? groupIndexPath : groupIndexPath[(containerPath.Length + 1)..];
 			groupChildren.Add(new IndexFileRef(groupIndexPath, groupIdxRelContainer, false, [], context));
@@ -1221,9 +1190,9 @@ public class DocumentationSetFile : TableOfContentsFile
 	/// <summary>
 	/// Resolves a CrossLinkRef by recursively resolving children (though cross-links typically don't have children).
 	/// </summary>
-	private static ITableOfContentsItem ResolveCrossLinkRef(
+	private static TocItem ResolveCrossLinkRef(
 		IDiagnosticsCollector collector,
-		CrossLinkRef crossLinkRef,
+		CrossLinkTocEntry crossLinkRef,
 		IDirectoryInfo baseDirectory,
 		IFileSystem fileSystem,
 		string parentPath,

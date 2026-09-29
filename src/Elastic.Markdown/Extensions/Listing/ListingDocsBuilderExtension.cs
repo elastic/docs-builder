@@ -5,6 +5,7 @@
 using System.IO.Abstractions;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Toc;
+using Elastic.Documentation.DocumentationSets;
 using Elastic.Documentation.Navigation;
 using Elastic.Markdown.Exporters;
 using Elastic.Markdown.IO;
@@ -40,7 +41,7 @@ public class ListingDocsBuilderExtension(BuildContext build, MarkdownParser mark
 		CollectListingRefs(Build.ConfigurationYaml.TableOfContents);
 	}
 
-	private void CollectListingRefs(IReadOnlyCollection<ITableOfContentsItem> items)
+	private void CollectListingRefs(IReadOnlyList<TocItem> items)
 	{
 		foreach (var item in items)
 		{
@@ -77,7 +78,7 @@ public class ListingDocsBuilderExtension(BuildContext build, MarkdownParser mark
 				continue;
 
 			// Find the IndexFileRef inside the group children (the first child of type IndexFileRef)
-			var groupIndex = groupRef.Children.OfType<IndexFileRef>().FirstOrDefault();
+			var groupIndex = groupRef.Children.OfCase<IndexFileRef>().FirstOrDefault();
 			if (groupIndex is null)
 			{
 				// Synthesize <rootDir>/<groupKey>/index.md

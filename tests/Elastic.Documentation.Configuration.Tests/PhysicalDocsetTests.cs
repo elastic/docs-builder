@@ -5,6 +5,7 @@
 using AwesomeAssertions;
 using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Configuration.Toc.CliReference;
+using Elastic.Documentation.DocumentationSets;
 
 namespace Elastic.Documentation.Configuration.Tests;
 
@@ -24,7 +25,7 @@ public class PhysicalDocsetTests
 			""";
 
 		var docSet = ConfigurationFileProvider.Deserializer.Deserialize<DocumentationSetFile>(yaml);
-		var cliRef = docSet.TableOfContents.OfType<CliReferenceRef>().Single();
+		var cliRef = docSet.TocEntries.OfType<CliReferenceEntry>().Single();
 
 		cliRef.Title.Should().Be("Elastic CLI reference");
 		cliRef.NavigationTitle.Should().Be("CLI reference");
@@ -56,19 +57,19 @@ public class PhysicalDocsetTests
 		apiEntry.Product.Should().Be("elasticsearch");
 		apiEntry.Repository.Should().Be("elastic/elasticsearch-specification");
 
-		docSet.TableOfContents.Should().NotBeEmpty();
+		docSet.TocEntries.Should().NotBeEmpty();
 
-		var firstItem = docSet.TableOfContents.ElementAt(0).Should().BeOfType<IndexFileRef>().Subject;
-		firstItem.PathRelativeToDocumentationSet.Should().Be("index.md");
+		var firstItem = docSet.TocEntries.ElementAt(0).Should().BeOfType<IndexFileEntry>().Subject;
+		firstItem.Path.Should().Be("index.md");
 		firstItem.Hidden.Should().BeFalse();
 
-		var hiddenFiles = docSet.TableOfContents.OfType<FileRef>().Where(f => f.Hidden).ToList();
-		hiddenFiles.Should().Contain(f => f.PathRelativeToDocumentationSet == "404.md");
-		hiddenFiles.Should().Contain(f => f.PathRelativeToDocumentationSet == "developer-notes.md");
+		var hiddenFiles = docSet.TocEntries.OfType<FileEntry>().Where(f => f.Hidden).ToList();
+		hiddenFiles.Should().Contain(f => f.Path == "404.md");
+		hiddenFiles.Should().Contain(f => f.Path == "developer-notes.md");
 
-		docSet.TableOfContents.OfType<FolderRef>().Should().NotBeEmpty();
+		docSet.TocEntries.OfType<FolderEntry>().Should().NotBeEmpty();
 
-		var cliRef = docSet.TableOfContents.OfType<CliReferenceRef>().FirstOrDefault();
+		var cliRef = docSet.TocEntries.OfType<CliReferenceEntry>().FirstOrDefault();
 		cliRef.Should().NotBeNull();
 	}
 
@@ -79,7 +80,7 @@ public class PhysicalDocsetTests
 		var yaml = File.ReadAllText(docsetPath);
 		var docSet = ConfigurationFileProvider.Deserializer.Deserialize<DocumentationSetFile>(yaml);
 
-		var folderNames = docSet.TableOfContents.OfType<FolderRef>().Select(f => f.PathRelativeToDocumentationSet).ToList();
+		var folderNames = docSet.TocEntries.OfType<FolderEntry>().Select(f => f.Path).ToList();
 
 		folderNames.Should().Contain("getting-started");
 		folderNames.Should().Contain("syntax");
@@ -88,10 +89,10 @@ public class PhysicalDocsetTests
 		folderNames.Should().Contain("integrations");
 
 		// development is a toc: reference, not a folder
-		var tocRefs = docSet.TableOfContents.OfType<IsolatedTableOfContentsRef>().Select(t => t.PathRelativeToDocumentationSet).ToList();
+		var tocRefs = docSet.TocEntries.OfType<NestedTocEntry>().Select(t => t.Path).ToList();
 		tocRefs.Should().Contain("development");
 
-		var cliRef = docSet.TableOfContents.OfType<CliReferenceRef>().FirstOrDefault();
+		var cliRef = docSet.TocEntries.OfType<CliReferenceEntry>().FirstOrDefault();
 		cliRef.Should().NotBeNull();
 	}
 
@@ -102,19 +103,16 @@ public class PhysicalDocsetTests
 		var yaml = File.ReadAllText(docsetPath);
 		var docSet = ConfigurationFileProvider.Deserializer.Deserialize<DocumentationSetFile>(yaml);
 
-		var documentationFolder = docSet
-			.TableOfContents
-			.OfType<FolderRef>()
-			.First(f => f.PathRelativeToDocumentationSet == "documentation");
+		var documentationFolder = docSet.TocEntries.OfType<FolderEntry>().First(f => f.Path == "documentation");
 		documentationFolder.Children.Should().NotBeEmpty();
 
-		var nestedFolders = documentationFolder.Children.OfType<FolderRef>().Select(f => f.PathRelativeToDocumentationSet).ToList();
+		var nestedFolders = documentationFolder.Children.OfType<FolderEntry>().Select(f => f.Path).ToList();
 		nestedFolders.Should().Contain("isolated");
 		nestedFolders.Should().Contain("assembler");
 		nestedFolders.Should().Contain("codex");
 		nestedFolders.Should().Contain("catalog");
 
-		var cliRef = docSet.TableOfContents.OfType<CliReferenceRef>().First();
+		var cliRef = docSet.TocEntries.OfType<CliReferenceEntry>().First();
 		cliRef.Children.Should().BeEmpty();
 	}
 
@@ -128,12 +126,12 @@ public class PhysicalDocsetTests
 		var docSet = ConfigurationFileProvider.Deserializer.Deserialize<DocumentationSetFile>(yaml);
 
 		var fileWithChildren = docSet
-			.TableOfContents
-			.OfType<FileRef>()
-			.FirstOrDefault(f => f.PathRelativeToDocumentationSet == "cross-links.md" && f.Children.Count > 0);
+			.TocEntries
+			.OfType<FileEntry>()
+			.FirstOrDefault(f => f.Path == "cross-links.md" && f.Children.Count > 0);
 
 		fileWithChildren.Should().NotBeNull();
 		fileWithChildren.Children.Should().NotBeEmpty();
-		fileWithChildren.Children.Should().Contain(c => c is CrossLinkRef);
+		fileWithChildren.Children.Should().Contain(c => c is CrossLinkTocEntry);
 	}
 }

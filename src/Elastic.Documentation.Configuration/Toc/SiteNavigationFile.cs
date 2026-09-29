@@ -156,7 +156,7 @@ public record SiteTableOfContentsRef(
 	IReadOnlyCollection<SiteTableOfContentsRef> Children,
 	bool Island = false,
 	string? NavigationTitle = null
-) : ISiteNavigationEntry, ITableOfContentsItem
+) : ISiteNavigationEntry
 {
 	// For site-level TOC refs, the Path is the path prefix (where it will be mounted in the site)
 	public string PathRelativeToDocumentationSet => PathPrefix;

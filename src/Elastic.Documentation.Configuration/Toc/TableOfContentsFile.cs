@@ -14,7 +14,7 @@ public class TableOfContentsFile
 	public string? Project { get; set; }
 
 	[YamlMember(Alias = "toc")]
-	public TableOfContents TableOfContents { get; set; } = [];
+	internal TocEntryList TocEntries { get; set; } = [];
 
 	/// <summary>
 	/// When <c>true</c>, this table of contents is rendered as an island in the navigation tree.
@@ -41,11 +41,4 @@ public class TableOfContentsFile
 
 	public static TableOfContentsFile Deserialize(string json) =>
 		ConfigurationFileProvider.Deserializer.Deserialize<TableOfContentsFile>(json);
-}
-
-public class TableOfContents : List<ITableOfContentsItem>
-{
-	public TableOfContents() { }
-
-	public TableOfContents(IEnumerable<ITableOfContentsItem> items) : base(items) { }
 }

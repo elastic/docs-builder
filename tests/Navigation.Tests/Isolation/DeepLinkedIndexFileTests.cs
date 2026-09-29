@@ -5,6 +5,7 @@
 using System.IO.Abstractions.TestingHelpers;
 using AwesomeAssertions;
 using Elastic.Documentation.Configuration.Toc;
+using Elastic.Documentation.DocumentationSets;
 using Elastic.Documentation.Extensions;
 using Elastic.Documentation.Navigation.Isolated;
 using Elastic.Documentation.Navigation.Isolated.Leaf;
@@ -31,10 +32,10 @@ public class DeepLinkedIndexFileTests() : DocumentationSetNavigationTestBase()
 		var context = CreateContext(fileSystem);
 		var docSet = DocumentationSetFile.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
 
-		var folder = docSet.TableOfContents.First().Should().BeOfType<FolderRef>().Subject;
+		var folder = docSet.TableOfContents.First().Value.Should().BeOfType<FolderRef>().Subject;
 		folder.PathRelativeToDocumentationSet.Should().Be("reference/1password");
 
-		var index = folder.Children.First().Should().BeOfType<FolderIndexFileRef>().Subject;
+		var index = folder.Children.First().Value.Should().BeOfType<FolderIndexFileRef>().Subject;
 		index.PathRelativeToDocumentationSet.Should().Be("reference/1password/index.md");
 	}
 
@@ -56,8 +57,8 @@ public class DeepLinkedIndexFileTests() : DocumentationSetNavigationTestBase()
 		var docSet = DocumentationSetFile.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
 
 		// Bare index.md stays on the IndexFileRef path, never wrapped into a folder.
-		_ = docSet.TableOfContents.First().Should().BeOfType<IndexFileRef>();
-		docSet.TableOfContents.OfType<FolderRef>().Should().BeEmpty();
+		_ = docSet.TableOfContents.First().Value.Should().BeOfType<IndexFileRef>();
+		docSet.TableOfContents.OfCase<FolderRef>().Should().BeEmpty();
 	}
 
 	[Test]
@@ -79,7 +80,7 @@ public class DeepLinkedIndexFileTests() : DocumentationSetNavigationTestBase()
 		var docSet = DocumentationSetFile.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
 
 		// Entries that declare explicit children keep the existing virtual-file (deep-linking) semantics.
-		var fileRef = docSet.TableOfContents.First().Should().BeOfType<FileRef>().Subject;
+		var fileRef = docSet.TableOfContents.First().Value.Should().BeOfType<FileRef>().Subject;
 		fileRef.Should().NotBeOfType<FolderRef>();
 		fileRef.PathRelativeToDocumentationSet.Should().Be("reference/aws/index.md");
 		fileRef.Children.Should().ContainSingle();

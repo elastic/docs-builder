@@ -6,13 +6,13 @@ using System.Diagnostics;
 using System.IO.Abstractions;
 using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Configuration.Toc.CliReference;
-using Elastic.Documentation.Configuration.Toc.DetectionRules;
+using Elastic.Documentation.DocumentationSets;
 using Elastic.Documentation.Extensions;
 using Elastic.Documentation.Links.CrossLinks;
 using Elastic.Documentation.Navigation.Isolated.Leaf;
-using ListingGroupRef = Elastic.Documentation.Configuration.Toc.ListingGroupRef;
-using ListingRef = Elastic.Documentation.Configuration.Toc.ListingRef;
-using ListingVisual = Elastic.Documentation.Configuration.Toc.ListingVisual;
+using ListingGroupRef = Elastic.Documentation.DocumentationSets.ListingGroupRef;
+using ListingRef = Elastic.Documentation.DocumentationSets.ListingRef;
+using ListingVisual = Elastic.Documentation.DocumentationSets.ListingVisual;
 
 namespace Elastic.Documentation.Navigation.Isolated.Node;
 
@@ -158,7 +158,7 @@ public class DocumentationSetNavigation<TModel> : IDocumentationSetNavigation, I
 	}
 
 	private INavigationItem? ConvertToNavigationItem(
-		ITableOfContentsItem tocItem,
+		TocItem tocItem,
 		int index,
 		IDocumentationSetContext context,
 		INodeNavigationItem<INavigationModel, INavigationItem>? parent,
@@ -171,7 +171,9 @@ public class DocumentationSetNavigation<TModel> : IDocumentationSetNavigation, I
 		IsolatedTableOfContentsRef tocRef => CreateTocNavigation(tocRef, index, context, parent, homeAccessor),
 		CliReferenceRef cliRef => CreateCliReferenceNavigation(cliRef, index, context, parent, homeAccessor),
 		ListingRef listingRef => CreateListingNavigation(listingRef, index, context, parent, homeAccessor),
-		_ => null
+		// Listing groups only occur inside a listing, which builds them itself.
+		ListingGroupRef => null,
+		null => null
 	};
 
 	/// <summary>
@@ -717,12 +719,12 @@ public class DocumentationSetNavigation<TModel> : IDocumentationSetNavigation, I
 							var pathDs = groupItem switch
 							{
 								FileRef fr => fr.PathRelativeToDocumentationSet,
-								_ => groupItem.PathRelativeToDocumentationSet
+								_ => groupItem.Item().PathRelativeToDocumentationSet
 							};
 							var pathCont = groupItem switch
 							{
 								FileRef fr => fr.PathRelativeToContainer,
-								_ => groupItem.PathRelativeToContainer
+								_ => groupItem.Item().PathRelativeToContainer
 							};
 
 							// Group index page: hidden matches group-level visibility

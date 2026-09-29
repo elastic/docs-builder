@@ -13,6 +13,7 @@ using Elastic.Documentation.Configuration.Builder;
 using Elastic.Documentation.Configuration.ReleaseNotes;
 using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Configuration.Toc.CliReference;
+using Elastic.Documentation.DocumentationSets;
 using Elastic.Documentation.Links;
 using Elastic.Documentation.Links.CrossLinks;
 using Elastic.Documentation.Navigation;
@@ -329,7 +330,7 @@ public class DocumentationSet : INavigationTraversable
 		return list.AsReadOnly();
 	}
 
-	private static bool HasCliReferenceRef(IReadOnlyCollection<ITableOfContentsItem> items)
+	private static bool HasCliReferenceRef(IReadOnlyList<TocItem> items)
 	{
 		foreach (var item in items)
 		{
@@ -349,7 +350,7 @@ public class DocumentationSet : INavigationTraversable
 		return false;
 	}
 
-	private static bool HasListingRef(IReadOnlyCollection<ITableOfContentsItem> items)
+	private static bool HasListingRef(IReadOnlyList<TocItem> items)
 	{
 		foreach (var item in items)
 		{

@@ -6,6 +6,7 @@ using System.IO.Abstractions.TestingHelpers;
 using AwesomeAssertions;
 using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.DocumentationSets;
 using Elastic.Documentation.Extensions;
 using Elastic.Documentation.Navigation.Isolated;
 using Elastic.Documentation.Navigation.Isolated.Node;
@@ -76,13 +77,13 @@ public class FolderIndexFileRefTests() : DocumentationSetNavigationTestBase()
 		await context.Collector.StopAsync(TestContext.Current!.Execution.CancellationToken);
 
 		// Verify that the FileRef for getting-started.md is a FolderIndexFileRef
-		var folderItem = docSet.TableOfContents.First().Should().BeOfType<FolderRef>().Subject;
+		var folderItem = docSet.TableOfContents.First().Value.Should().BeOfType<FolderRef>().Subject;
 		folderItem.Children.Should().HaveCount(2); // getting-started.md and install.md
 
-		var indexFile = folderItem.Children.First().Should().BeOfType<FolderIndexFileRef>().Subject;
+		var indexFile = folderItem.Children.First().Value.Should().BeOfType<FolderIndexFileRef>().Subject;
 		indexFile.PathRelativeToDocumentationSet.Should().Be("getting-started/getting-started.md");
 
-		var childFile = folderItem.Children.ElementAt(1).Should().BeOfType<FileRef>().Subject;
+		var childFile = folderItem.Children.ElementAt(1).Value.Should().BeOfType<FileRef>().Subject;
 		childFile.PathRelativeToDocumentationSet.Should().Be("getting-started/install.md");
 	}
 

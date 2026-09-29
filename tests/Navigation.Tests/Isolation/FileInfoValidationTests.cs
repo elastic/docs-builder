@@ -5,6 +5,7 @@
 using System.IO.Abstractions.TestingHelpers;
 using AwesomeAssertions;
 using Elastic.Documentation.Configuration.Toc;
+using Elastic.Documentation.DocumentationSets;
 using Elastic.Documentation.Extensions;
 using Elastic.Documentation.Navigation.Isolated;
 using Elastic.Documentation.Navigation.Isolated.Leaf;
@@ -315,14 +316,14 @@ public class FileInfoValidationTests() : DocumentationSetNavigationTestBase()
 		var context = CreateContext(fileSystem);
 		var docSet = DocumentationSetFile.LoadAndResolve(context.Collector, docsetYaml, fileSystem.NewDirInfo("docs"));
 
-		var setup = docSet.TableOfContents.OfType<FolderRef>().FirstOrDefault(f => f.PathRelativeToDocumentationSet == "setup");
+		var setup = docSet.TableOfContents.OfCase<FolderRef>().FirstOrDefault(f => f.PathRelativeToDocumentationSet == "setup");
 		setup.Should().NotBeNull("setup folder should exist");
 		setup.Children.Count.Should().Be(3, "should include 2 children");
-		var advanced = setup.Children.OfType<IsolatedTableOfContentsRef>().FirstOrDefault();
+		var advanced = setup.Children.OfCase<IsolatedTableOfContentsRef>().FirstOrDefault();
 		advanced.Should().NotBeNull("advanced TOC should exist");
 		advanced.PathRelativeToDocumentationSet.Should().Be("setup/advanced");
 
-		var fileRefs = docSet.TableOfContents.SelectMany(DocumentationSetFile.GetFileRefs).ToList();
+		var fileRefs = docSet.TableOfContents.SelectMany(TocItemExtensions.FileRefs).ToList();
 		foreach (var fileRef in fileRefs)
 		{
 			var path = fileSystem.FileInfo.New(

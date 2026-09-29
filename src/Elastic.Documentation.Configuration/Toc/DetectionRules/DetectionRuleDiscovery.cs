@@ -3,46 +3,20 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions;
+using Elastic.Documentation.DocumentationSets;
 
 namespace Elastic.Documentation.Configuration.Toc.DetectionRules;
 
-public record DetectionRuleOverviewRef : FileRef
+/// <summary>Discovers the rule pages beneath a <c>detection_rules</c> entry's folders.</summary>
+internal static class DetectionRuleDiscovery
 {
-	public IReadOnlyCollection<string> DetectionRuleFolders { get; }
-
-	/// <summary>Optional path to a markdown file whose content prefixes the deprecated rules listing page.</summary>
-	public string? DeprecatedFile { get; init; }
-
-	/// <summary>
-	/// The resolved deprecated-rules overview FileRef that should appear as a sibling to this ref in the nav.
-	/// Set by <c>ResolveRuleOverviewReference</c> when a <c>_deprecated</c> subfolder is detected.
-	/// </summary>
-	public FileRef? DeprecatedSiblingRef { get; init; }
-
-	public DetectionRuleOverviewRef(
-		string pathRelativeToDocumentationSet,
-		string pathRelativeToContainer,
-		IReadOnlyCollection<string> detectionRulesFolders,
-		IReadOnlyCollection<ITableOfContentsItem> children,
-		string context,
-		string? deprecatedFile = null
-	) : base(pathRelativeToDocumentationSet, pathRelativeToContainer, false, children, context)
-	{
-		PathRelativeToDocumentationSet = pathRelativeToDocumentationSet;
-		PathRelativeToContainer = pathRelativeToContainer;
-		DetectionRuleFolders = detectionRulesFolders;
-		Children = children;
-		Context = context;
-		DeprecatedFile = deprecatedFile;
-	}
-
-	public static IReadOnlyCollection<ITableOfContentsItem> CreateTableOfContentItems(
+	public static IReadOnlyList<TocItem> CreateTableOfContentItems(
 		IReadOnlyCollection<IDirectoryInfo> sourceFolders,
 		string context,
 		IDirectoryInfo baseDirectory
 	)
 	{
-		var tocItems = new List<ITableOfContentsItem>();
+		var tocItems = new List<TocItem>();
 		foreach (var detectionRuleFolder in sourceFolders)
 		{
 			var children = ReadDetectionRuleFolder(detectionRuleFolder, context, baseDirectory);
@@ -52,13 +26,13 @@ public record DetectionRuleOverviewRef : FileRef
 		return tocItems.ToArray();
 	}
 
-	public static IReadOnlyCollection<ITableOfContentsItem> CreateDeprecatedTableOfContentItems(
+	public static IReadOnlyList<TocItem> CreateDeprecatedTableOfContentItems(
 		IReadOnlyCollection<IDirectoryInfo> sourceFolders,
 		string context,
 		IDirectoryInfo baseDirectory
 	)
 	{
-		var tocItems = new List<ITableOfContentsItem>();
+		var tocItems = new List<TocItem>();
 		foreach (var detectionRuleFolder in sourceFolders)
 		{
 			var children = ReadDeprecatedDetectionRuleFolder(detectionRuleFolder, context, baseDirectory);
@@ -68,13 +42,9 @@ public record DetectionRuleOverviewRef : FileRef
 		return tocItems.ToArray();
 	}
 
-	private static IReadOnlyCollection<ITableOfContentsItem> ReadDetectionRuleFolder(
-		IDirectoryInfo directory,
-		string context,
-		IDirectoryInfo baseDirectory
-	)
+	private static IReadOnlyList<TocItem> ReadDetectionRuleFolder(IDirectoryInfo directory, string context, IDirectoryInfo baseDirectory)
 	{
-		IReadOnlyCollection<ITableOfContentsItem> children = directory
+		IReadOnlyList<TocItem> children = directory
 			.EnumerateFiles("*.*", SearchOption.AllDirectories)
 			.Where(f => !f.Attributes.HasFlag(FileAttributes.Hidden) && !f.Attributes.HasFlag(FileAttributes.System))
 			.Where(f => !f.Directory!.Attributes.HasFlag(FileAttributes.Hidden) && !f.Directory!.Attributes.HasFlag(FileAttributes.System))
@@ -88,7 +58,7 @@ public record DetectionRuleOverviewRef : FileRef
 				// baseDirectory is 'docs' rules live relative to docs parent '/'
 				var relativePath = Path.GetRelativePath(baseDirectory.Parent!.FullName, f.FullName);
 				if (f.Extension == ".toml")
-					return new DetectionRuleRef(f, relativePath, context);
+					return (TocItem)new DetectionRuleRef(f, relativePath, context);
 
 				return new FileRef(relativePath, relativePath, false, [], context);
 			})
@@ -97,13 +67,13 @@ public record DetectionRuleOverviewRef : FileRef
 		return children;
 	}
 
-	private static IReadOnlyCollection<ITableOfContentsItem> ReadDeprecatedDetectionRuleFolder(
+	private static IReadOnlyList<TocItem> ReadDeprecatedDetectionRuleFolder(
 		IDirectoryInfo directory,
 		string context,
 		IDirectoryInfo baseDirectory
 	)
 	{
-		IReadOnlyCollection<ITableOfContentsItem> children = directory
+		IReadOnlyList<TocItem> children = directory
 			.EnumerateFiles("*.*", SearchOption.AllDirectories)
 			.Where(f => !f.Attributes.HasFlag(FileAttributes.Hidden) && !f.Attributes.HasFlag(FileAttributes.System))
 			.Where(f => !f.Directory!.Attributes.HasFlag(FileAttributes.Hidden) && !f.Directory!.Attributes.HasFlag(FileAttributes.System))
@@ -115,7 +85,7 @@ public record DetectionRuleOverviewRef : FileRef
 			.Select(f =>
 			{
 				var relativePath = Path.GetRelativePath(baseDirectory.Parent!.FullName, f.FullName);
-				return (ITableOfContentsItem)new DetectionRuleRef(f, relativePath, context);
+				return (TocItem)new DetectionRuleRef(f, relativePath, context);
 			})
 			.ToArray();
 

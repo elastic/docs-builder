@@ -3,29 +3,28 @@
 // See the LICENSE file in the project root for more information
 
 using Elastic.Documentation.AppliesTo;
-using Elastic.Documentation.Configuration.Toc.CliReference;
-using Elastic.Documentation.Configuration.Toc.DetectionRules;
+using Elastic.Documentation.DocumentationSets;
 using YamlDotNet.Core;
 using YamlDotNet.Core.Events;
 using YamlDotNet.Serialization;
 
 namespace Elastic.Documentation.Configuration.Toc;
 
-public class TocItemCollectionYamlConverter : IYamlTypeConverter
+internal sealed class TocItemCollectionYamlConverter : IYamlTypeConverter
 {
-	public bool Accepts(Type type) => type == typeof(TableOfContents);
+	public bool Accepts(Type type) => type == typeof(TocEntryList);
 
 	public object ReadYaml(IParser parser, Type type, ObjectDeserializer rootDeserializer)
 	{
-		var collection = new TableOfContents();
+		var collection = new TocEntryList();
 
 		if (!parser.TryConsume<SequenceStart>(out _))
 			return collection;
 
 		while (!parser.TryConsume<SequenceEnd>(out _))
 		{
-			var item = rootDeserializer(typeof(ITableOfContentsItem));
-			if (item is ITableOfContentsItem tocItem)
+			var item = rootDeserializer(typeof(ITocEntry));
+			if (item is ITocEntry tocItem)
 				collection.Add(tocItem);
 		}
 
@@ -35,9 +34,9 @@ public class TocItemCollectionYamlConverter : IYamlTypeConverter
 	public void WriteYaml(IEmitter emitter, object? value, Type type, ObjectSerializer serializer) => serializer.Invoke(value, type);
 }
 
-public class TocItemYamlConverter : IYamlTypeConverter
+internal sealed class TocItemYamlConverter : IYamlTypeConverter
 {
-	public bool Accepts(Type type) => type == typeof(ITableOfContentsItem);
+	public bool Accepts(Type type) => type == typeof(ITocEntry);
 
 	public object? ReadYaml(IParser parser, Type type, ObjectDeserializer rootDeserializer)
 	{
@@ -49,7 +48,7 @@ public class TocItemYamlConverter : IYamlTypeConverter
 			if (parser.Accept<Scalar>(out var scalar))
 			{
 				_ = parser.MoveNext();
-				return new InvalidTocItemRef(scalar.Value);
+				return new InvalidTocEntry(scalar.Value);
 			}
 			// Anything else unexpected — skip to avoid an infinite loop.
 			parser.SkipThisAndNestedEvents();
@@ -75,12 +74,12 @@ public class TocItemYamlConverter : IYamlTypeConverter
 				if (key.Value == "children")
 				{
 					// Parse the children list manually
-					var childrenList = new List<ITableOfContentsItem>();
+					var childrenList = new List<ITocEntry>();
 					_ = parser.Consume<SequenceStart>();
 					while (!parser.TryConsume<SequenceEnd>(out _))
 					{
-						var child = rootDeserializer(typeof(ITableOfContentsItem));
-						if (child is ITableOfContentsItem tocItem)
+						var child = rootDeserializer(typeof(ITocEntry));
+						if (child is ITocEntry tocItem)
 							childrenList.Add(tocItem);
 					}
 					value = childrenList;
@@ -117,9 +116,6 @@ public class TocItemYamlConverter : IYamlTypeConverter
 
 		var children = GetChildren(dictionary);
 
-		// Context will be set during LoadAndResolve, use empty string as placeholder during deserialization
-		const string placeholderContext = "";
-
 		// Capture raw sort value; parsing and validation happen during resolution
 		var sort = dictionary.TryGetValue("sort", out var sortValue) && sortValue is string sortStr ? sortStr : null;
 
@@ -138,7 +134,7 @@ public class TocItemYamlConverter : IYamlTypeConverter
 			var glob = dictionary.TryGetValue("glob", out var globObj) && globObj is string globStr ? globStr : null;
 			var extension = dictionary.TryGetValue("extension", out var extObj) && extObj is string extStr ? extStr : null;
 			var groups = dictionary.TryGetValue("groups", out var groupsObj) && groupsObj is string[] groupsArr
-				? (IReadOnlyCollection<string>)groupsArr
+				? (IReadOnlyList<string>)groupsArr
 				: null;
 			var listingVisual = ListingVisual.None;
 			if (dictionary.TryGetValue("visual", out var visualObj) && visualObj is string visualStr)
@@ -149,7 +145,7 @@ public class TocItemYamlConverter : IYamlTypeConverter
 				&& islandBool;
 			// Reuse the already-captured sort and exclude variables from the outer scope
 			var options = new ListingOptions(glob, sort, exclude, listingVisual, groups, extension, island);
-			return new ListingRef(listing, listing, children, placeholderContext, options);
+			return new ListingEntry(listing, children, options);
 		}
 
 		// Check for CLI reference (cli: schema.json, optional folder: supplemental-docs/)
@@ -162,17 +158,7 @@ public class TocItemYamlConverter : IYamlTypeConverter
 				? navigationTitleStr
 				: null;
 			var appliesTo = dictionary.TryGetValue("applies_to", out var at) && at is ApplicableTo a ? a : null;
-			return new CliReferenceRef(
-				cliSchema,
-				supplementalFolder,
-				title,
-				navigationTitle,
-				cliSchema,
-				cliSchema,
-				placeholderContext,
-				children,
-				appliesTo
-			);
+			return new CliReferenceEntry(cliSchema, supplementalFolder, title, navigationTitle, children, appliesTo);
 		}
 
 		// Check for folder+file combination (e.g., folder: getting-started, file: getting-started.md)
@@ -189,16 +175,16 @@ public class TocItemYamlConverter : IYamlTypeConverter
 			// Store ONLY the file name - the folder path will be prepended during resolution
 			// This allows validation to check if the file itself has deep paths
 			// PathRelativeToContainer will be set during resolution
-			var indexFile = new FolderIndexFileRef(file, file, false, [], placeholderContext);
+			var indexFile = new FolderIndexFileEntry(file);
 
 			// Create a list with the index file first, followed by user-specified children
-			var folderChildren = new List<ITableOfContentsItem> { indexFile };
+			var folderChildren = new List<ITocEntry> { indexFile };
 			folderChildren.AddRange(children);
 
 			// Return a FolderRef with the index file and children
 			// The folder path can be deep (e.g., "guides/getting-started"), that's OK
 			// PathRelativeToContainer will be set during resolution
-			return new FolderRef(folder, folder, folderChildren, placeholderContext, sort, exclude, defaultCta);
+			return new FolderEntry(folder, folderChildren, sort, exclude, defaultCta);
 		}
 		if (
 			dictionary.TryGetValue("detection_rules", out var detectionRulesObj)
@@ -210,14 +196,7 @@ public class TocItemYamlConverter : IYamlTypeConverter
 			var deprecatedFile = dictionary.TryGetValue("deprecated_file", out var deprecatedFileObj) && deprecatedFileObj is string df
 				? df
 				: null;
-			return new DetectionRuleOverviewRef(
-				detectionRulesFile,
-				detectionRulesFile,
-				detectionRulesFolders,
-				children,
-				placeholderContext,
-				deprecatedFile
-			);
+			return new DetectionRulesEntry(detectionRulesFile, detectionRulesFolders, children, deprecatedFile);
 		}
 
 		// Check for file reference (file: or hidden:)
@@ -225,36 +204,34 @@ public class TocItemYamlConverter : IYamlTypeConverter
 		if (dictionary.TryGetValue("file", out var filePathOnly) && filePathOnly is string fileOnly)
 		{
 			if (fileOnly == "index.md")
-				return new IndexFileRef(fileOnly, fileOnly, false, children, placeholderContext, defaultCta);
+				return new IndexFileEntry(fileOnly, false, children, defaultCta);
 
 			// Sugar: childless "file: subdir/index.md" → single-page folder, so it isn't silently dropped competing for the parent's index slot.
 			if (children.Count == 0 && fileOnly.EndsWith("/index.md", StringComparison.Ordinal))
 			{
 				var indexFolderPath = fileOnly[..^"/index.md".Length];
-				var indexFile = new FolderIndexFileRef("index.md", "index.md", false, [], placeholderContext);
-				return new DeepLinkedFolderRef(indexFolderPath, indexFolderPath, [indexFile], placeholderContext, defaultCta);
+				var indexFile = new FolderIndexFileEntry("index.md");
+				return new DeepLinkedFolderEntry(indexFolderPath, [indexFile], defaultCta);
 			}
 
-			return new FileRef(fileOnly, fileOnly, false, children, placeholderContext, defaultCta);
+			return new FileEntry(fileOnly, false, children, defaultCta);
 		}
 
 		if (dictionary.TryGetValue("hidden", out var hiddenPath) && hiddenPath is string p)
-			return p == "index.md"
-				? new IndexFileRef(p, p, true, children, placeholderContext, defaultCta)
-				: new FileRef(p, p, true, children, placeholderContext, defaultCta);
+			return p == "index.md" ? new IndexFileEntry(p, true, children, defaultCta) : new FileEntry(p, true, children, defaultCta);
 
 		// Check for crosslink reference
 		if (dictionary.TryGetValue("crosslink", out var crosslink) && crosslink is string crosslinkStr)
 		{
 			var title = dictionary.TryGetValue("title", out var t) && t is string titleStr ? titleStr : null;
 			var isHidden = dictionary.TryGetValue("hidden", out var h) && h is bool hiddenBool && hiddenBool;
-			return new CrossLinkRef(new Uri(crosslinkStr), title, isHidden, children, placeholderContext);
+			return new CrossLinkTocEntry(new Uri(crosslinkStr), title, isHidden, children);
 		}
 
 		// Check for folder reference
 		// PathRelativeToContainer will be set during resolution
 		if (dictionary.TryGetValue("folder", out var folderPathOnly) && folderPathOnly is string folderOnly)
-			return new FolderRef(folderOnly, folderOnly, children, placeholderContext, sort, exclude, defaultCta);
+			return new FolderEntry(folderOnly, children, sort, exclude, defaultCta);
 
 		// Check for toc reference
 		// PathRelativeToContainer will be set during resolution
@@ -264,19 +241,19 @@ public class TocItemYamlConverter : IYamlTypeConverter
 				&& islandObj is string islandStr
 				&& bool.TryParse(islandStr, out var islandBool)
 				&& islandBool;
-			return new IsolatedTableOfContentsRef(source, source, children, placeholderContext, island);
+			return new NestedTocEntry(source, children, island);
 		}
 
 		return null;
 	}
 
-	private static IReadOnlyCollection<ITableOfContentsItem> GetChildren(Dictionary<string, object?> dictionary)
+	private static IReadOnlyList<ITocEntry> GetChildren(Dictionary<string, object?> dictionary)
 	{
 		if (!dictionary.TryGetValue("children", out var childrenObj))
 			return [];
 
-		// Children have already been deserialized as List<ITableOfContentsItem>
-		if (childrenObj is List<ITableOfContentsItem> tocItems)
+		// Children have already been deserialized as List<ITocEntry>
+		if (childrenObj is List<ITocEntry> tocItems)
 			return tocItems;
 
 		return [];

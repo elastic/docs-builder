@@ -7,6 +7,7 @@ using AwesomeAssertions;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.DocumentationSets;
 using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.Navigation.Isolated.Leaf;
 using Elastic.Documentation.Navigation.Isolated.Node;
@@ -122,7 +123,7 @@ public class PhysicalDocsetTests()
 
 		await context.Collector.StopAsync(TestContext.Current!.Execution.CancellationToken);
 
-		var fileRefs = docSet.TableOfContents.SelectMany(DocumentationSetFile.GetFileRefs).ToList();
+		var fileRefs = docSet.TableOfContents.SelectMany(TocItemExtensions.FileRefs).ToList();
 		foreach (var fileRef in fileRefs)
 		{
 			var path = fileSystem.FileInfo.New(Path.Join(configPath.Directory!.FullName, fileRef.PathRelativeToDocumentationSet));

@@ -5,6 +5,8 @@
 using System.Collections.Frozen;
 using AwesomeAssertions;
 using Elastic.Documentation.Configuration.Loading;
+using Elastic.Documentation.Configuration.Toc;
+using Elastic.Documentation.DocumentationSets;
 using static Elastic.Documentation.Configuration.Tests.Golden.Golden;
 
 namespace Elastic.Documentation.Configuration.Tests.Golden;
@@ -47,4 +49,32 @@ public class AggregateEqualityTests
 	[Test]
 	public void RelatedLearning_LoadedTwice_IsEqual() =>
 		RelatedLearningLoader.Load(BaselineProvider()).OrThrow().Should().Be(RelatedLearningLoader.Load(BaselineProvider()).OrThrow());
+
+	private static IReadOnlyList<TocItem> LoadBaselineToc()
+	{
+		var fs = DocumentationSetGoldenTests.CreateDocsTree();
+		var docsetFile = fs.FileInfo.New(Path.Join(DocumentationSetGoldenTests.DocsRoot, "_docset.yml"));
+		return DocumentationSetFile.LoadAndResolve(new CapturingDiagnosticsCollector(), docsetFile).TableOfContents;
+	}
+
+	[Test]
+	public void TableOfContents_LoadedTwice_IsEqual() => LoadBaselineToc().Should().Equal(LoadBaselineToc());
+
+	[Test]
+	public void TableOfContents_OneNestedFileHidden_IsNotEqual()
+	{
+		var toc = LoadBaselineToc();
+		var nested = toc.OfCase<IsolatedTableOfContentsRef>().First();
+		var file = nested.Children.OfCase<FileRef>().First();
+		var changed = toc.Select(
+			i => i.Value == nested
+				? new TocItem(nested with
+				{
+					Children = [.. nested.Children.Select(c => c.Value == file ? new TocItem(file with { Hidden = !file.Hidden }) : c)]
+				})
+				: i
+		).ToList();
+
+		changed.Should().NotEqual(toc);
+	}
 }

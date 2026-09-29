@@ -7,6 +7,7 @@ using Elastic.Documentation.AppliesTo;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Configuration.Toc.CliReference;
+using Elastic.Documentation.DocumentationSets;
 using Elastic.Documentation.Navigation;
 using Elastic.Markdown.Exporters;
 using Elastic.Markdown.IO;
@@ -496,13 +497,13 @@ public class CliReferenceDocsBuilderExtension(BuildContext build) : IDocsBuilder
 		}
 	}
 
-	private static IReadOnlyCollection<CliReferenceRef> FindCliReferenceRefs(IReadOnlyCollection<ITableOfContentsItem> items)
+	private static IReadOnlyCollection<CliReferenceRef> FindCliReferenceRefs(IReadOnlyList<TocItem> items)
 	{
 		var found = new List<CliReferenceRef>();
 		Traverse(items, found);
 		return found;
 
-		static void Traverse(IReadOnlyCollection<ITableOfContentsItem> items, List<CliReferenceRef> found)
+		static void Traverse(IReadOnlyList<TocItem> items, List<CliReferenceRef> found)
 		{
 			foreach (var item in items)
 			{

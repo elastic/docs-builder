@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using Elastic.Documentation.DocumentationSets;
 using System.IO.Abstractions;
 using System.IO.Abstractions.TestingHelpers;
 using System.Text.Json.Nodes;
@@ -11,7 +12,6 @@ using Elastic.Documentation.Configuration.Loading;
 using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Configuration.Toc.CliReference;
-using Elastic.Documentation.Configuration.Toc.DetectionRules;
 using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.FileSystems;
@@ -27,9 +27,9 @@ namespace Elastic.Documentation.Configuration.Tests.Golden;
 /// </summary>
 public class DocumentationSetGoldenTests
 {
-	private const string DocsRoot = "/docs";
+	internal const string DocsRoot = "/docs";
 
-	private static MockFileSystem CreateDocsTree()
+	internal static MockFileSystem CreateDocsTree()
 	{
 		var fs = new MockFileSystem(new Dictionary<string, MockFileData>(), DocsRoot);
 		var docsetDirectory = BaselineFile("docset");
@@ -137,7 +137,7 @@ public class DocumentationSetGoldenTests
 			("appleTouchIcon", Str(b.AppleTouchIcon))
 		);
 
-	private static JsonNode ProjectTocItem(ITableOfContentsItem item)
+	private static JsonNode ProjectTocItem(TocItem item)
 	{
 		var node = item switch
 		{
@@ -211,9 +211,9 @@ public class DocumentationSetGoldenTests
 					("container", Str(c.PathRelativeToContainer)),
 					("hasAppliesTo", Bool(c.AppliesTo is not null))
 				),
-			_ => Obj(("kind", Str("unknown:" + item.GetType().Name)), ("path", Str(item.PathRelativeToDocumentationSet)))
+			_ => Obj(("kind", Str("unknown:" + item.Value?.GetType().Name)), ("path", Str(item.Item().PathRelativeToDocumentationSet)))
 		};
-		node["context"] = Str(Rel(item.Context));
+		node["context"] = Str(Rel(item.Item().Context));
 		node["children"] = Arr(ChildrenOf(item), ProjectTocItem);
 		return node;
 	}
@@ -227,17 +227,7 @@ public class DocumentationSetGoldenTests
 			("defaultCta", Str(f.DefaultCta))
 		);
 
-	private static IEnumerable<ITableOfContentsItem> ChildrenOf(ITableOfContentsItem item) => item switch
-	{
-		FileRef f => f.Children,
-		CrossLinkRef c => c.Children,
-		FolderRef f => f.Children,
-		IsolatedTableOfContentsRef t => t.Children,
-		ListingRef l => l.Children,
-		ListingGroupRef g => g.Children,
-		CliReferenceRef c => c.Children,
-		_ => []
-	};
+	private static IEnumerable<TocItem> ChildrenOf(TocItem item) => item.Item().Children;
 
 	// ── ConfigurationFile (resolved against the catalog) ─────────────────────
 
