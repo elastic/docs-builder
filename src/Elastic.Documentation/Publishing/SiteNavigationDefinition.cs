@@ -24,6 +24,41 @@ public sealed partial record SiteNavigationDefinition
 	public IReadOnlyList<SiteNavigationEntry> TableOfContents { get; init; } = [];
 #pragma warning restore GE003
 
+	/// <summary>
+	/// The navigation without the tables of contents of <paramref name="repositories"/>: each such mount is dropped and
+	/// its children take its place, and phantoms from those repositories are dropped too. Children promoted this way
+	/// are kept as they are, even if they belong to one of the repositories.
+	/// </summary>
+	public SiteNavigationDefinition WithoutRepositories(IReadOnlySet<string> repositories)
+	{
+		if (repositories.Count == 0)
+			return this;
+
+		return this with
+		{
+			Phantoms = [.. Phantoms.Where(p => !IsFrom(p.Source, repositories))],
+			TableOfContents = [.. TableOfContents.SelectMany(entry => Without(entry, repositories))]
+		};
+	}
+
+	private static IEnumerable<SiteNavigationEntry> Without(SiteNavigationEntry entry, IReadOnlySet<string> repositories) => entry switch
+	{
+		SiteTableOfContentsRef toc => Without(toc, repositories).Select(t => new SiteNavigationEntry(t)),
+		SiteSectionRef section => [section with { Children = [.. section.Children.SelectMany(c => Without(c, repositories))] }],
+		_ => []
+	};
+
+	private static IEnumerable<SiteTableOfContentsRef> Without(SiteTableOfContentsRef toc, IReadOnlySet<string> repositories) =>
+		repositories.Contains(toc.Source.Scheme)
+			? toc.Children
+			: [toc with { Children = [.. toc.Children.SelectMany(c => Without(c, repositories))] }];
+
+	private static bool IsFrom(string source, IReadOnlySet<string> repositories)
+	{
+		var separator = source.IndexOf(':');
+		return separator > 0 && repositories.Contains(source[..separator]);
+	}
+
 	/// <summary>Every table of contents the navigation mounts, at any depth.</summary>
 	public static ImmutableHashSet<Uri> GetAllDeclaredSources(SiteNavigationDefinition siteNavigation)
 	{

@@ -9,6 +9,7 @@ using Elastic.Documentation.Publishing;
 using YamlDotNet.Core;
 using YamlDotNet.Core.Events;
 using YamlDotNet.Serialization;
+using AssemblyConfiguration = Elastic.Documentation.Publishing.AssemblyConfiguration;
 
 namespace Elastic.Documentation.Configuration.Toc;
 
@@ -46,6 +47,46 @@ public static class SiteNavigationLoader
 			Phantoms = [.. dto.Phantoms.Select(p => new Publishing.PhantomRegistration { Source = p.Source })],
 			TableOfContents = dto.TableOfContents
 		};
+	}
+
+	// language=yaml
+	private const string LocalDocsBuilderToc =
+		"""
+		toc:
+		  - toc: docs-builder://
+		    path_prefix: reference/docs-builder
+		    children:
+		      - toc: docs-builder://development
+		        path_prefix: reference/docs-builder/dev
+		        children:
+		          - toc: docs-builder://development/link-validation
+		            path_prefix: reference/docs-builder/dev/link-val
+		""";
+
+	/// <summary>
+	/// The navigation an assembler build uses: when private repositories are skipped, their mounts and phantoms are
+	/// removed, and a local docs-builder checkout is mounted so docset changes can be tried in an assembled build.
+	/// The typed equivalent of <see cref="ConfigurationFileProvider.CreateNavigationFile"/>'s text rewrite.
+	/// </summary>
+	public static SiteNavigationDefinition ForAssembly(
+		SiteNavigationDefinition navigation,
+		AssemblyConfiguration assembly,
+		bool skipPrivateRepositories
+	)
+	{
+		if (assembly.PrivateRepositories.Count == 0 || !skipPrivateRepositories)
+			return navigation;
+
+		var filtered = navigation.WithoutRepositories(new HashSet<string>(assembly.PrivateRepositories.Keys));
+		if (
+			assembly.AvailableRepositories.TryGetValue("docs-builder", out var docsBuilder)
+			&& docsBuilder is { Skip: false, Path: not null }
+		)
+			filtered = filtered with
+			{
+				TableOfContents = [.. filtered.TableOfContents, .. Deserialize(LocalDocsBuilderToc).TableOfContents]
+			};
+		return filtered;
 	}
 
 	/// <summary>Reports every <c>path_prefix</c> mounted twice; returns whether all were unique.</summary>
