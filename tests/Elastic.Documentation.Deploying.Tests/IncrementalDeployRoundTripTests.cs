@@ -40,6 +40,7 @@ public class IncrementalDeployRoundTripTests
 	private const string SkipETag = "aaaa0000skip0000etag0000aaaa0000";
 	private const string AnyOtherETag = "bbbb1111other1111etag1111bbbb1111";
 
+	[NotInParallel("deploying-apply")]
 	[Test]
 	public async Task AssemblerRoundTrip()
 	{
@@ -54,6 +55,7 @@ public class IncrementalDeployRoundTripTests
 		await RunRoundTrip(fs, s3, xfer, gh, svc, context, outputDir);
 	}
 
+	[NotInParallel("deploying-apply")]
 	[Test]
 	public async Task CodexRoundTrip()
 	{
@@ -209,6 +211,7 @@ public class IncrementalDeployExcludeTests
 	private const string SkipETag = "aaaa0000skip0000etag0000aaaa0000";
 	private const string AnyOtherETag = "bbbb1111other1111etag1111bbbb1111";
 
+	[NotInParallel("deploying-apply")]
 	[Test]
 	public async Task ExcludedRemoteObjectsAreNotDeleted()
 	{

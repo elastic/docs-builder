@@ -237,6 +237,9 @@ public class DocsSyncTests
 		return (validator, planStrategy, plan);
 	}
 
+	// NotInParallel: this test subscribes the OTel in-memory exporter to the global activity source;
+	// concurrent tests that also call Apply() emit activities that bleed into this exporter.
+	[NotInParallel("deploying-apply")]
 	[Test]
 	public async Task TestApply()
 	{
@@ -341,6 +344,7 @@ public class DocsSyncTests
 		);
 	}
 
+	[NotInParallel("deploying-apply")]
 	[Test]
 	public async Task TestApply_DeleteRequests_ChunksDeletesAtS3Limit()
 	{
@@ -383,6 +387,7 @@ public class DocsSyncTests
 		deleteBatches.Should().OnlyContain(r => r.Objects.Count <= 1000);
 	}
 
+	[NotInParallel("deploying-apply")]
 	[Test]
 	public async Task Apply_UploadFailure_ReturnsFalse()
 	{
