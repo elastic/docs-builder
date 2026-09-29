@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Runtime.CompilerServices;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Extensions;
 using Elastic.Documentation.Publishing;
@@ -29,6 +30,15 @@ public static class AssemblyLoader
 			]);
 		}
 	}
+
+	private static readonly ConditionalWeakTable<ConfigurationFileProvider, Result<AssemblyConfiguration>> LoadedByProvider = [];
+
+	/// <summary>
+	/// <see cref="Load"/>, once per provider: a provider's configuration files are fixed for its lifetime, so every
+	/// caller in a build (one per <c>{changelog}</c> directive, for instance) shares a single parse.
+	/// </summary>
+	public static Result<AssemblyConfiguration> LoadOnce(ConfigurationFileProvider provider) =>
+		LoadedByProvider.GetValue(provider, p => Load(p));
 
 	/// <summary>For composition roots, where an invalid <c>assembler.yml</c> must stop the process with the parser's exception.</summary>
 	public static AssemblyConfiguration Create(ConfigurationFileProvider provider, IEnvironmentVariables? environment = null) =>

@@ -97,4 +97,13 @@ public class AssemblyLoaderTests
 		var act = () => Toc.SiteNavigationLoader.Deserialize(yaml);
 		_ = act.Should().Throw<Exception>().WithMessage($"*'bogus' not found on type '{typeName}'*");
 	}
+
+	[Test]
+	public void LoadOnce_SameProvider_ParsesOnce()
+	{
+		var provider = BaselineProvider();
+
+		AssemblyLoader.LoadOnce(provider).Should().BeSameAs(AssemblyLoader.LoadOnce(provider));
+		AssemblyLoader.LoadOnce(BaselineProvider()).Should().NotBeSameAs(AssemblyLoader.LoadOnce(provider));
+	}
 }

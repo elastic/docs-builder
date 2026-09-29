@@ -22,7 +22,7 @@ try
 		.CreateSlimBuilder(args)
 		.AddDocumentationServiceDefaults((s, p) =>
 		{
-			_ = s.AddSingleton(AssemblyLoader.Create(p));
+			_ = s.AddSingleton(AssemblyLoader.LoadOnce(p).OrThrow());
 		})
 		.AddDocumentationOpenTelemetry(new OtelRegistration("docs-api") { Tracing = (_, t) => t.AddDocsApiTracing(), })
 		.HealthCheckBuilderExtensions();

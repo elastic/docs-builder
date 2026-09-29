@@ -26,7 +26,7 @@ var builder = Host
 	.CreateApplicationBuilder()
 	.AddDocumentationServiceDefaults(cliOptions ?? new GlobalCliOptions(), (s, p) =>
 	{
-		_ = s.AddSingleton(AssemblyLoader.Create(p));
+		_ = s.AddSingleton(AssemblyLoader.LoadOnce(p).OrThrow());
 	})
 	.AddDocumentationToolingDefaults()
 	.AddDocumentationOpenTelemetry(new OtelRegistration("docs-builder")
