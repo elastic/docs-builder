@@ -4,9 +4,15 @@
 
 namespace Elastic.Documentation.Configuration.Builder;
 
-public class FeatureFlags(Dictionary<string, bool> initFeatureFlags)
+/// <summary>
+/// Feature toggles from configuration, overridable per process with <c>FEATURE_&lt;KEY&gt;</c> environment variables.
+/// The variables are read through <see cref="IEnvironmentVariables"/> so tests can supply their own without touching the
+/// process environment.
+/// </summary>
+public class FeatureFlags(Dictionary<string, bool> initFeatureFlags, IEnvironmentVariables? environment = null)
 {
 	private readonly Dictionary<string, bool> _featureFlags = [with(initFeatureFlags)];
+	private readonly IEnvironmentVariables _environment = environment ?? SystemEnvironmentVariables.Instance;
 
 	public void Set(string key, bool value)
 	{
@@ -49,7 +55,7 @@ public class FeatureFlags(Dictionary<string, bool> initFeatureFlags)
 	private bool IsEnabled(string key)
 	{
 		var envKey = $"FEATURE_{key.ToUpperInvariant().Replace('-', '_')}";
-		if (Environment.GetEnvironmentVariable(envKey) is { } envValue)
+		if (_environment.GetEnvironmentVariable(envKey) is { } envValue)
 		{
 			if (bool.TryParse(envValue, out var envBool))
 				return envBool;

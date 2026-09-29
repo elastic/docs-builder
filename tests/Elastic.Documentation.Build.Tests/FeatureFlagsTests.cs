@@ -32,18 +32,11 @@ public class FeatureFlagsTests
 	[Test]
 	public void AssemblerApiExplorerEnabled_EnvironmentVariableOverridesYaml()
 	{
-		var previous = Environment.GetEnvironmentVariable("FEATURE_ASSEMBLER_API_EXPLORER");
-		try
-		{
-			Environment.SetEnvironmentVariable("FEATURE_ASSEMBLER_API_EXPLORER", "false");
-			var flags = new FeatureFlags(new Dictionary<string, bool> { ["assembler-api-explorer"] = true });
+		var environment = new MockEnvironmentVariables();
+		environment.Set("FEATURE_ASSEMBLER_API_EXPLORER", "false");
+		var flags = new FeatureFlags(new Dictionary<string, bool> { ["assembler-api-explorer"] = true }, environment);
 
-			flags.AssemblerApiExplorerEnabled.Should().BeFalse();
-		}
-		finally
-		{
-			Environment.SetEnvironmentVariable("FEATURE_ASSEMBLER_API_EXPLORER", previous);
-		}
+		flags.AssemblerApiExplorerEnabled.Should().BeFalse();
 	}
 
 	[Test]
@@ -100,18 +93,11 @@ public class FeatureFlagsTests
 	[Test]
 	public void ApiNavGroupingEnabled_EnvironmentVariableOverridesYaml()
 	{
-		var previous = Environment.GetEnvironmentVariable("FEATURE_API_NAV_GROUPING");
-		try
-		{
-			Environment.SetEnvironmentVariable("FEATURE_API_NAV_GROUPING", "false");
-			var flags = new FeatureFlags(new Dictionary<string, bool> { ["api-nav-grouping"] = true });
+		var environment = new MockEnvironmentVariables();
+		environment.Set("FEATURE_API_NAV_GROUPING", "false");
+		var flags = new FeatureFlags(new Dictionary<string, bool> { ["api-nav-grouping"] = true }, environment);
 
-			flags.ApiNavGroupingEnabled.Should().BeFalse();
-		}
-		finally
-		{
-			Environment.SetEnvironmentVariable("FEATURE_API_NAV_GROUPING", previous);
-		}
+		flags.ApiNavGroupingEnabled.Should().BeFalse();
 	}
 
 	[Test]

@@ -18,22 +18,11 @@ namespace Elastic.Documentation.Api.Tests;
 /// Integration tests for euid cookie enrichment in OpenTelemetry traces and logging.
 /// Uses WebApplicationFactory to test the real API configuration with mocked AskAi services.
 /// </summary>
-public class EuidEnrichmentTests : IAsyncInitializer, IAsyncDisposable
+public class EuidEnrichmentTests
 {
+	// Passed to the factory, which sets it as host configuration for this instance only.
+	// Never set OTEL_EXPORTER_OTLP_ENDPOINT process-wide: other API tests build hosts in parallel.
 	private const string OtlpEndpoint = "http://localhost:4318";
-
-	public Task InitializeAsync()
-	{
-		Environment.SetEnvironmentVariable("OTEL_EXPORTER_OTLP_ENDPOINT", OtlpEndpoint);
-		return Task.CompletedTask;
-	}
-
-	public ValueTask DisposeAsync()
-	{
-		GC.SuppressFinalize(this);
-		Environment.SetEnvironmentVariable("OTEL_EXPORTER_OTLP_ENDPOINT", null);
-		return ValueTask.CompletedTask;
-	}
 
 	/// <summary>
 	/// Test that verifies euid cookie is added to both HTTP span and custom AskAi span,
@@ -49,35 +38,38 @@ public class EuidEnrichmentTests : IAsyncInitializer, IAsyncDisposable
 		var mockStreams = new List<MemoryStream>();
 
 		// Create factory with mocked AskAi services
-		using var factory = ApiWebApplicationFactory.WithMockedServices(services =>
-		{
-			// Mock IAskAiService to avoid external AI service calls
-			var mockAskAiGateway = A.Fake<IAskAiService>();
-			A.CallTo(() => mockAskAiGateway.AskAi(A<AskAiRequest>._, A<Cancel>._)).ReturnsLazily(() =>
+		using var factory = ApiWebApplicationFactory.WithMockedServices(
+			services =>
 			{
-				var stream = new MemoryStream(Encoding.UTF8.GetBytes("data: test\n\n"));
-				mockStreams.Add(stream);
-				return Task.FromResult(new AskAiGatewayResponse(stream, GeneratedConversationId: Guid.NewGuid()));
-			});
-			services.AddSingleton(mockAskAiGateway);
+				// Mock IAskAiService to avoid external AI service calls
+				var mockAskAiGateway = A.Fake<IAskAiService>();
+				A.CallTo(() => mockAskAiGateway.AskAi(A<AskAiRequest>._, A<Cancel>._)).ReturnsLazily(() =>
+				{
+					var stream = new MemoryStream(Encoding.UTF8.GetBytes("data: test\n\n"));
+					mockStreams.Add(stream);
+					return Task.FromResult(new AskAiGatewayResponse(stream, GeneratedConversationId: Guid.NewGuid()));
+				});
+				services.AddSingleton(mockAskAiGateway);
 
-			// Mock IStreamTransformer
-			var mockTransformer = A.Fake<IStreamTransformer>();
-			A.CallTo(() => mockTransformer.AgentProvider).Returns("test-provider");
-			A.CallTo(() => mockTransformer.AgentId).Returns("test-agent");
-			A.CallTo(() => mockTransformer.TransformAsync(A<Stream>._, A<Guid?>._, A<Activity?>._, A<Cancel>._)).ReturnsLazily((
-				Stream s,
-				Guid? _,
-				Activity? activity,
-				Cancel _
-			) =>
-			{
-				// Dispose the activity if provided (simulating what the real transformer does)
-				activity?.Dispose();
-				return Task.FromResult(s);
-			});
-			services.AddSingleton(mockTransformer);
-		});
+				// Mock IStreamTransformer
+				var mockTransformer = A.Fake<IStreamTransformer>();
+				A.CallTo(() => mockTransformer.AgentProvider).Returns("test-provider");
+				A.CallTo(() => mockTransformer.AgentId).Returns("test-agent");
+				A.CallTo(() => mockTransformer.TransformAsync(A<Stream>._, A<Guid?>._, A<Activity?>._, A<Cancel>._)).ReturnsLazily((
+					Stream s,
+					Guid? _,
+					Activity? activity,
+					Cancel _
+				) =>
+				{
+					// Dispose the activity if provided (simulating what the real transformer does)
+					activity?.Dispose();
+					return Task.FromResult(s);
+				});
+				services.AddSingleton(mockTransformer);
+			},
+			OtlpEndpoint
+		);
 
 		// Create client
 		using var client = factory.CreateClient();
