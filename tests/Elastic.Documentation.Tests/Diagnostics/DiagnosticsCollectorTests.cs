@@ -75,7 +75,7 @@ public class DiagnosticsCollectorTests
 	/// the channel. Items reached HandleItem only if the caller remembered to call StartAsync;
 	/// forgetting it silently swallowed every error message while the count stayed correct.
 	/// </summary>
-	[Fact]
+	[Test]
 	public async Task StopAsync_WithoutStartAsync_DrainsSynchronouslyBeforeReturning()
 	{
 		var output = new CapturingOutput();
