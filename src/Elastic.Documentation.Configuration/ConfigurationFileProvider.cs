@@ -5,7 +5,6 @@
 using System.IO.Abstractions;
 using System.Text.RegularExpressions;
 using Elastic.Documentation.AppliesTo;
-using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Configuration.Converters;
 using Elastic.Documentation.Configuration.Serialization;
 using Elastic.Documentation.Configuration.Toc;

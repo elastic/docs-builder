@@ -4,7 +4,6 @@
 
 using Elastic.Documentation.AppliesTo;
 using Elastic.Documentation.Catalog;
-using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Configuration.Builder;
 using Elastic.Documentation.Configuration.LegacyUrlMappings;
 using Elastic.Documentation.DocumentationSets;

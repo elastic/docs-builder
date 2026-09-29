@@ -10,6 +10,7 @@ using Amazon.S3.Transfer;
 using AwesomeAssertions;
 using Elastic.Codex;
 using Elastic.Documentation.Assembler;
+using Elastic.Documentation.Codex;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Configuration.Codex;

@@ -3,9 +3,13 @@
 // See the LICENSE file in the project root for more information
 
 using Elastic.Documentation.Configuration.Builder;
-using Elastic.Documentation.Publishing;
 
-namespace Elastic.Documentation.Configuration.Assembler;
+// Declared in the domain namespace so the behavior arrives with the Publishing records it extends; it lives here because
+// it needs loader-side dependencies. The same-named assembler.yml DTOs in this folder's namespace would otherwise shadow them.
+#pragma warning disable IDE0130
+namespace Elastic.Documentation.Publishing;
+
+#pragma warning restore IDE0130
 
 public static class PublishEnvironmentExtensions
 {

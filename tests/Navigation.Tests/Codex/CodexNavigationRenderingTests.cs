@@ -4,6 +4,7 @@
 
 using AwesomeAssertions;
 using Elastic.Codex.Navigation;
+using Elastic.Documentation.Codex;
 using Elastic.Documentation.Configuration.Codex;
 using Elastic.Documentation.Navigation.Isolated.Node;
 using Elastic.Documentation.Site.Navigation;

@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using Elastic.Documentation.Codex;
 using System.IO.Abstractions.TestingHelpers;
 using AwesomeAssertions;
 using Elastic.Codex.Navigation;
@@ -164,7 +165,7 @@ public class CodexNavigationTests() : CodexNavigationTestBase()
 		           title: "Test Codex"
 		           site_prefix: /
 		           """;
-		var config = CodexConfiguration.Deserialize(yaml);
+		var config = CodexSiteLoader.Deserialize(yaml);
 		CodexDocumentationSetReference[] docSets = [new CodexDocumentationSetReference { Name = "repo-a", Branch = "main" }];
 		var docSetNavigations = CreateMockDocSetNavigations(["repo-a"]);
 		var codexNav = new CodexNavigation(config, docSets, CreateContext(), docSetNavigations);

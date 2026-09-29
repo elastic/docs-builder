@@ -4,11 +4,14 @@
 
 using System.Collections.Frozen;
 using AwesomeAssertions;
+using Elastic.Documentation.Codex;
+using Elastic.Documentation.Configuration.Codex;
 using Elastic.Documentation.Configuration.Loading;
 using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.DocumentationSets;
 using Elastic.Documentation.Publishing;
 using static Elastic.Documentation.Configuration.Tests.Golden.Golden;
+using CodexConfiguration = Elastic.Documentation.Codex.CodexConfiguration;
 
 namespace Elastic.Documentation.Configuration.Tests.Golden;
 
@@ -148,5 +151,23 @@ public class AggregateEqualityTests
 		};
 
 		changed.Should().NotBe(navigation);
+	}
+
+	// The baseline codex.example.yml is deliberately invalid (it fails to load), so this uses a valid inline codex.yml.
+	private static CodexConfiguration LoadBaselineCodex() =>
+		CodexSiteLoader.Deserialize(
+			"site_prefix: internal/\nenvironment: ' Internal '\ngroups:\n  - id: observability\n    name: Observability\n  - id: security\n    name: Security\n"
+		);
+
+	[Test]
+	public void Codex_LoadedTwice_IsEqual() => LoadBaselineCodex().Should().Be(LoadBaselineCodex());
+
+	[Test]
+	public void Codex_OneGroupRenamed_IsNotEqual()
+	{
+		var codex = LoadBaselineCodex();
+		var changed = codex with { Groups = [.. codex.Groups.Select((g, i) => i == 0 ? g with { Name = g.Name + " (renamed)" } : g)] };
+
+		changed.Should().NotBe(codex);
 	}
 }

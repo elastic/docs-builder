@@ -5,6 +5,7 @@
 using System.IO.Abstractions.TestingHelpers;
 using System.Text.Json.Nodes;
 using Elastic.Documentation.Catalog;
+using Elastic.Documentation.Codex;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Configuration.Codex;
 using Elastic.Documentation.Configuration.LegacyUrlMappings;
@@ -18,6 +19,10 @@ using Elastic.Documentation.Publishing;
 using Elastic.Documentation.Search;
 using Microsoft.Extensions.Logging.Abstractions;
 using static Elastic.Documentation.Configuration.Tests.Golden.Golden;
+using CodexConfiguration = Elastic.Documentation.Codex.CodexConfiguration;
+using AssemblyConfiguration = Elastic.Documentation.Publishing.AssemblyConfiguration;
+using PublishEnvironment = Elastic.Documentation.Publishing.PublishEnvironment;
+using Repository = Elastic.Documentation.Publishing.Repository;
 
 namespace Elastic.Documentation.Configuration.Tests.Golden;
 
@@ -105,7 +110,7 @@ public class GlobalConfigurationGoldenTests
 	public async Task Codex_Example_MatchesGolden()
 	{
 		var yaml = await File.ReadAllTextAsync(BaselineFile("config", "codex.example.yml"));
-		await AssertMatches("config-codex-example", Capture(() => ProjectCodex(CodexConfiguration.Deserialize(yaml))));
+		await AssertMatches("config-codex-example", Capture(() => ProjectCodex(CodexSiteLoader.Deserialize(yaml))));
 	}
 
 	// ── projections ──────────────────────────────────────────────────────────

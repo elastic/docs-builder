@@ -9,6 +9,7 @@ using Elastic.Documentation.Links;
 using Elastic.Documentation.Links.CrossLinks;
 using Elastic.Documentation.Publishing;
 using Microsoft.Extensions.Logging;
+using AssemblyConfiguration = Elastic.Documentation.Publishing.AssemblyConfiguration;
 
 namespace Elastic.Documentation.Assembler.Links;
 

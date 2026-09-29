@@ -7,6 +7,7 @@ using System.IO.Abstractions;
 using Actions.Core.Services;
 using Elastic.Codex;
 using Elastic.Documentation;
+using Elastic.Documentation.Codex;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Codex;
 using Elastic.Documentation.Deploying;
@@ -104,7 +105,7 @@ internal sealed class CodexSyncCommand(IDiagnosticsCollector collector, ILoggerF
 	private (CodexContext context, IncrementalDeployService service) LoadContext(FileInfo config)
 	{
 		var fs = new CodexFileSystem(config.FullName);
-		var codexConfig = CodexConfiguration.Load(fs.ConfigurationFile);
+		var codexConfig = CodexSiteLoader.Load(fs.ConfigurationFile);
 		return (new CodexContext(codexConfig, fs.ConfigurationFile, collector, fs), new IncrementalDeployService(
 			logFactory,
 			githubActionsService

@@ -12,23 +12,22 @@ using Elastic.Documentation.Configuration.ReleaseNotes;
 using Elastic.Documentation.Configuration.Search;
 using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Configuration.Versions;
-using Elastic.Documentation.Publishing;
 using YamlDotNet.Serialization;
 
 namespace Elastic.Documentation.Configuration.Serialization;
 
 [YamlStaticContext]
 // Codex configuration
-[YamlSerializable(typeof(CodexConfiguration))]
-[YamlSerializable(typeof(CodexGroupDefinition))]
-[YamlSerializable(typeof(CodexDocumentationSetReference))]
+[YamlSerializable(typeof(Codex.CodexConfiguration))]
+[YamlSerializable(typeof(Codex.CodexGroupDefinition))]
 // Assembly configuration
-[YamlSerializable(typeof(AssemblyConfigurationDto))]
-[YamlSerializable(typeof(RepositoryDto))]
-[YamlSerializable(typeof(PublishEnvironmentDto))]
-[YamlSerializable(typeof(GoogleTagManagerDto))]
-[YamlSerializable(typeof(OptimizelyDto))]
-[YamlSerializable(typeof(ContentSource))]
+[YamlSerializable(typeof(Assembler.AssemblyConfiguration))]
+[YamlSerializable(typeof(Assembler.Repository))]
+[YamlSerializable(typeof(Assembler.NarrativeRepository))]
+[YamlSerializable(typeof(Assembler.PublishEnvironment))]
+[YamlSerializable(typeof(Assembler.GoogleTagManager))]
+[YamlSerializable(typeof(Assembler.Optimizely))]
+[YamlSerializable(typeof(Publishing.ContentSource))]
 // Versions configuration
 [YamlSerializable(typeof(VersionsConfigDto))]
 [YamlSerializable(typeof(ProductConfigDto))]
@@ -44,8 +43,8 @@ namespace Elastic.Documentation.Configuration.Serialization;
 [YamlSerializable(typeof(CodexDocSetMetadata))]
 [YamlSerializable(typeof(ReleaseNotesProductReference))]
 [YamlSerializable(typeof(TableOfContentsFile))]
-[YamlSerializable(typeof(SiteNavigationFileDto))]
-[YamlSerializable(typeof(PhantomRegistrationDto))]
+[YamlSerializable(typeof(Toc.SiteNavigationFile))]
+[YamlSerializable(typeof(Toc.PhantomRegistration))]
 [YamlSerializable(typeof(ProductLink))]
 // Search configuration
 [YamlSerializable(typeof(SearchConfigDto))]

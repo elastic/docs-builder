@@ -4,6 +4,7 @@
 
 using AwesomeAssertions;
 using Elastic.Codex.Navigation;
+using Elastic.Documentation.Codex;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.FileSystems;
 
@@ -124,7 +125,7 @@ public class GroupNavigationTests
 	private static CodexNavigation CreateMinimalCodexNavigation()
 	{
 		// Create a minimal codex navigation for testing GroupLinkLeaf
-		var config = new Documentation.Configuration.Codex.CodexConfiguration { Title = "Test Codex", SitePrefix = "/docs" };
+		var config = new CodexConfiguration { Title = "Test Codex", SitePrefix = "/docs" };
 
 		return new CodexNavigation(
 			config,

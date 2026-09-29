@@ -7,6 +7,7 @@ using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Configuration.Loading;
 using Elastic.Documentation.Publishing;
 using YamlDotNet.Core;
+using AssemblyConfiguration = Elastic.Documentation.Publishing.AssemblyConfiguration;
 
 namespace Elastic.Documentation.Configuration.Tests;
 

@@ -76,4 +76,25 @@ public class AssemblyLoaderTests
 		var invalid = () => AssemblyLoader.Deserialize("references: [not, a, map]", environment: new Environment());
 		_ = invalid.Should().Throw<Exception>();
 	}
+
+	// YamlDotNet names the bound type in the error for an unknown key. These pin the names users have always seen.
+	[Test]
+	[Arguments("bogus: 1", "Elastic.Documentation.Configuration.Assembler.AssemblyConfiguration")]
+	[Arguments("references:\n  kibana:\n    bogus: 1", "Elastic.Documentation.Configuration.Assembler.Repository")]
+	[Arguments("narrative:\n  bogus: 1", "Elastic.Documentation.Configuration.Assembler.NarrativeRepository")]
+	[Arguments("environments:\n  prod:\n    bogus: 1", "Elastic.Documentation.Configuration.Assembler.PublishEnvironment")]
+	public void Deserialize_UnknownKey_NamesTheHistoricalType(string yaml, string typeName)
+	{
+		var act = () => AssemblyLoader.Deserialize(yaml, environment: new Environment());
+		_ = act.Should().Throw<Exception>().WithMessage($"*'bogus' not found on type '{typeName}'*");
+	}
+
+	[Test]
+	[Arguments("bogus: 1", "Elastic.Documentation.Configuration.Toc.SiteNavigationFile")]
+	[Arguments("phantoms:\n  - bogus: 1", "Elastic.Documentation.Configuration.Toc.PhantomRegistration")]
+	public void SiteNavigation_UnknownKey_NamesTheHistoricalType(string yaml, string typeName)
+	{
+		var act = () => Toc.SiteNavigationLoader.Deserialize(yaml);
+		_ = act.Should().Throw<Exception>().WithMessage($"*'bogus' not found on type '{typeName}'*");
+	}
 }

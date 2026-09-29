@@ -12,18 +12,20 @@ using YamlDotNet.Serialization;
 
 namespace Elastic.Documentation.Configuration.Toc;
 
+// SiteNavigationFile and PhantomRegistration keep their original names: YamlDotNet puts the type's full name in the
+// error for an unknown key, and those messages must not change.
 [YamlSerializable]
-internal sealed class SiteNavigationFileDto
+internal sealed class SiteNavigationFile
 {
 	[YamlMember(Alias = "phantoms")]
-	public List<PhantomRegistrationDto> Phantoms { get; set; } = [];
+	public List<PhantomRegistration> Phantoms { get; set; } = [];
 
 	[YamlMember(Alias = "toc")]
 	public SiteTableOfContents TableOfContents { get; set; } = [];
 }
 
 [YamlSerializable]
-internal sealed class PhantomRegistrationDto
+internal sealed class PhantomRegistration
 {
 	[YamlMember(Alias = "toc")]
 	public string Source { get; set; } = null!;
@@ -38,10 +40,10 @@ public static class SiteNavigationLoader
 	/// <summary>Parses <paramref name="yaml"/>. Entries without a <c>toc:</c> key, or with an unparsable source, throw.</summary>
 	public static SiteNavigationDefinition Deserialize(string yaml)
 	{
-		var dto = ConfigurationFileProvider.Deserializer.Deserialize<SiteNavigationFileDto>(yaml) ?? new SiteNavigationFileDto();
+		var dto = ConfigurationFileProvider.Deserializer.Deserialize<SiteNavigationFile>(yaml) ?? new SiteNavigationFile();
 		return new SiteNavigationDefinition
 		{
-			Phantoms = [.. dto.Phantoms.Select(p => new PhantomRegistration { Source = p.Source })],
+			Phantoms = [.. dto.Phantoms.Select(p => new Publishing.PhantomRegistration { Source = p.Source })],
 			TableOfContents = dto.TableOfContents
 		};
 	}

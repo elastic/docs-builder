@@ -4,6 +4,7 @@
 
 using System.IO.Abstractions;
 using System.Security;
+using Elastic.Documentation.Codex;
 using Elastic.Documentation.Configuration.Codex;
 using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Diagnostics;

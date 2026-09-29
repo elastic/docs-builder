@@ -2,37 +2,38 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using Elastic.Documentation.Publishing;
 using YamlDotNet.Serialization;
 
 namespace Elastic.Documentation.Configuration.Assembler;
 
 // assembler.yml exactly as authored. AssemblyLoader maps these to the Publishing domain records.
+// They keep the names of the types that were once both DTO and domain record: YamlDotNet puts the type's full name
+// in the error for an unknown key, and those messages must not change.
 
 [YamlSerializable]
-internal sealed class AssemblyConfigurationDto
+internal sealed class AssemblyConfiguration
 {
 	[YamlMember(Alias = "narrative")]
-	public RepositoryDto? Narrative { get; set; } = new();
+	public NarrativeRepository? Narrative { get; set; } = new();
 
 	[YamlMember(Alias = "references")]
-	public Dictionary<string, RepositoryDto?> ReferenceRepositories { get; set; } = [];
+	public Dictionary<string, Repository?> ReferenceRepositories { get; set; } = [];
 
 	[YamlMember(Alias = "environments")]
-	public Dictionary<string, PublishEnvironmentDto> Environments { get; set; } = [];
+	public Dictionary<string, PublishEnvironment> Environments { get; set; } = [];
 
 	[YamlMember(Alias = "shared_configuration")]
-	public Dictionary<string, RepositoryDto> SharedConfigurations { get; set; } = [];
+	public Dictionary<string, Repository> SharedConfigurations { get; set; } = [];
 }
 
 [YamlSerializable]
-internal sealed class RepositoryDto
+internal class Repository
 {
 	[YamlMember(Alias = "repo")]
 	public string Origin { get; set; } = string.Empty;
 
 	[YamlMember(Alias = "checkout_strategy")]
-	public CheckoutStrategy CheckoutStrategy { get; set; } = CheckoutStrategy.Partial;
+	public Publishing.CheckoutStrategy CheckoutStrategy { get; set; } = Publishing.CheckoutStrategy.Partial;
 
 	[YamlMember(Alias = "skip")]
 	public bool Skip { get; set; }
@@ -61,7 +62,10 @@ internal sealed class RepositoryDto
 }
 
 [YamlSerializable]
-internal sealed class PublishEnvironmentDto
+internal sealed class NarrativeRepository : Repository;
+
+[YamlSerializable]
+internal sealed class PublishEnvironment
 {
 	[YamlMember(Alias = "uri")]
 	public string Uri { get; set; } = string.Empty;
@@ -73,13 +77,13 @@ internal sealed class PublishEnvironmentDto
 	public bool AllowIndexing { get; set; }
 
 	[YamlMember(Alias = "content_source")]
-	public ContentSource ContentSource { get; set; }
+	public Publishing.ContentSource ContentSource { get; set; }
 
 	[YamlMember(Alias = "google_tag_manager")]
-	public GoogleTagManagerDto GoogleTagManager { get; set; } = new();
+	public GoogleTagManager GoogleTagManager { get; set; } = new();
 
 	[YamlMember(Alias = "optimizely")]
-	public OptimizelyDto Optimizely { get; set; } = new();
+	public Optimizely Optimizely { get; set; } = new();
 
 	[YamlMember(Alias = "feature_flags")]
 	public Dictionary<string, bool> FeatureFlags { get; set; } = [];
@@ -89,7 +93,7 @@ internal sealed class PublishEnvironmentDto
 }
 
 [YamlSerializable]
-internal sealed class GoogleTagManagerDto
+internal sealed class GoogleTagManager
 {
 	[YamlMember(Alias = "enabled")]
 	public bool Enabled { get; set; }
@@ -119,7 +123,7 @@ internal sealed class GoogleTagManagerDto
 }
 
 [YamlSerializable]
-internal sealed class OptimizelyDto
+internal sealed class Optimizely
 {
 	[YamlMember(Alias = "enabled")]
 	public bool Enabled { get; set; }
