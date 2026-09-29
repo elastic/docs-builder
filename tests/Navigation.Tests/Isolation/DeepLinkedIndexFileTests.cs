@@ -33,10 +33,10 @@ public class DeepLinkedIndexFileTests() : DocumentationSetNavigationTestBase()
 		var docSet = DocumentationSetFile.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
 
 		var folder = docSet.TableOfContents.First().Value.Should().BeOfType<FolderRef>().Subject;
-		folder.PathRelativeToDocumentationSet.Should().Be("reference/1password");
+		folder.PathRelativeToDocumentationSet.Value.Should().Be("reference/1password");
 
 		var index = folder.Children.First().Value.Should().BeOfType<FolderIndexFileRef>().Subject;
-		index.PathRelativeToDocumentationSet.Should().Be("reference/1password/index.md");
+		index.PathRelativeToDocumentationSet.Value.Should().Be("reference/1password/index.md");
 	}
 
 	[Test]
@@ -82,7 +82,7 @@ public class DeepLinkedIndexFileTests() : DocumentationSetNavigationTestBase()
 		// Entries that declare explicit children keep the existing virtual-file (deep-linking) semantics.
 		var fileRef = docSet.TableOfContents.First().Value.Should().BeOfType<FileRef>().Subject;
 		fileRef.Should().NotBeOfType<FolderRef>();
-		fileRef.PathRelativeToDocumentationSet.Should().Be("reference/aws/index.md");
+		fileRef.PathRelativeToDocumentationSet.Value.Should().Be("reference/aws/index.md");
 		fileRef.Children.Should().ContainSingle();
 	}
 

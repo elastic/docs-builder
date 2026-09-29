@@ -34,7 +34,7 @@ public interface ITableOfContentsItem
 	/// For folders: the folder path (e.g., "guides/advanced")
 	/// For TOCs: the path to the toc.yml directory (e.g., "development" or "guides/advanced")
 	/// </summary>
-	string PathRelativeToDocumentationSet { get; }
+	DocsetPath PathRelativeToDocumentationSet { get; }
 
 	/// <summary>
 	/// The full path of this item relative to the container docset.yml or toc.yml file.
@@ -42,7 +42,7 @@ public interface ITableOfContentsItem
 	/// For folders: the folder path (e.g., "guides/advanced")
 	/// For TOCs: the path to the toc.yml directory (e.g., "development" or "guides/advanced")
 	/// </summary>
-	string PathRelativeToContainer { get; }
+	ContainerPath PathRelativeToContainer { get; }
 
 	/// <summary>
 	/// The path to the YAML file (docset.yml or toc.yml) that defined this item.
@@ -115,8 +115,8 @@ public static class SortOrderExtensions
 /// </param>
 [Equatable]
 public partial record FileRef(
-	string PathRelativeToDocumentationSet,
-	string PathRelativeToContainer,
+	DocsetPath PathRelativeToDocumentationSet,
+	ContainerPath PathRelativeToContainer,
 	bool Hidden,
 	[property: OrderedEquality] IReadOnlyList<TocItem> Children,
 	string Context,
@@ -124,8 +124,8 @@ public partial record FileRef(
 ) : ITableOfContentsItem;
 
 public record IndexFileRef(
-	string PathRelativeToDocumentationSet,
-	string PathRelativeToContainer,
+	DocsetPath PathRelativeToDocumentationSet,
+	ContainerPath PathRelativeToContainer,
 	bool Hidden,
 	IReadOnlyList<TocItem> Children,
 	string Context,
@@ -137,21 +137,24 @@ public record IndexFileRef(
 /// Children of this file should resolve relative to the folder path, not the parent TOC path.
 /// </summary>
 public record FolderIndexFileRef(
-	string PathRelativeToDocumentationSet,
-	string PathRelativeToContainer,
+	DocsetPath PathRelativeToDocumentationSet,
+	ContainerPath PathRelativeToContainer,
 	bool Hidden,
 	IReadOnlyList<TocItem> Children,
 	string Context,
 	string? DefaultCta = null
 ) : IndexFileRef(PathRelativeToDocumentationSet, PathRelativeToContainer, Hidden, Children, Context, DefaultCta);
 
-/// <summary>A detection rule page, generated from a <c>.toml</c> rule file under a <c>detection_rules</c> folder.</summary>
+/// <summary>
+/// A detection rule page, generated from a <c>.toml</c> rule file under a <c>detection_rules</c> folder. Rules are not
+/// declared in a toc.yml, so their container path is their docset path.
+/// </summary>
 [Equatable]
 public partial record DetectionRuleRef(
 	[property: CustomEquality(typeof(FileSystemInfoLocationComparer))] IFileInfo FileInfo,
-	string PathRelativeToDocumentationSet,
+	DocsetPath PathRelativeToDocumentationSet,
 	string Context
-) : FileRef(PathRelativeToDocumentationSet, PathRelativeToDocumentationSet, true, [], Context);
+) : FileRef(PathRelativeToDocumentationSet, ContainerPath.From(PathRelativeToDocumentationSet), true, [], Context);
 
 /// <summary>
 /// The overview page of a <c>detection_rules</c> entry. Its children are the explicit children followed by one
@@ -159,8 +162,8 @@ public partial record DetectionRuleRef(
 /// </summary>
 [Equatable]
 public partial record DetectionRuleOverviewRef(
-	string PathRelativeToDocumentationSet,
-	string PathRelativeToContainer,
+	DocsetPath PathRelativeToDocumentationSet,
+	ContainerPath PathRelativeToContainer,
 	[property: OrderedEquality] IReadOnlyList<string> DetectionRuleFolders,
 	IReadOnlyList<TocItem> Children,
 	string Context,
@@ -184,10 +187,10 @@ public partial record CrossLinkRef(
 ) : ITableOfContentsItem
 {
 	// CrossLinks don't have a file system path, so we use the CrossLinkUri as the Path
-	public string PathRelativeToDocumentationSet => CrossLinkUri.ToString();
+	public DocsetPath PathRelativeToDocumentationSet => DocsetPath.From(CrossLinkUri.ToString());
 
 	// CrossLinks don't have a file system path, so we use the CrossLinkUri as the Path
-	public string PathRelativeToContainer => CrossLinkUri.ToString();
+	public ContainerPath PathRelativeToContainer => ContainerPath.From(CrossLinkUri.ToString());
 }
 
 /// <param name="Sort">Raw YAML sort value, parsed and validated during resolution via <see cref="SortOrderExtensions.TryParse"/>.</param>
@@ -195,8 +198,8 @@ public partial record CrossLinkRef(
 /// <param name="DefaultCta">Optional <c>default_cta</c> declared on this entry; applies to every page inside the folder.</param>
 [Equatable]
 public partial record FolderRef(
-	string PathRelativeToDocumentationSet,
-	string PathRelativeToContainer,
+	DocsetPath PathRelativeToDocumentationSet,
+	ContainerPath PathRelativeToContainer,
 	[property: OrderedEquality] IReadOnlyList<TocItem> Children,
 	string Context,
 	string? Sort = null,
@@ -211,8 +214,8 @@ public partial record FolderRef(
 /// because its path contains '/'.
 /// </summary>
 public record DeepLinkedFolderRef(
-	string PathRelativeToDocumentationSet,
-	string PathRelativeToContainer,
+	DocsetPath PathRelativeToDocumentationSet,
+	ContainerPath PathRelativeToContainer,
 	IReadOnlyList<TocItem> Children,
 	string Context,
 	string? DefaultCta = null
@@ -224,8 +227,8 @@ public record DeepLinkedFolderRef(
 /// </param>
 [Equatable]
 public partial record IsolatedTableOfContentsRef(
-	string PathRelativeToDocumentationSet,
-	string PathRelativeToContainer,
+	DocsetPath PathRelativeToDocumentationSet,
+	ContainerPath PathRelativeToContainer,
 	[property: OrderedEquality] IReadOnlyList<TocItem> Children,
 	string Context,
 	bool Island = false,
@@ -281,8 +284,8 @@ public partial record ListingOptions(
 /// </summary>
 [Equatable]
 public partial record ListingRef(
-	string PathRelativeToDocumentationSet,
-	string PathRelativeToContainer,
+	DocsetPath PathRelativeToDocumentationSet,
+	ContainerPath PathRelativeToContainer,
 	[property: OrderedEquality] IReadOnlyList<TocItem> Children,
 	string Context,
 	ListingOptions Options
@@ -292,8 +295,8 @@ public partial record ListingRef(
 [Equatable]
 public partial record ListingGroupRef(
 	string GroupKey,
-	string PathRelativeToDocumentationSet,
-	string PathRelativeToContainer,
+	DocsetPath PathRelativeToDocumentationSet,
+	ContainerPath PathRelativeToContainer,
 	[property: OrderedEquality] IReadOnlyList<TocItem> Children,
 	string Context
 ) : ITableOfContentsItem;
@@ -305,8 +308,8 @@ public partial record CliReferenceRef(
 	string? SupplementalFolder,
 	string? Title,
 	string? NavigationTitle,
-	string PathRelativeToDocumentationSet,
-	string PathRelativeToContainer,
+	DocsetPath PathRelativeToDocumentationSet,
+	ContainerPath PathRelativeToContainer,
 	string Context,
 	[property: OrderedEquality] IReadOnlyList<TocItem> Children,
 	[property: DefaultEquality] ApplicableTo? AppliesTo = null
