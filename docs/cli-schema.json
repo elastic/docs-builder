@@ -5485,8 +5485,8 @@
             "changelog"
           ],
           "name": "validate-onboarding",
-          "summary": "Validate that every product registered with features.release-notes: prestage has the required onboarding files in its repository.",
-          "notes": "Probes each Prestage product\u0027s repository (resolved from products.yml: the product key\nor its repository: override) via the GitHub contents API for the changelog\nconfiguration (docs/changelog.yml or changelog.yml) and the\nchangelog-validate, changelog-submit, changelog-upload, and\nchangelog-bundle-stage workflows. Exits non-zero when anything is missing, so CI can\ngate on registration drift. Set GITHUB_TOKEN to probe private repositories.",
+          "summary": "Validate that every product registered with features.release-notes: dra or on-release has the required onboarding files in its repository.",
+          "notes": "Probes each DRA or on-release product\u0027s repository (resolved from products.yml: the product key\nor its repository: override) via the GitHub contents API for the changelog\nconfiguration (docs/changelog.yml or changelog.yml) and the\nchangelog-validate, changelog-submit, changelog-upload, and\nchangelog-bundle-stage workflows. Exits non-zero when anything is missing, so CI can\ngate on registration drift. Set GITHUB_TOKEN to probe private repositories.",
           "usage": "docs-builder changelog validate-onboarding [options]",
           "examples": [],
           "parameters": [
@@ -6774,24 +6774,31 @@
                 "unified"
               ],
               "name": "bundle",
-              "summary": "Generate changelog bundles for all prestage products at the given version or for the next upcoming release.",
-              "notes": "When versionOrPreview is \u0022preview\u0022, the command resolves the next upcoming\nversion automatically:\n\n  - If a build candidate has been cut (appears in future-releases.json with a non-empty\n  build_candidates dict), the BC manifest anchors the git refs.\n  - Otherwise the latest SNAPSHOT from snapshots.elastic.co/latest/master.json is used,\n  keeping a preview PR open well before the BC is cut.\n\n\n\n\nWhen a specific version is given (e.g. 9.5.5), the command looks up the version in\nfuture-releases.json and uses the latest BC manifest. Exits with an error if no BC\nhas been cut yet.\n\n\n\nOnly products with features.release-notes: prestage in products.yml are bundled.\nBundle files are written to outputDir.",
-              "usage": "docs-builder release unified bundle \u003Cversion-or-preview\u003E [options]",
+              "summary": "Generate changelog bundles for all DRA products at the given version, for the current GA, or for the next upcoming release(s).",
+              "notes": "- \u0022current\u0022 \u2014 bundles the latest GA version from past-releases.json.\n  - \n    \u0022preview\u0022 \u2014 bundles both the next patch and next minor releases. Each uses its BC\n    manifest when one has been cut; otherwise the corresponding SNAPSHOT is used.\n  \n  - \n    Explicit version (e.g. 9.5.5) \u2014 bundles using the latest BC manifest. Errors when\n    no BC has been cut yet, and skips gracefully when the version is already GA.\n  \n\n\n\n\nOnly products with features.release-notes: dra in products.yml are bundled.\nBundle files are written to \u003CoutputDir\u003E/\u003Cproduct-id\u003E/.",
+              "usage": "docs-builder release unified bundle \u003Cversion-or-keyword\u003E [options]",
               "examples": [],
               "parameters": [
                 {
                   "role": "positional",
-                  "name": "version-or-preview",
+                  "name": "version-or-keyword",
                   "type": "string",
                   "required": true,
-                  "summary": "A specific version string (e.g. 9.5.5) or the literal \u0022preview\u0022 to target\nthe next upcoming release."
+                  "summary": "A version string (e.g. 9.5.5), \u0022current\u0022, or \u0022preview\u0022."
                 },
                 {
                   "role": "flag",
                   "name": "output-dir",
                   "type": "string",
                   "required": false,
-                  "summary": "Directory where bundle YAML files are written.\nDefaults to ./bundles relative to the current working directory."
+                  "summary": "Root directory for bundle output. Defaults to ./bundles. Each product writes to a\n\u003Cproduct-id\u003E/ subdirectory."
+                },
+                {
+                  "role": "flag",
+                  "name": "changelog-configs",
+                  "type": "string",
+                  "required": false,
+                  "summary": "Optional directory of prototype \u003Cproduct-id\u003E.changelog.yml files. When present,\na product\u0027s local file takes precedence over the file fetched from GitHub, allowing teams to\niterate on the configuration ahead of landing it in their repository."
                 },
                 {
                   "role": "flag",
@@ -6830,7 +6837,8 @@
                   "required": false,
                   "summary": "Skip cloning private repositories"
                 }
-              ]
+              ],
+              "hidden": true
             }
           ],
           "namespaces": []
