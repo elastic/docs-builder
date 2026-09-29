@@ -325,7 +325,7 @@ public class DocumentationSetGoldenTests
 			("apiNavGrouping", Bool(f.ApiNavGroupingEnabled))
 		);
 
-	private sealed class GoldenDocumentationSetContext(
+	internal sealed class GoldenDocumentationSetContext(
 		IDiagnosticsCollector collector,
 		IFileSystem fileSystem,
 		IFileInfo configurationPath,

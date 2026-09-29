@@ -77,4 +77,31 @@ public class AggregateEqualityTests
 
 		changed.Should().NotEqual(toc);
 	}
+
+	private static ResolvedDocumentationSet ResolveBaselineDocset()
+	{
+		var catalog = CatalogLoader.Load(BaselineProvider()).OrThrow();
+		var fs = DocumentationSetGoldenTests.CreateDocsTree();
+		var docsetFile = fs.FileInfo.New(Path.Join(DocumentationSetGoldenTests.DocsRoot, "_docset.yml"));
+		var collector = new CapturingDiagnosticsCollector();
+		var docSet = DocumentationSetFile.LoadAndResolve(collector, docsetFile);
+		var context = new DocumentationSetGoldenTests.GoldenDocumentationSetContext(collector, fs, docsetFile, docsetFile.Directory!);
+		return DocumentationSetResolver.Resolve(docSet, context, catalog.VersioningSystems, catalog.Products).OrThrowIfMissing();
+	}
+
+	[Test]
+	public void ResolvedDocumentationSet_ResolvedTwice_IsEqual() => ResolveBaselineDocset().Should().Be(ResolveBaselineDocset());
+
+	[Test]
+	public void ResolvedDocumentationSet_OneSubstitutionChanged_IsNotEqual()
+	{
+		var docset = ResolveBaselineDocset();
+		var (key, value) = docset.Substitutions.First();
+		var changed = docset with
+		{
+			Substitutions = docset.Substitutions.ToDictionary(kv => kv.Key, kv => kv.Key == key ? value + " (changed)" : kv.Value)
+		};
+
+		changed.Should().NotBe(docset);
+	}
 }
