@@ -20,7 +20,7 @@ public class ConfigurationFileStorybookRegistryTests
 	private const string Default = "https://ci-artifacts.kibana.dev/storybooks/main/storybook-docs/docs_registry.json";
 	private const string Expression = $"${{KIBANA_STORYBOOK_REGISTRY:-{Default}}}";
 
-	[Fact]
+	[Test]
 	public void UnsetVariable_ResolvesToCommittedDefault_WithNoFallback()
 	{
 		var config = CreateConfiguration(Expression, new MockEnvironment());
@@ -29,7 +29,7 @@ public class ConfigurationFileStorybookRegistryTests
 		config.StorybookRegistryFallback.Should().BeNull();
 	}
 
-	[Fact]
+	[Test]
 	public void SetVariable_ResolvesToEnvironmentValue_AndExposesDefaultAsFallback()
 	{
 		const string prRegistry = "https://ci-artifacts.kibana.dev/storybooks/pr-42/storybook-docs/docs_registry.json";
@@ -39,7 +39,7 @@ public class ConfigurationFileStorybookRegistryTests
 		config.StorybookRegistryFallback.Should().Be(Default);
 	}
 
-	[Fact]
+	[Test]
 	public void DisallowedVariable_IsLeftLiteral_AndWarns()
 	{
 		var collector = new DiagnosticsCollector([]);

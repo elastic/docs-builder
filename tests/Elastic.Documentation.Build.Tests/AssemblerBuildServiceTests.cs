@@ -74,10 +74,10 @@ namespace Elastic.Documentation.Build.Tests;
 
 public class AssemblerBuildServiceTests : IDisposable
 {
-	private readonly TestLoggerFactory _loggerFactory = new(TestContext.Current.TestOutputHelper);
+	private readonly TestLoggerFactory _loggerFactory = new();
 	private readonly NullCoreService _coreService = new();
 
-	[Fact]
+	[Test]
 	public void Constructor_AcceptsIEnvironmentVariables()
 	{
 		// Arrange
@@ -93,14 +93,14 @@ public class AssemblerBuildServiceTests : IDisposable
 		service.Should().NotBeNull();
 	}
 
-	[Theory]
-	[InlineData(true, true)] // CI + assumeBuild=true -> should throw
+	[Test]
+	[Arguments(true, true)] // CI + assumeBuild=true -> should throw
 
-	[InlineData(true, false)] // CI + assumeBuild=false -> should not throw
+	[Arguments(true, false)] // CI + assumeBuild=false -> should not throw
 
-	[InlineData(false, true)] // Local + assumeBuild=true -> should not throw
+	[Arguments(false, true)] // Local + assumeBuild=true -> should not throw
 
-	[InlineData(false, false)] // Local + assumeBuild=false -> should not throw
+	[Arguments(false, false)] // Local + assumeBuild=false -> should not throw
 
 	public void AssumeBuildValidation_FollowsTruthTable(bool isCI, bool assumeBuild)
 	{
@@ -120,7 +120,7 @@ public class AssemblerBuildServiceTests : IDisposable
 		wouldThrow.Should().Be(shouldThrow);
 	}
 
-	[Fact]
+	[Test]
 	public void MockEnvironmentVariables_CIStatus_AffectsAssumeBuildValidation()
 	{
 		// Test that the mock correctly simulates CI/non-CI for validation logic
@@ -137,7 +137,7 @@ public class AssemblerBuildServiceTests : IDisposable
 		localWithAssumeBuild.Should().BeFalse("Local with assumeBuild should not trigger validation error");
 	}
 
-	[Fact]
+	[Test]
 	public void IsRunningOnCI_WhenGitHubActionsSet_ReturnsTrue()
 	{
 		// Arrange
@@ -147,7 +147,7 @@ public class AssemblerBuildServiceTests : IDisposable
 		env.IsRunningOnCI.Should().BeTrue();
 	}
 
-	[Fact]
+	[Test]
 	public void IsRunningOnCI_WhenGitHubActionsNotSet_ReturnsFalse()
 	{
 		// Arrange
@@ -157,7 +157,7 @@ public class AssemblerBuildServiceTests : IDisposable
 		env.IsRunningOnCI.Should().BeFalse();
 	}
 
-	[Fact]
+	[Test]
 	public void AssumeBuildOnCI_ShouldThrow_ValidationLogic()
 	{
 		// This test documents the expected behavior:
@@ -173,7 +173,7 @@ public class AssemblerBuildServiceTests : IDisposable
 		shouldThrow.Should().BeTrue("CI + assumeBuild=true should cause an error");
 	}
 
-	[Fact]
+	[Test]
 	public void AssumeBuildLocally_ShouldNotThrow_ValidationLogic()
 	{
 		// This test documents the expected behavior:
@@ -190,16 +190,16 @@ public class AssemblerBuildServiceTests : IDisposable
 
 	// ── Three-state default tests ──────────────────────────────────────────────
 
-	[Theory]
-	[InlineData(true, null, false)] // CI + null → effective false (CI default)
+	[Test]
+	[Arguments(true, null, false)] // CI + null → effective false (CI default)
 
-	[InlineData(false, null, true)] // Local + null → effective true (local default)
+	[Arguments(false, null, true)] // Local + null → effective true (local default)
 
-	[InlineData(true, false, false)] // CI + explicit false → effective false
+	[Arguments(true, false, false)] // CI + explicit false → effective false
 
-	[InlineData(false, false, false)] // Local + explicit false → effective false
+	[Arguments(false, false, false)] // Local + explicit false → effective false
 
-	[InlineData(false, true, true)] // Local + explicit true → effective true
+	[Arguments(false, true, true)] // Local + explicit true → effective true
 
 	public void AssumeBuild_ThreeStateDefault_ResolvesCorrectly(bool isCI, bool? assumeBuild, bool expectedEffective)
 	{
@@ -209,7 +209,7 @@ public class AssemblerBuildServiceTests : IDisposable
 		effective.Should().Be(expectedEffective);
 	}
 
-	[Fact]
+	[Test]
 	public void AssumeBuild_ExplicitTrueOnCI_ThrowsGuard()
 	{
 		// explicit true + CI → the error guard must fire (assumeBuild == true && IsRunningOnCI)
@@ -218,7 +218,7 @@ public class AssemblerBuildServiceTests : IDisposable
 		shouldThrow.Should().BeTrue("explicit --assume-build on CI must throw");
 	}
 
-	[Fact]
+	[Test]
 	public void AssumeBuild_DefaultTrueOnCI_DoesNotTriggerGuard()
 	{
 		// null (default) on CI: effective is false, guard condition is never true

@@ -6,7 +6,6 @@ using Elastic.Codex.Navigation;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
-using Elastic.Documentation.Extensions;
 using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Site;
 using Elastic.Documentation.Site.FileProviders;
@@ -68,7 +67,6 @@ public abstract class CodexViewModel(CodexRenderContext context)
 	public GlobalLayoutViewModel CreateGlobalLayoutModel(IReadOnlyList<CodexBreadcrumb>? codexBreadcrumbs = null) =>
 		new()
 		{
-			DocsBuilderVersion = ShortId.Create(BuildContext.Version),
 			DocSetName = CodexNavigation.NavigationTitle,
 			Description = "Elastic Internal Docs",
 			CurrentNavigationItem = CurrentNavigationItem,

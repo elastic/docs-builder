@@ -113,7 +113,7 @@ public sealed record McpServerProfile(
 			Use the server when the user:{whenToUseBlock}
 			</triggers>
 			{toolGuidanceBlock}
-			""";
+			""".ReplaceLineEndings("\n");
 	}
 
 	private static string ReplaceToolPlaceholders(string line, string resourceNoun, string scopePrefix)

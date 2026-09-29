@@ -11,9 +11,9 @@ using FakeItEasy;
 
 namespace Elastic.Changelog.Tests.Changelogs.Create;
 
-public class ReleaseNoteExtractionTests(ITestOutputHelper output) : CreateChangelogTestBase(output)
+public class ReleaseNoteExtractionTests() : CreateChangelogTestBase()
 {
-	[Fact]
+	[Test]
 	public async Task CreateChangelog_WithExtractReleaseNotes_ShortReleaseNote_UsesPrTitleAndDescription()
 	{
 		// Arrange
@@ -60,7 +60,7 @@ public class ReleaseNoteExtractionTests(ITestOutputHelper output) : CreateChange
 		};
 
 		// Act
-		var result = await service.CreateChangelog(Collector, input, TestContext.Current.CancellationToken);
+		var result = await service.CreateChangelog(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		result.Should().BeTrue();
@@ -72,12 +72,12 @@ public class ReleaseNoteExtractionTests(ITestOutputHelper output) : CreateChange
 		var files = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
 		files.Should().HaveCount(1);
 
-		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current.CancellationToken);
+		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current!.Execution.CancellationToken);
 		yamlContent.Should().Contain("title: Implement new aggregation API");
 		yamlContent.Should().Contain("description: Adds support for new aggregation types");
 	}
 
-	[Fact]
+	[Test]
 	public async Task CreateChangelog_WithExtractReleaseNotes_LongReleaseNote_UsesAsDescription()
 	{
 		// Arrange
@@ -126,7 +126,7 @@ public class ReleaseNoteExtractionTests(ITestOutputHelper output) : CreateChange
 		};
 
 		// Act
-		var result = await service.CreateChangelog(Collector, input, TestContext.Current.CancellationToken);
+		var result = await service.CreateChangelog(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		result.Should().BeTrue();
@@ -138,12 +138,12 @@ public class ReleaseNoteExtractionTests(ITestOutputHelper output) : CreateChange
 		var files = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
 		files.Should().HaveCount(1);
 
-		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current.CancellationToken);
+		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current!.Execution.CancellationToken);
 		yamlContent.Should().Contain("title: Implement new aggregation API");
 		yamlContent.Should().Contain($"description: {longReleaseNote}");
 	}
 
-	[Fact]
+	[Test]
 	public async Task CreateChangelog_WithExtractReleaseNotes_MultiLineReleaseNote_UsesAsDescription()
 	{
 		// Arrange
@@ -193,7 +193,7 @@ public class ReleaseNoteExtractionTests(ITestOutputHelper output) : CreateChange
 		};
 
 		// Act
-		var result = await service.CreateChangelog(Collector, input, TestContext.Current.CancellationToken);
+		var result = await service.CreateChangelog(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		result.Should().BeTrue();
@@ -205,14 +205,14 @@ public class ReleaseNoteExtractionTests(ITestOutputHelper output) : CreateChange
 		var files = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
 		files.Should().HaveCount(1);
 
-		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current.CancellationToken);
+		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current!.Execution.CancellationToken);
 		yamlContent.Should().Contain("title: Implement new aggregation API");
 		yamlContent.Should().Contain("description:");
 		yamlContent.Should().Contain("Adds support for new aggregation types");
 		yamlContent.Should().Contain("date histogram");
 	}
 
-	[Fact]
+	[Test]
 	public async Task CreateChangelog_WithExtractReleaseNotes_NoReleaseNote_UsesPrTitle()
 	{
 		// Arrange
@@ -259,7 +259,7 @@ public class ReleaseNoteExtractionTests(ITestOutputHelper output) : CreateChange
 		};
 
 		// Act
-		var result = await service.CreateChangelog(Collector, input, TestContext.Current.CancellationToken);
+		var result = await service.CreateChangelog(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		result.Should().BeTrue();
@@ -271,7 +271,7 @@ public class ReleaseNoteExtractionTests(ITestOutputHelper output) : CreateChange
 		var files = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
 		files.Should().HaveCount(1);
 
-		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current.CancellationToken);
+		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current!.Execution.CancellationToken);
 		yamlContent.Should().Contain("title: Implement new aggregation API");
 		// Description should not be set when no release note is found
 		if (yamlContent.Contains("description:"))
@@ -282,7 +282,7 @@ public class ReleaseNoteExtractionTests(ITestOutputHelper output) : CreateChange
 		}
 	}
 
-	[Fact]
+	[Test]
 	public async Task CreateChangelog_WithExtractReleaseNotes_ExplicitTitle_TakesPrecedence()
 	{
 		// Arrange
@@ -330,7 +330,7 @@ public class ReleaseNoteExtractionTests(ITestOutputHelper output) : CreateChange
 		};
 
 		// Act
-		var result = await service.CreateChangelog(Collector, input, TestContext.Current.CancellationToken);
+		var result = await service.CreateChangelog(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		result.Should().BeTrue();
@@ -342,12 +342,12 @@ public class ReleaseNoteExtractionTests(ITestOutputHelper output) : CreateChange
 		var files = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
 		files.Should().HaveCount(1);
 
-		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current.CancellationToken);
+		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current!.Execution.CancellationToken);
 		yamlContent.Should().Contain("title: Custom title");
 		yamlContent.Should().Contain("description: Adds support for new aggregation types");
 	}
 
-	[Fact]
+	[Test]
 	public async Task CreateChangelog_WithExtractReleaseNotes_ExplicitDescription_TakesPrecedence()
 	{
 		// Arrange
@@ -397,7 +397,7 @@ public class ReleaseNoteExtractionTests(ITestOutputHelper output) : CreateChange
 		};
 
 		// Act
-		var result = await service.CreateChangelog(Collector, input, TestContext.Current.CancellationToken);
+		var result = await service.CreateChangelog(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		result.Should().BeTrue();
@@ -409,12 +409,12 @@ public class ReleaseNoteExtractionTests(ITestOutputHelper output) : CreateChange
 		var files = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
 		files.Should().HaveCount(1);
 
-		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current.CancellationToken);
+		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current!.Execution.CancellationToken);
 		yamlContent.Should().Contain("description: Custom description");
 		yamlContent.Should().NotContain(longReleaseNote);
 	}
 
-	[Fact]
+	[Test]
 	public async Task CreateChangelog_WhenExtractNotSpecifiedByCli_UsesConfigExtractReleaseNotes()
 	{
 		// When CLI does not pass --no-extract-release-notes, config extract.release_notes applies.
@@ -466,7 +466,7 @@ public class ReleaseNoteExtractionTests(ITestOutputHelper output) : CreateChange
 		};
 
 		// Act
-		var result = await service.CreateChangelog(Collector, input, TestContext.Current.CancellationToken);
+		var result = await service.CreateChangelog(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert - config says don't extract, so PR title is used
 		result.Should().BeTrue();
@@ -477,12 +477,12 @@ public class ReleaseNoteExtractionTests(ITestOutputHelper output) : CreateChange
 		var files = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
 		files.Should().HaveCount(1);
 
-		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current.CancellationToken);
+		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current!.Execution.CancellationToken);
 		yamlContent.Should().Contain("title: Implement new aggregation API");
 		yamlContent.Should().NotContain("Adds support for new aggregation types");
 	}
 
-	[Fact]
+	[Test]
 	public async Task CreateChangelog_InCI_ExtractionEnabledByConfig_PreservesCIDescription()
 	{
 		var prInfo = new GitHubPrInfo
@@ -539,7 +539,7 @@ public class ReleaseNoteExtractionTests(ITestOutputHelper output) : CreateChange
 			ExtractReleaseNotes = null
 		};
 
-		var result = await service.CreateChangelog(Collector, input, TestContext.Current.CancellationToken);
+		var result = await service.CreateChangelog(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		result.Should().BeTrue();
 		Collector.Errors.Should().Be(0);
@@ -547,12 +547,12 @@ public class ReleaseNoteExtractionTests(ITestOutputHelper output) : CreateChange
 		var files = FileSystem.Directory.GetFiles(input.Output, "*.yaml");
 		files.Should().HaveCount(1);
 
-		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current.CancellationToken);
+		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current!.Execution.CancellationToken);
 		yamlContent.Should().Contain("title: Implement new aggregation API");
 		yamlContent.Should().Contain("Adds support for new aggregation types");
 	}
 
-	[Fact]
+	[Test]
 	public async Task CreateChangelog_InCI_ExtractionDisabledByCli_ClearsCIDescription()
 	{
 		var prInfo = new GitHubPrInfo
@@ -609,7 +609,7 @@ public class ReleaseNoteExtractionTests(ITestOutputHelper output) : CreateChange
 		};
 
 		// Act
-		var result = await service.CreateChangelog(Collector, input, TestContext.Current.CancellationToken);
+		var result = await service.CreateChangelog(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert - extraction disabled, so CI description should be suppressed
 		result.Should().BeTrue();
@@ -618,12 +618,12 @@ public class ReleaseNoteExtractionTests(ITestOutputHelper output) : CreateChange
 		var files = FileSystem.Directory.GetFiles(input.Output, "*.yaml");
 		files.Should().HaveCount(1);
 
-		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current.CancellationToken);
+		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current!.Execution.CancellationToken);
 		yamlContent.Should().Contain("title: Implement new aggregation API");
 		yamlContent.Should().NotContain("Adds support for new aggregation types");
 	}
 
-	[Fact]
+	[Test]
 	public async Task CreateChangelog_InCI_MultiplePrs_ExtractionDisabled_ClearsCIDescription()
 	{
 		var prInfo1 = new GitHubPrInfo
@@ -696,7 +696,7 @@ public class ReleaseNoteExtractionTests(ITestOutputHelper output) : CreateChange
 			UsePrNumber = true
 		};
 
-		var result = await service.CreateChangelog(Collector, input, TestContext.Current.CancellationToken);
+		var result = await service.CreateChangelog(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		result.Should().BeTrue();
 		Collector.Errors.Should().Be(0);
@@ -706,14 +706,14 @@ public class ReleaseNoteExtractionTests(ITestOutputHelper output) : CreateChange
 
 		foreach (var file in files)
 		{
-			var yamlContent = await FileSystem.File.ReadAllTextAsync(file, TestContext.Current.CancellationToken);
+			var yamlContent = await FileSystem.File.ReadAllTextAsync(file, TestContext.Current!.Execution.CancellationToken);
 			yamlContent.Should().NotContain("Leaked description");
 			yamlContent.Should().NotContain("First extracted note");
 			yamlContent.Should().NotContain("Second extracted note");
 		}
 	}
 
-	[Fact]
+	[Test]
 	public async Task CreateChangelog_InCI_ExtractionDisabledByConfig_ClearsCIDescription()
 	{
 		var prInfo = new GitHubPrInfo
@@ -772,7 +772,7 @@ public class ReleaseNoteExtractionTests(ITestOutputHelper output) : CreateChange
 		};
 
 		// Act
-		var result = await service.CreateChangelog(Collector, input, TestContext.Current.CancellationToken);
+		var result = await service.CreateChangelog(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert - config disables extraction, so CI description should be cleared
 		result.Should().BeTrue();
@@ -781,12 +781,12 @@ public class ReleaseNoteExtractionTests(ITestOutputHelper output) : CreateChange
 		var files = FileSystem.Directory.GetFiles(input.Output, "*.yaml");
 		files.Should().HaveCount(1);
 
-		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current.CancellationToken);
+		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current!.Execution.CancellationToken);
 		yamlContent.Should().Contain("title: Implement new aggregation API");
 		yamlContent.Should().NotContain("Adds support for new aggregation types");
 	}
 
-	[Fact]
+	[Test]
 	public async Task CreateChangelog_InCI_CliEnablesExtraction_OverridesConfigFalse_PreservesCIDescription()
 	{
 		var prInfo = new GitHubPrInfo
@@ -843,7 +843,7 @@ public class ReleaseNoteExtractionTests(ITestOutputHelper output) : CreateChange
 			ExtractReleaseNotes = true
 		};
 
-		var result = await service.CreateChangelog(Collector, input, TestContext.Current.CancellationToken);
+		var result = await service.CreateChangelog(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		result.Should().BeTrue();
 		Collector.Errors.Should().Be(0);
@@ -851,12 +851,12 @@ public class ReleaseNoteExtractionTests(ITestOutputHelper output) : CreateChange
 		var files = FileSystem.Directory.GetFiles(input.Output, "*.yaml");
 		files.Should().HaveCount(1);
 
-		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current.CancellationToken);
+		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current!.Execution.CancellationToken);
 		yamlContent.Should().Contain("title: Implement new aggregation API");
 		yamlContent.Should().Contain("Adds support for new aggregation types");
 	}
 
-	[Fact]
+	[Test]
 	public async Task CreateChangelog_InCI_ExtractionDisabled_ExplicitCliDescription_Survives()
 	{
 		var prInfo = new GitHubPrInfo
@@ -912,7 +912,7 @@ public class ReleaseNoteExtractionTests(ITestOutputHelper output) : CreateChange
 			Description = "My explicit description"
 		};
 
-		var result = await service.CreateChangelog(Collector, input, TestContext.Current.CancellationToken);
+		var result = await service.CreateChangelog(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		result.Should().BeTrue();
 		Collector.Errors.Should().Be(0);
@@ -920,7 +920,7 @@ public class ReleaseNoteExtractionTests(ITestOutputHelper output) : CreateChange
 		var files = FileSystem.Directory.GetFiles(input.Output, "*.yaml");
 		files.Should().HaveCount(1);
 
-		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current.CancellationToken);
+		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current!.Execution.CancellationToken);
 		yamlContent.Should().Contain("description: My explicit description");
 		yamlContent.Should().NotContain("CI extracted note");
 	}

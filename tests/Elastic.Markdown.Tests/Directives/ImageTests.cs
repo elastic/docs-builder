@@ -9,8 +9,8 @@ using Elastic.Markdown.Myst.Directives.Image;
 
 namespace Elastic.Markdown.Tests.Directives;
 
-public class ImageBlockTests(ITestOutputHelper output) : DirectiveTest<ImageBlock>(
-	output,
+[InheritsTests]
+public class ImageBlockTests() : DirectiveTest<ImageBlock>(
 	"""
 :::{image} img/observability.png
 :alt: Elasticsearch
@@ -22,10 +22,10 @@ public class ImageBlockTests(ITestOutputHelper output) : DirectiveTest<ImageBloc
 {
 	protected override void AddToFileSystem(MockFileSystem fileSystem) => fileSystem.AddFile(@"docs/img/observability.png", "");
 
-	[Fact]
+	[Test]
 	public void ParsesBlock() => Block.Should().NotBeNull();
 
-	[Fact]
+	[Test]
 	public void ParsesBreakPoint()
 	{
 		Block!.Alt.Should().Be("Elasticsearch");
@@ -34,7 +34,7 @@ public class ImageBlockTests(ITestOutputHelper output) : DirectiveTest<ImageBloc
 		Block!.Screenshot.Should().Be("screenshot");
 	}
 
-	[Fact]
+	[Test]
 	public void ImageIsFoundSoNoErrorIsEmitted()
 	{
 		Block!.Found.Should().BeTrue();
@@ -42,8 +42,8 @@ public class ImageBlockTests(ITestOutputHelper output) : DirectiveTest<ImageBloc
 	}
 }
 
-public class AllowedExternalHostTests(ITestOutputHelper output) : DirectiveTest<ImageBlock>(
-	output,
+[InheritsTests]
+public class AllowedExternalHostTests() : DirectiveTest<ImageBlock>(
 	"""
 :::{image} https://images.contentstack.io/v3/assets/bltefdd0b53724fa2ce/blt/example.gif
 :alt: An animated screenshot hosted on the Elastic Contentstack CDN
@@ -51,10 +51,10 @@ public class AllowedExternalHostTests(ITestOutputHelper output) : DirectiveTest<
 """
 )
 {
-	[Fact]
+	[Test]
 	public void ParsesBlock() => Block.Should().NotBeNull();
 
-	[Fact]
+	[Test]
 	public void AllowedHostDoesNotWarn()
 	{
 		Block!.Found.Should().BeTrue();
@@ -62,8 +62,8 @@ public class AllowedExternalHostTests(ITestOutputHelper output) : DirectiveTest<
 	}
 }
 
-public class FigureTests(ITestOutputHelper output) : DirectiveTest<ImageBlock>(
-	output,
+[InheritsTests]
+public class FigureTests() : DirectiveTest<ImageBlock>(
 	"""
 :::{figure} https://github.com/rowanc1/pics/blob/main/sunset.png?raw=true
 :label: myFigure
@@ -75,10 +75,10 @@ Relaxing at the beach 🏝 🌊 😎
 """
 )
 {
-	[Fact]
+	[Test]
 	public void ParsesBlock() => Block.Should().NotBeNull();
 
-	[Fact]
+	[Test]
 	public void WarnsOnExternalUri()
 	{
 		Block!.Found.Should().BeTrue();

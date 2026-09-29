@@ -318,7 +318,13 @@ public class GitRangeEntryResolver(IGitHubPrService prService, ILogger logger)
 		if (products == null)
 			return (Row(pr, GitRangePrSourceKind.Missing), null, true);
 
-		var description = config?.Extract.ReleaseNotes != false ? ReleaseNotesExtractor.FindReleaseNote(prInfo.Body) : null;
+		string? description = null;
+		if (config?.Extract.ReleaseNotes != false)
+		{
+			var extraction = ReleaseNotesExtractor.ExtractReleaseNote(prInfo.Body);
+			description = extraction.Content;
+			ReleaseNoteExtractionDiagnostics.EmitHint(collector, pr.Url, pr.Number, extraction);
+		}
 
 		var areas = config?.LabelToAreas != null ? PrInfoProcessor.MapLabelsToAreas(labels, config.LabelToAreas) : [];
 

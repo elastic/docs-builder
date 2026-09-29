@@ -50,7 +50,7 @@
 			</div>
 		}
 		</div>
-		@if (Model.BackLinks.Count > 0 || Model.VersionSwitcher.Count > 1)
+		@if (Model.BackLinks.Count > 0)
 		{
 			<div class="pages-nav-v2__back-chrome">
 				@foreach (var back in Model.BackLinks)
@@ -62,14 +62,6 @@
 						</svg>
 						<span>@back.Title</span>
 					</a>
-				}
-				@if (Model.VersionSwitcher.Count > 1)
-				{
-					@await RenderPartialAsync(_NavSelect.Create(new NavigationSelectModel(
-						"api-version-switcher",
-						"API version",
-						Model.VersionSwitcher
-					)))
 				}
 			</div>
 		}
@@ -90,7 +82,10 @@
 			<li class="flex group/li">
 				<a href="@rootIndex.Url" class="sidebar-link nav-link nav-v2-link"><span class="nav-v2-nav-text">@rootIndex.NavigationTitle</span></a>
 			</li>
-			<li role="separator" class="nav-v2-separator"><hr></li>
+			@if (!Model.TreeHasSeparator)
+			{
+				<li role="separator" class="nav-v2-separator"><hr></li>
+			}
 		}
 		@await RenderPartialAsync(_TocTreeNav.Create(Model.Tree))
 	</ul>
@@ -168,7 +163,7 @@ else
 			</div>
 		}
 		</div>
-		@if (Model.BackLinks.Count > 0 || Model.VersionSwitcher.Count > 1)
+		@if (Model.BackLinks.Count > 0)
 		{
 			<div class="flex flex-col px-4 py-2 border-b border-grey-20 gap-2">
 				@foreach (var back in Model.BackLinks)
@@ -181,14 +176,6 @@ else
 						<span>@back.Title</span>
 					</a>
 				}
-				@if (Model.VersionSwitcher.Count > 1)
-				{
-					@await RenderPartialAsync(_NavSelect.Create(new NavigationSelectModel(
-						"api-version-switcher",
-						"API version",
-						Model.VersionSwitcher
-					)))
-				}
 			</div>
 		}
 	</div>
@@ -199,7 +186,10 @@ else
 			<li class="flex group/li pr-8 mt-6">
 				<a href="@rootIndex.Url" class="sidebar-link nav-link">@rootIndex.NavigationTitle</a>
 			</li>
-			<li role="separator" class="mt-4 pr-8"><hr class="border-grey-20"></li>
+			@if (!Model.TreeHasSeparator)
+			{
+				<li role="separator" class="mt-4 pr-8"><hr class="border-grey-20"></li>
+			}
 		}
 		@await RenderPartialAsync(_TocTreeNavLegacy.Create(Model.Tree))
 	</ul>

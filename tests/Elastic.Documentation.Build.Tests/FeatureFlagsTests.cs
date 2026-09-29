@@ -12,7 +12,7 @@ namespace Elastic.Documentation.Build.Tests;
 
 public class FeatureFlagsTests
 {
-	[Fact]
+	[Test]
 	public void AssemblerApiExplorerEnabled_ReadsYamlKey()
 	{
 		var flags = new FeatureFlags([]);
@@ -21,7 +21,7 @@ public class FeatureFlagsTests
 		flags.AssemblerApiExplorerEnabled.Should().BeTrue();
 	}
 
-	[Fact]
+	[Test]
 	public void AssemblerApiExplorerEnabled_DefaultsToFalse()
 	{
 		var flags = new FeatureFlags([]);
@@ -29,7 +29,7 @@ public class FeatureFlagsTests
 		flags.AssemblerApiExplorerEnabled.Should().BeFalse();
 	}
 
-	[Fact]
+	[Test]
 	public void AssemblerApiExplorerEnabled_EnvironmentVariableOverridesYaml()
 	{
 		var previous = Environment.GetEnvironmentVariable("FEATURE_ASSEMBLER_API_EXPLORER");
@@ -46,17 +46,15 @@ public class FeatureFlagsTests
 		}
 	}
 
-	[Fact]
+	[Test]
 	public void StagingEnvironment_EnablesAssemblerApiExplorer() => AssertEnvironmentEnablesAssemblerApiExplorer("staging");
 
-	[Fact]
+	[Test]
 	public void PreviewEnvironment_EnablesAssemblerApiExplorer() => AssertEnvironmentEnablesAssemblerApiExplorer("preview");
 
 	private static void AssertEnvironmentEnablesAssemblerApiExplorer(string environmentName)
 	{
-		var config = AssemblyConfiguration.Create(
-			new ConfigurationFileProvider(new TestLoggerFactory(null), new ConfigurationFileSystem())
-		);
+		var config = AssemblyConfiguration.Create(new ConfigurationFileProvider(new TestLoggerFactory(), new ConfigurationFileSystem()));
 		var environment = config.Environments[environmentName];
 
 		environment.FeatureFlags.Should().ContainKey("ASSEMBLER_API_EXPLORER").WhoseValue.Should().BeTrue();
@@ -67,12 +65,10 @@ public class FeatureFlagsTests
 		features.AssemblerApiExplorerEnabled.Should().BeTrue();
 	}
 
-	[Fact]
+	[Test]
 	public void ProdEnvironment_DoesNotEnableAssemblerApiExplorer()
 	{
-		var config = AssemblyConfiguration.Create(
-			new ConfigurationFileProvider(new TestLoggerFactory(null), new ConfigurationFileSystem())
-		);
+		var config = AssemblyConfiguration.Create(new ConfigurationFileProvider(new TestLoggerFactory(), new ConfigurationFileSystem()));
 		var prod = config.Environments["prod"];
 
 		prod.FeatureFlags.Should().NotContainKey("ASSEMBLER_API_EXPLORER");
@@ -83,7 +79,7 @@ public class FeatureFlagsTests
 		features.AssemblerApiExplorerEnabled.Should().BeFalse();
 	}
 
-	[Fact]
+	[Test]
 	public void ApiNavGroupingEnabled_DefaultsToFalse()
 	{
 		var flags = new FeatureFlags([]);
@@ -91,7 +87,7 @@ public class FeatureFlagsTests
 		flags.ApiNavGroupingEnabled.Should().BeFalse();
 	}
 
-	[Fact]
+	[Test]
 	public void ApiNavGroupingEnabled_SetEnablesIt()
 	{
 		var flags = new FeatureFlags([]);
@@ -101,7 +97,7 @@ public class FeatureFlagsTests
 		flags.PrimaryNavEnabled.Should().BeFalse();
 	}
 
-	[Fact]
+	[Test]
 	public void ApiNavGroupingEnabled_EnvironmentVariableOverridesYaml()
 	{
 		var previous = Environment.GetEnvironmentVariable("FEATURE_API_NAV_GROUPING");
@@ -118,12 +114,10 @@ public class FeatureFlagsTests
 		}
 	}
 
-	[Fact]
+	[Test]
 	public void ProdEnvironment_DoesNotEnableApiNavGrouping()
 	{
-		var config = AssemblyConfiguration.Create(
-			new ConfigurationFileProvider(new TestLoggerFactory(null), new ConfigurationFileSystem())
-		);
+		var config = AssemblyConfiguration.Create(new ConfigurationFileProvider(new TestLoggerFactory(), new ConfigurationFileSystem()));
 
 		foreach (var environmentName in new[] { "prod", "staging", "preview" })
 		{

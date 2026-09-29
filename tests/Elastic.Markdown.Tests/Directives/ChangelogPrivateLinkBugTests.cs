@@ -12,10 +12,10 @@ namespace Elastic.Markdown.Tests.Directives;
 /// Tests for the bug where entries with only PRIVATE PR/issue references
 /// produce incomplete "For more information, check." sentences.
 /// </summary>
+[InheritsTests]
 public class ChangelogPrivateLinkBugTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogPrivateLinkBugTests(ITestOutputHelper output) : base(
-			output,
+	public ChangelogPrivateLinkBugTests() : base(
 			// language=markdown
 			"""
 		:::{changelog}
@@ -48,7 +48,7 @@ public class ChangelogPrivateLinkBugTests : DirectiveTest<ChangelogBlock>
 			)
 		);
 
-	[Fact]
+	[Test]
 	public void DoesNotRenderIncompleteForMoreInformationSentence()
 	{
 		var markdown = ChangelogInlineRenderer.RenderChangelogMarkdown(Block!);
@@ -61,7 +61,7 @@ public class ChangelogPrivateLinkBugTests : DirectiveTest<ChangelogBlock>
 		markdown.Should().NotContain("check.");
 	}
 
-	[Fact]
+	[Test]
 	public void StillRendersEntryWithoutLinkSection()
 	{
 		var markdown = ChangelogInlineRenderer.RenderChangelogMarkdown(Block!);
@@ -79,10 +79,10 @@ public class ChangelogPrivateLinkBugTests : DirectiveTest<ChangelogBlock>
 /// <summary>
 /// Test mixed scenarios with both private and public links
 /// </summary>
+[InheritsTests]
 public class ChangelogMixedLinkBugTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogMixedLinkBugTests(ITestOutputHelper output) : base(
-			output,
+	public ChangelogMixedLinkBugTests() : base(
 			// language=markdown
 			"""
 		:::{changelog}
@@ -116,7 +116,7 @@ public class ChangelogMixedLinkBugTests : DirectiveTest<ChangelogBlock>
 			)
 		);
 
-	[Fact]
+	[Test]
 	public void RendersForMoreInformationWithOnlyVisibleLinks()
 	{
 		var markdown = ChangelogInlineRenderer.RenderChangelogMarkdown(Block!);
@@ -137,10 +137,10 @@ public class ChangelogMixedLinkBugTests : DirectiveTest<ChangelogBlock>
 /// <summary>
 /// Test entries with no PR/issue references at all
 /// </summary>
+[InheritsTests]
 public class ChangelogNoLinksTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogNoLinksTests(ITestOutputHelper output) : base(
-			output,
+	public ChangelogNoLinksTests() : base(
 			// language=markdown
 			"""
 		:::{changelog}
@@ -169,7 +169,7 @@ public class ChangelogNoLinksTests : DirectiveTest<ChangelogBlock>
 			)
 		);
 
-	[Fact]
+	[Test]
 	public void DoesNotRenderForMoreInformationSection()
 	{
 		var markdown = ChangelogInlineRenderer.RenderChangelogMarkdown(Block!);

@@ -12,7 +12,7 @@ namespace Elastic.ApiExplorer.Tests;
 
 public class ApiHubSwitcherTests
 {
-	[Fact]
+	[Test]
 	public void CollectDeclaredEntries_NullConfig_ReturnsEmpty()
 	{
 		var entries = ApiHubSwitcher.CollectDeclaredEntries("", null);
@@ -20,7 +20,7 @@ public class ApiHubSwitcherTests
 		entries.Should().BeEmpty();
 	}
 
-	[Fact]
+	[Test]
 	public void CollectDeclaredEntries_EmptyConfig_ReturnsEmpty()
 	{
 		var entries = ApiHubSwitcher.CollectDeclaredEntries("", new Dictionary<string, ResolvedApiConfiguration>());
@@ -28,7 +28,7 @@ public class ApiHubSwitcherTests
 		entries.Should().BeEmpty();
 	}
 
-	[Fact]
+	[Test]
 	public void CollectDeclaredEntries_TwoConfigs_UsesDisplayNamesAndProductRoots()
 	{
 		var configs = new Dictionary<string, ResolvedApiConfiguration>
@@ -54,7 +54,7 @@ public class ApiHubSwitcherTests
 			.BeEquivalentTo(new ApiCatalogEntry("kibana", "Kibana", "/api/doc/kibana/", "kibana"));
 	}
 
-	[Fact]
+	[Test]
 	public void Build_NullCurrentKey_ReturnsEmpty()
 	{
 		var items = ApiHubSwitcher.Build([Entry("elasticsearch", "Elasticsearch")], currentApiKey: null, "/api/");
@@ -62,7 +62,7 @@ public class ApiHubSwitcherTests
 		items.Should().BeEmpty();
 	}
 
-	[Fact]
+	[Test]
 	public void Build_EmptyEntries_ReturnsEmpty()
 	{
 		var items = ApiHubSwitcher.Build([], currentApiKey: "elasticsearch", "/api/");
@@ -70,7 +70,7 @@ public class ApiHubSwitcherTests
 		items.Should().BeEmpty();
 	}
 
-	[Fact]
+	[Test]
 	public void Build_HubOptionFirst_NeverSelected()
 	{
 		var items = ApiHubSwitcher.Build([Entry("elasticsearch", "Elasticsearch")], currentApiKey: "elasticsearch", "/api/");
@@ -80,7 +80,7 @@ public class ApiHubSwitcherTests
 		items[0].Selected.Should().BeFalse();
 	}
 
-	[Fact]
+	[Test]
 	public void Build_OrdersEntriesAlphabeticallyByTitle()
 	{
 		var items = ApiHubSwitcher.Build(
@@ -92,7 +92,7 @@ public class ApiHubSwitcherTests
 		items.Select(i => i.Label).Should().Equal("Back to hub", "Elasticsearch", "Kibana");
 	}
 
-	[Fact]
+	[Test]
 	public void Build_SelectedMatchesCurrentKey()
 	{
 		var items = ApiHubSwitcher.Build(
@@ -105,7 +105,7 @@ public class ApiHubSwitcherTests
 		items.Single(i => i.Selected).Label.Should().Be("Elasticsearch");
 	}
 
-	[Fact]
+	[Test]
 	public void CollectDeclaredEntries_PreservesCatalogCategories()
 	{
 		var configs = new Dictionary<string, ResolvedApiConfiguration>

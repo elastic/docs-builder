@@ -14,23 +14,29 @@ namespace Elastic.ApiExplorer.Tests;
 
 public class AuthSchemeTests
 {
-	[Fact]
+	[Test]
 	public async Task Resolve_DocumentSecurity_MapsApiKeyBasicBearer()
 	{
 		var (op, doc) = await Load(EsShapedSpec(operationSecurity: null));
 
-		OpenApiAuthSchemeResolver.Resolve(op, doc).Select(b => b.Label).Should().Equal("Api key", "Basic", "Bearer");
+		var badges = OpenApiAuthSchemeResolver.Resolve(op, doc);
+
+		badges.Select(b => b.Id).Should().Equal("apiKeyAuth", "basicAuth", "bearerAuth");
+		badges.Select(b => b.PillLabel).Should().Equal("Api key auth", "Basic auth", "Bearer auth");
 	}
 
-	[Fact]
+	[Test]
 	public async Task Resolve_OperationSecurity_OverridesDocument()
 	{
 		var (op, doc) = await Load(EsShapedSpec(operationSecurity: """{ "apiKeyAuth": [] }"""));
 
-		OpenApiAuthSchemeResolver.Resolve(op, doc).Select(b => b.Label).Should().Equal("Api key");
+		var badges = OpenApiAuthSchemeResolver.Resolve(op, doc);
+
+		badges.Select(b => b.Id).Should().Equal("apiKeyAuth");
+		badges.Select(b => b.PillLabel).Should().Equal("Api key auth");
 	}
 
-	[Fact]
+	[Test]
 	public async Task Resolve_EmptyOperationSecurity_ReturnsNoBadges()
 	{
 		var (op, doc) = await Load(EsShapedSpec(operationSecurity: ""));
@@ -38,7 +44,7 @@ public class AuthSchemeTests
 		OpenApiAuthSchemeResolver.Resolve(op, doc).Should().BeEmpty();
 	}
 
-	[Fact]
+	[Test]
 	public async Task Resolve_NoSchemes_ReturnsNoBadges()
 	{
 		var json = /*lang=json,strict*/
@@ -61,7 +67,7 @@ public class AuthSchemeTests
 		OpenApiAuthSchemeResolver.Resolve(op, doc).Should().BeEmpty();
 	}
 
-	[Fact]
+	[Test]
 	public async Task ElasticsearchSearch_InheritsDocumentSchemes()
 	{
 		var specPath = Path.Join(Paths.WorkingDirectoryRoot.FullName, "docs", "elasticsearch.json");
@@ -71,7 +77,26 @@ public class AuthSchemeTests
 		doc.Should().NotBeNull();
 		var search = doc!.Paths!["/_search"].Operations![HttpMethod.Get]!;
 
-		OpenApiAuthSchemeResolver.Resolve(search, doc).Select(b => b.Label).Should().Equal("Api key", "Basic", "Bearer");
+		var badges = OpenApiAuthSchemeResolver.Resolve(search, doc);
+
+		badges.Select(b => b.Id).Should().Equal("apiKeyAuth", "basicAuth", "bearerAuth");
+		badges.Select(b => b.PillLabel).Should().Equal("Api key auth", "Basic auth", "Bearer auth");
+	}
+
+	[Test]
+	public async Task Resolve_WithAuthenticationUrl_AppendsLowercasedSchemeAnchors()
+	{
+		var (op, doc) = await Load(EsShapedSpec(operationSecurity: null));
+		var badges = OpenApiAuthSchemeResolver.Resolve(op, doc, "/api/doc/elasticsearch/authentication");
+
+		badges
+			.Select(b => b.Href)
+			.Should()
+			.Equal(
+				"/api/doc/elasticsearch/authentication#apikeyauth",
+				"/api/doc/elasticsearch/authentication#basicauth",
+				"/api/doc/elasticsearch/authentication#bearerauth"
+			);
 	}
 
 	private static string EsShapedSpec(string? operationSecurity)
@@ -116,11 +141,11 @@ public class AuthSchemeTests
 		var jsonPath = Path.Join(Path.GetTempPath(), $"auth-scheme-{Guid.NewGuid():N}.json");
 		try
 		{
-			await File.WriteAllTextAsync(jsonPath, json, TestContext.Current.CancellationToken);
+			await File.WriteAllTextAsync(jsonPath, json, TestContext.Current!.Execution.CancellationToken);
 			var loaded = await OpenApiDocument.LoadAsync(
 				jsonPath,
 				new OpenApiReaderSettings { LeaveStreamOpen = false },
-				TestContext.Current.CancellationToken
+				TestContext.Current!.Execution.CancellationToken
 			);
 			var doc = loaded.Document!;
 			return (doc.Paths!["/a"].Operations![HttpMethod.Get]!, doc);

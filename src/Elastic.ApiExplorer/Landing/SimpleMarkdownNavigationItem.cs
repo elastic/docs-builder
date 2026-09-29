@@ -69,7 +69,8 @@ public class SimpleMarkdownNavigationItem(
 		var viewModel = new MarkdownPageViewModel(context)
 		{
 			PageTitle = NavigationTitle,
-			BodyHtml = new HtmlString(htmlContent ?? string.Empty)
+			BodyHtml = new HtmlString(htmlContent ?? string.Empty),
+			DescriptionMarkdown = ApiSeoDescription.FirstParagraph(ApiMarkdownFrontMatter.StripLeadingFrontMatter(markdownContent))
 		};
 		var slice = MarkdownPageView.Create(viewModel);
 		await slice.RenderAsync(stream, cancellationToken: ctx);

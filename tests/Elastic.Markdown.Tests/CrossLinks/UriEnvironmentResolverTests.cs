@@ -22,7 +22,7 @@ public class CodexAwareUriResolverTests
 {
 	private static readonly FrozenSet<string> CodexRepos = new HashSet<string> { "observability-robots", "docs-eng-team" }.ToFrozenSet();
 
-	[Fact]
+	[Test]
 	public void CodexRepo_RelativeMode_ProducesPathOnly()
 	{
 		var resolver = new CodexAwareUriResolver(CodexRepos, useRelativePaths: true);
@@ -34,7 +34,7 @@ public class CodexAwareUriResolverTests
 		result.ToString().Should().Be("/r/observability-robots/some-page");
 	}
 
-	[Fact]
+	[Test]
 	public void CodexRepo_AbsoluteMode_ProducesFullUrl()
 	{
 		var resolver = new CodexAwareUriResolver(CodexRepos, useRelativePaths: false);
@@ -46,7 +46,7 @@ public class CodexAwareUriResolverTests
 		result.ToString().Should().Be("https://codex.elastic.dev/r/observability-robots/some-page");
 	}
 
-	[Fact]
+	[Test]
 	public void CodexRepo_EmptyPath_RelativeMode()
 	{
 		var resolver = new CodexAwareUriResolver(CodexRepos, useRelativePaths: true);
@@ -58,7 +58,7 @@ public class CodexAwareUriResolverTests
 		result.ToString().Should().Be("/r/observability-robots/");
 	}
 
-	[Fact]
+	[Test]
 	public void CodexRepo_EmptyPath_AbsoluteMode()
 	{
 		var resolver = new CodexAwareUriResolver(CodexRepos, useRelativePaths: false);
@@ -70,7 +70,7 @@ public class CodexAwareUriResolverTests
 		result.ToString().Should().Be("https://codex.elastic.dev/r/observability-robots/");
 	}
 
-	[Fact]
+	[Test]
 	public void NonCodexRepo_FallsBackToPublicResolver()
 	{
 		var resolver = new CodexAwareUriResolver(CodexRepos, useRelativePaths: true);
@@ -83,7 +83,7 @@ public class CodexAwareUriResolverTests
 		result.ToString().Should().Contain("docs-content");
 	}
 
-	[Fact]
+	[Test]
 	public void DefaultMode_IsAbsolute()
 	{
 		var resolver = new CodexAwareUriResolver(CodexRepos);
@@ -95,7 +95,7 @@ public class CodexAwareUriResolverTests
 		result.ToString().Should().Be("https://codex.elastic.dev/r/observability-robots/page");
 	}
 
-	[Fact]
+	[Test]
 	public void SameRepoRedirect_CurrentRepoInCodexSet_ProducesCodexPath()
 	{
 		var codexRepos = new HashSet<string> { "ai-guild" }.ToFrozenSet();
@@ -109,7 +109,7 @@ public class CodexAwareUriResolverTests
 		result.ToString().Should().Be("/r/ai-guild/best-practices/tools");
 	}
 
-	[Fact]
+	[Test]
 	public void SameRepoRedirect_WithIndexNormalization_StripsTrailingIndex()
 	{
 		var codexRepos = new HashSet<string> { "ai-guild" }.ToFrozenSet();
@@ -126,7 +126,7 @@ public class CodexAwareUriResolverTests
 
 public class IsolatedBuildEnvironmentUriResolverTests
 {
-	[Fact]
+	[Test]
 	public void ProducesAbsoluteUrl()
 	{
 		var resolver = new IsolatedBuildEnvironmentUriResolver();
@@ -138,7 +138,7 @@ public class IsolatedBuildEnvironmentUriResolverTests
 		result.ToString().Should().Be("https://docs-v3-preview.elastic.dev/elastic/docs-content/tree/main/get-started");
 	}
 
-	[Fact]
+	[Test]
 	public void CloudRepo_UsesMasterBranch()
 	{
 		var resolver = new IsolatedBuildEnvironmentUriResolver();
@@ -149,7 +149,7 @@ public class IsolatedBuildEnvironmentUriResolverTests
 		result.ToString().Should().Contain("/tree/master/");
 	}
 
-	[Fact]
+	[Test]
 	public void NonCloudRepo_UsesMainBranch()
 	{
 		var resolver = new IsolatedBuildEnvironmentUriResolver();
@@ -163,7 +163,7 @@ public class IsolatedBuildEnvironmentUriResolverTests
 
 public class CodexRedirectPathExtractionTests
 {
-	[Fact]
+	[Test]
 	public void RelativeUri_FromCodexAwareResolver_ExtractsPathCorrectly()
 	{
 		var codexRepos = new HashSet<string> { "ai-guild" }.ToFrozenSet();
@@ -175,7 +175,7 @@ public class CodexRedirectPathExtractionTests
 		path.Should().Be("/r/ai-guild/tools");
 	}
 
-	[Fact]
+	[Test]
 	public void AbsoluteUri_FromCodexAwareResolver_ExtractsPathCorrectly()
 	{
 		var codexRepos = new HashSet<string> { "ai-guild" }.ToFrozenSet();
@@ -187,7 +187,7 @@ public class CodexRedirectPathExtractionTests
 		path.Should().Be("/r/ai-guild/tools");
 	}
 
-	[Fact]
+	[Test]
 	public void AbsoluteUri_FromIsolatedBuildResolver_ExtractsPathCorrectly()
 	{
 		var resolver = new IsolatedBuildEnvironmentUriResolver();
@@ -198,7 +198,7 @@ public class CodexRedirectPathExtractionTests
 		path.Should().Be("/elastic/docs-content/tree/main/get-started");
 	}
 
-	[Fact]
+	[Test]
 	public void NullUri_ReturnsEmptyString()
 	{
 		var path = RedirectPathExtractor.GetPath(null);
@@ -209,7 +209,7 @@ public class CodexRedirectPathExtractionTests
 
 public class CodexCrossRepoRedirectTests
 {
-	[Fact]
+	[Test]
 	public void CrossRepoRedirect_TargetInCodexRepo_ResolvesToCodexPath()
 	{
 		var resolver = new Elastic.Markdown.Tests.TestCodexCrossLinkResolver(useRelativePaths: true);
@@ -251,7 +251,7 @@ public class CrossLinkResolverFallbackUrlTests
 		};
 	}
 
-	[Fact]
+	[Test]
 	public void InternalRegistry_NoIndexEntry_UsesCodexInternalPath()
 	{
 		var crossLinks = BuildFallbackOnlyCrossLinks(
@@ -278,7 +278,7 @@ public class CrossLinkResolverFallbackUrlTests
 		emittedError.Should().NotContain("/main/links.json");
 	}
 
-	[Fact]
+	[Test]
 	public void PublicRegistry_NoIndexEntry_UsesPublicS3Path()
 	{
 		var crossLinks = BuildFallbackOnlyCrossLinks(

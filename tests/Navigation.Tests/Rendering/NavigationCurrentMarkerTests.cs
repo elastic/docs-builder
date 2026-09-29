@@ -10,7 +10,7 @@ namespace Elastic.Documentation.Navigation.Tests.Rendering;
 
 public class NavigationCurrentMarkerTests
 {
-	[Fact]
+	[Test]
 	public void Apply_MatchingSidebarLink_AddsCurrent()
 	{
 		const string html =
@@ -25,7 +25,7 @@ public class NavigationCurrentMarkerTests
 		marked.Should().Contain("class=\"sidebar-link nav-link nav-v2-link current\"");
 	}
 
-	[Fact]
+	[Test]
 	public void Apply_TrailingSlash_StillMatches()
 	{
 		const string html = """<a href="/getting-started/" class="sidebar-link nav-folder-link nav-v2-link">Started</a>""";
@@ -35,7 +35,7 @@ public class NavigationCurrentMarkerTests
 		marked.Should().Contain("nav-v2-link current\"");
 	}
 
-	[Fact]
+	[Test]
 	public void Apply_PrefixUrl_DoesNotMatch()
 	{
 		const string html =
@@ -51,7 +51,7 @@ public class NavigationCurrentMarkerTests
 		marked.Should().NotContain("href=\"/getting-started\" class=\"sidebar-link nav-folder-link nav-v2-link current\"");
 	}
 
-	[Fact]
+	[Test]
 	public void Apply_AlreadyCurrent_IsIdempotent()
 	{
 		const string html = """<a href="/guide" class="sidebar-link nav-link nav-v2-link current">Guide</a>""";
@@ -61,7 +61,7 @@ public class NavigationCurrentMarkerTests
 		marked.Should().Be(html);
 	}
 
-	[Fact]
+	[Test]
 	public void Apply_RootPath_MatchesIndex()
 	{
 		const string html = """<a href="/" class="sidebar-link nav-link nav-v2-link">docs-builder</a>""";
@@ -71,7 +71,7 @@ public class NavigationCurrentMarkerTests
 		marked.Should().Contain("nav-v2-link current\"");
 	}
 
-	[Fact]
+	[Test]
 	public void Apply_NonSidebarAnchor_IsIgnored()
 	{
 		const string html = """<a href="/getting-started" class="pages-nav-v2__back">Back</a>""";
@@ -81,7 +81,7 @@ public class NavigationCurrentMarkerTests
 		marked.Should().Be(html);
 	}
 
-	[Fact]
+	[Test]
 	public async Task TocTree_StampedHtml_MarksTheCurrentLeaf()
 	{
 		var model = new NavigationRenderModel
@@ -112,7 +112,7 @@ public class NavigationCurrentMarkerTests
 			NavigationPreviewEnabled = true
 		};
 
-		var html = await _TocTree.Create(model).RenderAsync(cancellationToken: TestContext.Current.CancellationToken);
+		var html = await _TocTree.Create(model).RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
 		var marked = NavigationCurrentMarker.Apply(html, "/getting-started/installation");
 
 		marked.Should().Contain("href=\"/getting-started/installation\" class=\"sidebar-link nav-link nav-v2-link current\"");

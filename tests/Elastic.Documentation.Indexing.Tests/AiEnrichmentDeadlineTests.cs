@@ -8,7 +8,7 @@ namespace Elastic.Documentation.Indexing.Tests;
 
 public class AiEnrichmentDeadlineTests
 {
-	[Fact]
+	[Test]
 	public void Create_NoWallClock_ReturnsOriginalToken()
 	{
 		using var cts = new CancellationTokenSource();
@@ -19,7 +19,7 @@ public class AiEnrichmentDeadlineTests
 		deadline.TimedOut.Should().BeFalse();
 	}
 
-	[Fact]
+	[Test]
 	public void Create_AmbientTokenCancelled_LinkedTokenCancelledButNotTimedOut()
 	{
 		using var cts = new CancellationTokenSource();
@@ -31,13 +31,13 @@ public class AiEnrichmentDeadlineTests
 		deadline.TimedOut.Should().BeFalse();
 	}
 
-	[Fact]
+	[Test]
 	public async Task Create_WallClockElapses_LinkedTokenCancelledAndTimedOut()
 	{
 		using var deadline = AiEnrichmentDeadline.Create(TimeSpan.FromMilliseconds(1), CancellationToken.None);
 
 		// Give the internal CancellationTokenSource timer a moment to fire.
-		await Task.Delay(TimeSpan.FromMilliseconds(200), TestContext.Current.CancellationToken);
+		await Task.Delay(TimeSpan.FromMilliseconds(200), TestContext.Current!.Execution.CancellationToken);
 
 		deadline.Token.IsCancellationRequested.Should().BeTrue();
 		deadline.TimedOut.Should().BeTrue();

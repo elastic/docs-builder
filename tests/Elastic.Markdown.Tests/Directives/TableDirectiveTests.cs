@@ -8,8 +8,8 @@ using Elastic.Markdown.Myst.Directives.Table;
 
 namespace Elastic.Markdown.Tests.Directives;
 
-public class TableDirectiveBasicTests(ITestOutputHelper output) : DirectiveTest<TableDirectiveBlock>(
-	output,
+[InheritsTests]
+public class TableDirectiveBasicTests() : DirectiveTest<TableDirectiveBlock>(
 	"""
 :::{table}
 | head a | head b |
@@ -19,13 +19,13 @@ public class TableDirectiveBasicTests(ITestOutputHelper output) : DirectiveTest<
 """
 )
 {
-	[Fact]
+	[Test]
 	public void ParsesTableDirectiveBlock() => Block.Should().NotBeNull();
 
-	[Fact]
+	[Test]
 	public void SetsCorrectDirectiveType() => Block!.Directive.Should().Be("table");
 
-	[Fact]
+	[Test]
 	public void RendersTableInOutput()
 	{
 		Html.Should().Contain("table-wrapper");
@@ -35,8 +35,8 @@ public class TableDirectiveBasicTests(ITestOutputHelper output) : DirectiveTest<
 	}
 }
 
-public class TableDirectiveWithWidthsTests(ITestOutputHelper output) : DirectiveTest<TableDirectiveBlock>(
-	output,
+[InheritsTests]
+public class TableDirectiveWithWidthsTests() : DirectiveTest<TableDirectiveBlock>(
 	"""
 :::{table}
 :widths: 4-8
@@ -48,7 +48,7 @@ public class TableDirectiveWithWidthsTests(ITestOutputHelper output) : Directive
 """
 )
 {
-	[Fact]
+	[Test]
 	public void ParsesWidthsOption()
 	{
 		Block!.ColumnWidths.Should().HaveCount(2);
@@ -56,7 +56,7 @@ public class TableDirectiveWithWidthsTests(ITestOutputHelper output) : Directive
 		Block.ColumnWidths[1].Should().BeApproximately(66.67, 0.1);
 	}
 
-	[Fact]
+	[Test]
 	public void RendersColgroupWithWidths()
 	{
 		Html.Should().Contain("colgroup");
@@ -66,8 +66,8 @@ public class TableDirectiveWithWidthsTests(ITestOutputHelper output) : Directive
 	}
 }
 
-public class TableDirectiveDescriptionPresetTests(ITestOutputHelper output) : DirectiveTest<TableDirectiveBlock>(
-	output,
+[InheritsTests]
+public class TableDirectiveDescriptionPresetTests() : DirectiveTest<TableDirectiveBlock>(
 	"""
 :::{table}
 :widths: description
@@ -79,7 +79,7 @@ public class TableDirectiveDescriptionPresetTests(ITestOutputHelper output) : Di
 """
 )
 {
-	[Fact]
+	[Test]
 	public void MapsDescriptionTo4_8()
 	{
 		Block!.ColumnWidths.Should().HaveCount(2);
@@ -87,12 +87,12 @@ public class TableDirectiveDescriptionPresetTests(ITestOutputHelper output) : Di
 		Block.ColumnWidths[1].Should().BeApproximately(66.67, 0.1);
 	}
 
-	[Fact]
+	[Test]
 	public void RendersColgroup() => Html.Should().Contain("colgroup");
 }
 
-public class TableDirectiveAutoPresetTests(ITestOutputHelper output) : DirectiveTest<TableDirectiveBlock>(
-	output,
+[InheritsTests]
+public class TableDirectiveAutoPresetTests() : DirectiveTest<TableDirectiveBlock>(
 	"""
 :::{table}
 :widths: auto
@@ -104,15 +104,15 @@ public class TableDirectiveAutoPresetTests(ITestOutputHelper output) : Directive
 """
 )
 {
-	[Fact]
+	[Test]
 	public void HasNoColumnWidths() => Block!.ColumnWidths.Should().BeEmpty();
 
-	[Fact]
+	[Test]
 	public void DoesNotInjectColgroup() => Html.Should().NotContain("colgroup");
 }
 
-public class TableDirectiveMatrixTests(ITestOutputHelper output) : DirectiveTest<TableDirectiveBlock>(
-	output,
+[InheritsTests]
+public class TableDirectiveMatrixTests() : DirectiveTest<TableDirectiveBlock>(
 	"""
 :::{table}
 :matrix:
@@ -124,15 +124,15 @@ public class TableDirectiveMatrixTests(ITestOutputHelper output) : DirectiveTest
 """
 )
 {
-	[Fact]
+	[Test]
 	public void ParsesMatrixOption() => Block!.Matrix.Should().BeTrue();
 
-	[Fact]
+	[Test]
 	public void RendersMatrixClass() => Html.Should().Contain("table-wrapper table-matrix");
 }
 
-public class TableDirectiveWithoutMatrixTests(ITestOutputHelper output) : DirectiveTest<TableDirectiveBlock>(
-	output,
+[InheritsTests]
+public class TableDirectiveWithoutMatrixTests() : DirectiveTest<TableDirectiveBlock>(
 	"""
 :::{table}
 | head a | head b |
@@ -142,12 +142,12 @@ public class TableDirectiveWithoutMatrixTests(ITestOutputHelper output) : Direct
 """
 )
 {
-	[Fact]
+	[Test]
 	public void DoesNotRenderMatrixClass() => Html.Should().NotContain("table-matrix");
 }
 
-public class TableDirectiveFilterableTests(ITestOutputHelper output) : DirectiveTest<TableDirectiveBlock>(
-	output,
+[InheritsTests]
+public class TableDirectiveFilterableTests() : DirectiveTest<TableDirectiveBlock>(
 	"""
 :::{table}
 :filterable:
@@ -159,22 +159,22 @@ public class TableDirectiveFilterableTests(ITestOutputHelper output) : Directive
 """
 )
 {
-	[Fact]
+	[Test]
 	public void ParsesFilterableOption() => Block!.Filterable.Should().BeTrue();
 
-	[Fact]
+	[Test]
 	public void WrapsTableInHostElement()
 	{
 		Html.Should().Contain("<filterable-table>");
 		Html.Should().Contain("</filterable-table>");
 	}
 
-	[Fact]
+	[Test]
 	public void KeepsServerRenderedTableInsideHost() => Html.Should().Contain("<filterable-table><div class=\"table-wrapper\"");
 }
 
-public class TableDirectiveWithoutFilterableTests(ITestOutputHelper output) : DirectiveTest<TableDirectiveBlock>(
-	output,
+[InheritsTests]
+public class TableDirectiveWithoutFilterableTests() : DirectiveTest<TableDirectiveBlock>(
 	"""
 :::{table}
 | head a | head b |
@@ -184,15 +184,15 @@ public class TableDirectiveWithoutFilterableTests(ITestOutputHelper output) : Di
 """
 )
 {
-	[Fact]
+	[Test]
 	public void DoesNotParseFilterableOption() => Block!.Filterable.Should().BeFalse();
 
-	[Fact]
+	[Test]
 	public void DoesNotWrapTable() => Html.Should().NotContain("filterable-table");
 }
 
-public class TableDirectiveFilterableWithMatrixAndWidthsTests(ITestOutputHelper output) : DirectiveTest<TableDirectiveBlock>(
-	output,
+[InheritsTests]
+public class TableDirectiveFilterableWithMatrixAndWidthsTests() : DirectiveTest<TableDirectiveBlock>(
 	"""
 :::{table}
 :filterable:
@@ -206,7 +206,7 @@ public class TableDirectiveFilterableWithMatrixAndWidthsTests(ITestOutputHelper 
 """
 )
 {
-	[Fact]
+	[Test]
 	public void ComposesWithMatrixAndWidths()
 	{
 		Html.Should().Contain("<filterable-table><div class=\"table-wrapper table-matrix\"");
@@ -215,8 +215,8 @@ public class TableDirectiveFilterableWithMatrixAndWidthsTests(ITestOutputHelper 
 	}
 }
 
-public class TableDirectiveWidthCountMismatchTests(ITestOutputHelper output) : DirectiveTest<TableDirectiveBlock>(
-	output,
+[InheritsTests]
+public class TableDirectiveWidthCountMismatchTests() : DirectiveTest<TableDirectiveBlock>(
 	"""
 :::{table}
 :widths: 4-4-4
@@ -228,13 +228,13 @@ public class TableDirectiveWidthCountMismatchTests(ITestOutputHelper output) : D
 """
 )
 {
-	[Fact]
+	[Test]
 	public void EmitsError() =>
 		Collector.Diagnostics.Should().Contain(d => d.Severity == Severity.Error && d.Message.Contains("does not match"));
 }
 
-public class TableDirectiveWidthsSumErrorTests(ITestOutputHelper output) : DirectiveTest<TableDirectiveBlock>(
-	output,
+[InheritsTests]
+public class TableDirectiveWidthsSumErrorTests() : DirectiveTest<TableDirectiveBlock>(
 	"""
 :::{table}
 :widths: 4-4
@@ -246,29 +246,27 @@ public class TableDirectiveWidthsSumErrorTests(ITestOutputHelper output) : Direc
 """
 )
 {
-	[Fact]
+	[Test]
 	public void EmitsError() =>
 		Collector.Diagnostics.Should().Contain(d => d.Severity == Severity.Error && d.Message.Contains("sum to 12"));
 }
 
-public class TableDirectiveNoTableTests(ITestOutputHelper output) : DirectiveTest<TableDirectiveBlock>(
-	output,
-	"""
+[InheritsTests]
+public class TableDirectiveNoTableTests() : DirectiveTest<TableDirectiveBlock>("""
 :::{table}
 :widths: 4-8
 
 Some text, no table.
 :::
-"""
-)
+""")
 {
-	[Fact]
+	[Test]
 	public void EmitsError() =>
 		Collector.Diagnostics.Should().Contain(d => d.Severity == Severity.Error && d.Message.Contains("pipe table"));
 }
 
-public class TableDirectiveInvalidWidthsTests(ITestOutputHelper output) : DirectiveTest<TableDirectiveBlock>(
-	output,
+[InheritsTests]
+public class TableDirectiveInvalidWidthsTests() : DirectiveTest<TableDirectiveBlock>(
 	"""
 :::{table}
 :widths: foo
@@ -280,13 +278,13 @@ public class TableDirectiveInvalidWidthsTests(ITestOutputHelper output) : Direct
 """
 )
 {
-	[Fact]
+	[Test]
 	public void EmitsErrorForInvalidPreset() =>
 		Collector.Diagnostics.Should().Contain(d => d.Severity == Severity.Error && d.Message.Contains("Invalid widths value"));
 }
 
-public class TableDirectiveOutOfRangeWidthsTests(ITestOutputHelper output) : DirectiveTest<TableDirectiveBlock>(
-	output,
+[InheritsTests]
+public class TableDirectiveOutOfRangeWidthsTests() : DirectiveTest<TableDirectiveBlock>(
 	"""
 :::{table}
 :widths: 0-12
@@ -298,13 +296,13 @@ public class TableDirectiveOutOfRangeWidthsTests(ITestOutputHelper output) : Dir
 """
 )
 {
-	[Fact]
+	[Test]
 	public void EmitsErrorForOutOfRangeUnit() =>
 		Collector.Diagnostics.Should().Contain(d => d.Severity == Severity.Error && d.Message.Contains("Invalid widths value"));
 }
 
-public class TableDirectiveMultipleTablesTests(ITestOutputHelper output) : DirectiveTest<TableDirectiveBlock>(
-	output,
+[InheritsTests]
+public class TableDirectiveMultipleTablesTests() : DirectiveTest<TableDirectiveBlock>(
 	"""
 :::{table}
 :widths: 4-8
@@ -320,7 +318,7 @@ public class TableDirectiveMultipleTablesTests(ITestOutputHelper output) : Direc
 """
 )
 {
-	[Fact]
+	[Test]
 	public void EmitsErrorForMultipleTables() =>
 		Collector.Diagnostics.Should().Contain(d => d.Severity == Severity.Error && d.Message.Contains("exactly one pipe table"));
 }
