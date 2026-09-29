@@ -124,76 +124,76 @@ public class VersionInferenceTests
 		switch (productName)
 		{
 			case nameof(ProductApplicability.Ecctl):
-				applicability.Ecctl = value;
+				applicability = applicability with { Ecctl = value };
 				break;
 			case nameof(ProductApplicability.Curator):
-				applicability.Curator = value;
+				applicability = applicability with { Curator = value };
 				break;
 			case nameof(ProductApplicability.ApmAgentAndroid):
-				applicability.ApmAgentAndroid = value;
+				applicability = applicability with { ApmAgentAndroid = value };
 				break;
 			case nameof(ProductApplicability.ApmAgentDotnet):
-				applicability.ApmAgentDotnet = value;
+				applicability = applicability with { ApmAgentDotnet = value };
 				break;
 			case nameof(ProductApplicability.ApmAgentGo):
-				applicability.ApmAgentGo = value;
+				applicability = applicability with { ApmAgentGo = value };
 				break;
 			case nameof(ProductApplicability.ApmAgentIos):
-				applicability.ApmAgentIos = value;
+				applicability = applicability with { ApmAgentIos = value };
 				break;
 			case nameof(ProductApplicability.ApmAgentJava):
-				applicability.ApmAgentJava = value;
+				applicability = applicability with { ApmAgentJava = value };
 				break;
 			case nameof(ProductApplicability.ApmAgentNode):
-				applicability.ApmAgentNode = value;
+				applicability = applicability with { ApmAgentNode = value };
 				break;
 			case nameof(ProductApplicability.ApmAgentPhp):
-				applicability.ApmAgentPhp = value;
+				applicability = applicability with { ApmAgentPhp = value };
 				break;
 			case nameof(ProductApplicability.ApmAgentPython):
-				applicability.ApmAgentPython = value;
+				applicability = applicability with { ApmAgentPython = value };
 				break;
 			case nameof(ProductApplicability.ApmAgentRuby):
-				applicability.ApmAgentRuby = value;
+				applicability = applicability with { ApmAgentRuby = value };
 				break;
 			case nameof(ProductApplicability.ApmAgentRumJs):
-				applicability.ApmAgentRumJs = value;
+				applicability = applicability with { ApmAgentRumJs = value };
 				break;
 			case nameof(ProductApplicability.EdotIos):
-				applicability.EdotIos = value;
+				applicability = applicability with { EdotIos = value };
 				break;
 			case nameof(ProductApplicability.EdotAndroid):
-				applicability.EdotAndroid = value;
+				applicability = applicability with { EdotAndroid = value };
 				break;
 			case nameof(ProductApplicability.EdotDotnet):
-				applicability.EdotDotnet = value;
+				applicability = applicability with { EdotDotnet = value };
 				break;
 			case nameof(ProductApplicability.EdotJava):
-				applicability.EdotJava = value;
+				applicability = applicability with { EdotJava = value };
 				break;
 			case nameof(ProductApplicability.EdotNode):
-				applicability.EdotNode = value;
+				applicability = applicability with { EdotNode = value };
 				break;
 			case nameof(ProductApplicability.EdotBrowser):
-				applicability.EdotBrowser = value;
+				applicability = applicability with { EdotBrowser = value };
 				break;
 			case nameof(ProductApplicability.EdotPhp):
-				applicability.EdotPhp = value;
+				applicability = applicability with { EdotPhp = value };
 				break;
 			case nameof(ProductApplicability.EdotPython):
-				applicability.EdotPython = value;
+				applicability = applicability with { EdotPython = value };
 				break;
 			case nameof(ProductApplicability.EdotCfAws):
-				applicability.EdotCfAws = value;
+				applicability = applicability with { EdotCfAws = value };
 				break;
 			case nameof(ProductApplicability.EdotCfAzure):
-				applicability.EdotCfAzure = value;
+				applicability = applicability with { EdotCfAzure = value };
 				break;
 			case nameof(ProductApplicability.EdotCfGcp):
-				applicability.EdotCfGcp = value;
+				applicability = applicability with { EdotCfGcp = value };
 				break;
 			case nameof(ProductApplicability.EdotCollector):
-				applicability.EdotCollector = value;
+				applicability = applicability with { EdotCollector = value };
 				break;
 			default:
 				throw new ArgumentException($"Unknown product: {productName}");

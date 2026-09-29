@@ -39,18 +39,18 @@ public interface IApplicableToElement
 [JsonConverter(typeof(ApplicableToJsonConverter))]
 public record ApplicableTo
 {
-	public AppliesCollection? Stack { get; set; }
+	public AppliesCollection? Stack { get; init; }
 
-	public DeploymentApplicability? Deployment { get; set; }
+	public DeploymentApplicability? Deployment { get; init; }
 
-	public ServerlessProjectApplicability? Serverless { get; set; }
+	public ServerlessProjectApplicability? Serverless { get; init; }
 
-	public AppliesCollection? Product { get; set; }
+	public AppliesCollection? Product { get; init; }
 
-	public ProductApplicability? ProductApplicability { get; set; }
+	public ProductApplicability? ProductApplicability { get; init; }
 
 	[JsonIgnore]
-	public ApplicabilityDiagnosticsCollection? Diagnostics { get; set; }
+	public ApplicabilityDiagnosticsCollection? Diagnostics { get; init; }
 
 	public static ApplicableTo All { get; } = new()
 	{
@@ -197,13 +197,13 @@ public record ApplicableTo
 
 public record DeploymentApplicability
 {
-	public AppliesCollection? Self { get; set; }
+	public AppliesCollection? Self { get; init; }
 
-	public AppliesCollection? Ece { get; set; }
+	public AppliesCollection? Ece { get; init; }
 
-	public AppliesCollection? Eck { get; set; }
+	public AppliesCollection? Eck { get; init; }
 
-	public AppliesCollection? Ess { get; set; }
+	public AppliesCollection? Ess { get; init; }
 
 	public static DeploymentApplicability All { get; } = new()
 	{
@@ -254,13 +254,13 @@ public record DeploymentApplicability
 
 public record ServerlessProjectApplicability
 {
-	public AppliesCollection? Elasticsearch { get; set; }
+	public AppliesCollection? Elasticsearch { get; init; }
 
-	public AppliesCollection? Observability { get; set; }
+	public AppliesCollection? Observability { get; init; }
 
-	public AppliesCollection? Security { get; set; }
+	public AppliesCollection? Security { get; init; }
 
-	public AppliesCollection? VectorDatabase { get; set; }
+	public AppliesCollection? VectorDatabase { get; init; }
 
 	/// <summary>
 	/// Returns if all serverless project types share the same applicability.

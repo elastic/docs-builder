@@ -10,76 +10,76 @@ namespace Elastic.Documentation.AppliesTo;
 public record ProductApplicability
 {
 	[JsonPropertyName("ecctl")]
-	public AppliesCollection? Ecctl { get; set; }
+	public AppliesCollection? Ecctl { get; init; }
 
 	[JsonPropertyName("curator")]
-	public AppliesCollection? Curator { get; set; }
+	public AppliesCollection? Curator { get; init; }
 
 	[JsonPropertyName("apm-agent-android")]
-	public AppliesCollection? ApmAgentAndroid { get; set; }
+	public AppliesCollection? ApmAgentAndroid { get; init; }
 
 	[JsonPropertyName("apm-agent-dotnet")]
-	public AppliesCollection? ApmAgentDotnet { get; set; }
+	public AppliesCollection? ApmAgentDotnet { get; init; }
 
 	[JsonPropertyName("apm-agent-go")]
-	public AppliesCollection? ApmAgentGo { get; set; }
+	public AppliesCollection? ApmAgentGo { get; init; }
 
 	[JsonPropertyName("apm-agent-ios")]
-	public AppliesCollection? ApmAgentIos { get; set; }
+	public AppliesCollection? ApmAgentIos { get; init; }
 
 	[JsonPropertyName("apm-agent-java")]
-	public AppliesCollection? ApmAgentJava { get; set; }
+	public AppliesCollection? ApmAgentJava { get; init; }
 
 	[JsonPropertyName("apm-agent-node")]
-	public AppliesCollection? ApmAgentNode { get; set; }
+	public AppliesCollection? ApmAgentNode { get; init; }
 
 	[JsonPropertyName("apm-agent-php")]
-	public AppliesCollection? ApmAgentPhp { get; set; }
+	public AppliesCollection? ApmAgentPhp { get; init; }
 
 	[JsonPropertyName("apm-agent-python")]
-	public AppliesCollection? ApmAgentPython { get; set; }
+	public AppliesCollection? ApmAgentPython { get; init; }
 
 	[JsonPropertyName("apm-agent-ruby")]
-	public AppliesCollection? ApmAgentRuby { get; set; }
+	public AppliesCollection? ApmAgentRuby { get; init; }
 
 	[JsonPropertyName("apm-agent-rum-js")]
-	public AppliesCollection? ApmAgentRumJs { get; set; }
+	public AppliesCollection? ApmAgentRumJs { get; init; }
 
 	[JsonPropertyName("edot-ios")]
-	public AppliesCollection? EdotIos { get; set; }
+	public AppliesCollection? EdotIos { get; init; }
 
 	[JsonPropertyName("edot-android")]
-	public AppliesCollection? EdotAndroid { get; set; }
+	public AppliesCollection? EdotAndroid { get; init; }
 
 	[JsonPropertyName("edot-dotnet")]
-	public AppliesCollection? EdotDotnet { get; set; }
+	public AppliesCollection? EdotDotnet { get; init; }
 
 	[JsonPropertyName("edot-java")]
-	public AppliesCollection? EdotJava { get; set; }
+	public AppliesCollection? EdotJava { get; init; }
 
 	[JsonPropertyName("edot-node")]
-	public AppliesCollection? EdotNode { get; set; }
+	public AppliesCollection? EdotNode { get; init; }
 
 	[JsonPropertyName("edot-browser")]
-	public AppliesCollection? EdotBrowser { get; set; }
+	public AppliesCollection? EdotBrowser { get; init; }
 
 	[JsonPropertyName("edot-php")]
-	public AppliesCollection? EdotPhp { get; set; }
+	public AppliesCollection? EdotPhp { get; init; }
 
 	[JsonPropertyName("edot-python")]
-	public AppliesCollection? EdotPython { get; set; }
+	public AppliesCollection? EdotPython { get; init; }
 
 	[JsonPropertyName("edot-cf-aws")]
-	public AppliesCollection? EdotCfAws { get; set; }
+	public AppliesCollection? EdotCfAws { get; init; }
 
 	[JsonPropertyName("edot-cf-azure")]
-	public AppliesCollection? EdotCfAzure { get; set; }
+	public AppliesCollection? EdotCfAzure { get; init; }
 
 	[JsonPropertyName("edot-cf-gcp")]
-	public AppliesCollection? EdotCfGcp { get; set; }
+	public AppliesCollection? EdotCfGcp { get; init; }
 
 	[JsonPropertyName("edot-collector")]
-	public AppliesCollection? EdotCollector { get; set; }
+	public AppliesCollection? EdotCollector { get; init; }
 
 	/// <inheritdoc />
 	public override string ToString()

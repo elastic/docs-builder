@@ -133,25 +133,28 @@ public class ApplicableToYamlConverter(IReadOnlyCollection<string> productKeys) 
 			diagnostics.Add((Severity.Warning, $"Applies block does not support the following keys: {string.Join(", ", unknownKeys)}"));
 
 		if (TryGetApplicabilityOverTime(dictionary, ApplicabilityKeys.Stack, diagnostics, out var stackAvailability))
-			applicableTo.Stack = stackAvailability;
+			applicableTo = applicableTo with { Stack = stackAvailability };
 
-		AssignProduct(dictionary, applicableTo, diagnostics);
-		AssignServerless(dictionary, applicableTo, diagnostics);
-		AssignDeploymentType(dictionary, applicableTo, diagnostics);
+		AssignProduct(dictionary, ref applicableTo, diagnostics);
+		AssignServerless(dictionary, ref applicableTo, diagnostics);
+		AssignDeploymentType(dictionary, ref applicableTo, diagnostics);
 
 		if (TryGetDeployment(dictionary, diagnostics, out var deployment))
-			applicableTo.Deployment = deployment;
+			applicableTo = applicableTo with { Deployment = deployment };
 
 		if (TryGetProjectApplicability(dictionary, diagnostics, out var serverless))
-			applicableTo.Serverless = applicableTo.Serverless is not null
-				? MergeServerlessProjectApplicability(applicableTo.Serverless, serverless)
-				: serverless;
+			applicableTo = applicableTo with
+			{
+				Serverless = applicableTo.Serverless is not null
+					? MergeServerlessProjectApplicability(applicableTo.Serverless, serverless)
+					: serverless
+			};
 
 		if (TryGetProductApplicability(dictionary, diagnostics, out var product))
-			applicableTo.ProductApplicability = product;
+			applicableTo = applicableTo with { ProductApplicability = product };
 
 		if (diagnostics.Count > 0)
-			applicableTo.Diagnostics = new ApplicabilityDiagnosticsCollection(diagnostics);
+			applicableTo = applicableTo with { Diagnostics = new ApplicabilityDiagnosticsCollection(diagnostics) };
 		return applicableTo;
 	}
 
@@ -169,7 +172,7 @@ public class ApplicableToYamlConverter(IReadOnlyCollection<string> productKeys) 
 
 	private static void AssignDeploymentType(
 		Dictionary<object, object?> dictionary,
-		ApplicableTo applicableTo,
+		ref ApplicableTo applicableTo,
 		List<(Severity, string)> diagnostics
 	)
 	{
@@ -177,24 +180,27 @@ public class ApplicableToYamlConverter(IReadOnlyCollection<string> productKeys) 
 			return;
 
 		if (deploymentType is null || (deploymentType is string s && string.IsNullOrWhiteSpace(s)))
-			applicableTo.Deployment = DeploymentApplicability.All;
+			applicableTo = applicableTo with { Deployment = DeploymentApplicability.All };
 		else if (deploymentType is string deploymentTypeString)
 		{
 			var applies = AppliesCollection.TryParse(deploymentTypeString, diagnostics, out var a) ? a : null;
 			if (applies is not null)
 				ValidateApplicabilityCollection(ApplicabilityKeys.Ess, applies, diagnostics);
-			applicableTo.Deployment = new DeploymentApplicability { Ece = applies, Eck = applies, Ess = applies, Self = applies };
+			applicableTo = applicableTo with
+			{
+				Deployment = new DeploymentApplicability { Ece = applies, Eck = applies, Ess = applies, Self = applies }
+			};
 		}
 		else if (deploymentType is Dictionary<object, object?> deploymentDictionary)
 		{
 			if (TryGetDeployment(deploymentDictionary, diagnostics, out var applicability))
-				applicableTo.Deployment = applicability;
+				applicableTo = applicableTo with { Deployment = applicability };
 		}
 	}
 
 	private static void AssignProduct(
 		Dictionary<object, object?> dictionary,
-		ApplicableTo applicableTo,
+		ref ApplicableTo applicableTo,
 		List<(Severity, string)> diagnostics
 	)
 	{
@@ -205,18 +211,18 @@ public class ApplicableToYamlConverter(IReadOnlyCollection<string> productKeys) 
 		if (productValue is not Dictionary<object, object?> productDictionary)
 		{
 			if (TryGetApplicabilityOverTime(dictionary, ApplicabilityKeys.Product, diagnostics, out var productAvailability))
-				applicableTo.Product = productAvailability;
+				applicableTo = applicableTo with { Product = productAvailability };
 			return;
 		}
 
 		// Handle dictionary case
 		if (TryGetProductApplicability(productDictionary, diagnostics, out var applicability))
-			applicableTo.ProductApplicability = applicability;
+			applicableTo = applicableTo with { ProductApplicability = applicability };
 	}
 
 	private static void AssignServerless(
 		Dictionary<object, object?> dictionary,
-		ApplicableTo applicableTo,
+		ref ApplicableTo applicableTo,
 		List<(Severity, string)> diagnostics
 	)
 	{
@@ -224,24 +230,27 @@ public class ApplicableToYamlConverter(IReadOnlyCollection<string> productKeys) 
 			return;
 
 		if (serverless is null || (serverless is string s && string.IsNullOrWhiteSpace(s)))
-			applicableTo.Serverless = ServerlessProjectApplicability.All;
+			applicableTo = applicableTo with { Serverless = ServerlessProjectApplicability.All };
 		else if (serverless is string serverlessString)
 		{
 			var applies = AppliesCollection.TryParse(serverlessString, diagnostics, out var a) ? a : null;
 			if (applies is not null)
 				ValidateApplicabilityCollection(ApplicabilityKeys.Serverless, applies, diagnostics);
-			applicableTo.Serverless = new ServerlessProjectApplicability
+			applicableTo = applicableTo with
 			{
-				Elasticsearch = applies,
-				Observability = applies,
-				Security = applies,
-				VectorDatabase = applies
+				Serverless = new ServerlessProjectApplicability
+				{
+					Elasticsearch = applies,
+					Observability = applies,
+					Security = applies,
+					VectorDatabase = applies
+				}
 			};
 		}
 		else if (serverless is Dictionary<object, object?> serverlessDictionary)
 		{
 			if (TryGetProjectApplicability(serverlessDictionary, diagnostics, out var applicability))
-				applicableTo.Serverless = applicability;
+				applicableTo = applicableTo with { Serverless = applicability };
 		}
 	}
 
@@ -264,11 +273,11 @@ public class ApplicableToYamlConverter(IReadOnlyCollection<string> productKeys) 
 
 		var mapping = new Dictionary<string, Action<AppliesCollection?>>
 		{
-			{ ApplicabilityKeys.Ece, a => d.Ece = a },
-			{ ApplicabilityKeys.Eck, a => d.Eck = a },
-			{ ApplicabilityKeys.Ess, a => d.Ess = a },
-			{ ApplicabilityKeys.Ech, a => d.Ess = a },
-			{ ApplicabilityKeys.Self, a => d.Self = a }
+			{ ApplicabilityKeys.Ece, a => d = d with { Ece = a } },
+			{ ApplicabilityKeys.Eck, a => d = d with { Eck = a } },
+			{ ApplicabilityKeys.Ess, a => d = d with { Ess = a } },
+			{ ApplicabilityKeys.Ech, a => d = d with { Ess = a } },
+			{ ApplicabilityKeys.Self, a => d = d with { Self = a } }
 		};
 
 		foreach (var (key, action) in mapping)
@@ -297,10 +306,10 @@ public class ApplicableToYamlConverter(IReadOnlyCollection<string> productKeys) 
 
 		var mapping = new Dictionary<string, Action<AppliesCollection?>>
 		{
-			[ApplicabilityKeys.Elasticsearch] = a => serverlessAvailability.Elasticsearch = a,
-			[ApplicabilityKeys.Observability] = a => serverlessAvailability.Observability = a,
-			[ApplicabilityKeys.Security] = a => serverlessAvailability.Security = a,
-			[ApplicabilityKeys.VectorDb] = a => serverlessAvailability.VectorDatabase = a
+			[ApplicabilityKeys.Elasticsearch] = a => serverlessAvailability = serverlessAvailability with { Elasticsearch = a },
+			[ApplicabilityKeys.Observability] = a => serverlessAvailability = serverlessAvailability with { Observability = a },
+			[ApplicabilityKeys.Security] = a => serverlessAvailability = serverlessAvailability with { Security = a },
+			[ApplicabilityKeys.VectorDb] = a => serverlessAvailability = serverlessAvailability with { VectorDatabase = a }
 		};
 
 		foreach (var (key, action) in mapping)
@@ -329,30 +338,30 @@ public class ApplicableToYamlConverter(IReadOnlyCollection<string> productKeys) 
 
 		var mapping = new Dictionary<string, Action<AppliesCollection?>>
 		{
-			{ "ecctl", a => productAvailability.Ecctl = a },
-			{ "curator", a => productAvailability.Curator = a },
-			{ "apm_agent_android", a => productAvailability.ApmAgentAndroid = a },
-			{ "apm_agent_dotnet", a => productAvailability.ApmAgentDotnet = a },
-			{ "apm_agent_go", a => productAvailability.ApmAgentGo = a },
-			{ "apm_agent_ios", a => productAvailability.ApmAgentIos = a },
-			{ "apm_agent_java", a => productAvailability.ApmAgentJava = a },
-			{ "apm_agent_node", a => productAvailability.ApmAgentNode = a },
-			{ "apm_agent_php", a => productAvailability.ApmAgentPhp = a },
-			{ "apm_agent_python", a => productAvailability.ApmAgentPython = a },
-			{ "apm_agent_ruby", a => productAvailability.ApmAgentRuby = a },
-			{ "apm_agent_rum_js", a => productAvailability.ApmAgentRumJs = a },
-			{ "edot_ios", a => productAvailability.EdotIos = a },
-			{ "edot_android", a => productAvailability.EdotAndroid = a },
-			{ "edot_collector", a => productAvailability.EdotCollector = a },
-			{ "edot_dotnet", a => productAvailability.EdotDotnet = a },
-			{ "edot_java", a => productAvailability.EdotJava = a },
-			{ "edot_node", a => productAvailability.EdotNode = a },
-			{ "edot_browser", a => productAvailability.EdotBrowser = a },
-			{ "edot_php", a => productAvailability.EdotPhp = a },
-			{ "edot_python", a => productAvailability.EdotPython = a },
-			{ "edot_cf_aws", a => productAvailability.EdotCfAws = a },
-			{ "edot_cf_azure", a => productAvailability.EdotCfAzure = a },
-			{ "edot_cf_gcp", a => productAvailability.EdotCfGcp = a }
+			{ "ecctl", a => productAvailability = productAvailability with { Ecctl = a } },
+			{ "curator", a => productAvailability = productAvailability with { Curator = a } },
+			{ "apm_agent_android", a => productAvailability = productAvailability with { ApmAgentAndroid = a } },
+			{ "apm_agent_dotnet", a => productAvailability = productAvailability with { ApmAgentDotnet = a } },
+			{ "apm_agent_go", a => productAvailability = productAvailability with { ApmAgentGo = a } },
+			{ "apm_agent_ios", a => productAvailability = productAvailability with { ApmAgentIos = a } },
+			{ "apm_agent_java", a => productAvailability = productAvailability with { ApmAgentJava = a } },
+			{ "apm_agent_node", a => productAvailability = productAvailability with { ApmAgentNode = a } },
+			{ "apm_agent_php", a => productAvailability = productAvailability with { ApmAgentPhp = a } },
+			{ "apm_agent_python", a => productAvailability = productAvailability with { ApmAgentPython = a } },
+			{ "apm_agent_ruby", a => productAvailability = productAvailability with { ApmAgentRuby = a } },
+			{ "apm_agent_rum_js", a => productAvailability = productAvailability with { ApmAgentRumJs = a } },
+			{ "edot_ios", a => productAvailability = productAvailability with { EdotIos = a } },
+			{ "edot_android", a => productAvailability = productAvailability with { EdotAndroid = a } },
+			{ "edot_collector", a => productAvailability = productAvailability with { EdotCollector = a } },
+			{ "edot_dotnet", a => productAvailability = productAvailability with { EdotDotnet = a } },
+			{ "edot_java", a => productAvailability = productAvailability with { EdotJava = a } },
+			{ "edot_node", a => productAvailability = productAvailability with { EdotNode = a } },
+			{ "edot_browser", a => productAvailability = productAvailability with { EdotBrowser = a } },
+			{ "edot_php", a => productAvailability = productAvailability with { EdotPhp = a } },
+			{ "edot_python", a => productAvailability = productAvailability with { EdotPython = a } },
+			{ "edot_cf_aws", a => productAvailability = productAvailability with { EdotCfAws = a } },
+			{ "edot_cf_azure", a => productAvailability = productAvailability with { EdotCfAzure = a } },
+			{ "edot_cf_gcp", a => productAvailability = productAvailability with { EdotCfGcp = a } }
 		};
 
 		foreach (var (key, action) in mapping)

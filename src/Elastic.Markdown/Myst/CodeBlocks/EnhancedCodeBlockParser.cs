@@ -125,7 +125,7 @@ public class EnhancedCodeBlockParser : FencedBlockParserBase<EnhancedCodeBlock>
 				return;
 			foreach (var (severity, message) in appliesToDirective.AppliesTo.Diagnostics)
 				appliesToDirective.Emit(severity, message);
-			applicableTo.Diagnostics = null;
+			appliesToDirective.AppliesTo = applicableTo with { Diagnostics = null };
 		}
 		catch (Exception e)
 		{
