@@ -16,7 +16,7 @@ products:
       - label: Release notes
         url: /release-notes.md
       - label: Changelog reference
-        url: /data/release-notes/overview.md
+        url: /data/release-notes/index.md
     upgrade-link:
       label: Upgrade docs-builder
       url: /getting-started/installation.md

@@ -377,7 +377,7 @@ rules:
         exclude: ">non-issue, ILM"
 ```
 
-For more context, go to [](/data/release-notes/create.md#rules).
+For more context, go to [](/data/release-notes/index.md).
 
 ### `rules.bundle` [rules-bundle]
 
