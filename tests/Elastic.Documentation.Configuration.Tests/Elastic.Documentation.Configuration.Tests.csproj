@@ -9,4 +9,8 @@
     <ProjectReference Include="..\..\src\Elastic.Documentation.Tooling\Elastic.Documentation.Tooling.csproj"/>
   </ItemGroup>
 
+  <ItemGroup>
+    <None Include="Baseline\**\*" CopyToOutputDirectory="PreserveNewest" LinkBase="Baseline" />
+  </ItemGroup>
+
 </Project>

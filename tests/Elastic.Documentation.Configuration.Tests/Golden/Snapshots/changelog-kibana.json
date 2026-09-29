@@ -1,0 +1,879 @@
+{
+  "value": {
+    "$type": "ChangelogConfiguration",
+    "Areas": [
+      "AI and machine Learning",
+      "Alerting and reporting",
+      "Dashboards and visualizations",
+      "Discover and ES|QL",
+      "Kibana platform",
+      "Other",
+      "Search and data"
+    ],
+    "Bundle": {
+      "$type": "BundleConfiguration",
+      "Branch": "main",
+      "Description": null,
+      "Directory": "docs/changelog",
+      "LinkAllowRepos": [
+        "elastic/kibana",
+        "elastic/elasticsearch",
+        "elastic/roadmap"
+      ],
+      "OutputDirectory": "docs/releases",
+      "Owner": "elastic",
+      "Profiles": {
+        "kibana-release": {
+          "$type": "BundleProfile",
+          "Branch": null,
+          "Description": null,
+          "HideFeatures": null,
+          "Output": null,
+          "OutputDirectory": "docs/releases/kibana",
+          "OutputProducts": "kibana {version} {lifecycle}",
+          "Owner": null,
+          "Product": null,
+          "Products": null,
+          "ReleaseDates": null,
+          "Repo": null,
+          "Source": null
+        },
+        "observability-release": {
+          "$type": "BundleProfile",
+          "Branch": null,
+          "Description": null,
+          "HideFeatures": null,
+          "Output": null,
+          "OutputDirectory": "docs/releases/observability",
+          "OutputProducts": "observability {version} {lifecycle}",
+          "Owner": null,
+          "Product": null,
+          "Products": null,
+          "ReleaseDates": null,
+          "Repo": null,
+          "Source": null
+        },
+        "security-release": {
+          "$type": "BundleProfile",
+          "Branch": null,
+          "Description": null,
+          "HideFeatures": null,
+          "Output": null,
+          "OutputDirectory": "docs/releases/security",
+          "OutputProducts": "security {version} {lifecycle}",
+          "Owner": null,
+          "Product": null,
+          "Products": null,
+          "ReleaseDates": null,
+          "Repo": null,
+          "Source": null
+        },
+        "serverless-release": {
+          "$type": "BundleProfile",
+          "Branch": null,
+          "Description": null,
+          "HideFeatures": [
+            "data-federation"
+          ],
+          "Output": null,
+          "OutputDirectory": "docs/releases/cloud-serverless",
+          "OutputProducts": "cloud-serverless {version} {lifecycle}",
+          "Owner": null,
+          "Product": null,
+          "Products": null,
+          "ReleaseDates": null,
+          "Repo": null,
+          "Source": null
+        }
+      },
+      "ReleaseDates": true,
+      "Releases": null,
+      "Repo": "kibana",
+      "UseLocalChangelogs": false
+    },
+    "Extract": {
+      "$type": "ExtractConfiguration",
+      "Issues": true,
+      "ReleaseNotes": true,
+      "StripTitlePrefix": true
+    },
+    "Filename": "Pr",
+    "HighlightLabels": null,
+    "LabelToAreas": {
+      ":ml": [
+        "AI and machine Learning"
+      ],
+      "EUI": [
+        "Kibana platform"
+      ],
+      "Feature:Actions": [
+        "Alerting and reporting"
+      ],
+      "Feature:Actions/ConnectorTypes": [
+        "Alerting and reporting"
+      ],
+      "Feature:Add Data": [
+        "Kibana platform"
+      ],
+      "Feature:Aggregations": [
+        "Dashboards and visualizations"
+      ],
+      "Feature:Alerting": [
+        "Alerting and reporting"
+      ],
+      "Feature:AlertingV2": [
+        "Alerting and reporting"
+      ],
+      "Feature:Anomaly Detection": [
+        "AI and machine Learning"
+      ],
+      "Feature:BackgroundSearch": [
+        "Discover and ES|QL"
+      ],
+      "Feature:CCR": [
+        "Kibana platform"
+      ],
+      "Feature:Canvas": [
+        "Dashboards and visualizations"
+      ],
+      "Feature:Cases": [
+        "Alerting and reporting"
+      ],
+      "Feature:Chrome": [
+        "Kibana platform"
+      ],
+      "Feature:Console": [
+        "Search and data"
+      ],
+      "Feature:Coordinate Map": [
+        "Dashboards and visualizations"
+      ],
+      "Feature:Courier": [
+        "Kibana platform"
+      ],
+      "Feature:Dashboard": [
+        "Dashboards and visualizations"
+      ],
+      "Feature:Data Frame Analytics": [
+        "AI and machine Learning"
+      ],
+      "Feature:Data Frames": [
+        "AI and machine Learning"
+      ],
+      "Feature:Data Table": [
+        "Dashboards and visualizations"
+      ],
+      "Feature:Data Views": [
+        "Search and data"
+      ],
+      "Feature:Dev Tools": [
+        "Search and data"
+      ],
+      "Feature:Discover": [
+        "Discover and ES|QL"
+      ],
+      "Feature:DiscoverTabs": [
+        "Discover and ES|QL"
+      ],
+      "Feature:Drilldowns": [
+        "Dashboards and visualizations"
+      ],
+      "Feature:Embedding": [
+        "Alerting and reporting"
+      ],
+      "Feature:FieldFormatters": [
+        "Search and data"
+      ],
+      "Feature:File Data Viz": [
+        "AI and machine Learning"
+      ],
+      "Feature:Filters": [
+        "Kibana platform"
+      ],
+      "Feature:Fleet": [
+        "Search and data"
+      ],
+      "Feature:Gauge Vis": [
+        "Dashboards and visualizations"
+      ],
+      "Feature:Graph": [
+        "Dashboards and visualizations"
+      ],
+      "Feature:Header": [
+        "Kibana platform"
+      ],
+      "Feature:Heatmap": [
+        "Dashboards and visualizations"
+      ],
+      "Feature:Highlight": [
+        "Kibana platform"
+      ],
+      "Feature:Home": [
+        "Kibana platform"
+      ],
+      "Feature:ILM": [
+        "Search and data"
+      ],
+      "Feature:Index Management": [
+        "Search and data"
+      ],
+      "Feature:Inference UI": [
+        "AI and machine Learning"
+      ],
+      "Feature:Ingest Node Pipelines": [
+        "Search and data"
+      ],
+      "Feature:Input Control": [
+        "Dashboards and visualizations"
+      ],
+      "Feature:Inspector": [
+        "Search and data"
+      ],
+      "Feature:KQL": [
+        "Kibana platform"
+      ],
+      "Feature:Kibana Management": [
+        "Kibana platform"
+      ],
+      "Feature:Lens": [
+        "Dashboards and visualizations"
+      ],
+      "Feature:License": [
+        "Kibana platform"
+      ],
+      "Feature:Logstash Pipelines": [
+        "Search and data"
+      ],
+      "Feature:ML/AIOps": [
+        "AI and machine Learning"
+      ],
+      "Feature:Maps": [
+        "Dashboards and visualizations"
+      ],
+      "Feature:Markdown": [
+        "Dashboards and visualizations"
+      ],
+      "Feature:MetricVis": [
+        "Dashboards and visualizations"
+      ],
+      "Feature:OAS": [
+        "Kibana platform"
+      ],
+      "Feature:Pie Chart": [
+        "Dashboards and visualizations"
+      ],
+      "Feature:Plugins": [
+        "Kibana platform"
+      ],
+      "Feature:Query Bar": [
+        "Kibana platform"
+      ],
+      "Feature:Region Map": [
+        "Dashboards and visualizations"
+      ],
+      "Feature:Reporting": [
+        "Alerting and reporting"
+      ],
+      "Feature:Rollups": [
+        "Kibana platform"
+      ],
+      "Feature:Saved Objects": [
+        "Kibana platform"
+      ],
+      "Feature:Search": [
+        "Search and data"
+      ],
+      "Feature:Search Profiler": [
+        "Search and data"
+      ],
+      "Feature:Security/Authentication": [
+        "Kibana platform"
+      ],
+      "Feature:Security/Authorization": [
+        "Kibana platform"
+      ],
+      "Feature:Security/Feature Controls": [
+        "Kibana platform"
+      ],
+      "Feature:Security/Spaces": [
+        "Kibana platform"
+      ],
+      "Feature:SharingURLs": [
+        "Alerting and reporting"
+      ],
+      "Feature:Snapshot and Restore": [
+        "Kibana platform"
+      ],
+      "Feature:Stack Monitoring": [
+        "Kibana platform"
+      ],
+      "Feature:TSVB": [
+        "Dashboards and visualizations"
+      ],
+      "Feature:Tagcloud": [
+        "Dashboards and visualizations"
+      ],
+      "Feature:Task Manager": [
+        "Kibana platform"
+      ],
+      "Feature:Telemetry": [
+        "Kibana platform"
+      ],
+      "Feature:Timelion": [
+        "Dashboards and visualizations"
+      ],
+      "Feature:Timepicker": [
+        "Kibana platform"
+      ],
+      "Feature:Transforms": [
+        "Search and data"
+      ],
+      "Feature:UnifiedDataTable": [
+        "Discover and ES|QL"
+      ],
+      "Feature:UnifiedDocViewer": [
+        "Discover and ES|QL"
+      ],
+      "Feature:UnifiedFieldList": [
+        "Discover and ES|QL"
+      ],
+      "Feature:Upgrade Assistant": [
+        "Kibana platform"
+      ],
+      "Feature:Vega": [
+        "Dashboards and visualizations"
+      ],
+      "Feature:Vis Editor": [
+        "Dashboards and visualizations"
+      ],
+      "Feature:Vis Loader": [
+        "Dashboards and visualizations"
+      ],
+      "Feature:Vislib": [
+        "Dashboards and visualizations"
+      ],
+      "Feature:Visualizations": [
+        "Dashboards and visualizations"
+      ],
+      "Feature:XYAxis": [
+        "Dashboards and visualizations"
+      ],
+      "Feature:beats-cm": [
+        "Search and data"
+      ],
+      "Feature:http": [
+        "Kibana platform"
+      ],
+      "Feature:logging": [
+        "Kibana platform"
+      ],
+      "Feature:ml-results": [
+        "AI and machine Learning"
+      ],
+      "Feature:users and roles": [
+        "Kibana platform"
+      ],
+      "Feature:watcher": [
+        "Kibana platform"
+      ],
+      "Ingest": [
+        "Search and data"
+      ],
+      "Kibana UI": [
+        "Kibana platform"
+      ],
+      "Project:Accessibility": [
+        "Kibana platform"
+      ],
+      "Project:AsyncSearch": [
+        "Search and data"
+      ],
+      "Project:TimeToVisualize": [
+        "Dashboards and visualizations"
+      ],
+      "Project:i18n": [
+        "Kibana platform"
+      ],
+      "Team:Alerting Services": [
+        "Alerting and reporting"
+      ],
+      "Team:Beats": [
+        "Search and data"
+      ],
+      "Team:Cases": [
+        "Alerting and reporting"
+      ],
+      "Team:Cloud": [
+        "Kibana platform"
+      ],
+      "Team:Core": [
+        "Kibana platform"
+      ],
+      "Team:Core UI": [
+        "Kibana platform"
+      ],
+      "Team:DataDiscovery": [
+        "Discover and ES|QL"
+      ],
+      "Team:Design": [
+        "Kibana platform"
+      ],
+      "Team:ESQL": [
+        "Discover and ES|QL"
+      ],
+      "Team:Elasticsearch UI": [
+        "Search and data"
+      ],
+      "Team:Fleet": [
+        "Search and data"
+      ],
+      "Team:Geo": [
+        "Dashboards and visualizations"
+      ],
+      "Team:Monitoring": [
+        "Kibana platform"
+      ],
+      "Team:Operations": [
+        "Kibana platform"
+      ],
+      "Team:Presentation": [
+        "Dashboards and visualizations"
+      ],
+      "Team:Reporting Services": [
+        "Alerting and reporting"
+      ],
+      "Team:ResponseOps": [
+        "Alerting and reporting"
+      ],
+      "Team:Search": [
+        "Search and data"
+      ],
+      "Team:Security": [
+        "Kibana platform"
+      ],
+      "Team:SharedUX": [
+        "Kibana platform"
+      ],
+      "Team:Stack Management": [
+        "Kibana platform"
+      ],
+      "Team:Visualizations": [
+        "Dashboards and visualizations"
+      ],
+      "Team:agent-builder": [
+        "AI and machine Learning"
+      ],
+      "feature:agent-builder": [
+        "AI and machine Learning"
+      ],
+      "release_note_area:other": [
+        "Other"
+      ]
+    },
+    "LabelToFeatures": null,
+    "LabelToProducts": {
+      "Feature:AutomaticImport": "security",
+      "Feature:Detection Alerts": "security",
+      "Feature:Detection Rules": "security",
+      "Feature:Entity Analytics": "security",
+      "Feature:Event Correlation (EQL) Rule": "security",
+      "Feature:Infra UI": "observability",
+      "Feature:Logs UI": "observability",
+      "Feature:Metrics UI": "observability",
+      "Feature:Observability Home": "observability",
+      "Feature:Rule Exceptions": "security",
+      "Feature:SIEMMigrations": "security",
+      "Feature:SLO": "observability",
+      "Feature:Service Maps": "observability",
+      "Feature:Streams": "observability",
+      "Feature:Timeline": "security",
+      "Feature:Uptime": "observability",
+      "Team: CTI": "security",
+      "Team: SecuritySolution": "security",
+      "Team:Asset Management": "security",
+      "Team:Cloud Security": "security",
+      "Team:Defend Workflows": "security",
+      "Team:Detection Alerts": "security",
+      "Team:Detection Engine": "security",
+      "Team:Detection Rule Management": "security",
+      "Team:Detection Rules": "security",
+      "Team:Detections and Resp": "security",
+      "Team:Endpoint Response": "security",
+      "Team:Entity Analytics": "security",
+      "Team:Observability": "observability",
+      "Team:Onboarding and Lifecycle Mgt": "security",
+      "Team:SIEM": "security",
+      "Team:Security Generative AI": "security",
+      "Team:Security Solution Platform": "security",
+      "Team:Security-Scalability": "security",
+      "Team:SecuritySolution": "security",
+      "Team:Threat Hunting": "security",
+      "Team:Threat Hunting:Cases": "security",
+      "Team:Threat Hunting:Explore": "security",
+      "Team:Threat Hunting:Investigations": "security",
+      "Team:actionable-obs": "observability",
+      "Team:apm": "observability",
+      "Team:logs-metrics-ui": "observability",
+      "Team:nightshift-context-and-research": "observability",
+      "Team:obs-entities": "observability",
+      "Team:obs-exploration": "observability",
+      "Team:obs-knowledge": "observability",
+      "Team:obs-signals-traces": "observability",
+      "Team:obs-ux-infra_services - DEPRECATED": "observability",
+      "Team:obs-ux-logs": "observability",
+      "Team:obs-ux-management": "observability",
+      "Team:streams-ui": "observability",
+      "Team:uptime": "observability",
+      "author:actionable-obs": "observability",
+      "ci:project-deploy-observability": "observability"
+    },
+    "LabelToType": {
+      ">docs": "docs",
+      "release_note:breaking": "breaking-change",
+      "release_note:deprecation": "deprecation",
+      "release_note:enhancement": "enhancement",
+      "release_note:feature": "feature",
+      "release_note:fix": "bug-fix"
+    },
+    "Lifecycles": [
+      "Preview",
+      "Beta",
+      "Ga"
+    ],
+    "Pivot": {
+      "$type": "PivotConfiguration",
+      "Areas": {
+        "AI and machine Learning": ":ml, Feature:Anomaly Detection, Feature:Data Frames, Feature:File Data Viz, Feature:ml-results, Feature:Data Frame Analytics, Feature:Inference UI, Feature:ML/AIOps, feature:agent-builder, Team:agent-builder",
+        "Alerting and reporting": "Feature:Alerting, Team:Alerting Services, Feature:Actions, Feature:Actions/ConnectorTypes, Team:ResponseOps, Team:Cases, Feature:Cases, Feature:Embedding, Feature:SharingURLs, Feature:Reporting, Team:Reporting Services, Feature:AlertingV2",
+        "Dashboards and visualizations": "Feature:Dashboard, Feature:Drilldowns, Project:TimeToVisualize, Team:Presentation, Feature:Lens, Feature:Timelion, Feature:TSVB, Feature:Coordinate Map, Feature:Region Map, Feature:Vega, Feature:Gauge Vis, Feature:Tagcloud, Feature:Vis Loader, Feature:Vislib, Feature:Vis Editor, Feature:Aggregations, Feature:Input Control, Feature:Visualizations, Feature:Markdown, Feature:Data Table, Feature:Heatmap, Feature:Pie Chart, Feature:XYAxis, Feature:Graph, Feature:MetricVis, Team:Visualizations, Feature:Canvas, Feature:Maps, Team:Geo",
+        "Discover and ES|QL": "Feature:Discover, Team:DataDiscovery, Team:ESQL, Feature:BackgroundSearch, Feature:DiscoverTabs, Feature:UnifiedDataTable, Feature:UnifiedDocViewer, Feature:UnifiedFieldList",
+        "Kibana platform": "Team:SharedUX, Team:Design, Project:Accessibility, Feature:Add Data, Feature:Home, Team:Cloud, EUI, Team:Monitoring, Feature:Telemetry, Feature:Stack Monitoring, Team:Operations, Feature:License, Kibana UI, Team:Core UI, Feature:Header, Team:Core, Feature:Plugins, Project:i18n, Feature:Saved Objects, Feature:Task Manager, Team:Security, Feature:Security/Spaces, Feature:users and roles, Feature:Security/Authentication, Feature:Security/Authorization, Feature:Security/Feature Controls, Feature:license, Feature:watcher, Feature:Kibana Management, Feature:Snapshot and Restore, Team:Stack Management, Feature:CCR, Feature:Upgrade Assistant, Feature:Query Bar, Feature:Courier, Feature:Filters, Feature:Timepicker, Feature:Highlight, Feature:KQL, Feature:Rollups, Feature:Chrome, Feature:http, Feature:OAS, Feature:logging",
+        "Other": "release_note_area:other",
+        "Search and data": "Feature:Logstash Pipelines, Feature:beats-cm, Team:Beats, Team:Fleet, Feature:Fleet, Ingest, Feature:Ingest Node Pipelines, Feature:Data Views, Feature:Index Management, Feature:FieldFormatters, Feature:ILM, Feature:Transforms, Feature:Console, Feature:Dev Tools, Feature:Inspector, Team:Search, Feature:Search Profiler, Team:Elasticsearch UI, Feature:Search, Project:AsyncSearch"
+      },
+      "Features": null,
+      "Highlight": null,
+      "Products": {
+        "observability": "Feature:Observability Home, Feature:SLO, Team:obs-ux-management, Team:nightshift-context-and-research, Team:obs-ux-infra_services - DEPRECATED, Team:obs-ux-logs, Team:streams-ui, Team:obs-knowledge, Team:obs-entities, ci:project-deploy-observability, Feature:Uptime, Team:uptime, Team:apm, Team:APM, Feature:Metrics UI, Team:logs-metrics-ui, Feature:Logs UI, Feature:Infra UI, Feature:Service Maps, Team:actionable-obs, Team:obs-exploration, Team:obs-signals-traces, Team:Observability, author:actionable-obs, Feature:Streams",
+        "security": "Team:SIEM, Team:SecuritySolution, Team: SecuritySolution, Team:Endpoint Response, Team:Entity Analytics, Team:Security Generative AI, Team:Threat Hunting, Team:Threat Hunting:Explore, Team:Threat Hunting:Investigations, Team:Detections and Resp, Team:Asset Management, Team:Onboarding and Lifecycle Mgt, Team:Security Solution Platform, Team:Detection Alerts, Team: CTI, Team:Threat Hunting:Cases, Team:Cloud Security, Team:Detection Engine, Team:Defend Workflows, Team:Detection Rules, Team:Security-Scalability, Team:Detection Rule Management, Feature:SIEMMigrations, Feature:Timeline, Feature:Detection Rules, Feature:Detection Alerts, Feature:Entity Analytics, Feature:Rule Exceptions, Feature:AutomaticImport, Feature:Event Correlation (EQL) Rule"
+      },
+      "Subtypes": null,
+      "Types": {
+        "breaking-change": {
+          "$type": "TypeEntry",
+          "Labels": "release_note:breaking",
+          "Subtypes": null
+        },
+        "bug-fix": {
+          "$type": "TypeEntry",
+          "Labels": "release_note:fix",
+          "Subtypes": null
+        },
+        "deprecation": {
+          "$type": "TypeEntry",
+          "Labels": "release_note:deprecation",
+          "Subtypes": null
+        },
+        "docs": {
+          "$type": "TypeEntry",
+          "Labels": ">docs",
+          "Subtypes": null
+        },
+        "enhancement": {
+          "$type": "TypeEntry",
+          "Labels": "release_note:enhancement",
+          "Subtypes": null
+        },
+        "feature": {
+          "$type": "TypeEntry",
+          "Labels": "release_note:feature",
+          "Subtypes": null
+        },
+        "known-issue": {
+          "$type": "TypeEntry",
+          "Labels": null,
+          "Subtypes": null
+        },
+        "other": {
+          "$type": "TypeEntry",
+          "Labels": null,
+          "Subtypes": null
+        },
+        "regression": {
+          "$type": "TypeEntry",
+          "Labels": null,
+          "Subtypes": null
+        },
+        "security": {
+          "$type": "TypeEntry",
+          "Labels": null,
+          "Subtypes": null
+        }
+      }
+    },
+    "Products": [
+      {
+        "$type": "Product",
+        "DisplayName": "Kibana",
+        "Features": {
+          "$type": "ProductFeatures",
+          "ParticipatesInReleaseNotes": true,
+          "PublicReference": true,
+          "ReleaseNotes": "OnRelease"
+        },
+        "Id": "kibana",
+        "Repository": "kibana",
+        "VersioningSystem": {
+          "$type": "VersioningSystem",
+          "Base": {
+            "$type": "SemVersion",
+            "Major": 9,
+            "Metadata": "",
+            "Minor": 0,
+            "Patch": 0,
+            "Prerelease": ""
+          },
+          "Current": {
+            "$type": "SemVersion",
+            "Major": 9,
+            "Metadata": "",
+            "Minor": 5,
+            "Patch": 4,
+            "Prerelease": ""
+          },
+          "Id": "Stack",
+          "IsVersionless": false
+        }
+      },
+      {
+        "$type": "Product",
+        "DisplayName": "Elastic Observability",
+        "Features": {
+          "$type": "ProductFeatures",
+          "ParticipatesInReleaseNotes": true,
+          "PublicReference": true,
+          "ReleaseNotes": "OnRelease"
+        },
+        "Id": "observability",
+        "Repository": "observability",
+        "VersioningSystem": {
+          "$type": "VersioningSystem",
+          "Base": {
+            "$type": "SemVersion",
+            "Major": 9,
+            "Metadata": "",
+            "Minor": 0,
+            "Patch": 0,
+            "Prerelease": ""
+          },
+          "Current": {
+            "$type": "SemVersion",
+            "Major": 9,
+            "Metadata": "",
+            "Minor": 5,
+            "Patch": 4,
+            "Prerelease": ""
+          },
+          "Id": "Stack",
+          "IsVersionless": false
+        }
+      },
+      {
+        "$type": "Product",
+        "DisplayName": "Elastic Cloud Serverless",
+        "Features": {
+          "$type": "ProductFeatures",
+          "ParticipatesInReleaseNotes": true,
+          "PublicReference": true,
+          "ReleaseNotes": "OnRelease"
+        },
+        "Id": "cloud-serverless",
+        "Repository": "cloud",
+        "VersioningSystem": {
+          "$type": "VersioningSystem",
+          "Base": {
+            "$type": "SemVersion",
+            "Major": 99999,
+            "Metadata": "",
+            "Minor": 0,
+            "Patch": 0,
+            "Prerelease": ""
+          },
+          "Current": {
+            "$type": "SemVersion",
+            "Major": 99999,
+            "Metadata": "",
+            "Minor": 0,
+            "Patch": 0,
+            "Prerelease": ""
+          },
+          "Id": "Serverless",
+          "IsVersionless": true
+        }
+      },
+      {
+        "$type": "Product",
+        "DisplayName": "Elastic Security",
+        "Features": {
+          "$type": "ProductFeatures",
+          "ParticipatesInReleaseNotes": true,
+          "PublicReference": true,
+          "ReleaseNotes": "OnRelease"
+        },
+        "Id": "security",
+        "Repository": "security",
+        "VersioningSystem": {
+          "$type": "VersioningSystem",
+          "Base": {
+            "$type": "SemVersion",
+            "Major": 9,
+            "Metadata": "",
+            "Minor": 0,
+            "Patch": 0,
+            "Prerelease": ""
+          },
+          "Current": {
+            "$type": "SemVersion",
+            "Major": 9,
+            "Metadata": "",
+            "Minor": 5,
+            "Patch": 4,
+            "Prerelease": ""
+          },
+          "Id": "Stack",
+          "IsVersionless": false
+        }
+      }
+    ],
+    "ProductsConfiguration": {
+      "$type": "ProductsConfig",
+      "Available": [
+        "kibana",
+        "observability",
+        "cloud-serverless",
+        "security"
+      ],
+      "Default": [
+        {
+          "$type": "DefaultProduct",
+          "Lifecycle": "ga",
+          "Product": "kibana"
+        }
+      ]
+    },
+    "Rules": {
+      "$type": "RulesConfiguration",
+      "Bundle": {
+        "$type": "BundleRules",
+        "Blocker": {
+          "$type": "PublishBlocker",
+          "Areas": null,
+          "AreasMode": "Exclude",
+          "HasBlockingRules": true,
+          "MatchAreas": "Any",
+          "Types": [
+            "docs"
+          ],
+          "TypesMode": "Exclude"
+        },
+        "ByProduct": null,
+        "ExcludeProducts": null,
+        "IncludeProducts": null,
+        "MatchProducts": "Any"
+      },
+      "Create": {
+        "$type": "CreateRules",
+        "ByProduct": null,
+        "Labels": [
+          "release_note:skip",
+          "reverted",
+          "backport"
+        ],
+        "Match": "Any",
+        "Mode": "Exclude"
+      },
+      "Match": "Any",
+      "Publish": null
+    },
+    "SubTypes": [
+      "api",
+      "behavioral",
+      "configuration",
+      "dependency",
+      "subscription",
+      "plugin",
+      "security",
+      "other"
+    ],
+    "Types": [
+      "breaking-change",
+      "bug-fix",
+      "deprecation",
+      "feature",
+      "enhancement",
+      "docs",
+      "known-issue",
+      "other",
+      "regression",
+      "security"
+    ]
+  },
+  "diagnostics": [
+    {
+      "severity": "Warning",
+      "file": "/repo/docs/changelog.yml",
+      "line": null,
+      "column": null,
+      "message": "bundle.profiles.kibana-release.output_products is deprecated. Use 'product: <id>' instead."
+    },
+    {
+      "severity": "Warning",
+      "file": "/repo/docs/changelog.yml",
+      "line": null,
+      "column": null,
+      "message": "bundle.profiles.kibana-release.output_directory is deprecated. The output directory is derived automatically as bundle.output_directory/{product}."
+    },
+    {
+      "severity": "Warning",
+      "file": "/repo/docs/changelog.yml",
+      "line": null,
+      "column": null,
+      "message": "bundle.profiles.observability-release.output_products is deprecated. Use 'product: <id>' instead."
+    },
+    {
+      "severity": "Warning",
+      "file": "/repo/docs/changelog.yml",
+      "line": null,
+      "column": null,
+      "message": "bundle.profiles.observability-release.output_directory is deprecated. The output directory is derived automatically as bundle.output_directory/{product}."
+    },
+    {
+      "severity": "Warning",
+      "file": "/repo/docs/changelog.yml",
+      "line": null,
+      "column": null,
+      "message": "bundle.profiles.security-release.output_products is deprecated. Use 'product: <id>' instead."
+    },
+    {
+      "severity": "Warning",
+      "file": "/repo/docs/changelog.yml",
+      "line": null,
+      "column": null,
+      "message": "bundle.profiles.security-release.output_directory is deprecated. The output directory is derived automatically as bundle.output_directory/{product}."
+    },
+    {
+      "severity": "Warning",
+      "file": "/repo/docs/changelog.yml",
+      "line": null,
+      "column": null,
+      "message": "bundle.profiles.serverless-release.output_products is deprecated. Use 'product: <id>' instead."
+    },
+    {
+      "severity": "Warning",
+      "file": "/repo/docs/changelog.yml",
+      "line": null,
+      "column": null,
+      "message": "bundle.profiles.serverless-release.output_directory is deprecated. The output directory is derived automatically as bundle.output_directory/{product}."
+    }
+  ]
+}

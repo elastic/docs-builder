@@ -1,0 +1,1206 @@
+{
+  "value": {
+    "phantoms": [
+      "elasticsearch://reference",
+      "docs-content://release-notes",
+      "docs-content://release-notes/elasticsearch-clients",
+      "docs-content://release-notes/apm-agents",
+      "docs-content://",
+      "docs-content://products",
+      "elastic-agent://reference/otel-collector"
+    ],
+    "toc": [
+      {
+        "kind": "mount",
+        "source": "docs-content://get-started/",
+        "pathPrefix": "",
+        "island": false,
+        "navigationTitle": null,
+        "children": []
+      },
+      {
+        "kind": "mount",
+        "source": "docs-content://solutions/",
+        "pathPrefix": "",
+        "island": false,
+        "navigationTitle": null,
+        "children": []
+      },
+      {
+        "kind": "mount",
+        "source": "docs-content://manage-data/",
+        "pathPrefix": "",
+        "island": false,
+        "navigationTitle": null,
+        "children": []
+      },
+      {
+        "kind": "mount",
+        "source": "docs-content://explore-analyze/",
+        "pathPrefix": "",
+        "island": false,
+        "navigationTitle": null,
+        "children": []
+      },
+      {
+        "kind": "mount",
+        "source": "docs-content://deploy-manage/",
+        "pathPrefix": "",
+        "island": false,
+        "navigationTitle": null,
+        "children": []
+      },
+      {
+        "kind": "mount",
+        "source": "docs-content://cloud-account/",
+        "pathPrefix": "",
+        "island": false,
+        "navigationTitle": "Manage your Cloud account",
+        "children": []
+      },
+      {
+        "kind": "mount",
+        "source": "docs-content://troubleshoot/",
+        "pathPrefix": "",
+        "island": false,
+        "navigationTitle": null,
+        "children": []
+      },
+      {
+        "kind": "mount",
+        "source": "docs-content://release-notes/intro",
+        "pathPrefix": "release-notes",
+        "island": false,
+        "navigationTitle": null,
+        "children": [
+          {
+            "kind": "mount",
+            "source": "elasticsearch://release-notes/",
+            "pathPrefix": "release-notes/elasticsearch",
+            "island": false,
+            "navigationTitle": null,
+            "children": [
+              {
+                "kind": "mount",
+                "source": "elasticsearch-java://release-notes/",
+                "pathPrefix": "release-notes/elasticsearch/clients/java",
+                "island": false,
+                "navigationTitle": null,
+                "children": []
+              },
+              {
+                "kind": "mount",
+                "source": "elasticsearch-js://release-notes/",
+                "pathPrefix": "release-notes/elasticsearch/clients/javascript",
+                "island": false,
+                "navigationTitle": null,
+                "children": []
+              },
+              {
+                "kind": "mount",
+                "source": "elasticsearch-net://release-notes/",
+                "pathPrefix": "release-notes/elasticsearch/clients/dotnet",
+                "island": false,
+                "navigationTitle": null,
+                "children": []
+              },
+              {
+                "kind": "mount",
+                "source": "elasticsearch-php://release-notes/",
+                "pathPrefix": "release-notes/elasticsearch/clients/php",
+                "island": false,
+                "navigationTitle": null,
+                "children": []
+              },
+              {
+                "kind": "mount",
+                "source": "elasticsearch-py://release-notes/",
+                "pathPrefix": "release-notes/elasticsearch/clients/python",
+                "island": false,
+                "navigationTitle": null,
+                "children": []
+              },
+              {
+                "kind": "mount",
+                "source": "elasticsearch-ruby://release-notes/",
+                "pathPrefix": "release-notes/elasticsearch/clients/ruby",
+                "island": false,
+                "navigationTitle": null,
+                "children": []
+              },
+              {
+                "kind": "mount",
+                "source": "elasticsearch-hadoop://release-notes/",
+                "pathPrefix": "release-notes/elasticsearch-hadoop",
+                "island": false,
+                "navigationTitle": null,
+                "children": []
+              }
+            ]
+          },
+          {
+            "kind": "mount",
+            "source": "kibana://release-notes/",
+            "pathPrefix": "release-notes/kibana",
+            "island": false,
+            "navigationTitle": null,
+            "children": []
+          },
+          {
+            "kind": "mount",
+            "source": "elastic-agent://release-notes/",
+            "pathPrefix": "release-notes/elastic-agent",
+            "island": false,
+            "navigationTitle": null,
+            "children": []
+          },
+          {
+            "kind": "mount",
+            "source": "fleet-server://release-notes/",
+            "pathPrefix": "release-notes/fleet-server",
+            "island": false,
+            "navigationTitle": null,
+            "children": []
+          },
+          {
+            "kind": "mount",
+            "source": "logstash://release-notes/",
+            "pathPrefix": "release-notes/logstash",
+            "island": false,
+            "navigationTitle": null,
+            "children": []
+          },
+          {
+            "kind": "mount",
+            "source": "beats://release-notes/",
+            "pathPrefix": "release-notes/beats",
+            "island": false,
+            "navigationTitle": null,
+            "children": []
+          },
+          {
+            "kind": "mount",
+            "source": "docs-content://release-notes/elastic-cloud-serverless",
+            "pathPrefix": "release-notes/cloud-serverless",
+            "island": false,
+            "navigationTitle": null,
+            "children": []
+          },
+          {
+            "kind": "mount",
+            "source": "cloud-on-k8s://release-notes/",
+            "pathPrefix": "release-notes/cloud-on-k8s",
+            "island": false,
+            "navigationTitle": null,
+            "children": []
+          },
+          {
+            "kind": "mount",
+            "source": "docs-content://release-notes/elastic-observability",
+            "pathPrefix": "release-notes/observability",
+            "island": false,
+            "navigationTitle": null,
+            "children": [
+              {
+                "kind": "mount",
+                "source": "apm-agent-android://release-notes/",
+                "pathPrefix": "release-notes/edot/sdks/android",
+                "island": false,
+                "navigationTitle": null,
+                "children": []
+              },
+              {
+                "kind": "mount",
+                "source": "apm-agent-ios://release-notes/",
+                "pathPrefix": "release-notes/edot/sdks/ios",
+                "island": false,
+                "navigationTitle": null,
+                "children": []
+              },
+              {
+                "kind": "mount",
+                "source": "elastic-otel-java://release-notes/",
+                "pathPrefix": "release-notes/edot/sdks/java",
+                "island": false,
+                "navigationTitle": null,
+                "children": []
+              },
+              {
+                "kind": "mount",
+                "source": "elastic-otel-dotnet://release-notes/",
+                "pathPrefix": "release-notes/edot/sdks/dotnet",
+                "island": false,
+                "navigationTitle": null,
+                "children": []
+              },
+              {
+                "kind": "mount",
+                "source": "elastic-otel-node://release-notes/",
+                "pathPrefix": "release-notes/edot/sdks/node",
+                "island": false,
+                "navigationTitle": null,
+                "children": []
+              },
+              {
+                "kind": "mount",
+                "source": "elastic-otel-python://release-notes/",
+                "pathPrefix": "release-notes/edot/sdks/python",
+                "island": false,
+                "navigationTitle": null,
+                "children": []
+              },
+              {
+                "kind": "mount",
+                "source": "elastic-otel-php://release-notes/",
+                "pathPrefix": "release-notes/edot/sdks/php",
+                "island": false,
+                "navigationTitle": null,
+                "children": []
+              },
+              {
+                "kind": "mount",
+                "source": "elastic-otel-rum-js://release-notes/",
+                "pathPrefix": "release-notes/edot/sdks/rum",
+                "island": false,
+                "navigationTitle": null,
+                "children": []
+              },
+              {
+                "kind": "mount",
+                "source": "apm-server://release-notes/",
+                "pathPrefix": "release-notes/apm",
+                "island": false,
+                "navigationTitle": null,
+                "children": []
+              },
+              {
+                "kind": "mount",
+                "source": "apm-agent-dotnet://release-notes/",
+                "pathPrefix": "release-notes/apm/agents/dotnet",
+                "island": false,
+                "navigationTitle": null,
+                "children": []
+              },
+              {
+                "kind": "mount",
+                "source": "apm-agent-go://release-notes/",
+                "pathPrefix": "release-notes/apm/agents/go",
+                "island": false,
+                "navigationTitle": null,
+                "children": []
+              },
+              {
+                "kind": "mount",
+                "source": "apm-agent-java://release-notes/",
+                "pathPrefix": "release-notes/apm/agents/java",
+                "island": false,
+                "navigationTitle": null,
+                "children": []
+              },
+              {
+                "kind": "mount",
+                "source": "apm-agent-nodejs://release-notes/",
+                "pathPrefix": "release-notes/apm/agents/nodejs",
+                "island": false,
+                "navigationTitle": null,
+                "children": []
+              },
+              {
+                "kind": "mount",
+                "source": "apm-agent-php://release-notes/",
+                "pathPrefix": "release-notes/apm/agents/php",
+                "island": false,
+                "navigationTitle": null,
+                "children": []
+              },
+              {
+                "kind": "mount",
+                "source": "apm-agent-python://release-notes/",
+                "pathPrefix": "release-notes/apm/agents/python",
+                "island": false,
+                "navigationTitle": null,
+                "children": []
+              },
+              {
+                "kind": "mount",
+                "source": "apm-agent-ruby://release-notes/",
+                "pathPrefix": "release-notes/apm/agents/ruby",
+                "island": false,
+                "navigationTitle": null,
+                "children": []
+              },
+              {
+                "kind": "mount",
+                "source": "apm-agent-rum-js://release-notes/",
+                "pathPrefix": "release-notes/apm/agents/rum-js",
+                "island": false,
+                "navigationTitle": null,
+                "children": []
+              },
+              {
+                "kind": "mount",
+                "source": "apm-aws-lambda://release-notes/",
+                "pathPrefix": "release-notes/apm/aws-lambda",
+                "island": false,
+                "navigationTitle": null,
+                "children": []
+              }
+            ]
+          },
+          {
+            "kind": "mount",
+            "source": "docs-content://release-notes/elastic-security",
+            "pathPrefix": "release-notes/security",
+            "island": false,
+            "navigationTitle": null,
+            "children": []
+          },
+          {
+            "kind": "mount",
+            "source": "ecs://release-notes/",
+            "pathPrefix": "release-notes/ecs",
+            "island": false,
+            "navigationTitle": null,
+            "children": []
+          },
+          {
+            "kind": "mount",
+            "source": "ecctl://release-notes/",
+            "pathPrefix": "release-notes/ecctl",
+            "island": false,
+            "navigationTitle": null,
+            "children": []
+          }
+        ]
+      },
+      {
+        "kind": "mount",
+        "source": "docs-content://reference/",
+        "pathPrefix": "reference",
+        "island": false,
+        "navigationTitle": null,
+        "children": [
+          {
+            "kind": "mount",
+            "source": "elasticsearch://reference/elasticsearch",
+            "pathPrefix": "reference/elasticsearch",
+            "island": false,
+            "navigationTitle": null,
+            "children": [
+              {
+                "kind": "mount",
+                "source": "elasticsearch://reference/query-languages",
+                "pathPrefix": "reference/query-languages",
+                "island": false,
+                "navigationTitle": null,
+                "children": []
+              },
+              {
+                "kind": "mount",
+                "source": "elasticsearch://reference/text-analysis",
+                "pathPrefix": "reference/text-analysis",
+                "island": false,
+                "navigationTitle": null,
+                "children": []
+              },
+              {
+                "kind": "mount",
+                "source": "elasticsearch://reference/aggregations",
+                "pathPrefix": "reference/aggregations",
+                "island": false,
+                "navigationTitle": null,
+                "children": []
+              },
+              {
+                "kind": "mount",
+                "source": "elasticsearch://reference/ingest-processor",
+                "pathPrefix": "reference/ingest-processor",
+                "island": false,
+                "navigationTitle": null,
+                "children": []
+              },
+              {
+                "kind": "mount",
+                "source": "curator://reference/",
+                "pathPrefix": "reference/elasticsearch/curator",
+                "island": false,
+                "navigationTitle": null,
+                "children": []
+              },
+              {
+                "kind": "mount",
+                "source": "docs-content://reference/elasticsearch-clients",
+                "pathPrefix": "reference/elasticsearch-clients",
+                "island": false,
+                "navigationTitle": null,
+                "children": [
+                  {
+                    "kind": "mount",
+                    "source": "eland://reference/",
+                    "pathPrefix": "reference/elasticsearch/clients/eland",
+                    "island": false,
+                    "navigationTitle": null,
+                    "children": []
+                  },
+                  {
+                    "kind": "mount",
+                    "source": "go-elasticsearch://reference/",
+                    "pathPrefix": "reference/elasticsearch/clients/go",
+                    "island": false,
+                    "navigationTitle": null,
+                    "children": []
+                  },
+                  {
+                    "kind": "mount",
+                    "source": "elasticsearch-java://reference/",
+                    "pathPrefix": "reference/elasticsearch/clients/java",
+                    "island": false,
+                    "navigationTitle": null,
+                    "children": []
+                  },
+                  {
+                    "kind": "mount",
+                    "source": "elasticsearch-js://reference/",
+                    "pathPrefix": "reference/elasticsearch/clients/javascript",
+                    "island": false,
+                    "navigationTitle": null,
+                    "children": []
+                  },
+                  {
+                    "kind": "mount",
+                    "source": "elasticsearch-dsl-js://reference/",
+                    "pathPrefix": "reference/elasticsearch/clients/javascript-dsl",
+                    "island": false,
+                    "navigationTitle": null,
+                    "children": []
+                  },
+                  {
+                    "kind": "mount",
+                    "source": "elasticsearch-net://reference/",
+                    "pathPrefix": "reference/elasticsearch/clients/dotnet",
+                    "island": false,
+                    "navigationTitle": null,
+                    "children": []
+                  },
+                  {
+                    "kind": "mount",
+                    "source": "elasticsearch-php://reference/",
+                    "pathPrefix": "reference/elasticsearch/clients/php",
+                    "island": false,
+                    "navigationTitle": null,
+                    "children": []
+                  },
+                  {
+                    "kind": "mount",
+                    "source": "elasticsearch-py://reference/",
+                    "pathPrefix": "reference/elasticsearch/clients/python",
+                    "island": false,
+                    "navigationTitle": null,
+                    "children": []
+                  },
+                  {
+                    "kind": "mount",
+                    "source": "elasticsearch-ruby://reference/",
+                    "pathPrefix": "reference/elasticsearch/clients/ruby",
+                    "island": false,
+                    "navigationTitle": null,
+                    "children": []
+                  },
+                  {
+                    "kind": "mount",
+                    "source": "elasticsearch-rs://reference/",
+                    "pathPrefix": "reference/elasticsearch/clients/rust",
+                    "island": false,
+                    "navigationTitle": null,
+                    "children": []
+                  },
+                  {
+                    "kind": "mount",
+                    "source": "elasticsearch://reference/community-contributed",
+                    "pathPrefix": "reference/elasticsearch/clients/community",
+                    "island": false,
+                    "navigationTitle": null,
+                    "children": []
+                  }
+                ]
+              },
+              {
+                "kind": "mount",
+                "source": "elasticsearch://reference/elasticsearch-plugins",
+                "pathPrefix": "reference/elasticsearch/plugins",
+                "island": false,
+                "navigationTitle": null,
+                "children": []
+              },
+              {
+                "kind": "mount",
+                "source": "elasticsearch://reference/scripting-languages",
+                "pathPrefix": "reference/scripting-languages",
+                "island": false,
+                "navigationTitle": null,
+                "children": []
+              }
+            ]
+          },
+          {
+            "kind": "mount",
+            "source": "kibana://reference/",
+            "pathPrefix": "reference/kibana",
+            "island": false,
+            "navigationTitle": null,
+            "children": []
+          },
+          {
+            "kind": "mount",
+            "source": "cloud-on-k8s://reference/",
+            "pathPrefix": "reference/cloud-on-k8s",
+            "island": false,
+            "navigationTitle": null,
+            "children": []
+          },
+          {
+            "kind": "mount",
+            "source": "ecctl://reference/",
+            "pathPrefix": "reference/ecctl",
+            "island": false,
+            "navigationTitle": null,
+            "children": []
+          },
+          {
+            "kind": "mount",
+            "source": "docs-content://reference/security",
+            "pathPrefix": "reference/security",
+            "island": false,
+            "navigationTitle": null,
+            "children": [
+              {
+                "kind": "mount",
+                "source": "detection-rules:///",
+                "pathPrefix": "reference/security/prebuilt-rules",
+                "island": false,
+                "navigationTitle": null,
+                "children": []
+              }
+            ]
+          },
+          {
+            "kind": "mount",
+            "source": "docs-content://reference/observability",
+            "pathPrefix": "reference/observability",
+            "island": false,
+            "navigationTitle": null,
+            "children": []
+          },
+          {
+            "kind": "mount",
+            "source": "docs-content://reference/ingestion-tools",
+            "pathPrefix": "reference/ingestion-tools",
+            "island": false,
+            "navigationTitle": null,
+            "children": [
+              {
+                "kind": "mount",
+                "source": "docs-content://reference/apm",
+                "pathPrefix": "reference/apm",
+                "island": false,
+                "navigationTitle": null,
+                "children": [
+                  {
+                    "kind": "mount",
+                    "source": "apm-k8s-attacher://reference/",
+                    "pathPrefix": "reference/apm/k8s-attacher",
+                    "island": false,
+                    "navigationTitle": null,
+                    "children": []
+                  },
+                  {
+                    "kind": "mount",
+                    "source": "apm-aws-lambda://reference/",
+                    "pathPrefix": "reference/apm/aws-lambda",
+                    "island": false,
+                    "navigationTitle": null,
+                    "children": []
+                  },
+                  {
+                    "kind": "mount",
+                    "source": "docs-content://reference/apm-agents",
+                    "pathPrefix": "reference/apm-agents",
+                    "island": false,
+                    "navigationTitle": null,
+                    "children": [
+                      {
+                        "kind": "mount",
+                        "source": "apm-agent-dotnet://reference/",
+                        "pathPrefix": "reference/apm/agents/dotnet",
+                        "island": false,
+                        "navigationTitle": null,
+                        "children": []
+                      },
+                      {
+                        "kind": "mount",
+                        "source": "apm-agent-go://reference/",
+                        "pathPrefix": "reference/apm/agents/go",
+                        "island": false,
+                        "navigationTitle": null,
+                        "children": []
+                      },
+                      {
+                        "kind": "mount",
+                        "source": "apm-agent-java://reference/",
+                        "pathPrefix": "reference/apm/agents/java",
+                        "island": false,
+                        "navigationTitle": null,
+                        "children": []
+                      },
+                      {
+                        "kind": "mount",
+                        "source": "apm-agent-nodejs://reference/",
+                        "pathPrefix": "reference/apm/agents/nodejs",
+                        "island": false,
+                        "navigationTitle": null,
+                        "children": []
+                      },
+                      {
+                        "kind": "mount",
+                        "source": "apm-agent-php://reference/",
+                        "pathPrefix": "reference/apm/agents/php",
+                        "island": false,
+                        "navigationTitle": null,
+                        "children": []
+                      },
+                      {
+                        "kind": "mount",
+                        "source": "apm-agent-python://reference/",
+                        "pathPrefix": "reference/apm/agents/python",
+                        "island": false,
+                        "navigationTitle": null,
+                        "children": []
+                      },
+                      {
+                        "kind": "mount",
+                        "source": "apm-agent-ruby://reference/",
+                        "pathPrefix": "reference/apm/agents/ruby",
+                        "island": false,
+                        "navigationTitle": null,
+                        "children": []
+                      },
+                      {
+                        "kind": "mount",
+                        "source": "apm-agent-rum-js://reference/",
+                        "pathPrefix": "reference/apm/agents/rum-js",
+                        "island": false,
+                        "navigationTitle": null,
+                        "children": []
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "kind": "mount",
+                "source": "beats://reference/",
+                "pathPrefix": "reference/beats",
+                "island": false,
+                "navigationTitle": null,
+                "children": []
+              },
+              {
+                "kind": "mount",
+                "source": "elasticsearch://reference/search-connectors",
+                "pathPrefix": "reference/search-connectors",
+                "island": false,
+                "navigationTitle": null,
+                "children": []
+              },
+              {
+                "kind": "mount",
+                "source": "opentelemetry://reference/",
+                "pathPrefix": "reference/opentelemetry",
+                "island": false,
+                "navigationTitle": null,
+                "children": [
+                  {
+                    "kind": "mount",
+                    "source": "opentelemetry://reference/edot-cloud-forwarder",
+                    "pathPrefix": "reference/opentelemetry/edot-cloud-forwarder",
+                    "island": false,
+                    "navigationTitle": null,
+                    "children": [
+                      {
+                        "kind": "mount",
+                        "source": "opentelemetry://reference/edot-cloud-forwarder/gcp",
+                        "pathPrefix": "reference/opentelemetry/edot-cloud-forwarder/gcp",
+                        "island": false,
+                        "navigationTitle": null,
+                        "children": []
+                      }
+                    ]
+                  },
+                  {
+                    "kind": "mount",
+                    "source": "elastic-agent://reference/edot-collector",
+                    "pathPrefix": "reference/edot-collector",
+                    "island": false,
+                    "navigationTitle": null,
+                    "children": []
+                  },
+                  {
+                    "kind": "mount",
+                    "source": "apm-agent-android://reference/edot-android",
+                    "pathPrefix": "reference/opentelemetry/edot-sdks/android",
+                    "island": false,
+                    "navigationTitle": null,
+                    "children": []
+                  },
+                  {
+                    "kind": "mount",
+                    "source": "elastic-otel-dotnet://reference/edot-dotnet",
+                    "pathPrefix": "reference/opentelemetry/edot-sdks/dotnet",
+                    "island": false,
+                    "navigationTitle": null,
+                    "children": []
+                  },
+                  {
+                    "kind": "mount",
+                    "source": "apm-agent-ios://reference/edot-ios",
+                    "pathPrefix": "reference/opentelemetry/edot-sdks/ios",
+                    "island": false,
+                    "navigationTitle": null,
+                    "children": []
+                  },
+                  {
+                    "kind": "mount",
+                    "source": "elastic-otel-java://reference/edot-java",
+                    "pathPrefix": "reference/opentelemetry/edot-sdks/java",
+                    "island": false,
+                    "navigationTitle": null,
+                    "children": []
+                  },
+                  {
+                    "kind": "mount",
+                    "source": "elastic-otel-node://reference/edot-node",
+                    "pathPrefix": "reference/opentelemetry/edot-sdks/node",
+                    "island": false,
+                    "navigationTitle": null,
+                    "children": []
+                  },
+                  {
+                    "kind": "mount",
+                    "source": "elastic-otel-php://reference/edot-php",
+                    "pathPrefix": "reference/opentelemetry/edot-sdks/php",
+                    "island": false,
+                    "navigationTitle": null,
+                    "children": []
+                  },
+                  {
+                    "kind": "mount",
+                    "source": "elastic-otel-python://reference/edot-python",
+                    "pathPrefix": "reference/opentelemetry/edot-sdks/python",
+                    "island": false,
+                    "navigationTitle": null,
+                    "children": []
+                  },
+                  {
+                    "kind": "mount",
+                    "source": "elastic-otel-rum-js://reference/edot-browser",
+                    "pathPrefix": "reference/opentelemetry/edot-sdks/browser",
+                    "island": false,
+                    "navigationTitle": null,
+                    "children": []
+                  }
+                ]
+              },
+              {
+                "kind": "mount",
+                "source": "opentelemetry://reference/managed-inputs",
+                "pathPrefix": "reference/opentelemetry/managed-inputs",
+                "island": false,
+                "navigationTitle": null,
+                "children": []
+              },
+              {
+                "kind": "mount",
+                "source": "elastic-serverless-forwarder://reference/",
+                "pathPrefix": "reference/aws-forwarder",
+                "island": false,
+                "navigationTitle": null,
+                "children": []
+              },
+              {
+                "kind": "mount",
+                "source": "elasticsearch-hadoop://reference/",
+                "pathPrefix": "reference/elasticsearch-hadoop",
+                "island": false,
+                "navigationTitle": null,
+                "children": []
+              },
+              {
+                "kind": "mount",
+                "source": "docs-content://reference/fleet",
+                "pathPrefix": "reference/fleet",
+                "island": false,
+                "navigationTitle": null,
+                "children": []
+              },
+              {
+                "kind": "mount",
+                "source": "logstash://reference/",
+                "pathPrefix": "reference/logstash",
+                "island": false,
+                "navigationTitle": null,
+                "children": []
+              }
+            ]
+          },
+          {
+            "kind": "mount",
+            "source": "ecs://reference/",
+            "pathPrefix": "reference/ecs",
+            "island": false,
+            "navigationTitle": null,
+            "children": [
+              {
+                "kind": "mount",
+                "source": "ecs-logging://reference/",
+                "pathPrefix": "reference/ecs/logging",
+                "island": false,
+                "navigationTitle": null,
+                "children": [
+                  {
+                    "kind": "mount",
+                    "source": "ecs-dotnet://reference/",
+                    "pathPrefix": "reference/ecs/logging/dotnet",
+                    "island": false,
+                    "navigationTitle": null,
+                    "children": []
+                  },
+                  {
+                    "kind": "mount",
+                    "source": "ecs-logging-go-logrus://reference/",
+                    "pathPrefix": "reference/ecs/logging/go-logrus",
+                    "island": false,
+                    "navigationTitle": null,
+                    "children": []
+                  },
+                  {
+                    "kind": "mount",
+                    "source": "ecs-logging-go-zap://reference/",
+                    "pathPrefix": "reference/ecs/logging/go-zap",
+                    "island": false,
+                    "navigationTitle": null,
+                    "children": []
+                  },
+                  {
+                    "kind": "mount",
+                    "source": "ecs-logging-go-zerolog://reference/",
+                    "pathPrefix": "reference/ecs/logging/go-zerolog",
+                    "island": false,
+                    "navigationTitle": null,
+                    "children": []
+                  },
+                  {
+                    "kind": "mount",
+                    "source": "ecs-logging-java://reference/",
+                    "pathPrefix": "reference/ecs/logging/java",
+                    "island": false,
+                    "navigationTitle": null,
+                    "children": []
+                  },
+                  {
+                    "kind": "mount",
+                    "source": "ecs-logging-nodejs://reference/",
+                    "pathPrefix": "reference/ecs/logging/nodejs",
+                    "island": false,
+                    "navigationTitle": null,
+                    "children": []
+                  },
+                  {
+                    "kind": "mount",
+                    "source": "ecs-logging-php://reference/",
+                    "pathPrefix": "reference/ecs/logging/php",
+                    "island": false,
+                    "navigationTitle": null,
+                    "children": []
+                  },
+                  {
+                    "kind": "mount",
+                    "source": "ecs-logging-python://reference/",
+                    "pathPrefix": "reference/ecs/logging/python",
+                    "island": false,
+                    "navigationTitle": null,
+                    "children": []
+                  },
+                  {
+                    "kind": "mount",
+                    "source": "ecs-logging-ruby://reference/",
+                    "pathPrefix": "reference/ecs/logging/ruby",
+                    "island": false,
+                    "navigationTitle": null,
+                    "children": []
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "kind": "mount",
+            "source": "cli:///",
+            "pathPrefix": "reference/elastic-cli",
+            "island": false,
+            "navigationTitle": null,
+            "children": []
+          },
+          {
+            "kind": "mount",
+            "source": "docs-content://reference/machine-learning",
+            "pathPrefix": "reference/machine-learning",
+            "island": false,
+            "navigationTitle": null,
+            "children": []
+          },
+          {
+            "kind": "mount",
+            "source": "search-ui://reference/",
+            "pathPrefix": "reference/search-ui",
+            "island": false,
+            "navigationTitle": null,
+            "children": []
+          },
+          {
+            "kind": "mount",
+            "source": "docs-content://reference/glossary",
+            "pathPrefix": "reference/glossary",
+            "island": false,
+            "navigationTitle": null,
+            "children": []
+          }
+        ]
+      },
+      {
+        "kind": "mount",
+        "source": "docs-content://extend/",
+        "pathPrefix": "",
+        "island": false,
+        "navigationTitle": null,
+        "children": [
+          {
+            "kind": "mount",
+            "source": "kibana://extend/",
+            "pathPrefix": "extend/kibana",
+            "island": false,
+            "navigationTitle": null,
+            "children": []
+          },
+          {
+            "kind": "mount",
+            "source": "logstash://extend/",
+            "pathPrefix": "extend/logstash",
+            "island": false,
+            "navigationTitle": null,
+            "children": []
+          },
+          {
+            "kind": "mount",
+            "source": "beats://extend/",
+            "pathPrefix": "extend/beats",
+            "island": false,
+            "navigationTitle": null,
+            "children": []
+          },
+          {
+            "kind": "mount",
+            "source": "elasticsearch://extend/",
+            "pathPrefix": "extend/elasticsearch",
+            "island": false,
+            "navigationTitle": null,
+            "children": []
+          },
+          {
+            "kind": "mount",
+            "source": "integrations://extend/",
+            "pathPrefix": "extend/integrations",
+            "island": false,
+            "navigationTitle": null,
+            "children": []
+          }
+        ]
+      },
+      {
+        "kind": "mount",
+        "source": "docs-content://contribute-docs/",
+        "pathPrefix": "",
+        "island": false,
+        "navigationTitle": null,
+        "children": []
+      },
+      {
+        "kind": "mount",
+        "source": "docs-builder:///",
+        "pathPrefix": "reference/docs-builder",
+        "island": false,
+        "navigationTitle": null,
+        "children": [
+          {
+            "kind": "mount",
+            "source": "docs-builder://development/",
+            "pathPrefix": "reference/docs-builder/dev",
+            "island": false,
+            "navigationTitle": null,
+            "children": [
+              {
+                "kind": "mount",
+                "source": "docs-builder://development/link-validation",
+                "pathPrefix": "reference/docs-builder/dev/link-val",
+                "island": false,
+                "navigationTitle": null,
+                "children": []
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "declaredSources": [
+      "apm-agent-android://reference/edot-android",
+      "apm-agent-android://release-notes/",
+      "apm-agent-dotnet://reference/",
+      "apm-agent-dotnet://release-notes/",
+      "apm-agent-go://reference/",
+      "apm-agent-go://release-notes/",
+      "apm-agent-ios://reference/edot-ios",
+      "apm-agent-ios://release-notes/",
+      "apm-agent-java://reference/",
+      "apm-agent-java://release-notes/",
+      "apm-agent-nodejs://reference/",
+      "apm-agent-nodejs://release-notes/",
+      "apm-agent-php://reference/",
+      "apm-agent-php://release-notes/",
+      "apm-agent-python://reference/",
+      "apm-agent-python://release-notes/",
+      "apm-agent-ruby://reference/",
+      "apm-agent-ruby://release-notes/",
+      "apm-agent-rum-js://reference/",
+      "apm-agent-rum-js://release-notes/",
+      "apm-aws-lambda://reference/",
+      "apm-aws-lambda://release-notes/",
+      "apm-k8s-attacher://reference/",
+      "apm-server://release-notes/",
+      "beats://extend/",
+      "beats://reference/",
+      "beats://release-notes/",
+      "cli:///",
+      "cloud-on-k8s://reference/",
+      "cloud-on-k8s://release-notes/",
+      "curator://reference/",
+      "detection-rules:///",
+      "docs-builder:///",
+      "docs-builder://development/",
+      "docs-builder://development/link-validation",
+      "docs-content://cloud-account/",
+      "docs-content://contribute-docs/",
+      "docs-content://deploy-manage/",
+      "docs-content://explore-analyze/",
+      "docs-content://extend/",
+      "docs-content://get-started/",
+      "docs-content://manage-data/",
+      "docs-content://reference/",
+      "docs-content://reference/apm",
+      "docs-content://reference/apm-agents",
+      "docs-content://reference/elasticsearch-clients",
+      "docs-content://reference/fleet",
+      "docs-content://reference/glossary",
+      "docs-content://reference/ingestion-tools",
+      "docs-content://reference/machine-learning",
+      "docs-content://reference/observability",
+      "docs-content://reference/security",
+      "docs-content://release-notes/elastic-cloud-serverless",
+      "docs-content://release-notes/elastic-observability",
+      "docs-content://release-notes/elastic-security",
+      "docs-content://release-notes/intro",
+      "docs-content://solutions/",
+      "docs-content://troubleshoot/",
+      "ecctl://reference/",
+      "ecctl://release-notes/",
+      "ecs-dotnet://reference/",
+      "ecs-logging-go-logrus://reference/",
+      "ecs-logging-go-zap://reference/",
+      "ecs-logging-go-zerolog://reference/",
+      "ecs-logging-java://reference/",
+      "ecs-logging-nodejs://reference/",
+      "ecs-logging-php://reference/",
+      "ecs-logging-python://reference/",
+      "ecs-logging-ruby://reference/",
+      "ecs-logging://reference/",
+      "ecs://reference/",
+      "ecs://release-notes/",
+      "eland://reference/",
+      "elastic-agent://reference/edot-collector",
+      "elastic-agent://release-notes/",
+      "elastic-otel-dotnet://reference/edot-dotnet",
+      "elastic-otel-dotnet://release-notes/",
+      "elastic-otel-java://reference/edot-java",
+      "elastic-otel-java://release-notes/",
+      "elastic-otel-node://reference/edot-node",
+      "elastic-otel-node://release-notes/",
+      "elastic-otel-php://reference/edot-php",
+      "elastic-otel-php://release-notes/",
+      "elastic-otel-python://reference/edot-python",
+      "elastic-otel-python://release-notes/",
+      "elastic-otel-rum-js://reference/edot-browser",
+      "elastic-otel-rum-js://release-notes/",
+      "elastic-serverless-forwarder://reference/",
+      "elasticsearch-dsl-js://reference/",
+      "elasticsearch-hadoop://reference/",
+      "elasticsearch-hadoop://release-notes/",
+      "elasticsearch-java://reference/",
+      "elasticsearch-java://release-notes/",
+      "elasticsearch-js://reference/",
+      "elasticsearch-js://release-notes/",
+      "elasticsearch-net://reference/",
+      "elasticsearch-net://release-notes/",
+      "elasticsearch-php://reference/",
+      "elasticsearch-php://release-notes/",
+      "elasticsearch-py://reference/",
+      "elasticsearch-py://release-notes/",
+      "elasticsearch-rs://reference/",
+      "elasticsearch-ruby://reference/",
+      "elasticsearch-ruby://release-notes/",
+      "elasticsearch://extend/",
+      "elasticsearch://reference/aggregations",
+      "elasticsearch://reference/community-contributed",
+      "elasticsearch://reference/elasticsearch",
+      "elasticsearch://reference/elasticsearch-plugins",
+      "elasticsearch://reference/ingest-processor",
+      "elasticsearch://reference/query-languages",
+      "elasticsearch://reference/scripting-languages",
+      "elasticsearch://reference/search-connectors",
+      "elasticsearch://reference/text-analysis",
+      "elasticsearch://release-notes/",
+      "fleet-server://release-notes/",
+      "go-elasticsearch://reference/",
+      "integrations://extend/",
+      "kibana://extend/",
+      "kibana://reference/",
+      "kibana://release-notes/",
+      "logstash://extend/",
+      "logstash://reference/",
+      "logstash://release-notes/",
+      "opentelemetry://reference/",
+      "opentelemetry://reference/edot-cloud-forwarder",
+      "opentelemetry://reference/edot-cloud-forwarder/gcp",
+      "opentelemetry://reference/managed-inputs",
+      "search-ui://reference/"
+    ],
+    "phantomPrefixes": [
+      "docs-content:///",
+      "docs-content://products/",
+      "docs-content://release-notes/",
+      "docs-content://release-notes/apm-agents",
+      "docs-content://release-notes/elasticsearch-clients",
+      "elastic-agent://reference/otel-collector",
+      "elasticsearch://reference/"
+    ],
+    "pathPrefixesValid": true,
+    "pathPrefixDiagnostics": []
+  }
+}

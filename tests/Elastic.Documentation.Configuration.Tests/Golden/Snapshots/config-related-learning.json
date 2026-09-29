@@ -1,0 +1,61 @@
+{
+  "value": {
+    "links": {
+      "apm-with-elastic": {
+        "id": "apm-with-elastic",
+        "title": "APM with Elastic on-demand training",
+        "url": "https://www.elastic.co/training/apm-with-elastic"
+      },
+      "data-types-and-mappings": {
+        "id": "data-types-and-mappings",
+        "title": "Data types and mappings on-demand training",
+        "url": "https://www.elastic.co/training/data-types-and-mappings"
+      },
+      "elastic-agent": {
+        "id": "elastic-agent",
+        "title": "Elastic Agent on-demand training",
+        "url": "https://www.elastic.co/training/elastic-agent"
+      },
+      "index-basics": {
+        "id": "index-basics",
+        "title": "Index Basics",
+        "url": "https://www.elastic.co/training/index-basics"
+      },
+      "logs-essentials": {
+        "id": "logs-essentials",
+        "title": "Logs essentials getting started on-demand training",
+        "url": "https://www.elastic.co/training/logs-essentials-getting-started"
+      },
+      "rag-beyond-basics": {
+        "id": "rag-beyond-basics",
+        "title": "Beyond RAG basics: Advanced strategies for AI applications blog",
+        "url": "https://www.elastic.co/blog/beyond-rag-basics"
+      },
+      "rag-build-agentic": {
+        "id": "rag-build-agentic",
+        "title": "Agentic RAG with Elasticsearch & Langchain blog",
+        "url": "https://www.elastic.co/search-labs/blog/rag-agent-tool-elasticsearch-langchain"
+      },
+      "rag-build-system": {
+        "id": "rag-build-system",
+        "title": "Building a RAG System With Gemma, Hugging Face & Elasticsearch blog",
+        "url": "https://www.elastic.co/search-labs/blog/building-a-rag-system-with-gemma-hugging-face-elasticsearch"
+      },
+      "rag-foundation": {
+        "id": "rag-foundation",
+        "title": "RAG Foundation on-demand training",
+        "url": "https://www.elastic.co/training/rag-foundation"
+      },
+      "semantic-search-foundation": {
+        "id": "semantic-search-foundation",
+        "title": "Semantic search foundation on-demand training",
+        "url": "https://www.elastic.co/training/semantic-search-foundation"
+      },
+      "semantic-search-text-embedding": {
+        "id": "semantic-search-text-embedding",
+        "title": "Semantic search text embedding on-demand training",
+        "url": "https://www.elastic.co/training/semantic-search-text-embedding"
+      }
+    }
+  }
+}

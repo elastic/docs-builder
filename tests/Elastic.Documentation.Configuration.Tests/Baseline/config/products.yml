@@ -1,0 +1,318 @@
+products:
+  agent-skills:
+    display: 'Elastic Agent Skills'
+    versioning: 'all'
+    features:
+      public-reference: false
+  apm:
+    display: 'APM'
+    versioning: 'stack'
+  apm-agent:
+    display: 'APM Agent'
+    versioning: 'all'
+  apm-agent-dotnet:
+    display: 'APM .NET Agent'
+  apm-agent-go:
+    display: 'APM Go Agent'
+  apm-agent-java:
+    display: 'APM Java Agent'
+  apm-agent-node:
+    display: 'APM Node.js Agent'
+  apm-agent-php:
+    display: 'APM PHP Agent'
+  apm-agent-python:
+    display: 'APM Python Agent'
+  apm-agent-ruby:
+    display: 'APM Ruby Agent'
+  apm-agent-rum-js:
+    display: 'APM RUM JavaScript Agent'
+  apm-k8s-attacher:
+    display: 'APM Attacher for Kubernetes'
+    versioning: 'apm-attacher'
+  apm-aws-lambda:
+    display: 'APM AWS Lambda extension'
+    versioning: 'apm-lambda'
+  apm-server:
+    display: 'APM Server'
+    versioning: 'stack'
+  auditbeat:
+    display: 'Auditbeat'
+    versioning: 'stack'
+  beats:
+    display: 'Beats'
+    versioning: 'stack'
+  cloud-control-ecctl:
+    display: 'Elastic Cloud Control'
+    versioning: 'ecctl'
+  cloud-enterprise:
+    display: 'Elastic Cloud Enterprise'
+    versioning: 'ece'
+    repository: 'cloud'
+  cloud-hosted:
+    display: 'Elastic Cloud Hosted'
+    versioning: 'ech'
+    repository: 'cloud'
+  cloud-kubernetes:
+    display: 'Elastic Cloud on Kubernetes'
+    versioning: 'eck'
+  cloud-serverless:
+    display: 'Elastic Cloud Serverless'
+    versioning: 'serverless'
+    repository: 'cloud'
+  cloud-terraform:
+    display: 'Elastic Cloud Terraform Provider'
+    versioning: 'cloud-terraform'
+  terraform-google-edot-cf:
+    display: 'Terraform Google Elastic Cloud Forwarder'
+    versioning: 'terraform-google-edot-cf'
+  connectors:
+    display: 'Elastic Connectors'
+    versioning: 'stack'
+    features:
+      public-reference: false
+      release-notes: false
+  curator:
+    display: 'Elasticsearch Curator'
+  docs-builder:
+    display: 'Elastic Docs Builder'
+    repository: 'docs-builder'
+    features:
+      public-reference: false
+      # Bundles are cut at release time from the GitHub release. Omitting the key resolves
+      # to the same path; it is spelled out so `changelog validate-onboarding` reads true.
+      release-notes: on-release
+  docs-playground-release-notes-changelogs:
+    display: 'Release Notes Playground (Changelogs)'
+    features:
+      public-reference: false
+      release-notes: prestage
+  docs-playground-release-notes-tagged:
+    display: 'Release Notes Playground (Tagged)'
+    features:
+      public-reference: false
+      release-notes: on-release
+  docs-playground-release-notes-tagged-workflow:
+    display: 'Release Notes Playground (Tagged Workflow)'
+    features:
+      public-reference: false
+      release-notes: on-release
+  ecs:
+    display: 'Elastic Common Schema (ECS)'
+  ecs-logging:
+    display: 'ECS Logging'
+    versioning: 'stack'
+  ecs-dotnet:
+    display: 'ECS Logging .NET'
+    versioning: 'ecs-logging-dotnet'
+  ecs-logging-go-logrus:
+    display: 'ECS Logging Go (Logrus)'
+  ecs-logging-go-zap:
+    display: 'ECS Logging Go (Zap)'
+  ecs-logging-go-zerolog:
+    display: 'ECS Logging Go (Zerolog)'
+  ecs-logging-java:
+    display: 'ECS Logging Java'
+  ecs-logging-nodejs:
+    display: 'ECS Logging Node.js'
+  ecs-logging-php:
+    display: 'ECS Logging PHP'
+  ecs-logging-python:
+    display: 'ECS Logging Python'
+  ecs-logging-ruby:
+    display: 'ECS Logging Ruby'
+  edot-cf:
+    display: 'Elastic Cloud Forwarder'
+    versioning: 'stack'
+  edot-sdk:
+    display: 'Elastic Distribution of OpenTelemetry SDK'
+    versioning: 'all'
+  edot-collector:
+    display: 'Elastic Agent'
+    versioning: 'stack'
+  edot-ios:
+    display: 'Elastic Distribution of OpenTelemetry iOS'
+    repository: 'apm-agent-ios'
+  edot-android:
+    display: 'Elastic Distribution of OpenTelemetry Android'
+    repository: 'apm-agent-android'
+  edot-dotnet:
+    display: 'Elastic Distribution of OpenTelemetry .NET'
+    repository: 'elastic-otel-dotnet'
+  edot-java:
+    display: 'Elastic Distribution of OpenTelemetry Java'
+    repository: 'elastic-otel-java'
+  edot-node:
+    display: 'Elastic Distribution of OpenTelemetry Node'
+    repository: 'elastic-otel-node'
+  edot-browser:
+    display: 'Elastic Distribution of OpenTelemetry Browser (RUM)'
+    repository: 'elastic-otel-rum-js'
+  edot-php:
+    display: 'Elastic Distribution of OpenTelemetry PHP'
+    repository: 'elastic-otel-php'
+  edot-python:
+    display: 'Elastic Distribution of OpenTelemetry Python'
+    repository: 'elastic-otel-python'
+  edot-cf-aws:
+    display: 'Elastic Cloud Forwarder for AWS'
+  edot-cf-azure:
+    display: 'Elastic Cloud Forwarder for Azure'
+  edot-cf-gcp:
+    display: 'Elastic Cloud Forwarder for GCP'
+  eland:
+    display: 'Eland'
+    versioning: 'stack'
+  elastic-agent:
+    display: 'Elastic Agent'
+    versioning: 'stack'
+  elastic-defend:
+    display: 'Elastic Defend'
+    versioning: 'stack'
+    features:
+      public-reference: false
+      release-notes: false
+  elastic-docs:
+    display: 'Elastic Documentation'
+    repository: 'docs-content'
+    features:
+      public-reference: false
+      release-notes: on-release
+  elastic-maps-server:
+    display: 'Elastic Maps Server'
+    versioning: 'stack'
+    features:
+      public-reference: false
+      release-notes: false
+  elastic-package-registry:
+    display: 'Elastic Package Registry'
+    repository: 'package-registry'
+    features:
+      public-reference: false
+      release-notes: false
+  elastic-serverless-forwarder:
+    display: 'Elastic Serverless Forwarder'
+    versioning: 'esf'
+  elastic-stack:
+    display: 'Elastic Stack'
+    versioning: 'stack'
+  elasticsearch:
+    display: 'Elasticsearch'
+    versioning: 'stack'
+  elasticsearch-client:
+    display: 'Elasticsearch Client'
+    versioning: 'stack'
+  elasticsearch-client-go:
+    display: 'Elasticsearch Go Client'
+    repository: 'go-elasticsearch'
+    versioning: 'elasticsearch-client-go'
+  elasticsearch-client-java:
+    display: 'Elasticsearch Java Client'
+    repository: 'elasticsearch-java'
+    versioning: 'elasticsearch-client-java'
+  elasticsearch-client-javascript:
+    display: 'Elasticsearch JavaScript Client'
+    repository: 'elasticsearch-js'
+    versioning: 'elasticsearch-client-javascript'
+  elasticsearch-client-dotnet:
+    display: 'Elasticsearch .NET Client'
+    repository: 'elasticsearch-net'
+    versioning: 'elasticsearch-client-dotnet'
+  elasticsearch-client-php:
+    display: 'Elasticsearch PHP Client'
+    repository: 'elasticsearch-php'
+    versioning: 'elasticsearch-client-php'
+  elasticsearch-client-python:
+    display: 'Elasticsearch Python Client'
+    repository: 'elasticsearch-py'
+    versioning: 'elasticsearch-client-python'
+  elasticsearch-client-ruby:
+    display: 'Elasticsearch Ruby Client'
+    repository: 'elasticsearch-ruby'
+    versioning: 'elasticsearch-client-ruby'
+  elasticsearch-client-rust:
+    display: 'Elasticsearch Rust Client'
+    repository: 'elasticsearch-rs'
+    versioning: 'elasticsearch-client-rust'
+  elasticsearch-hadoop:
+    display: 'Elasticsearch for Apache Hadoop'
+    repository: 'elasticsearch-hadoop'
+    versioning: 'stack'
+  enterprise-search:
+    display: 'Elastic Enterprise Search'
+    features:
+      public-reference: false
+      release-notes: false
+  ess:
+    display: 'Elastic Cloud Hosted'
+    versioning: 'all'
+  filebeat:
+    display: 'Filebeat'
+    versioning: 'stack'
+  fleet:
+    display: 'Fleet'
+    versioning: 'stack'
+  fleet-server:
+    display: 'Fleet Server'
+    versioning: 'stack'
+  heartbeat:
+    display: 'Heartbeat'
+    versioning: 'stack'
+  integrations:
+    display: 'Elastic integrations'
+    versioning: 'stack'
+  kibana:
+    display: 'Kibana'
+    versioning: 'stack'
+  logstash:
+    display: 'Logstash'
+    versioning: 'stack'
+  machine-learning:
+    display: 'Machine Learning'
+    versioning: 'stack'
+  metricbeat:
+    display: 'Metricbeat'
+    versioning: 'stack'
+  observability:
+    display: 'Elastic Observability'
+    versioning: 'stack'
+  packetbeat:
+    display: 'Packetbeat'
+    versioning: 'stack'
+  painless:
+    display: 'Painless'
+    versioning: 'stack'
+  search-ui:
+    display: 'Search UI'
+    versioning: 'stack'
+  security:
+    display: 'Elastic Security'
+    versioning: 'stack'
+  self:
+    display: 'Self-managed Elastic'
+    versioning: 'stack'
+  serverless-elasticsearch:
+    display: 'Elasticsearch Serverless'
+    versioning: 'all'
+  serverless-observability:
+    display: 'Elastic Observability Serverless'
+    versioning: 'all'
+  serverless-security:
+    display: 'Elastic Security Serverless'
+    versioning: 'all'
+  serverless-vector-database:
+    display: 'Elasticsearch Vector Database Serverless'
+    versioning: 'serverless'
+  synthetics-recorder:
+    display: 'Elastic Synthetics Recorder'
+    features:
+      public-reference: false
+      release-notes: false
+  transport-go:
+    display: 'Elastic Transport Go'
+    repository: 'elastic-transport-go'
+    versioning: 'all'
+    features:
+      public-reference: false
+  winlogbeat:
+    display: 'Winlogbeat'
+    versioning: 'stack'

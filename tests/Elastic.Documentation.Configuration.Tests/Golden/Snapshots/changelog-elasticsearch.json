@@ -1,0 +1,818 @@
+{
+  "value": {
+    "$type": "ChangelogConfiguration",
+    "Areas": [
+      "Aggregations",
+      "Allocation",
+      "Analysis",
+      "Application",
+      "Audit",
+      "Authentication",
+      "Authorization",
+      "Autoscaling",
+      "CAT APIs",
+      "CCR",
+      "CCS",
+      "Columnar",
+      "CRUD",
+      "Client",
+      "Cluster coordination",
+      "Codec",
+      "Data streams",
+      "DLM",
+      "Discovery-Plugins",
+      "Distributed",
+      "Downsampling",
+      "Engine",
+      "ES|QL",
+      "EQL",
+      "Experiences",
+      "Extract and transform",
+      "FIPS",
+      "Geo",
+      "Health",
+      "Highlighting",
+      "ILM",
+      "IdentityProvider",
+      "Indices APIs",
+      "Inference",
+      "Infra/CLI",
+      "Infra/Circuit breakers",
+      "Infra/Core",
+      "Infra/Logging",
+      "Infra/Metrics",
+      "Infra/Node lifecycle",
+      "Infra/Plugins",
+      "Infra/REST API",
+      "Infra/Resiliency",
+      "Infra/Scripting",
+      "Infra/Settings",
+      "Infra/Transport API",
+      "Ingest node",
+      "Java High Level REST Client",
+      "Java Low Level REST Client",
+      "License",
+      "Logs",
+      "Machine learning",
+      "Mapping",
+      "Monitoring",
+      "Network",
+      "Packaging",
+      "Percolator",
+      "Performance",
+      "PromQL",
+      "Query languages",
+      "Ranking",
+      "Recovery",
+      "Reindex",
+      "Relevance",
+      "Rollup",
+      "Search",
+      "Searchable snapshots",
+      "Security",
+      "SLM",
+      "Snapshot and restore",
+      "SQL",
+      "Stats",
+      "Store",
+      "Suggesters",
+      "Task management",
+      "TLS",
+      "Transform",
+      "TSDB",
+      "Vector search",
+      "Watcher"
+    ],
+    "Bundle": {
+      "$type": "BundleConfiguration",
+      "Branch": null,
+      "Description": null,
+      "Directory": "docs/changelog",
+      "LinkAllowRepos": [
+        "elastic/elasticsearch",
+        "elastic/fleet-server",
+        "elastic/kibana",
+        "elastic/roadmap"
+      ],
+      "OutputDirectory": "docs/releases",
+      "Owner": "elastic",
+      "Profiles": {
+        "elasticsearch-release": {
+          "$type": "BundleProfile",
+          "Branch": null,
+          "Description": null,
+          "HideFeatures": null,
+          "Output": null,
+          "OutputDirectory": "docs/releases/elasticsearch",
+          "OutputProducts": "elasticsearch {version}",
+          "Owner": null,
+          "Product": null,
+          "Products": null,
+          "ReleaseDates": null,
+          "Repo": null,
+          "Source": null
+        },
+        "serverless-release": {
+          "$type": "BundleProfile",
+          "Branch": null,
+          "Description": null,
+          "HideFeatures": [
+            "data-federation"
+          ],
+          "Output": null,
+          "OutputDirectory": "docs/releases/cloud-serverless",
+          "OutputProducts": "cloud-serverless {version}",
+          "Owner": null,
+          "Product": null,
+          "Products": null,
+          "ReleaseDates": null,
+          "Repo": null,
+          "Source": null
+        }
+      },
+      "ReleaseDates": true,
+      "Releases": null,
+      "Repo": "elasticsearch",
+      "UseLocalChangelogs": false
+    },
+    "Extract": {
+      "$type": "ExtractConfiguration",
+      "Issues": true,
+      "ReleaseNotes": true,
+      "StripTitlePrefix": true
+    },
+    "Filename": "Pr",
+    "HighlightLabels": null,
+    "LabelToAreas": {
+      ":Analytics/Aggregations": [
+        "Aggregations"
+      ],
+      ":Analytics/Compute Engine": [
+        "Engine"
+      ],
+      ":Analytics/EQL": [
+        "EQL"
+      ],
+      ":Analytics/ES|QL": [
+        "ES|QL"
+      ],
+      ":Analytics/Geo": [
+        "Geo"
+      ],
+      ":Analytics/SQL": [
+        "SQL"
+      ],
+      ":Clients/Java High Level REST Client": [
+        "Java High Level REST Client"
+      ],
+      ":Clients/Java Low Level REST Client": [
+        "Java Low Level REST Client"
+      ],
+      ":Core/Infra/CLI": [
+        "Infra/CLI"
+      ],
+      ":Core/Infra/Circuit Breakers": [
+        "Infra/Circuit breakers"
+      ],
+      ":Core/Infra/Core": [
+        "Infra/Core"
+      ],
+      ":Core/Infra/Logging": [
+        "Infra/Logging"
+      ],
+      ":Core/Infra/Metrics": [
+        "Infra/Metrics"
+      ],
+      ":Core/Infra/Monitoring": [
+        "Monitoring"
+      ],
+      ":Core/Infra/Node Lifecycle": [
+        "Infra/Node lifecycle"
+      ],
+      ":Core/Infra/Plugins": [
+        "Infra/Plugins"
+      ],
+      ":Core/Infra/REST API": [
+        "Infra/REST API"
+      ],
+      ":Core/Infra/Resiliency": [
+        "Infra/Resiliency"
+      ],
+      ":Core/Infra/Scripting": [
+        "Infra/Scripting"
+      ],
+      ":Core/Infra/Settings": [
+        "Infra/Settings"
+      ],
+      ":Core/Infra/Transport API": [
+        "Infra/Transport API"
+      ],
+      ":Data Management/CAT APIs": [
+        "CAT APIs"
+      ],
+      ":Data Management/DLM": [
+        "DLM"
+      ],
+      ":Data Management/Data streams": [
+        "Data streams"
+      ],
+      ":Data Management/ILM+SLM": [
+        "ILM",
+        "SLM"
+      ],
+      ":Data Management/Indices APIs": [
+        "Indices APIs"
+      ],
+      ":Data Management/Stats": [
+        "Stats"
+      ],
+      ":Data Management/Watcher": [
+        "Watcher"
+      ],
+      ":Delivery/Packaging": [
+        "Packaging"
+      ],
+      ":Distributed Coordination/Allocation": [
+        "Allocation"
+      ],
+      ":Distributed Coordination/Autoscaling": [
+        "Autoscaling"
+      ],
+      ":Distributed Coordination/Cluster Coordination": [
+        "Cluster coordination"
+      ],
+      ":Distributed Coordination/Discovery-Plugins": [
+        "Discovery-Plugins"
+      ],
+      ":Distributed Coordination/Distributed": [
+        "Distributed"
+      ],
+      ":Distributed Coordination/Network": [
+        "Network"
+      ],
+      ":Distributed Coordination/Snapshot/Restore": [
+        "Snapshot and restore"
+      ],
+      ":Distributed Coordination/Task Management": [
+        "Task management"
+      ],
+      ":Distributed Indexing/CCR": [
+        "CCR"
+      ],
+      ":Distributed Indexing/CRUD": [
+        "CRUD"
+      ],
+      ":Distributed Indexing/Distributed": [
+        "Distributed"
+      ],
+      ":Distributed Indexing/Engine": [
+        "Engine"
+      ],
+      ":Distributed Indexing/Recovery": [
+        "Recovery"
+      ],
+      ":Distributed Indexing/Reindex": [
+        "Reindex"
+      ],
+      ":Distributed Indexing/Searchable Snapshots": [
+        "Searchable snapshots"
+      ],
+      ":Distributed Indexing/Store": [
+        "Store"
+      ],
+      ":Distributed/Health": [
+        "Health"
+      ],
+      ":Distributed/Ingest Node": [
+        "Ingest node"
+      ],
+      ":Distributed/SLM": [
+        "SLM"
+      ],
+      ":EnterpriseSearch/Application": [
+        "Application"
+      ],
+      ":Performance": [
+        "Performance"
+      ],
+      ":Query Languages/EQL": [
+        "EQL",
+        "Query languages"
+      ],
+      ":Query Languages/SQL": [
+        "Query languages",
+        "SQL"
+      ],
+      ":Search Foundations/CCS": [
+        "CCS"
+      ],
+      ":Search Foundations/Mapping": [
+        "Mapping"
+      ],
+      ":Search Foundations/Search": [
+        "Search"
+      ],
+      ":Search Relevance/Analysis": [
+        "Analysis"
+      ],
+      ":Search Relevance/ES|QL": [
+        "ES|QL"
+      ],
+      ":Search Relevance/Highlighting": [
+        "Highlighting"
+      ],
+      ":Search Relevance/Percolator": [
+        "Percolator"
+      ],
+      ":Search Relevance/Ranking": [
+        "Ranking"
+      ],
+      ":Search Relevance/Search": [
+        "Relevance"
+      ],
+      ":Search Relevance/Suggesters": [
+        "Suggesters"
+      ],
+      ":Search Relevance/Vectors": [
+        "Vector search"
+      ],
+      ":SearchOrg/Experiences": [
+        "Experiences"
+      ],
+      ":SearchOrg/Extract&Transform": [
+        "Extract and transform"
+      ],
+      ":SearchOrg/Inference": [
+        "Inference"
+      ],
+      ":SearchOrg/Relevance": [
+        "Relevance"
+      ],
+      ":Security/Audit": [
+        "Audit"
+      ],
+      ":Security/Authentication": [
+        "Authentication"
+      ],
+      ":Security/Authorization": [
+        "Authorization"
+      ],
+      ":Security/Client": [
+        "Client"
+      ],
+      ":Security/FIPS": [
+        "FIPS"
+      ],
+      ":Security/IdentityProvider": [
+        "IdentityProvider"
+      ],
+      ":Security/License": [
+        "License"
+      ],
+      ":Security/Security": [
+        "Security"
+      ],
+      ":Security/TLS": [
+        "TLS"
+      ],
+      ":StorageEngine/Codec": [
+        "Codec"
+      ],
+      ":StorageEngine/Columnar": [
+        "Columnar"
+      ],
+      ":StorageEngine/Data streams": [
+        "Data streams"
+      ],
+      ":StorageEngine/Downsampling": [
+        "Downsampling"
+      ],
+      ":StorageEngine/ES|QL": [
+        "ES|QL"
+      ],
+      ":StorageEngine/ILM": [
+        "ILM"
+      ],
+      ":StorageEngine/Logs": [
+        "Logs"
+      ],
+      ":StorageEngine/Mapping": [
+        "Mapping"
+      ],
+      ":StorageEngine/PromQL": [
+        "PromQL"
+      ],
+      ":StorageEngine/Rollup": [
+        "Rollup"
+      ],
+      ":StorageEngine/TSDB": [
+        "TSDB"
+      ],
+      ":ml": [
+        "Machine learning"
+      ],
+      ":ml/ES|QL": [
+        "ES|QL"
+      ],
+      ":ml/Transform": [
+        "Transform"
+      ],
+      "StorageEngine/Logs": [
+        "Logs"
+      ]
+    },
+    "LabelToFeatures": null,
+    "LabelToProducts": null,
+    "LabelToType": {
+      ">breaking": "breaking-change",
+      ">bug": "bug-fix",
+      ">deprecation": "deprecation",
+      ">docs": "docs",
+      ">enhancement": "enhancement",
+      ">feature": "feature",
+      ">regression": "regression",
+      ">upgrade": "other",
+      "documentation": "docs",
+      "release_note:enhancement": "enhancement"
+    },
+    "Lifecycles": [
+      "Preview",
+      "Beta",
+      "Ga"
+    ],
+    "Pivot": {
+      "$type": "PivotConfiguration",
+      "Areas": {
+        "Aggregations": ":Analytics/Aggregations",
+        "Allocation": ":Distributed Coordination/Allocation",
+        "Analysis": ":Search Relevance/Analysis",
+        "Application": ":EnterpriseSearch/Application",
+        "Audit": ":Security/Audit",
+        "Authentication": ":Security/Authentication",
+        "Authorization": ":Security/Authorization",
+        "Autoscaling": ":Distributed Coordination/Autoscaling",
+        "CAT APIs": ":Data Management/CAT APIs",
+        "CCR": ":Distributed Indexing/CCR",
+        "CCS": ":Search Foundations/CCS",
+        "CRUD": ":Distributed Indexing/CRUD",
+        "Client": ":Security/Client",
+        "Cluster coordination": ":Distributed Coordination/Cluster Coordination",
+        "Codec": ":StorageEngine/Codec",
+        "Columnar": ":StorageEngine/Columnar",
+        "DLM": ":Data Management/DLM",
+        "Data streams": ":Data Management/Data streams, :StorageEngine/Data streams",
+        "Discovery-Plugins": ":Distributed Coordination/Discovery-Plugins",
+        "Distributed": ":Distributed Indexing/Distributed, :Distributed Coordination/Distributed",
+        "Downsampling": ":StorageEngine/Downsampling",
+        "EQL": ":Query Languages/EQL, :Analytics/EQL",
+        "ES|QL": ":Search Relevance/ES|QL, :StorageEngine/ES|QL, :ml/ES|QL, :Analytics/ES|QL",
+        "Engine": ":Distributed Indexing/Engine, :Analytics/Compute Engine",
+        "Experiences": ":SearchOrg/Experiences",
+        "Extract and transform": ":SearchOrg/Extract&Transform",
+        "FIPS": ":Security/FIPS",
+        "Geo": ":Analytics/Geo",
+        "Health": ":Distributed/Health",
+        "Highlighting": ":Search Relevance/Highlighting",
+        "ILM": ":StorageEngine/ILM, :Data Management/ILM+SLM",
+        "IdentityProvider": ":Security/IdentityProvider",
+        "Indices APIs": ":Data Management/Indices APIs",
+        "Inference": ":SearchOrg/Inference",
+        "Infra/CLI": ":Core/Infra/CLI",
+        "Infra/Circuit breakers": ":Core/Infra/Circuit Breakers",
+        "Infra/Core": ":Core/Infra/Core",
+        "Infra/Logging": ":Core/Infra/Logging",
+        "Infra/Metrics": ":Core/Infra/Metrics",
+        "Infra/Node lifecycle": ":Core/Infra/Node Lifecycle",
+        "Infra/Plugins": ":Core/Infra/Plugins",
+        "Infra/REST API": ":Core/Infra/REST API",
+        "Infra/Resiliency": ":Core/Infra/Resiliency",
+        "Infra/Scripting": ":Core/Infra/Scripting",
+        "Infra/Settings": ":Core/Infra/Settings",
+        "Infra/Transport API": ":Core/Infra/Transport API",
+        "Ingest node": ":Distributed/Ingest Node",
+        "Java High Level REST Client": ":Clients/Java High Level REST Client",
+        "Java Low Level REST Client": ":Clients/Java Low Level REST Client",
+        "License": ":Security/License",
+        "Logs": ":StorageEngine/Logs, StorageEngine/Logs",
+        "Machine learning": ":ml",
+        "Mapping": ":StorageEngine/Mapping, :Search Foundations/Mapping",
+        "Monitoring": ":Core/Infra/Monitoring",
+        "Network": ":Distributed Coordination/Network",
+        "Packaging": ":Delivery/Packaging",
+        "Percolator": ":Search Relevance/Percolator",
+        "Performance": ":Performance",
+        "PromQL": ":StorageEngine/PromQL",
+        "Query languages": ":Query Languages/EQL, :Query Languages/SQL",
+        "Ranking": ":Search Relevance/Ranking",
+        "Recovery": ":Distributed Indexing/Recovery",
+        "Reindex": ":Distributed Indexing/Reindex",
+        "Relevance": ":Search Relevance/Search, :SearchOrg/Relevance",
+        "Rollup": ":StorageEngine/Rollup",
+        "SLM": ":Distributed/SLM, :Data Management/ILM+SLM",
+        "SQL": ":Query Languages/SQL, :Analytics/SQL",
+        "Search": ":Search Foundations/Search",
+        "Searchable snapshots": ":Distributed Indexing/Searchable Snapshots",
+        "Security": ":Security/Security",
+        "Snapshot and restore": ":Distributed Coordination/Snapshot/Restore",
+        "Stats": ":Data Management/Stats",
+        "Store": ":Distributed Indexing/Store",
+        "Suggesters": ":Search Relevance/Suggesters",
+        "TLS": ":Security/TLS",
+        "TSDB": ":StorageEngine/TSDB",
+        "Task management": ":Distributed Coordination/Task Management",
+        "Transform": ":ml/Transform",
+        "Vector search": ":Search Relevance/Vectors",
+        "Watcher": ":Data Management/Watcher"
+      },
+      "Features": null,
+      "Highlight": null,
+      "Products": null,
+      "Subtypes": null,
+      "Types": {
+        "breaking-change": {
+          "$type": "TypeEntry",
+          "Labels": ">breaking",
+          "Subtypes": {
+            "api": null,
+            "behavioral": null,
+            "configuration": null,
+            "dependency": null,
+            "other": ">breaking-java",
+            "plugin": null,
+            "security": null,
+            "subscription": null
+          }
+        },
+        "bug-fix": {
+          "$type": "TypeEntry",
+          "Labels": ">bug",
+          "Subtypes": null
+        },
+        "deprecation": {
+          "$type": "TypeEntry",
+          "Labels": ">deprecation",
+          "Subtypes": null
+        },
+        "docs": {
+          "$type": "TypeEntry",
+          "Labels": ">docs, documentation",
+          "Subtypes": null
+        },
+        "enhancement": {
+          "$type": "TypeEntry",
+          "Labels": "release_note:enhancement, >enhancement",
+          "Subtypes": null
+        },
+        "feature": {
+          "$type": "TypeEntry",
+          "Labels": ">feature",
+          "Subtypes": null
+        },
+        "known-issue": {
+          "$type": "TypeEntry",
+          "Labels": null,
+          "Subtypes": null
+        },
+        "other": {
+          "$type": "TypeEntry",
+          "Labels": ">upgrade",
+          "Subtypes": null
+        },
+        "regression": {
+          "$type": "TypeEntry",
+          "Labels": ">regression",
+          "Subtypes": null
+        },
+        "security": {
+          "$type": "TypeEntry",
+          "Labels": null,
+          "Subtypes": null
+        }
+      }
+    },
+    "Products": [
+      {
+        "$type": "Product",
+        "DisplayName": "Elasticsearch",
+        "Features": {
+          "$type": "ProductFeatures",
+          "ParticipatesInReleaseNotes": true,
+          "PublicReference": true,
+          "ReleaseNotes": "OnRelease"
+        },
+        "Id": "elasticsearch",
+        "Repository": "elasticsearch",
+        "VersioningSystem": {
+          "$type": "VersioningSystem",
+          "Base": {
+            "$type": "SemVersion",
+            "Major": 9,
+            "Metadata": "",
+            "Minor": 0,
+            "Patch": 0,
+            "Prerelease": ""
+          },
+          "Current": {
+            "$type": "SemVersion",
+            "Major": 9,
+            "Metadata": "",
+            "Minor": 5,
+            "Patch": 4,
+            "Prerelease": ""
+          },
+          "Id": "Stack",
+          "IsVersionless": false
+        }
+      },
+      {
+        "$type": "Product",
+        "DisplayName": "Elastic Cloud Serverless",
+        "Features": {
+          "$type": "ProductFeatures",
+          "ParticipatesInReleaseNotes": true,
+          "PublicReference": true,
+          "ReleaseNotes": "OnRelease"
+        },
+        "Id": "cloud-serverless",
+        "Repository": "cloud",
+        "VersioningSystem": {
+          "$type": "VersioningSystem",
+          "Base": {
+            "$type": "SemVersion",
+            "Major": 99999,
+            "Metadata": "",
+            "Minor": 0,
+            "Patch": 0,
+            "Prerelease": ""
+          },
+          "Current": {
+            "$type": "SemVersion",
+            "Major": 99999,
+            "Metadata": "",
+            "Minor": 0,
+            "Patch": 0,
+            "Prerelease": ""
+          },
+          "Id": "Serverless",
+          "IsVersionless": true
+        }
+      }
+    ],
+    "ProductsConfiguration": {
+      "$type": "ProductsConfig",
+      "Available": [
+        "elasticsearch",
+        "cloud-serverless"
+      ],
+      "Default": [
+        {
+          "$type": "DefaultProduct",
+          "Lifecycle": "ga",
+          "Product": "elasticsearch"
+        }
+      ]
+    },
+    "Rules": {
+      "$type": "RulesConfiguration",
+      "Bundle": {
+        "$type": "BundleRules",
+        "Blocker": null,
+        "ByProduct": {
+          "cloud-serverless": {
+            "$type": "BundlePerProductRule",
+            "Blocker": {
+              "$type": "PublishBlocker",
+              "Areas": [
+                "Allocation",
+                "Audit",
+                "Authentication",
+                "Autoscaling",
+                "CCR",
+                "CCS",
+                "Cluster coordination",
+                "Codec",
+                "Discovery-Plugins",
+                "Engine",
+                "FIPS",
+                "Health",
+                "ILM",
+                "IdentityProvider",
+                "Infra/CLI",
+                "Infra/Logging",
+                "Infra/Metrics",
+                "Infra/Node lifecycle",
+                "Infra/Plugins",
+                "Infra/Transport API",
+                "License",
+                "Monitoring",
+                "Packaging",
+                "Searchable snapshots",
+                "SLM",
+                "Snapshot and restore",
+                "Stats",
+                "Watcher"
+              ],
+              "AreasMode": "Exclude",
+              "HasBlockingRules": true,
+              "MatchAreas": "All",
+              "Types": [
+                "docs"
+              ],
+              "TypesMode": "Exclude"
+            },
+            "ExcludeProducts": null,
+            "IncludeProducts": null,
+            "MatchProducts": "Any"
+          },
+          "elasticsearch": {
+            "$type": "BundlePerProductRule",
+            "Blocker": {
+              "$type": "PublishBlocker",
+              "Areas": null,
+              "AreasMode": "Exclude",
+              "HasBlockingRules": true,
+              "MatchAreas": "Any",
+              "Types": [
+                "docs"
+              ],
+              "TypesMode": "Exclude"
+            },
+            "ExcludeProducts": null,
+            "IncludeProducts": null,
+            "MatchProducts": "Any"
+          }
+        },
+        "ExcludeProducts": null,
+        "IncludeProducts": null,
+        "MatchProducts": "Any"
+      },
+      "Create": {
+        "$type": "CreateRules",
+        "ByProduct": null,
+        "Labels": [
+          ">non-issue",
+          ">test",
+          ">refactoring",
+          ":Delivery/Build",
+          ":Delivery/Tooling"
+        ],
+        "Match": "Any",
+        "Mode": "Exclude"
+      },
+      "Match": "Any",
+      "Publish": null
+    },
+    "SubTypes": [
+      "api",
+      "behavioral",
+      "configuration",
+      "dependency",
+      "subscription",
+      "plugin",
+      "security",
+      "other"
+    ],
+    "Types": [
+      "breaking-change",
+      "bug-fix",
+      "deprecation",
+      "docs",
+      "enhancement",
+      "feature",
+      "known-issue",
+      "regression",
+      "security",
+      "other"
+    ]
+  },
+  "diagnostics": [
+    {
+      "severity": "Warning",
+      "file": "/repo/docs/changelog.yml",
+      "line": null,
+      "column": null,
+      "message": "bundle.profiles.elasticsearch-release.output_products is deprecated. Use 'product: <id>' instead."
+    },
+    {
+      "severity": "Warning",
+      "file": "/repo/docs/changelog.yml",
+      "line": null,
+      "column": null,
+      "message": "bundle.profiles.elasticsearch-release.output_directory is deprecated. The output directory is derived automatically as bundle.output_directory/{product}."
+    },
+    {
+      "severity": "Warning",
+      "file": "/repo/docs/changelog.yml",
+      "line": null,
+      "column": null,
+      "message": "bundle.profiles.serverless-release.output_products is deprecated. Use 'product: <id>' instead."
+    },
+    {
+      "severity": "Warning",
+      "file": "/repo/docs/changelog.yml",
+      "line": null,
+      "column": null,
+      "message": "bundle.profiles.serverless-release.output_directory is deprecated. The output directory is derived automatically as bundle.output_directory/{product}."
+    }
+  ]
+}

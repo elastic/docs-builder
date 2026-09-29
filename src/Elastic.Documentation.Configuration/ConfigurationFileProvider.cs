@@ -239,6 +239,8 @@ public partial class ConfigurationFileProvider
 		var context = stream.ReadToEnd();
 		var fi = _fileSystem.FileInfo.New(Path.Join(TemporaryDirectory.FullName, fileName));
 		_fileSystem.File.WriteAllText(fi.FullName, context);
+		// The IFileInfo was created before the file was written; refresh so Exists and Length reflect the written file.
+		fi.Refresh();
 		return fi;
 	}
 

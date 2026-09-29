@@ -1,0 +1,1161 @@
+{
+  "value": {
+    "products": {
+      "agent-skills": {
+        "id": "agent-skills",
+        "displayName": "Elastic Agent Skills",
+        "versioningSystem": "All",
+        "repository": "agent-skills",
+        "features": {
+          "publicReference": false,
+          "releaseNotes": "OnRelease"
+        }
+      },
+      "apm": {
+        "id": "apm",
+        "displayName": "APM",
+        "versioningSystem": "Stack",
+        "repository": "apm",
+        "features": {
+          "publicReference": true,
+          "releaseNotes": "OnRelease"
+        }
+      },
+      "apm-agent": {
+        "id": "apm-agent",
+        "displayName": "APM Agent",
+        "versioningSystem": "All",
+        "repository": "apm-agent",
+        "features": {
+          "publicReference": true,
+          "releaseNotes": "OnRelease"
+        }
+      },
+      "apm-agent-dotnet": {
+        "id": "apm-agent-dotnet",
+        "displayName": "APM .NET Agent",
+        "versioningSystem": "ApmAgentDotnet",
+        "repository": "apm-agent-dotnet",
+        "features": {
+          "publicReference": true,
+          "releaseNotes": "OnRelease"
+        }
+      },
+      "apm-agent-go": {
+        "id": "apm-agent-go",
+        "displayName": "APM Go Agent",
+        "versioningSystem": "ApmAgentGo",
+        "repository": "apm-agent-go",
+        "features": {
+          "publicReference": true,
+          "releaseNotes": "OnRelease"
+        }
+      },
+      "apm-agent-java": {
+        "id": "apm-agent-java",
+        "displayName": "APM Java Agent",
+        "versioningSystem": "ApmAgentJava",
+        "repository": "apm-agent-java",
+        "features": {
+          "publicReference": true,
+          "releaseNotes": "OnRelease"
+        }
+      },
+      "apm-agent-node": {
+        "id": "apm-agent-node",
+        "displayName": "APM Node.js Agent",
+        "versioningSystem": "ApmAgentNode",
+        "repository": "apm-agent-node",
+        "features": {
+          "publicReference": true,
+          "releaseNotes": "OnRelease"
+        }
+      },
+      "apm-agent-php": {
+        "id": "apm-agent-php",
+        "displayName": "APM PHP Agent",
+        "versioningSystem": "ApmAgentPhp",
+        "repository": "apm-agent-php",
+        "features": {
+          "publicReference": true,
+          "releaseNotes": "OnRelease"
+        }
+      },
+      "apm-agent-python": {
+        "id": "apm-agent-python",
+        "displayName": "APM Python Agent",
+        "versioningSystem": "ApmAgentPython",
+        "repository": "apm-agent-python",
+        "features": {
+          "publicReference": true,
+          "releaseNotes": "OnRelease"
+        }
+      },
+      "apm-agent-ruby": {
+        "id": "apm-agent-ruby",
+        "displayName": "APM Ruby Agent",
+        "versioningSystem": "ApmAgentRuby",
+        "repository": "apm-agent-ruby",
+        "features": {
+          "publicReference": true,
+          "releaseNotes": "OnRelease"
+        }
+      },
+      "apm-agent-rum-js": {
+        "id": "apm-agent-rum-js",
+        "displayName": "APM RUM JavaScript Agent",
+        "versioningSystem": "ApmAgentRumJs",
+        "repository": "apm-agent-rum-js",
+        "features": {
+          "publicReference": true,
+          "releaseNotes": "OnRelease"
+        }
+      },
+      "apm-aws-lambda": {
+        "id": "apm-aws-lambda",
+        "displayName": "APM AWS Lambda extension",
+        "versioningSystem": "ApmLambda",
+        "repository": "apm-aws-lambda",
+        "features": {
+          "publicReference": true,
+          "releaseNotes": "OnRelease"
+        }
+      },
+      "apm-k8s-attacher": {
+        "id": "apm-k8s-attacher",
+        "displayName": "APM Attacher for Kubernetes",
+        "versioningSystem": "ApmAttacher",
+        "repository": "apm-k8s-attacher",
+        "features": {
+          "publicReference": true,
+          "releaseNotes": "OnRelease"
+        }
+      },
+      "apm-server": {
+        "id": "apm-server",
+        "displayName": "APM Server",
+        "versioningSystem": "Stack",
+        "repository": "apm-server",
+        "features": {
+          "publicReference": true,
+          "releaseNotes": "OnRelease"
+        }
+      },
+      "auditbeat": {
+        "id": "auditbeat",
+        "displayName": "Auditbeat",
+        "versioningSystem": "Stack",
+        "repository": "auditbeat",
+        "features": {
+          "publicReference": true,
+          "releaseNotes": "OnRelease"
+        }
+      },
+      "beats": {
+        "id": "beats",
+        "displayName": "Beats",
+        "versioningSystem": "Stack",
+        "repository": "beats",
+        "features": {
+          "publicReference": true,
+          "releaseNotes": "OnRelease"
+        }
+      },
+      "cloud-control-ecctl": {
+        "id": "cloud-control-ecctl",
+        "displayName": "Elastic Cloud Control",
+        "versioningSystem": "Ecctl",
+        "repository": "cloud-control-ecctl",
+        "features": {
+          "publicReference": true,
+          "releaseNotes": "OnRelease"
+        }
+      },
+      "cloud-enterprise": {
+        "id": "cloud-enterprise",
+        "displayName": "Elastic Cloud Enterprise",
+        "versioningSystem": "Ece",
+        "repository": "cloud",
+        "features": {
+          "publicReference": true,
+          "releaseNotes": "OnRelease"
+        }
+      },
+      "cloud-hosted": {
+        "id": "cloud-hosted",
+        "displayName": "Elastic Cloud Hosted",
+        "versioningSystem": "Ech",
+        "repository": "cloud",
+        "features": {
+          "publicReference": true,
+          "releaseNotes": "OnRelease"
+        }
+      },
+      "cloud-kubernetes": {
+        "id": "cloud-kubernetes",
+        "displayName": "Elastic Cloud on Kubernetes",
+        "versioningSystem": "Eck",
+        "repository": "cloud-kubernetes",
+        "features": {
+          "publicReference": true,
+          "releaseNotes": "OnRelease"
+        }
+      },
+      "cloud-serverless": {
+        "id": "cloud-serverless",
+        "displayName": "Elastic Cloud Serverless",
+        "versioningSystem": "Serverless",
+        "repository": "cloud",
+        "features": {
+          "publicReference": true,
+          "releaseNotes": "OnRelease"
+        }
+      },
+      "cloud-terraform": {
+        "id": "cloud-terraform",
+        "displayName": "Elastic Cloud Terraform Provider",
+        "versioningSystem": "CloudTerraform",
+        "repository": "cloud-terraform",
+        "features": {
+          "publicReference": true,
+          "releaseNotes": "OnRelease"
+        }
+      },
+      "connectors": {
+        "id": "connectors",
+        "displayName": "Elastic Connectors",
+        "versioningSystem": "Stack",
+        "repository": "connectors",
+        "features": {
+          "publicReference": false,
+          "releaseNotes": "None"
+        }
+      },
+      "curator": {
+        "id": "curator",
+        "displayName": "Elasticsearch Curator",
+        "versioningSystem": "Curator",
+        "repository": "curator",
+        "features": {
+          "publicReference": true,
+          "releaseNotes": "OnRelease"
+        }
+      },
+      "docs-builder": {
+        "id": "docs-builder",
+        "displayName": "Elastic Docs Builder",
+        "versioningSystem": "None",
+        "repository": "docs-builder",
+        "features": {
+          "publicReference": false,
+          "releaseNotes": "OnRelease"
+        }
+      },
+      "docs-playground-release-notes-changelogs": {
+        "id": "docs-playground-release-notes-changelogs",
+        "displayName": "Release Notes Playground (Changelogs)",
+        "versioningSystem": "None",
+        "repository": "docs-playground-release-notes-changelogs",
+        "features": {
+          "publicReference": false,
+          "releaseNotes": "Prestage"
+        }
+      },
+      "docs-playground-release-notes-tagged": {
+        "id": "docs-playground-release-notes-tagged",
+        "displayName": "Release Notes Playground (Tagged)",
+        "versioningSystem": "None",
+        "repository": "docs-playground-release-notes-tagged",
+        "features": {
+          "publicReference": false,
+          "releaseNotes": "OnRelease"
+        }
+      },
+      "docs-playground-release-notes-tagged-workflow": {
+        "id": "docs-playground-release-notes-tagged-workflow",
+        "displayName": "Release Notes Playground (Tagged Workflow)",
+        "versioningSystem": "None",
+        "repository": "docs-playground-release-notes-tagged-workflow",
+        "features": {
+          "publicReference": false,
+          "releaseNotes": "OnRelease"
+        }
+      },
+      "ecs": {
+        "id": "ecs",
+        "displayName": "Elastic Common Schema (ECS)",
+        "versioningSystem": "Ecs",
+        "repository": "ecs",
+        "features": {
+          "publicReference": true,
+          "releaseNotes": "OnRelease"
+        }
+      },
+      "ecs-dotnet": {
+        "id": "ecs-dotnet",
+        "displayName": "ECS Logging .NET",
+        "versioningSystem": "EcsLoggingDotnet",
+        "repository": "ecs-dotnet",
+        "features": {
+          "publicReference": true,
+          "releaseNotes": "OnRelease"
+        }
+      },
+      "ecs-logging": {
+        "id": "ecs-logging",
+        "displayName": "ECS Logging",
+        "versioningSystem": "Stack",
+        "repository": "ecs-logging",
+        "features": {
+          "publicReference": true,
+          "releaseNotes": "OnRelease"
+        }
+      },
+      "ecs-logging-go-logrus": {
+        "id": "ecs-logging-go-logrus",
+        "displayName": "ECS Logging Go (Logrus)",
+        "versioningSystem": "EcsLoggingGoLogrus",
+        "repository": "ecs-logging-go-logrus",
+        "features": {
+          "publicReference": true,
+          "releaseNotes": "OnRelease"
+        }
+      },
+      "ecs-logging-go-zap": {
+        "id": "ecs-logging-go-zap",
+        "displayName": "ECS Logging Go (Zap)",
+        "versioningSystem": "EcsLoggingGoZap",
+        "repository": "ecs-logging-go-zap",
+        "features": {
+          "publicReference": true,
+          "releaseNotes": "OnRelease"
+        }
+      },
+      "ecs-logging-go-zerolog": {
+        "id": "ecs-logging-go-zerolog",
+        "displayName": "ECS Logging Go (Zerolog)",
+        "versioningSystem": "EcsLoggingGoZerolog",
+        "repository": "ecs-logging-go-zerolog",
+        "features": {
+          "publicReference": true,
+          "releaseNotes": "OnRelease"
+        }
+      },
+      "ecs-logging-java": {
+        "id": "ecs-logging-java",
+        "displayName": "ECS Logging Java",
+        "versioningSystem": "EcsLoggingJava",
+        "repository": "ecs-logging-java",
+        "features": {
+          "publicReference": true,
+          "releaseNotes": "OnRelease"
+        }
+      },
+      "ecs-logging-nodejs": {
+        "id": "ecs-logging-nodejs",
+        "displayName": "ECS Logging Node.js",
+        "versioningSystem": "EcsLoggingNodeJs",
+        "repository": "ecs-logging-nodejs",
+        "features": {
+          "publicReference": true,
+          "releaseNotes": "OnRelease"
+        }
+      },
+      "ecs-logging-php": {
+        "id": "ecs-logging-php",
+        "displayName": "ECS Logging PHP",
+        "versioningSystem": "EcsLoggingPhp",
+        "repository": "ecs-logging-php",
+        "features": {
+          "publicReference": true,
+          "releaseNotes": "OnRelease"
+        }
+      },
+      "ecs-logging-python": {
+        "id": "ecs-logging-python",
+        "displayName": "ECS Logging Python",
+        "versioningSystem": "EcsLoggingPython",
+        "repository": "ecs-logging-python",
+        "features": {
+          "publicReference": true,
+          "releaseNotes": "OnRelease"
+        }
+      },
+      "ecs-logging-ruby": {
+        "id": "ecs-logging-ruby",
+        "displayName": "ECS Logging Ruby",
+        "versioningSystem": "EcsLoggingRuby",
+        "repository": "ecs-logging-ruby",
+        "features": {
+          "publicReference": true,
+          "releaseNotes": "OnRelease"
+        }
+      },
+      "edot-android": {
+        "id": "edot-android",
+        "displayName": "Elastic Distribution of OpenTelemetry Android",
+        "versioningSystem": "EdotAndroid",
+        "repository": "apm-agent-android",
+        "features": {
+          "publicReference": true,
+          "releaseNotes": "OnRelease"
+        }
+      },
+      "edot-browser": {
+        "id": "edot-browser",
+        "displayName": "Elastic Distribution of OpenTelemetry Browser (RUM)",
+        "versioningSystem": "EdotBrowser",
+        "repository": "elastic-otel-rum-js",
+        "features": {
+          "publicReference": true,
+          "releaseNotes": "OnRelease"
+        }
+      },
+      "edot-cf": {
+        "id": "edot-cf",
+        "displayName": "Elastic Cloud Forwarder",
+        "versioningSystem": "Stack",
+        "repository": "edot-cf",
+        "features": {
+          "publicReference": true,
+          "releaseNotes": "OnRelease"
+        }
+      },
+      "edot-cf-aws": {
+        "id": "edot-cf-aws",
+        "displayName": "Elastic Cloud Forwarder for AWS",
+        "versioningSystem": "EdotCfAws",
+        "repository": "edot-cf-aws",
+        "features": {
+          "publicReference": true,
+          "releaseNotes": "OnRelease"
+        }
+      },
+      "edot-cf-azure": {
+        "id": "edot-cf-azure",
+        "displayName": "Elastic Cloud Forwarder for Azure",
+        "versioningSystem": "EdotCfAzure",
+        "repository": "edot-cf-azure",
+        "features": {
+          "publicReference": true,
+          "releaseNotes": "OnRelease"
+        }
+      },
+      "edot-cf-gcp": {
+        "id": "edot-cf-gcp",
+        "displayName": "Elastic Cloud Forwarder for GCP",
+        "versioningSystem": "EdotCfGcp",
+        "repository": "edot-cf-gcp",
+        "features": {
+          "publicReference": true,
+          "releaseNotes": "OnRelease"
+        }
+      },
+      "edot-collector": {
+        "id": "edot-collector",
+        "displayName": "Elastic Agent",
+        "versioningSystem": "Stack",
+        "repository": "edot-collector",
+        "features": {
+          "publicReference": true,
+          "releaseNotes": "OnRelease"
+        }
+      },
+      "edot-dotnet": {
+        "id": "edot-dotnet",
+        "displayName": "Elastic Distribution of OpenTelemetry .NET",
+        "versioningSystem": "EdotDotnet",
+        "repository": "elastic-otel-dotnet",
+        "features": {
+          "publicReference": true,
+          "releaseNotes": "OnRelease"
+        }
+      },
+      "edot-ios": {
+        "id": "edot-ios",
+        "displayName": "Elastic Distribution of OpenTelemetry iOS",
+        "versioningSystem": "EdotIos",
+        "repository": "apm-agent-ios",
+        "features": {
+          "publicReference": true,
+          "releaseNotes": "OnRelease"
+        }
+      },
+      "edot-java": {
+        "id": "edot-java",
+        "displayName": "Elastic Distribution of OpenTelemetry Java",
+        "versioningSystem": "EdotJava",
+        "repository": "elastic-otel-java",
+        "features": {
+          "publicReference": true,
+          "releaseNotes": "OnRelease"
+        }
+      },
+      "edot-node": {
+        "id": "edot-node",
+        "displayName": "Elastic Distribution of OpenTelemetry Node",
+        "versioningSystem": "EdotNode",
+        "repository": "elastic-otel-node",
+        "features": {
+          "publicReference": true,
+          "releaseNotes": "OnRelease"
+        }
+      },
+      "edot-php": {
+        "id": "edot-php",
+        "displayName": "Elastic Distribution of OpenTelemetry PHP",
+        "versioningSystem": "EdotPhp",
+        "repository": "elastic-otel-php",
+        "features": {
+          "publicReference": true,
+          "releaseNotes": "OnRelease"
+        }
+      },
+      "edot-python": {
+        "id": "edot-python",
+        "displayName": "Elastic Distribution of OpenTelemetry Python",
+        "versioningSystem": "EdotPython",
+        "repository": "elastic-otel-python",
+        "features": {
+          "publicReference": true,
+          "releaseNotes": "OnRelease"
+        }
+      },
+      "edot-sdk": {
+        "id": "edot-sdk",
+        "displayName": "Elastic Distribution of OpenTelemetry SDK",
+        "versioningSystem": "All",
+        "repository": "edot-sdk",
+        "features": {
+          "publicReference": true,
+          "releaseNotes": "OnRelease"
+        }
+      },
+      "eland": {
+        "id": "eland",
+        "displayName": "Eland",
+        "versioningSystem": "Stack",
+        "repository": "eland",
+        "features": {
+          "publicReference": true,
+          "releaseNotes": "OnRelease"
+        }
+      },
+      "elastic-agent": {
+        "id": "elastic-agent",
+        "displayName": "Elastic Agent",
+        "versioningSystem": "Stack",
+        "repository": "elastic-agent",
+        "features": {
+          "publicReference": true,
+          "releaseNotes": "OnRelease"
+        }
+      },
+      "elastic-defend": {
+        "id": "elastic-defend",
+        "displayName": "Elastic Defend",
+        "versioningSystem": "Stack",
+        "repository": "elastic-defend",
+        "features": {
+          "publicReference": false,
+          "releaseNotes": "None"
+        }
+      },
+      "elastic-docs": {
+        "id": "elastic-docs",
+        "displayName": "Elastic Documentation",
+        "versioningSystem": "None",
+        "repository": "docs-content",
+        "features": {
+          "publicReference": false,
+          "releaseNotes": "OnRelease"
+        }
+      },
+      "elastic-maps-server": {
+        "id": "elastic-maps-server",
+        "displayName": "Elastic Maps Server",
+        "versioningSystem": "Stack",
+        "repository": "elastic-maps-server",
+        "features": {
+          "publicReference": false,
+          "releaseNotes": "None"
+        }
+      },
+      "elastic-package-registry": {
+        "id": "elastic-package-registry",
+        "displayName": "Elastic Package Registry",
+        "versioningSystem": "None",
+        "repository": "package-registry",
+        "features": {
+          "publicReference": false,
+          "releaseNotes": "None"
+        }
+      },
+      "elastic-serverless-forwarder": {
+        "id": "elastic-serverless-forwarder",
+        "displayName": "Elastic Serverless Forwarder",
+        "versioningSystem": "Esf",
+        "repository": "elastic-serverless-forwarder",
+        "features": {
+          "publicReference": true,
+          "releaseNotes": "OnRelease"
+        }
+      },
+      "elastic-stack": {
+        "id": "elastic-stack",
+        "displayName": "Elastic Stack",
+        "versioningSystem": "Stack",
+        "repository": "elastic-stack",
+        "features": {
+          "publicReference": true,
+          "releaseNotes": "OnRelease"
+        }
+      },
+      "elasticsearch": {
+        "id": "elasticsearch",
+        "displayName": "Elasticsearch",
+        "versioningSystem": "Stack",
+        "repository": "elasticsearch",
+        "features": {
+          "publicReference": true,
+          "releaseNotes": "OnRelease"
+        }
+      },
+      "elasticsearch-client": {
+        "id": "elasticsearch-client",
+        "displayName": "Elasticsearch Client",
+        "versioningSystem": "Stack",
+        "repository": "elasticsearch-client",
+        "features": {
+          "publicReference": true,
+          "releaseNotes": "OnRelease"
+        }
+      },
+      "elasticsearch-client-dotnet": {
+        "id": "elasticsearch-client-dotnet",
+        "displayName": "Elasticsearch .NET Client",
+        "versioningSystem": "ElasticsearchClientDotnet",
+        "repository": "elasticsearch-net",
+        "features": {
+          "publicReference": true,
+          "releaseNotes": "OnRelease"
+        }
+      },
+      "elasticsearch-client-go": {
+        "id": "elasticsearch-client-go",
+        "displayName": "Elasticsearch Go Client",
+        "versioningSystem": "ElasticsearchClientGo",
+        "repository": "go-elasticsearch",
+        "features": {
+          "publicReference": true,
+          "releaseNotes": "OnRelease"
+        }
+      },
+      "elasticsearch-client-java": {
+        "id": "elasticsearch-client-java",
+        "displayName": "Elasticsearch Java Client",
+        "versioningSystem": "ElasticsearchClientJava",
+        "repository": "elasticsearch-java",
+        "features": {
+          "publicReference": true,
+          "releaseNotes": "OnRelease"
+        }
+      },
+      "elasticsearch-client-javascript": {
+        "id": "elasticsearch-client-javascript",
+        "displayName": "Elasticsearch JavaScript Client",
+        "versioningSystem": "ElasticsearchClientJavascript",
+        "repository": "elasticsearch-js",
+        "features": {
+          "publicReference": true,
+          "releaseNotes": "OnRelease"
+        }
+      },
+      "elasticsearch-client-php": {
+        "id": "elasticsearch-client-php",
+        "displayName": "Elasticsearch PHP Client",
+        "versioningSystem": "ElasticsearchClientPhp",
+        "repository": "elasticsearch-php",
+        "features": {
+          "publicReference": true,
+          "releaseNotes": "OnRelease"
+        }
+      },
+      "elasticsearch-client-python": {
+        "id": "elasticsearch-client-python",
+        "displayName": "Elasticsearch Python Client",
+        "versioningSystem": "ElasticsearchClientPython",
+        "repository": "elasticsearch-py",
+        "features": {
+          "publicReference": true,
+          "releaseNotes": "OnRelease"
+        }
+      },
+      "elasticsearch-client-ruby": {
+        "id": "elasticsearch-client-ruby",
+        "displayName": "Elasticsearch Ruby Client",
+        "versioningSystem": "ElasticsearchClientRuby",
+        "repository": "elasticsearch-ruby",
+        "features": {
+          "publicReference": true,
+          "releaseNotes": "OnRelease"
+        }
+      },
+      "elasticsearch-client-rust": {
+        "id": "elasticsearch-client-rust",
+        "displayName": "Elasticsearch Rust Client",
+        "versioningSystem": "ElasticsearchClientRust",
+        "repository": "elasticsearch-rs",
+        "features": {
+          "publicReference": true,
+          "releaseNotes": "OnRelease"
+        }
+      },
+      "elasticsearch-hadoop": {
+        "id": "elasticsearch-hadoop",
+        "displayName": "Elasticsearch for Apache Hadoop",
+        "versioningSystem": "Stack",
+        "repository": "elasticsearch-hadoop",
+        "features": {
+          "publicReference": true,
+          "releaseNotes": "OnRelease"
+        }
+      },
+      "enterprise-search": {
+        "id": "enterprise-search",
+        "displayName": "Elastic Enterprise Search",
+        "versioningSystem": "None",
+        "repository": "enterprise-search",
+        "features": {
+          "publicReference": false,
+          "releaseNotes": "None"
+        }
+      },
+      "ess": {
+        "id": "ess",
+        "displayName": "Elastic Cloud Hosted",
+        "versioningSystem": "All",
+        "repository": "ess",
+        "features": {
+          "publicReference": true,
+          "releaseNotes": "OnRelease"
+        }
+      },
+      "filebeat": {
+        "id": "filebeat",
+        "displayName": "Filebeat",
+        "versioningSystem": "Stack",
+        "repository": "filebeat",
+        "features": {
+          "publicReference": true,
+          "releaseNotes": "OnRelease"
+        }
+      },
+      "fleet": {
+        "id": "fleet",
+        "displayName": "Fleet",
+        "versioningSystem": "Stack",
+        "repository": "fleet",
+        "features": {
+          "publicReference": true,
+          "releaseNotes": "OnRelease"
+        }
+      },
+      "fleet-server": {
+        "id": "fleet-server",
+        "displayName": "Fleet Server",
+        "versioningSystem": "Stack",
+        "repository": "fleet-server",
+        "features": {
+          "publicReference": true,
+          "releaseNotes": "OnRelease"
+        }
+      },
+      "heartbeat": {
+        "id": "heartbeat",
+        "displayName": "Heartbeat",
+        "versioningSystem": "Stack",
+        "repository": "heartbeat",
+        "features": {
+          "publicReference": true,
+          "releaseNotes": "OnRelease"
+        }
+      },
+      "integrations": {
+        "id": "integrations",
+        "displayName": "Elastic integrations",
+        "versioningSystem": "Stack",
+        "repository": "integrations",
+        "features": {
+          "publicReference": true,
+          "releaseNotes": "OnRelease"
+        }
+      },
+      "kibana": {
+        "id": "kibana",
+        "displayName": "Kibana",
+        "versioningSystem": "Stack",
+        "repository": "kibana",
+        "features": {
+          "publicReference": true,
+          "releaseNotes": "OnRelease"
+        }
+      },
+      "logstash": {
+        "id": "logstash",
+        "displayName": "Logstash",
+        "versioningSystem": "Stack",
+        "repository": "logstash",
+        "features": {
+          "publicReference": true,
+          "releaseNotes": "OnRelease"
+        }
+      },
+      "machine-learning": {
+        "id": "machine-learning",
+        "displayName": "Machine Learning",
+        "versioningSystem": "Stack",
+        "repository": "machine-learning",
+        "features": {
+          "publicReference": true,
+          "releaseNotes": "OnRelease"
+        }
+      },
+      "metricbeat": {
+        "id": "metricbeat",
+        "displayName": "Metricbeat",
+        "versioningSystem": "Stack",
+        "repository": "metricbeat",
+        "features": {
+          "publicReference": true,
+          "releaseNotes": "OnRelease"
+        }
+      },
+      "observability": {
+        "id": "observability",
+        "displayName": "Elastic Observability",
+        "versioningSystem": "Stack",
+        "repository": "observability",
+        "features": {
+          "publicReference": true,
+          "releaseNotes": "OnRelease"
+        }
+      },
+      "packetbeat": {
+        "id": "packetbeat",
+        "displayName": "Packetbeat",
+        "versioningSystem": "Stack",
+        "repository": "packetbeat",
+        "features": {
+          "publicReference": true,
+          "releaseNotes": "OnRelease"
+        }
+      },
+      "painless": {
+        "id": "painless",
+        "displayName": "Painless",
+        "versioningSystem": "Stack",
+        "repository": "painless",
+        "features": {
+          "publicReference": true,
+          "releaseNotes": "OnRelease"
+        }
+      },
+      "search-ui": {
+        "id": "search-ui",
+        "displayName": "Search UI",
+        "versioningSystem": "Stack",
+        "repository": "search-ui",
+        "features": {
+          "publicReference": true,
+          "releaseNotes": "OnRelease"
+        }
+      },
+      "security": {
+        "id": "security",
+        "displayName": "Elastic Security",
+        "versioningSystem": "Stack",
+        "repository": "security",
+        "features": {
+          "publicReference": true,
+          "releaseNotes": "OnRelease"
+        }
+      },
+      "self": {
+        "id": "self",
+        "displayName": "Self-managed Elastic",
+        "versioningSystem": "Stack",
+        "repository": "self",
+        "features": {
+          "publicReference": true,
+          "releaseNotes": "OnRelease"
+        }
+      },
+      "serverless-elasticsearch": {
+        "id": "serverless-elasticsearch",
+        "displayName": "Elasticsearch Serverless",
+        "versioningSystem": "All",
+        "repository": "serverless-elasticsearch",
+        "features": {
+          "publicReference": true,
+          "releaseNotes": "OnRelease"
+        }
+      },
+      "serverless-observability": {
+        "id": "serverless-observability",
+        "displayName": "Elastic Observability Serverless",
+        "versioningSystem": "All",
+        "repository": "serverless-observability",
+        "features": {
+          "publicReference": true,
+          "releaseNotes": "OnRelease"
+        }
+      },
+      "serverless-security": {
+        "id": "serverless-security",
+        "displayName": "Elastic Security Serverless",
+        "versioningSystem": "All",
+        "repository": "serverless-security",
+        "features": {
+          "publicReference": true,
+          "releaseNotes": "OnRelease"
+        }
+      },
+      "serverless-vector-database": {
+        "id": "serverless-vector-database",
+        "displayName": "Elasticsearch Vector Database Serverless",
+        "versioningSystem": "Serverless",
+        "repository": "serverless-vector-database",
+        "features": {
+          "publicReference": true,
+          "releaseNotes": "OnRelease"
+        }
+      },
+      "synthetics-recorder": {
+        "id": "synthetics-recorder",
+        "displayName": "Elastic Synthetics Recorder",
+        "versioningSystem": "None",
+        "repository": "synthetics-recorder",
+        "features": {
+          "publicReference": false,
+          "releaseNotes": "None"
+        }
+      },
+      "terraform-google-edot-cf": {
+        "id": "terraform-google-edot-cf",
+        "displayName": "Terraform Google Elastic Cloud Forwarder",
+        "versioningSystem": "TerraformGoogleEdotCf",
+        "repository": "terraform-google-edot-cf",
+        "features": {
+          "publicReference": true,
+          "releaseNotes": "OnRelease"
+        }
+      },
+      "transport-go": {
+        "id": "transport-go",
+        "displayName": "Elastic Transport Go",
+        "versioningSystem": "All",
+        "repository": "elastic-transport-go",
+        "features": {
+          "publicReference": false,
+          "releaseNotes": "OnRelease"
+        }
+      },
+      "winlogbeat": {
+        "id": "winlogbeat",
+        "displayName": "Winlogbeat",
+        "versioningSystem": "Stack",
+        "repository": "winlogbeat",
+        "features": {
+          "publicReference": true,
+          "releaseNotes": "OnRelease"
+        }
+      }
+    },
+    "publicReferenceProducts": [
+      "apm",
+      "apm-agent",
+      "apm-agent-dotnet",
+      "apm-agent-go",
+      "apm-agent-java",
+      "apm-agent-node",
+      "apm-agent-php",
+      "apm-agent-python",
+      "apm-agent-ruby",
+      "apm-agent-rum-js",
+      "apm-aws-lambda",
+      "apm-k8s-attacher",
+      "apm-server",
+      "auditbeat",
+      "beats",
+      "cloud-control-ecctl",
+      "cloud-enterprise",
+      "cloud-hosted",
+      "cloud-kubernetes",
+      "cloud-serverless",
+      "cloud-terraform",
+      "curator",
+      "ecs",
+      "ecs-dotnet",
+      "ecs-logging",
+      "ecs-logging-go-logrus",
+      "ecs-logging-go-zap",
+      "ecs-logging-go-zerolog",
+      "ecs-logging-java",
+      "ecs-logging-nodejs",
+      "ecs-logging-php",
+      "ecs-logging-python",
+      "ecs-logging-ruby",
+      "edot-android",
+      "edot-browser",
+      "edot-cf",
+      "edot-cf-aws",
+      "edot-cf-azure",
+      "edot-cf-gcp",
+      "edot-collector",
+      "edot-dotnet",
+      "edot-ios",
+      "edot-java",
+      "edot-node",
+      "edot-php",
+      "edot-python",
+      "edot-sdk",
+      "eland",
+      "elastic-agent",
+      "elastic-serverless-forwarder",
+      "elastic-stack",
+      "elasticsearch",
+      "elasticsearch-client",
+      "elasticsearch-client-dotnet",
+      "elasticsearch-client-go",
+      "elasticsearch-client-java",
+      "elasticsearch-client-javascript",
+      "elasticsearch-client-php",
+      "elasticsearch-client-python",
+      "elasticsearch-client-ruby",
+      "elasticsearch-client-rust",
+      "elasticsearch-hadoop",
+      "ess",
+      "filebeat",
+      "fleet",
+      "fleet-server",
+      "heartbeat",
+      "integrations",
+      "kibana",
+      "logstash",
+      "machine-learning",
+      "metricbeat",
+      "observability",
+      "packetbeat",
+      "painless",
+      "search-ui",
+      "security",
+      "self",
+      "serverless-elasticsearch",
+      "serverless-observability",
+      "serverless-security",
+      "serverless-vector-database",
+      "terraform-google-edot-cf",
+      "winlogbeat"
+    ],
+    "displayNames": {
+      "agent-skills": "Elastic Agent Skills",
+      "apm": "APM",
+      "apm-agent": "APM Agent",
+      "apm-agent-dotnet": "APM .NET Agent",
+      "apm-agent-go": "APM Go Agent",
+      "apm-agent-java": "APM Java Agent",
+      "apm-agent-node": "APM Node.js Agent",
+      "apm-agent-php": "APM PHP Agent",
+      "apm-agent-python": "APM Python Agent",
+      "apm-agent-ruby": "APM Ruby Agent",
+      "apm-agent-rum-js": "APM RUM JavaScript Agent",
+      "apm-aws-lambda": "APM AWS Lambda extension",
+      "apm-k8s-attacher": "APM Attacher for Kubernetes",
+      "apm-server": "APM Server",
+      "auditbeat": "Auditbeat",
+      "beats": "Beats",
+      "cloud-control-ecctl": "Elastic Cloud Control",
+      "cloud-enterprise": "Elastic Cloud Enterprise",
+      "cloud-hosted": "Elastic Cloud Hosted",
+      "cloud-kubernetes": "Elastic Cloud on Kubernetes",
+      "cloud-serverless": "Elastic Cloud Serverless",
+      "cloud-terraform": "Elastic Cloud Terraform Provider",
+      "connectors": "Elastic Connectors",
+      "curator": "Elasticsearch Curator",
+      "docs-builder": "Elastic Docs Builder",
+      "docs-playground-release-notes-changelogs": "Release Notes Playground (Changelogs)",
+      "docs-playground-release-notes-tagged": "Release Notes Playground (Tagged)",
+      "docs-playground-release-notes-tagged-workflow": "Release Notes Playground (Tagged Workflow)",
+      "ecs": "Elastic Common Schema (ECS)",
+      "ecs-dotnet": "ECS Logging .NET",
+      "ecs-logging": "ECS Logging",
+      "ecs-logging-go-logrus": "ECS Logging Go (Logrus)",
+      "ecs-logging-go-zap": "ECS Logging Go (Zap)",
+      "ecs-logging-go-zerolog": "ECS Logging Go (Zerolog)",
+      "ecs-logging-java": "ECS Logging Java",
+      "ecs-logging-nodejs": "ECS Logging Node.js",
+      "ecs-logging-php": "ECS Logging PHP",
+      "ecs-logging-python": "ECS Logging Python",
+      "ecs-logging-ruby": "ECS Logging Ruby",
+      "edot-android": "Elastic Distribution of OpenTelemetry Android",
+      "edot-browser": "Elastic Distribution of OpenTelemetry Browser (RUM)",
+      "edot-cf": "Elastic Cloud Forwarder",
+      "edot-cf-aws": "Elastic Cloud Forwarder for AWS",
+      "edot-cf-azure": "Elastic Cloud Forwarder for Azure",
+      "edot-cf-gcp": "Elastic Cloud Forwarder for GCP",
+      "edot-collector": "Elastic Agent",
+      "edot-dotnet": "Elastic Distribution of OpenTelemetry .NET",
+      "edot-ios": "Elastic Distribution of OpenTelemetry iOS",
+      "edot-java": "Elastic Distribution of OpenTelemetry Java",
+      "edot-node": "Elastic Distribution of OpenTelemetry Node",
+      "edot-php": "Elastic Distribution of OpenTelemetry PHP",
+      "edot-python": "Elastic Distribution of OpenTelemetry Python",
+      "edot-sdk": "Elastic Distribution of OpenTelemetry SDK",
+      "eland": "Eland",
+      "elastic-agent": "Elastic Agent",
+      "elastic-defend": "Elastic Defend",
+      "elastic-docs": "Elastic Documentation",
+      "elastic-maps-server": "Elastic Maps Server",
+      "elastic-package-registry": "Elastic Package Registry",
+      "elastic-serverless-forwarder": "Elastic Serverless Forwarder",
+      "elastic-stack": "Elastic Stack",
+      "elasticsearch": "Elasticsearch",
+      "elasticsearch-client": "Elasticsearch Client",
+      "elasticsearch-client-dotnet": "Elasticsearch .NET Client",
+      "elasticsearch-client-go": "Elasticsearch Go Client",
+      "elasticsearch-client-java": "Elasticsearch Java Client",
+      "elasticsearch-client-javascript": "Elasticsearch JavaScript Client",
+      "elasticsearch-client-php": "Elasticsearch PHP Client",
+      "elasticsearch-client-python": "Elasticsearch Python Client",
+      "elasticsearch-client-ruby": "Elasticsearch Ruby Client",
+      "elasticsearch-client-rust": "Elasticsearch Rust Client",
+      "elasticsearch-hadoop": "Elasticsearch for Apache Hadoop",
+      "enterprise-search": "Elastic Enterprise Search",
+      "ess": "Elastic Cloud Hosted",
+      "filebeat": "Filebeat",
+      "fleet": "Fleet",
+      "fleet-server": "Fleet Server",
+      "heartbeat": "Heartbeat",
+      "integrations": "Elastic integrations",
+      "kibana": "Kibana",
+      "logstash": "Logstash",
+      "machine-learning": "Machine Learning",
+      "metricbeat": "Metricbeat",
+      "observability": "Elastic Observability",
+      "packetbeat": "Packetbeat",
+      "painless": "Painless",
+      "search-ui": "Search UI",
+      "security": "Elastic Security",
+      "self": "Self-managed Elastic",
+      "serverless-elasticsearch": "Elasticsearch Serverless",
+      "serverless-observability": "Elastic Observability Serverless",
+      "serverless-security": "Elastic Security Serverless",
+      "serverless-vector-database": "Elasticsearch Vector Database Serverless",
+      "synthetics-recorder": "Elastic Synthetics Recorder",
+      "terraform-google-edot-cf": "Terraform Google Elastic Cloud Forwarder",
+      "transport-go": "Elastic Transport Go",
+      "winlogbeat": "Winlogbeat"
+    }
+  }
+}

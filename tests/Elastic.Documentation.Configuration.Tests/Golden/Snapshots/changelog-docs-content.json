@@ -1,0 +1,142 @@
+{
+  "value": {
+    "$type": "ChangelogConfiguration",
+    "Areas": null,
+    "Bundle": {
+      "$type": "BundleConfiguration",
+      "Branch": null,
+      "Description": null,
+      "Directory": "docs/changelog",
+      "LinkAllowRepos": [
+        "elastic/docs-content",
+        "elastic/elasticsearch",
+        "elastic/kibana",
+        "elastic/roadmap"
+      ],
+      "OutputDirectory": "docs/releases",
+      "Owner": "elastic",
+      "Profiles": {
+        "docs-release": {
+          "$type": "BundleProfile",
+          "Branch": null,
+          "Description": null,
+          "HideFeatures": null,
+          "Output": "docs-{version}.yaml",
+          "OutputDirectory": null,
+          "OutputProducts": "elastic-docs {version}",
+          "Owner": null,
+          "Product": null,
+          "Products": null,
+          "ReleaseDates": null,
+          "Repo": null,
+          "Source": null
+        }
+      },
+      "ReleaseDates": true,
+      "Releases": null,
+      "Repo": "docs-content",
+      "UseLocalChangelogs": false
+    },
+    "Extract": {
+      "$type": "ExtractConfiguration",
+      "Issues": true,
+      "ReleaseNotes": true,
+      "StripTitlePrefix": true
+    },
+    "Filename": "Pr",
+    "HighlightLabels": null,
+    "LabelToAreas": null,
+    "LabelToFeatures": null,
+    "LabelToProducts": null,
+    "LabelToType": {
+      "release_note:docs": "docs"
+    },
+    "Lifecycles": [
+      "Preview",
+      "Beta",
+      "Ga"
+    ],
+    "Pivot": {
+      "$type": "PivotConfiguration",
+      "Areas": null,
+      "Features": null,
+      "Highlight": null,
+      "Products": null,
+      "Subtypes": null,
+      "Types": {
+        "breaking-change": {
+          "$type": "TypeEntry",
+          "Labels": null,
+          "Subtypes": null
+        },
+        "bug-fix": {
+          "$type": "TypeEntry",
+          "Labels": null,
+          "Subtypes": null
+        },
+        "docs": {
+          "$type": "TypeEntry",
+          "Labels": "release_note:docs",
+          "Subtypes": null
+        },
+        "feature": {
+          "$type": "TypeEntry",
+          "Labels": null,
+          "Subtypes": null
+        }
+      }
+    },
+    "Products": null,
+    "ProductsConfiguration": {
+      "$type": "ProductsConfig",
+      "Available": null,
+      "Default": [
+        {
+          "$type": "DefaultProduct",
+          "Lifecycle": "ga",
+          "Product": "elastic-docs"
+        }
+      ]
+    },
+    "Rules": {
+      "$type": "RulesConfiguration",
+      "Bundle": null,
+      "Create": {
+        "$type": "CreateRules",
+        "ByProduct": null,
+        "Labels": [
+          "release_note:docs"
+        ],
+        "Match": "Any",
+        "Mode": "Include"
+      },
+      "Match": "Any",
+      "Publish": null
+    },
+    "SubTypes": [
+      "api",
+      "behavioral",
+      "configuration",
+      "dependency",
+      "subscription",
+      "plugin",
+      "security",
+      "other"
+    ],
+    "Types": [
+      "breaking-change",
+      "bug-fix",
+      "feature",
+      "docs"
+    ]
+  },
+  "diagnostics": [
+    {
+      "severity": "Warning",
+      "file": "/repo/docs/changelog.yml",
+      "line": null,
+      "column": null,
+      "message": "bundle.profiles.docs-release.output_products is deprecated. Use 'product: <id>' instead."
+    }
+  ]
+}

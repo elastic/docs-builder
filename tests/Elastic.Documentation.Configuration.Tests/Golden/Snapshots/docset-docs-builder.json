@@ -1,0 +1,3008 @@
+{
+  "value": {
+    "docset": {
+      "project": "doc-builder",
+      "island": false,
+      "maxTocDepth": 2,
+      "devDocs": true,
+      "crossLinks": [
+        "docs-content",
+        "elasticsearch"
+      ],
+      "releaseNotes": [
+        "docs-builder"
+      ],
+      "exclude": [
+        "_*.md"
+      ],
+      "extensions": [],
+      "subs": {
+        "a-global-variable": "This was defined in docset.yml",
+        "agent": "Elastic Agent",
+        "agents": "Elastic Agents",
+        "bedrock": "Amazon Bedrock",
+        "dbuild": "docs-builder",
+        "ech": "Elastic Cloud Hosted",
+        "ecloud": "Elastic Cloud",
+        "es": "Elasticsearch",
+        "fleet": "Fleet",
+        "fleet-server": "Fleet Server",
+        "gemini": "Google Gemini",
+        "hosted-ems": "hosted Elastic Maps Service",
+        "ibm-r": "IBM Resilient",
+        "kib": "Kibana",
+        "ls": "Logstash",
+        "opsgenie": "Opsgenie",
+        "package-manager": "Elastic Package Manager",
+        "security-features": "Elastic Stack security features",
+        "serverless-full": "Elastic Cloud Serverless",
+        "serverless-short": "Serverless",
+        "sn-itom": "ServiceNow ITOM",
+        "sn-itsm": "ServiceNow ITSM",
+        "sn-sir": "ServiceNow SIR",
+        "stack": "Elastic Stack",
+        "stack-monitor-app": "Stack Monitoring",
+        "stack-security-features": "Elastic Stack security features",
+        "swimlane": "Swimlane",
+        "webhook-cm": "Case Management webhook"
+      },
+      "displayName": null,
+      "description": null,
+      "icon": null,
+      "registry": null,
+      "features": {
+        "primaryNav": false,
+        "disableGithubEditLink": null,
+        "guideNav": null
+      },
+      "api": {
+        "docs-builder-cloud-connect": [
+          {
+            "spec": "cloud-connect.yml",
+            "product": "ess",
+            "repository": "elastic/cloud-connected-api",
+            "children": [],
+            "catalog": null,
+            "line": 71,
+            "column": 7
+          }
+        ],
+        "docs-builder-cloud-serverless": [
+          {
+            "spec": "elastic-cloud-serverless.yml",
+            "product": "cloud-serverless",
+            "repository": "elastic/serverless-api-specification",
+            "children": [],
+            "catalog": null,
+            "line": 75,
+            "column": 7
+          }
+        ],
+        "docs-builder-elasticsearch": [
+          {
+            "spec": "elasticsearch.json",
+            "product": "elasticsearch",
+            "repository": "elastic/elasticsearch-specification",
+            "children": [],
+            "catalog": [
+              "self",
+              "ece",
+              "ess"
+            ],
+            "line": 50,
+            "column": 7
+          }
+        ],
+        "docs-builder-elasticsearch-serverless": [
+          {
+            "spec": "elasticsearch-serverless.json",
+            "product": "serverless-elasticsearch",
+            "repository": "elastic/elasticsearch-specification",
+            "children": [],
+            "catalog": null,
+            "line": 59,
+            "column": 7
+          }
+        ],
+        "docs-builder-kibana": [
+          {
+            "spec": "kibana.yaml",
+            "product": "kibana",
+            "repository": "elastic/kibana",
+            "children": [],
+            "catalog": null,
+            "line": 63,
+            "column": 7
+          }
+        ],
+        "docs-builder-kibana-serverless": [
+          {
+            "spec": "kibana-serverless.yaml",
+            "product": "kibana",
+            "repository": "elastic/kibana",
+            "children": [],
+            "catalog": null,
+            "line": 67,
+            "column": 7
+          }
+        ]
+      },
+      "products": [],
+      "codexGroup": null,
+      "branding": null,
+      "storybookRegistry": null,
+      "cta": {
+        "docs-builder": {
+          "label": "Star docs-builder on GitHub",
+          "url": "https://github.com/elastic/docs-builder",
+          "benefits": [
+            "Open source",
+            "Built with .NET",
+            "Contributions welcome"
+          ]
+        }
+      },
+      "defaultCta": null,
+      "suppress": [
+        "AutolinkElasticCoDocs",
+        "DeepLinkingVirtualFile"
+      ],
+      "folderExcludedFiles": [],
+      "tocDefaultCtas": {},
+      "toc": [
+        {
+          "kind": "indexFile",
+          "path": "index.md",
+          "container": "index.md",
+          "hidden": false,
+          "defaultCta": null,
+          "context": "<docs><docs>et.yml",
+          "children": []
+        },
+        {
+          "kind": "file",
+          "path": "release-notes.md",
+          "container": "release-notes.md",
+          "hidden": false,
+          "defaultCta": null,
+          "context": "<docs><docs>et.yml",
+          "children": []
+        },
+        {
+          "kind": "file",
+          "path": "404.md",
+          "container": "404.md",
+          "hidden": true,
+          "defaultCta": null,
+          "context": "<docs><docs>et.yml",
+          "children": []
+        },
+        {
+          "kind": "file",
+          "path": "developer-notes.md",
+          "container": "developer-notes.md",
+          "hidden": true,
+          "defaultCta": null,
+          "context": "<docs><docs>et.yml",
+          "children": []
+        },
+        {
+          "kind": "folder",
+          "path": "getting-started",
+          "container": "getting-started",
+          "sort": null,
+          "exclude": null,
+          "defaultCta": null,
+          "context": "<docs><docs>et.yml",
+          "children": [
+            {
+              "kind": "indexFile",
+              "path": "getting-started/index.md",
+              "container": "getting-started/index.md",
+              "hidden": false,
+              "defaultCta": null,
+              "context": "<docs><docs>et.yml",
+              "children": []
+            },
+            {
+              "kind": "file",
+              "path": "getting-started/installation.md",
+              "container": "getting-started/installation.md",
+              "hidden": false,
+              "defaultCta": null,
+              "context": "<docs><docs>et.yml",
+              "children": []
+            },
+            {
+              "kind": "file",
+              "path": "getting-started/serve.md",
+              "container": "getting-started/serve.md",
+              "hidden": false,
+              "defaultCta": null,
+              "context": "<docs><docs>et.yml",
+              "children": []
+            },
+            {
+              "kind": "file",
+              "path": "getting-started/writing-content.md",
+              "container": "getting-started/writing-content.md",
+              "hidden": false,
+              "defaultCta": null,
+              "context": "<docs><docs>et.yml",
+              "children": []
+            },
+            {
+              "kind": "file",
+              "path": "getting-started/pages-and-links.md",
+              "container": "getting-started/pages-and-links.md",
+              "hidden": false,
+              "defaultCta": null,
+              "context": "<docs><docs>et.yml",
+              "children": []
+            },
+            {
+              "kind": "file",
+              "path": "getting-started/publish.md",
+              "container": "getting-started/publish.md",
+              "hidden": false,
+              "defaultCta": null,
+              "context": "<docs><docs>et.yml",
+              "children": []
+            }
+          ]
+        },
+        {
+          "kind": "folder",
+          "path": "syntax",
+          "container": "syntax",
+          "sort": null,
+          "exclude": null,
+          "defaultCta": null,
+          "context": "<docs><docs>et.yml",
+          "children": [
+            {
+              "kind": "indexFile",
+              "path": "syntax/index.md",
+              "container": "syntax/index.md",
+              "hidden": false,
+              "defaultCta": null,
+              "context": "<docs><docs>et.yml",
+              "children": []
+            },
+            {
+              "kind": "file",
+              "path": "syntax/quick-ref.md",
+              "container": "syntax/quick-ref.md",
+              "hidden": false,
+              "defaultCta": null,
+              "context": "<docs><docs>et.yml",
+              "children": []
+            },
+            {
+              "kind": "file",
+              "path": "syntax/directives.md",
+              "container": "syntax/directives.md",
+              "hidden": false,
+              "defaultCta": null,
+              "context": "<docs><docs>et.yml",
+              "children": []
+            },
+            {
+              "kind": "file",
+              "path": "syntax/headings.md",
+              "container": "syntax/headings.md",
+              "hidden": false,
+              "defaultCta": null,
+              "context": "<docs><docs>et.yml",
+              "children": []
+            },
+            {
+              "kind": "file",
+              "path": "syntax/admonitions.md",
+              "container": "syntax/admonitions.md",
+              "hidden": false,
+              "defaultCta": null,
+              "context": "<docs><docs>et.yml",
+              "children": []
+            },
+            {
+              "kind": "file",
+              "path": "syntax/agent-skill.md",
+              "container": "syntax/agent-skill.md",
+              "hidden": false,
+              "defaultCta": null,
+              "context": "<docs><docs>et.yml",
+              "children": []
+            },
+            {
+              "kind": "file",
+              "path": "syntax/applies.md",
+              "container": "syntax/applies.md",
+              "hidden": false,
+              "defaultCta": null,
+              "context": "<docs><docs>et.yml",
+              "children": []
+            },
+            {
+              "kind": "file",
+              "path": "syntax/applies-switch.md",
+              "container": "syntax/applies-switch.md",
+              "hidden": false,
+              "defaultCta": null,
+              "context": "<docs><docs>et.yml",
+              "children": []
+            },
+            {
+              "kind": "file",
+              "path": "syntax/automated_settings.md",
+              "container": "syntax/automated_settings.md",
+              "hidden": false,
+              "defaultCta": null,
+              "context": "<docs><docs>et.yml",
+              "children": []
+            },
+            {
+              "kind": "file",
+              "path": "syntax/buttons.md",
+              "container": "syntax/buttons.md",
+              "hidden": false,
+              "defaultCta": null,
+              "context": "<docs><docs>et.yml",
+              "children": []
+            },
+            {
+              "kind": "file",
+              "path": "syntax/card-group.md",
+              "container": "syntax/card-group.md",
+              "hidden": false,
+              "defaultCta": null,
+              "context": "<docs><docs>et.yml",
+              "children": []
+            },
+            {
+              "kind": "file",
+              "path": "syntax/changelog.md",
+              "container": "syntax/changelog.md",
+              "hidden": false,
+              "defaultCta": null,
+              "context": "<docs><docs>et.yml",
+              "children": []
+            },
+            {
+              "kind": "file",
+              "path": "syntax/code.md",
+              "container": "syntax/code.md",
+              "hidden": false,
+              "defaultCta": null,
+              "context": "<docs><docs>et.yml",
+              "children": []
+            },
+            {
+              "kind": "file",
+              "path": "syntax/comments.md",
+              "container": "syntax/comments.md",
+              "hidden": false,
+              "defaultCta": null,
+              "context": "<docs><docs>et.yml",
+              "children": []
+            },
+            {
+              "kind": "file",
+              "path": "syntax/contributors.md",
+              "container": "syntax/contributors.md",
+              "hidden": false,
+              "defaultCta": null,
+              "context": "<docs><docs>et.yml",
+              "children": []
+            },
+            {
+              "kind": "file",
+              "path": "syntax/csv-include.md",
+              "container": "syntax/csv-include.md",
+              "hidden": false,
+              "defaultCta": null,
+              "context": "<docs><docs>et.yml",
+              "children": []
+            },
+            {
+              "kind": "file",
+              "path": "syntax/dropdowns.md",
+              "container": "syntax/dropdowns.md",
+              "hidden": false,
+              "defaultCta": null,
+              "context": "<docs><docs>et.yml",
+              "children": []
+            },
+            {
+              "kind": "file",
+              "path": "syntax/definition-lists.md",
+              "container": "syntax/definition-lists.md",
+              "hidden": false,
+              "defaultCta": null,
+              "context": "<docs><docs>et.yml",
+              "children": []
+            },
+            {
+              "kind": "file",
+              "path": "syntax/explore.md",
+              "container": "syntax/explore.md",
+              "hidden": false,
+              "defaultCta": null,
+              "context": "<docs><docs>et.yml",
+              "children": []
+            },
+            {
+              "kind": "file",
+              "path": "syntax/file_inclusion.md",
+              "container": "syntax/file_inclusion.md",
+              "hidden": false,
+              "defaultCta": null,
+              "context": "<docs><docs>et.yml",
+              "children": []
+            },
+            {
+              "kind": "file",
+              "path": "syntax/footnotes.md",
+              "container": "syntax/footnotes.md",
+              "hidden": false,
+              "defaultCta": null,
+              "context": "<docs><docs>et.yml",
+              "children": []
+            },
+            {
+              "kind": "file",
+              "path": "syntax/frontmatter.md",
+              "container": "syntax/frontmatter.md",
+              "hidden": false,
+              "defaultCta": null,
+              "context": "<docs><docs>et.yml",
+              "children": []
+            },
+            {
+              "kind": "file",
+              "path": "syntax/get-started.md",
+              "container": "syntax/get-started.md",
+              "hidden": false,
+              "defaultCta": null,
+              "context": "<docs><docs>et.yml",
+              "children": []
+            },
+            {
+              "kind": "file",
+              "path": "syntax/hero.md",
+              "container": "syntax/hero.md",
+              "hidden": false,
+              "defaultCta": null,
+              "context": "<docs><docs>et.yml",
+              "children": []
+            },
+            {
+              "kind": "file",
+              "path": "syntax/hub-pages.md",
+              "container": "syntax/hub-pages.md",
+              "hidden": false,
+              "defaultCta": null,
+              "context": "<docs><docs>et.yml",
+              "children": []
+            },
+            {
+              "kind": "file",
+              "path": "syntax/icons.md",
+              "container": "syntax/icons.md",
+              "hidden": false,
+              "defaultCta": null,
+              "context": "<docs><docs>et.yml",
+              "children": []
+            },
+            {
+              "kind": "file",
+              "path": "syntax/images.md",
+              "container": "syntax/images.md",
+              "hidden": false,
+              "defaultCta": null,
+              "context": "<docs><docs>et.yml",
+              "children": []
+            },
+            {
+              "kind": "file",
+              "path": "syntax/videos.md",
+              "container": "syntax/videos.md",
+              "hidden": false,
+              "defaultCta": null,
+              "context": "<docs><docs>et.yml",
+              "children": []
+            },
+            {
+              "kind": "file",
+              "path": "syntax/kbd.md",
+              "container": "syntax/kbd.md",
+              "hidden": false,
+              "defaultCta": null,
+              "context": "<docs><docs>et.yml",
+              "children": []
+            },
+            {
+              "kind": "file",
+              "path": "syntax/link-card.md",
+              "container": "syntax/link-card.md",
+              "hidden": false,
+              "defaultCta": null,
+              "context": "<docs><docs>et.yml",
+              "children": []
+            },
+            {
+              "kind": "file",
+              "path": "syntax/math.md",
+              "container": "syntax/math.md",
+              "hidden": false,
+              "defaultCta": null,
+              "context": "<docs><docs>et.yml",
+              "children": []
+            },
+            {
+              "kind": "file",
+              "path": "syntax/vector-sizing-calculator.md",
+              "container": "syntax/vector-sizing-calculator.md",
+              "hidden": false,
+              "defaultCta": null,
+              "context": "<docs><docs>et.yml",
+              "children": []
+            },
+            {
+              "kind": "file",
+              "path": "syntax/diagrams.md",
+              "container": "syntax/diagrams.md",
+              "hidden": false,
+              "defaultCta": null,
+              "context": "<docs><docs>et.yml",
+              "children": []
+            },
+            {
+              "kind": "file",
+              "path": "syntax/lists.md",
+              "container": "syntax/lists.md",
+              "hidden": false,
+              "defaultCta": null,
+              "context": "<docs><docs>et.yml",
+              "children": []
+            },
+            {
+              "kind": "file",
+              "path": "syntax/task-lists.md",
+              "container": "syntax/task-lists.md",
+              "hidden": false,
+              "defaultCta": null,
+              "context": "<docs><docs>et.yml",
+              "children": []
+            },
+            {
+              "kind": "file",
+              "path": "syntax/line_breaks.md",
+              "container": "syntax/line_breaks.md",
+              "hidden": false,
+              "defaultCta": null,
+              "context": "<docs><docs>et.yml",
+              "children": []
+            },
+            {
+              "kind": "file",
+              "path": "syntax/storybook.md",
+              "container": "syntax/storybook.md",
+              "hidden": false,
+              "defaultCta": null,
+              "context": "<docs><docs>et.yml",
+              "children": []
+            },
+            {
+              "kind": "file",
+              "path": "syntax/links.md",
+              "container": "syntax/links.md",
+              "hidden": false,
+              "defaultCta": null,
+              "context": "<docs><docs>et.yml",
+              "children": []
+            },
+            {
+              "kind": "file",
+              "path": "syntax/list-sub-pages.md",
+              "container": "syntax/list-sub-pages.md",
+              "hidden": false,
+              "defaultCta": null,
+              "context": "<docs><docs>et.yml",
+              "children": []
+            },
+            {
+              "kind": "file",
+              "path": "syntax/page-card.md",
+              "container": "syntax/page-card.md",
+              "hidden": false,
+              "defaultCta": null,
+              "context": "<docs><docs>et.yml",
+              "children": []
+            },
+            {
+              "kind": "file",
+              "path": "syntax/related-learning.md",
+              "container": "syntax/related-learning.md",
+              "hidden": false,
+              "defaultCta": null,
+              "context": "<docs><docs>et.yml",
+              "children": []
+            },
+            {
+              "kind": "file",
+              "path": "syntax/stepper.md",
+              "container": "syntax/stepper.md",
+              "hidden": false,
+              "defaultCta": null,
+              "context": "<docs><docs>et.yml",
+              "children": []
+            },
+            {
+              "kind": "file",
+              "path": "syntax/substitutions.md",
+              "container": "syntax/substitutions.md",
+              "hidden": false,
+              "defaultCta": null,
+              "context": "<docs><docs>et.yml",
+              "children": []
+            },
+            {
+              "kind": "file",
+              "path": "syntax/version-variables.md",
+              "container": "syntax/version-variables.md",
+              "hidden": false,
+              "defaultCta": null,
+              "context": "<docs><docs>et.yml",
+              "children": []
+            },
+            {
+              "kind": "file",
+              "path": "syntax/sundries.md",
+              "container": "syntax/sundries.md",
+              "hidden": false,
+              "defaultCta": null,
+              "context": "<docs><docs>et.yml",
+              "children": []
+            },
+            {
+              "kind": "file",
+              "path": "syntax/tables.md",
+              "container": "syntax/tables.md",
+              "hidden": false,
+              "defaultCta": null,
+              "context": "<docs><docs>et.yml",
+              "children": []
+            },
+            {
+              "kind": "file",
+              "path": "syntax/tabs.md",
+              "container": "syntax/tabs.md",
+              "hidden": false,
+              "defaultCta": null,
+              "context": "<docs><docs>et.yml",
+              "children": []
+            },
+            {
+              "kind": "file",
+              "path": "syntax/titles.md",
+              "container": "syntax/titles.md",
+              "hidden": false,
+              "defaultCta": null,
+              "context": "<docs><docs>et.yml",
+              "children": []
+            },
+            {
+              "kind": "file",
+              "path": "syntax/whats-new.md",
+              "container": "syntax/whats-new.md",
+              "hidden": false,
+              "defaultCta": null,
+              "context": "<docs><docs>et.yml",
+              "children": []
+            }
+          ]
+        },
+        {
+          "kind": "folder",
+          "path": "examples",
+          "container": "examples",
+          "sort": null,
+          "exclude": null,
+          "defaultCta": null,
+          "context": "<docs><docs>et.yml",
+          "children": [
+            {
+              "kind": "indexFile",
+              "path": "examples/index.md",
+              "container": "examples/index.md",
+              "hidden": false,
+              "defaultCta": null,
+              "context": "<docs><docs>et.yml",
+              "children": []
+            },
+            {
+              "kind": "folder",
+              "path": "examples/products",
+              "container": "examples/products",
+              "sort": null,
+              "exclude": null,
+              "defaultCta": null,
+              "context": "<docs><docs>et.yml",
+              "children": [
+                {
+                  "kind": "file",
+                  "path": "examples/products/docs-builder.md",
+                  "container": "examples/products/docs-builder.md",
+                  "hidden": false,
+                  "defaultCta": null,
+                  "context": "<docs><docs>et.yml",
+                  "children": []
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "kind": "folder",
+          "path": "documentation",
+          "container": "documentation",
+          "sort": null,
+          "exclude": null,
+          "defaultCta": null,
+          "context": "<docs><docs>et.yml",
+          "children": [
+            {
+              "kind": "indexFile",
+              "path": "documentation/index.md",
+              "container": "documentation/index.md",
+              "hidden": false,
+              "defaultCta": null,
+              "context": "<docs><docs>et.yml",
+              "children": []
+            },
+            {
+              "kind": "file",
+              "path": "documentation/distributed-builds.md",
+              "container": "documentation/distributed-builds.md",
+              "hidden": false,
+              "defaultCta": null,
+              "context": "<docs><docs>et.yml",
+              "children": []
+            },
+            {
+              "kind": "file",
+              "path": "documentation/cross-links.md",
+              "container": "documentation/cross-links.md",
+              "hidden": false,
+              "defaultCta": null,
+              "context": "<docs><docs>et.yml",
+              "children": []
+            },
+            {
+              "kind": "folder",
+              "path": "documentation/isolated",
+              "container": "documentation/isolated",
+              "sort": null,
+              "exclude": null,
+              "defaultCta": null,
+              "context": "<docs><docs>et.yml",
+              "children": [
+                {
+                  "kind": "indexFile",
+                  "path": "documentation/isolated/index.md",
+                  "container": "documentation/isolated/index.md",
+                  "hidden": false,
+                  "defaultCta": null,
+                  "context": "<docs><docs>et.yml",
+                  "children": []
+                },
+                {
+                  "kind": "folder",
+                  "path": "documentation/isolated/configure",
+                  "container": "documentation/isolated/configure",
+                  "sort": null,
+                  "exclude": null,
+                  "defaultCta": null,
+                  "context": "<docs><docs>et.yml",
+                  "children": [
+                    {
+                      "kind": "indexFile",
+                      "path": "documentation/isolated/configure/index.md",
+                      "container": "documentation/isolated/configure/index.md",
+                      "hidden": false,
+                      "defaultCta": null,
+                      "context": "<docs><docs>et.yml",
+                      "children": []
+                    }
+                  ]
+                },
+                {
+                  "kind": "file",
+                  "path": "documentation/isolated/navigation.md",
+                  "container": "documentation/isolated/navigation.md",
+                  "hidden": false,
+                  "defaultCta": null,
+                  "context": "<docs><docs>et.yml",
+                  "children": []
+                },
+                {
+                  "kind": "file",
+                  "path": "documentation/isolated/urls.md",
+                  "container": "documentation/isolated/urls.md",
+                  "hidden": false,
+                  "defaultCta": null,
+                  "context": "<docs><docs>et.yml",
+                  "children": []
+                },
+                {
+                  "kind": "file",
+                  "path": "documentation/isolated/cta.md",
+                  "container": "documentation/isolated/cta.md",
+                  "hidden": false,
+                  "defaultCta": null,
+                  "context": "<docs><docs>et.yml",
+                  "children": []
+                },
+                {
+                  "kind": "file",
+                  "path": "documentation/isolated/extensions.md",
+                  "container": "documentation/isolated/extensions.md",
+                  "hidden": false,
+                  "defaultCta": null,
+                  "context": "<docs><docs>et.yml",
+                  "children": []
+                },
+                {
+                  "kind": "file",
+                  "path": "documentation/isolated/how-to/cumulative-docs/index.md",
+                  "container": "documentation/isolated/how-to/cumulative-docs/index.md",
+                  "hidden": true,
+                  "defaultCta": null,
+                  "context": "<docs><docs>et.yml",
+                  "children": []
+                },
+                {
+                  "kind": "file",
+                  "path": "documentation/isolated/how-to/cumulative-docs/guidelines.md",
+                  "container": "documentation/isolated/how-to/cumulative-docs/guidelines.md",
+                  "hidden": true,
+                  "defaultCta": null,
+                  "context": "<docs><docs>et.yml",
+                  "children": []
+                },
+                {
+                  "kind": "file",
+                  "path": "documentation/isolated/how-to/cumulative-docs/badge-placement.md",
+                  "container": "documentation/isolated/how-to/cumulative-docs/badge-placement.md",
+                  "hidden": true,
+                  "defaultCta": null,
+                  "context": "<docs><docs>et.yml",
+                  "children": []
+                },
+                {
+                  "kind": "file",
+                  "path": "documentation/isolated/how-to/cumulative-docs/example-scenarios.md",
+                  "container": "documentation/isolated/how-to/cumulative-docs/example-scenarios.md",
+                  "hidden": true,
+                  "defaultCta": null,
+                  "context": "<docs><docs>et.yml",
+                  "children": []
+                },
+                {
+                  "kind": "file",
+                  "path": "documentation/isolated/how-to/cumulative-docs/reference.md",
+                  "container": "documentation/isolated/how-to/cumulative-docs/reference.md",
+                  "hidden": true,
+                  "defaultCta": null,
+                  "context": "<docs><docs>et.yml",
+                  "children": []
+                },
+                {
+                  "kind": "folder",
+                  "path": "documentation/isolated/how-to",
+                  "container": "documentation/isolated/how-to",
+                  "sort": null,
+                  "exclude": null,
+                  "defaultCta": null,
+                  "context": "<docs><docs>et.yml",
+                  "children": [
+                    {
+                      "kind": "file",
+                      "path": "documentation/isolated/how-to/move.md",
+                      "container": "documentation/isolated/how-to/move.md",
+                      "hidden": false,
+                      "defaultCta": null,
+                      "context": "<docs><docs>et.yml",
+                      "children": []
+                    },
+                    {
+                      "kind": "file",
+                      "path": "documentation/isolated/how-to/locally.md",
+                      "container": "documentation/isolated/how-to/locally.md",
+                      "hidden": true,
+                      "defaultCta": null,
+                      "context": "<docs><docs>et.yml",
+                      "children": []
+                    },
+                    {
+                      "kind": "file",
+                      "path": "documentation/isolated/how-to/on-the-web.md",
+                      "container": "documentation/isolated/how-to/on-the-web.md",
+                      "hidden": true,
+                      "defaultCta": null,
+                      "context": "<docs><docs>et.yml",
+                      "children": []
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "kind": "folder",
+              "path": "documentation/assembler",
+              "container": "documentation/assembler",
+              "sort": null,
+              "exclude": null,
+              "defaultCta": null,
+              "context": "<docs><docs>et.yml",
+              "children": [
+                {
+                  "kind": "indexFile",
+                  "path": "documentation/assembler/index.md",
+                  "container": "documentation/assembler/index.md",
+                  "hidden": false,
+                  "defaultCta": null,
+                  "context": "<docs><docs>et.yml",
+                  "children": []
+                },
+                {
+                  "kind": "folder",
+                  "path": "documentation/assembler/configure",
+                  "container": "documentation/assembler/configure",
+                  "sort": null,
+                  "exclude": null,
+                  "defaultCta": null,
+                  "context": "<docs><docs>et.yml",
+                  "children": [
+                    {
+                      "kind": "indexFile",
+                      "path": "documentation/assembler/configure/index.md",
+                      "container": "documentation/assembler/configure/index.md",
+                      "hidden": false,
+                      "defaultCta": null,
+                      "context": "<docs><docs>et.yml",
+                      "children": []
+                    }
+                  ]
+                },
+                {
+                  "kind": "file",
+                  "path": "documentation/assembler/navigation.md",
+                  "container": "documentation/assembler/navigation.md",
+                  "hidden": false,
+                  "defaultCta": null,
+                  "context": "<docs><docs>et.yml",
+                  "children": []
+                },
+                {
+                  "kind": "file",
+                  "path": "documentation/assembler/urls.md",
+                  "container": "documentation/assembler/urls.md",
+                  "hidden": false,
+                  "defaultCta": null,
+                  "context": "<docs><docs>et.yml",
+                  "children": []
+                },
+                {
+                  "kind": "file",
+                  "path": "documentation/assembler/environments.md",
+                  "container": "documentation/assembler/environments.md",
+                  "hidden": false,
+                  "defaultCta": null,
+                  "context": "<docs><docs>et.yml",
+                  "children": []
+                },
+                {
+                  "kind": "file",
+                  "path": "documentation/assembler/add-repo.md",
+                  "container": "documentation/assembler/add-repo.md",
+                  "hidden": false,
+                  "defaultCta": null,
+                  "context": "<docs><docs>et.yml",
+                  "children": []
+                },
+                {
+                  "kind": "file",
+                  "path": "documentation/assembler/infrastructure.md",
+                  "container": "documentation/assembler/infrastructure.md",
+                  "hidden": false,
+                  "defaultCta": null,
+                  "context": "<docs><docs>et.yml",
+                  "children": []
+                }
+              ]
+            },
+            {
+              "kind": "folder",
+              "path": "documentation/codex",
+              "container": "documentation/codex",
+              "sort": null,
+              "exclude": null,
+              "defaultCta": null,
+              "context": "<docs><docs>et.yml",
+              "children": [
+                {
+                  "kind": "indexFile",
+                  "path": "documentation/codex/index.md",
+                  "container": "documentation/codex/index.md",
+                  "hidden": false,
+                  "defaultCta": null,
+                  "context": "<docs><docs>et.yml",
+                  "children": []
+                },
+                {
+                  "kind": "folder",
+                  "path": "documentation/codex/configure",
+                  "container": "documentation/codex/configure",
+                  "sort": null,
+                  "exclude": null,
+                  "defaultCta": null,
+                  "context": "<docs><docs>et.yml",
+                  "children": [
+                    {
+                      "kind": "indexFile",
+                      "path": "documentation/codex/configure/index.md",
+                      "container": "documentation/codex/configure/index.md",
+                      "hidden": false,
+                      "defaultCta": null,
+                      "context": "<docs><docs>et.yml",
+                      "children": []
+                    }
+                  ]
+                },
+                {
+                  "kind": "file",
+                  "path": "documentation/codex/navigation.md",
+                  "container": "documentation/codex/navigation.md",
+                  "hidden": false,
+                  "defaultCta": null,
+                  "context": "<docs><docs>et.yml",
+                  "children": []
+                },
+                {
+                  "kind": "file",
+                  "path": "documentation/codex/urls.md",
+                  "container": "documentation/codex/urls.md",
+                  "hidden": false,
+                  "defaultCta": null,
+                  "context": "<docs><docs>et.yml",
+                  "children": []
+                },
+                {
+                  "kind": "file",
+                  "path": "documentation/codex/infrastructure.md",
+                  "container": "documentation/codex/infrastructure.md",
+                  "hidden": false,
+                  "defaultCta": null,
+                  "context": "<docs><docs>et.yml",
+                  "children": []
+                }
+              ]
+            },
+            {
+              "kind": "folder",
+              "path": "documentation/catalog",
+              "container": "documentation/catalog",
+              "sort": null,
+              "exclude": null,
+              "defaultCta": null,
+              "context": "<docs><docs>et.yml",
+              "children": [
+                {
+                  "kind": "indexFile",
+                  "path": "documentation/catalog/index.md",
+                  "container": "documentation/catalog/index.md",
+                  "hidden": false,
+                  "defaultCta": null,
+                  "context": "<docs><docs>et.yml",
+                  "children": []
+                },
+                {
+                  "kind": "file",
+                  "path": "documentation/catalog/products.md",
+                  "container": "documentation/catalog/products.md",
+                  "hidden": false,
+                  "defaultCta": null,
+                  "context": "<docs><docs>et.yml",
+                  "children": []
+                },
+                {
+                  "kind": "file",
+                  "path": "documentation/catalog/related-learning.md",
+                  "container": "documentation/catalog/related-learning.md",
+                  "hidden": false,
+                  "defaultCta": null,
+                  "context": "<docs><docs>et.yml",
+                  "children": []
+                },
+                {
+                  "kind": "file",
+                  "path": "documentation/catalog/versions.md",
+                  "container": "documentation/catalog/versions.md",
+                  "hidden": false,
+                  "defaultCta": null,
+                  "context": "<docs><docs>et.yml",
+                  "children": []
+                },
+                {
+                  "kind": "file",
+                  "path": "documentation/catalog/synonyms.md",
+                  "container": "documentation/catalog/synonyms.md",
+                  "hidden": false,
+                  "defaultCta": null,
+                  "context": "<docs><docs>et.yml",
+                  "children": []
+                },
+                {
+                  "kind": "file",
+                  "path": "documentation/catalog/legacy-url-mappings.md",
+                  "container": "documentation/catalog/legacy-url-mappings.md",
+                  "hidden": false,
+                  "defaultCta": null,
+                  "context": "<docs><docs>et.yml",
+                  "children": []
+                }
+              ]
+            },
+            {
+              "kind": "file",
+              "path": "documentation/redirects.md",
+              "container": "documentation/redirects.md",
+              "hidden": false,
+              "defaultCta": null,
+              "context": "<docs><docs>et.yml",
+              "children": []
+            }
+          ]
+        },
+        {
+          "kind": "folder",
+          "path": "data",
+          "container": "data",
+          "sort": null,
+          "exclude": null,
+          "defaultCta": null,
+          "context": "<docs><docs>et.yml",
+          "children": [
+            {
+              "kind": "indexFile",
+              "path": "data/index.md",
+              "container": "data/index.md",
+              "hidden": false,
+              "defaultCta": null,
+              "context": "<docs><docs>et.yml",
+              "children": []
+            },
+            {
+              "kind": "folder",
+              "path": "data/mcp",
+              "container": "data/mcp",
+              "sort": null,
+              "exclude": null,
+              "defaultCta": null,
+              "context": "<docs><docs>et.yml",
+              "children": [
+                {
+                  "kind": "indexFile",
+                  "path": "data/mcp/index.md",
+                  "container": "data/mcp/index.md",
+                  "hidden": false,
+                  "defaultCta": null,
+                  "context": "<docs><docs>et.yml",
+                  "children": []
+                }
+              ]
+            },
+            {
+              "kind": "file",
+              "path": "data/api.md",
+              "container": "data/api.md",
+              "hidden": false,
+              "defaultCta": null,
+              "context": "<docs><docs>et.yml",
+              "children": []
+            },
+            {
+              "kind": "folder",
+              "path": "data/openapi",
+              "container": "data/openapi",
+              "sort": null,
+              "exclude": null,
+              "defaultCta": null,
+              "context": "<docs><docs>et.yml",
+              "children": [
+                {
+                  "kind": "indexFile",
+                  "path": "data/openapi/index.md",
+                  "container": "data/openapi/index.md",
+                  "hidden": false,
+                  "defaultCta": null,
+                  "context": "<docs><docs>et.yml",
+                  "children": []
+                },
+                {
+                  "kind": "file",
+                  "path": "data/openapi/api-explorer.md",
+                  "container": "data/openapi/api-explorer.md",
+                  "hidden": false,
+                  "defaultCta": null,
+                  "context": "<docs><docs>et.yml",
+                  "children": []
+                },
+                {
+                  "kind": "file",
+                  "path": "data/openapi/supplemental.md",
+                  "container": "data/openapi/supplemental.md",
+                  "hidden": false,
+                  "defaultCta": null,
+                  "context": "<docs><docs>et.yml",
+                  "children": []
+                }
+              ]
+            },
+            {
+              "kind": "folder",
+              "path": "data/cli-schema",
+              "container": "data/cli-schema",
+              "sort": null,
+              "exclude": null,
+              "defaultCta": null,
+              "context": "<docs><docs>et.yml",
+              "children": [
+                {
+                  "kind": "indexFile",
+                  "path": "data/cli-schema/index.md",
+                  "container": "data/cli-schema/index.md",
+                  "hidden": false,
+                  "defaultCta": null,
+                  "context": "<docs><docs>et.yml",
+                  "children": []
+                },
+                {
+                  "kind": "file",
+                  "path": "data/cli-schema/supplemental.md",
+                  "container": "data/cli-schema/supplemental.md",
+                  "hidden": false,
+                  "defaultCta": null,
+                  "context": "<docs><docs>et.yml",
+                  "children": []
+                }
+              ]
+            },
+            {
+              "kind": "folder",
+              "path": "data/exporters",
+              "container": "data/exporters",
+              "sort": null,
+              "exclude": null,
+              "defaultCta": null,
+              "context": "<docs><docs>et.yml",
+              "children": [
+                {
+                  "kind": "indexFile",
+                  "path": "data/exporters/index.md",
+                  "container": "data/exporters/index.md",
+                  "hidden": false,
+                  "defaultCta": null,
+                  "context": "<docs><docs>et.yml",
+                  "children": []
+                },
+                {
+                  "kind": "file",
+                  "path": "data/exporters/elasticsearch.md",
+                  "container": "data/exporters/elasticsearch.md",
+                  "hidden": false,
+                  "defaultCta": null,
+                  "context": "<docs><docs>et.yml",
+                  "children": []
+                },
+                {
+                  "kind": "file",
+                  "path": "data/exporters/llm.md",
+                  "container": "data/exporters/llm.md",
+                  "hidden": false,
+                  "defaultCta": null,
+                  "context": "<docs><docs>et.yml",
+                  "children": []
+                },
+                {
+                  "kind": "file",
+                  "path": "data/exporters/okf.md",
+                  "container": "data/exporters/okf.md",
+                  "hidden": false,
+                  "defaultCta": null,
+                  "context": "<docs><docs>et.yml",
+                  "children": []
+                },
+                {
+                  "kind": "file",
+                  "path": "data/exporters/plain-text.md",
+                  "container": "data/exporters/plain-text.md",
+                  "hidden": false,
+                  "defaultCta": null,
+                  "context": "<docs><docs>et.yml",
+                  "children": []
+                }
+              ]
+            },
+            {
+              "kind": "folder",
+              "path": "data/release-notes",
+              "container": "data/release-notes",
+              "sort": null,
+              "exclude": null,
+              "defaultCta": null,
+              "context": "<docs><docs>et.yml",
+              "children": [
+                {
+                  "kind": "indexFile",
+                  "path": "data/release-notes/index.md",
+                  "container": "data/release-notes/index.md",
+                  "hidden": false,
+                  "defaultCta": null,
+                  "context": "<docs><docs>et.yml",
+                  "children": []
+                },
+                {
+                  "kind": "file",
+                  "path": "data/release-notes/overview.md",
+                  "container": "data/release-notes/overview.md",
+                  "hidden": false,
+                  "defaultCta": null,
+                  "context": "<docs><docs>et.yml",
+                  "children": [
+                    {
+                      "kind": "file",
+                      "path": "data/release-notes/configure.md",
+                      "container": "data/release-notes/configure.md",
+                      "hidden": false,
+                      "defaultCta": null,
+                      "context": "<docs><docs>et.yml",
+                      "children": [
+                        {
+                          "kind": "file",
+                          "path": "data/release-notes/configure-ref.md",
+                          "container": "data/release-notes/configure-ref.md",
+                          "hidden": false,
+                          "defaultCta": null,
+                          "context": "<docs><docs>et.yml",
+                          "children": []
+                        }
+                      ]
+                    },
+                    {
+                      "kind": "file",
+                      "path": "data/release-notes/create.md",
+                      "container": "data/release-notes/create.md",
+                      "hidden": false,
+                      "defaultCta": null,
+                      "context": "<docs><docs>et.yml",
+                      "children": []
+                    },
+                    {
+                      "kind": "file",
+                      "path": "data/release-notes/bundle.md",
+                      "container": "data/release-notes/bundle.md",
+                      "hidden": false,
+                      "defaultCta": null,
+                      "context": "<docs><docs>et.yml",
+                      "children": []
+                    },
+                    {
+                      "kind": "file",
+                      "path": "data/release-notes/publish.md",
+                      "container": "data/release-notes/publish.md",
+                      "hidden": false,
+                      "defaultCta": null,
+                      "context": "<docs><docs>et.yml",
+                      "children": []
+                    }
+                  ]
+                },
+                {
+                  "kind": "file",
+                  "path": "data/release-notes/explorer.md",
+                  "container": "data/release-notes/explorer.md",
+                  "hidden": false,
+                  "defaultCta": null,
+                  "context": "<docs><docs>et.yml",
+                  "children": []
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "kind": "folder",
+          "path": "integrations",
+          "container": "integrations",
+          "sort": null,
+          "exclude": null,
+          "defaultCta": null,
+          "context": "<docs><docs>et.yml",
+          "children": [
+            {
+              "kind": "indexFile",
+              "path": "integrations/index.md",
+              "container": "integrations/index.md",
+              "hidden": false,
+              "defaultCta": null,
+              "context": "<docs><docs>et.yml",
+              "children": []
+            },
+            {
+              "kind": "file",
+              "path": "integrations/docs-actions.md",
+              "container": "integrations/docs-actions.md",
+              "hidden": false,
+              "defaultCta": null,
+              "context": "<docs><docs>et.yml",
+              "children": []
+            },
+            {
+              "kind": "file",
+              "path": "integrations/elastic-cli.md",
+              "container": "integrations/elastic-cli.md",
+              "hidden": false,
+              "defaultCta": null,
+              "context": "<docs><docs>et.yml",
+              "children": []
+            }
+          ]
+        },
+        {
+          "kind": "cliReference",
+          "schema": "cli-schema.json",
+          "folder": "cli",
+          "title": null,
+          "navigationTitle": "CLI Reference",
+          "path": "cli",
+          "container": "cli",
+          "hasAppliesTo": false,
+          "context": "<docs><docs>et.yml",
+          "children": []
+        },
+        {
+          "kind": "nestedToc",
+          "path": "development",
+          "container": "development",
+          "island": false,
+          "defaultCta": null,
+          "context": "<docs><docs>et.yml",
+          "children": [
+            {
+              "kind": "indexFile",
+              "path": "development/index.md",
+              "container": "index.md",
+              "hidden": false,
+              "defaultCta": null,
+              "context": "<docs>/development/toc.yml",
+              "children": []
+            },
+            {
+              "kind": "file",
+              "path": "development/navigation.md",
+              "container": "navigation.md",
+              "hidden": false,
+              "defaultCta": null,
+              "context": "<docs>/development/toc.yml",
+              "children": []
+            },
+            {
+              "kind": "file",
+              "path": "development/ingest.md",
+              "container": "ingest.md",
+              "hidden": false,
+              "defaultCta": null,
+              "context": "<docs>/development/toc.yml",
+              "children": []
+            },
+            {
+              "kind": "file",
+              "path": "development/essc.md",
+              "container": "essc.md",
+              "hidden": false,
+              "defaultCta": null,
+              "context": "<docs>/development/toc.yml",
+              "children": []
+            },
+            {
+              "kind": "file",
+              "path": "development/changelog-bundle-registry.md",
+              "container": "changelog-bundle-registry.md",
+              "hidden": false,
+              "defaultCta": null,
+              "context": "<docs>/development/toc.yml",
+              "children": []
+            },
+            {
+              "kind": "file",
+              "path": "development/page-feedback.md",
+              "container": "page-feedback.md",
+              "hidden": false,
+              "defaultCta": null,
+              "context": "<docs>/development/toc.yml",
+              "children": []
+            },
+            {
+              "kind": "nestedToc",
+              "path": "development/link-validation",
+              "container": "link-validation",
+              "island": false,
+              "defaultCta": null,
+              "context": "<docs>/development/toc.yml",
+              "children": [
+                {
+                  "kind": "indexFile",
+                  "path": "development/link-validation/index.md",
+                  "container": "index.md",
+                  "hidden": false,
+                  "defaultCta": null,
+                  "context": "<docs>/development/link-validation/toc.yml",
+                  "children": []
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "configuration": {
+      "project": "doc-builder",
+      "maxTocDepth": 2,
+      "developmentDocs": true,
+      "registry": "Public",
+      "crossLinkRepositories": [
+        "docs-content",
+        "elasticsearch"
+      ],
+      "crossLinkEntries": [
+        {
+          "repository": "docs-content",
+          "registry": "Public"
+        },
+        {
+          "repository": "elasticsearch",
+          "registry": "Public"
+        }
+      ],
+      "releaseNotesProducts": [
+        "docs-builder"
+      ],
+      "extensions": [],
+      "products": [],
+      "substitutions": {
+        ".apm": "APM",
+        ".apm-agent": "APM Agent",
+        ".apm-agent-dotnet": "APM .NET Agent",
+        ".apm-agent-go": "APM Go Agent",
+        ".apm-agent-java": "APM Java Agent",
+        ".apm-agent-node": "APM Node.js Agent",
+        ".apm-agent-php": "APM PHP Agent",
+        ".apm-agent-python": "APM Python Agent",
+        ".apm-agent-ruby": "APM Ruby Agent",
+        ".apm-agent-rum-js": "APM RUM JavaScript Agent",
+        ".apm-aws-lambda": "APM AWS Lambda extension",
+        ".apm-k8s-attacher": "APM Attacher for Kubernetes",
+        ".apm-server": "APM Server",
+        ".apm_agent": "APM Agent",
+        ".apm_agent_dotnet": "APM .NET Agent",
+        ".apm_agent_go": "APM Go Agent",
+        ".apm_agent_java": "APM Java Agent",
+        ".apm_agent_node": "APM Node.js Agent",
+        ".apm_agent_php": "APM PHP Agent",
+        ".apm_agent_python": "APM Python Agent",
+        ".apm_agent_ruby": "APM Ruby Agent",
+        ".apm_agent_rum_js": "APM RUM JavaScript Agent",
+        ".apm_aws_lambda": "APM AWS Lambda extension",
+        ".apm_k8s_attacher": "APM Attacher for Kubernetes",
+        ".apm_server": "APM Server",
+        ".auditbeat": "Auditbeat",
+        ".beats": "Beats",
+        ".cloud-control-ecctl": "Elastic Cloud Control",
+        ".cloud-enterprise": "Elastic Cloud Enterprise",
+        ".cloud-hosted": "Elastic Cloud Hosted",
+        ".cloud-kubernetes": "Elastic Cloud on Kubernetes",
+        ".cloud-serverless": "Elastic Cloud Serverless",
+        ".cloud-terraform": "Elastic Cloud Terraform Provider",
+        ".cloud_control_ecctl": "Elastic Cloud Control",
+        ".cloud_enterprise": "Elastic Cloud Enterprise",
+        ".cloud_hosted": "Elastic Cloud Hosted",
+        ".cloud_kubernetes": "Elastic Cloud on Kubernetes",
+        ".cloud_serverless": "Elastic Cloud Serverless",
+        ".cloud_terraform": "Elastic Cloud Terraform Provider",
+        ".curator": "Elasticsearch Curator",
+        ".ecs": "Elastic Common Schema (ECS)",
+        ".ecs-dotnet": "ECS Logging .NET",
+        ".ecs-logging": "ECS Logging",
+        ".ecs-logging-go-logrus": "ECS Logging Go (Logrus)",
+        ".ecs-logging-go-zap": "ECS Logging Go (Zap)",
+        ".ecs-logging-go-zerolog": "ECS Logging Go (Zerolog)",
+        ".ecs-logging-java": "ECS Logging Java",
+        ".ecs-logging-nodejs": "ECS Logging Node.js",
+        ".ecs-logging-php": "ECS Logging PHP",
+        ".ecs-logging-python": "ECS Logging Python",
+        ".ecs-logging-ruby": "ECS Logging Ruby",
+        ".ecs_dotnet": "ECS Logging .NET",
+        ".ecs_logging": "ECS Logging",
+        ".ecs_logging_go_logrus": "ECS Logging Go (Logrus)",
+        ".ecs_logging_go_zap": "ECS Logging Go (Zap)",
+        ".ecs_logging_go_zerolog": "ECS Logging Go (Zerolog)",
+        ".ecs_logging_java": "ECS Logging Java",
+        ".ecs_logging_nodejs": "ECS Logging Node.js",
+        ".ecs_logging_php": "ECS Logging PHP",
+        ".ecs_logging_python": "ECS Logging Python",
+        ".ecs_logging_ruby": "ECS Logging Ruby",
+        ".edot-android": "Elastic Distribution of OpenTelemetry Android",
+        ".edot-browser": "Elastic Distribution of OpenTelemetry Browser (RUM)",
+        ".edot-cf": "Elastic Cloud Forwarder",
+        ".edot-cf-aws": "Elastic Cloud Forwarder for AWS",
+        ".edot-cf-azure": "Elastic Cloud Forwarder for Azure",
+        ".edot-cf-gcp": "Elastic Cloud Forwarder for GCP",
+        ".edot-collector": "Elastic Agent",
+        ".edot-dotnet": "Elastic Distribution of OpenTelemetry .NET",
+        ".edot-ios": "Elastic Distribution of OpenTelemetry iOS",
+        ".edot-java": "Elastic Distribution of OpenTelemetry Java",
+        ".edot-node": "Elastic Distribution of OpenTelemetry Node",
+        ".edot-php": "Elastic Distribution of OpenTelemetry PHP",
+        ".edot-python": "Elastic Distribution of OpenTelemetry Python",
+        ".edot-sdk": "Elastic Distribution of OpenTelemetry SDK",
+        ".edot_android": "Elastic Distribution of OpenTelemetry Android",
+        ".edot_browser": "Elastic Distribution of OpenTelemetry Browser (RUM)",
+        ".edot_cf": "Elastic Cloud Forwarder",
+        ".edot_cf_aws": "Elastic Cloud Forwarder for AWS",
+        ".edot_cf_azure": "Elastic Cloud Forwarder for Azure",
+        ".edot_cf_gcp": "Elastic Cloud Forwarder for GCP",
+        ".edot_collector": "Elastic Agent",
+        ".edot_dotnet": "Elastic Distribution of OpenTelemetry .NET",
+        ".edot_ios": "Elastic Distribution of OpenTelemetry iOS",
+        ".edot_java": "Elastic Distribution of OpenTelemetry Java",
+        ".edot_node": "Elastic Distribution of OpenTelemetry Node",
+        ".edot_php": "Elastic Distribution of OpenTelemetry PHP",
+        ".edot_python": "Elastic Distribution of OpenTelemetry Python",
+        ".edot_sdk": "Elastic Distribution of OpenTelemetry SDK",
+        ".eland": "Eland",
+        ".elastic-agent": "Elastic Agent",
+        ".elastic-serverless-forwarder": "Elastic Serverless Forwarder",
+        ".elastic-stack": "Elastic Stack",
+        ".elastic_agent": "Elastic Agent",
+        ".elastic_serverless_forwarder": "Elastic Serverless Forwarder",
+        ".elastic_stack": "Elastic Stack",
+        ".elasticsearch": "Elasticsearch",
+        ".elasticsearch-client": "Elasticsearch Client",
+        ".elasticsearch-client-dotnet": "Elasticsearch .NET Client",
+        ".elasticsearch-client-go": "Elasticsearch Go Client",
+        ".elasticsearch-client-java": "Elasticsearch Java Client",
+        ".elasticsearch-client-javascript": "Elasticsearch JavaScript Client",
+        ".elasticsearch-client-php": "Elasticsearch PHP Client",
+        ".elasticsearch-client-python": "Elasticsearch Python Client",
+        ".elasticsearch-client-ruby": "Elasticsearch Ruby Client",
+        ".elasticsearch-client-rust": "Elasticsearch Rust Client",
+        ".elasticsearch-hadoop": "Elasticsearch for Apache Hadoop",
+        ".elasticsearch_client": "Elasticsearch Client",
+        ".elasticsearch_client_dotnet": "Elasticsearch .NET Client",
+        ".elasticsearch_client_go": "Elasticsearch Go Client",
+        ".elasticsearch_client_java": "Elasticsearch Java Client",
+        ".elasticsearch_client_javascript": "Elasticsearch JavaScript Client",
+        ".elasticsearch_client_php": "Elasticsearch PHP Client",
+        ".elasticsearch_client_python": "Elasticsearch Python Client",
+        ".elasticsearch_client_ruby": "Elasticsearch Ruby Client",
+        ".elasticsearch_client_rust": "Elasticsearch Rust Client",
+        ".elasticsearch_hadoop": "Elasticsearch for Apache Hadoop",
+        ".ess": "Elastic Cloud Hosted",
+        ".filebeat": "Filebeat",
+        ".fleet": "Fleet",
+        ".fleet-server": "Fleet Server",
+        ".fleet_server": "Fleet Server",
+        ".heartbeat": "Heartbeat",
+        ".integrations": "Elastic integrations",
+        ".kibana": "Kibana",
+        ".logstash": "Logstash",
+        ".machine-learning": "Machine Learning",
+        ".machine_learning": "Machine Learning",
+        ".metricbeat": "Metricbeat",
+        ".observability": "Elastic Observability",
+        ".packetbeat": "Packetbeat",
+        ".painless": "Painless",
+        ".search-ui": "Search UI",
+        ".search_ui": "Search UI",
+        ".security": "Elastic Security",
+        ".self": "Self-managed Elastic",
+        ".serverless-elasticsearch": "Elasticsearch Serverless",
+        ".serverless-observability": "Elastic Observability Serverless",
+        ".serverless-security": "Elastic Security Serverless",
+        ".serverless-vector-database": "Elasticsearch Vector Database Serverless",
+        ".serverless_elasticsearch": "Elasticsearch Serverless",
+        ".serverless_observability": "Elastic Observability Serverless",
+        ".serverless_security": "Elastic Security Serverless",
+        ".serverless_vector_database": "Elasticsearch Vector Database Serverless",
+        ".terraform-google-edot-cf": "Terraform Google Elastic Cloud Forwarder",
+        ".terraform_google_edot_cf": "Terraform Google Elastic Cloud Forwarder",
+        ".winlogbeat": "Winlogbeat",
+        "a-global-variable": "This was defined in docset.yml",
+        "agent": "Elastic Agent",
+        "agents": "Elastic Agents",
+        "bedrock": "Amazon Bedrock",
+        "dbuild": "docs-builder",
+        "ech": "Elastic Cloud Hosted",
+        "ecloud": "Elastic Cloud",
+        "es": "Elasticsearch",
+        "fleet": "Fleet",
+        "fleet-server": "Fleet Server",
+        "gemini": "Google Gemini",
+        "hosted-ems": "hosted Elastic Maps Service",
+        "ibm-r": "IBM Resilient",
+        "kib": "Kibana",
+        "ls": "Logstash",
+        "opsgenie": "Opsgenie",
+        "package-manager": "Elastic Package Manager",
+        "product.apm": "APM",
+        "product.apm-agent": "APM Agent",
+        "product.apm-agent-dotnet": "APM .NET Agent",
+        "product.apm-agent-go": "APM Go Agent",
+        "product.apm-agent-java": "APM Java Agent",
+        "product.apm-agent-node": "APM Node.js Agent",
+        "product.apm-agent-php": "APM PHP Agent",
+        "product.apm-agent-python": "APM Python Agent",
+        "product.apm-agent-ruby": "APM Ruby Agent",
+        "product.apm-agent-rum-js": "APM RUM JavaScript Agent",
+        "product.apm-aws-lambda": "APM AWS Lambda extension",
+        "product.apm-k8s-attacher": "APM Attacher for Kubernetes",
+        "product.apm-server": "APM Server",
+        "product.apm_agent": "APM Agent",
+        "product.apm_agent_dotnet": "APM .NET Agent",
+        "product.apm_agent_go": "APM Go Agent",
+        "product.apm_agent_java": "APM Java Agent",
+        "product.apm_agent_node": "APM Node.js Agent",
+        "product.apm_agent_php": "APM PHP Agent",
+        "product.apm_agent_python": "APM Python Agent",
+        "product.apm_agent_ruby": "APM Ruby Agent",
+        "product.apm_agent_rum_js": "APM RUM JavaScript Agent",
+        "product.apm_aws_lambda": "APM AWS Lambda extension",
+        "product.apm_k8s_attacher": "APM Attacher for Kubernetes",
+        "product.apm_server": "APM Server",
+        "product.auditbeat": "Auditbeat",
+        "product.beats": "Beats",
+        "product.cloud-control-ecctl": "Elastic Cloud Control",
+        "product.cloud-enterprise": "Elastic Cloud Enterprise",
+        "product.cloud-hosted": "Elastic Cloud Hosted",
+        "product.cloud-kubernetes": "Elastic Cloud on Kubernetes",
+        "product.cloud-serverless": "Elastic Cloud Serverless",
+        "product.cloud-terraform": "Elastic Cloud Terraform Provider",
+        "product.cloud_control_ecctl": "Elastic Cloud Control",
+        "product.cloud_enterprise": "Elastic Cloud Enterprise",
+        "product.cloud_hosted": "Elastic Cloud Hosted",
+        "product.cloud_kubernetes": "Elastic Cloud on Kubernetes",
+        "product.cloud_serverless": "Elastic Cloud Serverless",
+        "product.cloud_terraform": "Elastic Cloud Terraform Provider",
+        "product.curator": "Elasticsearch Curator",
+        "product.ecs": "Elastic Common Schema (ECS)",
+        "product.ecs-dotnet": "ECS Logging .NET",
+        "product.ecs-logging": "ECS Logging",
+        "product.ecs-logging-go-logrus": "ECS Logging Go (Logrus)",
+        "product.ecs-logging-go-zap": "ECS Logging Go (Zap)",
+        "product.ecs-logging-go-zerolog": "ECS Logging Go (Zerolog)",
+        "product.ecs-logging-java": "ECS Logging Java",
+        "product.ecs-logging-nodejs": "ECS Logging Node.js",
+        "product.ecs-logging-php": "ECS Logging PHP",
+        "product.ecs-logging-python": "ECS Logging Python",
+        "product.ecs-logging-ruby": "ECS Logging Ruby",
+        "product.ecs_dotnet": "ECS Logging .NET",
+        "product.ecs_logging": "ECS Logging",
+        "product.ecs_logging_go_logrus": "ECS Logging Go (Logrus)",
+        "product.ecs_logging_go_zap": "ECS Logging Go (Zap)",
+        "product.ecs_logging_go_zerolog": "ECS Logging Go (Zerolog)",
+        "product.ecs_logging_java": "ECS Logging Java",
+        "product.ecs_logging_nodejs": "ECS Logging Node.js",
+        "product.ecs_logging_php": "ECS Logging PHP",
+        "product.ecs_logging_python": "ECS Logging Python",
+        "product.ecs_logging_ruby": "ECS Logging Ruby",
+        "product.edot-android": "Elastic Distribution of OpenTelemetry Android",
+        "product.edot-browser": "Elastic Distribution of OpenTelemetry Browser (RUM)",
+        "product.edot-cf": "Elastic Cloud Forwarder",
+        "product.edot-cf-aws": "Elastic Cloud Forwarder for AWS",
+        "product.edot-cf-azure": "Elastic Cloud Forwarder for Azure",
+        "product.edot-cf-gcp": "Elastic Cloud Forwarder for GCP",
+        "product.edot-collector": "Elastic Agent",
+        "product.edot-dotnet": "Elastic Distribution of OpenTelemetry .NET",
+        "product.edot-ios": "Elastic Distribution of OpenTelemetry iOS",
+        "product.edot-java": "Elastic Distribution of OpenTelemetry Java",
+        "product.edot-node": "Elastic Distribution of OpenTelemetry Node",
+        "product.edot-php": "Elastic Distribution of OpenTelemetry PHP",
+        "product.edot-python": "Elastic Distribution of OpenTelemetry Python",
+        "product.edot-sdk": "Elastic Distribution of OpenTelemetry SDK",
+        "product.edot_android": "Elastic Distribution of OpenTelemetry Android",
+        "product.edot_browser": "Elastic Distribution of OpenTelemetry Browser (RUM)",
+        "product.edot_cf": "Elastic Cloud Forwarder",
+        "product.edot_cf_aws": "Elastic Cloud Forwarder for AWS",
+        "product.edot_cf_azure": "Elastic Cloud Forwarder for Azure",
+        "product.edot_cf_gcp": "Elastic Cloud Forwarder for GCP",
+        "product.edot_collector": "Elastic Agent",
+        "product.edot_dotnet": "Elastic Distribution of OpenTelemetry .NET",
+        "product.edot_ios": "Elastic Distribution of OpenTelemetry iOS",
+        "product.edot_java": "Elastic Distribution of OpenTelemetry Java",
+        "product.edot_node": "Elastic Distribution of OpenTelemetry Node",
+        "product.edot_php": "Elastic Distribution of OpenTelemetry PHP",
+        "product.edot_python": "Elastic Distribution of OpenTelemetry Python",
+        "product.edot_sdk": "Elastic Distribution of OpenTelemetry SDK",
+        "product.eland": "Eland",
+        "product.elastic-agent": "Elastic Agent",
+        "product.elastic-serverless-forwarder": "Elastic Serverless Forwarder",
+        "product.elastic-stack": "Elastic Stack",
+        "product.elastic_agent": "Elastic Agent",
+        "product.elastic_serverless_forwarder": "Elastic Serverless Forwarder",
+        "product.elastic_stack": "Elastic Stack",
+        "product.elasticsearch": "Elasticsearch",
+        "product.elasticsearch-client": "Elasticsearch Client",
+        "product.elasticsearch-client-dotnet": "Elasticsearch .NET Client",
+        "product.elasticsearch-client-go": "Elasticsearch Go Client",
+        "product.elasticsearch-client-java": "Elasticsearch Java Client",
+        "product.elasticsearch-client-javascript": "Elasticsearch JavaScript Client",
+        "product.elasticsearch-client-php": "Elasticsearch PHP Client",
+        "product.elasticsearch-client-python": "Elasticsearch Python Client",
+        "product.elasticsearch-client-ruby": "Elasticsearch Ruby Client",
+        "product.elasticsearch-client-rust": "Elasticsearch Rust Client",
+        "product.elasticsearch-hadoop": "Elasticsearch for Apache Hadoop",
+        "product.elasticsearch_client": "Elasticsearch Client",
+        "product.elasticsearch_client_dotnet": "Elasticsearch .NET Client",
+        "product.elasticsearch_client_go": "Elasticsearch Go Client",
+        "product.elasticsearch_client_java": "Elasticsearch Java Client",
+        "product.elasticsearch_client_javascript": "Elasticsearch JavaScript Client",
+        "product.elasticsearch_client_php": "Elasticsearch PHP Client",
+        "product.elasticsearch_client_python": "Elasticsearch Python Client",
+        "product.elasticsearch_client_ruby": "Elasticsearch Ruby Client",
+        "product.elasticsearch_client_rust": "Elasticsearch Rust Client",
+        "product.elasticsearch_hadoop": "Elasticsearch for Apache Hadoop",
+        "product.ess": "Elastic Cloud Hosted",
+        "product.filebeat": "Filebeat",
+        "product.fleet": "Fleet",
+        "product.fleet-server": "Fleet Server",
+        "product.fleet_server": "Fleet Server",
+        "product.heartbeat": "Heartbeat",
+        "product.integrations": "Elastic integrations",
+        "product.kibana": "Kibana",
+        "product.logstash": "Logstash",
+        "product.machine-learning": "Machine Learning",
+        "product.machine_learning": "Machine Learning",
+        "product.metricbeat": "Metricbeat",
+        "product.observability": "Elastic Observability",
+        "product.packetbeat": "Packetbeat",
+        "product.painless": "Painless",
+        "product.search-ui": "Search UI",
+        "product.search_ui": "Search UI",
+        "product.security": "Elastic Security",
+        "product.self": "Self-managed Elastic",
+        "product.serverless-elasticsearch": "Elasticsearch Serverless",
+        "product.serverless-observability": "Elastic Observability Serverless",
+        "product.serverless-security": "Elastic Security Serverless",
+        "product.serverless-vector-database": "Elasticsearch Vector Database Serverless",
+        "product.serverless_elasticsearch": "Elasticsearch Serverless",
+        "product.serverless_observability": "Elastic Observability Serverless",
+        "product.serverless_security": "Elastic Security Serverless",
+        "product.serverless_vector_database": "Elasticsearch Vector Database Serverless",
+        "product.terraform-google-edot-cf": "Terraform Google Elastic Cloud Forwarder",
+        "product.terraform_google_edot_cf": "Terraform Google Elastic Cloud Forwarder",
+        "product.winlogbeat": "Winlogbeat",
+        "security-features": "Elastic Stack security features",
+        "serverless-full": "Elastic Cloud Serverless",
+        "serverless-short": "Serverless",
+        "sn-itom": "ServiceNow ITOM",
+        "sn-itsm": "ServiceNow ITSM",
+        "sn-sir": "ServiceNow SIR",
+        "stack": "Elastic Stack",
+        "stack-monitor-app": "Stack Monitoring",
+        "stack-security-features": "Elastic Stack security features",
+        "swimlane": "Swimlane",
+        "version.all": "99999.0.0",
+        "version.all.base": "99999.0.0",
+        "version.apm-agent-dotnet": "1.35.0",
+        "version.apm-agent-dotnet.base": "1.0.0",
+        "version.apm-agent-go": "2.7.12",
+        "version.apm-agent-go.base": "2.0.0",
+        "version.apm-agent-java": "1.57.0",
+        "version.apm-agent-java.base": "1.0.0",
+        "version.apm-agent-node": "4.18.0",
+        "version.apm-agent-node.base": "4.0.0",
+        "version.apm-agent-php": "1.17.0",
+        "version.apm-agent-php.base": "1.0.0",
+        "version.apm-agent-python": "6.26.2",
+        "version.apm-agent-python.base": "6.0.0",
+        "version.apm-agent-ruby": "4.9.0",
+        "version.apm-agent-ruby.base": "4.0.0",
+        "version.apm-agent-rum-js": "5.17.5",
+        "version.apm-agent-rum-js.base": "5.0.0",
+        "version.apm-attacher": "1.1.3",
+        "version.apm-attacher.base": "1.0.0",
+        "version.apm-lambda": "1.6.0",
+        "version.apm-lambda.base": "1.0.0",
+        "version.apm_agent_dotnet": "1.35.0",
+        "version.apm_agent_dotnet.base": "1.0.0",
+        "version.apm_agent_go": "2.7.12",
+        "version.apm_agent_go.base": "2.0.0",
+        "version.apm_agent_java": "1.57.0",
+        "version.apm_agent_java.base": "1.0.0",
+        "version.apm_agent_node": "4.18.0",
+        "version.apm_agent_node.base": "4.0.0",
+        "version.apm_agent_php": "1.17.0",
+        "version.apm_agent_php.base": "1.0.0",
+        "version.apm_agent_python": "6.26.2",
+        "version.apm_agent_python.base": "6.0.0",
+        "version.apm_agent_ruby": "4.9.0",
+        "version.apm_agent_ruby.base": "4.0.0",
+        "version.apm_agent_rum_js": "5.17.5",
+        "version.apm_agent_rum_js.base": "5.0.0",
+        "version.apm_attacher": "1.1.3",
+        "version.apm_attacher.base": "1.0.0",
+        "version.apm_lambda": "1.6.0",
+        "version.apm_lambda.base": "1.0.0",
+        "version.cloud-terraform": "0.11.17",
+        "version.cloud-terraform.base": "0.11.0",
+        "version.cloud_terraform": "0.11.17",
+        "version.cloud_terraform.base": "0.11.0",
+        "version.curator": "9.0.0",
+        "version.curator.base": "9.0.0",
+        "version.ecctl": "1.15.0",
+        "version.ecctl.base": "1.0.0",
+        "version.ece": "4.2.0",
+        "version.ece.base": "4.0.0",
+        "version.ech": "99999.0.0",
+        "version.ech.base": "99999.0.0",
+        "version.eck": "3.5.0",
+        "version.eck.base": "3.0.0",
+        "version.ecs": "9.5.0",
+        "version.ecs-logging-dotnet": "8.18.1",
+        "version.ecs-logging-dotnet.base": "8.0.0",
+        "version.ecs-logging-go-logrus": "1.0.0",
+        "version.ecs-logging-go-logrus.base": "1.0.0",
+        "version.ecs-logging-go-zap": "1.0.3",
+        "version.ecs-logging-go-zap.base": "1.0.0",
+        "version.ecs-logging-go-zerolog": "0.2.0",
+        "version.ecs-logging-go-zerolog.base": "0.2.0",
+        "version.ecs-logging-java": "1.7.0",
+        "version.ecs-logging-java.base": "1.0.0",
+        "version.ecs-logging-nodejs": "1.5.3",
+        "version.ecs-logging-nodejs.base": "1.0.0",
+        "version.ecs-logging-php": "2.0.0",
+        "version.ecs-logging-php.base": "2.0.0",
+        "version.ecs-logging-python": "2.2.0",
+        "version.ecs-logging-python.base": "2.0.0",
+        "version.ecs-logging-ruby": "1.0.0",
+        "version.ecs-logging-ruby.base": "1.0.0",
+        "version.ecs.base": "9.0.0",
+        "version.ecs_logging_dotnet": "8.18.1",
+        "version.ecs_logging_dotnet.base": "8.0.0",
+        "version.ecs_logging_go_logrus": "1.0.0",
+        "version.ecs_logging_go_logrus.base": "1.0.0",
+        "version.ecs_logging_go_zap": "1.0.3",
+        "version.ecs_logging_go_zap.base": "1.0.0",
+        "version.ecs_logging_go_zerolog": "0.2.0",
+        "version.ecs_logging_go_zerolog.base": "0.2.0",
+        "version.ecs_logging_java": "1.7.0",
+        "version.ecs_logging_java.base": "1.0.0",
+        "version.ecs_logging_nodejs": "1.5.3",
+        "version.ecs_logging_nodejs.base": "1.0.0",
+        "version.ecs_logging_php": "2.0.0",
+        "version.ecs_logging_php.base": "2.0.0",
+        "version.ecs_logging_python": "2.2.0",
+        "version.ecs_logging_python.base": "2.0.0",
+        "version.ecs_logging_ruby": "1.0.0",
+        "version.ecs_logging_ruby.base": "1.0.0",
+        "version.edot-android": "1.10.0",
+        "version.edot-android.base": "1.0.0",
+        "version.edot-browser": "0.3.0",
+        "version.edot-browser.base": "0.1.0",
+        "version.edot-cf-aws": "1.10.0",
+        "version.edot-cf-aws.base": "1.0.0",
+        "version.edot-cf-azure": "0.10.0",
+        "version.edot-cf-azure.base": "0.7.1",
+        "version.edot-cf-gcp": "0.1.4",
+        "version.edot-cf-gcp.base": "0.1.0",
+        "version.edot-collector": "9.5.4",
+        "version.edot-collector.base": "9.0.0",
+        "version.edot-dotnet": "1.5.0",
+        "version.edot-dotnet.base": "1.0.0",
+        "version.edot-ios": "2.1.0",
+        "version.edot-ios.base": "1.0.0",
+        "version.edot-java": "1.13.0",
+        "version.edot-java.base": "1.0.0",
+        "version.edot-node": "1.18.0",
+        "version.edot-node.base": "1.0.0",
+        "version.edot-php": "1.9.0",
+        "version.edot-php.base": "1.0.0",
+        "version.edot-python": "1.16.0",
+        "version.edot-python.base": "1.0.0",
+        "version.edot_android": "1.10.0",
+        "version.edot_android.base": "1.0.0",
+        "version.edot_browser": "0.3.0",
+        "version.edot_browser.base": "0.1.0",
+        "version.edot_cf_aws": "1.10.0",
+        "version.edot_cf_aws.base": "1.0.0",
+        "version.edot_cf_azure": "0.10.0",
+        "version.edot_cf_azure.base": "0.7.1",
+        "version.edot_cf_gcp": "0.1.4",
+        "version.edot_cf_gcp.base": "0.1.0",
+        "version.edot_collector": "9.5.4",
+        "version.edot_collector.base": "9.0.0",
+        "version.edot_dotnet": "1.5.0",
+        "version.edot_dotnet.base": "1.0.0",
+        "version.edot_ios": "2.1.0",
+        "version.edot_ios.base": "1.0.0",
+        "version.edot_java": "1.13.0",
+        "version.edot_java.base": "1.0.0",
+        "version.edot_node": "1.18.0",
+        "version.edot_node.base": "1.0.0",
+        "version.edot_php": "1.9.0",
+        "version.edot_php.base": "1.0.0",
+        "version.edot_python": "1.16.0",
+        "version.edot_python.base": "1.0.0",
+        "version.elasticsearch": "99999.0.0",
+        "version.elasticsearch-client-dotnet": "9.5.3",
+        "version.elasticsearch-client-dotnet.base": "9.0.0",
+        "version.elasticsearch-client-go": "9.5.2",
+        "version.elasticsearch-client-go.base": "9.0.0",
+        "version.elasticsearch-client-java": "9.5.4",
+        "version.elasticsearch-client-java.base": "9.0.0",
+        "version.elasticsearch-client-javascript": "9.5.1",
+        "version.elasticsearch-client-javascript.base": "9.0.0",
+        "version.elasticsearch-client-php": "9.5.0",
+        "version.elasticsearch-client-php.base": "9.0.0",
+        "version.elasticsearch-client-python": "9.5.1",
+        "version.elasticsearch-client-python.base": "9.0.0",
+        "version.elasticsearch-client-ruby": "9.5.0",
+        "version.elasticsearch-client-ruby.base": "9.0.0",
+        "version.elasticsearch-client-rust": "9.1.0-alpha.1",
+        "version.elasticsearch-client-rust.base": "9.0.0",
+        "version.elasticsearch.base": "99999.0.0",
+        "version.elasticsearch_client_dotnet": "9.5.3",
+        "version.elasticsearch_client_dotnet.base": "9.0.0",
+        "version.elasticsearch_client_go": "9.5.2",
+        "version.elasticsearch_client_go.base": "9.0.0",
+        "version.elasticsearch_client_java": "9.5.4",
+        "version.elasticsearch_client_java.base": "9.0.0",
+        "version.elasticsearch_client_javascript": "9.5.1",
+        "version.elasticsearch_client_javascript.base": "9.0.0",
+        "version.elasticsearch_client_php": "9.5.0",
+        "version.elasticsearch_client_php.base": "9.0.0",
+        "version.elasticsearch_client_python": "9.5.1",
+        "version.elasticsearch_client_python.base": "9.0.0",
+        "version.elasticsearch_client_ruby": "9.5.0",
+        "version.elasticsearch_client_ruby.base": "9.0.0",
+        "version.elasticsearch_client_rust": "9.1.0-alpha.1",
+        "version.elasticsearch_client_rust.base": "9.0.0",
+        "version.esf": "1.21.0",
+        "version.esf.base": "1.0.0",
+        "version.ess": "99999.0.0",
+        "version.ess.base": "99999.0.0",
+        "version.observability": "99999.0.0",
+        "version.observability.base": "99999.0.0",
+        "version.search-ui": "1.24.2",
+        "version.search-ui.base": "1.0.0",
+        "version.search_ui": "1.24.2",
+        "version.search_ui.base": "1.0.0",
+        "version.security": "99999.0.0",
+        "version.security.base": "99999.0.0",
+        "version.self": "9.5.4",
+        "version.self.base": "9.0.0",
+        "version.serverless": "99999.0.0",
+        "version.serverless.base": "99999.0.0",
+        "version.stack": "9.5.4",
+        "version.stack.base": "9.0.0",
+        "version.terraform-google-edot-cf": "0.1.4",
+        "version.terraform-google-edot-cf.base": "0.1.0",
+        "version.terraform_google_edot_cf": "0.1.4",
+        "version.terraform_google_edot_cf.base": "0.1.0",
+        "webhook-cm": "Case Management webhook"
+      },
+      "features": {
+        "primaryNav": false,
+        "disableGitHubEditLink": false,
+        "stagingElasticNav": false,
+        "websiteSearch": false,
+        "websiteSearchScriptUrl": null,
+        "airGapped": false,
+        "diagnosticsPanel": false,
+        "assemblerApiExplorer": false,
+        "guideNav": false,
+        "navigationPreview": false,
+        "pageFeedback": false,
+        "apiNavGrouping": false
+      },
+      "storybookRegistry": null,
+      "storybookRegistryFallback": null,
+      "suppressDiagnostics": [
+        "AutolinkElasticCoDocs",
+        "DeepLinkingVirtualFile"
+      ],
+      "branding": null,
+      "ctas": {
+        "docs-builder": {
+          "name": "docs-builder",
+          "label": "Star docs-builder on GitHub",
+          "url": "https://github.com/elastic/docs-builder",
+          "benefits": [
+            "Open source",
+            "Built with .NET",
+            "Contributions welcome"
+          ]
+        },
+        "trial": {
+          "name": "trial",
+          "label": "Get started free",
+          "url": "https://cloud.elastic.co/registration?page=docs&placement=docs-siderail",
+          "benefits": [
+            "14-day free trial",
+            "All features included",
+            "No setup required"
+          ]
+        }
+      },
+      "redirects": {
+        "building-blocks/assembled-documentation.md": {
+          "to": "documentation/assembler/index.md",
+          "anchors": null,
+          "many": null
+        },
+        "building-blocks/distributed-documentation.md": {
+          "to": "documentation/distributed-builds.md",
+          "anchors": null,
+          "many": null
+        },
+        "building-blocks/documentation-set-navigation.md": {
+          "to": "documentation/isolated/navigation.md",
+          "anchors": null,
+          "many": null
+        },
+        "building-blocks/documentation-set.md": {
+          "to": "documentation/isolated/configure/index.md",
+          "anchors": null,
+          "many": null
+        },
+        "building-blocks/global-navigation.md": {
+          "to": "documentation/assembler/navigation.md",
+          "anchors": null,
+          "many": null
+        },
+        "building-blocks/inbound-cross-links.md": {
+          "to": "documentation/cross-links.md",
+          "anchors": null,
+          "many": null
+        },
+        "building-blocks/index.md": {
+          "to": "documentation/distributed-builds.md",
+          "anchors": null,
+          "many": null
+        },
+        "building-blocks/link-catalog.md": {
+          "to": "documentation/distributed-builds.md",
+          "anchors": null,
+          "many": null
+        },
+        "building-blocks/link-index.md": {
+          "to": "documentation/distributed-builds.md",
+          "anchors": null,
+          "many": null
+        },
+        "building-blocks/link-service.md": {
+          "to": "documentation/distributed-builds.md",
+          "anchors": null,
+          "many": null
+        },
+        "building-blocks/outbound-cross-links.md": {
+          "to": "documentation/cross-links.md",
+          "anchors": null,
+          "many": null
+        },
+        "cli/assembler/assemble.md": {
+          "to": "getting-started/installation.md",
+          "anchors": null,
+          "many": null
+        },
+        "cli/assembler/assembler-bloom-filter-create.md": {
+          "to": "getting-started/installation.md",
+          "anchors": null,
+          "many": null
+        },
+        "cli/assembler/assembler-bloom-filter-lookup.md": {
+          "to": "getting-started/installation.md",
+          "anchors": null,
+          "many": null
+        },
+        "cli/assembler/assembler-build.md": {
+          "to": "getting-started/installation.md",
+          "anchors": null,
+          "many": null
+        },
+        "cli/assembler/assembler-clone.md": {
+          "to": "getting-started/installation.md",
+          "anchors": null,
+          "many": null
+        },
+        "cli/assembler/assembler-config-init.md": {
+          "to": "getting-started/installation.md",
+          "anchors": null,
+          "many": null
+        },
+        "cli/assembler/assembler-content-source-match.md": {
+          "to": "getting-started/installation.md",
+          "anchors": null,
+          "many": null
+        },
+        "cli/assembler/assembler-content-source-validate.md": {
+          "to": "getting-started/installation.md",
+          "anchors": null,
+          "many": null
+        },
+        "cli/assembler/assembler-deploy-apply.md": {
+          "to": "getting-started/installation.md",
+          "anchors": null,
+          "many": null
+        },
+        "cli/assembler/assembler-deploy-plan.md": {
+          "to": "getting-started/installation.md",
+          "anchors": null,
+          "many": null
+        },
+        "cli/assembler/assembler-deploy-update-redirects.md": {
+          "to": "getting-started/installation.md",
+          "anchors": null,
+          "many": null
+        },
+        "cli/assembler/assembler-index.md": {
+          "to": "getting-started/installation.md",
+          "anchors": null,
+          "many": null
+        },
+        "cli/assembler/assembler-navigation-validate-link-reference.md": {
+          "to": "getting-started/installation.md",
+          "anchors": null,
+          "many": null
+        },
+        "cli/assembler/assembler-navigation-validate.md": {
+          "to": "getting-started/installation.md",
+          "anchors": null,
+          "many": null
+        },
+        "cli/assembler/assembler-serve.md": {
+          "to": "getting-started/installation.md",
+          "anchors": null,
+          "many": null
+        },
+        "cli/assembler/index.md": {
+          "to": "getting-started/installation.md",
+          "anchors": null,
+          "many": null
+        },
+        "cli/changelog/add.md": {
+          "to": "cli/changelog/index.md",
+          "anchors": null,
+          "many": null
+        },
+        "cli/changelog/bundle-amend.md": {
+          "to": "cli/changelog/index.md",
+          "anchors": null,
+          "many": null
+        },
+        "cli/changelog/bundle.md": {
+          "to": "cli/changelog/index.md",
+          "anchors": null,
+          "many": null
+        },
+        "cli/changelog/evaluate-pr.md": {
+          "to": "cli/changelog/index.md",
+          "anchors": null,
+          "many": null
+        },
+        "cli/changelog/gh-release.md": {
+          "to": "cli/changelog/index.md",
+          "anchors": null,
+          "many": null
+        },
+        "cli/changelog/init.md": {
+          "to": "cli/changelog/index.md",
+          "anchors": null,
+          "many": null
+        },
+        "cli/changelog/remove.md": {
+          "to": "cli/changelog/index.md",
+          "anchors": null,
+          "many": null
+        },
+        "cli/changelog/render.md": {
+          "to": "cli/changelog/index.md",
+          "anchors": null,
+          "many": null
+        },
+        "cli/cli-reference-how-to.md": {
+          "to": "data/cli-schema/index.md",
+          "anchors": null,
+          "many": null
+        },
+        "cli/cli-supplemental-docs.md": {
+          "to": "data/cli-schema/supplemental.md",
+          "anchors": null,
+          "many": null
+        },
+        "cli/docset/build.md": {
+          "to": "getting-started/installation.md",
+          "anchors": null,
+          "many": null
+        },
+        "cli/docset/diff-validate.md": {
+          "to": "getting-started/installation.md",
+          "anchors": null,
+          "many": null
+        },
+        "cli/docset/format.md": {
+          "to": "getting-started/installation.md",
+          "anchors": null,
+          "many": null
+        },
+        "cli/docset/index-command.md": {
+          "to": "getting-started/installation.md",
+          "anchors": null,
+          "many": null
+        },
+        "cli/docset/index.md": {
+          "to": "getting-started/installation.md",
+          "anchors": null,
+          "many": null
+        },
+        "cli/docset/mv.md": {
+          "to": "getting-started/installation.md",
+          "anchors": null,
+          "many": null
+        },
+        "cli/docset/serve.md": {
+          "to": "getting-started/installation.md",
+          "anchors": null,
+          "many": null
+        },
+        "cli/index.md": {
+          "to": "getting-started/installation.md",
+          "anchors": null,
+          "many": null
+        },
+        "cli/installation.md": {
+          "to": "getting-started/installation.md",
+          "anchors": null,
+          "many": null
+        },
+        "cli/links/inbound-links-validate-all.md": {
+          "to": "getting-started/installation.md",
+          "anchors": null,
+          "many": null
+        },
+        "cli/links/inbound-links-validate-link-reference.md": {
+          "to": "getting-started/installation.md",
+          "anchors": null,
+          "many": null
+        },
+        "cli/links/inbound-links-validate.md": {
+          "to": "getting-started/installation.md",
+          "anchors": null,
+          "many": null
+        },
+        "cli/links/index.md": {
+          "to": "getting-started/installation.md",
+          "anchors": null,
+          "many": null
+        },
+        "cli/shell-autocompletion.md": {
+          "to": "getting-started/installation.md",
+          "anchors": null,
+          "many": null
+        },
+        "configure/content-set/api-explorer.md": {
+          "to": "data/openapi/api-explorer.md",
+          "anchors": null,
+          "many": null
+        },
+        "configure/content-set/attributes.md": {
+          "to": "documentation/isolated/configure/index.md",
+          "anchors": null,
+          "many": null
+        },
+        "configure/content-set/cta.md": {
+          "to": "documentation/isolated/cta.md",
+          "anchors": null,
+          "many": null
+        },
+        "configure/content-set/extensions.md": {
+          "to": "documentation/isolated/extensions.md",
+          "anchors": null,
+          "many": null
+        },
+        "configure/content-set/file-structure.md": {
+          "to": "documentation/isolated/urls.md",
+          "anchors": null,
+          "many": null
+        },
+        "configure/content-set/index.md": {
+          "to": "documentation/isolated/configure/index.md",
+          "anchors": null,
+          "many": null
+        },
+        "configure/content-set/navigation.md": {
+          "to": "documentation/isolated/configure/index.md",
+          "anchors": null,
+          "many": null
+        },
+        "configure/content-sources.md": {
+          "to": "documentation/assembler/environments.md",
+          "anchors": null,
+          "many": null
+        },
+        "configure/index.md": {
+          "to": "documentation/isolated/configure/index.md",
+          "anchors": null,
+          "many": null
+        },
+        "configure/page.md": {
+          "to": "documentation/isolated/configure/index.md",
+          "anchors": null,
+          "many": null
+        },
+        "configure/site/content.md": {
+          "to": "documentation/assembler/configure/index.md",
+          "anchors": null,
+          "many": null
+        },
+        "configure/site/index.md": {
+          "to": "documentation/assembler/configure/index.md",
+          "anchors": null,
+          "many": null
+        },
+        "configure/site/legacy-url-mappings.md": {
+          "to": "documentation/catalog/legacy-url-mappings.md",
+          "anchors": null,
+          "many": null
+        },
+        "configure/site/navigation.md": {
+          "to": "documentation/assembler/navigation.md",
+          "anchors": null,
+          "many": null
+        },
+        "configure/site/products.md": {
+          "to": "documentation/catalog/products.md",
+          "anchors": null,
+          "many": null
+        },
+        "configure/site/synonyms.md": {
+          "to": "documentation/catalog/synonyms.md",
+          "anchors": null,
+          "many": null
+        },
+        "configure/site/versions.md": {
+          "to": "documentation/catalog/versions.md",
+          "anchors": null,
+          "many": null
+        },
+        "contribute/add-repo.md": {
+          "to": "documentation/assembler/add-repo.md",
+          "anchors": null,
+          "many": null
+        },
+        "contribute/branching-strategy.md": {
+          "to": "documentation/assembler/environments.md",
+          "anchors": null,
+          "many": null
+        },
+        "contribute/bundle-changelogs.md": {
+          "to": "data/release-notes/bundle.md",
+          "anchors": null,
+          "many": null
+        },
+        "contribute/changelog.md": {
+          "to": "data/release-notes/overview.md",
+          "anchors": null,
+          "many": null
+        },
+        "contribute/configure-changelogs-ref.md": {
+          "to": "data/release-notes/configure-ref.md",
+          "anchors": null,
+          "many": null
+        },
+        "contribute/configure-changelogs.md": {
+          "to": "data/release-notes/configure.md",
+          "anchors": null,
+          "many": null
+        },
+        "contribute/create-changelogs.md": {
+          "to": "data/release-notes/create.md",
+          "anchors": null,
+          "many": null
+        },
+        "contribute/cumulative-docs/badge-placement.md": {
+          "to": "documentation/isolated/how-to/cumulative-docs/badge-placement.md",
+          "anchors": null,
+          "many": null
+        },
+        "contribute/cumulative-docs/example-scenarios.md": {
+          "to": "documentation/isolated/how-to/cumulative-docs/example-scenarios.md",
+          "anchors": null,
+          "many": null
+        },
+        "contribute/cumulative-docs/guidelines.md": {
+          "to": "documentation/isolated/how-to/cumulative-docs/guidelines.md",
+          "anchors": null,
+          "many": null
+        },
+        "contribute/cumulative-docs/index.md": {
+          "to": "documentation/isolated/how-to/cumulative-docs/index.md",
+          "anchors": null,
+          "many": null
+        },
+        "contribute/cumulative-docs/reference.md": {
+          "to": "documentation/isolated/how-to/cumulative-docs/reference.md",
+          "anchors": null,
+          "many": null
+        },
+        "contribute/index.md": {
+          "to": "documentation/isolated/index.md",
+          "anchors": null,
+          "many": null
+        },
+        "contribute/locally.md": {
+          "to": "documentation/isolated/how-to/locally.md",
+          "anchors": null,
+          "many": null
+        },
+        "contribute/move.md": {
+          "to": "documentation/isolated/how-to/move.md",
+          "anchors": null,
+          "many": null
+        },
+        "contribute/on-the-web.md": {
+          "to": "documentation/isolated/how-to/on-the-web.md",
+          "anchors": null,
+          "many": null
+        },
+        "contribute/publish-changelogs.md": {
+          "to": "data/release-notes/publish.md",
+          "anchors": null,
+          "many": null
+        },
+        "contribute/redirects.md": {
+          "to": "documentation/redirects.md",
+          "anchors": null,
+          "many": null
+        },
+        "contribute/release-new-version.md": {
+          "to": "documentation/assembler/environments.md",
+          "anchors": null,
+          "many": null
+        },
+        "development/ingest/index.md": {
+          "to": "development/ingest.md",
+          "anchors": null,
+          "many": null
+        },
+        "development/link-validation/link-validation.md": {
+          "to": "documentation/cross-links.md",
+          "anchors": null,
+          "many": null
+        },
+        "development/navigation/assembler-process.md": {
+          "to": "development/navigation.md",
+          "anchors": null,
+          "many": null
+        },
+        "development/navigation/first-principles.md": {
+          "to": "development/navigation.md",
+          "anchors": null,
+          "many": null
+        },
+        "development/navigation/functional-principles.md": {
+          "to": "development/navigation.md",
+          "anchors": null,
+          "many": null
+        },
+        "development/navigation/home-provider-architecture.md": {
+          "to": "development/navigation.md",
+          "anchors": null,
+          "many": null
+        },
+        "development/navigation/navigation.md": {
+          "to": "development/navigation.md",
+          "anchors": null,
+          "many": null
+        },
+        "development/navigation/node-types.md": {
+          "to": "development/navigation.md",
+          "anchors": null,
+          "many": null
+        },
+        "development/navigation/technical-principles.md": {
+          "to": "development/navigation.md",
+          "anchors": null,
+          "many": null
+        },
+        "development/navigation/two-phase-loading.md": {
+          "to": "development/navigation.md",
+          "anchors": null,
+          "many": null
+        },
+        "development/navigation/visual-walkthrough.md": {
+          "to": "development/navigation.md",
+          "anchors": null,
+          "many": null
+        },
+        "mcp/index.md": {
+          "to": "data/mcp/index.md",
+          "anchors": null,
+          "many": null
+        },
+        "migration/engineering.md": {
+          "to": "index.md",
+          "anchors": null,
+          "many": null
+        },
+        "migration/freeze/gh-action.md": {
+          "to": "index.md",
+          "anchors": null,
+          "many": null
+        },
+        "migration/freeze/index.md": {
+          "to": "index.md",
+          "anchors": null,
+          "many": null
+        },
+        "migration/guide/automated.md": {
+          "to": "index.md",
+          "anchors": null,
+          "many": null
+        },
+        "migration/guide/how-to-set-up-docs-previews.md": {
+          "to": "index.md",
+          "anchors": null,
+          "many": null
+        },
+        "migration/guide/index.md": {
+          "to": "index.md",
+          "anchors": null,
+          "many": null
+        },
+        "migration/guide/mapping.md": {
+          "to": "index.md",
+          "anchors": null,
+          "many": null
+        },
+        "migration/guide/move-ref-docs.md": {
+          "to": "index.md",
+          "anchors": null,
+          "many": null
+        },
+        "migration/guide/tooling.md": {
+          "to": "index.md",
+          "anchors": null,
+          "many": null
+        },
+        "migration/guide/working-in-docs-content.md": {
+          "to": "index.md",
+          "anchors": null,
+          "many": null
+        },
+        "migration/ia.md": {
+          "to": "index.md",
+          "anchors": null,
+          "many": null
+        },
+        "migration/index.md": {
+          "to": "index.md",
+          "anchors": null,
+          "many": null
+        },
+        "migration/syntax.md": {
+          "to": "syntax/index.md",
+          "anchors": null,
+          "many": null
+        },
+        "migration/versioning.md": {
+          "to": "index.md",
+          "anchors": null,
+          "many": null
+        },
+        "schema-support/api-explorer/index.md": {
+          "to": "data/openapi/api-explorer.md",
+          "anchors": null,
+          "many": null
+        },
+        "schema-support/cli-schema/index.md": {
+          "to": "data/cli-schema/index.md",
+          "anchors": null,
+          "many": null
+        },
+        "schema-support/cli-schema/supplemental.md": {
+          "to": "data/cli-schema/supplemental.md",
+          "anchors": null,
+          "many": null
+        },
+        "schema-support/index.md": {
+          "to": "data/index.md",
+          "anchors": null,
+          "many": null
+        },
+        "syntax/conditionals.md": {
+          "to": "syntax/index.md",
+          "anchors": null,
+          "many": null
+        },
+        "syntax/example_blocks.md": {
+          "to": "syntax/index.md",
+          "anchors": null,
+          "many": null
+        },
+        "syntax/passthrough.md": {
+          "to": "syntax/index.md",
+          "anchors": null,
+          "many": null
+        },
+        "syntax/sidebars.md": {
+          "to": "syntax/index.md",
+          "anchors": null,
+          "many": null
+        },
+        "syntax/tagged_regions.md": {
+          "to": "syntax/file_inclusion.md",
+          "anchors": null,
+          "many": null
+        },
+        "testing/archive.md": {
+          "to": "index.md",
+          "anchors": null,
+          "many": null
+        },
+        "testing/cross-links.md": {
+          "to": "index.md",
+          "anchors": null,
+          "many": null
+        },
+        "testing/custom-highlighters.md": {
+          "to": "index.md",
+          "anchors": null,
+          "many": null
+        },
+        "testing/deeply-nested/bar.md": {
+          "to": "index.md",
+          "anchors": null,
+          "many": null
+        },
+        "testing/deeply-nested/baz/qux.md": {
+          "to": "index.md",
+          "anchors": null,
+          "many": null
+        },
+        "testing/deeply-nested/foo.md": {
+          "to": "index.md",
+          "anchors": null,
+          "many": null
+        },
+        "testing/deeply-nested/index.md": {
+          "to": "index.md",
+          "anchors": null,
+          "many": null
+        },
+        "testing/index.md": {
+          "to": "index.md",
+          "anchors": null,
+          "many": null
+        },
+        "testing/kibana-settings-yaml-samples.md": {
+          "to": "index.md",
+          "anchors": null,
+          "many": null
+        },
+        "testing/landing-page.md": {
+          "to": "index.md",
+          "anchors": null,
+          "many": null
+        },
+        "testing/mover/first-page.md": {
+          "to": "index.md",
+          "anchors": null,
+          "many": null
+        },
+        "testing/mover/second-page.md": {
+          "to": "index.md",
+          "anchors": null,
+          "many": null
+        },
+        "testing/nest-under-index/index.md": {
+          "to": "index.md",
+          "anchors": null,
+          "many": null
+        },
+        "testing/nest-under-index/nested-page-1.md": {
+          "to": "index.md",
+          "anchors": null,
+          "many": null
+        },
+        "testing/nest-under-index/nested-page-2.md": {
+          "to": "index.md",
+          "anchors": null,
+          "many": null
+        },
+        "testing/nested/index.md": {
+          "to": "index.md",
+          "anchors": null,
+          "many": null
+        },
+        "testing/redirects/4th-page.md": {
+          "to": "index.md",
+          "anchors": null,
+          "many": null
+        },
+        "testing/redirects/5th-page.md": {
+          "to": "index.md",
+          "anchors": null,
+          "many": null
+        },
+        "testing/redirects/6th-page.md": {
+          "to": "index.md",
+          "anchors": null,
+          "many": null
+        },
+        "testing/redirects/7th-page.md": {
+          "to": "index.md",
+          "anchors": null,
+          "many": null
+        },
+        "testing/redirects/9th-page.md": {
+          "to": "index.md",
+          "anchors": null,
+          "many": null
+        },
+        "testing/redirects/first-page-old.md": {
+          "to": "index.md",
+          "anchors": null,
+          "many": null
+        },
+        "testing/redirects/first-page.md": {
+          "to": "index.md",
+          "anchors": null,
+          "many": null
+        },
+        "testing/redirects/second-page-old.md": {
+          "to": "index.md",
+          "anchors": null,
+          "many": null
+        },
+        "testing/redirects/second-page.md": {
+          "to": "index.md",
+          "anchors": null,
+          "many": null
+        },
+        "testing/redirects/third-page.md": {
+          "to": "index.md",
+          "anchors": null,
+          "many": null
+        },
+        "testing/release-notes-all/index.md": {
+          "to": "index.md",
+          "anchors": null,
+          "many": null
+        },
+        "testing/release-notes/breaking-changes.md": {
+          "to": "index.md",
+          "anchors": null,
+          "many": null
+        },
+        "testing/release-notes/deprecations.md": {
+          "to": "index.md",
+          "anchors": null,
+          "many": null
+        },
+        "testing/release-notes/highlights.md": {
+          "to": "index.md",
+          "anchors": null,
+          "many": null
+        },
+        "testing/release-notes/index.md": {
+          "to": "index.md",
+          "anchors": null,
+          "many": null
+        },
+        "testing/release-notes/known-issues.md": {
+          "to": "index.md",
+          "anchors": null,
+          "many": null
+        },
+        "testing/req.md": {
+          "to": "index.md",
+          "anchors": null,
+          "many": null
+        },
+        "testing/security-settings.md": {
+          "to": "index.md",
+          "anchors": null,
+          "many": null
+        }
+      },
+      "apiConfigurations": {
+        "docs-builder-cloud-connect": {
+          "productKey": "docs-builder-cloud-connect",
+          "product": "ess",
+          "specFileName": "cloud-connect.yml",
+          "localSpecFile": null,
+          "repository": "elastic/cloud-connected-api",
+          "children": [],
+          "apiContentDirectory": "<docs>/api<docs>-builder-cloud-connect",
+          "catalogCategories": []
+        },
+        "docs-builder-cloud-serverless": {
+          "productKey": "docs-builder-cloud-serverless",
+          "product": "cloud-serverless",
+          "specFileName": "elastic-cloud-serverless.yml",
+          "localSpecFile": null,
+          "repository": "elastic/serverless-api-specification",
+          "children": [],
+          "apiContentDirectory": "<docs>/api<docs>-builder-cloud-serverless",
+          "catalogCategories": []
+        },
+        "docs-builder-elasticsearch": {
+          "productKey": "docs-builder-elasticsearch",
+          "product": "elasticsearch",
+          "specFileName": "elasticsearch.json",
+          "localSpecFile": "<docs>/elasticsearch.json",
+          "repository": "elastic/elasticsearch-specification",
+          "children": [],
+          "apiContentDirectory": "<docs>/api<docs>-builder-elasticsearch",
+          "catalogCategories": [
+            "ece",
+            "ess",
+            "self"
+          ]
+        },
+        "docs-builder-elasticsearch-serverless": {
+          "productKey": "docs-builder-elasticsearch-serverless",
+          "product": "serverless-elasticsearch",
+          "specFileName": "elasticsearch-serverless.json",
+          "localSpecFile": null,
+          "repository": "elastic/elasticsearch-specification",
+          "children": [],
+          "apiContentDirectory": "<docs>/api<docs>-builder-elasticsearch-serverless",
+          "catalogCategories": []
+        },
+        "docs-builder-kibana": {
+          "productKey": "docs-builder-kibana",
+          "product": "kibana",
+          "specFileName": "kibana.yaml",
+          "localSpecFile": null,
+          "repository": "elastic/kibana",
+          "children": [],
+          "apiContentDirectory": "<docs>/api<docs>-builder-kibana",
+          "catalogCategories": []
+        },
+        "docs-builder-kibana-serverless": {
+          "productKey": "docs-builder-kibana-serverless",
+          "product": "kibana",
+          "specFileName": "kibana-serverless.yaml",
+          "localSpecFile": null,
+          "repository": "elastic/kibana",
+          "children": [],
+          "apiContentDirectory": "<docs>/api<docs>-builder-kibana-serverless",
+          "catalogCategories": []
+        }
+      },
+      "isExcluded": {
+        "_hidden.md": true,
+        "_snippets/example.md": false,
+        "development/index.md": false,
+        "index.md": false,
+        "syntax/_draft.md": false
+      }
+    }
+  },
+  "diagnostics": []
+}

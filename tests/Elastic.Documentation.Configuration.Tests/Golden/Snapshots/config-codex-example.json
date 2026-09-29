@@ -1,0 +1,6 @@
+{
+  "failure": {
+    "exception": "YamlException",
+    "message": "Property 'documentation_sets' not found on type 'Elastic.Documentation.Configuration.Codex.CodexConfiguration'."
+  }
+}

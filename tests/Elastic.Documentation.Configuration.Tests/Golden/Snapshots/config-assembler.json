@@ -1,0 +1,1419 @@
+{
+  "value": {
+    "narrative": {
+      "name": "docs-content",
+      "origin": "<default-origin:elastic/docs-content>",
+      "checkoutStrategy": "Full",
+      "skip": false,
+      "path": null,
+      "current": "main",
+      "next": "main",
+      "edge": "main",
+      "sparsePaths": [
+        "docs"
+      ],
+      "private": false,
+      "cloneTimeout": null
+    },
+    "referenceRepositories": {
+      "apm-agent-android": {
+        "name": "apm-agent-android",
+        "origin": "<default-origin:elastic/apm-agent-android>",
+        "checkoutStrategy": "Partial",
+        "skip": false,
+        "path": null,
+        "current": "main",
+        "next": "main",
+        "edge": "main",
+        "sparsePaths": [
+          "docs"
+        ],
+        "private": false,
+        "cloneTimeout": null
+      },
+      "apm-agent-dotnet": {
+        "name": "apm-agent-dotnet",
+        "origin": "<default-origin:elastic/apm-agent-dotnet>",
+        "checkoutStrategy": "Partial",
+        "skip": false,
+        "path": null,
+        "current": "main",
+        "next": "main",
+        "edge": "main",
+        "sparsePaths": [
+          "docs"
+        ],
+        "private": false,
+        "cloneTimeout": null
+      },
+      "apm-agent-go": {
+        "name": "apm-agent-go",
+        "origin": "<default-origin:elastic/apm-agent-go>",
+        "checkoutStrategy": "Partial",
+        "skip": false,
+        "path": null,
+        "current": "main",
+        "next": "main",
+        "edge": "main",
+        "sparsePaths": [
+          "docs"
+        ],
+        "private": false,
+        "cloneTimeout": null
+      },
+      "apm-agent-ios": {
+        "name": "apm-agent-ios",
+        "origin": "<default-origin:elastic/apm-agent-ios>",
+        "checkoutStrategy": "Partial",
+        "skip": false,
+        "path": null,
+        "current": "main",
+        "next": "main",
+        "edge": "main",
+        "sparsePaths": [
+          "docs"
+        ],
+        "private": false,
+        "cloneTimeout": null
+      },
+      "apm-agent-java": {
+        "name": "apm-agent-java",
+        "origin": "<default-origin:elastic/apm-agent-java>",
+        "checkoutStrategy": "Partial",
+        "skip": false,
+        "path": null,
+        "current": "main",
+        "next": "main",
+        "edge": "main",
+        "sparsePaths": [
+          "docs"
+        ],
+        "private": false,
+        "cloneTimeout": null
+      },
+      "apm-agent-nodejs": {
+        "name": "apm-agent-nodejs",
+        "origin": "<default-origin:elastic/apm-agent-nodejs>",
+        "checkoutStrategy": "Partial",
+        "skip": false,
+        "path": null,
+        "current": "main",
+        "next": "main",
+        "edge": "main",
+        "sparsePaths": [
+          "docs"
+        ],
+        "private": false,
+        "cloneTimeout": null
+      },
+      "apm-agent-php": {
+        "name": "apm-agent-php",
+        "origin": "<default-origin:elastic/apm-agent-php>",
+        "checkoutStrategy": "Partial",
+        "skip": false,
+        "path": null,
+        "current": "main",
+        "next": "main",
+        "edge": "main",
+        "sparsePaths": [
+          "docs"
+        ],
+        "private": false,
+        "cloneTimeout": null
+      },
+      "apm-agent-python": {
+        "name": "apm-agent-python",
+        "origin": "<default-origin:elastic/apm-agent-python>",
+        "checkoutStrategy": "Partial",
+        "skip": false,
+        "path": null,
+        "current": "main",
+        "next": "main",
+        "edge": "main",
+        "sparsePaths": [
+          "docs"
+        ],
+        "private": false,
+        "cloneTimeout": null
+      },
+      "apm-agent-ruby": {
+        "name": "apm-agent-ruby",
+        "origin": "<default-origin:elastic/apm-agent-ruby>",
+        "checkoutStrategy": "Partial",
+        "skip": false,
+        "path": null,
+        "current": "main",
+        "next": "main",
+        "edge": "main",
+        "sparsePaths": [
+          "docs"
+        ],
+        "private": false,
+        "cloneTimeout": null
+      },
+      "apm-agent-rum-js": {
+        "name": "apm-agent-rum-js",
+        "origin": "<default-origin:elastic/apm-agent-rum-js>",
+        "checkoutStrategy": "Partial",
+        "skip": false,
+        "path": null,
+        "current": "main",
+        "next": "main",
+        "edge": "main",
+        "sparsePaths": [
+          "docs"
+        ],
+        "private": false,
+        "cloneTimeout": null
+      },
+      "apm-aws-lambda": {
+        "name": "apm-aws-lambda",
+        "origin": "<default-origin:elastic/apm-aws-lambda>",
+        "checkoutStrategy": "Partial",
+        "skip": false,
+        "path": null,
+        "current": "main",
+        "next": "main",
+        "edge": "main",
+        "sparsePaths": [
+          "docs"
+        ],
+        "private": false,
+        "cloneTimeout": null
+      },
+      "apm-k8s-attacher": {
+        "name": "apm-k8s-attacher",
+        "origin": "<default-origin:elastic/apm-k8s-attacher>",
+        "checkoutStrategy": "Partial",
+        "skip": false,
+        "path": null,
+        "current": "main",
+        "next": "main",
+        "edge": "main",
+        "sparsePaths": [
+          "docs"
+        ],
+        "private": false,
+        "cloneTimeout": null
+      },
+      "apm-server": {
+        "name": "apm-server",
+        "origin": "<default-origin:elastic/apm-server>",
+        "checkoutStrategy": "Partial",
+        "skip": false,
+        "path": null,
+        "current": "main",
+        "next": "main",
+        "edge": "main",
+        "sparsePaths": [
+          "docs"
+        ],
+        "private": false,
+        "cloneTimeout": null
+      },
+      "autoops-insights": {
+        "name": "autoops-insights",
+        "origin": "<default-origin:elastic/autoops-insights>",
+        "checkoutStrategy": "Partial",
+        "skip": false,
+        "path": null,
+        "current": "main",
+        "next": "main",
+        "edge": "main",
+        "sparsePaths": [
+          "generated/docs"
+        ],
+        "private": true,
+        "cloneTimeout": null
+      },
+      "beats": {
+        "name": "beats",
+        "origin": "<default-origin:elastic/beats>",
+        "checkoutStrategy": "Partial",
+        "skip": false,
+        "path": null,
+        "current": "9.5",
+        "next": "main",
+        "edge": "main",
+        "sparsePaths": [
+          "docs"
+        ],
+        "private": false,
+        "cloneTimeout": null
+      },
+      "cli": {
+        "name": "cli",
+        "origin": "<default-origin:elastic/cli>",
+        "checkoutStrategy": "Partial",
+        "skip": false,
+        "path": null,
+        "current": "main",
+        "next": "main",
+        "edge": "main",
+        "sparsePaths": [
+          "docs"
+        ],
+        "private": false,
+        "cloneTimeout": null
+      },
+      "cloud": {
+        "name": "cloud",
+        "origin": "<default-origin:elastic/cloud>",
+        "checkoutStrategy": "Partial",
+        "skip": false,
+        "path": null,
+        "current": "master",
+        "next": "master",
+        "edge": "master",
+        "sparsePaths": [
+          "docs"
+        ],
+        "private": true,
+        "cloneTimeout": null
+      },
+      "cloud-on-k8s": {
+        "name": "cloud-on-k8s",
+        "origin": "<default-origin:elastic/cloud-on-k8s>",
+        "checkoutStrategy": "Partial",
+        "skip": false,
+        "path": null,
+        "current": "main",
+        "next": "main",
+        "edge": "main",
+        "sparsePaths": [
+          "docs"
+        ],
+        "private": false,
+        "cloneTimeout": null
+      },
+      "curator": {
+        "name": "curator",
+        "origin": "<default-origin:elastic/curator>",
+        "checkoutStrategy": "Partial",
+        "skip": false,
+        "path": null,
+        "current": "master",
+        "next": "master",
+        "edge": "master",
+        "sparsePaths": [
+          "docs"
+        ],
+        "private": false,
+        "cloneTimeout": null
+      },
+      "detection-rules": {
+        "name": "detection-rules",
+        "origin": "<default-origin:elastic/detection-rules>",
+        "checkoutStrategy": "Full",
+        "skip": false,
+        "path": null,
+        "current": "main",
+        "next": "main",
+        "edge": "main",
+        "sparsePaths": [
+          "docs"
+        ],
+        "private": false,
+        "cloneTimeout": null
+      },
+      "docs-builder": {
+        "name": "docs-builder",
+        "origin": "<default-origin:elastic/docs-builder>",
+        "checkoutStrategy": "Partial",
+        "skip": true,
+        "path": null,
+        "current": "9.0",
+        "next": "main",
+        "edge": "main",
+        "sparsePaths": [
+          "docs",
+          "config"
+        ],
+        "private": false,
+        "cloneTimeout": null
+      },
+      "docs-playground-release-notes-changelogs": {
+        "name": "docs-playground-release-notes-changelogs",
+        "origin": "<default-origin:elastic/docs-playground-release-notes-changelogs>",
+        "checkoutStrategy": "Partial",
+        "skip": true,
+        "path": null,
+        "current": "main",
+        "next": "main",
+        "edge": "main",
+        "sparsePaths": [
+          "docs"
+        ],
+        "private": true,
+        "cloneTimeout": null
+      },
+      "docs-playground-release-notes-tagged": {
+        "name": "docs-playground-release-notes-tagged",
+        "origin": "<default-origin:elastic/docs-playground-release-notes-tagged>",
+        "checkoutStrategy": "Partial",
+        "skip": true,
+        "path": null,
+        "current": "main",
+        "next": "main",
+        "edge": "main",
+        "sparsePaths": [
+          "docs"
+        ],
+        "private": true,
+        "cloneTimeout": null
+      },
+      "docs-playground-release-notes-tagged-workflow": {
+        "name": "docs-playground-release-notes-tagged-workflow",
+        "origin": "<default-origin:elastic/docs-playground-release-notes-tagged-workflow>",
+        "checkoutStrategy": "Partial",
+        "skip": true,
+        "path": null,
+        "current": "main",
+        "next": "main",
+        "edge": "main",
+        "sparsePaths": [
+          "docs"
+        ],
+        "private": true,
+        "cloneTimeout": null
+      },
+      "ecctl": {
+        "name": "ecctl",
+        "origin": "<default-origin:elastic/ecctl>",
+        "checkoutStrategy": "Partial",
+        "skip": false,
+        "path": null,
+        "current": "master",
+        "next": "master",
+        "edge": "master",
+        "sparsePaths": [
+          "docs"
+        ],
+        "private": false,
+        "cloneTimeout": null
+      },
+      "ecs": {
+        "name": "ecs",
+        "origin": "<default-origin:elastic/ecs>",
+        "checkoutStrategy": "Partial",
+        "skip": false,
+        "path": null,
+        "current": "9.5",
+        "next": "main",
+        "edge": "main",
+        "sparsePaths": [
+          "docs"
+        ],
+        "private": false,
+        "cloneTimeout": null
+      },
+      "ecs-dotnet": {
+        "name": "ecs-dotnet",
+        "origin": "<default-origin:elastic/ecs-dotnet>",
+        "checkoutStrategy": "Partial",
+        "skip": false,
+        "path": null,
+        "current": "main",
+        "next": "main",
+        "edge": "main",
+        "sparsePaths": [
+          "docs"
+        ],
+        "private": false,
+        "cloneTimeout": null
+      },
+      "ecs-logging": {
+        "name": "ecs-logging",
+        "origin": "<default-origin:elastic/ecs-logging>",
+        "checkoutStrategy": "Partial",
+        "skip": false,
+        "path": null,
+        "current": "main",
+        "next": "main",
+        "edge": "main",
+        "sparsePaths": [
+          "docs"
+        ],
+        "private": false,
+        "cloneTimeout": null
+      },
+      "ecs-logging-go-logrus": {
+        "name": "ecs-logging-go-logrus",
+        "origin": "<default-origin:elastic/ecs-logging-go-logrus>",
+        "checkoutStrategy": "Partial",
+        "skip": false,
+        "path": null,
+        "current": "main",
+        "next": "main",
+        "edge": "main",
+        "sparsePaths": [
+          "docs"
+        ],
+        "private": false,
+        "cloneTimeout": null
+      },
+      "ecs-logging-go-zap": {
+        "name": "ecs-logging-go-zap",
+        "origin": "<default-origin:elastic/ecs-logging-go-zap>",
+        "checkoutStrategy": "Partial",
+        "skip": false,
+        "path": null,
+        "current": "main",
+        "next": "main",
+        "edge": "main",
+        "sparsePaths": [
+          "docs"
+        ],
+        "private": false,
+        "cloneTimeout": null
+      },
+      "ecs-logging-go-zerolog": {
+        "name": "ecs-logging-go-zerolog",
+        "origin": "<default-origin:elastic/ecs-logging-go-zerolog>",
+        "checkoutStrategy": "Partial",
+        "skip": false,
+        "path": null,
+        "current": "main",
+        "next": "main",
+        "edge": "main",
+        "sparsePaths": [
+          "docs"
+        ],
+        "private": false,
+        "cloneTimeout": null
+      },
+      "ecs-logging-java": {
+        "name": "ecs-logging-java",
+        "origin": "<default-origin:elastic/ecs-logging-java>",
+        "checkoutStrategy": "Partial",
+        "skip": false,
+        "path": null,
+        "current": "main",
+        "next": "main",
+        "edge": "main",
+        "sparsePaths": [
+          "docs"
+        ],
+        "private": false,
+        "cloneTimeout": null
+      },
+      "ecs-logging-nodejs": {
+        "name": "ecs-logging-nodejs",
+        "origin": "<default-origin:elastic/ecs-logging-nodejs>",
+        "checkoutStrategy": "Partial",
+        "skip": false,
+        "path": null,
+        "current": "main",
+        "next": "main",
+        "edge": "main",
+        "sparsePaths": [
+          "docs"
+        ],
+        "private": false,
+        "cloneTimeout": null
+      },
+      "ecs-logging-php": {
+        "name": "ecs-logging-php",
+        "origin": "<default-origin:elastic/ecs-logging-php>",
+        "checkoutStrategy": "Partial",
+        "skip": false,
+        "path": null,
+        "current": "main",
+        "next": "main",
+        "edge": "main",
+        "sparsePaths": [
+          "docs"
+        ],
+        "private": false,
+        "cloneTimeout": null
+      },
+      "ecs-logging-python": {
+        "name": "ecs-logging-python",
+        "origin": "<default-origin:elastic/ecs-logging-python>",
+        "checkoutStrategy": "Partial",
+        "skip": false,
+        "path": null,
+        "current": "main",
+        "next": "main",
+        "edge": "main",
+        "sparsePaths": [
+          "docs"
+        ],
+        "private": false,
+        "cloneTimeout": null
+      },
+      "ecs-logging-ruby": {
+        "name": "ecs-logging-ruby",
+        "origin": "<default-origin:elastic/ecs-logging-ruby>",
+        "checkoutStrategy": "Partial",
+        "skip": false,
+        "path": null,
+        "current": "main",
+        "next": "main",
+        "edge": "main",
+        "sparsePaths": [
+          "docs"
+        ],
+        "private": false,
+        "cloneTimeout": null
+      },
+      "edot-cloud-forwarder-aws": {
+        "name": "edot-cloud-forwarder-aws",
+        "origin": "<default-origin:elastic/edot-cloud-forwarder-aws>",
+        "checkoutStrategy": "Partial",
+        "skip": false,
+        "path": null,
+        "current": "main",
+        "next": "main",
+        "edge": "main",
+        "sparsePaths": [
+          "docs"
+        ],
+        "private": true,
+        "cloneTimeout": null
+      },
+      "edot-cloud-forwarder-azure": {
+        "name": "edot-cloud-forwarder-azure",
+        "origin": "<default-origin:elastic/edot-cloud-forwarder-azure>",
+        "checkoutStrategy": "Partial",
+        "skip": false,
+        "path": null,
+        "current": "main",
+        "next": "main",
+        "edge": "main",
+        "sparsePaths": [
+          "docs"
+        ],
+        "private": true,
+        "cloneTimeout": null
+      },
+      "eland": {
+        "name": "eland",
+        "origin": "<default-origin:elastic/eland>",
+        "checkoutStrategy": "Partial",
+        "skip": false,
+        "path": null,
+        "current": "main",
+        "next": "main",
+        "edge": "main",
+        "sparsePaths": [
+          "docs"
+        ],
+        "private": false,
+        "cloneTimeout": null
+      },
+      "elastic-agent": {
+        "name": "elastic-agent",
+        "origin": "<default-origin:elastic/elastic-agent>",
+        "checkoutStrategy": "Partial",
+        "skip": false,
+        "path": null,
+        "current": "main",
+        "next": "main",
+        "edge": "main",
+        "sparsePaths": [
+          "docs"
+        ],
+        "private": false,
+        "cloneTimeout": null
+      },
+      "elastic-otel-dotnet": {
+        "name": "elastic-otel-dotnet",
+        "origin": "<default-origin:elastic/elastic-otel-dotnet>",
+        "checkoutStrategy": "Partial",
+        "skip": false,
+        "path": null,
+        "current": "main",
+        "next": "main",
+        "edge": "main",
+        "sparsePaths": [
+          "docs"
+        ],
+        "private": false,
+        "cloneTimeout": null
+      },
+      "elastic-otel-java": {
+        "name": "elastic-otel-java",
+        "origin": "<default-origin:elastic/elastic-otel-java>",
+        "checkoutStrategy": "Partial",
+        "skip": false,
+        "path": null,
+        "current": "main",
+        "next": "main",
+        "edge": "main",
+        "sparsePaths": [
+          "docs"
+        ],
+        "private": false,
+        "cloneTimeout": null
+      },
+      "elastic-otel-node": {
+        "name": "elastic-otel-node",
+        "origin": "<default-origin:elastic/elastic-otel-node>",
+        "checkoutStrategy": "Partial",
+        "skip": false,
+        "path": null,
+        "current": "main",
+        "next": "main",
+        "edge": "main",
+        "sparsePaths": [
+          "docs"
+        ],
+        "private": false,
+        "cloneTimeout": null
+      },
+      "elastic-otel-php": {
+        "name": "elastic-otel-php",
+        "origin": "<default-origin:elastic/elastic-otel-php>",
+        "checkoutStrategy": "Partial",
+        "skip": false,
+        "path": null,
+        "current": "main",
+        "next": "main",
+        "edge": "main",
+        "sparsePaths": [
+          "docs"
+        ],
+        "private": false,
+        "cloneTimeout": null
+      },
+      "elastic-otel-python": {
+        "name": "elastic-otel-python",
+        "origin": "<default-origin:elastic/elastic-otel-python>",
+        "checkoutStrategy": "Partial",
+        "skip": false,
+        "path": null,
+        "current": "main",
+        "next": "main",
+        "edge": "main",
+        "sparsePaths": [
+          "docs"
+        ],
+        "private": false,
+        "cloneTimeout": null
+      },
+      "elastic-otel-rum-js": {
+        "name": "elastic-otel-rum-js",
+        "origin": "<default-origin:elastic/elastic-otel-rum-js>",
+        "checkoutStrategy": "Partial",
+        "skip": false,
+        "path": null,
+        "current": "main",
+        "next": "main",
+        "edge": "main",
+        "sparsePaths": [
+          "docs"
+        ],
+        "private": false,
+        "cloneTimeout": null
+      },
+      "elastic-serverless-forwarder": {
+        "name": "elastic-serverless-forwarder",
+        "origin": "<default-origin:elastic/elastic-serverless-forwarder>",
+        "checkoutStrategy": "Partial",
+        "skip": false,
+        "path": null,
+        "current": "main",
+        "next": "main",
+        "edge": "main",
+        "sparsePaths": [
+          "docs"
+        ],
+        "private": false,
+        "cloneTimeout": null
+      },
+      "elasticsearch": {
+        "name": "elasticsearch",
+        "origin": "<default-origin:elastic/elasticsearch>",
+        "checkoutStrategy": "Partial",
+        "skip": false,
+        "path": null,
+        "current": "main",
+        "next": "main",
+        "edge": "main",
+        "sparsePaths": [
+          "docs"
+        ],
+        "private": false,
+        "cloneTimeout": null
+      },
+      "elasticsearch-dsl-js": {
+        "name": "elasticsearch-dsl-js",
+        "origin": "<default-origin:elastic/elasticsearch-dsl-js>",
+        "checkoutStrategy": "Partial",
+        "skip": false,
+        "path": null,
+        "current": "main",
+        "next": "main",
+        "edge": "main",
+        "sparsePaths": [
+          "docs"
+        ],
+        "private": false,
+        "cloneTimeout": null
+      },
+      "elasticsearch-hadoop": {
+        "name": "elasticsearch-hadoop",
+        "origin": "<default-origin:elastic/elasticsearch-hadoop>",
+        "checkoutStrategy": "Partial",
+        "skip": false,
+        "path": null,
+        "current": "main",
+        "next": "main",
+        "edge": "main",
+        "sparsePaths": [
+          "docs"
+        ],
+        "private": false,
+        "cloneTimeout": null
+      },
+      "elasticsearch-java": {
+        "name": "elasticsearch-java",
+        "origin": "<default-origin:elastic/elasticsearch-java>",
+        "checkoutStrategy": "Partial",
+        "skip": false,
+        "path": null,
+        "current": "main",
+        "next": "main",
+        "edge": "main",
+        "sparsePaths": [
+          "docs"
+        ],
+        "private": false,
+        "cloneTimeout": null
+      },
+      "elasticsearch-js": {
+        "name": "elasticsearch-js",
+        "origin": "<default-origin:elastic/elasticsearch-js>",
+        "checkoutStrategy": "Partial",
+        "skip": false,
+        "path": null,
+        "current": "main",
+        "next": "main",
+        "edge": "main",
+        "sparsePaths": [
+          "docs"
+        ],
+        "private": false,
+        "cloneTimeout": null
+      },
+      "elasticsearch-net": {
+        "name": "elasticsearch-net",
+        "origin": "<default-origin:elastic/elasticsearch-net>",
+        "checkoutStrategy": "Partial",
+        "skip": false,
+        "path": null,
+        "current": "main",
+        "next": "main",
+        "edge": "main",
+        "sparsePaths": [
+          "docs"
+        ],
+        "private": false,
+        "cloneTimeout": null
+      },
+      "elasticsearch-php": {
+        "name": "elasticsearch-php",
+        "origin": "<default-origin:elastic/elasticsearch-php>",
+        "checkoutStrategy": "Partial",
+        "skip": false,
+        "path": null,
+        "current": "main",
+        "next": "main",
+        "edge": "main",
+        "sparsePaths": [
+          "docs"
+        ],
+        "private": false,
+        "cloneTimeout": null
+      },
+      "elasticsearch-py": {
+        "name": "elasticsearch-py",
+        "origin": "<default-origin:elastic/elasticsearch-py>",
+        "checkoutStrategy": "Partial",
+        "skip": false,
+        "path": null,
+        "current": "main",
+        "next": "main",
+        "edge": "main",
+        "sparsePaths": [
+          "docs"
+        ],
+        "private": false,
+        "cloneTimeout": null
+      },
+      "elasticsearch-rs": {
+        "name": "elasticsearch-rs",
+        "origin": "<default-origin:elastic/elasticsearch-rs>",
+        "checkoutStrategy": "Partial",
+        "skip": false,
+        "path": null,
+        "current": "main",
+        "next": "main",
+        "edge": "main",
+        "sparsePaths": [
+          "docs"
+        ],
+        "private": false,
+        "cloneTimeout": null
+      },
+      "elasticsearch-ruby": {
+        "name": "elasticsearch-ruby",
+        "origin": "<default-origin:elastic/elasticsearch-ruby>",
+        "checkoutStrategy": "Partial",
+        "skip": false,
+        "path": null,
+        "current": "main",
+        "next": "main",
+        "edge": "main",
+        "sparsePaths": [
+          "docs"
+        ],
+        "private": false,
+        "cloneTimeout": null
+      },
+      "fleet-server": {
+        "name": "fleet-server",
+        "origin": "<default-origin:elastic/fleet-server>",
+        "checkoutStrategy": "Partial",
+        "skip": false,
+        "path": null,
+        "current": "main",
+        "next": "main",
+        "edge": "main",
+        "sparsePaths": [
+          "docs"
+        ],
+        "private": false,
+        "cloneTimeout": null
+      },
+      "go-elasticsearch": {
+        "name": "go-elasticsearch",
+        "origin": "<default-origin:elastic/go-elasticsearch>",
+        "checkoutStrategy": "Partial",
+        "skip": false,
+        "path": null,
+        "current": "main",
+        "next": "main",
+        "edge": "main",
+        "sparsePaths": [
+          "docs"
+        ],
+        "private": false,
+        "cloneTimeout": null
+      },
+      "integration-docs": {
+        "name": "integration-docs",
+        "origin": "<default-origin:elastic/integration-docs>",
+        "checkoutStrategy": "Partial",
+        "skip": false,
+        "path": null,
+        "current": "main",
+        "next": "main",
+        "edge": "main",
+        "sparsePaths": [
+          "docs"
+        ],
+        "private": true,
+        "cloneTimeout": null
+      },
+      "integrations": {
+        "name": "integrations",
+        "origin": "<default-origin:elastic/integrations>",
+        "checkoutStrategy": "Partial",
+        "skip": false,
+        "path": null,
+        "current": "main",
+        "next": "main",
+        "edge": "main",
+        "sparsePaths": [
+          "docs"
+        ],
+        "private": false,
+        "cloneTimeout": null
+      },
+      "kibana": {
+        "name": "kibana",
+        "origin": "<default-origin:elastic/kibana>",
+        "checkoutStrategy": "Partial",
+        "skip": false,
+        "path": null,
+        "current": "main",
+        "next": "main",
+        "edge": "main",
+        "sparsePaths": [
+          "docs"
+        ],
+        "private": false,
+        "cloneTimeout": null
+      },
+      "kibana-team": {
+        "name": "kibana-team",
+        "origin": "<default-origin:elastic/kibana-team>",
+        "checkoutStrategy": "Partial",
+        "skip": true,
+        "path": null,
+        "current": "main",
+        "next": "main",
+        "edge": "main",
+        "sparsePaths": [
+          "docs"
+        ],
+        "private": true,
+        "cloneTimeout": null
+      },
+      "logstash": {
+        "name": "logstash",
+        "origin": "<default-origin:elastic/logstash>",
+        "checkoutStrategy": "Partial",
+        "skip": false,
+        "path": null,
+        "current": "9.5",
+        "next": "main",
+        "edge": "main",
+        "sparsePaths": [
+          "docs"
+        ],
+        "private": false,
+        "cloneTimeout": null
+      },
+      "logstash-docs-md": {
+        "name": "logstash-docs-md",
+        "origin": "<default-origin:elastic/logstash-docs-md>",
+        "checkoutStrategy": "Partial",
+        "skip": false,
+        "path": null,
+        "current": "main",
+        "next": "main",
+        "edge": "main",
+        "sparsePaths": [
+          "docs"
+        ],
+        "private": true,
+        "cloneTimeout": null
+      },
+      "obs-ai-assistant-team": {
+        "name": "obs-ai-assistant-team",
+        "origin": "<default-origin:elastic/obs-ai-assistant-team>",
+        "checkoutStrategy": "Partial",
+        "skip": true,
+        "path": null,
+        "current": "main",
+        "next": "main",
+        "edge": "main",
+        "sparsePaths": [
+          "docs"
+        ],
+        "private": true,
+        "cloneTimeout": null
+      },
+      "obs-ai-team": {
+        "name": "obs-ai-team",
+        "origin": "<default-origin:elastic/obs-ai-team>",
+        "checkoutStrategy": "Partial",
+        "skip": true,
+        "path": null,
+        "current": "main",
+        "next": "main",
+        "edge": "main",
+        "sparsePaths": [
+          "docs"
+        ],
+        "private": true,
+        "cloneTimeout": null
+      },
+      "observability-error-backlog": {
+        "name": "observability-error-backlog",
+        "origin": "<default-origin:elastic/observability-error-backlog>",
+        "checkoutStrategy": "Partial",
+        "skip": true,
+        "path": null,
+        "current": "main",
+        "next": "main",
+        "edge": "main",
+        "sparsePaths": [
+          "docs"
+        ],
+        "private": true,
+        "cloneTimeout": null
+      },
+      "opentelemetry": {
+        "name": "opentelemetry",
+        "origin": "<default-origin:elastic/opentelemetry>",
+        "checkoutStrategy": "Partial",
+        "skip": false,
+        "path": null,
+        "current": "main",
+        "next": "main",
+        "edge": "main",
+        "sparsePaths": [
+          "docs"
+        ],
+        "private": false,
+        "cloneTimeout": null
+      },
+      "response-ops-team": {
+        "name": "response-ops-team",
+        "origin": "<default-origin:elastic/response-ops-team>",
+        "checkoutStrategy": "Partial",
+        "skip": true,
+        "path": null,
+        "current": "main",
+        "next": "main",
+        "edge": "main",
+        "sparsePaths": [
+          "docs"
+        ],
+        "private": true,
+        "cloneTimeout": null
+      },
+      "roadmap": {
+        "name": "roadmap",
+        "origin": "<default-origin:elastic/roadmap>",
+        "checkoutStrategy": "Partial",
+        "skip": true,
+        "path": null,
+        "current": "main",
+        "next": "main",
+        "edge": "main",
+        "sparsePaths": [
+          "docs"
+        ],
+        "private": false,
+        "cloneTimeout": null
+      },
+      "sdh-synthetics": {
+        "name": "sdh-synthetics",
+        "origin": "<default-origin:elastic/sdh-synthetics>",
+        "checkoutStrategy": "Partial",
+        "skip": true,
+        "path": null,
+        "current": "main",
+        "next": "main",
+        "edge": "main",
+        "sparsePaths": [
+          "docs"
+        ],
+        "private": true,
+        "cloneTimeout": null
+      },
+      "search-team": {
+        "name": "search-team",
+        "origin": "<default-origin:elastic/search-team>",
+        "checkoutStrategy": "Partial",
+        "skip": true,
+        "path": null,
+        "current": "main",
+        "next": "main",
+        "edge": "main",
+        "sparsePaths": [
+          "docs"
+        ],
+        "private": true,
+        "cloneTimeout": null
+      },
+      "search-ui": {
+        "name": "search-ui",
+        "origin": "<default-origin:elastic/search-ui>",
+        "checkoutStrategy": "Partial",
+        "skip": false,
+        "path": null,
+        "current": "main",
+        "next": "main",
+        "edge": "main",
+        "sparsePaths": [
+          "docs"
+        ],
+        "private": false,
+        "cloneTimeout": null
+      },
+      "security-team": {
+        "name": "security-team",
+        "origin": "<default-origin:elastic/security-team>",
+        "checkoutStrategy": "Partial",
+        "skip": true,
+        "path": null,
+        "current": "main",
+        "next": "main",
+        "edge": "main",
+        "sparsePaths": [
+          "docs"
+        ],
+        "private": true,
+        "cloneTimeout": null
+      },
+      "streams-program": {
+        "name": "streams-program",
+        "origin": "<default-origin:elastic/streams-program>",
+        "checkoutStrategy": "Partial",
+        "skip": true,
+        "path": null,
+        "current": "main",
+        "next": "main",
+        "edge": "main",
+        "sparsePaths": [
+          "docs"
+        ],
+        "private": true,
+        "cloneTimeout": null
+      }
+    },
+    "availableRepositories": [
+      "apm-agent-android",
+      "apm-agent-dotnet",
+      "apm-agent-go",
+      "apm-agent-ios",
+      "apm-agent-java",
+      "apm-agent-nodejs",
+      "apm-agent-php",
+      "apm-agent-python",
+      "apm-agent-ruby",
+      "apm-agent-rum-js",
+      "apm-aws-lambda",
+      "apm-k8s-attacher",
+      "apm-server",
+      "autoops-insights",
+      "beats",
+      "cli",
+      "cloud",
+      "cloud-on-k8s",
+      "curator",
+      "detection-rules",
+      "docs-content",
+      "ecctl",
+      "ecs",
+      "ecs-dotnet",
+      "ecs-logging",
+      "ecs-logging-go-logrus",
+      "ecs-logging-go-zap",
+      "ecs-logging-go-zerolog",
+      "ecs-logging-java",
+      "ecs-logging-nodejs",
+      "ecs-logging-php",
+      "ecs-logging-python",
+      "ecs-logging-ruby",
+      "edot-cloud-forwarder-aws",
+      "edot-cloud-forwarder-azure",
+      "eland",
+      "elastic-agent",
+      "elastic-otel-dotnet",
+      "elastic-otel-java",
+      "elastic-otel-node",
+      "elastic-otel-php",
+      "elastic-otel-python",
+      "elastic-otel-rum-js",
+      "elastic-serverless-forwarder",
+      "elasticsearch",
+      "elasticsearch-dsl-js",
+      "elasticsearch-hadoop",
+      "elasticsearch-java",
+      "elasticsearch-js",
+      "elasticsearch-net",
+      "elasticsearch-php",
+      "elasticsearch-py",
+      "elasticsearch-rs",
+      "elasticsearch-ruby",
+      "fleet-server",
+      "go-elasticsearch",
+      "integration-docs",
+      "integrations",
+      "kibana",
+      "logstash",
+      "logstash-docs-md",
+      "opentelemetry",
+      "search-ui"
+    ],
+    "privateRepositories": [
+      "autoops-insights",
+      "cloud",
+      "edot-cloud-forwarder-aws",
+      "edot-cloud-forwarder-azure",
+      "integration-docs",
+      "logstash-docs-md"
+    ],
+    "allPrivateRepositoryNames": [
+      "autoops-insights",
+      "cloud",
+      "docs-playground-release-notes-changelogs",
+      "docs-playground-release-notes-tagged",
+      "docs-playground-release-notes-tagged-workflow",
+      "edot-cloud-forwarder-aws",
+      "edot-cloud-forwarder-azure",
+      "integration-docs",
+      "kibana-team",
+      "logstash-docs-md",
+      "obs-ai-assistant-team",
+      "obs-ai-team",
+      "observability-error-backlog",
+      "response-ops-team",
+      "sdh-synthetics",
+      "search-team",
+      "security-team",
+      "streams-program"
+    ],
+    "environments": {
+      "air-gapped": {
+        "name": "air-gapped",
+        "uri": "http://localhost:8080",
+        "pathPrefix": "docs",
+        "allowIndexing": false,
+        "contentSource": "Current",
+        "googleTagManager": {
+          "enabled": false,
+          "id": null,
+          "auth": null,
+          "preview": null,
+          "cookiesWin": null
+        },
+        "optimizely": {
+          "enabled": false,
+          "id": null
+        },
+        "featureFlags": {
+          "AIR_GAPPED": true
+        },
+        "websiteSearchScriptUrl": null
+      },
+      "dev": {
+        "name": "dev",
+        "uri": "http://localhost:4000",
+        "pathPrefix": "docs",
+        "allowIndexing": false,
+        "contentSource": "Current",
+        "googleTagManager": {
+          "enabled": false,
+          "id": null,
+          "auth": null,
+          "preview": null,
+          "cookiesWin": null
+        },
+        "optimizely": {
+          "enabled": false,
+          "id": null
+        },
+        "featureFlags": {
+          "NAVIGATION_PREVIEW": false,
+          "PAGE_FEEDBACK": true,
+          "WEBSITE_SEARCH": true
+        },
+        "websiteSearchScriptUrl": "http://localhost:4078/elastic-website-search.js"
+      },
+      "edge": {
+        "name": "edge",
+        "uri": "https://d34ipnu52o64md.cloudfront.net",
+        "pathPrefix": "docs",
+        "allowIndexing": false,
+        "contentSource": "Edge",
+        "googleTagManager": {
+          "enabled": false,
+          "id": null,
+          "auth": null,
+          "preview": null,
+          "cookiesWin": null
+        },
+        "optimizely": {
+          "enabled": false,
+          "id": null
+        },
+        "featureFlags": {
+          "PAGE_FEEDBACK": true
+        },
+        "websiteSearchScriptUrl": null
+      },
+      "local": {
+        "name": "local",
+        "uri": "http://localhost:4000",
+        "pathPrefix": "docs",
+        "allowIndexing": false,
+        "contentSource": "Current",
+        "googleTagManager": {
+          "enabled": false,
+          "id": null,
+          "auth": null,
+          "preview": null,
+          "cookiesWin": null
+        },
+        "optimizely": {
+          "enabled": false,
+          "id": null
+        },
+        "featureFlags": {
+          "WEBSITE_SEARCH": true
+        },
+        "websiteSearchScriptUrl": null
+      },
+      "preview": {
+        "name": "preview",
+        "uri": "https://docs-v3-preview.elastic.dev",
+        "pathPrefix": "${ASSEMBLER_PREVIEW_PATH_PREFIX}",
+        "allowIndexing": false,
+        "contentSource": "Current",
+        "googleTagManager": {
+          "enabled": false,
+          "id": null,
+          "auth": null,
+          "preview": null,
+          "cookiesWin": null
+        },
+        "optimizely": {
+          "enabled": false,
+          "id": null
+        },
+        "featureFlags": {
+          "ASSEMBLER_API_EXPLORER": true,
+          "PAGE_FEEDBACK": true
+        },
+        "websiteSearchScriptUrl": null
+      },
+      "prod": {
+        "name": "prod",
+        "uri": "https://www.elastic.co",
+        "pathPrefix": "docs",
+        "allowIndexing": true,
+        "contentSource": "Current",
+        "googleTagManager": {
+          "enabled": true,
+          "id": "GTM-KNJMG2M",
+          "auth": null,
+          "preview": null,
+          "cookiesWin": null
+        },
+        "optimizely": {
+          "enabled": false,
+          "id": "18132920325"
+        },
+        "featureFlags": {},
+        "websiteSearchScriptUrl": null
+      },
+      "staging": {
+        "name": "staging",
+        "uri": "https://staging-website.elastic.co",
+        "pathPrefix": "docs",
+        "allowIndexing": false,
+        "contentSource": "Next",
+        "googleTagManager": {
+          "enabled": true,
+          "id": "GTM-KNJMG2M",
+          "auth": "nPocPUG0wiH68jsVeyRSxA",
+          "preview": "env-507",
+          "cookiesWin": "x"
+        },
+        "optimizely": {
+          "enabled": false,
+          "id": null
+        },
+        "featureFlags": {
+          "ASSEMBLER_API_EXPLORER": true,
+          "NAVIGATION_PREVIEW": false,
+          "PAGE_FEEDBACK": true,
+          "WEBSITE_SEARCH": true
+        },
+        "websiteSearchScriptUrl": "https://staging-website.elastic.co/search/elastic-website-search.js"
+      }
+    },
+    "sharedConfigurations": [
+      "master",
+      "stack"
+    ]
+  }
+}

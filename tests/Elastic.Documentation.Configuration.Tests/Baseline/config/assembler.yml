@@ -1,0 +1,250 @@
+environments:
+  prod:
+    uri: https://www.elastic.co
+    path_prefix: docs
+    content_source: current # current | next
+    allow_indexing: true
+    google_tag_manager:
+      enabled: true
+      id: GTM-KNJMG2M
+    optimizely:
+      enabled: false
+      id: "18132920325"
+  staging:
+    uri: https://staging-website.elastic.co
+    path_prefix: docs
+    content_source: next
+    google_tag_manager:
+      enabled: true
+      id: GTM-KNJMG2M
+      auth: nPocPUG0wiH68jsVeyRSxA
+      preview: env-507
+      cookies_win: x
+    feature_flags:
+      WEBSITE_SEARCH: true
+      ASSEMBLER_API_EXPLORER: true
+      NAVIGATION_PREVIEW: false
+      PAGE_FEEDBACK: true
+    website_search_url: https://staging-website.elastic.co/search/elastic-website-search.js
+  edge:
+    uri: https://d34ipnu52o64md.cloudfront.net
+    path_prefix: docs
+    content_source: edge
+    google_tag_manager:
+      enabled: false
+    feature_flags:
+      PAGE_FEEDBACK: true
+      # NAVIGATION_PREVIEW: true
+  # TODO: remove 'local' and switch CI synthetics to use 'dev' explicitly once
+  # NAVIGATION_PREVIEW is the default (at which point the pages-dropdown step
+  # in navigation-test.journey.ts should be replaced with a top-nav step).
+  # 'local' exists solely so the CI synthetics job (assembler build -c local)
+  # falls back here instead of 'dev', keeping the flag-off secondary-nav path
+  # testable until the flag is retired.
+  local:
+    uri: http://localhost:4000
+    content_source: current
+    path_prefix: docs
+    feature_flags:
+      WEBSITE_SEARCH: true
+  dev:
+    uri: http://localhost:4000
+    content_source: current
+    path_prefix: docs
+    feature_flags:
+      WEBSITE_SEARCH: true
+      NAVIGATION_PREVIEW: false
+      PAGE_FEEDBACK: true
+    website_search_url: http://localhost:4078/elastic-website-search.js
+  preview:
+    uri: https://docs-v3-preview.elastic.dev
+    path_prefix: ${ASSEMBLER_PREVIEW_PATH_PREFIX}
+    content_source: current
+    google_tag_manager:
+      enabled: false
+    feature_flags:
+      ASSEMBLER_API_EXPLORER: true
+      PAGE_FEEDBACK: true
+  air-gapped:
+    uri: http://localhost:8080
+    path_prefix: docs
+    content_source: current
+    allow_indexing: false
+    feature_flags:
+      AIR_GAPPED: true
+
+shared_configuration:
+  stack: &stack
+    current:  9.5
+    next: main
+    edge: main
+
+  master: &master
+    current: master
+    next: master
+    edge: master
+
+###
+# 'narrative' shares the same keys as keys in 'references' (<repository_config>)
+# 'narrative' defines the docs-content repository
+###
+narrative:
+  checkout_strategy: full
+
+###
+# 'references' defines a map of `elastic/<repository_name> * <repository_config>
+# repository_config:
+#   skip: bool
+#   checkout_strategy: full | partial
+#             # 'full' git clone --depth-1 --single-branch
+#             # 'partial' --cone sparse-checkout of only the 'docs' folder with --filter=blob:none
+#   current: <git_ref>
+#   next: <git_ref>
+#   clone_timeout: <duration>
+#             # Per-attempt timeout for network git operations (fetch, pull) in CI.
+#             # Accepts a positive integer followed by 's' (seconds) or 'm' (minutes), e.g. '30s' or '15m'.
+#             # When omitted the global default of 10m applies in CI (unbounded locally).
+###
+references:
+
+  # @elastic/ingest-docs
+  apm-server:
+  apm-agent-android:
+  apm-agent-dotnet:
+  apm-agent-go:
+  apm-agent-ios:
+  apm-agent-java:
+  apm-agent-nodejs:
+  apm-agent-php:
+  apm-agent-python:
+  apm-agent-ruby:
+  apm-agent-rum-js:
+  apm-aws-lambda:
+  apm-k8s-attacher:
+  ecs:
+    current: 9.5 # releases do not always align with the Stack version
+    next: main
+  ecs-dotnet:
+  ecs-logging-go-logrus:
+  ecs-logging-go-zap:
+  ecs-logging-go-zerolog:
+  ecs-logging-java:
+  ecs-logging-nodejs:
+  ecs-logging-php:
+  ecs-logging-python:
+  ecs-logging-ruby:
+  ecs-logging:
+  # CF repos
+  edot-cloud-forwarder-aws:
+    private: true
+  edot-cloud-forwarder-azure:
+    private: true
+  elastic-agent:
+  elastic-otel-dotnet:
+  elastic-otel-java:
+  elastic-otel-node:
+  elastic-otel-php:
+  elastic-otel-python:
+  elastic-otel-rum-js:
+  elastic-serverless-forwarder:
+  fleet-server:
+  integration-docs:
+    private: true
+  integrations:
+  logstash-docs-md:
+    private: true
+  opentelemetry:
+
+  #stack aligned using gated deploys
+  beats: *stack
+  logstash: *stack
+
+  # @elastic/admin-docs
+  cloud-on-k8s:
+  cloud:
+    current: master
+    next: master
+    edge: master
+    private: true
+
+  cli:
+  curator: *master
+  ecctl: *master
+
+  # @elastic/admin-docs and @elastic/developer-docs
+  elasticsearch:
+
+  # @elastic/admin-docs and @elastic/experience-docs
+  kibana:
+
+  # Private Kibana team repo (changelog link filtering; does not publish docs here)
+  kibana-team:
+    private: true
+    skip: true
+  obs-ai-team:
+    private: true
+    skip: true
+  obs-ai-assistant-team:
+    private: true
+    skip: true
+  observability-error-backlog:
+    private: true
+    skip: true
+  response-ops-team:
+    private: true
+    skip: true
+  roadmap:
+    private: false
+    skip: true
+  search-team:
+    private: true
+    skip: true
+  security-team:
+    private: true
+    skip: true
+  sdh-synthetics:
+    private: true
+    skip: true
+  streams-program:
+    private: true
+    skip: true
+
+  # @elastic/developer-docs
+  eland:
+  elasticsearch-dsl-js:
+  elasticsearch-hadoop:
+  elasticsearch-java:
+  elasticsearch-js:
+  elasticsearch-net:
+  elasticsearch-php:
+  elasticsearch-py:
+  elasticsearch-rs:
+  elasticsearch-ruby:
+  go-elasticsearch:
+  search-ui:
+
+  # @elastic/experience-docs
+  detection-rules:
+    checkout_strategy: full
+
+  # @elastic/obs-docs
+  autoops-insights:
+    private: true
+    sparse_paths: ["generated/docs"]
+
+  # @elastic/docs-engineering
+  docs-builder:
+    current: 9.0
+    next: main
+    skip: true
+    sparse_paths: ["docs", "config"]
+  # Playground repos for release-notes automation (changelog link filtering; do not publish docs)
+  docs-playground-release-notes-changelogs:
+    private: true
+    skip: true
+  docs-playground-release-notes-tagged:
+    private: true
+    skip: true
+  docs-playground-release-notes-tagged-workflow:
+    private: true
+    skip: true

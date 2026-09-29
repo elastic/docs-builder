@@ -1,0 +1,139 @@
+{
+  "value": {
+    "$type": "ChangelogConfiguration",
+    "Areas": null,
+    "Bundle": {
+      "$type": "BundleConfiguration",
+      "Branch": null,
+      "Description": null,
+      "Directory": "docs/changelog",
+      "LinkAllowRepos": [
+        "elastic/docs-builder"
+      ],
+      "OutputDirectory": "docs/releases",
+      "Owner": "elastic",
+      "Profiles": null,
+      "ReleaseDates": null,
+      "Releases": null,
+      "Repo": "docs-builder",
+      "UseLocalChangelogs": false
+    },
+    "Extract": {
+      "$type": "ExtractConfiguration",
+      "Issues": true,
+      "ReleaseNotes": true,
+      "StripTitlePrefix": false
+    },
+    "Filename": "Pr",
+    "HighlightLabels": null,
+    "LabelToAreas": null,
+    "LabelToFeatures": null,
+    "LabelToProducts": null,
+    "LabelToType": {
+      "breaking": "breaking-change",
+      "bug": "bug-fix",
+      "documentation": "docs",
+      "enhancement": "enhancement",
+      "feature": "feature",
+      "fix": "bug-fix"
+    },
+    "Lifecycles": [
+      "Preview",
+      "Beta",
+      "Ga",
+      "Experimental"
+    ],
+    "Pivot": {
+      "$type": "PivotConfiguration",
+      "Areas": null,
+      "Features": null,
+      "Highlight": null,
+      "Products": null,
+      "Subtypes": null,
+      "Types": {
+        "breaking-change": {
+          "$type": "TypeEntry",
+          "Labels": "breaking",
+          "Subtypes": null
+        },
+        "bug-fix": {
+          "$type": "TypeEntry",
+          "Labels": "bug, fix",
+          "Subtypes": null
+        },
+        "docs": {
+          "$type": "TypeEntry",
+          "Labels": "documentation",
+          "Subtypes": null
+        },
+        "enhancement": {
+          "$type": "TypeEntry",
+          "Labels": "enhancement",
+          "Subtypes": null
+        },
+        "feature": {
+          "$type": "TypeEntry",
+          "Labels": "feature",
+          "Subtypes": null
+        }
+      }
+    },
+    "Products": null,
+    "ProductsConfiguration": null,
+    "Rules": {
+      "$type": "RulesConfiguration",
+      "Bundle": {
+        "$type": "BundleRules",
+        "Blocker": {
+          "$type": "PublishBlocker",
+          "Areas": null,
+          "AreasMode": "Exclude",
+          "HasBlockingRules": true,
+          "MatchAreas": "Any",
+          "Types": [
+            "other"
+          ],
+          "TypesMode": "Exclude"
+        },
+        "ByProduct": null,
+        "ExcludeProducts": null,
+        "IncludeProducts": null,
+        "MatchProducts": "Any"
+      },
+      "Create": {
+        "$type": "CreateRules",
+        "ByProduct": null,
+        "Labels": [
+          "changelog:skip",
+          "chore",
+          "dependencies",
+          "automation",
+          "ci",
+          "redesign"
+        ],
+        "Match": "Any",
+        "Mode": "Exclude"
+      },
+      "Match": "Any",
+      "Publish": null
+    },
+    "SubTypes": [
+      "api",
+      "behavioral",
+      "configuration",
+      "dependency",
+      "subscription",
+      "plugin",
+      "security",
+      "other"
+    ],
+    "Types": [
+      "breaking-change",
+      "feature",
+      "enhancement",
+      "bug-fix",
+      "docs"
+    ]
+  },
+  "diagnostics": []
+}
