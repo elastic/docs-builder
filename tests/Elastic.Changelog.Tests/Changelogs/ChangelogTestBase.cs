@@ -102,19 +102,14 @@ public abstract class ChangelogTestBase : IDisposable
 				}
 			}
 		};
-		var productsConfiguration = new ProductCatalog
-		{
-			Products = products.ToFrozenDictionary(),
-			PublicReferenceProducts = products.ToFrozenDictionary(),
-			ProductDisplayNames = products.ToDictionary(p => p.Key, p => p.Value.DisplayName).ToFrozenDictionary()
-		};
+		var productsConfiguration = ProductCatalog.FromPublicProducts(products);
 
 		ConfigurationContext = new ConfigurationContext
 		{
 			Endpoints = new DocumentationEndpoints { Elasticsearch = ElasticsearchEndpoint.Default, },
 			ConfigurationFileProvider = new ConfigurationFileProvider(NullLoggerFactory.Instance, configFileSystem),
-			Catalog = new GlobalCatalog(versionsConfiguration, productsConfiguration, new LegacyUrlMappingCatalog { Mappings = [] }),
-			SearchTuning = new SearchTuning { Synonyms = [], Rules = [], DiminishTerms = [] },
+			Catalog = new GlobalCatalog(versionsConfiguration, productsConfiguration, LegacyUrlMappingCatalog.None),
+			SearchTuning = SearchTuning.None,
 		};
 	}
 

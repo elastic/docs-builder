@@ -34,7 +34,7 @@ public class OnboardingValidationTests() : ChangelogTestBase()
 		var catalog = new GlobalCatalog(
 			new VersioningSystemCatalog { VersioningSystems = new Dictionary<VersioningSystemId, VersioningSystem>() },
 			configuration,
-			new LegacyUrlMappingCatalog { Mappings = [] }
+			LegacyUrlMappingCatalog.None
 		);
 		_ = A.CallTo(() => context.Catalog).Returns(catalog);
 		return context;

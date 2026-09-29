@@ -56,10 +56,10 @@ public static class AuthoringGenerator
 
 		var configurationContext = new ConfigurationContext
 		{
-			Catalog = new GlobalCatalog(versionsConfig, productsConfig, new LegacyUrlMappingCatalog { Mappings = [] }),
+			Catalog = new GlobalCatalog(versionsConfig, productsConfig, LegacyUrlMappingCatalog.None),
 			ConfigurationFileProvider = configurationFileProvider,
 			Endpoints = new DocumentationEndpoints { Elasticsearch = ElasticsearchEndpoint.Default },
-			SearchTuning = new SearchTuning { Synonyms = [], Rules = [], DiminishTerms = [] }
+			SearchTuning = SearchTuning.None
 		};
 
 		var context = new BuildContext(collector, docFs, configurationContext)

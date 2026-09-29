@@ -12,6 +12,8 @@ public sealed partial record LegacyUrlMappingCatalog
 {
 	[OrderedEquality]
 	public required IReadOnlyCollection<LegacyUrlMapping> Mappings { get; init; }
+
+	public static LegacyUrlMappingCatalog None { get; } = new() { Mappings = [] };
 }
 
 [Equatable]

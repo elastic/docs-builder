@@ -15,6 +15,18 @@ public sealed partial record ProductCatalog : IProductNameLookup
 	[UnorderedEquality]
 	public required FrozenDictionary<string, Product> Products { get; init; }
 
+	/// <summary>A catalog of <paramref name="products"/>, every one of them a public reference product.</summary>
+	public static ProductCatalog FromPublicProducts(IEnumerable<KeyValuePair<string, Product>> products)
+	{
+		var byId = products.ToFrozenDictionary();
+		return new ProductCatalog
+		{
+			Products = byId,
+			PublicReferenceProducts = byId,
+			ProductDisplayNames = byId.ToFrozenDictionary(p => p.Key, p => p.Value.DisplayName)
+		};
+	}
+
 	/// <summary>
 	/// Products with the <c>public-reference</c> feature enabled. These can appear in
 	/// applies_to blocks, page frontmatter, and get display-name substitutions.

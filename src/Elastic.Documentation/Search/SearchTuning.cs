@@ -54,6 +54,9 @@ public sealed partial record SearchTuning
 	public required IReadOnlyCollection<QueryRule> Rules { get; init; }
 	[OrderedEquality]
 	public required IReadOnlyCollection<string> DiminishTerms { get; init; }
+
+	/// <summary>No synonyms, rules or diminished terms: search as untuned.</summary>
+	public static SearchTuning None { get; } = new() { Synonyms = [], Rules = [], DiminishTerms = [] };
 }
 
 [Equatable]

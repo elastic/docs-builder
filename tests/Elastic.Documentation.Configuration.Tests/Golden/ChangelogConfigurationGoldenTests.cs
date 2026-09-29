@@ -49,8 +49,8 @@ public class ChangelogConfigurationGoldenTests
 		{
 			Endpoints = new DocumentationEndpoints { Elasticsearch = ElasticsearchEndpoint.Default },
 			ConfigurationFileProvider = provider,
-			Catalog = new GlobalCatalog(catalog.VersioningSystems, catalog.Products, new LegacyUrlMappingCatalog { Mappings = [] }),
-			SearchTuning = new SearchTuning { Synonyms = [], Rules = [], DiminishTerms = [] },
+			Catalog = new GlobalCatalog(catalog.VersioningSystems, catalog.Products, LegacyUrlMappingCatalog.None),
+			SearchTuning = SearchTuning.None,
 		};
 		const string configPath = "/repo/docs/changelog.yml";
 		var fs = new MockFileSystem(
@@ -71,8 +71,8 @@ public class ChangelogConfigurationGoldenTests
 		{
 			Endpoints = new DocumentationEndpoints { Elasticsearch = ElasticsearchEndpoint.Default },
 			ConfigurationFileProvider = provider,
-			Catalog = new GlobalCatalog(versions, products, new LegacyUrlMappingCatalog { Mappings = [] }),
-			SearchTuning = new SearchTuning { Synonyms = [], Rules = [], DiminishTerms = [] },
+			Catalog = new GlobalCatalog(versions, products, LegacyUrlMappingCatalog.None),
+			SearchTuning = SearchTuning.None,
 		};
 
 		const string configPath = "/repo/docs/changelog.yml";

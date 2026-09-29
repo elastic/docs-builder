@@ -74,12 +74,7 @@ public class DocumentInferrerServiceTests
 			}
 		};
 
-		return new ProductCatalog
-		{
-			Products = products.ToFrozenDictionary(),
-			PublicReferenceProducts = products.ToFrozenDictionary(),
-			ProductDisplayNames = products.ToDictionary(p => p.Key, p => p.Value.DisplayName).ToFrozenDictionary()
-		};
+		return ProductCatalog.FromPublicProducts(products);
 	}
 
 	private static LegacyUrlMappingCatalog CreateLegacyUrlMappings(ProductCatalog productsConfig)
@@ -401,13 +396,8 @@ public class DocumentInferrerServiceTests
 			}
 		};
 
-		var productsConfig = new ProductCatalog
-		{
-			Products = products.ToFrozenDictionary(),
-			PublicReferenceProducts = products.ToFrozenDictionary(),
-			ProductDisplayNames = products.ToDictionary(p => p.Key, p => p.Value.DisplayName).ToFrozenDictionary()
-		};
-		var legacyUrlMappings = new LegacyUrlMappingCatalog { Mappings = [] };
+		var productsConfig = ProductCatalog.FromPublicProducts(products);
+		var legacyUrlMappings = LegacyUrlMappingCatalog.None;
 
 		var inferrer = new DocumentInferrerService(productsConfig, versionsConfig, legacyUrlMappings);
 

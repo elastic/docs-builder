@@ -114,19 +114,14 @@ public static class TestHelpers
 					}
 				}
 			};
-			productsConfiguration = new ProductCatalog
-			{
-				Products = products.ToFrozenDictionary(),
-				PublicReferenceProducts = products.ToFrozenDictionary(),
-				ProductDisplayNames = products.ToDictionary(p => p.Key, p => p.Value.DisplayName).ToFrozenDictionary()
-			};
+			productsConfiguration = ProductCatalog.FromPublicProducts(products);
 		}
-		var search = new SearchTuning { Synonyms = [], Rules = [], DiminishTerms = [] };
+		var search = SearchTuning.None;
 		return new ConfigurationContext
 		{
 			Endpoints = new DocumentationEndpoints { Elasticsearch = ElasticsearchEndpoint.Default, },
 			ConfigurationFileProvider = new ConfigurationFileProvider(new TestLoggerFactory(), new ConfigurationFileSystem(fileSystem)),
-			Catalog = new GlobalCatalog(versionsConfiguration, productsConfiguration, new LegacyUrlMappingCatalog { Mappings = [] }),
+			Catalog = new GlobalCatalog(versionsConfiguration, productsConfiguration, LegacyUrlMappingCatalog.None),
 			SearchTuning = search,
 		};
 	}

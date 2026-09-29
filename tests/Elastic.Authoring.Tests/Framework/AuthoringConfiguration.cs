@@ -95,11 +95,6 @@ public static class AuthoringConfiguration
 				}
 			}
 		};
-		return new ProductCatalog
-		{
-			Products = products.ToFrozenDictionary(),
-			PublicReferenceProducts = products.ToFrozenDictionary(),
-			ProductDisplayNames = products.ToDictionary(p => p.Key, p => p.Value.DisplayName).ToFrozenDictionary()
-		};
+		return ProductCatalog.FromPublicProducts(products);
 	}
 }
