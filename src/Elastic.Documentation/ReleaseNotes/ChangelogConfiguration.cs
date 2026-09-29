@@ -3,14 +3,16 @@
 // See the LICENSE file in the project root for more information
 
 using Elastic.Documentation.Catalog;
-using Elastic.Documentation.ReleaseNotes;
+using Elastic.Documentation.Equality;
+using Generator.Equals;
 
-namespace Elastic.Documentation.Configuration.Changelog;
+namespace Elastic.Documentation.ReleaseNotes;
 
 /// <summary>
 /// Configuration for changelog generation
 /// </summary>
-public record ChangelogConfiguration
+[Equatable]
+public partial record ChangelogConfiguration
 {
 	/// <summary>
 	/// Default types for changelog entries (derived from ChangelogEntryType enum)
@@ -58,37 +60,47 @@ public record ChangelogConfiguration
 	/// <summary>
 	/// Available types for changelog entries (computed from Pivot.Types or defaults)
 	/// </summary>
+	[OrderedEquality]
 	public IReadOnlyList<string> Types { get; init; } = DefaultTypes;
 
 	/// <summary>
 	/// Available subtypes for breaking changes (computed from Pivot.Subtypes or defaults)
 	/// </summary>
+	[OrderedEquality]
 	public IReadOnlyList<string> SubTypes { get; init; } = DefaultSubtypes;
 
 	/// <summary>
 	/// Available lifecycle values (strongly typed, from config or defaults)
 	/// </summary>
+	[OrderedEquality]
 	public IReadOnlyList<Lifecycle> Lifecycles { get; init; } = DefaultLifecycles;
 
 	/// <summary>
 	/// Available areas (computed from Pivot.Areas keys)
 	/// </summary>
+	[OrderedEquality]
 	public IReadOnlyList<string>? Areas { get; init; }
 
 	/// <summary>
 	/// Available products (resolved Product objects from products.yml)
 	/// </summary>
+	// Product is a record of scalars, so compiler record equality is already structural; it needs no [Equatable].
+#pragma warning disable GE003
+	[OrderedEquality]
 	public IReadOnlyList<Product>? Products { get; init; }
+#pragma warning restore GE003
 
 	/// <summary>
 	/// Mapping from GitHub label names to changelog type values (computed from Pivot.Types)
 	/// </summary>
+	[UnorderedEquality]
 	public IReadOnlyDictionary<string, string>? LabelToType { get; init; }
 
 	/// <summary>
 	/// Mapping from GitHub label names to changelog area values (computed from Pivot.Areas)
 	/// Multiple labels can map to the same area. To map one label to multiple areas, repeat the label under each area in pivot.areas.
 	/// </summary>
+	[UnorderedEquality(typeof(StringListEntryComparer))]
 	public IReadOnlyDictionary<string, IReadOnlyList<string>>? LabelToAreas { get; init; }
 
 	/// <summary>
@@ -96,6 +108,7 @@ public record ChangelogConfiguration
 	/// Each label maps to a product spec string (e.g., "elasticsearch", "kibana 9.2.0").
 	/// When a PR has labels matching multiple entries, all matching products are collected.
 	/// </summary>
+	[UnorderedEquality]
 	public IReadOnlyDictionary<string, string>? LabelToProducts { get; init; }
 
 	/// <summary>
@@ -103,6 +116,7 @@ public record ChangelogConfiguration
 	/// Each label maps to a feature-id string (e.g., "feature:new-search-api").
 	/// When a PR has labels matching multiple distinct feature-ids, the first match is used.
 	/// </summary>
+	[UnorderedEquality]
 	public IReadOnlyDictionary<string, string>? LabelToFeatures { get; init; }
 
 	/// <summary>
@@ -135,6 +149,7 @@ public record ChangelogConfiguration
 	/// Labels that trigger the highlight flag for changelog entries (computed from Pivot.HighlightLabels).
 	/// When a PR has any of these labels, highlight is set to true.
 	/// </summary>
+	[OrderedEquality]
 	public IReadOnlyList<string>? HighlightLabels { get; init; }
 
 	private static readonly Lazy<ChangelogConfiguration> DefaultLazy = new(() => new ChangelogConfiguration());

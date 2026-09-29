@@ -170,4 +170,26 @@ public class AggregateEqualityTests
 
 		changed.Should().NotBe(codex);
 	}
+
+	[Test]
+	public async Task ChangelogConfiguration_LoadedTwice_IsEqual()
+	{
+		var file = BaselineFile("changelog", "elasticsearch.changelog.yml");
+		var first = await ChangelogConfigurationGoldenTests.LoadChangelog(file);
+		var second = await ChangelogConfigurationGoldenTests.LoadChangelog(file);
+
+		first.Should().NotBeNull();
+		Elastic
+			.Documentation
+			.ReleaseNotes
+			.ChangelogConfiguration
+			.EqualityComparer
+			.Default
+			.Inequalities(first!, second!)
+			.Select(i => i.ToString())
+			.Should()
+			.BeEmpty();
+		first.Should().Be(second);
+		(first! with { HighlightLabels = [.. first.HighlightLabels ?? [], "changed"] }).Should().NotBe(second);
+	}
 }

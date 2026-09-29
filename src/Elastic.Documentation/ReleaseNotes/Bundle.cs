@@ -2,15 +2,19 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using Generator.Equals;
+
 namespace Elastic.Documentation.ReleaseNotes;
 
 /// <summary>
 /// Domain type representing bundled changelog data.
 /// Contains products and entries for a changelog bundle.
 /// </summary>
-public record Bundle
+[Equatable]
+public partial record Bundle
 {
 	/// <summary>Products included in this bundle.</summary>
+	[OrderedEquality]
 	public IReadOnlyList<BundledProduct> Products { get; init; } = [];
 
 	/// <summary>
@@ -37,14 +41,17 @@ public record Bundle
 	/// Feature IDs that should be hidden when rendering this bundle.
 	/// Entries with matching feature-id values will be commented out in the output.
 	/// </summary>
+	[OrderedEquality]
 	public IReadOnlyList<string> HideFeatures { get; init; } = [];
 
 	/// <summary>Changelog entries in this bundle.</summary>
+	[OrderedEquality]
 	public IReadOnlyList<BundledEntry> Entries { get; init; } = [];
 
 	/// <summary>
 	/// Entries to exclude when this amend file is merged with its parent bundle.
 	/// Matched by file name and optional checksum.
 	/// </summary>
+	[OrderedEquality]
 	public IReadOnlyList<BundledEntry> ExcludeEntries { get; init; } = [];
 }

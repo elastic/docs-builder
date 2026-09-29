@@ -2,18 +2,23 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using Generator.Equals;
+
 namespace Elastic.Documentation.ReleaseNotes;
 
 /// <summary>
 /// Domain type representing a changelog entry.
 /// Uses strongly typed enums for Type, Subtype, and Lifecycle.
 /// </summary>
-public record ChangelogEntry
+[Equatable]
+public partial record ChangelogEntry
 {
 	/// <summary>Pull request URLs or references.</summary>
+	[OrderedEquality]
 	public IReadOnlyList<string>? Prs { get; init; }
 
 	/// <summary>Related issue URLs or references.</summary>
+	[OrderedEquality]
 	public IReadOnlyList<string>? Issues { get; init; }
 
 	/// <summary>The type of changelog entry (feature, bug-fix, etc.).</summary>
@@ -23,9 +28,11 @@ public record ChangelogEntry
 	public ChangelogEntrySubtype? Subtype { get; init; }
 
 	/// <summary>Products affected by this changelog entry.</summary>
+	[OrderedEquality]
 	public IReadOnlyList<ProductReference>? Products { get; init; }
 
 	/// <summary>Areas affected by this changelog entry.</summary>
+	[OrderedEquality]
 	public IReadOnlyList<string>? Areas { get; init; }
 
 	/// <summary>The title of the changelog entry.</summary>

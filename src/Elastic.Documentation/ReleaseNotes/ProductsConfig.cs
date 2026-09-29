@@ -2,23 +2,28 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-namespace Elastic.Documentation.Configuration.Changelog;
+using Generator.Equals;
+
+namespace Elastic.Documentation.ReleaseNotes;
 
 /// <summary>
 /// Products configuration for changelog
 /// </summary>
-public record ProductsConfig
+[Equatable]
+public partial record ProductsConfig
 {
 	/// <summary>
 	/// List of available product IDs (empty = all from products.yml).
 	/// Use this to restrict which products can be used.
 	/// </summary>
+	[OrderedEquality]
 	public IReadOnlyList<string>? Available { get; init; }
 
 	/// <summary>
 	/// Default products to use when --products is not specified.
 	/// Each entry has product ID and optional lifecycle.
 	/// </summary>
+	[OrderedEquality]
 	public IReadOnlyList<DefaultProduct>? Default { get; init; }
 }
 

@@ -12,6 +12,7 @@ using Elastic.Documentation.Configuration.LegacyUrlMappings;
 using Elastic.Documentation.Configuration.Loading;
 using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Configuration.Versions;
+using Elastic.Documentation.ReleaseNotes;
 using Elastic.Documentation.Search;
 using Microsoft.Extensions.Logging.Abstractions;
 using static Elastic.Documentation.Configuration.Tests.Golden.Golden;
@@ -39,6 +40,26 @@ public class ChangelogConfigurationGoldenTests
 	[Test]
 	public async Task ChangelogConfiguration_Template_MatchesGolden() =>
 		await AssertChangelog("changelog-example-template", BaselineFile("config", "changelog.example.yml"));
+
+	internal static async Task<ChangelogConfiguration?> LoadChangelog(string sourceFile)
+	{
+		var provider = BaselineProvider();
+		var catalog = CatalogLoader.Load(provider).OrThrow();
+		var context = new ConfigurationContext
+		{
+			Endpoints = new DocumentationEndpoints { Elasticsearch = ElasticsearchEndpoint.Default },
+			ConfigurationFileProvider = provider,
+			Catalog = new GlobalCatalog(catalog.VersioningSystems, catalog.Products, new LegacyUrlMappingCatalog { Mappings = [] }),
+			SearchTuning = new SearchTuning { Synonyms = [], Rules = [], DiminishTerms = [] },
+		};
+		const string configPath = "/repo/docs/changelog.yml";
+		var fs = new MockFileSystem(
+			new Dictionary<string, MockFileData> { [configPath] = new(await File.ReadAllTextAsync(sourceFile)) },
+			"/repo"
+		);
+		var loader = new ChangelogConfigurationLoader(NullLoggerFactory.Instance, context, fs);
+		return await loader.LoadChangelogConfiguration(new CapturingDiagnosticsCollector(), configPath, CancellationToken.None);
+	}
 
 	private static async Task AssertChangelog(string name, string sourceFile)
 	{

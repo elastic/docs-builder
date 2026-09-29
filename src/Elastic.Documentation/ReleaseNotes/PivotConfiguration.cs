@@ -2,18 +2,22 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-namespace Elastic.Documentation.Configuration.Changelog;
+using Generator.Equals;
+
+namespace Elastic.Documentation.ReleaseNotes;
 
 /// <summary>
 /// Pivot configuration containing types, subtypes, and areas with label mappings
 /// </summary>
-public record PivotConfiguration
+[Equatable]
+public partial record PivotConfiguration
 {
 	/// <summary>
 	/// Type definitions with optional labels and type-specific subtypes
 	/// Keys are type names (e.g., "bug-fix", "breaking-change")
 	/// Values can be: null/empty (no labels), string (labels), or TypeEntry object
 	/// </summary>
+	[UnorderedEquality]
 	public Dictionary<string, TypeEntry?>? Types { get; init; }
 
 	/// <summary>
@@ -22,6 +26,7 @@ public record PivotConfiguration
 	/// Keys are subtype names (e.g., "api", "behavioral")
 	/// Values can be: null/empty (no labels) or string (labels)
 	/// </summary>
+	[UnorderedEquality]
 	public Dictionary<string, string?>? Subtypes { get; init; }
 
 	/// <summary>
@@ -29,6 +34,7 @@ public record PivotConfiguration
 	/// Keys are area display names (e.g., "Autoscaling", "Search")
 	/// Values are label strings (e.g., ":Distributed/Auto")
 	/// </summary>
+	[UnorderedEquality]
 	public Dictionary<string, string?>? Areas { get; init; }
 
 	/// <summary>
@@ -38,6 +44,7 @@ public record PivotConfiguration
 	/// When a PR has labels matching a product's value, that product is added to the changelog entry.
 	/// Multiple matching product entries are all applied (same behavior as areas).
 	/// </summary>
+	[UnorderedEquality]
 	public Dictionary<string, string?>? Products { get; init; }
 
 	/// <summary>
@@ -46,6 +53,7 @@ public record PivotConfiguration
 	/// Values are label strings (e.g., "feature-flag:new-search-api").
 	/// When a PR has labels matching a feature entry, that feature-id is set on the changelog entry.
 	/// </summary>
+	[UnorderedEquality]
 	public Dictionary<string, string?>? Features { get; init; }
 
 	/// <summary>
@@ -60,7 +68,8 @@ public record PivotConfiguration
 /// Configuration entry for a type in the pivot configuration.
 /// Can represent either a simple label string or a complex object with labels and subtypes.
 /// </summary>
-public record TypeEntry
+[Equatable]
+public partial record TypeEntry
 {
 	/// <summary>
 	/// Labels for this type (comma-separated string)
@@ -71,6 +80,7 @@ public record TypeEntry
 	/// Type-specific subtype definitions (overrides pivot.subtypes for this type)
 	/// Keys are subtype names, values are label strings
 	/// </summary>
+	[UnorderedEquality]
 	public Dictionary<string, string?>? Subtypes { get; init; }
 
 	/// <summary>

@@ -2,9 +2,9 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using Elastic.Documentation.ReleaseNotes;
+using Generator.Equals;
 
-namespace Elastic.Documentation.Configuration.Changelog;
+namespace Elastic.Documentation.ReleaseNotes;
 
 /// <summary>
 /// Top-level rules configuration for controlling changelog creation and publishing.
@@ -35,11 +35,13 @@ public record RulesConfiguration
 /// <summary>
 /// Rules for create-time blocking based on PR labels.
 /// </summary>
-public record CreateRules
+[Equatable]
+public partial record CreateRules
 {
 	/// <summary>
 	/// Labels to match (semantics depend on <see cref="Mode"/>).
 	/// </summary>
+	[OrderedEquality]
 	public IReadOnlyList<string>? Labels { get; init; }
 
 	/// <summary>
@@ -55,13 +57,15 @@ public record CreateRules
 	/// <summary>
 	/// Per-product create rule overrides. Keys are product IDs.
 	/// </summary>
+	[UnorderedEquality]
 	public IReadOnlyDictionary<string, CreateRules>? ByProduct { get; init; }
 }
 
 /// <summary>
 /// Per-product bundle rule combining product filtering with type/area blocking.
 /// </summary>
-public record BundlePerProductRule
+[Equatable]
+public partial record BundlePerProductRule
 {
 	/// <summary>
 	/// Optional type/area blocker (existing functionality).
@@ -71,11 +75,13 @@ public record BundlePerProductRule
 	/// <summary>
 	/// Product IDs to include (mutually exclusive with ExcludeProducts).
 	/// </summary>
+	[OrderedEquality]
 	public IReadOnlyList<string>? IncludeProducts { get; init; }
 
 	/// <summary>
 	/// Product IDs to exclude (mutually exclusive with IncludeProducts).
 	/// </summary>
+	[OrderedEquality]
 	public IReadOnlyList<string>? ExcludeProducts { get; init; }
 
 	/// <summary>
@@ -152,16 +158,19 @@ public record ResolveResultWithRule(ResolveResult Result, BundlePerProductRule? 
 /// Applied during <c>changelog bundle</c> after the input stage gathers entries.
 /// Always applies regardless of input method (<c>--input-products</c>, <c>--prs</c>, <c>--all</c>, etc.).
 /// </summary>
-public record BundleRules
+[Equatable]
+public partial record BundleRules
 {
 	/// <summary>
 	/// Product IDs to exclude from the bundle. Cannot be combined with <see cref="IncludeProducts"/>.
 	/// </summary>
+	[OrderedEquality]
 	public IReadOnlyList<string>? ExcludeProducts { get; init; }
 
 	/// <summary>
 	/// Product IDs to include in the bundle (all others excluded). Cannot be combined with <see cref="ExcludeProducts"/>.
 	/// </summary>
+	[OrderedEquality]
 	public IReadOnlyList<string>? IncludeProducts { get; init; }
 
 	/// <summary>
@@ -177,6 +186,7 @@ public record BundleRules
 	/// <summary>
 	/// Per-product rule overrides. Keys are product IDs.
 	/// </summary>
+	[UnorderedEquality]
 	public IReadOnlyDictionary<string, BundlePerProductRule>? ByProduct { get; init; }
 }
 
@@ -224,7 +234,8 @@ public static class BundleRulesExtensions
 /// <summary>
 /// Rules for publish-time blocking based on entry type and area.
 /// </summary>
-public record PublishRules
+[Equatable]
+public partial record PublishRules
 {
 	/// <summary>
 	/// Global publish blocker configuration.
@@ -234,5 +245,6 @@ public record PublishRules
 	/// <summary>
 	/// Per-product publish blocker overrides. Keys are product IDs.
 	/// </summary>
+	[UnorderedEquality]
 	public IReadOnlyDictionary<string, PublishBlocker>? ByProduct { get; init; }
 }

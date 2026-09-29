@@ -2,12 +2,15 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using Generator.Equals;
+
 namespace Elastic.Documentation.ReleaseNotes;
 
 /// <summary>
 /// A changelog entry within a bundle, with strongly typed enums.
 /// </summary>
-public record BundledEntry
+[Equatable]
+public partial record BundledEntry
 {
 	/// <summary>File information (name and checksum).</summary>
 	public BundledFile? File { get; init; }
@@ -19,6 +22,7 @@ public record BundledEntry
 	public string? Title { get; init; }
 
 	/// <summary>Products affected by this changelog entry.</summary>
+	[OrderedEquality]
 	public IReadOnlyList<ProductReference>? Products { get; init; }
 
 	/// <summary>Optional description with more details.</summary>
@@ -40,12 +44,15 @@ public record BundledEntry
 	public ChangelogEntrySubtype? Subtype { get; init; }
 
 	/// <summary>Areas affected by this changelog entry.</summary>
+	[OrderedEquality]
 	public IReadOnlyList<string>? Areas { get; init; }
 
 	/// <summary>Pull request URLs or references.</summary>
+	[OrderedEquality]
 	public IReadOnlyList<string>? Prs { get; init; }
 
 	/// <summary>Related issue URLs or references.</summary>
+	[OrderedEquality]
 	public IReadOnlyList<string>? Issues { get; init; }
 
 	/// <summary>

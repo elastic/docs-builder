@@ -341,11 +341,12 @@ public class ChangelogRenderingService(
 			.ToDictionary(g => g.Key, g => (IReadOnlyCollection<ChangelogEntry>)g.ToArray().AsReadOnly())
 			.AsReadOnly();
 
-		// Create mappings from entries to their metadata
-		var entryToBundleProducts = new Dictionary<ChangelogEntry, HashSet<string>>();
-		var entryToRepo = new Dictionary<ChangelogEntry, string>();
-		var entryToOwner = new Dictionary<ChangelogEntry, string>();
-		var entryToHideLinks = new Dictionary<ChangelogEntry, bool>();
+		// Create mappings from entries to their metadata. Keyed by instance: two bundles can carry equal entries that
+		// still render with their own bundle's repo, owner and link visibility.
+		var entryToBundleProducts = new Dictionary<ChangelogEntry, HashSet<string>>(ReferenceEqualityComparer.Instance);
+		var entryToRepo = new Dictionary<ChangelogEntry, string>(ReferenceEqualityComparer.Instance);
+		var entryToOwner = new Dictionary<ChangelogEntry, string>(ReferenceEqualityComparer.Instance);
+		var entryToHideLinks = new Dictionary<ChangelogEntry, bool>(ReferenceEqualityComparer.Instance);
 
 		foreach (var entry in resolved.Entries)
 		{

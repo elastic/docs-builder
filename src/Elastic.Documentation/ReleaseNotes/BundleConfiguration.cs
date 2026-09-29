@@ -2,12 +2,15 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-namespace Elastic.Documentation.Configuration.Changelog;
+using Generator.Equals;
+
+namespace Elastic.Documentation.ReleaseNotes;
 
 /// <summary>
 /// Configuration for bundle operations
 /// </summary>
-public record BundleConfiguration
+[Equatable]
+public partial record BundleConfiguration
 {
 	/// <summary>
 	/// Input directory containing changelog YAML files.
@@ -67,6 +70,7 @@ public record BundleConfiguration
 	/// Remove <c>link_allow_repos</c> from <c>changelog.yml</c>.
 	/// </summary>
 	[Obsolete("link_allow_repos is no longer read. Remove it from changelog.yml.", error: false)]
+	[OrderedEquality]
 	public IReadOnlyList<string>? LinkAllowRepos { get; init; }
 
 	/// <summary>
@@ -77,6 +81,7 @@ public record BundleConfiguration
 	/// <summary>
 	/// Named bundle profiles for different release scenarios.
 	/// </summary>
+	[UnorderedEquality]
 	public IReadOnlyDictionary<string, BundleProfile>? Profiles { get; init; }
 
 	/// <summary>
@@ -90,7 +95,8 @@ public record BundleConfiguration
 /// A named bundle profile configuration.
 /// Profiles can be invoked with a version number or promotion report URL.
 /// </summary>
-public record BundleProfile
+[Equatable]
+public partial record BundleProfile
 {
 	/// <summary>
 	/// Target product ID for this profile. Validated against products.yml. Replaces output_products.
@@ -161,6 +167,7 @@ public record BundleProfile
 	/// Feature IDs to mark as hidden in the bundle output.
 	/// When the bundle is rendered, entries with matching feature-id values will be commented out.
 	/// </summary>
+	[OrderedEquality]
 	public IReadOnlyList<string>? HideFeatures { get; init; }
 
 	/// <summary>
@@ -178,16 +185,19 @@ public record BundleProfile
 /// <summary>
 /// Release trigger to profile mappings.
 /// </summary>
-public record BundleReleases
+[Equatable]
+public partial record BundleReleases
 {
 	/// <summary>
 	/// Maps GitHub release tag glob patterns to profiles. Key is the tag glob; value is the profile name.
 	/// </summary>
+	[UnorderedEquality]
 	public IReadOnlyDictionary<string, string>? Github { get; init; }
 
 	/// <summary>
 	/// Maps product IDs to profiles for any product-scoped release (versioned stack or date-based).
 	/// Key is the product ID; value is the profile name.
 	/// </summary>
+	[UnorderedEquality]
 	public IReadOnlyDictionary<string, string>? Products { get; init; }
 }

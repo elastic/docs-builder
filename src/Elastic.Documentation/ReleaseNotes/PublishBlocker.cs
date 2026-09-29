@@ -2,6 +2,8 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using Generator.Equals;
+
 namespace Elastic.Documentation.ReleaseNotes;
 
 /// <summary>
@@ -35,11 +37,13 @@ public enum FieldMode
 /// Configuration for blocking changelog entries from publishing based on type or area.
 /// Supports both exclude (block if matches) and include (block if doesn't match) modes.
 /// </summary>
-public record PublishBlocker
+[Equatable]
+public partial record PublishBlocker
 {
 	/// <summary>
 	/// Types to filter (either exclude or include based on <see cref="TypesMode"/>).
 	/// </summary>
+	[OrderedEquality]
 	public IReadOnlyList<string>? Types { get; init; }
 
 	/// <summary>
@@ -50,6 +54,7 @@ public record PublishBlocker
 	/// <summary>
 	/// Areas to filter (either exclude or include based on <see cref="AreasMode"/>).
 	/// </summary>
+	[OrderedEquality]
 	public IReadOnlyList<string>? Areas { get; init; }
 
 	/// <summary>

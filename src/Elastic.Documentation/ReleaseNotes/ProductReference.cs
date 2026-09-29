@@ -2,12 +2,15 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using Generator.Equals;
+
 namespace Elastic.Documentation.ReleaseNotes;
 
 /// <summary>
 /// Product reference with strongly typed lifecycle.
 /// </summary>
-public record ProductReference
+[Equatable]
+public partial record ProductReference
 {
 	/// <summary>The product identifier.</summary>
 	public required string ProductId { get; init; }
@@ -25,6 +28,7 @@ public record ProductReference
 	/// from a single-element list derived from <see cref="ProductInfoDto.Target"/> when <c>Versions</c>
 	/// is absent on an already-published note.
 	/// </summary>
+	[OrderedEquality]
 	public IReadOnlyList<string> Versions { get; init; } = [];
 
 	/// <summary>The lifecycle stage of the feature for this product.</summary>

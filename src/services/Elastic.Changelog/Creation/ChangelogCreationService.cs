@@ -10,6 +10,7 @@ using Elastic.Documentation.Configuration.Changelog;
 using Elastic.Documentation.Configuration.Inference;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.FileSystems;
+using Elastic.Documentation.ReleaseNotes;
 using Elastic.Documentation.Services;
 using Microsoft.Extensions.Logging;
 
