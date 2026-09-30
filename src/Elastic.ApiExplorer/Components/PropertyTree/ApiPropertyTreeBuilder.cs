@@ -196,7 +196,7 @@ public class ApiPropertyTreeBuilder(OpenApiDocument document, PropertyDisplayOpt
 			Availability = options.ShowVersionInfo ? AvailabilityBadgeHelper.FromSchema(propSchema, options.VersionsConfiguration) : null,
 			ExternalDocs = BuildExternalDocs(propSchema, typeInfo),
 			Constraints = BuildConstraints(propSchema),
-			EnumValues = typeInfo is { IsEnum: true, EnumValues.Length: > 0 } ? typeInfo.EnumValues : [],
+			EnumValues = typeInfo.EnumValues ?? [],
 			Union = typeInfo.IsUnion ? BuildUnionDisplay(propSchema, typeInfo, expansion) : null,
 			// Type annotation already reads "[] …"; skip the redundant "Array of:" row.
 			ArrayItemTypeName = null,
@@ -386,21 +386,16 @@ public class ApiPropertyTreeBuilder(OpenApiDocument document, PropertyDisplayOpt
 
 	private UnionDisplay? BuildUnionDisplay(IOpenApiSchema propSchema, TypeInfo typeInfo, Expansion expansion)
 	{
+		// The "Values:" row already lists the literals; a "One of:" row would only repeat the member types.
+		if (typeInfo.EnumValues is { Length: > 0 } && !expansion.HasUnionOptions)
+			return null;
+
 		var unionOptionNames = new List<string>();
 		if (typeInfo.AnyOfOptions is { Count: > 0 })
 			unionOptionNames.AddRange(typeInfo.AnyOfOptions.Select(o => o.Name));
 		if (typeInfo.UnionOptions is not null)
 			unionOptionNames.AddRange(typeInfo.UnionOptions);
 		var sortedOptions = unionOptionNames.Distinct().OrderByDescending(o => o.EndsWith("[]")).ToArray();
-
-		var allEnumLike = sortedOptions.Length > 0
-			&& sortedOptions.All(
-				o => !o.EndsWith("[]") && !string.IsNullOrEmpty(o) && !SchemaHelpers.PrimitiveTypeNames.Contains(o) &&
-					(char.IsLower(o[0]) || o.All(c => !char.IsLetter(c) || char.IsLower(c) || c == '_'))
-			);
-
-		if (allEnumLike)
-			return new UnionDisplay { Kind = UnionDisplayKind.EnumLike, EnumLikeValues = sortedOptions };
 
 		if (expansion.IsSimpleArrayUnion)
 			return null;
@@ -807,6 +802,9 @@ public class ApiPropertyTreeBuilder(OpenApiDocument document, PropertyDisplayOpt
 		var typeName = typeInfo.TypeName ?? "unknown";
 		if (!SchemaHelpers.IsInternalSchemaName(typeName))
 		{
+			// "enum" is a keyword marker already appended — inline enums have no distinct type name to show.
+			if (typeInfo.IsEnum && typeName == "enum")
+				return;
 			spans.Add(NamedTypeSpan(typeName, typeInfo.SchemaRef, typeInfo.IsValueType));
 			return;
 		}

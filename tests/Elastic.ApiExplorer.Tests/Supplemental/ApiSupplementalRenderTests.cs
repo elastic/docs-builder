@@ -127,7 +127,31 @@ public class ApiSupplementalRenderTests(ApiExplorerFixture fixture)
 		var nav = SearchOperation();
 		var html = await RenderAsync(nav.Model, nav);
 
-		html.Should().MatchRegex("""id="path-index"[\s\S]*?</a>\s*<span class="required type-status">required</span>""");
+		html.Should().MatchRegex("""id="path-index"[\s\S]*?</a>[\s\S]*?<span class="required type-status">required</span>""");
+	}
+
+	[Test]
+	public async Task Operation_AllOfEnumParameter_RendersEnumValues()
+	{
+		var nav = fixture.Walk().OfType<OperationNavigationItem>().First(n => n.Model.Operation.OperationId == "docs-get");
+		var html = await RenderAsync(nav.Model, nav);
+
+		html.Should().MatchRegex(
+			"""id="query-mode"[\s\S]*?class="enum-values"[\s\S]*?<code class="enum-value">fast</code>\s*<code class="enum-value">accurate</code>"""
+		);
+	}
+
+	[Test]
+	public async Task Operation_ArrayOfEnumParameter_RendersEnumValues()
+	{
+		var nav = fixture.Walk().OfType<OperationNavigationItem>().First(n => n.Model.Operation.OperationId == "docs-get");
+		var html = await RenderAsync(nav.Model, nav);
+		var markdown = await RenderCommonMarkAsync(nav.Model, nav);
+
+		html.Should().MatchRegex(
+			"""id="query-stored_states"[\s\S]*?<code class="enum-value">open</code>\s*<code class="enum-value">closed</code>"""
+		);
+		markdown.Should().Contain("Values: `open`, `closed`");
 	}
 
 	[Test]
