@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Collections.Frozen;
 using System.IO.Abstractions;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Diagnostics;
@@ -66,7 +67,6 @@ public static class SiteNavigationLoader
 	/// <summary>
 	/// The navigation an assembler build uses: when private repositories are skipped, their mounts and phantoms are
 	/// removed, and a local docs-builder checkout is mounted so docset changes can be tried in an assembled build.
-	/// The typed equivalent of <see cref="ConfigurationFileProvider.CreateNavigationFile"/>'s text rewrite.
 	/// </summary>
 	public static SiteNavigationDefinition ForAssembly(
 		SiteNavigationDefinition navigation,
@@ -88,6 +88,77 @@ public static class SiteNavigationLoader
 			};
 		return filtered;
 	}
+
+	/// <summary>
+	/// Where each mounted table of contents is published: its source (normalized to end in <c>/</c>) and path prefix.
+	/// The assembler resolves cross-links through these. A bare <c>toc: name</c> without <c>path_prefix</c> is
+	/// published under its name; any other mount without one is reported and falls back to its source path.
+	/// </summary>
+	public static FrozenDictionary<Uri, NavigationTocMapping> GetTocMappings(
+		SiteNavigationDefinition navigation,
+		IFileInfo navigationFile,
+		IDiagnosticsCollector collector
+	)
+	{
+		var mappings = new Dictionary<Uri, NavigationTocMapping>();
+		foreach (var entry in navigation.TableOfContents)
+		{
+			if (entry is SiteTableOfContentsRef toc)
+				AddTocMappings(toc, navigationFile, collector, mappings);
+			else
+				foreach (var child in entry.Children)
+					AddTocMappings(child, navigationFile, collector, mappings);
+		}
+		return mappings.ToFrozenDictionary();
+	}
+
+	private static void AddTocMappings(
+		SiteTableOfContentsRef toc,
+		IFileInfo navigationFile,
+		IDiagnosticsCollector collector,
+		Dictionary<Uri, NavigationTocMapping> mappings
+	)
+	{
+		var source = toc.ShorthandPath is { } shorthand
+			? ContentSourceMoniker.CreateString(Publishing.NarrativeRepository.RepositoryName, shorthand)
+			: toc.Source.OriginalString;
+		source = source.EndsWith("://", StringComparison.OrdinalIgnoreCase) ? source : source.TrimEnd('/') + "/";
+		if (!Uri.TryCreate(source, UriKind.Absolute, out var sourceUri))
+		{
+			Emit(collector, navigationFile, toc.Position, $"Source toc entry is not a valid uri: {source}");
+			return;
+		}
+
+		var pathPrefix = !string.IsNullOrEmpty(toc.PathPrefix) ? toc.PathPrefix : toc.ShorthandPath;
+		var sourcePrefix = $"{sourceUri.Host}/{sourceUri.AbsolutePath.TrimStart('/')}";
+		if (string.IsNullOrEmpty(pathPrefix))
+			Emit(
+				collector,
+				navigationFile,
+				toc.Position,
+				$"Path prefix is not defined for: {source}, falling back to {sourcePrefix} which may be incorrect"
+			);
+
+		mappings[sourceUri] = new NavigationTocMapping
+		{
+			Source = sourceUri,
+			SourcePathPrefix = string.IsNullOrEmpty(pathPrefix) ? sourcePrefix : pathPrefix
+		};
+		foreach (var child in toc.Children)
+			AddTocMappings(child, navigationFile, collector, mappings);
+	}
+
+	// Mirrors YamlStreamReader's positioned errors, so the diagnostics match the parser that used to report them.
+	private static void Emit(IDiagnosticsCollector collector, IFileInfo navigationFile, SourcePosition? position, string message) =>
+		collector.Write(new Diagnostic
+		{
+			Severity = Severity.Error,
+			File = navigationFile.FullName,
+			Message = message,
+			Line = position?.Line,
+			Column = position?.Column,
+			Length = position is { } p ? p.Column - p.EndColumn : null
+		});
 
 	/// <summary>Reports every <c>path_prefix</c> mounted twice; returns whether all were unique.</summary>
 	public static bool ValidatePathPrefixes(
@@ -138,12 +209,13 @@ public class SiteTableOfContentsCollectionYamlConverter : IYamlTypeConverter
 
 	private static SiteNavigationEntry? ParseTopLevelEntry(IParser parser, ObjectDeserializer rootDeserializer)
 	{
-		if (!parser.TryConsume<MappingStart>(out _))
+		if (!parser.TryConsume<MappingStart>(out var mappingStart))
 			return null;
 
 		var dictionary = new Dictionary<string, object?>();
 
-		while (!parser.TryConsume<MappingEnd>(out _))
+		MappingEnd? mappingEnd;
+		while (!parser.TryConsume<MappingEnd>(out mappingEnd))
 		{
 			var key = parser.Consume<Scalar>();
 
@@ -238,7 +310,11 @@ public class SiteTableOfContentsCollectionYamlConverter : IYamlTypeConverter
 				&& titleObj is string title
 				&& !string.IsNullOrWhiteSpace(title) ? title : null;
 
-			return new SiteTableOfContentsRef(source, pathPrefix, children, island, navigationTitle);
+			return new SiteTableOfContentsRef(source, pathPrefix, children, island, navigationTitle)
+			{
+				ShorthandPath = sourceString.Contains("://") ? null : sourceString,
+				Position = PositionOf(mappingStart, mappingEnd)
+			};
 		}
 
 		var keys = string.Join(", ", dictionary.Keys.Select(k => $"'{k}'"));
@@ -246,6 +322,14 @@ public class SiteTableOfContentsCollectionYamlConverter : IYamlTypeConverter
 	}
 
 	public void WriteYaml(IEmitter emitter, object? value, Type type, ObjectSerializer serializer) => serializer.Invoke(value, type);
+
+	internal static SourcePosition PositionOf(MappingStart start, MappingEnd? end) =>
+		new(
+			(int)start.Start.Line,
+			(int)start.Start.Column,
+			(int)(end?.End.Line ?? start.End.Line),
+			(int)(end?.End.Column ?? start.End.Column)
+		);
 }
 
 public class SiteTableOfContentsRefYamlConverter : IYamlTypeConverter
@@ -254,12 +338,13 @@ public class SiteTableOfContentsRefYamlConverter : IYamlTypeConverter
 
 	public object? ReadYaml(IParser parser, Type type, ObjectDeserializer rootDeserializer)
 	{
-		if (!parser.TryConsume<MappingStart>(out _))
+		if (!parser.TryConsume<MappingStart>(out var mappingStart))
 			return null;
 
 		var dictionary = new Dictionary<string, object?>();
 
-		while (!parser.TryConsume<MappingEnd>(out _))
+		MappingEnd? mappingEnd;
+		while (!parser.TryConsume<MappingEnd>(out mappingEnd))
 		{
 			var key = parser.Consume<Scalar>();
 
@@ -313,7 +398,11 @@ public class SiteTableOfContentsRefYamlConverter : IYamlTypeConverter
 				&& titleObj is string title
 				&& !string.IsNullOrWhiteSpace(title) ? title : null;
 
-			return new SiteTableOfContentsRef(source, pathPrefix, children, island, navigationTitle);
+			return new SiteTableOfContentsRef(source, pathPrefix, children, island, navigationTitle)
+			{
+				ShorthandPath = sourceString.Contains("://") ? null : sourceString,
+				Position = SiteTableOfContentsCollectionYamlConverter.PositionOf(mappingStart, mappingEnd)
+			};
 		}
 
 		var keys = string.Join(", ", dictionary.Keys.Select(k => $"'{k}'"));

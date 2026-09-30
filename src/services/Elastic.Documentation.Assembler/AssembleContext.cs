@@ -2,10 +2,12 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Diagnostics.CodeAnalysis;
 using System.IO.Abstractions;
 using Elastic.Documentation.Catalog;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
+using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Deploying.Synchronization;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.FileSystems;
@@ -58,6 +60,18 @@ public class AssembleContext : IDocumentationConfigurationContext, IDocsSyncCont
 	public BuildType BuildType => BuildType.Assembler;
 
 	public PublishEnvironment Environment { get; }
+
+	/// <summary>
+	/// The site navigation this assembly builds: <c>navigation.yml</c> (or <c>navigation_preview.yml</c>) as the
+	/// domain filters it, without the mounts and phantoms of private repositories when those are skipped.
+	/// </summary>
+	[field: AllowNull, MaybeNull]
+	public SiteNavigationDefinition Navigation =>
+		field ??= SiteNavigationLoader.ForAssembly(
+			SiteNavigationLoader.Deserialize(ReadFileSystem.File.ReadAllText(ConfigurationFileProvider.NavigationFile.FullName)),
+			Configuration,
+			ConfigurationFileProvider.SkipPrivateRepositories
+		);
 
 	/// <inheritdoc cref="IDocsSyncContext.EnvironmentName"/>
 	public string EnvironmentName => Environment.Name;

@@ -203,4 +203,14 @@ public partial record SiteTableOfContentsRef(
 	// For site-level TOC refs, the Context is the navigation.yml file path
 	// This will be set during site navigation loading
 	public string Context { get; init; } = "";
+
+	/// <summary>
+	/// The <c>toc:</c> value when written without a scheme (<c>toc: get-started</c>), which mounts a narrative
+	/// table of contents and doubles as its path prefix when <c>path_prefix</c> is omitted.
+	/// </summary>
+	public string? ShorthandPath { get; init; }
+
+	/// <summary>Where the entry is declared; diagnostics about it point here.</summary>
+	[IgnoreEquality]
+	public Diagnostics.SourcePosition? Position { get; init; }
 }

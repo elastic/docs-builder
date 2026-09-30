@@ -100,9 +100,41 @@ public class GlobalConfigurationGoldenTests
 		await AssertMatches("config-navigation-filtered", Capture(() =>
 		{
 			var assembly = AssemblyLoader.Create(provider);
-			var filtered = provider.CreateNavigationFile(assembly);
-			var yaml = filtered.FileSystem.File.ReadAllText(filtered.FullName);
-			return ProjectSiteNavigationWithValidation(yaml, "navigation.filtered.yml");
+			var navigation = SiteNavigationLoader.Deserialize(
+				provider.NavigationFile.FileSystem.File.ReadAllText(provider.NavigationFile.FullName)
+			);
+			return ProjectSiteNavigationWithValidation(
+				SiteNavigationLoader.ForAssembly(navigation, assembly, skipPrivateRepositories: true),
+				"navigation.yml"
+			);
+		}));
+	}
+
+	[Test]
+	[Arguments(false)]
+	[Arguments(true)]
+	public async Task NavigationTocMappings_Baseline_MatchesGolden(bool skipPrivateRepositories)
+	{
+		var provider = BaselineProvider(skipPrivateRepositories);
+		var name = skipPrivateRepositories ? "config-navigation-toc-mappings-filtered" : "config-navigation-toc-mappings";
+		await AssertMatches(name, Capture(() =>
+		{
+			var assembly = AssemblyLoader.Create(provider);
+			var file = provider.NavigationFile;
+			var navigation = SiteNavigationLoader.ForAssembly(
+				SiteNavigationLoader.Deserialize(file.FileSystem.File.ReadAllText(file.FullName)),
+				assembly,
+				skipPrivateRepositories
+			);
+			var collector = new CapturingDiagnosticsCollector();
+			var mappings = SiteNavigationLoader.GetTocMappings(navigation, file, collector);
+			return Obj(
+				("mappings", Map(
+					mappings.ToDictionary(kv => kv.Key.ToString(), kv => kv.Value),
+					m => Obj(("source", Str(m.Source.ToString())), ("pathPrefix", Str(m.SourcePathPrefix)))
+				)),
+				("diagnostics", DiagnosticList(collector.Diagnostics))
+			);
 		}));
 	}
 
@@ -258,9 +290,11 @@ public class GlobalConfigurationGoldenTests
 		_ => Obj(("kind", Str("unknown:" + entry.GetType().Name)))
 	};
 
-	private static JsonNode ProjectSiteNavigationWithValidation(string yaml, string fileName)
+	private static JsonNode ProjectSiteNavigationWithValidation(string yaml, string fileName) =>
+		ProjectSiteNavigationWithValidation(SiteNavigationLoader.Deserialize(yaml), fileName);
+
+	private static JsonNode ProjectSiteNavigationWithValidation(SiteNavigationDefinition navigation, string fileName)
 	{
-		var navigation = SiteNavigationLoader.Deserialize(yaml);
 		var collector = new CapturingDiagnosticsCollector();
 		var file = new MockFileSystem().FileInfo.New(Path.Join(BaselineDirectory, "config", fileName));
 		var valid = SiteNavigationLoader.ValidatePathPrefixes(collector, navigation, file);

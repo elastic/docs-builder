@@ -14,27 +14,12 @@ using static Elastic.Documentation.Configuration.Tests.Golden.Golden;
 namespace Elastic.Documentation.Configuration.Tests;
 
 /// <summary>
-/// SiteNavigationLoader.ForAssembly must produce exactly the navigation that ConfigurationFileProvider.CreateNavigationFile's
-/// line-based rewrite of navigation.yml parses to, so consumers can move from the text rewrite to the typed operation.
+/// Private repositories are filtered out of the site navigation at the domain level: their mounts and phantoms are
+/// dropped and their children promoted. The expectations below are what the former line-based rewrite of
+/// navigation.yml produced, which the typed filter was proven equal to before the rewrite was removed.
 /// </summary>
-public class SiteNavigationFilterEquivalenceTests
+public class SiteNavigationFilterTests
 {
-	[Test]
-	public void ForAssembly_BaselineNavigation_EqualsTheTextRewrite()
-	{
-		var provider = BaselineProvider(skipPrivateRepositories: true);
-		var assembly = AssemblyLoader.Create(provider);
-		var original = SiteNavigationLoader.Deserialize(
-			provider.NavigationFile.FileSystem.File.ReadAllText(provider.NavigationFile.FullName)
-		);
-
-		var rewritten = provider.CreateNavigationFile(assembly);
-		var fromText = SiteNavigationLoader.Deserialize(rewritten.FileSystem.File.ReadAllText(rewritten.FullName));
-
-		assembly.PrivateRepositories.Should().NotBeEmpty("the baseline must exercise the filter");
-		SiteNavigationLoader.ForAssembly(original, assembly, skipPrivateRepositories: true).Should().Be(fromText);
-	}
-
 	// language=yaml
 	private const string NestedWithPrivateParents =
 		"""
@@ -67,28 +52,44 @@ public class SiteNavigationFilterEquivalenceTests
 		""";
 
 	[Test]
-	public void ForAssembly_NestedPrivateMounts_EqualsTheTextRewrite()
+	public void ForAssembly_NestedPrivateMounts_PromotesChildrenAndDropsPrivatePhantoms()
 	{
-		var fileSystem = new MockFileSystem();
-		var provider = new ConfigurationFileProvider(
-			NullLoggerFactory.Instance,
-			new ConfigurationFileSystem(fileSystem),
-			skipPrivateRepositories: true,
-			ConfigurationSource.Embedded
-		);
-		fileSystem.File.WriteAllText(provider.NavigationFile.FullName, NestedWithPrivateParents);
 		var assembly = AssemblyLoader.Deserialize(
 			"narrative:\n  repo: git@github.com:elastic/docs-content.git\nreferences:\n  private-a:\n    private: true\n  private-b:\n    private: true",
 			skipPrivateRepositories: true
 		);
 
-		var rewritten = provider.CreateNavigationFile(assembly);
-		var fromText = SiteNavigationLoader.Deserialize(fileSystem.File.ReadAllText(rewritten.FullName));
+		var filtered = SiteNavigationLoader.ForAssembly(
+			SiteNavigationLoader.Deserialize(NestedWithPrivateParents),
+			assembly,
+			skipPrivateRepositories: true
+		);
 
-		SiteNavigationLoader
-			.ForAssembly(SiteNavigationLoader.Deserialize(NestedWithPrivateParents), assembly, skipPrivateRepositories: true)
+		SiteNavigationText
+			.Describe(filtered)
+			.ReplaceLineEndings()
 			.Should()
-			.Be(fromText);
+			.Be(
+				"""
+			phantom: public-repo://visible
+			toc: docs-content://top path_prefix: top
+			  toc: public-child://nested path_prefix: nested
+			    toc: private-b://inside-promoted path_prefix: inside-promoted
+			  toc: public-repo://after path_prefix: after
+			section: Reference
+			  toc: public-repo://promoted-into-section path_prefix: promoted-into-section
+
+			""".ReplaceLineEndings()
+			);
+	}
+
+	[Test]
+	public void ForAssembly_PrivateRepositoriesKept_ReturnsTheNavigationUnchanged()
+	{
+		var assembly = AssemblyLoader.Deserialize("references:\n  private-a:\n    private: true", skipPrivateRepositories: false);
+		var navigation = SiteNavigationLoader.Deserialize(NestedWithPrivateParents);
+
+		SiteNavigationLoader.ForAssembly(navigation, assembly, skipPrivateRepositories: false).Should().BeSameAs(navigation);
 	}
 
 	/// <summary>

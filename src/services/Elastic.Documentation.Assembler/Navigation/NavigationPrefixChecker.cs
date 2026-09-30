@@ -43,11 +43,7 @@ public class NavigationPrefixChecker
 	/// <inheritdoc cref="NavigationPrefixChecker"/>
 	public NavigationPrefixChecker(ILoggerFactory logFactory, AssembleContext context)
 	{
-		var navigationFileInfo = context.ConfigurationFileProvider.NavigationFile;
-		var navigationYaml = context.ReadFileSystem.File.ReadAllText(navigationFileInfo.FullName);
-		var siteNavigationFile = SiteNavigationLoader.Deserialize(navigationYaml);
-
-		_phantoms = SiteNavigationDefinition.GetPhantomPrefixes(siteNavigationFile);
+		_phantoms = SiteNavigationDefinition.GetPhantomPrefixes(context.Navigation);
 
 		_repositories = context.Configuration.AvailableRepositories.Values.Select(r => r.Name).ToImmutableHashSet();
 

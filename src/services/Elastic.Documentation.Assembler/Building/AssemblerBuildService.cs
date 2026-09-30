@@ -130,7 +130,7 @@ public class AssemblerBuildService(
 		);
 
 		var navigationFileInfo = configurationContext.ConfigurationFileProvider.NavigationFile;
-		var siteNavigationFile = SiteNavigationLoader.Deserialize(await fileSystem.File.ReadAllTextAsync(navigationFileInfo.FullName, ctx));
+		var siteNavigationFile = assembleContext.Navigation;
 		var documentationSets = assembleSources.AssembleSets.Values.Select(s => s.DocumentationSet.Navigation).ToArray();
 		var navigationPreviewEnabled = assembleContext.Environment.ToFeatureFlags().NavigationPreviewEnabled;
 		var navigation = new SiteNavigation(

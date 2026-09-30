@@ -6,6 +6,7 @@ using System.IO.Abstractions.TestingHelpers;
 using AwesomeAssertions;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Configuration.Loading;
+using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.Publishing;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -13,7 +14,7 @@ using AssemblyConfiguration = Elastic.Documentation.Publishing.AssemblyConfigura
 
 namespace Elastic.Documentation.Configuration.Tests;
 
-public class CreateNavigationFileTests
+public class PrivateRepositoryNavigationFilterTests
 {
 	private static ConfigurationFileProvider CreateProvider(MockFileSystem fileSystem) =>
 		new(
@@ -21,6 +22,17 @@ public class CreateNavigationFileTests
 			new ConfigurationFileSystem(fileSystem),
 			skipPrivateRepositories: true,
 			ConfigurationSource.Embedded
+		);
+
+	private static SiteNavigationDefinition Filter(
+		ConfigurationFileProvider provider,
+		MockFileSystem fileSystem,
+		AssemblyConfiguration config
+	) =>
+		SiteNavigationLoader.ForAssembly(
+			SiteNavigationLoader.Deserialize(fileSystem.File.ReadAllText(provider.NavigationFile.FullName)),
+			config,
+			skipPrivateRepositories: true
 		);
 
 	private static AssemblyConfiguration CreateConfig(params string[] privateRepoNames)
@@ -55,8 +67,7 @@ public class CreateNavigationFileTests
 		fileSystem.File.WriteAllText(provider.NavigationFile.FullName, navYaml);
 
 		var config = CreateConfig("private-a", "private-b");
-		var result = provider.CreateNavigationFile(config);
-		var output = fileSystem.File.ReadAllText(result.FullName);
+		var output = SiteNavigationText.Describe(Filter(provider, fileSystem, config));
 
 		output.Should().NotContain("private-a://");
 		output.Should().NotContain("private-b://");
@@ -92,8 +103,7 @@ public class CreateNavigationFileTests
 		fileSystem.File.WriteAllText(provider.NavigationFile.FullName, navYaml);
 
 		var config = CreateConfig("private-a", "private-b");
-		var result = provider.CreateNavigationFile(config);
-		var output = fileSystem.File.ReadAllText(result.FullName);
+		var output = SiteNavigationText.Describe(Filter(provider, fileSystem, config));
 
 		output.Should().NotContain("private-a://");
 		output.Should().NotContain("private-b://");
@@ -125,8 +135,7 @@ public class CreateNavigationFileTests
 		fileSystem.File.WriteAllText(provider.NavigationFile.FullName, navYaml);
 
 		var config = CreateConfig("private-a");
-		var result = provider.CreateNavigationFile(config);
-		var output = fileSystem.File.ReadAllText(result.FullName);
+		var output = SiteNavigationText.Describe(Filter(provider, fileSystem, config));
 
 		output.Should().NotContain("private-a://");
 		output.Should().Contain("public-child://nested");
@@ -156,8 +165,7 @@ public class CreateNavigationFileTests
 		fileSystem.File.WriteAllText(provider.NavigationFile.FullName, navYaml);
 
 		var config = CreateConfig("private-a", "private-b");
-		var result = provider.CreateNavigationFile(config);
-		var output = fileSystem.File.ReadAllText(result.FullName);
+		var output = SiteNavigationText.Describe(Filter(provider, fileSystem, config));
 
 		output.Should().NotContain("private-a://");
 		output.Should().NotContain("private-b://");
@@ -186,8 +194,7 @@ public class CreateNavigationFileTests
 		fileSystem.File.WriteAllText(provider.NavigationFile.FullName, navYaml);
 
 		var config = CreateConfig("private-a");
-		var result = provider.CreateNavigationFile(config);
-		var output = fileSystem.File.ReadAllText(result.FullName);
+		var output = SiteNavigationText.Describe(Filter(provider, fileSystem, config));
 
 		// The public entry and its island: true property are preserved
 		output.Should().Contain("public-repo://reference");
@@ -218,8 +225,7 @@ public class CreateNavigationFileTests
 		fileSystem.File.WriteAllText(provider.NavigationFile.FullName, navYaml);
 
 		var config = CreateConfig("private-a");
-		var result = provider.CreateNavigationFile(config);
-		var output = fileSystem.File.ReadAllText(result.FullName);
+		var output = SiteNavigationText.Describe(Filter(provider, fileSystem, config));
 
 		// The private entry and its island: true property are removed
 		output.Should().NotContain("private-a://");
@@ -241,10 +247,8 @@ public class CreateNavigationFileTests
 		var yaml = "narrative:\n  repo: git@github.com:elastic/docs-content.git\nreferences:\n  public-repo:\n    private: false";
 		var config = AssemblyLoader.Deserialize(yaml, skipPrivateRepositories: true);
 
-		var result = provider.CreateNavigationFile(config);
+		var original = SiteNavigationLoader.Deserialize(originalContent);
 
-		result.FullName.Should().Be(provider.NavigationFile.FullName);
-		var output = fileSystem.File.ReadAllText(result.FullName);
-		output.Should().Be(originalContent);
+		SiteNavigationLoader.ForAssembly(original, config, skipPrivateRepositories: true).Should().BeSameAs(original);
 	}
 }

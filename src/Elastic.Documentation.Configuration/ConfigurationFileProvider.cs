@@ -156,83 +156,6 @@ public partial class ConfigurationFileProvider
 		return NavigationFile;
 	}
 
-	public IFileInfo CreateNavigationFile(AssemblyConfiguration configuration)
-	{
-		var privateRepositories = configuration.PrivateRepositories;
-		if (privateRepositories.Count == 0 || !SkipPrivateRepositories)
-			return NavigationFile;
-
-		var targets = string.Join("|", privateRepositories.Keys);
-
-		var tempFile = Path.Join(TemporaryDirectory.FullName, "navigation.filtered.yml");
-		if (_fileSystem.File.Exists(tempFile))
-			return NavigationFile;
-
-		_logger.LogInformation("Filtering navigation file to remove private repositories");
-
-		// This routine removes `toc: `'s linking to private repositories and reindents any later lines if needed.
-		// This will make any public children in the nav move up one place.
-		var spacing = -1;
-		var reindenting = -1;
-		foreach (var l in _fileSystem.File.ReadAllLines(NavigationFile.FullName))
-		{
-			var line = l;
-			if (spacing > -1 && !string.IsNullOrWhiteSpace(line) && !line.StartsWith(new string(' ', spacing), StringComparison.Ordinal))
-			{
-				spacing = -1;
-				reindenting = -1;
-			}
-
-			if (spacing != -1 && Regex.IsMatch(line, $@"^\s{{{spacing}}}\S"))
-			{
-				spacing = -1;
-				reindenting = -1;
-			}
-			else if (spacing != -1 && Regex.IsMatch(line, $@"^(\s{{{spacing + 3},}})\S"))
-			{
-				var matches = Regex.Match(line, $@"^(?<spacing>\s{{{spacing}}})(?<remainder>.+)$");
-				line = $"{new string(' ', Math.Max(0, spacing - 4))}{matches.Groups["remainder"].Value}";
-				reindenting = spacing;
-			}
-
-			if (spacing == -1 && TocPrefixRegex().IsMatch(line))
-			{
-				var matches = Regex.Match(line, $@"^(?<spacing>\s+)-\s?toc:\s?(?:{targets})\:");
-				if (matches.Success)
-					spacing = matches.Groups["spacing"].Value.Length;
-				if (spacing == 0)
-					spacing = -1;
-			}
-
-			if (spacing == -1 || reindenting > 0)
-				_fileSystem.File.AppendAllLines(tempFile, [line]);
-		}
-
-		if (
-			configuration.AvailableRepositories.TryGetValue("docs-builder", out var docsBuildRepository)
-			&& docsBuildRepository is { Skip: false, Path: not null }
-		)
-		{
-			// language=yaml
-			_fileSystem.File.AppendAllText(
-				tempFile,
-				"""
-
-						  - toc: docs-builder://
-						    path_prefix: reference/docs-builder
-						    children:
-						      - toc: docs-builder://development
-						        path_prefix: reference/docs-builder/dev
-						        children:
-						          - toc: docs-builder://development/link-validation
-						            path_prefix: reference/docs-builder/dev/link-val
-						"""
-			);
-		}
-		NavigationFile = _fileSystem.FileInfo.New(tempFile);
-		return NavigationFile;
-	}
-
 	private IFileInfo CreateTemporaryConfigurationFile(string fileName, string? fallback = null)
 	{
 		using var stream = GetLocalOrEmbedded(fileName, fallback);
@@ -296,9 +219,6 @@ public partial class ConfigurationFileProvider
 
 	private static string GetLocalPath(string file) => Path.Join(LocalConfigurationDirectory, file);
 	private static string GetAppDataPath(string file) => Path.Join(AppDataConfigurationDirectory, file);
-
-	[GeneratedRegex(@"^\s+-?\s?toc:\s?")]
-	private static partial Regex TocPrefixRegex();
 }
 
 public static class ConfigurationFileProviderServiceCollectionExtensions

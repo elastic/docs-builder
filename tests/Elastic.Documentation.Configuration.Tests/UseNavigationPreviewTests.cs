@@ -6,6 +6,7 @@ using System.IO.Abstractions.TestingHelpers;
 using AwesomeAssertions;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Configuration.Loading;
+using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.Publishing;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -107,7 +108,7 @@ public class UseNavigationPreviewTests
 	}
 
 	[Test]
-	public void UseNavigationPreview_ThenCreateNavigationFile_StripsPrivateReposFromPreview()
+	public void UseNavigationPreview_ThenFilterForAssembly_StripsPrivateReposFromPreview()
 	{
 		// The ordering guarantee: private-repo filtering is applied to the preview content,
 		// and island: lines on public entries survive.
@@ -129,8 +130,13 @@ public class UseNavigationPreviewTests
 		fileSystem.File.WriteAllText(provider.NavigationFile.FullName, previewYaml);
 
 		var config = CreateConfig("private-a");
-		var result = provider.CreateNavigationFile(config);
-		var output = fileSystem.File.ReadAllText(result.FullName);
+		var output = SiteNavigationText.Describe(
+			SiteNavigationLoader.ForAssembly(
+				SiteNavigationLoader.Deserialize(fileSystem.File.ReadAllText(provider.NavigationFile.FullName)),
+				config,
+				skipPrivateRepositories: true
+			)
+		);
 
 		output.Should().NotContain("private-a://");
 		output.Should().Contain("public-repo://reference");
