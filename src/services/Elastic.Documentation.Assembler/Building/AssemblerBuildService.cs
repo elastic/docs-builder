@@ -91,6 +91,7 @@ public class AssemblerBuildService(
 				environment,
 				checkouts,
 				configurationContext.ConfigurationFileProvider,
+				assembleContext.NavigationFile,
 				exporters
 			);
 			var (isUpToDate, reason) = AssemblerBuildStampService.IsUpToDate(existingStamp, currentStamp);
@@ -129,7 +130,7 @@ public class AssemblerBuildService(
 			ctx
 		);
 
-		var navigationFileInfo = configurationContext.ConfigurationFileProvider.NavigationFile;
+		var navigationFileInfo = assembleContext.NavigationFile;
 		var siteNavigationFile = assembleContext.Navigation;
 		var documentationSets = assembleSources.AssembleSets.Values.Select(s => s.DocumentationSet.Navigation).ToArray();
 		var navigationPreviewEnabled = assembleContext.Environment.ToFeatureFlags().NavigationPreviewEnabled;
@@ -226,6 +227,7 @@ public class AssemblerBuildService(
 				environment,
 				checkouts,
 				configurationContext.ConfigurationFileProvider,
+				assembleContext.NavigationFile,
 				exporters
 			);
 			if (stamp is not null)

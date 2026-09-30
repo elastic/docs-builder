@@ -160,6 +160,7 @@ public class AssemblerBuildStampTests
 			"dev",
 			checkouts,
 			configContext.ConfigurationFileProvider,
+			configContext.ConfigurationFileProvider.NavigationFile,
 			new HashSet<Exporter> { Exporter.Html }
 		);
 		result.Should().BeNull();
@@ -183,6 +184,7 @@ public class AssemblerBuildStampTests
 			"dev",
 			checkouts,
 			configContext.ConfigurationFileProvider,
+			configContext.ConfigurationFileProvider.NavigationFile,
 			new HashSet<Exporter> { Exporter.Html }
 		);
 		stamp.Should().NotBeNull();

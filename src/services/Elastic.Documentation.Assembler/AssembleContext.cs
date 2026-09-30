@@ -61,6 +61,9 @@ public class AssembleContext : IDocumentationConfigurationContext, IDocsSyncCont
 
 	public PublishEnvironment Environment { get; }
 
+	/// <summary>The navigation file this environment builds from: <c>navigation_preview.yml</c> under the navigation-preview flag.</summary>
+	public IFileInfo NavigationFile { get; }
+
 	/// <summary>
 	/// The site navigation this assembly builds: <c>navigation.yml</c> (or <c>navigation_preview.yml</c>) as the
 	/// domain filters it, without the mounts and phantoms of private repositories when those are skipped.
@@ -68,7 +71,7 @@ public class AssembleContext : IDocumentationConfigurationContext, IDocsSyncCont
 	[field: AllowNull, MaybeNull]
 	public SiteNavigationDefinition Navigation =>
 		field ??= SiteNavigationLoader.ForAssembly(
-			SiteNavigationLoader.Deserialize(ReadFileSystem.File.ReadAllText(ConfigurationFileProvider.NavigationFile.FullName)),
+			SiteNavigationLoader.Deserialize(NavigationFile.FileSystem.File.ReadAllText(NavigationFile.FullName)),
 			Configuration,
 			ConfigurationFileProvider.SkipPrivateRepositories
 		);
@@ -103,8 +106,9 @@ public class AssembleContext : IDocumentationConfigurationContext, IDocsSyncCont
 			throw new Exception($"Could not find environment {environment}");
 		Environment = env;
 
-		if (Environment.ToFeatureFlags().NavigationPreviewEnabled)
-			_ = ConfigurationFileProvider.UseNavigationPreview();
+		NavigationFile = Environment.ToFeatureFlags().NavigationPreviewEnabled
+			? ConfigurationFileProvider.NavigationPreviewFile
+			: ConfigurationFileProvider.NavigationFile;
 
 		Endpoints.Environment = environment;
 

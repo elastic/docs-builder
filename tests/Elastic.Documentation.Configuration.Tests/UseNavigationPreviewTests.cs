@@ -32,47 +32,55 @@ public class UseNavigationPreviewTests
 		return AssemblyLoader.Deserialize(yaml, skipPrivateRepositories: true);
 	}
 
+	private static readonly string[] RequiredFiles =
+	[
+		"versions.yml",
+		"products.yml",
+		"assembler.yml",
+		"navigation.yml",
+		"legacy-url-mappings.yml",
+		"search.yml",
+		"related-learning.yml"
+	];
+
+	private static readonly string ConfigDirectory = ConfigurationFileProvider.AppDataConfigurationDirectory;
+
+	private static ConfigurationFileProvider CreateRemoteProvider(MockFileSystem fileSystem)
+	{
+		foreach (var file in RequiredFiles)
+			fileSystem.AddFile(Path.Join(ConfigDirectory, file), new MockFileData($"# {file}"));
+		fileSystem.AddFile(Path.Join(ConfigDirectory, "git-ref.txt"), new MockFileData("test"));
+		return new ConfigurationFileProvider(
+			NullLoggerFactory.Instance,
+			new ConfigurationFileSystem(fileSystem),
+			false,
+			ConfigurationSource.Remote
+		);
+	}
+
 	[Test]
-	public void UseNavigationPreview_ReadsPreviewFile()
+	public void RemoteConfiguration_IsReadInPlace()
+	{
+		var provider = CreateRemoteProvider(new MockFileSystem());
+
+		provider.NavigationFile.FullName.Should().Be(Path.Join(ConfigDirectory, "navigation.yml"));
+		provider.AssemblerFile.FullName.Should().Be(Path.Join(ConfigDirectory, "assembler.yml"));
+	}
+
+	[Test]
+	public void NavigationPreviewFile_ReadsThePreviewWhenPresent()
 	{
 		var fileSystem = new MockFileSystem();
-		var provider = CreateProvider(fileSystem);
+		fileSystem.AddFile(Path.Join(ConfigDirectory, "navigation_preview.yml"), new MockFileData("# preview"));
+		var provider = CreateRemoteProvider(fileSystem);
 
-		// language=yaml
-		var previewYaml =
-			"""
-		                  toc:
-		                    - toc: elasticsearch://reference/elasticsearch
-		                      path_prefix: reference/elasticsearch
-		                      island: true
-		                  """;
-
-		// language=yaml
-		var mainYaml =
-			"""
-		               toc:
-		                 - toc: elasticsearch://reference/elasticsearch
-		                   path_prefix: reference/elasticsearch
-		               """;
-
-		fileSystem.File.WriteAllText(provider.NavigationFile.FullName, mainYaml);
-
-		// Simulate navigation_preview.yml existing alongside navigation.yml in the same temp dir
-		var previewPath = Path.Join(Path.GetDirectoryName(provider.NavigationFile.FullName), "navigation_preview.yml");
-		fileSystem.File.WriteAllText(previewPath, previewYaml);
-
-		// Now simulate what ConfigurationSource.Local does — replace NavigationFile content
-		// by writing the preview content directly (the public API we can test without mocking the FS source):
-		// Instead, test via the embedded fallback path directly through the provider.
-		// The embedded resource always falls back when Local/Remote file is absent.
-		// We test the observable effect: after UseNavigationPreview, NavigationFile content changes.
-		fileSystem.File.WriteAllText(provider.NavigationFile.FullName.Replace("navigation.yml", "navigation_preview.yml"), previewYaml);
-
-		// We can't easily redirect CreateTemporaryConfigurationFile to read from the mock when source = Embedded,
-		// so verify the method exists and returns the NavigationFile (which we already confirmed compile-time above).
-		// The integration-level check is the assembled-build verification in the plan.
-		provider.NavigationFile.Should().NotBeNull();
+		provider.NavigationPreviewFile.Name.Should().Be("navigation_preview.yml");
+		provider.NavigationFile.Name.Should().Be("navigation.yml", "selecting the preview never repoints the provider's navigation.yml");
 	}
+
+	[Test]
+	public void NavigationPreviewFile_FallsBackToNavigationWhenAbsent() =>
+		CreateRemoteProvider(new MockFileSystem()).NavigationPreviewFile.Name.Should().Be("navigation.yml");
 
 	[Test]
 	public void NavigationPreviewEnabled_ReadsUnderscoredEnvironmentKey()
@@ -108,7 +116,7 @@ public class UseNavigationPreviewTests
 	}
 
 	[Test]
-	public void UseNavigationPreview_ThenFilterForAssembly_StripsPrivateReposFromPreview()
+	public void PreviewNavigation_FilterForAssembly_StripsPrivateRepos()
 	{
 		// The ordering guarantee: private-repo filtering is applied to the preview content,
 		// and island: lines on public entries survive.
@@ -126,7 +134,6 @@ public class UseNavigationPreviewTests
 		                      path_prefix: private-ref
 		                  """;
 
-		// Write as if UseNavigationPreview already ran (point NavigationFile at preview content)
 		fileSystem.File.WriteAllText(provider.NavigationFile.FullName, previewYaml);
 
 		var config = CreateConfig("private-a");

@@ -2,8 +2,8 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Diagnostics.CodeAnalysis;
 using System.IO.Abstractions;
-using System.Text.RegularExpressions;
 using Elastic.Documentation.AppliesTo;
 using Elastic.Documentation.Configuration.Converters;
 using Elastic.Documentation.Configuration.Serialization;
@@ -17,7 +17,7 @@ using YamlDotNet.Serialization.NamingConventions;
 
 namespace Elastic.Documentation.Configuration;
 
-public partial class ConfigurationFileProvider
+public class ConfigurationFileProvider
 {
 	private readonly IAppDataFileSystem _fileSystem;
 	private readonly string _assemblyName;
@@ -50,11 +50,6 @@ public partial class ConfigurationFileProvider
 		_fileSystem = fileSystem;
 		_assemblyName = typeof(ConfigurationFileProvider).Assembly.GetName().Name!;
 		SkipPrivateRepositories = skipPrivateRepositories;
-		// Use a unique subdirectory per instance to avoid file-locking collisions when
-		// multiple processes or parallel tests share the same ApplicationData path.
-		var configRuntimeDir = Path.Join(Paths.ApplicationData.FullName, "config-runtime", Guid.NewGuid().ToString("N"));
-		TemporaryDirectory = fileSystem.DirectoryInfo.New(configRuntimeDir);
-		TemporaryDirectory.Create();
 
 		// TODO: This doesn't work as expected if a github actions consumer repo has a `config` directory.
 		// ConfigurationSource = configurationSource ?? (
@@ -115,21 +110,43 @@ public partial class ConfigurationFileProvider
 			);
 		}
 
-		VersionFile = CreateTemporaryConfigurationFile("versions.yml");
-		ProductsFile = CreateTemporaryConfigurationFile("products.yml");
-		AssemblerFile = CreateTemporaryConfigurationFile("assembler.yml");
-		NavigationFile = CreateTemporaryConfigurationFile("navigation.yml");
-		LegacyUrlMappingsFile = CreateTemporaryConfigurationFile("legacy-url-mappings.yml");
+		VersionFile = Locate("versions.yml");
+		ProductsFile = Locate("products.yml");
+		AssemblerFile = Locate("assembler.yml");
+		NavigationFile = Locate("navigation.yml");
+		LegacyUrlMappingsFile = Locate("legacy-url-mappings.yml");
 		// reading from synonyms.yml is temporary. If you spot this again as a future reader, feel free to remove it.
-		SearchFile = CreateTemporaryConfigurationFile("search.yml", "synonyms.yml");
-		RelatedLearningFile = CreateTemporaryConfigurationFile("related-learning.yml");
+		SearchFile = Locate("search.yml", "synonyms.yml");
+		RelatedLearningFile = Locate("related-learning.yml");
 	}
 
 	public bool SkipPrivateRepositories { get; }
 
-	private IDirectoryInfo TemporaryDirectory { get; }
+	// Embedded configuration has no file of its own; it is written once to a directory unique to this instance so
+	// parallel processes and tests sharing ApplicationData never collide.
+	[field: AllowNull, MaybeNull]
+	private IDirectoryInfo EmbeddedDirectory
+	{
+		get
+		{
+			if (field is not null)
+				return field;
+			field = _fileSystem.DirectoryInfo.New(
+				Path.Join(Paths.ApplicationData.FullName, "config-runtime", Guid.NewGuid().ToString("N"))
+			);
+			field.Create();
+			return field;
+		}
+	}
 
-	public IFileInfo NavigationFile { get; private set; }
+	public IFileInfo NavigationFile { get; }
+
+	/// <summary>
+	/// <c>navigation_preview.yml</c>, for environments with the <c>navigation-preview</c> flag; <c>navigation.yml</c>
+	/// when the configuration has no preview file (older remote refs).
+	/// </summary>
+	[field: AllowNull, MaybeNull]
+	public IFileInfo NavigationPreviewFile => field ??= Locate("navigation_preview.yml", "navigation.yml");
 
 	public IFileInfo VersionFile { get; }
 
@@ -144,65 +161,29 @@ public partial class ConfigurationFileProvider
 	public IFileInfo RelatedLearningFile { get; }
 
 	/// <summary>
-	/// Repoints <see cref="NavigationFile"/> at <c>config/navigation_preview.yml</c>.
-	/// Must be called before any reader accesses <see cref="NavigationFile"/> —
-	/// the intended caller is <c>AssembleContext</c>'s constructor.
-	/// Falls back to <c>navigation.yml</c> when no preview file is present (safe for old remote refs).
+	/// The file <paramref name="fileName"/> (or <paramref name="fallback"/>) is read from: in place for local and remote
+	/// configuration, written out once for embedded configuration.
 	/// </summary>
-	public IFileInfo UseNavigationPreview()
+	private IFileInfo Locate(string fileName, string? fallback = null)
 	{
-		_logger.LogInformation("Feature flag navigation-preview: loading navigation from navigation_preview.yml");
-		NavigationFile = CreateTemporaryConfigurationFile("navigation_preview.yml", "navigation.yml");
-		return NavigationFile;
-	}
+		if (ConfigurationSource is ConfigurationSource.Local or ConfigurationSource.Remote)
+		{
+			var (directory, candidate, candidateFallback) = ConfigurationSource == ConfigurationSource.Local
+				? (LocalConfigurationDirectory, GetLocalPath(fileName), fallback is null ? null : GetLocalPath(fallback))
+				: (AppDataConfigurationDirectory, GetAppDataPath(fileName), fallback is null ? null : GetAppDataPath(fallback));
+			if (_fileSystem.File.Exists(candidate))
+				return _fileSystem.FileInfo.New(candidate);
+			if (candidateFallback is not null && _fileSystem.File.Exists(candidateFallback))
+				return _fileSystem.FileInfo.New(candidateFallback);
+			throw new Exception($"Can not read {fileName} in directory {directory}");
+		}
 
-	private IFileInfo CreateTemporaryConfigurationFile(string fileName, string? fallback = null)
-	{
-		using var stream = GetLocalOrEmbedded(fileName, fallback);
-		var context = stream.ReadToEnd();
-		var fi = _fileSystem.FileInfo.New(Path.Join(TemporaryDirectory.FullName, fileName));
-		_fileSystem.File.WriteAllText(fi.FullName, context);
+		using var stream = GetEmbeddedStream(fileName, fallback);
+		var fi = _fileSystem.FileInfo.New(Path.Join(EmbeddedDirectory.FullName, fileName));
+		_fileSystem.File.WriteAllText(fi.FullName, stream.ReadToEnd());
 		// The IFileInfo was created before the file was written; refresh so Exists and Length reflect the written file.
 		fi.Refresh();
 		return fi;
-	}
-
-	private StreamReader GetLocalOrEmbedded(string fileName, string? fallback = null)
-	{
-		var localPath = GetLocalPath(fileName);
-		if (ConfigurationSource == ConfigurationSource.Local)
-		{
-			if (_fileSystem.File.Exists(localPath))
-			{
-				var reader = _fileSystem.File.OpenText(localPath);
-				return reader;
-			}
-			var fallbackPath = fallback is not null ? GetLocalPath(fallback) : null;
-			if (fallbackPath is not null && _fileSystem.File.Exists(fallbackPath))
-			{
-				var reader = _fileSystem.File.OpenText(fallbackPath);
-				return reader;
-			}
-			throw new Exception($"Can not read {fileName} in directory {LocalConfigurationDirectory}");
-		}
-
-		var appDataPath = GetAppDataPath(fileName);
-		if (ConfigurationSource == ConfigurationSource.Remote)
-		{
-			if (_fileSystem.File.Exists(appDataPath))
-			{
-				var reader = _fileSystem.File.OpenText(appDataPath);
-				return reader;
-			}
-			var fallbackPath = fallback is not null ? GetAppDataPath(fallback) : null;
-			if (fallbackPath is not null && _fileSystem.File.Exists(fallbackPath))
-			{
-				var reader = _fileSystem.File.OpenText(fallbackPath);
-				return reader;
-			}
-			throw new Exception($"Can not read {fileName} in directory {AppDataConfigurationDirectory}");
-		}
-		return GetEmbeddedStream(fileName, fallback);
 	}
 
 	private StreamReader GetEmbeddedStream(string fileName, string? fallback = null)

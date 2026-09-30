@@ -26,7 +26,7 @@ public class GlobalNavigationService(
 		var assembleContext = new AssembleContext(configuration, configurationContext, "dev", collector, fileSystem);
 		var namespaceChecker = new NavigationPrefixChecker(logFactory, assembleContext);
 
-		var navigationFileInfo = assembleContext.ConfigurationFileProvider.NavigationFile;
+		var navigationFileInfo = assembleContext.NavigationFile;
 
 		// this validates all path prefixes are unique, early exit if duplicates are detected
 		if (!SiteNavigationLoader.ValidatePathPrefixes(collector, assembleContext.Navigation, navigationFileInfo) || collector.Errors > 0)

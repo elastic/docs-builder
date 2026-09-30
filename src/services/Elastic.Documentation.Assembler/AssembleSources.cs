@@ -172,5 +172,5 @@ public class AssembleSources
 	}
 
 	public static FrozenDictionary<Uri, NavigationTocMapping> GetTocMappings(AssembleContext context) =>
-		SiteNavigationLoader.GetTocMappings(context.Navigation, context.ConfigurationFileProvider.NavigationFile, context.Collector);
+		SiteNavigationLoader.GetTocMappings(context.Navigation, context.NavigationFile, context.Collector);
 }
