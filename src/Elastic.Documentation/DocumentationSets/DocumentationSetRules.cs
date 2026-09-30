@@ -345,7 +345,7 @@ public static class DocumentationSetRules
 				continue;
 			}
 
-			if (ChildSlug(childFile) == DocumentedReservedChildSlug)
+			if (ApiChildSlug(childFile.Name) == DocumentedReservedChildSlug)
 			{
 				findings.Add(
 					Finding.Warning(
@@ -362,14 +362,17 @@ public static class DocumentationSetRules
 	// API Explorer reserves the other child slugs by failing the build; 'tags' is only documented as reserved, so it warns.
 	private const string DocumentedReservedChildSlug = "tags";
 
-	// The slug API Explorer derives from a child file name: no extension, no '.vN' version suffix, lowercase, '-' for ' ' and '_'.
-	private static string ChildSlug(IFileInfo childFile)
+	/// <summary>
+	/// The URL slug API Explorer gives a child page: the file name without extension or <c>.vN</c> version suffix,
+	/// lowercased, with <c>-</c> for spaces and underscores.
+	/// </summary>
+	public static string ApiChildSlug(string fileName)
 	{
-		var name = Path.GetFileNameWithoutExtension(childFile.Name);
-		var versionSuffix = name.LastIndexOf(".v", StringComparison.OrdinalIgnoreCase);
-		if (versionSuffix > 0 && name.Length > versionSuffix + 2 && name[(versionSuffix + 2)..].All(char.IsAsciiDigit))
-			name = name[..versionSuffix];
-		return name.ToLowerInvariant().Replace(' ', '-').Replace('_', '-');
+		var stem = Path.GetFileNameWithoutExtension(fileName);
+		var dot = stem.LastIndexOf(".v", StringComparison.OrdinalIgnoreCase);
+		if (dot > 0 && int.TryParse(stem[(dot + 2)..], out var major) && major >= 0)
+			stem = stem[..dot];
+		return stem.ToLowerInvariant().Replace(' ', '-').Replace('_', '-');
 	}
 
 	private static bool IsTopLevelSupplementalChild(IFileInfo childFile, IDirectoryInfo apiDirectory) =>

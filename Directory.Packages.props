@@ -51,6 +51,7 @@
     <PackageVersion Include="OpenTelemetry.Instrumentation.AspNetCore" Version="1.16.0" />
     <PackageVersion Include="Generator.Equals" Version="4.0.0" PrivateAssets="all" IncludeAssets="runtime; build; native; contentfiles; analyzers; buildtransitive" />
     <PackageVersion Include="Elastic.Clients.Elasticsearch" Version="9.4.2" />
+    <PackageVersion Include="CsCheck" Version="4.9.1" />
     <PackageVersion Include="FakeItEasy" Version="9.0.1" />
     <PackageVersion Include="Elastic.Ingest.Elasticsearch" Version="0.51.0" />
     <PackageVersion Include="Elastic.Mapping" Version="0.51.0" />

@@ -8,4 +8,8 @@
     <ProjectReference Include="..\..\src\Elastic.Documentation\Elastic.Documentation.csproj"/>
   </ItemGroup>
 
+  <ItemGroup>
+    <PackageReference Include="CsCheck" />
+  </ItemGroup>
+
 </Project>

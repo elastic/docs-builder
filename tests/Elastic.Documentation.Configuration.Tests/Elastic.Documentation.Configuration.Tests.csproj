@@ -13,4 +13,8 @@
     <None Include="Baseline\**\*" CopyToOutputDirectory="PreserveNewest" LinkBase="Baseline" />
   </ItemGroup>
 
+  <ItemGroup>
+    <PackageReference Include="CsCheck" />
+  </ItemGroup>
+
 </Project>
