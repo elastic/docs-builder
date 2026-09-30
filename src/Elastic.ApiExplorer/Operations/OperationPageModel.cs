@@ -144,6 +144,7 @@ public record ResponsesBlockModel(IReadOnlyList<ApiResponse> Responses, Func<str
 public partial record OperationPageModel
 {
 	public required AvailabilityBadgeData? Availability { get; init; }
+	public required string? State { get; init; }
 	public required bool IsBeta { get; init; }
 	public required ExternalDocLink? ExternalDocs { get; init; }
 	public required IList<OpenApiServer>? Servers { get; init; }
@@ -221,6 +222,7 @@ public partial record OperationPageModel
 		return new OperationPageModel
 		{
 			Availability = AvailabilityBadgeHelper.FromOperation(operation, context.BuildContext.VersionsConfiguration),
+			State = OpenApiExtensionReader.GetState(operation),
 			IsBeta = OpenApiExtensionReader.IsBeta(operation),
 			ExternalDocs = externalDocs,
 			Servers = servers,
