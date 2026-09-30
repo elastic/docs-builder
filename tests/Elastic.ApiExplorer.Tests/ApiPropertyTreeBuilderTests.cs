@@ -275,6 +275,18 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture)
 	}
 
 	[Test]
+	public void BuildPropertyList_AllOfEnumRef_ShowsEnumValues()
+	{
+		var builder = CreateBuilder();
+
+		var list = builder.BuildPropertyList(Schema("fixture.EnumAllOfBody"), new PropertyTreeScope { Prefix = "req", IsRequest = true });
+
+		var mode = list!.Items.Single(p => p.Name == "mode");
+		mode.EnumValues.Should().BeEquivalentTo(["fast", "accurate"]);
+		mode.Type.Spans.Should().Contain(s => s.CssClass == SchemaHelpers.WrapperEnumCssClass && s.Text == "enum");
+	}
+
+	[Test]
 	public void BuildConstraints_NumericBounds_ProducesLabels()
 	{
 		var boolQuery = Schema("_types.query_dsl.BoolQuery");

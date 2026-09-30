@@ -487,7 +487,29 @@ public class SchemaAnalyzer(
 				if (!string.IsNullOrEmpty(refId))
 				{
 					var typeName = SchemaHelpers.FormatSchemaName(refId);
-					var named = ClassifyNamedSchema(typeName, refSchemas[0]);
+					var resolvedTarget = ResolveSchema(refSchemas[0]) ?? refSchemas[0];
+					var named = ClassifyNamedSchema(typeName, resolvedTarget);
+
+					// When allOf wraps a single $ref to an enum (a common pattern for adding description
+					// alongside a $ref in OpenAPI 3.1), propagate IsEnum and the enum values.
+					var isEnum = resolvedTarget.Enum is { Count: > 0 };
+					if (isEnum)
+					{
+						var enumValues = resolvedTarget.Enum?.Select(e => e.ToString()).ToArray();
+						return new TypeInfo(
+							named.TypeName,
+							named.IsPrimitiveAlias ? null : refId,
+							false,
+							false,
+							false,
+							null,
+							false,
+							null,
+							IsEnum: true,
+							EnumValues: enumValues
+						);
+					}
+
 					return new TypeInfo(
 						named.TypeName,
 						named.IsPrimitiveAlias ? null : refId,

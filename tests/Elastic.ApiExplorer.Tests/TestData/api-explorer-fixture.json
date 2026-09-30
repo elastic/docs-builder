@@ -737,6 +737,18 @@
             "$ref": "#/components/schemas/Security_Lists_API_ListType"
           }
         }
+      },
+      "fixture.EnumAllOfBody": {
+        "type": "object",
+        "description": "Exercises the allOf-wraps-enum-ref pattern (OpenAPI 3.1 adds description alongside $ref via allOf).",
+        "properties": {
+          "mode": {
+            "allOf": [
+              { "$ref": "#/components/schemas/_types.SearchMode" }
+            ],
+            "description": "Search mode, referenced via allOf so the description can be overridden."
+          }
+        }
       }
     }
   }
