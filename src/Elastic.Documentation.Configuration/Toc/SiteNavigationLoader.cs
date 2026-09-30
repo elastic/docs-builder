@@ -129,14 +129,8 @@ public static class SiteNavigationLoader
 		}
 
 		var pathPrefix = !string.IsNullOrEmpty(toc.PathPrefix) ? toc.PathPrefix : toc.ShorthandPath;
+		// A missing path_prefix is reported by SiteNavigationConstraints; the mapping falls back to the source path.
 		var sourcePrefix = $"{sourceUri.Host}/{sourceUri.AbsolutePath.TrimStart('/')}";
-		if (string.IsNullOrEmpty(pathPrefix))
-			Emit(
-				collector,
-				navigationFile,
-				toc.Position,
-				$"Path prefix is not defined for: {source}, falling back to {sourcePrefix} which may be incorrect"
-			);
 
 		mappings[sourceUri] = new NavigationTocMapping
 		{
@@ -159,29 +153,13 @@ public static class SiteNavigationLoader
 			Length = position is { } p ? p.Column - p.EndColumn : null
 		});
 
-	/// <summary>Reports every <c>path_prefix</c> mounted twice; returns whether all were unique.</summary>
-	public static bool ValidatePathPrefixes(
-		IDiagnosticsCollector collector,
-		SiteNavigationDefinition siteNavigation,
-		IFileInfo navigationFile
-	)
+	/// <summary>Reports every <see cref="SiteNavigationConstraints"/> violation against <paramref name="navigationFile"/>; returns whether there were no errors.</summary>
+	public static bool Validate(IDiagnosticsCollector collector, SiteNavigationDefinition siteNavigation, IFileInfo navigationFile)
 	{
-		var sourcePathPrefixes = SiteNavigationDefinition.GetAllPathPrefixes(siteNavigation);
-		var pathPrefixSet = new HashSet<string>();
-		var valid = true;
-
-		foreach (var pathPrefix in sourcePathPrefixes)
-		{
-			var prefix = $"{pathPrefix.Host}/{pathPrefix.AbsolutePath.Trim('/')}/";
-			if (pathPrefixSet.Add(prefix))
-				continue;
-
-			var duplicateOf = sourcePathPrefixes.First(p => p.Host == pathPrefix.Host && p.AbsolutePath == pathPrefix.AbsolutePath);
-			collector.EmitError(navigationFile, $"Duplicate path prefix: {pathPrefix} duplicate: {duplicateOf}");
-			valid = false;
-		}
-
-		return valid;
+		var violations = SiteNavigationConstraints.Check(siteNavigation);
+		foreach (var violation in violations)
+			collector.Write(violation.ToDiagnostic(navigationFile.FullName));
+		return violations.All(v => v.Severity != Severity.Error);
 	}
 }
 

@@ -81,16 +81,21 @@ public static class AssemblyLoader
 
 			var narrative = (NarrativeRepository)RepositoryDefaults(ToNarrative(dto.Narrative), environment);
 
-			return new AssemblyConfiguration
+			var assembly = new AssemblyConfiguration
 			{
 				Narrative = narrative,
 				ReferenceRepositories = references,
-				AvailableRepositories = references.Values.Where(r => !r.Skip).Concat([narrative]).ToDictionary(kvp => kvp.Name, kvp => kvp),
+				AvailableRepositories = AvailableByName(references.Values.Where(r => !r.Skip).Concat([narrative])),
 				PrivateRepositories = privateRepositories.Where(r => !r.Value.Skip).ToDictionary(kvp => kvp.Key, kvp => kvp.Value),
 				AllPrivateRepositoryNames = new HashSet<string>(privateRepositories.Select(r => r.Key), StringComparer.OrdinalIgnoreCase),
 				Environments = dto.Environments.ToDictionary(kv => kv.Key, kv => ToEnvironment(kv.Value, kv.Key)),
 				SharedConfigurations = dto.SharedConfigurations.ToDictionary(kv => kv.Key, kv => ToRepository(kv.Value, string.Empty))
 			};
+
+			// The constraints are checked on the model; this throwing API fails on the first error, as the parse used to.
+			if (AssemblyConstraints.Check(assembly).FirstOrDefault(v => v.Severity == Severity.Error) is { Message: { } error })
+				throw new InvalidOperationException(error);
+			return assembly;
 		}
 		catch (Exception e)
 		{
@@ -98,6 +103,15 @@ public static class AssemblyLoader
 			Console.WriteLine(e.InnerException);
 			throw;
 		}
+	}
+
+	// Last wins, so a model with colliding names can be built and reported by AssemblyConstraints.
+	private static Dictionary<string, Repository> AvailableByName(IEnumerable<Repository> repositories)
+	{
+		var byName = new Dictionary<string, Repository>();
+		foreach (var repository in repositories)
+			byName[repository.Name] = repository;
+		return byName;
 	}
 
 	private static Repository ToRepository(RepositoryDto? dto, string name) =>

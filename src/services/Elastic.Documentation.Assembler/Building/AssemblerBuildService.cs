@@ -145,7 +145,7 @@ public class AssemblerBuildService(
 		_logger.LogInformation("Validating navigation.yml does not contain colliding path prefixes");
 		// this validates all path prefixes are unique, early exit if duplicates are detected
 		if (
-			!SiteNavigationLoader.ValidatePathPrefixes(assembleContext.Collector, siteNavigationFile, navigationFileInfo)
+			!SiteNavigationLoader.Validate(assembleContext.Collector, siteNavigationFile, navigationFileInfo)
 			|| assembleContext.Collector.Errors > 0
 		)
 			return false;

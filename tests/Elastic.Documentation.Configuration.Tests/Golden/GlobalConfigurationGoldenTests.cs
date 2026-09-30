@@ -293,7 +293,7 @@ public class GlobalConfigurationGoldenTests
 	{
 		var collector = new CapturingDiagnosticsCollector();
 		var file = new MockFileSystem().FileInfo.New(Path.Join(BaselineDirectory, "config", fileName));
-		var valid = SiteNavigationLoader.ValidatePathPrefixes(collector, navigation, file);
+		var valid = SiteNavigationLoader.Validate(collector, navigation, file);
 		return Obj(
 			("phantoms", Arr(navigation.Phantoms, p => Str(p.Source))),
 			("toc", Arr(navigation.TableOfContents, ProjectSiteEntry)),

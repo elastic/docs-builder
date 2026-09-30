@@ -4,6 +4,7 @@
 
 using System.Collections.Frozen;
 using Elastic.Documentation.Catalog;
+using Elastic.Documentation.Diagnostics;
 using YamlDotNet.Serialization;
 
 namespace Elastic.Documentation.Configuration.RelatedLearning;
@@ -27,8 +28,17 @@ internal sealed class RelatedLearningLinkDto
 
 internal static class RelatedLearningConfigurationExtensions
 {
-	/// <summary>Parses and validates a <c>related-learning.yml</c> document. Throws on invalid input; <see cref="Loading.RelatedLearningLoader"/> turns that into a diagnostic.</summary>
+	/// <summary>Parses a <c>related-learning.yml</c> document and throws on its first <see cref="RelatedLearningConstraints"/> error.</summary>
 	public static RelatedLearningCatalog Parse(string yaml)
+	{
+		var catalog = ParseUnchecked(yaml);
+		if (RelatedLearningConstraints.Check(catalog).FirstOrDefault(v => v.Severity == Severity.Error) is { Message: { } error })
+			throw new InvalidOperationException(error);
+		return catalog;
+	}
+
+	/// <summary>Parses a <c>related-learning.yml</c> document without checking it. Throws only on YAML it cannot read.</summary>
+	public static RelatedLearningCatalog ParseUnchecked(string yaml)
 	{
 		var dto = ConfigurationFileProvider.Deserializer.Deserialize<RelatedLearningConfigDto>(yaml)
 			?? throw new InvalidOperationException("related-learning.yml deserialized to null.");
@@ -39,25 +49,7 @@ internal static class RelatedLearningConfigurationExtensions
 	{
 		var links = new Dictionary<string, RelatedLearningLink>(dto.Links.Count, StringComparer.Ordinal);
 		foreach (var (id, linkDto) in dto.Links)
-		{
-			if (string.IsNullOrWhiteSpace(linkDto.Title))
-				throw new InvalidOperationException($"related-learning.yml link '{id}' is missing required 'title'.");
-			if (string.IsNullOrWhiteSpace(linkDto.Url))
-				throw new InvalidOperationException($"related-learning.yml link '{id}' is missing required 'url'.");
-			if (!IsAbsoluteHttpUrl(linkDto.Url))
-			{
-				throw new InvalidOperationException(
-					$"related-learning.yml link '{id}' has invalid url '{linkDto.Url}'. " +
-						"Every url must be an absolute http or https URL."
-				);
-			}
-
 			links[id] = new RelatedLearningLink { Id = id, Title = linkDto.Title, Url = linkDto.Url };
-		}
-
 		return new RelatedLearningCatalog { Links = links.ToFrozenDictionary(StringComparer.Ordinal) };
 	}
-
-	private static bool IsAbsoluteHttpUrl(string url) =>
-		Uri.TryCreate(url, UriKind.Absolute, out var uri) && (uri.Scheme == Uri.UriSchemeHttps || uri.Scheme == Uri.UriSchemeHttp);
 }

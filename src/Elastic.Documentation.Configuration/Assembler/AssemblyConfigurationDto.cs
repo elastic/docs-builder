@@ -96,19 +96,9 @@ internal sealed class GoogleTagManagerDto
 	[YamlMember(Alias = "enabled")]
 	public bool Enabled { get; set; }
 
-	// Checked as the key is read, so it only fires when `enabled: true` comes before an empty `id:`. Kept as-is: moving
-	// it to after parsing would reject configs that load today.
+	// That an enabled container names an id is checked on the model: see AssemblyConstraints.
 	[YamlMember(Alias = "id")]
-	public string? Id
-	{
-		get;
-		set
-		{
-			if (Enabled && string.IsNullOrEmpty(value))
-				throw new ArgumentException("Id is required when Enabled is true.");
-			field = value;
-		}
-	}
+	public string? Id { get; set; }
 
 	[YamlMember(Alias = "auth")]
 	public string? Auth { get; set; }

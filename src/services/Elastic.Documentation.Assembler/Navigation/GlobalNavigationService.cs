@@ -29,7 +29,7 @@ public class GlobalNavigationService(
 		var navigationFileInfo = assembleContext.NavigationFile;
 
 		// this validates all path prefixes are unique, early exit if duplicates are detected
-		if (!SiteNavigationLoader.ValidatePathPrefixes(collector, assembleContext.Navigation, navigationFileInfo) || collector.Errors > 0)
+		if (!SiteNavigationLoader.Validate(collector, assembleContext.Navigation, navigationFileInfo) || collector.Errors > 0)
 			return false;
 
 		await namespaceChecker.CheckAllPublishedLinks(assembleContext.Collector, ctx);

@@ -6,6 +6,7 @@ using System.Collections.Frozen;
 using System.IO.Abstractions.TestingHelpers;
 using AwesomeAssertions;
 using Elastic.Documentation.Catalog;
+using Elastic.Documentation.Constraints;
 using Elastic.Documentation.DocumentationSets;
 
 namespace Elastic.Documentation.Tests.Domain;
@@ -15,7 +16,7 @@ namespace Elastic.Documentation.Tests.Domain;
 /// hold for any model. Every constraint needs a counter-example that breaks it, and only it, so none is dead or
 /// duplicated; a valid definition breaks none.
 /// </summary>
-public class DocumentationSetConstraintsTests
+public class DocumentationSetConstraintsTests : ConstraintSetTests<DocumentationSetInCatalog>
 {
 	private static ProductCatalog Products =>
 		ProductCatalog.FromPublicProducts(new Dictionary<string, Product>
@@ -25,7 +26,7 @@ public class DocumentationSetConstraintsTests
 
 	private static DeclaringFilePath Declared => DeclaringFilePath.From("/docs/docset.yml");
 
-	private static DocumentationSetDefinition Valid()
+	private static DocumentationSetDefinition ValidDocset()
 	{
 		var fs = new MockFileSystem(new Dictionary<string, MockFileData> { ["/docs/docset.yml"] = new("project: test") });
 		return new DocumentationSetDefinition
@@ -42,7 +43,7 @@ public class DocumentationSetConstraintsTests
 		};
 	}
 
-	private static FrozenDictionary<string, Func<DocumentationSetDefinition, DocumentationSetDefinition>> CounterExamples =>
+	private static FrozenDictionary<string, Func<DocumentationSetDefinition, DocumentationSetDefinition>> DocsetCounterExamples =>
 		new Dictionary<string, Func<DocumentationSetDefinition, DocumentationSetDefinition>>
 		{
 			["docset-file-exists"] =
@@ -112,31 +113,13 @@ public class DocumentationSetConstraintsTests
 				d => d with { Branding = new BrandingDeclaration(), Features = new DeclaredFeatures(PrimaryNav: true) }
 		}.ToFrozenDictionary();
 
-	[Test]
-	public void Valid_BreaksNoConstraint() => DocumentationSetConstraints.Check(Valid(), Products).Should().BeEmpty();
+	protected override IReadOnlyList<Constraint<DocumentationSetInCatalog>> Constraints => DocumentationSetConstraints.All;
 
-	[Test]
-	public void EveryConstraint_HasACounterExample() =>
-		DocumentationSetConstraints
-			.All
-			.Select(c => c.Id)
-			.Should()
-			.BeEquivalentTo(CounterExamples.Keys, "each constraint needs a counter-example, and each counter-example a constraint");
+	protected override DocumentationSetInCatalog Valid() => new(ValidDocset(), Products);
 
-	[Test]
-	public void ConstraintIds_AreUnique() => DocumentationSetConstraints.All.Select(c => c.Id).Should().OnlyHaveUniqueItems();
-
-	public static IEnumerable<Func<string>> ConstraintIds() => DocumentationSetConstraints.All.Select(c => (Func<string>)(() => c.Id));
-
-	[Test]
-	[MethodDataSource(nameof(ConstraintIds))]
-	public void CounterExample_BreaksOnlyItsConstraint(string constraintId)
-	{
-		var broken = CounterExamples[constraintId](Valid());
-
-		var violations = DocumentationSetConstraints.Check(broken, Products);
-
-		violations.Should().NotBeEmpty();
-		violations.Select(v => v.ConstraintId).Distinct().Should().Equal(constraintId);
-	}
+	protected override IReadOnlyDictionary<string, Func<DocumentationSetInCatalog, DocumentationSetInCatalog>> CounterExamples =>
+		DocsetCounterExamples.ToDictionary(
+			kv => kv.Key,
+			kv => (Func<DocumentationSetInCatalog, DocumentationSetInCatalog>)(m => m with { Docset = kv.Value(m.Docset) })
+		);
 }

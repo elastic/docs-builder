@@ -19,7 +19,14 @@ public sealed record Constraint<TModel>(string Id, string Description, Func<TMod
 /// One way a model breaks a constraint, located where the problem was declared when that is known. <see cref="File"/>
 /// is set when the problem sits in another file than the aggregate's own, such as a nested <c>toc.yml</c>.
 /// </summary>
-public readonly record struct Finding(Severity Severity, string Message, int? Line = null, int? Column = null, string? File = null)
+public readonly record struct Finding(
+	Severity Severity,
+	string Message,
+	int? Line = null,
+	int? Column = null,
+	string? File = null,
+	int? Length = null
+)
 {
 	public static Finding Error(string message, int? line = null, int? column = null) => new(Severity.Error, message, line, column);
 

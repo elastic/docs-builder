@@ -61,7 +61,11 @@ public static class RelatedLearningLoader
 		try
 		{
 			using var reader = provider.RelatedLearningFile.OpenText();
-			return Result.Success(RelatedLearningConfigurationExtensions.Parse(reader.ReadToEnd()));
+			var catalog = RelatedLearningConfigurationExtensions.ParseUnchecked(reader.ReadToEnd());
+			var diagnostics = RelatedLearningConstraints.Check(catalog).Select(v => v.ToDiagnostic("related-learning.yml")).ToList();
+			return diagnostics.Any(d => d.Severity == Severity.Error)
+				? Result.Failure<RelatedLearningCatalog>(diagnostics)
+				: Result.Success(catalog, diagnostics);
 		}
 		catch (Exception e) when (e is not OutOfMemoryException)
 		{
