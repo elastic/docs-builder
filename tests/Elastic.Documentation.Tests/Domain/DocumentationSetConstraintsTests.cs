@@ -16,6 +16,7 @@ namespace Elastic.Documentation.Tests.Domain;
 /// hold for any model. Every constraint needs a counter-example that breaks it, and only it, so none is dead or
 /// duplicated; a valid definition breaks none.
 /// </summary>
+[InheritsTests]
 public class DocumentationSetConstraintsTests : ConstraintSetTests<DocumentationSetInCatalog>
 {
 	private static ProductCatalog Products =>

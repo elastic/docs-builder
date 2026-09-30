@@ -9,6 +9,7 @@ using Elastic.Documentation.Publishing;
 
 namespace Elastic.Documentation.Tests.Domain;
 
+[InheritsTests]
 public class RelatedLearningConstraintsTests : ConstraintSetTests<RelatedLearningCatalog>
 {
 	protected override IReadOnlyList<Constraint<RelatedLearningCatalog>> Constraints => RelatedLearningConstraints.All;
@@ -29,6 +30,7 @@ public class RelatedLearningConstraintsTests : ConstraintSetTests<RelatedLearnin
 		};
 }
 
+[InheritsTests]
 public class AssemblyConstraintsTests : ConstraintSetTests<AssemblyConfiguration>
 {
 	protected override IReadOnlyList<Constraint<AssemblyConfiguration>> Constraints => AssemblyConstraints.All;
@@ -81,6 +83,7 @@ public class AssemblyConstraintsTests : ConstraintSetTests<AssemblyConfiguration
 		};
 }
 
+[InheritsTests]
 public class SiteNavigationConstraintsTests : ConstraintSetTests<SiteNavigationDefinition>
 {
 	protected override IReadOnlyList<Constraint<SiteNavigationDefinition>> Constraints => SiteNavigationConstraints.All;
@@ -98,6 +101,6 @@ public class SiteNavigationConstraintsTests : ConstraintSetTests<SiteNavigationD
 		{
 			["mount-has-path-prefix"] = _ => With(Mount("kibana://reference", "")),
 			["path-prefixes-unique"] =
-				_ => With(Mount("kibana://reference", "reference/shared"), Mount("kibana://other", "reference/shared"))
+				_ => With(Mount("kibana://reference", "reference/shared"), Mount("elasticsearch://reference", "reference/shared"))
 		};
 }
