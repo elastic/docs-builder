@@ -130,6 +130,38 @@ public class ExampleScenarioTests
 	}
 
 	[Test]
+	public void BuildExampleScenarios_CodeSamplesWithDifferentBody_KeepsRequestExampleVisible()
+	{
+		var request = new ExampleDisplay("createAgentRequestExample", null, /*lang=json,strict*/  """{"id":"created-agent-id"}""", null);
+		var console = new CodeSample(
+			"Console",
+			"""
+			POST kbn://api/agent_builder/agents
+			{"id":"new-agent-id"}
+			""",
+			"language-console"
+		);
+
+		var scenarios = OperationPageModel.BuildExampleScenarios([request], [], [console]);
+
+		scenarios.Should().ContainSingle();
+		scenarios[0].CodeSamples.Should().ContainSingle();
+		scenarios[0].CodeSamplesIncludeRequest.Should().BeFalse();
+		scenarios[0].ShowRequest.Should().BeTrue();
+	}
+
+	[Test]
+	public void BuildExampleScenarios_SyntheticCurlWithoutBody_KeepsRequestExampleVisible()
+	{
+		var request = new ExampleDisplay("default", null, /*lang=json,strict*/  """{"name":"x"}""", null);
+		var curl = new CodeSample("curl", "curl -X POST \"${KIBANA_URL}/api/things\"", "language-bash");
+
+		var scenarios = OperationPageModel.BuildExampleScenarios([request], [], [curl]);
+
+		scenarios[0].ShowRequest.Should().BeTrue();
+	}
+
+	[Test]
 	public void BuildExampleScenarios_CodeSamplesOnly_CreatesSingleScenario()
 	{
 		var samples = new[] { new CodeSample("Console", "GET /_search", "language-console") };

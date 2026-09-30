@@ -164,6 +164,44 @@ public class OperationExamplesPanelRenderingTests
 	}
 
 	[Test]
+	public async Task Render_ScenarioContent_CodeSamplesWithoutBody_AlsoRendersRequestBodyCard()
+	{
+		var html = await _ExampleScenarioContent.Create(new ExampleScenario
+		{
+			Title = "createAgentRequestExample",
+			TabId = "create",
+			HttpMethod = "post",
+			Route = "/api/agent_builder/agents",
+			RequestJson = /*lang=json,strict*/  """{"id":"created-agent-id"}""",
+			CodeSamples = [new("curl", "curl -X POST", "language-bash")]
+		}).RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
+
+		html.Should().Contain("curl -X POST");
+		html.Should().Contain("created-agent-id");
+		html.Should().Contain("api-code-sample-heading");
+		html.Should().Contain(">Request example</span>");
+		var codeSample = html.IndexOf("curl -X POST", StringComparison.Ordinal);
+		var requestBody = html.IndexOf("created-agent-id", StringComparison.Ordinal);
+		requestBody.Should().BeGreaterThan(codeSample);
+	}
+
+	[Test]
+	public async Task Render_ScenarioContent_CodeSamplesEmbeddingBody_OmitsRequestBodyCard()
+	{
+		var html = await _ExampleScenarioContent.Create(new ExampleScenario
+		{
+			Title = "Match all",
+			TabId = "match-all",
+			RequestJson = /*lang=json,strict*/  """{"query":{}}""",
+			CodeSamples = [new("Console", "POST /_search\n{\"query\":{}}", "language-console")],
+			CodeSamplesIncludeRequest = true
+		}).RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
+
+		html.Should().NotContain("api-code-sample-heading");
+		html.Should().NotContain("rail-match-all-request");
+	}
+
+	[Test]
 	public async Task Render_ResponseHeader_DoesNotIncludeScenarioSelect()
 	{
 		var html = await _ExampleScenarioContent.Create(new ExampleScenario
