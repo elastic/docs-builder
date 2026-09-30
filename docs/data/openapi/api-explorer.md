@@ -377,7 +377,7 @@ OpenAPI treats items in the `security` array as OR and keys inside one object as
 When schemes are present, **Authorization** appears as a section heading (same visual weight as **Prerequisites**) and in the on-page table of contents.
 When the section has more than one scheme, it renders collapsed with a one-line name summary.
 
-The same accordion applies to **Parameters**, **Query Parameters**, and **Request** when those sections have more than one item. A single-item section stays expanded as a plain heading.
+The same accordion applies to **Path Parameters**, **Query Parameters**, and **Request** when those sections have more than one item. A single-item section stays expanded as a plain heading.
 
 ### Tag labels [x-displayname]
 
