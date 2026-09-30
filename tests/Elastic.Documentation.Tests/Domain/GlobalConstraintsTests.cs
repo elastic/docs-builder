@@ -4,8 +4,10 @@
 
 using System.Collections.Frozen;
 using Elastic.Documentation.Catalog;
+using Elastic.Documentation.Codex;
 using Elastic.Documentation.Constraints;
 using Elastic.Documentation.Publishing;
+using Elastic.Documentation.Versions;
 
 namespace Elastic.Documentation.Tests.Domain;
 
@@ -52,7 +54,9 @@ public class AssemblyConstraintsTests : ConstraintSetTests<AssemblyConfiguration
 				{
 					Name = "prod",
 					Uri = "https://www.elastic.co",
-					GoogleTagManager = new() { Enabled = true, Id = "GTM-1" }
+					DeclaredContentSource = ContentSource.Current,
+					GoogleTagManager = new() { Enabled = true, Id = "GTM-1" },
+					Optimizely = new() { Enabled = true, Id = "1" }
 				}
 			},
 			SharedConfigurations = new Dictionary<string, Repository>()
@@ -71,16 +75,14 @@ public class AssemblyConstraintsTests : ConstraintSetTests<AssemblyConfiguration
 							[NarrativeRepository.RepositoryName] = new() { Name = NarrativeRepository.RepositoryName }
 						}
 					},
-			["google-tag-manager-has-id"] =
-				a =>
-					a with
-					{
-						Environments = new Dictionary<string, PublishEnvironment>
-						{
-							["prod"] = new() { Name = "prod", GoogleTagManager = new() { Enabled = true } }
-						}
-					}
+			["google-tag-manager-has-id"] = a => WithProd(a, e => e with { GoogleTagManager = new() { Enabled = true } }),
+			["environment-uri-absolute"] = a => WithProd(a, e => e with { Uri = "www.elastic.co" }),
+			["content-source-declared"] = a => WithProd(a, e => e with { DeclaredContentSource = null }),
+			["optimizely-has-id"] = a => WithProd(a, e => e with { Optimizely = new() { Enabled = true } })
 		};
+
+	private static AssemblyConfiguration WithProd(AssemblyConfiguration a, Func<PublishEnvironment, PublishEnvironment> change) =>
+		a with { Environments = new Dictionary<string, PublishEnvironment> { ["prod"] = change(a.Environments["prod"]) } };
 }
 
 [InheritsTests]
@@ -101,6 +103,55 @@ public class SiteNavigationConstraintsTests : ConstraintSetTests<SiteNavigationD
 		{
 			["mount-has-path-prefix"] = _ => With(Mount("kibana://reference", "")),
 			["path-prefixes-unique"] =
-				_ => With(Mount("kibana://reference", "reference/shared"), Mount("elasticsearch://reference", "reference/shared"))
+				_ => With(Mount("kibana://reference", "reference/shared"), Mount("elasticsearch://reference", "reference/shared")),
+			["repository-path-prefixes-unique"] =
+				_ => With(Mount("kibana://reference", "reference/kibana"), Mount("kibana://other", "reference/kibana/"))
+		};
+}
+
+[InheritsTests]
+public class VersioningSystemConstraintsTests : ConstraintSetTests<VersioningSystemCatalog>
+{
+	protected override IReadOnlyList<Constraint<VersioningSystemCatalog>> Constraints => VersioningSystemConstraints.All;
+
+	private static VersioningSystemCatalog With(string @base, string current) =>
+		new()
+		{
+			VersioningSystems = new Dictionary<VersioningSystemId, VersioningSystem>
+			{
+				[VersioningSystemId.Stack] = new()
+				{
+					Id = VersioningSystemId.Stack,
+					Base = (SemVersion)@base,
+					Current = (SemVersion)current
+				}
+			}
+		};
+
+	protected override VersioningSystemCatalog Valid() => With("8.0.0", "9.1.0");
+
+	protected override IReadOnlyDictionary<string, Func<VersioningSystemCatalog, VersioningSystemCatalog>> CounterExamples =>
+		new Dictionary<string, Func<VersioningSystemCatalog, VersioningSystemCatalog>>
+		{
+			["base-not-after-current"] = _ => With("9.2.0", "9.1.0")
+		};
+}
+
+[InheritsTests]
+public class CodexConfigurationConstraintsTests : ConstraintSetTests<CodexConfiguration>
+{
+	protected override IReadOnlyList<Constraint<CodexConfiguration>> Constraints => CodexConfigurationConstraints.All;
+
+	private static CodexGroupDefinition Group(string id, string name) => new() { Id = id, Name = name };
+
+	protected override CodexConfiguration Valid() =>
+		new() { Groups = [Group("observability", "Observability"), Group("security", "Security")] };
+
+	protected override IReadOnlyDictionary<string, Func<CodexConfiguration, CodexConfiguration>> CounterExamples =>
+		new Dictionary<string, Func<CodexConfiguration, CodexConfiguration>>
+		{
+			["group-has-id"] = c => c with { Groups = [.. c.Groups, Group(" ", "Unnamed")] },
+			["group-has-name"] = c => c with { Groups = [.. c.Groups, Group("search", "")] },
+			["group-ids-unique"] = c => c with { Groups = [.. c.Groups, Group("Security", "Security again")] }
 		};
 }

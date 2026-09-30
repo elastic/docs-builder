@@ -75,7 +75,7 @@ internal sealed class PublishEnvironmentDto
 	public bool AllowIndexing { get; set; }
 
 	[YamlMember(Alias = "content_source")]
-	public Publishing.ContentSource ContentSource { get; set; }
+	public Publishing.ContentSource? ContentSource { get; set; }
 
 	[YamlMember(Alias = "google_tag_manager")]
 	public GoogleTagManagerDto GoogleTagManager { get; set; } = new();

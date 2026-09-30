@@ -16,7 +16,12 @@ public static class SiteNavigationConstraints
 			"Every mounted table of contents has a path_prefix, except a bare 'toc: name', which is published under its name.",
 			MountsWithoutPathPrefix
 		),
-		new("path-prefixes-unique", "No two mounts publish under the same path prefix.", DuplicatePathPrefixes)
+		new("path-prefixes-unique", "No two repositories publish under the same path prefix.", DuplicatePathPrefixes),
+		new(
+			"repository-path-prefixes-unique",
+			"No repository mounts two tables of contents under the same path prefix.",
+			RepeatedRepositoryPathPrefixes
+		)
 	];
 
 	public static IReadOnlyList<ConstraintViolation> Check(SiteNavigationDefinition navigation) => All.CheckAll(navigation);
@@ -67,6 +72,23 @@ public static class SiteNavigationConstraints
 			yield return Finding.Error($"Duplicate path prefix: {pathPrefix} duplicate: {duplicateOf}");
 		}
 	}
+
+	// DuplicatePathPrefixes compares prefixes across repositories only: the same repository's repeats collapse in its set.
+	private static IEnumerable<Finding> RepeatedRepositoryPathPrefixes(SiteNavigationDefinition navigation) =>
+		AllMounts(navigation)
+			.Where(toc => !string.IsNullOrEmpty(toc.PathPrefix))
+			.GroupBy(
+				toc => (Repository: toc.Source.Scheme, Prefix: toc.PathPrefix.Trim('/')),
+				(key, mounts) => (key, Mounts: mounts.ToList())
+			)
+			.Where(g => g.Mounts.Count > 1)
+			.Select(
+				g => Finding.Warning(
+					$"Path prefix '{g.key.Prefix}' is mounted {g.Mounts.Count} times by {g.key.Repository}: {string.Join(", ", g.Mounts.Select(NormalizedSource))}",
+					g.Mounts[1].Position?.Line,
+					g.Mounts[1].Position?.Column
+				)
+			);
 
 	/// <summary>Every mount, depth-first in declaration order, including those under sections.</summary>
 	public static IEnumerable<SiteTableOfContentsRef> AllMounts(SiteNavigationDefinition navigation)

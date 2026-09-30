@@ -142,6 +142,8 @@ public class AssemblerBuildService(
 			navigationPreviewEnabled
 		);
 
+		GlobalConfigurationFindings.Report(assembleContext);
+
 		_logger.LogInformation("Validating navigation.yml does not contain colliding path prefixes");
 		// this validates all path prefixes are unique, early exit if duplicates are detected
 		if (

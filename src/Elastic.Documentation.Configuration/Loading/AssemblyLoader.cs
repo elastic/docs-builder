@@ -142,7 +142,7 @@ public static class AssemblyLoader
 			Uri = dto.Uri,
 			PathPrefix = dto.PathPrefix,
 			AllowIndexing = dto.AllowIndexing,
-			ContentSource = dto.ContentSource,
+			DeclaredContentSource = dto.ContentSource,
 			GoogleTagManager = new GoogleTagManager
 			{
 				Enabled = dto.GoogleTagManager.Enabled,

@@ -26,6 +26,37 @@ public static class AssemblyConstraints
 				.Values
 				.Where(e => e.GoogleTagManager.Enabled && string.IsNullOrEmpty(e.GoogleTagManager.Id))
 				.Select(_ => Finding.Error("Id is required when Enabled is true."))
+		),
+		new(
+			"environment-uri-absolute",
+			"Every environment's uri is an absolute URI.",
+			m => m
+				.Environments
+				.Values
+				.Where(e => !System.Uri.TryCreate(e.Uri, UriKind.Absolute, out _))
+				.Select(e => Finding.Warning($"Environment '{e.Name}' has uri '{e.Uri}', which is not an absolute URI."))
+		),
+		new(
+			"content-source-declared",
+			"Every environment declares which content source it publishes.",
+			m => m
+				.Environments
+				.Values
+				.Where(e => e.DeclaredContentSource is null)
+				.Select(
+					e => Finding.Warning(
+						$"Environment '{e.Name}' does not declare content_source, so it publishes 'next'. Set content_source to current, next or edge."
+					)
+				)
+		),
+		new(
+			"optimizely-has-id",
+			"An environment that enables Optimizely names its project id.",
+			m => m
+				.Environments
+				.Values
+				.Where(e => e.Optimizely.Enabled && string.IsNullOrWhiteSpace(e.Optimizely.Id))
+				.Select(e => Finding.Warning($"Environment '{e.Name}' enables Optimizely without an id."))
 		)
 	];
 

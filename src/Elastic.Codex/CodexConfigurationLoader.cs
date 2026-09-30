@@ -67,6 +67,8 @@ internal static class CodexConfigurationLoader
 			}
 
 			config = CodexSiteLoader.Load(configFile);
+			foreach (var violation in CodexConfigurationConstraints.Check(config))
+				collector.Write(violation.ToDiagnostic(originalPath));
 			return true;
 		}
 		catch (Exception ex)

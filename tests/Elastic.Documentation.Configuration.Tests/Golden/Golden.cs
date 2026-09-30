@@ -33,11 +33,15 @@ public static class Golden
 	public static string BaselineFile(params string[] parts) => Path.Join([BaselineDirectory, .. parts]);
 
 	/// <summary>A provider reading the frozen <c>Baseline/config/</c> files, through a mock file system seeded as the Remote config source.</summary>
-	public static ConfigurationFileProvider BaselineProvider(bool skipPrivateRepositories = false)
+	public static ConfigurationFileProvider BaselineProvider(bool skipPrivateRepositories = false) =>
+		ProviderFor(BaselineFile("config"), skipPrivateRepositories);
+
+	/// <summary>A provider reading the files in <paramref name="sourceDirectory"/>, through a mock file system seeded as the Remote config source.</summary>
+	public static ConfigurationFileProvider ProviderFor(string sourceDirectory, bool skipPrivateRepositories = false)
 	{
 		var fs = new MockFileSystem();
 		var configDirectory = ConfigurationFileProvider.AppDataConfigurationDirectory;
-		foreach (var file in Directory.EnumerateFiles(BaselineFile("config")))
+		foreach (var file in Directory.EnumerateFiles(sourceDirectory))
 			fs.AddFile(Path.Join(configDirectory, Path.GetFileName(file)), new MockFileData(File.ReadAllText(file)));
 		fs.AddFile(Path.Join(configDirectory, "git-ref.txt"), new MockFileData("golden"));
 		return new ConfigurationFileProvider(
