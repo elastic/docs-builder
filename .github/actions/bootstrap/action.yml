@@ -13,6 +13,10 @@ outputs:
 runs:
   using: "composite"
   steps:
+    - name: Set NUGET_PACKAGES path
+      shell: bash
+      run: echo "NUGET_PACKAGES=${{ github.workspace }}/.nuget/packages" >> $GITHUB_ENV # zizmor: ignore[github-env]
+
     - uses: actions/cache@v6
       with:
         path: ${{ github.workspace }}/.nuget/packages
