@@ -117,6 +117,8 @@ public class ApiSupplementalRenderTests(ApiExplorerFixture fixture)
 		var html = await RenderAsync(nav.Model, nav);
 
 		html.Should().Contain("id=\"parameters\"");
+		html.Should().Contain("<span>Path Parameters</span>");
+		html.Should().NotContain("<span>Parameters</span>");
 		html.Should().NotContain("id=\"parameters-list\"");
 		html.Should().NotContain("aria-controls=\"parameters-list\"");
 	}
