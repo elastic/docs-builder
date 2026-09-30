@@ -13,6 +13,10 @@
 			{
 				<span class="api-url">@Model.Route</span>
 			}
+			@if (!string.IsNullOrEmpty(Model.Title))
+			{
+				<span class="api-code-sample-heading">@Model.Title</span>
+			}
 		</div>
 		<div class="api-code-sample-actions">
 			@if (Model.Examples is { Count: > 1 })
