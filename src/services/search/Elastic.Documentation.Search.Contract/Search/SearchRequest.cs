@@ -32,6 +32,9 @@ public record SearchRequest
 	public SortMode SortBy { get; init; } = SortMode.Relevance;
 	public bool IncludeHighlighting { get; init; } = true;
 
+	/// <summary>Run the hybrid semantic query even when the query does not match the normal natural-language heuristic.</summary>
+	public bool ForceSemantic { get; init; }
+
 	/// <summary>
 	/// Diagnostic probe bitmask — see <see cref="SearchQueryComponents"/> for bit definitions.
 	/// When <c>null</c> (the default) the normal production query is built verbatim.

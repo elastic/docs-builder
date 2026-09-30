@@ -101,6 +101,14 @@ jobs:
           yq -i ".environments.preview.path_prefix = \"${ASSEMBLER_PREVIEW_PATH_PREFIX}\"" config/assembler.yml
           dotnet run --project src/tooling/docs-builder -- assemble --skip-private-repositories --environment preview
 
+      # Temporary: remove this step after docs-infra serves the 404 page from each preview's path prefix.
+      - name: Publish temporary 404 experience preview
+        run: |
+          preview_root=".artifacts/assembly/${ASSEMBLER_PREVIEW_PATH_PREFIX}"
+          preview_path="${preview_root}/opentelemetry-collector"
+          mkdir -p "${preview_path}"
+          cp "${preview_root}/404/index.html" "${preview_path}/index.html"
+
       - uses: elastic/docs-builder/.github/actions/aws-auth@main
 
       - name: Upload assembled docs to S3

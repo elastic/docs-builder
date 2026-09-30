@@ -38,6 +38,7 @@ export const loadWebComponents = createWebComponentLoader({
     'navigation-search': () =>
         import('./NavigationSearch/NavigationSearchComponent'),
     'diagnostics-panel': () => import('./Diagnostics/DiagnosticsComponent'),
+    'related-pages': () => import('./RelatedPages/RelatedPagesComponent'),
     'storybook-story': () => import('./StorybookStory/StorybookStoryComponent'),
     'vector-sizing-calculator': () =>
         import('./VectorSizingCalculator/VectorSizingCalculatorComponent'),

@@ -55,6 +55,7 @@ toc:
       - title: "Getting Started Guide"
         crosslink: docs-content://get-started/introduction.md
   - file: custom-highlighters.md
+  - hidden: 404.md
   - hidden: archive.md
   - hidden: landing-page.md
   - file: nest-under-index/index.md

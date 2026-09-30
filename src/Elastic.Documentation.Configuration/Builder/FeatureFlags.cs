@@ -24,6 +24,8 @@ public class FeatureFlags(Dictionary<string, bool> initFeatureFlags)
 
 	public bool StagingElasticNavEnabled { get => IsEnabled("staging-elastic-nav"); set => _featureFlags["staging-elastic-nav"] = value; }
 
+	public bool RelatedPagesEnabled { get => IsEnabled("related-pages"); set => _featureFlags["related-pages"] = value; }
+
 	public bool WebsiteSearchEnabled { get => IsEnabled("website-search"); set => _featureFlags["website-search"] = value; }
 
 	public string? WebsiteSearchScriptUrl { get; set; }
