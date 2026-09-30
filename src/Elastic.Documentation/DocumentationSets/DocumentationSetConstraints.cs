@@ -115,6 +115,23 @@ public static class DocumentationSetConstraints
 					)
 				]
 				: []
+		),
+		new(
+			"file-stays-in-folder",
+			"A file entry names a file in the folder it is declared in, or deeper.",
+			m => TableOfContentsRules.FilesLeavingTheirFolder(m.Docset)
+		),
+		new(
+			"registry-known",
+			"A registry, when set, names a known codex registry.",
+			m => m.Docset.Registry is { } registry && !string.IsNullOrWhiteSpace(registry) &&
+				!registry.Trim().Equals(DocSetRegistry.Internal.ToStringFast(true), StringComparison.OrdinalIgnoreCase)
+				? [
+					Finding.Warning(
+						$"registry '{registry.Trim()}' is not a known codex registry, so this is built as the default docset. Remove 'registry' for the default docset, or set it to: {DocSetRegistry.Internal.ToStringFast(true)}."
+					)
+				]
+				: []
 		)
 	];
 

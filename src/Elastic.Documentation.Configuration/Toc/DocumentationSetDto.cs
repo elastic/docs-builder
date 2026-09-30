@@ -167,6 +167,7 @@ internal class DocumentationSetDto : TableOfContentsDto
 		docSet.SuppressDiagnostics.ExceptWith(noSuppress ?? []);
 		docSet.TableOfContents = ResolveTableOfContents(
 			collector,
+			tocAncestors: [],
 			docSet.TocEntries,
 			sourceDirectory,
 			fileSystem,
@@ -189,6 +190,7 @@ internal class DocumentationSetDto : TableOfContentsDto
 	/// </summary>
 	private static IReadOnlyList<TocItem> ResolveTableOfContents(
 		IDiagnosticsCollector collector,
+		IReadOnlyList<string> tocAncestors,
 		IReadOnlyList<ITocEntryDto> items,
 		IDirectoryInfo baseDirectory,
 		IFileSystem fileSystem,
@@ -208,6 +210,7 @@ internal class DocumentationSetDto : TableOfContentsDto
 				NestedTocEntryDto tocRef =>
 					ResolveIsolatedToc(
 						collector,
+						tocAncestors,
 						tocRef,
 						baseDirectory,
 						fileSystem,
@@ -219,6 +222,7 @@ internal class DocumentationSetDto : TableOfContentsDto
 				DetectionRulesEntryDto ruleOverviewReference =>
 					ResolveRuleOverviewReference(
 						collector,
+						tocAncestors,
 						ruleOverviewReference,
 						baseDirectory,
 						fileSystem,
@@ -228,14 +232,25 @@ internal class DocumentationSetDto : TableOfContentsDto
 						suppressDiagnostics
 					),
 				CliReferenceEntryDto cliRef =>
-					ResolveCliReference(collector, cliRef, baseDirectory, fileSystem, parentPath, containerPath, context),
+					ResolveCliReference(collector, tocAncestors, cliRef, baseDirectory, fileSystem, parentPath, containerPath, context),
 				ListingEntryDto listingRef =>
-					ResolveListingRef(collector, listingRef, baseDirectory, fileSystem, parentPath, containerPath, context),
+					ResolveListingRef(collector, tocAncestors, listingRef, baseDirectory, fileSystem, parentPath, containerPath, context),
 				FileEntryDto fileRef =>
-					ResolveFileRef(collector, fileRef, baseDirectory, fileSystem, parentPath, containerPath, context, suppressDiagnostics),
+					ResolveFileRef(
+						collector,
+						tocAncestors,
+						fileRef,
+						baseDirectory,
+						fileSystem,
+						parentPath,
+						containerPath,
+						context,
+						suppressDiagnostics
+					),
 				FolderEntryDto folderRef =>
 					ResolveFolderRef(
 						collector,
+						tocAncestors,
 						folderRef,
 						baseDirectory,
 						fileSystem,
@@ -245,7 +260,7 @@ internal class DocumentationSetDto : TableOfContentsDto
 						suppressDiagnostics
 					),
 				CrossLinkEntryDto crossLink =>
-					ResolveCrossLinkRef(collector, crossLink, baseDirectory, fileSystem, parentPath, containerPath, context),
+					ResolveCrossLinkRef(collector, tocAncestors, crossLink, baseDirectory, fileSystem, parentPath, containerPath, context),
 				_ => null
 			};
 
@@ -288,6 +303,7 @@ internal class DocumentationSetDto : TableOfContentsDto
 #pragma warning disable IDE0060 // Remove unused parameter - suppressDiagnostics is for consistency, nested TOCs use their own suppression config
 	private static TocItem? ResolveIsolatedToc(
 		IDiagnosticsCollector collector,
+		IReadOnlyList<string> tocAncestors,
 		NestedTocEntryDto tocRef,
 		IDirectoryInfo baseDirectory,
 		IFileSystem fileSystem,
@@ -350,6 +366,23 @@ internal class DocumentationSetDto : TableOfContentsDto
 			);
 		}
 
+		// A toc.yml that includes one of its ancestors would recurse until the stack overflows
+		var tocKey = fileSystem.Path.GetFullPath(tocFilePath);
+		if (tocAncestors.Contains(tocKey, StringComparer.OrdinalIgnoreCase))
+		{
+			collector.EmitError(
+				parentContext,
+				$"Table of contents '{fullTocPath}/toc.yml' includes itself: {string.Join(" -> ", [.. tocAncestors, tocKey])}. Remove the 'toc:' entry that closes the loop."
+			);
+			return new IsolatedTableOfContentsRef(
+				DocsetPath.From(fullTocPath),
+				ContainerPath.From(tocPathRelativeToContainer),
+				[],
+				DeclaringFilePath.From(parentContext),
+				tocRef.Island
+			);
+		}
+
 		// Validate that the toc.yml is not a symlink (security: prevents path traversal attacks)
 		EnsureNotSymlink(fileSystem, tocFilePath);
 
@@ -381,6 +414,7 @@ internal class DocumentationSetDto : TableOfContentsDto
 		// For children of this TOC, the container path is fullTocPath (they're defined in toc.yml at that location)
 		var resolvedChildren = ResolveTableOfContents(
 			collector,
+			[.. tocAncestors, tocKey],
 			nestedTocFile.TocEntries,
 			baseDirectory,
 			fileSystem,
@@ -410,6 +444,7 @@ internal class DocumentationSetDto : TableOfContentsDto
 	/// </summary>
 	private static TocItem ResolveFileRef(
 		IDiagnosticsCollector collector,
+		IReadOnlyList<string> tocAncestors,
 		FileEntryDto fileRef,
 		IDirectoryInfo baseDirectory,
 		IFileSystem fileSystem,
@@ -553,6 +588,7 @@ internal class DocumentationSetDto : TableOfContentsDto
 		// For children of files, the container is still the current context (same container as the file itself)
 		var resolvedChildren = ResolveTableOfContents(
 			collector,
+			tocAncestors,
 			fileRef.Children,
 			baseDirectory,
 			fileSystem,
@@ -601,6 +637,7 @@ internal class DocumentationSetDto : TableOfContentsDto
 	/// </summary>
 	private static TocItem ResolveRuleOverviewReference(
 		IDiagnosticsCollector collector,
+		IReadOnlyList<string> tocAncestors,
 		DetectionRulesEntryDto detectionRuleRef,
 		IDirectoryInfo baseDirectory,
 		IFileSystem fileSystem,
@@ -635,6 +672,7 @@ internal class DocumentationSetDto : TableOfContentsDto
 		// For children of folders, the container remains the same as the folder's container
 		var resolvedChildren = ResolveTableOfContents(
 			collector,
+			tocAncestors,
 			detectionRuleRef.Children,
 			baseDirectory,
 			fileSystem,
@@ -693,6 +731,7 @@ internal class DocumentationSetDto : TableOfContentsDto
 
 	private static TocItem? ResolveCliReference(
 		IDiagnosticsCollector collector,
+		IReadOnlyList<string> tocAncestors,
 		CliReferenceEntryDto cliRef,
 		IDirectoryInfo baseDirectory,
 		IFileSystem fileSystem,
@@ -735,7 +774,16 @@ internal class DocumentationSetDto : TableOfContentsDto
 
 		// Resolve explicit children (regular docs + namespace/folder refs) relative to the virtual root
 		var resolvedChildren = cliRef.Children.Count > 0
-			? ResolveTableOfContents(collector, cliRef.Children, baseDirectory, fileSystem, fullVirtualRoot, containerPath, context)
+			? ResolveTableOfContents(
+				collector,
+				tocAncestors,
+				cliRef.Children,
+				baseDirectory,
+				fileSystem,
+				fullVirtualRoot,
+				containerPath,
+				context
+			)
 			: [];
 
 		return new CliReferenceRef(
@@ -757,6 +805,7 @@ internal class DocumentationSetDto : TableOfContentsDto
 	/// </summary>
 	private static TocItem ResolveFolderRef(
 		IDiagnosticsCollector collector,
+		IReadOnlyList<string> tocAncestors,
 		FolderEntryDto folderRef,
 		IDirectoryInfo baseDirectory,
 		IFileSystem fileSystem,
@@ -806,6 +855,7 @@ internal class DocumentationSetDto : TableOfContentsDto
 			// For children of folders, the container remains the same as the folder's container
 			var resolvedChildren = ResolveTableOfContents(
 				collector,
+				tocAncestors,
 				folderRef.Children,
 				baseDirectory,
 				fileSystem,
@@ -830,6 +880,7 @@ internal class DocumentationSetDto : TableOfContentsDto
 		var explicitSortOrder = folderRef.Sort is not null ? sortOrder : (SortOrder?)null;
 		var autoDiscoveredChildren = AutoDiscoverFolderFiles(
 			collector,
+			tocAncestors,
 			fullPath,
 			containerPath,
 			baseDirectory,
@@ -856,6 +907,7 @@ internal class DocumentationSetDto : TableOfContentsDto
 	/// </summary>
 	private static IReadOnlyList<TocItem> AutoDiscoverFolderFiles(
 		IDiagnosticsCollector collector,
+		IReadOnlyList<string> tocAncestors,
 		string folderPath,
 		string containerPath,
 		IDirectoryInfo baseDirectory,
@@ -911,7 +963,7 @@ internal class DocumentationSetDto : TableOfContentsDto
 
 		// Resolve the children with the folder path as parent to get correct full paths
 		// Auto-discovered items are in the same container as the folder
-		return ResolveTableOfContents(collector, children, baseDirectory, fileSystem, folderPath, containerPath, context);
+		return ResolveTableOfContents(collector, tocAncestors, children, baseDirectory, fileSystem, folderPath, containerPath, context);
 	}
 
 	/// <summary>
@@ -1044,6 +1096,7 @@ internal class DocumentationSetDto : TableOfContentsDto
 	/// </summary>
 	private static TocItem? ResolveListingRef(
 		IDiagnosticsCollector collector,
+		IReadOnlyList<string> tocAncestors,
 		ListingEntryDto listingRef,
 		IDirectoryInfo baseDirectory,
 		IFileSystem fileSystem,
@@ -1249,7 +1302,16 @@ internal class DocumentationSetDto : TableOfContentsDto
 
 		// Resolve explicit children (from YAML `children:`) last
 		var explicitChildren = listingRef.Children.Count > 0
-			? ResolveTableOfContents(collector, listingRef.Children, baseDirectory, fileSystem, fullPath, containerPath, context)
+			? ResolveTableOfContents(
+				collector,
+				tocAncestors,
+				listingRef.Children,
+				baseDirectory,
+				fileSystem,
+				fullPath,
+				containerPath,
+				context
+			)
 			: [];
 		tocItems.AddRange(explicitChildren);
 
@@ -1267,6 +1329,7 @@ internal class DocumentationSetDto : TableOfContentsDto
 	/// </summary>
 	private static TocItem ResolveCrossLinkRef(
 		IDiagnosticsCollector collector,
+		IReadOnlyList<string> tocAncestors,
 		CrossLinkEntryDto crossLinkRef,
 		IDirectoryInfo baseDirectory,
 		IFileSystem fileSystem,
@@ -1287,6 +1350,7 @@ internal class DocumentationSetDto : TableOfContentsDto
 		// For children of cross-links, the container remains the same
 		var resolvedChildren = ResolveTableOfContents(
 			collector,
+			tocAncestors,
 			crossLinkRef.Children,
 			baseDirectory,
 			fileSystem,

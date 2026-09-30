@@ -111,7 +111,23 @@ public class DocumentationSetConstraintsTests : ConstraintSetTests<Documentation
 			["cta-template-valid"] = d => d with { Ctas = [new CtaDeclaration("broken", null, null, [])], TocDefaultCtas = [] },
 			["default-cta-known"] = d => d with { TocDefaultCtas = [new("index.md", "missing")] },
 			["primary-nav-without-branding"] =
-				d => d with { Branding = new BrandingDeclaration(), Features = new DeclaredFeatures(PrimaryNav: true) }
+				d => d with { Branding = new BrandingDeclaration(), Features = new DeclaredFeatures(PrimaryNav: true) },
+			["file-stays-in-folder"] =
+				d =>
+					d with
+					{
+						TableOfContents =
+						[
+							new FileRef(
+								DocsetPath.From("guides/../setup.md"),
+								ContainerPath.From("guides/../setup.md"),
+								false,
+								[],
+								Declared
+							)
+						]
+					},
+			["registry-known"] = d => d with { Registry = "public" }
 		}.ToFrozenDictionary();
 
 	protected override IReadOnlyList<Constraint<DocumentationSetInCatalog>> Constraints => DocumentationSetConstraints.All;
@@ -123,4 +139,23 @@ public class DocumentationSetConstraintsTests : ConstraintSetTests<Documentation
 			kv => kv.Key,
 			kv => (Func<DocumentationSetInCatalog, DocumentationSetInCatalog>)(m => m with { Docset = kv.Value(m.Docset) })
 		);
+}
+
+[InheritsTests]
+public class DocsetDiscoveryConstraintsTests : ConstraintSetTests<DocsetDiscovery>
+{
+	private static MockFileSystem FileSystem => new();
+
+	private static DiscoveredDocset Docset(string path, string? registry) => new(FileSystem.FileInfo.New(path), registry);
+
+	protected override IReadOnlyList<Constraint<DocsetDiscovery>> Constraints => DocsetDiscoveryConstraints.All;
+
+	protected override DocsetDiscovery Valid() => new([Docset("/repo/docset.yml", null), Docset("/repo/docs/docset.yml", "internal")]);
+
+	protected override IReadOnlyDictionary<string, Func<DocsetDiscovery, DocsetDiscovery>> CounterExamples =>
+		new Dictionary<string, Func<DocsetDiscovery, DocsetDiscovery>>
+		{
+			["one-docset-per-registry"] = d => new([.. d.Candidates, Docset("/repo/_docset.yml", "public")]),
+			["discovered-docset-is-default"] = d => new([.. d.Candidates.Reverse()])
+		};
 }

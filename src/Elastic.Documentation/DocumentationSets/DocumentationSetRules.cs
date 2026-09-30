@@ -345,9 +345,31 @@ public static class DocumentationSetRules
 				continue;
 			}
 
+			if (ChildSlug(childFile) == DocumentedReservedChildSlug)
+			{
+				findings.Add(
+					Finding.Warning(
+						$"Child page '{child}' for API '{productKey}' uses the slug '{DocumentedReservedChildSlug}', which is reserved for API Explorer. Rename the file."
+					)
+				);
+			}
+
 			resolved.Add(childFile);
 		}
 		return resolved;
+	}
+
+	// API Explorer reserves the other child slugs by failing the build; 'tags' is only documented as reserved, so it warns.
+	private const string DocumentedReservedChildSlug = "tags";
+
+	// The slug API Explorer derives from a child file name: no extension, no '.vN' version suffix, lowercase, '-' for ' ' and '_'.
+	private static string ChildSlug(IFileInfo childFile)
+	{
+		var name = Path.GetFileNameWithoutExtension(childFile.Name);
+		var versionSuffix = name.LastIndexOf(".v", StringComparison.OrdinalIgnoreCase);
+		if (versionSuffix > 0 && name.Length > versionSuffix + 2 && name[(versionSuffix + 2)..].All(char.IsAsciiDigit))
+			name = name[..versionSuffix];
+		return name.ToLowerInvariant().Replace(' ', '-').Replace('_', '-');
 	}
 
 	private static bool IsTopLevelSupplementalChild(IFileInfo childFile, IDirectoryInfo apiDirectory) =>

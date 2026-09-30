@@ -218,16 +218,19 @@ internal sealed class TocItemYamlConverter : IYamlTypeConverter
 			return new FileEntryDto(fileOnly, false, children, defaultCta);
 		}
 
-		if (dictionary.TryGetValue("hidden", out var hiddenPath) && hiddenPath is string p)
-			return p == "index.md" ? new IndexFileEntryDto(p, true, children, defaultCta) : new FileEntryDto(p, true, children, defaultCta);
-
-		// Check for crosslink reference
+		// Check for crosslink reference before hidden:, which on a crosslink is a flag rather than a file
 		if (dictionary.TryGetValue("crosslink", out var crosslink) && crosslink is string crosslinkStr)
 		{
 			var title = dictionary.TryGetValue("title", out var t) && t is string titleStr ? titleStr : null;
-			var isHidden = dictionary.TryGetValue("hidden", out var h) && h is bool hiddenBool && hiddenBool;
+			var isHidden = dictionary.TryGetValue("hidden", out var h)
+				&& h is string hiddenStr
+				&& bool.TryParse(hiddenStr, out var hiddenBool)
+				&& hiddenBool;
 			return new CrossLinkEntryDto(new Uri(crosslinkStr), title, isHidden, children);
 		}
+
+		if (dictionary.TryGetValue("hidden", out var hiddenPath) && hiddenPath is string p)
+			return p == "index.md" ? new IndexFileEntryDto(p, true, children, defaultCta) : new FileEntryDto(p, true, children, defaultCta);
 
 		// Check for folder reference
 		// PathRelativeToContainer will be set during resolution

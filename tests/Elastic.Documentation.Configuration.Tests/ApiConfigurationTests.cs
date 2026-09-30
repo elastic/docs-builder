@@ -710,6 +710,37 @@ public class ConfigurationFileApiTests
 	}
 
 	[Test]
+	[Arguments("tags.md")]
+	[Arguments("Tags.v2.md")]
+	public void EmitsWarning_WhenChildUsesTheDocumentedReservedTagsSlug(string childFile)
+	{
+		var docSetFile = new DocumentationSetDto
+		{
+			Api = new Dictionary<string, ApiProductSequenceDto>
+			{
+				["elasticsearch"] = new()
+				{
+					Entries =
+					[
+						new ApiProductEntryDto
+						{
+							Spec = "elasticsearch-openapi.json",
+							Product = "elasticsearch",
+							Children = [new ApiEntryChildDto { File = childFile }]
+						}
+					]
+				}
+			}
+		};
+
+		var (config, collector) = CreateConfiguration(docSetFile, extraMarkdownFiles: [childFile]);
+
+		collector.Errors.Should().Be(0);
+		collector.Warnings.Should().Be(1);
+		config.ApiConfigurations!["elasticsearch"].Children.Should().ContainSingle();
+	}
+
+	[Test]
 	public void EmitsError_WhenChildPathEscapesApiKeyDirectory()
 	{
 		var docSetFile = new DocumentationSetDto

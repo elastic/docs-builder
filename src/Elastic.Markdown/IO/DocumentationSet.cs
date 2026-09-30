@@ -13,6 +13,7 @@ using Elastic.Documentation.Configuration.Builder;
 using Elastic.Documentation.Configuration.ReleaseNotes;
 using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Configuration.Toc.CliReference;
+using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.DocumentationSets;
 using Elastic.Documentation.Links;
 using Elastic.Documentation.Links.CrossLinks;
@@ -165,23 +166,23 @@ public class DocumentationSet : INavigationTraversable
 		foreach (var redirect in Configuration.Redirects)
 		{
 			if (redirect.Value.To is not null)
-				ValidateExists(redirect.Key, redirect.Value.To, redirect.Value.Anchors);
-			else if (redirect.Value.Many is not null)
+				ValidateExists(redirect.Key, redirect.Value.To, redirect.Value.Anchors, Severity.Error);
+
+			// Next to a top-level 'to', 'many' targets were never checked; they are reported as warnings until that becomes an error
+			var manySeverity = redirect.Value.To is null ? Severity.Error : Severity.Warning;
+			foreach (var r in redirect.Value.Many ?? [])
 			{
-				foreach (var r in redirect.Value.Many)
-				{
-					if (r.To is not null)
-						ValidateExists(redirect.Key, r.To, r.Anchors);
-				}
+				if (r.To is not null)
+					ValidateExists(redirect.Key, r.To, r.Anchors, manySeverity);
 			}
 		}
 
-		void ValidateExists(string from, string to, IReadOnlyDictionary<string, string?>? valueAnchors)
+		void ValidateExists(string from, string to, IReadOnlyDictionary<string, string?>? valueAnchors, Severity severity)
 		{
 			if (to.Contains("://"))
 			{
 				if (!Uri.TryCreate(to, UriKind.Absolute, out _))
-					Context.EmitError(Configuration.SourceFile, $"Redirect {from} points to {to} which is not a valid URI");
+					Context.Collector.Emit(severity, Configuration.SourceFile, $"Redirect {from} points to {to} which is not a valid URI");
 
 				return;
 			}
@@ -192,17 +193,18 @@ public class DocumentationSet : INavigationTraversable
 			var fp = new FilePath(to, SourceDirectory);
 			if (!Files.TryGetValue(fp, out var file))
 			{
-				Context.EmitError(Configuration.SourceFile, $"Redirect {from} points to {to} which does not exist");
+				Context.Collector.Emit(severity, Configuration.SourceFile, $"Redirect {from} points to {to} which does not exist");
 				return;
 			}
 
 			if (file is not MarkdownFile markdownFile)
 			{
-				Context.EmitError(Configuration.SourceFile, $"Redirect {from} points to {to} which is not a markdown file");
+				Context.Collector.Emit(severity, Configuration.SourceFile, $"Redirect {from} points to {to} which is not a markdown file");
 				return;
 			}
 
-			if (valueAnchors is null or { Count: 0 })
+			// Anchors on 'many' targets next to a top-level 'to' were never remapped; checking them doesn't change the output
+			if (severity != Severity.Error || valueAnchors is null or { Count: 0 })
 				return;
 
 			markdownFile.AnchorRemapping = markdownFile.AnchorRemapping?.Concat(valueAnchors)

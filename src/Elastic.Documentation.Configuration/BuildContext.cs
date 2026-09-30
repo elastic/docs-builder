@@ -118,6 +118,7 @@ public record BuildContext : IDocumentationSetContext, IDocumentationConfigurati
 		Optimizely = new OptimizelyConfiguration { Enabled = false };
 
 		Definition = LoadDefinition(fileSystem.Read);
+		ReportDiscovery();
 
 		Configuration = ResolveConfiguration();
 		Features = CreateFeatures();
@@ -128,6 +129,39 @@ public record BuildContext : IDocumentationSetContext, IDocumentationConfigurati
 		var result = DocumentationSetLoader.Load(ConfigurationPath, DocumentationSourceDirectory, ReadFileSystem, fileSystem);
 		_ = result.EmitTo(Collector);
 		return result.OrThrowIfMissing();
+	}
+
+	// A docset found by scanning should be the repository's default docset, and the only one for its registry.
+	private void ReportDiscovery()
+	{
+		if (FileSystem.Paths.DiscoveredDocsets is not { Count: > 0 } discovered)
+			return;
+		var candidates = discovered.Select(
+			f => TryReadRegistry(f, out var registry) ? new DiscoveredDocset(f, registry) : null
+		).OfType<DiscoveredDocset>();
+		foreach (var violation in DocsetDiscoveryConstraints.Check(new DocsetDiscovery([.. candidates])))
+			Collector.Write(violation.ToDiagnostic(ConfigurationPath.FullName));
+	}
+
+	private bool TryReadRegistry(IFileInfo docsetFile, out string? registry)
+	{
+		registry = null;
+		if (string.Equals(docsetFile.FullName, ConfigurationPath.FullName, StringComparison.OrdinalIgnoreCase))
+		{
+			registry = Definition.Registry;
+			return true;
+		}
+
+		// A docset this build doesn't use can't fail it; one that doesn't parse is left out of the comparison.
+		try
+		{
+			registry = DocumentationSetLoader.LoadMetadata(docsetFile).Registry;
+			return true;
+		}
+		catch (Exception e) when (e is not OutOfMemoryException)
+		{
+			return false;
+		}
 	}
 
 	private ResolvedDocumentationSet ResolveConfiguration()

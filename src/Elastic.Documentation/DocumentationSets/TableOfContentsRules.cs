@@ -48,6 +48,19 @@ public static class TableOfContentsRules
 		}
 	}
 
+	/// <summary>File entries whose path climbs out of the folder they are declared in with a <c>..</c> segment.</summary>
+	public static IEnumerable<Finding> FilesLeavingTheirFolder(DocumentationSetDefinition docset) =>
+		docset
+			.TableOfContents
+			.Descendants()
+			.OfCase<FileRef>()
+			.Where(f => f.PathRelativeToDocumentationSet.Value.Split('/', '\\').Contains(".."))
+			.Select(
+				f => Finding.Warning(
+					$"File '{f.PathRelativeToDocumentationSet}' leaves the folder it is declared in with '..'. A file's children must be its siblings or deeper; move the entry to where the file lives."
+				).In(f.Context)
+			);
+
 	/// <summary>CLI references whose supplemental docs folder does not exist.</summary>
 	public static IEnumerable<Finding> MissingCliSupplementalFolders(DocumentationSetDefinition docset)
 	{
