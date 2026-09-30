@@ -12,19 +12,19 @@ namespace Elastic.Documentation.Configuration.Toc;
 
 internal sealed class TocItemCollectionYamlConverter : IYamlTypeConverter
 {
-	public bool Accepts(Type type) => type == typeof(TocEntryList);
+	public bool Accepts(Type type) => type == typeof(TocEntryListDto);
 
 	public object ReadYaml(IParser parser, Type type, ObjectDeserializer rootDeserializer)
 	{
-		var collection = new TocEntryList();
+		var collection = new TocEntryListDto();
 
 		if (!parser.TryConsume<SequenceStart>(out _))
 			return collection;
 
 		while (!parser.TryConsume<SequenceEnd>(out _))
 		{
-			var item = rootDeserializer(typeof(ITocEntry));
-			if (item is ITocEntry tocItem)
+			var item = rootDeserializer(typeof(ITocEntryDto));
+			if (item is ITocEntryDto tocItem)
 				collection.Add(tocItem);
 		}
 
@@ -36,7 +36,7 @@ internal sealed class TocItemCollectionYamlConverter : IYamlTypeConverter
 
 internal sealed class TocItemYamlConverter : IYamlTypeConverter
 {
-	public bool Accepts(Type type) => type == typeof(ITocEntry);
+	public bool Accepts(Type type) => type == typeof(ITocEntryDto);
 
 	public object? ReadYaml(IParser parser, Type type, ObjectDeserializer rootDeserializer)
 	{
@@ -48,7 +48,7 @@ internal sealed class TocItemYamlConverter : IYamlTypeConverter
 			if (parser.Accept<Scalar>(out var scalar))
 			{
 				_ = parser.MoveNext();
-				return new InvalidTocEntry(scalar.Value);
+				return new InvalidTocEntryDto(scalar.Value);
 			}
 			// Anything else unexpected — skip to avoid an infinite loop.
 			parser.SkipThisAndNestedEvents();
@@ -74,12 +74,12 @@ internal sealed class TocItemYamlConverter : IYamlTypeConverter
 				if (key.Value == "children")
 				{
 					// Parse the children list manually
-					var childrenList = new List<ITocEntry>();
+					var childrenList = new List<ITocEntryDto>();
 					_ = parser.Consume<SequenceStart>();
 					while (!parser.TryConsume<SequenceEnd>(out _))
 					{
-						var child = rootDeserializer(typeof(ITocEntry));
-						if (child is ITocEntry tocItem)
+						var child = rootDeserializer(typeof(ITocEntryDto));
+						if (child is ITocEntryDto tocItem)
 							childrenList.Add(tocItem);
 					}
 					value = childrenList;
@@ -145,7 +145,7 @@ internal sealed class TocItemYamlConverter : IYamlTypeConverter
 				&& islandBool;
 			// Reuse the already-captured sort and exclude variables from the outer scope
 			var options = new ListingOptions(glob, sort, exclude, listingVisual, groups, extension, island);
-			return new ListingEntry(listing, children, options);
+			return new ListingEntryDto(listing, children, options);
 		}
 
 		// Check for CLI reference (cli: schema.json, optional folder: supplemental-docs/)
@@ -158,7 +158,7 @@ internal sealed class TocItemYamlConverter : IYamlTypeConverter
 				? navigationTitleStr
 				: null;
 			var appliesTo = dictionary.TryGetValue("applies_to", out var at) && at is ApplicableTo a ? a : null;
-			return new CliReferenceEntry(cliSchema, supplementalFolder, title, navigationTitle, children, appliesTo);
+			return new CliReferenceEntryDto(cliSchema, supplementalFolder, title, navigationTitle, children, appliesTo);
 		}
 
 		// Check for folder+file combination (e.g., folder: getting-started, file: getting-started.md)
@@ -175,16 +175,16 @@ internal sealed class TocItemYamlConverter : IYamlTypeConverter
 			// Store ONLY the file name - the folder path will be prepended during resolution
 			// This allows validation to check if the file itself has deep paths
 			// PathRelativeToContainer will be set during resolution
-			var indexFile = new FolderIndexFileEntry(file);
+			var indexFile = new FolderIndexFileEntryDto(file);
 
 			// Create a list with the index file first, followed by user-specified children
-			var folderChildren = new List<ITocEntry> { indexFile };
+			var folderChildren = new List<ITocEntryDto> { indexFile };
 			folderChildren.AddRange(children);
 
 			// Return a FolderRef with the index file and children
 			// The folder path can be deep (e.g., "guides/getting-started"), that's OK
 			// PathRelativeToContainer will be set during resolution
-			return new FolderEntry(folder, folderChildren, sort, exclude, defaultCta);
+			return new FolderEntryDto(folder, folderChildren, sort, exclude, defaultCta);
 		}
 		if (
 			dictionary.TryGetValue("detection_rules", out var detectionRulesObj)
@@ -196,7 +196,7 @@ internal sealed class TocItemYamlConverter : IYamlTypeConverter
 			var deprecatedFile = dictionary.TryGetValue("deprecated_file", out var deprecatedFileObj) && deprecatedFileObj is string df
 				? df
 				: null;
-			return new DetectionRulesEntry(detectionRulesFile, detectionRulesFolders, children, deprecatedFile);
+			return new DetectionRulesEntryDto(detectionRulesFile, detectionRulesFolders, children, deprecatedFile);
 		}
 
 		// Check for file reference (file: or hidden:)
@@ -204,34 +204,34 @@ internal sealed class TocItemYamlConverter : IYamlTypeConverter
 		if (dictionary.TryGetValue("file", out var filePathOnly) && filePathOnly is string fileOnly)
 		{
 			if (fileOnly == "index.md")
-				return new IndexFileEntry(fileOnly, false, children, defaultCta);
+				return new IndexFileEntryDto(fileOnly, false, children, defaultCta);
 
 			// Sugar: childless "file: subdir/index.md" → single-page folder, so it isn't silently dropped competing for the parent's index slot.
 			if (children.Count == 0 && fileOnly.EndsWith("/index.md", StringComparison.Ordinal))
 			{
 				var indexFolderPath = fileOnly[..^"/index.md".Length];
-				var indexFile = new FolderIndexFileEntry("index.md");
-				return new DeepLinkedFolderEntry(indexFolderPath, [indexFile], defaultCta);
+				var indexFile = new FolderIndexFileEntryDto("index.md");
+				return new DeepLinkedFolderEntryDto(indexFolderPath, [indexFile], defaultCta);
 			}
 
-			return new FileEntry(fileOnly, false, children, defaultCta);
+			return new FileEntryDto(fileOnly, false, children, defaultCta);
 		}
 
 		if (dictionary.TryGetValue("hidden", out var hiddenPath) && hiddenPath is string p)
-			return p == "index.md" ? new IndexFileEntry(p, true, children, defaultCta) : new FileEntry(p, true, children, defaultCta);
+			return p == "index.md" ? new IndexFileEntryDto(p, true, children, defaultCta) : new FileEntryDto(p, true, children, defaultCta);
 
 		// Check for crosslink reference
 		if (dictionary.TryGetValue("crosslink", out var crosslink) && crosslink is string crosslinkStr)
 		{
 			var title = dictionary.TryGetValue("title", out var t) && t is string titleStr ? titleStr : null;
 			var isHidden = dictionary.TryGetValue("hidden", out var h) && h is bool hiddenBool && hiddenBool;
-			return new CrossLinkTocEntry(new Uri(crosslinkStr), title, isHidden, children);
+			return new CrossLinkEntryDto(new Uri(crosslinkStr), title, isHidden, children);
 		}
 
 		// Check for folder reference
 		// PathRelativeToContainer will be set during resolution
 		if (dictionary.TryGetValue("folder", out var folderPathOnly) && folderPathOnly is string folderOnly)
-			return new FolderEntry(folderOnly, children, sort, exclude, defaultCta);
+			return new FolderEntryDto(folderOnly, children, sort, exclude, defaultCta);
 
 		// Check for toc reference
 		// PathRelativeToContainer will be set during resolution
@@ -241,19 +241,19 @@ internal sealed class TocItemYamlConverter : IYamlTypeConverter
 				&& islandObj is string islandStr
 				&& bool.TryParse(islandStr, out var islandBool)
 				&& islandBool;
-			return new NestedTocEntry(source, children, island);
+			return new NestedTocEntryDto(source, children, island);
 		}
 
 		return null;
 	}
 
-	private static IReadOnlyList<ITocEntry> GetChildren(Dictionary<string, object?> dictionary)
+	private static IReadOnlyList<ITocEntryDto> GetChildren(Dictionary<string, object?> dictionary)
 	{
 		if (!dictionary.TryGetValue("children", out var childrenObj))
 			return [];
 
-		// Children have already been deserialized as List<ITocEntry>
-		if (childrenObj is List<ITocEntry> tocItems)
+		// Children have already been deserialized as List<ITocEntryDto>
+		if (childrenObj is List<ITocEntryDto> tocItems)
 			return tocItems;
 
 		return [];

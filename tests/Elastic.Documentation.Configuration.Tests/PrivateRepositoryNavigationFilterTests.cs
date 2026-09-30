@@ -10,7 +10,6 @@ using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.Publishing;
 using Microsoft.Extensions.Logging.Abstractions;
-using AssemblyConfiguration = Elastic.Documentation.Publishing.AssemblyConfiguration;
 
 namespace Elastic.Documentation.Configuration.Tests;
 

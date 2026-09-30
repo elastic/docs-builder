@@ -32,8 +32,8 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 	/// <summary>
 	/// Deserializes changelog configuration YAML content.
 	/// </summary>
-	internal static ChangelogConfigurationYaml DeserializeConfiguration(string yaml) =>
-		ConfigurationDeserializer.Deserialize<ChangelogConfigurationYaml>(yaml);
+	internal static ChangelogConfigurationDto DeserializeConfiguration(string yaml) =>
+		ConfigurationDeserializer.Deserialize<ChangelogConfigurationDto>(yaml);
 
 	/// <summary>
 	/// Loads the publish blocker configuration from a changelog.
@@ -99,7 +99,7 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 
 	private ChangelogConfiguration? ParseConfiguration(
 		IDiagnosticsCollector collector,
-		ChangelogConfigurationYaml yamlConfig,
+		ChangelogConfigurationDto yamlConfig,
 		string configPath
 	)
 	{
@@ -411,7 +411,7 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 		};
 	}
 
-	private static PivotConfiguration ConvertPivot(PivotConfigurationYaml yamlPivot)
+	private static PivotConfiguration ConvertPivot(ChangelogPivotDto yamlPivot)
 	{
 		Dictionary<string, TypeEntry?>? types = null;
 		if (yamlPivot.Types != null)
@@ -454,7 +454,7 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 
 	private ProductsConfig? ParseProductsConfig(
 		IDiagnosticsCollector collector,
-		ProductsConfigYaml yaml,
+		ChangelogProductsDto yaml,
 		string configPath,
 		HashSet<string> validProductIds
 	)
@@ -515,7 +515,7 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 	private static BundleConfiguration? ParseBundleConfiguration(
 		IDiagnosticsCollector collector,
 		string configPath,
-		BundleConfigurationYaml yaml,
+		ChangelogBundleDto yaml,
 		HashSet<string> validProductIds
 	)
 	{
@@ -680,7 +680,7 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 	private static BundleReleases? ParseBundleReleases(
 		IDiagnosticsCollector collector,
 		string configPath,
-		BundleReleasesYaml? yaml,
+		ChangelogBundleReleasesDto? yaml,
 		Dictionary<string, BundleProfile>? profiles,
 		HashSet<string> validProductIds
 	)
@@ -851,7 +851,7 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 
 	private RulesConfiguration? ParseRulesConfiguration(
 		IDiagnosticsCollector collector,
-		RulesConfigurationYaml? rulesYaml,
+		ChangelogRulesDto? rulesYaml,
 		string configPath,
 		HashSet<string> validProductIds
 	)
@@ -904,7 +904,7 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 
 	private BundleRules? ParseBundleRules(
 		IDiagnosticsCollector collector,
-		BundleRulesYaml? yaml,
+		ChangelogBundleRulesDto? yaml,
 		string configPath,
 		HashSet<string> validProductIds,
 		MatchMode inheritedMatch
@@ -976,8 +976,8 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 			matchAreas = parsed.Value;
 		}
 
-		// Parse global type/area blocker (reusing PublishRulesYaml parsing logic)
-		var blockerYaml = new PublishRulesYaml
+		// Parse global type/area blocker (reusing ChangelogPublishRulesDto parsing logic)
+		var blockerYaml = new ChangelogPublishRulesDto
 		{
 			MatchAreas = yaml.MatchAreas,
 			ExcludeTypes = yaml.ExcludeTypes,
@@ -1109,7 +1109,7 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 						productMatchAreas = parsedMode.Value;
 					}
 
-					var productBlockerYaml = new PublishRulesYaml
+					var productBlockerYaml = new ChangelogPublishRulesDto
 					{
 						MatchAreas = productYaml.MatchAreas,
 						ExcludeTypes = productYaml.ExcludeTypes,
@@ -1196,7 +1196,7 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 
 	private CreateRules? ParseCreateRules(
 		IDiagnosticsCollector collector,
-		CreateRulesYaml? yaml,
+		ChangelogCreateRulesDto? yaml,
 		string configPath,
 		HashSet<string> validProductIds,
 		string path,
@@ -1271,7 +1271,7 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 
 	private PublishRules? ParsePublishRules(
 		IDiagnosticsCollector collector,
-		PublishRulesYaml? yaml,
+		ChangelogPublishRulesDto? yaml,
 		string configPath,
 		HashSet<string> validProductIds,
 		string path,
@@ -1361,7 +1361,7 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 
 	private static PublishBlocker? ParsePublishBlockerFromYaml(
 		IDiagnosticsCollector collector,
-		PublishRulesYaml yaml,
+		ChangelogPublishRulesDto yaml,
 		string configPath,
 		string path,
 		MatchMode matchAreas
@@ -1404,7 +1404,7 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 		};
 	}
 
-	private static PublishBlocker? ParsePublishBlocker(PublishRulesYaml? yaml, MatchMode matchAreas)
+	private static PublishBlocker? ParsePublishBlocker(ChangelogPublishRulesDto? yaml, MatchMode matchAreas)
 	{
 		if (yaml == null)
 			return null;
@@ -1442,7 +1442,7 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 	/// Builds LabelToType mapping by inverting pivot.types entries.
 	/// Each label in a type entry maps to that type name.
 	/// </summary>
-	private static Dictionary<string, string>? BuildLabelToTypeMapping(Dictionary<string, TypeEntryYaml?>? types)
+	private static Dictionary<string, string>? BuildLabelToTypeMapping(Dictionary<string, ChangelogTypeEntryDto?>? types)
 	{
 		if (types == null || types.Count == 0)
 			return null;

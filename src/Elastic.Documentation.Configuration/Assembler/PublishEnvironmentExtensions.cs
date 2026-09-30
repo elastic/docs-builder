@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using Elastic.Documentation.Publishing;
 using Elastic.Documentation.Configuration.Builder;
 
 // Declared in the domain namespace so the behavior arrives with the Publishing records it extends; it lives here because

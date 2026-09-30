@@ -201,7 +201,7 @@ public class ChangelogEntryValidationServiceTests() : ChangelogTestBase()
 	[Test]
 	public async Task ValidateEntries_NoProductRepo_FallsBackToSubmittingRepo()
 	{
-		// elasticsearch product has no Repository field — falls back to elastic/elasticsearch.
+		// elasticsearch product has no RepositoryDto field — falls back to elastic/elasticsearch.
 		await WriteConfig(MinimalConfig);
 		const string entryYaml =
 			"""

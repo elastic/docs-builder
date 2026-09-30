@@ -10,8 +10,6 @@ using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.Publishing;
 using Microsoft.Extensions.Logging.Abstractions;
-using AssemblyConfiguration = Elastic.Documentation.Publishing.AssemblyConfiguration;
-using PublishEnvironment = Elastic.Documentation.Publishing.PublishEnvironment;
 
 namespace Elastic.Documentation.Configuration.Tests;
 
@@ -86,7 +84,7 @@ public class UseNavigationPreviewTests
 	public void NavigationPreviewEnabled_ReadsUnderscoredEnvironmentKey()
 	{
 		// Regression guard: the ctor-doesn't-normalize trap.
-		// PublishEnvironment.FeatureFlags keys use UPPER_SNAKE yaml convention; FeatureFlags.IsEnabled
+		// PublishEnvironmentDto.FeatureFlags keys use UPPER_SNAKE yaml convention; FeatureFlags.IsEnabled
 		// looks up normalized lower-kebab keys. ToFeatureFlags() must bridge this via Set().
 		var env = new PublishEnvironment { FeatureFlags = new Dictionary<string, bool> { ["NAVIGATION_PREVIEW"] = true } };
 

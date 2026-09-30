@@ -12,22 +12,23 @@ using Elastic.Documentation.Configuration.ReleaseNotes;
 using Elastic.Documentation.Configuration.Search;
 using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Configuration.Versions;
+using Elastic.Documentation.Publishing;
 using YamlDotNet.Serialization;
 
 namespace Elastic.Documentation.Configuration.Serialization;
 
 [YamlStaticContext]
 // Codex configuration
-[YamlSerializable(typeof(Codex.CodexConfiguration))]
-[YamlSerializable(typeof(Codex.CodexGroupDefinition))]
+[YamlSerializable(typeof(CodexConfigurationDto))]
+[YamlSerializable(typeof(CodexGroupDefinitionDto))]
 // Assembly configuration
-[YamlSerializable(typeof(Assembler.AssemblyConfiguration))]
-[YamlSerializable(typeof(Assembler.Repository))]
-[YamlSerializable(typeof(Assembler.NarrativeRepository))]
-[YamlSerializable(typeof(Assembler.PublishEnvironment))]
-[YamlSerializable(typeof(Assembler.GoogleTagManager))]
-[YamlSerializable(typeof(Assembler.Optimizely))]
-[YamlSerializable(typeof(Publishing.ContentSource))]
+[YamlSerializable(typeof(AssemblyConfigurationDto))]
+[YamlSerializable(typeof(RepositoryDto))]
+[YamlSerializable(typeof(NarrativeRepositoryDto))]
+[YamlSerializable(typeof(PublishEnvironmentDto))]
+[YamlSerializable(typeof(GoogleTagManagerDto))]
+[YamlSerializable(typeof(OptimizelyDto))]
+[YamlSerializable(typeof(ContentSource))]
 // Versions configuration
 [YamlSerializable(typeof(VersionsConfigDto))]
 [YamlSerializable(typeof(ProductConfigDto))]
@@ -43,8 +44,8 @@ namespace Elastic.Documentation.Configuration.Serialization;
 [YamlSerializable(typeof(CodexDocSetMetadata))]
 [YamlSerializable(typeof(ReleaseNotesProductReference))]
 [YamlSerializable(typeof(TableOfContentsFile))]
-[YamlSerializable(typeof(Toc.SiteNavigationFile))]
-[YamlSerializable(typeof(Toc.PhantomRegistration))]
+[YamlSerializable(typeof(SiteNavigationDto))]
+[YamlSerializable(typeof(PhantomRegistrationDto))]
 [YamlSerializable(typeof(ProductLink))]
 // Search configuration
 [YamlSerializable(typeof(SearchConfigDto))]
@@ -63,19 +64,19 @@ namespace Elastic.Documentation.Configuration.Serialization;
 [YamlSerializable(typeof(RulesConfigMinimalDto))]
 [YamlSerializable(typeof(PublishRulesMinimalDto))]
 // Changelog YAML DTOs for CLI configuration (changelog.yml)
-[YamlSerializable(typeof(ChangelogConfigurationYaml))]
-[YamlSerializable(typeof(PivotConfigurationYaml))]
-[YamlSerializable(typeof(TypeEntryYaml))]
-[YamlSerializable(typeof(RulesConfigurationYaml))]
-[YamlSerializable(typeof(CreateRulesYaml))]
-[YamlSerializable(typeof(BundleRulesYaml))]
-[YamlSerializable(typeof(PublishRulesYaml))]
-[YamlSerializable(typeof(ProductsConfigYaml))]
-[YamlSerializable(typeof(DefaultProductYaml))]
-[YamlSerializable(typeof(BundleConfigurationYaml))]
-[YamlSerializable(typeof(BundleProfileYaml))]
-[YamlSerializable(typeof(BundleReleasesYaml))]
-[YamlSerializable(typeof(ExtractConfigurationYaml))]
+[YamlSerializable(typeof(ChangelogConfigurationDto))]
+[YamlSerializable(typeof(ChangelogPivotDto))]
+[YamlSerializable(typeof(ChangelogTypeEntryDto))]
+[YamlSerializable(typeof(ChangelogRulesDto))]
+[YamlSerializable(typeof(ChangelogCreateRulesDto))]
+[YamlSerializable(typeof(ChangelogBundleRulesDto))]
+[YamlSerializable(typeof(ChangelogPublishRulesDto))]
+[YamlSerializable(typeof(ChangelogProductsDto))]
+[YamlSerializable(typeof(ChangelogDefaultProductDto))]
+[YamlSerializable(typeof(ChangelogBundleDto))]
+[YamlSerializable(typeof(ChangelogBundleProfileDto))]
+[YamlSerializable(typeof(ChangelogBundleReleasesDto))]
+[YamlSerializable(typeof(ChangelogExtractDto))]
 [YamlSerializable(typeof(YamlLenientList))]
 // Related learning catalog
 [YamlSerializable(typeof(RelatedLearningConfigDto))]

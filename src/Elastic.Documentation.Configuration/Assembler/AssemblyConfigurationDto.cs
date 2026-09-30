@@ -7,27 +7,25 @@ using YamlDotNet.Serialization;
 namespace Elastic.Documentation.Configuration.Assembler;
 
 // assembler.yml exactly as authored. AssemblyLoader maps these to the Publishing domain records.
-// They keep the names of the types that were once both DTO and domain record: YamlDotNet puts the type's full name
-// in the error for an unknown key, and those messages must not change.
 
 [YamlSerializable]
-internal sealed class AssemblyConfiguration
+internal sealed class AssemblyConfigurationDto
 {
 	[YamlMember(Alias = "narrative")]
-	public NarrativeRepository? Narrative { get; set; } = new();
+	public NarrativeRepositoryDto? Narrative { get; set; } = new();
 
 	[YamlMember(Alias = "references")]
-	public Dictionary<string, Repository?> ReferenceRepositories { get; set; } = [];
+	public Dictionary<string, RepositoryDto?> ReferenceRepositories { get; set; } = [];
 
 	[YamlMember(Alias = "environments")]
-	public Dictionary<string, PublishEnvironment> Environments { get; set; } = [];
+	public Dictionary<string, PublishEnvironmentDto> Environments { get; set; } = [];
 
 	[YamlMember(Alias = "shared_configuration")]
-	public Dictionary<string, Repository> SharedConfigurations { get; set; } = [];
+	public Dictionary<string, RepositoryDto> SharedConfigurations { get; set; } = [];
 }
 
 [YamlSerializable]
-internal class Repository
+internal class RepositoryDto
 {
 	[YamlMember(Alias = "repo")]
 	public string Origin { get; set; } = string.Empty;
@@ -62,10 +60,10 @@ internal class Repository
 }
 
 [YamlSerializable]
-internal sealed class NarrativeRepository : Repository;
+internal sealed class NarrativeRepositoryDto : RepositoryDto;
 
 [YamlSerializable]
-internal sealed class PublishEnvironment
+internal sealed class PublishEnvironmentDto
 {
 	[YamlMember(Alias = "uri")]
 	public string Uri { get; set; } = string.Empty;
@@ -80,10 +78,10 @@ internal sealed class PublishEnvironment
 	public Publishing.ContentSource ContentSource { get; set; }
 
 	[YamlMember(Alias = "google_tag_manager")]
-	public GoogleTagManager GoogleTagManager { get; set; } = new();
+	public GoogleTagManagerDto GoogleTagManager { get; set; } = new();
 
 	[YamlMember(Alias = "optimizely")]
-	public Optimizely Optimizely { get; set; } = new();
+	public OptimizelyDto Optimizely { get; set; } = new();
 
 	[YamlMember(Alias = "feature_flags")]
 	public Dictionary<string, bool> FeatureFlags { get; set; } = [];
@@ -93,7 +91,7 @@ internal sealed class PublishEnvironment
 }
 
 [YamlSerializable]
-internal sealed class GoogleTagManager
+internal sealed class GoogleTagManagerDto
 {
 	[YamlMember(Alias = "enabled")]
 	public bool Enabled { get; set; }
@@ -123,7 +121,7 @@ internal sealed class GoogleTagManager
 }
 
 [YamlSerializable]
-internal sealed class Optimizely
+internal sealed class OptimizelyDto
 {
 	[YamlMember(Alias = "enabled")]
 	public bool Enabled { get; set; }

@@ -174,7 +174,7 @@ public class ChangelogEntryValidationService(
 
 		// ── Cross-repo PR existence check ────────────────────────────────────────────────────
 		// For each filename PR number, derive candidate repos from the entry's products field.
-		// Falls back to the submitting repo when products carry no Repository link.
+		// Falls back to the submitting repo when products carry no RepositoryDto link.
 		var fileCheckRepos = new Dictionary<string, HashSet<string>>(StringComparer.OrdinalIgnoreCase);
 		foreach (var (relPath, _) in filenamePrNumbers)
 		{
@@ -188,7 +188,7 @@ public class ChangelogEntryValidationService(
 					var productId = ep.Product.Replace('_', '-').ToLowerInvariant();
 					if (availableProducts.TryGetValue(productId, out var product) && !string.IsNullOrWhiteSpace(product.Repository))
 					{
-						// Repository values are bare names (e.g. "elasticsearch") — qualify with owner.
+						// RepositoryDto values are bare names (e.g. "elasticsearch") — qualify with owner.
 						var repoRef = product.Repository.Contains('/') ? product.Repository : $"{input.Owner}/{product.Repository}";
 						_ = candidateRepos.Add(repoRef);
 					}

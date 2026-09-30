@@ -9,14 +9,14 @@ using YamlDotNet.Serialization;
 namespace Elastic.Documentation.Configuration.Changelog;
 
 /// <summary>
-/// YAML type converter for TypeEntryYaml that handles both string and object forms.
+/// YAML type converter for ChangelogTypeEntryDto that handles both string and object forms.
 /// String form: "label1, label2"
 /// Object form: { labels: "label1", subtypes: { api: "label" } }
 /// Labels and subtype values accept both scalar (comma-separated) and sequence (list) forms.
 /// </summary>
 public class TypeEntryYamlConverter : IYamlTypeConverter
 {
-	public bool Accepts(Type type) => type == typeof(TypeEntryYaml);
+	public bool Accepts(Type type) => type == typeof(ChangelogTypeEntryDto);
 
 	public object? ReadYaml(IParser parser, Type type, ObjectDeserializer rootDeserializer)
 	{
@@ -25,16 +25,16 @@ public class TypeEntryYamlConverter : IYamlTypeConverter
 		{
 			// Handle empty scalar (null/empty value)
 			if (string.IsNullOrEmpty(scalar.Value) || scalar.Value == "~")
-				return new TypeEntryYaml();
+				return new ChangelogTypeEntryDto();
 
 			// Handle string form: just labels
-			return TypeEntryYaml.FromLabels(scalar.Value);
+			return ChangelogTypeEntryDto.FromLabels(scalar.Value);
 		}
 
 		// Handle object form: { labels: "...", subtypes: {...} }
 		if (parser.TryConsume<MappingStart>(out _))
 		{
-			var entry = new TypeEntryYaml();
+			var entry = new ChangelogTypeEntryDto();
 
 			while (!parser.TryConsume<MappingEnd>(out _))
 			{
@@ -60,7 +60,7 @@ public class TypeEntryYamlConverter : IYamlTypeConverter
 		}
 
 		// Unknown format
-		return new TypeEntryYaml();
+		return new ChangelogTypeEntryDto();
 	}
 
 	private static Dictionary<string, YamlLenientList?>? ParseSubtypes(IParser parser)
@@ -146,7 +146,7 @@ public class TypeEntryYamlConverter : IYamlTypeConverter
 
 	public void WriteYaml(IEmitter emitter, object? value, Type type, ObjectSerializer serializer)
 	{
-		if (value is not TypeEntryYaml entry)
+		if (value is not ChangelogTypeEntryDto entry)
 		{
 			emitter.Emit(new Scalar(null, null, string.Empty, ScalarStyle.Plain, true, false));
 			return;

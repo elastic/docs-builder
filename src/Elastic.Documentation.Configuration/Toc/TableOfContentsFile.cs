@@ -14,7 +14,7 @@ public class TableOfContentsFile
 	public string? Project { get; set; }
 
 	[YamlMember(Alias = "toc")]
-	internal TocEntryList TocEntries { get; set; } = [];
+	internal TocEntryListDto TocEntries { get; set; } = [];
 
 	/// <summary>
 	/// When <c>true</c>, this table of contents is rendered as an island in the navigation tree.

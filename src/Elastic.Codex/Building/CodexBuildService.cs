@@ -184,7 +184,7 @@ public class CodexBuildService(ILoggerFactory logFactory, IConfigurationContext 
 			var canonicalBaseUrl = !string.IsNullOrWhiteSpace(context.Configuration.CanonicalBaseUrl)
 				&& Uri.TryCreate(context.Configuration.CanonicalBaseUrl, UriKind.Absolute, out var parsed) ? parsed : null;
 
-			// Repository clone root must be BuildContext `source`: FindGitRoot(..., ceiling: rootFolder) only
+			// RepositoryDto clone root must be BuildContext `source`: FindGitRoot(..., ceiling: rootFolder) only
 			// discovers .git inside that ceiling (#3115). Using DocsDirectory alone would cap the ceiling
 			// at the docs subtree and return null above repo/.git, breaking GithubEditUrl generation.
 			// The docset file itself is passed explicitly so build reuses the docset clone discovery already

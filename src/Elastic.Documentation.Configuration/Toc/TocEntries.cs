@@ -10,73 +10,73 @@ namespace Elastic.Documentation.Configuration.Toc;
 // The toc: entries of docset.yml and toc.yml exactly as authored, before resolution. Paths are as written,
 // relative to wherever the entry sits. DocumentationSetFile resolves these into the domain TocItem tree.
 
-internal interface ITocEntry
+internal interface ITocEntryDto
 {
-	IReadOnlyList<ITocEntry> Children { get; }
+	IReadOnlyList<ITocEntryDto> Children { get; }
 }
 
 /// <summary>A list of <c>toc:</c> entries, bound by <see cref="TocItemCollectionYamlConverter"/>.</summary>
-internal sealed class TocEntryList : List<ITocEntry>;
+internal sealed class TocEntryListDto : List<ITocEntryDto>;
 
 /// <summary>A bare scalar (e.g. <c>- toc.yml</c>) where an entry mapping was expected; resolution reports it.</summary>
-internal sealed record InvalidTocEntry(string RawValue) : ITocEntry
+internal sealed record InvalidTocEntryDto(string RawValue) : ITocEntryDto
 {
-	public IReadOnlyList<ITocEntry> Children => [];
+	public IReadOnlyList<ITocEntryDto> Children => [];
 }
 
 /// <summary><c>file:</c> or <c>hidden:</c>.</summary>
-internal record FileEntry(string Path, bool Hidden, IReadOnlyList<ITocEntry> Children, string? DefaultCta = null) : ITocEntry;
+internal record FileEntryDto(string Path, bool Hidden, IReadOnlyList<ITocEntryDto> Children, string? DefaultCta = null) : ITocEntryDto;
 
 /// <summary>A <c>file: index.md</c> or <c>hidden: index.md</c>.</summary>
-internal sealed record IndexFileEntry(string Path, bool Hidden, IReadOnlyList<ITocEntry> Children, string? DefaultCta = null) : FileEntry(
-	Path,
-	Hidden,
-	Children,
-	DefaultCta
-);
+internal sealed record IndexFileEntryDto(
+	string Path,
+	bool Hidden,
+	IReadOnlyList<ITocEntryDto> Children,
+	string? DefaultCta = null
+) : FileEntryDto(Path, Hidden, Children, DefaultCta);
 
 /// <summary>The <c>file:</c> of a <c>folder:</c> + <c>file:</c> entry, placed first among the folder's children.</summary>
-internal sealed record FolderIndexFileEntry(string Path) : FileEntry(Path, false, []);
+internal sealed record FolderIndexFileEntryDto(string Path) : FileEntryDto(Path, false, []);
 
 /// <summary><c>detection_rules:</c> + <c>file:</c>.</summary>
-internal sealed record DetectionRulesEntry(
+internal sealed record DetectionRulesEntryDto(
 	string Path,
 	IReadOnlyList<string> RuleFolders,
-	IReadOnlyList<ITocEntry> Children,
+	IReadOnlyList<ITocEntryDto> Children,
 	string? DeprecatedFile
-) : FileEntry(Path, false, Children);
+) : FileEntryDto(Path, false, Children);
 
 /// <summary><c>folder:</c>, with or without <c>file:</c>.</summary>
-internal record FolderEntry(
+internal record FolderEntryDto(
 	string Path,
-	IReadOnlyList<ITocEntry> Children,
+	IReadOnlyList<ITocEntryDto> Children,
 	string? Sort = null,
 	IReadOnlyList<string>? Exclude = null,
 	string? DefaultCta = null
-) : ITocEntry;
+) : ITocEntryDto;
 
 /// <summary>The childless <c>file: subdir/index.md</c> sugar, expanded to a single-page folder.</summary>
-internal sealed record DeepLinkedFolderEntry(string Path, IReadOnlyList<ITocEntry> Children, string? DefaultCta) : FolderEntry(
+internal sealed record DeepLinkedFolderEntryDto(string Path, IReadOnlyList<ITocEntryDto> Children, string? DefaultCta) : FolderEntryDto(
 	Path,
 	Children,
 	DefaultCta: DefaultCta
 );
 
 /// <summary><c>toc:</c>, pointing at a folder holding a nested <c>toc.yml</c>.</summary>
-internal sealed record NestedTocEntry(string Path, IReadOnlyList<ITocEntry> Children, bool Island) : ITocEntry;
+internal sealed record NestedTocEntryDto(string Path, IReadOnlyList<ITocEntryDto> Children, bool Island) : ITocEntryDto;
 
 /// <summary><c>crosslink:</c>.</summary>
-internal sealed record CrossLinkTocEntry(Uri CrossLinkUri, string? Title, bool Hidden, IReadOnlyList<ITocEntry> Children) : ITocEntry;
+internal sealed record CrossLinkEntryDto(Uri CrossLinkUri, string? Title, bool Hidden, IReadOnlyList<ITocEntryDto> Children) : ITocEntryDto;
 
 /// <summary><c>listing:</c>.</summary>
-internal sealed record ListingEntry(string Path, IReadOnlyList<ITocEntry> Children, ListingOptions Options) : ITocEntry;
+internal sealed record ListingEntryDto(string Path, IReadOnlyList<ITocEntryDto> Children, ListingOptions Options) : ITocEntryDto;
 
 /// <summary><c>cli:</c>.</summary>
-internal sealed record CliReferenceEntry(
+internal sealed record CliReferenceEntryDto(
 	string SchemaPath,
 	string? SupplementalFolder,
 	string? Title,
 	string? NavigationTitle,
-	IReadOnlyList<ITocEntry> Children,
+	IReadOnlyList<ITocEntryDto> Children,
 	ApplicableTo? AppliesTo
-) : ITocEntry;
+) : ITocEntryDto;

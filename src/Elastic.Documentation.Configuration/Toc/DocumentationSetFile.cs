@@ -189,7 +189,7 @@ public class DocumentationSetFile : TableOfContentsFile
 	/// </summary>
 	private static IReadOnlyList<TocItem> ResolveTableOfContents(
 		IDiagnosticsCollector collector,
-		IReadOnlyList<ITocEntry> items,
+		IReadOnlyList<ITocEntryDto> items,
 		IDirectoryInfo baseDirectory,
 		IFileSystem fileSystem,
 		string parentPath,
@@ -204,8 +204,8 @@ public class DocumentationSetFile : TableOfContentsFile
 		{
 			var resolvedItem = item switch
 			{
-				InvalidTocEntry invalid => EmitInvalidTocItem(collector, invalid, context),
-				NestedTocEntry tocRef =>
+				InvalidTocEntryDto invalid => EmitInvalidTocItem(collector, invalid, context),
+				NestedTocEntryDto tocRef =>
 					ResolveIsolatedToc(
 						collector,
 						tocRef,
@@ -216,7 +216,7 @@ public class DocumentationSetFile : TableOfContentsFile
 						context,
 						suppressDiagnostics
 					),
-				DetectionRulesEntry ruleOverviewReference =>
+				DetectionRulesEntryDto ruleOverviewReference =>
 					ResolveRuleOverviewReference(
 						collector,
 						ruleOverviewReference,
@@ -227,13 +227,13 @@ public class DocumentationSetFile : TableOfContentsFile
 						context,
 						suppressDiagnostics
 					),
-				CliReferenceEntry cliRef =>
+				CliReferenceEntryDto cliRef =>
 					ResolveCliReference(collector, cliRef, baseDirectory, fileSystem, parentPath, containerPath, context),
-				ListingEntry listingRef =>
+				ListingEntryDto listingRef =>
 					ResolveListingRef(collector, listingRef, baseDirectory, fileSystem, parentPath, containerPath, context),
-				FileEntry fileRef =>
+				FileEntryDto fileRef =>
 					ResolveFileRef(collector, fileRef, baseDirectory, fileSystem, parentPath, containerPath, context, suppressDiagnostics),
-				FolderEntry folderRef =>
+				FolderEntryDto folderRef =>
 					ResolveFolderRef(
 						collector,
 						folderRef,
@@ -244,7 +244,7 @@ public class DocumentationSetFile : TableOfContentsFile
 						context,
 						suppressDiagnostics
 					),
-				CrossLinkTocEntry crossLink =>
+				CrossLinkEntryDto crossLink =>
 					ResolveCrossLinkRef(collector, crossLink, baseDirectory, fileSystem, parentPath, containerPath, context),
 				_ => null
 			};
@@ -263,7 +263,7 @@ public class DocumentationSetFile : TableOfContentsFile
 		return resolved;
 	}
 
-	private static TocItem? EmitInvalidTocItem(IDiagnosticsCollector collector, InvalidTocEntry invalid, string context)
+	private static TocItem? EmitInvalidTocItem(IDiagnosticsCollector collector, InvalidTocEntryDto invalid, string context)
 	{
 		var raw = invalid.RawValue;
 		var isYmlFile = raw.EndsWith(".yml", StringComparison.OrdinalIgnoreCase)
@@ -288,7 +288,7 @@ public class DocumentationSetFile : TableOfContentsFile
 #pragma warning disable IDE0060 // Remove unused parameter - suppressDiagnostics is for consistency, nested TOCs use their own suppression config
 	private static TocItem? ResolveIsolatedToc(
 		IDiagnosticsCollector collector,
-		NestedTocEntry tocRef,
+		NestedTocEntryDto tocRef,
 		IDirectoryInfo baseDirectory,
 		IFileSystem fileSystem,
 		string parentPath,
@@ -412,7 +412,7 @@ public class DocumentationSetFile : TableOfContentsFile
 	/// </summary>
 	private static TocItem ResolveFileRef(
 		IDiagnosticsCollector collector,
-		FileEntry fileRef,
+		FileEntryDto fileRef,
 		IDirectoryInfo baseDirectory,
 		IFileSystem fileSystem,
 		string parentPath,
@@ -425,7 +425,7 @@ public class DocumentationSetFile : TableOfContentsFile
 
 		// Special validation for FolderIndexFileRef (folder+file combination)
 		// Validate BEFORE early return so we catch cases with no children
-		if (fileRef is FolderIndexFileEntry)
+		if (fileRef is FolderIndexFileEntryDto)
 		{
 			var fileName = fileRef.Path;
 			var fileWithoutExtension = fileName.Replace(".md", "");
@@ -480,7 +480,7 @@ public class DocumentationSetFile : TableOfContentsFile
 			// Preserve specific types even when there are no children
 			return fileRef switch
 			{
-				FolderIndexFileEntry =>
+				FolderIndexFileEntryDto =>
 					new FolderIndexFileRef(
 						DocsetPath.From(fullPath),
 						ContainerPath.From(pathRelativeToContainer),
@@ -489,7 +489,7 @@ public class DocumentationSetFile : TableOfContentsFile
 						DeclaringFilePath.From(context),
 						fileRef.DefaultCta
 					),
-				IndexFileEntry =>
+				IndexFileEntryDto =>
 					new IndexFileRef(
 						DocsetPath.From(fullPath),
 						ContainerPath.From(pathRelativeToContainer),
@@ -512,7 +512,7 @@ public class DocumentationSetFile : TableOfContentsFile
 
 		// Emit hint if file has children and uses deep-linking (path contains '/')
 		// This suggests using 'folder' instead of 'file' would be better
-		if (fileRef.Path.Contains('/') && fileRef.Children.Count > 0 && fileRef is not FolderIndexFileEntry)
+		if (fileRef.Path.Contains('/') && fileRef.Children.Count > 0 && fileRef is not FolderIndexFileEntryDto)
 		{
 			// Check if this hint type should be suppressed
 			if (!suppressDiagnostics.ShouldSuppress(HintType.DeepLinkingVirtualFile))
@@ -534,7 +534,7 @@ public class DocumentationSetFile : TableOfContentsFile
 		// - User file with subpath: "clients/getting-started.md" (parentPath="guides") → children resolve to "guides/"
 		// - Folder+file (FolderIndexFileRef): "observability/apm/apm-server/index.md" → children resolve to directory of fullPath
 		string parentPathForChildren;
-		if (fileRef is FolderIndexFileEntry)
+		if (fileRef is FolderIndexFileEntryDto)
 		{
 			// Folder+file combination - extract directory from fullPath
 			var lastSlashIndex = fullPath.LastIndexOf('/');
@@ -567,7 +567,7 @@ public class DocumentationSetFile : TableOfContentsFile
 		// Preserve the specific type when creating the resolved reference
 		return fileRef switch
 		{
-			FolderIndexFileEntry =>
+			FolderIndexFileEntryDto =>
 				new FolderIndexFileRef(
 					DocsetPath.From(fullPath),
 					ContainerPath.From(pathRelativeToContainer),
@@ -576,7 +576,7 @@ public class DocumentationSetFile : TableOfContentsFile
 					DeclaringFilePath.From(context),
 					fileRef.DefaultCta
 				),
-			IndexFileEntry =>
+			IndexFileEntryDto =>
 				new IndexFileRef(
 					DocsetPath.From(fullPath),
 					ContainerPath.From(pathRelativeToContainer),
@@ -603,7 +603,7 @@ public class DocumentationSetFile : TableOfContentsFile
 	/// </summary>
 	private static TocItem ResolveRuleOverviewReference(
 		IDiagnosticsCollector collector,
-		DetectionRulesEntry detectionRuleRef,
+		DetectionRulesEntryDto detectionRuleRef,
 		IDirectoryInfo baseDirectory,
 		IFileSystem fileSystem,
 		string parentPath,
@@ -695,7 +695,7 @@ public class DocumentationSetFile : TableOfContentsFile
 
 	private static TocItem? ResolveCliReference(
 		IDiagnosticsCollector collector,
-		CliReferenceEntry cliRef,
+		CliReferenceEntryDto cliRef,
 		IDirectoryInfo baseDirectory,
 		IFileSystem fileSystem,
 		string parentPath,
@@ -764,7 +764,7 @@ public class DocumentationSetFile : TableOfContentsFile
 	/// </summary>
 	private static TocItem ResolveFolderRef(
 		IDiagnosticsCollector collector,
-		FolderEntry folderRef,
+		FolderEntryDto folderRef,
 		IDirectoryInfo baseDirectory,
 		IFileSystem fileSystem,
 		string parentPath,
@@ -778,7 +778,7 @@ public class DocumentationSetFile : TableOfContentsFile
 		// DeepLinkedFolderRef (the "file: subdir/index.md" sugar) is the exception: it always resolves
 		// relative to the parent, exactly like the FileRef it was expanded from, regardless of '/'.
 		string fullPath;
-		if (folderRef is not DeepLinkedFolderEntry && folderRef.Path.Contains('/'))
+		if (folderRef is not DeepLinkedFolderEntryDto && folderRef.Path.Contains('/'))
 		{
 			// Path contains '/', treat as context-relative (full path from the context file's directory)
 			var contextDir = fileSystem.Path.GetDirectoryName(context) ?? "";
@@ -902,16 +902,16 @@ public class DocumentationSetFile : TableOfContentsFile
 			_ => otherFiles.OrderBy(f => f.Name).ToList()
 		};
 
-		var children = new List<ITocEntry>();
+		var children = new List<ITocEntryDto>();
 
 		// Add index.md first if it exists
 		if (indexFile != null)
-			children.Add(new IndexFileEntry(indexFile.Name, false, []));
+			children.Add(new IndexFileEntryDto(indexFile.Name, false, []));
 
 		// Add other files sorted according to the specified order
 		foreach (var file in sortedFiles)
 		{
-			children.Add(new FileEntry(file.Name, false, []));
+			children.Add(new FileEntryDto(file.Name, false, []));
 		}
 
 		// Resolve the children with the folder path as parent to get correct full paths
@@ -1049,7 +1049,7 @@ public class DocumentationSetFile : TableOfContentsFile
 	/// </summary>
 	private static TocItem? ResolveListingRef(
 		IDiagnosticsCollector collector,
-		ListingEntry listingRef,
+		ListingEntryDto listingRef,
 		IDirectoryInfo baseDirectory,
 		IFileSystem fileSystem,
 		string parentPath,
@@ -1271,7 +1271,7 @@ public class DocumentationSetFile : TableOfContentsFile
 	/// </summary>
 	private static TocItem ResolveCrossLinkRef(
 		IDiagnosticsCollector collector,
-		CrossLinkTocEntry crossLinkRef,
+		CrossLinkEntryDto crossLinkRef,
 		IDirectoryInfo baseDirectory,
 		IFileSystem fileSystem,
 		string parentPath,

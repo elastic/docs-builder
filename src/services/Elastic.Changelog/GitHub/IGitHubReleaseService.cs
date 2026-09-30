@@ -114,8 +114,8 @@ public interface IGitHubReleaseService
 	/// <summary>
 	/// Fetches release information from GitHub
 	/// </summary>
-	/// <param name="owner">Repository owner</param>
-	/// <param name="repo">Repository name</param>
+	/// <param name="owner">RepositoryDto owner</param>
+	/// <param name="repo">RepositoryDto name</param>
 	/// <param name="version">Version tag or "latest" (null defaults to latest)</param>
 	/// <param name="ctx">Cancellation token</param>
 	/// <returns>Release information or null if fetch fails</returns>
@@ -124,8 +124,8 @@ public interface IGitHubReleaseService
 	/// <summary>
 	/// Fetches the most recent releases from GitHub, newest first
 	/// </summary>
-	/// <param name="owner">Repository owner</param>
-	/// <param name="repo">Repository name</param>
+	/// <param name="owner">RepositoryDto owner</param>
+	/// <param name="repo">RepositoryDto name</param>
 	/// <param name="count">Maximum number of releases to fetch</param>
 	/// <param name="ctx">Cancellation token</param>
 	/// <returns>The releases, or an empty list if the fetch fails</returns>
@@ -164,8 +164,8 @@ public interface IGitHubReleaseService
 	/// Fetches the SHA of the oldest commit reachable from <paramref name="tagRef"/> in the repository.
 	/// Used as a fallback start-ref when no previous release exists (i.e., this is the very first release).
 	/// </summary>
-	/// <param name="owner">Repository owner</param>
-	/// <param name="repo">Repository name</param>
+	/// <param name="owner">RepositoryDto owner</param>
+	/// <param name="repo">RepositoryDto name</param>
 	/// <param name="tagRef">The tag or ref to walk back from</param>
 	/// <param name="ctx">Cancellation token</param>
 	/// <returns>The initial commit SHA, or <c>null</c> if it cannot be determined.</returns>

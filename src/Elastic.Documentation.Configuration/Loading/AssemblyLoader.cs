@@ -3,10 +3,10 @@
 // See the LICENSE file in the project root for more information
 
 using System.Runtime.CompilerServices;
+using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Extensions;
 using Elastic.Documentation.Publishing;
-using Dto = Elastic.Documentation.Configuration.Assembler;
 
 namespace Elastic.Documentation.Configuration.Loading;
 
@@ -55,8 +55,7 @@ public static class AssemblyLoader
 
 		try
 		{
-			var dto = ConfigurationFileProvider.Deserializer.Deserialize<Dto.AssemblyConfiguration>(input)
-				?? new Dto.AssemblyConfiguration();
+			var dto = ConfigurationFileProvider.Deserializer.Deserialize<AssemblyConfigurationDto>(input) ?? new AssemblyConfigurationDto();
 			var references = new Dictionary<string, Repository>();
 			foreach (var (name, r) in dto.ReferenceRepositories)
 				references[name] = RepositoryDefaults(ToRepository(r, name), environment);
@@ -101,13 +100,13 @@ public static class AssemblyLoader
 		}
 	}
 
-	private static Repository ToRepository(Dto.Repository? dto, string name) =>
+	private static Repository ToRepository(RepositoryDto? dto, string name) =>
 		dto is null ? new Repository { Name = name } : Copy(dto, new Repository()) with { Name = name };
 
-	private static NarrativeRepository ToNarrative(Dto.Repository? dto) =>
+	private static NarrativeRepository ToNarrative(RepositoryDto? dto) =>
 		dto is null ? new NarrativeRepository() : Copy(dto, new NarrativeRepository());
 
-	private static TRepository Copy<TRepository>(Dto.Repository dto, TRepository empty) where TRepository : Repository =>
+	private static TRepository Copy<TRepository>(RepositoryDto dto, TRepository empty) where TRepository : Repository =>
 		empty with
 		{
 			Origin = dto.Origin,
@@ -122,7 +121,7 @@ public static class AssemblyLoader
 			CloneTimeout = dto.CloneTimeout
 		};
 
-	private static PublishEnvironment ToEnvironment(Dto.PublishEnvironment dto, string name) =>
+	private static PublishEnvironment ToEnvironment(PublishEnvironmentDto dto, string name) =>
 		new()
 		{
 			Name = name,

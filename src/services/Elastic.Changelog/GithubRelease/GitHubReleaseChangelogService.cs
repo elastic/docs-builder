@@ -44,7 +44,7 @@ public record GitHubReleaseResult(bool Success, string? BundlePath)
 public record CreateChangelogsFromReleaseArguments
 {
 	/// <summary>
-	/// Repository in owner/repo format (e.g., "elastic/elasticsearch")
+	/// RepositoryDto in owner/repo format (e.g., "elastic/elasticsearch")
 	/// </summary>
 	public required string Repository { get; init; }
 

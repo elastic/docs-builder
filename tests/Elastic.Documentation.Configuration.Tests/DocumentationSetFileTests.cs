@@ -120,8 +120,8 @@ public class DocumentationSetFileTests
 		var result = Deserialize(yaml);
 
 		result.TocEntries.Should().HaveCount(2);
-		result.TocEntries.ElementAt(0).Should().BeOfType<IndexFileEntry>().Which.Path.Should().Be("index.md");
-		result.TocEntries.ElementAt(1).Should().BeOfType<FileEntry>().Which.Path.Should().Be("getting-started.md");
+		result.TocEntries.ElementAt(0).Should().BeOfType<IndexFileEntryDto>().Which.Path.Should().Be("index.md");
+		result.TocEntries.ElementAt(1).Should().BeOfType<FileEntryDto>().Which.Path.Should().Be("getting-started.md");
 	}
 
 	[Test]
@@ -140,10 +140,10 @@ public class DocumentationSetFileTests
 		var result = Deserialize(yaml);
 
 		result.TocEntries.Should().HaveCount(3);
-		result.TocEntries.ElementAt(0).Should().BeOfType<IndexFileEntry>().Which.Hidden.Should().BeFalse();
-		result.TocEntries.ElementAt(1).Should().BeOfType<FileEntry>().Which.Hidden.Should().BeTrue();
-		result.TocEntries.ElementAt(1).Should().BeOfType<FileEntry>().Which.Path.Should().Be("404.md");
-		result.TocEntries.ElementAt(2).Should().BeOfType<FileEntry>().Which.Hidden.Should().BeTrue();
+		result.TocEntries.ElementAt(0).Should().BeOfType<IndexFileEntryDto>().Which.Hidden.Should().BeFalse();
+		result.TocEntries.ElementAt(1).Should().BeOfType<FileEntryDto>().Which.Hidden.Should().BeTrue();
+		result.TocEntries.ElementAt(1).Should().BeOfType<FileEntryDto>().Which.Path.Should().Be("404.md");
+		result.TocEntries.ElementAt(2).Should().BeOfType<FileEntryDto>().Which.Hidden.Should().BeTrue();
 	}
 
 	[Test]
@@ -163,11 +163,11 @@ public class DocumentationSetFileTests
 		var result = Deserialize(yaml);
 
 		result.TocEntries.Should().HaveCount(1);
-		var folder = result.TocEntries.ElementAt(0).Should().BeOfType<FolderEntry>().Subject;
+		var folder = result.TocEntries.ElementAt(0).Should().BeOfType<FolderEntryDto>().Subject;
 		folder.Path.Should().Be("contribute");
 		folder.Children.Should().HaveCount(2);
-		folder.Children.ElementAt(0).Should().BeOfType<IndexFileEntry>().Which.Path.Should().Be("index.md");
-		folder.Children.ElementAt(1).Should().BeOfType<FileEntry>().Which.Path.Should().Be("locally.md");
+		folder.Children.ElementAt(0).Should().BeOfType<IndexFileEntryDto>().Which.Path.Should().Be("index.md");
+		folder.Children.ElementAt(1).Should().BeOfType<FileEntryDto>().Which.Path.Should().Be("locally.md");
 	}
 
 	[Test]
@@ -185,8 +185,8 @@ public class DocumentationSetFileTests
 		var result = Deserialize(yaml);
 
 		result.TocEntries.Should().HaveCount(2);
-		result.TocEntries.ElementAt(0).Should().BeOfType<IndexFileEntry>();
-		result.TocEntries.ElementAt(1).Should().BeOfType<NestedTocEntry>().Which.Path.Should().Be("development");
+		result.TocEntries.ElementAt(0).Should().BeOfType<IndexFileEntryDto>();
+		result.TocEntries.ElementAt(1).Should().BeOfType<NestedTocEntryDto>().Which.Path.Should().Be("development");
 	}
 
 	[Test]
@@ -207,9 +207,9 @@ public class DocumentationSetFileTests
 		var result = Deserialize(yaml);
 
 		result.TocEntries.Should().HaveCount(2);
-		var fileWithChildren = result.TocEntries.ElementAt(1).Should().BeOfType<FileEntry>().Subject;
+		var fileWithChildren = result.TocEntries.ElementAt(1).Should().BeOfType<FileEntryDto>().Subject;
 		fileWithChildren.Children.Should().HaveCount(1);
-		var crosslink = fileWithChildren.Children.ElementAt(0).Should().BeOfType<CrossLinkTocEntry>().Subject;
+		var crosslink = fileWithChildren.Children.ElementAt(0).Should().BeOfType<CrossLinkEntryDto>().Subject;
 		crosslink.Title.Should().Be("Getting Started Guide");
 		crosslink.CrossLinkUri.ToString().Should().Be("docs-content://get-started/introduction.md");
 	}
@@ -235,18 +235,18 @@ public class DocumentationSetFileTests
 		var result = Deserialize(yaml);
 
 		result.TocEntries.Should().HaveCount(1);
-		var topFolder = result.TocEntries.ElementAt(0).Should().BeOfType<FolderEntry>().Subject;
+		var topFolder = result.TocEntries.ElementAt(0).Should().BeOfType<FolderEntryDto>().Subject;
 		topFolder.Path.Should().Be("configure");
 		topFolder.Children.Should().HaveCount(2);
 
-		topFolder.Children.ElementAt(0).Should().BeOfType<IndexFileEntry>().Which.Path.Should().Be("index.md");
+		topFolder.Children.ElementAt(0).Should().BeOfType<IndexFileEntryDto>().Which.Path.Should().Be("index.md");
 
-		var nestedFolder = topFolder.Children.ElementAt(1).Should().BeOfType<FolderEntry>().Subject;
+		var nestedFolder = topFolder.Children.ElementAt(1).Should().BeOfType<FolderEntryDto>().Subject;
 		nestedFolder.Path.Should().Be("site");
 		nestedFolder.Children.Should().HaveCount(3);
-		nestedFolder.Children.ElementAt(0).Should().BeOfType<IndexFileEntry>().Which.Path.Should().Be("index.md");
-		nestedFolder.Children.ElementAt(1).Should().BeOfType<FileEntry>().Which.Path.Should().Be("content.md");
-		nestedFolder.Children.ElementAt(2).Should().BeOfType<FileEntry>().Which.Path.Should().Be("navigation.md");
+		nestedFolder.Children.ElementAt(0).Should().BeOfType<IndexFileEntryDto>().Which.Path.Should().Be("index.md");
+		nestedFolder.Children.ElementAt(1).Should().BeOfType<FileEntryDto>().Which.Path.Should().Be("content.md");
+		nestedFolder.Children.ElementAt(2).Should().BeOfType<FileEntryDto>().Which.Path.Should().Be("navigation.md");
 	}
 
 	[Test]
@@ -309,56 +309,56 @@ public class DocumentationSetFileTests
 		result.TocEntries.Should().HaveCount(4);
 
 		// First item: simple file reference
-		var firstItem = result.TocEntries.ElementAt(0).Should().BeOfType<IndexFileEntry>().Subject;
+		var firstItem = result.TocEntries.ElementAt(0).Should().BeOfType<IndexFileEntryDto>().Subject;
 		firstItem.Path.Should().Be("index.md");
 		firstItem.Hidden.Should().BeFalse();
 		firstItem.Children.Should().BeEmpty();
 
 		// Second item: hidden file reference
-		var secondItem = result.TocEntries.ElementAt(1).Should().BeOfType<FileEntry>().Subject;
+		var secondItem = result.TocEntries.ElementAt(1).Should().BeOfType<FileEntryDto>().Subject;
 		secondItem.Path.Should().Be("404.md");
 		secondItem.Hidden.Should().BeTrue();
 		secondItem.Children.Should().BeEmpty();
 
 		// Third item: folder with a deeply nested structure
-		var configureFolder = result.TocEntries.ElementAt(2).Should().BeOfType<FolderEntry>().Subject;
+		var configureFolder = result.TocEntries.ElementAt(2).Should().BeOfType<FolderEntryDto>().Subject;
 		configureFolder.Path.Should().Be("configure");
 		configureFolder.Children.Should().HaveCount(3);
 
 		// First child: file reference
-		var configureIndexFile = configureFolder.Children.ElementAt(0).Should().BeOfType<IndexFileEntry>().Subject;
+		var configureIndexFile = configureFolder.Children.ElementAt(0).Should().BeOfType<IndexFileEntryDto>().Subject;
 		configureIndexFile.Path.Should().Be("index.md");
 		configureIndexFile.Hidden.Should().BeFalse();
 
 		// Second child: nested folder with 3 files
-		var siteFolder = configureFolder.Children.ElementAt(1).Should().BeOfType<FolderEntry>().Subject;
+		var siteFolder = configureFolder.Children.ElementAt(1).Should().BeOfType<FolderEntryDto>().Subject;
 		siteFolder.Path.Should().Be("site");
 		siteFolder.Children.Should().HaveCount(3);
 
 		// Assert nested folder's children
-		var siteIndexFile = siteFolder.Children.ElementAt(0).Should().BeOfType<IndexFileEntry>().Subject;
+		var siteIndexFile = siteFolder.Children.ElementAt(0).Should().BeOfType<IndexFileEntryDto>().Subject;
 		siteIndexFile.Path.Should().Be("index.md");
 
-		var contentFile = siteFolder.Children.ElementAt(1).Should().BeOfType<FileEntry>().Subject;
+		var contentFile = siteFolder.Children.ElementAt(1).Should().BeOfType<FileEntryDto>().Subject;
 		contentFile.Path.Should().Be("content.md");
 
-		var navigationFile = siteFolder.Children.ElementAt(2).Should().BeOfType<FileEntry>().Subject;
+		var navigationFile = siteFolder.Children.ElementAt(2).Should().BeOfType<FileEntryDto>().Subject;
 		navigationFile.Path.Should().Be("navigation.md");
 
 		// Third child: file with crosslink child
-		var pageFile = configureFolder.Children.ElementAt(2).Should().BeOfType<FileEntry>().Subject;
+		var pageFile = configureFolder.Children.ElementAt(2).Should().BeOfType<FileEntryDto>().Subject;
 		pageFile.Path.Should().Be("page.md");
 		pageFile.Children.Should().HaveCount(1);
 
 		// Assert crosslink reference as a child of page.md
-		var crosslink = pageFile.Children.ElementAt(0).Should().BeOfType<CrossLinkTocEntry>().Subject;
+		var crosslink = pageFile.Children.ElementAt(0).Should().BeOfType<CrossLinkEntryDto>().Subject;
 		crosslink.Title.Should().Be("Getting Started Guide");
 		crosslink.CrossLinkUri.ToString().Should().Be("docs-content://get-started/introduction.md");
 		crosslink.Hidden.Should().BeFalse();
 		crosslink.Children.Should().BeEmpty();
 
 		// Fourth item: toc reference
-		var tocRef = result.TocEntries.ElementAt(3).Should().BeOfType<NestedTocEntry>().Subject;
+		var tocRef = result.TocEntries.ElementAt(3).Should().BeOfType<NestedTocEntryDto>().Subject;
 		tocRef.Path.Should().Be("development");
 		tocRef.Children.Should().BeEmpty();
 	}
@@ -381,12 +381,12 @@ public class DocumentationSetFileTests
 		var result = Deserialize(yaml);
 
 		result.TocEntries.Should().HaveCount(1);
-		var guide = result.TocEntries.ElementAt(0).Should().BeOfType<FileEntry>().Subject;
+		var guide = result.TocEntries.ElementAt(0).Should().BeOfType<FileEntryDto>().Subject;
 		guide.Path.Should().Be("guide.md");
 		guide.Children.Should().HaveCount(3);
-		guide.Children.ElementAt(0).Should().BeOfType<FileEntry>().Which.Path.Should().Be("chapter1.md");
-		guide.Children.ElementAt(1).Should().BeOfType<FileEntry>().Which.Path.Should().Be("chapter2.md");
-		guide.Children.ElementAt(2).Should().BeOfType<FileEntry>().Which.Path.Should().Be("chapter3.md");
+		guide.Children.ElementAt(0).Should().BeOfType<FileEntryDto>().Which.Path.Should().Be("chapter1.md");
+		guide.Children.ElementAt(1).Should().BeOfType<FileEntryDto>().Which.Path.Should().Be("chapter2.md");
+		guide.Children.ElementAt(2).Should().BeOfType<FileEntryDto>().Which.Path.Should().Be("chapter3.md");
 	}
 
 	[Test]
@@ -406,11 +406,11 @@ public class DocumentationSetFileTests
 		var result = Deserialize(yaml);
 
 		result.TocEntries.Should().HaveCount(1);
-		var guide = result.TocEntries.ElementAt(0).Should().BeOfType<FileEntry>().Subject;
+		var guide = result.TocEntries.ElementAt(0).Should().BeOfType<FileEntryDto>().Subject;
 		guide.Path.Should().Be("api/guide.md");
 		guide.Children.Should().HaveCount(2);
-		guide.Children.ElementAt(0).Should().BeOfType<FileEntry>().Which.Path.Should().Be("api/section1.md");
-		guide.Children.ElementAt(1).Should().BeOfType<FileEntry>().Which.Path.Should().Be("api/section2.md");
+		guide.Children.ElementAt(0).Should().BeOfType<FileEntryDto>().Which.Path.Should().Be("api/section1.md");
+		guide.Children.ElementAt(1).Should().BeOfType<FileEntryDto>().Which.Path.Should().Be("api/section2.md");
 	}
 
 	[Test]
@@ -464,8 +464,8 @@ public class DocumentationSetFileTests
 
 		var result = Deserialize(yaml);
 
-		var file = result.TocEntries.ElementAt(0).Should().BeOfType<IndexFileEntry>().Subject;
-		var crosslink = file.Children.ElementAt(0).Should().BeOfType<CrossLinkTocEntry>().Subject;
+		var file = result.TocEntries.ElementAt(0).Should().BeOfType<IndexFileEntryDto>().Subject;
+		var crosslink = file.Children.ElementAt(0).Should().BeOfType<CrossLinkEntryDto>().Subject;
 		crosslink.CrossLinkUri.ToString().Should().Be("docs-content://get-started.md/"); // URI normalization adds trailing slash
 		crosslink.Title.Should().BeNull();
 	}
@@ -487,10 +487,10 @@ public class DocumentationSetFileTests
 		var result = Deserialize(yaml);
 
 		result.TocEntries.Should().HaveCount(4);
-		result.TocEntries.ElementAt(0).Should().BeOfType<IndexFileEntry>().Which.Hidden.Should().BeFalse();
-		result.TocEntries.ElementAt(1).Should().BeOfType<FileEntry>().Which.Hidden.Should().BeTrue();
-		result.TocEntries.ElementAt(2).Should().BeOfType<FileEntry>().Which.Hidden.Should().BeFalse();
-		result.TocEntries.ElementAt(3).Should().BeOfType<FileEntry>().Which.Hidden.Should().BeTrue();
+		result.TocEntries.ElementAt(0).Should().BeOfType<IndexFileEntryDto>().Which.Hidden.Should().BeFalse();
+		result.TocEntries.ElementAt(1).Should().BeOfType<FileEntryDto>().Which.Hidden.Should().BeTrue();
+		result.TocEntries.ElementAt(2).Should().BeOfType<FileEntryDto>().Which.Hidden.Should().BeFalse();
+		result.TocEntries.ElementAt(3).Should().BeOfType<FileEntryDto>().Which.Hidden.Should().BeTrue();
 	}
 
 	[Test]
@@ -512,10 +512,10 @@ public class DocumentationSetFileTests
 
 		var result = Deserialize(yaml);
 
-		var guide = result.TocEntries.ElementAt(0).Should().BeOfType<FileEntry>().Subject;
-		var chapter1 = guide.Children.ElementAt(0).Should().BeOfType<FileEntry>().Subject;
-		var section1 = chapter1.Children.ElementAt(0).Should().BeOfType<FileEntry>().Subject;
-		var subsection1 = section1.Children.ElementAt(0).Should().BeOfType<FileEntry>().Subject;
+		var guide = result.TocEntries.ElementAt(0).Should().BeOfType<FileEntryDto>().Subject;
+		var chapter1 = guide.Children.ElementAt(0).Should().BeOfType<FileEntryDto>().Subject;
+		var section1 = chapter1.Children.ElementAt(0).Should().BeOfType<FileEntryDto>().Subject;
+		var subsection1 = section1.Children.ElementAt(0).Should().BeOfType<FileEntryDto>().Subject;
 
 		subsection1.Path.Should().Be("subsection1.md");
 		subsection1.Children.Should().BeEmpty();
@@ -583,11 +583,11 @@ public class DocumentationSetFileTests
 
 		var result = Deserialize(yaml);
 
-		var apiFolder = result.TocEntries.ElementAt(0).Should().BeOfType<FolderEntry>().Subject;
+		var apiFolder = result.TocEntries.ElementAt(0).Should().BeOfType<FolderEntryDto>().Subject;
 		apiFolder.Children.Should().HaveCount(3);
-		apiFolder.Children.ElementAt(0).Should().BeOfType<IndexFileEntry>();
-		apiFolder.Children.ElementAt(1).Should().BeOfType<FolderEntry>();
-		apiFolder.Children.ElementAt(2).Should().BeOfType<FileEntry>();
+		apiFolder.Children.ElementAt(0).Should().BeOfType<IndexFileEntryDto>();
+		apiFolder.Children.ElementAt(1).Should().BeOfType<FolderEntryDto>();
+		apiFolder.Children.ElementAt(2).Should().BeOfType<FileEntryDto>();
 	}
 
 	[Test]
@@ -983,7 +983,7 @@ public class DocumentationSetFileTests
 
 		var result = Deserialize(yaml);
 
-		var tocRef = result.TocEntries.ElementAt(1).Should().BeOfType<NestedTocEntry>().Subject;
+		var tocRef = result.TocEntries.ElementAt(1).Should().BeOfType<NestedTocEntryDto>().Subject;
 		tocRef.Path.Should().Be("reference");
 		tocRef.Island.Should().BeTrue("inline island: true must be captured on NestedTocEntry");
 	}
@@ -1002,7 +1002,7 @@ public class DocumentationSetFileTests
 
 		var result = Deserialize(yaml);
 
-		var tocRef = result.TocEntries.ElementAt(1).Should().BeOfType<NestedTocEntry>().Subject;
+		var tocRef = result.TocEntries.ElementAt(1).Should().BeOfType<NestedTocEntryDto>().Subject;
 		tocRef.Island.Should().BeFalse("inline island defaults to false when omitted");
 	}
 

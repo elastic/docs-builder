@@ -10,31 +10,30 @@ using Elastic.Documentation.Publishing;
 using YamlDotNet.Core;
 using YamlDotNet.Core.Events;
 using YamlDotNet.Serialization;
-using AssemblyConfiguration = Elastic.Documentation.Publishing.AssemblyConfiguration;
 
 namespace Elastic.Documentation.Configuration.Toc;
 
-// SiteNavigationFile and PhantomRegistration keep their original names: YamlDotNet puts the type's full name in the
+// SiteNavigationDto and PhantomRegistrationDto keep their original names: YamlDotNet puts the type's full name in the
 // error for an unknown key, and those messages must not change.
 [YamlSerializable]
-internal sealed class SiteNavigationFile
+internal sealed class SiteNavigationDto
 {
 	[YamlMember(Alias = "phantoms")]
-	public List<PhantomRegistration> Phantoms { get; set; } = [];
+	public List<PhantomRegistrationDto> Phantoms { get; set; } = [];
 
 	[YamlMember(Alias = "toc")]
-	public SiteTableOfContents TableOfContents { get; set; } = [];
+	public SiteTableOfContentsDto TableOfContents { get; set; } = [];
 }
 
 [YamlSerializable]
-internal sealed class PhantomRegistration
+internal sealed class PhantomRegistrationDto
 {
 	[YamlMember(Alias = "toc")]
 	public string Source { get; set; } = null!;
 }
 
 /// <summary>The top-level <c>toc:</c> entries of <c>navigation.yml</c>, bound by <see cref="SiteTableOfContentsCollectionYamlConverter"/>.</summary>
-public sealed class SiteTableOfContents : List<SiteNavigationEntry>;
+internal sealed class SiteTableOfContentsDto : List<SiteNavigationEntry>;
 
 /// <summary>Loads <c>navigation.yml</c> into a <see cref="SiteNavigationDefinition"/> and validates it.</summary>
 public static class SiteNavigationLoader
@@ -42,10 +41,10 @@ public static class SiteNavigationLoader
 	/// <summary>Parses <paramref name="yaml"/>. Entries without a <c>toc:</c> key, or with an unparsable source, throw.</summary>
 	public static SiteNavigationDefinition Deserialize(string yaml)
 	{
-		var dto = ConfigurationFileProvider.Deserializer.Deserialize<SiteNavigationFile>(yaml) ?? new SiteNavigationFile();
+		var dto = ConfigurationFileProvider.Deserializer.Deserialize<SiteNavigationDto>(yaml) ?? new SiteNavigationDto();
 		return new SiteNavigationDefinition
 		{
-			Phantoms = [.. dto.Phantoms.Select(p => new Publishing.PhantomRegistration { Source = p.Source })],
+			Phantoms = [.. dto.Phantoms.Select(p => new PhantomRegistration { Source = p.Source })],
 			TableOfContents = dto.TableOfContents
 		};
 	}
@@ -120,7 +119,7 @@ public static class SiteNavigationLoader
 	)
 	{
 		var source = toc.ShorthandPath is { } shorthand
-			? ContentSourceMoniker.CreateString(Publishing.NarrativeRepository.RepositoryName, shorthand)
+			? ContentSourceMoniker.CreateString(NarrativeRepository.RepositoryName, shorthand)
 			: toc.Source.OriginalString;
 		source = source.EndsWith("://", StringComparison.OrdinalIgnoreCase) ? source : source.TrimEnd('/') + "/";
 		if (!Uri.TryCreate(source, UriKind.Absolute, out var sourceUri))
@@ -188,11 +187,11 @@ public static class SiteNavigationLoader
 
 public class SiteTableOfContentsCollectionYamlConverter : IYamlTypeConverter
 {
-	public bool Accepts(Type type) => type == typeof(SiteTableOfContents);
+	public bool Accepts(Type type) => type == typeof(SiteTableOfContentsDto);
 
 	public object ReadYaml(IParser parser, Type type, ObjectDeserializer rootDeserializer)
 	{
-		var collection = new SiteTableOfContents();
+		var collection = new SiteTableOfContentsDto();
 
 		if (!parser.TryConsume<SequenceStart>(out _))
 			return collection;

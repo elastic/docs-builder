@@ -159,7 +159,7 @@ public class CodexNavigationTests() : CodexNavigationTestBase()
 	[Test]
 	public void SlashSitePrefix_TreatedAsRoot()
 	{
-		// When loading from YAML, "/" gets normalized to empty by CodexConfiguration.Deserialize
+		// When loading from YAML, "/" gets normalized to empty by CodexConfigurationDto.Deserialize
 		// language=yaml
 		var yaml = """
 		           title: "Test Codex"

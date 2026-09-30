@@ -65,7 +65,7 @@ internal sealed partial class ChangelogCommands(
 	/// When <c>changelog.yml</c> already exists, updates only the paths specified via <see paramref="changelogDir"/> or <see paramref="bundlesDir"/>.
 	/// Seeds <c>bundle.owner</c>, <c>bundle.repo</c>, and <c>bundle.link_allow_repos</c> from the git remote origin when available.
 	/// </remarks>
-	/// <param name="path">Repository root. Defaults to <c>cwd</c>.</param>
+	/// <param name="path">RepositoryDto root. Defaults to <c>cwd</c>.</param>
 	/// <param name="changelogDir">Changelog entry directory. Defaults to <c>docs/changelog</c>.</param>
 	/// <param name="bundlesDir">Bundle output directory. Defaults to <c>docs/releases</c>.</param>
 	/// <param name="owner">GitHub owner for seeding bundle defaults. Overrides the value inferred from git remote origin.</param>

@@ -41,7 +41,7 @@ internal sealed class ContentSourceCommands(
 
 	/// <summary>Check whether a repository at a specific branch or tag should be included in the next build.</summary>
 	/// <remarks>Exits 0 if the repository matches; 1 otherwise. Useful for conditional CI steps.</remarks>
-	/// <param name="repository">Repository slug to match (e.g. <c>elastic/elasticsearch</c>).</param>
+	/// <param name="repository">RepositoryDto slug to match (e.g. <c>elastic/elasticsearch</c>).</param>
 	/// <param name="branchOrTag">Branch name or version tag to test against.</param>
 	[NoOptionsInjection]
 	public async Task<int> Match(

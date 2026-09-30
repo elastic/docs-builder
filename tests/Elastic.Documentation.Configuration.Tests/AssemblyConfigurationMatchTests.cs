@@ -11,11 +11,7 @@ using Elastic.Documentation.Publishing;
 using Elastic.Documentation.Versions;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
-using AssemblyConfiguration = Elastic.Documentation.Publishing.AssemblyConfiguration;
 using MatchResult = Elastic.Documentation.Publishing.AssemblyConfiguration.ContentSourceMatch;
-using NarrativeRepository = Elastic.Documentation.Publishing.NarrativeRepository;
-using PublishEnvironment = Elastic.Documentation.Publishing.PublishEnvironment;
-using Repository = Elastic.Documentation.Publishing.Repository;
 
 namespace Elastic.Documentation.Configuration.Tests;
 

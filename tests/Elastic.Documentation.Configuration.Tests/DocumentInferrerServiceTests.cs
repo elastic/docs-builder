@@ -136,7 +136,7 @@ public class DocumentInferrerServiceTests
 
 		var inferrer = new DocumentInferrerService(productsConfig, versionsConfig, legacyUrlMappings);
 
-		// "elastic-otel-java" is the Repository field of "apm-agent-java" product
+		// "elastic-otel-java" is the RepositoryDto field of "apm-agent-java" product
 		var result = inferrer.InferForMarkdown(
 			repositoryName: "elastic-otel-java",
 			mappedPages: null,

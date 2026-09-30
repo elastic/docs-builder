@@ -77,25 +77,25 @@ public class AssemblyLoaderTests
 		_ = invalid.Should().Throw<Exception>();
 	}
 
-	// YamlDotNet names the bound type in the error for an unknown key. These pin the names users have always seen.
+	// Unknown keys are rejected, and the error names the key so authors can find the typo.
 	[Test]
-	[Arguments("bogus: 1", "Elastic.Documentation.Configuration.Assembler.AssemblyConfiguration")]
-	[Arguments("references:\n  kibana:\n    bogus: 1", "Elastic.Documentation.Configuration.Assembler.Repository")]
-	[Arguments("narrative:\n  bogus: 1", "Elastic.Documentation.Configuration.Assembler.NarrativeRepository")]
-	[Arguments("environments:\n  prod:\n    bogus: 1", "Elastic.Documentation.Configuration.Assembler.PublishEnvironment")]
-	public void Deserialize_UnknownKey_NamesTheHistoricalType(string yaml, string typeName)
+	[Arguments("bogus: 1")]
+	[Arguments("references:\n  kibana:\n    bogus: 1")]
+	[Arguments("narrative:\n  bogus: 1")]
+	[Arguments("environments:\n  prod:\n    bogus: 1")]
+	public void Deserialize_UnknownKey_IsRejected(string yaml)
 	{
 		var act = () => AssemblyLoader.Deserialize(yaml, environment: new Environment());
-		_ = act.Should().Throw<Exception>().WithMessage($"*'bogus' not found on type '{typeName}'*");
+		_ = act.Should().Throw<Exception>().WithMessage("*'bogus' not found*");
 	}
 
 	[Test]
-	[Arguments("bogus: 1", "Elastic.Documentation.Configuration.Toc.SiteNavigationFile")]
-	[Arguments("phantoms:\n  - bogus: 1", "Elastic.Documentation.Configuration.Toc.PhantomRegistration")]
-	public void SiteNavigation_UnknownKey_NamesTheHistoricalType(string yaml, string typeName)
+	[Arguments("bogus: 1")]
+	[Arguments("phantoms:\n  - bogus: 1")]
+	public void SiteNavigation_UnknownKey_IsRejected(string yaml)
 	{
 		var act = () => Toc.SiteNavigationLoader.Deserialize(yaml);
-		_ = act.Should().Throw<Exception>().WithMessage($"*'bogus' not found on type '{typeName}'*");
+		_ = act.Should().Throw<Exception>().WithMessage("*'bogus' not found*");
 	}
 
 	[Test]

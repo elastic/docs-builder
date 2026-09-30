@@ -19,10 +19,6 @@ using Elastic.Documentation.Publishing;
 using Elastic.Documentation.Search;
 using Microsoft.Extensions.Logging.Abstractions;
 using static Elastic.Documentation.Configuration.Tests.Golden.Golden;
-using CodexConfiguration = Elastic.Documentation.Codex.CodexConfiguration;
-using AssemblyConfiguration = Elastic.Documentation.Publishing.AssemblyConfiguration;
-using PublishEnvironment = Elastic.Documentation.Publishing.PublishEnvironment;
-using Repository = Elastic.Documentation.Publishing.Repository;
 
 namespace Elastic.Documentation.Configuration.Tests.Golden;
 

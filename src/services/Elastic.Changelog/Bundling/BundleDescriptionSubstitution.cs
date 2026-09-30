@@ -17,7 +17,7 @@ internal static class BundleDescriptionSubstitution
 	/// <param name="version">Version value for {version} placeholder</param>
 	/// <param name="lifecycle">Lifecycle value for {lifecycle} placeholder</param>
 	/// <param name="owner">Owner value for {owner} placeholder</param>
-	/// <param name="repo">Repository value for {repo} placeholder</param>
+	/// <param name="repo">RepositoryDto value for {repo} placeholder</param>
 	/// <param name="validateResolvable">If true, validates that all used placeholders can be resolved</param>
 	/// <returns>Description with placeholders substituted</returns>
 	/// <exception cref="InvalidOperationException">When validateResolvable is true and placeholders cannot be resolved</exception>

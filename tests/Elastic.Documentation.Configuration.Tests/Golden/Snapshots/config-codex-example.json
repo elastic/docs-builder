@@ -1,5 +1,5 @@
 {
   "failure": {
-    "message": "Property 'documentation_sets' not found on type 'Elastic.Documentation.Configuration.Codex.CodexConfiguration'."
+    "message": "Property 'documentation_sets' not found on type 'Elastic.Documentation.Configuration.Codex.CodexConfigurationDto'."
   }
 }

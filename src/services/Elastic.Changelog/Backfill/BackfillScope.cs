@@ -41,7 +41,7 @@ public sealed record BackfillScope
 	public string? Ref { get; init; }
 
 	/// <summary>
-	/// Repository-relative path of the release-notes Markdown file (e.g. <c>docs/release-notes/index.md</c>).
+	/// RepositoryDto-relative path of the release-notes Markdown file (e.g. <c>docs/release-notes/index.md</c>).
 	/// Used only when this scope is a repo source; distinct from <see cref="Path"/> which is the site-relative path.
 	/// </summary>
 	public string? RepoPath { get; init; }

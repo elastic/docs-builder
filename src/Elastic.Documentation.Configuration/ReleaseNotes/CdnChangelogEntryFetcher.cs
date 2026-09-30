@@ -495,8 +495,8 @@ public sealed class CdnChangelogEntryFetcher : IDisposable
 	/// cannot be fetched is a hard error — the index is an authoritative promise that the note exists.
 	/// </summary>
 	/// <param name="baseUri">CDN base URI.</param>
-	/// <param name="org">Repository org (e.g. <c>elastic</c>).</param>
-	/// <param name="repo">Repository name (e.g. <c>kibana</c>).</param>
+	/// <param name="org">RepositoryDto org (e.g. <c>elastic</c>).</param>
+	/// <param name="repo">RepositoryDto name (e.g. <c>kibana</c>).</param>
 	/// <param name="version">Release version string (e.g. <c>9.0.0</c>).</param>
 	/// <param name="emitError">Called once per hard error; caller decides how to surface it.</param>
 	/// <param name="ctx">Cancellation token.</param>

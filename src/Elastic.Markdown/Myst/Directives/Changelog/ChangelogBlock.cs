@@ -161,7 +161,7 @@ public class ChangelogBlock(DirectiveBlockParser parser, ParserContext context) 
 	];
 
 	/// <summary>
-	/// Repository names that are marked as private in assembler.yml.
+	/// RepositoryDto names that are marked as private in assembler.yml.
 	/// Links to these repositories will be hidden (commented out) in the rendered output.
 	/// Auto-detected from assembler configuration when available.
 	/// </summary>

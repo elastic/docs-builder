@@ -13,7 +13,6 @@ using Elastic.Documentation.Links;
 using Elastic.Documentation.Publishing;
 using Elastic.Documentation.Serialization;
 using static Elastic.Documentation.Configuration.Tests.Golden.Golden;
-using CodexConfiguration = Elastic.Documentation.Codex.CodexConfiguration;
 
 namespace Elastic.Documentation.Configuration.Tests.Golden;
 
