@@ -4,20 +4,27 @@
 @* Example OpenAPI descriptions are omitted from the rail — they often restate the call
    or narrate the sample; the code blocks carry the useful content. *@
 
-@* Two widgets, one card: .api-code-card styles chrome + syntax for both.
-   1. .api-code-sample — multi-language x-codeSamples, or fallback request JSON
-   2. .example-block--response — response JSON (status-code tabs) *@
-@if (Model.CodeSamples.Count > 0)
+@* .api-code-card styles chrome + syntax for every widget:
+   1. .api-code-sample — multi-language x-codeSamples
+   2. .api-code-sample — request JSON, unless the code samples already embed it
+   3. .example-block--response — response JSON (status-code tabs) *@
+@{
+	var hasCodeSamples = Model.CodeSamples.Count > 0;
+}
+@if (hasCodeSamples)
 {
 	@(await RenderPartialAsync<_ApiCodeSample, ApiCodeSampleModel>(new ApiCodeSampleModel($"rail-{Model.TabId}", Model.CodeSamples, Model.HttpMethod, Model.Route, Model.ExampleOptions)))
 }
-else if (Model.ShowRequest && Model.RequestJson is not null)
+@if (Model.ShowRequest && Model.RequestJson is not null)
 {
 	var requestSamples = new[]
 	{
 		new CodeSample("JSON", Model.RequestJson, "language-json")
 	};
-	@(await RenderPartialAsync<_ApiCodeSample, ApiCodeSampleModel>(new ApiCodeSampleModel($"rail-{Model.TabId}-request", requestSamples, Model.HttpMethod, Model.Route, Model.ExampleOptions)))
+	var requestModel = hasCodeSamples
+		? new ApiCodeSampleModel($"rail-{Model.TabId}-request", requestSamples, Title: "Request example")
+		: new ApiCodeSampleModel($"rail-{Model.TabId}-request", requestSamples, Model.HttpMethod, Model.Route, Model.ExampleOptions);
+	@(await RenderPartialAsync<_ApiCodeSample, ApiCodeSampleModel>(requestModel))
 }
 
 @if (Model.ShowRequest && !string.IsNullOrEmpty(Model.RequestExternalValue))
