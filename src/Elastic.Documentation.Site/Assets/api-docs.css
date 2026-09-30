@@ -774,6 +774,15 @@
 		color 0.12s ease;
 }
 
+.response-status-row {
+	display: flex;
+	box-sizing: border-box;
+	align-items: center;
+	gap: 8px;
+	width: 100%;
+	padding: 8px 12px;
+}
+
 .response-status-toggle:hover {
 	background-color: #ecf1f9;
 	color: #1d2a3e;
@@ -2784,6 +2793,14 @@ button.example-response-tab:focus-visible {
 	font-weight: 300;
 	line-height: 20px;
 	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.api-code-sample-title .api-code-sample-heading {
+	color: var(--api-code-muted);
+	font-size: 12px;
+	font-weight: 600;
+	line-height: 20px;
 	white-space: nowrap;
 }
 

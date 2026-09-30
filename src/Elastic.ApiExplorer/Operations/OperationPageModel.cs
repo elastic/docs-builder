@@ -60,8 +60,11 @@ public record ExampleScenario
 	/// <summary>Choices for the request-header example picker. Empty hides the picker.</summary>
 	public IReadOnlyList<ApiSelectOption> ExampleOptions { get; init; } = [];
 
-	/// <summary>Request JSON is omitted when code samples already embed the request body.</summary>
-	public bool ShowRequest => (RequestJson is not null || !string.IsNullOrEmpty(RequestExternalValue)) && CodeSamples.Count == 0;
+	/// <summary>True when the attached code samples contain this scenario's request body verbatim.</summary>
+	public bool CodeSamplesIncludeRequest { get; init; }
+
+	/// <summary>Request JSON is omitted only when code samples already embed the request body.</summary>
+	public bool ShowRequest => (RequestJson is not null || !string.IsNullOrEmpty(RequestExternalValue)) && !CodeSamplesIncludeRequest;
 
 	public bool ShowResponse => Responses.Count > 0;
 }
@@ -132,6 +135,9 @@ public record ApiResponse
 	public required string? FirstContentType { get; init; }
 	public required IReadOnlyList<ApiResponseContent> Contents { get; init; }
 	public required IReadOnlyList<ApiResponseHeader> Headers { get; init; }
+
+	/// <summary>False when there is no schema or header to document, e.g. an example-only or 204 response.</summary>
+	public bool HasDetails => Contents.Count > 0 || Headers.Count > 0;
 }
 
 /// <summary>Status-code accordion under the Responses heading.</summary>
@@ -213,7 +219,7 @@ public partial record OperationPageModel
 		if (operation.ExternalDocs?.Url is not null)
 		{
 			var url = operation.ExternalDocs.Url.ToString();
-			externalDocs = new ExternalDocLink(url, ApiPropertyTreeBuilder.IsElasticDocsUrl(url));
+			externalDocs = new ExternalDocLink(url, ApiPropertyTreeBuilder.IsElasticDocsUrl(url), operation.ExternalDocs.Description);
 		}
 
 		var descriptionMarkdown = supplemental?.DescriptionOr(operation.Description) ?? operation.Description;
@@ -256,7 +262,7 @@ public partial record OperationPageModel
 			CodeSamples = codeSamples,
 			RequestExamples = requestExamples,
 			ResponseExamples = responseExamples,
-			ShowRequestExamples = requestExamples.Count > 0 && !(requestExamples.Count == 1 && codeSamples.Count > 0),
+			ShowRequestExamples = requestExamples.Count > 0 && scenarios.Any(static s => s.ShowRequest),
 			ShowResponseExamples = responseExamples.Count > 0,
 			Scenarios = scenarios,
 			ExamplesAnchor = examplesAnchor,
@@ -332,7 +338,8 @@ public partial record OperationPageModel
 		}
 
 		var matchIndex = FindScenarioForCodeSamples(scenarios, codeSamples);
-		scenarios[matchIndex] = scenarios[matchIndex] with { CodeSamples = codeSamples };
+		var target = matchIndex ?? 0;
+		scenarios[target] = scenarios[target] with { CodeSamples = codeSamples, CodeSamplesIncludeRequest = matchIndex is not null };
 		return scenarios;
 	}
 
@@ -457,7 +464,7 @@ public partial record OperationPageModel
 				? 1
 				: statusCode.Length > 0 && statusCode[0] == '4' ? 2 : statusCode.Length > 0 && statusCode[0] == '5' ? 3 : 4;
 
-	private static int FindScenarioForCodeSamples(IReadOnlyList<ExampleScenario> scenarios, IReadOnlyList<CodeSample> codeSamples)
+	private static int? FindScenarioForCodeSamples(IReadOnlyList<ExampleScenario> scenarios, IReadOnlyList<CodeSample> codeSamples)
 	{
 		var probe = codeSamples.FirstOrDefault(static s => string.Equals(s.Language, "Console", StringComparison.OrdinalIgnoreCase))
 			?? codeSamples[0];
@@ -474,7 +481,7 @@ public partial record OperationPageModel
 				return i;
 		}
 
-		return 0;
+		return null;
 	}
 
 	private static string Compact(string value) => string.Concat(value.Where(static c => !char.IsWhiteSpace(c)));

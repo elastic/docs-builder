@@ -12,9 +12,12 @@ using Microsoft.OpenApi;
 namespace Elastic.ApiExplorer.Components.PropertyTree;
 
 /// <summary>An external documentation link with its elastic.co treatment precomputed.</summary>
-public record ExternalDocLink(string Url, bool IsElasticDocs)
+public record ExternalDocLink(string Url, bool IsElasticDocs, string? Description = null)
 {
-	public string LinkText => IsElasticDocs ? "Read the reference documentation" : "External documentation";
+	public string LinkText =>
+		!string.IsNullOrWhiteSpace(Description)
+			? Description
+			: IsElasticDocs ? "Read the reference documentation" : "External documentation";
 }
 
 /// <summary>A link from a group-4 property row to that schema's dedicated page.</summary>
