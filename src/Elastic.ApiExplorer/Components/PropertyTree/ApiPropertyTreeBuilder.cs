@@ -341,7 +341,7 @@ public class ApiPropertyTreeBuilder(OpenApiDocument document, PropertyDisplayOpt
 		if (!options.ShowExternalDocs || propSchema.ExternalDocs?.Url is null || typeInfo.HasLink)
 			return null;
 		var url = propSchema.ExternalDocs.Url.ToString();
-		return new ExternalDocLink(url, IsElasticDocsUrl(url));
+		return new ExternalDocLink(url, IsElasticDocsUrl(url), propSchema.ExternalDocs.Description);
 	}
 
 	internal static bool IsElasticDocsUrl(string url) => url.Contains("www.elastic.co/docs") || url.Contains("elastic.co/guide");

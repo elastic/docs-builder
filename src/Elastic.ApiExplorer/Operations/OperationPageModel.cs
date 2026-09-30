@@ -213,7 +213,7 @@ public partial record OperationPageModel
 		if (operation.ExternalDocs?.Url is not null)
 		{
 			var url = operation.ExternalDocs.Url.ToString();
-			externalDocs = new ExternalDocLink(url, ApiPropertyTreeBuilder.IsElasticDocsUrl(url));
+			externalDocs = new ExternalDocLink(url, ApiPropertyTreeBuilder.IsElasticDocsUrl(url), operation.ExternalDocs.Description);
 		}
 
 		var descriptionMarkdown = supplemental?.DescriptionOr(operation.Description) ?? operation.Description;
