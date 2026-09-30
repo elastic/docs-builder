@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using Elastic.Documentation.Catalog;
-using Elastic.Documentation.Configuration.Suggestions;
+using Elastic.Documentation.Suggestions;
 using YamlDotNet.Core;
 using YamlDotNet.Core.Events;
 using YamlDotNet.Serialization;

@@ -13,7 +13,7 @@ namespace Elastic.Documentation.Configuration.Toc;
 /// A single declared child page under <c>api/&lt;key&gt;/</c>, referenced by <c>children:</c>.
 /// </summary>
 [YamlSerializable]
-public class ApiEntryChild
+internal class ApiEntryChildDto
 {
 	/// <summary>
 	/// Path to a Markdown file, relative to <c>api/&lt;key&gt;/</c>.
@@ -40,7 +40,7 @@ public class ApiEntryChild
 /// the spec-publishing repository differs from the current checkout's own GitHub remote.
 /// </summary>
 [YamlSerializable]
-public class ApiProductEntry
+internal class ApiProductEntryDto
 {
 	/// <summary>
 	/// Path to an OpenAPI specification file, relative to the docset. Required: its basename is
@@ -70,14 +70,14 @@ public class ApiProductEntry
 	/// Explicit child pages rendered under <c>api/&lt;key&gt;/</c>, in declared order.
 	/// </summary>
 	[YamlMember(Alias = "children")]
-	public List<ApiEntryChild> Children { get; set; } = [];
+	public List<ApiEntryChildDto> Children { get; set; } = [];
 
 	/// <summary>
 	/// Optional catalog grouping. Categories identify filter chips only; they do not
 	/// claim versioned availability.
 	/// </summary>
 	[YamlMember(Alias = "catalog")]
-	public ApiCatalogSettings? Catalog { get; set; }
+	public ApiCatalogDto? Catalog { get; set; }
 
 	/// <summary>
 	/// 1-based line of this entry's mapping start in the source YAML. Populated by
@@ -132,7 +132,7 @@ public class ApiProductEntry
 /// Category-only catalog metadata under <c>catalog:</c> on an API entry.
 /// </summary>
 [YamlSerializable]
-public class ApiCatalogSettings
+internal class ApiCatalogDto
 {
 	[YamlMember(Alias = "categories")]
 	public List<string> Categories { get; set; } = [];
@@ -146,12 +146,12 @@ public class ApiCatalogSettings
 
 /// <summary>
 /// The YAML sequence bound to each <c>api: &lt;key&gt;</c> entry. The RFC schema always contains
-/// exactly one <see cref="ApiProductEntry"/>; the sequence wrapper mirrors the wire format.
+/// exactly one <see cref="ApiProductEntryDto"/>; the sequence wrapper mirrors the wire format.
 /// </summary>
 [YamlSerializable]
-public class ApiProductSequence
+internal class ApiProductSequenceDto
 {
-	public List<ApiProductEntry> Entries { get; set; } = [];
+	public List<ApiProductEntryDto> Entries { get; set; } = [];
 
 	/// <summary>
 	/// Structural shape check only: exactly one entry is present. Product validity and spec/child
@@ -159,7 +159,7 @@ public class ApiProductSequence
 	/// </summary>
 	public bool IsValid => Entries.Count == 1;
 
-	public ApiProductEntry? SingleEntry => Entries.Count == 1 ? Entries[0] : null;
+	public ApiProductEntryDto? SingleEntry => Entries.Count == 1 ? Entries[0] : null;
 }
 
 /// <summary>The files an API configuration's content directory holds on disk.</summary>

@@ -78,11 +78,11 @@ public class ConfigurationFileStorybookRegistryTests
 			ProductDisplayNames = new Dictionary<string, string>().ToFrozenDictionary()
 		};
 
-		var docSet = new DocumentationSetFile
+		var docSet = new DocumentationSetDto
 		{
 			Project = "test",
 			TableOfContents = [],
-			Storybook = new DocumentationSetStorybook { Registry = registry }
+			Storybook = new StorybookDto { Registry = registry }
 		};
 
 		return DocumentationSetResolver.Resolve(docSet, context, versionsConfig, productsConfig).EmitTo(context.Collector)!;

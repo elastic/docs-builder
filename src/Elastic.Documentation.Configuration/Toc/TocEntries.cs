@@ -8,7 +8,7 @@ using Elastic.Documentation.DocumentationSets;
 namespace Elastic.Documentation.Configuration.Toc;
 
 // The toc: entries of docset.yml and toc.yml exactly as authored, before resolution. Paths are as written,
-// relative to wherever the entry sits. DocumentationSetFile resolves these into the domain TocItem tree.
+// relative to wherever the entry sits. DocumentationSetDto resolves these into the domain TocItem tree.
 
 internal interface ITocEntryDto
 {

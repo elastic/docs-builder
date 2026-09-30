@@ -81,16 +81,16 @@ public class ConfigurationFileReleaseNotesTests
 		diagnostics.Should().Contain(d => d.Severity == Severity.Error && d.Message.Contains("missing a 'product' value"));
 	}
 
-	private static DocumentationSetFile DocSetWithReleaseNotes(params string[] products) =>
+	private static DocumentationSetDto DocSetWithReleaseNotes(params string[] products) =>
 		new()
 		{
 			Project = "test",
 			TableOfContents = [],
-			ReleaseNotes = [.. products.Select(p => new ReleaseNotesProductReference { Product = p })]
+			ReleaseNotes = [.. products.Select(p => new ReleaseNotesProductDto { Product = p })]
 		};
 
 	private static async Task<(ResolvedDocumentationSet Config, IReadOnlyList<Diagnostic> Diagnostics)> CreateConfiguration(
-		DocumentationSetFile docSet
+		DocumentationSetDto docSet
 	)
 	{
 		var recorder = new RecordingDiagnosticsOutput();

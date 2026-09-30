@@ -57,9 +57,8 @@ public class DocumentationSetGoldenTests
 
 		var snapshot = Capture(() =>
 		{
-			var docSet = DocumentationSetFile.LoadAndResolve(collector, docsetFile);
-			var context = new GoldenDocumentationSetContext(collector, fs, docsetFile, docsetFile.Directory!);
-			var configuration = DocumentationSetResolver.Resolve(docSet, context, versions, products).EmitTo(context.Collector)!;
+			var docSet = DocumentationSetLoader.Load(docsetFile, docsetFile.Directory!, fs).EmitTo(collector)!;
+			var configuration = DocumentationSetResolver.Resolve(docSet, versions, products, new EmptyEnvironment()).EmitTo(collector)!;
 			return Obj(("docset", ProjectDocumentationSetFile(docSet)), ("configuration", ProjectConfigurationFile(configuration)));
 		});
 		snapshot["diagnostics"] = DiagnosticList(collector.Diagnostics.Select(NormalizeDocsRoot));
@@ -77,17 +76,17 @@ public class DocumentationSetGoldenTests
 
 	// ── docset.yml + toc.yml tree ────────────────────────────────────────────
 
-	private static JsonNode ProjectDocumentationSetFile(DocumentationSetFile d) =>
+	private static JsonNode ProjectDocumentationSetFile(DocumentationSetDefinition d) =>
 		Obj(
 			("project", Str(d.Project)),
 			("island", Bool(d.Island)),
 			("maxTocDepth", Num(d.MaxTocDepth)),
 			("devDocs", Bool(d.DevDocs)),
 			("crossLinks", Arr(d.CrossLinks, c => Str(c))),
-			("releaseNotes", Arr(d.ReleaseNotes, r => Str(r.Product))),
+			("releaseNotes", Arr(d.ReleaseNotesProducts, r => Str(r))),
 			("exclude", Arr(d.Exclude, e => Str(e))),
 			("extensions", Arr(d.Extensions, e => Str(e))),
-			("subs", Map(d.Subs, v => Str(v))),
+			("subs", Map(d.Substitutions, v => Str(v))),
 #pragma warning disable CS0618 // the snapshot records obsolete keys too: they are still accepted, and codex still reads description
 			("displayName", Str(d.DisplayName)),
 			("description", Str(d.Description)),
@@ -100,27 +99,29 @@ public class DocumentationSetGoldenTests
 				("guideNav", d.Features.GuideNav is { } n ? Bool(n) : null)
 			)),
 			("api", Map(
-				d.Api,
+				d.Api.Select(a => KeyValuePair.Create(a.ProductKey, a)),
 				seq => Arr(
 					seq.Entries,
 					e => Obj(
 						("spec", Str(e.Spec)),
 						("product", Str(e.Product)),
 						("repository", Str(e.Repository)),
-						("children", Arr(e.Children, c => Str(c.File))),
-						("catalog", e.Catalog is null ? null : Arr(e.Catalog.Categories, c => Str(c))),
-						("line", e.Line is { } l ? Num(l) : null),
-						("column", e.Column is { } col ? Num(col) : null)
+						("children", Arr(e.Children, c => Str(c))),
+						("catalog", e.CatalogLocation is null && e.CatalogCategories.Count == 0
+							? null
+							: Arr(e.CatalogCategories, c => Str(c))),
+						("line", e.Location is { } l ? Num(l.Line) : null),
+						("column", e.Location is { } col ? Num(col.Column) : null)
 					)
 				)
 			)),
-			("products", Arr(d.Products, p => Str(p.Id))),
-			("codexGroup", Str(d.Codex?.Group)),
-			("branding", d.Branding is null ? null : ProjectBranding(d.Branding)),
-			("storybookRegistry", Str(d.Storybook?.Registry)),
+			("products", Arr(d.Products, p => Str(p))),
+			("codexGroup", Str(d.CodexGroup)),
+			("branding", d.Branding is null ? null : ProjectDeclaredBranding(d.Branding)),
+			("storybookRegistry", Str(d.StorybookRegistry)),
 			("cta", Map(
-				d.Cta,
-				c => Obj(("label", Str(c.Button?.Label)), ("url", Str(c.Button?.Url)), ("benefits", Arr(c.Benefits, b => Str(b))))
+				d.Ctas.Select(c => KeyValuePair.Create(c.Name, c)),
+				c => Obj(("label", Str(c.Label)), ("url", Str(c.Url)), ("benefits", Arr(c.Benefits, b => Str(b))))
 			)),
 			("defaultCta", Str(d.DefaultCta)),
 			("suppress", Set(d.SuppressDiagnostics.Select(h => h.ToString()))),
@@ -138,7 +139,7 @@ public class DocumentationSetGoldenTests
 			("appleTouchIcon", Str(b.AppleTouchIcon))
 		);
 
-	private static JsonNode ProjectBranding(BrandingConfiguration b) =>
+	private static JsonNode ProjectDeclaredBranding(BrandingDeclaration b) =>
 		Obj(
 			("icon", Str(b.Icon)),
 			("headerBg", Str(b.HeaderBg)),
@@ -183,7 +184,7 @@ public class DocumentationSetGoldenTests
 					("kind", Str("folder")),
 					("path", Str(f.PathRelativeToDocumentationSet)),
 					("container", Str(f.PathRelativeToContainer)),
-					("sort", Str(f.Sort)),
+					("sort", Str(f.Sort?.ToString())),
 					("exclude", f.Exclude is null ? null : Arr(f.Exclude, e => Str(e))),
 					("defaultCta", Str(f.DefaultCta))
 				),
@@ -201,7 +202,7 @@ public class DocumentationSetGoldenTests
 					("path", Str(l.PathRelativeToDocumentationSet)),
 					("container", Str(l.PathRelativeToContainer)),
 					("glob", Str(l.Options.Glob)),
-					("sort", Str(l.Options.Sort)),
+					("sort", Str(l.Options.Sort?.ToString())),
 					("exclude", l.Options.Exclude is null ? null : Arr(l.Options.Exclude, e => Str(e))),
 					("visual", Str(l.Options.Visual.ToString())),
 					("groups", l.Options.Groups is null ? null : Arr(l.Options.Groups, g => Str(g))),

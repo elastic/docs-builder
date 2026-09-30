@@ -19,12 +19,12 @@ public class DetectionRulesDocsBuilderExtension(BuildContext build) : IDocsBuild
 	private BuildContext Build => build;
 	private bool _versionLockInitialized;
 
-	private IReadOnlySet<string> DeprecatedOverviewFileNames { get; } = GetAllDetectionRuleOverviewRefs(
-		build.ConfigurationYaml.TableOfContents
-	).Select(r => r.DeprecatedFile ?? "deprecated-detection-rules.md").ToHashSet();
+	private IReadOnlySet<string> DeprecatedOverviewFileNames { get; } = GetAllDetectionRuleOverviewRefs(build.Definition.TableOfContents)
+		.Select(r => r.DeprecatedFile ?? "deprecated-detection-rules.md")
+		.ToHashSet();
 
 	public IEnumerable<string> ExternalScopeRoots =>
-		GetAllDetectionRuleOverviewRefs(Build.ConfigurationYaml.TableOfContents)
+		GetAllDetectionRuleOverviewRefs(Build.Definition.TableOfContents)
 			.SelectMany(r => r.DetectionRuleFolders)
 			.Select(f => Path.GetFullPath(f, Build.DocumentationSourceDirectory.FullName))
 			.Distinct();
@@ -97,7 +97,7 @@ public class DetectionRulesDocsBuilderExtension(BuildContext build) : IDocsBuild
 		Func<IFileInfo, IDirectoryInfo, DocumentationFile> defaultFileHandling
 	)
 	{
-		var overviewRefs = GetAllDetectionRuleOverviewRefs(Build.ConfigurationYaml.TableOfContents).ToArray();
+		var overviewRefs = GetAllDetectionRuleOverviewRefs(Build.Definition.TableOfContents).ToArray();
 
 		// Pass each overviewRef as a single-element sequence so the switch case that
 		// checks DeprecatedSiblingRef is triggered, picking up both active and deprecated rules.

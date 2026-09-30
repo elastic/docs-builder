@@ -358,13 +358,13 @@ public class ConfigurationFileCtaTests
 		config.ResolveCta(null, "solutions/observability/get-started/quickstart.md", out _).Name.Should().Be("monitor-kubernetes");
 	}
 
-	private static DocumentationSetFile LoadDocSet(string docsetYaml, params (string Content, string Path)[] files)
+	private static DocumentationSetDto LoadDocSet(string docsetYaml, params (string Content, string Path)[] files)
 	{
 		var collector = new DiagnosticsCollector([]);
 		return LoadDocSet(collector, docsetYaml, files);
 	}
 
-	private static DocumentationSetFile LoadDocSet(
+	private static DocumentationSetDto LoadDocSet(
 		DiagnosticsCollector collector,
 		string docsetYaml,
 		params (string Content, string Path)[] files
@@ -377,17 +377,17 @@ public class ConfigurationFileCtaTests
 			fileSystem.AddFile($"/docs/{path}", new MockFileData(content));
 
 		var docsetPath = fileSystem.FileInfo.New("/docs/docset.yml");
-		return DocumentationSetFile.LoadAndResolve(collector, docsetPath, new ScopedFileSystem(fileSystem, "/docs"));
+		return DocumentationSetDto.LoadAndResolve(collector, docsetPath, new ScopedFileSystem(fileSystem, "/docs"));
 	}
 
-	private static ResolvedDocumentationSet CreateConfiguration(DocumentationSetFile docSet)
+	private static ResolvedDocumentationSet CreateConfiguration(DocumentationSetDto docSet)
 	{
 		var collector = new DiagnosticsCollector([]);
 		return CreateConfiguration(docSet, collector);
 	}
 
 	private static async Task<(ResolvedDocumentationSet Config, IReadOnlyList<Diagnostic> Diagnostics)> CreateConfigurationWithDiagnostics(
-		DocumentationSetFile docSet
+		DocumentationSetDto docSet
 	)
 	{
 		var recorder = new RecordingDiagnosticsOutput();
@@ -398,7 +398,7 @@ public class ConfigurationFileCtaTests
 		return (config, recorder.Diagnostics);
 	}
 
-	private static ResolvedDocumentationSet CreateConfiguration(DocumentationSetFile docSet, DiagnosticsCollector collector)
+	private static ResolvedDocumentationSet CreateConfiguration(DocumentationSetDto docSet, DiagnosticsCollector collector)
 	{
 		var fileSystem = new MockFileSystem(new Dictionary<string, MockFileData> { { "/docs/docset.yml", new MockFileData("") } }, "/docs");
 

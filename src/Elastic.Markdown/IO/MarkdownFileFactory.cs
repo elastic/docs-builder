@@ -176,7 +176,7 @@ public class MarkdownFileFactory : IDocumentationFileFactory<MarkdownFile>
 			return new ExcludedFile(file, sourceDirectory, context.Git.RepositoryName);
 
 		// Todo re-enable not included check else where
-		// var config = context.ConfigurationYaml;
+		// var config = context.Definition;
 		//if (config.Files.Contains(relativePath))
 		return ExtensionOrDefaultMarkdown();
 

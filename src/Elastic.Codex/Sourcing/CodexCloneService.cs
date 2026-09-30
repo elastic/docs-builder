@@ -6,8 +6,10 @@ using System.IO.Abstractions;
 using System.Security;
 using Elastic.Documentation.Codex;
 using Elastic.Documentation.Configuration.Codex;
+using Elastic.Documentation.Configuration.Loading;
 using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.DocumentationSets;
 using Elastic.Documentation.LinkIndex;
 using Elastic.Documentation.Links;
 using Elastic.Documentation.Serialization;
@@ -76,7 +78,7 @@ public class CodexCloneService(ILoggerFactory logFactory, ILinkIndexReader linkI
 			if (docsetFile == null)
 				continue;
 
-			var docSet = DocumentationSetFile.LoadMetadata(docsetFile);
+			var docSet = DocumentationSetLoader.LoadMetadata(docsetFile);
 			var docsDirectory = docsetFile.Directory!;
 			var docsPath = Path.GetRelativePath(subDir.FullName, docsDirectory.FullName);
 			var docsPathForRef = string.IsNullOrEmpty(docsPath) || docsPath == "." ? "." : docsPath.Replace('\\', '/');
@@ -243,7 +245,7 @@ public class CodexCloneService(ILoggerFactory logFactory, ILinkIndexReader linkI
 				return null;
 			}
 
-			var docSet = DocumentationSetFile.LoadMetadata(docsetFile);
+			var docSet = DocumentationSetLoader.LoadMetadata(docsetFile);
 			var docsDirectory = docsetFile.Directory!;
 			var docsPath = Path.GetRelativePath(repoDir.FullName, docsDirectory.FullName);
 
@@ -273,13 +275,13 @@ public class CodexCloneService(ILoggerFactory logFactory, ILinkIndexReader linkI
 	{
 		// A known-path candidate is re-encountered by the recursive walk below (e.g. `docs/docset.yml`
 		// lives inside `docs/`), so metadata is cached per call to avoid parsing the same file twice.
-		var metadataCache = new Dictionary<string, DocumentationSetFile>();
+		var metadataCache = new Dictionary<string, DocumentationSetDefinition>();
 
 		bool MatchesEnvironment(IFileInfo file)
 		{
 			if (!metadataCache.TryGetValue(file.FullName, out var docSet))
 			{
-				docSet = DocumentationSetFile.LoadMetadata(file);
+				docSet = DocumentationSetLoader.LoadMetadata(file);
 				metadataCache[file.FullName] = docSet;
 			}
 			return string.Equals(docSet.Registry, environment, StringComparison.OrdinalIgnoreCase);
@@ -347,7 +349,7 @@ public class CodexCloneService(ILoggerFactory logFactory, ILinkIndexReader linkI
 	/// preferred when one exists — so a mismatch usually means the repository has not opted in yet.
 	/// Kept as a warning rather than a hard error so existing repositories are not broken outright.
 	/// </summary>
-	private static void WarnIfRegistryMismatch(CodexContext context, string repoName, DocumentationSetFile docSet, string docsPath)
+	private static void WarnIfRegistryMismatch(CodexContext context, string repoName, DocumentationSetDefinition docSet, string docsPath)
 	{
 		if (string.Equals(docSet.Registry, context.EnvironmentName, StringComparison.OrdinalIgnoreCase))
 			return;
@@ -364,7 +366,7 @@ public class CodexCloneService(ILoggerFactory logFactory, ILinkIndexReader linkI
 		string repoName,
 		LinkRegistryEntry entry,
 		string docsPath,
-		DocumentationSetFile docSet
+		DocumentationSetDefinition docSet
 	) =>
 		new()
 		{
@@ -372,7 +374,7 @@ public class CodexCloneService(ILoggerFactory logFactory, ILinkIndexReader linkI
 			Origin = $"elastic/{repoName}",
 			Branch = entry.Branch,
 			Path = docsPath,
-			Group = docSet.Codex?.Group,
+			Group = docSet.CodexGroup,
 			Icon = docSet.Icon
 		};
 

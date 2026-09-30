@@ -8,7 +8,7 @@ using YamlDotNet.Serialization;
 namespace Elastic.Documentation.Configuration.Toc;
 
 [YamlSerializable]
-public class TableOfContentsFile
+internal class TableOfContentsDto
 {
 	[YamlMember(Alias = "project")]
 	public string? Project { get; set; }
@@ -39,6 +39,6 @@ public class TableOfContentsFile
 	[YamlMember(Alias = "default_cta")]
 	public string? DefaultCta { get; set; }
 
-	public static TableOfContentsFile Deserialize(string json) =>
-		ConfigurationFileProvider.Deserializer.Deserialize<TableOfContentsFile>(json);
+	public static TableOfContentsDto Deserialize(string json) =>
+		ConfigurationFileProvider.Deserializer.Deserialize<TableOfContentsDto>(json);
 }

@@ -47,8 +47,11 @@ public record BuildContext : IDocumentationSetContext, IDocumentationConfigurati
 	public IFileInfo ConfigurationPath => FileSystem.Paths.ConfigurationPath;
 	public GitCheckoutInformation Git => FileSystem.Paths.Git;
 
+	/// <summary>The documentation set as declared in its files, before it is checked and joined against the catalog.</summary>
+	public DocumentationSetDefinition Definition { get; private set; }
+
+	/// <summary>The documentation set the build uses: <see cref="Definition"/>, checked and joined against the catalog.</summary>
 	public ResolvedDocumentationSet Configuration { get; private set; }
-	public DocumentationSetFile ConfigurationYaml { get; set; }
 
 	/// <summary>
 	/// The docset's feature flags: <c>docset.yml</c> toggles, overridable by <c>FEATURE_*</c> environment variables and
@@ -114,22 +117,22 @@ public record BuildContext : IDocumentationSetContext, IDocumentationConfigurati
 		GoogleTagManager = new GoogleTagManagerConfiguration { Enabled = false };
 		Optimizely = new OptimizelyConfiguration { Enabled = false };
 
-		ConfigurationYaml = LoadConfigurationYaml(fileSystem.Read);
+		Definition = LoadDefinition(fileSystem.Read);
 
 		Configuration = ResolveConfiguration();
 		Features = CreateFeatures();
 	}
 
-	private DocumentationSetFile LoadConfigurationYaml(ScopedFileSystem? fileSystem)
+	private DocumentationSetDefinition LoadDefinition(ScopedFileSystem? fileSystem)
 	{
-		var result = DocumentationSetLoader.Load(ConfigurationPath, fileSystem);
+		var result = DocumentationSetLoader.Load(ConfigurationPath, DocumentationSourceDirectory, ReadFileSystem, fileSystem);
 		_ = result.EmitTo(Collector);
 		return result.OrThrowIfMissing();
 	}
 
 	private ResolvedDocumentationSet ResolveConfiguration()
 	{
-		var result = DocumentationSetResolver.Resolve(ConfigurationYaml, this, Catalog.VersioningSystems, Catalog.Products);
+		var result = DocumentationSetResolver.Resolve(Definition, Catalog.VersioningSystems, Catalog.Products, Environment);
 		_ = result.EmitTo(Collector);
 		return result.OrThrowIfMissing();
 	}
@@ -141,7 +144,7 @@ public record BuildContext : IDocumentationSetContext, IDocumentationConfigurati
 	public void ReloadConfiguration()
 	{
 		var previousFeatures = Features;
-		ConfigurationYaml = LoadConfigurationYaml(ReadFileSystem as ScopedFileSystem);
+		Definition = LoadDefinition(ReadFileSystem as ScopedFileSystem);
 		Configuration = ResolveConfiguration();
 		Features = CreateFeatures()
 			.With("diagnostics-panel", previousFeatures.DiagnosticsPanelEnabled)

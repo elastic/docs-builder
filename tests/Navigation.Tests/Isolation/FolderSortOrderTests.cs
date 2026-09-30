@@ -4,6 +4,7 @@
 
 using System.IO.Abstractions.TestingHelpers;
 using AwesomeAssertions;
+using Elastic.Documentation.Configuration.Loading;
 using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.DocumentationSets;
@@ -32,7 +33,7 @@ public class FolderSortOrderTests() : DocumentationSetNavigationTestBase()
 		fileSystem.AddFile("/docs/api-versions/v3.md", new MockFileData("# V3"));
 
 		var context = CreateContext(fileSystem);
-		var docSet = DocumentationSetFile.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
+		var docSet = DocumentationSetLoader.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
 
 		var folderItem = docSet.TableOfContents.First().Value.Should().BeOfType<FolderRef>().Subject;
 		folderItem.Sort.Should().BeNull();
@@ -64,10 +65,10 @@ public class FolderSortOrderTests() : DocumentationSetNavigationTestBase()
 		fileSystem.AddFile("/docs/api-versions/v3.md", new MockFileData("# V3"));
 
 		var context = CreateContext(fileSystem);
-		var docSet = DocumentationSetFile.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
+		var docSet = DocumentationSetLoader.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
 
 		var folderItem = docSet.TableOfContents.First().Value.Should().BeOfType<FolderRef>().Subject;
-		folderItem.Sort.Should().Be("desc");
+		folderItem.Sort.Should().Be(SortOrder.Descending);
 
 		var fileNames = folderItem.Children.Select(c => c.Item().PathRelativeToDocumentationSet.Value).ToList();
 		fileNames.Should().BeEquivalentTo(
@@ -96,10 +97,10 @@ public class FolderSortOrderTests() : DocumentationSetNavigationTestBase()
 		fileSystem.AddFile("/docs/api-versions/v3.md", new MockFileData("# V3"));
 
 		var context = CreateContext(fileSystem);
-		var docSet = DocumentationSetFile.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
+		var docSet = DocumentationSetLoader.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
 
 		var folderItem = docSet.TableOfContents.First().Value.Should().BeOfType<FolderRef>().Subject;
-		folderItem.Sort.Should().Be("descending");
+		folderItem.Sort.Should().Be(SortOrder.Descending);
 
 		var fileNames = folderItem.Children.Select(c => c.Item().PathRelativeToDocumentationSet.Value).ToList();
 		fileNames.Should().BeEquivalentTo(
@@ -128,10 +129,10 @@ public class FolderSortOrderTests() : DocumentationSetNavigationTestBase()
 		fileSystem.AddFile("/docs/api-versions/v2.md", new MockFileData("# V2"));
 
 		var context = CreateContext(fileSystem);
-		var docSet = DocumentationSetFile.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
+		var docSet = DocumentationSetLoader.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
 
 		var folderItem = docSet.TableOfContents.First().Value.Should().BeOfType<FolderRef>().Subject;
-		folderItem.Sort.Should().Be("asc");
+		folderItem.Sort.Should().Be(SortOrder.Ascending);
 
 		var fileNames = folderItem.Children.Select(c => c.Item().PathRelativeToDocumentationSet.Value).ToList();
 		fileNames.Should().BeEquivalentTo(
@@ -161,7 +162,7 @@ public class FolderSortOrderTests() : DocumentationSetNavigationTestBase()
 		fileSystem.AddFile("/docs/api-versions/v3.md", new MockFileData("# V3"));
 
 		var context = CreateContext(fileSystem);
-		var docSet = DocumentationSetFile.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
+		var docSet = DocumentationSetLoader.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
 
 		var folderItem = docSet.TableOfContents.First().Value.Should().BeOfType<FolderRef>().Subject;
 
@@ -191,10 +192,10 @@ public class FolderSortOrderTests() : DocumentationSetNavigationTestBase()
 		fileSystem.AddDirectory("/docs/api-versions");
 
 		var context = CreateContext(fileSystem);
-		var docSet = DocumentationSetFile.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
+		var docSet = DocumentationSetLoader.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
 
 		var folderItem = docSet.TableOfContents.First().Value.Should().BeOfType<FolderRef>().Subject;
-		folderItem.Sort.Should().Be("desc");
+		folderItem.Sort.Should().Be(SortOrder.Descending);
 	}
 
 	[Test]
@@ -218,7 +219,7 @@ public class FolderSortOrderTests() : DocumentationSetNavigationTestBase()
 		fileSystem.AddDirectory("/docs/api-versions");
 
 		var context = CreateContext(fileSystem);
-		var docSet = DocumentationSetFile.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
+		var docSet = DocumentationSetLoader.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
 
 		var folderItem = docSet.TableOfContents.First().Value.Should().BeOfType<FolderRef>().Subject;
 
@@ -247,7 +248,7 @@ public class FolderSortOrderTests() : DocumentationSetNavigationTestBase()
 		fileSystem.AddFile("/docs/api-versions/v1.md", new MockFileData("# V1"));
 
 		var context = CreateContext(fileSystem);
-		_ = DocumentationSetFile.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
+		_ = DocumentationSetLoader.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
 
 		context.Diagnostics.Should().Contain(d => d.Severity == Severity.Error && d.Message.Contains("Unknown sort order 'newest'"));
 	}
@@ -273,7 +274,7 @@ public class FolderSortOrderTests() : DocumentationSetNavigationTestBase()
 		fileSystem.AddFile("/docs/api-versions/3_10_0.md", new MockFileData("# 3.10.0"));
 
 		var context = CreateContext(fileSystem);
-		var docSet = DocumentationSetFile.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
+		var docSet = DocumentationSetLoader.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
 
 		var folderItem = docSet.TableOfContents.First().Value.Should().BeOfType<FolderRef>().Subject;
 
@@ -305,7 +306,7 @@ public class FolderSortOrderTests() : DocumentationSetNavigationTestBase()
 		fileSystem.AddFile("/docs/api-versions/3_10_0.md", new MockFileData("# 3.10.0"));
 
 		var context = CreateContext(fileSystem);
-		var docSet = DocumentationSetFile.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
+		var docSet = DocumentationSetLoader.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
 
 		var folderItem = docSet.TableOfContents.First().Value.Should().BeOfType<FolderRef>().Subject;
 

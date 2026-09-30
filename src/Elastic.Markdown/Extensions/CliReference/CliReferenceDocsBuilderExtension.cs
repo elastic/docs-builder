@@ -220,7 +220,7 @@ public class CliReferenceDocsBuilderExtension(BuildContext build) : IDocsBuilder
 
 	private List<IFileInfo> BuildSyntheticFiles()
 	{
-		var cliRefs = FindCliReferenceRefs(Build.ConfigurationYaml.TableOfContents);
+		var cliRefs = FindCliReferenceRefs(Build.Definition.TableOfContents);
 		var fileInfos = new List<IFileInfo>();
 
 		foreach (var cliRef in cliRefs)

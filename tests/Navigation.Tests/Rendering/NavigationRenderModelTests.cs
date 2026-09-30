@@ -4,6 +4,7 @@
 
 using System.IO.Abstractions.TestingHelpers;
 using AwesomeAssertions;
+using Elastic.Documentation.Configuration.Loading;
 using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Extensions;
 using Elastic.Documentation.Navigation.Isolated.Node;
@@ -192,7 +193,7 @@ public class NavigationRenderModelTests() : DocumentationSetNavigationTestBase()
 		);
 
 		var context = CreateContext(fileSystem);
-		var docSet = DocumentationSetFile.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
+		var docSet = DocumentationSetLoader.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
 		_ = context.Collector.StartAsync(TestContext.Current!.Execution.CancellationToken);
 		var navigation = new DocumentationSetNavigation<TestDocumentationFile>(
 			docSet,
@@ -257,7 +258,7 @@ public class NavigationRenderModelTests() : DocumentationSetNavigationTestBase()
 		);
 
 		var context = CreateContext(fileSystem);
-		var docSet = DocumentationSetFile.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
+		var docSet = DocumentationSetLoader.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
 		_ = context.Collector.StartAsync(TestContext.Current!.Execution.CancellationToken);
 		var navigation = new DocumentationSetNavigation<TestDocumentationFile>(
 			docSet,
@@ -326,7 +327,7 @@ public class NavigationRenderModelTests() : DocumentationSetNavigationTestBase()
 		);
 
 		var context = CreateContext(fileSystem);
-		var docSet = DocumentationSetFile.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
+		var docSet = DocumentationSetLoader.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
 		_ = context.Collector.StartAsync(TestContext.Current!.Execution.CancellationToken);
 		var navigation = new DocumentationSetNavigation<TestDocumentationFile>(
 			docSet,
@@ -369,7 +370,7 @@ public class NavigationRenderModelTests() : DocumentationSetNavigationTestBase()
 			""")
 		);
 		var context2 = CreateContext(fileSystem2);
-		var docSet2 = DocumentationSetFile.LoadAndResolve(context2.Collector, yaml2, fileSystem2.NewDirInfo("docs"));
+		var docSet2 = DocumentationSetLoader.LoadAndResolve(context2.Collector, yaml2, fileSystem2.NewDirInfo("docs"));
 		_ = context2.Collector.StartAsync(TestContext.Current!.Execution.CancellationToken);
 		var navigation2 = new DocumentationSetNavigation<TestDocumentationFile>(
 			docSet2,
@@ -413,7 +414,7 @@ public class NavigationRenderModelTests() : DocumentationSetNavigationTestBase()
 		fileSystem.AddFile("/docs/page.md", new MockFileData("# Page"));
 
 		var context = CreateContext(fileSystem);
-		var docSet = DocumentationSetFile.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
+		var docSet = DocumentationSetLoader.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
 		var navigation = new DocumentationSetNavigation<TestDocumentationFile>(docSet, context, TestDocumentationFileFactory.Instance);
 
 		// The navigation root itself has no parent, so it doesn't render as island
@@ -472,7 +473,7 @@ public class NavigationRenderModelTests() : DocumentationSetNavigationTestBase()
 		);
 
 		var context = CreateContext(fileSystem);
-		var docSet = DocumentationSetFile.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
+		var docSet = DocumentationSetLoader.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
 		_ = context.Collector.StartAsync(TestContext.Current!.Execution.CancellationToken);
 		var navigation = new DocumentationSetNavigation<TestDocumentationFile>(
 			docSet,
@@ -568,7 +569,7 @@ public class NavigationRenderModelTests() : DocumentationSetNavigationTestBase()
 		);
 
 		var context = CreateContext(fileSystem);
-		var docSet = DocumentationSetFile.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
+		var docSet = DocumentationSetLoader.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
 		_ = context.Collector.StartAsync(TestContext.Current!.Execution.CancellationToken);
 		var navigation = new DocumentationSetNavigation<TestDocumentationFile>(
 			docSet,
@@ -621,7 +622,7 @@ public class NavigationRenderModelTests() : DocumentationSetNavigationTestBase()
 		fileSystem.AddFile("/docs/clients/toc.yml", new MockFileData("toc:\n  - file: index.md\n"));
 
 		var context = CreateContext(fileSystem);
-		var docSet = DocumentationSetFile.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
+		var docSet = DocumentationSetLoader.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
 		_ = context.Collector.StartAsync(TestContext.Current!.Execution.CancellationToken);
 		var navigation = new DocumentationSetNavigation<TestDocumentationFile>(
 			docSet,
@@ -650,7 +651,7 @@ public class NavigationRenderModelTests() : DocumentationSetNavigationTestBase()
 		var fileSystem = new MockFileSystem();
 		fileSystem.AddDirectory("/docs");
 		var context = CreateContext(fileSystem);
-		var docSet = DocumentationSetFile.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
+		var docSet = DocumentationSetLoader.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
 		var navigation = new DocumentationSetNavigation<TestDocumentationFile>(docSet, context, TestDocumentationFileFactory.Instance);
 		return NavigationRenderModel.Create(
 			tree: navigation,

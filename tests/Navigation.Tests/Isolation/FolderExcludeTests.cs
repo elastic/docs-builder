@@ -4,6 +4,7 @@
 
 using System.IO.Abstractions.TestingHelpers;
 using AwesomeAssertions;
+using Elastic.Documentation.Configuration.Loading;
 using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.DocumentationSets;
 using Elastic.Documentation.Extensions;
@@ -31,7 +32,7 @@ public class FolderExcludeTests() : DocumentationSetNavigationTestBase()
 		fileSystem.AddFile("/docs/docs/gamma.md", new MockFileData("# Gamma"));
 
 		var context = CreateContext(fileSystem);
-		var docSet = DocumentationSetFile.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
+		var docSet = DocumentationSetLoader.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
 
 		var folderItem = docSet.TableOfContents.First().Value.Should().BeOfType<FolderRef>().Subject;
 
@@ -60,7 +61,7 @@ public class FolderExcludeTests() : DocumentationSetNavigationTestBase()
 		fileSystem.AddFile("/docs/docs/gamma.md", new MockFileData("# Gamma"));
 
 		var context = CreateContext(fileSystem);
-		var docSet = DocumentationSetFile.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
+		var docSet = DocumentationSetLoader.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
 
 		var folderItem = docSet.TableOfContents.First().Value.Should().BeOfType<FolderRef>().Subject;
 
@@ -90,7 +91,7 @@ public class FolderExcludeTests() : DocumentationSetNavigationTestBase()
 		fileSystem.AddFile("/docs/docs/gamma.md", new MockFileData("# Gamma"));
 
 		var context = CreateContext(fileSystem);
-		var docSet = DocumentationSetFile.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
+		var docSet = DocumentationSetLoader.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
 
 		var folderItem = docSet.TableOfContents.First().Value.Should().BeOfType<FolderRef>().Subject;
 
@@ -118,7 +119,7 @@ public class FolderExcludeTests() : DocumentationSetNavigationTestBase()
 		fileSystem.AddFile("/docs/docs/beta.md", new MockFileData("# Beta"));
 
 		var context = CreateContext(fileSystem);
-		var docSet = DocumentationSetFile.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
+		var docSet = DocumentationSetLoader.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
 
 		var folderItem = docSet.TableOfContents.First().Value.Should().BeOfType<FolderRef>().Subject;
 
@@ -148,7 +149,7 @@ public class FolderExcludeTests() : DocumentationSetNavigationTestBase()
 		fileSystem.AddFile("/docs/docs/beta.md", new MockFileData("# Beta"));
 
 		var context = CreateContext(fileSystem);
-		var docSet = DocumentationSetFile.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
+		var docSet = DocumentationSetLoader.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
 
 		var folderItem = docSet.TableOfContents.First().Value.Should().BeOfType<FolderRef>().Subject;
 
@@ -179,7 +180,7 @@ public class FolderExcludeTests() : DocumentationSetNavigationTestBase()
 		fileSystem.AddFile("/docs/docs/internal.md", new MockFileData("# Internal"));
 
 		var context = CreateContext(fileSystem);
-		var docSet = DocumentationSetFile.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
+		var docSet = DocumentationSetLoader.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
 
 		docSet.FolderExcludedFiles.Should().BeEquivalentTo(["docs/draft.md", "docs/internal.md"]);
 	}
@@ -215,7 +216,7 @@ public class FolderExcludeTests() : DocumentationSetNavigationTestBase()
 		fileSystem.AddFile("/docs/reference/deps/main.md", new MockFileData("# Main"));
 
 		var context = CreateContext(fileSystem);
-		var docSet = DocumentationSetFile.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
+		var docSet = DocumentationSetLoader.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
 
 		docSet.FolderExcludedFiles.Should().BeEquivalentTo(["reference/api/main.md", "reference/deps/main.md"]);
 	}

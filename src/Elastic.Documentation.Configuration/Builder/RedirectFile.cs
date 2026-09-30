@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions;
+using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Links;
 using YamlDotNet.RepresentationModel;
 using static Elastic.Documentation.SymlinkValidator;
@@ -13,18 +14,25 @@ public record RedirectFile
 {
 	public Dictionary<string, LinkRedirect>? Redirects { get; }
 	public IFileInfo Source { get; }
-	private IDocumentationSetContext Context { get; }
+	private IDiagnosticsCollector Collector { get; }
 
-	public RedirectFile(IDocumentationSetContext context, IFileInfo? source = null)
+	public RedirectFile(IDocumentationSetContext context, IFileInfo? source = null) : this(
+			context.ConfigurationPath,
+			context.Collector,
+			source
+		)
+	{ }
+
+	/// <summary>Reads the redirects file next to <paramref name="docsetConfigurationPath"/>, reporting problems to <paramref name="collector"/>.</summary>
+	public RedirectFile(IFileInfo docsetConfigurationPath, IDiagnosticsCollector collector, IFileInfo? source = null)
 	{
-		var docsetConfigurationPath = context.ConfigurationPath;
 		var redirectFileName = docsetConfigurationPath.Name.StartsWith('_') ? "_redirects.yml" : "redirects.yml";
 		var redirectFileInfo = docsetConfigurationPath
 			.FileSystem
 			.FileInfo
 			.New(Path.Join(docsetConfigurationPath.Directory!.FullName, redirectFileName));
 		Source = source ?? redirectFileInfo;
-		Context = context;
+		Collector = collector;
 
 		if (!Source.Exists)
 			return;
@@ -32,7 +40,7 @@ public record RedirectFile
 		// Validate that the redirects.yml is not a symlink (security: prevents path traversal attacks)
 		EnsureNotSymlink(Source);
 
-		var reader = new YamlStreamReader(Source, Context.Collector);
+		var reader = new YamlStreamReader(Source, Collector);
 		try
 		{
 			foreach (var entry in reader.Read())

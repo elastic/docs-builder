@@ -59,7 +59,7 @@ public class AggregateEqualityTests
 	{
 		var fs = DocumentationSetGoldenTests.CreateDocsTree();
 		var docsetFile = fs.FileInfo.New(Path.Join(DocumentationSetGoldenTests.DocsRoot, "_docset.yml"));
-		return DocumentationSetFile.LoadAndResolve(new CapturingDiagnosticsCollector(), docsetFile).TableOfContents;
+		return DocumentationSetLoader.LoadAndResolve(new CapturingDiagnosticsCollector(), docsetFile).TableOfContents;
 	}
 
 	[Test]
@@ -88,10 +88,35 @@ public class AggregateEqualityTests
 		var catalog = CatalogLoader.Load(BaselineProvider()).OrThrow();
 		var fs = DocumentationSetGoldenTests.CreateDocsTree();
 		var docsetFile = fs.FileInfo.New(Path.Join(DocumentationSetGoldenTests.DocsRoot, "_docset.yml"));
-		var collector = new CapturingDiagnosticsCollector();
-		var docSet = DocumentationSetFile.LoadAndResolve(collector, docsetFile);
-		var context = new DocumentationSetGoldenTests.GoldenDocumentationSetContext(collector, fs, docsetFile, docsetFile.Directory!);
-		return DocumentationSetResolver.Resolve(docSet, context, catalog.VersioningSystems, catalog.Products).OrThrowIfMissing();
+		var docSet = DocumentationSetLoader.Load(docsetFile, docsetFile.Directory!, fs).OrThrowIfMissing();
+		return DocumentationSetResolver.Resolve(
+			docSet,
+			catalog.VersioningSystems,
+			catalog.Products,
+			new EmptyEnvironment()
+		).OrThrowIfMissing();
+	}
+
+	private sealed class EmptyEnvironment : IEnvironmentVariables
+	{
+		public string? GetEnvironmentVariable(string name) => null;
+		public bool IsRunningOnCI => false;
+	}
+
+	[Test]
+	public void DocumentationSetDefinition_LoadedTwice_IsEqual()
+	{
+		DocumentationSetDefinition Load()
+		{
+			var fs = DocumentationSetGoldenTests.CreateDocsTree();
+			return DocumentationSetLoader.Load(
+				fs.FileInfo.New(Path.Join(DocumentationSetGoldenTests.DocsRoot, "_docset.yml")),
+				fs.DirectoryInfo.New(DocumentationSetGoldenTests.DocsRoot),
+				fs
+			).OrThrowIfMissing();
+		}
+
+		Load().Should().Be(Load());
 	}
 
 	[Test]

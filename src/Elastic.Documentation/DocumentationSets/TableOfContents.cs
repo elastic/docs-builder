@@ -65,6 +65,17 @@ public static class TocItemExtensions
 	/// </summary>
 	public static IEnumerable<T> OfCase<T>(this IEnumerable<TocItem> items) => items.Select(i => i.Value).OfType<T>();
 
+	/// <summary>Every item in the tree, depth-first in declaration order, the items themselves first.</summary>
+	public static IEnumerable<TocItem> Descendants(this IEnumerable<TocItem> items)
+	{
+		foreach (var item in items)
+		{
+			yield return item;
+			foreach (var descendant in item.Item().Children.Descendants())
+				yield return descendant;
+		}
+	}
+
 	/// <summary>Every file in the subtree, in declaration order. Cross-links and listing groups contribute none of their own.</summary>
 	public static IEnumerable<FileRef> FileRefs(this TocItem item) => item switch
 	{
@@ -193,7 +204,7 @@ public partial record CrossLinkRef(
 	public ContainerPath PathRelativeToContainer => ContainerPath.From(CrossLinkUri.ToString());
 }
 
-/// <param name="Sort">Raw YAML sort value, parsed and validated during resolution via <see cref="SortOrderExtensions.TryParse"/>.</param>
+/// <param name="Sort">The folder's <c>sort</c>; null keeps plain alphabetical order. An unrecognized value is rejected by the loader.</param>
 /// <param name="Exclude">File names to exclude from auto-discovery (like "draft.md", "internal.md").</param>
 /// <param name="DefaultCta">Optional <c>default_cta</c> declared on this entry; applies to every page inside the folder.</param>
 [Equatable]
@@ -202,7 +213,7 @@ public partial record FolderRef(
 	ContainerPath PathRelativeToContainer,
 	[property: OrderedEquality] IReadOnlyList<TocItem> Children,
 	DeclaringFilePath Context,
-	string? Sort = null,
+	SortOrder? Sort = null,
 	[property: OrderedEquality] IReadOnlyList<string>? Exclude = null,
 	string? DefaultCta = null
 ) : ITableOfContentsItem;
@@ -270,7 +281,7 @@ public static class ListingVisualExtensions
 [Equatable]
 public partial record ListingOptions(
 	string? Glob = null,
-	string? Sort = null,
+	SortOrder? Sort = null,
 	[property: OrderedEquality] IReadOnlyList<string>? Exclude = null,
 	ListingVisual Visual = ListingVisual.None,
 	[property: OrderedEquality] IReadOnlyList<string>? Groups = null,

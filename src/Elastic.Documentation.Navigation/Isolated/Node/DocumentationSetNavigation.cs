@@ -28,7 +28,7 @@ public class DocumentationSetNavigation<TModel> : IDocumentationSetNavigation, I
 	private readonly ICrossLinkResolver _crossLinkResolver;
 
 	public DocumentationSetNavigation(
-		DocumentationSetFile documentationSet,
+		DocumentationSetDefinition documentationSet,
 		IDocumentationSetContext context,
 		IDocumentationFileFactory<TModel> factory,
 		IRootNavigationItem<INavigationModel, INavigationItem>? parent = null,

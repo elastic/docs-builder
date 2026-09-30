@@ -89,7 +89,7 @@ public class DocumentationSet : INavigationTraversable
 
 		var fileFactory = new MarkdownFileFactory(context, MarkdownParser, EnabledExtensions);
 		Navigation = new DocumentationSetNavigation<MarkdownFile>(
-			context.ConfigurationYaml,
+			context.Definition,
 			context,
 			fileFactory,
 			null,
@@ -322,11 +322,11 @@ public class DocumentationSet : INavigationTraversable
 		}
 
 		// Auto-enable CLI reference extension when the TOC contains a cli: entry
-		if (HasCliReferenceRef(Context.ConfigurationYaml.TableOfContents))
+		if (HasCliReferenceRef(Context.Definition.TableOfContents))
 			list.Add(new CliReferenceDocsBuilderExtension(Context));
 
 		// Auto-enable listing extension when the TOC contains a listing: entry
-		if (HasListingRef(Context.ConfigurationYaml.TableOfContents))
+		if (HasListingRef(Context.Definition.TableOfContents))
 			list.Add(new ListingDocsBuilderExtension(Context, MarkdownParser));
 
 		return list.AsReadOnly();

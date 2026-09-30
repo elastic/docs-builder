@@ -5,9 +5,8 @@
 using System.Collections.Frozen;
 using System.Text;
 using System.Text.RegularExpressions;
-using Elastic.Documentation;
 
-namespace Elastic.Documentation.Configuration;
+namespace Elastic.Documentation;
 
 /// <summary>
 /// Outcome of interpolating shell-style <c>${VAR}</c> / <c>${VAR:-default}</c> expressions into a config value.
@@ -35,6 +34,19 @@ public static partial class EnvironmentInterpolation
 
 	[GeneratedRegex(@"\$\{(?<name>[A-Za-z_][A-Za-z0-9_]*)(?::-(?<default>[^}]*))?\}", RegexOptions.CultureInvariant)]
 	private static partial Regex ExpressionRegex();
+
+	/// <summary>The variables <paramref name="raw"/> references that are not allow-listed, in order; they stay literal.</summary>
+	public static IEnumerable<string> DisallowedVariables(string? raw)
+	{
+		if (string.IsNullOrEmpty(raw) || !raw.Contains("${", StringComparison.Ordinal))
+			yield break;
+		foreach (Match match in ExpressionRegex().Matches(raw))
+		{
+			var name = match.Groups["name"].Value;
+			if (!AllowedVariables.Contains(name))
+				yield return name;
+		}
+	}
 
 	/// <summary>
 	/// Interpolates allow-listed environment variables into <paramref name="raw"/>. Non-allow-listed expressions are

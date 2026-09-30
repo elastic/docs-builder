@@ -4,10 +4,10 @@
 
 using System.Runtime.CompilerServices;
 using DotNet.Globbing;
-using Elastic.Documentation.Configuration.Suggestions;
 using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.DocumentationSets;
 using Elastic.Documentation.Extensions;
+using Elastic.Documentation.Suggestions;
 
 namespace Elastic.Documentation.Configuration.Builder;
 
@@ -51,7 +51,7 @@ public static class DocumentationSetExtensions
 		}
 		if (relativePath is { Length: > 0 })
 		{
-			var normalizedPath = DocumentationSetFile.NormalizeDocsetRelativePath(relativePath);
+			var normalizedPath = DocumentationSetDto.NormalizeDocsetRelativePath(relativePath);
 			if (
 				docset.TocDefaultCtas.TryGetValue(normalizedPath, out var tocDefault) && docset.Ctas.TryGetValue(tocDefault, out var scoped)
 			)

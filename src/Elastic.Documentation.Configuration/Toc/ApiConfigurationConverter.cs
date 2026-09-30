@@ -37,12 +37,12 @@ public class ApiConfigurationConverter : IYamlTypeConverter
 		+ "      catalog:           # optional; category chips on the API catalog\n"
 		+ "        categories: [self, ece, ess, serverless]";
 
-	public bool Accepts(Type type) => type == typeof(ApiProductSequence) || type == typeof(ApiProductEntry);
+	public bool Accepts(Type type) => type == typeof(ApiProductSequenceDto) || type == typeof(ApiProductEntryDto);
 
 	public object? ReadYaml(IParser parser, Type type, ObjectDeserializer rootDeserializer) =>
-		type == typeof(ApiProductSequence) ? ReadSequence(parser) : ReadEntry(parser);
+		type == typeof(ApiProductSequenceDto) ? ReadSequence(parser) : ReadEntry(parser);
 
-	private ApiProductSequence ReadSequence(IParser parser)
+	private ApiProductSequenceDto ReadSequence(IParser parser)
 	{
 		if (parser.Current is not SequenceStart)
 		{
@@ -54,15 +54,15 @@ public class ApiConfigurationConverter : IYamlTypeConverter
 		}
 
 		_ = parser.MoveNext(); // consume SequenceStart
-		var entries = new List<ApiProductEntry>();
+		var entries = new List<ApiProductEntryDto>();
 		while (parser.Current is not SequenceEnd)
 			entries.Add(ReadEntry(parser));
 		_ = parser.MoveNext(); // consume SequenceEnd
 
-		return new ApiProductSequence { Entries = entries };
+		return new ApiProductSequenceDto { Entries = entries };
 	}
 
-	private ApiProductEntry ReadEntry(IParser parser)
+	private ApiProductEntryDto ReadEntry(IParser parser)
 	{
 		if (parser.Current is not MappingStart)
 		{
@@ -76,7 +76,7 @@ public class ApiConfigurationConverter : IYamlTypeConverter
 		var entryStart = parser.Current.Start;
 		_ = parser.MoveNext(); // consume MappingStart
 
-		var entry = new ApiProductEntry { Line = (int)entryStart.Line, Column = (int)entryStart.Column };
+		var entry = new ApiProductEntryDto { Line = (int)entryStart.Line, Column = (int)entryStart.Column };
 
 		while (parser.Current is not MappingEnd)
 		{
@@ -150,7 +150,7 @@ public class ApiConfigurationConverter : IYamlTypeConverter
 		return entry;
 	}
 
-	private static ApiCatalogSettings? ReadCatalog(IParser parser)
+	private static ApiCatalogDto? ReadCatalog(IParser parser)
 	{
 		if (parser.Current is not MappingStart)
 		{
@@ -160,7 +160,7 @@ public class ApiConfigurationConverter : IYamlTypeConverter
 
 		var start = parser.Current.Start;
 		_ = parser.MoveNext();
-		var catalog = new ApiCatalogSettings { Line = (int)start.Line, Column = (int)start.Column };
+		var catalog = new ApiCatalogDto { Line = (int)start.Line, Column = (int)start.Column };
 		while (parser.Current is not MappingEnd)
 		{
 			var key = parser.Consume<Scalar>();
@@ -197,9 +197,9 @@ public class ApiConfigurationConverter : IYamlTypeConverter
 		return values;
 	}
 
-	private static List<ApiEntryChild> ReadChildren(IParser parser)
+	private static List<ApiEntryChildDto> ReadChildren(IParser parser)
 	{
-		var children = new List<ApiEntryChild>();
+		var children = new List<ApiEntryChildDto>();
 		if (parser.Current is not SequenceStart)
 		{
 			parser.SkipThisAndNestedEvents();
@@ -216,7 +216,7 @@ public class ApiConfigurationConverter : IYamlTypeConverter
 			}
 
 			_ = parser.MoveNext(); // consume MappingStart
-			var child = new ApiEntryChild();
+			var child = new ApiEntryChildDto();
 			while (parser.Current is not MappingEnd)
 			{
 				var childKey = parser.Consume<Scalar>();

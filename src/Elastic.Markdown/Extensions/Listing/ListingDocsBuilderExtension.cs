@@ -38,7 +38,7 @@ public class ListingDocsBuilderExtension(BuildContext build, MarkdownParser mark
 		_listingIndexPaths = [];
 		_syntheticIndexFiles = [];
 
-		CollectListingRefs(Build.ConfigurationYaml.TableOfContents);
+		CollectListingRefs(Build.Definition.TableOfContents);
 	}
 
 	private void CollectListingRefs(IReadOnlyList<TocItem> items)

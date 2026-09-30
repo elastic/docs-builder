@@ -90,9 +90,9 @@ public class CrossLinkRegistryTests
 		config.CrossLinkRepositories.Should().BeEquivalentTo(["repo-a", "repo-b"]);
 	}
 
-	private static DocumentationSetFile CreateDocSet(string? registry, IReadOnlyList<string> crossLinks)
+	private static DocumentationSetDto CreateDocSet(string? registry, IReadOnlyList<string> crossLinks)
 	{
-		var docSet = new DocumentationSetFile
+		var docSet = new DocumentationSetDto
 		{
 			Project = "test",
 			CrossLinks = crossLinks.ToList(),
@@ -102,7 +102,7 @@ public class CrossLinkRegistryTests
 		return docSet;
 	}
 
-	private static ResolvedDocumentationSet CreateConfiguration(DocumentationSetFile docSet)
+	private static ResolvedDocumentationSet CreateConfiguration(DocumentationSetDto docSet)
 	{
 		var collector = new DiagnosticsCollector([]);
 		var root = Paths.WorkingDirectoryRoot.FullName;

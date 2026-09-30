@@ -8,8 +8,10 @@ using Elastic.Codex.Navigation;
 using Elastic.Documentation.Codex;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Codex;
+using Elastic.Documentation.Configuration.Loading;
 using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.DocumentationSets;
 using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Navigation.Isolated.Node;
@@ -56,7 +58,7 @@ public abstract class CodexNavigationTestBase()
 		return result;
 	}
 
-	private static DocumentationSetFile CreateMockDocumentationSet(MockFileSystem fileSystem, string repoName, bool includeProject)
+	private static DocumentationSetDefinition CreateMockDocumentationSet(MockFileSystem fileSystem, string repoName, bool includeProject)
 	{
 		var docsPath = $"/{repoName}/docs";
 		fileSystem.AddDirectory(docsPath);
@@ -65,7 +67,7 @@ public abstract class CodexNavigationTestBase()
 		// language=yaml
 		var yaml = includeProject ? $"project: '{repoName}'\ntoc:\n  - file: index.md" : "toc:\n  - file: index.md";
 
-		return DocumentationSetFile.LoadAndResolve(new DiagnosticsCollector([]), yaml, fileSystem.DirectoryInfo.New(docsPath));
+		return DocumentationSetLoader.LoadAndResolve(new DiagnosticsCollector([]), yaml, fileSystem.DirectoryInfo.New(docsPath));
 	}
 }
 

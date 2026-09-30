@@ -54,7 +54,7 @@ public class ApiProductEntryTests
 	[Test]
 	public void HasSpec_And_HasProduct_ReflectPresence()
 	{
-		var entry = new ApiProductEntry { Spec = "api.json", Product = "elasticsearch" };
+		var entry = new ApiProductEntryDto { Spec = "api.json", Product = "elasticsearch" };
 
 		entry.HasSpec.Should().BeTrue();
 		entry.HasProduct.Should().BeTrue();
@@ -66,7 +66,7 @@ public class ApiProductEntryTests
 	[Arguments("   ")]
 	public void HasSpec_FalseWhenBlank(string? spec)
 	{
-		var entry = new ApiProductEntry { Spec = spec, Product = "elasticsearch" };
+		var entry = new ApiProductEntryDto { Spec = spec, Product = "elasticsearch" };
 
 		entry.HasSpec.Should().BeFalse();
 	}
@@ -77,7 +77,7 @@ public class ApiProductEntryTests
 	[Arguments("   ")]
 	public void HasProduct_FalseWhenBlank(string? product)
 	{
-		var entry = new ApiProductEntry { Spec = "api.json", Product = product };
+		var entry = new ApiProductEntryDto { Spec = "api.json", Product = product };
 
 		entry.HasProduct.Should().BeFalse();
 	}
@@ -88,7 +88,7 @@ public class ApiProductSequenceTests
 	[Test]
 	public void IsValid_TrueWithExactlyOneEntry()
 	{
-		var sequence = new ApiProductSequence { Entries = [new ApiProductEntry { Product = "elasticsearch" }] };
+		var sequence = new ApiProductSequenceDto { Entries = [new ApiProductEntryDto { Product = "elasticsearch" }] };
 
 		sequence.IsValid.Should().BeTrue();
 		sequence.SingleEntry.Should().NotBeNull();
@@ -97,7 +97,7 @@ public class ApiProductSequenceTests
 	[Test]
 	public void IsValid_FalseWhenEmpty()
 	{
-		var sequence = new ApiProductSequence();
+		var sequence = new ApiProductSequenceDto();
 
 		sequence.IsValid.Should().BeFalse();
 		sequence.SingleEntry.Should().BeNull();
@@ -106,9 +106,9 @@ public class ApiProductSequenceTests
 	[Test]
 	public void IsValid_FalseWithMultipleEntries()
 	{
-		var sequence = new ApiProductSequence
+		var sequence = new ApiProductSequenceDto
 		{
-			Entries = [new ApiProductEntry { Product = "elasticsearch" }, new ApiProductEntry { Product = "kibana" }]
+			Entries = [new ApiProductEntryDto { Product = "elasticsearch" }, new ApiProductEntryDto { Product = "kibana" }]
 		};
 
 		sequence.IsValid.Should().BeFalse();
@@ -132,7 +132,7 @@ public class ApiConfigurationConverterTests
 			    - file: authentication.md
 			""";
 
-		var sequence = _deserializer.Deserialize<ApiProductSequence>(yaml);
+		var sequence = _deserializer.Deserialize<ApiProductSequenceDto>(yaml);
 
 		sequence.IsValid.Should().BeTrue();
 		var entry = sequence.SingleEntry!;
@@ -153,7 +153,7 @@ public class ApiConfigurationConverterTests
 			- product: kibana
 			""";
 
-		var sequence = _deserializer.Deserialize<ApiProductSequence>(yaml);
+		var sequence = _deserializer.Deserialize<ApiProductSequenceDto>(yaml);
 
 		sequence.IsValid.Should().BeTrue();
 		var entry = sequence.SingleEntry!;
@@ -169,7 +169,7 @@ public class ApiConfigurationConverterTests
 			  product: elasticsearch
 			""";
 
-		var sequence = _deserializer.Deserialize<ApiProductSequence>(yaml);
+		var sequence = _deserializer.Deserialize<ApiProductSequenceDto>(yaml);
 
 		sequence.SingleEntry!.Children.Should().BeEmpty();
 	}
@@ -182,7 +182,7 @@ public class ApiConfigurationConverterTests
 			  product: elasticsearch
 			""";
 
-		var sequence = _deserializer.Deserialize<ApiProductSequence>(yaml);
+		var sequence = _deserializer.Deserialize<ApiProductSequenceDto>(yaml);
 		var entry = sequence.SingleEntry!;
 
 		entry.Line.Should().Be(1);
@@ -199,7 +199,7 @@ public class ApiConfigurationConverterTests
 			  unknown_key: some value
 			""";
 
-		var sequence = _deserializer.Deserialize<ApiProductSequence>(yaml);
+		var sequence = _deserializer.Deserialize<ApiProductSequenceDto>(yaml);
 
 		sequence.SingleEntry!.Product.Should().Be("elasticsearch");
 	}
@@ -215,7 +215,7 @@ public class ApiConfigurationConverterTests
 			  product: kibana
 			""";
 
-		var sequence = _deserializer.Deserialize<ApiProductSequence>(yaml);
+		var sequence = _deserializer.Deserialize<ApiProductSequenceDto>(yaml);
 
 		sequence.Entries.Should().HaveCount(2);
 		sequence.IsValid.Should().BeFalse();
@@ -235,7 +235,7 @@ public class ApiConfigurationConverterTests
 			      - ess
 			""";
 
-		var sequence = _deserializer.Deserialize<ApiProductSequence>(yaml);
+		var sequence = _deserializer.Deserialize<ApiProductSequenceDto>(yaml);
 
 		sequence.SingleEntry!.Catalog.Should().NotBeNull();
 		sequence.SingleEntry.Catalog!.Categories.Should().Equal("self", "ece", "ess");
@@ -252,7 +252,7 @@ public class ApiConfigurationConverterTests
 			    categories: [self, serverless]
 			""";
 
-		var sequence = _deserializer.Deserialize<ApiProductSequence>(yaml);
+		var sequence = _deserializer.Deserialize<ApiProductSequenceDto>(yaml);
 
 		sequence.SingleEntry!.Catalog!.Categories.Should().Equal("self", "serverless");
 	}
@@ -265,7 +265,7 @@ public class ApiConfigurationConverterTests
 			  product: elasticsearch
 			""";
 
-		var sequence = _deserializer.Deserialize<ApiProductSequence>(yaml);
+		var sequence = _deserializer.Deserialize<ApiProductSequenceDto>(yaml);
 
 		sequence.SingleEntry!.Catalog.Should().BeNull();
 	}
@@ -280,7 +280,7 @@ public class ApiConfigurationConverterTests
 			  repository: elastic/elasticsearch-specification
 			""";
 
-		var sequence = _deserializer.Deserialize<ApiProductSequence>(yaml);
+		var sequence = _deserializer.Deserialize<ApiProductSequenceDto>(yaml);
 
 		sequence.SingleEntry!.Repository.Should().Be("elastic/elasticsearch-specification");
 	}
@@ -293,7 +293,7 @@ public class ApiConfigurationConverterTests
 			  product: elasticsearch
 			""";
 
-		var sequence = _deserializer.Deserialize<ApiProductSequence>(yaml);
+		var sequence = _deserializer.Deserialize<ApiProductSequenceDto>(yaml);
 
 		sequence.SingleEntry!.Repository.Should().BeNull();
 	}
@@ -303,7 +303,7 @@ public class ApiConfigurationConverterTests
 	{
 		const string yaml = "elasticsearch-openapi.json";
 
-		var act = () => _deserializer.Deserialize<ApiProductSequence>(yaml);
+		var act = () => _deserializer.Deserialize<ApiProductSequenceDto>(yaml);
 
 		act.Should().Throw<YamlException>();
 	}
@@ -315,7 +315,7 @@ public class ApiConfigurationConverterTests
 			spec: elasticsearch-openapi.json
 			""";
 
-		var act = () => _deserializer.Deserialize<ApiProductSequence>(yaml);
+		var act = () => _deserializer.Deserialize<ApiProductSequenceDto>(yaml);
 
 		act.Should().Throw<YamlException>();
 	}
@@ -329,7 +329,7 @@ public class ApiConfigurationConverterTests
 			- file: outro.md
 			""";
 
-		var act = () => _deserializer.Deserialize<ApiProductSequence>(yaml);
+		var act = () => _deserializer.Deserialize<ApiProductSequenceDto>(yaml);
 
 		act.Should().Throw<YamlException>().WithMessage("*legacy intro/outro shape*");
 	}
@@ -340,19 +340,19 @@ public class ConfigurationFileApiTests
 	[Test]
 	public void ResolvesLocalSpecProductAndChildren()
 	{
-		var docSetFile = new DocumentationSetFile
+		var docSetFile = new DocumentationSetDto
 		{
-			Api = new Dictionary<string, ApiProductSequence>
+			Api = new Dictionary<string, ApiProductSequenceDto>
 			{
 				["elasticsearch"] = new()
 				{
 					Entries =
 					[
-						new ApiProductEntry
+						new ApiProductEntryDto
 						{
 							Spec = "elasticsearch-openapi.json",
 							Product = "elasticsearch",
-							Children = [new ApiEntryChild { File = "getting-started.md" }]
+							Children = [new ApiEntryChildDto { File = "getting-started.md" }]
 						}
 					]
 				}
@@ -379,13 +379,13 @@ public class ConfigurationFileApiTests
 		// A declared 'spec:' that does not exist on disk is expected, not an error: it means
 		// the current version resolves remotely through the version index instead of a local
 		// override. The basename is still captured for that remote lookup.
-		var docSetFile = new DocumentationSetFile
+		var docSetFile = new DocumentationSetDto
 		{
-			Api = new Dictionary<string, ApiProductSequence>
+			Api = new Dictionary<string, ApiProductSequenceDto>
 			{
 				["elasticsearch"] = new()
 				{
-					Entries = [new ApiProductEntry { Spec = "elasticsearch-openapi.json", Product = "elasticsearch" }]
+					Entries = [new ApiProductEntryDto { Spec = "elasticsearch-openapi.json", Product = "elasticsearch" }]
 				}
 			}
 		};
@@ -401,13 +401,13 @@ public class ConfigurationFileApiTests
 	[Test]
 	public void ResolvesSpecFileName_FromBasenameOfNestedPath()
 	{
-		var docSetFile = new DocumentationSetFile
+		var docSetFile = new DocumentationSetDto
 		{
-			Api = new Dictionary<string, ApiProductSequence>
+			Api = new Dictionary<string, ApiProductSequenceDto>
 			{
 				["elasticsearch"] = new()
 				{
-					Entries = [new ApiProductEntry { Spec = "specs/elasticsearch-openapi.json", Product = "elasticsearch" }]
+					Entries = [new ApiProductEntryDto { Spec = "specs/elasticsearch-openapi.json", Product = "elasticsearch" }]
 				}
 			}
 		};
@@ -423,11 +423,11 @@ public class ConfigurationFileApiTests
 	[Test]
 	public void EmitsError_WhenSpecMissing()
 	{
-		var docSetFile = new DocumentationSetFile
+		var docSetFile = new DocumentationSetDto
 		{
-			Api = new Dictionary<string, ApiProductSequence>
+			Api = new Dictionary<string, ApiProductSequenceDto>
 			{
-				["elasticsearch"] = new() { Entries = [new ApiProductEntry { Product = "elasticsearch" }] }
+				["elasticsearch"] = new() { Entries = [new ApiProductEntryDto { Product = "elasticsearch" }] }
 			}
 		};
 
@@ -440,11 +440,11 @@ public class ConfigurationFileApiTests
 	[Test]
 	public void EmitsError_WhenSpecEscapesDocumentationSourceDirectory()
 	{
-		var docSetFile = new DocumentationSetFile
+		var docSetFile = new DocumentationSetDto
 		{
-			Api = new Dictionary<string, ApiProductSequence>
+			Api = new Dictionary<string, ApiProductSequenceDto>
 			{
-				["elasticsearch"] = new() { Entries = [new ApiProductEntry { Spec = "../../outside.json", Product = "elasticsearch" }] }
+				["elasticsearch"] = new() { Entries = [new ApiProductEntryDto { Spec = "../../outside.json", Product = "elasticsearch" }] }
 			}
 		};
 
@@ -457,11 +457,11 @@ public class ConfigurationFileApiTests
 	[Test]
 	public void EmitsError_WhenProductMissing()
 	{
-		var docSetFile = new DocumentationSetFile
+		var docSetFile = new DocumentationSetDto
 		{
-			Api = new Dictionary<string, ApiProductSequence>
+			Api = new Dictionary<string, ApiProductSequenceDto>
 			{
-				["elasticsearch"] = new() { Entries = [new ApiProductEntry { Spec = "elasticsearch-openapi.json" }] }
+				["elasticsearch"] = new() { Entries = [new ApiProductEntryDto { Spec = "elasticsearch-openapi.json" }] }
 			}
 		};
 
@@ -474,13 +474,13 @@ public class ConfigurationFileApiTests
 	[Test]
 	public void EmitsError_WhenProductUnknown()
 	{
-		var docSetFile = new DocumentationSetFile
+		var docSetFile = new DocumentationSetDto
 		{
-			Api = new Dictionary<string, ApiProductSequence>
+			Api = new Dictionary<string, ApiProductSequenceDto>
 			{
 				["elasticsearch"] = new()
 				{
-					Entries = [new ApiProductEntry { Spec = "elasticsearch-openapi.json", Product = "not-a-product" }]
+					Entries = [new ApiProductEntryDto { Spec = "elasticsearch-openapi.json", Product = "not-a-product" }]
 				}
 			}
 		};
@@ -494,13 +494,13 @@ public class ConfigurationFileApiTests
 	[Test]
 	public void NormalizesUnderscoreProductId()
 	{
-		var docSetFile = new DocumentationSetFile
+		var docSetFile = new DocumentationSetDto
 		{
-			Api = new Dictionary<string, ApiProductSequence>
+			Api = new Dictionary<string, ApiProductSequenceDto>
 			{
 				["dashboard"] = new()
 				{
-					Entries = [new ApiProductEntry { Spec = "dashboard-openapi.json", Product = "under_score_product" }]
+					Entries = [new ApiProductEntryDto { Spec = "dashboard-openapi.json", Product = "under_score_product" }]
 				}
 			}
 		};
@@ -514,15 +514,15 @@ public class ConfigurationFileApiTests
 	[Test]
 	public void ResolvesRepositoryOverride()
 	{
-		var docSetFile = new DocumentationSetFile
+		var docSetFile = new DocumentationSetDto
 		{
-			Api = new Dictionary<string, ApiProductSequence>
+			Api = new Dictionary<string, ApiProductSequenceDto>
 			{
 				["elasticsearch"] = new()
 				{
 					Entries =
 					[
-						new ApiProductEntry
+						new ApiProductEntryDto
 						{
 							Spec = "elasticsearch-openapi.json",
 							Product = "elasticsearch",
@@ -542,19 +542,19 @@ public class ConfigurationFileApiTests
 	[Test]
 	public void ResolvesCatalogCategories_NormalizesAliasAndDedupes()
 	{
-		var docSetFile = new DocumentationSetFile
+		var docSetFile = new DocumentationSetDto
 		{
-			Api = new Dictionary<string, ApiProductSequence>
+			Api = new Dictionary<string, ApiProductSequenceDto>
 			{
 				["elasticsearch"] = new()
 				{
 					Entries =
 					[
-						new ApiProductEntry
+						new ApiProductEntryDto
 						{
 							Spec = "elasticsearch-openapi.json",
 							Product = "elasticsearch",
-							Catalog = new ApiCatalogSettings { Categories = ["ECH", "self", "ech", "ece"] }
+							Catalog = new ApiCatalogDto { Categories = ["ECH", "self", "ech", "ece"] }
 						}
 					]
 				}
@@ -570,19 +570,19 @@ public class ConfigurationFileApiTests
 	[Test]
 	public void EmitsError_WhenCatalogCategoryUnknown()
 	{
-		var docSetFile = new DocumentationSetFile
+		var docSetFile = new DocumentationSetDto
 		{
-			Api = new Dictionary<string, ApiProductSequence>
+			Api = new Dictionary<string, ApiProductSequenceDto>
 			{
 				["elasticsearch"] = new()
 				{
 					Entries =
 					[
-						new ApiProductEntry
+						new ApiProductEntryDto
 						{
 							Spec = "elasticsearch-openapi.json",
 							Product = "elasticsearch",
-							Catalog = new ApiCatalogSettings { Categories = ["self", "eck"] }
+							Catalog = new ApiCatalogDto { Categories = ["self", "eck"] }
 						}
 					]
 				}
@@ -598,13 +598,13 @@ public class ConfigurationFileApiTests
 	[Test]
 	public void CatalogCategories_DefaultEmpty_WhenOmitted()
 	{
-		var docSetFile = new DocumentationSetFile
+		var docSetFile = new DocumentationSetDto
 		{
-			Api = new Dictionary<string, ApiProductSequence>
+			Api = new Dictionary<string, ApiProductSequenceDto>
 			{
 				["elasticsearch"] = new()
 				{
-					Entries = [new ApiProductEntry { Spec = "elasticsearch-openapi.json", Product = "elasticsearch" }]
+					Entries = [new ApiProductEntryDto { Spec = "elasticsearch-openapi.json", Product = "elasticsearch" }]
 				}
 			}
 		};
@@ -618,13 +618,13 @@ public class ConfigurationFileApiTests
 	[Test]
 	public void Repository_DefaultsToNull_WhenOmitted()
 	{
-		var docSetFile = new DocumentationSetFile
+		var docSetFile = new DocumentationSetDto
 		{
-			Api = new Dictionary<string, ApiProductSequence>
+			Api = new Dictionary<string, ApiProductSequenceDto>
 			{
 				["elasticsearch"] = new()
 				{
-					Entries = [new ApiProductEntry { Spec = "elasticsearch-openapi.json", Product = "elasticsearch" }]
+					Entries = [new ApiProductEntryDto { Spec = "elasticsearch-openapi.json", Product = "elasticsearch" }]
 				}
 			}
 		};
@@ -641,15 +641,15 @@ public class ConfigurationFileApiTests
 	[Arguments("trailing-slash/")]
 	public void EmitsError_WhenRepositoryNotInOrgSlashRepoForm(string repository)
 	{
-		var docSetFile = new DocumentationSetFile
+		var docSetFile = new DocumentationSetDto
 		{
-			Api = new Dictionary<string, ApiProductSequence>
+			Api = new Dictionary<string, ApiProductSequenceDto>
 			{
 				["elasticsearch"] = new()
 				{
 					Entries =
 					[
-						new ApiProductEntry { Spec = "elasticsearch-openapi.json", Product = "elasticsearch", Repository = repository }
+						new ApiProductEntryDto { Spec = "elasticsearch-openapi.json", Product = "elasticsearch", Repository = repository }
 					]
 				}
 			}
@@ -664,13 +664,13 @@ public class ConfigurationFileApiTests
 	[Test]
 	public void EmitsError_WhenMultipleEntries()
 	{
-		var docSetFile = new DocumentationSetFile
+		var docSetFile = new DocumentationSetDto
 		{
-			Api = new Dictionary<string, ApiProductSequence>
+			Api = new Dictionary<string, ApiProductSequenceDto>
 			{
 				["elasticsearch"] = new()
 				{
-					Entries = [new ApiProductEntry { Product = "elasticsearch" }, new ApiProductEntry { Product = "elasticsearch" }]
+					Entries = [new ApiProductEntryDto { Product = "elasticsearch" }, new ApiProductEntryDto { Product = "elasticsearch" }]
 				}
 			}
 		};
@@ -684,19 +684,19 @@ public class ConfigurationFileApiTests
 	[Test]
 	public void EmitsError_WhenChildFileMissing()
 	{
-		var docSetFile = new DocumentationSetFile
+		var docSetFile = new DocumentationSetDto
 		{
-			Api = new Dictionary<string, ApiProductSequence>
+			Api = new Dictionary<string, ApiProductSequenceDto>
 			{
 				["elasticsearch"] = new()
 				{
 					Entries =
 					[
-						new ApiProductEntry
+						new ApiProductEntryDto
 						{
 							Spec = "elasticsearch-openapi.json",
 							Product = "elasticsearch",
-							Children = [new ApiEntryChild { File = "missing.md" }]
+							Children = [new ApiEntryChildDto { File = "missing.md" }]
 						}
 					]
 				}
@@ -712,19 +712,19 @@ public class ConfigurationFileApiTests
 	[Test]
 	public void EmitsError_WhenChildPathEscapesApiKeyDirectory()
 	{
-		var docSetFile = new DocumentationSetFile
+		var docSetFile = new DocumentationSetDto
 		{
-			Api = new Dictionary<string, ApiProductSequence>
+			Api = new Dictionary<string, ApiProductSequenceDto>
 			{
 				["elasticsearch"] = new()
 				{
 					Entries =
 					[
-						new ApiProductEntry
+						new ApiProductEntryDto
 						{
 							Spec = "elasticsearch-openapi.json",
 							Product = "elasticsearch",
-							Children = [new ApiEntryChild { File = "../../outside.md" }]
+							Children = [new ApiEntryChildDto { File = "../../outside.md" }]
 						}
 					]
 				}
@@ -740,19 +740,19 @@ public class ConfigurationFileApiTests
 	[Test]
 	public void EmitsError_WhenChildFileUsesSupplementalName()
 	{
-		var docSetFile = new DocumentationSetFile
+		var docSetFile = new DocumentationSetDto
 		{
-			Api = new Dictionary<string, ApiProductSequence>
+			Api = new Dictionary<string, ApiProductSequenceDto>
 			{
 				["elasticsearch"] = new()
 				{
 					Entries =
 					[
-						new ApiProductEntry
+						new ApiProductEntryDto
 						{
 							Spec = "elasticsearch-openapi.json",
 							Product = "elasticsearch",
-							Children = [new ApiEntryChild { File = "op-search.md" }]
+							Children = [new ApiEntryChildDto { File = "op-search.md" }]
 						}
 					]
 				}
@@ -768,19 +768,19 @@ public class ConfigurationFileApiTests
 	[Test]
 	public void AcceptsNestedChildWhoseBasenameLooksSupplemental()
 	{
-		var docSetFile = new DocumentationSetFile
+		var docSetFile = new DocumentationSetDto
 		{
-			Api = new Dictionary<string, ApiProductSequence>
+			Api = new Dictionary<string, ApiProductSequenceDto>
 			{
 				["elasticsearch"] = new()
 				{
 					Entries =
 					[
-						new ApiProductEntry
+						new ApiProductEntryDto
 						{
 							Spec = "elasticsearch-openapi.json",
 							Product = "elasticsearch",
-							Children = [new ApiEntryChild { File = "guides/op-overview.md" }]
+							Children = [new ApiEntryChildDto { File = "guides/op-overview.md" }]
 						}
 					]
 				}
@@ -796,19 +796,19 @@ public class ConfigurationFileApiTests
 	[Test]
 	public void GetMarkdownPathsToExclude_IncludesChildrenAndSupplementalFiles()
 	{
-		var docSetFile = new DocumentationSetFile
+		var docSetFile = new DocumentationSetDto
 		{
-			Api = new Dictionary<string, ApiProductSequence>
+			Api = new Dictionary<string, ApiProductSequenceDto>
 			{
 				["elasticsearch"] = new()
 				{
 					Entries =
 					[
-						new ApiProductEntry
+						new ApiProductEntryDto
 						{
 							Spec = "elasticsearch-openapi.json",
 							Product = "elasticsearch",
-							Children = [new ApiEntryChild { File = "getting-started.md" }]
+							Children = [new ApiEntryChildDto { File = "getting-started.md" }]
 						}
 					]
 				}
@@ -833,13 +833,13 @@ public class ConfigurationFileApiTests
 	[Test]
 	public void ApiContentDirectory_IsSetToApiKeyFolder()
 	{
-		var docSetFile = new DocumentationSetFile
+		var docSetFile = new DocumentationSetDto
 		{
-			Api = new Dictionary<string, ApiProductSequence>
+			Api = new Dictionary<string, ApiProductSequenceDto>
 			{
 				["elasticsearch"] = new()
 				{
-					Entries = [new ApiProductEntry { Spec = "elasticsearch-openapi.json", Product = "elasticsearch" }]
+					Entries = [new ApiProductEntryDto { Spec = "elasticsearch-openapi.json", Product = "elasticsearch" }]
 				}
 			}
 		};
@@ -854,7 +854,7 @@ public class ConfigurationFileApiTests
 	private static readonly string[] DefaultProductIds = ["elasticsearch", "kibana"];
 
 	private static (ResolvedDocumentationSet Config, DiagnosticsCollector Collector) CreateConfiguration(
-		DocumentationSetFile docSet,
+		DocumentationSetDto docSet,
 		string[]? extraProducts = null,
 		bool withLocalSpecFile = true,
 		string[]? extraMarkdownFiles = null

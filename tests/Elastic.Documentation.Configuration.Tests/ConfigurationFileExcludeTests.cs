@@ -21,7 +21,7 @@ public class ConfigurationFileExcludeTests
 	[Test]
 	public void IsExcluded_DocsetGlob_MatchesNestedKibanaDocsPath()
 	{
-		var docSet = new DocumentationSetFile
+		var docSet = new DocumentationSetDto
 		{
 			Project = "test",
 			TableOfContents = [],
@@ -35,7 +35,7 @@ public class ConfigurationFileExcludeTests
 	[Test]
 	public void IsExcluded_DocsetGlob_DoesNotMatchOutsideTree()
 	{
-		var docSet = new DocumentationSetFile
+		var docSet = new DocumentationSetDto
 		{
 			Project = "test",
 			TableOfContents = [],
@@ -46,7 +46,7 @@ public class ConfigurationFileExcludeTests
 		config.IsExcluded("reference/query-languages/esql/guide.md").Should().BeFalse();
 	}
 
-	private static ResolvedDocumentationSet CreateConfiguration(DocumentationSetFile docSet)
+	private static ResolvedDocumentationSet CreateConfiguration(DocumentationSetDto docSet)
 	{
 		var collector = new DiagnosticsCollector([]);
 		var root = Paths.WorkingDirectoryRoot.FullName;

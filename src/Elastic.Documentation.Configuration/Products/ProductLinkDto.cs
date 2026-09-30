@@ -8,7 +8,7 @@ namespace Elastic.Documentation.Configuration.Products;
 
 /// <summary>A <c>products: [{id}]</c> entry in <c>docset.yml</c>, as authored.</summary>
 [YamlSerializable]
-public record ProductLink
+internal record ProductLinkDto
 {
 	public string Id { get; set; } = string.Empty;
 }

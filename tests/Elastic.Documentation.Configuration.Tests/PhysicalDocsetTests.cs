@@ -25,7 +25,7 @@ public class PhysicalDocsetTests
 			    navigation_title: CLI reference
 			""";
 
-		var docSet = ConfigurationFileProvider.Deserializer.Deserialize<DocumentationSetFile>(yaml);
+		var docSet = ConfigurationFileProvider.Deserializer.Deserialize<DocumentationSetDto>(yaml);
 		var cliRef = docSet.TocEntries.OfType<CliReferenceEntryDto>().Single();
 
 		cliRef.Title.Should().Be("Elastic CLI reference");
@@ -39,7 +39,7 @@ public class PhysicalDocsetTests
 		File.Exists(docsetPath).Should().BeTrue($"Expected docset file to exist at {docsetPath}");
 
 		var yaml = File.ReadAllText(docsetPath);
-		var docSet = ConfigurationFileProvider.Deserializer.Deserialize<DocumentationSetFile>(yaml);
+		var docSet = ConfigurationFileProvider.Deserializer.Deserialize<DocumentationSetDto>(yaml);
 
 		docSet.Project.Should().Be("doc-builder");
 		docSet.MaxTocDepth.Should().Be(2);
@@ -79,7 +79,7 @@ public class PhysicalDocsetTests
 	{
 		var docsetPath = Path.Join(Paths.WorkingDirectoryRoot.FullName, "docs", "_docset.yml");
 		var yaml = File.ReadAllText(docsetPath);
-		var docSet = ConfigurationFileProvider.Deserializer.Deserialize<DocumentationSetFile>(yaml);
+		var docSet = ConfigurationFileProvider.Deserializer.Deserialize<DocumentationSetDto>(yaml);
 
 		var folderNames = docSet.TocEntries.OfType<FolderEntryDto>().Select(f => f.Path).ToList();
 
@@ -102,7 +102,7 @@ public class PhysicalDocsetTests
 	{
 		var docsetPath = Path.Join(Paths.WorkingDirectoryRoot.FullName, "docs", "_docset.yml");
 		var yaml = File.ReadAllText(docsetPath);
-		var docSet = ConfigurationFileProvider.Deserializer.Deserialize<DocumentationSetFile>(yaml);
+		var docSet = ConfigurationFileProvider.Deserializer.Deserialize<DocumentationSetDto>(yaml);
 
 		var documentationFolder = docSet.TocEntries.OfType<FolderEntryDto>().First(f => f.Path == "documentation");
 		documentationFolder.Children.Should().NotBeEmpty();
@@ -124,7 +124,7 @@ public class PhysicalDocsetTests
 		File.Exists(docsetPath).Should().BeTrue($"Expected test docset file to exist at {docsetPath}");
 
 		var yaml = File.ReadAllText(docsetPath);
-		var docSet = ConfigurationFileProvider.Deserializer.Deserialize<DocumentationSetFile>(yaml);
+		var docSet = ConfigurationFileProvider.Deserializer.Deserialize<DocumentationSetDto>(yaml);
 
 		var fileWithChildren = docSet
 			.TocEntries

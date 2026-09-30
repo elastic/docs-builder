@@ -20,7 +20,7 @@ using static Elastic.Documentation.SymlinkValidator;
 namespace Elastic.Documentation.Configuration.Toc;
 
 [YamlSerializable]
-public class DocumentationSetFile : TableOfContentsFile
+internal class DocumentationSetDto : TableOfContentsDto
 {
 	[YamlMember(Alias = "max_toc_depth")]
 	public int MaxTocDepth { get; set; } = 2;
@@ -37,7 +37,7 @@ public class DocumentationSetFile : TableOfContentsFile
 	/// and lets <c>changelog bundle</c> source that product's entries from the CDN.
 	/// </summary>
 	[YamlMember(Alias = "release_notes")]
-	public List<ReleaseNotesProductReference> ReleaseNotes { get; set; } = [];
+	public List<ReleaseNotesProductDto> ReleaseNotes { get; set; } = [];
 
 	[YamlMember(Alias = "exclude")]
 	public List<string> Exclude { get; set; } = [];
@@ -63,58 +63,58 @@ public class DocumentationSetFile : TableOfContentsFile
 	public string? Registry { get; set; }
 
 	[YamlMember(Alias = "features")]
-	public DocumentationSetFeatures Features { get; set; } = new();
+	public DocumentationSetFeaturesDto Features { get; set; } = new();
 
 	[YamlMember(Alias = "api")]
-	public Dictionary<string, ApiProductSequence> Api { get; set; } = [];
+	public Dictionary<string, ApiProductSequenceDto> Api { get; set; } = [];
 
 	/// <summary>
 	/// Default products for this documentation set. These are merged with page-level frontmatter products.
 	/// </summary>
 	[YamlMember(Alias = "products")]
-	public List<ProductLink> Products { get; set; } = [];
+	public List<ProductLinkDto> Products { get; set; } = [];
 
 	/// <summary>
 	/// Optional codex-specific metadata. Only contains <c>group</c> for codex navigation grouping.
 	/// </summary>
 	[YamlMember(Alias = "codex")]
-	public CodexDocSetMetadata? Codex { get; set; }
+	public CodexMembershipDto? Codex { get; set; }
 
 	/// <summary>
 	/// Optional white-label branding overrides. When present, all Elastic-specific chrome is suppressed.
 	/// </summary>
 	[YamlMember(Alias = "branding")]
-	public BrandingConfiguration? Branding { get; set; }
+	public BrandingDto? Branding { get; set; }
 
 	[YamlMember(Alias = "storybook")]
-	public DocumentationSetStorybook? Storybook { get; set; }
+	public StorybookDto? Storybook { get; set; }
 
 	/// <summary>
 	/// Named, reusable right-gutter CTA templates. Selected per-page via frontmatter <c>cta: &lt;name&gt;</c>;
 	/// pages that omit it fall back to the built-in <c>trial</c> default.
 	/// </summary>
 	[YamlMember(Alias = "cta")]
-	public Dictionary<string, CtaDefinition> Cta { get; set; } = [];
+	public Dictionary<string, CtaDto> Cta { get; set; } = [];
 
-	private static new DocumentationSetFile Deserialize(string json) =>
-		ConfigurationFileProvider.Deserializer.Deserialize<DocumentationSetFile>(json);
+	private static new DocumentationSetDto Deserialize(string json) =>
+		ConfigurationFileProvider.Deserializer.Deserialize<DocumentationSetDto>(json);
 
 	/// <summary>
-	/// Loads a DocumentationSetFile from a file for reading metadata only (e.g. codex section).
+	/// Loads a DocumentationSetDto from a file for reading metadata only (e.g. codex section).
 	/// Does not perform full TOC resolution.
 	/// </summary>
-	public static DocumentationSetFile LoadMetadata(IFileInfo file)
+	public static DocumentationSetDto LoadMetadata(IFileInfo file)
 	{
 		var yaml = file.FileSystem.File.ReadAllText(file.FullName);
 		return Deserialize(yaml);
 	}
 
 	/// <summary>
-	/// Loads a DocumentationSetFile and recursively resolves all IsolatedTableOfContentsRef items,
+	/// Loads a DocumentationSetDto and recursively resolves all IsolatedTableOfContentsRef items,
 	/// replacing them with their resolved children and ensuring file paths carry over parent paths.
 	/// Validates the table of contents structure and emits diagnostics for issues.
 	/// </summary>
-	public static DocumentationSetFile LoadAndResolve(
+	public static DocumentationSetDto LoadAndResolve(
 		IDiagnosticsCollector collector,
 		IFileInfo docsetPath,
 		ScopedFileSystem? fileSystem = null,
@@ -149,11 +149,11 @@ public class DocumentationSetFile : TableOfContentsFile
 	public IReadOnlyDictionary<string, string> TocDefaultCtas { get; private set; } = FrozenDictionary<string, string>.Empty;
 
 	/// <summary>
-	/// Loads a DocumentationSetFile from YAML string and recursively resolves all IsolatedTableOfContentsRef items,
+	/// Loads a DocumentationSetDto from YAML string and recursively resolves all IsolatedTableOfContentsRef items,
 	/// replacing them with their resolved children and ensuring file paths carry over parent paths.
 	/// Validates the table of contents structure and emits diagnostics for issues.
 	/// </summary>
-	public static DocumentationSetFile LoadAndResolve(
+	public static DocumentationSetDto LoadAndResolve(
 		IDiagnosticsCollector collector,
 		string yaml,
 		IDirectoryInfo sourceDirectory,
@@ -354,7 +354,7 @@ public class DocumentationSetFile : TableOfContentsFile
 		EnsureNotSymlink(fileSystem, tocFilePath);
 
 		var tocYaml = fileSystem.File.ReadAllText(tocFilePath);
-		var nestedTocFile = TableOfContentsFile.Deserialize(tocYaml);
+		var nestedTocFile = TableOfContentsDto.Deserialize(tocYaml);
 
 		// this is temporary after this lands in main we can update these files to include
 		// suppress:
@@ -390,9 +390,7 @@ public class DocumentationSetFile : TableOfContentsFile
 			nestedTocFile.SuppressDiagnostics
 		);
 
-		// Validate: TOC must have at least one child
-		if (resolvedChildren.Count == 0)
-			collector.EmitError(tocFilePath, $"Table of contents '{fullTocPath}' has no children defined");
+		// A nested table of contents without children is checked on the model: see DocumentationSetConstraints.
 
 		// Return TOC ref with FULL path and resolved children.
 		// Island flag is OR-ed: either the inline `- toc:` entry or the child toc.yml root can opt in.
@@ -733,12 +731,7 @@ public class DocumentationSetFile : TableOfContentsFile
 		var fullVirtualRoot = string.IsNullOrEmpty(parentPath) ? virtualRoot : $"{parentPath}/{virtualRoot}";
 		var pathRelativeToContainer = string.IsNullOrEmpty(containerPath) ? fullVirtualRoot : fullVirtualRoot[(containerPath.Length + 1)..];
 
-		if (cliRef.SupplementalFolder is not null)
-		{
-			var supplementalDirPath = fileSystem.Path.Join(baseDirectory.FullName, cliRef.SupplementalFolder);
-			if (!fileSystem.Directory.Exists(supplementalDirPath))
-				collector.EmitWarning(context, $"CLI supplemental docs folder not found: {cliRef.SupplementalFolder}");
-		}
+		// A missing supplemental folder is checked on the model: see DocumentationSetConstraints.
 
 		// Resolve explicit children (regular docs + namespace/folder refs) relative to the virtual root
 		var resolvedChildren = cliRef.Children.Count > 0
@@ -797,8 +790,10 @@ public class DocumentationSetFile : TableOfContentsFile
 		// Calculate PathRelativeToContainer: the folder path relative to its container
 		var pathRelativeToContainer = string.IsNullOrEmpty(containerPath) ? fullPath : fullPath.Substring(containerPath.Length + 1);
 
-		// Parse and validate sort order
-		if (!SortOrderExtensions.TryParse(folderRef.Sort, out var sortOrder) && folderRef.Sort is not null)
+		// Parse and validate sort order; the model only ever holds a valid one
+		var sortIsValid = SortOrderExtensions.TryParse(folderRef.Sort, out var sortOrder);
+		SortOrder? declaredSort = sortIsValid ? sortOrder : null;
+		if (!sortIsValid && folderRef.Sort is not null)
 			collector.EmitError(
 				context,
 				$"Unknown sort order '{folderRef.Sort}' for folder '{folderRef.Path}'." +
@@ -825,7 +820,7 @@ public class DocumentationSetFile : TableOfContentsFile
 				ContainerPath.From(pathRelativeToContainer),
 				resolvedChildren,
 				DeclaringFilePath.From(context),
-				folderRef.Sort,
+				declaredSort,
 				DefaultCta: folderRef.DefaultCta
 			);
 		}
@@ -848,7 +843,7 @@ public class DocumentationSetFile : TableOfContentsFile
 			ContainerPath.From(pathRelativeToContainer),
 			autoDiscoveredChildren,
 			DeclaringFilePath.From(context),
-			folderRef.Sort,
+			declaredSort,
 			folderRef.Exclude,
 			folderRef.DefaultCta
 		);
@@ -1077,17 +1072,14 @@ public class DocumentationSetFile : TableOfContentsFile
 		var options = listingRef.Options;
 		var globPattern = options.Glob ?? "**/*.md";
 
-		// Validate that non-.md globs must specify an extension
-		var hasNonMdGlob = !globPattern.EndsWith(".md", StringComparison.OrdinalIgnoreCase)
-			&& !globPattern.EndsWith("/*.md", StringComparison.OrdinalIgnoreCase)
-			&& !globPattern.Equals("**/*.md", StringComparison.OrdinalIgnoreCase);
+		var hasNonMdGlob = TableOfContentsRules.GlobMayMatchNonMarkdown(globPattern);
 
-		if (hasNonMdGlob && string.IsNullOrEmpty(options.Extension))
+		// A listing that survives resolution has its glob checked on the model (DocumentationSetConstraints); one this
+		// loader drops never reaches the model, so the same check is reported here before dropping it.
+		void ReportGlobNeedingExtension()
 		{
-			collector.EmitError(
-				context,
-				$"Listing '{fullPath}': glob '{globPattern}' may match non-.md files — 'extension:' is required to handle them."
-			);
+			if (hasNonMdGlob && string.IsNullOrEmpty(options.Extension))
+				collector.EmitError(context, TableOfContentsRules.ListingGlobNeedsExtension(fullPath, globPattern));
 		}
 
 		// Build exclude globs
@@ -1098,6 +1090,7 @@ public class DocumentationSetFile : TableOfContentsFile
 
 		if (!listingDir.Exists)
 		{
+			ReportGlobNeedingExtension();
 			collector.EmitError(context, $"Listing folder not found: {fullPath}");
 			return null;
 		}
@@ -1125,7 +1118,10 @@ public class DocumentationSetFile : TableOfContentsFile
 			.ToList();
 
 		if (allFiles.Count == 0)
+		{
+			ReportGlobNeedingExtension();
 			return null;
+		}
 
 		// Read listing group from frontmatter of each .md file
 		var fileGroups = new Dictionary<IFileInfo, string?>(ReferenceEqualityComparer.Instance);
@@ -1153,7 +1149,7 @@ public class DocumentationSetFile : TableOfContentsFile
 		var contentFiles = allFiles.Where(f => f != rootIndex && !groupIndexFiles.ContainsValue(f)).ToList();
 
 		// Sort content files
-		contentFiles = SortOrderExtensions.TryParse(options.Sort, out var sortOrder)
+		contentFiles = options.Sort is { } sortOrder
 			? sortOrder == SortOrder.Descending
 				? contentFiles.OrderByDescending(f => f.Name, NaturalStringComparer.Instance).ToList()
 				: contentFiles.OrderBy(f => f.Name, NaturalStringComparer.Instance).ToList()
@@ -1310,7 +1306,7 @@ public class DocumentationSetFile : TableOfContentsFile
 }
 
 [YamlSerializable]
-public class DocumentationSetFeatures
+internal class DocumentationSetFeaturesDto
 {
 	[YamlMember(Alias = "primary-nav", ApplyNamingConventions = false)]
 	public bool? PrimaryNav { get; set; }
@@ -1321,7 +1317,7 @@ public class DocumentationSetFeatures
 }
 
 [YamlSerializable]
-public class DocumentationSetStorybook
+internal class StorybookDto
 {
 	[YamlMember(Alias = "registry")]
 	public string? Registry { get; set; }
@@ -1331,7 +1327,7 @@ public class DocumentationSetStorybook
 /// A single <c>release_notes</c> entry declaring a product whose changelog content is CDN-backed.
 /// </summary>
 [YamlSerializable]
-public record ReleaseNotesProductReference
+internal record ReleaseNotesProductDto
 {
 	[YamlMember(Alias = "product")]
 	public string Product { get; set; } = string.Empty;
@@ -1341,7 +1337,7 @@ public record ReleaseNotesProductReference
 /// Codex-specific metadata. Only contains <c>group</c> for navigation grouping in a codex environment.
 /// </summary>
 [YamlSerializable]
-public class CodexDocSetMetadata
+internal class CodexMembershipDto
 {
 	[YamlMember(Alias = "group")]
 	public string? Group { get; set; }
@@ -1352,7 +1348,7 @@ public class CodexDocSetMetadata
 /// All image paths are relative to the directory containing <c>docset.yml</c>.
 /// </summary>
 [YamlSerializable]
-public class BrandingConfiguration
+internal class BrandingDto
 {
 	/// <summary>Path to the site icon image, relative to the docs source directory.</summary>
 	[YamlMember(Alias = "icon")]
@@ -1385,20 +1381,20 @@ public class BrandingConfiguration
 /// A single named right-gutter CTA template, as declared under <c>docset.yml</c>'s <c>cta</c> map.
 /// </summary>
 [YamlSerializable]
-public class CtaDefinition
+internal class CtaDto
 {
 	[YamlMember(Alias = "button")]
-	public CtaButton? Button { get; set; }
+	public CtaButtonDto? Button { get; set; }
 
 	[YamlMember(Alias = "benefits")]
 	public List<string> Benefits { get; set; } = [];
 }
 
 /// <summary>
-/// The clickable button portion of a <see cref="CtaDefinition"/>.
+/// The clickable button portion of a <see cref="CtaDto"/>.
 /// </summary>
 [YamlSerializable]
-public class CtaButton
+internal class CtaButtonDto
 {
 	[YamlMember(Alias = "label")]
 	public string? Label { get; set; }

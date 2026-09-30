@@ -143,8 +143,9 @@ internal sealed class TocItemYamlConverter : IYamlTypeConverter
 				&& islandObj is string islandStr
 				&& bool.TryParse(islandStr, out var islandBool)
 				&& islandBool;
-			// Reuse the already-captured sort and exclude variables from the outer scope
-			var options = new ListingOptions(glob, sort, exclude, listingVisual, groups, extension, island);
+			// Reuse the already-captured sort and exclude variables from the outer scope; an unknown sort keeps path order
+			SortOrder? listingSort = SortOrderExtensions.TryParse(sort, out var parsedSort) ? parsedSort : null;
+			var options = new ListingOptions(glob, listingSort, exclude, listingVisual, groups, extension, island);
 			return new ListingEntryDto(listing, children, options);
 		}
 
