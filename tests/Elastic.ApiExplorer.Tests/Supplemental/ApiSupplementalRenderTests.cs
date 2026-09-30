@@ -127,7 +127,7 @@ public class ApiSupplementalRenderTests(ApiExplorerFixture fixture)
 		var nav = SearchOperation();
 		var html = await RenderAsync(nav.Model, nav);
 
-		html.Should().MatchRegex("""id="path-index"[\s\S]*?</a>\s*<span class="required type-status">required</span>""");
+		html.Should().MatchRegex("""id="path-index"[\s\S]*?</a>[\s\S]*?<span class="required type-status">required</span>""");
 	}
 
 	[Test]

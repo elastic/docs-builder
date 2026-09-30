@@ -86,10 +86,13 @@ public record ApiQueryParameter
 	public required string? DescriptionMarkdown { get; init; }
 }
 
-/// <summary>A path parameter with its effective description precomputed.</summary>
+/// <summary>A path parameter with its structural display data precomputed.</summary>
 public record ApiPathParameter
 {
 	public required IOpenApiParameter Parameter { get; init; }
+	public required TypeAnnotation? Type { get; init; }
+	public required IReadOnlyList<string> EnumValues { get; init; }
+	public required IReadOnlyList<UnionBadge> UnionOptions { get; init; }
 	public required HtmlString DescriptionHtml { get; init; }
 	public required string? DescriptionMarkdown { get; init; }
 
@@ -227,16 +230,7 @@ public partial record OperationPageModel
 			Overloads = ResolveOverloads(context),
 			PathParameters = (operation.Parameters ?? [])
 				.Where(p => p.In == ParameterLocation.Path)
-				.Select(p =>
-				{
-					var description = supplemental?.ParameterOr(p.Name ?? "", p.Description) ?? p.Description;
-					return new ApiPathParameter
-					{
-						Parameter = p,
-						DescriptionHtml = ApiMarkdown.Render(context, description),
-						DescriptionMarkdown = description
-					};
-				})
+				.Select(p => BuildPathParameter(p, analyzer, builder, context, supplemental))
 				.ToArray(),
 			QueryParameters = (operation.Parameters ?? [])
 				.Where(p => p.In == ParameterLocation.Query)
@@ -628,6 +622,29 @@ public partial record OperationPageModel
 		)
 			return parent.NavigationItems;
 		return context.CurrentNavigation is OperationNavigationItem self ? [self] : [];
+	}
+
+	private static ApiPathParameter BuildPathParameter(
+		IOpenApiParameter parameter,
+		SchemaAnalyzer analyzer,
+		ApiPropertyTreeBuilder builder,
+		ApiRenderContext context,
+		ApiSupplementalDoc? supplemental
+	)
+	{
+		var schema = parameter.Schema;
+		var description = supplemental?.ParameterOr(parameter.Name ?? "", parameter.Description) ?? parameter.Description;
+		return new ApiPathParameter
+		{
+			Parameter = parameter,
+			Type = schema is not null ? builder.Describe(schema) : null,
+			EnumValues = CollectEnumValues(schema, analyzer),
+			UnionOptions = CollectUnionOptionNames(schema, analyzer)
+				.Select(n => new UnionBadge(n, ApiPropertyTreeBuilder.IsTypeOptionBadge(n)))
+				.ToArray(),
+			DescriptionHtml = ApiMarkdown.Render(context, description),
+			DescriptionMarkdown = description
+		};
 	}
 
 	private static ApiQueryParameter BuildQueryParameter(

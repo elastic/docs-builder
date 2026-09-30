@@ -165,6 +165,10 @@
 						<span class="property-anchor-icon" aria-hidden="true"></span>
 						<code>@path.Name</code>
 					</a>
+					@if (path.Type is not null)
+					{
+						@(await RenderPartialAsync<_SchemaType, TypeAnnotation>(path.Type))
+					}
 					@if (path.Required)
 					{
 						<span class="required type-status">required</span>
@@ -175,6 +179,31 @@
 					}
 				</dt>
 			<dd>@path.DescriptionHtml</dd>
+			@if (path.UnionOptions.Count > 0 && path.EnumValues.Count == 0)
+			{
+				<dd class="union-options">
+					<span class="values-label">One of:</span>
+					@for (var optIndex = 0; optIndex < path.UnionOptions.Count; optIndex++)
+					{
+						var unionOpt = path.UnionOptions[optIndex];
+						if (optIndex > 0)
+						{
+							<span class="union-inline-separator">or</span>
+						}
+						<code class="@SchemaHelpers.UnionOptionClasses(unionOpt.IsTypeOption, unionOpt.Text)">@unionOpt.Text</code>
+					}
+				</dd>
+			}
+			@if (path.EnumValues.Count > 0)
+			{
+				<dd class="enum-values">
+					<span class="values-label">Values:</span>
+					@foreach (var enumVal in path.EnumValues)
+					{
+						<code class="enum-value">@enumVal</code>
+					}
+				</dd>
+			}
 		</div>
 		}
 		</dl>
