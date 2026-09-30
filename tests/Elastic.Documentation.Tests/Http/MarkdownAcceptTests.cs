@@ -9,24 +9,24 @@ namespace Elastic.Documentation.Tests.Http;
 
 public class MarkdownAcceptTests
 {
-	[Theory]
-	[InlineData("text/markdown")]
-	[InlineData("text/markdown; charset=utf-8")]
-	[InlineData("text/markdown, text/html;q=0.9")]
+	[Test]
+	[Arguments("text/markdown")]
+	[Arguments("text/markdown; charset=utf-8")]
+	[Arguments("text/markdown, text/html;q=0.9")]
 	public void PrefersMarkdown_WhenMarkdownOutranksHtml(string accept) => MarkdownAccept.PrefersMarkdown(accept).Should().BeTrue();
 
-	[Theory]
-	[InlineData(null)]
-	[InlineData("")]
-	[InlineData("text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8")]
-	[InlineData("text/html, text/markdown;q=0.5")]
-	[InlineData("text/html, text/markdown")]
+	[Test]
+	[Arguments(null)]
+	[Arguments("")]
+	[Arguments("text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8")]
+	[Arguments("text/html, text/markdown;q=0.5")]
+	[Arguments("text/html, text/markdown")]
 	public void PrefersMarkdown_WhenHtmlWinsOrMarkdownMissing(string? accept) => MarkdownAccept.PrefersMarkdown(accept).Should().BeFalse();
 }
 
 public class ApiMarkdownRequestTests
 {
-	[Fact]
+	[Test]
 	public void ResolveFile_CatalogSlugUsesParentApiMd()
 	{
 		var apiRoot = Path.GetFullPath(Path.Join(Path.GetTempPath(), "out", "api"));
@@ -36,7 +36,7 @@ public class ApiMarkdownRequestTests
 		ApiMarkdownRequest.ResolveFile(apiRoot, "api.md").Should().Be(expected);
 	}
 
-	[Fact]
+	[Test]
 	public void ResolveFile_PageSlugUsesSiblingMd()
 	{
 		var apiRoot = Path.GetFullPath(Path.Join(Path.GetTempPath(), "out", "api"));
@@ -55,7 +55,7 @@ public class ApiMarkdownRequestTests
 			.Be(Path.GetFullPath(Path.Join(apiRoot, "doc", "elasticsearch", "operation", "operation-search.md")));
 	}
 
-	[Fact]
+	[Test]
 	public void SiblingOfDirectory_UsesParentNameMd()
 	{
 		var directory = Path.Join(Path.GetTempPath(), "out", "api", "doc", "elasticsearch");

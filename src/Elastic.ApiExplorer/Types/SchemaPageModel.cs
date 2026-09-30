@@ -35,7 +35,8 @@ public record SchemaPageModel
 			ShowVersionInfo = false,
 			ShowExternalDocs = false,
 			UseHiddenUntilFound = false,
-			CollapseMode = CollapseMode.DepthBased
+			CollapseMode = CollapseMode.DepthBased,
+			SchemaResolveCache = context.SchemaResolveCache
 		};
 		var builder = new ApiPropertyTreeBuilder(context.Model, options, schema.DisplayName);
 		var rootAncestors = new HashSet<string> { schema.DisplayName };
@@ -44,7 +45,7 @@ public record SchemaPageModel
 		if (openApiSchema.ExternalDocs?.Url is not null)
 		{
 			var url = openApiSchema.ExternalDocs.Url.ToString();
-			externalDocs = new ExternalDocLink(url, ApiPropertyTreeBuilder.IsElasticDocsUrl(url));
+			externalDocs = new ExternalDocLink(url, ApiPropertyTreeBuilder.IsElasticDocsUrl(url), openApiSchema.ExternalDocs.Description);
 		}
 
 		return new SchemaPageModel

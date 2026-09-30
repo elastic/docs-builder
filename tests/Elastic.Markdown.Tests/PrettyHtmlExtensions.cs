@@ -6,11 +6,10 @@ using AngleSharp.Diffing;
 using AngleSharp.Html;
 using AngleSharp.Html.Parser;
 using AwesomeAssertions;
+using AwesomeAssertions.Execution;
 using DiffPlex.DiffBuilder;
 using DiffPlex.DiffBuilder.Model;
 using JetBrains.Annotations;
-using Xunit.Internal;
-using Xunit.Sdk;
 
 namespace Elastic.Markdown.Tests;
 
@@ -28,7 +27,7 @@ public static class PrettyHtmlExtensions
 		if (sanitize)
 		{
 			var links = element.QuerySelectorAll("a");
-			links.ForEach(l =>
+			foreach (var l in links)
 			{
 				l.RemoveAttribute("hx-get");
 				l.RemoveAttribute("hx-select-oob");
@@ -36,16 +35,16 @@ public static class PrettyHtmlExtensions
 				l.RemoveAttribute("hx-indicator");
 				l.RemoveAttribute("hx-push-url");
 				l.RemoveAttribute("preload");
-			});
+			}
 		}
 
 		using var sw = new StringWriter();
 		var formatter = new PrettyMarkupFormatter();
-		element.Children.ForEach(c =>
+		foreach (var c in element.Children)
 		{
 			// ReSharper disable once AccessToDisposedClosure
 			c.ToHtml(sw, formatter);
-		});
+		}
 		return sw.ToString().TrimStart('\n');
 	}
 
@@ -63,7 +62,7 @@ public static class PrettyHtmlExtensions
 		if (diff.Length == 0)
 			return;
 
-		throw new XunitException(CreateDiff(actual, expected, sanitize));
+		throw new AssertionFailedException(CreateDiff(actual, expected, sanitize));
 	}
 	public static void ShouldContainHtml(
 		[LanguageInjection("html")] this string actual,
@@ -117,7 +116,7 @@ public static class PrettyHtmlExtensions
 		}
 
 		using var sw = new StringWriter();
-		diffLines.ForEach(l =>
+		foreach (var l in diffLines)
 		{
 			switch (l.Type)
 			{
@@ -137,7 +136,7 @@ public static class PrettyHtmlExtensions
 					sw.WriteLine("+ " + l.Text);
 					break;
 			}
-		});
+		}
 
 		return sw.ToString();
 	}

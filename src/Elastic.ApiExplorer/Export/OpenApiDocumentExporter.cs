@@ -133,7 +133,7 @@ public partial class OpenApiDocumentExporter(VersionsConfiguration versionsConfi
 				var title = string.IsNullOrEmpty(summary) ? operationId : summary;
 				var method = operation.Key.ToString().ToUpperInvariant();
 				var searchTitle = BuildSearchTitle(title, productLabel, operationId, $"{method} {path.Key}");
-				var description = ApiMarkdown.TransformOperationListToMarkdown(operation.Value.Description);
+				var description = ApiMarkdown.StripHtml(operation.Value.Description);
 
 				// Build body content from operation details
 				var bodyBuilder = new StringBuilder();

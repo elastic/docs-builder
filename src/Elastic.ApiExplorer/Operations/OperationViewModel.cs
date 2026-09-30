@@ -38,9 +38,6 @@ public class OperationViewModel(ApiRenderContext context) : ApiViewModel(context
 		if (Prerequisites is { Count: > 0 })
 			tocItems.Add(new ApiTocItem("Prerequisites", "prerequisites"));
 
-		if (Page.AuthSchemes.Count > 0)
-			tocItems.Add(new ApiTocItem("Authorization", "authorization"));
-
 		if (Page.QueryParameters.Count > 0)
 			tocItems.Add(new ApiTocItem("Query Parameters", "query-params"));
 

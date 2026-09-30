@@ -876,10 +876,10 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 			markdown,
 			block.CurrentFile,
 			block.Context.YamlFrontMatter,
-			MarkdownParser.Pipeline
+			MarkdownParser.ChangelogPipeline
 		);
 
-		var html = document.ToHtml(MarkdownParser.Pipeline);
+		var html = document.ToHtml(MarkdownParser.ChangelogPipeline);
 		_ = renderer.Write(html);
 	}
 

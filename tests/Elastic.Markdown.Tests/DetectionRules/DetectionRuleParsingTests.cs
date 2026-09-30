@@ -28,7 +28,7 @@ public class DetectionRuleParsingTests
 		query = "process.name : evil.exe"
 		""";
 
-	[Fact]
+	[Test]
 	public void FromToml_MinimalRule_ParsesCorrectly()
 	{
 		var rule = DetectionRule.FromToml(MinimalRule);
@@ -41,7 +41,7 @@ public class DetectionRuleParsingTests
 		rule.Authors.Should().ContainSingle().Which.Should().Be("Elastic");
 	}
 
-	[Fact]
+	[Test]
 	public void FromToml_ImplicitIntermediateTable_ParsesTransformInvestigate()
 	{
 		var toml = MinimalRule
@@ -77,7 +77,7 @@ public class DetectionRuleParsingTests
 		rule.Threats[0].Techniques[0].Id.Should().Be("T1071");
 	}
 
-	[Fact]
+	[Test]
 	public void FromToml_MultiLineStringWithMarkdownLinks_ParsesCorrectly()
 	{
 		// TOML uses """ for multi-line strings; use 4-quote C# raw literals to embed them
@@ -112,7 +112,7 @@ public class DetectionRuleParsingTests
 		rule.Setup.Should().Contain("elastic.co/docs");
 	}
 
-	[Fact]
+	[Test]
 	public void FromToml_MixedMultiLineDelimiters_ParsesCorrectly()
 	{
 		// Triple-quoted """ appears inside a '''-delimited multi-line string
@@ -147,7 +147,7 @@ public class DetectionRuleParsingTests
 		rule.Note.Should().Contain("Triage");
 	}
 
-	[Fact]
+	[Test]
 	public void FromToml_DeprecatedRule_ParsesDeprecationDate()
 	{
 		var toml =
@@ -174,7 +174,7 @@ public class DetectionRuleParsingTests
 		rule.Maturity.Should().Be("deprecated");
 	}
 
-	[Fact]
+	[Test]
 	public void FromToml_ThreatWithSubTechniques_ParsesFullHierarchy()
 	{
 		var toml = MinimalRule
@@ -210,7 +210,7 @@ public class DetectionRuleParsingTests
 		technique.SubTechniques[1].Id.Should().Be("T1566.002");
 	}
 
-	[Fact]
+	[Test]
 	public void FromToml_MultipleThreats_ParsesAll()
 	{
 		var toml = MinimalRule
@@ -238,7 +238,7 @@ public class DetectionRuleParsingTests
 		rule.Threats[1].Tactic.Id.Should().Be("TA0005");
 	}
 
-	[Fact]
+	[Test]
 	public void FromToml_OptionalFieldsMissing_DefaultsCorrectly()
 	{
 		var rule = DetectionRule.FromToml(MinimalRule);
@@ -254,7 +254,7 @@ public class DetectionRuleParsingTests
 		rule.Threats.Should().BeEmpty();
 	}
 
-	[Fact]
+	[Test]
 	public void FromToml_DomainTag_ExtractedCorrectly()
 	{
 		var toml =

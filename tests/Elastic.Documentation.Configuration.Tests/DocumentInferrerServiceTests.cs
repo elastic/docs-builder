@@ -110,7 +110,7 @@ public class DocumentInferrerServiceTests
 		return new LegacyUrlMappingConfiguration { Mappings = mappings };
 	}
 
-	[Fact]
+	[Test]
 	public void InferForMarkdownWithDirectRepositoryMatchReturnsProduct()
 	{
 		var versionsConfig = CreateVersionsConfiguration();
@@ -133,7 +133,7 @@ public class DocumentInferrerServiceTests
 		result.ProductVersion.Should().Be("9.2.0");
 	}
 
-	[Fact]
+	[Test]
 	public void InferForMarkdownWithProductRepositoryReturnsProductByRepositoryField()
 	{
 		var versionsConfig = CreateVersionsConfiguration();
@@ -156,7 +156,7 @@ public class DocumentInferrerServiceTests
 		result.Repository.Should().Be("elastic-otel-java");
 	}
 
-	[Fact]
+	[Test]
 	public void InferForMarkdownWithLegacyMappedPagesReturnsProductFromLegacyMapping()
 	{
 		var versionsConfig = CreateVersionsConfiguration();
@@ -179,7 +179,7 @@ public class DocumentInferrerServiceTests
 		result.Product.Id.Should().Be("elasticsearch");
 	}
 
-	[Fact]
+	[Test]
 	public void InferForMarkdownWithProductApplicabilityReturnsProductFromApplicability()
 	{
 		var versionsConfig = CreateVersionsConfiguration();
@@ -205,7 +205,7 @@ public class DocumentInferrerServiceTests
 		result.Product.Id.Should().Be("curator");
 	}
 
-	[Fact]
+	[Test]
 	public void InferForMarkdownLegacyMappingTakesPriorityOverApplicability()
 	{
 		var versionsConfig = CreateVersionsConfiguration();
@@ -233,7 +233,7 @@ public class DocumentInferrerServiceTests
 		result.Product.Id.Should().Be("kibana");
 	}
 
-	[Fact]
+	[Test]
 	public void InferForMarkdownApplicabilityTakesPriorityOverRepository()
 	{
 		var versionsConfig = CreateVersionsConfiguration();
@@ -260,7 +260,7 @@ public class DocumentInferrerServiceTests
 		result.Product.Id.Should().Be("curator");
 	}
 
-	[Fact]
+	[Test]
 	public void InferForMarkdownCollectsAllRelatedProducts()
 	{
 		var versionsConfig = CreateVersionsConfiguration();
@@ -290,7 +290,7 @@ public class DocumentInferrerServiceTests
 		result.RelatedProducts.Select(p => p.Id).Should().Contain("kibana");
 	}
 
-	[Fact]
+	[Test]
 	public void InferForMarkdownIncludesFrontmatterProductsInRelatedProducts()
 	{
 		var versionsConfig = CreateVersionsConfiguration();
@@ -314,7 +314,7 @@ public class DocumentInferrerServiceTests
 		result.RelatedProducts.Select(p => p.Id).Should().Contain("kibana");
 	}
 
-	[Fact]
+	[Test]
 	public void InferForMarkdownMergesDocsetAndFrontmatterProducts()
 	{
 		var versionsConfig = CreateVersionsConfiguration();
@@ -340,7 +340,7 @@ public class DocumentInferrerServiceTests
 		result.RelatedProducts.Select(p => p.Id).Should().Contain("kibana");
 	}
 
-	[Fact]
+	[Test]
 	public void InferForMarkdownIncludesDocsetProductsWhenNoFrontmatterProducts()
 	{
 		var versionsConfig = CreateVersionsConfiguration();
@@ -364,7 +364,7 @@ public class DocumentInferrerServiceTests
 		result.RelatedProducts.Select(p => p.Id).Should().Contain("elasticsearch");
 	}
 
-	[Fact]
+	[Test]
 	public void InferForMarkdownWithUnknownRepositoryReturnsNullProduct()
 	{
 		var versionsConfig = CreateVersionsConfiguration();
@@ -386,7 +386,7 @@ public class DocumentInferrerServiceTests
 		result.RelatedProducts.Should().BeEmpty();
 	}
 
-	[Fact]
+	[Test]
 	public void InferForMarkdownWithVersionlessProductReturnsNullVersion()
 	{
 		var versionsConfig = CreateVersionsConfiguration();
@@ -425,7 +425,7 @@ public class DocumentInferrerServiceTests
 		result.ProductVersion.Should().BeNull("versionless products should return null version");
 	}
 
-	[Fact]
+	[Test]
 	public void InferForOpenApiWithElasticsearchReturnsCorrectProduct()
 	{
 		var versionsConfig = CreateVersionsConfiguration();
@@ -444,7 +444,7 @@ public class DocumentInferrerServiceTests
 		result.RelatedProducts.First().Id.Should().Be("elasticsearch");
 	}
 
-	[Fact]
+	[Test]
 	public void InferForOpenApiWithKibanaReturnsCorrectProduct()
 	{
 		var versionsConfig = CreateVersionsConfiguration();
@@ -461,7 +461,7 @@ public class DocumentInferrerServiceTests
 		result.ProductVersion.Should().Be("9.2.0");
 	}
 
-	[Fact]
+	[Test]
 	public void InferForOpenApiWithUnknownProductReturnsNullProductWithStackVersion()
 	{
 		var versionsConfig = CreateVersionsConfiguration();
@@ -478,7 +478,7 @@ public class DocumentInferrerServiceTests
 		result.RelatedProducts.Should().BeEmpty();
 	}
 
-	[Fact]
+	[Test]
 	public void InferForOpenApiIsCaseInsensitive()
 	{
 		var versionsConfig = CreateVersionsConfiguration();
@@ -493,7 +493,7 @@ public class DocumentInferrerServiceTests
 		result.Product.Id.Should().Be("elasticsearch");
 	}
 
-	[Fact]
+	[Test]
 	public void NoopDocumentInferrerReturnsEmptyResult()
 	{
 		var inferrer = new NoopDocumentInferrer();

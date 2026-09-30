@@ -15,32 +15,38 @@ public sealed record ApiBreadcrumb(string Title, string? Url)
 }
 
 /// <summary>
-/// Visible crumbs plus optional overflow (EUI Page breadcrumbs, max 4).
-/// When overflowing: first two, ellipsis, last two.
+/// Full crumb list. The first crumb and the current page stay visible; the
+/// client collapses middle crumbs into an ellipsis dropdown when the row is tight.
 /// </summary>
-public sealed record ApiBreadcrumbTrail(
-	IReadOnlyList<ApiBreadcrumb> Head,
-	IReadOnlyList<ApiBreadcrumb> Overflow,
-	IReadOnlyList<ApiBreadcrumb> Tail
-)
+public sealed record ApiBreadcrumbTrail(IReadOnlyList<ApiBreadcrumb> Items)
 {
-	public static readonly ApiBreadcrumbTrail Empty = new([], [], []);
+	public static readonly ApiBreadcrumbTrail Empty = new([]);
 
-	public bool HasOverflow => Overflow.Count > 0;
-
-	public bool IsEmpty => Head.Count == 0 && Tail.Count == 0;
+	public bool IsEmpty => Items.Count == 0;
 }
 
 public sealed record ApiBreadcrumbsView(ApiBreadcrumbTrail Trail, string HxAttributes);
 
 public static class ApiBreadcrumbBuilder
 {
-	public const int MaxVisible = 4;
+	public const string CatalogCrumbTitle = "APIs";
 
-	public static ApiBreadcrumbTrail Build(INavigationItem current, string currentTitle, string? rootTitle) =>
-		Split(Collect(current, currentTitle, rootTitle));
+	public static ApiBreadcrumbTrail Build(INavigationItem current, string currentTitle, string? rootTitle, string? catalogUrl = null) =>
+		TrailFrom(Collect(current, currentTitle, rootTitle, catalogUrl));
 
-	internal static IReadOnlyList<ApiBreadcrumb> Collect(INavigationItem current, string currentTitle, string? rootTitle)
+	internal static ApiBreadcrumbTrail TrailFrom(IReadOnlyList<ApiBreadcrumb> items)
+	{
+		if (items.Count == 0 || items.All(static crumb => crumb.IsCurrent))
+			return ApiBreadcrumbTrail.Empty;
+		return new ApiBreadcrumbTrail(items);
+	}
+
+	internal static IReadOnlyList<ApiBreadcrumb> Collect(
+		INavigationItem current,
+		string currentTitle,
+		string? rootTitle,
+		string? catalogUrl = null
+	)
 	{
 		var items = new List<ApiBreadcrumb>();
 		foreach (var parent in current.GetParents().Reverse())
@@ -60,6 +66,10 @@ public static class ApiBreadcrumbBuilder
 
 		var currentLabel = string.IsNullOrWhiteSpace(currentTitle) ? current.NavigationTitle : currentTitle;
 		items.Add(new ApiBreadcrumb(currentLabel, null));
+
+		if (ShouldPrependCatalog(catalogUrl, current.Url, items))
+			items.Insert(0, new ApiBreadcrumb(CatalogCrumbTitle, catalogUrl));
+
 		return items;
 	}
 
@@ -78,11 +88,19 @@ public static class ApiBreadcrumbBuilder
 		return JsonSerializer.Serialize(new BreadcrumbsList { ItemListElement = items }, BreadcrumbsContext.Default.BreadcrumbsList);
 	}
 
-	internal static ApiBreadcrumbTrail Split(IReadOnlyList<ApiBreadcrumb> items)
+	private static bool ShouldPrependCatalog(string? catalogUrl, string currentUrl, IReadOnlyList<ApiBreadcrumb> items)
 	{
-		if (items.Count <= MaxVisible)
-			return new ApiBreadcrumbTrail(items, [], []);
+		if (string.IsNullOrWhiteSpace(catalogUrl))
+			return false;
+		if (SameUrl(currentUrl, catalogUrl))
+			return false;
+		return items.Count == 0 || !SameUrl(items[0].Url, catalogUrl);
+	}
 
-		return new ApiBreadcrumbTrail(items.Take(2).ToArray(), items.Skip(2).Take(items.Count - 4).ToArray(), items.TakeLast(2).ToArray());
+	private static bool SameUrl(string? left, string? right)
+	{
+		if (left is null || right is null)
+			return false;
+		return string.Equals(left.TrimEnd('/'), right.TrimEnd('/'), StringComparison.Ordinal);
 	}
 }

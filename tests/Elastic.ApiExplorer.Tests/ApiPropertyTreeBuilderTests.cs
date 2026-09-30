@@ -11,7 +11,8 @@ using Microsoft.OpenApi;
 
 namespace Elastic.ApiExplorer.Tests;
 
-public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture) : IClassFixture<ApiExplorerFixture>
+[ClassDataSource<ApiExplorerFixture>(Shared = SharedType.PerClass)]
+public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture)
 {
 	private ApiPropertyTreeBuilder CreateBuilder(string? currentPageType = null, CollapseMode collapseMode = CollapseMode.AlwaysCollapsed)
 	{
@@ -26,7 +27,7 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture) : IClassFix
 
 	private IOpenApiSchema Schema(string id) => fixture.Document.Components!.Schemas![id];
 
-	[Fact]
+	[Test]
 	public void BuildPropertyList_RecursiveSchema_StopsAtAncestor()
 	{
 		var builder = CreateBuilder(currentPageType: "QueryContainer");
@@ -47,7 +48,7 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture) : IClassFix
 		must.Children.Kind.Should().Be(ChildKind.None);
 	}
 
-	[Fact]
+	[Test]
 	public void BuildPropertyList_SimpleArrayUnion_DetectsFieldOrFieldArray()
 	{
 		var builder = CreateBuilder();
@@ -63,7 +64,7 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture) : IClassFix
 		fields.AnchorId.Should().Be("req-fields");
 	}
 
-	[Fact]
+	[Test]
 	public void BuildPropertyList_DictionaryOfLinkedType_LinksInsteadOfExpanding()
 	{
 		var builder = CreateBuilder();
@@ -86,7 +87,7 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture) : IClassFix
 		aggs.Type.Spans.Where(s => s.Text is "map" or "{}").Should().OnlyContain(s => string.IsNullOrEmpty(s.Href));
 	}
 
-	[Fact]
+	[Test]
 	public void BuildPropertyList_LinkedType_PutsHrefOnTypeName()
 	{
 		var builder = CreateBuilder();
@@ -101,7 +102,7 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture) : IClassFix
 		query.Type.Spans.Should().Contain(s => s.Text == "QueryContainer" && s.CssClass == "type-linked" && s.Href == query.TypeLink!.Url);
 	}
 
-	[Fact]
+	[Test]
 	public void BuildPropertyList_RequiredProperty_IsMarkedRequired()
 	{
 		var builder = CreateBuilder();
@@ -115,7 +116,7 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture) : IClassFix
 		list.Items.Single(p => p.Name == "sort").IsRequired.Should().BeFalse();
 	}
 
-	[Fact]
+	[Test]
 	public void Describe_EnumSchema_ShowsEnumKeyword()
 	{
 		var builder = CreateBuilder();
@@ -125,7 +126,7 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture) : IClassFix
 		annotation.Spans.Should().Contain(s => s.CssClass == SchemaHelpers.WrapperEnumCssClass && s.Text == "enum");
 	}
 
-	[Fact]
+	[Test]
 	public void Describe_ValueType_MarksKeywordAndAliasAsTypeValue()
 	{
 		var builder = CreateBuilder();
@@ -137,7 +138,54 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture) : IClassFix
 		annotation.Spans.Should().NotContain(s => s.CssClass != null && s.CssClass.Contains("type-primitive"));
 	}
 
-	[Fact]
+	[Test]
+	public void Describe_PrimitiveAlias_HidesCodegenName()
+	{
+		var builder = CreateBuilder();
+
+		var annotation = builder.Describe(Schema("fixture.ListCreateBody").Properties!["description"]);
+
+		annotation.Text.Should().Be("string · min: 1");
+		annotation.Spans.Should().Contain(s => s.Text == "string" && s.CssClass == SchemaHelpers.PrimitiveCssClass);
+		annotation.Spans.Should().NotContain(s => s.Text.Contains("Security_Lists", StringComparison.Ordinal));
+		annotation.Spans.Should().NotContain(s => s.CssClass != null && s.CssClass.Contains("type-value"));
+	}
+
+	[Test]
+	public void Describe_CodegenObject_HidesSchemaName()
+	{
+		var builder = CreateBuilder();
+
+		var annotation = builder.Describe(Schema("fixture.ListCreateBody").Properties!["meta"]);
+
+		annotation.Text.Should().Be("object");
+		annotation.Spans.Should().Contain(s => s.Text == "object" && s.CssClass == SchemaHelpers.PrimitiveCssClass);
+		annotation.Spans.Should().NotContain(s => s.Text.Contains("Security_Lists", StringComparison.Ordinal));
+	}
+
+	[Test]
+	public void Describe_CodegenEnum_HidesSchemaName()
+	{
+		var builder = CreateBuilder();
+
+		var annotation = builder.Describe(Schema("fixture.ListCreateBody").Properties!["type"]);
+
+		annotation.Text.Should().Be("enum");
+		annotation.Spans.Should().Contain(s => s.Text == "enum" && s.CssClass == SchemaHelpers.WrapperEnumCssClass);
+		annotation.Spans.Should().NotContain(s => s.Text.Contains("Security_Lists", StringComparison.Ordinal));
+	}
+
+	[Test]
+	public void Describe_NamedEnum_KeepsSchemaName()
+	{
+		var builder = CreateBuilder();
+
+		var annotation = builder.Describe(Schema("fixture.SearchRequestBody").Properties!["mode"]);
+
+		annotation.Text.Should().Be("enum SearchMode");
+	}
+
+	[Test]
 	public void Describe_SimpleArrayUnion_SplitsFormulaIntoAtoms()
 	{
 		var builder = CreateBuilder();
@@ -150,7 +198,7 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture) : IClassFix
 		annotation.Spans.Should().NotContain(s => s.CssClass == "type-object");
 	}
 
-	[Fact]
+	[Test]
 	public void Describe_ArrayOfInlineObjects_UsesBracketPrefix()
 	{
 		var builder = CreateBuilder();
@@ -162,7 +210,7 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture) : IClassFix
 		annotation.Spans.Should().Contain(s => s.Text == "object" && s.CssClass == "type-primitive");
 	}
 
-	[Fact]
+	[Test]
 	public void Describe_ArrayOfLinkedType_UsesBracketPrefix()
 	{
 		var builder = CreateBuilder();
@@ -173,7 +221,7 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture) : IClassFix
 		annotation.Spans.Should().Contain(s => s.Text == "QueryContainer" && s.CssClass == "type-linked");
 	}
 
-	[Fact]
+	[Test]
 	public void Describe_LinkedType_MarksNameAsTypeLinked()
 	{
 		var builder = CreateBuilder();
@@ -184,7 +232,7 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture) : IClassFix
 		annotation.Spans.Should().Contain(s => s.Text == "{}" && s.CssClass != null && s.CssClass.Contains("type-wrapper"));
 	}
 
-	[Fact]
+	[Test]
 	public void Describe_DictionaryOfLinkedType_SplitsMapFormulaIntoAtoms()
 	{
 		var builder = CreateBuilder();
@@ -198,7 +246,7 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture) : IClassFix
 		annotation.Spans.Should().Contain(s => s.Text == "AggregationContainer" && s.CssClass == "type-linked");
 	}
 
-	[Fact]
+	[Test]
 	public void BuildUnionVariantsForSchemas_TopLevelOneOf_BuildsVariantPerOption()
 	{
 		var builder = CreateBuilder(currentPageType: "Aggregate", collapseMode: CollapseMode.DepthBased);
@@ -212,7 +260,21 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture) : IClassFix
 		variants.Variants.Select(v => v.DisplayName).Should().BeEquivalentTo(["TermsAggregate", "MaxAggregate"]);
 	}
 
-	[Fact]
+	[Test]
+	public void BuildUnionVariantsForSchemas_CodegenOneOf_UsesReadableNames()
+	{
+		var builder = CreateBuilder();
+		var schema = Schema("fixture.InvalidInputResponse");
+
+		var variants = builder.BuildUnionVariantsForSchemas(schema.OneOf!, "res-400", null);
+
+		variants.Should().NotBeNull();
+		variants!.Variants.Select(v => v.DisplayName).Should().BeEquivalentTo(["PlatformErrorResponse", "SiemErrorResponse"]);
+		variants.Variants.Should().AllSatisfy(v => v.ShowProperties.Should().BeTrue());
+		variants.ShouldCollapse.Should().BeFalse();
+	}
+
+	[Test]
 	public void BuildConstraints_NumericBounds_ProducesLabels()
 	{
 		var boolQuery = Schema("_types.query_dsl.BoolQuery");
@@ -222,7 +284,7 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture) : IClassFix
 		constraints.Should().ContainSingle(c => c.Text == "min: 0");
 	}
 
-	[Fact]
+	[Test]
 	public void Describe_NumericBounds_AppendsMinToType()
 	{
 		var builder = CreateBuilder();
@@ -233,7 +295,7 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture) : IClassFix
 		annotation.Spans.Should().Contain(s => s.Text == "min: 0" && s.CssClass == SchemaHelpers.ConstraintCssClass);
 	}
 
-	[Fact]
+	[Test]
 	public void BuildConstraints_StringAndArrayBounds_UseMinMaxWithoutQualifier()
 	{
 		var text = new OpenApiSchema { Type = JsonSchemaType.String, MinLength = 1, MaxLength = 50 };
@@ -243,7 +305,7 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture) : IClassFix
 		ApiPropertyTreeBuilder.BuildConstraints(items).Select(c => c.Text).Should().Equal("min: 1", "max: 100");
 	}
 
-	[Fact]
+	[Test]
 	public void BuildConstraints_ExclusiveUniqueAndDefault_UsesShortLabels()
 	{
 		var schema = new OpenApiSchema

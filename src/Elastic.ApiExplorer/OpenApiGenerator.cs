@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Collections.Concurrent;
 using System.IO.Abstractions;
 using Elastic.ApiExplorer.Infrastructure;
 using Elastic.ApiExplorer.Landing;
@@ -44,7 +45,8 @@ internal sealed record ApiProductGeneration(
 /// <remarks>
 /// For versioned products, renders the canonical <c>main</c> tree at the unversioned path plus one
 /// full tree per released numeric major at <c>/vN/</c>. Versionless products render only
-/// <c>main</c>. When more than one version is rendered, pages include a left-nav version switcher.
+/// <c>main</c>. When more than one version is rendered, assembler pages host the Docs
+/// <c>version-dropdown</c> on the secondary top bar. Isolated builds keep a left-nav switcher.
 /// </remarks>
 public class OpenApiGenerator(
 	ILoggerFactory logFactory,
@@ -89,23 +91,32 @@ public class OpenApiGenerator(
 
 		var catalogForSwitcher = hubEntries
 			?? ApiHubSwitcher.CollectDeclaredEntries(context.UrlPathPrefix, context.Configuration.ApiConfigurations);
-		var catalogEntries = new List<ApiCatalogEntry>();
 
-		foreach (var (prefix, apiConfig) in context.Configuration.ApiConfigurations)
+		// Fan out every API product in parallel.  Results collected into a ConcurrentBag then sorted
+		// back to the original config declaration order so the catalog page is stable build-to-build.
+		var catalogEntriesBag = new ConcurrentBag<(int Order, ApiCatalogEntry Entry)>();
+		var apiConfigs = context.Configuration.ApiConfigurations.Select((kv, i) => (Index: i, kv.Key, kv.Value)).ToList();
+
+		await Parallel.ForEachAsync(apiConfigs, new ParallelOptions
 		{
+			CancellationToken = ctx,
+			MaxDegreeOfParallelism = Environment.ProcessorCount
+		}, async (item, token) =>
+		{
+			var (order, prefix, apiConfig) = item;
 			try
 			{
-				var entry = await GenerateProduct(prefix, apiConfig, catalogForSwitcher, ctx).ConfigureAwait(false);
+				var entry = await GenerateProduct(prefix, apiConfig, catalogForSwitcher, token).ConfigureAwait(false);
 				if (entry is not null)
-					catalogEntries.Add(entry);
+					catalogEntriesBag.Add((order, entry));
 			}
 			catch (Exception ex) when (ex is not OperationCanceledException)
 			{
 				context.Collector.EmitGlobalError($"API '{prefix}' could not be generated: {ex.Message}");
 			}
-		}
+		}).ConfigureAwait(false);
 
-		return catalogEntries;
+		return [.. catalogEntriesBag.OrderBy(x => x.Order).Select(x => x.Entry)];
 	}
 
 	/// <summary>
@@ -123,13 +134,26 @@ public class OpenApiGenerator(
 	{
 		var resolved = await ResolveDocumentsForProduct(prefix, apiConfig, ctx).ConfigureAwait(false);
 		if (resolved.Documents.Count == 0)
+		{
+			context.Collector.EmitGlobalWarning(
+				$"API '{prefix}': no documents could be loaded from the spec — check earlier errors for details."
+			);
 			return null;
+		}
 
 		var versionedDocuments = resolved.Documents;
 		var monikers = versionedDocuments.Select(v => v.Version.Moniker).ToArray();
 		var highestMajor = monikers.Max(TryParseMajor);
+
+		// Each moniker gets an independent ApiRenderContext, navigation tree and navigation HTML
+		// writer, so there is no shared mutable state between concurrent versions.  Version monikers
+		// are rendered sequentially within a product to avoid oversubscribing the thread pool:
+		// the outer Parallel.ForEachAsync in GenerateProducts already fans out all product×version
+		// units concurrently, so a second level of parallelism here would multiply concurrency to
+		// ProcessorCount² rather than keeping it at ProcessorCount.
 		foreach (var versioned in versionedDocuments)
 		{
+			ctx.ThrowIfCancellationRequested();
 			var switcherItems = ApiVersionSwitcher.Build(context.UrlPathPrefix, prefix, monikers, versioned.Version.Moniker);
 			var apiUrlSuffix = ApiUrlBuilder.ProductSuffix(prefix, versioned.Version.Moniker);
 			await GenerateApiProduct(
@@ -206,7 +230,7 @@ public class OpenApiGenerator(
 
 	private async Task<ResolvedProductDocuments> ResolveLocalMainOnly(IFileInfo localFile)
 	{
-		var document = await _openApiReader.ReadAsync(localFile).ConfigureAwait(false);
+		var document = await _openApiReader.ReadAsync(localFile, context.Collector).ConfigureAwait(false);
 		if (document is null)
 			return new([], null);
 
@@ -241,13 +265,13 @@ public class OpenApiGenerator(
 	)
 	{
 		if (version.IsLocal)
-			return await _openApiReader.ReadAsync(version.LocalFile!).ConfigureAwait(false);
+			return await _openApiReader.ReadAsync(version.LocalFile!, context.Collector).ConfigureAwait(false);
 
 		var stream = await _versionIndexClient.FetchSpecStreamAsync(apiKey, version, context.Collector, ctx).ConfigureAwait(false);
 		if (stream is null)
 			return null;
 
-		return await _openApiReader.ReadAsync(stream, apiConfig.SpecFileName).ConfigureAwait(false);
+		return await _openApiReader.ReadAsync(stream, apiConfig.SpecFileName, context.Collector).ConfigureAwait(false);
 	}
 
 	private static readonly OpenApiDocument CatalogDocument = new()
@@ -259,7 +283,7 @@ public class OpenApiGenerator(
 	{
 		var catalogUrl = $"{ApiUrlBuilder.ApiRoot(context.UrlPathPrefix)}/";
 		var navigation = new ApiCatalogNavigationItem(catalogUrl, entries);
-		var navigationRenderer = new IsolatedBuildNavigationHtmlWriter(context, navigation);
+		var navigationRenderer = new IsolatedBuildNavigationHtmlWriter(context, navigation, suppressNavigationDropdown: true);
 
 		var renderContext = new ApiRenderContext(context, CatalogDocument, _contentHashProvider)
 		{
@@ -290,7 +314,8 @@ public class OpenApiGenerator(
 		var navigationRenderer = new IsolatedBuildNavigationHtmlWriter(
 			context,
 			navigation,
-			MapVersionSwitcher(generation.VersionSwitcherItems)
+			MapVersionSwitcher(generation.VersionSwitcherItems),
+			suppressNavigationDropdown: true
 		);
 
 		var operations = ApiSupplementalDoc.Load(discovery.Operations);
@@ -348,8 +373,11 @@ public class OpenApiGenerator(
 	private async Task WriteSpecSibling(string relativeFile, Func<Stream, Cancel, Task> write, Cancel ctx)
 	{
 		var file = _writeFileSystem.FileInfo.New(Path.Join(context.OutputDirectory.FullName, relativeFile));
-		if (!file.Directory!.Exists)
-			file.Directory.Create();
+		try
+		{
+			file.Directory!.Create();
+		}
+		catch (IOException) { }
 
 		await using var stream = _writeFileSystem.FileStream.New(file.FullName, FileMode.Create);
 		await write(stream, ctx).ConfigureAwait(false);
@@ -385,6 +413,9 @@ public class OpenApiGenerator(
 		Cancel ctx
 	)
 	{
+		if (currentNavigation is ISidebarSeparatorNavigationItem)
+			return;
+
 		if (currentNavigation is INodeNavigationItem<IApiModel, INavigationItem> node)
 		{
 			if (currentNavigation is not ClassificationNavigationItem)
@@ -410,8 +441,12 @@ public class OpenApiGenerator(
 	) where T : INavigationModel, IPageRenderer<ApiRenderContext>
 	{
 		var outputFile = OutputFile(current);
-		if (!outputFile.Directory!.Exists)
-			outputFile.Directory.Create();
+		// Use CreateIfNotExists-style pattern: another concurrent render may already have created it.
+		try
+		{
+			outputFile.Directory!.Create();
+		}
+		catch (IOException) { }
 
 		var navigationRenderResult = await navigationRenderer.RenderNavigation(current.NavigationRoot, current, ctx);
 		renderContext = renderContext with { CurrentNavigation = current, NavigationHtml = navigationRenderResult.Html };
@@ -457,8 +492,12 @@ public class OpenApiGenerator(
 		var markdownFile = _writeFileSystem.FileInfo.New(
 			Path.Join(context.OutputDirectory.FullName, ApiOutputPaths.RelativeMarkdownFile(current.Url, context.UrlPathPrefix))
 		);
-		if (!markdownFile.Directory!.Exists)
-			markdownFile.Directory.Create();
+		// Another concurrent render may already have created the directory.
+		try
+		{
+			markdownFile.Directory!.Create();
+		}
+		catch (IOException) { }
 
 		await _writeFileSystem.File.WriteAllTextAsync(markdownFile.FullName, markdown, ctx).ConfigureAwait(false);
 	}

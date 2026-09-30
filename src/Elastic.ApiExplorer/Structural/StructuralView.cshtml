@@ -5,7 +5,10 @@
 	public ApiLayoutViewModel LayoutModel => Model.CreateGlobalLayoutModel();
 }
 <section id="elastic-docs-v3">
-	<h1>@Model.Page.Title</h1>
+	<div class="api-page-heading">
+		<h1>@Model.Page.Title</h1>
+		@(await RenderPartialAsync<_PageActions, string>(LayoutModel.MarkdownUrl))
+	</div>
 	@if (Model.Page.Kind == ApiStructuralKind.Authentication)
 	{
 		if (Model.Schemes.Count == 0)

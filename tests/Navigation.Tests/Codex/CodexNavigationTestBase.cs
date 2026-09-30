@@ -15,9 +15,9 @@ using Elastic.Documentation.Navigation.Isolated.Node;
 
 namespace Elastic.Documentation.Navigation.Tests.Codex;
 
-public abstract class CodexNavigationTestBase(ITestOutputHelper output)
+public abstract class CodexNavigationTestBase()
 {
-	protected TestDiagnosticsCollector Collector { get; } = new(output);
+	protected TestDiagnosticsCollector Collector { get; } = new();
 
 	protected ICodexDocumentationContext CreateContext() => new TestCodexDocumentationContext(Collector);
 
@@ -40,7 +40,6 @@ public abstract class CodexNavigationTestBase(ITestOutputHelper output)
 				fileSystem.DirectoryInfo.New($"/{repoName}/docs"),
 				fileSystem.DirectoryInfo.New($"/{repoName}/output"),
 				fileSystem.FileInfo.New($"/{repoName}/docs/docset.yml"),
-				output,
 				repoName
 			);
 

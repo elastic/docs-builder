@@ -14,7 +14,7 @@ public class ApplicableToJsonConverterRoundTripTests
 {
 	private readonly JsonSerializerOptions _options = new() { WriteIndented = true };
 
-	[Fact]
+	[Test]
 	public void RoundTripStackSimple()
 	{
 		var original = new ApplicableTo { Stack = AppliesCollection.GenerallyAvailable };
@@ -27,7 +27,7 @@ public class ApplicableToJsonConverterRoundTripTests
 		deserialized.Stack.Should().BeEquivalentTo(original.Stack);
 	}
 
-	[Fact]
+	[Test]
 	public void RoundTripStackWithVersion()
 	{
 		var original = new ApplicableTo
@@ -46,7 +46,7 @@ public class ApplicableToJsonConverterRoundTripTests
 		deserialized.Stack.Should().BeEquivalentTo(original.Stack);
 	}
 
-	[Fact]
+	[Test]
 	public void RoundTripDeploymentAllProperties()
 	{
 		var original = new ApplicableTo
@@ -73,7 +73,7 @@ public class ApplicableToJsonConverterRoundTripTests
 		deserialized.Deployment.Ess.Should().BeEquivalentTo(original.Deployment.Ess);
 	}
 
-	[Fact]
+	[Test]
 	public void RoundTripServerlessAllProperties()
 	{
 		var original = new ApplicableTo
@@ -100,7 +100,7 @@ public class ApplicableToJsonConverterRoundTripTests
 		deserialized.Serverless.VectorDatabase.Should().BeEquivalentTo(original.Serverless.VectorDatabase);
 	}
 
-	[Fact]
+	[Test]
 	public void RoundTripProductSimple()
 	{
 		var original = new ApplicableTo { Product = AppliesCollection.GenerallyAvailable };
@@ -113,7 +113,7 @@ public class ApplicableToJsonConverterRoundTripTests
 		deserialized.Product.Should().BeEquivalentTo(original.Product);
 	}
 
-	[Fact]
+	[Test]
 	public void RoundTripProductApplicabilitySingleProduct()
 	{
 		var original = new ApplicableTo
@@ -129,7 +129,7 @@ public class ApplicableToJsonConverterRoundTripTests
 		deserialized.ProductApplicability.Ecctl.Should().BeEquivalentTo(original.ProductApplicability.Ecctl);
 	}
 
-	[Fact]
+	[Test]
 	public void RoundTripProductApplicabilityMultipleProducts()
 	{
 		var original = new ApplicableTo
@@ -160,7 +160,7 @@ public class ApplicableToJsonConverterRoundTripTests
 		deserialized.ProductApplicability.EdotDotnet.Should().BeEquivalentTo(original.ProductApplicability.EdotDotnet);
 	}
 
-	[Fact]
+	[Test]
 	public void RoundTripAllProductApplicabilityProperties()
 	{
 		var original = new ApplicableTo
@@ -255,7 +255,7 @@ public class ApplicableToJsonConverterRoundTripTests
 		deserialized.ProductApplicability.EdotCollector.Should().BeEquivalentTo(original.ProductApplicability.EdotCollector);
 	}
 
-	[Fact]
+	[Test]
 	public void RoundTripComplexAllFieldsPopulated()
 	{
 		var original = new ApplicableTo
@@ -313,7 +313,7 @@ public class ApplicableToJsonConverterRoundTripTests
 		deserialized.ProductApplicability.ApmAgentDotnet.Should().BeEquivalentTo(original.ProductApplicability.ApmAgentDotnet);
 	}
 
-	[Fact]
+	[Test]
 	public void RoundTripDeploymentEssRoundTripsCorrectly()
 	{
 		var original = new ApplicableTo
@@ -334,7 +334,7 @@ public class ApplicableToJsonConverterRoundTripTests
 		deserialized.Deployment.Ess.Should().BeEquivalentTo(original.Deployment.Ess);
 	}
 
-	[Fact]
+	[Test]
 	public void BothEssAndEchSubTypes_EchWins()
 	{
 		var json =
@@ -353,7 +353,7 @@ public class ApplicableToJsonConverterRoundTripTests
 		deserialized.Deployment.Ess.First().Lifecycle.Should().Be(ProductLifecycle.Beta);
 	}
 
-	[Fact]
+	[Test]
 	public void DeserializeExperimentalLifecycle()
 	{
 		var json =
@@ -370,7 +370,7 @@ public class ApplicableToJsonConverterRoundTripTests
 		deserialized.Stack.First().Lifecycle.Should().Be(ProductLifecycle.Experimental);
 	}
 
-	[Fact]
+	[Test]
 	public void RoundTripAllLifecycles()
 	{
 		var lifecycles = Enum.GetValues<ProductLifecycle>();
@@ -386,7 +386,7 @@ public class ApplicableToJsonConverterRoundTripTests
 		deserialized.Stack.Should().BeEquivalentTo(original.Stack);
 	}
 
-	[Fact]
+	[Test]
 	public void RoundTripMultipleApplicabilitiesInCollection()
 	{
 		var original = new ApplicableTo
@@ -408,7 +408,7 @@ public class ApplicableToJsonConverterRoundTripTests
 		deserialized.Stack.Should().BeEquivalentTo(original.Stack);
 	}
 
-	[Fact]
+	[Test]
 	public void RoundTripEmptyApplicableTo()
 	{
 		var original = new ApplicableTo();
@@ -424,7 +424,7 @@ public class ApplicableToJsonConverterRoundTripTests
 		deserialized.ProductApplicability.Should().BeNull();
 	}
 
-	[Fact]
+	[Test]
 	public void RoundTripNullReturnsNull()
 	{
 		ApplicableTo? original = null;
@@ -435,7 +435,7 @@ public class ApplicableToJsonConverterRoundTripTests
 		deserialized.Should().BeNull();
 	}
 
-	[Fact]
+	[Test]
 	public void RoundTripAllVersionsSerializesAsSemanticVersion()
 	{
 		var original = new ApplicableTo
@@ -454,7 +454,7 @@ public class ApplicableToJsonConverterRoundTripTests
 		deserialized.Stack.First().Version.Should().Be(AllVersionsSpec.Instance);
 	}
 
-	[Fact]
+	[Test]
 	public void RoundTripProductAndProductApplicabilityBothPresent()
 	{
 		var original = new ApplicableTo

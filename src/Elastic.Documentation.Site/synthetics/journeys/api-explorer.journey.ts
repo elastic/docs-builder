@@ -53,13 +53,15 @@ if (isAssemblerApiExplorerEnabled()) {
             )
         })
 
-        step('Switch API version with the sidebar dropdown', async () => {
-            const switcher = page.locator('#api-version-switcher')
-            await expect(switcher).toBeVisible()
+        step('Switch API version with the top-bar dropdown', async () => {
+            const picker = page.locator(
+                '[data-testid="docs-version-dropdown"]:visible'
+            )
+            await expect(picker).toBeVisible()
 
-            await switcher.locator('summary').click()
-            const target = switcher
-                .locator('.nav-select-option[href][aria-selected="false"]')
+            await picker.locator('button').click()
+            const target = page
+                .locator('a[href*="/docs/api/doc/elasticsearch/v"]')
                 .first()
             await expect(target).toBeVisible()
 
@@ -72,7 +74,7 @@ if (isAssemblerApiExplorerEnabled()) {
             await expect(page).toHaveURL(
                 /\/docs\/api\/doc\/elasticsearch\/v\d+\//
             )
-            await expect(switcher).toBeVisible()
+            await expect(picker).toBeVisible()
         })
 
         step('Open an operation page from the API sidebar', async () => {

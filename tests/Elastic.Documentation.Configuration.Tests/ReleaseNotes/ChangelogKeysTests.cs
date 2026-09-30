@@ -9,247 +9,247 @@ namespace Elastic.Documentation.Configuration.Tests.ReleaseNotes;
 
 public class ChangelogKeysTests
 {
-	[Theory]
-	[InlineData("elasticsearch")]
-	[InlineData("elastic-agent")]
-	[InlineData("cloud_hosted")]
-	[InlineData("a")]
-	[InlineData("Agent2")]
+	[Test]
+	[Arguments("elasticsearch")]
+	[Arguments("elastic-agent")]
+	[Arguments("cloud_hosted")]
+	[Arguments("a")]
+	[Arguments("Agent2")]
 	public void IsValidProduct_ValidNames_ReturnsTrue(string product) => ChangelogKeys.IsValidProduct(product).Should().BeTrue();
 
-	[Theory]
-	[InlineData(null)]
-	[InlineData("")]
-	[InlineData(" ")]
+	[Test]
+	[Arguments(null)]
+	[Arguments("")]
+	[Arguments(" ")]
 	// Products never contain dots (unlike repos/branches).
-	[InlineData("foo.bar")]
-	[InlineData(".")]
-	[InlineData("..")]
-	[InlineData("foo bar")]
-	[InlineData("foo/bar")]
+	[Arguments("foo.bar")]
+	[Arguments(".")]
+	[Arguments("..")]
+	[Arguments("foo bar")]
+	[Arguments("foo/bar")]
 	public void IsValidProduct_InvalidNames_ReturnsFalse(string? product) => ChangelogKeys.IsValidProduct(product).Should().BeFalse();
 
-	[Theory]
-	[InlineData("elastic")]
-	[InlineData("acme-corp")]
-	[InlineData("ACME1")]
+	[Test]
+	[Arguments("elastic")]
+	[Arguments("acme-corp")]
+	[Arguments("ACME1")]
 	public void IsValidOrg_ValidLogins_ReturnsTrue(string org) => ChangelogKeys.IsValidOrg(org).Should().BeTrue();
 
-	[Theory]
-	[InlineData(null)]
-	[InlineData("")]
-	[InlineData(" ")]
+	[Test]
+	[Arguments(null)]
+	[Arguments("")]
+	[Arguments(" ")]
 	// GitHub logins are ASCII alphanumerics and hyphens; dots and underscores are excluded.
-	[InlineData("acme.corp")]
-	[InlineData("acme_corp")]
-	[InlineData(".")]
-	[InlineData("..")]
-	[InlineData("acme corp")]
-	[InlineData("acme/corp")]
+	[Arguments("acme.corp")]
+	[Arguments("acme_corp")]
+	[Arguments(".")]
+	[Arguments("..")]
+	[Arguments("acme corp")]
+	[Arguments("acme/corp")]
 	public void IsValidOrg_InvalidLogins_ReturnsFalse(string? org) => ChangelogKeys.IsValidOrg(org).Should().BeFalse();
 
-	[Theory]
-	[InlineData("elasticsearch")]
+	[Test]
+	[Arguments("elasticsearch")]
 	// Repo names may contain dots (e.g. apm-agent-dotnet forks like apm.agent).
-	[InlineData("apm.agent")]
-	[InlineData("my_repo")]
-	[InlineData("repo-1")]
+	[Arguments("apm.agent")]
+	[Arguments("my_repo")]
+	[Arguments("repo-1")]
 	public void IsValidRepo_ValidNames_ReturnsTrue(string repo) => ChangelogKeys.IsValidRepo(repo).Should().BeTrue();
 
-	[Theory]
-	[InlineData(null)]
-	[InlineData("")]
-	[InlineData(" ")]
+	[Test]
+	[Arguments(null)]
+	[Arguments("")]
+	[Arguments(" ")]
 	// "." / ".." match the character class but are rejected to prevent traversal.
-	[InlineData(".")]
-	[InlineData("..")]
-	[InlineData("a/b")]
-	[InlineData("a b")]
+	[Arguments(".")]
+	[Arguments("..")]
+	[Arguments("a/b")]
+	[Arguments("a b")]
 	public void IsValidRepo_InvalidNames_ReturnsFalse(string? repo) => ChangelogKeys.IsValidRepo(repo).Should().BeFalse();
 
-	[Theory]
-	[InlineData("main")]
-	[InlineData("8.x")]
-	[InlineData("9.0")]
+	[Test]
+	[Arguments("main")]
+	[Arguments("8.x")]
+	[Arguments("9.0")]
 	// Branches are stored verbatim: each '/'-delimited part is validated on its own.
-	[InlineData("feature/foo")]
-	[InlineData("release/8.x")]
-	[InlineData("a_b")]
+	[Arguments("feature/foo")]
+	[Arguments("release/8.x")]
+	[Arguments("a_b")]
 	public void IsValidBranch_ValidBranches_ReturnsTrue(string branch) => ChangelogKeys.IsValidBranch(branch).Should().BeTrue();
 
-	[Theory]
-	[InlineData(null)]
-	[InlineData("")]
-	[InlineData(" ")]
-	[InlineData("/")]
-	[InlineData("/main")]
-	[InlineData("feature/")]
-	[InlineData("feature//foo")]
-	[InlineData(".")]
-	[InlineData("..")]
-	[InlineData("feature/..")]
-	[InlineData("a b")]
+	[Test]
+	[Arguments(null)]
+	[Arguments("")]
+	[Arguments(" ")]
+	[Arguments("/")]
+	[Arguments("/main")]
+	[Arguments("feature/")]
+	[Arguments("feature//foo")]
+	[Arguments(".")]
+	[Arguments("..")]
+	[Arguments("feature/..")]
+	[Arguments("a b")]
 	public void IsValidBranch_InvalidBranches_ReturnsFalse(string? branch) => ChangelogKeys.IsValidBranch(branch).Should().BeFalse();
 
-	[Theory]
-	[InlineData("entry.yaml")]
-	[InlineData("registry.json")]
-	[InlineData("9.0.0.yaml")]
+	[Test]
+	[Arguments("entry.yaml")]
+	[Arguments("registry.json")]
+	[Arguments("9.0.0.yaml")]
 	public void IsSafeFileName_SingleSegments_ReturnsTrue(string fileName) => ChangelogKeys.IsSafeFileName(fileName).Should().BeTrue();
 
-	[Theory]
-	[InlineData(null)]
-	[InlineData("")]
-	[InlineData(" ")]
-	[InlineData(".")]
-	[InlineData("..")]
-	[InlineData("a/b.yaml")]
-	[InlineData(@"a\b.yaml")]
+	[Test]
+	[Arguments(null)]
+	[Arguments("")]
+	[Arguments(" ")]
+	[Arguments(".")]
+	[Arguments("..")]
+	[Arguments("a/b.yaml")]
+	[Arguments(@"a\b.yaml")]
 	public void IsSafeFileName_TraversalOrMultiSegment_ReturnsFalse(string? fileName) =>
 		ChangelogKeys.IsSafeFileName(fileName).Should().BeFalse();
 
-	[Fact]
+	[Test]
 	public void BundleFileKey_ComposesArtifactRootKey() =>
 		ChangelogKeys.BundleFileKey("elasticsearch", "9.0.0.yaml").Should().Be("bundle/elasticsearch/9.0.0.yaml");
 
-	[Fact]
+	[Test]
 	public void ChangelogFileKey_ComposesArtifactRootKey() =>
 		ChangelogKeys.ChangelogFileKey("elastic", "kibana", "main", "entry.yaml").Should().Be("changelog/elastic/kibana/main/entry.yaml");
 
-	[Fact]
+	[Test]
 	public void ChangelogFileKey_BranchSlashesBecomeKeySegments() =>
 		ChangelogKeys
 			.ChangelogFileKey("elastic", "kibana", "feature/foo", "entry.yaml")
 			.Should()
 			.Be("changelog/elastic/kibana/feature/foo/entry.yaml");
 
-	[Fact]
+	[Test]
 	public void BundleRegistryKey_ComposesManifestKey() =>
 		ChangelogKeys.BundleRegistryKey("elasticsearch").Should().Be("bundle/elasticsearch/registry.json");
 
-	[Fact]
+	[Test]
 	public void ChangelogRegistryKey_ComposesManifestKeyFromGroup() =>
 		ChangelogKeys.ChangelogRegistryKey("elastic/kibana/main").Should().Be("changelog/elastic/kibana/main/registry.json");
 
-	[Theory]
-	[InlineData("bundle/elasticsearch/9.0.0.yaml", "elasticsearch")]
-	[InlineData("bundle/elastic-agent/entry.yaml", "elastic-agent")]
+	[Test]
+	[Arguments("bundle/elasticsearch/9.0.0.yaml", "elasticsearch")]
+	[Arguments("bundle/elastic-agent/entry.yaml", "elastic-agent")]
 	public void ExtractBundleGroup_BundleKeys_ReturnsProduct(string key, string expected) =>
 		ChangelogKeys.ExtractBundleGroup(key).Should().Be(expected);
 
-	[Theory]
-	[InlineData("changelog/elastic/kibana/main/entry.yaml")]
+	[Test]
+	[Arguments("changelog/elastic/kibana/main/entry.yaml")]
 	// No product segment ahead of the file name.
-	[InlineData("bundle/entry.yaml")]
-	[InlineData("bundle//entry.yaml")]
-	[InlineData("other/elasticsearch/entry.yaml")]
+	[Arguments("bundle/entry.yaml")]
+	[Arguments("bundle//entry.yaml")]
+	[Arguments("other/elasticsearch/entry.yaml")]
 	// The product segment is validated on extraction so an out-of-class group can never be
 	// re-composed into a registry key or URI (e.g. via BundleRegistryKey).
-	[InlineData("bundle/../entry.yaml")]
-	[InlineData("bundle/foo.bar/entry.yaml")]
-	[InlineData("bundle/elastic search/entry.yaml")]
+	[Arguments("bundle/../entry.yaml")]
+	[Arguments("bundle/foo.bar/entry.yaml")]
+	[Arguments("bundle/elastic search/entry.yaml")]
 	public void ExtractBundleGroup_NonBundleKeys_ReturnsNull(string key) => ChangelogKeys.ExtractBundleGroup(key).Should().BeNull();
 
-	[Theory]
-	[InlineData("changelog/elastic/kibana/main/entry.yaml", "elastic/kibana/main")]
+	[Test]
+	[Arguments("changelog/elastic/kibana/main/entry.yaml", "elastic/kibana/main")]
 	// The branch's own '/' produce extra segments; the group is everything before the file name.
-	[InlineData("changelog/elastic/kibana/feature/foo/entry.yaml", "elastic/kibana/feature/foo")]
+	[Arguments("changelog/elastic/kibana/feature/foo/entry.yaml", "elastic/kibana/feature/foo")]
 	public void ExtractChangelogGroup_EntryKeys_ReturnsPool(string key, string expected) =>
 		ChangelogKeys.ExtractChangelogGroup(key).Should().Be(expected);
 
-	[Theory]
-	[InlineData("bundle/elasticsearch/9.0.0.yaml")]
+	[Test]
+	[Arguments("bundle/elasticsearch/9.0.0.yaml")]
 	// Shallower than org/repo/branch ahead of the file name.
-	[InlineData("changelog/elastic/kibana/entry.yaml")]
-	[InlineData("changelog/entry.yaml")]
-	[InlineData("other/elastic/kibana/main/entry.yaml")]
+	[Arguments("changelog/elastic/kibana/entry.yaml")]
+	[Arguments("changelog/entry.yaml")]
+	[Arguments("other/elastic/kibana/main/entry.yaml")]
 	// Each group segment is validated per position on extraction (same rules as IsRegistry),
 	// so traversal, empty, or out-of-class segments can never be re-composed into keys or URIs.
-	[InlineData("changelog/elastic//main/entry.yaml")]
-	[InlineData("changelog/../kibana/main/entry.yaml")]
-	[InlineData("changelog/elastic/../main/entry.yaml")]
-	[InlineData("changelog/acme.corp/widgets/main/entry.yaml")]
-	[InlineData("changelog/elastic/elastic search/main/entry.yaml")]
+	[Arguments("changelog/elastic//main/entry.yaml")]
+	[Arguments("changelog/../kibana/main/entry.yaml")]
+	[Arguments("changelog/elastic/../main/entry.yaml")]
+	[Arguments("changelog/acme.corp/widgets/main/entry.yaml")]
+	[Arguments("changelog/elastic/elastic search/main/entry.yaml")]
 	public void ExtractChangelogGroup_NonEntryKeys_ReturnsNull(string key) => ChangelogKeys.ExtractChangelogGroup(key).Should().BeNull();
 
-	[Fact]
+	[Test]
 	public void BundleSegments_ReturnsPrefixAndProduct() =>
 		ChangelogKeys.BundleSegments("elasticsearch").Should().Equal("bundle", "elasticsearch");
 
-	[Fact]
+	[Test]
 	public void PoolSegments_ExpandsBranchSlashesIntoSegments() =>
 		ChangelogKeys.PoolSegments("elastic", "kibana", "feature/foo").Should().Equal("changelog", "elastic", "kibana", "feature", "foo");
 
-	[Theory]
+	[Test]
 	// Bundle index (artifact-root): bundle/{product}/registry.json — exactly one product segment.
-	[InlineData("bundle/elasticsearch/registry.json")]
-	[InlineData("bundle/kibana/registry.json")]
-	[InlineData("bundle/elastic-agent/registry.json")]
-	[InlineData("bundle/cloud_hosted/registry.json")]
-	[InlineData("bundle/cloud-serverless/registry.json")]
-	[InlineData("bundle/a/registry.json")]
+	[Arguments("bundle/elasticsearch/registry.json")]
+	[Arguments("bundle/kibana/registry.json")]
+	[Arguments("bundle/elastic-agent/registry.json")]
+	[Arguments("bundle/cloud_hosted/registry.json")]
+	[Arguments("bundle/cloud-serverless/registry.json")]
+	[Arguments("bundle/a/registry.json")]
 	// Changelog-entry index (artifact-root): changelog/{org}/{repo}/{branch}/registry.json.
-	[InlineData("changelog/elastic/elasticsearch/main/registry.json")]
-	[InlineData("changelog/elastic/kibana/master/registry.json")]
+	[Arguments("changelog/elastic/elasticsearch/main/registry.json")]
+	[Arguments("changelog/elastic/kibana/master/registry.json")]
 	// External org (e.g. an acquired company keeping its own GitHub org).
-	[InlineData("changelog/acme-corp/widgets/main/registry.json")]
+	[Arguments("changelog/acme-corp/widgets/main/registry.json")]
 	// Repo and branch segments may contain dots (e.g. apm-agent-dotnet, branch 8.x).
-	[InlineData("changelog/elastic/apm.agent/main/registry.json")]
-	[InlineData("changelog/elastic/elasticsearch/8.x/registry.json")]
-	[InlineData("changelog/elastic/kibana/9.0/registry.json")]
+	[Arguments("changelog/elastic/apm.agent/main/registry.json")]
+	[Arguments("changelog/elastic/elasticsearch/8.x/registry.json")]
+	[Arguments("changelog/elastic/kibana/9.0/registry.json")]
 	// Repo and branch segments may contain underscores; orgs may not.
-	[InlineData("changelog/elastic/my_repo/main/registry.json")]
-	[InlineData("changelog/elastic/kibana/my_branch/registry.json")]
+	[Arguments("changelog/elastic/my_repo/main/registry.json")]
+	[Arguments("changelog/elastic/kibana/my_branch/registry.json")]
 	// Branch stored verbatim: a branch's own '/' become additional, valid key segments.
-	[InlineData("changelog/elastic/kibana/feature/foo/registry.json")]
-	[InlineData("changelog/elastic/kibana/release/8.x/registry.json")]
+	[Arguments("changelog/elastic/kibana/feature/foo/registry.json")]
+	[Arguments("changelog/elastic/kibana/release/8.x/registry.json")]
 	public void IsRegistry_ValidArtifactRootKeys_ReturnsTrue(string key) => ChangelogKeys.IsRegistry(key).Should().BeTrue();
 
-	[Theory]
-	[InlineData("")]
-	[InlineData("registry.json")]
-	[InlineData("/registry.json")]
+	[Test]
+	[Arguments("")]
+	[Arguments("registry.json")]
+	[Arguments("/registry.json")]
 	// Old product-first and single-segment changelog layouts are no longer valid manifest keys.
-	[InlineData("elasticsearch/registry.json")]
-	[InlineData("elasticsearch/changelog/registry.json")]
-	[InlineData("changelog/elasticsearch/registry.json")]
+	[Arguments("elasticsearch/registry.json")]
+	[Arguments("elasticsearch/changelog/registry.json")]
+	[Arguments("changelog/elasticsearch/registry.json")]
 	// Changelog manifests shallower than org/repo/branch (3 segments) are rejected.
-	[InlineData("changelog/elastic/elasticsearch/registry.json")]
+	[Arguments("changelog/elastic/elasticsearch/registry.json")]
 	// Missing/empty middle segment.
-	[InlineData("bundle/registry.json")]
-	[InlineData("changelog/registry.json")]
-	[InlineData("bundle//registry.json")]
-	[InlineData("changelog/elastic//main/registry.json")]
+	[Arguments("bundle/registry.json")]
+	[Arguments("changelog/registry.json")]
+	[Arguments("bundle//registry.json")]
+	[Arguments("changelog/elastic//main/registry.json")]
 	// Unknown top-level prefix.
-	[InlineData("entries/elastic/elasticsearch/main/registry.json")]
-	[InlineData("elasticsearch/bundle/registry.json")]
+	[Arguments("entries/elastic/elasticsearch/main/registry.json")]
+	[Arguments("elasticsearch/bundle/registry.json")]
 	// Dots are allowed only for changelog repo/branch segments, never for bundle product segments
 	// (producers validate products as [a-zA-Z0-9_-]+).
-	[InlineData("bundle/foo.bar/registry.json")]
+	[Arguments("bundle/foo.bar/registry.json")]
 	// The org segment follows the producer's GitHub-login rule: no dots or underscores.
-	[InlineData("changelog/acme.corp/widgets/main/registry.json")]
-	[InlineData("changelog/acme_corp/widgets/main/registry.json")]
+	[Arguments("changelog/acme.corp/widgets/main/registry.json")]
+	[Arguments("changelog/acme_corp/widgets/main/registry.json")]
 	// Wrong extension.
-	[InlineData("bundle/elasticsearch/registry.yaml")]
-	[InlineData("changelog/elastic/elasticsearch/main/registry.yaml")]
+	[Arguments("bundle/elasticsearch/registry.yaml")]
+	[Arguments("changelog/elastic/elasticsearch/main/registry.yaml")]
 	// Deeper nesting is rejected for bundles (must stay single-segment).
-	[InlineData("bundle/elastic/search/registry.json")]
+	[Arguments("bundle/elastic/search/registry.json")]
 	// Traversal anywhere in the middle segments.
-	[InlineData("bundle/../registry.json")]
-	[InlineData("changelog/../registry.json")]
-	[InlineData("changelog/elastic/../main/registry.json")]
-	[InlineData("changelog/elastic/elasticsearch/../registry.json")]
+	[Arguments("bundle/../registry.json")]
+	[Arguments("changelog/../registry.json")]
+	[Arguments("changelog/elastic/../main/registry.json")]
+	[Arguments("changelog/elastic/elasticsearch/../registry.json")]
 	// Spaces (and other out-of-class characters) are rejected.
-	[InlineData("bundle/elastic search/registry.json")]
-	[InlineData("changelog/elastic/elastic search/main/registry.json")]
+	[Arguments("bundle/elastic search/registry.json")]
+	[Arguments("changelog/elastic/elastic search/main/registry.json")]
 	public void IsRegistry_InvalidKeys_ReturnsFalse(string key) => ChangelogKeys.IsRegistry(key).Should().BeFalse();
 
-	[Theory]
-	[InlineData("/bundle/elasticsearch/9.3.0.yaml", "elasticsearch", "9.3.0.yaml")]
-	[InlineData("bundle/elasticsearch/9.3.0.yaml", "elasticsearch", "9.3.0.yaml")]
-	[InlineData("https://cdn.example/bundle/elasticsearch/9.3.0.yaml", "elasticsearch", "9.3.0.yaml")]
-	[InlineData("https://cdn.example/prefix/bundle/kibana/9.3.0.yaml", "kibana", "9.3.0.yaml")]
-	[InlineData("/bundle/elasticsearch/9.3.0.amend-1.yaml", "elasticsearch", "9.3.0.amend-1.yaml")]
+	[Test]
+	[Arguments("/bundle/elasticsearch/9.3.0.yaml", "elasticsearch", "9.3.0.yaml")]
+	[Arguments("bundle/elasticsearch/9.3.0.yaml", "elasticsearch", "9.3.0.yaml")]
+	[Arguments("https://cdn.example/bundle/elasticsearch/9.3.0.yaml", "elasticsearch", "9.3.0.yaml")]
+	[Arguments("https://cdn.example/prefix/bundle/kibana/9.3.0.yaml", "kibana", "9.3.0.yaml")]
+	[Arguments("/bundle/elasticsearch/9.3.0.amend-1.yaml", "elasticsearch", "9.3.0.amend-1.yaml")]
 	public void TryParseBundleLocator_BundlePaths_ReturnsProductAndFile(string input, string product, string fileName)
 	{
 		var parsed = ChangelogKeys.TryParseBundleLocator(input, out var parsedProduct, out var parsedFile);
@@ -258,16 +258,16 @@ public class ChangelogKeysTests
 		parsedFile.Should().Be(fileName);
 	}
 
-	[Theory]
-	[InlineData("/changelog/elastic/kibana/main/entry.yaml")]
-	[InlineData("https://cdn.example/changelog/elastic/kibana/main/entry.yaml")]
-	[InlineData("/bundle/elasticsearch")]
-	[InlineData("not-a-path")]
-	[InlineData("bundle/foo.bar/9.3.0.yaml")]
-	[InlineData("/bundle/elasticsearch/a/b.yaml")]
-	[InlineData("https://cdn.example/notbundle/kibana/9.3.0.yaml")]
-	[InlineData("")]
-	[InlineData(null)]
+	[Test]
+	[Arguments("/changelog/elastic/kibana/main/entry.yaml")]
+	[Arguments("https://cdn.example/changelog/elastic/kibana/main/entry.yaml")]
+	[Arguments("/bundle/elasticsearch")]
+	[Arguments("not-a-path")]
+	[Arguments("bundle/foo.bar/9.3.0.yaml")]
+	[Arguments("/bundle/elasticsearch/a/b.yaml")]
+	[Arguments("https://cdn.example/notbundle/kibana/9.3.0.yaml")]
+	[Arguments("")]
+	[Arguments(null)]
 	public void TryParseBundleLocator_NonBundlePaths_ReturnsFalse(string? input)
 	{
 		ChangelogKeys.TryParseBundleLocator(input, out var product, out var fileName).Should().BeFalse();
