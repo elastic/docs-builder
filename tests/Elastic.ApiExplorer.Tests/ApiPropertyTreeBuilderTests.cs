@@ -304,6 +304,77 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture)
 	}
 
 	[Test]
+	public void BuildPropertyList_InlineEnumOverFiveValues_ShowsAllValues()
+	{
+		var weekday = EnumShapes().Single(p => p.Name == "weekday");
+
+		weekday.EnumValues.Should().Equal("mon", "tue", "wed", "thu", "fri", "sat", "sun");
+	}
+
+	[Test]
+	public void BuildPropertyList_OneOfInlineEnums_MergesValuesAsSingleEnum()
+	{
+		var union = EnumShapes().Single(p => p.Name == "literal_union");
+
+		union.EnumValues.Should().Equal("red", "green", "blue");
+		union.Type.Text.Should().Be("enum");
+		union.Union.Should().BeNull();
+	}
+
+	[Test]
+	public void BuildPropertyList_AnyOfEnumOrString_ShowsKnownValues()
+	{
+		var open = EnumShapes().Single(p => p.Name == "open_enum");
+
+		open.EnumValues.Should().Equal("known_a", "known_b");
+		open.Union.Should().BeNull("the Values row already lists the literals");
+	}
+
+	[Test]
+	public void GetEnumValues_UnionOfValueAndArrayOfSameEnum_DeduplicatesValues()
+	{
+		var analyzer = new SchemaAnalyzer(fixture.Document);
+		var schema = new OpenApiSchema
+		{
+			AnyOf =
+			[
+				new OpenApiSchemaReference("_types.SearchMode", fixture.Document),
+				new OpenApiSchema { Type = JsonSchemaType.Array, Items = new OpenApiSchemaReference("_types.SearchMode", fixture.Document) }
+			]
+		};
+
+		analyzer.GetEnumValues(schema).Should().Equal("fast", "accurate");
+	}
+
+	[Test]
+	public void EnumValueList_OverTwentyValues_FoldsAllButTheFirstTwelve()
+	{
+		var values = Enumerable.Range(1, 21).Select(i => $"v{i}").ToArray();
+
+		var list = new EnumValueList(values);
+
+		list.Visible.Should().Equal(values.Take(12));
+		list.Folded.Should().Equal(values.Skip(12));
+	}
+
+	[Test]
+	public void EnumValueList_TwentyValuesOrFewer_ShowsAll()
+	{
+		var values = Enumerable.Range(1, 20).Select(i => $"v{i}").ToArray();
+
+		var list = new EnumValueList(values);
+
+		list.Visible.Should().Equal(values);
+		list.Folded.Should().BeEmpty();
+	}
+
+	private IReadOnlyList<ApiProperty> EnumShapes() =>
+		CreateBuilder().BuildPropertyList(
+			Schema("fixture.EnumShapesBody"),
+			new PropertyTreeScope { Prefix = "req", IsRequest = true }
+		)!.Items;
+
+	[Test]
 	public void BuildConstraints_NumericBounds_ProducesLabels()
 	{
 		var boolQuery = Schema("_types.query_dsl.BoolQuery");

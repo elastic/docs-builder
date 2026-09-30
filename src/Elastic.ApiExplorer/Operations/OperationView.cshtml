@@ -194,16 +194,7 @@
 					}
 				</dd>
 			}
-			@if (path.EnumValues.Count > 0)
-			{
-				<dd class="enum-values">
-					<span class="values-label">Values:</span>
-					@foreach (var enumVal in path.EnumValues)
-					{
-						<code class="enum-value">@enumVal</code>
-					}
-				</dd>
-			}
+			@(await RenderPartialAsync<_EnumValues, EnumValueList>(new EnumValueList(path.EnumValues)))
 		</div>
 		}
 		</dl>
@@ -263,16 +254,7 @@
 						}
 					</dd>
 				}
-				@if (qp.EnumValues.Count > 0)
-				{
-					<dd class="enum-values">
-						<span class="values-label">Values:</span>
-						@foreach (var enumVal in qp.EnumValues)
-						{
-							<code class="enum-value">@enumVal</code>
-						}
-					</dd>
-				}
+				@(await RenderPartialAsync<_EnumValues, EnumValueList>(new EnumValueList(qp.EnumValues)))
 				</div>
 			}
 		</dl>

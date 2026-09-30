@@ -10,7 +10,7 @@
 
 	// Determine which sections exist
 	var hasDescription = !string.IsNullOrEmpty(openApiSchema.Description);
-	var hasEnum = openApiSchema.Enum is { Count: > 0 };
+	var hasEnum = pageModel.EnumValues.Count > 0;
 	var hasExample = openApiSchema.Examples is { Count: > 0 };
 	var firstExample = hasExample ? openApiSchema.Examples![0] : null;
 }
@@ -53,7 +53,7 @@
 	{
 		@(await RenderPartialAsync<_SectionHeader, SectionHeader>(new SectionHeader("Enum Values", "enum-values")))
 		<ul class="enum-values">
-			@foreach (var enumValue in openApiSchema.Enum!)
+			@foreach (var enumValue in pageModel.EnumValues)
 			{
 				<li><code>@enumValue</code></li>
 			}

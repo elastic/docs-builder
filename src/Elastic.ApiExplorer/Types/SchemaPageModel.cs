@@ -11,7 +11,7 @@ namespace Elastic.ApiExplorer.Types;
 
 /// <summary>
 /// Everything structural a schema type page renders, precomputed before the view runs.
-/// Scalar values (description, enum literals, example) are read off the raw schema in the view.
+/// Scalar values (description, example) are read off the raw schema in the view.
 /// </summary>
 public record SchemaPageModel
 {
@@ -23,6 +23,7 @@ public record SchemaPageModel
 	public required ApiUnionVariants? AnyOfVariants { get; init; }
 	public required ApiPropertyList? Properties { get; init; }
 	public required TypeAnnotation? AdditionalPropertiesType { get; init; }
+	public required IReadOnlyList<string> EnumValues { get; init; }
 
 	public static SchemaPageModel Create(ApiSchema schema, ApiRenderContext context)
 	{
@@ -64,7 +65,8 @@ public record SchemaPageModel
 				? builder.BuildUnionVariantsForSchemas(openApiSchema.AnyOf, "anyof", rootAncestors) ?? ApiUnionVariants.Empty
 				: null,
 			Properties = builder.BuildPropertyList(openApiSchema, new PropertyTreeScope { Prefix = "", Ancestors = rootAncestors }),
-			AdditionalPropertiesType = openApiSchema.AdditionalProperties is { } addProps ? builder.Describe(addProps) : null
+			AdditionalPropertiesType = openApiSchema.AdditionalProperties is { } addProps ? builder.Describe(addProps) : null,
+			EnumValues = new SchemaAnalyzer(context.Model, schema.DisplayName, context.SchemaResolveCache).GetEnumValues(openApiSchema)
 		};
 	}
 }

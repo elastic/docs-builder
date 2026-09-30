@@ -246,6 +246,25 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "mode",
+            "in": "query",
+            "description": "Lookup mode, referenced via allOf so the description can be overridden.",
+            "schema": {
+              "allOf": [
+                { "$ref": "#/components/schemas/_types.SearchMode" }
+              ]
+            }
+          },
+          {
+            "name": "stored_states",
+            "in": "query",
+            "description": "States to include, each element one of the allowed values.",
+            "schema": {
+              "type": "array",
+              "items": { "type": "string", "enum": ["open", "closed"] }
+            }
           }
         ],
         "responses": {
@@ -761,6 +780,28 @@
               "enum": ["organization-admins", "billing-admins", "resource-viewers"]
             },
             "description": "Groups to notify, each element must be one of the allowed values."
+          }
+        }
+      },
+      "fixture.EnumShapesBody": {
+        "type": "object",
+        "description": "Exercises enum literals reached through inline enums, oneOf and anyOf.",
+        "properties": {
+          "weekday": {
+            "type": "string",
+            "enum": ["mon", "tue", "wed", "thu", "fri", "sat", "sun"]
+          },
+          "literal_union": {
+            "oneOf": [
+              { "type": "string", "enum": ["red", "green"] },
+              { "type": "string", "enum": ["blue"] }
+            ]
+          },
+          "open_enum": {
+            "anyOf": [
+              { "type": "string", "enum": ["known_a", "known_b"] },
+              { "type": "string" }
+            ]
           }
         }
       }

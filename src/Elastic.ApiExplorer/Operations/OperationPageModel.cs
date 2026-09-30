@@ -633,15 +633,14 @@ public partial record OperationPageModel
 	)
 	{
 		var schema = parameter.Schema;
+		var typeInfo = analyzer.GetTypeInfo(schema);
 		var description = supplemental?.ParameterOr(parameter.Name ?? "", parameter.Description) ?? parameter.Description;
 		return new ApiPathParameter
 		{
 			Parameter = parameter,
 			Type = schema is not null ? builder.Describe(schema) : null,
-			EnumValues = CollectEnumValues(schema, analyzer),
-			UnionOptions = CollectUnionOptionNames(schema, analyzer)
-				.Select(n => new UnionBadge(n, ApiPropertyTreeBuilder.IsTypeOptionBadge(n)))
-				.ToArray(),
+			EnumValues = typeInfo.EnumValues ?? [],
+			UnionOptions = UnionBadges(typeInfo),
 			DescriptionHtml = ApiMarkdown.Render(context, description),
 			DescriptionMarkdown = description
 		};
@@ -656,58 +655,29 @@ public partial record OperationPageModel
 	)
 	{
 		var schema = parameter.Schema;
+		var typeInfo = analyzer.GetTypeInfo(schema);
 		var description = supplemental?.ParameterOr(parameter.Name ?? "", parameter.Description) ?? parameter.Description;
 		return new ApiQueryParameter
 		{
 			Parameter = parameter,
 			Type = schema is not null ? builder.Describe(schema) : null,
 			Constraints = schema is not null ? ApiPropertyTreeBuilder.BuildConstraints(schema) : [],
-			EnumValues = CollectEnumValues(schema, analyzer),
-			UnionOptions = CollectUnionOptionNames(schema, analyzer)
-				.Select(n => new UnionBadge(n, ApiPropertyTreeBuilder.IsTypeOptionBadge(n)))
-				.ToArray(),
+			EnumValues = typeInfo.EnumValues ?? [],
+			UnionOptions = UnionBadges(typeInfo),
 			DescriptionHtml = ApiMarkdown.Render(context, description),
 			DescriptionMarkdown = description
 		};
 	}
 
-	private static IReadOnlyList<string> CollectEnumValues(IOpenApiSchema? schema, SchemaAnalyzer analyzer)
+	private static UnionBadge[] UnionBadges(TypeInfo typeInfo)
 	{
-		var resolved = schema is not null ? analyzer.ResolveSchema(schema) : null;
-
-		// Collect enum values from direct enum, resolved enum, or union of string literals
-		var enumValues = new List<string>();
-		if (schema?.Enum is { Count: > 0 })
-			enumValues.AddRange(schema.Enum.Select(e => e?.ToString()?.Trim('"') ?? "").Where(e => !string.IsNullOrEmpty(e)));
-		else if (resolved?.Enum is { Count: > 0 })
-			enumValues.AddRange(resolved.Enum.Select(e => e?.ToString()?.Trim('"') ?? "").Where(e => !string.IsNullOrEmpty(e)));
-
-		if (enumValues.Count > 0)
-			return enumValues;
-
-		// Check for oneOf/anyOf with string literals (union enums)
-		var unionSchemas = resolved?.OneOf is { Count: > 0 } ? resolved.OneOf : resolved?.AnyOf is { Count: > 0 } ? resolved.AnyOf : null;
-		if (unionSchemas is not null)
-		{
-			enumValues.AddRange(
-				unionSchemas
-					.Select(analyzer.ResolveSchema)
-					.Where(r => r?.Enum is { Count: > 0 })
-					.SelectMany(r => r!.Enum!.Select(e => e?.ToString()?.Trim('"') ?? "").Where(e => !string.IsNullOrEmpty(e)))
-			);
-		}
-
-		return enumValues;
-	}
-
-	private static IReadOnlyList<string> CollectUnionOptionNames(IOpenApiSchema? schema, SchemaAnalyzer analyzer)
-	{
-		var typeInfo = schema is not null ? analyzer.GetTypeInfo(schema) : null;
-		if (typeInfo?.AnyOfOptions is { Count: > 0 })
-			return typeInfo.AnyOfOptions.Select(o => o.Name).Where(n => !string.IsNullOrEmpty(n)).ToArray();
-		if (typeInfo?.UnionOptions is { Length: > 0 })
-			return typeInfo.UnionOptions.Where(n => !string.IsNullOrEmpty(n)).ToArray();
-		return [];
+		var names = typeInfo.AnyOfOptions is { Count: > 0 } options
+			? options.Select(o => o.Name)
+			: typeInfo.UnionOptions ?? Enumerable.Empty<string>();
+		return names
+			.Where(n => !string.IsNullOrEmpty(n))
+			.Select(n => new UnionBadge(n, ApiPropertyTreeBuilder.IsTypeOptionBadge(n)))
+			.ToArray();
 	}
 
 	private static IReadOnlyList<ApiResponse> BuildResponses(

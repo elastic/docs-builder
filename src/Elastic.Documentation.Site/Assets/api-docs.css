@@ -1692,6 +1692,15 @@ a.docs-reference-btn::after {
 	@apply text-purple-70 bg-purple-10 rounded px-1.5 py-0.5 text-xs;
 }
 
+/* Folded literals join the row's wrap once shown; until-found keeps them searchable while folded. */
+.enum-values-folded:not([hidden]) {
+	display: contents;
+}
+
+.enum-values-folded[hidden='until-found'] {
+	display: block;
+}
+
 /* Response headers display */
 .response-headers {
 	@apply border-grey-20 mt-4 border-t pt-4;
