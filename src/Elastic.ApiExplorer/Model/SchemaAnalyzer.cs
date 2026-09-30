@@ -542,6 +542,8 @@ public class SchemaAnalyzer(
 					itemInfo.ValueTypeBase,
 					itemInfo.HasLink,
 					null,
+					IsEnum: itemInfo.IsEnum,
+					EnumValues: itemInfo.EnumValues,
 					ArrayItemType: arrayItemType
 				);
 			}

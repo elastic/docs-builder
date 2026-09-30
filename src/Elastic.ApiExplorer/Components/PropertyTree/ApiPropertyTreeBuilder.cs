@@ -807,6 +807,9 @@ public class ApiPropertyTreeBuilder(OpenApiDocument document, PropertyDisplayOpt
 		var typeName = typeInfo.TypeName ?? "unknown";
 		if (!SchemaHelpers.IsInternalSchemaName(typeName))
 		{
+			// "enum" is a keyword marker already appended — inline enums have no distinct type name to show.
+			if (typeInfo.IsEnum && typeName == "enum")
+				return;
 			spans.Add(NamedTypeSpan(typeName, typeInfo.SchemaRef, typeInfo.IsValueType));
 			return;
 		}

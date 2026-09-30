@@ -749,6 +749,20 @@
             "description": "Search mode, referenced via allOf so the description can be overridden."
           }
         }
+      },
+      "fixture.InlineArrayEnumBody": {
+        "type": "object",
+        "description": "Exercises the array-of-inline-enum pattern where items has an inline enum rather than a $ref.",
+        "properties": {
+          "recipient_group": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": ["organization-admins", "billing-admins", "resource-viewers"]
+            },
+            "description": "Groups to notify, each element must be one of the allowed values."
+          }
+        }
       }
     }
   }

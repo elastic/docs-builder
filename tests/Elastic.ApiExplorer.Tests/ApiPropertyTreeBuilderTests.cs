@@ -287,6 +287,23 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture)
 	}
 
 	[Test]
+	public void BuildPropertyList_ArrayOfInlineEnum_ShowsEnumValues()
+	{
+		var builder = CreateBuilder();
+
+		var list = builder.BuildPropertyList(
+			Schema("fixture.InlineArrayEnumBody"),
+			new PropertyTreeScope { Prefix = "req", IsRequest = true }
+		);
+
+		var group = list!.Items.Single(p => p.Name == "recipient_group");
+		group.EnumValues.Should().BeEquivalentTo(["organization-admins", "billing-admins", "resource-viewers"]);
+		group.Type.Spans.Should().Contain(s => s.CssClass == SchemaHelpers.WrapperEnumCssClass && s.Text == "enum");
+		group.Type.Spans.Should().Contain(s => s.CssClass == SchemaHelpers.WrapperArrayIconCssClass && s.Text == "[]");
+		group.Type.Text.Should().Be("[] enum");
+	}
+
+	[Test]
 	public void BuildConstraints_NumericBounds_ProducesLabels()
 	{
 		var boolQuery = Schema("_types.query_dsl.BoolQuery");
