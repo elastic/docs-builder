@@ -914,4 +914,21 @@ describe('API nav deep link', () => {
         scrollTo.mockRestore()
         setScrollY(0)
     })
+
+    it('keeps the article scroll when Space is pressed on a nav link', () => {
+        scrolledApiPage()
+        setScrollY(180)
+        const scrollTo = jest
+            .spyOn(window, 'scrollTo')
+            .mockImplementation(() => undefined)
+        const link = document.querySelector<HTMLAnchorElement>(
+            `a[href="${operation}"]`
+        )!
+        link.dispatchEvent(
+            new KeyboardEvent('keydown', { key: ' ', bubbles: true })
+        )
+        expect(scrollTo).not.toHaveBeenCalled()
+        scrollTo.mockRestore()
+        setScrollY(0)
+    })
 })

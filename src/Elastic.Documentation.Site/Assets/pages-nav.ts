@@ -1032,7 +1032,9 @@ function revealCurrentPage(nav: HTMLElement, activePath: string | null) {
 }
 
 function onApiNavKey(event: KeyboardEvent) {
-    if (event.key !== 'Enter' && event.key !== ' ') {
+    // Space scrolls the page. It does not activate an <a>, so resetting here
+    // would jump to the top without navigating.
+    if (event.key !== 'Enter') {
         return
     }
     if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) {
