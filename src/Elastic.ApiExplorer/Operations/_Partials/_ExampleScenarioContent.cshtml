@@ -10,8 +10,9 @@
    3. .example-block--response — response JSON (status-code tabs) *@
 @{
 	var hasCodeSamples = Model.CodeSamples.Count > 0;
+	var renderCodeSamples = hasCodeSamples && !Model.CodeSamplesOutsidePanel;
 }
-@if (hasCodeSamples)
+@if (renderCodeSamples)
 {
 	@(await RenderPartialAsync<_ApiCodeSample, ApiCodeSampleModel>(new ApiCodeSampleModel($"rail-{Model.TabId}", Model.CodeSamples, Model.HttpMethod, Model.Route, Model.ExampleOptions)))
 }
@@ -21,7 +22,7 @@
 	{
 		new CodeSample("JSON", Model.RequestJson, "language-json")
 	};
-	var requestModel = hasCodeSamples
+	var requestModel = hasCodeSamples || Model.CodeSamplesOutsidePanel
 		? new ApiCodeSampleModel($"rail-{Model.TabId}-request", requestSamples, Title: "Request example")
 		: new ApiCodeSampleModel($"rail-{Model.TabId}-request", requestSamples, Model.HttpMethod, Model.Route, Model.ExampleOptions);
 	@(await RenderPartialAsync<_ApiCodeSample, ApiCodeSampleModel>(requestModel))
