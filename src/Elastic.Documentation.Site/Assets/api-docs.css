@@ -2286,6 +2286,13 @@ a.docs-reference-btn::after {
 	box-shadow: none;
 }
 
+/* The examples rail clips overflow. A border that sticks out of the column loses its straight edges. */
+#api-examples-panel .api-code-card {
+	box-sizing: border-box;
+	min-width: 0;
+	max-width: 100%;
+}
+
 /* Thin scrollbar thumb on the dark surface. */
 .api-code-card .api-code-sample-body,
 .api-code-card .example-block-body {
