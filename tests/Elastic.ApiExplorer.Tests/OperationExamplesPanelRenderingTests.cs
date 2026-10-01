@@ -16,7 +16,7 @@ namespace Elastic.ApiExplorer.Tests;
 public class OperationExamplesPanelRenderingTests
 {
 	[Test]
-	public async Task Render_PutsExampleSelectInTheRequestHeader()
+	public async Task Render_MultipleScenarios_ListsEveryExample()
 	{
 		var model = new OperationExamplesPanelModel
 		{
@@ -28,7 +28,11 @@ public class OperationExamplesPanelRenderingTests
 					TabId = "match-all",
 					HttpMethod = "get",
 					Route = "/_search",
-					CodeSamples = [new("Console", "GET /_search", "language-console"), new("curl", "curl", "language-bash")],
+					CodeSamples =
+					[
+						new("Console", "GET /_search\n{\"query\":{\"match_all\":{}}}", "language-console"),
+						new("curl", "curl match-all", "language-bash")
+					],
 					Responses = [new ExampleResponse { StatusCode = "200", JsonValue = "{}" }]
 				},
 				new ExampleScenario
@@ -37,7 +41,11 @@ public class OperationExamplesPanelRenderingTests
 					TabId = "query-string",
 					HttpMethod = "get",
 					Route = "/_search",
-					CodeSamples = [new("Console", "GET /_search", "language-console"), new("curl", "curl", "language-bash")],
+					CodeSamples =
+					[
+						new("Console", "GET /_search\n{\"query\":{\"query_string\":{}}}", "language-console"),
+						new("curl", "curl query-string", "language-bash")
+					],
 					Responses = [new ExampleResponse { StatusCode = "200", JsonValue = "{}" }]
 				}
 			]
@@ -47,30 +55,34 @@ public class OperationExamplesPanelRenderingTests
 			cancellationToken: TestContext.Current!.Execution.CancellationToken
 		);
 
-		html.Should().Contain("data-api-scenarios");
-		html.Should().Contain("api-code-sample-header");
-		html.Should().Contain("api-scenario-select");
+		html.Should().Contain("aria-label=\"Examples\"");
+		html.Should().Contain("api-examples-index-list");
+		html.Should().Contain(">Examples</p>");
+		html.Should().Contain("href=\"#api-example-match-all\">Match all</a>");
+		html.Should().Contain("href=\"#api-example-query-string\">Query string</a>");
+		html.Should().Contain("id=\"api-example-match-all\"");
+		html.Should().Contain("id=\"api-example-query-string\"");
+		html.Should().Contain(">Match all</h3>");
+		html.Should().Contain(">Query string</h3>");
+		html.Should().Contain("match_all");
+		html.Should().Contain("query_string");
 		html.Should().Contain("api-code-sample-lang");
+		html.Should().Contain("data-lang=\"Console\"");
+		html.Should().NotContain("data-lang=\"Console\" hidden");
+		html.Should().Contain("data-lang=\"curl\" hidden=\"hidden\"");
+		html.Should().NotContain("api-scenario-select");
+		html.Should().NotContain("data-api-scenarios");
 		html.Should().NotContain("api-examples-switcher");
 		html.Should().NotContain("api-examples-switcher-title");
-		html.Should().NotContain(">Examples</span>");
-		html.Should().Contain("data-scenario=\"match-all\"");
-		html.Should().Contain("data-scenario=\"query-string\"");
-		html.Should().Contain("data-value=\"match-all\"");
-		html.Should().Contain("data-value=\"query-string\"");
-		html.Should().Contain(">Match all</button>");
-		html.Should().Contain(">Query string</button>");
-		var requestHeader = html.IndexOf("api-code-sample-header", StringComparison.Ordinal);
-		var exampleSelect = html.IndexOf("api-scenario-select", StringComparison.Ordinal);
-		var responseHeader = html.IndexOf("example-block-header", StringComparison.Ordinal);
-		exampleSelect.Should().BeGreaterThan(requestHeader);
-		responseHeader.Should().BeGreaterThan(exampleSelect);
 		html.Should().NotContain("<select");
 		html.Should().NotContain("<option");
 		html.Should().NotContain("id=\"api-examples-scenario-switcher\"");
 		html.Should().NotContain("class=\"nav-select\"");
 		html.Should().NotContain("api-examples-heading");
 		html.Should().NotContain("max-[1023px]:hidden");
+		var matchAll = html.IndexOf("id=\"api-example-match-all\"", StringComparison.Ordinal);
+		var queryString = html.IndexOf("id=\"api-example-query-string\"", StringComparison.Ordinal);
+		queryString.Should().BeGreaterThan(matchAll);
 	}
 
 	[Test]
@@ -91,6 +103,8 @@ public class OperationExamplesPanelRenderingTests
 
 		html.Should().Contain("id=\"api-examples-panel\"");
 		html.Should().Contain("example-block--response");
+		html.Should().NotContain("api-examples-index");
+		html.Should().NotContain("api-examples-scenario-title");
 		html.Should().NotContain("api-scenario-select");
 		html.Should().NotContain("api-examples-switcher");
 		html.Should().NotContain("api-examples-heading");

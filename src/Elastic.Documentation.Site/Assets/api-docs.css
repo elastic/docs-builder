@@ -2120,6 +2120,74 @@ a.docs-reference-btn::after {
 	display: none;
 }
 
+/* Named examples stay listed in the rail. The list does not scroll away with the samples. */
+#api-examples-panel .api-examples-index {
+	flex: 0 0 auto;
+	margin: 0 0 12px;
+}
+
+#api-examples-panel .api-examples-index-label {
+	margin: 0 0 8px;
+	color: var(--color-ink-navy, #111c2c);
+	font-size: 14px;
+	font-weight: 600;
+	line-height: 20px;
+}
+
+#api-examples-panel .api-examples-index-list {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+	margin: 0;
+	padding-left: 1.25rem;
+	list-style: decimal;
+}
+
+#api-examples-panel .api-examples-index-list a {
+	color: var(--color-blue-elastic, #0b64dd);
+	font-size: 14px;
+	font-weight: 600;
+	line-height: 20px;
+	text-decoration: none;
+}
+
+#api-examples-panel .api-examples-index-list a:hover {
+	text-decoration: underline;
+}
+
+#api-examples-panel .api-examples-scenario-title {
+	margin: 0 0 0.75rem;
+	padding: 0;
+	border: 0;
+	color: var(--color-ink-navy, #111c2c);
+	font-size: 14px;
+	font-weight: 600;
+	line-height: 20px;
+}
+
+#api-examples-panel
+	.api-examples-scenario-panel
+	+ .api-examples-scenario-panel {
+	margin-top: 1.5rem;
+}
+
+/* Long names and type labels wrap inside the reference column instead of painting under the rail. */
+.api-page-reference .property-list dt > a.property-anchor {
+	flex: 0 1 auto;
+	min-width: 0;
+	max-width: 100%;
+}
+
+.api-page-reference .property-list dt > a.property-anchor > code,
+.api-page-reference .property-list dt > code.schema-type,
+.api-page-reference .property-list dt > code.schema-type a,
+.api-page-reference .property-list dt > code.schema-type span {
+	min-width: 0;
+	max-width: 100%;
+	overflow-wrap: anywhere;
+	white-space: normal;
+}
+
 /* Section header */
 .section-header {
 	display: flex;
@@ -2643,10 +2711,10 @@ button.example-response-tab:focus-visible {
 	}
 
 	#api-examples-panel .api-examples-panel-nav {
-		flex: 0 1 auto;
+		flex: 1 1 auto;
 		min-height: 0;
 		max-height: none;
-		overflow: visible;
+		overflow: auto;
 		display: flex;
 		flex-direction: column;
 	}
@@ -3263,10 +3331,10 @@ button.example-response-tab:focus-visible {
 	}
 
 	#api-examples-panel .api-examples-panel-nav {
-		flex: 0 1 auto;
+		flex: 1 1 auto;
 		min-height: 0;
 		max-height: none;
-		overflow: visible;
+		overflow: auto;
 		display: flex;
 		flex-direction: column;
 	}

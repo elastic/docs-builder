@@ -1,28 +1,30 @@
 @using Elastic.ApiExplorer.Operations
 @inherits RazorSlice<OperationExamplesPanelModel>
-@* ≥1024px: right rail (api-docs.css). Below that: in-flow column under the article. *@
+@* ≥1024px: right rail (api-docs.css). Below that: in-flow column under the article.
+   The title list stays above the scrolling samples so a second example is visible immediately. *@
 <aside id="api-examples-panel" class="api-examples-panel shrink-0 w-full">
-	<nav class="api-examples-panel-nav markdown-content simple-scrollbar">
-		@if (Model.Scenarios.Count == 1)
-		{
-			<div class="api-examples-body">
-				@(await RenderPartialAsync<_ExampleScenarioContent, ExampleScenario>(Model.Scenarios[0]))
-			</div>
-		}
-		else if (Model.Scenarios.Count > 1)
-		{
-			<div class="api-examples-scenarios" data-api-scenarios>
-				@for (var i = 0; i < Model.Scenarios.Count; i++)
+	@if (Model.Scenarios.Count > 1)
+	{
+		<nav class="api-examples-index" aria-label="Examples">
+			<p class="api-examples-index-label">Examples</p>
+			<ol class="api-examples-index-list">
+				@foreach (var scenario in Model.Scenarios)
 				{
-					var scenario = Model.Scenarios[i];
-					var options = Model.Scenarios
-						.Select(choice => new ApiSelectOption(choice.Title, choice.TabId, choice.TabId == scenario.TabId))
-						.ToArray();
-					<div class="api-examples-scenario-panel api-examples-body" data-scenario="@scenario.TabId" hidden="@(i == 0 ? null : "hidden")">
-						@(await RenderPartialAsync<_ExampleScenarioContent, ExampleScenario>(scenario with { ExampleOptions = options }))
-					</div>
+					<li><a href="#api-example-@scenario.TabId">@scenario.Title</a></li>
 				}
-			</div>
+			</ol>
+		</nav>
+	}
+	<div class="api-examples-panel-nav markdown-content simple-scrollbar">
+		@foreach (var scenario in Model.Scenarios)
+		{
+			<section id="api-example-@scenario.TabId" class="api-examples-scenario-panel api-examples-body" data-scenario="@scenario.TabId">
+				@if (Model.Scenarios.Count > 1)
+				{
+					<h3 class="api-examples-scenario-title">@scenario.Title</h3>
+				}
+				@(await RenderPartialAsync<_ExampleScenarioContent, ExampleScenario>(scenario))
+			</section>
 		}
-	</nav>
+	</div>
 </aside>
