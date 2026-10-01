@@ -211,6 +211,22 @@ describe('filterable-table', () => {
         ).toBeUndefined()
     })
 
+    it('leaves a table with an empty body alone', () => {
+        document.body.innerHTML = `
+          <filterable-table>
+            <table>
+              <thead><tr><th>A</th><th>B</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </filterable-table>`
+        customElements.upgrade(document.body)
+        expect(document.querySelector('.filterable-table-controls')).toBeNull()
+        expect(
+            document.querySelector<HTMLElement>('filterable-table')!.dataset
+                .enhanced
+        ).toBeUndefined()
+    })
+
     it('does not re-initialize an already enhanced host', () => {
         mount()
         const host = document.querySelector<HTMLElement>('filterable-table')!
@@ -255,6 +271,31 @@ describe('filterable-table', () => {
         expect(
             document.querySelectorAll('.filterable-table-facet')
         ).toHaveLength(0)
+    })
+
+    it('omits a dropdown for a column with a blank header', () => {
+        // The values qualify (Core/Extended repeats), but the header cell is
+        // empty: a dropdown labelled ": " with no accessible name is worse
+        // than no dropdown, so the column is skipped.
+        document.body.innerHTML = `
+          <filterable-table>
+            <table>
+              <thead><tr><th>Name</th><th></th></tr></thead>
+              <tbody>
+                <tr><td>a</td><td>Core</td></tr>
+                <tr><td>b</td><td>Extended</td></tr>
+                <tr><td>c</td><td>Core</td></tr>
+              </tbody>
+            </table>
+          </filterable-table>`
+        customElements.upgrade(document.body)
+        expect(
+            document.querySelectorAll('.filterable-table-facet')
+        ).toHaveLength(0)
+        // Search still enhances the table.
+        expect(
+            document.querySelector('.filterable-table-search')
+        ).not.toBeNull()
     })
 
     it('adds a dropdown once a lazily rendered column fills in', async () => {

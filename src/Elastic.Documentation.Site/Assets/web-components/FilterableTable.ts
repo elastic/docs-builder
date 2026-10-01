@@ -43,6 +43,9 @@ class FilterableTableElement extends HTMLElement {
         const tbody = this.table?.tBodies[0]
         if (!this.table || !tbody) return
         this.rows = Array.from(tbody.rows)
+        // An empty body has nothing to filter; leave the server markup as-is
+        // rather than show controls that can do nothing.
+        if (this.rows.length === 0) return
         this.buildControls()
         this.applyFilters()
         this.watchLateContent(tbody)
@@ -74,6 +77,10 @@ class FilterableTableElement extends HTMLElement {
     private facetSpecs(): FacetSpec[] {
         const specs: FacetSpec[] = []
         this.headerLabels().forEach((label, colIndex) => {
+            // A blank header leaves the dropdown with no label and no
+            // accessible name, so skip the column: a nameless filter is worse
+            // than none.
+            if (!label) return
             const values = this.distinctValues(colIndex)
             // Only offer a dropdown for columns that partition the data
             // meaningfully: at least two values, not too many to scan, and not
