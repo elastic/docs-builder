@@ -2,7 +2,9 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.IO;
 using System.IO.Abstractions;
+using System.IO.Abstractions.TestingHelpers;
 using AwesomeAssertions;
 using Elastic.ApiExplorer;
 using Elastic.ApiExplorer.Infrastructure;
@@ -13,6 +15,8 @@ using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.FileSystems;
+using Elastic.Documentation.Site.FileProviders;
+using Elastic.Markdown.Helpers;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.OpenApi;
 using Microsoft.OpenApi.Reader;
@@ -994,5 +998,108 @@ public class TagMetadataTests
 
 		var act = () => generator.CreateNavigation("test", openApiDocument);
 		act.Should().Throw<InvalidOperationException>().WithMessage("*tag URL segment conflict*");
+	}
+
+	[Test]
+	public async Task GroupIntro_WithHeadings_AddsNavItemsAndDocsMeasure()
+	{
+		var openApiJson = /*lang=json,strict*/
+			"""
+			{
+			  "openapi": "3.0.3",
+			  "info": { "title": "Kibana", "version": "1.0" },
+			  "paths": {
+			    "/dashboards": {
+			      "get": {
+			        "operationId": "get-dashboards",
+			        "tags": ["dashboards"],
+			        "responses": { "200": { "description": "ok" } }
+			      }
+			    }
+			  },
+			  "tags": [
+			    {
+			      "name": "dashboards",
+			      "x-displayName": "Dashboards",
+			      "description": "# Ignored title\n\nGet started.\n\n## Panel types\n\nUse a panel.\n\n~~~\n# not a heading\n~~~\n\n## What's supported\n"
+			    }
+			  ]
+			}
+			""";
+
+		var (generator, document) = await CreateGeneratorWithSpec(openApiJson);
+		var navigation = generator.CreateNavigation("kibana", document);
+		var tag = FindTagNavigationItem(navigation, "dashboards");
+		tag.Should().NotBeNull();
+
+		var headings = tag.NavigationItems.OfType<IntroHeadingNavigationItem>().ToArray();
+		headings.Select(heading => heading.NavigationTitle).Should().Equal("Panel types", "What's supported");
+		headings[0].Url.Should().Be($"{tag.Url}#{"Panel types".Slugify()}");
+		headings[1].Url.Should().Be($"{tag.Url}#{"What's supported".Slugify()}");
+		tag
+			.NavigationItems
+			.Select(item => item.GetType())
+			.Should()
+			.Equal(typeof(IntroHeadingNavigationItem), typeof(IntroHeadingNavigationItem), typeof(OperationNavigationItem));
+
+		var html = await RenderTagAsync(tag);
+		html.Should().Contain("class=\"api-tag-description docs-measure\"");
+		html.Should().Contain("api-overview");
+	}
+
+	[Test]
+	public async Task GroupIntro_WithoutDescription_OmitsMeasureAndHeadingNav()
+	{
+		var openApiJson = /*lang=json,strict*/
+			"""
+			{
+			  "openapi": "3.0.3",
+			  "info": { "title": "Kibana", "version": "1.0" },
+			  "paths": {
+			    "/spaces": {
+			      "get": {
+			        "operationId": "get-spaces",
+			        "tags": ["spaces"],
+			        "responses": { "200": { "description": "ok" } }
+			      }
+			    }
+			  },
+			  "tags": [ { "name": "spaces", "x-displayName": "Spaces" } ]
+			}
+			""";
+
+		var (generator, document) = await CreateGeneratorWithSpec(openApiJson);
+		var navigation = generator.CreateNavigation("kibana", document);
+		var tag = FindTagNavigationItem(navigation, "spaces");
+		tag.Should().NotBeNull();
+		tag.NavigationItems.Should().ContainSingle().Which.Should().BeOfType<OperationNavigationItem>();
+
+		var html = await RenderTagAsync(tag);
+		html.Should().NotContain("docs-measure");
+		html.Should().Contain("api-overview");
+		html.Should().Contain("Spaces");
+	}
+
+	private static async Task<string> RenderTagAsync(TagNavigationItem tag)
+	{
+		var collector = new DiagnosticsCollector([]);
+		var configurationContext = TestHelpers.CreateConfigurationContext(new FileSystem());
+		var context = new BuildContext(
+			collector,
+			DocumentationFileSystem.Resolve(Paths.WorkingDirectoryRoot.FullName),
+			configurationContext
+		);
+		var renderContext = new ApiRenderContext(
+			context,
+			new OpenApiDocument(),
+			new StaticFileContentHashProvider(new EmbeddedOrPhysicalFileProvider(context))
+		)
+		{ NavigationHtml = string.Empty, CurrentNavigation = tag, MarkdownRenderer = PassthroughMarkdownRenderer.Instance };
+
+		var fs = new MockFileSystem();
+		await using (var stream = fs.FileStream.New("/out.html", FileMode.Create, FileAccess.Write))
+			await tag.Index.Model.RenderAsync(stream, renderContext, TestContext.Current!.Execution.CancellationToken);
+
+		return fs.File.ReadAllText("/out.html");
 	}
 }

@@ -111,6 +111,7 @@ public static class ApiOverviewBuilder
 					});
 					break;
 				case ISidebarSeparatorNavigationItem:
+				case IntroHeadingNavigationItem:
 					break;
 				default:
 					throw new InvalidOperationException($"Unexpected type: {navigationItem.GetType().FullName}");
@@ -138,6 +139,8 @@ public static class ApiOverviewBuilder
 						Operations = [operation],
 						Url = operation.Url
 					});
+					break;
+				case IntroHeadingNavigationItem:
 					break;
 				default:
 					throw new InvalidOperationException($"Unexpected type on tag landing: {navigationItem.GetType().FullName}");

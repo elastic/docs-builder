@@ -159,6 +159,11 @@
 	min-width: 0;
 }
 
+/* Group-page intro only. Same reading measure as docs articles (--max-text-width). */
+.api-tag-description.docs-measure {
+	max-width: var(--max-text-width);
+}
+
 .api-page-toolbar {
 	display: flex;
 	align-items: center;
