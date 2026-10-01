@@ -1062,8 +1062,11 @@ function onAfterSwap(event: Event) {
         html &&
         incomingNavSurfaceKey(html) === navSurfaceKey(current)
     ) {
-        keepLiveNav()
+        scrollCurrentNaviItemIntoView.cancel()
         revealCurrentPage(current, activePathFromResponse(html))
+        // htmx:load runs initNav next. A fully visible row stays put.
+        canRecenterNav = true
+        pinnedNavScrollTop = null
         return
     }
     const apply = () => {

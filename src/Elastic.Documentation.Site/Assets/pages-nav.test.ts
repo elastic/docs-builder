@@ -877,6 +877,45 @@ describe('API nav deep link', () => {
         ).toBe(true)
     })
 
+    it('scrolls the current operation into view after a same-tree swap', () => {
+        jest.useFakeTimers()
+        scrolledApiPage()
+        const nav = document.querySelector<HTMLElement>('#pages-nav')!
+        const link = document.querySelector<HTMLElement>(
+            `a[href="${operation}"]`
+        )!
+        Object.defineProperty(nav, 'scrollTop', {
+            configurable: true,
+            writable: true,
+            value: 80,
+        })
+        jest.spyOn(nav, 'getBoundingClientRect').mockReturnValue(
+            DOMRect.fromRect({ x: 0, y: 0, width: 100, height: 200 })
+        )
+        jest.spyOn(link, 'getBoundingClientRect').mockReturnValue(
+            DOMRect.fromRect({ x: 0, y: 500, width: 100, height: 20 })
+        )
+
+        document.dispatchEvent(
+            new CustomEvent('htmx:afterSwap', {
+                detail: {
+                    xhr: {
+                        response: `<html><head><meta name="docs:nav-active" content="${operation}"></head><body><nav id="pages-nav"><div class="pages-nav-v2-shell" data-nav-heading="Elasticsearch"><ul id="nav-tree-es"></ul></div></nav></body></html>`,
+                    },
+                },
+            })
+        )
+        document.head.insertAdjacentHTML(
+            'beforeend',
+            `<meta name="docs:nav-active" content="${operation}">`
+        )
+        initNav()
+        jest.advanceTimersByTime(150)
+
+        expect(nav.scrollTop).toBe(490)
+        jest.useRealTimers()
+    })
+
     it('scrolls the article to the top when an API nav swap settles', () => {
         scrolledApiPage()
         setScrollY(240)
