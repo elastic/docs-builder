@@ -55,7 +55,7 @@ function setEnumValuesExpanded(
 
 function expandResponsePanel(panel: HTMLElement): void {
     const toggleBtn = panel.querySelector<HTMLButtonElement>(
-        ':scope > .response-status-toggle'
+        ':scope > .response-status-row > .response-status-toggle'
     )
     const body = panel.querySelector<HTMLElement>(
         ':scope > .response-panel-body'
@@ -69,7 +69,7 @@ function expandResponsePanel(panel: HTMLElement): void {
 
 function collapseResponsePanel(panel: HTMLElement): void {
     const toggleBtn = panel.querySelector<HTMLButtonElement>(
-        ':scope > .response-status-toggle'
+        ':scope > .response-status-row > .response-status-toggle'
     )
     const body = panel.querySelector<HTMLElement>(
         ':scope > .response-panel-body'
@@ -498,15 +498,18 @@ function initGlobalClickHandlers(): void {
             return
         }
 
-        const responseStatusToggle = target.closest<HTMLButtonElement>(
-            '.response-status-toggle'
+        const responseStatusRow = target.closest<HTMLElement>(
+            '.response-panel:not(.response-panel--static) > .response-status-row'
         )
-        if (responseStatusToggle) {
+        if (responseStatusRow) {
+            // Anchors in the description sit beside the toggle, not inside it.
+            if (target.closest('a')) return
+
             e.preventDefault()
             e.stopPropagation()
 
             const panel =
-                responseStatusToggle.closest<HTMLElement>('.response-panel')
+                responseStatusRow.closest<HTMLElement>('.response-panel')
             if (!panel) return
 
             if (panel.classList.contains('expanded'))

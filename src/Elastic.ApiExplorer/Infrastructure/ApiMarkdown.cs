@@ -47,7 +47,7 @@ public static partial class ApiMarkdown
 	internal static string SanitizeHtml(string html) => string.IsNullOrEmpty(html) ? html : Sanitizer.Sanitize(html);
 
 	/// <summary>
-	/// Response rows are buttons, which cannot contain the paragraphs Markdig emits.
+	/// A status row is one flex line, which cannot contain the paragraphs Markdig emits.
 	/// A description made only of paragraphs becomes inline text with breaks between them.
 	/// </summary>
 	internal static HtmlString InlineParagraphs(HtmlString html)

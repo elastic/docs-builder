@@ -32,17 +32,19 @@
 				continue;
 			}
 			<div class="response-panel collapsed" data-status="@response.StatusCode">
-				<button
-					type="button"
-					class="response-status-toggle"
-					aria-expanded="false"
-					aria-controls="@bodyId">
-					<span class="response-status-chip status-@response.StatusClass">@response.StatusCode</span>
+				<div class="response-status-row">
+					<button
+						type="button"
+						class="response-status-toggle"
+						aria-expanded="false"
+						aria-controls="@bodyId">
+						<span class="response-status-chip status-@response.StatusClass">@response.StatusCode</span>
+					</button>
 					@if (!string.IsNullOrEmpty(response.Response.Description))
 					{
 						<span class="response-description">@ApiMarkdown.InlineParagraphs(Model.RenderMarkdown(response.Response.Description))</span>
 					}
-				</button>
+				</div>
 				@if (i == 0 && !string.IsNullOrEmpty(response.FirstContentType))
 				{
 					<div class="response-media-type">

@@ -112,14 +112,26 @@ public class ResponsesBlockRenderingTests
 		var html = await RenderHtml(Response("200", "success", description));
 
 		var button = html[html.IndexOf("<button", StringComparison.Ordinal)..html.IndexOf("</button>", StringComparison.Ordinal)];
-		button.Should().Contain(description);
+		button.Should().NotContain(description);
 		button.Should().NotContain("content-type-tag");
 		button.Should().NotContain("application/json");
+		html.Should().Contain(description);
 		html.Should().Contain("class=\"response-media-type\"");
 		html
 			.IndexOf("content-type-tag", StringComparison.Ordinal)
 			.Should()
-			.BeGreaterThan(html.IndexOf("</button>", StringComparison.Ordinal));
+			.BeGreaterThan(html.IndexOf("response-description", StringComparison.Ordinal));
+	}
+
+	[Test]
+	public async Task Render_ResponseDescriptionWithLink_PlacesAnchorOutsideTheToggle()
+	{
+		var html = await RenderHtml(Response("200", "success", "See the [guide](https://www.elastic.co/guide)."));
+
+		var button = html[html.IndexOf("<button", StringComparison.Ordinal)..html.IndexOf("</button>", StringComparison.Ordinal)];
+		button.Should().NotContain("<a ");
+		html.Should().Contain("href=\"https://www.elastic.co/guide\"");
+		html.IndexOf("<a ", StringComparison.Ordinal).Should().BeGreaterThan(html.IndexOf("</button>", StringComparison.Ordinal));
 	}
 
 	[Test]
