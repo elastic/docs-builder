@@ -103,6 +103,21 @@ public class ApiPropertyTreeBuilder(OpenApiDocument document, PropertyDisplayOpt
 		return schema is null ? annotation : WithConstraints(annotation, BuildConstraints(schema));
 	}
 
+	/// <summary>
+	/// Path-parameter type chip. A <c>$ref</c> to <c>X | X[]</c> is described from the resolved union
+	/// so both alternatives show. <see cref="Describe"/> still returns the wrapper name, which query
+	/// and body rows keep.
+	/// </summary>
+	public TypeAnnotation DescribePathParameter(IOpenApiSchema? schema)
+	{
+		var resolved = _analyzer.ResolveSchema(schema);
+		if (ReferenceEquals(resolved, schema) || resolved is null)
+			return Describe(schema);
+
+		var (isSimpleArrayUnion, _) = DetectSimpleArrayUnion(_analyzer.GetTypeInfo(resolved));
+		return isSimpleArrayUnion ? Describe(resolved) : Describe(schema);
+	}
+
 	/// <summary>Validation constraint labels for a schema; empty when it declares none.</summary>
 	public static IReadOnlyList<ConstraintDisplay> BuildConstraints(IOpenApiSchema schema)
 	{
