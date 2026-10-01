@@ -692,7 +692,7 @@ public class BundleOutputConventionTests() : ChangelogTestBase()
 	/// fallback — a profile's <c>output_directory</c> silently took precedence, so DRA bundling
 	/// wrote bundles to the profile's repo-relative path instead of the caller's directory.
 	/// </summary>
-	[Fact]
+	[Test]
 	public async Task OutputDirectory_WhenSet_WinsOverProfileOutputDirectory()
 	{
 		var callerOutputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, "dra-output");
@@ -720,7 +720,7 @@ public class BundleOutputConventionTests() : ChangelogTestBase()
 			OutputDirectory = callerOutputDir,
 		};
 
-		var result = await Service().BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await Service().BundleChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		result.Should().BeTrue(
 			$"Errors: {string.Join("; ", Collector.Diagnostics.Where(d => d.Severity == Severity.Error).Select(d => d.Message))}"
@@ -734,7 +734,7 @@ public class BundleOutputConventionTests() : ChangelogTestBase()
 			.BeFalse("bundle must not appear under the profile's output_directory when OutputDirectory is set");
 	}
 
-	[Fact]
+	[Test]
 	public async Task OutputDirectory_WhenNotSet_ProfileOutputDirectoryIsUsed()
 	{
 		var configPath = await WriteConfig(
@@ -759,7 +759,7 @@ public class BundleOutputConventionTests() : ChangelogTestBase()
 			// OutputDirectory intentionally omitted — profile's output_directory is the fallback.
 		};
 
-		var result = await Service().BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await Service().BundleChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		result.Should().BeTrue(
 			$"Errors: {string.Join("; ", Collector.Diagnostics.Where(d => d.Severity == Severity.Error).Select(d => d.Message))}"

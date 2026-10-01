@@ -11,7 +11,7 @@ public class ReleaseTargetResolverTests
 {
 	// ── ResolveCurrentGa ────────────────────────────────────────────────
 
-	[Fact]
+	[Test]
 	public void ResolveCurrentGa_ReturnsHighestVersionWithManifest()
 	{
 		var past = new PastReleasesResponse
@@ -31,7 +31,7 @@ public class ReleaseTargetResolverTests
 		result.Source.Should().Be(ReleaseTargetSource.CurrentGa);
 	}
 
-	[Fact]
+	[Test]
 	public void ResolveCurrentGa_IgnoresReleasesWithoutManifest()
 	{
 		var past = new PastReleasesResponse
@@ -48,7 +48,7 @@ public class ReleaseTargetResolverTests
 		result!.Version.Should().Be("9.1.0");
 	}
 
-	[Fact]
+	[Test]
 	public void ResolveCurrentGa_OrdersByVersionNotString_SoV9Point10BeatsV9Point9()
 	{
 		var past = new PastReleasesResponse
@@ -65,7 +65,7 @@ public class ReleaseTargetResolverTests
 		result!.Version.Should().Be("9.10.0", "numeric comparison must put 9.10.0 above 9.9.0");
 	}
 
-	[Fact]
+	[Test]
 	public void ResolveCurrentGa_WhenNoPastReleases_ReturnsNull()
 	{
 		var result = ReleaseTargetResolver.ResolveCurrentGa(null);
@@ -89,7 +89,7 @@ public class ReleaseTargetResolverTests
 	private static LatestBuildPointer Snapshot(string version, string manifestUrl) =>
 		new() { Version = version, BuildId = "snap", ManifestUrl = manifestUrl };
 
-	[Fact]
+	[Test]
 	public void ResolvePreviewTargets_NoBcs_ReturnsTwoSnapshots()
 	{
 		var past = new PastReleasesResponse { Releases = [new PastRelease { Version = "9.2.4", Manifest = "x" }], };
@@ -106,7 +106,7 @@ public class ReleaseTargetResolverTests
 		results[1].Source.Should().Be(ReleaseTargetSource.Snapshot);
 	}
 
-	[Fact]
+	[Test]
 	public void ResolvePreviewTargets_PatchBcPlusMinorSnapshot_ReturnsBoth()
 	{
 		var past = new PastReleasesResponse { Releases = [new PastRelease { Version = "9.2.4", Manifest = "x" }], };
@@ -126,7 +126,7 @@ public class ReleaseTargetResolverTests
 		results[1].Source.Should().Be(ReleaseTargetSource.Snapshot);
 	}
 
-	[Fact]
+	[Test]
 	public void ResolvePreviewTargets_BothBcs_ReturnsBothAsBuildCandidates()
 	{
 		var past = new PastReleasesResponse { Releases = [new PastRelease { Version = "9.2.4", Manifest = "x" }], };
@@ -146,7 +146,7 @@ public class ReleaseTargetResolverTests
 		results[1].Source.Should().Be(ReleaseTargetSource.BuildCandidate);
 	}
 
-	[Fact]
+	[Test]
 	public void ResolvePreviewTargets_AlreadyGaVersionSkipped()
 	{
 		// 9.2.5 is already in past-releases, so the patch target falls back to the SNAPSHOT pointer.
@@ -165,7 +165,7 @@ public class ReleaseTargetResolverTests
 		results[0].Version.Should().Be("9.3.0");
 	}
 
-	[Fact]
+	[Test]
 	public void ResolvePreviewTargets_SemverOrderingPicksEarliestMinor()
 	{
 		// future-releases has 9.10.0 and 9.3.0; 9.3.0 is the earliest next minor after 9.2.4.

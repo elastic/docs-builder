@@ -13,6 +13,7 @@ using Elastic.Documentation.FileSystems;
 using Microsoft.Extensions.Logging;
 using Nullean.Argh;
 using Nullean.Argh.Documentation;
+using YamlDotNet.Core;
 
 namespace Documentation.Builder.Commands.ReleaseAutomation;
 
@@ -114,8 +115,6 @@ internal sealed class UnifiedReleaseCommands(
 			return 0;
 		}
 
-		var exitCode = 0;
-
 		foreach (var target in targets)
 		{
 			_logger.LogInformation(
@@ -130,8 +129,7 @@ internal sealed class UnifiedReleaseCommands(
 			{
 				_logger.LogError("Failed to fetch build manifest from {ManifestUrl}", target.ManifestUrl);
 				collector.EmitError(string.Empty, $"Failed to fetch build manifest from {target.ManifestUrl}");
-				exitCode = 1;
-				continue;
+				return 1;
 			}
 
 			_logger.LogInformation(
@@ -179,13 +177,13 @@ internal sealed class UnifiedReleaseCommands(
 				);
 
 				if (result != 0)
-					exitCode = result;
-				else
-					_logger.LogInformation("Bundled '{Product}' @ {Version} successfully.", product.Id, target.Version);
+					return result;
+
+				_logger.LogInformation("Bundled '{Product}' @ {Version} successfully.", product.Id, target.Version);
 			}
 		}
 
-		return exitCode;
+		return 0;
 	}
 
 	private async Task<IReadOnlyList<ReleaseTarget>?> ResolveTargetsAsync(HttpClient http, string versionOrKeyword, CancellationToken ctx)
@@ -392,7 +390,19 @@ internal sealed class UnifiedReleaseCommands(
 			return 1;
 		}
 
-		var profiles = ChangelogConfigurationLoader.ReadBundleProfileNames(changelogYaml);
+		IReadOnlyList<string> profiles;
+		try
+		{
+			profiles = ChangelogConfigurationLoader.ReadBundleProfileNames(changelogYaml);
+		}
+		catch (YamlException ex)
+		{
+			var msg = $"Product '{productId}' changelog.yml is not valid YAML: {ex.Message}";
+			_logger.LogError("{Message}", msg);
+			collector.EmitError(string.Empty, msg);
+			return 1;
+		}
+
 		if (profiles.Count == 0)
 		{
 			var msg = $"Product '{productId}' (repo: elastic/{repoKey}@{commitHash[..8]}) changelog.yml has no bundle.profiles section. "

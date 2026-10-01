@@ -13,7 +13,7 @@ namespace Elastic.Documentation.Configuration.Tests;
 /// </summary>
 public class ReadBundleProfileNamesTests
 {
-	[Fact]
+	[Test]
 	public void ReadBundleProfileNames_WithSingleProfile_ReturnsThatName()
 	{
 		// language=yaml
@@ -30,7 +30,7 @@ public class ReadBundleProfileNamesTests
 		names.Should().ContainSingle().Which.Should().Be("kibana-release");
 	}
 
-	[Fact]
+	[Test]
 	public void ReadBundleProfileNames_WithMultipleProfiles_ReturnsAllNamesInOrder()
 	{
 		// language=yaml
@@ -51,7 +51,7 @@ public class ReadBundleProfileNamesTests
 		names.Should().Equal("kibana-release", "kibana-prerelease", "serverless-release");
 	}
 
-	[Fact]
+	[Test]
 	public void ReadBundleProfileNames_WithNoBundleSection_ReturnsEmpty()
 	{
 		// A changelog.yml that is valid but has no bundle section at all.
@@ -65,7 +65,7 @@ public class ReadBundleProfileNamesTests
 		names.Should().BeEmpty();
 	}
 
-	[Fact]
+	[Test]
 	public void ReadBundleProfileNames_WithBundleSectionButNoProfiles_ReturnsEmpty()
 	{
 		// language=yaml
@@ -80,7 +80,7 @@ public class ReadBundleProfileNamesTests
 		names.Should().BeEmpty();
 	}
 
-	[Fact]
+	[Test]
 	public void ReadBundleProfileNames_WithEmptyProfilesMap_ReturnsEmpty()
 	{
 		// language=yaml

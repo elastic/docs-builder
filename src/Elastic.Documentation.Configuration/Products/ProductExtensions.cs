@@ -126,6 +126,7 @@ public static class ProductExtensions
 		return value.ToLowerInvariant() switch
 		{
 			"dra" or "prestage" => (ReleaseNotesPath.DailyReleasableArtifacts, null), // prestage = legacy alias
+
 			"on-release" => (ReleaseNotesPath.OnRelease, null),
 			_ =>
 				(ReleaseNotesPath.OnRelease, $"Product '{productId}' has unrecognised 'release-notes' value '{value}'; treating as 'on-release'. Allowed values: true, false, dra, on-release.")
