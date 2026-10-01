@@ -585,8 +585,8 @@
 }
 
 /*
- * Nav method chips. An operation shows its HTTP verb.
- * A multi-operation row keeps the branch glyph in a 20px square.
+ * Nav method chips share one width so operation names start on the same line.
+ * The slot fits the longest verb (OPTIONS). A multi-operation row uses that same slot.
  */
 #pages-nav .nav-v2-api-method {
 	display: inline-flex;
@@ -594,19 +594,15 @@
 	align-items: center;
 	justify-content: center;
 	box-sizing: border-box;
-	height: 20px;
-	padding: 0 4px;
+	width: 52px;
+	height: 18px;
+	padding: 0 2px;
 	border: 1px solid;
-	border-radius: 6px;
-	font-size: 10px;
+	border-radius: 4px;
+	font-size: 9px;
 	font-weight: 600;
 	line-height: 12px;
 	white-space: nowrap;
-}
-
-#pages-nav .nav-v2-api-method-multi {
-	width: 20px;
-	padding: 0;
 }
 
 #pages-nav .nav-v2-api-method svg {
