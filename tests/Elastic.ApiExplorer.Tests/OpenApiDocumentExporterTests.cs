@@ -12,6 +12,7 @@ using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Search;
 using Elastic.Documentation.Search.Contract;
 using Elastic.Documentation.Versions;
+using Microsoft.OpenApi;
 using static System.StringComparison;
 
 namespace Elastic.ApiExplorer.Tests;
@@ -144,21 +145,146 @@ public class OpenApiDocumentExporterTests
 
 		var exporter = new OpenApiDocumentExporter(versionsConfiguration);
 
-		// Act — collect documents whose raw OAS description contains HTML (operation list block)
 		var documents = new List<DocumentationDocument>();
 		await foreach (var doc in exporter.ExportDocuments(limitPerSource: 100, TestContext.Current!.Execution.CancellationToken))
-		{
-			if (doc.Description != null && doc.Description.Contains("All methods and paths for this operation"))
-				documents.Add(doc);
-		}
+			documents.Add(doc);
 
-		documents.Should().NotBeEmpty("there should be at least one document whose description contained the operation list HTML block");
+		documents.Should().NotBeEmpty("the exporter should return documents");
 
 		foreach (var doc in documents)
 		{
-			// StripHtml removes tags — none should survive into the search index
+			doc.Description.Should().NotBeNullOrWhiteSpace();
 			doc.Description.Should().NotContain("<div>", "HTML tags should be stripped for the search index");
 			doc.Description.Should().NotContain("<span", "HTML tags should be stripped for the search index");
+			doc.Description.Should().NotContain("methods and paths for this operation", "the fixed method list is not the search hit");
+			doc.Description.Should().NotContain("method and path for this operation", "the fixed method list is not the search hit");
 		}
+	}
+
+	private static VersionsConfiguration StackVersions() =>
+		new()
+		{
+			VersioningSystems = new Dictionary<VersioningSystemId, VersioningSystem>
+			{
+				{
+					VersioningSystemId.Stack,
+					new VersioningSystem
+					{
+						Id = VersioningSystemId.Stack,
+						Base = new SemVersion(8, 0, 0),
+						Current = new SemVersion(9, 2, 0)
+					}
+				}
+			}
+		};
+
+	private static DocumentationDocument ExportOperation(string? summary, string? description, string operationId = "esql-put-data-source")
+	{
+		var spec = new OpenApiDocument
+		{
+			Paths = new OpenApiPaths
+			{
+				["/_query/data_source/{name}"] = new OpenApiPathItem
+				{
+					Operations = new Dictionary<HttpMethod, OpenApiOperation>
+					{
+						[HttpMethod.Put] = new OpenApiOperation { OperationId = operationId, Summary = summary, Description = description }
+					}
+				}
+			}
+		};
+
+		return new OpenApiDocumentExporter(StackVersions()).ConvertToDocuments(spec, "elasticsearch").Single();
+	}
+
+	[Test]
+	public void Operation_DescriptionAfterMethodList_IndexesTheProseAndTheSummaryTitle()
+	{
+		const string raw =
+			"""
+			**All methods and paths for this operation:**
+
+			<div>
+			<span class="operation-verb get">GET</span>
+			<span class="operation-path">/_query/data_source</span>
+			</div>
+
+			Returns one or more data sources.
+			""";
+
+		var doc = ExportOperation("Get ES|QL data sources\n", raw, "esql-get-data-source");
+
+		doc.Title.Should().Be("Get ES|QL data sources");
+		doc.Title.Should().NotBe("Get ES|QL data sources - esql-get-data-source");
+		doc.SearchTitle.Should().Contain("esql-get-data-source");
+		doc.SearchTitle.Should().Contain("PUT /_query/data_source/{name}");
+		doc.Description.Should().Be("Returns one or more data sources.");
+		doc.Body.Should().Contain("Returns one or more data sources.");
+		doc.Body.Should().NotContain("All methods and paths for this operation");
+		doc.Body.Should().NotContain("/_query/data_source</span>");
+	}
+
+	[Test]
+	public void Operation_OnlyMethodList_IndexesTheSummary()
+	{
+		const string raw =
+			"""
+			**Spaces method and path for this operation:**
+
+			<div><span class="operation-verb get">get</span>&nbsp;<span class="operation-path">/s/{space_id}/api/actions/connector_types</span></div>
+			""";
+
+		var doc = ExportOperation("Get connector types", raw, "get-actions-connector-types");
+
+		doc.Title.Should().Be("Get connector types");
+		doc.Description.Should().Be("Get connector types");
+		doc.Description.Should().NotContain("method and path");
+		doc.Body.Should().NotContain("Spaces method and path");
+	}
+
+	[Test]
+	public void Operation_EmptySummary_IndexesTheDescription()
+	{
+		const string raw =
+			"""
+			**Spaces method and path for this operation:**
+
+			<div><span class="operation-verb get">get</span> <span class="operation-path">/callback</span></div>
+
+			Returns the OAuth callback script
+			""";
+
+		var doc = ExportOperation(summary: null, raw, "get-actions-connector-oauth-callback-script");
+
+		doc.Title.Should().Be("get-actions-connector-oauth-callback-script");
+		doc.Description.Should().Be("Returns the OAuth callback script");
+		doc.Description.Should().NotBeNullOrWhiteSpace();
+	}
+
+	[Test]
+	public void Operation_EmptySummaryAndOnlyMethodList_IndexesTheOperationId()
+	{
+		const string raw =
+			"""
+			**All methods and paths for this operation:**
+
+			<div><span class="operation-verb put">PUT</span> <span class="operation-path">/_query/data_source/{name}</span></div>
+			""";
+
+		var doc = ExportOperation(summary: "  ", raw, "esql-put-data-source");
+
+		doc.Title.Should().Be("esql-put-data-source");
+		doc.Description.Should().Be("esql-put-data-source");
+	}
+
+	[Test]
+	public void Operation_PlainDescription_IsIndexedUnchanged()
+	{
+		const string raw = "Creates or replaces a named data source.";
+
+		var doc = ExportOperation("Create or update an ES|QL data source", raw);
+
+		doc.Title.Should().Be("Create or update an ES|QL data source");
+		doc.Description.Should().Be(raw);
 	}
 }
