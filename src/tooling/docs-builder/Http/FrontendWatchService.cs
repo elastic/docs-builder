@@ -8,7 +8,7 @@ using Microsoft.Extensions.Hosting;
 
 namespace Documentation.Builder.Http;
 
-public class ParcelWatchService : IHostedService
+public class FrontendWatchService : IHostedService
 {
 	private Process? _process;
 
