@@ -117,7 +117,7 @@
 
 .api-page-intro .api-url {
 	margin-left: 0;
-	color: #516381;
+	color: #1d2a3e;
 	font-family:
 		'Roboto Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
 		monospace;
@@ -915,7 +915,7 @@
 .content-type-tag {
 	margin-left: auto;
 	flex-shrink: 0;
-	color: #798eaf;
+	color: #1d2a3e;
 	font-size: 12px;
 	font-weight: 400;
 	line-height: 16px;
@@ -925,7 +925,8 @@
 .property-list .expand-toggle,
 .union-expand-toggle .expand-toggle,
 .union-group-toggle {
-	@apply text-grey-80 hover:text-grey-120 inline-flex cursor-pointer items-center gap-1 border-0 bg-transparent p-0 text-sm;
+	@apply inline-flex cursor-pointer items-center gap-1 border-0 bg-transparent p-0 text-sm;
+	color: #1d2a3e;
 }
 
 .expand-toggle .toggle-icon,
@@ -2210,7 +2211,7 @@ a.docs-reference-btn::after {
 
 	.operation-path {
 		margin-left: 4px;
-		color: #516381;
+		color: #1d2a3e;
 		font-family:
 			'Roboto Mono', ui-monospace, SFMono-Regular, Menlo, Monaco,
 			Consolas, monospace;
@@ -2795,7 +2796,7 @@ button.example-response-tab:focus-visible {
 .api-code-sample-title .api-url {
 	margin-left: 0;
 	overflow: hidden;
-	color: var(--api-code-muted);
+	color: var(--api-code-text);
 	font-family:
 		'Roboto Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
 		monospace;
@@ -2807,7 +2808,7 @@ button.example-response-tab:focus-visible {
 }
 
 .api-code-sample-title .api-code-sample-heading {
-	color: var(--api-code-muted);
+	color: var(--api-code-text);
 	font-size: 12px;
 	font-weight: 600;
 	line-height: 20px;
