@@ -704,8 +704,8 @@
 	}
 }
 
-#elastic-api-v3 h4.section-header.responses-header,
-#schema-definition h4.section-header.responses-header {
+#elastic-api-v3 h2.section-header.responses-header,
+#schema-definition h2.section-header.responses-header {
 	padding-bottom: 0;
 	border-bottom: 0;
 }
@@ -1713,10 +1713,14 @@ a.docs-reference-btn::after {
 /* Response headers display */
 .response-headers {
 	@apply border-grey-20 mt-4 border-t pt-4;
+}
 
-	h5 {
-		@apply text-grey-80 mb-2 text-sm font-medium;
-	}
+/* Nested under the responses h2. Wins over the page h3 border and top margin. */
+#elastic-api-v3 .response-headers h3 {
+	@apply text-grey-80 mb-2 text-sm font-medium;
+	margin-top: 0;
+	padding-bottom: 0;
+	border-bottom: 0;
 }
 
 .header-item {
@@ -2082,9 +2086,9 @@ a.docs-reference-btn::after {
 	}
 }
 
-/* Figma APIs 10079:2948 / 10079:2918 — H4 + 40px spacer, 16px below, border #e3e8f2 */
-#elastic-api-v3 h4.section-header,
-#schema-definition h4.section-header {
+/* Section headings are h2. 16px sits under the 30px page title and above nested h3. */
+#elastic-api-v3 h2.section-header,
+#schema-definition h2.section-header {
 	@apply bg-white;
 	position: static;
 	box-sizing: border-box;
@@ -2178,6 +2182,11 @@ a.docs-reference-btn::after {
 		font-size: 14px;
 		font-weight: 600;
 		line-height: 20px;
+	}
+
+	h2 {
+		font-size: 16px;
+		line-height: 24px;
 	}
 
 	strong,
