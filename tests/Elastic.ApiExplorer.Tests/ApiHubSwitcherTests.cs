@@ -45,13 +45,13 @@ public class ApiHubSwitcherTests
 			.ContainSingle(e => e.Key == "elasticsearch")
 			.Which
 			.Should()
-			.BeEquivalentTo(new ApiCatalogEntry("elasticsearch", "Elasticsearch", "/api/doc/elasticsearch/", "elasticsearch"));
+			.BeEquivalentTo(new ApiCatalogEntry("elasticsearch", "Elasticsearch", "/api/doc/elasticsearch", "elasticsearch"));
 		entries
 			.Should()
 			.ContainSingle(e => e.Key == "kibana")
 			.Which
 			.Should()
-			.BeEquivalentTo(new ApiCatalogEntry("kibana", "Kibana", "/api/doc/kibana/", "kibana"));
+			.BeEquivalentTo(new ApiCatalogEntry("kibana", "Kibana", "/api/doc/kibana", "kibana"));
 	}
 
 	[Test]
