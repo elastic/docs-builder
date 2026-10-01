@@ -2787,13 +2787,22 @@ button.example-response-tab:focus-visible {
 	min-width: 0;
 	flex: 1;
 	align-items: center;
+	align-self: stretch;
 	gap: 8px;
 	overflow: hidden;
 }
 
 .api-code-sample-title .api-url {
+	display: flex;
+	flex: 1;
+	align-items: center;
+	align-self: stretch;
+	min-width: 0;
 	margin-left: 0;
-	overflow: hidden;
+	overflow-x: auto;
+	overflow-y: hidden;
+	overflow-wrap: normal;
+	word-break: normal;
 	color: var(--api-code-muted);
 	font-family:
 		'Roboto Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
@@ -2801,8 +2810,13 @@ button.example-response-tab:focus-visible {
 	font-size: 12px;
 	font-weight: 300;
 	line-height: 20px;
-	text-overflow: ellipsis;
 	white-space: nowrap;
+	scrollbar-width: thin;
+	scrollbar-color: #e3e8f2 transparent;
+}
+
+.api-code-sample-title .api-url::-webkit-scrollbar {
+	height: 4px;
 }
 
 .api-code-sample-title .api-code-sample-heading {
@@ -3476,6 +3490,11 @@ button.example-response-tab:focus-visible {
 
 #api-examples-panel .api-code-sample .api-code-lines pre code {
 	max-height: none !important;
+}
+
+/* Beats the rail's min-height: 0. Top padding is 1rem; a shorter body clips the first line. */
+#api-examples-panel .api-code-sample-body {
+	min-height: calc(var(--spacing) * 4 + var(--api-code-leading));
 }
 
 /*

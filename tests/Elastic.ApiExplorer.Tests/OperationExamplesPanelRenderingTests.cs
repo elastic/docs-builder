@@ -147,6 +147,31 @@ public class OperationExamplesPanelRenderingTests
 	}
 
 	[Test]
+	public async Task Render_RequestHeader_KeepsTheFullRouteAndFirstSampleLine()
+	{
+		const string route = "/_inference/{task_type}/{anthropic_inference_id}/endpoints";
+		const string firstLine = "PUT _inference/{task_type}/{anthropic_inference_id}";
+		var html = await _ApiCodeSample.Create(new ApiCodeSampleModel(
+			"rail-long",
+			[new("Console", firstLine + "\n{\"service\":\"anthropic\"}", "language-console"), new("curl", "curl -X PUT", "language-bash")],
+			"put",
+			route,
+			[new ApiSelectOption("Anthropic task", "anthropic", true), new ApiSelectOption("Other task", "other", false)]
+		)).RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
+
+		var header = html.IndexOf("api-code-sample-header", StringComparison.Ordinal);
+		var routeAt = html.IndexOf(route, StringComparison.Ordinal);
+		var body = html.IndexOf("api-code-sample-body", StringComparison.Ordinal);
+		var lineAt = html.IndexOf(firstLine, StringComparison.Ordinal);
+		header.Should().BeGreaterThanOrEqualTo(0);
+		routeAt.Should().BeGreaterThan(header);
+		body.Should().BeGreaterThan(routeAt);
+		lineAt.Should().BeGreaterThan(body);
+		html.Should().Contain("api-scenario-select");
+		html.Should().Contain("api-code-sample-lang");
+	}
+
+	[Test]
 	public async Task Render_ScenarioContent_PassesMethodAndRouteToRequestCard()
 	{
 		var html = await _ExampleScenarioContent.Create(new ExampleScenario
