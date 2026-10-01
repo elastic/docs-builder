@@ -17,11 +17,12 @@ using YamlDotNet.Serialization.NamingConventions;
 
 namespace Elastic.Documentation.Configuration;
 
-public partial class ConfigurationFileProvider
+public partial class ConfigurationFileProvider : IDisposable
 {
 	private readonly IAppDataFileSystem _fileSystem;
 	private readonly string _assemblyName;
 	private readonly ILogger<ConfigurationFileProvider> _logger;
+	private static int StaleSweptOnce;
 
 	public static IDeserializer Deserializer { get; } = new StaticDeserializerBuilder(new YamlStaticContext())
 		.WithNamingConvention(UnderscoredNamingConvention.Instance)
@@ -52,9 +53,14 @@ public partial class ConfigurationFileProvider
 		SkipPrivateRepositories = skipPrivateRepositories;
 		// Use a unique subdirectory per instance to avoid file-locking collisions when
 		// multiple processes or parallel tests share the same ApplicationData path.
-		var configRuntimeDir = Path.Join(Paths.ApplicationData.FullName, "config-runtime", Guid.NewGuid().ToString("N"));
+		var configRuntimeParent = Path.Join(Paths.ApplicationData.FullName, "config-runtime");
+		var configRuntimeDir = Path.Join(configRuntimeParent, Guid.NewGuid().ToString("N"));
 		TemporaryDirectory = fileSystem.DirectoryInfo.New(configRuntimeDir);
 		TemporaryDirectory.Create();
+
+		// Best-effort sweep of directories left by prior (crashed) processes, once per process.
+		if (Interlocked.CompareExchange(ref StaleSweptOnce, 1, 0) == 0)
+			SweepStaleConfigRuntimeDirs(configRuntimeParent);
 
 		// TODO: This doesn't work as expected if a github actions consumer repo has a `config` directory.
 		// ConfigurationSource = configurationSource ?? (
@@ -231,6 +237,36 @@ public partial class ConfigurationFileProvider
 		}
 		NavigationFile = _fileSystem.FileInfo.New(tempFile);
 		return NavigationFile;
+	}
+
+	public void Dispose()
+	{
+		try
+		{
+			TemporaryDirectory.Delete(recursive: true);
+		}
+		catch { /* best-effort: the directory may already be gone */  }
+		GC.SuppressFinalize(this);
+	}
+
+	private static void SweepStaleConfigRuntimeDirs(string parentDir)
+	{
+		try
+		{
+			// 1-hour cutoff: no normal build or test run lasts that long, so any directory
+			// older than this cannot still be in active use by the process that created it.
+			var cutoff = DateTime.UtcNow.AddHours(-1);
+			foreach (var dir in Directory.EnumerateDirectories(parentDir))
+			{
+				try
+				{
+					if (Directory.GetCreationTimeUtc(dir) < cutoff)
+						Directory.Delete(dir, recursive: true);
+				}
+				catch { /* best-effort per directory */  }
+			}
+		}
+		catch { /* best-effort: parent may not exist yet */  }
 	}
 
 	private IFileInfo CreateTemporaryConfigurationFile(string fileName, string? fallback = null)
