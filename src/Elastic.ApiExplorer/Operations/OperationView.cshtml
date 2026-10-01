@@ -149,11 +149,11 @@
 		<div @ParamSectionHeader.WrapAttributes(collapsePath)>
 		@if (collapsePath)
 		{
-			@(await RenderPartialAsync<_ParamSectionHeader, ParamSectionHeader>(new ParamSectionHeader("Parameters", "parameters", pageModel.PathParameterNames)))
+			@(await RenderPartialAsync<_ParamSectionHeader, ParamSectionHeader>(new ParamSectionHeader("Path Parameters", "parameters", pageModel.PathParameterNames)))
 		}
 		else
 		{
-			@(await RenderPartialAsync<_SectionHeader, SectionHeader>(new SectionHeader("Parameters", "parameters")))
+			@(await RenderPartialAsync<_SectionHeader, SectionHeader>(new SectionHeader("Path Parameters", "parameters")))
 		}
 		<div @ParamSectionHeader.BodyAttributes(collapsePath, "parameters-list")>
 		<dl class="property-list">
