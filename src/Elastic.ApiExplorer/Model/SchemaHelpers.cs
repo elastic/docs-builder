@@ -128,6 +128,8 @@ public static class SchemaHelpers
 		StringComparer.OrdinalIgnoreCase
 	);
 
+	private static readonly HashSet<string> CompositionKeywords = new(["anyOf", "oneOf", "allOf"], StringComparer.OrdinalIgnoreCase);
+
 	private static readonly HashSet<string> StructuralTypeNames = new(
 		["anyOf", "oneOf", "allOf", "unknown"],
 		StringComparer.OrdinalIgnoreCase
@@ -213,13 +215,19 @@ public static class SchemaHelpers
 	/// <summary>
 	/// OpenAPI composition keywords and the unknown fallback. These are not types a reader can look up.
 	/// </summary>
-	public static bool IsStructuralTypeName(string? typeName)
+	public static bool IsStructuralTypeName(string? typeName) => StructuralTypeNames.Contains(BaseTypeName(typeName));
+
+	/// <summary>
+	/// <c>anyOf</c>, <c>oneOf</c>, and <c>allOf</c>. <c>unknown</c> is not one of these.
+	/// </summary>
+	public static bool IsCompositionKeyword(string? typeName) => CompositionKeywords.Contains(BaseTypeName(typeName));
+
+	private static string BaseTypeName(string? typeName)
 	{
 		if (string.IsNullOrEmpty(typeName))
-			return false;
+			return "";
 
-		var name = typeName.EndsWith("[]", StringComparison.Ordinal) ? typeName[..^2] : typeName;
-		return StructuralTypeNames.Contains(name);
+		return typeName.EndsWith("[]", StringComparison.Ordinal) ? typeName[..^2] : typeName;
 	}
 
 	/// <summary>True for JSON primitives and their plural array labels (<c>strings</c>, …).</summary>

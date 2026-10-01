@@ -395,7 +395,7 @@ public class ApiPropertyTreeBuilder(OpenApiDocument document, PropertyDisplayOpt
 		if (typeInfo.UnionOptions is not null)
 			unionOptionNames.AddRange(typeInfo.UnionOptions);
 		var sortedOptions = unionOptionNames
-			.Where(name => !SchemaHelpers.IsStructuralTypeName(name))
+			.Where(name => !SchemaHelpers.IsCompositionKeyword(name))
 			.Distinct()
 			.OrderByDescending(o => o.EndsWith("[]"))
 			.ToArray();
@@ -827,11 +827,8 @@ public class ApiPropertyTreeBuilder(OpenApiDocument document, PropertyDisplayOpt
 	private static void AppendDisplayedTypeName(List<TypeSpan> spans, TypeInfo typeInfo, bool hasActualProperties)
 	{
 		var typeName = typeInfo.TypeName ?? "unknown";
-		// "unknown" stays when it is the only label. anyOf, oneOf, and allOf never do.
-		if (
-			SchemaHelpers.IsStructuralTypeName(typeName)
-			&& (typeInfo.IsUnion || !typeName.Equals("unknown", StringComparison.OrdinalIgnoreCase))
-		)
+		// anyOf, oneOf, and allOf are not type names. unknown stays, including on a union.
+		if (SchemaHelpers.IsCompositionKeyword(typeName))
 			return;
 
 		if (!SchemaHelpers.IsInternalSchemaName(typeName))
@@ -872,7 +869,7 @@ public class ApiPropertyTreeBuilder(OpenApiDocument document, PropertyDisplayOpt
 		var wrotePart = false;
 		foreach (var part in parts)
 		{
-			if (SchemaHelpers.IsStructuralTypeName(part))
+			if (SchemaHelpers.IsCompositionKeyword(part))
 				continue;
 
 			if (wrotePart)
@@ -884,7 +881,7 @@ public class ApiPropertyTreeBuilder(OpenApiDocument document, PropertyDisplayOpt
 
 	private static void AppendUnionPartSpans(List<TypeSpan> spans, string part)
 	{
-		if (SchemaHelpers.IsStructuralTypeName(part))
+		if (SchemaHelpers.IsCompositionKeyword(part))
 			return;
 
 		if (!part.EndsWith("[]", StringComparison.Ordinal))

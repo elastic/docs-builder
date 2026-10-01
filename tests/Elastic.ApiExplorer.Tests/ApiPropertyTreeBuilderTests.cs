@@ -107,6 +107,22 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture)
 	}
 
 	[Test]
+	public void BuildPropertyList_UnknownUnion_KeepsUnknownLabel()
+	{
+		var builder = CreateBuilder();
+
+		var list = builder.BuildPropertyList(
+			Schema("fixture.SearchRequestBody"),
+			new PropertyTreeScope { Prefix = "req", IsRequest = true }
+		);
+
+		var unresolved = list!.Items.Single(p => p.Name == "unresolved");
+		unresolved.Type.Text.Should().Be("union unknown");
+		unresolved.Type.Spans.Select(s => s.Text).Should().Contain("unknown");
+		unresolved.Type.Spans.Select(s => s.Text).Should().NotIntersectWith(["oneOf", "anyOf", "allOf"]);
+	}
+
+	[Test]
 	public void BuildPropertyList_SimpleArrayUnion_DetectsFieldOrFieldArray()
 	{
 		var builder = CreateBuilder();

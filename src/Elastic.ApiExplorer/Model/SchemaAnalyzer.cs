@@ -236,13 +236,13 @@ public class SchemaAnalyzer(
 	/// </summary>
 	public List<UnionOption> ExpandStructuralUnionOptions(List<UnionOption> options)
 	{
-		if (!options.Any(o => SchemaHelpers.IsStructuralTypeName(o.Name)))
+		if (!options.Any(o => SchemaHelpers.IsCompositionKeyword(o.Name)))
 			return options;
 
 		var expanded = new List<UnionOption>(options.Count);
 		foreach (var option in options)
 		{
-			if (!SchemaHelpers.IsStructuralTypeName(option.Name))
+			if (!SchemaHelpers.IsCompositionKeyword(option.Name))
 			{
 				expanded.Add(option);
 				continue;
@@ -338,7 +338,7 @@ public class SchemaAnalyzer(
 						result.Add(new UnionOption(nestedName, nested.Ref, nested.IsObject, nested.Schema));
 					}
 				}
-				else if (!SchemaHelpers.IsStructuralTypeName(baseName))
+				else if (!SchemaHelpers.IsCompositionKeyword(baseName))
 					result.Add(option);
 			}
 		}
@@ -540,7 +540,7 @@ public class SchemaAnalyzer(
 				// If the item is not an object and not a linked type, it's a primitive array
 				var isPrimitiveArray = itemInfo is not { IsObject: false, HasLink: false } || !string.IsNullOrEmpty(itemInfo.SchemaRef);
 				var arrayItemType = isPrimitiveArray ? itemInfo.TypeName : null;
-				if (SchemaHelpers.IsStructuralTypeName(arrayItemType))
+				if (SchemaHelpers.IsCompositionKeyword(arrayItemType))
 					arrayItemType = null;
 				return new TypeInfo(
 					itemInfo.TypeName,

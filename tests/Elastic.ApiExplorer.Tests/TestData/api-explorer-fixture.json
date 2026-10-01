@@ -562,6 +562,13 @@
           }
         }
       },
+      "fixture.unknown": {
+        "description": "Members that do not resolve to a concrete type.",
+        "anyOf": [
+          {},
+          {}
+        ]
+      },
       "fixture.SearchRequestBody": {
         "type": "object",
         "description": "The body of a search request.",
@@ -640,6 +647,10 @@
                 }
               ]
             }
+          },
+          "unresolved": {
+            "description": "A union whose type name is the unknown fallback.",
+            "$ref": "#/components/schemas/fixture.unknown"
           },
           "mode": {
             "$ref": "#/components/schemas/_types.SearchMode"
