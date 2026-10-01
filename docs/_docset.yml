@@ -42,8 +42,8 @@ release_notes:
 features:
   primary-nav: false
 
-# Isolated fixtures. Keys stay prefixed so assembler preview does not collide
-# with docs-content (this checkout is still loaded even with skip: true).
+# Isolated fixtures. The prefix keeps these keys off the docs-content APIs.
+# Assembler builds omit them; this checkout is still loaded in preview (skip: true).
 # Isolated serve (no --watch): /api/doc/docs-builder-elasticsearch/, /api/doc/docs-builder-kibana/, …
 api:
   docs-builder-elasticsearch:

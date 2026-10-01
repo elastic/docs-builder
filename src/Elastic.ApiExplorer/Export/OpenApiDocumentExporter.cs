@@ -34,6 +34,9 @@ public partial class OpenApiDocumentExporter(VersionsConfiguration versionsConfi
 	[GeneratedRegex(@"Added in (\d+\.\d+\.\d+)", RegexOptions.IgnoreCase)]
 	private static partial Regex AddedInVersionRegex();
 
+	[GeneratedRegex(@"\*\*[^*\n]*methods? and paths? for this operation:\*\*", RegexOptions.IgnoreCase)]
+	private static partial Regex OperationListIntroRegex();
+
 	/// <summary>
 	/// Fetches and processes both Elasticsearch and Kibana OpenAPI specifications.
 	/// </summary>
@@ -133,7 +136,7 @@ public partial class OpenApiDocumentExporter(VersionsConfiguration versionsConfi
 				var title = string.IsNullOrEmpty(summary) ? operationId : summary;
 				var method = operation.Key.ToString().ToUpperInvariant();
 				var searchTitle = BuildSearchTitle(title, productLabel, operationId, $"{method} {path.Key}");
-				var description = ApiMarkdown.StripHtml(operation.Value.Description);
+				var description = IndexedHitText(summary, operation.Value.Description, operationId);
 
 				// Build body content from operation details
 				var bodyBuilder = new StringBuilder();
@@ -250,6 +253,65 @@ public partial class OpenApiDocumentExporter(VersionsConfiguration versionsConfi
 	{
 		var searchTitle = $"{title} - {productLabel} - {operationId} - {methodAndPath}";
 		return operationId.Contains('.', StringComparison.Ordinal) ? $"{searchTitle} - {operationId.Replace('.', ' ')}" : searchTitle;
+	}
+
+	/// <summary>
+	/// Search snippet for an operation. Prefer the spec prose, then the summary, then the
+	/// operation id so a hit is never blank. The generated "method and path" list is omitted
+	/// because it is the same sentence on every operation.
+	/// </summary>
+	private static string IndexedHitText(string? summary, string? rawDescription, string operationId)
+	{
+		var prose = ApiMarkdown.StripHtml(RemoveOperationListIntro(rawDescription));
+		if (!string.IsNullOrWhiteSpace(prose))
+			return prose;
+		if (!string.IsNullOrWhiteSpace(summary))
+			return summary;
+		return operationId;
+	}
+
+	private static string RemoveOperationListIntro(string? description)
+	{
+		if (string.IsNullOrEmpty(description))
+			return string.Empty;
+
+		var match = OperationListIntroRegex().Match(description);
+		if (!match.Success)
+			return description;
+
+		var end = EndOfOperationList(description, match.Index + match.Length);
+		var before = description[..match.Index].Trim();
+		var after = end < description.Length ? description[end..].Trim() : string.Empty;
+		if (before.Length == 0)
+			return after;
+		if (after.Length == 0)
+			return before;
+		return $"{before}\n\n{after}";
+	}
+
+	private static int EndOfOperationList(string description, int afterHeader)
+	{
+		var htmlStart = description.IndexOf("<div", afterHeader, StringComparison.OrdinalIgnoreCase);
+		if (htmlStart < 0)
+			return afterHeader;
+
+		var cursor = htmlStart;
+		while (true)
+		{
+			var close = description.IndexOf("</div>", cursor, StringComparison.OrdinalIgnoreCase);
+			if (close < 0)
+				return afterHeader;
+
+			var afterClose = close + "</div>".Length;
+			var next = afterClose;
+			while (next < description.Length && char.IsWhiteSpace(description[next]))
+				next++;
+
+			if (next >= description.Length || !description.AsSpan(next).StartsWith("<div", StringComparison.OrdinalIgnoreCase))
+				return afterClose;
+
+			cursor = afterClose;
+		}
 	}
 
 	/// <summary>

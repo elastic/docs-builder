@@ -14,6 +14,8 @@ public static class IsolatedApiAliases
 {
 	public const string FixturePrefix = "docs-builder-";
 
+	public static bool IsFixtureKey(string apiKey) => apiKey.StartsWith(FixturePrefix, StringComparison.Ordinal);
+
 	public static bool TryPrefixedDocSlug(string slug, [NotNullWhen(true)] out string? prefixed)
 	{
 		prefixed = null;
