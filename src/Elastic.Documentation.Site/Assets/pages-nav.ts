@@ -1043,7 +1043,11 @@ function onApiNavKey(event: KeyboardEvent) {
     if (!(event.target instanceof Element)) {
         return
     }
-    if (!event.target.closest('#pages-nav a.sidebar-link')) {
+    const link = event.target.closest('#pages-nav a.sidebar-link')
+    if (!(link instanceof HTMLAnchorElement)) {
+        return
+    }
+    if (anchorMatchesPath(link, window.location.pathname)) {
         return
     }
     const grid = document.getElementById('api-content-grid')
@@ -1128,11 +1132,6 @@ function ensureFolderRowClick() {
                 return
             }
 
-            const apiGrid = document.getElementById('api-content-grid')
-            if (apiGrid) {
-                resetArticleScroll(apiGrid)
-            }
-
             const folderRow = a.closest('.nav-folder-peer')
             const cb = folderRow?.parentElement?.classList.contains(
                 'nav-folder'
@@ -1152,6 +1151,11 @@ function ensureFolderRowClick() {
                 e.preventDefault()
                 e.stopPropagation()
                 return
+            }
+
+            const apiGrid = document.getElementById('api-content-grid')
+            if (apiGrid) {
+                resetArticleScroll(apiGrid)
             }
 
             previewCurrentLink(a)

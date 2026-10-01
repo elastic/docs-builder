@@ -970,4 +970,48 @@ describe('API nav deep link', () => {
         scrollTo.mockRestore()
         setScrollY(0)
     })
+
+    it('keeps the article scroll when the current folder row is toggled', () => {
+        const currentHref = '/api/doc/es/operation/operation-other'
+        window.history.pushState({}, '', currentHref)
+        scrolledApiPage()
+        initNav()
+        setScrollY(220)
+        const scrollTo = jest
+            .spyOn(window, 'scrollTo')
+            .mockImplementation(() => undefined)
+        const link = document.querySelector<HTMLAnchorElement>(
+            `a[href="${currentHref}"]`
+        )!
+        link.dispatchEvent(
+            new MouseEvent('click', { bubbles: true, button: 0 })
+        )
+        expect(scrollTo).not.toHaveBeenCalled()
+        expect(
+            document.querySelector<HTMLInputElement>('#other-group')?.checked
+        ).toBe(false)
+        scrollTo.mockRestore()
+        setScrollY(0)
+        window.history.pushState({}, '', '/')
+    })
+
+    it('keeps the article scroll when Enter toggles the current folder row', () => {
+        const currentHref = '/api/doc/es/operation/operation-other'
+        window.history.pushState({}, '', currentHref)
+        scrolledApiPage()
+        setScrollY(220)
+        const scrollTo = jest
+            .spyOn(window, 'scrollTo')
+            .mockImplementation(() => undefined)
+        const link = document.querySelector<HTMLAnchorElement>(
+            `a[href="${currentHref}"]`
+        )!
+        link.dispatchEvent(
+            new KeyboardEvent('keydown', { key: 'Enter', bubbles: true })
+        )
+        expect(scrollTo).not.toHaveBeenCalled()
+        scrollTo.mockRestore()
+        setScrollY(0)
+        window.history.pushState({}, '', '/')
+    })
 })
