@@ -115,7 +115,8 @@
 	transform: translateX(-102%) translateY(0);
 }
 
-.api-page-intro .api-url {
+.api-page-intro .api-url,
+.api-overview .api-url {
 	margin-left: 0;
 	color: #516381;
 	font-family:
@@ -482,16 +483,50 @@
 			font-weight: 700;
 			text-decoration: none;
 		}
-		.api-overview-title:hover {
+		.api-overview-title:hover,
+		.api-overview-title:focus-visible {
 			color: var(--color-blue-elastic, #0b64dd);
 		}
-		tr:has(td.api-name) {
+		a.api-overview-title {
+			display: grid;
+			grid-template-columns: 16rem minmax(0, 1fr);
+			align-items: center;
+			column-gap: 16px;
+			box-sizing: border-box;
+			width: 100%;
+			padding: 12px 8px;
+			border-radius: 8px;
+		}
+		a.api-overview-title:hover,
+		a.api-overview-title:focus-visible {
+			background-color: #ecf1f9;
+		}
+		a.api-overview-title:focus-visible {
+			outline: 2px solid var(--color-blue-elastic, #0b64dd);
+			outline-offset: 2px;
+		}
+		.api-method {
+			min-width: 6.75rem;
+			box-sizing: border-box;
+		}
+		tr:has(td.api-name),
+		tr.api-overview-operation {
 			border-bottom: 1px solid #e3e8f2;
 		}
 		tr:has(td.api-name) td {
 			padding-top: 16px;
 			padding-bottom: 16px;
 		}
+		tr.api-overview-operation td {
+			padding: 0;
+		}
+	}
+}
+
+@media (max-width: 767px) {
+	.api-overview a.api-overview-title {
+		grid-template-columns: 1fr;
+		row-gap: 8px;
 	}
 }
 
