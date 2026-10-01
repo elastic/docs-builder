@@ -769,9 +769,6 @@
 	cursor: pointer;
 	user-select: text;
 	-webkit-user-select: text;
-	transition:
-		background-color 0.12s ease,
-		color 0.12s ease;
 }
 
 .response-status-toggle::-webkit-details-marker {
@@ -876,7 +873,6 @@
 	border-right: 1.5px solid currentColor;
 	border-bottom: 1.5px solid currentColor;
 	transform: translateY(-2px) rotate(45deg);
-	transition: transform 0.12s ease;
 }
 
 .response-panel[open]
@@ -927,7 +923,6 @@
 	font-weight: 400;
 	line-height: 20px;
 	text-align: left;
-	transition: color 0.12s ease;
 }
 
 .content-type-tag {
