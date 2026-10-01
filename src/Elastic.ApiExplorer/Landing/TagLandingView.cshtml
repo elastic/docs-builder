@@ -1,14 +1,10 @@
 @inherits RazorSlice<Elastic.ApiExplorer.Landing.TagLandingViewModel>
 @using Elastic.ApiExplorer.Landing
-@using Elastic.ApiExplorer.Operations
 @implements IUsesLayout<Elastic.ApiExplorer._Layout, ApiLayoutViewModel>
 @functions {
 	public ApiLayoutViewModel LayoutModel => Model.CreateGlobalLayoutModel();
 }
-@{
-	var apiHxAttrs = LayoutModel.HxAttributes;
-}
-<section id="elastic-api-v3">
+<section id="elastic-api-v3" class="api-group">
 	<div class="api-page-heading">
 		<h1>@Model.Tag.DisplayName</h1>
 		@(await RenderPartialAsync<_PageActions, string>(LayoutModel.MarkdownUrl))
@@ -33,30 +29,24 @@
 			<a href="@ed.Url" class="docs-reference-btn" @(ed.IsElasticDocs ? "" : "target=\"_blank\" rel=\"noopener noreferrer\"")>@ed.LinkText</a>
 		</p>
 	}
-	<div class="api-overview">
-		<table>
-			@foreach (var row in Model.OverviewRows)
-			{
-				switch (row.Kind)
+	@if (Model.OverviewRows.Count > 0)
+	{
+		<div class="api-overview">
+			<p class="api-group-count">@Model.OverviewRows.Count @(Model.OverviewRows.Count == 1 ? "endpoint" : "endpoints")</p>
+			<ul class="api-group-list">
+				@foreach (var row in Model.OverviewRows)
 				{
-					case OverviewRowKind.Endpoint:
-					case OverviewRowKind.Operation:
-						<tr>
-							<td class="api-name">
-								@if (row.Url is not null)
-								{
-									<a href="@row.Url" class="api-overview-title" @apiHxAttrs>@(row.Title)</a>
-								}
-								else
-								{
-									@(row.Title)
-								}
-							</td>
-							<td>@(await RenderPartialAsync<_OperationUrlList, OperationUrlListModel>(new OperationUrlListModel(row.Operations, apiHxAttrs)))</td>
-						</tr>
-						break;
+					<li>
+						<a class="api-group-row" href="@row.Url" @LayoutModel.HxAttributes>
+							<span class="api-overview-title">@row.Title</span>
+							<span class="api-group-routes">
+								@(await RenderPartialAsync<_OperationUrlList, OperationUrlListModel>(new OperationUrlListModel(row.Operations, string.Empty)))
+							</span>
+							<svg class="api-group-chevron" viewBox="0 0 16 16" aria-hidden="true"><use href="#icon-chevron-down"/></svg>
+						</a>
+					</li>
 				}
-			}
-		</table>
-	</div>
+			</ul>
+		</div>
+	}
 </section>
