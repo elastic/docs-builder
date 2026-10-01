@@ -158,32 +158,11 @@
 	}
 
 	.secondary-nav-legacy-product .secondary-nav-dropdown-menu {
-		top: calc(100% + 4px);
 		left: auto;
 		right: 0;
 		min-width: 175px;
 		width: max-content;
 		max-width: 16rem;
-	}
-
-	.secondary-nav-legacy-product.is-open .secondary-nav-dropdown-menu,
-	.secondary-nav-legacy-product[open] .secondary-nav-dropdown-menu {
-		transform: translateY(0) translateZ(0);
-	}
-
-	.secondary-nav-legacy-product-label {
-		display: inline-block;
-		max-width: 16rem;
-		overflow: hidden;
-		text-overflow: ellipsis;
-		white-space: nowrap;
-		vertical-align: bottom;
-	}
-
-	.secondary-nav-legacy-product .secondary-nav-dropdown-link {
-		min-width: 0;
-		white-space: normal;
-		overflow-wrap: anywhere;
 	}
 
 	.secondary-nav-legacy-product[open] .nav-select__chevron,

@@ -144,8 +144,6 @@ api:
 
 Unknown values fail the build. Omit `catalog:` to keep the API visible only under **All**.
 
-`catalog.display_name:` is an optional label for the product switcher. Set it when two APIs would otherwise share a name, for example because they use the same `product:`. When it is omitted or blank, the switcher keeps that product's display name from `products.yml`.
-
 ### One spec per product
 
 Each product key in the `api:` block must have **exactly one** entry, with **exactly one**
@@ -154,11 +152,9 @@ specs per product are not currently supported.
 
 Product pages show an API product switcher on the far right of the grey secondary
 top bar, immediately before the version picker. Isolated builds keep a product
-`<select>` at the top of the left navigation. The list includes every declared API
-and a Back to hub option. Each row uses `catalog.display_name` when that API sets
-one, and the product display name otherwise. In the top bar, a long name stays on
-one line in the control that opens the menu, with the full text in a tooltip, and
-wraps inside the menu. The menu sits below that control.
+`<select>` at the top of the left navigation. The list includes every API whose spec
+loaded, and a Back to hub option. Each row uses that spec's title (`info.title`), the
+same text as the landing page heading.
 
 Assembler API pages also show a Jump to API box at the top of that sidebar. The box searches API operations only. Isolated and air-gapped builds omit the box. Markdown docs pages do not get it back.
 

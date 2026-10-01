@@ -61,6 +61,7 @@ public class OpenApiGenerator(
 	private readonly StaticFileContentHashProvider _contentHashProvider = new(new EmbeddedOrPhysicalFileProvider(context));
 	private readonly VersionIndexClient _versionIndexClient = versionIndexClient ?? new VersionIndexClient();
 	private readonly IOpenApiSpecificationReader _openApiReader = openApiReader ?? OpenApiReader.Instance;
+	private readonly ConcurrentDictionary<string, Task<ResolvedProductDocuments>> _documents = new(StringComparer.OrdinalIgnoreCase);
 
 	public LandingNavigationItem CreateNavigation(
 		string apiUrlSuffix,
@@ -71,8 +72,7 @@ public class OpenApiGenerator(
 
 	public async Task Generate(Cancel ctx = default)
 	{
-		var declaredEntries = ApiHubSwitcher.CollectDeclaredEntries(context.UrlPathPrefix, context.Configuration.ApiConfigurations);
-		var catalogEntries = await GenerateProducts(hubEntries: declaredEntries, ctx).ConfigureAwait(false);
+		var catalogEntries = await GenerateProducts(ctx: ctx).ConfigureAwait(false);
 		if (catalogEntries.Count > 0)
 			await GenerateCatalog(catalogEntries, ctx).ConfigureAwait(false);
 	}
@@ -89,13 +89,15 @@ public class OpenApiGenerator(
 		if (context.Configuration.ApiConfigurations is null)
 			return [];
 
-		var catalogForSwitcher = hubEntries
-			?? ApiHubSwitcher.CollectDeclaredEntries(context.UrlPathPrefix, context.Configuration.ApiConfigurations);
+		// The switcher label is the landing-page h1 (OpenAPI info.title). Resolve specs first so
+		// every page can list sibling APIs by that name. Callers that pass hubEntries, such as the
+		// assembler, have already resolved those titles.
+		var catalogForSwitcher = hubEntries ?? await ResolveCatalogEntries(ctx).ConfigureAwait(false);
 
 		// Fan out every API product in parallel.  Results collected into a ConcurrentBag then sorted
 		// back to the original config declaration order so the catalog page is stable build-to-build.
 		var catalogEntriesBag = new ConcurrentBag<(int Order, ApiCatalogEntry Entry)>();
-		var apiConfigs = context.Configuration.ApiConfigurations.Select((kv, i) => (Index: i, kv.Key, kv.Value)).ToList();
+		var apiConfigs = ApiConfigsToRender();
 
 		await Parallel.ForEachAsync(apiConfigs, new ParallelOptions
 		{
@@ -120,6 +122,33 @@ public class OpenApiGenerator(
 	}
 
 	/// <summary>
+	/// Loads each configured spec and returns catalog entries labeled with the landing-page heading.
+	/// Does not write pages. Later <see cref="GenerateProducts"/> calls reuse the loaded documents.
+	/// </summary>
+	public async Task<IReadOnlyList<ApiCatalogEntry>> ResolveCatalogEntries(Cancel ctx = default)
+	{
+		if (context.Configuration.ApiConfigurations is null)
+			return [];
+
+		var entries = new ConcurrentBag<(int Order, ApiCatalogEntry Entry)>();
+		var apiConfigs = ApiConfigsToRender();
+		await Parallel.ForEachAsync(apiConfigs, new ParallelOptions
+		{
+			CancellationToken = ctx,
+			MaxDegreeOfParallelism = Environment.ProcessorCount
+		}, async (item, token) =>
+		{
+			var (order, prefix, apiConfig) = item;
+			var resolved = await DocumentsFor(prefix, apiConfig, token).ConfigureAwait(false);
+			var entry = CatalogEntry(prefix, apiConfig, resolved);
+			if (entry is not null)
+				entries.Add((order, entry));
+		}).ConfigureAwait(false);
+
+		return [.. entries.OrderBy(x => x.Order).Select(x => x.Entry)];
+	}
+
+	/// <summary>
 	/// Writes the combined API catalog page once from entries collected across one or more owners.
 	/// </summary>
 	public Task GenerateCatalog(IReadOnlyList<ApiCatalogEntry> entries, Cancel ctx = default) =>
@@ -132,14 +161,9 @@ public class OpenApiGenerator(
 		Cancel ctx
 	)
 	{
-		var resolved = await ResolveDocumentsForProduct(prefix, apiConfig, ctx).ConfigureAwait(false);
+		var resolved = await DocumentsFor(prefix, apiConfig, ctx).ConfigureAwait(false);
 		if (resolved.Documents.Count == 0)
-		{
-			context.Collector.EmitGlobalWarning(
-				$"API '{prefix}': no documents could be loaded from the spec — check earlier errors for details."
-			);
 			return null;
-		}
 
 		var versionedDocuments = resolved.Documents;
 		var monikers = versionedDocuments.Select(v => v.Version.Moniker).ToArray();
@@ -172,7 +196,55 @@ public class OpenApiGenerator(
 			).ConfigureAwait(false);
 		}
 
-		var canonical = versionedDocuments.FirstOrDefault(v => v.Version.Moniker == "main") ?? versionedDocuments[0];
+		return CatalogEntry(prefix, apiConfig, resolved);
+	}
+
+	private List<(int Index, string Key, ResolvedApiConfiguration Value)> ApiConfigsToRender()
+	{
+		if (context.Configuration.ApiConfigurations is null)
+			return [];
+
+		// docs/_docset.yml declares docs-builder-* copies of product specs for isolated serve.
+		// Assembler preview also loads that checkout, so those keys would list the same API twice.
+		var skipFixtures = context.BuildType == BuildType.Assembler;
+		return context
+			.Configuration
+			.ApiConfigurations
+			.Where(kv => !skipFixtures || !IsolatedApiAliases.IsFixtureKey(kv.Key))
+			.Select((kv, i) => (i, kv.Key, kv.Value))
+			.ToList();
+	}
+
+	private Task<ResolvedProductDocuments> DocumentsFor(string apiKey, ResolvedApiConfiguration apiConfig, Cancel ctx) =>
+		_documents.GetOrAdd(apiKey, _ => LoadDocuments(apiKey, apiConfig, ctx));
+
+	private async Task<ResolvedProductDocuments> LoadDocuments(string apiKey, ResolvedApiConfiguration apiConfig, Cancel ctx)
+	{
+		try
+		{
+			var resolved = await ResolveDocumentsForProduct(apiKey, apiConfig, ctx).ConfigureAwait(false);
+			if (resolved.Documents.Count == 0)
+			{
+				context.Collector.EmitGlobalWarning(
+					$"API '{apiKey}': no documents could be loaded from the spec — check earlier errors for details."
+				);
+			}
+
+			return resolved;
+		}
+		catch (Exception ex) when (ex is not OperationCanceledException)
+		{
+			context.Collector.EmitGlobalError($"API '{apiKey}' could not be generated: {ex.Message}");
+			return new([], null);
+		}
+	}
+
+	private ApiCatalogEntry? CatalogEntry(string prefix, ResolvedApiConfiguration apiConfig, ResolvedProductDocuments resolved)
+	{
+		if (resolved.Documents.Count == 0)
+			return null;
+
+		var canonical = resolved.Documents.FirstOrDefault(v => v.Version.Moniker == "main") ?? resolved.Documents[0];
 		var title = canonical.Document.Info?.Title ?? apiConfig.Product.DisplayName ?? prefix;
 		var url = $"{ApiUrlBuilder.ProductRoot(context.UrlPathPrefix, prefix)}/";
 		return new ApiCatalogEntry(prefix, title, url, apiConfig.Product.Id, canonical.Document.Info?.Description)

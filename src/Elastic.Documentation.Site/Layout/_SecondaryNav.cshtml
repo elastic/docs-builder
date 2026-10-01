@@ -253,7 +253,7 @@ else
 				<li class="text-nowrap hover:text-blue-elastic active:text-blue-elastic-100">
 					<details class="secondary-nav-dropdown secondary-nav-legacy-product" id="api-hub-switcher">
 						<summary aria-label="API product">
-							<span class="secondary-nav-legacy-product-label" title="@currentProduct.Label">@currentProduct.Label</span>
+							<span>@currentProduct.Label</span>
 							<span class="nav-select__chevron" aria-hidden="true">
 								<svg viewBox="0 0 16 16"><use href="#icon-chevron-down"/></svg>
 							</span>
@@ -264,7 +264,6 @@ else
 								var selectedClass = option.Selected ? " secondary-nav-dropdown-link--selected" : "";
 								<a class="secondary-nav-dropdown-link@(selectedClass)"
 								   href="@option.Value"
-								   title="@option.Label"
 								   preload="mousedown"
 								   hx-boost="false">@option.Label</a>
 							}
