@@ -548,6 +548,10 @@
 	list-style: none;
 }
 
+#markdown-content a.api-group-row {
+	text-decoration: none;
+}
+
 .api-group-row {
 	display: grid;
 	grid-template-columns: minmax(0, 1fr) 16px;
@@ -584,13 +588,15 @@
 }
 
 .api-group .api-url-row {
-	flex-wrap: wrap;
+	display: grid;
+	grid-template-columns: auto minmax(0, 1fr);
 	align-items: center;
-	row-gap: 4px;
+	column-gap: 8px;
 }
 
 .api-group .api-url {
 	margin-left: 0;
+	min-width: 0;
 	color: var(--color-subdued, #516381);
 	font-family:
 		'Roboto Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
@@ -620,6 +626,12 @@
 .api-group-row:focus-visible .api-overview-title,
 .api-group-row:focus-visible .api-group-chevron {
 	color: var(--color-blue-elastic, #0b64dd);
+}
+
+.api-group-row:hover .api-overview-title,
+.api-group-row:focus-visible .api-overview-title {
+	text-decoration: underline;
+	text-underline-offset: 2px;
 }
 
 .api-group-row:active {
