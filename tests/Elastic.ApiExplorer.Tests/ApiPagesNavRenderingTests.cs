@@ -16,6 +16,7 @@ using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.Site;
 using Elastic.Documentation.Site.FileProviders;
+using Elastic.Documentation.Site.Navigation;
 using RazorSlices;
 
 namespace Elastic.ApiExplorer.Tests;
@@ -171,6 +172,42 @@ public partial class ApiPagesNavRenderingTests
 		var html = await _ApiPagesNav.Create(model).RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
 
 		html.Should().NotContain("navigation-search");
+	}
+
+	[Test]
+	[Arguments("get", "GET", "Get a document source")]
+	[Arguments("post", "POST", "Index a document")]
+	[Arguments("put", "PUT", "Create or update a document")]
+	[Arguments("patch", "PATCH", "Update a document")]
+	[Arguments("delete", "DELETE", "Delete a document")]
+	public async Task Render_OperationRow_ShowsVerbTextAndOperationName(string method, string verb, string title)
+	{
+		var html = await _TocTreeNav.Create([
+			new NavigationRenderNode
+			{
+				Kind = NavigationRenderNodeKind.Leaf,
+				IsTopLevel = false,
+				NavigationTitle = title,
+				Url = "/api/doc/elasticsearch/operation/example",
+				HttpMethod = method
+			}
+		]).RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
+
+		var link = OperationLink(html);
+		link.Should().Contain($">{verb}<");
+		link.Should().Contain(title);
+		link.Should().NotContain("aria-label");
+		link.Should().NotContain("icon-api-arrow");
+		link.Should().NotContain("icon-api-x");
+	}
+
+	private static string OperationLink(string html)
+	{
+		var start = html.IndexOf("<a ", StringComparison.Ordinal);
+		start.Should().BeGreaterThanOrEqualTo(0);
+		var end = html.IndexOf("</a>", start, StringComparison.Ordinal);
+		end.Should().BeGreaterThan(start);
+		return html[start..(end + 4)];
 	}
 
 	private static ApiLayoutViewModel CreateLayoutModel(
