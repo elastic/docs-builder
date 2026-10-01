@@ -28,7 +28,7 @@ public class OperationViewModel(ApiRenderContext context) : ApiViewModel(context
 
 	protected override string? LayoutPageTitle => Operation.Operation.Summary ?? CurrentNavigationItem.NavigationTitle;
 
-	protected override string? LayoutPageDescription => Page.DescriptionMarkdown;
+	protected override string? LayoutPageDescription => ApiSeoDescription.Meaningful(Page.DescriptionMarkdown, Operation.Operation.Summary);
 
 	protected override IReadOnlyList<ApiTocItem> GetTocItems()
 	{
