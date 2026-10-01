@@ -76,10 +76,14 @@ public static class ProductExtensions
 			);
 		}
 
+		var (releaseNotes, warning) = ResolveReleaseNotesPath(productId, featuresDto);
+		if (warning is not null)
+			Console.Error.WriteLine(warning);
+
 		return new ProductFeatures
 		{
 			PublicReference = ResolveBooleanFeature(productId, featuresDto, "public-reference"),
-			ReleaseNotes = ResolveReleaseNotesPath(productId, featuresDto)
+			ReleaseNotes = releaseNotes
 		};
 	}
 
@@ -97,29 +101,33 @@ public static class ProductExtensions
 	/// <summary>
 	/// Resolves <c>features.release-notes</c> into an onboarding path. Backward compatible with the
 	/// historical boolean flag: omitted/<c>true</c> mean on-release participation, <c>false</c> opts
-	/// out; the strings <c>prestage</c> and <c>on-release</c> select the path explicitly.
+	/// out; the strings <c>prestage</c>/<c>dra</c>/<c>on-release</c> select the path explicitly.
+	/// Unknown future values are tolerated and treated as <c>on-release</c> so that a newer
+	/// <c>config/products.yml</c> does not crash an older released binary.
 	/// </summary>
-	private static ReleaseNotesPath ResolveReleaseNotesPath(string productId, Dictionary<string, string> featuresDto)
+	/// <returns>The resolved path and an optional warning message for unknown values.</returns>
+	private static (ReleaseNotesPath Path, string? Warning) ResolveReleaseNotesPath(
+		string productId,
+		Dictionary<string, string> featuresDto
+	)
 	{
 		if (!featuresDto.TryGetValue("release-notes", out var value))
-			return ReleaseNotesPath.OnRelease;
+			return (ReleaseNotesPath.OnRelease, null);
 
 		if (string.IsNullOrWhiteSpace(value))
 			throw new InvalidOperationException(
-				$"Product '{productId}' has an empty 'release-notes' value. Allowed values: true, false, prestage, on-release."
+				$"Product '{productId}' has an empty 'release-notes' value. Allowed values: true, false, dra, on-release."
 			);
 
 		if (bool.TryParse(value, out var enabled))
-			return enabled ? ReleaseNotesPath.OnRelease : ReleaseNotesPath.None;
+			return (enabled ? ReleaseNotesPath.OnRelease : ReleaseNotesPath.None, null);
 
 		return value.ToLowerInvariant() switch
 		{
-			"prestage" => ReleaseNotesPath.Prestage,
-			"on-release" => ReleaseNotesPath.OnRelease,
+			"prestage" or "dra" => (ReleaseNotesPath.Prestage, null),
+			"on-release" => (ReleaseNotesPath.OnRelease, null),
 			_ =>
-				throw new InvalidOperationException(
-					$"Product '{productId}' has invalid 'release-notes' value '{value}'. Allowed values: true, false, prestage, on-release."
-				)
+				(ReleaseNotesPath.OnRelease, $"Product '{productId}' has unrecognised 'release-notes' value '{value}'; treating as 'on-release'. Allowed values: true, false, dra, on-release.")
 		};
 	}
 }

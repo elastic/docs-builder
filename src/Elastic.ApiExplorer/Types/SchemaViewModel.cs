@@ -30,7 +30,7 @@ public class SchemaViewModel(ApiRenderContext context) : ApiViewModel(context)
 			tocItems.Add(new ApiTocItem("Description", "description"));
 
 		// Enum values
-		if (openApiSchema.Enum is { Count: > 0 })
+		if (Page.EnumValues.Count > 0)
 			tocItems.Add(new ApiTocItem("Enum Values", "enum-values"));
 
 		// Union types (oneOf or anyOf)

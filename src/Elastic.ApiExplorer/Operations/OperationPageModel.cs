@@ -60,8 +60,11 @@ public record ExampleScenario
 	/// <summary>Choices for the request-header example picker. Empty hides the picker.</summary>
 	public IReadOnlyList<ApiSelectOption> ExampleOptions { get; init; } = [];
 
-	/// <summary>Request JSON is omitted when code samples already embed the request body.</summary>
-	public bool ShowRequest => (RequestJson is not null || !string.IsNullOrEmpty(RequestExternalValue)) && CodeSamples.Count == 0;
+	/// <summary>True when the attached code samples contain this scenario's request body verbatim.</summary>
+	public bool CodeSamplesIncludeRequest { get; init; }
+
+	/// <summary>Request JSON is omitted only when code samples already embed the request body.</summary>
+	public bool ShowRequest => (RequestJson is not null || !string.IsNullOrEmpty(RequestExternalValue)) && !CodeSamplesIncludeRequest;
 
 	public bool ShowResponse => Responses.Count > 0;
 }
@@ -86,10 +89,13 @@ public record ApiQueryParameter
 	public required string? DescriptionMarkdown { get; init; }
 }
 
-/// <summary>A path parameter with its effective description precomputed.</summary>
+/// <summary>A path parameter with its structural display data precomputed.</summary>
 public record ApiPathParameter
 {
 	public required IOpenApiParameter Parameter { get; init; }
+	public required TypeAnnotation? Type { get; init; }
+	public required IReadOnlyList<string> EnumValues { get; init; }
+	public required IReadOnlyList<UnionBadge> UnionOptions { get; init; }
 	public required HtmlString DescriptionHtml { get; init; }
 	public required string? DescriptionMarkdown { get; init; }
 
@@ -132,6 +138,9 @@ public record ApiResponse
 	public required string? FirstContentType { get; init; }
 	public required IReadOnlyList<ApiResponseContent> Contents { get; init; }
 	public required IReadOnlyList<ApiResponseHeader> Headers { get; init; }
+
+	/// <summary>False when there is no schema or header to document, e.g. an example-only or 204 response.</summary>
+	public bool HasDetails => Contents.Count > 0 || Headers.Count > 0;
 }
 
 /// <summary>Status-code accordion under the Responses heading.</summary>
@@ -213,7 +222,7 @@ public partial record OperationPageModel
 		if (operation.ExternalDocs?.Url is not null)
 		{
 			var url = operation.ExternalDocs.Url.ToString();
-			externalDocs = new ExternalDocLink(url, ApiPropertyTreeBuilder.IsElasticDocsUrl(url));
+			externalDocs = new ExternalDocLink(url, ApiPropertyTreeBuilder.IsElasticDocsUrl(url), operation.ExternalDocs.Description);
 		}
 
 		var descriptionMarkdown = supplemental?.DescriptionOr(operation.Description) ?? operation.Description;
@@ -227,16 +236,7 @@ public partial record OperationPageModel
 			Overloads = ResolveOverloads(context),
 			PathParameters = (operation.Parameters ?? [])
 				.Where(p => p.In == ParameterLocation.Path)
-				.Select(p =>
-				{
-					var description = supplemental?.ParameterOr(p.Name ?? "", p.Description) ?? p.Description;
-					return new ApiPathParameter
-					{
-						Parameter = p,
-						DescriptionHtml = ApiMarkdown.Render(context, description),
-						DescriptionMarkdown = description
-					};
-				})
+				.Select(p => BuildPathParameter(p, analyzer, builder, context, supplemental))
 				.ToArray(),
 			QueryParameters = (operation.Parameters ?? [])
 				.Where(p => p.In == ParameterLocation.Query)
@@ -256,7 +256,7 @@ public partial record OperationPageModel
 			CodeSamples = codeSamples,
 			RequestExamples = requestExamples,
 			ResponseExamples = responseExamples,
-			ShowRequestExamples = requestExamples.Count > 0 && !(requestExamples.Count == 1 && codeSamples.Count > 0),
+			ShowRequestExamples = requestExamples.Count > 0 && scenarios.Any(static s => s.ShowRequest),
 			ShowResponseExamples = responseExamples.Count > 0,
 			Scenarios = scenarios,
 			ExamplesAnchor = examplesAnchor,
@@ -332,7 +332,8 @@ public partial record OperationPageModel
 		}
 
 		var matchIndex = FindScenarioForCodeSamples(scenarios, codeSamples);
-		scenarios[matchIndex] = scenarios[matchIndex] with { CodeSamples = codeSamples };
+		var target = matchIndex ?? 0;
+		scenarios[target] = scenarios[target] with { CodeSamples = codeSamples, CodeSamplesIncludeRequest = matchIndex is not null };
 		return scenarios;
 	}
 
@@ -457,7 +458,7 @@ public partial record OperationPageModel
 				? 1
 				: statusCode.Length > 0 && statusCode[0] == '4' ? 2 : statusCode.Length > 0 && statusCode[0] == '5' ? 3 : 4;
 
-	private static int FindScenarioForCodeSamples(IReadOnlyList<ExampleScenario> scenarios, IReadOnlyList<CodeSample> codeSamples)
+	private static int? FindScenarioForCodeSamples(IReadOnlyList<ExampleScenario> scenarios, IReadOnlyList<CodeSample> codeSamples)
 	{
 		var probe = codeSamples.FirstOrDefault(static s => string.Equals(s.Language, "Console", StringComparison.OrdinalIgnoreCase))
 			?? codeSamples[0];
@@ -474,7 +475,7 @@ public partial record OperationPageModel
 				return i;
 		}
 
-		return 0;
+		return null;
 	}
 
 	private static string Compact(string value) => string.Concat(value.Where(static c => !char.IsWhiteSpace(c)));
@@ -630,6 +631,31 @@ public partial record OperationPageModel
 		return context.CurrentNavigation is OperationNavigationItem self ? [self] : [];
 	}
 
+	private static ApiPathParameter BuildPathParameter(
+		IOpenApiParameter parameter,
+		SchemaAnalyzer analyzer,
+		ApiPropertyTreeBuilder builder,
+		ApiRenderContext context,
+		ApiSupplementalDoc? supplemental
+	)
+	{
+		var schema = parameter.Schema;
+		var typeInfo = analyzer.GetTypeInfo(schema);
+		var description = supplemental?.ParameterOr(parameter.Name ?? "", parameter.Description) ?? parameter.Description;
+		var type = schema is not null ? builder.DescribePathParameter(schema) : null;
+		// The type chip already lists X | X[]; a One of row would repeat those alternatives.
+		var alternativesInType = type?.Text.Contains(" | ", StringComparison.Ordinal) == true;
+		return new ApiPathParameter
+		{
+			Parameter = parameter,
+			Type = type,
+			EnumValues = typeInfo.EnumValues ?? [],
+			UnionOptions = alternativesInType ? [] : UnionBadges(typeInfo),
+			DescriptionHtml = ApiMarkdown.Render(context, description),
+			DescriptionMarkdown = description
+		};
+	}
+
 	private static ApiQueryParameter BuildQueryParameter(
 		IOpenApiParameter parameter,
 		SchemaAnalyzer analyzer,
@@ -639,58 +665,29 @@ public partial record OperationPageModel
 	)
 	{
 		var schema = parameter.Schema;
+		var typeInfo = analyzer.GetTypeInfo(schema);
 		var description = supplemental?.ParameterOr(parameter.Name ?? "", parameter.Description) ?? parameter.Description;
 		return new ApiQueryParameter
 		{
 			Parameter = parameter,
 			Type = schema is not null ? builder.Describe(schema) : null,
 			Constraints = schema is not null ? ApiPropertyTreeBuilder.BuildConstraints(schema) : [],
-			EnumValues = CollectEnumValues(schema, analyzer),
-			UnionOptions = CollectUnionOptionNames(schema, analyzer)
-				.Select(n => new UnionBadge(n, ApiPropertyTreeBuilder.IsTypeOptionBadge(n)))
-				.ToArray(),
+			EnumValues = typeInfo.EnumValues ?? [],
+			UnionOptions = UnionBadges(typeInfo),
 			DescriptionHtml = ApiMarkdown.Render(context, description),
 			DescriptionMarkdown = description
 		};
 	}
 
-	private static IReadOnlyList<string> CollectEnumValues(IOpenApiSchema? schema, SchemaAnalyzer analyzer)
+	private static UnionBadge[] UnionBadges(TypeInfo typeInfo)
 	{
-		var resolved = schema is not null ? analyzer.ResolveSchema(schema) : null;
-
-		// Collect enum values from direct enum, resolved enum, or union of string literals
-		var enumValues = new List<string>();
-		if (schema?.Enum is { Count: > 0 })
-			enumValues.AddRange(schema.Enum.Select(e => e?.ToString()?.Trim('"') ?? "").Where(e => !string.IsNullOrEmpty(e)));
-		else if (resolved?.Enum is { Count: > 0 })
-			enumValues.AddRange(resolved.Enum.Select(e => e?.ToString()?.Trim('"') ?? "").Where(e => !string.IsNullOrEmpty(e)));
-
-		if (enumValues.Count > 0)
-			return enumValues;
-
-		// Check for oneOf/anyOf with string literals (union enums)
-		var unionSchemas = resolved?.OneOf is { Count: > 0 } ? resolved.OneOf : resolved?.AnyOf is { Count: > 0 } ? resolved.AnyOf : null;
-		if (unionSchemas is not null)
-		{
-			enumValues.AddRange(
-				unionSchemas
-					.Select(analyzer.ResolveSchema)
-					.Where(r => r?.Enum is { Count: > 0 })
-					.SelectMany(r => r!.Enum!.Select(e => e?.ToString()?.Trim('"') ?? "").Where(e => !string.IsNullOrEmpty(e)))
-			);
-		}
-
-		return enumValues;
-	}
-
-	private static IReadOnlyList<string> CollectUnionOptionNames(IOpenApiSchema? schema, SchemaAnalyzer analyzer)
-	{
-		var typeInfo = schema is not null ? analyzer.GetTypeInfo(schema) : null;
-		if (typeInfo?.AnyOfOptions is { Count: > 0 })
-			return typeInfo.AnyOfOptions.Select(o => o.Name).Where(n => !string.IsNullOrEmpty(n)).ToArray();
-		if (typeInfo?.UnionOptions is { Length: > 0 })
-			return typeInfo.UnionOptions.Where(n => !string.IsNullOrEmpty(n)).ToArray();
-		return [];
+		var names = typeInfo.AnyOfOptions is { Count: > 0 } options
+			? options.Select(o => o.Name)
+			: typeInfo.UnionOptions ?? Enumerable.Empty<string>();
+		return names
+			.Where(n => !string.IsNullOrEmpty(n))
+			.Select(n => new UnionBadge(n, ApiPropertyTreeBuilder.IsTypeOptionBadge(n)))
+			.ToArray();
 	}
 
 	private static IReadOnlyList<ApiResponse> BuildResponses(

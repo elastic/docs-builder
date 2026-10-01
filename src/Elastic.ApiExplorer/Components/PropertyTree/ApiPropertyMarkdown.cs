@@ -93,9 +93,6 @@ internal static class ApiPropertyMarkdown
 
 		switch (property.Union.Kind)
 		{
-			case UnionDisplayKind.EnumLike when property.Union.EnumLikeValues.Count > 0:
-				WriteNestedLine(markdown, depth, "Values: " + string.Join(", ", property.Union.EnumLikeValues.Select(v => $"`{v}`")));
-				break;
 			case UnionDisplayKind.Badges when property.Union.Badges.Count > 0:
 				WriteNestedLine(markdown, depth, "One of: " + string.Join(" or ", property.Union.Badges.Select(b => $"`{b.Text}`")));
 				break;

@@ -54,9 +54,11 @@
 					</label>
 				}
 			</div>
-			<ul class="nav-subtree">
-				@await RenderPartialAsync(_TocTreeNavLegacy.Create(item.NavigationItems))
-			</ul>
+			<div class="nav-subtree-clip">
+				<ul class="nav-subtree">
+					@await RenderPartialAsync(_TocTreeNavLegacy.Create(item.NavigationItems))
+				</ul>
+			</div>
 		</li>
 	}
 	else
@@ -82,9 +84,11 @@
 					</label>
 				}
 			</div>
-			<ul class="nav-subtree">
-				@await RenderPartialAsync(_TocTreeNavLegacy.Create(item.NavigationItems))
-			</ul>
+			<div class="nav-subtree-clip">
+				<ul class="nav-subtree">
+					@await RenderPartialAsync(_TocTreeNavLegacy.Create(item.NavigationItems))
+				</ul>
+			</div>
 		</li>
 	}
 }

@@ -106,6 +106,21 @@ public class ApiPropertyTreeBuilder(OpenApiDocument document, PropertyDisplayOpt
 		return schema is null ? annotation : WithConstraints(annotation, BuildConstraints(schema));
 	}
 
+	/// <summary>
+	/// Path-parameter type chip. A <c>$ref</c> to <c>X | X[]</c> is described from the resolved union
+	/// so both alternatives show. <see cref="Describe"/> still returns the wrapper name, which query
+	/// and body rows keep.
+	/// </summary>
+	public TypeAnnotation DescribePathParameter(IOpenApiSchema? schema)
+	{
+		var resolved = _analyzer.ResolveSchema(schema);
+		if (ReferenceEquals(resolved, schema) || resolved is null)
+			return Describe(schema);
+
+		var (isSimpleArrayUnion, _) = DetectSimpleArrayUnion(_analyzer.GetTypeInfo(resolved));
+		return isSimpleArrayUnion ? Describe(resolved) : Describe(schema);
+	}
+
 	/// <summary>Validation constraint labels for a schema; empty when it declares none.</summary>
 	public static IReadOnlyList<ConstraintDisplay> BuildConstraints(IOpenApiSchema schema)
 	{
@@ -199,7 +214,7 @@ public class ApiPropertyTreeBuilder(OpenApiDocument document, PropertyDisplayOpt
 			Availability = options.ShowVersionInfo ? AvailabilityBadgeHelper.FromSchema(propSchema, options.VersionsConfiguration) : null,
 			ExternalDocs = BuildExternalDocs(propSchema, typeInfo),
 			Constraints = BuildConstraints(propSchema),
-			EnumValues = typeInfo is { IsEnum: true, EnumValues.Length: > 0 } ? typeInfo.EnumValues : [],
+			EnumValues = typeInfo.EnumValues ?? [],
 			Union = typeInfo.IsUnion ? BuildUnionDisplay(propSchema, typeInfo, expansion) : null,
 			// Type annotation already reads "[] …"; skip the redundant "Array of:" row.
 			ArrayItemTypeName = null,
@@ -344,7 +359,7 @@ public class ApiPropertyTreeBuilder(OpenApiDocument document, PropertyDisplayOpt
 		if (!options.ShowExternalDocs || propSchema.ExternalDocs?.Url is null || typeInfo.HasLink)
 			return null;
 		var url = propSchema.ExternalDocs.Url.ToString();
-		return new ExternalDocLink(url, IsElasticDocsUrl(url));
+		return new ExternalDocLink(url, IsElasticDocsUrl(url), propSchema.ExternalDocs.Description);
 	}
 
 	internal static bool IsElasticDocsUrl(string url) => url.Contains("www.elastic.co/docs") || url.Contains("elastic.co/guide");
@@ -389,6 +404,10 @@ public class ApiPropertyTreeBuilder(OpenApiDocument document, PropertyDisplayOpt
 
 	private UnionDisplay? BuildUnionDisplay(IOpenApiSchema propSchema, TypeInfo typeInfo, Expansion expansion)
 	{
+		// The "Values:" row already lists the literals; a "One of:" row would only repeat the member types.
+		if (typeInfo.EnumValues is { Length: > 0 } && !expansion.HasUnionOptions)
+			return null;
+
 		var unionOptionNames = new List<string>();
 		if (typeInfo.AnyOfOptions is { Count: > 0 })
 			unionOptionNames.AddRange(typeInfo.AnyOfOptions.Select(o => o.Name));
@@ -399,15 +418,6 @@ public class ApiPropertyTreeBuilder(OpenApiDocument document, PropertyDisplayOpt
 			.Distinct()
 			.OrderByDescending(o => o.EndsWith("[]"))
 			.ToArray();
-
-		var allEnumLike = sortedOptions.Length > 0
-			&& sortedOptions.All(
-				o => !o.EndsWith("[]") && !string.IsNullOrEmpty(o) && !SchemaHelpers.PrimitiveTypeNames.Contains(o) &&
-					(char.IsLower(o[0]) || o.All(c => !char.IsLetter(c) || char.IsLower(c) || c == '_'))
-			);
-
-		if (allEnumLike)
-			return new UnionDisplay { Kind = UnionDisplayKind.EnumLike, EnumLikeValues = sortedOptions };
 
 		if (expansion.IsSimpleArrayUnion)
 			return null;
@@ -833,6 +843,9 @@ public class ApiPropertyTreeBuilder(OpenApiDocument document, PropertyDisplayOpt
 
 		if (!SchemaHelpers.IsInternalSchemaName(typeName))
 		{
+			// "enum" is a keyword marker already appended — inline enums have no distinct type name to show.
+			if (typeInfo.IsEnum && typeName == "enum")
+				return;
 			spans.Add(NamedTypeSpan(typeName, typeInfo.SchemaRef, typeInfo.IsValueType));
 			return;
 		}
