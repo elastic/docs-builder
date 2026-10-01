@@ -16,14 +16,9 @@ namespace Elastic.ApiExplorer.Tests;
 [ClassDataSource<ApiExplorerFixture>(Shared = SharedType.PerClass)]
 public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture)
 {
-	private ApiPropertyTreeBuilder CreateBuilder(string? currentPageType = null, CollapseMode collapseMode = CollapseMode.AlwaysCollapsed)
+	private ApiPropertyTreeBuilder CreateBuilder(string? currentPageType = null)
 	{
-		var options = new PropertyDisplayOptions
-		{
-			RenderMarkdown = s => new HtmlString($"<p>{s}</p>"),
-			ApiRootUrl = "/api/doc/fixture",
-			CollapseMode = collapseMode
-		};
+		var options = new PropertyDisplayOptions { RenderMarkdown = s => new HtmlString($"<p>{s}</p>"), ApiRootUrl = "/api/doc/fixture" };
 		return new ApiPropertyTreeBuilder(fixture.Document, options, currentPageType);
 	}
 
@@ -251,7 +246,7 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture)
 	[Test]
 	public void BuildUnionVariantsForSchemas_TopLevelOneOf_BuildsVariantPerOption()
 	{
-		var builder = CreateBuilder(currentPageType: "Aggregate", collapseMode: CollapseMode.DepthBased);
+		var builder = CreateBuilder(currentPageType: "Aggregate");
 		var aggregate = Schema("_types.aggregations.Aggregate");
 
 		var variants = builder.BuildUnionVariantsForSchemas(aggregate.OneOf!, "oneof", new HashSet<string> { "Aggregate" });
@@ -429,11 +424,11 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture)
 	}
 
 	[Test]
-	[Arguments(false, CollapseMode.DepthBased)]
-	[Arguments(true, CollapseMode.AlwaysCollapsed)]
-	public async Task BuildPropertyList_ObjectsAtSameDepth_StartCollapsed(bool isRequest, CollapseMode collapseMode)
+	[Arguments(false)]
+	[Arguments(true)]
+	public async Task BuildPropertyList_ObjectsAtSameDepth_StartCollapsed(bool isRequest)
 	{
-		var builder = CreateBuilder(collapseMode: collapseMode);
+		var builder = CreateBuilder();
 		var list = builder.BuildPropertyList(ObjectsAtTwoDepths(), new PropertyTreeScope { Prefix = "body", IsRequest = isRequest });
 
 		list.Should().NotBeNull();
