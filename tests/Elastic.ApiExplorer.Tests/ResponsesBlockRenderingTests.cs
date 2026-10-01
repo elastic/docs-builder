@@ -30,16 +30,15 @@ public class ResponsesBlockRenderingTests
 		html.Should().Contain("Bad request");
 		html.Should().Contain("application/json");
 		html.Should().NotContain("text/plain");
-		html.Should().Contain("aria-controls=\"response-200-fields\"");
-		html.Should().Contain("aria-controls=\"response-400-fields\"");
-		html.Should().Contain("role=\"tablist\"");
-		html.Should().Contain("aria-orientation=\"vertical\"");
-		html.Should().Contain("aria-selected=\"false\"");
-		html.Should().NotContain("aria-expanded");
-		html.Should().NotContain("<button");
-		html.Should().Contain("response-panel collapsed");
+		html.Should().Contain("<details");
+		html.Should().Contain("<summary");
+		html.Should().Contain("response-status-chevron");
 		html.Should().Contain("id=\"response-200-fields\"");
 		html.Should().Contain("id=\"response-400-fields\"");
+		html.Should().NotContain("role=\"tab");
+		html.Should().NotContain("aria-selected");
+		html.Should().NotContain("<button");
+		html.Should().NotContain("response-panel collapsed");
 		html.Should().NotContain("<select");
 		html.Should().NotContain("<option");
 		html.Should().NotContain("api-responses-select");
@@ -56,11 +55,10 @@ public class ResponsesBlockRenderingTests
 
 		html.Should().Contain(description);
 		html.Should().NotContain("<button");
-		html.Should().Contain("role=\"tab\"");
-		html.Should().Contain("aria-selected=\"false\"");
-		html.Should().Contain("role=\"tabpanel\"");
-		html.Should().Contain("aria-labelledby=\"response-404-tab\"");
-		html.Should().Contain("id=\"response-404-tab\"");
+		html.Should().Contain("<details class=\"response-panel\"");
+		html.Should().Contain("<summary class=\"response-status-toggle\">");
+		html.Should().Contain("response-status-chevron");
+		html.Should().NotContain("role=\"tab");
 	}
 
 	[Test]
@@ -70,7 +68,8 @@ public class ResponsesBlockRenderingTests
 
 		html.Should().Contain(">Response</span>");
 		html.Should().NotContain(">Responses</span>");
-		html.Should().Contain("aria-controls=\"response-200-fields\"");
+		html.Should().Contain("id=\"response-200-fields\"");
+		html.Should().Contain("<details class=\"response-panel\"");
 	}
 
 	[Test]

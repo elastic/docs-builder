@@ -54,38 +54,7 @@ function setEnumValuesExpanded(
 }
 
 function expandResponsePanel(panel: HTMLElement): void {
-    const toggle = panel.querySelector<HTMLElement>(
-        ':scope > .response-status-toggle'
-    )
-    const body = panel.querySelector<HTMLElement>(
-        ':scope > .response-panel-body'
-    )
-
-    panel.classList.remove('collapsed')
-    panel.classList.add('expanded')
-    toggle?.setAttribute('aria-selected', 'true')
-    setUntilFoundHidden(body, false)
-}
-
-function collapseResponsePanel(panel: HTMLElement): void {
-    const toggle = panel.querySelector<HTMLElement>(
-        ':scope > .response-status-toggle'
-    )
-    const body = panel.querySelector<HTMLElement>(
-        ':scope > .response-panel-body'
-    )
-
-    panel.classList.remove('expanded')
-    panel.classList.add('collapsed')
-    toggle?.setAttribute('aria-selected', 'false')
-    setUntilFoundHidden(body, true)
-}
-
-function toggleResponsePanel(tab: HTMLElement): void {
-    const panel = tab.closest<HTMLElement>('.response-panel')
-    if (!panel) return
-    if (panel.classList.contains('expanded')) collapseResponsePanel(panel)
-    else expandResponsePanel(panel)
+    if (panel instanceof HTMLDetailsElement) panel.open = true
 }
 
 /**
@@ -306,19 +275,6 @@ function initOperationView(section: HTMLElement): void {
 
         section
             .querySelectorAll<HTMLElement>(
-                '.response-panel-body[hidden="until-found"]'
-            )
-            .forEach((panelBody) => {
-                panelBody.addEventListener('beforematch', function () {
-                    const panel = panelBody.parentElement
-                    if (panel?.classList.contains('response-panel')) {
-                        expandResponsePanel(panel)
-                    }
-                })
-            })
-
-        section
-            .querySelectorAll<HTMLElement>(
                 '.api-param-section-body[hidden="until-found"]'
             )
             .forEach((body) => {
@@ -466,17 +422,6 @@ function initGlobalClickHandlers(): void {
         if (toggleBtn) setEnumValuesExpanded(toggleBtn, true)
     })
 
-    document.addEventListener('keydown', function (event) {
-        const target = event.target
-        if (!(target instanceof HTMLElement)) return
-        const tab = target.closest<HTMLElement>('.response-status-toggle')
-        if (!tab?.closest('#elastic-api-v3, #schema-definition')) return
-
-        if (event.key !== 'Enter' && event.key !== ' ') return
-        event.preventDefault()
-        toggleResponsePanel(tab)
-    })
-
     document.addEventListener('click', function (e) {
         const target = e.target as HTMLElement
 
@@ -516,14 +461,17 @@ function initGlobalClickHandlers(): void {
             return
         }
 
-        const responseStatusToggle = target.closest<HTMLElement>(
-            '.response-status-toggle'
+        const responseStatusToggle = target.closest(
+            'summary.response-status-toggle'
         )
         if (responseStatusToggle) {
-            if (window.getSelection()?.toString()) return
-            e.preventDefault()
-            e.stopPropagation()
-            toggleResponsePanel(responseStatusToggle)
+            const selection = window.getSelection()
+            if (
+                selection &&
+                !selection.isCollapsed &&
+                responseStatusToggle.contains(selection.anchorNode)
+            )
+                e.preventDefault()
             return
         }
 
