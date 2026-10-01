@@ -54,31 +54,7 @@ function setEnumValuesExpanded(
 }
 
 function expandResponsePanel(panel: HTMLElement): void {
-    const toggleBtn = panel.querySelector<HTMLButtonElement>(
-        ':scope > .response-status-toggle'
-    )
-    const body = panel.querySelector<HTMLElement>(
-        ':scope > .response-panel-body'
-    )
-
-    panel.classList.remove('collapsed')
-    panel.classList.add('expanded')
-    toggleBtn?.setAttribute('aria-expanded', 'true')
-    setUntilFoundHidden(body, false)
-}
-
-function collapseResponsePanel(panel: HTMLElement): void {
-    const toggleBtn = panel.querySelector<HTMLButtonElement>(
-        ':scope > .response-status-toggle'
-    )
-    const body = panel.querySelector<HTMLElement>(
-        ':scope > .response-panel-body'
-    )
-
-    panel.classList.remove('expanded')
-    panel.classList.add('collapsed')
-    toggleBtn?.setAttribute('aria-expanded', 'false')
-    setUntilFoundHidden(body, true)
+    if (panel instanceof HTMLDetailsElement) panel.open = true
 }
 
 /**
@@ -299,19 +275,6 @@ function initOperationView(section: HTMLElement): void {
 
         section
             .querySelectorAll<HTMLElement>(
-                '.response-panel-body[hidden="until-found"]'
-            )
-            .forEach((panelBody) => {
-                panelBody.addEventListener('beforematch', function () {
-                    const panel = panelBody.parentElement
-                    if (panel?.classList.contains('response-panel')) {
-                        expandResponsePanel(panel)
-                    }
-                })
-            })
-
-        section
-            .querySelectorAll<HTMLElement>(
                 '.api-param-section-body[hidden="until-found"]'
             )
             .forEach((body) => {
@@ -498,20 +461,17 @@ function initGlobalClickHandlers(): void {
             return
         }
 
-        const responseStatusToggle = target.closest<HTMLButtonElement>(
-            '.response-status-toggle'
+        const responseStatusToggle = target.closest(
+            'summary.response-status-toggle'
         )
         if (responseStatusToggle) {
-            e.preventDefault()
-            e.stopPropagation()
-
-            const panel =
-                responseStatusToggle.closest<HTMLElement>('.response-panel')
-            if (!panel) return
-
-            if (panel.classList.contains('expanded'))
-                collapseResponsePanel(panel)
-            else expandResponsePanel(panel)
+            const selection = window.getSelection()
+            if (
+                selection &&
+                !selection.isCollapsed &&
+                responseStatusToggle.contains(selection.anchorNode)
+            )
+                e.preventDefault()
             return
         }
 

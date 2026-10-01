@@ -11,10 +11,9 @@
 		@for (var i = 0; i < responses.Count; i++)
 		{
 			var response = responses[i];
-			var bodyId = $"response-{response.StatusCode}-fields";
 			if (!response.HasDetails)
 			{
-				<div class="response-panel response-panel--static" data-status="@response.StatusCode">
+				<div class="response-panel response-panel--static">
 					<div class="response-status-row">
 						<span class="response-status-chip status-@response.StatusClass">@response.StatusCode</span>
 						@if (!string.IsNullOrEmpty(response.Response.Description))
@@ -29,12 +28,8 @@
 				</div>
 				continue;
 			}
-			<div class="response-panel collapsed" data-status="@response.StatusCode">
-				<button
-					type="button"
-					class="response-status-toggle"
-					aria-expanded="false"
-					aria-controls="@bodyId">
+			<details class="response-panel">
+				<summary class="response-status-toggle">
 					<span class="response-status-chip status-@response.StatusClass">@response.StatusCode</span>
 					@if (!string.IsNullOrEmpty(response.Response.Description))
 					{
@@ -44,8 +39,9 @@
 					{
 						<span class="content-type-tag">@response.FirstContentType</span>
 					}
-				</button>
-				<div class="response-panel-body" id="@bodyId" hidden="until-found">
+					<span class="response-status-chevron" aria-hidden="true"></span>
+				</summary>
+				<div class="response-panel-body" id="response-@response.StatusCode-fields">
 					@foreach (var content in response.Contents)
 					{
 						if (content.Properties is not null)
@@ -101,7 +97,7 @@
 						</div>
 					}
 				</div>
-			</div>
+			</details>
 		}
 	</div>
 </div>

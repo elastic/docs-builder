@@ -30,12 +30,15 @@ public class ResponsesBlockRenderingTests
 		html.Should().Contain("Bad request");
 		html.Should().Contain("application/json");
 		html.Should().NotContain("text/plain");
-		html.Should().Contain("aria-controls=\"response-200-fields\"");
-		html.Should().Contain("aria-controls=\"response-400-fields\"");
-		html.Should().Contain("aria-expanded=\"false\"");
-		html.Should().Contain("response-panel collapsed");
+		html.Should().Contain("<details");
+		html.Should().Contain("<summary");
+		html.Should().Contain("response-status-chevron");
 		html.Should().Contain("id=\"response-200-fields\"");
 		html.Should().Contain("id=\"response-400-fields\"");
+		html.Should().NotContain("role=\"tab");
+		html.Should().NotContain("aria-selected");
+		html.Should().NotContain("<button");
+		html.Should().NotContain("response-panel collapsed");
 		html.Should().NotContain("<select");
 		html.Should().NotContain("<option");
 		html.Should().NotContain("api-responses-select");
@@ -45,13 +48,28 @@ public class ResponsesBlockRenderingTests
 	}
 
 	[Test]
+	public async Task Render_TextResponse_KeepsDescriptionOutsideAButtonAndExposesSelection()
+	{
+		const string description = "Not Found - no agent with this ID is visible to the caller.";
+		var html = await RenderHtml(Response("404", "error", description));
+
+		html.Should().Contain(description);
+		html.Should().NotContain("<button");
+		html.Should().Contain("<details class=\"response-panel\"");
+		html.Should().Contain("<summary class=\"response-status-toggle\">");
+		html.Should().Contain("response-status-chevron");
+		html.Should().NotContain("role=\"tab");
+	}
+
+	[Test]
 	public async Task Render_SingleStatus_KeepsSingularHeading()
 	{
 		var html = await RenderHtml(Response("200", "success", "Successful response"));
 
 		html.Should().Contain(">Response</span>");
 		html.Should().NotContain(">Responses</span>");
-		html.Should().Contain("aria-controls=\"response-200-fields\"");
+		html.Should().Contain("id=\"response-200-fields\"");
+		html.Should().Contain("<details class=\"response-panel\"");
 	}
 
 	[Test]
