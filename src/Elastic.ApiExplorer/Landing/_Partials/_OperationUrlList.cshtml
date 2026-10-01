@@ -1,13 +1,31 @@
 @inherits RazorSlice<OperationUrlListModel>
-		<ul class="api-url-listing">
-		@foreach (var overload in Model.Operations)
+@using System.Net
+@using System.Text
+@functions {
+	private static HtmlString RouteWithBreaks(string route)
+	{
+		var html = new StringBuilder(route.Length + 16);
+		var first = true;
+		foreach (var segment in route.Split('/'))
 		{
-			var method = overload.Model.OperationType.ToString().ToLowerInvariant();
-			<li class="api-url-list-item">
-				<span class="api-url-row">
-					@(await RenderPartialAsync<_HttpMethodBadge, string>(method))
-					<span class="api-url">@overload.Model.Route</span>
-				</span>
-			</li>
+			if (!first)
+				_ = html.Append("/<wbr>");
+			first = false;
+			_ = html.Append(WebUtility.HtmlEncode(segment));
 		}
-		</ul>
+
+		return new HtmlString(html.ToString());
+	}
+}
+<ul class="api-url-listing">
+	@foreach (var overload in Model.Operations)
+	{
+		var method = overload.Model.OperationType.ToString().ToLowerInvariant();
+		<li class="api-url-list-item">
+			<span class="api-url-row">
+				@(await RenderPartialAsync<_HttpMethodBadge, string>(method))
+				<span class="api-url">@RouteWithBreaks(overload.Model.Route)</span>
+			</span>
+		</li>
+	}
+</ul>
