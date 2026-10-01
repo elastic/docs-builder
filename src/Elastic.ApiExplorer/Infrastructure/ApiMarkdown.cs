@@ -47,6 +47,40 @@ public static partial class ApiMarkdown
 	internal static string SanitizeHtml(string html) => string.IsNullOrEmpty(html) ? html : Sanitizer.Sanitize(html);
 
 	/// <summary>
+	/// Response rows are buttons, which cannot contain the paragraphs Markdig emits.
+	/// A description made only of paragraphs becomes inline text with breaks between them.
+	/// </summary>
+	internal static HtmlString InlineParagraphs(HtmlString html)
+	{
+		var value = html.Value?.Trim() ?? "";
+		if (value.Length == 0 || !value.Contains("<p>", StringComparison.Ordinal))
+			return html;
+
+		var paragraphs = ReadParagraphs(value);
+		return paragraphs is null ? html : new HtmlString(string.Join("<br><br>", paragraphs));
+	}
+
+	private static List<string>? ReadParagraphs(string value)
+	{
+		var paragraphs = new List<string>();
+		var rest = value;
+		while (rest.Length > 0)
+		{
+			if (!rest.StartsWith("<p>", StringComparison.Ordinal))
+				return null;
+
+			var end = rest.IndexOf("</p>", StringComparison.Ordinal);
+			if (end < 0)
+				return null;
+
+			paragraphs.Add(rest[3..end]);
+			rest = rest[(end + 4)..].TrimStart();
+		}
+
+		return paragraphs;
+	}
+
+	/// <summary>
 	/// Keeps CommonMark readable: escape mustache substitutions and rewrite intra-API links.
 	/// </summary>
 	public static string Prepare(string? markdown, string apiBaseUrl)
