@@ -124,6 +124,18 @@ public class ApiSupplementalRenderTests(ApiExplorerFixture fixture)
 	}
 
 	[Test]
+	public async Task Operation_PathParameters_MultipleItems_RendersCollapsedHeading()
+	{
+		var nav = fixture.Walk().OfType<OperationNavigationItem>().First(n => n.Model.Operation.OperationId == "docs-get");
+		var html = await RenderAsync(nav.Model, nav);
+
+		html.Should().Contain("api-param-section collapsed");
+		html.Should().Contain("id=\"parameters-list\"");
+		html.Should().Contain("aria-controls=\"parameters-list\"");
+		html.Should().Contain("api-param-section-title\">Path Parameters</span>");
+	}
+
+	[Test]
 	public async Task Operation_PathParameters_RequiredBadgeIsSiblingOfAnchor()
 	{
 		var nav = SearchOperation();
