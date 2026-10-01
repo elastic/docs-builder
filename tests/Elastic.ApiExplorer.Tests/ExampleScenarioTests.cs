@@ -2,11 +2,20 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.IO.Abstractions;
 using AwesomeAssertions;
+using Elastic.ApiExplorer._Partials.Layout;
+using Elastic.ApiExplorer.Infrastructure;
+using Elastic.ApiExplorer.Landing;
 using Elastic.ApiExplorer.Model;
 using Elastic.ApiExplorer.Operations;
+using Elastic.Documentation.Configuration;
+using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.FileSystems;
+using Elastic.Documentation.Site.FileProviders;
 using Microsoft.AspNetCore.Html;
 using Microsoft.OpenApi;
+using RazorSlices;
 
 namespace Elastic.ApiExplorer.Tests;
 
@@ -300,4 +309,90 @@ public class ExampleScenarioTests
 			s.Route.Should().Be("/_search");
 		});
 	}
+
+	[Test]
+	public async Task Create_BudgetSpec_Renders200ExampleAndOmitsEmptyResponse()
+	{
+		const string exampleBody = "{\n  \"id\": 432433423\n}";
+		var page = await CreatePage(CreateBudgetSpec);
+		var html = await _OperationExamplesPanel.Create(new OperationExamplesPanelModel { Scenarios = page.Scenarios }).RenderAsync(
+			cancellationToken: TestContext.Current!.Execution.CancellationToken
+		);
+
+		var responses = page.Scenarios.SelectMany(static s => s.Responses).ToArray();
+		responses.Should().ContainSingle();
+		responses[0].StatusCode.Should().Be("200");
+		responses[0].JsonValue.Should().Be(exampleBody);
+		html.Should().Contain("432433423");
+		html.Should().NotContain("example-empty");
+		html.Should().NotContain(">400</span>");
+	}
+
+	private static async Task<OperationPageModel> CreatePage(string spec)
+	{
+		var path = Path.Join(Path.GetTempPath(), $"response-example-{Guid.NewGuid():N}.json");
+		try
+		{
+			await File.WriteAllTextAsync(path, spec, TestContext.Current!.Execution.CancellationToken);
+			var document = await OpenApiReader.Instance.ReadAsync(new FileSystem().FileInfo.New(path));
+			document.Should().NotBeNull();
+			var pathItem = document!.Paths!["/api/v1/billing/organization/{organization_id}/budget"];
+			var operation = pathItem.Operations![HttpMethod.Post];
+			var apiOperation = new ApiOperation(
+				HttpMethod.Post,
+				operation,
+				"/api/v1/billing/organization/{organization_id}/budget",
+				pathItem,
+				"Create a budget"
+			);
+			var build = new BuildContext(
+				new DiagnosticsCollector([]),
+				DocumentationFileSystem.Resolve(Paths.WorkingDirectoryRoot.FullName),
+				TestHelpers.CreateConfigurationContext(new FileSystem())
+			);
+			var context = new ApiRenderContext(
+				build,
+				document,
+				new StaticFileContentHashProvider(new EmbeddedOrPhysicalFileProvider(build))
+			)
+			{
+				NavigationHtml = string.Empty,
+				CurrentNavigation = new LandingNavigationItem("/api/doc/cloud-billing").Index,
+				MarkdownRenderer = PassthroughMarkdownRenderer.Instance
+			};
+			return OperationPageModel.Create(apiOperation, context);
+		}
+		finally
+		{
+			if (File.Exists(path))
+				File.Delete(path);
+		}
+	}
+
+	private const string CreateBudgetSpec =
+		"""
+		{
+		  "openapi": "3.0.3",
+		  "info": { "title": "Cloud Billing", "version": "1" },
+		  "paths": {
+		    "/api/v1/billing/organization/{organization_id}/budget": {
+		      "post": {
+		        "operationId": "createBudgetV1",
+		        "summary": "Create a budget for the organization.",
+		        "responses": {
+		          "200": {
+		            "description": "Budget created successfully",
+		            "content": {
+		              "application/json": {
+		                "example": { "id": 432433423 }
+		              }
+		            }
+		          },
+		          "400": { "description": "Invalid request" }
+		        }
+		      }
+		    }
+		  }
+		}
+		""";
 }
