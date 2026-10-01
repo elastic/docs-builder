@@ -56,6 +56,14 @@ public class OperationViewModel(ApiRenderContext context) : ApiViewModel(context
 		if (Page.ExamplesAnchor is null)
 			return layout;
 
-		return layout with { ExamplesPanel = new OperationExamplesPanelModel { Scenarios = Page.Scenarios } };
+		return layout with
+		{
+			ExamplesPanel = new OperationExamplesPanelModel
+			{
+				Scenarios = Page.Scenarios,
+				DrivenByPath = Page.ExamplesFollowPath,
+				SelectedExampleKey = Page.SelectedPath?.Key
+			}
+		};
 	}
 }

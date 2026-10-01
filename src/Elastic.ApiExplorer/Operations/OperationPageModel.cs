@@ -73,6 +73,11 @@ public record ExampleScenario
 public record OperationExamplesPanelModel
 {
 	public required IReadOnlyList<ExampleScenario> Scenarios { get; init; }
+
+	/// <summary>Path radios choose the visible example. The scenario dropdown stays for request variants.</summary>
+	public bool DrivenByPath { get; init; }
+
+	public string? SelectedExampleKey { get; init; }
 }
 
 /// <summary>A query string parameter with its structural display data precomputed.</summary>
@@ -101,7 +106,13 @@ public record ApiPathParameter
 
 	public string? Name => Parameter.Name;
 	public bool? Deprecated => Parameter.Deprecated;
-	public bool Required => Parameter.Required;
+
+	/// <summary>Required for the selected path. OpenAPI marks every merged path parameter required.</summary>
+	public bool Required { get; init; }
+
+	/// <summary>Routes whose template contains this parameter. Empty on single-path operations.</summary>
+	public IReadOnlyList<string> RequiredForRoutes { get; init; } = [];
+
 	public HtmlString Description => DescriptionHtml;
 }
 
@@ -158,6 +169,13 @@ public partial record OperationPageModel
 	public required IList<OpenApiServer>? Servers { get; init; }
 	public required IReadOnlyCollection<OperationNavigationItem> Overloads { get; init; }
 	public bool HasMultipleOverloads => Overloads.Count > 1;
+
+	/// <summary>Routes for this operation. More than one means the spec merged them onto a single path item.</summary>
+	public IReadOnlyList<OperationPathChoice> Paths { get; init; } = [];
+
+	public OperationPathChoice? SelectedPath { get; init; }
+	public bool ExamplesFollowPath { get; init; }
+	public bool HasPathChoices => Paths.Count > 1;
 	public required IReadOnlyList<ApiPathParameter> PathParameters { get; init; }
 	public required IReadOnlyList<ApiQueryParameter> QueryParameters { get; init; }
 
@@ -206,12 +224,18 @@ public partial record OperationPageModel
 		if (codeSamples.Count == 0)
 			codeSamples = SyntheticCodeSamples.Create(apiOperation.OperationType, apiOperation.Route, operation, servers);
 
+		var descriptionMarkdown = supplemental?.DescriptionOr(operation.Description) ?? operation.Description;
+		var httpMethod = apiOperation.OperationType.ToString().ToLowerInvariant();
+		var pathSet = OperationPaths.Resolve(descriptionMarkdown, httpMethod, apiOperation.Route, codeSamples);
+		descriptionMarkdown = pathSet.Description;
+
 		var requestExamples = MapExamples(operation.RequestBody?.Content?.FirstOrDefault().Value?.Examples, options.RenderMarkdown);
 		var responseExamples = MapResponseExamples(operation.Responses, options.RenderMarkdown);
-		var scenarios = WithOperationIdentity(
+		var (scenarios, examplesFollowPath) = ScenariosForPaths(
 			EnsureResponseTabs(BuildExampleScenarios(requestExamples, responseExamples, codeSamples), operation.Responses),
-			apiOperation.OperationType.ToString().ToLowerInvariant(),
-			apiOperation.Route
+			pathSet,
+			codeSamples,
+			new OperationPathChoice(httpMethod, apiOperation.Route)
 		);
 		var examplesAnchor = scenarios.Count > 0 ? "examples" : null;
 
@@ -225,8 +249,6 @@ public partial record OperationPageModel
 			externalDocs = new ExternalDocLink(url, ApiPropertyTreeBuilder.IsElasticDocsUrl(url), operation.ExternalDocs.Description);
 		}
 
-		var descriptionMarkdown = supplemental?.DescriptionOr(operation.Description) ?? operation.Description;
-
 		return new OperationPageModel
 		{
 			Availability = AvailabilityBadgeHelper.FromOperation(operation, context.BuildContext.VersionsConfiguration),
@@ -234,9 +256,12 @@ public partial record OperationPageModel
 			ExternalDocs = externalDocs,
 			Servers = servers,
 			Overloads = ResolveOverloads(context),
+			Paths = pathSet.Paths,
+			SelectedPath = pathSet.Selected,
+			ExamplesFollowPath = examplesFollowPath,
 			PathParameters = (operation.Parameters ?? [])
 				.Where(p => p.In == ParameterLocation.Path)
-				.Select(p => BuildPathParameter(p, analyzer, builder, context, supplemental))
+				.Select(p => OperationPaths.ApplyRequirement(BuildPathParameter(p, analyzer, builder, context, supplemental), pathSet))
 				.ToArray(),
 			QueryParameters = (operation.Parameters ?? [])
 				.Where(p => p.In == ParameterLocation.Query)
@@ -266,6 +291,26 @@ public partial record OperationPageModel
 				$"{context.CurrentNavigation.NavigationRoot.Url.TrimEnd('/')}/{ApiUrlBuilder.AuthenticationSegment}"
 			)
 		};
+	}
+
+	private static (IReadOnlyList<ExampleScenario> Scenarios, bool ExamplesFollowPath) ScenariosForPaths(
+		IReadOnlyList<ExampleScenario> scenarios,
+		OperationPathSet pathSet,
+		IReadOnlyList<CodeSample> codeSamples,
+		OperationPathChoice canonical
+	)
+	{
+		if (!pathSet.HasChoices)
+			return (WithOperationIdentity(scenarios, canonical.Method, canonical.Route), false);
+
+		if (scenarios.Count <= 1)
+		{
+			var basis = scenarios.Count == 0 ? null : scenarios[0];
+			return (OperationPaths.PerPathExamples(basis, pathSet, codeSamples), true);
+		}
+
+		var selected = pathSet.Selected ?? canonical;
+		return (WithOperationIdentity(scenarios, selected.Method, selected.Route), false);
 	}
 
 	internal static IReadOnlyList<ExampleScenario> WithOperationIdentity(
@@ -652,7 +697,8 @@ public partial record OperationPageModel
 			EnumValues = typeInfo.EnumValues ?? [],
 			UnionOptions = alternativesInType ? [] : UnionBadges(typeInfo),
 			DescriptionHtml = ApiMarkdown.Render(context, description),
-			DescriptionMarkdown = description
+			DescriptionMarkdown = description,
+			Required = parameter.Required
 		};
 	}
 

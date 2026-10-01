@@ -7,7 +7,8 @@
 @{
 	var operation = Model.Operation.Operation;
 	var pageModel = Model.Page;
-	var endpointListingAttrs = pageModel.HasMultipleOverloads
+	var multipleEndpoints = pageModel.HasPathChoices || pageModel.HasMultipleOverloads;
+	var endpointListingAttrs = multipleEndpoints
 		? new HtmlString(" role=\"radiogroup\" aria-label=\"Endpoints\"")
 		: HtmlString.Empty;
 }
@@ -48,30 +49,55 @@
 		</div>
 	}
 
-	<ul id="paths" class="api-url-listing@(pageModel.HasMultipleOverloads ? " api-url-listing--multi" : "")"@endpointListingAttrs>
-		@foreach (var overload in pageModel.Overloads)
+	<ul id="paths" class="api-url-listing@(multipleEndpoints ? " api-url-listing--multi" : "")"@endpointListingAttrs>
+		@if (pageModel.HasPathChoices)
 		{
-			var method = overload.Model.OperationType.ToString().ToLowerInvariant();
-			var isCurrent = overload.Model.Route == Model.Operation.Route && overload.Model.OperationType == Model.Operation.OperationType;
-			<li class="api-url-list-item">
-				<label class="api-url-row@(isCurrent ? " current" : "")">
-					@if (pageModel.HasMultipleOverloads)
-					{
+			@foreach (var choice in pageModel.Paths)
+			{
+				var isCurrent = choice == pageModel.SelectedPath;
+				<li class="api-url-list-item">
+					<label class="api-url-row@(isCurrent ? " current" : "")">
 						<input
 							type="radio"
 							class="api-url-radio"
 							name="api-endpoint"
-							value="@overload.Url"
-							aria-label="@(method.ToUpperInvariant()) @overload.Model.Route"
-							hx-get="@overload.Url"
-							@LayoutModel.HxAttributes
+							value="@choice.Key"
+							data-path-key="@choice.Key"
+							aria-label="@(choice.Method.ToUpperInvariant()) @choice.Route"
 							@(isCurrent ? "checked" : null) />
-					}
-					@(await RenderPartialAsync<_HttpMethodBadge, string>(method))
-					<span class="api-url">@overload.Model.Route</span>
-					@(await RenderPartialAsync<_EndpointCopyButton, string>(overload.Model.Route))
-				</label>
-			</li>
+						@(await RenderPartialAsync<_HttpMethodBadge, string>(choice.Method))
+						<span class="api-url">@choice.Route</span>
+						@(await RenderPartialAsync<_EndpointCopyButton, string>(choice.Route))
+					</label>
+				</li>
+			}
+		}
+		else
+		{
+			@foreach (var overload in pageModel.Overloads)
+			{
+				var method = overload.Model.OperationType.ToString().ToLowerInvariant();
+				var isCurrent = overload.Model.Route == Model.Operation.Route && overload.Model.OperationType == Model.Operation.OperationType;
+				<li class="api-url-list-item">
+					<label class="api-url-row@(isCurrent ? " current" : "")">
+						@if (pageModel.HasMultipleOverloads)
+						{
+							<input
+								type="radio"
+								class="api-url-radio"
+								name="api-endpoint"
+								value="@overload.Url"
+								aria-label="@(method.ToUpperInvariant()) @overload.Model.Route"
+								hx-get="@overload.Url"
+								@LayoutModel.HxAttributes
+								@(isCurrent ? "checked" : null) />
+						}
+						@(await RenderPartialAsync<_HttpMethodBadge, string>(method))
+						<span class="api-url">@overload.Model.Route</span>
+						@(await RenderPartialAsync<_EndpointCopyButton, string>(overload.Model.Route))
+					</label>
+				</li>
+			}
 		}
 	</ul>
 	@if (pageModel.AuthSchemes.Count > 0)
@@ -169,7 +195,11 @@
 					{
 						@(await RenderPartialAsync<_SchemaType, TypeAnnotation>(path.Type))
 					}
-					@if (path.Required)
+					@if (path.RequiredForRoutes.Count > 0)
+					{
+						<span class="required type-status" data-required-for="@string.Join(" ", path.RequiredForRoutes)" hidden="@(path.Required ? null : "hidden")">required</span>
+					}
+					else if (path.Required)
 					{
 						<span class="required type-status">required</span>
 					}
