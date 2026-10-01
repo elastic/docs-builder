@@ -3767,3 +3767,18 @@ button.example-response-tab:focus-visible {
 	width: auto;
 	height: 40px;
 }
+
+/* Keep the viewport scrollbar mounted. A scrollbar that appears when a
+   section expands changes the layout width and shifts both rails.
+   scrollbar-gutter does not reserve that space in current Chrome. */
+html:has(.api-page-shell) {
+	overflow-y: scroll;
+}
+
+@media (min-width: 1024px) {
+	/* The rail shrinks its cards to the viewport. Keep the request sample's
+	   height independent of which response status is selected. */
+	#api-examples-panel .api-code-card:not(.example-block--response) {
+		flex-shrink: 0;
+	}
+}
