@@ -3185,6 +3185,17 @@ button.example-response-tab:focus-visible {
 	max-width: var(--max-layout-width);
 }
 
+/* Above 1440, an operation with examples replaces the narrative TOC column
+   with the examples column, so the shell is wider than --max-layout-width. */
+@media (min-width: 1440px) {
+	.api-page-shell:has(#api-examples-panel.api-examples-panel) {
+		max-width: calc(
+			var(--max-layout-width) - var(--max-sidebar-width) +
+				var(--max-examples-width)
+		);
+	}
+}
+
 @media (min-width: 768px) {
 	.api-page-shell > .grid {
 		column-gap: 48px;
