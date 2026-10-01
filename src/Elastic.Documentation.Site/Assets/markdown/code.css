@@ -1,5 +1,6 @@
 @layer components {
-	/* Examples rail uses .api-code-card (api-docs.css). Do not apply the docs dark theme there. */
+	/* Examples rail card chrome lives in api-docs.css. Token colors apply to every
+	   .markdown-content, including that rail, so API samples share this theme. */
 	.markdown-content:not(.api-examples-panel-nav) {
 		.highlight {
 			@apply mt-4;
@@ -73,7 +74,9 @@
 			mix-blend-mode: multiply;
 			word-break: break-word;
 		}
+	}
 
+	.markdown-content {
 		.hljs-built_in,
 		.hljs-selector-tag,
 		.hljs-section,
