@@ -412,9 +412,18 @@ public class ApiSupplementalRenderTests(ApiExplorerFixture fixture)
 		var nav = SearchTag();
 		var html = await RenderAsync(nav.Index.Model, nav);
 
-		html.Should().Contain("api-overview-title");
+		html.Should().Contain("api-group-op");
 		html.Should().Contain("api-url-row");
+		html.Should().NotContain("<table");
 		html.Should().NotContain("api-url-list-item-landing");
+
+		var linkAt = html.IndexOf("class=\"api-group-op-link\"", StringComparison.Ordinal);
+		linkAt.Should().BeGreaterThanOrEqualTo(0);
+		var anchorEnd = html.IndexOf("</a>", linkAt, StringComparison.Ordinal);
+		var anchor = html[linkAt..anchorEnd];
+		anchor.Should().Contain(">search<");
+		anchor.Should().Contain("/<wbr>{index}/<wbr>_search");
+		anchor.Should().Contain("api-group-op-chevron");
 	}
 
 	[Test]

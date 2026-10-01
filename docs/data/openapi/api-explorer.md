@@ -295,7 +295,7 @@ toc:
 The API Explorer generates the following types of pages from your OpenAPI spec:
 
 - **Landing page**: An overview of the API grouped by tag
-- **Tag landing pages**: One page per tag that lists operations in that tag, with the tag's display name, optional OpenAPI `description` (CommonMark), and optional `externalDocs` link
+- **Tag landing pages**: One page per tag that lists operations in that tag, with the tag's display name, optional OpenAPI `description` (CommonMark), and optional `externalDocs` link. Each operation is one row and one link, with a trailing chevron. The method and path sit under the name, and beside it when the content column is wide
 - **Operation pages**: One page per API operation, with the HTTP method, path, parameters, request body, response schemas, and examples
 - **Schema type pages**: Dedicated pages for complex shared types such as `QueryContainer` and `AggregationContainer`. On operation pages, those properties link to that page.
 
