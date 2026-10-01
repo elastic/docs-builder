@@ -435,9 +435,11 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture)
 		var html = await _PropertyList.Create(list!).RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
 
 		AssertCollapsedPair(list.Items, "small", "large", html);
+		AssertStartsCollapsed(html, list.Items.Single(p => p.Name == "only").AnchorId);
 		var group = list.Items.Single(p => p.Name == "group");
 		group.Children.Properties.Should().NotBeNull();
 		AssertCollapsedPair(group.Children.Properties!.Items, "small", "large", html);
+		AssertStartsCollapsed(html, group.Children.Properties.Items.Single(p => p.Name == "only").AnchorId);
 	}
 
 	private static void AssertCollapsedPair(IReadOnlyList<ApiProperty> items, string smallName, string largeName, string html)
@@ -470,6 +472,7 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture)
 			Type = JsonSchemaType.Object,
 			Properties = new Dictionary<string, IOpenApiSchema>
 			{
+				["only"] = StringFields("one"),
 				["small"] = StringFields("one", "two"),
 				["large"] = StringFields("one", "two", "three", "four", "five", "six"),
 				["group"] = new OpenApiSchema
@@ -477,6 +480,7 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture)
 					Type = JsonSchemaType.Object,
 					Properties = new Dictionary<string, IOpenApiSchema>
 					{
+						["only"] = StringFields("one"),
 						["small"] = StringFields("one", "two"),
 						["large"] = StringFields("one", "two", "three", "four", "five", "six")
 					}

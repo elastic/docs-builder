@@ -270,7 +270,8 @@ public class ApiPropertyTreeBuilder(OpenApiDocument document, PropertyDisplayOpt
 
 		var hasChildren = (hasNestedProps || hasDictValueProps || hasArrayItemProps || hasUnionOptions || simpleUnionHasExpandableProps)
 			&& !isRecursive;
-		var isCollapsible = hasChildren && nestedCount > 1 && !hasUnionOptions && !hasDictValueProps;
+		// One nested field still collapses. A single child used to render open beside a closed sibling.
+		var isCollapsible = hasChildren && nestedCount > 0 && !hasUnionOptions && !hasDictValueProps;
 		var defaultExpanded = ComputeDefaultExpanded();
 
 		return new Expansion(
@@ -493,7 +494,7 @@ public class ApiPropertyTreeBuilder(OpenApiDocument document, PropertyDisplayOpt
 	private ApiPropertyChildren BuildDictionaryChildren(PropertyRow row, PropertyTreeScope childScope, Expansion expansion)
 	{
 		var keyAnchorId = $"{row.AnchorId}-string";
-		var dictIsCollapsible = expansion.NestedCount > 1;
+		var dictIsCollapsible = expansion.NestedCount > 0;
 		var dictDefaultExpanded = ComputeDefaultExpanded();
 		return new ApiPropertyChildren
 		{
@@ -621,7 +622,7 @@ public class ApiPropertyTreeBuilder(OpenApiDocument document, PropertyDisplayOpt
 				_ = newAncestors.Add(variant.BaseName);
 
 			var nestedCount = variant.Props?.Count ?? 0;
-			var isCollapsible = showProperties && nestedCount > 1;
+			var isCollapsible = showProperties && nestedCount > 0;
 			var defaultExpanded = ComputeDefaultExpanded();
 
 			variants.Add(new ApiUnionVariant
