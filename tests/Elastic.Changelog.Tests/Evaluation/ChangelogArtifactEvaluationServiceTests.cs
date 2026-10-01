@@ -15,7 +15,7 @@ using FakeItEasy;
 
 namespace Elastic.Changelog.Tests.Evaluation;
 
-public class ChangelogArtifactEvaluationServiceTests(ITestOutputHelper output) : ChangelogTestBase(output)
+public class ChangelogArtifactEvaluationServiceTests() : ChangelogTestBase()
 {
 	private readonly IGitHubPrService _mockGitHub = A.Fake<IGitHubPrService>();
 	private readonly ICoreService _mockCore = A.Fake<ICoreService>();
@@ -69,7 +69,7 @@ public class ChangelogArtifactEvaluationServiceTests(ITestOutputHelper output) :
 
 	private void VerifyOutputSet(string name, string value) => A.CallTo(() => _mockCore.SetOutputAsync(name, value)).MustHaveHappened();
 
-	[Fact]
+	[Test]
 	public async Task EvaluateArtifact_MissingMetadata_ReturnsTrue()
 	{
 		var service = CreateService();
@@ -80,7 +80,7 @@ public class ChangelogArtifactEvaluationServiceTests(ITestOutputHelper output) :
 		A.CallTo(() => _mockGitHub.FetchPrInfoAsync(A<string>._, A<string>._, A<string>._, A<CancellationToken>._)).MustNotHaveHappened();
 	}
 
-	[Fact]
+	[Test]
 	public async Task EvaluateArtifact_FetchPrFails_ReturnsFalse()
 	{
 		await WriteMetadata(DefaultMetadata());
@@ -92,7 +92,7 @@ public class ChangelogArtifactEvaluationServiceTests(ITestOutputHelper output) :
 		result.Should().BeFalse();
 	}
 
-	[Fact]
+	[Test]
 	public async Task EvaluateArtifact_HeadShaMoved_ReturnsTrueWithoutSettingFlags()
 	{
 		await WriteMetadata(DefaultMetadata());
@@ -105,7 +105,7 @@ public class ChangelogArtifactEvaluationServiceTests(ITestOutputHelper output) :
 		A.CallTo(() => _mockCore.SetOutputAsync("should-commit", A<string>._)).MustNotHaveHappened();
 	}
 
-	[Fact]
+	[Test]
 	public async Task EvaluateArtifact_AllProductsBlocked_ReturnsTrueGracefully()
 	{
 		var metadata = DefaultMetadata() with { CreateRules = new CreateRules { Labels = ["changelog:skip"], Mode = FieldMode.Exclude } };
@@ -119,7 +119,7 @@ public class ChangelogArtifactEvaluationServiceTests(ITestOutputHelper output) :
 		A.CallTo(() => _mockCore.SetOutputAsync("should-commit", A<string>._)).MustNotHaveHappened();
 	}
 
-	[Fact]
+	[Test]
 	public async Task EvaluateArtifact_SuccessCanCommit_SetsCommitFlag()
 	{
 		await WriteMetadata(DefaultMetadata(canCommit: true));
@@ -139,7 +139,7 @@ public class ChangelogArtifactEvaluationServiceTests(ITestOutputHelper output) :
 		VerifyOutputSet("changelog-filename", "42.yaml");
 	}
 
-	[Fact]
+	[Test]
 	public async Task EvaluateArtifact_SuccessCannotCommit_SetsCommentSuccessFlag()
 	{
 		await WriteMetadata(DefaultMetadata(canCommit: false));
@@ -153,7 +153,7 @@ public class ChangelogArtifactEvaluationServiceTests(ITestOutputHelper output) :
 		VerifyOutputSet("should-comment-success", "true");
 	}
 
-	[Fact]
+	[Test]
 	public async Task EvaluateArtifact_ForkCanCommit_SetsCommitFlag()
 	{
 		var metadata = DefaultMetadata(canCommit: true) with { IsFork = true, HeadRepo = "contributor/repo", MaintainerCanModify = true };
@@ -169,7 +169,7 @@ public class ChangelogArtifactEvaluationServiceTests(ITestOutputHelper output) :
 		VerifyOutputSet("head-repo", "contributor/repo");
 	}
 
-	[Fact]
+	[Test]
 	public async Task EvaluateArtifact_ForkCannotCommit_SetsCommentSuccessFlag()
 	{
 		var metadata = DefaultMetadata(canCommit: false) with { IsFork = true, HeadRepo = "contributor/repo", MaintainerCanModify = false };
@@ -185,7 +185,7 @@ public class ChangelogArtifactEvaluationServiceTests(ITestOutputHelper output) :
 		VerifyOutputSet("is-fork", "true");
 	}
 
-	[Fact]
+	[Test]
 	public async Task EvaluateArtifact_NoLabel_SetsCommentFailureFlag()
 	{
 		await WriteMetadata(DefaultMetadata(status: "no-label", canCommit: false) with
@@ -207,7 +207,7 @@ public class ChangelogArtifactEvaluationServiceTests(ITestOutputHelper output) :
 		VerifyOutputSet("skip-labels", "changelog:skip");
 	}
 
-	[Fact]
+	[Test]
 	public async Task EvaluateArtifact_TimestampFilename_OutputsOriginalFilename()
 	{
 		await WriteMetadata(DefaultMetadata(changelogFilename: "1735689600-fix-search.yaml"));

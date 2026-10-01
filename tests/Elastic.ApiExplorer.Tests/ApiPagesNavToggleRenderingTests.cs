@@ -10,10 +10,10 @@ namespace Elastic.ApiExplorer.Tests;
 
 public class ApiPagesNavToggleRenderingTests
 {
-	[Fact]
+	[Test]
 	public async Task Render_OpensTheSameHamburgerCheckboxAsDocs()
 	{
-		var html = await _ApiPagesNavToggle.Create().RenderAsync(cancellationToken: TestContext.Current.CancellationToken);
+		var html = await _ApiPagesNavToggle.Create().RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
 
 		html.Should().Contain("for=\"pages-nav-hamburger\"");
 		html.Should().Contain("aria-label=\"Open navigation\"");

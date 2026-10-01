@@ -4,46 +4,46 @@
 
 using Elastic.Authoring.Tests.Framework;
 
-namespace Elastic.Authoring.Tests.Inline.CrossLinkRedirectAnchors;
+namespace Elastic.Authoring.Tests.Inline;
 
 public class Scenario1ComplexRedirectMappingWithAnchorDropping
 {
-	[Fact(DisplayName = "No anchor redirects to new-anchorless page")]
+	[Test, DisplayName("No anchor redirects to new-anchorless page")]
 	public void NoAnchorRedirects() =>
 		CrossLinkResolverAssertions.ResolvesTo(
 			"docs-content://testing/redirects/multi-topic-page-1-old.md",
 			"/testing/redirects/multi-topic-page-1-new-anchorless"
 		);
 
-	[Fact(DisplayName = "Unmatched anchor for '!' rule redirects to new-anchorless page and drops anchor")]
+	[Test, DisplayName("Unmatched anchor for '!' rule redirects to new-anchorless page and drops anchor")]
 	public void UnmatchedAnchorDropsAnchor() =>
 		CrossLinkResolverAssertions.ResolvesTo(
 			"docs-content://testing/redirects/multi-topic-page-1-old.md#unmatched-anchor",
 			"/testing/redirects/multi-topic-page-1-new-anchorless"
 		);
 
-	[Fact(DisplayName = "topic-a-intro redirects to topic-a-subpage and drops anchor (null target)")]
+	[Test, DisplayName("topic-a-intro redirects to topic-a-subpage and drops anchor (null target)")]
 	public void TopicAIntroDropsAnchor() =>
 		CrossLinkResolverAssertions.ResolvesTo(
 			"docs-content://testing/redirects/multi-topic-page-1-old.md#topic-a-intro",
 			"/testing/redirects/multi-topic-page-1-new-topic-a-subpage"
 		);
 
-	[Fact(DisplayName = "topic-a-details redirects to topic-a-subpage with new anchor")]
+	[Test, DisplayName("topic-a-details redirects to topic-a-subpage with new anchor")]
 	public void TopicADetailsRedirectsWithNewAnchor() =>
 		CrossLinkResolverAssertions.ResolvesTo(
 			"docs-content://testing/redirects/multi-topic-page-1-old.md#topic-a-details",
 			"/testing/redirects/multi-topic-page-1-new-topic-a-subpage#details-anchor"
 		);
 
-	[Fact(DisplayName = "topic-b-main redirects to topic-b-subpage with new anchor")]
+	[Test, DisplayName("topic-b-main redirects to topic-b-subpage with new anchor")]
 	public void TopicBMainRedirectsWithNewAnchor() =>
 		CrossLinkResolverAssertions.ResolvesTo(
 			"docs-content://testing/redirects/multi-topic-page-1-old.md#topic-b-main",
 			"/testing/redirects/multi-topic-page-1-new-topic-b-subpage#main-anchor"
 		);
 
-	[Fact(DisplayName = "topic-c-main redirects to old page and keeps anchor")]
+	[Test, DisplayName("topic-c-main redirects to old page and keeps anchor")]
 	public void TopicCMainKeepsAnchor() =>
 		CrossLinkResolverAssertions.ResolvesTo(
 			"docs-content://testing/redirects/multi-topic-page-1-old.md#topic-c-main",
@@ -53,42 +53,42 @@ public class Scenario1ComplexRedirectMappingWithAnchorDropping
 
 public class Scenario2ComplexRedirectMappingWithAnchorPassing
 {
-	[Fact(DisplayName = "No anchor redirects to old page (self)")]
+	[Test, DisplayName("No anchor redirects to old page (self)")]
 	public void NoAnchorRedirectsToSelf() =>
 		CrossLinkResolverAssertions.ResolvesTo(
 			"docs-content://testing/redirects/multi-topic-page-2-old.md",
 			"/testing/redirects/multi-topic-page-2-old"
 		);
 
-	[Fact(DisplayName = "Unmatched anchor for '{}' rule redirects to old page (self) and keeps anchor")]
+	[Test, DisplayName("Unmatched anchor for '{}' rule redirects to old page (self) and keeps anchor")]
 	public void UnmatchedAnchorKeepsAnchor() =>
 		CrossLinkResolverAssertions.ResolvesTo(
 			"docs-content://testing/redirects/multi-topic-page-2-old.md#unmatched-anchor",
 			"/testing/redirects/multi-topic-page-2-old#unmatched-anchor"
 		);
 
-	[Fact(DisplayName = "topic-a-intro redirects to topic-a-subpage with new anchor")]
+	[Test, DisplayName("topic-a-intro redirects to topic-a-subpage with new anchor")]
 	public void TopicAIntroRedirectsWithNewAnchor() =>
 		CrossLinkResolverAssertions.ResolvesTo(
 			"docs-content://testing/redirects/multi-topic-page-2-old.md#topic-a-intro",
 			"/testing/redirects/multi-topic-page-2-new-topic-a-subpage#introduction"
 		);
 
-	[Fact(DisplayName = "topic-a-details redirects to topic-a-subpage and drops anchor (null target)")]
+	[Test, DisplayName("topic-a-details redirects to topic-a-subpage and drops anchor (null target)")]
 	public void TopicADetailsDropsAnchor() =>
 		CrossLinkResolverAssertions.ResolvesTo(
 			"docs-content://testing/redirects/multi-topic-page-2-old.md#topic-a-details",
 			"/testing/redirects/multi-topic-page-2-new-topic-a-subpage"
 		);
 
-	[Fact(DisplayName = "topic-b-main redirects to topic-b-subpage with new anchor")]
+	[Test, DisplayName("topic-b-main redirects to topic-b-subpage with new anchor")]
 	public void TopicBMainRedirectsWithNewAnchor() =>
 		CrossLinkResolverAssertions.ResolvesTo(
 			"docs-content://testing/redirects/multi-topic-page-2-old.md#topic-b-main",
 			"/testing/redirects/multi-topic-page-2-new-topic-b-subpage#summary"
 		);
 
-	[Fact(DisplayName = "topic-b-config redirects to topic-b-subpage and drops anchor (null target)")]
+	[Test, DisplayName("topic-b-config redirects to topic-b-subpage and drops anchor (null target)")]
 	public void TopicBConfigDropsAnchor() =>
 		CrossLinkResolverAssertions.ResolvesTo(
 			"docs-content://testing/redirects/multi-topic-page-2-old.md#topic-b-config",

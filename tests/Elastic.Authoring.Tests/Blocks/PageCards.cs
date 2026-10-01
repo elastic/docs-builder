@@ -2,7 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-namespace Elastic.Authoring.Tests.Blocks.PageCards;
+namespace Elastic.Authoring.Tests.Blocks;
 
 // {page-card} moved onto the shared DirectiveLinkValidator. These tests pin the contract it
 // had before that move: relative links resolve against the source file, and no file-existence
@@ -17,7 +17,7 @@ public class PageCardWithARelativeLink : MarkdownTest
 		:::
 		""";
 
-	[Fact(DisplayName = "resolves the link relative to the source file")]
+	[Test, DisplayName("resolves the link relative to the source file")]
 	public async Task ResolvesLinkRelative() =>
 		await Docs.ConvertsToContainingHtml(
 			"""
@@ -35,7 +35,7 @@ public class PageCardWithARelativeLink : MarkdownTest
 		"""
 		);
 
-	[Fact(DisplayName = "has no errors")]
+	[Test, DisplayName("has no errors")]
 	public async Task HasNoErrors() => await Docs.HasNoErrors();
 }
 
@@ -48,7 +48,7 @@ public class PageCardWithADotRelativeLink : MarkdownTest
 
 	// The CLI reference generates page-cards pointing at generated pages that have no markdown
 	// file on disk. A file-existence check here would report false positives on every one.
-	[Fact(DisplayName = "does not check that the target file exists")]
+	[Test, DisplayName("does not check that the target file exists")]
 	public async Task DoesNotCheckFileExists() => await Docs.HasNoErrors();
 }
 
@@ -59,7 +59,7 @@ public class PageCardWithoutADescription : MarkdownTest
 		:::
 		""";
 
-	[Fact(DisplayName = "has no errors")]
+	[Test, DisplayName("has no errors")]
 	public async Task HasNoErrors() => await Docs.HasNoErrors();
 }
 
@@ -70,7 +70,7 @@ public class PageCardWithAnAbsoluteUrl : MarkdownTest
 		:::
 		""";
 
-	[Fact(DisplayName = "errors")]
+	[Test, DisplayName("errors")]
 	public async Task Errors() => await Docs.HasError("page-card url must be a local .md path or crosslink");
 }
 
@@ -81,6 +81,6 @@ public class PageCardWithoutAMarkdownLink : MarkdownTest
 		:::
 		""";
 
-	[Fact(DisplayName = "errors")]
+	[Test, DisplayName("errors")]
 	public async Task Errors() => await Docs.HasError("page-card requires a markdown link argument");
 }

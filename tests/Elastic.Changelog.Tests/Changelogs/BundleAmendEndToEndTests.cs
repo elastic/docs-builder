@@ -21,12 +21,12 @@ namespace Elastic.Changelog.Tests.Changelogs;
 /// fetch returns the amend and the <c>exclude-entries</c> retraction (matched by <c>file</c>
 /// identity) applies.
 /// </summary>
-public class BundleAmendEndToEndTests(ITestOutputHelper output) : ChangelogTestBase(output)
+public class BundleAmendEndToEndTests() : ChangelogTestBase()
 {
-	[Fact]
+	[Test]
 	public async Task AmendLifecycle_FromCreationToVersionFilteredCdnConsumption()
 	{
-		var ct = TestContext.Current.CancellationToken;
+		var ct = TestContext.Current!.Execution.CancellationToken;
 
 		// -- Authoring fixtures -------------------------------------------------------------
 		var changelogDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
@@ -107,7 +107,7 @@ public class BundleAmendEndToEndTests(ITestOutputHelper output) : ChangelogTestB
 
 		// -- 2. upload destination discovery includes the amend ------------------------------
 		var s3 = new FakeS3("public-bucket");
-		var uploadCollector = new TestDiagnosticsCollector(Output);
+		var uploadCollector = new TestDiagnosticsCollector();
 		var uploadService = new ChangelogUploadService(NullLoggerFactory.Instance, fileSystem: FileSystem, s3Client: s3.Client);
 		var targets = uploadService.DiscoverBundleUploadTargets(uploadCollector, bundleDir);
 

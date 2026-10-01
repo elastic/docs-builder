@@ -8,16 +8,16 @@ using Elastic.Markdown.Tests.DocSet;
 
 namespace Elastic.Markdown.Tests.Mover;
 
-public class MoverTests(ITestOutputHelper output) : NavigationTestsBase(output)
+public class MoverTests() : NavigationTestsBase()
 {
-	[Fact]
+	[Test]
 	public async Task RelativeLinks()
 	{
 		var workingDirectory = Set.Configuration.SourceFile.DirectoryName;
 		Directory.SetCurrentDirectory(workingDirectory!);
 
 		var mover = new Move(LoggerFactory, FileSystem.Read, FileSystem.Write, Set);
-		await mover.Execute("mover/first-page.md", "new-folder/hello-world.md", true, TestContext.Current.CancellationToken);
+		await mover.Execute("mover/first-page.md", "new-folder/hello-world.md", true, TestContext.Current!.Execution.CancellationToken);
 
 		mover.Changes.Should().HaveCount(1);
 		var changeSet = mover.Changes.First();
@@ -38,14 +38,14 @@ public class MoverTests(ITestOutputHelper output) : NavigationTestsBase(output)
 		linkModifications[2].NewLink.Should().Be("[Absolut link to first page](/new-folder/hello-world.md)");
 	}
 
-	[Fact]
+	[Test]
 	public async Task MoveToFolder()
 	{
 		var workingDirectory = Set.Configuration.SourceFile.DirectoryName;
 		Directory.SetCurrentDirectory(workingDirectory!);
 
 		var mover = new Move(LoggerFactory, FileSystem.Read, FileSystem.Write, Set);
-		await mover.Execute("mover/first-page.md", "new-folder", true, TestContext.Current.CancellationToken);
+		await mover.Execute("mover/first-page.md", "new-folder", true, TestContext.Current!.Execution.CancellationToken);
 
 		mover.Changes.Should().HaveCount(1);
 		var changeSet = mover.Changes.First();
@@ -66,14 +66,14 @@ public class MoverTests(ITestOutputHelper output) : NavigationTestsBase(output)
 		linkModifications[2].NewLink.Should().Be("[Absolut link to first page](/new-folder/first-page.md)");
 	}
 
-	[Fact]
+	[Test]
 	public async Task MoveFolderToFolder()
 	{
 		var workingDirectory = Set.Configuration.SourceFile.DirectoryName;
 		Directory.SetCurrentDirectory(workingDirectory!);
 
 		var mover = new Move(LoggerFactory, FileSystem.Read, FileSystem.Write, Set);
-		await mover.Execute("mover", "new-folder", true, TestContext.Current.CancellationToken);
+		await mover.Execute("mover", "new-folder", true, TestContext.Current!.Execution.CancellationToken);
 
 		mover.Changes.Should().HaveCount(2);
 		var changeSet = mover.LinkModifications.FirstOrDefault(k => k.Key.From.Name == "first-page.md").Key;

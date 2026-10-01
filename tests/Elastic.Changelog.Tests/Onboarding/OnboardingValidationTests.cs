@@ -19,7 +19,7 @@ namespace Elastic.Changelog.Tests.Onboarding;
 /// Tests for <c>changelog validate-onboarding</c>: every product registered as
 /// <c>features.release-notes: prestage</c> must carry the Prestage scaffolding in its repository.
 /// </summary>
-public class OnboardingValidationTests(ITestOutputHelper output) : ChangelogTestBase(output)
+public class OnboardingValidationTests() : ChangelogTestBase()
 {
 	private static IConfigurationContext ContextWith(params Product[] products)
 	{
@@ -67,7 +67,7 @@ public class OnboardingValidationTests(ITestOutputHelper output) : ChangelogTest
 		"docs/changelog.yml"
 	];
 
-	[Fact]
+	[Test]
 	public async Task PrestageProductWithAllFiles_Passes()
 	{
 		var handler = RepoWith("widget", AllScaffolding);
@@ -76,7 +76,7 @@ public class OnboardingValidationTests(ITestOutputHelper output) : ChangelogTest
 		var result = await service.ValidateOnboardingAsync(
 			Collector,
 			new ValidateOnboardingArguments(),
-			TestContext.Current.CancellationToken
+			TestContext.Current!.Execution.CancellationToken
 		);
 
 		result.Should().BeTrue();
@@ -84,7 +84,7 @@ public class OnboardingValidationTests(ITestOutputHelper output) : ChangelogTest
 		handler.RequestedPaths.Should().Contain("/repos/elastic/widget/contents/.github/workflows/changelog-bundle-stage.yml");
 	}
 
-	[Fact]
+	[Test]
 	public async Task PrestageProductMissingWorkflow_FailsListingTheFile()
 	{
 		var handler = RepoWith(
@@ -99,7 +99,7 @@ public class OnboardingValidationTests(ITestOutputHelper output) : ChangelogTest
 		var result = await service.ValidateOnboardingAsync(
 			Collector,
 			new ValidateOnboardingArguments(),
-			TestContext.Current.CancellationToken
+			TestContext.Current!.Execution.CancellationToken
 		);
 
 		result.Should().BeFalse();
@@ -109,7 +109,7 @@ public class OnboardingValidationTests(ITestOutputHelper output) : ChangelogTest
 			.Contain(d => d.Severity == Severity.Error && d.Message.Contains("widget") && d.Message.Contains("changelog-bundle-stage.yml"));
 	}
 
-	[Fact]
+	[Test]
 	public async Task RootChangelogConfig_IsAcceptedAsFallback()
 	{
 		var handler = RepoWith(
@@ -125,14 +125,14 @@ public class OnboardingValidationTests(ITestOutputHelper output) : ChangelogTest
 		var result = await service.ValidateOnboardingAsync(
 			Collector,
 			new ValidateOnboardingArguments(),
-			TestContext.Current.CancellationToken
+			TestContext.Current!.Execution.CancellationToken
 		);
 
 		result.Should().BeTrue();
 		Collector.Errors.Should().Be(0);
 	}
 
-	[Fact]
+	[Test]
 	public async Task RepositoryOverride_IsProbedInsteadOfProductId()
 	{
 		var handler = RepoWith("widget-src", AllScaffolding);
@@ -141,14 +141,14 @@ public class OnboardingValidationTests(ITestOutputHelper output) : ChangelogTest
 		var result = await service.ValidateOnboardingAsync(
 			Collector,
 			new ValidateOnboardingArguments(),
-			TestContext.Current.CancellationToken
+			TestContext.Current!.Execution.CancellationToken
 		);
 
 		result.Should().BeTrue();
 		handler.RequestedPaths.Should().OnlyContain(p => p.StartsWith("/repos/elastic/widget-src/", StringComparison.Ordinal));
 	}
 
-	[Fact]
+	[Test]
 	public async Task NoManagedProducts_PassesWithoutAnyRequest()
 	{
 		var unmanaged = PrestageProduct("widget") with
@@ -161,14 +161,14 @@ public class OnboardingValidationTests(ITestOutputHelper output) : ChangelogTest
 		var result = await service.ValidateOnboardingAsync(
 			Collector,
 			new ValidateOnboardingArguments(),
-			TestContext.Current.CancellationToken
+			TestContext.Current!.Execution.CancellationToken
 		);
 
 		result.Should().BeTrue();
 		handler.RequestedPaths.Should().BeEmpty();
 	}
 
-	[Fact]
+	[Test]
 	public async Task OnReleaseProductWithWorkflow_Passes()
 	{
 		var product = PrestageProduct("widget") with { Features = ProductFeatures.All };
@@ -178,7 +178,7 @@ public class OnboardingValidationTests(ITestOutputHelper output) : ChangelogTest
 		var result = await service.ValidateOnboardingAsync(
 			Collector,
 			new ValidateOnboardingArguments(),
-			TestContext.Current.CancellationToken
+			TestContext.Current!.Execution.CancellationToken
 		);
 
 		result.Should().BeTrue();
@@ -186,7 +186,7 @@ public class OnboardingValidationTests(ITestOutputHelper output) : ChangelogTest
 		handler.RequestedPaths.Should().Contain("/repos/elastic/widget/contents/.github/workflows/release-notes.yml");
 	}
 
-	[Fact]
+	[Test]
 	public async Task OnReleaseProductMissingWorkflow_FailsListingTheFile()
 	{
 		var product = PrestageProduct("widget") with { Features = ProductFeatures.All };
@@ -196,7 +196,7 @@ public class OnboardingValidationTests(ITestOutputHelper output) : ChangelogTest
 		var result = await service.ValidateOnboardingAsync(
 			Collector,
 			new ValidateOnboardingArguments(),
-			TestContext.Current.CancellationToken
+			TestContext.Current!.Execution.CancellationToken
 		);
 
 		result.Should().BeFalse();
@@ -206,7 +206,7 @@ public class OnboardingValidationTests(ITestOutputHelper output) : ChangelogTest
 			.Contain(d => d.Severity == Severity.Error && d.Message.Contains("widget") && d.Message.Contains("release-notes.yml"));
 	}
 
-	[Fact]
+	[Test]
 	public async Task UnreadableRepository_FailsWithCredentialsHint()
 	{
 		var handler = new StubHandler(_ => new HttpResponseMessage(HttpStatusCode.Forbidden));
@@ -215,7 +215,7 @@ public class OnboardingValidationTests(ITestOutputHelper output) : ChangelogTest
 		var result = await service.ValidateOnboardingAsync(
 			Collector,
 			new ValidateOnboardingArguments(),
-			TestContext.Current.CancellationToken
+			TestContext.Current!.Execution.CancellationToken
 		);
 
 		result.Should().BeFalse();

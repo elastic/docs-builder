@@ -41,7 +41,7 @@ public class CdnChangelogFetcherTests
 		return (errors, warnings, errors.Add, warnings.Add);
 	}
 
-	[Fact]
+	[Test]
 	public async Task FetchAsync_HappyPath_ReturnsBundlesFromRegistry()
 	{
 		var handler = new StubHandler(
@@ -60,7 +60,7 @@ public class CdnChangelogFetcherTests
 			version: null,
 			emitError,
 			emitWarning,
-			TestContext.Current.CancellationToken
+			TestContext.Current!.Execution.CancellationToken
 		);
 
 		errors.Should().BeEmpty();
@@ -74,7 +74,7 @@ public class CdnChangelogFetcherTests
 		handler.RequestedPaths.Should().Contain("/bundle/elasticsearch/9.3.0.yaml");
 	}
 
-	[Fact]
+	[Test]
 	public async Task FetchAsync_WithVersion_OnlyDownloadsMatchingBundle()
 	{
 		var handler = new StubHandler(
@@ -93,7 +93,7 @@ public class CdnChangelogFetcherTests
 			version: "9.3.0",
 			emitError,
 			emitWarning,
-			TestContext.Current.CancellationToken
+			TestContext.Current!.Execution.CancellationToken
 		);
 
 		errors.Should().BeEmpty();
@@ -106,7 +106,7 @@ public class CdnChangelogFetcherTests
 		handler.RequestedPaths.Should().Contain(p => p.EndsWith("/9.3.0.yaml", StringComparison.Ordinal));
 	}
 
-	[Fact]
+	[Test]
 	public async Task FetchAsync_WithVersion_DownloadsAmendCarryingParentProducts()
 	{
 		// Amend materialized by a current docs-builder: it carries the parent's complete products,
@@ -144,7 +144,7 @@ public class CdnChangelogFetcherTests
 			version: "9.3.0",
 			emitError,
 			emitWarning,
-			TestContext.Current.CancellationToken
+			TestContext.Current!.Execution.CancellationToken
 		);
 
 		errors.Should().BeEmpty();
@@ -157,7 +157,7 @@ public class CdnChangelogFetcherTests
 		bundles[0].Entries.Select(e => e.Title).Should().BeEquivalentTo("Sample enhancement", "Amended fix");
 	}
 
-	[Fact]
+	[Test]
 	public async Task FetchAsync_WithVersion_DownloadsLegacyAmendWhoseParentMatches()
 	{
 		// Amend published before products were copied from the parent: null registry target and a
@@ -189,7 +189,7 @@ public class CdnChangelogFetcherTests
 			version: "9.3.0",
 			emitError,
 			emitWarning,
-			TestContext.Current.CancellationToken
+			TestContext.Current!.Execution.CancellationToken
 		);
 
 		errors.Should().BeEmpty();
@@ -200,7 +200,7 @@ public class CdnChangelogFetcherTests
 		bundles[0].Entries.Select(e => e.Title).Should().BeEquivalentTo("Sample enhancement", "Amended fix");
 	}
 
-	[Fact]
+	[Test]
 	public async Task FetchAsync_WithOtherVersion_DoesNotDownloadUnrelatedAmend()
 	{
 		var handler = new StubHandler(
@@ -219,7 +219,7 @@ public class CdnChangelogFetcherTests
 			version: "9.4.0",
 			emitError,
 			emitWarning,
-			TestContext.Current.CancellationToken
+			TestContext.Current!.Execution.CancellationToken
 		);
 
 		errors.Should().BeEmpty();
@@ -228,7 +228,7 @@ public class CdnChangelogFetcherTests
 		handler.RequestedPaths.Should().NotContain(p => p.EndsWith("/9.3.0.amend-1.yaml", StringComparison.Ordinal));
 	}
 
-	[Fact]
+	[Test]
 	public async Task FetchAsync_WithVersion_FileIdentityRetractionApplies()
 	{
 		// A resolved parent whose entries carry file identities, and a legacy amend that retracts one
@@ -282,7 +282,7 @@ public class CdnChangelogFetcherTests
 			version: "9.3.0",
 			emitError,
 			emitWarning,
-			TestContext.Current.CancellationToken
+			TestContext.Current!.Execution.CancellationToken
 		);
 
 		errors.Should().BeEmpty();
@@ -295,7 +295,7 @@ public class CdnChangelogFetcherTests
 			.BeEquivalentTo(["Kept enhancement"], "the amend retracts the entry by file identity");
 	}
 
-	[Fact]
+	[Test]
 	public async Task FetchAsync_RegistryNotFound_EmitsErrorAndReturnsEmpty()
 	{
 		var handler = new StubHandler(_ => new HttpResponseMessage(HttpStatusCode.NotFound));
@@ -308,14 +308,14 @@ public class CdnChangelogFetcherTests
 			version: null,
 			emitError,
 			emitWarning,
-			TestContext.Current.CancellationToken
+			TestContext.Current!.Execution.CancellationToken
 		);
 
 		bundles.Should().BeEmpty();
 		errors.Should().ContainSingle().Which.Should().Contain("registry");
 	}
 
-	[Fact]
+	[Test]
 	public async Task FetchAsync_BundleNotFound_EmitsWarningAndSkipsBundle()
 	{
 		var handler = new StubHandler(
@@ -334,7 +334,7 @@ public class CdnChangelogFetcherTests
 			version: null,
 			emitError,
 			emitWarning,
-			TestContext.Current.CancellationToken
+			TestContext.Current!.Execution.CancellationToken
 		);
 
 		bundles.Should().BeEmpty();
@@ -342,7 +342,7 @@ public class CdnChangelogFetcherTests
 		warnings.Should().ContainSingle().Which.Should().Contain("9.3.0.yaml");
 	}
 
-	[Fact]
+	[Test]
 	public async Task FetchAsync_SchemaVersionTooNew_EmitsError()
 	{
 		var handler = new StubHandler(
@@ -357,20 +357,20 @@ public class CdnChangelogFetcherTests
 			version: null,
 			emitError,
 			emitWarning,
-			TestContext.Current.CancellationToken
+			TestContext.Current!.Execution.CancellationToken
 		);
 
 		bundles.Should().BeEmpty();
 		errors.Should().ContainSingle().Which.Should().Contain("schema version");
 	}
 
-	[Theory]
-	[InlineData("")]
-	[InlineData(".")]
-	[InlineData("..")]
+	[Test]
+	[Arguments("")]
+	[Arguments(".")]
+	[Arguments("..")]
 	// Products never contain dots or spaces; the producer would have refused to upload such a bundle key.
-	[InlineData("foo.bar")]
-	[InlineData("elastic search")]
+	[Arguments("foo.bar")]
+	[Arguments("elastic search")]
 	public async Task FetchAsync_InvalidProduct_EmitsErrorAndDoesNotHitCdn(string product)
 	{
 		// A malformed product must be rejected before any request, mirroring the entry fetcher's pool
@@ -385,7 +385,7 @@ public class CdnChangelogFetcherTests
 			version: null,
 			emitError,
 			emitWarning,
-			TestContext.Current.CancellationToken
+			TestContext.Current!.Execution.CancellationToken
 		);
 
 		bundles.Should().BeEmpty();
@@ -393,7 +393,7 @@ public class CdnChangelogFetcherTests
 		handler.RequestedPaths.Should().BeEmpty("validation must happen before any CDN request");
 	}
 
-	[Fact]
+	[Test]
 	public async Task FetchAsync_WithETag_UsesCachedBundleOnSecondCall()
 	{
 		var handler = new StubHandler(
@@ -420,7 +420,7 @@ public class CdnChangelogFetcherTests
 			version: null,
 			emitError,
 			emitWarning,
-			TestContext.Current.CancellationToken
+			TestContext.Current!.Execution.CancellationToken
 		);
 		bundles.Should().ContainSingle();
 		handler.CallCount.Should().Be(3, "shallow map probe + registry + bundle");
@@ -432,14 +432,14 @@ public class CdnChangelogFetcherTests
 			version: null,
 			emitError,
 			emitWarning,
-			TestContext.Current.CancellationToken
+			TestContext.Current!.Execution.CancellationToken
 		);
 		bundles2.Should().ContainSingle();
 		handler.CallCount.Should().Be(4, "only registry fetched again; bundle served from memory cache");
 		errors.Should().BeEmpty();
 	}
 
-	[Fact]
+	[Test]
 	public async Task FetchAsync_WithETag_WritesCacheToDisk()
 	{
 		var handler = new StubHandler(
@@ -459,7 +459,7 @@ public class CdnChangelogFetcherTests
 			version: null,
 			emitError,
 			emitWarning,
-			TestContext.Current.CancellationToken
+			TestContext.Current!.Execution.CancellationToken
 		);
 
 		var expectedPath = Path.Join(Paths.ApplicationData.FullName, "changelog-bundles", "changelog-elasticsearch-9.3.0.yaml-deadbeef");
@@ -467,7 +467,7 @@ public class CdnChangelogFetcherTests
 		errors.Should().BeEmpty();
 	}
 
-	[Fact]
+	[Test]
 	public async Task FetchAsync_WithETag_ReadsCacheFromDisk()
 	{
 		// Pre-populate the disk cache
@@ -497,7 +497,7 @@ public class CdnChangelogFetcherTests
 			version: null,
 			emitError,
 			emitWarning,
-			TestContext.Current.CancellationToken
+			TestContext.Current!.Execution.CancellationToken
 		);
 
 		bundles.Should().ContainSingle();
@@ -505,7 +505,7 @@ public class CdnChangelogFetcherTests
 		errors.Should().BeEmpty();
 	}
 
-	[Fact]
+	[Test]
 	public async Task FetchNamedBundleAsync_DownloadsParentAndSiblingAmendsOnly()
 	{
 		// language=yaml
@@ -538,7 +538,7 @@ public class CdnChangelogFetcherTests
 			"elasticsearch",
 			"9.3.0.yaml",
 			emitError,
-			TestContext.Current.CancellationToken
+			TestContext.Current!.Execution.CancellationToken
 		);
 
 		errors.Should().BeEmpty();
@@ -552,7 +552,7 @@ public class CdnChangelogFetcherTests
 		handler.RequestedPaths.Should().NotContain(p => p.EndsWith("/9.4.0.yaml", StringComparison.Ordinal));
 	}
 
-	[Fact]
+	[Test]
 	public async Task FetchNamedBundleAsync_UnknownFile_EmitsErrorWithoutDownloadingYaml()
 	{
 		var handler = new StubHandler(
@@ -570,7 +570,7 @@ public class CdnChangelogFetcherTests
 			"elasticsearch",
 			"missing.yaml",
 			emitError,
-			TestContext.Current.CancellationToken
+			TestContext.Current!.Execution.CancellationToken
 		);
 
 		named.Should().BeNull();
@@ -578,7 +578,7 @@ public class CdnChangelogFetcherTests
 		handler.RequestedPaths.Should().Equal("/bundle/elasticsearch/registry.json");
 	}
 
-	[Fact]
+	[Test]
 	public async Task FetchAsync_NullETag_AlwaysFetchesFromCdn()
 	{
 		var handler = new StubHandler(
@@ -605,7 +605,7 @@ public class CdnChangelogFetcherTests
 			version: null,
 			emitError,
 			emitWarning,
-			TestContext.Current.CancellationToken
+			TestContext.Current!.Execution.CancellationToken
 		);
 		handler.CallCount.Should().Be(3, "map probe + registry + bundle");
 
@@ -616,13 +616,13 @@ public class CdnChangelogFetcherTests
 			version: null,
 			emitError,
 			emitWarning,
-			TestContext.Current.CancellationToken
+			TestContext.Current!.Execution.CancellationToken
 		);
 		handler.CallCount.Should().Be(5, "without ETag, both registry and bundle are fetched each time");
 		errors.Should().BeEmpty();
 	}
 
-	[Fact]
+	[Test]
 	public async Task FetchAsync_ChangedETag_FetchesNewBundle()
 	{
 		var etag = "v1";
@@ -649,7 +649,7 @@ public class CdnChangelogFetcherTests
 			version: null,
 			emitError,
 			emitWarning,
-			TestContext.Current.CancellationToken
+			TestContext.Current!.Execution.CancellationToken
 		);
 		handler.CallCount.Should().Be(3, "map probe + registry + bundle");
 
@@ -661,7 +661,7 @@ public class CdnChangelogFetcherTests
 			version: null,
 			emitError,
 			emitWarning,
-			TestContext.Current.CancellationToken
+			TestContext.Current!.Execution.CancellationToken
 		);
 		handler.CallCount.Should().Be(5, "new ETag means cache miss, bundle re-downloaded");
 		errors.Should().BeEmpty();
@@ -683,7 +683,7 @@ public class CdnChangelogFetcherTests
 		return fs;
 	}
 
-	[Fact]
+	[Test]
 	public async Task FetchAsync_ShallowMapAbsent_FetchesRegistryAndBundleAsBefore()
 	{
 		// Pre-cutover CDNs have no bundle/registry.json: a 404 must degrade to the full per-product flow.
@@ -705,7 +705,7 @@ public class CdnChangelogFetcherTests
 			version: null,
 			emitError,
 			emitWarning,
-			TestContext.Current.CancellationToken
+			TestContext.Current!.Execution.CancellationToken
 		);
 
 		errors.Should().BeEmpty();
@@ -715,7 +715,7 @@ public class CdnChangelogFetcherTests
 		handler.RequestedPaths.Should().Contain("/bundle/elasticsearch/9.3.0.yaml");
 	}
 
-	[Fact]
+	[Test]
 	public async Task FetchAsync_ShallowMapUnparseable_FetchesRegistryAndBundleAsBefore()
 	{
 		var handler = new StubHandler(
@@ -736,7 +736,7 @@ public class CdnChangelogFetcherTests
 			version: null,
 			emitError,
 			emitWarning,
-			TestContext.Current.CancellationToken
+			TestContext.Current!.Execution.CancellationToken
 		);
 
 		errors.Should().BeEmpty();
@@ -746,7 +746,7 @@ public class CdnChangelogFetcherTests
 		handler.RequestedPaths.Should().Contain("/bundle/elasticsearch/9.3.0.yaml");
 	}
 
-	[Fact]
+	[Test]
 	public async Task FetchAsync_ShallowMapTimesOut_DegradesInsteadOfFaultingLaterFetches()
 	{
 		// HttpClient surfaces its own request timeout as a TaskCanceledException even though the
@@ -776,7 +776,7 @@ public class CdnChangelogFetcherTests
 			version: null,
 			emitError,
 			emitWarning,
-			TestContext.Current.CancellationToken
+			TestContext.Current!.Execution.CancellationToken
 		);
 
 		errors.Should().BeEmpty();
@@ -785,7 +785,7 @@ public class CdnChangelogFetcherTests
 		handler.RequestedPaths.Should().Contain("/bundle/elasticsearch/registry.json");
 	}
 
-	[Fact]
+	[Test]
 	public async Task FetchAsync_ShallowMapTimesOut_DoesNotPoisonLaterProductsInTheSameRun()
 	{
 		var handler = new StubHandler(
@@ -811,7 +811,7 @@ public class CdnChangelogFetcherTests
 			version: null,
 			emitError,
 			emitWarning,
-			TestContext.Current.CancellationToken
+			TestContext.Current!.Execution.CancellationToken
 		);
 		var second = await fetcher.FetchAsync(
 			BaseUri,
@@ -819,7 +819,7 @@ public class CdnChangelogFetcherTests
 			version: null,
 			emitError,
 			emitWarning,
-			TestContext.Current.CancellationToken
+			TestContext.Current!.Execution.CancellationToken
 		);
 
 		errors.Should().BeEmpty();
@@ -828,7 +828,7 @@ public class CdnChangelogFetcherTests
 		second.Should().ContainSingle("a prior timeout for this base URI must not poison later fetches sharing the cached map lookup");
 	}
 
-	[Fact]
+	[Test]
 	public async Task FetchAsync_CallerCancels_PropagatesCancellationRatherThanDegrading()
 	{
 		using var cts = new CancellationTokenSource();
@@ -848,7 +848,7 @@ public class CdnChangelogFetcherTests
 		);
 	}
 
-	[Fact]
+	[Test]
 	public async Task FetchAsync_ShallowTokenMatchesWarmCache_MakesNoPerProductRequests()
 	{
 		var fs = WarmCache("tok1");
@@ -866,7 +866,7 @@ public class CdnChangelogFetcherTests
 			version: null,
 			emitError,
 			emitWarning,
-			TestContext.Current.CancellationToken
+			TestContext.Current!.Execution.CancellationToken
 		);
 
 		errors.Should().BeEmpty();
@@ -876,7 +876,7 @@ public class CdnChangelogFetcherTests
 		handler.RequestedPaths.Should().Equal(ShallowMapPath);
 	}
 
-	[Fact]
+	[Test]
 	public async Task FetchAsync_ShallowTokenMismatch_FetchesRegistryAndRecordsNewToken()
 	{
 		var fs = WarmCache("tok-old");
@@ -898,7 +898,7 @@ public class CdnChangelogFetcherTests
 			version: null,
 			emitError,
 			emitWarning,
-			TestContext.Current.CancellationToken
+			TestContext.Current!.Execution.CancellationToken
 		);
 
 		errors.Should().BeEmpty();
@@ -912,7 +912,7 @@ public class CdnChangelogFetcherTests
 			.BeTrue("the fresh registry should be recorded under the new token for the next run");
 	}
 
-	[Fact]
+	[Test]
 	public async Task FetchAsync_ShallowTokenWithColdCache_FetchesAsUsualThenSkipsOnNextRun()
 	{
 		var fs = new MockFileSystem();
@@ -937,7 +937,7 @@ public class CdnChangelogFetcherTests
 				version: null,
 				emitError,
 				emitWarning,
-				TestContext.Current.CancellationToken
+				TestContext.Current!.Execution.CancellationToken
 			);
 			bundles.Should().ContainSingle();
 			coldHandler.RequestedPaths.Should().Contain("/bundle/elasticsearch/registry.json");
@@ -957,7 +957,7 @@ public class CdnChangelogFetcherTests
 				version: null,
 				emitError,
 				emitWarning,
-				TestContext.Current.CancellationToken
+				TestContext.Current!.Execution.CancellationToken
 			);
 			bundles.Should().ContainSingle();
 			warmHandler.RequestedPaths.Should().Equal(ShallowMapPath);
@@ -967,7 +967,7 @@ public class CdnChangelogFetcherTests
 		warnings.Should().BeEmpty();
 	}
 
-	[Fact]
+	[Test]
 	public async Task FetchAsync_ShallowMapPartialMatch_SkipsOnlyUnchangedFolders()
 	{
 		// One run over two products: elasticsearch has a warm cache and a matching token, kibana does
@@ -995,7 +995,7 @@ public class CdnChangelogFetcherTests
 			version: null,
 			emitError,
 			emitWarning,
-			TestContext.Current.CancellationToken
+			TestContext.Current!.Execution.CancellationToken
 		);
 		var kibanaBundles = await fetcher.FetchAsync(
 			BaseUri,
@@ -1003,7 +1003,7 @@ public class CdnChangelogFetcherTests
 			version: null,
 			emitError,
 			emitWarning,
-			TestContext.Current.CancellationToken
+			TestContext.Current!.Execution.CancellationToken
 		);
 
 		errors.Should().BeEmpty();

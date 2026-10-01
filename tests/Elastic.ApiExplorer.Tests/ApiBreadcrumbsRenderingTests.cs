@@ -18,7 +18,7 @@ namespace Elastic.ApiExplorer.Tests;
 
 public class ApiBreadcrumbsRenderingTests
 {
-	[Fact]
+	[Test]
 	public async Task Render_ParentsAreLinks_AndCurrentPageIsAbsent()
 	{
 		var html = await Render([Crumb("/api/", "APIs"), Crumb("/api/es/", "[cmd]search")], BuildType.Assembler);
@@ -34,7 +34,7 @@ public class ApiBreadcrumbsRenderingTests
 		html.Should().NotContain("api-breadcrumbs");
 	}
 
-	[Fact]
+	[Test]
 	public async Task Render_IsolatedSingleParent_IsHidden()
 	{
 		var html = await Render([Crumb("/api/", "APIs")], BuildType.Isolated);
@@ -42,18 +42,18 @@ public class ApiBreadcrumbsRenderingTests
 		html.Should().NotContain("id=\"breadcrumbs\"");
 	}
 
-	[Fact]
+	[Test]
 	public async Task Render_IsolatedSingleParent_IsShownWhenRequested()
 	{
 		var html = await _Breadcrumbs.Create(
 			new BreadcrumbsView([Crumb("/api/", "APIs")], BuildType.Isolated, ShowSingle: true)
-		).RenderAsync(cancellationToken: TestContext.Current.CancellationToken);
+		).RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
 
 		html.Should().Contain("id=\"breadcrumbs\"");
 		html.Should().Contain("href=\"/api/\"");
 	}
 
-	[Fact]
+	[Test]
 	public async Task Render_AssemblerSingleParent_IsShown()
 	{
 		var html = await Render([Crumb("/api/", "APIs")], BuildType.Assembler);
@@ -63,7 +63,7 @@ public class ApiBreadcrumbsRenderingTests
 
 	private static async Task<string> Render(IReadOnlyList<INavigationItem> items, BuildType buildType) =>
 		await _Breadcrumbs.Create(new BreadcrumbsView(items, buildType)).RenderAsync(
-			cancellationToken: TestContext.Current.CancellationToken
+			cancellationToken: TestContext.Current!.Execution.CancellationToken
 		);
 
 	private static INavigationItem Crumb(string url, string title)
@@ -75,9 +75,10 @@ public class ApiBreadcrumbsRenderingTests
 	}
 }
 
-public class ApiBreadcrumbLayoutRenderingTests(ApiExplorerFixture fixture) : IClassFixture<ApiExplorerFixture>
+[ClassDataSource<ApiExplorerFixture>(Shared = SharedType.PerClass)]
+public class ApiBreadcrumbLayoutRenderingTests(ApiExplorerFixture fixture)
 {
-	[Fact]
+	[Test]
 	public async Task OperationPage_BreadcrumbsRenderOutsideMarkdownContent()
 	{
 		var nav = fixture.Walk().OfType<OperationNavigationItem>().First(n => n.Model.Operation.OperationId == "docs-get-source");
@@ -110,7 +111,7 @@ public class ApiBreadcrumbLayoutRenderingTests(ApiExplorerFixture fixture) : ICl
 
 		var fs = new MockFileSystem();
 		await using (var stream = fs.FileStream.New("/out.html", FileMode.Create, FileAccess.Write))
-			await nav.Model.RenderAsync(stream, renderContext, null, TestContext.Current.CancellationToken);
+			await nav.Model.RenderAsync(stream, renderContext, null, TestContext.Current!.Execution.CancellationToken);
 
 		return fs.File.ReadAllText("/out.html");
 	}

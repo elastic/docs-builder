@@ -3,13 +3,13 @@
 // See the LICENSE file in the project root for more information
 
 using AwesomeAssertions;
-using Xunit.Sdk;
+using TUnit.Assertions.Exceptions;
 
 namespace Elastic.Markdown.Tests;
 
 public class PrettyHtmlExtensionsTests
 {
-	[Fact]
+	[Test]
 	public void ShouldContainHtml_WhenExpectedHtmlIsMissing_Throws()
 	{
 		var actual = """
@@ -22,6 +22,6 @@ public class PrettyHtmlExtensionsTests
 
 		var act = () => actual.ShouldContainHtml(expected);
 
-		act.Should().Throw<XunitException>();
+		act.Should().Throw<AssertionException>();
 	}
 }

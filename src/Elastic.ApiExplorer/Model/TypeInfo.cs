@@ -28,7 +28,7 @@ public record UnionOption(string Name, string? Ref, bool IsObject, IOpenApiSchem
 /// <param name="DictValueSchema">The schema for dictionary value types.</param>
 /// <param name="IsEnum">Whether this is an enum type.</param>
 /// <param name="IsUnion">Whether this is a union type (oneOf/anyOf).</param>
-/// <param name="EnumValues">The enum values, if this is an enum type.</param>
+/// <param name="EnumValues">Every literal the value can take, from <see cref="SchemaAnalyzer.GetEnumValues"/>; set for unions and arrays of enums too.</param>
 /// <param name="UnionOptions">String array of union option names for display.</param>
 /// <param name="ArrayItemType">The primitive item type for arrays of primitives.</param>
 public record TypeInfo(

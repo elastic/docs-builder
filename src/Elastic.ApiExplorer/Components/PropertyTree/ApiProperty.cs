@@ -12,9 +12,12 @@ using Microsoft.OpenApi;
 namespace Elastic.ApiExplorer.Components.PropertyTree;
 
 /// <summary>An external documentation link with its elastic.co treatment precomputed.</summary>
-public record ExternalDocLink(string Url, bool IsElasticDocs)
+public record ExternalDocLink(string Url, bool IsElasticDocs, string? Description = null)
 {
-	public string LinkText => IsElasticDocs ? "Read the reference documentation" : "External documentation";
+	public string LinkText =>
+		!string.IsNullOrWhiteSpace(Description)
+			? Description
+			: IsElasticDocs ? "Read the reference documentation" : "External documentation";
 }
 
 /// <summary>A link from a group-4 property row to that schema's dedicated page.</summary>
@@ -26,9 +29,6 @@ public record ConstraintDisplay(string Text, string? Code = null);
 /// <summary>How a union renders inline on a property row.</summary>
 public enum UnionDisplayKind
 {
-	/// <summary>All options look like enum literals: rendered as a "Values:" list.</summary>
-	EnumLike,
-
 	/// <summary>An <c>X | X[]</c> pair: rendered as a compact "One of: X or []X" row.</summary>
 	SimpleArrayUnion,
 
@@ -43,9 +43,6 @@ public record UnionBadge(string Text, bool IsTypeOption);
 public record UnionDisplay
 {
 	public required UnionDisplayKind Kind { get; init; }
-
-	/// <summary>Enum-like literal values (<see cref="UnionDisplayKind.EnumLike"/>).</summary>
-	public IReadOnlyList<string> EnumLikeValues { get; init; } = [];
 
 	/// <summary>Base type name of an <c>X | X[]</c> union (<see cref="UnionDisplayKind.SimpleArrayUnion"/>).</summary>
 	public string? SimpleUnionBaseName { get; init; }
@@ -157,3 +154,14 @@ public record ApiProperty
 
 /// <summary>An ordered list of property rows; the model for <c>_PropertyList</c>.</summary>
 public record ApiPropertyList(IReadOnlyList<ApiProperty> Items);
+
+/// <summary>A "Values:" row; long lists show the first few literals and fold the rest behind a toggle.</summary>
+public record EnumValueList(IReadOnlyList<string> Values)
+{
+	private const int CollapseAbove = 20;
+	private const int VisibleWhenCollapsed = 12;
+
+	private bool Folds => Values.Count > CollapseAbove;
+	public IReadOnlyList<string> Visible => Folds ? Values.Take(VisibleWhenCollapsed).ToArray() : Values;
+	public IReadOnlyList<string> Folded => Folds ? Values.Skip(VisibleWhenCollapsed).ToArray() : [];
+}

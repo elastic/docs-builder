@@ -9,9 +9,9 @@ using FakeItEasy;
 
 namespace Elastic.Changelog.Tests.Changelogs.Create;
 
-public class TitleProcessingTests(ITestOutputHelper output) : CreateChangelogTestBase(output)
+public class TitleProcessingTests() : CreateChangelogTestBase()
 {
-	[Fact]
+	[Test]
 	public async Task CreateChangelog_WithStripTitlePrefix_RemovesSquareBracketsAndColon()
 	{
 		// Arrange
@@ -53,7 +53,7 @@ public class TitleProcessingTests(ITestOutputHelper output) : CreateChangelogTes
 		};
 
 		// Act
-		var result = await service.CreateChangelog(Collector, input, TestContext.Current.CancellationToken);
+		var result = await service.CreateChangelog(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		result.Should().BeTrue();
@@ -65,13 +65,13 @@ public class TitleProcessingTests(ITestOutputHelper output) : CreateChangelogTes
 		var files = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
 		files.Should().HaveCount(1);
 
-		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current.CancellationToken);
+		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current!.Execution.CancellationToken);
 		yamlContent.Should().Contain("title: Update Vector Similarity To Support BFLOAT16");
 		yamlContent.Should().NotContain("[ES|QL]");
 		yamlContent.Should().NotContain("[ES|QL]:");
 	}
 
-	[Fact]
+	[Test]
 	public async Task CreateChangelog_WithStripTitlePrefix_RemovesSquareBracketsWithoutColon()
 	{
 		// Arrange
@@ -113,7 +113,7 @@ public class TitleProcessingTests(ITestOutputHelper output) : CreateChangelogTes
 		};
 
 		// Act
-		var result = await service.CreateChangelog(Collector, input, TestContext.Current.CancellationToken);
+		var result = await service.CreateChangelog(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		result.Should().BeTrue();
@@ -125,12 +125,12 @@ public class TitleProcessingTests(ITestOutputHelper output) : CreateChangelogTes
 		var files = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
 		files.Should().HaveCount(1);
 
-		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current.CancellationToken);
+		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current!.Execution.CancellationToken);
 		yamlContent.Should().Contain("title: Improve authentication handling");
 		yamlContent.Should().NotContain("[Security]");
 	}
 
-	[Fact]
+	[Test]
 	public async Task CreateChangelog_WithStripTitlePrefix_RemovesMultipleSquareBracketPrefixes()
 	{
 		// Arrange
@@ -172,7 +172,7 @@ public class TitleProcessingTests(ITestOutputHelper output) : CreateChangelogTes
 		};
 
 		// Act
-		var result = await service.CreateChangelog(Collector, input, TestContext.Current.CancellationToken);
+		var result = await service.CreateChangelog(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		result.Should().BeTrue();
@@ -184,13 +184,13 @@ public class TitleProcessingTests(ITestOutputHelper output) : CreateChangelogTes
 		var files = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
 		files.Should().HaveCount(1);
 
-		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current.CancellationToken);
+		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current!.Execution.CancellationToken);
 		yamlContent.Should().Contain("title: Fix filtering by multiline string fields");
 		yamlContent.Should().NotContain("[Discover]");
 		yamlContent.Should().NotContain("[ESQL]");
 	}
 
-	[Fact]
+	[Test]
 	public async Task CreateChangelog_WithStripTitlePrefix_StripsKibanaStyleTeamHyphenSeparator()
 	{
 		var prInfo = new GitHubPrInfo { Title = "[Cases] - Enable cases numerical id service", Labels = ["type:feature"] };
@@ -224,7 +224,7 @@ public class TitleProcessingTests(ITestOutputHelper output) : CreateChangelogTes
 			StripTitlePrefix = true
 		};
 
-		var result = await service.CreateChangelog(Collector, input, TestContext.Current.CancellationToken);
+		var result = await service.CreateChangelog(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		result.Should().BeTrue();
 		Collector.Errors.Should().Be(0);
@@ -235,12 +235,12 @@ public class TitleProcessingTests(ITestOutputHelper output) : CreateChangelogTes
 		var files = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
 		files.Should().HaveCount(1);
 
-		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current.CancellationToken);
+		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current!.Execution.CancellationToken);
 		yamlContent.Should().Contain("title: Enable cases numerical id service");
 		yamlContent.Should().NotContain("title: '- Enable");
 	}
 
-	[Fact]
+	[Test]
 	public async Task CreateChangelog_WithExplicitTitle_OverridesPrTitle()
 	{
 		// Arrange
@@ -260,13 +260,13 @@ public class TitleProcessingTests(ITestOutputHelper output) : CreateChangelogTes
 		};
 
 		// Act
-		var result = await service.CreateChangelog(Collector, input, TestContext.Current.CancellationToken);
+		var result = await service.CreateChangelog(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		if (!result)
 		{
 			foreach (var diagnostic in Collector.Diagnostics)
-				Output.WriteLine($"{diagnostic.Severity}: {diagnostic.Message}");
+				TestContext.Current?.Output.WriteLine($"{diagnostic.Severity}: {diagnostic.Message}");
 		}
 
 		result.Should().BeTrue();
@@ -277,12 +277,12 @@ public class TitleProcessingTests(ITestOutputHelper output) : CreateChangelogTes
 		if (!FileSystem.Directory.Exists(outputDir))
 			FileSystem.Directory.CreateDirectory(outputDir);
 		var files = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
-		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current.CancellationToken);
+		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current!.Execution.CancellationToken);
 		yamlContent.Should().Contain("title: Custom Title Override");
 		yamlContent.Should().NotContain("PR Title from GitHub");
 	}
 
-	[Fact]
+	[Test]
 	public async Task CreateChangelog_WithIssues_CreatesValidYaml()
 	{
 		// Arrange
@@ -299,13 +299,13 @@ public class TitleProcessingTests(ITestOutputHelper output) : CreateChangelogTes
 		};
 
 		// Act
-		var result = await service.CreateChangelog(Collector, input, TestContext.Current.CancellationToken);
+		var result = await service.CreateChangelog(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		if (!result)
 		{
 			foreach (var diagnostic in Collector.Diagnostics)
-				Output.WriteLine($"{diagnostic.Severity}: {diagnostic.Message}");
+				TestContext.Current?.Output.WriteLine($"{diagnostic.Severity}: {diagnostic.Message}");
 		}
 
 		result.Should().BeTrue();
@@ -316,7 +316,7 @@ public class TitleProcessingTests(ITestOutputHelper output) : CreateChangelogTes
 		if (!FileSystem.Directory.Exists(outputDir))
 			FileSystem.Directory.CreateDirectory(outputDir);
 		var files = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
-		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current.CancellationToken);
+		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current!.Execution.CancellationToken);
 		yamlContent.Should().Contain("issues:");
 		yamlContent.Should().Contain("- https://github.com/elastic/elasticsearch/issues/123");
 		yamlContent.Should().Contain("- https://github.com/elastic/elasticsearch/issues/456");

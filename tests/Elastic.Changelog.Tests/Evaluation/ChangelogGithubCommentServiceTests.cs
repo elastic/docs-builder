@@ -11,7 +11,7 @@ using FakeItEasy;
 
 namespace Elastic.Changelog.Tests.Evaluation;
 
-public class ChangelogGithubCommentServiceTests(ITestOutputHelper output) : ChangelogTestBase(output)
+public class ChangelogGithubCommentServiceTests() : ChangelogTestBase()
 {
 	private static readonly string Root = Paths.WorkingDirectoryRoot.FullName;
 
@@ -49,7 +49,7 @@ public class ChangelogGithubCommentServiceTests(ITestOutputHelper output) : Chan
 			HeadRepo = "elastic/test-repo"
 		};
 
-	[Fact]
+	[Test]
 	public async Task PostComment_CommittedOutcome_RendersEntryCommittedBody()
 	{
 		await WriteMetadata(BaseMetadata() with { CommitOutcome = CommitOutcome.Committed, CommittedFile = "docs/changelog/42.yaml" });
@@ -74,7 +74,7 @@ public class ChangelogGithubCommentServiceTests(ITestOutputHelper output) : Chan
 		).MustHaveHappenedOnceExactly();
 	}
 
-	[Fact]
+	[Test]
 	public async Task PostComment_CommitFailed_RendersCommentOnlyWithFailureGuidance()
 	{
 		await WriteMetadata(BaseMetadata() with { CommitOutcome = CommitOutcome.Failed });
@@ -99,7 +99,7 @@ public class ChangelogGithubCommentServiceTests(ITestOutputHelper output) : Chan
 		).MustHaveHappenedOnceExactly();
 	}
 
-	[Fact]
+	[Test]
 	public async Task PostComment_SuccessNotCanCommit_RendersCommentOnlyInformational()
 	{
 		await WriteMetadata(BaseMetadata(status: "proceed", canCommit: false));
@@ -124,7 +124,7 @@ public class ChangelogGithubCommentServiceTests(ITestOutputHelper output) : Chan
 		).MustHaveHappenedOnceExactly();
 	}
 
-	[Fact]
+	[Test]
 	public async Task PostComment_NoLabel_RendersLabelsNeededBody()
 	{
 		await WriteMetadata(BaseMetadata(status: "no-label") with
@@ -152,7 +152,7 @@ public class ChangelogGithubCommentServiceTests(ITestOutputHelper output) : Chan
 		).MustHaveHappenedOnceExactly();
 	}
 
-	[Fact]
+	[Test]
 	public async Task PostComment_SuccessWithNoYaml_DeletesStickyComment()
 	{
 		await WriteMetadata(BaseMetadata(status: "proceed", canCommit: true));
@@ -170,7 +170,7 @@ public class ChangelogGithubCommentServiceTests(ITestOutputHelper output) : Chan
 		).MustNotHaveHappened();
 	}
 
-	[Fact]
+	[Test]
 	public async Task PostComment_MetadataNotFound_ReturnsTrueWithoutCalling()
 	{
 		var commentSvc = A.Fake<IGitHubCommentService>();
@@ -184,7 +184,7 @@ public class ChangelogGithubCommentServiceTests(ITestOutputHelper output) : Chan
 		).MustNotHaveHappened();
 	}
 
-	[Fact]
+	[Test]
 	public async Task PostComment_CommentServiceFails_ReturnsTrueAnyway()
 	{
 		await WriteMetadata(BaseMetadata(status: "no-label") with { LabelTable = "| label | type |" });
@@ -198,7 +198,7 @@ public class ChangelogGithubCommentServiceTests(ITestOutputHelper output) : Chan
 		result.Should().BeTrue();
 	}
 
-	[Fact]
+	[Test]
 	public async Task PostComment_Skipped_DeletesStickyComment()
 	{
 		await WriteMetadata(BaseMetadata(status: "skipped"));
@@ -217,7 +217,7 @@ public class ChangelogGithubCommentServiceTests(ITestOutputHelper output) : Chan
 
 	// ── Gate.Entries dispatch ──────────────────────────────────────────────────────────────────────
 
-	[Fact]
+	[Test]
 	public async Task PostComment_EntriesGateWithFindings_RendersEntriesInvalidBody()
 	{
 		await WriteMetadata(BaseMetadata(status: "entries-invalid") with
@@ -243,7 +243,7 @@ public class ChangelogGithubCommentServiceTests(ITestOutputHelper output) : Chan
 		).MustHaveHappenedOnceExactly();
 	}
 
-	[Fact]
+	[Test]
 	public async Task PostComment_EntriesGateNoFindings_DeletesStickyComment()
 	{
 		await WriteMetadata(BaseMetadata(status: "ok", canCommit: true) with { Gate = ValidationGate.Entries, EntryFindings = null });
@@ -259,7 +259,7 @@ public class ChangelogGithubCommentServiceTests(ITestOutputHelper output) : Chan
 
 	// ── Gate.Onboarding dispatch ──────────────────────────────────────────────────────────────────
 
-	[Fact]
+	[Test]
 	public async Task PostComment_OnboardingGate_RendersRepositoryNotOnboardedBody()
 	{
 		await WriteMetadata(BaseMetadata(status: "onboarding-required") with { Gate = ValidationGate.Onboarding });
@@ -283,7 +283,7 @@ public class ChangelogGithubCommentServiceTests(ITestOutputHelper output) : Chan
 
 	// ── Gate.File + missing-entry dispatch ────────────────────────────────────────────────────────
 
-	[Fact]
+	[Test]
 	public async Task PostComment_FileGateMissingEntry_RendersMissingEntryBody()
 	{
 		await WriteMetadata(BaseMetadata(status: "missing-entry") with { Gate = ValidationGate.File, ChangelogDir = "docs/changelog" });

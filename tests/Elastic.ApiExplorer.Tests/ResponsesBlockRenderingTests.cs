@@ -14,7 +14,7 @@ namespace Elastic.ApiExplorer.Tests;
 
 public class ResponsesBlockRenderingTests
 {
-	[Fact]
+	[Test]
 	public async Task Render_MultipleStatuses_UsesClickablePillsInsteadOfSelect()
 	{
 		var html = await RenderHtml(
@@ -44,7 +44,7 @@ public class ResponsesBlockRenderingTests
 		html.Should().NotContain("hidden=\"hidden\"");
 	}
 
-	[Fact]
+	[Test]
 	public async Task Render_SingleStatus_KeepsSingularHeading()
 	{
 		var html = await RenderHtml(Response("200", "success", "Successful response"));
@@ -54,7 +54,7 @@ public class ResponsesBlockRenderingTests
 		html.Should().Contain("aria-controls=\"response-200-fields\"");
 	}
 
-	[Fact]
+	[Test]
 	public async Task Render_OneOfResponse_RendersUnionVariantsInsteadOfTypeLine()
 	{
 		var html = await RenderHtml(new ApiResponse
@@ -93,10 +93,24 @@ public class ResponsesBlockRenderingTests
 		html.Should().NotContain("Response Type:");
 	}
 
+	[Test]
+	public async Task Render_ResponseWithoutSchemaOrHeaders_RendersStaticRowWithoutEmptyBody()
+	{
+		var html = await RenderHtml(Response("200", "success", "Indicates a successful response") with { Contents = [] });
+
+		html.Should().Contain("response-panel--static");
+		html.Should().Contain("response-status-row");
+		html.Should().Contain("Indicates a successful response");
+		html.Should().Contain("application/json");
+		html.Should().NotContain("response-status-toggle");
+		html.Should().NotContain("response-panel-body");
+		html.Should().NotContain("response-200-fields");
+	}
+
 	private static async Task<string> RenderHtml(params ApiResponse[] responses)
 	{
 		var model = new ResponsesBlockModel(responses, markdown => new HtmlString(markdown ?? ""));
-		return await _ResponsesBlock.Create(model).RenderAsync(cancellationToken: TestContext.Current.CancellationToken);
+		return await _ResponsesBlock.Create(model).RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
 	}
 
 	private static ApiResponse Response(
@@ -111,7 +125,16 @@ public class ResponsesBlockRenderingTests
 			StatusClass = statusClass,
 			FirstContentType = contentType,
 			Response = new OpenApiResponse { Description = description },
-			Contents = [],
+			Contents =
+			[
+				new ApiResponseContent
+				{
+					ContentType = contentType,
+					Type = new TypeAnnotation([new TypeSpan("object")]),
+					Properties = null,
+					ArrayItemProperties = null
+				}
+			],
 			Headers = []
 		};
 

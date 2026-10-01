@@ -37,6 +37,21 @@ function setUntilFoundHidden(
     )
 }
 
+function setEnumValuesExpanded(
+    toggleBtn: HTMLButtonElement,
+    expanded: boolean
+): void {
+    const folded = toggleBtn.parentElement?.querySelector<HTMLElement>(
+        ':scope > .enum-values-folded'
+    )
+    setUntilFoundHidden(folded ?? null, !expanded)
+    setDisclosureToggle(
+        toggleBtn,
+        expanded,
+        `${folded?.childElementCount ?? 0} more values`
+    )
+}
+
 function expandResponsePanel(panel: HTMLElement): void {
     const toggleBtn = panel.querySelector<HTMLButtonElement>(
         ':scope > .response-status-toggle'
@@ -433,6 +448,16 @@ function initGlobalClickHandlers(): void {
     if (globalHandlersInitialized) return
     globalHandlersInitialized = true
 
+    // Find-in-page matched a folded enum literal: unfold the row so the match is visible
+    document.addEventListener('beforematch', function (e) {
+        const folded = (e.target as HTMLElement).closest('.enum-values-folded')
+        const toggleBtn =
+            folded?.parentElement?.querySelector<HTMLButtonElement>(
+                ':scope > .enum-values-toggle'
+            )
+        if (toggleBtn) setEnumValuesExpanded(toggleBtn, true)
+    })
+
     document.addEventListener('click', function (e) {
         const target = e.target as HTMLElement
 
@@ -441,6 +466,20 @@ function initGlobalClickHandlers(): void {
             '#elastic-api-v3, #schema-definition'
         ) as HTMLElement
         if (!apiSection) return
+
+        // Before the generic .expand-toggle branch, which would toggle the enclosing property instead
+        const enumValuesToggle = target.closest<HTMLButtonElement>(
+            '.enum-values-toggle'
+        )
+        if (enumValuesToggle) {
+            e.preventDefault()
+            e.stopPropagation()
+            setEnumValuesExpanded(
+                enumValuesToggle,
+                enumValuesToggle.getAttribute('aria-expanded') !== 'true'
+            )
+            return
+        }
 
         const paramSectionToggle = target.closest<HTMLButtonElement>(
             '.api-param-section-toggle'

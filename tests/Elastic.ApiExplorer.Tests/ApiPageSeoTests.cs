@@ -14,9 +14,10 @@ using FakeItEasy;
 
 namespace Elastic.ApiExplorer.Tests;
 
-public class ApiPageSeoTests(ApiExplorerFixture fixture) : IClassFixture<ApiExplorerFixture>
+[ClassDataSource<ApiExplorerFixture>(Shared = SharedType.PerClass)]
+public class ApiPageSeoTests(ApiExplorerFixture fixture)
 {
-	[Fact]
+	[Test]
 	public void OperationLayout_UsesSummaryInTitleAndExcerptedDescription()
 	{
 		var item = fixture.Walk().OfType<OperationNavigationItem>().First(n => n.Model.Operation.OperationId == "search");
@@ -33,7 +34,7 @@ public class ApiPageSeoTests(ApiExplorerFixture fixture) : IClassFixture<ApiExpl
 		layout.Breadcrumbs.Should().NotContain(b => b.NavigationTitle == "Api Overview");
 	}
 
-	[Fact]
+	[Test]
 	public void SchemaLayout_UsesDisplayNameInTitleAndExcerptedDescription()
 	{
 		var item = fixture
@@ -51,7 +52,7 @@ public class ApiPageSeoTests(ApiExplorerFixture fixture) : IClassFixture<ApiExpl
 		layout.Description.Should().StartWith("A container for a single query variant");
 	}
 
-	[Fact]
+	[Test]
 	public void Excerpt_StripsLinksAndEmphasis()
 	{
 		var excerpt = ApiSeoDescription.Excerpt("See the [search](https://example.com/search) docs for *queries* and **filters**.");
@@ -59,7 +60,7 @@ public class ApiPageSeoTests(ApiExplorerFixture fixture) : IClassFixture<ApiExpl
 		excerpt.Should().Be("See the search docs for queries and filters.");
 	}
 
-	[Fact]
+	[Test]
 	public void Excerpt_TruncatesOnWordBoundary()
 	{
 		var words = string.Join(' ', Enumerable.Range(0, 40).Select(i => $"word{i}"));
@@ -71,10 +72,10 @@ public class ApiPageSeoTests(ApiExplorerFixture fixture) : IClassFixture<ApiExpl
 		excerpt.Should().NotContain("word39");
 	}
 
-	[Fact]
+	[Test]
 	public void Excerpt_EmptyMarkdown_ReturnsNull() => ApiSeoDescription.Excerpt("   ").Should().BeNull();
 
-	[Fact]
+	[Test]
 	public void ToJsonLd_AbsolutizesParentsAndOmitsCurrentItem()
 	{
 		INavigationItem[] parents =

@@ -2,7 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-namespace Elastic.Authoring.Tests.Blocks.AgentSkill;
+namespace Elastic.Authoring.Tests.Blocks;
 
 public class AgentSkillWithUrl : MarkdownTest
 {
@@ -13,7 +13,7 @@ public class AgentSkillWithUrl : MarkdownTest
 		:::
 		""";
 
-	[Fact(DisplayName = "validate HTML")]
+	[Test, DisplayName("validate HTML")]
 	public async Task ValidateHtml() =>
 		await Docs.ConvertsToHtml(
 			"""
@@ -40,7 +40,7 @@ public class AgentSkillWithUrl : MarkdownTest
 		"""
 		);
 
-	[Fact(DisplayName = "has no errors")]
+	[Test, DisplayName("has no errors")]
 	public async Task HasNoErrors() => await Docs.HasNoErrors();
 }
 
@@ -55,7 +55,7 @@ public class AgentSkillWithBodyContent : MarkdownTest
 		:::
 		""";
 
-	[Fact(DisplayName = "renders custom body")]
+	[Test, DisplayName("renders custom body")]
 	public async Task RendersCustomBody() =>
 		await Docs.ConvertsToHtml(
 			"""
@@ -83,7 +83,7 @@ public class AgentSkillWithBodyContent : MarkdownTest
 		"""
 		);
 
-	[Fact(DisplayName = "has no errors")]
+	[Test, DisplayName("has no errors")]
 	public async Task HasNoErrors() => await Docs.HasNoErrors();
 }
 
@@ -94,7 +94,7 @@ public class AgentSkillMissingUrl : MarkdownTest
 		:::
 		""";
 
-	[Fact(DisplayName = "has error")]
+	[Test, DisplayName("has error")]
 	public async Task HasError() => await Docs.HasError("requires a :url: property");
 }
 
@@ -106,6 +106,6 @@ public class AgentSkillRelativeUrl : MarkdownTest
 		:::
 		""";
 
-	[Fact(DisplayName = "has error")]
+	[Test, DisplayName("has error")]
 	public async Task HasError() => await Docs.HasError("must be an absolute URL");
 }

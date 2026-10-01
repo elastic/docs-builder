@@ -8,8 +8,8 @@ using Elastic.Markdown.Myst.Directives;
 
 namespace Elastic.Markdown.Tests.Directives;
 
-public abstract class UnsupportedDirectiveTests(ITestOutputHelper output, string directive) : DirectiveTest<UnsupportedDirectiveBlock>(
-	output,
+[InheritsTests]
+public abstract class UnsupportedDirectiveTests(string directive) : DirectiveTest<UnsupportedDirectiveBlock>(
 	$$"""
 Content before bad directive
 
@@ -20,16 +20,16 @@ A regular paragraph.
 """
 )
 {
-	[Fact]
+	[Test]
 	public void ParsesAdmonitionBlock() => Block.Should().NotBeNull();
 
-	[Fact]
+	[Test]
 	public void SetsCorrectDirectiveType() => Block!.Directive.Should().Be(directive);
 
-	[Fact]
+	[Test]
 	public void TracksASingleWarning() => Collector.Warnings.Should().Be(1);
 
-	[Fact]
+	[Test]
 	public void EmitsUnsupportedWarnings()
 	{
 		Collector.Diagnostics.Should().NotBeNullOrEmpty().And.HaveCount(1);
@@ -38,20 +38,29 @@ A regular paragraph.
 	}
 }
 
-public class BibliographyDirectiveTests(ITestOutputHelper output) : UnsupportedDirectiveTests(output, "bibliography");
+[InheritsTests]
+public class BibliographyDirectiveTests() : UnsupportedDirectiveTests("bibliography");
 
-public class BlockQuoteDirectiveTests(ITestOutputHelper output) : UnsupportedDirectiveTests(output, "blockquote");
+[InheritsTests]
+public class BlockQuoteDirectiveTests() : UnsupportedDirectiveTests("blockquote");
 
-public class FrameDirectiveTests(ITestOutputHelper output) : UnsupportedDirectiveTests(output, "iframe");
+[InheritsTests]
+public class FrameDirectiveTests() : UnsupportedDirectiveTests("iframe");
 
-public class CsvTableDirectiveTests(ITestOutputHelper output) : UnsupportedDirectiveTests(output, "csv-table");
+[InheritsTests]
+public class CsvTableDirectiveTests() : UnsupportedDirectiveTests("csv-table");
 
-public class MystDirectiveDirectiveTests(ITestOutputHelper output) : UnsupportedDirectiveTests(output, "myst");
+[InheritsTests]
+public class MystDirectiveDirectiveTests() : UnsupportedDirectiveTests("myst");
 
-public class TopicDirectiveTests(ITestOutputHelper output) : UnsupportedDirectiveTests(output, "topic");
+[InheritsTests]
+public class TopicDirectiveTests() : UnsupportedDirectiveTests("topic");
 
-public class ExerciseDirectiveTest(ITestOutputHelper output) : UnsupportedDirectiveTests(output, "exercise");
+[InheritsTests]
+public class ExerciseDirectiveTest() : UnsupportedDirectiveTests("exercise");
 
-public class SolutionDirectiveTests(ITestOutputHelper output) : UnsupportedDirectiveTests(output, "solution");
+[InheritsTests]
+public class SolutionDirectiveTests() : UnsupportedDirectiveTests("solution");
 
-public class TocTreeDirectiveTests(ITestOutputHelper output) : UnsupportedDirectiveTests(output, "solution");
+[InheritsTests]
+public class TocTreeDirectiveTests() : UnsupportedDirectiveTests("solution");

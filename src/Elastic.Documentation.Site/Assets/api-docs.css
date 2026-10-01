@@ -674,6 +674,15 @@
 		color 0.12s ease;
 }
 
+.response-status-row {
+	display: flex;
+	box-sizing: border-box;
+	align-items: center;
+	gap: 8px;
+	width: 100%;
+	padding: 8px 12px;
+}
+
 .response-status-toggle:hover {
 	background-color: #ecf1f9;
 	color: #1d2a3e;
@@ -1590,6 +1599,15 @@ a.docs-reference-btn::after {
 
 .enum-value {
 	@apply text-purple-70 bg-purple-10 rounded px-1.5 py-0.5 text-xs;
+}
+
+/* Folded literals join the row's wrap once shown; until-found keeps them searchable while folded. */
+.enum-values-folded:not([hidden]) {
+	display: contents;
+}
+
+.enum-values-folded[hidden='until-found'] {
+	display: block;
 }
 
 /* Response headers display */
@@ -2540,6 +2558,14 @@ button.example-response-tab:focus-visible {
 	font-weight: 300;
 	line-height: 20px;
 	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.api-code-sample-title .api-code-sample-heading {
+	color: var(--api-code-muted);
+	font-size: 12px;
+	font-weight: 600;
+	line-height: 20px;
 	white-space: nowrap;
 }
 

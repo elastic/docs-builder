@@ -67,7 +67,7 @@ public class KibanaApiMarkdownNavigationTests
 		return (navigation, introNav);
 	}
 
-	[Fact]
+	[Test]
 	public void IntroNav_ShouldBeLeafNavigationItem()
 	{
 		var (_, introNav) = SetupKibanaNavigation();
@@ -77,7 +77,7 @@ public class KibanaApiMarkdownNavigationTests
 		introNav.Slug.Should().Be("kibana-api-overview");
 	}
 
-	[Fact]
+	[Test]
 	public void IntroNav_ShouldAppearFirstInNavigation()
 	{
 		var (navigation, introNav) = SetupKibanaNavigation();
@@ -87,7 +87,7 @@ public class KibanaApiMarkdownNavigationTests
 		firstItem.Should().BeOfType<SimpleMarkdownNavigationItem>();
 	}
 
-	[Fact]
+	[Test]
 	public void IntroNav_ShouldGenerateCorrectUrl()
 	{
 		var (_, introNav) = SetupKibanaNavigation();
@@ -95,7 +95,7 @@ public class KibanaApiMarkdownNavigationTests
 		introNav.Url.Should().Be("/api/doc/kibana/kibana-api-overview/");
 	}
 
-	[Fact]
+	[Test]
 	public void UrlCollisionValidation_ShouldAllowSlugMatchingOperationId()
 	{
 		var act = () => SimpleMarkdownNavigationItem.ValidateSlugForCollisions("search", "kibana", "/docs/search.md");
@@ -103,7 +103,7 @@ public class KibanaApiMarkdownNavigationTests
 		act.Should().NotThrow();
 	}
 
-	[Fact]
+	[Test]
 	public void UrlCollisionValidation_ShouldAllowValidSlugs()
 	{
 		var act = () => SimpleMarkdownNavigationItem.ValidateSlugForCollisions("overview", "kibana", "/docs/overview.md");

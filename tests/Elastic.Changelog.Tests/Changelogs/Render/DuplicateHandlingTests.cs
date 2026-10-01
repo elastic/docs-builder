@@ -10,9 +10,9 @@ using Elastic.Documentation.Diagnostics;
 
 namespace Elastic.Changelog.Tests.Changelogs.Render;
 
-public class DuplicateHandlingTests(ITestOutputHelper output) : RenderChangelogTestBase(output)
+public class DuplicateHandlingTests() : RenderChangelogTestBase()
 {
-	[Fact]
+	[Test]
 	public async Task RenderChangelogs_WithDuplicateFileName_EmitsWarning()
 	{
 		// Arrange
@@ -44,11 +44,11 @@ public class DuplicateHandlingTests(ITestOutputHelper output) : RenderChangelogT
 
 		var bundle1 = FileSystem.Path.Join(bundleDir, "bundle1.yaml");
 		var bundleContent1 = CreateResolvedBundleContent(bundleHeader, (fileName, changelog));
-		await FileSystem.File.WriteAllTextAsync(bundle1, bundleContent1, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(bundle1, bundleContent1, TestContext.Current!.Execution.CancellationToken);
 
 		var bundle2 = FileSystem.Path.Join(bundleDir, "bundle2.yaml");
 		var bundleContent2 = CreateResolvedBundleContent(bundleHeader, (fileName, changelog));
-		await FileSystem.File.WriteAllTextAsync(bundle2, bundleContent2, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(bundle2, bundleContent2, TestContext.Current!.Execution.CancellationToken);
 
 		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
 
@@ -59,7 +59,7 @@ public class DuplicateHandlingTests(ITestOutputHelper output) : RenderChangelogT
 		};
 
 		// Act
-		var result = await Service.RenderChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await Service.RenderChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		result.Should().BeTrue();
@@ -68,7 +68,7 @@ public class DuplicateHandlingTests(ITestOutputHelper output) : RenderChangelogT
 		Collector.Diagnostics.Should().Contain(d => d.Severity == Severity.Warning && d.Message.Contains("appears in multiple bundles"));
 	}
 
-	[Fact]
+	[Test]
 	public async Task RenderChangelogs_WithDuplicateFileNameInSameBundle_EmitsWarning()
 	{
 		// Arrange
@@ -98,14 +98,14 @@ public class DuplicateHandlingTests(ITestOutputHelper output) : RenderChangelogT
 			    target: 9.2.0
 			""";
 		var bundleContent = CreateResolvedBundleContent(bundleHeader, (fileName, changelog), (fileName, changelog));
-		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current!.Execution.CancellationToken);
 
 		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
 
 		var input = new RenderChangelogsArguments { Bundles = [new BundleInput { BundleFile = bundleFile }], Output = outputDir };
 
 		// Act
-		var result = await Service.RenderChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await Service.RenderChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		result.Should().BeTrue();
@@ -120,7 +120,7 @@ public class DuplicateHandlingTests(ITestOutputHelper output) : RenderChangelogT
 			);
 	}
 
-	[Fact]
+	[Test]
 	public async Task RenderChangelogs_WithDuplicatePr_EmitsWarning()
 	{
 		// Arrange
@@ -161,11 +161,11 @@ public class DuplicateHandlingTests(ITestOutputHelper output) : RenderChangelogT
 
 		var bundle1 = FileSystem.Path.Join(bundleDir, "bundle1.yaml");
 		var bundleContent1 = CreateResolvedBundleContent(bundleHeader, ("1755268130-first.yaml", changelog1));
-		await FileSystem.File.WriteAllTextAsync(bundle1, bundleContent1, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(bundle1, bundleContent1, TestContext.Current!.Execution.CancellationToken);
 
 		var bundle2 = FileSystem.Path.Join(bundleDir, "bundle2.yaml");
 		var bundleContent2 = CreateResolvedBundleContent(bundleHeader, ("1755268140-second.yaml", changelog2));
-		await FileSystem.File.WriteAllTextAsync(bundle2, bundleContent2, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(bundle2, bundleContent2, TestContext.Current!.Execution.CancellationToken);
 
 		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
 
@@ -176,7 +176,7 @@ public class DuplicateHandlingTests(ITestOutputHelper output) : RenderChangelogT
 		};
 
 		// Act
-		var result = await Service.RenderChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await Service.RenderChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		result.Should().BeTrue();

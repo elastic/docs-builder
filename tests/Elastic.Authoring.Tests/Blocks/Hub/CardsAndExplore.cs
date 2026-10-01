@@ -2,7 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-namespace Elastic.Authoring.Tests.Blocks.Hub.CardsAndExplore;
+namespace Elastic.Authoring.Tests.Blocks.Hub;
 
 // {card-group} and {link-card} render two ways. Which one is decided entirely by whether an
 // {explore} ancestor is present, not by any option. These tests pin both modes and the
@@ -28,7 +28,7 @@ public class CardGroupStandalone : MarkdownTest
 		::::
 		""";
 
-	[Fact(DisplayName = "renders a heading and a grid, not an accordion")]
+	[Test, DisplayName("renders a heading and a grid, not an accordion")]
 	public async Task RendersHeadingAndGrid() =>
 		await Docs.ConvertsToContainingHtml(
 			"""
@@ -39,11 +39,11 @@ public class CardGroupStandalone : MarkdownTest
 		"""
 		);
 
-	[Fact(DisplayName = "renders the card with its description")]
+	[Test, DisplayName("renders the card with its description")]
 	public async Task RendersCardDescription() =>
 		await Docs.ConvertsToContainingHtml("""<p class="hub-card-desc">Author a page and preview it.</p>""");
 
-	[Fact(DisplayName = "has no errors")]
+	[Test, DisplayName("has no errors")]
 	public async Task HasNoErrors() => await Docs.HasNoErrors();
 }
 
@@ -61,7 +61,7 @@ public class CardGroupWithSolutionsVariant : MarkdownTest
 		::::
 		""";
 
-	[Fact(DisplayName = "locks the three column grid")]
+	[Test, DisplayName("locks the three column grid")]
 	public async Task LocksThreeColumnGrid() =>
 		await Docs.ConvertsToContainingHtml(
 			"""
@@ -77,7 +77,7 @@ public class CardGroupWithSolutionsVariant : MarkdownTest
 		"""
 		);
 
-	[Fact(DisplayName = "has no errors")]
+	[Test, DisplayName("has no errors")]
 	public async Task HasNoErrors() => await Docs.HasNoErrors();
 }
 
@@ -114,7 +114,7 @@ public class CardGroupNestedInExplore : MarkdownTest
 		:::::
 		""";
 
-	[Fact(DisplayName = "renders the explore heading")]
+	[Test, DisplayName("renders the explore heading")]
 	public async Task RendersExploreHeading() =>
 		await Docs.ConvertsToContainingHtml(
 			"""
@@ -128,7 +128,7 @@ public class CardGroupNestedInExplore : MarkdownTest
 	// One snapshot covers what nesting changes: accordion mode, the first accordion open and
 	// the rest closed, and link cards as columns. It also pins the heading levels, so an
 	// Explore stack keeps a complete outline: section h2, accordion h3, column h4.
-	[Fact(DisplayName = "renders the accordion stack")]
+	[Test, DisplayName("renders the accordion stack")]
 	public async Task RendersAccordionStack() =>
 		await Docs.ConvertsToContainingHtml(
 			"""
@@ -179,11 +179,11 @@ public class CardGroupNestedInExplore : MarkdownTest
 		);
 
 	// A column is a pure link index, so the description is deliberately dropped.
-	[Fact(DisplayName = "drops the description in column mode")]
+	[Test, DisplayName("drops the description in column mode")]
 	public async Task DropsDescriptionInColumnMode() =>
 		await Docs.DoesNotConvertToContainingHtml("This description is dropped in column mode.");
 
-	[Fact(DisplayName = "has no errors")]
+	[Test, DisplayName("has no errors")]
 	public async Task HasNoErrors() => await Docs.HasNoErrors();
 }
 
@@ -195,7 +195,7 @@ public class LinkCardWithoutATitle : MarkdownTest
 		:::
 		""";
 
-	[Fact(DisplayName = "errors")]
+	[Test, DisplayName("errors")]
 	public async Task Errors() => await Docs.HasError("requires a `title`");
 }
 
@@ -211,7 +211,7 @@ public class LinkCardWithARelativeLink : MarkdownTest
 		:::
 		""";
 
-	[Fact(DisplayName = "rejects a relative path")]
+	[Test, DisplayName("rejects a relative path")]
 	public async Task RejectsRelativePath() => await Docs.HasError("must be an absolute path starting with `/`");
 }
 
@@ -227,7 +227,7 @@ public class LinkCardWithAMissingTarget : MarkdownTest
 		:::
 		""";
 
-	[Fact(DisplayName = "errors on a link that does not resolve")]
+	[Test, DisplayName("errors on a link that does not resolve")]
 	public async Task ErrorsOnMissingTarget() => await Docs.HasError("does not exist");
 }
 
@@ -252,7 +252,7 @@ public class LinkCardWithACrossLink : MarkdownTest
 
 	// Covers three things at once: the icon and variant accent, and that a cross-link resolves
 	// to a full URL without being treated as external. Inline links make the same distinction.
-	[Fact(DisplayName = "renders the icon and variant, and does not open the cross-link in a new tab")]
+	[Test, DisplayName("renders the icon and variant, and does not open the cross-link in a new tab")]
 	public async Task RendersIconAndVariantWithoutNewTab() =>
 		await Docs.ConvertsToContainingHtml(
 			"""
@@ -281,6 +281,6 @@ public class LinkCardWithACrossLink : MarkdownTest
 		"""
 		);
 
-	[Fact(DisplayName = "has no errors")]
+	[Test, DisplayName("has no errors")]
 	public async Task HasNoErrors() => await Docs.HasNoErrors();
 }

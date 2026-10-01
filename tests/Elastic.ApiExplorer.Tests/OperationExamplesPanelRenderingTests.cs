@@ -15,7 +15,7 @@ namespace Elastic.ApiExplorer.Tests;
 
 public class OperationExamplesPanelRenderingTests
 {
-	[Fact]
+	[Test]
 	public async Task Render_PutsExampleSelectInTheRequestHeader()
 	{
 		var model = new OperationExamplesPanelModel
@@ -43,7 +43,9 @@ public class OperationExamplesPanelRenderingTests
 			]
 		};
 
-		var html = await _OperationExamplesPanel.Create(model).RenderAsync(cancellationToken: TestContext.Current.CancellationToken);
+		var html = await _OperationExamplesPanel.Create(model).RenderAsync(
+			cancellationToken: TestContext.Current!.Execution.CancellationToken
+		);
 
 		html.Should().Contain("data-api-scenarios");
 		html.Should().Contain("api-code-sample-header");
@@ -71,7 +73,7 @@ public class OperationExamplesPanelRenderingTests
 		html.Should().NotContain("max-[1023px]:hidden");
 	}
 
-	[Fact]
+	[Test]
 	public async Task Render_SingleScenario_OmitsExamplesSwitcher()
 	{
 		var html = await _OperationExamplesPanel.Create(new OperationExamplesPanelModel
@@ -85,7 +87,7 @@ public class OperationExamplesPanelRenderingTests
 					Responses = [new ExampleResponse { StatusCode = "200", JsonValue = "{}" }]
 				}
 			]
-		}).RenderAsync(cancellationToken: TestContext.Current.CancellationToken);
+		}).RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
 
 		html.Should().Contain("id=\"api-examples-panel\"");
 		html.Should().Contain("example-block--response");
@@ -96,11 +98,11 @@ public class OperationExamplesPanelRenderingTests
 		html.Should().NotContain("max-[1023px]:hidden");
 	}
 
-	[Fact]
+	[Test]
 	public async Task Render_RequestAndResponse_ShareTheCodeCardClass()
 	{
 		var request = await _ApiCodeSample.Create(new ApiCodeSampleModel("rail-one", [new("JSON", "{}", "language-json")])).RenderAsync(
-			cancellationToken: TestContext.Current.CancellationToken
+			cancellationToken: TestContext.Current!.Execution.CancellationToken
 		);
 
 		request.Should().Contain("api-code-card");
@@ -111,13 +113,13 @@ public class OperationExamplesPanelRenderingTests
 			Title = "Match all",
 			TabId = "match-all",
 			Responses = [new ExampleResponse { StatusCode = "200", JsonValue = "{}" }]
-		}).RenderAsync(cancellationToken: TestContext.Current.CancellationToken);
+		}).RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
 
 		response.Should().Contain("api-code-card");
 		response.Should().Contain("example-block--response");
 	}
 
-	[Fact]
+	[Test]
 	public async Task Render_RequestHeader_ShowsMethodChipAndRoute_NotLanguage()
 	{
 		var html = await _ApiCodeSample.Create(
@@ -127,7 +129,7 @@ public class OperationExamplesPanelRenderingTests
 				"get",
 				"/_search"
 			)
-		).RenderAsync(cancellationToken: TestContext.Current.CancellationToken);
+		).RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
 
 		html.Should().Contain("api-code-sample-title");
 		html.Should().Contain("api-method-get");
@@ -144,7 +146,7 @@ public class OperationExamplesPanelRenderingTests
 		html.Should().NotContain("api-code-sample-label");
 	}
 
-	[Fact]
+	[Test]
 	public async Task Render_ScenarioContent_PassesMethodAndRouteToRequestCard()
 	{
 		var html = await _ExampleScenarioContent.Create(new ExampleScenario
@@ -154,14 +156,52 @@ public class OperationExamplesPanelRenderingTests
 			HttpMethod = "post",
 			Route = "/_search",
 			CodeSamples = [new("Console", "POST /_search", "language-console")]
-		}).RenderAsync(cancellationToken: TestContext.Current.CancellationToken);
+		}).RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
 
 		html.Should().Contain("api-method-post");
 		html.Should().Contain("/_search");
 		html.Should().NotContain("api-code-sample-label");
 	}
 
-	[Fact]
+	[Test]
+	public async Task Render_ScenarioContent_CodeSamplesWithoutBody_AlsoRendersRequestBodyCard()
+	{
+		var html = await _ExampleScenarioContent.Create(new ExampleScenario
+		{
+			Title = "createAgentRequestExample",
+			TabId = "create",
+			HttpMethod = "post",
+			Route = "/api/agent_builder/agents",
+			RequestJson = /*lang=json,strict*/  """{"id":"created-agent-id"}""",
+			CodeSamples = [new("curl", "curl -X POST", "language-bash")]
+		}).RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
+
+		html.Should().Contain("curl -X POST");
+		html.Should().Contain("created-agent-id");
+		html.Should().Contain("api-code-sample-heading");
+		html.Should().Contain(">Request example</span>");
+		var codeSample = html.IndexOf("curl -X POST", StringComparison.Ordinal);
+		var requestBody = html.IndexOf("created-agent-id", StringComparison.Ordinal);
+		requestBody.Should().BeGreaterThan(codeSample);
+	}
+
+	[Test]
+	public async Task Render_ScenarioContent_CodeSamplesEmbeddingBody_OmitsRequestBodyCard()
+	{
+		var html = await _ExampleScenarioContent.Create(new ExampleScenario
+		{
+			Title = "Match all",
+			TabId = "match-all",
+			RequestJson = /*lang=json,strict*/  """{"query":{}}""",
+			CodeSamples = [new("Console", "POST /_search\n{\"query\":{}}", "language-console")],
+			CodeSamplesIncludeRequest = true
+		}).RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
+
+		html.Should().NotContain("api-code-sample-heading");
+		html.Should().NotContain("rail-match-all-request");
+	}
+
+	[Test]
 	public async Task Render_ResponseHeader_DoesNotIncludeScenarioSelect()
 	{
 		var html = await _ExampleScenarioContent.Create(new ExampleScenario
@@ -169,7 +209,7 @@ public class OperationExamplesPanelRenderingTests
 			Title = "Match all",
 			TabId = "match-all",
 			Responses = [new ExampleResponse { StatusCode = "200", JsonValue = "{}" }]
-		}).RenderAsync(cancellationToken: TestContext.Current.CancellationToken);
+		}).RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
 
 		html.Should().Contain("example-block--response");
 		html.Should().Contain("example-response-tab-label");

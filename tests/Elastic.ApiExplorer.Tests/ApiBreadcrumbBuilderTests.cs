@@ -12,7 +12,7 @@ namespace Elastic.ApiExplorer.Tests;
 
 public class ApiBreadcrumbBuilderTests
 {
-	[Fact]
+	[Test]
 	public void Parents_Chain_IsRootFirstAndOmitsCurrent()
 	{
 		var root = Node("/api/es", "Api Overview", parent: null);
@@ -25,7 +25,7 @@ public class ApiBreadcrumbBuilderTests
 		crumbs.Select(c => c.Url).Should().Equal("/api/es", "/api/es/search");
 	}
 
-	[Fact]
+	[Test]
 	public void Parents_SameTitleAsCurrent_IsKept()
 	{
 		var root = Node("/api/es", "Api Overview", parent: null);
@@ -35,7 +35,7 @@ public class ApiBreadcrumbBuilderTests
 		op.BreadcrumbParents().Select(c => c.NavigationTitle).Should().Equal("Api Overview", "Run a search");
 	}
 
-	[Fact]
+	[Test]
 	public void Parents_HiddenParent_IsKept()
 	{
 		var root = Node("/api/es", "Api Overview", parent: null);
@@ -45,7 +45,7 @@ public class ApiBreadcrumbBuilderTests
 		op.BreadcrumbParents().Select(c => c.NavigationTitle).Should().Equal("Api Overview", "Hidden");
 	}
 
-	[Fact]
+	[Test]
 	public void Parents_SameUrlAsCurrent_IsOmitted()
 	{
 		var root = Node("/api/es", "Api Overview", parent: null);
@@ -55,7 +55,7 @@ public class ApiBreadcrumbBuilderTests
 		op.BreadcrumbParents().Select(c => c.Url).Should().Equal("/api/es");
 	}
 
-	[Fact]
+	[Test]
 	public void Parents_DuplicateUrl_KeepsNearest()
 	{
 		var root = Node("/api/es", "Api Overview", parent: null);
@@ -68,7 +68,7 @@ public class ApiBreadcrumbBuilderTests
 		crumbs[0].Url.Should().Be("/api/es");
 	}
 
-	[Fact]
+	[Test]
 	public void Landing_BreadcrumbIsTheCatalogLink()
 	{
 		var landing = new LandingNavigationItem("/api/doc/elasticsearch/");
@@ -80,7 +80,7 @@ public class ApiBreadcrumbBuilderTests
 		crumbs[0].Url.Should().Be("/docs/api/");
 	}
 
-	[Fact]
+	[Test]
 	public void Operation_ReplacesApiOverviewWithSpecName()
 	{
 		var landing = new LandingNavigationItem("/api/doc/elasticsearch/");
@@ -93,7 +93,7 @@ public class ApiBreadcrumbBuilderTests
 		crumbs.Select(c => c.Url).Should().Equal("/docs/api/", "/api/doc/elasticsearch/", "/api/doc/elasticsearch/group/search");
 	}
 
-	[Fact]
+	[Test]
 	public void Classification_SpecRootCrumbUsesSpecName()
 	{
 		var landing = new LandingNavigationItem("/api/doc/elasticsearch/");
@@ -107,7 +107,7 @@ public class ApiBreadcrumbBuilderTests
 		crumbs.Select(c => c.Url).Should().Equal("/docs/api/", "/api/doc/elasticsearch/", "/api/doc/elasticsearch/group/search");
 	}
 
-	[Fact]
+	[Test]
 	public void Catalog_OmitsTheCatalogLink()
 	{
 		var landing = new LandingNavigationItem("/api/");

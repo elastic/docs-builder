@@ -15,9 +15,9 @@ using Nullean.ScopedFileSystem;
 
 namespace Elastic.Documentation.Navigation.Tests.Isolation;
 
-public class PhysicalDocsetTests(ITestOutputHelper output)
+public class PhysicalDocsetTests()
 {
-	[Fact]
+	[Test]
 	public async Task PhysicalDocsetCanBeNavigated()
 	{
 		var docsetPath = Path.Join(Paths.WorkingDirectoryRoot.FullName, "docs", "_docset.yml");
@@ -28,7 +28,7 @@ public class PhysicalDocsetTests(ITestOutputHelper output)
 		var outputDir = fileSystem.DirectoryInfo.New(Path.Join(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "test-output"));
 		var configPath = fileSystem.FileInfo.New(docsetPath);
 
-		var context = new TestDocumentationSetContext(fileSystem, docsDir, outputDir, configPath, output, "docs-builder");
+		var context = new TestDocumentationSetContext(fileSystem, docsDir, outputDir, configPath, "docs-builder");
 		var docSet = DocumentationSetFile.LoadAndResolve(
 			context.Collector,
 			configPath,
@@ -36,7 +36,7 @@ public class PhysicalDocsetTests(ITestOutputHelper output)
 			noSuppress: [HintType.DeepLinkingVirtualFile]
 		);
 
-		_ = context.Collector.StartAsync(TestContext.Current.CancellationToken);
+		_ = context.Collector.StartAsync(TestContext.Current!.Execution.CancellationToken);
 
 		var navigation = new DocumentationSetNavigation<TestDocumentationFile>(
 			docSet,
@@ -45,7 +45,7 @@ public class PhysicalDocsetTests(ITestOutputHelper output)
 			crossLinkResolver: TestCrossLinkResolver.Instance
 		);
 
-		await context.Collector.StopAsync(TestContext.Current.CancellationToken);
+		await context.Collector.StopAsync(TestContext.Current!.Execution.CancellationToken);
 
 		// Assert navigation was built successfully
 		navigation.NavigationItems.Should().NotBeEmpty();
@@ -69,7 +69,7 @@ public class PhysicalDocsetTests(ITestOutputHelper output)
 		context.Collector.Warnings.Should().Be(0, "no warnings should be emitted");
 	}
 
-	[Fact]
+	[Test]
 	public async Task PhysicalDocsetNavigationHasCorrectUrls()
 	{
 		var docsetPath = Path.Join(Paths.WorkingDirectoryRoot.FullName, "docs", "_docset.yml");
@@ -78,17 +78,17 @@ public class PhysicalDocsetTests(ITestOutputHelper output)
 		var outputDir = fileSystem.DirectoryInfo.New(Path.Join(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "test-output"));
 		var configPath = fileSystem.FileInfo.New(docsetPath);
 
-		var context = new TestDocumentationSetContext(fileSystem, docsDir, outputDir, configPath, output, "docs-builder");
+		var context = new TestDocumentationSetContext(fileSystem, docsDir, outputDir, configPath, "docs-builder");
 		var docSet = DocumentationSetFile.LoadAndResolve(
 			context.Collector,
 			configPath,
 			DocumentationFileSystem.Resolve(Paths.WorkingDirectoryRoot.FullName)
 		);
-		_ = context.Collector.StartAsync(TestContext.Current.CancellationToken);
+		_ = context.Collector.StartAsync(TestContext.Current!.Execution.CancellationToken);
 
 		var navigation = new DocumentationSetNavigation<TestDocumentationFile>(docSet, context, TestDocumentationFileFactory.Instance);
 
-		await context.Collector.StopAsync(TestContext.Current.CancellationToken);
+		await context.Collector.StopAsync(TestContext.Current!.Execution.CancellationToken);
 
 		// Find the documentation folder by URL
 		var documentationFolder = navigation
@@ -101,7 +101,7 @@ public class PhysicalDocsetTests(ITestOutputHelper output)
 		documentationFolder.NavigationItems.Should().NotBeEmpty();
 	}
 
-	[Fact]
+	[Test]
 	public async Task PhysicalDocsetNavigationIncludesNestedTocs()
 	{
 		var docsetPath = Path.Join(Paths.WorkingDirectoryRoot.FullName, "docs", "_docset.yml");
@@ -110,17 +110,17 @@ public class PhysicalDocsetTests(ITestOutputHelper output)
 		var outputDir = fileSystem.DirectoryInfo.New(Path.Join(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "test-output"));
 		var configPath = fileSystem.FileInfo.New(docsetPath);
 
-		var context = new TestDocumentationSetContext(fileSystem, docsDir, outputDir, configPath, output, "docs-builder");
+		var context = new TestDocumentationSetContext(fileSystem, docsDir, outputDir, configPath, "docs-builder");
 		var docSet = DocumentationSetFile.LoadAndResolve(
 			context.Collector,
 			configPath,
 			DocumentationFileSystem.Resolve(Paths.WorkingDirectoryRoot.FullName)
 		);
-		_ = context.Collector.StartAsync(TestContext.Current.CancellationToken);
+		_ = context.Collector.StartAsync(TestContext.Current!.Execution.CancellationToken);
 
 		var navigation = new DocumentationSetNavigation<TestDocumentationFile>(docSet, context, TestDocumentationFileFactory.Instance);
 
-		await context.Collector.StopAsync(TestContext.Current.CancellationToken);
+		await context.Collector.StopAsync(TestContext.Current!.Execution.CancellationToken);
 
 		var fileRefs = docSet.TableOfContents.SelectMany(DocumentationSetFile.GetFileRefs).ToList();
 		foreach (var fileRef in fileRefs)
@@ -139,7 +139,7 @@ public class PhysicalDocsetTests(ITestOutputHelper output)
 		developmentToc.NavigationItems.Should().NotBeEmpty();
 	}
 
-	[Fact]
+	[Test]
 	public async Task PhysicalDocsetNavigationHandlesHiddenFiles()
 	{
 		var docsetPath = Path.Join(Paths.WorkingDirectoryRoot.FullName, "docs", "_docset.yml");
@@ -148,17 +148,17 @@ public class PhysicalDocsetTests(ITestOutputHelper output)
 		var outputDir = fileSystem.DirectoryInfo.New(Path.Join(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "test-output"));
 		var configPath = fileSystem.FileInfo.New(docsetPath);
 
-		var context = new TestDocumentationSetContext(fileSystem, docsDir, outputDir, configPath, output, "docs-builder");
+		var context = new TestDocumentationSetContext(fileSystem, docsDir, outputDir, configPath, "docs-builder");
 		var docSet = DocumentationSetFile.LoadAndResolve(
 			context.Collector,
 			configPath,
 			DocumentationFileSystem.Resolve(Paths.WorkingDirectoryRoot.FullName)
 		);
-		_ = context.Collector.StartAsync(TestContext.Current.CancellationToken);
+		_ = context.Collector.StartAsync(TestContext.Current!.Execution.CancellationToken);
 
 		var navigation = new DocumentationSetNavigation<TestDocumentationFile>(docSet, context, TestDocumentationFileFactory.Instance);
 
-		await context.Collector.StopAsync(TestContext.Current.CancellationToken);
+		await context.Collector.StopAsync(TestContext.Current!.Execution.CancellationToken);
 
 		// Find hidden files
 		var allItems = GetAllNavigationItems(navigation.NavigationItems);
@@ -166,7 +166,7 @@ public class PhysicalDocsetTests(ITestOutputHelper output)
 		hiddenItems.Should().NotBeEmpty();
 	}
 
-	[Fact]
+	[Test]
 	public async Task PhysicalTestDocsetNavigationHandlesCrossLinks()
 	{
 		var docsetPath = Path.Join(Paths.WorkingDirectoryRoot.FullName, "docs-tests", "docset.yml");
@@ -177,9 +177,9 @@ public class PhysicalDocsetTests(ITestOutputHelper output)
 		var outputDir = fileSystem.DirectoryInfo.New(Path.Join(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "test-output"));
 		var configPath = fileSystem.FileInfo.New(docsetPath);
 
-		var context = new TestDocumentationSetContext(fileSystem, docsDir, outputDir, configPath, output, "doc-builder-tests");
+		var context = new TestDocumentationSetContext(fileSystem, docsDir, outputDir, configPath, "doc-builder-tests");
 		var docSet = DocumentationSetFile.LoadAndResolve(context.Collector, configPath);
-		_ = context.Collector.StartAsync(TestContext.Current.CancellationToken);
+		_ = context.Collector.StartAsync(TestContext.Current!.Execution.CancellationToken);
 
 		var navigation = new DocumentationSetNavigation<TestDocumentationFile>(
 			docSet,
@@ -188,7 +188,7 @@ public class PhysicalDocsetTests(ITestOutputHelper output)
 			crossLinkResolver: TestCrossLinkResolver.Instance
 		);
 
-		await context.Collector.StopAsync(TestContext.Current.CancellationToken);
+		await context.Collector.StopAsync(TestContext.Current!.Execution.CancellationToken);
 
 		// Find cross-link items
 		var allItems = GetAllNavigationItems(navigation.NavigationItems);
@@ -196,7 +196,7 @@ public class PhysicalDocsetTests(ITestOutputHelper output)
 		crossLinks.Should().NotBeEmpty();
 	}
 
-	[Fact]
+	[Test]
 	public void CovarianceOfNavigationItemsIsRespected()
 	{
 		var docsetPath = Path.Join(Paths.WorkingDirectoryRoot.FullName, "docs", "_docset.yml");
@@ -205,7 +205,7 @@ public class PhysicalDocsetTests(ITestOutputHelper output)
 		var outputDir = fileSystem.DirectoryInfo.New(Path.Join(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "test-output"));
 		var configPath = fileSystem.FileInfo.New(docsetPath);
 
-		var context = new TestDocumentationSetContext(fileSystem, docsDir, outputDir, configPath, output, "docs-builder");
+		var context = new TestDocumentationSetContext(fileSystem, docsDir, outputDir, configPath, "docs-builder");
 		var docSet = DocumentationSetFile.LoadAndResolve(context.Collector, configPath);
 
 		var navigation = new DocumentationSetNavigation<TestDocumentationFile>(docSet, context, TestDocumentationFileFactory.Instance);

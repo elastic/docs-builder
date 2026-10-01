@@ -36,29 +36,10 @@
 			</a>
 		</dd>
 	}
-	@if (Model.EnumValues.Count > 0)
-	{
-		<dd class="enum-values">
-			<span class="values-label">Values:</span>
-			@foreach (var enumVal in Model.EnumValues)
-			{
-				<code class="enum-value">@enumVal</code>
-			}
-		</dd>
-	}
+	@(await RenderPartialAsync<_EnumValues, EnumValueList>(new EnumValueList(Model.EnumValues)))
 	@if (Model.Union is not null)
 	{
-		if (Model.Union.Kind == UnionDisplayKind.EnumLike)
-		{
-			<dd class="enum-values">
-				<span class="values-label">Values:</span>
-				@foreach (var enumVal in Model.Union.EnumLikeValues)
-				{
-					<code class="enum-value">@enumVal</code>
-				}
-			</dd>
-		}
-		else if (Model.Union.Kind == UnionDisplayKind.Badges)
+		if (Model.Union.Kind == UnionDisplayKind.Badges)
 		{
 			<dd class="union-options">
 				<span class="values-label">One of:</span>
