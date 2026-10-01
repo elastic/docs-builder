@@ -4,8 +4,10 @@
 
 using AwesomeAssertions;
 using Elastic.ApiExplorer.Components.PropertyTree;
+using Elastic.ApiExplorer.Infrastructure;
 using Elastic.ApiExplorer.Operations;
 using Elastic.ApiExplorer.Operations._Partials;
+using Elastic.Markdown.Myst;
 using Microsoft.AspNetCore.Html;
 using Microsoft.OpenApi;
 using RazorSlices;
@@ -94,6 +96,33 @@ public class ResponsesBlockRenderingTests
 	}
 
 	[Test]
+	public async Task Render_ResponseDescription_RendersInlineCode()
+	{
+		var html = await RenderHtml(Response("200", "success", "Disabled by the `alerting:v2:enabled` setting."));
+
+		html.Should().Contain("<code>alerting:v2:enabled</code>");
+		html.Should().NotContain("`alerting:v2:enabled`");
+	}
+
+	[Test]
+	public async Task Render_LongSuccessDescription_KeepsMediaTypeOnItsOwnRow()
+	{
+		var description =
+			"Indicates a successful call. Returns the node stats for every pipeline, including queue depth, and worker utilization, even when that sentence is long enough to cross the media type label.";
+		var html = await RenderHtml(Response("200", "success", description));
+
+		var button = html[html.IndexOf("<button", StringComparison.Ordinal)..html.IndexOf("</button>", StringComparison.Ordinal)];
+		button.Should().Contain(description);
+		button.Should().NotContain("content-type-tag");
+		button.Should().NotContain("application/json");
+		html.Should().Contain("class=\"response-media-type\"");
+		html
+			.IndexOf("content-type-tag", StringComparison.Ordinal)
+			.Should()
+			.BeGreaterThan(html.IndexOf("</button>", StringComparison.Ordinal));
+	}
+
+	[Test]
 	public async Task Render_ResponseWithoutSchemaOrHeaders_RendersStaticRowWithoutEmptyBody()
 	{
 		var html = await RenderHtml(Response("200", "success", "Indicates a successful response") with { Contents = [] });
@@ -109,8 +138,16 @@ public class ResponsesBlockRenderingTests
 
 	private static async Task<string> RenderHtml(params ApiResponse[] responses)
 	{
-		var model = new ResponsesBlockModel(responses, markdown => new HtmlString(markdown ?? ""));
+		var model = new ResponsesBlockModel(responses, RenderDescription);
 		return await _ResponsesBlock.Create(model).RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
+	}
+
+	private static HtmlString RenderDescription(string? markdown)
+	{
+		if (string.IsNullOrEmpty(markdown))
+			return HtmlString.Empty;
+
+		return new HtmlString(ApiMarkdown.SanitizeHtml(Markdig.Markdown.ToHtml(markdown, MarkdownParser.ApiDescriptionPipeline)));
 	}
 
 	private static ApiResponse Response(
