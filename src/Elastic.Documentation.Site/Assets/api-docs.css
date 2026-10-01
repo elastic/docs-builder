@@ -3767,3 +3767,52 @@ button.example-response-tab:focus-visible {
 	width: auto;
 	height: 40px;
 }
+
+/* Sample containment stopped at 767px. From 768–1023 the rail is still one
+   column, and overflow:visible on a max-content line widens the page. */
+@media (max-width: 1023px) {
+	#api-examples-panel .api-code-card,
+	.api-page-main .markdown-content pre {
+		max-width: 100%;
+		overflow-x: auto;
+	}
+}
+
+/* Sticky on the rail item is clamped to the grid, which runs through the
+   feedback row, so a viewport-tall rail paints down to the footer. The panel
+   fills row 3 and the nav sticks inside it. display:contents drops pb-12. */
+@media (min-width: 1024px) {
+	.api-content-grid:has(#api-examples-panel.api-examples-panel)
+		#api-examples-panel {
+		position: relative;
+		top: auto;
+		align-self: stretch;
+		display: block;
+		height: auto;
+		max-height: none;
+		overflow: visible;
+		padding-block: 0;
+		grid-row: 3 / 4;
+	}
+
+	.api-content-grid:has(#api-examples-panel.api-examples-panel)
+		#api-examples-panel
+		> .api-examples-panel-nav {
+		position: sticky;
+		top: var(--offset-top);
+		max-height: calc(100vh - var(--offset-top));
+		overflow: auto;
+		box-sizing: border-box;
+		padding-block: calc(var(--spacing) * 6);
+	}
+
+	.api-content-grid:has(#api-examples-panel.api-examples-panel)
+		page-feedback {
+		grid-column: 1 / -1;
+		grid-row: 4 / 5;
+	}
+}
+
+.api-content-grid {
+	padding-bottom: 3rem;
+}
