@@ -12,6 +12,23 @@
 		{
 			var response = responses[i];
 			var bodyId = $"response-{response.StatusCode}-fields";
+			if (!response.HasDetails)
+			{
+				<div class="response-panel response-panel--static" data-status="@response.StatusCode">
+					<div class="response-status-row">
+						<span class="response-status-chip status-@response.StatusClass">@response.StatusCode</span>
+						@if (!string.IsNullOrEmpty(response.Response.Description))
+						{
+							<span class="response-description">@response.Response.Description</span>
+						}
+						@if (i == 0 && !string.IsNullOrEmpty(response.FirstContentType))
+						{
+							<span class="content-type-tag">@response.FirstContentType</span>
+						}
+					</div>
+				</div>
+				continue;
+			}
 			<div class="response-panel collapsed" data-status="@response.StatusCode">
 				<button
 					type="button"

@@ -433,7 +433,8 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 		{
 			DirectiveBlock = block,
 			ColumnWidths = block.ColumnWidths,
-			Matrix = block.Matrix
+			Matrix = block.Matrix,
+			Filterable = block.Filterable
 		});
 		RenderRazorSlice(slice, renderer);
 	}
@@ -876,10 +877,10 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 			markdown,
 			block.CurrentFile,
 			block.Context.YamlFrontMatter,
-			MarkdownParser.Pipeline
+			MarkdownParser.ChangelogPipeline
 		);
 
-		var html = document.ToHtml(MarkdownParser.Pipeline);
+		var html = document.ToHtml(MarkdownParser.ChangelogPipeline);
 		_ = renderer.Write(html);
 	}
 

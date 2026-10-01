@@ -117,7 +117,7 @@
 
 .api-page-intro .api-url {
 	margin-left: 0;
-	color: #516381;
+	color: #1d2a3e;
 	font-family:
 		'Roboto Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
 		monospace;
@@ -774,6 +774,15 @@
 		color 0.12s ease;
 }
 
+.response-status-row {
+	display: flex;
+	box-sizing: border-box;
+	align-items: center;
+	gap: 8px;
+	width: 100%;
+	padding: 8px 12px;
+}
+
 .response-status-toggle:hover {
 	background-color: #ecf1f9;
 	color: #1d2a3e;
@@ -906,7 +915,7 @@
 .content-type-tag {
 	margin-left: auto;
 	flex-shrink: 0;
-	color: #798eaf;
+	color: #1d2a3e;
 	font-size: 12px;
 	font-weight: 400;
 	line-height: 16px;
@@ -916,7 +925,8 @@
 .property-list .expand-toggle,
 .union-expand-toggle .expand-toggle,
 .union-group-toggle {
-	@apply text-grey-80 hover:text-grey-120 inline-flex cursor-pointer items-center gap-1 border-0 bg-transparent p-0 text-sm;
+	@apply inline-flex cursor-pointer items-center gap-1 border-0 bg-transparent p-0 text-sm;
+	color: #1d2a3e;
 }
 
 .expand-toggle .toggle-icon,
@@ -1570,7 +1580,7 @@ a.docs-reference-btn {
 	border-bottom: 1px solid #0b64dd;
 	border-radius: 0;
 	background: none;
-	color: #1d2a3e;
+	color: var(--color-blue-elastic, #0b64dd);
 	font-family: var(--font-body, Inter, ui-sans-serif, system-ui, sans-serif);
 	font-size: 14px;
 	font-weight: 500;
@@ -1582,7 +1592,7 @@ a.docs-reference-btn {
 .markdown-content a.docs-reference-btn:hover,
 a.docs-reference-btn:hover {
 	background: none;
-	color: #0b64dd;
+	color: var(--color-blue-elastic-100, #1750ba);
 	text-decoration: none;
 }
 
@@ -1690,6 +1700,15 @@ a.docs-reference-btn::after {
 
 .enum-value {
 	@apply text-purple-70 bg-purple-10 rounded px-1.5 py-0.5 text-xs;
+}
+
+/* Folded literals join the row's wrap once shown; until-found keeps them searchable while folded. */
+.enum-values-folded:not([hidden]) {
+	display: contents;
+}
+
+.enum-values-folded[hidden='until-found'] {
+	display: block;
 }
 
 /* Response headers display */
@@ -2167,15 +2186,16 @@ a.docs-reference-btn::after {
 		font-weight: 600;
 	}
 
-	/* Anchor links rendered from OAS HTML descriptions — bump.sh uses a "reference" class */
-	a,
+	a:not(.docs-reference-btn),
 	a.reference {
 		color: var(--color-blue-elastic, #0b64dd);
-		text-decoration: none;
+		text-decoration: underline;
+		text-underline-offset: 2px;
 	}
 
-	a:hover,
+	a:not(.docs-reference-btn):hover,
 	a.reference:hover {
+		color: var(--color-blue-elastic-100, #1750ba);
 		text-decoration: underline;
 	}
 
@@ -2191,7 +2211,7 @@ a.docs-reference-btn::after {
 
 	.operation-path {
 		margin-left: 4px;
-		color: #516381;
+		color: #1d2a3e;
 		font-family:
 			'Roboto Mono', ui-monospace, SFMono-Regular, Menlo, Monaco,
 			Consolas, monospace;
@@ -2214,7 +2234,7 @@ a.docs-reference-btn::after {
    --api-code-keyword const / await / search
    --api-code-variable identifiers           response, client
    --api-code-property object keys + numbers
-   --api-code-muted   text/disabled           inactive tabs, comments, copy icon
+   --api-code-muted   text/disabled           inactive tabs, comments, disabled controls
    --api-code-accent  borders/strong/primary  active tab + underline
    --api-code-string  string values
    --api-code-boolean true / false / null
@@ -2415,14 +2435,14 @@ button.example-response-tab:focus-visible {
 	height: 24px;
 	opacity: 1;
 	background-color: #fff;
-	color: var(--api-code-muted);
+	color: var(--api-code-text);
 	border: 1px solid #e3e8f2;
 	border-radius: 6px;
 }
 
 .api-code-card .copybtn.copybtn--in-header:hover {
 	background-color: #f6f9fc;
-	color: var(--api-code-muted);
+	color: var(--api-code-text);
 }
 
 .api-code-card .copybtn.copybtn--in-header.success {
@@ -2776,7 +2796,7 @@ button.example-response-tab:focus-visible {
 .api-code-sample-title .api-url {
 	margin-left: 0;
 	overflow: hidden;
-	color: var(--api-code-muted);
+	color: var(--api-code-text);
 	font-family:
 		'Roboto Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
 		monospace;
@@ -2784,6 +2804,14 @@ button.example-response-tab:focus-visible {
 	font-weight: 300;
 	line-height: 20px;
 	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.api-code-sample-title .api-code-sample-heading {
+	color: var(--api-code-text);
+	font-size: 12px;
+	font-weight: 600;
+	line-height: 20px;
 	white-space: nowrap;
 }
 
@@ -2812,7 +2840,7 @@ button.example-response-tab:focus-visible {
 	border: 1px solid #e3e8f2;
 	border-radius: 6px;
 	background: #fff;
-	color: var(--api-code-muted, #798eaf);
+	color: var(--api-code-text, #1d2a3e);
 	font-family: var(--font-sans, Inter, ui-sans-serif, system-ui, sans-serif);
 	font-size: 14px;
 	font-weight: 400;
@@ -2860,6 +2888,13 @@ button.example-response-tab:focus-visible {
 
 .api-select-trigger:hover {
 	background: #f6f9fc;
+}
+
+.api-select-trigger:is(:disabled, [aria-disabled='true']),
+.api-select-trigger:is(:disabled, [aria-disabled='true']):hover {
+	color: var(--api-code-muted, #798eaf);
+	background: #fff;
+	cursor: not-allowed;
 }
 
 .api-select-trigger:focus-visible {
@@ -3399,7 +3434,16 @@ button.example-response-tab:focus-visible {
 }
 
 .api-code-sample-actions .copybtn.copybtn--in-header:hover {
+	color: var(--api-code-text);
+}
+
+.api-code-card
+	.copybtn.copybtn--in-header:is(:disabled, [aria-disabled='true']),
+.api-code-card
+	.copybtn.copybtn--in-header:is(:disabled, [aria-disabled='true']):hover {
 	color: var(--api-code-muted);
+	background-color: #fff;
+	cursor: not-allowed;
 }
 
 .api-code-sample-actions .copybtn.copybtn--in-header.success {

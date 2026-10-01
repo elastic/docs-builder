@@ -21,6 +21,14 @@ public class IsolatedApiAliasesTests
 	}
 
 	[Test]
+	[Arguments("docs-builder-elasticsearch", true)]
+	[Arguments("docs-builder-cloud-connect", true)]
+	[Arguments("elasticsearch", false)]
+	[Arguments("cloud-connect", false)]
+	public void IsFixtureKey_MatchesPrefixedKeysOnly(string apiKey, bool expected) =>
+		IsolatedApiAliases.IsFixtureKey(apiKey).Should().Be(expected);
+
+	[Test]
 	[Arguments("doc/docs-builder-elasticsearch")]
 	[Arguments("doc/docs-builder-elasticsearch/operation/operation-search")]
 	[Arguments("api/doc/elasticsearch")]

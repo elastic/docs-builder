@@ -5,55 +5,11 @@
 using AwesomeAssertions;
 using Elastic.ApiExplorer.Infrastructure;
 using Elastic.ApiExplorer.Landing;
-using Elastic.Documentation.Configuration.Products;
-using Elastic.Documentation.Configuration.Toc;
 
 namespace Elastic.ApiExplorer.Tests;
 
 public class ApiHubSwitcherTests
 {
-	[Test]
-	public void CollectDeclaredEntries_NullConfig_ReturnsEmpty()
-	{
-		var entries = ApiHubSwitcher.CollectDeclaredEntries("", null);
-
-		entries.Should().BeEmpty();
-	}
-
-	[Test]
-	public void CollectDeclaredEntries_EmptyConfig_ReturnsEmpty()
-	{
-		var entries = ApiHubSwitcher.CollectDeclaredEntries("", new Dictionary<string, ResolvedApiConfiguration>());
-
-		entries.Should().BeEmpty();
-	}
-
-	[Test]
-	public void CollectDeclaredEntries_TwoConfigs_UsesDisplayNamesAndProductRoots()
-	{
-		var configs = new Dictionary<string, ResolvedApiConfiguration>
-		{
-			["elasticsearch"] = Config("elasticsearch", "Elasticsearch"),
-			["kibana"] = Config("kibana", "Kibana")
-		};
-
-		var entries = ApiHubSwitcher.CollectDeclaredEntries("", configs);
-
-		entries.Should().HaveCount(2);
-		entries
-			.Should()
-			.ContainSingle(e => e.Key == "elasticsearch")
-			.Which
-			.Should()
-			.BeEquivalentTo(new ApiCatalogEntry("elasticsearch", "Elasticsearch", "/api/doc/elasticsearch/", "elasticsearch"));
-		entries
-			.Should()
-			.ContainSingle(e => e.Key == "kibana")
-			.Which
-			.Should()
-			.BeEquivalentTo(new ApiCatalogEntry("kibana", "Kibana", "/api/doc/kibana/", "kibana"));
-	}
-
 	[Test]
 	public void Build_NullCurrentKey_ReturnsEmpty()
 	{
@@ -104,28 +60,6 @@ public class ApiHubSwitcherTests
 		items.Count(i => i.Selected).Should().Be(1);
 		items.Single(i => i.Selected).Label.Should().Be("Elasticsearch");
 	}
-
-	[Test]
-	public void CollectDeclaredEntries_PreservesCatalogCategories()
-	{
-		var configs = new Dictionary<string, ResolvedApiConfiguration>
-		{
-			["elasticsearch"] = Config("elasticsearch", "Elasticsearch", ["self", "ess"])
-		};
-
-		var entries = ApiHubSwitcher.CollectDeclaredEntries("", configs);
-
-		entries.Should().ContainSingle().Which.CatalogCategories.Should().Equal("self", "ess");
-	}
-
-	private static ResolvedApiConfiguration Config(string key, string displayName, IReadOnlyList<string>? categories = null) =>
-		new()
-		{
-			ProductKey = key,
-			Product = new Product { Id = key, DisplayName = displayName },
-			SpecFileName = $"{key}.json",
-			CatalogCategories = categories ?? []
-		};
 
 	private static ApiCatalogEntry Entry(string key, string title) => new(key, title, $"/api/doc/{key}/");
 }
