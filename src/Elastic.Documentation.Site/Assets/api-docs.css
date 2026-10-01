@@ -2035,6 +2035,9 @@ a.docs-reference-btn::after {
 	vertical-align: middle;
 	mix-blend-mode: normal;
 	word-break: normal;
+	max-width: 100%;
+	overflow-x: auto;
+	overflow-y: hidden;
 }
 
 /* Type definition link */
