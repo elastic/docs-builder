@@ -31,7 +31,7 @@ public class ResponsesBlockRenderingTests
 		html.Should().Contain("Successful response");
 		html.Should().Contain("Bad request");
 		html.Should().Contain("application/json");
-		html.Should().NotContain("text/plain");
+		html.Should().Contain("text/plain");
 		html.Should().Contain("aria-controls=\"response-200-fields\"");
 		html.Should().Contain("aria-controls=\"response-400-fields\"");
 		html.Should().Contain("aria-expanded=\"false\"");
@@ -105,22 +105,28 @@ public class ResponsesBlockRenderingTests
 	}
 
 	[Test]
-	public async Task Render_LongSuccessDescription_KeepsMediaTypeOnItsOwnRow()
+	public async Task Render_Response_PutsStatusAndMediaTypeAboveTheDescription()
 	{
-		var description =
-			"Indicates a successful call. Returns the node stats for every pipeline, including queue depth, and worker utilization, even when that sentence is long enough to cross the media type label.";
-		var html = await RenderHtml(Response("200", "success", description));
+		var html = await RenderHtml(
+			Response("200", "success", "A JSON object containing pipelines statistics.\n\n- queue depth\n- worker utilization")
+		);
 
 		var button = html[html.IndexOf("<button", StringComparison.Ordinal)..html.IndexOf("</button>", StringComparison.Ordinal)];
-		button.Should().NotContain(description);
-		button.Should().NotContain("content-type-tag");
-		button.Should().NotContain("application/json");
-		html.Should().Contain(description);
-		html.Should().Contain("class=\"response-media-type\"");
+		button.Should().Contain("response-status-chip");
+		button.Should().Contain("application/json");
+		button.Should().Contain("response-toggle-icon");
+		button.Should().NotContain("queue depth");
+		button.Should().NotContain("<ul>");
+		html.Should().Contain("<ul>");
+		html.Should().Contain("<li>queue depth</li>");
+		html
+			.IndexOf("response-description", StringComparison.Ordinal)
+			.Should()
+			.BeGreaterThan(html.IndexOf("</button>", StringComparison.Ordinal));
 		html
 			.IndexOf("content-type-tag", StringComparison.Ordinal)
 			.Should()
-			.BeGreaterThan(html.IndexOf("response-description", StringComparison.Ordinal));
+			.BeLessThan(html.IndexOf("response-description", StringComparison.Ordinal));
 	}
 
 	[Test]
@@ -144,6 +150,7 @@ public class ResponsesBlockRenderingTests
 		html.Should().Contain("Indicates a successful response");
 		html.Should().Contain("application/json");
 		html.Should().NotContain("response-status-toggle");
+		html.Should().NotContain("response-toggle-icon");
 		html.Should().NotContain("response-panel-body");
 		html.Should().NotContain("response-200-fields");
 	}

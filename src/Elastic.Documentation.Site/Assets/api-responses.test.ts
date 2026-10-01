@@ -11,10 +11,11 @@ function responseMarkup(): string {
                         aria-expanded="false"
                         aria-controls="response-200-fields">
                         <span class="response-status-chip status-success">200</span>
+                        <span class="content-type-tag">application/json</span>
                     </button>
-                    <span class="response-description">
-                        See the <a href="https://www.elastic.co/guide">guide</a>.
-                    </span>
+                </div>
+                <div class="response-description">
+                    See the <a href="https://www.elastic.co/guide">guide</a>.
                 </div>
                 <div class="response-panel-body" id="response-200-fields" hidden="until-found"></div>
             </div>
@@ -33,11 +34,18 @@ describe('response status row', () => {
     const toggle = () =>
         document.querySelector<HTMLButtonElement>('.response-status-toggle')!
 
-    it('expands when the description text is clicked', () => {
-        document.querySelector<HTMLElement>('.response-description')!.click()
+    it('expands when the media type in the header is clicked', () => {
+        document.querySelector<HTMLElement>('.content-type-tag')!.click()
 
         expect(panel().classList.contains('expanded')).toBe(true)
         expect(toggle().getAttribute('aria-expanded')).toBe('true')
+    })
+
+    it('leaves the panel collapsed when the description text is clicked', () => {
+        document.querySelector<HTMLElement>('.response-description')!.click()
+
+        expect(panel().classList.contains('collapsed')).toBe(true)
+        expect(toggle().getAttribute('aria-expanded')).toBe('false')
     })
 
     it('leaves the panel collapsed when a description link is clicked', () => {
