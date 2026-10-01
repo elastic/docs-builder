@@ -5,13 +5,5 @@
 }
 else if (Model.HttpMethod is { } httpMethod)
 {
-	var m = httpMethod.ToUpperInvariant();
-	if (httpMethod == "delete")
-	{
-<span class="nav-v2-api-method nav-v2-api-method-@httpMethod" aria-label="@m" title="@m"><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><use href="#icon-api-x"/></svg></span>
-	}
-	else
-	{
-<span class="nav-v2-api-method nav-v2-api-method-@httpMethod" aria-label="@m" title="@m"><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><use href="#icon-api-arrow"/></svg></span>
-	}
+<span class="nav-v2-api-method nav-v2-api-method-@httpMethod">@httpMethod.ToUpperInvariant()</span>
 }

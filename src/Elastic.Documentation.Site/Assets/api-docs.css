@@ -585,29 +585,32 @@
 }
 
 /*
- * Nav V2 method badges — Figma APIs (node 10065:6317):
- * GET green + pivot 180°; POST blue; PUT/PATCH orange; DELETE red + X;
- * multi-operation (and HEAD/OPTIONS) gray + branch glyph.
+ * Nav method chips. An operation shows its HTTP verb.
+ * A multi-operation row keeps the branch glyph in a 20px square.
  */
 #pages-nav .nav-v2-api-method {
 	display: inline-flex;
 	flex-shrink: 0;
 	align-items: center;
 	justify-content: center;
-	width: 20px;
+	box-sizing: border-box;
 	height: 20px;
+	padding: 0 4px;
 	border: 1px solid;
 	border-radius: 6px;
-	box-sizing: border-box;
+	font-size: 10px;
+	font-weight: 600;
+	line-height: 12px;
+	white-space: nowrap;
+}
+
+#pages-nav .nav-v2-api-method-multi {
+	width: 20px;
+	padding: 0;
 }
 
 #pages-nav .nav-v2-api-method svg {
 	display: block;
-}
-
-/* Only GET flips the pivot arrow (incoming). */
-#pages-nav .nav-v2-api-method-get svg {
-	transform: rotate(180deg);
 }
 
 #pages-nav .nav-v2-api-method-get {
