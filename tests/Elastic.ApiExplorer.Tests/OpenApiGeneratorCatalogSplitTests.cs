@@ -139,7 +139,16 @@ public class OpenApiGeneratorCatalogSplitTests
 		var productHtml = context.WriteFileSystem.File.ReadAllText(Path.Join(outputRoot, "api", "doc", "elasticsearch", "index.html"));
 		var catalogHtml = context.WriteFileSystem.File.ReadAllText(Path.Join(outputRoot, "api", "index.html"));
 		productHtml.Should().Contain("id=\"api-hub-switcher\"");
-		productHtml.Should().Contain("Back to hub");
+		productHtml.Should().Contain("<option value=\"/docs/api\">Back to hub</option>");
+		productHtml.Should().Contain("<option value=\"/docs/api/doc/elasticsearch\" selected>elasticsearch</option>");
+		productHtml.Should().Contain("href=\"/docs/api\" ");
+		productHtml.Should().Contain(">APIs<");
+		productHtml.Should().Contain("href=\"/docs/api/doc/elasticsearch/operation/operation-ping\"");
+		productHtml.Should().NotContain("href=\"/docs/api/doc/elasticsearch/operation/operation-ping/\"");
+		productHtml.Should().NotContain("value=\"/docs/api/\"");
+		productHtml.Should().NotContain("value=\"/docs/api/doc/elasticsearch/\"");
+		catalogHtml.Should().Contain("<a class=\"api-catalog-card-main\" href=\"/docs/api/doc/elasticsearch\">");
+		catalogHtml.Should().NotContain("href=\"/docs/api/doc/elasticsearch/\"");
 		catalogHtml.Should().NotContain("id=\"api-hub-switcher\"");
 		catalogHtml.Should().Contain("listing-group-chips");
 		catalogHtml.Should().Contain("data-group=\"self\"");
@@ -172,7 +181,7 @@ public class OpenApiGeneratorCatalogSplitTests
 
 		var productHtml = context.WriteFileSystem.File.ReadAllText(Path.Join(outputRoot, "api", "doc", "elasticsearch", "index.html"));
 		productHtml.Should().Contain("id=\"api-hub-switcher\"");
-		productHtml.Should().Contain("<option value=\"/docs/api/\">Back to hub</option>");
+		productHtml.Should().Contain("<option value=\"/docs/api\">Back to hub</option>");
 		productHtml.Should().Contain("<option value=\"/docs/api/doc/elasticsearch/\" selected>Elasticsearch</option>");
 		productHtml.Should().Contain("<option value=\"/docs/api/doc/kibana/\">Kibana</option>");
 	}

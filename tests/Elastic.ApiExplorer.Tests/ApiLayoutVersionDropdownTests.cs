@@ -29,7 +29,7 @@ public class ApiLayoutVersionDropdownTests
 		layout.CurrentVersion.Should().Be("9.0+");
 		layout.VersionDropdownSerializedModel.Should().Contain("\"name\":\"latest\"");
 		layout.VersionDropdownSerializedModel.Should().Contain("\"name\":\"v9\"");
-		layout.ApiCatalogUrl.Should().Be("/api/");
+		layout.ApiCatalogUrl.Should().Be("/api");
 		layout.SpecJsonUrl.Should().Be("/api/doc/elasticsearch.json");
 		layout.SpecYamlUrl.Should().Be("/api/doc/elasticsearch.yaml");
 	}
@@ -51,7 +51,7 @@ public class ApiLayoutVersionDropdownTests
 
 		layout.LegacyBarProductSwitcher.Should().HaveCount(3);
 		layout.LegacyBarProductSwitcher[0].Label.Should().Be("Back to hub");
-		layout.LegacyBarProductSwitcher[0].Value.Should().Be("/docs/api/");
+		layout.LegacyBarProductSwitcher[0].Value.Should().Be("/docs/api");
 		layout.LegacyBarProductSwitcher.Should().ContainSingle(i => i.Selected && i.Label == "Elasticsearch");
 		layout.HubSwitcherItems.Should().HaveCount(3);
 	}

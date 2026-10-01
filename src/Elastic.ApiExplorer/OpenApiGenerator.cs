@@ -174,7 +174,7 @@ public class OpenApiGenerator(
 
 		var canonical = versionedDocuments.FirstOrDefault(v => v.Version.Moniker == "main") ?? versionedDocuments[0];
 		var title = canonical.Document.Info?.Title ?? apiConfig.Product.DisplayName ?? prefix;
-		var url = $"{ApiUrlBuilder.ProductRoot(context.UrlPathPrefix, prefix)}/";
+		var url = ApiUrlBuilder.ProductRoot(context.UrlPathPrefix, prefix);
 		return new ApiCatalogEntry(prefix, title, url, apiConfig.Product.Id, canonical.Document.Info?.Description)
 		{
 			CatalogCategories = apiConfig.CatalogCategories
@@ -281,7 +281,7 @@ public class OpenApiGenerator(
 
 	private async Task GenerateApiCatalog(IReadOnlyList<ApiCatalogEntry> entries, Cancel ctx)
 	{
-		var catalogUrl = $"{ApiUrlBuilder.ApiRoot(context.UrlPathPrefix)}/";
+		var catalogUrl = ApiUrlBuilder.ApiRoot(context.UrlPathPrefix);
 		var navigation = new ApiCatalogNavigationItem(catalogUrl, entries);
 		var navigationRenderer = new IsolatedBuildNavigationHtmlWriter(context, navigation, suppressNavigationDropdown: true);
 

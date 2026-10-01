@@ -87,7 +87,7 @@ public abstract class ApiViewModel(ApiRenderContext context)
 		var docTitle = Document.Info?.Title ?? "API Documentation";
 		var pageTitle = LayoutPageTitle;
 		var documentTitle = pageTitle is not null ? $"{pageTitle} | {docTitle}" : docTitle;
-		var catalogUrl = $"{ApiUrlBuilder.ApiRoot(BuildContext.UrlPathPrefix)}/";
+		var catalogUrl = ApiUrlBuilder.ApiRoot(BuildContext.UrlPathPrefix);
 
 		var hubItems = ApiHubSwitcher.Build(RenderContext.CatalogEntries, RenderContext.CurrentApiKey, catalogUrl);
 		var assembler = BuildContext.BuildType == BuildType.Assembler;

@@ -20,7 +20,7 @@ public static class ApiHubSwitcher
 		var entries = new List<ApiCatalogEntry>(apiConfigurations.Count);
 		foreach (var (key, config) in apiConfigurations)
 		{
-			entries.Add(new(key, config.Product.DisplayName, $"{ApiUrlBuilder.ProductRoot(urlPathPrefix, key)}/", config.Product.Id)
+			entries.Add(new(key, config.Product.DisplayName, ApiUrlBuilder.ProductRoot(urlPathPrefix, key), config.Product.Id)
 			{
 				CatalogCategories = config.CatalogCategories
 			});

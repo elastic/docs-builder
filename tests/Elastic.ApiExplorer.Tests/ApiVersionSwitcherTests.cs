@@ -26,7 +26,7 @@ public class ApiVersionSwitcherTests
 
 		items.Should().HaveCount(3);
 		items.Select(i => i.Label).Should().Equal("latest", "v9", "v8");
-		items.Select(i => i.Url).Should().Equal("/api/doc/elasticsearch/", "/api/doc/elasticsearch/v9/", "/api/doc/elasticsearch/v8/");
+		items.Select(i => i.Url).Should().Equal("/api/doc/elasticsearch", "/api/doc/elasticsearch/v9", "/api/doc/elasticsearch/v8");
 		items.Single(i => i.Selected).Label.Should().Be("v8");
 	}
 
@@ -58,8 +58,8 @@ public class ApiVersionSwitcherTests
 
 		json.Should().Contain("\"name\":\"latest\"");
 		json.Should().Contain("\"name\":\"v9\"");
-		json.Should().Contain("\"href\":\"/api/doc/elasticsearch/\"");
-		json.Should().Contain("\"href\":\"/api/doc/elasticsearch/v9/\"");
+		json.Should().Contain("\"href\":\"/api/doc/elasticsearch\",\"disabled\":false");
+		json.Should().Contain("\"href\":\"/api/doc/elasticsearch/v9\",\"disabled\":false");
 		json.Should().Contain("\"disabled\":false");
 	}
 
