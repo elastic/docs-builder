@@ -1579,7 +1579,7 @@ a.docs-reference-btn {
 	border-bottom: 1px solid #0b64dd;
 	border-radius: 0;
 	background: none;
-	color: #1d2a3e;
+	color: var(--color-blue-elastic, #0b64dd);
 	font-family: var(--font-body, Inter, ui-sans-serif, system-ui, sans-serif);
 	font-size: 14px;
 	font-weight: 500;
@@ -1591,7 +1591,7 @@ a.docs-reference-btn {
 .markdown-content a.docs-reference-btn:hover,
 a.docs-reference-btn:hover {
 	background: none;
-	color: #0b64dd;
+	color: var(--color-blue-elastic-100, #1750ba);
 	text-decoration: none;
 }
 
@@ -2185,15 +2185,16 @@ a.docs-reference-btn::after {
 		font-weight: 600;
 	}
 
-	/* Anchor links rendered from OAS HTML descriptions — bump.sh uses a "reference" class */
-	a,
+	a:not(.docs-reference-btn),
 	a.reference {
 		color: var(--color-blue-elastic, #0b64dd);
-		text-decoration: none;
+		text-decoration: underline;
+		text-underline-offset: 2px;
 	}
 
-	a:hover,
+	a:not(.docs-reference-btn):hover,
 	a.reference:hover {
+		color: var(--color-blue-elastic-100, #1750ba);
 		text-decoration: underline;
 	}
 
@@ -2232,7 +2233,7 @@ a.docs-reference-btn::after {
    --api-code-keyword const / await / search
    --api-code-variable identifiers           response, client
    --api-code-property object keys + numbers
-   --api-code-muted   text/disabled           inactive tabs, comments, copy icon
+   --api-code-muted   text/disabled           inactive tabs, comments, disabled controls
    --api-code-accent  borders/strong/primary  active tab + underline
    --api-code-string  string values
    --api-code-boolean true / false / null
@@ -2433,14 +2434,14 @@ button.example-response-tab:focus-visible {
 	height: 24px;
 	opacity: 1;
 	background-color: #fff;
-	color: var(--api-code-muted);
+	color: var(--api-code-text);
 	border: 1px solid #e3e8f2;
 	border-radius: 6px;
 }
 
 .api-code-card .copybtn.copybtn--in-header:hover {
 	background-color: #f6f9fc;
-	color: var(--api-code-muted);
+	color: var(--api-code-text);
 }
 
 .api-code-card .copybtn.copybtn--in-header.success {
@@ -2838,7 +2839,7 @@ button.example-response-tab:focus-visible {
 	border: 1px solid #e3e8f2;
 	border-radius: 6px;
 	background: #fff;
-	color: var(--api-code-muted, #798eaf);
+	color: var(--api-code-text, #1d2a3e);
 	font-family: var(--font-sans, Inter, ui-sans-serif, system-ui, sans-serif);
 	font-size: 14px;
 	font-weight: 400;
@@ -2886,6 +2887,13 @@ button.example-response-tab:focus-visible {
 
 .api-select-trigger:hover {
 	background: #f6f9fc;
+}
+
+.api-select-trigger:is(:disabled, [aria-disabled='true']),
+.api-select-trigger:is(:disabled, [aria-disabled='true']):hover {
+	color: var(--api-code-muted, #798eaf);
+	background: #fff;
+	cursor: not-allowed;
 }
 
 .api-select-trigger:focus-visible {
@@ -3425,7 +3433,16 @@ button.example-response-tab:focus-visible {
 }
 
 .api-code-sample-actions .copybtn.copybtn--in-header:hover {
+	color: var(--api-code-text);
+}
+
+.api-code-card
+	.copybtn.copybtn--in-header:is(:disabled, [aria-disabled='true']),
+.api-code-card
+	.copybtn.copybtn--in-header:is(:disabled, [aria-disabled='true']):hover {
 	color: var(--api-code-muted);
+	background-color: #fff;
+	cursor: not-allowed;
 }
 
 .api-code-sample-actions .copybtn.copybtn--in-header.success {
