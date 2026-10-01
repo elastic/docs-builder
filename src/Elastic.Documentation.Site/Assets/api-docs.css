@@ -770,7 +770,7 @@
 
 .response-status-toggle {
 	margin: 0;
-	padding: 12px 16px;
+	padding: 14px 16px;
 	border: 0;
 	border-radius: 0;
 	background: transparent;
@@ -778,6 +778,11 @@
 	font: inherit;
 	text-align: left;
 	cursor: pointer;
+}
+
+button.response-status-toggle:focus,
+button.response-status-toggle:focus-visible {
+	outline: none;
 }
 
 .response-status-row:has(> .response-status-toggle) {
@@ -788,14 +793,21 @@
 		color 0.12s ease;
 }
 
-.response-status-row:has(> .response-status-toggle):hover {
+.response-panel:not(.expanded)
+	> .response-status-row:has(> .response-status-toggle):hover,
+.response-panel:not(.expanded)
+	> .response-status-row:has(> .response-status-toggle:focus-visible) {
 	background-color: #ecf1f9;
 	color: #1d2a3e;
 }
 
-.response-status-row:has(> .response-status-toggle):focus-within {
+.response-panel.expanded
+	> .response-status-row
+	.response-status-toggle:focus-visible
+	.response-toggle-icon {
 	outline: 2px solid var(--color-blue-elastic, #0b64dd);
-	outline-offset: -2px;
+	outline-offset: 3px;
+	border-radius: 2px;
 }
 
 .response-status-chip {
@@ -830,27 +842,6 @@
 	background-color: #d9e8ff;
 	border-color: #bfdbff;
 	color: #0b64dd;
-}
-
-.response-panel.expanded
-	> .response-status-row
-	.response-status-chip.status-success {
-	background-color: #aee8d2;
-	border-color: #008a5e;
-}
-
-.response-panel.expanded
-	> .response-status-row
-	.response-status-chip.status-error {
-	background-color: #ffc9c2;
-	border-color: #c61e25;
-}
-
-.response-panel.expanded
-	> .response-status-row
-	.response-status-chip.status-info {
-	background-color: #bfdbff;
-	border-color: #0b64dd;
 }
 
 .response-panel:first-child > .response-status-row {
@@ -904,6 +895,8 @@
 
 .response-panel.expanded > .response-panel-body {
 	display: block;
+	border-top: 1px solid #cad3e2;
+	padding-top: 16px;
 }
 
 .response-panel-body[hidden='until-found'] {
@@ -915,7 +908,7 @@
 
 .response-description {
 	margin: 0;
-	padding: 0 16px 16px;
+	padding: 8px 16px 24px;
 	color: inherit;
 	font-size: 14px;
 	font-weight: 400;
@@ -964,6 +957,24 @@
 
 .response-panel.expanded > .response-status-row .response-toggle-icon::before {
 	content: '−';
+}
+
+@media (prefers-reduced-motion: no-preference) {
+	.response-panel.expanded > .response-panel-body {
+		animation: response-fields-in 180ms ease;
+	}
+}
+
+@keyframes response-fields-in {
+	from {
+		opacity: 0;
+		transform: translateY(-6px);
+	}
+
+	to {
+		opacity: 1;
+		transform: none;
+	}
 }
 
 .property-list .expand-toggle,
