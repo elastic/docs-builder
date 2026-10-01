@@ -180,6 +180,21 @@ public class ApiSupplementalRenderTests(ApiExplorerFixture fixture)
 	}
 
 	[Test]
+	public async Task Operation_SectionHeadings_ExposeRequestResponseAndParameterAnchors()
+	{
+		var nav = SearchOperation();
+		var html = await RenderAsync(nav.Model, nav);
+
+		html.Should().Contain("id=\"request-body\"");
+		html.Should().Contain("data-copy-heading=\"#request-body\"");
+		html.Should().Contain("href=\"#request-body\"");
+		html.Should().Contain("id=\"responses\"");
+		html.Should().Contain("href=\"#responses\"");
+		html.Should().Contain("id=\"parameters\"");
+		html.Should().Contain("href=\"#parameters\"");
+	}
+
+	[Test]
 	public async Task Operation_Request_RendersCollapsedWithNameSummaryAndNoJsonBadge()
 	{
 		var nav = SearchOperation();

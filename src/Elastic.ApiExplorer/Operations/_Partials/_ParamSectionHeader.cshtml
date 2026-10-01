@@ -6,7 +6,10 @@
 		aria-expanded="false"
 		aria-controls="@Model.Anchor-list">
 		<span class="api-param-chevron" aria-hidden="true"></span>
-		<span class="api-param-section-title">@Model.Title</span>
+		<span class="api-param-section-title">
+			@(await RenderPartialAsync<_HeadingCopyLink, HeadingAnchor>(new HeadingAnchor(Model.Anchor, Model.Title)))
+			@Model.Title
+		</span>
 		@if (Model.Names.Count > 0)
 		{
 			@(await RenderPartialAsync<_ParamSummary, IReadOnlyList<string>>(Model.Names))

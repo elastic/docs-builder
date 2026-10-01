@@ -14,6 +14,9 @@ namespace Elastic.ApiExplorer.Infrastructure;
 /// </summary>
 public record SectionHeader(string Title, string Anchor, string? Route = null, string? ContentTypeBadge = null);
 
+/// <summary>Anchor id and visible label for a section heading's copy link.</summary>
+public readonly record struct HeadingAnchor(string Id, string Label);
+
 /// <summary>Collapsible Parameters / Query Parameters heading with a one-line name summary.</summary>
 public record ParamSectionHeader(string Title, string Anchor, IReadOnlyList<string> Names)
 {
