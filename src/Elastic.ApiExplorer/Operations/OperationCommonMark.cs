@@ -79,12 +79,25 @@ internal static class OperationCommonMark
 	private static void WritePaths(StringBuilder markdown, ApiOperation current, OperationPageModel page)
 	{
 		ApiCommonMark.Heading(markdown, 2, "Paths");
-		foreach (var overload in page.Overloads)
+		if (page.HasPathChoices)
 		{
-			var method = overload.Model.OperationType.ToString().ToUpperInvariant();
-			var marker = overload.Model.Route == current.Route && overload.Model.OperationType == current.OperationType ? " (current)" : "";
-			var deprecated = overload.Model.Operation?.Deprecated == true ? " — deprecated" : "";
-			_ = markdown.AppendLine($"- `{method}` `{overload.Model.Route}`{marker}{deprecated}");
+			foreach (var path in page.Paths)
+			{
+				var marker = path == page.SelectedPath ? " (current)" : "";
+				_ = markdown.AppendLine($"- `{path.Method.ToUpperInvariant()}` `{path.Route}`{marker}");
+			}
+		}
+		else
+		{
+			foreach (var overload in page.Overloads)
+			{
+				var method = overload.Model.OperationType.ToString().ToUpperInvariant();
+				var marker = overload.Model.Route == current.Route && overload.Model.OperationType == current.OperationType
+					? " (current)"
+					: "";
+				var deprecated = overload.Model.Operation?.Deprecated == true ? " — deprecated" : "";
+				_ = markdown.AppendLine($"- `{method}` `{overload.Model.Route}`{marker}{deprecated}");
+			}
 		}
 
 		_ = markdown.AppendLine();

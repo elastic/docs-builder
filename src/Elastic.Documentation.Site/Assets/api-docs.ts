@@ -978,6 +978,40 @@ export function initApiPageActions(): void {
     })
 }
 
+export function applyOperationPath(root: ParentNode, key: string): void {
+    const route = key.slice(key.indexOf(' ') + 1)
+    root.querySelectorAll<HTMLElement>('[data-example-key]').forEach(
+        (panel) => {
+            panel.toggleAttribute('hidden', panel.dataset.exampleKey !== key)
+        }
+    )
+    root.querySelectorAll<HTMLElement>('[data-required-for]').forEach(
+        (badge) => {
+            const routes = (badge.dataset.requiredFor ?? '').split(' ')
+            badge.toggleAttribute('hidden', !routes.includes(route))
+        }
+    )
+    root.querySelectorAll<HTMLElement>('#paths .api-url-row').forEach((row) => {
+        const radio = row.querySelector<HTMLInputElement>(
+            'input[data-path-key]'
+        )
+        row.classList.toggle('current', radio?.dataset.pathKey === key)
+    })
+}
+
+let operationPathChoicesInitialized = false
+
+function initOperationPathChoices(): void {
+    if (operationPathChoicesInitialized) return
+    operationPathChoicesInitialized = true
+    document.addEventListener('change', (event) => {
+        const target = event.target
+        if (!(target instanceof HTMLInputElement) || !target.dataset.pathKey)
+            return
+        applyOperationPath(document, target.dataset.pathKey)
+    })
+}
+
 /**
  * Initialize API documentation interactivity
  * Call this after page load or HTMX content swap
@@ -986,6 +1020,7 @@ export function initApiDocs(): void {
     // Initialize global click handlers once (uses event delegation)
     initGlobalClickHandlers()
     initApiEndpointCopy()
+    initOperationPathChoices()
     initApiCodeLanguageSelects()
     initApiResponseStatusTabs()
     initApiScenarioSelects()
