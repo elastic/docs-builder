@@ -642,12 +642,15 @@ public partial record OperationPageModel
 		var schema = parameter.Schema;
 		var typeInfo = analyzer.GetTypeInfo(schema);
 		var description = supplemental?.ParameterOr(parameter.Name ?? "", parameter.Description) ?? parameter.Description;
+		var type = schema is not null ? builder.DescribePathParameter(schema) : null;
+		// The type chip already lists X | X[]; a One of row would repeat those alternatives.
+		var alternativesInType = type?.Text.Contains(" | ", StringComparison.Ordinal) == true;
 		return new ApiPathParameter
 		{
 			Parameter = parameter,
-			Type = schema is not null ? builder.Describe(schema) : null,
+			Type = type,
 			EnumValues = typeInfo.EnumValues ?? [],
-			UnionOptions = UnionBadges(typeInfo),
+			UnionOptions = alternativesInType ? [] : UnionBadges(typeInfo),
 			DescriptionHtml = ApiMarkdown.Render(context, description),
 			DescriptionMarkdown = description
 		};
