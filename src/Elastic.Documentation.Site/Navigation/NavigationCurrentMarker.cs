@@ -7,9 +7,10 @@ using Elastic.Documentation.Navigation;
 namespace Elastic.Documentation.Site.Navigation;
 
 /// <summary>
-/// Stamps <c>current</c> onto the cached sidebar HTML for the page being rendered.
-/// The tree itself is shared across pages of the same island; only
-/// this class changes per page, which is why it is applied after the render cache.
+/// Stamps <c>current</c> onto the cached sidebar HTML for the page being rendered,
+/// and opens every ancestor group of that link. The tree itself is shared across
+/// pages of the same island; only this changes per page, which is why it is applied
+/// after the render cache.
 /// </summary>
 public static class NavigationCurrentMarker
 {
@@ -27,13 +28,18 @@ public static class NavigationCurrentMarker
 
 	public static string Apply(string html, string currentUrl)
 	{
-		var target = NormalizePath(currentUrl);
-		var searchFrom = 0;
-		string? updated = null;
+		var edits = new List<SpanEdit>();
+		CollectCurrentEdits(html, NormalizePath(currentUrl), edits);
+		return edits.Count == 0 ? html : ApplyEdits(html, edits);
+	}
 
+	private static void CollectCurrentEdits(string html, string target, List<SpanEdit> edits)
+	{
+		var stack = new List<LiFrame>();
+		var searchFrom = 0;
 		while (true)
 		{
-			var tagStart = html.IndexOf("<a ", searchFrom, StringComparison.Ordinal);
+			var tagStart = html.IndexOf('<', searchFrom);
 			if (tagStart < 0)
 				break;
 
@@ -43,24 +49,102 @@ public static class NavigationCurrentMarker
 
 			searchFrom = tagEnd + 1;
 			var tag = html[tagStart..tagEnd];
-			if (!tag.Contains("sidebar-link", StringComparison.Ordinal))
+			if (IsTag(tag, "li", end: true))
+			{
+				if (stack.Count > 0)
+					stack.RemoveAt(stack.Count - 1);
 				continue;
+			}
 
-			var href = GetQuotedAttribute(tag, "href");
-			if (href is null || NormalizePath(href) != target)
+			if (IsTag(tag, "li", end: false))
+			{
+				stack.Add(new LiFrame { IsFolder = ElementHasClass(tag, "nav-folder"), InputStart = -1, ClipInsertAt = -1 });
 				continue;
+			}
 
-			var marked = WithCurrentClass(tag);
-			if (marked.Equals(tag, StringComparison.Ordinal))
-				continue;
+			NoteCheckbox(stack, tag, tagStart, tagEnd);
+			NoteClip(stack, tag, tagStart);
+			NoteCurrentAnchor(html, target, stack, tag, tagStart, tagEnd, edits);
+		}
+	}
 
-			updated ??= html;
-			updated = string.Concat(updated.AsSpan(0, tagStart), marked, updated.AsSpan(tagEnd));
-			searchFrom = tagStart + marked.Length + 1;
-			html = updated;
+	private static void NoteCheckbox(List<LiFrame> stack, string tag, int tagStart, int tagEnd)
+	{
+		if (stack.Count == 0 || !IsCheckbox(tag))
+			return;
+
+		var top = stack[^1];
+		if (!top.IsFolder || top.InputStart >= 0)
+			return;
+
+		top.InputStart = tagStart;
+		top.InputEnd = tagEnd;
+		top.InputChecked = HasCheckedAttribute(tag);
+		stack[^1] = top;
+	}
+
+	private static void NoteClip(List<LiFrame> stack, string tag, int tagStart)
+	{
+		if (stack.Count == 0 || !IsTag(tag, "div", end: false) || !ElementHasClass(tag, "nav-subtree-clip"))
+			return;
+
+		var top = stack[^1];
+		if (!top.IsFolder || top.ClipInsertAt >= 0)
+			return;
+
+		var classEnd = ClassValueEnd(tag, tagStart);
+		if (classEnd < 0)
+			return;
+
+		top.ClipInsertAt = classEnd;
+		top.ClipOpen = ElementHasClass(tag, "nav-subtree-clip--open");
+		stack[^1] = top;
+	}
+
+	private static void NoteCurrentAnchor(
+		string html,
+		string target,
+		List<LiFrame> stack,
+		string tag,
+		int tagStart,
+		int tagEnd,
+		List<SpanEdit> edits
+	)
+	{
+		if (!IsTag(tag, "a", end: false) || !ElementHasClass(tag, "sidebar-link"))
+			return;
+
+		var href = GetQuotedAttribute(tag, "href");
+		if (href is null || NormalizePath(href) != target)
+			return;
+
+		var marked = WithCurrentClass(tag);
+		if (!marked.Equals(tag, StringComparison.Ordinal))
+			edits.Add(new SpanEdit(tagStart, tagEnd, marked));
+
+		for (var i = 0; i < stack.Count; i++)
+			OpenFolder(html, stack, i, edits);
+	}
+
+	private static void OpenFolder(string html, List<LiFrame> stack, int index, List<SpanEdit> edits)
+	{
+		var frame = stack[index];
+		if (!frame.IsFolder)
+			return;
+
+		if (frame.InputStart >= 0 && !frame.InputChecked)
+		{
+			edits.Add(new SpanEdit(frame.InputStart, frame.InputEnd, html[frame.InputStart..frame.InputEnd] + " checked"));
+			frame.InputChecked = true;
 		}
 
-		return updated ?? html;
+		if (frame.ClipInsertAt >= 0 && !frame.ClipOpen)
+		{
+			edits.Add(new SpanEdit(frame.ClipInsertAt, frame.ClipInsertAt, " nav-subtree-clip--open"));
+			frame.ClipOpen = true;
+		}
+
+		stack[index] = frame;
 	}
 
 	/// <summary>
@@ -142,5 +226,98 @@ public static class NavigationCurrentMarker
 		}
 
 		return false;
+	}
+
+	private static bool ElementHasClass(string tag, string name)
+	{
+		var classes = GetQuotedAttribute(tag, "class");
+		return classes is not null && HasClass(classes, name);
+	}
+
+	private static bool IsTag(string tag, string name, bool end)
+	{
+		if (end)
+		{
+			if (!tag.StartsWith("</", StringComparison.Ordinal))
+				return false;
+		}
+		else if (tag.StartsWith("</", StringComparison.Ordinal))
+			return false;
+
+		var offset = end ? 2 : 1;
+		if (tag.Length < offset + name.Length)
+			return false;
+		if (!tag.AsSpan(offset, name.Length).Equals(name, StringComparison.OrdinalIgnoreCase))
+			return false;
+
+		if (tag.Length == offset + name.Length)
+			return true;
+
+		var next = tag[offset + name.Length];
+		return char.IsWhiteSpace(next) || next == '/';
+	}
+
+	private static bool IsCheckbox(string tag)
+	{
+		if (!IsTag(tag, "input", end: false))
+			return false;
+
+		var type = GetQuotedAttribute(tag, "type");
+		return type is not null && type.Equals("checkbox", StringComparison.OrdinalIgnoreCase);
+	}
+
+	private static bool HasCheckedAttribute(string tag)
+	{
+		var index = 0;
+		while ((index = tag.IndexOf("checked", index, StringComparison.OrdinalIgnoreCase)) >= 0)
+		{
+			var before = index == 0 ? ' ' : tag[index - 1];
+			var afterIndex = index + "checked".Length;
+			var after = afterIndex < tag.Length ? tag[afterIndex] : ' ';
+			if ((char.IsWhiteSpace(before) || before == '<') && (char.IsWhiteSpace(after) || after is '=' or '/'))
+				return true;
+
+			index = afterIndex;
+		}
+
+		return false;
+	}
+
+	private static int ClassValueEnd(string tag, int tagStart)
+	{
+		const string prefix = " class=\"";
+		var classStart = tag.IndexOf(prefix, StringComparison.Ordinal);
+		if (classStart < 0)
+			return -1;
+
+		var valueEnd = tag.IndexOf('"', classStart + prefix.Length);
+		return valueEnd < 0 ? -1 : tagStart + valueEnd;
+	}
+
+	private static string ApplyEdits(string html, List<SpanEdit> edits)
+	{
+		edits.Sort(static (left, right) => right.Start.CompareTo(left.Start));
+		var seen = new HashSet<int>();
+		foreach (var edit in edits)
+		{
+			if (!seen.Add(edit.Start))
+				continue;
+
+			html = string.Concat(html.AsSpan(0, edit.Start), edit.Text, html.AsSpan(edit.End));
+		}
+
+		return html;
+	}
+
+	private readonly record struct SpanEdit(int Start, int End, string Text);
+
+	private struct LiFrame
+	{
+		public bool IsFolder;
+		public int InputStart;
+		public int InputEnd;
+		public bool InputChecked;
+		public int ClipInsertAt;
+		public bool ClipOpen;
 	}
 }

@@ -643,12 +643,12 @@ function applyAncestorHighlight(nav: HTMLElement) {
     })
 }
 
-export function markCurrentPage(nav: HTMLElement) {
+export function markCurrentPage(nav: HTMLElement, activePathname?: string) {
     const pathname = window.location.pathname.replace(/\/$/, '')
     const navActiveMeta = document.querySelector<HTMLMetaElement>(
         'meta[name="docs:nav-active"]'
     )
-    const activePathname = navActiveMeta?.content ?? pathname
+    activePathname ??= navActiveMeta?.content ?? pathname
 
     const next = new Set<Element>()
     const consider = (el: Element) => {
@@ -987,16 +987,81 @@ function keepLiveNav() {
     restorePagesNavScroll()
 }
 
+/** Article scroll reset for boosted swaps. API pages retarget `#api-content-grid`. */
+export function shouldResetPageScroll(target: EventTarget | null): boolean {
+    if (target === document.body) {
+        return true
+    }
+    return (
+        target instanceof Element &&
+        (target.id === 'main-container' ||
+            target.id === 'content-container' ||
+            target.id === 'api-content-grid')
+    )
+}
+
+export function resetArticleScroll(target: EventTarget | null): void {
+    if (!shouldResetPageScroll(target) || window.scrollY === 0) {
+        return
+    }
+    window.scrollTo(0, 0)
+}
+
+export function activePathFromResponse(html: string): string | null {
+    const tag =
+        /<meta\b[^>]*\bname=["']docs:nav-active["'][^>]*>/i.exec(html)?.[0] ??
+        /<meta\b[^>]*\bcontent=["'][^"']+["'][^>]*\bname=["']docs:nav-active["'][^>]*>/i.exec(
+            html
+        )?.[0]
+    if (!tag) {
+        return null
+    }
+    const content = /\bcontent=["']([^"']+)["']/i.exec(tag)?.[1]
+    return content?.replace(/&amp;/g, '&') ?? null
+}
+
+function revealCurrentPage(nav: HTMLElement, activePath: string | null) {
+    markCurrentPage(nav, activePath ?? undefined)
+    const currentNavItem = currentInNav(nav)
+    if (!currentNavItem) {
+        return
+    }
+    expandAllParents(currentNavItem)
+    applyAncestorHighlight(nav)
+    syncFolderPanels(nav)
+}
+
+function onApiNavKey(event: KeyboardEvent) {
+    if (event.key !== 'Enter' && event.key !== ' ') {
+        return
+    }
+    if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) {
+        return
+    }
+    if (!(event.target instanceof Element)) {
+        return
+    }
+    if (!event.target.closest('#pages-nav a.sidebar-link')) {
+        return
+    }
+    const grid = document.getElementById('api-content-grid')
+    if (grid) {
+        resetArticleScroll(grid)
+    }
+}
+
 function onAfterSwap(event: Event) {
+    resetArticleScroll(event.target)
     const html = responseHtmlFromSwap(event) || lastSwapHtml
     lastSwapHtml = ''
     const current = document.querySelector('#pages-nav')
     if (
-        current &&
+        current instanceof HTMLElement &&
         html &&
         incomingNavSurfaceKey(html) === navSurfaceKey(current)
     ) {
         keepLiveNav()
+        revealCurrentPage(current, activePathFromResponse(html))
         return
     }
     const apply = () => {
@@ -1020,6 +1085,7 @@ if (typeof document !== 'undefined') {
     clearHtmxHistoryCache()
     document.addEventListener('htmx:beforeSwap', onBeforeSwap, true)
     document.addEventListener('htmx:afterSwap', onAfterSwap, true)
+    document.addEventListener('keydown', onApiNavKey, true)
 }
 
 /**
@@ -1055,6 +1121,11 @@ function ensureFolderRowClick() {
             ) as HTMLAnchorElement | null
             if (!a) {
                 return
+            }
+
+            const apiGrid = document.getElementById('api-content-grid')
+            if (apiGrid) {
+                resetArticleScroll(apiGrid)
             }
 
             const folderRow = a.closest('.nav-folder-peer')
