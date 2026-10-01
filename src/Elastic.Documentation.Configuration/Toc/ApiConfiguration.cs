@@ -127,11 +127,17 @@ public class ApiProductEntry
 }
 
 /// <summary>
-/// Category-only catalog metadata under <c>catalog:</c> on an API entry.
+/// Optional catalog metadata under <c>catalog:</c> on an API entry.
 /// </summary>
 [YamlSerializable]
 public class ApiCatalogSettings
 {
+	/// <summary>
+	/// Label for this API in the product switcher. When omitted, the product display name is used.
+	/// </summary>
+	[YamlMember(Alias = "display_name")]
+	public string? DisplayName { get; set; }
+
 	[YamlMember(Alias = "categories")]
 	public List<string> Categories { get; set; } = [];
 
@@ -213,6 +219,11 @@ public class ResolvedApiConfiguration
 	/// Empty when the API is unclassified and appears only under All.
 	/// </summary>
 	public IReadOnlyList<string> CatalogCategories { get; init; } = [];
+
+	/// <summary>
+	/// Switcher label from <c>catalog.display_name</c>. Null when the entry should use the product display name.
+	/// </summary>
+	public string? CatalogDisplayName { get; init; }
 
 	/// <summary>
 	/// Whether <paramref name="fileName"/> is an auto-discovered supplemental file

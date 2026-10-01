@@ -624,6 +624,7 @@ public record ConfigurationFile
 			.DirectoryInfo
 			.New(Path.Join(context.DocumentationSourceDirectory.FullName, "api", productKey));
 		var children = ResolveApiChildren(productKey, entry.Children, context, apiContentDirectory);
+		var catalogDisplayName = entry.Catalog?.DisplayName?.Trim();
 
 		return new ResolvedApiConfiguration
 		{
@@ -634,7 +635,8 @@ public record ConfigurationFile
 			Repository = repository,
 			Children = children,
 			ApiContentDirectory = apiContentDirectory,
-			CatalogCategories = ResolveCatalogCategories(productKey, entry, context)
+			CatalogCategories = ResolveCatalogCategories(productKey, entry, context),
+			CatalogDisplayName = string.IsNullOrEmpty(catalogDisplayName) ? null : catalogDisplayName
 		};
 	}
 

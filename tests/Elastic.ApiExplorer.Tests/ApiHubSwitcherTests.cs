@@ -106,6 +106,38 @@ public class ApiHubSwitcherTests
 	}
 
 	[Test]
+	public void Build_SharedProductName_UsesDistinctCatalogDisplayNames()
+	{
+		var entries = ApiHubSwitcher.CollectDeclaredEntries(
+			"",
+			new Dictionary<string, ResolvedApiConfiguration>
+			{
+				["cloud-billing"] = Config("cloud-billing", "Elastic Cloud Hosted", catalogDisplayName: "Cloud Billing API"),
+				["cloud-connect"] = Config("cloud-connect", "Elastic Cloud Hosted", catalogDisplayName: "Elastic Cloud Connected API")
+			}
+		);
+
+		var items = ApiHubSwitcher.Build(entries, currentApiKey: "cloud-connect", "/api/");
+
+		items.Select(i => i.Label).Should().Equal("Back to hub", "Cloud Billing API", "Elastic Cloud Connected API");
+		items.Single(i => i.Selected).Label.Should().Be("Elastic Cloud Connected API");
+	}
+
+	[Test]
+	public void CollectDeclaredEntries_BlankCatalogDisplayName_UsesProductDisplayName()
+	{
+		var entries = ApiHubSwitcher.CollectDeclaredEntries(
+			"",
+			new Dictionary<string, ResolvedApiConfiguration>
+			{
+				["elasticsearch"] = Config("elasticsearch", "Elasticsearch", catalogDisplayName: "  ")
+			}
+		);
+
+		entries.Should().ContainSingle().Which.Title.Should().Be("Elasticsearch");
+	}
+
+	[Test]
 	public void CollectDeclaredEntries_PreservesCatalogCategories()
 	{
 		var configs = new Dictionary<string, ResolvedApiConfiguration>
@@ -118,13 +150,19 @@ public class ApiHubSwitcherTests
 		entries.Should().ContainSingle().Which.CatalogCategories.Should().Equal("self", "ess");
 	}
 
-	private static ResolvedApiConfiguration Config(string key, string displayName, IReadOnlyList<string>? categories = null) =>
+	private static ResolvedApiConfiguration Config(
+		string key,
+		string displayName,
+		IReadOnlyList<string>? categories = null,
+		string? catalogDisplayName = null
+	) =>
 		new()
 		{
 			ProductKey = key,
 			Product = new Product { Id = key, DisplayName = displayName },
 			SpecFileName = $"{key}.json",
-			CatalogCategories = categories ?? []
+			CatalogCategories = categories ?? [],
+			CatalogDisplayName = catalogDisplayName
 		};
 
 	private static ApiCatalogEntry Entry(string key, string title) => new(key, title, $"/api/doc/{key}/");

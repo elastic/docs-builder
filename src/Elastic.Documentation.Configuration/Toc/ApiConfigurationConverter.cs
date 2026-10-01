@@ -33,7 +33,8 @@ public class ApiConfigurationConverter : IYamlTypeConverter
 		+ "                              # different repo than the current checkout\n"
 		+ "      children:          # optional\n"
 		+ "        - file: getting-started.md\n"
-		+ "      catalog:           # optional; category chips on the API catalog\n"
+		+ "      catalog:           # optional\n"
+		+ "        display_name: <switcher label> # optional; defaults to the product display name\n"
 		+ "        categories: [self, ece, ess, serverless]";
 
 	public bool Accepts(Type type) => type == typeof(ApiProductSequence) || type == typeof(ApiProductEntry);
@@ -165,6 +166,11 @@ public class ApiConfigurationConverter : IYamlTypeConverter
 			var key = parser.Consume<Scalar>();
 			if (key.Value == "categories")
 				catalog.Categories = ReadStringSequence(parser);
+			else if (key.Value == "display_name" && parser.Current is Scalar displayName)
+			{
+				catalog.DisplayName = displayName.Value;
+				_ = parser.MoveNext();
+			}
 			else
 				parser.SkipThisAndNestedEvents();
 		}

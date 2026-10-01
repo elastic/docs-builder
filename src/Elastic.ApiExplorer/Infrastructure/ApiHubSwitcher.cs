@@ -20,13 +20,19 @@ public static class ApiHubSwitcher
 		var entries = new List<ApiCatalogEntry>(apiConfigurations.Count);
 		foreach (var (key, config) in apiConfigurations)
 		{
-			entries.Add(new(key, config.Product.DisplayName, $"{ApiUrlBuilder.ProductRoot(urlPathPrefix, key)}/", config.Product.Id)
+			entries.Add(new(key, SwitcherLabel(config), $"{ApiUrlBuilder.ProductRoot(urlPathPrefix, key)}/", config.Product.Id)
 			{
 				CatalogCategories = config.CatalogCategories
 			});
 		}
 
 		return entries;
+	}
+
+	private static string SwitcherLabel(ResolvedApiConfiguration config)
+	{
+		var catalogName = config.CatalogDisplayName?.Trim();
+		return string.IsNullOrEmpty(catalogName) ? config.Product.DisplayName : catalogName;
 	}
 
 	public static IReadOnlyList<ApiVersionSwitcherItem> Build(IReadOnlyList<ApiCatalogEntry> entries, string? currentApiKey, string hubUrl)

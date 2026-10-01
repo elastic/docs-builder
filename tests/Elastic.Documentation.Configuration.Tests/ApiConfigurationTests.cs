@@ -256,6 +256,24 @@ public class ApiConfigurationConverterTests
 	}
 
 	[Test]
+	public void AcceptsCatalogDisplayName()
+	{
+		const string yaml =
+			"""
+			- spec: cloud-connect.yml
+			  product: ess
+			  catalog:
+			    display_name: Elastic Cloud Connected API
+			    categories: [ess]
+			""";
+
+		var sequence = _deserializer.Deserialize<ApiProductSequence>(yaml);
+
+		sequence.SingleEntry!.Catalog!.DisplayName.Should().Be("Elastic Cloud Connected API");
+		sequence.SingleEntry.Catalog.Categories.Should().Equal("ess");
+	}
+
+	[Test]
 	public void Catalog_IsOptional()
 	{
 		const string yaml = """
@@ -335,6 +353,47 @@ public class ApiConfigurationConverterTests
 
 public class ConfigurationFileApiTests
 {
+	[Test]
+	public void ResolvesCatalogDisplayName_TrimsAndDropsBlank()
+	{
+		var docSetFile = new DocumentationSetFile
+		{
+			Api = new Dictionary<string, ApiProductSequence>
+			{
+				["elasticsearch"] = new()
+				{
+					Entries =
+					[
+						new ApiProductEntry
+						{
+							Spec = "elasticsearch-openapi.json",
+							Product = "elasticsearch",
+							Catalog = new ApiCatalogSettings { DisplayName = "  Elasticsearch API  " }
+						}
+					]
+				},
+				["kibana"] = new()
+				{
+					Entries =
+					[
+						new ApiProductEntry
+						{
+							Spec = "kibana.yaml",
+							Product = "kibana",
+							Catalog = new ApiCatalogSettings { DisplayName = "   " }
+						}
+					]
+				}
+			}
+		};
+
+		var (config, collector) = CreateConfiguration(docSetFile);
+
+		collector.Errors.Should().Be(0);
+		config.ApiConfigurations!["elasticsearch"].CatalogDisplayName.Should().Be("Elasticsearch API");
+		config.ApiConfigurations["kibana"].CatalogDisplayName.Should().BeNull();
+	}
+
 	[Test]
 	public void ResolvesLocalSpecProductAndChildren()
 	{
