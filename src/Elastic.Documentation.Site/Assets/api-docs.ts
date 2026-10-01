@@ -54,7 +54,7 @@ function setEnumValuesExpanded(
 }
 
 function expandResponsePanel(panel: HTMLElement): void {
-    const toggleBtn = panel.querySelector<HTMLButtonElement>(
+    const toggle = panel.querySelector<HTMLElement>(
         ':scope > .response-status-toggle'
     )
     const body = panel.querySelector<HTMLElement>(
@@ -63,12 +63,12 @@ function expandResponsePanel(panel: HTMLElement): void {
 
     panel.classList.remove('collapsed')
     panel.classList.add('expanded')
-    toggleBtn?.setAttribute('aria-expanded', 'true')
+    toggle?.setAttribute('aria-selected', 'true')
     setUntilFoundHidden(body, false)
 }
 
 function collapseResponsePanel(panel: HTMLElement): void {
-    const toggleBtn = panel.querySelector<HTMLButtonElement>(
+    const toggle = panel.querySelector<HTMLElement>(
         ':scope > .response-status-toggle'
     )
     const body = panel.querySelector<HTMLElement>(
@@ -77,8 +77,15 @@ function collapseResponsePanel(panel: HTMLElement): void {
 
     panel.classList.remove('expanded')
     panel.classList.add('collapsed')
-    toggleBtn?.setAttribute('aria-expanded', 'false')
+    toggle?.setAttribute('aria-selected', 'false')
     setUntilFoundHidden(body, true)
+}
+
+function toggleResponsePanel(tab: HTMLElement): void {
+    const panel = tab.closest<HTMLElement>('.response-panel')
+    if (!panel) return
+    if (panel.classList.contains('expanded')) collapseResponsePanel(panel)
+    else expandResponsePanel(panel)
 }
 
 /**
@@ -459,6 +466,17 @@ function initGlobalClickHandlers(): void {
         if (toggleBtn) setEnumValuesExpanded(toggleBtn, true)
     })
 
+    document.addEventListener('keydown', function (event) {
+        const target = event.target
+        if (!(target instanceof HTMLElement)) return
+        const tab = target.closest<HTMLElement>('.response-status-toggle')
+        if (!tab?.closest('#elastic-api-v3, #schema-definition')) return
+
+        if (event.key !== 'Enter' && event.key !== ' ') return
+        event.preventDefault()
+        toggleResponsePanel(tab)
+    })
+
     document.addEventListener('click', function (e) {
         const target = e.target as HTMLElement
 
@@ -498,20 +516,14 @@ function initGlobalClickHandlers(): void {
             return
         }
 
-        const responseStatusToggle = target.closest<HTMLButtonElement>(
+        const responseStatusToggle = target.closest<HTMLElement>(
             '.response-status-toggle'
         )
         if (responseStatusToggle) {
+            if (window.getSelection()?.toString()) return
             e.preventDefault()
             e.stopPropagation()
-
-            const panel =
-                responseStatusToggle.closest<HTMLElement>('.response-panel')
-            if (!panel) return
-
-            if (panel.classList.contains('expanded'))
-                collapseResponsePanel(panel)
-            else expandResponsePanel(panel)
+            toggleResponsePanel(responseStatusToggle)
             return
         }
 

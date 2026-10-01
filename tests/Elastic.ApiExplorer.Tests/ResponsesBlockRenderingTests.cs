@@ -32,7 +32,11 @@ public class ResponsesBlockRenderingTests
 		html.Should().NotContain("text/plain");
 		html.Should().Contain("aria-controls=\"response-200-fields\"");
 		html.Should().Contain("aria-controls=\"response-400-fields\"");
-		html.Should().Contain("aria-expanded=\"false\"");
+		html.Should().Contain("role=\"tablist\"");
+		html.Should().Contain("aria-orientation=\"vertical\"");
+		html.Should().Contain("aria-selected=\"false\"");
+		html.Should().NotContain("aria-expanded");
+		html.Should().NotContain("<button");
 		html.Should().Contain("response-panel collapsed");
 		html.Should().Contain("id=\"response-200-fields\"");
 		html.Should().Contain("id=\"response-400-fields\"");
@@ -42,6 +46,21 @@ public class ResponsesBlockRenderingTests
 		html.Should().NotContain("show fields");
 		html.Should().NotContain("response-fields-toggle");
 		html.Should().NotContain("hidden=\"hidden\"");
+	}
+
+	[Test]
+	public async Task Render_TextResponse_KeepsDescriptionOutsideAButtonAndExposesSelection()
+	{
+		const string description = "Not Found - no agent with this ID is visible to the caller.";
+		var html = await RenderHtml(Response("404", "error", description));
+
+		html.Should().Contain(description);
+		html.Should().NotContain("<button");
+		html.Should().Contain("role=\"tab\"");
+		html.Should().Contain("aria-selected=\"false\"");
+		html.Should().Contain("role=\"tabpanel\"");
+		html.Should().Contain("aria-labelledby=\"response-404-tab\"");
+		html.Should().Contain("id=\"response-404-tab\"");
 	}
 
 	[Test]

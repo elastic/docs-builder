@@ -769,6 +769,8 @@
 	font: inherit;
 	text-align: left;
 	cursor: pointer;
+	user-select: text;
+	-webkit-user-select: text;
 	transition:
 		background-color 0.12s ease,
 		color 0.12s ease;
@@ -909,12 +911,18 @@
 	font-weight: 400;
 	line-height: 20px;
 	text-align: left;
+	cursor: text;
+	user-select: text;
+	-webkit-user-select: text;
 	transition: color 0.12s ease;
 }
 
 .content-type-tag {
 	margin-left: auto;
 	flex-shrink: 0;
+	cursor: text;
+	user-select: text;
+	-webkit-user-select: text;
 	color: #798eaf;
 	font-size: 12px;
 	font-weight: 400;
