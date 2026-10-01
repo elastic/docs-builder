@@ -4,24 +4,21 @@
 
 using AwesomeAssertions;
 using Elastic.ApiExplorer.Components.PropertyTree;
+using Elastic.ApiExplorer.Components.PropertyTree._Partials;
 using Elastic.ApiExplorer.Model;
 using Elastic.ApiExplorer.Operations;
 using Microsoft.AspNetCore.Html;
 using Microsoft.OpenApi;
+using RazorSlices;
 
 namespace Elastic.ApiExplorer.Tests;
 
 [ClassDataSource<ApiExplorerFixture>(Shared = SharedType.PerClass)]
 public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture)
 {
-	private ApiPropertyTreeBuilder CreateBuilder(string? currentPageType = null, CollapseMode collapseMode = CollapseMode.AlwaysCollapsed)
+	private ApiPropertyTreeBuilder CreateBuilder(string? currentPageType = null)
 	{
-		var options = new PropertyDisplayOptions
-		{
-			RenderMarkdown = s => new HtmlString($"<p>{s}</p>"),
-			ApiRootUrl = "/api/doc/fixture",
-			CollapseMode = collapseMode
-		};
+		var options = new PropertyDisplayOptions { RenderMarkdown = s => new HtmlString($"<p>{s}</p>"), ApiRootUrl = "/api/doc/fixture" };
 		return new ApiPropertyTreeBuilder(fixture.Document, options, currentPageType);
 	}
 
@@ -249,7 +246,7 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture)
 	[Test]
 	public void BuildUnionVariantsForSchemas_TopLevelOneOf_BuildsVariantPerOption()
 	{
-		var builder = CreateBuilder(currentPageType: "Aggregate", collapseMode: CollapseMode.DepthBased);
+		var builder = CreateBuilder(currentPageType: "Aggregate");
 		var aggregate = Schema("_types.aggregations.Aggregate");
 
 		var variants = builder.BuildUnionVariantsForSchemas(aggregate.OneOf!, "oneof", new HashSet<string> { "Aggregate" });
@@ -425,4 +422,76 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture)
 			.Should()
 			.Equal("> 0", "< 100", "unique", "× 5", "pattern: [smdh]$", "default: 1m");
 	}
+
+	[Test]
+	[Arguments(false)]
+	[Arguments(true)]
+	public async Task BuildPropertyList_ObjectsAtSameDepth_StartCollapsed(bool isRequest)
+	{
+		var builder = CreateBuilder();
+		var list = builder.BuildPropertyList(ObjectsAtTwoDepths(), new PropertyTreeScope { Prefix = "body", IsRequest = isRequest });
+
+		list.Should().NotBeNull();
+		var html = await _PropertyList.Create(list!).RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
+
+		AssertCollapsedPair(list.Items, "small", "large", html);
+		AssertStartsCollapsed(html, list.Items.Single(p => p.Name == "only").AnchorId);
+		var group = list.Items.Single(p => p.Name == "group");
+		group.Children.Properties.Should().NotBeNull();
+		AssertCollapsedPair(group.Children.Properties!.Items, "small", "large", html);
+		AssertStartsCollapsed(html, group.Children.Properties.Items.Single(p => p.Name == "only").AnchorId);
+	}
+
+	private static void AssertCollapsedPair(IReadOnlyList<ApiProperty> items, string smallName, string largeName, string html)
+	{
+		var small = items.Single(p => p.Name == smallName);
+		var large = items.Single(p => p.Name == largeName);
+		small.Depth.Should().Be(large.Depth);
+		small.IsCollapsible.Should().BeTrue();
+		large.IsCollapsible.Should().BeTrue();
+		AssertStartsCollapsed(html, small.AnchorId);
+		AssertStartsCollapsed(html, large.AnchorId);
+	}
+
+	private static void AssertStartsCollapsed(string html, string anchorId)
+	{
+		var match = System
+			.Text
+			.RegularExpressions
+			.Regex
+			.Match(html, $"id=\"{anchorId}\"([\\s\\S]*?)aria-expanded=\"(true|false)\"([\\s\\S]*?)(show|hide) properties");
+		match.Success.Should().BeTrue($"property {anchorId} renders an expand control");
+		match.Groups[2].Value.Should().Be("false", $"{anchorId} starts collapsed");
+		match.Groups[4].Value.Should().Be("show", $"{anchorId} offers show properties");
+		html.Should().Contain($"id=\"{anchorId}-children\"");
+	}
+
+	private static OpenApiSchema ObjectsAtTwoDepths() =>
+		new()
+		{
+			Type = JsonSchemaType.Object,
+			Properties = new Dictionary<string, IOpenApiSchema>
+			{
+				["only"] = StringFields("one"),
+				["small"] = StringFields("one", "two"),
+				["large"] = StringFields("one", "two", "three", "four", "five", "six"),
+				["group"] = new OpenApiSchema
+				{
+					Type = JsonSchemaType.Object,
+					Properties = new Dictionary<string, IOpenApiSchema>
+					{
+						["only"] = StringFields("one"),
+						["small"] = StringFields("one", "two"),
+						["large"] = StringFields("one", "two", "three", "four", "five", "six")
+					}
+				}
+			}
+		};
+
+	private static OpenApiSchema StringFields(params string[] names) =>
+		new()
+		{
+			Type = JsonSchemaType.Object,
+			Properties = names.ToDictionary(name => name, name => (IOpenApiSchema)new OpenApiSchema { Type = JsonSchemaType.String })
+		};
 }

@@ -270,8 +270,9 @@ public class ApiPropertyTreeBuilder(OpenApiDocument document, PropertyDisplayOpt
 
 		var hasChildren = (hasNestedProps || hasDictValueProps || hasArrayItemProps || hasUnionOptions || simpleUnionHasExpandableProps)
 			&& !isRecursive;
-		var isCollapsible = hasChildren && nestedCount > 1 && !hasUnionOptions && !hasDictValueProps;
-		var defaultExpanded = ComputeDefaultExpanded(depth, nestedCount);
+		// One nested field still collapses. A single child used to render open beside a closed sibling.
+		var isCollapsible = hasChildren && nestedCount > 0 && !hasUnionOptions && !hasDictValueProps;
+		var defaultExpanded = ComputeDefaultExpanded();
 
 		return new Expansion(
 			hasNestedProps,
@@ -333,8 +334,8 @@ public class ApiPropertyTreeBuilder(OpenApiDocument document, PropertyDisplayOpt
 		return (true, baseOption.Schema, nestedOptions);
 	}
 
-	private bool ComputeDefaultExpanded(int depth, int nestedCount) =>
-		options.CollapseMode == CollapseMode.DepthBased && depth != 0 && nestedCount is > 0 and < 5;
+	// Object rows start collapsed. The request body root is the property list, so its fields stay visible.
+	private static bool ComputeDefaultExpanded() => false;
 
 	private ExternalDocLink? BuildExternalDocs(IOpenApiSchema propSchema, TypeInfo typeInfo)
 	{
@@ -493,8 +494,8 @@ public class ApiPropertyTreeBuilder(OpenApiDocument document, PropertyDisplayOpt
 	private ApiPropertyChildren BuildDictionaryChildren(PropertyRow row, PropertyTreeScope childScope, Expansion expansion)
 	{
 		var keyAnchorId = $"{row.AnchorId}-string";
-		var dictIsCollapsible = expansion.NestedCount > 1;
-		var dictDefaultExpanded = ComputeDefaultExpanded(childScope.Depth, expansion.NestedCount);
+		var dictIsCollapsible = expansion.NestedCount > 0;
+		var dictDefaultExpanded = ComputeDefaultExpanded();
 		return new ApiPropertyChildren
 		{
 			Kind = ChildKind.Dictionary,
@@ -621,8 +622,8 @@ public class ApiPropertyTreeBuilder(OpenApiDocument document, PropertyDisplayOpt
 				_ = newAncestors.Add(variant.BaseName);
 
 			var nestedCount = variant.Props?.Count ?? 0;
-			var isCollapsible = showProperties && nestedCount > 1;
-			var defaultExpanded = ComputeDefaultExpanded(scope.Depth, nestedCount);
+			var isCollapsible = showProperties && nestedCount > 0;
+			var defaultExpanded = ComputeDefaultExpanded();
 
 			variants.Add(new ApiUnionVariant
 			{
