@@ -537,6 +537,11 @@
 	list-style: none;
 }
 
+/* Docs list styles indent every ul. This list is the page body, not a bullet list. */
+#markdown-content .api-group-list {
+	margin-left: 0;
+}
+
 .api-group-list > li {
 	margin: 0;
 	padding: 0;
@@ -580,8 +585,19 @@
 
 .api-group .api-url-row {
 	flex-wrap: wrap;
-	align-items: flex-start;
+	align-items: center;
 	row-gap: 4px;
+}
+
+.api-group .api-url {
+	margin-left: 0;
+	color: var(--color-subdued, #516381);
+	font-family:
+		'Roboto Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+		monospace;
+	font-size: 14px;
+	font-weight: 400;
+	line-height: 24px;
 }
 
 .api-group-chevron {
