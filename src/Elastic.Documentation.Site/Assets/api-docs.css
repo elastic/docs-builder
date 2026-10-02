@@ -12,7 +12,7 @@
 	display: flex;
 	flex-direction: column;
 	gap: 8px;
-	margin-top: 32px;
+	margin: 0;
 	padding: 0;
 }
 
@@ -153,7 +153,13 @@
 	display: flex;
 	flex-wrap: wrap;
 	gap: 8px;
-	margin-top: 12px;
+}
+
+/* One 16px step between title, badges, servers, paths, and auth. */
+.api-page-intro {
+	display: flex;
+	flex-direction: column;
+	gap: 16px;
 }
 
 /* Operation / group page title — Figma APIs 10079:2802 */
@@ -193,6 +199,19 @@
 	gap: 16px;
 	min-width: 0;
 	margin: 0 0 16px;
+}
+
+/* Row-gap on the examples grid is already 16px. A margin here stacks a second step. */
+@media (min-width: 1024px) {
+	.api-content-grid:has(#api-examples-panel.api-examples-panel)
+		.api-page-toolbar {
+		margin-bottom: 0;
+	}
+
+	.api-content-grid:has(#api-examples-panel.api-examples-panel)
+		.api-operation-description {
+		margin-top: 0;
+	}
 }
 
 .api-page-toolbar .api-breadcrumbs {
@@ -1581,11 +1600,6 @@ a.type-linked:hover {
 	@apply text-grey-60 bg-grey-10 rounded px-1 py-0.5 text-xs font-normal;
 }
 
-/* Title badges: own line below h1, inline chips (not sharing the heading line) */
-.api-title-badges {
-	@apply mt-2;
-}
-
 .api-title-badges .deprecated-badge,
 .api-title-badges .beta-badge {
 	@apply mr-2 inline;
@@ -1771,7 +1785,7 @@ a.docs-reference-btn::after {
 
 /* Server info display */
 .server-info {
-	@apply mt-2 mb-4 flex flex-wrap items-center gap-2 text-sm;
+	@apply flex flex-wrap items-center gap-2 text-sm;
 }
 
 .server-label {
@@ -2193,7 +2207,7 @@ a.docs-reference-btn::after {
 	font-size: 14px;
 	font-weight: 400;
 	line-height: 20px;
-	margin-top: 1.5rem;
+	margin-top: 16px;
 	margin-bottom: 0.5rem;
 
 	> :first-child {
