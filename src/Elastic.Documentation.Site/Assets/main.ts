@@ -3,6 +3,7 @@ import { initApiDocs } from './api-docs'
 import { initAppliesSwitch } from './applies-switch'
 import { config } from './config'
 import { initCopyButton } from './copybutton'
+import { initGetStarted } from './get-started'
 import { initHighlight } from './hljs'
 import { initImageCarousel } from './image-carousel'
 import { initListing } from './listing'
@@ -200,6 +201,7 @@ document.addEventListener('DOMContentLoaded', function () {
         ['initMath', initMath],
         ['initMermaid', initMermaid],
         ['initCtaImpressions', initCtaImpressions],
+        ['initGetStarted', initGetStarted],
     ])
 })
 
@@ -218,6 +220,7 @@ document.addEventListener('htmx:load', function () {
         ['initSmoothScroll', initSmoothScroll],
         ['openDetailsWithAnchor', openDetailsWithAnchor],
         ['initImageCarousel', initImageCarousel],
+        ['initGetStarted', initGetStarted],
         ['initListing', initListing],
         ['initTable', initTable],
         ['initApiDocs', initApiDocs],

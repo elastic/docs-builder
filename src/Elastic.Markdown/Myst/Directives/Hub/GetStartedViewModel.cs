@@ -28,6 +28,57 @@ public class GetStartedViewModel : HubDirectiveViewModel
 			return inFlow % 2 == 0 ? 2 : inFlow < 3 ? inFlow : 3;
 		}
 	}
+
+	/// <summary>
+	/// Rows follow the same track count as <see cref="StepColumns"/>. A step with options
+	/// takes a row of its own. A row of one ordinary step is centered at the width of one
+	/// cell, using <see cref="SoloShare"/>.
+	/// </summary>
+	public IReadOnlyList<IReadOnlyList<GetStartedStepViewModel>> Rows
+	{
+		get
+		{
+			var rows = new List<IReadOnlyList<GetStartedStepViewModel>>();
+			var buffer = new List<GetStartedStepViewModel>();
+
+			void Flush()
+			{
+				if (buffer.Count == 0)
+					return;
+
+				var columns = StepColumns;
+				for (var index = 0; index < buffer.Count; index += columns)
+				{
+					var remaining = buffer.Count - index;
+					var take = remaining < columns ? remaining : columns;
+					rows.Add(buffer.GetRange(index, take));
+				}
+
+				buffer.Clear();
+			}
+
+			foreach (var step in Steps)
+			{
+				if (step.Options.Count > 0)
+				{
+					Flush();
+					rows.Add([step]);
+				}
+				else
+					buffer.Add(step);
+			}
+
+			Flush();
+			return rows;
+		}
+	}
+
+	/// <summary>
+	/// How many cells a shared row uses. A step sitting alone matches that width.
+	/// When every row is a single step, half the track is wide enough to read and
+	/// narrow enough not to stretch across the page.
+	/// </summary>
+	public int SoloShare => Rows.FirstOrDefault(row => row.Count > 1)?.Count ?? 2;
 }
 
 public sealed record GetStartedStepViewModel
