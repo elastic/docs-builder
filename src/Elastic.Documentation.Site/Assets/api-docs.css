@@ -1296,6 +1296,8 @@ button.response-status-toggle:focus {
 .api-param-section-header.section-header {
 	display: flex;
 	align-items: center;
+	justify-content: flex-start;
+	gap: 12px;
 }
 
 .api-param-section-toggle {
@@ -1303,7 +1305,7 @@ button.response-status-toggle:focus {
 	display: flex;
 	align-items: center;
 	gap: 8px;
-	width: 100%;
+	flex: 1 1 auto;
 	min-width: 0;
 	height: 24px;
 	margin: 0;
@@ -1330,20 +1332,11 @@ button.response-status-toggle:focus {
 	align-items: center;
 	justify-content: center;
 	flex: 0 0 24px;
+	margin-left: auto;
 	box-sizing: border-box;
 	width: 24px;
 	height: 24px;
 	color: #5a6d8c;
-}
-
-@media (min-width: 768px) {
-	.api-param-chevron {
-		position: absolute;
-		right: 100%;
-		top: 0;
-		flex: none;
-		margin-right: 8px;
-	}
 }
 
 .api-param-chevron::after {
@@ -2151,6 +2144,12 @@ a.docs-reference-btn::after {
 	font-size: 16px;
 	font-weight: 600;
 	line-height: 24px;
+}
+
+/* The global .headerlink::after '#' positions against its link, so it lines up with the title, not the padded h4 */
+#elastic-api-v3 h4.section-header .headerlink,
+#schema-definition h4.section-header .headerlink {
+	position: relative;
 }
 
 #api-examples-panel h4.section-header {

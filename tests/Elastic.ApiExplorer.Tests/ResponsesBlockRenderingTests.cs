@@ -51,8 +51,8 @@ public class ResponsesBlockRenderingTests
 	{
 		var html = await RenderHtml(Response("200", "success", "Successful response"));
 
-		html.Should().Contain(">Response</span>");
-		html.Should().NotContain(">Responses</span>");
+		html.Should().Contain(">Response</a>");
+		html.Should().NotContain(">Responses</a>");
 		html.Should().Contain("aria-controls=\"response-200-fields\"");
 	}
 
@@ -137,7 +137,10 @@ public class ResponsesBlockRenderingTests
 		var button = html[html.IndexOf("<button", StringComparison.Ordinal)..html.IndexOf("</button>", StringComparison.Ordinal)];
 		button.Should().NotContain("<a ");
 		html.Should().Contain("href=\"https://www.elastic.co/guide\"");
-		html.IndexOf("<a ", StringComparison.Ordinal).Should().BeGreaterThan(html.IndexOf("</button>", StringComparison.Ordinal));
+		html
+			.IndexOf("href=\"https://www.elastic.co/guide\"", StringComparison.Ordinal)
+			.Should()
+			.BeGreaterThan(html.IndexOf("</button>", StringComparison.Ordinal));
 	}
 
 	[Test]

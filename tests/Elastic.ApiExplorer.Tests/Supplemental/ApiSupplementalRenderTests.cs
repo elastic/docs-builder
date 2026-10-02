@@ -107,7 +107,7 @@ public class ApiSupplementalRenderTests(ApiExplorerFixture fixture)
 		html.Should().Contain("id=\"prerequisites\"");
 		html.Should().Contain("id=\"prerequisites-list\"");
 		html.Should().Contain("aria-controls=\"prerequisites-list\"");
-		html.Should().Contain("api-param-section-title\">Prerequisites</span>");
+		html.Should().Contain("href=\"#prerequisites\">Prerequisites</a>");
 	}
 
 	[Test]
@@ -117,8 +117,8 @@ public class ApiSupplementalRenderTests(ApiExplorerFixture fixture)
 		var html = await RenderAsync(nav.Model, nav);
 
 		html.Should().Contain("id=\"parameters\"");
-		html.Should().Contain("<span>Path Parameters</span>");
-		html.Should().NotContain("<span>Parameters</span>");
+		html.Should().Contain("href=\"#parameters\">Path Parameters</a>");
+		html.Should().NotContain(">Parameters</a>");
 		html.Should().NotContain("id=\"parameters-list\"");
 		html.Should().NotContain("aria-controls=\"parameters-list\"");
 	}
@@ -132,7 +132,7 @@ public class ApiSupplementalRenderTests(ApiExplorerFixture fixture)
 		html.Should().Contain("api-param-section collapsed");
 		html.Should().Contain("id=\"parameters-list\"");
 		html.Should().Contain("aria-controls=\"parameters-list\"");
-		html.Should().Contain("api-param-section-title\">Path Parameters</span>");
+		html.Should().Contain("href=\"#parameters\">Path Parameters</a>");
 	}
 
 	[Test]
@@ -180,6 +180,19 @@ public class ApiSupplementalRenderTests(ApiExplorerFixture fixture)
 	}
 
 	[Test]
+	public async Task Operation_SectionHeadings_TitleIsHeaderLinkOutsideToggle()
+	{
+		var nav = SearchOperation();
+		var html = await RenderAsync(nav.Model, nav);
+
+		html.Should().MatchRegex(
+			"""id="request-body"[^>]*>\s*<a class="headerlink api-param-section-title" href="#request-body">Request</a>\s*<button"""
+		);
+		html.Should().MatchRegex("""id="responses"[^>]*>\s*<a class="headerlink responses-title" href="#responses">Response""");
+		html.Should().NotMatchRegex("""<button[^>]*api-param-section-toggle[^>]*>(?:(?!</button>)[\s\S])*<a\s""");
+	}
+
+	[Test]
 	public async Task Operation_Request_RendersCollapsedWithNameSummaryAndNoJsonBadge()
 	{
 		var nav = SearchOperation();
@@ -188,7 +201,7 @@ public class ApiSupplementalRenderTests(ApiExplorerFixture fixture)
 		html.Should().Contain("id=\"request-body\"");
 		html.Should().Contain("id=\"request-body-list\"");
 		html.Should().Contain("aria-controls=\"request-body-list\"");
-		html.Should().Contain("api-param-section-title\">Request</span>");
+		html.Should().Contain("href=\"#request-body\">Request</a>");
 		html.Should().Contain("req-query");
 		html.Should().NotContain("content-type-badge");
 	}

@@ -250,7 +250,6 @@ function expandParamSectionForHash(): void {
     const target = document.getElementById(id)
     const section = target?.closest<HTMLElement>('[data-param-section]')
     if (section) expandParamSection(section)
-    if (section) expandParamSection(section)
     const panel = target?.closest<HTMLElement>('.response-panel')
     if (panel) expandResponsePanel(panel)
 }
@@ -483,6 +482,27 @@ function initGlobalClickHandlers(): void {
                 enumValuesToggle,
                 enumValuesToggle.getAttribute('aria-expanded') !== 'true'
             )
+            return
+        }
+
+        // The title toggles like the rest of the row. pushState sets the hash without
+        // a hashchange, which would otherwise re-expand a section the click just collapsed.
+        const paramSectionTitle = target.closest<HTMLAnchorElement>(
+            '.api-param-section-header > .headerlink'
+        )
+        if (paramSectionTitle) {
+            // Modified clicks keep normal link behaviour (new tab, new window)
+            if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return
+            e.preventDefault()
+            const section = paramSectionTitle.closest<HTMLElement>(
+                '[data-param-section]'
+            )
+            if (!section) return
+            if (section.classList.contains('expanded'))
+                collapseParamSection(section)
+            else expandParamSection(section)
+            if (window.location.hash !== paramSectionTitle.hash)
+                history.pushState(null, '', paramSectionTitle.hash)
             return
         }
 
