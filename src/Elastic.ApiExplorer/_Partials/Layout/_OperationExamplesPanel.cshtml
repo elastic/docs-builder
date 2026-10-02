@@ -1,7 +1,7 @@
 @using Elastic.ApiExplorer.Operations
 @inherits RazorSlice<OperationExamplesPanelModel>
-@* ≥1024px: right rail (api-docs.css). Below that: in-flow column under the article. *@
-<aside id="api-examples-panel" class="api-examples-panel shrink-0 w-full">
+@* Second column of .api-page-columns from 1024px (api-docs.css); stacked under the reference below that. *@
+<aside id="api-examples-panel" class="api-examples-panel">
 	<nav class="api-examples-panel-nav markdown-content simple-scrollbar">
 		@if (Model.Scenarios.Count == 1)
 		{

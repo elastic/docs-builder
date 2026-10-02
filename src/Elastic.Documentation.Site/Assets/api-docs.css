@@ -201,19 +201,6 @@
 	margin: 0 0 16px;
 }
 
-/* Row-gap on the examples grid is already 16px. A margin here stacks a second step. */
-@media (min-width: 1024px) {
-	.api-content-grid:has(#api-examples-panel.api-examples-panel)
-		.api-page-toolbar {
-		margin-bottom: 0;
-	}
-
-	.api-content-grid:has(#api-examples-panel.api-examples-panel)
-		.api-operation-description {
-		margin-top: 0;
-	}
-}
-
 .api-page-toolbar .api-breadcrumbs {
 	flex: 1 1 auto;
 	min-width: 0;
@@ -1286,15 +1273,11 @@ button.response-status-toggle:focus {
 	padding-bottom: 16px;
 }
 
-.api-page-main > #content-container,
+.api-page-main,
 #elastic-api-v3,
 .api-param-section,
 .api-param-section-header {
 	overflow: visible;
-}
-
-.api-page-main > #content-container {
-	overflow-x: visible;
 }
 
 /* A wide sample must scroll inside its block. Otherwise it grows the layout
@@ -2176,14 +2159,13 @@ a.docs-reference-btn::after {
 	margin-top: 0;
 }
 
-#api-examples-panel h4.section-header.api-examples-heading {
+/* Stacked under the reference, both heading variants sit above the cards. */
+#api-examples-panel h4.section-header.api-examples-heading,
+#api-examples-panel h4.section-header.api-examples-heading--stacked {
+	display: flex;
 	border-bottom: none;
-	padding-top: 0;
-}
-
-/* Single-scenario pages have no rail heading on desktop; show one when stacked. */
-#api-examples-panel .api-examples-heading--stacked {
-	display: none;
+	padding: 1.5rem 0 0.75rem;
+	margin: 0;
 }
 
 /* Section header */
@@ -2510,97 +2492,55 @@ button.example-response-tab:focus-visible {
 	}
 }
 
-/* Below 1024px the panel stays in the flex-col flow (after the article). Do not hide it.
-   Flush with the article — the cards have their own chrome. */
-@media (max-width: 1023px) {
-	#api-examples-panel.api-examples-panel {
-		min-width: 0;
-		margin: 0;
-		padding: 0;
-	}
+/* Examples rail. Flush with the article — the cards have their own chrome. */
+#api-examples-panel {
+	min-width: 0;
+	margin: 0;
+	padding: 0;
+}
 
-	#api-examples-panel .api-examples-panel-nav {
-		padding: 0;
-	}
+#api-examples-panel .api-examples-panel-nav {
+	padding: 0;
+}
 
-	#api-examples-panel h4.section-header.api-examples-heading,
-	#api-examples-panel h4.section-header.api-examples-heading--stacked {
-		display: flex;
-		padding: 1.5rem 0 0.75rem;
-		margin: 0;
-	}
+#api-examples-panel .api-code-card:last-child {
+	margin-bottom: 0;
+}
 
-	#api-examples-panel .api-code-card:last-child {
-		margin-bottom: 0;
-	}
+/* Operation pages: the reference and the examples rail. One column; two from 1024px,
+   under the full-width intro. The intro already ends with a 16px step. */
+.api-page-columns {
+	display: flex;
+	flex-direction: column;
+	gap: 16px;
+	min-width: 0;
+	margin-top: 16px;
+}
+
+.api-page-columns > .api-page-reference > :first-child {
+	margin-top: 0;
 }
 
 @media (min-width: 1024px) {
-	/* Prefer :has() over a server class on this wrapper: htmx swaps #api-examples-panel
-	   oob but does not remount .api-content-grid, so a toggled --examples class goes stale.
-	   Must set display:grid here — Tailwind lg:grid is 1280px and left the rail stacked
-	   under the reference column between 1024 and 1280. */
-	.api-content-grid:has(#api-examples-panel.api-examples-panel) {
-		display: grid;
-		grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-		column-gap: 24px;
-		/* Rows size to content so the examples rail can position:sticky while the page scrolls */
+	.api-page-columns {
+		flex-direction: row;
+		align-items: flex-start;
+		gap: 24px;
 	}
 
-	/* Flatten wrappers so intro/reference become grid items next to the examples rail */
-	.api-content-grid:has(#api-examples-panel.api-examples-panel)
-		> .api-page-main,
-	.api-content-grid:has(#api-examples-panel.api-examples-panel)
-		> .api-page-main
-		> #content-container,
-	.api-content-grid:has(#api-examples-panel.api-examples-panel)
-		> .api-page-main
-		> #content-container
-		> #markdown-content {
-		display: contents;
-	}
-
-	.api-content-grid:has(#api-examples-panel.api-examples-panel)
-		.api-page-toolbar {
-		grid-column: 1 / -1;
-		grid-row: 1;
+	.api-page-columns > .api-page-reference,
+	.api-page-columns > #api-examples-panel {
+		flex: 1 1 0;
 		min-width: 0;
-		padding-top: calc(
-			var(--spacing) * 6
-		); /* replaces .api-page-main pt-6 lost to contents */
 	}
 
-	.api-content-grid:has(#api-examples-panel.api-examples-panel)
-		.api-page-intro {
-		grid-column: 1 / -1;
-		grid-row: 2;
-		min-width: 0;
-		padding-top: 0;
-		padding-right: 0;
-	}
-
-	.api-content-grid:has(#api-examples-panel.api-examples-panel)
-		.api-page-reference {
-		grid-column: 1;
-		grid-row: 3;
-		min-width: 0;
-		padding-bottom: calc(var(--spacing) * 12); /* replaces main pb-12 */
-	}
-
-	/* Examples rail: hug content, cap at viewport under the intro */
+	/* Examples rail: hug content, cap at the viewport, scroll inside. */
 	#api-examples-panel {
-		--api-examples-rail-padding: calc(
-			var(--spacing) * 6
-		); /* match content pt-6 */
-		grid-column: 2;
-		grid-row: 3;
+		--api-rail-top: calc(var(--offset-top) + 16px);
 		position: sticky;
-		top: var(--offset-top);
-		align-self: start;
+		top: var(--api-rail-top);
 		box-sizing: border-box;
-		height: min(max-content, calc(100vh - var(--offset-top)));
-		max-height: calc(100vh - var(--offset-top));
-		padding-block: var(--api-examples-rail-padding);
+		max-height: calc(100vh - var(--api-rail-top));
 		overflow: hidden;
 		display: flex;
 		flex-direction: column;
@@ -2627,12 +2567,14 @@ button.example-response-tab:focus-visible {
 		overflow: visible;
 	}
 
-	#api-examples-panel .api-examples-heading {
+	/* Single-scenario pages have no rail heading beside the reference. */
+	#api-examples-panel h4.section-header.api-examples-heading--stacked {
+		display: none;
+	}
+
+	#api-examples-panel h4.section-header.api-examples-heading {
 		flex-shrink: 0;
-		border-bottom: none;
-		padding-top: 0;
-		padding-bottom: 1rem;
-		margin-top: 0;
+		padding: 0 0 1rem;
 	}
 
 	#api-examples-panel .api-examples-scenario-header {
@@ -2663,10 +2605,6 @@ button.example-response-tab:focus-visible {
 		display: flex;
 		flex: 0 0 auto;
 		flex-direction: column;
-	}
-
-	#api-examples-panel .api-code-card:last-child {
-		margin-bottom: 0;
 	}
 
 	#api-examples-panel .api-code-sample-body,
