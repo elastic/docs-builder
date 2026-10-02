@@ -7,7 +7,7 @@
 	}
 }
 
-/* Operation page endpoints — radio rows, 8px between items, no chrome */
+/* Operation page endpoints — path rows, 8px between items; multi-path rows mark the selection with an accent bar */
 .api-page-intro .api-url-listing {
 	display: flex;
 	flex-direction: column;
@@ -53,26 +53,45 @@
 	outline-offset: 2px;
 }
 
+/* The radio stays for keyboard and screen readers; the row shows the selection. */
 .api-page-intro .api-url-radio {
-	appearance: none;
-	-webkit-appearance: none;
-	width: 16px;
-	height: 16px;
+	position: absolute;
+	width: 1px;
+	height: 1px;
 	margin: 0;
-	flex-shrink: 0;
-	border: 1px solid #98a2b3;
-	border-radius: 50%;
-	background-color: #fff;
-	cursor: pointer;
+	opacity: 0;
+	pointer-events: none;
 }
 
-.api-page-intro .api-url-radio:checked {
-	border-color: #0b64dd;
-	background-image: radial-gradient(circle, #0b64dd 0 4px, #fff 4.5px);
+.api-page-intro .api-url-listing--multi > li > .api-url-row {
+	position: relative;
+	padding: 4px 8px 4px 12px;
+	border-radius: 8px;
 }
 
-.api-page-intro .api-url-radio:focus {
-	outline: none;
+.api-page-intro .api-url-listing--multi > li > .api-url-row:hover {
+	@apply bg-grey-10;
+}
+
+.api-page-intro
+	.api-url-listing--multi
+	> li
+	> .api-url-row:has(.api-url-radio:checked) {
+	background-color: #eff5ff;
+}
+
+.api-page-intro
+	.api-url-listing--multi
+	> li
+	> .api-url-row:has(.api-url-radio:checked)::before {
+	content: '';
+	position: absolute;
+	top: 6px;
+	bottom: 6px;
+	left: 0;
+	width: 3px;
+	border-radius: 2px;
+	background-color: #0b64dd;
 }
 
 .api-url-copy.copybtn {
@@ -135,18 +154,6 @@
 	font-weight: 300;
 	line-height: 20px;
 	overflow-wrap: anywhere;
-}
-
-.api-page-intro .api-url-listing--multi > li > .api-url-row:hover .api-url {
-	@apply border-grey-30;
-}
-
-.api-page-intro
-	.api-url-listing--multi
-	> li
-	> .api-url-row:has(.api-url-radio:checked)
-	.api-url {
-	@apply border-blue-elastic;
 }
 
 .api-page-intro .api-security-badges {
