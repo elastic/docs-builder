@@ -542,13 +542,13 @@ public class ApiPropertyTreeBuilder(OpenApiDocument document, PropertyDisplayOpt
 	private IReadOnlySet<string> AugmentAncestors(TypeInfo typeInfo, IReadOnlySet<string>? ancestors)
 	{
 		var newAncestors = ancestors is not null ? new HashSet<string>(ancestors) : [];
-		if (string.IsNullOrEmpty(typeInfo.TypeName) || !typeInfo.IsObject || SchemaHelpers.IsStructuralTypeName(typeInfo.TypeName))
+		if (string.IsNullOrEmpty(typeInfo.TypeName) || !typeInfo.IsObject || SchemaHelpers.IsCompositionKeyword(typeInfo.TypeName))
 			return newAncestors;
 
 		if (typeInfo is { IsDictionary: true, DictValueSchema: not null })
 		{
 			var dictValueType = _analyzer.GetTypeInfo(typeInfo.DictValueSchema);
-			if (!string.IsNullOrEmpty(dictValueType.TypeName) && !SchemaHelpers.IsStructuralTypeName(dictValueType.TypeName))
+			if (!string.IsNullOrEmpty(dictValueType.TypeName) && !SchemaHelpers.IsCompositionKeyword(dictValueType.TypeName))
 				_ = newAncestors.Add(dictValueType.TypeName);
 		}
 		else
@@ -614,7 +614,7 @@ public class ApiPropertyTreeBuilder(OpenApiDocument document, PropertyDisplayOpt
 	private static bool IsAncestorType(string? typeName, IReadOnlySet<string> ancestors) =>
 		!string.IsNullOrEmpty(typeName)
 			&& !SchemaHelpers.IsPrimitiveTypeName(typeName)
-			&& !SchemaHelpers.IsStructuralTypeName(typeName)
+			&& !SchemaHelpers.IsCompositionKeyword(typeName)
 			&& ancestors.Contains(typeName);
 
 	private TypeInfo WithExpandedUnions(TypeInfo typeInfo)

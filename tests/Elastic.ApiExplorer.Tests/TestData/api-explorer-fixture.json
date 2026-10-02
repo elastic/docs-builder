@@ -554,6 +554,15 @@
           }
         }
       },
+      "MyNamespace.Unknown": {
+        "type": "object",
+        "description": "A named schema whose display name matches the unknown fallback.",
+        "properties": {
+          "self": {
+            "$ref": "#/components/schemas/MyNamespace.Unknown"
+          }
+        }
+      },
       "fixture.DiscoverPanel": {
         "type": "object",
         "description": "A Discover session embedded in a dashboard.",

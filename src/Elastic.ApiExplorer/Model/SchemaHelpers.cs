@@ -130,11 +130,6 @@ public static class SchemaHelpers
 
 	private static readonly HashSet<string> CompositionKeywords = new(["anyOf", "oneOf", "allOf"], StringComparer.OrdinalIgnoreCase);
 
-	private static readonly HashSet<string> StructuralTypeNames = new(
-		["anyOf", "oneOf", "allOf", "unknown"],
-		StringComparer.OrdinalIgnoreCase
-	);
-
 	/// <summary>
 	/// Gets the URL for a container type's dedicated page under the given API root
 	/// (e.g. <c>/api/elasticsearch</c>), matching the URLs built by <c>SchemaNavigationItem</c>.
@@ -213,12 +208,7 @@ public static class SchemaHelpers
 	public static bool IsPrimitiveTypeName(string typeName) => PrimitiveTypeNames.Contains(typeName);
 
 	/// <summary>
-	/// OpenAPI composition keywords and the unknown fallback. These are not types a reader can look up.
-	/// </summary>
-	public static bool IsStructuralTypeName(string? typeName) => StructuralTypeNames.Contains(BaseTypeName(typeName));
-
-	/// <summary>
-	/// <c>anyOf</c>, <c>oneOf</c>, and <c>allOf</c>. <c>unknown</c> is not one of these.
+	/// <c>anyOf</c>, <c>oneOf</c>, and <c>allOf</c>. A schema named <c>Unknown</c> is not one of these.
 	/// </summary>
 	public static bool IsCompositionKeyword(string? typeName) => CompositionKeywords.Contains(BaseTypeName(typeName));
 

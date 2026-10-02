@@ -51,6 +51,19 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture)
 	}
 
 	[Test]
+	public void BuildPropertyList_SchemaNamedUnknown_StopsAtSelfReference()
+	{
+		var builder = CreateBuilder(currentPageType: "Unknown");
+		var ancestors = new HashSet<string> { "Unknown" };
+
+		var list = builder.BuildPropertyList(Schema("MyNamespace.Unknown"), new PropertyTreeScope { Prefix = "", Ancestors = ancestors });
+
+		var self = list!.Items.Single(p => p.Name == "self");
+		self.IsRecursive.Should().BeTrue();
+		self.Children.Kind.Should().Be(ChildKind.None);
+	}
+
+	[Test]
 	public void BuildPropertyList_ObjectUnion_OmitsCompositionKeyword()
 	{
 		var builder = CreateBuilder();
