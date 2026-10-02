@@ -483,7 +483,7 @@ function initGlobalClickHandlers(): void {
             return
         }
 
-        // The title toggles like the rest of the row. replaceState sets the hash without
+        // The title toggles like the rest of the row. pushState sets the hash without
         // a hashchange, which would otherwise re-expand a section the click just collapsed.
         const paramSectionTitle = target.closest<HTMLAnchorElement>(
             '.api-param-section-header > .headerlink'
@@ -499,7 +499,8 @@ function initGlobalClickHandlers(): void {
             if (section.classList.contains('expanded'))
                 collapseParamSection(section)
             else expandParamSection(section)
-            history.replaceState(null, '', paramSectionTitle.hash)
+            if (window.location.hash !== paramSectionTitle.hash)
+                history.pushState(null, '', paramSectionTitle.hash)
             return
         }
 
