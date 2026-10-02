@@ -3,6 +3,7 @@ import { initApiDocs } from './api-docs'
 function responseMarkup(): string {
     return `
         <section id="elastic-api-v3">
+            <p id="elsewhere">Unrelated operation description.</p>
             <div class="response-panel collapsed" data-status="200">
                 <div class="response-summary">
                     <div class="response-status-row">
@@ -69,7 +70,19 @@ describe('response status row', () => {
         expect(event.defaultPrevented).toBe(false)
     })
 
-    it('leaves the panel collapsed when text is selected', () => {
+    it('expands when text elsewhere on the page is selected', () => {
+        window
+            .getSelection()
+            ?.selectAllChildren(document.getElementById('elsewhere')!)
+
+        toggle().click()
+        window.getSelection()?.removeAllRanges()
+
+        expect(panel().classList.contains('expanded')).toBe(true)
+        expect(toggle().getAttribute('aria-expanded')).toBe('true')
+    })
+
+    it('leaves the panel collapsed when summary text is selected', () => {
         window
             .getSelection()
             ?.selectAllChildren(

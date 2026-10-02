@@ -505,7 +505,15 @@ function initGlobalClickHandlers(): void {
             ?.closest<HTMLElement>('.response-panel')
         if (responsePanel) {
             // The toggle's hit area covers the description, so selecting its text must not toggle.
-            if (window.getSelection()?.toString()) return
+            const summary = responsePanel.querySelector('.response-summary')
+            const selection = window.getSelection()
+            if (
+                selection &&
+                !selection.isCollapsed &&
+                (summary?.contains(selection.anchorNode) ||
+                    summary?.contains(selection.focusNode))
+            )
+                return
 
             e.preventDefault()
             e.stopPropagation()
