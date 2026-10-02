@@ -1122,8 +1122,8 @@ public partial class ChangelogBundlingService(
 		BundleProfile? profileDef = null;
 		if (!string.IsNullOrWhiteSpace(input.Profile))
 		{
-			// Plan must fail the same way the run does when profiles still carry output: patterns
-			// or collide on the conventional target, so CI surfaces the error before the Docker run.
+			// Plan must fail the same way the run does when profiles collide on the conventional
+			// target, so CI surfaces the error before the Docker run.
 			if (!ValidateProfileOutputs(collector, config, input.Profile))
 				return null;
 
@@ -1326,9 +1326,10 @@ public partial class ChangelogBundlingService(
 
 	/// <summary>
 	/// B2 (elastic/docs-builder#3774): bundle output names are standardized as
-	/// <c>{repo}-{product}-{version}.yaml</c> when a repo resolves. Any profile still setting an
-	/// explicit <c>output</c> pattern is a hard error, and two profiles sharing the same primary
-	/// output product would collide on the same conventional target, so that is rejected as well.
+	/// <c>{repo}-{product}-{version}.yaml</c> when a repo resolves. Two profiles sharing the same
+	/// primary output product would collide on the same conventional target, so that is rejected.
+	/// A profile <c>output_directory</c> that is a file path is also a hard error. Deprecated
+	/// <c>output</c> patterns are ignored (warned at config load).
 	/// </summary>
 	private static bool ValidateProfileOutputs(
 		IDiagnosticsCollector collector,
@@ -1355,18 +1356,6 @@ public partial class ChangelogBundlingService(
 				valid = false;
 			}
 #pragma warning restore CS0618
-
-#pragma warning disable CS0618 // intentionally reading the obsolete field to reject profiles that still set it
-			if (!string.IsNullOrWhiteSpace(profile.Output))
-#pragma warning restore CS0618
-			{
-				collector.EmitError(
-					string.Empty,
-					$"Profile '{name}': 'output' is no longer supported. Remove it — bundle output names are now derived by convention " +
-						$"as '{BundleOutputNaming.PrefixedConvention}' from the profile's output_products and authoring repo."
-				);
-				valid = false;
-			}
 
 #pragma warning disable CS0618
 			if (BundleOutputNaming.IsYamlFilePath(profile.OutputDirectory))
