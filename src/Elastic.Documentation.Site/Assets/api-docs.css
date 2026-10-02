@@ -1805,9 +1805,9 @@ a.docs-reference-btn::after {
 	line-height: inherit;
 }
 
-/* Value type keyword styling - for discovered primitive aliases */
-.value-type-keyword {
-	@apply text-blue-elastic border-0 bg-transparent p-0 text-xs font-normal;
+/* Primitive keyword inside a value type (string Duration) uses the plain string chip. */
+.schema-type .value-type-keyword {
+	color: #798eaf;
 }
 
 /* Inline union display for simple X | X[] unions */
