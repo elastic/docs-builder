@@ -63,6 +63,9 @@ public record ExampleScenario
 	/// <summary>True when the attached code samples contain this scenario's request body verbatim.</summary>
 	public bool CodeSamplesIncludeRequest { get; init; }
 
+	/// <summary>Samples render above the scenario panels so switching examples keeps the language selector.</summary>
+	public bool CodeSamplesOutsidePanel { get; init; }
+
 	/// <summary>Request JSON is omitted only when code samples already embed the request body.</summary>
 	public bool ShowRequest => (RequestJson is not null || !string.IsNullOrEmpty(RequestExternalValue)) && !CodeSamplesIncludeRequest;
 

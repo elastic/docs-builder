@@ -238,4 +238,100 @@ public class OperationExamplesPanelRenderingTests
 		html.Should().NotContain("api-scenario-select");
 		html.Should().NotContain("api-examples-switcher");
 	}
+
+	[Test]
+	public async Task Render_AnotherExample_KeepsLanguageSelectorOutsideScenarioPanels()
+	{
+		var html = await RenderPanel(
+			new ExampleScenario
+			{
+				Title = "Text embedding",
+				TabId = "text-embedding",
+				HttpMethod = "put",
+				Route = "/_inference/{task_type}/{inference_id}",
+				RequestJson = /*lang=json,strict*/  """{"service":"amazonbedrock"}""",
+				CodeSamples =
+				[
+					new("Console", "PUT /_inference/{task_type}/{inference_id}", "language-console"),
+					new("curl", "curl -X PUT", "language-bash")
+				],
+				Responses = [new ExampleResponse { StatusCode = "200", JsonValue = "{}" }]
+			},
+			new ExampleScenario
+			{
+				Title = "Completion",
+				TabId = "completion",
+				HttpMethod = "put",
+				Route = "/_inference/{task_type}/{inference_id}",
+				RequestJson = /*lang=json,strict*/  """{"service":"amazonbedrock","task_type":"completion"}""",
+				Responses = [new ExampleResponse { StatusCode = "200", JsonValue = "{}" }]
+			}
+		);
+
+		var languageSelect = html.IndexOf("api-code-sample-lang", StringComparison.Ordinal);
+		var scenarioPanel = html.IndexOf("api-examples-scenario-panel", StringComparison.Ordinal);
+		languageSelect.Should().BeGreaterThanOrEqualTo(0);
+		scenarioPanel.Should().BeGreaterThan(languageSelect);
+		CountOf(html, "api-code-sample-lang").Should().Be(1);
+		html.Should().Contain("data-value=\"Console\"");
+		html.Should().Contain("data-value=\"curl\"");
+		PanelHtml(html, "completion").Should().NotContain("api-code-sample-lang");
+	}
+
+	[Test]
+	public async Task Render_SingleLanguageExample_OmitsLanguageSelector()
+	{
+		var html = await RenderPanel(
+			new ExampleScenario
+			{
+				Title = "Console only",
+				TabId = "console-only",
+				HttpMethod = "get",
+				Route = "/_search",
+				CodeSamples = [new("Console", "GET /_search", "language-console")],
+				Responses = [new ExampleResponse { StatusCode = "200", JsonValue = "{}" }]
+			},
+			new ExampleScenario
+			{
+				Title = "Request JSON",
+				TabId = "request-json",
+				HttpMethod = "get",
+				Route = "/_search",
+				RequestJson = /*lang=json,strict*/  """{"query":{"match_all":{}}}""",
+				Responses = [new ExampleResponse { StatusCode = "200", JsonValue = "{}" }]
+			}
+		);
+
+		html.Should().NotContain("api-code-sample-lang");
+		html.Should().Contain("api-scenario-select");
+		html.Should().Contain("GET /_search");
+		html.Should().Contain("match_all");
+	}
+
+	private static async Task<string> RenderPanel(params ExampleScenario[] scenarios) =>
+		await _OperationExamplesPanel.Create(new OperationExamplesPanelModel { Scenarios = scenarios }).RenderAsync(
+			cancellationToken: TestContext.Current!.Execution.CancellationToken
+		);
+
+	private static int CountOf(string html, string value)
+	{
+		var count = 0;
+		var index = 0;
+		while ((index = html.IndexOf(value, index, StringComparison.Ordinal)) >= 0)
+		{
+			count++;
+			index += value.Length;
+		}
+
+		return count;
+	}
+
+	private static string PanelHtml(string html, string tabId)
+	{
+		var marker = $"data-scenario=\"{tabId}\"";
+		var start = html.IndexOf(marker, StringComparison.Ordinal);
+		start.Should().BeGreaterThanOrEqualTo(0);
+		var next = html.IndexOf("api-examples-scenario-panel", start + marker.Length, StringComparison.Ordinal);
+		return next < 0 ? html[start..] : html[start..next];
+	}
 }
