@@ -57,6 +57,18 @@ describe('response status row', () => {
         expect(toggle().getAttribute('aria-expanded')).toBe('false')
     })
 
+    it('lets a description link with the expand-toggle class navigate', () => {
+        const link = document.querySelector('a')!
+        link.className = 'expand-toggle'
+        const event = new MouseEvent('click', {
+            bubbles: true,
+            cancelable: true,
+        })
+        link.dispatchEvent(event)
+
+        expect(event.defaultPrevented).toBe(false)
+    })
+
     it('leaves the panel collapsed when text is selected', () => {
         window
             .getSelection()

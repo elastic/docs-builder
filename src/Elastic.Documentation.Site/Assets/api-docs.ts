@@ -400,7 +400,9 @@ function initOperationView(section: HTMLElement): void {
         }
 
         // Handle union variant expand/collapse
-        const toggleBtn = target.closest<HTMLButtonElement>('.expand-toggle')
+        const toggleBtn = target.closest<HTMLButtonElement>(
+            'button.expand-toggle'
+        )
         if (toggleBtn) {
             const unionToggleRow = toggleBtn.closest('.union-expand-toggle')
             if (unionToggleRow) {
@@ -551,7 +553,9 @@ function initGlobalClickHandlers(): void {
         }
 
         // Handle union variant expand/collapse
-        const toggleBtn = target.closest<HTMLButtonElement>('.expand-toggle')
+        const toggleBtn = target.closest<HTMLButtonElement>(
+            'button.expand-toggle'
+        )
         if (toggleBtn) {
             const unionToggleRow = toggleBtn.closest('.union-expand-toggle')
             if (unionToggleRow) {
