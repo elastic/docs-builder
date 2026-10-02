@@ -26,21 +26,19 @@ runs:
   steps:
     - name: Generate AWS Role ARN
       id: role_arn
-      shell: python
+      shell: bash
       env:
         AWS_ACCOUNT_ID: ${{ inputs.aws_account_id }}
       run: |
-          import hashlib
-          import os
-
-          prefix = "elastic-docs-link-index-uploader-"
-          aws_account_id = os.environ["AWS_ACCOUNT_ID"]
-
-          m = hashlib.sha256()
-          m.update(os.environ["GITHUB_REPOSITORY"].encode('utf-8'))
-          hash = m.hexdigest()[:64-len(prefix)]
-          with open(os.environ["GITHUB_OUTPUT"], "a") as f:
-            f.write(f"result=arn:aws:iam::{aws_account_id}:role/{prefix}{hash}")
+        set -euo pipefail
+        prefix="elastic-docs-link-index-uploader-"
+        if command -v sha256sum >/dev/null 2>&1; then
+          hash="$(printf '%s' "${GITHUB_REPOSITORY}" | sha256sum | awk '{print $1}')"
+        else
+          hash="$(printf '%s' "${GITHUB_REPOSITORY}" | shasum -a 256 | awk '{print $1}')"
+        fi
+        hash="${hash:0:$((64 - ${#prefix}))}"
+        printf 'result=arn:aws:iam::%s:role/%s%s\n' "${AWS_ACCOUNT_ID}" "${prefix}" "${hash}" >> "${GITHUB_OUTPUT}"
     - name: Configure AWS Credentials
       uses: aws-actions/configure-aws-credentials@e6de054238d6b7531b4efff3b6587d9aade6a06c # v6.2.3
       with:
