@@ -87,9 +87,12 @@ public class ApiSupplementalRenderTests(ApiExplorerFixture fixture)
 		var markdown = await RenderCommonMarkAsync(nav.Model, nav);
 
 		html.Should().Contain("class=\"api-security-badges\"");
-		html.Should().Contain("href=\"/api/doc/fixture/authentication#apikey\">Api key auth</a>");
-		html.Should().Contain("href=\"/api/doc/fixture/authentication#basicauth\">Basic auth</a>");
-		html.Should().Contain("href=\"/api/doc/fixture/authentication#bearerauth\">Bearer auth</a>");
+		html.Should().Contain("class=\"api-auth-button\" href=\"/api/doc/fixture/authentication#apikey\">");
+		html.Should().Contain("<span>Api key auth</span>");
+		html.Should().Contain("class=\"api-auth-button\" href=\"/api/doc/fixture/authentication#basicauth\">");
+		html.Should().Contain("<span>Basic auth</span>");
+		html.Should().Contain("class=\"api-auth-button\" href=\"/api/doc/fixture/authentication#bearerauth\">");
+		html.Should().Contain("<span>Bearer auth</span>");
 		html.Should().NotContain("id=\"authorization\"");
 		html.Should().NotContain("auth-scheme-item");
 		markdown.Should().Contain("[Api key auth](/api/doc/fixture/authentication#apikey)");
