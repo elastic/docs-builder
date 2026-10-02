@@ -87,7 +87,7 @@
 	}
 </header>
 <div class="api-page-columns">
-<section id="elastic-api-v3" class="api-page-reference">
+<section id="elastic-api-v3">
 	@{
 		var prerequisites = Model.Prerequisites;
 	}
@@ -304,8 +304,8 @@
 		<div>@extra.BodyHtml</div>
 	}
 </section>
-@if (Model.ExamplesPanel is not null)
+@if (Model.ExamplesPanel is { } examplesPanel)
 {
-	@await RenderPartialAsync(_OperationExamplesPanel.Create(Model.ExamplesPanel))
+	@await RenderPartialAsync(_OperationExamplesPanel.Create(examplesPanel))
 }
 </div>

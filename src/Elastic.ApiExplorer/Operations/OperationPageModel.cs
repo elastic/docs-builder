@@ -179,9 +179,6 @@ public partial record OperationPageModel
 	public required bool ShowResponseExamples { get; init; }
 	public required IReadOnlyList<ExampleScenario> Scenarios { get; init; }
 
-	/// <summary>Anchor of the examples rail; null when the page has no examples at all.</summary>
-	public required string? ExamplesAnchor { get; init; }
-
 	/// <summary>Effective auth scheme badges. Empty when the spec declares no schemes.</summary>
 	public required IReadOnlyList<AuthSchemeBadge> AuthSchemes { get; init; }
 
@@ -213,8 +210,6 @@ public partial record OperationPageModel
 			apiOperation.OperationType.ToString().ToLowerInvariant(),
 			apiOperation.Route
 		);
-		var examplesAnchor = scenarios.Count > 0 ? "examples" : null;
-
 		var requestContentEntry = operation.RequestBody?.Content?.FirstOrDefault();
 		var requestSchema = requestContentEntry?.Value?.Schema;
 
@@ -259,7 +254,6 @@ public partial record OperationPageModel
 			ShowRequestExamples = requestExamples.Count > 0 && scenarios.Any(static s => s.ShowRequest),
 			ShowResponseExamples = responseExamples.Count > 0,
 			Scenarios = scenarios,
-			ExamplesAnchor = examplesAnchor,
 			AuthSchemes = OpenApiAuthSchemeResolver.Resolve(
 				operation,
 				document,

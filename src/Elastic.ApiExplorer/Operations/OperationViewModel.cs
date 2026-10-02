@@ -51,5 +51,5 @@ public class OperationViewModel(ApiRenderContext context) : ApiViewModel(context
 	}
 
 	public OperationExamplesPanelModel? ExamplesPanel =>
-		Page.ExamplesAnchor is null ? null : new OperationExamplesPanelModel { Scenarios = Page.Scenarios };
+		Page.Scenarios.Count == 0 ? null : new OperationExamplesPanelModel { Scenarios = Page.Scenarios };
 }
