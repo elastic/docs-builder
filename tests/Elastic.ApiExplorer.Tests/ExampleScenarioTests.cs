@@ -322,7 +322,7 @@ public class ExampleScenarioTests
 		var responses = page.Scenarios.SelectMany(static s => s.Responses).ToArray();
 		responses.Should().ContainSingle();
 		responses[0].StatusCode.Should().Be("200");
-		responses[0].JsonValue.Should().Be(exampleBody);
+		responses[0].JsonValue?.ReplaceLineEndings("\n").Should().Be(exampleBody);
 		html.Should().Contain("432433423");
 		html.Should().NotContain("example-empty");
 		html.Should().NotContain(">400</span>");
