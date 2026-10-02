@@ -67,8 +67,10 @@
 							@LayoutModel.HxAttributes
 							@(isCurrent ? "checked" : null) />
 					}
-					@(await RenderPartialAsync<_HttpMethodBadge, string>(method))
-					<span class="api-url">@overload.Model.Route</span>
+					<span class="api-url">
+						@(await RenderPartialAsync<_HttpMethodBadge, string>(method))
+						<span>@overload.Model.Route</span>
+					</span>
 					@(await RenderPartialAsync<_EndpointCopyButton, string>(overload.Model.Route))
 				</label>
 			</li>

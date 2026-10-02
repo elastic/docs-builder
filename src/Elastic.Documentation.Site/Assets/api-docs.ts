@@ -259,6 +259,8 @@ function expandParamSectionForHash(): void {
  * Initialize API docs for OperationView pages
  */
 function initOperationView(section: HTMLElement): void {
+    addAlternativePathCopyButtons(section)
+
     // Add beforematch event listeners for hidden="until-found" elements
     // When find-in-page matches content inside collapsed sections, expand them
     if (supportsHiddenUntilFound) {
@@ -840,11 +842,51 @@ const apiEndpointCheckIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="16"
 let apiEndpointCopyInitialized = false
 let apiPageActionsInitialized = false
 
+// The "All methods and paths" list comes from the spec's description markdown,
+// so the copy buttons are added here instead of in a template.
+function addAlternativePathCopyButtons(section: HTMLElement): void {
+    section
+        .querySelectorAll<HTMLElement>(
+            '.api-operation-description .operation-path'
+        )
+        .forEach((path) => {
+            const chip = path.parentElement
+            if (
+                !chip ||
+                chip.parentElement?.classList.contains('operation-path-row')
+            )
+                return
+
+            const row = document.createElement('div')
+            row.className = 'operation-path-row'
+            chip.replaceWith(row)
+            row.appendChild(chip)
+
+            const btn = document.createElement('button')
+            btn.type = 'button'
+            btn.className = 'copybtn o-tooltip--left api-url-copy'
+            btn.setAttribute('aria-label', 'Copy endpoint')
+            btn.setAttribute('data-tooltip', 'Copy')
+            btn.dataset.copy = path.textContent?.trim() ?? ''
+            btn.innerHTML = apiEndpointCopyIcon
+            row.appendChild(btn)
+        })
+}
+
 function closestEndpointCopyButton(
     target: EventTarget | null
 ): HTMLButtonElement | null {
     if (!(target instanceof Element)) return null
-    return target.closest('button.api-url-copy')
+    const direct = target.closest<HTMLButtonElement>('button.api-url-copy')
+    if (direct) return direct
+
+    // Clicking the path text of an alternative-path row copies it too, unless the user is selecting text
+    if (window.getSelection()?.toString()) return null
+    return (
+        target
+            .closest('.operation-path-row')
+            ?.querySelector<HTMLButtonElement>('button.api-url-copy') ?? null
+    )
 }
 
 function initApiEndpointCopy(): void {
@@ -854,7 +896,11 @@ function initApiEndpointCopy(): void {
     document.addEventListener(
         'mousedown',
         (e) => {
-            if (!closestEndpointCopyButton(e.target)) return
+            if (
+                !(e.target instanceof Element) ||
+                !e.target.closest('button.api-url-copy')
+            )
+                return
             e.preventDefault()
             e.stopPropagation()
         },
