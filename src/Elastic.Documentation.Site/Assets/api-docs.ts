@@ -55,7 +55,7 @@ function setEnumValuesExpanded(
 
 function expandResponsePanel(panel: HTMLElement): void {
     const toggleBtn = panel.querySelector<HTMLButtonElement>(
-        '.response-status-toggle'
+        'button.response-status-toggle'
     )
     const body = panel.querySelector<HTMLElement>(
         ':scope > .response-panel-body'
@@ -69,7 +69,7 @@ function expandResponsePanel(panel: HTMLElement): void {
 
 function collapseResponsePanel(panel: HTMLElement): void {
     const toggleBtn = panel.querySelector<HTMLButtonElement>(
-        '.response-status-toggle'
+        'button.response-status-toggle'
     )
     const body = panel.querySelector<HTMLElement>(
         ':scope > .response-panel-body'
@@ -501,7 +501,7 @@ function initGlobalClickHandlers(): void {
         }
 
         const responsePanel = target
-            .closest('.response-status-toggle')
+            .closest('button.response-status-toggle')
             ?.closest<HTMLElement>('.response-panel')
         if (responsePanel) {
             // The toggle's hit area covers the description, so selecting its text must not toggle.

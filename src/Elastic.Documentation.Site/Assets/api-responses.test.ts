@@ -70,6 +70,19 @@ describe('response status row', () => {
         expect(event.defaultPrevented).toBe(false)
     })
 
+    it('lets a description link with the response-status-toggle class navigate', () => {
+        const link = document.querySelector('a')!
+        link.className = 'response-status-toggle'
+        const event = new MouseEvent('click', {
+            bubbles: true,
+            cancelable: true,
+        })
+        link.dispatchEvent(event)
+
+        expect(event.defaultPrevented).toBe(false)
+        expect(panel().classList.contains('collapsed')).toBe(true)
+    })
+
     it('expands when text elsewhere on the page is selected', () => {
         window
             .getSelection()
