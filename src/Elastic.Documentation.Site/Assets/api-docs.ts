@@ -250,7 +250,6 @@ function expandParamSectionForHash(): void {
     const target = document.getElementById(id)
     const section = target?.closest<HTMLElement>('[data-param-section]')
     if (section) expandParamSection(section)
-    if (section) expandParamSection(section)
     const panel = target?.closest<HTMLElement>('.response-panel')
     if (panel) expandResponsePanel(panel)
 }
@@ -481,6 +480,24 @@ function initGlobalClickHandlers(): void {
                 enumValuesToggle,
                 enumValuesToggle.getAttribute('aria-expanded') !== 'true'
             )
+            return
+        }
+
+        // The title toggles like the rest of the row. replaceState sets the hash without
+        // a hashchange, which would otherwise re-expand a section the click just collapsed.
+        const paramSectionTitle = target.closest<HTMLAnchorElement>(
+            '.api-param-section-header > .headerlink'
+        )
+        if (paramSectionTitle) {
+            e.preventDefault()
+            const section = paramSectionTitle.closest<HTMLElement>(
+                '[data-param-section]'
+            )
+            if (!section) return
+            if (section.classList.contains('expanded'))
+                collapseParamSection(section)
+            else expandParamSection(section)
+            history.replaceState(null, '', paramSectionTitle.hash)
             return
         }
 
@@ -918,52 +935,6 @@ async function copyPageMarkdown(
     }, 1500)
 }
 
-export function urlWithHash(pageHref: string, hash: string): string {
-    const url = new URL(pageHref)
-    url.hash = hash.startsWith('#') ? hash : `#${hash}`
-    return url.toString()
-}
-
-function headingHashFromClick(target: EventTarget | null): string | null {
-    if (!(target instanceof Element)) return null
-
-    const propertyHref = target
-        .closest('.property-anchor-icon')
-        ?.closest('a')
-        ?.getAttribute('href')
-    if (propertyHref) return propertyHref
-
-    return (
-        target
-            .closest('[data-copy-heading]')
-            ?.getAttribute('data-copy-heading') ?? null
-    )
-}
-
-let headingAnchorsInitialized = false
-
-export function initHeadingAnchors(): void {
-    if (headingAnchorsInitialized) return
-    headingAnchorsInitialized = true
-
-    document.addEventListener(
-        'click',
-        (event) => {
-            const hash = headingHashFromClick(event.target)
-            if (!hash) return
-
-            event.preventDefault()
-            event.stopPropagation()
-            void navigator.clipboard
-                .writeText(urlWithHash(window.location.href, hash))
-                .catch((error) => {
-                    console.error(error)
-                })
-        },
-        true
-    )
-}
-
 export function initApiPageActions(): void {
     if (apiPageActionsInitialized) return
     apiPageActionsInitialized = true
@@ -996,7 +967,6 @@ export function initApiDocs(): void {
     initApiResponseStatusTabs()
     initApiScenarioSelects()
     initApiPageActions()
-    initHeadingAnchors()
     initApiBreadcrumbs()
     // After initHighlight — gutters need final textContent line counts
     decorateApiCodeTokens()

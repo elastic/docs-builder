@@ -5,8 +5,7 @@
 }
 <div class="responses-block" data-api-responses>
 	<h4 class="section-header responses-header" id="responses" data-section="responses">
-		@(await RenderPartialAsync<_HeadingCopyLink, HeadingAnchor>(new HeadingAnchor("responses", title)))
-		<span class="responses-title">@title</span>
+		<a class="headerlink responses-title" href="#responses">@title</a>
 	</h4>
 	<div class="responses-list">
 		@foreach (var response in responses)
