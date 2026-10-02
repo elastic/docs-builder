@@ -489,6 +489,8 @@ function initGlobalClickHandlers(): void {
             '.api-param-section-header > .headerlink'
         )
         if (paramSectionTitle) {
+            // Modified clicks keep normal link behaviour (new tab, new window)
+            if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return
             e.preventDefault()
             const section = paramSectionTitle.closest<HTMLElement>(
                 '[data-param-section]'
