@@ -12,8 +12,8 @@ function languageMarkup(): string {
                     <button type="button" class="api-page-actions-option" role="option" aria-selected="false" data-value="Python">Python</button>
                 </div>
             </details>
-            <div class="api-code-sample-panel" data-lang="Console"></div>
-            <div class="api-code-sample-panel" data-lang="Python" hidden></div>
+            <div class="api-code-sample-panel" data-code-panel="Console"></div>
+            <div class="api-code-sample-panel" data-code-panel="Python" hidden></div>
         </div>
         <div data-api-code-sample>
             <details class="api-select api-code-sample-lang">
@@ -25,8 +25,8 @@ function languageMarkup(): string {
                     <button type="button" class="api-page-actions-option" role="option" aria-selected="false" data-value="Python">Python</button>
                 </div>
             </details>
-            <div class="api-code-sample-panel" data-lang="Console"></div>
-            <div class="api-code-sample-panel" data-lang="Python" hidden></div>
+            <div class="api-code-sample-panel" data-code-panel="Console"></div>
+            <div class="api-code-sample-panel" data-code-panel="Python" hidden></div>
         </div>
     `
 }
@@ -69,12 +69,12 @@ describe('API custom selects', () => {
         expect(values).toEqual(['Python', 'Python'])
         expect(
             document
-                .querySelector('[data-lang="Python"]')
+                .querySelector('[data-code-panel="Python"]')
                 ?.hasAttribute('hidden')
         ).toBe(false)
         expect(
             document
-                .querySelector('[data-lang="Console"]')
+                .querySelector('[data-code-panel="Console"]')
                 ?.hasAttribute('hidden')
         ).toBe(true)
         expect(window.sessionStorage.getItem('tab-id-api-language')).toBe(
@@ -86,7 +86,7 @@ describe('API custom selects', () => {
         document.body.innerHTML = `
             ${languageMarkup()}
             <div data-api-code-sample>
-                <div class="api-code-sample-panel" data-lang="JSON"></div>
+                <div class="api-code-sample-panel" data-code-panel="JSON"></div>
             </div>
         `
         initApiCodeLanguageSelects()
@@ -95,7 +95,7 @@ describe('API custom selects', () => {
             .querySelector<HTMLButtonElement>('[data-value="Python"]')!
             .click()
 
-        const jsonPanel = document.querySelector('[data-lang="JSON"]')
+        const jsonPanel = document.querySelector('[data-code-panel="JSON"]')
         expect(jsonPanel?.hasAttribute('hidden')).toBe(false)
     })
 

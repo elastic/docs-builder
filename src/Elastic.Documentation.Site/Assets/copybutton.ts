@@ -128,13 +128,11 @@ const addCopyButtonToCodeCells = (
         clipboardButton.className = 'copybtn o-tooltip--left'
         clipboardButton.setAttribute('data-tooltip', messages[locale]['copy'])
         clipboardButton.setAttribute('data-clipboard-target', `#${id}`)
-        const responseActions = codeCell
-            .closest('.example-block--response')
-            ?.querySelector('.example-block-actions')
-        const codeSampleActions = codeCell
-            .closest('[data-api-code-sample]')
-            ?.querySelector('.api-code-sample-actions')
-        const headerActions = responseActions || codeSampleActions
+        // Cards (see code-block.css) own a header with a [data-code-actions]
+        // slot; the button mounts there instead of overlaying the code.
+        const headerActions = codeCell
+            .closest('[data-code-card]')
+            ?.querySelector('[data-code-actions]')
         const headerIcon = headerActions ? iconCopyEui : iconCopy
         clipboardButton.innerHTML = headerIcon
         clipboardButton.onclick = async () => {
@@ -152,23 +150,14 @@ const addCopyButtonToCodeCells = (
             }
         }
 
-        // API example cards: mount copy in the card header (right), not over the code.
-        if (responseActions) {
-            clipboardButton.classList.add('copybtn--in-header')
-            const panel = codeCell.closest('.example-response-panel')
-            if (panel instanceof HTMLElement && panel.dataset.status) {
-                clipboardButton.dataset.status = panel.dataset.status
+        if (headerActions) {
+            // Switchable panels (language / status): the button follows its panel.
+            const panel = codeCell.closest('[data-code-panel]')
+            if (panel instanceof HTMLElement && panel.dataset.codePanel) {
+                clipboardButton.dataset.codePanel = panel.dataset.codePanel
                 clipboardButton.hidden = panel.hasAttribute('hidden')
             }
-            responseActions.appendChild(clipboardButton)
-        } else if (codeSampleActions) {
-            clipboardButton.classList.add('copybtn--in-header')
-            const panel = codeCell.closest('.api-code-sample-panel')
-            if (panel instanceof HTMLElement && panel.dataset.lang) {
-                clipboardButton.dataset.lang = panel.dataset.lang
-                clipboardButton.hidden = panel.hasAttribute('hidden')
-            }
-            codeSampleActions.appendChild(clipboardButton)
+            headerActions.appendChild(clipboardButton)
         } else {
             codeCell.insertAdjacentElement('afterend', clipboardButton)
         }

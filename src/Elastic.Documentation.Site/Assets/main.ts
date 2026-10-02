@@ -1,6 +1,7 @@
 import { initAgentSkillCopy } from './agent-skill'
 import { initApiDocs } from './api-docs'
 import { initAppliesSwitch } from './applies-switch'
+import { initCodeLineNumbers } from './code-line-numbers'
 import { config } from './config'
 import { initCopyButton } from './copybutton'
 import { initHighlight } from './hljs'
@@ -209,6 +210,7 @@ document.addEventListener('htmx:load', function () {
         ['initTocNav', initTocNav],
         ['initHighlight', initHighlight],
         ['initCopyButton', initCopyButton],
+        ['initCodeLineNumbers', initCodeLineNumbers],
         ['initAgentSkillCopy', initAgentSkillCopy],
         ['initTabs', initTabs],
         ['initAppliesSwitch', initAppliesSwitch],
