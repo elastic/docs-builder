@@ -37,7 +37,11 @@
 	cursor: default;
 }
 
-.api-page-intro .api-url-listing--multi > li > .api-url-row {
+.api-page-intro .api-url-listing--multi > li > .api-url-row,
+.api-page-intro
+	.api-url-listing:not(.api-url-listing--multi)
+	> li
+	> .api-url-row {
 	cursor: pointer;
 }
 
@@ -71,7 +75,7 @@
 	outline: none;
 }
 
-.api-page-intro .api-url-copy.copybtn {
+.api-url-copy.copybtn {
 	position: static;
 	top: auto;
 	right: auto;
@@ -86,22 +90,23 @@
 }
 
 .api-page-intro .api-url-row:hover .api-url-copy.copybtn,
-.api-page-intro .api-url-copy.copybtn:focus-visible,
-.api-page-intro .api-url-copy.copybtn.success {
+.api-operation-description .operation-path-row:hover > .api-url-copy.copybtn,
+.api-url-copy.copybtn:focus-visible,
+.api-url-copy.copybtn.success {
 	opacity: 1;
 	pointer-events: auto;
 }
 
-.api-page-intro .api-url-copy.copybtn:hover {
+.api-url-copy.copybtn:hover {
 	color: #1d2a3e;
 }
 
-.api-page-intro .api-url-copy.copybtn.success {
+.api-url-copy.copybtn.success {
 	background-color: transparent;
 	color: #22863a;
 }
 
-.api-page-intro .api-url-copy.copybtn svg {
+.api-url-copy.copybtn svg {
 	width: 16px;
 	height: 16px;
 	padding: 0;
@@ -109,21 +114,39 @@
 	fill: currentColor;
 }
 
-.api-page-intro .api-url-copy.copybtn.o-tooltip--left:after {
+.api-url-copy.copybtn.o-tooltip--left:after {
 	background-color: #1d2a3e;
 	color: #f6f9fc;
 	transform: translateX(-102%) translateY(0);
 }
 
-.api-page-intro .api-url {
+/* Path chip — mirrors inline code (markdown/code.css) so routes read as code */
+.api-url-row > .api-url {
+	@apply bg-grey-10 border-grey-20 border-1 font-mono;
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	min-width: 0;
 	margin-left: 0;
+	padding: 3px 10px 3px 3px;
+	border-radius: 10px;
 	color: #1d2a3e;
-	font-family:
-		'Roboto Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
-		monospace;
 	font-size: 14px;
 	font-weight: 300;
 	line-height: 20px;
+	overflow-wrap: anywhere;
+}
+
+.api-page-intro .api-url-listing--multi > li > .api-url-row:hover .api-url {
+	@apply border-grey-30;
+}
+
+.api-page-intro
+	.api-url-listing--multi
+	> li
+	> .api-url-row:has(.api-url-radio:checked)
+	.api-url {
+	@apply border-blue-elastic;
 }
 
 .api-page-intro .api-security-badges {
@@ -2233,16 +2256,35 @@ a.docs-reference-btn::after {
 		vertical-align: middle;
 	}
 
+	/* The authored markup is <div><verb/><path/></div>; the div is the chip */
+	div:has(> .operation-verb + .operation-path) {
+		@apply bg-grey-10 border-grey-20 border-1 font-mono;
+		display: flex;
+		align-items: center;
+		gap: 6px;
+		width: fit-content;
+		max-width: 100%;
+		padding: 2px 8px 2px 2px;
+		border-radius: 7px;
+	}
+
 	.operation-path {
-		margin-left: 4px;
 		color: #1d2a3e;
-		font-family:
-			'Roboto Mono', ui-monospace, SFMono-Regular, Menlo, Monaco,
-			Consolas, monospace;
 		font-size: 13px;
 		font-weight: 300;
 		line-height: 20px;
-		vertical-align: middle;
+	}
+
+	.operation-path-row {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		width: fit-content;
+		cursor: pointer;
+	}
+
+	.operation-path-row > div:has(.operation-path) {
+		margin-bottom: 0;
 	}
 
 	/* Space the URL listing block away from the prose that follows it */
