@@ -12,7 +12,7 @@
 		: HtmlString.Empty;
 }
 
-@* Intro spans both columns (title + paths); reference column starts below. *@
+@* Intro keeps the full width; the reference and the examples rail share .api-page-columns below it. *@
 <header class="api-page-intro">
 	<div class="api-page-heading">
 		<h1>@operation.Summary</h1>
@@ -86,7 +86,8 @@
 		</div>
 	}
 </header>
-<section id="elastic-api-v3" class="api-page-reference">
+<div class="api-page-columns">
+<section id="elastic-api-v3">
 	@{
 		var prerequisites = Model.Prerequisites;
 	}
@@ -303,3 +304,8 @@
 		<div>@extra.BodyHtml</div>
 	}
 </section>
+@if (Model.ExamplesPanel is { } examplesPanel)
+{
+	@await RenderPartialAsync(_OperationExamplesPanel.Create(examplesPanel))
+}
+</div>

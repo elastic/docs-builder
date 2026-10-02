@@ -22,9 +22,6 @@ public record ApiLayoutViewModel : GlobalLayoutViewModel
 {
 	public required IReadOnlyList<ApiTocItem> TocItems { get; init; }
 
-	/// <summary>When set, operation pages render examples in the right rail instead of the in-page TOC.</summary>
-	public OperationExamplesPanelModel? ExamplesPanel { get; init; }
-
 	public required ApiBreadcrumbTrail Breadcrumbs { get; init; }
 	public IReadOnlyList<ApiVersionSwitcherItem> VersionSwitcherItems { get; init; } = [];
 	public IReadOnlyList<ApiVersionSwitcherItem> HubSwitcherItems { get; init; } = [];

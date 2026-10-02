@@ -12,7 +12,7 @@
 	display: flex;
 	flex-direction: column;
 	gap: 8px;
-	margin-top: 32px;
+	margin: 0;
 	padding: 0;
 }
 
@@ -153,7 +153,13 @@
 	display: flex;
 	flex-wrap: wrap;
 	gap: 8px;
-	margin-top: 12px;
+}
+
+/* One 16px step between title, badges, servers, paths, and auth. */
+.api-page-intro {
+	display: flex;
+	flex-direction: column;
+	gap: 16px;
 }
 
 /* Operation / group page title — Figma APIs 10079:2802 */
@@ -1267,22 +1273,17 @@ button.response-status-toggle:focus {
 	padding-bottom: 16px;
 }
 
-.api-page-main > #content-container,
 #elastic-api-v3,
 .api-param-section,
 .api-param-section-header {
 	overflow: visible;
 }
 
-.api-page-main > #content-container {
-	overflow-x: visible;
-}
-
 /* A wide sample must scroll inside its block. Otherwise it grows the layout
    viewport, and the fixed mobile drawer (width: 80%) becomes wider than the screen. */
 @media (max-width: 767px) {
-	.api-page-main .markdown-content pre,
-	.api-page-main .markdown-content pre code {
+	.api-page-shell .markdown-content pre,
+	.api-page-shell .markdown-content pre code {
 		min-width: 0;
 		max-width: 100%;
 	}
@@ -1581,11 +1582,6 @@ a.type-linked:hover {
 	@apply text-grey-60 bg-grey-10 rounded px-1 py-0.5 text-xs font-normal;
 }
 
-/* Title badges: own line below h1, inline chips (not sharing the heading line) */
-.api-title-badges {
-	@apply mt-2;
-}
-
 .api-title-badges .deprecated-badge,
 .api-title-badges .beta-badge {
 	@apply mr-2 inline;
@@ -1771,7 +1767,7 @@ a.docs-reference-btn::after {
 
 /* Server info display */
 .server-info {
-	@apply mt-2 mb-4 flex flex-wrap items-center gap-2 text-sm;
+	@apply flex flex-wrap items-center gap-2 text-sm;
 }
 
 .server-label {
@@ -2152,26 +2148,6 @@ a.docs-reference-btn::after {
 	position: relative;
 }
 
-#api-examples-panel h4.section-header {
-	@apply bg-white;
-	position: sticky;
-	top: 0;
-	z-index: 10;
-	padding-top: 3rem;
-	padding-bottom: 1rem;
-	margin-top: 0;
-}
-
-#api-examples-panel h4.section-header.api-examples-heading {
-	border-bottom: none;
-	padding-top: 0;
-}
-
-/* Single-scenario pages have no rail heading on desktop; show one when stacked. */
-#api-examples-panel .api-examples-heading--stacked {
-	display: none;
-}
-
 /* Section header */
 .section-header {
 	display: flex;
@@ -2193,8 +2169,7 @@ a.docs-reference-btn::after {
 	font-size: 14px;
 	font-weight: 400;
 	line-height: 20px;
-	margin-top: 1.5rem;
-	margin-bottom: 0.5rem;
+	margin: 0 0 0.5rem;
 
 	> :first-child {
 		margin-top: 0;
@@ -2478,118 +2453,58 @@ button.example-response-tab:focus-visible {
 	margin-top: 0;
 }
 
-/* API page shell: same max width as docs; right column only when examples exist */
+/* API page shell: same max width as docs. Sidebar plus one content column; operation
+   pages split that column in two themselves (.api-page-columns). */
 .api-page-shell {
 	max-width: var(--max-layout-width);
 }
 
-/* 48px is the two-rail desktop gutter. Below 1024 the page is sidebar + one column. */
-@media (min-width: 768px) and (max-width: 1023px) {
-	.api-page-shell > .grid {
-		column-gap: 16px;
-	}
-}
-
-@media (min-width: 1024px) {
+@media (min-width: 768px) {
 	.api-page-shell > .grid {
 		column-gap: 48px;
 	}
 }
 
-/* Below 1024px the panel stays in the flex-col flow (after the article). Do not hide it.
-   Flush with the article — the cards have their own chrome. */
-@media (max-width: 1023px) {
-	#api-examples-panel.api-examples-panel {
-		min-width: 0;
-		margin: 0;
-		padding: 0;
-	}
+/* Examples rail cards sit flush with the article; they have their own chrome. */
+#api-examples-panel .api-code-card:last-child {
+	margin-bottom: 0;
+}
 
-	#api-examples-panel .api-examples-panel-nav {
-		padding: 0;
-	}
-
-	#api-examples-panel h4.section-header.api-examples-heading,
-	#api-examples-panel h4.section-header.api-examples-heading--stacked {
-		display: flex;
-		padding: 1.5rem 0 0.75rem;
-		margin: 0;
-	}
-
-	#api-examples-panel .api-code-card:last-child {
-		margin-bottom: 0;
-	}
+/* Operation pages: the reference and the examples rail. One column; two from 1024px,
+   under the full-width intro. The intro already ends with a 16px step. */
+.api-page-columns {
+	display: flex;
+	flex-direction: column;
+	gap: 16px;
+	margin-top: 16px;
 }
 
 @media (min-width: 1024px) {
-	/* Prefer :has() over a server class on this wrapper: htmx swaps #api-examples-panel
-	   oob but does not remount .api-content-grid, so a toggled --examples class goes stale.
-	   Must set display:grid here — Tailwind lg:grid is 1280px and left the rail stacked
-	   under the reference column between 1024 and 1280. */
-	.api-content-grid:has(#api-examples-panel.api-examples-panel) {
-		display: grid;
-		grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-		column-gap: 24px;
-		/* Rows size to content so the examples rail can position:sticky while the page scrolls */
+	.api-page-columns {
+		flex-direction: row;
+		align-items: flex-start;
+		gap: 24px;
 	}
 
-	/* Flatten wrappers so intro/reference become grid items next to the examples rail */
-	.api-content-grid:has(#api-examples-panel.api-examples-panel)
-		> .api-page-main,
-	.api-content-grid:has(#api-examples-panel.api-examples-panel)
-		> .api-page-main
-		> #content-container,
-	.api-content-grid:has(#api-examples-panel.api-examples-panel)
-		> .api-page-main
-		> #content-container
-		> #markdown-content {
-		display: contents;
-	}
-
-	.api-content-grid:has(#api-examples-panel.api-examples-panel)
-		.api-page-toolbar {
-		grid-column: 1 / -1;
-		grid-row: 1;
+	.api-page-columns > * {
+		flex: 1 1 0;
 		min-width: 0;
-		padding-top: calc(
-			var(--spacing) * 6
-		); /* replaces .api-page-main pt-6 lost to contents */
 	}
 
-	.api-content-grid:has(#api-examples-panel.api-examples-panel)
-		.api-page-intro {
-		grid-column: 1 / -1;
-		grid-row: 2;
-		min-width: 0;
-		padding-top: 0;
-		padding-right: 0;
-	}
-
-	.api-content-grid:has(#api-examples-panel.api-examples-panel)
-		.api-page-reference {
-		grid-column: 1;
-		grid-row: 3;
-		min-width: 0;
-		padding-bottom: calc(var(--spacing) * 12); /* replaces main pb-12 */
-	}
-
-	/* Examples rail: hug content, cap at viewport under the intro */
+	/* Examples rail: hug content, cap at the viewport, scroll inside.
+	   Same header-collapse transition as .sidebar-nav so the rails move together. */
 	#api-examples-panel {
-		--api-examples-rail-padding: calc(
-			var(--spacing) * 6
-		); /* match content pt-6 */
-		grid-column: 2;
-		grid-row: 3;
+		--api-rail-top: calc(var(--offset-top) + 16px);
 		position: sticky;
-		top: var(--offset-top);
-		align-self: start;
+		top: var(--api-rail-top);
 		box-sizing: border-box;
-		height: min(max-content, calc(100vh - var(--offset-top)));
-		max-height: calc(100vh - var(--offset-top));
-		padding-block: var(--api-examples-rail-padding);
+		max-height: calc(100vh - var(--api-rail-top));
 		overflow: hidden;
 		display: flex;
 		flex-direction: column;
+		transition:
+			top 0.3s ease,
+			max-height 0.3s ease;
 	}
 
 	/* The rail scrolls as a whole when it hits max-height. Cards must not shrink:
@@ -2611,14 +2526,6 @@ button.example-response-tab:focus-visible {
 		flex-direction: column;
 		flex-wrap: nowrap;
 		overflow: visible;
-	}
-
-	#api-examples-panel .api-examples-heading {
-		flex-shrink: 0;
-		border-bottom: none;
-		padding-top: 0;
-		padding-bottom: 1rem;
-		margin-top: 0;
 	}
 
 	#api-examples-panel .api-examples-scenario-header {
@@ -2649,10 +2556,6 @@ button.example-response-tab:focus-visible {
 		display: flex;
 		flex: 0 0 auto;
 		flex-direction: column;
-	}
-
-	#api-examples-panel .api-code-card:last-child {
-		margin-bottom: 0;
 	}
 
 	#api-examples-panel .api-code-sample-body,
@@ -2846,11 +2749,6 @@ button.example-response-tab:focus-visible {
 	}
 }
 
-/* Right-rail examples panel (Scalar-style operation layout) */
-.api-examples-panel {
-	@apply font-body;
-}
-
 .example-block--response .example-empty {
 	margin: 0;
 	padding: 12px 16px;
@@ -2862,17 +2760,6 @@ button.example-response-tab:focus-visible {
 
 .example-block-actions {
 	@apply ml-auto flex shrink-0 items-center gap-2;
-}
-
-/* API page shell: same max width as docs; right column only when examples exist */
-.api-page-shell {
-	max-width: var(--max-layout-width);
-}
-
-@media (min-width: 768px) {
-	.api-page-shell > .grid {
-		column-gap: 48px;
-	}
 }
 
 .api-code-sample-actions {
@@ -2923,11 +2810,6 @@ button.example-response-tab:focus-visible {
 		outline: var(--outline-size) var(--outline-style) var(--outline-color);
 		outline-offset: var(--outline-offset, var(--outline-size));
 	}
-}
-
-/* Right-rail examples panel (Scalar-style operation layout) */
-.api-examples-panel {
-	@apply font-body;
 }
 
 /* Example description - smaller font like property descriptions */
