@@ -898,8 +898,9 @@ button.response-status-toggle:focus-visible {
 	padding-top: 8px;
 }
 
+/* display:none would make find-in-page skip the schema, so collapse the box instead. */
 .response-panel-body[hidden='until-found'] {
-	display: none;
+	content-visibility: hidden;
 	border: 0;
 	padding: 0;
 	margin: 0;
