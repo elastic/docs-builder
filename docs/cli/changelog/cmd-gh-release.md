@@ -6,7 +6,7 @@ Create changelog files and a bundle from a GitHub release by parsing pull reques
 Only automated GitHub release notes (the default format or [Release Drafter](https://github.com/release-drafter/release-drafter) format) are supported at this time.
 :::
 
-For general information about changelogs, go to [](/data/release-notes/overview.md).
+For general information about changelogs, go to [](/data/release-notes/index.md).
 
 ## Output
 
