@@ -780,8 +780,7 @@
 	cursor: pointer;
 }
 
-button.response-status-toggle:focus,
-button.response-status-toggle:focus-visible {
+button.response-status-toggle:focus:not(:focus-visible) {
 	outline: none;
 }
 
@@ -794,20 +793,9 @@ button.response-status-toggle:focus-visible {
 }
 
 .response-panel:not(.expanded)
-	> .response-status-row:has(> .response-status-toggle):hover,
-.response-panel:not(.expanded)
-	> .response-status-row:has(> .response-status-toggle:focus-visible) {
+	> .response-status-row:has(> .response-status-toggle):hover {
 	background-color: #ecf1f9;
 	color: #1d2a3e;
-}
-
-.response-panel.expanded
-	> .response-status-row
-	.response-status-toggle:focus-visible
-	.response-toggle-icon {
-	outline: 2px solid var(--color-blue-elastic, #0b64dd);
-	outline-offset: 3px;
-	border-radius: 2px;
 }
 
 .response-status-chip {
