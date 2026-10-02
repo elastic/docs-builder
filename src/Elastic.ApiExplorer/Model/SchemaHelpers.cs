@@ -128,6 +128,8 @@ public static class SchemaHelpers
 		StringComparer.OrdinalIgnoreCase
 	);
 
+	private static readonly HashSet<string> CompositionKeywords = new(["anyOf", "oneOf", "allOf"], StringComparer.OrdinalIgnoreCase);
+
 	/// <summary>
 	/// Gets the URL for a container type's dedicated page under the given API root
 	/// (e.g. <c>/api/elasticsearch</c>), matching the URLs built by <c>SchemaNavigationItem</c>.
@@ -204,6 +206,19 @@ public static class SchemaHelpers
 	/// Primitive types like "object", "string", etc. should not be used for recursive type detection.
 	/// </summary>
 	public static bool IsPrimitiveTypeName(string typeName) => PrimitiveTypeNames.Contains(typeName);
+
+	/// <summary>
+	/// <c>anyOf</c>, <c>oneOf</c>, and <c>allOf</c>. A schema named <c>Unknown</c> is not one of these.
+	/// </summary>
+	public static bool IsCompositionKeyword(string? typeName) => CompositionKeywords.Contains(BaseTypeName(typeName));
+
+	private static string BaseTypeName(string? typeName)
+	{
+		if (string.IsNullOrEmpty(typeName))
+			return "";
+
+		return typeName.EndsWith("[]", StringComparison.Ordinal) ? typeName[..^2] : typeName;
+	}
 
 	/// <summary>True for JSON primitives and their plural array labels (<c>strings</c>, …).</summary>
 	public static bool IsPrimitiveDisplayName(string? name) => !string.IsNullOrEmpty(name) && PrimitiveDisplayNames.Contains(name);

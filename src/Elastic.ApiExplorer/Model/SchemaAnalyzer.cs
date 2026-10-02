@@ -231,7 +231,34 @@ public class SchemaAnalyzer(
 	}
 
 	/// <summary>
-	/// Flattens nested unions to get all leaf options (options with direct properties, not union wrappers).
+	/// Replaces <c>anyOf</c>/<c>oneOf</c>/<c>allOf</c> wrappers with the concrete types inside them.
+	/// Named options, including primitives, stay as they are.
+	/// </summary>
+	public List<UnionOption> ExpandStructuralUnionOptions(List<UnionOption> options)
+	{
+		if (!options.Any(o => SchemaHelpers.IsCompositionKeyword(o.Name)))
+			return options;
+
+		var expanded = new List<UnionOption>(options.Count);
+		foreach (var option in options)
+		{
+			if (!SchemaHelpers.IsCompositionKeyword(option.Name))
+			{
+				expanded.Add(option);
+				continue;
+			}
+
+			var flattened = FlattenUnionOptions([option]);
+			if (flattened.Count > 0)
+				expanded.AddRange(flattened);
+		}
+
+		return expanded;
+	}
+
+	/// <summary>
+	/// Flattens nested unions to their leaf options. Object leaves keep their properties.
+	/// Primitive leaves are kept. Structural wrappers are not.
 	/// </summary>
 	public List<UnionOption> FlattenUnionOptions(List<UnionOption> options)
 	{
@@ -311,6 +338,8 @@ public class SchemaAnalyzer(
 						result.Add(new UnionOption(nestedName, nested.Ref, nested.IsObject, nested.Schema));
 					}
 				}
+				else if (!SchemaHelpers.IsCompositionKeyword(baseName))
+					result.Add(option);
 			}
 		}
 
@@ -525,6 +554,8 @@ public class SchemaAnalyzer(
 				// If the item is not an object and not a linked type, it's a primitive array
 				var isPrimitiveArray = itemInfo is not { IsObject: false, HasLink: false } || !string.IsNullOrEmpty(itemInfo.SchemaRef);
 				var arrayItemType = isPrimitiveArray ? itemInfo.TypeName : null;
+				if (SchemaHelpers.IsCompositionKeyword(arrayItemType))
+					arrayItemType = null;
 				return new TypeInfo(
 					itemInfo.TypeName,
 					itemInfo.SchemaRef,
@@ -533,8 +564,10 @@ public class SchemaAnalyzer(
 					itemInfo.IsValueType,
 					itemInfo.ValueTypeBase,
 					itemInfo.HasLink,
-					null,
+					itemInfo.AnyOfOptions,
 					IsEnum: itemInfo.IsEnum,
+					IsUnion: itemInfo.IsUnion,
+					UnionOptions: itemInfo.UnionOptions,
 					ArrayItemType: arrayItemType
 				);
 			}
