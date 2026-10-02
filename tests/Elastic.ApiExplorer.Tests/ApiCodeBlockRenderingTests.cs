@@ -52,4 +52,22 @@ public class ApiCodeBlockRenderingTests
 		html.Should().Contain("data-code-panel=\"Python\"");
 		html.Should().Contain("data-line-numbers");
 	}
+
+	[Test]
+	public async Task Render_CodeSample_GivesEachPanelItsOwnHighlightLanguage()
+	{
+		var samples = new[]
+		{
+			new CodeSample("Console", "GET /", CodeSample.GetHighlightClass("Console")),
+			new CodeSample("Python", "client.get()", CodeSample.GetHighlightClass("Python")),
+			new CodeSample("curl", "curl localhost", CodeSample.GetHighlightClass("curl"))
+		};
+
+		var html = await _ApiCodeSample.Create(new ApiCodeSampleModel("rail-x", samples)).RenderAsync(cancellationToken: Ct);
+
+		html.Should().Contain("<code class=\"language-console\">");
+		html.Should().Contain("<code class=\"language-python\">");
+		html.Should().Contain("<code class=\"language-curl\">");
+		html.Should().Contain("class=\"highlight-python notranslate\"");
+	}
 }
