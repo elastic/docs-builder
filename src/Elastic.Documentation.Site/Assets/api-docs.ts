@@ -669,6 +669,15 @@ function closeApiSelect(option: HTMLElement): void {
     if (dropdown) dropdown.open = false
 }
 
+/** Show only the header copy button that belongs to the active panel. */
+function syncCopyButtons(widget: HTMLElement, activePanel: string): void {
+    widget
+        .querySelectorAll<HTMLButtonElement>('[data-code-actions] .copybtn')
+        .forEach((button) => {
+            button.hidden = button.dataset.codePanel !== activePanel
+        })
+}
+
 function applyApiCodeLanguage(
     root: ParentNode,
     language: string,
@@ -681,7 +690,7 @@ function applyApiCodeLanguage(
             )
             const dropdown = widget.querySelector('.api-code-sample-lang')
             const hasLanguage = panels.some(
-                (panel) => panel.dataset.lang === language
+                (panel) => panel.dataset.codePanel === language
             )
             // Examples that only ship JSON (or another single sample) keep that
             // body. Applying a language they don't have hid every panel and left
@@ -691,8 +700,8 @@ function applyApiCodeLanguage(
                 effectiveLanguage =
                     (dropdown ? apiSelectValue(dropdown) : undefined) ??
                     panels.find((panel) => !panel.hasAttribute('hidden'))
-                        ?.dataset.lang ??
-                    panels[0]?.dataset.lang ??
+                        ?.dataset.codePanel ??
+                    panels[0]?.dataset.codePanel ??
                     language
             } else if (dropdown) {
                 setApiSelectValue(dropdown, language)
@@ -701,17 +710,11 @@ function applyApiCodeLanguage(
             panels.forEach((panel) => {
                 panel.toggleAttribute(
                     'hidden',
-                    panel.dataset.lang !== effectiveLanguage
+                    panel.dataset.codePanel !== effectiveLanguage
                 )
             })
 
-            widget
-                .querySelectorAll<HTMLButtonElement>(
-                    '.api-code-sample-actions .copybtn--in-header'
-                )
-                .forEach((button) => {
-                    button.hidden = button.dataset.lang !== effectiveLanguage
-                })
+            syncCopyButtons(widget, effectiveLanguage)
         }
     )
 
@@ -770,13 +773,7 @@ function applyApiResponseStatus(widget: HTMLElement, statusCode: string): void {
             panel.toggleAttribute('hidden', panel.dataset.status !== effective)
         })
 
-    widget
-        .querySelectorAll<HTMLButtonElement>(
-            '.example-block-actions .copybtn--in-header'
-        )
-        .forEach((button) => {
-            button.hidden = button.dataset.status !== effective
-        })
+    syncCopyButtons(widget, effective)
 }
 
 let apiResponseStatusTabsDelegated = false
@@ -829,54 +826,6 @@ export function initApiScenarioSelects(): void {
         closeApiSelect(option)
         if (widget) applyApiScenario(widget, option.dataset.value)
     })
-}
-
-function countApiCodeLines(text: string): number {
-    if (!text) return 1
-    const parts = text.split(/\r?\n/)
-    if (parts[parts.length - 1] === '') parts.pop()
-    return Math.max(1, parts.length)
-}
-
-/**
- * Add a non-selectable line-number gutter beside request/response code in the
- * examples rail. Uses a sibling <pre> (same font metrics as the code) so numbers
- * stay aligned and mouse selection / copy omit them.
- */
-function initApiCodeLineNumbers(): void {
-    const panel = document.getElementById('api-examples-panel')
-    if (!panel) return
-
-    panel
-        .querySelectorAll<HTMLElement>('.api-code-card pre code')
-        .forEach((code) => {
-            const pre = code.parentElement
-            if (!(pre instanceof HTMLPreElement)) return
-            if (pre.parentElement?.classList.contains('api-code-lines')) return
-            if (pre.classList.contains('api-code-line-gutter')) return
-
-            const lineCount = countApiCodeLines(code.textContent ?? '')
-            const wrapper = document.createElement('div')
-            wrapper.className = 'api-code-lines'
-            const gutter = document.createElement('pre')
-            gutter.className = 'api-code-line-gutter'
-            gutter.setAttribute('aria-hidden', 'true')
-            gutter.textContent = Array.from({ length: lineCount }, (_, index) =>
-                String(index + 1)
-            ).join('\n')
-
-            // Match code metrics so gutter rows stay 1:1 with content rows
-            const codeStyle = getComputedStyle(code)
-            gutter.style.fontFamily = codeStyle.fontFamily
-            gutter.style.fontSize = codeStyle.fontSize
-            gutter.style.lineHeight = codeStyle.lineHeight
-            gutter.style.fontWeight = codeStyle.fontWeight
-            gutter.style.paddingTop = codeStyle.paddingTop
-            gutter.style.paddingBottom = codeStyle.paddingBottom
-
-            pre.replaceWith(wrapper)
-            wrapper.append(gutter, pre)
-        })
 }
 
 const apiEndpointCopyIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
@@ -1004,7 +953,6 @@ export function initApiDocs(): void {
     initApiBreadcrumbs()
     // After initHighlight — gutters need final textContent line counts
     decorateApiCodeTokens()
-    initApiCodeLineNumbers()
 
     // Check for OperationView page - initialize view-specific features
     initParamSummaries()

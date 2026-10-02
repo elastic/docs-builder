@@ -2251,45 +2251,26 @@ a.docs-reference-btn::after {
 	}
 }
 
-/* Shared Card/Code (Figma APIs 10202:2716). Request and response both carry .api-code-card.
-   Token roles:
-   --api-code-text    text/paragraph          chrome (titles, copy hover)
-   --api-code-syntax  punctuation / signs    = ( ) { } . ;
-   --api-code-keyword const / await / search
-   --api-code-variable identifiers           response, client
-   --api-code-property object keys + numbers
-   --api-code-muted   text/disabled           inactive tabs, comments, disabled controls
+/* Card chrome around shared code blocks (code-block.css owns the code itself:
+   syntax colours, gutter, callouts). Request and response both carry .api-code-card
+   and opt into the contract with data-code-card / data-code-actions / data-code-panel.
+   Chrome roles, derived from the shared --code-* theme so card and code read as one surface:
+   --api-code-text    text/paragraph          titles, copy hover
+   --api-code-muted   text/disabled           inactive tabs, disabled controls
    --api-code-accent  borders/strong/primary  active tab + underline
-   --api-code-string  string values
-   --api-code-boolean true / false / null
-   --api-code-number  numeric literals (same as property)
-   --api-code-gutter  borders/base/disabled   line numbers
-   --api-code-header  same as body (white)
-   --api-code-bg      card fill (white) */
+   --api-code-border  borders/base            card + header dividers
+   --api-code-hover   hover surface           tabs, select, copy button
+   --api-code-bg      card fill */
 .api-code-card {
-	--api-code-bg: #fff;
-	--api-code-header: #fff;
-	--api-code-border: #e3e8f2;
+	--api-code-bg: var(--code-bg);
+	--api-code-border: var(--code-border);
+	--api-code-hover: var(--code-hover);
 	--api-code-radius: 16px;
-	--api-code-text: #1d2a3e;
-	--api-code-syntax: #6b3c9f;
-	--api-code-keyword: #c61e25;
-	--api-code-variable: #c24411;
-	--api-code-property: #825803;
-	--api-code-muted: #798eaf;
-	--api-code-accent: #0b64dd;
-	--api-code-string: #008a5e;
-	--api-code-boolean: #c24411;
-	--api-code-number: #825803;
-	--api-code-gutter: #cad3e2;
-	--api-code-success: #22863a;
-	--api-code-font:
-		'Roboto Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
-		monospace;
-	--api-code-size: 14px;
-	--api-code-leading: 20px;
-	--api-code-pad-block: 1.5rem;
-	--api-code-max-height: none;
+	--api-code-text: var(--code-fg);
+	--api-code-muted: var(--code-muted);
+	--api-code-accent: var(--color-blue-elastic-50);
+	--api-code-scroll: var(--code-border);
+	--api-code-scroll-hover: var(--color-grey-100);
 	overflow: visible;
 	position: relative;
 	margin-bottom: 24px;
@@ -2300,11 +2281,11 @@ a.docs-reference-btn::after {
 	box-shadow: none;
 }
 
-/* Match sidebar `.pages-nav-v2__scroll` thumb (#e3e8f2 / hover #c5cedb). */
+/* Thin scrollbar thumb on the dark surface. */
 .api-code-card .api-code-sample-body,
 .api-code-card .example-block-body {
 	scrollbar-width: thin;
-	scrollbar-color: #e3e8f2 transparent;
+	scrollbar-color: var(--api-code-scroll) transparent;
 }
 
 .api-code-card .api-code-sample-body::-webkit-scrollbar,
@@ -2320,13 +2301,13 @@ a.docs-reference-btn::after {
 
 .api-code-card .api-code-sample-body::-webkit-scrollbar-thumb,
 .api-code-card .example-block-body::-webkit-scrollbar-thumb {
-	background-color: #e3e8f2;
+	background-color: var(--api-code-scroll);
 	border-radius: 9999px;
 }
 
 .api-code-card .api-code-sample-body::-webkit-scrollbar-thumb:hover,
 .api-code-card .example-block-body::-webkit-scrollbar-thumb:hover {
-	background-color: #c5cedb;
+	background-color: var(--api-code-scroll-hover);
 }
 
 .example-block {
@@ -2344,7 +2325,7 @@ a.docs-reference-btn::after {
 	height: 48px;
 	max-height: 48px;
 	padding: 0 16px;
-	background-color: var(--api-code-header);
+	background-color: var(--api-code-bg);
 	border-bottom: 1px solid var(--api-code-border);
 	border-radius: var(--api-code-radius) var(--api-code-radius) 0 0;
 	overflow: visible;
@@ -2371,7 +2352,7 @@ a.docs-reference-btn::after {
 	margin-bottom: -1px;
 	overflow-x: auto;
 	scrollbar-width: thin;
-	scrollbar-color: #e3e8f2 transparent;
+	scrollbar-color: var(--api-code-scroll) transparent;
 	-webkit-overflow-scrolling: touch;
 }
 
@@ -2420,15 +2401,15 @@ a.docs-reference-btn::after {
 }
 
 button.example-response-tab:not(.is-active):hover {
-	color: #1d2a3e;
+	color: var(--api-code-text);
 }
 
 button.example-response-tab:hover .example-response-tab-label {
-	background-color: #f6f9fc;
+	background-color: var(--api-code-hover);
 }
 
 button.example-response-tab:focus-visible {
-	outline: 2px solid var(--color-blue-elastic, #0b64dd);
+	outline: 2px solid var(--api-code-accent);
 	outline-offset: 2px;
 	border-radius: 2px;
 }
@@ -2447,111 +2428,8 @@ button.example-response-tab:focus-visible {
 	@apply ml-auto flex shrink-0 items-center gap-1;
 }
 
-.api-code-card .copybtn.copybtn--in-header {
-	position: static;
-	top: auto;
-	right: auto;
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	box-sizing: border-box;
-	width: 24px;
-	height: 24px;
-	opacity: 1;
-	background-color: #fff;
-	color: var(--api-code-text);
-	border: 1px solid #e3e8f2;
-	border-radius: 6px;
-}
-
-.api-code-card .copybtn.copybtn--in-header:hover {
-	background-color: #f6f9fc;
-	color: var(--api-code-text);
-}
-
-.api-code-card .copybtn.copybtn--in-header.success {
-	background-color: transparent;
-	color: var(--api-code-success);
-}
-
-.api-code-card .copybtn.copybtn--in-header svg {
-	width: 12px;
-	height: 12px;
-	padding: 0;
-	stroke: none;
-	fill: currentColor;
-}
-
-.api-code-card .copybtn.copybtn--in-header.o-tooltip--left:after {
-	background-color: var(--api-code-text);
-	color: var(--api-code-bg);
-	transform: translateX(-102%) translateY(0);
-}
-
 .api-code-card .highlight {
 	margin-top: 0;
-}
-
-/* Structure (keys, braces, GET) uses --api-code-syntax. Values get their own tokens. */
-.api-code-card pre code {
-	display: block;
-	background-color: transparent;
-	color: var(--api-code-syntax);
-	font-family: var(--api-code-font);
-	font-size: var(--api-code-size);
-	line-height: var(--api-code-leading);
-	font-weight: 400;
-	padding: var(--api-code-pad-block) 1rem;
-	border: 0;
-	border-radius: 0;
-	mix-blend-mode: unset;
-}
-
-.api-code-card .hljs,
-.api-code-card [class^='hljs-'] {
-	color: var(--api-code-syntax);
-	font-weight: 400;
-}
-
-.api-code-card .hljs-comment,
-.api-code-card .hljs-quote {
-	color: var(--api-code-muted);
-}
-
-.api-code-card .hljs-keyword,
-.api-code-card .hljs-title,
-.api-code-card .function_,
-.api-code-card .hljs-built_in {
-	color: var(--api-code-keyword);
-}
-
-.api-code-card .hljs-variable {
-	color: var(--api-code-variable);
-}
-
-.api-code-card .hljs-attr,
-.api-code-card .hljs-params {
-	color: var(--api-code-property);
-}
-
-.api-code-card .hljs-string {
-	color: var(--api-code-string);
-}
-
-.api-code-card .hljs-string.hljs-attr {
-	color: var(--api-code-property);
-}
-
-.api-code-card .hljs-literal {
-	color: var(--api-code-boolean);
-}
-
-.api-code-card .hljs-number {
-	color: var(--api-code-number);
-}
-
-.api-code-card .hljs-punctuation {
-	color: var(--api-code-syntax);
 }
 
 /* API page shell: same max width as docs; right column only when examples exist */
@@ -2741,69 +2619,6 @@ button.example-response-tab:focus-visible {
 	}
 }
 
-/* Cap tall samples so the card scrolls instead of growing forever */
-#api-examples-panel .api-code-card .highlight pre code {
-	max-height: none;
-}
-
-/* Line-number gutter (sibling <pre>): excluded from selection/copy.
-   display:block beats leftover docs `pre { display:grid }` if any still leak. */
-#api-examples-panel .api-code-card .api-code-lines {
-	display: flex;
-	align-items: flex-start;
-	min-width: 0;
-	max-height: none;
-	overflow: visible;
-}
-
-#api-examples-panel .api-code-card .api-code-lines > pre {
-	display: block;
-	margin: 0;
-}
-
-#api-examples-panel
-	.api-code-card
-	.api-code-lines
-	> pre:not(.api-code-line-gutter) {
-	flex: 1 0 auto;
-	width: max-content;
-	min-width: 0;
-}
-
-#api-examples-panel
-	.api-code-card
-	.api-code-lines
-	> pre:not(.api-code-line-gutter)
-	code {
-	display: block;
-	width: max-content;
-	min-width: 0;
-	max-height: none;
-	overflow: visible;
-	padding: var(--api-code-pad-block) 1rem var(--api-code-pad-block) 0.5rem;
-	white-space: pre;
-	word-break: normal;
-	overflow-wrap: normal;
-}
-
-#api-examples-panel .api-code-card .api-code-line-gutter {
-	flex: 0 0 auto;
-	margin: 0;
-	border: 0;
-	background: transparent;
-	user-select: none;
-	-webkit-user-select: none;
-	pointer-events: none;
-	text-align: right;
-	font-variant-numeric: tabular-nums;
-	white-space: pre;
-	padding: var(--api-code-pad-block) 0.5rem var(--api-code-pad-block) 1rem;
-	color: var(--api-code-gutter);
-	font-family: var(--api-code-font);
-	font-size: var(--api-code-size);
-	line-height: var(--api-code-leading);
-}
-
 #api-examples-panel .nav-select-dropdown {
 	width: auto;
 }
@@ -2861,10 +2676,10 @@ button.example-response-tab:focus-visible {
 	height: 24px;
 	margin: 0;
 	padding: 0 8px;
-	border: 1px solid #e3e8f2;
+	border: 1px solid var(--api-code-border);
 	border-radius: 6px;
-	background: #fff;
-	color: var(--api-code-text, #1d2a3e);
+	background: var(--api-code-bg);
+	color: var(--api-code-text);
 	font-family: var(--font-sans, Inter, ui-sans-serif, system-ui, sans-serif);
 	font-size: 14px;
 	font-weight: 400;
@@ -2911,18 +2726,18 @@ button.example-response-tab:focus-visible {
 }
 
 .api-select-trigger:hover {
-	background: #f6f9fc;
+	background: var(--api-code-hover);
 }
 
 .api-select-trigger:is(:disabled, [aria-disabled='true']),
 .api-select-trigger:is(:disabled, [aria-disabled='true']):hover {
-	color: var(--api-code-muted, #798eaf);
-	background: #fff;
+	color: var(--api-code-muted);
+	background: var(--api-code-bg);
 	cursor: not-allowed;
 }
 
 .api-select-trigger:focus-visible {
-	outline: 2px solid var(--api-code-accent, #0b64dd);
+	outline: 2px solid var(--api-code-accent);
 	outline-offset: 1px;
 }
 
@@ -2992,14 +2807,6 @@ button.example-response-tab:focus-visible {
 	@apply font-body;
 }
 
-/* Response card aliases the shared Card/Code tokens for the hljs !important rules. */
-.example-block--response {
-	--api-response-text: var(--api-code-syntax);
-	--api-response-string: var(--api-code-string);
-	--api-response-boolean: var(--api-code-boolean);
-	--api-response-number: var(--api-code-number);
-}
-
 .example-block--response .example-empty {
 	margin: 0;
 	padding: 12px 16px;
@@ -3011,206 +2818,6 @@ button.example-response-tab:focus-visible {
 
 .example-block-actions {
 	@apply ml-auto flex shrink-0 items-center gap-2;
-}
-
-.example-block--response .example-block-body .highlight {
-	@apply mt-0;
-}
-
-/* Beat `.markdown-content .hljs { color: blue-elastic-30 }` (same 0,2,0 + !important)
-   by including .markdown-content in the selector — the examples rail uses that class. */
-.markdown-content .example-block--response pre code,
-#api-examples-panel .example-block--response pre code,
-.markdown-content .api-code-sample pre code,
-#api-examples-panel .api-code-sample pre code {
-	background-color: transparent !important;
-	color: var(--api-response-text) !important;
-	font-family:
-		'Roboto Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
-		monospace;
-	font-size: 14px;
-	line-height: 20px;
-	font-weight: 400;
-}
-
-.markdown-content .example-block--response .hljs,
-.markdown-content .example-block--response .hljs-attr,
-.markdown-content .example-block--response .hljs-punctuation,
-.markdown-content .example-block--response .hljs-subst,
-.markdown-content .example-block--response .hljs-bullet,
-.markdown-content .example-block--response .hljs-section,
-.markdown-content .example-block--response .hljs-title,
-.markdown-content .example-block--response .hljs-name,
-.markdown-content .example-block--response .hljs-type,
-.markdown-content .example-block--response .hljs-params,
-.markdown-content .example-block--response .hljs-meta,
-.markdown-content .example-block--response .hljs-built_in,
-.markdown-content .example-block--response .hljs-comment,
-.markdown-content .example-block--response .hljs-quote,
-#api-examples-panel .example-block--response .hljs,
-#api-examples-panel .example-block--response [class^='hljs-'],
-.markdown-content .api-code-sample .hljs,
-.markdown-content .api-code-sample .hljs-attr,
-.markdown-content .api-code-sample .hljs-punctuation,
-.markdown-content .api-code-sample .hljs-subst,
-.markdown-content .api-code-sample .hljs-bullet,
-.markdown-content .api-code-sample .hljs-section,
-.markdown-content .api-code-sample .hljs-title,
-.markdown-content .api-code-sample .hljs-name,
-.markdown-content .api-code-sample .hljs-type,
-.markdown-content .api-code-sample .hljs-params,
-.markdown-content .api-code-sample .hljs-meta,
-.markdown-content .api-code-sample .hljs-built_in,
-.markdown-content .api-code-sample .hljs-comment,
-.markdown-content .api-code-sample .hljs-quote,
-#api-examples-panel .api-code-sample .hljs,
-#api-examples-panel .api-code-sample [class^='hljs-'] {
-	color: var(--api-response-text) !important;
-}
-
-.markdown-content .example-block--response .hljs-comment,
-.markdown-content .example-block--response .hljs-quote,
-#api-examples-panel .example-block--response .hljs-comment,
-#api-examples-panel .example-block--response .hljs-quote,
-.markdown-content .api-code-sample .hljs-comment,
-.markdown-content .api-code-sample .hljs-quote,
-#api-examples-panel .api-code-sample .hljs-comment,
-#api-examples-panel .api-code-sample .hljs-quote {
-	color: var(--api-code-muted) !important;
-}
-
-.markdown-content .example-block--response .hljs-keyword,
-.markdown-content .example-block--response .hljs-title,
-.markdown-content .example-block--response .function_,
-.markdown-content .example-block--response .hljs-built_in,
-#api-examples-panel .example-block--response .hljs-keyword,
-#api-examples-panel .example-block--response .hljs-title,
-#api-examples-panel .example-block--response .function_,
-#api-examples-panel .example-block--response .hljs-built_in,
-.markdown-content .api-code-sample .hljs-keyword,
-.markdown-content .api-code-sample .hljs-title,
-.markdown-content .api-code-sample .function_,
-.markdown-content .api-code-sample .hljs-built_in,
-#api-examples-panel .api-code-sample .hljs-keyword,
-#api-examples-panel .api-code-sample .hljs-title,
-#api-examples-panel .api-code-sample .function_,
-#api-examples-panel .api-code-sample .hljs-built_in {
-	color: var(--api-code-keyword) !important;
-}
-
-.markdown-content .example-block--response .hljs-variable,
-#api-examples-panel .example-block--response .hljs-variable,
-.markdown-content .api-code-sample .hljs-variable,
-#api-examples-panel .api-code-sample .hljs-variable {
-	color: var(--api-code-variable) !important;
-}
-
-.markdown-content .example-block--response .hljs-attr,
-.markdown-content .example-block--response .hljs-params,
-#api-examples-panel .example-block--response .hljs-attr,
-#api-examples-panel .example-block--response .hljs-params,
-.markdown-content .api-code-sample .hljs-attr,
-.markdown-content .api-code-sample .hljs-params,
-#api-examples-panel .api-code-sample .hljs-attr,
-#api-examples-panel .api-code-sample .hljs-params {
-	color: var(--api-code-property) !important;
-}
-
-.markdown-content .example-block--response .hljs-string,
-#api-examples-panel .example-block--response .hljs-string,
-.markdown-content .api-code-sample .hljs-string,
-#api-examples-panel .api-code-sample .hljs-string {
-	color: var(--api-response-string) !important;
-}
-
-.markdown-content .example-block--response .hljs-string.hljs-attr,
-#api-examples-panel .example-block--response .hljs-string.hljs-attr,
-.markdown-content .api-code-sample .hljs-string.hljs-attr,
-#api-examples-panel .api-code-sample .hljs-string.hljs-attr {
-	color: var(--api-code-property) !important;
-}
-
-.markdown-content .example-block--response .hljs-literal,
-#api-examples-panel .example-block--response .hljs-literal,
-.markdown-content .api-code-sample .hljs-literal,
-#api-examples-panel .api-code-sample .hljs-literal {
-	color: var(--api-response-boolean) !important;
-}
-
-.markdown-content .example-block--response .hljs-number,
-#api-examples-panel .example-block--response .hljs-number,
-.markdown-content .api-code-sample .hljs-number,
-#api-examples-panel .api-code-sample .hljs-number {
-	color: var(--api-response-number) !important;
-}
-
-.markdown-content .example-block--response .hljs-punctuation,
-#api-examples-panel .example-block--response .hljs-punctuation,
-.markdown-content .api-code-sample .hljs-punctuation,
-#api-examples-panel .api-code-sample .hljs-punctuation {
-	color: var(--api-code-syntax) !important;
-}
-
-/* Beat docs `.markdown-content .hljs` (blue-elastic-30) and `.hljs-keyword`
-   (python `from=`). `span` covers tokens that are not `.hljs *` descendants. */
-.api-page-shell #api-examples-panel .api-code-sample-body pre code,
-.api-page-shell #api-examples-panel .api-code-sample-body pre code *,
-.api-page-shell #api-examples-panel .api-code-sample-body span {
-	color: var(--api-code-syntax) !important;
-}
-
-.api-page-shell #api-examples-panel .api-code-sample .hljs-comment,
-.api-page-shell #api-examples-panel .api-code-sample .hljs-comment *,
-.api-page-shell #api-examples-panel .api-code-sample .hljs-quote,
-.api-page-shell #api-examples-panel .api-code-sample .hljs-quote * {
-	color: var(--api-code-muted) !important;
-}
-
-.api-page-shell #api-examples-panel .api-code-sample .hljs-keyword,
-.api-page-shell #api-examples-panel .api-code-sample .hljs-keyword *,
-.api-page-shell #api-examples-panel .api-code-sample .hljs-title,
-.api-page-shell #api-examples-panel .api-code-sample .hljs-title *,
-.api-page-shell #api-examples-panel .api-code-sample .function_,
-.api-page-shell #api-examples-panel .api-code-sample .hljs-built_in,
-.api-page-shell #api-examples-panel .api-code-sample .hljs-built_in * {
-	color: var(--api-code-keyword) !important;
-}
-
-.api-page-shell #api-examples-panel .api-code-sample .hljs-variable,
-.api-page-shell #api-examples-panel .api-code-sample .hljs-variable * {
-	color: var(--api-code-variable) !important;
-}
-
-.api-page-shell #api-examples-panel .api-code-sample .hljs-attr,
-.api-page-shell #api-examples-panel .api-code-sample .hljs-attr *,
-.api-page-shell #api-examples-panel .api-code-sample .hljs-params,
-.api-page-shell #api-examples-panel .api-code-sample .hljs-params * {
-	color: var(--api-code-property) !important;
-}
-
-.api-page-shell #api-examples-panel .api-code-sample .hljs-string,
-.api-page-shell #api-examples-panel .api-code-sample .hljs-string * {
-	color: var(--api-code-string) !important;
-}
-
-.api-page-shell #api-examples-panel .api-code-sample .hljs-string.hljs-attr,
-.api-page-shell #api-examples-panel .api-code-sample .hljs-string.hljs-attr * {
-	color: var(--api-code-property) !important;
-}
-
-.api-page-shell #api-examples-panel .api-code-sample .hljs-literal,
-.api-page-shell #api-examples-panel .api-code-sample .hljs-literal * {
-	color: var(--api-code-boolean) !important;
-}
-
-.api-page-shell #api-examples-panel .api-code-sample .hljs-number,
-.api-page-shell #api-examples-panel .api-code-sample .hljs-number * {
-	color: var(--api-code-number) !important;
-}
-
-.api-page-shell #api-examples-panel .api-code-sample .hljs-punctuation,
-.api-page-shell #api-examples-panel .api-code-sample .hljs-punctuation * {
-	color: var(--api-code-syntax) !important;
 }
 
 /* API page shell: same max width as docs; right column only when examples exist */
@@ -3368,156 +2975,16 @@ button.example-response-tab:focus-visible {
 	}
 }
 
-#api-examples-panel .highlight pre code {
-	max-height: none;
-	overflow: visible;
-}
-
-/* Line-number gutter (sibling <pre>): excluded from selection/copy.
-   Override markdown `pre { display:grid }` — that grid was desyncing gutter vs code rows.
-   width:max-content keeps long lines from wrapping (horizontal scroll only then). */
-#api-examples-panel .api-code-lines {
-	display: flex;
-	align-items: flex-start;
-	min-width: 0;
-	max-height: none;
-	overflow: visible;
-}
-
-#api-examples-panel .api-code-sample .api-code-lines {
-	max-height: none;
-}
-
-#api-examples-panel .api-code-lines > pre {
-	display: block !important;
-	margin: 0;
-}
-
-#api-examples-panel .api-code-lines > pre:not(.api-code-line-gutter) {
-	flex: 1 0 auto;
-	width: max-content;
-	min-width: 0;
-}
-
-#api-examples-panel .api-code-lines > pre:not(.api-code-line-gutter) code {
-	display: block;
-	width: max-content;
-	min-width: 0;
-	max-height: none !important;
-	overflow: visible !important;
-	padding-left: 0.5rem !important;
-	white-space: pre !important;
-	word-break: normal !important;
-	overflow-wrap: normal !important;
-}
-
-#api-examples-panel .api-code-line-gutter {
-	flex: 0 0 auto;
-	margin: 0;
-	border: 0;
-	background: transparent;
-	user-select: none;
-	-webkit-user-select: none;
-	pointer-events: none;
-	text-align: right;
-	font-variant-numeric: tabular-nums;
-	white-space: pre;
-	padding: 1.5rem 0.5rem 1.5rem 1rem;
-	color: var(--api-code-gutter);
-}
-
-#api-examples-panel .api-code-sample .api-code-line-gutter {
-	padding-top: calc(var(--spacing) * 4);
-	padding-bottom: 1.5rem;
-	color: var(--api-code-gutter);
-}
-
-#api-examples-panel .example-block--response .api-code-line-gutter,
-#api-examples-panel .api-code-sample .api-code-line-gutter {
-	font-family:
-		'Roboto Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
-		monospace;
-	font-size: 14px;
-	line-height: 20px;
-}
-
 #api-examples-panel .nav-select-dropdown {
 	width: auto;
-}
-
-/* Code sample widget — same Card/Code chrome as .example-block--response */
-.api-code-sample {
-	--api-response-text: var(--api-code-syntax);
-	--api-response-string: var(--api-code-string);
-	--api-response-boolean: var(--api-code-boolean);
-	--api-response-number: var(--api-code-number);
 }
 
 .api-code-sample-actions {
 	@apply ml-auto flex shrink-0 items-center gap-1;
 }
 
-.api-code-sample-actions .copybtn.copybtn--in-header:hover {
-	color: var(--api-code-text);
-}
-
-.api-code-card
-	.copybtn.copybtn--in-header:is(:disabled, [aria-disabled='true']),
-.api-code-card
-	.copybtn.copybtn--in-header:is(:disabled, [aria-disabled='true']):hover {
-	color: var(--api-code-muted);
-	background-color: #fff;
-	cursor: not-allowed;
-}
-
-.api-code-sample-actions .copybtn.copybtn--in-header.success {
-	background-color: transparent;
-	color: #22863a;
-}
-
-.api-code-sample-actions .copybtn.copybtn--in-header svg {
-	width: 12px;
-	height: 12px;
-	padding: 0;
-	stroke: none;
-	fill: currentColor;
-}
-
-.api-code-sample-actions .copybtn.copybtn--in-header.o-tooltip--left:after {
-	background-color: #1d2a3e;
-	color: #f6f9fc;
-	transform: translateX(-102%) translateY(0);
-}
-
 .api-code-sample-body {
 	min-width: 0;
-}
-
-.api-code-sample .highlight {
-	@apply mt-0;
-}
-
-.api-code-sample .highlight pre code {
-	@apply rounded-none!;
-	padding-top: calc(var(--spacing) * 4) !important;
-	background-color: transparent !important;
-	color: var(--api-code-syntax) !important;
-}
-
-/* Neutralize markdown/code.css bold tokens so all syntax shares weight 400 */
-.api-code-sample .hljs,
-.api-code-sample [class^='hljs-'],
-.example-block--response .hljs,
-.example-block--response [class^='hljs-'] {
-	font-weight: 400 !important;
-}
-
-#api-examples-panel .api-code-sample .highlight pre code {
-	max-height: none;
-}
-
-#api-examples-panel .api-code-sample .api-code-lines pre code {
-	max-height: none !important;
 }
 
 /*
