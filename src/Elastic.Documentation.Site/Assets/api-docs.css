@@ -1496,7 +1496,6 @@ button.response-status-toggle:focus {
 #elastic-api-v3 .schema-type a[href]:hover,
 #schema-definition .schema-type a[href]:hover,
 .schema-type a[href]:hover,
-.api-page-intro .api-security-badges a[href]:hover,
 a.type-linked:hover {
 	text-decoration: underline;
 	text-underline-offset: 2px;
@@ -1516,9 +1515,44 @@ a.type-linked:hover {
 	color: #f04e98;
 }
 
+/* Auth scheme link — compact outlined button with a leading icon */
+.api-page-intro .api-security-badges .api-auth-button {
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+	box-sizing: border-box;
+	height: 24px;
+	padding: 0 8px 0 6px;
+	border: 1px solid #a9c9f5;
+	border-radius: 4px;
+	background-color: #fff;
+	color: #0b64dd;
+	font-family: var(--font-body, Inter, ui-sans-serif, system-ui, sans-serif);
+	font-size: 12px;
+	font-weight: 500;
+	line-height: 16px;
+	white-space: nowrap;
+	text-decoration: none;
+}
+
+.api-page-intro .api-security-badges .api-auth-button svg {
+	flex: none;
+	width: 14px;
+	height: 14px;
+}
+
+.api-page-intro .api-security-badges .api-auth-button:hover {
+	border-color: #0b64dd;
+	background-color: #f0f6ff;
+}
+
+.api-page-intro .api-security-badges .api-auth-button:focus-visible {
+	outline: 2px solid #0b64dd;
+	outline-offset: 2px;
+}
+
 /* Type badge — Figma APIs 10079:2957 (boolean / string / read). Not markdown code. */
-.property-list .api-type-badge,
-.api-page-intro .api-security-badges .api-type-badge {
+.property-list .api-type-badge {
 	display: inline-flex;
 	align-items: center;
 	box-sizing: border-box;
