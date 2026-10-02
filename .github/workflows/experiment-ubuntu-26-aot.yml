@@ -1,0 +1,120 @@
+# Experiment: does a native AOT binary built on ubuntu-26.04 still run on
+# Ubuntu 24.04 consumers (runners and the noble-chiseled container base)?
+# Draft-only; remove once the ubuntu-latest migration decision is made.
+name: experiment-ubuntu-26-aot
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/experiment-ubuntu-26-aot.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  zip:
+    name: publishzip / built on ${{ matrix.build-os }}
+    runs-on: ${{ matrix.build-os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        build-os: [ubuntu-24.04, ubuntu-26.04]
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Bootstrap Action Workspace
+        uses: ./.github/actions/bootstrap
+
+      - name: Publish zip
+        run: ./build.sh publishzip
+
+      - name: Report glibc floor
+        env:
+          BUILD_OS: ${{ matrix.build-os }}
+        run: |
+          binary=.artifacts/publish/docs-builder/release/docs-builder
+          host_glibc=$(ldd --version | head -1 | grep -oE '[0-9]+\.[0-9]+$')
+          floor=$(objdump -T "$binary" | grep -oE 'GLIBC_[0-9.]+' | sort -Vu | tail -1)
+          echo "Host glibc: ${host_glibc}; binary requires: ${floor}"
+          echo "| Built on | Host glibc | Binary requires |" >> "$GITHUB_STEP_SUMMARY"
+          echo "|---|---|---|" >> "$GITHUB_STEP_SUMMARY"
+          echo "| ${BUILD_OS} | ${host_glibc} | ${floor} |" >> "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: docs-builder-${{ matrix.build-os }}
+          retention-days: 3
+          if-no-files-found: error
+          path: .artifacts/publish/docs-builder/release/*.zip
+
+  run-zip:
+    name: run ${{ matrix.build-os }} binary on ${{ matrix.run-os }}
+    needs: zip
+    runs-on: ${{ matrix.run-os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        build-os: [ubuntu-24.04, ubuntu-26.04]
+        run-os: [ubuntu-24.04, ubuntu-26.04]
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          name: docs-builder-${{ matrix.build-os }}
+          path: dist
+
+      - name: Unzip
+        run: |
+          unzip -q dist/*.zip -d dist
+          chmod +x dist/docs-builder
+
+      - name: Print version
+        run: ./dist/docs-builder --version
+
+      - name: Build documentation fixture
+        run: |
+          mkdir -p docs
+          cat > docs/docset.yml <<'EOF'
+          toc:
+            - file: index.md
+          EOF
+          cat > docs/index.md <<'EOF'
+          ---
+          description: Tests docs-builder AOT binaries across Ubuntu images.
+          ---
+          # Runner compatibility
+
+          This page checks documentation builds on Ubuntu.
+          EOF
+          ./dist/docs-builder --path docs --output .artifacts/compatibility
+          test -s .artifacts/compatibility/index.html
+          test -s .artifacts/compatibility/links.json
+
+  container:
+    name: container / built on ${{ matrix.build-os }}
+    runs-on: ${{ matrix.build-os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        build-os: [ubuntu-24.04, ubuntu-26.04]
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Bootstrap Action Workspace
+        uses: ./.github/actions/bootstrap
+
+      # Builds the AOT binary on the host and layers it on runtime-deps:10.0-noble-chiseled.
+      - name: Publish Containers
+        env:
+          DOCKER_NO_PUBLISH: true
+        run: dotnet run --project build -c release -- publishcontainers
+
+      - name: Run Container
+        run: dotnet run --project build -c release -- runlocalcontainer
