@@ -36,4 +36,58 @@
 			outline-offset: var(--outline-offset, var(--outline-size));
 		}
 	}
+
+	/*
+	 * Dropdown rendering. The tab strip stays in the markup as the no-JS
+	 * fallback; tabs.ts adds .tabs-dropdown-active once the <select> is live.
+	 */
+	.tabs.tabs-dropdown-active {
+		/*
+		 * Direct children only. A tab panel may hold a nested tab set, and
+		 * hiding its labels would leave it with no control at all.
+		 */
+		> .tabs-label {
+			@apply hidden;
+		}
+
+		/* The toolbar above already draws the top border. */
+		> .tabs-content {
+			@apply border-t-0 pt-4;
+		}
+	}
+
+	/* Toolbar the <select> sits in — reads as chrome, not content. */
+	.tabs-select-wrapper {
+		@apply bg-grey-10 border-grey-20 z-20 -mb-[1px] flex w-full items-center gap-2 border-1 px-4 py-2;
+	}
+
+	.tabs-select {
+		@apply text-ink-dark border-grey-30 cursor-pointer appearance-none rounded-md border-1 py-1.5 pr-8 pl-3 text-sm font-medium;
+		/* Keeps the control from resizing as you move between short and long
+		   option labels (e.g. "Go" vs "C#/.NET"). */
+		min-width: 9rem;
+		background-color: var(--color-white);
+		background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12' fill='none'%3E%3Cpath d='M3 4.5L6 7.5L9 4.5' stroke='%23343741' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+		background-repeat: no-repeat;
+		background-position: right 0.625rem center;
+		background-size: 0.75rem;
+		transition:
+			border-color 0.15s ease,
+			box-shadow 0.15s ease;
+
+		&:hover {
+			@apply border-grey-50;
+		}
+
+		&:focus {
+			@apply border-blue-elastic;
+			box-shadow: 0 0 0 1px var(--color-blue-elastic);
+		}
+
+		&:focus-visible {
+			outline: var(--outline-size) var(--outline-style)
+				var(--outline-color);
+			outline-offset: var(--outline-offset, var(--outline-size));
+		}
+	}
 }

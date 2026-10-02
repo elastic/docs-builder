@@ -37,6 +37,49 @@ This is where the content for tab #2 goes.
 ::::
 
 
+## Dropdown Tabs
+
+Tab sets with many options — code samples across every client language, for example — wrap onto
+several rows as a horizontal strip. Those render as a dropdown instead.
+
+This is automatic for the `languages` group. Any other tab set can opt in or out with the
+`dropdown` attribute:
+
+```markdown
+::::{tab-set}
+:dropdown: true
+:::{tab-item} Option one
+Content for option one
+:::
+:::{tab-item} Option two
+Content for option two
+:::
+::::
+```
+
+`:dropdown: false` forces a tab strip even for the `languages` group.
+
+The tab strip is still present in the markup and becomes visible if JavaScript is unavailable,
+so tab sets remain usable either way. Grouping and syncing (below) work the same in both renderings —
+a dropdown and a tab strip in the same group stay in sync with each other.
+
+### Example
+
+::::{tab-set}
+:dropdown: true
+:::{tab-item} Option one
+Content for option one
+:::
+
+:::{tab-item} Option two
+Content for option two
+:::
+
+:::{tab-item} Option three
+Content for option three
+:::
+::::
+
 ## Tab Groups
 
 Tabs can be grouped together by setting the `group` attribute to the same value for each `tab-set`.
