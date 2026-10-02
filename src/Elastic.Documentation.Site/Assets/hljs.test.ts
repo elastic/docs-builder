@@ -174,8 +174,12 @@ describe('API sample panels', () => {
 
         await initHighlight()
 
-        const python = document.querySelector('[data-code-panel="Python"] code')!
-        const consoleCode = document.querySelector('[data-code-panel="Console"] code')!
+        const python = document.querySelector(
+            '[data-code-panel="Python"] code'
+        )!
+        const consoleCode = document.querySelector(
+            '[data-code-panel="Console"] code'
+        )!
         expect(python.classList.contains('language-python')).toBe(true)
         expect(python.querySelector('.hljs-keyword')?.textContent).toBe('def')
         expect(consoleCode.classList.contains('language-console')).toBe(true)
