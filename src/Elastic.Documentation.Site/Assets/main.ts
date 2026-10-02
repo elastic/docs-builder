@@ -1,6 +1,7 @@
 import { initAgentSkillCopy } from './agent-skill'
 import { initApiDocs } from './api-docs'
 import { initAppliesSwitch } from './applies-switch'
+import { initCodeLineNumbers } from './code-line-numbers'
 import { config } from './config'
 import { initCopyButton } from './copybutton'
 import { initHighlight } from './hljs'
@@ -209,6 +210,7 @@ document.addEventListener('htmx:load', function () {
         ['initTocNav', initTocNav],
         ['initHighlight', initHighlight],
         ['initCopyButton', initCopyButton],
+        ['initCodeLineNumbers', initCodeLineNumbers],
         ['initAgentSkillCopy', initAgentSkillCopy],
         ['initTabs', initTabs],
         ['initAppliesSwitch', initAppliesSwitch],
@@ -299,23 +301,6 @@ document.addEventListener('htmx:beforeRequest', function (event: HtmxEvent) {
     if (!docsPath || isExternalDocsUrl(docsPath)) {
         event.preventDefault()
         window.location.assign(path)
-    }
-})
-
-// Boosted navigations swap #main-container. show:none on <body> stops HTMX
-// from scrolling the container into view (that jumps the page up to the
-// horizontal tabs). Instant window reset still matches a full page load.
-document.body.addEventListener('htmx:afterSwap', function (event: HtmxEvent) {
-    const target = event.target
-    if (
-        target === document.body ||
-        (target instanceof Element &&
-            (target.id === 'main-container' ||
-                target.id === 'content-container'))
-    ) {
-        if (window.scrollY !== 0) {
-            window.scrollTo(0, 0)
-        }
     }
 })
 

@@ -16,11 +16,11 @@ public class ProductFeaturesTests
 	public void ProductWithNoFeaturesKey_GetsAllFeaturesEnabled()
 	{
 		var config = LoadActualProductsConfiguration();
-		var elasticsearch = config.Products["elasticsearch"];
+		var auditbeat = config.Products["auditbeat"];
 
-		elasticsearch.Features.PublicReference.Should().BeTrue();
-		elasticsearch.Features.ReleaseNotes.Should().Be(ReleaseNotesPath.OnRelease);
-		elasticsearch.Features.ParticipatesInReleaseNotes.Should().BeTrue();
+		auditbeat.Features.PublicReference.Should().BeTrue();
+		auditbeat.Features.ReleaseNotes.Should().Be(ReleaseNotesPath.OnRelease);
+		auditbeat.Features.ParticipatesInReleaseNotes.Should().BeTrue();
 	}
 
 	[Test]

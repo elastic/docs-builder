@@ -50,12 +50,6 @@ public class OperationViewModel(ApiRenderContext context) : ApiViewModel(context
 		return tocItems;
 	}
 
-	public new ApiLayoutViewModel CreateGlobalLayoutModel()
-	{
-		var layout = base.CreateGlobalLayoutModel();
-		if (Page.ExamplesAnchor is null)
-			return layout;
-
-		return layout with { ExamplesPanel = new OperationExamplesPanelModel { Scenarios = Page.Scenarios } };
-	}
+	public OperationExamplesPanelModel? ExamplesPanel =>
+		Page.Scenarios.Count == 0 ? null : new OperationExamplesPanelModel { Scenarios = Page.Scenarios };
 }

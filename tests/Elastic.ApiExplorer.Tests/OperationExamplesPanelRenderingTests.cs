@@ -120,6 +120,27 @@ public class OperationExamplesPanelRenderingTests
 	}
 
 	[Test]
+	public async Task Render_ResponseCard_FollowsSharedCodeCardContract()
+	{
+		var html = await _ExampleScenarioContent.Create(new ExampleScenario
+		{
+			Title = "Match all",
+			TabId = "match-all",
+			Responses =
+			[
+				new ExampleResponse { StatusCode = "200", JsonValue = "{}" },
+				new ExampleResponse { StatusCode = "404", JsonValue = "{}" }
+			]
+		}).RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
+
+		html.Should().Contain("data-code-card");
+		html.Should().Contain("data-code-actions");
+		html.Should().Contain("data-code-panel=\"200\"");
+		html.Should().Contain("data-code-panel=\"404\"");
+		html.Should().Contain("data-line-numbers");
+	}
+
+	[Test]
 	public async Task Render_RequestHeader_ShowsMethodChipAndRoute_NotLanguage()
 	{
 		var html = await _ApiCodeSample.Create(
