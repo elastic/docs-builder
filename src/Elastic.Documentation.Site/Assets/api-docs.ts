@@ -55,7 +55,7 @@ function setEnumValuesExpanded(
 
 function expandResponsePanel(panel: HTMLElement): void {
     const toggleBtn = panel.querySelector<HTMLButtonElement>(
-        ':scope > .response-status-toggle'
+        'button.response-status-toggle'
     )
     const body = panel.querySelector<HTMLElement>(
         ':scope > .response-panel-body'
@@ -69,7 +69,7 @@ function expandResponsePanel(panel: HTMLElement): void {
 
 function collapseResponsePanel(panel: HTMLElement): void {
     const toggleBtn = panel.querySelector<HTMLButtonElement>(
-        ':scope > .response-status-toggle'
+        'button.response-status-toggle'
     )
     const body = panel.querySelector<HTMLElement>(
         ':scope > .response-panel-body'
@@ -400,7 +400,9 @@ function initOperationView(section: HTMLElement): void {
         }
 
         // Handle union variant expand/collapse
-        const toggleBtn = target.closest<HTMLButtonElement>('.expand-toggle')
+        const toggleBtn = target.closest<HTMLButtonElement>(
+            'button.expand-toggle'
+        )
         if (toggleBtn) {
             const unionToggleRow = toggleBtn.closest('.union-expand-toggle')
             if (unionToggleRow) {
@@ -498,20 +500,27 @@ function initGlobalClickHandlers(): void {
             return
         }
 
-        const responseStatusToggle = target.closest<HTMLButtonElement>(
-            '.response-status-toggle'
-        )
-        if (responseStatusToggle) {
+        const responsePanel = target
+            .closest('button.response-status-toggle')
+            ?.closest<HTMLElement>('.response-panel')
+        if (responsePanel) {
+            // The toggle's hit area covers the description, so selecting its text must not toggle.
+            const summary = responsePanel.querySelector('.response-summary')
+            const selection = window.getSelection()
+            if (
+                selection &&
+                !selection.isCollapsed &&
+                (summary?.contains(selection.anchorNode) ||
+                    summary?.contains(selection.focusNode))
+            )
+                return
+
             e.preventDefault()
             e.stopPropagation()
 
-            const panel =
-                responseStatusToggle.closest<HTMLElement>('.response-panel')
-            if (!panel) return
-
-            if (panel.classList.contains('expanded'))
-                collapseResponsePanel(panel)
-            else expandResponsePanel(panel)
+            if (responsePanel.classList.contains('expanded'))
+                collapseResponsePanel(responsePanel)
+            else expandResponsePanel(responsePanel)
             return
         }
 
@@ -552,7 +561,9 @@ function initGlobalClickHandlers(): void {
         }
 
         // Handle union variant expand/collapse
-        const toggleBtn = target.closest<HTMLButtonElement>('.expand-toggle')
+        const toggleBtn = target.closest<HTMLButtonElement>(
+            'button.expand-toggle'
+        )
         if (toggleBtn) {
             const unionToggleRow = toggleBtn.closest('.union-expand-toggle')
             if (unionToggleRow) {

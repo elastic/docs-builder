@@ -4,8 +4,10 @@
 
 using AwesomeAssertions;
 using Elastic.ApiExplorer.Components.PropertyTree;
+using Elastic.ApiExplorer.Infrastructure;
 using Elastic.ApiExplorer.Operations;
 using Elastic.ApiExplorer.Operations._Partials;
+using Elastic.Markdown.Myst;
 using Microsoft.AspNetCore.Html;
 using Microsoft.OpenApi;
 using RazorSlices;
@@ -29,7 +31,7 @@ public class ResponsesBlockRenderingTests
 		html.Should().Contain("Successful response");
 		html.Should().Contain("Bad request");
 		html.Should().Contain("application/json");
-		html.Should().NotContain("text/plain");
+		html.Should().Contain("text/plain");
 		html.Should().Contain("aria-controls=\"response-200-fields\"");
 		html.Should().Contain("aria-controls=\"response-400-fields\"");
 		html.Should().Contain("aria-expanded=\"false\"");
@@ -94,6 +96,51 @@ public class ResponsesBlockRenderingTests
 	}
 
 	[Test]
+	public async Task Render_ResponseDescription_RendersInlineCode()
+	{
+		var html = await RenderHtml(Response("200", "success", "Disabled by the `alerting:v2:enabled` setting."));
+
+		html.Should().Contain("<code>alerting:v2:enabled</code>");
+		html.Should().NotContain("`alerting:v2:enabled`");
+	}
+
+	[Test]
+	public async Task Render_Response_PutsStatusAndMediaTypeAboveTheDescription()
+	{
+		var html = await RenderHtml(
+			Response("200", "success", "A JSON object containing pipelines statistics.\n\n- queue depth\n- worker utilization")
+		);
+
+		var button = html[html.IndexOf("<button", StringComparison.Ordinal)..html.IndexOf("</button>", StringComparison.Ordinal)];
+		button.Should().Contain("response-status-chip");
+		button.Should().Contain("application/json");
+		button.Should().Contain("response-toggle-icon");
+		button.Should().NotContain("queue depth");
+		button.Should().NotContain("<ul>");
+		html.Should().Contain("<ul>");
+		html.Should().Contain("<li>queue depth</li>");
+		html
+			.IndexOf("response-description", StringComparison.Ordinal)
+			.Should()
+			.BeGreaterThan(html.IndexOf("</button>", StringComparison.Ordinal));
+		html
+			.IndexOf("content-type-tag", StringComparison.Ordinal)
+			.Should()
+			.BeLessThan(html.IndexOf("response-description", StringComparison.Ordinal));
+	}
+
+	[Test]
+	public async Task Render_ResponseDescriptionWithLink_PlacesAnchorOutsideTheToggle()
+	{
+		var html = await RenderHtml(Response("200", "success", "See the [guide](https://www.elastic.co/guide)."));
+
+		var button = html[html.IndexOf("<button", StringComparison.Ordinal)..html.IndexOf("</button>", StringComparison.Ordinal)];
+		button.Should().NotContain("<a ");
+		html.Should().Contain("href=\"https://www.elastic.co/guide\"");
+		html.IndexOf("<a ", StringComparison.Ordinal).Should().BeGreaterThan(html.IndexOf("</button>", StringComparison.Ordinal));
+	}
+
+	[Test]
 	public async Task Render_ResponseWithoutSchemaOrHeaders_RendersStaticRowWithoutEmptyBody()
 	{
 		var html = await RenderHtml(Response("200", "success", "Indicates a successful response") with { Contents = [] });
@@ -103,14 +150,23 @@ public class ResponsesBlockRenderingTests
 		html.Should().Contain("Indicates a successful response");
 		html.Should().Contain("application/json");
 		html.Should().NotContain("response-status-toggle");
+		html.Should().NotContain("response-toggle-icon");
 		html.Should().NotContain("response-panel-body");
 		html.Should().NotContain("response-200-fields");
 	}
 
 	private static async Task<string> RenderHtml(params ApiResponse[] responses)
 	{
-		var model = new ResponsesBlockModel(responses, markdown => new HtmlString(markdown ?? ""));
+		var model = new ResponsesBlockModel(responses, RenderDescription);
 		return await _ResponsesBlock.Create(model).RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
+	}
+
+	private static HtmlString RenderDescription(string? markdown)
+	{
+		if (string.IsNullOrEmpty(markdown))
+			return HtmlString.Empty;
+
+		return new HtmlString(ApiMarkdown.SanitizeHtml(Markdig.Markdown.ToHtml(markdown, MarkdownParser.ApiDescriptionPipeline)));
 	}
 
 	private static ApiResponse Response(

@@ -754,14 +754,23 @@
 	border-radius: 16px;
 }
 
+.response-status-row,
 .response-status-toggle {
 	display: flex;
 	box-sizing: border-box;
 	align-items: center;
-	gap: 8px;
+	justify-content: flex-start;
+	gap: 12px;
 	width: 100%;
+}
+
+.response-status-row {
+	padding: 12px 16px;
+}
+
+.response-status-toggle {
 	margin: 0;
-	padding: 8px 12px;
+	padding: 14px 16px;
 	border: 0;
 	border-radius: 0;
 	background: transparent;
@@ -769,32 +778,42 @@
 	font: inherit;
 	text-align: left;
 	cursor: pointer;
-	transition:
-		background-color 0.12s ease,
-		color 0.12s ease;
 }
 
-.response-status-row {
-	display: flex;
-	box-sizing: border-box;
-	align-items: center;
-	gap: 8px;
-	width: 100%;
-	padding: 8px 12px;
+button.response-status-toggle:focus {
+	outline: none;
 }
 
-.response-status-toggle:hover {
-	background-color: #ecf1f9;
-	color: #1d2a3e;
-}
-
-.response-status-toggle:hover .response-description {
-	color: #1d2a3e;
-}
-
-.response-status-toggle:focus-visible {
-	outline: 2px solid var(--color-blue-elastic, #0b64dd);
+.response-summary:has(.response-status-toggle:focus-visible) {
+	outline: var(--outline-size) var(--outline-style) var(--outline-color);
 	outline-offset: -2px;
+	border-radius: 12px;
+}
+
+.response-summary > .response-status-row {
+	padding: 0;
+}
+
+.response-summary {
+	position: relative;
+	cursor: pointer;
+	transition: background-color 0.12s ease;
+}
+
+.response-summary:hover {
+	background-color: #ecf1f9;
+}
+
+/* The toggle stays statically positioned so this stretches over the summary. */
+.response-status-toggle::after {
+	content: '';
+	position: absolute;
+	inset: 0;
+}
+
+/* Links sit above the stretched hit area so they still navigate. */
+.response-description a {
+	position: relative;
 }
 
 .response-status-chip {
@@ -831,41 +850,16 @@
 	color: #0b64dd;
 }
 
-.response-panel.expanded
-	> .response-status-toggle
-	.response-status-chip.status-success {
-	background-color: #aee8d2;
-	border-color: #008a5e;
-}
-
-.response-panel.expanded
-	> .response-status-toggle
-	.response-status-chip.status-error {
-	background-color: #ffc9c2;
-	border-color: #c61e25;
-}
-
-.response-panel.expanded
-	> .response-status-toggle
-	.response-status-chip.status-info {
-	background-color: #bfdbff;
-	border-color: #0b64dd;
-}
-
-.response-panel:first-child > .response-status-toggle {
+.response-panel:first-child > .response-summary {
 	border-radius: 16px 16px 0 0;
 }
 
-.response-panel:last-child:not(.expanded) > .response-status-toggle {
+.response-panel:last-child:not(.expanded) > .response-summary {
 	border-radius: 0 0 16px 16px;
 }
 
-.response-panel:only-child:not(.expanded) > .response-status-toggle {
+.response-panel:only-child:not(.expanded) > .response-summary {
 	border-radius: 16px;
-}
-
-.response-panel:only-child.expanded > .response-status-toggle {
-	border-radius: 16px 16px 0 0;
 }
 
 .response-panel.expanded {
@@ -873,11 +867,10 @@
 	z-index: 2;
 }
 
+/* Never set `display` here: a collapsed body relies on the `hidden="until-found"` default of `content-visibility: hidden` so find-in-page can reach it. */
 .response-panel-body {
 	box-sizing: border-box;
-	width: 100%;
-	padding: 0 12px 12px;
-	border: 0;
+	padding: 0;
 	overflow: visible;
 }
 
@@ -890,36 +883,67 @@
 }
 
 .response-panel.expanded > .response-panel-body {
-	display: block;
+	margin: 8px 12px 12px;
+	padding: 4px 12px 8px;
+	border-radius: 8px;
+	background-color: #f5f7fb;
 }
 
-.response-panel-body[hidden='until-found'] {
-	display: none;
-	border: 0;
-	padding: 0;
-	margin: 0;
+.response-panel-body > .property-list > :first-child > dt {
+	padding-top: 8px;
 }
 
 .response-description {
 	margin: 0;
-	min-width: 0;
-	flex: 1 1 auto;
-	color: #516381;
+	padding: 4px 16px 12px;
+	color: inherit;
 	font-size: 14px;
 	font-weight: 400;
-	line-height: 20px;
+	line-height: 1.5;
 	text-align: left;
-	transition: color 0.12s ease;
+}
+
+.response-description > :first-child {
+	margin-top: 0;
+}
+
+.response-description > :last-child {
+	margin-bottom: 0;
+}
+
+.response-description li {
+	margin-top: 0.25rem;
+}
+
+.response-description li:first-child {
+	margin-top: 0;
 }
 
 .content-type-tag {
-	margin-left: auto;
 	flex-shrink: 0;
 	color: #1d2a3e;
 	font-size: 12px;
 	font-weight: 400;
 	line-height: 16px;
 	background: none;
+}
+
+.response-toggle-icon {
+	margin-left: auto;
+	flex-shrink: 0;
+	color: #798eaf;
+	font-family: var(--font-mono, ui-monospace, monospace);
+	font-size: 14px;
+	font-weight: 600;
+	line-height: 16px;
+}
+
+.response-panel.collapsed .response-toggle-icon::before {
+	content: '+';
+}
+
+.response-panel.expanded .response-toggle-icon::before {
+	content: '−';
 }
 
 .property-list .expand-toggle,
