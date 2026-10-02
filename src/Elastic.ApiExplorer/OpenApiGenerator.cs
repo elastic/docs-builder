@@ -410,6 +410,8 @@ public class OpenApiGenerator(
 			);
 		}
 
+		ApplySupplementalIntroHeadings(navigation, tags);
+
 		var renderContext = new ApiRenderContext(context, generation.Document, _contentHashProvider)
 		{
 			NavigationHtml = string.Empty,
@@ -478,6 +480,23 @@ public class OpenApiGenerator(
 		return result;
 	}
 
+	private static void ApplySupplementalIntroHeadings(INavigationItem item, IReadOnlyDictionary<string, ApiSupplementalDoc> tags)
+	{
+		if (item is not INodeNavigationItem<INavigationModel, INavigationItem> node)
+			return;
+
+		var children = node.NavigationItems.ToArray();
+		if (
+			item is TagNavigationItem tag
+			&& tags.TryGetValue(tag.Index.Model.Name, out var doc)
+			&& !string.IsNullOrWhiteSpace(doc.Description)
+		)
+			tag.ApplyIntroHeadings(doc.Description);
+
+		foreach (var child in children)
+			ApplySupplementalIntroHeadings(child, tags);
+	}
+
 	private async Task RenderNavigationItems(
 		ApiRenderContext renderContext,
 		IsolatedBuildNavigationHtmlWriter navigationRenderer,
@@ -485,7 +504,7 @@ public class OpenApiGenerator(
 		Cancel ctx
 	)
 	{
-		if (currentNavigation is ISidebarSeparatorNavigationItem)
+		if (currentNavigation is ISidebarSeparatorNavigationItem or IntroHeadingNavigationItem)
 			return;
 
 		if (currentNavigation is INodeNavigationItem<IApiModel, INavigationItem> node)

@@ -146,9 +146,16 @@ public class TagNavigationItem(
 	string apiUrlSuffix,
 	IRootNavigationItem<IApiGroupingModel, INavigationItem> rootNavigation,
 	INodeNavigationItem<INavigationModel, INavigationItem> parent
-) : ApiGroupingNavigationItem<ApiTag, IEndpointOrOperationNavigationItem>(tag, rootNavigation, parent)
+) : ApiGroupingNavigationItem<ApiTag, INavigationItem>(tag, rootNavigation, parent)
 {
 	private readonly string _url = $"{ApiUrlBuilder.ProductRoot(urlPathPrefix, apiUrlSuffix)}/group/{tag.TagUrlSegment}";
+
+	internal void ApplyIntroHeadings(string? markdown)
+	{
+		var operations = NavigationItems.Where(item => item is not IntroHeadingNavigationItem).ToArray();
+		var headings = IntroHeadings.Parse(markdown).Select(heading => new IntroHeadingNavigationItem(this, heading));
+		NavigationItems = [.. headings, .. operations];
+	}
 
 	/// <inheritdoc />
 	public override string Url => _url;
@@ -158,6 +165,30 @@ public class TagNavigationItem(
 
 	/// <inheritdoc />
 	public override string Id { get; } = ShortId.Create(tag.Name);
+}
+
+public sealed class IntroHeadingNavigationItem(TagNavigationItem parent, IntroHeading heading) : ILeafNavigationItem<IntroHeading>
+{
+	/// <inheritdoc />
+	public string Url { get; } = $"{parent.Url}#{heading.Slug}";
+
+	/// <inheritdoc />
+	public string NavigationTitle { get; } = heading.Title;
+
+	/// <inheritdoc />
+	public IRootNavigationItem<INavigationModel, INavigationItem> NavigationRoot { get; } = parent.NavigationRoot;
+
+	/// <inheritdoc />
+	public INodeNavigationItem<INavigationModel, INavigationItem>? Parent { get; set; } = parent;
+
+	/// <inheritdoc />
+	public bool Hidden => false;
+
+	/// <inheritdoc />
+	public int NavigationIndex { get; set; }
+
+	/// <inheritdoc />
+	public IntroHeading Model { get; } = heading;
 }
 
 public interface IEndpointOrOperationNavigationItem : INavigationItem;
