@@ -55,7 +55,7 @@ function setEnumValuesExpanded(
 
 function expandResponsePanel(panel: HTMLElement): void {
     const toggleBtn = panel.querySelector<HTMLButtonElement>(
-        ':scope > .response-status-row > .response-status-toggle'
+        '.response-status-toggle'
     )
     const body = panel.querySelector<HTMLElement>(
         ':scope > .response-panel-body'
@@ -69,7 +69,7 @@ function expandResponsePanel(panel: HTMLElement): void {
 
 function collapseResponsePanel(panel: HTMLElement): void {
     const toggleBtn = panel.querySelector<HTMLButtonElement>(
-        ':scope > .response-status-row > .response-status-toggle'
+        '.response-status-toggle'
     )
     const body = panel.querySelector<HTMLElement>(
         ':scope > .response-panel-body'
@@ -498,23 +498,22 @@ function initGlobalClickHandlers(): void {
             return
         }
 
-        const responseStatusRow = target.closest<HTMLElement>(
-            '.response-panel:not(.response-panel--static) > .response-status-row'
+        const responseToggle = target.closest<HTMLElement>(
+            '.response-status-toggle'
         )
-        if (responseStatusRow) {
-            // Anchors in the description sit beside the toggle, not inside it.
-            if (target.closest('a')) return
+        const responsePanel = responseToggle?.closest<HTMLElement>(
+            '.response-panel:not(.response-panel--static)'
+        )
+        if (responsePanel) {
+            // The toggle's hit area covers the description, so selecting its text must not toggle.
+            if (window.getSelection()?.toString()) return
 
             e.preventDefault()
             e.stopPropagation()
 
-            const panel =
-                responseStatusRow.closest<HTMLElement>('.response-panel')
-            if (!panel) return
-
-            if (panel.classList.contains('expanded'))
-                collapseResponsePanel(panel)
-            else expandResponsePanel(panel)
+            if (responsePanel.classList.contains('expanded'))
+                collapseResponsePanel(responsePanel)
+            else expandResponsePanel(responsePanel)
             return
         }
 

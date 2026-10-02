@@ -29,24 +29,26 @@
 				continue;
 			}
 			<div class="response-panel collapsed" data-status="@response.StatusCode">
-				<div class="response-status-row">
-					<button
-						type="button"
-						class="response-status-toggle"
-						aria-expanded="false"
-						aria-controls="@bodyId">
-						<span class="response-status-chip status-@response.StatusClass">@response.StatusCode</span>
-						@if (!string.IsNullOrEmpty(response.FirstContentType))
-						{
-							<span class="content-type-tag">@response.FirstContentType</span>
-						}
-						<span class="response-toggle-icon" aria-hidden="true"></span>
-					</button>
+				<div class="response-summary">
+					<div class="response-status-row">
+						<button
+							type="button"
+							class="response-status-toggle"
+							aria-expanded="false"
+							aria-controls="@bodyId">
+							<span class="response-status-chip status-@response.StatusClass">@response.StatusCode</span>
+							@if (!string.IsNullOrEmpty(response.FirstContentType))
+							{
+								<span class="content-type-tag">@response.FirstContentType</span>
+							}
+							<span class="response-toggle-icon" aria-hidden="true"></span>
+						</button>
+					</div>
+					@if (!string.IsNullOrEmpty(response.Response.Description))
+					{
+						<div class="response-description">@Model.RenderMarkdown(response.Response.Description)</div>
+					}
 				</div>
-				@if (!string.IsNullOrEmpty(response.Response.Description))
-				{
-					<div class="response-description">@Model.RenderMarkdown(response.Response.Description)</div>
-				}
 				<div class="response-panel-body" id="@bodyId" hidden="until-found">
 					@foreach (var content in response.Contents)
 					{

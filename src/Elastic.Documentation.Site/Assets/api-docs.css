@@ -780,22 +780,42 @@
 	cursor: pointer;
 }
 
-button.response-status-toggle:focus:not(:focus-visible) {
+button.response-status-toggle:focus,
+button.response-status-toggle:focus-visible {
 	outline: none;
+}
+
+.response-summary:has(.response-status-toggle:focus-visible) {
+	outline: var(--outline-size) var(--outline-style) var(--outline-color);
+	outline-offset: -2px;
+	border-radius: 12px;
 }
 
 .response-status-row:has(> .response-status-toggle) {
 	padding: 0;
 	cursor: pointer;
-	transition:
-		background-color 0.12s ease,
-		color 0.12s ease;
 }
 
-.response-panel:not(.expanded)
-	> .response-status-row:has(> .response-status-toggle):hover {
+.response-panel:not(.response-panel--static) > .response-summary {
+	position: relative;
+	cursor: pointer;
+	transition: background-color 0.12s ease;
+}
+
+.response-panel:not(.response-panel--static) > .response-summary:hover {
 	background-color: #ecf1f9;
-	color: #1d2a3e;
+}
+
+/* The toggle stays statically positioned so this stretches over the summary. */
+.response-status-toggle::after {
+	content: '';
+	position: absolute;
+	inset: 0;
+}
+
+/* Links sit above the stretched hit area so they still navigate. */
+.response-description a {
+	position: relative;
 }
 
 .response-status-chip {
@@ -832,32 +852,16 @@ button.response-status-toggle:focus:not(:focus-visible) {
 	color: #0b64dd;
 }
 
-.response-panel:first-child > .response-status-row {
+.response-panel:first-child > .response-summary {
 	border-radius: 16px 16px 0 0;
 }
 
-.response-panel:last-child:not(.expanded) > .response-status-row {
+.response-panel:last-child:not(.expanded) > .response-summary {
 	border-radius: 0 0 16px 16px;
 }
 
-.response-panel:last-child:not(.expanded):has(> .response-description)
-	> .response-status-row,
-.response-panel.expanded > .response-status-row {
-	border-bottom-left-radius: 0;
-	border-bottom-right-radius: 0;
-}
-
-.response-panel:only-child:not(.expanded) > .response-status-row {
+.response-panel:only-child:not(.expanded) > .response-summary {
 	border-radius: 16px;
-}
-
-.response-panel:only-child:not(.expanded):has(> .response-description)
-	> .response-status-row {
-	border-radius: 16px 16px 0 0;
-}
-
-.response-panel:only-child.expanded > .response-status-row {
-	border-radius: 16px 16px 0 0;
 }
 
 .response-panel.expanded {
@@ -883,8 +887,15 @@ button.response-status-toggle:focus:not(:focus-visible) {
 
 .response-panel.expanded > .response-panel-body {
 	display: block;
-	border-top: 1px solid #cad3e2;
-	padding-top: 16px;
+	width: auto;
+	margin: 8px 12px 12px;
+	padding: 4px 12px 8px;
+	border-radius: 8px;
+	background-color: #f5f7fb;
+}
+
+.response-panel-body .property-list > :first-child > dt {
+	padding-top: 8px;
 }
 
 .response-panel-body[hidden='until-found'] {
@@ -896,7 +907,7 @@ button.response-status-toggle:focus:not(:focus-visible) {
 
 .response-description {
 	margin: 0;
-	padding: 8px 16px 24px;
+	padding: 4px 16px 12px;
 	color: inherit;
 	font-size: 14px;
 	font-weight: 400;
@@ -939,30 +950,12 @@ button.response-status-toggle:focus:not(:focus-visible) {
 	line-height: 16px;
 }
 
-.response-panel.collapsed > .response-status-row .response-toggle-icon::before {
+.response-panel.collapsed .response-status-row .response-toggle-icon::before {
 	content: '+';
 }
 
-.response-panel.expanded > .response-status-row .response-toggle-icon::before {
+.response-panel.expanded .response-status-row .response-toggle-icon::before {
 	content: '−';
-}
-
-@media (prefers-reduced-motion: no-preference) {
-	.response-panel.expanded > .response-panel-body {
-		animation: response-fields-in 180ms ease;
-	}
-}
-
-@keyframes response-fields-in {
-	from {
-		opacity: 0;
-		transform: translateY(-6px);
-	}
-
-	to {
-		opacity: 1;
-		transform: none;
-	}
 }
 
 .property-list .expand-toggle,
