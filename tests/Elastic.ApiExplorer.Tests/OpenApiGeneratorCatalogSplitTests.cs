@@ -72,6 +72,7 @@ public class OpenApiGeneratorCatalogSplitTests
 		var catalogPath = Path.Join(outputRoot, "api", "index.html");
 		context.WriteFileSystem.File.Exists(catalogPath).Should().BeTrue();
 		var html = await context.WriteFileSystem.File.ReadAllTextAsync(catalogPath, TestContext.Current!.Execution.CancellationToken);
+		html.Should().Contain("<title>Elastic APIs</title>");
 		html.Should().Contain("<h1>API catalog</h1>");
 		html.Should().Contain("api-catalog-grid");
 		html.Should().Contain("listing-root");
@@ -115,6 +116,7 @@ public class OpenApiGeneratorCatalogSplitTests
 				TestContext.Current!.Execution.CancellationToken
 			);
 		html.Should().Contain("api-landing-heading");
+		html.Should().Contain("<title>elasticsearch API documentation</title>");
 		html.Should().Contain("<h1>Elasticsearch main</h1>");
 		html.Should().Contain("<span class=\"api-landing-icon\">");
 		html.Should().Contain("viewBox=\"8 4.9995 47.7276 54.001\"");

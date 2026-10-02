@@ -12,6 +12,10 @@ internal static partial class ApiSeoDescription
 {
 	internal const int MaxLength = 150;
 
+	private static readonly char[] PathSeparators = [' ', '\t', '\r', '\n', '\u00a0'];
+
+	private static readonly string[] HttpMethods = ["GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS", "TRACE"];
+
 	internal static string? Excerpt(string? markdown)
 	{
 		if (string.IsNullOrWhiteSpace(markdown))
@@ -20,6 +24,32 @@ internal static partial class ApiSeoDescription
 		var paragraph = FirstParagraph(markdown) ?? markdown;
 		var plain = ToPlainText(paragraph);
 		return string.IsNullOrWhiteSpace(plain) ? null : Truncate(plain);
+	}
+
+	/// <summary>Skips the shared path preamble, then falls back to the operation summary.</summary>
+	internal static string? Meaningful(string? description, string? summary)
+	{
+		var real = WithoutPathPreamble(description);
+		if (!string.IsNullOrWhiteSpace(real))
+			return real;
+
+		return string.IsNullOrWhiteSpace(summary) ? null : summary.Trim();
+	}
+
+	private static string? WithoutPathPreamble(string? markdown)
+	{
+		if (string.IsNullOrWhiteSpace(markdown))
+			return null;
+
+		var paragraphs = SplitParagraphs(markdown);
+		var start = 0;
+		while (start < paragraphs.Count && IsPathPreamble(paragraphs[start]))
+			start++;
+
+		if (start == 0)
+			return markdown;
+
+		return start >= paragraphs.Count ? null : string.Join("\n\n", paragraphs.Skip(start));
 	}
 
 	internal static string? FirstParagraph(string markdown)
@@ -61,6 +91,81 @@ internal static partial class ApiSeoDescription
 		text = ItalicUnderscorePattern().Replace(text, "$1");
 		text = HeadingPattern().Replace(text, string.Empty);
 		return WhitespacePattern().Replace(text, " ").Trim();
+	}
+
+	private static List<string> SplitParagraphs(string markdown)
+	{
+		var paragraphs = new List<string>();
+		var buffer = new StringBuilder();
+		using var reader = new StringReader(markdown);
+		while (reader.ReadLine() is { } line)
+		{
+			if (string.IsNullOrWhiteSpace(line))
+			{
+				FlushParagraph(paragraphs, buffer);
+				continue;
+			}
+
+			if (buffer.Length > 0)
+				_ = buffer.Append('\n');
+			_ = buffer.Append(line);
+		}
+
+		FlushParagraph(paragraphs, buffer);
+		return paragraphs;
+	}
+
+	private static void FlushParagraph(List<string> paragraphs, StringBuilder buffer)
+	{
+		if (buffer.Length == 0)
+			return;
+
+		paragraphs.Add(buffer.ToString());
+		_ = buffer.Clear();
+	}
+
+	private static bool IsPathPreamble(string paragraph)
+	{
+		var plain = ToPlainText(ApiMarkdown.StripHtml(paragraph)).Trim().TrimEnd(':').Trim();
+		if (plain.Length == 0)
+			return true;
+
+		if (plain.StartsWith("All methods and paths for this operation", StringComparison.OrdinalIgnoreCase))
+			return true;
+
+		if (plain.StartsWith("Spaces method and path for this operation", StringComparison.OrdinalIgnoreCase))
+			return true;
+
+		if (plain.StartsWith("Refer to Spaces for more information", StringComparison.OrdinalIgnoreCase))
+			return true;
+
+		return IsMethodPathList(plain);
+	}
+
+	private static bool IsMethodPathList(string plain)
+	{
+		var tokens = plain.Split(PathSeparators, StringSplitOptions.RemoveEmptyEntries);
+		if (tokens.Length == 0 || tokens.Length % 2 != 0)
+			return false;
+
+		for (var i = 0; i < tokens.Length; i += 2)
+		{
+			if (!IsHttpMethod(tokens[i]) || !tokens[i + 1].StartsWith('/'))
+				return false;
+		}
+
+		return true;
+	}
+
+	private static bool IsHttpMethod(string token)
+	{
+		foreach (var method in HttpMethods)
+		{
+			if (token.Equals(method, StringComparison.OrdinalIgnoreCase))
+				return true;
+		}
+
+		return false;
 	}
 
 	internal static string Truncate(string text)

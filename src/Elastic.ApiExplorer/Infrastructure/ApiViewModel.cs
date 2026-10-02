@@ -61,7 +61,7 @@ public abstract class ApiViewModel(ApiRenderContext context)
 
 	protected virtual IReadOnlyList<ApiTocItem> GetTocItems() => [];
 
-	/// <summary>When set, drives <see cref="GlobalLayoutViewModel.Title"/> for this page (e.g. intro/outro markdown). Does not affect <see cref="GlobalLayoutViewModel.HeaderTitle"/> which stays as the API product name.</summary>
+	/// <summary>Leaf label in the browser title. The product suffix is added in <see cref="SeoDocumentTitle"/>.</summary>
 	protected virtual string? LayoutPageTitle => null;
 
 	/// <summary>Last breadcrumb label. Defaults to <see cref="LayoutPageTitle"/> or the nav title.</summary>
@@ -69,6 +69,14 @@ public abstract class ApiViewModel(ApiRenderContext context)
 
 	/// <summary>Raw markdown used for the meta description. Excerpted before it reaches the layout.</summary>
 	protected virtual string? LayoutPageDescription => null;
+
+	protected virtual string SeoDocumentTitle =>
+		ApiPageTitle.Format(
+			LayoutPageTitle,
+			RenderContext.Product?.DisplayName,
+			Document.Info?.Title,
+			ApiPageTitle.ReleasedVersionLabel(RenderContext.VersionSwitcherItems)
+		);
 
 	private string? GetGitHubDocsUrl()
 	{
@@ -82,8 +90,6 @@ public abstract class ApiViewModel(ApiRenderContext context)
 	public ApiLayoutViewModel CreateGlobalLayoutModel()
 	{
 		var docTitle = Document.Info?.Title ?? "API Documentation";
-		var pageTitle = LayoutPageTitle;
-		var documentTitle = pageTitle is not null ? $"{pageTitle} | {docTitle}" : docTitle;
 		var catalogUrl = $"{ApiUrlBuilder.ApiRoot(BuildContext.UrlPathPrefix)}/";
 
 		var hubItems = ApiHubSwitcher.Build(RenderContext.CatalogEntries, RenderContext.CurrentApiKey, catalogUrl);
@@ -96,7 +102,7 @@ public abstract class ApiViewModel(ApiRenderContext context)
 		{
 			DocSetName = "Api Explorer",
 			Description = ApiSeoDescription.Excerpt(LayoutPageDescription) ?? "",
-			Title = documentTitle,
+			Title = SeoDocumentTitle,
 			CurrentNavigationItem = CurrentNavigationItem,
 			Previous = null,
 			Next = null,

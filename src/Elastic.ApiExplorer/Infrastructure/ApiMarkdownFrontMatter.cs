@@ -73,13 +73,32 @@ internal static class ApiMarkdownFrontMatter
 		return page switch
 		{
 			ApiCatalog => ApiCatalog.PageDescription,
-			ApiLanding => FirstLine(ApiMarkdown.Prepare(context.Model.Info?.Description, apiBaseUrl)),
+			ApiLanding => LandingDescription(context, apiBaseUrl),
 			ApiTag tag => FirstLine(ApiMarkdown.Prepare(TagDescription(tag, context), apiBaseUrl)),
-			ApiOperation operation => FirstLine(ApiMarkdown.Prepare(OperationDescription(operation, context), apiBaseUrl)),
+			ApiOperation operation =>
+				FirstLine(
+					ApiSeoDescription.Meaningful(
+						ApiMarkdown.Prepare(OperationDescription(operation, context), apiBaseUrl),
+						operation.Operation.Summary
+					)
+				),
 			ApiSchema schema => FirstLine(ApiMarkdown.Prepare(schema.Schema.Description, apiBaseUrl)),
 			SimpleMarkdownNavigationItem => ApiSeoDescription.FirstParagraph(body),
 			_ => null
 		};
+	}
+
+	private static string? LandingDescription(ApiRenderContext context, string apiBaseUrl)
+	{
+		var authored = FirstLine(ApiMarkdown.Prepare(context.Model.Info?.Description, apiBaseUrl));
+		if (!string.IsNullOrWhiteSpace(authored))
+			return authored;
+
+		return ApiPageTitle.LandingDescription(
+			context.Product?.DisplayName,
+			context.Model.Info?.Title,
+			ApiPageTitle.ReleasedVersionLabel(context.VersionSwitcherItems)
+		);
 	}
 
 	private static string? TagDescription(ApiTag tag, ApiRenderContext context) =>

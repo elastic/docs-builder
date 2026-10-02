@@ -25,5 +25,12 @@ public class LandingViewModel(ApiRenderContext context) : ApiViewModel(context)
 
 	protected override string BreadcrumbCurrentTitle => ApiInfo.Title ?? CurrentNavigationItem.NavigationTitle;
 
-	protected override string? LayoutPageDescription => ApiInfo.Description;
+	protected override string? LayoutPageDescription =>
+		string.IsNullOrWhiteSpace(ApiInfo.Description)
+			? ApiPageTitle.LandingDescription(
+				RenderContext.Product?.DisplayName,
+				Document.Info?.Title,
+				ApiPageTitle.ReleasedVersionLabel(RenderContext.VersionSwitcherItems)
+			)
+			: ApiInfo.Description;
 }

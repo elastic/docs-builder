@@ -29,6 +29,8 @@ public class ApiCatalogViewModel(ApiRenderContext context) : ApiViewModel(contex
 
 	protected override string? LayoutPageDescription => ApiCatalog.PageDescription;
 
+	protected override string SeoDocumentTitle => ApiPageTitle.CatalogTitle;
+
 	public static ApiCatalogViewModel FromEntries(ApiRenderContext context, IReadOnlyList<ApiCatalogEntry> entries)
 	{
 		var tiles = entries.OrderBy(e => e.Key, StringComparer.Ordinal).Select(ToTile).ToArray();
