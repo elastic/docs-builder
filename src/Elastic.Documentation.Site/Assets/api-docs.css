@@ -2286,13 +2286,6 @@ a.docs-reference-btn::after {
 	box-shadow: none;
 }
 
-/* The examples rail clips overflow. A border that sticks out of the column loses its straight edges. */
-#api-examples-panel .api-code-card {
-	box-sizing: border-box;
-	min-width: 0;
-	max-width: 100%;
-}
-
 /* Thin scrollbar thumb on the dark surface. */
 .api-code-card .api-code-sample-body,
 .api-code-card .example-block-body {
@@ -2558,20 +2551,21 @@ button.example-response-tab:focus-visible {
 		flex-direction: column;
 	}
 
+	/* The rail scrolls as a whole when it hits max-height. Cards must not shrink:
+	   with min-height: 0 the request card collapsed to its header and hid the code. */
 	#api-examples-panel .api-examples-panel-nav {
 		flex: 0 1 auto;
 		min-height: 0;
 		max-height: none;
-		overflow: visible;
+		overflow-x: hidden;
+		overflow-y: auto;
 		display: flex;
 		flex-direction: column;
 	}
 
-	/* Size to content; shrink only when the rail hits max-height */
 	#api-examples-panel .api-examples-body,
 	#api-examples-panel .api-examples-scenarios {
-		flex: 0 1 auto;
-		min-height: 0;
+		flex: 0 0 auto;
 		display: flex;
 		flex-direction: column;
 		flex-wrap: nowrap;
@@ -2593,8 +2587,7 @@ button.example-response-tab:focus-visible {
 
 	#api-examples-panel .api-examples-scenario-panel {
 		display: flex;
-		flex: 0 1 auto;
-		min-height: 0;
+		flex: 0 0 auto;
 		flex-direction: column;
 	}
 
@@ -2604,8 +2597,7 @@ button.example-response-tab:focus-visible {
 
 	#api-examples-panel .api-examples-body {
 		display: flex;
-		flex: 0 1 auto;
-		min-height: 0;
+		flex: 0 0 auto;
 		flex-direction: column;
 		overflow: visible;
 		border: 0;
@@ -2614,8 +2606,7 @@ button.example-response-tab:focus-visible {
 
 	#api-examples-panel .api-code-card {
 		display: flex;
-		flex: 0 1 auto;
-		min-height: 0;
+		flex: 0 0 auto;
 		flex-direction: column;
 	}
 
@@ -2625,8 +2616,8 @@ button.example-response-tab:focus-visible {
 
 	#api-examples-panel .api-code-sample-body,
 	#api-examples-panel .example-block-body {
-		flex: 0 1 auto;
-		min-height: 0;
+		flex: 0 0 auto;
+		max-height: max(12rem, calc((100vh - var(--offset-top)) * 0.4));
 		overflow: auto;
 	}
 }
@@ -2841,154 +2832,6 @@ button.example-response-tab:focus-visible {
 	.api-page-shell > .grid {
 		column-gap: 48px;
 	}
-}
-
-@media (min-width: 1024px) {
-	/* Prefer :has() over a server class on this wrapper: htmx swaps #api-examples-panel
-	   oob but does not remount .api-content-grid, so a toggled --examples class goes stale.
-	   Must set display:grid here — Tailwind lg:grid is 1280px and left the rail stacked
-	   under the reference column between 1024 and 1280. */
-	.api-content-grid:has(#api-examples-panel.api-examples-panel) {
-		display: grid;
-		grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-		column-gap: 24px;
-		/* Rows size to content so the examples rail can position:sticky while the page scrolls */
-	}
-
-	/* Flatten wrappers so intro/reference become grid items next to the examples rail */
-	.api-content-grid:has(#api-examples-panel.api-examples-panel)
-		> .api-page-main,
-	.api-content-grid:has(#api-examples-panel.api-examples-panel)
-		> .api-page-main
-		> #content-container,
-	.api-content-grid:has(#api-examples-panel.api-examples-panel)
-		> .api-page-main
-		> #content-container
-		> #markdown-content {
-		display: contents;
-	}
-
-	.api-content-grid:has(#api-examples-panel.api-examples-panel)
-		.api-page-toolbar {
-		grid-column: 1 / -1;
-		grid-row: 1;
-		min-width: 0;
-		padding-top: calc(
-			var(--spacing) * 6
-		); /* replaces .api-page-main pt-6 lost to contents */
-	}
-
-	.api-content-grid:has(#api-examples-panel.api-examples-panel)
-		.api-page-intro {
-		grid-column: 1 / -1;
-		grid-row: 2;
-		min-width: 0;
-		padding-top: 0;
-		padding-right: 0;
-	}
-
-	.api-content-grid:has(#api-examples-panel.api-examples-panel)
-		.api-page-reference {
-		grid-column: 1;
-		grid-row: 3;
-		min-width: 0;
-		padding-bottom: calc(var(--spacing) * 12); /* replaces main pb-12 */
-	}
-
-	/* Examples rail: hug content, cap at viewport under the intro */
-	#api-examples-panel {
-		--api-examples-rail-padding: calc(
-			var(--spacing) * 6
-		); /* match content pt-6 */
-		grid-column: 2;
-		grid-row: 3;
-		position: sticky;
-		top: var(--offset-top);
-		align-self: start;
-		box-sizing: border-box;
-		height: min(max-content, calc(100vh - var(--offset-top)));
-		max-height: calc(100vh - var(--offset-top));
-		padding-block: var(--api-examples-rail-padding);
-		overflow: hidden;
-		display: flex;
-		flex-direction: column;
-	}
-
-	#api-examples-panel .api-examples-panel-nav {
-		flex: 0 1 auto;
-		min-height: 0;
-		max-height: none;
-		overflow: visible;
-		display: flex;
-		flex-direction: column;
-	}
-
-	/* Size to content; shrink only when the rail hits max-height */
-	#api-examples-panel .api-examples-body,
-	#api-examples-panel .api-examples-scenarios {
-		flex: 0 1 auto;
-		min-height: 0;
-		display: flex;
-		flex-direction: column;
-		flex-wrap: nowrap;
-		overflow: visible;
-	}
-
-	#api-examples-panel .api-examples-heading {
-		flex-shrink: 0;
-		border-bottom: none;
-		padding-top: 0;
-		padding-bottom: 1rem;
-		margin-top: 0;
-	}
-
-	#api-examples-panel .api-examples-scenario-header {
-		flex-shrink: 0;
-		margin-bottom: calc(var(--spacing) * 3);
-	}
-
-	#api-examples-panel .api-examples-scenario-panel {
-		display: flex;
-		flex: 0 1 auto;
-		min-height: 0;
-		flex-direction: column;
-	}
-
-	#api-examples-panel .api-examples-scenario-panel[hidden] {
-		display: none !important;
-	}
-
-	#api-examples-panel .api-examples-body {
-		display: flex;
-		flex: 0 1 auto;
-		min-height: 0;
-		flex-direction: column;
-		overflow: visible;
-		border: 0;
-		padding: 0;
-	}
-
-	#api-examples-panel .api-code-card {
-		display: flex;
-		flex: 0 1 auto;
-		min-height: 0;
-		flex-direction: column;
-	}
-
-	#api-examples-panel .api-code-card:last-child {
-		margin-bottom: 0;
-	}
-
-	#api-examples-panel .api-code-sample-body,
-	#api-examples-panel .example-block-body {
-		flex: 0 1 auto;
-		min-height: 0;
-		overflow: auto;
-	}
-}
-
-#api-examples-panel .nav-select-dropdown {
-	width: auto;
 }
 
 .api-code-sample-actions {
