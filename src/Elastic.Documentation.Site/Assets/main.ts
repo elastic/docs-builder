@@ -49,8 +49,6 @@ async function bootstrap() {
         initializeOtel({
             serviceName: config.serviceName,
             serviceVersion: DOCS_BUILDER_VERSION,
-            baseUrl: config.rootPath,
-            debug: false,
         })
     }
 

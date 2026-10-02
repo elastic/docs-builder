@@ -77,6 +77,9 @@ public static class ServicesExtension
 			client.DefaultRequestHeaders.Connection.Add("keep-alive");
 			client.Timeout = TimeSpan.FromMinutes(10); // Longer timeout for streaming
 		});
+
+		// Used by the browser OTLP proxy (POST /v1/traces, POST /v1/logs)
+		_ = services.AddHttpClient("OtlpProxy");
 		// Register AppEnvironment as a singleton for dependency injection
 		_ = services.AddSingleton(new AppEnvironment { Current = appEnv });
 		_ = services.AddSingleton<ITransport>(
