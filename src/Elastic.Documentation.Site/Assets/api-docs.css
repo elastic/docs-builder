@@ -1522,29 +1522,30 @@ a.type-linked:hover {
 	color: #f04e98;
 }
 
-/* Auth scheme link — outlined button with a leading icon */
+/* Auth scheme link — compact outlined button with a leading icon */
 .api-page-intro .api-security-badges .api-auth-button {
 	display: inline-flex;
 	align-items: center;
-	gap: 6px;
+	gap: 4px;
 	box-sizing: border-box;
-	height: 32px;
-	padding: 0 12px 0 10px;
-	border: 1px solid #cad3e2;
-	border-radius: 6px;
+	height: 24px;
+	padding: 0 8px 0 6px;
+	border: 1px solid #a9c9f5;
+	border-radius: 4px;
 	background-color: #fff;
-	color: #111c2c;
+	color: #0b64dd;
 	font-family: var(--font-body, Inter, ui-sans-serif, system-ui, sans-serif);
-	font-size: 14px;
+	font-size: 12px;
 	font-weight: 500;
-	line-height: 20px;
+	line-height: 16px;
 	white-space: nowrap;
 	text-decoration: none;
 }
 
 .api-page-intro .api-security-badges .api-auth-button svg {
 	flex: none;
-	color: #0b64dd;
+	width: 14px;
+	height: 14px;
 }
 
 .api-page-intro .api-security-badges .api-auth-button:hover {
