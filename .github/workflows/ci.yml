@@ -102,8 +102,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
+        # Native AOT links against the host glibc; keep ubuntu in sync with the noble-chiseled base image (build/Targets.fs).
         os:
-         - ubuntu-latest
+         - ubuntu-24.04
          - macos-latest
          - windows-latest
     steps:          
@@ -125,7 +126,7 @@ jobs:
         run: dotnet run --project build -c release -- compile
 
       - name: Check CLI schema is up to date
-        if: ${{ matrix.os == 'ubuntu-latest' }}
+        if: ${{ matrix.os == 'ubuntu-24.04' }}
         run: |
           dotnet run --project src/tooling/docs-builder -c release --no-build -- __schema > docs/cli-schema.json.tmp
           diff <(jq 'del(.version)' docs/cli-schema.json) <(jq 'del(.version)' docs/cli-schema.json.tmp) || (echo "docs/cli-schema.json is out of date — run: dotnet run --project src/tooling/docs-builder -- __schema > docs/cli-schema.json" && exit 1)
@@ -135,17 +136,17 @@ jobs:
         run: dotnet run --project build -c release -- unit-test
 
       - name: Publish AOT
-        if: ${{ github.event_name == 'push' && matrix.os != 'ubuntu-latest' }} # publish containers already validates AOT build
+        if: ${{ github.event_name == 'push' && matrix.os != 'ubuntu-24.04' }} # publish containers already validates AOT build
         run: dotnet run --project build -c release -- publishbinaries
 
       - name: Publish Containers
-        if: ${{ github.event_name == 'push' && matrix.os == 'ubuntu-latest' }}
+        if: ${{ github.event_name == 'push' && matrix.os == 'ubuntu-24.04' }}
         env:
           DOCKER_NO_PUBLISH: true
         run: dotnet run --project build -c release -- publishcontainers
 
       - name: Run Container
-        if: ${{ github.event_name == 'push' && matrix.os == 'ubuntu-latest' }}
+        if: ${{ github.event_name == 'push' && matrix.os == 'ubuntu-24.04' }}
         run: dotnet run --project build -c release -- runlocalcontainer
         
 
