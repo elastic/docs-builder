@@ -498,12 +498,9 @@ function initGlobalClickHandlers(): void {
             return
         }
 
-        const responseToggle = target.closest<HTMLElement>(
-            '.response-status-toggle'
-        )
-        const responsePanel = responseToggle?.closest<HTMLElement>(
-            '.response-panel:not(.response-panel--static)'
-        )
+        const responsePanel = target
+            .closest('.response-status-toggle')
+            ?.closest<HTMLElement>('.response-panel')
         if (responsePanel) {
             // The toggle's hit area covers the description, so selecting its text must not toggle.
             if (window.getSelection()?.toString()) return

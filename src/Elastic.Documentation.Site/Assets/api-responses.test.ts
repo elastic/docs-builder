@@ -58,15 +58,14 @@ describe('response status row', () => {
     })
 
     it('leaves the panel collapsed when text is selected', () => {
-        const selection = jest.spyOn(window, 'getSelection').mockReturnValue({
-            toString: () => 'See the guide',
-        } as Selection)
+        window
+            .getSelection()
+            ?.selectAllChildren(
+                document.querySelector('.response-description')!
+            )
 
-        try {
-            toggle().click()
-        } finally {
-            selection.mockRestore()
-        }
+        toggle().click()
+        window.getSelection()?.removeAllRanges()
 
         expect(panel().classList.contains('collapsed')).toBe(true)
         expect(toggle().getAttribute('aria-expanded')).toBe('false')

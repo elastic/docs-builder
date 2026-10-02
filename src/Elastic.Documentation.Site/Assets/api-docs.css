@@ -780,8 +780,7 @@
 	cursor: pointer;
 }
 
-button.response-status-toggle:focus,
-button.response-status-toggle:focus-visible {
+button.response-status-toggle:focus {
 	outline: none;
 }
 
@@ -791,18 +790,17 @@ button.response-status-toggle:focus-visible {
 	border-radius: 12px;
 }
 
-.response-status-row:has(> .response-status-toggle) {
+.response-summary > .response-status-row {
 	padding: 0;
-	cursor: pointer;
 }
 
-.response-panel:not(.response-panel--static) > .response-summary {
+.response-summary {
 	position: relative;
 	cursor: pointer;
 	transition: background-color 0.12s ease;
 }
 
-.response-panel:not(.response-panel--static) > .response-summary:hover {
+.response-summary:hover {
 	background-color: #ecf1f9;
 }
 
@@ -869,11 +867,10 @@ button.response-status-toggle:focus-visible {
 	z-index: 2;
 }
 
+/* Never set `display` here: a collapsed body relies on the `hidden="until-found"` default of `content-visibility: hidden` so find-in-page can reach it. */
 .response-panel-body {
 	box-sizing: border-box;
-	width: 100%;
-	padding: 0 16px 16px;
-	border: 0;
+	padding: 0;
 	overflow: visible;
 }
 
@@ -886,24 +883,14 @@ button.response-status-toggle:focus-visible {
 }
 
 .response-panel.expanded > .response-panel-body {
-	display: block;
-	width: auto;
 	margin: 8px 12px 12px;
 	padding: 4px 12px 8px;
 	border-radius: 8px;
 	background-color: #f5f7fb;
 }
 
-.response-panel-body .property-list > :first-child > dt {
+.response-panel-body > .property-list > :first-child > dt {
 	padding-top: 8px;
-}
-
-/* display:none would make find-in-page skip the schema, so collapse the box instead. */
-.response-panel-body[hidden='until-found'] {
-	content-visibility: hidden;
-	border: 0;
-	padding: 0;
-	margin: 0;
 }
 
 .response-description {
@@ -951,11 +938,11 @@ button.response-status-toggle:focus-visible {
 	line-height: 16px;
 }
 
-.response-panel.collapsed .response-status-row .response-toggle-icon::before {
+.response-panel.collapsed .response-toggle-icon::before {
 	content: '+';
 }
 
-.response-panel.expanded .response-status-row .response-toggle-icon::before {
+.response-panel.expanded .response-toggle-icon::before {
 	content: '−';
 }
 
