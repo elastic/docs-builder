@@ -202,15 +202,13 @@ internal static class OperationCommonMark
 		foreach (var response in page.Responses)
 		{
 			if (!single)
-			{
-				var description = string.IsNullOrEmpty(response.Response.Description) ? "" : $" {response.Response.Description}";
-				ApiCommonMark.Heading(markdown, 4, $"`{response.StatusCode}`{description}");
-			}
+				ApiCommonMark.Heading(markdown, 4, $"`{response.StatusCode}`");
+
+			ApiCommonMark.Prepared(markdown, response.Response.Description, apiBaseUrl);
 
 			foreach (var content in response.Contents)
 			{
-				if (!single)
-					ApiCommonMark.Paragraph(markdown, $"Content-Type: `{content.ContentType}`");
+				ApiCommonMark.Paragraph(markdown, $"`{content.ContentType}`");
 				if (content.Properties is not null)
 					ApiPropertyMarkdown.WriteList(markdown, content.Properties, apiBaseUrl);
 				else if (content.UnionVariants is { Variants.Count: > 0 })

@@ -35,7 +35,7 @@
 @if (Model.ShowResponse)
 {
 	var responses = Model.Responses;
-	<div class="api-code-card example-block example-block--response" data-api-response-samples>
+	<div class="api-code-card example-block example-block--response" data-api-response-samples data-code-card>
 		<div class="example-block-header">
 			<div class="example-response-tabs" role="tablist" aria-label="Response status">
 				@for (var i = 0; i < responses.Count; i++)
@@ -53,16 +53,16 @@
 					</button>
 				}
 			</div>
-			<div class="example-block-actions"></div>
+			<div class="example-block-actions" data-code-actions></div>
 		</div>
 		<div class="example-block-body">
 			@for (var i = 0; i < responses.Count; i++)
 			{
 				var response = responses[i];
-				<div class="example-response-panel" data-status="@response.StatusCode" role="tabpanel" hidden="@(i == 0 ? null : "hidden")">
+				<div class="example-response-panel" data-status="@response.StatusCode" data-code-panel="@response.StatusCode" role="tabpanel" hidden="@(i == 0 ? null : "hidden")">
 					@if (response.JsonValue is not null)
 					{
-						@(await RenderPartialAsync<_ApiCodeBlock, ApiCodeBlockModel>(new ApiCodeBlockModel(CodeSample.HighlightClassForExampleBody(response.JsonValue), response.JsonValue)))
+						@(await RenderPartialAsync<_ApiCodeBlock, ApiCodeBlockModel>(new ApiCodeBlockModel(CodeSample.HighlightClassForExampleBody(response.JsonValue), response.JsonValue, LineNumbers: true)))
 					}
 					else if (!string.IsNullOrEmpty(response.ExternalValue))
 					{

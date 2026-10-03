@@ -9,7 +9,7 @@
 	else if (item.Kind == NavigationRenderNodeKind.Leaf)
 	{
 		<li class="flex group/li">
-			<a href="@item.Url" class="sidebar-link nav-link nav-v2-link">
+			<a href="@item.Url" class="sidebar-link nav-link nav-v2-link" @(item.Url.Contains('#') ? "hx-boost=\"false\"" : "")>
 				@await RenderPartialAsync(_NavHttpMethodGlyph.Create(item))
 				<span class="nav-v2-nav-text">@item.NavigationTitle</span>
 				@if (item.Badge is not null) { <span class="nav-badge nav-badge-@item.Badge">@item.Badge</span> }

@@ -3,32 +3,11 @@
 // See the LICENSE file in the project root for more information
 
 using Elastic.ApiExplorer.Landing;
-using Elastic.Documentation.Configuration.Toc;
 
 namespace Elastic.ApiExplorer.Infrastructure;
 
 public static class ApiHubSwitcher
 {
-	public static IReadOnlyList<ApiCatalogEntry> CollectDeclaredEntries(
-		string? urlPathPrefix,
-		IReadOnlyDictionary<string, ResolvedApiConfiguration>? apiConfigurations
-	)
-	{
-		if (apiConfigurations is null || apiConfigurations.Count == 0)
-			return [];
-
-		var entries = new List<ApiCatalogEntry>(apiConfigurations.Count);
-		foreach (var (key, config) in apiConfigurations)
-		{
-			entries.Add(new(key, config.Product.DisplayName, $"{ApiUrlBuilder.ProductRoot(urlPathPrefix, key)}/", config.Product.Id)
-			{
-				CatalogCategories = config.CatalogCategories
-			});
-		}
-
-		return entries;
-	}
-
 	public static IReadOnlyList<ApiVersionSwitcherItem> Build(IReadOnlyList<ApiCatalogEntry> entries, string? currentApiKey, string hubUrl)
 	{
 		if (entries.Count == 0 || currentApiKey is null)

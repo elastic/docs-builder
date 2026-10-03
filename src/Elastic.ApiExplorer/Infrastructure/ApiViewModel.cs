@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information
 
 using Elastic.ApiExplorer.Model;
-using Elastic.ApiExplorer.Operations;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
@@ -21,9 +20,6 @@ public record ApiTocItem(string Heading, string Slug, int Level = 2);
 public record ApiLayoutViewModel : GlobalLayoutViewModel
 {
 	public required IReadOnlyList<ApiTocItem> TocItems { get; init; }
-
-	/// <summary>When set, operation pages render examples in the right rail instead of the in-page TOC.</summary>
-	public OperationExamplesPanelModel? ExamplesPanel { get; init; }
 
 	public required INavigationItem[] Breadcrumbs { get; init; }
 	public IReadOnlyList<ApiVersionSwitcherItem> VersionSwitcherItems { get; init; } = [];

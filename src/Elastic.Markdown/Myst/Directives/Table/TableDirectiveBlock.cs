@@ -28,9 +28,17 @@ public class TableDirectiveBlock(DirectiveBlockParser parser, ParserContext cont
 	/// </summary>
 	public bool Matrix { get; private set; }
 
+	/// <summary>
+	/// When set, wraps the table in a <c>filterable-table</c> host element so the client
+	/// can progressively enhance it with a search box and per-column facet filters.
+	/// The server-rendered table stays fully usable without JavaScript.
+	/// </summary>
+	public bool Filterable { get; private set; }
+
 	public override void FinalizeAndValidate(ParserContext context)
 	{
 		Matrix = PropBool("matrix");
+		Filterable = PropBool("filterable");
 
 		var widthsValue = Prop("widths")?.Trim();
 

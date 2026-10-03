@@ -109,6 +109,11 @@ public class OpenApiGeneratorMarkdownEmissionTests(ApiExplorerFixture fixture)
 		operation.Should().Contain("`/{index}/_search`");
 		operation.Should().Contain("## Description");
 		operation.Should().Contain("Returns hits that match the query");
+		operation.Should().Contain("Supports pagination through `size` and `from`.");
+		operation.Should().Contain("#### `200`");
+		operation.Should().Contain("Search results");
+		operation.Should().NotContain("#### `200` Search results");
+		operation.Should().Contain("`application/json`");
 		operation.Should().NotContain("<!DOCTYPE");
 		operation.Should().NotContain("<html");
 

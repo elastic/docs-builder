@@ -2,12 +2,14 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.IO;
 using AwesomeAssertions;
 using Elastic.ApiExplorer.Components.PropertyTree;
 using Elastic.ApiExplorer.Model;
 using Elastic.ApiExplorer.Operations;
 using Microsoft.AspNetCore.Html;
 using Microsoft.OpenApi;
+using Microsoft.OpenApi.Reader;
 
 namespace Elastic.ApiExplorer.Tests;
 
@@ -424,5 +426,78 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture)
 			.Select(c => c.Text)
 			.Should()
 			.Equal("> 0", "< 100", "unique", "× 5", "pattern: [smdh]$", "default: 1m");
+	}
+
+	[Test]
+	public async Task DescribePathParameter_StringOrStringArray_ShowsBothAlternatives()
+	{
+		var json =
+			"""
+			{
+			  "openapi": "3.0.3",
+			  "info": { "title": "t", "version": "1" },
+			  "paths": {},
+			  "components": {
+			    "schemas": {
+			      "_types.Name": { "type": "string" },
+			      "_types.Names": {
+			        "oneOf": [
+			          { "$ref": "#/components/schemas/_types.Name" },
+			          { "type": "array", "items": { "$ref": "#/components/schemas/_types.Name" } }
+			        ]
+			      },
+			      "_types.DataStreamName": { "type": "string" },
+			      "_types.DataStreamNames": {
+			        "oneOf": [
+			          { "$ref": "#/components/schemas/_types.DataStreamName" },
+			          { "type": "array", "items": { "$ref": "#/components/schemas/_types.DataStreamName" } }
+			        ]
+			      },
+			      "inline.StringOrArray": {
+			        "oneOf": [
+			          { "type": "string" },
+			          { "type": "array", "items": { "type": "string" } }
+			        ]
+			      }
+			    }
+			  }
+			}
+			""";
+		var path = Path.Join(Path.GetTempPath(), $"path-types-{Guid.NewGuid():N}.json");
+		await File.WriteAllTextAsync(path, json, TestContext.Current!.Execution.CancellationToken);
+		try
+		{
+			var loaded = await OpenApiDocument.LoadAsync(
+				path,
+				new OpenApiReaderSettings { LeaveStreamOpen = false },
+				TestContext.Current!.Execution.CancellationToken
+			);
+			var document = loaded.Document!;
+			var builder = new ApiPropertyTreeBuilder(
+				document,
+				new PropertyDisplayOptions { RenderMarkdown = s => new HtmlString($"<p>{s}</p>"), ApiRootUrl = "/api/doc/fixture" }
+			);
+
+			var names = new OpenApiSchemaReference("_types.Names", document);
+			var dataStreams = new OpenApiSchemaReference("_types.DataStreamNames", document);
+			var name = new OpenApiSchemaReference("_types.Name", document);
+
+			builder.Describe(names).Text.Should().Be("union Names");
+			builder.DescribePathParameter(names).Text.Should().Be("union Name | [] Name");
+			builder.DescribePathParameter(dataStreams).Text.Should().Be("union string | [] string");
+			builder
+				.DescribePathParameter(document.Components!.Schemas!["inline.StringOrArray"])
+				.Text
+				.Should()
+				.Be("union string | [] string");
+			builder.DescribePathParameter(name).Text.Should().Be("string Name");
+			builder.Describe(name).Text.Should().Be("string Name");
+			builder.DescribePathParameter(new OpenApiSchema { Type = JsonSchemaType.String }).Text.Should().Be("string");
+		}
+		finally
+		{
+			if (File.Exists(path))
+				File.Delete(path);
+		}
 	}
 }

@@ -16,6 +16,7 @@ using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.Site;
 using Elastic.Documentation.Site.FileProviders;
+using Elastic.Documentation.Site.Navigation;
 using RazorSlices;
 
 namespace Elastic.ApiExplorer.Tests;
@@ -159,6 +160,64 @@ public partial class ApiPagesNavRenderingTests
 	}
 
 	[Test]
+	public void DirectOperationUrl_ExpandsEveryAncestorAndMarksTheOperationCurrent()
+	{
+		const string operationUrl = "/api/doc/elasticsearch/operation/operation-synonyms-put-synonym";
+		const string html =
+			"""
+			<ul id="nav-tree-es">
+				<li class="nav-folder">
+					<div class="peer nav-folder-peer">
+						<input id="other-group" type="checkbox" class="hidden">
+						<a href="/api/doc/elasticsearch/group/other" class="sidebar-link nav-folder-link nav-v2-link"><span class="nav-v2-nav-text">Other</span></a>
+					</div>
+					<div class="nav-subtree-clip">
+						<ul class="nav-subtree">
+							<li class="flex group/li">
+								<a href="/api/doc/elasticsearch/operation/operation-other" class="sidebar-link nav-link nav-v2-link"><span class="nav-v2-nav-text">Other op</span></a>
+							</li>
+						</ul>
+					</div>
+				</li>
+				<li class="nav-folder">
+					<div class="peer nav-folder-peer">
+						<input id="search-apis" type="checkbox" class="hidden">
+						<span class="sidebar-link nav-folder-link nav-v2-link"><span class="nav-v2-nav-text">Search</span></span>
+					</div>
+					<div class="nav-subtree-clip">
+						<ul class="nav-subtree">
+							<li class="nav-folder">
+								<div class="peer nav-folder-peer">
+									<input id="synonyms" type="checkbox" class="hidden">
+									<a href="/api/doc/elasticsearch/group/synonyms" class="sidebar-link nav-folder-link nav-v2-link"><span class="nav-v2-nav-text">Synonyms</span></a>
+								</div>
+								<div class="nav-subtree-clip">
+									<ul class="nav-subtree">
+										<li class="flex group/li">
+											<a href="/api/doc/elasticsearch/operation/operation-synonyms-put-synonym" class="sidebar-link nav-link nav-v2-link"><span class="nav-v2-nav-text">Create or update a synonym set</span></a>
+										</li>
+									</ul>
+								</div>
+							</li>
+						</ul>
+					</div>
+				</li>
+			</ul>
+			""";
+
+		var marked = NavigationCurrentMarker.Apply(html, operationUrl);
+
+		marked.Should().Contain(
+			"href=\"/api/doc/elasticsearch/operation/operation-synonyms-put-synonym\" class=\"sidebar-link nav-link nav-v2-link current\""
+		);
+		marked.Should().Contain("id=\"search-apis\" type=\"checkbox\" class=\"hidden\" checked");
+		marked.Should().Contain("id=\"synonyms\" type=\"checkbox\" class=\"hidden\" checked");
+		marked.Should().Contain("id=\"other-group\" type=\"checkbox\" class=\"hidden\">");
+		marked.Should().NotContain("id=\"other-group\" type=\"checkbox\" class=\"hidden\" checked");
+		CountOccurrences(marked, "nav-subtree-clip--open").Should().Be(2);
+	}
+
+	[Test]
 	public async Task Render_OmitsJumpToPageWhenAirGapped()
 	{
 		var model = CreateLayoutModel(
@@ -214,6 +273,19 @@ public partial class ApiPagesNavRenderingTests
 
 	private static int CountSelectedOptions(string html) =>
 		OptionTag().Matches(html).Count(m => m.Value.Contains(" selected", StringComparison.Ordinal));
+
+	private static int CountOccurrences(string html, string value)
+	{
+		var count = 0;
+		var start = 0;
+		while ((start = html.IndexOf(value, start, StringComparison.Ordinal)) >= 0)
+		{
+			count++;
+			start += value.Length;
+		}
+
+		return count;
+	}
 
 	[GeneratedRegex("<option[^>]*>", RegexOptions.IgnoreCase)]
 	private static partial Regex OptionTag();

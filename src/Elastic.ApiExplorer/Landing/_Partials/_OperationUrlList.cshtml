@@ -5,8 +5,10 @@
 			var method = overload.Model.OperationType.ToString().ToLowerInvariant();
 			<li class="api-url-list-item">
 				<span class="api-url-row">
-					@(await RenderPartialAsync<_HttpMethodBadge, string>(method))
-					<span class="api-url">@overload.Model.Route</span>
+					<span class="api-url">
+						@(await RenderPartialAsync<_HttpMethodBadge, string>(method))
+						<span>@overload.Model.Route</span>
+					</span>
 				</span>
 			</li>
 		}

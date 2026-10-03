@@ -179,9 +179,6 @@ public partial record OperationPageModel
 	public required bool ShowResponseExamples { get; init; }
 	public required IReadOnlyList<ExampleScenario> Scenarios { get; init; }
 
-	/// <summary>Anchor of the examples rail; null when the page has no examples at all.</summary>
-	public required string? ExamplesAnchor { get; init; }
-
 	/// <summary>Effective auth scheme badges. Empty when the spec declares no schemes.</summary>
 	public required IReadOnlyList<AuthSchemeBadge> AuthSchemes { get; init; }
 
@@ -213,8 +210,6 @@ public partial record OperationPageModel
 			apiOperation.OperationType.ToString().ToLowerInvariant(),
 			apiOperation.Route
 		);
-		var examplesAnchor = scenarios.Count > 0 ? "examples" : null;
-
 		var requestContentEntry = operation.RequestBody?.Content?.FirstOrDefault();
 		var requestSchema = requestContentEntry?.Value?.Schema;
 
@@ -259,7 +254,6 @@ public partial record OperationPageModel
 			ShowRequestExamples = requestExamples.Count > 0 && scenarios.Any(static s => s.ShowRequest),
 			ShowResponseExamples = responseExamples.Count > 0,
 			Scenarios = scenarios,
-			ExamplesAnchor = examplesAnchor,
 			AuthSchemes = OpenApiAuthSchemeResolver.Resolve(
 				operation,
 				document,
@@ -531,9 +525,22 @@ public partial record OperationPageModel
 		var list = new List<ExampleDisplay>();
 		foreach (var (statusCode, response) in responses)
 		{
-			var examples = response?.Content?.FirstOrDefault().Value?.Examples;
-			foreach (var example in MapExamples(examples, renderMarkdown, statusCode))
-				list.Add(example);
+			var media = response?.Content?.FirstOrDefault().Value;
+			var named = MapExamples(media?.Examples, renderMarkdown, statusCode);
+			if (named.Count > 0)
+			{
+				list.AddRange(named);
+				continue;
+			}
+
+			if (media?.Example is not { } example || JsonNullSentinel.IsJsonNullSentinel(example))
+				continue;
+
+			var json = example.ToString();
+			if (string.IsNullOrWhiteSpace(json))
+				continue;
+
+			list.Add(new ExampleDisplay(statusCode, null, json, null, statusCode));
 		}
 
 		return list;
@@ -642,12 +649,15 @@ public partial record OperationPageModel
 		var schema = parameter.Schema;
 		var typeInfo = analyzer.GetTypeInfo(schema);
 		var description = supplemental?.ParameterOr(parameter.Name ?? "", parameter.Description) ?? parameter.Description;
+		var type = schema is not null ? builder.DescribePathParameter(schema) : null;
+		// The type chip already lists X | X[]; a One of row would repeat those alternatives.
+		var alternativesInType = type?.Text.Contains(" | ", StringComparison.Ordinal) == true;
 		return new ApiPathParameter
 		{
 			Parameter = parameter,
-			Type = schema is not null ? builder.Describe(schema) : null,
+			Type = type,
 			EnumValues = typeInfo.EnumValues ?? [],
-			UnionOptions = UnionBadges(typeInfo),
+			UnionOptions = alternativesInType ? [] : UnionBadges(typeInfo),
 			DescriptionHtml = ApiMarkdown.Render(context, description),
 			DescriptionMarkdown = description
 		};

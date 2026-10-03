@@ -52,6 +52,17 @@ public class FeatureFlagsTests
 	[Test]
 	public void PreviewEnvironment_EnablesAssemblerApiExplorer() => AssertEnvironmentEnablesAssemblerApiExplorer("preview");
 
+	[Test]
+	public void EdgeEnvironment_EnablesAssemblerApiExplorer() => AssertEnvironmentEnablesAssemblerApiExplorer("edge");
+
+	[Test]
+	public void EdgeEnvironment_DoesNotAllowIndexing()
+	{
+		var config = AssemblyConfiguration.Create(new ConfigurationFileProvider(new TestLoggerFactory(), new ConfigurationFileSystem()));
+
+		config.Environments["edge"].AllowIndexing.Should().BeFalse();
+	}
+
 	private static void AssertEnvironmentEnablesAssemblerApiExplorer(string environmentName)
 	{
 		var config = AssemblyConfiguration.Create(new ConfigurationFileProvider(new TestLoggerFactory(), new ConfigurationFileSystem()));
