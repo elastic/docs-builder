@@ -96,12 +96,28 @@ public sealed partial record SiteNavigationDefinition
 		return set.ToImmutableHashSet();
 	}
 
+	// Uri.TryCreate is not total: on .NET 10 it throws IndexOutOfRangeException for a file:// URI whose host is only a bidirectional control character (U+202E).
+	// Such a prefix is not a usable URL path either way, so it is treated as one that cannot be created.
+	private static bool TryCreateUri(string text, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out Uri? uri)
+	{
+		try
+		{
+			return Uri.TryCreate(text, UriKind.Absolute, out uri);
+		}
+		catch (IndexOutOfRangeException)
+		{
+			uri = null;
+			return false;
+		}
+	}
+
 	private static void CollectPathPrefixes(SiteTableOfContentsRef tocRef, HashSet<Uri> set)
 	{
 		if (!string.IsNullOrEmpty(tocRef.PathPrefix))
 		{
-			var pathUri = new Uri($"{tocRef.Source.Scheme}://{tocRef.PathPrefix.TrimEnd('/')}/");
-			_ = set.Add(pathUri);
+			// A path_prefix that is not a legal URL path (a space, a stray colon) cannot be compared as one; it is skipped here rather than throwing out of the constraint that asked.
+			if (TryCreateUri($"{tocRef.Source.Scheme}://{tocRef.PathPrefix.TrimEnd('/')}/", out var pathUri))
+				_ = set.Add(pathUri);
 		}
 
 		foreach (var child in tocRef.Children)

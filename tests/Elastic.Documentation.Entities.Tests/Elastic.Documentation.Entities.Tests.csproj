@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Tries Nullean.Entities (https://github.com/nullean/entities) against this domain: the rules the investigation lists as unchecked, written as constraint sets and run on
+    the shipped configuration, on the real docs/_docset.yml, through this repository's own ConstraintSetTests laws harness, and on generated data.
+
+    Not in docs-builder.slnx: it needs the library. Point NulleanEntitiesRoot at a checkout of nullean/entities (the packages are not published yet):
+
+      dotnet run (project: tests/Elastic.Documentation.Entities.Tests) with the property NulleanEntitiesRoot set to the checkout
+  -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <NulleanEntitiesRoot Condition="'$(NulleanEntitiesRoot)' == ''">$(HOME)/Projects/nullean-entities/.claude/worktrees/constraints-notes</NulleanEntitiesRoot>
+    <!-- the library is not part of this solution's analyzers -->
+    <NoWarn>$(NoWarn);CA1822;CA1707;CS1591</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Elastic.Documentation.Configuration\Elastic.Documentation.Configuration.csproj" />
+    <ProjectReference Include="..\..\src\Elastic.Documentation.Tooling\Elastic.Documentation.Tooling.csproj" />
+    <ProjectReference Include="$(NulleanEntitiesRoot)/src/Nullean.Entities.CsCheck/Nullean.Entities.CsCheck.csproj" AdditionalProperties="NulleanSingleTfm=true" />
+    <ProjectReference Include="$(NulleanEntitiesRoot)/src/Nullean.Entities.FileSystem/Nullean.Entities.FileSystem.csproj" AdditionalProperties="NulleanSingleTfm=true" />
+    <ProjectReference Include="$(NulleanEntitiesRoot)/src/Nullean.Entities.CsCheck.FileSystem/Nullean.Entities.CsCheck.FileSystem.csproj" AdditionalProperties="NulleanSingleTfm=true" />
+  </ItemGroup>
+
+</Project>

@@ -98,7 +98,7 @@ public static class DocumentationSetConstraints
 			return m
 				.Docset
 				.TocDefaultCtas
-				.Where(page => !ctas.ContainsKey(page.Value))
+				.Where(page => page.Value is null || !ctas.ContainsKey(page.Value))
 				.Select(
 					page => Finding.Error(
 						$"'default_cta: {page.Value}' on page '{page.Key}' does not match any 'cta' template in docset.yml."
