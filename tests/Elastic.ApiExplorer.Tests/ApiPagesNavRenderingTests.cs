@@ -265,7 +265,7 @@ public partial class ApiPagesNavRenderingTests
 			StaticFileContentHashProvider = new StaticFileContentHashProvider(new EmbeddedOrPhysicalFileProvider(context)),
 			TocItems = [],
 			MarkdownUrl = markdownUrl,
-			Breadcrumbs = ApiBreadcrumbTrail.Empty,
+			Breadcrumbs = [],
 			VersionSwitcherItems = versionSwitcherItems ?? [],
 			HubSwitcherItems = hubSwitcherItems ?? [],
 		};
