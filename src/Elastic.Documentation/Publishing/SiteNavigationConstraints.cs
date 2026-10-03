@@ -18,6 +18,11 @@ public static class SiteNavigationConstraints
 		),
 		new("path-prefixes-unique", "No two repositories publish under the same path prefix.", DuplicatePathPrefixes),
 		new(
+			"path-prefix-is-a-url-path",
+			"Every path_prefix is a legal URL path, so it can be compared and published.",
+			PathPrefixesThatAreNotUrlPaths
+		),
+		new(
 			"repository-path-prefixes-unique",
 			"No repository mounts two tables of contents under the same path prefix.",
 			RepeatedRepositoryPathPrefixes
@@ -57,6 +62,21 @@ public static class SiteNavigationConstraints
 			{ Length = toc.Position is { } p ? p.Column - p.EndColumn : null };
 		}
 	}
+
+	// DuplicatePathPrefixes compares prefixes as URIs and skips one that cannot be built; this is the rule that says so.
+	private static IEnumerable<Finding> PathPrefixesThatAreNotUrlPaths(SiteNavigationDefinition navigation) =>
+		AllMounts(navigation)
+			.Where(
+				toc => !string.IsNullOrEmpty(toc.PathPrefix) &&
+					!SiteNavigationDefinition.TryCreateUri($"{toc.Source.Scheme}://{toc.PathPrefix.TrimEnd('/')}/", out _)
+			)
+			.Select(
+				toc => Finding.Error(
+					$"Path prefix '{toc.PathPrefix}' of {NormalizedSource(toc)} is not a legal URL path.",
+					toc.Position?.Line,
+					toc.Position?.Column
+				)
+			);
 
 	private static IEnumerable<Finding> DuplicatePathPrefixes(SiteNavigationDefinition navigation)
 	{

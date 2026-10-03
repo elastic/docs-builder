@@ -98,7 +98,7 @@ public sealed partial record SiteNavigationDefinition
 
 	// Uri.TryCreate is not total: on .NET 10 it throws IndexOutOfRangeException for a file:// URI whose host is only a bidirectional control character (U+202E).
 	// Such a prefix is not a usable URL path either way, so it is treated as one that cannot be created.
-	private static bool TryCreateUri(string text, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out Uri? uri)
+	internal static bool TryCreateUri(string text, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out Uri? uri)
 	{
 		try
 		{

@@ -102,6 +102,7 @@ public class SiteNavigationConstraintsTests : ConstraintSetTests<SiteNavigationD
 		new Dictionary<string, Func<SiteNavigationDefinition, SiteNavigationDefinition>>
 		{
 			["mount-has-path-prefix"] = _ => With(Mount("kibana://reference", "")),
+			["path-prefix-is-a-url-path"] = _ => With(Mount("kibana://reference", "a prefix with spaces")),
 			["path-prefixes-unique"] =
 				_ => With(Mount("kibana://reference", "reference/shared"), Mount("elasticsearch://reference", "reference/shared")),
 			["repository-path-prefixes-unique"] =
