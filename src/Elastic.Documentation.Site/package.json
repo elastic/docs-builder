@@ -55,8 +55,9 @@
     }
   },
   "alias": {
-    "@opentelemetry/otlp-exporter-base/browser-http": "@opentelemetry/otlp-exporter-base/build/esm/index-browser-http.js",
-    "uuid": "./node_modules/uuid/dist/index.js"
+    "uuid": "./node_modules/uuid/dist/index.js",
+    "@opentelemetry/browser-instrumentation/experimental/web-vitals": "./node_modules/@opentelemetry/browser-instrumentation/dist/web-vitals/index.js",
+    "@opentelemetry/otlp-exporter-base/browser-http": "./node_modules/@elastic/opentelemetry-browser/node_modules/@opentelemetry/otlp-exporter-base/build/esm/index-browser-http.js"
   },
   "repository": {
     "type": "git",
@@ -109,21 +110,12 @@
   "dependencies": {
     "@elastic/eui": "117.0.0",
     "@elastic/highlightjs-esql": "1.2.3",
+    "@elastic/opentelemetry-browser": "^0.3.0",
     "@emotion/css": "11.13.5",
     "@emotion/react": "11.14.0",
     "@microsoft/fetch-event-source": "2.0.1",
     "@opentelemetry/api": "^1.9.1",
     "@opentelemetry/api-logs": "^0.221.0",
-    "@opentelemetry/context-zone": "^2.10.0",
-    "@opentelemetry/core": "^2.10.0",
-    "@opentelemetry/exporter-logs-otlp-http": "^0.221.0",
-    "@opentelemetry/exporter-trace-otlp-http": "^0.221.0",
-    "@opentelemetry/instrumentation": "^0.221.0",
-    "@opentelemetry/instrumentation-fetch": "^0.221.0",
-    "@opentelemetry/otlp-exporter-base": "^0.221.0",
-    "@opentelemetry/resources": "^2.10.0",
-    "@opentelemetry/sdk-logs": "^0.221.0",
-    "@opentelemetry/sdk-trace-web": "^2.10.0",
     "@opentelemetry/semantic-conventions": "^1.43.0",
     "@r2wc/react-to-web-component": "2.1.1",
     "@tanstack/react-query": "^5.101.4",
