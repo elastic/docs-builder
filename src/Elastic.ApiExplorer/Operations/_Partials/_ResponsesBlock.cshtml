@@ -4,9 +4,9 @@
 	var title = responses.Count == 1 ? "Response" : "Responses";
 }
 <div class="responses-block" data-api-responses>
-	<h4 class="section-header responses-header" id="responses" data-section="responses">
+	<h2 class="section-header responses-header" id="responses" data-section="responses">
 		<a class="headerlink responses-title" href="#responses">@title</a>
-	</h4>
+	</h2>
 	<div class="responses-list">
 		@foreach (var response in responses)
 		{
@@ -73,7 +73,7 @@
 					@if (response.Headers.Count > 0)
 					{
 						<div class="response-headers">
-							<h5>Response Headers</h5>
+							<h3>Response Headers</h3>
 							<dl class="property-list">
 								@foreach (var header in response.Headers)
 								{
