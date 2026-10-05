@@ -151,18 +151,7 @@ public static class OpenApiExtensionReader
 			samples.Add(new CodeSample(lang, displaySource, CodeSample.GetHighlightClass(lang)));
 		}
 
-		// Console first when present, then preserve spec order
-		samples.Sort(static (a, b) =>
-		{
-			var aIsConsole = string.Equals(a.Language, "Console", StringComparison.OrdinalIgnoreCase);
-			var bIsConsole = string.Equals(b.Language, "Console", StringComparison.OrdinalIgnoreCase);
-			if (aIsConsole && !bIsConsole)
-				return -1;
-			if (!aIsConsole && bIsConsole)
-				return 1;
-			return 0;
-		});
-
-		return samples;
+		// Console first, then by language popularity; OrderBy is stable, so unranked languages keep spec order.
+		return [.. samples.OrderBy(static s => s.Rank)];
 	}
 }

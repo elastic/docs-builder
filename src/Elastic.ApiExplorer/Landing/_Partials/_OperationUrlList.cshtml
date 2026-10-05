@@ -1,15 +1,15 @@
+@using Elastic.ApiExplorer.Operations
 @inherits RazorSlice<OperationUrlListModel>
+@if (Model.Endpoint is { } endpoint)
+{
 		<ul class="api-url-listing">
-		@foreach (var overload in Model.Operations)
+		@foreach (var row in endpoint.Rows)
 		{
-			var method = overload.Model.OperationType.ToString().ToLowerInvariant();
 			<li class="api-url-list-item">
 				<span class="api-url-row">
-					<span class="api-url">
-						@(await RenderPartialAsync<_HttpMethodBadge, string>(method))
-						<span>@overload.Model.Route</span>
-					</span>
+					@(await RenderPartialAsync<_EndpointPath, EndpointPathModel>(new EndpointPathModel(row, endpoint.ShortestRoute)))
 				</span>
 			</li>
 		}
 		</ul>
+}

@@ -6,6 +6,8 @@ using AwesomeAssertions;
 using Elastic.ApiExplorer._Partials;
 using Elastic.ApiExplorer.Infrastructure;
 using Elastic.ApiExplorer.Model;
+using Elastic.ApiExplorer.Operations;
+using Elastic.ApiExplorer.Operations._Partials;
 using RazorSlices;
 
 namespace Elastic.ApiExplorer.Tests;
@@ -36,34 +38,34 @@ public class ApiCodeBlockRenderingTests
 	}
 
 	[Test]
-	public async Task Render_CodeSample_ExposesCardActionsAndPanels()
+	public async Task Render_CodeSample_ExposesCardActions()
 	{
-		var samples = new[]
-		{
-			new CodeSample("Console", "GET /", "language-console"),
-			new CodeSample("Python", "client.get()", "language-python")
-		};
-
-		var html = await _ApiCodeSample.Create(new ApiCodeSampleModel("rail-x", samples)).RenderAsync(cancellationToken: Ct);
+		var html = await _ApiCodeSample.Create(new ApiCodeSampleModel(new CodeSample("JSON", "{}", "language-json"))).RenderAsync(
+			cancellationToken: Ct
+		);
 
 		html.Should().Contain("data-code-card");
 		html.Should().Contain("data-code-actions");
-		html.Should().Contain("data-code-panel=\"Console\"");
-		html.Should().Contain("data-code-panel=\"Python\"");
 		html.Should().Contain("data-line-numbers");
 	}
 
 	[Test]
-	public async Task Render_CodeSample_GivesEachPanelItsOwnHighlightLanguage()
+	public async Task Render_Carousel_GivesEachCardItsOwnHighlightLanguage()
 	{
-		var samples = new[]
+		var scenario = new ExampleScenario
 		{
-			new CodeSample("Console", "GET /", CodeSample.GetHighlightClass("Console")),
-			new CodeSample("Python", "client.get()", CodeSample.GetHighlightClass("Python")),
-			new CodeSample("curl", "curl localhost", CodeSample.GetHighlightClass("curl"))
+			Title = "Example",
+			TabId = "example",
+			CodeSamples =
+			[
+				new CodeSample("Console", "GET /", CodeSample.GetHighlightClass("Console")),
+				new CodeSample("Python", "client.get()", CodeSample.GetHighlightClass("Python")),
+				new CodeSample("curl", "curl localhost", CodeSample.GetHighlightClass("curl"))
+			]
 		};
+		var panel = new OperationExamplesPanelModel { Scenarios = [scenario] };
 
-		var html = await _ApiCodeSample.Create(new ApiCodeSampleModel("rail-x", samples)).RenderAsync(cancellationToken: Ct);
+		var html = await _ExampleScenarioContent.Create(new ExampleScenarioView(scenario, panel)).RenderAsync(cancellationToken: Ct);
 
 		html.Should().Contain("<code class=\"language-console\">");
 		html.Should().Contain("<code class=\"language-python\">");

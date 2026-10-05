@@ -33,6 +33,7 @@ public record ApiRenderContext(
 	/// <summary>Logger for API Explorer rendering (e.g. OpenAPI extension parsing); optional when the host does not provide one.</summary>
 	public ILogger? ApiExplorerLog { get; init; }
 
+	/// <summary>Page counters and heartbeat for the product being rendered; <see langword="null"/> outside a generation run.</summary>
 	public IReadOnlyList<ApiVersionSwitcherItem> VersionSwitcherItems { get; init; } = [];
 
 	public IReadOnlyList<ApiCatalogEntry> CatalogEntries { get; init; } = [];

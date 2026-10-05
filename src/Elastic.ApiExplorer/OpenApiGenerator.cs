@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.Collections.Concurrent;
+using System.Diagnostics;
 using System.IO.Abstractions;
 using Elastic.ApiExplorer.Infrastructure;
 using Elastic.ApiExplorer.Landing;
@@ -114,6 +115,8 @@ public class OpenApiGenerator(
 			}
 			catch (Exception ex) when (ex is not OperationCanceledException)
 			{
+				// EmitGlobalError only keeps the message; the stack trace is what says where it failed.
+				_logger.LogError(ex, "API '{Prefix}' could not be generated", prefix);
 				context.Collector.EmitGlobalError($"API '{prefix}' could not be generated: {ex.Message}");
 			}
 		}).ConfigureAwait(false);
@@ -370,6 +373,8 @@ public class OpenApiGenerator(
 
 	private async Task GenerateApiProduct(ApiProductGeneration generation, Cancel ctx)
 	{
+		var title = generation.Document.Info?.Title ?? "<no title>";
+		var started = Stopwatch.StartNew();
 		var discovery = DiscoverSupplemental(generation.Document, generation.ApiConfig);
 		ApiSupplementalValidator.Validate(
 			discovery,
@@ -381,7 +386,12 @@ public class OpenApiGenerator(
 			generation.ApiConfig,
 			versionMajor: generation.SupplementalMajor
 		);
-		_logger.LogInformation("Generating OpenApiDocument {Title}", generation.Document.Info?.Title ?? "<no title>");
+		_logger.LogInformation(
+			"Generating OpenApiDocument {Title} ({Operations} operations, navigation built in {Elapsed}ms)",
+			title,
+			generation.Document.Paths.Sum(static p => p.Value.Operations?.Count ?? 0),
+			started.ElapsedMilliseconds
+		);
 
 		var navigationRenderer = new IsolatedBuildNavigationHtmlWriter(
 			context,
@@ -428,6 +438,7 @@ public class OpenApiGenerator(
 
 		await RenderNavigationItems(renderContext, navigationRenderer, navigation, ctx).ConfigureAwait(false);
 		await WriteSpecDownloads(navigation, generation.Document, ctx).ConfigureAwait(false);
+		_logger.LogInformation("Generated OpenApiDocument {Title} in {Elapsed:0.0}s", title, started.Elapsed.TotalSeconds);
 	}
 
 	private async Task WriteSpecDownloads(INavigationItem landing, OpenApiDocument document, Cancel ctx)
@@ -520,6 +531,27 @@ public class OpenApiGenerator(
 			_ = currentNavigation is ILeafNavigationItem<IApiModel> leaf
 				? await Render(leaf, leaf.Model, renderContext, navigationRenderer, ctx)
 				: throw new Exception($"Unknown navigation item type {currentNavigation.GetType()}");
+			if (currentNavigation is OperationNavigationItem { AliasUrls.Count: > 0 } collapsed)
+				await WriteRedirects(collapsed, ctx);
+		}
+	}
+
+	/// <summary>Former per-operation URLs of a collapsed page forward to it, keeping any <c>#fragment</c>.</summary>
+	private async Task WriteRedirects(OperationNavigationItem page, Cancel ctx)
+	{
+		var html = ApiRedirectPage.Html(page.Url);
+		foreach (var alias in page.AliasUrls)
+		{
+			var file = _writeFileSystem.FileInfo.New(
+				Path.Join(context.OutputDirectory.FullName, ApiOutputPaths.RelativeHtmlFile(alias, context.UrlPathPrefix))
+			);
+			try
+			{
+				file.Directory!.Create();
+			}
+			catch (IOException) { }
+
+			await _writeFileSystem.File.WriteAllTextAsync(file.FullName, html, ctx).ConfigureAwait(false);
 		}
 	}
 

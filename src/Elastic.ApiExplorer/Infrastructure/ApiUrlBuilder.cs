@@ -38,6 +38,25 @@ public static partial class ApiUrlBuilder
 		return $"operation-{id.Replace('.', '-').ToLowerInvariant()}";
 	}
 
+	/// <summary>
+	/// URL leaf for operations collapsed onto one page. Spec operation ids for one API share a base and differ by
+	/// a numeric suffix (<c>search</c>, <c>search-1</c>…), so the page keeps the primary operation's base id. The
+	/// suffix stays when no other operation in the group shares that base.
+	/// </summary>
+	public static string CanonicalOperationMoniker(IReadOnlyList<ApiOperation> operations, ApiOperation primary)
+	{
+		var id = primary.Operation.OperationId;
+		if (string.IsNullOrWhiteSpace(id))
+			return OperationMoniker(id, primary.Route);
+
+		var baseId = NumericSuffix().Replace(id, "");
+		var shared = operations.Count(o => o.Operation.OperationId is { } other && NumericSuffix().Replace(other, "") == baseId) > 1;
+		return OperationMoniker(shared ? baseId : id, primary.Route);
+	}
+
+	[GeneratedRegex(@"-\d+$", RegexOptions.CultureInvariant)]
+	private static partial Regex NumericSuffix();
+
 	/// <summary>Deterministic URL segment for a schema type page under <c>.../types/</c>.</summary>
 	public static string SchemaMoniker(string schemaId) => schemaId.Replace('.', '-').ToLowerInvariant();
 

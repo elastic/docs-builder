@@ -110,13 +110,6 @@ public class ApiNavParityTests
 		var (generator, document) = await CreateGeneratorWithSpec(SharedSummarySpec);
 		var navigation = generator.CreateNavigation("test", document);
 
-		navigation
-			.NavigationItems
-			.OfType<TagNavigationItem>()
-			.SelectMany(tag => tag.NavigationItems)
-			.OfType<EndpointNavigationItem>()
-			.Should()
-			.BeEmpty();
 		var operations = navigation
 			.NavigationItems
 			.OfType<TagNavigationItem>()
@@ -126,31 +119,32 @@ public class ApiNavParityTests
 			.ToList();
 
 		operations.Should().HaveCount(2);
-		operations.Should().OnlyContain(op => !op.Hidden);
+		operations.Should().OnlyContain(op => !op.Hidden && op.Siblings.Count == 0 && op.AliasUrls.Count == 0);
 		operations.Select(op => op.Url).Should().Equal("/api/doc/test/operation/operation-op-a", "/api/doc/test/operation/operation-op-b");
 	}
 
 	[Test]
-	public async Task CreateNavigation_SharedSummaryOperations_GroupingEnabled_CollapsesIntoHiddenEndpoint()
+	public async Task CreateNavigation_SharedSummaryOperations_GroupingEnabled_CollapsesIntoOnePage()
 	{
 		var (generator, document) = await CreateGeneratorWithSpec(SharedSummarySpec, apiNavGroupingEnabled: true);
 		var navigation = generator.CreateNavigation("test", document);
 
-		var endpoint = navigation
+		var page = navigation
 			.NavigationItems
 			.OfType<TagNavigationItem>()
 			.Single()
 			.NavigationItems
-			.OfType<EndpointNavigationItem>()
 			.Should()
 			.ContainSingle()
+			.Which
+			.Should()
+			.BeOfType<OperationNavigationItem>()
 			.Subject;
 
-		endpoint.Hidden.Should().BeFalse();
-		var operations = endpoint.NavigationItems.ToList();
-		operations.Should().HaveCount(2);
-		operations.Should().OnlyContain(op => op.Hidden);
-		operations.Select(op => op.Url).Should().Equal("/api/doc/test/operation/operation-op-a", "/api/doc/test/operation/operation-op-b");
+		page.Hidden.Should().BeFalse();
+		page.Url.Should().Be("/api/doc/test/operation/operation-op-a");
+		page.Siblings.Select(o => o.Route).Should().Equal("/b");
+		page.AliasUrls.Should().Equal("/api/doc/test/operation/operation-op-b");
 	}
 
 	[Test]

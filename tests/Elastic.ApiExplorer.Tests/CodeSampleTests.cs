@@ -50,19 +50,37 @@ public class CodeSampleTests
 	}
 
 	[Test]
-	public void CodeSamples_OrdersConsoleFirst()
+	public void CodeSamples_OrdersConsoleFirstThenByLanguagePopularity()
 	{
 		var samples = new JsonArray(
+			new JsonObject { ["lang"] = "Ruby", ["source"] = "response = client.search" },
 			new JsonObject { ["lang"] = "Python", ["source"] = "resp = client.search()" },
 			new JsonObject { ["lang"] = "curl", ["source"] = "curl -X GET ..." },
 			new JsonObject { ["lang"] = "Console", ["source"] = "GET /_search" },
-			new JsonObject { ["lang"] = "Java", ["source"] = "client.search()" }
+			new JsonObject { ["lang"] = "Java", ["source"] = "client.search()" },
+			new JsonObject { ["lang"] = "JavaScript", ["source"] = "await client.search()" }
 		);
 		var operation = CreateOperationWithCodeSamples(samples);
 
 		var result = OpenApiExtensionReader.ParseCodeSamples(operation);
 
-		result[0].Language.Should().Be("Console");
+		result.Select(s => s.Language).Should().Equal("Console", "JavaScript", "Python", "curl", "Java", "Ruby");
+	}
+
+	[Test]
+	public void CodeSamples_UnrankedLanguagesKeepSpecOrderAfterRankedOnes()
+	{
+		var samples = new JsonArray(
+			new JsonObject { ["lang"] = "Haskell", ["source"] = "search client" },
+			new JsonObject { ["lang"] = "Python", ["source"] = "resp = client.search()" },
+			new JsonObject { ["lang"] = "Elixir", ["source"] = "Client.search()" },
+			new JsonObject { ["lang"] = "Console", ["source"] = "GET /_search" }
+		);
+		var operation = CreateOperationWithCodeSamples(samples);
+
+		var result = OpenApiExtensionReader.ParseCodeSamples(operation);
+
+		result.Select(s => s.Language).Should().Equal("Console", "Python", "Haskell", "Elixir");
 	}
 
 	[Test]
@@ -201,4 +219,15 @@ public class CodeSampleTests
 	[Test]
 	public void GetHighlightGroupClass_HandlesLanguagePrefixOnly() =>
 		CodeSample.GetHighlightGroupClass("language-").Should().Be("highlight-plaintext");
+
+	[Test]
+	[Arguments("Java", "elasticsearch-java")]
+	[Arguments("Console", "Kibana Dev Tools")]
+	[Arguments("C#", "Elastic.Clients.Elasticsearch")]
+	[Arguments("Go", "")]
+	public void ClientLabel_NamesTheLibraryThatRunsTheSample(string language, string expected) =>
+		new CodeSample(language, "", CodeSample.GetHighlightClass(language)).ClientLabel.Should().Be(expected);
+
+	[Test]
+	public void GetHighlightClass_CSharp_UsesTheCsharpGrammar() => CodeSample.GetHighlightClass("C#").Should().Be("language-csharp");
 }

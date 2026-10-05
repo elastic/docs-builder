@@ -207,6 +207,67 @@ public class OpenApiGeneratorMarkdownEmissionTests(ApiExplorerFixture fixture)
 		wrapped.Should().NotContain("<!DOCTYPE");
 	}
 
+	[Test]
+	[Arguments(true)]
+	[Arguments(false)]
+	public async Task Generate_CollapsedOperations_RedirectFormerUrlsOnlyWhenGroupingIsOn(bool grouping)
+	{
+		var outputRoot = Path.Join(Paths.WorkingDirectoryRoot.FullName, $"api-redirect-{Guid.NewGuid():N}");
+		var context = CreateGenerateContext(outputRoot);
+		context.Configuration.Features.ApiNavGroupingEnabled = grouping;
+		using var versionIndexClient = new VersionIndexClient(BaseUri, MainOnlyHandler(), sleep: (_, _) => Task.CompletedTask);
+		var generator = new OpenApiGenerator(
+			NullLoggerFactory.Instance,
+			context,
+			PassthroughMarkdownRenderer.Instance,
+			versionIndexClient,
+			CreateSequentialReader(await LoadSpec(SearchVariantsSpec))
+		);
+
+		await generator.Generate(TestContext.Current!.Execution.CancellationToken);
+
+		var operationDir = Path.Join(outputRoot, "api", "doc", "elasticsearch", "operation");
+		var file = context.WriteFileSystem.File;
+		var canonical = await file.ReadAllTextAsync(Path.Join(operationDir, "operation-search", "index.html"));
+		var former = await file.ReadAllTextAsync(Path.Join(operationDir, "operation-search-1", "index.html"));
+		if (grouping)
+		{
+			canonical.Should().Contain("api-url-also-method");
+			former.Should().Contain("window.location.replace(\"/api/doc/elasticsearch/operation/operation-search\"");
+			file.Exists(Path.Join(operationDir, "operation-search-1.md")).Should().BeFalse();
+		}
+		else
+		{
+			former.Should().NotContain("window.location.replace");
+			file.Exists(Path.Join(operationDir, "operation-search-1.md")).Should().BeTrue();
+		}
+	}
+
+	private const string SearchVariantsSpec = /*lang=json,strict*/
+		"""
+		{
+		  "openapi": "3.0.3",
+		  "info": { "title": "Elasticsearch", "version": "1.0" },
+		  "paths": {
+		    "/_search": {
+		      "get": { "operationId": "search", "summary": "Run a search", "tags": ["search"], "x-namespace": "_global", "x-api-name": "search", "responses": { "200": { "description": "ok" } } },
+		      "post": { "operationId": "search-1", "summary": "Run a search", "tags": ["search"], "x-namespace": "_global", "x-api-name": "search", "responses": { "200": { "description": "ok" } } }
+		    }
+		  },
+		  "tags": [ { "name": "search" } ]
+		}
+		""";
+
+	private static async Task<OpenApiDocument> LoadSpec(string json)
+	{
+		using var stream = new MemoryStream(System.Text.Encoding.UTF8.GetBytes(json));
+		var result = await OpenApiDocument.LoadAsync(
+			stream,
+			settings: new Microsoft.OpenApi.Reader.OpenApiReaderSettings { LeaveStreamOpen = false }
+		);
+		return result.Document!;
+	}
+
 	private static BuildContext CreateGenerateContext(string outputRoot)
 	{
 		var collector = new DiagnosticsCollector([]);

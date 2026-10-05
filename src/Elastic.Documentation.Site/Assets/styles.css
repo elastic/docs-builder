@@ -36,6 +36,7 @@
 @import './markdown/storybook.css';
 @import './markdown/hub.css';
 @import './api-docs.css';
+@import './api-language-icons.css';
 @import './web-components/VectorSizingCalculator/vector-sizing-calculator.css';
 @import './pages-nav-figma.css';
 @import 'tippy.js/dist/tippy.css';

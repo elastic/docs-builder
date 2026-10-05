@@ -231,22 +231,9 @@ public class ApiNavigationBuilder(ILogger logger, BuildContext context)
 		{
 			if (groupingEnabled && endpoint.Operations.Count > 1)
 			{
-				var endpointNavigationItem = new EndpointNavigationItem(endpoint, rootNavigation, parentNavigationItem);
-				var operationNavigationItems = new List<OperationNavigationItem>();
-				foreach (var operation in endpoint.Operations)
-				{
-					var operationNavigationItem = new OperationNavigationItem(
-						context.UrlPathPrefix,
-						apiUrlSuffix,
-						operation,
-						rootNavigation,
-						endpointNavigationItem
-					)
-					{ Hidden = true };
-					operationNavigationItems.Add(operationNavigationItem);
-				}
-				endpointNavigationItem.NavigationItems = operationNavigationItems;
-				endpointNavigationItems.Add(endpointNavigationItem);
+				endpointNavigationItems.Add(
+					CreateCollapsedOperationNavigationItem(apiUrlSuffix, rootNavigation, endpoint, parentNavigationItem)
+				);
 			}
 			else
 			{
@@ -263,6 +250,39 @@ public class ApiNavigationBuilder(ILogger logger, BuildContext context)
 				}
 			}
 		}
+	}
+
+	/// <summary>
+	/// Every method and route of one API renders as a single page built around the primary operation.
+	/// The other operations' former URLs become redirects.
+	/// </summary>
+	private OperationNavigationItem CreateCollapsedOperationNavigationItem(
+		string apiUrlSuffix,
+		IRootNavigationItem<IApiGroupingModel, INavigationItem> rootNavigation,
+		ApiEndpoint endpoint,
+		IApiGroupingNavigationItem<IApiGroupingModel, INavigationItem> parentNavigationItem
+	)
+	{
+		var primary = OperationEndpoint.SelectPrimary(endpoint.Operations);
+		var moniker = ApiUrlBuilder.CanonicalOperationMoniker(endpoint.Operations, primary);
+		var url = OperationNavigationItem.OperationUrl(context.UrlPathPrefix, apiUrlSuffix, moniker);
+		var aliases = endpoint
+			.Operations
+			.Select(
+				o => OperationNavigationItem.OperationUrl(
+					context.UrlPathPrefix,
+					apiUrlSuffix,
+					ApiUrlBuilder.OperationMoniker(o.Operation.OperationId, o.Route)
+				)
+			)
+			.Where(alias => alias != url)
+			.Distinct(StringComparer.Ordinal)
+			.ToArray();
+		return new OperationNavigationItem(context.UrlPathPrefix, apiUrlSuffix, primary, rootNavigation, parentNavigationItem, moniker)
+		{
+			Siblings = [.. endpoint.Operations.Where(o => !ReferenceEquals(o, primary))],
+			AliasUrls = aliases
+		};
 	}
 
 	private void CreateSchemaNavigationItems(

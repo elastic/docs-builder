@@ -312,7 +312,7 @@ For background on OpenAPI vendor extensions, refer to [OpenAPI Specification](ht
 
 ### Multi-language code examples [x-codesamples]
 
-When an OpenAPI operation includes the `x-codeSamples` extension, the API Explorer renders the code samples with a language selector tab. This lets users switch between available languages such as Console, cURL, Python, JavaScript, Ruby, PHP, and Java.
+When an OpenAPI operation includes the `x-codeSamples` extension, the API Explorer renders the code samples as a carousel with one card per language, such as Console, cURL, Python, JavaScript, Ruby, PHP, Java, and C#.
 
 The `x-codeSamples` extension is a JSON array of objects, each with a `lang` and `source` field:
 
@@ -324,11 +324,34 @@ The `x-codeSamples` extension is a JSON array of objects, each with a `lang` and
 ]
 ```
 
-Code samples appear in the right-hand **Examples** rail on every operation page that has the extension, regardless of HTTP method. Below 1024px the rail is not hidden: it stacks as a single column under the operation reference. Below 768px the API sidebar uses the same hamburger checkbox as docs pages (`#pages-nav-hamburger`). When an operation also declares multiple named request/response `examples`, the rail builds **scenarios from request examples** (matched to response examples by title/summary) and exposes a header-only **Examples** card with a chrome-less `<select>` to switch between those request variants. Response examples whose titles do not match any request (typical error payloads) are shared across those scenarios as extra **status-code tabs** (for example `200`, `400`) on the light response card, without replacing a scenario-specific body for the same status. When there are no request examples, named response-only examples collapse into a single scenario so status tabs stay primary. Multi-language `x-codeSamples` render inside a code box with a method chip, endpoint, and language `<select>` in the header, attached to the scenario whose request body matches the Console sample. When a scenario has request JSON but no `x-codeSamples`, that JSON uses the same request code card. The rail has no standalone **Examples** heading: the label lives in the header-only card when there are multiple scenarios. Request and response code boxes show a non-selectable line-number gutter (selection and copy omit the numbers). Response bodies that are JSON objects/arrays use the Figma Card/Code token colors (black structure, green strings, blue booleans, maroon numbers); other payloads such as SSE streams stay plaintext so highlighting does not invent misleading colors. Single-line `curl` samples are reformatted for display (method and URL on the first line, one flag per line, with `\` continuations). OpenAPI example `description` text is not shown in the rail (the code samples and response JSON carry the content).
+Code samples appear in the right-hand **Examples** rail on every operation page that has the extension, regardless of HTTP method. Below 1024px the rail is not hidden: it stacks as a single column under the operation reference. Below 768px the API sidebar uses the same hamburger checkbox as docs pages (`#pages-nav-hamburger`).
+
+How the rail is laid out:
+
+- **Example chips.** When an operation declares several named request `examples`, each one becomes a chip above the carousel. Response examples are matched to request examples by title or summary. Response examples that match no request (typical error payloads) are shared across the examples as extra **status-code tabs**, without replacing an example's own body for the same status. When there are no request examples, named response-only examples collapse into a single example so the status tabs stay primary. Examples without a `summary` get a readable title from their key: `executeBuiltinEsqlToolRequest` becomes "Execute builtin ES|QL tool".
+- **Language carousel.** Each example shows a scroll-snap strip with one card per language. A card header shows the language and the client that runs it (for example `elasticsearch-java`), not the path. Readers switch language with the dots, the arrows, the arrow keys, or by swiping. No language card is hidden, so the browser's find-in-page reaches every sample, and inactive examples use `hidden="until-found"` so a match inside one opens it.
+- **Size and expand.** Each snippet is as tall as its own code, up to 16 lines, and the card area follows the snippet you are looking at. Longer code scrolls inside the card, and an expand button (its tooltip gives the line count) appears next to the language arrows. Expanding gives the card as much of the rail as it can by folding the response down to its header; press it again to restore. The divider between the examples and the response can also be dragged, and the chosen split is remembered. The response card keeps its own size, about a quarter of the window height, however large the request is, so it does not change when you switch language or example; the request card gives way first when space is tight. The rail never scrolls as a whole: only the code inside each card does.
+- **Headings and descriptions.** A small **Examples** heading labels the example chips. An example's description appears as a muted note under the chips, cut to three lines with a **Show more** link when it is longer. The description is shown exactly as the spec writes it.
+- **Full screen preview.** Every code card, request and response alike, has a button next to **Copy** that opens its code in a dialog 100 characters wide and nearly the full window height; longer lines scroll sideways. The dialog shows the language or status you were looking at, has its own **Copy** and **Close** buttons, and closes with `Esc` or a click outside it.
+- **Language order.** Console comes first. The other languages follow GitHub's [Innovation Graph](https://innovationgraph.github.com/global-metrics/programming-languages) global ranking of programming languages by developers using them: JavaScript, Python, curl (as Shell), Java, C#, PHP, Ruby, Go, Rust. Languages not in that list keep their order from the spec, after the ranked ones.
+- **Where samples attach.** `x-codeSamples` attach to the example whose request body matches the Console sample. When the samples' body matches no named example, they become their own first example, titled **Example**.
+- **Generated samples.** An example that only has a JSON body gets a generated **Console** request, and a **curl** request when the operation has a curl sample to copy the host and headers from. Hovering one of these cards shows that it was built from the example's request body. The request line comes from an example description that starts with ``Run `METHOD path` ``, or else from the operation's dominant method and shortest path.
+- **Missing languages.** Languages that only exist for another example show as dimmed dots and a tile that jumps to that example.
+
+Request and response code boxes show a non-selectable line-number gutter (selection and copy omit the numbers). Response bodies that are JSON objects/arrays use the Figma Card/Code token colors (black structure, green strings, blue booleans, maroon numbers); other payloads such as SSE streams stay plaintext so highlighting does not invent misleading colors. Single-line `curl` samples are reformatted for display (method and URL on the first line, one flag per line, with `\` continuations).
 
 When an operation has **no** `x-codeSamples`, the API Explorer synthesizes a minimal **Console** and **curl** sample from the HTTP method, path, required query parameters, required headers (for example `kbn-xsrf`), and the document `servers` URL so the examples rail is never empty. Author-provided `x-codeSamples` always win over these synthetic samples. When the rail has samples (or request examples) but the operation declares response status codes without example bodies, the rail still shows status-code tabs: responses with no content render **No body**, and responses that declare a content type/schema but no example render **No example**.
 
-When there is only a single scenario (or only `x-codeSamples` / synthetic samples), the rail skips the scenario selector. The selected language persists across operations and page navigations. Console is treated as the default language and appears first in the language selector when present.
+When there is only a single example, the rail skips the example chips. **Console is the default language**, because you can paste it straight into Kibana Dev Tools. Once a reader picks another language, that choice is remembered in the browser and applies on every operation page. Links can open a specific example and language with `#example=<example>&lang=<language>`, for example `#example=search-slicing&lang=curl`. The link is always written in lowercase and read without regard to case, so `lang=Curl` works too.
+
+### Paths and methods [operation-paths]
+
+An operation page lists every path of the operation, one row per path, longest path first. Each row shows the dominant HTTP method (POST over PUT over PATCH over GET over DELETE over HEAD). Other methods on the same path appear as an **also GET** hint when they accept the same parameters, request body, and responses. Path segments that a shorter path leaves out are shown dashed, and their path parameters are marked **optional** with a hint naming the path to use without them. For example, the search operation shows `POST` (also `GET`) `/{index}/_search` and `POST` (also `GET`) `/_search`, with `index` optional.
+
+The paths come from either of two sources, and both produce the same rows:
+
+- The `**All methods and paths for this operation:**` (or `**Spaces method and path for this operation:**`) HTML block that bump.sh-flavoured specs put in the operation description. The block is removed from the rendered description.
+- Separate spec operations that share a grouping key, when `api-nav-grouping` is on (see below).
 
 ### Prerequisites [x-req-auth]
 
@@ -435,7 +458,9 @@ The document-level `x-tagGroups` extension (from [Redocly](https://redocly.com/d
 
 The default sidebar matches bump.sh. The product overview, Authentication, Servers, and any `children:` markdown pages sit in one group. A divider separates that group from tag folders. Each OpenAPI operation is a visible child of its tag.
 
-Classification folders, collapsing operations that share a grouping key into one endpoint, and Types pages require `FEATURE_API_NAV_GROUPING` (the `api-nav-grouping` feature flag). That flag is off by default.
+Classification folders, collapsing operations that share a grouping key into one page, and Types pages require `FEATURE_API_NAV_GROUPING` (the `api-nav-grouping` feature flag). That flag is off by default.
+
+With the flag on, all operations that share a grouping key render as **one page**, built around the dominant method on the longest path. The page URL uses the operation id without its numeric suffix: `search`, `search-1`, `search-2` and `search-3` become `operation-search`. The former per-operation URLs, such as `operation-search-2`, become redirect pages to the merged page, and they keep any `#fragment`.
 
 When the flag is on:
 

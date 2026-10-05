@@ -1,9 +1,5 @@
 @inherits RazorSlice<Elastic.Documentation.Site.Navigation.NavigationRenderNode>
-@if (Model.IsMultiOperation)
-{
-<span class="nav-v2-api-method nav-v2-api-method-multi" aria-label="Multiple operations" title="Multiple operations"><svg width="12" height="12" viewBox="0 0 16 16" aria-hidden="true"><use href="#icon-api-multi"/></svg></span>
-}
-else if (Model.HttpMethod is { } httpMethod)
+@if (Model.HttpMethod is { } httpMethod)
 {
 	var m = httpMethod.ToUpperInvariant();
 	if (httpMethod == "delete")

@@ -1,6 +1,6 @@
 const GUTTER_TARGET = '[data-line-numbers] pre code'
 
-function countLines(text: string): number {
+export function countLines(text: string): number {
     if (!text) return 1
     const parts = text.split(/\r?\n/)
     if (parts[parts.length - 1] === '') parts.pop()

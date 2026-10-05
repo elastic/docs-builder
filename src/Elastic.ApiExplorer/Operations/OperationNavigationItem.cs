@@ -48,17 +48,24 @@ public class OperationNavigationItem : ILeafNavigationItem<ApiOperation>, IEndpo
 		string apiUrlSuffix,
 		ApiOperation apiOperation,
 		IRootNavigationItem<IApiGroupingModel, INavigationItem> root,
-		IApiGroupingNavigationItem<IApiGroupingModel, INavigationItem> parent
+		IApiGroupingNavigationItem<IApiGroupingModel, INavigationItem> parent,
+		string? moniker = null
 	)
 	{
 		NavigationRoot = root;
 		Model = apiOperation;
 		NavigationTitle = apiOperation.ApiName;
 		Parent = parent;
-		var moniker = ApiUrlBuilder.OperationMoniker(apiOperation.Operation.OperationId, apiOperation.Route);
-		Url = $"{ApiUrlBuilder.ProductRoot(urlPathPrefix, apiUrlSuffix)}/operation/{moniker}";
+		Url = OperationUrl(
+			urlPathPrefix,
+			apiUrlSuffix,
+			moniker ?? ApiUrlBuilder.OperationMoniker(apiOperation.Operation.OperationId, apiOperation.Route)
+		);
 		Id = ShortId.Create(Url);
 	}
+
+	public static string OperationUrl(string? urlPathPrefix, string apiUrlSuffix, string moniker) =>
+		$"{ApiUrlBuilder.ProductRoot(urlPathPrefix, apiUrlSuffix)}/operation/{moniker}";
 
 	public IRootNavigationItem<INavigationModel, INavigationItem> NavigationRoot { get; }
 	//TODO enum to string
@@ -66,6 +73,12 @@ public class OperationNavigationItem : ILeafNavigationItem<ApiOperation>, IEndpo
 	public ApiOperation Model { get; }
 	public string Url { get; }
 	public bool Hidden { get; set; }
+
+	/// <summary>Other operations of the same API collapsed onto this page (other methods and routes).</summary>
+	public IReadOnlyList<ApiOperation> Siblings { get; init; } = [];
+
+	/// <summary>Former per-operation URLs of <see cref="Siblings"/> that now redirect to <see cref="Url"/>.</summary>
+	public IReadOnlyList<string> AliasUrls { get; init; } = [];
 
 	public string NavigationTitle { get; }
 

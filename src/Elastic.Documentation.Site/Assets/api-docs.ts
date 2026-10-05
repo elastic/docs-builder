@@ -5,7 +5,9 @@
  */
 import { initApiBreadcrumbs } from './api-breadcrumbs'
 import { decorateApiCodeTokens } from './api-code-tokens'
+import { initApiExamples } from './api-examples-carousel'
 import { applyParamSummaryFit } from './api-param-summary'
+import { iconCheckEui, iconCopyEui } from './copybutton'
 
 // Check if hidden="until-found" is supported (for find-in-page in collapsed sections)
 const supportsHiddenUntilFound = 'onbeforematch' in document.body
@@ -258,8 +260,6 @@ function expandParamSectionForHash(): void {
  * Initialize API docs for OperationView pages
  */
 function initOperationView(section: HTMLElement): void {
-    addAlternativePathCopyButtons(section)
-
     // Add beforematch event listeners for hidden="until-found" elements
     // When find-in-page matches content inside collapsed sections, expand them
     if (supportsHiddenUntilFound) {
@@ -656,41 +656,6 @@ function initGlobalClickHandlers(): void {
     })
 }
 
-const apiLanguageStorageKey = 'tab-id-api-language'
-
-function apiSelectOptions(dropdown: Element): HTMLElement[] {
-    return Array.from(
-        dropdown.querySelectorAll<HTMLElement>('[role="option"][data-value]')
-    )
-}
-
-function apiSelectValue(dropdown: Element): string | undefined {
-    return dropdown.querySelector<HTMLElement>(
-        '[role="option"][aria-selected="true"]'
-    )?.dataset.value
-}
-
-function setApiSelectValue(dropdown: Element, value: string): boolean {
-    const options = apiSelectOptions(dropdown)
-    const match = options.find((option) => option.dataset.value === value)
-    if (!match) return false
-
-    options.forEach((option) => {
-        const selected = option === match
-        option.classList.toggle('is-selected', selected)
-        option.setAttribute('aria-selected', selected ? 'true' : 'false')
-    })
-
-    const label = dropdown.querySelector<HTMLElement>('.api-select-value')
-    if (label) label.textContent = match.textContent?.trim() ?? value
-    return true
-}
-
-function closeApiSelect(option: HTMLElement): void {
-    const dropdown = option.closest<HTMLDetailsElement>('details.api-select')
-    if (dropdown) dropdown.open = false
-}
-
 /** Show only the header copy button that belongs to the active panel. */
 function syncCopyButtons(widget: HTMLElement, activePanel: string): void {
     widget
@@ -698,77 +663,6 @@ function syncCopyButtons(widget: HTMLElement, activePanel: string): void {
         .forEach((button) => {
             button.hidden = button.dataset.codePanel !== activePanel
         })
-}
-
-function applyApiCodeLanguage(
-    root: ParentNode,
-    language: string,
-    persist: boolean
-): void {
-    root.querySelectorAll<HTMLElement>('[data-api-code-sample]').forEach(
-        (widget) => {
-            const panels = Array.from(
-                widget.querySelectorAll<HTMLElement>('.api-code-sample-panel')
-            )
-            const dropdown = widget.querySelector('.api-code-sample-lang')
-            const hasLanguage = panels.some(
-                (panel) => panel.dataset.codePanel === language
-            )
-            // Examples that only ship JSON (or another single sample) keep that
-            // body. Applying a language they don't have hid every panel and left
-            // a header-only card.
-            let effectiveLanguage = language
-            if (!hasLanguage) {
-                effectiveLanguage =
-                    (dropdown ? apiSelectValue(dropdown) : undefined) ??
-                    panels.find((panel) => !panel.hasAttribute('hidden'))
-                        ?.dataset.codePanel ??
-                    panels[0]?.dataset.codePanel ??
-                    language
-            } else if (dropdown) {
-                setApiSelectValue(dropdown, language)
-            }
-
-            panels.forEach((panel) => {
-                panel.toggleAttribute(
-                    'hidden',
-                    panel.dataset.codePanel !== effectiveLanguage
-                )
-            })
-
-            syncCopyButtons(widget, effectiveLanguage)
-        }
-    )
-
-    if (persist) {
-        window.sessionStorage.setItem(apiLanguageStorageKey, language)
-    }
-}
-
-let apiCodeLanguageSelectDelegated = false
-
-/**
- * Language picker in API code-sample headers. Persists via sessionStorage.
- */
-export function initApiCodeLanguageSelects(): void {
-    const dropdowns = document.querySelectorAll('.api-code-sample-lang')
-    if (dropdowns.length === 0) return
-
-    const saved = window.sessionStorage.getItem(apiLanguageStorageKey)
-    if (saved) {
-        applyApiCodeLanguage(document, saved, false)
-    }
-
-    if (apiCodeLanguageSelectDelegated) return
-    apiCodeLanguageSelectDelegated = true
-    document.addEventListener('click', (event) => {
-        const option = (event.target as HTMLElement | null)?.closest(
-            '.api-code-sample-lang [role="option"][data-value]'
-        )
-        if (!(option instanceof HTMLElement) || !option.dataset.value) return
-        closeApiSelect(option)
-        applyApiCodeLanguage(document, option.dataset.value, true)
-    })
 }
 
 function applyApiResponseStatus(widget: HTMLElement, statusCode: string): void {
@@ -814,99 +708,14 @@ function initApiResponseStatusTabs(): void {
     })
 }
 
-function applyApiScenario(widget: HTMLElement, scenarioId: string): void {
-    widget
-        .querySelectorAll<HTMLElement>(
-            '.api-examples-scenario-panel[data-scenario]'
-        )
-        .forEach((panel) => {
-            const match = panel.dataset.scenario === scenarioId
-            panel.toggleAttribute('hidden', !match)
-        })
-
-    widget
-        .querySelectorAll('.api-scenario-select')
-        .forEach((dropdown) => setApiSelectValue(dropdown, scenarioId))
-}
-
-let apiScenarioSelectDelegated = false
-
-/**
- * Scenario picker in the Examples header card. Switches the request+response
- * pair. Not persisted — scenario ids/titles differ per operation.
- */
-export function initApiScenarioSelects(): void {
-    // Always register delegation once — pickers may appear after HTMX navigation.
-    if (apiScenarioSelectDelegated) return
-    apiScenarioSelectDelegated = true
-    document.addEventListener('click', (event) => {
-        const option = (event.target as HTMLElement | null)?.closest(
-            '.api-scenario-select [role="option"][data-value]'
-        )
-        if (!(option instanceof HTMLElement) || !option.dataset.value) return
-        const widget = option.closest<HTMLElement>('[data-api-scenarios]')
-        closeApiSelect(option)
-        if (widget) applyApiScenario(widget, option.dataset.value)
-    })
-}
-
-const apiEndpointCopyIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-		<path fill-rule="evenodd" clip-rule="evenodd" d="M6 1C5.44771 1 5 1.44772 5 2V10C5 10.5523 5.44772 11 6 11H14C14.5523 11 15 10.5523 15 10V2C15 1.44771 14.5523 1 14 1H6ZM6 2L14 2V10H6V2Z" fill="currentColor"/>
-		<path d="M2 5H4V6H2V14H10V12H11V14C11 14.5523 10.5523 15 10 15H2C1.44772 15 1 14.5523 1 14V6C1 5.44772 1.44771 5 2 5Z" fill="currentColor"/>
-	</svg>`
-
-const apiEndpointCheckIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-  <path fill="currentColor" fill-rule="evenodd" d="M6.5 12.242 2.354 8.096l.707-.707L6.5 10.828l6.44-6.44.707.708-7.147 7.146Z"/>
-</svg>`
-
 let apiEndpointCopyInitialized = false
 let apiPageActionsInitialized = false
-
-// The "All methods and paths" list comes from the spec's description markdown,
-// so the copy buttons are added here instead of in a template.
-function addAlternativePathCopyButtons(section: HTMLElement): void {
-    section
-        .querySelectorAll<HTMLElement>(
-            '.api-operation-description .operation-path'
-        )
-        .forEach((path) => {
-            const chip = path.parentElement
-            if (
-                !chip ||
-                chip.parentElement?.classList.contains('operation-path-row')
-            )
-                return
-
-            const row = document.createElement('div')
-            row.className = 'operation-path-row'
-            chip.replaceWith(row)
-            row.appendChild(chip)
-
-            const btn = document.createElement('button')
-            btn.type = 'button'
-            btn.className = 'copybtn o-tooltip--left api-url-copy'
-            btn.setAttribute('aria-label', 'Copy endpoint')
-            btn.setAttribute('data-tooltip', 'Copy')
-            btn.dataset.copy = path.textContent?.trim() ?? ''
-            btn.innerHTML = apiEndpointCopyIcon
-            row.appendChild(btn)
-        })
-}
 
 function closestEndpointCopyButton(
     target: EventTarget | null
 ): HTMLButtonElement | null {
     if (!(target instanceof Element)) return null
-    const direct = target.closest<HTMLButtonElement>('button.api-url-copy')
-    if (direct) return direct
-
-    // Clicking the path text of an alternative-path row copies it too, unless the user is selecting text
-    if (window.getSelection()?.toString()) return null
-    return (
-        target
-            .closest('.operation-path-row')
-            ?.querySelector<HTMLButtonElement>('button.api-url-copy') ?? null
-    )
+    return target.closest<HTMLButtonElement>('button.api-url-copy')
 }
 
 function initApiEndpointCopy(): void {
@@ -943,11 +752,11 @@ function initApiEndpointCopy(): void {
                 () => {
                     btn.classList.add('success')
                     btn.setAttribute('data-tooltip', 'Copied!')
-                    btn.innerHTML = apiEndpointCheckIcon
+                    btn.innerHTML = iconCheckEui
                     window.setTimeout(() => {
                         btn.classList.remove('success')
                         btn.setAttribute('data-tooltip', 'Copy')
-                        btn.innerHTML = apiEndpointCopyIcon
+                        btn.innerHTML = iconCopyEui
                     }, 1500)
                 },
                 (error) => {
@@ -1012,9 +821,8 @@ export function initApiDocs(): void {
     // Initialize global click handlers once (uses event delegation)
     initGlobalClickHandlers()
     initApiEndpointCopy()
-    initApiCodeLanguageSelects()
     initApiResponseStatusTabs()
-    initApiScenarioSelects()
+    initApiExamples()
     initApiPageActions()
     initApiBreadcrumbs()
     // After initHighlight — gutters need final textContent line counts

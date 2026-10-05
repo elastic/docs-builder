@@ -11,6 +11,44 @@ namespace Elastic.ApiExplorer.Model;
 /// </summary>
 public record CodeSample(string Language, string Source, string HighlightClass)
 {
+	/// <summary>True when docs-builder built this sample from an example body rather than reading it from the spec.</summary>
+	public bool Generated { get; init; }
+
+	/// <summary>The client library or tool that runs this sample, e.g. <c>elasticsearch-java</c>. Empty when unknown.</summary>
+	public string ClientLabel => ClientLabels.GetValueOrDefault(Language, "");
+
+	/// <summary>Position in the carousel: Console, then languages by how many developers use them. Unranked languages sort last.</summary>
+	public int Rank => LanguageRanks.GetValueOrDefault(Language, int.MaxValue);
+
+	// Console is the docs' native sample. The rest follow GitHub's Innovation Graph global
+	// programming-language ranking (unique pushers, 2026 Q1); curl counts as Shell there.
+	// https://innovationgraph.github.com/global-metrics/programming-languages
+	private static readonly Dictionary<string, int> LanguageRanks = new(StringComparer.OrdinalIgnoreCase)
+	{
+		["Console"] = 0,
+		["JavaScript"] = 1,
+		["Python"] = 2,
+		["curl"] = 3,
+		["Java"] = 4,
+		["C#"] = 5,
+		["PHP"] = 6,
+		["Ruby"] = 7,
+		["Go"] = 8,
+		["Rust"] = 9,
+	};
+
+	private static readonly Dictionary<string, string> ClientLabels = new(StringComparer.OrdinalIgnoreCase)
+	{
+		["Console"] = "Kibana Dev Tools",
+		["curl"] = "Shell",
+		["Python"] = "elasticsearch-py",
+		["JavaScript"] = "@elastic/elasticsearch",
+		["Ruby"] = "elasticsearch-ruby",
+		["PHP"] = "elasticsearch-php",
+		["Java"] = "elasticsearch-java",
+		["C#"] = "Elastic.Clients.Elasticsearch",
+	};
+
 	private static readonly Dictionary<string, string> LanguageHighlightMap = new(StringComparer.OrdinalIgnoreCase)
 	{
 		["Console"] = "language-console",
@@ -20,6 +58,7 @@ public record CodeSample(string Language, string Source, string HighlightClass)
 		["Ruby"] = "language-ruby",
 		["PHP"] = "language-php",
 		["Java"] = "language-java",
+		["C#"] = "language-csharp",
 	};
 
 	public static string GetHighlightClass(string language) =>

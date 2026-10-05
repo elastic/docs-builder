@@ -6,4 +6,4 @@ using Elastic.ApiExplorer.Operations;
 
 namespace Elastic.ApiExplorer.Landing;
 
-public record OperationUrlListModel(IReadOnlyCollection<OperationNavigationItem> Operations, string HtmxAttributes);
+public record OperationUrlListModel(OperationEndpoint? Endpoint);
