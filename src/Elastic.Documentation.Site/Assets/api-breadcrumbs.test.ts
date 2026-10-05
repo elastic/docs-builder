@@ -1,5 +1,41 @@
 import { collapsedMiddleCount } from './api-breadcrumbs'
 
+describe('initApiBreadcrumbs', () => {
+    const retained = new Set<Element>()
+
+    beforeEach(() => {
+        retained.clear()
+        document.body.replaceChildren()
+        global.ResizeObserver = class {
+            observe(target: Element) {
+                retained.add(target)
+            }
+            unobserve(target: Element) {
+                retained.delete(target)
+            }
+        } as unknown as typeof ResizeObserver
+        jest.resetModules()
+    })
+
+    it('releases a toolbar after a page swap removes it', async () => {
+        const { initApiBreadcrumbs } = await import('./api-breadcrumbs')
+        const first = document.createElement('div')
+        first.className = 'api-page-toolbar'
+        document.body.append(first)
+
+        initApiBreadcrumbs()
+        expect([...retained]).toEqual([first])
+
+        first.remove()
+        const second = document.createElement('div')
+        second.className = 'api-page-toolbar'
+        document.body.append(second)
+        initApiBreadcrumbs()
+
+        expect([...retained]).toEqual([second])
+    })
+})
+
 describe('collapsedMiddleCount', () => {
     it('keeps every middle crumb when the row fits', () => {
         expect(collapsedMiddleCount(400, 40, 80, 16, 16, [70, 60])).toBe(0)
