@@ -171,7 +171,7 @@ describe('TOC navigation', () => {
     it('marks an API heading using its data-section anchor as current', () => {
         document.body.innerHTML = `
             <main id="elastic-api-v3">
-                <h3 data-section="responses">Responses</h3>
+                <h2 data-section="responses">Responses</h2>
             </main>
             <nav id="toc-nav">
                 <div class="toc-progress-container">
@@ -181,7 +181,7 @@ describe('TOC navigation', () => {
             </nav>
         `
         jest.spyOn(
-            document.querySelector('h3')!,
+            document.querySelector('h2')!,
             'getBoundingClientRect'
         ).mockReturnValue(createRect(100, 30))
         jest.spyOn(
