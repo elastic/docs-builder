@@ -4,6 +4,8 @@
 
 using AwesomeAssertions;
 using Elastic.Documentation.Configuration.Loading;
+using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.Publishing;
 using static Elastic.Documentation.Configuration.Tests.Golden.Golden;
 
 namespace Elastic.Documentation.Configuration.Tests;
@@ -69,6 +71,25 @@ public class AssemblyLoaderTests
 	[Test]
 	public void Load_BaselineAssembler_Succeeds() =>
 		AssemblyLoader.Load(BaselineProvider(), new Environment()).HasErrors.Should().BeFalse();
+
+	[Test]
+	public void LoadYaml_ContentSourceOmitted_DefaultsToNextAndReportsAuthoredShape()
+	{
+		var result = AssemblyLoader.LoadYaml(
+			"environments:\n  preview:\n    uri: https://example.test",
+			"assembler.yml",
+			environment: new Environment()
+		);
+
+		result.Value!.Environments["preview"].ContentSource.Should().Be(ContentSource.Next);
+		result
+			.Diagnostics
+			.Should()
+			.ContainSingle(
+				d => d.Severity == Severity.Warning && d.File == "assembler.yml" && d.Message ==
+					"Environment 'preview' does not declare content_source, so it publishes 'next'. Set content_source to current, next or edge."
+			);
+	}
 
 	[Test]
 	public void Deserialize_ReferencesNotAMap_Throws()

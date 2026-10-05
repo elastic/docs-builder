@@ -37,19 +37,6 @@ public static class AssemblyConstraints
 				.Select(e => Finding.Warning($"Environment '{e.Name}' has uri '{e.Uri}', which is not an absolute URI."))
 		),
 		new(
-			"content-source-declared",
-			"Every environment declares which content source it publishes.",
-			m => m
-				.Environments
-				.Values
-				.Where(e => e.DeclaredContentSource is null)
-				.Select(
-					e => Finding.Warning(
-						$"Environment '{e.Name}' does not declare content_source, so it publishes 'next'. Set content_source to current, next or edge."
-					)
-				)
-		),
-		new(
 			"optimizely-has-id",
 			"An environment that enables Optimizely names its project id.",
 			m => m

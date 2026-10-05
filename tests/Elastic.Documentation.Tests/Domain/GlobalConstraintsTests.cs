@@ -54,7 +54,7 @@ public class AssemblyConstraintsTests : ConstraintSetTests<AssemblyConfiguration
 				{
 					Name = "prod",
 					Uri = "https://www.elastic.co",
-					DeclaredContentSource = ContentSource.Current,
+					ContentSource = ContentSource.Current,
 					GoogleTagManager = new() { Enabled = true, Id = "GTM-1" },
 					Optimizely = new() { Enabled = true, Id = "1" }
 				}
@@ -77,7 +77,6 @@ public class AssemblyConstraintsTests : ConstraintSetTests<AssemblyConfiguration
 					},
 			["google-tag-manager-has-id"] = a => WithProd(a, e => e with { GoogleTagManager = new() { Enabled = true } }),
 			["environment-uri-absolute"] = a => WithProd(a, e => e with { Uri = "www.elastic.co" }),
-			["content-source-declared"] = a => WithProd(a, e => e with { DeclaredContentSource = null }),
 			["optimizely-has-id"] = a => WithProd(a, e => e with { Optimizely = new() { Enabled = true } })
 		};
 

@@ -17,16 +17,25 @@ namespace Elastic.Documentation.Configuration.Loading;
 public static class AssemblyLoader
 {
 	/// <summary>Loads the provider's <c>assembler.yml</c>. Invalid input fails the load with the parser's message.</summary>
-	public static Result<AssemblyConfiguration> Load(ConfigurationFileProvider provider, IEnvironmentVariables? environment = null)
+	public static Result<AssemblyConfiguration> Load(ConfigurationFileProvider provider, IEnvironmentVariables? environment = null) =>
+		LoadYaml(provider.AssemblerFile.ReadToEnd(), provider.AssemblerFile.FullName, provider.SkipPrivateRepositories, environment);
+
+	internal static Result<AssemblyConfiguration> LoadYaml(
+		string yaml,
+		string sourceFile,
+		bool skipPrivateRepositories = false,
+		IEnvironmentVariables? environment = null
+	)
 	{
 		try
 		{
-			return Result.Success(Create(provider, environment));
+			var (configuration, diagnostics) = DeserializeWithDiagnostics(yaml, sourceFile, skipPrivateRepositories, environment);
+			return Result.Success(configuration, diagnostics);
 		}
 		catch (Exception e)
 		{
 			return Result.Failure<AssemblyConfiguration>([
-				new Diagnostic { Severity = Severity.Error, File = provider.AssemblerFile.FullName, Message = e.Message }
+				new Diagnostic { Severity = Severity.Error, File = sourceFile, Message = e.Message }
 			]);
 		}
 	}
@@ -42,12 +51,19 @@ public static class AssemblyLoader
 
 	/// <summary>For composition roots, where an invalid <c>assembler.yml</c> must stop the process with the parser's exception.</summary>
 	public static AssemblyConfiguration Create(ConfigurationFileProvider provider, IEnvironmentVariables? environment = null) =>
-		Deserialize(provider.AssemblerFile.ReadToEnd(), provider.SkipPrivateRepositories, environment);
+		Load(provider, environment).OrThrow();
 
 	public static AssemblyConfiguration Deserialize(
 		string yaml,
 		bool skipPrivateRepositories = false,
 		IEnvironmentVariables? environment = null
+	) => DeserializeWithDiagnostics(yaml, sourceFile: string.Empty, skipPrivateRepositories, environment).Configuration;
+
+	private static (AssemblyConfiguration Configuration, IReadOnlyList<Diagnostic> Diagnostics) DeserializeWithDiagnostics(
+		string yaml,
+		string sourceFile,
+		bool skipPrivateRepositories,
+		IEnvironmentVariables? environment
 	)
 	{
 		environment ??= SystemEnvironmentVariables.Instance;
@@ -81,6 +97,23 @@ public static class AssemblyLoader
 
 			var narrative = (NarrativeRepository)RepositoryDefaults(ToNarrative(dto.Narrative), environment);
 
+			var diagnostics = new List<Diagnostic>();
+			var environments = new Dictionary<string, PublishEnvironment>();
+			foreach (var (name, dtoEnvironment) in dto.Environments)
+			{
+				if (dtoEnvironment.ContentSource is null)
+				{
+					diagnostics.Add(new Diagnostic
+					{
+						Severity = Severity.Warning,
+						File = sourceFile,
+						Message =
+							$"Environment '{name}' does not declare content_source, so it publishes 'next'. Set content_source to current, next or edge."
+					});
+				}
+				environments[name] = ToEnvironment(dtoEnvironment, name);
+			}
+
 			var assembly = new AssemblyConfiguration
 			{
 				Narrative = narrative,
@@ -88,14 +121,14 @@ public static class AssemblyLoader
 				AvailableRepositories = AvailableByName(references.Values.Where(r => !r.Skip).Concat([narrative])),
 				PrivateRepositories = privateRepositories.Where(r => !r.Value.Skip).ToDictionary(kvp => kvp.Key, kvp => kvp.Value),
 				AllPrivateRepositoryNames = new HashSet<string>(privateRepositories.Select(r => r.Key), StringComparer.OrdinalIgnoreCase),
-				Environments = dto.Environments.ToDictionary(kv => kv.Key, kv => ToEnvironment(kv.Value, kv.Key)),
+				Environments = environments,
 				SharedConfigurations = dto.SharedConfigurations.ToDictionary(kv => kv.Key, kv => ToRepository(kv.Value, string.Empty))
 			};
 
 			// The constraints are checked on the model; this throwing API fails on the first error, as the parse used to.
 			if (AssemblyConstraints.Check(assembly).FirstOrDefault(v => v.Severity == Severity.Error) is { Message: { } error })
 				throw new InvalidOperationException(error);
-			return assembly;
+			return (assembly, diagnostics);
 		}
 		catch (Exception e)
 		{
@@ -142,7 +175,7 @@ public static class AssemblyLoader
 			Uri = dto.Uri,
 			PathPrefix = dto.PathPrefix,
 			AllowIndexing = dto.AllowIndexing,
-			DeclaredContentSource = dto.ContentSource,
+			ContentSource = dto.ContentSource ?? ContentSource.Next,
 			GoogleTagManager = new GoogleTagManager
 			{
 				Enabled = dto.GoogleTagManager.Enabled,

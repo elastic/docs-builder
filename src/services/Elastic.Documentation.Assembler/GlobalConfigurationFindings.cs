@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using Elastic.Documentation.Catalog;
+using Elastic.Documentation.Configuration.Loading;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Publishing;
 
@@ -16,6 +17,11 @@ public static class GlobalConfigurationFindings
 	/// </summary>
 	public static void Report(AssembleContext context)
 	{
+		foreach (var diagnostic in AssemblyLoader
+			.LoadOnce(context.ConfigurationFileProvider)
+			.Diagnostics
+			.Where(d => d.Severity != Severity.Error))
+			context.Collector.Write(diagnostic);
 		foreach (var violation in AssemblyConstraints.Check(context.Configuration).Where(v => v.Severity != Severity.Error))
 			context.Collector.Write(violation.ToDiagnostic(context.ConfigurationFileProvider.AssemblerFile.FullName));
 		foreach (var violation in VersioningSystemConstraints.Check(context.Catalog.VersioningSystems))

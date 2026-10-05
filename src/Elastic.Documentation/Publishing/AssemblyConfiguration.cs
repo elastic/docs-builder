@@ -134,11 +134,8 @@ public sealed partial record PublishEnvironment
 	public string Uri { get; init; } = string.Empty;
 	public string? PathPrefix { get; init; } = string.Empty;
 	public bool AllowIndexing { get; init; }
-	/// <summary>The <c>content_source</c> as authored; null when omitted.</summary>
-	public ContentSource? DeclaredContentSource { get; init; }
-
-	/// <summary>Which branch this environment publishes. An omitted <c>content_source</c> means <see cref="ContentSource.Next"/>.</summary>
-	public ContentSource ContentSource => DeclaredContentSource ?? ContentSource.Next;
+	/// <summary>Which branch this environment publishes. An omitted <c>content_source</c> defaults to <see cref="ContentSource.Next"/>.</summary>
+	public ContentSource ContentSource { get; init; } = ContentSource.Next;
 
 	public GoogleTagManager GoogleTagManager { get; init; } = new();
 	public Optimizely Optimizely { get; init; } = new();
