@@ -2245,7 +2245,13 @@ a.docs-reference-btn::after {
 		line-height: 20px;
 	}
 
+	/* Match the h2.section-header rows rendered by the operation view */
 	h2 {
+		margin-bottom: 0;
+		padding-top: 40px;
+		padding-bottom: 16px;
+		border-bottom: 1px solid #e3e8f2;
+		color: var(--color-ink-navy, #111c2c);
 		font-size: 16px;
 		line-height: 24px;
 	}
@@ -2255,14 +2261,14 @@ a.docs-reference-btn::after {
 		font-weight: 600;
 	}
 
-	a:not(.docs-reference-btn),
+	a:not(.docs-reference-btn, .headerlink),
 	a.reference {
 		color: var(--color-blue-elastic, #0b64dd);
 		text-decoration: underline;
 		text-underline-offset: 2px;
 	}
 
-	a:not(.docs-reference-btn):hover,
+	a:not(.docs-reference-btn, .headerlink):hover,
 	a.reference:hover {
 		color: var(--color-blue-elastic-100, #1750ba);
 		text-decoration: underline;
