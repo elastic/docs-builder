@@ -12,7 +12,7 @@
 		: HtmlString.Empty;
 }
 
-@* Intro spans both columns (title + paths); reference column starts below. *@
+@* Intro keeps the full width; the reference and the examples rail share .api-page-columns below it. *@
 <header class="api-page-intro">
 	<div class="api-page-heading">
 		<h1>@operation.Summary</h1>
@@ -67,8 +67,10 @@
 							@LayoutModel.HxAttributes
 							@(isCurrent ? "checked" : null) />
 					}
-					@(await RenderPartialAsync<_HttpMethodBadge, string>(method))
-					<span class="api-url">@overload.Model.Route</span>
+					<span class="api-url">
+						@(await RenderPartialAsync<_HttpMethodBadge, string>(method))
+						<span>@overload.Model.Route</span>
+					</span>
 					@(await RenderPartialAsync<_EndpointCopyButton, string>(overload.Model.Route))
 				</label>
 			</li>
@@ -79,12 +81,18 @@
 		<div class="api-security-badges">
 			@foreach (var scheme in pageModel.AuthSchemes)
 			{
-				<a class="api-type-badge" href="@scheme.Href">@scheme.PillLabel</a>
+				<a class="api-auth-button" href="@scheme.Href">
+					<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+						<path fill-rule="evenodd" clip-rule="evenodd" d="M4 7V5a4 4 0 1 1 8 0v2h1a1 1 0 0 1 1 1v6a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1h1Zm1 0h6V5a3 3 0 1 0-6 0v2ZM3 8v6h10V8H3Z" fill="currentColor"/>
+					</svg>
+					<span>@scheme.PillLabel</span>
+				</a>
 			}
 		</div>
 	}
 </header>
-<section id="elastic-api-v3" class="api-page-reference">
+<div class="api-page-columns">
+<section id="elastic-api-v3">
 	@{
 		var prerequisites = Model.Prerequisites;
 	}
@@ -149,11 +157,11 @@
 		<div @ParamSectionHeader.WrapAttributes(collapsePath)>
 		@if (collapsePath)
 		{
-			@(await RenderPartialAsync<_ParamSectionHeader, ParamSectionHeader>(new ParamSectionHeader("Parameters", "parameters", pageModel.PathParameterNames)))
+			@(await RenderPartialAsync<_ParamSectionHeader, ParamSectionHeader>(new ParamSectionHeader("Path Parameters", "parameters", pageModel.PathParameterNames)))
 		}
 		else
 		{
-			@(await RenderPartialAsync<_SectionHeader, SectionHeader>(new SectionHeader("Parameters", "parameters")))
+			@(await RenderPartialAsync<_SectionHeader, SectionHeader>(new SectionHeader("Path Parameters", "parameters")))
 		}
 		<div @ParamSectionHeader.BodyAttributes(collapsePath, "parameters-list")>
 		<dl class="property-list">
@@ -301,3 +309,8 @@
 		<div>@extra.BodyHtml</div>
 	}
 </section>
+@if (Model.ExamplesPanel is { } examplesPanel)
+{
+	@await RenderPartialAsync(_OperationExamplesPanel.Create(examplesPanel))
+}
+</div>

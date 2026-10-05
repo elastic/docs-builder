@@ -9,6 +9,7 @@
 @import './markdown/related-learning.css';
 @import './markdown/tabs.css';
 @import './markdown/applies-switch.css';
+@import './code-block.css';
 @import './markdown/code.css';
 @import './markdown/icons.css';
 @import './markdown/kbd.css';

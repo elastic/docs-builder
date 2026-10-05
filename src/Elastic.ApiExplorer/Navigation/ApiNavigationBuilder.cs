@@ -214,6 +214,7 @@ public class ApiNavigationBuilder(ILogger logger, BuildContext context)
 			CreateEndpointNavigationItems(apiUrlSuffix, rootNavigation, tag, tagNavigationItem, endpointNavigationItems);
 			parentNavigationItems.Add(tagNavigationItem);
 			tagNavigationItem.NavigationItems = endpointNavigationItems;
+			tagNavigationItem.ApplyIntroHeadings(tag.Description);
 		}
 	}
 

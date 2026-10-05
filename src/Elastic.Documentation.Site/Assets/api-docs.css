@@ -12,7 +12,7 @@
 	display: flex;
 	flex-direction: column;
 	gap: 8px;
-	margin-top: 32px;
+	margin: 0;
 	padding: 0;
 }
 
@@ -37,7 +37,11 @@
 	cursor: default;
 }
 
-.api-page-intro .api-url-listing--multi > li > .api-url-row {
+.api-page-intro .api-url-listing--multi > li > .api-url-row,
+.api-page-intro
+	.api-url-listing:not(.api-url-listing--multi)
+	> li
+	> .api-url-row {
 	cursor: pointer;
 }
 
@@ -71,7 +75,7 @@
 	outline: none;
 }
 
-.api-page-intro .api-url-copy.copybtn {
+.api-url-copy.copybtn {
 	position: static;
 	top: auto;
 	right: auto;
@@ -86,22 +90,23 @@
 }
 
 .api-page-intro .api-url-row:hover .api-url-copy.copybtn,
-.api-page-intro .api-url-copy.copybtn:focus-visible,
-.api-page-intro .api-url-copy.copybtn.success {
+.api-operation-description .operation-path-row:hover > .api-url-copy.copybtn,
+.api-url-copy.copybtn:focus-visible,
+.api-url-copy.copybtn.success {
 	opacity: 1;
 	pointer-events: auto;
 }
 
-.api-page-intro .api-url-copy.copybtn:hover {
+.api-url-copy.copybtn:hover {
 	color: #1d2a3e;
 }
 
-.api-page-intro .api-url-copy.copybtn.success {
+.api-url-copy.copybtn.success {
 	background-color: transparent;
 	color: #22863a;
 }
 
-.api-page-intro .api-url-copy.copybtn svg {
+.api-url-copy.copybtn svg {
 	width: 16px;
 	height: 16px;
 	padding: 0;
@@ -109,28 +114,52 @@
 	fill: currentColor;
 }
 
-.api-page-intro .api-url-copy.copybtn.o-tooltip--left:after {
+.api-url-copy.copybtn.o-tooltip--left:after {
 	background-color: #1d2a3e;
 	color: #f6f9fc;
 	transform: translateX(-102%) translateY(0);
 }
 
-.api-page-intro .api-url {
+/* Path chip — mirrors inline code (markdown/code.css) so routes read as code */
+.api-url-row > .api-url {
+	@apply bg-grey-10 border-grey-20 border-1 font-mono;
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	min-width: 0;
 	margin-left: 0;
-	color: #516381;
-	font-family:
-		'Roboto Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
-		monospace;
+	padding: 3px 10px 3px 3px;
+	border-radius: 10px;
+	color: #1d2a3e;
 	font-size: 14px;
 	font-weight: 300;
 	line-height: 20px;
+	overflow-wrap: anywhere;
+}
+
+.api-page-intro .api-url-listing--multi > li > .api-url-row:hover .api-url {
+	@apply border-grey-30;
+}
+
+.api-page-intro
+	.api-url-listing--multi
+	> li
+	> .api-url-row:has(.api-url-radio:checked)
+	.api-url {
+	@apply border-blue-elastic;
 }
 
 .api-page-intro .api-security-badges {
 	display: flex;
 	flex-wrap: wrap;
 	gap: 8px;
-	margin-top: 12px;
+}
+
+/* One 16px step between title, badges, servers, paths, and auth. */
+.api-page-intro {
+	display: flex;
+	flex-direction: column;
+	gap: 16px;
 }
 
 /* Operation / group page title — Figma APIs 10079:2802 */
@@ -157,6 +186,11 @@
 .api-page-heading > h1 {
 	flex: 1 1 auto;
 	min-width: 0;
+}
+
+/* Group-page intro only. Same reading measure as docs articles (--max-text-width). */
+.api-tag-description.docs-measure {
+	max-width: var(--max-text-width);
 }
 
 .api-page-toolbar {
@@ -754,14 +788,23 @@
 	border-radius: 16px;
 }
 
+.response-status-row,
 .response-status-toggle {
 	display: flex;
 	box-sizing: border-box;
 	align-items: center;
-	gap: 8px;
+	justify-content: flex-start;
+	gap: 12px;
 	width: 100%;
+}
+
+.response-status-row {
+	padding: 12px 16px;
+}
+
+.response-status-toggle {
 	margin: 0;
-	padding: 8px 12px;
+	padding: 14px 16px;
 	border: 0;
 	border-radius: 0;
 	background: transparent;
@@ -769,32 +812,42 @@
 	font: inherit;
 	text-align: left;
 	cursor: pointer;
-	transition:
-		background-color 0.12s ease,
-		color 0.12s ease;
 }
 
-.response-status-row {
-	display: flex;
-	box-sizing: border-box;
-	align-items: center;
-	gap: 8px;
-	width: 100%;
-	padding: 8px 12px;
+button.response-status-toggle:focus {
+	outline: none;
 }
 
-.response-status-toggle:hover {
-	background-color: #ecf1f9;
-	color: #1d2a3e;
-}
-
-.response-status-toggle:hover .response-description {
-	color: #1d2a3e;
-}
-
-.response-status-toggle:focus-visible {
-	outline: 2px solid var(--color-blue-elastic, #0b64dd);
+.response-summary:has(.response-status-toggle:focus-visible) {
+	outline: var(--outline-size) var(--outline-style) var(--outline-color);
 	outline-offset: -2px;
+	border-radius: 12px;
+}
+
+.response-summary > .response-status-row {
+	padding: 0;
+}
+
+.response-summary {
+	position: relative;
+	cursor: pointer;
+	transition: background-color 0.12s ease;
+}
+
+.response-summary:hover {
+	background-color: #ecf1f9;
+}
+
+/* The toggle stays statically positioned so this stretches over the summary. */
+.response-status-toggle::after {
+	content: '';
+	position: absolute;
+	inset: 0;
+}
+
+/* Links sit above the stretched hit area so they still navigate. */
+.response-description a {
+	position: relative;
 }
 
 .response-status-chip {
@@ -831,41 +884,16 @@
 	color: #0b64dd;
 }
 
-.response-panel.expanded
-	> .response-status-toggle
-	.response-status-chip.status-success {
-	background-color: #aee8d2;
-	border-color: #008a5e;
-}
-
-.response-panel.expanded
-	> .response-status-toggle
-	.response-status-chip.status-error {
-	background-color: #ffc9c2;
-	border-color: #c61e25;
-}
-
-.response-panel.expanded
-	> .response-status-toggle
-	.response-status-chip.status-info {
-	background-color: #bfdbff;
-	border-color: #0b64dd;
-}
-
-.response-panel:first-child > .response-status-toggle {
+.response-panel:first-child > .response-summary {
 	border-radius: 16px 16px 0 0;
 }
 
-.response-panel:last-child:not(.expanded) > .response-status-toggle {
+.response-panel:last-child:not(.expanded) > .response-summary {
 	border-radius: 0 0 16px 16px;
 }
 
-.response-panel:only-child:not(.expanded) > .response-status-toggle {
+.response-panel:only-child:not(.expanded) > .response-summary {
 	border-radius: 16px;
-}
-
-.response-panel:only-child.expanded > .response-status-toggle {
-	border-radius: 16px 16px 0 0;
 }
 
 .response-panel.expanded {
@@ -873,11 +901,10 @@
 	z-index: 2;
 }
 
+/* Never set `display` here: a collapsed body relies on the `hidden="until-found"` default of `content-visibility: hidden` so find-in-page can reach it. */
 .response-panel-body {
 	box-sizing: border-box;
-	width: 100%;
-	padding: 0 12px 12px;
-	border: 0;
+	padding: 0;
 	overflow: visible;
 }
 
@@ -890,42 +917,74 @@
 }
 
 .response-panel.expanded > .response-panel-body {
-	display: block;
+	margin: 8px 12px 12px;
+	padding: 4px 12px 8px;
+	border-radius: 8px;
+	background-color: #f5f7fb;
 }
 
-.response-panel-body[hidden='until-found'] {
-	display: none;
-	border: 0;
-	padding: 0;
-	margin: 0;
+.response-panel-body > .property-list > :first-child > dt {
+	padding-top: 8px;
 }
 
 .response-description {
 	margin: 0;
-	min-width: 0;
-	flex: 1 1 auto;
-	color: #516381;
+	padding: 4px 16px 12px;
+	color: inherit;
 	font-size: 14px;
 	font-weight: 400;
-	line-height: 20px;
+	line-height: 1.5;
 	text-align: left;
-	transition: color 0.12s ease;
+}
+
+.response-description > :first-child {
+	margin-top: 0;
+}
+
+.response-description > :last-child {
+	margin-bottom: 0;
+}
+
+.response-description li {
+	margin-top: 0.25rem;
+}
+
+.response-description li:first-child {
+	margin-top: 0;
 }
 
 .content-type-tag {
-	margin-left: auto;
 	flex-shrink: 0;
-	color: #798eaf;
+	color: #1d2a3e;
 	font-size: 12px;
 	font-weight: 400;
 	line-height: 16px;
 	background: none;
 }
 
+.response-toggle-icon {
+	margin-left: auto;
+	flex-shrink: 0;
+	color: #798eaf;
+	font-family: var(--font-mono, ui-monospace, monospace);
+	font-size: 14px;
+	font-weight: 600;
+	line-height: 16px;
+}
+
+.response-panel.collapsed .response-toggle-icon::before {
+	content: '+';
+}
+
+.response-panel.expanded .response-toggle-icon::before {
+	content: '−';
+}
+
 .property-list .expand-toggle,
 .union-expand-toggle .expand-toggle,
 .union-group-toggle {
-	@apply text-grey-80 hover:text-grey-120 inline-flex cursor-pointer items-center gap-1 border-0 bg-transparent p-0 text-sm;
+	@apply inline-flex cursor-pointer items-center gap-1 border-0 bg-transparent p-0 text-sm;
+	color: #1d2a3e;
 }
 
 .expand-toggle .toggle-icon,
@@ -1214,22 +1273,17 @@
 	padding-bottom: 16px;
 }
 
-.api-page-main > #content-container,
 #elastic-api-v3,
 .api-param-section,
 .api-param-section-header {
 	overflow: visible;
 }
 
-.api-page-main > #content-container {
-	overflow-x: visible;
-}
-
 /* A wide sample must scroll inside its block. Otherwise it grows the layout
    viewport, and the fixed mobile drawer (width: 80%) becomes wider than the screen. */
 @media (max-width: 767px) {
-	.api-page-main .markdown-content pre,
-	.api-page-main .markdown-content pre code {
+	.api-page-shell .markdown-content pre,
+	.api-page-shell .markdown-content pre code {
 		min-width: 0;
 		max-width: 100%;
 	}
@@ -1243,6 +1297,8 @@
 .api-param-section-header.section-header {
 	display: flex;
 	align-items: center;
+	justify-content: flex-start;
+	gap: 12px;
 }
 
 .api-param-section-toggle {
@@ -1250,7 +1306,7 @@
 	display: flex;
 	align-items: center;
 	gap: 8px;
-	width: 100%;
+	flex: 1 1 auto;
 	min-width: 0;
 	height: 24px;
 	margin: 0;
@@ -1277,20 +1333,11 @@
 	align-items: center;
 	justify-content: center;
 	flex: 0 0 24px;
+	margin-left: auto;
 	box-sizing: border-box;
 	width: 24px;
 	height: 24px;
 	color: #5a6d8c;
-}
-
-@media (min-width: 768px) {
-	.api-param-chevron {
-		position: absolute;
-		right: 100%;
-		top: 0;
-		flex: none;
-		margin-right: 8px;
-	}
 }
 
 .api-param-chevron::after {
@@ -1450,7 +1497,6 @@
 #elastic-api-v3 .schema-type a[href]:hover,
 #schema-definition .schema-type a[href]:hover,
 .schema-type a[href]:hover,
-.api-page-intro .api-security-badges a[href]:hover,
 a.type-linked:hover {
 	text-decoration: underline;
 	text-underline-offset: 2px;
@@ -1470,9 +1516,44 @@ a.type-linked:hover {
 	color: #f04e98;
 }
 
+/* Auth scheme link — compact outlined button with a leading icon */
+.api-page-intro .api-security-badges .api-auth-button {
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+	box-sizing: border-box;
+	height: 24px;
+	padding: 0 8px 0 6px;
+	border: 1px solid #a9c9f5;
+	border-radius: 4px;
+	background-color: #fff;
+	color: #0b64dd;
+	font-family: var(--font-body, Inter, ui-sans-serif, system-ui, sans-serif);
+	font-size: 12px;
+	font-weight: 500;
+	line-height: 16px;
+	white-space: nowrap;
+	text-decoration: none;
+}
+
+.api-page-intro .api-security-badges .api-auth-button svg {
+	flex: none;
+	width: 14px;
+	height: 14px;
+}
+
+.api-page-intro .api-security-badges .api-auth-button:hover {
+	border-color: #0b64dd;
+	background-color: #f0f6ff;
+}
+
+.api-page-intro .api-security-badges .api-auth-button:focus-visible {
+	outline: 2px solid #0b64dd;
+	outline-offset: 2px;
+}
+
 /* Type badge — Figma APIs 10079:2957 (boolean / string / read). Not markdown code. */
-.property-list .api-type-badge,
-.api-page-intro .api-security-badges .api-type-badge {
+.property-list .api-type-badge {
 	display: inline-flex;
 	align-items: center;
 	box-sizing: border-box;
@@ -1535,11 +1616,6 @@ a.type-linked:hover {
 	@apply text-grey-60 bg-grey-10 rounded px-1 py-0.5 text-xs font-normal;
 }
 
-/* Title badges: own line below h1, inline chips (not sharing the heading line) */
-.api-title-badges {
-	@apply mt-2;
-}
-
 .api-title-badges .deprecated-badge,
 .api-title-badges .beta-badge {
 	@apply mr-2 inline;
@@ -1579,7 +1655,7 @@ a.docs-reference-btn {
 	border-bottom: 1px solid #0b64dd;
 	border-radius: 0;
 	background: none;
-	color: #1d2a3e;
+	color: var(--color-blue-elastic, #0b64dd);
 	font-family: var(--font-body, Inter, ui-sans-serif, system-ui, sans-serif);
 	font-size: 14px;
 	font-weight: 500;
@@ -1591,7 +1667,7 @@ a.docs-reference-btn {
 .markdown-content a.docs-reference-btn:hover,
 a.docs-reference-btn:hover {
 	background: none;
-	color: #0b64dd;
+	color: var(--color-blue-elastic-100, #1750ba);
 	text-decoration: none;
 }
 
@@ -1729,7 +1805,7 @@ a.docs-reference-btn::after {
 
 /* Server info display */
 .server-info {
-	@apply mt-2 mb-4 flex flex-wrap items-center gap-2 text-sm;
+	@apply flex flex-wrap items-center gap-2 text-sm;
 }
 
 .server-label {
@@ -2104,24 +2180,10 @@ a.docs-reference-btn::after {
 	line-height: 24px;
 }
 
-#api-examples-panel h4.section-header {
-	@apply bg-white;
-	position: sticky;
-	top: 0;
-	z-index: 10;
-	padding-top: 3rem;
-	padding-bottom: 1rem;
-	margin-top: 0;
-}
-
-#api-examples-panel h4.section-header.api-examples-heading {
-	border-bottom: none;
-	padding-top: 0;
-}
-
-/* Single-scenario pages have no rail heading on desktop; show one when stacked. */
-#api-examples-panel .api-examples-heading--stacked {
-	display: none;
+/* The global .headerlink::after '#' positions against its link, so it lines up with the title, not the padded h2 */
+#elastic-api-v3 h2.section-header .headerlink,
+#schema-definition h2.section-header .headerlink {
+	position: relative;
 }
 
 /* Section header */
@@ -2145,8 +2207,7 @@ a.docs-reference-btn::after {
 	font-size: 14px;
 	font-weight: 400;
 	line-height: 20px;
-	margin-top: 1.5rem;
-	margin-bottom: 0.5rem;
+	margin: 0 0 0.5rem;
 
 	> :first-child {
 		margin-top: 0;
@@ -2194,15 +2255,16 @@ a.docs-reference-btn::after {
 		font-weight: 600;
 	}
 
-	/* Anchor links rendered from OAS HTML descriptions — bump.sh uses a "reference" class */
-	a,
+	a:not(.docs-reference-btn),
 	a.reference {
 		color: var(--color-blue-elastic, #0b64dd);
-		text-decoration: none;
+		text-decoration: underline;
+		text-underline-offset: 2px;
 	}
 
-	a:hover,
+	a:not(.docs-reference-btn):hover,
 	a.reference:hover {
+		color: var(--color-blue-elastic-100, #1750ba);
 		text-decoration: underline;
 	}
 
@@ -2216,16 +2278,35 @@ a.docs-reference-btn::after {
 		vertical-align: middle;
 	}
 
+	/* The authored markup is <div><verb/><path/></div>; the div is the chip */
+	div:has(> .operation-verb + .operation-path) {
+		@apply bg-grey-10 border-grey-20 border-1 font-mono;
+		display: flex;
+		align-items: center;
+		gap: 6px;
+		width: fit-content;
+		max-width: 100%;
+		padding: 2px 8px 2px 2px;
+		border-radius: 7px;
+	}
+
 	.operation-path {
-		margin-left: 4px;
-		color: #516381;
-		font-family:
-			'Roboto Mono', ui-monospace, SFMono-Regular, Menlo, Monaco,
-			Consolas, monospace;
+		color: #1d2a3e;
 		font-size: 13px;
 		font-weight: 300;
 		line-height: 20px;
-		vertical-align: middle;
+	}
+
+	.operation-path-row {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		width: fit-content;
+		cursor: pointer;
+	}
+
+	.operation-path-row > div:has(.operation-path) {
+		margin-bottom: 0;
 	}
 
 	/* Space the URL listing block away from the prose that follows it */
@@ -2234,45 +2315,26 @@ a.docs-reference-btn::after {
 	}
 }
 
-/* Shared Card/Code (Figma APIs 10202:2716). Request and response both carry .api-code-card.
-   Token roles:
-   --api-code-text    text/paragraph          chrome (titles, copy hover)
-   --api-code-syntax  punctuation / signs    = ( ) { } . ;
-   --api-code-keyword const / await / search
-   --api-code-variable identifiers           response, client
-   --api-code-property object keys + numbers
-   --api-code-muted   text/disabled           inactive tabs, comments, copy icon
+/* Card chrome around shared code blocks (code-block.css owns the code itself:
+   syntax colours, gutter, callouts). Request and response both carry .api-code-card
+   and opt into the contract with data-code-card / data-code-actions / data-code-panel.
+   Chrome roles, derived from the shared --code-* theme so card and code read as one surface:
+   --api-code-text    text/paragraph          titles, copy hover
+   --api-code-muted   text/disabled           inactive tabs, disabled controls
    --api-code-accent  borders/strong/primary  active tab + underline
-   --api-code-string  string values
-   --api-code-boolean true / false / null
-   --api-code-number  numeric literals (same as property)
-   --api-code-gutter  borders/base/disabled   line numbers
-   --api-code-header  same as body (white)
-   --api-code-bg      card fill (white) */
+   --api-code-border  borders/base            card + header dividers
+   --api-code-hover   hover surface           tabs, select, copy button
+   --api-code-bg      card fill */
 .api-code-card {
-	--api-code-bg: #fff;
-	--api-code-header: #fff;
-	--api-code-border: #e3e8f2;
+	--api-code-bg: var(--code-bg);
+	--api-code-border: var(--code-border);
+	--api-code-hover: var(--code-hover);
 	--api-code-radius: 16px;
-	--api-code-text: #1d2a3e;
-	--api-code-syntax: #6b3c9f;
-	--api-code-keyword: #c61e25;
-	--api-code-variable: #c24411;
-	--api-code-property: #825803;
-	--api-code-muted: #798eaf;
-	--api-code-accent: #0b64dd;
-	--api-code-string: #008a5e;
-	--api-code-boolean: #c24411;
-	--api-code-number: #825803;
-	--api-code-gutter: #cad3e2;
-	--api-code-success: #22863a;
-	--api-code-font:
-		'Roboto Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
-		monospace;
-	--api-code-size: 14px;
-	--api-code-leading: 20px;
-	--api-code-pad-block: 1.5rem;
-	--api-code-max-height: none;
+	--api-code-text: var(--code-fg);
+	--api-code-muted: var(--code-muted);
+	--api-code-accent: var(--color-blue-elastic-50);
+	--api-code-scroll: var(--code-border);
+	--api-code-scroll-hover: var(--color-grey-100);
 	overflow: visible;
 	position: relative;
 	margin-bottom: 24px;
@@ -2283,11 +2345,11 @@ a.docs-reference-btn::after {
 	box-shadow: none;
 }
 
-/* Match sidebar `.pages-nav-v2__scroll` thumb (#e3e8f2 / hover #c5cedb). */
+/* Thin scrollbar thumb on the dark surface. */
 .api-code-card .api-code-sample-body,
 .api-code-card .example-block-body {
 	scrollbar-width: thin;
-	scrollbar-color: #e3e8f2 transparent;
+	scrollbar-color: var(--api-code-scroll) transparent;
 }
 
 .api-code-card .api-code-sample-body::-webkit-scrollbar,
@@ -2303,13 +2365,13 @@ a.docs-reference-btn::after {
 
 .api-code-card .api-code-sample-body::-webkit-scrollbar-thumb,
 .api-code-card .example-block-body::-webkit-scrollbar-thumb {
-	background-color: #e3e8f2;
+	background-color: var(--api-code-scroll);
 	border-radius: 9999px;
 }
 
 .api-code-card .api-code-sample-body::-webkit-scrollbar-thumb:hover,
 .api-code-card .example-block-body::-webkit-scrollbar-thumb:hover {
-	background-color: #c5cedb;
+	background-color: var(--api-code-scroll-hover);
 }
 
 .example-block {
@@ -2327,7 +2389,7 @@ a.docs-reference-btn::after {
 	height: 48px;
 	max-height: 48px;
 	padding: 0 16px;
-	background-color: var(--api-code-header);
+	background-color: var(--api-code-bg);
 	border-bottom: 1px solid var(--api-code-border);
 	border-radius: var(--api-code-radius) var(--api-code-radius) 0 0;
 	overflow: visible;
@@ -2354,7 +2416,7 @@ a.docs-reference-btn::after {
 	margin-bottom: -1px;
 	overflow-x: auto;
 	scrollbar-width: thin;
-	scrollbar-color: #e3e8f2 transparent;
+	scrollbar-color: var(--api-code-scroll) transparent;
 	-webkit-overflow-scrolling: touch;
 }
 
@@ -2403,15 +2465,15 @@ a.docs-reference-btn::after {
 }
 
 button.example-response-tab:not(.is-active):hover {
-	color: #1d2a3e;
+	color: var(--api-code-text);
 }
 
 button.example-response-tab:hover .example-response-tab-label {
-	background-color: #f6f9fc;
+	background-color: var(--api-code-hover);
 }
 
 button.example-response-tab:focus-visible {
-	outline: 2px solid var(--color-blue-elastic, #0b64dd);
+	outline: 2px solid var(--api-code-accent);
 	outline-offset: 2px;
 	border-radius: 2px;
 }
@@ -2430,253 +2492,83 @@ button.example-response-tab:focus-visible {
 	@apply ml-auto flex shrink-0 items-center gap-1;
 }
 
-.api-code-card .copybtn.copybtn--in-header {
-	position: static;
-	top: auto;
-	right: auto;
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	box-sizing: border-box;
-	width: 24px;
-	height: 24px;
-	opacity: 1;
-	background-color: #fff;
-	color: var(--api-code-muted);
-	border: 1px solid #e3e8f2;
-	border-radius: 6px;
-}
-
-.api-code-card .copybtn.copybtn--in-header:hover {
-	background-color: #f6f9fc;
-	color: var(--api-code-muted);
-}
-
-.api-code-card .copybtn.copybtn--in-header.success {
-	background-color: transparent;
-	color: var(--api-code-success);
-}
-
-.api-code-card .copybtn.copybtn--in-header svg {
-	width: 12px;
-	height: 12px;
-	padding: 0;
-	stroke: none;
-	fill: currentColor;
-}
-
-.api-code-card .copybtn.copybtn--in-header.o-tooltip--left:after {
-	background-color: var(--api-code-text);
-	color: var(--api-code-bg);
-	transform: translateX(-102%) translateY(0);
-}
-
 .api-code-card .highlight {
 	margin-top: 0;
 }
 
-/* Structure (keys, braces, GET) uses --api-code-syntax. Values get their own tokens. */
-.api-code-card pre code {
-	display: block;
-	background-color: transparent;
-	color: var(--api-code-syntax);
-	font-family: var(--api-code-font);
-	font-size: var(--api-code-size);
-	line-height: var(--api-code-leading);
-	font-weight: 400;
-	padding: var(--api-code-pad-block) 1rem;
-	border: 0;
-	border-radius: 0;
-	mix-blend-mode: unset;
-}
-
-.api-code-card .hljs,
-.api-code-card [class^='hljs-'] {
-	color: var(--api-code-syntax);
-	font-weight: 400;
-}
-
-.api-code-card .hljs-comment,
-.api-code-card .hljs-quote {
-	color: var(--api-code-muted);
-}
-
-.api-code-card .hljs-keyword,
-.api-code-card .hljs-title,
-.api-code-card .function_,
-.api-code-card .hljs-built_in {
-	color: var(--api-code-keyword);
-}
-
-.api-code-card .hljs-variable {
-	color: var(--api-code-variable);
-}
-
-.api-code-card .hljs-attr,
-.api-code-card .hljs-params {
-	color: var(--api-code-property);
-}
-
-.api-code-card .hljs-string {
-	color: var(--api-code-string);
-}
-
-.api-code-card .hljs-string.hljs-attr {
-	color: var(--api-code-property);
-}
-
-.api-code-card .hljs-literal {
-	color: var(--api-code-boolean);
-}
-
-.api-code-card .hljs-number {
-	color: var(--api-code-number);
-}
-
-.api-code-card .hljs-punctuation {
-	color: var(--api-code-syntax);
-}
-
-/* API page shell: same max width as docs; right column only when examples exist */
+/* API page shell: same max width as docs. Sidebar plus one content column; operation
+   pages split that column in two themselves (.api-page-columns). */
 .api-page-shell {
 	max-width: var(--max-layout-width);
 }
 
-/* 48px is the two-rail desktop gutter. Below 1024 the page is sidebar + one column. */
-@media (min-width: 768px) and (max-width: 1023px) {
-	.api-page-shell > .grid {
-		column-gap: 16px;
-	}
-}
-
-@media (min-width: 1024px) {
+@media (min-width: 768px) {
 	.api-page-shell > .grid {
 		column-gap: 48px;
 	}
 }
 
-/* Below 1024px the panel stays in the flex-col flow (after the article). Do not hide it.
-   Flush with the article — the cards have their own chrome. */
-@media (max-width: 1023px) {
-	#api-examples-panel.api-examples-panel {
-		min-width: 0;
-		margin: 0;
-		padding: 0;
-	}
+/* Examples rail cards sit flush with the article; they have their own chrome. */
+#api-examples-panel .api-code-card:last-child {
+	margin-bottom: 0;
+}
 
-	#api-examples-panel .api-examples-panel-nav {
-		padding: 0;
-	}
-
-	#api-examples-panel h4.section-header.api-examples-heading,
-	#api-examples-panel h4.section-header.api-examples-heading--stacked {
-		display: flex;
-		padding: 1.5rem 0 0.75rem;
-		margin: 0;
-	}
-
-	#api-examples-panel .api-code-card:last-child {
-		margin-bottom: 0;
-	}
+/* Operation pages: the reference and the examples rail. One column; two from 1024px,
+   under the full-width intro. The intro already ends with a 16px step. */
+.api-page-columns {
+	display: flex;
+	flex-direction: column;
+	gap: 16px;
+	margin-top: 16px;
 }
 
 @media (min-width: 1024px) {
-	/* Prefer :has() over a server class on this wrapper: htmx swaps #api-examples-panel
-	   oob but does not remount .api-content-grid, so a toggled --examples class goes stale.
-	   Must set display:grid here — Tailwind lg:grid is 1280px and left the rail stacked
-	   under the reference column between 1024 and 1280. */
-	.api-content-grid:has(#api-examples-panel.api-examples-panel) {
-		display: grid;
-		grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-		column-gap: 24px;
-		/* Rows size to content so the examples rail can position:sticky while the page scrolls */
+	.api-page-columns {
+		flex-direction: row;
+		align-items: flex-start;
+		gap: 24px;
 	}
 
-	/* Flatten wrappers so intro/reference become grid items next to the examples rail */
-	.api-content-grid:has(#api-examples-panel.api-examples-panel)
-		> .api-page-main,
-	.api-content-grid:has(#api-examples-panel.api-examples-panel)
-		> .api-page-main
-		> #content-container,
-	.api-content-grid:has(#api-examples-panel.api-examples-panel)
-		> .api-page-main
-		> #content-container
-		> #markdown-content {
-		display: contents;
-	}
-
-	.api-content-grid:has(#api-examples-panel.api-examples-panel)
-		.api-page-toolbar {
-		grid-column: 1 / -1;
-		grid-row: 1;
+	.api-page-columns > * {
+		flex: 1 1 0;
 		min-width: 0;
-		padding-top: calc(
-			var(--spacing) * 6
-		); /* replaces .api-page-main pt-6 lost to contents */
 	}
 
-	.api-content-grid:has(#api-examples-panel.api-examples-panel)
-		.api-page-intro {
-		grid-column: 1 / -1;
-		grid-row: 2;
-		min-width: 0;
-		padding-top: 0;
-		padding-right: 0;
-	}
-
-	.api-content-grid:has(#api-examples-panel.api-examples-panel)
-		.api-page-reference {
-		grid-column: 1;
-		grid-row: 3;
-		min-width: 0;
-		padding-bottom: calc(var(--spacing) * 12); /* replaces main pb-12 */
-	}
-
-	/* Examples rail: hug content, cap at viewport under the intro */
+	/* Examples rail: hug content, cap at the viewport, scroll inside.
+	   Same header-collapse transition as .sidebar-nav so the rails move together. */
 	#api-examples-panel {
-		--api-examples-rail-padding: calc(
-			var(--spacing) * 6
-		); /* match content pt-6 */
-		grid-column: 2;
-		grid-row: 3;
+		--api-rail-top: calc(var(--offset-top) + 16px);
 		position: sticky;
-		top: var(--offset-top);
-		align-self: start;
+		top: var(--api-rail-top);
 		box-sizing: border-box;
-		height: min(max-content, calc(100vh - var(--offset-top)));
-		max-height: calc(100vh - var(--offset-top));
-		padding-block: var(--api-examples-rail-padding);
+		max-height: calc(100vh - var(--api-rail-top));
 		overflow: hidden;
 		display: flex;
 		flex-direction: column;
+		transition:
+			top 0.3s ease,
+			max-height 0.3s ease;
 	}
 
+	/* The rail scrolls as a whole when it hits max-height. Cards must not shrink:
+	   with min-height: 0 the request card collapsed to its header and hid the code. */
 	#api-examples-panel .api-examples-panel-nav {
 		flex: 0 1 auto;
 		min-height: 0;
 		max-height: none;
-		overflow: visible;
+		overflow-x: hidden;
+		overflow-y: auto;
 		display: flex;
 		flex-direction: column;
 	}
 
-	/* Size to content; shrink only when the rail hits max-height */
 	#api-examples-panel .api-examples-body,
 	#api-examples-panel .api-examples-scenarios {
-		flex: 0 1 auto;
-		min-height: 0;
+		flex: 0 0 auto;
 		display: flex;
 		flex-direction: column;
 		flex-wrap: nowrap;
 		overflow: visible;
-	}
-
-	#api-examples-panel .api-examples-heading {
-		flex-shrink: 0;
-		border-bottom: none;
-		padding-top: 0;
-		padding-bottom: 1rem;
-		margin-top: 0;
 	}
 
 	#api-examples-panel .api-examples-scenario-header {
@@ -2686,8 +2578,7 @@ button.example-response-tab:focus-visible {
 
 	#api-examples-panel .api-examples-scenario-panel {
 		display: flex;
-		flex: 0 1 auto;
-		min-height: 0;
+		flex: 0 0 auto;
 		flex-direction: column;
 	}
 
@@ -2697,8 +2588,7 @@ button.example-response-tab:focus-visible {
 
 	#api-examples-panel .api-examples-body {
 		display: flex;
-		flex: 0 1 auto;
-		min-height: 0;
+		flex: 0 0 auto;
 		flex-direction: column;
 		overflow: visible;
 		border: 0;
@@ -2707,84 +2597,16 @@ button.example-response-tab:focus-visible {
 
 	#api-examples-panel .api-code-card {
 		display: flex;
-		flex: 0 1 auto;
-		min-height: 0;
+		flex: 0 0 auto;
 		flex-direction: column;
-	}
-
-	#api-examples-panel .api-code-card:last-child {
-		margin-bottom: 0;
 	}
 
 	#api-examples-panel .api-code-sample-body,
 	#api-examples-panel .example-block-body {
-		flex: 0 1 auto;
-		min-height: 0;
+		flex: 0 0 auto;
+		max-height: max(12rem, calc((100vh - var(--offset-top)) * 0.4));
 		overflow: auto;
 	}
-}
-
-/* Cap tall samples so the card scrolls instead of growing forever */
-#api-examples-panel .api-code-card .highlight pre code {
-	max-height: none;
-}
-
-/* Line-number gutter (sibling <pre>): excluded from selection/copy.
-   display:block beats leftover docs `pre { display:grid }` if any still leak. */
-#api-examples-panel .api-code-card .api-code-lines {
-	display: flex;
-	align-items: flex-start;
-	min-width: 0;
-	max-height: none;
-	overflow: visible;
-}
-
-#api-examples-panel .api-code-card .api-code-lines > pre {
-	display: block;
-	margin: 0;
-}
-
-#api-examples-panel
-	.api-code-card
-	.api-code-lines
-	> pre:not(.api-code-line-gutter) {
-	flex: 1 0 auto;
-	width: max-content;
-	min-width: 0;
-}
-
-#api-examples-panel
-	.api-code-card
-	.api-code-lines
-	> pre:not(.api-code-line-gutter)
-	code {
-	display: block;
-	width: max-content;
-	min-width: 0;
-	max-height: none;
-	overflow: visible;
-	padding: var(--api-code-pad-block) 1rem var(--api-code-pad-block) 0.5rem;
-	white-space: pre;
-	word-break: normal;
-	overflow-wrap: normal;
-}
-
-#api-examples-panel .api-code-card .api-code-line-gutter {
-	flex: 0 0 auto;
-	margin: 0;
-	border: 0;
-	background: transparent;
-	user-select: none;
-	-webkit-user-select: none;
-	pointer-events: none;
-	text-align: right;
-	font-variant-numeric: tabular-nums;
-	white-space: pre;
-	padding: var(--api-code-pad-block) 0.5rem var(--api-code-pad-block) 1rem;
-	color: var(--api-code-gutter);
-	font-family: var(--api-code-font);
-	font-size: var(--api-code-size);
-	line-height: var(--api-code-leading);
 }
 
 #api-examples-panel .nav-select-dropdown {
@@ -2803,7 +2625,7 @@ button.example-response-tab:focus-visible {
 .api-code-sample-title .api-url {
 	margin-left: 0;
 	overflow: hidden;
-	color: var(--api-code-muted);
+	color: var(--api-code-text);
 	font-family:
 		'Roboto Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
 		monospace;
@@ -2815,7 +2637,7 @@ button.example-response-tab:focus-visible {
 }
 
 .api-code-sample-title .api-code-sample-heading {
-	color: var(--api-code-muted);
+	color: var(--api-code-text);
 	font-size: 12px;
 	font-weight: 600;
 	line-height: 20px;
@@ -2844,10 +2666,10 @@ button.example-response-tab:focus-visible {
 	height: 24px;
 	margin: 0;
 	padding: 0 8px;
-	border: 1px solid #e3e8f2;
+	border: 1px solid var(--api-code-border);
 	border-radius: 6px;
-	background: #fff;
-	color: var(--api-code-muted, #798eaf);
+	background: var(--api-code-bg);
+	color: var(--api-code-text);
 	font-family: var(--font-sans, Inter, ui-sans-serif, system-ui, sans-serif);
 	font-size: 14px;
 	font-weight: 400;
@@ -2894,11 +2716,18 @@ button.example-response-tab:focus-visible {
 }
 
 .api-select-trigger:hover {
-	background: #f6f9fc;
+	background: var(--api-code-hover);
+}
+
+.api-select-trigger:is(:disabled, [aria-disabled='true']),
+.api-select-trigger:is(:disabled, [aria-disabled='true']):hover {
+	color: var(--api-code-muted);
+	background: var(--api-code-bg);
+	cursor: not-allowed;
 }
 
 .api-select-trigger:focus-visible {
-	outline: 2px solid var(--api-code-accent, #0b64dd);
+	outline: 2px solid var(--api-code-accent);
 	outline-offset: 1px;
 }
 
@@ -2963,19 +2792,6 @@ button.example-response-tab:focus-visible {
 	}
 }
 
-/* Right-rail examples panel (Scalar-style operation layout) */
-.api-examples-panel {
-	@apply font-body;
-}
-
-/* Response card aliases the shared Card/Code tokens for the hljs !important rules. */
-.example-block--response {
-	--api-response-text: var(--api-code-syntax);
-	--api-response-string: var(--api-code-string);
-	--api-response-boolean: var(--api-code-boolean);
-	--api-response-number: var(--api-code-number);
-}
-
 .example-block--response .example-empty {
 	margin: 0;
 	padding: 12px 16px;
@@ -2989,502 +2805,12 @@ button.example-response-tab:focus-visible {
 	@apply ml-auto flex shrink-0 items-center gap-2;
 }
 
-.example-block--response .example-block-body .highlight {
-	@apply mt-0;
-}
-
-/* Beat `.markdown-content .hljs { color: blue-elastic-30 }` (same 0,2,0 + !important)
-   by including .markdown-content in the selector — the examples rail uses that class. */
-.markdown-content .example-block--response pre code,
-#api-examples-panel .example-block--response pre code,
-.markdown-content .api-code-sample pre code,
-#api-examples-panel .api-code-sample pre code {
-	background-color: transparent !important;
-	color: var(--api-response-text) !important;
-	font-family:
-		'Roboto Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
-		monospace;
-	font-size: 14px;
-	line-height: 20px;
-	font-weight: 400;
-}
-
-.markdown-content .example-block--response .hljs,
-.markdown-content .example-block--response .hljs-attr,
-.markdown-content .example-block--response .hljs-punctuation,
-.markdown-content .example-block--response .hljs-subst,
-.markdown-content .example-block--response .hljs-bullet,
-.markdown-content .example-block--response .hljs-section,
-.markdown-content .example-block--response .hljs-title,
-.markdown-content .example-block--response .hljs-name,
-.markdown-content .example-block--response .hljs-type,
-.markdown-content .example-block--response .hljs-params,
-.markdown-content .example-block--response .hljs-meta,
-.markdown-content .example-block--response .hljs-built_in,
-.markdown-content .example-block--response .hljs-comment,
-.markdown-content .example-block--response .hljs-quote,
-#api-examples-panel .example-block--response .hljs,
-#api-examples-panel .example-block--response [class^='hljs-'],
-.markdown-content .api-code-sample .hljs,
-.markdown-content .api-code-sample .hljs-attr,
-.markdown-content .api-code-sample .hljs-punctuation,
-.markdown-content .api-code-sample .hljs-subst,
-.markdown-content .api-code-sample .hljs-bullet,
-.markdown-content .api-code-sample .hljs-section,
-.markdown-content .api-code-sample .hljs-title,
-.markdown-content .api-code-sample .hljs-name,
-.markdown-content .api-code-sample .hljs-type,
-.markdown-content .api-code-sample .hljs-params,
-.markdown-content .api-code-sample .hljs-meta,
-.markdown-content .api-code-sample .hljs-built_in,
-.markdown-content .api-code-sample .hljs-comment,
-.markdown-content .api-code-sample .hljs-quote,
-#api-examples-panel .api-code-sample .hljs,
-#api-examples-panel .api-code-sample [class^='hljs-'] {
-	color: var(--api-response-text) !important;
-}
-
-.markdown-content .example-block--response .hljs-comment,
-.markdown-content .example-block--response .hljs-quote,
-#api-examples-panel .example-block--response .hljs-comment,
-#api-examples-panel .example-block--response .hljs-quote,
-.markdown-content .api-code-sample .hljs-comment,
-.markdown-content .api-code-sample .hljs-quote,
-#api-examples-panel .api-code-sample .hljs-comment,
-#api-examples-panel .api-code-sample .hljs-quote {
-	color: var(--api-code-muted) !important;
-}
-
-.markdown-content .example-block--response .hljs-keyword,
-.markdown-content .example-block--response .hljs-title,
-.markdown-content .example-block--response .function_,
-.markdown-content .example-block--response .hljs-built_in,
-#api-examples-panel .example-block--response .hljs-keyword,
-#api-examples-panel .example-block--response .hljs-title,
-#api-examples-panel .example-block--response .function_,
-#api-examples-panel .example-block--response .hljs-built_in,
-.markdown-content .api-code-sample .hljs-keyword,
-.markdown-content .api-code-sample .hljs-title,
-.markdown-content .api-code-sample .function_,
-.markdown-content .api-code-sample .hljs-built_in,
-#api-examples-panel .api-code-sample .hljs-keyword,
-#api-examples-panel .api-code-sample .hljs-title,
-#api-examples-panel .api-code-sample .function_,
-#api-examples-panel .api-code-sample .hljs-built_in {
-	color: var(--api-code-keyword) !important;
-}
-
-.markdown-content .example-block--response .hljs-variable,
-#api-examples-panel .example-block--response .hljs-variable,
-.markdown-content .api-code-sample .hljs-variable,
-#api-examples-panel .api-code-sample .hljs-variable {
-	color: var(--api-code-variable) !important;
-}
-
-.markdown-content .example-block--response .hljs-attr,
-.markdown-content .example-block--response .hljs-params,
-#api-examples-panel .example-block--response .hljs-attr,
-#api-examples-panel .example-block--response .hljs-params,
-.markdown-content .api-code-sample .hljs-attr,
-.markdown-content .api-code-sample .hljs-params,
-#api-examples-panel .api-code-sample .hljs-attr,
-#api-examples-panel .api-code-sample .hljs-params {
-	color: var(--api-code-property) !important;
-}
-
-.markdown-content .example-block--response .hljs-string,
-#api-examples-panel .example-block--response .hljs-string,
-.markdown-content .api-code-sample .hljs-string,
-#api-examples-panel .api-code-sample .hljs-string {
-	color: var(--api-response-string) !important;
-}
-
-.markdown-content .example-block--response .hljs-string.hljs-attr,
-#api-examples-panel .example-block--response .hljs-string.hljs-attr,
-.markdown-content .api-code-sample .hljs-string.hljs-attr,
-#api-examples-panel .api-code-sample .hljs-string.hljs-attr {
-	color: var(--api-code-property) !important;
-}
-
-.markdown-content .example-block--response .hljs-literal,
-#api-examples-panel .example-block--response .hljs-literal,
-.markdown-content .api-code-sample .hljs-literal,
-#api-examples-panel .api-code-sample .hljs-literal {
-	color: var(--api-response-boolean) !important;
-}
-
-.markdown-content .example-block--response .hljs-number,
-#api-examples-panel .example-block--response .hljs-number,
-.markdown-content .api-code-sample .hljs-number,
-#api-examples-panel .api-code-sample .hljs-number {
-	color: var(--api-response-number) !important;
-}
-
-.markdown-content .example-block--response .hljs-punctuation,
-#api-examples-panel .example-block--response .hljs-punctuation,
-.markdown-content .api-code-sample .hljs-punctuation,
-#api-examples-panel .api-code-sample .hljs-punctuation {
-	color: var(--api-code-syntax) !important;
-}
-
-/* Beat docs `.markdown-content .hljs` (blue-elastic-30) and `.hljs-keyword`
-   (python `from=`). `span` covers tokens that are not `.hljs *` descendants. */
-.api-page-shell #api-examples-panel .api-code-sample-body pre code,
-.api-page-shell #api-examples-panel .api-code-sample-body pre code *,
-.api-page-shell #api-examples-panel .api-code-sample-body span {
-	color: var(--api-code-syntax) !important;
-}
-
-.api-page-shell #api-examples-panel .api-code-sample .hljs-comment,
-.api-page-shell #api-examples-panel .api-code-sample .hljs-comment *,
-.api-page-shell #api-examples-panel .api-code-sample .hljs-quote,
-.api-page-shell #api-examples-panel .api-code-sample .hljs-quote * {
-	color: var(--api-code-muted) !important;
-}
-
-.api-page-shell #api-examples-panel .api-code-sample .hljs-keyword,
-.api-page-shell #api-examples-panel .api-code-sample .hljs-keyword *,
-.api-page-shell #api-examples-panel .api-code-sample .hljs-title,
-.api-page-shell #api-examples-panel .api-code-sample .hljs-title *,
-.api-page-shell #api-examples-panel .api-code-sample .function_,
-.api-page-shell #api-examples-panel .api-code-sample .hljs-built_in,
-.api-page-shell #api-examples-panel .api-code-sample .hljs-built_in * {
-	color: var(--api-code-keyword) !important;
-}
-
-.api-page-shell #api-examples-panel .api-code-sample .hljs-variable,
-.api-page-shell #api-examples-panel .api-code-sample .hljs-variable * {
-	color: var(--api-code-variable) !important;
-}
-
-.api-page-shell #api-examples-panel .api-code-sample .hljs-attr,
-.api-page-shell #api-examples-panel .api-code-sample .hljs-attr *,
-.api-page-shell #api-examples-panel .api-code-sample .hljs-params,
-.api-page-shell #api-examples-panel .api-code-sample .hljs-params * {
-	color: var(--api-code-property) !important;
-}
-
-.api-page-shell #api-examples-panel .api-code-sample .hljs-string,
-.api-page-shell #api-examples-panel .api-code-sample .hljs-string * {
-	color: var(--api-code-string) !important;
-}
-
-.api-page-shell #api-examples-panel .api-code-sample .hljs-string.hljs-attr,
-.api-page-shell #api-examples-panel .api-code-sample .hljs-string.hljs-attr * {
-	color: var(--api-code-property) !important;
-}
-
-.api-page-shell #api-examples-panel .api-code-sample .hljs-literal,
-.api-page-shell #api-examples-panel .api-code-sample .hljs-literal * {
-	color: var(--api-code-boolean) !important;
-}
-
-.api-page-shell #api-examples-panel .api-code-sample .hljs-number,
-.api-page-shell #api-examples-panel .api-code-sample .hljs-number * {
-	color: var(--api-code-number) !important;
-}
-
-.api-page-shell #api-examples-panel .api-code-sample .hljs-punctuation,
-.api-page-shell #api-examples-panel .api-code-sample .hljs-punctuation * {
-	color: var(--api-code-syntax) !important;
-}
-
-/* API page shell: same max width as docs; right column only when examples exist */
-.api-page-shell {
-	max-width: var(--max-layout-width);
-}
-
-@media (min-width: 768px) {
-	.api-page-shell > .grid {
-		column-gap: 48px;
-	}
-}
-
-@media (min-width: 1024px) {
-	/* Prefer :has() over a server class on this wrapper: htmx swaps #api-examples-panel
-	   oob but does not remount .api-content-grid, so a toggled --examples class goes stale.
-	   Must set display:grid here — Tailwind lg:grid is 1280px and left the rail stacked
-	   under the reference column between 1024 and 1280. */
-	.api-content-grid:has(#api-examples-panel.api-examples-panel) {
-		display: grid;
-		grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-		column-gap: 24px;
-		/* Rows size to content so the examples rail can position:sticky while the page scrolls */
-	}
-
-	/* Flatten wrappers so intro/reference become grid items next to the examples rail */
-	.api-content-grid:has(#api-examples-panel.api-examples-panel)
-		> .api-page-main,
-	.api-content-grid:has(#api-examples-panel.api-examples-panel)
-		> .api-page-main
-		> #content-container,
-	.api-content-grid:has(#api-examples-panel.api-examples-panel)
-		> .api-page-main
-		> #content-container
-		> #markdown-content {
-		display: contents;
-	}
-
-	.api-content-grid:has(#api-examples-panel.api-examples-panel)
-		.api-page-toolbar {
-		grid-column: 1 / -1;
-		grid-row: 1;
-		min-width: 0;
-		padding-top: calc(
-			var(--spacing) * 6
-		); /* replaces .api-page-main pt-6 lost to contents */
-	}
-
-	.api-content-grid:has(#api-examples-panel.api-examples-panel)
-		.api-page-intro {
-		grid-column: 1 / -1;
-		grid-row: 2;
-		min-width: 0;
-		padding-top: 0;
-		padding-right: 0;
-	}
-
-	.api-content-grid:has(#api-examples-panel.api-examples-panel)
-		.api-page-reference {
-		grid-column: 1;
-		grid-row: 3;
-		min-width: 0;
-		padding-bottom: calc(var(--spacing) * 12); /* replaces main pb-12 */
-	}
-
-	/* Examples rail: hug content, cap at viewport under the intro */
-	#api-examples-panel {
-		--api-examples-rail-padding: calc(
-			var(--spacing) * 6
-		); /* match content pt-6 */
-		grid-column: 2;
-		grid-row: 3;
-		position: sticky;
-		top: var(--offset-top);
-		align-self: start;
-		box-sizing: border-box;
-		height: min(max-content, calc(100vh - var(--offset-top)));
-		max-height: calc(100vh - var(--offset-top));
-		padding-block: var(--api-examples-rail-padding);
-		overflow: hidden;
-		display: flex;
-		flex-direction: column;
-	}
-
-	#api-examples-panel .api-examples-panel-nav {
-		flex: 0 1 auto;
-		min-height: 0;
-		max-height: none;
-		overflow: visible;
-		display: flex;
-		flex-direction: column;
-	}
-
-	/* Size to content; shrink only when the rail hits max-height */
-	#api-examples-panel .api-examples-body,
-	#api-examples-panel .api-examples-scenarios {
-		flex: 0 1 auto;
-		min-height: 0;
-		display: flex;
-		flex-direction: column;
-		flex-wrap: nowrap;
-		overflow: visible;
-	}
-
-	#api-examples-panel .api-examples-heading {
-		flex-shrink: 0;
-		border-bottom: none;
-		padding-top: 0;
-		padding-bottom: 1rem;
-		margin-top: 0;
-	}
-
-	#api-examples-panel .api-examples-scenario-header {
-		flex-shrink: 0;
-		margin-bottom: calc(var(--spacing) * 3);
-	}
-
-	#api-examples-panel .api-examples-scenario-panel {
-		display: flex;
-		flex: 0 1 auto;
-		min-height: 0;
-		flex-direction: column;
-	}
-
-	#api-examples-panel .api-examples-scenario-panel[hidden] {
-		display: none !important;
-	}
-
-	#api-examples-panel .api-examples-body {
-		display: flex;
-		flex: 0 1 auto;
-		min-height: 0;
-		flex-direction: column;
-		overflow: visible;
-		border: 0;
-		padding: 0;
-	}
-
-	#api-examples-panel .api-code-card {
-		display: flex;
-		flex: 0 1 auto;
-		min-height: 0;
-		flex-direction: column;
-	}
-
-	#api-examples-panel .api-code-card:last-child {
-		margin-bottom: 0;
-	}
-
-	#api-examples-panel .api-code-sample-body,
-	#api-examples-panel .example-block-body {
-		flex: 0 1 auto;
-		min-height: 0;
-		overflow: auto;
-	}
-}
-
-#api-examples-panel .highlight pre code {
-	max-height: none;
-	overflow: visible;
-}
-
-/* Line-number gutter (sibling <pre>): excluded from selection/copy.
-   Override markdown `pre { display:grid }` — that grid was desyncing gutter vs code rows.
-   width:max-content keeps long lines from wrapping (horizontal scroll only then). */
-#api-examples-panel .api-code-lines {
-	display: flex;
-	align-items: flex-start;
-	min-width: 0;
-	max-height: none;
-	overflow: visible;
-}
-
-#api-examples-panel .api-code-sample .api-code-lines {
-	max-height: none;
-}
-
-#api-examples-panel .api-code-lines > pre {
-	display: block !important;
-	margin: 0;
-}
-
-#api-examples-panel .api-code-lines > pre:not(.api-code-line-gutter) {
-	flex: 1 0 auto;
-	width: max-content;
-	min-width: 0;
-}
-
-#api-examples-panel .api-code-lines > pre:not(.api-code-line-gutter) code {
-	display: block;
-	width: max-content;
-	min-width: 0;
-	max-height: none !important;
-	overflow: visible !important;
-	padding-left: 0.5rem !important;
-	white-space: pre !important;
-	word-break: normal !important;
-	overflow-wrap: normal !important;
-}
-
-#api-examples-panel .api-code-line-gutter {
-	flex: 0 0 auto;
-	margin: 0;
-	border: 0;
-	background: transparent;
-	user-select: none;
-	-webkit-user-select: none;
-	pointer-events: none;
-	text-align: right;
-	font-variant-numeric: tabular-nums;
-	white-space: pre;
-	padding: 1.5rem 0.5rem 1.5rem 1rem;
-	color: var(--api-code-gutter);
-}
-
-#api-examples-panel .api-code-sample .api-code-line-gutter {
-	padding-top: calc(var(--spacing) * 4);
-	padding-bottom: 1.5rem;
-	color: var(--api-code-gutter);
-}
-
-#api-examples-panel .example-block--response .api-code-line-gutter,
-#api-examples-panel .api-code-sample .api-code-line-gutter {
-	font-family:
-		'Roboto Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
-		monospace;
-	font-size: 14px;
-	line-height: 20px;
-}
-
-#api-examples-panel .nav-select-dropdown {
-	width: auto;
-}
-
-/* Code sample widget — same Card/Code chrome as .example-block--response */
-.api-code-sample {
-	--api-response-text: var(--api-code-syntax);
-	--api-response-string: var(--api-code-string);
-	--api-response-boolean: var(--api-code-boolean);
-	--api-response-number: var(--api-code-number);
-}
-
 .api-code-sample-actions {
 	@apply ml-auto flex shrink-0 items-center gap-1;
 }
 
-.api-code-sample-actions .copybtn.copybtn--in-header:hover {
-	color: var(--api-code-muted);
-}
-
-.api-code-sample-actions .copybtn.copybtn--in-header.success {
-	background-color: transparent;
-	color: #22863a;
-}
-
-.api-code-sample-actions .copybtn.copybtn--in-header svg {
-	width: 12px;
-	height: 12px;
-	padding: 0;
-	stroke: none;
-	fill: currentColor;
-}
-
-.api-code-sample-actions .copybtn.copybtn--in-header.o-tooltip--left:after {
-	background-color: #1d2a3e;
-	color: #f6f9fc;
-	transform: translateX(-102%) translateY(0);
-}
-
 .api-code-sample-body {
 	min-width: 0;
-}
-
-.api-code-sample .highlight {
-	@apply mt-0;
-}
-
-.api-code-sample .highlight pre code {
-	@apply rounded-none!;
-	padding-top: calc(var(--spacing) * 4) !important;
-	background-color: transparent !important;
-	color: var(--api-code-syntax) !important;
-}
-
-/* Neutralize markdown/code.css bold tokens so all syntax shares weight 400 */
-.api-code-sample .hljs,
-.api-code-sample [class^='hljs-'],
-.example-block--response .hljs,
-.example-block--response [class^='hljs-'] {
-	font-weight: 400 !important;
-}
-
-#api-examples-panel .api-code-sample .highlight pre code {
-	max-height: none;
-}
-
-#api-examples-panel .api-code-sample .api-code-lines pre code {
-	max-height: none !important;
 }
 
 /*
@@ -3527,11 +2853,6 @@ button.example-response-tab:focus-visible {
 		outline: var(--outline-size) var(--outline-style) var(--outline-color);
 		outline-offset: var(--outline-offset, var(--outline-size));
 	}
-}
-
-/* Right-rail examples panel (Scalar-style operation layout) */
-.api-examples-panel {
-	@apply font-body;
 }
 
 /* Example description - smaller font like property descriptions */
@@ -3775,4 +3096,19 @@ button.example-response-tab:focus-visible {
 .api-landing-icon svg {
 	width: auto;
 	height: 40px;
+}
+
+/* Keep the viewport scrollbar mounted. A scrollbar that appears when a
+   section expands changes the layout width and shifts both rails.
+   scrollbar-gutter does not reserve that space in current Chrome. */
+html:has(.api-page-shell) {
+	overflow-y: scroll;
+}
+
+@media (min-width: 1024px) {
+	/* The rail shrinks its cards to the viewport. Keep the request sample's
+	   height independent of which response status is selected. */
+	#api-examples-panel .api-code-card:not(.example-block--response) {
+		flex-shrink: 0;
+	}
 }

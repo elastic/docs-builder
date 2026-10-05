@@ -1,6 +1,6 @@
 @inherits RazorSlice<Elastic.ApiExplorer.Infrastructure.SectionHeader>
 <h2 class="section-header" id="@Model.Anchor" data-section="@Model.Anchor">
-	<span>@Model.Title</span>
+	<a class="headerlink" href="#@Model.Anchor">@Model.Title</a>
 	@if (!string.IsNullOrEmpty(Model.ContentTypeBadge))
 	{
 		<span class="content-type-badge">@Model.ContentTypeBadge</span>

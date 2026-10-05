@@ -162,3 +162,27 @@ describe('toLanguageFn', () => {
         expect(toLanguageFn({ default: fn })).toBe(fn)
     })
 })
+
+describe('API sample panels', () => {
+    it('highlights each panel with its own language, including the hidden one', async () => {
+        const { initHighlight } = await loadModule()
+        document.body.innerHTML = `
+            <div id="api-examples-panel">
+                <div data-code-panel="Console"><pre><code class="language-console">GET /_search</code></pre></div>
+                <div data-code-panel="Python" hidden><pre><code class="language-python">def f():\n    return 1</code></pre></div>
+            </div>`
+
+        await initHighlight()
+
+        const python = document.querySelector(
+            '[data-code-panel="Python"] code'
+        )!
+        const consoleCode = document.querySelector(
+            '[data-code-panel="Console"] code'
+        )!
+        expect(python.classList.contains('language-python')).toBe(true)
+        expect(python.querySelector('.hljs-keyword')?.textContent).toBe('def')
+        expect(consoleCode.classList.contains('language-console')).toBe(true)
+        expect((consoleCode as HTMLElement).dataset.highlighted).toBe('yes')
+    })
+})

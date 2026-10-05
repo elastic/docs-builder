@@ -32,6 +32,7 @@ export function createWebComponentLoader(componentLoaders: ComponentLoaders) {
 }
 
 export const loadWebComponents = createWebComponentLoader({
+    'filterable-table': () => import('./FilterableTable'),
     'version-dropdown': () => import('./VersionDropdown'),
     'applies-to-popover': () => import('./AppliesToPopover'),
     'page-feedback': () => import('./PageFeedback'),

@@ -16,11 +16,11 @@ public class ProductFeaturesTests
 	public void ProductWithNoFeaturesKey_GetsAllFeaturesEnabled()
 	{
 		var config = LoadActualProductsConfiguration();
-		var elasticsearch = config.Products["elasticsearch"];
+		var auditbeat = config.Products["auditbeat"];
 
-		elasticsearch.Features.PublicReference.Should().BeTrue();
-		elasticsearch.Features.ReleaseNotes.Should().Be(ReleaseNotesPath.OnRelease);
-		elasticsearch.Features.ParticipatesInReleaseNotes.Should().BeTrue();
+		auditbeat.Features.PublicReference.Should().BeTrue();
+		auditbeat.Features.ReleaseNotes.Should().Be(ReleaseNotesPath.OnRelease);
+		auditbeat.Features.ParticipatesInReleaseNotes.Should().BeTrue();
 	}
 
 	[Test]
@@ -112,6 +112,8 @@ public class ProductFeaturesTests
 	[Arguments("false", ReleaseNotesPath.None)]
 	[Arguments("prestage", ReleaseNotesPath.Prestage)]
 	[Arguments("Prestage", ReleaseNotesPath.Prestage)]
+	[Arguments("dra", ReleaseNotesPath.Prestage)]
+	[Arguments("Dra", ReleaseNotesPath.Prestage)]
 	[Arguments("on-release", ReleaseNotesPath.OnRelease)]
 	public void ReleaseNotesFeature_AcceptsBooleansAndPathStrings(string value, ReleaseNotesPath expected)
 	{
@@ -149,11 +151,11 @@ public class ProductFeaturesTests
 	}
 
 	[Test]
-	public void ReleaseNotesFeature_InvalidValue_Throws()
+	public void ReleaseNotesFeature_UnknownValue_TreatsAsOnRelease()
 	{
-		var act =
-			() => ParseProducts(
-				"""
+		// Unknown future values must not crash an older binary — forward-compat rule.
+		var config = ParseProducts(
+			"""
 			products:
 			  widget:
 			    display: 'Widget'
@@ -161,12 +163,9 @@ public class ProductFeaturesTests
 			    features:
 			      release-notes: sideways
 			"""
-			);
+		);
 
-		act
-			.Should()
-			.Throw<InvalidOperationException>()
-			.WithMessage("*'release-notes' value 'sideways'*Allowed values: true, false, prestage, on-release*");
+		config.Products["widget"].Features.ReleaseNotes.Should().Be(ReleaseNotesPath.OnRelease);
 	}
 
 	[Test]
@@ -206,7 +205,7 @@ public class ProductFeaturesTests
 		act
 			.Should()
 			.Throw<InvalidOperationException>()
-			.WithMessage("*has an empty 'release-notes' value*Allowed values: true, false, prestage, on-release*");
+			.WithMessage("*has an empty 'release-notes' value*Allowed values: true, false, dra, on-release*");
 	}
 
 	[Test]
