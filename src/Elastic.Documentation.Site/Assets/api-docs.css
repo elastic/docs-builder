@@ -3492,9 +3492,12 @@ button.example-response-tab:focus-visible {
 	max-height: none !important;
 }
 
-/* Beats the rail's min-height: 0. Top padding is 1rem; a shorter body clips the first line. */
+/* Beats the rail's min-height: 0. A shorter body clips a one-line sample:
+   code has 1rem top padding, one line, and --api-code-pad-block below. */
 #api-examples-panel .api-code-sample-body {
-	min-height: calc(var(--spacing) * 4 + var(--api-code-leading));
+	min-height: calc(
+		var(--spacing) * 4 + var(--api-code-leading) + var(--api-code-pad-block)
+	);
 }
 
 /*
