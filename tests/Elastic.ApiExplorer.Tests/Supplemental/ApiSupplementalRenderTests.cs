@@ -442,8 +442,12 @@ public class ApiSupplementalRenderTests(ApiExplorerFixture fixture)
 		var nav = SearchTag();
 		var html = await RenderAsync(nav.Index.Model, nav);
 
+		html.Should().Contain("api-group-list");
+		html.Should().Contain("api-group-row");
 		html.Should().Contain("api-overview-title");
 		html.Should().Contain("api-url-row");
+		html.Should().Contain("api-group-count");
+		html.Should().NotContain("<table");
 		html.Should().NotContain("api-url-list-item-landing");
 	}
 

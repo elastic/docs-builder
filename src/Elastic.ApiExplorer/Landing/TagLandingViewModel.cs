@@ -20,7 +20,7 @@ public class TagLandingViewModel(ApiRenderContext context) : ApiViewModel(contex
 {
 	public required ApiTag Tag { get; init; }
 
-	/// <summary>Flattened overview table rows; built before the slice renders.</summary>
+	/// <summary>Built before the slice renders so the view only iterates.</summary>
 	public required IReadOnlyList<ApiOverviewRow> OverviewRows { get; init; }
 
 	public string? DescriptionMarkdown
