@@ -189,7 +189,14 @@ public static class ApplicabilityRenderer
 		var showVersionNote = productInfo is { IncludeVersionNote: true } && versioningSystem.IsVersioned();
 
 		var allNegative = applicabilities.All(
-			a => a.Lifecycle is ProductLifecycle.Unavailable or ProductLifecycle.Removed or ProductLifecycle.Deprecated
+		var allNegative = applicabilities.All(
+			a =>
+				a.Lifecycle
+				is ProductLifecycle.Unavailable
+					or ProductLifecycle.Removed
+					or ProductLifecycle.Deprecated
+					or ProductLifecycle.Discontinued
+		);
 		);
 
 		return new PopoverData(
