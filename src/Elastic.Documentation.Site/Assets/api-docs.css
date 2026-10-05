@@ -2182,7 +2182,8 @@ a.docs-reference-btn::after {
 
 /* The global .headerlink::after '#' positions against its link, so it lines up with the title, not the padded h2 */
 #elastic-api-v3 h2.section-header .headerlink,
-#schema-definition h2.section-header .headerlink {
+#schema-definition h2.section-header .headerlink,
+.api-operation-description h2 .headerlink {
 	position: relative;
 }
 
