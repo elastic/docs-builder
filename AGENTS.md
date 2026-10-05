@@ -101,6 +101,14 @@ public void BaseAfterCurrent_IsReportedExactlyWhenInverted() =>
 	);
 ```
 
+### DTO projections
+
+Every hand-written DTO-to-domain projection needs a coverage test in
+`tests/Elastic.Documentation.Configuration.Tests/`. Use `ProjectionCoverage.For<TDto>()` to name every mapped member.
+Members accepted only for compatibility must use `ProjectionCoverage.Ignore(...)` with a reason. The test uses reflection
+only in the test assembly; production code stays AOT-compatible. Golden tests remain responsible for defaults and other
+mapping semantics.
+
 ## Key Locations
 
 | What | Where |
