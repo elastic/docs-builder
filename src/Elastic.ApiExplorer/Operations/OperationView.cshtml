@@ -81,7 +81,12 @@
 		<div class="api-security-badges">
 			@foreach (var scheme in pageModel.AuthSchemes)
 			{
-				<a class="api-type-badge" href="@scheme.Href">@scheme.PillLabel</a>
+				<a class="api-auth-button" href="@scheme.Href">
+					<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+						<path fill-rule="evenodd" clip-rule="evenodd" d="M4 7V5a4 4 0 1 1 8 0v2h1a1 1 0 0 1 1 1v6a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1h1Zm1 0h6V5a3 3 0 1 0-6 0v2ZM3 8v6h10V8H3Z" fill="currentColor"/>
+					</svg>
+					<span>@scheme.PillLabel</span>
+				</a>
 			}
 		</div>
 	}
