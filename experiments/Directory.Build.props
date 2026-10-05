@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project>
+  <!-- Experiments are test projects kept out of tests/, which ./build.sh unit-test runs: they need checkouts CI does not have. -->
+  <Import Project="$(MSBuildThisFileDirectory)../tests/Directory.Build.props" />
+</Project>
