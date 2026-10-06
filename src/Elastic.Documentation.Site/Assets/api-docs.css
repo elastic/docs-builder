@@ -2704,6 +2704,8 @@ button.example-response-tab:focus-visible {
 		display: flex;
 		flex: 0 0 auto;
 		flex-direction: column;
+		/* Between the request rail and the response card. */
+		row-gap: calc(var(--spacing) * 4);
 	}
 
 	#api-examples-panel .api-examples-body {
