@@ -101,7 +101,9 @@ public class SpaceNormalizerParser : InlineParser
 		if (span.IndexOfAny(SpaceSearchValues) == -1)
 			return false;
 
-		processor.Inline = IrregularSpace.Instance;
+		// Each match needs its own node: an inline is a linked-list node, so reusing one instance
+		// moves it and drops earlier occurrences, and races across documents parsed in parallel.
+		processor.Inline = new IrregularSpace();
 
 		// Emit a single hint per file on first detection
 		var context = processor.GetContext();
@@ -125,10 +127,7 @@ public class SpaceNormalizerParser : InlineParser
 	}
 }
 
-public class IrregularSpace : LeafInline
-{
-	public static readonly IrregularSpace Instance = new();
-};
+public class IrregularSpace : LeafInline;
 
 public class SpaceNormalizerRenderer : HtmlObjectRenderer<IrregularSpace>
 {
