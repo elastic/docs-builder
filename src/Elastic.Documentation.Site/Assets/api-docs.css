@@ -3379,7 +3379,14 @@ html:has(.api-page-shell) {
 	transform-origin: left top;
 	transition:
 		opacity 0.25s,
-		transform 0.25s;
+		transform 0.25s,
+		transform-origin 0.25s;
+}
+
+/* Inactive cards shrink towards the active one, so the gap beside it stays 12px on both sides. The last card
+   deliberately stops where the strip runs out, with the previous card showing beside it. */
+#api-examples-panel .api-code-carousel-card:has(~ .is-active) {
+	transform-origin: right top;
 }
 
 .api-code-carousel-card:not(.is-active) {
