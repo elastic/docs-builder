@@ -48,27 +48,36 @@ public sealed class StringListEntryComparer : IEqualityComparer<KeyValuePair<str
 /// Entries of <see cref="LinkRegistry.Repositories"/> (repository to branch to entry): equal when the keys match and the inner dictionaries hold equal values
 /// under the same keys, in any order.
 /// </summary>
-public sealed class LinkRegistryEntriesComparer : IEqualityComparer<KeyValuePair<string, Dictionary<string, LinkRegistryEntry>>>
+public sealed class LinkRegistryEntriesComparer : IEqualityComparer<Dictionary<string, Dictionary<string, LinkRegistryEntry>>>
 {
 	public static LinkRegistryEntriesComparer Default { get; } = new();
 
 	public bool Equals(
-		KeyValuePair<string, Dictionary<string, LinkRegistryEntry>> x,
-		KeyValuePair<string, Dictionary<string, LinkRegistryEntry>> y
+		Dictionary<string, Dictionary<string, LinkRegistryEntry>>? x,
+		Dictionary<string, Dictionary<string, LinkRegistryEntry>>? y
 	) =>
-		string.Equals(x.Key, y.Key, StringComparison.Ordinal)
-			&& (ReferenceEquals(x.Value, y.Value)
-				|| (x.Value is not null
-					&& y.Value is not null
-					&& x.Value.Count == y.Value.Count
-					&& x.Value.All(
-						kv => y.Value.TryGetValue(kv.Key, out var other) && EqualityComparer<LinkRegistryEntry>.Default.Equals(
-							kv.Value,
-							other
-						)
-					)));
+		ReferenceEquals(x, y)
+			|| (x is not null
+				&& y is not null
+				&& x.Count == y.Count
+				&& x.All(
+					repository => y.TryGetValue(repository.Key, out var other) &&
+						(ReferenceEquals(repository.Value, other) ||
+							(repository.Value is not null &&
+								other is not null && repository.Value.Count == other.Count && repository.Value.All(
+								branch => other.TryGetValue(
+									branch.Key,
+									out var entry
+								) && EqualityComparer<LinkRegistryEntry>.Default.Equals(branch.Value, entry)
+							)))
+				));
 
-	// Order-independent: the key and the entry count identify the bucket; Equals settles the rest.
-	public int GetHashCode(KeyValuePair<string, Dictionary<string, LinkRegistryEntry>> obj) =>
-		HashCode.Combine(StringComparer.Ordinal.GetHashCode(obj.Key), obj.Value?.Count ?? 0);
+	// Order-independent: the repositories and their branch counts identify the registry; Equals settles the rest.
+	public int GetHashCode(Dictionary<string, Dictionary<string, LinkRegistryEntry>> obj)
+	{
+		var hash = 0;
+		foreach (var (key, branches) in obj)
+			hash ^= HashCode.Combine(StringComparer.Ordinal.GetHashCode(key), branches?.Count ?? 0);
+		return hash;
+	}
 }

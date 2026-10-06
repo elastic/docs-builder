@@ -12,6 +12,11 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- The fixed-seed convention of the property tests: one definition, linked where it is used. -->
+    <Compile Include="..\Elastic.Documentation.Tests\Domain\Props.cs" Link="Props.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\..\src\services\Elastic.Documentation.Deploying\Elastic.Documentation.Deploying.csproj" />
     <ProjectReference Include="..\..\src\services\Elastic.Documentation.Assembler\Elastic.Documentation.Assembler.csproj" />
     <ProjectReference Include="..\..\src\Elastic.Codex\Elastic.Codex.csproj" />

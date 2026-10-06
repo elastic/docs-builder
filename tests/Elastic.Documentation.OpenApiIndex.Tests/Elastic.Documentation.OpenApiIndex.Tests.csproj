@@ -5,6 +5,11 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <!-- The fixed-seed convention of the property tests: one definition, linked where it is used. -->
+    <Compile Include="..\Elastic.Documentation.Tests\Domain\Props.cs" Link="Props.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\..\src\Elastic.Documentation.OpenApiIndex\Elastic.Documentation.OpenApiIndex.csproj" />
     <!-- Laws: how the index constraints are tested. Not shipped. -->
     <ProjectReference Include="$(NulleanEntitiesRoot)/src/Nullean.Entities.CsCheck/Nullean.Entities.CsCheck.csproj" />

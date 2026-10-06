@@ -103,10 +103,18 @@ public static class DocumentationSetLoader
 			return Result.Failure<DocumentationSetDefinition>(buffer.Diagnostics);
 		}
 
-		return Result.Success(
-			ToDefinition(dto, docsetFile, sourceDirectory, fileSystem, redirectFile.Redirects, redirectFile),
-			buffer.Diagnostics
-		);
+		DocumentationSetDefinition definition;
+		try
+		{
+			definition = ToDefinition(dto, docsetFile, sourceDirectory, fileSystem, redirectFile.Redirects, redirectFile);
+		}
+		catch (Exception e) when (e is not OutOfMemoryException)
+		{
+			// a key the file leaves empty (`release_notes:` and nothing under it) reaches the mapping as a null list: that is the file's fault, reported as one
+			buffer.EmitError(docsetFile, e.Message);
+			return Result.Failure<DocumentationSetDefinition>(buffer.Diagnostics);
+		}
+		return Result.Success(definition, buffer.Diagnostics);
 	}
 
 	/// <summary>Loads <paramref name="docsetFile"/> and its table of contents, reporting to <paramref name="collector"/>; no redirects.</summary>
@@ -152,11 +160,11 @@ public static class DocumentationSetLoader
 			MaxTocDepth = dto.MaxTocDepth,
 			DevDocs = dto.DevDocs,
 			Island = dto.Island,
-			CrossLinks = dto.CrossLinks,
-			ReleaseNotesProducts = [.. dto.ReleaseNotes.Select(r => (string?)r.Product)],
-			Exclude = dto.Exclude,
-			Extensions = dto.Extensions,
-			Substitutions = [.. dto.Subs],
+			CrossLinks = dto.CrossLinks ?? [],
+			ReleaseNotesProducts = [.. (dto.ReleaseNotes ?? []).Select(r => (string?)r.Product)],
+			Exclude = dto.Exclude ?? [],
+			Extensions = dto.Extensions ?? [],
+			Substitutions = [.. dto.Subs ?? []],
 #pragma warning disable CS0618 // carried over for codex, which still reads them
 			DisplayName = dto.DisplayName,
 			Description = dto.Description,
@@ -164,13 +172,16 @@ public static class DocumentationSetLoader
 			Icon = dto.Icon,
 			Registry = dto.Registry,
 			Features = new DeclaredFeatures(dto.Features.PrimaryNav, dto.Features.DisableGithubEditLink, dto.Features.GuideNav),
-			Api = [.. dto.Api.Select(kv => ToApi(kv.Key, kv.Value))],
-			Products = [.. dto.Products.Select(p => p.Id)],
+			Api = [.. (dto.Api ?? []).Select(kv => ToApi(kv.Key, kv.Value))],
+			Products = [.. (dto.Products ?? []).Select(p => p.Id)],
 			CodexGroup = dto.Codex?.Group,
 			Branding = dto.Branding is { } b ? new BrandingDeclaration(b.Icon, b.HeaderBg, b.OgImage, b.Favicon, b.AppleTouchIcon) : null,
 			HasStorybook = dto.Storybook is not null,
 			StorybookRegistry = dto.Storybook?.Registry,
-			Ctas = [.. dto.Cta.Select(kv => new CtaDeclaration(kv.Key, kv.Value.Button?.Label, kv.Value.Button?.Url, kv.Value.Benefits))],
+			Ctas =
+			[
+				.. (dto.Cta ?? []).Select(kv => new CtaDeclaration(kv.Key, kv.Value.Button?.Label, kv.Value.Button?.Url, kv.Value.Benefits))
+			],
 			SuppressDiagnostics = dto.SuppressDiagnostics,
 			DefaultCta = dto.DefaultCta,
 			TableOfContents = dto.TableOfContents,

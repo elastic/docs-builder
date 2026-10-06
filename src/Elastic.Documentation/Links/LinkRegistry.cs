@@ -19,8 +19,10 @@ public partial record LinkRegistry
 	[JsonPropertyName("repositories")]
 	[JsonInclude]
 	[JsonRequired]
-	[UnorderedEquality(typeof(LinkRegistryEntriesComparer))]
+	[CustomEquality(typeof(LinkRegistryEntriesComparer))]
+#pragma warning disable GE001 // the whole dictionary is compared by LinkRegistryEntriesComparer; the generator's collection attributes compare nested dictionaries by reference
 	public Dictionary<string, Dictionary<string, LinkRegistryEntry>> Repositories { get; internal init; } = default!;
+#pragma warning restore GE001
 
 	[JsonIgnore]
 	public string? ETag { get; internal init; }

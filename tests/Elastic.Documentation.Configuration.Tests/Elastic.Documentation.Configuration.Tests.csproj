@@ -7,6 +7,17 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\Elastic.Documentation.Configuration\Elastic.Documentation.Configuration.csproj"/>
     <ProjectReference Include="..\..\src\Elastic.Documentation.Tooling\Elastic.Documentation.Tooling.csproj"/>
+    <!-- GenAuto and the generators: the loader laws round-trip generated valid records. Not shipped. -->
+    <ProjectReference Include="$(NulleanEntitiesRoot)/src/Nullean.Entities.CsCheck/Nullean.Entities.CsCheck.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The generators of the domain tests, linked so the loader laws and the constraint laws draw the same valid records. -->
+    <Compile Include="..\Elastic.Documentation.Tests\Domain\Props.cs" Link="Generators\Props.cs" />
+    <Compile Include="..\Elastic.Documentation.Tests\Domain\DomainGen.cs" Link="Generators\DomainGen.cs" />
+    <Compile Include="..\Elastic.Documentation.Tests\Domain\BundleExamples.cs" Link="Generators\BundleExamples.cs" />
+    <Compile Include="..\Elastic.Documentation.Tests\Domain\ChangelogEntryExamples.cs" Link="Generators\ChangelogEntryExamples.cs" />
+    <Compile Include="..\Elastic.Documentation.Tests\Domain\LinkExamples.cs" Link="Generators\LinkExamples.cs" />
   </ItemGroup>
 
   <ItemGroup>

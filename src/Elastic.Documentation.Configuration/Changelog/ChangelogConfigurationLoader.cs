@@ -34,7 +34,9 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 	/// Deserializes changelog configuration YAML content.
 	/// </summary>
 	internal static ChangelogConfigurationDto DeserializeConfiguration(string yaml) =>
-		ConfigurationDeserializer.Deserialize<ChangelogConfigurationDto>(yaml);
+		// an empty document (or one of only comments) deserializes to null: it is a configuration that says nothing, as every other config loader reads it
+		ConfigurationDeserializer.Deserialize<ChangelogConfigurationDto>(yaml)
+			?? new ChangelogConfigurationDto();
 
 	/// <summary>
 	/// Loads the publish blocker configuration from a changelog.

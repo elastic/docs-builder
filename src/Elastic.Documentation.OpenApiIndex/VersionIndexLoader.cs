@@ -72,6 +72,34 @@ public static class VersionIndexLoader
 		}
 	}
 
-	private static VersionIndexLoad Concluded(RootVersionIndex? index) =>
-		index is null ? new VersionIndexLoad(null, EmptyMessage, null) : new VersionIndexLoad(index, null, Check(index));
+	private static VersionIndexLoad Concluded(RootVersionIndex? index)
+	{
+		if (index is null)
+			return new VersionIndexLoad(null, EmptyMessage, null);
+		// JSON null is a value the serializer accepts at every level; the rules assume the shape is whole, so a hole is a parse error, not a crash
+		var hole = FirstNull(index);
+		return hole is null
+			? new VersionIndexLoad(index, null, Check(index))
+			: new VersionIndexLoad(null, $"the index has a null where {hole} should be", null);
+	}
+
+	private static string? FirstNull(RootVersionIndex index)
+	{
+		foreach (var (repo, specs) in index)
+		{
+			if (specs is null)
+				return $"the specs of '{repo}'";
+			foreach (var (spec, keys) in specs)
+			{
+				if (keys is null)
+					return $"the versions of {repo}/{spec}";
+				foreach (var (key, entry) in keys)
+				{
+					if (entry?.Version is null)
+						return $"the version of {repo}/{spec}/{key}";
+				}
+			}
+		}
+		return null;
+	}
 }
