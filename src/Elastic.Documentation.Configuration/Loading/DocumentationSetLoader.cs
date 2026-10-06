@@ -4,6 +4,7 @@
 
 using System.IO.Abstractions;
 using Elastic.Documentation.Configuration.Builder;
+using Elastic.Documentation.Configuration.Converters;
 using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.DocumentationSets;
@@ -45,10 +46,10 @@ public static class DocumentationSetLoader
 			return Result.Failure<DocumentationSetDefinition>(buffer.Diagnostics);
 		}
 
-		Dictionary<string, LinkRedirect>? redirects;
+		RedirectFile redirectFile;
 		try
 		{
-			redirects = new RedirectFile(docsetFile, buffer).Redirects;
+			redirectFile = new RedirectFile(docsetFile, buffer);
 		}
 		catch (Exception)
 		{
@@ -56,7 +57,10 @@ public static class DocumentationSetLoader
 			return Result.Failure<DocumentationSetDefinition>(buffer.Diagnostics);
 		}
 
-		return Result.Success(ToDefinition(dto, docsetFile, sourceDirectory, fileSystem, redirects), buffer.Diagnostics);
+		return Result.Success(
+			ToDefinition(dto, docsetFile, sourceDirectory, fileSystem, redirectFile.Redirects, redirectFile),
+			buffer.Diagnostics
+		);
 	}
 
 	/// <summary>Loads <paramref name="docsetFile"/> and its table of contents, reporting to <paramref name="collector"/>; no redirects.</summary>
@@ -100,7 +104,8 @@ public static class DocumentationSetLoader
 		IFileInfo docsetFile,
 		IDirectoryInfo sourceDirectory,
 		IFileSystem fileSystem,
-		IReadOnlyDictionary<string, LinkRedirect>? redirects
+		IReadOnlyDictionary<string, LinkRedirect>? redirects,
+		RedirectFile? redirectFile = null
 	) =>
 		new()
 		{
@@ -135,7 +140,11 @@ public static class DocumentationSetLoader
 			TableOfContents = dto.TableOfContents,
 			FolderExcludedFiles = dto.FolderExcludedFiles,
 			TocDefaultCtas = [.. dto.TocDefaultCtas],
-			Redirects = redirects
+			Redirects = redirects,
+			RedirectsFile = redirectFile?.Source,
+			DroppedRedirects = redirectFile?.Dropped ?? [],
+			UnknownSuppressions = dto.SuppressDiagnostics is HintTypeSet set ? set.UnknownNames : [],
+			TocAuthoring = dto.TocAuthoring
 		};
 
 	private static ApiDeclaration ToApi(string productKey, ApiProductSequenceDto sequence) =>
@@ -149,6 +158,7 @@ public static class DocumentationSetLoader
 						Product = e.Product,
 						Repository = e.Repository,
 						Children = [.. e.Children.Select(c => c.File)],
+						UnknownKeys = e.UnknownKeys,
 						CatalogCategories = e.Catalog?.Categories ?? [],
 						Location = At(e.Line, e.Column),
 						ProductLocation = At(e.ProductLine, e.ProductColumn),

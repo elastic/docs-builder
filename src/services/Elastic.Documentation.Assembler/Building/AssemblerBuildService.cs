@@ -130,7 +130,6 @@ public class AssemblerBuildService(
 			ctx
 		);
 
-		var navigationFileInfo = assembleContext.NavigationFile;
 		var siteNavigationFile = assembleContext.Navigation;
 		var documentationSets = assembleSources.AssembleSets.Values.Select(s => s.DocumentationSet.Navigation).ToArray();
 		var navigationPreviewEnabled = assembleContext.Environment.ToFeatureFlags().NavigationPreviewEnabled;
@@ -144,12 +143,11 @@ public class AssemblerBuildService(
 
 		GlobalConfigurationFindings.Report(assembleContext);
 
-		_logger.LogInformation("Validating navigation.yml does not contain colliding path prefixes");
-		// this validates all path prefixes are unique, early exit if duplicates are detected
-		if (
-			!SiteNavigationLoader.Validate(assembleContext.Collector, siteNavigationFile, navigationFileInfo)
-			|| assembleContext.Collector.Errors > 0
-		)
+		// loading the navigation (above) checked it, e.g. that path prefixes are unique; the assembled site is checked once, here
+		_ = AssembledSiteChecker.Check(assembleContext, assembleSources).EmitTo(collector);
+
+		// early exit if either has errors
+		if (assembleContext.Collector.Errors > 0)
 			return false;
 
 		var pathProvider = new GlobalNavigationPathProvider(navigation, assembleSources, assembleContext);

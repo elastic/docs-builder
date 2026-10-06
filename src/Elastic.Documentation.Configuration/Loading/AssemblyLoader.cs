@@ -29,8 +29,7 @@ public static class AssemblyLoader
 	{
 		try
 		{
-			var (configuration, diagnostics) = DeserializeWithDiagnostics(yaml, sourceFile, skipPrivateRepositories, environment);
-			return Result.Success(configuration, diagnostics);
+			return DeserializeWithDiagnostics(yaml, sourceFile, skipPrivateRepositories, environment);
 		}
 		catch (Exception e)
 		{
@@ -57,9 +56,9 @@ public static class AssemblyLoader
 		string yaml,
 		bool skipPrivateRepositories = false,
 		IEnvironmentVariables? environment = null
-	) => DeserializeWithDiagnostics(yaml, sourceFile: string.Empty, skipPrivateRepositories, environment).Configuration;
+	) => DeserializeWithDiagnostics(yaml, sourceFile: string.Empty, skipPrivateRepositories, environment).OrThrow();
 
-	private static (AssemblyConfiguration Configuration, IReadOnlyList<Diagnostic> Diagnostics) DeserializeWithDiagnostics(
+	private static Result<AssemblyConfiguration> DeserializeWithDiagnostics(
 		string yaml,
 		string sourceFile,
 		bool skipPrivateRepositories,
@@ -125,10 +124,9 @@ public static class AssemblyLoader
 				SharedConfigurations = dto.SharedConfigurations.ToDictionary(kv => kv.Key, kv => ToRepository(kv.Value, string.Empty))
 			};
 
-			// The constraints are checked on the model; this throwing API fails on the first error, as the parse used to.
-			if (AssemblyConstraints.Check(assembly).FirstOrDefault(v => v.Severity == Severity.Error) is { Message: { } error })
-				throw new InvalidOperationException(error);
-			return (assembly, diagnostics);
+			// The loader owns the check: every violation rides in the result, and an error means no configuration.
+			var all = Result.From(AssemblyConstraints.All.Report(assembly), sourceFile, diagnostics);
+			return all.HasErrors ? Result.Failure<AssemblyConfiguration>(all.Diagnostics) : all;
 		}
 		catch (Exception e)
 		{

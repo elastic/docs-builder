@@ -55,6 +55,13 @@ public sealed partial record SearchTuning
 	[OrderedEquality]
 	public required IReadOnlyCollection<string> DiminishTerms { get; init; }
 
+	/// <summary>
+	/// The name of the file the tuning was read from, or null when it was not read from one. The loader reads <c>synonyms.yml</c> when there is no
+	/// <c>search.yml</c>, and nothing else in the model tells the two apart.
+	/// </summary>
+	[IgnoreEquality]
+	public string? SourceFileName { get; init; }
+
 	/// <summary>No synonyms, rules or diminished terms: search as untuned.</summary>
 	public static SearchTuning None { get; } = new() { Synonyms = [], Rules = [], DiminishTerms = [] };
 }
@@ -64,6 +71,11 @@ public sealed partial record QueryRule
 {
 	public required string RuleId { get; init; }
 	public required QueryRuleType Type { get; init; }
+
+	/// <summary><c>type</c> as written; empty when absent, null when the rule was not loaded from a file. An unknown or empty text is read as <see cref="QueryRuleType.Pinned"/>.</summary>
+	[IgnoreEquality]
+	public string? TypeRaw { get; init; }
+
 	[OrderedEquality]
 	public required IReadOnlyCollection<QueryRuleCriteria> Criteria { get; init; }
 	public required QueryRuleActions Actions { get; init; }
@@ -79,6 +91,11 @@ public enum QueryRuleType
 public sealed partial record QueryRuleCriteria
 {
 	public required QueryRuleCriteriaType Type { get; init; }
+
+	/// <summary><c>type</c> as written; empty when absent, null when the criteria was not loaded from a file. An unknown or empty text is read as <see cref="QueryRuleCriteriaType.Exact"/>.</summary>
+	[IgnoreEquality]
+	public string? TypeRaw { get; init; }
+
 	public required string Metadata { get; init; }
 	[OrderedEquality]
 	public required IReadOnlyCollection<string> Values { get; init; }

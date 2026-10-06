@@ -77,6 +77,7 @@ public class ApiConfigurationConverter : IYamlTypeConverter
 		_ = parser.MoveNext(); // consume MappingStart
 
 		var entry = new ApiProductEntryDto { Line = (int)entryStart.Line, Column = (int)entryStart.Column };
+		var unknown = new List<string>();
 
 		while (parser.Current is not MappingEnd)
 		{
@@ -142,11 +143,13 @@ public class ApiConfigurationConverter : IYamlTypeConverter
 					);
 				default:
 					// Forward-compatible: ignore unrecognized keys rather than failing the whole build.
+					unknown.Add(key.Value);
 					parser.SkipThisAndNestedEvents();
 					break;
 			}
 		}
 		_ = parser.MoveNext(); // consume MappingEnd
+		entry.UnknownKeys = unknown;
 		return entry;
 	}
 

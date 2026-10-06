@@ -179,23 +179,16 @@ public class DocumentationSet : INavigationTraversable
 
 		void ValidateExists(string from, string to, IReadOnlyDictionary<string, string?>? valueAnchors, Severity severity)
 		{
+			// An external target that is not a URI, and a local target that does not exist, are reported by the DocumentationSetInCatalog constraints
 			if (to.Contains("://"))
-			{
-				if (!Uri.TryCreate(to, UriKind.Absolute, out _))
-					Context.Collector.Emit(severity, Configuration.SourceFile, $"Redirect {from} points to {to} which is not a valid URI");
-
 				return;
-			}
 
 			if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
 				to = to.Replace('/', Path.DirectorySeparatorChar);
 
 			var fp = new FilePath(to, SourceDirectory);
 			if (!Files.TryGetValue(fp, out var file))
-			{
-				Context.Collector.Emit(severity, Configuration.SourceFile, $"Redirect {from} points to {to} which does not exist");
 				return;
-			}
 
 			if (file is not MarkdownFile markdownFile)
 			{
@@ -289,7 +282,12 @@ public class DocumentationSet : INavigationTraversable
 			.ToDictionary(tuple => tuple.Path, tuple =>
 			{
 				var anchors = tuple.Markdown.Anchors.Count == 0 ? null : tuple.Markdown.Anchors.ToArray();
-				return new LinkMetadata { Anchors = anchors, Hidden = tuple.Navigation.ExcludeFromIndexing };
+				return new LinkMetadata
+				{
+					Anchors = anchors,
+					Hidden = tuple.Navigation.ExcludeFromIndexing,
+					DuplicateAnchors = tuple.Markdown.DuplicateAnchors
+				};
 			});
 
 		return new LinkManifest

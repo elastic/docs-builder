@@ -188,6 +188,14 @@ public partial record SiteSectionRef(
 {
 	public bool IsExternal => ExternalUrl is not null;
 
+	/// <summary>Keys the entry wrote that navigation.yml does not read, in the order written; the loader drops them. See Constraints-Conventions.md.</summary>
+	[IgnoreEquality]
+	public IReadOnlyList<string> UnknownKeys { get; init; } = [];
+
+	/// <summary>Where the entry is declared; diagnostics about it point here.</summary>
+	[IgnoreEquality]
+	public Diagnostics.SourcePosition? Position { get; init; }
+
 	/// <summary>True when the section carries a dropdown list instead of tree children.</summary>
 	public bool IsDropdown => DropdownLinks.Count > 0;
 }
@@ -229,4 +237,12 @@ public partial record SiteTableOfContentsRef(
 	/// <summary>Where the entry is declared; diagnostics about it point here.</summary>
 	[IgnoreEquality]
 	public Diagnostics.SourcePosition? Position { get; init; }
+
+	/// <summary>Keys the entry wrote that navigation.yml does not read, in the order written (<c>pathprefix</c>, <c>repo</c>); the loader drops them. See Constraints-Conventions.md.</summary>
+	[IgnoreEquality]
+	public IReadOnlyList<string> UnknownKeys { get; init; } = [];
+
+	/// <summary><c>island:</c> as written, or null when absent. <see cref="Island"/> is true only when this parses as the boolean true, so <c>island: yes</c> or <c>island: false</c> cannot be told from nothing.</summary>
+	[IgnoreEquality]
+	public string? IslandRaw { get; init; }
 }

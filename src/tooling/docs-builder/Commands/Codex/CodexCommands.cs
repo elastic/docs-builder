@@ -53,12 +53,12 @@ internal sealed class CodexCommands(ILoggerFactory logFactory, IDiagnosticsColle
 	{
 		await using var serviceInvoker = new ServiceInvoker(collector);
 		var fs = new CodexFileSystem(config.FullName, output?.FullName);
-		if (!CodexConfigurationLoader.TryLoad(fs.ConfigurationFile, config.FullName, collector, out var codexConfig, out var environment))
+		if (!CodexConfigurationLoader.Load(fs.ConfigurationFile, config.FullName, collector, CodexLoadPurpose.Publish, out var codexConfig))
 			return 1;
 
 		var codexContext = new CodexContext(codexConfig, fs.ConfigurationFile, collector, fs, null, output?.FullName);
 
-		using var linkIndexReader = new GitLinkIndexReader(environment);
+		using var linkIndexReader = new GitLinkIndexReader(codexConfig.Environment!);
 		var cloneService = new CodexCloneService(logFactory, linkIndexReader);
 		CodexCloneResult? cloneResult = null;
 
@@ -106,12 +106,12 @@ internal sealed class CodexCommands(ILoggerFactory logFactory, IDiagnosticsColle
 	{
 		await using var serviceInvoker = new ServiceInvoker(collector);
 		var fs = new CodexFileSystem(config.FullName);
-		if (!CodexConfigurationLoader.TryLoad(fs.ConfigurationFile, config.FullName, collector, out var codexConfig, out var environment))
+		if (!CodexConfigurationLoader.Load(fs.ConfigurationFile, config.FullName, collector, CodexLoadPurpose.Publish, out var codexConfig))
 			return 1;
 
 		var codexContext = new CodexContext(codexConfig, fs.ConfigurationFile, collector, fs);
 
-		using var linkIndexReader = new GitLinkIndexReader(environment);
+		using var linkIndexReader = new GitLinkIndexReader(codexConfig.Environment!);
 		var cloneService = new CodexCloneService(logFactory, linkIndexReader);
 		serviceInvoker.AddCommand(cloneService, (codexContext, fetchLatest, assumeCloned), strict, async (s, col, state, c) =>
 		{
@@ -138,7 +138,7 @@ internal sealed class CodexCommands(ILoggerFactory logFactory, IDiagnosticsColle
 	{
 		await using var serviceInvoker = new ServiceInvoker(collector);
 		var fs = new CodexFileSystem(config.FullName, output?.FullName);
-		if (!CodexConfigurationLoader.TryLoad(fs.ConfigurationFile, config.FullName, collector, out var codexConfig, out _))
+		if (!CodexConfigurationLoader.Load(fs.ConfigurationFile, config.FullName, collector, CodexLoadPurpose.Publish, out var codexConfig))
 			return 1;
 
 		var codexContext = new CodexContext(codexConfig, fs.ConfigurationFile, collector, fs, null, output?.FullName);

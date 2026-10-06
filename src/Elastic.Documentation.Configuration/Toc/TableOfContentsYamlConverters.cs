@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using Elastic.Documentation.AppliesTo;
+using Elastic.Documentation.Configuration.Converters;
 using Elastic.Documentation.DocumentationSets;
 using YamlDotNet.Core;
 using YamlDotNet.Core.Events;
@@ -36,10 +37,47 @@ internal sealed class TocItemCollectionYamlConverter : IYamlTypeConverter
 
 internal sealed class TocItemYamlConverter : IYamlTypeConverter
 {
+	// The keys each entry shape reads. A key written on an entry that its shape does not read is dropped, and one no shape reads is unknown;
+	// both are recorded on the TocEntryAuthoring (see Constraints-Conventions.md).
+	private static readonly string[] ListingKeys =
+	[
+		"listing",
+		"glob",
+		"extension",
+		"groups",
+		"visual",
+		"island",
+		"sort",
+		"exclude",
+		"children"
+	];
+	private static readonly string[] CliKeys = ["cli", "folder", "title", "navigation_title", "applies_to", "children"];
+	private static readonly string[] FolderWithFileKeys = ["folder", "file", "children", "sort", "exclude", "default_cta"];
+	private static readonly string[] DetectionRulesKeys = ["detection_rules", "file", "deprecated_file", "children"];
+	private static readonly string[] FileKeys = ["file", "children", "default_cta"];
+	private static readonly string[] CrossLinkKeys = ["crosslink", "title", "hidden", "children"];
+	private static readonly string[] HiddenFileKeys = ["hidden", "children", "default_cta"];
+	private static readonly string[] FolderKeys = ["folder", "children", "sort", "exclude", "default_cta"];
+	private static readonly string[] NestedTocKeys = ["toc", "island", "children"];
+
+	private static readonly string[] AllKeys =
+	[
+		.. ListingKeys,
+		.. CliKeys,
+		.. FolderWithFileKeys,
+		.. DetectionRulesKeys,
+		.. FileKeys,
+		.. CrossLinkKeys,
+		.. HiddenFileKeys,
+		.. FolderKeys,
+		.. NestedTocKeys
+	];
+
 	public bool Accepts(Type type) => type == typeof(ITocEntryDto);
 
 	public object? ReadYaml(IParser parser, Type type, ObjectDeserializer rootDeserializer)
 	{
+		var start = parser.Current?.Start;
 		if (!parser.TryConsume<MappingStart>(out _))
 		{
 			// A bare scalar (e.g. "- toc.yml") is not a valid toc entry. Consume the token so
@@ -52,6 +90,7 @@ internal sealed class TocItemYamlConverter : IYamlTypeConverter
 			}
 			// Anything else unexpected — skip to avoid an infinite loop.
 			parser.SkipThisAndNestedEvents();
+			TocAuthoringSink.Record(new TocEntryAuthoring(TocEntryKind.Dropped, "(not a mapping)") { Location = LocationOf(start) });
 			return null;
 		}
 
@@ -146,6 +185,16 @@ internal sealed class TocItemYamlConverter : IYamlTypeConverter
 			// Reuse the already-captured sort and exclude variables from the outer scope; an unknown sort keeps path order
 			SortOrder? listingSort = SortOrderExtensions.TryParse(sort, out var parsedSort) ? parsedSort : null;
 			var options = new ListingOptions(glob, listingSort, exclude, listingVisual, groups, extension, island);
+			Note(
+				TocEntryKind.Listing,
+				$"listing: {listing}",
+				dictionary,
+				ListingKeys,
+				start,
+				islandRaw: RawOf(dictionary, "island"),
+				visualRaw: RawOf(dictionary, "visual"),
+				sortRaw: RawOf(dictionary, "sort")
+			);
 			return new ListingEntryDto(listing, children, options);
 		}
 
@@ -159,6 +208,7 @@ internal sealed class TocItemYamlConverter : IYamlTypeConverter
 				? navigationTitleStr
 				: null;
 			var appliesTo = dictionary.TryGetValue("applies_to", out var at) && at is ApplicableTo a ? a : null;
+			Note(TocEntryKind.CliReference, $"cli: {cliSchema}", dictionary, CliKeys, start);
 			return new CliReferenceEntryDto(cliSchema, supplementalFolder, title, navigationTitle, children, appliesTo);
 		}
 
@@ -185,6 +235,7 @@ internal sealed class TocItemYamlConverter : IYamlTypeConverter
 			// Return a FolderRef with the index file and children
 			// The folder path can be deep (e.g., "guides/getting-started"), that's OK
 			// PathRelativeToContainer will be set during resolution
+			Note(TocEntryKind.FolderWithFile, $"folder: {folder}", dictionary, FolderWithFileKeys, start, explicitChildren: true);
 			return new FolderEntryDto(folder, folderChildren, sort, exclude, defaultCta);
 		}
 		if (
@@ -197,6 +248,7 @@ internal sealed class TocItemYamlConverter : IYamlTypeConverter
 			var deprecatedFile = dictionary.TryGetValue("deprecated_file", out var deprecatedFileObj) && deprecatedFileObj is string df
 				? df
 				: null;
+			Note(TocEntryKind.DetectionRules, $"file: {detectionRulesFile}", dictionary, DetectionRulesKeys, start);
 			return new DetectionRulesEntryDto(detectionRulesFile, detectionRulesFolders, children, deprecatedFile);
 		}
 
@@ -204,6 +256,7 @@ internal sealed class TocItemYamlConverter : IYamlTypeConverter
 		// PathRelativeToContainer will be set during resolution
 		if (dictionary.TryGetValue("file", out var filePathOnly) && filePathOnly is string fileOnly)
 		{
+			Note(TocEntryKind.File, $"file: {fileOnly}", dictionary, FileKeys, start);
 			if (fileOnly == "index.md")
 				return new IndexFileEntryDto(fileOnly, false, children, defaultCta);
 
@@ -226,16 +279,30 @@ internal sealed class TocItemYamlConverter : IYamlTypeConverter
 				&& h is string hiddenStr
 				&& bool.TryParse(hiddenStr, out var hiddenBool)
 				&& hiddenBool;
+			Note(
+				TocEntryKind.CrossLink,
+				$"crosslink: {crosslinkStr}",
+				dictionary,
+				CrossLinkKeys,
+				start,
+				hiddenRaw: RawOf(dictionary, "hidden")
+			);
 			return new CrossLinkEntryDto(new Uri(crosslinkStr), title, isHidden, children);
 		}
 
 		if (dictionary.TryGetValue("hidden", out var hiddenPath) && hiddenPath is string p)
+		{
+			Note(TocEntryKind.HiddenFile, $"hidden: {p}", dictionary, HiddenFileKeys, start);
 			return p == "index.md" ? new IndexFileEntryDto(p, true, children, defaultCta) : new FileEntryDto(p, true, children, defaultCta);
+		}
 
 		// Check for folder reference
 		// PathRelativeToContainer will be set during resolution
 		if (dictionary.TryGetValue("folder", out var folderPathOnly) && folderPathOnly is string folderOnly)
+		{
+			Note(TocEntryKind.Folder, $"folder: {folderOnly}", dictionary, FolderKeys, start, explicitChildren: children.Count > 0);
 			return new FolderEntryDto(folderOnly, children, sort, exclude, defaultCta);
+		}
 
 		// Check for toc reference
 		// PathRelativeToContainer will be set during resolution
@@ -245,11 +312,48 @@ internal sealed class TocItemYamlConverter : IYamlTypeConverter
 				&& islandObj is string islandStr
 				&& bool.TryParse(islandStr, out var islandBool)
 				&& islandBool;
+			Note(TocEntryKind.NestedToc, $"toc: {source}", dictionary, NestedTocKeys, start, islandRaw: RawOf(dictionary, "island"));
 			return new NestedTocEntryDto(source, children, island);
 		}
 
+		TocAuthoringSink.Record(new TocEntryAuthoring(TocEntryKind.Dropped, $"{{{string.Join(", ", dictionary.Keys)}}}")
+		{
+			WrittenKeys = [.. dictionary.Keys],
+			Location = LocationOf(start)
+		});
 		return null;
 	}
+
+	private static SourceLocation? LocationOf(Mark? start) => start is { } m ? new SourceLocation((int)m.Line, (int)m.Column) : null;
+
+	/// <summary>The text of a written key; empty when the value is not a scalar; null when the key is absent.</summary>
+	private static string? RawOf(Dictionary<string, object?> written, string key) =>
+		written.TryGetValue(key, out var value) ? value as string ?? "" : null;
+
+	private static void Note(
+		TocEntryKind kind,
+		string entry,
+		Dictionary<string, object?> written,
+		string[] read,
+		Mark? start,
+		bool explicitChildren = false,
+		string? islandRaw = null,
+		string? hiddenRaw = null,
+		string? visualRaw = null,
+		string? sortRaw = null
+	) =>
+		TocAuthoringSink.Record(new TocEntryAuthoring(kind, entry)
+		{
+			WrittenKeys = [.. written.Keys],
+			UnknownKeys = UnknownYamlKeys.Of(written.Keys, AllKeys),
+			IgnoredKeys = [.. written.Keys.Where(k => AllKeys.Contains(k) && !read.Contains(k))],
+			ExplicitChildren = explicitChildren,
+			Location = LocationOf(start),
+			IslandRaw = islandRaw,
+			HiddenRaw = hiddenRaw,
+			VisualRaw = visualRaw,
+			SortRaw = sortRaw
+		});
 
 	private static IReadOnlyList<ITocEntryDto> GetChildren(Dictionary<string, object?> dictionary)
 	{

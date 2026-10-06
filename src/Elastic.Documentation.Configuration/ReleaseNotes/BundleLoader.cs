@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions;
+using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.ReleaseNotes;
 using Elastic.Documentation.Versions;
 using YamlDotNet.Core;
@@ -19,8 +20,16 @@ public class BundleLoader(IFileSystem fileSystem)
 	/// </summary>
 	/// <param name="bundlesFolderPath">The absolute path to the bundles folder.</param>
 	/// <param name="emitWarning">Callback to emit warnings during loading.</param>
+	/// <param name="emitDiagnostic">
+	/// Receives every finding of <see cref="LoadedBundleConstraints"/> for the bundles that were loaded (amend files already merged),
+	/// each checked once, here. When null the bundles are not checked.
+	/// </param>
 	/// <returns>A list of successfully loaded bundles.</returns>
-	public IReadOnlyList<LoadedBundle> LoadBundles(string bundlesFolderPath, Action<string> emitWarning)
+	public IReadOnlyList<LoadedBundle> LoadBundles(
+		string bundlesFolderPath,
+		Action<string> emitWarning,
+		Action<Diagnostic>? emitDiagnostic = null
+	)
 	{
 		var yamlFiles = fileSystem
 			.Directory
@@ -46,6 +55,15 @@ public class BundleLoader(IFileSystem fileSystem)
 
 		// Merge amend files with their parent bundles
 		loadedBundles = MergeAmendFiles(loadedBundles, emitWarning);
+
+		if (emitDiagnostic is not null)
+		{
+			foreach (var loaded in loadedBundles)
+			{
+				foreach (var diagnostic in LoadedBundleConstraints.All.Report(loaded).ToDiagnostics(loaded.FilePath))
+					emitDiagnostic(diagnostic);
+			}
+		}
 
 		return loadedBundles;
 	}

@@ -20,6 +20,14 @@ public partial record LinkMetadata
 	[JsonPropertyName("hidden")]
 	[JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
 	public bool Hidden { get; init; }
+
+	/// <summary>
+	/// Anchors the page declared more than once (compared ignoring case), in the order met. <see cref="Anchors"/> is a set, so the duplicates
+	/// are gone from it. Not part of the wire format.
+	/// </summary>
+	[JsonIgnore]
+	[IgnoreEquality]
+	public IReadOnlyList<string> DuplicateAnchors { get; init; } = [];
 }
 
 [Equatable]

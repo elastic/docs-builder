@@ -35,7 +35,7 @@ internal sealed class CodexUpdateRedirectsCommand(IDiagnosticsCollector collecto
 		await using var serviceInvoker = new ServiceInvoker(collector);
 
 		var fs = new CodexFileSystem(config.FullName);
-		if (!CodexConfigurationLoader.TryLoad(fs.ConfigurationFile, config.FullName, collector, out var codexConfig))
+		if (!CodexConfigurationLoader.Load(fs.ConfigurationFile, config.FullName, collector, CodexLoadPurpose.Read, out var codexConfig))
 			return 1;
 
 		var resolvedEnvironment = environment ?? codexConfig.Environment ?? Environment.GetEnvironmentVariable("ENVIRONMENT") ?? "internal";

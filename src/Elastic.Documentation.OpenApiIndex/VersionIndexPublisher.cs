@@ -31,6 +31,14 @@ public sealed class VersionIndexPublisher(IAmazonS3 s3Client, string bucketName)
 	{
 		var keys = await ListSpecKeysAsync(ctx).ConfigureAwait(false);
 		var (index, invalidKeys) = VersionIndexBuilder.Build(keys);
+
+		// The built index is checked once, here, before it is published: an index with an error is never written.
+		var report = VersionIndexConstraints.All.Report(index);
+		if (report.HasErrors)
+			throw new InvalidOperationException(
+				$"The rebuilt version index breaks its constraints and was not published:{Environment.NewLine}{string.Join(Environment.NewLine, report.Errors.Select(v => $"[{v.ConstraintId}] {v.Message}"))}"
+			);
+
 		var json = JsonSerializer.Serialize(
 			index,
 			VersionIndexJsonContext.Default.SortedDictionaryStringSortedDictionaryStringSortedDictionaryStringVersionIndexEntry

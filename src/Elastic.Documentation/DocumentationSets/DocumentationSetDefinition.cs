@@ -116,7 +116,26 @@ public sealed partial record DocumentationSetDefinition
 	/// <summary><c>redirects.yml</c>, or null when the docset has none.</summary>
 	[UnorderedEquality]
 	public IReadOnlyDictionary<string, LinkRedirect>? Redirects { get; init; }
+
+	/// <summary>The redirects file the loader looked for (<c>redirects.yml</c>, or <c>_redirects.yml</c> for a <c>_</c>-prefixed docset file); null when the model was not loaded from a file. It need not exist.</summary>
+	[IgnoreEquality]
+	public IFileInfo? RedirectsFile { get; init; }
+
+	/// <summary>Redirect entries and <c>many</c> items the reader dropped because they hold nothing it can use.</summary>
+	[IgnoreEquality]
+	public IReadOnlyList<DroppedRedirect> DroppedRedirects { get; init; } = [];
+
+	/// <summary>The <c>suppress</c> names the reader does not recognise as a hint type and drops, as written.</summary>
+	[IgnoreEquality]
+	public IReadOnlyList<string> UnknownSuppressions { get; init; } = [];
+
+	/// <summary>Every <c>toc:</c> entry mapping of <c>docset.yml</c> and the nested <c>toc.yml</c> files that were read, with what the reader hid.</summary>
+	[IgnoreEquality]
+	public IReadOnlyList<TocEntryAuthoring> TocAuthoring { get; init; } = [];
 }
+
+/// <summary>A redirect the reader drops: the whole entry for <paramref name="Source"/>, or its <c>many</c> item number <paramref name="ManyItem"/> (0-based).</summary>
+public sealed record DroppedRedirect(string Source, int? ManyItem = null);
 
 /// <summary>The <c>features</c> toggles of <c>docset.yml</c>; null when not set.</summary>
 public sealed record DeclaredFeatures(bool? PrimaryNav = null, bool? DisableGithubEditLink = null, bool? GuideNav = null);
@@ -158,6 +177,10 @@ public sealed partial record ApiDeclarationEntry
 	/// <summary><c>catalog.categories</c> as written; empty when there is no <c>catalog</c>.</summary>
 	[OrderedEquality]
 	public IReadOnlyList<string> CatalogCategories { get; init; } = [];
+
+	/// <summary>The keys of the entry the reader does not read and drops, in the order written.</summary>
+	[IgnoreEquality]
+	public IReadOnlyList<string> UnknownKeys { get; init; } = [];
 
 	public SourceLocation? Location { get; init; }
 	public SourceLocation? ProductLocation { get; init; }

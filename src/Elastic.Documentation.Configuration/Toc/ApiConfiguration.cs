@@ -79,6 +79,10 @@ internal class ApiProductEntryDto
 	[YamlMember(Alias = "catalog")]
 	public ApiCatalogDto? Catalog { get; set; }
 
+	/// <summary>The keys of the entry that <see cref="ApiConfigurationConverter"/> does not read; it skips them rather than failing.</summary>
+	[YamlIgnore]
+	public IReadOnlyList<string> UnknownKeys { get; set; } = [];
+
 	/// <summary>
 	/// 1-based line of this entry's mapping start in the source YAML. Populated by
 	/// <see cref="ApiConfigurationConverter"/>; used to attribute diagnostics that have no more

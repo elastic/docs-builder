@@ -149,8 +149,10 @@ public class BundleValidationService(ILoggerFactory logFactory, IFileSystem file
 		Dictionary<string, List<string>> seenPrs
 	)
 	{
-		var fileNamesInThisBundle = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-		var allValid = true;
+		// The bundle is checked once, here: entries without inline content and repeated file names are the rules' findings.
+		var report = BundleConstraints.All.Report(bundledData);
+		var allValid = collector.Write(report, bundleInput.BundleFile);
+		var notInlined = report.Rejected(BundleConstraints.BundleEntriesInlined);
 
 		foreach (var entry in bundledData.Entries)
 		{
@@ -158,10 +160,6 @@ public class BundleValidationService(ILoggerFactory logFactory, IFileSystem file
 			if (!string.IsNullOrWhiteSpace(entry.File?.Name))
 			{
 				var fileName = entry.File.Name;
-
-				// Check for duplicates within the same bundle
-				if (!fileNamesInThisBundle.Add(fileName))
-					collector.EmitWarning(bundleInput.BundleFile, $"Changelog file '{fileName}' appears multiple times in the same bundle");
 
 				// Track across bundles
 				if (!seenFileNames.TryGetValue(fileName, out var bundleList))
@@ -173,7 +171,7 @@ public class BundleValidationService(ILoggerFactory logFactory, IFileSystem file
 			}
 
 			// Continue past invalid entries so every problem in the bundle is reported in one pass.
-			if (!ValidateResolvedEntry(collector, bundleInput.BundleFile, entry, seenPrs))
+			if (!notInlined.Contains(entry) && !ValidateResolvedEntry(collector, bundleInput.BundleFile, entry, seenPrs))
 				allValid = false;
 		}
 
@@ -187,18 +185,6 @@ public class BundleValidationService(ILoggerFactory logFactory, IFileSystem file
 		Dictionary<string, List<string>> seenPrs
 	)
 	{
-		// Bundles are always self-contained: an entry without inline content is invalid.
-		if (string.IsNullOrWhiteSpace(entry.Title) || entry.Type == null)
-		{
-			var entryName = !string.IsNullOrWhiteSpace(entry.File?.Name) ? entry.File.Name : entry.Title ?? "<unnamed>";
-			collector.EmitError(
-				bundleFile,
-				$"Entry '{entryName}' in bundle has no inline content: title and type are required. " +
-					"Re-create the bundle with 'changelog bundle'."
-			);
-			return false;
-		}
-
 		if (entry.Products == null || entry.Products.Count == 0)
 		{
 			collector.EmitError(bundleFile, $"Entry '{entry.Title}' in bundle is missing required field: products");

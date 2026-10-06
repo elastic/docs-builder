@@ -26,11 +26,11 @@ public class GlobalNavigationService(
 		var assembleContext = new AssembleContext(configuration, configurationContext, "dev", collector, fileSystem);
 		var namespaceChecker = new NavigationPrefixChecker(logFactory, assembleContext);
 
-		var navigationFileInfo = assembleContext.NavigationFile;
 		GlobalConfigurationFindings.Report(assembleContext);
 
-		// this validates all path prefixes are unique, early exit if duplicates are detected
-		if (!SiteNavigationLoader.Validate(collector, assembleContext.Navigation, navigationFileInfo) || collector.Errors > 0)
+		// loading the navigation checks it (path prefixes are unique, ...); early exit if it has errors
+		_ = assembleContext.Navigation;
+		if (collector.Errors > 0)
 			return false;
 
 		await namespaceChecker.CheckAllPublishedLinks(assembleContext.Collector, ctx);

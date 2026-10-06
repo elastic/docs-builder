@@ -4,19 +4,21 @@
 
 using System.Collections.Frozen;
 using DotNet.Globbing;
+using Elastic.Documentation.AppliesTo;
 using Elastic.Documentation.Catalog;
 using Elastic.Documentation.Configuration.Builder;
 using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.DocumentationSets;
 using Elastic.Documentation.Links;
+using DocumentationSetReport = Nullean.Entities.ConstraintReport<Elastic.Documentation.DocumentationSets.DocumentationSetInCatalog>;
 
 namespace Elastic.Documentation.Configuration.Loading;
 
 /// <summary>
 /// Joins a <see cref="DocumentationSetDefinition"/> against the catalog into a <see cref="ResolvedDocumentationSet"/>.
 /// Every <see cref="DocumentationSetConstraints"/> violation is reported; resolution then keeps what satisfies the
-/// rules and drops the rest, deciding item by item with the same <see cref="DocumentationSetRules"/>.
+/// rules and drops the rest: an item a rule reported as its evidence is dropped, so the loader never re-decides what a rule decided.
 /// </summary>
 public static class DocumentationSetResolver
 {
@@ -27,16 +29,16 @@ public static class DocumentationSetResolver
 		IEnvironmentVariables environment
 	)
 	{
-		var violations = DocumentationSetConstraints.Check(docset, productsConfig);
-		var diagnostics = violations.Select(v => v.ToDiagnostic(docset.SourceFile.FullName)).ToList();
+		var report = DocumentationSetConstraints.All.Report(new DocumentationSetInCatalog(docset, productsConfig));
+		var diagnostics = report.ToDiagnostics(docset.SourceFile.FullName).ToList();
 
 		// Colliding substitution keys leave no substitution table to build from; the load fails, as it always has.
-		if (violations.Any(v => v.ConstraintId == "substitution-keys-unique"))
+		if (report.Of(DocumentationSetConstraints.SubstitutionKeysUnique).Count > 0)
 			return Result.Failure<ResolvedDocumentationSet>(diagnostics);
 
 		try
 		{
-			return Result.Success(Map(docset, versionsConfig, productsConfig, environment), diagnostics);
+			return Result.Success(Map(docset, versionsConfig, productsConfig, environment, report), diagnostics);
 		}
 		catch (Exception e)
 		{
@@ -60,11 +62,13 @@ public static class DocumentationSetResolver
 	{
 		var buffer = new BufferingDiagnosticsCollector();
 		IReadOnlyDictionary<string, LinkRedirect>? redirects = null;
+		RedirectFile? redirectFile = null;
 		if (context.ConfigurationPath.Exists)
 		{
 			try
 			{
-				redirects = new RedirectFile(context.ConfigurationPath, buffer).Redirects;
+				redirectFile = new RedirectFile(context.ConfigurationPath, buffer);
+				redirects = redirectFile.Redirects;
 			}
 			catch (Exception)
 			{
@@ -77,7 +81,8 @@ public static class DocumentationSetResolver
 			context.ConfigurationPath,
 			context.DocumentationSourceDirectory,
 			context.ReadFileSystem,
-			redirects
+			redirects,
+			redirectFile
 		);
 		var resolved = Resolve(docset, versionsConfig, productsConfig, context.Environment);
 		return new Result<ResolvedDocumentationSet>(resolved.Value, [.. buffer.Diagnostics, .. resolved.Diagnostics]);
@@ -87,7 +92,8 @@ public static class DocumentationSetResolver
 		DocumentationSetDefinition docset,
 		VersioningSystemCatalog versionsConfig,
 		ProductCatalog productsConfig,
-		IEnvironmentVariables environment
+		IEnvironmentVariables environment,
+		DocumentationSetReport report
 	)
 	{
 		var empty = new ResolvedDocumentationSet { SourceFile = docset.SourceFile, ScopeDirectory = docset.SourceFile.Directory! };
@@ -103,28 +109,30 @@ public static class DocumentationSetResolver
 			docset.FolderExcludedFiles
 		);
 
+		// What a rule rejected, by the rule itself, is what resolution drops.
 		var registry = DocumentationSetRules.ParseRegistry(docset.Registry);
-		var crossLinkEntries = DocumentationSetRules
-			.DeclaredCrossLinks(docset)
-			.Select(raw => DocumentationSetRules.ParseCrossLink(raw, registry).Entry)
-			.OfType<CrossLinkEntry>()
+		var crossLinkEntries = report
+			.Keep(
+				docset.CrossLinks.Where(raw => !string.IsNullOrWhiteSpace(raw)),
+				DocumentationSetConstraints.CrossLinkWellFormed,
+				raw => raw.Trim()
+			)
+			.Select(raw => CrossLinkEntryOf(raw.Trim(), registry))
 			.ToArray();
 
-		var releaseNotesProducts = docset
-			.ReleaseNotesProducts
-			.Select(p => DocumentationSetRules.ResolveReleaseNotesProduct(p, productsConfig).ProductId)
+		var releaseNotesProducts = report
+			.Keep(docset.ReleaseNotesProducts, DocumentationSetConstraints.ReleaseNotesProductKnown)
 			.OfType<string>()
+			.Select(p => productsConfig.Products[p.Trim().Replace('_', '-')].Id)
 			.Distinct(StringComparer.Ordinal)
 			.ToArray();
 
 		var substitutions = docset.Substitutions.ToDictionary(kv => kv.Key, kv => kv.Value, StringComparer.OrdinalIgnoreCase);
 
+		var rejectedApis = report.Rejected(DocumentationSetConstraints.ApiEntryValid);
 		var apiConfigurations = new Dictionary<string, ResolvedApiConfiguration>(StringComparer.OrdinalIgnoreCase);
-		foreach (var api in docset.Api)
-		{
-			if (DocumentationSetRules.ResolveApi(api, docset, productsConfig).Api is { } resolved)
-				apiConfigurations[api.ProductKey] = resolved;
-		}
+		foreach (var api in report.Keep(docset.Api, DocumentationSetConstraints.ApiEntryValid, api => new RejectedApi(api.ProductKey)))
+			apiConfigurations[api.ProductKey] = ResolveApi(api, docset, productsConfig, rejectedApis);
 
 		string? storybookRegistry = null;
 		string? storybookRegistryFallback = null;
@@ -172,26 +180,96 @@ public static class DocumentationSetResolver
 			StorybookRegistryFallback = storybookRegistryFallback,
 			ApiConfigurations = apiConfigurations.Count > 0 ? apiConfigurations : null,
 			SuppressDiagnostics = docset.SuppressDiagnostics,
-			Branding = docset.Branding is { } branding ? ResolveBranding(branding, docset) : null,
-			Ctas = DocumentationSetRules.ValidCtas(docset),
+			Branding = docset.Branding is { } branding
+				? ResolveBranding(branding, docset, report.Rejected(DocumentationSetConstraints.BrandingImagesValid))
+				: null,
+			Ctas = ResolveCtas(report.Keep(docset.Ctas, DocumentationSetConstraints.CtaTemplateValid)),
 			TocDefaultCtas = docset.TocDefaultCtas.ToFrozenDictionary(kv => kv.Key, kv => kv.Value, StringComparer.OrdinalIgnoreCase),
 			TableOfContents = docset.TableOfContents
 		};
 	}
 
-	private static Branding ResolveBranding(BrandingDeclaration branding, DocumentationSetDefinition docset) =>
-		new()
+	private static CrossLinkEntry CrossLinkEntryOf(string raw, DocSetRegistry docsetRegistry)
+	{
+		var colonSlash = raw.IndexOf("://", StringComparison.Ordinal);
+		return colonSlash < 0
+			? new CrossLinkEntry(raw, docsetRegistry)
+			: new CrossLinkEntry(
+				raw[(colonSlash + 3)..],
+				DocSetRegistryExtensions.TryParse(raw[..colonSlash], out var registry, true) ? registry : docsetRegistry
+			);
+	}
+
+	// The built-in default, overlaid by every cta the rules accept, by case-insensitive name.
+	private static Dictionary<string, Cta> ResolveCtas(IEnumerable<CtaDeclaration> accepted)
+	{
+		var ctas = new Dictionary<string, Cta>(StringComparer.OrdinalIgnoreCase) { [Cta.DefaultName] = Cta.Default };
+		foreach (var declared in accepted)
+			ctas[declared.Name] = new Cta
+			{
+				Name = declared.Name,
+				Label = declared.Label!,
+				Url = declared.Url!.Trim(),
+				Benefits = declared.Benefits
+			};
+		return ctas;
+	}
+
+	private static ResolvedApiConfiguration ResolveApi(
+		ApiDeclaration api,
+		DocumentationSetDefinition docset,
+		ProductCatalog catalog,
+		IReadOnlySet<ApiRejection> rejected
+	)
+	{
+		var productKey = api.ProductKey;
+		var entry = api.Entries[0];
+		var sourceDirectory = docset.SourceDirectory;
+		var specFile = docset.FileSystem.FileInfo.New(Path.GetFullPath(Path.Join(sourceDirectory.FullName, entry.Spec)));
+		var apiContentDirectory = docset.FileSystem.DirectoryInfo.New(Path.Join(sourceDirectory.FullName, "api", productKey));
+		var seen = entry.CatalogCategories.Select(ApiCatalogCategory.Normalize).OfType<string>().ToHashSet(StringComparer.Ordinal);
+		return new ResolvedApiConfiguration
 		{
-			Icon = DocumentationSetRules.ValidateBrandingImage(branding.Icon, "branding.icon", docset).Path,
+			ProductKey = productKey,
+			Product = catalog.Products[entry.Product!.Trim().Replace('_', '-')],
+			SpecFileName = Path.GetFileName(entry.Spec!.Trim()),
+			LocalSpecFile = specFile.Exists ? specFile : null,
+			Repository = string.IsNullOrWhiteSpace(entry.Repository) ? null : entry.Repository.Trim(),
+			Children =
+			[
+				.. entry
+					.Children
+					.OfType<string>()
+					.Where(c => !string.IsNullOrWhiteSpace(c) && !rejected.Contains(new RejectedApiChild(productKey, c)))
+					.Select(c => docset.FileSystem.FileInfo.New(Path.GetFullPath(Path.Join(apiContentDirectory.FullName, c))))
+			],
+			ApiContentDirectory = apiContentDirectory,
+			CatalogCategories = [.. ApiCatalogCategory.DisplayOrder.Where(seen.Contains)]
+		};
+	}
+
+	private static Branding ResolveBranding(
+		BrandingDeclaration branding,
+		DocumentationSetDefinition docset,
+		IReadOnlySet<DeclaredBrandingImage> rejected
+	)
+	{
+		string? Valid(string? path, string field) =>
+			string.IsNullOrEmpty(path) || rejected.Contains(new DeclaredBrandingImage(field, path)) ? null : path;
+
+		return new()
+		{
+			Icon = Valid(branding.Icon, "branding.icon"),
 			HeaderBg = branding.HeaderBg,
-			OgImage = DocumentationSetRules.ValidateBrandingImage(branding.OgImage, "branding.og-image", docset).Path,
+			OgImage = Valid(branding.OgImage, "branding.og-image"),
 			Favicon = string.IsNullOrEmpty(branding.Favicon)
 				? DiscoverBrandingFile(["favicon.ico", "favicon.png", "favicon.svg"], docset)
-				: DocumentationSetRules.ValidateBrandingImage(branding.Favicon, "branding.favicon", docset).Path,
+				: Valid(branding.Favicon, "branding.favicon"),
 			AppleTouchIcon = string.IsNullOrEmpty(branding.AppleTouchIcon)
 				? DiscoverBrandingFile(["apple-touch-icon.png"], docset)
-				: DocumentationSetRules.ValidateBrandingImage(branding.AppleTouchIcon, "branding.apple-touch-icon", docset).Path
+				: Valid(branding.AppleTouchIcon, "branding.apple-touch-icon")
 		};
+	}
 
 	private static string? DiscoverBrandingFile(string[] candidates, DocumentationSetDefinition docset)
 	{

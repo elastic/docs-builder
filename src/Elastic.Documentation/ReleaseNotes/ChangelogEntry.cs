@@ -69,6 +69,14 @@ public partial record ChangelogEntry
 	/// </summary>
 	public bool SourceRedirect { get; init; }
 
+	/// <summary>The singular <c>pr:</c> as written, or null when absent; the loader merges it into <see cref="Prs"/>.</summary>
+	[IgnoreEquality]
+	public string? Pr { get; init; }
+
+	/// <summary>The file the entry was read from (name only), or null when it was not read from a file.</summary>
+	[IgnoreEquality]
+	public string? FileName { get; init; }
+
 	/// <summary>
 	/// Converts this ChangelogEntry to a BundledEntry for embedding in bundles.
 	/// File property is set to null; set it separately using a 'with' expression.

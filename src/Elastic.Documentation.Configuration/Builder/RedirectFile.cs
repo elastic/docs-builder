@@ -4,6 +4,7 @@
 
 using System.IO.Abstractions;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.DocumentationSets;
 using Elastic.Documentation.Links;
 using YamlDotNet.RepresentationModel;
 using static Elastic.Documentation.SymlinkValidator;
@@ -14,6 +15,11 @@ public record RedirectFile
 {
 	public Dictionary<string, LinkRedirect>? Redirects { get; }
 	public IFileInfo Source { get; }
+
+	/// <summary>Entries and <c>many</c> items the reader dropped because they hold nothing it can use, in the order read.</summary>
+	public IReadOnlyList<DroppedRedirect> Dropped => _dropped;
+
+	private readonly List<DroppedRedirect> _dropped = [];
 	private IDiagnosticsCollector Collector { get; }
 
 	public RedirectFile(IDocumentationSetContext context, IFileInfo? source = null) : this(
@@ -48,7 +54,7 @@ public record RedirectFile
 				switch (entry.Key)
 				{
 					case "redirects":
-						Redirects = ReadRedirects(reader, entry.Entry);
+						Redirects = ReadRedirects(reader, entry.Entry, _dropped);
 						break;
 					default:
 						reader.EmitWarning($"{entry.Key} is not a known configuration", entry.Key);
@@ -63,7 +69,11 @@ public record RedirectFile
 		}
 	}
 
-	private static Dictionary<string, LinkRedirect>? ReadRedirects(YamlStreamReader reader, KeyValuePair<YamlNode, YamlNode> entry)
+	private static Dictionary<string, LinkRedirect>? ReadRedirects(
+		YamlStreamReader reader,
+		KeyValuePair<YamlNode, YamlNode> entry,
+		List<DroppedRedirect> dropped
+	)
 	{
 		if (!reader.ReadObjectDictionary(entry, out var mapping))
 			return null;
@@ -92,15 +102,22 @@ public record RedirectFile
 			if (!reader.ReadObjectDictionary(entryValue, out var valueMapping))
 				continue;
 
-			var linkRedirect = ReadLinkRedirect(reader, key, valueMapping);
+			var linkRedirect = ReadLinkRedirect(reader, key, valueMapping, dropped);
 			if (linkRedirect is not null)
 				dictionary.Add(key, linkRedirect);
+			else
+				dropped.Add(new DroppedRedirect(key));
 		}
 
 		return dictionary;
 	}
 
-	private static LinkRedirect? ReadLinkRedirect(YamlStreamReader reader, string file, YamlMappingNode mapping)
+	private static LinkRedirect? ReadLinkRedirect(
+		YamlStreamReader reader,
+		string file,
+		YamlMappingNode mapping,
+		List<DroppedRedirect> dropped
+	)
 	{
 		var redirect = new LinkRedirect();
 		foreach (var entryValue in mapping.Children)
@@ -119,7 +136,7 @@ public record RedirectFile
 						redirect = redirect with { To = to };
 					continue;
 				case "many":
-					var many = ReadManyRedirects(reader, file, entryValue.Value);
+					var many = ReadManyRedirects(reader, file, entryValue.Value, dropped);
 					redirect = redirect with { Many = many };
 					continue;
 			}
@@ -134,16 +151,26 @@ public record RedirectFile
 		return string.IsNullOrEmpty(redirect.To) && redirect.Many is null or { Length: 0 } ? null : redirect;
 	}
 
-	private static LinkSingleRedirect[]? ReadManyRedirects(YamlStreamReader reader, string file, YamlNode node)
+	private static LinkSingleRedirect[]? ReadManyRedirects(
+		YamlStreamReader reader,
+		string file,
+		YamlNode node,
+		List<DroppedRedirect> dropped
+	)
 	{
 		if (node is not YamlSequenceNode sequence)
 			return null;
 
 		var redirects = new List<LinkSingleRedirect>();
+		var index = -1;
 		foreach (var entryValue in sequence.Children)
 		{
+			index++;
 			if (entryValue is not YamlMappingNode mapping)
+			{
+				dropped.Add(new DroppedRedirect(file, index));
 				continue;
+			}
 			var redirect = new LinkRedirect();
 			foreach (var keyValue in mapping.Children)
 			{
@@ -166,6 +193,8 @@ public record RedirectFile
 			if (redirect.To is null && redirect.Anchors is not null && redirect.Anchors.Count >= 0)
 				redirect = redirect with { To = file };
 			redirects.Add(redirect);
+			if (redirect.To is null || redirect.Anchors is null)
+				dropped.Add(new DroppedRedirect(file, index));
 		}
 
 		if (redirects.Count == 0)

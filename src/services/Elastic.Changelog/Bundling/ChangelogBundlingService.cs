@@ -1578,7 +1578,7 @@ public partial class ChangelogBundlingService(
 			{
 				var normalized = ReleaseNotesSerialization.NormalizeYaml(entry.Content);
 				var dto = ReleaseNotesSerialization.GetEntryDeserializer().Deserialize<ChangelogEntryDto>(normalized);
-				var data = ReleaseNotesSerialization.ConvertEntry(dto);
+				var data = ReleaseNotesSerialization.ConvertEntry(dto) with { FileName = entry.FileName };
 				var checksum = ComputeSha1(entry.Content);
 				matchedNotes.Add(new MatchedChangelogFile
 				{

@@ -63,8 +63,9 @@ public static class AppDefaultsExtensions
 			.AddConfigurationFileProvider(cliOptions.SkipPrivateRepositories, cliOptions.ConfigSource, (s, p) =>
 			{
 				// The only place the global catalog is loaded. Its parts are registered too, for services that need one piece.
-				var catalog = CatalogLoader.Load(p).OrThrow();
-				var search = SearchTuningLoader.Load(p).OrThrow();
+				// Loaded once per provider: the assembler's findings report emits the warnings these loads carry.
+				var catalog = CatalogLoader.LoadOnce(p).OrThrow();
+				var search = SearchTuningLoader.LoadOnce(p).OrThrow();
 				_ = s.AddSingleton(catalog);
 				_ = s.AddSingleton(catalog.VersioningSystems);
 				_ = s.AddSingleton(catalog.Products);

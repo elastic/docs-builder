@@ -169,7 +169,8 @@ public static partial class ReleaseNotesSerialization
 			FeatureId = dto.FeatureId,
 			Highlight = dto.Highlight,
 			Link = dto.Link,
-			SourceRedirect = dto.SourceRedirect ?? false
+			SourceRedirect = dto.SourceRedirect ?? false,
+			Pr = dto.Pr
 		};
 
 	private static ChangelogEntry ToEntry(BundledEntry entry) =>
@@ -198,7 +199,13 @@ public static partial class ReleaseNotesSerialization
 		IReadOnlyList<string> versions = dto.Versions is { Count: > 0 }
 			? dto.Versions
 			: !string.IsNullOrWhiteSpace(dto.Target) ? [dto.Target] : [];
-		return new() { ProductId = dto.Product ?? "", Versions = versions, Lifecycle = ParseLifecycle(dto.Lifecycle) };
+		return new()
+		{
+			ProductId = dto.Product ?? "",
+			Versions = versions,
+			Lifecycle = ParseLifecycle(dto.Lifecycle),
+			TargetRaw = dto.Target
+		};
 #pragma warning restore CS0618
 	}
 
@@ -208,6 +215,7 @@ public static partial class ReleaseNotesSerialization
 			Products = dto.Products?.Select(ToBundledProduct).ToList() ?? [],
 			Description = dto.Description,
 			ReleaseDate = ParseReleaseDate(dto.ReleaseDate),
+			ReleaseDateRaw = dto.ReleaseDate,
 			GitRef = dto.GitRef,
 			HideFeatures = dto.HideFeatures ?? [],
 			Entries = dto.Entries?.Select(ToBundledEntry).ToList() ?? [],

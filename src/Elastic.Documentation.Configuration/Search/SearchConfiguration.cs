@@ -54,7 +54,7 @@ internal static class SearchConfigurationExtensions
 			.ToArray();
 		var rules = searchDto.Rules.Select(ParseRule).ToImmutableArray();
 		var diminishTerms = searchDto.DiminishTerms.ToImmutableArray();
-		return new SearchTuning { Synonyms = synonyms, Rules = rules, DiminishTerms = diminishTerms };
+		return new SearchTuning { Synonyms = synonyms, Rules = rules, DiminishTerms = diminishTerms, SourceFileName = searchFile.Name };
 	}
 
 	private static QueryRule ParseRule(QueryRuleDto dto) =>
@@ -62,6 +62,7 @@ internal static class SearchConfigurationExtensions
 		{
 			RuleId = dto.RuleId,
 			Type = Enum.TryParse<QueryRuleType>(dto.Type, ignoreCase: true, out var ruleType) ? ruleType : QueryRuleType.Pinned,
+			TypeRaw = dto.Type,
 			Criteria = dto.Criteria.Select(ParseCriteria).ToImmutableArray(),
 			Actions = new QueryRuleActions { Ids = dto.Actions.Ids.ToImmutableArray() }
 		};
@@ -72,6 +73,7 @@ internal static class SearchConfigurationExtensions
 			Type = Enum.TryParse<QueryRuleCriteriaType>(dto.Type, ignoreCase: true, out var criteriaType)
 				? criteriaType
 				: QueryRuleCriteriaType.Exact,
+			TypeRaw = dto.Type,
 			Metadata = dto.Metadata,
 			Values = dto.Values.ToImmutableArray()
 		};

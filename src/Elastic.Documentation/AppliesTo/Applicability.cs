@@ -165,6 +165,14 @@ public record Applicability : IComparable<Applicability>, IComparable
 	public ProductLifecycle Lifecycle { get; init; }
 	public VersionSpec? Version { get; init; }
 
+	/// <summary>The item as written (<c>ga 9.0</c>), or null when the item was not read from text. A version that does not parse is <c>null</c> in <see cref="Version"/>, and tokens after the second are dropped; this shows both.</summary>
+	public string? Raw { get; init; }
+
+	// Raw records how the item was written, not what it means: it takes no part in equality.
+	public virtual bool Equals(Applicability? other) => other is not null && Lifecycle == other.Lifecycle && Equals(Version, other.Version);
+
+	public override int GetHashCode() => HashCode.Combine(Lifecycle, Version);
+
 	public static Applicability GenerallyAvailable { get; } = new()
 	{
 		Lifecycle = ProductLifecycle.GenerallyAvailable,
@@ -287,7 +295,7 @@ public record Applicability : IComparable<Applicability>, IComparable
 				"" => AllVersionsSpec.Instance,
 				var t => VersionSpec.TryParse(t, out var v) ? v : null
 			};
-		availability = new Applicability { Version = version, Lifecycle = lifecycle.Value };
+		availability = new Applicability { Version = version, Lifecycle = lifecycle.Value, Raw = value.Trim() };
 		return true;
 	}
 

@@ -98,6 +98,10 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 	private readonly HashSet<string> _anchors = [with(StringComparer.OrdinalIgnoreCase)];
 	public IReadOnlySet<string> Anchors => _anchors;
 
+	private readonly List<string> _duplicateAnchors = [];
+	/// <summary>Anchors this page declared more than once (ignoring case); <see cref="Anchors"/> is a set and drops them.</summary>
+	public IReadOnlyList<string> DuplicateAnchors => _duplicateAnchors;
+
 	public string FilePath { get; }
 	public string FileName { get; }
 	public string? SourcePath => RelativePath;
@@ -216,8 +220,12 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 		foreach (var t in toc)
 			_pageTableOfContent[t.Slug] = t;
 
+		_duplicateAnchors.Clear();
 		foreach (var label in anchors)
-			_ = _anchors.Add(label);
+		{
+			if (!_anchors.Add(label))
+				_duplicateAnchors.Add(label);
+		}
 
 		_instructionsParsed = true;
 	}

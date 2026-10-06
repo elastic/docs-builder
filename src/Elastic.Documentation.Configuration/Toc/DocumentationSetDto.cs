@@ -140,6 +140,10 @@ internal class DocumentationSetDto : TableOfContentsDto
 	[YamlIgnore]
 	public HashSet<string> FolderExcludedFiles { get; private set; } = [];
 
+	/// <summary>Every <c>toc:</c> entry mapping read while resolving, with what the reader hid (unknown keys, raw text).</summary>
+	[YamlIgnore]
+	public IReadOnlyList<TocEntryAuthoring> TocAuthoring { get; private set; } = [];
+
 	/// <summary>
 	/// Pages registered with a default CTA via <c>default_cta</c> on <c>docset.yml</c>, nested <c>toc.yml</c> files,
 	/// or individual <c>file:</c> / <c>folder:</c> entries.
@@ -162,8 +166,10 @@ internal class DocumentationSetDto : TableOfContentsDto
 	)
 	{
 		fileSystem ??= new CheckoutsFileSystem(sourceDirectory, inner: sourceDirectory.FileSystem);
-		var docSet = Deserialize(yaml);
 		var docsetPath = fileSystem.Path.Join(sourceDirectory.FullName, "docset.yml").OptionalWindowsReplace();
+		var authoring = new List<TocEntryAuthoring>();
+		using var authoringScope = TocAuthoringSink.Begin(authoring, docsetPath);
+		var docSet = Deserialize(yaml);
 		docSet.SuppressDiagnostics.ExceptWith(noSuppress ?? []);
 		docSet.TableOfContents = ResolveTableOfContents(
 			collector,
@@ -179,6 +185,7 @@ internal class DocumentationSetDto : TableOfContentsDto
 		// Collect excluded paths so they can be skipped during file processing (not just navigation)
 		docSet.FolderExcludedFiles = CollectFolderExcludedFiles(docSet.TableOfContents);
 		docSet.TocDefaultCtas = CollectTocDefaultCtas(collector, docSet.TableOfContents, docSet.DefaultCta);
+		docSet.TocAuthoring = authoring;
 		return docSet;
 	}
 
@@ -387,7 +394,9 @@ internal class DocumentationSetDto : TableOfContentsDto
 		EnsureNotSymlink(fileSystem, tocFilePath);
 
 		var tocYaml = fileSystem.File.ReadAllText(tocFilePath);
-		var nestedTocFile = TableOfContentsDto.Deserialize(tocYaml);
+		TableOfContentsDto nestedTocFile;
+		using (TocAuthoringSink.InFile(tocFilePath.OptionalWindowsReplace()))
+			nestedTocFile = TableOfContentsDto.Deserialize(tocYaml);
 
 		// this is temporary after this lands in main we can update these files to include
 		// suppress:

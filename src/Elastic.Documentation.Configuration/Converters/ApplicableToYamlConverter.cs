@@ -155,8 +155,129 @@ public class ApplicableToYamlConverter(IReadOnlyCollection<string> productKeys) 
 
 		if (diagnostics.Count > 0)
 			applicableTo = applicableTo with { Diagnostics = new ApplicabilityDiagnosticsCollection(diagnostics) };
-		return applicableTo;
+
+		var (unknown, ignored) = RecordDropped(dictionary);
+		return applicableTo with { UnknownKeys = unknown, IgnoredValues = ignored };
 	}
+
+	private static readonly string[] DeploymentKeys =
+	[
+		ApplicabilityKeys.Ece,
+		ApplicabilityKeys.Eck,
+		ApplicabilityKeys.Ess,
+		ApplicabilityKeys.Ech,
+		ApplicabilityKeys.Self
+	];
+
+	private static readonly string[] ProjectKeys =
+	[
+		ApplicabilityKeys.Elasticsearch,
+		ApplicabilityKeys.Observability,
+		ApplicabilityKeys.Security,
+		ApplicabilityKeys.VectorDb
+	];
+
+	private static readonly string[] ProductMappingKeys =
+	[
+		"ecctl",
+		"curator",
+		"apm_agent_android",
+		"apm_agent_dotnet",
+		"apm_agent_go",
+		"apm_agent_ios",
+		"apm_agent_java",
+		"apm_agent_node",
+		"apm_agent_php",
+		"apm_agent_python",
+		"apm_agent_ruby",
+		"apm_agent_rum_js",
+		"edot_ios",
+		"edot_android",
+		"edot_collector",
+		"edot_dotnet",
+		"edot_java",
+		"edot_node",
+		"edot_browser",
+		"edot_php",
+		"edot_python",
+		"edot_cf_aws",
+		"edot_cf_azure",
+		"edot_cf_gcp"
+	];
+
+	/// <summary>
+	/// What the readers above never look at: keys written under <c>deployment</c>, <c>serverless</c> or <c>product</c> that no reader maps
+	/// (and top-level keys that pass the known-key check but are not the exact key a reader maps, like <c>apm-agent-java</c>), and keys whose
+	/// value is not text. The top-level unknown and old-style keys are reported by <c>Diagnostics</c> and are not repeated here.
+	/// </summary>
+	private (IReadOnlyList<string> Unknown, IReadOnlyList<string> Ignored) RecordDropped(Dictionary<object, object?> dictionary)
+	{
+		var unknown = new List<string>();
+		var ignored = new List<string>();
+		string[] topRead =
+		[
+			ApplicabilityKeys.Stack,
+			ApplicabilityKeys.Deployment,
+			ApplicabilityKeys.Serverless,
+			ApplicabilityKeys.Product,
+			.. DeploymentKeys,
+			.. ProjectKeys,
+			.. ProductMappingKeys
+		];
+		foreach (var (k, value) in dictionary)
+		{
+			if (k is not string key)
+				continue;
+			if (!topRead.Contains(key, StringComparer.Ordinal))
+			{
+				if (_knownKeys.Contains(key.Replace('_', '-'), StringComparer.Ordinal))
+					unknown.Add(key);
+				continue;
+			}
+
+			switch (key)
+			{
+				case ApplicabilityKeys.Deployment:
+					RecordContainer(key, value, DeploymentKeys, unknown, ignored);
+					break;
+				case ApplicabilityKeys.Serverless:
+					RecordContainer(key, value, ProjectKeys, unknown, ignored);
+					break;
+				case ApplicabilityKeys.Product:
+					if (value is Dictionary<object, object?>)
+						RecordContainer(key, value, ProductMappingKeys, unknown, ignored);
+					else if (!IsText(value))
+						ignored.Add(key);
+					break;
+				default:
+					if (!IsText(value))
+						ignored.Add(key);
+					break;
+			}
+		}
+
+		return (unknown, ignored);
+	}
+
+	private static void RecordContainer(string name, object? value, string[] read, List<string> unknown, List<string> ignored)
+	{
+		if (value is Dictionary<object, object?> nested)
+		{
+			foreach (var (k, v) in nested)
+			{
+				if (k is not string key)
+					continue;
+				if (!read.Contains(key, StringComparer.Ordinal))
+					unknown.Add($"{name}.{key}");
+				else if (!IsText(v))
+					ignored.Add($"{name}.{key}");
+			}
+		}
+		else if (!IsText(value))
+			ignored.Add(name);
+	}
+
+	private static bool IsText(object? value) => value is null or string;
 
 	private static ServerlessProjectApplicability MergeServerlessProjectApplicability(
 		ServerlessProjectApplicability target,

@@ -291,10 +291,10 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 			Filename = filenameStrategy
 		};
 
-		var violations = ChangelogConfigurationConstraints.Check(configuration, configurationContext.Catalog.Products);
-		foreach (var violation in violations)
-			collector.Write(violation.ToDiagnostic(configPath));
-		return violations.Any(v => v.Severity == Severity.Error) ? null : configuration;
+		var report = ChangelogConfigurationConstraints.All.Report(
+			new ChangelogConfigurationInCatalog(configuration, configurationContext.Catalog.Products)
+		);
+		return collector.Write(report, configPath) ? configuration : null;
 	}
 
 	private static PivotConfiguration ConvertPivot(ChangelogPivotDto yamlPivot)

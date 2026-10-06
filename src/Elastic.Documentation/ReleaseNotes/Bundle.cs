@@ -31,6 +31,10 @@ public partial record Bundle
 	/// </summary>
 	public DateOnly? ReleaseDate { get; init; }
 
+	/// <summary>The <c>release-date</c> as written; null when absent or when the bundle was not read from YAML. A malformed date becomes a null <see cref="ReleaseDate"/>.</summary>
+	[IgnoreEquality]
+	public string? ReleaseDateRaw { get; init; }
+
 	/// <summary>
 	/// Optional git ref of the published endpoint this bundle was cut for.
 	/// Set by commit-range bundling (<c>--end-git-ref</c>); not rendered to end-users.

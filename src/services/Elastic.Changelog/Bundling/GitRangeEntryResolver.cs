@@ -230,7 +230,7 @@ public class GitRangeEntryResolver(IGitHubPrService prService, ILogger logger)
 			var dto = ReleaseNotesSerialization.GetEntryDeserializer().Deserialize<ChangelogEntryDto>(normalized);
 			var entry = new MatchedChangelogFile
 			{
-				Data = ReleaseNotesSerialization.ConvertEntry(dto),
+				Data = ReleaseNotesSerialization.ConvertEntry(dto) with { FileName = fileName },
 				FilePath = fileName,
 				FileName = fileName,
 				Checksum = checksum

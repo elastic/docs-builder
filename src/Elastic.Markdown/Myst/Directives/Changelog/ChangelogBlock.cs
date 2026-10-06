@@ -564,7 +564,7 @@ public class ChangelogBlock(DirectiveBlockParser parser, ParserContext context) 
 		// Load bundles using the BundleLoader service
 		// Emit errors (not warnings) for missing file references so the build fails fast
 		// rather than silently omitting entries from the rendered output.
-		var loadedBundles = loader.LoadBundles(BundlesFolderPath, msg => this.EmitError(msg));
+		var loadedBundles = loader.LoadBundles(BundlesFolderPath, msg => this.EmitError(msg), d => this.Emit(d.Severity, d.Message));
 
 		ApplyLoadedBundles(loadedBundles);
 	}

@@ -208,7 +208,7 @@ public class ChangelogEntryMatcher(IFileSystem fileSystem, IDeserializer deseria
 			_ = seenChangelogs.Add(checksum);
 
 			// Convert to domain type
-			var data = ReleaseNotesSerialization.ConvertEntry(yamlDto);
+			var data = ReleaseNotesSerialization.ConvertEntry(yamlDto) with { FileName = fileName };
 
 			return new MatchedChangelogFile { Data = data, FilePath = filePath, FileName = fileName, Checksum = checksum };
 		}

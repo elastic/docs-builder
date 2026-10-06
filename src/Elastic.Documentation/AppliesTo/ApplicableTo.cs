@@ -52,6 +52,29 @@ public record ApplicableTo
 	[JsonIgnore]
 	public ApplicabilityDiagnosticsCollection? Diagnostics { get; init; }
 
+	/// <summary>
+	/// Keys the block wrote that the reader never maps, in the order written: nested ones as <c>deployment.x</c>, and top-level keys that pass the
+	/// known-key check but are not the exact key a reader maps (<c>apm-agent-java</c>). Top-level unknown keys are in <see cref="Diagnostics"/>.
+	/// </summary>
+	[JsonIgnore]
+	public IReadOnlyList<string> UnknownKeys { get; init; } = [];
+
+	/// <summary>Keys (nested as <c>deployment.x</c>) whose value was not text, which the reader ignores.</summary>
+	[JsonIgnore]
+	public IReadOnlyList<string> IgnoredValues { get; init; } = [];
+
+	// UnknownKeys and IgnoredValues record how the block was written, not what it means: they take no part in equality.
+	public virtual bool Equals(ApplicableTo? other) =>
+		other is not null
+			&& EqualityComparer<AppliesCollection?>.Default.Equals(Stack, other.Stack)
+			&& EqualityComparer<DeploymentApplicability?>.Default.Equals(Deployment, other.Deployment)
+			&& EqualityComparer<ServerlessProjectApplicability?>.Default.Equals(Serverless, other.Serverless)
+			&& EqualityComparer<AppliesCollection?>.Default.Equals(Product, other.Product)
+			&& EqualityComparer<ProductApplicability?>.Default.Equals(ProductApplicability, other.ProductApplicability)
+			&& EqualityComparer<ApplicabilityDiagnosticsCollection?>.Default.Equals(Diagnostics, other.Diagnostics);
+
+	public override int GetHashCode() => HashCode.Combine(Stack, Deployment, Serverless, Product, ProductApplicability, Diagnostics);
+
 	public static ApplicableTo All { get; } = new()
 	{
 		Stack = AppliesCollection.GenerallyAvailable,

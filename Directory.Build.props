@@ -10,6 +10,14 @@
   </PropertyGroup>
   
   <PropertyGroup>
+    <!--
+      Nullean.Entities (https://github.com/nullean/entities): the constraint model every domain rule is written in. The packages are not published yet, so the projects are
+      referenced from a checkout; point NulleanEntitiesRoot at another one to build against it. The library targets net10.0 on this repository's stable SDK by itself.
+    -->
+    <NulleanEntitiesRoot Condition="'$(NulleanEntitiesRoot)' == ''">$(HOME)/Projects/nullean-entities</NulleanEntitiesRoot>
+  </PropertyGroup>
+
+  <PropertyGroup>
     <IsPackable>False</IsPackable>
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
     <MinVerDefaultPreReleaseIdentifiers>canary.0</MinVerDefaultPreReleaseIdentifiers>

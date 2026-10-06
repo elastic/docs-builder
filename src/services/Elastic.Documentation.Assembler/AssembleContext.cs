@@ -68,13 +68,19 @@ public class AssembleContext : IDocumentationConfigurationContext, IDocsSyncCont
 	/// The site navigation this assembly builds: <c>navigation.yml</c> (or <c>navigation_preview.yml</c>) as the
 	/// domain filters it, without the mounts and phantoms of private repositories when those are skipped.
 	/// </summary>
+	/// <remarks>
+	/// Loaded and checked on first use; this is the one place the navigation's constraint violations are reported
+	/// (to <see cref="Collector"/>), so they appear once per run. Callers that must stop on an invalid navigation check the collector's errors.
+	/// </remarks>
 	[field: AllowNull, MaybeNull]
 	public SiteNavigationDefinition Navigation =>
-		field ??= SiteNavigationLoader.ForAssembly(
-			SiteNavigationLoader.Deserialize(NavigationFile.FileSystem.File.ReadAllText(NavigationFile.FullName)),
-			Configuration,
-			ConfigurationFileProvider.SkipPrivateRepositories
-		);
+		field ??=
+			SiteNavigationLoader.Load(
+				NavigationFile.FileSystem.File.ReadAllText(NavigationFile.FullName),
+				NavigationFile,
+				Configuration,
+				ConfigurationFileProvider.SkipPrivateRepositories
+			).EmitTo(Collector)!;
 
 	/// <inheritdoc cref="IDocsSyncContext.EnvironmentName"/>
 	public string EnvironmentName => Environment.Name;

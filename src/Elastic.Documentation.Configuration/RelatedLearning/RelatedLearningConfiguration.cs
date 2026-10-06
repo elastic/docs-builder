@@ -28,14 +28,9 @@ internal sealed class RelatedLearningLinkDto
 
 internal static class RelatedLearningConfigurationExtensions
 {
-	/// <summary>Parses a <c>related-learning.yml</c> document and throws on its first <see cref="RelatedLearningConstraints"/> error.</summary>
-	public static RelatedLearningCatalog Parse(string yaml)
-	{
-		var catalog = ParseUnchecked(yaml);
-		if (RelatedLearningConstraints.Check(catalog).FirstOrDefault(v => v.Severity == Severity.Error) is { Message: { } error })
-			throw new InvalidOperationException(error);
-		return catalog;
-	}
+	/// <summary>Parses a <c>related-learning.yml</c> document and throws a <see cref="ConfigurationException"/> listing every <see cref="RelatedLearningConstraints"/> error.</summary>
+	public static RelatedLearningCatalog Parse(string yaml) =>
+		Result.From(RelatedLearningConstraints.All.Report(ParseUnchecked(yaml)), "related-learning.yml").OrThrow();
 
 	/// <summary>Parses a <c>related-learning.yml</c> document without checking it. Throws only on YAML it cannot read.</summary>
 	public static RelatedLearningCatalog ParseUnchecked(string yaml)

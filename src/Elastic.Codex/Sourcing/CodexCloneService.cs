@@ -82,7 +82,7 @@ public class CodexCloneService(ILoggerFactory logFactory, ILinkIndexReader linkI
 			var docsDirectory = docsetFile.Directory!;
 			var docsPath = Path.GetRelativePath(subDir.FullName, docsDirectory.FullName);
 			var docsPathForRef = string.IsNullOrEmpty(docsPath) || docsPath == "." ? "." : docsPath.Replace('\\', '/');
-			WarnIfRegistryMismatch(context, repoName, docSet, docsPathForRef);
+			CheckDocset(context, repoName, docSet, docsPathForRef, docsetFile);
 
 			string currentCommit;
 			try
@@ -250,7 +250,7 @@ public class CodexCloneService(ILoggerFactory logFactory, ILinkIndexReader linkI
 			var docsPath = Path.GetRelativePath(repoDir.FullName, docsDirectory.FullName);
 
 			var docsPathForRef = string.IsNullOrEmpty(docsPath) || docsPath == "." ? "." : docsPath.Replace('\\', '/');
-			WarnIfRegistryMismatch(context, repoName, docSet, docsPathForRef);
+			CheckDocset(context, repoName, docSet, docsPathForRef, docsetFile);
 			var docSetRef = CreateDocumentationSetReference(repoName, entry, docsPathForRef, docSet);
 
 			return new CodexCheckout(docSetRef, repoDir, docsDirectory, docsetFile, currentCommit);
@@ -340,6 +340,25 @@ public class CodexCloneService(ILoggerFactory logFactory, ILinkIndexReader linkI
 		}
 
 		return null;
+	}
+
+	/// <summary>
+	/// A docset is paired with the codex site it is listed in here, once, and checked against it (its <c>codex.group</c> must be one of
+	/// the site's groups); then the registry it declares is compared to the codex environment.
+	/// </summary>
+	private static void CheckDocset(
+		CodexContext context,
+		string repoName,
+		DocumentationSetDefinition docSet,
+		string docsPath,
+		IFileInfo docsetFile
+	)
+	{
+		_ = context.Collector.Write(
+			DocumentationSetInCodexConstraints.All.Report(new DocumentationSetInCodex(docSet, context.Configuration)),
+			docsetFile.FullName
+		);
+		WarnIfRegistryMismatch(context, repoName, docSet, docsPath);
 	}
 
 	/// <summary>

@@ -2,6 +2,8 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using Nullean.Entities;
+
 namespace Elastic.Documentation.Diagnostics;
 
 /// <summary>
@@ -33,15 +35,14 @@ public sealed record Result<T>(T? Value, IReadOnlyList<Diagnostic> Diagnostics) 
 			);
 
 	/// <summary>
-	/// For configuration that must load for the process to start (global config): returns the value, or throws with the
-	/// first error's message so startup fails exactly as it did when the loaders threw.
+	/// For configuration that must load for the process to start (global config): returns the value, or throws a
+	/// <see cref="ConfigurationException"/> whose message lists every error (one per line) and which carries every diagnostic.
 	/// </summary>
 	public T OrThrow()
 	{
 		if (Value is not null && !HasErrors)
 			return Value;
-		var message = Diagnostics.Where(d => d.Severity == Severity.Error).Select(d => d.Message).FirstOrDefault();
-		throw new InvalidOperationException(message ?? $"Could not load {typeof(T).Name}");
+		throw new ConfigurationException(Diagnostics, $"Could not load {typeof(T).Name}");
 	}
 }
 
@@ -53,4 +54,12 @@ public static class Result
 	public static Result<T> Success<T>(T value, IReadOnlyList<Diagnostic> diagnostics) where T : class => new(value, diagnostics);
 
 	public static Result<T> Failure<T>(IReadOnlyList<Diagnostic> diagnostics) where T : class => new(null, diagnostics);
+
+	/// <summary>
+	/// The outcome of checking a model: always carries the checked value and every violation as a diagnostic (after <paramref name="extra"/>,
+	/// the findings made while building it). When the report has errors the result <see cref="Result{T}.HasErrors"/>, so <see cref="Result{T}.OrThrow"/>
+	/// throws and <see cref="Result{T}.EmitTo"/> reports them, while a caller that tolerates errors (a docset) can still use the value.
+	/// </summary>
+	public static Result<T> From<T>(ConstraintReport<T> report, string file, IReadOnlyList<Diagnostic>? extra = null) where T : class =>
+		new(report.Value, [.. extra ?? [], .. report.ToDiagnostics(file)]);
 }

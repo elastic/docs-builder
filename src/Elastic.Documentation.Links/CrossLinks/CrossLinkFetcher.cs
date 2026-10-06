@@ -87,7 +87,26 @@ public abstract class CrossLinkFetcher(
 
 		Logger.LogInformation("Fetching link index registry (link-index.json)");
 		_linkIndex = await linkIndexProvider.GetRegistry(ctx);
+		LogFindings("link-index.json", LinkRegistryConstraints.All.Report(_linkIndex));
 		return _linkIndex;
+	}
+
+	/// <summary>
+	/// A fetched link index or links.json is checked once, when it is fetched. What it breaks is logged, not thrown: the file
+	/// belongs to another repository, so a rule it breaks is that repository's to fix and never stops this build.
+	/// </summary>
+	private void LogFindings<T>(string source, Nullean.Entities.ConstraintReport<T> report)
+	{
+		foreach (var violation in report.Violations)
+		{
+			var level = violation.Severity switch
+			{
+				Nullean.Entities.Severity.Error => LogLevel.Warning,
+				Nullean.Entities.Severity.Warning => LogLevel.Information,
+				_ => LogLevel.Debug
+			};
+			Logger.Log(level, "{Source} breaks {RuleId}: {Message}", source, violation.ConstraintId, violation.Message);
+		}
 	}
 
 	protected async Task<LinkRegistryEntry> GetLinkIndexEntry(string repository, Cancel ctx)
@@ -147,6 +166,7 @@ public abstract class CrossLinkFetcher(
 
 		Logger.LogInformation("Fetching links.json for '{Repository}' from {RegistryUrl}", repository, reader.RegistryUrl);
 		linkReference = await reader.GetRepositoryLinks(linkRegistryEntry.Path, ctx);
+		LogFindings($"links.json of '{repository}'", LinkManifestConstraints.All.Report(linkReference));
 		WriteLinksJsonCachedFile(repository, linkRegistryEntry, linkReference);
 		return linkReference;
 	}
@@ -162,6 +182,7 @@ public abstract class CrossLinkFetcher(
 	)
 	{
 		var linkIndex = await reader.GetRegistry(ctx);
+		fetcher.LogFindings("link-index.json", LinkRegistryConstraints.All.Report(linkIndex));
 		if (!linkIndex.Repositories.TryGetValue(repository, out var repositoryLinks))
 			throw new Exception($"Repository {repository} not found in link index");
 		var entry = GetNextContentSourceLinkIndexEntry(repositoryLinks, repository);

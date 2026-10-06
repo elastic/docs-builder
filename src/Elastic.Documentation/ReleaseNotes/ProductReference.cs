@@ -31,6 +31,10 @@ public partial record ProductReference
 	[OrderedEquality]
 	public IReadOnlyList<string> Versions { get; init; } = [];
 
+	/// <summary>The <c>target</c> as written on the product, or null when absent; the loader reads it as <see cref="Versions"/>.</summary>
+	[IgnoreEquality]
+	public string? TargetRaw { get; init; }
+
 	/// <summary>The lifecycle stage of the feature for this product.</summary>
 	public Lifecycle? Lifecycle { get; init; }
 }

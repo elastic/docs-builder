@@ -7,6 +7,7 @@ using Elastic.Documentation.Api;
 using Elastic.Documentation.Api.OpenTelemetry;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
+using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Search.Common;
 using Elastic.Documentation.ServiceDefaults;
 using Elastic.Documentation.ServiceDefaults.Telemetry;
@@ -76,6 +77,13 @@ try
 
 	Console.WriteLine("Application startup completed successfully");
 	app.Run();
+}
+catch (ConfigurationException ex)
+{
+	// Invalid global configuration is the one early exit: list every diagnostic the loaders found, then fail.
+	foreach (var line in ex.Lines)
+		Console.Error.WriteLine(line);
+	Environment.ExitCode = 1;
 }
 catch (Exception ex)
 {

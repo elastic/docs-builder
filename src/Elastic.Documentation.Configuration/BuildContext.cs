@@ -139,8 +139,7 @@ public record BuildContext : IDocumentationSetContext, IDocumentationConfigurati
 		var candidates = discovered.Select(
 			f => TryReadRegistry(f, out var registry) ? new DiscoveredDocset(f, registry) : null
 		).OfType<DiscoveredDocset>();
-		foreach (var violation in DocsetDiscoveryConstraints.Check(new DocsetDiscovery([.. candidates])))
-			Collector.Write(violation.ToDiagnostic(ConfigurationPath.FullName));
+		_ = Collector.Write(DocsetDiscoveryConstraints.All.Report(new DocsetDiscovery([.. candidates])), ConfigurationPath.FullName);
 	}
 
 	private bool TryReadRegistry(IFileInfo docsetFile, out string? registry)

@@ -5,6 +5,7 @@
 using System.Collections.Frozen;
 using System.IO.Abstractions;
 using Elastic.Documentation.Configuration.Assembler;
+using Elastic.Documentation.Configuration.Converters;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Publishing;
 using YamlDotNet.Core;
@@ -153,19 +154,29 @@ public static class SiteNavigationLoader
 			Length = position is { } p ? p.Column - p.EndColumn : null
 		});
 
-	/// <summary>Reports every <see cref="SiteNavigationConstraints"/> violation against <paramref name="navigationFile"/>; returns whether there were no errors.</summary>
-	public static bool Validate(IDiagnosticsCollector collector, SiteNavigationDefinition siteNavigation, IFileInfo navigationFile)
-	{
-		var violations = SiteNavigationConstraints.Check(siteNavigation);
-		foreach (var violation in violations)
-			collector.Write(violation.ToDiagnostic(navigationFile.FullName));
-		return violations.All(v => v.Severity != Severity.Error);
-	}
+	/// <summary>
+	/// Loads the navigation an assembler build uses: parses <paramref name="yaml"/>, filters it as <see cref="ForAssembly"/> does, and checks it
+	/// against <see cref="SiteNavigationConstraints"/> once. The result carries every violation (positioned in <paramref name="navigationFile"/>);
+	/// it has errors when a rule at error severity failed, and the caller decides whether to stop.
+	/// </summary>
+	public static Result<SiteNavigationDefinition> Load(
+		string yaml,
+		IFileInfo navigationFile,
+		AssemblyConfiguration assembly,
+		bool skipPrivateRepositories
+	) =>
+		Result.From(
+			SiteNavigationConstraints.All.Report(ForAssembly(Deserialize(yaml), assembly, skipPrivateRepositories)),
+			navigationFile.FullName
+		);
 }
 
 public class SiteTableOfContentsCollectionYamlConverter : IYamlTypeConverter
 {
 	public bool Accepts(Type type) => type == typeof(SiteTableOfContentsDto);
+
+	/// <summary>The keys of a mounted <c>toc:</c> entry that are read; any other key is dropped and kept as <c>UnknownKeys</c>.</summary>
+	internal static readonly string[] TocEntryKeys = ["toc", "path_prefix", "children", "island", "navigation_title"];
 
 	public object ReadYaml(IParser parser, Type type, ObjectDeserializer rootDeserializer)
 	{
@@ -263,7 +274,11 @@ public class SiteTableOfContentsCollectionYamlConverter : IYamlTypeConverter
 				&& childrenObj is List<SiteTableOfContentsRef> refs ? refs : [];
 			IReadOnlyList<SiteDropdownLinkRef> dropdownLinks = dictionary.TryGetValue("dropdown", out var dropdownObj)
 				&& dropdownObj is List<SiteDropdownLinkRef> dLinks ? dLinks : [];
-			return new SiteSectionRef(sectionTitle, externalUrl, children, dropdownLinks);
+			return new SiteSectionRef(sectionTitle, externalUrl, children, dropdownLinks)
+			{
+				UnknownKeys = UnknownYamlKeys.Of(dictionary.Keys, "section", "external", "children", "dropdown"),
+				Position = PositionOf(mappingStart, mappingEnd)
+			};
 		}
 
 		if (dictionary.TryGetValue("toc", out var tocPath) && tocPath is string sourceString)
@@ -290,7 +305,9 @@ public class SiteTableOfContentsCollectionYamlConverter : IYamlTypeConverter
 			return new SiteTableOfContentsRef(source, pathPrefix, children, island, navigationTitle)
 			{
 				ShorthandPath = sourceString.Contains("://") ? null : sourceString,
-				Position = PositionOf(mappingStart, mappingEnd)
+				Position = PositionOf(mappingStart, mappingEnd),
+				UnknownKeys = UnknownYamlKeys.Of(dictionary.Keys, TocEntryKeys),
+				IslandRaw = dictionary.TryGetValue("island", out var rawIsland) ? rawIsland as string : null
 			};
 		}
 
@@ -378,7 +395,9 @@ public class SiteTableOfContentsRefYamlConverter : IYamlTypeConverter
 			return new SiteTableOfContentsRef(source, pathPrefix, children, island, navigationTitle)
 			{
 				ShorthandPath = sourceString.Contains("://") ? null : sourceString,
-				Position = SiteTableOfContentsCollectionYamlConverter.PositionOf(mappingStart, mappingEnd)
+				Position = SiteTableOfContentsCollectionYamlConverter.PositionOf(mappingStart, mappingEnd),
+				UnknownKeys = UnknownYamlKeys.Of(dictionary.Keys, SiteTableOfContentsCollectionYamlConverter.TocEntryKeys),
+				IslandRaw = dictionary.TryGetValue("island", out var rawIsland) ? rawIsland as string : null
 			};
 		}
 
