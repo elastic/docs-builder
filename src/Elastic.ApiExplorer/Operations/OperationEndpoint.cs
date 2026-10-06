@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.Text.RegularExpressions;
+using Elastic.ApiExplorer.Model;
 using Microsoft.OpenApi;
 
 namespace Elastic.ApiExplorer.Operations;
@@ -112,7 +113,8 @@ public sealed partial record OperationEndpoint(
 	/// <summary>
 	/// Separate operations only merge their methods when they are the same call: the same non-path parameters
 	/// (name, requiredness and schema), the same request body (requiredness and schema per media type), the
-	/// same response schema per status and media type, and the same security requirements.
+	/// same response schema per status and media type, the same security requirements, and the same lifecycle
+	/// (deprecated, beta).
 	/// </summary>
 	public static bool AreInterchangeable(IReadOnlyList<ApiOperation> operations)
 	{
@@ -132,7 +134,16 @@ public sealed partial record OperationEndpoint(
 		var responses = (operation.Responses ?? []).Select(static r => $"{r.Key}:{ContentKey(r.Value?.Content)}").Order(
 			StringComparer.Ordinal
 		);
-		return string.Join('|', parameters) + "#" + body + "#" + string.Join('|', responses) + "#" + SecurityKey(operation.Security);
+		var lifecycle = $"{(operation.Deprecated ? "deprecated" : "")}:{(OpenApiExtensionReader.IsBeta(operation) ? "beta" : "")}";
+		return string.Join('|', parameters)
+			+ "#"
+			+ body
+			+ "#"
+			+ string.Join('|', responses)
+			+ "#"
+			+ SecurityKey(operation.Security)
+			+ "#"
+			+ lifecycle;
 	}
 
 	/// <summary>

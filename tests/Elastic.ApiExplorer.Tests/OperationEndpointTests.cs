@@ -2,8 +2,10 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Text.Json.Nodes;
 using AwesomeAssertions;
 using Elastic.ApiExplorer.Infrastructure;
+using Elastic.ApiExplorer.Model;
 using Elastic.ApiExplorer.Operations;
 using Microsoft.OpenApi;
 
@@ -327,6 +329,42 @@ public class OperationEndpointTests
 			])
 			.Should()
 			.BeTrue();
+
+	private static ApiOperation WithLifecycle(HttpMethod method, bool deprecated, bool beta) =>
+		new(
+			method,
+			new OpenApiOperation
+			{
+				Deprecated = deprecated,
+				Extensions = beta
+					? new Dictionary<string, IOpenApiExtension> { ["x-beta"] = new JsonNodeExtension(JsonValue.Create(true)) }
+					: null,
+				Responses = new OpenApiResponses { ["200"] = new OpenApiResponse { Description = "ok" } }
+			},
+			"/foo",
+			new OpenApiPathItem(),
+			"foo"
+		);
+
+	[Test]
+	public void AreInterchangeable_OneMethodDeprecated_IsFalse() =>
+		OperationEndpoint
+			.AreInterchangeable([
+				WithLifecycle(HttpMethod.Get, deprecated: true, beta: false),
+				WithLifecycle(HttpMethod.Post, deprecated: false, beta: false)
+			])
+			.Should()
+			.BeFalse();
+
+	[Test]
+	public void AreInterchangeable_OneMethodBeta_IsFalse() =>
+		OperationEndpoint
+			.AreInterchangeable([
+				WithLifecycle(HttpMethod.Get, deprecated: false, beta: true),
+				WithLifecycle(HttpMethod.Post, deprecated: false, beta: false)
+			])
+			.Should()
+			.BeFalse();
 
 	private static ApiOperation WithSecurity(HttpMethod method, IList<OpenApiSecurityRequirement>? security) =>
 		new(
