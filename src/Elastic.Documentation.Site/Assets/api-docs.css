@@ -3579,34 +3579,6 @@ html:has(.api-page-shell) {
 }
 
 /* Response collapse toggle in the response card header. */
-.example-block-collapse {
-	display: inline-grid;
-	place-items: center;
-	width: 24px;
-	height: 24px;
-	margin-left: 4px;
-	border: 0;
-	border-radius: 6px;
-	background: transparent;
-	color: var(--api-code-muted);
-	cursor: pointer;
-}
-
-.example-block-collapse:hover {
-	background: var(--api-code-hover);
-	color: var(--api-code-text);
-}
-
-.example-block-collapse svg {
-	width: 12px;
-	height: 12px;
-	fill: currentColor;
-	transition: transform 0.15s ease;
-}
-
-.is-response-collapsed .example-block-collapse svg {
-	transform: rotate(180deg);
-}
 
 .is-response-collapsed .example-block--response .example-block-body {
 	display: none;

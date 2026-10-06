@@ -37,7 +37,6 @@ function carousel(
                 <button data-description-toggle aria-expanded="false" hidden>Show more</button>
             </div>
             <button data-request-expand aria-pressed="false" hidden></button>
-            <button data-response-collapse aria-expanded="true"></button>
             <div class="api-code-carousel-strip" data-carousel-strip tabindex="0">${langs.map(card).join('')}</div>
             <div>${dots}</div>
         </div>`
@@ -284,22 +283,6 @@ describe('API examples carousel', () => {
         expand.click()
 
         expect(examples.classList.contains('is-response-collapsed')).toBe(false)
-    })
-
-    it('collapsing the response is the same state as expanding the examples', () => {
-        initApiExamples()
-        const expand = document.querySelector<HTMLElement>(
-            '[data-scenario="term"] [data-request-expand]'
-        )!
-
-        document
-            .querySelector<HTMLElement>(
-                '[data-scenario="term"] [data-response-collapse]'
-            )!
-            .click()
-
-        expect(expand.getAttribute('aria-pressed')).toBe('true')
-        expect(expand.hidden).toBe(false)
     })
 
     it('opens and closes a long description', () => {

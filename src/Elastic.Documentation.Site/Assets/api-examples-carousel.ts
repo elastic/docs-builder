@@ -552,16 +552,6 @@ function onDividerPointerDown(event: PointerEvent) {
 /** Expanding gives the examples the whole rail by folding the response down to its header. */
 function setExpanded(examples: HTMLElement, expanded: boolean) {
     examples.classList.toggle('is-response-collapsed', expanded)
-    examples
-        .querySelectorAll<HTMLElement>('[data-response-collapse]')
-        .forEach((button) => {
-            const label = expanded
-                ? 'Expand the response'
-                : 'Collapse the response'
-            button.setAttribute('aria-expanded', expanded ? 'false' : 'true')
-            button.setAttribute('aria-label', label)
-            button.title = label
-        })
     // Hidden examples re-measure when they are shown (showScenario).
     const carousel = visibleCarousel(examples)
     if (carousel) {
@@ -590,9 +580,7 @@ function onClick(event: MouseEvent) {
         return
     }
 
-    const toggle = target.closest<HTMLElement>(
-        '[data-response-collapse], [data-request-expand]'
-    )
+    const toggle = target.closest<HTMLElement>('[data-request-expand]')
     if (toggle) {
         toggleExpanded(toggle)
         return
