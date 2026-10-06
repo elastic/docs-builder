@@ -27,6 +27,29 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture)
 		return new ApiPropertyTreeBuilder(fixture.Document, options, currentPageType);
 	}
 
+	private static async Task<OpenApiDocument> LoadSpecAsync(string json)
+	{
+		var path = Path.Join(Path.GetTempPath(), $"api-explorer-spec-{Guid.NewGuid():N}.json");
+		await File.WriteAllTextAsync(path, json, TestContext.Current!.Execution.CancellationToken);
+		try
+		{
+			var loaded = await OpenApiDocument.LoadAsync(
+				path,
+				new OpenApiReaderSettings { LeaveStreamOpen = false },
+				TestContext.Current!.Execution.CancellationToken
+			);
+			return loaded.Document!;
+		}
+		finally
+		{
+			if (File.Exists(path))
+				File.Delete(path);
+		}
+	}
+
+	private static ApiPropertyTreeBuilder BuilderFor(OpenApiDocument document) =>
+		new(document, new PropertyDisplayOptions { RenderMarkdown = s => new HtmlString($"<p>{s}</p>"), ApiRootUrl = "/api/doc/fixture" });
+
 	private IOpenApiSchema Schema(string id) => fixture.Document.Components!.Schemas![id];
 
 	[Test]
@@ -466,42 +489,20 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture)
 			  }
 			}
 			""";
-		var path = Path.Join(Path.GetTempPath(), $"path-types-{Guid.NewGuid():N}.json");
-		await File.WriteAllTextAsync(path, json, TestContext.Current!.Execution.CancellationToken);
-		try
-		{
-			var loaded = await OpenApiDocument.LoadAsync(
-				path,
-				new OpenApiReaderSettings { LeaveStreamOpen = false },
-				TestContext.Current!.Execution.CancellationToken
-			);
-			var document = loaded.Document!;
-			var builder = new ApiPropertyTreeBuilder(
-				document,
-				new PropertyDisplayOptions { RenderMarkdown = s => new HtmlString($"<p>{s}</p>"), ApiRootUrl = "/api/doc/fixture" }
-			);
+		var document = await LoadSpecAsync(json);
+		var builder = BuilderFor(document);
 
-			var names = new OpenApiSchemaReference("_types.Names", document);
-			var dataStreams = new OpenApiSchemaReference("_types.DataStreamNames", document);
-			var name = new OpenApiSchemaReference("_types.Name", document);
+		var names = new OpenApiSchemaReference("_types.Names", document);
+		var dataStreams = new OpenApiSchemaReference("_types.DataStreamNames", document);
+		var name = new OpenApiSchemaReference("_types.Name", document);
 
-			builder.Describe(names).Text.Should().Be("union Names");
-			builder.DescribePathParameter(names).Text.Should().Be("union Name | [] Name");
-			builder.DescribePathParameter(dataStreams).Text.Should().Be("union string | [] string");
-			builder
-				.DescribePathParameter(document.Components!.Schemas!["inline.StringOrArray"])
-				.Text
-				.Should()
-				.Be("union string | [] string");
-			builder.DescribePathParameter(name).Text.Should().Be("string Name");
-			builder.Describe(name).Text.Should().Be("string Name");
-			builder.DescribePathParameter(new OpenApiSchema { Type = JsonSchemaType.String }).Text.Should().Be("string");
-		}
-		finally
-		{
-			if (File.Exists(path))
-				File.Delete(path);
-		}
+		builder.Describe(names).Text.Should().Be("union Names");
+		builder.DescribePathParameter(names).Text.Should().Be("union Name | [] Name");
+		builder.DescribePathParameter(dataStreams).Text.Should().Be("union string | [] string");
+		builder.DescribePathParameter(document.Components!.Schemas!["inline.StringOrArray"]).Text.Should().Be("union string | [] string");
+		builder.DescribePathParameter(name).Text.Should().Be("string Name");
+		builder.Describe(name).Text.Should().Be("string Name");
+		builder.DescribePathParameter(new OpenApiSchema { Type = JsonSchemaType.String }).Text.Should().Be("string");
 	}
 
 	[Test]
@@ -531,32 +532,14 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture)
 			  }
 			}
 			""";
-		var path = Path.Join(Path.GetTempPath(), $"union-own-props-{Guid.NewGuid():N}.json");
-		await File.WriteAllTextAsync(path, json, TestContext.Current!.Execution.CancellationToken);
-		try
-		{
-			var loaded = await OpenApiDocument.LoadAsync(
-				path,
-				new OpenApiReaderSettings { LeaveStreamOpen = false },
-				TestContext.Current!.Execution.CancellationToken
-			);
-			var document = loaded.Document!;
-			var builder = new ApiPropertyTreeBuilder(
-				document,
-				new PropertyDisplayOptions { RenderMarkdown = s => new HtmlString($"<p>{s}</p>"), ApiRootUrl = "/api/doc/fixture" }
-			);
+		var document = await LoadSpecAsync(json);
+		var builder = BuilderFor(document);
 
-			var list = builder.BuildPropertyList(document.Components!.Schemas!["Holder"], new PropertyTreeScope { Prefix = "" });
+		var list = builder.BuildPropertyList(document.Components!.Schemas!["Holder"], new PropertyTreeScope { Prefix = "" });
 
-			var pet = list!.Items.Single(p => p.Name == "pet");
-			pet.Children.Kind.Should().Be(ChildKind.PropertyList);
-			pet.Children.Properties!.Items.Select(p => p.Name).Should().Equal("kind");
-		}
-		finally
-		{
-			if (File.Exists(path))
-				File.Delete(path);
-		}
+		var pet = list!.Items.Single(p => p.Name == "pet");
+		pet.Children.Kind.Should().Be(ChildKind.PropertyList);
+		pet.Children.Properties!.Items.Select(p => p.Name).Should().Equal("kind");
 	}
 
 	[Test]
@@ -588,34 +571,16 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture)
 			  }
 			}
 			""";
-		var path = Path.Join(Path.GetTempPath(), $"allof-override-{Guid.NewGuid():N}.json");
-		await File.WriteAllTextAsync(path, json, TestContext.Current!.Execution.CancellationToken);
-		try
-		{
-			var loaded = await OpenApiDocument.LoadAsync(
-				path,
-				new OpenApiReaderSettings { LeaveStreamOpen = false },
-				TestContext.Current!.Execution.CancellationToken
-			);
-			var document = loaded.Document!;
-			var builder = new ApiPropertyTreeBuilder(
-				document,
-				new PropertyDisplayOptions { RenderMarkdown = s => new HtmlString($"<p>{s}</p>"), ApiRootUrl = "/api/doc/fixture" }
-			);
+		var document = await LoadSpecAsync(json);
+		var builder = BuilderFor(document);
 
-			var list = builder.BuildPropertyList(document.Components!.Schemas!["Holder"], new PropertyTreeScope { Prefix = "" });
+		var list = builder.BuildPropertyList(document.Components!.Schemas!["Holder"], new PropertyTreeScope { Prefix = "" });
 
-			var variants = list!.Items.Single(p => p.Name == "pet").Children.Variants!.Variants;
-			var cat = variants[0].Properties!.Items;
-			cat.Select(p => p.Name).Should().Equal("kind", "id");
-			cat.Single(p => p.Name == "kind").EnumValues.Should().Equal("cat");
-			variants[1].Properties!.Items.Single(p => p.Name == "kind").EnumValues.Should().BeEmpty();
-		}
-		finally
-		{
-			if (File.Exists(path))
-				File.Delete(path);
-		}
+		var variants = list!.Items.Single(p => p.Name == "pet").Children.Variants!.Variants;
+		var cat = variants[0].Properties!.Items;
+		cat.Select(p => p.Name).Should().Equal("kind", "id");
+		cat.Single(p => p.Name == "kind").EnumValues.Should().Equal("cat");
+		variants[1].Properties!.Items.Single(p => p.Name == "kind").EnumValues.Should().BeEmpty();
 	}
 
 	[Test]
@@ -647,35 +612,17 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture)
 			  }
 			}
 			""";
-		var path = Path.Join(Path.GetTempPath(), $"allof-anyof-{Guid.NewGuid():N}.json");
-		await File.WriteAllTextAsync(path, json, TestContext.Current!.Execution.CancellationToken);
-		try
-		{
-			var loaded = await OpenApiDocument.LoadAsync(
-				path,
-				new OpenApiReaderSettings { LeaveStreamOpen = false },
-				TestContext.Current!.Execution.CancellationToken
-			);
-			var document = loaded.Document!;
-			var builder = new ApiPropertyTreeBuilder(
-				document,
-				new PropertyDisplayOptions { RenderMarkdown = s => new HtmlString($"<p>{s}</p>"), ApiRootUrl = "/api/doc/fixture" }
-			);
+		var document = await LoadSpecAsync(json);
+		var builder = BuilderFor(document);
 
-			var list = builder.BuildPropertyList(document.Components!.Schemas!["Holder"], new PropertyTreeScope { Prefix = "" });
+		var list = builder.BuildPropertyList(document.Components!.Schemas!["Holder"], new PropertyTreeScope { Prefix = "" });
 
-			var pet = list!.Items.Single(p => p.Name == "pet");
-			pet.Children.Kind.Should().Be(ChildKind.UnionVariants);
-			var variants = pet.Children.Variants!.Variants;
-			variants.Select(v => v.DisplayName).Should().Equal("Cat", "Dog");
-			variants[0].Properties!.Items.Where(p => p.IsRequired).Select(p => p.Name).Should().Equal("id", "lives");
-			variants[1].Properties!.Items.Where(p => p.IsRequired).Select(p => p.Name).Should().Equal("id");
-		}
-		finally
-		{
-			if (File.Exists(path))
-				File.Delete(path);
-		}
+		var pet = list!.Items.Single(p => p.Name == "pet");
+		pet.Children.Kind.Should().Be(ChildKind.UnionVariants);
+		var variants = pet.Children.Variants!.Variants;
+		variants.Select(v => v.DisplayName).Should().Equal("Cat", "Dog");
+		variants[0].Properties!.Items.Where(p => p.IsRequired).Select(p => p.Name).Should().Equal("id", "lives");
+		variants[1].Properties!.Items.Where(p => p.IsRequired).Select(p => p.Name).Should().Equal("id");
 	}
 
 	[Test]
@@ -712,38 +659,20 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture)
 			  }
 			}
 			""";
-		var path = Path.Join(Path.GetTempPath(), $"allof-oneof-{Guid.NewGuid():N}.json");
-		await File.WriteAllTextAsync(path, json, TestContext.Current!.Execution.CancellationToken);
-		try
-		{
-			var loaded = await OpenApiDocument.LoadAsync(
-				path,
-				new OpenApiReaderSettings { LeaveStreamOpen = false },
-				TestContext.Current!.Execution.CancellationToken
-			);
-			var document = loaded.Document!;
-			var builder = new ApiPropertyTreeBuilder(
-				document,
-				new PropertyDisplayOptions { RenderMarkdown = s => new HtmlString($"<p>{s}</p>"), ApiRootUrl = "/api/doc/fixture" }
-			);
+		var document = await LoadSpecAsync(json);
+		var builder = BuilderFor(document);
 
-			var list = builder.BuildPropertyList(document.Components!.Schemas!["Holder"], new PropertyTreeScope { Prefix = "" });
+		var list = builder.BuildPropertyList(document.Components!.Schemas!["Holder"], new PropertyTreeScope { Prefix = "" });
 
-			var pet = list!.Items.Single(p => p.Name == "pet");
-			pet.Children.Kind.Should().Be(ChildKind.UnionVariants);
-			var variants = pet.Children.Variants!.Variants;
-			variants.Select(v => v.DisplayName).Should().Equal("Cat", "Dog");
-			variants[0].Properties!.Items.Select(p => p.Name).Should().Equal("id", "lives");
-			variants[1].Properties!.Items.Select(p => p.Name).Should().Equal("id", "barks");
+		var pet = list!.Items.Single(p => p.Name == "pet");
+		pet.Children.Kind.Should().Be(ChildKind.UnionVariants);
+		var variants = pet.Children.Variants!.Variants;
+		variants.Select(v => v.DisplayName).Should().Equal("Cat", "Dog");
+		variants[0].Properties!.Items.Select(p => p.Name).Should().Equal("id", "lives");
+		variants[1].Properties!.Items.Select(p => p.Name).Should().Equal("id", "barks");
 
-			var wrapped = list.Items.Single(p => p.Name == "wrapped");
-			wrapped.Children.Kind.Should().Be(ChildKind.None, "an allOf with no property-bearing base keeps its previous rendering");
-		}
-		finally
-		{
-			if (File.Exists(path))
-				File.Delete(path);
-		}
+		var wrapped = list.Items.Single(p => p.Name == "wrapped");
+		wrapped.Children.Kind.Should().Be(ChildKind.None, "an allOf with no property-bearing base keeps its previous rendering");
 	}
 
 	[Test]
@@ -784,33 +713,15 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture)
 			  }
 			}
 			""";
-		var path = Path.Join(Path.GetTempPath(), $"allof-multi-{Guid.NewGuid():N}.json");
-		await File.WriteAllTextAsync(path, json, TestContext.Current!.Execution.CancellationToken);
-		try
-		{
-			var loaded = await OpenApiDocument.LoadAsync(
-				path,
-				new OpenApiReaderSettings { LeaveStreamOpen = false },
-				TestContext.Current!.Execution.CancellationToken
-			);
-			var document = loaded.Document!;
-			var builder = new ApiPropertyTreeBuilder(
-				document,
-				new PropertyDisplayOptions { RenderMarkdown = s => new HtmlString($"<p>{s}</p>"), ApiRootUrl = "/api/doc/fixture" }
-			);
+		var document = await LoadSpecAsync(json);
+		var builder = BuilderFor(document);
 
-			var list = builder.BuildPropertyList(document.Components!.Schemas!["Holder"], new PropertyTreeScope { Prefix = "" });
+		var list = builder.BuildPropertyList(document.Components!.Schemas!["Holder"], new PropertyTreeScope { Prefix = "" });
 
-			var merged = list!.Items.Single(p => p.Name == "merged");
-			merged.AlsoIncludes.Select(t => t.TypeName).Should().Equal("Timestamps");
-			list.Items.Single(p => p.Name == "repeated").AlsoIncludes.Select(t => t.TypeName).Should().Equal("Timestamps");
-			list.Items.Single(p => p.Name == "single").AlsoIncludes.Should().BeEmpty();
-		}
-		finally
-		{
-			if (File.Exists(path))
-				File.Delete(path);
-		}
+		var merged = list!.Items.Single(p => p.Name == "merged");
+		merged.AlsoIncludes.Select(t => t.TypeName).Should().Equal("Timestamps");
+		list.Items.Single(p => p.Name == "repeated").AlsoIncludes.Select(t => t.TypeName).Should().Equal("Timestamps");
+		list.Items.Single(p => p.Name == "single").AlsoIncludes.Should().BeEmpty();
 	}
 
 	[Test]
@@ -867,47 +778,25 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture)
 			  }
 			}
 			""";
-		var path = Path.Join(Path.GetTempPath(), $"discriminator-{Guid.NewGuid():N}.json");
-		await File.WriteAllTextAsync(path, json, TestContext.Current!.Execution.CancellationToken);
-		try
-		{
-			var loaded = await OpenApiDocument.LoadAsync(
-				path,
-				new OpenApiReaderSettings { LeaveStreamOpen = false },
-				TestContext.Current!.Execution.CancellationToken
-			);
-			var document = loaded.Document!;
-			var builder = new ApiPropertyTreeBuilder(
-				document,
-				new PropertyDisplayOptions { RenderMarkdown = s => new HtmlString($"<p>{s}</p>"), ApiRootUrl = "/api/doc/fixture" }
-			);
+		var document = await LoadSpecAsync(json);
+		var builder = BuilderFor(document);
 
-			var list = builder.BuildPropertyList(document.Components!.Schemas!["Holder"], new PropertyTreeScope { Prefix = "" });
+		var list = builder.BuildPropertyList(document.Components!.Schemas!["Holder"], new PropertyTreeScope { Prefix = "" });
 
-			List<string?> Labels(string name) =>
-				list!.Items.Single(p => p.Name == name).Children.Variants!.Variants.Select(v => v.DiscriminatorLabel).ToList();
+		List<string?> Labels(string name) =>
+			list!.Items.Single(p => p.Name == name).Children.Variants!.Variants.Select(v => v.DiscriminatorLabel).ToList();
 
-			Labels("mapped").Should().Equal("kind: feline", "kind: canine");
-			Labels("implicit").Should().Equal("kind: cat", null);
-			Labels("plain").Should().Equal(null, null);
+		Labels("mapped").Should().Equal("kind: feline", "kind: canine");
+		Labels("implicit").Should().Equal("kind: cat", null);
+		Labels("plain").Should().Equal(null, null);
 
-			Labels("composed").Should().Equal("kind: feline", "kind: canine");
-			list!.Items.Single(p => p.Name == "composed").Union!.DiscriminatorProperty.Should().Be("kind");
+		Labels("composed").Should().Equal("kind: feline", "kind: canine");
+		list!.Items.Single(p => p.Name == "composed").Union!.DiscriminatorProperty.Should().Be("kind");
 
-			var holder = new OpenApiSchemaReference("Pet", document);
-			var pet = document.Components!.Schemas!["Pet"];
-			var topLevel = builder.BuildUnionVariantsForSchemas(
-				pet.OneOf!,
-				new PropertyTreeScope { Prefix = "oneof" },
-				holder.Discriminator
-			);
-			topLevel!.Variants.Select(v => v.DiscriminatorLabel).Should().Equal("kind: tomcat", "kind: dog");
-		}
-		finally
-		{
-			if (File.Exists(path))
-				File.Delete(path);
-		}
+		var holder = new OpenApiSchemaReference("Pet", document);
+		var pet = document.Components!.Schemas!["Pet"];
+		var topLevel = builder.BuildUnionVariantsForSchemas(pet.OneOf!, new PropertyTreeScope { Prefix = "oneof" }, holder.Discriminator);
+		topLevel!.Variants.Select(v => v.DiscriminatorLabel).Should().Equal("kind: tomcat", "kind: dog");
 	}
 
 	[Test]
@@ -936,34 +825,16 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture)
 			  }
 			}
 			""";
-		var path = Path.Join(Path.GetTempPath(), $"any-of-{Guid.NewGuid():N}.json");
-		await File.WriteAllTextAsync(path, json, TestContext.Current!.Execution.CancellationToken);
-		try
-		{
-			var loaded = await OpenApiDocument.LoadAsync(
-				path,
-				new OpenApiReaderSettings { LeaveStreamOpen = false },
-				TestContext.Current!.Execution.CancellationToken
-			);
-			var document = loaded.Document!;
-			var builder = new ApiPropertyTreeBuilder(
-				document,
-				new PropertyDisplayOptions { RenderMarkdown = s => new HtmlString($"<p>{s}</p>"), ApiRootUrl = "/api/doc/fixture" }
-			);
+		var document = await LoadSpecAsync(json);
+		var builder = BuilderFor(document);
 
-			var list = builder.BuildPropertyList(document.Components!.Schemas!["Holder"], new PropertyTreeScope { Prefix = "" });
+		var list = builder.BuildPropertyList(document.Components!.Schemas!["Holder"], new PropertyTreeScope { Prefix = "" });
 
-			string? Label(string name) => list!.Items.Single(p => p.Name == name).Union?.Label;
+		string? Label(string name) => list!.Items.Single(p => p.Name == name).Union?.Label;
 
-			Label("inlineAny").Should().Be("Any of:");
-			Label("inlineOne").Should().Be("One of:");
-			Label("refAny").Should().Be("Any of:");
-		}
-		finally
-		{
-			if (File.Exists(path))
-				File.Delete(path);
-		}
+		Label("inlineAny").Should().Be("Any of:");
+		Label("inlineOne").Should().Be("One of:");
+		Label("refAny").Should().Be("Any of:");
 	}
 
 	[Test]
@@ -988,36 +859,18 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture)
 			  }
 			}
 			""";
-		var path = Path.Join(Path.GetTempPath(), $"variant-names-{Guid.NewGuid():N}.json");
-		await File.WriteAllTextAsync(path, json, TestContext.Current!.Execution.CancellationToken);
-		try
-		{
-			var loaded = await OpenApiDocument.LoadAsync(
-				path,
-				new OpenApiReaderSettings { LeaveStreamOpen = false },
-				TestContext.Current!.Execution.CancellationToken
-			);
-			var document = loaded.Document!;
-			var builder = new ApiPropertyTreeBuilder(
-				document,
-				new PropertyDisplayOptions { RenderMarkdown = s => new HtmlString($"<p>{s}</p>"), ApiRootUrl = "/api/doc/fixture" }
-			);
+		var document = await LoadSpecAsync(json);
+		var builder = BuilderFor(document);
 
-			var variants = OperationPageModel.BuildTopLevelUnionVariants(
-				new OpenApiSchemaReference("Body", document),
-				new PropertyTreeScope { Prefix = "req", IsRequest = true },
-				new SchemaAnalyzer(document),
-				builder
-			);
+		var variants = OperationPageModel.BuildTopLevelUnionVariants(
+			new OpenApiSchemaReference("Body", document),
+			new PropertyTreeScope { Prefix = "req", IsRequest = true },
+			new SchemaAnalyzer(document),
+			builder
+		);
 
-			variants!.Variants.Select(v => v.DisplayName).Should().Equal("Cat", "Cat");
-			OperationPageModel.VariantNames(variants).Should().Equal("Cat[]", "Cat");
-		}
-		finally
-		{
-			if (File.Exists(path))
-				File.Delete(path);
-		}
+		variants!.Variants.Select(v => v.DisplayName).Should().Equal("Cat", "Cat");
+		OperationPageModel.VariantNames(variants).Should().Equal("Cat[]", "Cat");
 	}
 
 	[Test]
@@ -1039,52 +892,31 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture)
 			  }
 			}
 			""";
-		var path = Path.Join(Path.GetTempPath(), $"request-union-{Guid.NewGuid():N}.json");
-		await File.WriteAllTextAsync(path, json, TestContext.Current!.Execution.CancellationToken);
-		try
-		{
-			var loaded = await OpenApiDocument.LoadAsync(
-				path,
-				new OpenApiReaderSettings { LeaveStreamOpen = false },
-				TestContext.Current!.Execution.CancellationToken
-			);
-			var document = loaded.Document!;
-			var analyzer = new SchemaAnalyzer(document);
-			var builder = new ApiPropertyTreeBuilder(
-				document,
-				new PropertyDisplayOptions { RenderMarkdown = s => new HtmlString($"<p>{s}</p>"), ApiRootUrl = "/api/doc/fixture" }
-			);
-			var body = new OpenApiSchemaReference("Body", document);
-			var plain = new OpenApiSchemaReference("Plain", document);
+		var document = await LoadSpecAsync(json);
+		var analyzer = new SchemaAnalyzer(document);
+		var builder = BuilderFor(document);
+		var body = new OpenApiSchemaReference("Body", document);
+		var plain = new OpenApiSchemaReference("Plain", document);
 
-			builder.BuildPropertyList(body, new PropertyTreeScope { Prefix = "req", IsRequest = true }).Should().BeNull();
-			var variants = OperationPageModel.BuildTopLevelUnionVariants(
-				body,
-				new PropertyTreeScope { Prefix = "req", IsRequest = true },
-				analyzer,
-				builder
-			);
+		builder.BuildPropertyList(body, new PropertyTreeScope { Prefix = "req", IsRequest = true }).Should().BeNull();
+		var variants = OperationPageModel.BuildTopLevelUnionVariants(
+			body,
+			new PropertyTreeScope { Prefix = "req", IsRequest = true },
+			analyzer,
+			builder
+		);
 
-			variants!.Variants.Select(v => v.DisplayName).Should().Equal("Cat", "Dog");
-			variants.Variants[0].AnchorId.Should().StartWith("req-variant-");
-			variants.Variants[0].Properties!.Items.Single().IsRequired.Should().BeTrue();
-			variants.Variants[0].Properties!.Items.Single().IsRequest.Should().BeTrue("request variants keep the request flag");
-			variants.Label.Should().Be("Any of:");
-			variants.Variants[0].DescriptionMarkdown.Should().Be("A cat.", "only the first paragraph is shown");
-			variants.Variants[1].DescriptionMarkdown.Should().BeNull();
-			var markdown = new System.Text.StringBuilder();
-			ApiPropertyMarkdown.WriteVariants(markdown, variants, "/api/doc/fixture");
-			markdown.ToString().Should().StartWith("Any of:").And.Contain("- `lives` (integer) — required");
-			OperationPageModel
-				.BuildTopLevelUnionVariants(plain, new PropertyTreeScope { Prefix = "req" }, analyzer, builder)
-				.Should()
-				.BeNull();
-		}
-		finally
-		{
-			if (File.Exists(path))
-				File.Delete(path);
-		}
+		variants!.Variants.Select(v => v.DisplayName).Should().Equal("Cat", "Dog");
+		variants.Variants[0].AnchorId.Should().StartWith("req-variant-");
+		variants.Variants[0].Properties!.Items.Single().IsRequired.Should().BeTrue();
+		variants.Variants[0].Properties!.Items.Single().IsRequest.Should().BeTrue("request variants keep the request flag");
+		variants.Label.Should().Be("Any of:");
+		variants.Variants[0].DescriptionMarkdown.Should().Be("A cat.", "only the first paragraph is shown");
+		variants.Variants[1].DescriptionMarkdown.Should().BeNull();
+		var markdown = new System.Text.StringBuilder();
+		ApiPropertyMarkdown.WriteVariants(markdown, variants, "/api/doc/fixture");
+		markdown.ToString().Should().StartWith("Any of:").And.Contain("- `lives` (integer) — required");
+		OperationPageModel.BuildTopLevelUnionVariants(plain, new PropertyTreeScope { Prefix = "req" }, analyzer, builder).Should().BeNull();
 	}
 
 	[Test]
@@ -1105,35 +937,17 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture)
 			  }
 			}
 			""";
-		var path = Path.Join(Path.GetTempPath(), $"crlf-description-{Guid.NewGuid():N}.json");
-		await File.WriteAllTextAsync(path, json, TestContext.Current!.Execution.CancellationToken);
-		try
-		{
-			var loaded = await OpenApiDocument.LoadAsync(
-				path,
-				new OpenApiReaderSettings { LeaveStreamOpen = false },
-				TestContext.Current!.Execution.CancellationToken
-			);
-			var document = loaded.Document!;
-			var builder = new ApiPropertyTreeBuilder(
-				document,
-				new PropertyDisplayOptions { RenderMarkdown = s => new HtmlString($"<p>{s}</p>"), ApiRootUrl = "/api/doc/fixture" }
-			);
+		var document = await LoadSpecAsync(json);
+		var builder = BuilderFor(document);
 
-			var variants = OperationPageModel.BuildTopLevelUnionVariants(
-				new OpenApiSchemaReference("Body", document),
-				new PropertyTreeScope { Prefix = "res-200" },
-				new SchemaAnalyzer(document),
-				builder
-			);
+		var variants = OperationPageModel.BuildTopLevelUnionVariants(
+			new OpenApiSchemaReference("Body", document),
+			new PropertyTreeScope { Prefix = "res-200" },
+			new SchemaAnalyzer(document),
+			builder
+		);
 
-			variants!.Variants.Select(v => v.DescriptionMarkdown).Should().Equal("A cat.", "A dog.");
-		}
-		finally
-		{
-			if (File.Exists(path))
-				File.Delete(path);
-		}
+		variants!.Variants.Select(v => v.DescriptionMarkdown).Should().Equal("A cat.", "A dog.");
 	}
 
 	[Test]
@@ -1166,43 +980,19 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture)
 			  }
 			}
 			""";
-		var path = Path.Join(Path.GetTempPath(), $"map-variant-{Guid.NewGuid():N}.json");
-		await File.WriteAllTextAsync(path, json, TestContext.Current!.Execution.CancellationToken);
-		try
-		{
-			var loaded = await OpenApiDocument.LoadAsync(
-				path,
-				new OpenApiReaderSettings { LeaveStreamOpen = false },
-				TestContext.Current!.Execution.CancellationToken
-			);
-			var document = loaded.Document!;
-			var builder = new ApiPropertyTreeBuilder(
-				document,
-				new PropertyDisplayOptions { RenderMarkdown = s => new HtmlString($"<p>{s}</p>"), ApiRootUrl = "/api/doc/fixture" }
-			);
+		var document = await LoadSpecAsync(json);
+		var builder = BuilderFor(document);
 
-			var list = builder.BuildPropertyList(document.Components!.Schemas!["Holder"], new PropertyTreeScope { Prefix = "" });
+		var list = builder.BuildPropertyList(document.Components!.Schemas!["Holder"], new PropertyTreeScope { Prefix = "" });
 
-			var inputs = list!.Items.Single(p => p.Name == "inputs");
-			inputs.Children.Kind.Should().Be(ChildKind.UnionVariants);
-			var map = inputs.Children.Variants!.Variants.Single(v => v.Properties?.Items.Any(p => p.Name == "<string>") == true);
-			var keyRow = map.Properties!.Items.Single();
-			keyRow.AnchorId.Should().EndWith("-string", "the id stays free of angle brackets");
-			keyRow.Children.Properties!.Items.Select(p => p.Name).Should().Equal("enabled", "vars");
+		var inputs = list!.Items.Single(p => p.Name == "inputs");
+		inputs.Children.Kind.Should().Be(ChildKind.UnionVariants);
+		var map = inputs.Children.Variants!.Variants.Single(v => v.Properties?.Items.Any(p => p.Name == "<string>") == true);
+		var keyRow = map.Properties!.Items.Single();
+		keyRow.AnchorId.Should().EndWith("-string", "the id stays free of angle brackets");
+		keyRow.Children.Properties!.Items.Select(p => p.Name).Should().Equal("enabled", "vars");
 
-			list
-				.Items
-				.Single(p => p.Name == "query")
-				.Children
-				.Kind
-				.Should()
-				.Be(ChildKind.None, "a map of anything has no properties to list");
-		}
-		finally
-		{
-			if (File.Exists(path))
-				File.Delete(path);
-		}
+		list.Items.Single(p => p.Name == "query").Children.Kind.Should().Be(ChildKind.None, "a map of anything has no properties to list");
 	}
 
 	[Test]
@@ -1232,34 +1022,16 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture)
 			  }
 			}
 			""";
-		var path = Path.Join(Path.GetTempPath(), $"array-variants-{Guid.NewGuid():N}.json");
-		await File.WriteAllTextAsync(path, json, TestContext.Current!.Execution.CancellationToken);
-		try
-		{
-			var loaded = await OpenApiDocument.LoadAsync(
-				path,
-				new OpenApiReaderSettings { LeaveStreamOpen = false },
-				TestContext.Current!.Execution.CancellationToken
-			);
-			var document = loaded.Document!;
-			var builder = new ApiPropertyTreeBuilder(
-				document,
-				new PropertyDisplayOptions { RenderMarkdown = s => new HtmlString($"<p>{s}</p>"), ApiRootUrl = "/api/doc/fixture" }
-			);
+		var document = await LoadSpecAsync(json);
+		var builder = BuilderFor(document);
 
-			var list = builder.BuildPropertyList(document.Components!.Schemas!["Holder"], new PropertyTreeScope { Prefix = "" });
+		var list = builder.BuildPropertyList(document.Components!.Schemas!["Holder"], new PropertyTreeScope { Prefix = "" });
 
-			var variants = list!.Items.Single(p => p.Name == "policies").Children.Variants!.Variants;
-			var policy = variants.Single(v => v.DisplayName == "Policy");
-			policy.IsArrayVariant.Should().BeTrue();
-			policy.ShowProperties.Should().BeTrue("an array-only variant lists the properties of its items");
-			policy.Properties!.Items.Select(p => p.Name).Should().Equal("name", "inputs");
-			variants.Single(v => v.DisplayName == "string").Properties.Should().BeNull();
-		}
-		finally
-		{
-			if (File.Exists(path))
-				File.Delete(path);
-		}
+		var variants = list!.Items.Single(p => p.Name == "policies").Children.Variants!.Variants;
+		var policy = variants.Single(v => v.DisplayName == "Policy");
+		policy.IsArrayVariant.Should().BeTrue();
+		policy.ShowProperties.Should().BeTrue("an array-only variant lists the properties of its items");
+		policy.Properties!.Items.Select(p => p.Name).Should().Equal("name", "inputs");
+		variants.Single(v => v.DisplayName == "string").Properties.Should().BeNull();
 	}
 }
