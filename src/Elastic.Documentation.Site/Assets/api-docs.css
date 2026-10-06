@@ -2453,7 +2453,7 @@ a.docs-reference-btn::after {
 	--api-code-bg: var(--code-bg);
 	--api-code-border: var(--code-border);
 	--api-code-hover: var(--code-hover);
-	--api-code-radius: 16px;
+	--api-code-radius: var(--code-radius);
 	--api-code-text: var(--code-fg);
 	--api-code-muted: var(--code-muted);
 	--api-code-accent: var(--color-blue-elastic-50);
