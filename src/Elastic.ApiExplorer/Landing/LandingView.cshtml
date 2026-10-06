@@ -39,7 +39,6 @@
 						<td colspan="2"><h3><a href="@row.Url" class="api-tag-landing-link" @apiHxAttrs>@row.Title</a></h3></td>
 					</tr>
 						break;
-					case OverviewRowKind.Endpoint:
 					case OverviewRowKind.Operation:
 							<tr>
 								<td class="api-name">
@@ -52,7 +51,7 @@
 										@(row.Title)
 									}
 								</td>
-								<td>@(await RenderPartialAsync<_OperationUrlList, OperationUrlListModel>(new OperationUrlListModel(row.Operations, apiHxAttrs)))</td>
+								<td>@(await RenderPartialAsync<_OperationUrlList, OperationUrlListModel>(new OperationUrlListModel(row.Endpoint)))</td>
 							</tr>
 						break;
 					case OverviewRowKind.SchemaCategoryHeading:

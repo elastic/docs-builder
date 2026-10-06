@@ -28,6 +28,11 @@ function ensureHighlightReady(): Promise<void> {
     return allLanguagesReady
 }
 
+/** Starts loading the languages early; pages with code call this before the first init step runs. */
+export function preloadHighlight(): void {
+    void ensureHighlightReady()
+}
+
 export async function highlightCodeBlocks(root: ParentNode): Promise<void> {
     const blocks = root.querySelectorAll<HTMLElement>(CODE_BLOCK_SELECTOR)
     if (blocks.length === 0) return
@@ -177,23 +182,20 @@ hljs.registerLanguage('console', function () {
         aliases: ['es-console'],
         contains: [
             {
-                className: 'meta',
+                // `starts` so the path is highlighted after the method, rather than inside a
+                // rule whose `begin` has already consumed it.
+                className: 'keyword',
                 begin: /^(?:GET|POST|PUT|DELETE|HEAD|OPTIONS|PATCH)\b/,
-                end: /$/,
-                contains: [
-                    {
-                        className: 'keyword',
-                        begin: /^(?:GET|POST|PUT|DELETE|HEAD|OPTIONS|PATCH)/,
-                    },
-                    {
-                        className: 'string',
-                        begin: /\S+/,
-                    },
-                ],
+                starts: {
+                    end: /$/,
+                    contains: [{ className: 'string', begin: /\S+/ }],
+                },
             },
             {
                 begin: /\{/,
-                end: /(?=\n(?:GET|POST|PUT|DELETE|HEAD|OPTIONS|PATCH)\b)|$/,
+                // No `$`: highlight.js compiles regexes as multiline, so it would end the
+                // body after its first line. It runs to the next request or the end of the sample.
+                end: /(?=\n(?:GET|POST|PUT|DELETE|HEAD|OPTIONS|PATCH)\b)/,
                 subLanguage: 'json',
                 relevance: 0,
             },

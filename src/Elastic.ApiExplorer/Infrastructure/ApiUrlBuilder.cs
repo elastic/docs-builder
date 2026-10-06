@@ -38,6 +38,37 @@ public static partial class ApiUrlBuilder
 		return $"operation-{id.Replace('.', '-').ToLowerInvariant()}";
 	}
 
+	/// <summary>
+	/// URL leaf for operations collapsed onto one page. Spec operation ids for one API share a base and differ by
+	/// a numeric suffix (<c>search</c>, <c>search-1</c>…), so the page keeps the primary operation's base id. The
+	/// suffix stays when no other operation in the group shares that base, or when the base moniker is already a
+	/// page outside the group (<paramref name="takenMonikers"/>: every operation's own moniker, plus the shared
+	/// pages created so far).
+	/// </summary>
+	public static string CanonicalOperationMoniker(
+		IReadOnlyList<ApiOperation> operations,
+		ApiOperation primary,
+		IReadOnlySet<string>? takenMonikers = null
+	)
+	{
+		var id = primary.Operation.OperationId;
+		if (string.IsNullOrWhiteSpace(id))
+			return OperationMoniker(id, primary.Route);
+
+		var baseId = NumericSuffix().Replace(id, "");
+		var shared = operations.Count(o => o.Operation.OperationId is { } other && NumericSuffix().Replace(other, "") == baseId) > 1;
+		if (!shared)
+			return OperationMoniker(id, primary.Route);
+
+		var candidate = OperationMoniker(baseId, primary.Route);
+		var ownedByGroup = operations.Any(o => OperationMoniker(o.Operation.OperationId, o.Route) == candidate);
+		var takenElsewhere = !ownedByGroup && takenMonikers?.Contains(candidate) == true;
+		return takenElsewhere ? OperationMoniker(id, primary.Route) : candidate;
+	}
+
+	[GeneratedRegex(@"-\d+$", RegexOptions.CultureInvariant)]
+	private static partial Regex NumericSuffix();
+
 	/// <summary>Deterministic URL segment for a schema type page under <c>.../types/</c>.</summary>
 	public static string SchemaMoniker(string schemaId) => schemaId.Replace('.', '-').ToLowerInvariant();
 
@@ -75,6 +106,9 @@ public static partial class ApiUrlBuilder
 
 	public static string ServersUrl(string? urlPathPrefix, string apiUrlSuffix) =>
 		$"{ProductRoot(urlPathPrefix, apiUrlSuffix)}/{ServersSegment}";
+
+	public static string OperationUrl(string? urlPathPrefix, string apiUrlSuffix, string moniker) =>
+		$"{ProductRoot(urlPathPrefix, apiUrlSuffix)}/operation/{moniker}";
 
 	[GeneratedRegex(@"\s*\(([^)]+)\)")]
 	private static partial Regex ParentheticalSuffixPattern();

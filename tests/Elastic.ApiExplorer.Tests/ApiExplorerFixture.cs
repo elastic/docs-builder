@@ -52,7 +52,6 @@ public sealed class ApiExplorerFixture : IAsyncInitializer, IAsyncDisposable
 			?? throw new InvalidOperationException($"Could not read fixture spec at {path}");
 
 		var generator = new OpenApiGenerator(NullLoggerFactory.Instance, Context, PassthroughMarkdownRenderer.Instance);
-		Context.Configuration.Features.ApiNavGroupingEnabled = true;
 		Navigation = generator.CreateNavigation("fixture", Document);
 	}
 
