@@ -337,7 +337,7 @@ How the rail is laid out:
 - **Language names.** The `lang` of an `x-codeSamples` entry is matched without regard to case (`cURL`, `Curl` and `curl` are the same language). A suffix after a known language name, such as `cURL_tag_names`, makes that sample part of a separate example named after the suffix ("Tag names") instead of a language of its own.
 - **Where samples attach.** `x-codeSamples` attach to the example whose request body matches the Console sample. When the samples' body matches no named example, they become their own first example, titled **Example**.
 - **Generated samples.** An example that only has a JSON body gets a generated **Console** request, and a **curl** request when the operation has a curl sample to copy the host and headers from. Hovering one of these cards shows that it was built from the example's request body. The request line comes from an example description that starts with ``Run `METHOD path` ``, or else from the operation's dominant method and shortest path.
-- **Missing languages.** Languages that only exist for another example show as dimmed dots and a tile that jumps to that example.
+- **Missing languages.** Languages that only exist for another example show as dimmed dots that jump to that example.
 
 Request and response code boxes show a non-selectable line-number gutter (selection and copy omit the numbers). Response bodies that are JSON objects/arrays use the Figma Card/Code token colors (black structure, green strings, blue booleans, maroon numbers); other payloads such as SSE streams stay plaintext so highlighting does not invent misleading colors. Single-line `curl` samples are reformatted for display (method and URL on the first line, one flag per line, with `\` continuations).
 

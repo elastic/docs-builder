@@ -2,9 +2,10 @@
  * Examples rail on API operation pages: example chips pick a scenario, each scenario shows a
  * scroll-snap carousel with one card per language. Console is the default language; an explicit pick is remembered across pages.
  */
-import { countLines } from './code-line-numbers'
 import { iconCheckEui, iconCopyEui, temporarilyChangeIcon } from './copybutton'
 import { closeIcon, fullscreenIcon } from './icons'
+import { prefersReducedMotion } from './motion'
+import { lockPageScroll } from './scroll-lock'
 
 export const apiLanguageStorageKey = 'api-language'
 const defaultLanguage = 'Console'
@@ -85,12 +86,9 @@ function syncStripHeight(carousel: HTMLElement) {
     if (code > 0) strip.style.setProperty('--api-strip-height', `${height}px`)
 }
 
+/** The card's line count, written by the template (data-lines). */
 function lineCount(card: HTMLElement): number {
-    if (card.dataset.lines) return Number(card.dataset.lines)
-    const text = card.querySelector('pre code')?.textContent ?? ''
-    const lines = text === '' ? 0 : countLines(text)
-    card.dataset.lines = String(lines)
-    return lines
+    return Number(card.dataset.lines ?? 0)
 }
 
 /** Shows the expand button only when the active sample is longer than the cap (or while expanded, to restore). */
@@ -152,13 +150,6 @@ function activeLanguage(carousel: HTMLElement): string | undefined {
     return carousel.querySelector<HTMLElement>(
         '.api-code-carousel-card.is-active'
     )?.dataset.lang
-}
-
-function prefersReducedMotion(): boolean {
-    return (
-        typeof window.matchMedia === 'function' &&
-        window.matchMedia('(prefers-reduced-motion: reduce)').matches
-    )
 }
 
 /** Marks a card active and updates the position label, arrows and dots. Returns false if the language is missing. */
@@ -371,15 +362,9 @@ function previewCode(card: HTMLElement): HTMLElement | null {
     return card.querySelector<HTMLElement>('pre code')
 }
 
-function syncPreviewButton(card: HTMLElement) {
-    const button = card.querySelector<HTMLElement>('[data-code-preview]')
-    const hide = !previewCode(card)
-    if (button && button.hidden !== hide) button.hidden = hide
-}
-
 /**
  * Puts a full screen preview button in front of the copy button of every code card that has code.
- * A card with switchable panels (response statuses) shows it only while the visible panel has code.
+ * For a card with status panels, CSS hides the button while the visible panel has no code (api-docs.css).
  */
 function addPreviewButtons(examples: HTMLElement) {
     examples
@@ -397,18 +382,6 @@ function addPreviewButtons(examples: HTMLElement) {
             )
             button.dataset.codePreview = ''
             actions.prepend(button)
-            syncPreviewButton(card)
-            // Follow the status tabs: the button tracks which panel is shown.
-            const panels =
-                card.querySelectorAll<HTMLElement>('[data-code-panel]')
-            if (panels.length > 0) {
-                const observer = new MutationObserver(() =>
-                    syncPreviewButton(card)
-                )
-                panels.forEach((panel) =>
-                    observer.observe(panel, { attributeFilter: ['hidden'] })
-                )
-            }
         })
 }
 
@@ -502,20 +475,9 @@ function openPreview(card: HTMLElement): HTMLDialogElement | null {
         event.stopPropagation()
         dialog.close()
     })
-    // The page behind the dialog does not scroll. The lock goes on <html>: it sets overflow-y itself, so a
-    // lock on <body> would not reach the viewport. If hiding the scrollbar widens the page, pad that back.
-    const root = document.documentElement
-    const previous = {
-        overflow: root.style.overflow,
-        paddingRight: root.style.paddingRight,
-    }
-    const widthBefore = root.clientWidth
-    root.style.overflow = 'hidden'
-    const widened = root.clientWidth - widthBefore
-    if (widened > 0) root.style.paddingRight = `${widened}px`
+    const unlockScroll = lockPageScroll()
     dialog.addEventListener('close', () => {
-        root.style.overflow = previous.overflow
-        root.style.paddingRight = previous.paddingRight
+        unlockScroll()
         dialog.remove()
     })
 

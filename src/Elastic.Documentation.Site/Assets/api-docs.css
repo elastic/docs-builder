@@ -2686,18 +2686,12 @@ button.example-response-tab:focus-visible {
 		flex-direction: column;
 	}
 
-	#api-examples-panel .api-examples-body,
-	#api-examples-panel .api-examples-scenarios {
+	#api-examples-panel .api-examples-body {
 		flex: 0 0 auto;
 		display: flex;
 		flex-direction: column;
 		flex-wrap: nowrap;
 		overflow: visible;
-	}
-
-	#api-examples-panel .api-examples-scenario-header {
-		flex-shrink: 0;
-		margin-bottom: calc(var(--spacing) * 3);
 	}
 
 	#api-examples-panel .api-examples-scenario-panel:not([hidden]) {
@@ -3484,7 +3478,13 @@ html:has(.api-page-shell) {
 	}
 }
 
-/* Full screen preview of one code block. The card button shares the header copy button's rule (code-block.css). */
+/* Full screen preview of one code block. The card button shares the header copy button's rule (code-block.css).
+   A response card offers it only while the status panel on show has code. */
+.example-block--response:not(:has([data-code-panel]:not([hidden]) pre code))
+	[data-code-preview] {
+	display: none;
+}
+
 .api-code-preview-btn:focus-visible {
 	outline: 2px solid var(--color-blue-elastic, #0b64dd);
 	outline-offset: 2px;
@@ -3543,8 +3543,6 @@ html:has(.api-page-shell) {
 	box-sizing: content-box;
 	width: 100ch;
 }
-
-/* Response collapse toggle in the response card header. */
 
 .is-response-collapsed .example-block--response .example-block-body {
 	display: none;
@@ -3657,9 +3655,6 @@ html:has(.api-page-shell) {
 		max-height: var(--api-code-cap, none);
 		min-height: 0;
 	}
-
-	#api-examples-panel .is-response-collapsed .api-code-carousel-card-body,
-	#api-examples-panel .is-response-collapsed .api-code-sample-body,
 
 	/* The response has its own size: as tall as its JSON up to --api-response-height, and it never shrinks.
 	   The request pane gives way instead, so the response does not change size when the language or the

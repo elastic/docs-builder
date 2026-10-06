@@ -49,18 +49,13 @@ public sealed partial record OperationEndpoint(
 		}
 		variants = [.. variants.Distinct()];
 
-		// bump.sh lists the variants of one operation, so they behave the same by definition.
-		var mergeMethods = siblings.Count == 0 || AreInterchangeable([operation, .. siblings]);
-		return FromVariants(variants, operation.Route, mergeMethods, stripped);
+		// Siblings arrive from the navigation builder only when AreInterchangeable held, and bump.sh lists the
+		// variants of one operation, so every variant here behaves the same and the methods merge per route.
+		return FromVariants(variants, operation.Route, stripped);
 	}
 
 	/// <summary>Applies the display rules to a variant list. <paramref name="specRoute"/> wins ties for the main row.</summary>
-	public static OperationEndpoint FromVariants(
-		IReadOnlyList<EndpointVariant> variants,
-		string specRoute,
-		bool mergeMethods,
-		string? description = null
-	)
+	public static OperationEndpoint FromVariants(IReadOnlyList<EndpointVariant> variants, string specRoute, string? description = null)
 	{
 		// Most segments first; the spec's own route wins ties, then longer text, then ordinal.
 		var routes = variants
@@ -87,10 +82,7 @@ public sealed partial record OperationEndpoint(
 				? mainSegments.Select((s, i) => new EndpointSegment(s, optional.Contains(i))).ToArray()
 				: Split(route).Select(static s => new EndpointSegment(s, false)).ToArray();
 
-			if (mergeMethods)
-				rows.Add(new EndpointRow(route, methods[0], methods[1..], segments));
-			else
-				rows.AddRange(methods.Select(m => new EndpointRow(route, m, [], segments)));
+			rows.Add(new EndpointRow(route, methods[0], methods[1..], segments));
 		}
 
 		var optionalParameters = optional

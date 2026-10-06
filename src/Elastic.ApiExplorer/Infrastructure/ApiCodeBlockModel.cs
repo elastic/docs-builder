@@ -13,9 +13,9 @@ public record ApiCodeBlockModel(string HighlightClass, string Source, bool LineN
 	/// <summary>Lines the gutter numbers: one trailing newline does not count, and an empty block is one line.</summary>
 	public static int LineCount(string source)
 	{
-		var text = source.Replace("\r\n", "\n", StringComparison.Ordinal);
+		var text = source.ReplaceLineEndings("\n").AsSpan();
 		if (text.EndsWith('\n'))
 			text = text[..^1];
-		return Math.Max(1, text.Split('\n').Length);
+		return text.Count('\n') + 1;
 	}
 }

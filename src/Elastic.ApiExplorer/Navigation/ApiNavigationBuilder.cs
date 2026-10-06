@@ -264,11 +264,11 @@ public class ApiNavigationBuilder(ILogger logger, BuildContext context)
 	{
 		var primary = OperationEndpoint.SelectPrimary(endpoint.Operations);
 		var moniker = ApiUrlBuilder.CanonicalOperationMoniker(endpoint.Operations, primary);
-		var url = OperationNavigationItem.OperationUrl(context.UrlPathPrefix, apiUrlSuffix, moniker);
+		var url = ApiUrlBuilder.OperationUrl(context.UrlPathPrefix, apiUrlSuffix, moniker);
 		var aliases = endpoint
 			.Operations
 			.Select(
-				o => OperationNavigationItem.OperationUrl(
+				o => ApiUrlBuilder.OperationUrl(
 					context.UrlPathPrefix,
 					apiUrlSuffix,
 					ApiUrlBuilder.OperationMoniker(o.Operation.OperationId, o.Route)

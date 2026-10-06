@@ -542,16 +542,15 @@ public class OpenApiGenerator(
 		var html = ApiRedirectPage.Html(page.Url);
 		foreach (var alias in page.AliasUrls)
 		{
-			var file = _writeFileSystem.FileInfo.New(
-				Path.Join(context.OutputDirectory.FullName, ApiOutputPaths.RelativeHtmlFile(alias, context.UrlPathPrefix))
-			);
-			try
-			{
-				file.Directory!.Create();
-			}
-			catch (IOException) { }
-
-			await _writeFileSystem.File.WriteAllTextAsync(file.FullName, html, ctx).ConfigureAwait(false);
+			await WriteSpecSibling(
+				ApiOutputPaths.RelativeHtmlFile(alias, context.UrlPathPrefix),
+				async (stream, c) =>
+				{
+					await using var writer = new StreamWriter(stream);
+					await writer.WriteAsync(html.AsMemory(), c).ConfigureAwait(false);
+				},
+				ctx
+			).ConfigureAwait(false);
 		}
 	}
 

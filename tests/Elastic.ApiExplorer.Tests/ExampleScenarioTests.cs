@@ -354,7 +354,7 @@ public class ExampleScenarioTests
 				"language-curl"
 			)
 		};
-		var endpoint = OperationEndpoint.FromVariants([new EndpointVariant("post", "/_search")], "/_search", mergeMethods: true);
+		var endpoint = OperationEndpoint.FromVariants([new EndpointVariant("post", "/_search")], "/_search");
 
 		var filled = GeneratedCodeSamples.Fill([slicing], spec, endpoint);
 
@@ -379,8 +379,7 @@ public class ExampleScenarioTests
 				new EndpointVariant("post", "/api/agent_builder/tools/_execute"),
 				new EndpointVariant("post", "/s/{space_id}/api/agent_builder/tools/_execute")
 			],
-			"/api/agent_builder/tools/_execute",
-			mergeMethods: true
+			"/api/agent_builder/tools/_execute"
 		);
 
 		var console = GeneratedCodeSamples.Fill([esql], spec, endpoint).Single().CodeSamples.Single();

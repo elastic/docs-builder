@@ -63,17 +63,6 @@ public class OperationEndpointTests
 	}
 
 	[Test]
-	public void Build_SiblingsWithDifferentParameters_KeepOneRowPerMethod()
-	{
-		var get = Op(HttpMethod.Get, "/_search", "search", "q");
-		var post = Op(HttpMethod.Post, "/_search", "search-1", "q", "routing");
-
-		var endpoint = OperationEndpoint.Build(get, null, [post]);
-
-		endpoint.Rows.Select(Label).Should().Equal("post /_search", "get /_search");
-	}
-
-	[Test]
 	public void Build_BumpListing_PutItemStillLeadsWithPost_AndIsStrippedFromTheDescription()
 	{
 		var put = Op(HttpMethod.Put, "/{index}/_bulk", "bulk");

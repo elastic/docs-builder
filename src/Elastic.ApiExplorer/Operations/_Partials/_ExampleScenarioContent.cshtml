@@ -16,7 +16,7 @@
 	</div>
 }
 @{
-	var hasRequest = samples.Count > 0 || (scenario.ShowRequest && (scenario.RequestJson is not null || !string.IsNullOrEmpty(scenario.RequestExternalValue)));
+	var hasRequest = samples.Count > 0 || scenario.ShowRequest;
 }
 @if (hasRequest)
 {
@@ -43,7 +43,7 @@
 			@for (var i = 0; i < samples.Count; i++)
 			{
 				var sample = samples[i];
-				<section class="api-code-card api-code-carousel-card@(i == 0 ? " is-active" : "")" data-code-card data-lang="@sample.Language" aria-label="@sample.Language"@(sample.Generated ? new HtmlString(" data-generated title=\"Built from this example&rsquo;s request body\"") : HtmlString.Empty)>
+				<section class="api-code-card api-code-carousel-card@(i == 0 ? " is-active" : "")" data-code-card data-lang="@sample.Language" data-lines="@ApiCodeBlockModel.LineCount(sample.Source)" aria-label="@sample.Language"@(sample.Generated ? new HtmlString(" data-generated title=\"Built from this example&rsquo;s request body\"") : HtmlString.Empty)>
 					<header class="api-code-carousel-card-header">
 						<span class="api-lang-badge" data-lang="@sample.Language" aria-hidden="true"></span>
 						<span class="api-code-carousel-card-language">@sample.Language</span>

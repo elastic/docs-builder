@@ -568,11 +568,7 @@ public partial record OperationPageModel
 	}
 
 	private static bool SamplesCarryABody(IReadOnlyList<CodeSample> codeSamples) =>
-		codeSamples.Any(
-			static s => s.Language.Equals("Console", StringComparison.OrdinalIgnoreCase)
-				? s.Source.Trim().Contains('\n')
-				: s.Source.Contains(" -d ", StringComparison.Ordinal)
-		);
+		codeSamples.Any(static s => s.IsConsole ? s.Source.Trim().Contains('\n') : s.Source.Contains(" -d ", StringComparison.Ordinal));
 
 	private static string UniqueTabId(string id, IReadOnlyList<ExampleScenario> scenarios)
 	{

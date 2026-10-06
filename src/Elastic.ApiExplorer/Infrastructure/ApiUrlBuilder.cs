@@ -95,6 +95,9 @@ public static partial class ApiUrlBuilder
 	public static string ServersUrl(string? urlPathPrefix, string apiUrlSuffix) =>
 		$"{ProductRoot(urlPathPrefix, apiUrlSuffix)}/{ServersSegment}";
 
+	public static string OperationUrl(string? urlPathPrefix, string apiUrlSuffix, string moniker) =>
+		$"{ProductRoot(urlPathPrefix, apiUrlSuffix)}/operation/{moniker}";
+
 	[GeneratedRegex(@"\s*\(([^)]+)\)")]
 	private static partial Regex ParentheticalSuffixPattern();
 }

@@ -9,7 +9,7 @@ function source(lang: string): string {
 
 function card(lang: string): string {
     return `
-        <section class="api-code-card api-code-carousel-card" data-code-card data-lang="${lang}">
+        <section class="api-code-card api-code-carousel-card" data-code-card data-lang="${lang}" data-lines="${source(lang).split('\n').length}">
             <header class="api-code-carousel-card-header"><span class="api-code-carousel-card-language">${lang}</span><span data-code-actions></span></header>
             <div><pre><code>${source(lang)}</code></pre></div>
         </section>`
@@ -211,30 +211,17 @@ describe('API examples carousel', () => {
         expect(slicing.hasAttribute('hidden')).toBe(false)
     })
 
-    it('offers the preview only where there is code to show', async () => {
+    it('offers the preview only on cards that have code', () => {
         initApiExamples()
-        const response = document.querySelector<HTMLElement>(
-            '.example-block--response'
-        )!
-        const button = response.querySelector<HTMLElement>(
-            '[data-code-preview]'
-        )!
 
+        expect(
+            document.querySelector(
+                '.example-block--response [data-code-preview]'
+            )
+        ).not.toBeNull()
         expect(
             document.querySelector('[data-empty-card] [data-code-preview]')
         ).toBeNull()
-        expect(button.hidden).toBe(false)
-
-        // Switch to the status that has no example, the way the response tabs do.
-        response
-            .querySelector('[data-code-panel="200"]')!
-            .setAttribute('hidden', '')
-        response
-            .querySelector('[data-code-panel="400"]')!
-            .removeAttribute('hidden')
-        await new Promise((resolve) => setTimeout(resolve, 0))
-
-        expect(button.hidden).toBe(true)
     })
 
     it('copies from the preview, and does nothing without a Clipboard API', async () => {

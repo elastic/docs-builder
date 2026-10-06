@@ -32,58 +32,44 @@ public record CodeSample(string Language, string Source, string HighlightClass)
 		return (Canonical(lang) ?? lang, null);
 	}
 
-	private static string? Canonical(string language) =>
-		LanguageRanks.Keys.FirstOrDefault(k => k.Equals(language, StringComparison.OrdinalIgnoreCase));
+	private static string? Canonical(string language) => ByName.TryGetValue(language, out var known) ? known.Name : null;
+
+	public bool IsConsole => Language.Equals("Console", StringComparison.OrdinalIgnoreCase);
+
+	public bool IsCurl => Language.Equals("curl", StringComparison.OrdinalIgnoreCase);
 
 	/// <summary>The client library or tool that runs this sample, e.g. <c>elasticsearch-java</c>. Empty when unknown.</summary>
-	public string ClientLabel => ClientLabels.GetValueOrDefault(Language, "");
+	public string ClientLabel => ByName.TryGetValue(Language, out var known) ? known.Client ?? "" : "";
 
 	/// <summary>Position in the carousel: Console, then languages by how many developers use them. Unranked languages sort last.</summary>
-	public int Rank => LanguageRanks.GetValueOrDefault(Language, int.MaxValue);
-
-	// Console is the docs' native sample. The rest follow GitHub's Innovation Graph global
-	// programming-language ranking (unique pushers, 2026 Q1); curl counts as Shell there.
-	// https://innovationgraph.github.com/global-metrics/programming-languages
-	private static readonly Dictionary<string, int> LanguageRanks = new(StringComparer.OrdinalIgnoreCase)
-	{
-		["Console"] = 0,
-		["JavaScript"] = 1,
-		["Python"] = 2,
-		["curl"] = 3,
-		["Java"] = 4,
-		["C#"] = 5,
-		["PHP"] = 6,
-		["Ruby"] = 7,
-		["Go"] = 8,
-		["Rust"] = 9,
-	};
-
-	private static readonly Dictionary<string, string> ClientLabels = new(StringComparer.OrdinalIgnoreCase)
-	{
-		["Console"] = "Kibana Dev Tools",
-		["curl"] = "Shell",
-		["Python"] = "elasticsearch-py",
-		["JavaScript"] = "@elastic/elasticsearch",
-		["Ruby"] = "elasticsearch-ruby",
-		["PHP"] = "elasticsearch-php",
-		["Java"] = "elasticsearch-java",
-		["C#"] = "Elastic.Clients.Elasticsearch",
-	};
-
-	private static readonly Dictionary<string, string> LanguageHighlightMap = new(StringComparer.OrdinalIgnoreCase)
-	{
-		["Console"] = "language-console",
-		["curl"] = "language-curl",
-		["Python"] = "language-python",
-		["JavaScript"] = "language-javascript",
-		["Ruby"] = "language-ruby",
-		["PHP"] = "language-php",
-		["Java"] = "language-java",
-		["C#"] = "language-csharp",
-	};
+	public int Rank => ByName.TryGetValue(Language, out var known) ? known.Rank : int.MaxValue;
 
 	public static string GetHighlightClass(string language) =>
-		LanguageHighlightMap.GetValueOrDefault(language, $"language-{language.ToLowerInvariant()}");
+		ByName.TryGetValue(language, out var known) && known.Highlight is { } highlight
+			? highlight
+			: $"language-{language.ToLowerInvariant()}";
+
+	private sealed record KnownLanguage(string Name, int Rank, string? Client, string? Highlight);
+
+	// One row per language we know, in carousel order: Console is the docs' native sample, the rest follow
+	// GitHub's Innovation Graph global ranking (unique pushers, 2026 Q1); curl counts as Shell there.
+	// https://innovationgraph.github.com/global-metrics/programming-languages
+	private static readonly Dictionary<string, KnownLanguage> ByName = new (string Name, string? Client, string? Highlight)[]
+	{
+		("Console", "Kibana Dev Tools", "language-console"),
+		("JavaScript", "@elastic/elasticsearch", "language-javascript"),
+		("Python", "elasticsearch-py", "language-python"),
+		("curl", "Shell", "language-curl"),
+		("Java", "elasticsearch-java", "language-java"),
+		("C#", "Elastic.Clients.Elasticsearch", "language-csharp"),
+		("PHP", "elasticsearch-php", "language-php"),
+		("Ruby", "elasticsearch-ruby", "language-ruby"),
+		("Go", null, null),
+		("Rust", null, null),
+	}.Select(static (l, rank) => new KnownLanguage(l.Name, rank, l.Client, l.Highlight)).ToDictionary(
+		static l => l.Name,
+		StringComparer.OrdinalIgnoreCase
+	);
 
 	/// <summary>
 	/// Picks a highlight language for OpenAPI example bodies. Only real JSON objects/arrays

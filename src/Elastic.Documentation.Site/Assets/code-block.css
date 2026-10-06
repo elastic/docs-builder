@@ -12,7 +12,7 @@
  *     </div>
  *   </div>
  *
- *   data-line-numbers      opt in to a line-number gutter (code-line-numbers.ts)
+ *   data-line-numbers      marks a block whose template renders a line-number gutter (_ApiCodeBlock.cshtml)
  *
  * Optional card wrapper for blocks that own a header (the API examples rail):
  *
@@ -205,7 +205,7 @@
 		}
 	}
 
-	/* Line-number gutter (code-line-numbers.ts): a sibling <pre> that is excluded from
+	/* Line-number gutter (rendered by _ApiCodeBlock.cshtml): a sibling element that is excluded from
 	   selection and copy. The wrapper owns the surface so the gutter sits on the same fill. */
 	.highlight .code-lines {
 		display: flex;

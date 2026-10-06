@@ -20,11 +20,8 @@ public static partial class GeneratedCodeSamples
 		OperationEndpoint endpoint
 	)
 	{
-		if (!scenarios.Any(static s => s.CodeSamples.Count == 0 && !string.IsNullOrWhiteSpace(s.RequestJson)))
-			return scenarios;
-
-		var console = specSamples.FirstOrDefault(static s => s.Language.Equals("Console", StringComparison.OrdinalIgnoreCase));
-		var curl = specSamples.FirstOrDefault(static s => s.Language.Equals("curl", StringComparison.OrdinalIgnoreCase));
+		var console = specSamples.FirstOrDefault(static s => s.IsConsole);
+		var curl = specSamples.FirstOrDefault(static s => s.IsCurl);
 		var prefix = ConsolePrefix(console?.Source);
 		var fallbackMethod = endpoint.Rows.First(r => r.Route == endpoint.ShortestRoute).Method.ToUpperInvariant();
 

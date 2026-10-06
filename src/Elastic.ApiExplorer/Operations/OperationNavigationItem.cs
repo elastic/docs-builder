@@ -56,16 +56,13 @@ public class OperationNavigationItem : ILeafNavigationItem<ApiOperation>, IEndpo
 		Model = apiOperation;
 		NavigationTitle = apiOperation.ApiName;
 		Parent = parent;
-		Url = OperationUrl(
+		Url = ApiUrlBuilder.OperationUrl(
 			urlPathPrefix,
 			apiUrlSuffix,
 			moniker ?? ApiUrlBuilder.OperationMoniker(apiOperation.Operation.OperationId, apiOperation.Route)
 		);
 		Id = ShortId.Create(Url);
 	}
-
-	public static string OperationUrl(string? urlPathPrefix, string apiUrlSuffix, string moniker) =>
-		$"{ApiUrlBuilder.ProductRoot(urlPathPrefix, apiUrlSuffix)}/operation/{moniker}";
 
 	public IRootNavigationItem<INavigationModel, INavigationItem> NavigationRoot { get; }
 	//TODO enum to string
