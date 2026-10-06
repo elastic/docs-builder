@@ -5,6 +5,12 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <!-- The fixed-seed convention of the property tests: one definition, linked where it is used. -->
+    <Compile Include="..\Elastic.Documentation.Tests\Domain\Props.cs" Link="Props.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="CsCheck" />
     <PackageReference Include="DiffPlex" />
     <PackageReference Include="AngleSharp.Diffing" />
     <PackageReference Include="Nullean.ScopedFileSystem" />

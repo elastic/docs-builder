@@ -11,6 +11,12 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- The fixed-seed convention of the property tests: one definition, linked where it is used. -->
+    <Compile Include="..\Elastic.Documentation.Tests\Domain\Props.cs" Link="Props.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="CsCheck" />
     <PackageReference Include="FakeItEasy" />
     <PackageReference Include="Microsoft.Extensions.TimeProvider.Testing" />
     <PackageReference Include="Nullean.ScopedFileSystem" />

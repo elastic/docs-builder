@@ -28,72 +28,45 @@ public class AwsS3SyncPlanStrategy(
 		return fileInfo.LinkTarget != null;
 	}
 
-	private static bool IsExcluded(string destinationPath, Glob[] globs) => globs.Length > 0 && globs.Any(g => g.IsMatch(destinationPath));
-
-	/// <summary>
-	/// Normalize an exclude pattern so it behaves like <c>aws s3 sync --exclude</c>, where
-	/// <c>*</c> matches path separators (e.g. <c>_preview/*</c> matches
-	/// <c>_preview/pr-42/index.html</c>).  A trailing <c>/*</c> is expanded to <c>/**</c> so
-	/// DotNet.Glob treats it as a recursive wildcard.
-	/// </summary>
-	private static string NormalizePattern(string pattern) =>
-		pattern.EndsWith("/*", StringComparison.Ordinal) ? string.Concat(pattern.AsSpan(0, pattern.Length - 2), "/**") : pattern;
-
 	public async Task<Result<SyncPlan>> Plan(float? deleteThreshold, string[] excludePatterns, Cancel ctx = default)
 	{
-		var excludeGlobs = excludePatterns.Select(p => Glob.Parse(NormalizePattern(p))).ToArray();
+		var excludeGlobs = excludePatterns.Select(p => Glob.Parse(SyncPlanner.NormalizePattern(p))).ToArray();
 
 		// Start S3 listing in background while scanning local files concurrently
 		var listTask = ListObjects(ctx);
 		var localObjects = context.OutputDirectory.GetFiles("*", SearchOption.AllDirectories).Where(f => !IsSymlink(f.FullName)).ToArray();
 		var (readToCompletion, remoteObjects) = await listTask;
-		var deleteRequests = new ConcurrentBag<DeleteRequest>();
-		var addRequests = new ConcurrentBag<AddRequest>();
-		var updateRequests = new ConcurrentBag<UpdateRequest>();
-		var skipRequests = new ConcurrentBag<SkipRequest>();
 
-		await Parallel.ForEachAsync(localObjects, ctx, async (localFile, token) =>
-		{
-			var relativePath = Path.GetRelativePath(context.OutputDirectory.FullName, localFile.FullName);
-			var destinationPath = relativePath.Replace('\\', '/');
+		var localFiles = localObjects.Select(
+			f =>
+				(LocalPath: f.FullName, DestinationPath: Path.GetRelativePath(context.OutputDirectory.FullName, f.FullName).Replace(
+					'\\',
+					'/'
+				))
+		).ToArray();
+		var remoteETags = remoteObjects.ToDictionary(
+			o => o.Key,
+			o => o.Value.ETag?.Trim('"') ?? string.Empty
+		); // Remove quotes from remote ETag
 
-			if (IsExcluded(destinationPath, excludeGlobs))
-				return;
+		// only a file that is also remote needs its ETag (a hash of the file), so the work stays what it was
+		var localETags = new ConcurrentDictionary<string, string>();
+		await Parallel.ForEachAsync(
+			localFiles.Where(f => remoteETags.ContainsKey(f.DestinationPath) && !SyncPlanner.IsExcluded(f.DestinationPath, excludeGlobs)),
+			ctx,
+			async (f, token) => localETags[f.LocalPath] = await _s3EtagCalculator.CalculateS3ETag(f.LocalPath, token)
+		);
 
-			if (remoteObjects.TryGetValue(destinationPath, out var remoteObject))
-			{
-				// Check if the ETag differs for updates
-				var localETag = await _s3EtagCalculator.CalculateS3ETag(localFile.FullName, token);
-				var remoteETag = remoteObject.ETag.Trim('"'); // Remove quotes from remote ETag
-				if (localETag == remoteETag)
-				{
-					var skipRequest = new SkipRequest { LocalPath = localFile.FullName, DestinationPath = remoteObject.Key };
-					skipRequests.Add(skipRequest);
-				}
-				else
-				{
-					var updateRequest = new UpdateRequest() { LocalPath = localFile.FullName, DestinationPath = remoteObject.Key };
-					updateRequests.Add(updateRequest);
-				}
-			}
-			else
-			{
-				var addRequest = new AddRequest { LocalPath = localFile.FullName, DestinationPath = destinationPath };
-				addRequests.Add(addRequest);
-			}
-		});
-
-		// Find deletions (files in S3 but not locally), honouring excludes
-		foreach (var remoteObject in remoteObjects)
-		{
-			if (IsExcluded(remoteObject.Key, excludeGlobs))
-				continue;
-			var localPath = Path.Join(context.OutputDirectory.FullName, remoteObject.Key.Replace('/', Path.DirectorySeparatorChar));
-			if (context.ReadFileSystem.File.Exists(localPath))
-				continue;
-			var deleteRequest = new DeleteRequest { DestinationPath = remoteObject.Key };
-			deleteRequests.Add(deleteRequest);
-		}
+		var (deleteRequests, addRequests, updateRequests, skipRequests) = SyncPlanner.Compute(
+			localFiles,
+			remoteETags,
+			localPath => localETags[localPath],
+			key => context
+				.ReadFileSystem
+				.File
+				.Exists(Path.Join(context.OutputDirectory.FullName, key.Replace('/', Path.DirectorySeparatorChar))),
+			excludeGlobs
+		);
 
 		return SyncPlanLoader.Planned(
 			readToCompletion,
@@ -101,10 +74,10 @@ public class AwsS3SyncPlanStrategy(
 			excludePatterns,
 			remoteObjects.Count,
 			localObjects.Length,
-			deleteRequests.ToList(),
-			addRequests.ToList(),
-			updateRequests.ToList(),
-			skipRequests.ToList()
+			deleteRequests,
+			addRequests,
+			updateRequests,
+			skipRequests
 		);
 	}
 
