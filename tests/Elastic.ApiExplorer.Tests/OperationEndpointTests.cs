@@ -252,4 +252,32 @@ public class OperationEndpointTests
 			.AreInterchangeable([Contract(HttpMethod.Get, true, "took"), Contract(HttpMethod.Post, true, "hits")])
 			.Should()
 			.BeFalse();
+
+	private static ApiOperation WithBody(HttpMethod method, bool bodyRequired) =>
+		new(
+			method,
+			new OpenApiOperation
+			{
+				RequestBody = new OpenApiRequestBody
+				{
+					Required = bodyRequired,
+					Content = new Dictionary<string, IOpenApiMediaType>
+					{
+						["application/json"] = new OpenApiMediaType { Schema = new OpenApiSchema { Type = JsonSchemaType.Object } }
+					}
+				},
+				Responses = new OpenApiResponses { ["200"] = new OpenApiResponse { Description = "ok" } }
+			},
+			"/foo",
+			new OpenApiPathItem(),
+			"foo"
+		);
+
+	[Test]
+	public void AreInterchangeable_SameBodyButDifferentRequiredness_IsFalse() =>
+		OperationEndpoint.AreInterchangeable([WithBody(HttpMethod.Post, true), WithBody(HttpMethod.Put, false)]).Should().BeFalse();
+
+	[Test]
+	public void AreInterchangeable_SameBodyAndRequiredness_IsTrue() =>
+		OperationEndpoint.AreInterchangeable([WithBody(HttpMethod.Post, true), WithBody(HttpMethod.Put, true)]).Should().BeTrue();
 }

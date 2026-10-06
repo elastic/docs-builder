@@ -119,8 +119,8 @@ public sealed partial record OperationEndpoint(
 
 	/// <summary>
 	/// Separate operations only merge their methods when they are the same call: the same non-path parameters
-	/// (name, requiredness and schema), the same request body schema per media type, and the same response
-	/// schema per status and media type.
+	/// (name, requiredness and schema), the same request body (requiredness and schema per media type), and the
+	/// same response schema per status and media type.
 	/// </summary>
 	public static bool AreInterchangeable(IReadOnlyList<ApiOperation> operations)
 	{
@@ -134,7 +134,9 @@ public sealed partial record OperationEndpoint(
 			.Where(static p => p.In != ParameterLocation.Path)
 			.Select(static p => $"{p.In}:{p.Name}:{(p.Required ? "required" : "optional")}:{SchemaKey(p.Schema)}")
 			.Order(StringComparer.Ordinal);
-		var body = ContentKey(operation.RequestBody?.Content);
+		var body = operation.RequestBody is { } requestBody
+			? $"{(requestBody.Required ? "required" : "optional")}:{ContentKey(requestBody.Content)}"
+			: "";
 		var responses = (operation.Responses ?? []).Select(static r => $"{r.Key}:{ContentKey(r.Value?.Content)}").Order(
 			StringComparer.Ordinal
 		);
