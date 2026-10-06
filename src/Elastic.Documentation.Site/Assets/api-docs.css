@@ -3584,15 +3584,10 @@ html:has(.api-page-shell) {
 	display: none;
 }
 
-/* The divider only resizes inside the fixed rail frame. */
-.api-rail-divider {
-	display: none;
-}
-
 /*
  * Fixed rail frame: from 1024px the rail is exactly the viewport tall and never scrolls.
  * Example chips stay put, the request pane hugs the active sample, the response takes the
- * rest, and only the code areas scroll. The divider fixes the request pane height.
+ * rest, and only the code areas scroll.
  */
 @media (min-width: 1024px) {
 	#api-examples-panel {
@@ -3631,7 +3626,7 @@ html:has(.api-page-shell) {
 
 	/* Each snippet is as tall as its own code, up to --api-max-lines, and the strip follows the active one
 	   (--api-strip-height, measured from the code in api-examples-carousel.ts). The response takes whatever is left.
-	   Longer code scrolls, and the expand button shows all of it. Dragging the divider fixes the height instead. */
+	   Longer code scrolls, and the expand button shows all of it. */
 	#api-examples-panel .api-rail-request {
 		--api-code-cap: calc(
 			var(--api-max-lines, 16) * var(--code-size) * 1.5 +
@@ -3641,18 +3636,6 @@ html:has(.api-page-shell) {
 		flex: 0 1 auto;
 		flex-direction: column;
 		min-height: 120px;
-	}
-
-	#api-examples-panel .has-rail-split .api-rail-request {
-		flex: 0 0 var(--api-rail-request-height);
-	}
-
-	#api-examples-panel .has-rail-split .api-code-carousel {
-		flex: 1 1 auto;
-	}
-
-	#api-examples-panel .has-rail-split .api-code-carousel-strip {
-		flex: 1 1 0;
 	}
 
 	#api-examples-panel .api-rail-request > .api-code-card {
@@ -3709,56 +3692,12 @@ html:has(.api-page-shell) {
 		min-height: 0;
 	}
 
-	#api-examples-panel .api-rail-divider {
-		display: block;
-		flex: 0 0 auto;
-		position: relative;
-		height: 16px;
-		margin: 4px 0;
-		cursor: row-resize;
-		touch-action: none;
-	}
-
-	#api-examples-panel .api-rail-divider::before {
-		content: '';
-		position: absolute;
-		top: 50%;
-		left: 50%;
-		width: 40px;
-		height: 4px;
-		border-radius: 999px;
-		background: var(--color-grey-30, #c4cbd8);
-		transform: translate(-50%, -50%);
-		transition:
-			background-color 0.15s,
-			width 0.15s;
-	}
-
-	#api-examples-panel .api-rail-divider:hover::before,
-	#api-examples-panel .api-rail-divider.is-dragging::before,
-	#api-examples-panel .api-rail-divider:focus-visible::before {
-		width: 64px;
-		background: var(--color-blue-elastic, #0b64dd);
-	}
-
-	#api-examples-panel .api-rail-divider:focus-visible {
-		outline: none;
-	}
-
 	#api-examples-panel .is-response-collapsed .api-code-carousel-card-body,
 	#api-examples-panel .is-response-collapsed .api-code-sample-body,
-	#api-examples-panel .has-rail-split .api-code-carousel-card-body,
-	#api-examples-panel .has-rail-split .api-code-sample-body {
-		max-height: none;
-	}
-
-	#api-examples-panel .is-response-collapsed .api-rail-divider {
-		display: none;
-	}
 
 	/* The response has its own size: as tall as its JSON up to --api-response-height, and it never shrinks.
 	   The request pane gives way instead, so the response does not change size when the language or the
-	   example code changes. Dragging the divider sizes it explicitly. */
+	   example code changes. */
 	#api-examples-panel {
 		--api-response-height: clamp(140px, 24vh, 300px);
 	}
@@ -3768,12 +3707,6 @@ html:has(.api-page-shell) {
 		max-height: var(--api-response-height);
 		min-height: 0;
 		margin-bottom: 0;
-	}
-
-	#api-examples-panel .has-rail-split .example-block--response {
-		flex: 1 1 0;
-		max-height: none;
-		min-height: 120px;
 	}
 
 	#api-examples-panel .is-response-collapsed .example-block--response {

@@ -270,15 +270,6 @@ function visibleCarousel(examples: HTMLElement): HTMLElement | null {
     )
 }
 
-/** The request pane of the example a divider belongs to. */
-function railRequest(divider: HTMLElement): HTMLElement | null {
-    return (
-        divider
-            .closest('.api-examples-scenario-panel')
-            ?.querySelector<HTMLElement>('[data-rail-request]') ?? null
-    )
-}
-
 /** Shows one scenario; the others stay findable through hidden="until-found". */
 function showScenario(examples: HTMLElement, scenarioId: string): void {
     const panels = scenarioPanels(examples)
@@ -469,86 +460,6 @@ function openPreview(card: HTMLElement): HTMLDialogElement | null {
     return dialog
 }
 
-const splitStorageKey = 'api-rail-split'
-const minPane = 120
-
-function savedSplit(): number | null {
-    try {
-        const value = Number(window.localStorage.getItem(splitStorageKey))
-        return Number.isFinite(value) && value > 0 ? value : null
-    } catch {
-        return null
-    }
-}
-
-/** Fixes the request pane height (px) for every example; null returns to content-sized panes. */
-function applySplit(examples: HTMLElement, height: number | null) {
-    if (height === null) {
-        examples.style.removeProperty('--api-rail-request-height')
-        examples.classList.remove('has-rail-split')
-        return
-    }
-    examples.style.setProperty(
-        '--api-rail-request-height',
-        `${Math.round(height)}px`
-    )
-    examples.classList.add('has-rail-split')
-}
-
-/** The request pane's allowed height range: at least a pane for it, and one left for the response. */
-function splitBounds(divider: HTMLElement): { top: number; max: number } {
-    const panel = divider.closest<HTMLElement>('.api-examples-scenario-panel')
-    const request = railRequest(divider)
-    if (!panel || !request) return { top: 0, max: Number.POSITIVE_INFINITY }
-    const top = request.getBoundingClientRect().top
-    return { top, max: panel.getBoundingClientRect().bottom - top - minPane }
-}
-
-function clampSplit(height: number, max: number): number {
-    return Math.max(minPane, Math.min(height, max))
-}
-
-function saveSplit(height: number | null) {
-    try {
-        if (height === null) window.localStorage.removeItem(splitStorageKey)
-        else
-            window.localStorage.setItem(
-                splitStorageKey,
-                String(Math.round(height))
-            )
-    } catch {
-        // Storage can be disabled; the split then lasts for this page only.
-    }
-}
-
-function onDividerPointerDown(event: PointerEvent) {
-    const divider = (event.target as HTMLElement | null)?.closest<HTMLElement>(
-        '[data-rail-divider]'
-    )
-    const examples = divider?.closest<HTMLElement>('[data-api-examples]')
-    const request = divider && railRequest(divider)
-    if (!divider || !examples || !request || event.button !== 0) return
-    event.preventDefault()
-    const { top, max } = splitBounds(divider)
-    divider.classList.add('is-dragging')
-    divider.setPointerCapture?.(event.pointerId)
-    let height = request.getBoundingClientRect().height
-    const move = (e: PointerEvent) => {
-        height = clampSplit(e.clientY - top, max)
-        applySplit(examples, height)
-    }
-    const up = () => {
-        divider.classList.remove('is-dragging')
-        divider.removeEventListener('pointermove', move)
-        divider.removeEventListener('pointerup', up)
-        divider.removeEventListener('pointercancel', up)
-        saveSplit(height)
-    }
-    divider.addEventListener('pointermove', move)
-    divider.addEventListener('pointerup', up)
-    divider.addEventListener('pointercancel', up)
-}
-
 /** Expanding gives the examples the whole rail by folding the response down to its header. */
 function setExpanded(examples: HTMLElement, expanded: boolean) {
     examples.classList.toggle('is-response-collapsed', expanded)
@@ -641,30 +552,9 @@ function onClick(event: MouseEvent) {
     }
 }
 
-function onDividerKey(divider: HTMLElement, event: KeyboardEvent): boolean {
-    if (event.key !== 'ArrowUp' && event.key !== 'ArrowDown') return false
-    const examples = divider.closest<HTMLElement>('[data-api-examples]')
-    const request = railRequest(divider)
-    if (!examples || !request) return false
-    const delta = event.key === 'ArrowUp' ? -32 : 32
-    const height = clampSplit(
-        request.getBoundingClientRect().height + delta,
-        splitBounds(divider).max
-    )
-    applySplit(examples, height)
-    saveSplit(height)
-    return true
-}
-
 function onKeydown(event: KeyboardEvent) {
     const target = event.target as HTMLElement | null
     if (!target || event.metaKey || event.ctrlKey || event.altKey) return
-
-    const divider = target.closest<HTMLElement>('[data-rail-divider]')
-    if (divider && onDividerKey(divider, event)) {
-        event.preventDefault()
-        return
-    }
 
     const strip = target.closest<HTMLElement>('[data-carousel-strip]')
     if (strip && (event.key === 'ArrowRight' || event.key === 'ArrowLeft')) {
@@ -684,18 +574,6 @@ export function initApiExamples(root: ParentNode = document): void {
         delegated = true
         document.addEventListener('click', onClick)
         document.addEventListener('keydown', onKeydown)
-        document.addEventListener('pointerdown', onDividerPointerDown)
-        document.addEventListener('dblclick', (event) => {
-            const divider = (event.target as HTMLElement | null)?.closest(
-                '[data-rail-divider]'
-            )
-            const examples = divider?.closest<HTMLElement>(
-                '[data-api-examples]'
-            )
-            if (!examples) return
-            applySplit(examples, null)
-            saveSplit(null)
-        })
     }
 
     const link = readDeepLink()
@@ -715,7 +593,6 @@ export function initApiExamples(root: ParentNode = document): void {
                 .querySelectorAll<HTMLElement>('[data-api-carousel]')
                 .forEach(observeStrip)
             applyPreferredLanguage(examples, link.lang)
-            applySplit(examples, savedSplit())
             if (!link.example) syncDescription(examples)
         }
     )
