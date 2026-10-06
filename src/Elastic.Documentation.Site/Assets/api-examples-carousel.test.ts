@@ -234,7 +234,10 @@ describe('API examples carousel', () => {
         const dialog = document.querySelector<HTMLDialogElement>(
             'dialog.api-code-preview'
         )!
-        expect(dialog.querySelector('h2')?.textContent).toBe('Console')
+        expect(
+            dialog.querySelector('.api-code-carousel-card-language')
+                ?.textContent
+        ).toBe('Console')
         expect(dialog.querySelector('pre code')?.textContent).toBe(
             'Console sample'
         )

@@ -378,16 +378,36 @@ function addPreviewButtons(examples: HTMLElement) {
         })
 }
 
-function previewTitle(card: HTMLElement): string {
+/** The card's header, rebuilt for the dialog: badge, language and client label, or the response status. */
+function previewHeader(card: HTMLElement, scenarioTitle: string): HTMLElement {
     const text = (selector: string) =>
         card.querySelector(selector)?.textContent?.trim() ?? ''
-    const language = text('.api-code-carousel-card-language')
-    if (language) {
-        const client = text('.api-code-carousel-card-client')
-        return client ? `${language} · ${client}` : language
+    const header = document.createElement('header')
+    header.className = 'api-code-carousel-card-header'
+    if (card.dataset.lang) {
+        const badge = document.createElement('span')
+        badge.className = 'api-lang-badge'
+        badge.dataset.lang = card.dataset.lang
+        badge.setAttribute('aria-hidden', 'true')
+        header.appendChild(badge)
     }
+    const name = document.createElement('span')
+    name.className = 'api-code-carousel-card-language'
     const status = text('.example-response-tab.is-active')
-    return status ? `Response ${status}` : 'Code'
+    name.textContent =
+        text('.api-code-carousel-card-language') ||
+        (status ? `Response ${status}` : 'Code')
+    header.appendChild(name)
+    const detail = [text('.api-code-carousel-card-client'), scenarioTitle]
+        .filter(Boolean)
+        .join(' · ')
+    if (detail) {
+        const client = document.createElement('span')
+        client.className = 'api-code-carousel-card-client'
+        client.textContent = detail
+        header.appendChild(client)
+    }
+    return header
 }
 
 /** The code of a card, almost full screen. Shows the visible panel of switchable cards. */
@@ -407,32 +427,26 @@ function openPreview(card: HTMLElement): HTMLDialogElement | null {
             )
             ?.textContent?.trim() ?? ''
 
+    // A code card in a dialog: same header, border and surface as the cards in the rail.
     const dialog = document.createElement('dialog')
-    dialog.className = 'api-code-preview'
+    dialog.className = 'api-code-card api-code-preview'
+    dialog.dataset.codeCard = ''
     dialog.setAttribute('aria-label', 'Full screen code preview')
 
-    const header = document.createElement('header')
-    header.className = 'api-code-preview-header'
-    const heading = document.createElement('div')
-    if (scenarioTitle) {
-        const kicker = document.createElement('p')
-        kicker.className = 'api-code-preview-kicker'
-        kicker.textContent = scenarioTitle
-        heading.appendChild(kicker)
-    }
-    const title = document.createElement('h2')
-    title.textContent = previewTitle(card)
-    heading.appendChild(title)
-
-    const copy = iconButton('api-code-preview-action', 'Copy code', iconCopyEui)
+    const header = previewHeader(card, scenarioTitle)
+    const actions = document.createElement('span')
+    actions.className = 'api-code-carousel-card-actions'
+    actions.dataset.codeActions = ''
+    const copy = iconButton('api-code-preview-btn', 'Copy code', iconCopyEui)
     copy.addEventListener('click', () => {
         void navigator.clipboard
             ?.writeText(code.textContent?.trimEnd() ?? '')
             .then(() => temporarilyChangeIcon(copy, iconCopyEui, iconCheckEui))
     })
-    const close = iconButton('api-code-preview-action', 'Close', closeIcon)
+    const close = iconButton('api-code-preview-btn', 'Close', closeIcon)
     close.addEventListener('click', () => dialog.close())
-    header.append(heading, copy, close)
+    actions.append(copy, close)
+    header.appendChild(actions)
 
     const body = document.createElement('div')
     body.className = 'api-code-preview-body'

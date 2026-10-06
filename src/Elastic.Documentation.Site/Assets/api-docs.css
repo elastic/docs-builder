@@ -3485,8 +3485,7 @@ html:has(.api-page-shell) {
 }
 
 /* Full screen preview of one code block. The card button shares the header copy button's rule (code-block.css). */
-.api-code-preview-btn:focus-visible,
-.api-code-preview-action:focus-visible {
+.api-code-preview-btn:focus-visible {
 	outline: 2px solid var(--color-blue-elastic, #0b64dd);
 	outline-offset: 2px;
 }
@@ -3497,7 +3496,10 @@ html:has(.api-page-shell) {
 	gap: 6px;
 }
 
+/* Also an .api-code-card, which gives it the cards' border, radius and surface; position: fixed because
+   the card rule's position: relative would otherwise win over the modal's own. */
 .api-code-preview {
+	position: fixed;
 	flex-direction: column;
 	width: fit-content;
 	max-width: calc(100vw - 48px);
@@ -3505,14 +3507,15 @@ html:has(.api-page-shell) {
 	max-height: calc(100vh - 48px);
 	margin: auto;
 	padding: 0;
-	border: 1px solid var(--code-border);
-	border-radius: 8px;
-	background: var(--code-bg);
-	color: var(--code-fg);
 }
 
 .api-code-preview[open] {
 	display: flex;
+}
+
+/* The header keeps its height when the body is capped and scrolls. */
+.api-code-preview > .api-code-carousel-card-header {
+	flex: 0 0 auto;
 }
 
 /* The page stays visible but stops competing with the code: darker, and blurred past legibility. */
@@ -3520,55 +3523,6 @@ html:has(.api-page-shell) {
 	background: rgb(10 16 28 / 0.8);
 	-webkit-backdrop-filter: blur(4px);
 	backdrop-filter: blur(4px);
-}
-
-.api-code-preview-header {
-	display: flex;
-	align-items: center;
-	gap: 8px;
-	padding: 14px 20px;
-	border-bottom: 1px solid var(--code-border);
-}
-
-.api-code-preview-header > div {
-	flex: 1;
-	min-width: 0;
-}
-
-.api-code-preview-header h2 {
-	margin: 0;
-	font-size: 15px;
-	font-weight: 600;
-	color: #fff;
-}
-
-.api-code-preview-kicker {
-	margin: 0 0 2px;
-	font-size: 12px;
-	color: var(--code-muted);
-}
-
-.api-code-preview-action {
-	display: inline-grid;
-	place-items: center;
-	box-sizing: border-box;
-	width: 32px;
-	height: 32px;
-	padding: 0;
-	border: 1px solid var(--code-border);
-	border-radius: 6px;
-	background: transparent;
-	color: var(--code-fg);
-	cursor: pointer;
-}
-
-.api-code-preview-action svg {
-	width: 16px;
-	height: 16px;
-}
-
-.api-code-preview-action:hover {
-	background: var(--code-hover);
 }
 
 .api-code-preview-body {
