@@ -32,6 +32,7 @@ public static partial class GeneratedCodeSamples
 					return scenario;
 
 				var (method, path) = scenario.RequestLine is { } line ? line : (fallbackMethod, endpoint.ShortestRoute);
+				method = SampleMethods.Dominant(method, path, endpoint) ?? method;
 				var samples = new List<CodeSample>
 				{
 					new("Console", $"{method} {prefix}{path}\n{scenario.RequestJson.Trim()}", CodeSample.GetHighlightClass("Console"))

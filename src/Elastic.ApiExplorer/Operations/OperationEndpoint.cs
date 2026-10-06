@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Diagnostics.CodeAnalysis;
 using System.Text.RegularExpressions;
 using Elastic.ApiExplorer.Model;
 using Microsoft.OpenApi;
@@ -280,6 +281,54 @@ public sealed partial record OperationEndpoint(
 		}
 
 		return optional;
+	}
+
+	/// <summary>
+	/// The row a request target calls: <c>/my-index/_search?size=1</c>, <c>_bulk</c>, <c>kbn:/api/x</c> or
+	/// <c>$HOST/x</c> resolve to their templated route. A placeholder segment stands for any one segment; among
+	/// rows that fit, the one with the most literal segments wins.
+	/// </summary>
+	public bool TryFindRow(string target, [NotNullWhen(true)] out EndpointRow? row)
+	{
+		var segments = Split(PathOf(target));
+		row = segments.Length == 0
+			? null
+			: Rows
+				.Where(
+					r => r.Segments.Count == segments.Length && r
+						.Segments
+						.Select((s, i) => IsPlaceholder(s.Text) || s.Text == segments[i])
+						.All(static m => m)
+				)
+				.OrderByDescending(static r => r.Segments.Count(static s => !IsPlaceholder(s.Text)))
+				.FirstOrDefault();
+		return row is not null;
+	}
+
+	/// <summary>
+	/// The path part of a request target. Hosts (<c>https://host:9200</c>, <c>$ELASTICSEARCH_URL</c>) and Console
+	/// targets (<c>kbn:</c>) come off; a bare Console path (<c>_bulk</c>, <c>my-index/_search</c>) gets its slash.
+	/// </summary>
+	private static string PathOf(string target)
+	{
+		var text = target.Trim();
+		var cut = text.IndexOfAny(['?', '#']);
+		if (cut >= 0)
+			text = text[..cut];
+
+		var hadScheme = text.StartsWith("http://", StringComparison.OrdinalIgnoreCase)
+			|| text.StartsWith("https://", StringComparison.OrdinalIgnoreCase);
+		if (hadScheme)
+			text = text[(text.IndexOf("//", StringComparison.Ordinal) + 2)..];
+		if (text.StartsWith('/'))
+			return text;
+
+		var slash = text.IndexOf('/');
+		var head = slash < 0 ? text : text[..slash];
+		var isHostOrTarget = hadScheme || head.StartsWith('$') || head.Contains(':');
+		if (isHostOrTarget)
+			return slash < 0 ? "" : text[slash..];
+		return "/" + text;
 	}
 
 	private static int Rank(string method)

@@ -160,6 +160,69 @@ public class OperationEndpointTests
 		ApiUrlBuilder.CanonicalOperationMoniker(operations, primary).Should().Be("operation-search");
 	}
 
+	private static OperationEndpoint SearchEndpoint() =>
+		OperationEndpoint.FromVariants(
+			[
+				new EndpointVariant("post", "/{index}/_search"),
+				new EndpointVariant("get", "/{index}/_search"),
+				new EndpointVariant("post", "/_search"),
+				new EndpointVariant("get", "/_search")
+			],
+			"/{index}/_search"
+		);
+
+	[Test]
+	[Arguments("/my-index-000001/_search?from=40&size=20", "/{index}/_search")]
+	[Arguments("/_search", "/_search")]
+	[Arguments("_search", "/_search")]
+	[Arguments("my-index/_search", "/{index}/_search")]
+	[Arguments("$ELASTICSEARCH_URL/my-index/_search?size=1", "/{index}/_search")]
+	[Arguments("https://localhost:9200/_search", "/_search")]
+	[Arguments("localhost:9200/_search", "/_search")]
+	public void TryFindRow_RequestTargets_ResolveToTheirRow(string target, string route)
+	{
+		SearchEndpoint().TryFindRow(target, out var row).Should().BeTrue();
+		row!.Route.Should().Be(route);
+	}
+
+	[Test]
+	[Arguments("/my-index/_count")]
+	[Arguments("/a/b/_search")]
+	[Arguments("")]
+	[Arguments("$ELASTICSEARCH_URL")]
+	public void TryFindRow_UnknownTarget_IsFalse(string target) => SearchEndpoint().TryFindRow(target, out _).Should().BeFalse();
+
+	[Test]
+	public void TryFindRow_LiteralSegmentsWinOverPlaceholders()
+	{
+		var endpoint = OperationEndpoint.FromVariants(
+			[new EndpointVariant("get", "/_cat/{target}"), new EndpointVariant("get", "/_cat/indices")],
+			"/_cat/indices"
+		);
+
+		endpoint.TryFindRow("/_cat/indices", out var row).Should().BeTrue();
+		row!.Route.Should().Be("/_cat/indices");
+	}
+
+	[Test]
+	[Arguments("kbn:/api/agent_builder/tools/_execute", "/api/agent_builder/tools/_execute")]
+	[Arguments("kbn://api/agent_builder/tools/_execute", "/api/agent_builder/tools/_execute")]
+	[Arguments("http://${KIBANA_URL}/api/agent_builder/tools/_execute", "/api/agent_builder/tools/_execute")]
+	[Arguments("kbn:/s/my-space/api/agent_builder/tools/_execute", "/s/{space_id}/api/agent_builder/tools/_execute")]
+	public void TryFindRow_KibanaTargets_ResolveToTheirRow(string target, string route)
+	{
+		var endpoint = OperationEndpoint.FromVariants(
+			[
+				new EndpointVariant("post", "/api/agent_builder/tools/_execute"),
+				new EndpointVariant("post", "/s/{space_id}/api/agent_builder/tools/_execute")
+			],
+			"/api/agent_builder/tools/_execute"
+		);
+
+		endpoint.TryFindRow(target, out var row).Should().BeTrue();
+		row!.Route.Should().Be(route);
+	}
+
 	[Test]
 	public void CanonicalOperationMoniker_UnrelatedIds_UseThePrimaryOperation()
 	{

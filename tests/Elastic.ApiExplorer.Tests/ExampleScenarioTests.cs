@@ -354,19 +354,58 @@ public class ExampleScenarioTests
 				"language-curl"
 			)
 		};
-		var endpoint = OperationEndpoint.FromVariants([new EndpointVariant("post", "/_search")], "/_search");
+		// The path lists GET beside its dominant POST, so the Run line's GET becomes POST.
+		var endpoint = OperationEndpoint.FromVariants(
+			[new EndpointVariant("post", "/_search"), new EndpointVariant("get", "/_search")],
+			"/_search"
+		);
 
 		var filled = GeneratedCodeSamples.Fill([slicing], spec, endpoint);
 
 		var samples = filled.Single().CodeSamples;
 		samples.Select(static s => s.Language).Should().Equal("Console", "curl");
 		samples.Should().OnlyContain(static s => s.Generated);
-		samples[0].Source.Should().Be("GET /_search\n{\"slice\":{\"id\":0}}");
+		samples[0].Source.Should().Be("POST /_search\n{\"slice\":{\"id\":0}}");
 		samples[1]
 			.Source
 			.Should()
-			.Be("curl -X GET -H \"Authorization: ApiKey $ELASTIC_API_KEY\" -d '{\"slice\":{\"id\":0}}' \"$ELASTICSEARCH_URL/_search\"");
+			.Be("curl -X POST -H \"Authorization: ApiKey $ELASTIC_API_KEY\" -d '{\"slice\":{\"id\":0}}' \"$ELASTICSEARCH_URL/_search\"");
 		filled.Single().CodeSamplesIncludeRequest.Should().BeTrue();
+	}
+
+	[Test]
+	public void GeneratedCodeSamples_RequestLineMethodNotOnTheRow_IsKept()
+	{
+		var slicing = new ExampleScenario { Title = "Slicing", TabId = "slicing", RequestJson = "{}", RequestLine = ("GET", "/_search") };
+		var endpoint = OperationEndpoint.FromVariants([new EndpointVariant("post", "/_search")], "/_search");
+
+		var console = GeneratedCodeSamples.Fill([slicing], [], endpoint).Single().CodeSamples.Single();
+
+		console.Source.Should().StartWith("GET /_search\n");
+	}
+
+	[Test]
+	public void GeneratedCodeSamples_RequestLineOnAlsoMethod_FollowsTheDominantMethod()
+	{
+		var scenario = new ExampleScenario
+		{
+			Title = "Index",
+			TabId = "index",
+			RequestJson = "{}",
+			RequestLine = ("GET", "/my-index-000001/_search?from=40")
+		};
+		var endpoint = OperationEndpoint.FromVariants(
+			[
+				new EndpointVariant("post", "/{index}/_search"),
+				new EndpointVariant("get", "/{index}/_search"),
+				new EndpointVariant("post", "/_search")
+			],
+			"/{index}/_search"
+		);
+
+		var console = GeneratedCodeSamples.Fill([scenario], [], endpoint).Single().CodeSamples.Single();
+
+		console.Source.Should().StartWith("POST /my-index-000001/_search?from=40\n");
 	}
 
 	[Test]

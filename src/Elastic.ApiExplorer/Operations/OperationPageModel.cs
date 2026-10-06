@@ -213,8 +213,12 @@ public partial record OperationPageModel
 			supplemental?.DescriptionOr(operation.Description) ?? operation.Description,
 			siblings
 		);
-		var requestExamples = MapExamples(operation.RequestBody?.Content?.FirstOrDefault().Value?.Examples, options.RenderMarkdown);
-		var codeSamples = OpenApiExtensionReader.ParseCodeSamples(operation);
+		var requestExamples = MapExamples(
+			operation.RequestBody?.Content?.FirstOrDefault().Value?.Examples,
+			options.RenderMarkdown,
+			endpoint: endpoint
+		);
+		var codeSamples = SampleMethods.Align(OpenApiExtensionReader.ParseCodeSamples(operation), endpoint);
 		var servers = operation.Servers is { Count: > 0 } ? operation.Servers : document.Servers;
 		if (codeSamples.Count == 0)
 		{
@@ -648,16 +652,20 @@ public partial record OperationPageModel
 		return list;
 	}
 
+	/// <summary>With <paramref name="endpoint"/>, a request description's <c>Run `METHOD path`</c> line follows the path's dominant method.</summary>
 	private static IReadOnlyList<ExampleDisplay> MapExamples(
 		IDictionary<string, IOpenApiExample>? examples,
 		Func<string?, HtmlString> renderMarkdown,
-		string? statusCode = null
+		string? statusCode = null,
+		OperationEndpoint? endpoint = null
 	) =>
 		examples is null
 			? []
 			: examples.Select(e =>
 			{
 				var description = string.IsNullOrWhiteSpace(e.Value?.Description) ? null : e.Value.Description.Trim();
+				if (description is not null && endpoint is not null)
+					description = SampleMethods.AlignDescription(description, endpoint);
 				return new ExampleDisplay(
 					string.IsNullOrEmpty(e.Value?.Summary) ? HumanizeExampleKey(e.Key) : e.Value.Summary,
 					string.IsNullOrEmpty(description) ? null : renderMarkdown(description),
@@ -666,7 +674,7 @@ public partial record OperationPageModel
 					statusCode,
 					description
 				)
-				{ RequestLine = GeneratedCodeSamples.ParseRequestLine(e.Value?.Description) };
+				{ RequestLine = GeneratedCodeSamples.ParseRequestLine(description) };
 			}).ToArray();
 
 	/// <summary>
