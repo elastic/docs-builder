@@ -366,6 +366,33 @@ public class OperationEndpointTests
 			.Should()
 			.BeFalse();
 
+	private static ApiOperation WithServers(HttpMethod method, params string[] urls) =>
+		new(
+			method,
+			new OpenApiOperation
+			{
+				Servers = urls.Length == 0 ? null : [.. urls.Select(static u => new OpenApiServer { Url = u })],
+				Responses = new OpenApiResponses { ["200"] = new OpenApiResponse { Description = "ok" } }
+			},
+			"/foo",
+			new OpenApiPathItem(),
+			"foo"
+		);
+
+	[Test]
+	public void AreInterchangeable_DifferentOperationServers_IsFalse() =>
+		OperationEndpoint
+			.AreInterchangeable([WithServers(HttpMethod.Get, "https://a.example"), WithServers(HttpMethod.Post, "https://b.example")])
+			.Should()
+			.BeFalse();
+
+	[Test]
+	public void AreInterchangeable_OwnServersVersusInherited_IsFalse() =>
+		OperationEndpoint
+			.AreInterchangeable([WithServers(HttpMethod.Get, "https://a.example"), WithServers(HttpMethod.Post)])
+			.Should()
+			.BeFalse();
+
 	private static ApiOperation WithSecurity(HttpMethod method, IList<OpenApiSecurityRequirement>? security) =>
 		new(
 			method,

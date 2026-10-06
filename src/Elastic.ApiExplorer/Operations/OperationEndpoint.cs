@@ -113,8 +113,8 @@ public sealed partial record OperationEndpoint(
 	/// <summary>
 	/// Separate operations only merge their methods when they are the same call: the same non-path parameters
 	/// (name, requiredness and schema), the same request body (requiredness and schema per media type), the
-	/// same response schema per status and media type, the same security requirements, and the same lifecycle
-	/// (deprecated, beta).
+	/// same response schema per status and media type, the same security requirements, the same lifecycle
+	/// (deprecated, beta), and the same servers.
 	/// </summary>
 	public static bool AreInterchangeable(IReadOnlyList<ApiOperation> operations)
 	{
@@ -135,6 +135,10 @@ public sealed partial record OperationEndpoint(
 			StringComparer.Ordinal
 		);
 		var lifecycle = $"{(operation.Deprecated ? "deprecated" : "")}:{(OpenApiExtensionReader.IsBeta(operation) ? "beta" : "")}";
+		// Absent servers fall back to the document's; an operation that names its own is a different call.
+		var servers = operation.Servers is null
+			? "inherit"
+			: string.Join(',', operation.Servers.Select(static s => s.Url ?? "").Order(StringComparer.Ordinal));
 		return string.Join('|', parameters)
 			+ "#"
 			+ body
@@ -143,7 +147,9 @@ public sealed partial record OperationEndpoint(
 			+ "#"
 			+ SecurityKey(operation.Security)
 			+ "#"
-			+ lifecycle;
+			+ lifecycle
+			+ "#"
+			+ servers;
 	}
 
 	/// <summary>
