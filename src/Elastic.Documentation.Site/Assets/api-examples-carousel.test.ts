@@ -49,7 +49,17 @@ function markup(): string {
         <div data-api-examples>
             <button class="api-example-chip is-active" data-scenario="term"><span class="api-example-chip-title">Term search</span></button>
             <button class="api-example-chip" data-scenario="slicing"><span class="api-example-chip-title">Slicing</span></button>
-            <div class="api-examples-scenario-panel" data-scenario="term">${carousel(all, all)}</div>
+            <div class="api-examples-scenario-panel" data-scenario="term">${carousel(all, all)}
+                <div class="api-code-card example-block example-block--response" data-code-card>
+                    <div class="example-block-header"><span data-code-actions></span></div>
+                    <div data-code-panel="200"><pre><code>{"ok":true}</code></pre></div>
+                    <div data-code-panel="400" hidden><p class="example-empty">No example</p></div>
+                </div>
+                <div class="api-code-card" data-code-card data-empty-card>
+                    <div class="example-block-header"><span data-code-actions></span></div>
+                    <p class="example-empty">No example</p>
+                </div>
+            </div>
             <div class="api-examples-scenario-panel" data-scenario="slicing" hidden="until-found">${carousel(['Console', 'curl'], all, 'term')}</div>
         </div>`
 }
@@ -199,6 +209,32 @@ describe('API examples carousel', () => {
         slicing.dispatchEvent(new Event('beforematch'))
 
         expect(slicing.hasAttribute('hidden')).toBe(false)
+    })
+
+    it('offers the preview only where there is code to show', async () => {
+        initApiExamples()
+        const response = document.querySelector<HTMLElement>(
+            '.example-block--response'
+        )!
+        const button = response.querySelector<HTMLElement>(
+            '[data-code-preview]'
+        )!
+
+        expect(
+            document.querySelector('[data-empty-card] [data-code-preview]')
+        ).toBeNull()
+        expect(button.hidden).toBe(false)
+
+        // Switch to the status that has no example, the way the response tabs do.
+        response
+            .querySelector('[data-code-panel="200"]')!
+            .setAttribute('hidden', '')
+        response
+            .querySelector('[data-code-panel="400"]')!
+            .removeAttribute('hidden')
+        await new Promise((resolve) => setTimeout(resolve, 0))
+
+        expect(button.hidden).toBe(true)
     })
 
     it('locks page scrolling while the preview is open', () => {

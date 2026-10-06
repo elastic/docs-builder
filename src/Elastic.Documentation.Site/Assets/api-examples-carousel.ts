@@ -362,12 +362,34 @@ function iconButton(className: string, label: string, icon: string) {
     return button
 }
 
-/** Puts a full screen preview button in front of the copy button of every code card. */
+/** The code a preview of the card would show: its visible panel's, or its only block. Null when there is none. */
+function previewCode(card: HTMLElement): HTMLElement | null {
+    if (card.querySelector('[data-code-panel]'))
+        return card.querySelector<HTMLElement>(
+            '[data-code-panel]:not([hidden]) pre code'
+        )
+    return card.querySelector<HTMLElement>('pre code')
+}
+
+function syncPreviewButton(card: HTMLElement) {
+    const button = card.querySelector<HTMLElement>('[data-code-preview]')
+    const hide = !previewCode(card)
+    if (button && button.hidden !== hide) button.hidden = hide
+}
+
+/**
+ * Puts a full screen preview button in front of the copy button of every code card that has code.
+ * A card with switchable panels (response statuses) shows it only while the visible panel has code.
+ */
 function addPreviewButtons(examples: HTMLElement) {
     examples
-        .querySelectorAll<HTMLElement>('[data-code-card] [data-code-actions]')
-        .forEach((actions) => {
-            if (actions.querySelector('[data-code-preview]')) return
+        .querySelectorAll<HTMLElement>('[data-code-card]')
+        .forEach((card) => {
+            const actions = card.querySelector<HTMLElement>(
+                '[data-code-actions]'
+            )
+            if (!actions || actions.querySelector('[data-code-preview]')) return
+            if (!card.querySelector('pre code')) return
             const button = iconButton(
                 'api-code-preview-btn',
                 'Full screen preview',
@@ -375,6 +397,18 @@ function addPreviewButtons(examples: HTMLElement) {
             )
             button.dataset.codePreview = ''
             actions.prepend(button)
+            syncPreviewButton(card)
+            // Follow the status tabs: the button tracks which panel is shown.
+            const panels =
+                card.querySelectorAll<HTMLElement>('[data-code-panel]')
+            if (panels.length > 0) {
+                const observer = new MutationObserver(() =>
+                    syncPreviewButton(card)
+                )
+                panels.forEach((panel) =>
+                    observer.observe(panel, { attributeFilter: ['hidden'] })
+                )
+            }
         })
 }
 
@@ -412,10 +446,7 @@ function previewHeader(card: HTMLElement, scenarioTitle: string): HTMLElement {
 
 /** The code of a card, almost full screen. Shows the visible panel of switchable cards. */
 function openPreview(card: HTMLElement): HTMLDialogElement | null {
-    const code =
-        card.querySelector<HTMLElement>(
-            '[data-code-panel]:not([hidden]) pre code'
-        ) ?? card.querySelector<HTMLElement>('pre code')
+    const code = previewCode(card)
     if (!code) return null
     const block =
         code.closest<HTMLElement>('.notranslate') ?? code.closest('pre') ?? code
