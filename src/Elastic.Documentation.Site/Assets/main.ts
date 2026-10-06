@@ -4,7 +4,7 @@ import { initAppliesSwitch } from './applies-switch'
 import { initCodeLineNumbers } from './code-line-numbers'
 import { config } from './config'
 import { initCopyButton } from './copybutton'
-import { initHighlight } from './hljs'
+import { initHighlight, preloadHighlight } from './hljs'
 import { initImageCarousel } from './image-carousel'
 import { initListing } from './listing'
 import { initMermaid } from './mermaid'
@@ -193,6 +193,9 @@ function initCtaImpressions() {
         ctaImpressionObserver?.observe(cta)
     )
 }
+
+// The languages chunk is the long pole for code pages; fetch it before the init steps get to it.
+if (document.querySelector('pre code')) preloadHighlight()
 
 // Initialize on initial page load
 document.addEventListener('DOMContentLoaded', function () {

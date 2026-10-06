@@ -72,4 +72,24 @@ public class ApiCodeBlockRenderingTests
 		html.Should().Contain("<code class=\"language-curl\">");
 		html.Should().Contain("class=\"highlight-python notranslate\"");
 	}
+
+	[Test]
+	public async Task Render_LineNumbers_PutsTheGutterInTheMarkup()
+	{
+		var html = await _ApiCodeBlock.Create(new ApiCodeBlockModel("language-json", "{\n  \"a\": 1\n}\n", LineNumbers: true)).RenderAsync(
+			cancellationToken: Ct
+		);
+
+		html.Should().Contain(
+			"<div class=\"code-lines\"><div class=\"code-line-gutter\" aria-hidden=\"true\">1\n2\n3</div><pre><code class=\"language-json\">"
+		);
+	}
+
+	[Test]
+	[Arguments("", 1)]
+	[Arguments("one", 1)]
+	[Arguments("one\n", 1)]
+	[Arguments("one\n\n", 2)]
+	[Arguments("a\r\nb\r\nc", 3)]
+	public void LineCount_MatchesTheGutterRule(string source, int expected) => ApiCodeBlockModel.LineCount(source).Should().Be(expected);
 }

@@ -68,15 +68,13 @@
 				@apply overflow-x-auto rounded-none border-0;
 				padding: var(--code-pad) !important;
 				background-color: var(--code-bg);
-				color: var(--code-fg);
+				/* The base colour highlighting ends up with, so a slow load only adds the token colours. */
+				color: var(--code-token-base);
 				font-family: var(--code-font);
 				font-size: var(--code-size);
 				mix-blend-mode: unset;
 				line-height: var(--code-leading);
 				word-break: normal;
-			}
-			code.hljs {
-				color: var(--code-token-base);
 			}
 			code:first-child {
 				border-top-left-radius: var(--code-radius);

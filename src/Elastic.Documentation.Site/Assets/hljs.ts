@@ -28,6 +28,11 @@ function ensureHighlightReady(): Promise<void> {
     return allLanguagesReady
 }
 
+/** Starts loading the languages early; pages with code call this before the first init step runs. */
+export function preloadHighlight(): void {
+    void ensureHighlightReady()
+}
+
 export async function highlightCodeBlocks(root: ParentNode): Promise<void> {
     const blocks = root.querySelectorAll<HTMLElement>(CODE_BLOCK_SELECTOR)
     if (blocks.length === 0) return
