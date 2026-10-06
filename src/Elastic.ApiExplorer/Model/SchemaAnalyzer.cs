@@ -644,11 +644,34 @@ public class SchemaAnalyzer(
 			.AnyOfOptions
 			.Select(
 				o => o is { IsObject: true, Schema: not null } && !o.Name.EndsWith("[]")
-					? o with { Schema = new OpenApiSchema { AllOf = [.. split.Bases, o.Schema] } }
+					? o with { Schema = MergeBasesInto(split.Bases, o.Schema) }
 					: o
 			)
 			.ToList();
 		return union with { AnyOfOptions = options };
+	}
+
+	/// <summary>A synthetic <c>allOf</c> has no <c>required</c> list of its own, so it collects the lists of every member.</summary>
+	private OpenApiSchema MergeBasesInto(IReadOnlyList<IOpenApiSchema> bases, IOpenApiSchema variant)
+	{
+		var members = new List<IOpenApiSchema>([.. bases, variant]);
+		var required = new HashSet<string>();
+		CollectRequired(members, required, [with(ReferenceEqualityComparer.Instance)]);
+		return new OpenApiSchema { AllOf = members, Required = required };
+	}
+
+	private void CollectRequired(IEnumerable<IOpenApiSchema> schemas, HashSet<string> required, HashSet<IOpenApiSchema> visited)
+	{
+		foreach (var schema in schemas)
+		{
+			var resolved = ResolveSchema(schema) ?? schema;
+			if (!visited.Add(resolved))
+				continue;
+
+			if (resolved.Required is { } declared)
+				required.UnionWith(declared);
+			CollectRequired(resolved.AllOf ?? [], required, visited);
+		}
 	}
 
 	private readonly record struct AllOfUnion(IReadOnlyList<IOpenApiSchema> Bases, IList<IOpenApiSchema> Variants, string Keyword);
