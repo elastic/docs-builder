@@ -80,7 +80,8 @@ public class ApiPropertyTreeBuilder(OpenApiDocument document, PropertyDisplayOpt
 	public ApiUnionVariants? BuildUnionVariantsForSchemas(
 		IList<IOpenApiSchema> unionSchemas,
 		string prefix,
-		IReadOnlySet<string>? ancestors
+		IReadOnlySet<string>? ancestors,
+		OpenApiDiscriminator? discriminator = null
 	)
 	{
 		var unionOptions = unionSchemas
@@ -92,7 +93,7 @@ public class ApiPropertyTreeBuilder(OpenApiDocument document, PropertyDisplayOpt
 				return new UnionOption(displayName, info.SchemaRef, info.IsObject, s);
 			})
 			.ToList();
-		return BuildUnionVariants(unionOptions, new PropertyTreeScope { Prefix = prefix, Ancestors = ancestors });
+		return BuildUnionVariants(unionOptions, new PropertyTreeScope { Prefix = prefix, Ancestors = ancestors }, discriminator);
 	}
 
 	/// <summary>The display form (icons, keywords, name) of a schema's type.</summary>

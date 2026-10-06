@@ -824,6 +824,10 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture)
 			      "Cat": { "type": "object", "properties": { "kind": { "type": "string", "enum": ["cat"] }, "lives": { "type": "integer" } } },
 			      "Dog": { "type": "object", "properties": { "kind": { "type": "string", "enum": ["dog"] }, "barks": { "type": "boolean" } } },
 			      "Fish": { "type": "object", "properties": { "kind": { "type": "string" }, "fins": { "type": "integer" } } },
+			      "Pet": {
+			        "oneOf": [ { "$ref": "#/components/schemas/Cat" }, { "$ref": "#/components/schemas/Dog" } ],
+			        "discriminator": { "propertyName": "kind", "mapping": { "tomcat": "#/components/schemas/Cat" } }
+			      },
 			      "Holder": {
 			        "type": "object",
 			        "properties": {
@@ -870,6 +874,11 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture)
 			Labels("mapped").Should().Equal("kind: feline", "kind: canine");
 			Labels("implicit").Should().Equal("kind: cat", null);
 			Labels("plain").Should().Equal(null, null);
+
+			var holder = new OpenApiSchemaReference("Pet", document);
+			var pet = document.Components!.Schemas!["Pet"];
+			var topLevel = builder.BuildUnionVariantsForSchemas(pet.OneOf!, "oneof", null, holder.Discriminator);
+			topLevel!.Variants.Select(v => v.DiscriminatorLabel).Should().Equal("kind: tomcat", "kind: dog");
 		}
 		finally
 		{
