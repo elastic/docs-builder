@@ -55,6 +55,37 @@ public class OpenApiGeneratorCatalogSplitTests
 	}
 
 	[Test]
+	public async Task GenerateProducts_IsolatedFixtureKey_DropsPrefixFromUrl()
+	{
+		var outputRoot = Path.Join(Paths.WorkingDirectoryRoot.FullName, $"api-catalog-split-{Guid.NewGuid():N}");
+		var context = CreateGenerateContext(
+			outputRoot,
+			"""
+			api:
+			  docs-builder-elasticsearch:
+			    - spec: elasticsearch-openapi.json
+			      product: elasticsearch
+			"""
+		);
+		using var versionIndexClient = new VersionIndexClient(BaseUri, MultiVersionHandler(), sleep: (_, _) => Task.CompletedTask);
+		var reader = CreateSequentialReader(SpecDocument("Elasticsearch main"));
+		var generator = new OpenApiGenerator(
+			NullLoggerFactory.Instance,
+			context,
+			NoopMarkdownStringRenderer.Instance,
+			versionIndexClient,
+			reader
+		);
+
+		var entries = await generator.GenerateProducts(ctx: TestContext.Current!.Execution.CancellationToken);
+
+		entries.Should().ContainSingle();
+		entries[0].Url.Should().Be("/docs/api/doc/elasticsearch/");
+		context.WriteFileSystem.File.Exists(Path.Join(outputRoot, "api", "doc", "elasticsearch", "index.html")).Should().BeTrue();
+		context.WriteFileSystem.Directory.Exists(Path.Join(outputRoot, "api", "doc", "docs-builder-elasticsearch")).Should().BeFalse();
+	}
+
+	[Test]
 	public async Task GenerateCatalog_WritesCombinedCatalogFromMultipleEntries()
 	{
 		var outputRoot = Path.Join(Paths.WorkingDirectoryRoot.FullName, $"api-catalog-split-{Guid.NewGuid():N}");

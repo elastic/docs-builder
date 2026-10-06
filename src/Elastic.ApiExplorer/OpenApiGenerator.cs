@@ -206,13 +206,22 @@ public class OpenApiGenerator(
 
 		// docs/_docset.yml declares docs-builder-* copies of product specs for isolated serve.
 		// Assembler preview also loads that checkout, so those keys would list the same API twice.
-		var skipFixtures = context.BuildType == BuildType.Assembler;
-		return context
-			.Configuration
-			.ApiConfigurations
-			.Where(kv => !skipFixtures || !IsolatedApiAliases.IsFixtureKey(kv.Key))
-			.Select((kv, i) => (i, kv.Key, kv.Value))
-			.ToList();
+		// Isolated builds have no such collision and serve the fixtures under the short product key.
+		if (context.BuildType == BuildType.Assembler)
+		{
+			return context
+				.Configuration
+				.ApiConfigurations
+				.Where(kv => !IsolatedApiAliases.IsFixtureKey(kv.Key))
+				.Select((kv, i) => (i, kv.Key, kv.Value))
+				.ToList();
+		}
+
+		var keys = context.Configuration.ApiConfigurations.Keys.ToHashSet(StringComparer.OrdinalIgnoreCase);
+		return context.Configuration.ApiConfigurations.Select((kv, i) => (i, UrlKey(kv.Key, keys), kv.Value)).ToList();
+
+		static string UrlKey(string apiKey, HashSet<string> keys) =>
+			IsolatedApiAliases.UrlKey(apiKey) is var shortKey && !keys.Contains(shortKey) ? shortKey : apiKey;
 	}
 
 	private Task<ResolvedProductDocuments> DocumentsFor(string apiKey, ResolvedApiConfiguration apiConfig, Cancel ctx) =>

@@ -44,7 +44,7 @@ features:
 
 # Isolated fixtures. The prefix keeps these keys off the docs-content APIs.
 # Assembler builds omit them; this checkout is still loaded in preview (skip: true).
-# Isolated serve (no --watch): /api/doc/docs-builder-elasticsearch/, /api/doc/docs-builder-kibana/, …
+# Isolated serve (no --watch) drops the prefix from URLs: /api/doc/elasticsearch/, /api/doc/kibana/, …
 api:
   docs-builder-elasticsearch:
     - spec: elasticsearch.json
