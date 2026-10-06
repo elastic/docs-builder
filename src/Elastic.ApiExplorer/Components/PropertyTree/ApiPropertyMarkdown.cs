@@ -37,6 +37,7 @@ internal static class ApiPropertyMarkdown
 			if (variant.DiscriminatorLabel is { Length: > 0 } discriminatorLabel)
 				_ = markdown.Append($" (`{discriminatorLabel}`)");
 			_ = markdown.AppendLine();
+			WriteNestedLine(markdown, depth, ApiMarkdown.Prepare(variant.DescriptionMarkdown, apiBaseUrl));
 			if (variant.Properties is not null)
 				WriteList(markdown, variant.Properties, apiBaseUrl, depth + 1);
 		}

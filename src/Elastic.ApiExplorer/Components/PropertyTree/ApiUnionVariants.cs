@@ -4,6 +4,7 @@
 
 using Elastic.ApiExplorer.Model;
 using Elastic.ApiExplorer.Operations;
+using Microsoft.AspNetCore.Html;
 
 namespace Elastic.ApiExplorer.Components.PropertyTree;
 
@@ -21,6 +22,10 @@ public record ApiUnionVariant
 	public required int NestedCount { get; init; }
 	public required bool UseHidden { get; init; }
 	public ApiPropertyList? Properties { get; init; }
+
+	/// <summary>The first paragraph of the variant schema's description; empty when it has none.</summary>
+	public HtmlString DescriptionHtml { get; init; } = HtmlString.Empty;
+	public string? DescriptionMarkdown { get; init; }
 
 	/// <summary>The discriminator property and the value that selects this variant, e.g. <c>type: eql</c>.</summary>
 	public string? DiscriminatorLabel { get; init; }

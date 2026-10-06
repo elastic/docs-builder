@@ -1031,7 +1031,7 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture)
 			  "paths": {},
 			  "components": {
 			    "schemas": {
-			      "Cat": { "type": "object", "required": ["lives"], "properties": { "lives": { "type": "integer" } } },
+			      "Cat": { "type": "object", "description": "A cat.\n\nSecond paragraph.", "required": ["lives"], "properties": { "lives": { "type": "integer" } } },
 			      "Dog": { "type": "object", "properties": { "barks": { "type": "boolean" } } },
 			      "Body": { "anyOf": [ { "$ref": "#/components/schemas/Cat" }, { "$ref": "#/components/schemas/Dog" } ] },
 			      "Plain": { "type": "object", "properties": { "name": { "type": "string" } } }
@@ -1070,6 +1070,8 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture)
 			variants.Variants[0].Properties!.Items.Single().IsRequired.Should().BeTrue();
 			variants.Variants[0].Properties!.Items.Single().IsRequest.Should().BeTrue("request variants keep the request flag");
 			variants.Label.Should().Be("Any of:");
+			variants.Variants[0].DescriptionMarkdown.Should().Be("A cat.", "only the first paragraph is shown");
+			variants.Variants[1].DescriptionMarkdown.Should().BeNull();
 			var markdown = new System.Text.StringBuilder();
 			ApiPropertyMarkdown.WriteVariants(markdown, variants, "/api/doc/fixture");
 			markdown.ToString().Should().StartWith("Any of:").And.Contain("- `lives` (integer) — required");

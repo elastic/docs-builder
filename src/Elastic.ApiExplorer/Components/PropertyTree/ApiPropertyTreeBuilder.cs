@@ -657,6 +657,9 @@ public class ApiPropertyTreeBuilder(OpenApiDocument document, PropertyDisplayOpt
 			var isCollapsible = showProperties && nestedCount > 1;
 			var defaultExpanded = ComputeDefaultExpanded(scope.Depth, nestedCount);
 
+			// An X[] / X pair describes the same schema twice, so only the plain variant carries the text.
+			var description = !variant.IsArray || !hasBothVariants ? FirstParagraph(variant.Schema?.Description) : null;
+
 			variants.Add(new ApiUnionVariant
 			{
 				DisplayName = SchemaHelpers.ReadableSchemaName(
@@ -676,6 +679,8 @@ public class ApiPropertyTreeBuilder(OpenApiDocument document, PropertyDisplayOpt
 						scope with { Prefix = optionId, Depth = scope.Depth + 1, Ancestors = newAncestors, RequiredProperties = null }
 					) ?? new ApiPropertyList([])
 					: null,
+				DescriptionHtml = description is null ? HtmlString.Empty : options.RenderMarkdown(description),
+				DescriptionMarkdown = description,
 				DiscriminatorLabel = variant.IsArray ? null : BuildDiscriminatorLabel(discriminator, variant)
 			});
 		}
@@ -688,6 +693,9 @@ public class ApiPropertyTreeBuilder(OpenApiDocument document, PropertyDisplayOpt
 			UseHiddenUntilFound = options.UseHiddenUntilFound
 		};
 	}
+
+	private static string? FirstParagraph(string? description) =>
+		description?.Split("\n\n", 2, StringSplitOptions.TrimEntries)[0] is { Length: > 0 } first ? first : null;
 
 	/// <summary>An explicit <c>mapping</c> entry wins; otherwise a variant whose discriminator property has a single enum value declares it.</summary>
 	private string? BuildDiscriminatorLabel(OpenApiDiscriminator? discriminator, VariantCandidate variant)

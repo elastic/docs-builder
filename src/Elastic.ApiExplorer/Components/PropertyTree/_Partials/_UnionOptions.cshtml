@@ -50,6 +50,10 @@
 					<code class="discriminator-value">@discriminatorLabel</code>
 				}
 			</div>
+			@if (variant.DescriptionHtml.Value is { Length: > 0 })
+			{
+				<div class="union-variant-description">@variant.DescriptionHtml</div>
+			}
 			@if (variant.ShowProperties && variant.Properties is not null)
 			{
 				if (variant.IsCollapsible)
