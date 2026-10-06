@@ -81,7 +81,7 @@ public class ApiCodeBlockRenderingTests
 		);
 
 		html.Should().Contain(
-			"<div class=\"code-lines\"><div class=\"code-line-gutter\" aria-hidden=\"true\">1\n2\n3</div><pre><code class=\"language-json\">"
+			"<div class=\"code-lines\"><div class=\"code-line-gutter\" aria-hidden=\"true\">1&#xA;2&#xA;3</div><pre><code class=\"language-json\">"
 		);
 	}
 
