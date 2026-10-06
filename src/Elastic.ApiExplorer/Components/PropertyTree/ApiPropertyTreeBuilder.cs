@@ -263,10 +263,10 @@ public class ApiPropertyTreeBuilder(OpenApiDocument document, PropertyDisplayOpt
 
 		var (isSimpleArrayUnion, simpleUnionBaseName) = DetectSimpleArrayUnion(typeInfo);
 
-		var hasUnionOptions = typeInfo is { IsUnion: true, AnyOfOptions: not null }
+		var hasUnionOptions = typeInfo is { IsUnion: true, UnionOptions: not null }
 			&& depth < options.MaxDepth
 			&& !isSimpleArrayUnion
-			&& typeInfo.AnyOfOptions.Any(_analyzer.UnionOptionHasProperties);
+			&& typeInfo.UnionOptions.Any(_analyzer.UnionOptionHasProperties);
 
 		var (simpleUnionHasExpandableProps, simpleUnionSchema, simpleUnionNestedOptions) = ResolveSimpleUnionExpansion(
 			typeInfo,
@@ -283,7 +283,7 @@ public class ApiPropertyTreeBuilder(OpenApiDocument document, PropertyDisplayOpt
 		else if (hasArrayItemProps)
 			nestedCount = _analyzer.GetSchemaProperties(arrayItemSchema)?.Count ?? 0;
 		else if (hasUnionOptions)
-			nestedCount = typeInfo.AnyOfOptions!.Count(_analyzer.UnionOptionHasProperties);
+			nestedCount = typeInfo.UnionOptions!.Count(_analyzer.UnionOptionHasProperties);
 		else if (simpleUnionHasExpandableProps && simpleUnionNestedOptions is { Count: > 0 })
 			nestedCount = simpleUnionNestedOptions.Count(_analyzer.UnionOptionHasProperties);
 		else if (simpleUnionHasExpandableProps && simpleUnionSchema is not null)
@@ -314,14 +314,10 @@ public class ApiPropertyTreeBuilder(OpenApiDocument document, PropertyDisplayOpt
 
 	private static (bool IsSimpleArrayUnion, string? BaseName) DetectSimpleArrayUnion(TypeInfo typeInfo)
 	{
-		if (typeInfo is not { IsUnion: true, AnyOfOptions.Count: > 0 })
+		if (typeInfo is not { IsUnion: true, UnionOptions.Count: > 0 })
 			return (false, null);
 
-		var unionOptionNames = new List<string>();
-		unionOptionNames.AddRange(typeInfo.AnyOfOptions.Select(o => o.Name));
-		if (typeInfo.UnionOptions is not null)
-			unionOptionNames.AddRange(typeInfo.UnionOptions);
-		var distinctNames = unionOptionNames.Distinct().ToArray();
+		var distinctNames = typeInfo.UnionOptions.Select(o => o.Name).Distinct().ToArray();
 		if (distinctNames.Length != 2)
 			return (false, null);
 
@@ -341,7 +337,7 @@ public class ApiPropertyTreeBuilder(OpenApiDocument document, PropertyDisplayOpt
 		if (!isSimpleArrayUnion || string.IsNullOrEmpty(simpleUnionBaseName) || depth >= options.MaxDepth)
 			return (false, null, null);
 
-		var baseOption = typeInfo.AnyOfOptions!.FirstOrDefault(o => o.Name == simpleUnionBaseName);
+		var baseOption = typeInfo.UnionOptions!.FirstOrDefault(o => o.Name == simpleUnionBaseName);
 		if (baseOption?.Schema is null)
 			return (false, null, null);
 
@@ -401,7 +397,7 @@ public class ApiPropertyTreeBuilder(OpenApiDocument document, PropertyDisplayOpt
 		}
 		else if (expansion.IsSimpleArrayUnion && !string.IsNullOrEmpty(expansion.SimpleUnionBaseName))
 		{
-			var baseOption = typeInfo.AnyOfOptions!.FirstOrDefault(o => o.Name == expansion.SimpleUnionBaseName);
+			var baseOption = typeInfo.UnionOptions!.FirstOrDefault(o => o.Name == expansion.SimpleUnionBaseName);
 			if (baseOption?.Schema is not null && _analyzer.GetTypeInfo(baseOption.Schema).HasLink)
 				linkedTypeName = expansion.SimpleUnionBaseName;
 		}
@@ -417,12 +413,7 @@ public class ApiPropertyTreeBuilder(OpenApiDocument document, PropertyDisplayOpt
 		if (typeInfo.EnumValues is { Length: > 0 } && !expansion.HasUnionOptions)
 			return null;
 
-		var unionOptionNames = new List<string>();
-		if (typeInfo.AnyOfOptions is { Count: > 0 })
-			unionOptionNames.AddRange(typeInfo.AnyOfOptions.Select(o => o.Name));
-		if (typeInfo.UnionOptions is not null)
-			unionOptionNames.AddRange(typeInfo.UnionOptions);
-		var sortedOptions = unionOptionNames.Distinct().OrderByDescending(o => o.EndsWith("[]")).ToArray();
+		var sortedOptions = (typeInfo.UnionOptions ?? []).Select(o => o.Name).Distinct().OrderByDescending(o => o.EndsWith("[]")).ToArray();
 
 		if (expansion.IsSimpleArrayUnion)
 			return null;
@@ -491,7 +482,7 @@ public class ApiPropertyTreeBuilder(OpenApiDocument document, PropertyDisplayOpt
 			{
 				Kind = ChildKind.UnionVariants,
 				UseHidden = false,
-				Variants = BuildUnionVariants(typeInfo.AnyOfOptions!, childScope, _analyzer.GetUnionDiscriminator(row.Schema))
+				Variants = BuildUnionVariants(typeInfo.UnionOptions!, childScope, _analyzer.GetUnionDiscriminator(row.Schema))
 					?? ApiUnionVariants.Empty
 			};
 		}
@@ -583,9 +574,9 @@ public class ApiPropertyTreeBuilder(OpenApiDocument document, PropertyDisplayOpt
 			return true;
 
 		if (
-			typeInfo is { IsUnion: true, AnyOfOptions: not null }
+			typeInfo is { IsUnion: true, UnionOptions: not null }
 			&& typeInfo
-				.AnyOfOptions
+				.UnionOptions
 				.Select(option => option.Name.EndsWith("[]") ? option.Name[..^2] : option.Name)
 				.Any(baseName => IsAncestorType(baseName, ancestors))
 		)
@@ -596,8 +587,7 @@ public class ApiPropertyTreeBuilder(OpenApiDocument document, PropertyDisplayOpt
 
 	private bool DetectDirectUnionRecursion(IOpenApiSchema propSchema, IReadOnlySet<string> ancestors)
 	{
-		var unionSchemas = propSchema.OneOf ?? propSchema.AnyOf;
-		if (unionSchemas is not { Count: > 0 })
+		if (!UnionSchemas.TryGet(propSchema, out _, out var unionSchemas))
 			return false;
 
 		foreach (var unionSchema in unionSchemas.Where(s => s is not null))

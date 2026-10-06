@@ -57,7 +57,7 @@ public record UnionDisplay
 	public IReadOnlyList<UnionBadge> Badges { get; init; } = [];
 
 	/// <summary>The schema keyword the union came from, <c>oneOf</c> or <c>anyOf</c>.</summary>
-	public string? Keyword { get; init; }
+	public UnionKeyword? Keyword { get; init; }
 
 	/// <summary>"Any of:" when any number of options can match, "One of:" otherwise.</summary>
 	public string Label => SchemaHelpers.UnionLabel(Keyword);

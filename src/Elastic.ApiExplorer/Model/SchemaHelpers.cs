@@ -133,7 +133,7 @@ public static class SchemaHelpers
 	/// (e.g. <c>/api/elasticsearch</c>), matching the URLs built by <c>SchemaNavigationItem</c>.
 	/// </summary>
 	/// <summary>The row label for a union: <c>anyOf</c> options can match together, so it says "Any of:".</summary>
-	public static string UnionLabel(string? keyword) => keyword == "anyOf" ? "Any of:" : "One of:";
+	public static string UnionLabel(UnionKeyword? keyword) => keyword == UnionKeyword.AnyOf ? "Any of:" : "One of:";
 
 	public static string? GetContainerPageUrl(string apiRootUrl, string typeName)
 	{
@@ -313,7 +313,7 @@ public static class SchemaHelpers
 			return null;
 		if (schema.AdditionalProperties is not null)
 			return null;
-		if (schema.OneOf is { Count: > 0 } || schema.AnyOf is { Count: > 0 } || schema.AllOf is { Count: > 0 })
+		if (UnionSchemas.IsUnion(schema) || schema.AllOf is { Count: > 0 })
 			return null;
 		// Enums are not primitive aliases - they have special rendering
 		if (schema.Enum is { Count: > 0 })

@@ -19,39 +19,50 @@ public record ComposedType(string Name, bool HasLink);
 /// Unified type information record used by both OperationView and SchemaView.
 /// Contains all metadata needed for rendering schema types.
 /// </summary>
-/// <param name="TypeName">The display name of the type.</param>
-/// <param name="SchemaRef">The schema reference ID, if applicable.</param>
-/// <param name="IsArray">Whether this is an array type.</param>
-/// <param name="IsObject">Whether this is an object type (has properties).</param>
-/// <param name="IsValueType">Whether this is a known value type (resolves to primitive).</param>
-/// <param name="ValueTypeBase">The primitive base type for value types.</param>
-/// <param name="HasLink">Whether this type has a dedicated page to link to.</param>
-/// <param name="AnyOfOptions">Union options with schema references for potential expansion.</param>
-/// <param name="IsDictionary">Whether this is a dictionary/map type (additionalProperties).</param>
-/// <param name="DictValueSchema">The schema for dictionary value types.</param>
-/// <param name="IsEnum">Whether this is an enum type.</param>
-/// <param name="IsUnion">Whether this is a union type (oneOf/anyOf).</param>
-/// <param name="EnumValues">Every literal the value can take, from <see cref="SchemaAnalyzer.GetEnumValues"/>; set for unions and arrays of enums too.</param>
-/// <param name="UnionOptions">String array of union option names for display.</param>
-/// <param name="ArrayItemType">The primitive item type for arrays of primitives.</param>
-/// <param name="UnionKeyword">The schema keyword a union came from, <c>oneOf</c> or <c>anyOf</c>; null for other types.</param>
-/// <param name="AlsoIncludes">Further named schemas an <c>allOf</c> merges in after the first <c>$ref</c>, which names the type.</param>
-public record TypeInfo(
-	string TypeName,
-	string? SchemaRef,
-	bool IsArray,
-	bool IsObject,
-	bool IsValueType,
-	string? ValueTypeBase,
-	bool HasLink,
-	List<UnionOption>? AnyOfOptions,
-	bool IsDictionary = false,
-	IOpenApiSchema? DictValueSchema = null,
-	bool IsEnum = false,
-	bool IsUnion = false,
-	string[]? EnumValues = null,
-	string[]? UnionOptions = null,
-	string? ArrayItemType = null,
-	List<ComposedType>? AlsoIncludes = null,
-	string? UnionKeyword = null
-);
+public record TypeInfo
+{
+	/// <summary>The display name of the type.</summary>
+	public required string TypeName { get; init; }
+
+	/// <summary>The schema reference ID, if applicable.</summary>
+	public string? SchemaRef { get; init; }
+
+	public bool IsArray { get; init; }
+
+	/// <summary>Whether this is an object type (has properties).</summary>
+	public bool IsObject { get; init; }
+
+	/// <summary>Whether this is a known value type (resolves to primitive).</summary>
+	public bool IsValueType { get; init; }
+
+	/// <summary>The primitive base type for value types.</summary>
+	public string? ValueTypeBase { get; init; }
+
+	/// <summary>Whether this type has a dedicated page to link to.</summary>
+	public bool HasLink { get; init; }
+
+	/// <summary>The options of a <c>oneOf</c>/<c>anyOf</c> union, with schema references for potential expansion.</summary>
+	public List<UnionOption>? UnionOptions { get; init; }
+
+	/// <summary>The schema keyword a union came from; null for every other type.</summary>
+	public UnionKeyword? UnionKeyword { get; init; }
+
+	public bool IsUnion => UnionKeyword is not null;
+
+	/// <summary>Whether this is a dictionary/map type (additionalProperties).</summary>
+	public bool IsDictionary { get; init; }
+
+	/// <summary>The schema for dictionary value types.</summary>
+	public IOpenApiSchema? DictValueSchema { get; init; }
+
+	public bool IsEnum { get; init; }
+
+	/// <summary>Every literal the value can take, from <see cref="SchemaAnalyzer.GetEnumValues"/>; set for unions and arrays of enums too.</summary>
+	public string[]? EnumValues { get; init; }
+
+	/// <summary>The primitive item type for arrays of primitives.</summary>
+	public string? ArrayItemType { get; init; }
+
+	/// <summary>Further named schemas an <c>allOf</c> merges in after the first <c>$ref</c>, which names the type.</summary>
+	public List<ComposedType>? AlsoIncludes { get; init; }
+}

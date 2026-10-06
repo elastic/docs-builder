@@ -707,9 +707,7 @@ public partial record OperationPageModel
 
 	private static UnionBadge[] UnionBadges(TypeInfo typeInfo)
 	{
-		var names = typeInfo.AnyOfOptions is { Count: > 0 } options
-			? options.Select(o => o.Name)
-			: typeInfo.UnionOptions ?? Enumerable.Empty<string>();
+		var names = (typeInfo.UnionOptions ?? []).Select(o => o.Name);
 		return names
 			.Where(n => !string.IsNullOrEmpty(n))
 			.Select(n => new UnionBadge(n, ApiPropertyTreeBuilder.IsTypeOptionBadge(n)))
@@ -812,10 +810,10 @@ public partial record OperationPageModel
 	)
 	{
 		var typeInfo = analyzer.GetTypeInfo(bodySchema);
-		if (typeInfo is not { IsUnion: true, AnyOfOptions.Count: > 0 })
+		if (typeInfo is not { IsUnion: true, UnionOptions.Count: > 0 })
 			return null;
 
-		var schemas = typeInfo.AnyOfOptions.Where(static o => o.Schema is not null).Select(static o => o.Schema!).ToList();
+		var schemas = typeInfo.UnionOptions.Where(static o => o.Schema is not null).Select(static o => o.Schema!).ToList();
 		var variants = schemas.Count == 0
 			? null
 			: builder.BuildUnionVariantsForSchemas(schemas, scope, analyzer.GetUnionDiscriminator(bodySchema));
