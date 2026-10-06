@@ -3501,8 +3501,8 @@ html:has(.api-page-shell) {
 	flex-direction: column;
 	width: fit-content;
 	max-width: calc(100vw - 48px);
-	height: calc(100vh - 48px);
-	max-height: none;
+	/* As tall as the code, up to the window; longer code scrolls in the body. */
+	max-height: calc(100vh - 48px);
 	margin: auto;
 	padding: 0;
 	border: 1px solid var(--code-border);
