@@ -6,6 +6,7 @@ import { iconCheckEui, iconCopyEui, temporarilyChangeIcon } from './copybutton'
 import { closeIcon, fullscreenIcon } from './icons'
 import { prefersReducedMotion } from './motion'
 import { lockPageScroll } from './scroll-lock'
+import tippy from 'tippy.js'
 
 export const apiLanguageStorageKey = 'api-language'
 const defaultLanguage = 'Console'
@@ -621,6 +622,22 @@ function onKeydown(event: KeyboardEvent) {
     }
 }
 
+/** Language names on the dots show at once on hover; the native title tooltip takes about a second. */
+function addDotTooltips(examples: HTMLElement) {
+    examples
+        .querySelectorAll<HTMLElement>('.api-code-carousel-dot[data-tooltip]')
+        .forEach((dot) => {
+            if (dot.dataset.tooltipBound) return
+            dot.dataset.tooltipBound = 'true'
+            tippy(dot, {
+                content: dot.dataset.tooltip ?? '',
+                delay: [80, 0],
+                placement: 'top',
+                touch: ['hold', 300],
+            })
+        })
+}
+
 /** Initializes every examples rail in `root`. Safe to call again after an HTMX swap. */
 export function initApiExamples(root: ParentNode = document): void {
     if (!delegated) {
@@ -633,6 +650,7 @@ export function initApiExamples(root: ParentNode = document): void {
     root.querySelectorAll<HTMLElement>('[data-api-examples]').forEach(
         (examples) => {
             addPreviewButtons(examples)
+            addDotTooltips(examples)
             if (link.example) showScenario(examples, link.example)
             scenarioPanels(examples).forEach((panel) => {
                 if (panel.dataset.beforematchBound) return

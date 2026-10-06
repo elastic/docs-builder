@@ -23,7 +23,7 @@ function carousel(
     const dots = allLangs
         .map((lang) =>
             langs.includes(lang)
-                ? `<button class="api-code-carousel-dot" data-carousel-dot="${lang}"></button>`
+                ? `<button class="api-code-carousel-dot" data-carousel-dot="${lang}" data-tooltip="${lang}"></button>`
                 : `<button class="api-code-carousel-dot is-missing" data-carousel-jump="${jumpTo}" data-lang="${lang}"></button>`
         )
         .join('')
@@ -183,6 +183,19 @@ describe('API examples carousel', () => {
         })
         expect(activeLang('term')).toBe('Java')
         jest.useRealTimers()
+    })
+
+    it('gives the dots a fast tooltip instead of a native title', () => {
+        initApiExamples()
+        const dot = document.querySelector<
+            HTMLElement & {
+                _tippy?: { props: { content: string; delay: unknown } }
+            }
+        >('[data-scenario="term"] [data-carousel-dot="Java"]')!
+
+        expect(dot.hasAttribute('title')).toBe(false)
+        expect(dot._tippy?.props.content).toBe('Java')
+        expect(dot._tippy?.props.delay).toEqual([80, 0])
     })
 
     it('steps with the arrows and disables them at the ends', () => {

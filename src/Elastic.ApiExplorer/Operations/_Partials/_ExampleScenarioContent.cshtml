@@ -68,13 +68,13 @@
 					var sample = samples.FirstOrDefault(s => s.Language.Equals(language, StringComparison.OrdinalIgnoreCase));
 					if (sample is not null)
 					{
-						<button type="button" class="api-code-carousel-dot@(sample == samples[0] ? " is-active" : "")" data-carousel-dot="@sample.Language" aria-label="@sample.Language" title="@sample.Language" aria-current="@(sample == samples[0] ? "true" : "false")">
+						<button type="button" class="api-code-carousel-dot@(sample == samples[0] ? " is-active" : "")" data-carousel-dot="@sample.Language" aria-label="@sample.Language" data-tooltip="@sample.Language" aria-current="@(sample == samples[0] ? "true" : "false")">
 							<span class="api-lang-badge" data-lang="@sample.Language" aria-hidden="true"></span>
 						</button>
 					}
 					else if (Model.Panel.ScenarioWith(language) is { } owner)
 					{
-						<button type="button" class="api-code-carousel-dot is-missing" data-carousel-jump="@owner.TabId" data-lang="@language" aria-label="@language, in @owner.Title" title="No @language sample for this example. Show @language for &ldquo;@owner.Title&rdquo;.">
+						<button type="button" class="api-code-carousel-dot is-missing" data-carousel-jump="@owner.TabId" data-lang="@language" aria-label="@language, in @owner.Title" data-tooltip="No @language sample for this example. Show @language for &ldquo;@owner.Title&rdquo;.">
 							<span class="api-lang-badge" data-lang="@language" aria-hidden="true"></span>
 						</button>
 					}
