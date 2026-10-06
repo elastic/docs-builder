@@ -60,7 +60,8 @@ public class ApiPropertyTreeBuilder(OpenApiDocument document, PropertyDisplayOpt
 				continue;
 
 			var typeInfo = _analyzer.GetTypeInfo(propSchema);
-			var propId = string.IsNullOrEmpty(scope.Prefix) ? name : $"{scope.Prefix}-{name}";
+			var anchorName = name == DictionaryKeyName ? "string" : name;
+			var propId = string.IsNullOrEmpty(scope.Prefix) ? anchorName : $"{scope.Prefix}-{anchorName}";
 			var row = new PropertyRow(
 				name,
 				propSchema,
@@ -621,6 +622,8 @@ public class ApiPropertyTreeBuilder(OpenApiDocument document, PropertyDisplayOpt
 	private static bool IsAncestorType(string? typeName, IReadOnlySet<string> ancestors) =>
 		!string.IsNullOrEmpty(typeName) && !SchemaHelpers.IsPrimitiveTypeName(typeName) && ancestors.Contains(typeName);
 
+	private const string DictionaryKeyName = "<string>";
+
 	private ApiUnionVariants? BuildUnionVariants(
 		List<UnionOption> unionOptions,
 		PropertyTreeScope scope,
@@ -644,7 +647,8 @@ public class ApiPropertyTreeBuilder(OpenApiDocument document, PropertyDisplayOpt
 		var variants = new List<ApiUnionVariant>(variantsToRender.Count);
 		foreach (var variant in variantsToRender)
 		{
-			var hasProperties = variant.Props is { Count: > 0 };
+			var dictionaryValue = variant.Props is { Count: > 0 } ? null : _analyzer.GetExpandableDictionaryValue(variant.Schema);
+			var hasProperties = variant.Props is { Count: > 0 } || dictionaryValue is not null;
 			var optionId = $"{scope.Prefix}-variant-{variant.Name.ToLowerInvariant().Replace(" ", "-").Replace("[]", "-array")}";
 			var hasBothVariants = variantsToRender.Count(v => v.BaseName == variant.BaseName) > 1;
 			var showProperties = hasProperties && (!variant.IsArray || !hasBothVariants);
@@ -653,7 +657,7 @@ public class ApiPropertyTreeBuilder(OpenApiDocument document, PropertyDisplayOpt
 			if (!string.IsNullOrEmpty(variant.BaseName))
 				_ = newAncestors.Add(variant.BaseName);
 
-			var nestedCount = variant.Props?.Count ?? 0;
+			var nestedCount = dictionaryValue is not null ? 1 : variant.Props?.Count ?? 0;
 			var isCollapsible = showProperties && nestedCount > 1;
 			var defaultExpanded = ComputeDefaultExpanded(scope.Depth, nestedCount);
 
@@ -675,7 +679,7 @@ public class ApiPropertyTreeBuilder(OpenApiDocument document, PropertyDisplayOpt
 				UseHidden = options.UseHiddenUntilFound && isCollapsible && !defaultExpanded,
 				Properties = showProperties && variant.Schema is not null
 					? childBuilder.BuildPropertyList(
-						variant.Schema,
+						dictionaryValue is null ? variant.Schema : DictionaryKeyRow(dictionaryValue),
 						scope with { Prefix = optionId, Depth = scope.Depth + 1, Ancestors = newAncestors, RequiredProperties = null }
 					) ?? new ApiPropertyList([])
 					: null,
@@ -693,6 +697,10 @@ public class ApiPropertyTreeBuilder(OpenApiDocument document, PropertyDisplayOpt
 			UseHiddenUntilFound = options.UseHiddenUntilFound
 		};
 	}
+
+	/// <summary>A one-row schema that lists a map's value under the same <c>&lt;string&gt;</c> key a plain dictionary property uses.</summary>
+	private static OpenApiSchema DictionaryKeyRow(IOpenApiSchema value) =>
+		new() { Type = JsonSchemaType.Object, Properties = new Dictionary<string, IOpenApiSchema> { [DictionaryKeyName] = value } };
 
 	private static string? FirstParagraph(string? description) =>
 		description?.Split(["\r\n\r\n", "\n\n"], 2, StringSplitOptions.TrimEntries)[0] is { Length: > 0 } first ? first : null;

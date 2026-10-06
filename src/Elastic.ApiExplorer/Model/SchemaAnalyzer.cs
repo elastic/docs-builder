@@ -174,6 +174,9 @@ public class SchemaAnalyzer(
 		if (option.Schema == null)
 			return false;
 
+		if (GetExpandableDictionaryValue(option.Schema) is not null)
+			return true;
+
 		// For non-object types, check if they're nested unions with object options
 		if (!option.IsObject)
 		{
@@ -229,6 +232,21 @@ public class SchemaAnalyzer(
 		}
 
 		return false;
+	}
+
+	/// <summary>
+	/// The value schema of a map (<c>additionalProperties</c>) when it has properties worth listing and no page of its own.
+	/// A union member that is such a map shows its value properties under a <c>&lt;string&gt;</c> key row.
+	/// </summary>
+	public IOpenApiSchema? GetExpandableDictionaryValue(IOpenApiSchema? schema)
+	{
+		if (schema is null)
+			return null;
+
+		var info = GetTypeInfo(schema);
+		return info is { IsDictionary: true, HasLink: false, DictValueSchema: { } value } && GetSchemaProperties(value)?.Count > 0
+			? value
+			: null;
 	}
 
 	/// <summary>

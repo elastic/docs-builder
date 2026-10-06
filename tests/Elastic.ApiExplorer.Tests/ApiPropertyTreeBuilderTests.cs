@@ -1135,4 +1135,73 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture)
 				File.Delete(path);
 		}
 	}
+
+	[Test]
+	public async Task BuildPropertyList_UnionMemberThatIsAMap_ListsTheValuePropertiesUnderAKeyRow()
+	{
+		var json =
+			"""
+			{
+			  "openapi": "3.0.3",
+			  "info": { "title": "t", "version": "1" },
+			  "paths": {},
+			  "components": {
+			    "schemas": {
+			      "Input": { "type": "object", "properties": { "enabled": { "type": "boolean" }, "vars": { "type": "object" } } },
+			      "Holder": {
+			        "type": "object",
+			        "properties": {
+			          "inputs": {
+			            "anyOf": [
+			              { "type": "array", "items": { "$ref": "#/components/schemas/Input" } },
+			              { "type": "object", "additionalProperties": { "$ref": "#/components/schemas/Input" } }
+			            ]
+			          },
+			          "query": {
+			            "anyOf": [ { "type": "string" }, { "type": "object", "additionalProperties": {} } ]
+			          }
+			        }
+			      }
+			    }
+			  }
+			}
+			""";
+		var path = Path.Join(Path.GetTempPath(), $"map-variant-{Guid.NewGuid():N}.json");
+		await File.WriteAllTextAsync(path, json, TestContext.Current!.Execution.CancellationToken);
+		try
+		{
+			var loaded = await OpenApiDocument.LoadAsync(
+				path,
+				new OpenApiReaderSettings { LeaveStreamOpen = false },
+				TestContext.Current!.Execution.CancellationToken
+			);
+			var document = loaded.Document!;
+			var builder = new ApiPropertyTreeBuilder(
+				document,
+				new PropertyDisplayOptions { RenderMarkdown = s => new HtmlString($"<p>{s}</p>"), ApiRootUrl = "/api/doc/fixture" }
+			);
+
+			var list = builder.BuildPropertyList(document.Components!.Schemas!["Holder"], new PropertyTreeScope { Prefix = "" });
+
+			var inputs = list!.Items.Single(p => p.Name == "inputs");
+			inputs.Children.Kind.Should().Be(ChildKind.UnionVariants);
+			var map = inputs.Children.Variants!.Variants.Single(v => v.Properties?.Items.Any(p => p.Name == "<string>") == true);
+			var keyRow = map.Properties!.Items.Single();
+			keyRow.AnchorId.Should().EndWith("-string", "the id stays free of angle brackets");
+			keyRow.Children.Properties!.Items.Select(p => p.Name).Should().Equal("enabled", "vars");
+
+			list
+				.Items
+				.Single(p => p.Name == "query")
+				.Children
+				.Kind
+				.Should()
+				.Be(ChildKind.None, "a map of anything has no properties to list");
+		}
+		finally
+		{
+			if (File.Exists(path))
+				File.Delete(path);
+		}
+	}
 }
