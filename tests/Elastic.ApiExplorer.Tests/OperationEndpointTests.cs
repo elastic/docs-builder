@@ -271,4 +271,40 @@ public class OperationEndpointTests
 	[Test]
 	public void AreInterchangeable_SameBodyAndRequiredness_IsTrue() =>
 		OperationEndpoint.AreInterchangeable([WithBody(HttpMethod.Post, true), WithBody(HttpMethod.Put, true)]).Should().BeTrue();
+
+	private static ApiOperation WithSecurity(HttpMethod method, IList<OpenApiSecurityRequirement>? security) =>
+		new(
+			method,
+			new OpenApiOperation
+			{
+				Security = security,
+				Responses = new OpenApiResponses { ["200"] = new OpenApiResponse { Description = "ok" } }
+			},
+			"/foo",
+			new OpenApiPathItem(),
+			"foo"
+		);
+
+	private static OpenApiSecurityRequirement Requires(string scheme) => new() { [new OpenApiSecuritySchemeReference(scheme)] = [] };
+
+	[Test]
+	public void AreInterchangeable_SameContractButDifferentSecurityScheme_IsFalse() =>
+		OperationEndpoint
+			.AreInterchangeable([WithSecurity(HttpMethod.Get, [Requires("apiKey")]), WithSecurity(HttpMethod.Post, [Requires("basic")])])
+			.Should()
+			.BeFalse();
+
+	[Test]
+	public void AreInterchangeable_InheritedSecurityVersusNone_IsFalse() =>
+		OperationEndpoint.AreInterchangeable([WithSecurity(HttpMethod.Get, null), WithSecurity(HttpMethod.Post, [])]).Should().BeFalse();
+
+	[Test]
+	public void AreInterchangeable_SameSecurityInAnyOrder_IsTrue() =>
+		OperationEndpoint
+			.AreInterchangeable([
+				WithSecurity(HttpMethod.Get, [Requires("apiKey"), Requires("basic")]),
+				WithSecurity(HttpMethod.Post, [Requires("basic"), Requires("apiKey")])
+			])
+			.Should()
+			.BeTrue();
 }

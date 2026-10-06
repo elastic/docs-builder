@@ -111,8 +111,8 @@ public sealed partial record OperationEndpoint(
 
 	/// <summary>
 	/// Separate operations only merge their methods when they are the same call: the same non-path parameters
-	/// (name, requiredness and schema), the same request body (requiredness and schema per media type), and the
-	/// same response schema per status and media type.
+	/// (name, requiredness and schema), the same request body (requiredness and schema per media type), the
+	/// same response schema per status and media type, and the same security requirements.
 	/// </summary>
 	public static bool AreInterchangeable(IReadOnlyList<ApiOperation> operations)
 	{
@@ -132,8 +132,27 @@ public sealed partial record OperationEndpoint(
 		var responses = (operation.Responses ?? []).Select(static r => $"{r.Key}:{ContentKey(r.Value?.Content)}").Order(
 			StringComparer.Ordinal
 		);
-		return string.Join('|', parameters) + "#" + body + "#" + string.Join('|', responses);
+		return string.Join('|', parameters) + "#" + body + "#" + string.Join('|', responses) + "#" + SecurityKey(operation.Security);
 	}
+
+	/// <summary>
+	/// The alternatives a caller may authenticate with, each as its schemes and scopes. Absent means the document's
+	/// default applies, which is not the same as an empty list (no authentication), so the two key differently.
+	/// </summary>
+	private static string SecurityKey(IList<OpenApiSecurityRequirement>? security) =>
+		security is null
+			? "inherit"
+			: string.Join(
+				'|',
+				security.Select(
+					static requirement => string.Join(
+						',',
+						requirement.Select(static scheme => $"{scheme.Key.Reference.Id}({string.Join(' ', scheme.Value ?? [])})").Order(
+							StringComparer.Ordinal
+						)
+					)
+				).Order(StringComparer.Ordinal)
+			);
 
 	private static string ContentKey(IDictionary<string, IOpenApiMediaType>? content) =>
 		string.Join(
