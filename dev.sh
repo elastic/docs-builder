@@ -54,6 +54,13 @@ _cli_serve() {
 
 CODEX_CONFIG="${CODEX_CONFIG:-config/codex.example.yml}"
 
+# Host ports, one per mode (see the table in docker-compose.yml).
+ISOLATED_URL="http://localhost:3000"
+ASSEMBLER_URL="http://localhost:4000"
+CODEX_URL="http://localhost:4001"
+
+_url() { echo "Serving $1 at $2"; }
+
 _ensure_runtime() {
   docker image inspect docs-builder:local >/dev/null 2>&1 \
     || _bake --load runtime
@@ -73,27 +80,40 @@ case "${1:-help}" in
   help|--help|-h)
     echo "Usage: ./dev.sh <command>"
     echo ""
+    echo "Local modes share the same verbs: <mode>-serve, <mode>-build, <mode>-watch,"
+    echo "and <mode>-clone where the mode clones repositories."
+    echo ""
+    echo "  isolated   One docset (docs/), hot reload at $ISOLATED_URL"
+    echo "  isolated-serve       Serve with hot reload (same as serve)"
+    echo "  isolated-watch       Serve with hot reload (same as serve)"
+    echo "  isolated-build       Build the current documentation set (same as docs)"
+    echo ""
+    echo "  assembler  All repositories under one navigation, at $ASSEMBLER_URL"
+    echo "  assembler            Clone, build, and serve"
+    echo "  assembler-clone      Clone the assembler repositories"
+    echo "  assembler-build      Build the assembled site from the clones"
+    echo "  assembler-serve      Serve the last build"
+    echo "  assembler-watch      Rebuild and serve on every source change"
+    echo ""
+    echo "  codex      Codex portal (config: \$CODEX_CONFIG), at $CODEX_URL"
+    echo "  codex                Clone, build, and serve"
+    echo "  codex-clone          Clone the codex repositories"
+    echo "  codex-build          Build the codex from the clones"
+    echo "  codex-serve          Serve the last build"
+    echo "  codex-watch          Rebuild and serve on every source change"
+    echo ""
+    echo "Other:"
     echo "  build                Build the dev Docker images"
     echo "  build-api            Build only the docs API Docker image"
     echo "  build-mcp            Build only the MCP server Docker image"
     echo "  rebuild              Rebuild the dev Docker images without cache"
-    echo "  serve                Serve docs at http://localhost:3000 with hot reload"
+    echo "  serve                Same as isolated-serve"
     echo "  serve-detached       Serve docs in the background"
     echo "  stop                 Stop the development server"
-    echo "  docs                 Build the current documentation set"
+    echo "  docs                 Same as isolated-build"
     echo "  test                 Run the unit-test suite (delegates to ./build.sh unit-test)"
     echo "  serve-api            Run the docs API at http://localhost:8081"
     echo "  serve-api-detached   Run the docs API in the background"
-    echo "  assembler            Clone, build, and serve the assembled site at http://localhost:4000"
-    echo "  assembler-clone      Clone the assembler repositories"
-    echo "  assembler-build      Build the assembled site from the clones"
-    echo "  assembler-serve      Serve the last assembler build at http://localhost:4000"
-    echo "  codex                Clone, build, and serve the codex at http://localhost:4001"
-    echo "  codex-clone          Clone the codex repositories (config: \$CODEX_CONFIG)"
-    echo "  codex-build          Build the codex from the clones"
-    echo "  codex-serve          Serve the last codex build at http://localhost:4001"
-    echo "  assembler-watch      Rebuild and serve the assembler site on every source change"
-    echo "  codex-watch          Rebuild and serve the codex on every source change"
     echo "  stop-api             Stop the docs API"
     echo "  serve-mcp            Run the MCP server at http://localhost:8080 (public profile)"
     echo "  serve-mcp-internal   Run the MCP server at http://localhost:8080 (internal profile)"
@@ -113,18 +133,20 @@ case "${1:-help}" in
   rebuild)
     _bake --no-cache --load all
     ;;
-  serve)
+  serve|isolated-serve|isolated-watch)
     _ensure_tooling
+    _url isolated "$ISOLATED_URL"
     _compose up --no-build serve
     ;;
   serve-detached)
     _ensure_tooling
+    _url isolated "$ISOLATED_URL"
     _compose up --no-build -d serve
     ;;
   stop)
     _compose stop serve
     ;;
-  docs)
+  docs|isolated-build)
     _ensure_runtime
     _compose run --rm docs-builder build
     ;;
@@ -159,6 +181,7 @@ case "${1:-help}" in
     _compose stop mcp
     ;;
   assembler)
+    _url assembler "$ASSEMBLER_URL"
     _cli_serve assembler assemble --serve "${@:2}"
     ;;
   assembler-clone)
@@ -168,9 +191,11 @@ case "${1:-help}" in
     _cli assembler assembler build "${@:2}"
     ;;
   assembler-serve)
+    _url assembler "$ASSEMBLER_URL"
     _cli_serve assembler assembler serve "${@:2}"
     ;;
   codex)
+    _url codex "$CODEX_URL"
     _cli_serve codex codex "$CODEX_CONFIG" --serve "${@:2}"
     ;;
   codex-clone)
@@ -180,12 +205,15 @@ case "${1:-help}" in
     _cli codex codex build "$CODEX_CONFIG" "${@:2}"
     ;;
   codex-serve)
+    _url codex "$CODEX_URL"
     _cli_serve codex codex serve "${@:2}"
     ;;
   assembler-watch)
+    _url assembler "$ASSEMBLER_URL"
     _cli_serve --entrypoint sh assembler build/dev/watch-entrypoint.sh assembler "${@:2}"
     ;;
   codex-watch)
+    _url codex "$CODEX_URL"
     _cli_serve --entrypoint sh -e CODEX_CONFIG="$CODEX_CONFIG" codex build/dev/watch-entrypoint.sh codex "${@:2}"
     ;;
   clean)

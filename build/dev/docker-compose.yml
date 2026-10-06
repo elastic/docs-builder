@@ -1,9 +1,22 @@
+# Local modes, one set of conventions (use ./dev.sh, not these services directly):
+#
+#   mode      service    host port  build output volume   clone volume
+#   isolated  serve      3000       serve-artifacts       -
+#   assembler assembler  4000       assembler-artifacts   assembler-data
+#   codex     codex      4001       codex-artifacts       codex-data
+#
+# All three run from source in docs-builder:tooling and share the environment
+# below, so a default such as a feature flag is set once.
 x-cli: &cli
   image: docs-builder:tooling
   working_dir: /src
   environment: &cli-env
     DOCS_BUILDER_BIND_ADDRESS: 0.0.0.0
     DOTNET_USE_POLLING_FILE_WATCHER: "1"
+    # Feature flag defaults for every local mode. The default `dev` environment
+    # leaves the API Explorer off, so the assembler's /docs/api/ would 404. Set
+    # FEATURE_ASSEMBLER_API_EXPLORER=false to skip it and build faster.
+    FEATURE_ASSEMBLER_API_EXPLORER: ${FEATURE_ASSEMBLER_API_EXPLORER:-true}
     # dev.sh sets these to rewrite the git@github.com: origins the CLI builds
     # into HTTPS URLs, because the image has no ssh client.
     GIT_CONFIG_COUNT: ${GIT_CONFIG_COUNT:-0}
@@ -47,12 +60,10 @@ services:
   # npm-cache volume retains downloaded packages so reinstalls after a
   # lockfile change are fast.
   serve:
-    image: docs-builder:tooling
-    working_dir: /src
+    <<: *cli
     entrypoint: ["sh", "build/dev/serve-entrypoint.sh"]
     environment:
-      DOCS_BUILDER_BIND_ADDRESS: 0.0.0.0
-      DOTNET_USE_POLLING_FILE_WATCHER: "1"
+      <<: *cli-env
       DOTNET_WATCH_SUPPRESS_LAUNCH_BROWSER: "1"
       # API page regeneration allocates heavily on every core; workstation GC
       # throttled it to a few cores (about 10 s per regeneration vs 3-4 s).
@@ -73,16 +84,11 @@ services:
   #
   # Build output lives in the named .artifacts volumes and clones in the *-data
   # volumes (the CLI clones to ~/.local/share/elastic/docs-builder/checkouts),
-  # not the host checkout, so no root-owned files appear in the working tree. Both commands
+  # not the host checkout, so no root-owned files appear in the working tree. Both
   # serve static output on container port 4000; the host ports differ so the
   # two sites can run side by side.
   assembler:
     <<: *cli
-    environment:
-      <<: *cli-env
-      # The default `dev` environment leaves the API Explorer off, so /docs/api/
-      # would 404. Set FEATURE_ASSEMBLER_API_EXPLORER=false to skip it and build faster.
-      FEATURE_ASSEMBLER_API_EXPLORER: ${FEATURE_ASSEMBLER_API_EXPLORER:-true}
     entrypoint: ["dotnet", "run", "--project", "src/tooling/docs-builder", "--configuration", "debug", "--"]
     ports:
       - "127.0.0.1:4000:4000"
