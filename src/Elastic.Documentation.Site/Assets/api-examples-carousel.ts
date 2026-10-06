@@ -450,8 +450,10 @@ function openPreview(card: HTMLElement): HTMLDialogElement | null {
             code.textContent?.trimEnd() ?? ''
         )
         if (!write) return
-        void write.then(() =>
-            temporarilyChangeIcon(copy, iconCopyEui, iconCheckEui)
+        write.then(
+            () => temporarilyChangeIcon(copy, iconCopyEui, iconCheckEui),
+            // Denied by permission or policy: the icon stays put, and the error is logged like the code block copy button does.
+            (error: unknown) => console.error(error)
         )
     })
     const close = iconButton('api-code-preview-btn', 'Close', closeIcon)

@@ -371,6 +371,21 @@ describe('API examples carousel', () => {
         document
             .querySelector('dialog.api-code-preview')!
             .dispatchEvent(new Event('close'))
+
+        // A denied write is reported, not left as an unhandled rejection.
+        const error = jest.spyOn(console, 'error').mockImplementation(() => {})
+        Object.defineProperty(navigator, 'clipboard', {
+            value: { writeText: () => Promise.reject(new Error('denied')) },
+            configurable: true,
+        })
+        open().click()
+        await new Promise((resolve) => setTimeout(resolve, 0))
+
+        expect(error).toHaveBeenCalledWith(new Error('denied'))
+        error.mockRestore()
+        document
+            .querySelector('dialog.api-code-preview')!
+            .dispatchEvent(new Event('close'))
     })
 
     it('locks page scrolling while the preview is open', () => {
