@@ -3507,6 +3507,8 @@ html:has(.api-page-shell) {
 	max-height: calc(100vh - 48px);
 	margin: auto;
 	padding: 0;
+	/* Lifts the dialog off the dimmed page; cards in the rail have no shadow. */
+	box-shadow: 0 24px 64px rgb(0 0 0 / 0.5);
 }
 
 .api-code-preview[open] {
