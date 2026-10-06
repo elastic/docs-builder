@@ -112,51 +112,53 @@ public sealed partial record OperationEndpoint(
 
 	/// <summary>
 	/// Separate operations only merge their methods when they are the same call: the same non-path parameters
-	/// (name, requiredness, serialization and schema), the same request body (requiredness and schema per media type), the
-	/// same response schema and headers per status and media type, the same security requirements, the same
-	/// lifecycle (deprecated, beta), and the same servers.
+	/// (name, requiredness, serialization and schema), the same request body (requiredness and schema per media
+	/// type), the same response schema and headers per status and media type, the same security requirements, the
+	/// same lifecycle (deprecated, beta), and the same servers.
 	/// </summary>
-	public static bool AreInterchangeable(IReadOnlyList<ApiOperation> operations)
+	public static bool AreInterchangeable(IReadOnlyList<ApiOperation> operations) => Differences(operations).Count == 0;
+
+	/// <summary>The facets on which the operations disagree, by name; empty when one page can stand in for all of them.</summary>
+	public static IReadOnlyList<string> Differences(IReadOnlyList<ApiOperation> operations)
 	{
-		var first = Signature(operations[0].Operation);
-		return operations.Skip(1).All(o => Signature(o.Operation) == first);
+		var first = Facets(operations[0].Operation).ToDictionary(static f => f.Facet, static f => f.Key, StringComparer.Ordinal);
+		return [
+			.. operations
+				.Skip(1)
+				.SelectMany(static o => Facets(o.Operation))
+				.Where(f => first[f.Facet] != f.Key)
+				.Select(static f => f.Facet)
+				.Distinct(StringComparer.Ordinal)
+		];
 	}
 
-	private static string Signature(OpenApiOperation operation)
+	/// <summary>What two operations must agree on to share a page, each facet reduced to a comparable key.</summary>
+	private static IEnumerable<(string Facet, string Key)> Facets(OpenApiOperation operation)
 	{
-		var parameters = (operation.Parameters ?? [])
-			.Where(static p => p.In != ParameterLocation.Path)
-			.Select(static p => $"{p.In}:{p.Name}:{(p.Required ? "required" : "optional")}:{SerializationKey(p)}:{SchemaKey(p.Schema)}")
-			.Order(StringComparer.Ordinal);
-		var body = operation.RequestBody is { } requestBody
+		yield return ("parameters", string.Join(
+			'|',
+			(operation.Parameters ?? [])
+				.Where(static p => p.In != ParameterLocation.Path)
+				.Select(static p => $"{p.In}:{p.Name}:{(p.Required ? "required" : "optional")}:{SerializationKey(p)}:{SchemaKey(p.Schema)}")
+				.Order(StringComparer.Ordinal)
+		));
+		yield return ("request body", operation.RequestBody is { } requestBody
 			? $"{(requestBody.Required ? "required" : "optional")}:{ContentKey(requestBody.Content)}"
-			: "";
-		var responses = (operation.Responses ?? []).Select(
-			static r => $"{r.Key}:{ContentKey(r.Value?.Content)}:{HeadersKey(r.Value?.Headers)}"
-		).Order(StringComparer.Ordinal);
-		var lifecycle = $"{(operation.Deprecated ? "deprecated" : "")}:{(OpenApiExtensionReader.IsBeta(operation) ? "beta" : "")}";
+			: "");
+		yield return ("responses", string.Join(
+			'|',
+			(operation.Responses ?? []).Select(static r => $"{r.Key}:{ContentKey(r.Value?.Content)}:{HeadersKey(r.Value?.Headers)}").Order(
+				StringComparer.Ordinal
+			)
+		));
+		yield return ("security", SecurityKey(operation.Security));
+		yield return ("lifecycle", $"{(operation.Deprecated ? "deprecated" : "")}:{(OpenApiExtensionReader.IsBeta(operation) ? "beta" : "")}");
 		// Absent servers fall back to the document's; an operation that names its own is a different call.
-		var servers = operation.Servers is null
+		yield return ("servers", operation.Servers is null
 			? "inherit"
-			: string.Join(',', operation.Servers.Select(static s => s.Url ?? "").Order(StringComparer.Ordinal));
-		return string.Join('|', parameters)
-			+ "#"
-			+ body
-			+ "#"
-			+ string.Join('|', responses)
-			+ "#"
-			+ SecurityKey(operation.Security)
-			+ "#"
-			+ lifecycle
-			+ "#"
-			+ servers;
+			: string.Join(',', operation.Servers.Select(static s => s.Url ?? "").Order(StringComparer.Ordinal)));
 	}
 
-	/// <summary>
-	/// How a parameter goes on the wire: <c>ids=a,b</c> against <c>ids=a&amp;ids=b</c> is the same schema with a
-	/// different style or explode. An unset style keys as the OpenAPI default for the location; the model already
-	/// resolves an unset explode from the style.
-	/// </summary>
 	private static string SerializationKey(IOpenApiParameter parameter)
 	{
 		var style = parameter.Style

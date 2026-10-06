@@ -243,7 +243,8 @@ public class ApiNavigationBuilder(ILogger logger, BuildContext context)
 		{
 			// One page can only stand in for several operations when they are the same call; a sibling with
 			// its own parameters or responses keeps its own page rather than redirecting to a page that lacks them.
-			if (endpoint.Operations.Count > 1 && OperationEndpoint.AreInterchangeable(endpoint.Operations))
+			var differences = endpoint.Operations.Count > 1 ? OperationEndpoint.Differences(endpoint.Operations) : [];
+			if (endpoint.Operations.Count > 1 && differences.Count == 0)
 			{
 				endpointNavigationItems.Add(
 					CreateCollapsedOperationNavigationItem(apiUrlSuffix, rootNavigation, endpoint, parentNavigationItem, operationMonikers)
@@ -251,6 +252,16 @@ public class ApiNavigationBuilder(ILogger logger, BuildContext context)
 			}
 			else
 			{
+				// Siblings of one API are meant to be the same call; a difference is worth a look at the spec.
+				if (differences.Count > 0)
+				{
+					_logger.LogWarning(
+						"Operations {Operations} of API '{Api}' differ in {Facets}; each keeps its own page instead of sharing one.",
+						string.Join(", ", endpoint.Operations.Select(static o => $"{o.OperationType.Method.ToUpperInvariant()} {o.Route}")),
+						endpoint.Name,
+						string.Join(", ", differences)
+					);
+				}
 				foreach (var operation in endpoint.Operations)
 				{
 					var operationNavigationItem = new OperationNavigationItem(
@@ -280,6 +291,16 @@ public class ApiNavigationBuilder(ILogger logger, BuildContext context)
 	{
 		var primary = OperationEndpoint.SelectPrimary(endpoint.Operations);
 		var moniker = ApiUrlBuilder.CanonicalOperationMoniker(endpoint.Operations, primary, operationMonikers);
+		var preferred = ApiUrlBuilder.CanonicalOperationMoniker(endpoint.Operations, primary);
+		if (moniker != preferred)
+		{
+			_logger.LogWarning(
+				"The shared page for API '{Api}' would be '{Preferred}', but another operation already owns that URL; it is '{Moniker}' instead.",
+				endpoint.Name,
+				preferred,
+				moniker
+			);
+		}
 		var url = ApiUrlBuilder.OperationUrl(context.UrlPathPrefix, apiUrlSuffix, moniker);
 		var aliases = endpoint
 			.Operations

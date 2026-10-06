@@ -548,6 +548,22 @@ public class OperationEndpointTests
 	private static OpenApiSecurityRequirement Requires(string scheme) => new() { [new OpenApiSecuritySchemeReference(scheme)] = [] };
 
 	[Test]
+	public void Differences_NamesEveryFacetThatDiffers()
+	{
+		var a = WithSecurity(HttpMethod.Get, [Requires("apiKey")]) with
+		{
+			Operation = new OpenApiOperation { Security = [Requires("apiKey")], Deprecated = true }
+		};
+		var b = WithSecurity(HttpMethod.Post, [Requires("basic")]);
+
+		OperationEndpoint.Differences([a, b]).Should().Equal("responses", "security", "lifecycle");
+	}
+
+	[Test]
+	public void Differences_SameCall_IsEmpty() =>
+		OperationEndpoint.Differences([Contract(HttpMethod.Get, true, "took"), Contract(HttpMethod.Post, true, "took")]).Should().BeEmpty();
+
+	[Test]
 	public void AreInterchangeable_SameContractButDifferentSecurityScheme_IsFalse() =>
 		OperationEndpoint
 			.AreInterchangeable([WithSecurity(HttpMethod.Get, [Requires("apiKey")]), WithSecurity(HttpMethod.Post, [Requires("basic")])])
