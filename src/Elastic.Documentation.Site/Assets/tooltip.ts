@@ -12,12 +12,11 @@ export function initTooltips(): void {
     if (bound) return
     bound = true
     delegate(document.body, {
-        target: '[data-tippy-content]',
+        // Templates may emit the attribute empty; an empty title shows nothing natively, so neither does this.
+        target: '[data-tippy-content]:not([data-tippy-content=""])',
         delay: [80, 0],
         placement: 'top',
         touch: ['hold', 300],
         appendTo: (reference) => reference.closest('dialog') ?? document.body,
-        // An empty title shows nothing natively; keep that.
-        onShow: (instance) => (instance.props.content ? undefined : false),
     })
 }
