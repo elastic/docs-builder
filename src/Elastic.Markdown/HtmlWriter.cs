@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions;
-using System.Text.Json;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration.Inference;
 using Elastic.Documentation.Configuration.LegacyUrlMappings;
@@ -156,10 +155,12 @@ public class HtmlWriter(
 
 		var currentBaseVersion = pageVersioning.IsVersionless ? null : $"{pageVersioning.Base.Major}.{pageVersioning.Base.Minor}+";
 
-		//TODO should we even distinctby
-		var breadcrumbs = parents.Reverse().DistinctBy(p => p.Url).ToArray();
-		var breadcrumbsList = CreateStructuredBreadcrumbsData(markdown, breadcrumbs);
-		var structuredBreadcrumbsJsonString = JsonSerializer.Serialize(breadcrumbsList, BreadcrumbsContext.Default.BreadcrumbsList);
+		var breadcrumbs = current.BreadcrumbParents();
+		var structuredBreadcrumbsJsonString = BreadcrumbJson.Serialize(
+			breadcrumbs,
+			markdown.Title ?? markdown.NavigationTitle,
+			DocumentationSet.Context.CanonicalBaseUrl
+		);
 
 		// Git info for isolated header
 		var gitBranch = DocumentationSet.Context.Git.Branch;
@@ -225,32 +226,6 @@ public class HtmlWriter(
 		});
 
 		return new RenderResult { Html = await slice.RenderAsync(cancellationToken: ctx) };
-	}
-
-	private BreadcrumbsList CreateStructuredBreadcrumbsData(MarkdownFile markdown, INavigationItem[] crumbs)
-	{
-		List<BreadcrumbListItem> breadcrumbItems = [];
-		var position = 1;
-		// Add parents
-		breadcrumbItems.AddRange(
-			crumbs.Select(
-				parent => new BreadcrumbListItem
-				{
-					Position = position++,
-					Name = parent.NavigationTitle,
-					Item = new Uri(DocumentationSet.Context.CanonicalBaseUrl ?? new Uri("http://localhost"), parent.Url).ToString()
-				}
-			)
-		);
-		// Add current page
-		breadcrumbItems.Add(new BreadcrumbListItem
-		{
-			Position = position,
-			Name = markdown.Title ?? markdown.NavigationTitle,
-			Item = null,
-		});
-		var breadcrumbsList = new BreadcrumbsList { ItemListElement = breadcrumbItems };
-		return breadcrumbsList;
 	}
 
 	public async Task<MarkdownDocument> WriteAsync(

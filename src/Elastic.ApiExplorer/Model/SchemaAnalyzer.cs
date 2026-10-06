@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Collections.Concurrent;
 using Elastic.ApiExplorer.Operations;
 using Microsoft.OpenApi;
 
@@ -25,12 +26,12 @@ namespace Elastic.ApiExplorer.Model;
 public class SchemaAnalyzer(
 	OpenApiDocument document,
 	string? currentPageType = null,
-	Dictionary<string, IOpenApiSchema?>? resolveCache = null
+	ConcurrentDictionary<string, IOpenApiSchema?>? resolveCache = null
 )
 {
 	// Per-unit schema resolve cache; shared (by reference) across all pages that use the same ApiRenderContext.
 	// Falls back to a fresh per-instance dict when no external cache is provided.
-	private readonly Dictionary<string, IOpenApiSchema?> _cache = resolveCache ?? [];
+	private readonly ConcurrentDictionary<string, IOpenApiSchema?> _cache = resolveCache ?? new();
 
 	/// <summary>
 	/// Checks if a type should link to its container page, considering the current page.
@@ -322,6 +323,43 @@ public class SchemaAnalyzer(
 	/// </summary>
 	public TypeInfo GetTypeInfo(IOpenApiSchema? schema)
 	{
+		var info = ClassifyType(schema);
+		var enumValues = GetEnumValues(schema);
+		return enumValues.Count > 0 ? info with { EnumValues = [.. enumValues] } : info;
+	}
+
+	/// <summary>
+	/// Every enum literal a value of <paramref name="schema"/> can take, looking through <c>$ref</c>,
+	/// <c>allOf</c>/<c>oneOf</c>/<c>anyOf</c> members and array <c>items</c>. The single source of enum values for all views.
+	/// </summary>
+	public IReadOnlyList<string> GetEnumValues(IOpenApiSchema? schema)
+	{
+		var values = new List<string>();
+		CollectEnumValues(schema, values, [with(ReferenceEqualityComparer.Instance)]);
+		return values.Distinct(StringComparer.Ordinal).ToArray();
+	}
+
+	private void CollectEnumValues(IOpenApiSchema? schema, List<string> values, HashSet<IOpenApiSchema> visited)
+	{
+		var resolved = ResolveSchema(schema);
+		if (resolved is null || !visited.Add(resolved))
+			return;
+
+		if (resolved.Enum is { Count: > 0 } literals)
+		{
+			values.AddRange(literals.Select(e => e?.ToString().Trim('"')).Where(e => !string.IsNullOrEmpty(e))!);
+			return;
+		}
+
+		if (resolved.Type?.HasFlag(JsonSchemaType.Array) == true)
+			CollectEnumValues(resolved.Items, values, visited);
+
+		foreach (var member in (resolved.AllOf ?? []).Concat(resolved.OneOf ?? []).Concat(resolved.AnyOf ?? []))
+			CollectEnumValues(member, values, visited);
+	}
+
+	private TypeInfo ClassifyType(IOpenApiSchema? schema)
+	{
 		if (schema is null)
 			return new TypeInfo("unknown", null, false, false, false, null, false, null);
 
@@ -350,7 +388,6 @@ public class SchemaAnalyzer(
 				// Check if the schema reference is an enum or union — read from the resolved target
 				var isEnum = resolvedTarget.Enum is { Count: > 0 };
 				var isUnion = !isEnum && (resolvedTarget.OneOf is { Count: > 0 } || resolvedTarget.AnyOf is { Count: > 0 });
-				var enumValues = isEnum ? resolvedTarget.Enum?.Select(e => e.ToString()).ToArray() : null;
 
 				// Check if the referenced type is an array of primitives
 				string? arrayItemType = null;
@@ -359,7 +396,7 @@ public class SchemaAnalyzer(
 					var itemSchema = resolvedTarget.Items;
 					if (itemSchema is not null)
 					{
-						var itemInfo = GetTypeInfo(itemSchema);
+						var itemInfo = ClassifyType(itemSchema);
 						// If the item is not an object, not a linked type, and has no schema reference, it's a primitive array
 						if (itemInfo is { IsObject: false, HasLink: false } && string.IsNullOrEmpty(itemInfo.SchemaRef))
 							arrayItemType = itemInfo.TypeName;
@@ -385,16 +422,14 @@ public class SchemaAnalyzer(
 								new UnionOption(unionTypeName, unionRef.Reference?.Id, !SchemaHelpers.IsValueType(unionTypeName), s)
 							);
 						}
-						else if (s.Enum is { Count: > 0 } inlineEnum)
+						else if (s.Enum is { Count: > 0 })
 						{
-							// String literal union - add enum values
-							foreach (var enumVal in inlineEnum)
-								options.Add(enumVal.ToString());
+							// Literal members surface through TypeInfo.EnumValues, not as union options.
 						}
 						else if (s.Type?.HasFlag(JsonSchemaType.Array) == true && s.Items != null)
 						{
 							// Array type - get the item type and add [] suffix
-							var itemInfo = GetTypeInfo(s.Items);
+							var itemInfo = ClassifyType(s.Items);
 							var arrayTypeName = $"{itemInfo.TypeName}[]";
 							options.Add(arrayTypeName);
 							// Arrays of objects are expandable
@@ -427,7 +462,7 @@ public class SchemaAnalyzer(
 					null,
 					isEnum,
 					isUnion,
-					enumValues,
+					null,
 					unionOptions,
 					arrayItemType
 				);
@@ -436,46 +471,10 @@ public class SchemaAnalyzer(
 
 		// Check for oneOf/anyOf which often indicate union types
 		if (schema.OneOf is { Count: > 0 } oneOf)
-		{
-			var options = oneOf.Select(s =>
-			{
-				var info = GetTypeInfo(s);
-				// Include [] suffix for array types
-				var displayName = info.IsArray ? $"{info.TypeName}[]" : info.TypeName;
-				return new UnionOption(displayName, info.SchemaRef, info.IsObject, s);
-			}).ToList();
-
-			var hasObjectOptions = options.Any(o => o.IsObject);
-			if (hasObjectOptions && options.Count > 1)
-			{
-				// Return anyOf options for potential tab rendering
-				return new TypeInfo("oneOf", null, false, true, false, null, false, options, IsUnion: true);
-			}
-
-			var typeNames = options.Select(o => o.Name).Distinct().ToArray();
-			return new TypeInfo(string.Join(" | ", typeNames), null, false, false, false, null, false, options, IsUnion: true);
-		}
+			return ClassifyUnion(oneOf, "oneOf");
 
 		if (schema.AnyOf is { Count: > 0 } anyOf)
-		{
-			var options = anyOf.Select(s =>
-			{
-				var info = GetTypeInfo(s);
-				// Include [] suffix for array types
-				var displayName = info.IsArray ? $"{info.TypeName}[]" : info.TypeName;
-				return new UnionOption(displayName, info.SchemaRef, info.IsObject, s);
-			}).ToList();
-
-			var hasObjectOptions = options.Any(o => o.IsObject);
-			if (hasObjectOptions && options.Count > 1)
-			{
-				// Return anyOf options for potential tab rendering
-				return new TypeInfo("anyOf", null, false, true, false, null, false, options, IsUnion: true);
-			}
-
-			var typeNames = options.Select(o => o.Name).Distinct().ToArray();
-			return new TypeInfo(string.Join(" | ", typeNames), null, false, false, false, null, false, options, IsUnion: true);
-		}
+			return ClassifyUnion(anyOf, "anyOf");
 
 		// Check for allOf (usually inheritance/composition)
 		if (schema.AllOf is { Count: > 0 } allOf)
@@ -487,7 +486,23 @@ public class SchemaAnalyzer(
 				if (!string.IsNullOrEmpty(refId))
 				{
 					var typeName = SchemaHelpers.FormatSchemaName(refId);
-					var named = ClassifyNamedSchema(typeName, refSchemas[0]);
+					var resolvedTarget = ResolveSchema(refSchemas[0]) ?? refSchemas[0];
+					var named = ClassifyNamedSchema(typeName, resolvedTarget);
+
+					// allOf wrapping a single enum $ref is how OpenAPI 3.1 attaches a description to a $ref.
+					if (resolvedTarget.Enum is { Count: > 0 })
+						return new TypeInfo(
+							named.TypeName,
+							named.IsPrimitiveAlias ? null : refId,
+							false,
+							false,
+							false,
+							null,
+							false,
+							null,
+							IsEnum: true
+						);
+
 					return new TypeInfo(
 						named.TypeName,
 						named.IsPrimitiveAlias ? null : refId,
@@ -507,7 +522,7 @@ public class SchemaAnalyzer(
 		{
 			if (schema.Items is not null)
 			{
-				var itemInfo = GetTypeInfo(schema.Items);
+				var itemInfo = ClassifyType(schema.Items);
 				// If the item is not an object and not a linked type, it's a primitive array
 				var isPrimitiveArray = itemInfo is not { IsObject: false, HasLink: false } || !string.IsNullOrEmpty(itemInfo.SchemaRef);
 				var arrayItemType = isPrimitiveArray ? itemInfo.TypeName : null;
@@ -520,6 +535,7 @@ public class SchemaAnalyzer(
 					itemInfo.ValueTypeBase,
 					itemInfo.HasLink,
 					null,
+					IsEnum: itemInfo.IsEnum,
 					ArrayItemType: arrayItemType
 				);
 			}
@@ -528,15 +544,12 @@ public class SchemaAnalyzer(
 
 		// Check for enum
 		if (schema.Enum is { Count: > 0 })
-		{
-			var enumValues = schema.Enum.Select(e => e.ToString()).Take(5).ToArray();
-			return new TypeInfo("enum", null, false, false, false, null, false, null, false, null, true, false, enumValues);
-		}
+			return new TypeInfo("enum", null, false, false, false, null, false, null, IsEnum: true);
 
 		// Check for additionalProperties (dictionary-like objects)
 		if (schema.AdditionalProperties is { } addProps)
 		{
-			var valueInfo = GetTypeInfo(addProps);
+			var valueInfo = ClassifyType(addProps);
 			// Pass valueInfo.HasLink so we know if the dictionary value type has a dedicated page
 			return new TypeInfo(
 				$"string to {valueInfo.TypeName}",
@@ -562,6 +575,26 @@ public class SchemaAnalyzer(
 			return new TypeInfo(primitiveName, null, false, primitiveName == "object", false, null, false, null);
 
 		return new TypeInfo("object", null, false, true, false, null, false, null);
+	}
+
+	private TypeInfo ClassifyUnion(IList<IOpenApiSchema> members, string keyword)
+	{
+		var classified = members.Select(s => (Schema: s, Info: ClassifyType(s))).ToArray();
+
+		// A union of inline literal sets is just a bigger enum.
+		if (classified.All(m => m.Info is { IsEnum: true, IsArray: false, SchemaRef: null }))
+			return new TypeInfo("enum", null, false, false, false, null, false, null, IsEnum: true);
+
+		var options = classified.Select(
+			m => new UnionOption(m.Info.IsArray ? $"{m.Info.TypeName}[]" : m.Info.TypeName, m.Info.SchemaRef, m.Info.IsObject, m.Schema)
+		).ToList();
+
+		// Multiple object options render as tabs.
+		if (options.Count > 1 && options.Any(o => o.IsObject))
+			return new TypeInfo(keyword, null, false, true, false, null, false, options, IsUnion: true);
+
+		var typeNames = options.Select(o => o.Name).Distinct();
+		return new TypeInfo(string.Join(" | ", typeNames), null, false, false, false, null, false, options, IsUnion: true);
 	}
 
 	/// <summary>

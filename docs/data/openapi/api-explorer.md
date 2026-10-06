@@ -152,8 +152,9 @@ specs per product are not currently supported.
 
 Product pages show an API product switcher on the far right of the grey secondary
 top bar, immediately before the version picker. Isolated builds keep a product
-`<select>` at the top of the left navigation. The list includes every declared API
-and a Back to hub option.
+`<select>` at the top of the left navigation. The list includes every API whose spec
+loaded, and a Back to hub option. Each row uses that spec's title (`info.title`), the
+same text as the landing page heading.
 
 Assembler API pages also show a Jump to API box at the top of that sidebar. The box searches API operations only. Isolated and air-gapped builds omit the box. Markdown docs pages do not get it back.
 
@@ -377,7 +378,7 @@ OpenAPI treats items in the `security` array as OR and keys inside one object as
 When schemes are present, **Authorization** appears as a section heading (same visual weight as **Prerequisites**) and in the on-page table of contents.
 When the section has more than one scheme, it renders collapsed with a one-line name summary.
 
-The same accordion applies to **Parameters**, **Query Parameters**, and **Request** when those sections have more than one item. A single-item section stays expanded as a plain heading.
+The same accordion applies to **Path Parameters**, **Query Parameters**, and **Request** when those sections have more than one item. A single-item section stays expanded as a plain heading.
 
 ### Tag labels [x-displayname]
 

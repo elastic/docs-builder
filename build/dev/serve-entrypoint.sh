@@ -17,4 +17,4 @@ fi
 exec dotnet watch \
     --project src/tooling/docs-builder \
     --configuration debug \
-    -- serve --watch --no-hud --port 3000
+    -- serve --no-hud --port 3000

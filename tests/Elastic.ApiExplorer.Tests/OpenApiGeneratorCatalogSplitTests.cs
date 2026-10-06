@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Collections.Concurrent;
 using System.Collections.Frozen;
 using System.IO.Abstractions;
 using System.IO.Abstractions.TestingHelpers;
@@ -46,11 +47,77 @@ public class OpenApiGeneratorCatalogSplitTests
 		var entries = await generator.GenerateProducts(ctx: TestContext.Current!.Execution.CancellationToken);
 
 		entries.Should().ContainSingle();
+		entries[0].Title.Should().Be("Elasticsearch main");
 		entries[0].ProductId.Should().Be("elasticsearch");
 		entries[0].Description.Should().Be("A **distributed** [search](https://example.com) engine.\n\nMore detail.");
 		entries[0].CatalogCategories.Should().Equal("ece", "ess", "self");
 		context.WriteFileSystem.File.Exists(Path.Join(outputRoot, "api", "doc", "elasticsearch", "index.html")).Should().BeTrue();
 		context.WriteFileSystem.File.Exists(Path.Join(outputRoot, "api", "index.html")).Should().BeFalse();
+	}
+
+	[Test]
+	public async Task GenerateProducts_IsolatedFixtureKey_DropsPrefixFromUrl()
+	{
+		var outputRoot = Path.Join(Paths.WorkingDirectoryRoot.FullName, $"api-catalog-split-{Guid.NewGuid():N}");
+		var context = CreateGenerateContext(
+			outputRoot,
+			"""
+			api:
+			  docs-builder-elasticsearch:
+			    - spec: elasticsearch-openapi.json
+			      product: elasticsearch
+			"""
+		);
+		using var versionIndexClient = new VersionIndexClient(BaseUri, MultiVersionHandler(), sleep: (_, _) => Task.CompletedTask);
+		var reader = CreateSequentialReader(SpecDocument("Elasticsearch main"));
+		var generator = new OpenApiGenerator(
+			NullLoggerFactory.Instance,
+			context,
+			NoopMarkdownStringRenderer.Instance,
+			versionIndexClient,
+			reader
+		);
+
+		var entries = await generator.GenerateProducts(ctx: TestContext.Current!.Execution.CancellationToken);
+
+		entries.Should().ContainSingle();
+		entries[0].Url.Should().Be("/docs/api/doc/elasticsearch/");
+		context.WriteFileSystem.File.Exists(Path.Join(outputRoot, "api", "doc", "elasticsearch", "index.html")).Should().BeTrue();
+		context.WriteFileSystem.Directory.Exists(Path.Join(outputRoot, "api", "doc", "docs-builder-elasticsearch")).Should().BeFalse();
+	}
+
+	[Test]
+	public async Task GenerateProducts_RegenerateWithShorterPage_TruncatesPreviousOutput()
+	{
+		var outputRoot = Path.Join(Paths.WorkingDirectoryRoot.FullName, $"api-catalog-split-{Guid.NewGuid():N}");
+		var context = CreateGenerateContext(outputRoot);
+		var ctx = TestContext.Current!.Execution.CancellationToken;
+		var longTitle = "Elasticsearch " + new string('x', 4000);
+		using var versionIndexClient = new VersionIndexClient(BaseUri, MultiVersionHandler(), sleep: (_, _) => Task.CompletedTask);
+		var first = new OpenApiGenerator(
+			NullLoggerFactory.Instance,
+			context,
+			NoopMarkdownStringRenderer.Instance,
+			versionIndexClient,
+			CreateSequentialReader(SpecDocument(longTitle))
+		);
+		var second = new OpenApiGenerator(
+			NullLoggerFactory.Instance,
+			context,
+			NoopMarkdownStringRenderer.Instance,
+			versionIndexClient,
+			CreateSequentialReader(SpecDocument("Elasticsearch"))
+		);
+
+		_ = await first.GenerateProducts(ctx: ctx);
+		_ = await second.GenerateProducts(ctx: ctx);
+
+		var html = await context
+			.WriteFileSystem
+			.File
+			.ReadAllTextAsync(Path.Join(outputRoot, "api", "doc", "elasticsearch", "index.html"), ctx);
+		html.Should().NotContain(longTitle);
+		html.TrimEnd().Should().EndWith("</html>");
 	}
 
 	[Test]
@@ -139,6 +206,8 @@ public class OpenApiGeneratorCatalogSplitTests
 		var productHtml = context.WriteFileSystem.File.ReadAllText(Path.Join(outputRoot, "api", "doc", "elasticsearch", "index.html"));
 		var catalogHtml = context.WriteFileSystem.File.ReadAllText(Path.Join(outputRoot, "api", "index.html"));
 		productHtml.Should().Contain("id=\"api-hub-switcher\"");
+		productHtml.Should().Contain("<h1>Elasticsearch main</h1>");
+		productHtml.Should().Contain("<option value=\"/docs/api/doc/elasticsearch/\" selected>Elasticsearch main</option>");
 		productHtml.Should().Contain("Back to hub");
 		catalogHtml.Should().NotContain("id=\"api-hub-switcher\"");
 		catalogHtml.Should().Contain("listing-group-chips");
@@ -178,6 +247,47 @@ public class OpenApiGeneratorCatalogSplitTests
 	}
 
 	[Test]
+	public async Task Generate_SharedProductDisplayName_UsesLandingTitleInSwitcher()
+	{
+		var outputRoot = Path.Join(Paths.WorkingDirectoryRoot.FullName, $"api-catalog-split-{Guid.NewGuid():N}");
+		var context = CreateGenerateContext(
+			outputRoot,
+			"""
+			api:
+			  cloud-billing:
+			    - spec: cloud-billing.json
+			      product: elasticsearch
+			  cloud-connect:
+			    - spec: cloud-connect.json
+			      product: elasticsearch
+			""",
+			displayName: "Elastic Cloud Hosted"
+		);
+		using var versionIndexClient = new VersionIndexClient(BaseUri, SharedProductHandler(), sleep: (_, _) => Task.CompletedTask);
+		var reader = A.Fake<IOpenApiSpecificationReader>();
+		A.CallTo(() => reader.ReadAsync(A<Stream>._, A<string>._, A<IDiagnosticsCollector?>._)).ReturnsLazily(call =>
+		{
+			var specFileName = call.GetArgument<string>(1);
+			var title = specFileName == "cloud-billing.json" ? "Cloud Billing API" : "Elastic Cloud Connected API";
+			return Task.FromResult<OpenApiDocument?>(SpecDocument(title));
+		});
+		var generator = new OpenApiGenerator(
+			NullLoggerFactory.Instance,
+			context,
+			NoopMarkdownStringRenderer.Instance,
+			versionIndexClient,
+			reader
+		);
+
+		await generator.Generate(TestContext.Current!.Execution.CancellationToken);
+
+		var productHtml = context.WriteFileSystem.File.ReadAllText(Path.Join(outputRoot, "api", "doc", "cloud-connect", "index.html"));
+		productHtml.Should().Contain("<h1>Elastic Cloud Connected API</h1>");
+		productHtml.Should().Contain("<option value=\"/docs/api/doc/cloud-billing/\">Cloud Billing API</option>");
+		productHtml.Should().Contain("<option value=\"/docs/api/doc/cloud-connect/\" selected>Elastic Cloud Connected API</option>");
+	}
+
+	[Test]
 	public async Task GenerateCatalog_RendersUsedCategoryChipsOnly()
 	{
 		var outputRoot = Path.Join(Paths.WorkingDirectoryRoot.FullName, $"api-catalog-split-{Guid.NewGuid():N}");
@@ -212,14 +322,14 @@ public class OpenApiGeneratorCatalogSplitTests
 		html.Should().Contain("No APIs match your filter.");
 	}
 
-	private static BuildContext CreateGenerateContext(string outputRoot)
+	private static BuildContext CreateGenerateContext(string outputRoot, string? docsetYaml = null, string? displayName = null)
 	{
 		var collector = new DiagnosticsCollector([]);
 		var stack = TestHelpers.CreateStackVersionsConfiguration(currentMajor: 9);
-		var product = TestHelpers.CreateProduct("elasticsearch", stack.GetVersioningSystem(VersioningSystemId.Stack));
+		var product = TestHelpers.CreateProduct("elasticsearch", stack.GetVersioningSystem(VersioningSystemId.Stack), displayName);
 		var repoRoot = Path.Join(Paths.WorkingDirectoryRoot.FullName, $"api-catalog-split-repo-{Guid.NewGuid():N}");
 		var configPath = Path.Join(repoRoot, "docs", "docset.yml");
-		var docsetYaml =
+		docsetYaml ??=
 			"""
 			api:
 			  elasticsearch:
@@ -295,13 +405,38 @@ public class OpenApiGeneratorCatalogSplitTests
 
 	private static IOpenApiSpecificationReader CreateSequentialReader(params OpenApiDocument[] documents)
 	{
-		var queue = new Queue<OpenApiDocument>(documents);
+		var queue = new ConcurrentQueue<OpenApiDocument>(documents);
 		var reader = A.Fake<IOpenApiSpecificationReader>();
 		A.CallTo(() => reader.ReadAsync(A<Stream>._, A<string>._, A<IDiagnosticsCollector?>._)).ReturnsLazily(
-			_ => Task.FromResult<OpenApiDocument?>(queue.Dequeue())
+			_ => Task.FromResult<OpenApiDocument?>(queue.TryDequeue(out var next) ? next : null)
 		);
 		return reader;
 	}
+
+	private static HttpMessageHandler SharedProductHandler() =>
+		new StubHandler(request =>
+		{
+			if (request.RequestUri!.AbsolutePath.EndsWith("index.json", StringComparison.Ordinal))
+			{
+				return IndexResponse(
+					/*lang=json,strict*/
+					"""
+					{
+						"elastic/elasticsearch": {
+							"cloud-billing.json": {
+								"main": { "version": "main" }
+							},
+							"cloud-connect.json": {
+								"main": { "version": "main" }
+							}
+						}
+					}
+					"""
+				);
+			}
+
+			return SpecResponse();
+		});
 
 	private static HttpMessageHandler MultiVersionHandler(string repository = "elastic/elasticsearch") =>
 		new StubHandler(request =>

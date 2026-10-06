@@ -89,10 +89,13 @@ public record ApiQueryParameter
 	public required string? DescriptionMarkdown { get; init; }
 }
 
-/// <summary>A path parameter with its effective description precomputed.</summary>
+/// <summary>A path parameter with its structural display data precomputed.</summary>
 public record ApiPathParameter
 {
 	public required IOpenApiParameter Parameter { get; init; }
+	public required TypeAnnotation? Type { get; init; }
+	public required IReadOnlyList<string> EnumValues { get; init; }
+	public required IReadOnlyList<UnionBadge> UnionOptions { get; init; }
 	public required HtmlString DescriptionHtml { get; init; }
 	public required string? DescriptionMarkdown { get; init; }
 
@@ -176,9 +179,6 @@ public partial record OperationPageModel
 	public required bool ShowResponseExamples { get; init; }
 	public required IReadOnlyList<ExampleScenario> Scenarios { get; init; }
 
-	/// <summary>Anchor of the examples rail; null when the page has no examples at all.</summary>
-	public required string? ExamplesAnchor { get; init; }
-
 	/// <summary>Effective auth scheme badges. Empty when the spec declares no schemes.</summary>
 	public required IReadOnlyList<AuthSchemeBadge> AuthSchemes { get; init; }
 
@@ -210,8 +210,6 @@ public partial record OperationPageModel
 			apiOperation.OperationType.ToString().ToLowerInvariant(),
 			apiOperation.Route
 		);
-		var examplesAnchor = scenarios.Count > 0 ? "examples" : null;
-
 		var requestContentEntry = operation.RequestBody?.Content?.FirstOrDefault();
 		var requestSchema = requestContentEntry?.Value?.Schema;
 
@@ -233,16 +231,7 @@ public partial record OperationPageModel
 			Overloads = ResolveOverloads(context),
 			PathParameters = (operation.Parameters ?? [])
 				.Where(p => p.In == ParameterLocation.Path)
-				.Select(p =>
-				{
-					var description = supplemental?.ParameterOr(p.Name ?? "", p.Description) ?? p.Description;
-					return new ApiPathParameter
-					{
-						Parameter = p,
-						DescriptionHtml = ApiMarkdown.Render(context, description),
-						DescriptionMarkdown = description
-					};
-				})
+				.Select(p => BuildPathParameter(p, analyzer, builder, context, supplemental))
 				.ToArray(),
 			QueryParameters = (operation.Parameters ?? [])
 				.Where(p => p.In == ParameterLocation.Query)
@@ -265,7 +254,6 @@ public partial record OperationPageModel
 			ShowRequestExamples = requestExamples.Count > 0 && scenarios.Any(static s => s.ShowRequest),
 			ShowResponseExamples = responseExamples.Count > 0,
 			Scenarios = scenarios,
-			ExamplesAnchor = examplesAnchor,
 			AuthSchemes = OpenApiAuthSchemeResolver.Resolve(
 				operation,
 				document,
@@ -537,9 +525,22 @@ public partial record OperationPageModel
 		var list = new List<ExampleDisplay>();
 		foreach (var (statusCode, response) in responses)
 		{
-			var examples = response?.Content?.FirstOrDefault().Value?.Examples;
-			foreach (var example in MapExamples(examples, renderMarkdown, statusCode))
-				list.Add(example);
+			var media = response?.Content?.FirstOrDefault().Value;
+			var named = MapExamples(media?.Examples, renderMarkdown, statusCode);
+			if (named.Count > 0)
+			{
+				list.AddRange(named);
+				continue;
+			}
+
+			if (media?.Example is not { } example || JsonNullSentinel.IsJsonNullSentinel(example))
+				continue;
+
+			var json = example.ToString();
+			if (string.IsNullOrWhiteSpace(json))
+				continue;
+
+			list.Add(new ExampleDisplay(statusCode, null, json, null, statusCode));
 		}
 
 		return list;
@@ -637,6 +638,31 @@ public partial record OperationPageModel
 		return context.CurrentNavigation is OperationNavigationItem self ? [self] : [];
 	}
 
+	private static ApiPathParameter BuildPathParameter(
+		IOpenApiParameter parameter,
+		SchemaAnalyzer analyzer,
+		ApiPropertyTreeBuilder builder,
+		ApiRenderContext context,
+		ApiSupplementalDoc? supplemental
+	)
+	{
+		var schema = parameter.Schema;
+		var typeInfo = analyzer.GetTypeInfo(schema);
+		var description = supplemental?.ParameterOr(parameter.Name ?? "", parameter.Description) ?? parameter.Description;
+		var type = schema is not null ? builder.DescribePathParameter(schema) : null;
+		// The type chip already lists X | X[]; a One of row would repeat those alternatives.
+		var alternativesInType = type?.Text.Contains(" | ", StringComparison.Ordinal) == true;
+		return new ApiPathParameter
+		{
+			Parameter = parameter,
+			Type = type,
+			EnumValues = typeInfo.EnumValues ?? [],
+			UnionOptions = alternativesInType ? [] : UnionBadges(typeInfo),
+			DescriptionHtml = ApiMarkdown.Render(context, description),
+			DescriptionMarkdown = description
+		};
+	}
+
 	private static ApiQueryParameter BuildQueryParameter(
 		IOpenApiParameter parameter,
 		SchemaAnalyzer analyzer,
@@ -646,58 +672,29 @@ public partial record OperationPageModel
 	)
 	{
 		var schema = parameter.Schema;
+		var typeInfo = analyzer.GetTypeInfo(schema);
 		var description = supplemental?.ParameterOr(parameter.Name ?? "", parameter.Description) ?? parameter.Description;
 		return new ApiQueryParameter
 		{
 			Parameter = parameter,
 			Type = schema is not null ? builder.Describe(schema) : null,
 			Constraints = schema is not null ? ApiPropertyTreeBuilder.BuildConstraints(schema) : [],
-			EnumValues = CollectEnumValues(schema, analyzer),
-			UnionOptions = CollectUnionOptionNames(schema, analyzer)
-				.Select(n => new UnionBadge(n, ApiPropertyTreeBuilder.IsTypeOptionBadge(n)))
-				.ToArray(),
+			EnumValues = typeInfo.EnumValues ?? [],
+			UnionOptions = UnionBadges(typeInfo),
 			DescriptionHtml = ApiMarkdown.Render(context, description),
 			DescriptionMarkdown = description
 		};
 	}
 
-	private static IReadOnlyList<string> CollectEnumValues(IOpenApiSchema? schema, SchemaAnalyzer analyzer)
+	private static UnionBadge[] UnionBadges(TypeInfo typeInfo)
 	{
-		var resolved = schema is not null ? analyzer.ResolveSchema(schema) : null;
-
-		// Collect enum values from direct enum, resolved enum, or union of string literals
-		var enumValues = new List<string>();
-		if (schema?.Enum is { Count: > 0 })
-			enumValues.AddRange(schema.Enum.Select(e => e?.ToString()?.Trim('"') ?? "").Where(e => !string.IsNullOrEmpty(e)));
-		else if (resolved?.Enum is { Count: > 0 })
-			enumValues.AddRange(resolved.Enum.Select(e => e?.ToString()?.Trim('"') ?? "").Where(e => !string.IsNullOrEmpty(e)));
-
-		if (enumValues.Count > 0)
-			return enumValues;
-
-		// Check for oneOf/anyOf with string literals (union enums)
-		var unionSchemas = resolved?.OneOf is { Count: > 0 } ? resolved.OneOf : resolved?.AnyOf is { Count: > 0 } ? resolved.AnyOf : null;
-		if (unionSchemas is not null)
-		{
-			enumValues.AddRange(
-				unionSchemas
-					.Select(analyzer.ResolveSchema)
-					.Where(r => r?.Enum is { Count: > 0 })
-					.SelectMany(r => r!.Enum!.Select(e => e?.ToString()?.Trim('"') ?? "").Where(e => !string.IsNullOrEmpty(e)))
-			);
-		}
-
-		return enumValues;
-	}
-
-	private static IReadOnlyList<string> CollectUnionOptionNames(IOpenApiSchema? schema, SchemaAnalyzer analyzer)
-	{
-		var typeInfo = schema is not null ? analyzer.GetTypeInfo(schema) : null;
-		if (typeInfo?.AnyOfOptions is { Count: > 0 })
-			return typeInfo.AnyOfOptions.Select(o => o.Name).Where(n => !string.IsNullOrEmpty(n)).ToArray();
-		if (typeInfo?.UnionOptions is { Length: > 0 })
-			return typeInfo.UnionOptions.Where(n => !string.IsNullOrEmpty(n)).ToArray();
-		return [];
+		var names = typeInfo.AnyOfOptions is { Count: > 0 } options
+			? options.Select(o => o.Name)
+			: typeInfo.UnionOptions ?? Enumerable.Empty<string>();
+		return names
+			.Where(n => !string.IsNullOrEmpty(n))
+			.Select(n => new UnionBadge(n, ApiPropertyTreeBuilder.IsTypeOptionBadge(n)))
+			.ToArray();
 	}
 
 	private static IReadOnlyList<ApiResponse> BuildResponses(

@@ -61,6 +61,7 @@ public class OpenApiGenerator(
 	private readonly StaticFileContentHashProvider _contentHashProvider = new(new EmbeddedOrPhysicalFileProvider(context));
 	private readonly VersionIndexClient _versionIndexClient = versionIndexClient ?? new VersionIndexClient();
 	private readonly IOpenApiSpecificationReader _openApiReader = openApiReader ?? OpenApiReader.Instance;
+	private readonly ConcurrentDictionary<string, Task<ResolvedProductDocuments>> _documents = new(StringComparer.OrdinalIgnoreCase);
 
 	public LandingNavigationItem CreateNavigation(
 		string apiUrlSuffix,
@@ -71,8 +72,7 @@ public class OpenApiGenerator(
 
 	public async Task Generate(Cancel ctx = default)
 	{
-		var declaredEntries = ApiHubSwitcher.CollectDeclaredEntries(context.UrlPathPrefix, context.Configuration.ApiConfigurations);
-		var catalogEntries = await GenerateProducts(hubEntries: declaredEntries, ctx).ConfigureAwait(false);
+		var catalogEntries = await GenerateProducts(ctx: ctx).ConfigureAwait(false);
 		if (catalogEntries.Count > 0)
 			await GenerateCatalog(catalogEntries, ctx).ConfigureAwait(false);
 	}
@@ -89,13 +89,15 @@ public class OpenApiGenerator(
 		if (context.Configuration.ApiConfigurations is null)
 			return [];
 
-		var catalogForSwitcher = hubEntries
-			?? ApiHubSwitcher.CollectDeclaredEntries(context.UrlPathPrefix, context.Configuration.ApiConfigurations);
+		// The switcher label is the landing-page h1 (OpenAPI info.title). Resolve specs first so
+		// every page can list sibling APIs by that name. Callers that pass hubEntries, such as the
+		// assembler, have already resolved those titles.
+		var catalogForSwitcher = hubEntries ?? await ResolveCatalogEntries(ctx).ConfigureAwait(false);
 
 		// Fan out every API product in parallel.  Results collected into a ConcurrentBag then sorted
 		// back to the original config declaration order so the catalog page is stable build-to-build.
 		var catalogEntriesBag = new ConcurrentBag<(int Order, ApiCatalogEntry Entry)>();
-		var apiConfigs = context.Configuration.ApiConfigurations.Select((kv, i) => (Index: i, kv.Key, kv.Value)).ToList();
+		var apiConfigs = ApiConfigsToRender();
 
 		await Parallel.ForEachAsync(apiConfigs, new ParallelOptions
 		{
@@ -120,6 +122,33 @@ public class OpenApiGenerator(
 	}
 
 	/// <summary>
+	/// Loads each configured spec and returns catalog entries labeled with the landing-page heading.
+	/// Does not write pages. Later <see cref="GenerateProducts"/> calls reuse the loaded documents.
+	/// </summary>
+	public async Task<IReadOnlyList<ApiCatalogEntry>> ResolveCatalogEntries(Cancel ctx = default)
+	{
+		if (context.Configuration.ApiConfigurations is null)
+			return [];
+
+		var entries = new ConcurrentBag<(int Order, ApiCatalogEntry Entry)>();
+		var apiConfigs = ApiConfigsToRender();
+		await Parallel.ForEachAsync(apiConfigs, new ParallelOptions
+		{
+			CancellationToken = ctx,
+			MaxDegreeOfParallelism = Environment.ProcessorCount
+		}, async (item, token) =>
+		{
+			var (order, prefix, apiConfig) = item;
+			var resolved = await DocumentsFor(prefix, apiConfig, token).ConfigureAwait(false);
+			var entry = CatalogEntry(prefix, apiConfig, resolved);
+			if (entry is not null)
+				entries.Add((order, entry));
+		}).ConfigureAwait(false);
+
+		return [.. entries.OrderBy(x => x.Order).Select(x => x.Entry)];
+	}
+
+	/// <summary>
 	/// Writes the combined API catalog page once from entries collected across one or more owners.
 	/// </summary>
 	public Task GenerateCatalog(IReadOnlyList<ApiCatalogEntry> entries, Cancel ctx = default) =>
@@ -132,28 +161,21 @@ public class OpenApiGenerator(
 		Cancel ctx
 	)
 	{
-		var resolved = await ResolveDocumentsForProduct(prefix, apiConfig, ctx).ConfigureAwait(false);
+		var resolved = await DocumentsFor(prefix, apiConfig, ctx).ConfigureAwait(false);
 		if (resolved.Documents.Count == 0)
-		{
-			context.Collector.EmitGlobalWarning(
-				$"API '{prefix}': no documents could be loaded from the spec — check earlier errors for details."
-			);
 			return null;
-		}
 
 		var versionedDocuments = resolved.Documents;
 		var monikers = versionedDocuments.Select(v => v.Version.Moniker).ToArray();
 		var highestMajor = monikers.Max(TryParseMajor);
 
 		// Each moniker gets an independent ApiRenderContext, navigation tree and navigation HTML
-		// writer, so there is no shared mutable state between concurrent versions.  Version monikers
-		// are rendered sequentially within a product to avoid oversubscribing the thread pool:
-		// the outer Parallel.ForEachAsync in GenerateProducts already fans out all product×version
-		// units concurrently, so a second level of parallelism here would multiply concurrency to
-		// ProcessorCount² rather than keeping it at ProcessorCount.
-		foreach (var versioned in versionedDocuments)
+		// writer, so there is no shared mutable state between concurrent versions. The outer loop in
+		// GenerateProducts fans out products only; rendering versions sequentially here made a
+		// product's total time the sum of all its versions. Pages within one version stay sequential,
+		// so concurrency is bounded by the number of product×version units, not ProcessorCount².
+		await Parallel.ForEachAsync(versionedDocuments, ctx, async (versioned, token) =>
 		{
-			ctx.ThrowIfCancellationRequested();
 			var switcherItems = ApiVersionSwitcher.Build(context.UrlPathPrefix, prefix, monikers, versioned.Version.Moniker);
 			var apiUrlSuffix = ApiUrlBuilder.ProductSuffix(prefix, versioned.Version.Moniker);
 			await GenerateApiProduct(
@@ -168,11 +190,68 @@ public class OpenApiGenerator(
 					CatalogEntries: hubEntries,
 					CurrentApiKey: prefix
 				),
-				ctx
+				token
 			).ConfigureAwait(false);
+		}).ConfigureAwait(false);
+
+		return CatalogEntry(prefix, apiConfig, resolved);
+	}
+
+	private List<(int Index, string Key, ResolvedApiConfiguration Value)> ApiConfigsToRender()
+	{
+		if (context.Configuration.ApiConfigurations is null)
+			return [];
+
+		// docs/_docset.yml declares docs-builder-* copies of product specs for isolated serve.
+		// Assembler preview also loads that checkout, so those keys would list the same API twice.
+		// Isolated builds have no such collision and serve the fixtures under the short product key.
+		if (context.BuildType == BuildType.Assembler)
+		{
+			return context
+				.Configuration
+				.ApiConfigurations
+				.Where(kv => !IsolatedApiAliases.IsFixtureKey(kv.Key))
+				.Select((kv, i) => (i, kv.Key, kv.Value))
+				.ToList();
 		}
 
-		var canonical = versionedDocuments.FirstOrDefault(v => v.Version.Moniker == "main") ?? versionedDocuments[0];
+		var keys = context.Configuration.ApiConfigurations.Keys.ToHashSet(StringComparer.OrdinalIgnoreCase);
+		return context.Configuration.ApiConfigurations.Select((kv, i) => (i, UrlKey(kv.Key, keys), kv.Value)).ToList();
+
+		static string UrlKey(string apiKey, HashSet<string> keys) =>
+			IsolatedApiAliases.UrlKey(apiKey) is var shortKey && !keys.Contains(shortKey) ? shortKey : apiKey;
+	}
+
+	private Task<ResolvedProductDocuments> DocumentsFor(string apiKey, ResolvedApiConfiguration apiConfig, Cancel ctx) =>
+		_documents.GetOrAdd(apiKey, _ => LoadDocuments(apiKey, apiConfig, ctx));
+
+	private async Task<ResolvedProductDocuments> LoadDocuments(string apiKey, ResolvedApiConfiguration apiConfig, Cancel ctx)
+	{
+		try
+		{
+			var resolved = await ResolveDocumentsForProduct(apiKey, apiConfig, ctx).ConfigureAwait(false);
+			if (resolved.Documents.Count == 0)
+			{
+				context.Collector.EmitGlobalWarning(
+					$"API '{apiKey}': no documents could be loaded from the spec — check earlier errors for details."
+				);
+			}
+
+			return resolved;
+		}
+		catch (Exception ex) when (ex is not OperationCanceledException)
+		{
+			context.Collector.EmitGlobalError($"API '{apiKey}' could not be generated: {ex.Message}");
+			return new([], null);
+		}
+	}
+
+	private ApiCatalogEntry? CatalogEntry(string prefix, ResolvedApiConfiguration apiConfig, ResolvedProductDocuments resolved)
+	{
+		if (resolved.Documents.Count == 0)
+			return null;
+
+		var canonical = resolved.Documents.FirstOrDefault(v => v.Version.Moniker == "main") ?? resolved.Documents[0];
 		var title = canonical.Document.Info?.Title ?? apiConfig.Product.DisplayName ?? prefix;
 		var url = $"{ApiUrlBuilder.ProductRoot(context.UrlPathPrefix, prefix)}/";
 		return new ApiCatalogEntry(prefix, title, url, apiConfig.Product.Id, canonical.Document.Info?.Description)
@@ -215,15 +294,14 @@ public class OpenApiGenerator(
 
 		var latestDeclared = versionsToRender.Any(v => v.Moniker == "main") ? "main" : versionsToRender[0].Moniker;
 
-		var results = new List<VersionedOpenApiDocument>(versionsToRender.Length);
-		foreach (var version in versionsToRender)
-		{
-			var document = await ResolveDocumentForVersion(apiKey, apiConfig, version, ctx).ConfigureAwait(false);
-			if (document is null)
-				continue;
-
-			results.Add(new VersionedOpenApiDocument(version, document));
-		}
+		// Download and parse every version at once; results keep the declared version order.
+		var documents = await Task.WhenAll(
+			versionsToRender.Select(v => ResolveDocumentForVersion(apiKey, apiConfig, v, ctx))
+		).ConfigureAwait(false);
+		var results = versionsToRender
+			.Zip(documents, static (version, document) => document is null ? null : new VersionedOpenApiDocument(version, document))
+			.OfType<VersionedOpenApiDocument>()
+			.ToList();
 
 		return ToResolvedProductDocuments(results, latestDeclared);
 	}
@@ -338,6 +416,8 @@ public class OpenApiGenerator(
 			);
 		}
 
+		ApplySupplementalIntroHeadings(navigation, tags);
+
 		var renderContext = new ApiRenderContext(context, generation.Document, _contentHashProvider)
 		{
 			NavigationHtml = string.Empty,
@@ -406,30 +486,60 @@ public class OpenApiGenerator(
 		return result;
 	}
 
+	private static void ApplySupplementalIntroHeadings(INavigationItem item, IReadOnlyDictionary<string, ApiSupplementalDoc> tags)
+	{
+		if (item is not INodeNavigationItem<INavigationModel, INavigationItem> node)
+			return;
+
+		var children = node.NavigationItems.ToArray();
+		if (
+			item is TagNavigationItem tag
+			&& tags.TryGetValue(tag.Index.Model.Name, out var doc)
+			&& !string.IsNullOrWhiteSpace(doc.Description)
+		)
+			tag.ApplyIntroHeadings(doc.Description);
+
+		foreach (var child in children)
+			ApplySupplementalIntroHeadings(child, tags);
+	}
+
 	private async Task RenderNavigationItems(
 		ApiRenderContext renderContext,
 		IsolatedBuildNavigationHtmlWriter navigationRenderer,
-		INavigationItem currentNavigation,
+		INavigationItem root,
 		Cancel ctx
 	)
 	{
-		if (currentNavigation is ISidebarSeparatorNavigationItem)
+		var pages = new List<(INavigationItem Item, IApiModel Model)>();
+		CollectPages(root, pages);
+
+		// Pages of one version render in parallel. When two items share a URL the last one wins,
+		// as it did when pages were written sequentially in depth-first order.
+		var unique = pages.AsEnumerable().Reverse().DistinctBy(p => p.Item.Url).ToArray();
+		await Parallel.ForEachAsync(
+			unique,
+			new ParallelOptions { CancellationToken = ctx, MaxDegreeOfParallelism = Environment.ProcessorCount },
+			async (page, token) => _ = await Render(page.Item, page.Model, renderContext, navigationRenderer, token).ConfigureAwait(false)
+		).ConfigureAwait(false);
+	}
+
+	private static void CollectPages(INavigationItem item, List<(INavigationItem Item, IApiModel Model)> pages)
+	{
+		if (item is ISidebarSeparatorNavigationItem or IntroHeadingNavigationItem)
 			return;
 
-		if (currentNavigation is INodeNavigationItem<IApiModel, INavigationItem> node)
+		if (item is INodeNavigationItem<IApiModel, INavigationItem> node)
 		{
-			if (currentNavigation is not ClassificationNavigationItem)
-				_ = await Render(node, node.Index.Model, renderContext, navigationRenderer, ctx);
-
+			if (item is not ClassificationNavigationItem)
+				pages.Add((node, node.Index.Model));
 			foreach (var child in node.NavigationItems)
-				await RenderNavigationItems(renderContext, navigationRenderer, child, ctx);
+				CollectPages(child, pages);
+			return;
 		}
-		else
-		{
-			_ = currentNavigation is ILeafNavigationItem<IApiModel> leaf
-				? await Render(leaf, leaf.Model, renderContext, navigationRenderer, ctx)
-				: throw new Exception($"Unknown navigation item type {currentNavigation.GetType()}");
-		}
+
+		if (item is not ILeafNavigationItem<IApiModel> leaf)
+			throw new Exception($"Unknown navigation item type {item.GetType()}");
+		pages.Add((leaf, leaf.Model));
 	}
 
 	private async Task<IFileInfo> Render<T>(
@@ -450,7 +560,7 @@ public class OpenApiGenerator(
 
 		var navigationRenderResult = await navigationRenderer.RenderNavigation(current.NavigationRoot, current, ctx);
 		renderContext = renderContext with { CurrentNavigation = current, NavigationHtml = navigationRenderResult.Html };
-		await using var stream = _writeFileSystem.FileStream.New(outputFile.FullName, FileMode.OpenOrCreate);
+		await using var stream = _writeFileSystem.FileStream.New(outputFile.FullName, FileMode.Create);
 
 		// Build the expensive page model once and pass it to both render paths so that
 		// OperationPageModel.Create / SchemaPageModel.Create / StructuralViewModel.Create

@@ -4,47 +4,51 @@
 	var title = responses.Count == 1 ? "Response" : "Responses";
 }
 <div class="responses-block" data-api-responses>
-	<h4 class="section-header responses-header" id="responses" data-section="responses">
-		<span class="responses-title">@title</span>
-	</h4>
+	<h2 class="section-header responses-header" id="responses" data-section="responses">
+		<a class="headerlink responses-title" href="#responses">@title</a>
+	</h2>
 	<div class="responses-list">
-		@for (var i = 0; i < responses.Count; i++)
+		@foreach (var response in responses)
 		{
-			var response = responses[i];
 			var bodyId = $"response-{response.StatusCode}-fields";
 			if (!response.HasDetails)
 			{
 				<div class="response-panel response-panel--static" data-status="@response.StatusCode">
 					<div class="response-status-row">
 						<span class="response-status-chip status-@response.StatusClass">@response.StatusCode</span>
-						@if (!string.IsNullOrEmpty(response.Response.Description))
-						{
-							<span class="response-description">@response.Response.Description</span>
-						}
-						@if (i == 0 && !string.IsNullOrEmpty(response.FirstContentType))
+						@if (!string.IsNullOrEmpty(response.FirstContentType))
 						{
 							<span class="content-type-tag">@response.FirstContentType</span>
 						}
 					</div>
+					@if (!string.IsNullOrEmpty(response.Response.Description))
+					{
+						<div class="response-description">@Model.RenderMarkdown(response.Response.Description)</div>
+					}
 				</div>
 				continue;
 			}
 			<div class="response-panel collapsed" data-status="@response.StatusCode">
-				<button
-					type="button"
-					class="response-status-toggle"
-					aria-expanded="false"
-					aria-controls="@bodyId">
-					<span class="response-status-chip status-@response.StatusClass">@response.StatusCode</span>
+				<div class="response-summary">
+					<div class="response-status-row">
+						<button
+							type="button"
+							class="response-status-toggle"
+							aria-expanded="false"
+							aria-controls="@bodyId">
+							<span class="response-status-chip status-@response.StatusClass">@response.StatusCode</span>
+							@if (!string.IsNullOrEmpty(response.FirstContentType))
+							{
+								<span class="content-type-tag">@response.FirstContentType</span>
+							}
+							<span class="response-toggle-icon" aria-hidden="true"></span>
+						</button>
+					</div>
 					@if (!string.IsNullOrEmpty(response.Response.Description))
 					{
-						<span class="response-description">@response.Response.Description</span>
+						<div class="response-description">@Model.RenderMarkdown(response.Response.Description)</div>
 					}
-					@if (i == 0 && !string.IsNullOrEmpty(response.FirstContentType))
-					{
-						<span class="content-type-tag">@response.FirstContentType</span>
-					}
-				</button>
+				</div>
 				<div class="response-panel-body" id="@bodyId" hidden="until-found">
 					@foreach (var content in response.Contents)
 					{
@@ -69,7 +73,7 @@
 					@if (response.Headers.Count > 0)
 					{
 						<div class="response-headers">
-							<h5>Response Headers</h5>
+							<h3>Response Headers</h3>
 							<dl class="property-list">
 								@foreach (var header in response.Headers)
 								{

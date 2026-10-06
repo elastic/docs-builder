@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Collections.Concurrent;
 using System.Collections.Frozen;
 using System.IO.Abstractions;
 using System.IO.Abstractions.TestingHelpers;
@@ -109,6 +110,11 @@ public class OpenApiGeneratorMarkdownEmissionTests(ApiExplorerFixture fixture)
 		operation.Should().Contain("`/{index}/_search`");
 		operation.Should().Contain("## Description");
 		operation.Should().Contain("Returns hits that match the query");
+		operation.Should().Contain("Supports pagination through `size` and `from`.");
+		operation.Should().Contain("#### `200`");
+		operation.Should().Contain("Search results");
+		operation.Should().NotContain("#### `200` Search results");
+		operation.Should().Contain("`application/json`");
 		operation.Should().NotContain("<!DOCTYPE");
 		operation.Should().NotContain("<html");
 
@@ -252,10 +258,10 @@ public class OpenApiGeneratorMarkdownEmissionTests(ApiExplorerFixture fixture)
 
 	private static IOpenApiSpecificationReader CreateSequentialReader(params OpenApiDocument[] documents)
 	{
-		var queue = new Queue<OpenApiDocument>(documents);
+		var queue = new ConcurrentQueue<OpenApiDocument>(documents);
 		var reader = A.Fake<IOpenApiSpecificationReader>();
 		A.CallTo(() => reader.ReadAsync(A<Stream>._, A<string>._, A<IDiagnosticsCollector?>._)).ReturnsLazily(
-			_ => Task.FromResult<OpenApiDocument?>(queue.Dequeue())
+			_ => Task.FromResult<OpenApiDocument?>(queue.TryDequeue(out var next) ? next : null)
 		);
 		return reader;
 	}

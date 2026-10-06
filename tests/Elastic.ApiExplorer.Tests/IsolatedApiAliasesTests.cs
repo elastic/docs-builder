@@ -10,25 +10,16 @@ namespace Elastic.ApiExplorer.Tests;
 public class IsolatedApiAliasesTests
 {
 	[Test]
-	[Arguments("doc/elasticsearch", "doc/docs-builder-elasticsearch")]
-	[Arguments("doc/elasticsearch/operation/operation-search", "doc/docs-builder-elasticsearch/operation/operation-search")]
-	[Arguments("doc/kibana/operation/operation-post-agent-builder-conversations-conversation-id-attachments", "doc/docs-builder-kibana/operation/operation-post-agent-builder-conversations-conversation-id-attachments")]
-	[Arguments("/doc/elasticsearch/", "doc/docs-builder-elasticsearch")]
-	public void TryPrefixedDocSlug_ShortProductKey_MapsToFixture(string slug, string expected)
-	{
-		IsolatedApiAliases.TryPrefixedDocSlug(slug, out var prefixed).Should().BeTrue();
-		prefixed.Should().Be(expected);
-	}
+	[Arguments("docs-builder-elasticsearch", true)]
+	[Arguments("docs-builder-cloud-connect", true)]
+	[Arguments("elasticsearch", false)]
+	[Arguments("cloud-connect", false)]
+	public void IsFixtureKey_MatchesPrefixedKeysOnly(string apiKey, bool expected) =>
+		IsolatedApiAliases.IsFixtureKey(apiKey).Should().Be(expected);
 
 	[Test]
-	[Arguments("doc/docs-builder-elasticsearch")]
-	[Arguments("doc/docs-builder-elasticsearch/operation/operation-search")]
-	[Arguments("api/doc/elasticsearch")]
-	[Arguments("")]
-	[Arguments("doc/")]
-	public void TryPrefixedDocSlug_AlreadyPrefixedOrInvalid_ReturnsFalse(string slug)
-	{
-		IsolatedApiAliases.TryPrefixedDocSlug(slug, out var prefixed).Should().BeFalse();
-		prefixed.Should().BeNull();
-	}
+	[Arguments("docs-builder-elasticsearch", "elasticsearch")]
+	[Arguments("docs-builder-cloud-connect", "cloud-connect")]
+	[Arguments("kibana", "kibana")]
+	public void UrlKey_FixtureKey_DropsPrefix(string apiKey, string expected) => IsolatedApiAliases.UrlKey(apiKey).Should().Be(expected);
 }
