@@ -2,7 +2,6 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using System.Collections.Concurrent;
 using System.IO.Abstractions;
 using System.Net;
 using System.Text.Json;
@@ -66,7 +65,6 @@ public sealed class VersionIndexClient : IDisposable
 	private readonly int _maxAttempts;
 	private readonly Func<TimeSpan, Cancel, Task> _sleep;
 
-	private readonly ConcurrentDictionary<string, byte[]> _specBodies = new(StringComparer.Ordinal);
 	private readonly SemaphoreSlim _rootIndexLock = new(1, 1);
 	private bool _rootIndexFetched;
 	private RootVersionIndex? _rootIndex;
@@ -94,10 +92,11 @@ public sealed class VersionIndexClient : IDisposable
 	}
 
 	/// <summary>
-	/// Keeps downloaded spec bodies in memory so later fetches of the same object key skip the network.
-	/// A long-lived client in <c>serve</c> sets this so regenerating API pages only re-parses specs.
+	/// When set, downloaded spec bodies are stored here and later fetches of the same object key skip
+	/// the network. <c>serve</c> shares one cache across regenerations while each regeneration gets a
+	/// new client, so a failed version index fetch is retried instead of memoized for the process.
 	/// </summary>
-	public bool CacheSpecBodies { get; init; }
+	public SpecBodyCache? SpecBodies { get; init; }
 
 	public async Task<IReadOnlyList<ResolvedApiVersion>> ResolveVersionsAsync(
 		GitCheckoutInformation git,
@@ -169,7 +168,7 @@ public sealed class VersionIndexClient : IDisposable
 				$"Version '{version.Moniker}' of API '{apiKey}' is local; read {nameof(ResolvedApiVersion.LocalFile)} instead."
 			);
 
-		if (CacheSpecBodies && _specBodies.TryGetValue(objectKey, out var cached))
+		if (SpecBodies is not null && SpecBodies.TryGet(objectKey, out var cached))
 			return new MemoryStream(cached, writable: false);
 
 		var uri = new Uri(_baseUri, objectKey);
@@ -182,7 +181,7 @@ public sealed class VersionIndexClient : IDisposable
 			try
 			{
 				var stream = await FetchStreamAsync(uri, attempt, ctx).ConfigureAwait(false);
-				return CacheSpecBodies ? await BufferSpecBody(objectKey, stream, ctx).ConfigureAwait(false) : stream;
+				return SpecBodies is { } cache ? await BufferSpecBody(cache, objectKey, stream, ctx).ConfigureAwait(false) : stream;
 			}
 			catch (HttpRequestException ex)
 			{
@@ -199,13 +198,13 @@ public sealed class VersionIndexClient : IDisposable
 		return null;
 	}
 
-	private async Task<Stream> BufferSpecBody(string objectKey, Stream stream, Cancel ctx)
+	private static async Task<Stream> BufferSpecBody(SpecBodyCache cache, string objectKey, Stream stream, Cancel ctx)
 	{
 		await using (stream.ConfigureAwait(false))
 		{
 			using var buffer = new MemoryStream();
 			await stream.CopyToAsync(buffer, ctx).ConfigureAwait(false);
-			var body = _specBodies.GetOrAdd(objectKey, buffer.ToArray());
+			var body = cache.GetOrAdd(objectKey, buffer.ToArray());
 			return new MemoryStream(body, writable: false);
 		}
 	}
