@@ -141,6 +141,59 @@ describe('API examples carousel', () => {
         expect(activeLang('slicing')).toBe('curl')
     })
 
+    it('jumps instead of starting a second smooth scroll while one is in flight', () => {
+        jest.useFakeTimers()
+        initApiExamples()
+        const strip = document.querySelector<HTMLElement>(
+            '[data-scenario="term"] [data-carousel-strip]'
+        )!
+        const scrollTo = jest.fn()
+        strip.scrollTo = scrollTo as unknown as typeof strip.scrollTo
+        const dot = (lang: string) =>
+            document.querySelector<HTMLElement>(
+                `[data-scenario="term"] [data-carousel-dot="${lang}"]`
+            )!
+
+        dot('Python').click()
+        dot('Java').click()
+
+        expect(scrollTo.mock.calls.map((c) => c[0].behavior)).toEqual([
+            'smooth',
+            'auto',
+        ])
+        jest.useRealTimers()
+    })
+
+    it('settles on the card in view when a held scroll ends elsewhere', () => {
+        jest.useFakeTimers()
+        initApiExamples()
+        const strip = document.querySelector<HTMLElement>(
+            '[data-scenario="term"] [data-carousel-strip]'
+        )!
+        strip
+            .querySelectorAll<HTMLElement>('.api-code-carousel-card')
+            .forEach((card, i) =>
+                Object.defineProperty(card, 'offsetLeft', { value: i * 400 })
+            )
+        strip.scrollTo = jest.fn() as unknown as typeof strip.scrollTo
+
+        document
+            .querySelector<HTMLElement>(
+                '[data-scenario="term"] [data-carousel-dot="Java"]'
+            )!
+            .click()
+        expect(activeLang('term')).toBe('Java')
+        // The browser snapped back to Python (index 2) instead of reaching Java (index 3).
+        Object.defineProperty(strip, 'scrollLeft', {
+            value: 800,
+            configurable: true,
+        })
+        jest.advanceTimersByTime(900)
+
+        expect(activeLang('term')).toBe('Python')
+        jest.useRealTimers()
+    })
+
     it('steps with the arrows and disables them at the ends', () => {
         initApiExamples()
         const prev = document.querySelector<HTMLButtonElement>(
