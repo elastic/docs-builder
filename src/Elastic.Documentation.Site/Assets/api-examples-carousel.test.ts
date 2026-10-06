@@ -107,6 +107,51 @@ describe('API examples carousel', () => {
         expect(activeLang('term')).toBe('Java')
     })
 
+    it('treats a swipe to another card as a pick: link and preference follow', () => {
+        type Callback = (entries: Partial<IntersectionObserverEntry>[]) => void
+        const callbacks: Callback[] = []
+        const Original = window.IntersectionObserver
+        window.IntersectionObserver = class {
+            constructor(callback: Callback) {
+                callbacks.push(callback)
+            }
+            observe() {}
+            disconnect() {}
+            unobserve() {}
+        } as unknown as typeof IntersectionObserver
+        try {
+            initApiExamples()
+            // Observers register in document order; the first one watches the term carousel.
+            const settle = (lang: string) =>
+                callbacks[0]([
+                    {
+                        isIntersecting: true,
+                        intersectionRatio: 1,
+                        target: document.querySelector(
+                            `[data-scenario="term"] .api-code-carousel-card[data-lang="${lang}"]`
+                        )!,
+                    },
+                ])
+
+            // The first report after load names the card that is already active and changes nothing.
+            settle('Console')
+            expect(window.location.hash).toBe('')
+            expect(
+                window.localStorage.getItem(apiLanguageStorageKey)
+            ).toBeNull()
+
+            settle('Python')
+
+            expect(activeLang('term')).toBe('Python')
+            expect(window.location.hash).toBe('#example=term&lang=python')
+            expect(window.localStorage.getItem(apiLanguageStorageKey)).toBe(
+                'Python'
+            )
+        } finally {
+            window.IntersectionObserver = Original
+        }
+    })
+
     it('restores example and language from the deep link', () => {
         window.history.replaceState(null, '', '#example=slicing&lang=curl')
 

@@ -308,9 +308,11 @@ function pickLanguage(examples: HTMLElement, language: string) {
     writeDeepLink(language, currentScenario(examples))
 }
 
+/** Follows swipes and free scrolls: the card that settles into view becomes the pick, like a dot click would. */
 function observeStrip(carousel: HTMLElement) {
     const strip = carousel.querySelector<HTMLElement>('[data-carousel-strip]')
-    if (!strip || strip.dataset.carouselObserved) return
+    const examples = carousel.closest<HTMLElement>('[data-api-examples]')
+    if (!strip || !examples || strip.dataset.carouselObserved) return
     strip.dataset.carouselObserved = 'true'
     if (typeof IntersectionObserver === 'undefined') return
 
@@ -322,8 +324,10 @@ function observeStrip(carousel: HTMLElement) {
             const language = (best?.target as HTMLElement | undefined)?.dataset
                 .lang
             if (carousel.dataset.scrolling) return
-            if (best && best.intersectionRatio >= 0.6 && language)
-                setActive(carousel, language)
+            if (!best || best.intersectionRatio < 0.6 || !language) return
+            // Only a change counts: the first callback after load reports the card that is already active.
+            if (sameLanguage(language, activeLanguage(carousel))) return
+            if (setActive(carousel, language)) pickLanguage(examples, language)
         },
         { root: strip, threshold: [0.6, 0.9] }
     )
