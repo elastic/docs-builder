@@ -35,7 +35,7 @@
 			{
 				var scenario = Model.Scenarios[i];
 				<div class="api-examples-scenario-panel api-examples-body" data-scenario="@scenario.TabId" hidden="@(i == 0 ? null : "until-found")">
-					@(await RenderPartialAsync<_ExampleScenarioContent, ExampleScenarioView>(new ExampleScenarioView(scenario, Model)))
+					@(await RenderPartialAsync<_ExampleScenarioContent, ExampleScenario>(scenario))
 				</div>
 			}
 		</div>

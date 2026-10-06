@@ -38,11 +38,8 @@ public class OperationExamplesPanelRenderingTests
 	private static ValueTask<string> RenderPanel(params ExampleScenario[] scenarios) =>
 		_OperationExamplesPanel.Create(new OperationExamplesPanelModel { Scenarios = scenarios }).RenderAsync(cancellationToken: Ct);
 
-	private static ValueTask<string> RenderScenario(ExampleScenario scenario, params ExampleScenario[] others) =>
-		_ExampleScenarioContent.Create(new ExampleScenarioView(
-			scenario,
-			new OperationExamplesPanelModel { Scenarios = [scenario, .. others] }
-		)).RenderAsync(cancellationToken: Ct);
+	private static ValueTask<string> RenderScenario(ExampleScenario scenario) =>
+		_ExampleScenarioContent.Create(scenario).RenderAsync(cancellationToken: Ct);
 
 	[Test]
 	public async Task Render_MultipleScenarios_ShowsChipsAndKeepsOthersFindable()
@@ -95,13 +92,13 @@ public class OperationExamplesPanelRenderingTests
 	}
 
 	[Test]
-	public async Task Render_MissingLanguages_PointAtTheExampleThatHasThem()
+	public async Task Render_Dots_ShowOnlyTheLanguagesThisExampleHas()
 	{
-		var html = await RenderScenario(Slicing, TermSearch);
+		var html = await RenderPanel(TermSearch, Slicing);
 
-		html.Should().Contain("data-carousel-jump=\"term\" data-lang=\"Python\"");
-		html.Should().Contain("Show Python for &ldquo;A simple term search&rdquo;");
-		html.Should().Contain("api-code-carousel-dot is-missing");
+		html.Should().NotContain("data-carousel-jump");
+		html.Should().NotContain("is-missing");
+		html.Should().Contain("data-carousel-dot=\"Python\"");
 	}
 
 	[Test]
@@ -141,10 +138,10 @@ public class OperationExamplesPanelRenderingTests
 	{
 		var html = await RenderPanel(TermSearch, Slicing);
 
-		html.Should().Contain("id=\"api-examples-heading\">Examples</p>");
+		html.Should().Contain("id=\"api-examples-heading\" role=\"heading\" aria-level=\"2\">Examples</p>");
 		html.Should().Contain("aria-labelledby=\"api-examples-heading\"");
 		html
-			.IndexOf("api-examples-heading\">", StringComparison.Ordinal)
+			.IndexOf("id=\"api-examples-heading\"", StringComparison.Ordinal)
 			.Should()
 			.BeLessThan(html.IndexOf("api-example-chips", StringComparison.Ordinal));
 	}

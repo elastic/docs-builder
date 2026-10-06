@@ -3511,14 +3511,6 @@ html:has(.api-page-shell) {
 	border-color: var(--color-blue-elastic, #0b64dd);
 }
 
-.api-code-carousel-dot.is-missing {
-	filter: grayscale(1) brightness(1.25);
-}
-
-.api-code-carousel-dot.is-missing:hover {
-	filter: none;
-}
-
 @media (prefers-reduced-motion: reduce) {
 	.api-code-carousel-card,
 	.api-code-carousel-dot,

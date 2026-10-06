@@ -15,16 +15,11 @@ function card(lang: string): string {
         </section>`
 }
 
-function carousel(
-    langs: string[],
-    allLangs: string[],
-    jumpTo?: string
-): string {
-    const dots = allLangs
-        .map((lang) =>
-            langs.includes(lang)
-                ? `<button class="api-code-carousel-dot" data-carousel-dot="${lang}" data-tooltip="${lang}"></button>`
-                : `<button class="api-code-carousel-dot is-missing" data-carousel-jump="${jumpTo}" data-lang="${lang}"></button>`
+function carousel(langs: string[]): string {
+    const dots = langs
+        .map(
+            (lang) =>
+                `<button class="api-code-carousel-dot" data-carousel-dot="${lang}" data-tooltip="${lang}"></button>`
         )
         .join('')
     return `
@@ -49,7 +44,7 @@ function markup(): string {
         <div data-api-examples>
             <button class="api-example-chip is-active" data-scenario="term"><span class="api-example-chip-title">Term search</span></button>
             <button class="api-example-chip" data-scenario="slicing"><span class="api-example-chip-title">Slicing</span></button>
-            <div class="api-examples-scenario-panel" data-scenario="term">${carousel(all, all)}
+            <div class="api-examples-scenario-panel" data-scenario="term">${carousel(all)}
                 <div class="api-code-card example-block example-block--response" data-code-card>
                     <div class="example-block-header"><span data-code-actions></span></div>
                     <div data-code-panel="200"><pre><code>{"ok":true}</code></pre></div>
@@ -60,7 +55,7 @@ function markup(): string {
                     <p class="example-empty">No example</p>
                 </div>
             </div>
-            <div class="api-examples-scenario-panel" data-scenario="slicing" hidden="until-found">${carousel(['Console', 'curl'], all, 'term')}</div>
+            <div class="api-examples-scenario-panel" data-scenario="slicing" hidden="until-found">${carousel(['Console', 'curl'])}</div>
         </div>`
 }
 
@@ -239,22 +234,17 @@ describe('API examples carousel', () => {
         expect(activeLang('slicing')).toBe('curl')
     })
 
-    it('jumps to the example that has a missing language', () => {
+    it('offers only the languages an example has', () => {
         initApiExamples()
         click('.api-example-chip[data-scenario="slicing"]')
 
-        click(
-            '[data-scenario="slicing"] [data-carousel-jump][data-lang="Java"]'
-        )
+        const dots = [
+            ...document.querySelectorAll<HTMLElement>(
+                '[data-scenario="slicing"] .api-code-carousel-dot'
+            ),
+        ].map((dot) => dot.dataset.carouselDot)
 
-        expect(
-            document
-                .querySelector(
-                    '.api-examples-scenario-panel[data-scenario="term"]'
-                )
-                ?.hasAttribute('hidden')
-        ).toBe(false)
-        expect(activeLang('term')).toBe('Java')
+        expect(dots).toEqual(['Console', 'curl'])
     })
 
     it('shows a scenario when find-in-page matches inside it', () => {

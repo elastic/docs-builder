@@ -569,16 +569,6 @@ function onClick(event: MouseEvent) {
         return
     }
 
-    const jump = target.closest<HTMLElement>('[data-carousel-jump]')
-    if (jump?.dataset.carouselJump) {
-        showScenario(examples, jump.dataset.carouselJump)
-        const carousel = visibleCarousel(examples)
-        const language = jump.dataset.lang
-        if (carousel && language && showLanguage(carousel, language, false))
-            pickLanguage(examples, language)
-        return
-    }
-
     const carousel = target.closest<HTMLElement>('[data-api-carousel]')
     if (!carousel) return
 

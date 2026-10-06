@@ -77,33 +77,7 @@ public record ExampleScenario
 public record OperationExamplesPanelModel
 {
 	public required IReadOnlyList<ExampleScenario> Scenarios { get; init; }
-
-	private Dictionary<string, ExampleScenario>? _firstScenarioByLanguage;
-
-	/// <summary>Every sample language across all examples, in carousel order (see <see cref="CodeSample.Rank"/>).</summary>
-	public IReadOnlyList<string> AllLanguages =>
-		field ??=
-		[
-			.. Scenarios
-				.SelectMany(static s => s.CodeSamples)
-				.GroupBy(static c => c.Language, StringComparer.OrdinalIgnoreCase)
-				.OrderBy(static g => g.First().Rank)
-				.Select(static g => g.Key)
-		];
-
-	/// <summary>The first example that has a sample in <paramref name="language"/>; used to point at languages an example lacks.</summary>
-	public ExampleScenario? ScenarioWith(string language)
-	{
-		_firstScenarioByLanguage ??= Scenarios
-			.SelectMany(static s => s.CodeSamples.Select(c => (c.Language, Scenario: s)))
-			.GroupBy(static x => x.Language, StringComparer.OrdinalIgnoreCase)
-			.ToDictionary(static g => g.Key, static g => g.First().Scenario, StringComparer.OrdinalIgnoreCase);
-		return _firstScenarioByLanguage.GetValueOrDefault(language);
-	}
 }
-
-/// <summary>One example's carousel, with the panel for cross-example language lookups.</summary>
-public record ExampleScenarioView(ExampleScenario Scenario, OperationExamplesPanelModel Panel);
 
 /// <summary>A query string parameter with its structural display data precomputed.</summary>
 public record ApiQueryParameter

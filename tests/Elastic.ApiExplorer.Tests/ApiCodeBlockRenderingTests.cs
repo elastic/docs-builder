@@ -63,9 +63,8 @@ public class ApiCodeBlockRenderingTests
 				new CodeSample("curl", "curl localhost", CodeSample.GetHighlightClass("curl"))
 			]
 		};
-		var panel = new OperationExamplesPanelModel { Scenarios = [scenario] };
 
-		var html = await _ExampleScenarioContent.Create(new ExampleScenarioView(scenario, panel)).RenderAsync(cancellationToken: Ct);
+		var html = await _ExampleScenarioContent.Create(scenario).RenderAsync(cancellationToken: Ct);
 
 		html.Should().Contain("<code class=\"language-console\">");
 		html.Should().Contain("<code class=\"language-python\">");

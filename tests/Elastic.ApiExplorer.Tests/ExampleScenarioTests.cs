@@ -499,29 +499,4 @@ public class ExampleScenarioTests
 		  }
 		}
 		""";
-
-	[Test]
-	public void AllLanguages_FollowsTheLanguageRankAcrossExamples()
-	{
-		var panel = new OperationExamplesPanelModel
-		{
-			Scenarios =
-			[
-				new ExampleScenario
-				{
-					Title = "A",
-					TabId = "a",
-					CodeSamples = [new("curl", "curl ...", "language-curl"), new("Ruby", "...", "language-ruby")]
-				},
-				new ExampleScenario
-				{
-					Title = "B",
-					TabId = "b",
-					CodeSamples = [new("Console", "GET /", "language-console"), new("Python", "...", "language-python")]
-				}
-			]
-		};
-
-		panel.AllLanguages.Should().Equal("Console", "Python", "curl", "Ruby");
-	}
 }
