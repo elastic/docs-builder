@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 using System.IO.Abstractions;
 using Elastic.ApiExplorer;
+using Elastic.ApiExplorer.Model;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Builder;
@@ -65,7 +66,11 @@ public class ReloadableGeneratorState : IDisposable
 	private readonly Dictionary<string, DateTimeOffset> _apiMarkdownFilesLastModified = [];
 
 	private volatile bool _apiReferencesStale = true;
+	// 1 when the next /api/ request must regenerate; consumed atomically so a concurrent invalidation is never lost.
+	private int _forceApiRegeneration;
 	private readonly SemaphoreSlim _apiSemaphore = new(1, 1);
+	// Outlives each regeneration so specs are not downloaded again; the version index is re-fetched each time.
+	private readonly SpecBodyCache _specBodies = new();
 	private CancellationTokenSource? _apiGenerationCts;
 
 	public async Task ReloadAsync(Cancel ctx, bool reloadConfiguration = true)
@@ -120,6 +125,16 @@ public class ReloadableGeneratorState : IDisposable
 		_apiReferencesStale = true;
 	}
 
+	/// <summary>
+	/// Regenerates API pages on the next /api/ request even when no spec changed. Hot reload calls
+	/// this because rendering code and static asset hashes are baked into the generated HTML.
+	/// </summary>
+	public void InvalidateApiReferences()
+	{
+		_ = Interlocked.Exchange(ref _forceApiRegeneration, 1);
+		_apiReferencesStale = true;
+	}
+
 	/// <summary>Lazily generates OpenAPI references on the first /api/ request, and regenerates when spec files change.</summary>
 	public async Task EnsureApiReferencesAsync(Cancel ctx)
 	{
@@ -139,14 +154,25 @@ public class ReloadableGeneratorState : IDisposable
 			if (!_apiReferencesStale)
 				return;
 
-			// Use the isolated token for actual generation
+			// Clear flags and snapshot timestamps before generating, so a code or file change that
+			// lands mid-generation marks the pages stale again instead of being lost.
 			var config = _generator.DocumentationSet.Configuration;
-			if (HaveOpenApiSpecsChanged(config))
-			{
-				await ReloadApiReferences(_generator.MarkdownStringRenderer, combinedCts.Token);
-				UpdateOpenApiSpecTimestamps(config);
-			}
 			_apiReferencesStale = false;
+			var force = Interlocked.Exchange(ref _forceApiRegeneration, 0) == 1;
+			if (!force && !HaveOpenApiSpecsChanged(config))
+				return;
+
+			UpdateOpenApiSpecTimestamps(config);
+			try
+			{
+				// Use the isolated token for actual generation
+				await ReloadApiReferences(_generator.MarkdownStringRenderer, combinedCts.Token);
+			}
+			catch
+			{
+				InvalidateApiReferences();
+				throw;
+			}
 		}
 		finally
 		{
@@ -240,10 +266,12 @@ public class ReloadableGeneratorState : IDisposable
 		if (_isWatchBuild)
 			return;
 
-		if (ApiPath.Exists)
-			ApiPath.Delete(true);
+		// Serve writes to an in-memory file system where a recursive delete of the generated tree takes
+		// longer than regenerating it. Pages are overwritten in place instead; a page whose operation
+		// was removed from the spec stays reachable until the server restarts.
 		ApiPath.Create();
-		var generator = new OpenApiGenerator(_logFactory, _context, markdownStringRenderer);
+		using var versionIndexClient = new VersionIndexClient { SpecBodies = _specBodies };
+		var generator = new OpenApiGenerator(_logFactory, _context, markdownStringRenderer, versionIndexClient);
 		await generator.Generate(ctx);
 	}
 

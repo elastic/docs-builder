@@ -194,18 +194,10 @@
 }
 
 .api-page-toolbar {
-	display: flex;
-	align-items: center;
-	gap: 16px;
 	min-width: 0;
-	margin: 0 0 16px;
-}
-
-.api-page-toolbar .api-breadcrumbs {
-	flex: 1 1 auto;
-	min-width: 0;
-	margin: 0;
-	overflow: hidden;
+	margin-bottom: calc(
+		var(--spacing) * 6
+	); /* docs h1 mt-6; API headings set margin: 0 */
 }
 
 .api-page-actions {
@@ -359,24 +351,21 @@
 	color: #1d2a3e;
 }
 
-.markdown-content .api-page-actions a.api-page-actions-option,
-.markdown-content .api-breadcrumbs a.api-page-actions-option {
+.markdown-content .api-page-actions a.api-page-actions-option {
 	color: #1d2a3e;
 	text-decoration: none;
 }
 
 .markdown-content
 	.api-page-actions
-	a.api-page-actions-option[target='_blank']::after,
-.markdown-content .api-breadcrumbs a.api-page-actions-option::after {
+	a.api-page-actions-option[target='_blank']::after {
 	content: none;
 }
 
-/* API breadcrumbs — Figma APIs 10087:3195 (EuiBreadcrumbs Page). On all API pages. */
 .api-pages-nav-toggle {
 	display: inline-flex;
 	align-items: center;
-	margin: 0 0 12px;
+	margin: calc(var(--spacing) * 6) 0 12px; /* replaces .api-page-main pt-6 above the mobile toggle */
 	padding: 0;
 	border: 0;
 	background: none;
@@ -387,95 +376,6 @@
 	.api-pages-nav-toggle {
 		display: none;
 	}
-}
-
-.api-breadcrumbs {
-	margin: 0 0 16px;
-	color: var(--color-subdued, #516381);
-	font-family: var(--font-body, Inter, ui-sans-serif, system-ui, sans-serif);
-	font-size: 14px;
-	font-weight: 400;
-	line-height: 20px;
-}
-
-.api-breadcrumbs ol {
-	display: flex;
-	flex-wrap: nowrap;
-	align-items: center;
-	min-width: 0;
-	margin: 0;
-	padding: 0;
-	list-style: none;
-}
-
-.api-breadcrumbs li {
-	margin: 0;
-	list-style: none;
-	flex-shrink: 0;
-}
-
-.api-breadcrumbs__item[data-crumb='end'] {
-	flex: 0 1 auto;
-	min-width: 0;
-	max-width: 100%;
-}
-
-.api-breadcrumbs a {
-	color: var(--color-subdued, #516381);
-	font-family: inherit;
-	font-size: inherit;
-	font-weight: 400;
-	line-height: inherit;
-	text-decoration: underline;
-	text-underline-offset: 2px;
-	white-space: nowrap;
-}
-
-.api-breadcrumbs a:hover {
-	color: #1d2a3e;
-}
-
-.api-breadcrumbs a[target='_blank']::after {
-	content: none;
-}
-
-.api-breadcrumbs__current {
-	display: block;
-	overflow: hidden;
-	color: var(--color-subdued, #516381);
-	text-overflow: ellipsis;
-	white-space: nowrap;
-}
-
-.api-breadcrumbs__sep {
-	padding: 0 8px;
-	color: var(--color-subdued, #516381);
-}
-
-.api-breadcrumbs__overflow {
-	position: relative;
-}
-
-.api-breadcrumbs__overflow-dropdown {
-	position: relative;
-	display: flex;
-}
-
-.api-breadcrumbs__overflow summary {
-	display: inline-flex;
-	align-items: center;
-	cursor: pointer;
-	list-style: none;
-	color: inherit;
-}
-
-.api-breadcrumbs__overflow summary::-webkit-details-marker {
-	display: none;
-}
-
-.api-breadcrumbs__overflow .api-page-actions-menu {
-	left: 0;
-	right: auto;
 }
 
 .api-overview {
@@ -526,6 +426,167 @@
 			padding-top: 16px;
 			padding-bottom: 16px;
 		}
+	}
+}
+
+.api-group {
+	container-type: inline-size;
+	container-name: api-group;
+}
+
+.api-group .api-page-heading {
+	flex-wrap: wrap;
+	align-items: flex-start;
+}
+
+.api-group .api-page-heading > h1 {
+	font-size: 24px;
+	line-height: 32px;
+}
+
+.api-group .api-tag-canonical {
+	margin: 4px 0 0;
+}
+
+.api-group .api-tag-description {
+	max-width: 66ch;
+	margin-top: 8px;
+	font-size: 16px;
+	line-height: 24px;
+}
+
+.api-group-count {
+	margin: 24px 0 0;
+	color: var(--color-subdued, #516381);
+	font-size: 14px;
+	line-height: 20px;
+}
+
+.api-group-list {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	margin: 12px 0 0;
+	padding: 0;
+	list-style: none;
+}
+
+/* Docs list styles indent every ul. This list is the page body, not a bullet list. */
+#markdown-content .api-group-list {
+	margin-left: 0;
+}
+
+.api-group-list > li {
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+#markdown-content a.api-group-row {
+	text-decoration: none;
+}
+
+.api-group-row {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) 16px;
+	grid-template-areas:
+		'title chevron'
+		'routes chevron';
+	column-gap: 12px;
+	row-gap: 8px;
+	align-items: center;
+	box-sizing: border-box;
+	min-height: 44px;
+	margin: 0;
+	padding: 16px;
+	border: 1px solid #e3e8f2;
+	border-radius: 8px;
+	background: #fff;
+	color: inherit;
+	text-decoration: none;
+	-webkit-tap-highlight-color: rgb(11 100 221 / 16%);
+}
+
+.api-group .api-overview-title {
+	grid-area: title;
+	color: inherit;
+	font-size: 16px;
+	font-weight: 600;
+	line-height: 24px;
+	text-decoration: none;
+}
+
+.api-group-routes {
+	grid-area: routes;
+	min-width: 0;
+}
+
+.api-group .api-url-row {
+	display: grid;
+	grid-template-columns: auto minmax(0, 1fr);
+	align-items: center;
+	column-gap: 8px;
+}
+
+.api-group .api-url {
+	margin-left: 0;
+	min-width: 0;
+	color: var(--color-subdued, #516381);
+	font-family:
+		'Roboto Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+		monospace;
+	font-size: 14px;
+	font-weight: 400;
+	line-height: 24px;
+}
+
+.api-group-chevron {
+	grid-area: chevron;
+	display: block;
+	width: 16px;
+	height: 16px;
+	color: var(--color-subdued, #516381);
+	transform: rotate(-90deg);
+}
+
+.api-group-row:hover,
+.api-group-row:focus-visible {
+	border-color: var(--color-blue-elastic, #0b64dd);
+	background: #f6f9fc;
+}
+
+.api-group-row:hover .api-overview-title,
+.api-group-row:hover .api-group-chevron,
+.api-group-row:focus-visible .api-overview-title,
+.api-group-row:focus-visible .api-group-chevron {
+	color: var(--color-blue-elastic, #0b64dd);
+}
+
+.api-group-row:hover .api-overview-title,
+.api-group-row:focus-visible .api-overview-title {
+	text-decoration: underline;
+	text-underline-offset: 2px;
+}
+
+.api-group-row:active {
+	border-color: var(--color-blue-elastic, #0b64dd);
+	background: #e8f1ff;
+}
+
+.api-group-row:focus-visible {
+	outline: 2px solid var(--color-blue-elastic, #0b64dd);
+	outline-offset: 2px;
+}
+
+@container api-group (min-width: 40rem) {
+	.api-group .api-page-heading > h1 {
+		font-size: 30px;
+		line-height: 36px;
+	}
+
+	.api-group-row {
+		grid-template-columns: minmax(12rem, 0.9fr) minmax(0, 1.5fr) 16px;
+		grid-template-areas: 'title routes chevron';
 	}
 }
 
@@ -738,8 +799,8 @@
 	}
 }
 
-#elastic-api-v3 h4.section-header.responses-header,
-#schema-definition h4.section-header.responses-header {
+#elastic-api-v3 h2.section-header.responses-header,
+#schema-definition h2.section-header.responses-header {
 	padding-bottom: 0;
 	border-bottom: 0;
 }
@@ -1497,7 +1558,6 @@ button.response-status-toggle:focus {
 #elastic-api-v3 .schema-type a[href]:hover,
 #schema-definition .schema-type a[href]:hover,
 .schema-type a[href]:hover,
-.api-page-intro .api-security-badges a[href]:hover,
 a.type-linked:hover {
 	text-decoration: underline;
 	text-underline-offset: 2px;
@@ -1517,9 +1577,44 @@ a.type-linked:hover {
 	color: #f04e98;
 }
 
+/* Auth scheme link — compact outlined button with a leading icon */
+.api-page-intro .api-security-badges .api-auth-button {
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+	box-sizing: border-box;
+	height: 24px;
+	padding: 0 8px 0 6px;
+	border: 1px solid #a9c9f5;
+	border-radius: 4px;
+	background-color: #fff;
+	color: #0b64dd;
+	font-family: var(--font-body, Inter, ui-sans-serif, system-ui, sans-serif);
+	font-size: 12px;
+	font-weight: 500;
+	line-height: 16px;
+	white-space: nowrap;
+	text-decoration: none;
+}
+
+.api-page-intro .api-security-badges .api-auth-button svg {
+	flex: none;
+	width: 14px;
+	height: 14px;
+}
+
+.api-page-intro .api-security-badges .api-auth-button:hover {
+	border-color: #0b64dd;
+	background-color: #f0f6ff;
+}
+
+.api-page-intro .api-security-badges .api-auth-button:focus-visible {
+	outline: 2px solid #0b64dd;
+	outline-offset: 2px;
+}
+
 /* Type badge — Figma APIs 10079:2957 (boolean / string / read). Not markdown code. */
-.property-list .api-type-badge,
-.api-page-intro .api-security-badges .api-type-badge {
+.property-list .api-type-badge {
 	display: inline-flex;
 	align-items: center;
 	box-sizing: border-box;
@@ -1755,10 +1850,14 @@ a.docs-reference-btn::after {
 /* Response headers display */
 .response-headers {
 	@apply border-grey-20 mt-4 border-t pt-4;
+}
 
-	h5 {
-		@apply text-grey-80 mb-2 text-sm font-medium;
-	}
+/* Nested under the responses h2. Wins over the page h3 border and top margin. */
+#elastic-api-v3 .response-headers h3 {
+	@apply text-grey-80 mb-2 text-sm font-medium;
+	margin-top: 0;
+	padding-bottom: 0;
+	border-bottom: 0;
 }
 
 .header-item {
@@ -1805,9 +1904,9 @@ a.docs-reference-btn::after {
 	line-height: inherit;
 }
 
-/* Value type keyword styling - for discovered primitive aliases */
-.value-type-keyword {
-	@apply text-blue-elastic border-0 bg-transparent p-0 text-xs font-normal;
+/* Primitive keyword inside a value type (string Duration) uses the plain string chip. */
+.schema-type .value-type-keyword {
+	color: #798eaf;
 }
 
 /* Inline union display for simple X | X[] unions */
@@ -2124,9 +2223,9 @@ a.docs-reference-btn::after {
 	}
 }
 
-/* Figma APIs 10079:2948 / 10079:2918 — H4 + 40px spacer, 16px below, border #e3e8f2 */
-#elastic-api-v3 h4.section-header,
-#schema-definition h4.section-header {
+/* Section headings are h2. 16px sits under the 30px page title and above nested h3. */
+#elastic-api-v3 h2.section-header,
+#schema-definition h2.section-header {
 	@apply bg-white;
 	position: static;
 	box-sizing: border-box;
@@ -2142,9 +2241,10 @@ a.docs-reference-btn::after {
 	line-height: 24px;
 }
 
-/* The global .headerlink::after '#' positions against its link, so it lines up with the title, not the padded h4 */
-#elastic-api-v3 h4.section-header .headerlink,
-#schema-definition h4.section-header .headerlink {
+/* The global .headerlink::after '#' positions against its link, so it lines up with the title, not the padded h2 */
+#elastic-api-v3 h2.section-header .headerlink,
+#schema-definition h2.section-header .headerlink,
+.api-operation-description h2 .headerlink {
 	position: relative;
 }
 
@@ -2207,19 +2307,30 @@ a.docs-reference-btn::after {
 		line-height: 20px;
 	}
 
+	/* Match the h2.section-header rows rendered by the operation view */
+	h2 {
+		margin-bottom: 0;
+		padding-top: 40px;
+		padding-bottom: 16px;
+		border-bottom: 1px solid #e3e8f2;
+		color: var(--color-ink-navy, #111c2c);
+		font-size: 16px;
+		line-height: 24px;
+	}
+
 	strong,
 	b {
 		font-weight: 600;
 	}
 
-	a:not(.docs-reference-btn),
+	a:not(.docs-reference-btn, .headerlink),
 	a.reference {
 		color: var(--color-blue-elastic, #0b64dd);
 		text-decoration: underline;
 		text-underline-offset: 2px;
 	}
 
-	a:not(.docs-reference-btn):hover,
+	a:not(.docs-reference-btn, .headerlink):hover,
 	a.reference:hover {
 		color: var(--color-blue-elastic-100, #1750ba);
 		text-decoration: underline;

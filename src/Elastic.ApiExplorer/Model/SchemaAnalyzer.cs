@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Collections.Concurrent;
 using Elastic.ApiExplorer.Operations;
 using Microsoft.OpenApi;
 
@@ -25,12 +26,12 @@ namespace Elastic.ApiExplorer.Model;
 public class SchemaAnalyzer(
 	OpenApiDocument document,
 	string? currentPageType = null,
-	Dictionary<string, IOpenApiSchema?>? resolveCache = null
+	ConcurrentDictionary<string, IOpenApiSchema?>? resolveCache = null
 )
 {
 	// Per-unit schema resolve cache; shared (by reference) across all pages that use the same ApiRenderContext.
 	// Falls back to a fresh per-instance dict when no external cache is provided.
-	private readonly Dictionary<string, IOpenApiSchema?> _cache = resolveCache ?? [];
+	private readonly ConcurrentDictionary<string, IOpenApiSchema?> _cache = resolveCache ?? new();
 
 	/// <summary>
 	/// Checks if a type should link to its container page, considering the current page.
