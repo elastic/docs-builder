@@ -638,11 +638,17 @@ public class SchemaAnalyzer(
 	private List<ComposedType>? GetComposedTypes(OpenApiSchemaReference[] refSchemas)
 	{
 		var composed = new List<ComposedType>();
+		var primaryName = SchemaHelpers.FormatSchemaName(refSchemas[0].Reference.Id ?? "");
 		foreach (var reference in refSchemas.Skip(1))
 		{
 			var name = SchemaHelpers.FormatSchemaName(reference.Reference.Id ?? "");
 			var target = ResolveSchema(reference) ?? reference;
-			if (string.IsNullOrEmpty(name) || target.Enum is { Count: > 0 } || ClassifyNamedSchema(name, target).IsPrimitiveAlias)
+			if (
+				string.IsNullOrEmpty(name)
+				|| name == primaryName
+				|| target.Enum is { Count: > 0 }
+				|| ClassifyNamedSchema(name, target).IsPrimitiveAlias
+			)
 				continue;
 			if (composed.All(c => c.Name != name))
 				composed.Add(new ComposedType(name, IsLinkedType(name)));

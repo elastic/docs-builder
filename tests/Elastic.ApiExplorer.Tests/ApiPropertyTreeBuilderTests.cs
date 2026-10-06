@@ -767,6 +767,13 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture)
 			              { "$ref": "#/components/schemas/Mode" }
 			            ]
 			          },
+			          "repeated": {
+			            "allOf": [
+			              { "$ref": "#/components/schemas/Base" },
+			              { "$ref": "#/components/schemas/Base" },
+			              { "$ref": "#/components/schemas/Timestamps" }
+			            ]
+			          },
 			          "single": { "allOf": [ { "$ref": "#/components/schemas/Base" } ] }
 			        }
 			      }
@@ -793,6 +800,7 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture)
 
 			var merged = list!.Items.Single(p => p.Name == "merged");
 			merged.AlsoIncludes.Select(t => t.TypeName).Should().Equal("Timestamps");
+			list.Items.Single(p => p.Name == "repeated").AlsoIncludes.Select(t => t.TypeName).Should().Equal("Timestamps");
 			list.Items.Single(p => p.Name == "single").AlsoIncludes.Should().BeEmpty();
 		}
 		finally
