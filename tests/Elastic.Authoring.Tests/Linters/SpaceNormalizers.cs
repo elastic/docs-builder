@@ -16,3 +16,12 @@ public class SpaceDetection : MarkdownTest
 	public async Task EmitsHint() =>
 		await Docs.HasHint("Irregular space detected. Run 'docs-builder format --write' to automatically fix all instances.");
 }
+
+public class MultipleIrregularSpaces : MarkdownTest
+{
+	//   is a thin space; OpenAPI descriptions use it around em dashes.
+	protected override string Markdown => "shard placement — or routing\n";
+
+	[Test, DisplayName("validate HTML: every irregular space in a paragraph becomes a space")]
+	public async Task ValidateHtml() => await Docs.ConvertsToHtml("<p>shard placement — or routing</p>");
+}

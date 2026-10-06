@@ -33,13 +33,13 @@ else
 			   #api-content-grid is the htmx swap target for API pages (pages-nav.ts). *@
 			<div id="api-content-grid" class="min-w-0 md:order-2 mx-4 md:mx-0">
 				<main id="content-container" class="relative pt-6 pb-12">
+					<input type="checkbox" class="hidden" id="pages-nav-hamburger">
+					@await RenderPartialAsync(_ApiPagesNavToggle.Create())
+					<div class="api-page-toolbar">
+						@* Isolated docs hide a one-item trail. The spec landing's only crumb is the catalog. *@
+						@(await RenderPartialAsync(_Breadcrumbs.Create(new BreadcrumbsView(Model.Breadcrumbs, Model.BuildType, ShowSingle: true))))
+					</div>
 					<article id="markdown-content" class="content-container markdown-content">
-						<input type="checkbox" class="hidden" id="pages-nav-hamburger">
-						@await RenderPartialAsync(_ApiPagesNavToggle.Create())
-						<div class="api-page-toolbar">
-							@(await RenderPartialAsync<_ApiBreadcrumbs, ApiBreadcrumbsView>(
-								new ApiBreadcrumbsView(Model.Breadcrumbs, Model.HxAttributes)))
-						</div>
 						@await RenderBodyAsync()
 					</article>
 					@await RenderPartialAsync(_PageFeedback.Create(Model))

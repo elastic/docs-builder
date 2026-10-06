@@ -91,6 +91,13 @@ public sealed class VersionIndexClient : IDisposable
 		}
 	}
 
+	/// <summary>
+	/// When set, downloaded spec bodies are stored here and later fetches of the same object key skip
+	/// the network. <c>serve</c> shares one cache across regenerations while each regeneration gets a
+	/// new client, so a failed version index fetch is retried instead of memoized for the process.
+	/// </summary>
+	public SpecBodyCache? SpecBodies { get; init; }
+
 	public async Task<IReadOnlyList<ResolvedApiVersion>> ResolveVersionsAsync(
 		GitCheckoutInformation git,
 		string apiKey,
@@ -161,6 +168,9 @@ public sealed class VersionIndexClient : IDisposable
 				$"Version '{version.Moniker}' of API '{apiKey}' is local; read {nameof(ResolvedApiVersion.LocalFile)} instead."
 			);
 
+		if (SpecBodies is not null && SpecBodies.TryGet(objectKey, out var cached))
+			return new MemoryStream(cached, writable: false);
+
 		var uri = new Uri(_baseUri, objectKey);
 		string? lastError = null;
 		var attempts = 0;
@@ -170,7 +180,8 @@ public sealed class VersionIndexClient : IDisposable
 			ctx.ThrowIfCancellationRequested();
 			try
 			{
-				return await FetchStreamAsync(uri, attempt, ctx).ConfigureAwait(false);
+				var stream = await FetchStreamAsync(uri, attempt, ctx).ConfigureAwait(false);
+				return SpecBodies is { } cache ? await BufferSpecBody(cache, objectKey, stream, ctx).ConfigureAwait(false) : stream;
 			}
 			catch (HttpRequestException ex)
 			{
@@ -185,6 +196,17 @@ public sealed class VersionIndexClient : IDisposable
 			$"Could not fetch spec '{objectKey}' for version '{version.Moniker}' of API '{apiKey}' from {uri} after {attempts} attempt(s): {lastError}. Skipping this version."
 		);
 		return null;
+	}
+
+	private static async Task<Stream> BufferSpecBody(SpecBodyCache cache, string objectKey, Stream stream, Cancel ctx)
+	{
+		await using (stream.ConfigureAwait(false))
+		{
+			using var buffer = new MemoryStream();
+			await stream.CopyToAsync(buffer, ctx).ConfigureAwait(false);
+			var body = cache.GetOrAdd(objectKey, buffer.ToArray());
+			return new MemoryStream(body, writable: false);
+		}
 	}
 
 	private static ResolvedApiVersion LocalMain(IFileInfo localFile) =>

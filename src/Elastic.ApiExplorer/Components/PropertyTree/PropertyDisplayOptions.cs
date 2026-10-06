@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Collections.Concurrent;
 using Elastic.ApiExplorer.Model;
 using Elastic.ApiExplorer.Operations;
 using Elastic.Documentation.Configuration.Versions;
@@ -47,5 +48,5 @@ public record PropertyDisplayOptions
 	/// <see cref="SchemaAnalyzer"/> it creates so component schemas are looked up in
 	/// <c>OpenApiDocument.Components</c> at most once per unit rather than on every proxy access.
 	/// </summary>
-	internal Dictionary<string, IOpenApiSchema?>? SchemaResolveCache { get; init; }
+	internal ConcurrentDictionary<string, IOpenApiSchema?>? SchemaResolveCache { get; init; }
 }
