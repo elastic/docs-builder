@@ -488,6 +488,10 @@ function openPreview(card: HTMLElement): HTMLDialogElement | null {
     document.body.appendChild(dialog)
     if (typeof dialog.showModal === 'function') dialog.showModal()
     else dialog.setAttribute('open', '')
+    // showModal focuses the first control, the copy button, and a focused control shows its tooltip.
+    // Focus starts on the dialog instead; the first Tab reaches the copy button.
+    dialog.tabIndex = -1
+    dialog.focus()
     return dialog
 }
 
