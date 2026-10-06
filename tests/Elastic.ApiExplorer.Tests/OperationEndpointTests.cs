@@ -94,7 +94,7 @@ public class OperationEndpointTests
 	}
 
 	[Test]
-	public void Build_KibanaSpacesListing_MarksTheSpacePrefixOptional()
+	public void Build_KibanaSpacesListing_LeadsWithThePathOutsideTheSpaceAndListsTheSpaceVariantAfterIt()
 	{
 		var item = Op(HttpMethod.Post, "/api/agent_builder/tools/_execute");
 		const string description =
@@ -106,10 +106,20 @@ public class OperationEndpointTests
 			.Rows
 			.Select(static r => r.Route)
 			.Should()
-			.Equal("/s/{space_id}/api/agent_builder/tools/_execute", "/api/agent_builder/tools/_execute");
-		endpoint.Rows[0].Segments.Where(static s => s.Optional).Select(static s => s.Text).Should().Equal("s", "{space_id}");
-		endpoint.OptionalPathParameters.Should().BeEquivalentTo(["space_id"]);
+			.Equal("/api/agent_builder/tools/_execute", "/s/{space_id}/api/agent_builder/tools/_execute");
+		endpoint.Rows.SelectMany(static r => r.Segments).Should().OnlyContain(static s => !s.Optional);
+		endpoint.OptionalPathParameters.Should().BeEmpty();
+		endpoint.ShortestRoute.Should().Be("/api/agent_builder/tools/_execute");
 		endpoint.Description.Should().Be("Refer to Spaces for more information.");
+	}
+
+	[Test]
+	public void FromVariants_SpacePrefixOnAnUnrelatedRoute_IsNotASpaceVariant()
+	{
+		// /s/{id}/other is not /other in a space; the longest-first rule applies as usual.
+		var endpoint = OperationEndpoint.FromVariants([new("get", "/s/{id}/other"), new("get", "/api/other")], "/api/other");
+
+		endpoint.Rows.Select(static r => r.Route).Should().Equal("/s/{id}/other", "/api/other");
 	}
 
 	[Test]

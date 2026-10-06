@@ -20,7 +20,8 @@ public sealed record EndpointRow(string Route, string Method, IReadOnlyList<stri
 /// <summary>
 /// Every route and method of one operation merged into display rows: longest route first, the dominant method per
 /// route (POST &gt; PUT &gt; PATCH &gt; GET &gt; DELETE &gt; HEAD) with the rest listed as alternatives, and path segments
-/// that some variants leave out marked optional.
+/// that some variants leave out marked optional. A Kibana <c>/s/{space_id}/…</c> variant of a route lists after
+/// that route: the call is the same, in a space.
 /// </summary>
 public sealed partial record OperationEndpoint(
 	IReadOnlyList<EndpointRow> Rows,
@@ -58,17 +59,19 @@ public sealed partial record OperationEndpoint(
 	/// <summary>Applies the display rules to a variant list. <paramref name="specRoute"/> wins ties for the main row.</summary>
 	public static OperationEndpoint FromVariants(IReadOnlyList<EndpointVariant> variants, string specRoute, string? description = null)
 	{
-		// Most segments first; the spec's own route wins ties, then longer text, then ordinal.
-		var routes = variants
-			.Select(static v => v.Route)
-			.Distinct(StringComparer.Ordinal)
-			.OrderByDescending(static r => Split(r).Length)
+		var all = variants.Select(static v => v.Route).Distinct(StringComparer.Ordinal).ToArray();
+		var spaced = all.Where(r => IsSpacesVariant(r, all)).ToHashSet(StringComparer.Ordinal);
+		// Space variants last; then most segments first, the spec's own route winning ties, then longer text, then ordinal.
+		var routes = all
+			.OrderBy(spaced.Contains)
+			.ThenByDescending(static r => Split(r).Length)
 			.ThenByDescending(r => r == specRoute)
 			.ThenByDescending(static r => r.Length)
 			.ThenBy(static r => r, StringComparer.Ordinal)
 			.ToArray();
 		var mainSegments = Split(routes[0]);
-		var optional = OptionalSegmentIndexes(mainSegments, routes);
+		// The space prefix is not an optional part of the main route: that route is the one without it.
+		var optional = OptionalSegmentIndexes(mainSegments, routes.Where(r => !spaced.Contains(r)));
 
 		var rows = new List<EndpointRow>();
 		foreach (var route in routes)
@@ -241,6 +244,16 @@ public sealed partial record OperationEndpoint(
 			if (method.Length > 0 && route.Length > 0)
 				yield return new EndpointVariant(method, route);
 		}
+	}
+
+	/// <summary>A Kibana route that is another of the routes with <c>/s/{space_id}</c> in front.</summary>
+	private static bool IsSpacesVariant(string route, IEnumerable<string> routes)
+	{
+		var segments = Split(route);
+		if (segments.Length < 3 || segments[0] != "s" || !IsPlaceholder(segments[1]))
+			return false;
+		var inner = string.Join('/', segments[2..]);
+		return routes.Any(r => string.Join('/', Split(r)) == inner);
 	}
 
 	/// <summary>Segments of the main route that a shorter route leaves out as one contiguous run.</summary>
