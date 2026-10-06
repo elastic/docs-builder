@@ -111,8 +111,10 @@ public static class AssemblyLoader
 		var narrative = (NarrativeRepository)RepositoryDefaults(ToNarrative(dto.Narrative), environment);
 
 		var environments = new Dictionary<string, PublishEnvironment>();
-		foreach (var (name, dtoEnvironment) in dto.Environments)
+		foreach (var (name, nullableEnvironment) in dto.Environments)
 		{
+			// `prod:` with nothing under it is an environment with every default
+			var dtoEnvironment = nullableEnvironment ?? new PublishEnvironmentDto();
 			if (dtoEnvironment.ContentSource is null)
 			{
 				findings.Add(new Diagnostic
@@ -163,7 +165,7 @@ public static class AssemblyLoader
 			GitReferenceCurrent = dto.GitReferenceCurrent,
 			GitReferenceNext = dto.GitReferenceNext,
 			GitReferenceEdge = dto.GitReferenceEdge,
-			SparsePaths = dto.SparsePaths,
+			SparsePaths = dto.SparsePaths ?? [],
 			Private = dto.Private,
 			CloneTimeout = dto.CloneTimeout
 		};
@@ -185,7 +187,7 @@ public static class AssemblyLoader
 				CookiesWin = dto.GoogleTagManager.CookiesWin
 			},
 			Optimizely = new Optimizely { Enabled = dto.Optimizely.Enabled, Id = dto.Optimizely.Id },
-			FeatureFlags = dto.FeatureFlags,
+			FeatureFlags = dto.FeatureFlags ?? [],
 			WebsiteSearchScriptUrl = dto.WebsiteSearchScriptUrl
 		};
 

@@ -106,16 +106,14 @@ internal static class Mutations
 /// loads back as itself, and no text, however bent, makes a loader fail in a way its caller does not expect. The corpus is the shipped baseline
 /// configuration; the variants are the same text with a line dropped, swapped, repeated, truncated, a key added or a value replaced. Fixed seeds.
 /// </summary>
-// FINDING 5b (unexplained): with these laws running in parallel (nine entry points deserializing at once) one run gave a NullReferenceException out of
-// SiteNavigationLoader.Load and two runs a test process spinning at 100% CPU for minutes; in sequence, with the fixed corpus, they pass run after run. The laws
-// therefore run in sequence. The suspect is the static YamlDotNet deserializer (ConfigurationFileProvider.Deserializer) and its converters; not narrowed down.
-[NotInParallel("loader-properties")]
+// These laws run in parallel: loaders are thread-safe (ConcurrentLoadTests proves it). The NullReferenceException and the 100% CPU hang seen while they were
+// first written were texts, not races (LoaderTerminationTests holds them): a non-mapping entry in navigation.yml that no loop consumed, and empty values.
 public class LoaderProperties
 {
-	private static readonly Dictionary<string, string> BaselineConfig =
+	internal static readonly Dictionary<string, string> BaselineConfig =
 		Directory.EnumerateFiles(BaselineFile("config")).ToDictionary(Path.GetFileName, f => File.ReadAllText(f))!;
 
-	private static ConfigurationFileProvider ProviderWith(string file, string text)
+	internal static ConfigurationFileProvider ProviderWith(string file, string text)
 	{
 		var fs = new MockFileSystem();
 		var directory = ConfigurationFileProvider.AppDataConfigurationDirectory;
@@ -130,7 +128,7 @@ public class LoaderProperties
 		);
 	}
 
-	private sealed class NoEnvironment : IEnvironmentVariables
+	internal sealed class NoEnvironment : IEnvironmentVariables
 	{
 		public string? GetEnvironmentVariable(string name) => null;
 
@@ -138,12 +136,12 @@ public class LoaderProperties
 	}
 
 	/// <summary>One public YAML entry point: the file it reads and a way to run it over that file's text, giving the record (or null) and what it reported.</summary>
-	private sealed record YamlEntry(string Name, string File, Func<string, (object? Value, IReadOnlyList<Diagnostic> Diagnostics)> Load);
+	internal sealed record YamlEntry(string Name, string File, Func<string, (object? Value, IReadOnlyList<Diagnostic> Diagnostics)> Load);
 
 	private static (object? Value, IReadOnlyList<Diagnostic> Diagnostics) Of<T>(Result<T> result) where T : class =>
 		(result.Value, result.Diagnostics);
 
-	private static IEnumerable<YamlEntry> YamlEntries()
+	internal static IEnumerable<YamlEntry> YamlEntries()
 	{
 		yield return new YamlEntry(
 			"AssemblyLoader.Load",

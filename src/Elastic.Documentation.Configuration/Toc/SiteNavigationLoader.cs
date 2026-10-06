@@ -46,8 +46,12 @@ public static class SiteNavigationLoader
 		var dto = ConfigurationFileProvider.Deserializer.Deserialize<SiteNavigationDto>(yaml) ?? new SiteNavigationDto();
 		return new SiteNavigationDefinition
 		{
-			Phantoms = [.. dto.Phantoms.Select(p => new PhantomRegistration { Source = p.Source })],
-			TableOfContents = dto.TableOfContents
+			// `phantoms:` with nothing under it, an entry with nothing in it, or a `toc:` with no value is an empty one, not a null
+			Phantoms =
+			[
+				.. (dto.Phantoms ?? []).Where(p => p is not null).Select(p => new PhantomRegistration { Source = p.Source ?? string.Empty })
+			],
+			TableOfContents = dto.TableOfContents ?? []
 		};
 	}
 
@@ -196,7 +200,11 @@ public class SiteTableOfContentsCollectionYamlConverter : IYamlTypeConverter
 	private static SiteNavigationEntry? ParseTopLevelEntry(IParser parser, ObjectDeserializer rootDeserializer)
 	{
 		if (!parser.TryConsume<MappingStart>(out var mappingStart))
+		{
+			// An entry that is not a mapping (a bare scalar, a nested list) is skipped; left unread, the caller's loop would spin on it forever.
+			parser.SkipThisAndNestedEvents();
 			return null;
+		}
 
 		var dictionary = new Dictionary<string, object?>();
 
@@ -232,7 +240,10 @@ public class SiteTableOfContentsCollectionYamlConverter : IYamlTypeConverter
 					while (!parser.TryConsume<SequenceEnd>(out _))
 					{
 						if (!parser.TryConsume<MappingStart>(out _))
+						{
+							parser.SkipThisAndNestedEvents();
 							continue;
+						}
 						string? itemTitle = null;
 						string? itemUrl = null;
 						while (!parser.TryConsume<MappingEnd>(out _))
@@ -331,7 +342,11 @@ public class SiteTableOfContentsRefYamlConverter : IYamlTypeConverter
 	public object? ReadYaml(IParser parser, Type type, ObjectDeserializer rootDeserializer)
 	{
 		if (!parser.TryConsume<MappingStart>(out var mappingStart))
+		{
+			// Not a mapping: skipped, or the caller's children loop would never advance past it.
+			parser.SkipThisAndNestedEvents();
 			return null;
+		}
 
 		var dictionary = new Dictionary<string, object?>();
 
