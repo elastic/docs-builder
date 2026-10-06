@@ -479,6 +479,9 @@ public class SchemaAnalyzer(
 		// Check for allOf (usually inheritance/composition)
 		if (schema.AllOf is { Count: > 0 } allOf)
 		{
+			if (TrySplitAllOfUnion(allOf, out var allOfUnion))
+				return ClassifyAllOfUnion(allOfUnion);
+
 			var refSchemas = allOf.OfType<OpenApiSchemaReference>().ToArray();
 			if (refSchemas.Length > 0)
 			{
@@ -596,6 +599,59 @@ public class SchemaAnalyzer(
 		var typeNames = options.Select(o => o.Name).Distinct();
 		return new TypeInfo(string.Join(" | ", typeNames), null, false, false, false, null, false, options, IsUnion: true);
 	}
+
+	/// <summary>
+	/// <c>allOf: [Base, { oneOf: [A, B] }]</c> means "Base plus one of A or B". The base members only count when
+	/// they contribute properties; an <c>allOf</c> that merely wraps a union <c>$ref</c> stays a plain named type.
+	/// </summary>
+	private bool TrySplitAllOfUnion(IList<IOpenApiSchema> allOf, out AllOfUnion split)
+	{
+		split = default;
+		foreach (var member in allOf)
+		{
+			var resolved = ResolveSchema(member);
+			if (resolved is null || resolved.Enum is { Count: > 0 })
+				continue;
+
+			var (keyword, variants) = resolved switch
+			{
+				{ OneOf: { Count: > 0 } oneOf } => ("oneOf", oneOf),
+				{ AnyOf: { Count: > 0 } anyOf } => ("anyOf", anyOf),
+				_ => (null, null)
+			};
+			if (keyword is null || variants is null)
+				continue;
+
+			var bases = allOf.Where(m => !ReferenceEquals(m, member)).ToArray();
+			if (!bases.Any(b => GetSchemaProperties(b)?.Count > 0))
+				continue;
+
+			split = new AllOfUnion(bases, variants, keyword);
+			return true;
+		}
+
+		return false;
+	}
+
+	/// <summary>Each object variant carries the shared base members, so it expands to base plus its own properties.</summary>
+	private TypeInfo ClassifyAllOfUnion(AllOfUnion split)
+	{
+		var union = ClassifyUnion(split.Variants, split.Keyword);
+		if (union.AnyOfOptions is null)
+			return union;
+
+		var options = union
+			.AnyOfOptions
+			.Select(
+				o => o is { IsObject: true, Schema: not null } && !o.Name.EndsWith("[]")
+					? o with { Schema = new OpenApiSchema { AllOf = [.. split.Bases, o.Schema] } }
+					: o
+			)
+			.ToList();
+		return union with { AnyOfOptions = options };
+	}
+
+	private readonly record struct AllOfUnion(IReadOnlyList<IOpenApiSchema> Bases, IList<IOpenApiSchema> Variants, string Keyword);
 
 	/// <summary>
 	/// Known domain aliases (<c>Field</c>, <c>Id</c>) keep their name. Codegen wrappers that are

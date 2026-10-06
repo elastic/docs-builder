@@ -244,7 +244,9 @@ public class ApiPropertyTreeBuilder(OpenApiDocument document, PropertyDisplayOpt
 	private Expansion ComputeExpansion(IOpenApiSchema propSchema, TypeInfo typeInfo, int depth, bool isRecursive)
 	{
 		var dictHasLinkedValue = typeInfo is { IsDictionary: true, HasLink: true };
-		var hasNestedProps = typeInfo is { IsObject: true, HasLink: false } && depth < options.MaxDepth && HasActualProperties(propSchema);
+		var hasNestedProps = typeInfo is { IsObject: true, HasLink: false, IsUnion: false }
+			&& depth < options.MaxDepth
+			&& HasActualProperties(propSchema);
 		var hasDictValueProps = typeInfo is { IsDictionary: true, DictValueSchema: not null }
 			&& depth < options.MaxDepth
 			&& !dictHasLinkedValue
