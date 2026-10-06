@@ -22,7 +22,7 @@ public static class ApiRedirectPage
 			<meta name="robots" content="noindex">
 			<link rel="canonical" href="{href}">
 			<meta http-equiv="refresh" content="0; url={href}">
-			<script>window.location.replace({script} + window.location.hash);</script>
+			<script>window.location.replace({script} + window.location.search + window.location.hash);</script>
 			<title>Moved</title>
 			</head>
 			<body><p>This page moved to <a href="{href}">{href}</a>.</p></body>

@@ -225,7 +225,9 @@ public class OpenApiGeneratorMarkdownEmissionTests(ApiExplorerFixture fixture)
 		var canonical = await file.ReadAllTextAsync(Path.Join(operationDir, "operation-search", "index.html"));
 		var former = await file.ReadAllTextAsync(Path.Join(operationDir, "operation-search-1", "index.html"));
 		canonical.Should().Contain("api-url-also-method");
-		former.Should().Contain("window.location.replace(\"/api/doc/elasticsearch/operation/operation-search\"");
+		former.Should().Contain(
+			"window.location.replace(\"/api/doc/elasticsearch/operation/operation-search\" + window.location.search + window.location.hash)"
+		);
 		file.Exists(Path.Join(operationDir, "operation-search-1.md")).Should().BeFalse();
 	}
 

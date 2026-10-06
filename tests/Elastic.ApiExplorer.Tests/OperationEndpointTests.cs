@@ -181,12 +181,14 @@ public class OperationEndpointTests
 	}
 
 	[Test]
-	public void RedirectPage_ForwardsToTheTargetAndKeepsTheFragment()
+	public void RedirectPage_ForwardsToTheTargetAndKeepsTheQueryAndFragment()
 	{
 		var html = ApiRedirectPage.Html("/docs/api/doc/elasticsearch/operation/operation-search");
 
 		html.Should().Contain("<link rel=\"canonical\" href=\"/docs/api/doc/elasticsearch/operation/operation-search\">");
-		html.Should().Contain("window.location.replace(\"/docs/api/doc/elasticsearch/operation/operation-search\" + window.location.hash)");
+		html.Should().Contain(
+			"window.location.replace(\"/docs/api/doc/elasticsearch/operation/operation-search\" + window.location.search + window.location.hash)"
+		);
 		html.Should().Contain("noindex");
 	}
 
