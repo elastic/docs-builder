@@ -470,9 +470,14 @@ function openPreview(card: HTMLElement): HTMLDialogElement | null {
     actions.dataset.codeActions = ''
     const copy = iconButton('api-code-preview-btn', 'Copy code', iconCopyEui)
     copy.addEventListener('click', () => {
-        void navigator.clipboard
-            ?.writeText(code.textContent?.trimEnd() ?? '')
-            .then(() => temporarilyChangeIcon(copy, iconCopyEui, iconCheckEui))
+        // No Clipboard API (insecure context, old browser): nothing to copy with, so nothing to do.
+        const write = navigator.clipboard?.writeText(
+            code.textContent?.trimEnd() ?? ''
+        )
+        if (!write) return
+        void write.then(() =>
+            temporarilyChangeIcon(copy, iconCopyEui, iconCheckEui)
+        )
     })
     const close = iconButton('api-code-preview-btn', 'Close', closeIcon)
     close.addEventListener('click', () => dialog.close())

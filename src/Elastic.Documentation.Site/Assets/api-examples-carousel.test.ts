@@ -237,6 +237,42 @@ describe('API examples carousel', () => {
         expect(button.hidden).toBe(true)
     })
 
+    it('copies from the preview, and does nothing without a Clipboard API', async () => {
+        initApiExamples()
+        const open = () => {
+            document
+                .querySelector<HTMLElement>(
+                    '[data-scenario="term"] .is-active [data-code-preview]'
+                )!
+                .click()
+            return document.querySelector<HTMLElement>(
+                'dialog.api-code-preview [aria-label="Copy code"]'
+            )!
+        }
+
+        Object.defineProperty(navigator, 'clipboard', {
+            value: undefined,
+            configurable: true,
+        })
+        expect(() => open().click()).not.toThrow()
+        document
+            .querySelector('dialog.api-code-preview')!
+            .dispatchEvent(new Event('close'))
+
+        const writeText = jest.fn(() => Promise.resolve())
+        Object.defineProperty(navigator, 'clipboard', {
+            value: { writeText },
+            configurable: true,
+        })
+        open().click()
+        await Promise.resolve()
+
+        expect(writeText).toHaveBeenCalledWith('Console sample')
+        document
+            .querySelector('dialog.api-code-preview')!
+            .dispatchEvent(new Event('close'))
+    })
+
     it('locks page scrolling while the preview is open', () => {
         initApiExamples()
         document
