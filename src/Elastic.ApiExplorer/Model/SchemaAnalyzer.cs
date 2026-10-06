@@ -158,7 +158,7 @@ public class SchemaAnalyzer(
 	}
 
 	/// <summary>
-	/// Checks if a union option has properties, using fallback resolution if needed.
+	/// Checks if a union option has properties, resolving its reference if needed.
 	/// Also recursively checks nested unions.
 	/// </summary>
 	public bool UnionOptionHasProperties(UnionOption option)
@@ -203,24 +203,6 @@ public class SchemaAnalyzer(
 			}
 			if (nestedOptions.Any(UnionOptionHasProperties))
 				return true;
-		}
-
-		// Try finding by name pattern (e.g., "SourceFilter" -> look for schemas ending with ".SourceFilter")
-		if (document.Components?.Schemas != null)
-		{
-			var baseName = option.BaseName;
-			var matchingSchema = document.Components.Schemas.FirstOrDefault(kvp => kvp.Key.EndsWith("." + baseName) || kvp.Key == baseName);
-			if (matchingSchema.Value != null)
-			{
-				props = GetSchemaProperties(matchingSchema.Value);
-				if (props?.Count > 0)
-					return true;
-
-				// Check if the matched schema is itself a union
-				var nestedOptions = GetNestedUnionOptions(matchingSchema.Value);
-				if (nestedOptions.Any(UnionOptionHasProperties))
-					return true;
-			}
 		}
 
 		return false;
