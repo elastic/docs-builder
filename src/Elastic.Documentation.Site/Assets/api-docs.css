@@ -3436,6 +3436,43 @@ html:has(.api-page-shell) {
 	overflow: auto;
 }
 
+/* At every width the strip is as tall as the active card (--api-strip-height, measured by api-examples-carousel.ts),
+   not as tall as the tallest card in the row. */
+#api-examples-panel .api-code-carousel {
+	display: flex;
+	flex: 0 1 auto;
+	flex-direction: column;
+	min-height: 0;
+	margin-bottom: 0;
+}
+
+#api-examples-panel .api-code-carousel-head,
+#api-examples-panel .api-code-carousel-dots {
+	flex: 0 0 auto;
+}
+
+#api-examples-panel .api-code-carousel-strip {
+	transition: flex-basis 0.2s ease;
+	flex: 0 1 var(--api-strip-height, auto);
+	align-items: flex-start;
+	height: auto;
+	min-height: 0;
+	overflow-y: hidden;
+}
+
+/* Expanded or dragged, the card may use the whole strip and its code scrolls, but it is not stretched
+   to fill it: a short sample keeps its own height and the spare room stays in the rail. */
+#api-examples-panel .api-code-carousel-card {
+	display: flex;
+	flex-direction: column;
+	min-height: 0;
+	max-height: 100%;
+}
+
+#api-examples-panel .api-code-carousel-card-header {
+	flex: 0 0 auto;
+}
+
 .api-code-carousel-dots {
 	display: flex;
 	flex-wrap: wrap;
@@ -3626,41 +3663,6 @@ html:has(.api-page-shell) {
 		margin-bottom: 0;
 	}
 
-	#api-examples-panel .api-code-carousel {
-		display: flex;
-		flex: 0 1 auto;
-		flex-direction: column;
-		min-height: 0;
-		margin-bottom: 0;
-	}
-
-	#api-examples-panel .api-code-carousel-head,
-	#api-examples-panel .api-code-carousel-dots {
-		flex: 0 0 auto;
-	}
-
-	#api-examples-panel .api-code-carousel-strip {
-		transition: flex-basis 0.2s ease;
-		flex: 0 1 var(--api-strip-height, auto);
-		align-items: flex-start;
-		height: auto;
-		min-height: 0;
-		overflow-y: hidden;
-	}
-
-	/* Expanded or dragged, the card may use the whole strip and its code scrolls, but it is not stretched
-	   to fill it: a short sample keeps its own height and the spare room stays in the rail. */
-	#api-examples-panel .api-code-carousel-card {
-		display: flex;
-		flex-direction: column;
-		min-height: 0;
-		max-height: 100%;
-	}
-
-	#api-examples-panel .api-code-carousel-card-header {
-		flex: 0 0 auto;
-	}
-
 	#api-examples-panel .api-code-carousel-card-body {
 		flex: 1 1 auto;
 		max-height: var(--api-code-cap, none);
@@ -3749,5 +3751,18 @@ html:has(.api-page-shell) {
 @media (max-width: 1023px) {
 	.api-code-carousel-expand {
 		display: none;
+	}
+
+	/* Below the sidebar breakpoint the rail is one section among the page's, so its heading is a section heading. */
+	#api-examples-panel .api-examples-heading {
+		margin: 0 0 16px;
+		padding: 40px 0 16px;
+		border-bottom: 1px solid #e3e8f2;
+		color: var(--color-ink-navy, #111c2c);
+		font-size: 16px;
+		font-weight: 600;
+		letter-spacing: 0;
+		line-height: 24px;
+		text-transform: none;
 	}
 }
