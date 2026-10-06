@@ -163,32 +163,30 @@ public sealed partial record OperationEndpoint(
 		);
 
 	/// <summary>
-	/// What a schema is: a reference by name, an inline schema by its structure. Bounded in depth so a deeply
-	/// nested inline schema stays cheap; references end the descent anyway.
+	/// What a schema is: a reference by name, an inline schema by its whole structure. Only references can
+	/// recurse, and they end the descent, so an inline schema is always finite.
 	/// </summary>
-	private static string SchemaKey(IOpenApiSchema? schema, int depth = 0)
+	private static string SchemaKey(IOpenApiSchema? schema)
 	{
 		if (schema is null)
 			return "";
 		if (schema is OpenApiSchemaReference reference)
 			return "$" + (reference.Reference.Id ?? "");
-		if (depth >= 4)
-			return "...";
 
 		var parts = new List<string> { schema.Type?.ToString() ?? "", schema.Format ?? "" };
 		if (schema.Items is not null)
-			parts.Add("items=" + SchemaKey(schema.Items, depth + 1));
+			parts.Add("items=" + SchemaKey(schema.Items));
 		foreach (var (name, property) in (schema.Properties ?? new Dictionary<string, IOpenApiSchema>()).OrderBy(
 			static p => p.Key,
 			StringComparer.Ordinal
 		))
-			parts.Add($"{name}={SchemaKey(property, depth + 1)}");
+			parts.Add($"{name}={SchemaKey(property)}");
 		if (schema.Required is { Count: > 0 })
 			parts.Add("required=" + string.Join(',', schema.Required.Order(StringComparer.Ordinal)));
 		foreach (var (label, options) in new[] { ("allOf", schema.AllOf), ("oneOf", schema.OneOf), ("anyOf", schema.AnyOf) })
 		{
 			if (options is { Count: > 0 })
-				parts.Add(label + "=" + string.Join(',', options.Select(o => SchemaKey(o, depth + 1))));
+				parts.Add(label + "=" + string.Join(',', options.Select(SchemaKey)));
 		}
 		if (schema.Enum is { Count: > 0 })
 			parts.Add("enum=" + string.Join(',', schema.Enum.Select(static e => e?.ToJsonString() ?? "null")));

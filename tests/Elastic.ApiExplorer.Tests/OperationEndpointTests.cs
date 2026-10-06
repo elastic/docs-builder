@@ -272,6 +272,62 @@ public class OperationEndpointTests
 	public void AreInterchangeable_SameBodyAndRequiredness_IsTrue() =>
 		OperationEndpoint.AreInterchangeable([WithBody(HttpMethod.Post, true), WithBody(HttpMethod.Put, true)]).Should().BeTrue();
 
+	/// <summary>An object nested <paramref name="depth"/> levels deep whose innermost property is <paramref name="leaf"/>.</summary>
+	private static OpenApiSchema Nested(int depth, string leaf) =>
+		depth == 0
+			? new OpenApiSchema
+			{
+				Type = JsonSchemaType.Object,
+				Properties = new Dictionary<string, IOpenApiSchema> { [leaf] = new OpenApiSchema { Type = JsonSchemaType.String } }
+			}
+			: new OpenApiSchema
+			{
+				Type = JsonSchemaType.Object,
+				Properties = new Dictionary<string, IOpenApiSchema> { ["child"] = Nested(depth - 1, leaf) }
+			};
+
+	private static ApiOperation WithResponseSchema(HttpMethod method, OpenApiSchema schema) =>
+		new(
+			method,
+			new OpenApiOperation
+			{
+				Responses = new OpenApiResponses
+				{
+					["200"] = new OpenApiResponse
+					{
+						Description = "ok",
+						Content = new Dictionary<string, IOpenApiMediaType>
+						{
+							["application/json"] = new OpenApiMediaType { Schema = schema }
+						}
+					}
+				}
+			},
+			"/foo",
+			new OpenApiPathItem(),
+			"foo"
+		);
+
+	[Test]
+	public void AreInterchangeable_SchemasThatDifferOnlyDeepDown_IsFalse() =>
+		OperationEndpoint
+			.AreInterchangeable([
+				WithResponseSchema(HttpMethod.Get, Nested(8, "took")),
+				WithResponseSchema(HttpMethod.Post, Nested(8, "hits"))
+			])
+			.Should()
+			.BeFalse();
+
+	[Test]
+	public void AreInterchangeable_DeepSchemasThatMatch_IsTrue() =>
+		OperationEndpoint
+			.AreInterchangeable([
+				WithResponseSchema(HttpMethod.Get, Nested(8, "took")),
+				WithResponseSchema(HttpMethod.Post, Nested(8, "took"))
+			])
+			.Should()
+			.BeTrue();
+
 	private static ApiOperation WithSecurity(HttpMethod method, IList<OpenApiSecurityRequirement>? security) =>
 		new(
 			method,
