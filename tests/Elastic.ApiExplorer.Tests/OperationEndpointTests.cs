@@ -254,6 +254,28 @@ public class OperationEndpointTests
 	}
 
 	[Test]
+	public void CanonicalOperationMoniker_BaseTakenByAnEarlierGroup_KeepsThePrimaryId()
+	{
+		// Two groups share a base and no standalone "search" exists: the first takes the base, the second keeps its id.
+		var first = new[] { Op(HttpMethod.Get, "/_search", "search-1"), Op(HttpMethod.Post, "/_search", "search-2") };
+		var second = new[] { Op(HttpMethod.Get, "/_search/scroll", "search-3"), Op(HttpMethod.Post, "/_search/scroll", "search-4") };
+		var taken = new HashSet<string>(StringComparer.Ordinal)
+		{
+			"operation-search-1",
+			"operation-search-2",
+			"operation-search-3",
+			"operation-search-4"
+		};
+
+		var firstPage = ApiUrlBuilder.CanonicalOperationMoniker(first, first[1], taken);
+		_ = taken.Add(firstPage);
+		var secondPage = ApiUrlBuilder.CanonicalOperationMoniker(second, second[1], taken);
+
+		firstPage.Should().Be("operation-search");
+		secondPage.Should().Be("operation-search-4");
+	}
+
+	[Test]
 	public void CanonicalOperationMoniker_BaseOwnedByTheGroup_UsesTheBase()
 	{
 		var operations = new[] { Op(HttpMethod.Get, "/_search", "search"), Op(HttpMethod.Post, "/_search", "search-1") };

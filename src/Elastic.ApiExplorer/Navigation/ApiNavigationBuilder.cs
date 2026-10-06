@@ -59,8 +59,9 @@ public class ApiNavigationBuilder(ILogger logger, BuildContext context)
 			})
 			.ToArray();
 
-		// The page every operation would claim on its own; a collapsed page must not take one from outside its group.
-		var operationMonikers = ops.Select(o => ApiUrlBuilder.OperationMoniker(o.Operation.Value.OperationId, o.Path.Key)).ToHashSet(
+		// Every page URL claimed so far: each operation's own, plus each shared page as it is created, so a
+		// collapsed group never takes a URL that belongs to an operation outside it or to an earlier group.
+		var takenMonikers = ops.Select(o => ApiUrlBuilder.OperationMoniker(o.Operation.Value.OperationId, o.Path.Key)).ToHashSet(
 			StringComparer.Ordinal
 		);
 
@@ -127,7 +128,7 @@ public class ApiNavigationBuilder(ILogger logger, BuildContext context)
 					classification,
 					classificationNavigationItem,
 					classificationNavigationItem,
-					operationMonikers,
+					takenMonikers,
 					tagNavigationItems
 				);
 				topLevelNavigationItems.Add(classificationNavigationItem);
@@ -141,7 +142,7 @@ public class ApiNavigationBuilder(ILogger logger, BuildContext context)
 					classification,
 					rootNavigation,
 					rootNavigation,
-					operationMonikers,
+					takenMonikers,
 					topLevelNavigationItems
 				);
 		}
@@ -215,7 +216,7 @@ public class ApiNavigationBuilder(ILogger logger, BuildContext context)
 		ApiClassification classification,
 		IRootNavigationItem<IApiGroupingModel, INavigationItem> rootNavigation,
 		IApiGroupingNavigationItem<IApiGroupingModel, INavigationItem> parent,
-		IReadOnlySet<string> operationMonikers,
+		HashSet<string> takenMonikers,
 		List<IApiGroupingNavigationItem<IApiGroupingModel, INavigationItem>> parentNavigationItems
 	)
 	{
@@ -223,7 +224,7 @@ public class ApiNavigationBuilder(ILogger logger, BuildContext context)
 		{
 			var endpointNavigationItems = new List<IEndpointOrOperationNavigationItem>();
 			var tagNavigationItem = new TagNavigationItem(tag, context.UrlPathPrefix, apiUrlSuffix, rootNavigation, parent);
-			CreateEndpointNavigationItems(apiUrlSuffix, rootNavigation, tag, tagNavigationItem, operationMonikers, endpointNavigationItems);
+			CreateEndpointNavigationItems(apiUrlSuffix, rootNavigation, tag, tagNavigationItem, takenMonikers, endpointNavigationItems);
 			parentNavigationItems.Add(tagNavigationItem);
 			tagNavigationItem.NavigationItems = endpointNavigationItems;
 			tagNavigationItem.ApplyIntroHeadings(tag.Description);
@@ -235,7 +236,7 @@ public class ApiNavigationBuilder(ILogger logger, BuildContext context)
 		IRootNavigationItem<IApiGroupingModel, INavigationItem> rootNavigation,
 		ApiTag tag,
 		IApiGroupingNavigationItem<IApiGroupingModel, INavigationItem> parentNavigationItem,
-		IReadOnlySet<string> operationMonikers,
+		HashSet<string> takenMonikers,
 		List<IEndpointOrOperationNavigationItem> endpointNavigationItems
 	)
 	{
@@ -247,7 +248,7 @@ public class ApiNavigationBuilder(ILogger logger, BuildContext context)
 			if (endpoint.Operations.Count > 1 && differences.Count == 0)
 			{
 				endpointNavigationItems.Add(
-					CreateCollapsedOperationNavigationItem(apiUrlSuffix, rootNavigation, endpoint, parentNavigationItem, operationMonikers)
+					CreateCollapsedOperationNavigationItem(apiUrlSuffix, rootNavigation, endpoint, parentNavigationItem, takenMonikers)
 				);
 			}
 			else
@@ -286,21 +287,22 @@ public class ApiNavigationBuilder(ILogger logger, BuildContext context)
 		IRootNavigationItem<IApiGroupingModel, INavigationItem> rootNavigation,
 		ApiEndpoint endpoint,
 		IApiGroupingNavigationItem<IApiGroupingModel, INavigationItem> parentNavigationItem,
-		IReadOnlySet<string> operationMonikers
+		HashSet<string> takenMonikers
 	)
 	{
 		var primary = OperationEndpoint.SelectPrimary(endpoint.Operations);
-		var moniker = ApiUrlBuilder.CanonicalOperationMoniker(endpoint.Operations, primary, operationMonikers);
+		var moniker = ApiUrlBuilder.CanonicalOperationMoniker(endpoint.Operations, primary, takenMonikers);
 		var preferred = ApiUrlBuilder.CanonicalOperationMoniker(endpoint.Operations, primary);
 		if (moniker != preferred)
 		{
 			_logger.LogWarning(
-				"The shared page for API '{Api}' would be '{Preferred}', but another operation already owns that URL; it is '{Moniker}' instead.",
+				"The shared page for API '{Api}' would be '{Preferred}', but another page already owns that URL; it is '{Moniker}' instead.",
 				endpoint.Name,
 				preferred,
 				moniker
 			);
 		}
+		_ = takenMonikers.Add(moniker);
 		var url = ApiUrlBuilder.OperationUrl(context.UrlPathPrefix, apiUrlSuffix, moniker);
 		var aliases = endpoint
 			.Operations

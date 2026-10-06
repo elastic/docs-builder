@@ -41,8 +41,9 @@ public static partial class ApiUrlBuilder
 	/// <summary>
 	/// URL leaf for operations collapsed onto one page. Spec operation ids for one API share a base and differ by
 	/// a numeric suffix (<c>search</c>, <c>search-1</c>…), so the page keeps the primary operation's base id. The
-	/// suffix stays when no other operation in the group shares that base, or when the base moniker is the page
-	/// of an operation outside the group (<paramref name="takenMonikers"/>: every operation's own moniker).
+	/// suffix stays when no other operation in the group shares that base, or when the base moniker is already a
+	/// page outside the group (<paramref name="takenMonikers"/>: every operation's own moniker, plus the shared
+	/// pages created so far).
 	/// </summary>
 	public static string CanonicalOperationMoniker(
 		IReadOnlyList<ApiOperation> operations,
