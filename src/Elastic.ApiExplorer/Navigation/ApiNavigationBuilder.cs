@@ -59,6 +59,11 @@ public class ApiNavigationBuilder(ILogger logger, BuildContext context)
 			})
 			.ToArray();
 
+		// The page every operation would claim on its own; a collapsed page must not take one from outside its group.
+		var operationMonikers = ops.Select(o => ApiUrlBuilder.OperationMoniker(o.Operation.Value.OperationId, o.Path.Key)).ToHashSet(
+			StringComparer.Ordinal
+		);
+
 		var distinctTagNames = ops.Select(o => o.Tag ?? "unknown").Distinct().ToList();
 		var tagNameToUrlSegment = BuildTagMonikerMap(distinctTagNames);
 
@@ -122,6 +127,7 @@ public class ApiNavigationBuilder(ILogger logger, BuildContext context)
 					classification,
 					classificationNavigationItem,
 					classificationNavigationItem,
+					operationMonikers,
 					tagNavigationItems
 				);
 				topLevelNavigationItems.Add(classificationNavigationItem);
@@ -130,7 +136,14 @@ public class ApiNavigationBuilder(ILogger logger, BuildContext context)
 					classificationNavigationItem.NavigationItems = tagNavigationItems;
 			}
 			else
-				CreateTagNavigationItems(apiUrlSuffix, classification, rootNavigation, rootNavigation, topLevelNavigationItems);
+				CreateTagNavigationItems(
+					apiUrlSuffix,
+					classification,
+					rootNavigation,
+					rootNavigation,
+					operationMonikers,
+					topLevelNavigationItems
+				);
 		}
 		CreateSchemaNavigationItems(apiUrlSuffix, openApiDocument, rootNavigation, topLevelNavigationItems);
 
@@ -202,6 +215,7 @@ public class ApiNavigationBuilder(ILogger logger, BuildContext context)
 		ApiClassification classification,
 		IRootNavigationItem<IApiGroupingModel, INavigationItem> rootNavigation,
 		IApiGroupingNavigationItem<IApiGroupingModel, INavigationItem> parent,
+		IReadOnlySet<string> operationMonikers,
 		List<IApiGroupingNavigationItem<IApiGroupingModel, INavigationItem>> parentNavigationItems
 	)
 	{
@@ -209,7 +223,7 @@ public class ApiNavigationBuilder(ILogger logger, BuildContext context)
 		{
 			var endpointNavigationItems = new List<IEndpointOrOperationNavigationItem>();
 			var tagNavigationItem = new TagNavigationItem(tag, context.UrlPathPrefix, apiUrlSuffix, rootNavigation, parent);
-			CreateEndpointNavigationItems(apiUrlSuffix, rootNavigation, tag, tagNavigationItem, endpointNavigationItems);
+			CreateEndpointNavigationItems(apiUrlSuffix, rootNavigation, tag, tagNavigationItem, operationMonikers, endpointNavigationItems);
 			parentNavigationItems.Add(tagNavigationItem);
 			tagNavigationItem.NavigationItems = endpointNavigationItems;
 			tagNavigationItem.ApplyIntroHeadings(tag.Description);
@@ -221,6 +235,7 @@ public class ApiNavigationBuilder(ILogger logger, BuildContext context)
 		IRootNavigationItem<IApiGroupingModel, INavigationItem> rootNavigation,
 		ApiTag tag,
 		IApiGroupingNavigationItem<IApiGroupingModel, INavigationItem> parentNavigationItem,
+		IReadOnlySet<string> operationMonikers,
 		List<IEndpointOrOperationNavigationItem> endpointNavigationItems
 	)
 	{
@@ -231,7 +246,7 @@ public class ApiNavigationBuilder(ILogger logger, BuildContext context)
 			if (endpoint.Operations.Count > 1 && OperationEndpoint.AreInterchangeable(endpoint.Operations))
 			{
 				endpointNavigationItems.Add(
-					CreateCollapsedOperationNavigationItem(apiUrlSuffix, rootNavigation, endpoint, parentNavigationItem)
+					CreateCollapsedOperationNavigationItem(apiUrlSuffix, rootNavigation, endpoint, parentNavigationItem, operationMonikers)
 				);
 			}
 			else
@@ -259,11 +274,12 @@ public class ApiNavigationBuilder(ILogger logger, BuildContext context)
 		string apiUrlSuffix,
 		IRootNavigationItem<IApiGroupingModel, INavigationItem> rootNavigation,
 		ApiEndpoint endpoint,
-		IApiGroupingNavigationItem<IApiGroupingModel, INavigationItem> parentNavigationItem
+		IApiGroupingNavigationItem<IApiGroupingModel, INavigationItem> parentNavigationItem,
+		IReadOnlySet<string> operationMonikers
 	)
 	{
 		var primary = OperationEndpoint.SelectPrimary(endpoint.Operations);
-		var moniker = ApiUrlBuilder.CanonicalOperationMoniker(endpoint.Operations, primary);
+		var moniker = ApiUrlBuilder.CanonicalOperationMoniker(endpoint.Operations, primary, operationMonikers);
 		var url = ApiUrlBuilder.OperationUrl(context.UrlPathPrefix, apiUrlSuffix, moniker);
 		var aliases = endpoint
 			.Operations

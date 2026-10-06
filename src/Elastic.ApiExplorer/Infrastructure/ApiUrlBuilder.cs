@@ -41,9 +41,14 @@ public static partial class ApiUrlBuilder
 	/// <summary>
 	/// URL leaf for operations collapsed onto one page. Spec operation ids for one API share a base and differ by
 	/// a numeric suffix (<c>search</c>, <c>search-1</c>…), so the page keeps the primary operation's base id. The
-	/// suffix stays when no other operation in the group shares that base.
+	/// suffix stays when no other operation in the group shares that base, or when the base moniker is the page
+	/// of an operation outside the group (<paramref name="takenMonikers"/>: every operation's own moniker).
 	/// </summary>
-	public static string CanonicalOperationMoniker(IReadOnlyList<ApiOperation> operations, ApiOperation primary)
+	public static string CanonicalOperationMoniker(
+		IReadOnlyList<ApiOperation> operations,
+		ApiOperation primary,
+		IReadOnlySet<string>? takenMonikers = null
+	)
 	{
 		var id = primary.Operation.OperationId;
 		if (string.IsNullOrWhiteSpace(id))
@@ -51,7 +56,13 @@ public static partial class ApiUrlBuilder
 
 		var baseId = NumericSuffix().Replace(id, "");
 		var shared = operations.Count(o => o.Operation.OperationId is { } other && NumericSuffix().Replace(other, "") == baseId) > 1;
-		return OperationMoniker(shared ? baseId : id, primary.Route);
+		if (!shared)
+			return OperationMoniker(id, primary.Route);
+
+		var candidate = OperationMoniker(baseId, primary.Route);
+		var ownedByGroup = operations.Any(o => OperationMoniker(o.Operation.OperationId, o.Route) == candidate);
+		var takenElsewhere = !ownedByGroup && takenMonikers?.Contains(candidate) == true;
+		return takenElsewhere ? OperationMoniker(id, primary.Route) : candidate;
 	}
 
 	[GeneratedRegex(@"-\d+$", RegexOptions.CultureInvariant)]

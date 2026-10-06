@@ -172,6 +172,24 @@ public class OperationEndpointTests
 	}
 
 	[Test]
+	public void CanonicalOperationMoniker_BaseTakenByAnOperationOutsideTheGroup_KeepsThePrimaryId()
+	{
+		var operations = new[] { Op(HttpMethod.Get, "/_search", "search-1"), Op(HttpMethod.Post, "/_search", "search-2") };
+		var taken = new HashSet<string>(StringComparer.Ordinal) { "operation-search", "operation-search-1", "operation-search-2" };
+
+		ApiUrlBuilder.CanonicalOperationMoniker(operations, operations[1], taken).Should().Be("operation-search-2");
+	}
+
+	[Test]
+	public void CanonicalOperationMoniker_BaseOwnedByTheGroup_UsesTheBase()
+	{
+		var operations = new[] { Op(HttpMethod.Get, "/_search", "search"), Op(HttpMethod.Post, "/_search", "search-1") };
+		var taken = new HashSet<string>(StringComparer.Ordinal) { "operation-search", "operation-search-1" };
+
+		ApiUrlBuilder.CanonicalOperationMoniker(operations, operations[1], taken).Should().Be("operation-search");
+	}
+
+	[Test]
 	public void RedirectPage_ForwardsToTheTargetAndKeepsTheQueryAndFragment()
 	{
 		var html = ApiRedirectPage.Html("/docs/api/doc/elasticsearch/operation/operation-search");
