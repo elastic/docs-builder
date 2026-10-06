@@ -502,6 +502,120 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture)
 	}
 
 	[Test]
+	public async Task BuildPropertyList_UnionWithOwnProperties_KeepsListingTheSharedProperties()
+	{
+		var json =
+			"""
+			{
+			  "openapi": "3.0.3",
+			  "info": { "title": "t", "version": "1" },
+			  "paths": {},
+			  "components": {
+			    "schemas": {
+			      "Cat": { "type": "object", "properties": { "lives": { "type": "integer" } } },
+			      "Dog": { "type": "object", "properties": { "barks": { "type": "boolean" } } },
+			      "Holder": {
+			        "type": "object",
+			        "properties": {
+			          "pet": {
+			            "type": "object",
+			            "properties": { "kind": { "type": "string" } },
+			            "oneOf": [ { "$ref": "#/components/schemas/Cat" }, { "$ref": "#/components/schemas/Dog" } ]
+			          }
+			        }
+			      }
+			    }
+			  }
+			}
+			""";
+		var path = Path.Join(Path.GetTempPath(), $"union-own-props-{Guid.NewGuid():N}.json");
+		await File.WriteAllTextAsync(path, json, TestContext.Current!.Execution.CancellationToken);
+		try
+		{
+			var loaded = await OpenApiDocument.LoadAsync(
+				path,
+				new OpenApiReaderSettings { LeaveStreamOpen = false },
+				TestContext.Current!.Execution.CancellationToken
+			);
+			var document = loaded.Document!;
+			var builder = new ApiPropertyTreeBuilder(
+				document,
+				new PropertyDisplayOptions { RenderMarkdown = s => new HtmlString($"<p>{s}</p>"), ApiRootUrl = "/api/doc/fixture" }
+			);
+
+			var list = builder.BuildPropertyList(document.Components!.Schemas!["Holder"], new PropertyTreeScope { Prefix = "" });
+
+			var pet = list!.Items.Single(p => p.Name == "pet");
+			pet.Children.Kind.Should().Be(ChildKind.PropertyList);
+			pet.Children.Properties!.Items.Select(p => p.Name).Should().Equal("kind");
+		}
+		finally
+		{
+			if (File.Exists(path))
+				File.Delete(path);
+		}
+	}
+
+	[Test]
+	public async Task BuildPropertyList_AllOfVariantRedefinesBaseProperty_VariantDefinitionWins()
+	{
+		var json =
+			"""
+			{
+			  "openapi": "3.0.3",
+			  "info": { "title": "t", "version": "1" },
+			  "paths": {},
+			  "components": {
+			    "schemas": {
+			      "Base": { "type": "object", "properties": { "kind": { "type": "string" }, "id": { "type": "string" } } },
+			      "Cat": { "type": "object", "description": "A cat.", "properties": { "kind": { "type": "string", "enum": ["cat"] } } },
+			      "Dog": { "type": "object", "properties": { "barks": { "type": "boolean" } } },
+			      "Holder": {
+			        "type": "object",
+			        "properties": {
+			          "pet": {
+			            "allOf": [
+			              { "$ref": "#/components/schemas/Base" },
+			              { "oneOf": [ { "$ref": "#/components/schemas/Cat" }, { "$ref": "#/components/schemas/Dog" } ] }
+			            ]
+			          }
+			        }
+			      }
+			    }
+			  }
+			}
+			""";
+		var path = Path.Join(Path.GetTempPath(), $"allof-override-{Guid.NewGuid():N}.json");
+		await File.WriteAllTextAsync(path, json, TestContext.Current!.Execution.CancellationToken);
+		try
+		{
+			var loaded = await OpenApiDocument.LoadAsync(
+				path,
+				new OpenApiReaderSettings { LeaveStreamOpen = false },
+				TestContext.Current!.Execution.CancellationToken
+			);
+			var document = loaded.Document!;
+			var builder = new ApiPropertyTreeBuilder(
+				document,
+				new PropertyDisplayOptions { RenderMarkdown = s => new HtmlString($"<p>{s}</p>"), ApiRootUrl = "/api/doc/fixture" }
+			);
+
+			var list = builder.BuildPropertyList(document.Components!.Schemas!["Holder"], new PropertyTreeScope { Prefix = "" });
+
+			var variants = list!.Items.Single(p => p.Name == "pet").Children.Variants!.Variants;
+			var cat = variants[0].Properties!.Items;
+			cat.Select(p => p.Name).Should().Equal("kind", "id");
+			cat.Single(p => p.Name == "kind").EnumValues.Should().Equal("cat");
+			variants[1].Properties!.Items.Single(p => p.Name == "kind").EnumValues.Should().BeEmpty();
+		}
+		finally
+		{
+			if (File.Exists(path))
+				File.Delete(path);
+		}
+	}
+
+	[Test]
 	public async Task BuildPropertyList_AllOfWithAnyOfMember_ExpandsVariantsKeepingRequiredFromBaseAndVariant()
 	{
 		var json =

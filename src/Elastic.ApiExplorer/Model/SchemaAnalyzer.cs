@@ -652,12 +652,31 @@ public class SchemaAnalyzer(
 	}
 
 	/// <summary>A synthetic <c>allOf</c> has no <c>required</c> list of its own, so it collects the lists of every member.</summary>
+	/// <summary>
+	/// Folds the shared base members and one variant into a single object schema. The variant's own properties win over a base
+	/// property of the same name, and the <c>required</c> lists of every member carry over.
+	/// </summary>
 	private OpenApiSchema MergeBasesInto(IReadOnlyList<IOpenApiSchema> bases, IOpenApiSchema variant)
 	{
-		var members = new List<IOpenApiSchema>([.. bases, variant]);
+		var properties = new Dictionary<string, IOpenApiSchema>();
+		foreach (var member in bases)
+		{
+			foreach (var (name, property) in GetSchemaProperties(member) ?? new Dictionary<string, IOpenApiSchema>())
+				_ = properties.TryAdd(name, property);
+		}
+
+		foreach (var (name, property) in GetSchemaProperties(variant) ?? new Dictionary<string, IOpenApiSchema>())
+			properties[name] = property;
+
 		var required = new HashSet<string>();
-		CollectRequired(members, required, [with(ReferenceEqualityComparer.Instance)]);
-		return new OpenApiSchema { AllOf = members, Required = required };
+		CollectRequired([.. bases, variant], required, [with(ReferenceEqualityComparer.Instance)]);
+		return new OpenApiSchema
+		{
+			Type = JsonSchemaType.Object,
+			Properties = properties,
+			Required = required,
+			Description = variant.Description
+		};
 	}
 
 	private void CollectRequired(IEnumerable<IOpenApiSchema> schemas, HashSet<string> required, HashSet<IOpenApiSchema> visited)
