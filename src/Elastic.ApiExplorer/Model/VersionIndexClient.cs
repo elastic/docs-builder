@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Collections.Concurrent;
 using System.IO.Abstractions;
 using System.Net;
 using System.Text.Json;
@@ -65,6 +66,7 @@ public sealed class VersionIndexClient : IDisposable
 	private readonly int _maxAttempts;
 	private readonly Func<TimeSpan, Cancel, Task> _sleep;
 
+	private readonly ConcurrentDictionary<string, byte[]> _specBodies = new(StringComparer.Ordinal);
 	private readonly SemaphoreSlim _rootIndexLock = new(1, 1);
 	private bool _rootIndexFetched;
 	private RootVersionIndex? _rootIndex;
@@ -90,6 +92,12 @@ public sealed class VersionIndexClient : IDisposable
 			_httpClient = _ownedHttpClient;
 		}
 	}
+
+	/// <summary>
+	/// Keeps downloaded spec bodies in memory so later fetches of the same object key skip the network.
+	/// A long-lived client in <c>serve</c> sets this so regenerating API pages only re-parses specs.
+	/// </summary>
+	public bool CacheSpecBodies { get; init; }
 
 	public async Task<IReadOnlyList<ResolvedApiVersion>> ResolveVersionsAsync(
 		GitCheckoutInformation git,
@@ -161,6 +169,9 @@ public sealed class VersionIndexClient : IDisposable
 				$"Version '{version.Moniker}' of API '{apiKey}' is local; read {nameof(ResolvedApiVersion.LocalFile)} instead."
 			);
 
+		if (CacheSpecBodies && _specBodies.TryGetValue(objectKey, out var cached))
+			return new MemoryStream(cached, writable: false);
+
 		var uri = new Uri(_baseUri, objectKey);
 		string? lastError = null;
 		var attempts = 0;
@@ -170,7 +181,8 @@ public sealed class VersionIndexClient : IDisposable
 			ctx.ThrowIfCancellationRequested();
 			try
 			{
-				return await FetchStreamAsync(uri, attempt, ctx).ConfigureAwait(false);
+				var stream = await FetchStreamAsync(uri, attempt, ctx).ConfigureAwait(false);
+				return CacheSpecBodies ? await BufferSpecBody(objectKey, stream, ctx).ConfigureAwait(false) : stream;
 			}
 			catch (HttpRequestException ex)
 			{
@@ -185,6 +197,17 @@ public sealed class VersionIndexClient : IDisposable
 			$"Could not fetch spec '{objectKey}' for version '{version.Moniker}' of API '{apiKey}' from {uri} after {attempts} attempt(s): {lastError}. Skipping this version."
 		);
 		return null;
+	}
+
+	private async Task<Stream> BufferSpecBody(string objectKey, Stream stream, Cancel ctx)
+	{
+		await using (stream.ConfigureAwait(false))
+		{
+			using var buffer = new MemoryStream();
+			await stream.CopyToAsync(buffer, ctx).ConfigureAwait(false);
+			var body = _specBodies.GetOrAdd(objectKey, buffer.ToArray());
+			return new MemoryStream(body, writable: false);
+		}
 	}
 
 	private static ResolvedApiVersion LocalMain(IFileInfo localFile) =>

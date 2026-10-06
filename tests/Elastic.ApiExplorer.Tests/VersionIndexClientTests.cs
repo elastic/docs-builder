@@ -479,6 +479,40 @@ public class VersionIndexClientTests
 	}
 
 	[Test]
+	[Arguments(true, 1)]
+	[Arguments(false, 2)]
+	public async Task FetchSpecStreamAsync_FetchedTwice_DownloadsOnceOnlyWhenCaching(bool cacheSpecBodies, int expectedRequests)
+	{
+		var handler = new StubHandler(
+			_ => new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(/*lang=json,strict*/ """{"openapi":"3.1.0"}""") }
+		);
+		using var client = new VersionIndexClient(BaseUri, handler, sleep: (_, _) => Task.CompletedTask)
+		{
+			CacheSpecBodies = cacheSpecBodies
+		};
+		var collector = new CapturingDiagnosticsCollector();
+		var version = new ResolvedApiVersion
+		{
+			Moniker = "8",
+			Version = "8.19",
+			IsLocal = false,
+			ObjectKey = "elastic/elasticsearch/8.19/elasticsearch-openapi.json"
+		};
+		var ctx = TestContext.Current!.Execution.CancellationToken;
+
+		var bodies = new List<string>();
+		for (var i = 0; i < 2; i++)
+		{
+			var stream = await client.FetchSpecStreamAsync("elasticsearch", version, collector, ctx);
+			using var reader = new StreamReader(stream!);
+			bodies.Add(await reader.ReadToEndAsync(ctx));
+		}
+
+		bodies.Should().AllSatisfy(b => b.Should().Contain("openapi"));
+		handler.RequestedPaths.Should().HaveCount(expectedRequests);
+	}
+
+	[Test]
 	public async Task FetchSpecStreamAsync_PersistentFailure_EmitsWarningAndReturnsNull()
 	{
 		var handler = new StubHandler(_ => new HttpResponseMessage(HttpStatusCode.NotFound));

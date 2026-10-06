@@ -294,15 +294,14 @@ public class OpenApiGenerator(
 
 		var latestDeclared = versionsToRender.Any(v => v.Moniker == "main") ? "main" : versionsToRender[0].Moniker;
 
-		var results = new List<VersionedOpenApiDocument>(versionsToRender.Length);
-		foreach (var version in versionsToRender)
-		{
-			var document = await ResolveDocumentForVersion(apiKey, apiConfig, version, ctx).ConfigureAwait(false);
-			if (document is null)
-				continue;
-
-			results.Add(new VersionedOpenApiDocument(version, document));
-		}
+		// Download and parse every version at once; results keep the declared version order.
+		var documents = await Task.WhenAll(
+			versionsToRender.Select(v => ResolveDocumentForVersion(apiKey, apiConfig, v, ctx))
+		).ConfigureAwait(false);
+		var results = versionsToRender
+			.Zip(documents, static (version, document) => document is null ? null : new VersionedOpenApiDocument(version, document))
+			.OfType<VersionedOpenApiDocument>()
+			.ToList();
 
 		return ToResolvedProductDocuments(results, latestDeclared);
 	}
@@ -507,27 +506,40 @@ public class OpenApiGenerator(
 	private async Task RenderNavigationItems(
 		ApiRenderContext renderContext,
 		IsolatedBuildNavigationHtmlWriter navigationRenderer,
-		INavigationItem currentNavigation,
+		INavigationItem root,
 		Cancel ctx
 	)
 	{
-		if (currentNavigation is ISidebarSeparatorNavigationItem or IntroHeadingNavigationItem)
+		var pages = new List<(INavigationItem Item, IApiModel Model)>();
+		CollectPages(root, pages);
+
+		// Pages of one version render in parallel. When two items share a URL the last one wins,
+		// as it did when pages were written sequentially in depth-first order.
+		var unique = pages.AsEnumerable().Reverse().DistinctBy(p => p.Item.Url).ToArray();
+		await Parallel.ForEachAsync(
+			unique,
+			new ParallelOptions { CancellationToken = ctx, MaxDegreeOfParallelism = Environment.ProcessorCount },
+			async (page, token) => _ = await Render(page.Item, page.Model, renderContext, navigationRenderer, token).ConfigureAwait(false)
+		).ConfigureAwait(false);
+	}
+
+	private static void CollectPages(INavigationItem item, List<(INavigationItem Item, IApiModel Model)> pages)
+	{
+		if (item is ISidebarSeparatorNavigationItem or IntroHeadingNavigationItem)
 			return;
 
-		if (currentNavigation is INodeNavigationItem<IApiModel, INavigationItem> node)
+		if (item is INodeNavigationItem<IApiModel, INavigationItem> node)
 		{
-			if (currentNavigation is not ClassificationNavigationItem)
-				_ = await Render(node, node.Index.Model, renderContext, navigationRenderer, ctx);
-
+			if (item is not ClassificationNavigationItem)
+				pages.Add((node, node.Index.Model));
 			foreach (var child in node.NavigationItems)
-				await RenderNavigationItems(renderContext, navigationRenderer, child, ctx);
+				CollectPages(child, pages);
+			return;
 		}
-		else
-		{
-			_ = currentNavigation is ILeafNavigationItem<IApiModel> leaf
-				? await Render(leaf, leaf.Model, renderContext, navigationRenderer, ctx)
-				: throw new Exception($"Unknown navigation item type {currentNavigation.GetType()}");
-		}
+
+		if (item is not ILeafNavigationItem<IApiModel> leaf)
+			throw new Exception($"Unknown navigation item type {item.GetType()}");
+		pages.Add((leaf, leaf.Model));
 	}
 
 	private async Task<IFileInfo> Render<T>(

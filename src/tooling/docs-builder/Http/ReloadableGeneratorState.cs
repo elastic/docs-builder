@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 using System.IO.Abstractions;
 using Elastic.ApiExplorer;
+using Elastic.ApiExplorer.Model;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Builder;
@@ -68,6 +69,8 @@ public class ReloadableGeneratorState : IDisposable
 	// 1 when the next /api/ request must regenerate; consumed atomically so a concurrent invalidation is never lost.
 	private int _forceApiRegeneration;
 	private readonly SemaphoreSlim _apiSemaphore = new(1, 1);
+	// Outlives each OpenApiGenerator so regenerations reuse the version index and downloaded specs.
+	private readonly VersionIndexClient _versionIndexClient = new() { CacheSpecBodies = true };
 	private CancellationTokenSource? _apiGenerationCts;
 
 	public async Task ReloadAsync(Cancel ctx, bool reloadConfiguration = true)
@@ -267,7 +270,7 @@ public class ReloadableGeneratorState : IDisposable
 		// longer than regenerating it. Pages are overwritten in place instead; a page whose operation
 		// was removed from the spec stays reachable until the server restarts.
 		ApiPath.Create();
-		var generator = new OpenApiGenerator(_logFactory, _context, markdownStringRenderer);
+		var generator = new OpenApiGenerator(_logFactory, _context, markdownStringRenderer, _versionIndexClient);
 		await generator.Generate(ctx);
 	}
 
@@ -276,6 +279,7 @@ public class ReloadableGeneratorState : IDisposable
 		_apiGenerationCts?.Cancel();
 		_apiGenerationCts?.Dispose();
 		_apiSemaphore.Dispose();
+		_versionIndexClient.Dispose();
 		(_codexReader as IDisposable)?.Dispose();
 		GC.SuppressFinalize(this);
 	}
