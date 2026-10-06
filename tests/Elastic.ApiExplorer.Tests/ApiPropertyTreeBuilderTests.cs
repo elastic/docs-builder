@@ -1086,4 +1086,53 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture)
 				File.Delete(path);
 		}
 	}
+
+	[Test]
+	public async Task BuildTopLevelUnionVariants_DescriptionWithCrlfParagraphs_KeepsOnlyTheFirstParagraph()
+	{
+		var json =
+			"""
+			{
+			  "openapi": "3.0.3",
+			  "info": { "title": "t", "version": "1" },
+			  "paths": {},
+			  "components": {
+			    "schemas": {
+			      "Cat": { "type": "object", "description": "A cat.\r\n\r\nSecond paragraph.", "properties": { "lives": { "type": "integer" } } },
+			      "Dog": { "type": "object", "description": "A dog.\n\nSecond paragraph.", "properties": { "barks": { "type": "boolean" } } },
+			      "Body": { "oneOf": [ { "$ref": "#/components/schemas/Cat" }, { "$ref": "#/components/schemas/Dog" } ] }
+			    }
+			  }
+			}
+			""";
+		var path = Path.Join(Path.GetTempPath(), $"crlf-description-{Guid.NewGuid():N}.json");
+		await File.WriteAllTextAsync(path, json, TestContext.Current!.Execution.CancellationToken);
+		try
+		{
+			var loaded = await OpenApiDocument.LoadAsync(
+				path,
+				new OpenApiReaderSettings { LeaveStreamOpen = false },
+				TestContext.Current!.Execution.CancellationToken
+			);
+			var document = loaded.Document!;
+			var builder = new ApiPropertyTreeBuilder(
+				document,
+				new PropertyDisplayOptions { RenderMarkdown = s => new HtmlString($"<p>{s}</p>"), ApiRootUrl = "/api/doc/fixture" }
+			);
+
+			var variants = OperationPageModel.BuildTopLevelUnionVariants(
+				new OpenApiSchemaReference("Body", document),
+				new PropertyTreeScope { Prefix = "res-200" },
+				new SchemaAnalyzer(document),
+				builder
+			);
+
+			variants!.Variants.Select(v => v.DescriptionMarkdown).Should().Equal("A cat.", "A dog.");
+		}
+		finally
+		{
+			if (File.Exists(path))
+				File.Delete(path);
+		}
+	}
 }

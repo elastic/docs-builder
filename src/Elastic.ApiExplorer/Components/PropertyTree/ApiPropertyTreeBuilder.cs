@@ -695,7 +695,7 @@ public class ApiPropertyTreeBuilder(OpenApiDocument document, PropertyDisplayOpt
 	}
 
 	private static string? FirstParagraph(string? description) =>
-		description?.Split("\n\n", 2, StringSplitOptions.TrimEntries)[0] is { Length: > 0 } first ? first : null;
+		description?.Split(["\r\n\r\n", "\n\n"], 2, StringSplitOptions.TrimEntries)[0] is { Length: > 0 } first ? first : null;
 
 	/// <summary>An explicit <c>mapping</c> entry wins; otherwise a variant whose discriminator property has a single enum value declares it.</summary>
 	private string? BuildDiscriminatorLabel(OpenApiDiscriminator? discriminator, VariantCandidate variant)
