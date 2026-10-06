@@ -273,6 +273,7 @@
 	[data-code-actions]
 	:is(button.copybtn, .api-code-preview-btn) {
 	position: static;
+	cursor: pointer;
 	top: auto;
 	right: auto;
 	display: flex;
