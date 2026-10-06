@@ -1,15 +1,13 @@
 @using Elastic.ApiExplorer.Operations
 @inherits RazorSlice<OperationUrlListModel>
-@if (Model.Endpoint is { } endpoint)
+@* Overview rows show the main path only; the operation page lists every path. *@
+@if (Model.Endpoint is { Rows.Count: > 0 } endpoint)
 {
 		<ul class="api-url-listing">
-		@foreach (var row in endpoint.Rows)
-		{
 			<li class="api-url-list-item">
 				<span class="api-url-row">
-					@(await RenderPartialAsync<_EndpointPath, EndpointPathModel>(new EndpointPathModel(row, endpoint.ShortestRoute)))
+					@(await RenderPartialAsync<_EndpointPath, EndpointPathModel>(new EndpointPathModel(endpoint.Rows[0], endpoint.ShortestRoute)))
 				</span>
 			</li>
-		}
 		</ul>
 }
