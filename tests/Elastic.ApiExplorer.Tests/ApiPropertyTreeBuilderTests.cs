@@ -946,16 +946,6 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture)
 
 			var list = builder.BuildPropertyList(document.Components!.Schemas!["Holder"], new PropertyTreeScope { Prefix = "" });
 
-			Console.WriteLine(
-				"DEBUG " + string.Join(
-					" || ",
-					list!.Items.Select(
-						p =>
-							$"{p.Name}: type='{p.Type.Text}' union={(p.Union is null ? "null" : p.Union.Kind + "/" + p.Union.Keyword + "/" + p.Union.Badges.Count)}"
-					)
-				)
-			);
-
 			string? Label(string name) => list!.Items.Single(p => p.Name == name).Union?.Label;
 
 			Label("inlineAny").Should().Be("Any of:");
