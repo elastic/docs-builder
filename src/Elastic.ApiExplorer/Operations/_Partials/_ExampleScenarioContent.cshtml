@@ -25,6 +25,7 @@
 {
 	<div class="api-code-carousel" data-api-carousel>
 		<div class="api-code-carousel-head">
+			<span class="api-rail-label">Request</span>
 			<span class="api-code-carousel-position" data-carousel-position aria-live="polite">
 				<strong>@samples[0].Language</strong>
 				<span>1 / @samples.Count @(samples.Count == 1 ? "language" : "languages")</span>
@@ -88,6 +89,7 @@
 	var requestModel = samples.Count > 0
 		? new ApiCodeSampleModel(requestSample, Title: "Request example")
 		: new ApiCodeSampleModel(requestSample, scenario.HttpMethod, scenario.Route);
+	<div class="api-code-carousel-head"><span class="api-rail-label">Request</span></div>
 	@(await RenderPartialAsync<_ApiCodeSample, ApiCodeSampleModel>(requestModel))
 }
 
@@ -100,6 +102,8 @@
 @if (scenario.ShowResponse)
 {
 	var responses = scenario.Responses;
+	<div class="api-rail-response">
+	<div class="api-code-carousel-head"><span class="api-rail-label">Response</span></div>
 	<div class="api-code-card example-block example-block--response" data-api-response-samples data-code-card>
 		<div class="example-block-header">
 			<div class="example-response-tabs" role="tablist" aria-label="Response status">
@@ -140,5 +144,6 @@
 				</div>
 			}
 		</div>
+	</div>
 	</div>
 }

@@ -3297,6 +3297,24 @@ html:has(.api-page-shell) {
 	margin-bottom: 8px;
 }
 
+/* Says what a card is before anything else does: Request above the samples, Response above the response. */
+.api-rail-label {
+	flex-shrink: 0;
+	margin-right: 6px;
+	color: var(--color-grey-90, #6b7a90);
+	font-size: 11px;
+	font-weight: 600;
+	letter-spacing: 0.06em;
+	line-height: 16px;
+	text-transform: uppercase;
+}
+
+.api-rail-response {
+	display: flex;
+	flex-direction: column;
+	min-height: 0;
+}
+
 .api-code-carousel-position {
 	flex: 1;
 	min-width: 0;
@@ -3661,6 +3679,10 @@ html:has(.api-page-shell) {
 	   example code changes. */
 	#api-examples-panel {
 		--api-response-height: clamp(140px, 24vh, 300px);
+	}
+
+	#api-examples-panel .api-rail-response {
+		flex: 0 0 auto;
 	}
 
 	#api-examples-panel .api-examples-scenario-panel .example-block--response {

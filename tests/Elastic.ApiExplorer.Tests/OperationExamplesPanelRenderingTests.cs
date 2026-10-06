@@ -234,4 +234,13 @@ public class OperationExamplesPanelRenderingTests
 
 		html.Should().NotContain("api-code-sample-heading");
 	}
+
+	[Test]
+	public async Task Render_LabelsTheRequestAndTheResponse()
+	{
+		var html = await RenderScenario(TermSearch);
+
+		html.Should().Contain("<span class=\"api-rail-label\">Request</span>");
+		html.Should().Contain("<span class=\"api-rail-label\">Response</span>");
+	}
 }
