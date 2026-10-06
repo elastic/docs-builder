@@ -141,12 +141,17 @@ describe('API examples carousel', () => {
         expect(activeLang('slicing')).toBe('curl')
     })
 
-    it('jumps instead of starting a second smooth scroll while one is in flight', () => {
+    it('keeps every pick smooth, snaps off while gliding, and lands on the target afterwards', () => {
         jest.useFakeTimers()
         initApiExamples()
         const strip = document.querySelector<HTMLElement>(
             '[data-scenario="term"] [data-carousel-strip]'
         )!
+        strip
+            .querySelectorAll<HTMLElement>('.api-code-carousel-card')
+            .forEach((card, i) =>
+                Object.defineProperty(card, 'offsetLeft', { value: i * 400 })
+            )
         const scrollTo = jest.fn()
         strip.scrollTo = scrollTo as unknown as typeof strip.scrollTo
         const dot = (lang: string) =>
@@ -159,38 +164,24 @@ describe('API examples carousel', () => {
 
         expect(scrollTo.mock.calls.map((c) => c[0].behavior)).toEqual([
             'smooth',
-            'auto',
+            'smooth',
         ])
-        jest.useRealTimers()
-    })
-
-    it('settles on the card in view when a held scroll ends elsewhere', () => {
-        jest.useFakeTimers()
-        initApiExamples()
-        const strip = document.querySelector<HTMLElement>(
-            '[data-scenario="term"] [data-carousel-strip]'
-        )!
-        strip
-            .querySelectorAll<HTMLElement>('.api-code-carousel-card')
-            .forEach((card, i) =>
-                Object.defineProperty(card, 'offsetLeft', { value: i * 400 })
-            )
-        strip.scrollTo = jest.fn() as unknown as typeof strip.scrollTo
-
-        document
-            .querySelector<HTMLElement>(
-                '[data-scenario="term"] [data-carousel-dot="Java"]'
-            )!
-            .click()
+        expect(strip.style.scrollSnapType).toBe('none')
         expect(activeLang('term')).toBe('Java')
-        // The browser snapped back to Python (index 2) instead of reaching Java (index 3).
+
+        // The browser stopped on Python (index 2) instead of reaching Java (index 3).
         Object.defineProperty(strip, 'scrollLeft', {
             value: 800,
             configurable: true,
         })
         jest.advanceTimersByTime(900)
 
-        expect(activeLang('term')).toBe('Python')
+        expect(strip.style.scrollSnapType).toBe('')
+        expect(scrollTo.mock.calls[scrollTo.mock.calls.length - 1][0]).toEqual({
+            left: 1200,
+            behavior: 'auto',
+        })
+        expect(activeLang('term')).toBe('Java')
         jest.useRealTimers()
     })
 

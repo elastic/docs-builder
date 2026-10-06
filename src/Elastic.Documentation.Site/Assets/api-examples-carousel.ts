@@ -194,38 +194,46 @@ function setActive(carousel: HTMLElement, language: string): boolean {
     return true
 }
 
+const holds = new WeakMap<HTMLElement, () => void>()
+
 /**
  * While the strip glides to a chosen language it passes the cards in between. They must not become active on the
  * way, or the strip resizes to each of them in turn. Released when the scroll ends, with a timeout as a fallback
- * for browsers without the scrollend event. On release the card in view wins: Firefox can abandon a smooth
- * scroll that another one interrupts and snap back, which would leave a dimmed card on show.
+ * for browsers without the scrollend event. Mandatory snapping is off while it glides: Firefox snaps back to
+ * the previous card when one smooth scroll interrupts another. Consecutive picks share one hold, and when it
+ * ends the strip is put on the active card if the scroll ended anywhere else.
  */
 function holdActiveUntilScrolled(carousel: HTMLElement, strip: HTMLElement) {
+    holds.get(carousel)?.()
     carousel.dataset.scrolling = 'true'
-    const release = () => {
-        delete carousel.dataset.scrolling
+    strip.style.scrollSnapType = 'none'
+    const cancel = () => {
+        holds.delete(carousel)
         strip.removeEventListener('scrollend', release)
         window.clearTimeout(timer)
-        settleActive(carousel, strip)
+    }
+    const release = () => {
+        cancel()
+        delete carousel.dataset.scrolling
+        strip.style.removeProperty('scroll-snap-type')
+        landOnActiveCard(carousel, strip)
     }
     const timer = window.setTimeout(release, 900)
     strip.addEventListener('scrollend', release, { once: true })
+    holds.set(carousel, cancel)
 }
 
-/** Marks the card nearest the strip's scroll position active, if the scroll ended somewhere unplanned. */
-function settleActive(carousel: HTMLElement, strip: HTMLElement) {
-    const position = strip.scrollLeft + strip.offsetLeft
-    const nearest = cards(carousel).reduce<HTMLElement | null>(
-        (best, card) =>
-            !best ||
-            Math.abs(card.offsetLeft - position) <
-                Math.abs(best.offsetLeft - position)
-                ? card
-                : best,
-        null
+/** Puts the strip on the active card without animation, when a scroll ended somewhere else. */
+function landOnActiveCard(carousel: HTMLElement, strip: HTMLElement) {
+    const active = cards(carousel).find((c) =>
+        c.classList.contains('is-active')
     )
-    if (nearest?.dataset.lang && !nearest.classList.contains('is-active'))
-        setActive(carousel, nearest.dataset.lang)
+    if (!active) return
+    const left = active.offsetLeft - strip.offsetLeft
+    if (Math.abs(strip.scrollLeft - left) <= 1) return
+    if (typeof strip.scrollTo === 'function')
+        strip.scrollTo({ left, behavior: 'auto' })
+    else strip.scrollLeft = left
 }
 
 /** Scrolls the strip to a language and marks it active. */
@@ -242,10 +250,7 @@ function showLanguage(
 
     setActive(carousel, card.dataset.lang ?? language)
     const left = card.offsetLeft - strip.offsetLeft
-    // A scroll already in flight is not interrupted with another smooth one (Firefox may then snap back);
-    // the strip jumps instead, and the running hold settles on it.
-    const animate =
-        smooth && !carousel.dataset.scrolling && !prefersReducedMotion()
+    const animate = smooth && !prefersReducedMotion()
     if (animate) holdActiveUntilScrolled(carousel, strip)
     if (typeof strip.scrollTo === 'function')
         strip.scrollTo({ left, behavior: animate ? 'smooth' : 'auto' })
