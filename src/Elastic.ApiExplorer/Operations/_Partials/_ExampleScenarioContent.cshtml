@@ -34,16 +34,12 @@
 				<button type="button" class="api-code-carousel-arrow" data-carousel-step="-1" aria-label="Previous language" disabled>&lsaquo;</button>
 				<button type="button" class="api-code-carousel-arrow" data-carousel-step="1" aria-label="Next language">&rsaquo;</button>
 			}
-			<button type="button" class="api-code-carousel-expand" data-request-expand aria-pressed="false" aria-label="Expand" title="Expand" hidden>
-				<svg class="icon-expand" viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M9.5 2H14v4.5h-1V3.7L9.85 6.85l-.7-.7L12.3 3H9.5V2ZM2 9.5h1v2.8l3.15-3.15.7.7L3.7 13h2.8v1H2V9.5Z"/></svg>
-				<svg class="icon-restore" viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M13.15 2.15l.7.7L10.7 6H13.5v1H9V2.5h1v2.8l3.15-3.15ZM2.85 13.85l-.7-.7L5.3 10H2.5V9H7v4.5H6v-2.8l-3.15 3.15Z"/></svg>
-			</button>
 		</div>
 		<div class="api-code-carousel-strip" data-carousel-strip tabindex="0" aria-label="@scenario.Title code samples. Use the arrow keys to switch language.">
 			@for (var i = 0; i < samples.Count; i++)
 			{
 				var sample = samples[i];
-				<section class="api-code-card api-code-carousel-card@(i == 0 ? " is-active" : "")" data-code-card data-lang="@sample.Language" data-lines="@ApiCodeBlockModel.LineCount(sample.Source)" aria-label="@sample.Language"@(sample.Generated ? new HtmlString(" data-generated title=\"Built from this example&rsquo;s request body\"") : HtmlString.Empty)>
+				<section class="api-code-card api-code-carousel-card@(i == 0 ? " is-active" : "")" data-code-card data-lang="@sample.Language" aria-label="@sample.Language"@(sample.Generated ? new HtmlString(" data-generated title=\"Built from this example&rsquo;s request body\"") : HtmlString.Empty)>
 					<header class="api-code-carousel-card-header">
 						<span class="api-lang-badge" data-lang="@sample.Language" aria-hidden="true"></span>
 						<span class="api-code-carousel-card-language">@sample.Language</span>

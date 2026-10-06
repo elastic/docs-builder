@@ -3591,10 +3591,6 @@ html:has(.api-page-shell) {
 	width: 100ch;
 }
 
-.is-response-collapsed .example-block--response .example-block-body {
-	display: none;
-}
-
 /*
  * Fixed rail frame: from 1024px the rail is exactly the viewport tall and never scrolls.
  * Example chips stay put, the request pane hugs the active sample, the response takes the
@@ -3686,12 +3682,6 @@ html:has(.api-page-shell) {
 		margin-bottom: 0;
 	}
 
-	#api-examples-panel .is-response-collapsed .example-block--response {
-		flex: 0 0 auto;
-		max-height: none;
-		min-height: 0;
-	}
-
 	#api-examples-panel .example-block--response .example-block-body {
 		flex: 1 1 auto;
 		max-height: none;
@@ -3699,52 +3689,7 @@ html:has(.api-page-shell) {
 	}
 }
 
-/* Expand: the examples take the whole rail and the response folds down to its header. */
-.api-code-carousel-expand {
-	display: inline-grid;
-	place-items: center;
-	width: 30px;
-	height: 30px;
-	margin-left: 4px;
-	border: 1px solid var(--color-grey-20, #e3e8f2);
-	border-radius: 50%;
-	background: #fff;
-	color: #1d2a3e;
-	cursor: pointer;
-}
-
-.api-code-carousel-expand[hidden] {
-	display: none;
-}
-
-.api-code-carousel-expand:hover {
-	border-color: #1d2a3e;
-}
-
-.api-code-carousel-expand:focus-visible {
-	outline: 2px solid var(--color-blue-elastic, #0b64dd);
-	outline-offset: 2px;
-}
-
-.api-code-carousel-expand svg {
-	width: 14px;
-	height: 14px;
-}
-
-.api-code-carousel-expand .icon-restore,
-.is-response-collapsed .api-code-carousel-expand .icon-expand {
-	display: none;
-}
-
-.is-response-collapsed .api-code-carousel-expand .icon-restore {
-	display: block;
-}
-
 @media (max-width: 1023px) {
-	.api-code-carousel-expand {
-		display: none;
-	}
-
 	/* Below the sidebar breakpoint the rail is one section among the page's, so its heading is a section heading. */
 	#api-examples-panel .api-examples-heading {
 		margin: 0 0 16px;

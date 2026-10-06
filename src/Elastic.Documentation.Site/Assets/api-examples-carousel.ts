@@ -11,9 +11,6 @@ import tippy from 'tippy.js'
 export const apiLanguageStorageKey = 'api-language'
 const defaultLanguage = 'Console'
 
-/** Code taller than this many lines scrolls; the expand button then shows all of it. Also --api-max-lines in api-docs.css. */
-const maxCodeLines = 16
-
 let delegated = false
 
 /** Language the reader picked last. */
@@ -87,25 +84,6 @@ function syncStripHeight(carousel: HTMLElement) {
     if (code > 0) strip.style.setProperty('--api-strip-height', `${height}px`)
 }
 
-/** The card's line count, written by the template (data-lines). */
-function lineCount(card: HTMLElement): number {
-    return Number(card.dataset.lines ?? 0)
-}
-
-/** Shows the expand button only when the active sample is longer than the cap (or while expanded, to restore). */
-function syncExpandable(carousel: HTMLElement) {
-    const examples = carousel.closest<HTMLElement>('[data-api-examples]')
-    const button = carousel.querySelector<HTMLElement>('[data-request-expand]')
-    const card = carousel.querySelector<HTMLElement>(
-        '.api-code-carousel-card.is-active'
-    )
-    if (!examples || !button || !card) return
-    const lines = lineCount(card)
-    const expanded = examples.classList.contains('is-response-collapsed')
-    button.hidden = !expanded && lines <= maxCodeLines
-    labelExpand(button, expanded, lines)
-}
-
 /** Offers "Show more" only when the description is cut off by its three-line clamp. */
 function syncDescription(examples: HTMLElement) {
     const description = visiblePanel(examples)?.querySelector<HTMLElement>(
@@ -132,13 +110,6 @@ function toggleDescription(button: HTMLElement) {
     button.setAttribute('aria-expanded', open ? 'true' : 'false')
 }
 
-function labelExpand(button: HTMLElement, expanded: boolean, lines: number) {
-    const label = expanded ? 'Restore the layout' : `Expand (${lines} lines)`
-    button.setAttribute('aria-pressed', expanded ? 'true' : 'false')
-    button.setAttribute('aria-label', label)
-    button.title = label
-}
-
 function cards(carousel: HTMLElement): HTMLElement[] {
     return Array.from(
         carousel.querySelectorAll<HTMLElement>(
@@ -163,7 +134,6 @@ function setActive(carousel: HTMLElement, language: string): boolean {
 
     all.forEach((card, i) => card.classList.toggle('is-active', i === index))
     syncStripHeight(carousel)
-    syncExpandable(carousel)
     carousel
         .querySelectorAll<HTMLElement>('[data-carousel-dot]')
         .forEach((dot) => {
@@ -306,10 +276,7 @@ function showScenario(examples: HTMLElement, scenarioId: string): void {
             chip.setAttribute('aria-selected', match ? 'true' : 'false')
         })
     const carousel = visibleCarousel(examples)
-    if (carousel) {
-        syncStripHeight(carousel)
-        syncExpandable(carousel)
-    }
+    if (carousel) syncStripHeight(carousel)
     syncDescription(examples)
 }
 
@@ -514,26 +481,6 @@ function openPreview(card: HTMLElement): HTMLDialogElement | null {
     return dialog
 }
 
-/** Expanding gives the examples the whole rail by folding the response down to its header. */
-function setExpanded(examples: HTMLElement, expanded: boolean) {
-    examples.classList.toggle('is-response-collapsed', expanded)
-    // Hidden examples re-measure when they are shown (showScenario).
-    const carousel = visibleCarousel(examples)
-    if (carousel) {
-        syncStripHeight(carousel)
-        syncExpandable(carousel)
-    }
-}
-
-function toggleExpanded(button: HTMLElement) {
-    const examples = button.closest<HTMLElement>('[data-api-examples]')
-    if (examples)
-        setExpanded(
-            examples,
-            !examples.classList.contains('is-response-collapsed')
-        )
-}
-
 function onClick(event: MouseEvent) {
     const target = event.target as HTMLElement | null
     const examples = target?.closest<HTMLElement>('[data-api-examples]')
@@ -542,12 +489,6 @@ function onClick(event: MouseEvent) {
     const more = target.closest<HTMLElement>('[data-description-toggle]')
     if (more) {
         toggleDescription(more)
-        return
-    }
-
-    const toggle = target.closest<HTMLElement>('[data-request-expand]')
-    if (toggle) {
-        toggleExpanded(toggle)
         return
     }
 

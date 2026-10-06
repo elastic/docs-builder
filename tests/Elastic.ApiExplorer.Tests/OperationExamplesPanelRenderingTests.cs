@@ -112,15 +112,6 @@ public class OperationExamplesPanelRenderingTests
 	}
 
 	[Test]
-	public async Task Render_Carousel_HasAnExpandButtonThatStartsHidden()
-	{
-		var html = await RenderScenario(TermSearch);
-
-		// Scripts reveal it only when the active sample is longer than the line cap.
-		html.Should().MatchRegex("data-request-expand[^>]*\\shidden>");
-	}
-
-	[Test]
 	public async Task Render_Description_IsANoteWithAToggleForLongText()
 	{
 		var html = await RenderScenario(TermSearch with

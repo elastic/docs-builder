@@ -9,7 +9,7 @@ function source(lang: string): string {
 
 function card(lang: string): string {
     return `
-        <section class="api-code-card api-code-carousel-card" data-code-card data-lang="${lang}" data-lines="${source(lang).split('\n').length}">
+        <section class="api-code-card api-code-carousel-card" data-code-card data-lang="${lang}">
             <header class="api-code-carousel-card-header"><span class="api-code-carousel-card-language">${lang}</span><span data-code-actions></span></header>
             <div><pre><code>${source(lang)}</code></pre></div>
         </section>`
@@ -31,7 +31,6 @@ function carousel(langs: string[]): string {
                 <div class="api-example-description-text">A description.</div>
                 <button data-description-toggle aria-expanded="false" hidden>Show more</button>
             </div>
-            <button data-request-expand aria-pressed="false" hidden></button>
             <div class="api-code-carousel-strip" data-carousel-strip tabindex="0">${langs.map(card).join('')}</div>
             <div>${dots}</div>
         </div>`
@@ -369,48 +368,6 @@ describe('API examples carousel', () => {
         dialog.close = jest.fn(() => dialog.remove())
         dialog.querySelector<HTMLElement>('[aria-label="Close"]')!.click()
         expect(dialog.close).toHaveBeenCalled()
-    })
-
-    it('offers expand only when the active sample is past the line cap', () => {
-        initApiExamples()
-        const expand = document.querySelector<HTMLElement>(
-            '[data-scenario="term"] [data-request-expand]'
-        )!
-        expect(expand.hidden).toBe(true)
-
-        click('[data-scenario="term"] [data-carousel-dot="Java"]')
-
-        expect(expand.hidden).toBe(false)
-        expect(expand.getAttribute('aria-label')).toBe('Expand (20 lines)')
-
-        click('[data-scenario="term"] [data-carousel-dot="curl"]')
-
-        expect(expand.hidden).toBe(true)
-    })
-
-    it('expands by folding the response, keeps the button to restore, and restores', () => {
-        initApiExamples()
-        click('[data-scenario="term"] [data-carousel-dot="Java"]')
-        const examples = document.querySelector<HTMLElement>(
-            '[data-api-examples]'
-        )!
-        const expand = document.querySelector<HTMLElement>(
-            '[data-scenario="term"] [data-request-expand]'
-        )!
-
-        expand.click()
-
-        expect(examples.classList.contains('is-response-collapsed')).toBe(true)
-        expect(expand.getAttribute('aria-pressed')).toBe('true')
-        expect(expand.getAttribute('aria-label')).toBe('Restore the layout')
-
-        // A short sample while expanded still shows the button, so the reader can restore.
-        click('[data-scenario="term"] [data-carousel-dot="curl"]')
-        expect(expand.hidden).toBe(false)
-
-        expand.click()
-
-        expect(examples.classList.contains('is-response-collapsed')).toBe(false)
     })
 
     it('opens and closes a long description', () => {
