@@ -821,6 +821,7 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture)
 			  "paths": {},
 			  "components": {
 			    "schemas": {
+			      "Base": { "type": "object", "properties": { "id": { "type": "string" } } },
 			      "Cat": { "type": "object", "properties": { "kind": { "type": "string", "enum": ["cat"] }, "lives": { "type": "integer" } } },
 			      "Dog": { "type": "object", "properties": { "kind": { "type": "string", "enum": ["dog"] }, "barks": { "type": "boolean" } } },
 			      "Fish": { "type": "object", "properties": { "kind": { "type": "string" }, "fins": { "type": "integer" } } },
@@ -841,6 +842,18 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture)
 			          "implicit": {
 			            "oneOf": [ { "$ref": "#/components/schemas/Cat" }, { "$ref": "#/components/schemas/Fish" } ],
 			            "discriminator": { "propertyName": "kind" }
+			          },
+			          "composed": {
+			            "allOf": [
+			              { "$ref": "#/components/schemas/Base" },
+			              {
+			                "oneOf": [ { "$ref": "#/components/schemas/Cat" }, { "$ref": "#/components/schemas/Dog" } ],
+			                "discriminator": {
+			                  "propertyName": "kind",
+			                  "mapping": { "feline": "#/components/schemas/Cat", "canine": "#/components/schemas/Dog" }
+			                }
+			              }
+			            ]
 			          },
 			          "plain": {
 			            "oneOf": [ { "$ref": "#/components/schemas/Cat" }, { "$ref": "#/components/schemas/Dog" } ]
@@ -874,6 +887,9 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture)
 			Labels("mapped").Should().Equal("kind: feline", "kind: canine");
 			Labels("implicit").Should().Equal("kind: cat", null);
 			Labels("plain").Should().Equal(null, null);
+
+			Labels("composed").Should().Equal("kind: feline", "kind: canine");
+			list!.Items.Single(p => p.Name == "composed").Union!.DiscriminatorProperty.Should().Be("kind");
 
 			var holder = new OpenApiSchemaReference("Pet", document);
 			var pet = document.Components!.Schemas!["Pet"];

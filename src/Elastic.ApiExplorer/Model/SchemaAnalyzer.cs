@@ -656,6 +656,20 @@ public class SchemaAnalyzer(
 		return composed.Count > 0 ? composed : null;
 	}
 
+	/// <summary>The discriminator of a union: its own, or the one declared on the <c>oneOf</c>/<c>anyOf</c> member of an <c>allOf</c>.</summary>
+	public OpenApiDiscriminator? GetUnionDiscriminator(IOpenApiSchema? schema)
+	{
+		var resolved = ResolveSchema(schema) ?? schema;
+		if (resolved?.Discriminator is { } own)
+			return own;
+
+		return (resolved?.AllOf ?? [])
+			.Select(m => ResolveSchema(m) ?? m)
+			.Where(m => m.Discriminator is not null && (m.OneOf is { Count: > 0 } || m.AnyOf is { Count: > 0 }))
+			.Select(static m => m.Discriminator)
+			.FirstOrDefault();
+	}
+
 	/// <summary>Each object variant carries the shared base members, so it expands to base plus its own properties.</summary>
 	private TypeInfo ClassifyAllOfUnion(AllOfUnion split)
 	{

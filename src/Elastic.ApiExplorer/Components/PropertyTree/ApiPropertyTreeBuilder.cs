@@ -435,7 +435,7 @@ public class ApiPropertyTreeBuilder(OpenApiDocument document, PropertyDisplayOpt
 			return new UnionDisplay
 			{
 				Kind = UnionDisplayKind.Badges,
-				DiscriminatorProperty = propSchema.Discriminator?.PropertyName,
+				DiscriminatorProperty = _analyzer.GetUnionDiscriminator(propSchema)?.PropertyName,
 				Badges = badgeOptions.Select(o => new UnionBadge(o, IsTypeOptionBadge(o))).ToArray()
 			};
 		}
@@ -490,7 +490,8 @@ public class ApiPropertyTreeBuilder(OpenApiDocument document, PropertyDisplayOpt
 			{
 				Kind = ChildKind.UnionVariants,
 				UseHidden = false,
-				Variants = BuildUnionVariants(typeInfo.AnyOfOptions!, childScope, row.Schema.Discriminator) ?? ApiUnionVariants.Empty
+				Variants = BuildUnionVariants(typeInfo.AnyOfOptions!, childScope, _analyzer.GetUnionDiscriminator(row.Schema))
+					?? ApiUnionVariants.Empty
 			};
 		}
 
@@ -500,7 +501,7 @@ public class ApiPropertyTreeBuilder(OpenApiDocument document, PropertyDisplayOpt
 			{
 				Kind = ChildKind.SimpleUnionVariants,
 				UseHidden = useHidden,
-				Variants = BuildUnionVariants(expansion.SimpleUnionNestedOptions, childScope, row.Schema.Discriminator)
+				Variants = BuildUnionVariants(expansion.SimpleUnionNestedOptions, childScope, _analyzer.GetUnionDiscriminator(row.Schema))
 					?? ApiUnionVariants.Empty
 			};
 		}

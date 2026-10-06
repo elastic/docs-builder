@@ -799,7 +799,12 @@ public partial record OperationPageModel
 		var schemas = typeInfo.AnyOfOptions.Where(static o => o.Schema is not null).Select(static o => o.Schema!).ToList();
 		return schemas.Count == 0
 			? null
-			: builder.BuildUnionVariantsForSchemas(schemas, $"res-{statusCode}", ancestors: null, responseSchema.Discriminator);
+			: builder.BuildUnionVariantsForSchemas(
+				schemas,
+				$"res-{statusCode}",
+				ancestors: null,
+				analyzer.GetUnionDiscriminator(responseSchema)
+			);
 	}
 
 	private static IReadOnlyList<string> NamesOf(IEnumerable<string?> names) => [.. names.OfType<string>().Where(static n => n.Length > 0)];
