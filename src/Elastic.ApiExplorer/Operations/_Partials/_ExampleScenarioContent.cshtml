@@ -42,15 +42,17 @@
 				<section class="api-code-card api-code-carousel-card@(i == 0 ? " is-active" : "")" data-code-card data-lang="@sample.Language" aria-label="@sample.Language"@(sample.Generated ? new HtmlString(" data-generated title=\"Built from this example&rsquo;s request body\"") : HtmlString.Empty)>
 					<header class="api-code-carousel-card-header">
 						<span class="api-lang-badge" data-lang="@sample.Language" aria-hidden="true"></span>
-						<span class="api-code-carousel-card-language">@sample.Language</span>
-						@if (sample.ClientLabel.Length > 0 && sample.ClientDocsUrl is { } clientDocs)
-						{
-							<a class="api-code-carousel-card-client" href="@clientDocs">@sample.ClientLabel</a>
-						}
-						else if (sample.ClientLabel.Length > 0)
-						{
-							<span class="api-code-carousel-card-client">@sample.ClientLabel</span>
-						}
+						<span class="api-code-carousel-card-title">
+							<span class="api-code-carousel-card-language">@sample.Language</span>
+							@if (sample.ClientLabel.Length > 0 && sample.ClientDocsUrl is { } clientDocs)
+							{
+								<a class="api-code-carousel-card-client" href="@clientDocs">@sample.ClientLabel</a>
+							}
+							else if (sample.ClientLabel.Length > 0)
+							{
+								<span class="api-code-carousel-card-client">@sample.ClientLabel</span>
+							}
+						</span>
 						<span class="api-code-carousel-card-actions" data-code-actions></span>
 					</header>
 					<div class="api-code-carousel-card-body">

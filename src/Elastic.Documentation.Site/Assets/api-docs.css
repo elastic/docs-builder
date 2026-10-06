@@ -3411,6 +3411,14 @@ html:has(.api-page-shell) {
 	font-size: 13px;
 }
 
+/* Language and client label are different sizes, so they line up on the baseline, not by box centre. */
+.api-code-carousel-card-title {
+	display: flex;
+	align-items: baseline;
+	gap: 8px;
+	min-width: 0;
+}
+
 .api-code-carousel-card-language {
 	color: var(--api-code-text);
 	font-weight: 600;

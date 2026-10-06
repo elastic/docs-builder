@@ -392,22 +392,25 @@ function previewHeader(card: HTMLElement, scenarioTitle: string): HTMLElement {
         badge.setAttribute('aria-hidden', 'true')
         header.appendChild(badge)
     }
+    const title = document.createElement('span')
+    title.className = 'api-code-carousel-card-title'
+    header.appendChild(title)
     const name = document.createElement('span')
     name.className = 'api-code-carousel-card-language'
     const status = text('.example-response-tab.is-active')
     name.textContent =
         text('.api-code-carousel-card-language') ||
         (status ? `Response ${status}` : 'Code')
-    header.appendChild(name)
+    title.appendChild(name)
     const client = card.querySelector<HTMLElement>(
         '.api-code-carousel-card-client'
     )
-    if (client) header.appendChild(client.cloneNode(true))
+    if (client) title.appendChild(client.cloneNode(true))
     if (scenarioTitle) {
-        const title = document.createElement('span')
-        title.className = 'api-code-carousel-card-client'
-        title.textContent = client ? `· ${scenarioTitle}` : scenarioTitle
-        header.appendChild(title)
+        const scenario = document.createElement('span')
+        scenario.className = 'api-code-carousel-card-client'
+        scenario.textContent = client ? `· ${scenarioTitle}` : scenarioTitle
+        title.appendChild(scenario)
     }
     return header
 }
