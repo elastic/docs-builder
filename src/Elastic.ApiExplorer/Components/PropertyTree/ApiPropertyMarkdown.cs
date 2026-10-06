@@ -24,6 +24,9 @@ internal static class ApiPropertyMarkdown
 		if (variants is null || variants.Variants.Count == 0)
 			return;
 
+		if (variants.Label is { Length: > 0 } unionLabel)
+			_ = markdown.AppendLine(Indent(depth) + unionLabel);
+
 		foreach (var variant in variants.Variants)
 		{
 			var label = variant.IsArrayVariant ? $"[]{variant.DisplayName}" : variant.DisplayName;

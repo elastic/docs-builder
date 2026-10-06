@@ -6,6 +6,10 @@
 		return;
 	}
 }
+@if (Model.Label is { Length: > 0 } unionLabel)
+{
+	<span class="values-label">@unionLabel</span>
+}
 <div class="union-variants-container @(Model.ShouldCollapse ? "collapsible collapsed" : "")" id="@Model.ContainerId">
 	@if (Model.ShouldCollapse)
 	{

@@ -79,8 +79,7 @@ public class ApiPropertyTreeBuilder(OpenApiDocument document, PropertyDisplayOpt
 	/// <summary>Builds the expanded variants for a top-level oneOf/anyOf union (schema pages).</summary>
 	public ApiUnionVariants? BuildUnionVariantsForSchemas(
 		IList<IOpenApiSchema> unionSchemas,
-		string prefix,
-		IReadOnlySet<string>? ancestors,
+		PropertyTreeScope scope,
 		OpenApiDiscriminator? discriminator = null
 	)
 	{
@@ -93,7 +92,7 @@ public class ApiPropertyTreeBuilder(OpenApiDocument document, PropertyDisplayOpt
 				return new UnionOption(displayName, info.SchemaRef, info.IsObject, s);
 			})
 			.ToList();
-		return BuildUnionVariants(unionOptions, new PropertyTreeScope { Prefix = prefix, Ancestors = ancestors }, discriminator);
+		return BuildUnionVariants(unionOptions, scope, discriminator);
 	}
 
 	/// <summary>The display form (icons, keywords, name) of a schema's type.</summary>

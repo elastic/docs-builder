@@ -254,7 +254,10 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture)
 		var builder = CreateBuilder(currentPageType: "Aggregate", collapseMode: CollapseMode.DepthBased);
 		var aggregate = Schema("_types.aggregations.Aggregate");
 
-		var variants = builder.BuildUnionVariantsForSchemas(aggregate.OneOf!, "oneof", new HashSet<string> { "Aggregate" });
+		var variants = builder.BuildUnionVariantsForSchemas(
+			aggregate.OneOf!,
+			new PropertyTreeScope { Prefix = "oneof", Ancestors = new HashSet<string> { "Aggregate" } }
+		);
 
 		variants.Should().NotBeNull();
 		variants!.Variants.Should().HaveCount(2);
@@ -268,7 +271,7 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture)
 		var builder = CreateBuilder();
 		var schema = Schema("fixture.InvalidInputResponse");
 
-		var variants = builder.BuildUnionVariantsForSchemas(schema.OneOf!, "res-400", null);
+		var variants = builder.BuildUnionVariantsForSchemas(schema.OneOf!, new PropertyTreeScope { Prefix = "res-400" });
 
 		variants.Should().NotBeNull();
 		variants!.Variants.Select(v => v.DisplayName).Should().BeEquivalentTo(["PlatformErrorResponse", "SiemErrorResponse"]);
@@ -893,7 +896,11 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture)
 
 			var holder = new OpenApiSchemaReference("Pet", document);
 			var pet = document.Components!.Schemas!["Pet"];
-			var topLevel = builder.BuildUnionVariantsForSchemas(pet.OneOf!, "oneof", null, holder.Discriminator);
+			var topLevel = builder.BuildUnionVariantsForSchemas(
+				pet.OneOf!,
+				new PropertyTreeScope { Prefix = "oneof" },
+				holder.Discriminator
+			);
 			topLevel!.Variants.Select(v => v.DiscriminatorLabel).Should().Equal("kind: tomcat", "kind: dog");
 		}
 		finally
@@ -997,12 +1004,25 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture)
 			var plain = new OpenApiSchemaReference("Plain", document);
 
 			builder.BuildPropertyList(body, new PropertyTreeScope { Prefix = "req", IsRequest = true }).Should().BeNull();
-			var variants = OperationPageModel.BuildTopLevelUnionVariants(body, "req", analyzer, builder);
+			var variants = OperationPageModel.BuildTopLevelUnionVariants(
+				body,
+				new PropertyTreeScope { Prefix = "req", IsRequest = true },
+				analyzer,
+				builder
+			);
 
 			variants!.Variants.Select(v => v.DisplayName).Should().Equal("Cat", "Dog");
 			variants.Variants[0].AnchorId.Should().StartWith("req-variant-");
 			variants.Variants[0].Properties!.Items.Single().IsRequired.Should().BeTrue();
-			OperationPageModel.BuildTopLevelUnionVariants(plain, "req", analyzer, builder).Should().BeNull();
+			variants.Variants[0].Properties!.Items.Single().IsRequest.Should().BeTrue("request variants keep the request flag");
+			variants.Label.Should().Be("Any of:");
+			var markdown = new System.Text.StringBuilder();
+			ApiPropertyMarkdown.WriteVariants(markdown, variants, "/api/doc/fixture");
+			markdown.ToString().Should().StartWith("Any of:").And.Contain("- `lives` (integer) — required");
+			OperationPageModel
+				.BuildTopLevelUnionVariants(plain, new PropertyTreeScope { Prefix = "req" }, analyzer, builder)
+				.Should()
+				.BeNull();
 		}
 		finally
 		{

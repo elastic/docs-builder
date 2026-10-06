@@ -41,5 +41,8 @@ public record ApiUnionVariants
 	public required IReadOnlyList<ApiUnionVariant> Variants { get; init; }
 	public required bool ShouldCollapse { get; init; }
 	public required string ContainerId { get; init; }
+
+	/// <summary>"Any of:" or "One of:" above a body-level list that has no property row to carry it.</summary>
+	public string? Label { get; init; }
 	public required bool UseHiddenUntilFound { get; init; }
 }
