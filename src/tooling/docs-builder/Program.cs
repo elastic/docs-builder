@@ -56,6 +56,7 @@ _ = builder.Services.AddArgh(args, app =>
 	_ = app.MapNamespace<ReleaseCommands>("release", g =>
 	{
 		_ = g.MapNamespace<UnifiedReleaseCommands>("unified");
+		_ = g.MapNamespace<ServerlessReleaseCommands>("serverless");
 	});
 	_ = app.MapNamespace<InboundLinkCommands>("inbound-links");
 
