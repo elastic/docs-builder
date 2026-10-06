@@ -170,14 +170,12 @@ public class OpenApiGenerator(
 		var highestMajor = monikers.Max(TryParseMajor);
 
 		// Each moniker gets an independent ApiRenderContext, navigation tree and navigation HTML
-		// writer, so there is no shared mutable state between concurrent versions.  Version monikers
-		// are rendered sequentially within a product to avoid oversubscribing the thread pool:
-		// the outer Parallel.ForEachAsync in GenerateProducts already fans out all product×version
-		// units concurrently, so a second level of parallelism here would multiply concurrency to
-		// ProcessorCount² rather than keeping it at ProcessorCount.
-		foreach (var versioned in versionedDocuments)
+		// writer, so there is no shared mutable state between concurrent versions. The outer loop in
+		// GenerateProducts fans out products only; rendering versions sequentially here made a
+		// product's total time the sum of all its versions. Pages within one version stay sequential,
+		// so concurrency is bounded by the number of product×version units, not ProcessorCount².
+		await Parallel.ForEachAsync(versionedDocuments, ctx, async (versioned, token) =>
 		{
-			ctx.ThrowIfCancellationRequested();
 			var switcherItems = ApiVersionSwitcher.Build(context.UrlPathPrefix, prefix, monikers, versioned.Version.Moniker);
 			var apiUrlSuffix = ApiUrlBuilder.ProductSuffix(prefix, versioned.Version.Moniker);
 			await GenerateApiProduct(
@@ -192,9 +190,9 @@ public class OpenApiGenerator(
 					CatalogEntries: hubEntries,
 					CurrentApiKey: prefix
 				),
-				ctx
+				token
 			).ConfigureAwait(false);
-		}
+		}).ConfigureAwait(false);
 
 		return CatalogEntry(prefix, apiConfig, resolved);
 	}
@@ -550,7 +548,7 @@ public class OpenApiGenerator(
 
 		var navigationRenderResult = await navigationRenderer.RenderNavigation(current.NavigationRoot, current, ctx);
 		renderContext = renderContext with { CurrentNavigation = current, NavigationHtml = navigationRenderResult.Html };
-		await using var stream = _writeFileSystem.FileStream.New(outputFile.FullName, FileMode.OpenOrCreate);
+		await using var stream = _writeFileSystem.FileStream.New(outputFile.FullName, FileMode.Create);
 
 		// Build the expensive page model once and pass it to both render paths so that
 		// OperationPageModel.Create / SchemaPageModel.Create / StructuralViewModel.Create

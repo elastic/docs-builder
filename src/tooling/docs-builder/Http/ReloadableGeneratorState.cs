@@ -65,6 +65,7 @@ public class ReloadableGeneratorState : IDisposable
 	private readonly Dictionary<string, DateTimeOffset> _apiMarkdownFilesLastModified = [];
 
 	private volatile bool _apiReferencesStale = true;
+	private volatile bool _forceApiRegeneration;
 	private readonly SemaphoreSlim _apiSemaphore = new(1, 1);
 	private CancellationTokenSource? _apiGenerationCts;
 
@@ -120,6 +121,16 @@ public class ReloadableGeneratorState : IDisposable
 		_apiReferencesStale = true;
 	}
 
+	/// <summary>
+	/// Regenerates API pages on the next /api/ request even when no spec changed. Hot reload calls
+	/// this because rendering code and static asset hashes are baked into the generated HTML.
+	/// </summary>
+	public void InvalidateApiReferences()
+	{
+		_forceApiRegeneration = true;
+		_apiReferencesStale = true;
+	}
+
 	/// <summary>Lazily generates OpenAPI references on the first /api/ request, and regenerates when spec files change.</summary>
 	public async Task EnsureApiReferencesAsync(Cancel ctx)
 	{
@@ -139,14 +150,26 @@ public class ReloadableGeneratorState : IDisposable
 			if (!_apiReferencesStale)
 				return;
 
-			// Use the isolated token for actual generation
+			// Clear flags and snapshot timestamps before generating, so a code or file change that
+			// lands mid-generation marks the pages stale again instead of being lost.
 			var config = _generator.DocumentationSet.Configuration;
-			if (HaveOpenApiSpecsChanged(config))
-			{
-				await ReloadApiReferences(_generator.MarkdownStringRenderer, combinedCts.Token);
-				UpdateOpenApiSpecTimestamps(config);
-			}
 			_apiReferencesStale = false;
+			var force = _forceApiRegeneration;
+			_forceApiRegeneration = false;
+			if (!force && !HaveOpenApiSpecsChanged(config))
+				return;
+
+			UpdateOpenApiSpecTimestamps(config);
+			try
+			{
+				// Use the isolated token for actual generation
+				await ReloadApiReferences(_generator.MarkdownStringRenderer, combinedCts.Token);
+			}
+			catch
+			{
+				InvalidateApiReferences();
+				throw;
+			}
 		}
 		finally
 		{
@@ -240,8 +263,9 @@ public class ReloadableGeneratorState : IDisposable
 		if (_isWatchBuild)
 			return;
 
-		if (ApiPath.Exists)
-			ApiPath.Delete(true);
+		// Serve writes to an in-memory file system where a recursive delete of the generated tree takes
+		// longer than regenerating it. Pages are overwritten in place instead; a page whose operation
+		// was removed from the spec stays reachable until the server restarts.
 		ApiPath.Create();
 		var generator = new OpenApiGenerator(_logFactory, _context, markdownStringRenderer);
 		await generator.Generate(ctx);
