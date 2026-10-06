@@ -21,6 +21,9 @@ public record ApiUnionVariant
 	public required int NestedCount { get; init; }
 	public required bool UseHidden { get; init; }
 	public ApiPropertyList? Properties { get; init; }
+
+	/// <summary>The discriminator property and the value that selects this variant, e.g. <c>type: eql</c>.</summary>
+	public string? DiscriminatorLabel { get; init; }
 }
 
 /// <summary>The expanded variants of a union; the model for <c>_UnionOptions</c>.</summary>

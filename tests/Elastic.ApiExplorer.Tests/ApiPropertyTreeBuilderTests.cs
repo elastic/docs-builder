@@ -809,4 +809,72 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture)
 				File.Delete(path);
 		}
 	}
+
+	[Test]
+	public async Task BuildPropertyList_DiscriminatedOneOf_LabelsVariantsWithTheirDiscriminatorValue()
+	{
+		var json =
+			"""
+			{
+			  "openapi": "3.0.3",
+			  "info": { "title": "t", "version": "1" },
+			  "paths": {},
+			  "components": {
+			    "schemas": {
+			      "Cat": { "type": "object", "properties": { "kind": { "type": "string", "enum": ["cat"] }, "lives": { "type": "integer" } } },
+			      "Dog": { "type": "object", "properties": { "kind": { "type": "string", "enum": ["dog"] }, "barks": { "type": "boolean" } } },
+			      "Fish": { "type": "object", "properties": { "kind": { "type": "string" }, "fins": { "type": "integer" } } },
+			      "Holder": {
+			        "type": "object",
+			        "properties": {
+			          "mapped": {
+			            "oneOf": [ { "$ref": "#/components/schemas/Cat" }, { "$ref": "#/components/schemas/Dog" } ],
+			            "discriminator": {
+			              "propertyName": "kind",
+			              "mapping": { "feline": "#/components/schemas/Cat", "canine": "#/components/schemas/Dog" }
+			            }
+			          },
+			          "implicit": {
+			            "oneOf": [ { "$ref": "#/components/schemas/Cat" }, { "$ref": "#/components/schemas/Fish" } ],
+			            "discriminator": { "propertyName": "kind" }
+			          },
+			          "plain": {
+			            "oneOf": [ { "$ref": "#/components/schemas/Cat" }, { "$ref": "#/components/schemas/Dog" } ]
+			          }
+			        }
+			      }
+			    }
+			  }
+			}
+			""";
+		var path = Path.Join(Path.GetTempPath(), $"discriminator-{Guid.NewGuid():N}.json");
+		await File.WriteAllTextAsync(path, json, TestContext.Current!.Execution.CancellationToken);
+		try
+		{
+			var loaded = await OpenApiDocument.LoadAsync(
+				path,
+				new OpenApiReaderSettings { LeaveStreamOpen = false },
+				TestContext.Current!.Execution.CancellationToken
+			);
+			var document = loaded.Document!;
+			var builder = new ApiPropertyTreeBuilder(
+				document,
+				new PropertyDisplayOptions { RenderMarkdown = s => new HtmlString($"<p>{s}</p>"), ApiRootUrl = "/api/doc/fixture" }
+			);
+
+			var list = builder.BuildPropertyList(document.Components!.Schemas!["Holder"], new PropertyTreeScope { Prefix = "" });
+
+			List<string?> Labels(string name) =>
+				list!.Items.Single(p => p.Name == name).Children.Variants!.Variants.Select(v => v.DiscriminatorLabel).ToList();
+
+			Labels("mapped").Should().Equal("kind: feline", "kind: canine");
+			Labels("implicit").Should().Equal("kind: cat", null);
+			Labels("plain").Should().Equal(null, null);
+		}
+		finally
+		{
+			if (File.Exists(path))
+				File.Delete(path);
+		}
+	}
 }

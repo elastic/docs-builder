@@ -30,7 +30,10 @@ internal static class ApiPropertyMarkdown
 			_ = markdown.Append(Indent(depth));
 			_ = markdown.Append("- **");
 			_ = markdown.Append(label);
-			_ = markdown.AppendLine("**");
+			_ = markdown.Append("**");
+			if (variant.DiscriminatorLabel is { Length: > 0 } discriminatorLabel)
+				_ = markdown.Append($" (`{discriminatorLabel}`)");
+			_ = markdown.AppendLine();
 			if (variant.Properties is not null)
 				WriteList(markdown, variant.Properties, apiBaseUrl, depth + 1);
 		}

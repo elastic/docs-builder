@@ -41,6 +41,10 @@
 				{
 					<code class="schema-type"><span class="@SchemaHelpers.TypeAtomCssClassOrNull(variant.DisplayName)">@variant.DisplayName</span></code>
 				}
+				@if (variant.DiscriminatorLabel is { Length: > 0 } discriminatorLabel)
+				{
+					<code class="discriminator-value">@discriminatorLabel</code>
+				}
 			</div>
 			@if (variant.ShowProperties && variant.Properties is not null)
 			{

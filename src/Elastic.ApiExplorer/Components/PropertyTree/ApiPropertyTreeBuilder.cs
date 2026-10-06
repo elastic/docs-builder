@@ -489,7 +489,7 @@ public class ApiPropertyTreeBuilder(OpenApiDocument document, PropertyDisplayOpt
 			{
 				Kind = ChildKind.UnionVariants,
 				UseHidden = false,
-				Variants = BuildUnionVariants(typeInfo.AnyOfOptions!, childScope) ?? ApiUnionVariants.Empty
+				Variants = BuildUnionVariants(typeInfo.AnyOfOptions!, childScope, row.Schema.Discriminator) ?? ApiUnionVariants.Empty
 			};
 		}
 
@@ -499,7 +499,8 @@ public class ApiPropertyTreeBuilder(OpenApiDocument document, PropertyDisplayOpt
 			{
 				Kind = ChildKind.SimpleUnionVariants,
 				UseHidden = useHidden,
-				Variants = BuildUnionVariants(expansion.SimpleUnionNestedOptions, childScope) ?? ApiUnionVariants.Empty
+				Variants = BuildUnionVariants(expansion.SimpleUnionNestedOptions, childScope, row.Schema.Discriminator)
+					?? ApiUnionVariants.Empty
 			};
 		}
 
@@ -618,7 +619,11 @@ public class ApiPropertyTreeBuilder(OpenApiDocument document, PropertyDisplayOpt
 	private static bool IsAncestorType(string? typeName, IReadOnlySet<string> ancestors) =>
 		!string.IsNullOrEmpty(typeName) && !SchemaHelpers.IsPrimitiveTypeName(typeName) && ancestors.Contains(typeName);
 
-	private ApiUnionVariants? BuildUnionVariants(List<UnionOption> unionOptions, PropertyTreeScope scope)
+	private ApiUnionVariants? BuildUnionVariants(
+		List<UnionOption> unionOptions,
+		PropertyTreeScope scope,
+		OpenApiDiscriminator? discriminator = null
+	)
 	{
 		if (unionOptions.Count == 0 || !unionOptions.Any(o => o.IsObject))
 			return null;
@@ -668,7 +673,8 @@ public class ApiPropertyTreeBuilder(OpenApiDocument document, PropertyDisplayOpt
 						variant.Schema,
 						scope with { Prefix = optionId, Depth = scope.Depth + 1, Ancestors = newAncestors, RequiredProperties = null }
 					) ?? new ApiPropertyList([])
-					: null
+					: null,
+				DiscriminatorLabel = variant.IsArray ? null : BuildDiscriminatorLabel(discriminator, variant)
 			});
 		}
 
@@ -681,9 +687,27 @@ public class ApiPropertyTreeBuilder(OpenApiDocument document, PropertyDisplayOpt
 		};
 	}
 
+	/// <summary>An explicit <c>mapping</c> entry wins; otherwise a variant whose discriminator property has a single enum value declares it.</summary>
+	private string? BuildDiscriminatorLabel(OpenApiDiscriminator? discriminator, VariantCandidate variant)
+	{
+		if (discriminator?.PropertyName is not { Length: > 0 } propertyName)
+			return null;
+
+		var mapped = discriminator.Mapping?.FirstOrDefault(
+			m => !string.IsNullOrEmpty(variant.Ref) && m.Value.Reference.Id == variant.Ref
+		).Key;
+		if (!string.IsNullOrEmpty(mapped))
+			return $"{propertyName}: {mapped}";
+
+		var property = variant.Props is not null && variant.Props.TryGetValue(propertyName, out var schema) ? schema : null;
+		var values = _analyzer.GetEnumValues(property);
+		return values.Count == 1 ? $"{propertyName}: {values[0]}" : null;
+	}
+
 	private sealed record VariantCandidate(
 		string Name,
 		string BaseName,
+		string? Ref,
 		bool IsArray,
 		bool IsObject,
 		IOpenApiSchema? Schema,
@@ -721,13 +745,21 @@ public class ApiPropertyTreeBuilder(OpenApiDocument document, PropertyDisplayOpt
 
 			if (hasArrayVariant && hasNonArrayVariant)
 			{
-				variantsToRender.Add(new VariantCandidate($"{baseName}[]", baseName, true, isObject, schemaToRender, optionProps));
-				variantsToRender.Add(new VariantCandidate(baseName, baseName, false, isObject, schemaToRender, optionProps));
+				variantsToRender.Add(
+					new VariantCandidate($"{baseName}[]", baseName, primaryOption?.Ref, true, isObject, schemaToRender, optionProps)
+				);
+				variantsToRender.Add(
+					new VariantCandidate(baseName, baseName, primaryOption?.Ref, false, isObject, schemaToRender, optionProps)
+				);
 			}
 			else if (hasArrayVariant)
-				variantsToRender.Add(new VariantCandidate($"{baseName}[]", baseName, true, isObject, schemaToRender, optionProps));
+				variantsToRender.Add(
+					new VariantCandidate($"{baseName}[]", baseName, primaryOption?.Ref, true, isObject, schemaToRender, optionProps)
+				);
 			else
-				variantsToRender.Add(new VariantCandidate(baseName, baseName, false, isObject, schemaToRender, optionProps));
+				variantsToRender.Add(
+					new VariantCandidate(baseName, baseName, primaryOption?.Ref, false, isObject, schemaToRender, optionProps)
+				);
 		}
 
 		return variantsToRender;

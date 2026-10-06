@@ -1773,6 +1773,11 @@ a.docs-reference-btn::after {
 	@apply text-grey-60 text-xs italic;
 }
 
+/* Discriminator value that selects a union variant */
+.discriminator-value {
+	@apply text-grey-60 ml-2 text-xs;
+}
+
 /* Object type icon */
 .object-icon {
 	@apply text-grey-60 font-normal;
