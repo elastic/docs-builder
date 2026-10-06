@@ -84,7 +84,11 @@ public record OperationExamplesPanelModel
 	public IReadOnlyList<string> AllLanguages =>
 		field ??=
 		[
-			.. Scenarios.SelectMany(static s => s.CodeSamples).Select(static c => c.Language).Distinct(StringComparer.OrdinalIgnoreCase)
+			.. Scenarios
+				.SelectMany(static s => s.CodeSamples)
+				.GroupBy(static c => c.Language, StringComparer.OrdinalIgnoreCase)
+				.OrderBy(static g => g.First().Rank)
+				.Select(static g => g.Key)
 		];
 
 	/// <summary>The first example that has a sample in <paramref name="language"/>; used to point at languages an example lacks.</summary>
