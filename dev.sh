@@ -13,8 +13,26 @@ _ensure_tooling() {
 }
 
 # Assembler and codex run from source in the tooling image. Their services use
-# the named .artifacts volumes; --service-ports publishes the serve port.
+# the named .artifacts volumes. Clone and build publish no ports, so they never
+# collide with a running serve.
 _cli() {
+  _ensure_tooling
+  _compose run --rm "$@"
+}
+
+# Serve flows publish the fixed host port from the compose file (4000 for
+# assembler, 4001 for codex), which maps to container port 4000. A forwarded
+# --port would move the app off that mapping, so reject it.
+_cli_serve() {
+  local arg
+  for arg in "$@"; do
+    case "$arg" in
+      --port|--port=*|-p)
+        echo "error: --port is fixed for dev.sh serve commands; the compose file publishes a fixed port." >&2
+        exit 1
+        ;;
+    esac
+  done
   _ensure_tooling
   _compose run --rm --service-ports "$@"
 }
@@ -126,7 +144,7 @@ case "${1:-help}" in
     _compose stop mcp
     ;;
   assembler)
-    _cli assembler assemble --serve "${@:2}"
+    _cli_serve assembler assemble --serve "${@:2}"
     ;;
   assembler-clone)
     _cli assembler assembler clone "${@:2}"
@@ -135,10 +153,10 @@ case "${1:-help}" in
     _cli assembler assembler build "${@:2}"
     ;;
   assembler-serve)
-    _cli assembler assembler serve "${@:2}"
+    _cli_serve assembler assembler serve "${@:2}"
     ;;
   codex)
-    _cli codex codex "$CODEX_CONFIG" --serve "${@:2}"
+    _cli_serve codex codex "$CODEX_CONFIG" --serve "${@:2}"
     ;;
   codex-clone)
     _cli codex codex clone "$CODEX_CONFIG" "${@:2}"
@@ -147,13 +165,13 @@ case "${1:-help}" in
     _cli codex codex build "$CODEX_CONFIG" "${@:2}"
     ;;
   codex-serve)
-    _cli codex codex serve "${@:2}"
+    _cli_serve codex codex serve "${@:2}"
     ;;
   assembler-watch)
-    _cli --entrypoint sh assembler build/dev/watch-entrypoint.sh assembler "${@:2}"
+    _cli_serve --entrypoint sh assembler build/dev/watch-entrypoint.sh assembler "${@:2}"
     ;;
   codex-watch)
-    _cli --entrypoint sh -e CODEX_CONFIG="$CODEX_CONFIG" codex build/dev/watch-entrypoint.sh codex "${@:2}"
+    _cli_serve --entrypoint sh -e CODEX_CONFIG="$CODEX_CONFIG" codex build/dev/watch-entrypoint.sh codex "${@:2}"
     ;;
   clean)
     _compose down --remove-orphans --volumes
