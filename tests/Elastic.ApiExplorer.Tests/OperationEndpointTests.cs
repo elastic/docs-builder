@@ -704,7 +704,28 @@ public class OperationEndpointTests
 			"foo"
 		);
 
-	private static OpenApiSecurityRequirement Requires(string scheme) => new() { [new OpenApiSecuritySchemeReference(scheme)] = [] };
+	private static OpenApiSecurityRequirement Requires(string scheme, params string[] scopes) =>
+		new() { [new OpenApiSecuritySchemeReference(scheme)] = [.. scopes] };
+
+	[Test]
+	public void AreInterchangeable_SameScopesInAnyOrder_IsTrue() =>
+		OperationEndpoint
+			.AreInterchangeable([
+				WithSecurity(HttpMethod.Get, [Requires("oauth", "read", "write")]),
+				WithSecurity(HttpMethod.Post, [Requires("oauth", "write", "read")])
+			])
+			.Should()
+			.BeTrue();
+
+	[Test]
+	public void AreInterchangeable_DifferentScopes_IsFalse() =>
+		OperationEndpoint
+			.AreInterchangeable([
+				WithSecurity(HttpMethod.Get, [Requires("oauth", "read")]),
+				WithSecurity(HttpMethod.Post, [Requires("oauth", "read", "write")])
+			])
+			.Should()
+			.BeFalse();
 
 	[Test]
 	public void Differences_NamesEveryFacetThatDiffers()

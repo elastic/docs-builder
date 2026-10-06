@@ -204,9 +204,11 @@ public sealed partial record OperationEndpoint(
 				security.Select(
 					static requirement => string.Join(
 						',',
-						requirement.Select(static scheme => $"{scheme.Key.Reference.Id}({string.Join(' ', scheme.Value ?? [])})").Order(
-							StringComparer.Ordinal
-						)
+						// Scopes are a set: [read, write] and [write, read] ask for the same access.
+						requirement.Select(
+							static scheme =>
+								$"{scheme.Key.Reference.Id}({string.Join(' ', (scheme.Value ?? []).Order(StringComparer.Ordinal))})"
+						).Order(StringComparer.Ordinal)
 					)
 				).Order(StringComparer.Ordinal)
 			);
