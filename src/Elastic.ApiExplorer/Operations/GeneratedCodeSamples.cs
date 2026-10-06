@@ -91,6 +91,7 @@ public static partial class GeneratedCodeSamples
 	[GeneratedRegex(@"-X\s+[A-Z]+", RegexOptions.CultureInvariant)]
 	private static partial Regex CurlMethod();
 
-	[GeneratedRegex(@"(\$\{?[A-Za-z0-9_]+\}?)/[^""'\s]*", RegexOptions.CultureInvariant)]
+	/// <summary>The host of the request URL and the path after it: <c>$ELASTICSEARCH_URL/x</c>, <c>${KIBANA_URL}/x</c>, or <c>https://localhost:9200/x</c>.</summary>
+	[GeneratedRegex(@"(\$\{?[A-Za-z0-9_]+\}?|https?://[^/""'\s]+)/[^""'\s]*", RegexOptions.CultureInvariant)]
 	private static partial Regex CurlHostPath();
 }

@@ -374,6 +374,25 @@ public class ExampleScenarioTests
 	}
 
 	[Test]
+	public void GeneratedCodeSamples_CurlWithALiteralHost_IsReusedToo()
+	{
+		var scenario = new ExampleScenario { Title = "Slicing", TabId = "slicing", RequestJson = "{}", RequestLine = ("POST", "/_search") };
+		var spec = new[]
+		{
+			new CodeSample(
+				"curl",
+				"curl -X GET -H \"kbn-xsrf: true\" -d '{}' \"https://localhost:9200/my-index/_search?size=1\"",
+				"language-curl"
+			)
+		};
+		var endpoint = OperationEndpoint.FromVariants([new EndpointVariant("post", "/_search")], "/_search");
+
+		var curl = GeneratedCodeSamples.Fill([scenario], spec, endpoint).Single().CodeSamples.Single(static s => s.IsCurl);
+
+		curl.Source.Should().Be("curl -X POST -H \"kbn-xsrf: true\" -d '{}' \"https://localhost:9200/_search\"");
+	}
+
+	[Test]
 	public void GeneratedCodeSamples_RequestLineMethodNotOnTheRow_IsKept()
 	{
 		var slicing = new ExampleScenario { Title = "Slicing", TabId = "slicing", RequestJson = "{}", RequestLine = ("GET", "/_search") };
