@@ -448,6 +448,72 @@ public class OperationEndpointTests
 			.Should()
 			.BeTrue();
 
+	private static ApiOperation WithQuerySerialization(HttpMethod method, ParameterStyle? style, bool? explode, bool allowReserved = false)
+	{
+		var ids = new OpenApiParameter
+		{
+			Name = "ids",
+			In = ParameterLocation.Query,
+			Style = style,
+			AllowReserved = allowReserved,
+			Schema = new OpenApiSchema { Type = JsonSchemaType.Array, Items = new OpenApiSchema { Type = JsonSchemaType.String } }
+		};
+		// Left unset, Explode follows the style (true for form), which the defaults test relies on.
+		if (explode is { } value)
+			ids.Explode = value;
+		return new ApiOperation(
+			method,
+			new OpenApiOperation
+			{
+				Parameters = [ids],
+				Responses = new OpenApiResponses { ["200"] = new OpenApiResponse { Description = "ok" } }
+			},
+			"/foo",
+			new OpenApiPathItem(),
+			"foo"
+		);
+	}
+
+	[Test]
+	public void AreInterchangeable_SameSchemaButDifferentExplode_IsFalse() =>
+		OperationEndpoint
+			.AreInterchangeable([
+				WithQuerySerialization(HttpMethod.Get, ParameterStyle.Form, explode: true),
+				WithQuerySerialization(HttpMethod.Post, ParameterStyle.Form, explode: false)
+			])
+			.Should()
+			.BeFalse();
+
+	[Test]
+	public void AreInterchangeable_SameSchemaButDifferentStyle_IsFalse() =>
+		OperationEndpoint
+			.AreInterchangeable([
+				WithQuerySerialization(HttpMethod.Get, ParameterStyle.Form, explode: false),
+				WithQuerySerialization(HttpMethod.Post, ParameterStyle.SpaceDelimited, explode: false)
+			])
+			.Should()
+			.BeFalse();
+
+	[Test]
+	public void AreInterchangeable_SameSchemaButDifferentAllowReserved_IsFalse() =>
+		OperationEndpoint
+			.AreInterchangeable([
+				WithQuerySerialization(HttpMethod.Get, null, null, allowReserved: true),
+				WithQuerySerialization(HttpMethod.Post, null, null)
+			])
+			.Should()
+			.BeFalse();
+
+	[Test]
+	public void AreInterchangeable_UnsetSerializationEqualsTheQueryDefaults_IsTrue() =>
+		OperationEndpoint
+			.AreInterchangeable([
+				WithQuerySerialization(HttpMethod.Get, null, null),
+				WithQuerySerialization(HttpMethod.Post, ParameterStyle.Form, explode: true)
+			])
+			.Should()
+			.BeTrue();
+
 	private static ApiOperation WithSecurity(HttpMethod method, IList<OpenApiSecurityRequirement>? security) =>
 		new(
 			method,

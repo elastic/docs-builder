@@ -112,7 +112,7 @@ public sealed partial record OperationEndpoint(
 
 	/// <summary>
 	/// Separate operations only merge their methods when they are the same call: the same non-path parameters
-	/// (name, requiredness and schema), the same request body (requiredness and schema per media type), the
+	/// (name, requiredness, serialization and schema), the same request body (requiredness and schema per media type), the
 	/// same response schema and headers per status and media type, the same security requirements, the same
 	/// lifecycle (deprecated, beta), and the same servers.
 	/// </summary>
@@ -126,7 +126,7 @@ public sealed partial record OperationEndpoint(
 	{
 		var parameters = (operation.Parameters ?? [])
 			.Where(static p => p.In != ParameterLocation.Path)
-			.Select(static p => $"{p.In}:{p.Name}:{(p.Required ? "required" : "optional")}:{SchemaKey(p.Schema)}")
+			.Select(static p => $"{p.In}:{p.Name}:{(p.Required ? "required" : "optional")}:{SerializationKey(p)}:{SchemaKey(p.Schema)}")
 			.Order(StringComparer.Ordinal);
 		var body = operation.RequestBody is { } requestBody
 			? $"{(requestBody.Required ? "required" : "optional")}:{ContentKey(requestBody.Content)}"
@@ -150,6 +150,18 @@ public sealed partial record OperationEndpoint(
 			+ lifecycle
 			+ "#"
 			+ servers;
+	}
+
+	/// <summary>
+	/// How a parameter goes on the wire: <c>ids=a,b</c> against <c>ids=a&amp;ids=b</c> is the same schema with a
+	/// different style or explode. An unset style keys as the OpenAPI default for the location; the model already
+	/// resolves an unset explode from the style.
+	/// </summary>
+	private static string SerializationKey(IOpenApiParameter parameter)
+	{
+		var style = parameter.Style
+			?? (parameter.In is ParameterLocation.Query or ParameterLocation.Cookie ? ParameterStyle.Form : ParameterStyle.Simple);
+		return $"{style}:{(parameter.Explode ? "explode" : "flat")}:{(parameter.AllowReserved ? "reserved" : "")}";
 	}
 
 	private static string HeadersKey(IDictionary<string, IOpenApiHeader>? headers) =>
