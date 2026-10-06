@@ -41,7 +41,7 @@
 				{
 					<span class="@SchemaHelpers.WrapperObjectIconCssClass">{}</span>
 				}
-				@if (!SchemaHelpers.IsInternalSchemaName(variant.DisplayName) || SchemaHelpers.IsSnakeCaseName(variant.DisplayName))
+				@if (!string.IsNullOrEmpty(variant.DisplayName))
 				{
 					<code class="schema-type"><span class="@SchemaHelpers.TypeAtomCssClassOrNull(variant.DisplayName)">@variant.DisplayName</span></code>
 				}

@@ -96,6 +96,41 @@ public class ResponsesBlockRenderingTests
 	}
 
 	[Test]
+	[Arguments("bedrock_config")]
+	[Arguments("Security_Lists_API_list_item")]
+	[Arguments("PlatformErrorResponse")]
+	public async Task Render_UnionVariant_ShowsItsNameWhateverTheIdStyle(string displayName)
+	{
+		var html = await RenderHtml(new ApiResponse
+		{
+			StatusCode = "400",
+			StatusClass = "error",
+			FirstContentType = "application/json",
+			Response = new OpenApiResponse { Description = "Invalid input data response" },
+			Contents =
+			[
+				new ApiResponseContent
+				{
+					ContentType = "application/json",
+					Type = new TypeAnnotation([new TypeSpan("union oneOf")]),
+					Properties = null,
+					ArrayItemProperties = null,
+					UnionVariants = new ApiUnionVariants
+					{
+						Variants = [Variant(displayName, "res-400-variant-x")],
+						ShouldCollapse = false,
+						ContainerId = "res-400-union-options",
+						UseHiddenUntilFound = false
+					}
+				}
+			],
+			Headers = []
+		});
+
+		html.Should().Contain($">{displayName}</span></code>");
+	}
+
+	[Test]
 	public async Task Render_ResponseDescription_RendersInlineCode()
 	{
 		var html = await RenderHtml(Response("200", "success", "Disabled by the `alerting:v2:enabled` setting."));
