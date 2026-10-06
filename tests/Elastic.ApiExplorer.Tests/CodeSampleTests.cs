@@ -68,6 +68,41 @@ public class CodeSampleTests
 	}
 
 	[Test]
+	public void CodeSamples_NormalizesLanguageCasing()
+	{
+		var samples = new JsonArray(
+			new JsonObject { ["lang"] = "cURL", ["source"] = "curl -X GET ..." },
+			new JsonObject { ["lang"] = "console", ["source"] = "GET /_search" }
+		);
+		var operation = CreateOperationWithCodeSamples(samples);
+
+		var result = OpenApiExtensionReader.ParseCodeSamples(operation);
+
+		result.Select(s => s.Language).Should().Equal("Console", "curl");
+		result[1].HighlightClass.Should().Be("language-curl");
+		result[1].ClientLabel.Should().Be("Shell");
+	}
+
+	[Test]
+	public void CodeSamples_SplitAnExampleSuffixOffTheLanguage()
+	{
+		var samples = new JsonArray(
+			new JsonObject { ["lang"] = "cURL_tag_names", ["source"] = "curl -X GET ...?tag_names=a" },
+			new JsonObject { ["lang"] = "Console", ["source"] = "GET /api/dashboards" },
+			new JsonObject { ["lang"] = "Console_tag_names", ["source"] = "GET /api/dashboards?tag_names=a" },
+			new JsonObject { ["lang"] = "my_language", ["source"] = "..." }
+		);
+		var operation = CreateOperationWithCodeSamples(samples);
+
+		var result = OpenApiExtensionReader.ParseCodeSamples(operation);
+
+		result
+			.Select(s => (s.Language, s.Scenario))
+			.Should()
+			.Equal(("Console", null), ("Console", "tag_names"), ("curl", "tag_names"), ("my_language", null));
+	}
+
+	[Test]
 	public void CodeSamples_UnrankedLanguagesKeepSpecOrderAfterRankedOnes()
 	{
 		var samples = new JsonArray(

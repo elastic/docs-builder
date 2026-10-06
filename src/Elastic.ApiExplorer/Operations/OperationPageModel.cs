@@ -355,6 +355,14 @@ public partial record OperationPageModel
 		else if (!hasRequestScenarios && scenarios.Count > 1)
 			scenarios = CollapseIntoSingleScenario(scenarios);
 
+		// Samples whose language name carries an example suffix (cURL_tag_names) are their own examples.
+		var suffixed = codeSamples.Where(static c => c.Scenario is not null).ToArray();
+		var attached = AttachCodeSamples(scenarios, [.. codeSamples.Where(static c => c.Scenario is null)]);
+		return suffixed.Length == 0 ? attached : [.. attached, .. SuffixedScenarios(attached, suffixed)];
+	}
+
+	private static List<ExampleScenario> AttachCodeSamples(List<ExampleScenario> scenarios, IReadOnlyList<CodeSample> codeSamples)
+	{
 		if (codeSamples.Count == 0)
 			return scenarios;
 
@@ -390,6 +398,26 @@ public partial record OperationPageModel
 
 		scenarios[0] = scenarios[0] with { CodeSamples = codeSamples };
 		return scenarios;
+	}
+
+	/// <summary>One example per suffix, sharing the first example's responses; the samples already say how to call it.</summary>
+	private static IEnumerable<ExampleScenario> SuffixedScenarios(List<ExampleScenario> scenarios, IReadOnlyList<CodeSample> suffixed)
+	{
+		var responses = scenarios.Count > 0 ? scenarios[0].Responses : [];
+		var added = new List<ExampleScenario>();
+		foreach (var group in suffixed.GroupBy(static c => c.Scenario!, StringComparer.OrdinalIgnoreCase))
+		{
+			var title = HumanizeExampleKey(group.Key);
+			added.Add(new ExampleScenario
+			{
+				Title = title,
+				TabId = UniqueTabId(ToTabId(title, scenarios.Count + added.Count), [.. scenarios, .. added]),
+				CodeSamples = [.. group],
+				CodeSamplesIncludeRequest = true,
+				Responses = responses
+			});
+		}
+		return added;
 	}
 
 	/// <summary>

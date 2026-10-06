@@ -145,10 +145,11 @@ public static class OpenApiExtensionReader
 			if (string.IsNullOrEmpty(lang) || string.IsNullOrEmpty(source))
 				continue;
 
-			var displaySource = string.Equals(lang, "curl", StringComparison.OrdinalIgnoreCase)
+			var (language, scenario) = CodeSample.SplitLanguage(lang);
+			var displaySource = string.Equals(language, "curl", StringComparison.OrdinalIgnoreCase)
 				? CurlSourceFormatter.Format(source)
 				: source;
-			samples.Add(new CodeSample(lang, displaySource, CodeSample.GetHighlightClass(lang)));
+			samples.Add(new CodeSample(language, displaySource, CodeSample.GetHighlightClass(language)) { Scenario = scenario });
 		}
 
 		// Console first, then by language popularity; OrderBy is stable, so unranked languages keep spec order.

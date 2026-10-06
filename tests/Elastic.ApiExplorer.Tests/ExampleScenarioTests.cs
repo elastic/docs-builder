@@ -37,6 +37,29 @@ public class ExampleScenarioTests
 	}
 
 	[Test]
+	public void BuildExampleScenarios_SuffixedSamplesBecomeTheirOwnExamples()
+	{
+		var ok = new ExampleDisplay("searchDashboardsResponse", null, /*lang=json,strict*/  """{"items":[]}""", null, "200");
+		CodeSample[] samples =
+		[
+			new("Console", "GET kbn:/api/dashboards", "language-console"),
+			new("curl", "curl ...", "language-curl"),
+			new("Console", "GET kbn:/api/dashboards?tag_names=a", "language-console") { Scenario = "tag_names" },
+			new("curl", "curl ...?tag_names=a", "language-curl") { Scenario = "tag_names" },
+			new("curl", "curl ...?excluded_tag_names=b", "language-curl") { Scenario = "excluded_tag_names" }
+		];
+
+		var scenarios = OperationPageModel.BuildExampleScenarios([], [ok], samples);
+
+		scenarios.Select(s => s.Title).Should().Equal("searchDashboardsResponse", "Tag names", "Excluded tag names");
+		scenarios[0].CodeSamples.Should().HaveCount(2);
+		scenarios[1].CodeSamples.Select(c => c.Language).Should().Equal("Console", "curl");
+		scenarios[2].CodeSamples.Should().ContainSingle();
+		scenarios.Should().AllSatisfy(s => s.Responses.Select(r => r.StatusCode).Should().Equal("200"));
+		scenarios.Select(s => s.TabId).Should().OnlyHaveUniqueItems();
+	}
+
+	[Test]
 	public void BuildExampleScenarios_GroupsResponsesByStatusCode()
 	{
 		var ok = new ExampleDisplay("Create", null, /*lang=json,strict*/  """{"ok":true}""", null, "200");

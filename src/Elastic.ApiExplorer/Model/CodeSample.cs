@@ -14,6 +14,27 @@ public record CodeSample(string Language, string Source, string HighlightClass)
 	/// <summary>True when docs-builder built this sample from an example body rather than reading it from the spec.</summary>
 	public bool Generated { get; init; }
 
+	/// <summary>
+	/// The example this sample belongs to when the spec encodes it in the language name, e.g. <c>cURL_tag_names</c>
+	/// is the curl sample of a "Tag names" example. Null for samples of the default example.
+	/// </summary>
+	public string? Scenario { get; init; }
+
+	/// <summary>
+	/// Splits a spec <c>lang</c> into the language, in its canonical casing (<c>cURL</c> is <c>curl</c>), and the
+	/// example suffix when one follows a known language name.
+	/// </summary>
+	public static (string Language, string? Scenario) SplitLanguage(string lang)
+	{
+		var separator = lang.IndexOf('_');
+		if (separator > 0 && separator < lang.Length - 1 && Canonical(lang[..separator]) is { } prefix)
+			return (prefix, lang[(separator + 1)..]);
+		return (Canonical(lang) ?? lang, null);
+	}
+
+	private static string? Canonical(string language) =>
+		LanguageRanks.Keys.FirstOrDefault(k => k.Equals(language, StringComparison.OrdinalIgnoreCase));
+
 	/// <summary>The client library or tool that runs this sample, e.g. <c>elasticsearch-java</c>. Empty when unknown.</summary>
 	public string ClientLabel => ClientLabels.GetValueOrDefault(Language, "");
 
