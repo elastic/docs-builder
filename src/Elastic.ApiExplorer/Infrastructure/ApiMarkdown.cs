@@ -30,7 +30,7 @@ public static partial class ApiMarkdown
 		var rewritten = Prepare(markdown, context.CurrentNavigation.NavigationRoot.Url);
 		var source = CreateVirtualSource(context);
 		var html = context.MarkdownRenderer.RenderApiDescription(rewritten, source);
-		return new HtmlString(SanitizeHtml(html));
+		return new HtmlString(string.IsNullOrEmpty(html) ? html : context.SanitizedHtmlCache.GetOrAdd(html, SanitizeHtml));
 	}
 
 	// HtmlSanitizer defaults already cover all standard HTML tags and exclude script/on*/etc.
