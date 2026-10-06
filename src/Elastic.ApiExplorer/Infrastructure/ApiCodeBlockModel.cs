@@ -7,5 +7,5 @@ using Elastic.ApiExplorer.Operations;
 
 namespace Elastic.ApiExplorer.Infrastructure;
 
-/// <summary>Model for the API Explorer code block partial (Myst-style highlight wrappers and copy support).</summary>
-public record ApiCodeBlockModel(string HighlightClass, string Source);
+/// <summary>Model for the API Explorer code block partial (Myst-style highlight wrappers and copy support). <c>LineNumbers</c> opts into the shared <c>data-line-numbers</c> gutter.</summary>
+public record ApiCodeBlockModel(string HighlightClass, string Source, bool LineNumbers = false);

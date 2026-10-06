@@ -2,12 +2,14 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.IO;
 using AwesomeAssertions;
 using Elastic.ApiExplorer.Components.PropertyTree;
 using Elastic.ApiExplorer.Model;
 using Elastic.ApiExplorer.Operations;
 using Microsoft.AspNetCore.Html;
 using Microsoft.OpenApi;
+using Microsoft.OpenApi.Reader;
 
 namespace Elastic.ApiExplorer.Tests;
 
@@ -275,6 +277,106 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture)
 	}
 
 	[Test]
+	public void BuildPropertyList_AllOfEnumRef_ShowsEnumValues()
+	{
+		var builder = CreateBuilder();
+
+		var list = builder.BuildPropertyList(Schema("fixture.EnumAllOfBody"), new PropertyTreeScope { Prefix = "req", IsRequest = true });
+
+		var mode = list!.Items.Single(p => p.Name == "mode");
+		mode.EnumValues.Should().BeEquivalentTo(["fast", "accurate"]);
+		mode.Type.Spans.Should().Contain(s => s.CssClass == SchemaHelpers.WrapperEnumCssClass && s.Text == "enum");
+	}
+
+	[Test]
+	public void BuildPropertyList_ArrayOfInlineEnum_ShowsEnumValues()
+	{
+		var builder = CreateBuilder();
+
+		var list = builder.BuildPropertyList(
+			Schema("fixture.InlineArrayEnumBody"),
+			new PropertyTreeScope { Prefix = "req", IsRequest = true }
+		);
+
+		var group = list!.Items.Single(p => p.Name == "recipient_group");
+		group.EnumValues.Should().BeEquivalentTo(["organization-admins", "billing-admins", "resource-viewers"]);
+		group.Type.Spans.Should().Contain(s => s.CssClass == SchemaHelpers.WrapperEnumCssClass && s.Text == "enum");
+		group.Type.Spans.Should().Contain(s => s.CssClass == SchemaHelpers.WrapperArrayIconCssClass && s.Text == "[]");
+		group.Type.Text.Should().Be("[] enum");
+	}
+
+	[Test]
+	public void BuildPropertyList_InlineEnumOverFiveValues_ShowsAllValues()
+	{
+		var weekday = EnumShapes().Single(p => p.Name == "weekday");
+
+		weekday.EnumValues.Should().Equal("mon", "tue", "wed", "thu", "fri", "sat", "sun");
+	}
+
+	[Test]
+	public void BuildPropertyList_OneOfInlineEnums_MergesValuesAsSingleEnum()
+	{
+		var union = EnumShapes().Single(p => p.Name == "literal_union");
+
+		union.EnumValues.Should().Equal("red", "green", "blue");
+		union.Type.Text.Should().Be("enum");
+		union.Union.Should().BeNull();
+	}
+
+	[Test]
+	public void BuildPropertyList_AnyOfEnumOrString_ShowsKnownValues()
+	{
+		var open = EnumShapes().Single(p => p.Name == "open_enum");
+
+		open.EnumValues.Should().Equal("known_a", "known_b");
+		open.Union.Should().BeNull("the Values row already lists the literals");
+	}
+
+	[Test]
+	public void GetEnumValues_UnionOfValueAndArrayOfSameEnum_DeduplicatesValues()
+	{
+		var analyzer = new SchemaAnalyzer(fixture.Document);
+		var schema = new OpenApiSchema
+		{
+			AnyOf =
+			[
+				new OpenApiSchemaReference("_types.SearchMode", fixture.Document),
+				new OpenApiSchema { Type = JsonSchemaType.Array, Items = new OpenApiSchemaReference("_types.SearchMode", fixture.Document) }
+			]
+		};
+
+		analyzer.GetEnumValues(schema).Should().Equal("fast", "accurate");
+	}
+
+	[Test]
+	public void EnumValueList_OverTwentyValues_FoldsAllButTheFirstTwelve()
+	{
+		var values = Enumerable.Range(1, 21).Select(i => $"v{i}").ToArray();
+
+		var list = new EnumValueList(values);
+
+		list.Visible.Should().Equal(values.Take(12));
+		list.Folded.Should().Equal(values.Skip(12));
+	}
+
+	[Test]
+	public void EnumValueList_TwentyValuesOrFewer_ShowsAll()
+	{
+		var values = Enumerable.Range(1, 20).Select(i => $"v{i}").ToArray();
+
+		var list = new EnumValueList(values);
+
+		list.Visible.Should().Equal(values);
+		list.Folded.Should().BeEmpty();
+	}
+
+	private IReadOnlyList<ApiProperty> EnumShapes() =>
+		CreateBuilder().BuildPropertyList(
+			Schema("fixture.EnumShapesBody"),
+			new PropertyTreeScope { Prefix = "req", IsRequest = true }
+		)!.Items;
+
+	[Test]
 	public void BuildConstraints_NumericBounds_ProducesLabels()
 	{
 		var boolQuery = Schema("_types.query_dsl.BoolQuery");
@@ -324,5 +426,78 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture)
 			.Select(c => c.Text)
 			.Should()
 			.Equal("> 0", "< 100", "unique", "× 5", "pattern: [smdh]$", "default: 1m");
+	}
+
+	[Test]
+	public async Task DescribePathParameter_StringOrStringArray_ShowsBothAlternatives()
+	{
+		var json =
+			"""
+			{
+			  "openapi": "3.0.3",
+			  "info": { "title": "t", "version": "1" },
+			  "paths": {},
+			  "components": {
+			    "schemas": {
+			      "_types.Name": { "type": "string" },
+			      "_types.Names": {
+			        "oneOf": [
+			          { "$ref": "#/components/schemas/_types.Name" },
+			          { "type": "array", "items": { "$ref": "#/components/schemas/_types.Name" } }
+			        ]
+			      },
+			      "_types.DataStreamName": { "type": "string" },
+			      "_types.DataStreamNames": {
+			        "oneOf": [
+			          { "$ref": "#/components/schemas/_types.DataStreamName" },
+			          { "type": "array", "items": { "$ref": "#/components/schemas/_types.DataStreamName" } }
+			        ]
+			      },
+			      "inline.StringOrArray": {
+			        "oneOf": [
+			          { "type": "string" },
+			          { "type": "array", "items": { "type": "string" } }
+			        ]
+			      }
+			    }
+			  }
+			}
+			""";
+		var path = Path.Join(Path.GetTempPath(), $"path-types-{Guid.NewGuid():N}.json");
+		await File.WriteAllTextAsync(path, json, TestContext.Current!.Execution.CancellationToken);
+		try
+		{
+			var loaded = await OpenApiDocument.LoadAsync(
+				path,
+				new OpenApiReaderSettings { LeaveStreamOpen = false },
+				TestContext.Current!.Execution.CancellationToken
+			);
+			var document = loaded.Document!;
+			var builder = new ApiPropertyTreeBuilder(
+				document,
+				new PropertyDisplayOptions { RenderMarkdown = s => new HtmlString($"<p>{s}</p>"), ApiRootUrl = "/api/doc/fixture" }
+			);
+
+			var names = new OpenApiSchemaReference("_types.Names", document);
+			var dataStreams = new OpenApiSchemaReference("_types.DataStreamNames", document);
+			var name = new OpenApiSchemaReference("_types.Name", document);
+
+			builder.Describe(names).Text.Should().Be("union Names");
+			builder.DescribePathParameter(names).Text.Should().Be("union Name | [] Name");
+			builder.DescribePathParameter(dataStreams).Text.Should().Be("union string | [] string");
+			builder
+				.DescribePathParameter(document.Components!.Schemas!["inline.StringOrArray"])
+				.Text
+				.Should()
+				.Be("union string | [] string");
+			builder.DescribePathParameter(name).Text.Should().Be("string Name");
+			builder.Describe(name).Text.Should().Be("string Name");
+			builder.DescribePathParameter(new OpenApiSchema { Type = JsonSchemaType.String }).Text.Should().Be("string");
+		}
+		finally
+		{
+			if (File.Exists(path))
+				File.Delete(path);
+		}
 	}
 }

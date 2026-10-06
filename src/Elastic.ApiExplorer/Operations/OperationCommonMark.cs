@@ -109,11 +109,13 @@ internal static class OperationCommonMark
 		ApiCommonMark.Heading(markdown, 4, "Path Parameters");
 		foreach (var path in page.PathParameters)
 		{
+			var type = path.Type is null ? "" : $" ({path.Type.Text})";
 			var deprecated = path.Deprecated is true ? " — deprecated" : "";
-			_ = markdown.AppendLine($"- `{path.Name}`{deprecated}");
+			_ = markdown.AppendLine($"- `{path.Name}`{type}{deprecated}");
 			var description = ApiMarkdown.Prepare(path.DescriptionMarkdown, apiBaseUrl);
 			if (!string.IsNullOrWhiteSpace(description))
 				_ = markdown.AppendLine($"  {description.TrimEnd()}");
+			WriteValues(markdown, path.UnionOptions, path.EnumValues);
 		}
 
 		_ = markdown.AppendLine();
@@ -160,13 +162,18 @@ internal static class OperationCommonMark
 			if (!string.IsNullOrWhiteSpace(description))
 				_ = markdown.AppendLine($"  {description.TrimEnd()}");
 
-			if (query.UnionOptions.Count > 0 && query.EnumValues.Count == 0)
-				_ = markdown.AppendLine("  One of: " + string.Join(" or ", query.UnionOptions.Select(o => $"`{o.Text}`")));
-			if (query.EnumValues.Count > 0)
-				_ = markdown.AppendLine("  Values: " + string.Join(", ", query.EnumValues.Select(v => $"`{v}`")));
+			WriteValues(markdown, query.UnionOptions, query.EnumValues);
 		}
 
 		_ = markdown.AppendLine();
+	}
+
+	private static void WriteValues(StringBuilder markdown, IReadOnlyList<UnionBadge> unionOptions, IReadOnlyList<string> enumValues)
+	{
+		if (enumValues.Count > 0)
+			_ = markdown.AppendLine("  Values: " + string.Join(", ", enumValues.Select(v => $"`{v}`")));
+		else if (unionOptions.Count > 0)
+			_ = markdown.AppendLine("  One of: " + string.Join(" or ", unionOptions.Select(o => $"`{o.Text}`")));
 	}
 
 	private static void WriteRequestBody(StringBuilder markdown, ApiOperation apiOperation, OperationPageModel page, string apiBaseUrl)
@@ -195,15 +202,13 @@ internal static class OperationCommonMark
 		foreach (var response in page.Responses)
 		{
 			if (!single)
-			{
-				var description = string.IsNullOrEmpty(response.Response.Description) ? "" : $" {response.Response.Description}";
-				ApiCommonMark.Heading(markdown, 4, $"`{response.StatusCode}`{description}");
-			}
+				ApiCommonMark.Heading(markdown, 4, $"`{response.StatusCode}`");
+
+			ApiCommonMark.Prepared(markdown, response.Response.Description, apiBaseUrl);
 
 			foreach (var content in response.Contents)
 			{
-				if (!single)
-					ApiCommonMark.Paragraph(markdown, $"Content-Type: `{content.ContentType}`");
+				ApiCommonMark.Paragraph(markdown, $"`{content.ContentType}`");
 				if (content.Properties is not null)
 					ApiPropertyMarkdown.WriteList(markdown, content.Properties, apiBaseUrl);
 				else if (content.UnionVariants is { Variants.Count: > 0 })

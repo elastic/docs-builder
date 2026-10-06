@@ -3,7 +3,6 @@
  * Handles expand/collapse toggles, scroll state, and find-in-page support
  * for both OperationView and SchemaView pages.
  */
-import { initApiBreadcrumbs } from './api-breadcrumbs'
 import { decorateApiCodeTokens } from './api-code-tokens'
 import { applyParamSummaryFit } from './api-param-summary'
 
@@ -38,9 +37,24 @@ function setUntilFoundHidden(
     )
 }
 
+function setEnumValuesExpanded(
+    toggleBtn: HTMLButtonElement,
+    expanded: boolean
+): void {
+    const folded = toggleBtn.parentElement?.querySelector<HTMLElement>(
+        ':scope > .enum-values-folded'
+    )
+    setUntilFoundHidden(folded ?? null, !expanded)
+    setDisclosureToggle(
+        toggleBtn,
+        expanded,
+        `${folded?.childElementCount ?? 0} more values`
+    )
+}
+
 function expandResponsePanel(panel: HTMLElement): void {
     const toggleBtn = panel.querySelector<HTMLButtonElement>(
-        ':scope > .response-status-toggle'
+        'button.response-status-toggle'
     )
     const body = panel.querySelector<HTMLElement>(
         ':scope > .response-panel-body'
@@ -54,7 +68,7 @@ function expandResponsePanel(panel: HTMLElement): void {
 
 function collapseResponsePanel(panel: HTMLElement): void {
     const toggleBtn = panel.querySelector<HTMLButtonElement>(
-        ':scope > .response-status-toggle'
+        'button.response-status-toggle'
     )
     const body = panel.querySelector<HTMLElement>(
         ':scope > .response-panel-body'
@@ -235,7 +249,6 @@ function expandParamSectionForHash(): void {
     const target = document.getElementById(id)
     const section = target?.closest<HTMLElement>('[data-param-section]')
     if (section) expandParamSection(section)
-    if (section) expandParamSection(section)
     const panel = target?.closest<HTMLElement>('.response-panel')
     if (panel) expandResponsePanel(panel)
 }
@@ -244,6 +257,8 @@ function expandParamSectionForHash(): void {
  * Initialize API docs for OperationView pages
  */
 function initOperationView(section: HTMLElement): void {
+    addAlternativePathCopyButtons(section)
+
     // Add beforematch event listeners for hidden="until-found" elements
     // When find-in-page matches content inside collapsed sections, expand them
     if (supportsHiddenUntilFound) {
@@ -385,7 +400,9 @@ function initOperationView(section: HTMLElement): void {
         }
 
         // Handle union variant expand/collapse
-        const toggleBtn = target.closest<HTMLButtonElement>('.expand-toggle')
+        const toggleBtn = target.closest<HTMLButtonElement>(
+            'button.expand-toggle'
+        )
         if (toggleBtn) {
             const unionToggleRow = toggleBtn.closest('.union-expand-toggle')
             if (unionToggleRow) {
@@ -434,6 +451,16 @@ function initGlobalClickHandlers(): void {
     if (globalHandlersInitialized) return
     globalHandlersInitialized = true
 
+    // Find-in-page matched a folded enum literal: unfold the row so the match is visible
+    document.addEventListener('beforematch', function (e) {
+        const folded = (e.target as HTMLElement).closest('.enum-values-folded')
+        const toggleBtn =
+            folded?.parentElement?.querySelector<HTMLButtonElement>(
+                ':scope > .enum-values-toggle'
+            )
+        if (toggleBtn) setEnumValuesExpanded(toggleBtn, true)
+    })
+
     document.addEventListener('click', function (e) {
         const target = e.target as HTMLElement
 
@@ -442,6 +469,41 @@ function initGlobalClickHandlers(): void {
             '#elastic-api-v3, #schema-definition'
         ) as HTMLElement
         if (!apiSection) return
+
+        // Before the generic .expand-toggle branch, which would toggle the enclosing property instead
+        const enumValuesToggle = target.closest<HTMLButtonElement>(
+            '.enum-values-toggle'
+        )
+        if (enumValuesToggle) {
+            e.preventDefault()
+            e.stopPropagation()
+            setEnumValuesExpanded(
+                enumValuesToggle,
+                enumValuesToggle.getAttribute('aria-expanded') !== 'true'
+            )
+            return
+        }
+
+        // The title toggles like the rest of the row. pushState sets the hash without
+        // a hashchange, which would otherwise re-expand a section the click just collapsed.
+        const paramSectionTitle = target.closest<HTMLAnchorElement>(
+            '.api-param-section-header > .headerlink'
+        )
+        if (paramSectionTitle) {
+            // Modified clicks keep normal link behaviour (new tab, new window)
+            if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return
+            e.preventDefault()
+            const section = paramSectionTitle.closest<HTMLElement>(
+                '[data-param-section]'
+            )
+            if (!section) return
+            if (section.classList.contains('expanded'))
+                collapseParamSection(section)
+            else expandParamSection(section)
+            if (window.location.hash !== paramSectionTitle.hash)
+                history.pushState(null, '', paramSectionTitle.hash)
+            return
+        }
 
         const paramSectionToggle = target.closest<HTMLButtonElement>(
             '.api-param-section-toggle'
@@ -459,20 +521,27 @@ function initGlobalClickHandlers(): void {
             return
         }
 
-        const responseStatusToggle = target.closest<HTMLButtonElement>(
-            '.response-status-toggle'
-        )
-        if (responseStatusToggle) {
+        const responsePanel = target
+            .closest('button.response-status-toggle')
+            ?.closest<HTMLElement>('.response-panel')
+        if (responsePanel) {
+            // The toggle's hit area covers the description, so selecting its text must not toggle.
+            const summary = responsePanel.querySelector('.response-summary')
+            const selection = window.getSelection()
+            if (
+                selection &&
+                !selection.isCollapsed &&
+                (summary?.contains(selection.anchorNode) ||
+                    summary?.contains(selection.focusNode))
+            )
+                return
+
             e.preventDefault()
             e.stopPropagation()
 
-            const panel =
-                responseStatusToggle.closest<HTMLElement>('.response-panel')
-            if (!panel) return
-
-            if (panel.classList.contains('expanded'))
-                collapseResponsePanel(panel)
-            else expandResponsePanel(panel)
+            if (responsePanel.classList.contains('expanded'))
+                collapseResponsePanel(responsePanel)
+            else expandResponsePanel(responsePanel)
             return
         }
 
@@ -513,7 +582,9 @@ function initGlobalClickHandlers(): void {
         }
 
         // Handle union variant expand/collapse
-        const toggleBtn = target.closest<HTMLButtonElement>('.expand-toggle')
+        const toggleBtn = target.closest<HTMLButtonElement>(
+            'button.expand-toggle'
+        )
         if (toggleBtn) {
             const unionToggleRow = toggleBtn.closest('.union-expand-toggle')
             if (unionToggleRow) {
@@ -619,6 +690,15 @@ function closeApiSelect(option: HTMLElement): void {
     if (dropdown) dropdown.open = false
 }
 
+/** Show only the header copy button that belongs to the active panel. */
+function syncCopyButtons(widget: HTMLElement, activePanel: string): void {
+    widget
+        .querySelectorAll<HTMLButtonElement>('[data-code-actions] .copybtn')
+        .forEach((button) => {
+            button.hidden = button.dataset.codePanel !== activePanel
+        })
+}
+
 function applyApiCodeLanguage(
     root: ParentNode,
     language: string,
@@ -631,7 +711,7 @@ function applyApiCodeLanguage(
             )
             const dropdown = widget.querySelector('.api-code-sample-lang')
             const hasLanguage = panels.some(
-                (panel) => panel.dataset.lang === language
+                (panel) => panel.dataset.codePanel === language
             )
             // Examples that only ship JSON (or another single sample) keep that
             // body. Applying a language they don't have hid every panel and left
@@ -641,8 +721,8 @@ function applyApiCodeLanguage(
                 effectiveLanguage =
                     (dropdown ? apiSelectValue(dropdown) : undefined) ??
                     panels.find((panel) => !panel.hasAttribute('hidden'))
-                        ?.dataset.lang ??
-                    panels[0]?.dataset.lang ??
+                        ?.dataset.codePanel ??
+                    panels[0]?.dataset.codePanel ??
                     language
             } else if (dropdown) {
                 setApiSelectValue(dropdown, language)
@@ -651,17 +731,11 @@ function applyApiCodeLanguage(
             panels.forEach((panel) => {
                 panel.toggleAttribute(
                     'hidden',
-                    panel.dataset.lang !== effectiveLanguage
+                    panel.dataset.codePanel !== effectiveLanguage
                 )
             })
 
-            widget
-                .querySelectorAll<HTMLButtonElement>(
-                    '.api-code-sample-actions .copybtn--in-header'
-                )
-                .forEach((button) => {
-                    button.hidden = button.dataset.lang !== effectiveLanguage
-                })
+            syncCopyButtons(widget, effectiveLanguage)
         }
     )
 
@@ -720,13 +794,7 @@ function applyApiResponseStatus(widget: HTMLElement, statusCode: string): void {
             panel.toggleAttribute('hidden', panel.dataset.status !== effective)
         })
 
-    widget
-        .querySelectorAll<HTMLButtonElement>(
-            '.example-block-actions .copybtn--in-header'
-        )
-        .forEach((button) => {
-            button.hidden = button.dataset.status !== effective
-        })
+    syncCopyButtons(widget, effective)
 }
 
 let apiResponseStatusTabsDelegated = false
@@ -781,54 +849,6 @@ export function initApiScenarioSelects(): void {
     })
 }
 
-function countApiCodeLines(text: string): number {
-    if (!text) return 1
-    const parts = text.split(/\r?\n/)
-    if (parts[parts.length - 1] === '') parts.pop()
-    return Math.max(1, parts.length)
-}
-
-/**
- * Add a non-selectable line-number gutter beside request/response code in the
- * examples rail. Uses a sibling <pre> (same font metrics as the code) so numbers
- * stay aligned and mouse selection / copy omit them.
- */
-function initApiCodeLineNumbers(): void {
-    const panel = document.getElementById('api-examples-panel')
-    if (!panel) return
-
-    panel
-        .querySelectorAll<HTMLElement>('.api-code-card pre code')
-        .forEach((code) => {
-            const pre = code.parentElement
-            if (!(pre instanceof HTMLPreElement)) return
-            if (pre.parentElement?.classList.contains('api-code-lines')) return
-            if (pre.classList.contains('api-code-line-gutter')) return
-
-            const lineCount = countApiCodeLines(code.textContent ?? '')
-            const wrapper = document.createElement('div')
-            wrapper.className = 'api-code-lines'
-            const gutter = document.createElement('pre')
-            gutter.className = 'api-code-line-gutter'
-            gutter.setAttribute('aria-hidden', 'true')
-            gutter.textContent = Array.from({ length: lineCount }, (_, index) =>
-                String(index + 1)
-            ).join('\n')
-
-            // Match code metrics so gutter rows stay 1:1 with content rows
-            const codeStyle = getComputedStyle(code)
-            gutter.style.fontFamily = codeStyle.fontFamily
-            gutter.style.fontSize = codeStyle.fontSize
-            gutter.style.lineHeight = codeStyle.lineHeight
-            gutter.style.fontWeight = codeStyle.fontWeight
-            gutter.style.paddingTop = codeStyle.paddingTop
-            gutter.style.paddingBottom = codeStyle.paddingBottom
-
-            pre.replaceWith(wrapper)
-            wrapper.append(gutter, pre)
-        })
-}
-
 const apiEndpointCopyIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
 		<path fill-rule="evenodd" clip-rule="evenodd" d="M6 1C5.44771 1 5 1.44772 5 2V10C5 10.5523 5.44772 11 6 11H14C14.5523 11 15 10.5523 15 10V2C15 1.44771 14.5523 1 14 1H6ZM6 2L14 2V10H6V2Z" fill="currentColor"/>
 		<path d="M2 5H4V6H2V14H10V12H11V14C11 14.5523 10.5523 15 10 15H2C1.44772 15 1 14.5523 1 14V6C1 5.44772 1.44771 5 2 5Z" fill="currentColor"/>
@@ -841,11 +861,51 @@ const apiEndpointCheckIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="16"
 let apiEndpointCopyInitialized = false
 let apiPageActionsInitialized = false
 
+// The "All methods and paths" list comes from the spec's description markdown,
+// so the copy buttons are added here instead of in a template.
+function addAlternativePathCopyButtons(section: HTMLElement): void {
+    section
+        .querySelectorAll<HTMLElement>(
+            '.api-operation-description .operation-path'
+        )
+        .forEach((path) => {
+            const chip = path.parentElement
+            if (
+                !chip ||
+                chip.parentElement?.classList.contains('operation-path-row')
+            )
+                return
+
+            const row = document.createElement('div')
+            row.className = 'operation-path-row'
+            chip.replaceWith(row)
+            row.appendChild(chip)
+
+            const btn = document.createElement('button')
+            btn.type = 'button'
+            btn.className = 'copybtn o-tooltip--left api-url-copy'
+            btn.setAttribute('aria-label', 'Copy endpoint')
+            btn.setAttribute('data-tooltip', 'Copy')
+            btn.dataset.copy = path.textContent?.trim() ?? ''
+            btn.innerHTML = apiEndpointCopyIcon
+            row.appendChild(btn)
+        })
+}
+
 function closestEndpointCopyButton(
     target: EventTarget | null
 ): HTMLButtonElement | null {
     if (!(target instanceof Element)) return null
-    return target.closest('button.api-url-copy')
+    const direct = target.closest<HTMLButtonElement>('button.api-url-copy')
+    if (direct) return direct
+
+    // Clicking the path text of an alternative-path row copies it too, unless the user is selecting text
+    if (window.getSelection()?.toString()) return null
+    return (
+        target
+            .closest('.operation-path-row')
+            ?.querySelector<HTMLButtonElement>('button.api-url-copy') ?? null
+    )
 }
 
 function initApiEndpointCopy(): void {
@@ -855,7 +915,11 @@ function initApiEndpointCopy(): void {
     document.addEventListener(
         'mousedown',
         (e) => {
-            if (!closestEndpointCopyButton(e.target)) return
+            if (
+                !(e.target instanceof Element) ||
+                !e.target.closest('button.api-url-copy')
+            )
+                return
             e.preventDefault()
             e.stopPropagation()
         },
@@ -951,10 +1015,8 @@ export function initApiDocs(): void {
     initApiResponseStatusTabs()
     initApiScenarioSelects()
     initApiPageActions()
-    initApiBreadcrumbs()
     // After initHighlight — gutters need final textContent line counts
     decorateApiCodeTokens()
-    initApiCodeLineNumbers()
 
     // Check for OperationView page - initialize view-specific features
     initParamSummaries()

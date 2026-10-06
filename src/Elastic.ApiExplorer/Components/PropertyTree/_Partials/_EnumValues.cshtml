@@ -1,0 +1,27 @@
+@inherits RazorSlice<Elastic.ApiExplorer.Components.PropertyTree.EnumValueList>
+@{
+	if (Model.Values.Count == 0)
+	{
+		return;
+	}
+}
+<dd class="enum-values">
+	<span class="values-label">Values:</span>
+	@foreach (var enumVal in Model.Visible)
+	{
+		<code class="enum-value">@enumVal</code>
+	}
+	@if (Model.Folded.Count > 0)
+	{
+		<span class="enum-values-folded" hidden="until-found">
+			@foreach (var enumVal in Model.Folded)
+			{
+				<code class="enum-value">@enumVal</code>
+			}
+		</span>
+		<button class="expand-toggle enum-values-toggle" aria-expanded="false">
+			<span class="toggle-icon">+</span>
+			<span class="toggle-label">show @Model.Folded.Count more values</span>
+		</button>
+	}
+</dd>

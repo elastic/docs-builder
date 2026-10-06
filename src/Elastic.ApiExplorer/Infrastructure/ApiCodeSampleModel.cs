@@ -12,5 +12,6 @@ public record ApiCodeSampleModel(
 	IReadOnlyList<CodeSample> Samples,
 	string? HttpMethod = null,
 	string? Route = null,
-	IReadOnlyList<ApiSelectOption>? Examples = null
+	IReadOnlyList<ApiSelectOption>? Examples = null,
+	string? Title = null
 );

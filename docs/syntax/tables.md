@@ -147,6 +147,50 @@ The `{table}` directive's `:matrix:` option highlights the whole row *and* colum
 
 :::::
 
+## Filterable table
+
+The `{table}` directive's `:filterable:` option adds a search box above the table, plus a dropdown filter for each column that has a small number of repeated values — for example a type or status column. Search matches text in every column. Search and filters combine — each one you set narrows the results further. A live "Showing N of M" count is announced to assistive technologies.
+
+The table is rendered server-side and stays fully usable without JavaScript, because the controls are added only as a progressive enhancement. The filter inputs don't print. A filter stays applied when you print, so a printed filtered table keeps its "Showing N of M" count to show that rows are missing.
+
+:::::{tab-set}
+
+::::{tab-item} Output
+:::{table}
+:filterable:
+
+| Component | Type | Support status |
+|-----------|----------|----------------|
+| filelogreceiver | Receiver | Core |
+| hostmetricsreceiver | Receiver | Core |
+| apachereceiver | Receiver | Extended |
+| batchprocessor | Processor | Core |
+| transformprocessor | Processor | Extended |
+| otlpexporter | Exporter | Core |
+| kafkaexporter | Exporter | Extended |
+:::
+::::
+
+::::{tab-item} Markdown
+```markdown
+:::{table}
+:filterable:
+
+| Component | Type | Support status |
+|-----------|----------|----------------|
+| filelogreceiver | Receiver | Core |
+| hostmetricsreceiver | Receiver | Core |
+| apachereceiver | Receiver | Extended |
+| batchprocessor | Processor | Core |
+| transformprocessor | Processor | Extended |
+| otlpexporter | Exporter | Core |
+| kafkaexporter | Exporter | Extended |
+:::
+```
+::::
+
+:::::
+
 ## Table directive with column widths
 
 The `{table}` directive wraps a pipe table and lets you control column widths using a 12-unit grid system (similar to Bootstrap). Use the `:widths:` option to specify how space is distributed across columns.

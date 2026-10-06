@@ -1,8 +1,9 @@
 @inherits RazorSlice<ApiCodeBlockModel>
 @{
 	var highlightGroupClass = CodeSample.GetHighlightGroupClass(Model.HighlightClass);
+	var lineNumbersAttr = Model.LineNumbers ? new HtmlString(" data-line-numbers") : HtmlString.Empty;
 }
-<div class="@highlightGroupClass notranslate">
+<div class="@highlightGroupClass notranslate"@lineNumbersAttr>
 	<div class="highlight">
 		<pre><code class="@Model.HighlightClass">@Model.Source</code></pre>
 	</div>

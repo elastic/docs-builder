@@ -1,5 +1,9 @@
 {
-  "failure": {
-    "message": "Property 'documentation_sets' not found on type 'Elastic.Documentation.Configuration.Codex.CodexConfigurationDto'."
+  "value": {
+    "sitePrefix": "",
+    "environment": null,
+    "title": "Elastic's Internal Dev Docs",
+    "groups": [],
+    "canonicalBaseUrl": null
   }
 }

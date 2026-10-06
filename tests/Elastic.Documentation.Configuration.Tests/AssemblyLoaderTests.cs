@@ -98,25 +98,25 @@ public class AssemblyLoaderTests
 		_ = invalid.Should().Throw<Exception>();
 	}
 
-	// Unknown keys are rejected, and the error names the key so authors can find the typo.
+	// The deserializer ignores unmatched properties (a released binary must not crash on a key a newer file adds), so an unknown key is not an error.
 	[Test]
 	[Arguments("bogus: 1")]
 	[Arguments("references:\n  kibana:\n    bogus: 1")]
 	[Arguments("narrative:\n  bogus: 1")]
 	[Arguments("environments:\n  prod:\n    bogus: 1")]
-	public void Deserialize_UnknownKey_IsRejected(string yaml)
+	public void Deserialize_UnknownKey_IsIgnored(string yaml)
 	{
 		var act = () => AssemblyLoader.Deserialize(yaml, environment: new Environment());
-		_ = act.Should().Throw<Exception>().WithMessage("*'bogus' not found*");
+		_ = act.Should().NotThrow();
 	}
 
 	[Test]
 	[Arguments("bogus: 1")]
 	[Arguments("phantoms:\n  - bogus: 1")]
-	public void SiteNavigation_UnknownKey_IsRejected(string yaml)
+	public void SiteNavigation_UnknownKey_IsIgnored(string yaml)
 	{
 		var act = () => Toc.SiteNavigationLoader.Deserialize(yaml);
-		_ = act.Should().Throw<Exception>().WithMessage("*'bogus' not found*");
+		_ = act.Should().NotThrow();
 	}
 
 	private const string TwoBadRepositories = "references:\n  a/b:\n  c/d:\n";

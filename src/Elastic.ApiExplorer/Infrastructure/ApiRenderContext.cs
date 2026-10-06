@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Collections.Concurrent;
 using System.Collections.Frozen;
 using Elastic.ApiExplorer.Landing;
 using Elastic.ApiExplorer.Model;
@@ -63,7 +64,14 @@ public record ApiRenderContext(
 	/// <remarks>
 	/// Records propagate reference-type properties shallowly via <c>with</c>, so this dictionary is
 	/// the same object instance in the unit context and in every page-level copy derived from it.
-	/// Pages within a unit are still processed sequentially, so no synchronisation is needed.
+	/// Pages within a unit render in parallel, so the cache must be concurrent.
 	/// </remarks>
-	internal Dictionary<string, IOpenApiSchema?> SchemaResolveCache { get; } = [];
+	internal ConcurrentDictionary<string, IOpenApiSchema?> SchemaResolveCache { get; } = new();
+
+	/// <summary>
+	/// Per-generation-unit cache of sanitized description HTML, shared like <see cref="SchemaResolveCache"/>.
+	/// The same descriptions repeat across many pages, and HtmlSanitizer serializes on a process-wide
+	/// AngleSharp pool lock, so sanitizing each distinct fragment once keeps parallel rendering busy.
+	/// </summary>
+	internal ConcurrentDictionary<string, string> SanitizedHtmlCache { get; } = new(StringComparer.Ordinal);
 }

@@ -2268,7 +2268,7 @@ public partial class ChangelogBundlingService(
 	)
 	{
 		// Early validation: validate bundle has some product context
-		if ((outputProductIds == null || outputProductIds.Count == 0) && !entries.Any(e => e.Data.Products?.Any() == true))
+		if ((outputProductIds == null || outputProductIds.Count == 0) && !entries.Any(e => e.Data.Products?.Count > 0))
 		{
 			collector.EmitError(
 				string.Empty,

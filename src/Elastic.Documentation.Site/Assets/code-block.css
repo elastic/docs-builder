@@ -1,0 +1,317 @@
+/*
+ * Code block component, shared by Markdown fences (Elastic.Markdown/Myst/CodeBlocks/Code.cshtml)
+ * and the API explorer (Elastic.ApiExplorer/_Partials/_ApiCodeBlock.cshtml).
+ * Highlighting is client side (hljs.ts); this file owns how the result looks.
+ *
+ * Markup contract. Producers emit:
+ *
+ *   <div class="highlight-{lang} notranslate" [data-line-numbers]>
+ *     <div class="highlight">
+ *       [<div class="code-block-caption">...</div>]
+ *       <pre><code class="language-{lang}">...<span class="code-callout" data-index="1"></span></code></pre>
+ *     </div>
+ *   </div>
+ *
+ *   data-line-numbers      opt in to a line-number gutter (code-line-numbers.ts)
+ *
+ * Optional card wrapper for blocks that own a header (the API examples rail):
+ *
+ *   data-code-card         the container
+ *   data-code-actions      header slot; copybutton.ts mounts the copy button here
+ *                          instead of overlaying the code
+ *   data-code-panel="key"  one of several switchable panels (language, status);
+ *                          the copy button follows the panel's key and `hidden`
+ *
+ * Theming: override the --code-* custom properties on any ancestor.
+ */
+:root {
+	--code-bg: #22272e;
+	--code-fg: var(--color-grey-30);
+	--code-border: #373e47;
+	--code-hover: #2d333b;
+	--code-muted: var(--color-grey-70);
+	--code-gutter: var(--color-grey-100);
+	--code-font: var(
+		--font-mono,
+		ui-monospace,
+		SFMono-Regular,
+		Menlo,
+		Monaco,
+		Consolas,
+		monospace
+	);
+	--code-size: var(--text-sm);
+	--code-leading: 1.5em;
+	--code-pad: calc(var(--spacing) * 6);
+	--code-radius: 0.25rem;
+
+	--code-token-base: var(--color-blue-elastic-30);
+	--code-token-keyword: var(--color-blue-elastic-70);
+	--code-token-subst: var(--color-purple-60);
+	--code-token-attr: var(--color-yellow-50);
+	--code-token-string: var(--color-green-50);
+	--code-token-type: var(--color-teal-50);
+	--code-token-variable: var(--color-purple-50);
+	--code-token-comment: var(--color-grey-70);
+	--code-token-punctuation: var(--color-grey-50);
+	--code-token-literal: var(--color-pink-50);
+	--code-token-number: var(--color-red-50);
+}
+
+@layer components {
+	/* Doubled class keeps the specificity of the old .markdown-content-scoped rules,
+	   so other component styles (e.g. hub.css) keep the same precedence over code. */
+	.highlight.highlight {
+		pre {
+			@apply grid;
+			code {
+				@apply overflow-x-auto rounded-none border-0;
+				padding: var(--code-pad) !important;
+				background-color: var(--code-bg);
+				color: var(--code-fg);
+				font-family: var(--code-font);
+				font-size: var(--code-size);
+				mix-blend-mode: unset;
+				line-height: var(--code-leading);
+				word-break: normal;
+			}
+			code.hljs {
+				color: var(--code-token-base);
+			}
+			code:first-child {
+				border-top-left-radius: var(--code-radius);
+				border-top-right-radius: var(--code-radius);
+			}
+			code:last-child {
+				border-bottom-left-radius: var(--code-radius);
+				border-bottom-right-radius: var(--code-radius);
+			}
+			code.language-apiheader + code.language-json {
+				margin-top: calc(-1 * var(--code-pad));
+				padding-top: 0 !important;
+			}
+
+			code.language-json + code.language-apiheader,
+			code.language-apiheader + code.language-apiheader {
+				@apply border-t-grey-100 border-t-1 border-dotted;
+			}
+		}
+	}
+
+	.highlight {
+		pre code .code-callout {
+			@apply ml-1;
+			user-select: none;
+			&::after {
+				content: attr(data-index);
+			}
+		}
+
+		pre code .code-callout .hljs-number {
+			@apply text-white!;
+		}
+
+		pre code .code-callout {
+			@apply bg-blue-elastic inline-flex size-4.5 items-center justify-center rounded-full font-mono text-xs! text-white!;
+		}
+
+		.hljs-built_in,
+		.hljs-selector-tag,
+		.hljs-section,
+		.hljs-link,
+		.hljs-keyword {
+			color: var(--code-token-keyword);
+		}
+
+		.hljs-subst,
+		.hljs-function {
+			color: var(--code-token-subst);
+		}
+
+		.hljs-title,
+		.hljs-title.function,
+		.hljs-attr,
+		.hljs-meta-keyword,
+		.hljs-operator,
+		.hljs-meta,
+		.hljs-name,
+		.hljs-bullet,
+		.hljs-addition,
+		.hljs-template-tag,
+		.hljs-template-variable {
+			color: var(--code-token-attr);
+		}
+
+		.hljs-string {
+			color: var(--code-token-string);
+		}
+
+		.hljs-type,
+		.hljs-symbol {
+			color: var(--code-token-type);
+		}
+
+		.hljs-variable {
+			color: var(--code-token-variable);
+		}
+
+		.hljs-comment,
+		.hljs-quote,
+		.hljs-deletion {
+			color: var(--code-token-comment);
+		}
+
+		.hljs-punctuation {
+			color: var(--code-token-punctuation);
+			font-weight: bold;
+		}
+
+		.hljs-keyword,
+		.hljs-selector-tag,
+		.hljs-literal,
+		.hljs-title,
+		.hljs-section,
+		.hljs-doctag,
+		.hljs-type,
+		.hljs-name,
+		.hljs-strong {
+			font-weight: bold;
+		}
+
+		.hljs-literal {
+			color: var(--code-token-literal);
+		}
+
+		.hljs-number {
+			color: var(--code-token-number);
+		}
+
+		.hljs-emphasis {
+			font-style: italic;
+		}
+	}
+
+	ol.code-callouts {
+		li {
+			@apply relative pl-1;
+			counter-increment: code-callout-counter;
+			list-style-type: none;
+		}
+
+		li::before {
+			content: counter(code-callout-counter);
+			position: absolute;
+			top: 1px;
+			left: calc(-1 * var(--spacing) * 6);
+			@apply bg-blue-elastic inline-flex size-4.5 items-center justify-center rounded-full font-mono text-xs! text-white!;
+		}
+	}
+
+	/* Line-number gutter (code-line-numbers.ts): a sibling <pre> that is excluded from
+	   selection and copy. The wrapper owns the surface so the gutter sits on the same fill. */
+	.highlight .code-lines {
+		display: flex;
+		align-items: flex-start;
+		min-width: 0;
+		background-color: var(--code-bg);
+		border-radius: var(--code-radius);
+
+		/* width:max-content keeps long lines from wrapping; the card scrolls instead. */
+		> pre {
+			display: block;
+			margin: 0;
+			flex: 1 0 auto;
+			width: max-content;
+			min-width: 0;
+
+			code {
+				display: block;
+				width: max-content;
+				min-width: 0;
+				max-height: none;
+				overflow: visible;
+				background-color: transparent;
+				border-radius: 0;
+				padding-left: 0.5rem !important;
+				white-space: pre;
+				word-break: normal;
+				overflow-wrap: normal;
+			}
+		}
+	}
+
+	.highlight .code-line-gutter {
+		flex: 0 0 auto;
+		margin: 0;
+		border: 0;
+		background: transparent;
+		user-select: none;
+		-webkit-user-select: none;
+		pointer-events: none;
+		text-align: right;
+		font-variant-numeric: tabular-nums;
+		white-space: pre;
+		padding: var(--code-pad) 0.5rem var(--code-pad) 1rem;
+		color: var(--code-gutter);
+		font-family: var(--code-font);
+		font-size: var(--code-size);
+		line-height: var(--code-leading);
+	}
+
+	/* A card paints one surface behind its header and body, so code goes transparent
+	   and square: the card clips the corners. */
+	[data-code-card] .code-lines,
+	[data-code-card] .highlight.highlight pre code {
+		background-color: transparent;
+		border-radius: 0;
+	}
+}
+
+/* Unlayered on purpose: copybutton.css is unlayered, and layered rules always lose to it.
+   Copy button mounted in a card header (copybutton.ts) instead of over the code. */
+[data-code-card] [data-code-actions] button.copybtn {
+	position: static;
+	top: auto;
+	right: auto;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	box-sizing: border-box;
+	width: 24px;
+	height: 24px;
+	opacity: 1;
+	background-color: var(--code-bg);
+	color: var(--code-fg);
+	border: 1px solid var(--code-border);
+	border-radius: 6px;
+
+	&:hover {
+		background-color: var(--code-hover);
+	}
+
+	&:is(:disabled, [aria-disabled='true']),
+	&:is(:disabled, [aria-disabled='true']):hover {
+		color: var(--code-muted);
+		background-color: var(--code-bg);
+		cursor: not-allowed;
+	}
+
+	&.success {
+		background-color: transparent;
+		color: var(--color-green-50);
+	}
+
+	svg {
+		width: 12px;
+		height: 12px;
+		padding: 0;
+		stroke: none;
+		fill: currentColor;
+	}
+
+	&.o-tooltip--left:after {
+		background-color: var(--code-fg);
+		color: var(--code-bg);
+		transform: translateX(-102%) translateY(0);
+	}
+}

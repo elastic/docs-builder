@@ -41,6 +41,10 @@ services:
       DOCS_BUILDER_BIND_ADDRESS: 0.0.0.0
       DOTNET_USE_POLLING_FILE_WATCHER: "1"
       DOTNET_WATCH_SUPPRESS_LAUNCH_BROWSER: "1"
+      # API page regeneration allocates heavily on every core; workstation GC
+      # throttled it to a few cores (about 10 s per regeneration vs 3-4 s).
+      # The runtime matches this name case-sensitively: DOTNET_GCSERVER is ignored.
+      DOTNET_gcServer: "1"
     ports:
       - "127.0.0.1:3000:3000"
     volumes:

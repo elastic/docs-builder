@@ -33,10 +33,10 @@ internal static class SchemaCommonMark
 		if (page.ExternalDocs is { } docs)
 			ApiCommonMark.Paragraph(markdown, ApiCommonMark.Link(docs.LinkText, docs.Url));
 
-		if (openApiSchema.Enum is { Count: > 0 })
+		if (page.EnumValues.Count > 0)
 		{
 			ApiCommonMark.Heading(markdown, 2, "Enum Values");
-			foreach (var enumValue in openApiSchema.Enum)
+			foreach (var enumValue in page.EnumValues)
 				_ = markdown.AppendLine($"- `{enumValue}`");
 			_ = markdown.AppendLine();
 		}
