@@ -19,6 +19,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Westwind.AspNetCore.LiveReload;
 
 namespace Documentation.Builder.Http;
 
@@ -26,9 +27,14 @@ public class StaticWebHost
 {
 	public WebApplication WebApplication { get; }
 	private readonly string _contentRoot;
+	private readonly bool _watch;
 
-	public StaticWebHost(int port, string? path)
+	/// <param name="port">Port to listen on.</param>
+	/// <param name="path">Directory to serve. Defaults to the assembler output.</param>
+	/// <param name="watch">Inject the live reload client so open pages refresh when this host restarts after a rebuild.</param>
+	public StaticWebHost(int port, string? path, bool watch = false)
 	{
+		_watch = watch;
 		_contentRoot = path ?? Path.Join(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "assembly");
 		var fs = CheckoutsFileSystem.FromWorkingDirectory();
 		var dir = fs.DirectoryInfo.New(_contentRoot);
@@ -50,6 +56,17 @@ public class StaticWebHost
 			.AddFilter("Microsoft.AspNetCore.Hosting.Diagnostics", LogLevel.Error)
 			.AddFilter("Microsoft.AspNetCore.StaticFiles.StaticFileMiddleware", LogLevel.Error)
 			.AddFilter("Microsoft.Hosting.Lifetime", LogLevel.Information);
+		if (watch)
+		{
+			_ = builder.Services.AddAotLiveReload(s =>
+			{
+				// A rebuild replaces the whole output tree and restarts this host, so nothing needs file watching.
+				// Point the monitor at an empty folder instead of the (very large) output directory.
+				s.FolderToMonitor = Directory.CreateDirectory(Path.Join(Path.GetTempPath(), "docs-builder-livereload")).FullName;
+				s.ClientFileExtensions = ".none";
+			});
+		}
+
 		var bindAddress = Environment.GetEnvironmentVariable("DOCS_BUILDER_BIND_ADDRESS") ?? "localhost";
 		_ = builder.WebHost.UseUrls($"http://{bindAddress}:{port}");
 
@@ -63,6 +80,9 @@ public class StaticWebHost
 
 	private void SetUpRoutes()
 	{
+		if (_watch)
+			_ = WebApplication.UseLiveReloadWithManualScriptInjection(WebApplication.Lifetime);
+
 		_ = WebApplication.Use(async (context, next) =>
 		{
 			try
@@ -109,25 +129,33 @@ public class StaticWebHost
 
 	}
 
-	private Task<IResult> ServeRootIndex(Cancel _)
+	private async Task<IResult> ServeRootIndex(Cancel ctx)
 	{
 		var indexPath = Path.Join(_contentRoot, "index.html");
 		var fileInfo = new FileInfo(indexPath);
 		if (fileInfo.Exists)
-			return Task.FromResult(Results.File(fileInfo.FullName, "text/html"));
+			return await ServeFile(fileInfo, "text/html", ctx);
 
 		// Fall back to redirect for backward compatibility with assemblies that don't have a root index.html
 		// TODO: Integration tests are failing without this. Adapt this when codex is actually in use.
-		return Task.FromResult(Results.Redirect("docs"));
+		return Results.Redirect("docs");
 	}
 
-	private async Task<IResult> ServeDocumentationFile(string slug, HttpContext http, Cancel _)
+	private async Task<IResult> ServeFile(FileInfo file, string mimetype, Cancel ctx)
+	{
+		if (!_watch || mimetype != "text/html")
+			return Results.File(file.FullName, mimetype);
+
+		var html = await File.ReadAllTextAsync(file.FullName, ctx);
+		return DocumentationWebHost.LiveReloadHtml(html);
+	}
+
+	private async Task<IResult> ServeDocumentationFile(string slug, HttpContext http, Cancel ctx)
 	{
 		// from the injected top level navigation which expects us to run on elastic.co
 		if (slug.StartsWith("static-res/"))
 			return Results.NotFound();
 
-		await Task.CompletedTask;
 		var contentRoot = Path.GetFullPath(_contentRoot);
 		var localPath = Path.GetFullPath(Path.Join(contentRoot, slug.Replace('/', Path.DirectorySeparatorChar)));
 		if (!localPath.StartsWith(contentRoot + Path.DirectorySeparatorChar, StringComparison.Ordinal))
@@ -169,7 +197,7 @@ public class StaticWebHost
 				".md" => "text/markdown; charset=utf-8",
 				_ => "text/html"
 			};
-			return Results.File(fileInfo.FullName, mimetype);
+			return await ServeFile(fileInfo, mimetype, ctx);
 		}
 
 		return Results.NotFound();

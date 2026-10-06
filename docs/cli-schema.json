@@ -1725,6 +1725,14 @@
             },
             {
               "role": "flag",
+              "name": "watch",
+              "type": "boolean",
+              "required": false,
+              "summary": "Refresh open pages when the server restarts after a rebuild. Used by ./dev.sh assembler-watch.",
+              "defaultValue": "false"
+            },
+            {
+              "role": "flag",
               "name": "log-level",
               "shortName": "l",
               "type": "enum",
@@ -6191,6 +6199,14 @@
                   "kind": "existing"
                 }
               ]
+            },
+            {
+              "role": "flag",
+              "name": "watch",
+              "type": "boolean",
+              "required": false,
+              "summary": "Refresh open pages when the server restarts after a rebuild. Used by ./dev.sh codex-watch.",
+              "defaultValue": "false"
             },
             {
               "role": "flag",

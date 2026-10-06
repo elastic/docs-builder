@@ -59,6 +59,8 @@ case "${1:-help}" in
     echo "  codex-clone          Clone the codex repositories (config: \$CODEX_CONFIG)"
     echo "  codex-build          Build the codex from the clones"
     echo "  codex-serve          Serve the last codex build at http://localhost:4001"
+    echo "  assembler-watch      Rebuild and serve the assembler site on every source change"
+    echo "  codex-watch          Rebuild and serve the codex on every source change"
     echo "  stop-api             Stop the docs API"
     echo "  serve-mcp            Run the MCP server at http://localhost:8080 (public profile)"
     echo "  serve-mcp-internal   Run the MCP server at http://localhost:8080 (internal profile)"
@@ -146,6 +148,12 @@ case "${1:-help}" in
     ;;
   codex-serve)
     _cli codex codex serve "${@:2}"
+    ;;
+  assembler-watch)
+    _cli --entrypoint sh assembler build/dev/watch-entrypoint.sh assembler "${@:2}"
+    ;;
+  codex-watch)
+    _cli --entrypoint sh -e CODEX_CONFIG="$CODEX_CONFIG" codex build/dev/watch-entrypoint.sh codex "${@:2}"
     ;;
   clean)
     _compose down --remove-orphans --volumes
