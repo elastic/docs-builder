@@ -49,17 +49,45 @@ links:
 | `:title:` | **Required.** H2 heading, for example "Explore Elasticsearch". |
 | `:intro:` | Intro paragraph below the heading. |
 | `:id:` | Section anchor. Use `explore` so `{hero}`'s tertiary action can jump to it. |
+| `:collapsed:` | Collapses every accordion, including the first. Add it with no value or set it to `true`. Off by default. |
 
 ## What nesting changes
 
-`{explore}` carries no options for the accordions. Nesting drives everything:
+`{explore}` carries no options for individual accordions. Nesting drives everything:
 
 - Each [`{card-group}`](card-group.md) inside becomes one accordion. Its `:title:` is the accordion header.
-- The first accordion is expanded. The rest are collapsed.
+- The first accordion is expanded. The rest are collapsed. Set `:collapsed:` on the `{explore}` to collapse the first one too.
 - A reader can expand as many accordions as they want. Expanding one does not collapse the others.
 - Each [`{link-card}`](link-card.md) inside renders as a link column rather than a bordered card.
 
 Toggling uses native `<details>` and `<summary>`, so it works without JavaScript.
+
+## Several Explore sections on one page
+
+Every `{explore}` expands its first accordion by default. On a page with more than one `{explore}`, that opens one accordion per section. To keep a single accordion open on load, leave the first `{explore}` as it is and set `:collapsed:` on the others:
+
+```markdown
+:::::{explore}
+:id: explore
+:title: Explore the docs toolchain
+
+::::{card-group}
+:title: Quick links
+...
+::::
+:::::
+
+:::::{explore}
+:id: explore-advanced
+:title: Go further
+:collapsed:
+
+::::{card-group}
+:title: Extending
+...
+::::
+:::::
+```
 
 ## Fence depth
 

@@ -23,9 +23,15 @@ internal static class HubExplore
 		return null;
 	}
 
-	/// <summary>The first accordion in an Explore stack is expanded by default.</summary>
-	public static bool IsFirstCardGroup(ExploreBlock explore, CardGroupBlock card)
+	/// <summary>
+	/// The first accordion in an Explore stack is expanded by default, unless the stack sets
+	/// <c>:collapsed:</c>.
+	/// </summary>
+	public static bool IsOpenByDefault(ExploreBlock explore, CardGroupBlock card)
 	{
+		if (explore.Collapsed)
+			return false;
+
 		foreach (var child in explore)
 		{
 			if (child is CardGroupBlock candidate)

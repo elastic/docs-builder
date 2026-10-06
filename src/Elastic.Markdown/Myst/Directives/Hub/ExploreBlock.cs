@@ -33,11 +33,15 @@ public class ExploreBlock(DirectiveBlockParser parser, ParserContext context) : 
 	public string? Intro { get; private set; }
 	public string? Anchor { get; private set; }
 
+	/// <summary>Renders every accordion collapsed, including the first.</summary>
+	public bool Collapsed { get; private set; }
+
 	public override void FinalizeAndValidate(ParserContext context)
 	{
 		Title = Prop("title");
 		Intro = Prop("intro");
 		Anchor = Prop("id");
+		Collapsed = PropBool("collapsed");
 
 		if (string.IsNullOrWhiteSpace(Title))
 			this.EmitError("{explore} requires a `:title:` option.");

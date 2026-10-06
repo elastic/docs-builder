@@ -269,7 +269,7 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 			Anchor = block.Anchor,
 			Variant = block.Variant,
 			IsAccordion = explore is not null,
-			IsOpen = explore is not null && HubExplore.IsFirstCardGroup(explore, block)
+			IsOpen = explore is not null && HubExplore.IsOpenByDefault(explore, block)
 		});
 		RenderRazorSlice(slice, renderer);
 	}
