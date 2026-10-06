@@ -172,6 +172,9 @@ public partial record OperationPageModel
 	public required IReadOnlyList<ApiPostSection> PostSections { get; init; }
 	public required string RequestContentType { get; init; }
 	public required ApiPropertyList? RequestProperties { get; init; }
+
+	/// <summary>The variants of a request body that is itself a <c>oneOf</c>/<c>anyOf</c>; set only when there are no plain properties.</summary>
+	public ApiUnionVariants? RequestUnionVariants { get; init; }
 	public required TypeAnnotation? RequestType { get; init; }
 	public required IReadOnlyList<ApiResponse> Responses { get; init; }
 	public required IReadOnlyList<CodeSample> CodeSamples { get; init; }
@@ -224,6 +227,13 @@ public partial record OperationPageModel
 
 		var descriptionMarkdown = supplemental?.DescriptionOr(operation.Description) ?? operation.Description;
 
+		var requestProperties = requestSchema is not null
+			? builder.BuildPropertyList(
+				requestSchema,
+				new PropertyTreeScope { Prefix = "req", IsRequest = true, DescriptionOverrides = supplemental?.RequestBodyOverrides }
+			)
+			: null;
+
 		return new OperationPageModel
 		{
 			Availability = AvailabilityBadgeHelper.FromOperation(operation, context.BuildContext.VersionsConfiguration),
@@ -240,11 +250,9 @@ public partial record OperationPageModel
 				.Select(p => BuildQueryParameter(p, analyzer, builder, context, supplemental))
 				.ToArray(),
 			RequestContentType = requestContentEntry?.Key ?? "application/json",
-			RequestProperties = requestSchema is not null
-				? builder.BuildPropertyList(
-					requestSchema,
-					new PropertyTreeScope { Prefix = "req", IsRequest = true, DescriptionOverrides = supplemental?.RequestBodyOverrides }
-				)
+			RequestProperties = requestProperties,
+			RequestUnionVariants = requestSchema is not null && requestProperties is null
+				? BuildTopLevelUnionVariants(requestSchema, "req", analyzer, builder)
 				: null,
 			DescriptionMarkdown = descriptionMarkdown,
 			PostSections = ApiPostSection.From(context, supplemental?.PostSections ?? []),
@@ -762,7 +770,7 @@ public partial record OperationPageModel
 		var properties = builder.BuildPropertyList(responseSchema, scope);
 		var arrayItemProperties = properties is null ? BuildArrayItemProperties(responseSchema, scope, analyzer, builder) : null;
 		var unionVariants = properties is null && arrayItemProperties is null
-			? BuildResponseUnionVariants(responseSchema, statusCode, analyzer, builder)
+			? BuildTopLevelUnionVariants(responseSchema, scope.Prefix, analyzer, builder)
 			: null;
 
 		return new ApiResponseContent
@@ -789,26 +797,21 @@ public partial record OperationPageModel
 		return arrayItemSchema is null ? null : builder.BuildPropertyList(arrayItemSchema, scope);
 	}
 
-	private static ApiUnionVariants? BuildResponseUnionVariants(
-		IOpenApiSchema responseSchema,
-		string statusCode,
+	internal static ApiUnionVariants? BuildTopLevelUnionVariants(
+		IOpenApiSchema bodySchema,
+		string prefix,
 		SchemaAnalyzer analyzer,
 		ApiPropertyTreeBuilder builder
 	)
 	{
-		var typeInfo = analyzer.GetTypeInfo(responseSchema);
+		var typeInfo = analyzer.GetTypeInfo(bodySchema);
 		if (typeInfo is not { IsUnion: true, AnyOfOptions.Count: > 0 })
 			return null;
 
 		var schemas = typeInfo.AnyOfOptions.Where(static o => o.Schema is not null).Select(static o => o.Schema!).ToList();
 		return schemas.Count == 0
 			? null
-			: builder.BuildUnionVariantsForSchemas(
-				schemas,
-				$"res-{statusCode}",
-				ancestors: null,
-				analyzer.GetUnionDiscriminator(responseSchema)
-			);
+			: builder.BuildUnionVariantsForSchemas(schemas, prefix, ancestors: null, analyzer.GetUnionDiscriminator(bodySchema));
 	}
 
 	private static IReadOnlyList<string> NamesOf(IEnumerable<string?> names) => [.. names.OfType<string>().Where(static n => n.Length > 0)];

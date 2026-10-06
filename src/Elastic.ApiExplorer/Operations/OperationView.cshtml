@@ -291,6 +291,10 @@
 		{
 			@(await RenderPartialAsync<_PropertyList, ApiPropertyList>(pageModel.RequestProperties))
 		}
+		else if (pageModel.RequestUnionVariants is { Variants.Count: > 0 } requestVariants)
+		{
+			@(await RenderPartialAsync<_UnionOptions, ApiUnionVariants>(requestVariants))
+		}
 		else if (pageModel.RequestType is not null)
 		{
 			<p>Type: @(await RenderPartialAsync<_SchemaType, TypeAnnotation>(pageModel.RequestType))</p>

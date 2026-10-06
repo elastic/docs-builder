@@ -958,4 +958,56 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture)
 				File.Delete(path);
 		}
 	}
+
+	[Test]
+	public async Task BuildTopLevelUnionVariants_RequestBodyAnyOf_ExpandsVariantsWithTheirProperties()
+	{
+		var json =
+			"""
+			{
+			  "openapi": "3.0.3",
+			  "info": { "title": "t", "version": "1" },
+			  "paths": {},
+			  "components": {
+			    "schemas": {
+			      "Cat": { "type": "object", "required": ["lives"], "properties": { "lives": { "type": "integer" } } },
+			      "Dog": { "type": "object", "properties": { "barks": { "type": "boolean" } } },
+			      "Body": { "anyOf": [ { "$ref": "#/components/schemas/Cat" }, { "$ref": "#/components/schemas/Dog" } ] },
+			      "Plain": { "type": "object", "properties": { "name": { "type": "string" } } }
+			    }
+			  }
+			}
+			""";
+		var path = Path.Join(Path.GetTempPath(), $"request-union-{Guid.NewGuid():N}.json");
+		await File.WriteAllTextAsync(path, json, TestContext.Current!.Execution.CancellationToken);
+		try
+		{
+			var loaded = await OpenApiDocument.LoadAsync(
+				path,
+				new OpenApiReaderSettings { LeaveStreamOpen = false },
+				TestContext.Current!.Execution.CancellationToken
+			);
+			var document = loaded.Document!;
+			var analyzer = new SchemaAnalyzer(document);
+			var builder = new ApiPropertyTreeBuilder(
+				document,
+				new PropertyDisplayOptions { RenderMarkdown = s => new HtmlString($"<p>{s}</p>"), ApiRootUrl = "/api/doc/fixture" }
+			);
+			var body = new OpenApiSchemaReference("Body", document);
+			var plain = new OpenApiSchemaReference("Plain", document);
+
+			builder.BuildPropertyList(body, new PropertyTreeScope { Prefix = "req", IsRequest = true }).Should().BeNull();
+			var variants = OperationPageModel.BuildTopLevelUnionVariants(body, "req", analyzer, builder);
+
+			variants!.Variants.Select(v => v.DisplayName).Should().Equal("Cat", "Dog");
+			variants.Variants[0].AnchorId.Should().StartWith("req-variant-");
+			variants.Variants[0].Properties!.Items.Single().IsRequired.Should().BeTrue();
+			OperationPageModel.BuildTopLevelUnionVariants(plain, "req", analyzer, builder).Should().BeNull();
+		}
+		finally
+		{
+			if (File.Exists(path))
+				File.Delete(path);
+		}
+	}
 }

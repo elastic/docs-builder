@@ -192,6 +192,8 @@ internal static class OperationCommonMark
 		ApiCommonMark.Prepared(markdown, apiOperation.Operation.RequestBody.Description, apiBaseUrl);
 		if (page.RequestProperties is not null)
 			ApiPropertyMarkdown.WriteList(markdown, page.RequestProperties, apiBaseUrl);
+		else if (page.RequestUnionVariants is { Variants.Count: > 0 })
+			ApiPropertyMarkdown.WriteVariants(markdown, page.RequestUnionVariants, apiBaseUrl);
 		else
 			ApiPropertyMarkdown.WriteType(markdown, page.RequestType);
 		_ = markdown.AppendLine();
