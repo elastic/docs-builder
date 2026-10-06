@@ -242,6 +242,11 @@ public sealed partial record OperationEndpoint(
 			parts.Add($"{name}={SchemaKey(property)}");
 		if (schema.Required is { Count: > 0 })
 			parts.Add("required=" + string.Join(',', schema.Required.Order(StringComparer.Ordinal)));
+		// A closed object, an open one, and a map of typed values are different contracts.
+		if (!schema.AdditionalPropertiesAllowed)
+			parts.Add("additional=none");
+		else if (schema.AdditionalProperties is not null)
+			parts.Add("additional=" + SchemaKey(schema.AdditionalProperties));
 		foreach (var (label, options) in new[] { ("allOf", schema.AllOf), ("oneOf", schema.OneOf), ("anyOf", schema.AnyOf) })
 		{
 			if (options is { Count: > 0 })

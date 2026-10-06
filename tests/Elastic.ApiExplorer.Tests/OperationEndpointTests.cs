@@ -423,6 +423,45 @@ public class OperationEndpointTests
 			"foo"
 		);
 
+	private static OpenApiSchema ObjectWith(bool additionalAllowed, OpenApiSchema? additional = null) =>
+		new()
+		{
+			Type = JsonSchemaType.Object,
+			Properties = new Dictionary<string, IOpenApiSchema> { ["name"] = new OpenApiSchema { Type = JsonSchemaType.String } },
+			AdditionalPropertiesAllowed = additionalAllowed,
+			AdditionalProperties = additional
+		};
+
+	[Test]
+	public void AreInterchangeable_ClosedObjectVersusOpenObject_IsFalse() =>
+		OperationEndpoint
+			.AreInterchangeable([
+				WithResponseSchema(HttpMethod.Get, ObjectWith(false)),
+				WithResponseSchema(HttpMethod.Post, ObjectWith(true))
+			])
+			.Should()
+			.BeFalse();
+
+	[Test]
+	public void AreInterchangeable_OpenObjectVersusTypedMap_IsFalse() =>
+		OperationEndpoint
+			.AreInterchangeable([
+				WithResponseSchema(HttpMethod.Get, ObjectWith(true)),
+				WithResponseSchema(HttpMethod.Post, ObjectWith(true, new OpenApiSchema { Type = JsonSchemaType.Integer }))
+			])
+			.Should()
+			.BeFalse();
+
+	[Test]
+	public void AreInterchangeable_SameObjectOpenness_IsTrue() =>
+		OperationEndpoint
+			.AreInterchangeable([
+				WithResponseSchema(HttpMethod.Get, ObjectWith(false)),
+				WithResponseSchema(HttpMethod.Post, ObjectWith(false))
+			])
+			.Should()
+			.BeTrue();
+
 	[Test]
 	public void AreInterchangeable_SchemasThatDifferOnlyDeepDown_IsFalse() =>
 		OperationEndpoint
