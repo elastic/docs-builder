@@ -201,6 +201,25 @@ describe('API examples carousel', () => {
         expect(slicing.hasAttribute('hidden')).toBe(false)
     })
 
+    it('locks page scrolling while the preview is open', () => {
+        initApiExamples()
+        document
+            .querySelector<HTMLElement>(
+                '[data-scenario="term"] .is-active [data-code-preview]'
+            )!
+            .click()
+        const dialog = document.querySelector<HTMLDialogElement>(
+            'dialog.api-code-preview'
+        )!
+
+        expect(document.body.style.overflow).toBe('hidden')
+
+        dialog.dispatchEvent(new Event('close'))
+
+        expect(document.body.style.overflow).toBe('')
+        expect(document.querySelector('dialog.api-code-preview')).toBeNull()
+    })
+
     it('closes the preview on Escape even when the page prevents the key', () => {
         initApiExamples()
         document.addEventListener('keydown', (e) => e.preventDefault())
