@@ -18,10 +18,34 @@ dotnet tool restore
 If you only need to validate rendering or authoring changes, the Docker setup removes the .NET/Node prerequisite:
 
 ```bash
-./dev.sh build    # build images (once, or after Dockerfile changes)
-./dev.sh serve    # serve docs with hot reload at http://localhost:3000
-./dev.sh test     # run the full unit-test suite
+./dev.sh build            # build images (once, or after Dockerfile changes)
+./dev.sh isolated-serve   # serve docs with hot reload at http://localhost:3000
+./dev.sh test             # run the full unit-test suite
 ```
+
+The same setup runs the assembled site and the codex. All three modes use the same verbs
+(`<mode>-serve`, `<mode>-build`, `<mode>-watch`, and `<mode>-clone` where the mode clones repositories):
+
+| Mode | Serves | URL | Commands |
+|---|---|---|---|
+| `isolated` | One docset (`docs/`) | http://localhost:3000 | `isolated-serve`, `isolated-build` |
+| `assembler` | Every repository under one navigation | http://localhost:4000 | `assembler-clone`, `assembler-build`, `assembler-serve`, `assembler-watch` |
+| `codex` | The codex portal | http://localhost:4001 | `codex-clone`, `codex-build`, `codex-serve`, `codex-watch` |
+
+```bash
+./dev.sh assembler-clone    # clone the repositories (first run, needs network)
+./dev.sh assembler-watch    # rebuild and reload on every source change
+```
+
+Notes for the assembler and codex modes:
+
+- They run from source in the tooling image, so local code changes apply without a publish.
+- Builds are static and the site is down while one runs. `-watch` rebuilds on each change to `src/`, `config/`, or `docs/`, then reloads open pages.
+- Clones and build output live in named volumes. `./dev.sh clean` removes them.
+- The image has no `ssh`, so `dev.sh` clones over HTTPS. Private repositories need `GITHUB_TOKEN` or a logged-in `gh`.
+- The serve commands publish a fixed port and reject `--port`.
+- `codex` reads its config from `CODEX_CONFIG` (default `config/codex.example.yml`).
+- The assembler builds the API Explorer pages. Set `FEATURE_ASSEMBLER_API_EXPLORER=false` to skip them and build faster. After changing it, run `./dev.sh assembler-build --no-assume-build` once, because the build stamp ignores environment variables.
 
 Run `./dev.sh help` for the full list of commands. Docker files live under `build/dev/`.
 
