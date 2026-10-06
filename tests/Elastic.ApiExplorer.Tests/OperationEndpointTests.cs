@@ -189,4 +189,67 @@ public class OperationEndpointTests
 		html.Should().Contain("window.location.replace(\"/docs/api/doc/elasticsearch/operation/operation-search\" + window.location.hash)");
 		html.Should().Contain("noindex");
 	}
+
+	private static ApiOperation Contract(HttpMethod method, bool requiredQuery, string responseProperty) =>
+		new(
+			method,
+			new OpenApiOperation
+			{
+				Parameters =
+				[
+					new OpenApiParameter
+					{
+						Name = "q",
+						In = ParameterLocation.Query,
+						Required = requiredQuery,
+						Schema = new OpenApiSchema { Type = JsonSchemaType.String }
+					}
+				],
+				Responses = new OpenApiResponses
+				{
+					["200"] = new OpenApiResponse
+					{
+						Description = "ok",
+						Content = new Dictionary<string, IOpenApiMediaType>
+						{
+							["application/json"] = new OpenApiMediaType
+							{
+								Schema = new OpenApiSchema
+								{
+									Type = JsonSchemaType.Object,
+									Properties = new Dictionary<string, IOpenApiSchema>
+									{
+										[responseProperty] = new OpenApiSchema { Type = JsonSchemaType.Integer }
+									}
+								}
+							}
+						}
+					}
+				}
+			},
+			"/_search",
+			new OpenApiPathItem(),
+			"search"
+		);
+
+	[Test]
+	public void AreInterchangeable_SameContract_IsTrue() =>
+		OperationEndpoint
+			.AreInterchangeable([Contract(HttpMethod.Get, true, "took"), Contract(HttpMethod.Post, true, "took")])
+			.Should()
+			.BeTrue();
+
+	[Test]
+	public void AreInterchangeable_SameParameterNamesButDifferentRequiredness_IsFalse() =>
+		OperationEndpoint
+			.AreInterchangeable([Contract(HttpMethod.Get, true, "took"), Contract(HttpMethod.Post, false, "took")])
+			.Should()
+			.BeFalse();
+
+	[Test]
+	public void AreInterchangeable_SameStatusCodesButDifferentInlineResponseSchema_IsFalse() =>
+		OperationEndpoint
+			.AreInterchangeable([Contract(HttpMethod.Get, true, "took"), Contract(HttpMethod.Post, true, "hits")])
+			.Should()
+			.BeFalse();
 }

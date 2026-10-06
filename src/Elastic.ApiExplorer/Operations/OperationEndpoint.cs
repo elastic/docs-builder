@@ -118,8 +118,9 @@ public sealed partial record OperationEndpoint(
 	}
 
 	/// <summary>
-	/// Separate operations only merge their methods when they are the same call: same non-path parameters,
-	/// same request body schema, and the same response status codes.
+	/// Separate operations only merge their methods when they are the same call: the same non-path parameters
+	/// (name, requiredness and schema), the same request body schema per media type, and the same response
+	/// schema per status and media type.
 	/// </summary>
 	public static bool AreInterchangeable(IReadOnlyList<ApiOperation> operations)
 	{
@@ -131,21 +132,55 @@ public sealed partial record OperationEndpoint(
 	{
 		var parameters = (operation.Parameters ?? [])
 			.Where(static p => p.In != ParameterLocation.Path)
-			.Select(static p => $"{p.In}:{p.Name}")
+			.Select(static p => $"{p.In}:{p.Name}:{(p.Required ? "required" : "optional")}:{SchemaKey(p.Schema)}")
 			.Order(StringComparer.Ordinal);
-		var body = (operation.RequestBody?.Content ?? new Dictionary<string, IOpenApiMediaType>()).Select(
-			static c => $"{c.Key}:{SchemaKey(c.Value?.Schema)}"
-		).Order(StringComparer.Ordinal);
-		var responses = (operation.Responses ?? []).Keys.Order(StringComparer.Ordinal);
-		return string.Join('|', parameters) + "#" + string.Join('|', body) + "#" + string.Join('|', responses);
+		var body = ContentKey(operation.RequestBody?.Content);
+		var responses = (operation.Responses ?? []).Select(static r => $"{r.Key}:{ContentKey(r.Value?.Content)}").Order(
+			StringComparer.Ordinal
+		);
+		return string.Join('|', parameters) + "#" + body + "#" + string.Join('|', responses);
 	}
 
-	private static string SchemaKey(IOpenApiSchema? schema) => schema switch
+	private static string ContentKey(IDictionary<string, IOpenApiMediaType>? content) =>
+		string.Join(
+			',',
+			(content ?? new Dictionary<string, IOpenApiMediaType>()).Select(static c => $"{c.Key}={SchemaKey(c.Value?.Schema)}").Order(
+				StringComparer.Ordinal
+			)
+		);
+
+	/// <summary>
+	/// What a schema is: a reference by name, an inline schema by its structure. Bounded in depth so a deeply
+	/// nested inline schema stays cheap; references end the descent anyway.
+	/// </summary>
+	private static string SchemaKey(IOpenApiSchema? schema, int depth = 0)
 	{
-		null => "",
-		OpenApiSchemaReference reference => reference.Reference.Id ?? "",
-		_ => schema.Type?.ToString() ?? "inline"
-	};
+		if (schema is null)
+			return "";
+		if (schema is OpenApiSchemaReference reference)
+			return "$" + (reference.Reference.Id ?? "");
+		if (depth >= 4)
+			return "...";
+
+		var parts = new List<string> { schema.Type?.ToString() ?? "", schema.Format ?? "" };
+		if (schema.Items is not null)
+			parts.Add("items=" + SchemaKey(schema.Items, depth + 1));
+		foreach (var (name, property) in (schema.Properties ?? new Dictionary<string, IOpenApiSchema>()).OrderBy(
+			static p => p.Key,
+			StringComparer.Ordinal
+		))
+			parts.Add($"{name}={SchemaKey(property, depth + 1)}");
+		if (schema.Required is { Count: > 0 })
+			parts.Add("required=" + string.Join(',', schema.Required.Order(StringComparer.Ordinal)));
+		foreach (var (label, options) in new[] { ("allOf", schema.AllOf), ("oneOf", schema.OneOf), ("anyOf", schema.AnyOf) })
+		{
+			if (options is { Count: > 0 })
+				parts.Add(label + "=" + string.Join(',', options.Select(o => SchemaKey(o, depth + 1))));
+		}
+		if (schema.Enum is { Count: > 0 })
+			parts.Add("enum=" + string.Join(',', schema.Enum.Select(static e => e?.ToJsonString() ?? "null")));
+		return "{" + string.Join(';', parts) + "}";
+	}
 
 	private static IEnumerable<EndpointVariant> ParseBadges(string listing)
 	{
