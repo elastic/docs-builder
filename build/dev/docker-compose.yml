@@ -4,6 +4,12 @@ x-cli: &cli
   environment:
     DOCS_BUILDER_BIND_ADDRESS: 0.0.0.0
     DOTNET_USE_POLLING_FILE_WATCHER: "1"
+    # dev.sh sets these to rewrite the git@github.com: origins the CLI builds
+    # into HTTPS URLs, because the image has no ssh client.
+    GIT_CONFIG_COUNT: ${GIT_CONFIG_COUNT:-0}
+    GIT_CONFIG_KEY_0: ${GIT_CONFIG_KEY_0:-}
+    GIT_CONFIG_VALUE_0: ${GIT_CONFIG_VALUE_0:-}
+    GIT_TERMINAL_PROMPT: "0"
 
 services:
   # Run a one-shot CLI command, for example:
@@ -65,8 +71,9 @@ services:
   # code changes apply without an AOT publish. Use the `./dev.sh assembler*`
   # and `./dev.sh codex*` commands rather than calling these directly.
   #
-  # Clones and build output live in the named .artifacts volumes (not the host
-  # checkout) so no root-owned files appear in the working tree. Both commands
+  # Build output lives in the named .artifacts volumes and clones in the *-data
+  # volumes (the CLI clones to ~/.local/share/elastic/docs-builder/checkouts),
+  # not the host checkout, so no root-owned files appear in the working tree. Both commands
   # serve static output on container port 4000; the host ports differ so the
   # two sites can run side by side.
   assembler:
@@ -80,6 +87,7 @@ services:
       - npm-cache:/root/.npm
       - node-modules:/src/src/Elastic.Documentation.Site/node_modules
       - assembler-artifacts:/src/.artifacts
+      - assembler-data:/root/.local/share/elastic/docs-builder
 
   codex:
     <<: *cli
@@ -92,6 +100,7 @@ services:
       - npm-cache:/root/.npm
       - node-modules:/src/src/Elastic.Documentation.Site/node_modules
       - codex-artifacts:/src/.artifacts
+      - codex-data:/root/.local/share/elastic/docs-builder
 
   # Run the docs API locally. Start with `./dev.sh serve-api` and connect
   # an API client to http://localhost:8081.
@@ -126,6 +135,8 @@ volumes:
   serve-artifacts:
   assembler-artifacts:
   codex-artifacts:
+  assembler-data:
+  codex-data:
   build-artifacts:
   api-artifacts:
   mcp-artifacts:

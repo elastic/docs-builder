@@ -12,10 +12,24 @@ _ensure_tooling() {
     || _bake --load tooling
 }
 
+# The CLI clones with git@github.com: origins and the image has no ssh client.
+# Rewrite them to HTTPS, with a token when one is available (needed for private
+# repos): GITHUB_TOKEN, else `gh auth token`.
+_git_https() {
+  local token="${GITHUB_TOKEN:-}"
+  if [ -z "$token" ] && command -v gh >/dev/null 2>&1; then
+    token="$(gh auth token 2>/dev/null || true)"
+  fi
+  export GIT_CONFIG_COUNT=1
+  export GIT_CONFIG_KEY_0="url.https://${token:+oauth2:$token@}github.com/.insteadOf"
+  export GIT_CONFIG_VALUE_0="git@github.com:"
+}
+
 # Assembler and codex run from source in the tooling image. Their services use
 # the named .artifacts volumes. Clone and build publish no ports, so they never
 # collide with a running serve.
 _cli() {
+  _git_https
   _ensure_tooling
   _compose run --rm "$@"
 }
@@ -33,6 +47,7 @@ _cli_serve() {
         ;;
     esac
   done
+  _git_https
   _ensure_tooling
   _compose run --rm --service-ports "$@"
 }
