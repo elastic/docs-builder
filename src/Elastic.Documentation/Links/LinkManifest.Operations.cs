@@ -60,7 +60,7 @@ public partial record LinkManifest
 			Links = links,
 			CrossLinks = [.. crossLinks.ToHashSet().OrderBy(l => l)]
 		};
-		return ReleaseNotesOperation.Built(LinkManifestConstraints.All, manifest);
+		return DomainOperation.Built(LinkManifestConstraints.All, manifest);
 	}
 
 	/// <summary>
@@ -69,7 +69,7 @@ public partial record LinkManifest
 	/// it instead of "no such repository".
 	/// </summary>
 	public static Result<LinkManifest> Empty(string repository) =>
-		ReleaseNotesOperation.Built(
+		DomainOperation.Built(
 			LinkManifestConstraints.All,
 			new LinkManifest
 			{

@@ -9,8 +9,27 @@ namespace Elastic.Documentation.Catalog;
 /// the products that use them, and the legacy URL mappings that point at those products. Loaded once per process,
 /// as one unit, from <c>versions.yml</c>, <c>products.yml</c> and <c>legacy-url-mappings.yml</c>, in that order.
 /// </summary>
-public sealed record GlobalCatalog(
-	VersioningSystemCatalog VersioningSystems,
-	ProductCatalog Products,
-	LegacyUrlMappingCatalog LegacyUrlMappings
-);
+public sealed record GlobalCatalog
+{
+	internal GlobalCatalog(VersioningSystemCatalog versioningSystems, ProductCatalog products, LegacyUrlMappingCatalog legacyUrlMappings)
+	{
+		VersioningSystems = versioningSystems;
+		Products = products;
+		LegacyUrlMappings = legacyUrlMappings;
+	}
+
+	public VersioningSystemCatalog VersioningSystems { get; internal init; }
+	public ProductCatalog Products { get; internal init; }
+	public LegacyUrlMappingCatalog LegacyUrlMappings { get; internal init; }
+
+	public void Deconstruct(
+		out VersioningSystemCatalog versioningSystems,
+		out ProductCatalog products,
+		out LegacyUrlMappingCatalog legacyUrlMappings
+	)
+	{
+		versioningSystems = VersioningSystems;
+		products = Products;
+		legacyUrlMappings = LegacyUrlMappings;
+	}
+}

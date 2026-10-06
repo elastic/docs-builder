@@ -20,7 +20,7 @@ public partial record LoadedBundle
 			return Result.Success(bundles);
 
 		var merged = bundles.GroupBy(b => b.Version).Select(MergeGroup).OrderByDescending(b => VersionOrDate.Parse(b.Version)).ToList();
-		var errors = merged.SelectMany(b => ReleaseNotesOperation.Derived(LoadedBundleConstraints.All, b).Diagnostics).ToList();
+		var errors = merged.SelectMany(b => DomainOperation.Derived(LoadedBundleConstraints.All, b).Diagnostics).ToList();
 		return Result.Success<IReadOnlyList<LoadedBundle>>(merged, errors);
 	}
 

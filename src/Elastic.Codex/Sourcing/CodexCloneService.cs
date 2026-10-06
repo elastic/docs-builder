@@ -385,16 +385,7 @@ public class CodexCloneService(ILoggerFactory logFactory, ILinkIndexReader linkI
 		LinkRegistryEntry entry,
 		string docsPath,
 		DocumentationSetDefinition docSet
-	) =>
-		new()
-		{
-			Name = repoName,
-			Origin = $"elastic/{repoName}",
-			Branch = entry.Branch,
-			Path = docsPath,
-			Group = docSet.CodexGroup,
-			Icon = docSet.Icon
-		};
+	) => CodexDocumentationSetReference.ForRepository(repoName, entry.Branch, docsPath, docSet.CodexGroup, docSet.Icon);
 
 	private static string GetGitUrl(string origin)
 	{

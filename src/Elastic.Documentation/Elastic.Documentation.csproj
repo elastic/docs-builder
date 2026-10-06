@@ -21,6 +21,29 @@
   <ItemGroup>
     <!-- The raw wire-format readers (LinkJson.Deserialize*) are internal: the checked loaders in Configuration are the only way to a record. -->
     <InternalsVisibleTo Include="Elastic.Documentation.Configuration" />
+    <!-- The compile-time guard: aggregate setters and constructors are internal, so production code outside this assembly and Configuration cannot create or edit one. Tests build records by hand. Never add a production assembly here. -->
+    <InternalsVisibleTo Include="Elastic.ApiExplorer.Tests" />
+    <InternalsVisibleTo Include="Elastic.Authoring.Tests" />
+    <InternalsVisibleTo Include="Elastic.Changelog.Tests" />
+    <InternalsVisibleTo Include="Elastic.Documentation.Api.Infrastructure.Tests" />
+    <InternalsVisibleTo Include="Elastic.Documentation.Api.Tests" />
+    <InternalsVisibleTo Include="Elastic.Documentation.Build.Tests" />
+    <InternalsVisibleTo Include="Elastic.Documentation.Configuration.Tests" />
+    <InternalsVisibleTo Include="Elastic.Documentation.Deploying.Tests" />
+    <InternalsVisibleTo Include="Elastic.Documentation.Indexing.Tests" />
+    <InternalsVisibleTo Include="Elastic.Documentation.Integrations.Tests" />
+    <InternalsVisibleTo Include="Elastic.Documentation.LegacyDocs.Tests" />
+    <InternalsVisibleTo Include="Elastic.Documentation.OpenApiIndex.Tests" />
+    <InternalsVisibleTo Include="Elastic.Documentation.Tests" />
+    <InternalsVisibleTo Include="Elastic.LegacyDocs.Migration.Tests" />
+    <InternalsVisibleTo Include="Elastic.Markdown.Tests" />
+    <InternalsVisibleTo Include="Elastic.SiteSearch.Tests" />
+    <InternalsVisibleTo Include="Mcp.Remote.Tests" />
+    <InternalsVisibleTo Include="Navigation.Tests" />
+    <InternalsVisibleTo Include="Elastic.Documentation.IntegrationTests" />
+    <InternalsVisibleTo Include="Mcp.Remote.IntegrationTests" />
+    <InternalsVisibleTo Include="Search.IntegrationTests" />
+    <InternalsVisibleTo Include="Elastic.ContentDateEnrichment.IntegrationTests" />
   </ItemGroup>
 
   <ItemGroup>

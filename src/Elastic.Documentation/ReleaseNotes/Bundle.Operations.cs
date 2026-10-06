@@ -34,7 +34,7 @@ public partial record Bundle
 		string? owner,
 		IReadOnlyCollection<string>? hideFeatures
 	) =>
-		ReleaseNotesOperation.Built(
+		DomainOperation.Built(
 			BundleReadConstraints.All,
 			new Bundle
 			{
@@ -104,7 +104,7 @@ public partial record Bundle
 		DateOnly? releaseDate,
 		IReadOnlyList<BundledEntry> entries
 	) =>
-		ReleaseNotesOperation.Built(
+		DomainOperation.Built(
 			BundleReadConstraints.All,
 			new Bundle
 			{
@@ -130,7 +130,7 @@ public partial record Bundle
 		DateOnly today,
 		bool suppressReleaseDate = false
 	) =>
-		ReleaseNotesOperation.Derived(
+		DomainOperation.Derived(
 			BundleReadConstraints.All,
 			this with
 			{
@@ -151,7 +151,7 @@ public partial record Bundle
 		IReadOnlyList<BundledEntry> exclusions,
 		string? description = null
 	) =>
-		ReleaseNotesOperation.Derived(
+		DomainOperation.Derived(
 			BundleReadConstraints.All,
 			new Bundle { Products = parentProducts, ExcludeEntries = exclusions, Entries = entriesToAdd, Description = description }
 		);
@@ -161,7 +161,7 @@ public partial record Bundle
 	/// patched by the amends that patch it. The one way a bundle takes its amends.
 	/// </summary>
 	public Result<Bundle> ApplyAmends(IReadOnlyList<BundleAmend> amendsInOrder) =>
-		ReleaseNotesOperation.Derived(
+		DomainOperation.Derived(
 			BundleReadConstraints.All,
 			this with
 			{

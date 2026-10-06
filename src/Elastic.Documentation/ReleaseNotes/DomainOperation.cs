@@ -10,7 +10,7 @@ namespace Elastic.Documentation.ReleaseNotes;
 /// How a domain operation hands back a record: built or derived, then checked by the aggregate's constraint set, as a <see cref="Result{T}"/>.
 /// An operation is pure: no IO, no clock (the caller passes <c>today</c>), no collector (a finding is a diagnostic in the result).
 /// </summary>
-internal static class ReleaseNotesOperation
+internal static class DomainOperation
 {
 	/// <summary>
 	/// A record built from facts that were never in a file: every finding of <paramref name="rules"/> is in the result, so the caller sees what

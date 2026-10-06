@@ -56,7 +56,7 @@ public partial record LinkRegistry
 		{
 			copiedRepositories.Add(repository, new Dictionary<string, LinkRegistryEntry> { { branch, entry } });
 		}
-		return ReleaseNotesOperation.Derived(LinkRegistryConstraints.All, this with { Repositories = copiedRepositories });
+		return DomainOperation.Derived(LinkRegistryConstraints.All, this with { Repositories = copiedRepositories });
 	}
 }
 

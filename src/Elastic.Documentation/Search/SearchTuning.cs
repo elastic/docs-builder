@@ -14,7 +14,7 @@ namespace Elastic.Documentation.Search;
 public sealed partial record SearchTuning
 {
 	[OrderedEquality]
-	public required IReadOnlyList<SynonymGroup> Synonyms { get; init; }
+	public IReadOnlyList<SynonymGroup> Synonyms { get; internal init; } = default!;
 
 	/// <summary>Each single-word synonym mapped to the rest of its group; derived from <see cref="Synonyms"/>.</summary>
 	[IgnoreEquality]
@@ -51,16 +51,16 @@ public sealed partial record SearchTuning
 			.ToDictionary(a => a[0], a => a.Skip(1).ToArray(), StringComparer.OrdinalIgnoreCase);
 
 	[OrderedEquality]
-	public required IReadOnlyCollection<QueryRule> Rules { get; init; }
+	public IReadOnlyCollection<QueryRule> Rules { get; internal init; } = default!;
 	[OrderedEquality]
-	public required IReadOnlyCollection<string> DiminishTerms { get; init; }
+	public IReadOnlyCollection<string> DiminishTerms { get; internal init; } = default!;
 
 	/// <summary>
 	/// The name of the file the tuning was read from, or null when it was not read from one. The loader reads <c>synonyms.yml</c> when there is no
 	/// <c>search.yml</c>, and nothing else in the model tells the two apart.
 	/// </summary>
 	[IgnoreEquality]
-	public string? SourceFileName { get; init; }
+	public string? SourceFileName { get; internal init; }
 
 	/// <summary>No synonyms, rules or diminished terms: search as untuned.</summary>
 	public static SearchTuning None { get; } = new() { Synonyms = [], Rules = [], DiminishTerms = [] };
@@ -69,16 +69,16 @@ public sealed partial record SearchTuning
 [Equatable]
 public sealed partial record QueryRule
 {
-	public required string RuleId { get; init; }
-	public required QueryRuleType Type { get; init; }
+	public string RuleId { get; internal init; } = default!;
+	public QueryRuleType Type { get; internal init; } = default!;
 
 	/// <summary><c>type</c> as written; empty when absent, null when the rule was not loaded from a file. An unknown or empty text is read as <see cref="QueryRuleType.Pinned"/>.</summary>
 	[IgnoreEquality]
-	public string? TypeRaw { get; init; }
+	public string? TypeRaw { get; internal init; }
 
 	[OrderedEquality]
-	public required IReadOnlyCollection<QueryRuleCriteria> Criteria { get; init; }
-	public required QueryRuleActions Actions { get; init; }
+	public IReadOnlyCollection<QueryRuleCriteria> Criteria { get; internal init; } = default!;
+	public QueryRuleActions Actions { get; internal init; } = default!;
 }
 
 public enum QueryRuleType
@@ -90,15 +90,15 @@ public enum QueryRuleType
 [Equatable]
 public sealed partial record QueryRuleCriteria
 {
-	public required QueryRuleCriteriaType Type { get; init; }
+	public QueryRuleCriteriaType Type { get; internal init; } = default!;
 
 	/// <summary><c>type</c> as written; empty when absent, null when the criteria was not loaded from a file. An unknown or empty text is read as <see cref="QueryRuleCriteriaType.Exact"/>.</summary>
 	[IgnoreEquality]
-	public string? TypeRaw { get; init; }
+	public string? TypeRaw { get; internal init; }
 
-	public required string Metadata { get; init; }
+	public string Metadata { get; internal init; } = default!;
 	[OrderedEquality]
-	public required IReadOnlyCollection<string> Values { get; init; }
+	public IReadOnlyCollection<string> Values { get; internal init; } = default!;
 }
 
 public enum QueryRuleCriteriaType
@@ -112,7 +112,7 @@ public enum QueryRuleCriteriaType
 public sealed partial record QueryRuleActions
 {
 	[OrderedEquality]
-	public required IReadOnlyCollection<string> Ids { get; init; }
+	public IReadOnlyCollection<string> Ids { get; internal init; } = default!;
 }
 
 /// <summary>
@@ -120,4 +120,12 @@ public sealed partial record QueryRuleActions
 /// maps <c>a</c> to the rest of the group in one direction only.
 /// </summary>
 [Equatable]
-public sealed partial record SynonymGroup([property: OrderedEquality] IReadOnlyList<string> Terms);
+public sealed partial record SynonymGroup
+{
+	internal SynonymGroup(IReadOnlyList<string> terms) => Terms = terms;
+
+	[OrderedEquality]
+	public IReadOnlyList<string> Terms { get; internal init; }
+
+	public void Deconstruct(out IReadOnlyList<string> terms) => terms = Terms;
+}

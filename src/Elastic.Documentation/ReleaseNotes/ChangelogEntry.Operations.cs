@@ -74,7 +74,7 @@ public partial record ChangelogEntry
 	/// <see cref="TypeOrOther"/> of <see cref="PullRequestFacts.Type"/>; an empty list of areas or issues is none.
 	/// </summary>
 	public static Result<ChangelogEntry> FromPullRequest(PullRequestFacts facts, IReadOnlyList<ProductReference> products) =>
-		ReleaseNotesOperation.Built(
+		DomainOperation.Built(
 			ChangelogEntryReadConstraints.All,
 			new ChangelogEntry
 			{
@@ -105,7 +105,7 @@ public partial record ChangelogEntry
 			) ? subtypeParsed : (ChangelogEntrySubtype?)null
 			: null;
 
-		return ReleaseNotesOperation.Built(
+		return DomainOperation.Built(
 			ChangelogEntryReadConstraints.All,
 			new ChangelogEntry
 			{
@@ -133,11 +133,11 @@ public partial record ChangelogEntry
 
 	/// <summary>The marker for a link as written (a file read from the pool may carry anything): a link that is not a PR number is a violation of <c>marker-link-is-pr-number</c> in the result.</summary>
 	public static Result<ChangelogEntry> Marker(string link) =>
-		ReleaseNotesOperation.Built(ChangelogEntryReadConstraints.All, new ChangelogEntry { Link = link });
+		DomainOperation.Built(ChangelogEntryReadConstraints.All, new ChangelogEntry { Link = link });
 
 	/// <summary>A source pointer the scrubber writes in the public bucket, tracing a source key to a canonical file <paramref name="stem"/> (<c>link:</c> and <c>source-redirect:</c>).</summary>
 	public static Result<ChangelogEntry> SourcePointer(string stem) =>
-		ReleaseNotesOperation.Built(ChangelogEntryReadConstraints.All, new ChangelogEntry { Link = stem, SourceRedirect = true });
+		DomainOperation.Built(ChangelogEntryReadConstraints.All, new ChangelogEntry { Link = stem, SourceRedirect = true });
 
 	/// <summary>
 	/// Where this entry belongs in the pool, derived from its PR references (a reference to another repository is read against the default owner and repository):

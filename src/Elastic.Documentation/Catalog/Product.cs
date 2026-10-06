@@ -13,7 +13,7 @@ namespace Elastic.Documentation.Catalog;
 public sealed partial record ProductCatalog : IProductNameLookup
 {
 	[UnorderedEquality]
-	public required FrozenDictionary<string, Product> Products { get; init; }
+	public FrozenDictionary<string, Product> Products { get; internal init; } = default!;
 
 	/// <summary>A catalog of <paramref name="products"/>, every one of them a public reference product.</summary>
 	public static ProductCatalog FromPublicProducts(IEnumerable<KeyValuePair<string, Product>> products)
@@ -33,13 +33,13 @@ public sealed partial record ProductCatalog : IProductNameLookup
 	/// When a product has no explicit <c>features</c> map, it is included here by default.
 	/// </summary>
 	[UnorderedEquality]
-	public required FrozenDictionary<string, Product> PublicReferenceProducts { get; init; }
+	public FrozenDictionary<string, Product> PublicReferenceProducts { get; internal init; } = default!;
 
 	/// <summary>
 	/// Product id to display name mappings for fast lookups.
 	/// </summary>
 	[UnorderedEquality]
-	public required FrozenDictionary<string, string> ProductDisplayNames { get; init; }
+	public FrozenDictionary<string, string> ProductDisplayNames { get; internal init; } = default!;
 
 	private FrozenDictionary<string, string>.AlternateLookup<ReadOnlySpan<char>>? _displayNameLookup;
 
@@ -126,14 +126,14 @@ public enum ReleaseNotesPath
 public sealed record ProductFeatures
 {
 	/// <summary>Product can be referenced in applies_to blocks, page frontmatter, and gets display-name substitutions.</summary>
-	public bool PublicReference { get; init; }
+	public bool PublicReference { get; internal init; }
 
 	/// <summary>
 	/// The product's release-notes onboarding path. <see cref="ReleaseNotesPath.OnRelease"/> when
 	/// <c>features.release-notes</c> is omitted or <c>true</c> (preserving the historical boolean
 	/// participation default), <see cref="ReleaseNotesPath.None"/> when <c>false</c>.
 	/// </summary>
-	public ReleaseNotesPath ReleaseNotes { get; init; }
+	public ReleaseNotesPath ReleaseNotes { get; internal init; }
 
 	/// <summary>Whether the product participates in the changelog / release-notes system at all.</summary>
 	public bool ParticipatesInReleaseNotes => ReleaseNotes != ReleaseNotesPath.None;
@@ -150,9 +150,9 @@ public sealed record ProductFeatures
 /// <summary>A product from <c>products.yml</c>. Its versioning system is resolved while loading the <see cref="GlobalCatalog"/>.</summary>
 public sealed record Product
 {
-	public required string Id { get; init; }
-	public required string DisplayName { get; init; }
-	public VersioningSystem? VersioningSystem { get; init; }
-	public string? Repository { get; init; }
-	public ProductFeatures Features { get; init; } = ProductFeatures.All;
+	public string Id { get; internal init; } = default!;
+	public string DisplayName { get; internal init; } = default!;
+	public VersioningSystem? VersioningSystem { get; internal init; }
+	public string? Repository { get; internal init; }
+	public ProductFeatures Features { get; internal init; } = ProductFeatures.All;
 }

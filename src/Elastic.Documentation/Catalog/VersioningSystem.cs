@@ -14,7 +14,7 @@ namespace Elastic.Documentation.Catalog;
 public sealed partial record VersioningSystemCatalog
 {
 	[UnorderedEquality]
-	public required IReadOnlyDictionary<VersioningSystemId, VersioningSystem> VersioningSystems { get; init; }
+	public IReadOnlyDictionary<VersioningSystemId, VersioningSystem> VersioningSystems { get; internal init; } = default!;
 	public VersioningSystem GetVersioningSystem(VersioningSystemId versioningSystem)
 	{
 		if (!VersioningSystems.TryGetValue(versioningSystem, out var version))
@@ -169,11 +169,11 @@ public sealed record VersioningSystem
 		Current = new SemVersion(VersionlessSentinel, 0, 0)
 	};
 
-	public required VersioningSystemId Id { get; init; }
+	public VersioningSystemId Id { get; internal init; } = default!;
 
-	public required SemVersion Base { get; init; }
+	public SemVersion Base { get; internal init; } = default!;
 
-	public required SemVersion Current { get; init; }
+	public SemVersion Current { get; internal init; } = default!;
 
 	public bool IsVersioned() => Base.Major != AllVersions.Instance.Major;
 	/// <summary>

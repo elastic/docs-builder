@@ -40,7 +40,7 @@ public partial record BundledEntry
 	/// release (an entry's own products are not a note's), a missing type is <c>other</c> and a missing title blank.
 	/// </summary>
 	public Result<ChangelogEntry> ToNote(string productId, string version) =>
-		ReleaseNotesOperation.Built(
+		DomainOperation.Built(
 			ChangelogEntryReadConstraints.All,
 			new ChangelogEntry
 			{

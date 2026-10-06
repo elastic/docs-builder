@@ -19,7 +19,7 @@ public sealed partial record RelatedLearningCatalog
 
 	/// <summary>Catalog entries keyed by ID.</summary>
 	[UnorderedEquality]
-	public required IReadOnlyDictionary<string, RelatedLearningLink> Links { get; init; }
+	public IReadOnlyDictionary<string, RelatedLearningLink> Links { get; internal init; } = default!;
 
 	public bool TryGet(string id, [NotNullWhen(true)] out RelatedLearningLink? link) => Links.TryGetValue(id, out link);
 }
@@ -27,7 +27,7 @@ public sealed partial record RelatedLearningCatalog
 /// <summary>A single named learning destination from <c>related-learning.yml</c>.</summary>
 public sealed record RelatedLearningLink
 {
-	public required string Id { get; init; }
-	public required string Title { get; init; }
-	public required string Url { get; init; }
+	public string Id { get; internal init; } = default!;
+	public string Title { get; internal init; } = default!;
+	public string Url { get; internal init; } = default!;
 }

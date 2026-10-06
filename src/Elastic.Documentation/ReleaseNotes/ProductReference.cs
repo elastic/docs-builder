@@ -44,7 +44,7 @@ public partial record ProductReference
 	/// <c>product-id-required</c>) are the entry's, so the entry that holds it is what is checked.
 	/// </summary>
 	public static ProductReference Parse(string? productId, IReadOnlyList<string>? versions = null, string? lifecycle = null) =>
-		new() { ProductId = productId ?? "", Versions = versions ?? [], Lifecycle = ReleaseNotesOperation.ParseLifecycle(lifecycle) };
+		new() { ProductId = productId ?? "", Versions = versions ?? [], Lifecycle = DomainOperation.ParseLifecycle(lifecycle) };
 
 	/// <summary>A reference to a product alone, as a note scraped from a release notes page names it.</summary>
 	public static ProductReference Of(string productId, IReadOnlyList<string>? versions = null) =>

@@ -94,7 +94,7 @@ public static partial class LinkAllowlist
 			Impact = scrubbed.Impact,
 			Action = scrubbed.Action
 		};
-		var rechecked = ReleaseNotesOperation.Derived(ChangelogEntryReadConstraints.All, value, diagnostics);
+		var rechecked = DomainOperation.Derived(ChangelogEntryReadConstraints.All, value, diagnostics);
 		return Result.Success(new PrivateLinkScrub<ChangelogEntry>(value, scrubbed.Changed), rechecked.Diagnostics);
 	}
 
@@ -122,7 +122,7 @@ public static partial class LinkAllowlist
 
 		var description = ScrubText(bundle.Description, BuildAllowSet(allowRepos), ref anyChanged);
 		var value = bundle with { Entries = entries, Description = description };
-		var rechecked = ReleaseNotesOperation.Derived(BundleReadConstraints.All, value, diagnostics);
+		var rechecked = DomainOperation.Derived(BundleReadConstraints.All, value, diagnostics);
 		return Result.Success(new PrivateLinkScrub<Bundle>(value, anyChanged), rechecked.Diagnostics);
 	}
 
@@ -157,7 +157,7 @@ public static partial class LinkAllowlist
 		}
 
 		var value = bundle with { Entries = entries };
-		var rechecked = ReleaseNotesOperation.Derived(BundleReadConstraints.All, value, diagnostics);
+		var rechecked = DomainOperation.Derived(BundleReadConstraints.All, value, diagnostics);
 		return Result.Success(new PrivateLinkScrub<Bundle>(value, anyRewritten), rechecked.Diagnostics);
 	}
 

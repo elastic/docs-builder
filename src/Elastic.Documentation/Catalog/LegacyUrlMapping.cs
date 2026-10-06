@@ -11,7 +11,7 @@ namespace Elastic.Documentation.Catalog;
 public sealed partial record LegacyUrlMappingCatalog
 {
 	[OrderedEquality]
-	public required IReadOnlyCollection<LegacyUrlMapping> Mappings { get; init; }
+	public IReadOnlyCollection<LegacyUrlMapping> Mappings { get; internal init; } = default!;
 
 	public static LegacyUrlMappingCatalog None { get; } = new() { Mappings = [] };
 }
@@ -19,9 +19,9 @@ public sealed partial record LegacyUrlMappingCatalog
 [Equatable]
 public sealed partial record LegacyUrlMapping
 {
-	public required string BaseUrl { get; init; }
+	public string BaseUrl { get; internal init; } = default!;
 	[DefaultEquality]
-	public required Product Product { get; init; }
+	public Product Product { get; internal init; } = default!;
 	[OrderedEquality]
-	public required IReadOnlyCollection<string> LegacyVersions { get; init; }
+	public IReadOnlyCollection<string> LegacyVersions { get; internal init; } = default!;
 }

@@ -57,7 +57,7 @@ public record BundledProduct
 		new(
 			productId ?? "",
 			target == "*" ? null : target,
-			ReleaseNotesOperation.ParseLifecycle(lifecycle == "*" ? null : lifecycle),
+			DomainOperation.ParseLifecycle(lifecycle == "*" ? null : lifecycle),
 			repo,
 			owner
 		);

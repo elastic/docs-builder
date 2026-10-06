@@ -18,12 +18,12 @@ namespace Elastic.Documentation.Publishing;
 public sealed partial record SiteNavigationDefinition
 {
 	[OrderedEquality]
-	public IReadOnlyList<PhantomRegistration> Phantoms { get; init; } = [];
+	public IReadOnlyList<PhantomRegistration> Phantoms { get; internal init; } = [];
 
 	// A union compares its case value, and both cases are [Equatable]; the analyzer cannot see through the union.
 #pragma warning disable GE003
 	[OrderedEquality]
-	public IReadOnlyList<SiteNavigationEntry> TableOfContents { get; init; } = [];
+	public IReadOnlyList<SiteNavigationEntry> TableOfContents { get; internal init; } = [];
 #pragma warning restore GE003
 
 	/// <summary>
@@ -55,7 +55,7 @@ public sealed partial record SiteNavigationDefinition
 		if (appended is { Count: > 0 })
 			derived = derived with { TableOfContents = [.. derived.TableOfContents, .. appended] };
 
-		return ReleaseNotesOperation.Built(SiteNavigationConstraints.All, derived, file: file);
+		return DomainOperation.Built(SiteNavigationConstraints.All, derived, file: file);
 	}
 
 	private static IEnumerable<SiteNavigationEntry> Without(SiteNavigationEntry entry, IReadOnlySet<string> repositories) => entry switch
@@ -183,35 +183,68 @@ public static class SiteNavigationEntryExtensions
 /// <summary>A source known to the site but deliberately not mounted in its navigation.</summary>
 public sealed record PhantomRegistration
 {
-	public string Source { get; init; } = null!;
+	public string Source { get; internal init; } = null!;
 }
 
 public record NavigationTocMapping
 {
-	public required Uri Source { get; init; }
-	public required string SourcePathPrefix { get; init; }
+	public Uri Source { get; internal init; } = default!;
+	public string SourcePathPrefix { get; internal init; } = default!;
 }
 
 /// <summary>A link entry within a <c>dropdown:</c> section.</summary>
-public record SiteDropdownLinkRef(string Title, string Url);
+public record SiteDropdownLinkRef
+{
+	internal SiteDropdownLinkRef(string title, string url)
+	{
+		Title = title;
+		Url = url;
+	}
+
+	public string Title { get; internal init; }
+	public string Url { get; internal init; }
+
+	public void Deconstruct(out string title, out string url)
+	{
+		title = Title;
+		url = Url;
+	}
+}
 
 [Equatable]
-public partial record SiteSectionRef(
-	string Title,
-	string? ExternalUrl,
-	[property: OrderedEquality] IReadOnlyList<SiteTableOfContentsRef> Children,
-	[property: OrderedEquality] IReadOnlyList<SiteDropdownLinkRef> DropdownLinks
-)
+public partial record SiteSectionRef
 {
+	internal SiteSectionRef(
+		string title,
+		string? externalUrl,
+		IReadOnlyList<SiteTableOfContentsRef> children,
+		IReadOnlyList<SiteDropdownLinkRef> dropdownLinks
+	)
+	{
+		Title = title;
+		ExternalUrl = externalUrl;
+		Children = children;
+		DropdownLinks = dropdownLinks;
+	}
+
+	public string Title { get; internal init; }
+	public string? ExternalUrl { get; internal init; }
+
+	[OrderedEquality]
+	public IReadOnlyList<SiteTableOfContentsRef> Children { get; internal init; }
+
+	[OrderedEquality]
+	public IReadOnlyList<SiteDropdownLinkRef> DropdownLinks { get; internal init; }
+
 	public bool IsExternal => ExternalUrl is not null;
 
 	/// <summary>Keys the entry wrote that navigation.yml does not read, in the order written; the loader drops them. See Constraints-Conventions.md.</summary>
 	[IgnoreEquality]
-	public IReadOnlyList<string> UnknownKeys { get; init; } = [];
+	public IReadOnlyList<string> UnknownKeys { get; internal init; } = [];
 
 	/// <summary>Where the entry is declared; diagnostics about it point here.</summary>
 	[IgnoreEquality]
-	public Diagnostics.SourcePosition? Position { get; init; }
+	public Diagnostics.SourcePosition? Position { get; internal init; }
 
 	/// <summary>True when the section carries a dropdown list instead of tree children.</summary>
 	public bool IsDropdown => DropdownLinks.Count > 0;
@@ -226,14 +259,32 @@ public partial record SiteSectionRef(
 /// in the assembled navigation (dropdowns, back-links, sidebar root row). Does not change the page H1.
 /// </param>
 [Equatable]
-public partial record SiteTableOfContentsRef(
-	Uri Source,
-	string PathPrefix,
-	[property: OrderedEquality] IReadOnlyList<SiteTableOfContentsRef> Children,
-	bool Island = false,
-	string? NavigationTitle = null
-)
+public partial record SiteTableOfContentsRef
 {
+	internal SiteTableOfContentsRef(
+		Uri source,
+		string pathPrefix,
+		IReadOnlyList<SiteTableOfContentsRef> children,
+		bool island = false,
+		string? navigationTitle = null
+	)
+	{
+		Source = source;
+		PathPrefix = pathPrefix;
+		Children = children;
+		Island = island;
+		NavigationTitle = navigationTitle;
+	}
+
+	public Uri Source { get; internal init; }
+	public string PathPrefix { get; internal init; }
+
+	[OrderedEquality]
+	public IReadOnlyList<SiteTableOfContentsRef> Children { get; internal init; }
+
+	public bool Island { get; internal init; }
+	public string? NavigationTitle { get; internal init; }
+
 	// For site-level TOC refs, the Path is the path prefix (where it will be mounted in the site)
 	public string PathRelativeToDocumentationSet => PathPrefix;
 
@@ -243,23 +294,23 @@ public partial record SiteTableOfContentsRef(
 
 	// For site-level TOC refs, the Context is the navigation.yml file path
 	// This will be set during site navigation loading
-	public string Context { get; init; } = "";
+	public string Context { get; internal init; } = "";
 
 	/// <summary>
 	/// The <c>toc:</c> value when written without a scheme (<c>toc: get-started</c>), which mounts a narrative
 	/// table of contents and doubles as its path prefix when <c>path_prefix</c> is omitted.
 	/// </summary>
-	public string? ShorthandPath { get; init; }
+	public string? ShorthandPath { get; internal init; }
 
 	/// <summary>Where the entry is declared; diagnostics about it point here.</summary>
 	[IgnoreEquality]
-	public Diagnostics.SourcePosition? Position { get; init; }
+	public Diagnostics.SourcePosition? Position { get; internal init; }
 
 	/// <summary>Keys the entry wrote that navigation.yml does not read, in the order written (<c>pathprefix</c>, <c>repo</c>); the loader drops them. See Constraints-Conventions.md.</summary>
 	[IgnoreEquality]
-	public IReadOnlyList<string> UnknownKeys { get; init; } = [];
+	public IReadOnlyList<string> UnknownKeys { get; internal init; } = [];
 
 	/// <summary><c>island:</c> as written, or null when absent. <see cref="Island"/> is true only when this parses as the boolean true, so <c>island: yes</c> or <c>island: false</c> cannot be told from nothing.</summary>
 	[IgnoreEquality]
-	public string? IslandRaw { get; init; }
+	public string? IslandRaw { get; internal init; }
 }
