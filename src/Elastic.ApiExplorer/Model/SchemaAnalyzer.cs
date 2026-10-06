@@ -145,7 +145,7 @@ public class SchemaAnalyzer(
 		if (member.Type?.HasFlag(JsonSchemaType.Array) == true && member.Items != null)
 		{
 			var item = ClassifyType(member.Items);
-			return new UnionOption($"{item.TypeName}[]", item.SchemaRef, item.IsObject, member);
+			return new UnionOption(item.TypeName, item.SchemaRef, item.IsObject, member, IsArray: true);
 		}
 
 		// An inline schema can still wrap a reference (allOf: [$ref]).
@@ -208,7 +208,7 @@ public class SchemaAnalyzer(
 		// Try finding by name pattern (e.g., "SourceFilter" -> look for schemas ending with ".SourceFilter")
 		if (document.Components?.Schemas != null)
 		{
-			var baseName = option.Name.EndsWith("[]") ? option.Name[..^2] : option.Name;
+			var baseName = option.BaseName;
 			var matchingSchema = document.Components.Schemas.FirstOrDefault(kvp => kvp.Key.EndsWith("." + baseName) || kvp.Key == baseName);
 			if (matchingSchema.Value != null)
 			{
@@ -239,93 +239,6 @@ public class SchemaAnalyzer(
 		return info is { IsDictionary: true, HasLink: false, DictValueSchema: { } value } && GetSchemaProperties(value)?.Count > 0
 			? value
 			: null;
-	}
-
-	/// <summary>
-	/// Flattens nested unions to get all leaf options (options with direct properties, not union wrappers).
-	/// </summary>
-	public List<UnionOption> FlattenUnionOptions(List<UnionOption> options)
-	{
-		var result = new List<UnionOption>();
-
-		foreach (var option in options.Where(o => o.Schema != null))
-		{
-			var baseName = option.Name.EndsWith("[]") ? option.Name[..^2] : option.Name;
-			var isArray = option.Name.EndsWith("[]");
-			var schema = option.Schema!; // Schema is guaranteed non-null by Where filter
-
-			// For array types, we need to look at the Items schema
-			var schemaToCheck = schema;
-			if (schema.Type?.HasFlag(JsonSchemaType.Array) == true && schema.Items != null)
-				schemaToCheck = schema.Items;
-
-			// Check if this option has direct properties
-			var hasDirectProps = false;
-			var resolvedSchema = schemaToCheck;
-
-			var props = GetSchemaProperties(schemaToCheck);
-			if (props?.Count > 0)
-				hasDirectProps = true;
-			else if (schemaToCheck is OpenApiSchemaReference schemaRef)
-			{
-				var refId = schemaRef.Reference?.Id;
-				if (!string.IsNullOrEmpty(refId) && document.Components?.Schemas?.TryGetValue(refId, out var resolved) == true)
-				{
-					resolvedSchema = resolved;
-					props = GetSchemaProperties(resolved);
-					if (props?.Count > 0)
-						hasDirectProps = true;
-				}
-			}
-
-			if (!hasDirectProps && document.Components?.Schemas != null)
-			{
-				var matchingSchema = document
-					.Components
-					.Schemas
-					.FirstOrDefault(kvp => kvp.Key.EndsWith("." + baseName) || kvp.Key == baseName);
-				if (matchingSchema.Value != null)
-				{
-					resolvedSchema = matchingSchema.Value;
-					props = GetSchemaProperties(matchingSchema.Value);
-					if (props?.Count > 0)
-						hasDirectProps = true;
-				}
-			}
-
-			if (hasDirectProps)
-			{
-				// This option has properties, add it to results
-				// For arrays, keep the original schema so we render the right type
-				result.Add(new UnionOption(option.Name, option.Ref, option.IsObject, resolvedSchema));
-			}
-			else if (resolvedSchema != null)
-			{
-				// Check if this is a nested union that we should expand
-				// Try the original schema first (OpenApiSchemaReference proxies OneOf/AnyOf correctly)
-				var nestedOptions = GetNestedUnionOptions(schemaToCheck);
-				if (nestedOptions.Count == 0)
-				{
-					// Fallback to resolved schema
-					nestedOptions = GetNestedUnionOptions(resolvedSchema);
-				}
-				if (nestedOptions.Count > 0)
-				{
-					// Recursively flatten nested union, carrying the array suffix if needed
-					var flattenedNested = FlattenUnionOptions(nestedOptions);
-					foreach (var nested in flattenedNested)
-					{
-						// If the parent was an array and the nested option isn't, add array suffix
-						var nestedName = nested.Name;
-						if (isArray && !nestedName.EndsWith("[]"))
-							nestedName = $"{nestedName}[]";
-						result.Add(new UnionOption(nestedName, nested.Ref, nested.IsObject, nested.Schema));
-					}
-				}
-			}
-		}
-
-		return result;
 	}
 
 	/// <summary>
@@ -542,7 +455,7 @@ public class SchemaAnalyzer(
 			return new TypeInfo { TypeName = "enum", IsEnum = true };
 
 		var options = classified.Select(
-			m => new UnionOption(m.Info.IsArray ? $"{m.Info.TypeName}[]" : m.Info.TypeName, m.Info.SchemaRef, m.Info.IsObject, m.Schema)
+			m => new UnionOption(m.Info.TypeName, m.Info.SchemaRef, m.Info.IsObject, m.Schema, m.Info.IsArray)
 		).ToList();
 
 		// Multiple object options render as tabs.
@@ -630,9 +543,7 @@ public class SchemaAnalyzer(
 		var options = union
 			.UnionOptions
 			.Select(
-				o => o is { IsObject: true, Schema: not null } && !o.Name.EndsWith("[]")
-					? o with { Schema = MergeBasesInto(split.Bases, o.Schema) }
-					: o
+				o => o is { IsObject: true, Schema: not null } && !o.IsArray ? o with { Schema = MergeBasesInto(split.Bases, o.Schema) } : o
 			)
 			.ToList();
 		return union with { UnionOptions = options };

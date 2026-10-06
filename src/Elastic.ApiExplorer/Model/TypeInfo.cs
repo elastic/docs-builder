@@ -10,7 +10,11 @@ namespace Elastic.ApiExplorer.Model;
 /// <summary>
 /// Represents a union option with full schema information.
 /// </summary>
-public record UnionOption(string Name, string? Ref, bool IsObject, IOpenApiSchema? Schema);
+public record UnionOption(string BaseName, string? Ref, bool IsObject, IOpenApiSchema? Schema, bool IsArray = false)
+{
+	/// <summary>The display name: <see cref="BaseName"/>, with <c>[]</c> when the member is an array of it.</summary>
+	public string Name => IsArray ? $"{BaseName}[]" : BaseName;
+}
 
 /// <summary>A named schema merged into a type through <c>allOf</c>, beyond the one that names the type.</summary>
 public record ComposedType(string Name, bool HasLink);

@@ -89,8 +89,7 @@ public class ApiPropertyTreeBuilder(OpenApiDocument document, PropertyDisplayOpt
 			.Select(s =>
 			{
 				var info = _analyzer.GetTypeInfo(s);
-				var displayName = info.IsArray ? $"{info.TypeName}[]" : info.TypeName;
-				return new UnionOption(displayName, info.SchemaRef, info.IsObject, s);
+				return new UnionOption(info.TypeName, info.SchemaRef, info.IsObject, s, info.IsArray);
 			})
 			.ToList();
 		return BuildUnionVariants(unionOptions, scope, discriminator);
@@ -317,11 +316,11 @@ public class ApiPropertyTreeBuilder(OpenApiDocument document, PropertyDisplayOpt
 		if (typeInfo is not { IsUnion: true, UnionOptions.Count: > 0 })
 			return (false, null);
 
-		var distinctNames = typeInfo.UnionOptions.Select(o => o.Name).Distinct().ToArray();
-		if (distinctNames.Length != 2)
+		var distinctOptions = typeInfo.UnionOptions.DistinctBy(o => o.Name).ToArray();
+		if (distinctOptions.Length != 2)
 			return (false, null);
 
-		var baseNames = distinctNames.Select(n => n.EndsWith("[]") ? n[..^2] : n).Distinct().ToArray();
+		var baseNames = distinctOptions.Select(o => o.BaseName).Distinct().ToArray();
 		if (baseNames.Length == 1 && !string.IsNullOrEmpty(baseNames[0]))
 			return (true, baseNames[0]);
 		return (false, null);
@@ -413,7 +412,11 @@ public class ApiPropertyTreeBuilder(OpenApiDocument document, PropertyDisplayOpt
 		if (typeInfo.EnumValues is { Length: > 0 } && !expansion.HasUnionOptions)
 			return null;
 
-		var sortedOptions = (typeInfo.UnionOptions ?? []).Select(o => o.Name).Distinct().OrderByDescending(o => o.EndsWith("[]")).ToArray();
+		var sortedOptions = (typeInfo.UnionOptions ?? [])
+			.DistinctBy(o => o.Name)
+			.OrderByDescending(o => o.IsArray)
+			.Select(o => o.Name)
+			.ToArray();
 
 		if (expansion.IsSimpleArrayUnion)
 			return null;
@@ -575,10 +578,7 @@ public class ApiPropertyTreeBuilder(OpenApiDocument document, PropertyDisplayOpt
 
 		if (
 			typeInfo is { IsUnion: true, UnionOptions: not null }
-			&& typeInfo
-				.UnionOptions
-				.Select(option => option.Name.EndsWith("[]") ? option.Name[..^2] : option.Name)
-				.Any(baseName => IsAncestorType(baseName, ancestors))
+			&& typeInfo.UnionOptions.Select(option => option.BaseName).Any(baseName => IsAncestorType(baseName, ancestors))
 		)
 			return true;
 
@@ -656,9 +656,7 @@ public class ApiPropertyTreeBuilder(OpenApiDocument document, PropertyDisplayOpt
 
 			variants.Add(new ApiUnionVariant
 			{
-				DisplayName = SchemaHelpers.ReadableSchemaName(
-					variant.IsArray && variant.Name.EndsWith("[]") ? variant.Name[..^2] : variant.Name
-				),
+				DisplayName = SchemaHelpers.ReadableSchemaName(variant.BaseName),
 				IsArrayVariant = variant.IsArray,
 				IsObjectType = variant.IsObject,
 				AnchorId = optionId,
@@ -724,53 +722,38 @@ public class ApiPropertyTreeBuilder(OpenApiDocument document, PropertyDisplayOpt
 
 	private List<VariantCandidate> CollectVariantsToRender(List<UnionOption> unionOptions)
 	{
-		// Sort: array variants first within each base-name group, preserving group order
-		var sortedOptions = unionOptions
-			.GroupBy(o => o.Name.EndsWith("[]") ? o.Name[..^2] : o.Name)
-			.SelectMany(g => g.OrderByDescending(o => o.Name.EndsWith("[]")))
-			.ToList();
-
-		var typeGroups = sortedOptions.GroupBy(o => o.Name.EndsWith("[]") ? o.Name[..^2] : o.Name).ToDictionary(
-			g => g.Key,
-			g => g.ToList()
-		);
-
+		// One group per base name, array variant first; groups keep the order their first option appeared in.
 		var variantsToRender = new List<VariantCandidate>();
-		foreach (var (baseName, variants) in typeGroups)
+		foreach (var variants in unionOptions.GroupBy(o => o.BaseName).Select(g => g.OrderByDescending(o => o.IsArray).ToList()))
 		{
-			var primaryOption = variants.FirstOrDefault(o => !o.Name.EndsWith("[]"));
+			var primaryOption = variants.FirstOrDefault(o => !o.IsArray);
 			if (primaryOption?.Schema is null)
 				primaryOption = variants.First();
 
-			var schemaToRender = primaryOption?.Schema;
+			var baseName = primaryOption.BaseName;
+			var schemaToRender = primaryOption.Schema;
 			// An array-only variant describes its items; the array schema itself carries no properties.
-			if (primaryOption?.Name.EndsWith("[]") == true && schemaToRender?.Items is { } items)
+			if (primaryOption.IsArray && schemaToRender?.Items is { } items)
 				schemaToRender = items;
-			var optionProps = primaryOption?.IsObject == true && schemaToRender is not null
-				? _analyzer.GetSchemaProperties(schemaToRender)
-				: null;
+			var optionProps = primaryOption.IsObject && schemaToRender is not null ? _analyzer.GetSchemaProperties(schemaToRender) : null;
 
-			var isObject = primaryOption?.IsObject ?? false;
-			var hasArrayVariant = variants.Any(v => v.Name.EndsWith("[]"));
-			var hasNonArrayVariant = variants.Any(v => !v.Name.EndsWith("[]"));
+			VariantCandidate Candidate(bool isArray) =>
+				new(
+					isArray ? $"{baseName}[]" : baseName,
+					baseName,
+					primaryOption.Ref,
+					isArray,
+					primaryOption.IsObject,
+					schemaToRender,
+					optionProps
+				);
 
-			if (hasArrayVariant && hasNonArrayVariant)
-			{
-				variantsToRender.Add(
-					new VariantCandidate($"{baseName}[]", baseName, primaryOption?.Ref, true, isObject, schemaToRender, optionProps)
-				);
-				variantsToRender.Add(
-					new VariantCandidate(baseName, baseName, primaryOption?.Ref, false, isObject, schemaToRender, optionProps)
-				);
-			}
-			else if (hasArrayVariant)
-				variantsToRender.Add(
-					new VariantCandidate($"{baseName}[]", baseName, primaryOption?.Ref, true, isObject, schemaToRender, optionProps)
-				);
-			else
-				variantsToRender.Add(
-					new VariantCandidate(baseName, baseName, primaryOption?.Ref, false, isObject, schemaToRender, optionProps)
-				);
+			var hasArrayVariant = variants.Any(v => v.IsArray);
+			var hasNonArrayVariant = variants.Any(v => !v.IsArray);
+			if (hasArrayVariant)
+				variantsToRender.Add(Candidate(isArray: true));
+			if (hasNonArrayVariant)
+				variantsToRender.Add(Candidate(isArray: false));
 		}
 
 		return variantsToRender;
