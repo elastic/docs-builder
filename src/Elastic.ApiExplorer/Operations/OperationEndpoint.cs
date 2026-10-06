@@ -160,7 +160,7 @@ public sealed partial record OperationEndpoint(
 		// Absent servers fall back to the document's; an operation that names its own is a different call.
 		yield return ("servers", operation.Servers is null
 			? "inherit"
-			: string.Join(',', operation.Servers.Select(static s => s.Url ?? "").Order(StringComparer.Ordinal)));
+			: string.Join(',', operation.Servers.Select(ServerKey).Order(StringComparer.Ordinal)));
 	}
 
 	private static string SerializationKey(IOpenApiParameter parameter)
@@ -169,6 +169,18 @@ public sealed partial record OperationEndpoint(
 			?? (parameter.In is ParameterLocation.Query or ParameterLocation.Cookie ? ParameterStyle.Form : ParameterStyle.Simple);
 		return $"{style}:{(parameter.Explode ? "explode" : "flat")}:{(parameter.AllowReserved ? "reserved" : "")}";
 	}
+
+	/// <summary>A server's URL with its variables (name, default, allowed values), since a templated URL means little without them.</summary>
+	private static string ServerKey(OpenApiServer server) =>
+		(server.Url ?? "")
+			+ "{"
+			+ string.Join(
+				',',
+				(server.Variables ?? new Dictionary<string, OpenApiServerVariable>()).Select(
+					static v => $"{v.Key}={v.Value?.Default ?? ""}[{string.Join('|', (v.Value?.Enum ?? []).Order(StringComparer.Ordinal))}]"
+				).Order(StringComparer.Ordinal)
+			)
+			+ "}";
 
 	private static string HeadersKey(IDictionary<string, IOpenApiHeader>? headers) =>
 		string.Join(

@@ -492,6 +492,60 @@ public class OperationEndpointTests
 			"foo"
 		);
 
+	private static ApiOperation WithServerVariable(HttpMethod method, string defaultRegion, params string[] regions) =>
+		new(
+			method,
+			new OpenApiOperation
+			{
+				Servers =
+				[
+					new OpenApiServer
+					{
+						Url = "https://{region}.api.example.com",
+						Variables = new Dictionary<string, OpenApiServerVariable>
+						{
+							["region"] = new OpenApiServerVariable
+							{
+								Default = defaultRegion,
+								Enum = regions.Length == 0 ? null : [.. regions]
+							}
+						}
+					}
+				],
+				Responses = new OpenApiResponses { ["200"] = new OpenApiResponse { Description = "ok" } }
+			},
+			"/foo",
+			new OpenApiPathItem(),
+			"foo"
+		);
+
+	[Test]
+	public void AreInterchangeable_SameServerUrlButDifferentVariableDefault_IsFalse() =>
+		OperationEndpoint
+			.AreInterchangeable([WithServerVariable(HttpMethod.Get, "us-east-1"), WithServerVariable(HttpMethod.Post, "eu-west-1")])
+			.Should()
+			.BeFalse();
+
+	[Test]
+	public void AreInterchangeable_SameServerUrlButDifferentVariableEnum_IsFalse() =>
+		OperationEndpoint
+			.AreInterchangeable([
+				WithServerVariable(HttpMethod.Get, "us-east-1", "us-east-1", "eu-west-1"),
+				WithServerVariable(HttpMethod.Post, "us-east-1", "us-east-1")
+			])
+			.Should()
+			.BeFalse();
+
+	[Test]
+	public void AreInterchangeable_SameServerVariablesInAnyOrder_IsTrue() =>
+		OperationEndpoint
+			.AreInterchangeable([
+				WithServerVariable(HttpMethod.Get, "us-east-1", "eu-west-1", "us-east-1"),
+				WithServerVariable(HttpMethod.Post, "us-east-1", "us-east-1", "eu-west-1")
+			])
+			.Should()
+			.BeTrue();
+
 	[Test]
 	public void AreInterchangeable_DifferentOperationServers_IsFalse() =>
 		OperationEndpoint
