@@ -115,7 +115,7 @@ internal static class OperationCommonMark
 			var description = ApiMarkdown.Prepare(path.DescriptionMarkdown, apiBaseUrl);
 			if (!string.IsNullOrWhiteSpace(description))
 				_ = markdown.AppendLine($"  {description.TrimEnd()}");
-			WriteValues(markdown, path.UnionOptions, path.EnumValues);
+			WriteValues(markdown, path.UnionOptions, path.UnionLabel, path.EnumValues);
 		}
 
 		_ = markdown.AppendLine();
@@ -162,18 +162,23 @@ internal static class OperationCommonMark
 			if (!string.IsNullOrWhiteSpace(description))
 				_ = markdown.AppendLine($"  {description.TrimEnd()}");
 
-			WriteValues(markdown, query.UnionOptions, query.EnumValues);
+			WriteValues(markdown, query.UnionOptions, query.UnionLabel, query.EnumValues);
 		}
 
 		_ = markdown.AppendLine();
 	}
 
-	private static void WriteValues(StringBuilder markdown, IReadOnlyList<UnionBadge> unionOptions, IReadOnlyList<string> enumValues)
+	private static void WriteValues(
+		StringBuilder markdown,
+		IReadOnlyList<UnionBadge> unionOptions,
+		string unionLabel,
+		IReadOnlyList<string> enumValues
+	)
 	{
 		if (enumValues.Count > 0)
 			_ = markdown.AppendLine("  Values: " + string.Join(", ", enumValues.Select(v => $"`{v}`")));
 		else if (unionOptions.Count > 0)
-			_ = markdown.AppendLine("  One of: " + string.Join(" or ", unionOptions.Select(o => $"`{o.Text}`")));
+			_ = markdown.AppendLine($"  {unionLabel} " + string.Join(" or ", unionOptions.Select(o => $"`{o.Text}`")));
 	}
 
 	private static void WriteRequestBody(StringBuilder markdown, ApiOperation apiOperation, OperationPageModel page, string apiBaseUrl)

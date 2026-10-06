@@ -110,7 +110,11 @@ internal static class ApiPropertyMarkdown
 		switch (property.Union.Kind)
 		{
 			case UnionDisplayKind.Badges when property.Union.Badges.Count > 0:
-				WriteNestedLine(markdown, depth, "One of: " + string.Join(" or ", property.Union.Badges.Select(b => $"`{b.Text}`")));
+				WriteNestedLine(
+					markdown,
+					depth,
+					$"{property.Union.Label} " + string.Join(" or ", property.Union.Badges.Select(b => $"`{b.Text}`"))
+				);
 				break;
 		}
 	}

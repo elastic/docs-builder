@@ -56,6 +56,12 @@ public record UnionDisplay
 	/// <summary>Union option badges (<see cref="UnionDisplayKind.Badges"/>).</summary>
 	public IReadOnlyList<UnionBadge> Badges { get; init; } = [];
 
+	/// <summary>The schema keyword the union came from, <c>oneOf</c> or <c>anyOf</c>.</summary>
+	public string? Keyword { get; init; }
+
+	/// <summary>"Any of:" when any number of options can match, "One of:" otherwise.</summary>
+	public string Label => SchemaHelpers.UnionLabel(Keyword);
+
 	/// <summary>Discriminator property name shown next to the badges.</summary>
 	public string? DiscriminatorProperty { get; init; }
 }

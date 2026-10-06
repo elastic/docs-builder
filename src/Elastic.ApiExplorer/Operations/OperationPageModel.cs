@@ -85,6 +85,7 @@ public record ApiQueryParameter
 	public required IReadOnlyList<ConstraintDisplay> Constraints { get; init; }
 	public required IReadOnlyList<string> EnumValues { get; init; }
 	public required IReadOnlyList<UnionBadge> UnionOptions { get; init; }
+	public string UnionLabel { get; init; } = SchemaHelpers.UnionLabel(null);
 	public required HtmlString DescriptionHtml { get; init; }
 	public required string? DescriptionMarkdown { get; init; }
 }
@@ -96,6 +97,7 @@ public record ApiPathParameter
 	public required TypeAnnotation? Type { get; init; }
 	public required IReadOnlyList<string> EnumValues { get; init; }
 	public required IReadOnlyList<UnionBadge> UnionOptions { get; init; }
+	public string UnionLabel { get; init; } = SchemaHelpers.UnionLabel(null);
 	public required HtmlString DescriptionHtml { get; init; }
 	public required string? DescriptionMarkdown { get; init; }
 
@@ -658,6 +660,7 @@ public partial record OperationPageModel
 			Type = type,
 			EnumValues = typeInfo.EnumValues ?? [],
 			UnionOptions = alternativesInType ? [] : UnionBadges(typeInfo),
+			UnionLabel = SchemaHelpers.UnionLabel(typeInfo.UnionKeyword),
 			DescriptionHtml = ApiMarkdown.Render(context, description),
 			DescriptionMarkdown = description
 		};
@@ -681,6 +684,7 @@ public partial record OperationPageModel
 			Constraints = schema is not null ? ApiPropertyTreeBuilder.BuildConstraints(schema) : [],
 			EnumValues = typeInfo.EnumValues ?? [],
 			UnionOptions = UnionBadges(typeInfo),
+			UnionLabel = SchemaHelpers.UnionLabel(typeInfo.UnionKeyword),
 			DescriptionHtml = ApiMarkdown.Render(context, description),
 			DescriptionMarkdown = description
 		};

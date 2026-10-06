@@ -435,6 +435,7 @@ public class ApiPropertyTreeBuilder(OpenApiDocument document, PropertyDisplayOpt
 			return new UnionDisplay
 			{
 				Kind = UnionDisplayKind.Badges,
+				Keyword = typeInfo.UnionKeyword,
 				DiscriminatorProperty = _analyzer.GetUnionDiscriminator(propSchema)?.PropertyName,
 				Badges = badgeOptions.Select(o => new UnionBadge(o, IsTypeOptionBadge(o))).ToArray()
 			};

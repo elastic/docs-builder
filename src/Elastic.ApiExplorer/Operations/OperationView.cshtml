@@ -190,7 +190,7 @@
 			@if (path.UnionOptions.Count > 0 && path.EnumValues.Count == 0)
 			{
 				<dd class="union-options">
-					<span class="values-label">One of:</span>
+					<span class="values-label">@path.UnionLabel</span>
 					@for (var optIndex = 0; optIndex < path.UnionOptions.Count; optIndex++)
 					{
 						var unionOpt = path.UnionOptions[optIndex];
@@ -250,7 +250,7 @@
 				@if (qp.UnionOptions.Count > 0 && qp.EnumValues.Count == 0)
 				{
 					<dd class="union-options">
-						<span class="values-label">One of:</span>
+						<span class="values-label">@qp.UnionLabel</span>
 						@for (var optIndex = 0; optIndex < qp.UnionOptions.Count; optIndex++)
 						{
 							var unionOpt = qp.UnionOptions[optIndex];

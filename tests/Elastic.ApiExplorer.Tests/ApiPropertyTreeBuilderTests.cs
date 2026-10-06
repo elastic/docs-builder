@@ -902,4 +902,70 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture)
 				File.Delete(path);
 		}
 	}
+
+	[Test]
+	public async Task BuildPropertyList_AnyOfUnion_LabelsTheRowAnyOfAndOneOfUnionsOneOf()
+	{
+		var json =
+			"""
+			{
+			  "openapi": "3.0.3",
+			  "info": { "title": "t", "version": "1" },
+			  "paths": {},
+			  "components": {
+			    "schemas": {
+			      "Cat": { "type": "object", "properties": { "lives": { "type": "integer" } } },
+			      "Dog": { "type": "object", "properties": { "barks": { "type": "boolean" } } },
+			      "Flexible": { "anyOf": [ { "$ref": "#/components/schemas/Cat" }, { "$ref": "#/components/schemas/Dog" } ] },
+			      "Holder": {
+			        "type": "object",
+			        "properties": {
+			          "inlineAny": { "anyOf": [ { "$ref": "#/components/schemas/Cat" }, { "$ref": "#/components/schemas/Dog" } ] },
+			          "inlineOne": { "oneOf": [ { "$ref": "#/components/schemas/Cat" }, { "$ref": "#/components/schemas/Dog" } ] },
+			          "refAny": { "$ref": "#/components/schemas/Flexible" }
+			        }
+			      }
+			    }
+			  }
+			}
+			""";
+		var path = Path.Join(Path.GetTempPath(), $"any-of-{Guid.NewGuid():N}.json");
+		await File.WriteAllTextAsync(path, json, TestContext.Current!.Execution.CancellationToken);
+		try
+		{
+			var loaded = await OpenApiDocument.LoadAsync(
+				path,
+				new OpenApiReaderSettings { LeaveStreamOpen = false },
+				TestContext.Current!.Execution.CancellationToken
+			);
+			var document = loaded.Document!;
+			var builder = new ApiPropertyTreeBuilder(
+				document,
+				new PropertyDisplayOptions { RenderMarkdown = s => new HtmlString($"<p>{s}</p>"), ApiRootUrl = "/api/doc/fixture" }
+			);
+
+			var list = builder.BuildPropertyList(document.Components!.Schemas!["Holder"], new PropertyTreeScope { Prefix = "" });
+
+			Console.WriteLine(
+				"DEBUG " + string.Join(
+					" || ",
+					list!.Items.Select(
+						p =>
+							$"{p.Name}: type='{p.Type.Text}' union={(p.Union is null ? "null" : p.Union.Kind + "/" + p.Union.Keyword + "/" + p.Union.Badges.Count)}"
+					)
+				)
+			);
+
+			string? Label(string name) => list!.Items.Single(p => p.Name == name).Union?.Label;
+
+			Label("inlineAny").Should().Be("Any of:");
+			Label("inlineOne").Should().Be("One of:");
+			Label("refAny").Should().Be("Any of:");
+		}
+		finally
+		{
+			if (File.Exists(path))
+				File.Delete(path);
+		}
+	}
 }

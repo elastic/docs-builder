@@ -464,7 +464,8 @@ public class SchemaAnalyzer(
 					isUnion,
 					null,
 					unionOptions,
-					arrayItemType
+					arrayItemType,
+					UnionKeyword: isUnion ? (resolvedTarget.OneOf is { Count: > 0 } ? "oneOf" : "anyOf") : null
 				);
 			}
 		}
@@ -595,10 +596,21 @@ public class SchemaAnalyzer(
 
 		// Multiple object options render as tabs.
 		if (options.Count > 1 && options.Any(o => o.IsObject))
-			return new TypeInfo(keyword, null, false, true, false, null, false, options, IsUnion: true);
+			return new TypeInfo(keyword, null, false, true, false, null, false, options, IsUnion: true, UnionKeyword: keyword);
 
 		var typeNames = options.Select(o => o.Name).Distinct();
-		return new TypeInfo(string.Join(" | ", typeNames), null, false, false, false, null, false, options, IsUnion: true);
+		return new TypeInfo(
+			string.Join(" | ", typeNames),
+			null,
+			false,
+			false,
+			false,
+			null,
+			false,
+			options,
+			IsUnion: true,
+			UnionKeyword: keyword
+		);
 	}
 
 	/// <summary>

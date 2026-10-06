@@ -34,6 +34,7 @@ public record ComposedType(string Name, bool HasLink);
 /// <param name="EnumValues">Every literal the value can take, from <see cref="SchemaAnalyzer.GetEnumValues"/>; set for unions and arrays of enums too.</param>
 /// <param name="UnionOptions">String array of union option names for display.</param>
 /// <param name="ArrayItemType">The primitive item type for arrays of primitives.</param>
+/// <param name="UnionKeyword">The schema keyword a union came from, <c>oneOf</c> or <c>anyOf</c>; null for other types.</param>
 /// <param name="AlsoIncludes">Further named schemas an <c>allOf</c> merges in after the first <c>$ref</c>, which names the type.</param>
 public record TypeInfo(
 	string TypeName,
@@ -51,5 +52,6 @@ public record TypeInfo(
 	string[]? EnumValues = null,
 	string[]? UnionOptions = null,
 	string? ArrayItemType = null,
-	List<ComposedType>? AlsoIncludes = null
+	List<ComposedType>? AlsoIncludes = null,
+	string? UnionKeyword = null
 );

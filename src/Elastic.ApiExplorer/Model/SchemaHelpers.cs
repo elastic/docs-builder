@@ -132,6 +132,9 @@ public static class SchemaHelpers
 	/// Gets the URL for a container type's dedicated page under the given API root
 	/// (e.g. <c>/api/elasticsearch</c>), matching the URLs built by <c>SchemaNavigationItem</c>.
 	/// </summary>
+	/// <summary>The row label for a union: <c>anyOf</c> options can match together, so it says "Any of:".</summary>
+	public static string UnionLabel(string? keyword) => keyword == "anyOf" ? "Any of:" : "One of:";
+
 	public static string? GetContainerPageUrl(string apiRootUrl, string typeName)
 	{
 		var schemaId = typeName switch
