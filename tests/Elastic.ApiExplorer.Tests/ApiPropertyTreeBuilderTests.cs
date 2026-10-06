@@ -1204,4 +1204,62 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture)
 				File.Delete(path);
 		}
 	}
+
+	[Test]
+	public async Task BuildPropertyList_UnionOfArrays_ListsThePropertiesOfTheObjectItems()
+	{
+		var json =
+			"""
+			{
+			  "openapi": "3.0.3",
+			  "info": { "title": "t", "version": "1" },
+			  "paths": {},
+			  "components": {
+			    "schemas": {
+			      "Policy": { "type": "object", "properties": { "name": { "type": "string" }, "inputs": { "type": "object" } } },
+			      "Holder": {
+			        "type": "object",
+			        "properties": {
+			          "policies": {
+			            "anyOf": [
+			              { "type": "array", "items": { "type": "string" } },
+			              { "type": "array", "items": { "$ref": "#/components/schemas/Policy" } }
+			            ]
+			          }
+			        }
+			      }
+			    }
+			  }
+			}
+			""";
+		var path = Path.Join(Path.GetTempPath(), $"array-variants-{Guid.NewGuid():N}.json");
+		await File.WriteAllTextAsync(path, json, TestContext.Current!.Execution.CancellationToken);
+		try
+		{
+			var loaded = await OpenApiDocument.LoadAsync(
+				path,
+				new OpenApiReaderSettings { LeaveStreamOpen = false },
+				TestContext.Current!.Execution.CancellationToken
+			);
+			var document = loaded.Document!;
+			var builder = new ApiPropertyTreeBuilder(
+				document,
+				new PropertyDisplayOptions { RenderMarkdown = s => new HtmlString($"<p>{s}</p>"), ApiRootUrl = "/api/doc/fixture" }
+			);
+
+			var list = builder.BuildPropertyList(document.Components!.Schemas!["Holder"], new PropertyTreeScope { Prefix = "" });
+
+			var variants = list!.Items.Single(p => p.Name == "policies").Children.Variants!.Variants;
+			var policy = variants.Single(v => v.DisplayName == "Policy");
+			policy.IsArrayVariant.Should().BeTrue();
+			policy.ShowProperties.Should().BeTrue("an array-only variant lists the properties of its items");
+			policy.Properties!.Items.Select(p => p.Name).Should().Equal("name", "inputs");
+			variants.Single(v => v.DisplayName == "string").Properties.Should().BeNull();
+		}
+		finally
+		{
+			if (File.Exists(path))
+				File.Delete(path);
+		}
+	}
 }

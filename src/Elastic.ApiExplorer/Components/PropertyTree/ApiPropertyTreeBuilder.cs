@@ -753,6 +753,9 @@ public class ApiPropertyTreeBuilder(OpenApiDocument document, PropertyDisplayOpt
 				primaryOption = variants.First();
 
 			var schemaToRender = primaryOption?.Schema;
+			// An array-only variant describes its items; the array schema itself carries no properties.
+			if (primaryOption?.Name.EndsWith("[]") == true && schemaToRender?.Items is { } items)
+				schemaToRender = items;
 			var optionProps = primaryOption?.IsObject == true && schemaToRender is not null
 				? _analyzer.GetSchemaProperties(schemaToRender)
 				: null;
