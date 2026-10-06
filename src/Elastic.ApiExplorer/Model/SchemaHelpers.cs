@@ -241,19 +241,28 @@ public static class SchemaHelpers
 			&& !IsPrimitiveDisplayName(name);
 
 	/// <summary>
-	/// Last meaningful segment of a codegen id (<c>Security_Lists_API_PlatformErrorResponse</c> →
-	/// <c>PlatformErrorResponse</c>). Readable names are returned unchanged.
+	/// True for all-lowercase snake_case ids (<c>bedrock_config</c>). They are already readable names, and
+	/// shortening them to the last segment would make sibling variants read alike.
+	/// </summary>
+	public static bool IsSnakeCaseName(string? name) =>
+		!string.IsNullOrEmpty(name)
+			&& name.Contains('_', StringComparison.Ordinal)
+			&& name.All(static c => char.IsAsciiLetterLower(c) || char.IsAsciiDigit(c) || c == '_');
+
+	/// <summary>
+	/// Last meaningful segment of a PascalCase codegen id (<c>Security_Lists_API_PlatformErrorResponse</c> →
+	/// <c>PlatformErrorResponse</c>). Readable names and snake_case ids are returned unchanged.
 	/// </summary>
 	public static string ReadableSchemaName(string? typeName)
 	{
-		if (string.IsNullOrEmpty(typeName) || !IsInternalSchemaName(typeName))
+		if (string.IsNullOrEmpty(typeName) || !IsInternalSchemaName(typeName) || IsSnakeCaseName(typeName))
 			return typeName ?? "";
 
 		var parts = typeName.Split('_', StringSplitOptions.RemoveEmptyEntries);
 		for (var i = parts.Length - 1; i >= 0; i--)
 		{
 			if (!parts[i].Equals("API", StringComparison.Ordinal))
-				return parts[i];
+				return char.IsUpper(parts[i][0]) ? parts[i] : typeName;
 		}
 
 		return typeName;

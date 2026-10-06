@@ -104,6 +104,19 @@ public class SchemaHelpersTests
 	[Arguments("Security_Lists_API_SiemErrorResponse", "SiemErrorResponse")]
 	[Arguments("Field", "Field")]
 	[Arguments("QueryContainer", "QueryContainer")]
+	[Arguments("bedrock_config", "bedrock_config")]
+	[Arguments("params_property_apm_anomaly", "params_property_apm_anomaly")]
+	[Arguments("Security_Lists_API_list_item", "Security_Lists_API_list_item")]
 	public void ReadableSchemaName_CodegenIds_UsesLastSegment(string input, string expected) =>
 		SchemaHelpers.ReadableSchemaName(input).Should().Be(expected);
+
+	[Test]
+	[Arguments("bedrock_config", true)]
+	[Arguments("no_data", true)]
+	[Arguments("Security_Lists_API_ListMetadata", false)]
+	[Arguments("QueryContainer", false)]
+	[Arguments("string", false)]
+	[Arguments(null, false)]
+	public void IsSnakeCaseName_Ids_MatchesOnlyLowercaseSnakeCase(string? name, bool expected) =>
+		SchemaHelpers.IsSnakeCaseName(name).Should().Be(expected);
 }
