@@ -126,7 +126,7 @@ public class OperationExamplesPanelRenderingTests
 		var html = await RenderScenario(Slicing);
 
 		html.Should().Contain("data-generated");
-		html.Should().Contain("Built from this example&rsquo;s request body");
+		html.Should().NotContain("Built from this example");
 		html.Should().NotContain("<footer");
 	}
 

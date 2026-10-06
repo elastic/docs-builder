@@ -40,7 +40,7 @@
 			{
 				var sample = samples[i];
 				<section class="api-code-card api-code-carousel-card@(i == 0 ? " is-active" : "")" data-code-card data-lang="@sample.Language" aria-label="@sample.Language"@(sample.Generated ? new HtmlString(" data-generated") : HtmlString.Empty)>
-					<header class="api-code-carousel-card-header"@(sample.Generated ? new HtmlString(" data-tippy-content=\"Built from this example&rsquo;s request body\"") : HtmlString.Empty)>
+					<header class="api-code-carousel-card-header">
 						<span class="api-lang-badge" data-lang="@sample.Language" aria-hidden="true"></span>
 						<span class="api-code-carousel-card-title">
 							<span class="api-code-carousel-card-language">@sample.Language</span>
