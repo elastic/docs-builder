@@ -220,14 +220,17 @@ public partial record OperationPageModel
 
 		var requestExamples = MapExamples(operation.RequestBody?.Content?.FirstOrDefault().Value?.Examples, options.RenderMarkdown);
 		var responseExamples = MapResponseExamples(operation.Responses, options.RenderMarkdown);
-		var scenarios = WithOperationIdentity(
-			GeneratedCodeSamples.Fill(
-				EnsureResponseTabs(BuildExampleScenarios(requestExamples, responseExamples, codeSamples), operation.Responses),
-				codeSamples,
-				endpoint
+		var scenarios = WithClientDocs(
+			WithOperationIdentity(
+				GeneratedCodeSamples.Fill(
+					EnsureResponseTabs(BuildExampleScenarios(requestExamples, responseExamples, codeSamples), operation.Responses),
+					codeSamples,
+					endpoint
+				),
+				apiOperation.OperationType.ToString().ToLowerInvariant(),
+				apiOperation.Route
 			),
-			apiOperation.OperationType.ToString().ToLowerInvariant(),
-			apiOperation.Route
+			context.Product?.Id
 		);
 		var requestContentEntry = operation.RequestBody?.Content?.FirstOrDefault();
 		var requestSchema = requestContentEntry?.Value?.Schema;
@@ -338,6 +341,21 @@ public partial record OperationPageModel
 		var attached = AttachCodeSamples(scenarios, [.. codeSamples.Where(static c => c.Scenario is null)]);
 		return suffixed.Length == 0 ? attached : [.. attached, .. SuffixedScenarios(attached, suffixed)];
 	}
+
+	/// <summary>Links each sample's client label to the client's docs page where one exists for this product.</summary>
+	private static List<ExampleScenario> WithClientDocs(IReadOnlyList<ExampleScenario> scenarios, string? productId) =>
+		[
+			.. scenarios.Select(
+				s =>
+					s with
+					{
+						CodeSamples =
+						[
+							.. s.CodeSamples.Select(c => c with { ClientDocsUrl = CodeSample.ClientDocsUrlFor(c.Language, productId) })
+						]
+					}
+			)
+		];
 
 	private static List<ExampleScenario> AttachCodeSamples(List<ExampleScenario> scenarios, IReadOnlyList<CodeSample> codeSamples)
 	{

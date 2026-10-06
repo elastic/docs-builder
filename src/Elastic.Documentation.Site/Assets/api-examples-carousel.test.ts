@@ -10,7 +10,7 @@ function source(lang: string): string {
 function card(lang: string): string {
     return `
         <section class="api-code-card api-code-carousel-card" data-code-card data-lang="${lang}">
-            <header class="api-code-carousel-card-header"><span class="api-code-carousel-card-language">${lang}</span><span data-code-actions></span></header>
+            <header class="api-code-carousel-card-header"><span class="api-code-carousel-card-language">${lang}</span><a class="api-code-carousel-card-client" href="https://example.test/${lang}">${lang} client</a><span data-code-actions></span></header>
             <div><pre><code>${source(lang)}</code></pre></div>
         </section>`
 }
@@ -365,6 +365,11 @@ describe('API examples carousel', () => {
         expect(dialog.querySelector('pre code')?.textContent).toBe(
             'Console sample'
         )
+        expect(
+            dialog.querySelector<HTMLAnchorElement>(
+                'a.api-code-carousel-card-client'
+            )?.href
+        ).toBe('https://example.test/Console')
         dialog.close = jest.fn(() => dialog.remove())
         dialog.querySelector<HTMLElement>('[aria-label="Close"]')!.click()
         expect(dialog.close).toHaveBeenCalled()

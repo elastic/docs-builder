@@ -399,14 +399,15 @@ function previewHeader(card: HTMLElement, scenarioTitle: string): HTMLElement {
         text('.api-code-carousel-card-language') ||
         (status ? `Response ${status}` : 'Code')
     header.appendChild(name)
-    const detail = [text('.api-code-carousel-card-client'), scenarioTitle]
-        .filter(Boolean)
-        .join(' · ')
-    if (detail) {
-        const client = document.createElement('span')
-        client.className = 'api-code-carousel-card-client'
-        client.textContent = detail
-        header.appendChild(client)
+    const client = card.querySelector<HTMLElement>(
+        '.api-code-carousel-card-client'
+    )
+    if (client) header.appendChild(client.cloneNode(true))
+    if (scenarioTitle) {
+        const title = document.createElement('span')
+        title.className = 'api-code-carousel-card-client'
+        title.textContent = client ? `· ${scenarioTitle}` : scenarioTitle
+        header.appendChild(title)
     }
     return header
 }

@@ -38,8 +38,27 @@ public record CodeSample(string Language, string Source, string HighlightClass)
 
 	public bool IsCurl => Language.Equals("curl", StringComparison.OrdinalIgnoreCase);
 
-	/// <summary>The client library or tool that runs this sample, e.g. <c>elasticsearch-java</c>. Empty when unknown.</summary>
+	/// <summary>The client or tool that runs this sample, e.g. <c>Elasticsearch Java Client</c>. Empty when unknown.</summary>
 	public string ClientLabel => ByName.TryGetValue(Language, out var known) ? known.Client ?? "" : "";
+
+	/// <summary>Docs page of the client that runs this sample; set from the product (see <see cref="ClientDocsUrlFor"/>).</summary>
+	public string? ClientDocsUrl { get; init; }
+
+	private const string ConsoleDocsUrl = "https://www.elastic.co/docs/explore-analyze/query-filter/tools/console";
+	private const string ClientDocsRoot = "https://www.elastic.co/docs/reference/elasticsearch/clients/";
+
+	/// <summary>
+	/// Console is the same tool for every API, so it always links. The client libraries are Elasticsearch's, so their
+	/// pages only link on Elasticsearch products; a Kibana spec's JavaScript sample runs something else.
+	/// </summary>
+	public static string? ClientDocsUrlFor(string language, string? productId)
+	{
+		if (!ByName.TryGetValue(language, out var known) || known.Docs is null)
+			return null;
+		if (known.Name == "Console")
+			return ConsoleDocsUrl;
+		return productId is "elasticsearch" or "serverless-elasticsearch" ? ClientDocsRoot + known.Docs : null;
+	}
 
 	/// <summary>Position in the carousel: Console, then languages by how many developers use them. Unranked languages sort last.</summary>
 	public int Rank => ByName.TryGetValue(Language, out var known) ? known.Rank : int.MaxValue;
@@ -49,24 +68,26 @@ public record CodeSample(string Language, string Source, string HighlightClass)
 			? highlight
 			: $"language-{language.ToLowerInvariant()}";
 
-	private sealed record KnownLanguage(string Name, int Rank, string? Client, string? Highlight);
+	private sealed record KnownLanguage(string Name, int Rank, string? Client, string? Highlight, string? Docs);
 
 	// One row per language we know, in carousel order: Console is the docs' native sample, the rest follow
 	// GitHub's Innovation Graph global ranking (unique pushers, 2026 Q1); curl counts as Shell there.
 	// https://innovationgraph.github.com/global-metrics/programming-languages
-	private static readonly Dictionary<string, KnownLanguage> ByName = new (string Name, string? Client, string? Highlight)[]
+	// Client is the product name from config/products.yml (elasticsearch-client-*), or the tool that runs the sample.
+	// Docs is the page under https://www.elastic.co/docs/reference/elasticsearch/clients/ (Console has its own page).
+	private static readonly Dictionary<string, KnownLanguage> ByName = new (string Name, string? Client, string? Highlight, string? Docs)[]
 	{
-		("Console", "Kibana Dev Tools", "language-console"),
-		("JavaScript", "@elastic/elasticsearch", "language-javascript"),
-		("Python", "elasticsearch-py", "language-python"),
-		("curl", "Shell", "language-curl"),
-		("Java", "elasticsearch-java", "language-java"),
-		("C#", "Elastic.Clients.Elasticsearch", "language-csharp"),
-		("PHP", "elasticsearch-php", "language-php"),
-		("Ruby", "elasticsearch-ruby", "language-ruby"),
-		("Go", null, null),
-		("Rust", null, null),
-	}.Select(static (l, rank) => new KnownLanguage(l.Name, rank, l.Client, l.Highlight)).ToDictionary(
+		("Console", "Kibana Dev Tools", "language-console", "console"),
+		("JavaScript", "Elasticsearch JavaScript Client", "language-javascript", "javascript"),
+		("Python", "Elasticsearch Python Client", "language-python", "python"),
+		("curl", "Shell", "language-curl", null),
+		("Java", "Elasticsearch Java Client", "language-java", "java"),
+		("C#", "Elasticsearch .NET Client", "language-csharp", "dotnet"),
+		("PHP", "Elasticsearch PHP Client", "language-php", "php"),
+		("Ruby", "Elasticsearch Ruby Client", "language-ruby", "ruby"),
+		("Go", "Elasticsearch Go Client", null, "go"),
+		("Rust", "Elasticsearch Rust Client", null, "rust"),
+	}.Select(static (l, rank) => new KnownLanguage(l.Name, rank, l.Client, l.Highlight, l.Docs)).ToDictionary(
 		static l => l.Name,
 		StringComparer.OrdinalIgnoreCase
 	);

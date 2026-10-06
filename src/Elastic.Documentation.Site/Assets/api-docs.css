@@ -3426,6 +3426,18 @@ html:has(.api-page-shell) {
 	white-space: nowrap;
 }
 
+/* The client label links to the client's docs page; a light blue reads as a link on the dark card. */
+.markdown-content a.api-code-carousel-card-client {
+	color: var(--color-blue-elastic-50, #85b7ff);
+	text-decoration: none;
+}
+
+.markdown-content a.api-code-carousel-card-client:hover,
+.markdown-content a.api-code-carousel-card-client:focus-visible {
+	color: var(--color-blue-elastic-30, #b8d4ff);
+	text-decoration: underline;
+}
+
 .api-code-carousel-card-actions {
 	display: flex;
 	margin-left: auto;

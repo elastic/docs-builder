@@ -43,7 +43,11 @@
 					<header class="api-code-carousel-card-header">
 						<span class="api-lang-badge" data-lang="@sample.Language" aria-hidden="true"></span>
 						<span class="api-code-carousel-card-language">@sample.Language</span>
-						@if (sample.ClientLabel.Length > 0)
+						@if (sample.ClientLabel.Length > 0 && sample.ClientDocsUrl is { } clientDocs)
+						{
+							<a class="api-code-carousel-card-client" href="@clientDocs">@sample.ClientLabel</a>
+						}
+						else if (sample.ClientLabel.Length > 0)
 						{
 							<span class="api-code-carousel-card-client">@sample.ClientLabel</span>
 						}

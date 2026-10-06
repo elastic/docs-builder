@@ -86,9 +86,28 @@ public class OperationExamplesPanelRenderingTests
 	{
 		var html = await RenderScenario(TermSearch with { HttpMethod = "post", Route = "/_search" });
 
-		html.Should().Contain("api-code-carousel-card-client\">elasticsearch-java</span>");
+		html.Should().Contain("api-code-carousel-card-client\">Elasticsearch Java Client</span>");
 		html.Should().Contain("api-code-carousel-card-client\">Kibana Dev Tools</span>");
 		html.Should().NotContain("api-method-post");
+	}
+
+	[Test]
+	public async Task Render_CardHeader_LinksTheClientLabelToItsDocs()
+	{
+		var scenario = TermSearch with
+		{
+			CodeSamples =
+			[
+				.. TermSearch.CodeSamples.Select(c => c with { ClientDocsUrl = CodeSample.ClientDocsUrlFor(c.Language, "elasticsearch") })
+			]
+		};
+
+		var html = await RenderScenario(scenario);
+
+		html.Should().Contain(
+			"<a class=\"api-code-carousel-card-client\" href=\"https://www.elastic.co/docs/reference/elasticsearch/clients/java\">Elasticsearch Java Client</a>"
+		);
+		html.Should().Contain("href=\"https://www.elastic.co/docs/explore-analyze/query-filter/tools/console\">Kibana Dev Tools</a>");
 	}
 
 	[Test]

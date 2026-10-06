@@ -256,12 +256,24 @@ public class CodeSampleTests
 		CodeSample.GetHighlightGroupClass("language-").Should().Be("highlight-plaintext");
 
 	[Test]
-	[Arguments("Java", "elasticsearch-java")]
+	[Arguments("Java", "Elasticsearch Java Client")]
 	[Arguments("Console", "Kibana Dev Tools")]
-	[Arguments("C#", "Elastic.Clients.Elasticsearch")]
-	[Arguments("Go", "")]
+	[Arguments("C#", "Elasticsearch .NET Client")]
+	[Arguments("Go", "Elasticsearch Go Client")]
 	public void ClientLabel_NamesTheLibraryThatRunsTheSample(string language, string expected) =>
 		new CodeSample(language, "", CodeSample.GetHighlightClass(language)).ClientLabel.Should().Be(expected);
+
+	[Test]
+	[Arguments("JavaScript", "elasticsearch", "https://www.elastic.co/docs/reference/elasticsearch/clients/javascript")]
+	[Arguments("C#", "serverless-elasticsearch", "https://www.elastic.co/docs/reference/elasticsearch/clients/dotnet")]
+	[Arguments("Console", "kibana", "https://www.elastic.co/docs/explore-analyze/query-filter/tools/console")]
+	[Arguments("Console", null, "https://www.elastic.co/docs/explore-analyze/query-filter/tools/console")]
+	[Arguments("JavaScript", "kibana", null)]
+	[Arguments("JavaScript", null, null)]
+	[Arguments("curl", "elasticsearch", null)]
+	[Arguments("Haskell", "elasticsearch", null)]
+	public void ClientDocsUrlFor_LinksElasticsearchClientsAndConsole(string language, string? productId, string? expected) =>
+		CodeSample.ClientDocsUrlFor(language, productId).Should().Be(expected);
 
 	[Test]
 	public void GetHighlightClass_CSharp_UsesTheCsharpGrammar() => CodeSample.GetHighlightClass("C#").Should().Be("language-csharp");
