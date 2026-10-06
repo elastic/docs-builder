@@ -12,6 +12,9 @@ namespace Elastic.ApiExplorer.Model;
 /// </summary>
 public record UnionOption(string Name, string? Ref, bool IsObject, IOpenApiSchema? Schema);
 
+/// <summary>A named schema merged into a type through <c>allOf</c>, beyond the one that names the type.</summary>
+public record ComposedType(string Name, bool HasLink);
+
 /// <summary>
 /// Unified type information record used by both OperationView and SchemaView.
 /// Contains all metadata needed for rendering schema types.
@@ -31,6 +34,7 @@ public record UnionOption(string Name, string? Ref, bool IsObject, IOpenApiSchem
 /// <param name="EnumValues">Every literal the value can take, from <see cref="SchemaAnalyzer.GetEnumValues"/>; set for unions and arrays of enums too.</param>
 /// <param name="UnionOptions">String array of union option names for display.</param>
 /// <param name="ArrayItemType">The primitive item type for arrays of primitives.</param>
+/// <param name="AlsoIncludes">Further named schemas an <c>allOf</c> merges in after the first <c>$ref</c>, which names the type.</param>
 public record TypeInfo(
 	string TypeName,
 	string? SchemaRef,
@@ -46,5 +50,6 @@ public record TypeInfo(
 	bool IsUnion = false,
 	string[]? EnumValues = null,
 	string[]? UnionOptions = null,
-	string? ArrayItemType = null
+	string? ArrayItemType = null,
+	List<ComposedType>? AlsoIncludes = null
 );

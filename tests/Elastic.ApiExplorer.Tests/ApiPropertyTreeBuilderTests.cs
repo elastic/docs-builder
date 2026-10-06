@@ -742,4 +742,63 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture)
 				File.Delete(path);
 		}
 	}
+
+	[Test]
+	public async Task BuildPropertyList_AllOfWithSeveralRefs_ListsTheOtherSchemasAsAlsoIncludes()
+	{
+		var json =
+			"""
+			{
+			  "openapi": "3.0.3",
+			  "info": { "title": "t", "version": "1" },
+			  "paths": {},
+			  "components": {
+			    "schemas": {
+			      "Base": { "type": "object", "properties": { "id": { "type": "string" } } },
+			      "Timestamps": { "type": "object", "properties": { "created": { "type": "string" } } },
+			      "Mode": { "type": "string", "enum": ["a", "b"] },
+			      "Holder": {
+			        "type": "object",
+			        "properties": {
+			          "merged": {
+			            "allOf": [
+			              { "$ref": "#/components/schemas/Base" },
+			              { "$ref": "#/components/schemas/Timestamps" },
+			              { "$ref": "#/components/schemas/Mode" }
+			            ]
+			          },
+			          "single": { "allOf": [ { "$ref": "#/components/schemas/Base" } ] }
+			        }
+			      }
+			    }
+			  }
+			}
+			""";
+		var path = Path.Join(Path.GetTempPath(), $"allof-multi-{Guid.NewGuid():N}.json");
+		await File.WriteAllTextAsync(path, json, TestContext.Current!.Execution.CancellationToken);
+		try
+		{
+			var loaded = await OpenApiDocument.LoadAsync(
+				path,
+				new OpenApiReaderSettings { LeaveStreamOpen = false },
+				TestContext.Current!.Execution.CancellationToken
+			);
+			var document = loaded.Document!;
+			var builder = new ApiPropertyTreeBuilder(
+				document,
+				new PropertyDisplayOptions { RenderMarkdown = s => new HtmlString($"<p>{s}</p>"), ApiRootUrl = "/api/doc/fixture" }
+			);
+
+			var list = builder.BuildPropertyList(document.Components!.Schemas!["Holder"], new PropertyTreeScope { Prefix = "" });
+
+			var merged = list!.Items.Single(p => p.Name == "merged");
+			merged.AlsoIncludes.Select(t => t.TypeName).Should().Equal("Timestamps");
+			list.Items.Single(p => p.Name == "single").AlsoIncludes.Should().BeEmpty();
+		}
+		finally
+		{
+			if (File.Exists(path))
+				File.Delete(path);
+		}
+	}
 }

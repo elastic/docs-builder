@@ -74,7 +74,20 @@ internal static class ApiPropertyMarkdown
 		if (property.TypeLink is { Url: { Length: > 0 } url })
 			WriteNestedLine(markdown, depth, $"See {ApiCommonMark.Link(property.TypeLink.TypeName, url)}");
 
+		WriteAlsoIncludes(markdown, property, depth);
+
 		WriteChildren(markdown, property, apiBaseUrl, depth);
+	}
+
+	private static void WriteAlsoIncludes(StringBuilder markdown, ApiProperty property, int depth)
+	{
+		if (property.AlsoIncludes.Count == 0)
+			return;
+
+		var names = property.AlsoIncludes.Select(
+			t => t.Url is { Length: > 0 } url ? ApiCommonMark.Link(t.TypeName, url) : $"`{t.TypeName}`"
+		);
+		WriteNestedLine(markdown, depth, "Also includes: " + string.Join(", ", names));
 	}
 
 	private static void WriteArrayItemType(StringBuilder markdown, ApiProperty property, int depth)

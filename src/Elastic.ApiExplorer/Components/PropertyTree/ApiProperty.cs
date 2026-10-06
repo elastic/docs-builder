@@ -145,6 +145,9 @@ public record ApiProperty
 
 	public TypePageLink? TypeLink { get; init; }
 
+	/// <summary>Further schemas an <c>allOf</c> merges in; the row's type names only the first.</summary>
+	public IReadOnlyList<TypePageLink> AlsoIncludes { get; init; } = [];
+
 	public required bool IsCollapsible { get; init; }
 	public required bool DefaultExpanded { get; init; }
 	public required int NestedCount { get; init; }

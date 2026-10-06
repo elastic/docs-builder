@@ -216,6 +216,7 @@ public class ApiPropertyTreeBuilder(OpenApiDocument document, PropertyDisplayOpt
 			// Type annotation already reads "[] …"; skip the redundant "Array of:" row.
 			ArrayItemTypeName = null,
 			TypeLink = typeLink,
+			AlsoIncludes = BuildAlsoIncludes(typeInfo),
 			IsCollapsible = expansion.IsCollapsible,
 			DefaultExpanded = expansion.DefaultExpanded,
 			NestedCount = expansion.NestedCount,
@@ -381,6 +382,12 @@ public class ApiPropertyTreeBuilder(OpenApiDocument document, PropertyDisplayOpt
 
 		return new TypeAnnotation(spans);
 	}
+
+	private IReadOnlyList<TypePageLink> BuildAlsoIncludes(TypeInfo typeInfo) =>
+		typeInfo.AlsoIncludes?.Select(
+			c => new TypePageLink(c.Name, c.HasLink ? SchemaHelpers.GetContainerPageUrl(options.ApiRootUrl, c.Name) : null)
+		).ToArray()
+			?? [];
 
 	private TypePageLink? BuildTypeLink(TypeInfo typeInfo, Expansion expansion)
 	{

@@ -514,7 +514,8 @@ public class SchemaAnalyzer(
 						named.IsValueType,
 						named.ValueTypeBase,
 						IsLinkedType(named.TypeName),
-						null
+						null,
+						AlsoIncludes: GetComposedTypes(refSchemas)
 					);
 				}
 			}
@@ -631,6 +632,22 @@ public class SchemaAnalyzer(
 		}
 
 		return false;
+	}
+
+	/// <summary>The object schemas after the first <c>$ref</c> of an <c>allOf</c>; the first one names the type.</summary>
+	private List<ComposedType>? GetComposedTypes(OpenApiSchemaReference[] refSchemas)
+	{
+		var composed = new List<ComposedType>();
+		foreach (var reference in refSchemas.Skip(1))
+		{
+			var name = SchemaHelpers.FormatSchemaName(reference.Reference.Id ?? "");
+			var target = ResolveSchema(reference) ?? reference;
+			if (string.IsNullOrEmpty(name) || target.Enum is { Count: > 0 } || ClassifyNamedSchema(name, target).IsPrimitiveAlias)
+				continue;
+			if (composed.All(c => c.Name != name))
+				composed.Add(new ComposedType(name, IsLinkedType(name)));
+		}
+		return composed.Count > 0 ? composed : null;
 	}
 
 	/// <summary>Each object variant carries the shared base members, so it expands to base plus its own properties.</summary>

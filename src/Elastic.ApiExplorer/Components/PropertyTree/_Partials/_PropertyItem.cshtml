@@ -36,6 +36,28 @@
 			</a>
 		</dd>
 	}
+	@if (Model.AlsoIncludes.Count > 0)
+	{
+		<dd class="also-includes">
+			<span class="values-label">Also includes:</span>
+			@for (var i = 0; i < Model.AlsoIncludes.Count; i++)
+			{
+				var included = Model.AlsoIncludes[i];
+				if (i > 0)
+				{
+					<text>, </text>
+				}
+				if (included.Url is { Length: > 0 } includedUrl)
+				{
+					<code class="schema-type"><a href="@includedUrl" class="@SchemaHelpers.LinkedCssClass" data-hx-boost="false">@included.TypeName</a></code>
+				}
+				else
+				{
+					<code class="schema-type">@included.TypeName</code>
+				}
+			}
+		</dd>
+	}
 	@(await RenderPartialAsync<_EnumValues, EnumValueList>(new EnumValueList(Model.EnumValues)))
 	@if (Model.Union is not null)
 	{
