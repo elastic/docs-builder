@@ -7,6 +7,7 @@ using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Changelog;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.ReleaseNotes;
 
 namespace Elastic.Changelog.Tests.Changelogs;
 
@@ -47,7 +48,7 @@ public class ChangelogConfigurationDiagnosticsTests : ChangelogTestBase
 		await FileSystem.File.WriteAllTextAsync(configPath, yaml, ct);
 		var loader = new ChangelogConfigurationLoader(LoggerFactory, ConfigurationContext, FileSystem);
 
-		var config = await loader.LoadChangelogConfigurationRequired(Collector, configPath, ct);
+		var config = (await loader.LoadRequired(configPath, ct)).EmitTo(Collector);
 
 		Collector.Diagnostics.Should().ContainSingle();
 		var diagnostic = Collector.Diagnostics.Single();
@@ -58,5 +59,85 @@ public class ChangelogConfigurationDiagnosticsTests : ChangelogTestBase
 			config.Should().BeNull();
 		else
 			config.Should().NotBeNull();
+	}
+
+	private async Task<string> WriteConfig(string yaml)
+	{
+		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog.yml");
+		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
+		await FileSystem.File.WriteAllTextAsync(configPath, yaml, TestContext.Current!.Execution.CancellationToken);
+		return configPath;
+	}
+
+	private ChangelogConfigurationLoader NewLoader() => new(LoggerFactory, ConfigurationContext, FileSystem);
+
+	[Test]
+	public async Task Load_AValidFile_IsAResultWithTheValueAndNoDiagnostics()
+	{
+		var ct = TestContext.Current!.Execution.CancellationToken;
+		var configPath = await WriteConfig(RequiredTypes);
+
+		var result = await NewLoader().Load(configPath, ct);
+
+		result.Value.Should().NotBeNull();
+		result.HasErrors.Should().BeFalse();
+		result.Diagnostics.Should().BeEmpty();
+		Collector.Diagnostics.Should().BeEmpty("a Result is returned, nothing is written to a collector until the caller asks");
+	}
+
+	[Test]
+	public async Task Load_AnErrorIsNoValue_AndEveryDiagnosticRidesInTheResult()
+	{
+		var ct = TestContext.Current!.Execution.CancellationToken;
+		var configPath = await WriteConfig(RequiredTypes + "    nope:\n");
+
+		var result = await NewLoader().Load(configPath, ct);
+
+		result.Value.Should().BeNull();
+		result.Diagnostics.Should().ContainSingle(d => d.Severity == Severity.Error && d.File == configPath);
+		Collector.Diagnostics.Should().BeEmpty();
+	}
+
+	[Test]
+	public async Task Load_AWarningKeepsTheValue()
+	{
+		var ct = TestContext.Current!.Execution.CancellationToken;
+		var configPath = await WriteConfig("bundle:\n  profiles:\n    release:\n      source: github_release\n");
+
+		var result = await NewLoader().Load(configPath, ct);
+
+		result.Value.Should().NotBeNull();
+		result.Diagnostics.Should().ContainSingle(d => d.Severity == Severity.Warning);
+	}
+
+	[Test]
+	public async Task Load_NoFile_IsTheCheckedDefault()
+	{
+		var result = await NewLoader().Load("/nowhere/changelog.yml", TestContext.Current!.Execution.CancellationToken);
+
+		result.Value.Should().BeSameAs(ChangelogConfiguration.Default);
+		result.Diagnostics.Should().BeEmpty();
+	}
+
+	[Test]
+	public async Task LoadRequired_NoFile_IsAnError()
+	{
+		var result = await NewLoader().LoadRequired("/nowhere/changelog.yml", TestContext.Current!.Execution.CancellationToken);
+
+		result.Value.Should().BeNull();
+		result.Diagnostics.Should().ContainSingle(d => d.Severity == Severity.Error && d.Message.Contains("not found"));
+	}
+
+	[Test]
+	public async Task Load_ReadsTheFileEveryTime_SoAnEditedFileIsSeen()
+	{
+		var ct = TestContext.Current!.Execution.CancellationToken;
+		var configPath = await WriteConfig(RequiredTypes);
+		var loader = NewLoader();
+		(await loader.Load(configPath, ct)).Value.Should().NotBeNull();
+
+		await FileSystem.File.WriteAllTextAsync(configPath, RequiredTypes + "    nope:\n", ct);
+
+		(await loader.Load(configPath, ct)).Value.Should().BeNull();
 	}
 }

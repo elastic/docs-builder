@@ -5,6 +5,7 @@
 using System.IO.Abstractions;
 using Actions.Core.Services;
 using Elastic.Documentation;
+using Elastic.Documentation.Assembler;
 using Elastic.Documentation.Assembler.Building;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
@@ -20,7 +21,7 @@ namespace Documentation.Builder.Commands.Assembler;
 internal sealed class AssemblerSitemapCommand(
 	ILoggerFactory logFactory,
 	IDiagnosticsCollector collector,
-	AssemblyConfiguration configuration,
+	AssembleContextProvider contexts,
 	IConfigurationContext configurationContext,
 	ICoreService githubActionsService
 )
@@ -44,7 +45,7 @@ internal sealed class AssemblerSitemapCommand(
 	{
 		await using var serviceInvoker = new ServiceInvoker(collector);
 		var fs = CheckoutsFileSystem.FromWorkingDirectory();
-		var service = new AssemblerSitemapService(logFactory, configuration, configurationContext, githubActionsService);
+		var service = new AssemblerSitemapService(logFactory, contexts, configurationContext, githubActionsService);
 		serviceInvoker.AddCommand(service, async (s, col, ctx) => await s.GenerateSitemapAsync(col, fs, es, environment, ctx));
 		return await serviceInvoker.InvokeAsync(ct);
 	}

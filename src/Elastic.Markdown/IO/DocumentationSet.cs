@@ -254,50 +254,31 @@ public class DocumentationSet : INavigationTraversable
 		_resolved = true;
 	}
 
-	public LinkManifest CreateLinkReference()
+	/// <summary>
+	/// The <c>links.json</c> this build publishes, checked by <see cref="LinkManifestConstraints"/> (see <see cref="LinkManifest.From"/>). The value is
+	/// there even when a rule of error severity is broken; the findings are the caller's to report.
+	/// </summary>
+	public Result<LinkManifest> CreateLinkReference()
 	{
-		var redirects = Configuration.Redirects is { } declared
-			? new Dictionary<string, LinkRedirect>(declared, StringComparer.OrdinalIgnoreCase)
-			: null;
-		var crossLinks = Context.Collector.CrossLinks.ToHashSet().OrderBy(l => l).ToArray();
-
 		var leafs = NavigationIndexedByOrder.Values.OfType<ILeafNavigationItem<MarkdownFile>>().ToArray();
 		var nodes = NavigationIndexedByOrder.Values.OfType<INodeNavigationItem<INavigationModel, INavigationItem>>().ToArray();
 
-		var markdownInNavigation = leafs
-			.Select(m => (Markdown: m.Model, Navigation: (INavigationItem)m))
-			.Concat(nodes.Select(g => (Markdown: (MarkdownFile)g.Index.Model, Navigation: (INavigationItem)g)))
-			.ToList();
+		var markdownInNavigation = leafs.Select(m => (Markdown: m.Model, Navigation: (INavigationItem)m)).Concat(
+			nodes.Select(g => (Markdown: (MarkdownFile)g.Index.Model, Navigation: (INavigationItem)g))
+		);
 
-		var links = markdownInNavigation
-			.Select(tuple =>
-			{
-				var path = RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
+		var pages = markdownInNavigation.Select(
+			tuple => new LinkPage(
+				RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
 					? tuple.Markdown.LinkReferenceRelativePath.Replace('\\', '/')
-					: tuple.Markdown.LinkReferenceRelativePath;
-				return (Path: path, tuple.Markdown, tuple.Navigation);
-			})
-			.DistinctBy(tuple => tuple.Path)
-			.OrderBy(tuple => tuple.Path)
-			.ToDictionary(tuple => tuple.Path, tuple =>
-			{
-				var anchors = tuple.Markdown.Anchors.Count == 0 ? null : tuple.Markdown.Anchors.ToArray();
-				return new LinkMetadata
-				{
-					Anchors = anchors,
-					Hidden = tuple.Navigation.ExcludeFromIndexing,
-					DuplicateAnchors = tuple.Markdown.DuplicateAnchors
-				};
-			});
+					: tuple.Markdown.LinkReferenceRelativePath,
+				[.. tuple.Markdown.Anchors],
+				tuple.Navigation.ExcludeFromIndexing,
+				tuple.Markdown.DuplicateAnchors
+			)
+		);
 
-		return new LinkManifest
-		{
-			Redirects = redirects,
-			UrlPathPrefix = Context.UrlPathPrefix,
-			Origin = Context.Git,
-			Links = links,
-			CrossLinks = crossLinks
-		};
+		return LinkManifest.From(Context.Git, Context.UrlPathPrefix, pages, Context.Collector.CrossLinks, Configuration.Redirects);
 	}
 
 	public void ClearOutputDirectory()

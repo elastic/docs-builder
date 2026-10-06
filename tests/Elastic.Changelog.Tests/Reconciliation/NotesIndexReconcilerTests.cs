@@ -61,20 +61,20 @@ public class NotesIndexReconcilerTests
 	[Test]
 	public void DirectYamlParse_NoteYaml_HasVersions()
 	{
-		var dto = ReleaseNotesSerialization.GetEntryDeserializer().Deserialize<ChangelogEntryDto>(NoteYaml);
-		dto.Products.Should().NotBeNullOrEmpty("YAML has products");
-		dto.Products?[0].Versions.Should().BeEquivalentTo(["9.0.0"]);
+		var entry = ReleaseNotesLoader.LoadEntry(NoteYaml, "note-slow-rollover.yml").Value!;
+		entry.Products.Should().NotBeNullOrEmpty("YAML has products");
+		entry.Products?[0].Versions.Should().BeEquivalentTo(["9.0.0"]);
 	}
 
 	[Test]
 	public void DirectYamlParse_LegacyTargetField_FallsBackToVersions()
 	{
 		// Existing notes in pools still carry `target:` — the reconciler must still read them.
-		var dto = ReleaseNotesSerialization.GetEntryDeserializer().Deserialize<ChangelogEntryDto>(LegacyNoteYaml);
-		dto.Products.Should().NotBeNullOrEmpty();
-#pragma warning disable CS0618 // testing backward-compat read of obsolete Target
-		dto.Products?[0].Target.Should().Be("9.0.0");
-#pragma warning restore CS0618
+		var entry = ReleaseNotesLoader.LoadEntry(LegacyNoteYaml, "note-legacy.yml").Value!;
+		entry.Products.Should().NotBeNullOrEmpty();
+		// the loader reads the obsolete target as the version, and keeps what was written
+		entry.Products?[0].Versions.Should().BeEquivalentTo(["9.0.0"]);
+		entry.Products?[0].TargetRaw.Should().Be("9.0.0");
 	}
 
 	[Test]

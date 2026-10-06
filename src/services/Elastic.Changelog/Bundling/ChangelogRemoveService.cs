@@ -62,14 +62,14 @@ public record ChangelogRemoveArguments
 public class ChangelogRemoveService(
 	ILoggerFactory logFactory,
 	IChangelogFileSystem fileSystem,
-	IConfigurationContext? configurationContext = null
+	IConfigurationContext? configurationContext = null,
+	ChangelogConfigurationLoader? configurationLoader = null
 ) : IService
 {
 	private readonly ILogger _logger = logFactory.CreateLogger<ChangelogRemoveService>();
 	private readonly IChangelogFileSystem _fileSystem = fileSystem;
-	private readonly ChangelogConfigurationLoader? _configLoader = configurationContext != null
-		? new ChangelogConfigurationLoader(logFactory, configurationContext, fileSystem)
-		: null;
+	private readonly ChangelogConfigurationLoader? _configLoader = configurationLoader
+		?? (configurationContext != null ? new ChangelogConfigurationLoader(logFactory, configurationContext, fileSystem) : null);
 
 	public async Task<bool> RemoveChangelogs(IDiagnosticsCollector collector, ChangelogRemoveArguments input, Cancel ctx)
 	{
@@ -88,13 +88,13 @@ public class ChangelogRemoveService(
 				// When an explicit config path is provided, load it (required, no fallback).
 				// Otherwise, discover from CWD: ./changelog.yml then ./docs/changelog.yml.
 				config = string.IsNullOrWhiteSpace(input.Config)
-					? await _configLoader.LoadChangelogConfigurationForProfileMode(collector, ctx)
-					: await _configLoader.LoadChangelogConfigurationRequired(collector, input.Config, ctx);
+					? (await _configLoader.LoadForProfileMode(ctx)).EmitTo(collector)
+					: (await _configLoader.LoadRequired(input.Config, ctx)).EmitTo(collector);
 				if (config == null)
 					return false;
 			}
 			else if (_configLoader != null)
-				config = await _configLoader.LoadChangelogConfiguration(collector, input.Config, ctx);
+				config = (await _configLoader.Load(input.Config, ctx)).EmitTo(collector);
 
 			// Handle profile-based removal (same ordering as ChangelogBundlingService)
 			if (!string.IsNullOrWhiteSpace(input.Profile))
@@ -167,7 +167,7 @@ public class ChangelogRemoveService(
 			}
 
 			var filterCriteria = BuildFilterCriteria(input, prsToMatch, issuesToMatch);
-			var entryMatcher = new ChangelogEntryMatcher(_fileSystem, ReleaseNotesSerialization.GetEntryDeserializer(), _logger);
+			var entryMatcher = new ChangelogEntryMatcher(_fileSystem, _logger);
 			ChangelogMatchResult matchResult;
 			if (explicitFilePaths != null)
 			{

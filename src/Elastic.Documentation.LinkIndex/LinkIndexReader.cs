@@ -5,8 +5,9 @@
 using Amazon.Runtime;
 using Amazon.S3;
 using Amazon.S3.Model;
+using Elastic.Documentation.Configuration.Loading;
+using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Links;
-using Elastic.Documentation.Serialization;
 
 namespace Elastic.Documentation.LinkIndex;
 
@@ -28,20 +29,20 @@ public class Aws3LinkIndexReader(
 		return new AwsS3LinkIndexReaderWriter(s3Client);
 	}
 
-	public async Task<LinkRegistry> GetRegistry(Cancel cancellationToken = default)
+	public async Task<Result<LinkRegistry>> GetRegistry(Cancel cancellationToken = default)
 	{
 		var getObjectRequest = new GetObjectRequest { BucketName = bucketName, Key = registryKey };
 		var getObjectResponse = await s3Client.GetObjectAsync(getObjectRequest, cancellationToken);
 		await using var stream = getObjectResponse.ResponseStream;
-		var linkIndex = LinkJson.DeserializeRegistry(stream);
-		return linkIndex with { ETag = getObjectResponse.ETag };
+		return LinkLoader.LoadRegistry(stream, registryKey, getObjectResponse.ETag);
 	}
-	public async Task<LinkManifest> GetRepositoryLinks(string key, Cancel cancellationToken)
+
+	public async Task<Result<LinkManifest>> GetRepositoryLinks(string key, Cancel cancellationToken)
 	{
 		var getObjectRequest = new GetObjectRequest { BucketName = bucketName, Key = key };
 		var getObjectResponse = await s3Client.GetObjectAsync(getObjectRequest, cancellationToken);
 		await using var stream = getObjectResponse.ResponseStream;
-		return LinkJson.DeserializeManifest(stream);
+		return LinkLoader.LoadManifest(stream, key);
 	}
 
 	public string RegistryUrl { get; } = $"https://{bucketName}.s3.{s3Client.Config.RegionEndpoint.SystemName}.amazonaws.com/{registryKey}";

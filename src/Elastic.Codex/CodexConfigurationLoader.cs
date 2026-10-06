@@ -34,25 +34,10 @@ internal static class CodexConfigurationLoader
 		out CodexConfiguration config
 	)
 	{
-		config = default!;
-		try
-		{
-			if (!configFile.Exists)
-			{
-				collector.EmitGlobalError($"Codex configuration file not found: {originalPath}");
-				return false;
-			}
-
-			config = CodexSiteLoader.Load(configFile);
-			var ok = collector.Write(CodexConfigurationConstraints.All.Report(config), originalPath);
-			if (purpose == CodexLoadPurpose.Publish)
-				ok &= collector.Write(CodexPublishingConstraints.All.Report(config), originalPath);
-			return ok;
-		}
-		catch (Exception ex)
-		{
-			collector.EmitGlobalError($"Failed to read codex configuration '{originalPath}': {ex.Message}", ex);
-			return false;
-		}
+		var result = CodexSiteLoader.Load(configFile, originalPath, forPublish: purpose == CodexLoadPurpose.Publish);
+		foreach (var diagnostic in result.Diagnostics)
+			collector.Write(diagnostic);
+		config = result.Value!;
+		return !result.HasErrors;
 	}
 }

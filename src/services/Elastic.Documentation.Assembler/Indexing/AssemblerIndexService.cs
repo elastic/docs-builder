@@ -17,11 +17,11 @@ namespace Elastic.Documentation.Assembler.Indexing;
 
 public class AssemblerIndexService(
 	ILoggerFactory logFactory,
-	AssemblyConfiguration assemblyConfiguration,
+	AssembleContextProvider contexts,
 	IConfigurationContext configurationContext,
 	ICoreService githubActionsService,
 	IEnvironmentVariables environmentVariables
-) : AssemblerBuildService(logFactory, assemblyConfiguration, configurationContext, githubActionsService, environmentVariables)
+) : AssemblerBuildService(logFactory, contexts, configurationContext, githubActionsService, environmentVariables)
 {
 	private readonly IConfigurationContext _configurationContext = configurationContext;
 

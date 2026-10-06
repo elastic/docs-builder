@@ -7,22 +7,26 @@ using Microsoft.Extensions.Logging;
 
 namespace Elastic.Documentation.Deploying.Synchronization;
 
-/// <summary>Checks a <see cref="SyncPlan"/> against <see cref="SyncPlanConstraints"/> and logs what is wrong with it.</summary>
+/// <summary>The verdict on a <see cref="SyncPlan"/>, from the findings of <see cref="SyncPlanConstraints"/>, logged.</summary>
 public class DocsSyncPlanValidator(ILoggerFactory logFactory)
 {
 	private readonly ILogger<DocsSyncPlanValidator> _logger = logFactory.CreateLogger<DocsSyncPlanValidator>();
 
-	public PlanValidationResult Validate(SyncPlan plan)
+	/// <summary>Checks a plan the planner just built (once, through <see cref="SyncPlanLoader.Check"/>) and logs what is wrong with it.</summary>
+	public PlanValidationResult Validate(SyncPlan plan) => Validate(SyncPlanLoader.Check(plan));
+
+	/// <summary>
+	/// The verdict on a plan that was already checked (by <see cref="SyncPlanLoader.Load"/> or <see cref="SyncPlanLoader.Check"/>): reads its findings,
+	/// does not run the rules again, so a bad plan is reported once with all of its violations.
+	/// </summary>
+	public PlanValidationResult Validate(Result<SyncPlan> checkedPlan)
 	{
+		var plan = checkedPlan.Value ?? throw new ArgumentException("A plan that did not load has no verdict.", nameof(checkedPlan));
 		if (plan.DeleteThresholdDefault is not null)
 			_logger.LogInformation("Using user-specified delete threshold of {Threshold}", plan.DeleteThresholdDefault);
 
-		// The plan is checked once, here: this validator is the single gate in front of a sync.
-		var errors = Result
-			.From(SyncPlanConstraints.All.Report(plan), "sync-plan")
-			.Diagnostics
-			.Where(d => d.Severity == Severity.Error)
-			.ToList();
+		// the plan was checked once, by the loader: this validator turns its findings into the verdict in front of a sync
+		var errors = checkedPlan.Diagnostics.Where(d => d.Severity == Severity.Error).ToList();
 		if (!plan.RemoteListingCompleted || plan.TotalSourceFiles == 0)
 		{
 			foreach (var error in errors.Take(1))

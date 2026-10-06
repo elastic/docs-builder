@@ -38,7 +38,7 @@ public class AppliesToRole : RoleLeaf, IApplicableToElement
 				return applicableTo;
 			foreach (var (severity, message) in applicableTo.Diagnostics)
 				processor.Emit(severity, this, Role.Length + yaml.Length, message);
-			return applicableTo with { Diagnostics = null };
+			return applicableTo.WithoutDiagnostics();
 		}
 		catch (Exception e)
 		{

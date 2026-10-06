@@ -236,7 +236,7 @@ public sealed class NoteAmendReconciler(
 		}
 
 		// Shipped set = parent entries merged with all numeric amends.
-		var mergedEntries = BundleAmendMerger.MergeEntries(parent.Entries, amendBundles);
+		var mergedEntries = parent.ApplyAmends([.. amendBundles.Select(a => new BundleAmend(a))]).Value!.Entries;
 		var shippedLeaves = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 		foreach (var entry in mergedEntries)
 		{
@@ -269,8 +269,8 @@ public sealed class NoteAmendReconciler(
 			var lateEntries = await FetchLateNoteEntriesAsync(org, repo, lateNotes, ctx);
 			if (lateEntries.Count > 0)
 			{
-				var amendBundle = AmendDocumentBuilder.Build(parent.Products, lateEntries, []);
-				var newJson = ReleaseNotesSerialization.SerializeBundle(amendBundle);
+				var amendBundle = Bundle.AmendOf(parent.Products, lateEntries, []).Value!;
+				var newJson = ReleaseNotesLoader.Serialize(amendBundle);
 				await WriteAmendNotesAsync(amendNotesKey, newJson, ctx);
 
 				foreach (var note in lateNotes)
@@ -308,12 +308,19 @@ public sealed class NoteAmendReconciler(
 				using var reader = new StreamReader(stream);
 				var yaml = await reader.ReadToEndAsync(ctx);
 
-				var normalized = ReleaseNotesSerialization.NormalizeYaml(yaml);
-				var dto = ReleaseNotesSerialization.GetEntryDeserializer().Deserialize<ChangelogEntryDto>(normalized);
-				var entry = ReleaseNotesSerialization.ConvertEntry(dto);
+				var loaded = ReleaseNotesLoader.LoadEntry(yaml, note.Path);
+				if (loaded.Value is not { } entry)
+				{
+					_logger.LogWarning(
+						"Could not read late note {Key}: {Message}; skipping",
+						key,
+						loaded.Diagnostics.Select(d => d.Message).FirstOrDefault()
+					);
+					continue;
+				}
 				var checksum = ChangelogBundlingService.ComputeSha1(yaml);
 
-				entries.Add(entry.ToBundledEntry() with { File = new BundledFile { Name = note.Path, Checksum = checksum } });
+				entries.Add(entry.ToBundledEntry(note.Path, checksum));
 			}
 			catch (AmazonS3Exception ex) when (ex.StatusCode == HttpStatusCode.NotFound)
 			{
@@ -453,7 +460,14 @@ public sealed class NoteAmendReconciler(
 			await using var stream = response.ResponseStream;
 			using var reader = new StreamReader(stream);
 			var yaml = await reader.ReadToEndAsync(ctx);
-			return ReleaseNotesSerialization.DeserializeBundle(yaml);
+			var loaded = ReleaseNotesLoader.LoadBundle(yaml, key);
+			if (loaded.Value is null)
+				_logger.LogWarning(
+					"Could not read bundle {Key}: {Message}",
+					key,
+					loaded.Diagnostics.Select(d => d.Message).FirstOrDefault()
+				);
+			return loaded.Value;
 		}
 		catch (AmazonS3Exception ex) when (ex.StatusCode == HttpStatusCode.NotFound)
 		{

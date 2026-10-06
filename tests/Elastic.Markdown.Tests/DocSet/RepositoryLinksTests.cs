@@ -5,6 +5,7 @@
 using AwesomeAssertions;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
+using Elastic.Documentation.Configuration.Loading;
 using Elastic.Documentation.Links;
 using Elastic.Documentation.Serialization;
 
@@ -12,7 +13,7 @@ namespace Elastic.Markdown.Tests.DocSet;
 
 public class RepositoryLinksTests : NavigationTestsBase
 {
-	public RepositoryLinksTests() : base() => Reference = Set.CreateLinkReference();
+	public RepositoryLinksTests() : base() => Reference = Set.CreateLinkReference().OrThrowIfMissing();
 
 	private LinkManifest Reference { get; }
 
@@ -99,7 +100,7 @@ public class LinkReferenceSerializationTests
 			  "redirects": null
 			}
 			""";
-		var linkReference = LinkJson.DeserializeManifest(json);
+		var linkReference = LinkLoader.LoadManifest(json, "links.json").Value!;
 		linkReference.Origin.Ref.Should().Be("ref");
 	}
 }

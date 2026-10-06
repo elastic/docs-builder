@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information
 
 using AwesomeAssertions;
-using Elastic.Changelog.Evaluation;
 using Elastic.Documentation.Configuration.Changelog;
 using Elastic.Documentation.Configuration.ReleaseNotes;
 using Elastic.Documentation.ReleaseNotes;
@@ -14,14 +13,11 @@ public class ChangelogEntryValidatorTests
 {
 	private static readonly ChangelogConfiguration Config = ChangelogConfiguration.Default;
 
-	private static ChangelogEntryDto ParseYaml(string yaml)
-	{
-		var normalized = ReleaseNotesSerialization.NormalizeYaml(yaml);
-		return ReleaseNotesSerialization.GetEntryDeserializer().Deserialize<ChangelogEntryDto>(normalized) ?? new ChangelogEntryDto();
-	}
+	// the validator reads the file's text: the file's shape is the loader's, not the test's
+	private static string ParseYaml(string yaml) => yaml;
 
 	private static IReadOnlyList<EntryFileFinding> Validate(
-		ChangelogEntryDto entry,
+		string entry,
 		ChangelogEntryType? labelDerivedType = null,
 		IReadOnlySet<string>? knownProducts = null
 	) => ChangelogEntryValidator.Validate("docs/changelog/42.yaml", entry, Config, labelDerivedType, knownProducts);

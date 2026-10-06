@@ -14,19 +14,12 @@ using Microsoft.Extensions.Logging;
 
 namespace Elastic.Documentation.Assembler.Navigation;
 
-public class GlobalNavigationService(
-	ILoggerFactory logFactory,
-	AssemblyConfiguration configuration,
-	IConfigurationContext configurationContext,
-	CheckoutsFileSystem fileSystem
-) : IService
+public class GlobalNavigationService(ILoggerFactory logFactory, AssembleContextProvider contexts, CheckoutsFileSystem fileSystem) : IService
 {
 	public async Task<bool> Validate(IDiagnosticsCollector collector, Cancel ctx)
 	{
-		var assembleContext = new AssembleContext(configuration, configurationContext, "dev", collector, fileSystem);
+		var assembleContext = contexts.Get("dev", collector, fileSystem);
 		var namespaceChecker = new NavigationPrefixChecker(logFactory, assembleContext);
-
-		GlobalConfigurationFindings.Report(assembleContext);
 
 		// loading the navigation checks it (path prefixes are unique, ...); early exit if it has errors
 		_ = assembleContext.Navigation;
@@ -40,7 +33,7 @@ public class GlobalNavigationService(
 	public async Task<bool> ValidateLocalLinkReference(IDiagnosticsCollector collector, string? file, Cancel ctx)
 	{
 		file ??= ".artifacts/docs/html/links.json";
-		var assembleContext = new AssembleContext(configuration, configurationContext, "dev", collector, fileSystem);
+		var assembleContext = contexts.Get("dev", collector, fileSystem);
 
 		var root = fileSystem.DirectoryInfo.New(Paths.WorkingDirectoryRoot.FullName);
 		var repository = GitCheckoutInformationFactory.Create(

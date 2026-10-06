@@ -98,7 +98,8 @@ public class GitHubReleaseChangelogService(
 	IGitHubPrService? prService = null,
 	ChangelogBundlingService? bundlingService = null,
 	CdnChangelogEntryFetcher? entryFetcher = null,
-	IGitHubCommitRangeService? commitRangeService = null
+	IGitHubCommitRangeService? commitRangeService = null,
+	ChangelogConfigurationLoader? configurationLoader = null
 ) : IService
 {
 	/// <summary>
@@ -108,7 +109,7 @@ public class GitHubReleaseChangelogService(
 
 	private readonly ILogger _logger = logFactory.CreateLogger<GitHubReleaseChangelogService>();
 	private readonly IChangelogFileSystem _fileSystem = fileSystem;
-	private readonly ChangelogConfigurationLoader _configLoader = new(logFactory, configurationContext, fileSystem);
+	private readonly ChangelogConfigurationLoader _configLoader = configurationLoader ?? new(logFactory, configurationContext, fileSystem);
 	private readonly IGitHubReleaseService _releaseService = releaseService ?? new GitHubReleaseService(logFactory);
 	private readonly IGitHubPrService _prService = prService ?? new GitHubPrService(logFactory);
 	private readonly ChangelogBundlingService _bundlingService = bundlingService
@@ -158,7 +159,7 @@ public class GitHubReleaseChangelogService(
 			);
 
 			// 3. Load changelog configuration
-			var config = await _configLoader.LoadChangelogConfiguration(collector, input.Config, ctx);
+			var config = (await _configLoader.Load(input.Config, ctx)).EmitTo(collector);
 			if (config == null)
 			{
 				collector.EmitError(string.Empty, "Failed to load changelog configuration");
@@ -445,13 +446,7 @@ public class GitHubReleaseChangelogService(
 				labelDerivedAreas = MapLabelsToAreas(prInfo.Labels.ToArray(), config.LabelToAreas);
 		}
 
-		var finalTypeString = labelDerivedType ?? ChangelogEntryType.Other.ToStringFast(true);
-		var finalType = ChangelogEntryTypeExtensions.TryParse(
-			finalTypeString,
-			out var parsed,
-			ignoreCase: true,
-			allowMatchingMetadataAttribute: true
-		) ? parsed : ChangelogEntryType.Other;
+		var finalType = ChangelogEntry.TypeOrOther(labelDerivedType);
 
 		var typeSource = labelDerivedType != null
 			? $"label '{string.Join(", ", prInfo?.Labels ?? [])}'"
@@ -476,35 +471,19 @@ public class GitHubReleaseChangelogService(
 		}
 		var issues = config.Extract.Issues && prInfo?.LinkedIssues is { Count: > 0 } linkedIssues ? linkedIssues.ToList() : null;
 
-		var changelogData = new ChangelogEntry
-		{
-			Title = title,
-			Type = finalType,
-			Description = description,
-			Products =
-			[
-				new ProductReference
-				{
-					ProductId = context.ProductInfo.Product ?? "",
+		// the legacy `target` stands in for `versions` when a product names no list of them
 #pragma warning disable CS0618
-					Versions = context.ProductInfo.Versions is { Count: > 0 }
-						? context.ProductInfo.Versions
-						: context.ProductInfo.Target is not null ? [context.ProductInfo.Target] : [],
+		var versions = context.ProductInfo.Versions is { Count: > 0 }
+			? context.ProductInfo.Versions
+			: context.ProductInfo.Target is not null ? [context.ProductInfo.Target] : [];
 #pragma warning restore CS0618
-					Lifecycle = !string.IsNullOrWhiteSpace(context.ProductInfo.Lifecycle)
-						? (LifecycleExtensions.TryParse(
-							context.ProductInfo.Lifecycle,
-							out var lc,
-							ignoreCase: true,
-							allowMatchingMetadataAttribute: true
-						) ? lc : null)
-						: null
-				}
-			],
-			Areas = labelDerivedAreas,
-			Prs = [pr.Url],
-			Issues = issues
-		};
+
+		var entryResult = ChangelogEntry.FromPullRequest(
+			new PullRequestFacts(pr.Url, title, finalType.ToStringFast(true), description, labelDerivedAreas, Issues: issues),
+			[ProductReference.Parse(context.ProductInfo.Product, versions, context.ProductInfo.Lifecycle)]
+		);
+		if (entryResult.EmitErrorsTo(collector) is not { } changelogData)
+			return false;
 
 		var yamlContent = GenerateYaml(changelogData);
 		var slug = ChangelogTextUtilities.GenerateSlug(title);
@@ -576,7 +555,7 @@ public class GitHubReleaseChangelogService(
 		return true;
 	}
 
-	private static string GenerateYaml(ChangelogEntry data) => ReleaseNotesSerialization.SerializeEntry(data);
+	private static string GenerateYaml(ChangelogEntry data) => ReleaseNotesLoader.Serialize(data);
 
 	private async Task<string?> CreateBundleViaService(
 		IDiagnosticsCollector collector,

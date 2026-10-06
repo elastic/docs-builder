@@ -4,12 +4,13 @@
 
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using Elastic.Documentation.Diagnostics;
 
 namespace Elastic.Documentation.Deploying.Synchronization;
 
 public interface IDocsSyncPlanStrategy
 {
-	Task<SyncPlan> Plan(float? deleteThreshold, string[] excludePatterns, Cancel ctx = default);
+	Task<Result<SyncPlan>> Plan(float? deleteThreshold, string[] excludePatterns, Cancel ctx = default);
 }
 
 public record PlanValidationResult(bool Valid, float DeleteRatio, float DeleteThreshold);
@@ -128,7 +129,8 @@ public record SyncPlan
 
 	public static string Serialize(SyncPlan plan) => JsonSerializer.Serialize(plan, SyncSerializerContext.Default.SyncPlan);
 
-	public static SyncPlan Deserialize(string json) =>
+	/// <summary>The raw reader of the plan's wire format; internal: <see cref="SyncPlanLoader.Load"/> checks what it reads.</summary>
+	internal static SyncPlan Deserialize(string json) =>
 		JsonSerializer.Deserialize(json, SyncSerializerContext.Default.SyncPlan)
 			?? throw new JsonException("Failed to deserialize SyncPlan from JSON");
 }

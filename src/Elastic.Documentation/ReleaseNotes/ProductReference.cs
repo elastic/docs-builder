@@ -24,8 +24,8 @@ public partial record ProductReference
 
 	/// <summary>
 	/// The releases this note applies to (note-only). Empty for entries.
-	/// Populated from <see cref="ProductInfoDto.Versions"/> or, for backward compatibility,
-	/// from a single-element list derived from <see cref="ProductInfoDto.Target"/> when <c>Versions</c>
+	/// Populated from the file's <c>versions</c> or, for backward compatibility,
+	/// from a single-element list derived from the file's legacy <c>target</c> when <c>Versions</c>
 	/// is absent on an already-published note.
 	/// </summary>
 	[OrderedEquality]
@@ -37,4 +37,16 @@ public partial record ProductReference
 
 	/// <summary>The lifecycle stage of the feature for this product.</summary>
 	public Lifecycle? Lifecycle { get; init; }
+
+	/// <summary>
+	/// A product reference from the pieces a CLI or a label names: the product id, the releases it applies to (never the obsolete <c>target</c>), and a
+	/// lifecycle's text (none when blank or not a lifecycle). A reference has no rule set of its own: its rules (<c>products-required</c>,
+	/// <c>product-id-required</c>) are the entry's, so the entry that holds it is what is checked.
+	/// </summary>
+	public static ProductReference Parse(string? productId, IReadOnlyList<string>? versions = null, string? lifecycle = null) =>
+		new() { ProductId = productId ?? "", Versions = versions ?? [], Lifecycle = ReleaseNotesOperation.ParseLifecycle(lifecycle) };
+
+	/// <summary>A reference to a product alone, as a note scraped from a release notes page names it.</summary>
+	public static ProductReference Of(string productId, IReadOnlyList<string>? versions = null) =>
+		new() { ProductId = productId, Versions = versions ?? [] };
 }

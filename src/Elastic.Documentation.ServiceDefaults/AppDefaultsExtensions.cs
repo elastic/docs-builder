@@ -62,15 +62,19 @@ public static class AppDefaultsExtensions
 			})
 			.AddConfigurationFileProvider(cliOptions.SkipPrivateRepositories, cliOptions.ConfigSource, (s, p) =>
 			{
-				// The only place the global catalog is loaded. Its parts are registered too, for services that need one piece.
-				// Loaded once per provider: the assembler's findings report emits the warnings these loads carry.
-				var catalog = CatalogLoader.LoadOnce(p).OrThrow();
-				var search = SearchTuningLoader.LoadOnce(p).OrThrow();
+				// The only place global configuration is loaded: one entry, every file, every error listed at once (ConfigurationException).
+				// The warnings it carries are registered as StartupDiagnostics, drained by whoever owns a collector (once per process).
+				var result = GlobalConfigurationLoader.LoadOnce(p);
+				var global = result.OrThrow();
+				var catalog = global.Catalog;
+				_ = s.AddSingleton(global);
+				_ = s.AddSingleton(GlobalConfigurationLoader.StartupDiagnosticsOf(result));
+				_ = s.AddSingleton(global.Assembly);
 				_ = s.AddSingleton(catalog);
 				_ = s.AddSingleton(catalog.VersioningSystems);
 				_ = s.AddSingleton(catalog.Products);
 				_ = s.AddSingleton(catalog.LegacyUrlMappings);
-				_ = s.AddSingleton(search);
+				_ = s.AddSingleton(global.Search);
 				configure?.Invoke(s, p);
 			})
 			.AddSingleton(cliOptions);

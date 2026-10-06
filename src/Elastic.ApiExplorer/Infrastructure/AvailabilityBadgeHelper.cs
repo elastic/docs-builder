@@ -80,7 +80,7 @@ public static partial class AvailabilityBadgeHelper
 		if (!AppliesCollection.TryParse(lifecycleString, diagnostics, out var appliesCollection) || appliesCollection is null)
 			return null;
 
-		var applicableTo = new ApplicableTo { Stack = appliesCollection };
+		var applicableTo = ApplicableTo.ForStack(appliesCollection);
 
 		return BuildBadgeData(applicableTo, versionsConfig);
 	}

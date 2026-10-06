@@ -22,9 +22,8 @@ namespace Documentation.Builder.Commands.Assembler;
 
 /// <summary>Deploy built documentation to S3 and update CloudFront redirect rules.</summary>
 internal sealed class DeployCommands(
-	AssemblyConfiguration assemblyConfiguration,
+	AssembleContextProvider contexts,
 	IDiagnosticsCollector collector,
-	IConfigurationContext configurationContext,
 	ILoggerFactory logFactory,
 	ICoreService githubActionsService
 )
@@ -52,7 +51,7 @@ internal sealed class DeployCommands(
 		await using var serviceInvoker = new ServiceInvoker(collector);
 
 		var fs = CheckoutsFileSystem.FromWorkingDirectory();
-		var context = new AssembleContext(assemblyConfiguration, configurationContext, environment, collector, fs);
+		var context = contexts.Get(environment, collector, fs);
 		var service = new IncrementalDeployService(logFactory, githubActionsService);
 		serviceInvoker.AddCommand(
 			service,
@@ -89,7 +88,7 @@ internal sealed class DeployCommands(
 		await using var serviceInvoker = new ServiceInvoker(collector);
 
 		var fs = CheckoutsFileSystem.FromWorkingDirectory();
-		var context = new AssembleContext(assemblyConfiguration, configurationContext, environment, collector, fs);
+		var context = contexts.Get(environment, collector, fs);
 		var service = new IncrementalDeployService(logFactory, githubActionsService);
 		serviceInvoker.AddCommand(
 			service,

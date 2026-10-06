@@ -32,7 +32,7 @@ public class PrivateRepositoryNavigationFilterTests
 			SiteNavigationLoader.Deserialize(fileSystem.File.ReadAllText(provider.NavigationFile.FullName)),
 			config,
 			skipPrivateRepositories: true
-		);
+		).OrThrowIfMissing();
 
 	private static AssemblyConfiguration CreateConfig(params string[] privateRepoNames)
 	{
@@ -248,6 +248,6 @@ public class PrivateRepositoryNavigationFilterTests
 
 		var original = SiteNavigationLoader.Deserialize(originalContent);
 
-		SiteNavigationLoader.ForAssembly(original, config, skipPrivateRepositories: true).Should().BeSameAs(original);
+		SiteNavigationLoader.ForAssembly(original, config, skipPrivateRepositories: true).Value.Should().BeSameAs(original);
 	}
 }

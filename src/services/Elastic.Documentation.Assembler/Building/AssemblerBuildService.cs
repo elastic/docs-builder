@@ -25,7 +25,7 @@ namespace Elastic.Documentation.Assembler.Building;
 
 public class AssemblerBuildService(
 	ILoggerFactory logFactory,
-	AssemblyConfiguration assemblyConfiguration,
+	AssembleContextProvider contexts,
 	IConfigurationContext configurationContext,
 	ICoreService githubActionsService,
 	IEnvironmentVariables environmentVariables
@@ -64,7 +64,7 @@ public class AssemblerBuildService(
 
 		_logger.LogInformation("Creating assemble context");
 
-		var assembleContext = new AssembleContext(assemblyConfiguration, configurationContext, environment, collector, fileSystem);
+		var assembleContext = contexts.Get(environment, collector, fileSystem);
 
 		// Explicit --assume-build on CI is not allowed: CI must produce fresh, reproducible output.
 		if (assumeBuild == true && _env.IsRunningOnCI)
@@ -140,8 +140,6 @@ public class AssemblerBuildService(
 			assembleContext.Environment.PathPrefix,
 			navigationPreviewEnabled
 		);
-
-		GlobalConfigurationFindings.Report(assembleContext);
 
 		// loading the navigation (above) checked it, e.g. that path prefixes are unique; the assembled site is checked once, here
 		_ = AssembledSiteChecker.Check(assembleContext, assembleSources).EmitTo(collector);

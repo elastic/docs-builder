@@ -42,7 +42,7 @@ internal static class SearchConfigurationExtensions
 		var searchFile = provider.SearchFile;
 
 		if (!searchFile.Exists)
-			return new SearchTuning { Synonyms = [], Rules = [], DiminishTerms = [] };
+			return SearchTuning.None;
 
 		var searchDto = ConfigurationFileProvider.Deserializer.Deserialize<SearchConfigDto>(searchFile.OpenText());
 		var synonyms = searchDto

@@ -302,23 +302,18 @@ public static partial class ReleaseNotesPageParser
 			return new MigratedRelease
 			{
 				Version = version,
-				Bundle = new Bundle
-				{
-					Products =
-					[
-						new BundledProduct
-						{
-							ProductId = scope.ProductId,
-							Target = version,
-							Lifecycle = _lifecycle,
-							Repo = scope.Repo,
-							Owner = scope.Owner
-						}
-					],
-					Description = description.Length > 0 ? description : null,
-					ReleaseDate = _releaseDate,
-					Entries = _entries
-				}
+				// no rule of a bundle read from a page is an error (a product with several targets is a warning the page cannot have)
+				Bundle =
+					Bundle.ForRelease(
+						scope.ProductId,
+						version,
+						_lifecycle,
+						scope.Repo,
+						scope.Owner,
+						description,
+						_releaseDate,
+						_entries
+					).Value!
 			};
 		}
 	}
@@ -384,21 +379,13 @@ public static partial class ReleaseNotesPageParser
 		var (cleanText, inlineArea) = ExtractAreaPrefix(text);
 		var area = inlineArea ?? sectionArea;
 		var (title, prs) = ExtractPrReferences(cleanText, scope);
-		return new BundledEntry
-		{
-			Type = type,
-			Title = title,
-			Products = [new ProductReference { ProductId = scope.ProductId }],
-			Prs = prs.Count > 0 ? prs : null,
-			Areas = area is not null ? [area] : null
-		};
+		return BundledEntry.Inline(type, title, scope.ProductId, prs, area);
 	}
 
 	private static BundledEntry MergeContinuation(BundledEntry entry, string continuation, BackfillScope scope)
 	{
 		var (title, prs) = ExtractPrReferences($"{entry.Title} {continuation}", scope);
-		var mergedPrs = (entry.Prs ?? []).Concat(prs).Distinct(StringComparer.Ordinal).ToList();
-		return entry with { Title = title, Prs = mergedPrs.Count > 0 ? mergedPrs : null };
+		return entry.AppendContinuation(title, prs);
 	}
 
 	/// <summary>

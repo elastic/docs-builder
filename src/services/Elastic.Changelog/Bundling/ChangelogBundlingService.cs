@@ -192,7 +192,8 @@ public partial class ChangelogBundlingService(
 	CdnChangelogEntryFetcher? entryFetcher = null,
 	IGitHubPrService? prService = null,
 	IGitHubCommitRangeService? commitRangeService = null,
-	IEnvironmentVariables? env = null
+	IEnvironmentVariables? env = null,
+	ChangelogConfigurationLoader? configurationLoader = null
 ) : IService
 {
 	private readonly ILogger _logger = logFactory.CreateLogger<ChangelogBundlingService>();
@@ -201,9 +202,8 @@ public partial class ChangelogBundlingService(
 	private readonly CdnChangelogEntryFetcher _entryFetcher = entryFetcher ?? new CdnChangelogEntryFetcher(logFactory);
 	private readonly IGitHubPrService _prService = prService ?? new GitHubPrService(logFactory);
 	private readonly IGitHubCommitRangeService _commitRangeService = commitRangeService ?? new GitHubCommitRangeService(logFactory);
-	private readonly ChangelogConfigurationLoader? _configLoader = configurationContext != null
-		? new ChangelogConfigurationLoader(logFactory, configurationContext, fileSystem)
-		: null;
+	private readonly ChangelogConfigurationLoader? _configLoader = configurationLoader
+		?? (configurationContext != null ? new ChangelogConfigurationLoader(logFactory, configurationContext, fileSystem) : null);
 
 	private const string DefaultOwner = ChangelogEntrySourcing.DefaultOwner;
 	private const string DefaultBranch = ChangelogEntrySourcing.DefaultBranch;
@@ -250,13 +250,13 @@ public partial class ChangelogBundlingService(
 				// When an explicit config path is provided, load it (required, no fallback).
 				// Otherwise, discover from CWD: ./changelog.yml then ./docs/changelog.yml.
 				config = string.IsNullOrWhiteSpace(input.Config)
-					? await _configLoader.LoadChangelogConfigurationForProfileMode(collector, ctx)
-					: await _configLoader.LoadChangelogConfigurationRequired(collector, input.Config, ctx);
+					? (await _configLoader.LoadForProfileMode(ctx)).EmitTo(collector)
+					: (await _configLoader.LoadRequired(input.Config, ctx)).EmitTo(collector);
 				if (config == null)
 					return false;
 			}
 			else if (_configLoader != null)
-				config = await _configLoader.LoadChangelogConfiguration(collector, input.Config, ctx);
+				config = (await _configLoader.Load(input.Config, ctx)).EmitTo(collector);
 
 			// Handle profile-based bundling
 			if (!string.IsNullOrWhiteSpace(input.Profile))
@@ -387,7 +387,7 @@ public partial class ChangelogBundlingService(
 			// Source and match changelog entries — from the CDN (default) or the local folder.
 			// Explicit --files / path-list selection bypasses content filters (IncludeAll): locally it loads
 			// the named paths, in CDN mode it selects pool entries by file name.
-			var entryMatcher = new ChangelogEntryMatcher(_fileSystem, ReleaseNotesSerialization.GetEntryDeserializer(), _logger);
+			var entryMatcher = new ChangelogEntryMatcher(_fileSystem, _logger);
 			ChangelogMatchResult matchResult;
 			if (explicitFilePaths != null)
 			{
@@ -550,6 +550,7 @@ public partial class ChangelogBundlingService(
 
 		var bundleData = buildResult.Data;
 		// Apply description with placeholder substitution
+		string? substitutedDescription = null;
 		if (!string.IsNullOrEmpty(input.Description))
 		{
 			var version = (input.OutputProducts?.Count > 0 ? input.OutputProducts[0].Target : null)
@@ -561,7 +562,7 @@ public partial class ChangelogBundlingService(
 
 			try
 			{
-				var substitutedDescription = BundleDescriptionSubstitution.SubstitutePlaceholders(
+				substitutedDescription = BundleDescriptionSubstitution.SubstitutePlaceholders(
 					input.Description,
 					version,
 					lifecycle,
@@ -569,7 +570,6 @@ public partial class ChangelogBundlingService(
 					repo,
 					validateResolvable: true
 				);
-				bundleData = bundleData with { Description = substitutedDescription };
 			}
 			catch (InvalidOperationException ex)
 			{
@@ -578,32 +578,30 @@ public partial class ChangelogBundlingService(
 			}
 		}
 
-		// Apply release date: CLI override → existing bundle date → auto-populate (unless suppressed)
-		var finalReleaseDate = bundleData.ReleaseDate; // Preserve existing date if present
+		// Release date: CLI override -> existing bundle date -> today (UTC) unless suppressed
+		DateOnly? explicitReleaseDate = null;
 		if (!string.IsNullOrEmpty(input.ReleaseDate))
 		{
-			// Explicit CLI override
 			if (DateOnly.TryParseExact(input.ReleaseDate, "yyyy-MM-dd", out var parsedDate))
-			{
-				finalReleaseDate = parsedDate;
-			}
+				explicitReleaseDate = parsedDate;
 			else
 			{
 				collector.EmitError(string.Empty, $"Invalid release date format '{input.ReleaseDate}'. Expected YYYY-MM-DD format.");
 				return false;
 			}
 		}
-		else if (finalReleaseDate == null && !input.SuppressReleaseDate)
-		{
-			// Auto-populate with today's date (UTC) if no existing date
-			finalReleaseDate = DateOnly.FromDateTime(DateTime.UtcNow);
-		}
-
-		bundleData = bundleData with { ReleaseDate = finalReleaseDate };
 
 		// Commit-range bundles record the published endpoint ref (--end-git-ref) as metadata.
-		if (!string.IsNullOrWhiteSpace(input.EndGitRef))
-			bundleData = bundleData with { GitRef = input.EndGitRef };
+		var finalized = bundleData.Finalize(
+			substitutedDescription,
+			explicitReleaseDate,
+			input.EndGitRef,
+			DateOnly.FromDateTime(DateTime.UtcNow),
+			input.SuppressReleaseDate
+		);
+		if (finalized.EmitErrorsTo(collector) is not { } finalBundle)
+			return false;
+		bundleData = finalBundle;
 
 		// Write bundle file
 		await WriteBundleFileAsync(bundleData, outputPath, ctx);
@@ -1111,13 +1109,13 @@ public partial class ChangelogBundlingService(
 				return null;
 			}
 			config = string.IsNullOrWhiteSpace(input.Config)
-				? await _configLoader.LoadChangelogConfigurationForProfileMode(collector, ctx)
-				: await _configLoader.LoadChangelogConfigurationRequired(collector, input.Config, ctx);
+				? (await _configLoader.LoadForProfileMode(ctx)).EmitTo(collector)
+				: (await _configLoader.LoadRequired(input.Config, ctx)).EmitTo(collector);
 			if (config == null)
 				return null;
 		}
 		else if (_configLoader != null)
-			config = await _configLoader.LoadChangelogConfiguration(collector, input.Config, ctx);
+			config = (await _configLoader.Load(input.Config, ctx)).EmitTo(collector);
 
 		BundleProfile? profileDef = null;
 		if (!string.IsNullOrWhiteSpace(input.Profile))
@@ -1574,26 +1572,29 @@ public partial class ChangelogBundlingService(
 		var matchedNotes = new List<MatchedChangelogFile>(cdnEntries.Count);
 		foreach (var entry in cdnEntries)
 		{
-			try
+			var loaded = ReleaseNotesLoader.LoadEntry(entry.Content, entry.FileName);
+			if (loaded.Value is not { } data)
 			{
-				var normalized = ReleaseNotesSerialization.NormalizeYaml(entry.Content);
-				var dto = ReleaseNotesSerialization.GetEntryDeserializer().Deserialize<ChangelogEntryDto>(normalized);
-				var data = ReleaseNotesSerialization.ConvertEntry(dto) with { FileName = entry.FileName };
-				var checksum = ComputeSha1(entry.Content);
-				matchedNotes.Add(new MatchedChangelogFile
-				{
-					Data = data,
-					FilePath = entry.FileName,
-					FileName = entry.FileName,
-					Checksum = checksum
-				});
-			}
-			catch (Exception ex) when (ex is not OperationCanceledException)
-			{
-				_logger.LogWarning(ex, "Failed to parse note '{FileName}' for {Repo}@{Target}; skipping", entry.FileName, repo, target);
-				collector.EmitError(string.Empty, $"Note '{entry.FileName}' for {repo}@{target} could not be parsed: {ex.Message}");
+				var message = loaded.Diagnostics.Select(d => d.Message).FirstOrDefault() ?? "The note could not be read.";
+				_logger.LogWarning(
+					"Failed to parse note '{FileName}' for {Repo}@{Target}: {Message}; skipping",
+					entry.FileName,
+					repo,
+					target,
+					message
+				);
+				collector.EmitError(string.Empty, $"Note '{entry.FileName}' for {repo}@{target} could not be parsed: {message}");
 				return null;
 			}
+
+			_ = loaded.EmitTo(collector);
+			matchedNotes.Add(new MatchedChangelogFile
+			{
+				Data = data,
+				FilePath = entry.FileName,
+				FileName = entry.FileName,
+				Checksum = ComputeSha1(entry.Content)
+			});
 		}
 
 		_logger.LogInformation("Resolved {Count} note(s) for {Repo}@{Target} from CDN", matchedNotes.Count, repo, target);
@@ -1775,7 +1776,13 @@ public partial class ChangelogBundlingService(
 				continue;
 			}
 
-			var entry = ReleaseNotesSerialization.DeserializeEntry(cdnEntry.Value.Content);
+			if (ReleaseNotesLoader.LoadEntry(cdnEntry.Value.Content, cdnEntry.Value.FileName).Value is not { } entry)
+			{
+				collector.EmitError(string.Empty, $"Changelog entry '{cdnEntry.Value.FileName}' could not be parsed.");
+				hasError = true;
+				continue;
+			}
+
 			if (!entry.IsMarker)
 			{
 				_ = entries.TryAdd(cdnEntry.Value.FileName, cdnEntry.Value.Content);
@@ -1810,7 +1817,13 @@ public partial class ChangelogBundlingService(
 				continue;
 			}
 
-			var parentEntry = ReleaseNotesSerialization.DeserializeEntry(parentCdnEntry.Value.Content);
+			if (ReleaseNotesLoader.LoadEntry(parentCdnEntry.Value.Content, parentCdnEntry.Value.FileName).Value is not { } parentEntry)
+			{
+				collector.EmitError(string.Empty, $"Changelog entry '{parentCdnEntry.Value.FileName}' could not be parsed.");
+				hasError = true;
+				continue;
+			}
+
 			if (parentEntry.IsMarker)
 			{
 				collector.EmitError(
@@ -2020,7 +2033,7 @@ public partial class ChangelogBundlingService(
 	private async Task WriteBundleFileAsync(Bundle bundledData, string outputPath, Cancel ctx)
 	{
 		// Generate bundled YAML
-		var bundledYaml = ReleaseNotesSerialization.SerializeBundle(bundledData);
+		var bundledYaml = ReleaseNotesLoader.Serialize(bundledData);
 
 		// Ensure output directory exists
 		var outputDir = _fileSystem.Path.GetDirectoryName(outputPath);
@@ -2053,7 +2066,7 @@ public partial class ChangelogBundlingService(
 	[System.Diagnostics.CodeAnalysis.SuppressMessage("Security", "CA5350:Do not use insecure cryptographic algorithm SHA1", Justification = "SHA1 is required for compatibility with existing changelog bundle format")]
 	internal static string ComputeSha1(string content)
 	{
-		var normalized = ReleaseNotesSerialization.NormalizeYaml(content);
+		var normalized = ReleaseNotesLoader.NormalizeYaml(content);
 		var bytes = Encoding.UTF8.GetBytes(normalized);
 		var hash = SHA1.HashData(bytes);
 		return Convert.ToHexString(hash).ToLowerInvariant();

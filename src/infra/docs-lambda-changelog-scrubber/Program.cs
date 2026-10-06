@@ -33,7 +33,7 @@ IReadOnlyList<string> BuildAllowlist()
 		?? throw new InvalidOperationException("Embedded assembler.yml not found");
 	using var reader = new StreamReader(stream);
 	var yaml = reader.ReadToEnd();
-	var assembly = AssemblyLoader.Deserialize(yaml, skipPrivateRepositories: false);
+	var assembly = AssemblyLoader.LoadYaml(yaml, "assembler.yml", skipPrivateRepositories: false).OrThrow();
 	return LinkAllowlistSanitizer.BuildAllowReposFromAssembler(assembly);
 }
 

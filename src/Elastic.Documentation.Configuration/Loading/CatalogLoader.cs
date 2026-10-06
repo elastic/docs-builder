@@ -2,7 +2,6 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using System.Runtime.CompilerServices;
 using Elastic.Documentation.Catalog;
 using Elastic.Documentation.Configuration.LegacyUrlMappings;
 using Elastic.Documentation.Configuration.Products;
@@ -23,22 +22,17 @@ namespace Elastic.Documentation.Configuration.Loading;
 /// </summary>
 public static class CatalogLoader
 {
-	private static readonly ConditionalWeakTable<ConfigurationFileProvider, Result<GlobalCatalog>> LoadedByProvider = [];
-
-	/// <summary><see cref="Load"/>, once per provider, so the composition root and the findings report share one load.</summary>
-	public static Result<GlobalCatalog> LoadOnce(ConfigurationFileProvider provider) => LoadedByProvider.GetValue(provider, Load);
-
 	public static Result<GlobalCatalog> Load(ConfigurationFileProvider provider)
 	{
 		var diagnostics = new List<Diagnostic>();
 
-		if (!TryLoad("versions.yml", provider.CreateVersionConfiguration, out var versions, diagnostics))
+		// Each stage is Parse + Map (the provider's Create* helper, internal) + Rules through the pipeline; every stage's
+		// violations are kept, and a stage that could not be built stops the load.
+		if (!Stage("versions.yml", provider.CreateVersionConfiguration, VersioningSystemConstraints.All, diagnostics, out var versions))
 			return Result.Failure<GlobalCatalog>(diagnostics);
-		diagnostics.AddRange(VersioningSystemConstraints.All.Report(versions).ToDiagnostics("versions.yml"));
 
-		if (!TryLoad("products.yml", () => provider.CreateProducts(versions), out var products, diagnostics))
+		if (!Stage("products.yml", () => provider.CreateProducts(versions), ProductCatalogConstraints.All, diagnostics, out var products))
 			return Result.Failure<GlobalCatalog>(diagnostics);
-		diagnostics.AddRange(ProductCatalogConstraints.All.Report(products).ToDiagnostics("products.yml"));
 		diagnostics.AddRange(
 			ProductCatalogInVersioningSystemCatalogConstraints
 				.All
@@ -46,7 +40,7 @@ public static class CatalogLoader
 				.ToDiagnostics("products.yml")
 		);
 
-		if (!TryLoad("legacy-url-mappings.yml", () => provider.CreateLegacyUrlMappings(products), out var legacy, diagnostics))
+		if (!Stage("legacy-url-mappings.yml", () => provider.CreateLegacyUrlMappings(products), null, diagnostics, out var legacy))
 			return Result.Failure<GlobalCatalog>(diagnostics);
 		diagnostics.AddRange(
 			LegacyUrlMappingCatalogInProductCatalogConstraints
@@ -60,19 +54,19 @@ public static class CatalogLoader
 			: Result.Success(new GlobalCatalog(versions, products, legacy), diagnostics);
 	}
 
-	private static bool TryLoad<T>(string file, Func<T> load, out T value, List<Diagnostic> diagnostics)
+	private static bool Stage<T>(
+		string file,
+		Func<T> build,
+		Nullean.Entities.ConstraintSet<T>? rules,
+		List<Diagnostic> diagnostics,
+		out T value
+	) where T : class
 	{
-		try
-		{
-			value = load();
-			return true;
-		}
-		catch (Exception e) when (e is not OutOfMemoryException)
-		{
-			value = default!;
-			diagnostics.Add(new Diagnostic { Severity = Severity.Error, File = file, Message = e.Message });
-			return false;
-		}
+		// A stage with no set of its own (legacy-url-mappings) is only built; the pair set that relates it to the products checks it.
+		var result = rules is null ? LoaderPipeline.Build(file, build) : LoaderPipeline.Run(file, build, rules, errorsAreFatal: false);
+		diagnostics.AddRange(result.Diagnostics);
+		value = result.Value!;
+		return result.Value is not null;
 	}
 }
 
@@ -85,41 +79,28 @@ public static class RelatedLearningLoader
 {
 	public static Result<RelatedLearningCatalog> Load(ConfigurationFileProvider provider)
 	{
-		try
-		{
-			using var reader = provider.RelatedLearningFile.OpenText();
-			var catalog = RelatedLearningConfigurationExtensions.ParseUnchecked(reader.ReadToEnd());
-			var result = Result.From(RelatedLearningConstraints.All.Report(catalog), "related-learning.yml");
-			return result.HasErrors ? Result.Failure<RelatedLearningCatalog>(result.Diagnostics) : result;
-		}
-		catch (Exception e) when (e is not OutOfMemoryException)
-		{
-			return Result.Failure<RelatedLearningCatalog>([
-				new Diagnostic { Severity = Severity.Error, File = "related-learning.yml", Message = e.Message }
-			]);
-		}
+		const string file = "related-learning.yml";
+		return LoaderPipeline.Run(
+			file,
+			parse: () =>
+			{
+				using var reader = provider.RelatedLearningFile.OpenText();
+				return reader.ReadToEnd();
+			},
+			map: RelatedLearningConfigurationExtensions.ParseUnchecked,
+			rules: RelatedLearningConstraints.All
+		);
 	}
 }
 
 /// <summary>Loads the <see cref="SearchTuning"/> aggregate from <c>search.yml</c> (or the legacy <c>synonyms.yml</c>) and checks it.</summary>
 public static class SearchTuningLoader
 {
-	private static readonly ConditionalWeakTable<ConfigurationFileProvider, Result<SearchTuning>> LoadedByProvider = [];
-
-	/// <summary><see cref="Load"/>, once per provider, so the composition root and the findings report share one load.</summary>
-	public static Result<SearchTuning> LoadOnce(ConfigurationFileProvider provider) => LoadedByProvider.GetValue(provider, Load);
-
-	public static Result<SearchTuning> Load(ConfigurationFileProvider provider)
-	{
-		try
-		{
-			var tuning = provider.CreateSearchConfiguration();
-			var result = Result.From(SearchTuningConstraints.All.Report(tuning), tuning.SourceFileName ?? "search.yml");
-			return result.HasErrors ? Result.Failure<SearchTuning>(result.Diagnostics) : result;
-		}
-		catch (Exception e) when (e is not OutOfMemoryException)
-		{
-			return Result.Failure<SearchTuning>([new Diagnostic { Severity = Severity.Error, File = "search.yml", Message = e.Message }]);
-		}
-	}
+	public static Result<SearchTuning> Load(ConfigurationFileProvider provider) =>
+		LoaderPipeline.Run(
+			"search.yml",
+			provider.CreateSearchConfiguration,
+			SearchTuningConstraints.All,
+			fileOf: tuning => tuning.SourceFileName
+		);
 }

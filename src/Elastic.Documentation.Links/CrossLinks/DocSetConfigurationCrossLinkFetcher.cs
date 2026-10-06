@@ -5,6 +5,7 @@
 using System.Collections.Frozen;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Builder;
+using Elastic.Documentation.Configuration.Loading;
 using Elastic.Documentation.DocumentationSets;
 using Elastic.Documentation.LinkIndex;
 using Microsoft.Extensions.Logging;
@@ -75,22 +76,7 @@ public class DocSetConfigurationCrossLinkFetcher(
 
 				if (!linkReferences.ContainsKey(entry.Repository))
 				{
-					linkReferences.Add(
-						entry.Repository,
-						new LinkManifest
-						{
-							Links = [],
-							Origin = new GitCheckoutInformation
-							{
-								Branch = "main",
-								RepositoryName = entry.Repository,
-								Remote = "origin",
-								Ref = "refs/heads/main"
-							},
-							UrlPathPrefix = "",
-							CrossLinks = []
-						}
-					);
+					linkReferences.Add(entry.Repository, LinkManifest.Empty(entry.Repository).Unwrap(_logger, entry.Repository));
 				}
 			}
 		}
@@ -111,7 +97,7 @@ public class DocSetConfigurationCrossLinkFetcher(
 	{
 		try
 		{
-			return await reader.GetRegistry(ctx);
+			return (await reader.GetRegistry(ctx)).Unwrap(_logger, "link-index.json");
 		}
 		catch (OperationCanceledException)
 		{

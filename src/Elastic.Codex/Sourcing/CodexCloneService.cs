@@ -12,7 +12,6 @@ using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.DocumentationSets;
 using Elastic.Documentation.LinkIndex;
 using Elastic.Documentation.Links;
-using Elastic.Documentation.Serialization;
 using Elastic.Documentation.Services;
 using Microsoft.Extensions.Logging;
 
@@ -57,7 +56,7 @@ public class CodexCloneService(ILoggerFactory logFactory, ILinkIndexReader linkI
 			return null;
 
 		var json = await context.ReadFileSystem.File.ReadAllTextAsync(snapshotFilePath, ctx);
-		var linkRegistry = LinkJson.DeserializeRegistry(json);
+		var linkRegistry = LinkLoader.LoadRegistry(json, snapshotFilePath).Unwrap(logger, "link-index snapshot");
 
 		var checkouts = new List<CodexCheckout>();
 		foreach (var subDir in checkoutDir.GetDirectories())
@@ -78,7 +77,7 @@ public class CodexCloneService(ILoggerFactory logFactory, ILinkIndexReader linkI
 			if (docsetFile == null)
 				continue;
 
-			var docSet = DocumentationSetLoader.LoadMetadata(docsetFile);
+			var docSet = DocumentationSetLoader.LoadMetadata(docsetFile).OrThrowIfMissing();
 			var docsDirectory = docsetFile.Directory!;
 			var docsPath = Path.GetRelativePath(subDir.FullName, docsDirectory.FullName);
 			var docsPathForRef = string.IsNullOrEmpty(docsPath) || docsPath == "." ? "." : docsPath.Replace('\\', '/');
@@ -123,7 +122,7 @@ public class CodexCloneService(ILoggerFactory logFactory, ILinkIndexReader linkI
 		if (!checkoutDir.Exists)
 			checkoutDir.Create();
 
-		var linkRegistry = await linkIndexReader.GetRegistry(ctx);
+		var linkRegistry = (await linkIndexReader.GetRegistry(ctx)).Unwrap(_logger, "link-index.json");
 		var repoEntries = GetRepositoryEntries(linkRegistry);
 
 		_logger.LogInformation("Cloning {Count} documentation sets to {Directory}", repoEntries.Count, checkoutDir.FullName);
@@ -148,7 +147,7 @@ public class CodexCloneService(ILoggerFactory logFactory, ILinkIndexReader linkI
 
 		var snapshotFilePath = Path.Join(context.CheckoutDirectory.FullName, LinkRegistrySnapshotFileName);
 
-		await context.WriteFileSystem.File.WriteAllTextAsync(snapshotFilePath, LinkJson.Serialize(linkRegistry), ctx);
+		await context.WriteFileSystem.File.WriteAllTextAsync(snapshotFilePath, LinkLoader.Serialize(linkRegistry), ctx);
 
 		return new CodexCloneResult(checkouts, linkRegistry);
 	}
@@ -245,7 +244,7 @@ public class CodexCloneService(ILoggerFactory logFactory, ILinkIndexReader linkI
 				return null;
 			}
 
-			var docSet = DocumentationSetLoader.LoadMetadata(docsetFile);
+			var docSet = DocumentationSetLoader.LoadMetadata(docsetFile).OrThrowIfMissing();
 			var docsDirectory = docsetFile.Directory!;
 			var docsPath = Path.GetRelativePath(repoDir.FullName, docsDirectory.FullName);
 
@@ -281,7 +280,7 @@ public class CodexCloneService(ILoggerFactory logFactory, ILinkIndexReader linkI
 		{
 			if (!metadataCache.TryGetValue(file.FullName, out var docSet))
 			{
-				docSet = DocumentationSetLoader.LoadMetadata(file);
+				docSet = DocumentationSetLoader.LoadMetadata(file).OrThrowIfMissing();
 				metadataCache[file.FullName] = docSet;
 			}
 			return string.Equals(docSet.Registry, environment, StringComparison.OrdinalIgnoreCase);

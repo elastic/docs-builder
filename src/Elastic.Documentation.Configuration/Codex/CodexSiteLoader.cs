@@ -4,14 +4,75 @@
 
 using System.IO.Abstractions;
 using Elastic.Documentation.Codex;
+using Elastic.Documentation.Configuration.Loading;
+using Elastic.Documentation.Diagnostics;
 using YamlDotNet.Serialization;
 
 namespace Elastic.Documentation.Configuration.Codex;
 
-/// <summary>Loads <c>codex.yml</c> into a <see cref="CodexConfiguration"/>, normalizing the site prefix and environment.</summary>
+/// <summary>
+/// Loads <c>codex.yml</c> into a <see cref="CodexConfiguration"/>, normalizing the site prefix and environment, and checks it once:
+/// against <see cref="CodexConfigurationConstraints"/>, and for publishing also <see cref="CodexPublishingConstraints"/>.
+/// </summary>
 public static class CodexSiteLoader
 {
-	public static CodexConfiguration Deserialize(string yaml)
+	/// <summary>
+	/// Loads and checks <paramref name="file"/>. A missing or unreadable file, or input the parser rejects, is an error diagnostic; every
+	/// violation of every set rides in the result, and an error means no configuration. Diagnostics are reported against <paramref name="originalPath"/>.
+	/// </summary>
+	public static Result<CodexConfiguration> Load(IFileInfo file, string originalPath, bool forPublish)
+	{
+		var read = LoaderPipeline.Run(
+			originalPath,
+			parse: () =>
+			{
+				if (!file.Exists)
+					throw new FileNotFoundException($"Codex configuration file not found: {originalPath}", originalPath);
+				return ReadText(file, originalPath);
+			},
+			map: yaml => DeserializeOrExplain(yaml, originalPath),
+			rules: CodexConfigurationConstraints.All,
+			errorsAreFatal: false
+		);
+		if (read.Value is not { } config)
+			return read;
+
+		// the stage's own set (publishing needs an environment) is a second report over the same value: one report per set, none repeated
+		var diagnostics = forPublish
+			? [.. read.Diagnostics, .. CodexPublishingConstraints.All.Report(config).ToDiagnostics(originalPath)]
+			: read.Diagnostics;
+		return diagnostics.Any(d => d.Severity == Severity.Error)
+			? Result.Failure<CodexConfiguration>(diagnostics)
+			: Result.Success(config, diagnostics);
+	}
+
+	// An unreadable file (outside a scoped file system) or unparsable text keeps the message that names the file.
+	private static string ReadText(IFileInfo file, string originalPath)
+	{
+		try
+		{
+			using var reader = file.OpenText();
+			return reader.ReadToEnd();
+		}
+		catch (Exception e) when (e is not OutOfMemoryException)
+		{
+			throw new InvalidOperationException($"Failed to read codex configuration '{originalPath}': {e.Message}", e);
+		}
+	}
+
+	private static CodexConfiguration DeserializeOrExplain(string yaml, string originalPath)
+	{
+		try
+		{
+			return Deserialize(yaml);
+		}
+		catch (Exception e) when (e is not OutOfMemoryException)
+		{
+			throw new InvalidOperationException($"Failed to read codex configuration '{originalPath}': {e.Message}", e);
+		}
+	}
+
+	internal static CodexConfiguration Deserialize(string yaml)
 	{
 		using var input = new StringReader(yaml);
 		var dto = ConfigurationFileProvider.Deserializer.Deserialize<CodexConfigurationDto>(input) ?? new CodexConfigurationDto();
@@ -26,17 +87,6 @@ public static class CodexSiteLoader
 			],
 			CanonicalBaseUrl = dto.CanonicalBaseUrl
 		};
-	}
-
-	public static CodexConfiguration Load(IFileInfo file) => Deserialize(file.OpenText().ReadToEnd());
-
-	public static CodexConfiguration Load(IFileSystem fileSystem, string path)
-	{
-		var file = fileSystem.FileInfo.New(path);
-		if (!file.Exists)
-			throw new FileNotFoundException($"Codex configuration file not found: {path}", path);
-
-		return Load(file);
 	}
 
 	// Empty or "/" means root (no prefix); otherwise it starts with '/' and does not end with one.

@@ -5,6 +5,7 @@
 using System.Collections.Immutable;
 using Elastic.Documentation.Assembler.Links;
 using Elastic.Documentation.Configuration;
+using Elastic.Documentation.Configuration.Loading;
 using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.LinkIndex;
@@ -12,7 +13,6 @@ using Elastic.Documentation.Links;
 using Elastic.Documentation.Links.CrossLinks;
 using Elastic.Documentation.Links.InboundLinks;
 using Elastic.Documentation.Publishing;
-using Elastic.Documentation.Serialization;
 using Microsoft.Extensions.Logging;
 
 namespace Elastic.Documentation.Assembler.Navigation;
@@ -175,7 +175,7 @@ public class NavigationPrefixChecker
 		try
 		{
 			var json = await File.ReadAllTextAsync(localLinksJson, ctx);
-			return LinkJson.DeserializeManifest(json);
+			return LinkLoader.LoadManifest(json, localLinksJson).Unwrap(_logger, "local links.json");
 		}
 		catch (Exception e)
 		{

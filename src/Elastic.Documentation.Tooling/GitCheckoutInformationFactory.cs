@@ -33,13 +33,7 @@ public static partial class GitCheckoutInformationFactory
 			var fsType = fileSystem is ScopedFileSystem sf ? sf.InnerType : fileSystem.GetType();
 			if (fsType.Name.Contains("Mock", StringComparison.OrdinalIgnoreCase) && IsLegacyTestWithoutGitLayout(fileSystem, source))
 			{
-				return new GitCheckoutInformation
-				{
-					Branch = "test-e35fcb27-5f60-4e",
-					Remote = "elastic/docs-builder",
-					Ref = "e35fcb27-5f60-4e",
-					RepositoryName = "docs-builder"
-				};
+				return GitCheckoutInformation.LegacyTestCheckout;
 			}
 		}
 
@@ -136,14 +130,7 @@ public static partial class GitCheckoutInformationFactory
 		remote = CutOffGitExtension().Replace(remote, string.Empty);
 
 		var githubRef = Environment.GetEnvironmentVariable("GITHUB_REF");
-		var info = new GitCheckoutInformation
-		{
-			Ref = gitRef,
-			Branch = branch,
-			Remote = remote,
-			RepositoryName = remote.Split('/').Last(),
-			GitHubRef = string.IsNullOrEmpty(githubRef) ? null : githubRef
-		};
+		var info = GitCheckoutInformation.Resolved(gitRef, branch, remote, githubRef);
 
 		logger?.LogInformation("-> Remote Name: {GitRemote}", info.Remote);
 		logger?.LogInformation("-> Repository Name: {RepositoryName}", info.RepositoryName);

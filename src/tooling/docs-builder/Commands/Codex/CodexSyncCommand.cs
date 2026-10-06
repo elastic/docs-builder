@@ -51,7 +51,9 @@ internal sealed class CodexSyncCommand(IDiagnosticsCollector collector, ILoggerF
 	)
 	{
 		await using var serviceInvoker = new ServiceInvoker(collector);
-		var (context, service) = LoadContext(config);
+		if (LoadContext(config) is not { } loaded)
+			return 1;
+		var (context, service) = loaded;
 		var excludePatterns = exclude ?? [];
 		serviceInvoker.AddCommand(
 			service,
@@ -87,7 +89,9 @@ internal sealed class CodexSyncCommand(IDiagnosticsCollector collector, ILoggerF
 	)
 	{
 		await using var serviceInvoker = new ServiceInvoker(collector);
-		var (context, service) = LoadContext(config);
+		if (LoadContext(config) is not { } loaded)
+			return 1;
+		var (context, service) = loaded;
 		serviceInvoker.AddCommand(
 			service,
 			(context, s3BucketName, planFile),
@@ -102,10 +106,12 @@ internal sealed class CodexSyncCommand(IDiagnosticsCollector collector, ILoggerF
 		return await serviceInvoker.InvokeAsync(ct);
 	}
 
-	private (CodexContext context, IncrementalDeployService service) LoadContext(FileInfo config)
+	// Planning and applying a deploy only read the configuration: the checked loader, with the file's own rules (not publishing's).
+	private (CodexContext context, IncrementalDeployService service)? LoadContext(FileInfo config)
 	{
 		var fs = new CodexFileSystem(config.FullName);
-		var codexConfig = CodexSiteLoader.Load(fs.ConfigurationFile);
+		if (!CodexConfigurationLoader.Load(fs.ConfigurationFile, config.FullName, collector, CodexLoadPurpose.Read, out var codexConfig))
+			return null;
 		return (new CodexContext(codexConfig, fs.ConfigurationFile, collector, fs), new IncrementalDeployService(
 			logFactory,
 			githubActionsService

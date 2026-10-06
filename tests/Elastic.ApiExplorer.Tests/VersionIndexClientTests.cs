@@ -367,6 +367,37 @@ public class VersionIndexClientTests
 	}
 
 	[Test]
+	public async Task ResolveVersionsAsync_ABrokenIndexIsCheckedOnce_AndItsErrorsAreWarningsThatDoNotStopTheRender()
+	{
+		// the key '8' resolves to 9.1: an Error of the index's rules, which is the CDN's to fix and never fails this build
+		const string index =
+			"""
+			{ "elastic/elasticsearch": { "elasticsearch-openapi.json": { "main": { "version": "main" }, "8": { "version": "9.1" } } } }
+			""";
+		var handler = new StubHandler(_ => new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(index) });
+		using var client = CreateClient(handler);
+		var collector = new CapturingDiagnosticsCollector();
+
+		for (var i = 0; i < 2; i++)
+		{
+			var versions = await client.ResolveVersionsAsync(
+				GitFor("https://github.com/elastic/elasticsearch.git"),
+				"elasticsearch",
+				ApiConfig(),
+				collector,
+				TestContext.Current!.Execution.CancellationToken
+			);
+			versions.Should().HaveCount(2);
+		}
+
+		collector.Errors.Should().Be(0);
+		collector
+			.WarningMessages
+			.Should()
+			.ContainSingle(m => m.Contains("version-key-matches-version"), "checked once per index, not once per API");
+	}
+
+	[Test]
 	public async Task ResolveVersionsAsync_IndexRecoversAfterRetry_ReturnsVersions()
 	{
 		var attempts = 0;

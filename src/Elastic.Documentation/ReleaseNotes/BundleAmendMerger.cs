@@ -4,12 +4,12 @@
 
 using System.Globalization;
 using System.Text.RegularExpressions;
-using Elastic.Documentation.ReleaseNotes;
 
-namespace Elastic.Documentation.Configuration.ReleaseNotes;
+namespace Elastic.Documentation.ReleaseNotes;
 
 /// <summary>
-/// Merges parent bundle entries with amend files (exclusions first, then additions per amend).
+/// Merges parent bundle entries with amend files (exclusions first, then additions per amend), and names amend sidecars. Lives in the domain because
+/// <see cref="Bundle.ApplyAmends"/> is the one way a bundle takes its amends.
 /// </summary>
 public static partial class BundleAmendMerger
 {

@@ -14,4 +14,7 @@ public record BundledFile
 
 	/// <summary>The file checksum.</summary>
 	public required string Checksum { get; init; }
+
+	/// <summary>The file a bundle entry was read from.</summary>
+	public static BundledFile Of(string name, string checksum) => new() { Name = name, Checksum = checksum };
 }

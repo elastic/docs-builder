@@ -20,9 +20,9 @@ namespace Elastic.Documentation.Configuration.Loading;
 /// Every <see cref="DocumentationSetConstraints"/> violation is reported; resolution then keeps what satisfies the
 /// rules and drops the rest: an item a rule reported as its evidence is dropped, so the loader never re-decides what a rule decided.
 /// </summary>
-public static class DocumentationSetResolver
+internal static class DocumentationSetResolver
 {
-	public static Result<ResolvedDocumentationSet> Resolve(
+	internal static Result<ResolvedDocumentationSet> Resolve(
 		DocumentationSetDefinition docset,
 		VersioningSystemCatalog versionsConfig,
 		ProductCatalog productsConfig,

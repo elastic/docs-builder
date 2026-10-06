@@ -24,6 +24,22 @@ public sealed record Result<T>(T? Value, IReadOnlyList<Diagnostic> Diagnostics) 
 	}
 
 	/// <summary>
+	/// Writes only the error diagnostics to <paramref name="collector"/> and returns the value when there are none (null otherwise). For a caller that
+	/// derived a record from one the loader already checked: the warnings it carried were reported when it was read, so only what the derivation
+	/// itself broke is news.
+	/// </summary>
+	public T? EmitErrorsTo(IDiagnosticsCollector collector)
+	{
+		var failed = false;
+		foreach (var diagnostic in Diagnostics.Where(d => d.Severity == Severity.Error))
+		{
+			collector.Write(diagnostic);
+			failed = true;
+		}
+		return failed ? null : Value;
+	}
+
+	/// <summary>
 	/// For inputs whose errors are reported but do not stop the command (a docset): returns the value even when there
 	/// are errors, and throws only when none could be produced, with the last error's message.
 	/// </summary>

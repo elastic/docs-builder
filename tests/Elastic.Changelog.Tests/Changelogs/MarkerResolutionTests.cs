@@ -32,8 +32,7 @@ public class MarkerResolutionTests
 		    lifecycle: ga
 		""";
 
-	private static ChangelogEntryMatcher BuildMatcher() =>
-		new(new MockFileSystem(), ReleaseNotesSerialization.GetEntryDeserializer(), NullLogger.Instance);
+	private static ChangelogEntryMatcher BuildMatcher() => new(new MockFileSystem(), NullLogger.Instance);
 
 	private static ChangelogFilterCriteria AllEntries() =>
 		new() { IncludeAll = true, ProductFilters = [], PrsToMatch = [], IssuesToMatch = [] };

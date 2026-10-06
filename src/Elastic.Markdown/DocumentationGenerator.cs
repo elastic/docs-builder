@@ -9,6 +9,7 @@ using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Inference;
 using Elastic.Documentation.Configuration.LegacyUrlMappings;
+using Elastic.Documentation.Configuration.Loading;
 using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.DocumentationSets;
 using Elastic.Documentation.Links;
@@ -524,7 +525,11 @@ public partial class DocumentationGenerator
 	private async Task<LinkManifest> GenerateLinkReference(bool writeToDisk, Cancel ctx)
 	{
 		var file = DocumentationSet.LinkReferenceFile;
-		var state = DocumentationSet.CreateLinkReference();
+		var checkedManifest = DocumentationSet.CreateLinkReference();
+		// FINDING: the manifest's own rules are not reported to the collector (they would be new warnings and errors on every build, for
+		// example a page without anchors is written without a list, which the schema rule flags); they are logged for a shipped-docs sweep.
+		checkedManifest.LogFindings(_logger, "links.json");
+		var state = checkedManifest.OrThrowIfMissing();
 		if (writeToDisk)
 		{
 			if (!file.Directory!.Exists)

@@ -5,6 +5,7 @@
 using System.ComponentModel.DataAnnotations;
 using System.IO.Abstractions;
 using Elastic.Documentation;
+using Elastic.Documentation.Assembler;
 using Elastic.Documentation.Assembler.Navigation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
@@ -18,24 +19,14 @@ using Nullean.Argh;
 namespace Documentation.Builder.Commands.Assembler;
 
 /// <summary>Validate the global navigation structure and cross-doc-set link references.</summary>
-internal sealed class NavigationCommands(
-	ILoggerFactory logFactory,
-	IDiagnosticsCollector collector,
-	AssemblyConfiguration configuration,
-	IConfigurationContext configurationContext
-)
+internal sealed class NavigationCommands(ILoggerFactory logFactory, IDiagnosticsCollector collector, AssembleContextProvider contexts)
 {
 	/// <summary>Check <c>navigation.yml</c> for duplicate path prefixes and non-unique URLs.</summary>
 	[NoOptionsInjection]
 	public async Task<int> Validate(CancellationToken ct = default)
 	{
 		await using var serviceInvoker = new ServiceInvoker(collector);
-		var service = new GlobalNavigationService(
-			logFactory,
-			configuration,
-			configurationContext,
-			CheckoutsFileSystem.FromWorkingDirectory()
-		);
+		var service = new GlobalNavigationService(logFactory, contexts, CheckoutsFileSystem.FromWorkingDirectory());
 		serviceInvoker.AddCommand(service, static async (s, collector, ctx) => await s.Validate(collector, ctx));
 		return await serviceInvoker.InvokeAsync(ct);
 	}
@@ -49,12 +40,7 @@ internal sealed class NavigationCommands(
 	)
 	{
 		await using var serviceInvoker = new ServiceInvoker(collector);
-		var service = new GlobalNavigationService(
-			logFactory,
-			configuration,
-			configurationContext,
-			CheckoutsFileSystem.FromWorkingDirectory()
-		);
+		var service = new GlobalNavigationService(logFactory, contexts, CheckoutsFileSystem.FromWorkingDirectory());
 		serviceInvoker.AddCommand(
 			service,
 			file,

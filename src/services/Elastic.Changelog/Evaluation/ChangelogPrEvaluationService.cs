@@ -26,12 +26,13 @@ public class ChangelogPrEvaluationService(
 	IGitHubPrService gitHubPrService,
 	ICoreService coreService,
 	IRunnerTempFileSystem fileSystem,
-	IEnvironmentVariables? env = null
+	IEnvironmentVariables? env = null,
+	ChangelogConfigurationLoader? configurationLoader = null
 ) : IService
 {
 	private readonly ILogger _logger = logFactory.CreateLogger<ChangelogPrEvaluationService>();
 	private readonly IRunnerTempFileSystem _fileSystem = fileSystem;
-	private readonly ChangelogConfigurationLoader _configLoader = new(logFactory, configurationContext, fileSystem);
+	private readonly ChangelogConfigurationLoader _configLoader = configurationLoader ?? new(logFactory, configurationContext, fileSystem);
 	private readonly GithubDecisionMetadataWriter _metadataWriter = new(logFactory, fileSystem);
 
 	public async Task<bool> EvaluatePr(IDiagnosticsCollector collector, EvaluatePrArguments input, Cancel ctx)
@@ -43,7 +44,7 @@ public class ChangelogPrEvaluationService(
 			return await SetOutputs(PrEvaluationResult.Skipped);
 		}
 
-		var config = await _configLoader.LoadChangelogConfiguration(collector, input.Config, ctx) ?? ChangelogConfiguration.Default;
+		var config = (await _configLoader.Load(input.Config, ctx)).EmitTo(collector) ?? ChangelogConfiguration.Default;
 		var changelogDir = config.Bundle?.Directory ?? "docs/changelog";
 		var defaultBranch = config.Bundle?.Branch ?? "main";
 

@@ -5,6 +5,7 @@
 using System.IO.Abstractions;
 using Actions.Core.Services;
 using Elastic.Documentation;
+using Elastic.Documentation.Assembler;
 using Elastic.Documentation.Assembler.Indexing;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
@@ -20,7 +21,7 @@ namespace Documentation.Builder.Commands.Assembler;
 internal sealed class AssemblerIndexCommand(
 	ILoggerFactory logFactory,
 	IDiagnosticsCollector collector,
-	AssemblyConfiguration configuration,
+	AssembleContextProvider contexts,
 	IConfigurationContext configurationContext,
 	ICoreService githubActionsService,
 	IEnvironmentVariables environmentVariables
@@ -45,13 +46,7 @@ internal sealed class AssemblerIndexCommand(
 	{
 		await using var serviceInvoker = new ServiceInvoker(collector);
 		var fs = CheckoutsFileSystem.FromWorkingDirectory();
-		var service = new AssemblerIndexService(
-			logFactory,
-			configuration,
-			configurationContext,
-			githubActionsService,
-			environmentVariables
-		);
+		var service = new AssemblerIndexService(logFactory, contexts, configurationContext, githubActionsService, environmentVariables);
 		serviceInvoker.AddCommand(service, async (s, col, ctx) => await s.Index(col, fs, es, environment, ctx));
 		return await serviceInvoker.InvokeAsync(ct);
 	}

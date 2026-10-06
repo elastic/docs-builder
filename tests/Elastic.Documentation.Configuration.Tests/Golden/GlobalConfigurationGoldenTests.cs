@@ -101,7 +101,7 @@ public class GlobalConfigurationGoldenTests
 				provider.NavigationFile.FileSystem.File.ReadAllText(provider.NavigationFile.FullName)
 			);
 			return ProjectSiteNavigationWithValidation(
-				SiteNavigationLoader.ForAssembly(navigation, assembly, skipPrivateRepositories: true),
+				SiteNavigationLoader.ForAssembly(navigation, assembly, skipPrivateRepositories: true).OrThrowIfMissing(),
 				"navigation.yml"
 			);
 		}));
@@ -122,7 +122,7 @@ public class GlobalConfigurationGoldenTests
 				SiteNavigationLoader.Deserialize(file.FileSystem.File.ReadAllText(file.FullName)),
 				assembly,
 				skipPrivateRepositories
-			);
+			).OrThrowIfMissing();
 			var collector = new CapturingDiagnosticsCollector();
 			var mappings = SiteNavigationLoader.GetTocMappings(navigation, file, collector);
 			return Obj(

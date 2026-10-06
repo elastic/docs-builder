@@ -266,7 +266,7 @@ public class IncrementalDeployExcludeTests
 
 		// The plan must not contain deletions for any excluded key
 		var planJson = fs.File.ReadAllText(planPath);
-		var plan = SyncPlan.Deserialize(planJson);
+		var plan = SyncPlanLoader.Load(planJson).Value!;
 		plan
 			.DeleteRequests
 			.Should()

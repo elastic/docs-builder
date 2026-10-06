@@ -5,13 +5,12 @@
 using System.Collections.Concurrent;
 using System.Collections.Frozen;
 using System.IO.Abstractions;
-using System.Text.Json;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Builder;
+using Elastic.Documentation.Configuration.Loading;
 using Elastic.Documentation.DocumentationSets;
 using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.LinkIndex;
-using Elastic.Documentation.Serialization;
 using Microsoft.Extensions.Logging;
 using Nullean.ScopedFileSystem;
 
@@ -70,8 +69,6 @@ public abstract class CrossLinkFetcher(
 	private readonly IFileSystem _fileSystem = fileSystem ?? new ApplicationDataFileSystem();
 	private LinkRegistry? _linkIndex;
 
-	public static LinkManifest Deserialize(string json) => JsonSerializer.Deserialize(json, SourceGenerationContext.Default.LinkManifest)!;
-
 	public abstract Task<FetchedCrossLinks> FetchCrossLinks(Cancel ctx);
 
 	private int _logOnce;
@@ -86,27 +83,8 @@ public abstract class CrossLinkFetcher(
 		}
 
 		Logger.LogInformation("Fetching link index registry (link-index.json)");
-		_linkIndex = await linkIndexProvider.GetRegistry(ctx);
-		LogFindings("link-index.json", LinkRegistryConstraints.All.Report(_linkIndex));
+		_linkIndex = (await linkIndexProvider.GetRegistry(ctx)).Unwrap(Logger, "link-index.json");
 		return _linkIndex;
-	}
-
-	/// <summary>
-	/// A fetched link index or links.json is checked once, when it is fetched. What it breaks is logged, not thrown: the file
-	/// belongs to another repository, so a rule it breaks is that repository's to fix and never stops this build.
-	/// </summary>
-	private void LogFindings<T>(string source, Nullean.Entities.ConstraintReport<T> report)
-	{
-		foreach (var violation in report.Violations)
-		{
-			var level = violation.Severity switch
-			{
-				Nullean.Entities.Severity.Error => LogLevel.Warning,
-				Nullean.Entities.Severity.Warning => LogLevel.Information,
-				_ => LogLevel.Debug
-			};
-			Logger.Log(level, "{Source} breaks {RuleId}: {Message}", source, violation.ConstraintId, violation.Message);
-		}
 	}
 
 	protected async Task<LinkRegistryEntry> GetLinkIndexEntry(string repository, Cancel ctx)
@@ -165,8 +143,8 @@ public abstract class CrossLinkFetcher(
 		}
 
 		Logger.LogInformation("Fetching links.json for '{Repository}' from {RegistryUrl}", repository, reader.RegistryUrl);
-		linkReference = await reader.GetRepositoryLinks(linkRegistryEntry.Path, ctx);
-		LogFindings($"links.json of '{repository}'", LinkManifestConstraints.All.Report(linkReference));
+		// checked once by the reader's loader; what it breaks is logged, never thrown (the file is another repository's)
+		linkReference = (await reader.GetRepositoryLinks(linkRegistryEntry.Path, ctx)).Unwrap(Logger, $"links.json of '{repository}'");
 		WriteLinksJsonCachedFile(repository, linkRegistryEntry, linkReference);
 		return linkReference;
 	}
@@ -181,8 +159,7 @@ public abstract class CrossLinkFetcher(
 		Cancel ctx
 	)
 	{
-		var linkIndex = await reader.GetRegistry(ctx);
-		fetcher.LogFindings("link-index.json", LinkRegistryConstraints.All.Report(linkIndex));
+		var linkIndex = (await reader.GetRegistry(ctx)).Unwrap(fetcher.Logger, "link-index.json");
 		if (!linkIndex.Repositories.TryGetValue(repository, out var repositoryLinks))
 			throw new Exception($"Repository {repository} not found in link index");
 		var entry = GetNextContentSourceLinkIndexEntry(repositoryLinks, repository);
@@ -198,7 +175,7 @@ public abstract class CrossLinkFetcher(
 		try
 		{
 			_ = _fileSystem.Directory.CreateDirectory(Path.GetDirectoryName(cachedPath)!);
-			_fileSystem.File.WriteAllText(cachedPath, LinkJson.Serialize(linkReference));
+			_fileSystem.File.WriteAllText(cachedPath, LinkLoader.Serialize(linkReference));
 		}
 		catch (Exception e)
 		{
@@ -220,7 +197,8 @@ public abstract class CrossLinkFetcher(
 			try
 			{
 				var json = await _fileSystem.File.ReadAllTextAsync(cachedPath);
-				var linkReference = Deserialize(json);
+				// the cached copy is checked like a fetched one
+				var linkReference = LinkLoader.LoadManifest(json, cachedPath).Unwrap(Logger, $"cached links.json of '{repository}'");
 				_ = _cachedLinkReferences.TryAdd(cachedFileName, linkReference);
 				return linkReference;
 			}

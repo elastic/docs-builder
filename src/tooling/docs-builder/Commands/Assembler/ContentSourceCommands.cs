@@ -5,6 +5,7 @@
 using System.IO.Abstractions;
 using Actions.Core.Services;
 using Elastic.Documentation;
+using Elastic.Documentation.Assembler;
 using Elastic.Documentation.Assembler.ContentSources;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
@@ -21,8 +22,7 @@ namespace Documentation.Builder.Commands.Assembler;
 internal sealed class ContentSourceCommands(
 	ILoggerFactory logFactory,
 	IDiagnosticsCollector collector,
-	AssemblyConfiguration configuration,
-	IConfigurationContext configurationContext,
+	AssembleContextProvider contexts,
 	ICoreService githubActionsService
 )
 {
@@ -33,7 +33,7 @@ internal sealed class ContentSourceCommands(
 		await using var serviceInvoker = new ServiceInvoker(collector);
 
 		var fs = CheckoutsFileSystem.FromWorkingDirectory();
-		var service = new RepositoryPublishValidationService(logFactory, configuration, configurationContext, fs);
+		var service = new RepositoryPublishValidationService(logFactory, contexts, fs);
 		serviceInvoker.AddCommand(service, static async (s, collector, ctx) => await s.ValidatePublishStatus(collector, ctx));
 
 		return await serviceInvoker.InvokeAsync(ct);
@@ -53,7 +53,7 @@ internal sealed class ContentSourceCommands(
 		await using var serviceInvoker = new ServiceInvoker(collector);
 
 		var fs = CheckoutsFileSystem.FromWorkingDirectory();
-		var service = new RepositoryBuildMatchingService(logFactory, configuration, configurationContext, githubActionsService, fs);
+		var service = new RepositoryBuildMatchingService(logFactory, contexts, githubActionsService, fs);
 		serviceInvoker.AddCommand(service, (repository, branchOrTag), static async (s, collector, state, ctx) =>
 		{
 			// ShouldBuild emits GitHub Actions outputs to drive conditional CI steps;

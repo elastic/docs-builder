@@ -78,7 +78,7 @@ public class DocumentationSetAuthoringTests
 			)
 		);
 
-		var result = DocumentationSetLoader.Load(
+		var result = DocumentationSetLoader.ParseDefinition(
 			fileSystem.FileInfo.New("/docs/docset.yml"),
 			fileSystem.DirectoryInfo.New("/docs"),
 			fileSystem,
@@ -141,7 +141,7 @@ public class DocumentationSetAuthoringTests
 		fileSystem.AddFile("/docs/_docset.yml", new MockFileData("project: test\ntoc:\n  - file: index.md\n"));
 		fileSystem.AddFile("/docs/_redirects.yml", new MockFileData("redirects:\n  old.md: index.md\n"));
 
-		var result = DocumentationSetLoader.Load(
+		var result = DocumentationSetLoader.ParseDefinition(
 			fileSystem.FileInfo.New("/docs/_docset.yml"),
 			fileSystem.DirectoryInfo.New("/docs"),
 			fileSystem,

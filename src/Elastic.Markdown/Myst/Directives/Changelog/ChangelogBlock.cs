@@ -548,9 +548,7 @@ public class ChangelogBlock(DirectiveBlockParser parser, ParserContext context) 
 		// but skip:true means "does not publish docs", not "is public". Repos like kibana-team
 		// (private:true, skip:true) must still have their links hidden at render time.
 		// If assembler.yml is not available (standalone builds), no repos are private.
-		if (AssemblyLoader.LoadOnce(Build.ConfigurationFileProvider).Value is not { } assemblerConfig)
-			return;
-		foreach (var repoName in assemblerConfig.AllPrivateRepositoryNames)
+		foreach (var repoName in Build.PrivateRepositoryNames)
 			_ = PrivateRepositories.Add(repoName);
 	}
 
@@ -559,14 +557,14 @@ public class ChangelogBlock(DirectiveBlockParser parser, ParserContext context) 
 		if (BundlesFolderPath is null)
 			return;
 
-		var loader = new BundleLoader(Build.ReadFileSystem);
-
 		// Load bundles using the BundleLoader service
 		// Emit errors (not warnings) for missing file references so the build fails fast
 		// rather than silently omitting entries from the rendered output.
-		var loadedBundles = loader.LoadBundles(BundlesFolderPath, msg => this.EmitError(msg), d => this.Emit(d.Severity, d.Message));
+		var loaded = Build.BundleLoader.LoadBundles(BundlesFolderPath);
+		foreach (var diagnostic in loaded.Diagnostics)
+			this.Emit(diagnostic.Severity, diagnostic.Message);
 
-		ApplyLoadedBundles(loadedBundles);
+		ApplyLoadedBundles(loaded.Value ?? []);
 	}
 
 	private void LoadCdnBundles(string product, bool isAutoInferred = false)

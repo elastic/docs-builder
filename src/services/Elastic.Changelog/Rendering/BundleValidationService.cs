@@ -40,14 +40,13 @@ public class BundleValidationService(ILoggerFactory logFactory, IFileSystem file
 			var bundleContent = await fileSystem.File.ReadAllTextAsync(bundleInput.BundleFile, ctx);
 
 			// Validate bundle structure
-			Bundle? bundledData;
-			try
+			var loadedBundle = ReleaseNotesLoader.LoadBundle(bundleContent, bundleInput.BundleFile);
+			if (loadedBundle.Value is not { } bundledData)
 			{
-				bundledData = ReleaseNotesSerialization.DeserializeBundle(bundleContent);
-			}
-			catch (YamlException yamlEx)
-			{
-				collector.EmitError(bundleInput.BundleFile, $"Failed to deserialize bundle file: {yamlEx.Message}", yamlEx);
+				collector.EmitError(
+					bundleInput.BundleFile,
+					$"Failed to deserialize bundle file: {loadedBundle.Diagnostics.Select(d => d.Message).FirstOrDefault()}"
+				);
 				return CreateInvalidResult(bundleDataList, seenFileNames, seenPrs);
 			}
 
@@ -93,35 +92,29 @@ public class BundleValidationService(ILoggerFactory logFactory, IFileSystem file
 
 		foreach (var amendFile in amendFiles)
 		{
-			try
+			var amendContent = await fileSystem.File.ReadAllTextAsync(amendFile, ctx);
+			var loadedAmend = ReleaseNotesLoader.LoadBundle(amendContent, amendFile);
+			if (loadedAmend.Value is not { } amendBundle)
 			{
-				var amendContent = await fileSystem.File.ReadAllTextAsync(amendFile, ctx);
-				var amendBundle = ReleaseNotesSerialization.DeserializeBundle(amendContent);
-				amendBundles.Add(amendBundle);
-				_logger.LogInformation(
-					"Merging amend file {AmendFile} ({AddCount} additions, {ExcludeCount} exclusions)",
+				collector.EmitError(
 					amendFile,
-					amendBundle.Entries.Count,
-					amendBundle.ExcludeEntries.Count
+					$"Failed to deserialize amend file: {loadedAmend.Diagnostics.Select(d => d.Message).FirstOrDefault()}"
 				);
-			}
-			catch (YamlException yamlEx)
-			{
-				collector.EmitError(amendFile, $"Failed to deserialize amend file: {yamlEx.Message}", yamlEx);
 				return null;
 			}
+
+			amendBundles.Add(amendBundle);
+			_logger.LogInformation(
+				"Merging amend file {AmendFile} ({AddCount} additions, {ExcludeCount} exclusions)",
+				amendFile,
+				amendBundle.Entries.Count,
+				amendBundle.ExcludeEntries.Count
+			);
 		}
 
-		var mergedEntries = BundleAmendMerger.MergeEntries(mainBundle.Entries, amendBundles);
-
-		return new Bundle
-		{
-			Products = mainBundle.Products,
-			Description = mainBundle.Description,
-			ReleaseDate = mainBundle.ReleaseDate,
-			HideFeatures = mainBundle.HideFeatures,
-			Entries = mergedEntries
-		};
+		// the one way a bundle takes its amends (the entries are what is validated; the intro is patched too, as everywhere)
+		var merged = mainBundle.ApplyAmends([.. amendBundles.Select(a => new BundleAmend(a))]);
+		return merged.EmitErrorsTo(collector);
 	}
 
 	private bool ValidateBundleInput(IDiagnosticsCollector collector, BundleInput bundleInput)

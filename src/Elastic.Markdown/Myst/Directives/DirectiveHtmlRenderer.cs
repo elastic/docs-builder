@@ -633,7 +633,7 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 				return applicableTo;
 			foreach (var (severity, message) in applicableTo.Diagnostics)
 				block.Emit(severity, message);
-			return applicableTo with { Diagnostics = null };
+			return applicableTo.WithoutDiagnostics();
 		}
 		catch (Exception e)
 		{

@@ -349,14 +349,7 @@ public partial class OpenApiDocumentExporter(
 		// Parse version from "Added in X.Y.Z"
 		var version = ParseVersion(stateValue);
 
-		// Create Applicability instance
-		var applicability = new Applicability { Lifecycle = lifecycle, Version = version };
-
-		// Create AppliesCollection
-		var appliesCollection = new AppliesCollection([applicability]);
-
-		// Return ApplicableTo with Stack set
-		return new ApplicableTo { Stack = appliesCollection };
+		return ApplicableTo.ForStack(lifecycle, version);
 	}
 
 	/// <summary>

@@ -67,6 +67,18 @@ public record BuildContext : IDocumentationSetContext, IDocumentationConfigurati
 
 	public GlobalCatalog Catalog { get; }
 	public ConfigurationFileProvider ConfigurationFileProvider { get; }
+
+	/// <summary>
+	/// Names of the repositories that are private (including <c>skip: true</c> ones, which do not publish docs but are not public):
+	/// links to them are hidden when rendering. Taken from the assembler configuration the process loaded at startup (the same
+	/// parse the DI singleton is, once per provider); empty when that configuration is not available (standalone builds, tests).
+	/// </summary>
+	public IReadOnlySet<string> PrivateRepositoryNames =>
+		field ??= AssemblyLoader.LoadOnce(ConfigurationFileProvider).Value?.AllPrivateRepositoryNames ?? new HashSet<string>();
+
+	/// <summary>The loader for changelog bundles read through this build's file system: one per build, not one per directive.</summary>
+	public ReleaseNotes.BundleLoader BundleLoader => field ??= new ReleaseNotes.BundleLoader(ReadFileSystem);
+
 	public DocumentationEndpoints Endpoints { get; }
 	public RelatedLearningCatalog RelatedLearning { get; }
 	public SearchTuning SearchTuning { get; }
@@ -117,16 +129,26 @@ public record BuildContext : IDocumentationSetContext, IDocumentationConfigurati
 		GoogleTagManager = new GoogleTagManagerConfiguration { Enabled = false };
 		Optimizely = new OptimizelyConfiguration { Enabled = false };
 
-		Definition = LoadDefinition(fileSystem.Read);
+		var loaded = LoadDocumentationSet(fileSystem.Read);
+		Definition = loaded.Definition;
+		Configuration = loaded.Resolved;
 		ReportDiscovery();
-
-		Configuration = ResolveConfiguration();
 		Features = CreateFeatures();
 	}
 
-	private DocumentationSetDefinition LoadDefinition(ScopedFileSystem? fileSystem)
+	// The one load of docset.yml: checked once, its diagnostics reported once. Errors are reported and the build continues
+	// with what could be built; a docset that yields nothing at all stops here with the last error's message.
+	private LoadedDocumentationSet LoadDocumentationSet(ScopedFileSystem? fileSystem)
 	{
-		var result = DocumentationSetLoader.Load(ConfigurationPath, DocumentationSourceDirectory, ReadFileSystem, fileSystem);
+		var result = DocumentationSetLoader.Load(
+			ConfigurationPath,
+			DocumentationSourceDirectory,
+			ReadFileSystem,
+			fileSystem,
+			Catalog.VersioningSystems,
+			Catalog.Products,
+			Environment
+		);
 		_ = result.EmitTo(Collector);
 		return result.OrThrowIfMissing();
 	}
@@ -154,20 +176,14 @@ public record BuildContext : IDocumentationSetContext, IDocumentationConfigurati
 		// A docset this build doesn't use can't fail it; one that doesn't parse is left out of the comparison.
 		try
 		{
-			registry = DocumentationSetLoader.LoadMetadata(docsetFile).Registry;
+			// Metadata only, unchecked on purpose: this docset is not the one being built.
+			registry = DocumentationSetLoader.LoadMetadata(docsetFile).OrThrowIfMissing().Registry;
 			return true;
 		}
 		catch (Exception e) when (e is not OutOfMemoryException)
 		{
 			return false;
 		}
-	}
-
-	private ResolvedDocumentationSet ResolveConfiguration()
-	{
-		var result = DocumentationSetResolver.Resolve(Definition, Catalog.VersioningSystems, Catalog.Products, Environment);
-		_ = result.EmitTo(Collector);
-		return result.OrThrowIfMissing();
 	}
 
 	private FeatureFlags CreateFeatures() =>
@@ -177,8 +193,9 @@ public record BuildContext : IDocumentationSetContext, IDocumentationConfigurati
 	public void ReloadConfiguration()
 	{
 		var previousFeatures = Features;
-		Definition = LoadDefinition(ReadFileSystem as ScopedFileSystem);
-		Configuration = ResolveConfiguration();
+		var loaded = LoadDocumentationSet(ReadFileSystem as ScopedFileSystem);
+		Definition = loaded.Definition;
+		Configuration = loaded.Resolved;
 		Features = CreateFeatures()
 			.With("diagnostics-panel", previousFeatures.DiagnosticsPanelEnabled)
 			.With("page-feedback", previousFeatures.PageFeedbackEnabled);

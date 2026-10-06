@@ -10,7 +10,7 @@ namespace Elastic.Documentation.Configuration.ReleaseNotes;
 /// DTO for YAML serialization of bundled changelog data.
 /// Maps directly to the bundle YAML file structure.
 /// </summary>
-public sealed record BundleDto
+internal sealed record BundleDto
 {
 	public List<BundledProductDto>? Products { get; set; }
 	/// <summary>
@@ -49,7 +49,7 @@ public sealed record BundleDto
 /// <summary>
 /// DTO for bundled product info in YAML.
 /// </summary>
-public sealed record BundledProductDto
+internal sealed record BundledProductDto
 {
 	public string? Product { get; set; }
 	public string? Target { get; set; }
@@ -69,7 +69,7 @@ public sealed record BundledProductDto
 /// <summary>
 /// DTO for bundled entry in YAML.
 /// </summary>
-public sealed record BundledEntryDto
+internal sealed record BundledEntryDto
 {
 	public BundledFileDto? File { get; set; }
 	public string? Type { get; set; }
@@ -92,7 +92,7 @@ public sealed record BundledEntryDto
 /// <summary>
 /// DTO for bundled file info in YAML.
 /// </summary>
-public sealed record BundledFileDto
+internal sealed record BundledFileDto
 {
 	public string? Name { get; set; }
 	public string? Checksum { get; set; }

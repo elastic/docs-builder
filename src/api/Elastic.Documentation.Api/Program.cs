@@ -21,10 +21,7 @@ try
 
 	var builder = WebApplication
 		.CreateSlimBuilder(args)
-		.AddDocumentationServiceDefaults((s, p) =>
-		{
-			_ = s.AddSingleton(AssemblyLoader.LoadOnce(p).OrThrow());
-		})
+		.AddDocumentationServiceDefaults()
 		.AddDocumentationOpenTelemetry(new OtelRegistration("docs-api") { Tracing = (_, t) => t.AddDocsApiTracing(), })
 		.HealthCheckBuilderExtensions();
 
@@ -46,6 +43,9 @@ try
 	var app = builder.Build();
 
 	var logger = app.Services.GetRequiredService<ILogger<Program>>();
+
+	// The API has no diagnostics collector: global configuration warnings are logged once at startup.
+	_ = app.Services.GetRequiredService<StartupDiagnostics>().LogTo(logger);
 
 	LogElasticsearchConfiguration(app, logger);
 

@@ -4,6 +4,7 @@
 
 using System.Reflection;
 using Elastic.Documentation.Configuration;
+using Elastic.Documentation.Configuration.Loading;
 using Elastic.Documentation.Mcp.Remote;
 using Elastic.Documentation.Mcp.Remote.Telemetry;
 using Elastic.Documentation.Search.Common;
@@ -89,6 +90,9 @@ try
 	var app = builder.Build();
 
 	var logger = app.Services.GetRequiredService<ILogger<Program>>();
+
+	// No diagnostics collector here: global configuration warnings are logged once at startup.
+	_ = app.Services.GetRequiredService<StartupDiagnostics>().LogTo(logger);
 
 	LogElasticsearchConfiguration(app, logger);
 

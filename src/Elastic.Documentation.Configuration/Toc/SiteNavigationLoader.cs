@@ -6,6 +6,7 @@ using System.Collections.Frozen;
 using System.IO.Abstractions;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Configuration.Converters;
+using Elastic.Documentation.Configuration.Loading;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Publishing;
 using YamlDotNet.Core;
@@ -39,8 +40,8 @@ internal sealed class SiteTableOfContentsDto : List<SiteNavigationEntry>;
 /// <summary>Loads <c>navigation.yml</c> into a <see cref="SiteNavigationDefinition"/> and validates it.</summary>
 public static class SiteNavigationLoader
 {
-	/// <summary>Parses <paramref name="yaml"/>. Entries without a <c>toc:</c> key, or with an unparsable source, throw.</summary>
-	public static SiteNavigationDefinition Deserialize(string yaml)
+	/// <summary>Parses <paramref name="yaml"/>, unchecked. Entries without a <c>toc:</c> key, or with an unparsable source, throw. Callers outside this assembly use <see cref="Load"/>.</summary>
+	internal static SiteNavigationDefinition Deserialize(string yaml)
 	{
 		var dto = ConfigurationFileProvider.Deserializer.Deserialize<SiteNavigationDto>(yaml) ?? new SiteNavigationDto();
 		return new SiteNavigationDefinition
@@ -66,27 +67,26 @@ public static class SiteNavigationLoader
 
 	/// <summary>
 	/// The navigation an assembler build uses: when private repositories are skipped, their mounts and phantoms are
-	/// removed, and a local docs-builder checkout is mounted so docset changes can be tried in an assembled build.
+	/// removed, and a local docs-builder checkout is mounted so docset changes can be tried in an assembled build. The result is
+	/// checked against <see cref="SiteNavigationConstraints"/> once, by <see cref="SiteNavigationDefinition.WithoutRepositories"/>.
 	/// </summary>
-	public static SiteNavigationDefinition ForAssembly(
+	public static Result<SiteNavigationDefinition> ForAssembly(
 		SiteNavigationDefinition navigation,
 		AssemblyConfiguration assembly,
-		bool skipPrivateRepositories
+		bool skipPrivateRepositories,
+		string file = ""
 	)
 	{
 		if (assembly.PrivateRepositories.Count == 0 || !skipPrivateRepositories)
-			return navigation;
+			return navigation.WithoutRepositories(new HashSet<string>(), file: file);
 
-		var filtered = navigation.WithoutRepositories(new HashSet<string>(assembly.PrivateRepositories.Keys));
-		if (
-			assembly.AvailableRepositories.TryGetValue("docs-builder", out var docsBuilder)
-			&& docsBuilder is { Skip: false, Path: not null }
-		)
-			filtered = filtered with
-			{
-				TableOfContents = [.. filtered.TableOfContents, .. Deserialize(LocalDocsBuilderToc).TableOfContents]
-			};
-		return filtered;
+		var mountLocalDocsBuilder = assembly.AvailableRepositories.TryGetValue("docs-builder", out var docsBuilder)
+			&& docsBuilder is { Skip: false, Path: not null };
+		return navigation.WithoutRepositories(
+			new HashSet<string>(assembly.PrivateRepositories.Keys),
+			mountLocalDocsBuilder ? Deserialize(LocalDocsBuilderToc).TableOfContents : null,
+			file
+		);
 	}
 
 	/// <summary>
@@ -165,10 +165,8 @@ public static class SiteNavigationLoader
 		AssemblyConfiguration assembly,
 		bool skipPrivateRepositories
 	) =>
-		Result.From(
-			SiteNavigationConstraints.All.Report(ForAssembly(Deserialize(yaml), assembly, skipPrivateRepositories)),
-			navigationFile.FullName
-		);
+		// A document the parser rejects still throws (its message is what the caller reports); every rule violation rides in the result.
+		ForAssembly(Deserialize(yaml), assembly, skipPrivateRepositories, navigationFile.FullName);
 }
 
 public class SiteTableOfContentsCollectionYamlConverter : IYamlTypeConverter

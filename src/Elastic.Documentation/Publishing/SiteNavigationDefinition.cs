@@ -3,6 +3,8 @@
 // See the LICENSE file in the project root for more information
 
 using System.Collections.Immutable;
+using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.ReleaseNotes;
 using Generator.Equals;
 
 namespace Elastic.Documentation.Publishing;
@@ -27,18 +29,33 @@ public sealed partial record SiteNavigationDefinition
 	/// <summary>
 	/// The navigation without the tables of contents of <paramref name="repositories"/>: each such mount is dropped and
 	/// its children take its place, and phantoms from those repositories are dropped too. Children promoted this way
-	/// are kept as they are, even if they belong to one of the repositories.
+	/// are kept as they are, even if they belong to one of the repositories. <paramref name="appended"/> entries are mounted
+	/// after the rest (a local checkout of a repository the build adds back).
 	/// </summary>
-	public SiteNavigationDefinition WithoutRepositories(IReadOnlySet<string> repositories)
+	/// <remarks>
+	/// Derive, then re-check: the result is checked once by <see cref="SiteNavigationConstraints.All"/> and carries every finding, positioned
+	/// in <paramref name="file"/>. Filtering can break a rule the whole navigation kept (a section whose only children were private is now empty,
+	/// a promoted child now shares a prefix with a sibling), so the rules run on what is returned and not on what was filtered. The value rides
+	/// along when a rule of error severity is broken. With nothing to remove and nothing to append the navigation itself is checked and returned.
+	/// </remarks>
+	/// <param name="file">The file diagnostics are reported against.</param>
+	public Result<SiteNavigationDefinition> WithoutRepositories(
+		IReadOnlySet<string> repositories,
+		IReadOnlyList<SiteNavigationEntry>? appended = null,
+		string file = ""
+	)
 	{
-		if (repositories.Count == 0)
-			return this;
+		var derived = this;
+		if (repositories.Count > 0)
+			derived = this with
+			{
+				Phantoms = [.. Phantoms.Where(p => !IsFrom(p.Source, repositories))],
+				TableOfContents = [.. TableOfContents.SelectMany(entry => Without(entry, repositories))]
+			};
+		if (appended is { Count: > 0 })
+			derived = derived with { TableOfContents = [.. derived.TableOfContents, .. appended] };
 
-		return this with
-		{
-			Phantoms = [.. Phantoms.Where(p => !IsFrom(p.Source, repositories))],
-			TableOfContents = [.. TableOfContents.SelectMany(entry => Without(entry, repositories))]
-		};
+		return ReleaseNotesOperation.Built(SiteNavigationConstraints.All, derived, file: file);
 	}
 
 	private static IEnumerable<SiteNavigationEntry> Without(SiteNavigationEntry entry, IReadOnlySet<string> repositories) => entry switch

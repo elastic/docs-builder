@@ -37,8 +37,7 @@ public class ConfigurationCloneService(ILoggerFactory logFactory, AssemblyConfig
 		}
 
 		// relies on the embedded configuration, but we don't expect this to change
-		var repository = assemblyConfiguration.ReferenceRepositories["docs-builder"];
-		repository = repository with { SparsePaths = ["config"] };
+		var repository = assemblyConfiguration.ReferenceRepositories["docs-builder"].AsConfigurationCheckout();
 		var gitReference = gitRef;
 		if (string.IsNullOrEmpty(gitReference))
 			gitReference = "main";

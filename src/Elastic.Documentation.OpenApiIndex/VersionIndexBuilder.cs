@@ -3,8 +3,20 @@
 // See the LICENSE file in the project root for more information
 
 using System.Globalization;
+using Nullean.Entities;
 
 namespace Elastic.Documentation.OpenApiIndex;
+
+/// <summary>What <see cref="VersionIndexBuilder.Build"/> made: the index, the keys it skipped, and the report of <see cref="VersionIndexConstraints"/> on the index.</summary>
+public sealed record VersionIndexBuild(RootVersionIndex Index, IReadOnlyList<string> InvalidKeys, ConstraintReport<RootVersionIndex> Report)
+{
+	/// <summary>The index and the keys that did not match, for a caller that does not need the report.</summary>
+	public void Deconstruct(out RootVersionIndex index, out IReadOnlyList<string> invalidKeys)
+	{
+		index = Index;
+		invalidKeys = InvalidKeys;
+	}
+}
 
 /// <summary>
 /// Builds a <see cref="RootVersionIndex"/> from the object keys in the <c>elastic-docs-openapi-specs</c>
@@ -17,10 +29,11 @@ namespace Elastic.Documentation.OpenApiIndex;
 public static class VersionIndexBuilder
 {
 	/// <summary>
-	/// Returns the index, plus any keys that did not match the expected shape. Such a key cannot have come
-	/// from the version-validating uploader, so it is reported and skipped rather than failing the build.
+	/// Returns the index, plus any keys that did not match the expected shape (such a key cannot have come from the version-validating uploader, so it
+	/// is reported and skipped rather than failing the build) and what the index breaks. This is the only way a <see cref="VersionIndexEntry"/> is
+	/// made outside a read, and the index is checked once here, through <see cref="VersionIndexLoader.Check"/>, the gate a read goes through.
 	/// </summary>
-	public static (RootVersionIndex Index, IReadOnlyList<string> InvalidKeys) Build(IEnumerable<string> keys)
+	public static VersionIndexBuild Build(IEnumerable<string> keys)
 	{
 		Dictionary<(string Repo, string File, string Major), (string Version, int Minor)> highest = [];
 		List<string> invalidKeys = [];
@@ -51,7 +64,7 @@ public static class VersionIndexBuilder
 		}
 #pragma warning restore IDE0028
 
-		return (index, invalidKeys);
+		return new VersionIndexBuild(index, invalidKeys, VersionIndexLoader.Check(index));
 	}
 
 	/// <summary>False for anything not shaped as exactly four non-empty segments.</summary>

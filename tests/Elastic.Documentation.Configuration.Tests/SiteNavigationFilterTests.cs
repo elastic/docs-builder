@@ -63,7 +63,7 @@ public class SiteNavigationFilterTests
 			SiteNavigationLoader.Deserialize(NestedWithPrivateParents),
 			assembly,
 			skipPrivateRepositories: true
-		);
+		).OrThrowIfMissing();
 
 		SiteNavigationText
 			.Describe(filtered)
@@ -89,7 +89,7 @@ public class SiteNavigationFilterTests
 		var assembly = AssemblyLoader.Deserialize("references:\n  private-a:\n    private: true", skipPrivateRepositories: false);
 		var navigation = SiteNavigationLoader.Deserialize(NestedWithPrivateParents);
 
-		SiteNavigationLoader.ForAssembly(navigation, assembly, skipPrivateRepositories: false).Should().BeSameAs(navigation);
+		SiteNavigationLoader.ForAssembly(navigation, assembly, skipPrivateRepositories: false).Value.Should().BeSameAs(navigation);
 	}
 
 	[Test]
@@ -126,7 +126,7 @@ public class SiteNavigationFilterTests
 			"""
 		);
 
-		var filtered = navigation.WithoutRepositories(new HashSet<string> { "private-a" });
+		var filtered = navigation.WithoutRepositories(new HashSet<string> { "private-a" }).OrThrowIfMissing();
 
 		filtered.TableOfContents.OfCase<SiteTableOfContentsRef>().Select(t => t.PathPrefix).Should().Equal("promoted", "after");
 	}

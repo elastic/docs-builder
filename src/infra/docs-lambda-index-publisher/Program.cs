@@ -31,7 +31,8 @@ static async Task<SQSBatchResponse> Handler(SQSEvent ev, ILambdaContext context)
 	ILinkIndexReaderWriter linkIndexReaderWriter = new AwsS3LinkIndexReaderWriter(s3Client, bucketName, indexFile);
 	var batchItemFailures = new List<SQSBatchResponse.BatchItemFailure>();
 
-	var linkRegistry = await linkIndexReaderWriter.GetRegistry();
+	// read through the checked loader: a link-index.json that does not parse stops the batch; what it breaks is the index's to fix
+	var linkRegistry = (await linkIndexReaderWriter.GetRegistry()).OrThrowIfMissing();
 
 	foreach (var message in ev.Records)
 	{
@@ -43,7 +44,11 @@ static async Task<SQSBatchResponse> Handler(SQSEvent ev, ILambdaContext context)
 			foreach (var (s3Record, linkReference) in s3RecordLinkReferenceTuples)
 			{
 				var newEntry = ConvertToLinkIndexEntry(s3Record, linkReference);
-				linkRegistry = linkRegistry.WithLinkRegistryEntry(newEntry);
+				var updated = linkRegistry.WithLinkRegistryEntry(newEntry);
+				// the registry is the index's to fix: what the entry breaks is logged, and the entry is still filed
+				foreach (var finding in updated.Diagnostics)
+					context.Logger.LogWarning(finding.Message);
+				linkRegistry = updated.OrThrowIfMissing();
 			}
 		}
 		catch (Exception e)
@@ -90,18 +95,7 @@ static async Task<SQSBatchResponse> Handler(SQSEvent ev, ILambdaContext context)
 static LinkRegistryEntry ConvertToLinkIndexEntry(S3EventNotification.S3EventNotificationRecord record, LinkManifest linkReference)
 {
 	var s3Object = record.S3.Object;
-	var keyTokens = s3Object.Key.Split('/');
-	var repository = keyTokens[1];
-	var branch = keyTokens[2];
-	return new LinkRegistryEntry
-	{
-		Repository = repository,
-		Branch = branch,
-		ETag = s3Object.ETag,
-		Path = s3Object.Key,
-		UpdatedAt = record.EventTime,
-		GitReference = linkReference.Origin.Ref
-	};
+	return LinkRegistryEntry.FromS3Key(s3Object.Key, s3Object.ETag, record.EventTime, linkReference.Origin.Ref);
 }
 
 static async Task<IReadOnlyCollection<(S3EventNotification.S3EventNotificationRecord, LinkManifest)>> GetS3RecordLinkReferenceTuples(
@@ -113,7 +107,7 @@ static async Task<IReadOnlyCollection<(S3EventNotification.S3EventNotificationRe
 	var recordLinkReferenceTuples = new ConcurrentBag<(S3EventNotification.S3EventNotificationRecord, LinkManifest)>();
 	await Parallel.ForEachAsync(s3Event.Records, async (record, ctx) =>
 	{
-		var linkReference = await linkIndexReaderWriter.GetRepositoryLinks(record.S3.Object.Key, ctx);
+		var linkReference = (await linkIndexReaderWriter.GetRepositoryLinks(record.S3.Object.Key, ctx)).OrThrowIfMissing();
 		recordLinkReferenceTuples.Add((record, linkReference));
 	});
 	return recordLinkReferenceTuples;

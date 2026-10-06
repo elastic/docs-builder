@@ -16,6 +16,15 @@ public class BundleLoaderTests()
 
 	private BundleLoader CreateService() => new(_fileSystem);
 
+	// The loader reports its findings in the Result; the loader's own messages (a bundle that does not parse, an entry without inline content) are what these tests call warnings.
+	private IReadOnlyList<LoadedBundle> Load(BundleLoader loader, string folder)
+	{
+		var result = loader.LoadBundles(folder);
+		foreach (var message in result.Diagnostics.Where(d => d.RuleId is null).Select(d => d.Message))
+			EmitWarning(message);
+		return result.Value!;
+	}
+
 	private void EmitWarning(string message)
 	{
 		_warnings.Add(message);
@@ -48,7 +57,7 @@ public class BundleLoaderTests()
 		var service = CreateService();
 
 		// Act
-		var bundles = service.LoadBundles(bundlesFolder, EmitWarning);
+		var bundles = Load(service, bundlesFolder);
 
 		// Assert
 		bundles.Should().HaveCount(1);
@@ -93,7 +102,7 @@ public class BundleLoaderTests()
 		var service = CreateService();
 
 		// Act
-		var bundles = service.LoadBundles(bundlesFolder, EmitWarning);
+		var bundles = Load(service, bundlesFolder);
 
 		// Assert
 		bundles.Should().HaveCount(2);
@@ -115,7 +124,7 @@ public class BundleLoaderTests()
 		var service = CreateService();
 
 		// Act
-		var bundles = service.LoadBundles(bundlesFolder, EmitWarning);
+		var bundles = Load(service, bundlesFolder);
 
 		// Assert
 		bundles.Should().BeEmpty();
@@ -143,7 +152,7 @@ public class BundleLoaderTests()
 		var service = CreateService();
 
 		// Act
-		var bundles = service.LoadBundles(bundlesFolder, EmitWarning);
+		var bundles = Load(service, bundlesFolder);
 
 		// Assert
 		bundles.Should().HaveCount(1);
@@ -469,7 +478,7 @@ public class BundleLoaderTests()
 		var service = CreateService();
 
 		// Act
-		var bundles = service.LoadBundles(bundlesFolder, EmitWarning);
+		var bundles = Load(service, bundlesFolder);
 
 		// Assert
 		bundles.Should().HaveCount(1);
@@ -507,7 +516,7 @@ public class BundleLoaderTests()
 		_fileSystem.File.WriteAllText($"{bundlesFolder}/9.3.0.amend-notes.yaml", amendNotes);
 
 		var service = CreateService();
-		var bundles = service.LoadBundles(bundlesFolder, EmitWarning);
+		var bundles = Load(service, bundlesFolder);
 
 		bundles.Should().HaveCount(1);
 		bundles[0].Version.Should().Be("9.3.0");
@@ -555,7 +564,7 @@ public class BundleLoaderTests()
 		var service = CreateService();
 
 		// Act
-		var bundles = service.LoadBundles(bundlesFolder, EmitWarning);
+		var bundles = Load(service, bundlesFolder);
 
 		// Assert
 		bundles.Should().HaveCount(1);
@@ -600,7 +609,7 @@ public class BundleLoaderTests()
 		_fileSystem.File.WriteAllText($"{bundlesFolder}/9.3.0.amend-1.yaml", excludeAmend);
 
 		var service = CreateService();
-		var bundles = service.LoadBundles(bundlesFolder, EmitWarning);
+		var bundles = Load(service, bundlesFolder);
 
 		bundles.Should().HaveCount(1);
 		bundles[0].Entries.Should().HaveCount(1);
@@ -651,7 +660,7 @@ public class BundleLoaderTests()
 		_fileSystem.File.WriteAllText($"{bundlesFolder}/9.3.0.amend-1.yaml", numberedExclude);
 		_fileSystem.File.WriteAllText($"{bundlesFolder}/9.3.0.amend-notes.yaml", amendNotes);
 
-		var bundles = CreateService().LoadBundles(bundlesFolder, EmitWarning);
+		var bundles = Load(CreateService(), bundlesFolder);
 
 		bundles.Should().HaveCount(1);
 		bundles[0].Entries.Select(e => e.Title).Should().Equal("Late readd");
@@ -679,7 +688,7 @@ public class BundleLoaderTests()
 		var service = CreateService();
 
 		// Act
-		var bundles = service.LoadBundles(bundlesFolder, EmitWarning);
+		var bundles = Load(service, bundlesFolder);
 
 		// Assert
 		bundles.Should().HaveCount(1);
@@ -718,7 +727,7 @@ public class BundleLoaderTests()
 		var service = CreateService();
 
 		// Act
-		var bundles = service.LoadBundles(bundlesFolder, EmitWarning);
+		var bundles = Load(service, bundlesFolder);
 
 		// Assert
 		bundles.Should().HaveCount(1);
@@ -758,7 +767,7 @@ public class BundleLoaderTests()
 		var service = CreateService();
 
 		// Act
-		var bundles = service.LoadBundles(bundlesFolder, EmitWarning);
+		var bundles = Load(service, bundlesFolder);
 
 		// Assert
 		bundles.Should().HaveCount(1);
@@ -797,7 +806,7 @@ public class BundleLoaderTests()
 		var service = CreateService();
 
 		// Act
-		var bundles = service.LoadBundles(bundlesFolder, EmitWarning);
+		var bundles = Load(service, bundlesFolder);
 
 		// Assert
 		bundles.Should().HaveCount(1);
@@ -849,7 +858,7 @@ public class BundleLoaderTests()
 		var service = CreateService();
 
 		// Act
-		var bundles = service.LoadBundles(bundlesFolder, EmitWarning);
+		var bundles = Load(service, bundlesFolder);
 
 		// Assert
 		bundles.Should().HaveCount(2);
@@ -894,7 +903,7 @@ public class BundleLoaderTests()
 		var service = CreateService();
 
 		// Act
-		var bundles = service.LoadBundles(bundlesFolder, EmitWarning);
+		var bundles = Load(service, bundlesFolder);
 
 		// Assert
 		bundles.Should().HaveCount(1);
@@ -930,7 +939,7 @@ public class BundleLoaderTests()
 		var service = CreateService();
 
 		// Act
-		var bundles = service.LoadBundles(bundlesFolder, EmitWarning);
+		var bundles = Load(service, bundlesFolder);
 
 		// Assert
 		bundles.Should().HaveCount(1);
@@ -963,7 +972,7 @@ public class BundleLoaderTests()
 		var service = CreateService();
 
 		// Act
-		var bundles = service.LoadBundles(bundlesFolder, EmitWarning);
+		var bundles = Load(service, bundlesFolder);
 
 		// Assert
 		bundles.Should().HaveCount(1);
@@ -997,7 +1006,7 @@ public class BundleLoaderTests()
 		var service = CreateService();
 
 		// Act
-		var bundles = service.LoadBundles(bundlesFolder, EmitWarning);
+		var bundles = Load(service, bundlesFolder);
 
 		// Assert
 		bundles.Should().HaveCount(1);
@@ -1033,7 +1042,7 @@ public class BundleLoaderTests()
 		var service = CreateService();
 
 		// Act
-		var bundles = service.LoadBundles(bundlesFolder, EmitWarning);
+		var bundles = Load(service, bundlesFolder);
 
 		// Assert
 		bundles.Should().HaveCount(1);
@@ -1074,7 +1083,7 @@ public class BundleLoaderTests()
 		var service = CreateService();
 
 		// Act
-		var bundles = service.LoadBundles(bundlesFolder, EmitWarning);
+		var bundles = Load(service, bundlesFolder);
 
 		// Assert
 		bundles.Should().HaveCount(1);
@@ -1107,7 +1116,7 @@ public class BundleLoaderTests()
 		var service = CreateService();
 
 		// Act
-		var bundles = service.LoadBundles(bundlesFolder, EmitWarning);
+		var bundles = Load(service, bundlesFolder);
 
 		// Assert
 		bundles.Should().HaveCount(1);
@@ -1143,7 +1152,7 @@ public class BundleLoaderTests()
 		var service = CreateService();
 
 		// Act
-		var bundles = service.LoadBundles(bundlesFolder, EmitWarning);
+		var bundles = Load(service, bundlesFolder);
 
 		// Assert
 		bundles.Should().HaveCount(1);
@@ -1179,7 +1188,7 @@ public class BundleLoaderTests()
 		_fileSystem.File.WriteAllText($"{bundlesFolder}/9.3.0.yaml", parentBundle);
 		_fileSystem.File.WriteAllText($"{bundlesFolder}/9.3.0.amend-1.yaml", amendBundle);
 
-		var bundles = CreateService().LoadBundles(bundlesFolder, EmitWarning);
+		var bundles = Load(CreateService(), bundlesFolder);
 
 		bundles.Should().HaveCount(1);
 		bundles[0].Data.Description?.TrimEnd().Should().Be("Replacement intro");
@@ -1215,7 +1224,7 @@ public class BundleLoaderTests()
 		_fileSystem.File.WriteAllText($"{bundlesFolder}/9.3.0.yaml", parentBundle);
 		_fileSystem.File.WriteAllText($"{bundlesFolder}/9.3.0.amend-1.yaml", amendBundle);
 
-		var bundles = CreateService().LoadBundles(bundlesFolder, EmitWarning);
+		var bundles = Load(CreateService(), bundlesFolder);
 
 		bundles.Should().HaveCount(1);
 		bundles[0].Data.Description.Should().Be("Keep this intro");
@@ -1251,7 +1260,7 @@ public class BundleLoaderTests()
 		_fileSystem.File.WriteAllText($"{bundlesFolder}/9.3.0.yaml", parentBundle);
 		_fileSystem.File.WriteAllText($"{bundlesFolder}/9.3.0.amend-notes.yaml", amendNotes);
 
-		var bundles = CreateService().LoadBundles(bundlesFolder, EmitWarning);
+		var bundles = Load(CreateService(), bundlesFolder);
 
 		bundles.Should().HaveCount(1);
 		bundles[0].Data.Description.Should().Be("Parent intro");
@@ -1278,7 +1287,7 @@ public class BundleLoaderTests()
 		_fileSystem.File.WriteAllText($"{bundlesFolder}/9.3.0.yaml", parentBundle);
 		_fileSystem.File.WriteAllText($"{bundlesFolder}/9.3.0.amend-1.yaml", "products: []\ndescription: \"\"\n");
 
-		var bundles = CreateService().LoadBundles(bundlesFolder, EmitWarning);
+		var bundles = Load(CreateService(), bundlesFolder);
 
 		bundles.Should().HaveCount(1);
 		bundles[0].Data.Description.Should().BeNull();
@@ -1366,7 +1375,7 @@ public class BundleLoaderTests()
 		var service = CreateService();
 
 		// Act
-		var bundles = service.LoadBundles(bundlesFolder, EmitWarning);
+		var bundles = Load(service, bundlesFolder);
 
 		// Assert
 		bundles.Should().HaveCount(1);
@@ -1407,7 +1416,7 @@ public class BundleLoaderTests()
 		var service = CreateService();
 
 		// Act
-		var bundles = service.LoadBundles(bundlesFolder, EmitWarning);
+		var bundles = Load(service, bundlesFolder);
 
 		// Assert
 		bundles.Should().HaveCount(1);
@@ -1443,7 +1452,7 @@ public class BundleLoaderTests()
 		var service = CreateService();
 
 		// Act
-		var bundles = service.LoadBundles(bundlesFolder, EmitWarning);
+		var bundles = Load(service, bundlesFolder);
 
 		// Assert
 		bundles.Should().HaveCount(1);
@@ -1478,7 +1487,7 @@ public class BundleLoaderTests()
 		var service = CreateService();
 
 		// Act
-		var bundles = service.LoadBundles(bundlesFolder, EmitWarning);
+		var bundles = Load(service, bundlesFolder);
 
 		// Assert
 		bundles.Should().HaveCount(1);
@@ -1510,7 +1519,7 @@ public class BundleLoaderTests()
 		var service = CreateService();
 
 		// Act
-		var bundles = service.LoadBundles(bundlesFolder, EmitWarning);
+		var bundles = Load(service, bundlesFolder);
 
 		// Assert
 		bundles.Should().HaveCount(1);
@@ -1542,7 +1551,7 @@ public class BundleLoaderTests()
 		var service = CreateService();
 
 		// Act
-		var bundles = service.LoadBundles(bundlesFolder, EmitWarning);
+		var bundles = Load(service, bundlesFolder);
 
 		// Assert
 		bundles.Should().HaveCount(1);
@@ -1588,7 +1597,7 @@ public class BundleLoaderTests()
 		_fileSystem.File.WriteAllText($"{bundlesFolder}/kibana-9.3.0.yaml", bundle2);
 
 		var service = CreateService();
-		var loaded = service.LoadBundles(bundlesFolder, EmitWarning);
+		var loaded = Load(service, bundlesFolder);
 
 		// Act
 		var merged = BundleLoader.MergeBundlesByTarget(loaded);

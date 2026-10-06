@@ -20,23 +20,23 @@ public static class AssemblyLoader
 	public static Result<AssemblyConfiguration> Load(ConfigurationFileProvider provider, IEnvironmentVariables? environment = null) =>
 		LoadYaml(provider.AssemblerFile.ReadToEnd(), provider.AssemblerFile.FullName, provider.SkipPrivateRepositories, environment);
 
-	internal static Result<AssemblyConfiguration> LoadYaml(
+	/// <summary>Checked load of <c>assembler.yml</c> text (an embedded copy, for instance). Parse + Map + Rules through <see cref="LoaderPipeline"/>: a parser failure becomes an error diagnostic, an error violation means no configuration.</summary>
+	public static Result<AssemblyConfiguration> LoadYaml(
 		string yaml,
 		string sourceFile,
 		bool skipPrivateRepositories = false,
 		IEnvironmentVariables? environment = null
 	)
 	{
-		try
-		{
-			return DeserializeWithDiagnostics(yaml, sourceFile, skipPrivateRepositories, environment);
-		}
-		catch (Exception e)
-		{
-			return Result.Failure<AssemblyConfiguration>([
-				new Diagnostic { Severity = Severity.Error, File = sourceFile, Message = e.Message }
-			]);
-		}
+		environment ??= SystemEnvironmentVariables.Instance;
+		var findings = new List<Diagnostic>();
+		return LoaderPipeline.Run(
+			sourceFile,
+			parse: () => Parse(yaml),
+			map: dto => Map(dto, sourceFile, skipPrivateRepositories, environment, findings),
+			rules: AssemblyConstraints.All,
+			extra: findings
+		);
 	}
 
 	private static readonly ConditionalWeakTable<ConfigurationFileProvider, Result<AssemblyConfiguration>> LoadedByProvider = [];
@@ -52,88 +52,90 @@ public static class AssemblyLoader
 	public static AssemblyConfiguration Create(ConfigurationFileProvider provider, IEnvironmentVariables? environment = null) =>
 		Load(provider, environment).OrThrow();
 
-	public static AssemblyConfiguration Deserialize(
+	/// <summary>Text in, checked configuration out or a <see cref="ConfigurationException"/>: for tests that hold the YAML, not a provider.</summary>
+	internal static AssemblyConfiguration Deserialize(
 		string yaml,
 		bool skipPrivateRepositories = false,
 		IEnvironmentVariables? environment = null
-	) => DeserializeWithDiagnostics(yaml, sourceFile: string.Empty, skipPrivateRepositories, environment).OrThrow();
-
-	private static Result<AssemblyConfiguration> DeserializeWithDiagnostics(
-		string yaml,
-		string sourceFile,
-		bool skipPrivateRepositories,
-		IEnvironmentVariables? environment
 	)
 	{
-		environment ??= SystemEnvironmentVariables.Instance;
-		var input = new StringReader(yaml);
+		// A document the parser rejects throws its own exception here (LoadYaml reports it as a diagnostic instead); the rules are checked once.
+		var findings = new List<Diagnostic>();
+		var configuration = Map(
+			Parse(yaml),
+			string.Empty,
+			skipPrivateRepositories,
+			environment ?? SystemEnvironmentVariables.Instance,
+			findings
+		);
+		return LoaderPipeline.Check(configuration, string.Empty, AssemblyConstraints.All, findings).OrThrow();
+	}
 
-		try
+	private static AssemblyConfigurationDto Parse(string yaml)
+	{
+		using var input = new StringReader(yaml);
+		return ConfigurationFileProvider.Deserializer.Deserialize<AssemblyConfigurationDto>(input) ?? new AssemblyConfigurationDto();
+	}
+
+	private static AssemblyConfiguration Map(
+		AssemblyConfigurationDto dto,
+		string sourceFile,
+		bool skipPrivateRepositories,
+		IEnvironmentVariables environment,
+		List<Diagnostic> findings
+	)
+	{
+		var references = new Dictionary<string, Repository>();
+		foreach (var (name, r) in dto.ReferenceRepositories)
+			references[name] = RepositoryDefaults(ToRepository(r, name), environment);
+
+		// If we are skipping private repositories, and we can locate the solution directory. include the local docs-content repository
+		// this allows us to test new docset features as part of the assembler build
+		if (
+			skipPrivateRepositories
+			&& references.TryGetValue("docs-builder", out var docsContentRepository)
+			&& Paths.GetSolutionDirectory() is { } solutionDir
+		)
 		{
-			var dto = ConfigurationFileProvider.Deserializer.Deserialize<AssemblyConfigurationDto>(input) ?? new AssemblyConfigurationDto();
-			var references = new Dictionary<string, Repository>();
-			foreach (var (name, r) in dto.ReferenceRepositories)
-				references[name] = RepositoryDefaults(ToRepository(r, name), environment);
+			var docsRepositoryPath = Path.Join(solutionDir.FullName, "docs");
+			references["docs-builder"] = docsContentRepository with { Skip = false, Path = docsRepositoryPath };
+		}
 
-			// If we are skipping private repositories, and we can locate the solution directory. include the local docs-content repository
-			// this allows us to test new docset features as part of the assembler build
-			if (
-				skipPrivateRepositories
-				&& references.TryGetValue("docs-builder", out var docsContentRepository)
-				&& Paths.GetSolutionDirectory() is { } solutionDir
-			)
+		var privateRepositories = references.Where(r => r.Value.Private).ToList();
+		if (skipPrivateRepositories)
+		{
+			foreach (var (name, _) in privateRepositories)
+				_ = references.Remove(name);
+		}
+
+		var narrative = (NarrativeRepository)RepositoryDefaults(ToNarrative(dto.Narrative), environment);
+
+		var environments = new Dictionary<string, PublishEnvironment>();
+		foreach (var (name, dtoEnvironment) in dto.Environments)
+		{
+			if (dtoEnvironment.ContentSource is null)
 			{
-				var docsRepositoryPath = Path.Join(solutionDir.FullName, "docs");
-				references["docs-builder"] = docsContentRepository with { Skip = false, Path = docsRepositoryPath };
-			}
-
-			var privateRepositories = references.Where(r => r.Value.Private).ToList();
-			if (skipPrivateRepositories)
-			{
-				foreach (var (name, _) in privateRepositories)
-					_ = references.Remove(name);
-			}
-
-			var narrative = (NarrativeRepository)RepositoryDefaults(ToNarrative(dto.Narrative), environment);
-
-			var diagnostics = new List<Diagnostic>();
-			var environments = new Dictionary<string, PublishEnvironment>();
-			foreach (var (name, dtoEnvironment) in dto.Environments)
-			{
-				if (dtoEnvironment.ContentSource is null)
+				findings.Add(new Diagnostic
 				{
-					diagnostics.Add(new Diagnostic
-					{
-						Severity = Severity.Warning,
-						File = sourceFile,
-						Message =
-							$"Environment '{name}' does not declare content_source, so it publishes 'next'. Set content_source to current, next or edge."
-					});
-				}
-				environments[name] = ToEnvironment(dtoEnvironment, name);
+					Severity = Severity.Warning,
+					File = sourceFile,
+					Message =
+						$"Environment '{name}' does not declare content_source, so it publishes 'next'. Set content_source to current, next or edge."
+				});
 			}
-
-			var assembly = new AssemblyConfiguration
-			{
-				Narrative = narrative,
-				ReferenceRepositories = references,
-				AvailableRepositories = AvailableByName(references.Values.Where(r => !r.Skip).Concat([narrative])),
-				PrivateRepositories = privateRepositories.Where(r => !r.Value.Skip).ToDictionary(kvp => kvp.Key, kvp => kvp.Value),
-				AllPrivateRepositoryNames = new HashSet<string>(privateRepositories.Select(r => r.Key), StringComparer.OrdinalIgnoreCase),
-				Environments = environments,
-				SharedConfigurations = dto.SharedConfigurations.ToDictionary(kv => kv.Key, kv => ToRepository(kv.Value, string.Empty))
-			};
-
-			// The loader owns the check: every violation rides in the result, and an error means no configuration.
-			var all = Result.From(AssemblyConstraints.All.Report(assembly), sourceFile, diagnostics);
-			return all.HasErrors ? Result.Failure<AssemblyConfiguration>(all.Diagnostics) : all;
+			environments[name] = ToEnvironment(dtoEnvironment, name);
 		}
-		catch (Exception e)
+
+		return new AssemblyConfiguration
 		{
-			Console.WriteLine(e);
-			Console.WriteLine(e.InnerException);
-			throw;
-		}
+			Narrative = narrative,
+			ReferenceRepositories = references,
+			AvailableRepositories = AvailableByName(references.Values.Where(r => !r.Skip).Concat([narrative])),
+			PrivateRepositories = privateRepositories.Where(r => !r.Value.Skip).ToDictionary(kvp => kvp.Key, kvp => kvp.Value),
+			AllPrivateRepositoryNames = new HashSet<string>(privateRepositories.Select(r => r.Key), StringComparer.OrdinalIgnoreCase),
+			Environments = environments,
+			SharedConfigurations = dto.SharedConfigurations.ToDictionary(kv => kv.Key, kv => ToRepository(kv.Value, string.Empty))
+		};
 	}
 
 	// Last wins, so a model with colliding names can be built and reported by AssemblyConstraints.

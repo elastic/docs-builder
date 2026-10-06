@@ -37,10 +37,12 @@ public class IncrementalDeployService(
 		if (excludePatterns.Length > 0)
 			_logger.LogInformation("Excluding patterns from sync: {ExcludePatterns}", string.Join(", ", excludePatterns));
 		var planner = new AwsS3SyncPlanStrategy(logFactory, _s3, s3BucketName, context, etagCalculator);
-		var plan = await planner.Plan(deleteThreshold, excludePatterns, ctx);
+		// the planner checks the plan once, as it builds it; the validator turns those findings into the verdict
+		var checkedPlan = await planner.Plan(deleteThreshold, excludePatterns, ctx);
+		var plan = checkedPlan.OrThrowIfMissing();
 		LogPlanSummary(plan);
 		var validator = new DocsSyncPlanValidator(logFactory);
-		var validationResult = validator.Validate(plan);
+		var validationResult = validator.Validate(checkedPlan);
 		if (!validationResult.Valid)
 		{
 			await githubActionsService.SetOutputAsync("plan-valid", "false");
@@ -86,7 +88,13 @@ public class IncrementalDeployService(
 			return false;
 		}
 		var planJson = await context.ReadFileSystem.File.ReadAllTextAsync(planFile, ctx);
-		var plan = SyncPlan.Deserialize(planJson);
+		// the plan is checked once, as it is read; a plan that does not parse is reported and stops the apply
+		var loaded = SyncPlanLoader.Load(planJson, planFile);
+		if (loaded.Value is not { } plan)
+		{
+			_ = loaded.EmitTo(collector);
+			return false;
+		}
 		_logger.LogInformation("Total files to sync: {TotalFiles}", plan.TotalSyncRequests);
 		LogPlanSummary(plan);
 		if (plan.TotalSyncRequests == 0)
@@ -95,7 +103,7 @@ public class IncrementalDeployService(
 			return true;
 		}
 		var validator = new DocsSyncPlanValidator(logFactory);
-		var validationResult = validator.Validate(plan);
+		var validationResult = validator.Validate(loaded);
 		if (!validationResult.Valid)
 		{
 			collector.EmitError(

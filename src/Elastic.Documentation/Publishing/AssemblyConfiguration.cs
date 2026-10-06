@@ -83,6 +83,12 @@ public partial record Repository
 	/// </summary>
 	public TimeSpan? CloneTimeout { get; init; }
 
+	/// <summary>
+	/// The repository as the configuration clone uses it: only its <c>config</c> folder is checked out. A pure derivation; no rule of the
+	/// <see cref="AssemblyConfiguration"/> relates to the clone, and the repository keeps every rule it satisfied.
+	/// </summary>
+	public Repository AsConfigurationCheckout() => this with { SparsePaths = ["config"] };
+
 	public string GetBranch(ContentSource contentSource) => contentSource switch
 	{
 		ContentSource.Current => GitReferenceCurrent,

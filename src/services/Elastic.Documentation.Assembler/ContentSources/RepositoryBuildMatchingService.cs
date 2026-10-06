@@ -6,6 +6,7 @@ using System.IO.Abstractions;
 using Actions.Core.Services;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
+using Elastic.Documentation.Configuration.Loading;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.LinkIndex;
@@ -18,8 +19,7 @@ namespace Elastic.Documentation.Assembler.ContentSources;
 
 public class RepositoryBuildMatchingService(
 	ILoggerFactory logFactory,
-	AssemblyConfiguration configuration,
-	IConfigurationContext configurationContext,
+	AssembleContextProvider contexts,
 	ICoreService githubActionsService,
 	CheckoutsFileSystem fileSystem
 ) : IService
@@ -33,7 +33,7 @@ public class RepositoryBuildMatchingService(
 		{
 			try
 			{
-				return await provider.GetRegistry(ctx);
+				return (await provider.GetRegistry(ctx)).Unwrap(_logger, "link-index.json");
 			}
 			catch (Exception ex) when (attempt < maxAttempts)
 			{
@@ -48,7 +48,7 @@ public class RepositoryBuildMatchingService(
 				await Task.Delay(delay, ctx);
 			}
 		}
-		return await provider.GetRegistry(ctx);
+		return (await provider.GetRegistry(ctx)).Unwrap(_logger, "link-index.json");
 	}
 
 	//TODO return contentsourcematch
@@ -82,7 +82,7 @@ public class RepositoryBuildMatchingService(
 			repositoryName,
 			alreadyPublishing
 		);
-		var assembleContext = new AssembleContext(configuration, configurationContext, "dev", collector, fileSystem);
+		var assembleContext = contexts.Get("dev", collector, fileSystem);
 		var product = assembleContext.Catalog.Products.GetProductByRepositoryName(repo);
 		var matches = assembleContext.Configuration.Match(logFactory, repo, refName, product, alreadyPublishing);
 		if (matches is { Current: null, Next: null, Edge: null, Speculative: false })

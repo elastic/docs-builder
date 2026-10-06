@@ -16,6 +16,45 @@ public record GitCheckoutInformation
 		RepositoryName = "unavailable"
 	};
 
+	/// <summary>
+	/// The canned checkout tests that seed no layout get from <c>GitCheckoutInformationFactory</c> (a mock filesystem with no <c>.git</c>), so
+	/// they do not each have to build one.
+	/// </summary>
+	public static GitCheckoutInformation LegacyTestCheckout { get; } = new()
+	{
+		Branch = "test-e35fcb27-5f60-4e",
+		Remote = "elastic/docs-builder",
+		Ref = "e35fcb27-5f60-4e",
+		RepositoryName = "docs-builder"
+	};
+
+	/// <summary>
+	/// The checkout read from a <c>.git</c> folder: the repository is named by the last segment of <paramref name="remote"/>, and an empty
+	/// <paramref name="gitHubRef"/> (the <c>GITHUB_REF</c> of a build outside CI) is no ref.
+	/// </summary>
+	public static GitCheckoutInformation Resolved(string gitRef, string branch, string remote, string? gitHubRef) =>
+		new()
+		{
+			Ref = gitRef,
+			Branch = branch,
+			Remote = remote,
+			RepositoryName = remote.Split('/').Last(),
+			GitHubRef = string.IsNullOrEmpty(gitHubRef) ? null : gitHubRef
+		};
+
+	/// <summary>The checkout of an elastic repository an assembler build cloned: its remote is <c>elastic/{repositoryName}</c>.</summary>
+	public static GitCheckoutInformation ForElasticRepository(string repositoryName, string gitRef, string branch) =>
+		new() { RepositoryName = repositoryName, Ref = gitRef, Remote = $"elastic/{repositoryName}", Branch = branch };
+
+	/// <summary>The checkout of a repository a codex build cloned, named and located as its reference says.</summary>
+	public static GitCheckoutInformation ForClonedRepository(
+		string repositoryName,
+		string remote,
+		string branch,
+		string commitHash,
+		string? gitHubRef
+	) => new() { Branch = branch, Remote = remote, Ref = commitHash, RepositoryName = repositoryName, GitHubRef = gitHubRef };
+
 	[JsonPropertyName("branch")]
 	public required string Branch { get; init; }
 

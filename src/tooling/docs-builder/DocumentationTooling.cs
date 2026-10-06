@@ -8,8 +8,10 @@ using Actions.Core.Extensions;
 using Actions.Core.Services;
 using Documentation.Builder.Diagnostics.Console;
 using Elastic.Documentation;
+using Elastic.Documentation.Assembler;
 using Elastic.Documentation.Catalog;
 using Elastic.Documentation.Configuration;
+using Elastic.Documentation.Configuration.Loading;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Search;
 using Elastic.Documentation.ServiceDefaults;
@@ -38,7 +40,10 @@ public static class DocumentationTooling
 			{
 				var logFactory = sp.GetRequiredService<ILoggerFactory>();
 				var githubActionsService = sp.GetRequiredService<ICoreService>();
-				return new ConsoleDiagnosticsCollector(logFactory, githubActionsService);
+				var collector = new ConsoleDiagnosticsCollector(logFactory, githubActionsService);
+				// Global configuration findings predate this collector; the first (only) one of the process reports them, for every command.
+				_ = sp.GetRequiredService<StartupDiagnostics>().DrainInto(collector);
+				return collector;
 			})
 			.AddSingleton(_ =>
 			{
@@ -58,7 +63,9 @@ public static class DocumentationTooling
 					Endpoints = endpoints,
 					SearchTuning = search
 				};
-			});
+			})
+			// One AssembleContext per run: every assembler service takes it from here, so the navigation is parsed (and diagnosed) once.
+			.AddSingleton<AssembleContextProvider>();
 
 		return builder;
 	}

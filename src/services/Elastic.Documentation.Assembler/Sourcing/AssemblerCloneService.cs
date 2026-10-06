@@ -16,8 +16,7 @@ namespace Elastic.Documentation.Assembler.Sourcing;
 
 public class AssemblerCloneService(
 	ILoggerFactory logFactory,
-	AssemblyConfiguration assemblyConfiguration,
-	IConfigurationContext configurationContext,
+	AssembleContextProvider contexts,
 	ICoreService githubActionsService
 ) : IService
 {
@@ -28,7 +27,7 @@ public class AssemblerCloneService(
 		var environment = options.Environment ?? (!string.IsNullOrEmpty(githubEnvironmentInput) ? githubEnvironmentInput : "dev");
 
 		var cfs = CheckoutsFileSystem.FromWorkingDirectory();
-		var assembleContext = new AssembleContext(assemblyConfiguration, configurationContext, environment, collector, cfs);
+		var assembleContext = contexts.Get(environment, collector, cfs);
 		var cloner = new AssemblerRepositorySourcer(logFactory, assembleContext);
 
 		_ = await cloner.CloneAll(options.FetchLatest ?? false, options.AssumeCloned ?? false, ctx);

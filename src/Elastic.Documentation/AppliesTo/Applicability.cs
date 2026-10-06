@@ -15,6 +15,9 @@ public record AppliesCollection : IReadOnlyCollection<Applicability>
 	private readonly Applicability[] _items;
 	public AppliesCollection(Applicability[] items) => _items = items;
 
+	/// <summary>The collection of <paramref name="items"/>, in the order given.</summary>
+	public static AppliesCollection Of(IEnumerable<Applicability> items) => new([.. items]);
+
 	// <lifecycle> [version]
 	public static bool TryParse(string? value, IList<(Severity, string)> diagnostics, out AppliesCollection? availability)
 	{

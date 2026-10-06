@@ -6,6 +6,7 @@ using System.Collections.Concurrent;
 using Amazon.S3;
 using Amazon.S3.Model;
 using DotNet.Globbing;
+using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Integrations.S3;
 using Microsoft.Extensions.Logging;
 
@@ -38,7 +39,7 @@ public class AwsS3SyncPlanStrategy(
 	private static string NormalizePattern(string pattern) =>
 		pattern.EndsWith("/*", StringComparison.Ordinal) ? string.Concat(pattern.AsSpan(0, pattern.Length - 2), "/**") : pattern;
 
-	public async Task<SyncPlan> Plan(float? deleteThreshold, string[] excludePatterns, Cancel ctx = default)
+	public async Task<Result<SyncPlan>> Plan(float? deleteThreshold, string[] excludePatterns, Cancel ctx = default)
 	{
 		var excludeGlobs = excludePatterns.Select(p => Glob.Parse(NormalizePattern(p))).ToArray();
 
@@ -94,19 +95,17 @@ public class AwsS3SyncPlanStrategy(
 			deleteRequests.Add(deleteRequest);
 		}
 
-		return new SyncPlan
-		{
-			RemoteListingCompleted = readToCompletion,
-			DeleteThresholdDefault = deleteThreshold,
-			ExcludePatterns = excludePatterns,
-			TotalRemoteFiles = remoteObjects.Count,
-			TotalSourceFiles = localObjects.Length,
-			DeleteRequests = deleteRequests.ToList(),
-			AddRequests = addRequests.ToList(),
-			UpdateRequests = updateRequests.ToList(),
-			SkipRequests = skipRequests.ToList(),
-			TotalSyncRequests = deleteRequests.Count + addRequests.Count + updateRequests.Count + skipRequests.Count
-		};
+		return SyncPlanLoader.Planned(
+			readToCompletion,
+			deleteThreshold,
+			excludePatterns,
+			remoteObjects.Count,
+			localObjects.Length,
+			deleteRequests.ToList(),
+			addRequests.ToList(),
+			updateRequests.ToList(),
+			skipRequests.ToList()
+		);
 	}
 
 	private async Task<(bool readToCompletion, Dictionary<string, S3Object> objects)> ListObjects(Cancel ctx = default)

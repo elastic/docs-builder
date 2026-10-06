@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.Collections.Frozen;
+using System.Runtime.CompilerServices;
 using AwesomeAssertions;
 using Elastic.Documentation.Codex;
 using Elastic.Documentation.Configuration.Codex;
@@ -69,16 +70,12 @@ public class AggregateEqualityTests
 	public void TableOfContents_OneNestedFileHidden_IsNotEqual()
 	{
 		var toc = LoadBaselineToc();
-		var nested = toc.OfCase<IsolatedTableOfContentsRef>().First();
-		var file = nested.Children.OfCase<FileRef>().First();
-		var changed = toc.Select(
-			i => i.Value == nested
-				? new TocItem(nested with
-				{
-					Children = [.. nested.Children.Select(c => c.Value == file ? new TocItem(file with { Hidden = !file.Hidden }) : c)]
-				})
-				: i
-		).ToList();
+		var (nested, nestedAt) = FirstOfCase<TocItem, IsolatedTableOfContentsRef>(toc);
+		var (file, fileAt) = FirstOfCase<TocItem, FileRef>(nested.Children);
+		var children = nested.Children.ToList();
+		children[fileAt] = new TocItem(file with { Hidden = !file.Hidden });
+		var changed = toc.ToList();
+		changed[nestedAt] = new TocItem(nested with { Children = children });
 
 		changed.Should().NotEqual(toc);
 	}
@@ -88,7 +85,7 @@ public class AggregateEqualityTests
 		var catalog = CatalogLoader.Load(BaselineProvider()).OrThrow();
 		var fs = DocumentationSetGoldenTests.CreateDocsTree();
 		var docsetFile = fs.FileInfo.New(Path.Join(DocumentationSetGoldenTests.DocsRoot, "_docset.yml"));
-		var docSet = DocumentationSetLoader.Load(docsetFile, docsetFile.Directory!, fs).OrThrowIfMissing();
+		var docSet = DocumentationSetLoader.ParseDefinition(docsetFile, docsetFile.Directory!, fs).OrThrowIfMissing();
 		return DocumentationSetResolver.Resolve(
 			docSet,
 			catalog.VersioningSystems,
@@ -109,7 +106,7 @@ public class AggregateEqualityTests
 		DocumentationSetDefinition Load()
 		{
 			var fs = DocumentationSetGoldenTests.CreateDocsTree();
-			return DocumentationSetLoader.Load(
+			return DocumentationSetLoader.ParseDefinition(
 				fs.FileInfo.New(Path.Join(DocumentationSetGoldenTests.DocsRoot, "_docset.yml")),
 				fs.DirectoryInfo.New(DocumentationSetGoldenTests.DocsRoot),
 				fs
@@ -165,16 +162,10 @@ public class AggregateEqualityTests
 	public void SiteNavigation_OneMountMoved_IsNotEqual()
 	{
 		var navigation = LoadBaselineNavigation();
-		var first = navigation.TableOfContents.OfCase<SiteTableOfContentsRef>().First();
-		var changed = navigation with
-		{
-			TableOfContents =
-			[
-				.. navigation.TableOfContents.Select(
-					e => e.Value == first ? new SiteNavigationEntry(first with { PathPrefix = first.PathPrefix + "/moved" }) : e
-				)
-			]
-		};
+		var (first, firstAt) = FirstOfCase<SiteNavigationEntry, SiteTableOfContentsRef>(navigation.TableOfContents);
+		var entries = navigation.TableOfContents.ToList();
+		entries[firstAt] = new SiteNavigationEntry(first with { PathPrefix = first.PathPrefix + "/moved" });
+		var changed = navigation with { TableOfContents = entries };
 
 		changed.Should().NotBe(navigation);
 	}
@@ -226,14 +217,25 @@ public class AggregateEqualityTests
 
 	[Test]
 	public void LinkManifest_ReadTwice_IsEqual() =>
-		LinkJson.DeserializeManifest(ManifestJson).Should().Be(LinkJson.DeserializeManifest(ManifestJson));
+		LinkLoader.LoadManifest(ManifestJson, "links.json").Value!.Should().Be(LinkLoader.LoadManifest(ManifestJson, "links.json").Value!);
 
 	[Test]
 	public void LinkManifest_OneAnchorAdded_IsNotEqual()
 	{
-		var manifest = LinkJson.DeserializeManifest(ManifestJson);
+		var manifest = LinkLoader.LoadManifest(ManifestJson, "links.json").Value!;
 		var changed = manifest with { Links = new Dictionary<string, LinkMetadata> { ["index.md"] = new() { Anchors = ["a", "b", "c"] } } };
 
 		changed.Should().NotBe(manifest);
+	}
+
+	// Replaces by position: the union's Value is an object, so == would compare references and depend on instance identity.
+	private static (TCase Item, int Index) FirstOfCase<TUnion, TCase>(IReadOnlyList<TUnion> items) where TUnion : IUnion where TCase : class
+	{
+		for (var i = 0; i < items.Count; i++)
+		{
+			if (items[i].Value is TCase match)
+				return (match, i);
+		}
+		throw new InvalidOperationException($"The baseline has no {typeof(TCase).Name}.");
 	}
 }

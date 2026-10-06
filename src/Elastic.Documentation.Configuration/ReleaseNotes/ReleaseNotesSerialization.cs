@@ -20,7 +20,7 @@ namespace Elastic.Documentation.Configuration.ReleaseNotes;
 /// Centralized YAML serialization for release notes/changelog operations.
 /// Provides static deserializers and serializers configured for different use cases.
 /// </summary>
-public static partial class ReleaseNotesSerialization
+internal static partial class ReleaseNotesSerialization
 {
 	/// <summary>
 	/// Regex to normalize "version:" to "target:" in changelog YAML files.
@@ -42,10 +42,9 @@ public static partial class ReleaseNotesSerialization
 		.Build();
 
 	/// <summary>
-	/// Gets the raw YAML deserializer for changelog entry DTOs.
-	/// Used by bundling service for direct deserialization with error handling.
+	/// Parses an entry file's (normalized) text to its DTO, null for an empty file. Only the loader's own validator reads the shape; everything else gets a record.
 	/// </summary>
-	public static IDeserializer GetEntryDeserializer() => YamlDeserializer;
+	internal static ChangelogEntryDto? ParseEntryDto(string yaml) => YamlDeserializer.Deserialize<ChangelogEntryDto>(NormalizeYaml(yaml));
 
 	/// <summary>
 	/// Deserializes a changelog entry YAML content to domain type.
@@ -53,7 +52,8 @@ public static partial class ReleaseNotesSerialization
 	public static ChangelogEntry DeserializeEntry(string yaml)
 	{
 		yaml = Utf8TextNormalization.StripLeadingUtf8Bom(yaml)!;
-		var yamlDto = YamlDeserializer.Deserialize<ChangelogEntryDto>(yaml);
+		var yamlDto = YamlDeserializer.Deserialize<ChangelogEntryDto>(yaml)
+			?? throw new InvalidDataException("The changelog entry has no content.");
 		return ToEntry(yamlDto);
 	}
 
@@ -75,7 +75,8 @@ public static partial class ReleaseNotesSerialization
 	public static Bundle DeserializeBundle(string yaml)
 	{
 		yaml = Utf8TextNormalization.StripLeadingUtf8Bom(yaml)!;
-		var yamlDto = YamlDeserializer.Deserialize<BundleDto>(yaml);
+		var yamlDto = YamlDeserializer.Deserialize<BundleDto>(yaml)
+			?? throw new InvalidDataException("The changelog bundle has no content.");
 		return ToBundle(yamlDto);
 	}
 
@@ -312,7 +313,8 @@ public static partial class ReleaseNotesSerialization
 			Subtype = EntrySubtypeToString(entry.Subtype),
 			Products = entry.Products?.Select(ToDto).ToList(),
 			Areas = entry.Areas?.ToList(),
-			Title = entry.Title,
+			// serialization shaping, not the domain: a blank title is absent from the file (a CLI writing an entry whose title is still to be added comments it out)
+			Title = string.IsNullOrEmpty(entry.Title) ? null : entry.Title,
 			Description = entry.Description,
 			Impact = entry.Impact,
 			Action = entry.Action,
@@ -492,7 +494,7 @@ public static partial class ReleaseNotesSerialization
 /// Used for AOT-compatible lightweight loading of publish blocker configuration.
 /// Registered with YamlStaticContext for source-generated deserialization.
 /// </summary>
-public sealed class ChangelogConfigMinimalDto
+internal sealed class ChangelogConfigMinimalDto
 {
 	/// <summary>Rules configuration section (new format).</summary>
 	public RulesConfigMinimalDto? Rules { get; set; }
@@ -502,7 +504,7 @@ public sealed class ChangelogConfigMinimalDto
 /// Minimal DTO for rules configuration.
 /// Registered with YamlStaticContext for source-generated deserialization.
 /// </summary>
-public sealed class RulesConfigMinimalDto
+internal sealed class RulesConfigMinimalDto
 {
 	/// <summary>Global match mode ("any" or "all").</summary>
 	public string? Match { get; set; }
@@ -515,7 +517,7 @@ public sealed class RulesConfigMinimalDto
 /// Minimal DTO for publish rules configuration.
 /// Registered with YamlStaticContext for source-generated deserialization.
 /// </summary>
-public sealed class PublishRulesMinimalDto
+internal sealed class PublishRulesMinimalDto
 {
 	/// <summary>Match mode for areas ("any" or "all").</summary>
 	public string? MatchAreas { get; set; }

@@ -45,7 +45,11 @@ public class ShippedConfigurationTests
 	{
 		var assembly = AssemblyLoader.Create(Provider);
 		var yaml = File.ReadAllText(Path.Join(Paths.GetSolutionDirectory()!.FullName, "config", "navigation.yml"));
-		var navigation = SiteNavigationLoader.ForAssembly(SiteNavigationLoader.Deserialize(yaml), assembly, skipPrivateRepositories: false);
+		var navigation = SiteNavigationLoader.ForAssembly(
+			SiteNavigationLoader.Deserialize(yaml),
+			assembly,
+			skipPrivateRepositories: false
+		).OrThrowIfMissing();
 
 		NavigationInAssemblyConstraints
 			.All
@@ -101,7 +105,7 @@ public class ShippedConfigurationTests
 			SiteNavigationLoader.Deserialize(yaml),
 			AssemblyLoader.Create(Provider),
 			skipPrivateRepositories: false
-		);
+		).OrThrowIfMissing();
 
 		SiteNavigationConstraints
 			.All

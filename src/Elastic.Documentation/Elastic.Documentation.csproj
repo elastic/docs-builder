@@ -19,6 +19,11 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- The raw wire-format readers (LinkJson.Deserialize*) are internal: the checked loaders in Configuration are the only way to a record. -->
+    <InternalsVisibleTo Include="Elastic.Documentation.Configuration" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\services\search\Elastic.Documentation.Search.Contract\Elastic.Documentation.Search.Contract.csproj" />
     <!-- The core only: no CsCheck, no Rx, trim and AOT clean. -->
     <ProjectReference Include="$(NulleanEntitiesRoot)/src/Nullean.Entities/Nullean.Entities.csproj" />

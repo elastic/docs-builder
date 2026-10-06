@@ -6,6 +6,7 @@ using System.Collections.Frozen;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using Elastic.Documentation.Configuration.Builder;
+using Elastic.Documentation.Configuration.Loading;
 using Elastic.Documentation.DocumentationSets;
 using Elastic.Documentation.Links;
 using Elastic.Documentation.Links.CrossLinks;
@@ -65,7 +66,7 @@ public sealed class TestCrossLinkResolver : ICrossLinkResolver
 		             }
 		             """;
 
-		var reference = CrossLinkFetcher.Deserialize(json);
+		var reference = LinkLoader.LoadManifest(json, "test-links.json").Value!;
 		_references.Add("docs-content", reference);
 		_references.Add("kibana", reference);
 		_declared.Add("docs-content");

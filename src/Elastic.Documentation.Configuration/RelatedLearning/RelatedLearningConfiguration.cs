@@ -33,7 +33,7 @@ internal static class RelatedLearningConfigurationExtensions
 		Result.From(RelatedLearningConstraints.All.Report(ParseUnchecked(yaml)), "related-learning.yml").OrThrow();
 
 	/// <summary>Parses a <c>related-learning.yml</c> document without checking it. Throws only on YAML it cannot read.</summary>
-	public static RelatedLearningCatalog ParseUnchecked(string yaml)
+	internal static RelatedLearningCatalog ParseUnchecked(string yaml)
 	{
 		var dto = ConfigurationFileProvider.Deserializer.Deserialize<RelatedLearningConfigDto>(yaml)
 			?? throw new InvalidOperationException("related-learning.yml deserialized to null.");

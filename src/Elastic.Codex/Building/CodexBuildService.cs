@@ -168,14 +168,13 @@ public class CodexBuildService(ILoggerFactory logFactory, IConfigurationContext 
 			var pathPrefix = string.IsNullOrEmpty(sitePrefix) ? $"/r/{repoName}" : $"/{sitePrefix}/r/{repoName}";
 
 			// Create git checkout information
-			var git = new GitCheckoutInformation
-			{
-				Branch = checkout.Reference.Branch,
-				Remote = checkout.Reference.ResolvedOrigin,
-				Ref = checkout.CommitHash,
-				RepositoryName = checkout.Reference.Name,
-				GitHubRef = Environment.GetEnvironmentVariable("GITHUB_REF")
-			};
+			var git = GitCheckoutInformation.ForClonedRepository(
+				checkout.Reference.Name,
+				checkout.Reference.ResolvedOrigin,
+				checkout.Reference.Branch,
+				checkout.CommitHash,
+				Environment.GetEnvironmentVariable("GITHUB_REF")
+			);
 
 			// Pre-compute codex site root for HTMX (no URL parsing in providers)
 			var siteRootPath = string.IsNullOrEmpty(sitePrefix) ? "/" : $"/{sitePrefix.Trim('/')}/";

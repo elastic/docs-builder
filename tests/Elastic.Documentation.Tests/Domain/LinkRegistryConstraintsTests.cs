@@ -22,7 +22,7 @@ public class LinkRegistryConstraintsTests
 	public void AddingANewerEntry_IsMonotonic()
 	{
 		var before = Valid();
-		var after = before.WithLinkRegistryEntry(Entry("kibana", "main") with { UpdatedAt = Published.AddDays(1) });
+		var after = before.WithLinkRegistryEntry(Entry("kibana", "main") with { UpdatedAt = Published.AddDays(1) }).OrThrowIfMissing();
 		LinkRegistryConstraints.All.Check(before, after).Should().BeEmpty();
 	}
 

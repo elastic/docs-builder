@@ -140,7 +140,7 @@ public class UseNavigationPreviewTests
 				SiteNavigationLoader.Deserialize(fileSystem.File.ReadAllText(provider.NavigationFile.FullName)),
 				config,
 				skipPrivateRepositories: true
-			)
+			).OrThrowIfMissing()
 		);
 
 		output.Should().NotContain("private-a://");

@@ -2,12 +2,10 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using Elastic.Documentation;
-using Elastic.Documentation.Configuration.Changelog;
-using Elastic.Documentation.Configuration.ReleaseNotes;
 using Elastic.Documentation.ReleaseNotes;
+using YamlDotNet.Core;
 
-namespace Elastic.Changelog.Evaluation;
+namespace Elastic.Documentation.Configuration.ReleaseNotes;
 
 /// <summary>Finding severity level.</summary>
 public enum FindingSeverity
@@ -19,15 +17,66 @@ public enum FindingSeverity
 /// <summary>A validation finding for a changelog entry file.</summary>
 public record EntryFileFinding(string File, FindingSeverity Severity, string Message);
 
+/// <summary>An entry file's validation: every finding, and the product ids the file names (for the PR existence check, which needs the repository each belongs to).</summary>
+public sealed record EntryFileValidation(IReadOnlyList<EntryFileFinding> Findings, IReadOnlyList<string> ProductIds);
+
 /// <summary>
-/// Pure, stateless rule engine for changelog entry files.
-/// A <see cref="YamlDotNet.Core.YamlException"/> during parse should be converted to a single
-/// <see cref="EntryFileFinding"/> error by the caller before calling <see cref="Validate"/>.
+/// The authoring-stage rule engine for changelog entry files (<c>validate-entries</c>). It reads the file's own shape, which a
+/// <see cref="ChangelogEntry"/> no longer carries (an unrecognized type, a <c>versions</c> list on an entry, a source-redirect on an authored file,
+/// the raw lifecycle text), so it lives here beside the loader, the only code that touches the DTO. The rules a record can answer for are
+/// <see cref="ChangelogEntryConstraints"/>; their messages differ from the ones this pins, so this stays the validate stage's own report.
 /// </summary>
 public static class ChangelogEntryValidator
 {
 	/// <summary>
-	/// Validates an already-parsed <see cref="ChangelogEntryDto"/> against <paramref name="config"/>
+	/// Parses <paramref name="yaml"/> and validates it. A parse failure is a single error finding (<c>YAML parse error: ...</c>) and no product ids;
+	/// an empty file has no findings.
+	/// </summary>
+	public static EntryFileValidation Check(
+		string filePath,
+		string yaml,
+		ChangelogConfiguration config,
+		ChangelogEntryType? labelDerivedType,
+		IReadOnlySet<string>? knownProducts,
+		int? filenamePrNumber = null
+	)
+	{
+		try
+		{
+			var dto = ReleaseNotesSerialization.ParseEntryDto(yaml);
+			if (dto is null)
+				return new EntryFileValidation([], []);
+			var findings = Validate(filePath, dto, config, labelDerivedType, knownProducts, filenamePrNumber);
+			var productIds = dto.Products?.Select(p => p.Product).OfType<string>().Where(id => !string.IsNullOrWhiteSpace(id)).ToList()
+				?? [];
+			return new EntryFileValidation(findings, productIds);
+		}
+		catch (YamlException ex)
+		{
+			return new EntryFileValidation([new EntryFileFinding(filePath, FindingSeverity.Error, $"YAML parse error: {ex.Message}")], []);
+		}
+	}
+
+	/// <summary>Validates the file's text: <see cref="Check"/> without the product ids, an empty file validated as an entry with nothing in it.</summary>
+	public static IReadOnlyList<EntryFileFinding> Validate(
+		string filePath,
+		string yaml,
+		ChangelogConfiguration config,
+		ChangelogEntryType? labelDerivedType,
+		IReadOnlySet<string>? knownProducts,
+		int? filenamePrNumber = null
+	) =>
+		Validate(
+			filePath,
+			ReleaseNotesSerialization.ParseEntryDto(yaml) ?? new ChangelogEntryDto(),
+			config,
+			labelDerivedType,
+			knownProducts,
+			filenamePrNumber
+		);
+
+	/// <summary>
+	/// Validates a parsed entry against <paramref name="config"/>
 	/// and optionally against a <paramref name="labelDerivedType"/> from the PR labels.
 	/// </summary>
 	/// <param name="filePath">Repo-relative path used in finding messages.</param>
@@ -41,7 +90,7 @@ public static class ChangelogEntryValidator
 	/// Valid product IDs (already normalised to lower-kebab-case) from products.yml.
 	/// Null means skip product membership check.
 	/// </param>
-	public static IReadOnlyList<EntryFileFinding> Validate(
+	private static IReadOnlyList<EntryFileFinding> Validate(
 		string filePath,
 		ChangelogEntryDto entry,
 		ChangelogConfiguration config,

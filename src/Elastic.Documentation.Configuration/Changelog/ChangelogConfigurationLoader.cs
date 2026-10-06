@@ -6,6 +6,7 @@ using Elastic.Documentation.Catalog;
 using System.IO.Abstractions;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
+using Elastic.Documentation.Configuration.Loading;
 using Elastic.Documentation.Configuration.Serialization;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.ReleaseNotes;
@@ -41,7 +42,7 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 	/// <param name="fileSystem">The file system to read from.</param>
 	/// <param name="configPath">The path to the changelog.yml configuration file.</param>
 	/// <returns>The publish blocker configuration, or null if not found.</returns>
-	public static PublishBlocker? LoadPublishBlocker(IFileSystem fileSystem, string configPath)
+	internal static PublishBlocker? LoadPublishBlocker(IFileSystem fileSystem, string configPath)
 	{
 		if (!fileSystem.File.Exists(configPath))
 			return null;
@@ -59,18 +60,46 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 	}
 
 	/// <summary>
-	/// Loads changelog configuration from file or returns default configuration
+	/// Loads changelog configuration from file or returns the (checked) default configuration. Every diagnostic rides in the result; an error means no value.
 	/// </summary>
-	public async Task<ChangelogConfiguration?> LoadChangelogConfiguration(IDiagnosticsCollector collector, string? configPath, Cancel ctx)
+	public Task<Result<ChangelogConfiguration>> Load(string? configPath, Cancel ctx) =>
+		Run(collector => LoadCore(collector, configPath, ctx));
+
+	/// <summary>
+	/// Loads changelog configuration from a specific path, treating a missing file as a hard error.
+	/// Used in profile mode when an explicit config path was provided (e.g. in tests).
+	/// </summary>
+	public Task<Result<ChangelogConfiguration>> LoadRequired(string configPath, Cancel ctx) =>
+		Run(collector => LoadRequiredCore(collector, configPath, ctx));
+
+	/// <summary>
+	/// Discovers and loads the changelog configuration for profile mode. Unlike <see cref="Load"/>, a missing file is a hard error. It searches for
+	/// <c>changelog.yml</c> then <c>docs/changelog.yml</c> relative to the current working directory, so the command works when run from any folder that contains the file.
+	/// </summary>
+	public Task<Result<ChangelogConfiguration>> LoadForProfileMode(Cancel ctx) => Run(collector => LoadForProfileModeCore(collector, ctx));
+
+	// The parse helpers below report to a collector as they find things; a private buffer turns that into the Result (this load's
+	// diagnostics only, in emission order). Not cached: a command loads changelog.yml once or twice and a changed file must be seen.
+	private static async Task<Result<ChangelogConfiguration>> Run(Func<IDiagnosticsCollector, Task<ChangelogConfiguration?>> load)
+	{
+		var buffer = new BufferingDiagnosticsCollector();
+		var configuration = await load(buffer);
+		return configuration is null || buffer.Errors > 0
+			? Result.Failure<ChangelogConfiguration>(buffer.Diagnostics)
+			: Result.Success(configuration, buffer.Diagnostics);
+	}
+
+	private async Task<ChangelogConfiguration?> LoadCore(IDiagnosticsCollector collector, string? configPath, Cancel ctx)
 	{
 		// Determine config file path
 		var finalConfigPath = configPath ?? fileSystem.Path.Join(fileSystem.Directory.GetCurrentDirectory(), "docs", "changelog.yml");
 
 		if (!fileSystem.File.Exists(finalConfigPath))
 		{
-			// Use default configuration if file doesn't exist
+			// Use default configuration if file doesn't exist. The defaults go through the same set as a file would (and are
+			// expected to satisfy it; a test pins that), so no record leaves this loader unchecked.
 			_logger.LogWarning("Changelog configuration not found at {ConfigPath}, using defaults", finalConfigPath);
-			return ChangelogConfiguration.Default;
+			return Check(collector, ChangelogConfiguration.Default, finalConfigPath);
 		}
 
 		try
@@ -291,6 +320,12 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 			Filename = filenameStrategy
 		};
 
+		return Check(collector, configuration, configPath);
+	}
+
+	// The one check of a changelog configuration, whether it was read from a file or is the built-in default.
+	private ChangelogConfiguration? Check(IDiagnosticsCollector collector, ChangelogConfiguration configuration, string configPath)
+	{
 		var report = ChangelogConfigurationConstraints.All.Report(
 			new ChangelogConfigurationInCatalog(configuration, configurationContext.Catalog.Products)
 		);
@@ -523,15 +558,7 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 		return new BundleReleases { Github = github, Products = products };
 	}
 
-	/// <summary>
-	/// Loads changelog configuration from a specific path, treating a missing file as a hard error.
-	/// Used in profile mode when an explicit config path was provided (e.g. in tests).
-	/// </summary>
-	public async Task<ChangelogConfiguration?> LoadChangelogConfigurationRequired(
-		IDiagnosticsCollector collector,
-		string configPath,
-		Cancel ctx
-	)
+	private async Task<ChangelogConfiguration?> LoadRequiredCore(IDiagnosticsCollector collector, string configPath, Cancel ctx)
 	{
 		if (!fileSystem.File.Exists(configPath))
 		{
@@ -566,13 +593,7 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 		}
 	}
 
-	/// <summary>
-	/// Discovers and loads the changelog configuration for profile mode.
-	/// Unlike <see cref="LoadChangelogConfiguration"/>, this method treats a missing config file as a
-	/// hard error. It searches for <c>changelog.yml</c> then <c>docs/changelog.yml</c> relative to the
-	/// current working directory, so the command works when run from any folder that contains the file.
-	/// </summary>
-	public async Task<ChangelogConfiguration?> LoadChangelogConfigurationForProfileMode(IDiagnosticsCollector collector, Cancel ctx)
+	private async Task<ChangelogConfiguration?> LoadForProfileModeCore(IDiagnosticsCollector collector, Cancel ctx)
 	{
 		var cwd = fileSystem.Directory.GetCurrentDirectory();
 		var candidates = new[] { fileSystem.Path.Join(cwd, "changelog.yml"), fileSystem.Path.Join(cwd, "docs", "changelog.yml") };

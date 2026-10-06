@@ -12,7 +12,6 @@ using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.ReleaseNotes;
 using Elastic.Documentation.Services;
 using Microsoft.Extensions.Logging;
-using YamlDotNet.Core;
 
 namespace Elastic.Changelog.Evaluation;
 
@@ -25,11 +24,12 @@ public class ChangelogEntryValidationService(
 	IConfigurationContext configurationContext,
 	IGitHubPrService gitHubPrService,
 	IRunnerTempFileSystem fileSystem,
-	IEnvironmentVariables? env = null
+	IEnvironmentVariables? env = null,
+	ChangelogConfigurationLoader? configurationLoader = null
 ) : IService
 {
 	private readonly ILogger _logger = logFactory.CreateLogger<ChangelogEntryValidationService>();
-	private readonly ChangelogConfigurationLoader _configLoader = new(logFactory, configurationContext, fileSystem);
+	private readonly ChangelogConfigurationLoader _configLoader = configurationLoader ?? new(logFactory, configurationContext, fileSystem);
 	private readonly GithubDecisionMetadataWriter _metadataWriter = new(logFactory, fileSystem);
 
 	/// <summary>
@@ -38,7 +38,7 @@ public class ChangelogEntryValidationService(
 	/// </summary>
 	public async Task<bool> ValidateEntries(IDiagnosticsCollector collector, ValidateEntriesArguments input, Cancel ctx)
 	{
-		var config = await _configLoader.LoadChangelogConfiguration(collector, input.ConfigFile, ctx) ?? ChangelogConfiguration.Default;
+		var config = (await _configLoader.Load(input.ConfigFile, ctx)).EmitTo(collector) ?? ChangelogConfiguration.Default;
 		var changelogDir = config.Bundle?.Directory ?? "docs/changelog";
 		var defaultBranch = config.Bundle?.Branch ?? "main";
 
@@ -134,7 +134,7 @@ public class ChangelogEntryValidationService(
 
 		// ── Parse files, validate filenames, run field-level rules ───────────────────────────
 		var allFindings = new List<EntryFileFinding>();
-		var entriesByFile = new Dictionary<string, ChangelogEntryDto?>(StringComparer.OrdinalIgnoreCase);
+		var productIdsByFile = new Dictionary<string, IReadOnlyList<string>>(StringComparer.OrdinalIgnoreCase);
 		var filenamePrNumbers = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
 		foreach (var relPath in filesToValidate)
 		{
@@ -152,24 +152,10 @@ public class ChangelogEntryValidationService(
 			}
 
 			var rawYaml = await fileSystem.File.ReadAllTextAsync(fullPath, ctx);
-			ChangelogEntryDto? dto = null;
-			try
-			{
-				var normalized = ReleaseNotesSerialization.NormalizeYaml(rawYaml);
-				dto = ReleaseNotesSerialization.GetEntryDeserializer().Deserialize<ChangelogEntryDto>(normalized);
-				if (dto is not null)
-				{
-					var fnNum = filenamePrNumbers.TryGetValue(relPath, out var n) ? n : (int?)null;
-					var findings = ChangelogEntryValidator.Validate(relPath, dto, config, labelDerivedType, knownProducts, fnNum);
-					allFindings.AddRange(findings);
-				}
-			}
-			catch (YamlException ex)
-			{
-				allFindings.Add(new EntryFileFinding(relPath, FindingSeverity.Error, $"YAML parse error: {ex.Message}"));
-			}
-
-			entriesByFile[relPath] = dto;
+			var fnNum = filenamePrNumbers.TryGetValue(relPath, out var n) ? n : (int?)null;
+			var validation = ChangelogEntryValidator.Check(relPath, rawYaml, config, labelDerivedType, knownProducts, fnNum);
+			allFindings.AddRange(validation.Findings);
+			productIdsByFile[relPath] = validation.ProductIds;
 		}
 
 		// ── Cross-repo PR existence check ────────────────────────────────────────────────────
@@ -179,13 +165,11 @@ public class ChangelogEntryValidationService(
 		foreach (var (relPath, _) in filenamePrNumbers)
 		{
 			var candidateRepos = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-			if (entriesByFile.TryGetValue(relPath, out var dto) && dto?.Products is { Count: > 0 })
+			if (productIdsByFile.TryGetValue(relPath, out var productIds) && productIds.Count > 0)
 			{
-				foreach (var ep in dto.Products)
+				foreach (var id in productIds)
 				{
-					if (string.IsNullOrWhiteSpace(ep.Product))
-						continue;
-					var productId = ep.Product.Replace('_', '-').ToLowerInvariant();
+					var productId = id.Replace('_', '-').ToLowerInvariant();
 					if (availableProducts.TryGetValue(productId, out var product) && !string.IsNullOrWhiteSpace(product.Repository))
 					{
 						// RepositoryDto values are bare names (e.g. "elasticsearch") — qualify with owner.

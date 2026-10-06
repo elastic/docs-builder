@@ -88,14 +88,14 @@ public class ChangelogUploadService(
 	ILoggerFactory logFactory,
 	IChangelogFileSystem fileSystem,
 	IConfigurationContext? configurationContext = null,
-	IAmazonS3? s3Client = null
+	IAmazonS3? s3Client = null,
+	ChangelogConfigurationLoader? configurationLoader = null
 ) : IService
 {
 	private readonly ILogger _logger = logFactory.CreateLogger<ChangelogUploadService>();
 	private readonly IChangelogFileSystem _fileSystem = fileSystem;
-	private readonly ChangelogConfigurationLoader? _configLoader = configurationContext != null
-		? new ChangelogConfigurationLoader(logFactory, configurationContext, fileSystem)
-		: null;
+	private readonly ChangelogConfigurationLoader? _configLoader = configurationLoader
+		?? (configurationContext != null ? new ChangelogConfigurationLoader(logFactory, configurationContext, fileSystem) : null);
 
 	public async Task<bool> Upload(IDiagnosticsCollector collector, ChangelogUploadArguments args, Cancel ctx)
 	{
@@ -245,15 +245,7 @@ public class ChangelogUploadService(
 		if (string.IsNullOrWhiteSpace(yaml))
 			return null;
 
-		try
-		{
-			var entry = ReleaseNotesSerialization.DeserializeEntry(yaml);
-			return entry.IsMarker ? entry.Link : null;
-		}
-		catch (Exception)
-		{
-			return null;
-		}
+		return ReleaseNotesLoader.LoadEntry(yaml, "marker.yaml").Value is { IsMarker: true } entry ? entry.Link : null;
 	}
 
 	internal IReadOnlyList<UploadTarget> DiscoverUploadTargets(
@@ -328,7 +320,14 @@ public class ChangelogUploadService(
 			try
 			{
 				var content = _fileSystem.File.ReadAllText(filePath);
-				entry = ReleaseNotesSerialization.DeserializeEntry(content);
+				var loaded = ReleaseNotesLoader.LoadEntry(content, fileName, filePath);
+				entry = loaded.Value;
+				if (entry is null)
+					_logger.LogWarning(
+						"Could not read entry from {File}: {Message}; using filename for key",
+						filePath,
+						loaded.Diagnostics.Select(d => d.Message).FirstOrDefault()
+					);
 			}
 			catch (Exception ex)
 			{
@@ -358,32 +357,14 @@ public class ChangelogUploadService(
 		if (entry is null)
 			return (fileName, []);
 
-		var prNumbers = entry.Prs?.Select(pr => ChangelogTextUtilities.ExtractPrNumber(pr))
-			.Where(n => n.HasValue)
-			.Select(n => n!.Value)
-			.Distinct()
-			.OrderBy(n => n)
-			.ToList();
-
-		if (prNumbers is null or { Count: 0 })
+		if (entry.CanonicalKeyAndMarkers(fileName) is not { } placement)
 		{
 			logger?.LogWarning("Entry {File} has no PR references; using filename as-is for key", fileName);
 			return (fileName, []);
 		}
 
-		var primaryPr = prNumbers[0]; // already sorted ascending, min is first
-		var canonicalFileName = $"{primaryPr}.yaml";
-
-		if (prNumbers.Count == 1)
-			return (canonicalFileName, []);
-
-		var markerContent = ReleaseNotesSerialization.SerializeEntry(new ChangelogEntry
-		{
-			Link = primaryPr.ToString(System.Globalization.CultureInfo.InvariantCulture)
-		});
-		var markers = prNumbers.Skip(1).Select(pr => ($"{pr}.yaml", markerContent)).ToList();
-
-		return (canonicalFileName, markers);
+		var markers = placement.Markers.Select(m => (m.FileName, ReleaseNotesLoader.Serialize(m.Marker))).ToList();
+		return (placement.CanonicalFileName, markers);
 	}
 
 	/// <summary>
@@ -526,7 +507,7 @@ public class ChangelogUploadService(
 		try
 		{
 			var content = _fileSystem.File.ReadAllText(filePath);
-			var bundle = ReleaseNotesSerialization.DeserializeBundle(content);
+			var bundle = ReleaseNotesLoader.LoadBundle(content, filePath).OrThrowIfMissing();
 
 			return bundle.Products.Select(p => p.ProductId).Where(p => !string.IsNullOrWhiteSpace(p)).Distinct().ToList();
 		}
@@ -603,7 +584,7 @@ public class ChangelogUploadService(
 		if (!string.IsNullOrWhiteSpace(args.Directory) || _configLoader == null)
 			return CollectBundleScanDirectories(args.Directory, null);
 
-		var config = await _configLoader.LoadChangelogConfiguration(collector, args.Config, ctx).ConfigureAwait(false);
+		var config = (await _configLoader.Load(args.Config, ctx).ConfigureAwait(false)).EmitTo(collector);
 		return CollectBundleScanDirectories(null, config);
 	}
 
@@ -615,7 +596,7 @@ public class ChangelogUploadService(
 		if (_configLoader == null)
 			return "docs/changelog";
 
-		var config = await _configLoader.LoadChangelogConfiguration(collector, args.Config, ctx);
+		var config = (await _configLoader.Load(args.Config, ctx)).EmitTo(collector);
 		return config?.Bundle?.Directory ?? "docs/changelog";
 	}
 }

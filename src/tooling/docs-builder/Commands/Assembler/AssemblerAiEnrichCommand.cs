@@ -4,6 +4,7 @@
 
 using Actions.Core.Services;
 using Elastic.Documentation;
+using Elastic.Documentation.Assembler;
 using Elastic.Documentation.Assembler.Indexing;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
@@ -19,7 +20,7 @@ namespace Documentation.Builder.Commands.Assembler;
 internal sealed class AssemblerAiEnrichCommand(
 	ILoggerFactory logFactory,
 	IDiagnosticsCollector collector,
-	AssemblyConfiguration configuration,
+	AssembleContextProvider contexts,
 	IConfigurationContext configurationContext,
 	ICoreService githubActionsService
 )
@@ -46,7 +47,7 @@ internal sealed class AssemblerAiEnrichCommand(
 	{
 		await using var serviceInvoker = new ServiceInvoker(collector);
 		var fs = CheckoutsFileSystem.FromWorkingDirectory();
-		var service = new AssemblerAiEnrichService(logFactory, configuration, configurationContext, githubActionsService);
+		var service = new AssemblerAiEnrichService(logFactory, contexts, configurationContext, githubActionsService);
 		serviceInvoker.AddCommand(service, async (s, col, ctx) => await s.AiEnrich(col, fs, es, environment, bootstrapOnly, ctx));
 		return await serviceInvoker.InvokeAsync(ct);
 	}

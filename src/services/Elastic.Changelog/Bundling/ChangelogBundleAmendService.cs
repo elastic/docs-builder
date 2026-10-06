@@ -77,7 +77,8 @@ public class ChangelogBundleAmendService(
 	IChangelogFileSystem fileSystem,
 	IConfigurationContext? configurationContext = null,
 	CdnChangelogEntryFetcher? entryFetcher = null,
-	CdnChangelogFetcher? bundleFetcher = null
+	CdnChangelogFetcher? bundleFetcher = null,
+	ChangelogConfigurationLoader? configurationLoader = null
 ) : IService
 {
 	/// <summary>
@@ -89,9 +90,8 @@ public class ChangelogBundleAmendService(
 	private readonly IChangelogFileSystem _fileSystem = fileSystem;
 	private readonly CdnChangelogEntryFetcher _entryFetcher = entryFetcher ?? new CdnChangelogEntryFetcher(logFactory);
 	private readonly CdnChangelogFetcher _bundleFetcher = bundleFetcher ?? new CdnChangelogFetcher(logFactory, fileSystem);
-	private readonly ChangelogConfigurationLoader? _configLoader = configurationContext != null
-		? new ChangelogConfigurationLoader(logFactory, configurationContext, fileSystem)
-		: null;
+	private readonly ChangelogConfigurationLoader? _configLoader = configurationLoader
+		?? (configurationContext != null ? new ChangelogConfigurationLoader(logFactory, configurationContext, fileSystem) : null);
 
 	/// <summary>
 	/// Amends a bundle with additional or excluded changelog entries, creating a new immutable amend file.
@@ -113,7 +113,7 @@ public class ChangelogBundleAmendService(
 			ChangelogConfiguration? changelogConfig = null;
 			if (_configLoader != null)
 			{
-				changelogConfig = await _configLoader.LoadChangelogConfiguration(collector, null, ctx);
+				changelogConfig = (await _configLoader.Load(null, ctx)).EmitTo(collector);
 				if (changelogConfig is null)
 					return false;
 			}
@@ -183,7 +183,7 @@ public class ChangelogBundleAmendService(
 			if (removeSources is null)
 				return false;
 
-			var effectiveEntries = BundleAmendMerger.MergeEntries(parentBundle.Entries, existingAmendBundles);
+			var effectiveEntries = parentBundle.ApplyAmends([.. existingAmendBundles.Select(a => new BundleAmend(a))]).Value!.Entries;
 			var appliedExclusionKeys = BundleAmendMerger.CollectAppliedExclusionKeys(existingAmendBundles);
 
 			var excludeEntries = new List<BundledEntry>();
@@ -283,9 +283,11 @@ public class ChangelogBundleAmendService(
 			// Copy the parent's complete products (target, repo, owner) so the amend is self-contained:
 			// upload destination discovery, the registry's per-product target, and :version:-filtered
 			// CDN fetches all derive from a bundle file's own products.
-			var amendBundle = AmendDocumentBuilder.Build(parentBundle.Products, entries, excludeEntries, description: amendDescription);
+			var amendResult = Bundle.AmendOf(parentBundle.Products, entries, excludeEntries, amendDescription);
+			if (amendResult.EmitErrorsTo(collector) is not { } amendBundle)
+				return false;
 
-			var yaml = ReleaseNotesSerialization.SerializeBundle(amendBundle);
+			var yaml = ReleaseNotesLoader.Serialize(amendBundle);
 
 			var outputDir = _fileSystem.Path.GetDirectoryName(amendFilePath);
 			if (!string.IsNullOrWhiteSpace(outputDir) && !_fileSystem.Directory.Exists(outputDir))
@@ -621,7 +623,7 @@ public class ChangelogBundleAmendService(
 
 		try
 		{
-			var bundle = ReleaseNotesSerialization.DeserializeBundle(fetched.Value.Content);
+			var bundle = ReleaseNotesLoader.LoadBundle(fetched.Value.Content, fetched.Value.FileName).OrThrowIfMissing();
 			return new ResolvedParent
 			{
 				Bundle = bundle,
@@ -702,7 +704,7 @@ public class ChangelogBundleAmendService(
 			{
 				var content = await _fileSystem.File.ReadAllTextAsync(amendPath, ctx);
 				var fileName = _fileSystem.Path.GetFileName(amendPath);
-				byFileName[fileName] = ReleaseNotesSerialization.DeserializeBundle(content);
+				byFileName[fileName] = ReleaseNotesLoader.LoadBundle(content, amendPath).OrThrowIfMissing();
 			}
 			catch (Exception ex) when (ex is not (OutOfMemoryException or StackOverflowException or ThreadAbortException))
 			{
@@ -721,7 +723,7 @@ public class ChangelogBundleAmendService(
 	{
 		try
 		{
-			bundle = ReleaseNotesSerialization.DeserializeBundle(content);
+			bundle = ReleaseNotesLoader.LoadBundle(content, fileName).OrThrowIfMissing();
 			return true;
 		}
 		catch (Exception ex) when (ex is not (OutOfMemoryException or StackOverflowException or ThreadAbortException))
@@ -761,7 +763,7 @@ public class ChangelogBundleAmendService(
 		var fileName = source.FileName;
 		var fileChecksum = source.Content is null ? string.Empty : ChangelogBundlingService.ComputeSha1(source.Content);
 
-		var strictExclusion = new BundledEntry { File = new BundledFile { Name = fileName, Checksum = fileChecksum } };
+		var strictExclusion = BundledEntry.Exclusion(fileName, fileChecksum);
 
 		var exclusionKey = BundleAmendMerger.BuildExclusionKey(strictExclusion);
 		if (!string.IsNullOrEmpty(fileChecksum) && appliedExclusionKeys.Contains(exclusionKey))
@@ -776,7 +778,7 @@ public class ChangelogBundleAmendService(
 
 		if (matchedEntry == null)
 		{
-			var nameOnlyExclusion = new BundledEntry { File = new BundledFile { Name = fileName, Checksum = string.Empty } };
+			var nameOnlyExclusion = BundledEntry.Exclusion(fileName, string.Empty);
 
 			var nameMatches = effectiveEntries.Where(entry => BundleAmendMerger.EntryMatchesExclusion(entry, nameOnlyExclusion)).ToList();
 
@@ -803,17 +805,15 @@ public class ChangelogBundleAmendService(
 		}
 
 		var exclusionChecksum = matchedEntry.File?.Checksum ?? fileChecksum;
-		var appliedKey = BundleAmendMerger.BuildExclusionKey(new BundledEntry
-		{
-			File = new BundledFile { Name = fileName, Checksum = exclusionChecksum }
-		});
+		var exclusion = BundledEntry.Exclusion(fileName, exclusionChecksum);
+		var appliedKey = BundleAmendMerger.BuildExclusionKey(exclusion);
 		if (appliedExclusionKeys.Contains(appliedKey))
 		{
 			collector.EmitWarning(source.DisplayPath, $"Changelog '{fileName}' is already excluded by a prior amend file; skipping.");
 			return RemoveExclusionResult.Skip.Instance;
 		}
 
-		return new RemoveExclusionResult.Add(new BundledEntry { File = new BundledFile { Name = fileName, Checksum = exclusionChecksum } });
+		return new RemoveExclusionResult.Add(exclusion);
 	}
 
 	private abstract record RemoveExclusionResult
@@ -836,7 +836,7 @@ public class ChangelogBundleAmendService(
 		try
 		{
 			var text = await _fileSystem.File.ReadAllTextAsync(bundlePath, ctx);
-			var bundle = ReleaseNotesSerialization.DeserializeBundle(text);
+			var bundle = ReleaseNotesLoader.LoadBundle(text, bundlePath).OrThrowIfMissing();
 			return (true, bundle);
 		}
 		catch (Exception ex) when (ex is not (OutOfMemoryException or StackOverflowException))
@@ -857,25 +857,9 @@ public class ChangelogBundleAmendService(
 			}
 
 			var checksum = ChangelogBundlingService.ComputeSha1(source.Content);
-			var normalizedYaml = ReleaseNotesSerialization.NormalizeYaml(source.Content);
-			var entry = ReleaseNotesSerialization.DeserializeEntry(normalizedYaml);
+			var entry = ReleaseNotesLoader.LoadEntry(source.Content, source.FileName, source.DisplayPath).OrThrowIfMissing();
 
-			return new BundledEntry
-			{
-				File = new BundledFile { Name = source.FileName, Checksum = checksum },
-				Type = entry.Type,
-				Title = entry.Title,
-				Products = entry.Products,
-				Description = entry.Description,
-				Impact = entry.Impact,
-				Action = entry.Action,
-				FeatureId = entry.FeatureId,
-				Highlight = entry.Highlight,
-				Subtype = entry.Subtype,
-				Areas = entry.Areas,
-				Prs = entry.Prs,
-				Issues = entry.Issues
-			};
+			return entry.ToBundledEntry(source.FileName, checksum);
 		}
 		catch (Exception ex) when (ex is not (OutOfMemoryException or StackOverflowException))
 		{

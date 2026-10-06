@@ -58,7 +58,7 @@ public class ChangelogConfigurationGoldenTests
 			"/repo"
 		);
 		var loader = new ChangelogConfigurationLoader(NullLoggerFactory.Instance, context, fs);
-		return await loader.LoadChangelogConfiguration(new CapturingDiagnosticsCollector(), configPath, CancellationToken.None);
+		return (await loader.Load(configPath, CancellationToken.None)).EmitTo(new CapturingDiagnosticsCollector());
 	}
 
 	private static async Task AssertChangelog(string name, string sourceFile)
@@ -86,11 +86,7 @@ public class ChangelogConfigurationGoldenTests
 		JsonNode snapshot;
 		try
 		{
-			var configuration = await loader.LoadChangelogConfiguration(
-				collector,
-				configPath,
-				TestContext.Current!.Execution.CancellationToken
-			);
+			var configuration = (await loader.Load(configPath, TestContext.Current!.Execution.CancellationToken)).EmitTo(collector);
 			snapshot = Obj(("value", configuration is null ? null : Reflect(configuration, 0)));
 		}
 		catch (Exception e)

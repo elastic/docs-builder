@@ -83,6 +83,19 @@ public record ApplicableTo
 		Product = AppliesCollection.GenerallyAvailable
 	};
 
+	/// <summary>Only the stack applicability: the block <c>stack: &lt;lifecycle&gt; &lt;version&gt;</c> declares.</summary>
+	public static ApplicableTo ForStack(AppliesCollection stack) => new() { Stack = stack };
+
+	/// <summary>Only the stack applicability, of one lifecycle (<paramref name="version"/> null means every version).</summary>
+	public static ApplicableTo ForStack(ProductLifecycle lifecycle, VersionSpec? version) =>
+		ForStack(AppliesCollection.Of([new Applicability { Lifecycle = lifecycle, Version = version }]));
+
+	/// <summary>
+	/// The same applicability once its parse diagnostics were reported: a reader collects them where it has no collector, the renderer reports them
+	/// and drops them so they are not reported again.
+	/// </summary>
+	public ApplicableTo WithoutDiagnostics() => this with { Diagnostics = null };
+
 	private static readonly VersionSpec DefaultVersion = VersionSpec.TryParse("9.0", out var v) ? v : AllVersionsSpec.Instance;
 
 	public static ApplicableTo Default { get; } = new()

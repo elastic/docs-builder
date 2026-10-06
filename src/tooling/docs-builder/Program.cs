@@ -29,10 +29,7 @@ try
 {
 	builder = Host
 		.CreateApplicationBuilder()
-		.AddDocumentationServiceDefaults(cliOptions ?? new GlobalCliOptions(), (s, p) =>
-		{
-			_ = s.AddSingleton(AssemblyLoader.LoadOnce(p).OrThrow());
-		})
+		.AddDocumentationServiceDefaults(cliOptions ?? new GlobalCliOptions())
 		.AddDocumentationToolingDefaults()
 		.AddDocumentationOpenTelemetry(new OtelRegistration("docs-builder")
 		{

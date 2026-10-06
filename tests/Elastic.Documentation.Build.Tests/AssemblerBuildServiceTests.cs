@@ -5,6 +5,7 @@
 using System.IO.Abstractions;
 using System.IO.Abstractions.TestingHelpers;
 using AwesomeAssertions;
+using Elastic.Documentation.Assembler;
 using Elastic.Documentation.Assembler.Building;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
@@ -89,7 +90,13 @@ public class AssemblerBuildServiceTests : IDisposable
 		var assemblyConfig = AssemblyLoader.Deserialize("references: {}");
 
 		// Act
-		var service = new AssemblerBuildService(_loggerFactory, assemblyConfig, configContext, _coreService, env);
+		var service = new AssemblerBuildService(
+			_loggerFactory,
+			new AssembleContextProvider(assemblyConfig, configContext),
+			configContext,
+			_coreService,
+			env
+		);
 
 		// Assert
 		service.Should().NotBeNull();

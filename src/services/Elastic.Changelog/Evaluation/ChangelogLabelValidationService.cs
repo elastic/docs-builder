@@ -26,11 +26,12 @@ public class ChangelogLabelValidationService(
 	IConfigurationContext configurationContext,
 	ICoreService coreService,
 	IRunnerTempFileSystem fileSystem,
-	IEnvironmentVariables? env = null
+	IEnvironmentVariables? env = null,
+	ChangelogConfigurationLoader? configurationLoader = null
 ) : IService
 {
 	private readonly ILogger _logger = logFactory.CreateLogger<ChangelogLabelValidationService>();
-	private readonly ChangelogConfigurationLoader _configLoader = new(logFactory, configurationContext, fileSystem);
+	private readonly ChangelogConfigurationLoader _configLoader = configurationLoader ?? new(logFactory, configurationContext, fileSystem);
 	private readonly GithubDecisionMetadataWriter _metadataWriter = new(logFactory, fileSystem);
 
 	/// <summary>
@@ -41,7 +42,7 @@ public class ChangelogLabelValidationService(
 	/// </summary>
 	public async Task<bool> ValidateLabels(IDiagnosticsCollector collector, ValidateLabelsArguments input, Cancel ctx)
 	{
-		var config = await _configLoader.LoadChangelogConfiguration(collector, input.Config, ctx) ?? ChangelogConfiguration.Default;
+		var config = (await _configLoader.Load(input.Config, ctx)).EmitTo(collector) ?? ChangelogConfiguration.Default;
 		var defaultBranch = config.Bundle?.Branch ?? "main";
 
 		// Label-based skip check: all products blocked → skipped

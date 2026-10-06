@@ -49,4 +49,16 @@ public record BundledProduct
 	/// If not specified, defaults to "elastic".
 	/// </summary>
 	public string? Owner { get; init; }
+
+	/// <summary>
+	/// A bundle's product from the pieces a CLI names: the product id, a target (<c>*</c> is none) and a lifecycle's text (<c>*</c> or an unrecognized one is none).
+	/// </summary>
+	public static BundledProduct Of(string? productId, string? target, string? lifecycle, string? repo = null, string? owner = null) =>
+		new(
+			productId ?? "",
+			target == "*" ? null : target,
+			ReleaseNotesOperation.ParseLifecycle(lifecycle == "*" ? null : lifecycle),
+			repo,
+			owner
+		);
 }

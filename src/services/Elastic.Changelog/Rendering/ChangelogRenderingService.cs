@@ -70,11 +70,13 @@ public enum ChangelogFileType
 public class ChangelogRenderingService(
 	ILoggerFactory logFactory,
 	IChangelogFileSystem fileSystem,
-	IConfigurationContext? configurationContext = null
+	IConfigurationContext? configurationContext = null,
+	ChangelogConfigurationLoader? configurationLoader = null
 ) : IService
 {
 	private readonly ILogger _logger = logFactory.CreateLogger<ChangelogRenderingService>();
 	private readonly IChangelogFileSystem _fileSystem = fileSystem;
+	private readonly ChangelogConfigurationLoader _configLoader = configurationLoader ?? new(logFactory, configurationContext!, fileSystem);
 
 	public async Task<bool> RenderChangelogs(IDiagnosticsCollector collector, RenderChangelogsArguments input, Cancel ctx)
 	{
@@ -108,8 +110,7 @@ public class ChangelogRenderingService(
 			var outputSetup = SetupOutput(collector, input, resolvedResult.AllProducts);
 
 			// Load changelog configuration
-			var configLoader = new ChangelogConfigurationLoader(logFactory, configurationContext!, _fileSystem);
-			var config = await configLoader.LoadChangelogConfiguration(collector, input.Config, ctx);
+			var config = (await _configLoader.Load(input.Config, ctx)).EmitTo(collector);
 			if (config == null)
 			{
 				collector.EmitError(string.Empty, "Failed to load changelog configuration");

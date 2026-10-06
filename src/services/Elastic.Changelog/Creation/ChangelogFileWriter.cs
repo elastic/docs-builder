@@ -155,40 +155,25 @@ public class ChangelogFileWriter(IFileSystem fileSystem, ILogger logger)
 		return null;
 	}
 
-	private static ChangelogEntry BuildChangelogData(CreateChangelogArguments input)
-	{
-		var entryType = ChangelogEntryTypeExtensions.TryParse(
-			input.Type,
-			out var parsed,
-			ignoreCase: true,
-			allowMatchingMetadataAttribute: true
-		) ? parsed : ChangelogEntryType.Other;
-
-		var subtype = !string.IsNullOrWhiteSpace(input.Subtype)
-			? (ChangelogEntrySubtypeExtensions.TryParse(
+	private static ChangelogEntry BuildChangelogData(CreateChangelogArguments input) =>
+		// The read-stage rules are the marker rules and an entry made here is never a marker, so the result has no finding to forward;
+		// completeness (title, type) is what the command's own validation and the commented-out fields are for.
+		ChangelogEntry.Create(
+			new CreateEntryFacts(
+				input.Title,
+				input.Type,
 				input.Subtype,
-				out var subtypeParsed,
-				ignoreCase: true,
-				allowMatchingMetadataAttribute: true
-			) ? subtypeParsed : (ChangelogEntrySubtype?)null)
-			: null;
-
-		return new()
-		{
-			Title = input.Title ?? string.Empty,
-			Type = entryType,
-			Subtype = subtype,
-			Description = input.Description,
-			Impact = input.Impact,
-			Action = input.Action,
-			FeatureId = input.FeatureId,
-			Highlight = input.Highlight,
-			Prs = NormalizeReferences(input.Prs, input.Owner, input.Repo, "pull"),
-			Products = input.Products.Select(p => p.ToProductReference()).ToList(),
-			Areas = input.Areas is { Length: > 0 } ? input.Areas.ToList() : null,
-			Issues = NormalizeReferences(input.Issues, input.Owner, input.Repo, "issues")
-		};
-	}
+				input.Description,
+				input.Impact,
+				input.Action,
+				input.FeatureId,
+				input.Highlight,
+				NormalizeReferences(input.Prs, input.Owner, input.Repo, "pull"),
+				input.Products.Select(p => p.ToProductReference()).ToList(),
+				input.Areas,
+				NormalizeReferences(input.Issues, input.Owner, input.Repo, "issues")
+			)
+		).Value!;
 
 	/// <summary>
 	/// Expands bare numeric PR/issue references to full <c>https://github.com/owner/repo/{pull|issues}/N</c>
@@ -223,21 +208,9 @@ public class ChangelogFileWriter(IFileSystem fileSystem, ILogger logger)
 
 	private static string GenerateYaml(ChangelogEntry data, ChangelogConfiguration config, bool titleMissing, bool typeMissing)
 	{
-		// Create a mutable copy for serialization adjustments
-		var areas = data.Areas;
-		var issues = data.Issues;
-
-		// Temporarily remove title if missing so it doesn't appear in YAML
-		// Type is an enum so we keep it and add a comment if missing
-		var serializeData = data with
-		{
-			Title = titleMissing ? string.Empty : data.Title,
-			Areas = areas != null && areas.Count == 0 ? null : areas,
-			Issues = issues != null && issues.Count == 0 ? null : issues
-		};
-
+		// A missing title is absent from the YAML and an empty list is not written: both are the serializer's shaping (ReleaseNotesLoader.Serialize)
 		// Use centralized serialization which handles DTO conversion
-		var yaml = ReleaseNotesSerialization.SerializeEntry(serializeData);
+		var yaml = ReleaseNotesLoader.Serialize(data);
 
 		// Comment out missing title/type fields - insert at the beginning of the YAML data
 		if (titleMissing || typeMissing)
@@ -350,14 +323,5 @@ public class ChangelogFileWriter(IFileSystem fileSystem, ILogger logger)
 		return result;
 	}
 
-	private static string GenerateConciseYaml(ChangelogEntry data)
-	{
-		var serializeData = data with
-		{
-			Areas = data.Areas is { Count: 0 } ? null : data.Areas,
-			Issues = data.Issues is { Count: 0 } ? null : data.Issues
-		};
-
-		return ReleaseNotesSerialization.SerializeEntry(serializeData);
-	}
+	private static string GenerateConciseYaml(ChangelogEntry data) => ReleaseNotesLoader.Serialize(data);
 }

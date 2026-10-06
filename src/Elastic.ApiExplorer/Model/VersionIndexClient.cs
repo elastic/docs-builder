@@ -9,6 +9,7 @@ using Elastic.Documentation;
 using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.DocumentationSets;
+using Elastic.Documentation.OpenApiIndex;
 
 namespace Elastic.ApiExplorer.Model;
 
@@ -70,6 +71,8 @@ public sealed class VersionIndexClient : IDisposable
 	private bool _rootIndexFetched;
 	private RootVersionIndex? _rootIndex;
 	private string? _rootIndexFetchError;
+	private IReadOnlyList<string> _rootIndexFindings = [];
+	private int _findingsReported;
 
 	public VersionIndexClient(
 		Uri? baseUri = null,
@@ -112,6 +115,7 @@ public sealed class VersionIndexClient : IDisposable
 			return NoRepositoryFallback(apiKey, apiConfig, collector);
 
 		var (index, fetchError) = await GetRootIndexAsync(ctx).ConfigureAwait(false);
+		ReportIndexFindingsOnce(collector);
 		if (fetchError is not null)
 			return MissingEntryFallback(apiKey, apiConfig, $"Version index at {_indexUri} could not be fetched ({fetchError})", collector);
 
@@ -260,8 +264,15 @@ public sealed class VersionIndexClient : IDisposable
 
 			try
 			{
-				_rootIndex = await FetchIndexAsync(ctx).ConfigureAwait(false);
-				_rootIndexFetchError = _rootIndex is null ? "the response was empty or could not be parsed" : null;
+				var loaded = await FetchIndexAsync(ctx).ConfigureAwait(false);
+				_rootIndex = loaded.Index;
+				_rootIndexFetchError = loaded.Error;
+				// the index belongs to the CDN, not to this build: what it breaks is reported once as a warning and never stops the render
+				_rootIndexFindings = loaded.Report?.Violations
+					.Where(v => v.Severity == Nullean.Entities.Severity.Error)
+					.Select(v => $"Version index at {_indexUri} breaks {v.ConstraintId}: {v.Message}")
+					.ToList()
+					?? [];
 			}
 			catch (Exception ex) when (ex is HttpRequestException or JsonException or IOException)
 			{
@@ -280,7 +291,7 @@ public sealed class VersionIndexClient : IDisposable
 		}
 	}
 
-	private async Task<RootVersionIndex?> FetchIndexAsync(Cancel ctx)
+	private async Task<VersionIndexLoad> FetchIndexAsync(Cancel ctx)
 	{
 		Exception? lastError = null;
 		for (var attempt = 1; attempt <= _maxAttempts; attempt++)
@@ -289,11 +300,7 @@ public sealed class VersionIndexClient : IDisposable
 			try
 			{
 				await using var stream = await FetchStreamAsync(_indexUri, attempt, ctx).ConfigureAwait(false);
-				return await JsonSerializer.DeserializeAsync(
-					stream,
-					VersionIndexJsonContext.Default.DictionaryStringDictionaryStringDictionaryStringVersionIndexEntry,
-					ctx
-				).ConfigureAwait(false);
+				return await VersionIndexLoader.LoadAsync(stream, ctx).ConfigureAwait(false);
 			}
 			catch (HttpRequestException ex)
 			{
@@ -306,7 +313,15 @@ public sealed class VersionIndexClient : IDisposable
 
 		if (lastError is not null)
 			throw lastError;
-		return null;
+		return new VersionIndexLoad(null, VersionIndexLoader.EmptyMessage, null);
+	}
+
+	private void ReportIndexFindingsOnce(IDiagnosticsCollector collector)
+	{
+		if (Interlocked.Exchange(ref _findingsReported, 1) == 1)
+			return;
+		foreach (var finding in _rootIndexFindings)
+			collector.EmitGlobalWarning(finding);
 	}
 
 	private Task<Stream> FetchStreamAsync(Uri uri, int attempt, Cancel ctx)

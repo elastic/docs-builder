@@ -6,7 +6,6 @@ using System.IO.Abstractions;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.ReleaseNotes;
 using Elastic.Documentation.Versions;
-using YamlDotNet.Core;
 
 namespace Elastic.Documentation.Configuration.ReleaseNotes;
 
@@ -16,20 +15,14 @@ namespace Elastic.Documentation.Configuration.ReleaseNotes;
 public class BundleLoader(IFileSystem fileSystem)
 {
 	/// <summary>
-	/// Loads all changelog bundles from a folder.
+	/// Loads all changelog bundles from a folder: each file is parsed, mapped and checked against <see cref="BundleReadConstraints"/> by
+	/// <see cref="ReleaseNotesLoader.LoadBundle"/>, and the bundles that were loaded (amend files already merged) are checked once against
+	/// <see cref="LoadedBundleConstraints"/>. Every finding rides in the <see cref="Result{T}"/>: a bundle that cannot be parsed or an entry
+	/// without inline content is an error diagnostic (the bundle or entry is skipped), a broken rule is reported at its own severity. The value is
+	/// always the bundles that could be loaded, so a caller reports the diagnostics and carries on.
 	/// </summary>
 	/// <param name="bundlesFolderPath">The absolute path to the bundles folder.</param>
-	/// <param name="emitWarning">Callback to emit warnings during loading.</param>
-	/// <param name="emitDiagnostic">
-	/// Receives every finding of <see cref="LoadedBundleConstraints"/> for the bundles that were loaded (amend files already merged),
-	/// each checked once, here. When null the bundles are not checked.
-	/// </param>
-	/// <returns>A list of successfully loaded bundles.</returns>
-	public IReadOnlyList<LoadedBundle> LoadBundles(
-		string bundlesFolderPath,
-		Action<string> emitWarning,
-		Action<Diagnostic>? emitDiagnostic = null
-	)
+	public Result<IReadOnlyList<LoadedBundle>> LoadBundles(string bundlesFolderPath)
 	{
 		var yamlFiles = fileSystem
 			.Directory
@@ -37,75 +30,74 @@ public class BundleLoader(IFileSystem fileSystem)
 			.Concat(fileSystem.Directory.EnumerateFiles(bundlesFolderPath, "*.yml"))
 			.ToList();
 
+		var diagnostics = new List<Diagnostic>();
 		var loadedBundles = new List<LoadedBundle>();
 
 		foreach (var bundleFile in yamlFiles)
 		{
-			var bundleData = LoadBundle(bundleFile, emitWarning);
-			if (bundleData == null)
-				continue;
+			var fileName = fileSystem.Path.GetFileName(bundleFile);
+			var text = fileSystem.File.ReadAllText(bundleFile);
 
-			var version = GetVersionFromBundle(bundleData) ?? fileSystem.Path.GetFileNameWithoutExtension(bundleFile);
-			var repo = GetRepoFromBundle(bundleData);
-			var owner = GetOwnerFromBundle(bundleData);
-			var entries = ResolveEntries(bundleData, fileSystem.Path.GetFileName(bundleFile), emitWarning);
-
-			loadedBundles.Add(new LoadedBundle(version, repo, owner, bundleData, bundleFile, entries));
+			if (LoadOne(text, bundleFile, fileName, diagnostics) is { } loaded)
+				loadedBundles.Add(loaded);
 		}
 
-		// Merge amend files with their parent bundles
-		loadedBundles = MergeAmendFiles(loadedBundles, emitWarning);
-
-		if (emitDiagnostic is not null)
-		{
-			foreach (var loaded in loadedBundles)
-			{
-				foreach (var diagnostic in LoadedBundleConstraints.All.Report(loaded).ToDiagnostics(loaded.FilePath))
-					emitDiagnostic(diagnostic);
-			}
-		}
-
-		return loadedBundles;
+		return Finish(loadedBundles, diagnostics, LoadedBundleConstraints.All);
 	}
 
 	/// <summary>
-	/// Loads bundles from in-memory YAML content rather than a folder. Used by the <c>changelog</c>
+	/// Loads bundles from in-memory YAML content rather than a folder, with the same checks as <see cref="LoadBundles"/>. Used by the <c>changelog</c>
 	/// directive in <c>cdn:</c> mode, where bundle files are fetched over HTTP.
 	/// Amend sidecars (numbered and <c>.amend-notes</c>) are still merged by file name.
 	/// </summary>
 	/// <param name="bundles">Bundle file name and raw YAML content pairs.</param>
-	/// <param name="emitWarning">Callback to emit warnings during loading.</param>
-	/// <returns>A list of successfully loaded bundles.</returns>
-	public IReadOnlyList<LoadedBundle> LoadBundlesFromContent(
-		IReadOnlyList<(string FileName, string Content)> bundles,
-		Action<string> emitWarning
-	)
+	public Result<IReadOnlyList<LoadedBundle>> LoadBundlesFromContent(IReadOnlyList<(string FileName, string Content)> bundles)
 	{
+		var diagnostics = new List<Diagnostic>();
 		var loadedBundles = new List<LoadedBundle>(bundles.Count);
 
 		foreach (var (fileName, content) in bundles)
 		{
-			Bundle bundleData;
-			try
-			{
-				bundleData = ReleaseNotesSerialization.DeserializeBundle(content);
-			}
-			catch (YamlException e)
-			{
-				emitWarning($"Failed to parse changelog bundle '{fileName}': {e.Message}");
-				continue;
-			}
-
-			var version = GetVersionFromBundle(bundleData) ?? fileSystem.Path.GetFileNameWithoutExtension(fileName);
-			var repo = GetRepoFromBundle(bundleData);
-			var owner = GetOwnerFromBundle(bundleData);
-			var entries = ResolveEntries(bundleData, fileName, emitWarning);
-
-			loadedBundles.Add(new LoadedBundle(version, repo, owner, bundleData, fileName, entries));
+			if (LoadOne(content, fileName, fileName, diagnostics) is { } loaded)
+				loadedBundles.Add(loaded);
 		}
 
-		return MergeAmendFiles(loadedBundles, emitWarning);
+		return Finish(loadedBundles, diagnostics, LoadedBundleReadConstraints.FromContent);
 	}
+
+	// One file: parse + map + check by the loader, then the version/repo/owner every consumer derives from it.
+	private LoadedBundle? LoadOne(string text, string path, string fileName, List<Diagnostic> diagnostics)
+	{
+		var result = ReleaseNotesLoader.LoadBundle(text, path);
+		if (result.Value is not { } bundleData)
+		{
+			foreach (var failure in result.Diagnostics)
+				diagnostics.Add(failure with { Message = $"Failed to parse changelog bundle '{fileName}': {failure.Message}" });
+			return null;
+		}
+
+		diagnostics.AddRange(result.Diagnostics);
+		var version = GetVersionFromBundle(bundleData) ?? fileSystem.Path.GetFileNameWithoutExtension(path);
+		var repo = GetRepoFromBundle(bundleData);
+		var owner = GetOwnerFromBundle(bundleData);
+		var entries = ResolveEntries(bundleData, fileName, message => diagnostics.Add(Error(fileName, message)));
+		return new LoadedBundle(version, repo, owner, bundleData, path, entries);
+	}
+
+	private Result<IReadOnlyList<LoadedBundle>> Finish(
+		List<LoadedBundle> loadedBundles,
+		List<Diagnostic> diagnostics,
+		Nullean.Entities.ConstraintSet<LoadedBundle> rules
+	)
+	{
+		// Merge amend files with their parent bundles, then check what was loaded
+		var merged = MergeAmendFiles(loadedBundles, message => diagnostics.Add(Error(string.Empty, message)));
+		foreach (var loaded in merged)
+			diagnostics.AddRange(Result.From(rules.Report(loaded), loaded.FilePath).Diagnostics);
+		return Result.Success<IReadOnlyList<LoadedBundle>>(merged, diagnostics);
+	}
+
+	private static Diagnostic Error(string file, string message) => new() { Severity = Severity.Error, File = file, Message = message };
 
 	/// <summary>
 	/// Resolves entries from a bundle. Bundles are always self-contained: an entry without inline
@@ -158,30 +150,8 @@ public class BundleLoader(IFileSystem fileSystem)
 	/// <param name="bundles">The sorted list of bundles to merge.</param>
 	/// <returns>A list of bundles where same-target bundles are merged.</returns>
 	public static IReadOnlyList<LoadedBundle> MergeBundlesByTarget(IReadOnlyList<LoadedBundle> bundles)
-	{
-		if (bundles.Count <= 1)
-			return bundles;
-
-		return bundles.GroupBy(b => b.Version).Select(MergeBundleGroup).OrderByDescending(b => VersionOrDate.Parse(b.Version)).ToList();
-	}
-
-	/// <summary>
-	/// Loads a single bundle from a file.
-	/// </summary>
-	private Bundle? LoadBundle(string filePath, Action<string> emitWarning)
-	{
-		try
-		{
-			var bundleContent = fileSystem.File.ReadAllText(filePath);
-			return ReleaseNotesSerialization.DeserializeBundle(bundleContent);
-		}
-		catch (YamlException e)
-		{
-			var fileName = fileSystem.Path.GetFileName(filePath);
-			emitWarning($"Failed to parse changelog bundle '{fileName}': {e.Message}");
-			return null;
-		}
-	}
+	// the domain operation; a merge breaks no rule the sources did not, so there is no finding to forward
+	=> LoadedBundle.MergeByTarget(bundles).Value ?? bundles;
 
 	/// <summary>
 	/// Gets the version from a bundle's first product.
@@ -217,49 +187,6 @@ public class BundleLoader(IFileSystem fileSystem)
 	}
 
 	/// <summary>
-	/// Merges a group of bundles with the same target version into a single bundle.
-	/// </summary>
-	private static LoadedBundle MergeBundleGroup(IGrouping<string, LoadedBundle> group)
-	{
-		var bundlesList = group.ToList();
-
-		if (bundlesList.Count == 1)
-			return bundlesList[0];
-
-		// Merge entries from all bundles
-		var mergedEntries = bundlesList.SelectMany(b => b.Entries).ToList();
-
-		// Combine repo names from all contributing bundles
-		var combinedRepo = string.Join("+", bundlesList.Select(b => b.Repo).Distinct().OrderBy(r => r));
-
-		// Use the first bundle's metadata as the base
-		var first = bundlesList[0];
-
-		var descriptions = bundlesList.Select(b => b.Data?.Description).Where(d => !string.IsNullOrEmpty(d)).ToList();
-
-		var mergedDescription = descriptions.Count switch
-		{
-			0 => null,
-			1 => descriptions[0],
-			_ => string.Join("\n\n", descriptions)
-		};
-
-		var releaseDates = bundlesList.Select(b => b.Data?.ReleaseDate).Where(d => d.HasValue).Select(d => d!.Value).Distinct().ToList();
-
-		var mergedReleaseDate = releaseDates.Count switch
-		{
-			0 => (DateOnly?)null,
-			_ => releaseDates[0]
-		};
-
-		var mergedData = first.Data != null
-			? first.Data with { Description = mergedDescription, ReleaseDate = mergedReleaseDate }
-			: new Bundle { Description = mergedDescription, ReleaseDate = mergedReleaseDate };
-
-		return new LoadedBundle(first.Version, combinedRepo, first.Owner, mergedData, first.FilePath, mergedEntries);
-	}
-
-	/// <summary>
 	/// Merges amend files with their parent bundles.
 	/// Numbered sidecars (<c>{baseName}.amend-{N}.yaml</c>) apply in numeric order, then the
 	/// reconciler-owned <c>{baseName}.amend-notes.yaml</c> sidecar.
@@ -290,12 +217,9 @@ public class BundleLoader(IFileSystem fileSystem)
 				continue;
 
 			var orderedAmends = group.OrderBy(a => BundleAmendMerger.GetAmendMergeOrder(a.FilePath)).ToList();
-			var orderedAmendData = orderedAmends.Select(a => a.Data).ToList();
-			var numberedAmendData = orderedAmends.Where(a => !BundleAmendMerger.IsNotesAmendFile(a.FilePath)).Select(a => a.Data).ToList();
+			var amends = orderedAmends.Select(a => new BundleAmend(a.Data, !BundleAmendMerger.IsNotesAmendFile(a.FilePath))).ToList();
 
-			var mergedEntryList = BundleAmendMerger.MergeEntries(parentBundle.Data.Entries, orderedAmendData);
-			var mergedDescription = BundleAmendMerger.MergeDescription(parentBundle.Data.Description, numberedAmendData);
-			var mergedBundleData = parentBundle.Data with { Entries = mergedEntryList, Description = mergedDescription };
+			var mergedBundleData = parentBundle.Data.ApplyAmends(amends).Value ?? parentBundle.Data;
 			var resolvedEntries = ResolveEntries(mergedBundleData, fileSystem.Path.GetFileName(parentPath), emitWarning);
 
 			mergedParents[parentPath] = new LoadedBundle(
