@@ -606,6 +606,16 @@ public class OperationEndpointTests
 			.BeFalse();
 
 	[Test]
+	public void AreInterchangeable_SameResponseHeaderInDifferentCase_IsTrue() =>
+		OperationEndpoint
+			.AreInterchangeable([
+				WithResponseHeader(HttpMethod.Get, "X-Elastic-Product"),
+				WithResponseHeader(HttpMethod.Post, "x-elastic-product")
+			])
+			.Should()
+			.BeTrue();
+
+	[Test]
 	public void AreInterchangeable_SameResponseHeaders_IsTrue() =>
 		OperationEndpoint
 			.AreInterchangeable([

@@ -186,8 +186,10 @@ public sealed partial record OperationEndpoint(
 		string.Join(
 			',',
 			(headers ?? new Dictionary<string, IOpenApiHeader>()).Select(
-				static h => $"{h.Key}={(h.Value?.Required == true ? "required" : "optional")}:{SchemaKey(h.Value?.Schema)}"
-			).Order(StringComparer.OrdinalIgnoreCase)
+				// Header names are case-insensitive, so X-Elastic-Product and x-elastic-product are the same header.
+				static h =>
+					$"{h.Key.ToLowerInvariant()}={(h.Value?.Required == true ? "required" : "optional")}:{SchemaKey(h.Value?.Schema)}"
+			).Order(StringComparer.Ordinal)
 		);
 
 	/// <summary>
