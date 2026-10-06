@@ -202,6 +202,28 @@ describe('API examples carousel', () => {
         expect(slicing.hasAttribute('hidden')).toBe(false)
     })
 
+    it('closes the preview on Escape even when the page prevents the key', () => {
+        initApiExamples()
+        document.addEventListener('keydown', (e) => e.preventDefault())
+        document
+            .querySelector<HTMLElement>(
+                '[data-scenario="term"] .is-active [data-code-preview]'
+            )!
+            .click()
+        const dialog = document.querySelector<HTMLDialogElement>(
+            'dialog.api-code-preview'
+        )!
+        dialog.close = jest.fn(() => dialog.remove())
+
+        dialog
+            .querySelector('button')!
+            .dispatchEvent(
+                new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })
+            )
+
+        expect(dialog.close).toHaveBeenCalled()
+    })
+
     it('previews the code of a card in a dialog', () => {
         initApiExamples()
         const button = document.querySelector<HTMLElement>(
