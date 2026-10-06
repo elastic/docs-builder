@@ -113,8 +113,8 @@ public sealed partial record OperationEndpoint(
 	/// <summary>
 	/// Separate operations only merge their methods when they are the same call: the same non-path parameters
 	/// (name, requiredness and schema), the same request body (requiredness and schema per media type), the
-	/// same response schema per status and media type, the same security requirements, the same lifecycle
-	/// (deprecated, beta), and the same servers.
+	/// same response schema and headers per status and media type, the same security requirements, the same
+	/// lifecycle (deprecated, beta), and the same servers.
 	/// </summary>
 	public static bool AreInterchangeable(IReadOnlyList<ApiOperation> operations)
 	{
@@ -131,9 +131,9 @@ public sealed partial record OperationEndpoint(
 		var body = operation.RequestBody is { } requestBody
 			? $"{(requestBody.Required ? "required" : "optional")}:{ContentKey(requestBody.Content)}"
 			: "";
-		var responses = (operation.Responses ?? []).Select(static r => $"{r.Key}:{ContentKey(r.Value?.Content)}").Order(
-			StringComparer.Ordinal
-		);
+		var responses = (operation.Responses ?? []).Select(
+			static r => $"{r.Key}:{ContentKey(r.Value?.Content)}:{HeadersKey(r.Value?.Headers)}"
+		).Order(StringComparer.Ordinal);
 		var lifecycle = $"{(operation.Deprecated ? "deprecated" : "")}:{(OpenApiExtensionReader.IsBeta(operation) ? "beta" : "")}";
 		// Absent servers fall back to the document's; an operation that names its own is a different call.
 		var servers = operation.Servers is null
@@ -151,6 +151,14 @@ public sealed partial record OperationEndpoint(
 			+ "#"
 			+ servers;
 	}
+
+	private static string HeadersKey(IDictionary<string, IOpenApiHeader>? headers) =>
+		string.Join(
+			',',
+			(headers ?? new Dictionary<string, IOpenApiHeader>()).Select(
+				static h => $"{h.Key}={(h.Value?.Required == true ? "required" : "optional")}:{SchemaKey(h.Value?.Schema)}"
+			).Order(StringComparer.OrdinalIgnoreCase)
+		);
 
 	/// <summary>
 	/// The alternatives a caller may authenticate with, each as its schemes and scopes. Absent means the document's

@@ -393,6 +393,61 @@ public class OperationEndpointTests
 			.Should()
 			.BeFalse();
 
+	private static ApiOperation WithResponseHeader(HttpMethod method, string? header, bool required = false) =>
+		new(
+			method,
+			new OpenApiOperation
+			{
+				Responses = new OpenApiResponses
+				{
+					["200"] = new OpenApiResponse
+					{
+						Description = "ok",
+						Headers = header is null
+							? null
+							: new Dictionary<string, IOpenApiHeader>
+							{
+								[header] = new OpenApiHeader
+								{
+									Required = required,
+									Schema = new OpenApiSchema { Type = JsonSchemaType.String }
+								}
+							}
+					}
+				}
+			},
+			"/foo",
+			new OpenApiPathItem(),
+			"foo"
+		);
+
+	[Test]
+	public void AreInterchangeable_OneResponseDeclaresAHeader_IsFalse() =>
+		OperationEndpoint
+			.AreInterchangeable([WithResponseHeader(HttpMethod.Get, "X-Elastic-Product"), WithResponseHeader(HttpMethod.Post, null)])
+			.Should()
+			.BeFalse();
+
+	[Test]
+	public void AreInterchangeable_SameHeaderButDifferentRequiredness_IsFalse() =>
+		OperationEndpoint
+			.AreInterchangeable([
+				WithResponseHeader(HttpMethod.Get, "X-Elastic-Product", required: true),
+				WithResponseHeader(HttpMethod.Post, "X-Elastic-Product")
+			])
+			.Should()
+			.BeFalse();
+
+	[Test]
+	public void AreInterchangeable_SameResponseHeaders_IsTrue() =>
+		OperationEndpoint
+			.AreInterchangeable([
+				WithResponseHeader(HttpMethod.Get, "X-Elastic-Product"),
+				WithResponseHeader(HttpMethod.Post, "X-Elastic-Product")
+			])
+			.Should()
+			.BeTrue();
+
 	private static ApiOperation WithSecurity(HttpMethod method, IList<OpenApiSecurityRequirement>? security) =>
 		new(
 			method,
