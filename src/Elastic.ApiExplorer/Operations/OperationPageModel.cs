@@ -213,12 +213,16 @@ public partial record OperationPageModel
 			supplemental?.DescriptionOr(operation.Description) ?? operation.Description,
 			siblings
 		);
+		var requestExamples = MapExamples(operation.RequestBody?.Content?.FirstOrDefault().Value?.Examples, options.RenderMarkdown);
 		var codeSamples = OpenApiExtensionReader.ParseCodeSamples(operation);
 		var servers = operation.Servers is { Count: > 0 } ? operation.Servers : document.Servers;
 		if (codeSamples.Count == 0)
-			codeSamples = SyntheticCodeSamples.Create(apiOperation.OperationType, apiOperation.Route, operation, servers);
+		{
+			// Built around the first example's body, so the samples attach to that example and carry its request.
+			var body = requestExamples.FirstOrDefault(static e => !string.IsNullOrWhiteSpace(e.JsonValue))?.JsonValue;
+			codeSamples = SyntheticCodeSamples.Create(apiOperation.OperationType, apiOperation.Route, operation, servers, body);
+		}
 
-		var requestExamples = MapExamples(operation.RequestBody?.Content?.FirstOrDefault().Value?.Examples, options.RenderMarkdown);
 		var responseExamples = MapResponseExamples(operation.Responses, options.RenderMarkdown);
 		var scenarios = WithClientDocs(
 			WithOperationIdentity(
