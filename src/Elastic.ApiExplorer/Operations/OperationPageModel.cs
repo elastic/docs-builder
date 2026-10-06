@@ -168,11 +168,12 @@ public partial record OperationPageModel
 	public IReadOnlyList<string> QueryParameterNames => NamesOf(QueryParameters.Select(static q => q.Parameter.Name));
 
 	public IReadOnlyList<string> RequestPropertyNames =>
-		NamesOf(
-			RequestProperties is not null
-				? RequestProperties.Items.Select(static p => p.Name)
-				: (RequestUnionVariants?.Variants ?? []).Select(static v => v.DisplayName)
-		);
+		NamesOf(RequestProperties is not null ? RequestProperties.Items.Select(static p => p.Name) : VariantNames(RequestUnionVariants));
+
+	/// <summary>Names a collapsed section header lists; an array variant keeps its <c>[]</c> so it stays apart from the plain one.</summary>
+	internal static IEnumerable<string> VariantNames(ApiUnionVariants? variants) =>
+		(variants?.Variants ?? []).Select(static v => v.IsArrayVariant ? $"{v.DisplayName}[]" : v.DisplayName);
+
 	public required string? DescriptionMarkdown { get; init; }
 	public required IReadOnlyList<ApiPostSection> PostSections { get; init; }
 	public required string RequestContentType { get; init; }

@@ -967,6 +967,60 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture)
 	}
 
 	[Test]
+	public async Task VariantNames_ArrayAndPlainVariantOfOneSchema_StayDistinct()
+	{
+		var json =
+			"""
+			{
+			  "openapi": "3.0.3",
+			  "info": { "title": "t", "version": "1" },
+			  "paths": {},
+			  "components": {
+			    "schemas": {
+			      "Cat": { "type": "object", "properties": { "lives": { "type": "integer" } } },
+			      "Body": {
+			        "oneOf": [
+			          { "$ref": "#/components/schemas/Cat" },
+			          { "type": "array", "items": { "$ref": "#/components/schemas/Cat" } }
+			        ]
+			      }
+			    }
+			  }
+			}
+			""";
+		var path = Path.Join(Path.GetTempPath(), $"variant-names-{Guid.NewGuid():N}.json");
+		await File.WriteAllTextAsync(path, json, TestContext.Current!.Execution.CancellationToken);
+		try
+		{
+			var loaded = await OpenApiDocument.LoadAsync(
+				path,
+				new OpenApiReaderSettings { LeaveStreamOpen = false },
+				TestContext.Current!.Execution.CancellationToken
+			);
+			var document = loaded.Document!;
+			var builder = new ApiPropertyTreeBuilder(
+				document,
+				new PropertyDisplayOptions { RenderMarkdown = s => new HtmlString($"<p>{s}</p>"), ApiRootUrl = "/api/doc/fixture" }
+			);
+
+			var variants = OperationPageModel.BuildTopLevelUnionVariants(
+				new OpenApiSchemaReference("Body", document),
+				new PropertyTreeScope { Prefix = "req", IsRequest = true },
+				new SchemaAnalyzer(document),
+				builder
+			);
+
+			variants!.Variants.Select(v => v.DisplayName).Should().Equal("Cat", "Cat");
+			OperationPageModel.VariantNames(variants).Should().Equal("Cat[]", "Cat");
+		}
+		finally
+		{
+			if (File.Exists(path))
+				File.Delete(path);
+		}
+	}
+
+	[Test]
 	public async Task BuildTopLevelUnionVariants_RequestBodyAnyOf_ExpandsVariantsWithTheirProperties()
 	{
 		var json =
