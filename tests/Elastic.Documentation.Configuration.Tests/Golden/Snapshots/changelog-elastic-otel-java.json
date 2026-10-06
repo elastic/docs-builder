@@ -169,7 +169,16 @@
       "file": "/repo/docs/changelog.yml",
       "line": null,
       "column": null,
+      "ruleId": "profile-fields-not-deprecated",
       "message": "bundle.profiles.edot-java-release.output_products is deprecated. Use 'product: <id>' instead."
+    },
+    {
+      "severity": "Warning",
+      "file": "/repo/docs/changelog.yml",
+      "line": null,
+      "column": null,
+      "ruleId": "profile-output-removed",
+      "message": "Profile 'edot-java-release': 'output' is no longer supported. Remove it: bundle output names are derived by convention as '{repo}-{product}-{version}.yaml'."
     }
   ]
 }

@@ -6,6 +6,7 @@
       "file": "/repo/docs/changelog.yml",
       "line": null,
       "column": null,
+      "ruleId": "filename-keyed-by-pr",
       "message": "filename: 'timestamp' is no longer supported. Changelog entries are keyed by PR number; for items with no PR use 'changelog note'."
     }
   ]

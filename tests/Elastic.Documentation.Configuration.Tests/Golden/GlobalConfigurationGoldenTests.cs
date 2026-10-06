@@ -14,6 +14,7 @@ using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Configuration.RelatedLearning;
 using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Configuration.Versions;
+using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.Publishing;
 using Elastic.Documentation.Search;
@@ -293,7 +294,9 @@ public class GlobalConfigurationGoldenTests
 	{
 		var collector = new CapturingDiagnosticsCollector();
 		var file = new MockFileSystem().FileInfo.New(Path.Join(BaselineDirectory, "config", fileName));
-		var valid = SiteNavigationLoader.Validate(collector, navigation, file);
+		var result = Result.From(SiteNavigationConstraints.All.Report(navigation), file.FullName);
+		result.EmitTo(collector);
+		var valid = !result.HasErrors;
 		return Obj(
 			("phantoms", Arr(navigation.Phantoms, p => Str(p.Source))),
 			("toc", Arr(navigation.TableOfContents, ProjectSiteEntry)),

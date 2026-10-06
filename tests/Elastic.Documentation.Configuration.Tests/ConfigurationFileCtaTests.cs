@@ -401,6 +401,7 @@ public class ConfigurationFileCtaTests
 	private static ResolvedDocumentationSet CreateConfiguration(DocumentationSetDto docSet, DiagnosticsCollector collector)
 	{
 		var fileSystem = new MockFileSystem(new Dictionary<string, MockFileData> { { "/docs/docset.yml", new MockFileData("") } }, "/docs");
+		TocFixtures.EnsureTableOfContents(docSet, fileSystem, "/docs");
 
 		var configPath = fileSystem.FileInfo.New("/docs/docset.yml");
 		var docsDir = fileSystem.DirectoryInfo.New("/docs");

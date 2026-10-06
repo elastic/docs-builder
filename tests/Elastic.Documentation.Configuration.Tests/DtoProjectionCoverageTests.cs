@@ -106,7 +106,8 @@ public class DtoProjectionCoverageTests
 				nameof(DocumentationSetDto.Cta),
 				nameof(DocumentationSetDto.TableOfContents),
 				nameof(DocumentationSetDto.FolderExcludedFiles),
-				nameof(DocumentationSetDto.TocDefaultCtas)
+				nameof(DocumentationSetDto.TocDefaultCtas),
+				nameof(DocumentationSetDto.TocAuthoring)
 			)
 			.Ignores(
 				ProjectionCoverage.Ignore(
@@ -141,6 +142,7 @@ public class DtoProjectionCoverageTests
 				nameof(ApiProductEntryDto.Repository),
 				nameof(ApiProductEntryDto.Children),
 				nameof(ApiProductEntryDto.Catalog),
+				nameof(ApiProductEntryDto.UnknownKeys),
 				nameof(ApiProductEntryDto.Line),
 				nameof(ApiProductEntryDto.Column),
 				nameof(ApiProductEntryDto.ProductLine),

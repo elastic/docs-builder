@@ -135,5 +135,14 @@
       "docs"
     ]
   },
-  "diagnostics": []
+  "diagnostics": [
+    {
+      "severity": "Warning",
+      "file": "/repo/docs/changelog.yml",
+      "line": null,
+      "column": null,
+      "ruleId": "bundle-rule-types-areas-valid",
+      "message": "rules.bundle: type 'other' is not a configured type. Configured types: breaking-change, feature, enhancement, bug-fix, docs"
+    }
+  ]
 }

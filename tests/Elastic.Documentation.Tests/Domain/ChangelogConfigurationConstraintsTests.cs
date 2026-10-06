@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using Elastic.Documentation.Catalog;
-using Elastic.Documentation.Constraints;
+using Nullean.Entities.CsCheck;
 using Elastic.Documentation.ReleaseNotes;
 
 namespace Elastic.Documentation.Tests.Domain;
@@ -12,8 +12,7 @@ namespace Elastic.Documentation.Tests.Domain;
 /// The changelog configuration constraints are checked on configurations built directly, with no loader involved. The
 /// valid configuration sets every section a rule looks at, so each counter-example changes one value and breaks one rule.
 /// </summary>
-[InheritsTests]
-public class ChangelogConfigurationConstraintsTests : ConstraintSetTests<ChangelogConfigurationInCatalog>
+public class ChangelogConfigurationConstraintsTests
 {
 	private static ProductCatalog Products =>
 		ProductCatalog.FromPublicProducts(new Dictionary<string, Product>
@@ -178,14 +177,42 @@ public class ChangelogConfigurationConstraintsTests : ConstraintSetTests<Changel
 							Create = new CreateRules { ByProduct = new Dictionary<string, CreateRules> { ["nope"] = new() } }
 						}
 					},
-			["filename-keyed-by-pr"] = c => c with { Filename = FilenameStrategy.Timestamp }
+			["filename-keyed-by-pr"] = c => c with { Filename = FilenameStrategy.Timestamp },
+			["pivot-label-unique"] =
+				c => WithPivot(c, p => p with { Features = new() { ["feature:a"] = "shared", ["feature:b"] = "shared" } }),
+			["bundle-rule-types-areas-valid"] =
+				c => WithBundleRules(
+					c,
+					BundleRules(PerProductRule, includeProducts: ["elasticsearch"]) with
+					{
+						Blocker = new PublishBlocker { Types = ["nope"] }
+					}
+				),
+			["output-directory-not-file"] = c => WithBundle(c, b => b with { OutputDirectory = "docs/releases/bundle.yml" }),
+#pragma warning disable CS0618 // the rules still check the obsolete fields
+			["profile-output-removed"] = c => WithProfile(c, new BundleProfile { Product = "elasticsearch", Output = "bundle.yaml" }),
+#pragma warning restore CS0618
+			["profile-primary-product-unique"] =
+				c => WithBundle(
+					c,
+					b =>
+						b with
+						{
+							Profiles = new Dictionary<string, BundleProfile>
+							{
+								["release"] = new BundleProfile { Product = "elasticsearch" },
+								["other"] = new BundleProfile { Product = "elasticsearch" }
+							}
+						}
+				)
 		};
 
-	protected override IReadOnlyList<Constraint<ChangelogConfigurationInCatalog>> Constraints => ChangelogConfigurationConstraints.All;
+	[Test]
+	public void Laws() => ChangelogConfigurationConstraints.All.Laws(Valid(), CounterExamples);
 
-	protected override ChangelogConfigurationInCatalog Valid() => new(ValidConfiguration(), Products);
+	private static ChangelogConfigurationInCatalog Valid() => new(ValidConfiguration(), Products);
 
-	protected override IReadOnlyDictionary<string, Func<ChangelogConfigurationInCatalog, ChangelogConfigurationInCatalog>> CounterExamples =>
+	private static IReadOnlyDictionary<string, Func<ChangelogConfigurationInCatalog, ChangelogConfigurationInCatalog>> CounterExamples =>
 		ConfigurationCounterExamples.ToDictionary(
 			kv => kv.Key,
 			kv =>

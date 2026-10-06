@@ -27,8 +27,7 @@ public class DomainPurityTests
 		"Elastic.Documentation.Content",
 		"Elastic.Documentation.Search",
 		"Elastic.Documentation.ReleaseNotes",
-		"Elastic.Documentation.Links",
-		"Elastic.Documentation.Constraints"
+		"Elastic.Documentation.Links"
 	];
 
 	private static readonly string[] ForbiddenNamespacePrefixes =

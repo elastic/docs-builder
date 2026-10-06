@@ -92,6 +92,20 @@ public class SiteNavigationFilterTests
 		SiteNavigationLoader.ForAssembly(navigation, assembly, skipPrivateRepositories: false).Should().BeSameAs(navigation);
 	}
 
+	[Test]
+	public void Load_DuplicatePathPrefixes_ResultCarriesTheViolationsAndNothingElseChecksThem()
+	{
+		var assembly = AssemblyLoader.Deserialize("references:\n  private-a:\n    private: true", skipPrivateRepositories: false);
+		var file = new MockFileSystem().FileInfo.New(Path.Join(Paths.WorkingDirectoryRoot.FullName, "navigation.yml"));
+		const string yaml = "toc:\n  - toc: docs-content://a\n    path_prefix: same\n  - toc: other://b\n    path_prefix: same\n";
+
+		var result = SiteNavigationLoader.Load(yaml, file, assembly, skipPrivateRepositories: false);
+
+		result.HasErrors.Should().BeTrue();
+		result.Value.Should().NotBeNull();
+		result.Diagnostics.Should().Contain(d => d.RuleId == "path-prefixes-unique" && d.File == file.FullName);
+	}
+
 	/// <summary>
 	/// A private mount at the top level promotes its children to the top level. The text rewrite cannot express this: it
 	/// re-indents promoted lines by four columns less, which for a top-level entry yields invalid YAML.

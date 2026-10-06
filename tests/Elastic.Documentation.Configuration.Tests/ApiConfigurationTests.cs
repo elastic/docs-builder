@@ -905,6 +905,7 @@ public class ConfigurationFileApiTests
 		foreach (var name in extraMarkdownFiles ?? [])
 			files[Path.Join(root, "docs", "api", "elasticsearch", name)] = new MockFileData("# extra");
 		var fileSystem = new MockFileSystem(files, root);
+		TocFixtures.EnsureTableOfContents(docSet, fileSystem, Path.Join(root, "docs"));
 
 		var configPath = fileSystem.FileInfo.New(configFilePath);
 		var docsDir = fileSystem.DirectoryInfo.New(Path.Join(root, "docs"));

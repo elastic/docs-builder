@@ -264,7 +264,7 @@ public class LinkAllowlistSanitizerTests() : ChangelogTestBase()
 	{
 		var yaml = """
 			references:
-			  elastic/foo:
+			  foo:
 			    private: true
 			""";
 		var asm = AssemblyLoader.Deserialize(yaml, skipPrivateRepositories: false);
@@ -329,13 +329,13 @@ public class LinkAllowlistSanitizerTests() : ChangelogTestBase()
 		var yaml =
 			"""
 			references:
-			  elastic/elasticsearch:
+			  elasticsearch:
 			    private: false
-			  elastic/kibana:
+			  kibana:
 			    private: false
-			  elastic/secret-team:
+			  secret-team:
 			    private: true
-			  elastic/old-repo:
+			  old-repo:
 			    skip: true
 			""";
 		var asm = AssemblyLoader.Deserialize(yaml, skipPrivateRepositories: false);

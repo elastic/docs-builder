@@ -94,9 +94,9 @@ public class ChangelogInlineEntriesNoErrorTests : DirectiveTest<ChangelogBlock>
 		:::
 		"""
 		) =>
-		// Bundle has fully inline/resolved entry — no file reference needed
+		// Bundle has fully inline/resolved entry — no file reference needed (named by the convention, so the loader has nothing to say about it)
 		FileSystem.AddFile(
-			"docs/changelog/bundles/9.3.0.yaml",
+			"docs/changelog/bundles/elasticsearch-elasticsearch-9.3.0.yaml",
 			new MockFileData(
 				// language=yaml
 				"""

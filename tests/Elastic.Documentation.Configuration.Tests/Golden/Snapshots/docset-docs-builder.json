@@ -3004,5 +3004,14 @@
       }
     }
   },
-  "diagnostics": []
+  "diagnostics": [
+    {
+      "severity": "Warning",
+      "file": "<docs>/_docset.yml",
+      "line": null,
+      "column": null,
+      "ruleId": "dev-docs-has-no-effect",
+      "message": "'dev_docs' relaxes no rule and is never read; remove it."
+    }
+  ]
 }

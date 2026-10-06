@@ -791,6 +791,7 @@
       "file": "/repo/docs/changelog.yml",
       "line": null,
       "column": null,
+      "ruleId": "profile-fields-not-deprecated",
       "message": "bundle.profiles.elasticsearch-release.output_products is deprecated. Use 'product: <id>' instead."
     },
     {
@@ -798,6 +799,7 @@
       "file": "/repo/docs/changelog.yml",
       "line": null,
       "column": null,
+      "ruleId": "profile-fields-not-deprecated",
       "message": "bundle.profiles.elasticsearch-release.output_directory is deprecated. The output directory is derived automatically as bundle.output_directory/{product}."
     },
     {
@@ -805,6 +807,7 @@
       "file": "/repo/docs/changelog.yml",
       "line": null,
       "column": null,
+      "ruleId": "profile-fields-not-deprecated",
       "message": "bundle.profiles.serverless-release.output_products is deprecated. Use 'product: <id>' instead."
     },
     {
@@ -812,6 +815,7 @@
       "file": "/repo/docs/changelog.yml",
       "line": null,
       "column": null,
+      "ruleId": "profile-fields-not-deprecated",
       "message": "bundle.profiles.serverless-release.output_directory is deprecated. The output directory is derived automatically as bundle.output_directory/{product}."
     }
   ]

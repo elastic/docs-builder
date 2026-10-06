@@ -118,12 +118,18 @@ public class ConstraintProperties
 				var (@base, current) = x;
 				var catalog = new VersioningSystemCatalog
 				{
-					VersioningSystems = new Dictionary<VersioningSystemId, VersioningSystem>
-					{
-						[VersioningSystemId.Stack] = new() { Id = VersioningSystemId.Stack, Base = @base, Current = current }
-					}
+					// every id is defined, so only the base/current rule can fire
+					VersioningSystems = VersioningSystemIdExtensions
+						.GetValues()
+						.Where(id => id != VersioningSystemId.None)
+						.ToDictionary(
+							id => id,
+							id => id == VersioningSystemId.Stack
+								? new VersioningSystem { Id = id, Base = @base, Current = current }
+								: new VersioningSystem { Id = id, Base = (SemVersion)"8.0.0", Current = (SemVersion)"9.1.0" }
+						)
 				};
-				VersioningSystemConstraints.Check(catalog).Any().Should().Be(@base > current);
+				VersioningSystemConstraints.All.Validate(catalog).Any().Should().Be(@base > current);
 			},
 			print: x => $"base {x.Item1}, current {x.Item2}"
 		);
@@ -137,11 +143,19 @@ public class ConstraintProperties
 		Gens.DistinctCodexGroups.Sample(
 			groups =>
 			{
-				CodexConfigurationConstraints.Check(new CodexConfiguration { Groups = groups }).Should().BeEmpty();
+				CodexConfigurationConstraints
+					.All
+					.Validate(new CodexConfiguration { Environment = "internal", Groups = groups })
+					.Should()
+					.BeEmpty();
 				if (groups is [var first, ..])
 				{
-					var repeated = new CodexConfiguration { Groups = [.. groups, first with { Id = first.Id.ToUpperInvariant() }] };
-					CodexConfigurationConstraints.Check(repeated).Select(v => v.ConstraintId).Should().Equal("group-ids-unique");
+					var repeated = new CodexConfiguration
+					{
+						Environment = "internal",
+						Groups = [.. groups, first with { Id = first.Id.ToUpperInvariant() }]
+					};
+					CodexConfigurationConstraints.All.Validate(repeated).Select(v => v.ConstraintId).Should().Equal("group-ids-unique");
 				}
 			},
 			print: groups => string.Join(", ", groups.Select(g => g.Id))
@@ -191,7 +205,7 @@ public class ConstraintProperties
 			{
 				ProductsConfiguration = new ProductsConfig { Available = [spelling] }
 			};
-			ChangelogConfigurationConstraints.Check(configuration, Products).Should().BeEmpty();
+			ChangelogConfigurationConstraints.All.Validate(new ChangelogConfigurationInCatalog(configuration, Products)).Should().BeEmpty();
 		});
 
 	private static ProductCatalog Products =>
@@ -199,7 +213,8 @@ public class ConstraintProperties
 
 	private static IEnumerable<string> RepeatedPrefixFindings((string Repository, string Prefix)[] mounts) =>
 		SiteNavigationConstraints
-			.Check(new SiteNavigationDefinition
+			.All
+			.Validate(new SiteNavigationDefinition
 			{
 				TableOfContents =
 				[
@@ -215,7 +230,7 @@ public class ConstraintProperties
 		new([.. registries.Select((r, i) => new DiscoveredDocset(FileSystem.FileInfo.New($"/repo/candidate-{i}/docset.yml"), r))]);
 
 	private static bool Fired(DocsetDiscovery discovery, string constraintId) =>
-		DocsetDiscoveryConstraints.Check(discovery).Any(v => v.ConstraintId == constraintId);
+		DocsetDiscoveryConstraints.All.Validate(discovery).Any(v => v.ConstraintId == constraintId);
 
 	private static string Print((string Repository, string Prefix)[] mounts) =>
 		string.Join(", ", mounts.Select(m => $"{m.Repository}:{m.Prefix}"));

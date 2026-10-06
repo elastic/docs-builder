@@ -39,6 +39,6 @@ public class ApiChildSlugProperties
 		SlugGens.ChildFileName.Sample(fileName =>
 		{
 			var file = new MockFileSystem().FileInfo.New($"/docs/api/elasticsearch/{fileName}");
-			DocumentationSetRules.ApiChildSlug(fileName).Should().Be(SimpleMarkdownNavigationItem.CreateSlugFromFile(file));
+			DocumentationSetConstraints.ApiChildSlug(fileName).Should().Be(SimpleMarkdownNavigationItem.CreateSlugFromFile(file));
 		});
 }

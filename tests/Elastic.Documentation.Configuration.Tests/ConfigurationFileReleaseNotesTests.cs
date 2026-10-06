@@ -42,7 +42,7 @@ public class ConfigurationFileReleaseNotesTests
 		var (config, diagnostics) = await CreateConfiguration(DocSetWithReleaseNotes("elasticsearch", "elasticsearch"));
 
 		config.ReleaseNotesProducts.Should().ContainSingle().Which.Should().Be("elasticsearch");
-		diagnostics.Should().BeEmpty();
+		diagnostics.Should().ContainSingle(d => d.Severity == Severity.Warning).Which.Message.Should().Contain("declared more than once");
 	}
 
 	[Test]
@@ -100,6 +100,7 @@ public class ConfigurationFileReleaseNotesTests
 		var root = Paths.WorkingDirectoryRoot.FullName;
 		var configFilePath = Path.Join(root, "docs", "_docset.yml");
 		var fileSystem = new MockFileSystem(new Dictionary<string, MockFileData> { { configFilePath, new MockFileData("") } }, root);
+		TocFixtures.EnsureTableOfContents(docSet, fileSystem, Path.Join(root, "docs"));
 
 		var configPath = fileSystem.FileInfo.New(configFilePath);
 		var docsDir = fileSystem.DirectoryInfo.New(Path.Join(root, "docs"));

@@ -1,0 +1,83 @@
+// Licensed to Elasticsearch B.V under one or more agreements.
+// Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
+// See the LICENSE file in the project root for more information
+
+using AwesomeAssertions;
+using Elastic.Documentation.Links;
+using Nullean.Entities.CsCheck;
+
+namespace Elastic.Documentation.Tests.Domain;
+
+public class LinkRegistryConstraintsTests
+{
+	private static readonly DateTime Published = new(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+
+	[Test]
+	public void Laws() => LinkRegistryConstraints.All.Laws(Valid(), CounterExamples);
+
+	[Test]
+	public void ValidRegistry_BreaksNoRule() => LinkRegistryConstraints.All.Validate(Valid()).Should().BeEmpty();
+
+	[Test]
+	public void AddingANewerEntry_IsMonotonic()
+	{
+		var before = Valid();
+		var after = before.WithLinkRegistryEntry(Entry("kibana", "main") with { UpdatedAt = Published.AddDays(1) });
+		LinkRegistryConstraints.All.Check(before, after).Should().BeEmpty();
+	}
+
+	[Test]
+	public void AnOlderEntry_IsNamedWithItsRepositoryAndBranch()
+	{
+		var before = Valid();
+		var after = CounterExamples["registry-entry-updated-at-monotonic"](before);
+		LinkRegistryConstraints.All.Check(before, after).Should().ContainSingle().Which.Message.Should().Contain("kibana/main");
+	}
+
+	private static LinkRegistryEntry Entry(string repository, string branch) =>
+		new()
+		{
+			Repository = repository,
+			Branch = branch,
+			Path = $"elastic/{repository}/{branch}/links.json",
+			ETag = "etag",
+			GitReference = "abc123",
+			UpdatedAt = Published
+		};
+
+	private static LinkRegistry Registry(params (string Repository, string Branch, LinkRegistryEntry Entry)[] entries) =>
+		new()
+		{
+			Repositories = entries.GroupBy(e => e.Repository).ToDictionary(g => g.Key, g => g.ToDictionary(e => e.Branch, e => e.Entry))
+		};
+
+	private static LinkRegistry Valid() =>
+		Registry(
+			("docs-content", "main", Entry("docs-content", "main")),
+			("kibana", "main", Entry("kibana", "main")),
+			("kibana", "8.x", Entry("kibana", "8.x"))
+		);
+
+	private static LinkRegistry With(LinkRegistry r, string repository, string branch, LinkRegistryEntry entry)
+	{
+		var copy = r.Repositories.ToDictionary(x => x.Key, x => new Dictionary<string, LinkRegistryEntry>(x.Value));
+		if (!copy.TryGetValue(repository, out var branches))
+			copy[repository] = branches = [];
+		branches[branch] = entry;
+		return r with { Repositories = copy };
+	}
+
+	private static IReadOnlyDictionary<string, Func<LinkRegistry, LinkRegistry>> CounterExamples
+	{
+		get;
+	} = new Dictionary<string, Func<LinkRegistry, LinkRegistry>>
+	{
+		["registry-entry-updated-at-monotonic"] =
+			r => With(r, "kibana", "main", Entry("kibana", "main") with { UpdatedAt = Published.AddDays(-1) }),
+		["registry-entry-has-ref-and-timestamp"] = r => With(r, "kibana", "8.x", Entry("kibana", "8.x") with { GitReference = "unknown" }),
+		["repository-has-main-or-master"] = r => With(r, "tools", "dev", Entry("tools", "dev")),
+		["registry-entry-path-matches-key"] =
+			r => With(r, "kibana", "8.x", Entry("kibana", "8.x") with { Path = "elastic/kibana/8/links.json" }),
+		["registry-repository-name-single-segment"] = r => With(r, "../evil", "main", Entry("../evil", "main"))
+	};
+}

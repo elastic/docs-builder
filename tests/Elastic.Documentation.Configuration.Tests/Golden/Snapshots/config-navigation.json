@@ -1265,6 +1265,23 @@
       "elasticsearch://reference/"
     ],
     "pathPrefixesValid": true,
-    "pathPrefixDiagnostics": []
+    "pathPrefixDiagnostics": [
+      {
+        "severity": "Warning",
+        "file": "<baseline>/config/navigation.yml",
+        "line": 404,
+        "column": 17,
+        "ruleId": "mount-sources-segment-prefix-free",
+        "message": "docs-content://reference/apm-agents/ starts with docs-content://reference/apm/ without a '/' boundary, so a link to it can resolve to the shorter mount."
+      },
+      {
+        "severity": "Warning",
+        "file": "<baseline>/config/navigation.yml",
+        "line": 326,
+        "column": 13,
+        "ruleId": "mount-sources-segment-prefix-free",
+        "message": "elasticsearch://reference/elasticsearch-plugins/ starts with elasticsearch://reference/elasticsearch/ without a '/' boundary, so a link to it can resolve to the shorter mount."
+      }
+    ]
   }
 }

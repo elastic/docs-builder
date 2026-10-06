@@ -82,6 +82,16 @@ public class CrossLinkRegistryTests
 	}
 
 	[Test]
+	public void CrossLinkEntry_RejectedEntryIsDroppedByItsTrimmedText_AndKeptEntriesAreTrimmed()
+	{
+		// the rule reports the trimmed text as evidence, so an entry with surrounding whitespace is still dropped (or kept) by what the rule saw
+		var docSet = CreateDocSet(null, ["  elasticsearch  ", "  internal://docs-eng-team ", "  "]);
+		var config = CreateConfiguration(docSet);
+
+		config.CrossLinkEntries.Should().ContainSingle().Which.Should().Be(new CrossLinkEntry("elasticsearch", DocSetRegistry.Public));
+	}
+
+	[Test]
 	public void CrossLinkRepositories_MatchesCrossLinkEntries()
 	{
 		var docSet = CreateDocSet("internal", ["repo-a", "public://repo-b"]);

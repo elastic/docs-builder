@@ -138,6 +138,7 @@ public static class Golden
 				("file", Str(NormalizePath(d.File))),
 				("line", d.Line is { } l ? Num(l) : null),
 				("column", d.Column is { } c ? Num(c) : null),
+				("ruleId", d.RuleId is { } ruleId ? Str(ruleId) : null),
 				("message", Str(NormalizePath(d.Message)))
 			)
 		);

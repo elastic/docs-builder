@@ -5,6 +5,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="CsCheck" />
     <PackageReference Include="FakeItEasy" />
     <PackageReference Include="OpenTelemetry" />
     <PackageReference Include="OpenTelemetry.Exporter.InMemory" />
@@ -14,6 +15,8 @@
     <ProjectReference Include="..\..\src\services\Elastic.Documentation.Deploying\Elastic.Documentation.Deploying.csproj" />
     <ProjectReference Include="..\..\src\services\Elastic.Documentation.Assembler\Elastic.Documentation.Assembler.csproj" />
     <ProjectReference Include="..\..\src\Elastic.Codex\Elastic.Codex.csproj" />
+    <!-- Laws and the generators: how the domain constraints are tested. Not shipped. -->
+    <ProjectReference Include="$(NulleanEntitiesRoot)/src/Nullean.Entities.CsCheck/Nullean.Entities.CsCheck.csproj" />
   </ItemGroup>
 
 </Project>

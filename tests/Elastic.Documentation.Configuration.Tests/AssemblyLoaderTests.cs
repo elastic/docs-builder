@@ -119,6 +119,45 @@ public class AssemblyLoaderTests
 		_ = act.Should().Throw<Exception>().WithMessage("*'bogus' not found*");
 	}
 
+	private const string TwoBadRepositories = "references:\n  a/b:\n  c/d:\n";
+
+	[Test]
+	public void LoadYaml_TwoBadRepositories_ReportsBoth()
+	{
+		var result = AssemblyLoader.LoadYaml(TwoBadRepositories, "assembler.yml", environment: new Environment());
+
+		result.Value.Should().BeNull();
+		result
+			.Diagnostics
+			.Where(d => d.Severity == Severity.Error)
+			.Select(d => (d.RuleId, d.File, d.Message.Split('\'')[1]))
+			.Should()
+			.BeEquivalentTo([
+				("repository-name-single-segment", "assembler.yml", "a/b"),
+				("repository-name-single-segment", "assembler.yml", "c/d")
+			]);
+	}
+
+	[Test]
+	public void OrThrow_TwoBadRepositories_ListsBothInTheMessageAndCarriesTheDiagnostics()
+	{
+		var act = () => AssemblyLoader.LoadYaml(TwoBadRepositories, "assembler.yml", environment: new Environment()).OrThrow();
+
+		var exception = act.Should().Throw<ConfigurationException>().Which;
+		exception.Message.Should().Contain("Repository name 'a/b'").And.Contain("Repository name 'c/d'");
+		exception.Message.Split(System.Environment.NewLine).Should().HaveCount(2);
+		exception.Diagnostics.Count(d => d.Severity == Severity.Error).Should().Be(2);
+		exception.Lines.Should().Contain(l => l.Contains("[repository-name-single-segment]"));
+		_ = act.Should().Throw<InvalidOperationException>();
+	}
+
+	[Test]
+	public void Deserialize_TwoBadRepositories_ThrowsWithBothMessages()
+	{
+		var act = () => AssemblyLoader.Deserialize(TwoBadRepositories, environment: new Environment());
+		_ = act.Should().Throw<InvalidOperationException>().WithMessage("*Repository name 'a/b'*Repository name 'c/d'*");
+	}
+
 	[Test]
 	public void LoadOnce_SameProvider_ParsesOnce()
 	{
