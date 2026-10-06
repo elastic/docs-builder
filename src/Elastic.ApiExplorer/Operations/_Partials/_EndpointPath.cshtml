@@ -9,13 +9,13 @@
 	@if (row.AlsoMethods.Count > 0)
 	{
 		var also = string.Join(", ", row.AlsoMethods.Select(static m => m.ToUpperInvariant()));
-		<span class="api-url-also-method" title="@also works the same way: same parameters, body, and response.">also @also</span>
+		<span class="api-url-also-method" data-tippy-content="@also works the same way: same parameters, body, and response.">also @also</span>
 	}
 	@* Segments on the brace lines: Razor would otherwise emit the indentation and line breaks as text, which inline layout shows as a space after each optional segment. *@
 	<span class="api-url-path">@foreach (var segment in row.Segments)
 	{
 		if (segment.Optional)
-		{<span class="api-url-optional" title="Optional. Leave it out to call @Model.ShortestRoute">/@segment.Text</span>}
+		{<span class="api-url-optional" data-tippy-content="Optional. Leave it out to call @Model.ShortestRoute">/@segment.Text</span>}
 		else
 		{@("/" + segment.Text)}
 	}</span>

@@ -8,6 +8,7 @@ import { decorateApiCodeTokens } from './api-code-tokens'
 import { initApiExamples } from './api-examples-carousel'
 import { applyParamSummaryFit } from './api-param-summary'
 import { iconCheckEui, iconCopyEui } from './copybutton'
+import { initTooltips } from './tooltip'
 
 // Check if hidden="until-found" is supported (for find-in-page in collapsed sections)
 const supportsHiddenUntilFound = 'onbeforematch' in document.body
@@ -820,6 +821,7 @@ export function initApiPageActions(): void {
 export function initApiDocs(): void {
     // Initialize global click handlers once (uses event delegation)
     initGlobalClickHandlers()
+    initTooltips()
     initApiEndpointCopy()
     initApiResponseStatusTabs()
     initApiExamples()

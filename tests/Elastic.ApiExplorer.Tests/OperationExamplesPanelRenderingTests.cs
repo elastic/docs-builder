@@ -50,7 +50,7 @@ public class OperationExamplesPanelRenderingTests
 		html.Should().Contain("data-scenario=\"term\"");
 		html.Should().Contain(">Search slicing</span>");
 		// The chip shows just the number; the words are a tooltip and screen-reader text.
-		html.Should().Contain("title=\"4 languages\"");
+		html.Should().Contain("data-tippy-content=\"4 languages\"");
 		html.Should().Contain("<span class=\"sr-only\"> languages</span>");
 		html.Should().Contain("hidden=\"until-found\"");
 		html.Should().NotContain("api-select");

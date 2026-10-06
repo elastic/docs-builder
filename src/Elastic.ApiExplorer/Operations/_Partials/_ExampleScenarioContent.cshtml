@@ -39,8 +39,8 @@
 			@for (var i = 0; i < samples.Count; i++)
 			{
 				var sample = samples[i];
-				<section class="api-code-card api-code-carousel-card@(i == 0 ? " is-active" : "")" data-code-card data-lang="@sample.Language" aria-label="@sample.Language"@(sample.Generated ? new HtmlString(" data-generated title=\"Built from this example&rsquo;s request body\"") : HtmlString.Empty)>
-					<header class="api-code-carousel-card-header">
+				<section class="api-code-card api-code-carousel-card@(i == 0 ? " is-active" : "")" data-code-card data-lang="@sample.Language" aria-label="@sample.Language"@(sample.Generated ? new HtmlString(" data-generated") : HtmlString.Empty)>
+					<header class="api-code-carousel-card-header"@(sample.Generated ? new HtmlString(" data-tippy-content=\"Built from this example&rsquo;s request body\"") : HtmlString.Empty)>
 						<span class="api-lang-badge" data-lang="@sample.Language" aria-hidden="true"></span>
 						<span class="api-code-carousel-card-title">
 							<span class="api-code-carousel-card-language">@sample.Language</span>
@@ -66,7 +66,7 @@
 			<div class="api-code-carousel-dots" role="group" aria-label="Languages">
 				@foreach (var sample in samples)
 				{
-					<button type="button" class="api-code-carousel-dot@(sample == samples[0] ? " is-active" : "")" data-carousel-dot="@sample.Language" aria-label="@sample.Language" data-tooltip="@sample.Language" aria-current="@(sample == samples[0] ? "true" : "false")">
+					<button type="button" class="api-code-carousel-dot@(sample == samples[0] ? " is-active" : "")" data-carousel-dot="@sample.Language" aria-label="@sample.Language" data-tippy-content="@sample.Language" aria-current="@(sample == samples[0] ? "true" : "false")">
 						<span class="api-lang-badge" data-lang="@sample.Language" aria-hidden="true"></span>
 					</button>
 				}

@@ -23,7 +23,7 @@
 							@if (count > 0)
 							{
 								var noun = count == 1 ? "language" : "languages";
-								<span class="api-example-chip-count" title="@count @noun">
+								<span class="api-example-chip-count" data-tippy-content="@count @noun">
 									<svg width="12" height="12" viewBox="0 0 16 16" aria-hidden="true"><use href="#icon-code"/></svg>@count<span class="sr-only"> @noun</span>
 								</span>
 							}
