@@ -12,6 +12,17 @@ set -u
 site="${1:?usage: watch-entrypoint.sh assembler|codex [build args...]}"
 shift
 
+# The serve step always reads the default output directory, so a custom
+# --output would build to one place and serve another.
+for arg in "$@"; do
+  case "$arg" in
+    --output|--output=*|-o)
+      echo "error: --output is not supported in watch mode; the server always serves the default output directory." >&2
+      exit 1
+      ;;
+  esac
+done
+
 cli="dotnet run --project src/tooling/docs-builder --configuration debug"
 marker=/tmp/watch-last-build
 serve_pid=""
