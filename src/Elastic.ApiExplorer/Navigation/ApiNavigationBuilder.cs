@@ -109,8 +109,7 @@ public class ApiNavigationBuilder(ILogger logger, BuildContext context)
 		}
 
 		var topLevelNavigationItems = new List<IApiGroupingNavigationItem<IApiGroupingModel, INavigationItem>>();
-		var groupingEnabled = context.Configuration.Features.ApiNavGroupingEnabled;
-		var hasClassifications = groupingEnabled && classifications.Count > 1;
+		var hasClassifications = classifications.Count > 1;
 		foreach (var classification in classifications)
 		{
 			if (hasClassifications)
@@ -133,8 +132,7 @@ public class ApiNavigationBuilder(ILogger logger, BuildContext context)
 			else
 				CreateTagNavigationItems(apiUrlSuffix, classification, rootNavigation, rootNavigation, topLevelNavigationItems);
 		}
-		if (groupingEnabled)
-			CreateSchemaNavigationItems(apiUrlSuffix, openApiDocument, rootNavigation, topLevelNavigationItems);
+		CreateSchemaNavigationItems(apiUrlSuffix, openApiDocument, rootNavigation, topLevelNavigationItems);
 
 		// Add explicit children declared via 'children:' below the landing page and before the
 		// generated OpenAPI groups, in declared order.
@@ -226,10 +224,9 @@ public class ApiNavigationBuilder(ILogger logger, BuildContext context)
 		List<IEndpointOrOperationNavigationItem> endpointNavigationItems
 	)
 	{
-		var groupingEnabled = context.Configuration.Features.ApiNavGroupingEnabled;
 		foreach (var endpoint in tag.Endpoints)
 		{
-			if (groupingEnabled && endpoint.Operations.Count > 1)
+			if (endpoint.Operations.Count > 1)
 			{
 				endpointNavigationItems.Add(
 					CreateCollapsedOperationNavigationItem(apiUrlSuffix, rootNavigation, endpoint, parentNavigationItem)

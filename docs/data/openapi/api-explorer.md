@@ -352,7 +352,7 @@ An operation page lists every path of the operation, one row per path, longest p
 The paths come from either of two sources, and both produce the same rows:
 
 - The `**All methods and paths for this operation:**` (or `**Spaces method and path for this operation:**`) HTML block that bump.sh-flavoured specs put in the operation description. The block is removed from the rendered description.
-- Separate spec operations that share a grouping key, when `api-nav-grouping` is on (see below).
+- Separate spec operations that share `x-namespace` and `x-api-name` (see below).
 
 ### Prerequisites [x-req-auth]
 
@@ -459,11 +459,9 @@ The document-level `x-tagGroups` extension (from [Redocly](https://redocly.com/d
 
 The default sidebar matches bump.sh. The product overview, Authentication, Servers, and any `children:` markdown pages sit in one group. A divider separates that group from tag folders. Each OpenAPI operation is a visible child of its tag.
 
-Classification folders, collapsing operations that share a grouping key into one page, and Types pages require `FEATURE_API_NAV_GROUPING` (the `api-nav-grouping` feature flag). That flag is off by default.
+Operations that share `x-namespace` and `x-api-name` render as **one page**, built around the dominant method on the longest path. Specs without those extensions group by operation summary instead. The page URL uses the operation id without its numeric suffix: `search`, `search-1`, `search-2` and `search-3` become `operation-search`. The former per-operation URLs, such as `operation-search-2`, become redirect pages to the merged page, and they keep any `#fragment`.
 
-With the flag on, all operations that share a grouping key render as **one page**, built around the dominant method on the longest path. The page URL uses the operation id without its numeric suffix: `search`, `search-1`, `search-2` and `search-3` become `operation-search`. The former per-operation URLs, such as `operation-search-2`, become redirect pages to the merged page, and they keep any `#fragment`.
-
-When the flag is on:
+Sidebar grouping:
 
 - When `x-tagGroups` is present and valid, the API Explorer uses it as an additional level of grouping in the sidebar.
 - A group's section title links to the main API overview for that product. It is not a separate page and does not point at the first tag in the group. Tag landings stay under `/group/`.

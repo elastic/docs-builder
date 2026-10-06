@@ -23,63 +23,6 @@ namespace Elastic.ApiExplorer.Tests;
 public class ApiNavParityTests
 {
 	[Test]
-	public async Task CreateNavigation_XTagGroupsWithMultipleGroups_Default_TagsHangOffLanding()
-	{
-		var openApiJson = /*lang=json,strict*/
-			"""
-			{
-			  "openapi": "3.0.3",
-			  "info": { "title": "ES", "version": "1.0" },
-			  "paths": {
-			    "/a": { "get": { "operationId": "a1", "tags": ["watcher"], "responses": { "200": { "description": "ok" } } } },
-			    "/b": { "get": { "operationId": "b1", "tags": ["tasks"], "responses": { "200": { "description": "ok" } } } },
-			    "/c": { "get": { "operationId": "c1", "tags": ["search"], "responses": { "200": { "description": "ok" } } } }
-			  },
-			  "tags": [
-			    { "name": "watcher", "x-displayName": "Watcher" },
-			    { "name": "tasks", "x-displayName": "Task management" },
-			    { "name": "search" }
-			  ],
-			  "x-tagGroups": [
-			    { "name": "Information", "tags": ["watcher", "tasks"] },
-			    { "name": "Search", "tags": ["search"] }
-			  ]
-			}
-			""";
-
-		var (generator, document) = await CreateGeneratorWithSpec(openApiJson);
-		var navigation = generator.CreateNavigation("elasticsearch", document);
-
-		navigation.NavigationItems.OfType<ClassificationNavigationItem>().Should().BeEmpty();
-		var tags = navigation.NavigationItems.OfType<TagNavigationItem>().ToList();
-		tags.Select(t => t.NavigationTitle).Should().Equal("Task management", "Watcher", "search");
-		tags
-			.Select(t => t.Url)
-			.Should()
-			.Equal(
-				"/api/doc/elasticsearch/group/endpoint-tasks",
-				"/api/doc/elasticsearch/group/endpoint-watcher",
-				"/api/doc/elasticsearch/group/endpoint-search"
-			);
-
-		navigation.NavigationItems.OfType<StructuralNavigationItem>().Should().BeEmpty();
-		navigation.NavigationItems.OfType<SidebarSeparatorNavigationItem>().Should().BeEmpty();
-		navigation.NavigationItems.Should().AllBeOfType<TagNavigationItem>();
-
-		var model = NavigationRenderModel.Create(
-			navigation,
-			[],
-			isUsingNavigationDropdown: false,
-			isPrimaryNavEnabled: false,
-			isGlobalAssemblyBuild: false,
-			navigationPreviewEnabled: true
-		);
-		model.RootIndex!.NavigationTitle.Should().Be("Api Overview");
-		model.TreeHasSeparator.Should().BeFalse();
-		model.Tree.Select(NodeLabel).Should().Equal("Task management", "Watcher", "search");
-	}
-
-	[Test]
 	public async Task CreateNavigation_WithServers_SeparatesIntroPagesFromEndpoints()
 	{
 		var openApiJson = /*lang=json,strict*/
@@ -105,28 +48,9 @@ public class ApiNavParityTests
 	}
 
 	[Test]
-	public async Task CreateNavigation_SharedSummaryOperations_Default_EachOperationIsVisible()
+	public async Task CreateNavigation_SharedSummaryOperations_CollapsesIntoOnePage()
 	{
 		var (generator, document) = await CreateGeneratorWithSpec(SharedSummarySpec);
-		var navigation = generator.CreateNavigation("test", document);
-
-		var operations = navigation
-			.NavigationItems
-			.OfType<TagNavigationItem>()
-			.Single()
-			.NavigationItems
-			.OfType<OperationNavigationItem>()
-			.ToList();
-
-		operations.Should().HaveCount(2);
-		operations.Should().OnlyContain(op => !op.Hidden && op.Siblings.Count == 0 && op.AliasUrls.Count == 0);
-		operations.Select(op => op.Url).Should().Equal("/api/doc/test/operation/operation-op-a", "/api/doc/test/operation/operation-op-b");
-	}
-
-	[Test]
-	public async Task CreateNavigation_SharedSummaryOperations_GroupingEnabled_CollapsesIntoOnePage()
-	{
-		var (generator, document) = await CreateGeneratorWithSpec(SharedSummarySpec, apiNavGroupingEnabled: true);
 		var navigation = generator.CreateNavigation("test", document);
 
 		var page = navigation
@@ -148,18 +72,9 @@ public class ApiNavParityTests
 	}
 
 	[Test]
-	public async Task CreateNavigation_QueryContainerSchema_Default_OmitsTypesNav()
+	public async Task CreateNavigation_QueryContainerSchema_AddsTypesNav()
 	{
 		var (generator, document) = await CreateGeneratorWithSpec(QueryContainerSpec);
-		var navigation = generator.CreateNavigation("test", document);
-
-		navigation.NavigationItems.OfType<SchemaCategoryNavigationItem>().Should().BeEmpty();
-	}
-
-	[Test]
-	public async Task CreateNavigation_QueryContainerSchema_GroupingEnabled_AddsTypesNav()
-	{
-		var (generator, document) = await CreateGeneratorWithSpec(QueryContainerSpec, apiNavGroupingEnabled: true);
 		var navigation = generator.CreateNavigation("test", document);
 
 		var types = navigation
@@ -221,10 +136,7 @@ public class ApiNavParityTests
 		}
 		""";
 
-	private static async Task<(OpenApiGenerator generator, OpenApiDocument document)> CreateGeneratorWithSpec(
-		string openApiJson,
-		bool apiNavGroupingEnabled = false
-	)
+	private static async Task<(OpenApiGenerator generator, OpenApiDocument document)> CreateGeneratorWithSpec(string openApiJson)
 	{
 		var collector = new DiagnosticsCollector([]);
 		var configurationContext = TestHelpers.CreateConfigurationContext(new FileSystem());
@@ -233,7 +145,6 @@ public class ApiNavParityTests
 			DocumentationFileSystem.Resolve(Paths.WorkingDirectoryRoot.FullName),
 			configurationContext
 		);
-		context.Configuration.Features.ApiNavGroupingEnabled = apiNavGroupingEnabled;
 		var generator = new OpenApiGenerator(NullLoggerFactory.Instance, context, NoopMarkdownStringRenderer.Instance);
 
 		using var stream = new MemoryStream(System.Text.Encoding.UTF8.GetBytes(openApiJson));
