@@ -176,7 +176,14 @@ public class DocumentationWebHost
 					throw; // Re-throw to let ASP.NET Core handle it
 				}
 			})
-			.UseStaticFiles(new StaticFileOptions { FileProvider = new EmbeddedOrPhysicalFileProvider(Context), RequestPath = "/_static" });
+			.UseStaticFiles(new StaticFileOptions
+			{
+				FileProvider = new EmbeddedOrPhysicalFileProvider(Context),
+				RequestPath = "/_static",
+				// Generated pages keep the asset hash from when they were rendered, so make the
+				// browser revalidate instead of reusing a cached bundle after a Parcel rebuild.
+				OnPrepareResponse = static ctx => ctx.Context.Response.Headers.CacheControl = "no-cache"
+			});
 
 		_ = _webApplication.UseRouting();
 
