@@ -3382,13 +3382,6 @@ html:has(.api-page-shell) {
 		transform 0.25s;
 }
 
-/* Trailing room so the last card snaps to the start like the others instead of stopping where the strip
-   runs out, with the previous card hanging in view beside it: 86% card + 14% margin fills the strip, and
-   the 2px is the strip padding the snap scrolls past. */
-#api-examples-panel .api-code-carousel-card:last-child {
-	margin-right: calc(14% + 2px);
-}
-
 .api-code-carousel-card:not(.is-active) {
 	cursor: pointer;
 }
