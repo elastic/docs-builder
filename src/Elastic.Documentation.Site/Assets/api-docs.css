@@ -3515,8 +3515,11 @@ html:has(.api-page-shell) {
 	display: flex;
 }
 
+/* The page stays visible but stops competing with the code: darker, and blurred past legibility. */
 .api-code-preview::backdrop {
-	background: rgb(10 16 28 / 0.7);
+	background: rgb(10 16 28 / 0.8);
+	-webkit-backdrop-filter: blur(4px);
+	backdrop-filter: blur(4px);
 }
 
 .api-code-preview-header {
