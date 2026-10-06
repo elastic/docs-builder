@@ -50,7 +50,8 @@ public class StaticWebHost
 			.AddFilter("Microsoft.AspNetCore.Hosting.Diagnostics", LogLevel.Error)
 			.AddFilter("Microsoft.AspNetCore.StaticFiles.StaticFileMiddleware", LogLevel.Error)
 			.AddFilter("Microsoft.Hosting.Lifetime", LogLevel.Information);
-		_ = builder.WebHost.UseUrls($"http://localhost:{port}");
+		var bindAddress = Environment.GetEnvironmentVariable("DOCS_BUILDER_BIND_ADDRESS") ?? "localhost";
+		_ = builder.WebHost.UseUrls($"http://{bindAddress}:{port}");
 
 		WebApplication = builder.Build();
 		SetUpRoutes();

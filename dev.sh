@@ -12,6 +12,15 @@ _ensure_tooling() {
     || _bake --load tooling
 }
 
+# Assembler and codex run from source in the tooling image. Their services use
+# the named .artifacts volumes; --service-ports publishes the serve port.
+_cli() {
+  _ensure_tooling
+  _compose run --rm --service-ports "$@"
+}
+
+CODEX_CONFIG="${CODEX_CONFIG:-config/codex.example.yml}"
+
 _ensure_runtime() {
   docker image inspect docs-builder:local >/dev/null 2>&1 \
     || _bake --load runtime
@@ -42,6 +51,14 @@ case "${1:-help}" in
     echo "  test                 Run the unit-test suite (delegates to ./build.sh unit-test)"
     echo "  serve-api            Run the docs API at http://localhost:8081"
     echo "  serve-api-detached   Run the docs API in the background"
+    echo "  assembler            Clone, build, and serve the assembled site at http://localhost:4000"
+    echo "  assembler-clone      Clone the assembler repositories"
+    echo "  assembler-build      Build the assembled site from the clones"
+    echo "  assembler-serve      Serve the last assembler build at http://localhost:4000"
+    echo "  codex                Clone, build, and serve the codex at http://localhost:4001"
+    echo "  codex-clone          Clone the codex repositories (config: \$CODEX_CONFIG)"
+    echo "  codex-build          Build the codex from the clones"
+    echo "  codex-serve          Serve the last codex build at http://localhost:4001"
     echo "  stop-api             Stop the docs API"
     echo "  serve-mcp            Run the MCP server at http://localhost:8080 (public profile)"
     echo "  serve-mcp-internal   Run the MCP server at http://localhost:8080 (internal profile)"
@@ -105,6 +122,30 @@ case "${1:-help}" in
     ;;
   stop-mcp)
     _compose stop mcp
+    ;;
+  assembler)
+    _cli assembler assemble --serve "${@:2}"
+    ;;
+  assembler-clone)
+    _cli assembler assembler clone "${@:2}"
+    ;;
+  assembler-build)
+    _cli assembler assembler build "${@:2}"
+    ;;
+  assembler-serve)
+    _cli assembler assembler serve "${@:2}"
+    ;;
+  codex)
+    _cli codex codex "$CODEX_CONFIG" --serve "${@:2}"
+    ;;
+  codex-clone)
+    _cli codex codex clone "$CODEX_CONFIG" "${@:2}"
+    ;;
+  codex-build)
+    _cli codex codex build "$CODEX_CONFIG" "${@:2}"
+    ;;
+  codex-serve)
+    _cli codex codex serve "${@:2}"
     ;;
   clean)
     _compose down --remove-orphans --volumes
