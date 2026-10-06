@@ -3505,7 +3505,12 @@ html:has(.api-page-shell) {
 	max-width: calc(100vw - 48px);
 	/* As tall as the code, up to the window; longer code scrolls in the body. */
 	max-height: calc(100vh - 48px);
-	margin: auto;
+	/* On the optical centre rather than the geometric one: the dialog's 38.2% mark sits on the window's,
+	   so the space above and below is in the golden ratio whatever the dialog's height. */
+	top: 38.2%;
+	bottom: auto;
+	transform: translateY(-38.2%);
+	margin: 0 auto;
 	padding: 0;
 	/* Lifts the dialog off the dimmed page; cards in the rail have no shadow. */
 	box-shadow: 0 24px 64px rgb(0 0 0 / 0.5);
