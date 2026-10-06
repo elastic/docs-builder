@@ -9,6 +9,7 @@ using Elastic.Documentation.Catalog;
 using Elastic.Documentation.DocumentationSets;
 using Elastic.Documentation.Links;
 using Nullean.Entities.CsCheck;
+using Nullean.Entities.CsCheck.FileSystem;
 
 namespace Elastic.Documentation.Tests.Domain;
 
@@ -422,6 +423,10 @@ public class DocumentationSetConstraintsTests
 		redirects.ToDictionary(r => r.From, r => r.Redirect);
 
 	[Test]
+	// Stays hand-written (5a: not generated). A valid docset is a table of contents and a file system that agree: about 25 of its 70 rules say a toc entry's file, folder, index page,
+	// api child or default-cta page exists on disk, so a generated tree is valid only when the generator builds the world from the tree (or the tree from the world) and the entries are
+	// unique, well-nested and well-named. GenAuto draws the file system and the tree independently; that coupling is not a repair of members but a model-first generator (a set of page
+	// paths, then both the files and the toc built from it).
 	public void Laws() => DocumentationSetConstraints.All.Laws(Valid(), CounterExamples);
 
 	private static DocumentationSetInCatalog Valid() => new(ValidDocset(), Products);
@@ -472,17 +477,36 @@ public class DocsetDiscoveryConstraintsTests
 
 	private static DiscoveredDocset Docset(string path, string? registry) => new(FileSystem.FileInfo.New(path), registry);
 
+	/// <summary>
+	/// What discovery returns for a repository: its default docset first (the public registry), then at most one docset for the internal codex registry, each file named
+	/// docset.yml or _docset.yml. The generator gives the number of candidates; the registries and files are the ones discovery finds them under.
+	/// </summary>
+	private static DocsetDiscovery Discovered(DocsetDiscovery d) =>
+		new([Docset("/repo/docset.yml", null), .. d.Candidates.Skip(1).Take(1).Select(_ => Docset("/repo/docs/_docset.yml", "internal"))]);
+
 	[Test]
-	public void Laws() => DocsetDiscoveryConstraints.All.Laws(Valid(), CounterExamples);
+	public void Laws() =>
+		DocsetDiscoveryConstraints.All.Laws(
+			DomainGen.Of<DocsetDiscovery>(o => o.UseFileSystem().Normalize<DocsetDiscovery>(Discovered)),
+			CounterExamples,
+			options: o => o.UseFileSystem()
+		);
 
-	private static DocsetDiscovery Valid() => new([Docset("/repo/docset.yml", null), Docset("/repo/docs/docset.yml", "internal")]);
-
+	// each case reorders or extends what discovery found: the default docset moved behind a codex one, a second public docset, a file the glob matched by accident
 	private static IReadOnlyDictionary<string, Func<DocsetDiscovery, DocsetDiscovery>> CounterExamples =>
 		new Dictionary<string, Func<DocsetDiscovery, DocsetDiscovery>>
 		{
 			["one-docset-per-registry"] = d => new([.. d.Candidates, Docset("/repo/_docset.yml", "public")]),
-			["discovered-docset-is-default"] = d => new([.. d.Candidates.Reverse()]),
-			["discovered-docset-name-exact"] = d => new([d.Candidates[0], Docset("/repo/docs/foo-docset.yml", "internal")]),
+			["discovered-docset-is-default"] =
+				d => new([
+					Docset("/repo/codex/docset.yml", "internal"),
+					.. d.Candidates.Where(c => c.EffectiveRegistry != DocSetRegistry.Internal)
+				]),
+			["discovered-docset-name-exact"] =
+				d => new([
+					.. d.Candidates.Where(c => c.EffectiveRegistry != DocSetRegistry.Internal),
+					Docset("/repo/docs/foo-docset.yml", "internal")
+				]),
 			["docset-discovered"] = _ => new([])
 		};
 }

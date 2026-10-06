@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Globalization;
 using Nullean.Entities.CsCheck;
 using RootVersionIndex = System.Collections.Generic.SortedDictionary<string, System.Collections.Generic.SortedDictionary<string, System.Collections.Generic.SortedDictionary<string, Elastic.Documentation.OpenApiIndex.VersionIndexEntry>>>;
 
@@ -9,31 +10,57 @@ namespace Elastic.Documentation.OpenApiIndex.Tests;
 
 public class VersionIndexConstraintsTests
 {
-	[Test]
-	public void Laws() => VersionIndexConstraints.All.Laws(Valid(), CounterExamples);
-
-	private static RootVersionIndex With(params string[] versionKeys)
+	/// <summary>
+	/// An index as it is built from the S3 keys: every version moniker is 'main' or a major, and resolves to a version of that major (main to main). The monikers and the
+	/// repositories and specs they sit under are the generated ones; the versions follow from the monikers.
+	/// </summary>
+	private static RootVersionIndex Valid(RootVersionIndex index)
 	{
-		var byMajor = new SortedDictionary<string, VersionIndexEntry>(StringComparer.Ordinal);
-		foreach (var key in versionKeys)
-			byMajor[key] = new VersionIndexEntry { Version = key == "main" ? "main" : $"{key}.0" };
-		return new RootVersionIndex(StringComparer.Ordinal)
+		var result = new RootVersionIndex(StringComparer.Ordinal);
+		foreach (var (repo, specs) in index)
 		{
-			["elastic/elasticsearch"] = new(StringComparer.Ordinal) { ["openapi.json"] = byMajor }
-		};
+			var byRepo = result[repo] = new(StringComparer.Ordinal);
+			foreach (var (spec, versions) in specs)
+			{
+				var bySpec = byRepo[spec] = new SortedDictionary<string, VersionIndexEntry>(StringComparer.Ordinal);
+				var i = 0;
+				foreach (var entry in versions.Values)
+				{
+					var key = i++ == 0 ? "main" : (7 + i).ToString(CultureInfo.InvariantCulture);
+					bySpec[key] = entry with { Version = key == "main" ? "main" : $"{key}.{entry.Version.Length % 10}" };
+				}
+			}
+		}
+		return result;
 	}
 
-	private static RootVersionIndex Valid() => With("main", "8", "9");
+	[Test]
+	public void Laws() =>
+		VersionIndexConstraints.All.Laws(
+			GenAuto.Of<RootVersionIndex>(AutoMode.Plausible, o => o.Normalize<RootVersionIndex>(Valid)),
+			CounterExamples
+		);
+
+	// each case adds one entry that is wrong in one way, under a repository the generator never names
+	private static RootVersionIndex Plus(RootVersionIndex index, string moniker, string version)
+	{
+		var copy = new RootVersionIndex(index, StringComparer.Ordinal)
+		{
+			["elastic/extra"] = new(StringComparer.Ordinal)
+			{
+				["openapi.json"] = new SortedDictionary<string, VersionIndexEntry>(StringComparer.Ordinal)
+				{
+					[moniker] = new VersionIndexEntry { Version = version }
+				}
+			}
+		};
+		return copy;
+	}
 
 	private static IReadOnlyDictionary<string, Func<RootVersionIndex, RootVersionIndex>> CounterExamples =>
 		new Dictionary<string, Func<RootVersionIndex, RootVersionIndex>>
 		{
-			["version-moniker-main-or-major"] = _ => With("main", "8", "next"),
-			["version-key-matches-version"] = _ =>
-			{
-				var index = With("main", "8");
-				index["elastic/elasticsearch"]["openapi.json"]["8"] = new VersionIndexEntry { Version = "9.1" };
-				return index;
-			}
+			["version-moniker-main-or-major"] = i => Plus(i, "next", "next.0"),
+			["version-key-matches-version"] = i => Plus(i, "8", "9.1")
 		};
 }

@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using AwesomeAssertions;
+using CsCheck;
 using Elastic.Documentation.AppliesTo;
 using Elastic.Documentation.Versions;
 using Nullean.Entities.CsCheck;
@@ -13,7 +14,55 @@ namespace Elastic.Documentation.Tests.Domain;
 public class ApplicableToConstraintsTests
 {
 	[Test]
-	public void Laws() => ApplicableToConstraints.All.Laws(Valid(), CounterExamples);
+	public void Laws() => ApplicableToConstraints.All.Laws(Generated, CounterExamples);
+
+	private static readonly ProductLifecycle[] Current =
+	[
+		ProductLifecycle.TechnicalPreview,
+		ProductLifecycle.Experimental,
+		ProductLifecycle.Beta,
+		ProductLifecycle.GenerallyAvailable,
+		ProductLifecycle.Deprecated,
+		ProductLifecycle.Removed
+	];
+
+	private static AppliesCollection Versionless => Collection(Item(ProductLifecycle.GenerallyAvailable, null));
+
+	/// <summary>
+	/// An applies_to block as the reader builds it: each key one item with a current lifecycle (not a deprecated spelling) and a version, the keys that take no version (ess and the
+	/// serverless projects) written without one, nothing unread or ignored, and at least one key.
+	/// </summary>
+	private static Gen<ApplicableTo> Generated =>
+		DomainGen.Of<ApplicableTo>(o => o
+			.Use(
+				Gen.Select(
+					Gen.OneOfConst(Current),
+					DomainGen.SemVersions,
+					(lifecycle, version) => Collection(new Applicability
+					{
+						Lifecycle = lifecycle,
+						Version = VersionSpec.GreaterThanOrEqual(version)
+					})
+				)
+			)
+			.Normalize<DeploymentApplicability>(d => d with { Ess = d.Ess is null ? null : Versionless })
+			.Normalize<ServerlessProjectApplicability>(
+				s =>
+					s with
+					{
+						Elasticsearch = s.Elasticsearch is null ? null : Versionless,
+						Observability = s.Observability is null ? null : Versionless,
+						Security = s.Security is null ? null : Versionless,
+						VectorDatabase = s.VectorDatabase is null ? null : Versionless
+					}
+			)
+			.Normalize<ApplicableTo>(a =>
+			{
+				var cleaned = a with { UnknownKeys = [], IgnoredValues = [], Diagnostics = new ApplicabilityDiagnosticsCollection([]) };
+				return ApplicableToConstraints.Collections(cleaned).Any()
+					? cleaned
+					: cleaned with { Stack = Collection(Item(ProductLifecycle.GenerallyAvailable, "9.0")) };
+			}));
 
 	[Test]
 	public void ValidApplicability_BreaksNoRule() => ApplicableToConstraints.All.Validate(Valid()).Should().BeEmpty();
@@ -116,7 +165,8 @@ public class ApplicableToConstraintsTests
 		get;
 	} = new Dictionary<string, Func<ApplicableTo, ApplicableTo>>
 	{
-		["applies-to-not-empty"] = _ => new ApplicableTo(),
+		["applies-to-not-empty"] =
+			a => a with { Stack = null, Deployment = null, Serverless = null, Product = null, ProductApplicability = null },
 		["applicability-lifecycle-not-deprecated"] = a => a with { Stack = Collection(Item(ProductLifecycle.Planned, "9.0")) },
 		["versionless-keys-have-no-version"] =
 			a => a with { Deployment = new DeploymentApplicability { Ess = Collection(Item(ProductLifecycle.GenerallyAvailable, "9.1")) } },

@@ -2,26 +2,64 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Globalization;
 using AwesomeAssertions;
+using CsCheck;
 using Elastic.Documentation.Catalog;
 using Elastic.Documentation.ReleaseNotes;
 using Nullean.Entities.CsCheck;
 
 namespace Elastic.Documentation.Tests.Domain;
 
+internal static class ChangelogEntryExamples
+{
+	/// <summary>
+	/// A generated entry as the loader hands it over: a title and type, at least one product with an id, a file named for the PR it declares,
+	/// a subtype only on a breaking change, and not a marker (a marker is the other shape, and has its own counter-examples).
+	/// </summary>
+	public static ChangelogEntry Valid(ChangelogEntry e)
+	{
+		var title = e.Title.Length > 80 ? e.Title[..80] : e.Title;
+		var type = e.Type == ChangelogEntryType.Invalid ? ChangelogEntryType.Feature : e.Type;
+		var pr = (title.Length % 90) + 1;
+		return e with
+		{
+			Link = null,
+			SourceRedirect = false,
+			Title = string.IsNullOrWhiteSpace(title) ? "A title" : title,
+			Type = type,
+			Subtype = type == ChangelogEntryType.BreakingChange ? e.Subtype : null,
+			Description = e.Description is { Length: > 600 } d ? d[..600] : e.Description,
+			Products =
+			[
+				.. (e.Products is { Count: > 0 } ? e.Products : [ProductReference.Of("elasticsearch")]).Select(
+					p =>
+						p with
+						{
+							TargetRaw = null,
+							ProductId = string.IsNullOrWhiteSpace(p.ProductId) ? "elasticsearch" : p.ProductId.Replace('_', '-')
+						}
+				)
+			],
+			FileName = $"{pr}-change.yaml",
+			Pr = pr.ToString(CultureInfo.InvariantCulture)
+		};
+	}
+
+	public static Gen<T> Generated<T>(Action<AutoOptions>? configure = null) =>
+		GenAuto.Of<T>(AutoMode.Plausible, o =>
+		{
+			o.Normalize<ChangelogEntry>(Valid);
+			configure?.Invoke(o);
+		});
+}
+
 public class ChangelogEntryConstraintsTests
 {
 	[Test]
-	public void Laws() => ChangelogEntryConstraints.All.Laws(Valid(), CounterExamples);
+	public void Laws() => ChangelogEntryConstraints.All.Laws(ChangelogEntryExamples.Generated<ChangelogEntry>(), CounterExamples);
 
-	private static ChangelogEntry Valid() =>
-		new()
-		{
-			Type = ChangelogEntryType.Feature,
-			Title = "Add a thing",
-			Products = [new ProductReference { ProductId = "elasticsearch", Lifecycle = Lifecycle.Ga }],
-			Prs = ["https://github.com/elastic/elasticsearch/pull/1"]
-		};
+	private static ChangelogEntry Valid() => ChangelogEntryExamples.Valid(new ChangelogEntry { Title = "Add a thing" });
 
 	[Test]
 	public void AMarkerNamesEachFieldItShouldNotCarry()
@@ -51,7 +89,7 @@ public class ChangelogEntryConstraintsTests
 			["entry-title-max-80"] = e => e with { Title = new string('x', 81) },
 			["entry-description-max-600"] = e => e with { Description = new string('x', 601) },
 			["entry-type-required"] = e => e with { Type = ChangelogEntryType.Invalid },
-			["entry-subtype-only-breaking-change"] = e => e with { Subtype = ChangelogEntrySubtype.Api },
+			["entry-subtype-only-breaking-change"] = e => e with { Type = ChangelogEntryType.Feature, Subtype = ChangelogEntrySubtype.Api },
 			["entry-products-required"] = e => e with { Products = [] },
 			["entry-product-id-required"] = e => e with { Products = [new ProductReference { ProductId = " " }] },
 			["entry-product-target-obsolete"] =
@@ -71,33 +109,48 @@ public class ChangelogEntryConstraintsTests
 public class ChangelogEntryInConfigurationConstraintsTests
 {
 	[Test]
-	public void Laws() => ChangelogEntryInConfigurationConstraints.All.Laws(Valid(), CounterExamples);
+	public void Laws() => ChangelogEntryInConfigurationConstraints.All.Laws(Generated, CounterExamples);
 
-	private static ProductCatalog Products =>
-		ProductCatalog.FromPublicProducts(new Dictionary<string, Product>
+	private static ProductCatalog CatalogOf(IEnumerable<string> ids) =>
+		ProductCatalog.FromPublicProducts(
+			ids.Distinct(StringComparer.OrdinalIgnoreCase).Select(id => KeyValuePair.Create(id, new Product { Id = id, DisplayName = id }))
+		);
+
+	/// <summary>
+	/// The configuration an entry is checked against allows what the generated entry uses: its type and subtype, its products' lifecycles, its areas,
+	/// and its products are in products.yml and in products.available. The configuration is derived from the entry, so each rule holds by construction
+	/// and the counter-examples are the ways to leave one thing out.
+	/// </summary>
+	private static ChangelogEntryInConfiguration InConfiguration(ChangelogEntryInConfiguration m)
+	{
+		var e = m.Entry;
+		var ids = (e.Products ?? []).Select(p => p.ProductId).ToList();
+		var configuration = ChangelogConfiguration.Default with
 		{
-			["elasticsearch"] = new() { Id = "elasticsearch", DisplayName = "Elasticsearch" },
-			["kibana"] = new() { Id = "kibana", DisplayName = "Kibana" }
-		});
+			Types = [.. ChangelogConfiguration.DefaultTypes.Append(e.Type.ToStringFast(true)).Distinct()],
+			SubTypes =
+			[
+				.. ChangelogConfiguration.DefaultSubtypes.Append(e.Subtype?.ToStringFast(true) ?? "").Where(x => x != "").Distinct()
+			],
+			Lifecycles =
+			[
+				.. ChangelogConfiguration
+					.DefaultLifecycles
+					.Concat((e.Products ?? []).Select(p => p.Lifecycle).OfType<Lifecycle>())
+					.Distinct()
+			],
+			Areas = e.Areas is { Count: > 0 } ? [.. e.Areas.Distinct()] : null,
+			ProductsConfiguration = new ProductsConfig { Available = ids }
+		};
+		return new ChangelogEntryInConfiguration(e, new ChangelogConfigurationInCatalog(configuration, CatalogOf(ids)));
+	}
 
-	private static ChangelogEntryInConfiguration Valid() =>
-		new(
-			new ChangelogEntry
-			{
-				Type = ChangelogEntryType.Feature,
-				Title = "Add a thing",
-				Subtype = null,
-				Areas = ["Search"],
-				Products = [new ProductReference { ProductId = "elasticsearch", Lifecycle = Lifecycle.Ga }]
-			},
-			new ChangelogConfigurationInCatalog(
-				ChangelogConfiguration.Default with
-				{
-					Areas = ["Search"],
-					ProductsConfiguration = new ProductsConfig { Available = ["elasticsearch"] }
-				},
-				Products
-			)
+	private static Gen<ChangelogEntryInConfiguration> Generated =>
+		ChangelogEntryExamples.Generated<ChangelogEntryInConfiguration>(
+			o => o.Use(Gen.Const(new ChangelogConfigurationInCatalog(
+				ChangelogConfiguration.Default,
+				CatalogOf(["elasticsearch"])
+			))).Normalize<ChangelogEntryInConfiguration>(InConfiguration)
 		);
 
 	private static ChangelogEntryInConfiguration WithEntry(ChangelogEntryInConfiguration m, Func<ChangelogEntry, ChangelogEntry> change) =>
@@ -111,16 +164,24 @@ public class ChangelogEntryInConfigurationConstraintsTests
 	private static IReadOnlyDictionary<string, Func<ChangelogEntryInConfiguration, ChangelogEntryInConfiguration>> CounterExamples =>
 		new Dictionary<string, Func<ChangelogEntryInConfiguration, ChangelogEntryInConfiguration>>
 		{
-			// kibana is in products.yml; widening the available list is not what breaks, so the entry names a product products.yml lacks
+			// widening the available list is not what breaks, so the entry names a product products.yml lacks
 			["entry-products-known"] =
 				m => WithConfiguration(
 					WithEntry(m, e => e with { Products = [new ProductReference { ProductId = "nope" }] }),
 					c => c with { ProductsConfiguration = null }
 				),
-			["entry-products-available"] = m => WithEntry(m, e => e with { Products = [new ProductReference { ProductId = "kibana" }] }),
+			// kibana is in products.yml (the catalog gains it) but not in products.available
+			["entry-products-available"] =
+				m => WithEntry(
+					m with
+					{
+						Configuration = m.Configuration with { Products = CatalogOf([.. m.Configuration.Products.Products.Keys, "kibana"]) }
+					},
+					e => e with { Products = [new ProductReference { ProductId = "kibana" }] }
+				),
 			["entry-type-allowed"] =
 				m => WithConfiguration(
-					m,
+					WithEntry(m, e => e with { Type = ChangelogEntryType.Feature }),
 					c =>
 						c with
 						{
@@ -132,7 +193,12 @@ public class ChangelogEntryInConfigurationConstraintsTests
 					WithEntry(m, e => e with { Type = ChangelogEntryType.BreakingChange, Subtype = ChangelogEntrySubtype.Api }),
 					c => c with { SubTypes = [ChangelogEntrySubtype.Behavioral.ToStringFast(true)] }
 				),
-			["entry-lifecycle-allowed"] = m => WithConfiguration(m, c => c with { Lifecycles = [Lifecycle.Beta] }),
-			["entry-areas-allowed"] = m => WithEntry(m, e => e with { Areas = ["search"] })
+			["entry-lifecycle-allowed"] =
+				m => WithConfiguration(
+					WithEntry(m, e => e with { Products = [.. e.Products!.Select(p => p with { Lifecycle = Lifecycle.Ga })] }),
+					c => c with { Lifecycles = [Lifecycle.Beta] }
+				),
+			["entry-areas-allowed"] =
+				m => WithConfiguration(WithEntry(m, e => e with { Areas = ["search"] }), c => c with { Areas = ["Search"] })
 		};
 }

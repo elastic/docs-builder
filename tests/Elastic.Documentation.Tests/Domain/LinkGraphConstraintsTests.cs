@@ -4,17 +4,75 @@
 
 using System.IO.Abstractions.TestingHelpers;
 using AwesomeAssertions;
+using CsCheck;
 using Elastic.Documentation.DocumentationSets;
 using Elastic.Documentation.Links;
 using Elastic.Documentation.Publishing;
 using Nullean.Entities.CsCheck;
+using Nullean.Entities.CsCheck.FileSystem;
 
 namespace Elastic.Documentation.Tests.Domain;
 
 public class LinkGraphConstraintsTests
 {
 	[Test]
-	public void Laws() => LinkGraphConstraints.All.Laws(Valid(), CounterExamples);
+	public void Laws() => LinkGraphConstraints.All.Laws(Generated(), CounterExamples, options: o => o.UseFileSystem());
+
+	/// <summary>
+	/// A graph in which every repository the manifest links to is fetched (a target of its own, filed under its own name), in the registry, declared under cross_links and mounted in the
+	/// navigation, and every cross-link names a page of that target with an anchor it has, or a redirect of it that maps the anchor. The targets keep their generated pages.
+	/// </summary>
+	private static LinkGraph Resolved(LinkGraph g)
+	{
+		var keys = Enumerable.Range(0, g.Targets.Count).Select(i => $"repo{i}").ToList();
+		var targets = keys.Zip(g.Targets.Values, (key, t) => (Key: key, Target: t)).ToDictionary(
+			x => x.Key,
+			x =>
+				x.Target with
+				{
+					Origin = x.Target.Origin with { RepositoryName = x.Key },
+					Links = new Dictionary<string, LinkMetadata>(x.Target.Links) { ["reference/page.md"] = new() { Anchors = ["top"] } },
+					Redirects = new Dictionary<string, LinkRedirect>(x.Target.Redirects ?? [])
+					{
+						["reference/old.md"] = new()
+						{
+							To = "reference/page.md",
+							Anchors = new Dictionary<string, string?> { ["a"] = "top" }
+						}
+					}
+				}
+		);
+		var navigation = SiteNavigationConstraintsTests.Valid(g.Navigation);
+		return g with
+		{
+			Manifest = g.Manifest with
+			{
+				CrossLinks = [.. keys.SelectMany(k => new[] { $"{k}://reference/page.md#top", $"{k}://reference/old.md#a" })]
+			},
+			Registry = LinkExamples.Registry(g.Registry, keys),
+			Targets = targets,
+			Docset = g.Docset with { CrossLinkRepositories = keys },
+			Navigation = navigation with
+			{
+				TableOfContents =
+				[
+					.. navigation.TableOfContents,
+					.. keys.Select(
+						k => new SiteNavigationEntry(new SiteTableOfContentsRef(new Uri($"{k}://reference"), $"reference/{k}", []))
+					)
+				]
+			}
+		};
+	}
+
+	private static Gen<LinkGraph> Generated() =>
+		DomainGen.Of<LinkGraph>(
+			o => o
+				.UseFileSystem()
+				.Normalize<LinkManifest>(LinkExamples.Manifest)
+				.Normalize<LinkRegistry>(r => LinkExamples.Registry(r))
+				.Normalize<LinkGraph>(Resolved)
+		);
 
 	[Test]
 	public void ValidGraph_BreaksNoRule() => LinkGraphConstraints.All.Validate(Valid()).Should().BeEmpty();
@@ -111,8 +169,38 @@ public class LinkGraphConstraintsTests
 			Navigation("kibana://reference", "docs-content://get-started")
 		);
 
-	private static LinkGraph WithTarget(LinkGraph g, LinkManifest target) =>
-		g with { Targets = new Dictionary<string, LinkManifest> { ["kibana"] = target } };
+	// A repository the graph fetches, declares, registers, mounts and links to correctly; each case then breaks one thing about it (or leaves one thing out).
+	private static LinkGraph Fetched(
+		LinkGraph g,
+		string name,
+		bool registered = true,
+		bool declared = true,
+		bool mounted = true,
+		Func<LinkManifest, LinkManifest>? change = null
+	) =>
+		g with
+		{
+			Manifest = g.Manifest with
+			{
+				CrossLinks = [.. g.Manifest.CrossLinks, $"{name}://reference/page.md#top", $"{name}://reference/old.md#a"]
+			},
+			Registry = registered ? LinkExamples.Registry(g.Registry, [name]) : g.Registry,
+			Targets = new Dictionary<string, LinkManifest>(g.Targets) { [name] = (change ?? (m => m))(Target(name)) },
+			Docset = declared ? g.Docset with { CrossLinkRepositories = [.. g.Docset.CrossLinkRepositories, name] } : g.Docset,
+			Navigation = mounted
+				? g.Navigation with
+				{
+					TableOfContents =
+					[
+						.. g.Navigation.TableOfContents,
+						new SiteNavigationEntry(new SiteTableOfContentsRef(new Uri($"{name}://reference"), $"reference/{name}", []))
+					]
+				}
+				: g.Navigation
+		};
+
+	private static LinkGraph WithLink(LinkGraph g, string link) =>
+		g with { Manifest = g.Manifest with { CrossLinks = [.. g.Manifest.CrossLinks, link] } };
 
 	private static IReadOnlyDictionary<string, Func<LinkGraph, LinkGraph>> CounterExamples
 	{
@@ -120,43 +208,36 @@ public class LinkGraphConstraintsTests
 	} = new Dictionary<string, Func<LinkGraph, LinkGraph>>
 	{
 		// the other repository is declared, mounted and used, so only the registry lacks it
-		["cross-link-repository-in-registry"] =
-			g =>
-				g with
-				{
-					Manifest = Manifest("kibana://reference/page.md#top", "beats://reference/x.md"),
-					Docset = Docset("kibana", "beats"),
-					Navigation = Navigation("kibana://reference", "beats://reference")
-				},
-		["cross-link-scheme-declared"] =
-			g =>
-				g with
-				{
-					Manifest = Manifest("kibana://reference/page.md#top", "beats://reference/x.md"),
-					Registry = Registry("docs-content", "kibana", "beats"),
-					Navigation = Navigation("kibana://reference", "beats://reference")
-				},
-		["cross-link-declaration-used"] = g => g with { Docset = Docset("kibana", "beats") },
-		["cross-link-resolves"] = g => g with { Manifest = Manifest("kibana://reference/missing.md") },
-		["cross-link-redirect-resolves"] = g => g with { Manifest = Manifest("kibana://reference/old.md#zzz") },
+		["cross-link-repository-in-registry"] = g => Fetched(g, "beats", registered: false),
+		["cross-link-scheme-declared"] = g => Fetched(g, "beats", declared: false),
+		["cross-link-declaration-used"] =
+			g => g with { Docset = g.Docset with { CrossLinkRepositories = [.. g.Docset.CrossLinkRepositories, "unused"] } },
+		["cross-link-resolves"] = g => WithLink(Fetched(g, "beats"), "beats://reference/missing.md"),
+		["cross-link-redirect-resolves"] = g => WithLink(Fetched(g, "beats"), "beats://reference/old.md#zzz"),
 		["redirect-target-exists"] =
 			g =>
-				g with
+				Fetched(g, "beats") with
 				{
 					Manifest = g.Manifest with
 					{
-						Redirects = new Dictionary<string, LinkRedirect> { ["gone.md"] = new() { To = "kibana://reference/missing.md" } }
+						CrossLinks = [.. g.Manifest.CrossLinks, "beats://reference/page.md#top", "beats://reference/old.md#a"],
+						Redirects = new Dictionary<string, LinkRedirect>(g.Manifest.Redirects ?? [])
+						{
+							["gone.md"] = new() { To = "beats://reference/missing.md" }
+						}
 					}
 				},
 		["cross-link-target-not-hidden"] =
-			g => WithTarget(
+			g => Fetched(
 				g,
-				Target("kibana") with
-				{
-					Links = new Dictionary<string, LinkMetadata> { ["reference/page.md"] = new() { Anchors = ["top"], Hidden = true } }
-				}
+				"beats",
+				change: m =>
+					m with
+					{
+						Links = new Dictionary<string, LinkMetadata> { ["reference/page.md"] = new() { Anchors = ["top"], Hidden = true } }
+					}
 			),
-		["cross-link-repository-is-mounted"] = g => g with { Navigation = Navigation("docs-content://get-started") },
-		["manifest-origin-matches-registry-key"] = g => WithTarget(g, Target("kibana") with { Origin = Origin("elastic") })
+		["cross-link-repository-is-mounted"] = g => Fetched(g, "beats", mounted: false),
+		["manifest-origin-matches-registry-key"] = g => Fetched(g, "beats", change: m => m with { Origin = Origin("elastic") })
 	};
 }

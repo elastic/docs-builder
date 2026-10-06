@@ -207,6 +207,10 @@ public class ChangelogConfigurationConstraintsTests
 				)
 		};
 
+	// Stays hand-written (5a: not generated). Generated configurations (GenAuto at depth 6, so the sections are not empty) break 18 of the 31 rules at once, because the rules are referential
+	// across Pivot, Bundle, Rules and ProductsConfiguration (a profile names a product of the catalog, a release names a profile, a rule names a product): a valid configuration is a
+	// consistent web of ids, and a normalizer that builds one is the loader's resolution logic written again. A generator for it would be model-first (a chosen product subset, then the
+	// sections built around it), not a repair of generated members. (At the default depth the sections generate empty, so those rules would only ever be checked against nothing.)
 	[Test]
 	public void Laws() => ChangelogConfigurationConstraints.All.Laws(Valid(), CounterExamples);
 

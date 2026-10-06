@@ -11,7 +11,8 @@ namespace Elastic.Documentation.Tests.Domain;
 public class LinkManifestConstraintsTests
 {
 	[Test]
-	public void Laws() => LinkManifestConstraints.All.Laws(Valid(), CounterExamples);
+	public void Laws() =>
+		LinkManifestConstraints.All.Laws(DomainGen.Of<LinkManifest>(o => o.Normalize<LinkManifest>(LinkExamples.Manifest)), CounterExamples);
 
 	[Test]
 	public void ValidManifest_BreaksNoRule() => LinkManifestConstraints.All.Validate(Valid()).Should().BeEmpty();
@@ -80,10 +81,14 @@ public class LinkManifestConstraintsTests
 		};
 
 	private static LinkManifest WithRedirect(LinkManifest m, string source, LinkRedirect redirect) =>
-		m with { Redirects = new Dictionary<string, LinkRedirect>(m.Redirects!) { [source] = redirect } };
+		m with { Redirects = new Dictionary<string, LinkRedirect>(m.Redirects ?? []) { [source] = redirect } };
 
 	private static LinkManifest WithPage(LinkManifest m, string path, LinkMetadata page) =>
 		m with { Links = new Dictionary<string, LinkMetadata>(m.Links) { [path] = page } };
+
+	// the pages the redirect cases land on, under names the generator never gives a page (it names them page0.md, page1.md...)
+	private static LinkManifest WithSetup(LinkManifest m) =>
+		WithPage(WithPage(m, "setup.md", new LinkMetadata { Anchors = ["intro"] }), "index.md", new LinkMetadata { Anchors = [] });
 
 	private static IReadOnlyDictionary<string, Func<LinkManifest, LinkManifest>> CounterExamples
 	{
@@ -94,14 +99,16 @@ public class LinkManifestConstraintsTests
 		["link-manifest-anchors-present"] = m => WithPage(m, "null.md", new LinkMetadata { Anchors = null }),
 		["link-manifest-origin-named"] = m => m with { Origin = GitCheckoutInformation.Unavailable },
 		["url-path-prefix-normalized"] = m => m with { UrlPathPrefix = "docs/" },
-		["link-manifest-page-urls-unique"] = m => WithPage(m, "setup/index.md", new LinkMetadata()),
+		["link-manifest-page-urls-unique"] =
+			m => WithPage(WithPage(m, "dupurl.md", new LinkMetadata()), "dupurl/index.md", new LinkMetadata()),
 		["page-path-single-md-extension"] = m => WithPage(m, "a.md.md", new LinkMetadata()),
-		["cross-link-scheme-allowed"] = m => m with { CrossLinks = ["https://example.test/x"] },
+		["cross-link-scheme-allowed"] = m => m with { CrossLinks = [.. m.CrossLinks, "https://example.test/x"] },
 		["page-anchors-unique"] = m => WithPage(m, "dup.md", new LinkMetadata { Anchors = ["a"], DuplicateAnchors = ["A"] }),
-		["redirect-source-is-not-a-page"] = m => WithRedirect(m, "index.md", new LinkRedirect { To = "guide/index.md" }),
+		["redirect-source-is-not-a-page"] =
+			m => WithRedirect(WithPage(WithSetup(m), "shadow.md", new LinkMetadata()), "shadow.md", new LinkRedirect { To = "setup.md" }),
 		["redirect-catch-all-after-exact"] =
 			m => WithRedirect(
-				m,
+				WithSetup(m),
 				"many.md",
 				new LinkRedirect
 				{
@@ -113,13 +120,17 @@ public class LinkManifestConstraintsTests
 				}
 			),
 		["redirect-empty-anchors-keeps-anchor"] =
-			m => WithRedirect(m, "empty.md", new LinkRedirect { To = "setup.md", Anchors = new Dictionary<string, string?>() }),
+			m => WithRedirect(WithSetup(m), "empty.md", new LinkRedirect { To = "setup.md", Anchors = new Dictionary<string, string?>() }),
 		["redirect-same-page-needs-anchors"] = m => WithRedirect(m, "same.md", new LinkRedirect()),
 		["redirect-no-chains"] =
-			m => WithRedirect(WithRedirect(m, "a.md", new LinkRedirect { To = "b.md" }), "b.md", new LinkRedirect { To = "setup.md" }),
+			m => WithRedirect(
+				WithRedirect(WithSetup(m), "a.md", new LinkRedirect { To = "b.md" }),
+				"b.md",
+				new LinkRedirect { To = "setup.md" }
+			),
 		["redirect-target-anchors-exist"] =
 			m => WithRedirect(
-				m,
+				WithSetup(m),
 				"anch.md",
 				new LinkRedirect { To = "setup.md", Anchors = new Dictionary<string, string?> { ["x"] = "missing" } }
 			),

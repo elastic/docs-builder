@@ -7,70 +7,83 @@ using Elastic.Documentation.Codex;
 using Elastic.Documentation.DocumentationSets;
 using Elastic.Documentation.Publishing;
 using Nullean.Entities.CsCheck;
+using Nullean.Entities.CsCheck.FileSystem;
 
 namespace Elastic.Documentation.Tests.Domain;
 
 public class NavigationInAssemblyConstraintsTests
 {
-	[Test]
-	public void Laws() => NavigationInAssemblyConstraints.All.Laws(Valid(), CounterExamples);
-
-	private static SiteNavigationDefinition Navigation(params string[] sources) =>
-		new()
+	/// <summary>The assembly publishes every repository the navigation mounts, because a mount can only be built from one.</summary>
+	private static NavigationInAssembly Published(NavigationInAssembly p) =>
+		p with
 		{
-			TableOfContents = [.. sources.Select(s => new SiteNavigationEntry(new SiteTableOfContentsRef(new Uri(s), "reference", [])))]
+			Assembly = p.Assembly with
+			{
+				AvailableRepositories = new Dictionary<string, Repository>(p.Assembly.AvailableRepositories)
+					.Concat(
+						SiteNavigationConstraints
+							.AllMounts(p.Navigation)
+							.Select(m => m.Source.Scheme)
+							.Distinct(StringComparer.OrdinalIgnoreCase)
+							.Where(scheme => !p.Assembly.AvailableRepositories.Keys.Contains(scheme, StringComparer.OrdinalIgnoreCase))
+							.Select(scheme => KeyValuePair.Create(scheme, new Repository { Name = scheme }))
+					)
+					.ToDictionary()
+			}
 		};
 
-	private static NavigationInAssembly Valid()
-	{
-		var narrative = new NarrativeRepository();
-		var kibana = new Repository { Name = "kibana" };
-		return new NavigationInAssembly(
-			Navigation("kibana://reference", "docs-content://get-started"),
-			new AssemblyConfiguration
-			{
-				Narrative = narrative,
-				ReferenceRepositories = new Dictionary<string, Repository> { ["kibana"] = kibana },
-				AvailableRepositories = new Dictionary<string, Repository> { ["kibana"] = kibana, [narrative.Name] = narrative },
-				PrivateRepositories = new Dictionary<string, Repository>(),
-				AllPrivateRepositoryNames = new HashSet<string>(),
-				Environments = new Dictionary<string, PublishEnvironment>(),
-				SharedConfigurations = new Dictionary<string, Repository>()
-			}
+	[Test]
+	public void Laws() =>
+		NavigationInAssemblyConstraints.All.Laws(
+			DomainGen.Of<NavigationInAssembly>(
+				o => AssemblyConstraintsTests
+					.Configure(o)
+					.Normalize<SiteNavigationDefinition>(SiteNavigationConstraintsTests.Valid)
+					.Normalize<NavigationInAssembly>(Published)
+			),
+			CounterExamples
 		);
-	}
 
 	private static IReadOnlyDictionary<string, Func<NavigationInAssembly, NavigationInAssembly>> CounterExamples =>
 		new Dictionary<string, Func<NavigationInAssembly, NavigationInAssembly>>
 		{
-			["mount-repository-in-assembly"] = p => p with { Navigation = Navigation("kibana://reference", "beats://reference") }
+			// a mount of a repository the assembly does not publish
+			["mount-repository-in-assembly"] =
+				p =>
+					p with
+					{
+						Navigation = p.Navigation with
+						{
+							TableOfContents =
+							[
+								.. p.Navigation.TableOfContents,
+								new SiteNavigationEntry(new SiteTableOfContentsRef(
+									new Uri("unpublished://reference"),
+									"reference/unpublished",
+									[]
+								))
+							]
+						}
+					}
 		};
 }
 
 public class DocumentationSetInCodexConstraintsTests
 {
+	// codex.group refers to a group the codex site defines: the declared reference does it, so the groups are the generated ones
 	[Test]
-	public void Laws() => DocumentationSetInCodexConstraints.All.Laws(Valid(), CounterExamples);
-
-	private static DocumentationSetInCodex Valid()
-	{
-		var fs = new MockFileSystem(new Dictionary<string, MockFileData> { ["/docs/docset.yml"] = new("project: test") });
-		return new DocumentationSetInCodex(
-			new DocumentationSetDefinition
-			{
-				SourceFile = fs.FileInfo.New("/docs/docset.yml"),
-				SourceDirectory = fs.DirectoryInfo.New("/docs"),
-				FileSystem = fs,
-				Project = "test",
-				CodexGroup = "observability"
-			},
-			new CodexConfiguration { Groups = [new CodexGroupDefinition { Id = "observability", Name = "Observability" }] }
+	public void Laws() =>
+		DocumentationSetInCodexConstraints.All.Laws(
+			DomainGen.Of<DocumentationSetInCodex>(
+				o => o.UseFileSystem().Reference<DocumentationSetDefinition, CodexGroupDefinition, string>(d => d.CodexGroup!, g => g.Id)
+			),
+			CounterExamples,
+			options: o => o.UseFileSystem()
 		);
-	}
 
 	private static IReadOnlyDictionary<string, Func<DocumentationSetInCodex, DocumentationSetInCodex>> CounterExamples =>
 		new Dictionary<string, Func<DocumentationSetInCodex, DocumentationSetInCodex>>
 		{
-			["codex-group-known"] = p => p with { Docset = p.Docset with { CodexGroup = "security" } }
+			["codex-group-known"] = p => p with { Docset = p.Docset with { CodexGroup = "not-a-group-of-the-codex" } }
 		};
 }
