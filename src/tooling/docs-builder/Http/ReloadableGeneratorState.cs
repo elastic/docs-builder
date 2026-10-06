@@ -65,7 +65,8 @@ public class ReloadableGeneratorState : IDisposable
 	private readonly Dictionary<string, DateTimeOffset> _apiMarkdownFilesLastModified = [];
 
 	private volatile bool _apiReferencesStale = true;
-	private volatile bool _forceApiRegeneration;
+	// 1 when the next /api/ request must regenerate; consumed atomically so a concurrent invalidation is never lost.
+	private int _forceApiRegeneration;
 	private readonly SemaphoreSlim _apiSemaphore = new(1, 1);
 	private CancellationTokenSource? _apiGenerationCts;
 
@@ -127,7 +128,7 @@ public class ReloadableGeneratorState : IDisposable
 	/// </summary>
 	public void InvalidateApiReferences()
 	{
-		_forceApiRegeneration = true;
+		_ = Interlocked.Exchange(ref _forceApiRegeneration, 1);
 		_apiReferencesStale = true;
 	}
 
@@ -154,8 +155,7 @@ public class ReloadableGeneratorState : IDisposable
 			// lands mid-generation marks the pages stale again instead of being lost.
 			var config = _generator.DocumentationSet.Configuration;
 			_apiReferencesStale = false;
-			var force = _forceApiRegeneration;
-			_forceApiRegeneration = false;
+			var force = Interlocked.Exchange(ref _forceApiRegeneration, 0) == 1;
 			if (!force && !HaveOpenApiSpecsChanged(config))
 				return;
 
