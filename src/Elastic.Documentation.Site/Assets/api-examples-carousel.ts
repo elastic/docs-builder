@@ -466,19 +466,20 @@ function openPreview(card: HTMLElement): HTMLDialogElement | null {
         event.stopPropagation()
         dialog.close()
     })
-    // The page behind the dialog does not scroll; the body is padded by the scrollbar's width so the
-    // layout does not shift when the scrollbar goes (same as the search and diagram modals).
-    const scrollbar = window.innerWidth - document.documentElement.clientWidth
-    const bodyStyle = document.body.style
+    // The page behind the dialog does not scroll. The lock goes on <html>: it sets overflow-y itself, so a
+    // lock on <body> would not reach the viewport. If hiding the scrollbar widens the page, pad that back.
+    const root = document.documentElement
     const previous = {
-        overflow: bodyStyle.overflow,
-        paddingRight: bodyStyle.paddingRight,
+        overflow: root.style.overflow,
+        paddingRight: root.style.paddingRight,
     }
-    bodyStyle.overflow = 'hidden'
-    if (scrollbar > 0) bodyStyle.paddingRight = `${scrollbar}px`
+    const widthBefore = root.clientWidth
+    root.style.overflow = 'hidden'
+    const widened = root.clientWidth - widthBefore
+    if (widened > 0) root.style.paddingRight = `${widened}px`
     dialog.addEventListener('close', () => {
-        bodyStyle.overflow = previous.overflow
-        bodyStyle.paddingRight = previous.paddingRight
+        root.style.overflow = previous.overflow
+        root.style.paddingRight = previous.paddingRight
         dialog.remove()
     })
 

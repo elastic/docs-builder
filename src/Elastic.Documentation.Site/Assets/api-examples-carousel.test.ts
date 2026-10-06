@@ -212,11 +212,11 @@ describe('API examples carousel', () => {
             'dialog.api-code-preview'
         )!
 
-        expect(document.body.style.overflow).toBe('hidden')
+        expect(document.documentElement.style.overflow).toBe('hidden')
 
         dialog.dispatchEvent(new Event('close'))
 
-        expect(document.body.style.overflow).toBe('')
+        expect(document.documentElement.style.overflow).toBe('')
         expect(document.querySelector('dialog.api-code-preview')).toBeNull()
     })
 
