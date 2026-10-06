@@ -56,16 +56,23 @@ public record GitCheckoutInformation
 	) => new() { Branch = branch, Remote = remote, Ref = commitHash, RepositoryName = repositoryName, GitHubRef = gitHubRef };
 
 	[JsonPropertyName("branch")]
-	public required string Branch { get; init; }
+	[JsonInclude]
+	[JsonRequired]
+	public string Branch { get; internal init; } = default!;
 
 	[JsonPropertyName("remote")]
-	public required string Remote { get; init; }
+	[JsonInclude]
+	[JsonRequired]
+	public string Remote { get; internal init; } = default!;
 
 	[JsonPropertyName("ref")]
-	public required string Ref { get; init; }
+	[JsonInclude]
+	[JsonRequired]
+	public string Ref { get; internal init; } = default!;
 
 	[JsonPropertyName("name")]
-	public string RepositoryName { get; init; } = "unavailable";
+	[JsonInclude]
+	public string RepositoryName { get; internal init; } = "unavailable";
 
 	/// <summary>Whether git checkout information was resolved (false for the <see cref="Unavailable"/> sentinel).</summary>
 	[JsonIgnore]
@@ -75,7 +82,8 @@ public record GitCheckoutInformation
 	/// The full git ref from GitHub Actions (e.g. refs/pull/123/merge). Set from GITHUB_REF when running in CI.
 	/// </summary>
 	[JsonPropertyName("github_ref")]
-	public string? GitHubRef { get; init; }
+	[JsonInclude]
+	public string? GitHubRef { get; internal init; }
 
 	/// <summary>
 	/// The GitHub repository in <c>org/repo</c> format, derived from the git remote URL.

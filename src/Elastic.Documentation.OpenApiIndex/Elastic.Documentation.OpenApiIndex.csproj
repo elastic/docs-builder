@@ -13,6 +13,10 @@
     </ItemGroup>
 
     <ItemGroup>
+      <InternalsVisibleTo Include="Elastic.Documentation.OpenApiIndex.Tests" />
+    </ItemGroup>
+
+    <ItemGroup>
       <PackageReference Include="AWSSDK.CloudFront" />
       <PackageReference Include="AWSSDK.S3" />
     </ItemGroup>

@@ -39,29 +39,29 @@ public interface IApplicableToElement
 [JsonConverter(typeof(ApplicableToJsonConverter))]
 public record ApplicableTo
 {
-	public AppliesCollection? Stack { get; init; }
+	public AppliesCollection? Stack { get; internal init; }
 
-	public DeploymentApplicability? Deployment { get; init; }
+	public DeploymentApplicability? Deployment { get; internal init; }
 
-	public ServerlessProjectApplicability? Serverless { get; init; }
+	public ServerlessProjectApplicability? Serverless { get; internal init; }
 
-	public AppliesCollection? Product { get; init; }
+	public AppliesCollection? Product { get; internal init; }
 
-	public ProductApplicability? ProductApplicability { get; init; }
+	public ProductApplicability? ProductApplicability { get; internal init; }
 
 	[JsonIgnore]
-	public ApplicabilityDiagnosticsCollection? Diagnostics { get; init; }
+	public ApplicabilityDiagnosticsCollection? Diagnostics { get; internal init; }
 
 	/// <summary>
 	/// Keys the block wrote that the reader never maps, in the order written: nested ones as <c>deployment.x</c>, and top-level keys that pass the
 	/// known-key check but are not the exact key a reader maps (<c>apm-agent-java</c>). Top-level unknown keys are in <see cref="Diagnostics"/>.
 	/// </summary>
 	[JsonIgnore]
-	public IReadOnlyList<string> UnknownKeys { get; init; } = [];
+	public IReadOnlyList<string> UnknownKeys { get; internal init; } = [];
 
 	/// <summary>Keys (nested as <c>deployment.x</c>) whose value was not text, which the reader ignores.</summary>
 	[JsonIgnore]
-	public IReadOnlyList<string> IgnoredValues { get; init; } = [];
+	public IReadOnlyList<string> IgnoredValues { get; internal init; } = [];
 
 	// UnknownKeys and IgnoredValues record how the block was written, not what it means: they take no part in equality.
 	public virtual bool Equals(ApplicableTo? other) =>
@@ -233,13 +233,13 @@ public record ApplicableTo
 
 public record DeploymentApplicability
 {
-	public AppliesCollection? Self { get; init; }
+	public AppliesCollection? Self { get; internal init; }
 
-	public AppliesCollection? Ece { get; init; }
+	public AppliesCollection? Ece { get; internal init; }
 
-	public AppliesCollection? Eck { get; init; }
+	public AppliesCollection? Eck { get; internal init; }
 
-	public AppliesCollection? Ess { get; init; }
+	public AppliesCollection? Ess { get; internal init; }
 
 	public static DeploymentApplicability All { get; } = new()
 	{
@@ -290,13 +290,13 @@ public record DeploymentApplicability
 
 public record ServerlessProjectApplicability
 {
-	public AppliesCollection? Elasticsearch { get; init; }
+	public AppliesCollection? Elasticsearch { get; internal init; }
 
-	public AppliesCollection? Observability { get; init; }
+	public AppliesCollection? Observability { get; internal init; }
 
-	public AppliesCollection? Security { get; init; }
+	public AppliesCollection? Security { get; internal init; }
 
-	public AppliesCollection? VectorDatabase { get; init; }
+	public AppliesCollection? VectorDatabase { get; internal init; }
 
 	/// <summary>
 	/// Returns if all serverless project types share the same applicability.

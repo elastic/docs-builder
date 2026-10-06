@@ -15,13 +15,13 @@ public partial record Bundle
 {
 	/// <summary>Products included in this bundle.</summary>
 	[OrderedEquality]
-	public IReadOnlyList<BundledProduct> Products { get; init; } = [];
+	public IReadOnlyList<BundledProduct> Products { get; internal init; } = [];
 
 	/// <summary>
 	/// Optional introductory description text for this bundle.
 	/// Rendered as introductory content after the release heading.
 	/// </summary>
-	public string? Description { get; init; }
+	public string? Description { get; internal init; }
 
 	/// <summary>
 	/// Optional release date for this bundle.
@@ -29,33 +29,33 @@ public partial record Bundle
 	/// Useful for components released outside the usual stack lifecycle (e.g., APM/EDOT agents).
 	/// Parsed from YYYY-MM-DD format in YAML; serialized back as YYYY-MM-DD.
 	/// </summary>
-	public DateOnly? ReleaseDate { get; init; }
+	public DateOnly? ReleaseDate { get; internal init; }
 
 	/// <summary>The <c>release-date</c> as written; null when absent or when the bundle was not read from YAML. A malformed date becomes a null <see cref="ReleaseDate"/>.</summary>
 	[IgnoreEquality]
-	public string? ReleaseDateRaw { get; init; }
+	public string? ReleaseDateRaw { get; internal init; }
 
 	/// <summary>
 	/// Optional git ref of the published endpoint this bundle was cut for.
 	/// Set by commit-range bundling (<c>--end-git-ref</c>); not rendered to end-users.
 	/// </summary>
-	public string? GitRef { get; init; }
+	public string? GitRef { get; internal init; }
 
 	/// <summary>
 	/// Feature IDs that should be hidden when rendering this bundle.
 	/// Entries with matching feature-id values will be commented out in the output.
 	/// </summary>
 	[OrderedEquality]
-	public IReadOnlyList<string> HideFeatures { get; init; } = [];
+	public IReadOnlyList<string> HideFeatures { get; internal init; } = [];
 
 	/// <summary>Changelog entries in this bundle.</summary>
 	[OrderedEquality]
-	public IReadOnlyList<BundledEntry> Entries { get; init; } = [];
+	public IReadOnlyList<BundledEntry> Entries { get; internal init; } = [];
 
 	/// <summary>
 	/// Entries to exclude when this amend file is merged with its parent bundle.
 	/// Matched by file name and optional checksum.
 	/// </summary>
 	[OrderedEquality]
-	public IReadOnlyList<BundledEntry> ExcludeEntries { get; init; } = [];
+	public IReadOnlyList<BundledEntry> ExcludeEntries { get; internal init; } = [];
 }

@@ -18,7 +18,7 @@ public partial record PivotConfiguration
 	/// Values can be: null/empty (no labels), string (labels), or TypeEntry object
 	/// </summary>
 	[UnorderedEquality]
-	public Dictionary<string, TypeEntry?>? Types { get; init; }
+	public Dictionary<string, TypeEntry?>? Types { get; internal init; }
 
 	/// <summary>
 	/// Default subtype definitions with optional labels
@@ -27,7 +27,7 @@ public partial record PivotConfiguration
 	/// Values can be: null/empty (no labels) or string (labels)
 	/// </summary>
 	[UnorderedEquality]
-	public Dictionary<string, string?>? Subtypes { get; init; }
+	public Dictionary<string, string?>? Subtypes { get; internal init; }
 
 	/// <summary>
 	/// Area definitions with labels
@@ -35,7 +35,7 @@ public partial record PivotConfiguration
 	/// Values are label strings (e.g., ":Distributed/Auto")
 	/// </summary>
 	[UnorderedEquality]
-	public Dictionary<string, string?>? Areas { get; init; }
+	public Dictionary<string, string?>? Areas { get; internal init; }
 
 	/// <summary>
 	/// Product definitions with labels mapped to product spec strings.
@@ -45,7 +45,7 @@ public partial record PivotConfiguration
 	/// Multiple matching product entries are all applied (same behavior as areas).
 	/// </summary>
 	[UnorderedEquality]
-	public Dictionary<string, string?>? Products { get; init; }
+	public Dictionary<string, string?>? Products { get; internal init; }
 
 	/// <summary>
 	/// Feature ID definitions with labels mapped to feature-id values.
@@ -54,14 +54,14 @@ public partial record PivotConfiguration
 	/// When a PR has labels matching a feature entry, that feature-id is set on the changelog entry.
 	/// </summary>
 	[UnorderedEquality]
-	public Dictionary<string, string?>? Features { get; init; }
+	public Dictionary<string, string?>? Features { get; internal init; }
 
 	/// <summary>
 	/// Labels that trigger the highlight flag (comma-separated string).
 	/// When a PR has any of these labels, highlight is set to true.
 	/// Example: ">highlight, >release-highlight"
 	/// </summary>
-	public string? Highlight { get; init; }
+	public string? Highlight { get; internal init; }
 }
 
 /// <summary>
@@ -74,14 +74,14 @@ public partial record TypeEntry
 	/// <summary>
 	/// Labels for this type (comma-separated string)
 	/// </summary>
-	public string? Labels { get; init; }
+	public string? Labels { get; internal init; }
 
 	/// <summary>
 	/// Type-specific subtype definitions (overrides pivot.subtypes for this type)
 	/// Keys are subtype names, values are label strings
 	/// </summary>
 	[UnorderedEquality]
-	public Dictionary<string, string?>? Subtypes { get; init; }
+	public Dictionary<string, string?>? Subtypes { get; internal init; }
 
 	/// <summary>
 	/// Creates a TypeEntry from a simple label string

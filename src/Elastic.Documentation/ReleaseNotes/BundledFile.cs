@@ -10,10 +10,10 @@ namespace Elastic.Documentation.ReleaseNotes;
 public record BundledFile
 {
 	/// <summary>The filename.</summary>
-	public required string Name { get; init; }
+	public string Name { get; internal init; } = default!;
 
 	/// <summary>The file checksum.</summary>
-	public required string Checksum { get; init; }
+	public string Checksum { get; internal init; } = default!;
 
 	/// <summary>The file a bundle entry was read from.</summary>
 	public static BundledFile Of(string name, string checksum) => new() { Name = name, Checksum = checksum };

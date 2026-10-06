@@ -8,6 +8,10 @@
 	</PropertyGroup>
 
 	<ItemGroup>
+		<InternalsVisibleTo Include="Elastic.Documentation.Deploying.Tests" />
+	</ItemGroup>
+
+	<ItemGroup>
 		<PackageReference Include="AWSSDK.S3" />
 		<PackageReference Include="DotNet.Glob" />
 		<PackageReference Include="GitHub.Actions.Core" />

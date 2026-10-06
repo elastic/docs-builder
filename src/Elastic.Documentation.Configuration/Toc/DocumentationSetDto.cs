@@ -880,7 +880,7 @@ internal class DocumentationSetDto : TableOfContentsDto
 				resolvedChildren,
 				DeclaringFilePath.From(context),
 				declaredSort,
-				DefaultCta: folderRef.DefaultCta
+				defaultCta: folderRef.DefaultCta
 			);
 		}
 

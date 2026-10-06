@@ -14,51 +14,52 @@ public record RulesConfiguration
 	/// <summary>
 	/// Global match mode for multi-valued fields. Inherited by create, bundle, and publish sections.
 	/// </summary>
-	public MatchMode Match { get; init; } = MatchMode.Any;
+	public MatchMode Match { get; internal init; } = MatchMode.Any;
 
 	/// <summary>
 	/// Rules controlling which PRs generate changelog entries.
 	/// </summary>
-	public CreateRules? Create { get; init; }
+	public CreateRules? Create { get; internal init; }
 
 	/// <summary>
 	/// Rules controlling which entries are included in a bundle file.
 	/// </summary>
-	public BundleRules? Bundle { get; init; }
+	public BundleRules? Bundle { get; internal init; }
 
 	/// <summary>
 	/// Rules controlling which entries appear in rendered output.
 	/// </summary>
-	public PublishRules? Publish { get; init; }
+	public PublishRules? Publish { get; internal init; }
 }
 
 /// <summary>
 /// Rules for create-time blocking based on PR labels.
 /// </summary>
 [Equatable]
+[System.Text.Json.Serialization.JsonConverter(typeof(Elastic.Documentation.Serialization.CreateRulesJsonConverter))]
 public partial record CreateRules
 {
 	/// <summary>
 	/// Labels to match (semantics depend on <see cref="Mode"/>).
 	/// </summary>
 	[OrderedEquality]
-	public IReadOnlyList<string>? Labels { get; init; }
+	public IReadOnlyList<string>? Labels { get; internal init; }
 
 	/// <summary>
 	/// Whether labels use exclude or include semantics.
 	/// </summary>
-	public FieldMode Mode { get; init; } = FieldMode.Exclude;
+	public FieldMode Mode { get; internal init; } = FieldMode.Exclude;
 
 	/// <summary>
 	/// Match mode for labels (any, all, or conjunction). Inherited from RulesConfiguration.Match if not set.
 	/// </summary>
-	public MatchMode Match { get; init; } = MatchMode.Any;
+	public MatchMode Match { get; internal init; } = MatchMode.Any;
 
 	/// <summary>
 	/// Per-product create rule overrides. Keys are product IDs.
 	/// </summary>
 	[UnorderedEquality]
-	public IReadOnlyDictionary<string, CreateRules>? ByProduct { get; init; }
+	public IReadOnlyDictionary<string, CreateRules>? ByProduct { get; internal init; }
 }
 
 /// <summary>
@@ -70,24 +71,24 @@ public partial record BundlePerProductRule
 	/// <summary>
 	/// Optional type/area blocker (existing functionality).
 	/// </summary>
-	public PublishBlocker? Blocker { get; init; }
+	public PublishBlocker? Blocker { get; internal init; }
 
 	/// <summary>
 	/// Product IDs to include (mutually exclusive with ExcludeProducts).
 	/// </summary>
 	[OrderedEquality]
-	public IReadOnlyList<string>? IncludeProducts { get; init; }
+	public IReadOnlyList<string>? IncludeProducts { get; internal init; }
 
 	/// <summary>
 	/// Product IDs to exclude (mutually exclusive with IncludeProducts).
 	/// </summary>
 	[OrderedEquality]
-	public IReadOnlyList<string>? ExcludeProducts { get; init; }
+	public IReadOnlyList<string>? ExcludeProducts { get; internal init; }
 
 	/// <summary>
 	/// Match mode for products (any, all, or conjunction).
 	/// </summary>
-	public MatchMode MatchProducts { get; init; } = MatchMode.Any;
+	public MatchMode MatchProducts { get; internal init; } = MatchMode.Any;
 }
 
 /// <summary>
@@ -165,29 +166,29 @@ public partial record BundleRules
 	/// Product IDs to exclude from the bundle. Cannot be combined with <see cref="IncludeProducts"/>.
 	/// </summary>
 	[OrderedEquality]
-	public IReadOnlyList<string>? ExcludeProducts { get; init; }
+	public IReadOnlyList<string>? ExcludeProducts { get; internal init; }
 
 	/// <summary>
 	/// Product IDs to include in the bundle (all others excluded). Cannot be combined with <see cref="ExcludeProducts"/>.
 	/// </summary>
 	[OrderedEquality]
-	public IReadOnlyList<string>? IncludeProducts { get; init; }
+	public IReadOnlyList<string>? IncludeProducts { get; internal init; }
 
 	/// <summary>
 	/// Match mode for products (any, all, or conjunction). Inherited from RulesConfiguration.Match if not set.
 	/// </summary>
-	public MatchMode MatchProducts { get; init; } = MatchMode.Any;
+	public MatchMode MatchProducts { get; internal init; } = MatchMode.Any;
 
 	/// <summary>
 	/// Global type/area blocker applied to all entries. Mirrors <c>rules.publish</c> blocker semantics.
 	/// </summary>
-	public PublishBlocker? Blocker { get; init; }
+	public PublishBlocker? Blocker { get; internal init; }
 
 	/// <summary>
 	/// Per-product rule overrides. Keys are product IDs.
 	/// </summary>
 	[UnorderedEquality]
-	public IReadOnlyDictionary<string, BundlePerProductRule>? ByProduct { get; init; }
+	public IReadOnlyDictionary<string, BundlePerProductRule>? ByProduct { get; internal init; }
 }
 
 /// <summary>
@@ -240,11 +241,11 @@ public partial record PublishRules
 	/// <summary>
 	/// Global publish blocker configuration.
 	/// </summary>
-	public PublishBlocker? Blocker { get; init; }
+	public PublishBlocker? Blocker { get; internal init; }
 
 	/// <summary>
 	/// Per-product publish blocker overrides. Keys are product IDs.
 	/// </summary>
 	[UnorderedEquality]
-	public IReadOnlyDictionary<string, PublishBlocker>? ByProduct { get; init; }
+	public IReadOnlyDictionary<string, PublishBlocker>? ByProduct { get; internal init; }
 }

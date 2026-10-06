@@ -16,15 +16,49 @@ namespace Elastic.Documentation.ReleaseNotes;
 /// <param name="FilePath">The absolute path to the bundle file.</param>
 /// <param name="Entries">Resolved changelog entries (from inline data or file references).</param>
 [Equatable]
-public partial record LoadedBundle(
-	string Version,
-	string Repo,
-	string Owner,
-	[property: DefaultEquality] Bundle Data,
-	string FilePath,
-	[property: OrderedEquality] IReadOnlyList<ChangelogEntry> Entries
-)
+public partial record LoadedBundle
 {
+	internal LoadedBundle(string version, string repo, string owner, Bundle data, string filePath, IReadOnlyList<ChangelogEntry> entries)
+	{
+		Version = version;
+		Repo = repo;
+		Owner = owner;
+		Data = data;
+		FilePath = filePath;
+		Entries = entries;
+	}
+
+	public string Version { get; internal init; }
+
+	public string Repo { get; internal init; }
+
+	public string Owner { get; internal init; }
+
+	[DefaultEquality]
+	public Bundle Data { get; internal init; }
+
+	public string FilePath { get; internal init; }
+
+	[OrderedEquality]
+	public IReadOnlyList<ChangelogEntry> Entries { get; internal init; }
+
+	public void Deconstruct(
+		out string version,
+		out string repo,
+		out string owner,
+		out Bundle data,
+		out string filePath,
+		out IReadOnlyList<ChangelogEntry> entries
+	)
+	{
+		version = Version;
+		repo = Repo;
+		owner = Owner;
+		data = Data;
+		filePath = FilePath;
+		entries = Entries;
+	}
+
 	/// <summary>
 	/// Entries grouped by their changelog entry type.
 	/// </summary>

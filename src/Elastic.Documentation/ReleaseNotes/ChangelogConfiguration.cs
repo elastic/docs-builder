@@ -55,31 +55,31 @@ public partial record ChangelogConfiguration
 	/// <summary>
 	/// Pivot configuration for types, subtypes, and areas with label mappings
 	/// </summary>
-	public PivotConfiguration? Pivot { get; init; }
+	public PivotConfiguration? Pivot { get; internal init; }
 
 	/// <summary>
 	/// Available types for changelog entries (computed from Pivot.Types or defaults)
 	/// </summary>
 	[OrderedEquality]
-	public IReadOnlyList<string> Types { get; init; } = DefaultTypes;
+	public IReadOnlyList<string> Types { get; internal init; } = DefaultTypes;
 
 	/// <summary>
 	/// Available subtypes for breaking changes (computed from Pivot.Subtypes or defaults)
 	/// </summary>
 	[OrderedEquality]
-	public IReadOnlyList<string> SubTypes { get; init; } = DefaultSubtypes;
+	public IReadOnlyList<string> SubTypes { get; internal init; } = DefaultSubtypes;
 
 	/// <summary>
 	/// Available lifecycle values (strongly typed, from config or defaults)
 	/// </summary>
 	[OrderedEquality]
-	public IReadOnlyList<Lifecycle> Lifecycles { get; init; } = DefaultLifecycles;
+	public IReadOnlyList<Lifecycle> Lifecycles { get; internal init; } = DefaultLifecycles;
 
 	/// <summary>
 	/// Available areas (computed from Pivot.Areas keys)
 	/// </summary>
 	[OrderedEquality]
-	public IReadOnlyList<string>? Areas { get; init; }
+	public IReadOnlyList<string>? Areas { get; internal init; }
 
 	/// <summary>
 	/// Available products (resolved Product objects from products.yml)
@@ -87,21 +87,21 @@ public partial record ChangelogConfiguration
 	// Product is a record of scalars, so compiler record equality is already structural; it needs no [Equatable].
 #pragma warning disable GE003
 	[OrderedEquality]
-	public IReadOnlyList<Product>? Products { get; init; }
+	public IReadOnlyList<Product>? Products { get; internal init; }
 #pragma warning restore GE003
 
 	/// <summary>
 	/// Mapping from GitHub label names to changelog type values (computed from Pivot.Types)
 	/// </summary>
 	[UnorderedEquality]
-	public IReadOnlyDictionary<string, string>? LabelToType { get; init; }
+	public IReadOnlyDictionary<string, string>? LabelToType { get; internal init; }
 
 	/// <summary>
 	/// Mapping from GitHub label names to changelog area values (computed from Pivot.Areas)
 	/// Multiple labels can map to the same area. To map one label to multiple areas, repeat the label under each area in pivot.areas.
 	/// </summary>
 	[UnorderedEquality(typeof(StringListEntryComparer))]
-	public IReadOnlyDictionary<string, IReadOnlyList<string>>? LabelToAreas { get; init; }
+	public IReadOnlyDictionary<string, IReadOnlyList<string>>? LabelToAreas { get; internal init; }
 
 	/// <summary>
 	/// Mapping from GitHub label names to product spec strings (computed from Pivot.Products).
@@ -109,7 +109,7 @@ public partial record ChangelogConfiguration
 	/// When a PR has labels matching multiple entries, all matching products are collected.
 	/// </summary>
 	[UnorderedEquality]
-	public IReadOnlyDictionary<string, string>? LabelToProducts { get; init; }
+	public IReadOnlyDictionary<string, string>? LabelToProducts { get; internal init; }
 
 	/// <summary>
 	/// Mapping from GitHub label names to feature-id values (computed from Pivot.Features).
@@ -117,40 +117,40 @@ public partial record ChangelogConfiguration
 	/// When a PR has labels matching multiple distinct feature-ids, the first match is used.
 	/// </summary>
 	[UnorderedEquality]
-	public IReadOnlyDictionary<string, string>? LabelToFeatures { get; init; }
+	public IReadOnlyDictionary<string, string>? LabelToFeatures { get; internal init; }
 
 	/// <summary>
 	/// Rules configuration for create and publish blockers
 	/// </summary>
-	public RulesConfiguration? Rules { get; init; }
+	public RulesConfiguration? Rules { get; internal init; }
 
 	/// <summary>
 	/// Extraction configuration for release notes and issues.
 	/// </summary>
-	public ExtractConfiguration Extract { get; init; } = new();
+	public ExtractConfiguration Extract { get; internal init; } = new();
 
 	/// <summary>
 	/// Products configuration with available and default products.
 	/// </summary>
-	public ProductsConfig? ProductsConfiguration { get; init; }
+	public ProductsConfig? ProductsConfiguration { get; internal init; }
 
 	/// <summary>
 	/// Filename strategy for generated changelog files.
 	/// Controls how files created by 'changelog add' are named.
 	/// </summary>
-	public FilenameStrategy Filename { get; init; } = FilenameStrategy.Pr;
+	public FilenameStrategy Filename { get; internal init; } = FilenameStrategy.Pr;
 
 	/// <summary>
 	/// Bundle configuration with profiles and defaults.
 	/// </summary>
-	public BundleConfiguration? Bundle { get; init; }
+	public BundleConfiguration? Bundle { get; internal init; }
 
 	/// <summary>
 	/// Labels that trigger the highlight flag for changelog entries (computed from Pivot.HighlightLabels).
 	/// When a PR has any of these labels, highlight is set to true.
 	/// </summary>
 	[OrderedEquality]
-	public IReadOnlyList<string>? HighlightLabels { get; init; }
+	public IReadOnlyList<string>? HighlightLabels { get; internal init; }
 
 	private static readonly Lazy<ChangelogConfiguration> DefaultLazy = new(() => new ChangelogConfiguration());
 

@@ -30,37 +30,53 @@ public enum TocEntryKind
 /// that selects no shape; this keeps what it hid (see <c>Constraints-Conventions.md</c>). Not part of equality.
 /// </summary>
 [Equatable]
-public sealed partial record TocEntryAuthoring(TocEntryKind Kind, string Entry)
+public sealed partial record TocEntryAuthoring
 {
+	internal TocEntryAuthoring(TocEntryKind kind, string entry)
+	{
+		Kind = kind;
+		Entry = entry;
+	}
+
+	public TocEntryKind Kind { get; internal init; }
+
+	public string Entry { get; internal init; }
+
+	public void Deconstruct(out TocEntryKind kind, out string entry)
+	{
+		kind = Kind;
+		entry = Entry;
+	}
+
 	/// <summary>Every key of the mapping, in the order written.</summary>
 	[OrderedEquality]
-	public IReadOnlyList<string> WrittenKeys { get; init; } = [];
+	public IReadOnlyList<string> WrittenKeys { get; internal init; } = [];
 
 	/// <summary>Keys that no entry shape reads at all.</summary>
 	[OrderedEquality]
-	public IReadOnlyList<string> UnknownKeys { get; init; } = [];
+	public IReadOnlyList<string> UnknownKeys { get; internal init; } = [];
 
 	/// <summary>Keys that other shapes read but the chosen shape does not (for example <c>toc:</c> next to <c>file:</c>).</summary>
 	[OrderedEquality]
-	public IReadOnlyList<string> IgnoredKeys { get; init; } = [];
+	public IReadOnlyList<string> IgnoredKeys { get; internal init; } = [];
 
 	/// <summary>Whether the resolver takes the entry's children as written, so that auto-discovery (<c>sort</c>, <c>exclude</c>) is not used.</summary>
-	public bool ExplicitChildren { get; init; }
+	public bool ExplicitChildren { get; internal init; }
 
 	/// <summary>The <c>toc.yml</c> or <c>docset.yml</c> the entry is written in.</summary>
-	public string? File { get; init; }
+	public string? File { get; internal init; }
 
-	public SourceLocation? Location { get; init; }
+	public SourceLocation? Location { get; internal init; }
 
 	/// <summary><c>island</c> as written (a listing or a nested toc); null when absent.</summary>
-	public string? IslandRaw { get; init; }
+	public string? IslandRaw { get; internal init; }
 
 	/// <summary><c>hidden</c> as written on a <c>crosslink:</c> entry; null when absent.</summary>
-	public string? HiddenRaw { get; init; }
+	public string? HiddenRaw { get; internal init; }
 
 	/// <summary><c>visual</c> as written on a listing; null when absent.</summary>
-	public string? VisualRaw { get; init; }
+	public string? VisualRaw { get; internal init; }
 
 	/// <summary><c>sort</c> as written on a listing; null when absent.</summary>
-	public string? SortRaw { get; init; }
+	public string? SortRaw { get; internal init; }
 }

@@ -2,8 +2,6 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using System.Diagnostics.CodeAnalysis;
-
 namespace Elastic.Documentation.ReleaseNotes;
 
 /// <summary>
@@ -14,13 +12,12 @@ public record BundledProduct
 	/// <summary>
 	/// Parameterless constructor for object initializer syntax.
 	/// </summary>
-	public BundledProduct() { }
+	internal BundledProduct() { }
 
 	/// <summary>
 	/// Constructor with all parameters.
 	/// </summary>
-	[SetsRequiredMembers]
-	public BundledProduct(string productId, string? target = null, Lifecycle? lifecycle = null, string? repo = null, string? owner = null)
+	internal BundledProduct(string productId, string? target = null, Lifecycle? lifecycle = null, string? repo = null, string? owner = null)
 	{
 		ProductId = productId;
 		Target = target;
@@ -30,25 +27,25 @@ public record BundledProduct
 	}
 
 	/// <summary>The product identifier.</summary>
-	public required string ProductId { get; init; }
+	public string ProductId { get; internal init; } = default!;
 
 	/// <summary>Optional target version.</summary>
-	public string? Target { get; init; }
+	public string? Target { get; internal init; }
 
 	/// <summary>The lifecycle stage of the feature for this product.</summary>
-	public Lifecycle? Lifecycle { get; init; }
+	public Lifecycle? Lifecycle { get; internal init; }
 
 	/// <summary>
 	/// GitHub repository name for generating PR/issue links.
 	/// If not specified, falls back to ProductId.
 	/// </summary>
-	public string? Repo { get; init; }
+	public string? Repo { get; internal init; }
 
 	/// <summary>
 	/// GitHub owner (organization or user) for generating PR/issue links.
 	/// If not specified, defaults to "elastic".
 	/// </summary>
-	public string? Owner { get; init; }
+	public string? Owner { get; internal init; }
 
 	/// <summary>
 	/// A bundle's product from the pieces a CLI names: the product id, a target (<c>*</c> is none) and a lifecycle's text (<c>*</c> or an unrecognized one is none).

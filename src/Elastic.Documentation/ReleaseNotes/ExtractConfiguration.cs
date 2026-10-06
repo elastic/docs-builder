@@ -13,13 +13,13 @@ public record ExtractConfiguration
 	/// Whether to extract release notes from PR descriptions by default.
 	/// Defaults to true. Can be overridden by CLI --no-extract-release-notes.
 	/// </summary>
-	public bool ReleaseNotes { get; init; } = true;
+	public bool ReleaseNotes { get; internal init; } = true;
 
 	/// <summary>
 	/// Whether to extract linked issues from PR body by default.
 	/// Defaults to true. Looks for patterns like "Fixes #123", "Closes #456", etc.
 	/// </summary>
-	public bool Issues { get; init; } = true;
+	public bool Issues { get; internal init; } = true;
 
 	/// <summary>
 	/// Whether to strip square-bracket prefixes from PR titles by default.
@@ -29,5 +29,5 @@ public record ExtractConfiguration
 	/// Serialized changelog YAML uses quoted scalars when a title still starts with <c>-</c>, <c>*</c>, <c>+</c>, en dash, or em dash so the value is not parsed as a list marker.
 	/// Can be overridden by CLI --strip-title-prefix flag.
 	/// </summary>
-	public bool StripTitlePrefix { get; init; }
+	public bool StripTitlePrefix { get; internal init; }
 }

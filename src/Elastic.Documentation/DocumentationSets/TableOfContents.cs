@@ -125,78 +125,197 @@ public static class SortOrderExtensions
 /// unless a nearer entry, nested <c>toc.yml</c>, or page frontmatter selects another template.
 /// </param>
 [Equatable]
-public partial record FileRef(
-	DocsetPath PathRelativeToDocumentationSet,
-	ContainerPath PathRelativeToContainer,
-	bool Hidden,
-	[property: OrderedEquality] IReadOnlyList<TocItem> Children,
-	DeclaringFilePath Context,
-	string? DefaultCta = null
-) : ITableOfContentsItem;
+public partial record FileRef : ITableOfContentsItem
+{
+	internal FileRef(
+		DocsetPath pathRelativeToDocumentationSet,
+		ContainerPath pathRelativeToContainer,
+		bool hidden,
+		IReadOnlyList<TocItem> children,
+		DeclaringFilePath context,
+		string? defaultCta = null
+	)
+	{
+		PathRelativeToDocumentationSet = pathRelativeToDocumentationSet;
+		PathRelativeToContainer = pathRelativeToContainer;
+		Hidden = hidden;
+		Children = children;
+		Context = context;
+		DefaultCta = defaultCta;
+	}
 
-public record IndexFileRef(
-	DocsetPath PathRelativeToDocumentationSet,
-	ContainerPath PathRelativeToContainer,
-	bool Hidden,
-	IReadOnlyList<TocItem> Children,
-	DeclaringFilePath Context,
-	string? DefaultCta = null
-) : FileRef(PathRelativeToDocumentationSet, PathRelativeToContainer, Hidden, Children, Context, DefaultCta);
+	public DocsetPath PathRelativeToDocumentationSet { get; internal init; }
+
+	public ContainerPath PathRelativeToContainer { get; internal init; }
+
+	public bool Hidden { get; internal init; }
+
+	[OrderedEquality]
+	public IReadOnlyList<TocItem> Children { get; internal init; }
+
+	public DeclaringFilePath Context { get; internal init; }
+
+	public string? DefaultCta { get; internal init; }
+
+	public void Deconstruct(
+		out DocsetPath pathRelativeToDocumentationSet,
+		out ContainerPath pathRelativeToContainer,
+		out bool hidden,
+		out IReadOnlyList<TocItem> children,
+		out DeclaringFilePath context,
+		out string? defaultCta
+	)
+	{
+		pathRelativeToDocumentationSet = PathRelativeToDocumentationSet;
+		pathRelativeToContainer = PathRelativeToContainer;
+		hidden = Hidden;
+		children = Children;
+		context = Context;
+		defaultCta = DefaultCta;
+	}
+}
+
+public record IndexFileRef : FileRef
+{
+	internal IndexFileRef(
+		DocsetPath pathRelativeToDocumentationSet,
+		ContainerPath pathRelativeToContainer,
+		bool hidden,
+		IReadOnlyList<TocItem> children,
+		DeclaringFilePath context,
+		string? defaultCta = null
+	) : base(pathRelativeToDocumentationSet, pathRelativeToContainer, hidden, children, context, defaultCta) { }
+}
 
 /// <summary>
 /// Represents a file reference created from a folder+file combination in YAML (e.g., "folder: path/to/dir, file: index.md").
 /// Children of this file should resolve relative to the folder path, not the parent TOC path.
 /// </summary>
-public record FolderIndexFileRef(
-	DocsetPath PathRelativeToDocumentationSet,
-	ContainerPath PathRelativeToContainer,
-	bool Hidden,
-	IReadOnlyList<TocItem> Children,
-	DeclaringFilePath Context,
-	string? DefaultCta = null
-) : IndexFileRef(PathRelativeToDocumentationSet, PathRelativeToContainer, Hidden, Children, Context, DefaultCta);
+public record FolderIndexFileRef : IndexFileRef
+{
+	internal FolderIndexFileRef(
+		DocsetPath pathRelativeToDocumentationSet,
+		ContainerPath pathRelativeToContainer,
+		bool hidden,
+		IReadOnlyList<TocItem> children,
+		DeclaringFilePath context,
+		string? defaultCta = null
+	) : base(pathRelativeToDocumentationSet, pathRelativeToContainer, hidden, children, context, defaultCta) { }
+}
 
 /// <summary>
 /// A detection rule page, generated from a <c>.toml</c> rule file under a <c>detection_rules</c> folder. Rules are not
 /// declared in a toc.yml, so their container path is their docset path.
 /// </summary>
 [Equatable]
-public partial record DetectionRuleRef(
-	[property: CustomEquality(typeof(FileSystemInfoLocationComparer))] IFileInfo FileInfo,
-	DocsetPath PathRelativeToDocumentationSet,
-	DeclaringFilePath Context
-) : FileRef(PathRelativeToDocumentationSet, ContainerPath.From(PathRelativeToDocumentationSet), true, [], Context);
+public partial record DetectionRuleRef : FileRef
+{
+	internal DetectionRuleRef(IFileInfo fileInfo, DocsetPath pathRelativeToDocumentationSet, DeclaringFilePath context) : base(
+			pathRelativeToDocumentationSet,
+			ContainerPath.From(pathRelativeToDocumentationSet),
+			true,
+			[],
+			context
+		) => FileInfo = fileInfo;
+
+	[CustomEquality(typeof(FileSystemInfoLocationComparer))]
+	public IFileInfo FileInfo { get; internal init; }
+
+	public void Deconstruct(out IFileInfo fileInfo, out DocsetPath pathRelativeToDocumentationSet, out DeclaringFilePath context)
+	{
+		fileInfo = FileInfo;
+		pathRelativeToDocumentationSet = PathRelativeToDocumentationSet;
+		context = Context;
+	}
+}
 
 /// <summary>
 /// The overview page of a <c>detection_rules</c> entry. Its children are the explicit children followed by one
 /// page per discovered rule.
 /// </summary>
 [Equatable]
-public partial record DetectionRuleOverviewRef(
-	DocsetPath PathRelativeToDocumentationSet,
-	ContainerPath PathRelativeToContainer,
-	[property: OrderedEquality] IReadOnlyList<string> DetectionRuleFolders,
-	IReadOnlyList<TocItem> Children,
-	DeclaringFilePath Context,
-	string? DeprecatedFile = null
-) : FileRef(PathRelativeToDocumentationSet, PathRelativeToContainer, false, Children, Context)
+public partial record DetectionRuleOverviewRef : FileRef
 {
+	internal DetectionRuleOverviewRef(
+		DocsetPath pathRelativeToDocumentationSet,
+		ContainerPath pathRelativeToContainer,
+		IReadOnlyList<string> detectionRuleFolders,
+		IReadOnlyList<TocItem> children,
+		DeclaringFilePath context,
+		string? deprecatedFile = null
+	) : base(pathRelativeToDocumentationSet, pathRelativeToContainer, false, children, context)
+	{
+		DetectionRuleFolders = detectionRuleFolders;
+		DeprecatedFile = deprecatedFile;
+	}
+
+	[OrderedEquality]
+	public IReadOnlyList<string> DetectionRuleFolders { get; internal init; }
+
+	public string? DeprecatedFile { get; internal init; }
+
+	public void Deconstruct(
+		out DocsetPath pathRelativeToDocumentationSet,
+		out ContainerPath pathRelativeToContainer,
+		out IReadOnlyList<string> detectionRuleFolders,
+		out IReadOnlyList<TocItem> children,
+		out DeclaringFilePath context,
+		out string? deprecatedFile
+	)
+	{
+		pathRelativeToDocumentationSet = PathRelativeToDocumentationSet;
+		pathRelativeToContainer = PathRelativeToContainer;
+		detectionRuleFolders = DetectionRuleFolders;
+		children = Children;
+		context = Context;
+		deprecatedFile = DeprecatedFile;
+	}
+
 	/// <summary>
 	/// The deprecated-rules overview emitted as this entry's next sibling, when a <c>_deprecated</c> subfolder exists.
 	/// </summary>
 	[DefaultEquality]
-	public FileRef? DeprecatedSiblingRef { get; init; }
+	public FileRef? DeprecatedSiblingRef { get; internal init; }
 }
 
 [Equatable]
-public partial record CrossLinkRef(
-	Uri CrossLinkUri,
-	string? Title,
-	bool Hidden,
-	[property: OrderedEquality] IReadOnlyList<TocItem> Children,
-	DeclaringFilePath Context
-) : ITableOfContentsItem
+public partial record CrossLinkRef : ITableOfContentsItem
 {
+	internal CrossLinkRef(Uri crossLinkUri, string? title, bool hidden, IReadOnlyList<TocItem> children, DeclaringFilePath context)
+	{
+		CrossLinkUri = crossLinkUri;
+		Title = title;
+		Hidden = hidden;
+		Children = children;
+		Context = context;
+	}
+
+	public Uri CrossLinkUri { get; internal init; }
+
+	public string? Title { get; internal init; }
+
+	public bool Hidden { get; internal init; }
+
+	[OrderedEquality]
+	public IReadOnlyList<TocItem> Children { get; internal init; }
+
+	public DeclaringFilePath Context { get; internal init; }
+
+	public void Deconstruct(
+		out Uri crossLinkUri,
+		out string? title,
+		out bool hidden,
+		out IReadOnlyList<TocItem> children,
+		out DeclaringFilePath context
+	)
+	{
+		crossLinkUri = CrossLinkUri;
+		title = Title;
+		hidden = Hidden;
+		children = Children;
+		context = Context;
+	}
+
 	// CrossLinks don't have a file system path, so we use the CrossLinkUri as the Path
 	public DocsetPath PathRelativeToDocumentationSet => DocsetPath.From(CrossLinkUri.ToString());
 
@@ -208,15 +327,62 @@ public partial record CrossLinkRef(
 /// <param name="Exclude">File names to exclude from auto-discovery (like "draft.md", "internal.md").</param>
 /// <param name="DefaultCta">Optional <c>default_cta</c> declared on this entry; applies to every page inside the folder.</param>
 [Equatable]
-public partial record FolderRef(
-	DocsetPath PathRelativeToDocumentationSet,
-	ContainerPath PathRelativeToContainer,
-	[property: OrderedEquality] IReadOnlyList<TocItem> Children,
-	DeclaringFilePath Context,
-	SortOrder? Sort = null,
-	[property: OrderedEquality] IReadOnlyList<string>? Exclude = null,
-	string? DefaultCta = null
-) : ITableOfContentsItem;
+public partial record FolderRef : ITableOfContentsItem
+{
+	internal FolderRef(
+		DocsetPath pathRelativeToDocumentationSet,
+		ContainerPath pathRelativeToContainer,
+		IReadOnlyList<TocItem> children,
+		DeclaringFilePath context,
+		SortOrder? sort = null,
+		IReadOnlyList<string>? exclude = null,
+		string? defaultCta = null
+	)
+	{
+		PathRelativeToDocumentationSet = pathRelativeToDocumentationSet;
+		PathRelativeToContainer = pathRelativeToContainer;
+		Children = children;
+		Context = context;
+		Sort = sort;
+		Exclude = exclude;
+		DefaultCta = defaultCta;
+	}
+
+	public DocsetPath PathRelativeToDocumentationSet { get; internal init; }
+
+	public ContainerPath PathRelativeToContainer { get; internal init; }
+
+	[OrderedEquality]
+	public IReadOnlyList<TocItem> Children { get; internal init; }
+
+	public DeclaringFilePath Context { get; internal init; }
+
+	public SortOrder? Sort { get; internal init; }
+
+	[OrderedEquality]
+	public IReadOnlyList<string>? Exclude { get; internal init; }
+
+	public string? DefaultCta { get; internal init; }
+
+	public void Deconstruct(
+		out DocsetPath pathRelativeToDocumentationSet,
+		out ContainerPath pathRelativeToContainer,
+		out IReadOnlyList<TocItem> children,
+		out DeclaringFilePath context,
+		out SortOrder? sort,
+		out IReadOnlyList<string>? exclude,
+		out string? defaultCta
+	)
+	{
+		pathRelativeToDocumentationSet = PathRelativeToDocumentationSet;
+		pathRelativeToContainer = PathRelativeToContainer;
+		children = Children;
+		context = Context;
+		sort = Sort;
+		exclude = Exclude;
+		defaultCta = DefaultCta;
+	}
+}
 
 /// <summary>
 /// A synthetic single-page folder created from the childless "file: subdir/index.md" sugar. Its path
@@ -224,27 +390,86 @@ public partial record FolderRef(
 /// -- unlike an explicit "folder: a/b" entry, it never switches to context-relative resolution just
 /// because its path contains '/'.
 /// </summary>
-public record DeepLinkedFolderRef(
-	DocsetPath PathRelativeToDocumentationSet,
-	ContainerPath PathRelativeToContainer,
-	IReadOnlyList<TocItem> Children,
-	DeclaringFilePath Context,
-	string? DefaultCta = null
-) : FolderRef(PathRelativeToDocumentationSet, PathRelativeToContainer, Children, Context, DefaultCta: DefaultCta);
+public record DeepLinkedFolderRef : FolderRef
+{
+	internal DeepLinkedFolderRef(
+		DocsetPath pathRelativeToDocumentationSet,
+		ContainerPath pathRelativeToContainer,
+		IReadOnlyList<TocItem> children,
+		DeclaringFilePath context,
+		string? defaultCta = null
+	) : base(pathRelativeToDocumentationSet, pathRelativeToContainer, children, context, defaultCta: defaultCta) { }
+
+	public void Deconstruct(
+		out DocsetPath pathRelativeToDocumentationSet,
+		out ContainerPath pathRelativeToContainer,
+		out IReadOnlyList<TocItem> children,
+		out DeclaringFilePath context,
+		out string? defaultCta
+	)
+	{
+		pathRelativeToDocumentationSet = PathRelativeToDocumentationSet;
+		pathRelativeToContainer = PathRelativeToContainer;
+		children = Children;
+		context = Context;
+		defaultCta = DefaultCta;
+	}
+}
 
 /// <param name="Island">
 /// When <c>true</c>, this TOC renders as an island. Combines flags from both the inline
 /// <c>- toc: x</c> entry and the child <c>toc.yml</c> root (OR semantics).
 /// </param>
 [Equatable]
-public partial record IsolatedTableOfContentsRef(
-	DocsetPath PathRelativeToDocumentationSet,
-	ContainerPath PathRelativeToContainer,
-	[property: OrderedEquality] IReadOnlyList<TocItem> Children,
-	DeclaringFilePath Context,
-	bool Island = false,
-	string? DefaultCta = null
-) : ITableOfContentsItem;
+public partial record IsolatedTableOfContentsRef : ITableOfContentsItem
+{
+	internal IsolatedTableOfContentsRef(
+		DocsetPath pathRelativeToDocumentationSet,
+		ContainerPath pathRelativeToContainer,
+		IReadOnlyList<TocItem> children,
+		DeclaringFilePath context,
+		bool island = false,
+		string? defaultCta = null
+	)
+	{
+		PathRelativeToDocumentationSet = pathRelativeToDocumentationSet;
+		PathRelativeToContainer = pathRelativeToContainer;
+		Children = children;
+		Context = context;
+		Island = island;
+		DefaultCta = defaultCta;
+	}
+
+	public DocsetPath PathRelativeToDocumentationSet { get; internal init; }
+
+	public ContainerPath PathRelativeToContainer { get; internal init; }
+
+	[OrderedEquality]
+	public IReadOnlyList<TocItem> Children { get; internal init; }
+
+	public DeclaringFilePath Context { get; internal init; }
+
+	public bool Island { get; internal init; }
+
+	public string? DefaultCta { get; internal init; }
+
+	public void Deconstruct(
+		out DocsetPath pathRelativeToDocumentationSet,
+		out ContainerPath pathRelativeToContainer,
+		out IReadOnlyList<TocItem> children,
+		out DeclaringFilePath context,
+		out bool island,
+		out string? defaultCta
+	)
+	{
+		pathRelativeToDocumentationSet = PathRelativeToDocumentationSet;
+		pathRelativeToContainer = PathRelativeToContainer;
+		children = Children;
+		context = Context;
+		island = Island;
+		defaultCta = DefaultCta;
+	}
+}
 
 /// <summary>Controls how much of the listing appears in the rendered navigation tree.</summary>
 public enum ListingVisual
@@ -279,49 +504,225 @@ public static class ListingVisualExtensions
 
 /// <summary>Optional knobs on a <see cref="ListingRef"/> entry beyond the mandatory path.</summary>
 [Equatable]
-public partial record ListingOptions(
-	string? Glob = null,
-	SortOrder? Sort = null,
-	[property: OrderedEquality] IReadOnlyList<string>? Exclude = null,
-	ListingVisual Visual = ListingVisual.None,
-	[property: OrderedEquality] IReadOnlyList<string>? Groups = null,
-	string? Extension = null,
-	bool Island = false
-);
+public partial record ListingOptions
+{
+	internal ListingOptions(
+		string? glob = null,
+		SortOrder? sort = null,
+		IReadOnlyList<string>? exclude = null,
+		ListingVisual visual = ListingVisual.None,
+		IReadOnlyList<string>? groups = null,
+		string? extension = null,
+		bool island = false
+	)
+	{
+		Glob = glob;
+		Sort = sort;
+		Exclude = exclude;
+		Visual = visual;
+		Groups = groups;
+		Extension = extension;
+		Island = island;
+	}
+
+	public string? Glob { get; internal init; }
+
+	public SortOrder? Sort { get; internal init; }
+
+	[OrderedEquality]
+	public IReadOnlyList<string>? Exclude { get; internal init; }
+
+	public ListingVisual Visual { get; internal init; }
+
+	[OrderedEquality]
+	public IReadOnlyList<string>? Groups { get; internal init; }
+
+	public string? Extension { get; internal init; }
+
+	public bool Island { get; internal init; }
+
+	public void Deconstruct(
+		out string? glob,
+		out SortOrder? sort,
+		out IReadOnlyList<string>? exclude,
+		out ListingVisual visual,
+		out IReadOnlyList<string>? groups,
+		out string? extension,
+		out bool island
+	)
+	{
+		glob = Glob;
+		sort = Sort;
+		exclude = Exclude;
+		visual = Visual;
+		groups = Groups;
+		extension = Extension;
+		island = Island;
+	}
+}
 
 /// <summary>
 /// A listing entry in the TOC: glob-discovers files, hides them from the nav tree
 /// (subject to <see cref="ListingOptions.Visual"/>), and generates a grouped index page.
 /// </summary>
 [Equatable]
-public partial record ListingRef(
-	DocsetPath PathRelativeToDocumentationSet,
-	ContainerPath PathRelativeToContainer,
-	[property: OrderedEquality] IReadOnlyList<TocItem> Children,
-	DeclaringFilePath Context,
-	ListingOptions Options
-) : ITableOfContentsItem;
+public partial record ListingRef : ITableOfContentsItem
+{
+	internal ListingRef(
+		DocsetPath pathRelativeToDocumentationSet,
+		ContainerPath pathRelativeToContainer,
+		IReadOnlyList<TocItem> children,
+		DeclaringFilePath context,
+		ListingOptions options
+	)
+	{
+		PathRelativeToDocumentationSet = pathRelativeToDocumentationSet;
+		PathRelativeToContainer = pathRelativeToContainer;
+		Children = children;
+		Context = context;
+		Options = options;
+	}
+
+	public DocsetPath PathRelativeToDocumentationSet { get; internal init; }
+
+	public ContainerPath PathRelativeToContainer { get; internal init; }
+
+	[OrderedEquality]
+	public IReadOnlyList<TocItem> Children { get; internal init; }
+
+	public DeclaringFilePath Context { get; internal init; }
+
+	public ListingOptions Options { get; internal init; }
+
+	public void Deconstruct(
+		out DocsetPath pathRelativeToDocumentationSet,
+		out ContainerPath pathRelativeToContainer,
+		out IReadOnlyList<TocItem> children,
+		out DeclaringFilePath context,
+		out ListingOptions options
+	)
+	{
+		pathRelativeToDocumentationSet = PathRelativeToDocumentationSet;
+		pathRelativeToContainer = PathRelativeToContainer;
+		children = Children;
+		context = Context;
+		options = Options;
+	}
+}
 
 /// <summary>A resolved group bucket inside a <see cref="ListingRef"/>. Children are the pages belonging to this group.</summary>
 [Equatable]
-public partial record ListingGroupRef(
-	string GroupKey,
-	DocsetPath PathRelativeToDocumentationSet,
-	ContainerPath PathRelativeToContainer,
-	[property: OrderedEquality] IReadOnlyList<TocItem> Children,
-	DeclaringFilePath Context
-) : ITableOfContentsItem;
+public partial record ListingGroupRef : ITableOfContentsItem
+{
+	internal ListingGroupRef(
+		string groupKey,
+		DocsetPath pathRelativeToDocumentationSet,
+		ContainerPath pathRelativeToContainer,
+		IReadOnlyList<TocItem> children,
+		DeclaringFilePath context
+	)
+	{
+		GroupKey = groupKey;
+		PathRelativeToDocumentationSet = pathRelativeToDocumentationSet;
+		PathRelativeToContainer = pathRelativeToContainer;
+		Children = children;
+		Context = context;
+	}
+
+	public string GroupKey { get; internal init; }
+
+	public DocsetPath PathRelativeToDocumentationSet { get; internal init; }
+
+	public ContainerPath PathRelativeToContainer { get; internal init; }
+
+	[OrderedEquality]
+	public IReadOnlyList<TocItem> Children { get; internal init; }
+
+	public DeclaringFilePath Context { get; internal init; }
+
+	public void Deconstruct(
+		out string groupKey,
+		out DocsetPath pathRelativeToDocumentationSet,
+		out ContainerPath pathRelativeToContainer,
+		out IReadOnlyList<TocItem> children,
+		out DeclaringFilePath context
+	)
+	{
+		groupKey = GroupKey;
+		pathRelativeToDocumentationSet = PathRelativeToDocumentationSet;
+		pathRelativeToContainer = PathRelativeToContainer;
+		children = Children;
+		context = Context;
+	}
+}
 
 /// <summary>A CLI reference generated from a <c>cli-schema.json</c>, optionally merged with supplemental docs.</summary>
 [Equatable]
-public partial record CliReferenceRef(
-	string SchemaPath,
-	string? SupplementalFolder,
-	string? Title,
-	string? NavigationTitle,
-	DocsetPath PathRelativeToDocumentationSet,
-	ContainerPath PathRelativeToContainer,
-	DeclaringFilePath Context,
-	[property: OrderedEquality] IReadOnlyList<TocItem> Children,
-	[property: DefaultEquality] ApplicableTo? AppliesTo = null
-) : ITableOfContentsItem;
+public partial record CliReferenceRef : ITableOfContentsItem
+{
+	internal CliReferenceRef(
+		string schemaPath,
+		string? supplementalFolder,
+		string? title,
+		string? navigationTitle,
+		DocsetPath pathRelativeToDocumentationSet,
+		ContainerPath pathRelativeToContainer,
+		DeclaringFilePath context,
+		IReadOnlyList<TocItem> children,
+		ApplicableTo? appliesTo = null
+	)
+	{
+		SchemaPath = schemaPath;
+		SupplementalFolder = supplementalFolder;
+		Title = title;
+		NavigationTitle = navigationTitle;
+		PathRelativeToDocumentationSet = pathRelativeToDocumentationSet;
+		PathRelativeToContainer = pathRelativeToContainer;
+		Context = context;
+		Children = children;
+		AppliesTo = appliesTo;
+	}
+
+	public string SchemaPath { get; internal init; }
+
+	public string? SupplementalFolder { get; internal init; }
+
+	public string? Title { get; internal init; }
+
+	public string? NavigationTitle { get; internal init; }
+
+	public DocsetPath PathRelativeToDocumentationSet { get; internal init; }
+
+	public ContainerPath PathRelativeToContainer { get; internal init; }
+
+	public DeclaringFilePath Context { get; internal init; }
+
+	[OrderedEquality]
+	public IReadOnlyList<TocItem> Children { get; internal init; }
+
+	[DefaultEquality]
+	public ApplicableTo? AppliesTo { get; internal init; }
+
+	public void Deconstruct(
+		out string schemaPath,
+		out string? supplementalFolder,
+		out string? title,
+		out string? navigationTitle,
+		out DocsetPath pathRelativeToDocumentationSet,
+		out ContainerPath pathRelativeToContainer,
+		out DeclaringFilePath context,
+		out IReadOnlyList<TocItem> children,
+		out ApplicableTo? appliesTo
+	)
+	{
+		schemaPath = SchemaPath;
+		supplementalFolder = SupplementalFolder;
+		title = Title;
+		navigationTitle = NavigationTitle;
+		pathRelativeToDocumentationSet = PathRelativeToDocumentationSet;
+		pathRelativeToContainer = PathRelativeToContainer;
+		context = Context;
+		children = Children;
+		appliesTo = AppliesTo;
+	}
+}

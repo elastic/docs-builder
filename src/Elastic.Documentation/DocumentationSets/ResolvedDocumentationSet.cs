@@ -23,33 +23,33 @@ public sealed partial record ResolvedDocumentationSet
 {
 	/// <summary>The <c>docset.yml</c> (or <c>_docset.yml</c>) this set was loaded from.</summary>
 	[CustomEquality(typeof(FileSystemInfoLocationComparer))]
-	public required IFileInfo SourceFile { get; init; }
+	public IFileInfo SourceFile { get; internal init; } = default!;
 
 	/// <summary>The directory holding <see cref="SourceFile"/>; the root every docset-relative path resolves from.</summary>
 	[CustomEquality(typeof(FileSystemInfoLocationComparer))]
-	public required IDirectoryInfo ScopeDirectory { get; init; }
+	public IDirectoryInfo ScopeDirectory { get; internal init; } = default!;
 
-	public string? Project { get; init; }
+	public string? Project { get; internal init; }
 
 	/// The maximum depth `toc.yml` files may appear
-	public int MaxTocDepth { get; init; } = 1;
+	public int MaxTocDepth { get; internal init; } = 1;
 
 	/// This is a documentation set not linked to by assembler.
 	/// Setting this to true relaxes a few restrictions such as mixing toc references with file and folder reference
-	public bool DevelopmentDocs { get; init; }
+	public bool DevelopmentDocs { get; internal init; }
 
 	[DefaultEquality]
-	public DocumentationSetExclusions Exclusions { get; init; } = DocumentationSetExclusions.None;
+	public DocumentationSetExclusions Exclusions { get; internal init; } = DocumentationSetExclusions.None;
 
 	/// <summary>Registry for this documentation set. <c>Public</c> uses S3 link index; other values use codex-link-index.</summary>
-	public DocSetRegistry Registry { get; init; } = DocSetRegistry.Public;
+	public DocSetRegistry Registry { get; internal init; } = DocSetRegistry.Public;
 
 	/// <summary>Parsed cross-link entries with registry for each target.</summary>
 	[OrderedEquality]
-	public IReadOnlyList<CrossLinkEntry> CrossLinkEntries { get; init; } = [];
+	public IReadOnlyList<CrossLinkEntry> CrossLinkEntries { get; internal init; } = [];
 
 	[OrderedEquality]
-	public IReadOnlyList<string> CrossLinkRepositories { get; init; } = [];
+	public IReadOnlyList<string> CrossLinkRepositories { get; internal init; } = [];
 
 	/// <summary>
 	/// Canonical product ids declared under <c>release_notes</c> whose changelog content is sourced from
@@ -57,62 +57,62 @@ public sealed partial record ResolvedDocumentationSet
 	/// directive and CDN sourcing for <c>changelog bundle</c>.
 	/// </summary>
 	[OrderedEquality]
-	public IReadOnlyList<string> ReleaseNotesProducts { get; init; } = [];
+	public IReadOnlyList<string> ReleaseNotesProducts { get; internal init; } = [];
 
 	[DefaultEquality]
-	public EnabledExtensions Extensions { get; init; } = EnabledExtensions.None;
+	public EnabledExtensions Extensions { get; internal init; } = EnabledExtensions.None;
 
 	[UnorderedEquality]
-	public IReadOnlyDictionary<string, LinkRedirect>? Redirects { get; init; }
+	public IReadOnlyDictionary<string, LinkRedirect>? Redirects { get; internal init; }
 
 	// Product is a record of scalars, so compiler record equality is already structural; it needs no [Equatable].
 #pragma warning disable GE003
 	[SetEquality]
-	public IReadOnlySet<Product> Products { get; init; } = new HashSet<Product>();
+	public IReadOnlySet<Product> Products { get; internal init; } = new HashSet<Product>();
 #pragma warning restore GE003
 
 	/// <summary>Authored <c>subs</c> merged with the generated <c>{{version.*}}</c> and <c>{{product.*}}</c> substitutions.</summary>
 	[UnorderedEquality]
-	public IReadOnlyDictionary<string, string> Substitutions { get; init; } = new Dictionary<string, string>();
+	public IReadOnlyDictionary<string, string> Substitutions { get; internal init; } = new Dictionary<string, string>();
 
 	/// <summary>The <c>features</c> toggles set in <c>docset.yml</c>, keyed by flag name.</summary>
 	[UnorderedEquality]
-	public IReadOnlyDictionary<string, bool> FeatureToggles { get; init; } = new Dictionary<string, bool>();
+	public IReadOnlyDictionary<string, bool> FeatureToggles { get; internal init; } = new Dictionary<string, bool>();
 
-	public string? StorybookRegistry { get; init; }
+	public string? StorybookRegistry { get; internal init; }
 
 	/// <summary>
 	/// Environment-independent <c>storybook.registry</c> value (committed default). Non-null only when an allow-listed
 	/// environment variable changed <see cref="StorybookRegistry"/>, so the directive can degrade to the committed
 	/// registry when the environment-supplied one is unreachable (e.g. an ephemeral PR registry that is not yet published).
 	/// </summary>
-	public string? StorybookRegistryFallback { get; init; }
+	public string? StorybookRegistryFallback { get; internal init; }
 
 	/// <summary>Resolved API configurations with template and specification file information.</summary>
 	[UnorderedEquality]
-	public IReadOnlyDictionary<string, ResolvedApiConfiguration>? ApiConfigurations { get; init; }
+	public IReadOnlyDictionary<string, ResolvedApiConfiguration>? ApiConfigurations { get; internal init; }
 
 	/// <summary>Set of diagnostic hint types to suppress for this documentation set.</summary>
 	[SetEquality]
-	public IReadOnlySet<HintType> SuppressDiagnostics { get; init; } = new HashSet<HintType>();
+	public IReadOnlySet<HintType> SuppressDiagnostics { get; internal init; } = new HashSet<HintType>();
 
 	/// <summary>White-label branding overrides. When non-null, all Elastic-specific chrome is suppressed.</summary>
 	[DefaultEquality]
-	public Branding? Branding { get; init; }
+	public Branding? Branding { get; internal init; }
 
 	/// <summary>
 	/// Named right-gutter CTA templates declared under <c>docset.yml</c>'s <c>cta</c> map, keyed by name.
 	/// Always contains at least the built-in <see cref="Cta.DefaultName"/> entry.
 	/// </summary>
 	[UnorderedEquality]
-	public IReadOnlyDictionary<string, Cta> Ctas { get; init; } = new Dictionary<string, Cta> { [Cta.DefaultName] = Cta.Default };
+	public IReadOnlyDictionary<string, Cta> Ctas { get; internal init; } = new Dictionary<string, Cta> { [Cta.DefaultName] = Cta.Default };
 
 	/// <summary>Pages registered with a default CTA via <c>default_cta</c>, keyed by docset-relative path.</summary>
 	[UnorderedEquality]
-	public IReadOnlyDictionary<string, string> TocDefaultCtas { get; init; } = new Dictionary<string, string>();
+	public IReadOnlyDictionary<string, string> TocDefaultCtas { get; internal init; } = new Dictionary<string, string>();
 
 	[OrderedEquality]
-	public IReadOnlyList<TocItem> TableOfContents { get; init; } = [];
+	public IReadOnlyList<TocItem> TableOfContents { get; internal init; } = [];
 }
 
 /// <summary>
@@ -121,12 +121,39 @@ public sealed partial record ResolvedDocumentationSet
 /// loader, since glob semantics are not part of the domain.
 /// </summary>
 [Equatable]
-public sealed partial record DocumentationSetExclusions(
-	[property: OrderedEquality] IReadOnlyList<string> ExcludeGlobs,
-	[property: OrderedEquality] IReadOnlyList<string> IncludeOverrides,
-	[property: SetEquality] IReadOnlySet<string> FolderExcludedFiles
-)
+public sealed partial record DocumentationSetExclusions
 {
+	internal DocumentationSetExclusions(
+		IReadOnlyList<string> excludeGlobs,
+		IReadOnlyList<string> includeOverrides,
+		IReadOnlySet<string> folderExcludedFiles
+	)
+	{
+		ExcludeGlobs = excludeGlobs;
+		IncludeOverrides = includeOverrides;
+		FolderExcludedFiles = folderExcludedFiles;
+	}
+
+	[OrderedEquality]
+	public IReadOnlyList<string> ExcludeGlobs { get; internal init; }
+
+	[OrderedEquality]
+	public IReadOnlyList<string> IncludeOverrides { get; internal init; }
+
+	[SetEquality]
+	public IReadOnlySet<string> FolderExcludedFiles { get; internal init; }
+
+	public void Deconstruct(
+		out IReadOnlyList<string> excludeGlobs,
+		out IReadOnlyList<string> includeOverrides,
+		out IReadOnlySet<string> folderExcludedFiles
+	)
+	{
+		excludeGlobs = ExcludeGlobs;
+		includeOverrides = IncludeOverrides;
+		folderExcludedFiles = FolderExcludedFiles;
+	}
+
 	public static DocumentationSetExclusions None { get; } = new([], [], new HashSet<string>());
 }
 
@@ -149,15 +176,39 @@ public enum DocSetRegistry
 /// <summary>A parsed cross-link entry from docset.yml, with the target registry for lookup.</summary>
 /// <param name="Repository">Repository name (e.g. elasticsearch, docs-eng-team).</param>
 /// <param name="Registry">Registry to use for lookup (public S3 or codex environment).</param>
-public record CrossLinkEntry(string Repository, DocSetRegistry Registry);
+public record CrossLinkEntry
+{
+	internal CrossLinkEntry(string repository, DocSetRegistry registry)
+	{
+		Repository = repository;
+		Registry = registry;
+	}
+
+	public string Repository { get; internal init; }
+
+	public DocSetRegistry Registry { get; internal init; }
+
+	public void Deconstruct(out string repository, out DocSetRegistry registry)
+	{
+		repository = Repository;
+		registry = Registry;
+	}
+}
 
 /// <summary>The <c>extensions</c> enabled in <c>docset.yml</c>.</summary>
 [Equatable]
-public sealed partial record EnabledExtensions([property: SetEquality] IReadOnlySet<string> Enabled)
+public sealed partial record EnabledExtensions
 {
+	internal EnabledExtensions(IReadOnlySet<string> enabled) => Enabled = enabled;
+
+	[SetEquality]
+	public IReadOnlySet<string> Enabled { get; internal init; }
+
+	public void Deconstruct(out IReadOnlySet<string> enabled) => enabled = Enabled;
+
 	public static EnabledExtensions None { get; } = new(new HashSet<string>());
 
-	public EnabledExtensions(IEnumerable<string> extensions) : this(new HashSet<string>(extensions)) { }
+	internal EnabledExtensions(IEnumerable<string> extensions) : this(new HashSet<string>(extensions)) { }
 
 	public bool IsDetectionRulesEnabled => Enabled.Contains("detection-rules");
 }
@@ -165,11 +216,11 @@ public sealed partial record EnabledExtensions([property: SetEquality] IReadOnly
 /// <summary>White-label branding from <c>docset.yml</c>'s <c>branding</c>, with image paths validated against the docset.</summary>
 public sealed record Branding
 {
-	public string? Icon { get; init; }
-	public string? HeaderBg { get; init; }
-	public string? OgImage { get; init; }
-	public string? Favicon { get; init; }
-	public string? AppleTouchIcon { get; init; }
+	public string? Icon { get; internal init; }
+	public string? HeaderBg { get; internal init; }
+	public string? OgImage { get; internal init; }
+	public string? Favicon { get; internal init; }
+	public string? AppleTouchIcon { get; internal init; }
 }
 
 /// <summary>A right-gutter call-to-action template.</summary>
@@ -177,12 +228,12 @@ public sealed record Branding
 public sealed partial record Cta
 {
 	/// <summary>Name of the template this was resolved from; <see cref="DefaultName"/> for the built-in default.</summary>
-	public required string Name { get; init; }
-	public required string Label { get; init; }
-	public required string Url { get; init; }
+	public string Name { get; internal init; } = default!;
+	public string Label { get; internal init; } = default!;
+	public string Url { get; internal init; } = default!;
 
 	[OrderedEquality]
-	public IReadOnlyList<string> Benefits { get; init; } = [];
+	public IReadOnlyList<string> Benefits { get; internal init; } = [];
 
 	/// <summary>The built-in default, reproducing the CTA that renders when no <c>cta:</c> config exists.</summary>
 	public const string DefaultName = "trial";
@@ -203,11 +254,11 @@ public sealed partial record Cta
 [Equatable]
 public sealed partial record ResolvedApiConfiguration
 {
-	public required string ProductKey { get; init; }
+	public string ProductKey { get; internal init; } = default!;
 
 	/// <summary>The <c>products.yml</c> product this API key binds to.</summary>
 	[DefaultEquality]
-	public required Product Product { get; init; }
+	public Product Product { get; internal init; } = default!;
 
 	/// <summary>
 	/// The basename (including extension) of the declared <c>spec:</c> value, e.g.
@@ -216,7 +267,7 @@ public sealed partial record ResolvedApiConfiguration
 	/// <c>&lt;org/repo&gt;</c> and this basename,
 	/// regardless of whether <see cref="LocalSpecFile"/> is present.
 	/// </summary>
-	public required string SpecFileName { get; init; }
+	public string SpecFileName { get; internal init; } = default!;
 
 	/// <summary>
 	/// Local override for the current OpenAPI specification file, present only when a file exists
@@ -225,35 +276,35 @@ public sealed partial record ResolvedApiConfiguration
 	/// docset that does not carry the spec file locally.
 	/// </summary>
 	[CustomEquality(typeof(FileSystemInfoLocationComparer))]
-	public IFileInfo? LocalSpecFile { get; init; }
+	public IFileInfo? LocalSpecFile { get; internal init; }
 
 	/// <summary>
 	/// Optional <c>org/repo</c> override from <c>repository:</c>, used instead of the current
 	/// checkout's GitHub remote to look up this API's entry in the root version index. Null means
 	/// use the checkout's own remote (the common case: a repo consuming its own published spec).
 	/// </summary>
-	public string? Repository { get; init; }
+	public string? Repository { get; internal init; }
 
 	/// <summary>
 	/// Explicit child pages declared via <c>children:</c>, resolved to files under <c>api/&lt;key&gt;/</c>,
 	/// in declared order.
 	/// </summary>
 	[OrderedEquality(typeof(FileSystemInfoLocationComparer))]
-	public IReadOnlyList<IFileInfo> Children { get; init; } = [];
+	public IReadOnlyList<IFileInfo> Children { get; internal init; } = [];
 
 	/// <summary>
 	/// The <c>api/&lt;key&gt;/</c> directory for this product, whether or not it exists yet.
 	/// Supplemental <c>op-*.md</c> / <c>tag-*.md</c> files are discovered from here.
 	/// </summary>
 	[CustomEquality(typeof(FileSystemInfoLocationComparer))]
-	public IDirectoryInfo? ApiContentDirectory { get; init; }
+	public IDirectoryInfo? ApiContentDirectory { get; internal init; }
 
 	/// <summary>
 	/// Normalized catalog categories (<c>ece</c>, <c>ess</c>, <c>self</c>, <c>serverless</c>).
 	/// Empty when the API is unclassified and appears only under All.
 	/// </summary>
 	[OrderedEquality]
-	public IReadOnlyList<string> CatalogCategories { get; init; } = [];
+	public IReadOnlyList<string> CatalogCategories { get; internal init; } = [];
 
 	/// <summary>
 	/// Whether <paramref name="fileName"/> is an auto-discovered supplemental file

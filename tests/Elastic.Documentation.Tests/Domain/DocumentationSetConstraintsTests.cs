@@ -107,7 +107,7 @@ public class DocumentationSetConstraintsTests
 								ContainerPath.From("posts"),
 								[],
 								Declared,
-								new ListingOptions(Glob: "**/*.yaml")
+								new ListingOptions(glob: "**/*.yaml")
 							)
 						]
 					},
@@ -116,11 +116,11 @@ public class DocumentationSetConstraintsTests
 			["substitution-keys-unique"] = d => d with { Substitutions = [new("stack", "a"), new("STACK", "b")] },
 			["api-entry-valid"] = d => d with { Api = [new ApiDeclaration("elasticsearch", [])] },
 			["storybook-variables-allowed"] = d => d with { HasStorybook = true, StorybookRegistry = "${NOT_ALLOWED}/registry" },
-			["branding-images-valid"] = d => d with { Branding = new BrandingDeclaration(Icon: "logo.bmp") },
+			["branding-images-valid"] = d => d with { Branding = new BrandingDeclaration(icon: "logo.bmp") },
 			["cta-template-valid"] = d => d with { Ctas = [new CtaDeclaration("broken", null, null, [])], TocDefaultCtas = [] },
 			["default-cta-known"] = d => d with { TocDefaultCtas = [new("index.md", "missing")] },
 			["primary-nav-without-branding"] =
-				d => d with { Branding = new BrandingDeclaration(), Features = new DeclaredFeatures(PrimaryNav: true) },
+				d => d with { Branding = new BrandingDeclaration(), Features = new DeclaredFeatures(primaryNav: true) },
 			["file-stays-in-folder"] =
 				d =>
 					d with
@@ -177,7 +177,7 @@ public class DocumentationSetConstraintsTests
 #pragma warning disable CS0618 // The rule is about the obsolete fields
 			["docset-obsolete-fields-unused"] = d => d with { DisplayName = "Test", Description = "A test set" },
 #pragma warning restore CS0618
-			["branding-header-bg-valid"] = d => d with { Branding = new BrandingDeclaration(HeaderBg: "not a colour!") },
+			["branding-header-bg-valid"] = d => d with { Branding = new BrandingDeclaration(headerBg: "not a colour!") },
 			["cta-names-unique"] =
 				d =>
 					d with
@@ -297,7 +297,7 @@ public class DocumentationSetConstraintsTests
 								ContainerPath.From("posts"),
 								[],
 								Declared,
-								new ListingOptions(Island: true, Visual: ListingVisual.None)
+								new ListingOptions(island: true, visual: ListingVisual.None)
 							)
 						]
 					},

@@ -13,14 +13,14 @@ namespace Elastic.Documentation.ReleaseNotes;
 public partial record ProductReference
 {
 	/// <summary>The product identifier.</summary>
-	public required string ProductId { get; init; }
+	public string ProductId { get; internal init; } = default!;
 
 	/// <summary>
 	/// Obsolete — entries derive applicability from their origin branch; notes use <see cref="Versions"/>.
 	/// Kept for backward compatibility when reading already-published pool objects that still carry target.
 	/// </summary>
 	[Obsolete("Entries derive applicability from their origin branch; notes use Versions.")]
-	public string? Target { get; init; }
+	public string? Target { get; internal init; }
 
 	/// <summary>
 	/// The releases this note applies to (note-only). Empty for entries.
@@ -29,14 +29,14 @@ public partial record ProductReference
 	/// is absent on an already-published note.
 	/// </summary>
 	[OrderedEquality]
-	public IReadOnlyList<string> Versions { get; init; } = [];
+	public IReadOnlyList<string> Versions { get; internal init; } = [];
 
 	/// <summary>The <c>target</c> as written on the product, or null when absent; the loader reads it as <see cref="Versions"/>.</summary>
 	[IgnoreEquality]
-	public string? TargetRaw { get; init; }
+	public string? TargetRaw { get; internal init; }
 
 	/// <summary>The lifecycle stage of the feature for this product.</summary>
-	public Lifecycle? Lifecycle { get; init; }
+	public Lifecycle? Lifecycle { get; internal init; }
 
 	/// <summary>
 	/// A product reference from the pieces a CLI or a label names: the product id, the releases it applies to (never the obsolete <c>target</c>), and a

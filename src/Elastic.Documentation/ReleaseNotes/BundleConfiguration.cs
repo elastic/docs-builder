@@ -16,13 +16,13 @@ public partial record BundleConfiguration
 	/// Input directory containing changelog YAML files.
 	/// Defaults to "docs/changelog"
 	/// </summary>
-	public string? Directory { get; init; }
+	public string? Directory { get; internal init; }
 
 	/// <summary>
 	/// Output directory for bundled changelog files.
 	/// Defaults to "docs/releases"
 	/// </summary>
-	public string? OutputDirectory { get; init; }
+	public string? OutputDirectory { get; internal init; }
 
 	/// <summary>
 	/// When true, the individual changelog entries that make up a bundle are sourced from the local
@@ -30,13 +30,13 @@ public partial record BundleConfiguration
 	/// CDN, scoped to the bundle's products. An explicit <c>--directory</c> on the CLI always forces
 	/// local sourcing regardless of this setting.
 	/// </summary>
-	public bool UseLocalChangelogs { get; init; }
+	public bool UseLocalChangelogs { get; internal init; }
 
 	/// <summary>
 	/// Default bundle description used when no profile-specific description is provided.
 	/// Supports {version}, {lifecycle}, {owner}, and {repo} placeholders.
 	/// </summary>
-	public string? Description { get; init; }
+	public string? Description { get; internal init; }
 
 	/// <summary>
 	/// Default GitHub repository name applied to all profiles that do not specify their own.
@@ -49,21 +49,21 @@ public partial record BundleConfiguration
 	/// </para>
 	/// </summary>
 	[Obsolete("Derived automatically. Remove bundle.repo from changelog.yml; a mismatch with the running repo is a hard error.")]
-	public string? Repo { get; init; }
+	public string? Repo { get; internal init; }
 
 	/// <summary>
 	/// Default GitHub repository owner applied to all profiles that do not specify their own.
 	/// <para><b>Deprecated.</b> Derived automatically alongside <c>bundle.repo</c>. Remove from <c>changelog.yml</c>.</para>
 	/// </summary>
 	[Obsolete("Derived automatically. Remove bundle.owner from changelog.yml.")]
-	public string? Owner { get; init; }
+	public string? Owner { get; internal init; }
 
 	/// <summary>
 	/// Branch whose CDN changelog pool (<c>changelog/{org}/{repo}/{branch}/…</c>) entries are sourced from
 	/// when bundling from the CDN. Applied to all profiles that do not specify their own. Defaults to
 	/// <c>main</c> when unset.
 	/// </summary>
-	public string? Branch { get; init; }
+	public string? Branch { get; internal init; }
 
 	/// <summary>
 	/// Obsolete — no longer read. Link sanitization is handled exclusively by the scrubber Lambda.
@@ -71,24 +71,24 @@ public partial record BundleConfiguration
 	/// </summary>
 	[Obsolete("link_allow_repos is no longer read. Remove it from changelog.yml.", error: false)]
 	[OrderedEquality]
-	public IReadOnlyList<string>? LinkAllowRepos { get; init; }
+	public IReadOnlyList<string>? LinkAllowRepos { get; internal init; }
 
 	/// <summary>
 	/// When true, auto-populate release date in bundle output. Defaults to true when omitted.
 	/// </summary>
-	public bool? ReleaseDates { get; init; }
+	public bool? ReleaseDates { get; internal init; }
 
 	/// <summary>
 	/// Named bundle profiles for different release scenarios.
 	/// </summary>
 	[UnorderedEquality]
-	public IReadOnlyDictionary<string, BundleProfile>? Profiles { get; init; }
+	public IReadOnlyDictionary<string, BundleProfile>? Profiles { get; internal init; }
 
 	/// <summary>
 	/// Release trigger to profile mappings. <c>github</c> maps tag globs to profiles;
 	/// <c>products</c> maps product IDs to profiles for any product-scoped release (versioned stack or date-based).
 	/// </summary>
-	public BundleReleases? Releases { get; init; }
+	public BundleReleases? Releases { get; internal init; }
 }
 
 /// <summary>
@@ -101,7 +101,7 @@ public partial record BundleProfile
 	/// <summary>
 	/// Target product ID for this profile. Validated against products.yml. Replaces output_products.
 	/// </summary>
-	public string? Product { get; init; }
+	public string? Product { get; internal init; }
 
 	/// <summary>
 	/// Product filter pattern for input changelogs.
@@ -110,7 +110,7 @@ public partial record BundleProfile
 	/// - "elasticsearch {version} {lifecycle}"
 	/// - "cloud-serverless {version} *"
 	/// </summary>
-	public string? Products { get; init; }
+	public string? Products { get; internal init; }
 
 	/// <summary>
 	/// Legacy output filename pattern. No longer supported: bundle output names are derived by
@@ -120,25 +120,25 @@ public partial record BundleProfile
 	/// error rather than a YAML parse failure.
 	/// </summary>
 	[Obsolete("No longer supported: bundle output names are derived by convention as '{repo}-{product}-{version}.yaml' from the authoring repo and the profile's output_products. Setting 'output' is a hard error at bundle time.")]
-	public string? Output { get; init; }
+	public string? Output { get; internal init; }
 
 	/// <summary>
 	/// Profile-specific output directory. Deprecated: derived automatically as bundle.output_directory/{product}.
 	/// </summary>
 	[Obsolete("Profile output_directory is derived automatically as bundle.output_directory/{product}. Remove this field.")]
-	public string? OutputDirectory { get; init; }
+	public string? OutputDirectory { get; internal init; }
 
 	/// <summary>
 	/// Output products pattern. Deprecated: use 'product' instead.
 	/// </summary>
 	[Obsolete("Use 'product' instead. 'output_products' will be removed in a future version.")]
-	public string? OutputProducts { get; init; }
+	public string? OutputProducts { get; internal init; }
 
 	/// <summary>
 	/// Profile-specific bundle description. When provided, overrides the bundle.description default.
 	/// Supports {version}, {lifecycle}, {owner}, and {repo} placeholders.
 	/// </summary>
-	public string? Description { get; init; }
+	public string? Description { get; internal init; }
 
 	/// <summary>
 	/// GitHub repository name for link and file name generation.
@@ -148,38 +148,38 @@ public partial record BundleProfile
 	/// </para>
 	/// </summary>
 	[Obsolete("Derived from GITHUB_REPOSITORY or git origin when omitted. Remove from profile config.")]
-	public string? Repo { get; init; }
+	public string? Repo { get; internal init; }
 
 	/// <summary>
 	/// GitHub repository owner stored on each product in the bundle output.
 	/// <para><b>Deprecated.</b> Derived automatically alongside <c>repo</c>. Remove from profile config.</para>
 	/// </summary>
 	[Obsolete("Derived automatically. Remove from profile config.")]
-	public string? Owner { get; init; }
+	public string? Owner { get; internal init; }
 
 	/// <summary>
 	/// Branch whose CDN changelog pool entries this profile sources from. Overrides
 	/// <see cref="BundleConfiguration.Branch"/> when set.
 	/// </summary>
-	public string? Branch { get; init; }
+	public string? Branch { get; internal init; }
 
 	/// <summary>
 	/// Feature IDs to mark as hidden in the bundle output.
 	/// When the bundle is rendered, entries with matching feature-id values will be commented out.
 	/// </summary>
 	[OrderedEquality]
-	public IReadOnlyList<string>? HideFeatures { get; init; }
+	public IReadOnlyList<string>? HideFeatures { get; internal init; }
 
 	/// <summary>
 	/// When true, auto-populate release date in bundle output. Defaults to true when omitted.
 	/// </summary>
-	public bool? ReleaseDates { get; init; }
+	public bool? ReleaseDates { get; internal init; }
 
 	/// <summary>
 	/// Profile source type. Removed — use bundle.releases.github to map release tags to profiles.
 	/// </summary>
 	[Obsolete("'source: github_release' is removed. Use bundle.releases.github to map release tags to profiles.")]
-	public string? Source { get; init; }
+	public string? Source { get; internal init; }
 }
 
 /// <summary>
@@ -192,12 +192,12 @@ public partial record BundleReleases
 	/// Maps GitHub release tag glob patterns to profiles. Key is the tag glob; value is the profile name.
 	/// </summary>
 	[UnorderedEquality]
-	public IReadOnlyDictionary<string, string>? Github { get; init; }
+	public IReadOnlyDictionary<string, string>? Github { get; internal init; }
 
 	/// <summary>
 	/// Maps product IDs to profiles for any product-scoped release (versioned stack or date-based).
 	/// Key is the product ID; value is the profile name.
 	/// </summary>
 	[UnorderedEquality]
-	public IReadOnlyDictionary<string, string>? Products { get; init; }
+	public IReadOnlyDictionary<string, string>? Products { get; internal init; }
 }

@@ -13,51 +13,51 @@ namespace Elastic.Documentation.ReleaseNotes;
 public partial record BundledEntry
 {
 	/// <summary>File information (name and checksum).</summary>
-	public BundledFile? File { get; init; }
+	public BundledFile? File { get; internal init; }
 
 	/// <summary>The type of changelog entry (feature, bug-fix, etc.).</summary>
-	public ChangelogEntryType? Type { get; init; }
+	public ChangelogEntryType? Type { get; internal init; }
 
 	/// <summary>The title of the changelog entry.</summary>
-	public string? Title { get; init; }
+	public string? Title { get; internal init; }
 
 	/// <summary>Products affected by this changelog entry.</summary>
 	[OrderedEquality]
-	public IReadOnlyList<ProductReference>? Products { get; init; }
+	public IReadOnlyList<ProductReference>? Products { get; internal init; }
 
 	/// <summary>Optional description with more details.</summary>
-	public string? Description { get; init; }
+	public string? Description { get; internal init; }
 
 	/// <summary>Impact statement for breaking changes.</summary>
-	public string? Impact { get; init; }
+	public string? Impact { get; internal init; }
 
 	/// <summary>Required action for breaking changes.</summary>
-	public string? Action { get; init; }
+	public string? Action { get; internal init; }
 
 	/// <summary>Optional feature ID for tracking.</summary>
-	public string? FeatureId { get; init; }
+	public string? FeatureId { get; internal init; }
 
 	/// <summary>Whether this entry should be highlighted.</summary>
-	public bool? Highlight { get; init; }
+	public bool? Highlight { get; internal init; }
 
 	/// <summary>The subtype of changelog entry (only applicable to breaking changes).</summary>
-	public ChangelogEntrySubtype? Subtype { get; init; }
+	public ChangelogEntrySubtype? Subtype { get; internal init; }
 
 	/// <summary>Areas affected by this changelog entry.</summary>
 	[OrderedEquality]
-	public IReadOnlyList<string>? Areas { get; init; }
+	public IReadOnlyList<string>? Areas { get; internal init; }
 
 	/// <summary>Pull request URLs or references.</summary>
 	[OrderedEquality]
-	public IReadOnlyList<string>? Prs { get; init; }
+	public IReadOnlyList<string>? Prs { get; internal init; }
 
 	/// <summary>Related issue URLs or references.</summary>
 	[OrderedEquality]
-	public IReadOnlyList<string>? Issues { get; init; }
+	public IReadOnlyList<string>? Issues { get; internal init; }
 
 	/// <summary>
 	/// Marker reference: a bare PR number pointing to the authoritative entry in the same pool.
 	/// Preserved through the scrub round-trip so the public pool can resolve markers end-to-end.
 	/// </summary>
-	public string? Link { get; init; }
+	public string? Link { get; internal init; }
 }

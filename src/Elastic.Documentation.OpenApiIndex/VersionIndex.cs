@@ -15,7 +15,9 @@ namespace Elastic.Documentation.OpenApiIndex;
 public sealed record VersionIndexEntry
 {
 	/// <summary>The version this key resolves to: <c>main</c>, or the highest minor of its major, e.g. <c>9.5</c>.</summary>
-	public required string Version { get; init; }
+	[JsonInclude]
+	[JsonRequired]
+	public string Version { get; internal init; } = default!;
 }
 
 [JsonSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.SnakeCaseLower)]

@@ -17,14 +17,14 @@ public partial record ProductsConfig
 	/// Use this to restrict which products can be used.
 	/// </summary>
 	[OrderedEquality]
-	public IReadOnlyList<string>? Available { get; init; }
+	public IReadOnlyList<string>? Available { get; internal init; }
 
 	/// <summary>
 	/// Default products to use when --products is not specified.
 	/// Each entry has product ID and optional lifecycle.
 	/// </summary>
 	[OrderedEquality]
-	public IReadOnlyList<DefaultProduct>? Default { get; init; }
+	public IReadOnlyList<DefaultProduct>? Default { get; internal init; }
 }
 
 /// <summary>
@@ -35,10 +35,10 @@ public record DefaultProduct
 	/// <summary>
 	/// Product ID
 	/// </summary>
-	public required string Product { get; init; }
+	public string Product { get; internal init; } = default!;
 
 	/// <summary>
 	/// Default lifecycle (defaults to "ga")
 	/// </summary>
-	public string Lifecycle { get; init; } = "ga";
+	public string Lifecycle { get; internal init; } = "ga";
 }

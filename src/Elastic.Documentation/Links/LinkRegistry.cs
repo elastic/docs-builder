@@ -17,11 +17,13 @@ public partial record LinkRegistry
 {
 	/// Map of branch to <see cref="LinkRegistryEntry"/>
 	[JsonPropertyName("repositories")]
+	[JsonInclude]
+	[JsonRequired]
 	[UnorderedEquality(typeof(LinkRegistryEntriesComparer))]
-	public required Dictionary<string, Dictionary<string, LinkRegistryEntry>> Repositories { get; init; }
+	public Dictionary<string, Dictionary<string, LinkRegistryEntry>> Repositories { get; internal init; } = default!;
 
 	[JsonIgnore]
-	public string? ETag { get; init; }
+	public string? ETag { get; internal init; }
 
 	/// <summary>
 	/// The registry with <paramref name="entry"/> filed under its repository and branch: a new repository or branch is added, an existing branch
@@ -63,24 +65,34 @@ public partial record LinkRegistry
 public record LinkRegistryEntry
 {
 	[JsonPropertyName("repository")]
-	public required string Repository { get; init; }
+	[JsonInclude]
+	[JsonRequired]
+	public string Repository { get; internal init; } = default!;
 
 	[JsonPropertyName("path")]
-	public required string Path { get; init; }
+	[JsonInclude]
+	[JsonRequired]
+	public string Path { get; internal init; } = default!;
 
 	[JsonPropertyName("branch")]
-	public required string Branch { get; init; }
+	[JsonInclude]
+	[JsonRequired]
+	public string Branch { get; internal init; } = default!;
 
 	[JsonPropertyName("etag")]
-	public required string ETag { get; init; }
+	[JsonInclude]
+	[JsonRequired]
+	public string ETag { get; internal init; } = default!;
 
 	// TODO can be made required after all doc_sets have published again
 	[JsonPropertyName("ref")]
-	public string GitReference { get; init; } = "unknown";
+	[JsonInclude]
+	public string GitReference { get; internal init; } = "unknown";
 
 	// TODO can be made required after all doc_sets have published again
 	[JsonPropertyName("updated_at")]
-	public DateTime UpdatedAt { get; init; } = DateTime.MinValue;
+	[JsonInclude]
+	public DateTime UpdatedAt { get; internal init; } = DateTime.MinValue;
 
 	/// <summary>
 	/// The entry the link index files for an object an S3 notification names. The key is <c>elastic/{repository}/{branch}/links.json</c>; the

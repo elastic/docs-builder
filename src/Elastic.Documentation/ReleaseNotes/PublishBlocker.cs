@@ -44,28 +44,28 @@ public partial record PublishBlocker
 	/// Types to filter (either exclude or include based on <see cref="TypesMode"/>).
 	/// </summary>
 	[OrderedEquality]
-	public IReadOnlyList<string>? Types { get; init; }
+	public IReadOnlyList<string>? Types { get; internal init; }
 
 	/// <summary>
 	/// Whether types uses exclude or include semantics.
 	/// </summary>
-	public FieldMode TypesMode { get; init; } = FieldMode.Exclude;
+	public FieldMode TypesMode { get; internal init; } = FieldMode.Exclude;
 
 	/// <summary>
 	/// Areas to filter (either exclude or include based on <see cref="AreasMode"/>).
 	/// </summary>
 	[OrderedEquality]
-	public IReadOnlyList<string>? Areas { get; init; }
+	public IReadOnlyList<string>? Areas { get; internal init; }
 
 	/// <summary>
 	/// Whether areas uses exclude or include semantics.
 	/// </summary>
-	public FieldMode AreasMode { get; init; } = FieldMode.Exclude;
+	public FieldMode AreasMode { get; internal init; } = FieldMode.Exclude;
 
 	/// <summary>
 	/// How to match areas: Any (default), All, or Conjunction.
 	/// </summary>
-	public MatchMode MatchAreas { get; init; } = MatchMode.Any;
+	public MatchMode MatchAreas { get; internal init; } = MatchMode.Any;
 
 	/// <summary>
 	/// Returns true if this blocker has any blocking rules configured.

@@ -50,43 +50,63 @@ public record SkipRequest : SyncRequest
 	public required string DestinationPath { get; init; }
 }
 
-public record SyncPlan
+public sealed record SyncPlan
 {
 	/// The user-specified delete threshold
 	[JsonPropertyName("deletion_threshold_default")]
-	public required float? DeleteThresholdDefault { get; init; }
+	[JsonInclude]
+	[JsonRequired]
+	public float? DeleteThresholdDefault { get; internal init; }
 
 	/// Glob patterns excluded from both local upload and remote deletion
 	[JsonPropertyName("exclude_patterns")]
-	public required string[] ExcludePatterns { get; init; }
+	[JsonInclude]
+	[JsonRequired]
+	public string[] ExcludePatterns { get; internal init; } = default!;
 
 	/// The user-specified delete threshold
 	[JsonPropertyName("remote_listing_completed")]
-	public required bool RemoteListingCompleted { get; init; }
+	[JsonInclude]
+	[JsonRequired]
+	public bool RemoteListingCompleted { get; internal init; }
 
 	/// The total number of source files that were located in the build output
 	[JsonPropertyName("total_source_files")]
-	public required int TotalSourceFiles { get; init; }
+	[JsonInclude]
+	[JsonRequired]
+	public int TotalSourceFiles { get; internal init; }
 
 	/// The total number of remote files that were located in the remote location
 	[JsonPropertyName("total_remote_files")]
-	public required int TotalRemoteFiles { get; init; }
+	[JsonInclude]
+	[JsonRequired]
+	public int TotalRemoteFiles { get; internal init; }
 
 	/// The total number of sync requests that were generated (sum of <see cref="AddRequests"/>, <see cref="UpdateRequests"/>, <see cref="DeleteRequests"/>)
 	[JsonPropertyName("total_sync_requests")]
-	public required int TotalSyncRequests { get; init; }
+	[JsonInclude]
+	[JsonRequired]
+	public int TotalSyncRequests { get; internal init; }
 
 	[JsonPropertyName("delete")]
-	public required IReadOnlyList<DeleteRequest> DeleteRequests { get; init; }
+	[JsonInclude]
+	[JsonRequired]
+	public IReadOnlyList<DeleteRequest> DeleteRequests { get; internal init; } = default!;
 
 	[JsonPropertyName("add")]
-	public required IReadOnlyList<AddRequest> AddRequests { get; init; }
+	[JsonInclude]
+	[JsonRequired]
+	public IReadOnlyList<AddRequest> AddRequests { get; internal init; } = default!;
 
 	[JsonPropertyName("update")]
-	public required IReadOnlyList<UpdateRequest> UpdateRequests { get; init; }
+	[JsonInclude]
+	[JsonRequired]
+	public IReadOnlyList<UpdateRequest> UpdateRequests { get; internal init; } = default!;
 
 	[JsonPropertyName("skip")]
-	public required IReadOnlyList<SkipRequest> SkipRequests { get; init; }
+	[JsonInclude]
+	[JsonRequired]
+	public IReadOnlyList<SkipRequest> SkipRequests { get; internal init; } = default!;
 
 	/// <summary>The delete threshold when none was given: no more than a fifth of the remote files may be deleted.</summary>
 	public const float DefaultDeleteThreshold = 0.2f;

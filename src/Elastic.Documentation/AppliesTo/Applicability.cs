@@ -13,7 +13,7 @@ namespace Elastic.Documentation.AppliesTo;
 public record AppliesCollection : IReadOnlyCollection<Applicability>
 {
 	private readonly Applicability[] _items;
-	public AppliesCollection(Applicability[] items) => _items = items;
+	internal AppliesCollection(Applicability[] items) => _items = items;
 
 	/// <summary>The collection of <paramref name="items"/>, in the order given.</summary>
 	public static AppliesCollection Of(IEnumerable<Applicability> items) => new([.. items]);
@@ -165,11 +165,11 @@ public record AppliesCollection : IReadOnlyCollection<Applicability>
 
 public record Applicability : IComparable<Applicability>, IComparable
 {
-	public ProductLifecycle Lifecycle { get; init; }
-	public VersionSpec? Version { get; init; }
+	public ProductLifecycle Lifecycle { get; internal init; }
+	public VersionSpec? Version { get; internal init; }
 
 	/// <summary>The item as written (<c>ga 9.0</c>), or null when the item was not read from text. A version that does not parse is <c>null</c> in <see cref="Version"/>, and tokens after the second are dropped; this shows both.</summary>
-	public string? Raw { get; init; }
+	public string? Raw { get; internal init; }
 
 	// Raw records how the item was written, not what it means: it takes no part in equality.
 	public virtual bool Equals(Applicability? other) => other is not null && Lifecycle == other.Lifecycle && Equals(Version, other.Version);
