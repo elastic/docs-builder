@@ -328,11 +328,7 @@ public class DocumentationWebHost
 
 		var info = _writeFileSystem.FileInfo.New(path);
 		if (!info.Exists)
-		{
-			if (TryRedirectIsolatedFixtureAlias(http, apiRoot, outputRoot, trimmed, specMime, wantsMarkdown) is { } redirect)
-				return redirect;
 			return Results.NotFound();
-		}
 
 		var contents = await _writeFileSystem.File.ReadAllTextAsync(info.FullName, ctx);
 		if (specMime is not null)
@@ -355,32 +351,6 @@ public class DocumentationWebHost
 	private static IResult RedirectAssemblerApiPath(HttpContext http, string slug)
 	{
 		var location = string.IsNullOrEmpty(slug) ? "/api/" : $"/api/{slug.Trim('/')}";
-		if (http.Request.Path.Value?.EndsWith('/') == true && !location.EndsWith('/'))
-			location += "/";
-		return Results.Redirect(location + http.Request.QueryString);
-	}
-
-	private IResult? TryRedirectIsolatedFixtureAlias(
-		HttpContext http,
-		string apiRoot,
-		string outputRoot,
-		string trimmed,
-		string? specMime,
-		bool wantsMarkdown
-	)
-	{
-		if (!IsolatedApiAliases.TryPrefixedDocSlug(trimmed, out var aliased))
-			return null;
-
-		var aliasPath = specMime is not null
-			? Path.GetFullPath(Path.Join(apiRoot, aliased))
-			: wantsMarkdown ? ApiMarkdownRequest.ResolveFile(apiRoot, aliased) : Path.GetFullPath(Path.Join(apiRoot, aliased, "index.html"));
-		if (!aliasPath.StartsWith(outputRoot + Path.DirectorySeparatorChar, StringComparison.Ordinal))
-			return null;
-		if (!_writeFileSystem.FileInfo.New(aliasPath).Exists)
-			return null;
-
-		var location = $"/api/{aliased}";
 		if (http.Request.Path.Value?.EndsWith('/') == true && !location.EndsWith('/'))
 			location += "/";
 		return Results.Redirect(location + http.Request.QueryString);
