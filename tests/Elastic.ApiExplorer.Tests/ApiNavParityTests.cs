@@ -86,6 +86,58 @@ public class ApiNavParityTests
 		types.NavigationItems.OfType<SchemaCategoryNavigationItem>().Select(c => c.NavigationTitle).Should().Equal("Query DSL");
 	}
 
+	[Test]
+	public async Task CreateNavigation_GroupedOperationsWithDifferentContracts_KeepSeparatePages()
+	{
+		var (generator, document) = await CreateGeneratorWithSpec(DifferentContractsSpec);
+		var navigation = generator.CreateNavigation("test", document);
+
+		var operations = navigation
+			.NavigationItems
+			.OfType<TagNavigationItem>()
+			.Single()
+			.NavigationItems
+			.OfType<OperationNavigationItem>()
+			.ToList();
+
+		operations.Should().HaveCount(2);
+		operations.Should().OnlyContain(op => op.Siblings.Count == 0 && op.AliasUrls.Count == 0);
+		operations.Select(op => op.Url).Should().Equal("/api/doc/test/operation/operation-op-a", "/api/doc/test/operation/operation-op-b");
+	}
+
+	/// <summary>Same API name, but the POST takes a required query parameter the GET does not: not the same call.</summary>
+	private const string DifferentContractsSpec = /*lang=json,strict*/
+		"""
+		{
+		  "openapi": "3.0.3",
+		  "info": { "title": "T", "version": "1.0" },
+		  "paths": {
+		    "/a": {
+		      "get": {
+		        "operationId": "op-a",
+		        "summary": "Search",
+		        "tags": ["search"],
+		        "x-namespace": "_global",
+		        "x-api-name": "search",
+		        "responses": { "200": { "description": "ok" } }
+		      }
+		    },
+		    "/b": {
+		      "post": {
+		        "operationId": "op-b",
+		        "summary": "Search",
+		        "tags": ["search"],
+		        "x-namespace": "_global",
+		        "x-api-name": "search",
+		        "parameters": [{ "name": "scroll", "in": "query", "required": true, "schema": { "type": "string" } }],
+		        "responses": { "200": { "description": "ok" } }
+		      }
+		    }
+		  },
+		  "tags": [{ "name": "search" }]
+		}
+		""";
+
 	private const string SharedSummarySpec = /*lang=json,strict*/
 		"""
 		{

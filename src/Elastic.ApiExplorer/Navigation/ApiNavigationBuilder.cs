@@ -226,7 +226,9 @@ public class ApiNavigationBuilder(ILogger logger, BuildContext context)
 	{
 		foreach (var endpoint in tag.Endpoints)
 		{
-			if (endpoint.Operations.Count > 1)
+			// One page can only stand in for several operations when they are the same call; a sibling with
+			// its own parameters or responses keeps its own page rather than redirecting to a page that lacks them.
+			if (endpoint.Operations.Count > 1 && OperationEndpoint.AreInterchangeable(endpoint.Operations))
 			{
 				endpointNavigationItems.Add(
 					CreateCollapsedOperationNavigationItem(apiUrlSuffix, rootNavigation, endpoint, parentNavigationItem)
