@@ -18,6 +18,8 @@ public class LandingViewModel(ApiRenderContext context) : ApiViewModel(context)
 	/// <summary>Flattened overview table rows; built before the slice renders.</summary>
 	public required IReadOnlyList<ApiOverviewRow> OverviewRows { get; init; }
 
+	public IReadOnlyList<ApiOverviewSection> OverviewSections => field ??= ApiOverviewBuilder.Sections(OverviewRows);
+
 	public string JsonUrl { get; } = ApiOutputPaths.JsonUrl(context.CurrentNavigation.Url);
 	public string YamlUrl { get; } = ApiOutputPaths.YamlUrl(context.CurrentNavigation.Url);
 

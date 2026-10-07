@@ -36,15 +36,7 @@
 			<ul class="api-group-list">
 				@foreach (var row in Model.OverviewRows)
 				{
-					<li>
-						<a class="api-group-row" href="@row.Url" @LayoutModel.HxAttributes>
-							<span class="api-overview-title">@row.Title</span>
-							<div class="api-group-routes">
-								@(await RenderPartialAsync<_OperationUrlList, OperationUrlListModel>(new OperationUrlListModel(row.Endpoint)))
-							</div>
-							<svg class="api-group-chevron" viewBox="0 0 16 16" aria-hidden="true"><use href="#icon-chevron-down"/></svg>
-						</a>
-					</li>
+					@(await RenderPartialAsync<_ApiGroupRow, ApiGroupRowModel>(new ApiGroupRowModel(row, LayoutModel.HxAttributes)))
 				}
 			</ul>
 		</div>

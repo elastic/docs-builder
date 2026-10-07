@@ -140,16 +140,18 @@ public class OpenApiGeneratorCatalogSplitTests
 		var html = await context.WriteFileSystem.File.ReadAllTextAsync(catalogPath, TestContext.Current!.Execution.CancellationToken);
 		html.Should().Contain("<h1>Elastic APIs</h1>");
 		html.Should().Contain(
-			"<a href=\"/docs/api/doc/elasticsearch\" aria-labelledby=\"api-catalog-title-elasticsearch\" class=\"api-catalog-card "
+			"<a href=\"/docs/api/doc/elasticsearch\" aria-labelledby=\"api-catalog-title-elasticsearch\" class=\"api-card api-catalog-card "
 		);
-		html.Should().Contain("<a href=\"/docs/api/doc/kibana\" aria-labelledby=\"api-catalog-title-kibana\" class=\"api-catalog-card ");
 		html.Should().Contain(
-			"<h2 id=\"api-catalog-title-elasticsearch\" class=\"api-catalog-card-title ",
+			"<a href=\"/docs/api/doc/kibana\" aria-labelledby=\"api-catalog-title-kibana\" class=\"api-card api-catalog-card "
+		);
+		html.Should().Contain(
+			"<h2 id=\"api-catalog-title-elasticsearch\" class=\"api-card-title api-catalog-card-title ",
 			"the heading is inside the link and names it"
 		);
 		html.Should().NotContain("api-catalog-card-arrow");
 		html.Should().NotContain("View docs");
-		html.Should().Contain("rounded-2xl border-1 border-grey-20 bg-white");
+		html.Should().NotContain("rounded-2xl", "the box comes from the shared api-card class");
 		html.Split("<a href=").Length.Should().BeGreaterThan(2);
 		html.Should().NotContain("after:absolute", "the card is the link itself, so there is no stretched overlay to trap");
 		html.Should().Contain("<ul class=\"api-catalog-featured ");
@@ -227,7 +229,7 @@ public class OpenApiGeneratorCatalogSplitTests
 		productHtml.Should().Contain("Back to hub");
 		catalogHtml.Should().NotContain("id=\"api-hub-switcher\"");
 		catalogHtml.Should().Contain("<h1>Elastic APIs</h1>");
-		catalogHtml.Should().Contain("rounded-2xl border-1 border-grey-20 bg-white");
+		catalogHtml.Should().Contain("api-card api-catalog-card");
 		catalogHtml.Should().NotContain("listing-group-chips");
 		context.WriteFileSystem.File.Exists(Path.Join(outputRoot, "api", "doc", "elasticsearch.md")).Should().BeTrue();
 		context.WriteFileSystem.File.Exists(Path.Join(outputRoot, "api.md")).Should().BeTrue();
