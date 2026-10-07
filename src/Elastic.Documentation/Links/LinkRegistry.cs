@@ -14,11 +14,8 @@ namespace Elastic.Documentation.Links;
 
 /// <summary>The link index of all repositories' published manifests (<c>link-index.json</c>), keyed by repository and branch.</summary>
 /// <remarks>
-/// <para><b>Built by:</b> <c>LinkLoader.LoadRegistry</c> in <c>Elastic.Documentation.Configuration</c>, which deserializes <c>link-index.json</c> and checks it once, or the pure <see cref="LinkRegistry.WithLinkRegistryEntry"/>.</para>
-/// <para><b>Why it cannot be built from outside:</b> Its members are <c>internal init</c>: only <c>Elastic.Documentation</c>, <c>Elastic.Documentation.Configuration</c> and the test projects (<c>InternalsVisibleTo</c>) can set them, so a record that reaches a service has been through a loader or a checked operation.</para>
-/// <para><b>Members that must always be set</b> (they were <c>required</c> before the type was sealed; C# forbids <c>required</c> on a member whose setter is less visible than the type, CS9032): <c>Repositories</c>. A loader or test that leaves one out gets the default; the aggregate's constraint set (<see cref="LinkRegistryConstraints"/>) is where a missing member is reported, and the loader's mapping is what normally sets them.</para>
-/// <para><b>In a test:</b> build it with <c>LinkExamples.Registry</c> (tests), an object initializer (<c>new LinkRegistry { Repositories = ... }</c>) or <c>DomainGen.Of&lt;LinkRegistry&gt;()</c> (tests), and <c>with</c> for variations.</para>
-/// <para><b>Serialised:</b> <c>[JsonInclude]</c> on the internal setters and <c>[JsonRequired]</c> stand in for the lost <c>required</c>: the serializer cannot reach an internal setter without the first, and a missing key is still a parse error with the second.</para>
+/// Constructed with <c>LinkLoader.LoadRegistry</c> or <see cref="LinkRegistry.WithLinkRegistryEntry"/>.
+/// Members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can build one directly.
 /// </remarks>
 [Equatable]
 public partial record LinkRegistry
@@ -74,11 +71,8 @@ public partial record LinkRegistry
 
 /// <summary>One published manifest of a repository and branch in the <see cref="LinkRegistry"/>, with the object key and ETag it was read from.</summary>
 /// <remarks>
-/// <para><b>Built by:</b> <c>LinkLoader.LoadRegistry</c> in <c>Elastic.Documentation.Configuration</c>, which deserializes <c>link-index.json</c> and checks it once, or the pure <see cref="LinkRegistry.WithLinkRegistryEntry"/>, or <see cref="LinkRegistryEntry.FromS3Key"/> for an entry read from an object key.</para>
-/// <para><b>Why it cannot be built from outside:</b> Its members are <c>internal init</c>: only <c>Elastic.Documentation</c>, <c>Elastic.Documentation.Configuration</c> and the test projects (<c>InternalsVisibleTo</c>) can set them, so a record that reaches a service has been through a loader or a checked operation.</para>
-/// <para><b>Members that must always be set</b> (they were <c>required</c> before the type was sealed; C# forbids <c>required</c> on a member whose setter is less visible than the type, CS9032): <c>Repository</c>, <c>Path</c>, <c>Branch</c>, <c>ETag</c>. A loader or test that leaves one out gets the default; the aggregate's constraint set (<see cref="LinkRegistryConstraints"/>) is where a missing member is reported, and the loader's mapping is what normally sets them.</para>
-/// <para><b>In a test:</b> build it with <c>LinkExamples.Entry</c> (tests) or an object initializer (<c>new LinkRegistryEntry { Repository = ..., Path = ..., Branch = ..., ETag = ... }</c>).</para>
-/// <para><b>Serialised:</b> <c>[JsonInclude]</c> on the internal setters and <c>[JsonRequired]</c> stand in for the lost <c>required</c>: the serializer cannot reach an internal setter without the first, and a missing key is still a parse error with the second.</para>
+/// Constructed through <c>LinkRegistry</c>.
+/// Members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can build one directly.
 /// </remarks>
 public record LinkRegistryEntry
 {

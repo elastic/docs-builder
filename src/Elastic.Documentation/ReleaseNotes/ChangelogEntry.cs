@@ -11,9 +11,8 @@ namespace Elastic.Documentation.ReleaseNotes;
 /// Uses strongly typed enums for Type, Subtype, and Lifecycle.
 /// </summary>
 /// <remarks>
-/// <para><b>Built by:</b> <c>ReleaseNotesLoader.LoadEntry</c> in <c>Elastic.Documentation.Configuration</c> (a changelog YAML file) or the pure operations <see cref="ChangelogEntry.FromPullRequest"/>, <see cref="ChangelogEntry.Create"/>, <c>ChangelogEntry.Marker</c> and <c>ChangelogEntry.SourcePointer</c>.</para>
-/// <para><b>Why it cannot be built from outside:</b> Its members are <c>internal init</c>: only <c>Elastic.Documentation</c>, <c>Elastic.Documentation.Configuration</c> and the test projects (<c>InternalsVisibleTo</c>) can set them, so a record that reaches a service has been through a loader or a checked operation.</para>
-/// <para><b>In a test:</b> build it with <c>ChangelogEntryExamples.Valid</c> or <c>ChangelogEntryExamples.Generated&lt;ChangelogEntry&gt;()</c> (tests), or an object initializer (<c>new ChangelogEntry { ... }</c>), and <c>with</c> for variations.</para>
+/// Constructed with <c>ReleaseNotesLoader.LoadEntry</c> or <see cref="ChangelogEntry.FromPullRequest"/> and <see cref="ChangelogEntry.Create"/>.
+/// Members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can build one directly.
 /// </remarks>
 [Equatable]
 public partial record ChangelogEntry

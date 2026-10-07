@@ -16,10 +16,8 @@ namespace Elastic.Documentation.Publishing;
 /// <c>AssemblyLoader</c>, with repository defaults applied and private repositories filtered when requested.
 /// </summary>
 /// <remarks>
-/// <para><b>Built by:</b> <c>AssemblyLoader.Load</c> in <c>Elastic.Documentation.Configuration</c>, reading <c>assembler.yml</c> (and a pure copy through <c>with</c> inside the two assemblies).</para>
-/// <para><b>Why it cannot be built from outside:</b> Its members are <c>internal init</c>: only <c>Elastic.Documentation</c>, <c>Elastic.Documentation.Configuration</c> and the test projects (<c>InternalsVisibleTo</c>) can set them, so a record that reaches a service has been through a loader or a checked operation.</para>
-/// <para><b>Members that must always be set</b> (they were <c>required</c> before the type was sealed; C# forbids <c>required</c> on a member whose setter is less visible than the type, CS9032): <c>Narrative</c>, <c>ReferenceRepositories</c>, <c>AvailableRepositories</c>, <c>PrivateRepositories</c>, <c>AllPrivateRepositoryNames</c>, <c>Environments</c>, <c>SharedConfigurations</c>. A loader or test that leaves one out gets the default; the aggregate's constraint set (<see cref="AssemblyConstraints"/>) is where a missing member is reported, and the loader's mapping is what normally sets them.</para>
-/// <para><b>In a test:</b> build it with an object initializer (<c>new AssemblyConfiguration { Narrative = ..., ... }</c>) with all seven members above, or <c>DomainGen.Of&lt;AssemblyConfiguration&gt;()</c> (tests) for a generated one, and <c>with</c> for variations.</para>
+/// Constructed with <c>AssemblyLoader.Load</c>.
+/// Members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can build one directly.
 /// </remarks>
 [Equatable]
 public sealed partial record AssemblyConfiguration
@@ -59,9 +57,8 @@ public sealed partial record AssemblyConfiguration
 
 /// <summary>A repository the assembler clones, with the branch it publishes per content source.</summary>
 /// <remarks>
-/// <para><b>Built by:</b> <c>AssemblyLoader.Load</c> in <c>Elastic.Documentation.Configuration</c>, reading <c>assembler.yml</c> (and a pure copy through <c>with</c> inside the two assemblies); a variant of one that is already loaded comes from <see cref="Repository.AsConfigurationCheckout"/>.</para>
-/// <para><b>Why it cannot be built from outside:</b> Its members are <c>internal init</c>: only <c>Elastic.Documentation</c>, <c>Elastic.Documentation.Configuration</c> and the test projects (<c>InternalsVisibleTo</c>) can set them, so a record that reaches a service has been through a loader or a checked operation.</para>
-/// <para><b>In a test:</b> build it with an object initializer (<c>new Repository { ... }</c>), <c>DomainGen.Of&lt;Repository&gt;()</c> (tests) or <c>with</c> on a loaded one.</para>
+/// Constructed with <c>AssemblyLoader.Load</c> or <see cref="Repository.AsConfigurationCheckout"/>.
+/// Members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can build one directly.
 /// </remarks>
 [Equatable]
 public partial record Repository
@@ -111,9 +108,8 @@ public partial record Repository
 
 /// <summary>The narrative repository (<c>docs-content</c>): the site's own content, always published.</summary>
 /// <remarks>
-/// <para><b>Built by:</b> <c>AssemblyLoader.Load</c> in <c>Elastic.Documentation.Configuration</c>, reading <c>assembler.yml</c> (and a pure copy through <c>with</c> inside the two assemblies) (the <c>narrative</c> entry, always present).</para>
-/// <para><b>Why it cannot be built from outside:</b> Its members are <c>internal init</c>: only <c>Elastic.Documentation</c>, <c>Elastic.Documentation.Configuration</c> and the test projects (<c>InternalsVisibleTo</c>) can set them, so a record that reaches a service has been through a loader or a checked operation.</para>
-/// <para><b>In a test:</b> build it with an object initializer through <c>InternalsVisibleTo</c> (<c>new NarrativeRepository { ... }</c>) and <c>with</c> for variations.</para>
+/// Constructed through <c>AssemblyConfiguration</c>.
+/// Members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can build one directly.
 /// </remarks>
 public sealed record NarrativeRepository : Repository
 {
@@ -150,9 +146,8 @@ public enum ContentSource
 
 /// <summary>A deploy target of the assembled site, from <c>assembler.yml</c>'s <c>environments</c>.</summary>
 /// <remarks>
-/// <para><b>Built by:</b> <c>AssemblyLoader.Load</c> in <c>Elastic.Documentation.Configuration</c>, reading <c>assembler.yml</c> (and a pure copy through <c>with</c> inside the two assemblies) (one entry of <c>environments</c>).</para>
-/// <para><b>Why it cannot be built from outside:</b> Its members are <c>internal init</c>: only <c>Elastic.Documentation</c>, <c>Elastic.Documentation.Configuration</c> and the test projects (<c>InternalsVisibleTo</c>) can set them, so a record that reaches a service has been through a loader or a checked operation.</para>
-/// <para><b>In a test:</b> build it with an object initializer through <c>InternalsVisibleTo</c> (<c>new PublishEnvironment { ... }</c>) and <c>with</c> for variations.</para>
+/// Constructed through <c>AssemblyConfiguration</c>.
+/// Members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can build one directly.
 /// </remarks>
 [Equatable]
 public sealed partial record PublishEnvironment
@@ -176,9 +171,8 @@ public sealed partial record PublishEnvironment
 
 /// <summary>The Google Tag Manager id of a publish environment.</summary>
 /// <remarks>
-/// <para><b>Built by:</b> <c>AssemblyLoader.Load</c> in <c>Elastic.Documentation.Configuration</c>, reading <c>assembler.yml</c> (and a pure copy through <c>with</c> inside the two assemblies) (the <c>google_tag_manager</c> block of an environment).</para>
-/// <para><b>Why it cannot be built from outside:</b> Its members are <c>internal init</c>: only <c>Elastic.Documentation</c>, <c>Elastic.Documentation.Configuration</c> and the test projects (<c>InternalsVisibleTo</c>) can set them, so a record that reaches a service has been through a loader or a checked operation.</para>
-/// <para><b>In a test:</b> build it with an object initializer through <c>InternalsVisibleTo</c> (<c>new GoogleTagManager { ... }</c>) and <c>with</c> for variations.</para>
+/// Constructed through <c>AssemblyConfiguration</c>.
+/// Members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can build one directly.
 /// </remarks>
 public sealed record GoogleTagManager
 {
@@ -191,9 +185,8 @@ public sealed record GoogleTagManager
 
 /// <summary>The Optimizely id of a publish environment.</summary>
 /// <remarks>
-/// <para><b>Built by:</b> <c>AssemblyLoader.Load</c> in <c>Elastic.Documentation.Configuration</c>, reading <c>assembler.yml</c> (and a pure copy through <c>with</c> inside the two assemblies) (the <c>optimizely</c> block of an environment).</para>
-/// <para><b>Why it cannot be built from outside:</b> Its members are <c>internal init</c>: only <c>Elastic.Documentation</c>, <c>Elastic.Documentation.Configuration</c> and the test projects (<c>InternalsVisibleTo</c>) can set them, so a record that reaches a service has been through a loader or a checked operation.</para>
-/// <para><b>In a test:</b> build it with an object initializer through <c>InternalsVisibleTo</c> (<c>new Optimizely { ... }</c>) and <c>with</c> for variations.</para>
+/// Constructed through <c>AssemblyConfiguration</c>.
+/// Members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can build one directly.
 /// </remarks>
 public sealed record Optimizely
 {

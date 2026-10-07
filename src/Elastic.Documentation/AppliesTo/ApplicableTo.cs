@@ -38,10 +38,8 @@ public interface IApplicableToElement
 
 /// <summary>The <c>applies_to</c> block of a page, section or toc entry: which stack, serverless, deployment and product versions a piece of documentation applies to, and in which lifecycle.</summary>
 /// <remarks>
-/// <para><b>Built by:</b> the <c>ApplicableToYamlConverter</c> in <c>Elastic.Documentation.Configuration</c> (YAML) and <c>ApplicableToJsonConverter</c> (JSON, in the domain), plus the domain helpers <c>ApplicableTo.ForStack</c>, <c>ApplicableTo.Default</c> and <c>AppliesCollection.Of</c>.</para>
-/// <para><b>Why it cannot be built from outside:</b> Its members are <c>internal init</c>: only <c>Elastic.Documentation</c>, <c>Elastic.Documentation.Configuration</c> and the test projects (<c>InternalsVisibleTo</c>) can set them, so a record that reaches a service has been through a loader or a checked operation.</para>
-/// <para><b>In a test:</b> build it with an object initializer (<c>new ApplicableTo { Stack = ... }</c>), <c>ApplicableTo.ForStack</c>, or <c>DomainGen.Of&lt;ApplicableTo&gt;()</c> (tests), and <c>with</c> for variations.</para>
-/// <para><b>Serialised:</b> read by its own <c>ApplicableToJsonConverter</c> inside this assembly, so the internal setters need no <c>[JsonInclude]</c>.</para>
+/// Constructed with <c>ApplicableToYamlConverter</c> or <c>ApplicableToJsonConverter</c>.
+/// Members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can build one directly.
 /// </remarks>
 [JsonConverter(typeof(ApplicableToJsonConverter))]
 public record ApplicableTo
@@ -240,9 +238,8 @@ public record ApplicableTo
 
 /// <summary>The <c>deployment</c> part of an <c>applies_to</c> block: self-managed, ECE, ECK and Elastic Cloud Hosted.</summary>
 /// <remarks>
-/// <para><b>Built by:</b> the <c>ApplicableToYamlConverter</c> in <c>Elastic.Documentation.Configuration</c> (YAML) and <c>ApplicableToJsonConverter</c> (JSON, in the domain), plus the domain helpers <c>ApplicableTo.ForStack</c>, <c>ApplicableTo.Default</c> and <c>AppliesCollection.Of</c>.</para>
-/// <para><b>Why it cannot be built from outside:</b> Its members are <c>internal init</c>: only <c>Elastic.Documentation</c>, <c>Elastic.Documentation.Configuration</c> and the test projects (<c>InternalsVisibleTo</c>) can set them, so a record that reaches a service has been through a loader or a checked operation.</para>
-/// <para><b>In a test:</b> build it with an object initializer through <c>InternalsVisibleTo</c> (<c>new DeploymentApplicability { ... }</c>) and <c>with</c> for variations.</para>
+/// Constructed through <c>ApplicableTo</c>.
+/// Members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can build one directly.
 /// </remarks>
 public record DeploymentApplicability
 {
@@ -303,9 +300,8 @@ public record DeploymentApplicability
 
 /// <summary>The <c>serverless</c> part of an <c>applies_to</c> block, one entry per project type.</summary>
 /// <remarks>
-/// <para><b>Built by:</b> the <c>ApplicableToYamlConverter</c> in <c>Elastic.Documentation.Configuration</c> (YAML) and <c>ApplicableToJsonConverter</c> (JSON, in the domain), plus the domain helpers <c>ApplicableTo.ForStack</c>, <c>ApplicableTo.Default</c> and <c>AppliesCollection.Of</c>.</para>
-/// <para><b>Why it cannot be built from outside:</b> Its members are <c>internal init</c>: only <c>Elastic.Documentation</c>, <c>Elastic.Documentation.Configuration</c> and the test projects (<c>InternalsVisibleTo</c>) can set them, so a record that reaches a service has been through a loader or a checked operation.</para>
-/// <para><b>In a test:</b> build it with an object initializer through <c>InternalsVisibleTo</c> (<c>new ServerlessProjectApplicability { ... }</c>) and <c>with</c> for variations.</para>
+/// Constructed through <c>ApplicableTo</c>.
+/// Members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can build one directly.
 /// </remarks>
 public record ServerlessProjectApplicability
 {

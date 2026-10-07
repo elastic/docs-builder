@@ -15,9 +15,8 @@ namespace Elastic.Documentation.Publishing;
 /// known but intentionally not mounted.
 /// </summary>
 /// <remarks>
-/// <para><b>Built by:</b> <c>SiteNavigationLoader</c> in <c>Elastic.Documentation.Configuration</c> (<c>Load</c> and <c>ForAssembly</c>), reading <c>navigation.yml</c>, or the pure <see cref="SiteNavigationDefinition.WithoutRepositories"/> (a checked copy).</para>
-/// <para><b>Why it cannot be built from outside:</b> Its members are <c>internal init</c>: only <c>Elastic.Documentation</c>, <c>Elastic.Documentation.Configuration</c> and the test projects (<c>InternalsVisibleTo</c>) can set them, so a record that reaches a service has been through a loader or a checked operation.</para>
-/// <para><b>In a test:</b> build it with an object initializer (<c>new SiteNavigationDefinition { ... }</c>) or <c>DomainGen.Of&lt;SiteNavigationDefinition&gt;()</c> (tests), and <c>with</c> for variations.</para>
+/// Constructed with <c>SiteNavigationLoader</c> or <see cref="SiteNavigationDefinition.WithoutRepositories"/>.
+/// Members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can build one directly.
 /// </remarks>
 [Equatable]
 public sealed partial record SiteNavigationDefinition
@@ -187,9 +186,8 @@ public static class SiteNavigationEntryExtensions
 
 /// <summary>A source known to the site but deliberately not mounted in its navigation.</summary>
 /// <remarks>
-/// <para><b>Built by:</b> <c>SiteNavigationLoader</c> in <c>Elastic.Documentation.Configuration</c> (<c>Load</c> and <c>ForAssembly</c>), reading <c>navigation.yml</c>.</para>
-/// <para><b>Why it cannot be built from outside:</b> Its members are <c>internal init</c>: only <c>Elastic.Documentation</c>, <c>Elastic.Documentation.Configuration</c> and the test projects (<c>InternalsVisibleTo</c>) can set them, so a record that reaches a service has been through a loader or a checked operation.</para>
-/// <para><b>In a test:</b> build it with an object initializer through <c>InternalsVisibleTo</c> (<c>new PhantomRegistration { ... }</c>) and <c>with</c> for variations.</para>
+/// Constructed through <c>SiteNavigationDefinition</c>.
+/// Members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can build one directly.
 /// </remarks>
 public sealed record PhantomRegistration
 {
@@ -198,10 +196,8 @@ public sealed record PhantomRegistration
 
 /// <summary>Where one table of contents mounts in the assembled site: its source and the path prefix it is served under.</summary>
 /// <remarks>
-/// <para><b>Built by:</b> <c>SiteNavigationLoader.GetTocMappings</c> in <c>Elastic.Documentation.Configuration</c>, which derives the mappings from a loaded <c>SiteNavigationDefinition</c>.</para>
-/// <para><b>Why it cannot be built from outside:</b> Its members are <c>internal init</c>: only <c>Elastic.Documentation</c>, <c>Elastic.Documentation.Configuration</c> and the test projects (<c>InternalsVisibleTo</c>) can set them, so a record that reaches a service has been through a loader or a checked operation.</para>
-/// <para><b>Members that must always be set</b> (they were <c>required</c> before the type was sealed; C# forbids <c>required</c> on a member whose setter is less visible than the type, CS9032): <c>Source</c>, <c>SourcePathPrefix</c>. A loader or test that leaves one out gets the default; the aggregate's constraint set (<see cref="SiteNavigationConstraints"/>) is where a missing member is reported, and the loader's mapping is what normally sets them.</para>
-/// <para><b>In a test:</b> build it with an object initializer through <c>InternalsVisibleTo</c> (<c>new NavigationTocMapping { ... }</c>) and <c>with</c> for variations.</para>
+/// Constructed with <c>SiteNavigationLoader.GetTocMappings</c>.
+/// Members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can build one directly.
 /// </remarks>
 public record NavigationTocMapping
 {
@@ -211,9 +207,8 @@ public record NavigationTocMapping
 
 /// <summary>A link entry within a <c>dropdown:</c> section.</summary>
 /// <remarks>
-/// <para><b>Built by:</b> <c>SiteNavigationLoader</c> in <c>Elastic.Documentation.Configuration</c> (<c>Load</c> and <c>ForAssembly</c>), reading <c>navigation.yml</c>.</para>
-/// <para><b>Why it cannot be built from outside:</b> Its members are <c>internal init</c>: only <c>Elastic.Documentation</c>, <c>Elastic.Documentation.Configuration</c> and the test projects (<c>InternalsVisibleTo</c>) can set them, so a record that reaches a service has been through a loader or a checked operation.</para>
-/// <para><b>In a test:</b> build it with an object initializer through <c>InternalsVisibleTo</c> (<c>new SiteDropdownLinkRef { ... }</c>) and <c>with</c> for variations.</para>
+/// Constructed through <c>SiteNavigationDefinition</c>.
+/// Members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can build one directly.
 /// </remarks>
 public record SiteDropdownLinkRef
 {
@@ -235,9 +230,8 @@ public record SiteDropdownLinkRef
 
 /// <summary>A top-level section of <c>navigation.yml</c>: a title with its children.</summary>
 /// <remarks>
-/// <para><b>Built by:</b> <c>SiteNavigationLoader</c> in <c>Elastic.Documentation.Configuration</c> (<c>Load</c> and <c>ForAssembly</c>), reading <c>navigation.yml</c>.</para>
-/// <para><b>Why it cannot be built from outside:</b> Its members are <c>internal init</c>: only <c>Elastic.Documentation</c>, <c>Elastic.Documentation.Configuration</c> and the test projects (<c>InternalsVisibleTo</c>) can set them, so a record that reaches a service has been through a loader or a checked operation.</para>
-/// <para><b>In a test:</b> build it with an object initializer through <c>InternalsVisibleTo</c> (<c>new SiteSectionRef { ... }</c>) and <c>with</c> for variations.</para>
+/// Constructed through <c>SiteNavigationDefinition</c>.
+/// Members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can build one directly.
 /// </remarks>
 [Equatable]
 public partial record SiteSectionRef
@@ -280,9 +274,8 @@ public partial record SiteSectionRef
 
 /// <summary>A table of contents mounted by <c>navigation.yml</c>.</summary>
 /// <remarks>
-/// <para><b>Built by:</b> <c>SiteNavigationLoader</c> in <c>Elastic.Documentation.Configuration</c> (<c>Load</c> and <c>ForAssembly</c>), reading <c>navigation.yml</c> (<c>SiteTableOfContentsRefYamlConverter</c>).</para>
-/// <para><b>Why it cannot be built from outside:</b> Its members are <c>internal init</c>: only <c>Elastic.Documentation</c>, <c>Elastic.Documentation.Configuration</c> and the test projects (<c>InternalsVisibleTo</c>) can set them, so a record that reaches a service has been through a loader or a checked operation.</para>
-/// <para><b>In a test:</b> build it with an object initializer through <c>InternalsVisibleTo</c> (<c>new SiteTableOfContentsRef { ... }</c>) and <c>with</c> for variations.</para>
+/// Constructed through <c>SiteNavigationDefinition</c>.
+/// Members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can build one directly.
 /// </remarks>
 /// <param name="Island">
 /// When <c>true</c>, the resolved navigation node is marked as an island from the assembler side.

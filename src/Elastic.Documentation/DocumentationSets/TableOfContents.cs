@@ -122,9 +122,8 @@ public static class SortOrderExtensions
 
 /// <summary>A table-of-contents <c>file</c> entry.</summary>
 /// <remarks>
-/// <para><b>Built by:</b> the table-of-contents YAML converters (<c>TocItemYamlConverter</c>) and <c>DocumentationSetDto</c> in <c>Elastic.Documentation.Configuration</c>, reached through <c>DocumentationSetLoader.Load</c>.</para>
-/// <para><b>Why it cannot be built from outside:</b> Its members are <c>internal init</c>: only <c>Elastic.Documentation</c>, <c>Elastic.Documentation.Configuration</c> and the test projects (<c>InternalsVisibleTo</c>) can set them, so a record that reaches a service has been through a loader or a checked operation.</para>
-/// <para><b>In a test:</b> build it with an object initializer through <c>InternalsVisibleTo</c> (<c>new FileRef { ... }</c>) and <c>with</c> for variations.</para>
+/// Constructed with <c>TocItemYamlConverter</c>.
+/// Members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can build one directly.
 /// </remarks>
 /// <param name="DefaultCta">
 /// Optional <c>default_cta</c> declared on this entry. Applies to the file itself and every page beneath it
@@ -183,9 +182,8 @@ public partial record FileRef : ITableOfContentsItem
 
 /// <summary>A table-of-contents <c>file</c> entry that is a folder's index page.</summary>
 /// <remarks>
-/// <para><b>Built by:</b> the table-of-contents YAML converters (<c>TocItemYamlConverter</c>) and <c>DocumentationSetDto</c> in <c>Elastic.Documentation.Configuration</c>, reached through <c>DocumentationSetLoader.Load</c>.</para>
-/// <para><b>Why it cannot be built from outside:</b> Its members are <c>internal init</c>: only <c>Elastic.Documentation</c>, <c>Elastic.Documentation.Configuration</c> and the test projects (<c>InternalsVisibleTo</c>) can set them, so a record that reaches a service has been through a loader or a checked operation.</para>
-/// <para><b>In a test:</b> build it with an object initializer through <c>InternalsVisibleTo</c> (<c>new IndexFileRef { ... }</c>) and <c>with</c> for variations.</para>
+/// Constructed with <c>TocItemYamlConverter</c>.
+/// Members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can build one directly.
 /// </remarks>
 public record IndexFileRef : FileRef
 {
@@ -204,9 +202,8 @@ public record IndexFileRef : FileRef
 /// Children of this file should resolve relative to the folder path, not the parent TOC path.
 /// </summary>
 /// <remarks>
-/// <para><b>Built by:</b> the table-of-contents YAML converters (<c>TocItemYamlConverter</c>) and <c>DocumentationSetDto</c> in <c>Elastic.Documentation.Configuration</c>, reached through <c>DocumentationSetLoader.Load</c>.</para>
-/// <para><b>Why it cannot be built from outside:</b> Its members are <c>internal init</c>: only <c>Elastic.Documentation</c>, <c>Elastic.Documentation.Configuration</c> and the test projects (<c>InternalsVisibleTo</c>) can set them, so a record that reaches a service has been through a loader or a checked operation.</para>
-/// <para><b>In a test:</b> build it with an object initializer through <c>InternalsVisibleTo</c> (<c>new FolderIndexFileRef { ... }</c>) and <c>with</c> for variations.</para>
+/// Constructed with <c>TocItemYamlConverter</c>.
+/// Members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can build one directly.
 /// </remarks>
 public record FolderIndexFileRef : IndexFileRef
 {
@@ -225,9 +222,8 @@ public record FolderIndexFileRef : IndexFileRef
 /// declared in a toc.yml, so their container path is their docset path.
 /// </summary>
 /// <remarks>
-/// <para><b>Built by:</b> <c>DetectionRuleDiscovery</c> in <c>Elastic.Documentation.Configuration</c>, which makes one per <c>.toml</c> rule file it finds under a <c>detection_rules</c> folder.</para>
-/// <para><b>Why it cannot be built from outside:</b> Its members are <c>internal init</c>: only <c>Elastic.Documentation</c>, <c>Elastic.Documentation.Configuration</c> and the test projects (<c>InternalsVisibleTo</c>) can set them, so a record that reaches a service has been through a loader or a checked operation.</para>
-/// <para><b>In a test:</b> build it with an object initializer through <c>InternalsVisibleTo</c> (<c>new DetectionRuleRef { ... }</c>) and <c>with</c> for variations.</para>
+/// Constructed with <c>DetectionRuleDiscovery</c>.
+/// Members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can build one directly.
 /// </remarks>
 [Equatable]
 public partial record DetectionRuleRef : FileRef
@@ -256,9 +252,8 @@ public partial record DetectionRuleRef : FileRef
 /// page per discovered rule.
 /// </summary>
 /// <remarks>
-/// <para><b>Built by:</b> <c>DetectionRuleDiscovery</c> in <c>Elastic.Documentation.Configuration</c> (the overview page of a <c>detection_rules</c> entry) and the table-of-contents converters.</para>
-/// <para><b>Why it cannot be built from outside:</b> Its members are <c>internal init</c>: only <c>Elastic.Documentation</c>, <c>Elastic.Documentation.Configuration</c> and the test projects (<c>InternalsVisibleTo</c>) can set them, so a record that reaches a service has been through a loader or a checked operation.</para>
-/// <para><b>In a test:</b> build it with an object initializer through <c>InternalsVisibleTo</c> (<c>new DetectionRuleOverviewRef { ... }</c>) and <c>with</c> for variations.</para>
+/// Constructed with <c>DetectionRuleDiscovery</c>.
+/// Members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can build one directly.
 /// </remarks>
 [Equatable]
 public partial record DetectionRuleOverviewRef : FileRef
@@ -307,9 +302,8 @@ public partial record DetectionRuleOverviewRef : FileRef
 
 /// <summary>A table-of-contents entry that points at a page of another repository by cross-link.</summary>
 /// <remarks>
-/// <para><b>Built by:</b> the table-of-contents YAML converters (<c>TocItemYamlConverter</c>) and <c>DocumentationSetDto</c> in <c>Elastic.Documentation.Configuration</c>, reached through <c>DocumentationSetLoader.Load</c>.</para>
-/// <para><b>Why it cannot be built from outside:</b> Its members are <c>internal init</c>: only <c>Elastic.Documentation</c>, <c>Elastic.Documentation.Configuration</c> and the test projects (<c>InternalsVisibleTo</c>) can set them, so a record that reaches a service has been through a loader or a checked operation.</para>
-/// <para><b>In a test:</b> build it with an object initializer through <c>InternalsVisibleTo</c> (<c>new CrossLinkRef { ... }</c>) and <c>with</c> for variations.</para>
+/// Constructed with <c>TocItemYamlConverter</c>.
+/// Members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can build one directly.
 /// </remarks>
 [Equatable]
 public partial record CrossLinkRef : ITableOfContentsItem
@@ -358,9 +352,8 @@ public partial record CrossLinkRef : ITableOfContentsItem
 
 /// <summary>A table-of-contents <c>folder</c> entry.</summary>
 /// <remarks>
-/// <para><b>Built by:</b> the table-of-contents YAML converters (<c>TocItemYamlConverter</c>) and <c>DocumentationSetDto</c> in <c>Elastic.Documentation.Configuration</c>, reached through <c>DocumentationSetLoader.Load</c>.</para>
-/// <para><b>Why it cannot be built from outside:</b> Its members are <c>internal init</c>: only <c>Elastic.Documentation</c>, <c>Elastic.Documentation.Configuration</c> and the test projects (<c>InternalsVisibleTo</c>) can set them, so a record that reaches a service has been through a loader or a checked operation.</para>
-/// <para><b>In a test:</b> build it with an object initializer through <c>InternalsVisibleTo</c> (<c>new FolderRef { ... }</c>) and <c>with</c> for variations.</para>
+/// Constructed with <c>TocItemYamlConverter</c>.
+/// Members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can build one directly.
 /// </remarks>
 /// <param name="Sort">The folder's <c>sort</c>; null keeps plain alphabetical order. An unrecognized value is rejected by the loader.</param>
 /// <param name="Exclude">File names to exclude from auto-discovery (like "draft.md", "internal.md").</param>
@@ -430,9 +423,8 @@ public partial record FolderRef : ITableOfContentsItem
 /// because its path contains '/'.
 /// </summary>
 /// <remarks>
-/// <para><b>Built by:</b> the table-of-contents YAML converters (<c>TocItemYamlConverter</c>) and <c>DocumentationSetDto</c> in <c>Elastic.Documentation.Configuration</c>, reached through <c>DocumentationSetLoader.Load</c>.</para>
-/// <para><b>Why it cannot be built from outside:</b> Its members are <c>internal init</c>: only <c>Elastic.Documentation</c>, <c>Elastic.Documentation.Configuration</c> and the test projects (<c>InternalsVisibleTo</c>) can set them, so a record that reaches a service has been through a loader or a checked operation.</para>
-/// <para><b>In a test:</b> build it with an object initializer through <c>InternalsVisibleTo</c> (<c>new DeepLinkedFolderRef { ... }</c>) and <c>with</c> for variations.</para>
+/// Constructed with <c>TocItemYamlConverter</c>.
+/// Members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can build one directly.
 /// </remarks>
 public record DeepLinkedFolderRef : FolderRef
 {
@@ -462,9 +454,8 @@ public record DeepLinkedFolderRef : FolderRef
 
 /// <summary>A nested <c>toc.yml</c> referenced from a table of contents.</summary>
 /// <remarks>
-/// <para><b>Built by:</b> the table-of-contents YAML converters (<c>TocItemYamlConverter</c>) and <c>DocumentationSetDto</c> in <c>Elastic.Documentation.Configuration</c>, reached through <c>DocumentationSetLoader.Load</c>.</para>
-/// <para><b>Why it cannot be built from outside:</b> Its members are <c>internal init</c>: only <c>Elastic.Documentation</c>, <c>Elastic.Documentation.Configuration</c> and the test projects (<c>InternalsVisibleTo</c>) can set them, so a record that reaches a service has been through a loader or a checked operation.</para>
-/// <para><b>In a test:</b> build it with an object initializer through <c>InternalsVisibleTo</c> (<c>new IsolatedTableOfContentsRef { ... }</c>) and <c>with</c> for variations.</para>
+/// Constructed with <c>TocItemYamlConverter</c>.
+/// Members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can build one directly.
 /// </remarks>
 /// <param name="Island">
 /// When <c>true</c>, this TOC renders as an island. Combines flags from both the inline
@@ -554,9 +545,8 @@ public static class ListingVisualExtensions
 
 /// <summary>Optional knobs on a <see cref="ListingRef"/> entry beyond the mandatory path.</summary>
 /// <remarks>
-/// <para><b>Built by:</b> the table-of-contents YAML converters (<c>TocItemYamlConverter</c>) and <c>DocumentationSetDto</c> in <c>Elastic.Documentation.Configuration</c>, reached through <c>DocumentationSetLoader.Load</c>.</para>
-/// <para><b>Why it cannot be built from outside:</b> Its members are <c>internal init</c>: only <c>Elastic.Documentation</c>, <c>Elastic.Documentation.Configuration</c> and the test projects (<c>InternalsVisibleTo</c>) can set them, so a record that reaches a service has been through a loader or a checked operation.</para>
-/// <para><b>In a test:</b> build it with an object initializer through <c>InternalsVisibleTo</c> (<c>new ListingOptions { ... }</c>) and <c>with</c> for variations.</para>
+/// Constructed through <c>ListingRef</c>.
+/// Members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can build one directly.
 /// </remarks>
 [Equatable]
 public partial record ListingOptions
@@ -621,9 +611,8 @@ public partial record ListingOptions
 /// (subject to <see cref="ListingOptions.Visual"/>), and generates a grouped index page.
 /// </summary>
 /// <remarks>
-/// <para><b>Built by:</b> the table-of-contents YAML converters (<c>TocItemYamlConverter</c>) and <c>DocumentationSetDto</c> in <c>Elastic.Documentation.Configuration</c>, reached through <c>DocumentationSetLoader.Load</c>.</para>
-/// <para><b>Why it cannot be built from outside:</b> Its members are <c>internal init</c>: only <c>Elastic.Documentation</c>, <c>Elastic.Documentation.Configuration</c> and the test projects (<c>InternalsVisibleTo</c>) can set them, so a record that reaches a service has been through a loader or a checked operation.</para>
-/// <para><b>In a test:</b> build it with an object initializer through <c>InternalsVisibleTo</c> (<c>new ListingRef { ... }</c>) and <c>with</c> for variations.</para>
+/// Constructed with <c>TocItemYamlConverter</c>.
+/// Members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can build one directly.
 /// </remarks>
 [Equatable]
 public partial record ListingRef : ITableOfContentsItem
@@ -672,9 +661,8 @@ public partial record ListingRef : ITableOfContentsItem
 
 /// <summary>A resolved group bucket inside a <see cref="ListingRef"/>. Children are the pages belonging to this group.</summary>
 /// <remarks>
-/// <para><b>Built by:</b> <c>DocumentationSetDto</c> in <c>Elastic.Documentation.Configuration</c>, which resolves the groups of a <c>ListingRef</c> while it maps the file to the definition.</para>
-/// <para><b>Why it cannot be built from outside:</b> Its members are <c>internal init</c>: only <c>Elastic.Documentation</c>, <c>Elastic.Documentation.Configuration</c> and the test projects (<c>InternalsVisibleTo</c>) can set them, so a record that reaches a service has been through a loader or a checked operation.</para>
-/// <para><b>In a test:</b> build it with an object initializer through <c>InternalsVisibleTo</c> (<c>new ListingGroupRef { ... }</c>) and <c>with</c> for variations.</para>
+/// Constructed through <c>ListingRef</c>.
+/// Members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can build one directly.
 /// </remarks>
 [Equatable]
 public partial record ListingGroupRef : ITableOfContentsItem
@@ -723,9 +711,8 @@ public partial record ListingGroupRef : ITableOfContentsItem
 
 /// <summary>A CLI reference generated from a <c>cli-schema.json</c>, optionally merged with supplemental docs.</summary>
 /// <remarks>
-/// <para><b>Built by:</b> the table-of-contents YAML converters (<c>TocItemYamlConverter</c>) and <c>DocumentationSetDto</c> in <c>Elastic.Documentation.Configuration</c>, reached through <c>DocumentationSetLoader.Load</c>.</para>
-/// <para><b>Why it cannot be built from outside:</b> Its members are <c>internal init</c>: only <c>Elastic.Documentation</c>, <c>Elastic.Documentation.Configuration</c> and the test projects (<c>InternalsVisibleTo</c>) can set them, so a record that reaches a service has been through a loader or a checked operation.</para>
-/// <para><b>In a test:</b> build it with an object initializer through <c>InternalsVisibleTo</c> (<c>new CliReferenceRef { ... }</c>) and <c>with</c> for variations.</para>
+/// Constructed with <c>TocItemYamlConverter</c>.
+/// Members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can build one directly.
 /// </remarks>
 [Equatable]
 public partial record CliReferenceRef : ITableOfContentsItem

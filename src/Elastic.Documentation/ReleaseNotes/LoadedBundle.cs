@@ -10,9 +10,8 @@ namespace Elastic.Documentation.ReleaseNotes;
 /// Represents a loaded and parsed changelog bundle with its metadata.
 /// </summary>
 /// <remarks>
-/// <para><b>Built by:</b> <c>BundleLoader.LoadBundles</c> / <c>LoadBundlesFromContent</c> in <c>Elastic.Documentation.Configuration</c> (a bundle file with its version, repo, owner and path), or <see cref="LoadedBundle.MergeByTarget"/>.</para>
-/// <para><b>Why it cannot be built from outside:</b> Its members are <c>internal init</c>: only <c>Elastic.Documentation</c>, <c>Elastic.Documentation.Configuration</c> and the test projects (<c>InternalsVisibleTo</c>) can set them, so a record that reaches a service has been through a loader or a checked operation.</para>
-/// <para><b>In a test:</b> build it with <c>BundleExamples.Loaded</c> or <c>BundleExamples.Generated&lt;LoadedBundle&gt;()</c> (tests), or an object initializer / constructor.</para>
+/// Constructed with <c>BundleLoader.LoadBundles</c> or <see cref="LoadedBundle.MergeByTarget"/>.
+/// Members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can build one directly.
 /// </remarks>
 /// <param name="Version">The semantic version or date extracted from the bundle.</param>
 /// <param name="Repo">The repository/product name.</param>

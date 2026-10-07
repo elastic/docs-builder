@@ -10,9 +10,8 @@ namespace Elastic.Documentation.ReleaseNotes;
 /// Products configuration for changelog
 /// </summary>
 /// <remarks>
-/// <para><b>Built by:</b> <c>ChangelogConfigurationLoader</c> in <c>Elastic.Documentation.Configuration</c> (<c>Load</c>, <c>LoadRequired</c>, <c>LoadForProfileMode</c>), reading <c>changelog.yml</c> (the <c>products</c> block).</para>
-/// <para><b>Why it cannot be built from outside:</b> Its members are <c>internal init</c>: only <c>Elastic.Documentation</c>, <c>Elastic.Documentation.Configuration</c> and the test projects (<c>InternalsVisibleTo</c>) can set them, so a record that reaches a service has been through a loader or a checked operation.</para>
-/// <para><b>In a test:</b> build it with an object initializer through <c>InternalsVisibleTo</c> (<c>new ProductsConfig { ... }</c>) and <c>with</c> for variations.</para>
+/// Constructed through <c>ChangelogConfiguration</c>.
+/// Members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can build one directly.
 /// </remarks>
 [Equatable]
 public partial record ProductsConfig
@@ -36,10 +35,8 @@ public partial record ProductsConfig
 /// Default product specification
 /// </summary>
 /// <remarks>
-/// <para><b>Built by:</b> <c>ChangelogConfigurationLoader</c> in <c>Elastic.Documentation.Configuration</c> (<c>Load</c>, <c>LoadRequired</c>, <c>LoadForProfileMode</c>), reading <c>changelog.yml</c> (the <c>products.default</c> block).</para>
-/// <para><b>Why it cannot be built from outside:</b> Its members are <c>internal init</c>: only <c>Elastic.Documentation</c>, <c>Elastic.Documentation.Configuration</c> and the test projects (<c>InternalsVisibleTo</c>) can set them, so a record that reaches a service has been through a loader or a checked operation.</para>
-/// <para><b>Members that must always be set</b> (they were <c>required</c> before the type was sealed; C# forbids <c>required</c> on a member whose setter is less visible than the type, CS9032): <c>Product</c>. A loader or test that leaves one out gets the default; the aggregate's constraint set (<see cref="ChangelogConfigurationConstraints"/>) reports it: <see cref="ChangelogConfigurationConstraints.DefaultProductHasId"/> reports a default product with no id.</para>
-/// <para><b>In a test:</b> build it with an object initializer through <c>InternalsVisibleTo</c> (<c>new DefaultProduct { ... }</c>) and <c>with</c> for variations.</para>
+/// Constructed through <c>ProductsConfig</c>.
+/// Members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can build one directly.
 /// </remarks>
 public record DefaultProduct
 {

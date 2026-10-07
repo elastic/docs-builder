@@ -9,9 +9,8 @@ namespace Elastic.Documentation.AppliesTo;
 
 /// <summary>The <c>product</c> part of an <c>applies_to</c> block: the products that have their own applicability.</summary>
 /// <remarks>
-/// <para><b>Built by:</b> the <c>ApplicableToYamlConverter</c> in <c>Elastic.Documentation.Configuration</c> (YAML) and <c>ApplicableToJsonConverter</c> (JSON, in the domain), plus the domain helpers <c>ApplicableTo.ForStack</c>, <c>ApplicableTo.Default</c> and <c>AppliesCollection.Of</c>.</para>
-/// <para><b>Why it cannot be built from outside:</b> Its members are <c>internal init</c>: only <c>Elastic.Documentation</c>, <c>Elastic.Documentation.Configuration</c> and the test projects (<c>InternalsVisibleTo</c>) can set them, so a record that reaches a service has been through a loader or a checked operation.</para>
-/// <para><b>In a test:</b> build it with an object initializer through <c>InternalsVisibleTo</c> (<c>new ProductApplicability { ... }</c>) and <c>with</c> for variations.</para>
+/// Constructed through <c>ApplicableTo</c>.
+/// Members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can build one directly.
 /// </remarks>
 public record ProductApplicability
 {

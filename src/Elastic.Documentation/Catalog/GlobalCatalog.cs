@@ -10,9 +10,8 @@ namespace Elastic.Documentation.Catalog;
 /// as one unit, from <c>versions.yml</c>, <c>products.yml</c> and <c>legacy-url-mappings.yml</c>, in that order.
 /// </summary>
 /// <remarks>
-/// <para><b>Built by:</b> <c>CatalogLoader.Load</c> in <c>Elastic.Documentation.Configuration</c>, which reads <c>versions.yml</c>, <c>products.yml</c> and <c>legacy-url-mappings.yml</c> as one unit and returns a <c>Result&lt;GlobalCatalog&gt;</c>.</para>
-/// <para><b>Why it cannot be built from outside:</b> Its members are <c>internal init</c>: only <c>Elastic.Documentation</c>, <c>Elastic.Documentation.Configuration</c> and the test projects (<c>InternalsVisibleTo</c>) can set them, so a record that reaches a service has been through a loader or a checked operation.</para>
-/// <para><b>In a test:</b> build it with an object initializer through <c>InternalsVisibleTo</c> (<c>new GlobalCatalog { ... }</c>) and <c>with</c> for variations.</para>
+/// Constructed with <c>CatalogLoader.Load</c>.
+/// Members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can build one directly.
 /// </remarks>
 public sealed record GlobalCatalog
 {

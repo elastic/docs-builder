@@ -30,9 +30,8 @@ public enum TocEntryKind
 /// that selects no shape; this keeps what it hid (see <c>Constraints-Conventions.md</c>). Not part of equality.
 /// </summary>
 /// <remarks>
-/// <para><b>Built by:</b> <c>TocItemYamlConverter</c> in <c>Elastic.Documentation.Configuration</c>, which records one for every <c>toc:</c> entry it reads (through <c>TocAuthoringSink</c>) next to the item it makes.</para>
-/// <para><b>Why it cannot be built from outside:</b> Its members are <c>internal init</c>: only <c>Elastic.Documentation</c>, <c>Elastic.Documentation.Configuration</c> and the test projects (<c>InternalsVisibleTo</c>) can set them, so a record that reaches a service has been through a loader or a checked operation.</para>
-/// <para><b>In a test:</b> build it with its constructor (<c>new TocEntryAuthoring(kind, entry)</c>, internal and visible to the tests).</para>
+/// Constructed with <c>TocItemYamlConverter</c>.
+/// Members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can build one directly.
 /// </remarks>
 [Equatable]
 public sealed partial record TocEntryAuthoring
