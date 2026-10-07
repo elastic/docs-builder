@@ -232,6 +232,43 @@ public partial class ApiPagesNavRenderingTests
 		html.Should().NotContain("navigation-search");
 	}
 
+	[Test]
+	[Arguments("get", "GET", "Get a document source")]
+	[Arguments("post", "POST", "Index a document")]
+	[Arguments("put", "PUT", "Create or update a document")]
+	[Arguments("patch", "PATCH", "Update a document")]
+	[Arguments("delete", "DELETE", "Delete a document")]
+	public async Task Render_OperationRow_ShowsVerbTextAfterOperationName(string method, string verb, string title)
+	{
+		var html = await _TocTreeNav.Create([
+			new NavigationRenderNode
+			{
+				Kind = NavigationRenderNodeKind.Leaf,
+				IsTopLevel = false,
+				NavigationTitle = title,
+				Url = "/api/doc/elasticsearch/operation/example",
+				HttpMethod = method
+			}
+		]).RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
+
+		var link = OperationLink(html);
+		link.Should().Contain($">{verb}<");
+		link.Should().Contain(title);
+		link.IndexOf(title, StringComparison.Ordinal).Should().BeLessThan(link.IndexOf($">{verb}<", StringComparison.Ordinal));
+		link.Should().NotContain("aria-label");
+		link.Should().NotContain("icon-api-arrow");
+		link.Should().NotContain("icon-api-x");
+	}
+
+	private static string OperationLink(string html)
+	{
+		var start = html.IndexOf("<a ", StringComparison.Ordinal);
+		start.Should().BeGreaterThanOrEqualTo(0);
+		var end = html.IndexOf("</a>", start, StringComparison.Ordinal);
+		end.Should().BeGreaterThan(start);
+		return html[start..(end + 4)];
+	}
+
 	private static ApiLayoutViewModel CreateLayoutModel(
 		string navigationUrl,
 		string markdownUrl,

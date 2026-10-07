@@ -652,29 +652,28 @@
 }
 
 /*
- * Nav V2 method badges — Figma APIs (node 10065:6317).
+ * Nav method chips: a small text label at the right edge of the row, after the operation name.
  * Colors follow Swagger UI conventions (GET blue, POST green, PUT amber, PATCH teal,
- * DELETE red + X, HEAD purple, OPTIONS gray); GET pivots 180°.
+ * DELETE red, HEAD purple, OPTIONS gray). The current row keeps the chip fill and darkens
+ * only the border, so the 9px label stays above WCAG AA (4.5:1).
  */
 #pages-nav .nav-v2-api-method {
 	display: inline-flex;
 	flex-shrink: 0;
 	align-items: center;
 	justify-content: center;
-	width: 20px;
-	height: 20px;
-	border: 1px solid;
-	border-radius: 6px;
+	align-self: center;
+	margin-left: auto;
 	box-sizing: border-box;
-}
-
-#pages-nav .nav-v2-api-method svg {
-	display: block;
-}
-
-/* Only GET flips the pivot arrow (incoming). */
-#pages-nav .nav-v2-api-method-get svg {
-	transform: rotate(180deg);
+	height: 16px;
+	padding: 0 4px;
+	border: 1px solid;
+	border-radius: 4px;
+	font-size: 9px;
+	font-weight: 600;
+	letter-spacing: 0.02em;
+	line-height: 1;
+	white-space: nowrap;
 }
 
 #pages-nav .nav-v2-api-method-get {
@@ -720,37 +719,30 @@
 }
 
 #pages-nav a.sidebar-link.current .nav-v2-api-method-get {
-	background-color: var(--color-blue-elastic-30);
 	border-color: var(--color-blue-elastic-100);
 }
 
 #pages-nav a.sidebar-link.current .nav-v2-api-method-post {
-	background-color: var(--color-green-30);
 	border-color: var(--color-green-100);
 }
 
 #pages-nav a.sidebar-link.current .nav-v2-api-method-put {
-	background-color: var(--color-yellow-30);
 	border-color: var(--color-yellow-100);
 }
 
 #pages-nav a.sidebar-link.current .nav-v2-api-method-patch {
-	background-color: var(--color-teal-30);
 	border-color: var(--color-teal-100);
 }
 
 #pages-nav a.sidebar-link.current .nav-v2-api-method-delete {
-	background-color: var(--color-red-30);
 	border-color: var(--color-red-100);
 }
 
 #pages-nav a.sidebar-link.current .nav-v2-api-method-head {
-	background-color: var(--color-purple-30);
 	border-color: var(--color-purple-100);
 }
 
 #pages-nav a.sidebar-link.current .nav-v2-api-method-options {
-	background-color: var(--color-grey-30);
 	border-color: var(--color-grey-100);
 }
 
