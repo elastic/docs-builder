@@ -29,6 +29,10 @@ public sealed record ServerlessService(
 /// <summary>Pure helpers for resolving a serverless promotion's commit range from serverless-gitops history.</summary>
 public static partial class ServerlessPromotion
 {
+	/// <summary>Release notes cover pull requests merged into this branch. A pull request merged into a
+	/// feature branch reaches the range when the branch merges, and the PR that merged the branch carries the note.</summary>
+	public const string BaseBranch = "main";
+
 	/// <summary>The last production slice of a rollout; release notes publish when it completes.</summary>
 	public const string FinalSlice = "production-noncanary-ds-5";
 

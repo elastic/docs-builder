@@ -143,6 +143,14 @@ public record BundleChangelogsArguments
 	public string? EndGitRef { get; init; }
 
 	/// <summary>
+	/// When set with a git ref range, only pull requests whose base branch is this branch are bundled.
+	/// Pull requests merged into other branches (for example feature branches that later merged into
+	/// the integration branch) appear in the run report as excluded. Set programmatically by
+	/// <c>release serverless bundle</c>; not a <c>changelog bundle</c> option.
+	/// </summary>
+	public string? BaseRef { get; init; }
+
+	/// <summary>
 	/// When true, resolve the commit range and print the run report (resolved PR list with per-PR
 	/// entry source) without writing a bundle. Only valid together with a git ref range.
 	/// </summary>
@@ -957,7 +965,14 @@ public partial class ChangelogBundlingService(
 		var owner = string.IsNullOrWhiteSpace(sourcing.Owner) ? DefaultOwner : sourcing.Owner;
 		var resolution = await _commitRangeService.ResolvePullRequestsAsync(
 			collector,
-			new CommitRangeArguments { Owner = owner, Repo = sourcing.Repo, StartRef = input.StartGitRef!, EndRef = input.EndGitRef! },
+			new CommitRangeArguments
+			{
+				Owner = owner,
+				Repo = sourcing.Repo,
+				StartRef = input.StartGitRef!,
+				EndRef = input.EndGitRef!,
+				BaseRef = input.BaseRef
+			},
 			ctx
 		);
 		if (resolution == null)

@@ -205,6 +205,7 @@ public sealed partial class GitHubCommitRangeService(
 		var prsByNumber = new Dictionary<int, (string Url, List<string> Shas)>();
 		var orderedPrNumbers = new List<int>();
 		var commitsWithoutPr = new List<string>();
+		var excludedByBase = new Dictionary<int, CommitRangeExcludedPullRequest>();
 		var repoFullName = $"{args.Owner}/{args.Repo}";
 
 		for (var offset = 0; offset < commits.Count; offset += GraphQlBatchSize)
@@ -218,7 +219,7 @@ public sealed partial class GitHubCommitRangeService(
 			{
 				var sha = batch[i];
 				_ = byAlias.TryGetValue($"c{i}", out var commitNode);
-				var selected = SelectPullRequest(collector, sha, commitNode, repoFullName);
+				var selected = SelectPullRequest(collector, sha, commitNode, repoFullName, args.BaseRef, excludedByBase);
 				if (selected == null)
 				{
 					commitsWithoutPr.Add(sha);
@@ -254,7 +255,8 @@ public sealed partial class GitHubCommitRangeService(
 		{
 			TotalCommits = commits.Count,
 			PullRequests = pullRequests,
-			CommitsWithoutPullRequest = commitsWithoutPr
+			CommitsWithoutPullRequest = commitsWithoutPr,
+			ExcludedPullRequests = [.. excludedByBase.Values.OrderBy(pr => pr.Number)]
 		};
 	}
 
@@ -268,13 +270,36 @@ public sealed partial class GitHubCommitRangeService(
 		IDiagnosticsCollector collector,
 		string sha,
 		GraphQlCommit? commitNode,
-		string repoFullName
+		string repoFullName,
+		string? baseRef,
+		Dictionary<int, CommitRangeExcludedPullRequest> excludedByBase
 	)
 	{
-		var candidates = commitNode?.AssociatedPullRequests?.Nodes?.OfType<GraphQlPullRequest>()
+		var merged = commitNode?.AssociatedPullRequests?.Nodes?.OfType<GraphQlPullRequest>()
 			.Where(pr => pr.Merged && string.Equals(pr.BaseRepository?.NameWithOwner, repoFullName, StringComparison.OrdinalIgnoreCase))
 			.ToList()
 			?? [];
+
+		// A pull request merged into another branch (for example a feature branch) reaches the range
+		// when that branch later merges into the integration branch. Leave it to the PR that merged
+		// the branch, and report it.
+		var candidates = merged;
+		if (!string.IsNullOrWhiteSpace(baseRef))
+		{
+			candidates = [.. merged.Where(pr => string.Equals(pr.BaseRefName, baseRef, StringComparison.Ordinal))];
+			foreach (var pr in merged.Except(candidates))
+			{
+				if (!excludedByBase.ContainsKey(pr.Number))
+				{
+					excludedByBase[pr.Number] = new CommitRangeExcludedPullRequest
+					{
+						Number = pr.Number,
+						Url = pr.Url ?? $"https://github.com/{repoFullName}/pull/{pr.Number}",
+						BaseRef = pr.BaseRefName ?? string.Empty
+					};
+				}
+			}
+		}
 
 		if (candidates.Count == 0)
 			return null;
@@ -363,7 +388,7 @@ public sealed partial class GitHubCommitRangeService(
 				.Append(" oid associatedPullRequests(first: ")
 				.Append(MaxAssociatedPullRequests)
 				.Append(") { nodes {")
-				.Append(" number url merged mergeCommit { oid } baseRepository { nameWithOwner }")
+				.Append(" number url merged baseRefName mergeCommit { oid } baseRepository { nameWithOwner }")
 				.Append(" } } } }");
 		}
 
@@ -441,6 +466,9 @@ public sealed partial class GitHubCommitRangeService(
 
 		[JsonPropertyName("merged")]
 		public bool Merged { get; set; }
+
+		[JsonPropertyName("baseRefName")]
+		public string? BaseRefName { get; set; }
 
 		[JsonPropertyName("mergeCommit")]
 		public GraphQlCommitRef? MergeCommit { get; set; }

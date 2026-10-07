@@ -207,6 +207,7 @@ internal sealed class ServerlessReleaseCommands(
 				Config = tempConfig,
 				StartGitRef = startRef,
 				EndGitRef = endRef,
+				BaseRef = ServerlessPromotion.BaseBranch,
 				DryRun = dryRun,
 				OnBundlePathResolved = path => paths.Add(path)
 			};
