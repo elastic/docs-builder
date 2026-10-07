@@ -154,6 +154,64 @@
 		flex-shrink: 0;
 	}
 
+	/* On this page ----------------------------------------------------- */
+	/* A row of in-page links under the hero rule. It borrows the right-rail TOC look: 14px
+	   ink-light links, each with a grey rule on its left edge that darkens on hover. */
+	.hub-hero:has(+ .hub-on-this-page) {
+		margin-bottom: 0;
+	}
+	.hub-on-this-page {
+		@apply mx-auto w-full max-w-5xl;
+		display: flex;
+		align-items: baseline;
+		column-gap: 16px;
+		padding-top: 20px;
+		margin-bottom: 40px;
+	}
+	.hub-on-this-page .hub-on-this-page-label {
+		flex: none;
+		font-size: var(--text-base);
+		font-weight: 700;
+		line-height: 24px;
+		white-space: nowrap;
+		color: var(--color-ink);
+	}
+	/* The links wrap inside their own column, so a second line starts under the first link
+	   and never under the label. */
+	.hub-on-this-page .hub-on-this-page-list {
+		@apply m-0 list-none p-0;
+		display: flex;
+		flex: 1;
+		flex-wrap: wrap;
+		min-width: 0;
+		row-gap: 4px;
+	}
+	.hub-on-this-page .hub-on-this-page-list li {
+		@apply m-0 p-0;
+	}
+	.hub-on-this-page .hub-on-this-page-list a {
+		display: block;
+		padding: 0 16px;
+		border-left: 1px solid var(--color-grey-20);
+		font-size: var(--text-sm);
+		line-height: 20px;
+		color: var(--color-ink-light);
+		text-decoration: none;
+	}
+	.hub-on-this-page .hub-on-this-page-list a:hover,
+	.hub-on-this-page .hub-on-this-page-list a:focus-visible {
+		border-left-color: var(--color-grey-80);
+		color: var(--color-ink-dark);
+	}
+	@media (max-width: 640px) {
+		.hub-on-this-page {
+			display: block;
+		}
+		.hub-on-this-page .hub-on-this-page-label {
+			margin-bottom: 8px;
+		}
+	}
+
 	/* Get started ------------------------------------------------------ */
 	/* A container, not the viewport: the left sidebar narrows the body, so the step
 	   grid has to answer to the space it actually has. */

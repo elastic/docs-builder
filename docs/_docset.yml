@@ -140,6 +140,7 @@ toc:
       - file: kbd.md
       - file: link-card.md
       - file: math.md
+      - file: on-this-page.md
       - file: vector-sizing-calculator.md
       - file: diagrams.md
       - file: lists.md
