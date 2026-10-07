@@ -37,6 +37,9 @@ public class SchemaAnalyzer(
 	// Each page builds its own analyzer, so the set never crosses threads.
 	private readonly HashSet<string> _expandingAllOfRefs = [with(StringComparer.Ordinal)];
 
+	// Each schema's allOf folds once per page.
+	private readonly Dictionary<IOpenApiSchema, EffectiveSchema> _flattened = [with(ReferenceEqualityComparer.Instance)];
+
 	/// <summary>
 	/// Checks if a type should link to its container page, considering the current page.
 	/// </summary>
@@ -78,43 +81,50 @@ public class SchemaAnalyzer(
 		return resolved ?? schemaRef;
 	}
 
-	/// <summary>
-	/// Gets the properties from a schema, resolving references and handling allOf composition.
-	/// </summary>
-	public IDictionary<string, IOpenApiSchema>? GetSchemaProperties(IOpenApiSchema? schema)
+	/// <summary>The properties of a schema and its <c>allOf</c> members; null when there are none.</summary>
+	public IDictionary<string, IOpenApiSchema>? GetSchemaProperties(IOpenApiSchema? schema) =>
+		Flatten(schema).Properties is { Count: > 0 } properties ? properties : null;
+
+	/// <summary>The schema's <c>allOf</c> members folded into one view; see <see cref="EffectiveSchema"/>.</summary>
+	public EffectiveSchema Flatten(IOpenApiSchema? schema)
 	{
-		if (schema is null)
-			return null;
+		var resolved = ResolveSchema(schema);
+		if (resolved is null)
+			return EffectiveSchema.Empty;
+		if (_flattened.TryGetValue(resolved, out var cached))
+			return cached;
 
-		// For schema references resolve directly to avoid proxy reads:
-		// each proxy property access on OpenApiSchemaReference calls ResolveReference internally,
-		// so reading .Properties through the proxy is equivalent to re-resolving the $ref on every call.
-		if (schema is OpenApiSchemaReference schemaRef)
+		var flattened = Flatten(resolved, [with(ReferenceEqualityComparer.Instance)]);
+		_flattened[resolved] = flattened;
+		return flattened;
+	}
+
+	private EffectiveSchema Flatten(IOpenApiSchema resolved, HashSet<IOpenApiSchema> visited)
+	{
+		if (!visited.Add(resolved))
+			return EffectiveSchema.Empty;
+		if (resolved.AllOf is not { Count: > 0 } allOf)
 		{
-			var resolved = ResolveSchema(schemaRef);
-			// Only recurse when we have a concrete resolved schema; null means external ref or
-			// unresolvable — fall through so the proxy's own property reads are used as a fallback.
-			if (resolved is not null && !ReferenceEquals(resolved, schemaRef))
-				return GetSchemaProperties(resolved);
+			return new EffectiveSchema(
+				resolved.Properties ?? new Dictionary<string, IOpenApiSchema>(),
+				resolved.Required ?? new HashSet<string>(),
+				resolved.AdditionalProperties
+			);
 		}
 
-		// Direct properties
-		if (schema.Properties is { Count: > 0 })
-			return schema.Properties;
-
-		// For allOf, collect properties from all schemas
-		if (schema.AllOf is { Count: > 0 } allOf)
+		var properties = new Dictionary<string, IOpenApiSchema>(resolved.Properties ?? new Dictionary<string, IOpenApiSchema>());
+		var required = new HashSet<string>(resolved.Required ?? new HashSet<string>());
+		var mapValue = resolved.AdditionalProperties;
+		foreach (var member in allOf.Select(m => ResolveSchema(m) ?? m))
 		{
-			var props = new Dictionary<string, IOpenApiSchema>();
-			foreach (var subProps in allOf.Select(GetSchemaProperties).Where(p => p is not null))
-			{
-				foreach (var prop in subProps!)
-					_ = props.TryAdd(prop.Key, prop.Value);
-			}
-			return props.Count > 0 ? props : null;
+			var folded = Flatten(member, visited);
+			foreach (var (name, property) in folded.Properties)
+				_ = properties.TryAdd(name, property);
+			required.UnionWith(folded.Required);
+			mapValue ??= folded.MapValue;
 		}
 
-		return null;
+		return new EffectiveSchema(properties, required, mapValue);
 	}
 
 	/// <summary>
@@ -124,15 +134,95 @@ public class SchemaAnalyzer(
 	{
 		// Resolve references to avoid proxy reads (each proxy access calls ResolveReference internally)
 		var target = ResolveSchema(schema) ?? schema;
-		return UnionSchemas.TryGet(target, out _, out var members) ? BuildUnionOptions(members) : [];
+		return UnionSchemas.TryGet(target, out _, out var members) ? GetUnionOptions(members) : [];
 	}
 
 	/// <summary>
-	/// One option per union member. A <c>$ref</c> member stays shallow (its name and id) so cyclic unions cannot recurse;
-	/// <see cref="ClassifyUnion"/> classifies inline unions in full instead.
+	/// The options of a union, as every option list (badges, variant tabs, body and schema-page variants) shows them.
+	/// Literal members surface through <see cref="TypeInfo.EnumValues"/>, not as options.
 	/// </summary>
-	private List<UnionOption> BuildUnionOptions(IEnumerable<IOpenApiSchema> members) =>
-		LabelInlineObjects([.. FlattenInlineUnions(members).Select(BuildUnionOption).OfType<UnionOption>()]);
+	public List<UnionOption> GetUnionOptions(IEnumerable<IOpenApiSchema> members) =>
+		LabelInlineObjects([
+			.. FlattenInlineUnions(members)
+				.Where(static m => m is OpenApiSchemaReference || m.Enum is not { Count: > 0 })
+				.Select(ClassifyOption)
+		]);
+
+	/// <summary>
+	/// One union member, classified like any other type, except that a <c>$ref</c> (or an array of one) keeps its schema's
+	/// name: an option list reads <c>NodeId | NodeId[]</c>, not <c>string | string[]</c>. A referenced member is not
+	/// classified further, so a union that refers back to itself cannot recurse.
+	/// </summary>
+	private UnionOption ClassifyOption(IOpenApiSchema member)
+	{
+		if (member is OpenApiSchemaReference { Reference.Id.Length: > 0 } reference)
+			return ReferencedOption(reference, member, isArray: false);
+		if (member.Type?.HasFlag(JsonSchemaType.Array) == true && member.Items is OpenApiSchemaReference { Reference.Id.Length: > 0 } items)
+			return ReferencedOption(items, member, isArray: true);
+
+		var info = ClassifyType(member);
+		var titled = info is { IsObject: true, IsArray: false, SchemaRef: null or "" } && !string.IsNullOrWhiteSpace(member.Title);
+		return new UnionOption(titled ? member.Title! : info.TypeName, info.SchemaRef, info.IsObject, member, info.IsArray);
+	}
+
+	/// <summary>An option named after the schema a <c>$ref</c> points to; aliases of a primitive or an enum are not objects.</summary>
+	private UnionOption ReferencedOption(OpenApiSchemaReference reference, IOpenApiSchema member, bool isArray)
+	{
+		var refId = reference.Reference.Id!;
+		var name = SchemaHelpers.FormatSchemaName(refId);
+		var target = ResolveSchema(reference) ?? reference;
+		var named = ClassifyNamedSchema(name, target);
+		var isObject = !named.IsValueType && !named.IsPrimitiveAlias && target.Enum is not { Count: > 0 };
+		return PrimitiveSpelling(name, named, target) is { } spelled
+			? new UnionOption(spelled.Name, refId, false, member, isArray || spelled.IsArray)
+			: new UnionOption(name, refId, isObject, member, isArray);
+	}
+
+	/// <summary>
+	/// The primitive types a referenced schema stands for, when they read better than its name: a schema of several
+	/// primitive types (<c>Stringifieddouble</c> is <c>number | string</c>), or a codegen name with no readable part
+	/// (<c>Cases_string</c>, <c>Cases_string_array</c>). Null when the name should show.
+	/// </summary>
+	private (string Name, bool IsArray)? PrimitiveSpelling(string name, NamedSchemaKind named, IOpenApiSchema target)
+	{
+		if (named.IsValueType)
+			return null;
+		if (MultiPrimitiveType(target) is { } types)
+			return (types, false);
+		if (!SchemaHelpers.IsInternalSchemaName(SchemaHelpers.ReadableSchemaName(name)))
+			return null;
+		if (named.IsPrimitiveAlias)
+			return (named.TypeName, false);
+		return target.Type?.HasFlag(JsonSchemaType.Array) == true && PrimitiveAliasItem(target.Items) is { } item ? (item, true) : null;
+	}
+
+	private static string? MultiPrimitiveType(IOpenApiSchema target)
+	{
+		if (
+			target.Type is not { } type
+			|| type.HasFlag(JsonSchemaType.Object)
+			|| type.HasFlag(JsonSchemaType.Array)
+			|| UnionSchemas.IsUnion(target)
+		)
+			return null;
+		var names = SchemaHelpers.GetPrimitiveTypeName(type);
+		return names.Contains(" | ", StringComparison.Ordinal) ? names : null;
+	}
+
+	/// <summary>
+	/// The primitive an array's items are: inline, or a <c>$ref</c> to an alias of one. Nothing is classified, so a
+	/// referenced item cannot lead back to the union the option belongs to.
+	/// </summary>
+	private string? PrimitiveAliasItem(IOpenApiSchema? items)
+	{
+		if (items is OpenApiSchemaReference { Reference.Id: { } itemId } itemRef)
+		{
+			var alias = ClassifyNamedSchema(SchemaHelpers.FormatSchemaName(itemId), ResolveSchema(itemRef) ?? itemRef);
+			return alias.IsPrimitiveAlias ? alias.TypeName : null;
+		}
+		var primitive = SchemaHelpers.GetPrimitiveTypeName(items?.Type);
+		return string.IsNullOrEmpty(primitive) || primitive == "object" ? null : primitive;
+	}
 
 	/// <summary>Gives each unnamed inline object member a <see cref="UnionOption.Label"/> it can be told apart by.</summary>
 	private List<UnionOption> LabelInlineObjects(List<UnionOption> options)
@@ -184,37 +274,6 @@ public class SchemaAnalyzer(
 				? FlattenInlineUnions(inner)
 				: [m]
 		);
-
-	private UnionOption? BuildUnionOption(IOpenApiSchema member)
-	{
-		if (member is OpenApiSchemaReference reference)
-		{
-			var name = SchemaHelpers.FormatSchemaName(reference.Reference?.Id ?? "unknown");
-			return new UnionOption(name, reference.Reference?.Id, !SchemaHelpers.IsValueType(name), member);
-		}
-
-		// Literal members surface through TypeInfo.EnumValues, not as union options.
-		if (member.Enum is { Count: > 0 })
-			return null;
-
-		if (member.Type?.HasFlag(JsonSchemaType.Array) == true && member.Items != null)
-		{
-			var item = ClassifyType(member.Items);
-			return new UnionOption(item.TypeName, item.SchemaRef, item.IsObject, member, IsArray: true);
-		}
-
-		// An inline schema can still wrap a reference (allOf: [$ref]).
-		var info = ClassifyType(member);
-		if (!string.IsNullOrEmpty(info.SchemaRef))
-			return new UnionOption(info.TypeName, info.SchemaRef, info.IsObject, member);
-
-		// An inline object with properties of its own expands like a named one; its title, when set, names it.
-		if (info is { IsObject: true, IsUnion: false, IsDictionary: false } && GetSchemaProperties(member)?.Count > 0)
-			return new UnionOption(string.IsNullOrWhiteSpace(member.Title) ? info.TypeName : member.Title, null, true, member);
-
-		var primitive = SchemaHelpers.GetPrimitiveTypeName(member.Type);
-		return new UnionOption(string.IsNullOrEmpty(primitive) ? "unknown" : primitive, null, false, member);
-	}
 
 	/// <summary>
 	/// Checks if a union option has properties, resolving its reference if needed.
@@ -326,144 +385,129 @@ public class SchemaAnalyzer(
 	{
 		if (schema is null)
 			return new TypeInfo { TypeName = "unknown" };
-
-		// Check if this is a schema reference
-		if (schema is OpenApiSchemaReference schemaRef)
-		{
-			var refId = schemaRef.Reference.Id;
-			if (!string.IsNullOrEmpty(refId))
-			{
-				var typeName = SchemaHelpers.FormatSchemaName(refId);
-
-				// Resolve the $ref once. Reading any property through OpenApiSchemaReference calls
-				// ResolveReference internally on every access, so we resolve here and read structural
-				// fields (Type, Enum, OneOf, AnyOf, Items, Properties) off the concrete schema.
-				// Description/Title/ReadOnly/WriteOnly intentionally stay on the proxy because
-				// OpenAPI 3.1 allows sibling keywords alongside $ref to override those fields.
-				var resolvedTarget = ResolveSchema(schemaRef) ?? schemaRef;
-				var isArray = resolvedTarget.Type?.HasFlag(JsonSchemaType.Array) ?? false;
-				var named = ClassifyNamedSchema(typeName, resolvedTarget);
-				typeName = named.TypeName;
-				var isValueType = named.IsValueType;
-				var valueTypeBase = named.ValueTypeBase;
-				var schemaRefId = named.IsPrimitiveAlias ? null : refId;
-				var hasLink = IsLinkedType(typeName);
-
-				// Check if the schema reference is an enum or union — read from the resolved target
-				var isEnum = resolvedTarget.Enum is { Count: > 0 };
-
-				// Check if the referenced type is an array of primitives
-				string? arrayItemType = null;
-				if (isArray)
-				{
-					var itemSchema = resolvedTarget.Items;
-					if (itemSchema is not null)
-					{
-						var itemInfo = ClassifyType(itemSchema);
-						// If the item is not an object, not a linked type, and has no schema reference, it's a primitive array
-						if (itemInfo is { IsObject: false, HasLink: false } && string.IsNullOrEmpty(itemInfo.SchemaRef))
-							arrayItemType = itemInfo.TypeName;
-					}
-				}
-
-				UnionKeyword? unionKeyword = null;
-				List<UnionOption>? unionOptions = null;
-				if (!isEnum && UnionSchemas.TryGet(resolvedTarget, out var keyword, out var members))
-				{
-					unionKeyword = keyword;
-					var built = BuildUnionOptions(members);
-					unionOptions = built.Count > 0 ? built : null;
-				}
-				else if (!isEnum && ClassifyReferencedAllOfUnion(refId, resolvedTarget) is { } allOfUnion)
-				{
-					unionKeyword = allOfUnion.UnionKeyword;
-					unionOptions = allOfUnion.UnionOptions;
-				}
-
-				return new TypeInfo
-				{
-					TypeName = typeName,
-					SchemaRef = schemaRefId,
-					IsArray = isArray,
-					IsObject = !isValueType && !isEnum && !named.IsPrimitiveAlias,
-					IsValueType = isValueType,
-					ValueTypeBase = valueTypeBase,
-					HasLink = hasLink,
-					UnionOptions = unionOptions,
-					IsEnum = isEnum,
-					UnionKeyword = unionKeyword,
-					ArrayItemType = arrayItemType
-				};
-			}
-		}
-
-		// Check for oneOf/anyOf which often indicate union types
-		if (UnionSchemas.TryGet(schema, out var inlineKeyword, out var inlineMembers))
-			return ClassifyUnion(inlineMembers, inlineKeyword);
-
-		// Check for allOf (usually inheritance/composition)
-		if (schema.AllOf is { Count: > 0 } allOf)
-		{
-			if (AllOfUnion.TrySplit(allOf, this, out var allOfUnion))
-				return ClassifyAllOfUnion(allOfUnion);
-
-			var refSchemas = allOf.OfType<OpenApiSchemaReference>().ToArray();
-			if (refSchemas.Length > 0)
-			{
-				var refId = refSchemas[0].Reference.Id;
-				if (!string.IsNullOrEmpty(refId))
-				{
-					var typeName = SchemaHelpers.FormatSchemaName(refId);
-					var resolvedTarget = ResolveSchema(refSchemas[0]) ?? refSchemas[0];
-					var named = ClassifyNamedSchema(typeName, resolvedTarget);
-
-					// allOf wrapping a single enum $ref is how OpenAPI 3.1 attaches a description to a $ref.
-					if (resolvedTarget.Enum is { Count: > 0 })
-						return new TypeInfo { TypeName = named.TypeName, SchemaRef = named.IsPrimitiveAlias ? null : refId, IsEnum = true };
-
-					return new TypeInfo
-					{
-						TypeName = named.TypeName,
-						SchemaRef = named.IsPrimitiveAlias ? null : refId,
-						IsObject = !named.IsValueType && !named.IsPrimitiveAlias,
-						IsValueType = named.IsValueType,
-						ValueTypeBase = named.ValueTypeBase,
-						HasLink = IsLinkedType(named.TypeName),
-						AlsoIncludes = GetComposedTypes(refSchemas)
-					};
-				}
-			}
-		}
-
-		// Check for array items
+		if (schema is OpenApiSchemaReference { Reference.Id: { Length: > 0 } refId } reference)
+			return ClassifyReference(reference, refId);
+		if (UnionSchemas.TryGet(schema, out var keyword, out var members))
+			return ClassifyUnion(members, keyword);
+		if (schema.AllOf is { Count: > 0 } allOf && ClassifyComposition(allOf) is { } composed)
+			return composed;
 		if (schema.Type?.HasFlag(JsonSchemaType.Array) ?? false)
+			return ClassifyArray(schema);
+		return ClassifyScalar(schema);
+	}
+
+	private TypeInfo ClassifyReference(OpenApiSchemaReference reference, string refId)
+	{
+		// Resolve the $ref once. Reading any property through OpenApiSchemaReference calls
+		// ResolveReference internally on every access, so we resolve here and read structural
+		// fields (Type, Enum, OneOf, AnyOf, Items, Properties) off the concrete schema.
+		// Description/Title/ReadOnly/WriteOnly intentionally stay on the proxy because
+		// OpenAPI 3.1 allows sibling keywords alongside $ref to override those fields.
+		var resolvedTarget = ResolveSchema(reference) ?? reference;
+		var isArray = resolvedTarget.Type?.HasFlag(JsonSchemaType.Array) ?? false;
+		var named = ClassifyNamedSchema(SchemaHelpers.FormatSchemaName(refId), resolvedTarget);
+		var isEnum = resolvedTarget.Enum is { Count: > 0 };
+		var (unionKeyword, unionOptions) = isEnum ? (null, null) : ReferencedUnion(refId, resolvedTarget);
+
+		return new TypeInfo
 		{
-			if (schema.Items is not null)
-			{
-				var itemInfo = ClassifyType(schema.Items);
-				// If the item is not an object and not a linked type, it's a primitive array
-				var isPrimitiveArray = itemInfo is not { IsObject: false, HasLink: false } || !string.IsNullOrEmpty(itemInfo.SchemaRef);
-				var arrayItemType = isPrimitiveArray ? itemInfo.TypeName : null;
-				return new TypeInfo
-				{
-					TypeName = itemInfo.TypeName,
-					SchemaRef = itemInfo.SchemaRef,
-					IsArray = true,
-					IsObject = itemInfo.IsObject,
-					IsValueType = itemInfo.IsValueType,
-					ValueTypeBase = itemInfo.ValueTypeBase,
-					HasLink = itemInfo.HasLink,
-					IsEnum = itemInfo.IsEnum,
-					ArrayItemType = arrayItemType,
-					// An array of a union offers the union's variants for each item.
-					UnionOptions = itemInfo.UnionOptions,
-					UnionKeyword = itemInfo.UnionKeyword
-				};
-			}
-			return new TypeInfo { TypeName = "unknown", IsArray = true, ArrayItemType = "unknown" };
+			TypeName = named.TypeName,
+			SchemaRef = named.IsPrimitiveAlias ? null : refId,
+			IsArray = isArray,
+			IsObject = !named.IsValueType && !isEnum && !named.IsPrimitiveAlias,
+			IsValueType = named.IsValueType,
+			ValueTypeBase = named.ValueTypeBase,
+			HasLink = IsLinkedType(named.TypeName),
+			UnionOptions = unionOptions,
+			IsEnum = isEnum,
+			UnionKeyword = unionKeyword,
+			ArrayItemType = isArray ? PrimitiveItemType(resolvedTarget.Items) : null
+		};
+	}
+
+	/// <summary>The item type of a referenced array, when the items are a plain primitive rather than a linked or named type.</summary>
+	private string? PrimitiveItemType(IOpenApiSchema? itemSchema)
+	{
+		if (itemSchema is null)
+			return null;
+		var itemInfo = ClassifyType(itemSchema);
+		return itemInfo is { IsObject: false, HasLink: false } && string.IsNullOrEmpty(itemInfo.SchemaRef) ? itemInfo.TypeName : null;
+	}
+
+	/// <summary>The union a referenced schema declares, directly or as an <c>allOf</c> around a union member.</summary>
+	private (UnionKeyword? Keyword, List<UnionOption>? Options) ReferencedUnion(string refId, IOpenApiSchema resolvedTarget)
+	{
+		if (UnionSchemas.TryGet(resolvedTarget, out var keyword, out var members))
+		{
+			var built = GetUnionOptions(members);
+			return (keyword, built.Count > 0 ? built : null);
 		}
 
-		// Check for enum
+		return ClassifyReferencedAllOfUnion(refId, resolvedTarget) is { } allOfUnion
+			? (allOfUnion.UnionKeyword, allOfUnion.UnionOptions)
+			: (null, null);
+	}
+
+	/// <summary>
+	/// An <c>allOf</c> is a union when it wraps one, otherwise it takes the name of its first <c>$ref</c>. Null when neither
+	/// applies, so classification goes on with the schema's other keywords.
+	/// </summary>
+	private TypeInfo? ClassifyComposition(IList<IOpenApiSchema> allOf)
+	{
+		if (AllOfUnion.TrySplit(allOf, this, out var allOfUnion))
+			return ClassifyAllOfUnion(allOfUnion);
+
+		var refSchemas = allOf.OfType<OpenApiSchemaReference>().ToArray();
+		if (refSchemas.Length == 0 || refSchemas[0].Reference.Id is not { Length: > 0 } refId)
+			return null;
+
+		var resolvedTarget = ResolveSchema(refSchemas[0]) ?? refSchemas[0];
+		var named = ClassifyNamedSchema(SchemaHelpers.FormatSchemaName(refId), resolvedTarget);
+
+		// allOf wrapping a single enum $ref is how OpenAPI 3.1 attaches a description to a $ref.
+		if (resolvedTarget.Enum is { Count: > 0 })
+			return new TypeInfo { TypeName = named.TypeName, SchemaRef = named.IsPrimitiveAlias ? null : refId, IsEnum = true };
+
+		return new TypeInfo
+		{
+			TypeName = named.TypeName,
+			SchemaRef = named.IsPrimitiveAlias ? null : refId,
+			IsObject = !named.IsValueType && !named.IsPrimitiveAlias,
+			IsValueType = named.IsValueType,
+			ValueTypeBase = named.ValueTypeBase,
+			HasLink = IsLinkedType(named.TypeName),
+			AlsoIncludes = GetComposedTypes(refSchemas)
+		};
+	}
+
+	private TypeInfo ClassifyArray(IOpenApiSchema schema)
+	{
+		if (schema.Items is null)
+			return new TypeInfo { TypeName = "unknown", IsArray = true, ArrayItemType = "unknown" };
+
+		var itemInfo = ClassifyType(schema.Items);
+		// If the item is not an object and not a linked type, it's a primitive array
+		var isPrimitiveArray = itemInfo is not { IsObject: false, HasLink: false } || !string.IsNullOrEmpty(itemInfo.SchemaRef);
+		return new TypeInfo
+		{
+			TypeName = itemInfo.TypeName,
+			SchemaRef = itemInfo.SchemaRef,
+			IsArray = true,
+			IsObject = itemInfo.IsObject,
+			IsValueType = itemInfo.IsValueType,
+			ValueTypeBase = itemInfo.ValueTypeBase,
+			HasLink = itemInfo.HasLink,
+			IsEnum = itemInfo.IsEnum,
+			ArrayItemType = isPrimitiveArray ? itemInfo.TypeName : null,
+			// An array of a union offers the union's variants for each item.
+			UnionOptions = itemInfo.UnionOptions,
+			UnionKeyword = itemInfo.UnionKeyword
+		};
+	}
+
+	/// <summary>An inline enum, map, object or primitive.</summary>
+	private TypeInfo ClassifyScalar(IOpenApiSchema schema)
+	{
 		if (schema.Enum is { Count: > 0 })
 			return new TypeInfo { TypeName = "enum", IsEnum = true };
 
@@ -483,11 +527,9 @@ public class SchemaAnalyzer(
 			};
 		}
 
-		// Check if it has properties (inline object)
 		if (schema.Properties is { Count: > 0 })
 			return new TypeInfo { TypeName = "object", IsObject = true };
 
-		// Primitive type
 		var primitiveName = SchemaHelpers.GetPrimitiveTypeName(schema.Type);
 		if (!string.IsNullOrEmpty(primitiveName))
 			return new TypeInfo { TypeName = primitiveName, IsObject = primitiveName == "object" };
@@ -497,15 +539,13 @@ public class SchemaAnalyzer(
 
 	private TypeInfo ClassifyUnion(IList<IOpenApiSchema> members, UnionKeyword keyword)
 	{
-		var classified = FlattenInlineUnions(members).Select(s => (Schema: s, Info: ClassifyType(s))).ToArray();
+		var flattened = FlattenInlineUnions(members).ToArray();
 
 		// A union of inline literal sets is just a bigger enum.
-		if (classified.All(m => m.Info is { IsEnum: true, IsArray: false, SchemaRef: null }))
+		if (flattened.All(m => m is not OpenApiSchemaReference && ClassifyType(m) is { IsEnum: true, IsArray: false, SchemaRef: null }))
 			return new TypeInfo { TypeName = "enum", IsEnum = true };
 
-		var options = LabelInlineObjects([
-			.. classified.Select(m => new UnionOption(m.Info.TypeName, m.Info.SchemaRef, m.Info.IsObject, m.Schema, m.Info.IsArray))
-		]);
+		var options = LabelInlineObjects([.. flattened.Select(ClassifyOption)]);
 
 		// Multiple object options render as tabs.
 		if (options.Count > 1 && options.Any(o => o.IsObject))
@@ -513,7 +553,7 @@ public class SchemaAnalyzer(
 
 		return new TypeInfo
 		{
-			TypeName = string.Join(" | ", options.Select(o => o.Name).Distinct()),
+			TypeName = string.Join(" | ", options.Select(o => SchemaHelpers.ReadableSchemaName(o.Name)).Distinct()),
 			UnionOptions = options,
 			UnionKeyword = keyword
 		};

@@ -43,53 +43,27 @@ internal sealed record AllOfUnion(IReadOnlyList<IOpenApiSchema> Bases, IList<IOp
 	/// </summary>
 	public MergedVariantSchema MergeInto(IOpenApiSchema variant, SchemaAnalyzer analyzer)
 	{
-		var properties = new Dictionary<string, IOpenApiSchema>();
-		foreach (var member in Bases)
-		{
-			foreach (var (name, property) in analyzer.GetSchemaProperties(member) ?? new Dictionary<string, IOpenApiSchema>())
-				_ = properties.TryAdd(name, property);
-		}
+		var bases = Bases.Select(analyzer.Flatten).ToArray();
+		var own = analyzer.Flatten(variant);
 
-		foreach (var (name, property) in analyzer.GetSchemaProperties(variant) ?? new Dictionary<string, IOpenApiSchema>())
+		var properties = new Dictionary<string, IOpenApiSchema>();
+		foreach (var (name, property) in bases.SelectMany(static b => b.Properties))
+			_ = properties.TryAdd(name, property);
+		foreach (var (name, property) in own.Properties)
 			properties[name] = property;
 
-		var required = new HashSet<string>();
-		CollectRequired([.. Bases, variant], analyzer, required, [with(ReferenceEqualityComparer.Instance)]);
 		return new MergedVariantSchema
 		{
 			Type = JsonSchemaType.Object,
 			Properties = properties,
-			Required = required,
-			AdditionalProperties = MapValue(variant, analyzer)
-				?? Bases.Select(b => MapValue(b, analyzer)).FirstOrDefault(a => a is not null),
+			Required = new HashSet<string>(bases.Append(own).SelectMany(static b => b.Required)),
+			AdditionalProperties = own.MapValue ?? bases.Select(static b => b.MapValue).FirstOrDefault(static a => a is not null),
 			Description = variant.Description
 		};
 	}
 
 	private static bool ContributesStructure(IOpenApiSchema member, SchemaAnalyzer analyzer) =>
-		analyzer.GetSchemaProperties(member)?.Count > 0 || MapValue(member, analyzer) is not null;
-
-	private static IOpenApiSchema? MapValue(IOpenApiSchema member, SchemaAnalyzer analyzer) =>
-		(analyzer.ResolveSchema(member) ?? member).AdditionalProperties;
-
-	private static void CollectRequired(
-		IEnumerable<IOpenApiSchema> schemas,
-		SchemaAnalyzer analyzer,
-		HashSet<string> required,
-		HashSet<IOpenApiSchema> visited
-	)
-	{
-		foreach (var schema in schemas)
-		{
-			var resolved = analyzer.ResolveSchema(schema) ?? schema;
-			if (!visited.Add(resolved))
-				continue;
-
-			if (resolved.Required is { } declared)
-				required.UnionWith(declared);
-			CollectRequired(resolved.AllOf ?? [], analyzer, required, visited);
-		}
-	}
+		analyzer.Flatten(member) is { Properties.Count: > 0 } or { MapValue: not null };
 }
 
 /// <summary>
