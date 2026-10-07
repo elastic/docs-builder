@@ -37,6 +37,29 @@ public class ExampleScenarioTests
 	}
 
 	[Test]
+	public void BuildExampleScenarios_SuffixedSamplesBecomeTheirOwnExamples()
+	{
+		var ok = new ExampleDisplay("searchDashboardsResponse", null, /*lang=json,strict*/  """{"items":[]}""", null, "200");
+		CodeSample[] samples =
+		[
+			new("Console", "GET kbn:/api/dashboards", "language-console"),
+			new("curl", "curl ...", "language-curl"),
+			new("Console", "GET kbn:/api/dashboards?tag_names=a", "language-console") { Scenario = "tag_names" },
+			new("curl", "curl ...?tag_names=a", "language-curl") { Scenario = "tag_names" },
+			new("curl", "curl ...?excluded_tag_names=b", "language-curl") { Scenario = "excluded_tag_names" }
+		];
+
+		var scenarios = OperationPageModel.BuildExampleScenarios([], [ok], samples);
+
+		scenarios.Select(s => s.Title).Should().Equal("searchDashboardsResponse", "Tag names", "Excluded tag names");
+		scenarios[0].CodeSamples.Should().HaveCount(2);
+		scenarios[1].CodeSamples.Select(c => c.Language).Should().Equal("Console", "curl");
+		scenarios[2].CodeSamples.Should().ContainSingle();
+		scenarios.Should().AllSatisfy(s => s.Responses.Select(r => r.StatusCode).Should().Equal("200"));
+		scenarios.Select(s => s.TabId).Should().OnlyHaveUniqueItems();
+	}
+
+	[Test]
 	public void BuildExampleScenarios_GroupsResponsesByStatusCode()
 	{
 		var ok = new ExampleDisplay("Create", null, /*lang=json,strict*/  """{"ok":true}""", null, "200");
@@ -139,7 +162,7 @@ public class ExampleScenarioTests
 	}
 
 	[Test]
-	public void BuildExampleScenarios_CodeSamplesWithDifferentBody_KeepsRequestExampleVisible()
+	public void BuildExampleScenarios_CodeSamplesWithDifferentBody_BecomeTheirOwnExample()
 	{
 		var request = new ExampleDisplay("createAgentRequestExample", null, /*lang=json,strict*/  """{"id":"created-agent-id"}""", null);
 		var console = new CodeSample(
@@ -153,10 +176,10 @@ public class ExampleScenarioTests
 
 		var scenarios = OperationPageModel.BuildExampleScenarios([request], [], [console]);
 
-		scenarios.Should().ContainSingle();
+		scenarios.Select(static s => s.Title).Should().Equal("Example", "createAgentRequestExample");
 		scenarios[0].CodeSamples.Should().ContainSingle();
-		scenarios[0].CodeSamplesIncludeRequest.Should().BeFalse();
-		scenarios[0].ShowRequest.Should().BeTrue();
+		scenarios[1].CodeSamples.Should().BeEmpty();
+		scenarios[1].ShowRequest.Should().BeTrue();
 	}
 
 	[Test]
@@ -241,57 +264,6 @@ public class ExampleScenarioTests
 	}
 
 	[Test]
-	public void SanitizeExampleDescription_DropsRunCommandBoilerplate()
-	{
-		var onlyBoilerplate =
-			"Run `PUT _inference/completion/azure_ai_studio_completion` to create an inference endpoint that performs a completion task.";
-		var withNote =
-			"Run `PUT _inference/text_embedding/azure_ai_studio_embeddings` to create an inference endpoint that performs a text_embedding task. Note that you do not specify a model here.";
-
-		OperationPageModel.SanitizeExampleDescription(onlyBoilerplate).Should().BeNull();
-		OperationPageModel.SanitizeExampleDescription(withNote).Should().Be("Note that you do not specify a model here.");
-		OperationPageModel.SanitizeExampleDescription("Useful context without a command.").Should().Be("Useful context without a command.");
-	}
-
-	[Test]
-	public void SanitizeExampleDescription_DropsSuccessfulResponseFromPath()
-	{
-		var onlyBoilerplate = "A successful response from `POST _inference/completion/openai_completions`.";
-		var withNote = "A successful response from `POST _inference/completion/openai_completions`. The response includes token usage.";
-
-		OperationPageModel.SanitizeExampleDescription(onlyBoilerplate).Should().BeNull();
-		OperationPageModel.SanitizeExampleDescription(withNote).Should().Be("The response includes token usage.");
-		OperationPageModel
-			.SanitizeExampleDescription("A successful response when performing a chat completion task with tools.")
-			.Should()
-			.Be("A successful response when performing a chat completion task with tools.");
-	}
-
-	[Test]
-	public void SanitizeExampleDescription_DropsExampleBodyForRequest()
-	{
-		var onlyBoilerplate = "An example body for a `PUT _inference/rerank/my-rerank-model` request.";
-		var withNote = "An example body for a `PUT _inference/rerank/my-rerank-model` request. Includes a custom `task_settings` block.";
-
-		OperationPageModel.SanitizeExampleDescription(onlyBoilerplate).Should().BeNull();
-		OperationPageModel.SanitizeExampleDescription(withNote).Should().Be("Includes a custom `task_settings` block.");
-	}
-
-	[Test]
-	public void SanitizeExampleDescription_DropsAbbreviatedResponseFromPath()
-	{
-		var onlyBoilerplate = "An abbreviated response from `GET /my-index-000001/_search_shards`.";
-		var withNote = "An abbreviated response from `GET /_segments`. Only the first shard is shown.";
-
-		OperationPageModel.SanitizeExampleDescription(onlyBoilerplate).Should().BeNull();
-		OperationPageModel.SanitizeExampleDescription(withNote).Should().Be("Only the first shard is shown.");
-		OperationPageModel
-			.SanitizeExampleDescription("An abbreviated response when requesting cluster nodes information.")
-			.Should()
-			.Be("An abbreviated response when requesting cluster nodes information.");
-	}
-
-	[Test]
 	public void WithOperationIdentity_StampsMethodAndRouteOnEveryScenario()
 	{
 		var scenarios = OperationPageModel.WithOperationIdentity(
@@ -326,6 +298,161 @@ public class ExampleScenarioTests
 		html.Should().Contain("432433423");
 		html.Should().NotContain("example-empty");
 		html.Should().NotContain(">400</span>");
+	}
+
+	[Test]
+	public async Task Create_ExampleDescriptions_AreKeptExactlyAsTheSpecWritesThem()
+	{
+		var page = await CreatePage(DescribedExamplesSpec);
+
+		var term = page.Scenarios.Single(static s => s.Title == "A simple term search");
+		var lead = page.Scenarios.Single(static s => s.Title == "A lead-in");
+		// The test renderer leaves backticks alone; on the site they become <code>. The words must all be there.
+		var termText = term.DescriptionHtml!.Value.ToString();
+		termText.Should().Contain("Run ").And.Contain("GET /my-index-000001/_search?from=40&amp;size=20").And.Contain("to run a search.");
+		var leadText = lead.DescriptionHtml!.Value.ToString();
+		leadText.Should().Contain("A successful response from ").And.Contain("POST /x");
+	}
+
+	[Test]
+	[Arguments("executeBuiltinEsqlToolRequest", "Execute builtin ES|QL tool")]
+	[Arguments("executeBuiltinEsqlToolExample", "Execute builtin ES|QL tool")]
+	[Arguments("SearchResponseExample1", "Search response example1")]
+	[Arguments("Already readable", "Already readable")]
+	public void HumanizeExampleKey_ReadsLikeATitle(string key, string expected) =>
+		OperationPageModel.HumanizeExampleKey(key).Should().Be(expected);
+
+	[Test]
+	public void BuildExampleScenarios_SamplesMatchingNoExample_BecomeTheirOwnFirstExample()
+	{
+		var esql = new ExampleDisplay("Execute builtin ES|QL tool", null, /*lang=json,strict*/  """{"tool_id":"esql"}""", null);
+		var samples = new[] { new CodeSample("Console", "POST kbn:/api/tools/_execute\n{\"tool_id\":\"search\"}", "language-console") };
+
+		var scenarios = OperationPageModel.BuildExampleScenarios([esql], [], samples);
+
+		scenarios.Select(static s => s.Title).Should().Equal("Example", "Execute builtin ES|QL tool");
+		scenarios[0].CodeSamples.Should().ContainSingle();
+		scenarios[1].CodeSamples.Should().BeEmpty();
+	}
+
+	[Test]
+	public void GeneratedCodeSamples_JsonOnlyExample_GetsConsoleAndCurl()
+	{
+		var slicing = new ExampleScenario
+		{
+			Title = "Search slicing",
+			TabId = "slicing",
+			RequestJson = /*lang=json,strict*/  """{"slice":{"id":0}}""",
+			RequestLine = ("GET", "/_search")
+		};
+		var spec = new[]
+		{
+			new CodeSample("Console", "GET /my-index/_search\n{}", "language-console"),
+			new CodeSample(
+				"curl",
+				"curl -X GET -H \"Authorization: ApiKey $ELASTIC_API_KEY\" -d '{}' \"$ELASTICSEARCH_URL/my-index/_search\"",
+				"language-curl"
+			)
+		};
+		// The path lists GET beside its dominant POST, so the Run line's GET becomes POST.
+		var endpoint = OperationEndpoint.FromVariants(
+			[new EndpointVariant("post", "/_search"), new EndpointVariant("get", "/_search")],
+			"/_search"
+		);
+
+		var filled = GeneratedCodeSamples.Fill([slicing], spec, endpoint);
+
+		var samples = filled.Single().CodeSamples;
+		samples.Select(static s => s.Language).Should().Equal("Console", "curl");
+		samples.Should().OnlyContain(static s => s.Generated);
+		samples[0].Source.Should().Be("POST /_search\n{\"slice\":{\"id\":0}}");
+		samples[1]
+			.Source
+			.Should()
+			.Be("curl -X POST -H \"Authorization: ApiKey $ELASTIC_API_KEY\" -d '{\"slice\":{\"id\":0}}' \"$ELASTICSEARCH_URL/_search\"");
+		filled.Single().CodeSamplesIncludeRequest.Should().BeTrue();
+	}
+
+	[Test]
+	public void GeneratedCodeSamples_CurlWithALiteralHost_IsReusedToo()
+	{
+		var scenario = new ExampleScenario { Title = "Slicing", TabId = "slicing", RequestJson = "{}", RequestLine = ("POST", "/_search") };
+		var spec = new[]
+		{
+			new CodeSample(
+				"curl",
+				"curl -X GET -H \"kbn-xsrf: true\" -d '{}' \"https://localhost:9200/my-index/_search?size=1\"",
+				"language-curl"
+			)
+		};
+		var endpoint = OperationEndpoint.FromVariants([new EndpointVariant("post", "/_search")], "/_search");
+
+		var curl = GeneratedCodeSamples.Fill([scenario], spec, endpoint).Single().CodeSamples.Single(static s => s.IsCurl);
+
+		curl.Source.Should().Be("curl -X POST -H \"kbn-xsrf: true\" -d '{}' \"https://localhost:9200/_search\"");
+	}
+
+	[Test]
+	public void GeneratedCodeSamples_RequestLineMethodNotOnTheRow_IsKept()
+	{
+		var slicing = new ExampleScenario { Title = "Slicing", TabId = "slicing", RequestJson = "{}", RequestLine = ("GET", "/_search") };
+		var endpoint = OperationEndpoint.FromVariants([new EndpointVariant("post", "/_search")], "/_search");
+
+		var console = GeneratedCodeSamples.Fill([slicing], [], endpoint).Single().CodeSamples.Single();
+
+		console.Source.Should().StartWith("GET /_search\n");
+	}
+
+	[Test]
+	public void GeneratedCodeSamples_RequestLineOnAlsoMethod_FollowsTheDominantMethod()
+	{
+		var scenario = new ExampleScenario
+		{
+			Title = "Index",
+			TabId = "index",
+			RequestJson = "{}",
+			RequestLine = ("GET", "/my-index-000001/_search?from=40")
+		};
+		var endpoint = OperationEndpoint.FromVariants(
+			[
+				new EndpointVariant("post", "/{index}/_search"),
+				new EndpointVariant("get", "/{index}/_search"),
+				new EndpointVariant("post", "/_search")
+			],
+			"/{index}/_search"
+		);
+
+		var console = GeneratedCodeSamples.Fill([scenario], [], endpoint).Single().CodeSamples.Single();
+
+		console.Source.Should().StartWith("POST /my-index-000001/_search?from=40\n");
+	}
+
+	[Test]
+	public void GeneratedCodeSamples_KibanaExample_KeepsTheKbnPrefixAndUsesTheShortestRoute()
+	{
+		var esql = new ExampleScenario { Title = "ES|QL", TabId = "esql", RequestJson = /*lang=json,strict*/  """{"tool_id":"esql"}""" };
+		var spec = new[] { new CodeSample("Console", "POST kbn:/api/agent_builder/tools/_execute\n{}", "language-console") };
+		var endpoint = OperationEndpoint.FromVariants(
+			[
+				new EndpointVariant("post", "/api/agent_builder/tools/_execute"),
+				new EndpointVariant("post", "/s/{space_id}/api/agent_builder/tools/_execute")
+			],
+			"/api/agent_builder/tools/_execute"
+		);
+
+		var console = GeneratedCodeSamples.Fill([esql], spec, endpoint).Single().CodeSamples.Single();
+
+		console.Source.Should().StartWith("POST kbn:/api/agent_builder/tools/_execute\n");
+	}
+
+	[Test]
+	public void ParseRequestLine_ReadsTheRunInstruction()
+	{
+		GeneratedCodeSamples
+			.ParseRequestLine("Run `GET /my-index-000001/_search?from=40&size=20` to run a search.")
+			.Should()
+			.Be(("GET", "/my-index-000001/_search?from=40&size=20"));
+		GeneratedCodeSamples.ParseRequestLine("Returns documents.").Should().BeNull();
 	}
 
 	private static async Task<OperationPageModel> CreatePage(string spec)
@@ -390,6 +517,41 @@ public class ExampleScenarioTests
 		          },
 		          "400": { "description": "Invalid request" }
 		        }
+		      }
+		    }
+		  }
+		}
+		""";
+
+	private const string DescribedExamplesSpec =
+		"""
+		{
+		  "openapi": "3.0.3",
+		  "info": { "title": "Cloud Billing", "version": "1" },
+		  "paths": {
+		    "/api/v1/billing/organization/{organization_id}/budget": {
+		      "post": {
+		        "operationId": "describedExamples",
+		        "summary": "Create a budget for the organization.",
+		        "requestBody": {
+		          "content": {
+		            "application/json": {
+		              "examples": {
+		                "SearchRequestExample1": {
+		                  "summary": "A simple term search",
+		                  "description": "Run `GET /my-index-000001/_search?from=40&size=20` to run a search.\n",
+		                  "value": { "query": { "term": { "user.id": "kimchy" } } }
+		                },
+		                "LeadInExample": {
+		                  "summary": "A lead-in",
+		                  "description": "A successful response from `POST /x`.",
+		                  "value": { "ok": true }
+		                }
+		              }
+		            }
+		          }
+		        },
+		        "responses": { "200": { "description": "ok" } }
 		      }
 		    }
 		  }

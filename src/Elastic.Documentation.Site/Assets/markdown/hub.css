@@ -159,6 +159,8 @@
 	   grid has to answer to the space it actually has. */
 	.hub-get-started {
 		@apply mx-auto w-full max-w-5xl;
+		--hub-notch: 28px;
+		--hub-chevron-gap: 14px;
 		container-type: inline-size;
 		margin-bottom: 56px;
 		scroll-margin-top: 96px;
@@ -175,105 +177,224 @@
 		color: var(--color-ink-light, #4c4c4c);
 		line-height: 1.5;
 	}
+	/* An option command stays a real code block, so it keeps highlighting and a
+	   copy button. The box hugs the command and matches the option button. */
 	.hub-get-started .hub-get-started-install {
 		position: relative;
-		flex: 1 1 380px;
+		flex: none;
+		align-self: flex-start;
+		width: fit-content;
+		max-width: 100%;
 		min-width: 0;
 		margin: 0;
 	}
 	.hub-get-started .hub-get-started-install pre {
+		display: flex;
+		align-items: center;
+		box-sizing: border-box;
+		height: 37px;
 		margin: 0;
-		padding: 12px 16px;
+		padding: 0 36px 0 12px;
 		overflow-x: auto;
 		background: var(--color-ink-navy);
-		border-radius: 10px;
+		border-radius: 8px;
 	}
 	.hub-get-started .hub-get-started-install code {
 		font-family: var(--font-mono, monospace);
-		font-size: var(--text-sm);
+		font-size: var(--text-xs);
+		line-height: 1.2;
 		color: var(--color-white);
 		background: transparent;
+		white-space: nowrap;
 	}
 
-	/* The track count is authored, not inferred from the width: the directive counts the
-	   steps that flow in columns and sets --hub-step-columns, so a section of any length
-	   fills its rows evenly instead of leaving a short last row. */
-	.hub-get-started .hub-get-started-steps {
-		@apply grid gap-4;
-		grid-template-columns: repeat(
-			var(--hub-step-columns, 2),
-			minmax(0, 1fr)
-		);
+	/* Chevrons. The ice-blue fill is a tint, so a grey-70 hairline is what separates
+	   the shape from the page. grey-70 is the lightest token that clears 3:1 on white. */
+	.hub-get-started .hub-get-started-track {
+		position: relative;
+		display: flex;
+		flex-direction: column;
+		gap: 48px;
+	}
+	.hub-get-started .hub-get-started-row {
+		display: grid;
+		grid-auto-flow: column;
+		grid-auto-columns: minmax(0, 1fr);
+		gap: var(--hub-chevron-gap);
+		align-items: stretch;
 		margin: 0;
 		padding: 0;
 		list-style: none;
 	}
-	.hub-get-started .hub-get-started-step {
-		@apply relative flex flex-col;
-		padding: 20px;
-		background: var(--color-white);
-		border: 1px solid var(--color-grey-20);
-		border-radius: 14px;
+	/* A step with no neighbor stays one cell wide and sits in the middle of the row. */
+	.hub-get-started .hub-get-started-row-solo {
+		width: calc(
+			(100% - (var(--hub-solo-share, 2) - 1) * var(--hub-chevron-gap)) /
+				var(--hub-solo-share, 2)
+		);
+		margin-inline: auto;
 	}
-	.hub-get-started .hub-get-started-step-head {
-		@apply flex items-center;
-		gap: 12px;
-		margin-bottom: 10px;
-		padding-right: 34px;
+	.hub-get-started .hub-get-started-step {
+		position: relative;
+		display: flex;
+		align-items: center;
+		gap: 16px;
+		min-width: 0;
+		min-height: 148px;
+		padding: 22px calc(var(--hub-notch) + 18px) 22px
+			calc(var(--hub-notch) + 8px);
+		color: var(--color-ink-dark);
+	}
+	.hub-get-started .hub-get-started-step.is-flat {
+		padding-left: 22px;
+	}
+	.hub-get-started .hub-get-started-step::before {
+		content: '';
+		position: absolute;
+		inset: 0;
+		z-index: 0;
+		background: var(--color-blue-elastic-10);
+		pointer-events: none;
+		clip-path: polygon(
+			0 0,
+			calc(100% - var(--hub-notch)) 0,
+			100% 50%,
+			calc(100% - var(--hub-notch)) 100%,
+			0 100%,
+			var(--hub-notch) 50%
+		);
+		filter: drop-shadow(1px 0 0 var(--color-grey-70))
+			drop-shadow(-1px 0 0 var(--color-grey-70))
+			drop-shadow(0 1px 0 var(--color-grey-70))
+			drop-shadow(0 -1px 0 var(--color-grey-70));
+	}
+	.hub-get-started .hub-get-started-step.is-flat::before {
+		clip-path: polygon(
+			0 0,
+			calc(100% - var(--hub-notch)) 0,
+			100% 50%,
+			calc(100% - var(--hub-notch)) 100%,
+			0 100%
+		);
+	}
+	.hub-get-started .hub-get-started-step > * {
+		position: relative;
+		z-index: 1;
 	}
 	.hub-get-started .hub-get-started-step-num {
-		position: absolute;
-		top: 20px;
-		right: 20px;
-		font-size: var(--text-base);
-		font-weight: 600;
-		/* grey-70 reads at 3.31:1 on white, short of the 4.5:1 minimum. ink-light
-		   carries the same quiet weight at 7.03:1 and is what other secondary text
-		   on the page already uses. */
-		color: var(--color-ink-light);
-		letter-spacing: 0.06em;
+		display: grid;
+		place-items: center;
+		flex-shrink: 0;
+		align-self: center;
+		width: 36px;
+		height: 36px;
+		border-radius: 50%;
+		background: var(--color-blue-elastic-100);
+		color: var(--color-white);
+		font-size: 1.125rem;
+		font-weight: 700;
+		line-height: 1;
+	}
+	.hub-get-started .hub-get-started-step-body {
+		flex: 1;
+		min-width: 0;
+		display: flex;
+		flex-direction: column;
 	}
 	.hub-get-started .hub-get-started-step-title {
 		margin: 0;
-		font-size: var(--text-base);
+		font-size: var(--text-lg);
 		font-weight: 700;
+		letter-spacing: -0.2px;
 		color: var(--color-ink-dark);
 	}
 	.hub-get-started .hub-get-started-step-desc {
-		margin: 0;
+		margin: 8px 0 0;
 		font-size: var(--text-base);
 		color: var(--color-ink-light, #4c4c4c);
 		line-height: 1.45;
 	}
-
-	/* Below this the tracks are too narrow to hold a step title and a description. */
-	@container (max-width: 640px) {
-		.hub-get-started .hub-get-started-steps {
-			grid-template-columns: 1fr;
-		}
+	.hub-get-started .hub-get-started-step-arrow,
+	.hub-get-started .hub-get-started-option-link {
+		@apply inline-flex items-center gap-1;
+		align-self: flex-start;
+		margin-top: 12px;
+		font-size: var(--text-base);
+		font-weight: 600;
+		color: var(--color-blue-elastic-100);
+		text-decoration: none;
+	}
+	.hub-get-started .hub-get-started-step-arrow:hover,
+	.hub-get-started .hub-get-started-step-arrow:focus-visible,
+	.hub-get-started .hub-get-started-option-link:hover,
+	.hub-get-started .hub-get-started-option-link:focus-visible {
+		text-decoration: underline;
 	}
 
-	/* A step offering equally weighted options spans the full row, whatever the track count. */
-	.hub-get-started .hub-get-started-step-wide {
-		grid-column: 1 / -1;
-		container-type: inline-size;
-	}
-	.hub-get-started .hub-get-started-options {
+	/* A forked step is one chevron. The middle column lines up with the gap
+	   between the chevrons on the next row. */
+	.hub-get-started .hub-get-started-step.is-fork {
 		display: grid;
-		grid-template-columns: 1fr 1fr;
-		margin-top: 16px;
-		padding-top: 16px;
-		border-top: 1px solid var(--color-grey-20);
+		grid-template-columns: minmax(0, 1fr) var(--hub-chevron-gap) minmax(
+				0,
+				1fr
+			);
+		grid-template-rows: auto 1fr;
+		gap: 0;
+		align-items: stretch;
+		padding: 22px 0;
+	}
+	.hub-get-started .hub-get-started-step.is-fork .hub-get-started-step-num {
+		position: absolute;
+		left: 22px;
+		top: 50%;
+		transform: translateY(-50%);
+		z-index: 2;
+	}
+	.hub-get-started .hub-get-started-fork-lead {
+		grid-column: 1;
+		grid-row: 1;
+		padding: 0 16px 8px 74px;
+	}
+	.hub-get-started .hub-get-started-option-left {
+		grid-column: 1;
+		grid-row: 2;
+		padding: 0 16px 0 74px;
+	}
+	.hub-get-started .hub-get-started-or {
+		grid-column: 2;
+		grid-row: 1 / span 2;
+		position: relative;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		color: var(--color-ink-light);
+		font-size: 0.8125rem;
+	}
+	.hub-get-started .hub-get-started-or::before {
+		content: '';
+		position: absolute;
+		top: 8px;
+		bottom: 8px;
+		left: 50%;
+		width: 1px;
+		background: var(--color-blue-elastic-30);
+	}
+	.hub-get-started .hub-get-started-or span {
+		position: relative;
+		z-index: 1;
+		padding: 4px 0;
+		background: var(--color-blue-elastic-10);
+	}
+	.hub-get-started .hub-get-started-option-right {
+		grid-column: 3;
+		grid-row: 2;
+		padding: 0 calc(var(--hub-notch) + 16px) 0 16px;
 	}
 	.hub-get-started .hub-get-started-option {
-		@apply flex flex-col;
-		gap: 10px;
-		padding-right: 28px;
-	}
-	.hub-get-started .hub-get-started-option + .hub-get-started-option {
-		padding-right: 0;
-		padding-left: 28px;
-		border-left: 1px solid var(--color-grey-20);
+		min-width: 0;
+		display: flex;
+		flex-direction: column;
 	}
 	.hub-get-started .hub-get-started-option-label {
 		font-size: var(--text-base);
@@ -281,93 +402,122 @@
 		color: var(--color-ink-dark);
 	}
 	.hub-get-started .hub-get-started-option-desc {
-		margin: 0;
+		margin: 8px 0 12px;
 		font-size: var(--text-base);
 		color: var(--color-ink-light, #4c4c4c);
 		line-height: 1.45;
 	}
-	.hub-get-started .hub-get-started-option .hub-get-started-install {
-		flex: none;
-		width: 100%;
+	.hub-get-started .hub-get-started-option .hub-get-started-install,
+	.hub-get-started .hub-get-started-option-btn {
 		margin-top: auto;
 	}
+	/* Same height as the command chip, and smaller than the body type. */
 	.hub-get-started .hub-get-started-option-btn {
 		@apply inline-flex items-center justify-center;
-		gap: 8px;
-		width: 100%;
-		min-height: 48px;
-		margin-top: auto;
-		padding: 0 18px;
-		font-size: var(--text-base);
+		align-self: flex-start;
+		box-sizing: border-box;
+		width: auto;
+		height: 37px;
+		padding: 0 12px;
+		font-size: var(--text-sm);
 		font-weight: 600;
+		line-height: 1.2;
 		color: var(--color-ink-dark);
 		background: var(--color-white);
 		border: 1px solid var(--color-ink-dark);
 		border-radius: 8px;
-		transition:
-			background 0.15s ease,
-			border-color 0.15s ease;
+		text-decoration: none;
 	}
 	.hub-get-started .hub-get-started-option-btn:hover,
 	.hub-get-started .hub-get-started-option-btn:focus-visible {
 		background: var(--color-grey-10);
-		border-color: var(--color-ink-dark);
 		color: var(--color-ink-dark);
 	}
-	.hub-get-started .hub-get-started-option-link {
-		@apply inline-flex items-center gap-1;
-		align-self: flex-start;
-		font-size: var(--text-base);
-		font-weight: 600;
-		color: var(--color-blue-elastic-100, #0b64dd);
+	.hub-get-started .hub-get-started-options {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: 16px;
+		margin-top: 12px;
 	}
-	.hub-get-started .hub-get-started-option-link:hover,
-	.hub-get-started .hub-get-started-option-link:focus-visible {
-		text-decoration: underline;
+
+	.hub-get-started .hub-get-started-track-svg {
+		position: absolute;
+		inset: 0;
+		width: 100%;
+		height: 100%;
+		overflow: visible;
+		pointer-events: none;
+		z-index: 2;
 	}
-	@container (max-width: 560px) {
+
+	/* Below this a chevron cannot hold a title and a description side by side. */
+	@container (max-width: 720px) {
+		.hub-get-started .hub-get-started-track {
+			gap: 12px;
+		}
+		.hub-get-started .hub-get-started-row,
+		.hub-get-started .hub-get-started-row-fork {
+			display: flex;
+			flex-direction: column;
+			gap: 12px;
+		}
+		.hub-get-started .hub-get-started-row-solo {
+			width: auto;
+			margin-inline: 0;
+		}
+		.hub-get-started .hub-get-started-step,
+		.hub-get-started .hub-get-started-step.is-flat,
+		.hub-get-started .hub-get-started-step.is-fork {
+			display: flex;
+			flex-direction: column;
+			align-items: center;
+			text-align: center;
+			padding: 18px;
+		}
+		.hub-get-started .hub-get-started-step-body,
+		.hub-get-started .hub-get-started-fork-lead,
+		.hub-get-started .hub-get-started-option {
+			align-self: stretch;
+		}
+		.hub-get-started .hub-get-started-step-arrow,
+		.hub-get-started .hub-get-started-option-link,
+		.hub-get-started .hub-get-started-option-btn,
+		.hub-get-started .hub-get-started-install {
+			align-self: center;
+		}
+		.hub-get-started .hub-get-started-step::before,
+		.hub-get-started .hub-get-started-step.is-flat::before {
+			clip-path: none;
+			border-radius: 12px;
+		}
+		.hub-get-started
+			.hub-get-started-step.is-fork
+			.hub-get-started-step-num {
+			position: static;
+			transform: none;
+		}
+		.hub-get-started .hub-get-started-fork-lead,
+		.hub-get-started .hub-get-started-option-left,
+		.hub-get-started .hub-get-started-option-right {
+			padding: 0;
+		}
+		.hub-get-started .hub-get-started-or {
+			width: 100%;
+			padding: 8px 0;
+		}
+		.hub-get-started .hub-get-started-or::before {
+			top: 50%;
+			bottom: auto;
+			left: 0;
+			width: 100%;
+			height: 1px;
+		}
 		.hub-get-started .hub-get-started-options {
 			grid-template-columns: 1fr;
 		}
-		.hub-get-started .hub-get-started-option {
-			padding-right: 0;
+		.hub-get-started .hub-get-started-track-svg {
+			display: none;
 		}
-		.hub-get-started .hub-get-started-option + .hub-get-started-option {
-			padding-left: 0;
-			padding-top: 16px;
-			margin-top: 4px;
-			border-left: 0;
-			border-top: 1px solid var(--color-grey-20);
-		}
-	}
-
-	/* Steps 02/03 are clickable link cards. */
-	.hub-get-started .hub-get-started-step-link {
-		padding: 0;
-		transition:
-			box-shadow 0.15s,
-			border-color 0.15s;
-	}
-	/* Same hover treatment as every other card that is itself a link. Blue would make
-	   one step look like the call to action when they are a sequence. */
-	.hub-get-started .hub-get-started-step-link:hover,
-	.hub-get-started .hub-get-started-step-link:focus-visible {
-		border-color: var(--color-grey-80);
-		box-shadow: 0 1px 4px rgb(0 0 0 / 0.07);
-	}
-	.hub-get-started .hub-get-started-step-anchor {
-		@apply flex h-full flex-col;
-		padding: 20px;
-		color: inherit;
-		text-decoration: none;
-	}
-	.hub-get-started .hub-get-started-step-arrow {
-		@apply inline-flex items-center gap-1;
-		margin-top: auto;
-		padding-top: 14px;
-		font-size: var(--text-base);
-		font-weight: 600;
-		color: var(--color-blue-elastic-100, #0b64dd);
 	}
 
 	/* What's new ------------------------------------------------------- */

@@ -25,7 +25,7 @@ internal static class OperationCommonMark
 		ApiCommonMark.Heading(markdown, 1, title);
 		WriteBadges(markdown, operation, page);
 		WriteServers(markdown, page);
-		WritePaths(markdown, apiOperation, page);
+		WritePaths(markdown, page);
 		WriteSecurity(markdown, page);
 		WritePrerequisites(markdown, prerequisites, apiBaseUrl);
 		WritePathParameters(markdown, page, apiBaseUrl);
@@ -76,18 +76,22 @@ internal static class OperationCommonMark
 		_ = markdown.AppendLine();
 	}
 
-	private static void WritePaths(StringBuilder markdown, ApiOperation current, OperationPageModel page)
+	private static void WritePaths(StringBuilder markdown, OperationPageModel page)
 	{
 		ApiCommonMark.Heading(markdown, 2, "Paths");
-		foreach (var overload in page.Overloads)
-		{
-			var method = overload.Model.OperationType.ToString().ToUpperInvariant();
-			var marker = overload.Model.Route == current.Route && overload.Model.OperationType == current.OperationType ? " (current)" : "";
-			var deprecated = overload.Model.Operation?.Deprecated == true ? " — deprecated" : "";
-			_ = markdown.AppendLine($"- `{method}` `{overload.Model.Route}`{marker}{deprecated}");
-		}
+		foreach (var row in page.Endpoint.Rows)
+			_ = markdown.AppendLine($"- {PathLabel(row)}");
 
 		_ = markdown.AppendLine();
+	}
+
+	/// <summary><c>`POST` (also `GET`) `/{index}/_search`</c>.</summary>
+	public static string PathLabel(EndpointRow row)
+	{
+		var also = row.AlsoMethods.Count == 0
+			? ""
+			: $" (also {string.Join(", ", row.AlsoMethods.Select(static m => $"`{m.ToUpperInvariant()}`"))})";
+		return $"`{row.Method.ToUpperInvariant()}`{also} `{row.Route}`";
 	}
 
 	private static void WritePrerequisites(StringBuilder markdown, IReadOnlyList<string>? prerequisites, string apiBaseUrl)
@@ -111,7 +115,8 @@ internal static class OperationCommonMark
 		{
 			var type = path.Type is null ? "" : $" ({path.Type.Text})";
 			var deprecated = path.Deprecated is true ? " — deprecated" : "";
-			_ = markdown.AppendLine($"- `{path.Name}`{type}{deprecated}");
+			var optional = path.Optional ? $" — optional, leave it out to use `{page.Endpoint.ShortestRoute}`" : "";
+			_ = markdown.AppendLine($"- `{path.Name}`{type}{optional}{deprecated}");
 			var description = ApiMarkdown.Prepare(path.DescriptionMarkdown, apiBaseUrl);
 			if (!string.IsNullOrWhiteSpace(description))
 				_ = markdown.AppendLine($"  {description.TrimEnd()}");

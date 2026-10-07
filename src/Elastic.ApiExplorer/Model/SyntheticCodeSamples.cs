@@ -2,14 +2,15 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using System.Text;
 using Microsoft.OpenApi;
 
 namespace Elastic.ApiExplorer.Model;
 
 /// <summary>
 /// Builds minimal Console/curl samples from an operation when the OpenAPI document
-/// does not declare <c>x-codeSamples</c>, so the examples rail is never empty.
+/// does not declare <c>x-codeSamples</c>, so the examples rail is never empty. With a request
+/// example body the samples carry it, so the body sits in the request like a spec sample's would
+/// instead of in a block of its own.
 /// </summary>
 public static class SyntheticCodeSamples
 {
@@ -17,18 +18,20 @@ public static class SyntheticCodeSamples
 		HttpMethod method,
 		string route,
 		OpenApiOperation operation,
-		IList<OpenApiServer>? servers
+		IList<OpenApiServer>? servers,
+		string? body = null
 	)
 	{
 		var pathWithQuery = BuildPathWithRequiredQuery(route, operation);
 		var methodLabel = method.Method.ToUpperInvariant();
+		var trimmedBody = string.IsNullOrWhiteSpace(body) ? null : body.Trim();
 
-		var consoleSource = $"{methodLabel} {pathWithQuery}";
-		var curlSource = BuildCurl(methodLabel, pathWithQuery, operation, servers);
+		var consoleSource = trimmedBody is null ? $"{methodLabel} {pathWithQuery}" : $"{methodLabel} {pathWithQuery}\n{trimmedBody}";
+		var curlSource = BuildCurl(methodLabel, pathWithQuery, operation, servers, trimmedBody);
 
 		return [
 			new CodeSample("Console", consoleSource, CodeSample.GetHighlightClass("Console")),
-			new CodeSample("curl", CurlSourceFormatter.Format(curlSource), CodeSample.GetHighlightClass("curl"))
+			new CodeSample("curl", curlSource, CodeSample.GetHighlightClass("curl"))
 		];
 	}
 
@@ -50,16 +53,28 @@ public static class SyntheticCodeSamples
 		return $"{path}?{query}";
 	}
 
-	private static string BuildCurl(string methodLabel, string pathWithQuery, OpenApiOperation operation, IList<OpenApiServer>? servers)
+	/// <summary>One flag per continuation line, the layout <see cref="CurlSourceFormatter"/> gives spec samples.</summary>
+	private static string BuildCurl(
+		string methodLabel,
+		string pathWithQuery,
+		OpenApiOperation operation,
+		IList<OpenApiServer>? servers,
+		string? body
+	)
 	{
-		var url = BuildRequestUrl(pathWithQuery, servers);
-		var sb = new StringBuilder();
-		_ = sb.Append("curl -X ").Append(methodLabel).Append(" \"").Append(url).Append('"');
+		var parts = new List<string> { $"curl -X {methodLabel} \"{BuildRequestUrl(pathWithQuery, servers)}\"" };
+		var headers = RequiredHeaders(operation).ToArray();
+		parts.AddRange(headers.Select(static h => $"-H \"{h.Name}: {HeaderExampleValue(h)}\""));
 
-		foreach (var header in RequiredHeaders(operation))
-			_ = sb.Append(" -H \"").Append(header.Name).Append(": ").Append(HeaderExampleValue(header)).Append('"');
+		if (body is not null)
+		{
+			if (!headers.Any(static h => string.Equals(h.Name, "Content-Type", StringComparison.OrdinalIgnoreCase)))
+				parts.Add($"-H \"Content-Type: {operation.RequestBody?.Content?.Keys.FirstOrDefault() ?? "application/json"}\"");
+			// A single quote ends the quoted argument, so it becomes '\'' as the shell expects.
+			parts.Add($"-d '{body.Replace("'", "'\\''", StringComparison.Ordinal)}'");
+		}
 
-		return sb.ToString();
+		return string.Join(" \\\n  ", parts);
 	}
 
 	private static string BuildRequestUrl(string pathWithQuery, IList<OpenApiServer>? servers)

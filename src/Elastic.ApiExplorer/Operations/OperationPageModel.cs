@@ -23,7 +23,11 @@ public record ExampleDisplay(
 	string? ExternalValue,
 	string? StatusCode = null,
 	string? DescriptionMarkdown = null
-);
+)
+{
+	/// <summary>Method and path named by a <c>Run `METHOD path`</c> description, before boilerplate is stripped.</summary>
+	public (string Method, string Path)? RequestLine { get; init; }
+}
 
 /// <summary>One response body example tagged with its HTTP status code for the examples rail.</summary>
 public record ExampleResponse
@@ -57,8 +61,8 @@ public record ExampleScenario
 	public string? HttpMethod { get; init; }
 	public string? Route { get; init; }
 
-	/// <summary>Choices for the request-header example picker. Empty hides the picker.</summary>
-	public IReadOnlyList<ApiSelectOption> ExampleOptions { get; init; } = [];
+	/// <summary>Method and path the example description says to run; generated samples use it.</summary>
+	public (string Method, string Path)? RequestLine { get; init; }
 
 	/// <summary>True when the attached code samples contain this scenario's request body verbatim.</summary>
 	public bool CodeSamplesIncludeRequest { get; init; }
@@ -69,7 +73,7 @@ public record ExampleScenario
 	public bool ShowResponse => Responses.Count > 0;
 }
 
-/// <summary>Right-rail examples panel for operation pages (Scalar-style layout).</summary>
+/// <summary>Right-rail examples panel: example chips over a carousel of language samples per example.</summary>
 public record OperationExamplesPanelModel
 {
 	public required IReadOnlyList<ExampleScenario> Scenarios { get; init; }
@@ -101,9 +105,14 @@ public record ApiPathParameter
 	public required HtmlString DescriptionHtml { get; init; }
 	public required string? DescriptionMarkdown { get; init; }
 
+	/// <summary>True when the parameter's route segment can be left out (a sibling route without it exists).</summary>
+	public required bool Optional { get; init; }
+
 	public string? Name => Parameter.Name;
 	public bool? Deprecated => Parameter.Deprecated;
-	public bool Required => Parameter.Required;
+
+	/// <summary>OpenAPI forces path parameters required; one that only some routes contain is optional.</summary>
+	public required bool Required { get; init; }
 	public HtmlString Description => DescriptionHtml;
 }
 
@@ -158,8 +167,8 @@ public partial record OperationPageModel
 	public required bool IsBeta { get; init; }
 	public required ExternalDocLink? ExternalDocs { get; init; }
 	public required IList<OpenApiServer>? Servers { get; init; }
-	public required IReadOnlyCollection<OperationNavigationItem> Overloads { get; init; }
-	public bool HasMultipleOverloads => Overloads.Count > 1;
+	/// <summary>Every route and method of the operation, merged into display rows.</summary>
+	public required OperationEndpoint Endpoint { get; init; }
 	public required IReadOnlyList<ApiPathParameter> PathParameters { get; init; }
 	public required IReadOnlyList<ApiQueryParameter> QueryParameters { get; init; }
 
@@ -209,17 +218,38 @@ public partial record OperationPageModel
 		};
 		var builder = new ApiPropertyTreeBuilder(document, options);
 
-		var codeSamples = OpenApiExtensionReader.ParseCodeSamples(operation);
+		var siblings = context.CurrentNavigation is OperationNavigationItem { Siblings: var collapsed } ? collapsed : [];
+		var endpoint = OperationEndpoint.Build(
+			apiOperation,
+			supplemental?.DescriptionOr(operation.Description) ?? operation.Description,
+			siblings
+		);
+		var requestExamples = MapExamples(
+			operation.RequestBody?.Content?.FirstOrDefault().Value?.Examples,
+			options.RenderMarkdown,
+			endpoint: endpoint
+		);
+		var codeSamples = SampleMethods.Align(OpenApiExtensionReader.ParseCodeSamples(operation), endpoint);
 		var servers = operation.Servers is { Count: > 0 } ? operation.Servers : document.Servers;
 		if (codeSamples.Count == 0)
-			codeSamples = SyntheticCodeSamples.Create(apiOperation.OperationType, apiOperation.Route, operation, servers);
+		{
+			// Built around the first example's body, so the samples attach to that example and carry its request.
+			var body = requestExamples.FirstOrDefault(static e => !string.IsNullOrWhiteSpace(e.JsonValue))?.JsonValue;
+			codeSamples = SyntheticCodeSamples.Create(apiOperation.OperationType, apiOperation.Route, operation, servers, body);
+		}
 
-		var requestExamples = MapExamples(operation.RequestBody?.Content?.FirstOrDefault().Value?.Examples, options.RenderMarkdown);
 		var responseExamples = MapResponseExamples(operation.Responses, options.RenderMarkdown);
-		var scenarios = WithOperationIdentity(
-			EnsureResponseTabs(BuildExampleScenarios(requestExamples, responseExamples, codeSamples), operation.Responses),
-			apiOperation.OperationType.ToString().ToLowerInvariant(),
-			apiOperation.Route
+		var scenarios = WithClientDocs(
+			WithOperationIdentity(
+				GeneratedCodeSamples.Fill(
+					EnsureResponseTabs(BuildExampleScenarios(requestExamples, responseExamples, codeSamples), operation.Responses),
+					codeSamples,
+					endpoint
+				),
+				apiOperation.OperationType.ToString().ToLowerInvariant(),
+				apiOperation.Route
+			),
+			context.Product?.Id
 		);
 		var requestContentEntry = operation.RequestBody?.Content?.FirstOrDefault();
 		var requestSchema = requestContentEntry?.Value?.Schema;
@@ -230,8 +260,6 @@ public partial record OperationPageModel
 			var url = operation.ExternalDocs.Url.ToString();
 			externalDocs = new ExternalDocLink(url, ApiPropertyTreeBuilder.IsElasticDocsUrl(url), operation.ExternalDocs.Description);
 		}
-
-		var descriptionMarkdown = supplemental?.DescriptionOr(operation.Description) ?? operation.Description;
 
 		var requestScope = new PropertyTreeScope
 		{
@@ -247,10 +275,10 @@ public partial record OperationPageModel
 			IsBeta = OpenApiExtensionReader.IsBeta(operation),
 			ExternalDocs = externalDocs,
 			Servers = servers,
-			Overloads = ResolveOverloads(context),
+			Endpoint = endpoint,
 			PathParameters = (operation.Parameters ?? [])
 				.Where(p => p.In == ParameterLocation.Path)
-				.Select(p => BuildPathParameter(p, analyzer, builder, context, supplemental))
+				.Select(p => BuildPathParameter(p, analyzer, builder, context, supplemental, endpoint))
 				.ToArray(),
 			QueryParameters = (operation.Parameters ?? [])
 				.Where(p => p.In == ParameterLocation.Query)
@@ -261,7 +289,7 @@ public partial record OperationPageModel
 			RequestUnionVariants = requestSchema is not null && requestProperties is null
 				? BuildTopLevelUnionVariants(requestSchema, requestScope, analyzer, builder)
 				: null,
-			DescriptionMarkdown = descriptionMarkdown,
+			DescriptionMarkdown = endpoint.Description,
 			PostSections = ApiPostSection.From(context, supplemental?.PostSections ?? []),
 			RequestType = requestSchema is not null ? builder.Describe(requestSchema) : null,
 			Responses = BuildResponses(operation, analyzer, builder),
@@ -333,6 +361,29 @@ public partial record OperationPageModel
 		else if (!hasRequestScenarios && scenarios.Count > 1)
 			scenarios = CollapseIntoSingleScenario(scenarios);
 
+		// Samples whose language name carries an example suffix (cURL_tag_names) are their own examples.
+		var suffixed = codeSamples.Where(static c => c.Scenario is not null).ToArray();
+		var attached = AttachCodeSamples(scenarios, [.. codeSamples.Where(static c => c.Scenario is null)]);
+		return suffixed.Length == 0 ? attached : [.. attached, .. SuffixedScenarios(attached, suffixed)];
+	}
+
+	/// <summary>Links each sample's client label to the client's docs page where one exists for this product.</summary>
+	private static List<ExampleScenario> WithClientDocs(IReadOnlyList<ExampleScenario> scenarios, string? productId) =>
+		[
+			.. scenarios.Select(
+				s =>
+					s with
+					{
+						CodeSamples =
+						[
+							.. s.CodeSamples.Select(c => c with { ClientDocsUrl = CodeSample.ClientDocsUrlFor(c.Language, productId) })
+						]
+					}
+			)
+		];
+
+	private static List<ExampleScenario> AttachCodeSamples(List<ExampleScenario> scenarios, IReadOnlyList<CodeSample> codeSamples)
+	{
 		if (codeSamples.Count == 0)
 			return scenarios;
 
@@ -343,9 +394,51 @@ public partial record OperationPageModel
 		}
 
 		var matchIndex = FindScenarioForCodeSamples(scenarios, codeSamples);
-		var target = matchIndex ?? 0;
-		scenarios[target] = scenarios[target] with { CodeSamples = codeSamples, CodeSamplesIncludeRequest = matchIndex is not null };
+		if (matchIndex is { } match)
+		{
+			scenarios[match] = scenarios[match] with { CodeSamples = codeSamples, CodeSamplesIncludeRequest = true };
+			return scenarios;
+		}
+
+		// Samples written for a body no named example has: keep them as their own first example instead of
+		// pinning them to an unrelated one. Body-less samples (e.g. synthetic curl) still join the first example.
+		if (SamplesCarryABody(codeSamples) && scenarios.Any(static s => !string.IsNullOrWhiteSpace(s.RequestJson)))
+		{
+			scenarios.Insert(
+				0,
+				new ExampleScenario
+				{
+					Title = "Example",
+					TabId = UniqueTabId("example", scenarios),
+					CodeSamples = codeSamples,
+					Responses = scenarios[0].Responses.Where(static r => !r.StatusCode.StartsWith('2')).ToArray()
+				}
+			);
+			return scenarios;
+		}
+
+		scenarios[0] = scenarios[0] with { CodeSamples = codeSamples };
 		return scenarios;
+	}
+
+	/// <summary>One example per suffix, sharing the first example's responses; the samples already say how to call it.</summary>
+	private static IEnumerable<ExampleScenario> SuffixedScenarios(List<ExampleScenario> scenarios, IReadOnlyList<CodeSample> suffixed)
+	{
+		var responses = scenarios.Count > 0 ? scenarios[0].Responses : [];
+		var added = new List<ExampleScenario>();
+		foreach (var group in suffixed.GroupBy(static c => c.Scenario!, StringComparer.OrdinalIgnoreCase))
+		{
+			var title = HumanizeExampleKey(group.Key);
+			added.Add(new ExampleScenario
+			{
+				Title = title,
+				TabId = UniqueTabId(ToTabId(title, scenarios.Count + added.Count), [.. scenarios, .. added]),
+				CodeSamples = [.. group],
+				CodeSamplesIncludeRequest = true,
+				Responses = responses
+			});
+		}
+		return added;
 	}
 
 	/// <summary>
@@ -417,7 +510,8 @@ public partial record OperationPageModel
 				{
 					DescriptionHtml = existing.DescriptionHtml ?? example.DescriptionHtml,
 					RequestJson = example.JsonValue,
-					RequestExternalValue = example.ExternalValue
+					RequestExternalValue = example.ExternalValue,
+					RequestLine = example.RequestLine
 				}
 				: existing with
 				{
@@ -436,7 +530,8 @@ public partial record OperationPageModel
 					TabId = ToTabId(example.Title, scenarios.Count),
 					DescriptionHtml = example.DescriptionHtml,
 					RequestJson = example.JsonValue,
-					RequestExternalValue = example.ExternalValue
+					RequestExternalValue = example.ExternalValue,
+					RequestLine = example.RequestLine
 				}
 				: new ExampleScenario
 				{
@@ -487,6 +582,17 @@ public partial record OperationPageModel
 		}
 
 		return null;
+	}
+
+	private static bool SamplesCarryABody(IReadOnlyList<CodeSample> codeSamples) =>
+		codeSamples.Any(static s => s.IsConsole ? s.Source.Trim().Contains('\n') : s.Source.Contains(" -d ", StringComparison.Ordinal));
+
+	private static string UniqueTabId(string id, IReadOnlyList<ExampleScenario> scenarios)
+	{
+		var candidate = id;
+		for (var i = 1; scenarios.Any(s => s.TabId == candidate); i++)
+			candidate = $"{id}-{i}";
+		return candidate;
 	}
 
 	private static string Compact(string value) => string.Concat(value.Where(static c => !char.IsWhiteSpace(c)));
@@ -563,110 +669,73 @@ public partial record OperationPageModel
 		return list;
 	}
 
+	/// <summary>With <paramref name="endpoint"/>, a request description's <c>Run `METHOD path`</c> line follows the path's dominant method.</summary>
 	private static IReadOnlyList<ExampleDisplay> MapExamples(
 		IDictionary<string, IOpenApiExample>? examples,
 		Func<string?, HtmlString> renderMarkdown,
-		string? statusCode = null
+		string? statusCode = null,
+		OperationEndpoint? endpoint = null
 	) =>
 		examples is null
 			? []
 			: examples.Select(e =>
 			{
-				var description = SanitizeExampleDescription(e.Value?.Description);
+				var description = string.IsNullOrWhiteSpace(e.Value?.Description) ? null : e.Value.Description.Trim();
+				if (description is not null && endpoint is not null)
+					description = SampleMethods.AlignDescription(description, endpoint);
 				return new ExampleDisplay(
-					string.IsNullOrEmpty(e.Value?.Summary) ? e.Key : e.Value.Summary,
+					string.IsNullOrEmpty(e.Value?.Summary) ? HumanizeExampleKey(e.Key) : e.Value.Summary,
 					string.IsNullOrEmpty(description) ? null : renderMarkdown(description),
 					e.Value?.Value?.ToString(),
 					string.IsNullOrEmpty(e.Value?.ExternalValue) ? null : e.Value.ExternalValue,
 					statusCode,
 					description
-				);
+				)
+				{ RequestLine = GeneratedCodeSamples.ParseRequestLine(description) };
 			}).ToArray();
 
 	/// <summary>
-	/// Drops leading boilerplate that only restates the HTTP call or a generic success line
-	/// already visible in code samples. Keeps any trailing notes.
+	/// Spec example keys stand in for a missing summary: <c>executeBuiltinEsqlToolRequest</c> reads as
+	/// "Execute builtin ES|QL tool". A trailing Request/Response/Example word is dropped so a request and its
+	/// response example still pair up by title. Keys that already contain spaces are kept as written.
 	/// </summary>
-	public static string? SanitizeExampleDescription(string? description)
+	public static string HumanizeExampleKey(string key)
 	{
-		if (string.IsNullOrWhiteSpace(description))
-			return null;
+		if (string.IsNullOrWhiteSpace(key) || key.Contains(' ', StringComparison.Ordinal))
+			return key;
 
-		var trimmed = description.Trim();
-		while (true)
-		{
-			var runCommand = RunCommandBoilerplate().Match(trimmed);
-			if (runCommand.Success)
-			{
-				trimmed = trimmed[runCommand.Length..].TrimStart();
-				continue;
-			}
+		var words = CamelCaseBoundary().Split(key.Replace('_', ' ').Replace('-', ' ')).Where(static w => w.Length > 0).ToList();
+		if (words.Count > 1 && words[^1] is "Request" or "Response" or "Example")
+			words.RemoveAt(words.Count - 1);
 
-			var successFrom = SuccessfulResponseFromBoilerplate().Match(trimmed);
-			if (successFrom.Success)
-			{
-				trimmed = trimmed[successFrom.Length..].TrimStart();
-				continue;
-			}
-
-			var exampleBody = ExampleBodyForRequestBoilerplate().Match(trimmed);
-			if (exampleBody.Success)
-			{
-				trimmed = trimmed[exampleBody.Length..].TrimStart();
-				continue;
-			}
-
-			var abbreviatedFrom = AbbreviatedResponseFromBoilerplate().Match(trimmed);
-			if (abbreviatedFrom.Success)
-			{
-				trimmed = trimmed[abbreviatedFrom.Length..].TrimStart();
-				continue;
-			}
-
-			break;
-		}
-
-		return string.IsNullOrWhiteSpace(trimmed) ? null : trimmed;
+		var text = string.Join(
+			' ',
+			words.Select(
+				static (w, i) => w.Equals("esql", StringComparison.OrdinalIgnoreCase)
+					? "ES|QL"
+					: i == 0 ? char.ToUpperInvariant(w[0]) + w[1..] : w.ToLowerInvariant()
+			)
+		);
+		return text.Length == 0 ? key : text;
 	}
 
-	/// <summary>Matches <c>Run `…` ….</c> instructional openers from elasticsearch-specification examples.</summary>
-	[GeneratedRegex(@"^Run\s+`[^`]+`\s+[^.]*\.\s*", RegexOptions.CultureInvariant | RegexOptions.IgnoreCase)]
-	private static partial Regex RunCommandBoilerplate();
-
-	/// <summary>Matches <c>A successful response from `METHOD path`.</c> openers that only echo the call.</summary>
-	[GeneratedRegex(@"^A\s+successful\s+response\s+from\s+`[^`]+`\.\s*", RegexOptions.CultureInvariant | RegexOptions.IgnoreCase)]
-	private static partial Regex SuccessfulResponseFromBoilerplate();
-
-	/// <summary>Matches <c>An example body for a `METHOD path` request.</c> openers that only label the JSON body.</summary>
-	[GeneratedRegex(@"^An\s+example\s+body\s+for\s+a\s+`[^`]+`\s+request\.\s*", RegexOptions.CultureInvariant | RegexOptions.IgnoreCase)]
-	private static partial Regex ExampleBodyForRequestBoilerplate();
-
-	/// <summary>Matches <c>An abbreviated response from `METHOD path`.</c> openers that only echo the call.</summary>
-	[GeneratedRegex(@"^An\s+abbreviated\s+response\s+from\s+`[^`]+`\.\s*", RegexOptions.CultureInvariant | RegexOptions.IgnoreCase)]
-	private static partial Regex AbbreviatedResponseFromBoilerplate();
-
-	private static IReadOnlyCollection<OperationNavigationItem> ResolveOverloads(ApiRenderContext context)
-	{
-		if (
-			context.CurrentNavigation.Parent is EndpointNavigationItem { NavigationItems.Count: > 0 } parent
-			&& parent.NavigationItems.All(n => n.Hidden)
-		)
-			return parent.NavigationItems;
-		return context.CurrentNavigation is OperationNavigationItem self ? [self] : [];
-	}
+	[GeneratedRegex(@"(?<=[a-z0-9])(?=[A-Z])|\s+", RegexOptions.CultureInvariant)]
+	private static partial Regex CamelCaseBoundary();
 
 	private static ApiPathParameter BuildPathParameter(
 		IOpenApiParameter parameter,
 		SchemaAnalyzer analyzer,
 		ApiPropertyTreeBuilder builder,
 		ApiRenderContext context,
-		ApiSupplementalDoc? supplemental
+		ApiSupplementalDoc? supplemental,
+		OperationEndpoint endpoint
 	)
 	{
 		var schema = parameter.Schema;
 		var typeInfo = analyzer.GetTypeInfo(schema);
 		var description = supplemental?.ParameterOr(parameter.Name ?? "", parameter.Description) ?? parameter.Description;
 		var type = schema is not null ? builder.DescribePathParameter(schema) : null;
+		var optional = parameter.Name is { } name && endpoint.OptionalPathParameters.Contains(name);
 		// The type chip already lists X | X[]; a One of row would repeat those alternatives.
 		var alternativesInType = type?.Text.Contains(" | ", StringComparison.Ordinal) == true;
 		return new ApiPathParameter
@@ -677,7 +746,9 @@ public partial record OperationPageModel
 			UnionOptions = alternativesInType ? [] : UnionBadges(typeInfo),
 			UnionLabel = SchemaHelpers.UnionLabel(typeInfo.UnionKeyword),
 			DescriptionHtml = ApiMarkdown.Render(context, description),
-			DescriptionMarkdown = description
+			DescriptionMarkdown = description,
+			Optional = optional,
+			Required = parameter.Required && !optional
 		};
 	}
 

@@ -80,7 +80,6 @@ internal static class LandingCommonMark
 				case OverviewRowKind.MarkdownPage:
 					_ = markdown.AppendLine($"- {ApiCommonMark.Link(row.Title, row.Url)}");
 					break;
-				case OverviewRowKind.Endpoint:
 				case OverviewRowKind.Operation:
 					WriteOperationRow(markdown, row);
 					break;
@@ -90,16 +89,13 @@ internal static class LandingCommonMark
 
 	private static void WriteOperationRow(StringBuilder markdown, ApiOverviewRow row)
 	{
-		if (row.Operations.Count == 0)
+		if (row.Endpoint is not { } endpoint || row.Url is null)
 		{
 			_ = markdown.AppendLine($"- {row.Title}");
 			return;
 		}
 
-		foreach (var operation in row.Operations)
-		{
-			var method = operation.Model.OperationType.ToString().ToUpperInvariant();
-			_ = markdown.AppendLine($"- {row.Title}: {ApiCommonMark.Link($"`{method}` `{operation.Model.Route}`", operation.Url)}");
-		}
+		var paths = string.Join(", ", endpoint.Rows.Select(OperationCommonMark.PathLabel));
+		_ = markdown.AppendLine($"- {ApiCommonMark.Link(row.Title, row.Url)}: {paths}");
 	}
 }
