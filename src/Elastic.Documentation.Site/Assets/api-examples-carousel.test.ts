@@ -644,6 +644,29 @@ describe('API examples chip overflow', () => {
         expect(proto.hidePopover).toHaveBeenCalled()
     })
 
+    it('drops the tooltip of a chip whose title fits again after a refit', () => {
+        let clipped = true
+        Object.defineProperty(proto, 'scrollWidth', {
+            configurable: true,
+            get(this: HTMLElement) {
+                return clipped && this.matches('.api-example-chip-title')
+                    ? 200
+                    : 0
+            },
+        })
+        initApiExamples()
+        const chip = document.querySelector<HTMLElement>(
+            '.api-example-chip[data-scenario="a"]'
+        )!
+        expect(chip.dataset.tippyContent).toBe('Term search')
+
+        clipped = false
+        click('.api-example-chip[data-scenario="b"]')
+
+        expect(chip.dataset.tippyContent).toBeUndefined()
+        delete proto.scrollWidth
+    })
+
     it('keeps the chip of a deep-linked example in the row', () => {
         window.history.replaceState(null, '', '#example=d')
         initApiExamples()

@@ -8,6 +8,7 @@ import { prefersReducedMotion } from './motion'
 import { lockPageScroll } from './scroll-lock'
 import { flashTooltip, initTooltips } from './tooltip'
 import Fuse from 'fuse.js'
+import type { Instance } from 'tippy.js'
 
 export const apiLanguageStorageKey = 'api-language'
 const defaultLanguage = 'Console'
@@ -334,6 +335,12 @@ function chipMenuSupported(menu: HTMLElement | null): menu is HTMLElement {
     return !!menu && typeof menu.hidePopover === 'function'
 }
 
+/** Removes the tooltip text and the tippy instance already made from it, which keeps the old text. */
+function clearChipTooltip(chip: HTMLElement) {
+    delete chip.dataset.tippyContent
+    ;(chip as HTMLElement & { _tippy?: Instance })._tippy?.destroy()
+}
+
 function setMoreLabel(more: HTMLElement, count: number) {
     more.querySelector('[data-example-more-label]')!.textContent =
         `+${count} more`
@@ -386,9 +393,10 @@ function fitChips(examples: HTMLElement) {
     chips.forEach((chip, i) => {
         chip.hidden = !visible.has(i)
         if (chip.hidden) overflow.add(chip.dataset.scenario)
-        // A title cut off by the chip's width gets a tooltip with the whole of it.
+        // A title cut off by the chip's width gets a tooltip with the whole of it; one that fits again loses it.
         else if (truncated[i])
             chip.dataset.tippyContent = titles[i]?.textContent?.trim() ?? ''
+        else clearChipTooltip(chip)
     })
     menu.querySelectorAll<HTMLElement>('[data-scenario]').forEach((item) => {
         item.hidden = !overflow.has(item.dataset.scenario)
