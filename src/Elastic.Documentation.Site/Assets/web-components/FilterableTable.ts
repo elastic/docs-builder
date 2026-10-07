@@ -109,19 +109,25 @@ class FilterableTableElement extends HTMLElement {
      * A cell's text with footnote markers removed. A `[^1]` reference renders
      * as `<a class="footnote-ref">`, whose digit is part of `textContent` but
      * not part of the value - without this a footnoted "Core" reads as
-     * "Core 1" and splits off into its own dropdown option.
+     * "Core 1" and splits off into its own dropdown option. A footnote nested
+     * inside other markup (`**Core[^1]**`) is skipped at any depth.
      */
     private cellText(cell: Element | undefined): string {
         if (!cell) return ''
         let text = ''
-        for (const node of Array.from(cell.childNodes)) {
+        const collect = (node: Node): void => {
+            if (node.nodeType === Node.TEXT_NODE) {
+                text += node.textContent ?? ''
+                return
+            }
             if (
                 node.nodeType === Node.ELEMENT_NODE &&
                 (node as Element).classList.contains('footnote-ref')
             )
-                continue
-            text += node.textContent ?? ''
+                return
+            for (const child of Array.from(node.childNodes)) collect(child)
         }
+        collect(cell)
         return text.trim()
     }
 

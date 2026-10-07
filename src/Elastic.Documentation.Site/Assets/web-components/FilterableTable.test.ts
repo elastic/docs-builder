@@ -307,7 +307,7 @@ describe('filterable-table', () => {
               <thead><tr><th>Name</th><th>Support status</th></tr></thead>
               <tbody>
                 <tr><td>a</td><td>Core<a class="footnote-ref" href="#fn:1"><sup>1</sup></a></td></tr>
-                <tr><td>b</td><td>Core</td></tr>
+                <tr><td>b</td><td><strong>Core<a class="footnote-ref" href="#fn:2"><sup>2</sup></a></strong></td></tr>
                 <tr><td>c</td><td>Extended</td></tr>
               </tbody>
             </table>
