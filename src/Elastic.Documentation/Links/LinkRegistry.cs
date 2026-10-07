@@ -15,7 +15,7 @@ namespace Elastic.Documentation.Links;
 /// <summary>The link index of all repositories' published manifests (<c>link-index.json</c>), keyed by repository and branch.</summary>
 /// <remarks>
 /// Constructed with <c>LinkLoader.LoadRegistry</c> or <see cref="LinkRegistry.WithLinkRegistryEntry"/>.
-/// Members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can build one directly.
+/// Optional members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can set them.
 /// </remarks>
 [Equatable]
 public partial record LinkRegistry
@@ -26,7 +26,7 @@ public partial record LinkRegistry
 	[JsonRequired]
 	[CustomEquality(typeof(LinkRegistryEntriesComparer))]
 #pragma warning disable GE001 // the whole dictionary is compared by LinkRegistryEntriesComparer; the generator's collection attributes compare nested dictionaries by reference
-	public Dictionary<string, Dictionary<string, LinkRegistryEntry>> Repositories { get; internal init; } = default!;
+	public required Dictionary<string, Dictionary<string, LinkRegistryEntry>> Repositories { get; init; }
 #pragma warning restore GE001
 
 	[JsonIgnore]
@@ -72,29 +72,21 @@ public partial record LinkRegistry
 /// <summary>One published manifest of a repository and branch in the <see cref="LinkRegistry"/>, with the object key and ETag it was read from.</summary>
 /// <remarks>
 /// Constructed through <c>LinkRegistry</c>.
-/// Members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can build one directly.
+/// Optional members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can set them.
 /// </remarks>
 public record LinkRegistryEntry
 {
 	[JsonPropertyName("repository")]
-	[JsonInclude]
-	[JsonRequired]
-	public string Repository { get; internal init; } = default!;
+	public required string Repository { get; init; }
 
 	[JsonPropertyName("path")]
-	[JsonInclude]
-	[JsonRequired]
-	public string Path { get; internal init; } = default!;
+	public required string Path { get; init; }
 
 	[JsonPropertyName("branch")]
-	[JsonInclude]
-	[JsonRequired]
-	public string Branch { get; internal init; } = default!;
+	public required string Branch { get; init; }
 
 	[JsonPropertyName("etag")]
-	[JsonInclude]
-	[JsonRequired]
-	public string ETag { get; internal init; } = default!;
+	public required string ETag { get; init; }
 
 	// TODO can be made required after all doc_sets have published again
 	[JsonPropertyName("ref")]

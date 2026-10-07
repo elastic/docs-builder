@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using AwesomeAssertions;
 using Elastic.Documentation.AppliesTo;
 using Elastic.Documentation.Catalog;
@@ -17,9 +18,10 @@ namespace Elastic.Documentation.Tests.Domain;
 
 /// <summary>
 /// The compile-time guard (see Constraints-Conventions.md): production code outside Elastic.Documentation and
-/// Elastic.Documentation.Configuration cannot create or edit an aggregate, because its setters and constructors are internal
-/// and only those two assemblies (and the tests) see internals. This test fails when a sealed type gains a public setter,
-/// init accessor or constructor with parameters, so the guard cannot regress silently.
+/// Elastic.Documentation.Configuration cannot set an aggregate's optional members or call a constructor, because those are internal
+/// and only those two assemblies (and the tests) see internals; a <c>required</c> member is public init (CS9032), so an outsider can still
+/// build a record from its required members (accepted). This test fails when a sealed type gains a public setter or init accessor on a
+/// member that is not <c>required</c>, or a public constructor with parameters, so the guard cannot regress silently.
 /// </summary>
 public class AggregateGuardTests
 {
@@ -137,11 +139,11 @@ public class AggregateGuardTests
 			typeof(PublishBlocker)
 		];
 
-	public static List<string> PublicSetters(IEnumerable<Type> types) =>
+	public static List<string> PublicNonRequiredSetters(IEnumerable<Type> types) =>
 		types.SelectMany(
 			t => t
 				.GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.DeclaredOnly)
-				.Where(p => p.SetMethod is { IsPublic: true })
+				.Where(p => p.SetMethod is { IsPublic: true } && p.GetCustomAttribute<RequiredMemberAttribute>() is null)
 				.Select(p => $"{t.Name}.{p.Name}")
 		).ToList();
 
@@ -154,10 +156,10 @@ public class AggregateGuardTests
 		).ToList();
 
 	[Test]
-	public void Stage1Aggregates_HaveNoPublicSetterOrInit() =>
-		PublicSetters(Stage1Types())
+	public void Stage1Aggregates_HaveOnlyRequiredPublicInit() =>
+		PublicNonRequiredSetters(Stage1Types())
 			.Should()
-			.BeEmpty("a public setter or init accessor lets any production assembly edit an aggregate; make it internal");
+			.BeEmpty("only a required member may have a public init accessor; an optional member is internal init");
 
 	[Test]
 	public void Stage1Aggregates_HaveNoPublicConstructorWithParameters() =>
@@ -166,10 +168,10 @@ public class AggregateGuardTests
 			.BeEmpty("a public constructor lets any production assembly build an aggregate; make it internal");
 
 	[Test]
-	public void Stage2Aggregates_HaveNoPublicSetterOrInit() =>
-		PublicSetters(Stage2Types())
+	public void Stage2Aggregates_HaveOnlyRequiredPublicInit() =>
+		PublicNonRequiredSetters(Stage2Types())
 			.Should()
-			.BeEmpty("a public setter or init accessor lets any production assembly edit an aggregate; make it internal");
+			.BeEmpty("only a required member may have a public init accessor; an optional member is internal init");
 
 	[Test]
 	public void Stage2Aggregates_HaveNoPublicConstructorWithParameters() =>

@@ -14,14 +14,11 @@ namespace Elastic.Documentation.OpenApiIndex;
 /// <summary>One entry in a <see cref="RootVersionIndex"/>.</summary>
 /// <remarks>
 /// Constructed with <c>VersionIndexLoader.Load</c> or <c>VersionIndexBuilder.Build</c>.
-/// Members are <c>internal init</c>: only its own assembly and its test project can build one directly.
 /// </remarks>
 public sealed record VersionIndexEntry
 {
 	/// <summary>The version this key resolves to: <c>main</c>, or the highest minor of its major, e.g. <c>9.5</c>.</summary>
-	[JsonInclude]
-	[JsonRequired]
-	public string Version { get; internal init; } = default!;
+	public required string Version { get; init; }
 }
 
 [JsonSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.SnakeCaseLower)]

@@ -14,7 +14,6 @@ namespace Elastic.Documentation.Catalog;
 /// </summary>
 /// <remarks>
 /// Constructed with <c>RelatedLearningLoader.Load</c>.
-/// Members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can build one directly.
 /// </remarks>
 [Equatable]
 public sealed partial record RelatedLearningCatalog
@@ -23,7 +22,7 @@ public sealed partial record RelatedLearningCatalog
 
 	/// <summary>Catalog entries keyed by ID.</summary>
 	[UnorderedEquality]
-	public IReadOnlyDictionary<string, RelatedLearningLink> Links { get; internal init; } = default!;
+	public required IReadOnlyDictionary<string, RelatedLearningLink> Links { get; init; }
 
 	public bool TryGet(string id, [NotNullWhen(true)] out RelatedLearningLink? link) => Links.TryGetValue(id, out link);
 }
@@ -31,11 +30,10 @@ public sealed partial record RelatedLearningCatalog
 /// <summary>A single named learning destination from <c>related-learning.yml</c>.</summary>
 /// <remarks>
 /// Constructed through <c>RelatedLearningCatalog</c>.
-/// Members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can build one directly.
 /// </remarks>
 public sealed record RelatedLearningLink
 {
-	public string Id { get; internal init; } = default!;
-	public string Title { get; internal init; } = default!;
-	public string Url { get; internal init; } = default!;
+	public required string Id { get; init; }
+	public required string Title { get; init; }
+	public required string Url { get; init; }
 }

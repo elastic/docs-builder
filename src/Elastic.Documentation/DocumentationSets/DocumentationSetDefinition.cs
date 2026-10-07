@@ -18,22 +18,22 @@ namespace Elastic.Documentation.DocumentationSets;
 /// </summary>
 /// <remarks>
 /// Constructed with <c>DocumentationSetLoader.Load</c>.
-/// Members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can build one directly.
+/// Optional members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can set them.
 /// </remarks>
 [Equatable]
 public sealed partial record DocumentationSetDefinition
 {
 	/// <summary>The <c>docset.yml</c> (or <c>_docset.yml</c>) this set is declared in. It need not exist.</summary>
 	[CustomEquality(typeof(FileSystemInfoLocationComparer))]
-	public IFileInfo SourceFile { get; internal init; } = default!;
+	public required IFileInfo SourceFile { get; init; }
 
 	/// <summary>The documentation source directory that docset-relative paths resolve from.</summary>
 	[CustomEquality(typeof(FileSystemInfoLocationComparer))]
-	public IDirectoryInfo SourceDirectory { get; internal init; } = default!;
+	public required IDirectoryInfo SourceDirectory { get; init; }
 
 	/// <summary>The file system the set's files are read through; branding images and API specs are checked on it.</summary>
 	[IgnoreEquality]
-	public IFileSystem FileSystem { get; internal init; } = default!;
+	public required IFileSystem FileSystem { get; init; }
 
 	public string? Project { get; internal init; }
 
@@ -141,7 +141,7 @@ public sealed partial record DocumentationSetDefinition
 /// <summary>A redirect the reader drops: the whole entry for <see cref="Source"/>, or its <c>many</c> item number <see cref="ManyItem"/> (0-based).</summary>
 /// <remarks>
 /// Constructed through <c>DocumentationSetDefinition</c>.
-/// Members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can build one directly.
+/// Optional members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can set them.
 /// </remarks>
 public sealed record DroppedRedirect
 {
@@ -165,7 +165,7 @@ public sealed record DroppedRedirect
 /// <summary>The <c>features</c> toggles of <c>docset.yml</c>; null when not set.</summary>
 /// <remarks>
 /// Constructed through <c>DocumentationSetDefinition</c>.
-/// Members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can build one directly.
+/// Optional members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can set them.
 /// </remarks>
 public sealed record DeclaredFeatures
 {
@@ -193,7 +193,7 @@ public sealed record DeclaredFeatures
 /// <summary><c>branding</c> as written: image paths relative to the documentation source directory.</summary>
 /// <remarks>
 /// Constructed through <c>DocumentationSetDefinition</c>.
-/// Members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can build one directly.
+/// Optional members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can set them.
 /// </remarks>
 public sealed record BrandingDeclaration
 {
@@ -235,7 +235,7 @@ public sealed record BrandingDeclaration
 /// <summary>A <c>cta</c> template as written.</summary>
 /// <remarks>
 /// Constructed through <c>DocumentationSetDefinition</c>.
-/// Members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can build one directly.
+/// Optional members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can set them.
 /// </remarks>
 [Equatable]
 public sealed partial record CtaDeclaration
@@ -269,7 +269,7 @@ public sealed partial record CtaDeclaration
 /// <summary>A key of the <c>api</c> map: normally a single entry; any other count is invalid.</summary>
 /// <remarks>
 /// Constructed through <c>DocumentationSetDefinition</c>.
-/// Members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can build one directly.
+/// Optional members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can set them.
 /// </remarks>
 [Equatable]
 public sealed partial record ApiDeclaration
@@ -295,7 +295,7 @@ public sealed partial record ApiDeclaration
 /// <summary>One <c>api</c> entry as written, with where its keys are in <c>docset.yml</c>.</summary>
 /// <remarks>
 /// Constructed through <c>ApiDeclaration</c>.
-/// Members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can build one directly.
+/// Optional members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can set them.
 /// </remarks>
 [Equatable]
 public sealed partial record ApiDeclarationEntry

@@ -11,7 +11,7 @@ namespace Elastic.Documentation.ReleaseNotes;
 /// </summary>
 /// <remarks>
 /// Constructed through <c>ChangelogConfiguration</c>.
-/// Members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can build one directly.
+/// Optional members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can set them.
 /// </remarks>
 [Equatable]
 public partial record BundleConfiguration
@@ -101,7 +101,7 @@ public partial record BundleConfiguration
 /// </summary>
 /// <remarks>
 /// Constructed through <c>BundleConfiguration</c>.
-/// Members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can build one directly.
+/// Optional members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can set them.
 /// </remarks>
 [Equatable]
 public partial record BundleProfile
@@ -195,7 +195,7 @@ public partial record BundleProfile
 /// </summary>
 /// <remarks>
 /// Constructed through <c>BundleConfiguration</c>.
-/// Members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can build one directly.
+/// Optional members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can set them.
 /// </remarks>
 [Equatable]
 public partial record BundleReleases

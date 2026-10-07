@@ -9,7 +9,7 @@ namespace Elastic.Documentation.ReleaseNotes;
 /// </summary>
 /// <remarks>
 /// Constructed through <c>ChangelogConfiguration</c>.
-/// Members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can build one directly.
+/// Optional members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can set them.
 /// </remarks>
 public record ExtractConfiguration
 {

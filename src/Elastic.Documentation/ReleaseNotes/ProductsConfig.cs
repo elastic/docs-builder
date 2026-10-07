@@ -11,7 +11,7 @@ namespace Elastic.Documentation.ReleaseNotes;
 /// </summary>
 /// <remarks>
 /// Constructed through <c>ChangelogConfiguration</c>.
-/// Members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can build one directly.
+/// Optional members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can set them.
 /// </remarks>
 [Equatable]
 public partial record ProductsConfig
@@ -36,14 +36,14 @@ public partial record ProductsConfig
 /// </summary>
 /// <remarks>
 /// Constructed through <c>ProductsConfig</c>.
-/// Members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can build one directly.
+/// Optional members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can set them.
 /// </remarks>
 public record DefaultProduct
 {
 	/// <summary>
 	/// Product ID
 	/// </summary>
-	public string Product { get; internal init; } = default!;
+	public required string Product { get; init; }
 
 	/// <summary>
 	/// Default lifecycle (defaults to "ga")

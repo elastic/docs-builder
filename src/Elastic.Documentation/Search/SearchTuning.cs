@@ -12,13 +12,13 @@ namespace Elastic.Documentation.Search;
 /// </summary>
 /// <remarks>
 /// Constructed with <c>SearchTuningLoader.Load</c>.
-/// Members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can build one directly.
+/// Optional members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can set them.
 /// </remarks>
 [Equatable]
 public sealed partial record SearchTuning
 {
 	[OrderedEquality]
-	public IReadOnlyList<SynonymGroup> Synonyms { get; internal init; } = default!;
+	public required IReadOnlyList<SynonymGroup> Synonyms { get; init; }
 
 	/// <summary>Each single-word synonym mapped to the rest of its group; derived from <see cref="Synonyms"/>.</summary>
 	[IgnoreEquality]
@@ -55,9 +55,9 @@ public sealed partial record SearchTuning
 			.ToDictionary(a => a[0], a => a.Skip(1).ToArray(), StringComparer.OrdinalIgnoreCase);
 
 	[OrderedEquality]
-	public IReadOnlyCollection<QueryRule> Rules { get; internal init; } = default!;
+	public required IReadOnlyCollection<QueryRule> Rules { get; init; }
 	[OrderedEquality]
-	public IReadOnlyCollection<string> DiminishTerms { get; internal init; } = default!;
+	public required IReadOnlyCollection<string> DiminishTerms { get; init; }
 
 	/// <summary>
 	/// The name of the file the tuning was read from, or null when it was not read from one. The loader reads <c>synonyms.yml</c> when there is no
@@ -73,21 +73,21 @@ public sealed partial record SearchTuning
 /// <summary>One query rule from <c>search.yml</c>: an id, a type, the criteria that trigger it and the actions it takes.</summary>
 /// <remarks>
 /// Constructed through <c>SearchTuning</c>.
-/// Members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can build one directly.
+/// Optional members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can set them.
 /// </remarks>
 [Equatable]
 public sealed partial record QueryRule
 {
-	public string RuleId { get; internal init; } = default!;
-	public QueryRuleType Type { get; internal init; } = default!;
+	public required string RuleId { get; init; }
+	public required QueryRuleType Type { get; init; }
 
 	/// <summary><c>type</c> as written; empty when absent, null when the rule was not loaded from a file. An unknown or empty text is read as <see cref="QueryRuleType.Pinned"/>.</summary>
 	[IgnoreEquality]
 	public string? TypeRaw { get; internal init; }
 
 	[OrderedEquality]
-	public IReadOnlyCollection<QueryRuleCriteria> Criteria { get; internal init; } = default!;
-	public QueryRuleActions Actions { get; internal init; } = default!;
+	public required IReadOnlyCollection<QueryRuleCriteria> Criteria { get; init; }
+	public required QueryRuleActions Actions { get; init; }
 }
 
 public enum QueryRuleType
@@ -99,20 +99,20 @@ public enum QueryRuleType
 /// <summary>A criterion of a <see cref="QueryRule"/>: a metadata field, how it is compared and the values.</summary>
 /// <remarks>
 /// Constructed through <c>QueryRule</c>.
-/// Members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can build one directly.
+/// Optional members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can set them.
 /// </remarks>
 [Equatable]
 public sealed partial record QueryRuleCriteria
 {
-	public QueryRuleCriteriaType Type { get; internal init; } = default!;
+	public required QueryRuleCriteriaType Type { get; init; }
 
 	/// <summary><c>type</c> as written; empty when absent, null when the criteria was not loaded from a file. An unknown or empty text is read as <see cref="QueryRuleCriteriaType.Exact"/>.</summary>
 	[IgnoreEquality]
 	public string? TypeRaw { get; internal init; }
 
-	public string Metadata { get; internal init; } = default!;
+	public required string Metadata { get; init; }
 	[OrderedEquality]
-	public IReadOnlyCollection<string> Values { get; internal init; } = default!;
+	public required IReadOnlyCollection<string> Values { get; init; }
 }
 
 public enum QueryRuleCriteriaType
@@ -125,13 +125,12 @@ public enum QueryRuleCriteriaType
 /// <summary>The actions of a <see cref="QueryRule"/>: the ids it pins.</summary>
 /// <remarks>
 /// Constructed through <c>QueryRule</c>.
-/// Members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can build one directly.
 /// </remarks>
 [Equatable]
 public sealed partial record QueryRuleActions
 {
 	[OrderedEquality]
-	public IReadOnlyCollection<string> Ids { get; internal init; } = default!;
+	public required IReadOnlyCollection<string> Ids { get; init; }
 }
 
 /// <summary>
@@ -140,7 +139,7 @@ public sealed partial record QueryRuleActions
 /// </summary>
 /// <remarks>
 /// Constructed through <c>SearchTuning</c>.
-/// Members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can build one directly.
+/// Optional members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can set them.
 /// </remarks>
 [Equatable]
 public sealed partial record SynonymGroup

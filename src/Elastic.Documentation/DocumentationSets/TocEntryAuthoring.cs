@@ -31,7 +31,7 @@ public enum TocEntryKind
 /// </summary>
 /// <remarks>
 /// Constructed with <c>TocItemYamlConverter</c>.
-/// Members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can build one directly.
+/// Optional members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can set them.
 /// </remarks>
 [Equatable]
 public sealed partial record TocEntryAuthoring

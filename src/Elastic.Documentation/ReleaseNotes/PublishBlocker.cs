@@ -39,7 +39,7 @@ public enum FieldMode
 /// </summary>
 /// <remarks>
 /// Constructed through <c>PublishRules</c>.
-/// Members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can build one directly.
+/// Optional members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can set them.
 /// </remarks>
 [Equatable]
 public partial record PublishBlocker

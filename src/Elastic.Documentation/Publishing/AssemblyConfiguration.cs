@@ -17,25 +17,24 @@ namespace Elastic.Documentation.Publishing;
 /// </summary>
 /// <remarks>
 /// Constructed with <c>AssemblyLoader.Load</c>.
-/// Members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can build one directly.
 /// </remarks>
 [Equatable]
 public sealed partial record AssemblyConfiguration
 {
 	[DefaultEquality]
-	public NarrativeRepository Narrative { get; internal init; } = default!;
+	public required NarrativeRepository Narrative { get; init; }
 
 	/// <summary>The <c>references</c> repositories, keyed by name, after private-repository filtering.</summary>
 	[UnorderedEquality]
-	public IReadOnlyDictionary<string, Repository> ReferenceRepositories { get; internal init; } = default!;
+	public required IReadOnlyDictionary<string, Repository> ReferenceRepositories { get; init; }
 
 	/// <summary>Every repository that publishes docs: references not marked <c>skip</c>, plus the narrative.</summary>
 	[UnorderedEquality]
-	public IReadOnlyDictionary<string, Repository> AvailableRepositories { get; internal init; } = default!;
+	public required IReadOnlyDictionary<string, Repository> AvailableRepositories { get; init; }
 
 	/// <summary>Private repositories that publish docs (<c>private: true</c> and not <c>skip</c>).</summary>
 	[UnorderedEquality]
-	public IReadOnlyDictionary<string, Repository> PrivateRepositories { get; internal init; } = default!;
+	public required IReadOnlyDictionary<string, Repository> PrivateRepositories { get; init; }
 
 	/// <summary>
 	/// All repos marked <c>private: true</c>, regardless of <c>skip</c>. Skip means "does not publish docs", not
@@ -43,13 +42,13 @@ public sealed partial record AssemblyConfiguration
 	/// repository still have their links hidden.
 	/// </summary>
 	[SetEquality]
-	public IReadOnlySet<string> AllPrivateRepositoryNames { get; internal init; } = default!;
+	public required IReadOnlySet<string> AllPrivateRepositoryNames { get; init; }
 
 	[UnorderedEquality]
-	public IReadOnlyDictionary<string, PublishEnvironment> Environments { get; internal init; } = default!;
+	public required IReadOnlyDictionary<string, PublishEnvironment> Environments { get; init; }
 
 	[UnorderedEquality]
-	public IReadOnlyDictionary<string, Repository> SharedConfigurations { get; internal init; } = default!;
+	public required IReadOnlyDictionary<string, Repository> SharedConfigurations { get; init; }
 
 	/// <summary>Which content sources a push of <c>branchOrTag</c> to a repository publishes to.</summary>
 	public record ContentSourceMatch(ContentSource? Current, ContentSource? Next, ContentSource? Edge, bool Speculative);
@@ -58,7 +57,7 @@ public sealed partial record AssemblyConfiguration
 /// <summary>A repository the assembler clones, with the branch it publishes per content source.</summary>
 /// <remarks>
 /// Constructed with <c>AssemblyLoader.Load</c> or <see cref="Repository.AsConfigurationCheckout"/>.
-/// Members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can build one directly.
+/// Optional members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can set them.
 /// </remarks>
 [Equatable]
 public partial record Repository
@@ -109,7 +108,6 @@ public partial record Repository
 /// <summary>The narrative repository (<c>docs-content</c>): the site's own content, always published.</summary>
 /// <remarks>
 /// Constructed through <c>AssemblyConfiguration</c>.
-/// Members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can build one directly.
 /// </remarks>
 public sealed record NarrativeRepository : Repository
 {
@@ -147,7 +145,7 @@ public enum ContentSource
 /// <summary>A deploy target of the assembled site, from <c>assembler.yml</c>'s <c>environments</c>.</summary>
 /// <remarks>
 /// Constructed through <c>AssemblyConfiguration</c>.
-/// Members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can build one directly.
+/// Optional members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can set them.
 /// </remarks>
 [Equatable]
 public sealed partial record PublishEnvironment
@@ -172,7 +170,7 @@ public sealed partial record PublishEnvironment
 /// <summary>The Google Tag Manager id of a publish environment.</summary>
 /// <remarks>
 /// Constructed through <c>AssemblyConfiguration</c>.
-/// Members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can build one directly.
+/// Optional members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can set them.
 /// </remarks>
 public sealed record GoogleTagManager
 {
@@ -186,7 +184,7 @@ public sealed record GoogleTagManager
 /// <summary>The Optimizely id of a publish environment.</summary>
 /// <remarks>
 /// Constructed through <c>AssemblyConfiguration</c>.
-/// Members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can build one directly.
+/// Optional members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can set them.
 /// </remarks>
 public sealed record Optimizely
 {

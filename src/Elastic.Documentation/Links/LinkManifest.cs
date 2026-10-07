@@ -12,7 +12,7 @@ namespace Elastic.Documentation.Links;
 /// <summary>One page of a <see cref="LinkManifest"/>: its anchors and whether it is hidden.</summary>
 /// <remarks>
 /// Constructed through <c>LinkManifest</c>.
-/// Members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can build one directly.
+/// Optional members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can set them.
 /// </remarks>
 [Equatable]
 public partial record LinkMetadata
@@ -40,7 +40,7 @@ public partial record LinkMetadata
 /// <summary>One redirect of a <see cref="LinkManifest"/>: where it points and which anchors it maps.</summary>
 /// <remarks>
 /// Constructed through <c>LinkManifest</c>.
-/// Members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can build one directly.
+/// Optional members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can set them.
 /// </remarks>
 [Equatable]
 public partial record LinkSingleRedirect
@@ -60,7 +60,7 @@ public partial record LinkSingleRedirect
 /// <summary>A redirect of a <see cref="LinkManifest"/>, optionally a list of anchor-specific redirects.</summary>
 /// <remarks>
 /// Constructed through <c>LinkManifest</c>.
-/// Members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can build one directly.
+/// Optional members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can set them.
 /// </remarks>
 [Equatable]
 public partial record LinkRedirect : LinkSingleRedirect
@@ -80,33 +80,29 @@ public partial record LinkRedirect : LinkSingleRedirect
 /// </summary>
 /// <remarks>
 /// Constructed with <c>LinkLoader.LoadManifest</c> or <see cref="LinkManifest.From"/> and <see cref="LinkManifest.Empty"/>.
-/// Members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can build one directly.
+/// Optional members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can set them.
 /// </remarks>
 [Equatable]
 public partial record LinkManifest
 {
 	[JsonPropertyName("origin")]
-	[JsonInclude]
-	[JsonRequired]
-	public GitCheckoutInformation Origin { get; internal init; } = default!;
+	public required GitCheckoutInformation Origin { get; init; }
 
 	[JsonPropertyName("url_path_prefix")]
-	[JsonInclude]
-	[JsonRequired]
-	public string? UrlPathPrefix { get; internal init; }
+	public required string? UrlPathPrefix { get; init; }
 
 	/// Mapping of relative filepath and all the page's anchors for deep links
 	[JsonPropertyName("links")]
 	[JsonInclude]
 	[JsonRequired]
 	[UnorderedEquality]
-	public Dictionary<string, LinkMetadata> Links { get; internal init; } = [];
+	public required Dictionary<string, LinkMetadata> Links { get; init; } = [];
 
 	[JsonPropertyName("cross_links")]
 	[JsonInclude]
 	[JsonRequired]
 	[OrderedEquality]
-	public string[] CrossLinks { get; internal init; } = [];
+	public required string[] CrossLinks { get; init; } = [];
 
 	/// Mapping of relative filepath and all the page's anchors for deep links
 	[JsonPropertyName("redirects")]

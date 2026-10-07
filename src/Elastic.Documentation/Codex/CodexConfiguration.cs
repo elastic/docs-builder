@@ -12,7 +12,7 @@ namespace Elastic.Documentation.Codex;
 /// </summary>
 /// <remarks>
 /// Constructed with <c>CodexSiteLoader.Load</c>.
-/// Members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can build one directly.
+/// Optional members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can set them.
 /// </remarks>
 [Equatable]
 public sealed partial record CodexConfiguration
@@ -34,7 +34,7 @@ public sealed partial record CodexConfiguration
 /// <summary>A group of documentation sets on the codex landing page.</summary>
 /// <remarks>
 /// Constructed through <c>CodexConfiguration</c>.
-/// Members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can build one directly.
+/// Optional members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can set them.
 /// </remarks>
 public sealed record CodexGroupDefinition
 {
@@ -47,7 +47,7 @@ public sealed record CodexGroupDefinition
 /// <summary>A documentation set a codex site builds: which repository and branch, and which group it lists under.</summary>
 /// <remarks>
 /// Constructed through <c>CodexConfiguration</c>.
-/// Members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can build one directly.
+/// Optional members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can set them.
 /// </remarks>
 public sealed record CodexDocumentationSetReference
 {

@@ -16,7 +16,7 @@ namespace Elastic.Documentation.Publishing;
 /// </summary>
 /// <remarks>
 /// Constructed with <c>SiteNavigationLoader</c> or <see cref="SiteNavigationDefinition.WithoutRepositories"/>.
-/// Members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can build one directly.
+/// Optional members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can set them.
 /// </remarks>
 [Equatable]
 public sealed partial record SiteNavigationDefinition
@@ -187,7 +187,7 @@ public static class SiteNavigationEntryExtensions
 /// <summary>A source known to the site but deliberately not mounted in its navigation.</summary>
 /// <remarks>
 /// Constructed through <c>SiteNavigationDefinition</c>.
-/// Members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can build one directly.
+/// Optional members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can set them.
 /// </remarks>
 public sealed record PhantomRegistration
 {
@@ -197,18 +197,17 @@ public sealed record PhantomRegistration
 /// <summary>Where one table of contents mounts in the assembled site: its source and the path prefix it is served under.</summary>
 /// <remarks>
 /// Constructed with <c>SiteNavigationLoader.GetTocMappings</c>.
-/// Members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can build one directly.
 /// </remarks>
 public record NavigationTocMapping
 {
-	public Uri Source { get; internal init; } = default!;
-	public string SourcePathPrefix { get; internal init; } = default!;
+	public required Uri Source { get; init; }
+	public required string SourcePathPrefix { get; init; }
 }
 
 /// <summary>A link entry within a <c>dropdown:</c> section.</summary>
 /// <remarks>
 /// Constructed through <c>SiteNavigationDefinition</c>.
-/// Members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can build one directly.
+/// Optional members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can set them.
 /// </remarks>
 public record SiteDropdownLinkRef
 {
@@ -231,7 +230,7 @@ public record SiteDropdownLinkRef
 /// <summary>A top-level section of <c>navigation.yml</c>: a title with its children.</summary>
 /// <remarks>
 /// Constructed through <c>SiteNavigationDefinition</c>.
-/// Members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can build one directly.
+/// Optional members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can set them.
 /// </remarks>
 [Equatable]
 public partial record SiteSectionRef
@@ -275,7 +274,7 @@ public partial record SiteSectionRef
 /// <summary>A table of contents mounted by <c>navigation.yml</c>.</summary>
 /// <remarks>
 /// Constructed through <c>SiteNavigationDefinition</c>.
-/// Members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can build one directly.
+/// Optional members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can set them.
 /// </remarks>
 /// <param name="Island">
 /// When <c>true</c>, the resolved navigation node is marked as an island from the assembler side.

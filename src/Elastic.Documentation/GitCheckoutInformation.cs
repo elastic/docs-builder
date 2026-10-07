@@ -9,7 +9,7 @@ namespace Elastic.Documentation;
 /// <summary>The git checkout a build ran in: branch, remote and ref (and the GitHub ref when known).</summary>
 /// <remarks>
 /// Constructed with <c>GitCheckoutInformation.Resolved</c>, <c>ForClonedRepository</c> or <c>ForElasticRepository</c>.
-/// Members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can build one directly.
+/// Optional members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can set them.
 /// </remarks>
 public record GitCheckoutInformation
 {
@@ -61,19 +61,13 @@ public record GitCheckoutInformation
 	) => new() { Branch = branch, Remote = remote, Ref = commitHash, RepositoryName = repositoryName, GitHubRef = gitHubRef };
 
 	[JsonPropertyName("branch")]
-	[JsonInclude]
-	[JsonRequired]
-	public string Branch { get; internal init; } = default!;
+	public required string Branch { get; init; }
 
 	[JsonPropertyName("remote")]
-	[JsonInclude]
-	[JsonRequired]
-	public string Remote { get; internal init; } = default!;
+	public required string Remote { get; init; }
 
 	[JsonPropertyName("ref")]
-	[JsonInclude]
-	[JsonRequired]
-	public string Ref { get; internal init; } = default!;
+	public required string Ref { get; init; }
 
 	[JsonPropertyName("name")]
 	[JsonInclude]

@@ -12,7 +12,7 @@ namespace Elastic.Documentation.ReleaseNotes;
 /// </summary>
 /// <remarks>
 /// Constructed with <c>BundleLoader</c> or <see cref="Bundle.Assemble"/>, <see cref="Bundle.ForRelease"/> and <see cref="Bundle.AmendOf"/>.
-/// Members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can build one directly.
+/// Optional members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can set them.
 /// </remarks>
 [Equatable]
 public partial record Bundle

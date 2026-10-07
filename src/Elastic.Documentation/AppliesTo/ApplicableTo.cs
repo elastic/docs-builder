@@ -39,7 +39,7 @@ public interface IApplicableToElement
 /// <summary>The <c>applies_to</c> block of a page, section or toc entry: which stack, serverless, deployment and product versions a piece of documentation applies to, and in which lifecycle.</summary>
 /// <remarks>
 /// Constructed with <c>ApplicableToYamlConverter</c> or <c>ApplicableToJsonConverter</c>.
-/// Members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can build one directly.
+/// Optional members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can set them.
 /// </remarks>
 [JsonConverter(typeof(ApplicableToJsonConverter))]
 public record ApplicableTo
@@ -239,7 +239,7 @@ public record ApplicableTo
 /// <summary>The <c>deployment</c> part of an <c>applies_to</c> block: self-managed, ECE, ECK and Elastic Cloud Hosted.</summary>
 /// <remarks>
 /// Constructed through <c>ApplicableTo</c>.
-/// Members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can build one directly.
+/// Optional members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can set them.
 /// </remarks>
 public record DeploymentApplicability
 {
@@ -301,7 +301,7 @@ public record DeploymentApplicability
 /// <summary>The <c>serverless</c> part of an <c>applies_to</c> block, one entry per project type.</summary>
 /// <remarks>
 /// Constructed through <c>ApplicableTo</c>.
-/// Members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can build one directly.
+/// Optional members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can set them.
 /// </remarks>
 public record ServerlessProjectApplicability
 {

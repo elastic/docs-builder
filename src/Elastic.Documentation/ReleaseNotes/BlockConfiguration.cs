@@ -11,7 +11,7 @@ namespace Elastic.Documentation.ReleaseNotes;
 /// </summary>
 /// <remarks>
 /// Constructed through <c>ChangelogConfiguration</c>.
-/// Members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can build one directly.
+/// Optional members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can set them.
 /// </remarks>
 public record RulesConfiguration
 {
@@ -41,7 +41,7 @@ public record RulesConfiguration
 /// </summary>
 /// <remarks>
 /// Constructed through <c>RulesConfiguration</c>.
-/// Members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can build one directly.
+/// Optional members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can set them.
 /// </remarks>
 [Equatable]
 [System.Text.Json.Serialization.JsonConverter(typeof(Elastic.Documentation.Serialization.CreateRulesJsonConverter))]
@@ -75,7 +75,7 @@ public partial record CreateRules
 /// </summary>
 /// <remarks>
 /// Constructed through <c>BundleRules</c>.
-/// Members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can build one directly.
+/// Optional members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can set them.
 /// </remarks>
 [Equatable]
 public partial record BundlePerProductRule
@@ -173,7 +173,7 @@ public record ResolveResultWithRule(ResolveResult Result, BundlePerProductRule? 
 /// </summary>
 /// <remarks>
 /// Constructed through <c>RulesConfiguration</c>.
-/// Members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can build one directly.
+/// Optional members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can set them.
 /// </remarks>
 [Equatable]
 public partial record BundleRules
@@ -253,7 +253,7 @@ public static class BundleRulesExtensions
 /// </summary>
 /// <remarks>
 /// Constructed through <c>RulesConfiguration</c>.
-/// Members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can build one directly.
+/// Optional members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can set them.
 /// </remarks>
 [Equatable]
 public partial record PublishRules

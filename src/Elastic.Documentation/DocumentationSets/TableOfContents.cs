@@ -123,7 +123,7 @@ public static class SortOrderExtensions
 /// <summary>A table-of-contents <c>file</c> entry.</summary>
 /// <remarks>
 /// Constructed with <c>TocItemYamlConverter</c>.
-/// Members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can build one directly.
+/// Optional members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can set them.
 /// </remarks>
 /// <param name="DefaultCta">
 /// Optional <c>default_cta</c> declared on this entry. Applies to the file itself and every page beneath it
@@ -183,7 +183,6 @@ public partial record FileRef : ITableOfContentsItem
 /// <summary>A table-of-contents <c>file</c> entry that is a folder's index page.</summary>
 /// <remarks>
 /// Constructed with <c>TocItemYamlConverter</c>.
-/// Members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can build one directly.
 /// </remarks>
 public record IndexFileRef : FileRef
 {
@@ -203,7 +202,6 @@ public record IndexFileRef : FileRef
 /// </summary>
 /// <remarks>
 /// Constructed with <c>TocItemYamlConverter</c>.
-/// Members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can build one directly.
 /// </remarks>
 public record FolderIndexFileRef : IndexFileRef
 {
@@ -223,7 +221,7 @@ public record FolderIndexFileRef : IndexFileRef
 /// </summary>
 /// <remarks>
 /// Constructed with <c>DetectionRuleDiscovery</c>.
-/// Members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can build one directly.
+/// Optional members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can set them.
 /// </remarks>
 [Equatable]
 public partial record DetectionRuleRef : FileRef
@@ -253,7 +251,7 @@ public partial record DetectionRuleRef : FileRef
 /// </summary>
 /// <remarks>
 /// Constructed with <c>DetectionRuleDiscovery</c>.
-/// Members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can build one directly.
+/// Optional members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can set them.
 /// </remarks>
 [Equatable]
 public partial record DetectionRuleOverviewRef : FileRef
@@ -303,7 +301,7 @@ public partial record DetectionRuleOverviewRef : FileRef
 /// <summary>A table-of-contents entry that points at a page of another repository by cross-link.</summary>
 /// <remarks>
 /// Constructed with <c>TocItemYamlConverter</c>.
-/// Members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can build one directly.
+/// Optional members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can set them.
 /// </remarks>
 [Equatable]
 public partial record CrossLinkRef : ITableOfContentsItem
@@ -353,7 +351,7 @@ public partial record CrossLinkRef : ITableOfContentsItem
 /// <summary>A table-of-contents <c>folder</c> entry.</summary>
 /// <remarks>
 /// Constructed with <c>TocItemYamlConverter</c>.
-/// Members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can build one directly.
+/// Optional members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can set them.
 /// </remarks>
 /// <param name="Sort">The folder's <c>sort</c>; null keeps plain alphabetical order. An unrecognized value is rejected by the loader.</param>
 /// <param name="Exclude">File names to exclude from auto-discovery (like "draft.md", "internal.md").</param>
@@ -424,7 +422,6 @@ public partial record FolderRef : ITableOfContentsItem
 /// </summary>
 /// <remarks>
 /// Constructed with <c>TocItemYamlConverter</c>.
-/// Members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can build one directly.
 /// </remarks>
 public record DeepLinkedFolderRef : FolderRef
 {
@@ -455,7 +452,7 @@ public record DeepLinkedFolderRef : FolderRef
 /// <summary>A nested <c>toc.yml</c> referenced from a table of contents.</summary>
 /// <remarks>
 /// Constructed with <c>TocItemYamlConverter</c>.
-/// Members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can build one directly.
+/// Optional members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can set them.
 /// </remarks>
 /// <param name="Island">
 /// When <c>true</c>, this TOC renders as an island. Combines flags from both the inline
@@ -546,7 +543,7 @@ public static class ListingVisualExtensions
 /// <summary>Optional knobs on a <see cref="ListingRef"/> entry beyond the mandatory path.</summary>
 /// <remarks>
 /// Constructed through <c>ListingRef</c>.
-/// Members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can build one directly.
+/// Optional members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can set them.
 /// </remarks>
 [Equatable]
 public partial record ListingOptions
@@ -612,7 +609,7 @@ public partial record ListingOptions
 /// </summary>
 /// <remarks>
 /// Constructed with <c>TocItemYamlConverter</c>.
-/// Members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can build one directly.
+/// Optional members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can set them.
 /// </remarks>
 [Equatable]
 public partial record ListingRef : ITableOfContentsItem
@@ -662,7 +659,7 @@ public partial record ListingRef : ITableOfContentsItem
 /// <summary>A resolved group bucket inside a <see cref="ListingRef"/>. Children are the pages belonging to this group.</summary>
 /// <remarks>
 /// Constructed through <c>ListingRef</c>.
-/// Members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can build one directly.
+/// Optional members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can set them.
 /// </remarks>
 [Equatable]
 public partial record ListingGroupRef : ITableOfContentsItem
@@ -712,7 +709,7 @@ public partial record ListingGroupRef : ITableOfContentsItem
 /// <summary>A CLI reference generated from a <c>cli-schema.json</c>, optionally merged with supplemental docs.</summary>
 /// <remarks>
 /// Constructed with <c>TocItemYamlConverter</c>.
-/// Members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can build one directly.
+/// Optional members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can set them.
 /// </remarks>
 [Equatable]
 public partial record CliReferenceRef : ITableOfContentsItem

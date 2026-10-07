@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using AwesomeAssertions;
 using Elastic.Documentation.Deploying.Synchronization;
 
@@ -10,19 +11,19 @@ namespace Elastic.Documentation.Deploying.Tests;
 
 /// <summary>
 /// The compile-time guard for the one aggregate this assembly owns (see <c>Constraints-Conventions.md</c>): <see cref="SyncPlan"/> has
-/// <c>internal init</c> setters, so only this project (<c>SyncPlanLoader</c> and the planners) and the tests make one. System.Text.Json skips a
+/// <c>required</c> public members and <c>internal init</c> for the rest, so only this project (<c>SyncPlanLoader</c> and the planners) and the tests make one. System.Text.Json skips a
 /// setter it cannot reach, so the second test reads a plan from text and checks every field.
 /// </summary>
 public class SyncPlanGuardTests
 {
 	[Test]
-	public void SyncPlan_HasNoPublicSetterOrConstructorWithParameters()
+	public void SyncPlan_HasOnlyRequiredPublicInitAndNoParameterizedConstructor()
 	{
 		var type = typeof(SyncPlan);
 
 		type
 			.GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.DeclaredOnly)
-			.Where(p => p.SetMethod is { IsPublic: true })
+			.Where(p => p.SetMethod is { IsPublic: true } && p.GetCustomAttribute<RequiredMemberAttribute>() is null)
 			.Should()
 			.BeEmpty();
 		type.GetConstructors(BindingFlags.Instance | BindingFlags.Public).Where(c => c.GetParameters().Length > 0).Should().BeEmpty();

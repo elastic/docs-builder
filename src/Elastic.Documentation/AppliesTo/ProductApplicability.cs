@@ -10,7 +10,7 @@ namespace Elastic.Documentation.AppliesTo;
 /// <summary>The <c>product</c> part of an <c>applies_to</c> block: the products that have their own applicability.</summary>
 /// <remarks>
 /// Constructed through <c>ApplicableTo</c>.
-/// Members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can build one directly.
+/// Optional members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can set them.
 /// </remarks>
 public record ProductApplicability
 {

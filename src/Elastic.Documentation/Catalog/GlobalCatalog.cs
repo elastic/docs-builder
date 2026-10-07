@@ -11,7 +11,7 @@ namespace Elastic.Documentation.Catalog;
 /// </summary>
 /// <remarks>
 /// Constructed with <c>CatalogLoader.Load</c>.
-/// Members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can build one directly.
+/// Optional members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can set them.
 /// </remarks>
 public sealed record GlobalCatalog
 {

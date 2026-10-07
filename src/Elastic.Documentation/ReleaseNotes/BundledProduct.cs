@@ -2,6 +2,8 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Diagnostics.CodeAnalysis;
+
 namespace Elastic.Documentation.ReleaseNotes;
 
 /// <summary>
@@ -9,7 +11,7 @@ namespace Elastic.Documentation.ReleaseNotes;
 /// </summary>
 /// <remarks>
 /// Constructed through <c>Bundle</c>.
-/// Members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can build one directly.
+/// Optional members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can set them.
 /// </remarks>
 public record BundledProduct
 {
@@ -21,6 +23,7 @@ public record BundledProduct
 	/// <summary>
 	/// Constructor with all parameters.
 	/// </summary>
+	[SetsRequiredMembers]
 	internal BundledProduct(string productId, string? target = null, Lifecycle? lifecycle = null, string? repo = null, string? owner = null)
 	{
 		ProductId = productId;
@@ -31,7 +34,7 @@ public record BundledProduct
 	}
 
 	/// <summary>The product identifier.</summary>
-	public string ProductId { get; internal init; } = default!;
+	public required string ProductId { get; init; }
 
 	/// <summary>Optional target version.</summary>
 	public string? Target { get; internal init; }

@@ -12,13 +12,12 @@ namespace Elastic.Documentation.Catalog;
 /// <summary>Every versioning system from <c>versions.yml</c>, keyed by id. Part of the <see cref="GlobalCatalog"/> aggregate.</summary>
 /// <remarks>
 /// Constructed through <c>GlobalCatalog</c>.
-/// Members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can build one directly.
 /// </remarks>
 [Equatable]
 public sealed partial record VersioningSystemCatalog
 {
 	[UnorderedEquality]
-	public IReadOnlyDictionary<VersioningSystemId, VersioningSystem> VersioningSystems { get; internal init; } = default!;
+	public required IReadOnlyDictionary<VersioningSystemId, VersioningSystem> VersioningSystems { get; init; }
 	public VersioningSystem GetVersioningSystem(VersioningSystemId versioningSystem)
 	{
 		if (!VersioningSystems.TryGetValue(versioningSystem, out var version))
@@ -156,7 +155,6 @@ public enum VersioningSystemId
 /// <summary>A version line with a <c>base</c> (first version the docs cover) and a <c>current</c> (latest release).</summary>
 /// <remarks>
 /// Constructed through <c>VersioningSystemCatalog</c>.
-/// Members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can build one directly.
 /// </remarks>
 public sealed record VersioningSystem
 {
@@ -177,11 +175,11 @@ public sealed record VersioningSystem
 		Current = new SemVersion(VersionlessSentinel, 0, 0)
 	};
 
-	public VersioningSystemId Id { get; internal init; } = default!;
+	public required VersioningSystemId Id { get; init; }
 
-	public SemVersion Base { get; internal init; } = default!;
+	public required SemVersion Base { get; init; }
 
-	public SemVersion Current { get; internal init; } = default!;
+	public required SemVersion Current { get; init; }
 
 	public bool IsVersioned() => Base.Major != AllVersions.Instance.Major;
 	/// <summary>

@@ -20,18 +20,18 @@ namespace Elastic.Documentation.DocumentationSets;
 /// </summary>
 /// <remarks>
 /// Constructed with <c>DocumentationSetResolver</c>.
-/// Members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can build one directly.
+/// Optional members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can set them.
 /// </remarks>
 [Equatable]
 public sealed partial record ResolvedDocumentationSet
 {
 	/// <summary>The <c>docset.yml</c> (or <c>_docset.yml</c>) this set was loaded from.</summary>
 	[CustomEquality(typeof(FileSystemInfoLocationComparer))]
-	public IFileInfo SourceFile { get; internal init; } = default!;
+	public required IFileInfo SourceFile { get; init; }
 
 	/// <summary>The directory holding <see cref="SourceFile"/>; the root every docset-relative path resolves from.</summary>
 	[CustomEquality(typeof(FileSystemInfoLocationComparer))]
-	public IDirectoryInfo ScopeDirectory { get; internal init; } = default!;
+	public required IDirectoryInfo ScopeDirectory { get; init; }
 
 	public string? Project { get; internal init; }
 
@@ -126,7 +126,7 @@ public sealed partial record ResolvedDocumentationSet
 /// </summary>
 /// <remarks>
 /// Constructed through <c>ResolvedDocumentationSet</c>.
-/// Members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can build one directly.
+/// Optional members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can set them.
 /// </remarks>
 [Equatable]
 public sealed partial record DocumentationSetExclusions
@@ -184,7 +184,7 @@ public enum DocSetRegistry
 /// <summary>A parsed cross-link entry from docset.yml, with the target registry for lookup.</summary>
 /// <remarks>
 /// Constructed through <c>ResolvedDocumentationSet</c>.
-/// Members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can build one directly.
+/// Optional members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can set them.
 /// </remarks>
 /// <param name="Repository">Repository name (e.g. elasticsearch, docs-eng-team).</param>
 /// <param name="Registry">Registry to use for lookup (public S3 or codex environment).</param>
@@ -210,7 +210,7 @@ public record CrossLinkEntry
 /// <summary>The <c>extensions</c> enabled in <c>docset.yml</c>.</summary>
 /// <remarks>
 /// Constructed through <c>ResolvedDocumentationSet</c>.
-/// Members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can build one directly.
+/// Optional members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can set them.
 /// </remarks>
 [Equatable]
 public sealed partial record EnabledExtensions
@@ -232,7 +232,7 @@ public sealed partial record EnabledExtensions
 /// <summary>White-label branding from <c>docset.yml</c>'s <c>branding</c>, with image paths validated against the docset.</summary>
 /// <remarks>
 /// Constructed through <c>ResolvedDocumentationSet</c>.
-/// Members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can build one directly.
+/// Optional members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can set them.
 /// </remarks>
 public sealed record Branding
 {
@@ -246,15 +246,15 @@ public sealed record Branding
 /// <summary>A right-gutter call-to-action template.</summary>
 /// <remarks>
 /// Constructed through <c>ResolvedDocumentationSet</c>.
-/// Members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can build one directly.
+/// Optional members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can set them.
 /// </remarks>
 [Equatable]
 public sealed partial record Cta
 {
 	/// <summary>Name of the template this was resolved from; <see cref="DefaultName"/> for the built-in default.</summary>
-	public string Name { get; internal init; } = default!;
-	public string Label { get; internal init; } = default!;
-	public string Url { get; internal init; } = default!;
+	public required string Name { get; init; }
+	public required string Label { get; init; }
+	public required string Url { get; init; }
 
 	[OrderedEquality]
 	public IReadOnlyList<string> Benefits { get; internal init; } = [];
@@ -277,16 +277,16 @@ public sealed partial record Cta
 /// <summary>An <c>api</c> entry of <c>docset.yml</c>, validated and bound to its <see cref="Catalog.Product"/>.</summary>
 /// <remarks>
 /// Constructed through <c>ResolvedDocumentationSet</c>.
-/// Members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can build one directly.
+/// Optional members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can set them.
 /// </remarks>
 [Equatable]
 public sealed partial record ResolvedApiConfiguration
 {
-	public string ProductKey { get; internal init; } = default!;
+	public required string ProductKey { get; init; }
 
 	/// <summary>The <c>products.yml</c> product this API key binds to.</summary>
 	[DefaultEquality]
-	public Product Product { get; internal init; } = default!;
+	public required Product Product { get; init; }
 
 	/// <summary>
 	/// The basename (including extension) of the declared <c>spec:</c> value, e.g.
@@ -295,7 +295,7 @@ public sealed partial record ResolvedApiConfiguration
 	/// <c>&lt;org/repo&gt;</c> and this basename,
 	/// regardless of whether <see cref="LocalSpecFile"/> is present.
 	/// </summary>
-	public string SpecFileName { get; internal init; } = default!;
+	public required string SpecFileName { get; init; }
 
 	/// <summary>
 	/// Local override for the current OpenAPI specification file, present only when a file exists

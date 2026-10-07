@@ -11,7 +11,7 @@ namespace Elastic.Documentation.ReleaseNotes;
 /// </summary>
 /// <remarks>
 /// Constructed with <c>BundleLoader.LoadBundles</c> or <see cref="LoadedBundle.MergeByTarget"/>.
-/// Members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can build one directly.
+/// Optional members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can set them.
 /// </remarks>
 /// <param name="Version">The semantic version or date extracted from the bundle.</param>
 /// <param name="Repo">The repository/product name.</param>

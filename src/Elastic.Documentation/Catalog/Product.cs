@@ -11,13 +11,12 @@ namespace Elastic.Documentation.Catalog;
 /// <summary>Every product from <c>products.yml</c>, with lookups by repository and display name. Part of the <see cref="GlobalCatalog"/> aggregate.</summary>
 /// <remarks>
 /// Constructed with <c>CatalogLoader.Load</c> or <see cref="ProductCatalog.FromPublicProducts"/>.
-/// Members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can build one directly.
 /// </remarks>
 [Equatable]
 public sealed partial record ProductCatalog : IProductNameLookup
 {
 	[UnorderedEquality]
-	public FrozenDictionary<string, Product> Products { get; internal init; } = default!;
+	public required FrozenDictionary<string, Product> Products { get; init; }
 
 	/// <summary>A catalog of <paramref name="products"/>, every one of them a public reference product.</summary>
 	public static ProductCatalog FromPublicProducts(IEnumerable<KeyValuePair<string, Product>> products)
@@ -37,13 +36,13 @@ public sealed partial record ProductCatalog : IProductNameLookup
 	/// When a product has no explicit <c>features</c> map, it is included here by default.
 	/// </summary>
 	[UnorderedEquality]
-	public FrozenDictionary<string, Product> PublicReferenceProducts { get; internal init; } = default!;
+	public required FrozenDictionary<string, Product> PublicReferenceProducts { get; init; }
 
 	/// <summary>
 	/// Product id to display name mappings for fast lookups.
 	/// </summary>
 	[UnorderedEquality]
-	public FrozenDictionary<string, string> ProductDisplayNames { get; internal init; } = default!;
+	public required FrozenDictionary<string, string> ProductDisplayNames { get; init; }
 
 	private FrozenDictionary<string, string>.AlternateLookup<ReadOnlySpan<char>>? _displayNameLookup;
 
@@ -129,7 +128,7 @@ public enum ReleaseNotesPath
 /// <summary>Declares which docs-builder subsystems a product participates in.</summary>
 /// <remarks>
 /// Constructed through <c>Product</c>.
-/// Members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can build one directly.
+/// Optional members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can set them.
 /// </remarks>
 public sealed record ProductFeatures
 {
@@ -158,12 +157,12 @@ public sealed record ProductFeatures
 /// <summary>A product from <c>products.yml</c>. Its versioning system is resolved while loading the <see cref="GlobalCatalog"/>.</summary>
 /// <remarks>
 /// Constructed through <c>ProductCatalog</c>.
-/// Members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can build one directly.
+/// Optional members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can set them.
 /// </remarks>
 public sealed record Product
 {
-	public string Id { get; internal init; } = default!;
-	public string DisplayName { get; internal init; } = default!;
+	public required string Id { get; init; }
+	public required string DisplayName { get; init; }
 	public VersioningSystem? VersioningSystem { get; internal init; }
 	public string? Repository { get; internal init; }
 	public ProductFeatures Features { get; internal init; } = ProductFeatures.All;

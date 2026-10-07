@@ -13,7 +13,6 @@ namespace Elastic.Documentation.AppliesTo;
 /// <summary>The applicability entries of one <c>applies_to</c> key, ordered.</summary>
 /// <remarks>
 /// Constructed through <c>ApplicableTo</c>.
-/// Members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can build one directly.
 /// </remarks>
 public record AppliesCollection : IReadOnlyCollection<Applicability>
 {
@@ -171,7 +170,7 @@ public record AppliesCollection : IReadOnlyCollection<Applicability>
 /// <summary>One lifecycle and version of an <c>applies_to</c> entry, for example <c>ga 9.1</c>.</summary>
 /// <remarks>
 /// Constructed through <c>ApplicableTo</c>.
-/// Members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can build one directly.
+/// Optional members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can set them.
 /// </remarks>
 public record Applicability : IComparable<Applicability>, IComparable
 {

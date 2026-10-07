@@ -11,13 +11,13 @@ namespace Elastic.Documentation.ReleaseNotes;
 /// </summary>
 /// <remarks>
 /// Constructed with <c>ReleaseNotesLoader.LoadEntry</c> or <see cref="ProductReference.Parse"/> and <see cref="ProductReference.Of"/>.
-/// Members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can build one directly.
+/// Optional members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can set them.
 /// </remarks>
 [Equatable]
 public partial record ProductReference
 {
 	/// <summary>The product identifier.</summary>
-	public string ProductId { get; internal init; } = default!;
+	public required string ProductId { get; init; }
 
 	/// <summary>
 	/// Obsolete — entries derive applicability from their origin branch; notes use <see cref="Versions"/>.
