@@ -652,7 +652,10 @@
 }
 
 #pages-nav a.sidebar-link:has(> .nav-v2-api-method) {
+	display: flex;
+	align-items: center;
 	justify-content: space-between;
+	width: 100%;
 	gap: 8px;
 }
 
