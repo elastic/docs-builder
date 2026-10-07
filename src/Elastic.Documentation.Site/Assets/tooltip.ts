@@ -33,6 +33,8 @@ export function flashTooltip(el: HTMLElement, text: string, ms = 1500): void {
         ;(el as HTMLElement & { _tippy?: Instance })._tippy?.setContent(value)
     }
     set(text)
+    // tippy hides a tooltip on click, which is when this runs, so bring it back with the new text.
+    ;(el as HTMLElement & { _tippy?: Instance })._tippy?.show()
     const timer = window.setTimeout(() => {
         set(original)
         flashes.delete(el)

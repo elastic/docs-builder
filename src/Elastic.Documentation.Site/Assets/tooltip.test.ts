@@ -33,4 +33,14 @@ describe('flashTooltip', () => {
         jest.advanceTimersByTime(500)
         expect(el.dataset.tippyContent).toBe('Copy')
     })
+
+    it('shows an existing tooltip with the new text', () => {
+        const el = document.createElement('button')
+        const tippy = { setContent: jest.fn(), show: jest.fn() }
+        Object.assign(el, { _tippy: tippy })
+        el.dataset.tippyContent = 'Copy'
+        flashTooltip(el, 'Copied!')
+        expect(tippy.setContent).toHaveBeenCalledWith('Copied!')
+        expect(tippy.show).toHaveBeenCalled()
+    })
 })
