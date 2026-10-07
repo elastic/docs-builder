@@ -266,7 +266,7 @@
 		<div @ParamSectionHeader.WrapAttributes(collapseRequest)>
 		@if (collapseRequest)
 		{
-			@(await RenderPartialAsync<_ParamSectionHeader, ParamSectionHeader>(new ParamSectionHeader("Request", "request-body", pageModel.RequestPropertyNames)))
+			@(await RenderPartialAsync<_ParamSectionHeader, ParamSectionHeader>(new ParamSectionHeader("Request", "request-body", pageModel.RequestPropertyNames, pageModel.RequestNamesAreVariants)))
 		}
 		else
 		{

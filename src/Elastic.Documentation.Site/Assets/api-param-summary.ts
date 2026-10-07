@@ -56,5 +56,14 @@ function applyHiddenState(
 
     more.hidden = false
     more.classList.toggle('has-leading-sep', visible > 0)
-    moreCount.textContent = `${hidden} more`
+    moreCount.textContent = moreLabel(
+        hidden,
+        more.closest<HTMLElement>('[data-param-summary]')?.dataset.paramMoreNoun
+    )
+}
+
+/** "3 more" for fields; "3 more variants" when the summary names what it folds away. */
+export function moreLabel(hidden: number, noun?: string): string {
+    if (!noun) return `${hidden} more`
+    return `${hidden} more ${hidden === 1 ? noun : `${noun}s`}`
 }

@@ -176,6 +176,9 @@ public partial record OperationPageModel
 
 	public IReadOnlyList<string> QueryParameterNames => NamesOf(QueryParameters.Select(static q => q.Parameter.Name));
 
+	/// <summary>The request body is a union, so <see cref="RequestPropertyNames"/> names its variants, not its fields.</summary>
+	public bool RequestNamesAreVariants => RequestProperties is null && RequestUnionVariants is { Variants.Count: > 0 };
+
 	public IReadOnlyList<string> RequestPropertyNames =>
 		NamesOf(RequestProperties is not null ? RequestProperties.Items.Select(static p => p.Name) : VariantNames(RequestUnionVariants));
 

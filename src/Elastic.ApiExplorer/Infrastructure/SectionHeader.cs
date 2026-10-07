@@ -14,8 +14,11 @@ namespace Elastic.ApiExplorer.Infrastructure;
 /// </summary>
 public record SectionHeader(string Title, string Anchor, string? Route = null, string? ContentTypeBadge = null);
 
-/// <summary>Collapsible Parameters / Query Parameters heading with a one-line name summary.</summary>
-public record ParamSectionHeader(string Title, string Anchor, IReadOnlyList<string> Names)
+/// <summary>
+/// Collapsible Parameters / Query Parameters heading with a one-line name summary. <paramref name="NamesAreVariants"/>
+/// marks a body that is a union, whose summary lists alternatives rather than fields.
+/// </summary>
+public record ParamSectionHeader(string Title, string Anchor, IReadOnlyList<string> Names, bool NamesAreVariants = false)
 {
 	public static bool ShouldCollapse(int count) => count > 1;
 
