@@ -162,20 +162,28 @@
 	}
 	.hub-on-this-page {
 		@apply mx-auto w-full max-w-5xl;
+		display: flex;
+		align-items: baseline;
+		column-gap: 16px;
 		padding-top: 20px;
 		margin-bottom: 40px;
 	}
 	.hub-on-this-page .hub-on-this-page-label {
-		margin-bottom: 8px;
+		flex: none;
 		font-size: var(--text-base);
 		font-weight: 700;
 		line-height: 24px;
+		white-space: nowrap;
 		color: var(--color-ink);
 	}
+	/* The links wrap inside their own column, so a second line starts under the first link
+	   and never under the label. */
 	.hub-on-this-page .hub-on-this-page-list {
 		@apply m-0 list-none p-0;
 		display: flex;
+		flex: 1;
 		flex-wrap: wrap;
+		min-width: 0;
 		row-gap: 4px;
 	}
 	.hub-on-this-page .hub-on-this-page-list li {
@@ -194,6 +202,14 @@
 	.hub-on-this-page .hub-on-this-page-list a:focus-visible {
 		border-left-color: var(--color-grey-80);
 		color: var(--color-ink-dark);
+	}
+	@media (max-width: 640px) {
+		.hub-on-this-page {
+			display: block;
+		}
+		.hub-on-this-page .hub-on-this-page-label {
+			margin-bottom: 8px;
+		}
 	}
 
 	/* Get started ------------------------------------------------------ */

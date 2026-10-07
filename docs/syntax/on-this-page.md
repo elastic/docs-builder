@@ -42,6 +42,6 @@ To keep the row short, group sections under one `{explore}` heading and set `:le
 
 ## Appearance
 
-The row sits below the hero rule. Each link carries a grey rule on its left edge, as in the right-hand table of contents on other pages. The rule and the text darken on hover and keyboard focus.
+The row sits below the hero rule, with the "On this page" label on the left and the links to its right. Each link carries a grey rule on its left edge, as in the right-hand table of contents on other pages. The rule and the text darken on hover and keyboard focus.
 
-The row wraps on narrow screens.
+A short list stays on one line. A longer list wraps onto more lines inside the link column, so the second line never goes under the label. On narrow screens the label sits above the links.
