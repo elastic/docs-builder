@@ -497,7 +497,9 @@
 		border-color 0.15s;
 }
 
+/* The docs link style (blue, underlined) outranks .api-card, so the cards win it back here. */
 #markdown-content a.api-card {
+	color: inherit;
 	text-decoration: none;
 }
 
@@ -512,6 +514,12 @@
 .api-card:hover .api-group-chevron,
 .api-card:focus-visible .api-group-chevron {
 	color: var(--color-blue-elastic, #0b64dd);
+}
+
+.api-card:hover .api-card-title,
+.api-card:focus-visible .api-card-title {
+	text-decoration: underline;
+	text-underline-offset: 2px;
 }
 
 .api-card:active {
