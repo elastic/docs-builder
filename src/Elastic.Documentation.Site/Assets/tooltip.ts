@@ -1,4 +1,4 @@
-import { delegate } from 'tippy.js'
+import { delegate, type Instance } from 'tippy.js'
 
 let bound = false
 
@@ -19,4 +19,20 @@ export function initTooltips(): void {
         touch: ['hold', 300],
         appendTo: (reference) => reference.closest('dialog') ?? document.body,
     })
+}
+
+/** Swaps a tooltip's text for a moment (e.g. "Copied!"), updating an already created tippy too. */
+export function flashTooltip(el: HTMLElement, text: string, ms = 1500): void {
+    const original =
+        el.dataset.tippyRest ??
+        (el.dataset.tippyRest = el.dataset.tippyContent ?? '')
+    const set = (value: string) => {
+        el.dataset.tippyContent = value
+        ;(el as HTMLElement & { _tippy?: Instance })._tippy?.setContent(value)
+    }
+    set(text)
+    window.setTimeout(() => {
+        set(original)
+        delete el.dataset.tippyRest
+    }, ms)
 }
