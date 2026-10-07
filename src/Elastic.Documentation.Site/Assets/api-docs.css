@@ -653,6 +653,7 @@
 
 /*
  * Nav method chips: a small text label at the right edge of the row, after the operation name.
+ * Every chip shares one width (fits OPTIONS) and right-aligns its verb.
  * Colors follow Swagger UI conventions (GET blue, POST green, PUT amber, PATCH teal,
  * DELETE red, HEAD purple, OPTIONS gray). The current row keeps the chip fill and darkens
  * only the border, so the 9px label stays above WCAG AA (4.5:1).
@@ -661,10 +662,11 @@
 	display: inline-flex;
 	flex-shrink: 0;
 	align-items: center;
-	justify-content: center;
+	justify-content: flex-end;
 	align-self: center;
 	margin-left: auto;
 	box-sizing: border-box;
+	width: 52px;
 	height: 16px;
 	padding: 0 4px;
 	border: 1px solid;
