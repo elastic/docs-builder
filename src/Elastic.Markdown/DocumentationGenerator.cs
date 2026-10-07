@@ -11,6 +11,7 @@ using Elastic.Documentation.Configuration.Inference;
 using Elastic.Documentation.Configuration.LegacyUrlMappings;
 using Elastic.Documentation.Configuration.Loading;
 using Elastic.Documentation.Configuration.Toc;
+using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.DocumentationSets;
 using Elastic.Documentation.Links;
 using Elastic.Documentation.Navigation;
@@ -185,7 +186,7 @@ public partial class DocumentationGenerator
 
 		_logger.LogInformation($"Generating links.json");
 		var writeToDisk = Context.AvailableExporters.Contains(Exporter.LinkMetadata);
-		var linkReference = await GenerateLinkReference(writeToDisk, ctx);
+		var linkReference = await GenerateLinkReference(writeToDisk, mode == CompilationMode.Full, ctx);
 
 		return result with { Redirects = linkReference.Redirects ?? [] };
 	}
@@ -522,7 +523,7 @@ public partial class DocumentationGenerator
 		return CompilationMode.Full;
 	}
 
-	private async Task<LinkManifest> GenerateLinkReference(bool writeToDisk, Cancel ctx)
+	private async Task<LinkManifest> GenerateLinkReference(bool writeToDisk, bool checkGraph, Cancel ctx)
 	{
 		var file = DocumentationSet.LinkReferenceFile;
 		var checkedManifest = DocumentationSet.CreateLinkReference();
@@ -532,6 +533,8 @@ public partial class DocumentationGenerator
 		foreach (var diagnostic in checkedManifest.Diagnostics.Where(d => surfaced.Contains(d.RuleId)))
 			Context.Collector.Write(diagnostic);
 		var state = checkedManifest.OrThrowIfMissing();
+		if (checkGraph)
+			ReportLinkGraph(state);
 		if (writeToDisk)
 		{
 			if (!file.Directory!.Exists)
@@ -541,6 +544,37 @@ public partial class DocumentationGenerator
 		}
 		return state;
 	}
+
+	/// <summary>
+	/// The repository's cross-links are checked once against everything this build has of its targets: the manifest just made, the registry and the
+	/// manifests the cross-link fetcher got for the declared repositories, and the resolved docset. The rules that are the resolver's to report at each
+	/// link (M30, M31, M34) are not asked again (see <see cref="LinkGraphIsolatedConstraints"/>). Skipped when the resolver kept no complete fetch with
+	/// its registry (offline, a codex build, an assembler build, whose navigation and registries are not part of this one build), and after a full
+	/// compilation only: an incremental one has seen the cross-links of the changed pages alone, so a declaration would look unused.
+	/// </summary>
+	private void ReportLinkGraph(LinkManifest manifest)
+	{
+		if (CheckLinkGraph(manifest, DocumentationSet.CrossLinkResolver.FetchedCrossLinks, DocumentationSet.Configuration) is { } report)
+			_ = Context.Collector.Write(report, DocumentationSet.Configuration.SourceFile.FullName);
+	}
+
+	/// <summary>The report of <see cref="LinkGraphIsolatedConstraints"/> on the graph of <paramref name="manifest"/>, or null when there is no complete fetch with a registry to check it against.</summary>
+	internal static Nullean.Entities.ConstraintReport<LinkGraph>? CheckLinkGraph(
+		LinkManifest manifest,
+		Elastic.Documentation.Links.CrossLinks.FetchedCrossLinks? fetched,
+		ResolvedDocumentationSet docset
+	) =>
+		fetched is { Registry: { } registry, IsComplete: true }
+			? LinkGraphIsolatedConstraints.All.Report(
+				new LinkGraph(
+					manifest,
+					registry,
+					fetched.LinkReferences,
+					docset,
+					new Elastic.Documentation.Publishing.SiteNavigationDefinition()
+				)
+			)
+			: null;
 
 	private async Task GenerateDocumentationState(Cancel ctx)
 	{

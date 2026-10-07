@@ -629,11 +629,7 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 		try
 		{
 			var applicableTo = YamlSerialization.Deserialize<ApplicableTo>(yaml, block.Build.Catalog.Products);
-			if (applicableTo.Diagnostics is null)
-				return applicableTo;
-			foreach (var (severity, message) in applicableTo.Diagnostics)
-				block.Emit(severity, message);
-			return applicableTo.WithoutDiagnostics();
+			return block.ReportApplicableTo(applicableTo);
 		}
 		catch (Exception e)
 		{

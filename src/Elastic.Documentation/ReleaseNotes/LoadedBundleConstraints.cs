@@ -60,10 +60,12 @@ public static partial class LoadedBundlesConstraints
 			m => m.Bundles,
 			b => b.Version,
 			StringComparer.Ordinal,
-			message: "Several bundles share a target version; the loader merges them (descriptions joined, first release date wins) and the render CLI warns and drops all but one."
+			message: "Several bundles share a target version; they are merged into one release (descriptions joined, the earliest release date wins)."
 		)
-		.WithSeverity(Severity.Warning)
-		.Describe("R88: Each target version has one bundle (stage dependent: the loader merges silently, the render CLI warns and drops).");
+		.WithSeverity(Severity.Hint)
+		.Describe(
+			"R88: Each target version has one bundle. A Hint, not a Warning: giving several bundles of one target to one render is how a release assembled from several repositories (a merged Cloud Serverless release) is written."
+		);
 
 	public static Constraint<LoadedBundles> BundlesEntryFilesUnique { get; } = Constraints<LoadedBundles>
 		.Consistent(
@@ -81,5 +83,7 @@ public static partial class LoadedBundlesConstraints
 			describe: (file, bundles) => $"Changelog file '{file}' appears in multiple bundles: {string.Join(", ", bundles)}"
 		)
 		.WithSeverity(Severity.Warning)
-		.Describe("R89: A changelog file appears in one bundle, not several (render CLI only).");
+		.Describe(
+			"R89: A changelog file appears in one bundle, not several (render CLI only: BundleValidationService builds the LoadedBundles of the inputs and reports it once)."
+		);
 }

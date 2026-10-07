@@ -25,6 +25,12 @@ public record FetchedCrossLinks
 	public required FrozenDictionary<string, LinkRegistryEntry> LinkIndexEntries { get; init; }
 
 	/// <summary>
+	/// The link registry the declared repositories were looked up in, when there was one registry and it was fetched (null for a build against a
+	/// codex registry as well as the public one, and when the fetch failed). The cross-link graph is checked against it.
+	/// </summary>
+	public LinkRegistry? Registry { get; init; }
+
+	/// <summary>
 	/// Optional map of repository name to link index registry URL for error messages.
 	/// When null or missing, falls back to the public S3 URL.
 	/// </summary>

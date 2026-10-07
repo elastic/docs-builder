@@ -120,12 +120,7 @@ public class EnhancedCodeBlockParser : FencedBlockParserBase<EnhancedCodeBlock>
 		try
 		{
 			var applicableTo = YamlSerialization.Deserialize<ApplicableTo>(yaml, appliesToDirective.Build.Catalog.Products);
-			appliesToDirective.AppliesTo = applicableTo;
-			if (appliesToDirective.AppliesTo.Diagnostics is null)
-				return;
-			foreach (var (severity, message) in appliesToDirective.AppliesTo.Diagnostics)
-				appliesToDirective.Emit(severity, message);
-			appliesToDirective.AppliesTo = applicableTo.WithoutDiagnostics();
+			appliesToDirective.AppliesTo = appliesToDirective.ReportApplicableTo(applicableTo);
 		}
 		catch (Exception e)
 		{

@@ -96,6 +96,31 @@ internal static class ErrorCollectorAssertions
 	}
 
 	[DebuggerStepThrough]
+	internal static void HasRuleDiagnosticOnce(string? ruleId, Severity severity, string expected, GeneratorResults results)
+	{
+		var all = results.Context.Collector.Diagnostics;
+		var byRule = all.Where(d => d.RuleId == ruleId).ToList();
+		if (byRule.Count != 1)
+			throw new AwesomeAssertions.Execution.AssertionFailedException(
+				$"Expected exactly one diagnostic of rule '{ruleId}' but found {byRule.Count}. All: " + string.Join(
+					"; ",
+					all.Select(d => $"[{d.RuleId}] {d.Severity} {d.Message}")
+				)
+			);
+		var only = byRule[0];
+		if (only.Severity != severity || !only.Message.Contains(expected, StringComparison.Ordinal))
+			throw new AwesomeAssertions.Execution.AssertionFailedException(
+				$"Expected a {severity} of rule '{ruleId}' containing '{expected}' but found {only.Severity}: {only.Message}"
+			);
+		// the same problem under another wording would be a second emitter: nothing else may carry the message's text
+		var echoes = all.Where(d => d.RuleId != ruleId && d.Message.Contains(expected, StringComparison.Ordinal)).ToList();
+		if (echoes.Count > 0)
+			throw new AwesomeAssertions.Execution.AssertionFailedException(
+				$"'{expected}' is also reported by another emitter: " + string.Join("; ", echoes.Select(d => $"[{d.RuleId}] {d.Message}"))
+			);
+	}
+
+	[DebuggerStepThrough]
 	internal static void HasHint(string expected, GeneratorResults results)
 	{
 		var hints = results.Context.Collector.Hints;

@@ -77,11 +77,8 @@ public class BundleLoader(IFileSystem fileSystem)
 		}
 
 		diagnostics.AddRange(result.Diagnostics);
-		var version = GetVersionFromBundle(bundleData) ?? fileSystem.Path.GetFileNameWithoutExtension(path);
-		var repo = GetRepoFromBundle(bundleData);
-		var owner = GetOwnerFromBundle(bundleData);
 		var entries = ResolveEntries(bundleData, fileName, message => diagnostics.Add(Error(fileName, message)));
-		return new LoadedBundle(version, repo, owner, bundleData, path, entries);
+		return LoadedBundle.Of(bundleData, path, fileSystem.Path.GetFileNameWithoutExtension(path), entries);
 	}
 
 	private Result<IReadOnlyList<LoadedBundle>> Finish(
@@ -152,39 +149,6 @@ public class BundleLoader(IFileSystem fileSystem)
 	public static IReadOnlyList<LoadedBundle> MergeBundlesByTarget(IReadOnlyList<LoadedBundle> bundles)
 	// the domain operation; a merge breaks no rule the sources did not, so there is no finding to forward
 	=> LoadedBundle.MergeByTarget(bundles).Value ?? bundles;
-
-	/// <summary>
-	/// Gets the version from a bundle's first product.
-	/// </summary>
-	private static string? GetVersionFromBundle(Bundle bundledData) =>
-		bundledData.Products.Count > 0 ? bundledData.Products[0].Target : null;
-
-	/// <summary>
-	/// Gets the repository name from a bundle's first product.
-	/// Uses the explicit Repo field if set, otherwise falls back to ProductId.
-	/// </summary>
-	private static string GetRepoFromBundle(Bundle bundledData)
-	{
-		if (bundledData.Products.Count == 0)
-			return "elastic";
-
-		var firstProduct = bundledData.Products[0];
-		// Use explicit Repo if provided, otherwise fall back to ProductId
-		return !string.IsNullOrWhiteSpace(firstProduct.Repo) ? firstProduct.Repo : firstProduct.ProductId;
-	}
-
-	/// <summary>
-	/// Gets the GitHub owner from a bundle's first product.
-	/// Uses the explicit Owner field if set, otherwise falls back to "elastic".
-	/// </summary>
-	private static string GetOwnerFromBundle(Bundle bundledData)
-	{
-		if (bundledData.Products.Count == 0)
-			return "elastic";
-
-		var firstProduct = bundledData.Products[0];
-		return !string.IsNullOrWhiteSpace(firstProduct.Owner) ? firstProduct.Owner : "elastic";
-	}
 
 	/// <summary>
 	/// Merges amend files with their parent bundles.

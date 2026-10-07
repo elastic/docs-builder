@@ -97,5 +97,8 @@ public sealed class TestCrossLinkResolver : ICrossLinkResolver
 	public bool TryResolve(Action<string> errorEmitter, Uri crossLinkUri, [NotNullWhen(true)] out Uri? resolvedUri) =>
 		CrossLinkResolver.TryResolve(errorEmitter, _crossLinks, _uriResolver, crossLinkUri, out resolvedUri);
 
+	public bool TryResolve(Action<string, string?> errorEmitter, Uri crossLinkUri, [NotNullWhen(true)] out Uri? resolvedUri) =>
+		CrossLinkResolver.TryResolve(errorEmitter, _crossLinks, _uriResolver, crossLinkUri, out resolvedUri);
+
 	public bool IsDeclaredCrossLinkScheme(string scheme) => _declared.Contains(scheme);
 }

@@ -69,8 +69,22 @@ public class BundleValidationService(ILoggerFactory logFactory, IFileSystem file
 			bundleDataList.Add(new ValidatedBundle { Data = bundledData, Input = bundleInput });
 		}
 
-		// Check for duplicate file names across bundles
-		EmitDuplicateWarnings(collector, seenFileNames, seenPrs);
+		// The bundles together are checked once, by the rules across bundles (R88 one bundle per target, R89 a changelog file in one bundle): the
+		// duplicate file names were this service's own warning before, now the rule says it, under its id.
+		var loaded = new LoadedBundles([
+			.. bundleDataList.Select(
+				b => LoadedBundle.Of(
+					b.Data,
+					b.Input.BundleFile,
+					fileSystem.Path.GetFileNameWithoutExtension(b.Input.BundleFile),
+					[.. b.Data.Entries.Where(e => !string.IsNullOrWhiteSpace(e.Title) && e.Type != null).Select(ReleaseNotesLoader.ToEntry)]
+				)
+			)
+		]);
+		_ = collector.Write(LoadedBundlesConstraints.All.Report(loaded), string.Empty);
+
+		// Duplicate PRs across bundles have no rule yet
+		EmitDuplicateWarnings(collector, seenPrs);
 
 		return new BundleValidationResult
 		{
@@ -201,23 +215,8 @@ public class BundleValidationService(ILoggerFactory logFactory, IFileSystem file
 		return true;
 	}
 
-	private static void EmitDuplicateWarnings(
-		IDiagnosticsCollector collector,
-		Dictionary<string, List<string>> seenFileNames,
-		Dictionary<string, List<string>> seenPrs
-	)
+	private static void EmitDuplicateWarnings(IDiagnosticsCollector collector, Dictionary<string, List<string>> seenPrs)
 	{
-		// Check for duplicate file names across bundles
-		foreach (var (fileName, bundleFiles) in seenFileNames.Where(kvp => kvp.Value.Count > 1))
-		{
-			var uniqueBundles = bundleFiles.Distinct().ToList();
-			if (uniqueBundles.Count > 1)
-				collector.EmitWarning(
-					string.Empty,
-					$"Changelog file '{fileName}' appears in multiple bundles: {string.Join(", ", uniqueBundles)}"
-				);
-		}
-
 		// Check for duplicate PRs
 		foreach (var (pr, bundleFiles) in seenPrs.Where(kvp => kvp.Value.Count > 1))
 		{

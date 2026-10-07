@@ -79,16 +79,16 @@ public static partial class BundleAmendConstraints
 		x => Enumerable.Repeat(FileName(x)!, 1),
 		m => m.Parent.Entries.Select(FileName).OfType<string>(),
 		StringComparer.OrdinalIgnoreCase,
-		describe: (_, name) => $"Changelog '{name}' to remove was not found in the bundle."
+		describe: (_, name) => $"Changelog '{name}' was not found in the effective bundle (parent plus existing amend files)."
 	).Describe("R92: Every entry an amend removes is in the bundle it amends.");
 
 	public static Constraint<BundleAmendOfParent> AmendRemovalChecksumsMatch { get; } = Constraints<BundleAmendOfParent>.Each(
 		m => m.Amend.ExcludeEntries,
 		(m, x) => ChecksumMismatch(m.Parent, x)
-			? $"Bundle contains '{FileName(x)}' but with a different checksum than the one to remove. An empty checksum matches by file name only."
+			? $"Bundle contains '{FileName(x)}' but with a different checksum than the sourced changelog. Re-create the bundle or use --force to remove by file name only."
 			: null
 	).Describe(
-		"R92: An entry an amend removes has the checksum of the bundle's entry, unless the checksum is empty (run-time --force skips this)."
+		"R92: An entry an amend removes has the checksum of the bundle's entry, unless the checksum is empty. `changelog amend --force` accepts a mismatch: the service then reports this as a warning and writes the bundle's checksum."
 	);
 
 	public static Constraint<BundleAmendOfParent> AmendAddedEntriesNew { get; } = Constraints<BundleAmendOfParent>

@@ -292,12 +292,9 @@ public record Applicability : IComparable<Applicability>, IComparable
 			availability = null;
 			return false;
 		}
-		var deprecatedLifecycles = new[] { ProductLifecycle.Development, ProductLifecycle.Planned, ProductLifecycle.Discontinued };
-
+		// A deprecated lifecycle (dev, coming, planned, discontinued, unavailable) is reported by
+		// ApplicableToConstraints.ApplicabilityLifecycleNotDeprecated (M91), the single emitter: it names the lifecycle as written, from Raw.
 		// TODO emit as error when all docs have been updated
-		if (deprecatedLifecycles.Contains(lifecycle.Value))
-			diagnostics.Add((Severity.Hint, $"The '{lookup}' lifecycle is deprecated and will be removed in a future release."));
-
 		var version = tokens.Length < 2
 			? null
 			: tokens[1] switch

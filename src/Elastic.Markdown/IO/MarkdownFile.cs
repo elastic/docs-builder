@@ -413,13 +413,13 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 
 		var raw = string.Join(Environment.NewLine, yaml.Lines.Lines);
 		var fm = ReadYamlFrontMatter(raw);
-		fm.AppliesTo ??= FallbackAppliesTo;
-
-		if (fm.AppliesTo?.Diagnostics is not null)
+		// Only a block the page itself wrote is checked: a fallback comes from the table of contents and is not this file's to report
+		if (fm.AppliesTo is { } written)
 		{
-			foreach (var (severity, message) in fm.AppliesTo.Diagnostics)
-				Collector.Emit(severity, FilePath, message);
+			foreach (var d in ApplicableToReadConstraints.Check(written))
+				Collector.Write(d with { File = FilePath });
 		}
+		fm.AppliesTo ??= FallbackAppliesTo;
 
 		// Validate mapped_pages URLs
 		if (fm.MappedPages is not null)

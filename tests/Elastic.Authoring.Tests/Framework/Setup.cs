@@ -136,6 +136,13 @@ public sealed class Scenario
 	/// </summary>
 	public async Task HasHint(string expected) => ErrorCollectorAssertions.HasHint(expected, await BuildAsync());
 
+	/// <summary>
+	/// Asserts exactly one diagnostic carries <paramref name="ruleId"/> and that it has <paramref name="severity"/> and a message containing
+	/// <paramref name="expected"/>: the rule is the single emitter of its problem (a second report, under the same id or another, fails here).
+	/// </summary>
+	public async Task HasRuleDiagnosticOnce(string? ruleId, Elastic.Documentation.Diagnostics.Severity severity, string expected) =>
+		ErrorCollectorAssertions.HasRuleDiagnosticOnce(ruleId, severity, expected, await BuildAsync());
+
 	// ────────────────────────────────────────────────────────────────────────────────
 	// Per-file result accessor
 	// ────────────────────────────────────────────────────────────────────────────────

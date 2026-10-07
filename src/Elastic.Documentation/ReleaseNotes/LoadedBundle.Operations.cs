@@ -10,6 +10,25 @@ namespace Elastic.Documentation.ReleaseNotes;
 public partial record LoadedBundle
 {
 	/// <summary>
+	/// A bundle that was read (and checked) as the loaded bundle every consumer derives from it: the version is its first product's target
+	/// (<paramref name="fallbackVersion"/>, normally the file name without extension, when it has none), the repository and owner come from its first
+	/// product (the repository falls back to the product id, the owner to <c>elastic</c>), and <paramref name="entries"/> are the resolved entries.
+	/// The bundle was checked by whoever read it: nothing is checked here.
+	/// </summary>
+	public static LoadedBundle Of(Bundle data, string filePath, string fallbackVersion, IReadOnlyList<ChangelogEntry> entries)
+	{
+		var first = data.Products.Count > 0 ? data.Products[0] : null;
+		return new LoadedBundle(
+			first?.Target ?? fallbackVersion,
+			first is null ? "elastic" : !string.IsNullOrWhiteSpace(first.Repo) ? first.Repo : first.ProductId,
+			first is not null && !string.IsNullOrWhiteSpace(first.Owner) ? first.Owner : "elastic",
+			data,
+			filePath,
+			entries
+		);
+	}
+
+	/// <summary>
 	/// Merges the bundles that share a target version into one (entries concatenated, repos joined with <c>+</c>, descriptions joined, the earliest release date
 	/// kept) and orders the result newest first. The result does not depend on the order of <paramref name="bundles"/>: the bundles of one version are taken in
 	/// the canonical order of <see cref="CanonicalOrder"/> (release date ascending with undated last, then file path, repository and owner, all ordinal), the

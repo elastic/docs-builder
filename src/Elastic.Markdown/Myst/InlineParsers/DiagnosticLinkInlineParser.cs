@@ -192,7 +192,19 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 		if (url != null)
 			context.Build.Collector.EmitCrossLink(url);
 
-		if (context.CrossLinkResolver.TryResolve(s => processor.EmitError(link, s), uri, out var resolvedUri))
+		if (
+			context.CrossLinkResolver.TryResolve(
+				(message, ruleId) => processor.Emit(
+					Elastic.Documentation.Diagnostics.Severity.Error,
+					link,
+					link.Url?.Length ?? 1,
+					message,
+					ruleId: ruleId
+				),
+				uri,
+				out var resolvedUri
+			)
+		)
 		{
 			link.Url = resolvedUri.ToString();
 			if (resolvedUri.IsAbsoluteUri && context.Build.BuildType == BuildType.Isolated)

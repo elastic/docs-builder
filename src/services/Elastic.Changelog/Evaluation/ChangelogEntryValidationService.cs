@@ -156,7 +156,15 @@ public class ChangelogEntryValidationService(
 
 			var rawYaml = await fileSystem.File.ReadAllTextAsync(fullPath, ctx);
 			var fnNum = filenamePrNumbers.TryGetValue(relPath, out var n) ? n : (int?)null;
-			var validation = ChangelogEntryValidator.Check(relPath, rawYaml, config, labelDerivedType, knownProducts, fnNum);
+			var validation = ChangelogEntryValidator.Check(
+				relPath,
+				rawYaml,
+				config,
+				labelDerivedType,
+				knownProducts,
+				fnNum,
+				configurationContext.Catalog.Products
+			);
 			allFindings.AddRange(validation.Findings);
 			productIdsByFile[relPath] = validation.ProductIds;
 		}
@@ -265,24 +273,23 @@ public class ChangelogEntryValidationService(
 		// ── Write metadata and return ─────────────────────────────────────────────────────────
 		var hasErrors = allFindings.Any(f => f.Severity == FindingSeverity.Error);
 
+		// each finding is reported once, under the id of the rule that covers it (the validate stage's wording is the pinned one)
 		if (hasErrors)
 		{
 			foreach (var finding in allFindings.Where(f => f.Severity == FindingSeverity.Error))
-				collector.EmitError(finding.File, finding.Message);
-			foreach (var finding in allFindings.Where(f => f.Severity == FindingSeverity.Warning))
-				collector.EmitWarning(finding.File, finding.Message);
+				Write(collector, finding, Severity.Error);
 		}
-		else
-		{
-			foreach (var finding in allFindings.Where(f => f.Severity == FindingSeverity.Warning))
-				collector.EmitWarning(finding.File, finding.Message);
-		}
+		foreach (var finding in allFindings.Where(f => f.Severity == FindingSeverity.Warning))
+			Write(collector, finding, Severity.Warning);
 
 		var entryFindings = allFindings.Count > 0 ? allFindings : null;
 		await WriteMetadataAsync(input, hasErrors ? "entries-invalid" : "ok", entryFindings, defaultBranch, ctx);
 
 		return !hasErrors;
 	}
+
+	private static void Write(IDiagnosticsCollector collector, EntryFileFinding finding, Severity severity) =>
+		collector.Write(new Diagnostic { Severity = severity, File = finding.File, Message = finding.Message, RuleId = finding.RuleId });
 
 	/// <summary>Filters a list of file paths to changelog entry files in the changelog dir (top level only, no note-* files).</summary>
 	private static IReadOnlyList<string> FilterChangelogFiles(IEnumerable<string> files, string changelogDir)

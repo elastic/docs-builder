@@ -143,6 +143,90 @@ public class ApplicableToConstraintsTests
 			.Contain("'extra'");
 	}
 
+	[Test]
+	public void TheReadStage_LeavesTheReadersOwnWording_OfM94AndM96_ToTheReader()
+	{
+		var asked = ApplicableToReadConstraints.All.AsConstraints().Select(r => r.Name).ToList();
+
+		asked.Should().NotContain(ApplicableToConstraints.VersionlessKeysHaveNoVersion.Name);
+		asked.Should().NotContain(ApplicableToConstraints.ApplicabilityVersionsConsistent.Name);
+		asked.Should().Contain(ApplicableToConstraints.ApplicabilityLifecycleNotDeprecated.Name);
+		asked.Should().Contain(ApplicableToConstraints.ApplicabilityDiagnosticsReported.Name);
+	}
+
+	[Test]
+	public void AFindingTheReaderMadeForAnotherRulesProblem_IsReportedUnderThatRulesId_Once()
+	{
+		var applicable = Valid() with
+		{
+			Diagnostics = new ApplicabilityDiagnosticsCollection([
+				new ApplicabilityDiagnostic(
+					DiagnosticSeverity.Error,
+					"Can't specify a version for 'ech'",
+					ApplicableToConstraints.VersionlessKeysHaveNoVersion.Name
+				),
+				new ApplicabilityDiagnostic(DiagnosticSeverity.Warning, "Applies block does not support the following keys: hosted")
+			])
+		};
+
+		var found = ApplicableToReadConstraints.Check(applicable);
+
+		found.Should().HaveCount(2);
+		found[0].RuleId.Should().Be(ApplicableToConstraints.VersionlessKeysHaveNoVersion.Name);
+		found[0].Message.Should().Be("Can't specify a version for 'ech'");
+		found[1].RuleId.Should().Be(ApplicableToConstraints.ApplicabilityDiagnosticsReported.Name);
+	}
+
+	[Test]
+	public void ADeprecatedLifecycle_IsNamedAsWritten_AndEveryDeprecatedOneIsReported()
+	{
+		foreach (var written in new[] { "dev", "development", "coming", "planned", "discontinued", "unavailable" })
+		{
+			var item = new Applicability { Lifecycle = ProductLifecycle.Planned, Version = AllVersionsSpec.Instance, Raw = written };
+			var lifecycle = written switch
+			{
+				"dev" or "development" => ProductLifecycle.Development,
+				"discontinued" => ProductLifecycle.Discontinued,
+				"unavailable" => ProductLifecycle.Unavailable,
+				_ => ProductLifecycle.Planned
+			};
+			var found = ApplicableToReadConstraints.Check(new ApplicableTo { Stack = Collection(item with { Lifecycle = lifecycle }) });
+
+			found
+				.Should()
+				.ContainSingle()
+				.Which
+				.Message
+				.Should()
+				.StartWith($"The '{written}' lifecycle is deprecated and will be removed in a future release");
+		}
+	}
+
+	[Test]
+	public void ABlockTheReaderAlreadyReportedOn_IsNotReportedAsEmpty()
+	{
+		var onlyUnknownKeys = new ApplicableTo
+		{
+			Diagnostics = new ApplicabilityDiagnosticsCollection([
+				new ApplicabilityDiagnostic(DiagnosticSeverity.Warning, "Applies block does not support the following keys: hosted")
+			])
+		};
+
+		ApplicableToReadConstraints
+			.Check(onlyUnknownKeys)
+			.Should()
+			.ContainSingle()
+			.Which
+			.RuleId
+			.Should()
+			.Be(ApplicableToConstraints.ApplicabilityDiagnosticsReported.Name);
+		ApplicableToConstraints
+			.All
+			.Validate(new ApplicableTo())
+			.Should()
+			.Contain(v => v.ConstraintId == ApplicableToConstraints.AppliesToNotEmpty.Name);
+	}
+
 	private static Applicability Item(ProductLifecycle lifecycle, string? version) =>
 		new()
 		{

@@ -35,6 +35,27 @@ public static class ChangelogEntryReadConstraints
 }
 
 /// <summary>
+/// The rules of <see cref="ChangelogEntryInConfigurationConstraints"/> the validate stage (<c>validate-entries</c>) asks of the entry a file reads as.
+/// <c>validate-entries</c> reads the file's own text, which sees what a record cannot (an unrecognized type or lifecycle, the authored spelling of a
+/// subtype or area), so it reports the product, subtype, lifecycle and area membership itself under those rules' ids with its pinned wording; asking
+/// the same rules of the record would say each problem twice. What the text cannot answer stays: a recognized type the configuration does not list
+/// (R37) and a product outside <c>products.available</c> (R6).
+/// </summary>
+public static class ChangelogEntryValidateConstraints
+{
+	/// <summary>The configuration rules the entry's record answers at the validate stage.</summary>
+	public static ConstraintSet<ChangelogEntryInConfiguration> InConfiguration
+	{
+		get;
+	} = ChangelogEntryInConfigurationConstraints.All.Without(
+		ChangelogEntryInConfigurationConstraints.EntryProductsKnown,
+		ChangelogEntryInConfigurationConstraints.EntrySubtypeAllowed,
+		ChangelogEntryInConfigurationConstraints.EntryLifecycleAllowed,
+		ChangelogEntryInConfigurationConstraints.EntryAreasAllowed
+	);
+}
+
+/// <summary>
 /// The rules of <see cref="BundleConstraints"/> that hold when a bundle is <i>read</i>. <c>bundle-entries-inlined</c> is stage dependent (the loader
 /// skips a not-inlined entry with its own pinned warning, the render CLI errors) and <c>bundle-entry-files-unique</c> is a render CLI rule.
 /// </summary>

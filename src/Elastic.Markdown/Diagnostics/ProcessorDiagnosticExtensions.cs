@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using Elastic.Documentation.AppliesTo;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Markdown.Myst;
 using Elastic.Markdown.Myst.Directives;
@@ -119,7 +120,7 @@ public static class ProcessorDiagnosticExtensions
 
 	public static void EmitHint(this IBlockExtension block, string message) => Emit(block, Severity.Hint, message);
 
-	public static void Emit(this IBlockExtension block, Severity severity, string message, Exception? e = null)
+	public static void Emit(this IBlockExtension block, Severity severity, string message, Exception? e = null, string? ruleId = null)
 	{
 		if (block.SkipValidation)
 			return;
@@ -132,6 +133,7 @@ public static class ProcessorDiagnosticExtensions
 			Column = block.Column,
 			Length = block.OpeningLength + 5,
 			Message = CreateExceptionMessage(message, e),
+			RuleId = ruleId
 		};
 		block.Build.Collector.Write(d);
 	}
@@ -142,7 +144,8 @@ public static class ProcessorDiagnosticExtensions
 		Inline inline,
 		int length,
 		string message,
-		Exception? e = null
+		Exception? e = null,
+		string? ruleId = null
 	)
 	{
 		var line = inline.Line + 1;
@@ -159,9 +162,29 @@ public static class ProcessorDiagnosticExtensions
 			Column = Math.Max(column, 1),
 			Line = line,
 			Message = CreateExceptionMessage(message, e),
-			Length = Math.Max(length, 1)
+			Length = Math.Max(length, 1),
+			RuleId = ruleId
 		};
 		context.Build.Collector.Write(d);
+	}
+
+	/// <summary>
+	/// Runs <see cref="ApplicableToReadConstraints"/> once on an <c>applies_to</c> block a directive just read and reports what it found, each under
+	/// the rule's id. Returns the block without the reader's diagnostics, which the rules carry.
+	/// </summary>
+	public static ApplicableTo ReportApplicableTo(this IBlockExtension block, ApplicableTo applicableTo)
+	{
+		foreach (var d in ApplicableToReadConstraints.Check(applicableTo))
+			block.Emit(d.Severity, d.Message, ruleId: d.RuleId);
+		return applicableTo.WithoutDiagnostics();
+	}
+
+	/// <summary>As <see cref="ReportApplicableTo(IBlockExtension, ApplicableTo)"/> for an inline role.</summary>
+	public static ApplicableTo ReportApplicableTo(this InlineProcessor processor, Inline inline, int length, ApplicableTo applicableTo)
+	{
+		foreach (var d in ApplicableToReadConstraints.Check(applicableTo))
+			processor.Emit(d.Severity, inline, length, d.Message, ruleId: d.RuleId);
+		return applicableTo.WithoutDiagnostics();
 	}
 
 	public static void EmitError(this InlineProcessor processor, LinkInline inline, string message) =>

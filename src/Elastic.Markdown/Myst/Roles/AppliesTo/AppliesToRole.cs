@@ -34,11 +34,7 @@ public class AppliesToRole : RoleLeaf, IApplicableToElement
 		try
 		{
 			var applicableTo = YamlSerialization.Deserialize<ApplicableTo>(yaml, BuildContext.Catalog.Products);
-			if (applicableTo.Diagnostics is null)
-				return applicableTo;
-			foreach (var (severity, message) in applicableTo.Diagnostics)
-				processor.Emit(severity, this, Role.Length + yaml.Length, message);
-			return applicableTo.WithoutDiagnostics();
+			return processor.ReportApplicableTo(this, Role.Length + yaml.Length, applicableTo);
 		}
 		catch (Exception e)
 		{

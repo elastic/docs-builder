@@ -183,21 +183,24 @@ public class ChangelogBundleAmendService(
 			if (removeSources is null)
 				return false;
 
-			var effectiveEntries = parentBundle.ApplyAmends([.. existingAmendBundles.Select(a => new BundleAmend(a))]).Value!.Entries;
+			var effectiveBundle = parentBundle.ApplyAmends([.. existingAmendBundles.Select(a => new BundleAmend(a))]).Value!;
+			var effectiveEntries = effectiveBundle.Entries;
 			var appliedExclusionKeys = BundleAmendMerger.CollectAppliedExclusionKeys(existingAmendBundles);
 
+			// what is written, and what was asked for: with --force an exclusion is written with the checksum of the entry it matched by name,
+			// and the rules are asked about the request
 			var excludeEntries = new List<BundledEntry>();
+			var requestedExclusions = new List<BundledEntry>();
 			foreach (var removeSource in removeSources)
 			{
 				var exclusion = BuildExclusionEntry(collector, removeSource, effectiveEntries, appliedExclusionKeys, input.Force);
-				if (exclusion == null)
-					return false;
 				if (exclusion is RemoveExclusionResult.Skip)
 					continue;
 
-				var entry = ((RemoveExclusionResult.Add)exclusion).Entry;
-				excludeEntries.Add(entry);
-				_ = appliedExclusionKeys.Add(BundleAmendMerger.BuildExclusionKey(entry));
+				var add = (RemoveExclusionResult.Add)exclusion;
+				excludeEntries.Add(add.Entry);
+				requestedExclusions.Add(add.Requested);
+				_ = appliedExclusionKeys.Add(BundleAmendMerger.BuildExclusionKey(add.Entry));
 			}
 
 			var entries = new List<BundledEntry>();
@@ -211,6 +214,20 @@ public class ChangelogBundleAmendService(
 					entries.Add(entry);
 				}
 			}
+
+			if (
+				!AmendHoldsToRules(
+					collector,
+					parentBundle,
+					effectiveBundle,
+					requestedExclusions,
+					entries,
+					addSources,
+					removeSources,
+					input.Force
+				)
+			)
+				return false;
 
 			if (excludeEntries.Count == 0 && entries.Count == 0 && input.Description is null)
 			{
@@ -752,7 +769,65 @@ public class ChangelogBundleAmendService(
 		public IReadOnlyList<(string FileName, string Content)> CdnAmends { get; init; } = [];
 	}
 
-	private RemoveExclusionResult? BuildExclusionEntry(
+	/// <summary>
+	/// The amend about to be written is checked once against the bundle it amends, by <see cref="BundleAmendConstraints"/>: a removal that is not in the
+	/// bundle (R92), a removal whose checksum is not the bundle's (R92), an addition the bundle already has (R93). <c>--force</c> accepts the checksum
+	/// mismatch (the exclusion is then written with the bundle's checksum, as before) and reports it as a warning; every other error stops the write.
+	/// </summary>
+	private static bool AmendHoldsToRules(
+		IDiagnosticsCollector collector,
+		Bundle parentBundle,
+		Bundle effectiveBundle,
+		IReadOnlyList<BundledEntry> requestedExclusions,
+		IReadOnlyList<BundledEntry> additions,
+		IReadOnlyList<SourcedChangelog> addSources,
+		IReadOnlyList<SourcedChangelog> removeSources,
+		bool force
+	)
+	{
+		if (requestedExclusions.Count == 0 && additions.Count == 0)
+			return true;
+
+		var requested = Bundle.AmendOf(parentBundle.Products, additions, requestedExclusions, null).Value;
+		if (requested is null)
+			return true;
+
+		var pathByName = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+		foreach (var source in addSources.Concat(removeSources))
+			pathByName[source.FileName] = source.DisplayPath;
+
+		var ok = true;
+		foreach (var violation in BundleAmendConstraints.All.Report(new BundleAmendOfParent(effectiveBundle, requested)).Violations)
+		{
+			var severity = violation.Severity switch
+			{
+				Nullean.Entities.Severity.Error when force
+					&& violation.ConstraintId == BundleAmendConstraints.AmendRemovalChecksumsMatch.Name => Severity.Warning,
+				Nullean.Entities.Severity.Error => Severity.Error,
+				Nullean.Entities.Severity.Warning => Severity.Warning,
+				_ => Severity.Hint
+			};
+			var name = violation.Evidence switch
+			{
+				string text => text,
+				BundledEntry entry => entry.File?.Name,
+				_ => null
+			};
+			collector.Write(new Diagnostic
+			{
+				Severity = severity,
+				File = name is not null && pathByName.TryGetValue(name, out var path) ? path : string.Empty,
+				Message = violation.Message,
+				RuleId = violation.ConstraintId
+			});
+			if (severity == Severity.Error)
+				ok = false;
+		}
+
+		return ok;
+	}
+
+	private RemoveExclusionResult BuildExclusionEntry(
 		IDiagnosticsCollector collector,
 		SourcedChangelog source,
 		IReadOnlyList<BundledEntry> effectiveEntries,
@@ -782,24 +857,10 @@ public class ChangelogBundleAmendService(
 
 			var nameMatches = effectiveEntries.Where(entry => BundleAmendMerger.EntryMatchesExclusion(entry, nameOnlyExclusion)).ToList();
 
-			if (nameMatches.Count == 0)
-			{
-				collector.EmitError(
-					source.DisplayPath,
-					$"Changelog '{fileName}' was not found in the effective bundle (parent plus existing amend files)."
-				);
-				return null;
-			}
-
-			if (!force)
-			{
-				collector.EmitError(
-					source.DisplayPath,
-					$"Bundle contains '{fileName}' but with a different checksum than the sourced changelog. " +
-						"Re-create the bundle or use --force to remove by file name only."
-				);
-				return null;
-			}
+			// Not in the bundle, or in it with another checksum and no --force: the request goes on as it was asked and the amend's rules say why
+			// (AmendRemovalsExist, AmendRemovalChecksumsMatch); this method no longer words either.
+			if (nameMatches.Count == 0 || !force)
+				return new RemoveExclusionResult.Add(strictExclusion, strictExclusion);
 
 			matchedEntry = nameMatches[0];
 		}
@@ -813,12 +874,12 @@ public class ChangelogBundleAmendService(
 			return RemoveExclusionResult.Skip.Instance;
 		}
 
-		return new RemoveExclusionResult.Add(exclusion);
+		return new RemoveExclusionResult.Add(exclusion, strictExclusion);
 	}
 
 	private abstract record RemoveExclusionResult
 	{
-		public sealed record Add(BundledEntry Entry) : RemoveExclusionResult;
+		public sealed record Add(BundledEntry Entry, BundledEntry Requested) : RemoveExclusionResult;
 
 		public sealed record Skip : RemoveExclusionResult
 		{

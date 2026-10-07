@@ -2,7 +2,9 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using Elastic.Documentation.Catalog;
 using Elastic.Documentation.ReleaseNotes;
+using Nullean.Entities;
 using YamlDotNet.Core;
 
 namespace Elastic.Documentation.Configuration.ReleaseNotes;
@@ -15,7 +17,11 @@ public enum FindingSeverity
 }
 
 /// <summary>A validation finding for a changelog entry file.</summary>
-public record EntryFileFinding(string File, FindingSeverity Severity, string Message);
+/// <param name="File">The entry file the finding is about.</param>
+/// <param name="Severity">Error or warning.</param>
+/// <param name="Message">The finding, worded as the validate stage pins it.</param>
+/// <param name="RuleId">The id of the constraint that covers the same problem (<c>ChangelogEntryConstraints</c>, <c>ChangelogEntryInConfigurationConstraints</c>), when one does: it is reported under it.</param>
+public record EntryFileFinding(string File, FindingSeverity Severity, string Message, string? RuleId = null);
 
 /// <summary>An entry file's validation: every finding, and the product ids the file names (for the PR existence check, which needs the repository each belongs to).</summary>
 public sealed record EntryFileValidation(IReadOnlyList<EntryFileFinding> Findings, IReadOnlyList<string> ProductIds);
@@ -38,7 +44,8 @@ public static class ChangelogEntryValidator
 		ChangelogConfiguration config,
 		ChangelogEntryType? labelDerivedType,
 		IReadOnlySet<string>? knownProducts,
-		int? filenamePrNumber = null
+		int? filenamePrNumber = null,
+		ProductCatalog? products = null
 	)
 	{
 		try
@@ -47,6 +54,8 @@ public static class ChangelogEntryValidator
 			if (dto is null)
 				return new EntryFileValidation([], []);
 			var findings = Validate(filePath, dto, config, labelDerivedType, knownProducts, filenamePrNumber);
+			if (products is not null)
+				findings = [.. findings, .. InConfiguration(filePath, yaml, config, products)];
 			var productIds = dto.Products?.Select(p => p.Product).OfType<string>().Where(id => !string.IsNullOrWhiteSpace(id)).ToList()
 				?? [];
 			return new EntryFileValidation(findings, productIds);
@@ -55,6 +64,34 @@ public static class ChangelogEntryValidator
 		{
 			return new EntryFileValidation([new EntryFileFinding(filePath, FindingSeverity.Error, $"YAML parse error: {ex.Message}")], []);
 		}
+	}
+
+	/// <summary>
+	/// The rules of <see cref="ChangelogEntryValidateConstraints.InConfiguration"/>: the ones the file's own text cannot answer (a recognized type the
+	/// configuration does not list, a product outside <c>products.available</c>), asked of the entry the file reads as. The rest of the
+	/// configuration rules are reported above, from the text, under their rule ids with the validate stage's pinned wording.
+	/// </summary>
+	private static IEnumerable<EntryFileFinding> InConfiguration(
+		string filePath,
+		string yaml,
+		ChangelogConfiguration config,
+		ProductCatalog products
+	)
+	{
+		var entry = ReleaseNotesLoader.LoadEntry(yaml, Path.GetFileName(filePath), filePath).Value;
+		if (entry is null)
+			return [];
+		var report = ChangelogEntryValidateConstraints.InConfiguration.Report(
+			new ChangelogEntryInConfiguration(entry, new ChangelogConfigurationInCatalog(config, products))
+		);
+		return report.Violations.Select(
+			v => new EntryFileFinding(
+				filePath,
+				v.Severity == Nullean.Entities.Severity.Error ? FindingSeverity.Error : FindingSeverity.Warning,
+				v.Message,
+				v.ConstraintId
+			)
+		);
 	}
 
 	/// <summary>Validates the file's text: <see cref="Check"/> without the product ids, an empty file validated as an entry with nothing in it.</summary>
@@ -114,7 +151,11 @@ public static class ChangelogEntryValidator
 				|| entry.Issues is { Count: > 0 };
 			if (hasOtherFields)
 				findings.Add(
-					Error(filePath, "marker entries (link:) must not contain other fields such as title, type, products, prs, or issues")
+					Error(
+						filePath,
+						"marker entries (link:) must not contain other fields such as title, type, products, prs, or issues",
+						ChangelogEntryConstraints.MarkerCarriesOnlyLink
+					)
 				);
 
 			// source-redirect check still applies
@@ -131,24 +172,32 @@ public static class ChangelogEntryValidator
 
 		// ── Title ────────────────────────────────────────────────────────────────────────────────
 		if (string.IsNullOrWhiteSpace(entry.Title))
-			findings.Add(Error(filePath, "title is required"));
+			findings.Add(Error(filePath, "title is required", ChangelogEntryConstraints.EntryTitleRequired));
 		else if (entry.Title.Length > 80)
-			findings.Add(Warning(filePath, $"title exceeds 80 characters (current: {entry.Title.Length})"));
+			findings.Add(
+				Warning(filePath, $"title exceeds 80 characters (current: {entry.Title.Length})", ChangelogEntryConstraints.EntryTitleMax80)
+			);
 
 		// ── Description ──────────────────────────────────────────────────────────────────────────
 		if (entry.Description is not null && entry.Description.Length > 600)
-			findings.Add(Warning(filePath, $"description exceeds 600 characters (current: {entry.Description.Length})"));
+			findings.Add(
+				Warning(
+					filePath,
+					$"description exceeds 600 characters (current: {entry.Description.Length})",
+					ChangelogEntryConstraints.EntryDescriptionMax600
+				)
+			);
 
 		// ── Products ─────────────────────────────────────────────────────────────────────────────
 		if (entry.Products is null || entry.Products.Count == 0)
-			findings.Add(Error(filePath, "products is required"));
+			findings.Add(Error(filePath, "products is required", ChangelogEntryConstraints.EntryProductsRequired));
 		else
 		{
 			for (var i = 0; i < entry.Products.Count; i++)
 			{
 				var product = entry.Products[i];
 				if (string.IsNullOrWhiteSpace(product.Product))
-					findings.Add(Error(filePath, $"products[{i}].product is required"));
+					findings.Add(Error(filePath, $"products[{i}].product is required", ChangelogEntryConstraints.EntryProductIdRequired));
 				else if (knownProducts is not null)
 				{
 					var normalized = ProductNames.Normalize(product.Product);
@@ -158,7 +207,8 @@ public static class ChangelogEntryValidator
 						findings.Add(
 							Error(
 								filePath,
-								$"product '{product.Product}' is not in the list of available products from config/products.yml. Available products: {available}"
+								$"product '{product.Product}' is not in the list of available products from config/products.yml. Available products: {available}",
+								ChangelogEntryInConfigurationConstraints.EntryProductsKnown
 							)
 						);
 					}
@@ -171,7 +221,13 @@ public static class ChangelogEntryValidator
 
 				// obsolete target:
 				if (product.Target is not null)
-					findings.Add(Warning(filePath, "products[].target is obsolete; use products[].versions in a note file"));
+					findings.Add(
+						Warning(
+							filePath,
+							"products[].target is obsolete; use products[].versions in a note file",
+							ChangelogEntryConstraints.EntryProductTargetObsolete
+						)
+					);
 #pragma warning restore CS0618
 
 				// lifecycle
@@ -186,7 +242,8 @@ public static class ChangelogEntryValidator
 						findings.Add(
 							Error(
 								filePath,
-								$"lifecycle '{product.Lifecycle}' is not valid; expected one of: {string.Join(", ", availableLifecycles)}"
+								$"lifecycle '{product.Lifecycle}' is not valid; expected one of: {string.Join(", ", availableLifecycles)}",
+								ChangelogEntryInConfigurationConstraints.EntryLifecycleAllowed
 							)
 						);
 					}
@@ -208,15 +265,27 @@ public static class ChangelogEntryValidator
 				if (labelDerivedType.HasValue)
 				{
 					var labelTypeName = labelDerivedType.Value.ToStringFast(true);
-					findings.Add(Error(filePath, $"type is omitted; add `type: {labelTypeName}` to match this PR's label"));
+					findings.Add(
+						Error(
+							filePath,
+							$"type is omitted; add `type: {labelTypeName}` to match this PR's label",
+							ChangelogEntryConstraints.EntryTypeRequired
+						)
+					);
 				}
 				else
-					findings.Add(Error(filePath, "type is required"));
+					findings.Add(Error(filePath, "type is required", ChangelogEntryConstraints.EntryTypeRequired));
 			}
 			else
 			{
 				// Present but unrecognised
-				findings.Add(Error(filePath, $"type '{entry.Type}' is not recognised; valid values: {string.Join(", ", config.Types)}"));
+				findings.Add(
+					Error(
+						filePath,
+						$"type '{entry.Type}' is not recognised; valid values: {string.Join(", ", config.Types)}",
+						ChangelogEntryConstraints.EntryTypeRequired
+					)
+				);
 			}
 		}
 		else
@@ -235,10 +304,20 @@ public static class ChangelogEntryValidator
 		{
 			if (!config.SubTypes.Contains(entry.Subtype, StringComparer.OrdinalIgnoreCase))
 				findings.Add(
-					Error(filePath, $"subtype '{entry.Subtype}' is not valid; expected one of: {string.Join(", ", config.SubTypes)}")
+					Error(
+						filePath,
+						$"subtype '{entry.Subtype}' is not valid; expected one of: {string.Join(", ", config.SubTypes)}",
+						ChangelogEntryInConfigurationConstraints.EntrySubtypeAllowed
+					)
 				);
 			else if (parsedEntryType is not (ChangelogEntryType.BreakingChange or ChangelogEntryType.Invalid))
-				findings.Add(Warning(filePath, "subtype is only expected on breaking-change entries"));
+				findings.Add(
+					Warning(
+						filePath,
+						"subtype is only expected on breaking-change entries",
+						ChangelogEntryConstraints.EntrySubtypeOnlyBreakingChange
+					)
+				);
 		}
 
 		// ── pr: field (optional) ─────────────────────────────────────────────────────────────────
@@ -250,12 +329,22 @@ public static class ChangelogEntryValidator
 			{
 				if (declaredPr != filenamePrNumber.Value)
 					findings.Add(
-						Error(filePath, $"pr: {declaredPr} does not match the PR number in the filename ({filenamePrNumber.Value})")
+						Error(
+							filePath,
+							$"pr: {declaredPr} does not match the PR number in the filename ({filenamePrNumber.Value})",
+							ChangelogEntryConstraints.EntryPrMatchesFileName
+						)
 					);
 			}
 			else
 			{
-				findings.Add(Error(filePath, $"pr: '{entry.Pr}' could not be parsed as a PR number"));
+				findings.Add(
+					Error(
+						filePath,
+						$"pr: '{entry.Pr}' could not be parsed as a PR number",
+						ChangelogEntryConstraints.EntryPrMatchesFileName
+					)
+				);
 			}
 		}
 
@@ -265,7 +354,13 @@ public static class ChangelogEntryValidator
 			foreach (var area in entry.Areas)
 			{
 				if (!config.Areas.Contains(area, StringComparer.OrdinalIgnoreCase))
-					findings.Add(Error(filePath, $"area '{area}' is not valid; expected one of: {string.Join(", ", config.Areas)}"));
+					findings.Add(
+						Error(
+							filePath,
+							$"area '{area}' is not valid; expected one of: {string.Join(", ", config.Areas)}",
+							ChangelogEntryInConfigurationConstraints.EntryAreasAllowed
+						)
+					);
 			}
 		}
 
@@ -279,7 +374,13 @@ public static class ChangelogEntryValidator
 	{
 		var filename = Path.GetFileName(filePath);
 		if (!TryParseFilenameAsPrNumber(filePath, out _))
-			return [Error(filePath, $"filename '{filename}' must start with a PR number (e.g. 14-my-feature.yaml or 14.yaml)")];
+			return [
+				Error(
+					filePath,
+					$"filename '{filename}' must start with a PR number (e.g. 14-my-feature.yaml or 14.yaml)",
+					ChangelogEntryConstraints.EntryFileNameStartsWithPr
+				)
+			];
 		return [];
 	}
 
@@ -303,5 +404,10 @@ public static class ChangelogEntryValidator
 	}
 
 	private static EntryFileFinding Error(string file, string message) => new(file, FindingSeverity.Error, message);
-	private static EntryFileFinding Warning(string file, string message) => new(file, FindingSeverity.Warning, message);
+
+	private static EntryFileFinding Error<T>(string file, string message, Constraint<T> rule) =>
+		new(file, FindingSeverity.Error, message, rule.Name);
+
+	private static EntryFileFinding Warning<T>(string file, string message, Constraint<T> rule) =>
+		new(file, FindingSeverity.Warning, message, rule.Name);
 }

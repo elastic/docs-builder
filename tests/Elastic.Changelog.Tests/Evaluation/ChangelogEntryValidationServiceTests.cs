@@ -11,6 +11,7 @@ using Elastic.Documentation;
 using Elastic.Documentation.Catalog;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.ReleaseNotes;
 using FakeItEasy;
 
 namespace Elastic.Changelog.Tests.Evaluation;
@@ -313,5 +314,130 @@ public class ChangelogEntryValidationServiceTests() : ChangelogTestBase()
 			.Where(d => d.Severity == Severity.Error)
 			.Should()
 			.Contain(d => d.Message.Contains("42") && d.Message.Contains("elastic/apm"));
+	}
+
+	// ── Rules wired into validate-entries: one emitter per problem ───────────────────────────────
+
+	private async Task<(bool Result, IReadOnlyList<Diagnostic> Diagnostics)> Validate(string config, string entryYaml)
+	{
+		await WriteConfig(config);
+		await WriteEntryFile("docs/changelog/42.yaml", entryYaml);
+		var prService = A.Fake<IGitHubPrService>();
+		A.CallTo(
+			() => prService.CheckPullRequestsExistAsync(A<string>._, A<string>._, A<IReadOnlyList<int>>._, A<CancellationToken>._)
+		).Returns(new Dictionary<int, bool> { { 42, true } });
+		var svc = new ChangelogEntryValidationService(
+			LoggerFactory,
+			ContextWithProductRepo("apm", "elastic/apm"),
+			prService,
+			RunnerTempFileSystem
+		);
+		var result = await svc.ValidateEntries(
+			Collector,
+			MakeArgs("elasticsearch") with { Files = ["docs/changelog/42.yaml"] },
+			CancellationToken.None
+		);
+		return (result, [.. Collector.Diagnostics]);
+	}
+
+	[Test]
+	public async Task ValidateEntries_ProductOutsideProductsAvailable_IsReportedOnceByTheRule()
+	{
+		var (_, diagnostics) = await Validate(
+			"""
+			products:
+			  available:
+			    - elasticsearch
+			pivot:
+			  types:
+			    feature: "type:feature"
+			    bug-fix:
+			    breaking-change:
+			""",
+			"""
+			type: feature
+			title: My feature
+			products:
+			  - product: apm
+			"""
+		);
+
+		diagnostics
+			.Where(d => d.RuleId == ChangelogEntryInConfigurationConstraints.EntryProductsAvailable.Name)
+			.Should()
+			.ContainSingle()
+			.Which
+			.Should()
+			.Match<Diagnostic>(d => d.Severity == Severity.Warning && d.Message.Contains("is not in products.available of changelog.yml"));
+	}
+
+	[Test]
+	public async Task ValidateEntries_RecognizedTypeTheConfigurationDoesNotList_IsReportedOnceByTheRule()
+	{
+		var (result, diagnostics) = await Validate(
+			MinimalConfig,
+			"""
+			type: deprecation
+			title: My deprecation
+			products:
+			  - product: apm
+			"""
+		);
+
+		result.Should().BeFalse();
+		diagnostics
+			.Where(d => d.RuleId == ChangelogEntryInConfigurationConstraints.EntryTypeAllowed.Name)
+			.Should()
+			.ContainSingle()
+			.Which
+			.Message
+			.Should()
+			.Contain("type 'deprecation' is not a configured type");
+	}
+
+	[Test]
+	public async Task ValidateEntries_UnknownProduct_KeepsThePinnedMessageUnderTheRuleIdAndIsNotReportedTwice()
+	{
+		var (result, diagnostics) = await Validate(
+			MinimalConfig,
+			"""
+			type: feature
+			title: My feature
+			products:
+			  - product: no-such-product
+			"""
+		);
+
+		result.Should().BeFalse();
+		diagnostics
+			.Where(d => d.Message.Contains("product 'no-such-product' is not in the list of available products", StringComparison.Ordinal))
+			.Should()
+			.ContainSingle()
+			.Which
+			.RuleId
+			.Should()
+			.Be(ChangelogEntryInConfigurationConstraints.EntryProductsKnown.Name);
+	}
+
+	[Test]
+	public async Task ValidateEntries_MissingTitle_KeepsThePinnedMessageUnderTheRuleId()
+	{
+		var (_, diagnostics) = await Validate(
+			MinimalConfig,
+			"""
+			type: feature
+			products:
+			  - product: apm
+			"""
+		);
+
+		diagnostics
+			.Where(d => d.Message == "title is required")
+			.Should()
+			.ContainSingle()
+			.Which
+			.RuleId
+			.Should()
+			.Be(ChangelogEntryConstraints.EntryTitleRequired.Name);
 	}
 }

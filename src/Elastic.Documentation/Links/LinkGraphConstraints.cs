@@ -182,3 +182,21 @@ public static partial class LinkGraphConstraints
 	// The way the publish environment resolver builds a source to compare, so a link is matched exactly as it is resolved.
 	private static string SourceOf(Uri uri) => $"{uri.Scheme}://{uri.Host}/{uri.AbsolutePath.TrimStart('/')}".TrimEnd('/');
 }
+
+/// <summary>
+/// The rules of <see cref="LinkGraphConstraints"/> run on the graph of one repository built on its own (a documentation set built in isolation).
+/// <c>CrossLinkSchemeDeclared</c> (M34), <c>CrossLinkResolves</c> (M30) and <c>CrossLinkRedirectResolves</c> (M31) are not in it: the cross-link
+/// resolver reports them while it resolves each link, at the line and column of the link, with the rules' ids (<c>CrossLinkResolver.TryResolve</c>),
+/// which the graph's manifest-level violation cannot say. <c>CrossLinkRepositoryIsMounted</c> (N15) is not in it either: a single repository has no
+/// site navigation; the assembler is where it can run.
+/// </summary>
+public static class LinkGraphIsolatedConstraints
+{
+	/// <summary>The checks run once, after the documentation set was built.</summary>
+	public static ConstraintSet<LinkGraph> All { get; } = LinkGraphConstraints.All.Without(
+		LinkGraphConstraints.CrossLinkSchemeDeclared,
+		LinkGraphConstraints.CrossLinkResolves,
+		LinkGraphConstraints.CrossLinkRedirectResolves,
+		LinkGraphConstraints.CrossLinkRepositoryIsMounted
+	);
+}

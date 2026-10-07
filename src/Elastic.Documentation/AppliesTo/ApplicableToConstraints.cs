@@ -13,19 +13,26 @@ namespace Elastic.Documentation.AppliesTo;
 public static partial class ApplicableToConstraints
 {
 	public static Constraint<ApplicableTo> AppliesToNotEmpty { get; } = Constraints<ApplicableTo>
-		.Always(a => Collections(a).Any(), "The 'applies_to' field is present but empty. No applicability will be assumed.")
+		.Always(
+			a => Collections(a).Any() || a.Diagnostics is { Count: > 0 },
+			"The 'applies_to' field is present but empty. No applicability will be assumed."
+		)
 		.WithSeverity(Severity.Warning)
-		.Describe("M87: An applies_to block declares at least one key; the empty-block warning is dead code and never emitted.");
+		.Describe(
+			"M87: An applies_to block declares at least one key. A block the reader already reported on (it wrote only unsupported or old-style keys) is not reported again as empty."
+		);
 
 	public static Constraint<ApplicableTo> ApplicabilityLifecycleNotDeprecated { get; } = Constraints<ApplicableTo>
 		.Each(
-			a => Collections(a).SelectMany(c => c.Items.Select(i => (c.Key, Item: i))),
+			DeprecatedLifecycles,
+			x => false,
 			x =>
-				x.Item.Lifecycle is not (ProductLifecycle.Development or ProductLifecycle.Planned or ProductLifecycle.Discontinued or ProductLifecycle.Unavailable),
-			x => $"Key '{x.Key}': the '{x.Item.GetLifeCycleName()}' lifecycle is deprecated and will be removed in a future release."
+				$"The '{x.Word}' lifecycle is deprecated and will be removed in a future release ({(x.Keys.Count == 1 ? "key" : "keys")} {string.Join(", ", x.Keys.Select(k => $"'{k}'"))})."
 		)
 		.WithSeverity(Severity.Hint)
-		.Describe("M91: No key uses a deprecated lifecycle (dev, development, coming, planned, discontinued, unavailable).");
+		.Describe(
+			"M91: No key uses a deprecated lifecycle (dev, development, coming, planned, discontinued, unavailable). The reader no longer reports it: this rule is the single emitter, once per lifecycle as written, naming every key that uses it (a lifecycle given to all four serverless projects is one finding)."
+		);
 
 	public static Constraint<ApplicableTo> VersionlessKeysHaveNoVersion { get; } = Constraints<ApplicableTo>.Each(
 		Collections,
@@ -70,18 +77,38 @@ public static partial class ApplicableToConstraints
 		.Describe("M93: The value of an applies_to key is text (or empty); a list, a mapping or another non-text value is ignored.");
 
 	public static Constraint<ApplicableTo> ApplicabilityDiagnosticsReported { get; } = Constraints<ApplicableTo>.EachCheck(
-		a => (IEnumerable<(DiagnosticSeverity, string)>?)a.Diagnostics ?? [],
-		(_, d) => [Report(d.Item1, d.Item2)]
+		a => (IEnumerable<ApplicabilityDiagnostic>?)a.Diagnostics ?? [],
+		(_, d) => [Report(d)]
 	).Describe(
-		"M98: The diagnostics raised while reading an applies_to block are reported, at their own severity; admonitions and applies-item drop them."
+		"M98: The diagnostics raised while reading an applies_to block are reported, at their own severity. A finding the reader made for a problem another rule covers (M94, M96) carries that rule's id as its evidence and is reported under it."
 	);
 
-	private static Violation Report(DiagnosticSeverity severity, string message) => severity switch
-	{
-		DiagnosticSeverity.Error => Violation.Error(message),
-		DiagnosticSeverity.Warning => Violation.Warning(message),
-		_ => Violation.Hint(message)
-	};
+	private static Violation Report(ApplicabilityDiagnostic d) =>
+		new(
+			d.Message,
+			d.Severity switch
+			{
+				DiagnosticSeverity.Error => Severity.Error,
+				DiagnosticSeverity.Warning => Severity.Warning,
+				_ => Severity.Hint
+			}
+		)
+		{ Evidence = d };
+
+	/// <summary>The deprecated lifecycles the block uses, each as it was written, with the keys that use it.</summary>
+	private static IEnumerable<(string Word, IReadOnlyList<string> Keys)> DeprecatedLifecycles(ApplicableTo a) =>
+		Collections(a)
+			.SelectMany(c => c.Items.Where(IsDeprecated).Select(i => (c.Key, Word: WrittenLifecycle(i))))
+			.GroupBy(x => x.Word)
+			.Select(g => (g.Key, (IReadOnlyList<string>)[.. g.Select(x => x.Key).Distinct()]));
+
+	private static bool IsDeprecated(Applicability item) =>
+		item.Lifecycle is ProductLifecycle.Development or ProductLifecycle.Planned or ProductLifecycle.Discontinued or ProductLifecycle.Unavailable;
+
+	/// <summary>The lifecycle word as the block wrote it (<c>coming</c>, not the lifecycle it maps to), when the item remembers its text.</summary>
+	private static string WrittenLifecycle(Applicability item) =>
+		item.Raw?.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).FirstOrDefault()?.ToLowerInvariant()
+			?? item.GetLifeCycleName();
 
 	/// <summary>Every key of the block that is set, with its collection; keys are named as in YAML.</summary>
 	public static IEnumerable<(string Key, AppliesCollection Items, bool Versionless)> Collections(ApplicableTo a)
@@ -234,4 +261,37 @@ public static partial class ApplicableToConstraints
 	};
 
 	private static bool StartsBeforeEnd(SemVersion start, SemVersion? end) => end is null || start.CompareTo(end) <= 0;
+}
+
+/// <summary>
+/// The rules of <see cref="ApplicableToConstraints"/> that run where an <c>applies_to</c> block is <i>read</i> from a file (a page, a directive, a
+/// role, a code block). M94 and M96 are not in it: the reader sees the key as it was written (<c>ech</c>, <c>serverless</c>) and reports them
+/// itself, with those rules' ids, through M98, so the same problem is not said twice in two wordings.
+/// </summary>
+public static class ApplicableToReadConstraints
+{
+	/// <summary>The checks run once on every block read from a file.</summary>
+	public static ConstraintSet<ApplicableTo> All { get; } = ApplicableToConstraints.All.Without(
+		ApplicableToConstraints.VersionlessKeysHaveNoVersion,
+		ApplicableToConstraints.ApplicabilityVersionsConsistent
+	);
+
+	/// <summary>
+	/// Runs <see cref="All"/> once on a block as the reader built it and returns what it found as diagnostics (no file: the caller reports each at the
+	/// place it knows). A finding the reader made for a problem another rule covers is reported under that rule's id.
+	/// </summary>
+	public static IReadOnlyList<Elastic.Documentation.Diagnostics.Diagnostic> Check(ApplicableTo applicableTo) =>
+		[
+			.. All
+				.Report(applicableTo)
+				.Violations
+				.OrderBy(v => v.Evidence is ApplicabilityDiagnostic ? 0 : 1)
+				.Select(
+					v =>
+						Elastic.Documentation.Diagnostics.ViolationDiagnostics.ToDiagnostic(v, string.Empty) with
+						{
+							RuleId = v.Evidence is ApplicabilityDiagnostic { RuleId: { } id } ? id : v.ConstraintId
+						}
+				)
+		];
 }

@@ -12,16 +12,32 @@ using Elastic.Documentation.Versions;
 
 namespace Elastic.Documentation.AppliesTo;
 
-/// Use to collect diagnostics during YAML parsing where we do not have access to the current diagnostics collector
-public class ApplicabilityDiagnosticsCollection : IEquatable<ApplicabilityDiagnosticsCollection>, IReadOnlyCollection<(Severity, string)>
+/// <summary>
+/// A finding the applies_to reader made while reading a block, where it had no collector. <see cref="RuleId"/> is the id of the constraint that
+/// covers the same problem, when one does: the finding is then reported under that id.
+/// </summary>
+public readonly record struct ApplicabilityDiagnostic(Severity Severity, string Message, string? RuleId = null)
 {
-	private readonly List<(Severity, string)> _list = [];
+	public void Deconstruct(out Severity severity, out string message)
+	{
+		severity = Severity;
+		message = Message;
+	}
 
-	public ApplicabilityDiagnosticsCollection(IEnumerable<(Severity, string)> warnings) => _list.AddRange(warnings);
+	public static implicit operator ApplicabilityDiagnostic((Severity Severity, string Message) value) =>
+		new(value.Severity, value.Message);
+}
+
+/// Use to collect diagnostics during YAML parsing where we do not have access to the current diagnostics collector
+public class ApplicabilityDiagnosticsCollection : IEquatable<ApplicabilityDiagnosticsCollection>, IReadOnlyCollection<ApplicabilityDiagnostic>
+{
+	private readonly List<ApplicabilityDiagnostic> _list = [];
+
+	public ApplicabilityDiagnosticsCollection(IEnumerable<ApplicabilityDiagnostic> warnings) => _list.AddRange(warnings);
 
 	public bool Equals(ApplicabilityDiagnosticsCollection? other) => other != null && _list.SequenceEqual(other._list);
 
-	public IEnumerator<(Severity, string)> GetEnumerator() => _list.GetEnumerator();
+	public IEnumerator<ApplicabilityDiagnostic> GetEnumerator() => _list.GetEnumerator();
 
 	public override bool Equals(object? obj) => Equals(obj as ApplicabilityDiagnosticsCollection);
 

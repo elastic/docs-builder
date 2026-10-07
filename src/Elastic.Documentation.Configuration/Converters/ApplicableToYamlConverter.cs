@@ -37,7 +37,7 @@ public class ApplicableToYamlConverter(IReadOnlyCollection<string> productKeys) 
 
 	public object? ReadYaml(IParser parser, Type type, ObjectDeserializer rootDeserializer)
 	{
-		var diagnostics = new List<(Severity, string)>();
+		var diagnostics = new List<ApplicabilityDiagnostic>();
 
 		if (parser.TryConsume<Scalar>(out var value))
 		{
@@ -83,6 +83,14 @@ public class ApplicableToYamlConverter(IReadOnlyCollection<string> productKeys) 
 		return FinalizeApplicableTo(dictionary, diagnostics);
 	}
 
+	private static bool ParseCollection(string? value, List<ApplicabilityDiagnostic> diagnostics, out AppliesCollection? availability)
+	{
+		var parsed = new List<(Severity, string)>();
+		var ok = AppliesCollection.TryParse(value, parsed, out availability);
+		diagnostics.AddRange(parsed.Select(d => (ApplicabilityDiagnostic)d));
+		return ok;
+	}
+
 	private static object? DeepMergeAppliesToNode(object? existing, object? incoming)
 	{
 		if (incoming is not Dictionary<object, object?> incomingDict)
@@ -104,7 +112,7 @@ public class ApplicableToYamlConverter(IReadOnlyCollection<string> productKeys) 
 	private static void MergeAppliesToListScalarLine(
 		Dictionary<object, object?> dictionary,
 		string line,
-		List<(Severity, string)> diagnostics
+		List<ApplicabilityDiagnostic> diagnostics
 	)
 	{
 		var trimmed = line.Trim();
@@ -120,7 +128,7 @@ public class ApplicableToYamlConverter(IReadOnlyCollection<string> productKeys) 
 		dictionary[key] = string.IsNullOrEmpty(val) ? null : val;
 	}
 
-	private ApplicableTo FinalizeApplicableTo(Dictionary<object, object?> dictionary, List<(Severity, string)> diagnostics)
+	private ApplicableTo FinalizeApplicableTo(Dictionary<object, object?> dictionary, List<ApplicabilityDiagnostic> diagnostics)
 	{
 		var applicableTo = new ApplicableTo();
 
@@ -294,7 +302,7 @@ public class ApplicableToYamlConverter(IReadOnlyCollection<string> productKeys) 
 	private static void AssignDeploymentType(
 		Dictionary<object, object?> dictionary,
 		ref ApplicableTo applicableTo,
-		List<(Severity, string)> diagnostics
+		List<ApplicabilityDiagnostic> diagnostics
 	)
 	{
 		if (!dictionary.TryGetValue(ApplicabilityKeys.Deployment, out var deploymentType))
@@ -304,7 +312,7 @@ public class ApplicableToYamlConverter(IReadOnlyCollection<string> productKeys) 
 			applicableTo = applicableTo with { Deployment = DeploymentApplicability.All };
 		else if (deploymentType is string deploymentTypeString)
 		{
-			var applies = AppliesCollection.TryParse(deploymentTypeString, diagnostics, out var a) ? a : null;
+			var applies = ParseCollection(deploymentTypeString, diagnostics, out var a) ? a : null;
 			if (applies is not null)
 				ValidateApplicabilityCollection(ApplicabilityKeys.Ess, applies, diagnostics);
 			applicableTo = applicableTo with
@@ -322,7 +330,7 @@ public class ApplicableToYamlConverter(IReadOnlyCollection<string> productKeys) 
 	private static void AssignProduct(
 		Dictionary<object, object?> dictionary,
 		ref ApplicableTo applicableTo,
-		List<(Severity, string)> diagnostics
+		List<ApplicabilityDiagnostic> diagnostics
 	)
 	{
 		if (!dictionary.TryGetValue(ApplicabilityKeys.Product, out var productValue))
@@ -344,7 +352,7 @@ public class ApplicableToYamlConverter(IReadOnlyCollection<string> productKeys) 
 	private static void AssignServerless(
 		Dictionary<object, object?> dictionary,
 		ref ApplicableTo applicableTo,
-		List<(Severity, string)> diagnostics
+		List<ApplicabilityDiagnostic> diagnostics
 	)
 	{
 		if (!dictionary.TryGetValue(ApplicabilityKeys.Serverless, out var serverless))
@@ -354,7 +362,7 @@ public class ApplicableToYamlConverter(IReadOnlyCollection<string> productKeys) 
 			applicableTo = applicableTo with { Serverless = ServerlessProjectApplicability.All };
 		else if (serverless is string serverlessString)
 		{
-			var applies = AppliesCollection.TryParse(serverlessString, diagnostics, out var a) ? a : null;
+			var applies = ParseCollection(serverlessString, diagnostics, out var a) ? a : null;
 			if (applies is not null)
 				ValidateApplicabilityCollection(ApplicabilityKeys.Serverless, applies, diagnostics);
 			applicableTo = applicableTo with
@@ -377,7 +385,7 @@ public class ApplicableToYamlConverter(IReadOnlyCollection<string> productKeys) 
 
 	private static bool TryGetDeployment(
 		Dictionary<object, object?> dictionary,
-		List<(Severity, string)> diagnostics,
+		List<ApplicabilityDiagnostic> diagnostics,
 		[NotNullWhen(true)] out DeploymentApplicability? applicability
 	)
 	{
@@ -417,7 +425,7 @@ public class ApplicableToYamlConverter(IReadOnlyCollection<string> productKeys) 
 
 	private static bool TryGetProjectApplicability(
 		Dictionary<object, object?> dictionary,
-		List<(Severity, string)> diagnostics,
+		List<ApplicabilityDiagnostic> diagnostics,
 		[NotNullWhen(true)] out ServerlessProjectApplicability? applicability
 	)
 	{
@@ -449,7 +457,7 @@ public class ApplicableToYamlConverter(IReadOnlyCollection<string> productKeys) 
 
 	private static bool TryGetProductApplicability(
 		Dictionary<object, object?> dictionary,
-		List<(Severity, string)> diagnostics,
+		List<ApplicabilityDiagnostic> diagnostics,
 		[NotNullWhen(true)] out ProductApplicability? applicability
 	)
 	{
@@ -513,7 +521,7 @@ public class ApplicableToYamlConverter(IReadOnlyCollection<string> productKeys) 
 	private static bool TryGetApplicabilityOverTime(
 		Dictionary<object, object?> dictionary,
 		string key,
-		List<(Severity, string)> diagnostics,
+		List<ApplicabilityDiagnostic> diagnostics,
 		out AppliesCollection? availability
 	)
 	{
@@ -525,7 +533,7 @@ public class ApplicableToYamlConverter(IReadOnlyCollection<string> productKeys) 
 			availability = AppliesCollection.GenerallyAvailable;
 		else if (target is string stackString)
 		{
-			availability = AppliesCollection.TryParse(stackString, diagnostics, out var a) ? a : null;
+			availability = ParseCollection(stackString, diagnostics, out var a) ? a : null;
 
 			if (availability is not null)
 				ValidateApplicabilityCollection(key, availability, diagnostics);
@@ -533,7 +541,7 @@ public class ApplicableToYamlConverter(IReadOnlyCollection<string> productKeys) 
 		return availability is not null;
 	}
 
-	private static void ValidateApplicabilityCollection(string key, AppliesCollection collection, List<(Severity, string)> diagnostics)
+	private static void ValidateApplicabilityCollection(string key, AppliesCollection collection, List<ApplicabilityDiagnostic> diagnostics)
 	{
 		var items = collection.ToList();
 
@@ -542,7 +550,11 @@ public class ApplicableToYamlConverter(IReadOnlyCollection<string> productKeys) 
 		{
 			if (items.Any(a => a.Version is not null && a.Version != AllVersionsSpec.Instance))
 				diagnostics.Add(
-					(Severity.Error, $"Can't specify a version for '{key}' because this product is not versioned. Remove the version, or use 'stack:' for version-specific requirements.")
+					new ApplicabilityDiagnostic(
+						Severity.Error,
+						$"Can't specify a version for '{key}' because this product is not versioned. Remove the version, or use 'stack:' for version-specific requirements.",
+						ApplicableToConstraints.VersionlessKeysHaveNoVersion.Name
+					)
 				);
 			return;
 		}
@@ -558,8 +570,12 @@ public class ApplicableToYamlConverter(IReadOnlyCollection<string> productKeys) 
 		{
 			var lifecycleNames = string.Join(", ", lifecyclesWithMultipleVersions);
 			diagnostics.Add(
-				(Severity.Hint, // Temporary downgrade to Hint until the currently available docs are adjusted
-				 $"Key '{key}': Multiple version declarations found for lifecycle(s): {lifecycleNames}. Only one version per lifecycle is allowed.")
+				new ApplicabilityDiagnostic(
+					Severity.Hint,
+					$"Key '{key}': Multiple version declarations found for lifecycle(s): {lifecycleNames}. Only one version per lifecycle is allowed.",
+					ApplicableToConstraints.ApplicabilityVersionsConsistent.Name
+				) // Temporary downgrade to Hint until the currently available docs are adjusted
+
 			);
 		}
 
@@ -571,8 +587,12 @@ public class ApplicableToYamlConverter(IReadOnlyCollection<string> productKeys) 
 		if (greaterThanItems.Count > 1)
 		{
 			diagnostics.Add(
-				(Severity.Hint, // Temporary downgrade to Hint until the currently available docs are adjusted
-				 $"Key '{key}': Multiple items use greater-than-or-equal syntax. Only one item per key can use this syntax.")
+				new ApplicabilityDiagnostic(
+					Severity.Hint,
+					$"Key '{key}': Multiple items use greater-than-or-equal syntax. Only one item per key can use this syntax.",
+					ApplicableToConstraints.ApplicabilityVersionsConsistent.Name
+				) // Temporary downgrade to Hint until the currently available docs are adjusted
+
 			);
 		}
 
@@ -588,8 +608,12 @@ public class ApplicableToYamlConverter(IReadOnlyCollection<string> productKeys) 
 					$"{item.Lifecycle} ({item.Version!.Min.Major}.{item.Version.Min.Minor}-{item.Version.Max!.Major}.{item.Version.Max.Minor})"
 			);
 			diagnostics.Add(
-				(Severity.Hint, // Temporary downgrade to Hint until the currently available docs are adjusted
-				 $"Key '{key}': Invalid range(s) where first version is greater than last version: {string.Join(", ", rangeDescriptions)}.")
+				new ApplicabilityDiagnostic(
+					Severity.Hint,
+					$"Key '{key}': Invalid range(s) where first version is greater than last version: {string.Join(", ", rangeDescriptions)}.",
+					ApplicableToConstraints.ApplicabilityVersionsConsistent.Name
+				) // Temporary downgrade to Hint until the currently available docs are adjusted
+
 			);
 		}
 
@@ -609,8 +633,12 @@ public class ApplicableToYamlConverter(IReadOnlyCollection<string> productKeys) 
 		if (hasOverlaps)
 		{
 			diagnostics.Add(
-				(Severity.Hint, // Temporary downgrade to Hint until the currently available docs are adjusted
-				 $"Key '{key}': Overlapping version ranges detected. Ensure version ranges do not overlap within the same key.")
+				new ApplicabilityDiagnostic(
+					Severity.Hint,
+					$"Key '{key}': Overlapping version ranges detected. Ensure version ranges do not overlap within the same key.",
+					ApplicableToConstraints.ApplicabilityVersionsConsistent.Name
+				) // Temporary downgrade to Hint until the currently available docs are adjusted
+
 			);
 		}
 	}

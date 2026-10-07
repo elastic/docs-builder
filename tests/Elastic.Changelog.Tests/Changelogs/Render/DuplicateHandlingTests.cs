@@ -7,6 +7,7 @@ using Elastic.Changelog.Bundling;
 using Elastic.Changelog.Rendering;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.ReleaseNotes;
 
 namespace Elastic.Changelog.Tests.Changelogs.Render;
 
@@ -66,6 +67,29 @@ public class DuplicateHandlingTests() : RenderChangelogTestBase()
 		Collector.Errors.Should().Be(0);
 		Collector.Warnings.Should().BeGreaterThan(0);
 		Collector.Diagnostics.Should().Contain(d => d.Severity == Severity.Warning && d.Message.Contains("appears in multiple bundles"));
+
+		// the rule across bundles is the only emitter: the old message, once, under the rule's id
+		Collector
+			.Diagnostics
+			.Where(d => d.Message.Contains($"Changelog file '{fileName}' appears in multiple bundles", StringComparison.Ordinal))
+			.Should()
+			.ContainSingle()
+			.Which
+			.RuleId
+			.Should()
+			.Be(LoadedBundlesConstraints.BundlesEntryFilesUnique.Name);
+
+		// both bundles name the same target version: reported once, as a hint (merging bundles of one release is legitimate)
+		Collector
+			.Diagnostics
+			.Where(d => d.RuleId == LoadedBundlesConstraints.BundlesTargetUnique.Name)
+			.Should()
+			.ContainSingle()
+			.Which
+			.Severity
+			.Should()
+			.Be(Severity.Hint);
+		Collector.DuplicatesDropped.Should().BeEmpty();
 	}
 
 	[Test]

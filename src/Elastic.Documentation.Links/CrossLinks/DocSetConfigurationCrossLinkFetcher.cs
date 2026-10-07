@@ -86,6 +86,7 @@ public class DocSetConfigurationCrossLinkFetcher(
 			DeclaredRepositories = declaredRepositories,
 			LinkReferences = linkReferences.ToFrozenDictionary(),
 			LinkIndexEntries = linkIndexEntries.ToFrozenDictionary(),
+			Registry = useDualRegistry ? null : publicRegistry,
 			RegistryUrlsByRepository = registryUrlsByRepository.ToFrozenDictionary(),
 			RegistryByRepository = registryByRepository.ToFrozenDictionary(),
 			CodexRepositories = codexRepositories.Count > 0 ? codexRepositories.ToFrozenSet() : null,

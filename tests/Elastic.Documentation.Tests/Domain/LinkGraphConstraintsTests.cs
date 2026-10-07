@@ -106,6 +106,47 @@ public class LinkGraphConstraintsTests
 		LinkGraphConstraints.All.Validate(graph).Should().ContainSingle().Which.Message.Should().Contain("no links.json was found");
 	}
 
+	[Test]
+	public void TheIsolatedBuildAsksOnlyTheRulesNoOneElseReports()
+	{
+		var asked = LinkGraphIsolatedConstraints.All.AsConstraints().Select(r => r.Name).ToList();
+
+		// the resolver reports these at each link, with the rules' ids; the navigation is the assembler's
+		asked.Should().NotContain([
+			LinkGraphConstraints.CrossLinkSchemeDeclared.Name,
+			LinkGraphConstraints.CrossLinkResolves.Name,
+			LinkGraphConstraints.CrossLinkRedirectResolves.Name,
+			LinkGraphConstraints.CrossLinkRepositoryIsMounted.Name
+		]);
+		asked.Should().Contain([
+			LinkGraphConstraints.CrossLinkRepositoryInRegistry.Name,
+			LinkGraphConstraints.CrossLinkDeclarationUsed.Name,
+			LinkGraphConstraints.RedirectTargetExists.Name,
+			LinkGraphConstraints.CrossLinkTargetNotHidden.Name,
+			LinkGraphConstraints.ManifestOriginMatchesRegistryKey.Name
+		]);
+	}
+
+	[Test]
+	public void AnUnusedCrossLinksDeclaration_IsReportedOnceByTheIsolatedBuild()
+	{
+		var graph = Valid() with { Docset = Docset("kibana", "never-linked") };
+
+		var findings = LinkGraphIsolatedConstraints.All.Validate(graph);
+
+		findings.Should().ContainSingle().Which.ConstraintId.Should().Be(LinkGraphConstraints.CrossLinkDeclarationUsed.Name);
+	}
+
+	[Test]
+	public void AnUnknownLinkTarget_IsLeftToTheResolverInTheIsolatedBuild()
+	{
+		// a link to a page the target does not have is M30: reported by the resolver at the link, so not by the graph run of the isolated build
+		var graph = WithLink(Valid(), "kibana://reference/missing.md");
+
+		LinkGraphConstraints.All.Validate(graph).Should().Contain(v => v.ConstraintId == LinkGraphConstraints.CrossLinkResolves.Name);
+		LinkGraphIsolatedConstraints.All.Validate(graph).Should().BeEmpty();
+	}
+
 	private static GitCheckoutInformation Origin(string repository) =>
 		new() { Branch = "main", Remote = "https://example.test/repo.git", Ref = "abc", RepositoryName = repository };
 

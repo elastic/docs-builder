@@ -13,6 +13,18 @@ namespace Elastic.Documentation.Links.CrossLinks;
 public interface ICrossLinkResolver
 {
 	bool TryResolve(Action<string> errorEmitter, Uri crossLinkUri, [NotNullWhen(true)] out Uri? resolvedUri);
+
+	/// <summary>
+	/// Resolves like <see cref="TryResolve(Action{string}, Uri, out Uri?)"/> and hands each problem to <paramref name="errorEmitter"/> with the id of the
+	/// <see cref="LinkGraphConstraints"/> rule that covers it (the message, the rule id), so the diagnostic carries the rule's id. A resolver that does not
+	/// know the rules reports with no id.
+	/// </summary>
+	bool TryResolve(Action<string, string?> errorEmitter, Uri crossLinkUri, [NotNullWhen(true)] out Uri? resolvedUri) =>
+		TryResolve(message => errorEmitter(message, null), crossLinkUri, out resolvedUri);
+
+	/// <summary>What was fetched for the declared repositories, when the resolver keeps it (the cross-link graph of the build is checked against it).</summary>
+	FetchedCrossLinks? FetchedCrossLinks => null;
+
 	IUriEnvironmentResolver UriResolver { get; }
 
 	/// <summary>
@@ -45,25 +57,39 @@ public class NoopCrossLinkResolver : ICrossLinkResolver
 
 public class CrossLinkResolver(FetchedCrossLinks crossLinks, IUriEnvironmentResolver? uriResolver = null) : ICrossLinkResolver
 {
-	private FetchedCrossLinks _crossLinks = crossLinks;
+	/// <inheritdoc />
+	public FetchedCrossLinks FetchedCrossLinks { get; private set; } = crossLinks;
 	public IUriEnvironmentResolver UriResolver { get; } = uriResolver ?? new IsolatedBuildEnvironmentUriResolver();
 
 	public bool TryResolve(Action<string> errorEmitter, Uri crossLinkUri, [NotNullWhen(true)] out Uri? resolvedUri) =>
-		TryResolve(errorEmitter, _crossLinks, UriResolver, crossLinkUri, out resolvedUri);
+		TryResolve((message, _) => errorEmitter(message), FetchedCrossLinks, UriResolver, crossLinkUri, out resolvedUri);
 
 	/// <inheritdoc />
-	public bool IsDeclaredCrossLinkScheme(string scheme) => _crossLinks.DeclaredRepositories.Contains(scheme);
+	public bool TryResolve(Action<string, string?> errorEmitter, Uri crossLinkUri, [NotNullWhen(true)] out Uri? resolvedUri) =>
+		TryResolve(errorEmitter, FetchedCrossLinks, UriResolver, crossLinkUri, out resolvedUri);
+
+	/// <inheritdoc />
+	public bool IsDeclaredCrossLinkScheme(string scheme) => FetchedCrossLinks.DeclaredRepositories.Contains(scheme);
 
 	public FetchedCrossLinks UpdateLinkReference(string repository, LinkManifest repositoryLinks)
 	{
-		var dictionary = _crossLinks.LinkReferences.ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
+		var dictionary = FetchedCrossLinks.LinkReferences.ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
 		dictionary[repository] = repositoryLinks;
-		_crossLinks = _crossLinks with { LinkReferences = dictionary.ToFrozenDictionary() };
-		return _crossLinks;
+		FetchedCrossLinks = FetchedCrossLinks with { LinkReferences = dictionary.ToFrozenDictionary() };
+		return FetchedCrossLinks;
 	}
 
 	public static bool TryResolve(
 		Action<string> errorEmitter,
+		FetchedCrossLinks fetchedCrossLinks,
+		IUriEnvironmentResolver uriResolver,
+		Uri crossLinkUri,
+		[NotNullWhen(true)] out Uri? resolvedUri
+	) => TryResolve((message, _) => errorEmitter(message), fetchedCrossLinks, uriResolver, crossLinkUri, out resolvedUri);
+
+	/// <summary>Each problem is reported with the id of the <see cref="LinkGraphConstraints"/> rule that covers it, at the link it was found at.</summary>
+	public static bool TryResolve(
+		Action<string, string?> errorEmitter,
 		FetchedCrossLinks fetchedCrossLinks,
 		IUriEnvironmentResolver uriResolver,
 		Uri crossLinkUri,
@@ -88,7 +114,8 @@ public class CrossLinkResolver(FetchedCrossLinks crossLinks, IUriEnvironmentReso
 			}
 
 			errorEmitter(
-				$"'{crossLinkUri.Scheme}' was not found in the cross link index. Ensure it is listed under 'cross_links' in your docset.yml"
+				$"'{crossLinkUri.Scheme}' was not found in the cross link index. Ensure it is listed under 'cross_links' in your docset.yml",
+				LinkGraphConstraints.CrossLinkSchemeDeclared.Name
 			);
 			return false;
 		}
@@ -120,13 +147,16 @@ public class CrossLinkResolver(FetchedCrossLinks crossLinks, IUriEnvironmentReso
 			? $"{baseUrl}/{indexEntry.Path}"
 			: BuildFallbackLinksJsonUrl(baseUrl, crossLinkUri.Scheme, fetchedCrossLinks);
 
-		errorEmitter($"'{originalLookupPath}' is not a valid link in the '{crossLinkUri.Scheme}' cross link index: {linksJson}");
+		errorEmitter(
+			$"'{originalLookupPath}' is not a valid link in the '{crossLinkUri.Scheme}' cross link index: {linksJson}",
+			LinkGraphConstraints.CrossLinkResolves.Name
+		);
 		resolvedUri = null;
 		return false;
 	}
 
 	private static bool ResolveDirectLink(
-		Action<string> errorEmitter,
+		Action<string, string?> errorEmitter,
 		IUriEnvironmentResolver uriResolver,
 		Uri crossLinkUri,
 		string lookupPath,
@@ -143,7 +173,7 @@ public class CrossLinkResolver(FetchedCrossLinks crossLinks, IUriEnvironmentReso
 			var anchor = lookupFragment.TrimStart('#');
 			if (linkMetadata.Anchors is null || !linkMetadata.Anchors.Contains(anchor, StringComparer.OrdinalIgnoreCase))
 			{
-				errorEmitter($"'{lookupPath}' has no anchor named: '{lookupFragment}'.");
+				errorEmitter($"'{lookupPath}' has no anchor named: '{lookupFragment}'.", LinkGraphConstraints.CrossLinkResolves.Name);
 				return false;
 			}
 
@@ -155,7 +185,7 @@ public class CrossLinkResolver(FetchedCrossLinks crossLinks, IUriEnvironmentReso
 	}
 
 	private static bool ResolveRedirect(
-		Action<string> errorEmitter,
+		Action<string, string?> errorEmitter,
 		IUriEnvironmentResolver uriResolver,
 		Uri originalCrossLinkUri,
 		LinkRedirect redirectRule,
@@ -213,7 +243,8 @@ public class CrossLinkResolver(FetchedCrossLinks crossLinks, IUriEnvironmentReso
 			else
 			{
 				errorEmitter(
-					$"Redirect rule for '{originalLookupPath}' in '{originalCrossLinkUri.Scheme}' found, but top-level rule did not handle anchor '#{originalFragment}'."
+					$"Redirect rule for '{originalLookupPath}' in '{originalCrossLinkUri.Scheme}' found, but top-level rule did not handle anchor '#{originalFragment}'.",
+					LinkGraphConstraints.CrossLinkRedirectResolves.Name
 				);
 				return false;
 			}
@@ -241,7 +272,7 @@ public class CrossLinkResolver(FetchedCrossLinks crossLinks, IUriEnvironmentReso
 	}
 
 	private static bool FinalizeRedirect(
-		Action<string> errorEmitter,
+		Action<string, string?> errorEmitter,
 		IUriEnvironmentResolver uriResolver,
 		Uri originalProcessingUri,
 		string redirectToPath,
@@ -268,7 +299,8 @@ public class CrossLinkResolver(FetchedCrossLinks crossLinks, IUriEnvironmentReso
 			if (!fetchedCrossLinks.LinkReferences.TryGetValue(targetCrossUri.Scheme, out var targetLinkReference))
 			{
 				errorEmitter(
-					$"Redirect target '{redirectToPath}' points to repository '{targetCrossUri.Scheme}' for which no links.json was found."
+					$"Redirect target '{redirectToPath}' points to repository '{targetCrossUri.Scheme}' for which no links.json was found.",
+					LinkGraphConstraints.CrossLinkRedirectResolves.Name
 				);
 				return false;
 			}
@@ -276,7 +308,8 @@ public class CrossLinkResolver(FetchedCrossLinks crossLinks, IUriEnvironmentReso
 			if (!targetLinkReference.Links.ContainsKey(lookupPath))
 			{
 				errorEmitter(
-					$"Redirect target '{redirectToPath}' points to file '{lookupPath}' which was not found in repository '{targetCrossUri.Scheme}'s links.json."
+					$"Redirect target '{redirectToPath}' points to file '{lookupPath}' which was not found in repository '{targetCrossUri.Scheme}'s links.json.",
+					LinkGraphConstraints.CrossLinkRedirectResolves.Name
 				);
 				return false;
 			}

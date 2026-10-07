@@ -74,7 +74,7 @@ public class AppliesItemBlock(DirectiveBlockParser parser, ParserContext context
 		try
 		{
 			var applicableTo = YamlSerialization.Deserialize<ApplicableTo>(yaml, Build.Catalog.Products);
-			return applicableTo;
+			return this.ReportApplicableTo(applicableTo);
 		}
 		catch (FormatException e)
 		{

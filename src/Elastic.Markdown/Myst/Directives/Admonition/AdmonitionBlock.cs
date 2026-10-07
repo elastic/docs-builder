@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using Elastic.Documentation.AppliesTo;
+using Elastic.Markdown.Diagnostics;
 using Elastic.Markdown.Helpers;
 
 namespace Elastic.Markdown.Myst.Directives.Admonition;
@@ -63,7 +64,7 @@ public class AdmonitionBlock : DirectiveBlock, IBlockTitle, IBlockAppliesTo
 		try
 		{
 			var applicableTo = YamlSerialization.Deserialize<ApplicableTo>(yaml, Build.Catalog.Products);
-			return applicableTo;
+			return this.ReportApplicableTo(applicableTo);
 		}
 		catch
 		{

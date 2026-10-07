@@ -206,6 +206,124 @@ public class BundleAmendTests : ChangelogTestBase
 	}
 
 	[Test]
+	public async Task AmendBundle_RemoveWithChecksumMismatch_WithoutForce_IsReportedOnceByTheRule()
+	{
+		var ct = TestContext.Current!.Execution.CancellationToken;
+		var bundlePath = await CreateBundle(ct);
+		var changelogFile = FileSystem.Path.Join(_changelogDir, "1755268130-existing.yaml");
+		await FileSystem.File.WriteAllTextAsync(
+			changelogFile,
+			"""
+			title: Changed title
+			type: feature
+			products:
+			  - product: elasticsearch
+			    target: 9.2.0
+			prs:
+			- "100"
+			""",
+			ct
+		);
+
+		var amendCollector = new TestDiagnosticsCollector();
+		var result = await Service.AmendBundle(
+			amendCollector,
+			new AmendBundleArguments { BundlePath = bundlePath, RemoveFiles = [changelogFile], ForceLocal = true },
+			ct
+		);
+
+		result.Should().BeFalse();
+		var finding = amendCollector.Diagnostics.Should().ContainSingle(d => d.Message.Contains("different checksum")).Subject;
+		finding.Severity.Should().Be(Severity.Error);
+		finding.RuleId.Should().Be(BundleAmendConstraints.AmendRemovalChecksumsMatch.Name);
+		finding.File.Should().Be(changelogFile);
+		ChangelogBundleAmendService.DiscoverAmendFiles(FileSystem, bundlePath).Should().BeEmpty("an error stops the write");
+	}
+
+	[Test]
+	public async Task AmendBundle_RemoveWithChecksumMismatch_WithForce_WarnsOnceAndStillWrites()
+	{
+		var ct = TestContext.Current!.Execution.CancellationToken;
+		var bundlePath = await CreateBundle(ct);
+		var changelogFile = FileSystem.Path.Join(_changelogDir, "1755268130-existing.yaml");
+		await FileSystem.File.WriteAllTextAsync(
+			changelogFile,
+			"""
+			title: Changed title
+			type: feature
+			products:
+			  - product: elasticsearch
+			    target: 9.2.0
+			prs:
+			- "100"
+			""",
+			ct
+		);
+
+		var amendCollector = new TestDiagnosticsCollector();
+		var result = await Service.AmendBundle(
+			amendCollector,
+			new AmendBundleArguments { BundlePath = bundlePath, RemoveFiles = [changelogFile], ForceLocal = true, Force = true },
+			ct
+		);
+
+		result.Should().BeTrue();
+		amendCollector.Errors.Should().Be(0);
+		var finding = amendCollector.Diagnostics.Should().ContainSingle(d => d.Message.Contains("different checksum")).Subject;
+		finding.Severity.Should().Be(Severity.Warning);
+		finding.RuleId.Should().Be(BundleAmendConstraints.AmendRemovalChecksumsMatch.Name);
+		var amendFiles = ChangelogBundleAmendService.DiscoverAmendFiles(FileSystem, bundlePath);
+		amendFiles.Should().HaveCount(1);
+		(await FileSystem.File.ReadAllTextAsync(amendFiles[0], ct)).Should().Contain("name: 1755268130-existing.yaml");
+	}
+
+	[Test]
+	public async Task AmendBundle_RemoveNotInBundle_IsReportedOnceByTheRule_EvenWithForce()
+	{
+		var ct = TestContext.Current!.Execution.CancellationToken;
+		var bundlePath = await CreateBundle(ct);
+		var otherFile = await CreateNewChangelogFile(ct);
+
+		var amendCollector = new TestDiagnosticsCollector();
+		var result = await Service.AmendBundle(
+			amendCollector,
+			new AmendBundleArguments { BundlePath = bundlePath, RemoveFiles = [otherFile], ForceLocal = true, Force = true },
+			ct
+		);
+
+		result.Should().BeFalse();
+		var finding = amendCollector
+			.Diagnostics
+			.Should()
+			.ContainSingle(d => d.Message.Contains("was not found in the effective bundle"))
+			.Subject;
+		finding.Severity.Should().Be(Severity.Error);
+		finding.RuleId.Should().Be(BundleAmendConstraints.AmendRemovalsExist.Name);
+		finding.File.Should().Be(otherFile);
+	}
+
+	[Test]
+	public async Task AmendBundle_AddAnEntryTheBundleHas_WarnsOnceByTheRuleAndStillWrites()
+	{
+		var ct = TestContext.Current!.Execution.CancellationToken;
+		var bundlePath = await CreateBundle(ct);
+		var existingFile = FileSystem.Path.Join(_changelogDir, "1755268130-existing.yaml");
+
+		var amendCollector = new TestDiagnosticsCollector();
+		var result = await Service.AmendBundle(
+			amendCollector,
+			new AmendBundleArguments { BundlePath = bundlePath, AddFiles = [existingFile], ForceLocal = true },
+			ct
+		);
+
+		result.Should().BeTrue();
+		var finding = amendCollector.Diagnostics.Should().ContainSingle(d => d.Message.Contains("to add is already in the bundle")).Subject;
+		finding.Severity.Should().Be(Severity.Warning);
+		finding.RuleId.Should().Be(BundleAmendConstraints.AmendAddedEntriesNew.Name);
+		ChangelogBundleAmendService.DiscoverAmendFiles(FileSystem, bundlePath).Should().HaveCount(1);
+	}
+
+	[Test]
 	public async Task AmendBundle_RemoveAndAdd_InSingleAmendFile()
 	{
 		var ct = TestContext.Current!.Execution.CancellationToken;
