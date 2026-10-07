@@ -86,6 +86,11 @@
 		<dd class="union-options">
 			<span class="values-label">@repeated.Label</span>
 			<a href="#@repeated.AnchorId"><code>@repeated.Name</code></a>
+			@if (repeated.Owner is { Length: > 0 } owner)
+			{
+				<span class="values-label">in</span>
+				<code>@owner</code>
+			}
 		</dd>
 	}
 	@if (Model.ArrayItemTypeName != null)

@@ -24,6 +24,9 @@ public sealed record PropertyTreeScope
 	public IReadOnlySet<string>? Ancestors { get; init; }
 	public IReadOnlyDictionary<string, string>? DescriptionOverrides { get; init; }
 
+	/// <summary>The variant or row these properties belong to, used to say where a shared listing sits.</summary>
+	public string? Owner { get; init; }
+
 	/// <summary>Overrides the schema's own required set at the top level; never inherited by children.</summary>
 	public ISet<string>? RequiredProperties { get; init; }
 }
@@ -230,9 +233,10 @@ public class ApiPropertyTreeBuilder(
 			ArrayItemTypeName = null,
 			TypeLink = typeLink,
 			AlsoIncludes = BuildAlsoIncludes(typeInfo),
-			IsCollapsible = expansion.IsCollapsible,
+			// A repeat lists nothing itself, so it gets no show/hide toggle.
+			IsCollapsible = row.Repeats is null && expansion.IsCollapsible,
 			DefaultExpanded = expansion.DefaultExpanded,
-			NestedCount = expansion.NestedCount,
+			NestedCount = row.Repeats is null ? expansion.NestedCount : 0,
 			Children = isRecursive || row.Repeats is not null ? ApiPropertyChildren.None : ListChildren(row, scope, expansion)
 		};
 	}
@@ -465,7 +469,8 @@ public class ApiPropertyTreeBuilder(
 			Prefix = row.AnchorId,
 			Depth = scope.Depth + 1,
 			Ancestors = AugmentAncestors(typeInfo, scope.Ancestors),
-			RequiredProperties = null
+			RequiredProperties = null,
+			Owner = row.Name
 		};
 		var useHidden = options.UseHiddenUntilFound && expansion.IsCollapsible && !expansion.DefaultExpanded;
 
@@ -582,7 +587,7 @@ public class ApiPropertyTreeBuilder(
 		if (row.ShapeKey is not { } key)
 			return BuildChildren(row, scope, expansion);
 
-		var shape = new RepeatedShape(row.Name, row.AnchorId, row.TypeInfo.IsUnion);
+		var shape = new RepeatedShape(row.Name, row.AnchorId, row.TypeInfo.IsUnion, scope.Owner);
 		_shapes.BeginListing(key, shape);
 		var children = BuildChildren(row, scope, expansion);
 		_shapes.EndListing(key, shape, CountRows(children));
@@ -734,7 +739,14 @@ public class ApiPropertyTreeBuilder(
 				Properties = showProperties && variant.Schema is not null
 					? childBuilder.BuildPropertyList(
 						dictionaryValue is null ? variant.Schema : WithDictionaryKeyRow(variant.Schema, variant.Props, dictionaryValue),
-						scope with { Prefix = optionId, Depth = scope.Depth + 1, Ancestors = newAncestors, RequiredProperties = null }
+						scope with
+						{
+							Prefix = optionId,
+							Depth = scope.Depth + 1,
+							Ancestors = newAncestors,
+							RequiredProperties = null,
+							Owner = SchemaHelpers.ReadableSchemaName(variant.BaseName)
+						}
 					) ?? new ApiPropertyList([])
 					: null,
 				DescriptionHtml = description is null ? HtmlString.Empty : options.RenderMarkdown(description),

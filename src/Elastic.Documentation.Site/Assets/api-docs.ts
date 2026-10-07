@@ -254,6 +254,35 @@ function expandParamSectionForHash(): void {
     if (section) expandParamSection(section)
     const panel = target?.closest<HTMLElement>('.response-panel')
     if (panel) expandResponsePanel(panel)
+    if (target && revealCollapsedAncestors(target)) target.scrollIntoView()
+}
+
+/**
+ * Opens every collapsed property, variant and "type options" list around a link target, so a
+ * "Same fields as" link or a shared URL lands on visible content in every browser, including
+ * those without hidden="until-found". The target's own row stays as it was.
+ */
+export function revealCollapsedAncestors(target: HTMLElement): boolean {
+    const ownRow = target.closest<HTMLElement>('.property-item')
+    const start =
+        ownRow && ownRow.contains(target) && target.tagName === 'DT'
+            ? ownRow.parentElement
+            : target.parentElement
+    let revealed = false
+    for (let el = start; el; el = el.parentElement) {
+        if (!el.classList.contains('collapsed')) continue
+        if (el.classList.contains('union-variants-container')) {
+            expandUnionContainer(el)
+            revealed = true
+        } else if (el.classList.contains('union-variant-item')) {
+            expandUnionVariantItem(el)
+            revealed = true
+        } else if (el.classList.contains('property-item')) {
+            expandPropertyItem(el)
+            revealed = true
+        }
+    }
+    return revealed
 }
 
 /**

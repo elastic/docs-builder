@@ -1625,4 +1625,43 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture)
 		var later = builder.BuildPropertyList(document.Components!.Schemas!["Holder"], new PropertyTreeScope { Prefix = "req" })!;
 		later.Items.Single(p => p.Name == "created").Repeats!.AnchorId.Should().Be("res-200-created", "one builder serves one page");
 	}
+
+	[Test]
+	public async Task BuildPropertyList_LargeTypeSharedAcrossVariants_NamesTheVariantAndShowsNoToggle()
+	{
+		var json =
+			"""
+			{
+			  "openapi": "3.0.3",
+			  "info": { "title": "t", "version": "1" },
+			  "paths": {},
+			  "components": {
+			    "schemas": {
+			      "Actions": { "type": "object", "properties": { "f0": { "type": "string" }, "f1": { "type": "string" }, "f2": { "type": "string" }, "f3": { "type": "string" }, "f4": { "type": "string" }, "f5": { "type": "string" }, "f6": { "type": "string" }, "f7": { "type": "string" }, "f8": { "type": "string" }, "f9": { "type": "string" }, "f10": { "type": "string" }, "f11": { "type": "string" } } },
+			      "EqlRule": { "type": "object", "properties": { "query": { "type": "string" }, "actions": { "type": "array", "items": { "$ref": "#/components/schemas/Actions" } } } },
+			      "QueryRule": { "type": "object", "properties": { "filters": { "type": "string" }, "actions": { "type": "array", "items": { "$ref": "#/components/schemas/Actions" } } } },
+			      "Holder": {
+			        "type": "object",
+			        "properties": {
+			          "rule": { "oneOf": [ { "$ref": "#/components/schemas/EqlRule" }, { "$ref": "#/components/schemas/QueryRule" } ] }
+			        }
+			      }
+			    }
+			  }
+			}
+			""";
+		var document = await LoadSpecAsync(json);
+
+		var variants = BuilderFor(document).BuildPropertyList(
+			document.Components!.Schemas!["Holder"],
+			new PropertyTreeScope { Prefix = "" }
+		)!.Items.Single().Children.Variants!.Variants;
+
+		var first = variants[0].Properties!.Items.Single(p => p.Name == "actions");
+		first.Children.Properties!.Items.Should().HaveCount(12);
+		var repeat = variants[1].Properties!.Items.Single(p => p.Name == "actions");
+		repeat.Repeats.Should().Be(new RepeatedShape("actions", first.AnchorId, IsUnion: false, Owner: "EqlRule"));
+		repeat.IsCollapsible.Should().BeFalse("a repeat lists nothing, so it has nothing to show or hide");
+		repeat.NestedCount.Should().Be(0);
+	}
 }

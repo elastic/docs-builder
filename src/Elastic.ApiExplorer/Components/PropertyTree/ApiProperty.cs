@@ -21,7 +21,8 @@ public record ExternalDocLink(string Url, bool IsElasticDocs, string? Descriptio
 }
 
 /// <summary>An earlier row on the page whose fields (or union options) a row repeats; the row links back to it.</summary>
-public record RepeatedShape(string Name, string AnchorId, bool IsUnion)
+/// <remarks><see cref="Owner"/> names the variant or row the first listing sits in, since many listings share a name.</remarks>
+public record RepeatedShape(string Name, string AnchorId, bool IsUnion, string? Owner = null)
 {
 	public string Label => IsUnion ? "Same options as" : "Same fields as";
 }
