@@ -77,11 +77,6 @@ public static class SchemaHelpers
 		StringComparer.OrdinalIgnoreCase
 	);
 
-	/// <summary>
-	/// Primitive/generic type names that are not named schema types.
-	/// These should not be considered for recursive type detection since they
-	/// represent generic types rather than specific schema references.
-	/// </summary>
 	// Display order for a schema with several types; it matches how the specs list them, since the type flags keep no order.
 	private static readonly (JsonSchemaType Type, string Name)[] PrimitiveTypeOrder =
 	[
@@ -92,6 +87,11 @@ public static class SchemaHelpers
 		(JsonSchemaType.Object, "object")
 	];
 
+	/// <summary>
+	/// Primitive/generic type names that are not named schema types.
+	/// These should not be considered for recursive type detection since they
+	/// represent generic types rather than specific schema references.
+	/// </summary>
 	public static readonly HashSet<string> PrimitiveTypeNames = new(
 		["boolean", "number", "string", "integer", "object", "null", "array"],
 		StringComparer.OrdinalIgnoreCase
@@ -138,13 +138,13 @@ public static class SchemaHelpers
 		StringComparer.OrdinalIgnoreCase
 	);
 
+	/// <summary>The row label for a union: <c>anyOf</c> options can match together, so it says "Any of:".</summary>
+	public static string UnionLabel(UnionKeyword? keyword) => keyword == UnionKeyword.AnyOf ? "Any of:" : "One of:";
+
 	/// <summary>
 	/// Gets the URL for a container type's dedicated page under the given API root
 	/// (e.g. <c>/api/elasticsearch</c>), matching the URLs built by <c>SchemaNavigationItem</c>.
 	/// </summary>
-	/// <summary>The row label for a union: <c>anyOf</c> options can match together, so it says "Any of:".</summary>
-	public static string UnionLabel(UnionKeyword? keyword) => keyword == UnionKeyword.AnyOf ? "Any of:" : "One of:";
-
 	public static string? GetContainerPageUrl(string apiRootUrl, string typeName)
 	{
 		var schemaId = typeName switch
@@ -207,7 +207,9 @@ public static class SchemaHelpers
 	/// Checks if a type name is a primitive/generic type name (not a named schema type).
 	/// Primitive types like "object", "string", etc. should not be used for recursive type detection.
 	/// </summary>
-	public static bool IsPrimitiveTypeName(string typeName) => PrimitiveTypeNames.Contains(typeName);
+	public static bool IsPrimitiveTypeName(string typeName) =>
+		PrimitiveTypeNames.Contains(typeName)
+			|| (typeName.Contains(" | ", StringComparison.Ordinal) && typeName.Split(" | ").All(PrimitiveTypeNames.Contains));
 
 	/// <summary>True for JSON primitives and their plural array labels (<c>strings</c>, …).</summary>
 	public static bool IsPrimitiveDisplayName(string? name) => !string.IsNullOrEmpty(name) && PrimitiveDisplayNames.Contains(name);

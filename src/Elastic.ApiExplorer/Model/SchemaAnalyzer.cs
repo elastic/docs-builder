@@ -559,6 +559,12 @@ public class SchemaAnalyzer(
 	/// A named schema that is an <c>allOf</c> with a <c>oneOf</c>/<c>anyOf</c> member is a union too, so a <c>$ref</c> to it
 	/// expands its variants. The guard stops a variant that refers back to its parent from recursing forever.
 	/// </summary>
+	/// <remarks>
+	/// Inside A's expansion, a variant B that refers back to A sees A as a plain named type, while B classified on its own
+	/// sees A as a union. That difference stays inside the nested classification: a union option keeps only its name,
+	/// <c>$ref</c> and object flag, which come out the same in any order, and the guard is empty again once a
+	/// classification returns.
+	/// </remarks>
 	private TypeInfo? ClassifyReferencedAllOfUnion(string refId, IOpenApiSchema target)
 	{
 		if (target.AllOf is not { Count: > 0 } allOf || !AllOfUnion.TrySplit(allOf, this, out var split) || !_expandingAllOfRefs.Add(refId))

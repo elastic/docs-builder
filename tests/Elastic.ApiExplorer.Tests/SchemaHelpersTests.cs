@@ -134,4 +134,13 @@ public class SchemaHelpersTests
 		SchemaHelpers.GetPrimitiveTypeName(JsonSchemaType.Null).Should().Be("null");
 		SchemaHelpers.GetPrimitiveTypeName(JsonSchemaType.Integer).Should().Be("integer");
 	}
+
+	[Test]
+	[Arguments("string | object", true)]
+	[Arguments("boolean | number | string", true)]
+	[Arguments("string", true)]
+	[Arguments("Cat | Dog", false)]
+	[Arguments("QueryContainer", false)]
+	public void IsPrimitiveTypeName_SingleAndMultiTypeNames(string name, bool expected) =>
+		SchemaHelpers.IsPrimitiveTypeName(name).Should().Be(expected);
 }

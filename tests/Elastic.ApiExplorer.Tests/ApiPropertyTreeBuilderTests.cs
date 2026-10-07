@@ -1833,4 +1833,80 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture)
 		Row("second").Repeats.Should().BeNull("its map values have different fields");
 		Row("third").Repeats!.Name.Should().Be("first");
 	}
+
+	[Test]
+	public async Task GetTypeInfo_TwoAllOfUnionsReferringToEachOther_GivesTheSameResultInAnyOrder()
+	{
+		var json =
+			"""
+			{
+			  "openapi": "3.0.3",
+			  "info": { "title": "t", "version": "1" },
+			  "paths": {},
+			  "components": {
+			    "schemas": {
+			      "Leaf": { "type": "object", "properties": { "value": { "type": "string" } } },
+			      "A": { "allOf": [
+			        { "type": "object", "properties": { "a": { "type": "string" } } },
+			        { "oneOf": [ { "$ref": "#/components/schemas/Leaf" }, { "$ref": "#/components/schemas/B" } ] } ] },
+			      "B": { "allOf": [
+			        { "type": "object", "properties": { "b": { "type": "string" } } },
+			        { "oneOf": [ { "$ref": "#/components/schemas/Leaf" }, { "$ref": "#/components/schemas/A" } ] } ] }
+			    }
+			  }
+			}
+			""";
+		var document = await LoadSpecAsync(json);
+
+		string Describe(Model.TypeInfo info) =>
+			$"{info.TypeName}:{info.UnionKeyword}:{string.Join(",", info.UnionOptions!.Select(o => $"{o.Name}/{o.Ref}/{o.IsObject}"))}";
+
+		var forward = new SchemaAnalyzer(document);
+		var aFirst = Describe(forward.GetTypeInfo(new OpenApiSchemaReference("A", document)));
+		var bAfter = Describe(forward.GetTypeInfo(new OpenApiSchemaReference("B", document)));
+		var aAgain = Describe(forward.GetTypeInfo(new OpenApiSchemaReference("A", document)));
+
+		var backward = new SchemaAnalyzer(document);
+		var bFirst = Describe(backward.GetTypeInfo(new OpenApiSchemaReference("B", document)));
+		var aAfter = Describe(backward.GetTypeInfo(new OpenApiSchemaReference("A", document)));
+
+		aAgain.Should().Be(aFirst, "the cycle guard is empty again once a classification returns");
+		aAfter.Should().Be(aFirst);
+		bFirst.Should().Be(bAfter);
+		aFirst.Should().Contain("B/B/True");
+	}
+
+	[Test]
+	public async Task BuildPropertyList_TypeArrayOfStringAndObject_IsAPrimitiveType()
+	{
+		var json =
+			"""
+			{
+			  "openapi": "3.1.0",
+			  "info": { "title": "t", "version": "1" },
+			  "paths": {},
+			  "components": {
+			    "schemas": {
+			      "Holder": {
+			        "type": "object",
+			        "properties": {
+			          "value": { "type": ["string", "object"] },
+			          "nested": { "type": "object", "properties": { "value": { "type": ["string", "object"] } } }
+			        }
+			      }
+			    }
+			  }
+			}
+			""";
+		var document = await LoadSpecAsync(json);
+
+		var info = new SchemaAnalyzer(document).GetTypeInfo(document.Components!.Schemas!["Holder"].Properties!["value"]);
+		info.TypeName.Should().Be("string | object");
+		info.IsObject.Should().BeFalse("it has no properties to list");
+		SchemaHelpers.IsPrimitiveTypeName(info.TypeName).Should().BeTrue();
+
+		var list = BuilderFor(document).BuildPropertyList(document.Components!.Schemas!["Holder"], new PropertyTreeScope { Prefix = "" })!;
+		var nestedValue = list.Items.Single(p => p.Name == "nested").Children.Properties!.Items.Single();
+		nestedValue.IsRecursive.Should().BeFalse("a primitive multi-type name is never an ancestor type");
+	}
 }
