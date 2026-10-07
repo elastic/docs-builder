@@ -474,7 +474,7 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture)
 
 		builder.Describe(names).Text.Should().Be("union Names");
 		builder.DescribePathParameter(names).Text.Should().Be("union Name | [] Name");
-		builder.DescribePathParameter(dataStreams).Text.Should().Be("union string | [] string");
+		builder.DescribePathParameter(dataStreams).Text.Should().Be("union DataStreamName | [] DataStreamName");
 		builder.DescribePathParameter(document.Components!.Schemas!["inline.StringOrArray"]).Text.Should().Be("union string | [] string");
 		builder.DescribePathParameter(name).Text.Should().Be("string Name");
 		builder.Describe(name).Text.Should().Be("string Name");

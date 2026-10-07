@@ -417,14 +417,18 @@ public partial class ApiPropertyTreeBuilder(
 		if (typeInfo.EnumValues is { Length: > 0 } && !expansion.HasUnionOptions)
 			return null;
 
+		// An X | X[] union needs no options row when its type already reads X | X[] or X's fields expand below it.
+		// A named one (`union NodeIds`) that does not expand has only this row to name X.
+		var namesItsOptions = typeInfo.TypeName?.Contains(" | ", StringComparison.Ordinal) == true;
+		if (expansion.IsSimpleArrayUnion && (namesItsOptions || expansion.SimpleUnionHasExpandableProps))
+			return null;
+
 		var sortedOptions = (typeInfo.UnionOptions ?? [])
 			.DistinctBy(o => o.Name)
 			.OrderByDescending(o => o.IsArray)
-			.Select(o => o.Name)
+			.Select(static o => SchemaHelpers.ReadableSchemaName(o.BaseName) + (o.IsArray ? "[]" : ""))
+			.Distinct()
 			.ToArray();
-
-		if (expansion.IsSimpleArrayUnion)
-			return null;
 
 		if (sortedOptions.Length > 0 || expansion.HasUnionOptions)
 		{

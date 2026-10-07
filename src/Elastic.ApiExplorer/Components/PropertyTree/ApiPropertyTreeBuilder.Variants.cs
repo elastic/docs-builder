@@ -19,7 +19,7 @@ public partial class ApiPropertyTreeBuilder
 		OpenApiDiscriminator? discriminator = null
 	)
 	{
-		var unionOptions = unionSchemas.Where(s => s is not null).Select(_analyzer.ClassifyOption).ToList();
+		var unionOptions = _analyzer.GetUnionOptions(unionSchemas.Where(static s => s is not null));
 		return BuildUnionVariants(unionOptions, scope, discriminator);
 	}
 

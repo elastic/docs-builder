@@ -41,7 +41,7 @@ internal static class ApiBodyContent
 		if (typeInfo is not { IsUnion: true, UnionOptions.Count: > 0 })
 			return null;
 
-		var options = typeInfo.UnionOptions.Where(static o => o.Schema is not null).Select(o => DescribeMember(o, analyzer)).ToList();
+		var options = typeInfo.UnionOptions.Where(static o => o.Schema is not null).ToList();
 		var variants = options.Count == 0 ? null : builder.BuildUnionVariants(options, scope, analyzer.GetUnionDiscriminator(bodySchema));
 		return variants is null ? null : variants with { Label = UnionLabel(typeInfo) };
 	}
@@ -54,21 +54,6 @@ internal static class ApiBodyContent
 	{
 		var label = SchemaHelpers.UnionLabel(typeInfo.UnionKeyword);
 		return typeInfo.IsArray ? $"An array; each item is {label.ToLowerInvariant()}" : label;
-	}
-
-	/// <summary>
-	/// Classifies a union member the way a body-level list always has. A merged <c>allOf</c> variant has no <c>$ref</c> of its own,
-	/// so it keeps the name and <c>$ref</c> of the option it came from; discriminator mappings match on that <c>$ref</c>.
-	/// </summary>
-	private static UnionOption DescribeMember(UnionOption option, SchemaAnalyzer analyzer)
-	{
-		if (option.Schema is MergedVariantSchema)
-			return option;
-
-		// Keep the inline member's own name (its title) and label; take the classification from the type.
-		var classified = analyzer.ClassifyOption(option.Schema!);
-		var keepsName = string.IsNullOrEmpty(option.Ref) && option is { IsObject: true, IsArray: false };
-		return (keepsName ? classified with { BaseName = option.BaseName } : classified) with { Label = option.Label };
 	}
 
 	/// <summary>Names a collapsed section header lists; an array variant keeps its <c>[]</c> so it stays apart from the plain one.</summary>
