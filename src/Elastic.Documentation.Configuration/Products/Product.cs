@@ -95,8 +95,8 @@ public record ProductLink
 
 /// <summary>
 /// The release-notes onboarding path a product follows, declared via <c>features.release-notes</c>
-/// in <c>products.yml</c>. See the release-notes onboarding RFC: a product either commits its final
-/// release bundles before release (<see cref="Prestage"/>) or cuts them at release time
+/// in <c>products.yml</c>. A product either ships via the Elastic DRA pipeline
+/// (<see cref="DailyReleasableArtifacts"/>) or cuts bundles at release time
 /// (<see cref="OnRelease"/>, the default).
 /// </summary>
 public enum ReleaseNotesPath
@@ -107,8 +107,11 @@ public enum ReleaseNotesPath
 	/// <summary>Final bundles are built and uploaded at release time (<c>release-notes</c> omitted, <c>true</c>, or <c>on-release</c>).</summary>
 	OnRelease,
 
-	/// <summary>Release bundles are reviewed and committed to the repository before release (<c>release-notes: prestage</c>).</summary>
-	Prestage
+	/// <summary>
+	/// Release bundles are generated from the DRA (Daily Releasable Artifacts) build manifest
+	/// and reviewed before GA (<c>release-notes: dra</c>; <c>prestage</c> accepted as an alias).
+	/// </summary>
+	DailyReleasableArtifacts
 }
 
 /// <summary>Declares which docs-builder subsystems a product participates in.</summary>
@@ -120,7 +123,8 @@ public record ProductFeatures
 	/// <summary>
 	/// The product's release-notes onboarding path. <see cref="ReleaseNotesPath.OnRelease"/> when
 	/// <c>features.release-notes</c> is omitted or <c>true</c> (preserving the historical boolean
-	/// participation default), <see cref="ReleaseNotesPath.None"/> when <c>false</c>.
+	/// participation default), <see cref="ReleaseNotesPath.None"/> when <c>false</c>,
+	/// <see cref="ReleaseNotesPath.DailyReleasableArtifacts"/> when <c>dra</c>.
 	/// </summary>
 	public ReleaseNotesPath ReleaseNotes { get; init; }
 
@@ -143,5 +147,13 @@ public record Product
 	public required string DisplayName { get; init; }
 	public VersioningSystem? VersioningSystem { get; init; }
 	public string? Repository { get; init; }
+
+	/// <summary>
+	/// The key used to look up this product in the DRA build manifest.
+	/// When null the manifest lookup falls back to <see cref="Repository"/> then <see cref="Id"/>.
+	/// Set this when the artifact name in the DRA manifest differs from the repository name.
+	/// </summary>
+	public string? DraArtifact { get; init; }
+
 	public ProductFeatures Features { get; init; } = ProductFeatures.All;
 }
