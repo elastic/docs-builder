@@ -555,3 +555,101 @@ public class LinkCardWithACrossLink : MarkdownTest
 	[Test, DisplayName("has no errors")]
 	public async Task HasNoErrors() => await Docs.HasNoErrors();
 }
+
+// :level: 3 nests a section under another heading. The whole outline moves with it, so the
+// accordion and the column keep their relative depth.
+public class ExploreAtLevelThree : MarkdownTest
+{
+	protected override string Markdown =>
+		"""
+		:::::{explore}
+		:id: use-kibana
+		:title: Use Kibana
+		:level: 3
+		:mode: first
+
+		::::{card-group}
+		:title: Analyze data
+		:id: analyze
+
+		:::{link-card}
+		title: Discover
+		:::
+		::::
+		:::::
+		""";
+
+	[Test, DisplayName("renders the section as a nested h3")]
+	public async Task RendersNestedHeading() =>
+		await Docs.ConvertsToContainingHtml(
+			"""
+		<div class="hub-zone hub-zone-nested" id="use-kibana">
+			<h3 class="hub-zone-title">Use Kibana</h3>
+		</div>
+		"""
+		);
+
+	[Test, DisplayName("renders the accordion as h4 and the column as h5")]
+	public async Task RendersNestedOutline() =>
+		await Docs.ConvertsToContainingHtml(
+			"""
+		<div class="hub-explore">
+			<details class="hub-accordion" id="analyze" open="">
+				<summary class="hub-accordion-summary">
+					<h4 class="hub-accordion-title">Analyze data</h4>
+					<svg class="hub-accordion-icon" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+						<path d="M3 8h10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"></path>
+						<path class="hub-accordion-icon-v" d="M8 3v10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"></path>
+					</svg>
+				</summary>
+				<div class="hub-accordion-body">
+					<ul class="hub-explore-cols">
+						<li class="hub-col">
+							<h5 class="hub-col-title">
+								Discover
+							</h5>
+						</li>
+					</ul>
+				</div>
+			</details>
+		</div>
+		"""
+		);
+
+	[Test, DisplayName("has no errors")]
+	public async Task HasNoErrors() => await Docs.HasNoErrors();
+}
+
+public class ExploreWithInvalidLevel : MarkdownTest
+{
+	protected override string Markdown =>
+		"""
+		:::::{explore}
+		:id: explore
+		:title: Explore the docs
+		:level: 4
+
+		::::{card-group}
+		:title: Quick links
+		:id: quick-links
+
+		:::{link-card}
+		title: Releases
+		:::
+		::::
+		:::::
+		""";
+
+	[Test, DisplayName("warns")]
+	public async Task Warns() => await Docs.HasWarning("Invalid {explore} level '4'");
+
+	[Test, DisplayName("falls back to h2")]
+	public async Task FallsBackToH2() =>
+		await Docs.ConvertsToContainingHtml(
+			"""
+		<div class="hub-zone" id="explore">
+			<h2 class="hub-zone-title">Explore the docs</h2>
+		</div>
+		"""
+		);
+}

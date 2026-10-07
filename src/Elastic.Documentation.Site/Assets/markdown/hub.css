@@ -708,6 +708,14 @@
 		color: var(--color-ink-light);
 		margin-top: 8px;
 	}
+	/* A section nested under another zone ({explore} with :level: 3). It sits closer to the
+	   zone above and steps its title down so the H2 stays the strongest heading. */
+	.hub-zone.hub-zone-nested {
+		margin-top: 40px;
+	}
+	.hub-zone.hub-zone-nested .hub-zone-title {
+		font-size: var(--text-xl);
+	}
 
 	/* Card grid -------------------------------------------------------- */
 	.hub-card-grid {
