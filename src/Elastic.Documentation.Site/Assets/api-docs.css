@@ -605,15 +605,15 @@
 
 .api-method-get,
 .api-operation-description .operation-verb.get {
-	background-color: #c9f3e3;
-	border-color: #aee8d2;
-	color: #008a5e;
+	background-color: #d9e8ff;
+	border-color: #bfdbff;
+	color: #1750ba;
 }
 .api-method-post,
 .api-operation-description .operation-verb.post {
-	background-color: #d9e8ff;
-	border-color: #bfdbff;
-	color: #0b64dd;
+	background-color: #c9f3e3;
+	border-color: #aee8d2;
+	color: #0c5a3f;
 }
 .api-method-put,
 .api-method-patch,
@@ -621,7 +621,7 @@
 .api-operation-description .operation-verb.patch {
 	background-color: #ffdebf;
 	border-color: #ffcda1;
-	color: #ed6723;
+	color: #9e3e0d;
 }
 .api-method-delete,
 .api-operation-description .operation-verb.delete {
@@ -641,7 +641,7 @@
 
 /*
  * Nav V2 method badges — Figma APIs (node 10065:6317):
- * GET green + pivot 180°; POST blue; PUT/PATCH orange; DELETE red + X;
+ * GET blue + pivot 180°; POST green; PUT/PATCH orange; DELETE red + X;
  * multi-operation (and HEAD/OPTIONS) gray + branch glyph.
  */
 #pages-nav .nav-v2-api-method {
@@ -666,22 +666,22 @@
 }
 
 #pages-nav .nav-v2-api-method-get {
-	background-color: #c9f3e3;
-	border-color: #aee8d2;
-	color: #008a5e;
+	background-color: #d9e8ff;
+	border-color: #bfdbff;
+	color: #1750ba;
 }
 
 #pages-nav .nav-v2-api-method-post {
-	background-color: #d9e8ff;
-	border-color: #bfdbff;
-	color: #0b64dd;
+	background-color: #c9f3e3;
+	border-color: #aee8d2;
+	color: #0c5a3f;
 }
 
 #pages-nav .nav-v2-api-method-put,
 #pages-nav .nav-v2-api-method-patch {
 	background-color: #ffdebf;
 	border-color: #ffcda1;
-	color: #ed6723;
+	color: #9e3e0d;
 }
 
 /* Neutral gray reserved for multi-operation endpoints (and rare HEAD/OPTIONS). */
@@ -694,19 +694,19 @@
 }
 
 #pages-nav a.sidebar-link.current .nav-v2-api-method-get {
-	background-color: #aee8d2;
-	border-color: #008a5e;
+	background-color: #bfdbff;
+	border-color: #1750ba;
 }
 
 #pages-nav a.sidebar-link.current .nav-v2-api-method-post {
-	background-color: #bfdbff;
-	border-color: #0b64dd;
+	background-color: #aee8d2;
+	border-color: #0c5a3f;
 }
 
 #pages-nav a.sidebar-link.current .nav-v2-api-method-put,
 #pages-nav a.sidebar-link.current .nav-v2-api-method-patch {
 	background-color: #ffcda1;
-	border-color: #c24411;
+	border-color: #9e3e0d;
 }
 
 #pages-nav a.sidebar-link.current .nav-v2-api-method-delete {
