@@ -59,7 +59,7 @@ if (
 /**
  * SVG files for our copy buttons
  */
-const iconCheck = `<svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-check" width="44" height="44" viewBox="0 0 24 24" stroke-width="2" stroke="#22863a" fill="none" stroke-linecap="round" stroke-linejoin="round">
+export const iconCheck = `<svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-check" width="44" height="44" viewBox="0 0 24 24" stroke-width="2" stroke="#22863a" fill="none" stroke-linecap="round" stroke-linejoin="round">
   <title>${messages[locale]['copy_success']}</title>
   <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
   <path d="M5 12l5 5l10 -10" />
@@ -80,9 +80,14 @@ if (!iconCopy) {
 }
 
 // EUI copy (Figma APIs 10202:4933). Keep 16×16 root; the header button is the 40×40 hit target.
-const iconCopyEui = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+export const iconCopyEui = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
   <path fill-rule="evenodd" clip-rule="evenodd" d="M6 1C5.44771 1 5 1.44772 5 2V10C5 10.5523 5.44772 11 6 11H14C14.5523 11 15 10.5523 15 10V2C15 1.44771 14.5523 1 14 1H6ZM6 2L14 2V10H6V2Z" fill="currentColor"/>
   <path d="M2 5H4V6H2V14H10V12H11V14C11 14.5523 10.5523 15 10 15H2C1.44772 15 1 14.5523 1 14V6C1 5.44772 1.44771 5 2 5Z" fill="currentColor"/>
+</svg>`
+
+// EUI check, fill based like the copy icon: card headers paint SVGs with fill, not stroke.
+export const iconCheckEui = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+  <path fill="currentColor" d="M6.5 12.207 2.146 7.854l.708-.708L6.5 10.793l6.646-6.647.708.708L6.5 12.207Z"/>
 </svg>`
 
 const codeCellId = (index: number, prefix: string) => `${prefix}${index}`
@@ -103,8 +108,12 @@ const temporarilyChangeTooltip = (el, oldText, newText) => {
 }
 
 // Changes the copy button icon for two seconds, then changes it back
-const temporarilyChangeIcon = (el, icon = iconCopy) => {
-    el.innerHTML = iconCheck
+export const temporarilyChangeIcon = (
+    el: HTMLElement,
+    icon = iconCopy,
+    check = iconCheck
+) => {
+    el.innerHTML = check
     setTimeout(() => {
         el.innerHTML = icon
     }, timeoutIcon)
@@ -144,7 +153,11 @@ const addCopyButtonToCodeCells = (
                     messages[locale]['copy'],
                     messages[locale]['copy_success']
                 )
-                temporarilyChangeIcon(clipboardButton, headerIcon)
+                temporarilyChangeIcon(
+                    clipboardButton,
+                    headerIcon,
+                    headerActions ? iconCheckEui : iconCheck
+                )
             } catch (error) {
                 console.error(error)
             }

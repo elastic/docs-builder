@@ -14,7 +14,6 @@ public enum OverviewRowKind
 {
 	ClassificationHeading,
 	TagHeading,
-	Endpoint,
 	Operation,
 	SchemaCategoryHeading,
 	Schema,
@@ -27,7 +26,8 @@ public record ApiOverviewRow
 	public required OverviewRowKind Kind { get; init; }
 	public required string Title { get; init; }
 	public string? Url { get; init; }
-	public IReadOnlyCollection<OperationNavigationItem> Operations { get; init; } = [];
+	/// <summary>Merged method and route rows of an operation row.</summary>
+	public OperationEndpoint? Endpoint { get; init; }
 
 	/// <summary>The full schema id shown next to schema rows.</summary>
 	public string? SchemaId { get; init; }
@@ -69,17 +69,8 @@ public static class ApiOverviewBuilder
 					rows.Add(new ApiOverviewRow { Kind = OverviewRowKind.TagHeading, Title = tag.NavigationTitle, Url = tag.Url });
 					AddProductRows(tag, rows);
 					break;
-				case EndpointNavigationItem endpoint:
-					AddEndpointRow(endpoint, rows, AddProductRows);
-					break;
 				case OperationNavigationItem operation:
-					rows.Add(new ApiOverviewRow
-					{
-						Kind = OverviewRowKind.Operation,
-						Title = operation.NavigationTitle,
-						Operations = [operation],
-						Url = operation.Url
-					});
+					rows.Add(OperationRow(operation));
 					break;
 				case SchemaCategoryNavigationItem schemaCategory:
 					rows.Add(new ApiOverviewRow { Kind = OverviewRowKind.SchemaCategoryHeading, Title = schemaCategory.NavigationTitle });
@@ -128,17 +119,8 @@ public static class ApiOverviewBuilder
 		{
 			switch (navigationItem)
 			{
-				case EndpointNavigationItem endpoint:
-					AddEndpointRow(endpoint, rows, AddTagRows);
-					break;
 				case OperationNavigationItem operation:
-					rows.Add(new ApiOverviewRow
-					{
-						Kind = OverviewRowKind.Operation,
-						Title = operation.NavigationTitle,
-						Operations = [operation],
-						Url = operation.Url
-					});
+					rows.Add(OperationRow(operation));
 					break;
 				case IntroHeadingNavigationItem:
 					break;
@@ -148,24 +130,12 @@ public static class ApiOverviewBuilder
 		}
 	}
 
-	private static void AddEndpointRow(
-		EndpointNavigationItem endpoint,
-		List<ApiOverviewRow> rows,
-		Action<INavigationItem, List<ApiOverviewRow>> recurse
-	)
-	{
-		var endpointOperations = endpoint is { NavigationItems.Count: > 0 } && endpoint.NavigationItems.All(n => n.Hidden)
-			? endpoint.NavigationItems
-			: [];
-		if (endpointOperations.Count > 0)
-			rows.Add(new ApiOverviewRow
-			{
-				Kind = OverviewRowKind.Endpoint,
-				Title = endpoint.NavigationTitle,
-				Operations = endpointOperations,
-				Url = endpoint.Url
-			});
-		else
-			recurse(endpoint, rows);
-	}
+	private static ApiOverviewRow OperationRow(OperationNavigationItem operation) =>
+		new()
+		{
+			Kind = OverviewRowKind.Operation,
+			Title = operation.NavigationTitle,
+			Endpoint = OperationEndpoint.Build(operation.Model, operation.Model.Operation.Description, operation.Siblings),
+			Url = operation.Url
+		};
 }

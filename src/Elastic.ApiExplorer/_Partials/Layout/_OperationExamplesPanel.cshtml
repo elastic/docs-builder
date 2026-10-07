@@ -1,28 +1,43 @@
 @using Elastic.ApiExplorer.Operations
 @inherits RazorSlice<OperationExamplesPanelModel>
-@* Second column of .api-page-columns from 1024px (api-docs.css); stacked under the reference below that. *@
+@* Second column of .api-page-columns from 1024px (api-docs.css); stacked under the reference below that.
+   Example chips pick a scenario; inactive scenarios use hidden="until-found" so find-in-page still reaches them. *@
 <aside id="api-examples-panel">
 	<nav class="api-examples-panel-nav markdown-content simple-scrollbar">
-		@if (Model.Scenarios.Count == 1)
-		{
-			<div class="api-examples-body">
-				@(await RenderPartialAsync<_ExampleScenarioContent, ExampleScenario>(Model.Scenarios[0]))
-			</div>
-		}
-		else if (Model.Scenarios.Count > 1)
-		{
-			<div class="api-examples-scenarios" data-api-scenarios>
-				@for (var i = 0; i < Model.Scenarios.Count; i++)
-				{
-					var scenario = Model.Scenarios[i];
-					var options = Model.Scenarios
-						.Select(choice => new ApiSelectOption(choice.Title, choice.TabId, choice.TabId == scenario.TabId))
-						.ToArray();
-					<div class="api-examples-scenario-panel api-examples-body" data-scenario="@scenario.TabId" hidden="@(i == 0 ? null : "hidden")">
-						@(await RenderPartialAsync<_ExampleScenarioContent, ExampleScenario>(scenario with { ExampleOptions = options }))
-					</div>
-				}
-			</div>
-		}
+		<div class="api-examples" data-api-examples>
+			<p class="api-examples-heading" id="api-examples-heading" role="heading" aria-level="2">Examples</p>
+			@if (Model.Scenarios.Count > 1)
+			{
+				<div class="api-example-chips" role="tablist" aria-labelledby="api-examples-heading">
+					@for (var i = 0; i < Model.Scenarios.Count; i++)
+					{
+						var scenario = Model.Scenarios[i];
+						var count = scenario.CodeSamples.Count;
+						<button
+							type="button"
+							role="tab"
+							class="api-example-chip@(i == 0 ? " is-active" : "")"
+							data-scenario="@scenario.TabId"
+							aria-selected="@(i == 0 ? "true" : "false")">
+							<span class="api-example-chip-title">@scenario.Title</span>
+							@if (count > 0)
+							{
+								var noun = count == 1 ? "language" : "languages";
+								<span class="api-example-chip-count" data-tippy-content="@count @noun">
+									<svg width="12" height="12" viewBox="0 0 16 16" aria-hidden="true"><use href="#icon-code"/></svg>@count<span class="sr-only"> @noun</span>
+								</span>
+							}
+						</button>
+					}
+				</div>
+			}
+			@for (var i = 0; i < Model.Scenarios.Count; i++)
+			{
+				var scenario = Model.Scenarios[i];
+				<div class="api-examples-scenario-panel api-examples-body" data-scenario="@scenario.TabId" hidden="@(i == 0 ? null : "until-found")">
+					@(await RenderPartialAsync<_ExampleScenarioContent, ExampleScenario>(scenario))
+				</div>
+			}
+		</div>
 	</nav>
 </aside>

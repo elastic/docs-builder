@@ -1,40 +1,100 @@
 @using Elastic.ApiExplorer.Model
 @using Elastic.ApiExplorer.Operations
 @inherits RazorSlice<ExampleScenario>
-@* Example OpenAPI descriptions are omitted from the rail — they often restate the call
-   or narrate the sample; the code blocks carry the useful content. *@
-
-@* .api-code-card styles chrome + syntax for every widget:
-   1. .api-code-sample — multi-language x-codeSamples
-   2. .api-code-sample — request JSON, unless the code samples already embed it
-   3. .example-block--response — response JSON (status-code tabs) *@
+@* One example: a carousel with one card per language (none hidden, so find-in-page reaches every sample),
+   the request body when no sample embeds it, and the response with status-code tabs. *@
 @{
-	var hasCodeSamples = Model.CodeSamples.Count > 0;
+	var scenario = Model;
+	var samples = scenario.CodeSamples;
 }
-@if (hasCodeSamples)
+@if (scenario.DescriptionHtml is { } description)
 {
-	@(await RenderPartialAsync<_ApiCodeSample, ApiCodeSampleModel>(new ApiCodeSampleModel($"rail-{Model.TabId}", Model.CodeSamples, Model.HttpMethod, Model.Route, Model.ExampleOptions)))
+	<div class="api-example-description" data-example-description>
+		<div class="api-example-description-text">@description</div>
+		<button type="button" class="api-example-description-toggle" data-description-toggle aria-expanded="false" hidden>Show more</button>
+	</div>
 }
-@if (Model.ShowRequest && Model.RequestJson is not null)
+@{
+	var hasRequest = samples.Count > 0 || scenario.ShowRequest;
+}
+@if (hasRequest)
 {
-	var requestSamples = new[]
-	{
-		new CodeSample("JSON", Model.RequestJson, "language-json")
-	};
-	var requestModel = hasCodeSamples
-		? new ApiCodeSampleModel($"rail-{Model.TabId}-request", requestSamples, Title: "Request example")
-		: new ApiCodeSampleModel($"rail-{Model.TabId}-request", requestSamples, Model.HttpMethod, Model.Route, Model.ExampleOptions);
+<div class="api-rail-request" data-rail-request>
+@if (samples.Count > 0)
+{
+	<div class="api-code-carousel" data-api-carousel>
+		<div class="api-code-carousel-head">
+			<span class="api-rail-label">Request</span>
+			<span class="api-code-carousel-position" data-carousel-position aria-live="polite">
+				<strong>@samples[0].Language</strong>
+				<span>1 / @samples.Count @(samples.Count == 1 ? "language" : "languages")</span>
+			</span>
+			@if (samples.Count > 1)
+			{
+				<button type="button" class="api-code-carousel-arrow" data-carousel-step="-1" aria-label="Previous language" disabled>&lsaquo;</button>
+				<button type="button" class="api-code-carousel-arrow" data-carousel-step="1" aria-label="Next language">&rsaquo;</button>
+			}
+		</div>
+		<div class="api-code-carousel-strip" data-carousel-strip tabindex="0" aria-label="@scenario.Title code samples. Use the arrow keys to switch language.">
+			@for (var i = 0; i < samples.Count; i++)
+			{
+				var sample = samples[i];
+				<section class="api-code-card api-code-carousel-card@(i == 0 ? " is-active" : "")" data-code-card data-lang="@sample.Language" aria-label="@sample.Language"@(sample.Generated ? new HtmlString(" data-generated") : HtmlString.Empty)>
+					<header class="api-code-carousel-card-header">
+						<span class="api-lang-badge" data-lang="@sample.Language" aria-hidden="true"></span>
+						<span class="api-code-carousel-card-title">
+							<span class="api-code-carousel-card-language">@sample.Language</span>
+							@if (sample.ClientLabel.Length > 0 && sample.ClientDocsUrl is { } clientDocs)
+							{
+								<a class="api-code-carousel-card-client" href="@clientDocs">@sample.ClientLabel</a>
+							}
+							else if (sample.ClientLabel.Length > 0)
+							{
+								<span class="api-code-carousel-card-client">@sample.ClientLabel</span>
+							}
+						</span>
+						<span class="api-code-carousel-card-actions" data-code-actions></span>
+					</header>
+					<div class="api-code-carousel-card-body">
+						@(await RenderPartialAsync<_ApiCodeBlock, ApiCodeBlockModel>(new ApiCodeBlockModel(sample.HighlightClass, sample.Source, LineNumbers: true)))
+					</div>
+				</section>
+			}
+		</div>
+		@if (samples.Count > 1)
+		{
+			<div class="api-code-carousel-dots" role="group" aria-label="Languages">
+				@foreach (var sample in samples)
+				{
+					<button type="button" class="api-code-carousel-dot@(sample == samples[0] ? " is-active" : "")" data-carousel-dot="@sample.Language" aria-label="@sample.Language" data-tippy-content="@sample.Language" aria-current="@(sample == samples[0] ? "true" : "false")">
+						<span class="api-lang-badge" data-lang="@sample.Language" aria-hidden="true"></span>
+					</button>
+				}
+			</div>
+		}
+	</div>
+}
+@if (scenario.ShowRequest && scenario.RequestJson is not null)
+{
+	var requestSample = new CodeSample("JSON", scenario.RequestJson, "language-json");
+	var requestModel = samples.Count > 0
+		? new ApiCodeSampleModel(requestSample, Title: "Request example")
+		: new ApiCodeSampleModel(requestSample, scenario.HttpMethod, scenario.Route);
+	<div class="api-code-carousel-head"><span class="api-rail-label">Request</span></div>
 	@(await RenderPartialAsync<_ApiCodeSample, ApiCodeSampleModel>(requestModel))
 }
 
-@if (Model.ShowRequest && !string.IsNullOrEmpty(Model.RequestExternalValue))
+@if (scenario.ShowRequest && !string.IsNullOrEmpty(scenario.RequestExternalValue))
 {
-	<p class="external-example">External example: <a href="@Model.RequestExternalValue">@Model.RequestExternalValue</a></p>
+	<p class="external-example">External example: <a href="@scenario.RequestExternalValue">@scenario.RequestExternalValue</a></p>
 }
-
-@if (Model.ShowResponse)
+</div>
+}
+@if (scenario.ShowResponse)
 {
-	var responses = Model.Responses;
+	var responses = scenario.Responses;
+	<div class="api-rail-response">
+	<div class="api-code-carousel-head"><span class="api-rail-label">Response</span></div>
 	<div class="api-code-card example-block example-block--response" data-api-response-samples data-code-card>
 		<div class="example-block-header">
 			<div class="example-response-tabs" role="tablist" aria-label="Response status">
@@ -75,5 +135,6 @@
 				</div>
 			}
 		</div>
+	</div>
 	</div>
 }
