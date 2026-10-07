@@ -774,6 +774,12 @@
 	.hub-zone.hub-zone-nested .hub-zone-title {
 		font-size: var(--text-xl);
 	}
+	/* Accordion titles are text-xl, the same size as a nested section title. Under a nested
+	   section they step down so the section title still reads as the heading. */
+	.hub-zone-nested + .hub-explore .hub-accordion-title {
+		font-size: var(--text-base);
+		font-weight: 600;
+	}
 
 	/* Card grid -------------------------------------------------------- */
 	.hub-card-grid {
