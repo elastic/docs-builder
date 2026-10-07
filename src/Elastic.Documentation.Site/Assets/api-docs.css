@@ -653,7 +653,7 @@
 
 #pages-nav a.sidebar-link:has(> .nav-v2-api-method) {
 	display: flex;
-	align-items: center;
+	align-items: flex-start;
 	justify-content: space-between;
 	width: 100%;
 	gap: 8px;
@@ -670,7 +670,8 @@
 	flex-shrink: 0;
 	align-items: center;
 	justify-content: center;
-	align-self: center;
+	align-self: flex-start;
+	margin-top: 2px;
 	box-sizing: border-box;
 	height: 16px;
 	padding: 0 4px;
