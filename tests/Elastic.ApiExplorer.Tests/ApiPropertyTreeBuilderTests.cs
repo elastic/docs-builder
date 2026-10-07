@@ -1994,4 +1994,48 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture)
 		created.Children.Variants!.Variants[1].Properties!.Items.Single(p => p.Name == "actions").Repeats!.Owner.Should().Be("EqlRule");
 		list.Items.Single(p => p.Name == "updated").Repeats.Should().Be(new RepeatedShape("created", "created", IsUnion: true));
 	}
+
+	[Test]
+	public async Task BuildBodyContent_ArrayOfUnion_SaysEachItemIsAVariant()
+	{
+		var json =
+			"""
+			{
+			  "openapi": "3.0.3",
+			  "info": { "title": "t", "version": "1" },
+			  "paths": {},
+			  "components": {
+			    "schemas": {
+			      "Cat": { "type": "object", "properties": { "lives": { "type": "integer" } } },
+			      "Dog": { "type": "object", "properties": { "barks": { "type": "boolean" } } },
+			      "Pets": { "type": "array", "items": { "oneOf": [ { "$ref": "#/components/schemas/Cat" }, { "$ref": "#/components/schemas/Dog" } ] } },
+			      "Pet": { "oneOf": [ { "$ref": "#/components/schemas/Cat" }, { "$ref": "#/components/schemas/Dog" } ] }
+			    }
+			  }
+			}
+			""";
+		var document = await LoadSpecAsync(json);
+		var analyzer = new SchemaAnalyzer(document);
+		var builder = BuilderFor(document);
+
+		var (_, array) = OperationPageModel.BuildBodyContent(
+			document.Components!.Schemas!["Pets"],
+			new PropertyTreeScope { Prefix = "res-200" },
+			analyzer,
+			builder
+		);
+		array!.Label.Should().Be("An array; each item is one of:");
+		array.Variants.Select(v => v.DisplayName).Should().Equal("Cat", "Dog");
+		var markdown = new System.Text.StringBuilder();
+		ApiPropertyMarkdown.WriteVariants(markdown, array, "/api/doc/fixture");
+		markdown.ToString().Should().StartWith("An array; each item is one of:");
+
+		var (_, single) = OperationPageModel.BuildBodyContent(
+			document.Components!.Schemas!["Pet"],
+			new PropertyTreeScope { Prefix = "req" },
+			analyzer,
+			builder
+		);
+		single!.Label.Should().Be("One of:");
+	}
 }

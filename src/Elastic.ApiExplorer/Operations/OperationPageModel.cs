@@ -907,7 +907,17 @@ public partial record OperationPageModel
 
 		var options = typeInfo.UnionOptions.Where(static o => o.Schema is not null).Select(o => DescribeMember(o, analyzer)).ToList();
 		var variants = options.Count == 0 ? null : builder.BuildUnionVariants(options, scope, analyzer.GetUnionDiscriminator(bodySchema));
-		return variants is null ? null : variants with { Label = SchemaHelpers.UnionLabel(typeInfo.UnionKeyword) };
+		return variants is null ? null : variants with { Label = BodyUnionLabel(typeInfo) };
+	}
+
+	/// <summary>
+	/// The label above a body's variants. An array whose items are a union says so, since the variants then describe each
+	/// item rather than the body.
+	/// </summary>
+	private static string BodyUnionLabel(TypeInfo typeInfo)
+	{
+		var label = SchemaHelpers.UnionLabel(typeInfo.UnionKeyword);
+		return typeInfo.IsArray ? $"An array; each item is {label.ToLowerInvariant()}" : label;
 	}
 
 	/// <summary>
