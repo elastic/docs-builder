@@ -43,7 +43,14 @@
 				}
 				@if (!string.IsNullOrEmpty(variant.DisplayName))
 				{
-					<code class="schema-type"><span class="@SchemaHelpers.TypeAtomCssClassOrNull(variant.DisplayName)">@variant.DisplayName</span></code>
+					@if (variant.PageUrl is { Length: > 0 } pageUrl)
+					{
+						<code class="schema-type"><a href="@pageUrl" class="@SchemaHelpers.LinkedCssClass" data-hx-boost="false">@variant.DisplayName</a></code>
+					}
+					else
+					{
+						<code class="schema-type"><span class="@SchemaHelpers.TypeAtomCssClassOrNull(variant.DisplayName)">@variant.DisplayName</span></code>
+					}
 				}
 				@if (variant.DiscriminatorLabel is { Length: > 0 } discriminatorLabel)
 				{

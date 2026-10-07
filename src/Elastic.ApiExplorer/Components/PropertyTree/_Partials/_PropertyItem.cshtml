@@ -81,6 +81,13 @@
 			</dd>
 		}
 	}
+	@if (Model.RepeatsUnion is { } repeated)
+	{
+		<dd class="union-options">
+			<span class="values-label">Same options as</span>
+			<a href="#@repeated.AnchorId"><code>@repeated.Name</code></a>
+		</dd>
+	}
 	@if (Model.ArrayItemTypeName != null)
 	{
 		<dd class="primitive-array">

@@ -13,6 +13,9 @@ public record ApiUnionVariant
 {
 	/// <summary>Display name without the <c>[]</c> suffix when the array icon is already shown.</summary>
 	public required string DisplayName { get; init; }
+
+	/// <summary>The type's own page when it has one; the variant links there instead of listing its fields.</summary>
+	public string? PageUrl { get; init; }
 	public required bool IsArrayVariant { get; init; }
 	public required bool IsObjectType { get; init; }
 	public required string AnchorId { get; init; }

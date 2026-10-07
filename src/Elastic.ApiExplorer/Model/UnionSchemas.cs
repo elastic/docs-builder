@@ -40,5 +40,8 @@ public static class UnionSchemas
 
 	public static bool IsUnion(IOpenApiSchema? schema) => TryGet(schema, out _, out _);
 
+	/// <summary>True for the type name an inline union displays (<c>oneOf</c>/<c>anyOf</c>), which names no schema.</summary>
+	public static bool IsKeywordName(string? name) => name is "oneOf" or "anyOf";
+
 	public static string ToSchemaKeyword(this UnionKeyword keyword) => keyword == UnionKeyword.AnyOf ? "anyOf" : "oneOf";
 }

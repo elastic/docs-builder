@@ -24,6 +24,9 @@ public sealed record PropertyTreeScope
 	public IReadOnlySet<string>? Ancestors { get; init; }
 	public IReadOnlyDictionary<string, string>? DescriptionOverrides { get; init; }
 
+	/// <summary>Enclosing union rows by option signature, so an anonymous union that repeats one stops instead of expanding again.</summary>
+	public IReadOnlyDictionary<string, UnionAncestor>? UnionAncestors { get; init; }
+
 	/// <summary>Overrides the schema's own required set at the top level; never inherited by children.</summary>
 	public ISet<string>? RequiredProperties { get; init; }
 }
@@ -40,7 +43,8 @@ public class ApiPropertyTreeBuilder(OpenApiDocument document, PropertyDisplayOpt
 		string AnchorId,
 		bool IsRequired,
 		bool IsLast,
-		bool IsRecursive
+		bool IsRecursive,
+		UnionAncestor? RepeatsUnion = null
 	);
 
 	/// <summary>Builds the property rows for a schema; null when it has no renderable properties.</summary>
@@ -60,6 +64,7 @@ public class ApiPropertyTreeBuilder(OpenApiDocument document, PropertyDisplayOpt
 				continue;
 
 			var typeInfo = _analyzer.GetTypeInfo(propSchema);
+			var repeatsUnion = RepeatedUnion(typeInfo, scope);
 			var anchorName = name == DictionaryKeyName ? "string" : name;
 			var propId = string.IsNullOrEmpty(scope.Prefix) ? anchorName : $"{scope.Prefix}-{anchorName}";
 			var row = new PropertyRow(
@@ -69,7 +74,8 @@ public class ApiPropertyTreeBuilder(OpenApiDocument document, PropertyDisplayOpt
 				propId,
 				IsRequired: requiredProps.Contains(name),
 				IsLast: i == propArray.Length - 1,
-				IsRecursive: DetectRecursion(propSchema, typeInfo, scope.Ancestors)
+				IsRecursive: repeatsUnion is not null || DetectRecursion(propSchema, typeInfo, scope.Ancestors),
+				RepeatsUnion: repeatsUnion
 			);
 			items.Add(BuildProperty(row, scope));
 		}
@@ -186,7 +192,7 @@ public class ApiPropertyTreeBuilder(OpenApiDocument document, PropertyDisplayOpt
 
 	private ApiProperty BuildProperty(PropertyRow row, PropertyTreeScope scope)
 	{
-		var (_, propSchema, typeInfo, _, _, _, isRecursive) = row;
+		var (_, propSchema, typeInfo, _, _, _, isRecursive, _) = row;
 		var expansion = ComputeExpansion(propSchema, typeInfo, scope.Depth, isRecursive);
 		var (descriptionHtml, descriptionMarkdown) = RenderDescription(row.Name, propSchema.Description, scope);
 		var typeLink = BuildTypeLink(typeInfo, expansion);
@@ -212,7 +218,8 @@ public class ApiPropertyTreeBuilder(OpenApiDocument document, PropertyDisplayOpt
 			ExternalDocs = BuildExternalDocs(propSchema, typeInfo),
 			Constraints = BuildConstraints(propSchema),
 			EnumValues = typeInfo.EnumValues ?? [],
-			Union = typeInfo.IsUnion ? BuildUnionDisplay(propSchema, typeInfo, expansion) : null,
+			Union = typeInfo.IsUnion && row.RepeatsUnion is null ? BuildUnionDisplay(propSchema, typeInfo, expansion) : null,
+			RepeatsUnion = row.RepeatsUnion,
 			// Type annotation already reads "[] …"; skip the redundant "Array of:" row.
 			ArrayItemTypeName = null,
 			TypeLink = typeLink,
@@ -485,7 +492,11 @@ public class ApiPropertyTreeBuilder(OpenApiDocument document, PropertyDisplayOpt
 			{
 				Kind = ChildKind.UnionVariants,
 				UseHidden = false,
-				Variants = BuildUnionVariants(typeInfo.UnionOptions!, childScope, _analyzer.GetUnionDiscriminator(row.Schema))
+				Variants = BuildUnionVariants(
+					typeInfo.UnionOptions!,
+					WithUnionAncestor(childScope, typeInfo.UnionOptions!, row),
+					_analyzer.GetUnionDiscriminator(row.Schema)
+				)
 					?? ApiUnionVariants.Empty
 			};
 		}
@@ -496,7 +507,11 @@ public class ApiPropertyTreeBuilder(OpenApiDocument document, PropertyDisplayOpt
 			{
 				Kind = ChildKind.SimpleUnionVariants,
 				UseHidden = useHidden,
-				Variants = BuildUnionVariants(expansion.SimpleUnionNestedOptions, childScope, _analyzer.GetUnionDiscriminator(row.Schema))
+				Variants = BuildUnionVariants(
+					expansion.SimpleUnionNestedOptions,
+					WithUnionAncestor(childScope, expansion.SimpleUnionNestedOptions, row),
+					_analyzer.GetUnionDiscriminator(row.Schema)
+				)
 					?? ApiUnionVariants.Empty
 			};
 		}
@@ -559,6 +574,32 @@ public class ApiPropertyTreeBuilder(OpenApiDocument document, PropertyDisplayOpt
 		return newAncestors;
 	}
 
+	/// <summary>
+	/// Generated specs often inline a recursive union (a condition whose <c>and</c> holds more conditions) several levels
+	/// deep. Those copies have no name to recognise, so a union whose options match an enclosing union row is a repeat.
+	/// </summary>
+	private UnionAncestor? RepeatedUnion(TypeInfo typeInfo, PropertyTreeScope scope) =>
+		typeInfo is { IsUnion: true, UnionOptions.Count: > 0 }
+			&& scope.UnionAncestors is { } known
+			&& known.TryGetValue(UnionSignature(typeInfo.UnionOptions), out var ancestor) ? ancestor : null;
+
+	private PropertyTreeScope WithUnionAncestor(PropertyTreeScope scope, IEnumerable<UnionOption> unionOptions, PropertyRow row)
+	{
+		var known = new Dictionary<string, UnionAncestor>(scope.UnionAncestors ?? new Dictionary<string, UnionAncestor>());
+		_ = known.TryAdd(UnionSignature(unionOptions), new UnionAncestor(row.Name, row.AnchorId));
+		return scope with { UnionAncestors = known };
+	}
+
+	/// <summary>Each option's name and property names; two unions with the same signature offer the same shapes.</summary>
+	private string UnionSignature(IEnumerable<UnionOption> unionOptions) =>
+		string.Join(
+			";",
+			unionOptions.Select(
+				o =>
+					$"{o.Name}{{{string.Join(",", (_analyzer.GetSchemaProperties(o.IsArray ? o.Schema?.Items : o.Schema)?.Keys ?? []).Order(StringComparer.Ordinal))}}}"
+			)
+		);
+
 	private bool DetectRecursion(IOpenApiSchema propSchema, TypeInfo typeInfo, IReadOnlySet<string>? ancestors)
 	{
 		if (ancestors is null)
@@ -609,8 +650,12 @@ public class ApiPropertyTreeBuilder(OpenApiDocument document, PropertyDisplayOpt
 		return false;
 	}
 
+	// Primitive names and the "oneOf"/"anyOf" label of an inline union name no schema, so they never mark a recursion.
 	private static bool IsAncestorType(string? typeName, IReadOnlySet<string> ancestors) =>
-		!string.IsNullOrEmpty(typeName) && !SchemaHelpers.IsPrimitiveTypeName(typeName) && ancestors.Contains(typeName);
+		!string.IsNullOrEmpty(typeName)
+			&& !SchemaHelpers.IsPrimitiveTypeName(typeName)
+			&& !UnionSchemas.IsKeywordName(typeName)
+			&& ancestors.Contains(typeName);
 
 	private const string DictionaryKeyName = "<string>";
 
@@ -639,7 +684,7 @@ public class ApiPropertyTreeBuilder(OpenApiDocument document, PropertyDisplayOpt
 		var usedIds = new HashSet<string>(StringComparer.Ordinal);
 		foreach (var variant in variantsToRender)
 		{
-			var dictionaryValue = _analyzer.GetExpandableDictionaryValue(variant.Schema);
+			var dictionaryValue = variant.PageUrl is null ? _analyzer.GetExpandableDictionaryValue(variant.Schema) : null;
 			var hasProperties = variant.Props is { Count: > 0 } || dictionaryValue is not null;
 			var optionId = UniqueId(
 				$"{scope.Prefix}-variant-{variant.Name.ToLowerInvariant().Replace(" ", "-").Replace("[]", "-array")}",
@@ -662,6 +707,7 @@ public class ApiPropertyTreeBuilder(OpenApiDocument document, PropertyDisplayOpt
 			variants.Add(new ApiUnionVariant
 			{
 				DisplayName = SchemaHelpers.ReadableSchemaName(variant.BaseName),
+				PageUrl = variant.PageUrl,
 				IsArrayVariant = variant.IsArray,
 				IsObjectType = variant.IsObject,
 				AnchorId = optionId,
@@ -753,7 +799,8 @@ public class ApiPropertyTreeBuilder(OpenApiDocument document, PropertyDisplayOpt
 		bool IsArray,
 		bool IsObject,
 		IOpenApiSchema? Schema,
-		IDictionary<string, IOpenApiSchema>? Props
+		IDictionary<string, IOpenApiSchema>? Props,
+		string? PageUrl = null
 	);
 
 	/// <summary>
@@ -778,7 +825,13 @@ public class ApiPropertyTreeBuilder(OpenApiDocument document, PropertyDisplayOpt
 			// An array-only variant describes its items; the array schema itself carries no properties.
 			if (primaryOption.IsArray && schemaToRender?.Items is { } items)
 				schemaToRender = items;
-			var optionProps = primaryOption.IsObject && schemaToRender is not null ? _analyzer.GetSchemaProperties(schemaToRender) : null;
+			// A type with its own page (QueryContainer, …) links there instead of listing its fields again, as property rows do.
+			var pageUrl = schemaToRender is not null && _analyzer.GetTypeInfo(schemaToRender).HasLink
+				? SchemaHelpers.GetContainerPageUrl(options.ApiRootUrl, baseName)
+				: null;
+			var optionProps = primaryOption.IsObject && schemaToRender is not null && pageUrl is null
+				? _analyzer.GetSchemaProperties(schemaToRender)
+				: null;
 
 			VariantCandidate Candidate(bool isArray) =>
 				new(
@@ -788,7 +841,8 @@ public class ApiPropertyTreeBuilder(OpenApiDocument document, PropertyDisplayOpt
 					isArray,
 					primaryOption.IsObject,
 					schemaToRender,
-					optionProps
+					optionProps,
+					pageUrl
 				);
 
 			var hasArrayVariant = variants.Any(v => v.IsArray);

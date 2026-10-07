@@ -1440,4 +1440,145 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture)
 		properties.Should().BeNull();
 		variants!.Variants.Select(v => v.DisplayName).Should().Equal("Cat", "Dog");
 	}
+
+	[Test]
+	public async Task BuildPropertyList_ArrayOfUnion_ExpandsTheItemVariants()
+	{
+		var json =
+			"""
+			{
+			  "openapi": "3.1.0",
+			  "info": { "title": "t", "version": "1" },
+			  "paths": {},
+			  "components": {
+			    "schemas": {
+			      "Holder": {
+			        "type": "object",
+			        "properties": {
+			          "and": {
+			            "type": "array",
+			            "maxItems": 50,
+			            "items": {
+			              "anyOf": [
+			                { "anyOf": [
+			                  { "type": "object", "required": ["field"], "properties": { "field": { "type": "string" }, "eq": { "type": "string" } } },
+			                  { "type": "object", "properties": { "field": { "type": "string" }, "exists": { "type": "boolean" } } }
+			                ] },
+			                { "type": "object", "properties": { "always": { "type": "object" } } }
+			              ]
+			            }
+			          }
+			        }
+			      }
+			    }
+			  }
+			}
+			""";
+		var document = await LoadSpecAsync(json);
+
+		var and = BuilderFor(document).BuildPropertyList(
+			document.Components!.Schemas!["Holder"],
+			new PropertyTreeScope { Prefix = "" }
+		)!.Items.Single();
+
+		and.Type.Text.Should().Contain("anyOf");
+		and.Children.Kind.Should().Be(ChildKind.UnionVariants);
+		and.Children.Variants!
+			.Variants
+			.Select(v => v.Properties!.Items.Select(p => p.Name).First())
+			.Should()
+			.Equal("field", "field", "always");
+	}
+
+	[Test]
+	public async Task BuildPropertyList_InlineRecursiveUnion_ExpandsOnceAndPointsBackToTheParent()
+	{
+		var condition = """{ "type": "object", "properties": { "field": { "type": "string" }, "eq": { "type": "string" } } }""";
+		var always = """{ "type": "object", "properties": { "always": { "type": "object" } } }""";
+		var leaf = $$"""{ "anyOf": [ { "anyOf": [ {{condition}} ] }, {{always}} ] }""";
+		var level2 =
+			$$"""{ "anyOf": [ { "anyOf": [ {{condition}} ] }, { "type": "object", "properties": { "and": { "type": "array", "items": {{leaf}} } } }, {{always}} ] }""";
+		var json =
+			$$"""
+			{
+			  "openapi": "3.1.0",
+			  "info": { "title": "t", "version": "1" },
+			  "paths": {},
+			  "components": {
+			    "schemas": {
+			      "Holder": {
+			        "type": "object",
+			        "properties": {
+			          "where": {
+			            "anyOf": [
+			              { "anyOf": [ {{condition}} ] },
+			              { "type": "object", "properties": { "and": { "type": "array", "items": {{level2}} } } },
+			              {{always}}
+			            ]
+			          }
+			        }
+			      }
+			    }
+			  }
+			}
+			""";
+		var document = await LoadSpecAsync(json);
+
+		var where = BuilderFor(document).BuildPropertyList(
+			document.Components!.Schemas!["Holder"],
+			new PropertyTreeScope { Prefix = "" }
+		)!.Items.Single();
+
+		where.Children.Kind.Should().Be(ChildKind.UnionVariants);
+		var variants = where.Children.Variants!.Variants;
+		variants[0].Properties!.Items.Select(p => p.Name).Should().Equal("field", "eq");
+		var and = variants[1].Properties!.Items.Single();
+		and.RepeatsUnion.Should().Be(new UnionAncestor("where", "where"));
+		and.Children.Kind.Should().Be(ChildKind.None);
+		and.Union.Should().BeNull("the repeat line replaces the empty \"Any of:\" row");
+	}
+
+	[Test]
+	public async Task BuildPropertyList_ArrayOfUnionWithALinkedType_LinksTheVariantInsteadOfExpandingIt()
+	{
+		var json =
+			"""
+			{
+			  "openapi": "3.0.3",
+			  "info": { "title": "t", "version": "1" },
+			  "paths": {},
+			  "components": {
+			    "schemas": {
+			      "_types.query_dsl.QueryContainer": { "type": "object", "properties": { "match": { "type": "object" }, "term": { "type": "object" } } },
+			      "security._types.RoleTemplateQuery": { "type": "object", "properties": { "template": { "type": "object" } } },
+			      "security._types.IndicesPrivilegesQuery": {
+			        "oneOf": [
+			          { "type": "string" },
+			          { "$ref": "#/components/schemas/_types.query_dsl.QueryContainer" },
+			          { "$ref": "#/components/schemas/security._types.RoleTemplateQuery" }
+			        ]
+			      },
+			      "Holder": {
+			        "type": "object",
+			        "properties": {
+			          "query": { "type": "array", "items": { "$ref": "#/components/schemas/security._types.IndicesPrivilegesQuery" } }
+			        }
+			      }
+			    }
+			  }
+			}
+			""";
+		var document = await LoadSpecAsync(json);
+
+		var query = BuilderFor(document).BuildPropertyList(
+			document.Components!.Schemas!["Holder"],
+			new PropertyTreeScope { Prefix = "" }
+		)!.Items.Single();
+
+		var variants = query.Children.Variants!.Variants;
+		var container = variants.Single(v => v.DisplayName == "QueryContainer");
+		container.PageUrl.Should().NotBeNullOrEmpty();
+		container.Properties.Should().BeNull("QueryContainer has its own page");
+		variants.Single(v => v.DisplayName == "RoleTemplateQuery").Properties!.Items.Select(p => p.Name).Should().Equal("template");
+	}
 }

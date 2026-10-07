@@ -132,7 +132,18 @@ public class SchemaAnalyzer(
 	/// <see cref="ClassifyUnion"/> classifies inline unions in full instead.
 	/// </summary>
 	private List<UnionOption> BuildUnionOptions(IEnumerable<IOpenApiSchema> members) =>
-		[.. members.Select(BuildUnionOption).OfType<UnionOption>()];
+		[.. FlattenInlineUnions(members).Select(BuildUnionOption).OfType<UnionOption>()];
+
+	/// <summary>
+	/// A member that is itself an inline <c>oneOf</c>/<c>anyOf</c>, with no properties of its own, lists its members in the
+	/// parent: <c>anyOf[anyOf[A, B], C]</c> offers A, B and C. Named unions stay one option, so cyclic references cannot recurse.
+	/// </summary>
+	private static IEnumerable<IOpenApiSchema> FlattenInlineUnions(IEnumerable<IOpenApiSchema> members) =>
+		members.SelectMany(
+			m => m is not OpenApiSchemaReference && m.Properties is not { Count: > 0 } && UnionSchemas.TryGet(m, out _, out var inner)
+				? FlattenInlineUnions(inner)
+				: [m]
+		);
 
 	private UnionOption? BuildUnionOption(IOpenApiSchema member)
 	{
@@ -403,7 +414,10 @@ public class SchemaAnalyzer(
 					ValueTypeBase = itemInfo.ValueTypeBase,
 					HasLink = itemInfo.HasLink,
 					IsEnum = itemInfo.IsEnum,
-					ArrayItemType = arrayItemType
+					ArrayItemType = arrayItemType,
+					// An array of a union offers the union's variants for each item.
+					UnionOptions = itemInfo.UnionOptions,
+					UnionKeyword = itemInfo.UnionKeyword
 				};
 			}
 			return new TypeInfo { TypeName = "unknown", IsArray = true, ArrayItemType = "unknown" };
@@ -443,7 +457,7 @@ public class SchemaAnalyzer(
 
 	private TypeInfo ClassifyUnion(IList<IOpenApiSchema> members, UnionKeyword keyword)
 	{
-		var classified = members.Select(s => (Schema: s, Info: ClassifyType(s))).ToArray();
+		var classified = FlattenInlineUnions(members).Select(s => (Schema: s, Info: ClassifyType(s))).ToArray();
 
 		// A union of inline literal sets is just a bigger enum.
 		if (classified.All(m => m.Info is { IsEnum: true, IsArray: false, SchemaRef: null }))
