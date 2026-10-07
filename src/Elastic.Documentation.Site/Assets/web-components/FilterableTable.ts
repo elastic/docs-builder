@@ -90,11 +90,19 @@ class FilterableTableElement extends HTMLElement {
     private isSectionRow(row: HTMLTableRowElement): boolean {
         const cells = Array.from(row.cells)
         if (cells.length < 2) return false
+        const [first, ...rest] = cells
+        const heading = this.cellText(first)
         // A heading fills only its first cell; every other cell is empty.
-        return (
-            this.cellText(cells[0]) !== '' &&
-            cells.slice(1).every((c) => this.cellText(c) === '')
-        )
+        if (heading === '' || rest.some((c) => this.cellText(c) !== ''))
+            return false
+        // The heading must be emphasized, the convention for a section row in a
+        // Markdown table (`|***Receivers***|||||`). A plain data row whose
+        // trailing cells happen to be blank is then never mistaken for a
+        // heading. Erring toward "data" is the safe direction: mislabeling a
+        // heading as data only miscounts by one, while the reverse would drop a
+        // real row from the count and hide it under a filter.
+        const emphasis = first.querySelector('strong, em, b, i')
+        return emphasis?.textContent?.trim() === heading
     }
 
     /**

@@ -391,6 +391,37 @@ describe('filterable-table', () => {
         ])
     })
 
+    it('keeps a sparse data row (blank trailing cell) as data, not a heading', () => {
+        // Only the first cell is filled, like a section header - but it is
+        // plain text, not emphasized, so it is a data row and must stay counted
+        // and filterable.
+        document.body.innerHTML = `
+          <filterable-table>
+            <table>
+              <thead><tr><th>Name</th><th>Status</th></tr></thead>
+              <tbody>
+                <tr><td>alpha</td><td></td></tr>
+                <tr><td>beta</td><td>Core</td></tr>
+                <tr><td>gamma</td><td>Core</td></tr>
+              </tbody>
+            </table>
+          </filterable-table>`
+        customElements.upgrade(document.body)
+        // The sparse row counts: three data rows, none removed as a heading.
+        expect(
+            document.querySelector('.filterable-table-status')?.textContent
+        ).toBe('Showing 3 of 3')
+
+        const search = document.querySelector<HTMLInputElement>(
+            '.filterable-table-search'
+        )!
+        search.value = 'alpha'
+        search.dispatchEvent(new Event('input'))
+        expect(visibleRows().map((r) => r.cells[0].textContent)).toEqual([
+            'alpha',
+        ])
+    })
+
     it('excludes section-header rows from the count and filtering', () => {
         document.body.innerHTML = `
           <filterable-table>
