@@ -651,6 +651,11 @@
 	color: var(--color-grey-100);
 }
 
+/* Legacy rows reserve 32px on the right; a row with a chip needs less. */
+#pages-nav li:has(> a.sidebar-link > .nav-v2-api-method) {
+	padding-right: 8px;
+}
+
 #pages-nav a.sidebar-link:has(> .nav-v2-api-method) {
 	display: flex;
 	align-items: flex-start;
