@@ -417,4 +417,71 @@ public class AllOfCompositionTests
 		bFirst.Should().Be(bAfter);
 		aFirst.Should().Contain("B/B/True");
 	}
+
+	private const string InheritanceSpec =
+		"""
+		{
+		  "openapi": "3.1.0",
+		  "info": { "title": "t", "version": "1" },
+		  "paths": {},
+		  "components": {
+		    "schemas": {
+		      "Base": {
+		        "type": "object",
+		        "required": ["id"],
+		        "properties": { "id": { "type": "string" }, "note": { "type": "string" } }
+		      },
+		      "Derived": {
+		        "allOf": [
+		          { "$ref": "#/components/schemas/Base" },
+		          { "type": "object", "required": ["size"], "properties": { "size": { "type": "integer" } } }
+		        ]
+		      },
+		      "Holder": {
+		        "type": "object",
+		        "properties": { "base": { "allOf": [ { "$ref": "#/components/schemas/Base" } ], "description": "Wrapped." } }
+		      },
+		      "Mixed": {
+		        "type": "object",
+		        "required": ["own"],
+		        "properties": { "own": { "type": "string" } },
+		        "allOf": [ { "$ref": "#/components/schemas/Base" } ]
+		      }
+		    }
+		  }
+		}
+		""";
+
+	[Test]
+	public async Task BuildPropertyList_AllOfOverABase_KeepsRequiredFromEveryMember()
+	{
+		var document = await LoadSpecAsync(InheritanceSpec);
+
+		var list = BuilderFor(document).BuildPropertyList(document.Components!.Schemas!["Derived"], new PropertyTreeScope { Prefix = "" });
+
+		list!.Items.Where(static p => p.IsRequired).Select(static p => p.Name).Should().BeEquivalentTo("id", "size");
+	}
+
+	[Test]
+	public async Task BuildPropertyList_PropertyWrappingARefInAllOf_KeepsRequiredOfTheReferencedSchema()
+	{
+		var document = await LoadSpecAsync(InheritanceSpec);
+
+		var list = BuilderFor(document).BuildPropertyList(document.Components!.Schemas!["Holder"], new PropertyTreeScope { Prefix = "" });
+
+		var children = list!.Items.Single().Children.Properties!.Items;
+		children.Single(static p => p.Name == "id").IsRequired.Should().BeTrue();
+		children.Single(static p => p.Name == "note").IsRequired.Should().BeFalse();
+	}
+
+	[Test]
+	public async Task Flatten_SchemaWithPropertiesAndAllOf_CombinesBothOwnFirst()
+	{
+		var document = await LoadSpecAsync(InheritanceSpec);
+
+		var effective = new SchemaAnalyzer(document).Flatten(document.Components!.Schemas!["Mixed"]);
+
+		effective.Properties.Keys.Should().Equal("own", "id", "note");
+		effective.Required.Should().BeEquivalentTo("own", "id");
+	}
 }

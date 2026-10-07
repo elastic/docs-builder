@@ -37,6 +37,9 @@ public class SchemaAnalyzer(
 	// Each page builds its own analyzer, so the set never crosses threads.
 	private readonly HashSet<string> _expandingAllOfRefs = [with(StringComparer.Ordinal)];
 
+	// Each schema's allOf folds once per page.
+	private readonly Dictionary<IOpenApiSchema, EffectiveSchema> _flattened = [with(ReferenceEqualityComparer.Instance)];
+
 	/// <summary>
 	/// Checks if a type should link to its container page, considering the current page.
 	/// </summary>
@@ -78,43 +81,50 @@ public class SchemaAnalyzer(
 		return resolved ?? schemaRef;
 	}
 
-	/// <summary>
-	/// Gets the properties from a schema, resolving references and handling allOf composition.
-	/// </summary>
-	public IDictionary<string, IOpenApiSchema>? GetSchemaProperties(IOpenApiSchema? schema)
+	/// <summary>The properties of a schema and its <c>allOf</c> members; null when there are none.</summary>
+	public IDictionary<string, IOpenApiSchema>? GetSchemaProperties(IOpenApiSchema? schema) =>
+		Flatten(schema).Properties is { Count: > 0 } properties ? properties : null;
+
+	/// <summary>The schema's <c>allOf</c> members folded into one view; see <see cref="EffectiveSchema"/>.</summary>
+	public EffectiveSchema Flatten(IOpenApiSchema? schema)
 	{
-		if (schema is null)
-			return null;
+		var resolved = ResolveSchema(schema);
+		if (resolved is null)
+			return EffectiveSchema.Empty;
+		if (_flattened.TryGetValue(resolved, out var cached))
+			return cached;
 
-		// For schema references resolve directly to avoid proxy reads:
-		// each proxy property access on OpenApiSchemaReference calls ResolveReference internally,
-		// so reading .Properties through the proxy is equivalent to re-resolving the $ref on every call.
-		if (schema is OpenApiSchemaReference schemaRef)
+		var flattened = Flatten(resolved, [with(ReferenceEqualityComparer.Instance)]);
+		_flattened[resolved] = flattened;
+		return flattened;
+	}
+
+	private EffectiveSchema Flatten(IOpenApiSchema resolved, HashSet<IOpenApiSchema> visited)
+	{
+		if (!visited.Add(resolved))
+			return EffectiveSchema.Empty;
+		if (resolved.AllOf is not { Count: > 0 } allOf)
 		{
-			var resolved = ResolveSchema(schemaRef);
-			// Only recurse when we have a concrete resolved schema; null means external ref or
-			// unresolvable — fall through so the proxy's own property reads are used as a fallback.
-			if (resolved is not null && !ReferenceEquals(resolved, schemaRef))
-				return GetSchemaProperties(resolved);
+			return new EffectiveSchema(
+				resolved.Properties ?? new Dictionary<string, IOpenApiSchema>(),
+				resolved.Required ?? new HashSet<string>(),
+				resolved.AdditionalProperties
+			);
 		}
 
-		// Direct properties
-		if (schema.Properties is { Count: > 0 })
-			return schema.Properties;
-
-		// For allOf, collect properties from all schemas
-		if (schema.AllOf is { Count: > 0 } allOf)
+		var properties = new Dictionary<string, IOpenApiSchema>(resolved.Properties ?? new Dictionary<string, IOpenApiSchema>());
+		var required = new HashSet<string>(resolved.Required ?? new HashSet<string>());
+		var mapValue = resolved.AdditionalProperties;
+		foreach (var member in allOf.Select(m => ResolveSchema(m) ?? m))
 		{
-			var props = new Dictionary<string, IOpenApiSchema>();
-			foreach (var subProps in allOf.Select(GetSchemaProperties).Where(p => p is not null))
-			{
-				foreach (var prop in subProps!)
-					_ = props.TryAdd(prop.Key, prop.Value);
-			}
-			return props.Count > 0 ? props : null;
+			var folded = Flatten(member, visited);
+			foreach (var (name, property) in folded.Properties)
+				_ = properties.TryAdd(name, property);
+			required.UnionWith(folded.Required);
+			mapValue ??= folded.MapValue;
 		}
 
-		return null;
+		return new EffectiveSchema(properties, required, mapValue);
 	}
 
 	/// <summary>

@@ -58,11 +58,12 @@ public partial class ApiPropertyTreeBuilder(
 	/// <summary>Builds the property rows for a schema; null when it has no renderable properties.</summary>
 	public ApiPropertyList? BuildPropertyList(IOpenApiSchema? schema, PropertyTreeScope scope)
 	{
-		var properties = _analyzer.GetSchemaProperties(schema);
-		if (properties is null || properties.Count == 0)
+		var effective = _analyzer.Flatten(schema);
+		var properties = effective.Properties;
+		if (properties.Count == 0)
 			return null;
 
-		var requiredProps = scope.RequiredProperties ?? schema?.Required ?? new HashSet<string>();
+		var requiredProps = scope.RequiredProperties ?? effective.Required;
 		var propArray = properties.ToArray();
 		var items = new List<ApiProperty>(propArray.Length);
 		for (var i = 0; i < propArray.Length; i++)

@@ -38,13 +38,11 @@ public class SchemaViewModel(ApiRenderContext context) : ApiViewModel(context)
 			tocItems.Add(new ApiTocItem("Union Types", "union-types"));
 
 		// Properties
-		if (HasSchemaProperties(openApiSchema))
+		if (Page.Properties is { Items.Count: > 0 } properties)
 		{
 			tocItems.Add(new ApiTocItem("Properties", "properties"));
-			// Add top-level properties nested under Properties
-			var props = GetSchemaPropertyNames(openApiSchema);
-			foreach (var propName in props)
-				tocItems.Add(new ApiTocItem(propName, propName, 3));
+			foreach (var property in properties.Items)
+				tocItems.Add(new ApiTocItem(property.Name, property.Name, 3));
 		}
 
 		// Additional properties
@@ -56,76 +54,5 @@ public class SchemaViewModel(ApiRenderContext context) : ApiViewModel(context)
 			tocItems.Add(new ApiTocItem("Example", "example"));
 
 		return tocItems;
-	}
-
-	/// <summary>
-	/// Gets the property names from a schema, resolving references and AllOf as needed.
-	/// </summary>
-	private IEnumerable<string> GetSchemaPropertyNames(IOpenApiSchema? schema)
-	{
-		if (schema is null)
-			return [];
-
-		// Handle schema references
-		if (schema is OpenApiSchemaReference schemaRef)
-		{
-			if (schemaRef.Properties is { Count: > 0 })
-				return schemaRef.Properties.Keys;
-
-			var refId = schemaRef.Reference?.Id;
-			if (!string.IsNullOrEmpty(refId) && Document.Components?.Schemas?.TryGetValue(refId, out var resolvedSchema) == true)
-			{
-				return GetSchemaPropertyNames(resolvedSchema);
-			}
-		}
-
-		// Direct properties
-		if (schema.Properties is { Count: > 0 })
-			return schema.Properties.Keys;
-
-		// For allOf, collect property names from all schemas
-		if (schema.AllOf is { Count: > 0 })
-		{
-			var allProps = new List<string>();
-			foreach (var subSchema in schema.AllOf)
-				allProps.AddRange(GetSchemaPropertyNames(subSchema));
-			return allProps.Distinct();
-		}
-
-		return [];
-	}
-
-	/// <summary>
-	/// Checks if a schema has properties, resolving references and AllOf as needed.
-	/// </summary>
-	private bool HasSchemaProperties(IOpenApiSchema? schema)
-	{
-		if (schema is null)
-			return false;
-
-		// Handle schema references - resolve to get actual properties
-		if (schema is OpenApiSchemaReference schemaRef)
-		{
-			// Try direct property access first (proxied)
-			if (schemaRef.Properties is { Count: > 0 })
-				return true;
-
-			// Try resolving via Reference.Id
-			var refId = schemaRef.Reference?.Id;
-			if (!string.IsNullOrEmpty(refId) && Document.Components?.Schemas?.TryGetValue(refId, out var resolvedSchema) == true)
-			{
-				return HasSchemaProperties(resolvedSchema);
-			}
-		}
-
-		// Direct properties
-		if (schema.Properties is { Count: > 0 })
-			return true;
-
-		// For allOf, check if any sub-schema has properties
-		if (schema.AllOf is { Count: > 0 })
-			return schema.AllOf.Any(HasSchemaProperties);
-
-		return false;
 	}
 }
