@@ -59,6 +59,7 @@ Write both deliberately. The search body indexes the hero title and description 
 | [`{get-started}`](get-started.md) | Onboarding funnel. An install command, a tutorial link, and numbered steps. |
 | [`{whats-new}`](whats-new.md) | Recency panel. Dated highlight cards, authored once in `hub-whats-new.yml`. |
 | [`{explore}`](explore.md) | The browse-everything section. A stack of collapsible accordions. |
+| [`{on-this-page}`](on-this-page.md) | A row of links to the page's H2 sections, placed under the hero. |
 
 ## Page skeleton
 

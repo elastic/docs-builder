@@ -126,6 +126,9 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 			case WhatsNewBlock whatsNewBlock:
 				WriteWhatsNew(renderer, whatsNewBlock);
 				return;
+			case OnThisPageBlock onThisPageBlock:
+				WriteOnThisPage(renderer, onThisPageBlock);
+				return;
 			case RelatedLearningBlock relatedLearningBlock:
 				WriteRelatedLearning(renderer, relatedLearningBlock);
 				return;
@@ -299,6 +302,12 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 			Data = block.Data,
 			SitePathPrefix = block.Build.UrlPathPrefix
 		});
+		RenderRazorSlice(slice, renderer);
+	}
+
+	private static void WriteOnThisPage(HtmlRenderer renderer, OnThisPageBlock block)
+	{
+		var slice = OnThisPageView.Create(new OnThisPageViewModel { DirectiveBlock = block, Items = block.CollectItems() });
 		RenderRazorSlice(slice, renderer);
 	}
 

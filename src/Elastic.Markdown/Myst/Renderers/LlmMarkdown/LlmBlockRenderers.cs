@@ -494,6 +494,9 @@ public class LlmDirectiveRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, 
 			case HeroBlock heroBlock:
 				WriteHeroBlock(renderer, heroBlock);
 				return;
+			case OnThisPageBlock:
+				// The export already carries every section as a heading, so a row of links to them adds nothing.
+				return;
 			case ExploreBlock exploreBlock:
 				WriteExploreBlock(renderer, exploreBlock);
 				return;
