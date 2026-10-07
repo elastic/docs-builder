@@ -91,7 +91,7 @@ public class ApiCatalogViewModel(ApiRenderContext context) : ApiViewModel(contex
 		new(
 			entry.Key,
 			entry.Title,
-			entry.Url.TrimEnd('/'),
+			entry.Url,
 			ProductIcons.Get(entry.ProductId ?? entry.Key) ?? FallbackIconSvg,
 			ApiSeoDescription.Excerpt(entry.Description),
 			DeploymentsOf(entry)
