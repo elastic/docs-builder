@@ -36,6 +36,9 @@ public record ApiOverviewRow
 /// <summary>A heading row and the item rows under it. <see cref="Heading"/> is null for items that come before any heading.</summary>
 public record ApiOverviewSection(ApiOverviewRow? Heading, IReadOnlyList<ApiOverviewRow> Items);
 
+/// <summary>The product landing page: topic pages to read, and the sections the grouped index shows.</summary>
+public record ApiOverviewIndex(IReadOnlyList<ApiOverviewRow> Topics, IReadOnlyList<ApiOverviewSection> Groups);
+
 /// <summary>Flattens the navigation tree into overview rows so the landing views only iterate and print.</summary>
 public static class ApiOverviewBuilder
 {
@@ -73,6 +76,29 @@ public static class ApiOverviewBuilder
 			heading = null;
 			items = [];
 		}
+	}
+
+	/// <summary>
+	/// Splits the pages that come before the first group (Authentication, Servers) from the grouped endpoints.
+	/// They are topics to read, not endpoints to browse.
+	/// </summary>
+	public static ApiOverviewIndex SplitTopics(IReadOnlyList<ApiOverviewSection> sections)
+	{
+		var topics = new List<ApiOverviewRow>();
+		var groups = new List<ApiOverviewSection>();
+		foreach (var section in sections)
+		{
+			if (section.Heading is not null)
+			{
+				groups.Add(section);
+				continue;
+			}
+			topics.AddRange(section.Items.Where(static r => r.Kind == OverviewRowKind.MarkdownPage));
+			var rest = section.Items.Where(static r => r.Kind != OverviewRowKind.MarkdownPage).ToList();
+			if (rest.Count > 0)
+				groups.Add(section with { Items = rest });
+		}
+		return new ApiOverviewIndex(topics, groups);
 	}
 
 	private static bool IsHeading(ApiOverviewRow row) =>

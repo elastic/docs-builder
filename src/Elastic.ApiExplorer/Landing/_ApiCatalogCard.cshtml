@@ -2,8 +2,7 @@
 @using System.Text.RegularExpressions
 @{
 	var item = Model.Item;
-	// The .api-card box is shared with the product and group landing rows, so all three hover and press
-	// the same. It is sized down so the whole catalog fits on one screen. The featured pair is one step larger.
+	// Sized down so the whole catalog fits on one screen. The featured pair is one step larger.
 	var box = Model.Featured ? "gap-4 p-5" : "gap-3 p-4";
 	var icon = Model.Featured ? "size-8" : "size-6";
 	var title = Model.Featured ? "text-xl" : "text-base";
