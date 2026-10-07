@@ -18,8 +18,8 @@ using Nullean.Argh.Documentation;
 
 namespace Documentation.Builder.Commands.ReleaseAutomation;
 
-/// <summary>Serverless release automation commands.</summary>
-internal sealed class ServerlessReleaseCommands(
+/// <summary>Serverless release automation command.</summary>
+internal sealed class ServerlessReleaseCommand(
 	ILoggerFactory logFactory,
 	IDiagnosticsCollector collector,
 	IConfigurationContext configurationContext,
@@ -30,7 +30,7 @@ internal sealed class ServerlessReleaseCommands(
 	private const string GitOpsRepository = "elastic/serverless-gitops";
 	private const int MaxHistoryPages = 10;
 
-	private readonly ILogger _logger = logFactory.CreateLogger<ServerlessReleaseCommands>();
+	private readonly ILogger _logger = logFactory.CreateLogger<ServerlessReleaseCommand>();
 
 	/// <summary>
 	/// Bundle the release notes of a serverless promotion, from the previously published endpoint ref
@@ -52,9 +52,10 @@ internal sealed class ServerlessReleaseCommands(
 	/// <param name="date">Bundle version, a date (YYYY-MM-DD). Defaults to today's UTC date. Named <c>date</c> because <c>--version</c> is the CLI's own flag.</param>
 	/// <param name="outputDir">Directory for the bundle file. Defaults to <c>./bundles</c>.</param>
 	/// <param name="dryRun">Resolve the range and print the run report without writing a bundle.</param>
+	[CommandName("serverless")]
 	[Hidden]
 	[NoOptionsInjection]
-	public async Task<int> Bundle(
+	public async Task<int> Serverless(
 		[Argument] string service,
 		[Argument] string serviceVersion,
 		string? date = null,

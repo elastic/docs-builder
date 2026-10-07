@@ -146,7 +146,7 @@ public record BundleChangelogsArguments
 	/// When set with a git ref range, only pull requests whose base branch is this branch are bundled.
 	/// Pull requests merged into other branches (for example feature branches that later merged into
 	/// the integration branch) appear in the run report as excluded. Set programmatically by
-	/// <c>release serverless bundle</c>; not a <c>changelog bundle</c> option.
+	/// <c>release serverless</c>; not a <c>changelog bundle</c> option.
 	/// </summary>
 	public string? BaseRef { get; init; }
 
