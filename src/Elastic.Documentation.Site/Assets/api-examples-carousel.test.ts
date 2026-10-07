@@ -1,4 +1,8 @@
-import { apiLanguageStorageKey, initApiExamples } from './api-examples-carousel'
+import {
+    apiLanguageStorageKey,
+    initApiExamples,
+    packChips,
+} from './api-examples-carousel'
 
 // Java is the only long sample: 20 lines, past the 16-line cap.
 function source(lang: string): string {
@@ -494,5 +498,232 @@ describe('API examples carousel', () => {
 
         expect(description.classList.contains('is-open')).toBe(false)
         expect(toggle.textContent).toBe('Show more')
+    })
+})
+
+describe('packChips', () => {
+    const widths = [100, 100, 100, 100, 100]
+
+    it('keeps every chip when they fit in two lines', () => {
+        expect(packChips(widths.slice(0, 4), 250, 6, 60, 2, 0)).toEqual([
+            0, 1, 2, 3,
+        ])
+    })
+
+    it('leaves room for the more button on the last line', () => {
+        expect(packChips(widths, 250, 6, 100, 2, 0)).toEqual([0, 1, 2])
+    })
+
+    it('keeps the active chip by taking the place of the last one that fits', () => {
+        expect(packChips(widths, 250, 6, 100, 2, 4)).toEqual([0, 1, 4])
+    })
+
+    it('never lets one wide chip take more than a line', () => {
+        expect(packChips([900, 100, 100], 250, 6, 60, 2, 0)).toEqual([0, 1, 2])
+    })
+})
+
+describe('API examples chip overflow', () => {
+    const ids = ['a', 'b', 'c', 'd', 'e']
+    const titles = [
+        'Term search',
+        'Slicing',
+        'Pagination',
+        'Aggregations',
+        'Highlighting',
+    ]
+    const proto = HTMLElement.prototype as unknown as Record<string, unknown>
+
+    function overflowMarkup(): string {
+        const chips = ids
+            .map(
+                (id, i) =>
+                    `<button class="api-example-chip${i === 0 ? ' is-active' : ''}" data-scenario="${id}"><span class="api-example-chip-title">${titles[i]}</span></button>`
+            )
+            .join('')
+        const items = ids
+            .map(
+                (id, i) =>
+                    `<button class="api-example-menu-item" role="menuitem" data-scenario="${id}" hidden>${titles[i]}</button>`
+            )
+            .join('')
+        const panels = ids
+            .map(
+                (id, i) =>
+                    `<div class="api-examples-scenario-panel" data-scenario="${id}"${i === 0 ? '' : ' hidden="until-found"'}>${carousel(['Console'])}</div>`
+            )
+            .join('')
+        return `
+            <div data-api-examples>
+                <div data-example-chips>
+                    <div role="tablist">${chips}</div>
+                    <button data-example-more hidden><span data-example-more-label></span></button>
+                    <div data-example-menu><input data-example-filter /><div role="menu">${items}</div></div>
+                </div>
+                ${panels}
+            </div>`
+    }
+
+    function visibleChips(): string[] {
+        return Array.from(
+            document.querySelectorAll<HTMLElement>(
+                '.api-example-chip:not([hidden])'
+            )
+        ).map((chip) => chip.dataset.scenario!)
+    }
+
+    function visibleItems(): string[] {
+        return Array.from(
+            document.querySelectorAll<HTMLElement>(
+                '[role="menuitem"]:not([hidden])'
+            )
+        ).map((item) => item.dataset.scenario!)
+    }
+
+    function stubWidths(row: number) {
+        Object.defineProperty(proto, 'offsetWidth', {
+            configurable: true,
+            get: () => 100,
+        })
+        Object.defineProperty(proto, 'clientWidth', {
+            configurable: true,
+            get(this: HTMLElement) {
+                return this.matches('[data-example-chips]') ? row : 0
+            },
+        })
+    }
+
+    beforeEach(() => {
+        window.localStorage.clear()
+        window.history.replaceState(null, '', '#')
+        document.body.innerHTML = overflowMarkup()
+        proto.hidePopover = jest.fn()
+        stubWidths(250)
+    })
+
+    afterEach(() => {
+        delete proto.hidePopover
+        delete proto.offsetWidth
+        delete proto.clientWidth
+    })
+
+    it('moves the chips that do not fit into the more menu', () => {
+        initApiExamples()
+
+        expect(visibleChips()).toEqual(['a', 'b', 'c'])
+        expect(visibleItems()).toEqual(['d', 'e'])
+        expect(
+            document.querySelector('[data-example-more-label]')?.textContent
+        ).toBe('+2 more')
+        expect(
+            document.querySelector<HTMLElement>('[data-example-more]')!.hidden
+        ).toBe(false)
+    })
+
+    it('hides the more button when every chip fits', () => {
+        stubWidths(1000)
+        initApiExamples()
+
+        expect(visibleChips()).toEqual(ids)
+        expect(
+            document.querySelector<HTMLElement>('[data-example-more]')!.hidden
+        ).toBe(true)
+    })
+
+    it('swaps a picked menu example into the row as the active chip', () => {
+        initApiExamples()
+        click('[role="menuitem"][data-scenario="e"]')
+
+        expect(visibleChips()).toContain('e')
+        expect(
+            document
+                .querySelector('.api-example-chip[data-scenario="e"]')!
+                .classList.contains('is-active')
+        ).toBe(true)
+        expect(window.location.hash).toContain('example=e')
+        expect(proto.hidePopover).toHaveBeenCalled()
+    })
+
+    it('drops the tooltip of a chip whose title fits again after a refit', () => {
+        let clipped = true
+        Object.defineProperty(proto, 'scrollWidth', {
+            configurable: true,
+            get(this: HTMLElement) {
+                return clipped && this.matches('.api-example-chip-title')
+                    ? 200
+                    : 0
+            },
+        })
+        initApiExamples()
+        const chip = document.querySelector<HTMLElement>(
+            '.api-example-chip[data-scenario="a"]'
+        )!
+        expect(chip.dataset.tippyContent).toBe('Term search')
+
+        clipped = false
+        click('.api-example-chip[data-scenario="b"]')
+
+        expect(chip.dataset.tippyContent).toBeUndefined()
+        delete proto.scrollWidth
+    })
+
+    it('keeps the chip of a deep-linked example in the row', () => {
+        window.history.replaceState(null, '', '#example=d')
+        initApiExamples()
+
+        expect(visibleChips()).toContain('d')
+        expect(visibleItems()).not.toContain('d')
+    })
+
+    it('filters the menu fuzzily, forgiving a typo and ranking the best match first', () => {
+        initApiExamples()
+        const input = document.querySelector<HTMLInputElement>(
+            '[data-example-filter]'
+        )!
+        input.value = 'highlite'
+        input.dispatchEvent(new Event('input', { bubbles: true }))
+
+        expect(visibleItems()).toEqual(['e'])
+
+        input.value = 'highlite ing'
+        input.dispatchEvent(new Event('input', { bubbles: true }))
+
+        expect(visibleItems()).toEqual(['e'])
+
+        input.value = ''
+        input.dispatchEvent(new Event('input', { bubbles: true }))
+
+        expect(visibleItems()).toEqual(['d', 'e'])
+    })
+
+    it('keeps the open menu under its button while the page scrolls', async () => {
+        initApiExamples()
+        const more = document.querySelector<HTMLElement>('[data-example-more]')!
+        const menu = document.querySelector<HTMLElement>('[data-example-menu]')!
+        let top = 100
+        more.getBoundingClientRect = () =>
+            ({ top, bottom: top + 24, left: 50, width: 80 }) as DOMRect
+        menu.getBoundingClientRect = () =>
+            ({ width: 200, height: 100 }) as DOMRect
+
+        const toggle = new Event('toggle') as ToggleEvent
+        Object.defineProperty(toggle, 'newState', { value: 'open' })
+        menu.dispatchEvent(toggle)
+        expect(menu.style.top).toBe('128px')
+
+        const frame = () =>
+            new Promise((resolve) => requestAnimationFrame(resolve))
+        top = 40
+        window.dispatchEvent(new Event('scroll'))
+        await frame()
+        expect(menu.style.top).toBe('68px')
+
+        const close = new Event('toggle') as ToggleEvent
+        Object.defineProperty(close, 'newState', { value: 'closed' })
+        menu.dispatchEvent(close)
+        top = 10
+        window.dispatchEvent(new Event('scroll'))
+        await frame()
+        expect(menu.style.top).toBe('68px')
     })
 })
