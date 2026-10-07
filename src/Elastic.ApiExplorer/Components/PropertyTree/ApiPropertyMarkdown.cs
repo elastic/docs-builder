@@ -115,7 +115,7 @@ internal static class ApiPropertyMarkdown
 		if (property.EnumValues.Count > 0)
 			WriteNestedLine(markdown, depth, "Values: " + string.Join(", ", property.EnumValues.Select(v => $"`{v}`")));
 
-		if (property.Union is null)
+		if (property.Union is null || property.Repeats is not null)
 			return;
 
 		switch (property.Union.Kind)

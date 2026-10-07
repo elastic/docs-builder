@@ -72,7 +72,7 @@ public class ApiPropertyTreeBuilder(
 
 			var typeInfo = _analyzer.GetTypeInfo(propSchema);
 			var shapeKey = ShapeKey(typeInfo);
-			var (repeats, repeatsAncestor) = _shapes.Find(shapeKey);
+			var ancestor = _shapes.Ancestor(shapeKey);
 			// The synthetic map row reads "<string>"; its anchor avoids a real property named "string" on the same list.
 			var anchorName = name == DictionaryKeyName ? properties.ContainsKey("string") ? "string-map" : "string" : name;
 			var propId = string.IsNullOrEmpty(scope.Prefix) ? anchorName : $"{scope.Prefix}-{anchorName}";
@@ -83,9 +83,9 @@ public class ApiPropertyTreeBuilder(
 				propId,
 				IsRequired: requiredProps.Contains(name),
 				IsLast: i == propArray.Length - 1,
-				IsRecursive: repeatsAncestor || DetectRecursion(propSchema, typeInfo, scope.Ancestors),
+				IsRecursive: ancestor is not null || DetectRecursion(propSchema, typeInfo, scope.Ancestors),
 				ShapeKey: shapeKey,
-				Repeats: repeats
+				Repeats: ancestor
 			);
 			items.Add(BuildProperty(row, scope));
 		}
@@ -206,6 +206,9 @@ public class ApiPropertyTreeBuilder(
 		var expansion = ComputeExpansion(propSchema, typeInfo, scope.Depth, isRecursive);
 		var (descriptionHtml, descriptionMarkdown) = RenderDescription(row.Name, propSchema.Description, scope);
 		var typeLink = BuildTypeLink(typeInfo, expansion);
+		var (children, repeats) = isRecursive || row.Repeats is not null
+			? (ApiPropertyChildren.None, row.Repeats)
+			: ListChildren(row, scope, expansion);
 
 		return new ApiProperty
 		{
@@ -228,17 +231,18 @@ public class ApiPropertyTreeBuilder(
 			ExternalDocs = BuildExternalDocs(propSchema, typeInfo),
 			Constraints = BuildConstraints(propSchema),
 			EnumValues = typeInfo.EnumValues ?? [],
-			Union = typeInfo.IsUnion && row.Repeats is null ? BuildUnionDisplay(propSchema, typeInfo, expansion) : null,
-			Repeats = row.Repeats,
+			// Kept on a repeat too, so it hashes like the row it repeats; the views show "Same … as" in its place.
+			Union = typeInfo.IsUnion ? BuildUnionDisplay(propSchema, typeInfo, expansion) : null,
+			Repeats = repeats,
 			// Type annotation already reads "[] …"; skip the redundant "Array of:" row.
 			ArrayItemTypeName = null,
 			TypeLink = typeLink,
 			AlsoIncludes = BuildAlsoIncludes(typeInfo),
 			// A repeat lists nothing itself, so it gets no show/hide toggle.
-			IsCollapsible = row.Repeats is null && expansion.IsCollapsible,
+			IsCollapsible = repeats is null && expansion.IsCollapsible,
 			DefaultExpanded = expansion.DefaultExpanded,
-			NestedCount = row.Repeats is null ? expansion.NestedCount : 0,
-			Children = isRecursive || row.Repeats is not null ? ApiPropertyChildren.None : ListChildren(row, scope, expansion)
+			NestedCount = repeats is null ? expansion.NestedCount : 0,
+			Children = children
 		};
 	}
 
@@ -579,20 +583,34 @@ public class ApiPropertyTreeBuilder(
 	}
 
 	/// <summary>
-	/// Lists a row's children and records the row as the page's first listing of its shape. While the children are built
-	/// the shape counts as an ancestor, so a generated spec that inlines a recursive union several levels deep stops at
-	/// the first repeat.
+	/// Lists a row's children and records them as the page's listing of the row's shape. While they are built the shape
+	/// counts as an ancestor, so a recursive union that a spec inlines level after level stops at the first repeat. When
+	/// the finished listing matches an earlier one exactly, the row links there instead and the copy is dropped.
 	/// </summary>
-	private ApiPropertyChildren ListChildren(PropertyRow row, PropertyTreeScope scope, Expansion expansion)
+	private (ApiPropertyChildren Children, RepeatedShape? Repeats) ListChildren(
+		PropertyRow row,
+		PropertyTreeScope scope,
+		Expansion expansion
+	)
 	{
 		if (row.ShapeKey is not { } key)
-			return BuildChildren(row, scope, expansion);
+			return (BuildChildren(row, scope, expansion), null);
 
 		var shape = new RepeatedShape(row.Name, row.AnchorId, row.TypeInfo.IsUnion, scope.Owner);
+		var checkpoint = _shapes.Checkpoint;
 		_shapes.BeginListing(key, shape);
 		var children = BuildChildren(row, scope, expansion);
-		_shapes.EndListing(key, shape, CountRows(children));
-		return children;
+		_shapes.EndListing(key);
+
+		var content = ListingContent.Of(children, _shapes);
+		if (_shapes.Listing(key, content) is { } earlier)
+		{
+			_shapes.Rollback(checkpoint);
+			return (ApiPropertyChildren.None, earlier);
+		}
+
+		_shapes.Record(key, shape, content, CountRows(children));
+		return (children, null);
 	}
 
 	/// <summary>Named object types repeat by <c>$ref</c>; unions, which are often inline, repeat by their option signature.</summary>

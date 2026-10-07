@@ -1539,7 +1539,14 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture)
 		var and = variants[1].Properties!.Items.Single();
 		and.Repeats.Should().Be(new RepeatedShape("where", "where", IsUnion: true));
 		and.Children.Kind.Should().Be(ChildKind.None);
-		and.Union.Should().BeNull("the repeat line replaces the empty \"Any of:\" row");
+		var markdown = new System.Text.StringBuilder();
+		ApiPropertyMarkdown.WriteList(markdown, variants[1].Properties, "/api/doc/fixture");
+		markdown
+			.ToString()
+			.Should()
+			.Contain("Same options as `where`")
+			.And
+			.NotContain("Any of:", "the repeat line replaces the empty \"Any of:\" row");
 	}
 
 	[Test]
@@ -1908,5 +1915,83 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture)
 		var list = BuilderFor(document).BuildPropertyList(document.Components!.Schemas!["Holder"], new PropertyTreeScope { Prefix = "" })!;
 		var nestedValue = list.Items.Single(p => p.Name == "nested").Children.Properties!.Items.Single();
 		nestedValue.IsRecursive.Should().BeFalse("a primitive multi-type name is never an ancestor type");
+	}
+
+	[Test]
+	public async Task BuildPropertyList_UnionsDifferingInEnumValuesOrDeepFields_AreNotShared()
+	{
+		var json =
+			"""
+			{
+			  "openapi": "3.1.0",
+			  "info": { "title": "t", "version": "1" },
+			  "paths": {},
+			  "components": {
+			    "schemas": {
+			      "Holder": {
+			        "type": "object",
+			        "properties": {
+			          "first": { "oneOf": [
+			            { "type": "object", "properties": { "f0": { "type": "string" }, "f1": { "type": "string" }, "f2": { "type": "string" }, "f3": { "type": "string" }, "f4": { "type": "string" }, "f5": { "type": "string" }, "f6": { "type": "string" }, "f7": { "type": "string" }, "f8": { "type": "string" }, "f9": { "type": "string" }, "status": { "type": "string", "enum": ["open", "closed"] }, "meta": { "type": "object", "properties": { "inner": { "type": "object", "properties": { "deep": { "type": "string" } } } } } } },
+			            { "type": "object", "properties": { "other": { "type": "string" } } } ] },
+			          "otherEnum": { "oneOf": [
+			            { "type": "object", "properties": { "f0": { "type": "string" }, "f1": { "type": "string" }, "f2": { "type": "string" }, "f3": { "type": "string" }, "f4": { "type": "string" }, "f5": { "type": "string" }, "f6": { "type": "string" }, "f7": { "type": "string" }, "f8": { "type": "string" }, "f9": { "type": "string" }, "status": { "type": "string", "enum": ["open", "acknowledged"] }, "meta": { "type": "object", "properties": { "inner": { "type": "object", "properties": { "deep": { "type": "string" } } } } } } },
+			            { "type": "object", "properties": { "other": { "type": "string" } } } ] },
+			          "otherDeep": { "oneOf": [
+			            { "type": "object", "properties": { "f0": { "type": "string" }, "f1": { "type": "string" }, "f2": { "type": "string" }, "f3": { "type": "string" }, "f4": { "type": "string" }, "f5": { "type": "string" }, "f6": { "type": "string" }, "f7": { "type": "string" }, "f8": { "type": "string" }, "f9": { "type": "string" }, "status": { "type": "string", "enum": ["open", "closed"] }, "meta": { "type": "object", "properties": { "inner": { "type": "object", "properties": { "deep": { "type": "integer" } } } } } } },
+			            { "type": "object", "properties": { "other": { "type": "string" } } } ] },
+			          "same": { "oneOf": [
+			            { "type": "object", "properties": { "f0": { "type": "string" }, "f1": { "type": "string" }, "f2": { "type": "string" }, "f3": { "type": "string" }, "f4": { "type": "string" }, "f5": { "type": "string" }, "f6": { "type": "string" }, "f7": { "type": "string" }, "f8": { "type": "string" }, "f9": { "type": "string" }, "status": { "type": "string", "enum": ["open", "closed"] }, "meta": { "type": "object", "properties": { "inner": { "type": "object", "properties": { "deep": { "type": "string" } } } } } } },
+			            { "type": "object", "properties": { "other": { "type": "string" } } } ] }
+			        }
+			      }
+			    }
+			  }
+			}
+			""";
+		var document = await LoadSpecAsync(json);
+
+		var list = BuilderFor(document).BuildPropertyList(document.Components!.Schemas!["Holder"], new PropertyTreeScope { Prefix = "" })!;
+
+		ApiProperty Row(string name) => list.Items.Single(p => p.Name == name);
+
+		Row("otherEnum").Repeats.Should().BeNull("its status values differ");
+		Row("otherDeep").Repeats.Should().BeNull("a field three levels down differs");
+		Row("same").Repeats!.Name.Should().Be("first");
+	}
+
+	[Test]
+	public async Task BuildPropertyList_CopyWhoseNestedFieldsWereLinked_StillSharesTheWholeListing()
+	{
+		var json =
+			"""
+			{
+			  "openapi": "3.0.3",
+			  "info": { "title": "t", "version": "1" },
+			  "paths": {},
+			  "components": {
+			    "schemas": {
+			      "Actions": { "type": "object", "properties": { "f0": { "type": "string" }, "f1": { "type": "string" }, "f2": { "type": "string" }, "f3": { "type": "string" }, "f4": { "type": "string" }, "f5": { "type": "string" }, "f6": { "type": "string" }, "f7": { "type": "string" }, "f8": { "type": "string" }, "f9": { "type": "string" } } },
+			      "EqlRule": { "type": "object", "properties": { "query": { "type": "string" }, "actions": { "$ref": "#/components/schemas/Actions" } } },
+			      "QueryRule": { "type": "object", "properties": { "filters": { "type": "string" }, "actions": { "$ref": "#/components/schemas/Actions" } } },
+			      "Rule": { "oneOf": [ { "$ref": "#/components/schemas/EqlRule" }, { "$ref": "#/components/schemas/QueryRule" } ] },
+			      "Results": {
+			        "type": "object",
+			        "properties": {
+			          "created": { "type": "array", "items": { "$ref": "#/components/schemas/Rule" } },
+			          "updated": { "type": "array", "items": { "$ref": "#/components/schemas/Rule" } }
+			        }
+			      }
+			    }
+			  }
+			}
+			""";
+		var document = await LoadSpecAsync(json);
+
+		var list = BuilderFor(document).BuildPropertyList(document.Components!.Schemas!["Results"], new PropertyTreeScope { Prefix = "" })!;
+
+		var created = list.Items.Single(p => p.Name == "created");
+		created.Children.Variants!.Variants[1].Properties!.Items.Single(p => p.Name == "actions").Repeats!.Owner.Should().Be("EqlRule");
+		list.Items.Single(p => p.Name == "updated").Repeats.Should().Be(new RepeatedShape("created", "created", IsUnion: true));
 	}
 }
