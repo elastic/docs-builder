@@ -566,8 +566,8 @@ public class SchemaAnalyzer(
 
 	/// <summary>A synthetic <c>allOf</c> has no <c>required</c> list of its own, so it collects the lists of every member.</summary>
 	/// <summary>
-	/// Folds the shared base members and one variant into a single object schema. The variant's own properties win over a base
-	/// property of the same name, and the <c>required</c> lists of every member carry over.
+	/// Folds the shared base members and one variant into a single object schema. The variant's own properties and map value win
+	/// over a base one of the same name, and the <c>required</c> lists of every member carry over.
 	/// </summary>
 	private OpenApiSchema MergeBasesInto(IReadOnlyList<IOpenApiSchema> bases, IOpenApiSchema variant)
 	{
@@ -588,6 +588,8 @@ public class SchemaAnalyzer(
 			Type = JsonSchemaType.Object,
 			Properties = properties,
 			Required = required,
+			AdditionalProperties = (ResolveSchema(variant) ?? variant).AdditionalProperties
+				?? bases.Select(b => (ResolveSchema(b) ?? b).AdditionalProperties).FirstOrDefault(a => a is not null),
 			Description = variant.Description
 		};
 	}

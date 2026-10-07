@@ -639,7 +639,7 @@ public class ApiPropertyTreeBuilder(OpenApiDocument document, PropertyDisplayOpt
 		var usedIds = new HashSet<string>(StringComparer.Ordinal);
 		foreach (var variant in variantsToRender)
 		{
-			var dictionaryValue = variant.Props is { Count: > 0 } ? null : _analyzer.GetExpandableDictionaryValue(variant.Schema);
+			var dictionaryValue = _analyzer.GetExpandableDictionaryValue(variant.Schema);
 			var hasProperties = variant.Props is { Count: > 0 } || dictionaryValue is not null;
 			var optionId = UniqueId(
 				$"{scope.Prefix}-variant-{variant.Name.ToLowerInvariant().Replace(" ", "-").Replace("[]", "-array")}",
@@ -652,7 +652,7 @@ public class ApiPropertyTreeBuilder(OpenApiDocument document, PropertyDisplayOpt
 			if (!string.IsNullOrEmpty(variant.BaseName))
 				_ = newAncestors.Add(variant.BaseName);
 
-			var nestedCount = dictionaryValue is not null ? 1 : variant.Props?.Count ?? 0;
+			var nestedCount = (variant.Props?.Count ?? 0) + (dictionaryValue is null ? 0 : 1);
 			var isCollapsible = showProperties && nestedCount > 1;
 			var defaultExpanded = ComputeDefaultExpanded(scope.Depth, nestedCount);
 
@@ -672,7 +672,7 @@ public class ApiPropertyTreeBuilder(OpenApiDocument document, PropertyDisplayOpt
 				UseHidden = options.UseHiddenUntilFound && isCollapsible && !defaultExpanded,
 				Properties = showProperties && variant.Schema is not null
 					? childBuilder.BuildPropertyList(
-						dictionaryValue is null ? variant.Schema : DictionaryKeyRow(dictionaryValue),
+						dictionaryValue is null ? variant.Schema : WithDictionaryKeyRow(variant.Schema, variant.Props, dictionaryValue),
 						scope with { Prefix = optionId, Depth = scope.Depth + 1, Ancestors = newAncestors, RequiredProperties = null }
 					) ?? new ApiPropertyList([])
 					: null,
@@ -691,9 +691,24 @@ public class ApiPropertyTreeBuilder(OpenApiDocument document, PropertyDisplayOpt
 		};
 	}
 
-	/// <summary>A one-row schema that lists a map's value under the same <c>&lt;string&gt;</c> key a plain dictionary property uses.</summary>
-	private static OpenApiSchema DictionaryKeyRow(IOpenApiSchema value) =>
-		new() { Type = JsonSchemaType.Object, Properties = new Dictionary<string, IOpenApiSchema> { [DictionaryKeyName] = value } };
+	/// <summary>
+	/// The variant's properties plus a <c>&lt;string&gt;</c> key row for its map values, the way a plain dictionary property
+	/// lists them. A pure map has no properties, so it shows the key row alone.
+	/// </summary>
+	private static OpenApiSchema WithDictionaryKeyRow(
+		IOpenApiSchema schema,
+		IDictionary<string, IOpenApiSchema>? properties,
+		IOpenApiSchema value
+	) =>
+		new()
+		{
+			Type = JsonSchemaType.Object,
+			Properties = new Dictionary<string, IOpenApiSchema>(properties ?? new Dictionary<string, IOpenApiSchema>())
+			{
+				[DictionaryKeyName] = value
+			},
+			Required = schema.Required
+		};
 
 	/// <summary>Two variants with the same name (two inline <c>object</c> members) still need distinct anchors.</summary>
 	private static string UniqueId(string id, HashSet<string> used)
