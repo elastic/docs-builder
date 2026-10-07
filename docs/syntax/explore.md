@@ -49,27 +49,40 @@ links:
 | `:title:` | **Required.** H2 heading, for example "Explore Elasticsearch". |
 | `:intro:` | Intro paragraph below the heading. |
 | `:id:` | Section anchor. Use `explore` so `{hero}`'s tertiary action can jump to it. |
-| `:collapsed:` | Collapses every accordion, including the first. Add it with no value or set it to `true`. Off by default. |
+| `:mode:` | Which accordions are open on load: `collapsed`, `first`, or `expanded`. Defaults to `collapsed`. See [Modes](#modes). |
 
 ## What nesting changes
 
 `{explore}` carries no options for individual accordions. Nesting drives everything:
 
 - Each [`{card-group}`](card-group.md) inside becomes one accordion. Its `:title:` is the accordion header.
-- The first accordion is expanded. The rest are collapsed. Set `:collapsed:` on the `{explore}` to collapse the first one too.
+- All accordions start collapsed. Set [`:mode:`](#modes) on the `{explore}` to open the first one or all of them.
 - A reader can expand as many accordions as they want. Expanding one does not collapse the others.
 - Each [`{link-card}`](link-card.md) inside renders as a link column rather than a bordered card.
 
 Toggling uses native `<details>` and `<summary>`, so it works without JavaScript.
 
+## Modes
+
+The `:mode:` option sets which accordions are open when the page loads. A reader can still open and close any accordion.
+
+| Mode | Behavior |
+|---|---|
+| `collapsed` | Every accordion is closed. This is the default. |
+| `first` | The first accordion is open. The rest are closed. |
+| `expanded` | Every accordion is open. |
+
+An unknown value produces a warning, and the section renders as `collapsed`.
+
 ## Several Explore sections on one page
 
-Every `{explore}` expands its first accordion by default. On a page with more than one `{explore}`, that opens one accordion per section. To keep a single accordion open on load, leave the first `{explore}` as it is and set `:collapsed:` on the others:
+Every `{explore}` section applies its own mode. To keep a single accordion open on a page with more than one `{explore}`, set `:mode: first` on one section and leave the others at the default:
 
 ```markdown
 :::::{explore}
 :id: explore
 :title: Explore the docs toolchain
+:mode: first
 
 ::::{card-group}
 :title: Quick links
@@ -80,7 +93,6 @@ Every `{explore}` expands its first accordion by default. On a page with more th
 :::::{explore}
 :id: explore-advanced
 :title: Go further
-:collapsed:
 
 ::::{card-group}
 :title: Extending

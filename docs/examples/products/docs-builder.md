@@ -127,6 +127,7 @@ links:
 :::::{explore}
 :id: explore
 :title: Explore docs-builder
+:mode: first
 :intro: Find what you need, organized by task, from authoring and building to publishing and operating.
 
 ::::{card-group}
