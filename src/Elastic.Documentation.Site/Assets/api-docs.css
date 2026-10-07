@@ -1729,7 +1729,7 @@ a.type-linked:hover {
 	@apply text-yellow-90 bg-yellow-10 border-yellow-30 rounded border px-1 py-0.5 text-xs font-medium;
 }
 
-/* Reference documentation link — text + 1px rule, not a button */
+/* Reference documentation link — styled like a regular docs link, on its own line */
 .markdown-content a.docs-reference-btn,
 a.docs-reference-btn {
 	display: inline-block;
@@ -1738,15 +1738,10 @@ a.docs-reference-btn {
 	margin-top: 0.75rem;
 	padding: 0;
 	border: none;
-	border-bottom: 1px solid #0b64dd;
 	border-radius: 0;
 	background: none;
 	color: var(--color-blue-elastic, #0b64dd);
-	font-family: var(--font-body, Inter, ui-sans-serif, system-ui, sans-serif);
-	font-size: 14px;
-	font-weight: 500;
-	line-height: 20px;
-	text-decoration: none;
+	text-decoration: underline;
 	transition: none;
 }
 
@@ -1754,7 +1749,6 @@ a.docs-reference-btn {
 a.docs-reference-btn:hover {
 	background: none;
 	color: var(--color-blue-elastic-100, #1750ba);
-	text-decoration: none;
 }
 
 .markdown-content a.docs-reference-btn::before,
