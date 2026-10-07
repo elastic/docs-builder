@@ -28,6 +28,8 @@ type FacetSpec = { colIndex: number; label: string; values: string[] }
 class FilterableTableElement extends HTMLElement {
     private table: HTMLTableElement | null = null
     private rows: HTMLTableRowElement[] = []
+    private allRows: HTMLTableRowElement[] = []
+    private sectionRows: Set<HTMLTableRowElement> = new Set()
     private searchInput: HTMLInputElement | null = null
     private facets: Facet[] = []
     private status: HTMLElement | null = null
@@ -42,7 +44,7 @@ class FilterableTableElement extends HTMLElement {
         this.table = this.querySelector('table')
         const tbody = this.table?.tBodies[0]
         if (!this.table || !tbody) return
-        this.rows = Array.from(tbody.rows)
+        this.readRows(tbody)
         // An empty body has nothing to filter; leave the server markup as-is
         // rather than show controls that can do nothing.
         if (this.rows.length === 0) return
@@ -64,12 +66,75 @@ class FilterableTableElement extends HTMLElement {
             : []
     }
 
+    /**
+     * Splits the body into data rows and section-header rows. A grouped
+     * reference table (for example the EDOT components list) uses a row whose
+     * first cell holds a group name and whose other cells are empty as a
+     * heading. Those rows are structure, not data: they must not inflate the
+     * count or be matched by a filter.
+     */
+    private readRows(tbody: HTMLTableSectionElement): void {
+        this.allRows = Array.from(tbody.rows)
+        const candidates = this.allRows.filter((r) => this.isSectionRow(r))
+        // If every row looks like a heading, none of them is: the data columns
+        // are probably still empty because sibling components (for example
+        // `applies_to` badges) render them late. The observer re-reads once
+        // they fill, and the real headings separate out then.
+        this.sectionRows =
+            candidates.length < this.allRows.length
+                ? new Set(candidates)
+                : new Set()
+        this.rows = this.allRows.filter((r) => !this.sectionRows.has(r))
+    }
+
+    private isSectionRow(row: HTMLTableRowElement): boolean {
+        const cells = Array.from(row.cells)
+        if (cells.length < 2) return false
+        // A heading fills only its first cell; every other cell is empty.
+        return (
+            this.cellText(cells[0]) !== '' &&
+            cells.slice(1).every((c) => this.cellText(c) === '')
+        )
+    }
+
+    /**
+     * A cell's text with footnote markers removed. A `[^1]` reference renders
+     * as `<a class="footnote-ref">`, whose digit is part of `textContent` but
+     * not part of the value - without this a footnoted "Core" reads as
+     * "Core 1" and splits off into its own dropdown option.
+     */
+    private cellText(cell: Element | undefined): string {
+        if (!cell) return ''
+        let text = ''
+        for (const node of Array.from(cell.childNodes)) {
+            if (
+                node.nodeType === Node.ELEMENT_NODE &&
+                (node as Element).classList.contains('footnote-ref')
+            )
+                continue
+            text += node.textContent ?? ''
+        }
+        return text.trim()
+    }
+
+    /**
+     * The values a cell contributes to its column's filter. A cell that lists
+     * several comma-separated values ("Logs, Metrics") contributes each one, so
+     * the row matches a filter for any of them rather than only the exact text.
+     */
+    private cellValues(cell: Element | undefined): string[] {
+        const text = this.cellText(cell)
+        if (!text) return []
+        return text
+            .split(',')
+            .map((v) => v.trim())
+            .filter(Boolean)
+    }
+
     private distinctValues(colIndex: number): string[] {
         const values = new Set<string>()
-        for (const row of this.rows) {
-            const v = row.cells[colIndex]?.textContent?.trim() ?? ''
-            if (v) values.add(v)
-        }
+        for (const row of this.rows)
+            for (const v of this.cellValues(row.cells[colIndex])) values.add(v)
         return Array.from(values).sort((a, b) => a.localeCompare(b))
     }
 
@@ -172,7 +237,7 @@ class FilterableTableElement extends HTMLElement {
             window.clearTimeout(this.settleTimer)
             this.settleTimer = window.setTimeout(() => {
                 const body = this.table?.tBodies[0]
-                if (body) this.rows = Array.from(body.rows)
+                if (body) this.readRows(body)
                 this.renderFacets()
                 this.applyFilters()
             }, SETTLE_MS)
@@ -199,19 +264,35 @@ class FilterableTableElement extends HTMLElement {
             .map((f) => ({ colIndex: f.colIndex, value: f.select.value }))
 
         let visible = 0
-        for (const row of this.rows) {
+        // A section header is shown only while its group has a visible row, so
+        // a filter never strands a heading above nothing.
+        let section: HTMLTableRowElement | null = null
+        let sectionHasVisible = false
+        const closeSection = () => {
+            if (section) section.hidden = !sectionHasVisible
+        }
+
+        for (const row of this.allRows) {
+            if (this.sectionRows.has(row)) {
+                closeSection()
+                section = row
+                sectionHasVisible = false
+                continue
+            }
             const matchesQuery =
                 query === '' ||
                 (row.textContent?.toLowerCase().includes(query) ?? false)
-            const matchesFacets = activeFacets.every(
-                (f) =>
-                    (row.cells[f.colIndex]?.textContent?.trim() ?? '') ===
-                    f.value
+            const matchesFacets = activeFacets.every((f) =>
+                this.cellValues(row.cells[f.colIndex]).includes(f.value)
             )
             const show = matchesQuery && matchesFacets
             row.hidden = !show
-            if (show) visible++
+            if (show) {
+                visible++
+                sectionHasVisible = true
+            }
         }
+        closeSection()
 
         // Drives the print rule: a printed copy of a filtered table keeps its
         // count, so it can't be mistaken for the complete table.
