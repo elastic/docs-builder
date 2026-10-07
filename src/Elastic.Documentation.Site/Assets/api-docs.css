@@ -413,10 +413,6 @@
 	line-height: 32px;
 }
 
-.api-group .api-tag-canonical {
-	margin: 4px 0 0;
-}
-
 .api-group .api-tag-description {
 	max-width: 66ch;
 	margin-top: 8px;

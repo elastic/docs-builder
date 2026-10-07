@@ -9,10 +9,6 @@
 		<h1>@Model.Tag.DisplayName</h1>
 		@(await RenderPartialAsync<_PageActions, string>(LayoutModel.MarkdownUrl))
 	</div>
-	@if (!string.Equals(Model.Tag.Name, Model.Tag.DisplayName, StringComparison.Ordinal))
-	{
-		<p class="api-tag-canonical"><code>@Model.Tag.Name</code></p>
-	}
 	@if (!string.IsNullOrEmpty(Model.DescriptionMarkdown))
 	{
 		<div class="api-tag-description docs-measure">@Model.RenderMarkdown(Model.DescriptionMarkdown)</div>
