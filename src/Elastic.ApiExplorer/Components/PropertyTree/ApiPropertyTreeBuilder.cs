@@ -113,8 +113,7 @@ public partial class ApiPropertyTreeBuilder(
 		if (ReferenceEquals(resolved, schema) || resolved is null)
 			return Describe(schema);
 
-		var (isSimpleArrayUnion, _) = DetectSimpleArrayUnion(_analyzer.GetTypeInfo(resolved));
-		return isSimpleArrayUnion ? Describe(resolved) : Describe(schema);
+		return DetectSimpleArrayUnion(_analyzer.GetTypeInfo(resolved)) is not null ? Describe(resolved) : Describe(schema);
 	}
 
 	/// <summary>Validation constraint labels for a schema; empty when it declares none.</summary>
@@ -229,131 +228,6 @@ public partial class ApiPropertyTreeBuilder(
 		};
 	}
 
-	/// <summary>Everything the original view's opening code block derived about a property's expansion.</summary>
-	private sealed record Expansion(
-		bool HasNestedProps,
-		bool HasDictValueProps,
-		IOpenApiSchema? ArrayItemSchema,
-		bool HasArrayItemProps,
-		bool IsSimpleArrayUnion,
-		string? SimpleUnionBaseName,
-		bool HasUnionOptions,
-		bool SimpleUnionHasExpandableProps,
-		IOpenApiSchema? SimpleUnionSchema,
-		List<UnionOption>? SimpleUnionNestedOptions,
-		int NestedCount,
-		bool HasChildren,
-		bool IsCollapsible,
-		bool DefaultExpanded
-	);
-
-	private Expansion ComputeExpansion(IOpenApiSchema propSchema, TypeInfo typeInfo, int depth, bool isRecursive)
-	{
-		var dictHasLinkedValue = typeInfo is { IsDictionary: true, HasLink: true };
-		// A union whose properties come only from an allOf expands as variants; one that declares properties itself keeps listing them.
-		var hasNestedProps = typeInfo is { IsObject: true, HasLink: false }
-			&& (!typeInfo.IsUnion || propSchema.Properties is { Count: > 0 })
-			&& depth < options.MaxDepth
-			&& HasActualProperties(propSchema);
-		var hasDictValueProps = typeInfo is { IsDictionary: true, DictValueSchema: not null }
-			&& depth < options.MaxDepth
-			&& !dictHasLinkedValue
-			&& HasActualProperties(typeInfo.DictValueSchema);
-		var arrayItemSchema = typeInfo.IsArray && propSchema.Items is not null ? propSchema.Items : null;
-		var hasArrayItemProps = arrayItemSchema is not null
-			&& !typeInfo.HasLink
-			&& depth < options.MaxDepth
-			&& HasActualProperties(arrayItemSchema);
-
-		var (isSimpleArrayUnion, simpleUnionBaseName) = DetectSimpleArrayUnion(typeInfo);
-
-		var hasUnionOptions = typeInfo is { IsUnion: true, UnionOptions: not null }
-			&& depth < options.MaxDepth
-			&& !isSimpleArrayUnion
-			&& typeInfo.UnionOptions.Any(_analyzer.UnionOptionHasProperties);
-
-		var (simpleUnionHasExpandableProps, simpleUnionSchema, simpleUnionNestedOptions) = ResolveSimpleUnionExpansion(
-			typeInfo,
-			isSimpleArrayUnion,
-			simpleUnionBaseName,
-			depth
-		);
-
-		var nestedCount = 0;
-		if (hasNestedProps)
-			nestedCount = _analyzer.GetSchemaProperties(propSchema)?.Count ?? 0;
-		else if (hasDictValueProps)
-			nestedCount = _analyzer.GetSchemaProperties(typeInfo.DictValueSchema)?.Count ?? 0;
-		else if (hasArrayItemProps)
-			nestedCount = _analyzer.GetSchemaProperties(arrayItemSchema)?.Count ?? 0;
-		else if (hasUnionOptions)
-			nestedCount = typeInfo.UnionOptions!.Count(_analyzer.UnionOptionHasProperties);
-		else if (simpleUnionHasExpandableProps && simpleUnionNestedOptions is { Count: > 0 })
-			nestedCount = simpleUnionNestedOptions.Count(_analyzer.UnionOptionHasProperties);
-		else if (simpleUnionHasExpandableProps && simpleUnionSchema is not null)
-			nestedCount = _analyzer.GetSchemaProperties(simpleUnionSchema)?.Count ?? 0;
-
-		var hasChildren = (hasNestedProps || hasDictValueProps || hasArrayItemProps || hasUnionOptions || simpleUnionHasExpandableProps)
-			&& !isRecursive;
-		var isCollapsible = hasChildren && nestedCount > 1 && !hasUnionOptions && !hasDictValueProps;
-		var defaultExpanded = ComputeDefaultExpanded(depth, nestedCount);
-
-		return new Expansion(
-			hasNestedProps,
-			hasDictValueProps,
-			arrayItemSchema,
-			hasArrayItemProps,
-			isSimpleArrayUnion,
-			simpleUnionBaseName,
-			hasUnionOptions,
-			simpleUnionHasExpandableProps,
-			simpleUnionSchema,
-			simpleUnionNestedOptions,
-			nestedCount,
-			hasChildren,
-			isCollapsible,
-			defaultExpanded
-		);
-	}
-
-	private static (bool IsSimpleArrayUnion, string? BaseName) DetectSimpleArrayUnion(TypeInfo typeInfo)
-	{
-		if (typeInfo is not { IsUnion: true, UnionOptions.Count: > 0 })
-			return (false, null);
-
-		var distinctOptions = typeInfo.UnionOptions.DistinctBy(o => o.Name).ToArray();
-		if (distinctOptions.Length != 2)
-			return (false, null);
-
-		var baseNames = distinctOptions.Select(o => o.BaseName).Distinct().ToArray();
-		if (baseNames.Length == 1 && !string.IsNullOrEmpty(baseNames[0]))
-			return (true, baseNames[0]);
-		return (false, null);
-	}
-
-	private (bool Expandable, IOpenApiSchema? Schema, List<UnionOption>? NestedOptions) ResolveSimpleUnionExpansion(
-		TypeInfo typeInfo,
-		bool isSimpleArrayUnion,
-		string? simpleUnionBaseName,
-		int depth
-	)
-	{
-		if (!isSimpleArrayUnion || string.IsNullOrEmpty(simpleUnionBaseName) || depth >= options.MaxDepth)
-			return (false, null, null);
-
-		var baseOption = typeInfo.UnionOptions!.FirstOrDefault(o => o.Name == simpleUnionBaseName);
-		if (baseOption?.Schema is null)
-			return (false, null, null);
-
-		var baseTypeInfo = _analyzer.GetTypeInfo(baseOption.Schema);
-		if (baseTypeInfo.HasLink || !_analyzer.UnionOptionHasProperties(baseOption))
-			return (false, null, null);
-
-		var directProps = _analyzer.GetSchemaProperties(baseOption.Schema);
-		var nestedOptions = directProps is null or { Count: 0 } ? _analyzer.GetNestedUnionOptions(baseOption.Schema) : null;
-		return (true, baseOption.Schema, nestedOptions);
-	}
-
 	private bool ComputeDefaultExpanded(int depth, int nestedCount) =>
 		options.CollapseMode == CollapseMode.DepthBased && depth != 0 && nestedCount is > 0 and < 5;
 
@@ -399,11 +273,11 @@ public partial class ApiPropertyTreeBuilder(
 				? _analyzer.GetTypeInfo(typeInfo.DictValueSchema).TypeName
 				: typeInfo.TypeName;
 		}
-		else if (expansion.IsSimpleArrayUnion && !string.IsNullOrEmpty(expansion.SimpleUnionBaseName))
+		else if (expansion.ArrayUnion is { BaseName: var baseName })
 		{
-			var baseOption = typeInfo.UnionOptions!.FirstOrDefault(o => o.Name == expansion.SimpleUnionBaseName);
+			var baseOption = typeInfo.UnionOptions!.FirstOrDefault(o => o.Name == baseName);
 			if (baseOption?.Schema is not null && _analyzer.GetTypeInfo(baseOption.Schema).HasLink)
-				linkedTypeName = expansion.SimpleUnionBaseName;
+				linkedTypeName = baseName;
 		}
 
 		if (string.IsNullOrEmpty(linkedTypeName))
@@ -420,7 +294,7 @@ public partial class ApiPropertyTreeBuilder(
 		// An X | X[] union needs no options row when its type already reads X | X[] or X's fields expand below it.
 		// A named one (`union NodeIds`) that does not expand has only this row to name X.
 		var namesItsOptions = typeInfo.TypeName?.Contains(" | ", StringComparison.Ordinal) == true;
-		if (expansion.IsSimpleArrayUnion && (namesItsOptions || expansion.SimpleUnionHasExpandableProps))
+		if (expansion.ArrayUnion is { } arrayUnion && (namesItsOptions || arrayUnion.Expands))
 			return null;
 
 		var sortedOptions = (typeInfo.UnionOptions ?? [])
@@ -452,77 +326,6 @@ public partial class ApiPropertyTreeBuilder(
 			|| SchemaHelpers.PrimitiveTypeNames.Contains(option.TrimEnd('[', ']'))
 			|| char.IsUpper(option[0])
 			|| option.EndsWith("[]");
-
-	private ApiPropertyChildren BuildChildren(PropertyRow row, PropertyTreeScope scope, Expansion expansion)
-	{
-		var typeInfo = row.TypeInfo;
-		var childScope = scope with
-		{
-			Prefix = row.AnchorId,
-			Depth = scope.Depth + 1,
-			Ancestors = AugmentAncestors(typeInfo, scope.Ancestors),
-			RequiredProperties = null,
-			Owner = row.Name
-		};
-		var useHidden = options.UseHiddenUntilFound && expansion.IsCollapsible && !expansion.DefaultExpanded;
-
-		if (expansion.HasDictValueProps)
-			return BuildDictionaryChildren(row, childScope, expansion);
-
-		if (expansion.HasNestedProps)
-		{
-			return new ApiPropertyChildren
-			{
-				Kind = ChildKind.PropertyList,
-				UseHidden = useHidden,
-				Properties = BuildPropertyList(row.Schema, childScope) ?? new ApiPropertyList([])
-			};
-		}
-
-		if (expansion.HasArrayItemProps)
-		{
-			return new ApiPropertyChildren
-			{
-				Kind = ChildKind.PropertyList,
-				UseHidden = useHidden,
-				Properties = BuildPropertyList(expansion.ArrayItemSchema, childScope) ?? new ApiPropertyList([])
-			};
-		}
-
-		if (expansion.HasUnionOptions)
-		{
-			return new ApiPropertyChildren
-			{
-				Kind = ChildKind.UnionVariants,
-				UseHidden = false,
-				Variants = BuildUnionVariants(typeInfo.UnionOptions!, childScope, _analyzer.GetUnionDiscriminator(row.Schema))
-					?? ApiUnionVariants.Empty
-			};
-		}
-
-		if (expansion.SimpleUnionHasExpandableProps && expansion.SimpleUnionNestedOptions is { Count: > 0 })
-		{
-			return new ApiPropertyChildren
-			{
-				Kind = ChildKind.SimpleUnionVariants,
-				UseHidden = useHidden,
-				Variants = BuildUnionVariants(expansion.SimpleUnionNestedOptions, childScope, _analyzer.GetUnionDiscriminator(row.Schema))
-					?? ApiUnionVariants.Empty
-			};
-		}
-
-		if (expansion.SimpleUnionHasExpandableProps && expansion.SimpleUnionSchema is not null)
-		{
-			return new ApiPropertyChildren
-			{
-				Kind = ChildKind.PropertyList,
-				UseHidden = useHidden,
-				Properties = BuildPropertyList(expansion.SimpleUnionSchema, childScope) ?? new ApiPropertyList([])
-			};
-		}
-
-		return ApiPropertyChildren.None;
-	}
 
 	private ApiPropertyChildren BuildDictionaryChildren(PropertyRow row, PropertyTreeScope childScope, Expansion expansion)
 	{
