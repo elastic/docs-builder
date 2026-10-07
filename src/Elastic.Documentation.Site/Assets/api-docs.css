@@ -2837,14 +2837,7 @@ button.example-response-tab:focus-visible {
 	color: var(--color-ink-dark);
 }
 
-/* The hero caps its inner width for hub pages. The cards run the full container width, like the
-   landing page, so the title has to share their left edge. It is also tightened so the cards start
-   higher on the page. */
-.api-catalog .hub-hero {
-	padding: 20px 0 14px;
-	margin-bottom: 20px;
-}
-
+/* The hero caps its inner width for hub pages, which would leave the centred title off-centre. */
 .api-catalog .hub-hero .hub-hero-inner {
 	max-width: none;
 }
@@ -2907,19 +2900,15 @@ button.example-response-tab:focus-visible {
 	height: 100%;
 }
 
-/* Whole-card hover. The link is stretched over the card, so hovering anywhere lands on it. The
-   border is grey-80 for the same reason the hub cards use it: it clears the 3:1 ratio a state
-   indicator needs, which the resting grey-20 container edge does not have to. */
-.api-catalog .api-catalog-card {
-	transition:
-		box-shadow 0.15s,
-		border-color 0.15s;
-}
-
-/* The card is the link, so it takes the link out of its own colour and underline. */
+/* The card is the link, so it takes the link out of its own colour and underline. The hover border is
+   grey-80 for the same reason the hub cards use it: it clears the 3:1 ratio a state indicator needs,
+   which the resting grey-20 container edge does not have to. */
 .api-catalog .api-catalog-card {
 	color: inherit;
 	text-decoration: none;
+	transition:
+		box-shadow 0.15s,
+		border-color 0.15s;
 }
 
 .api-catalog .api-catalog-card:hover .api-catalog-card-title,
@@ -2927,15 +2916,15 @@ button.example-response-tab:focus-visible {
 	color: var(--color-blue-elastic);
 }
 
+.api-catalog .api-catalog-card:hover,
+.api-catalog .api-catalog-card:focus-visible {
+	border-color: var(--color-grey-80);
+	box-shadow: 0 2px 8px rgb(0 0 0 / 0.05);
+}
+
 .api-catalog .api-catalog-card:focus-visible {
 	outline: 2px solid var(--color-blue-elastic);
 	outline-offset: 2px;
-}
-
-.api-catalog .api-catalog-card:hover,
-.api-catalog .api-catalog-card:focus-within {
-	border-color: var(--color-grey-80);
-	box-shadow: 0 2px 8px rgb(0 0 0 / 0.05);
 }
 
 @media (prefers-reduced-motion: reduce) {

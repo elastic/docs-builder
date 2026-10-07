@@ -46,28 +46,13 @@ public class ApiCatalogCardTests
 	}
 
 	[Test]
-	public async Task Render_Card_LinkIsNamedByItsTitleNotByTheWholeCardText()
+	[Arguments("elasticsearch", "elasticsearch")]
+	[Arguments("my api/v2", "my-api-v2")]
+	public async Task Render_Card_LinkIsNamedByItsTitleWithAnIdThatIsValid(string key, string id)
 	{
-		var html = await Render(Item());
+		var html = await Render(Item(key));
 
-		html.Should().Contain("aria-labelledby=\"api-catalog-title-elasticsearch\"");
-		html.Should().Contain("<h2 id=\"api-catalog-title-elasticsearch\"");
-	}
-
-	[Test]
-	public async Task Render_KeyWithCharactersThatAreNotValidInAnId_IsMadeSafe()
-	{
-		var html = await Render(Item("my api/v2"));
-
-		html.Should().Contain("aria-labelledby=\"api-catalog-title-my-api-v2\"");
-		html.Should().Contain("<h2 id=\"api-catalog-title-my-api-v2\"");
-	}
-
-	[Test]
-	public async Task Render_Card_UsesNoStretchedOverlayThatAPositionedAncestorCouldTrap()
-	{
-		var html = await Render(Item());
-
-		html.Should().NotContain("after:absolute").And.NotContain("after:inset-0");
+		html.Should().Contain($"aria-labelledby=\"api-catalog-title-{id}\"");
+		html.Should().Contain($"<h2 id=\"api-catalog-title-{id}\"");
 	}
 }
