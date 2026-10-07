@@ -7,3 +7,5 @@ namespace Elastic.ApiExplorer.Landing;
 public record ApiGroupRowModel(ApiOverviewRow Row, string HxAttributes);
 
 public record ApiGroupListModel(IReadOnlyList<ApiOverviewRow> Rows, string HxAttributes);
+
+public record ApiIndexGroupModel(ApiOverviewSection Group, string HxAttributes);

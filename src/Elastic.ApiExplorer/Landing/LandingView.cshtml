@@ -17,34 +17,46 @@
 		<h1>@Model.ApiInfo.Title</h1>
 		@(await RenderPartialAsync<_PageActions, string>(LayoutModel.MarkdownUrl))
 	</div>
-	<p>@Model.RenderMarkdown(Model.ApiInfo.Description)</p>
-	<p>License: @Model.ApiInfo.License?.Name</p>
-	@if (LayoutModel.BuildType != BuildType.Assembler)
+	<div class="docs-measure">
+		<p>@Model.RenderMarkdown(Model.ApiInfo.Description)</p>
+	</div>
+	<div class="api-landing-meta">
+		@if (Model.ApiInfo.License?.Name is { Length: > 0 } license)
+		{
+			<span>@license license</span>
+		}
+		@if (LayoutModel.BuildType != BuildType.Assembler)
+		{
+			<span class="api-landing-download">
+				<span>Download spec</span>
+				@foreach (var (format, url) in new[] { ("JSON", Model.JsonUrl), ("YAML", Model.YamlUrl) })
+				{
+					<a class="api-chip-link" href="@url" download aria-label="Download spec as @format">
+						<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2v8m0 0L5 7m3 3 3-3M3 13h10" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>@format</a>
+				}
+			</span>
+		}
+	</div>
+	@if (Model.TopicPages.Count > 0)
 	{
-		<p>Download source: <a href="@Model.JsonUrl" download>JSON</a> <a href="@Model.YamlUrl" download>YAML</a></p>
+		<nav class="api-topics" aria-label="Reference topics">
+			@foreach (var topic in Model.TopicPages)
+			{
+				<a class="api-chip-link" href="@topic.Url" @(new HtmlString(apiHxAttrs))>@topic.Title</a>
+			}
+		</nav>
 	}
 	<div class="api-overview">
-		@foreach (var section in Model.OverviewSections)
-		{
-			if (section.Heading is { } heading)
+		<div class="api-index">
+			@foreach (var group in Model.IndexSections)
 			{
-				if (heading.Kind == OverviewRowKind.ClassificationHeading)
+				if (group.Heading is { Kind: OverviewRowKind.ClassificationHeading } classification)
 				{
-					<h2>@heading.Title</h2>
+					<h2 class="api-index-heading">@classification.Title</h2>
+					continue;
 				}
-				else if (heading.Url is not null)
-				{
-					<h3><a href="@heading.Url" @apiHxAttrs>@heading.Title</a></h3>
-				}
-				else
-				{
-					<h3>@heading.Title</h3>
-				}
+				@(await RenderPartialAsync<_ApiIndexGroup, ApiIndexGroupModel>(new ApiIndexGroupModel(group, apiHxAttrs)))
 			}
-			if (section.Items.Count > 0)
-			{
-				@(await RenderPartialAsync<_ApiGroupList, ApiGroupListModel>(new ApiGroupListModel(section.Items, apiHxAttrs)))
-			}
-		}
+		</div>
 	</div>
 </section>

@@ -106,7 +106,7 @@ public class OpenApiGeneratorSpecDownloadTests(ApiExplorerFixture fixture)
 				TestContext.Current!.Execution.CancellationToken
 			);
 
-		html.Should().Contain("Download source");
+		html.Should().Contain("Download spec");
 		html.Should().Contain("href=\"/api/doc/elasticsearch.json\"");
 		html.Should().Contain("href=\"/api/doc/elasticsearch.yaml\"");
 		html.Should().Contain("download");

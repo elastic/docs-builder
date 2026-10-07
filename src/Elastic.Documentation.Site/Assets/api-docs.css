@@ -157,8 +157,8 @@
 	min-width: 0;
 }
 
-/* Group-page intro only. Same reading measure as docs articles (--max-text-width). */
-.api-tag-description.docs-measure {
+/* Docs reading measure (--max-text-width): group-page intros and the product landing text. */
+.docs-measure {
 	max-width: var(--max-text-width);
 }
 
@@ -365,10 +365,6 @@
 		align-items: center;
 		gap: 8px;
 	}
-	h2,
-	h3 {
-		margin: 24px 0 0;
-	}
 }
 
 /* The rows switch to a two-column layout by container width. The product landing page has no .api-group,
@@ -406,9 +402,9 @@
 .api-group-list {
 	display: flex;
 	flex-direction: column;
-	gap: 8px;
 	margin: 12px 0 0;
 	padding: 0;
+	border-top: 1px solid var(--color-grey-20);
 	list-style: none;
 }
 
@@ -420,6 +416,7 @@
 .api-group-list > li {
 	margin: 0;
 	padding: 0;
+	border-bottom: 1px solid var(--color-grey-20);
 	list-style: none;
 }
 
@@ -435,8 +432,37 @@
 	box-sizing: border-box;
 	min-height: 44px;
 	margin: 0;
-	padding: 16px;
+	padding: 12px 8px;
 	-webkit-tap-highlight-color: rgb(11 100 221 / 16%);
+}
+
+/* The docs link style (blue, underlined) outranks the row, so the row wins it back here. */
+#markdown-content a.api-group-row {
+	color: inherit;
+	text-decoration: none;
+}
+
+.api-group-row:hover,
+.api-group-row:focus-visible {
+	background: var(--color-grey-10);
+}
+
+.api-group-row:focus-visible {
+	outline: 2px solid var(--color-blue-elastic, #0b64dd);
+	outline-offset: -2px;
+}
+
+.api-group-row:hover .api-overview-title,
+.api-group-row:focus-visible .api-overview-title,
+.api-group-row:hover .api-group-chevron,
+.api-group-row:focus-visible .api-group-chevron {
+	color: var(--color-blue-elastic, #0b64dd);
+}
+
+.api-group-row:hover .api-overview-title,
+.api-group-row:focus-visible .api-overview-title {
+	text-decoration: underline;
+	text-underline-offset: 2px;
 }
 
 .api-group-row .api-overview-title {
@@ -481,8 +507,180 @@
 	transform: rotate(-90deg);
 }
 
-/* One card look for every API landing page: the /api catalog cards, the product landing rows and the group
-   rows. The border is grey-80 on hover for the same reason the hub cards use it: it clears the 3:1 ratio a
+/* Product landing: the groups as a flat index. Columns follow the container, not the viewport, so the index
+   reads the same beside the sidebar and in a narrow window. Classification headings span every column. */
+.api-index {
+	column-gap: 40px;
+}
+
+.api-index .api-index-heading {
+	column-span: all;
+	margin: 32px 0 8px;
+	font-size: 20px;
+	line-height: 28px;
+}
+
+/* Topic pages (Authentication, Servers) sit above the index: they are read once, not browsed with the endpoints. */
+.api-topics {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	margin: 16px 0 32px;
+}
+
+/* Quiet outlined link: topic pages and the spec downloads. */
+#markdown-content a.api-chip-link {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	padding: 4px 12px;
+	border: 1px solid var(--color-grey-20);
+	border-radius: 8px;
+	color: inherit;
+	font-size: 14px;
+	line-height: 20px;
+	text-decoration: none;
+}
+
+.api-chip-link svg {
+	width: 14px;
+	height: 14px;
+}
+
+#markdown-content a.api-chip-link:hover,
+#markdown-content a.api-chip-link:focus-visible {
+	border-color: var(--color-grey-80);
+	color: var(--color-blue-elastic, #0b64dd);
+}
+
+#markdown-content a.api-chip-link:focus-visible {
+	outline: 2px solid var(--color-blue-elastic, #0b64dd);
+	outline-offset: 2px;
+}
+
+/* License and spec downloads: facts about the spec, so they sit under the description in the subdued colour. */
+.api-landing-meta {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 8px 24px;
+	margin: 16px 0 0;
+	color: var(--color-subdued, #516381);
+	font-size: 14px;
+	line-height: 20px;
+}
+
+.api-landing-download {
+	display: inline-flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 8px;
+}
+
+.api-index-group {
+	break-inside: avoid;
+	margin: 0 0 32px;
+}
+
+.api-index .api-index-group-title {
+	display: flex;
+	align-items: baseline;
+	justify-content: space-between;
+	gap: 12px;
+	margin: 0;
+	padding: 0 0 8px;
+	border-bottom: 1px solid var(--color-grey-20);
+	font-size: 16px;
+	font-weight: 600;
+	line-height: 24px;
+}
+
+.api-index-group-title a {
+	color: inherit;
+	text-decoration: none;
+}
+
+.api-index-group-title a:hover,
+.api-index-group-title a:focus-visible {
+	color: var(--color-blue-elastic, #0b64dd);
+	text-decoration: underline;
+	text-underline-offset: 2px;
+}
+
+.api-index-count {
+	color: var(--color-subdued, #516381);
+	font-size: 14px;
+	font-weight: 400;
+}
+
+#markdown-content .api-index-list {
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.api-index-list > li {
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+#markdown-content a.api-index-item {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	min-height: 36px;
+	padding: 6px 4px;
+	border-bottom: 1px solid var(--color-grey-10);
+	color: inherit;
+	font-size: 14px;
+	line-height: 20px;
+	text-decoration: none;
+}
+
+/* One chip width, so the titles line up whatever the method. */
+.api-index-item .api-method {
+	min-width: 72px;
+	height: 20px;
+	font-size: 11px;
+}
+
+.api-index-item-title {
+	min-width: 0;
+	overflow-wrap: anywhere;
+}
+
+#markdown-content a.api-index-item:hover,
+#markdown-content a.api-index-item:focus-visible {
+	background: var(--color-grey-10);
+}
+
+#markdown-content a.api-index-item:hover .api-index-item-title,
+#markdown-content a.api-index-item:focus-visible .api-index-item-title {
+	color: var(--color-blue-elastic, #0b64dd);
+	text-decoration: underline;
+	text-underline-offset: 2px;
+}
+
+#markdown-content a.api-index-item:focus-visible,
+.api-index-group-title a:focus-visible {
+	outline: 2px solid var(--color-blue-elastic, #0b64dd);
+	outline-offset: -2px;
+}
+
+@container api-group (min-width: 44rem) {
+	.api-index {
+		column-count: 2;
+	}
+}
+
+@container api-group (min-width: 84rem) {
+	.api-index {
+		column-count: 3;
+	}
+}
+
+/* The /api catalog card. The border is grey-80 on hover for the same reason the hub cards use it: it clears the 3:1 ratio a
    state indicator needs, which the resting grey-20 edge does not have to. */
 .api-card {
 	box-sizing: border-box;
@@ -509,9 +707,7 @@
 }
 
 .api-card:hover .api-card-title,
-.api-card:focus-visible .api-card-title,
-.api-card:hover .api-group-chevron,
-.api-card:focus-visible .api-group-chevron {
+.api-card:focus-visible .api-card-title {
 	color: var(--color-blue-elastic, #0b64dd);
 }
 

@@ -4,8 +4,8 @@
 	var row = Model.Row;
 }
 <li>
-	<a class="api-card api-group-row" href="@row.Url" @(new HtmlString(Model.HxAttributes))>
-		<span class="api-card-title api-overview-title">@row.Title</span>
+	<a class="api-group-row" href="@row.Url" @(new HtmlString(Model.HxAttributes))>
+		<span class="api-overview-title">@row.Title</span>
 		<div class="api-group-routes">
 			@switch (row.Kind)
 			{
