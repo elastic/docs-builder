@@ -625,24 +625,31 @@ public class ApiPropertyTreeBuilder(
 		);
 
 	/// <summary>
-	/// Each field's name, requiredness and type, and one more level for inline objects. A union-typed field contributes
-	/// only its type, so a generated spec that repeats a recursive union level after level still matches its parent.
+	/// Each field's name, requiredness and type, and the map value of an object that is also a map. A union-typed field
+	/// contributes only its type, so a generated spec that repeats a recursive union level after level still matches its parent.
 	/// </summary>
 	private string Fingerprint(IOpenApiSchema? schema, int depth)
 	{
-		var properties = _analyzer.GetSchemaProperties(schema);
-		if (properties is null)
-			return "";
+		var resolved = _analyzer.ResolveSchema(schema) ?? schema;
+		var required = resolved?.Required ?? new HashSet<string>();
+		var fields = (_analyzer.GetSchemaProperties(schema) ?? new Dictionary<string, IOpenApiSchema>()).OrderBy(
+			p => p.Key,
+			StringComparer.Ordinal
+		).Select(p => $"{p.Key}{(required.Contains(p.Key) ? "!" : "")}:{TypeFingerprint(p.Value, depth)}");
+		var mapValue = resolved?.AdditionalProperties is { } value
+			? [$"{DictionaryKeyName}:{TypeFingerprint(value, depth)}"]
+			: Array.Empty<string>();
+		return string.Join(",", fields.Concat(mapValue));
+	}
 
-		var required = (_analyzer.ResolveSchema(schema) ?? schema)?.Required ?? new HashSet<string>();
-		return string.Join(",", properties.OrderBy(p => p.Key, StringComparer.Ordinal).Select(p =>
-		{
-			var type = _analyzer.GetTypeInfo(p.Value);
-			var nested = depth > 1 && type is { IsObject: true, IsUnion: false, SchemaRef: null or "" }
-				? $"{{{Fingerprint(type.IsArray ? p.Value.Items : p.Value, depth - 1)}}}"
-				: "";
-			return $"{p.Key}{(required.Contains(p.Key) ? "!" : "")}:{(type.IsArray ? "[]" : "")}{type.TypeName}@{type.SchemaRef}{nested}";
-		}));
+	/// <summary>A field's or map value's type and <c>$ref</c>, and one more level for an inline object.</summary>
+	private string TypeFingerprint(IOpenApiSchema schema, int depth)
+	{
+		var type = _analyzer.GetTypeInfo(schema);
+		var nested = depth > 1 && type is { IsObject: true, IsUnion: false, SchemaRef: null or "" }
+			? $"{{{Fingerprint(type.IsArray ? schema.Items : schema, depth - 1)}}}"
+			: "";
+		return $"{(type.IsArray ? "[]" : "")}{type.TypeName}@{type.SchemaRef}{nested}";
 	}
 
 	private bool DetectRecursion(IOpenApiSchema propSchema, TypeInfo typeInfo, IReadOnlySet<string>? ancestors)

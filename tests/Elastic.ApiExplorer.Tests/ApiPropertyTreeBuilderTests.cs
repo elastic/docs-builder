@@ -1793,4 +1793,44 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture)
 		anchors.Should().OnlyHaveUniqueItems();
 		map.Properties.Items.Single(p => p.Name == "<string>").AnchorId.Should().EndWith("-string-map");
 	}
+
+	[Test]
+	public async Task BuildPropertyList_UnionsDifferingOnlyInMapValue_AreNotShared()
+	{
+		var json =
+			"""
+			{
+			  "openapi": "3.1.0",
+			  "info": { "title": "t", "version": "1" },
+			  "paths": {},
+			  "components": {
+			    "schemas": {
+			      "Input": { "type": "object", "properties": { "enabled": { "type": "boolean" } } },
+			      "Holder": {
+			        "type": "object",
+			        "properties": {
+			          "first": { "oneOf": [
+			            { "type": "object", "properties": { "f0": { "type": "string" }, "f1": { "type": "string" }, "f2": { "type": "string" }, "f3": { "type": "string" }, "f4": { "type": "string" }, "f5": { "type": "string" }, "f6": { "type": "string" }, "f7": { "type": "string" }, "f8": { "type": "string" }, "f9": { "type": "string" } }, "additionalProperties": { "type": "object", "properties": { "x": { "type": "string" } } } },
+			            { "type": "object", "properties": { "other": { "type": "string" } } } ] },
+			          "second": { "oneOf": [
+			            { "type": "object", "properties": { "f0": { "type": "string" }, "f1": { "type": "string" }, "f2": { "type": "string" }, "f3": { "type": "string" }, "f4": { "type": "string" }, "f5": { "type": "string" }, "f6": { "type": "string" }, "f7": { "type": "string" }, "f8": { "type": "string" }, "f9": { "type": "string" } }, "additionalProperties": { "type": "object", "properties": { "y": { "type": "integer" } } } },
+			            { "type": "object", "properties": { "other": { "type": "string" } } } ] },
+			          "third": { "oneOf": [
+			            { "type": "object", "properties": { "f0": { "type": "string" }, "f1": { "type": "string" }, "f2": { "type": "string" }, "f3": { "type": "string" }, "f4": { "type": "string" }, "f5": { "type": "string" }, "f6": { "type": "string" }, "f7": { "type": "string" }, "f8": { "type": "string" }, "f9": { "type": "string" } }, "additionalProperties": { "type": "object", "properties": { "x": { "type": "string" } } } },
+			            { "type": "object", "properties": { "other": { "type": "string" } } } ] }
+			        }
+			      }
+			    }
+			  }
+			}
+			""";
+		var document = await LoadSpecAsync(json);
+
+		var list = BuilderFor(document).BuildPropertyList(document.Components!.Schemas!["Holder"], new PropertyTreeScope { Prefix = "" })!;
+
+		ApiProperty Row(string name) => list.Items.Single(p => p.Name == name);
+
+		Row("second").Repeats.Should().BeNull("its map values have different fields");
+		Row("third").Repeats!.Name.Should().Be("first");
+	}
 }
