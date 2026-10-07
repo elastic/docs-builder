@@ -1,0 +1,25 @@
+@using Elastic.ApiExplorer.Operations
+@inherits RazorSlice<ApiGroupRowModel>
+@{
+	var row = Model.Row;
+}
+<li>
+	<a class="api-card api-group-row" href="@row.Url" @(new HtmlString(Model.HxAttributes))>
+		<span class="api-card-title api-overview-title">@row.Title</span>
+		<div class="api-group-routes">
+			@switch (row.Kind)
+			{
+				case OverviewRowKind.Operation:
+					@(await RenderPartialAsync<_OperationUrlList, OperationUrlListModel>(new OperationUrlListModel(row.Endpoint)))
+					break;
+				case OverviewRowKind.Schema:
+					<code>@row.SchemaId</code>
+					break;
+				default:
+					@:Additional documentation
+					break;
+			}
+		</div>
+		<svg class="api-group-chevron" viewBox="0 0 16 16" aria-hidden="true"><use href="#icon-chevron-down"/></svg>
+	</a>
+</li>

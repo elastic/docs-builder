@@ -75,12 +75,6 @@
 	fill: currentColor;
 }
 
-.api-url-copy.copybtn.o-tooltip--left:after {
-	background-color: #1d2a3e;
-	color: #f6f9fc;
-	transform: translateX(-102%) translateY(0);
-}
-
 /* Path chip — mirrors inline code (markdown/code.css) so routes read as code */
 .api-url-row > .api-url {
 	@apply bg-grey-10 border-grey-20 border-1 font-mono;
@@ -371,40 +365,16 @@
 		align-items: center;
 		gap: 8px;
 	}
-	table {
-		width: 100%;
-		border-collapse: collapse;
-		td {
-			text-align: left;
-			vertical-align: middle;
-		}
-		td:has(h3) {
-			@apply border-b-grey-20 mb-2 border-b-1 pb-2;
-		}
-		td.api-name {
-			@apply pr-2;
-			text-align: left;
-			font-weight: 700;
-		}
-		.api-overview-title {
-			color: inherit;
-			font-weight: 700;
-			text-decoration: none;
-		}
-		.api-overview-title:hover {
-			color: var(--color-blue-elastic, #0b64dd);
-		}
-		tr:has(td.api-name) {
-			border-bottom: 1px solid #e3e8f2;
-		}
-		tr:has(td.api-name) td {
-			padding-top: 16px;
-			padding-bottom: 16px;
-		}
+	h2,
+	h3 {
+		margin: 24px 0 0;
 	}
 }
 
-.api-group {
+/* The rows switch to a two-column layout by container width. The product landing page has no .api-group,
+   so the overview is a container too. */
+.api-group,
+.api-overview {
 	container-type: inline-size;
 	container-name: api-group;
 }
@@ -417,10 +387,6 @@
 .api-group .api-page-heading > h1 {
 	font-size: 24px;
 	line-height: 32px;
-}
-
-.api-group .api-tag-canonical {
-	margin: 4px 0 0;
 }
 
 .api-group .api-tag-description {
@@ -457,10 +423,6 @@
 	list-style: none;
 }
 
-#markdown-content a.api-group-row {
-	text-decoration: none;
-}
-
 .api-group-row {
 	display: grid;
 	grid-template-columns: minmax(0, 1fr) 16px;
@@ -474,15 +436,10 @@
 	min-height: 44px;
 	margin: 0;
 	padding: 16px;
-	border: 1px solid #e3e8f2;
-	border-radius: 8px;
-	background: #fff;
-	color: inherit;
-	text-decoration: none;
 	-webkit-tap-highlight-color: rgb(11 100 221 / 16%);
 }
 
-.api-group .api-overview-title {
+.api-group-row .api-overview-title {
 	grid-area: title;
 	color: inherit;
 	font-size: 16px;
@@ -496,14 +453,14 @@
 	min-width: 0;
 }
 
-.api-group .api-url-row {
+.api-group-row .api-url-row {
 	display: grid;
 	grid-template-columns: auto minmax(0, 1fr);
 	align-items: center;
 	column-gap: 8px;
 }
 
-.api-group .api-url {
+.api-group-row .api-url {
 	margin-left: 0;
 	min-width: 0;
 	color: var(--color-subdued, #516381);
@@ -524,33 +481,61 @@
 	transform: rotate(-90deg);
 }
 
-.api-group-row:hover,
-.api-group-row:focus-visible {
-	border-color: var(--color-blue-elastic, #0b64dd);
-	background: #f6f9fc;
+/* One card look for every API landing page: the /api catalog cards, the product landing rows and the group
+   rows. The border is grey-80 on hover for the same reason the hub cards use it: it clears the 3:1 ratio a
+   state indicator needs, which the resting grey-20 edge does not have to. */
+.api-card {
+	box-sizing: border-box;
+	border: 1px solid var(--color-grey-20);
+	border-radius: 12px;
+	background: var(--color-white);
+	color: inherit;
+	text-decoration: none;
+	transition:
+		box-shadow 0.15s,
+		border-color 0.15s;
 }
 
-.api-group-row:hover .api-overview-title,
-.api-group-row:hover .api-group-chevron,
-.api-group-row:focus-visible .api-overview-title,
-.api-group-row:focus-visible .api-group-chevron {
+/* The docs link style (blue, underlined) outranks .api-card, so the cards win it back here. */
+#markdown-content a.api-card {
+	color: inherit;
+	text-decoration: none;
+}
+
+.api-card:hover,
+.api-card:focus-visible {
+	border-color: var(--color-grey-80);
+	box-shadow: 0 2px 8px rgb(0 0 0 / 0.05);
+}
+
+.api-card:hover .api-card-title,
+.api-card:focus-visible .api-card-title,
+.api-card:hover .api-group-chevron,
+.api-card:focus-visible .api-group-chevron {
 	color: var(--color-blue-elastic, #0b64dd);
 }
 
-.api-group-row:hover .api-overview-title,
-.api-group-row:focus-visible .api-overview-title {
+.api-card:hover .api-card-title,
+.api-card:focus-visible .api-card-title {
 	text-decoration: underline;
 	text-underline-offset: 2px;
 }
 
-.api-group-row:active {
-	border-color: var(--color-blue-elastic, #0b64dd);
-	background: #e8f1ff;
+.api-card:active {
+	border-color: var(--color-grey-80);
+	background: var(--color-grey-10);
+	box-shadow: none;
 }
 
-.api-group-row:focus-visible {
+.api-card:focus-visible {
 	outline: 2px solid var(--color-blue-elastic, #0b64dd);
 	outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.api-card {
+		transition: none;
+	}
 }
 
 @container api-group (min-width: 40rem) {
@@ -2836,20 +2821,8 @@ button.example-response-tab:focus-visible {
 	}
 }
 
-/* API catalog — own markup and selectors. Values match hub cards so the
-   pages feel related; a hub.css change does not restyle this page. */
-.api-catalog {
-	margin: 0 auto;
-	max-width: 64rem;
-}
-
-.api-catalog-header {
-	padding: 40px 0 28px;
-	margin-bottom: 44px;
-	border-bottom: 1px solid var(--color-grey-20);
-}
-
-.api-catalog-header h1,
+/* API catalog. The cards use the docs landing page's Tailwind classes and the applies_to pill look,
+   so this file only holds what those utilities cannot express. */
 .api-landing-heading h1 {
 	margin: 0;
 	font-size: var(--text-4xl);
@@ -2859,151 +2832,86 @@ button.example-response-tab:focus-visible {
 	color: var(--color-ink-dark);
 }
 
-.api-catalog-lede {
-	margin: 16px 0 0;
-	max-width: 760px;
-	font-size: var(--text-base);
-	line-height: 1.6;
-	color: var(--color-ink-light);
+/* The hero caps its inner width for hub pages, which would leave the centred title off-centre. */
+.api-catalog .hub-hero .hub-hero-inner {
+	max-width: none;
 }
 
-.api-catalog-grid {
-	display: grid;
-	grid-template-columns: repeat(auto-fill, minmax(min(310px, 100%), 1fr));
-	gap: 24px;
-	margin: 0;
-	padding: 0;
-	list-style: none;
+.api-catalog .hub-hero .hub-hero-top {
+	margin-bottom: 0;
 }
 
-.api-catalog-grid > li {
-	margin: 0;
-	list-style: none;
-}
-
-.api-catalog-grid .api-catalog-card {
-	display: flex;
-	flex-direction: column;
-	height: 100%;
-	box-sizing: border-box;
-	padding: 22px;
-	background: var(--color-white);
-	border: 1px solid var(--color-grey-20);
-	border-radius: 14px;
-	text-decoration: none;
-	color: inherit;
-	transition:
-		box-shadow 0.15s,
-		border-color 0.15s;
-}
-
-.api-catalog-grid .api-catalog-card:hover,
-.api-catalog-grid .api-catalog-card:focus-within {
-	border-color: var(--color-grey-80);
-	box-shadow: 0 2px 8px rgb(0 0 0 / 0.05);
-}
-
-.api-catalog-card-main {
-	display: block;
-	flex: 1 1 auto;
-	text-decoration: none;
-	color: inherit;
-}
-
-.api-catalog-card-head {
-	display: flex;
-	align-items: center;
-	gap: 10px;
-	margin-bottom: 6px;
-}
-
-.api-catalog-card-icon {
-	flex-shrink: 0;
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	width: 36px;
-	height: 36px;
-	border-radius: 8px;
+/* The hero is a centred title and one line of text on a band that spans the screen, in the flat light grey the
+   docs landing page uses for its own hero, so the white cards below stand out against it. */
+.api-catalog-band {
 	background: var(--color-grey-10);
 }
 
-.api-catalog-card-icon svg {
-	width: 22px;
-	height: 22px;
-	display: block;
+.api-catalog .hub-hero.api-catalog-hero {
+	padding: 56px 0 44px;
+	margin-bottom: 0;
+	border-bottom: 0;
+	text-align: center;
 }
 
-.api-catalog-card-title {
-	margin: 0;
-	font-size: var(--text-base);
+/* The title is set in Space Grotesk, which the Elastic brand guide (brand.elastic.co, Typography) names for
+   developer marketing headlines. The guide says that use needs the brand team's agreement. Headline leading is
+   the guide's 1.14, at its heaviest weight (Space Grotesk stops at 700), with the Mier B headline face and then
+   Inter behind it if the font does not load. The hub hero sets no family, which left this title in Inter. */
+.api-catalog .hub-hero .hub-hero-top h1 {
+	font-family: 'Space Grotesk', var(--font-sans);
+	font-size: clamp(var(--text-4xl), 3vw, var(--text-5xl));
 	font-weight: 700;
-	color: var(--color-ink-dark);
+	line-height: 1.14;
+	letter-spacing: -0.02em;
 }
 
-.api-catalog-card:hover .api-catalog-card-title,
-.api-catalog-card:focus-within .api-catalog-card-title {
-	color: var(--color-blue-elastic);
-}
-
-.api-catalog-card-key {
-	display: inline-block;
-	margin-top: 4px;
-	font-size: var(--text-sm);
-	color: var(--color-ink-light);
-}
-
-.api-catalog-card-badges {
-	display: flex;
-	flex-wrap: wrap;
-	gap: 6px;
-	margin-top: 10px;
-}
-
-.api-catalog-badge {
-	display: inline-flex;
-	align-items: center;
-	padding: 2px 8px;
-	border-radius: 999px;
-	border: 1px solid var(--color-grey-20);
-	background: var(--color-grey-10);
-	font-size: var(--text-xs);
-	line-height: 1.4;
-	color: var(--color-ink-light);
-}
-
-.api-catalog-badge-rest {
-	border-color: var(--color-blue-elastic-30);
-	background: var(--color-blue-elastic-10);
-	color: var(--color-blue-elastic);
-	font-weight: 600;
-}
-
-.api-catalog-card-desc {
-	margin: 10px 0 0;
+/* "Extra bold headlines with lighter accompanying text", per the brand guide: the line under the title is Inter
+   at regular weight in the lighter ink, with the guide's paragraph leading of 1.55. Its contrast on the band is
+   6.65:1, above the 4.5:1 the guide requires. */
+.api-catalog .api-catalog-lede {
+	max-width: 36rem;
+	margin: 12px auto 0;
+	font-family: var(--font-body);
 	font-size: var(--text-base);
-	line-height: 1.5;
+	line-height: 1.55;
 	color: var(--color-ink-light);
+	text-wrap: balance;
 }
 
-.api-catalog-card-actions {
-	display: flex;
-	gap: 12px;
-	margin-top: 16px;
-	padding-top: 12px;
-	border-top: 1px solid var(--color-grey-20);
+@media (max-width: 640px) {
+	.api-catalog .hub-hero.api-catalog-hero {
+		padding: 36px 0 32px;
+	}
 }
 
-.api-catalog-card-actions a {
-	font-size: var(--text-sm);
-	font-weight: 600;
-	color: var(--color-blue-elastic);
-	text-decoration: none;
+.api-catalog .api-catalog-hero .hub-hero-top {
+	justify-content: center;
 }
 
-.api-catalog-card-actions a:hover,
-.api-catalog-card-actions a:focus-visible {
-	text-decoration: underline;
+.api-catalog .api-catalog-card-icon svg {
+	display: block;
+	width: 100%;
+	height: 100%;
+}
+
+/* Descriptions are up to 150 characters. Four across, that is too long to show whole. */
+.api-catalog .api-catalog-desc {
+	display: -webkit-box;
+	overflow: hidden;
+	-webkit-box-orient: vertical;
+	-webkit-line-clamp: 2;
+	line-clamp: 2;
+}
+
+.api-catalog .api-catalog-featured .api-catalog-desc {
+	-webkit-line-clamp: 3;
+	line-clamp: 3;
+}
+
+/* The applies_to pill is built for running text. In a card it is tightened to a small tag. */
+.api-catalog .applies .applicable-info {
+	padding: 1px 8px;
 }
 
 .api-landing-heading {

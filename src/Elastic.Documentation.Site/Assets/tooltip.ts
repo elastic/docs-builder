@@ -1,4 +1,4 @@
-import { delegate } from 'tippy.js'
+import { delegate, type Instance } from 'tippy.js'
 
 let bound = false
 
@@ -17,6 +17,30 @@ export function initTooltips(): void {
         delay: [80, 0],
         placement: 'top',
         touch: ['hold', 300],
+        // A click on a copy button swaps the text in place (flashTooltip); hiding the tooltip would make it flicker.
+        onCreate: (instance) => {
+            if (instance.reference.matches('.copybtn, .api-code-preview-btn'))
+                instance.setProps({ hideOnClick: false })
+        },
         appendTo: (reference) => reference.closest('dialog') ?? document.body,
     })
+}
+
+const flashes = new WeakMap<HTMLElement, { original: string; timer: number }>()
+
+/** Swaps a tooltip's text for a moment (e.g. "Copied!"), updating an already created tippy too. */
+export function flashTooltip(el: HTMLElement, text: string, ms = 1500): void {
+    const pending = flashes.get(el)
+    if (pending) window.clearTimeout(pending.timer)
+    const original = pending?.original ?? el.dataset.tippyContent ?? ''
+    const set = (value: string) => {
+        el.dataset.tippyContent = value
+        ;(el as HTMLElement & { _tippy?: Instance })._tippy?.setContent(value)
+    }
+    set(text)
+    const timer = window.setTimeout(() => {
+        set(original)
+        flashes.delete(el)
+    }, ms)
+    flashes.set(el, { original, timer })
 }

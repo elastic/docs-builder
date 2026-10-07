@@ -33,6 +33,9 @@ public record ApiOverviewRow
 	public string? SchemaId { get; init; }
 }
 
+/// <summary>A heading row and the item rows under it. <see cref="Heading"/> is null for items that come before any heading.</summary>
+public record ApiOverviewSection(ApiOverviewRow? Heading, IReadOnlyList<ApiOverviewRow> Items);
+
 /// <summary>Flattens the navigation tree into overview rows so the landing views only iterate and print.</summary>
 public static class ApiOverviewBuilder
 {
@@ -43,6 +46,37 @@ public static class ApiOverviewBuilder
 		AddProductRows(root, rows);
 		return rows;
 	}
+
+	/// <summary>Groups the flat rows into sections: each heading row starts one, item rows join the current one.</summary>
+	public static IReadOnlyList<ApiOverviewSection> Sections(IReadOnlyList<ApiOverviewRow> rows)
+	{
+		var sections = new List<ApiOverviewSection>();
+		ApiOverviewRow? heading = null;
+		var items = new List<ApiOverviewRow>();
+		foreach (var row in rows)
+		{
+			if (!IsHeading(row))
+			{
+				items.Add(row);
+				continue;
+			}
+			Flush();
+			heading = row;
+		}
+		Flush();
+		return sections;
+
+		void Flush()
+		{
+			if (heading is not null || items.Count > 0)
+				sections.Add(new ApiOverviewSection(heading, items));
+			heading = null;
+			items = [];
+		}
+	}
+
+	private static bool IsHeading(ApiOverviewRow row) =>
+		row.Kind is OverviewRowKind.ClassificationHeading or OverviewRowKind.TagHeading or OverviewRowKind.SchemaCategoryHeading;
 
 	/// <summary>Rows for a tag landing page: endpoints and operations only.</summary>
 	public static IReadOnlyList<ApiOverviewRow> BuildTagChildren(INavigationItem tagItem)

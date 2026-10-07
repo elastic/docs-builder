@@ -1,6 +1,7 @@
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-nocheck
 // This is copied from legacy. It works, but we should rework this if we ever need to change it
+import { flashTooltip } from './tooltip'
 import { $$optional } from 'select-dom'
 
 const messages = {
@@ -99,11 +100,16 @@ const timeoutIcon = 1500
 const timeoutSuccessClass = 1500
 
 const temporarilyChangeTooltip = (el, oldText, newText) => {
-    el.setAttribute('data-tooltip', newText)
     el.classList.add('success')
     // Remove success a little bit sooner than we change the tooltip
     // So that we can use CSS to hide the copybutton first
     setTimeout(() => el.classList.remove('success'), timeoutSuccessClass)
+    // Card header buttons carry a tippy tooltip, the others the CSS one
+    if (el.hasAttribute('data-tippy-content')) {
+        flashTooltip(el, newText, timeoutIcon)
+        return
+    }
+    el.setAttribute('data-tooltip', newText)
     setTimeout(() => el.setAttribute('data-tooltip', oldText), timeoutIcon)
 }
 
@@ -134,14 +140,25 @@ const addCopyButtonToCodeCells = (
         codeCell.setAttribute('id', id)
         const clipboardButton = document.createElement('button')
         clipboardButton.setAttribute('aria-label', 'Copy code to clipboard')
-        clipboardButton.className = 'copybtn o-tooltip--left'
-        clipboardButton.setAttribute('data-tooltip', messages[locale]['copy'])
-        clipboardButton.setAttribute('data-clipboard-target', `#${id}`)
         // Cards (see code-block.css) own a header with a [data-code-actions]
         // slot; the button mounts there instead of overlaying the code.
         const headerActions = codeCell
             .closest('[data-code-card]')
             ?.querySelector('[data-code-actions]')
+        if (headerActions) {
+            clipboardButton.className = 'copybtn'
+            clipboardButton.setAttribute(
+                'data-tippy-content',
+                messages[locale]['copy']
+            )
+        } else {
+            clipboardButton.className = 'copybtn o-tooltip--left'
+            clipboardButton.setAttribute(
+                'data-tooltip',
+                messages[locale]['copy']
+            )
+        }
+        clipboardButton.setAttribute('data-clipboard-target', `#${id}`)
         const headerIcon = headerActions ? iconCopyEui : iconCopy
         clipboardButton.innerHTML = headerIcon
         clipboardButton.onclick = async () => {

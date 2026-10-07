@@ -1,0 +1,50 @@
+@inherits RazorSlice<Elastic.ApiExplorer.Landing.ApiCatalogCard>
+@using System.Text.RegularExpressions
+@{
+	var item = Model.Item;
+	// The .api-card box is shared with the product and group landing rows, so all three hover and press
+	// the same. It is sized down so the whole catalog fits on one screen. The featured pair is one step larger.
+	var box = Model.Featured ? "gap-4 p-5" : "gap-3 p-4";
+	var icon = Model.Featured ? "size-8" : "size-6";
+	var title = Model.Featured ? "text-xl" : "text-base";
+	var desc = Model.Featured ? "mt-1.5 text-base" : "mt-1 text-sm";
+	var titleId = "api-catalog-title-" + Regex.Replace(item.Key, "[^a-zA-Z0-9_-]", "-");
+}
+<li class="m-0 list-none">
+	@* The card is the link. Nothing inside it is interactive, so there is no overlay to get trapped in a positioned
+	   ancestor, and the whole box is one target, one hover area and one focus ring. aria-labelledby keeps the
+	   announced name to the title instead of reading the whole card as the link text. *@
+	<a href="@item.Url" aria-labelledby="@titleId" class="api-card api-catalog-card flex h-full items-start @box">
+		<span class="api-catalog-card-icon @icon shrink-0" aria-hidden="true">@(new HtmlString(item.IconSvg))</span>
+		<div class="flex min-w-0 grow flex-col self-stretch">
+			<h2 id="@titleId" class="api-card-title api-catalog-card-title font-sans font-bold text-ink-dark @title">@item.Title</h2>
+			@if (!string.IsNullOrWhiteSpace(item.Summary))
+			{
+				<p class="api-catalog-desc @desc">@item.Summary</p>
+			}
+			@if (item.Deployments.Count > 0)
+			{
+				@* The pills use the applies_to badge look (.applies > .applicable-info). Name only: the
+				   catalog knows the deployment, not a lifecycle or version, so none is shown. They sit at the
+				   bottom so the pills line up across a row. *@
+				<div class="applies mt-auto flex flex-wrap gap-1.5 pt-2">
+					@foreach (var deployment in item.Deployments)
+					{
+						<span class="applicable-info">
+							<span class="applicable-name">
+								@if (deployment.Label == deployment.Name)
+								{
+									@deployment.Label
+								}
+								else
+								{
+									<abbr title="@deployment.Name" class="no-underline">@deployment.Label</abbr>
+								}
+							</span>
+						</span>
+					}
+				</div>
+			}
+		</div>
+	</a>
+</li>

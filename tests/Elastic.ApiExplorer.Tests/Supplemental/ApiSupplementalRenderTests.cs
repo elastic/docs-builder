@@ -443,12 +443,23 @@ public class ApiSupplementalRenderTests(ApiExplorerFixture fixture)
 		var html = await RenderAsync(nav.Index.Model, nav);
 
 		html.Should().Contain("api-group-list");
-		html.Should().Contain("api-group-row");
-		html.Should().Contain("api-overview-title");
+		html.Should().Contain("class=\"api-card api-group-row\"");
+		html.Should().Contain("api-card-title api-overview-title");
 		html.Should().Contain("api-url-row");
 		html.Should().Contain("api-group-count");
 		html.Should().NotContain("<table");
 		html.Should().NotContain("api-url-list-item-landing");
+	}
+
+	[Test]
+	public async Task Product_OverviewRows_UseTheSameCardAsGroupRows()
+	{
+		var html = await RenderAsync(fixture.Navigation.Index.Model, fixture.Navigation);
+
+		html.Should().Contain("api-group-list");
+		html.Should().Contain("class=\"api-card api-group-row\"");
+		html.Should().Contain("api-card-title api-overview-title");
+		html.Should().NotContain("<table");
 	}
 
 	[Test]
