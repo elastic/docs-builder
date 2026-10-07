@@ -14,6 +14,7 @@
   <ItemGroup>
     <!-- The fixed-seed convention of the property tests: one definition, linked where it is used. -->
     <Compile Include="..\Elastic.Documentation.Tests\Domain\Props.cs" Link="Props.cs" />
+    <Compile Include="..\Elastic.Documentation.Tests\Domain\RequiredGate.cs" Link="RequiredGate.cs" />
   </ItemGroup>
 
   <ItemGroup>

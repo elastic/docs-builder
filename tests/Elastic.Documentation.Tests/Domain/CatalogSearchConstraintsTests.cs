@@ -35,7 +35,7 @@ internal static class CatalogFixtures
 public class ProductCatalogConstraintsTests
 {
 	[Test]
-	public void Laws() => ProductCatalogConstraints.All.Laws(DomainGen.Of<ProductCatalog>(), CounterExamples);
+	public void Laws() => ProductCatalogConstraints.All.GatedByRequired().Laws(DomainGen.Of<ProductCatalog>(), CounterExamples);
 
 	// each case adds one product that is wrong in one way, so it stands on its own whatever products the generated catalog holds
 	private static ProductCatalog Added(ProductCatalog c, KeyValuePair<string, Product> product) =>
@@ -44,6 +44,7 @@ public class ProductCatalogConstraintsTests
 	private static IReadOnlyDictionary<string, Func<ProductCatalog, ProductCatalog>> CounterExamples =>
 		new Dictionary<string, Func<ProductCatalog, ProductCatalog>>
 		{
+			["products-required"] = c => c with { Products = null! },
 			["product-id-matches-key"] = c => Added(c, new KeyValuePair<string, Product>("Kibana", CatalogFixtures.Kibana)),
 			["product-has-display-name"] =
 				c => Added(c, new KeyValuePair<string, Product>("kibana", CatalogFixtures.Kibana with { DisplayName = "" })),
@@ -133,32 +134,35 @@ public class SearchTuningConstraintsTests
 {
 	[Test]
 	public void Laws() =>
-		SearchTuningConstraints.All.Laws(
-			DomainGen.Of<SearchTuning>(
-				o => o
-					.Identity<QueryRule, string>(r => r.RuleId)
-					.Normalize<SynonymGroup>(g => new SynonymGroup([.. g.Terms.Select(t => t.Replace(' ', '-'))]))
-					.Normalize<QueryRuleCriteria>(
-						c =>
-							c with
-							{
-								TypeRaw = c.Type.ToString(),
-								Metadata = string.IsNullOrWhiteSpace(c.Metadata) ? "query" : c.Metadata,
-								Values = c.Values.Count > 0 ? c.Values : ["search"]
-							}
-					)
-					.Normalize<QueryRule>(
-						r =>
-							r with
-							{
-								TypeRaw = r.Type.ToString(),
-								Actions = r.Actions.Ids.Count > 0 ? r.Actions : new QueryRuleActions { Ids = ["doc-1"] }
-							}
-					)
-					.Normalize<SearchTuning>(s => s with { SourceFileName = "search.yml" })
-			),
-			CounterExamples
-		);
+		SearchTuningConstraints
+			.All
+			.GatedByRequired()
+			.Laws(
+				DomainGen.Of<SearchTuning>(
+					o => o
+						.Identity<QueryRule, string>(r => r.RuleId)
+						.Normalize<SynonymGroup>(g => new SynonymGroup([.. g.Terms.Select(t => t.Replace(' ', '-'))]))
+						.Normalize<QueryRuleCriteria>(
+							c =>
+								c with
+								{
+									TypeRaw = c.Type.ToString(),
+									Metadata = string.IsNullOrWhiteSpace(c.Metadata) ? "query" : c.Metadata,
+									Values = c.Values.Count > 0 ? c.Values : ["search"]
+								}
+						)
+						.Normalize<QueryRule>(
+							r =>
+								r with
+								{
+									TypeRaw = r.Type.ToString(),
+									Actions = r.Actions.Ids.Count > 0 ? r.Actions : new QueryRuleActions { Ids = ["doc-1"] }
+								}
+						)
+						.Normalize<SearchTuning>(s => s with { SourceFileName = "search.yml" })
+				),
+				CounterExamples
+			);
 
 	private static QueryRule Rule(string id = "rule-1", string[]? ids = null) =>
 		new()
@@ -174,6 +178,8 @@ public class SearchTuningConstraintsTests
 	private static IReadOnlyDictionary<string, Func<SearchTuning, SearchTuning>> CounterExamples =>
 		new Dictionary<string, Func<SearchTuning, SearchTuning>>
 		{
+			["synonyms-required"] = s => s with { Synonyms = null! },
+			["rules-required"] = s => s with { Rules = null! },
 			["synonym-terms-single-word"] = s => s with { Synonyms = [.. s.Synonyms, new SynonymGroup(["ice cream", "gelato"])] },
 			["query-rule-id-unique"] = s => WithRules(s, Rule("dup"), Rule("dup")),
 			["query-rule-complete"] = s => WithRules(s, Rule("incomplete", ids: [])),

@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using Elastic.Documentation.Deploying.Synchronization;
+using Elastic.Documentation.Tests.Domain;
 using Nullean.Entities.CsCheck;
 
 namespace Elastic.Documentation.Deploying.Tests;
@@ -28,7 +29,10 @@ public class SyncPlanConstraintsTests
 
 	[Test]
 	public void Laws() =>
-		SyncPlanConstraints.All.Laws(GenAuto.Of<SyncPlan>(AutoMode.Plausible, o => o.Normalize<SyncPlan>(Planned)), CounterExamples);
+		SyncPlanConstraints
+			.All
+			.GatedByRequired()
+			.Laws(GenAuto.Of<SyncPlan>(AutoMode.Plausible, o => o.Normalize<SyncPlan>(Planned)), CounterExamples);
 
 	private static IReadOnlyList<DeleteRequest> Deletes(int count) =>
 		[.. Enumerable.Range(0, count).Select(i => new DeleteRequest { DestinationPath = $"old/{i}.html" })];
@@ -36,6 +40,9 @@ public class SyncPlanConstraintsTests
 	private static IReadOnlyDictionary<string, Func<SyncPlan, SyncPlan>> CounterExamples =>
 		new Dictionary<string, Func<SyncPlan, SyncPlan>>
 		{
+			["add-requests-required"] = p => p with { AddRequests = null! },
+			["update-requests-required"] = p => p with { UpdateRequests = null! },
+			["delete-requests-required"] = p => p with { DeleteRequests = null! },
 			["remote-listing-complete"] = p => p with { RemoteListingCompleted = false },
 			["source-files-present"] = p => p with { TotalSourceFiles = 0 },
 			// 2000 remote files allow 0.2: 401 deletes are over it

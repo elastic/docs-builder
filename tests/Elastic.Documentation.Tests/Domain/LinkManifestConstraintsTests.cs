@@ -12,7 +12,10 @@ public class LinkManifestConstraintsTests
 {
 	[Test]
 	public void Laws() =>
-		LinkManifestConstraints.All.Laws(DomainGen.Of<LinkManifest>(o => o.Normalize<LinkManifest>(LinkExamples.Manifest)), CounterExamples);
+		LinkManifestConstraints
+			.All
+			.GatedByRequired()
+			.Laws(DomainGen.Of<LinkManifest>(o => o.Normalize<LinkManifest>(LinkExamples.Manifest)), CounterExamples);
 
 	[Test]
 	public void ValidManifest_BreaksNoRule() => LinkManifestConstraints.All.Validate(Valid()).Should().BeEmpty();
@@ -95,6 +98,9 @@ public class LinkManifestConstraintsTests
 		get;
 	} = new Dictionary<string, Func<LinkManifest, LinkManifest>>
 	{
+		["origin-required"] = m => m with { Origin = null! },
+		["links-required"] = m => m with { Links = null! },
+		["cross-links-required"] = m => m with { CrossLinks = null! },
 		["link-manifest-page-paths-are-markdown"] = m => WithPage(m, "notes.txt", new LinkMetadata()),
 		["link-manifest-origin-named"] = m => m with { Origin = GitCheckoutInformation.Unavailable },
 		["url-path-prefix-normalized"] = m => m with { UrlPathPrefix = "docs/" },

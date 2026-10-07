@@ -14,10 +14,10 @@ public class LinkRegistryConstraintsTests
 
 	[Test]
 	public void Laws() =>
-		LinkRegistryConstraints.All.Laws(
-			DomainGen.Of<LinkRegistry>(o => o.Normalize<LinkRegistry>(r => LinkExamples.Registry(r))),
-			CounterExamples
-		);
+		LinkRegistryConstraints
+			.All
+			.GatedByRequired()
+			.Laws(DomainGen.Of<LinkRegistry>(o => o.Normalize<LinkRegistry>(r => LinkExamples.Registry(r))), CounterExamples);
 
 	[Test]
 	public void ValidRegistry_BreaksNoRule() => LinkRegistryConstraints.All.Validate(Valid()).Should().BeEmpty();
@@ -102,6 +102,7 @@ public class LinkRegistryConstraintsTests
 		get;
 	} = new Dictionary<string, Func<LinkRegistry, LinkRegistry>>
 	{
+		["repositories-required"] = r => r with { Repositories = null! },
 		["registry-entry-updated-at-monotonic"] = r => WithFirst(r, e => e with { UpdatedAt = e.UpdatedAt.AddDays(-1) }),
 		["registry-entry-has-ref-and-timestamp"] =
 			r => With(r, "tools", "main", Entry("tools", "main") with { UpdatedAt = DateTime.MinValue }),

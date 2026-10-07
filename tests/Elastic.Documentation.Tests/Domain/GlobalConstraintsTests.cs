@@ -16,7 +16,7 @@ namespace Elastic.Documentation.Tests.Domain;
 public class RelatedLearningConstraintsTests
 {
 	[Test]
-	public void Laws() => RelatedLearningConstraints.All.Laws(DomainGen.Of<RelatedLearningCatalog>(), CounterExamples);
+	public void Laws() => RelatedLearningConstraints.All.GatedByRequired().Laws(DomainGen.Of<RelatedLearningCatalog>(), CounterExamples);
 
 	// each case adds one link that is wrong in one way (under an id no generated link has), so it holds whatever links were generated
 	private static RelatedLearningCatalog Plus(RelatedLearningCatalog c, RelatedLearningLink link) =>
@@ -27,6 +27,7 @@ public class RelatedLearningConstraintsTests
 	private static IReadOnlyDictionary<string, Func<RelatedLearningCatalog, RelatedLearningCatalog>> CounterExamples =>
 		new Dictionary<string, Func<RelatedLearningCatalog, RelatedLearningCatalog>>
 		{
+			["links-required"] = c => c with { Links = null! },
 			["link-has-title"] = c => Plus(c, Link with { Title = "" }),
 			["link-has-url"] = c => Plus(c, Link with { Url = " " }),
 			["link-url-absolute-http"] = c => Plus(c, Link with { Url = "ftp://example.test/intro" })
@@ -113,7 +114,7 @@ public class AssemblyConstraintsTests
 	private static Gen<AssemblyConfiguration> Generated() => DomainGen.Of<AssemblyConfiguration>(o => Configure(o));
 
 	[Test]
-	public void Laws() => AssemblyConstraints.All.Laws(Generated(), CounterExamples);
+	public void Laws() => AssemblyConstraints.All.GatedByRequired().Laws(Generated(), CounterExamples);
 
 	private static PublishEnvironment Prod =>
 		new()
@@ -130,6 +131,11 @@ public class AssemblyConstraintsTests
 	private static IReadOnlyDictionary<string, Func<AssemblyConfiguration, AssemblyConfiguration>> CounterExamples =>
 		new Dictionary<string, Func<AssemblyConfiguration, AssemblyConfiguration>>
 		{
+			["narrative-required"] = a => a with { Narrative = null! },
+			["reference-repositories-required"] = a => a with { ReferenceRepositories = null! },
+			["private-repositories-required"] = a => a with { PrivateRepositories = null! },
+			["all-private-repository-names-required"] = a => a with { AllPrivateRepositoryNames = null! },
+			["environments-required"] = a => a with { Environments = null! },
 			["narrative-name-reserved"] =
 				a => WithReference(a, NarrativeRepository.RepositoryName, new Repository { Name = NarrativeRepository.RepositoryName }),
 			["google-tag-manager-has-id"] = a => WithProd(a, e => e with { GoogleTagManager = new() { Enabled = true } }),
@@ -305,7 +311,7 @@ public class SiteNavigationConstraintsTests
 public class VersioningSystemConstraintsTests
 {
 	[Test]
-	public void Laws() => VersioningSystemConstraints.All.Laws(DomainGen.Of<VersioningSystemCatalog>(), CounterExamples);
+	public void Laws() => VersioningSystemConstraints.All.GatedByRequired().Laws(DomainGen.Of<VersioningSystemCatalog>(), CounterExamples);
 
 	[Test]
 	public void KeyMatchesId_NamesTheKeyAndTheIdOfTheSystemFoundThere() =>
@@ -339,6 +345,7 @@ public class VersioningSystemConstraintsTests
 	private static IReadOnlyDictionary<string, Func<VersioningSystemCatalog, VersioningSystemCatalog>> CounterExamples =>
 		new Dictionary<string, Func<VersioningSystemCatalog, VersioningSystemCatalog>>
 		{
+			["versioning-systems-required"] = c => c with { VersioningSystems = null! },
 			["base-not-after-current"] = c => WithStack(c, "9.2.0", "9.1.0"),
 			["versioning-systems-complete"] =
 				c => new VersioningSystemCatalog
