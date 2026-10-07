@@ -1362,4 +1362,38 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture)
 		Labels("partial").Should().Equal("kind: feline", "kind: Dog");
 		Labels("enumerated").Should().Equal("kind: Cat", "kind: dog | puppy");
 	}
+
+	[Test]
+	public async Task BuildPropertyList_TypeArrayWithSeveralTypes_ShowsEveryType()
+	{
+		var json =
+			"""
+			{
+			  "openapi": "3.1.0",
+			  "info": { "title": "t", "version": "1" },
+			  "paths": {},
+			  "components": {
+			    "schemas": {
+			      "Holder": {
+			        "type": "object",
+			        "properties": {
+			          "defaultValue": { "type": ["boolean", "string"] },
+			          "size": { "type": ["number", "string"] },
+			          "nullableName": { "type": ["string", "null"] }
+			        }
+			      }
+			    }
+			  }
+			}
+			""";
+		var document = await LoadSpecAsync(json);
+
+		var list = BuilderFor(document).BuildPropertyList(document.Components!.Schemas!["Holder"], new PropertyTreeScope { Prefix = "" });
+
+		string TypeOf(string name) => list!.Items.Single(p => p.Name == name).Type.Text;
+
+		TypeOf("defaultValue").Should().Be("boolean | string");
+		TypeOf("size").Should().Be("number | string");
+		TypeOf("nullableName").Should().Be("string");
+	}
 }

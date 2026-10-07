@@ -823,7 +823,8 @@ public class ApiPropertyTreeBuilder(OpenApiDocument document, PropertyDisplayOpt
 
 		AppendScalarKeywordSpans(spans, typeInfo, hasActualProperties);
 
-		if (typeInfo.IsUnion && typeName.Contains(" | ", StringComparison.Ordinal))
+		// A union and a multi-type schema (`type: [number, string]`) both read as a formula of their parts.
+		if (typeName.Contains(" | ", StringComparison.Ordinal))
 		{
 			AppendUnionFormulaSpans(spans, typeName);
 			return new TypeAnnotation(spans);

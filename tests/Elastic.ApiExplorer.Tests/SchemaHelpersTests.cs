@@ -4,6 +4,7 @@
 
 using AwesomeAssertions;
 using Elastic.ApiExplorer.Model;
+using Microsoft.OpenApi;
 
 namespace Elastic.ApiExplorer.Tests;
 
@@ -119,4 +120,18 @@ public class SchemaHelpersTests
 	[Arguments(null, false)]
 	public void IsSnakeCaseName_Ids_MatchesOnlyLowercaseSnakeCase(string? name, bool expected) =>
 		SchemaHelpers.IsSnakeCaseName(name).Should().Be(expected);
+
+	[Test]
+	public void GetPrimitiveTypeName_SeveralTypes_ListsEveryTypeButNull()
+	{
+		SchemaHelpers.GetPrimitiveTypeName(JsonSchemaType.Number | JsonSchemaType.String).Should().Be("number | string");
+		SchemaHelpers
+			.GetPrimitiveTypeName(JsonSchemaType.Boolean | JsonSchemaType.Number | JsonSchemaType.String)
+			.Should()
+			.Be("boolean | number | string");
+		SchemaHelpers.GetPrimitiveTypeName(JsonSchemaType.String | JsonSchemaType.Object).Should().Be("string | object");
+		SchemaHelpers.GetPrimitiveTypeName(JsonSchemaType.String | JsonSchemaType.Null).Should().Be("string");
+		SchemaHelpers.GetPrimitiveTypeName(JsonSchemaType.Null).Should().Be("null");
+		SchemaHelpers.GetPrimitiveTypeName(JsonSchemaType.Integer).Should().Be("integer");
+	}
 }

@@ -82,6 +82,16 @@ public static class SchemaHelpers
 	/// These should not be considered for recursive type detection since they
 	/// represent generic types rather than specific schema references.
 	/// </summary>
+	// Display order for a schema with several types; it matches how the specs list them, since the type flags keep no order.
+	private static readonly (JsonSchemaType Type, string Name)[] PrimitiveTypeOrder =
+	[
+		(JsonSchemaType.Boolean, "boolean"),
+		(JsonSchemaType.Integer, "integer"),
+		(JsonSchemaType.Number, "number"),
+		(JsonSchemaType.String, "string"),
+		(JsonSchemaType.Object, "object")
+	];
+
 	public static readonly HashSet<string> PrimitiveTypeNames = new(
 		["boolean", "number", "string", "integer", "object", "null", "array"],
 		StringComparer.OrdinalIgnoreCase
@@ -172,20 +182,11 @@ public static class SchemaHelpers
 		if (type is null)
 			return "";
 
-		if (type.Value.HasFlag(JsonSchemaType.Boolean))
-			return "boolean";
-		if (type.Value.HasFlag(JsonSchemaType.Integer))
-			return "integer";
-		if (type.Value.HasFlag(JsonSchemaType.String))
-			return "string";
-		if (type.Value.HasFlag(JsonSchemaType.Number))
-			return "number";
-		if (type.Value.HasFlag(JsonSchemaType.Null))
-			return "null";
-		if (type.Value.HasFlag(JsonSchemaType.Object))
-			return "object";
-
-		return "";
+		// OpenAPI 3.1 allows several types (`type: [number, string]`); show them all. Null only names a type on its own.
+		var names = PrimitiveTypeOrder.Where(t => type.Value.HasFlag(t.Type)).Select(t => t.Name).ToArray();
+		if (names.Length > 0)
+			return string.Join(" | ", names);
+		return type.Value.HasFlag(JsonSchemaType.Null) ? "null" : "";
 	}
 
 	/// <summary>
