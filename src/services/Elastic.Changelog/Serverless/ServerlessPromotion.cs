@@ -2,16 +2,29 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Text.Json;
 using System.Text.RegularExpressions;
 
 namespace Elastic.Changelog.Serverless;
 
+/// <summary>A repository vendored as a git submodule of a service repository, whose PRs ship with the service.</summary>
+/// <param name="Repository">Repository in the <c>elastic</c> org (for example <c>elasticsearch</c>).</param>
+/// <param name="Path">Submodule path in the service repository's tree.</param>
+public sealed record ServerlessSubmodule(string Repository, string Path);
+
 /// <summary>A serverless service whose promotions publish date-keyed release notes.</summary>
 /// <param name="Id">Service name as emitted by gpctl (for example <c>kibana</c>).</param>
 /// <param name="Repository">Repository in the <c>elastic</c> org that owns the commit range and <c>docs/changelog.yml</c>.</param>
-/// <param name="Profile">Bundle profile in that repository's <c>docs/changelog.yml</c>.</param>
+/// <param name="Profile">Bundle profile in each repository's <c>docs/changelog.yml</c>.</param>
 /// <param name="VersionsPath">Path of the service's <c>versions.yaml</c> in <c>elastic/serverless-gitops</c>.</param>
-public sealed record ServerlessService(string Id, string Repository, string Profile, string VersionsPath);
+/// <param name="Submodules">Repositories vendored as submodules; each gets its own bundle over the range of submodule commits.</param>
+public sealed record ServerlessService(
+	string Id,
+	string Repository,
+	string Profile,
+	string VersionsPath,
+	IReadOnlyList<ServerlessSubmodule> Submodules
+);
 
 /// <summary>Pure helpers for resolving a serverless promotion's commit range from serverless-gitops history.</summary>
 public static partial class ServerlessPromotion
@@ -19,12 +32,21 @@ public static partial class ServerlessPromotion
 	/// <summary>The last production slice of a rollout; release notes publish when it completes.</summary>
 	public const string FinalSlice = "production-noncanary-ds-5";
 
-	/// <summary>Services that can be bundled. Elasticsearch is not listed yet: its range spans the
-	/// <c>elasticsearch-serverless</c> repository and the <c>elasticsearch</c> submodule.</summary>
+	/// <summary>Services that can be bundled. An Elasticsearch release spans <c>elasticsearch-serverless</c>
+	/// and its <c>elasticsearch</c> submodule, so it produces two bundles.</summary>
 	public static IReadOnlyDictionary<string, ServerlessService> Services { get; } = new Dictionary<string, ServerlessService>(
 		StringComparer.OrdinalIgnoreCase
 	)
-	{ ["kibana"] = new("kibana", "kibana", "serverless-release", "services/kibana/versions.yaml") };
+	{
+		["kibana"] = new("kibana", "kibana", "serverless-release", "services/kibana/versions.yaml", []),
+		["elasticsearch"] = new(
+			"elasticsearch",
+			"elasticsearch-serverless",
+			"serverless-release",
+			"services/elasticsearch/versions.yaml",
+			[new ServerlessSubmodule("elasticsearch", "elasticsearch")]
+		)
+	};
 
 	[GeneratedRegex(@"\bproduction-noncanary-ds-5\b")]
 	private static partial Regex FinalSliceMessageRegex();
@@ -59,4 +81,19 @@ public static partial class ServerlessPromotion
 	/// </summary>
 	public static string? FindPreviousVersion(IEnumerable<string?> finalSliceVersionsNewestFirst, string currentVersion) =>
 		finalSliceVersionsNewestFirst.FirstOrDefault(v => !string.IsNullOrEmpty(v) && !SameRef(v, currentVersion));
+
+	/// <summary>Reads a submodule's pinned commit from a GitHub git-tree response
+	/// (<c>GET /repos/{owner}/{repo}/git/trees/{sha}</c>): the entry with the given path and type <c>commit</c>.</summary>
+	public static string? FindSubmoduleSha(string treeJson, string submodulePath)
+	{
+		using var doc = JsonDocument.Parse(treeJson);
+		if (!doc.RootElement.TryGetProperty("tree", out var tree))
+			return null;
+		foreach (var entry in tree.EnumerateArray())
+		{
+			if (entry.GetProperty("path").GetString() == submodulePath && entry.GetProperty("type").GetString() == "commit")
+				return entry.GetProperty("sha").GetString();
+		}
+		return null;
+	}
 }

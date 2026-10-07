@@ -39,11 +39,13 @@ internal sealed class ServerlessReleaseCommands(
 	/// <remarks>
 	/// <para>
 	/// The previous endpoint ref is the last different <c>production-noncanary-ds-5</c> version in the
-	/// service's <c>versions.yaml</c> history in <c>elastic/serverless-gitops</c>. The service's
-	/// <c>docs/changelog.yml</c> is read at <paramref name="serviceVersion"/>, and the bundle is built
-	/// with its <c>serverless-release</c> profile from the commit range.
+	/// service's <c>versions.yaml</c> history in <c>elastic/serverless-gitops</c>. Each repository's
+	/// <c>docs/changelog.yml</c> is read at its end ref, and one bundle per repository is built with
+	/// its <c>serverless-release</c> profile from the commit range. Kibana produces one bundle.
+	/// Elasticsearch produces two: <c>elasticsearch-serverless</c> over the serverless range, and
+	/// <c>elasticsearch</c>, a submodule of it, over the range of submodule commits pinned at the two refs.
 	/// </para>
-	/// <para>Requires <c>GITHUB_TOKEN</c> with read access to <c>elastic/serverless-gitops</c> and the service repository.</para>
+	/// <para>Requires <c>GITHUB_TOKEN</c> with read access to <c>elastic/serverless-gitops</c> and the service repositories.</para>
 	/// </remarks>
 	/// <param name="service">Serverless service, as emitted by gpctl (for example <c>kibana</c>).</param>
 	/// <param name="serviceVersion">Published endpoint ref of this promotion (<c>SERVICE_VERSION</c>). 12 characters or a full SHA.</param>
@@ -77,7 +79,7 @@ internal sealed class ServerlessReleaseCommands(
 			return 1;
 		}
 
-		var version = date ?? DateTime.UtcNow.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+		var bundleVersion = date ?? DateTime.UtcNow.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
 
 		using var http = new HttpClient { BaseAddress = new Uri("https://api.github.com/") };
 		http.DefaultRequestHeaders.UserAgent.ParseAdd("docs-builder/1.0");
@@ -95,51 +97,139 @@ internal sealed class ServerlessReleaseCommands(
 		_logger.LogInformation("Commit range for {Service}: {Start}..{End}", svc.Id, startRef, serviceVersion);
 		await githubActionsService.SetOutputAsync("start_ref", startRef);
 
-		var changelogYaml = await GetRawAsync(
-			http,
-			$"repos/elastic/{svc.Repository}/contents/docs/changelog.yml?ref={serviceVersion}",
-			ctx
-		);
-		if (changelogYaml is null)
-		{
-			collector.EmitError(string.Empty, $"Could not read docs/changelog.yml from elastic/{svc.Repository} at {serviceVersion}.");
-			return 1;
-		}
-
 		var rootOutput = outputDir ?? new DirectoryInfo(Path.Join(Directory.GetCurrentDirectory(), "bundles"));
 		if (!rootOutput.Exists)
 			rootOutput.Create();
 
-		var tempConfig = Path.Join(
-			rootOutput.FullName,
-			$"changelog-config-{svc.Repository}-{serviceVersion[..Math.Min(8, serviceVersion.Length)]}.yml"
+		// One bundle per repository: the service repository over the serverless range, then each
+		// submodule over the range of commits the service repository pins at the two refs.
+		var bundles = new List<string>();
+		var primary = await BundleRangeAsync(
+			http,
+			svc.Repository,
+			svc.Profile,
+			startRef,
+			serviceVersion,
+			bundleVersion,
+			rootOutput,
+			dryRun,
+			ctx
 		);
+		if (!primary.Success)
+			return 1;
+		bundles.AddRange(primary.Paths);
+
+		foreach (var submodule in svc.Submodules)
+		{
+			var startSha = await GetSubmoduleShaAsync(http, svc.Repository, startRef, submodule, ctx);
+			var endSha = await GetSubmoduleShaAsync(http, svc.Repository, serviceVersion, submodule, ctx);
+			if (startSha is null || endSha is null)
+			{
+				collector.EmitError(
+					string.Empty,
+					$"Could not read the '{submodule.Path}' submodule commit of elastic/{svc.Repository} at {startRef} or {serviceVersion}."
+				);
+				return 1;
+			}
+			if (string.Equals(startSha, endSha, StringComparison.OrdinalIgnoreCase))
+			{
+				_logger.LogInformation(
+					"{Repository} did not change between {Start} and {End}; no bundle.",
+					submodule.Repository,
+					startRef,
+					serviceVersion
+				);
+				continue;
+			}
+			_logger.LogInformation("Submodule {Repository}: {Start}..{End}", submodule.Repository, startSha, endSha);
+			var result = await BundleRangeAsync(
+				http,
+				submodule.Repository,
+				svc.Profile,
+				startSha,
+				endSha,
+				bundleVersion,
+				rootOutput,
+				dryRun,
+				ctx
+			);
+			if (!result.Success)
+				return 1;
+			bundles.AddRange(result.Paths);
+		}
+
+		if (bundles.Count > 0)
+		{
+			await githubActionsService.SetOutputAsync("bundle_path", bundles[0]);
+			await githubActionsService.SetOutputAsync("bundle_paths", string.Join('\n', bundles));
+			await githubActionsService.SetOutputAsync("bundle_directory", rootOutput.FullName);
+		}
+		return 0;
+	}
+
+	private async Task<(bool Success, IReadOnlyList<string> Paths)> BundleRangeAsync(
+		HttpClient http,
+		string repository,
+		string profile,
+		string startRef,
+		string endRef,
+		string bundleVersion,
+		DirectoryInfo rootOutput,
+		bool dryRun,
+		CancellationToken ctx
+	)
+	{
+		var changelogYaml = await GetRawAsync(http, $"repos/elastic/{repository}/contents/docs/changelog.yml?ref={endRef}", ctx);
+		if (changelogYaml is null)
+		{
+			collector.EmitError(string.Empty, $"Could not read docs/changelog.yml from elastic/{repository} at {endRef}.");
+			return (false, []);
+		}
+
+		var tempConfig = Path.Join(rootOutput.FullName, $"changelog-config-{repository}-{endRef[..Math.Min(8, endRef.Length)]}.yml");
 		await File.WriteAllTextAsync(tempConfig, changelogYaml, ctx);
 		try
 		{
-			string? bundlePath = null;
+			var paths = new List<string>();
 			var arguments = new BundleChangelogsArguments
 			{
-				Profile = svc.Profile,
-				ProfileArgument = version,
+				Profile = profile,
+				ProfileArgument = bundleVersion,
 				OutputDirectory = rootOutput.FullName,
 				Config = tempConfig,
 				StartGitRef = startRef,
-				EndGitRef = serviceVersion,
+				EndGitRef = endRef,
 				DryRun = dryRun,
-				OnBundlePathResolved = path => bundlePath = path
+				OnBundlePathResolved = path => paths.Add(path)
 			};
 
+			_logger.LogInformation(
+				"Bundling elastic/{Repository} {Start}..{End} with profile {Profile}",
+				repository,
+				startRef,
+				endRef,
+				profile
+			);
 			var bundleService = new ChangelogBundlingService(logFactory, ChangelogFileSystem.FromWorkingDirectory(), configurationContext);
 			var success = await bundleService.BundleChangelogs(collector, arguments, ctx);
-			if (bundlePath is not null)
-				await githubActionsService.SetOutputAsync("bundle_path", bundlePath);
-			return success ? 0 : 1;
+			return (success, paths);
 		}
 		finally
 		{
 			File.Delete(tempConfig);
 		}
+	}
+
+	private async Task<string?> GetSubmoduleShaAsync(
+		HttpClient http,
+		string repository,
+		string gitRef,
+		ServerlessSubmodule submodule,
+		CancellationToken ctx
+	)
+	{
+		var tree = await GetRawAsync(http, $"repos/elastic/{repository}/git/trees/{gitRef}", ctx);
+		return tree is null ? null : ServerlessPromotion.FindSubmoduleSha(tree, submodule.Path);
 	}
 
 	private async Task<string?> ResolvePreviousVersionAsync(

@@ -6780,6 +6780,101 @@
       "commands": [],
       "namespaces": [
         {
+          "segment": "serverless",
+          "summary": "Serverless release automation commands.",
+          "options": [],
+          "commands": [
+            {
+              "path": [
+                "release",
+                "serverless"
+              ],
+              "name": "bundle",
+              "summary": "Bundle the release notes of a serverless promotion, from the previously published endpoint ref to serviceVersion.",
+              "notes": "The previous endpoint ref is the last different production-noncanary-ds-5 version in the\nservice\u0027s versions.yaml history in elastic/serverless-gitops. Each repository\u0027s\ndocs/changelog.yml is read at its end ref, and one bundle per repository is built with\nits serverless-release profile from the commit range. Kibana produces one bundle.\nElasticsearch produces two: elasticsearch-serverless over the serverless range, and\nelasticsearch, a submodule of it, over the range of submodule commits pinned at the two refs.\n\n\nRequires GITHUB_TOKEN with read access to elastic/serverless-gitops and the service repositories.",
+              "usage": "docs-builder release serverless bundle \u003Cservice\u003E \u003Cservice-version\u003E [options]",
+              "examples": [],
+              "parameters": [
+                {
+                  "role": "positional",
+                  "name": "service",
+                  "type": "string",
+                  "required": true,
+                  "summary": "Serverless service, as emitted by gpctl (for example kibana)."
+                },
+                {
+                  "role": "positional",
+                  "name": "service-version",
+                  "type": "string",
+                  "required": true,
+                  "summary": "Published endpoint ref of this promotion (SERVICE_VERSION). 12 characters or a full SHA."
+                },
+                {
+                  "role": "flag",
+                  "name": "date",
+                  "type": "string",
+                  "required": false,
+                  "summary": "Bundle version, a date (YYYY-MM-DD). Defaults to today\u0027s UTC date. Named date because --version is the CLI\u0027s own flag."
+                },
+                {
+                  "role": "flag",
+                  "name": "output-dir",
+                  "type": "string",
+                  "required": false,
+                  "summary": "Directory for the bundle file. Defaults to ./bundles."
+                },
+                {
+                  "role": "flag",
+                  "name": "dry-run",
+                  "type": "boolean",
+                  "required": false,
+                  "summary": "Resolve the range and print the run report without writing a bundle.",
+                  "defaultValue": "false"
+                },
+                {
+                  "role": "flag",
+                  "name": "log-level",
+                  "shortName": "l",
+                  "type": "enum",
+                  "required": false,
+                  "summary": "Minimum log level. Default: information",
+                  "enumValues": [
+                    "trace",
+                    "debug",
+                    "information",
+                    "warning",
+                    "error",
+                    "critical",
+                    "none"
+                  ]
+                },
+                {
+                  "role": "flag",
+                  "name": "config-source",
+                  "shortName": "c",
+                  "type": "enum",
+                  "required": false,
+                  "summary": "Override the configuration source: local, remote",
+                  "enumValues": [
+                    "local",
+                    "remote",
+                    "embedded"
+                  ]
+                },
+                {
+                  "role": "flag",
+                  "name": "skip-private-repositories",
+                  "type": "boolean",
+                  "required": false,
+                  "summary": "Skip cloning private repositories"
+                }
+              ],
+              "hidden": true
+            }
+          ],
+          "namespaces": []
+        },
+        {
           "segment": "unified",
           "summary": "Unified release automation commands.",
           "options": [],

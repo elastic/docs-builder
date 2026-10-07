@@ -53,4 +53,34 @@ public class ServerlessPromotionTests
 	[Test]
 	public void FindPreviousVersion_ReturnsNullWhenAllMatch() =>
 		ServerlessPromotion.FindPreviousVersion(["7dd981dcd7d3"], "7dd981dcd7d3").Should().BeNull();
+
+	private const string TreeJson =
+		"""
+		{"sha":"a","tree":[
+		  {"path":"elasticsearch","mode":"160000","type":"commit","sha":"b8965d0ee9108765f983c1bb7af08e598b5bdb30"},
+		  {"path":"docs","mode":"040000","type":"tree","sha":"1111111111111111111111111111111111111111"},
+		  {"path":"elasticsearch-extra","mode":"040000","type":"tree","sha":"2222222222222222222222222222222222222222"}
+		]}
+		""";
+
+	[Test]
+	public void FindSubmoduleSha_ReturnsCommitEntry() =>
+		ServerlessPromotion.FindSubmoduleSha(TreeJson, "elasticsearch").Should().Be("b8965d0ee9108765f983c1bb7af08e598b5bdb30");
+
+	[Test]
+	public void FindSubmoduleSha_IgnoresTreesAndMissingPaths()
+	{
+		ServerlessPromotion.FindSubmoduleSha(TreeJson, "docs").Should().BeNull();
+		ServerlessPromotion.FindSubmoduleSha(TreeJson, "missing").Should().BeNull();
+		ServerlessPromotion.FindSubmoduleSha("{}", "elasticsearch").Should().BeNull();
+	}
+
+	[Test]
+	public void Elasticsearch_BundlesServerlessRepoAndElasticsearchSubmodule()
+	{
+		var es = ServerlessPromotion.Services["elasticsearch"];
+		es.Repository.Should().Be("elasticsearch-serverless");
+		es.Submodules.Should().ContainSingle().Which.Repository.Should().Be("elasticsearch");
+		ServerlessPromotion.Services["kibana"].Submodules.Should().BeEmpty();
+	}
 }
