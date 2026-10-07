@@ -6,9 +6,11 @@ navigation_title: API Explorer
 
 The API Explorer renders OpenAPI specifications as interactive API documentation. When you configure it in your content set, `docs-builder` automatically generates a product landing page, an `/authentication` page when the spec declares security schemes, a `/servers` page when the spec declares servers, tag and operation pages, request and response schemas, shared type definitions, and inline examples.
 
-The assembler also writes a combined **API catalog** at `/docs/api/`: a grid of product cards on its own layout (no API sidebar). Each card opens the HTML landing page and includes REST and category badges plus JSON and YAML downloads. Markdown, JSON, and YAML stay on the product landing page and in the catalog Markdown export. The card shows `info.description`, clamped to three lines.
+The assembler also writes a combined **Elastic APIs** page at `/docs/api/`, on its own layout with no API sidebar. The cards match the ones on the [docs landing page](https://www.elastic.co/docs): a rounded box with the product icon, a bold title, and a short description. The whole card is one link to the API. The title sits on a full-width band with one line of text under it that says which deployments the APIs cover. There are no group headings. Elasticsearch and Kibana get two larger cards across the top. Every other API follows in a four-column grid: Elasticsearch Serverless, Kibana Serverless, Logstash, and Elastic Cloud come first in that order, and the rest sort by title. Each API appears once. If either Elasticsearch or Kibana is missing, the page is one plain grid.
 
-The catalog reuses listing filter chips. A click selects one category. Cmd or Ctrl click adds or removes categories. Categories are discovery labels only. They do not claim versioned availability. An API with no `catalog.categories` appears only when **All** is selected. The filter bar shows only categories that at least one API uses. Filter state is not stored in the URL.
+Each card shows the API's deployments as small pills taken from `catalog.categories`. They use the same look as `applies_to` badges and the same names (**Self-managed**, **ECE**, **ECH**, **Serverless**), but show the name only: the catalog knows the deployment, not a lifecycle or version. An API with no categories shows no pills. The description is a short plain-text summary of `info.description` (the first paragraph with Markdown removed). JSON, YAML, and Markdown downloads stay on each API's landing page and in the `/docs/api.md` export.
+
+The API title comes from `info.title` in the spec, so fix naming and description copy in the spec.
 
 :::{warning}
 This feature is still under development and the functionality described on this page might change.
@@ -119,9 +121,7 @@ also fails with a duplicate-slug error.
 
 ### `catalog:` (optional)
 
-Use this when an API should appear under one or more catalog chips on the API catalog page. An
-API may list several categories. The same identifiers are used in `applies_to`, but a category
-here does not mean the API is generally available for every version of that deployment.
+This sets the deployment tags on the API's row on the Elastic APIs page. An API may list several categories. The same identifiers are used in `applies_to`, but a category here does not mean the API is generally available for every version of that deployment. An API with no `catalog:` shows no tags.
 
 ```yaml
 api:
@@ -142,7 +142,7 @@ api:
 - `ess` or `ech` → Elastic Cloud Hosted
 - `serverless` → Serverless
 
-Unknown values fail the build. Omit `catalog:` to keep the API visible only under **All**.
+Unknown values fail the build.
 
 ### One spec per product
 

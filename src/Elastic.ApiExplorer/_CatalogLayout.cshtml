@@ -1,4 +1,5 @@
 @inherits RazorLayoutSlice<Elastic.ApiExplorer.Infrastructure.ApiLayoutViewModel>
+@using Elastic.ApiExplorer.Landing
 @implements IUsesLayout<Elastic.Documentation.Site._GlobalLayout, GlobalLayoutViewModel>
 @functions {
 	public GlobalLayoutViewModel LayoutModel => Model;
@@ -19,14 +20,16 @@ else
 {
 	@(await RenderPartialAsync(_IsolatedHeader.Create(Model)))
 }
-<div id="main-container" class="flex flex-col items-center">
+@* min-h-screen, like the API product layout: a short page still fills the screen, so the footer sits below the fold instead of under the cards. *@
+<div id="main-container" class="flex min-h-screen flex-col items-center">
+	@* The catalog's hero, outside the container below so a band behind it can span the screen. *@
+	@await RenderSectionAsync(ApiCatalog.HeroSection)
 	<div class="max-w-(--max-layout-width) w-full px-6">
 		<main id="content-container" class="w-full pb-12">
 			<div class="api-page-toolbar">
 				@(await RenderPartialAsync(_Breadcrumbs.Create(new BreadcrumbsView(Model.Breadcrumbs, Model.BuildType, ShowSingle: true))))
 			</div>
 			@await RenderBodyAsync()
-			@await RenderPartialAsync(_PageFeedback.Create(Model))
 		</main>
 	</div>
 </div>

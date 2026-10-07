@@ -43,6 +43,10 @@ features:
   primary-nav: false
 
 # Isolated fixtures. The prefix keeps these keys off the docs-content APIs.
+# Mirrors the api: block in elastic/docs-content docset.yml (without Kibana's children: file, which
+# this repo doesn't have) so the preview groups and counts the same way as production.
+# Two entries go beyond docs-content on purpose, so the preview shows the intended tags: cloud-enterprise
+# declares ece, and logstash declares ece.
 # Assembler builds omit them; this checkout is still loaded in preview (skip: true).
 # Isolated serve (no --watch) drops the prefix from URLs: /api/doc/elasticsearch/, /api/doc/kibana/, …
 api:
@@ -59,14 +63,43 @@ api:
     - spec: elasticsearch-serverless.json
       product: serverless-elasticsearch
       repository: elastic/elasticsearch-specification
+      catalog:
+        categories:
+          - serverless
   docs-builder-kibana:
     - spec: kibana.yaml
       product: kibana
       repository: elastic/kibana
+      catalog:
+        categories:
+          - self
+          - ece
+          - ess
   docs-builder-kibana-serverless:
     - spec: kibana-serverless.yaml
       product: kibana
       repository: elastic/kibana
+      catalog:
+        categories:
+          - serverless
+  docs-builder-cloud:
+    - spec: cloud.json
+      product: cloud-hosted
+      repository: elastic/cloud
+  docs-builder-cloud-enterprise:
+    - spec: cloud-enterprise.json
+      product: cloud-enterprise
+      repository: elastic/cloud
+      catalog:
+        categories:
+          - ece
+  docs-builder-cloud-billing:
+    - spec: cloud-billing.yaml
+      product: ess
+      repository: elastic/cloud
+      catalog:
+        categories:
+          - ess
   docs-builder-cloud-connect:
     - spec: cloud-connect.yml
       product: ess
@@ -75,6 +108,17 @@ api:
     - spec: elastic-cloud-serverless.yml
       product: cloud-serverless
       repository: elastic/serverless-api-specification
+      catalog:
+        categories:
+          - serverless
+  docs-builder-logstash:
+    - spec: logstash.yaml
+      product: logstash
+      repository: elastic/logstash
+      catalog:
+        categories:
+          - self
+          - ece
 
 cta:
   docs-builder:

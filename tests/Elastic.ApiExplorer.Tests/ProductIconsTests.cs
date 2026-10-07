@@ -27,6 +27,47 @@ public class ProductIconsTests
 	}
 
 	[Test]
+	[Arguments("elasticsearch")]
+	[Arguments("kibana")]
+	[Arguments("observability")]
+	[Arguments("security")]
+	[Arguments("logstash")]
+	[Arguments("ess")]
+	[Arguments("cloud-enterprise")]
+	public void Get_LogoWithNegativeSpace_UsesEuiNegativeFillNotFixedWhite(string key)
+	{
+		var svg = ProductIcons.Get(key);
+
+		svg.Should().Contain("euiIcon__fillNegative");
+		svg.Should().NotContain("rgba(255,255,255", "a fixed white fill is invisible on a light background");
+	}
+
+	[Test]
+	[Arguments("elasticsearch")]
+	[Arguments("kibana")]
+	[Arguments("observability")]
+	[Arguments("security")]
+	[Arguments("logstash")]
+	[Arguments("elastic-stack")]
+	[Arguments("ess")]
+	[Arguments("cloud-enterprise")]
+	[Arguments("vectordb")]
+	public void Get_AnyIcon_HasNoFixedWhiteFill(string key) => ProductIcons.Get(key).Should().NotContain("rgba(255,255,255");
+
+	[Test]
+	public void Get_CloudHosted_ReusesTheHostedCloudMark() =>
+		ProductIcons.Get("cloud-hosted").Should().Be(ProductIcons.Get("ess")).And.Contain("<svg");
+
+	[Test]
+	public void Get_CloudEnterprise_HasItsOwnMark()
+	{
+		var svg = ProductIcons.Get("cloud-enterprise");
+
+		svg.Should().Contain("<svg");
+		svg.Should().NotBe(ProductIcons.Get("ess"));
+	}
+
+	[Test]
 	public void Get_VectorDatabase_ReturnsOfficialMark()
 	{
 		ProductIcons.Get("vectordb").Should().Contain("<svg");
