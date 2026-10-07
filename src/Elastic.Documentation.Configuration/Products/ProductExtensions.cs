@@ -42,19 +42,7 @@ internal static class ProductExtensions
 			};
 		});
 
-		var publicReferenceProducts = products.Where(kvp => kvp.Value.Features.PublicReference).ToDictionary(
-			kvp => kvp.Key,
-			kvp => kvp.Value
-		);
-
-		var productDisplayNames = productsDto.Products.ToDictionary(kvp => kvp.Key, kvp => kvp.Value.Display);
-
-		return new ProductCatalog
-		{
-			Products = products.ToFrozenDictionary(),
-			PublicReferenceProducts = publicReferenceProducts.ToFrozenDictionary(),
-			ProductDisplayNames = productDisplayNames.ToFrozenDictionary()
-		};
+		return new ProductCatalog { Products = products.ToFrozenDictionary() };
 	}
 
 	private static VersioningSystem? ResolveVersioningSystem(VersioningSystemCatalog versionsConfiguration, string id) =>

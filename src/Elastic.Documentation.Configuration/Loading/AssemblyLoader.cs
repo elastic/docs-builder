@@ -132,21 +132,11 @@ public static class AssemblyLoader
 		{
 			Narrative = narrative,
 			ReferenceRepositories = references,
-			AvailableRepositories = AvailableByName(references.Values.Where(r => !r.Skip).Concat([narrative])),
 			PrivateRepositories = privateRepositories.Where(r => !r.Value.Skip).ToDictionary(kvp => kvp.Key, kvp => kvp.Value),
 			AllPrivateRepositoryNames = new HashSet<string>(privateRepositories.Select(r => r.Key), StringComparer.OrdinalIgnoreCase),
 			Environments = environments,
 			SharedConfigurations = dto.SharedConfigurations.ToDictionary(kv => kv.Key, kv => ToRepository(kv.Value, string.Empty))
 		};
-	}
-
-	// Last wins, so a model with colliding names can be built and reported by AssemblyConstraints.
-	private static Dictionary<string, Repository> AvailableByName(IEnumerable<Repository> repositories)
-	{
-		var byName = new Dictionary<string, Repository>();
-		foreach (var repository in repositories)
-			byName[repository.Name] = repository;
-		return byName;
 	}
 
 	private static Repository ToRepository(RepositoryDto? dto, string name) =>

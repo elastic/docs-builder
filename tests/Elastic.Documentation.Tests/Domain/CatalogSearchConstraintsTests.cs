@@ -25,12 +25,7 @@ internal static class CatalogFixtures
 	public static ProductCatalog Catalog(params KeyValuePair<string, Product>[] products)
 	{
 		var byId = products.ToFrozenDictionary();
-		return new ProductCatalog
-		{
-			Products = byId,
-			PublicReferenceProducts = byId,
-			ProductDisplayNames = byId.ToFrozenDictionary(p => p.Key, p => p.Value.DisplayName)
-		};
+		return new ProductCatalog { Products = byId };
 	}
 
 	public static ProductCatalog Catalog(params Product[] products) =>

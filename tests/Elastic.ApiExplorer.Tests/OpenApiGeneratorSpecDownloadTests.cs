@@ -128,14 +128,7 @@ public class OpenApiGeneratorSpecDownloadTests(ApiExplorerFixture fixture)
 		var fs = new MockFileSystem(new MockFileSystemOptions { CurrentDirectory = Paths.WorkingDirectoryRoot.FullName });
 		fs.AddDirectory(Path.Join(repoRoot, ".git"));
 		fs.AddFile(configPath, new MockFileData(docsetYaml));
-		var products = new ProductCatalog
-		{
-			Products = new[] { product }.ToFrozenDictionary(p => p.Id, StringComparer.OrdinalIgnoreCase),
-			PublicReferenceProducts = new[] { product }.ToFrozenDictionary(p => p.Id, StringComparer.OrdinalIgnoreCase),
-			ProductDisplayNames = new Dictionary<string, string> { [product.Id] = product.DisplayName ?? product.Id }.ToFrozenDictionary(
-				StringComparer.OrdinalIgnoreCase
-			)
-		};
+		var products = new ProductCatalog { Products = new[] { product }.ToFrozenDictionary(p => p.Id, StringComparer.OrdinalIgnoreCase), };
 		var configurationContext = TestHelpers.CreateConfigurationContext(fs, stack, products);
 
 		return new BuildContext(

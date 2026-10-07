@@ -9,6 +9,7 @@ using System.Text.RegularExpressions;
 using Elastic.Documentation.Configuration.Serialization;
 using Elastic.Documentation.ReleaseNotes;
 using Elastic.Documentation.Text;
+using Nullean.Entities;
 using YamlDotNet.Core;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.EventEmitters;
@@ -215,8 +216,7 @@ internal static partial class ReleaseNotesSerialization
 		{
 			Products = dto.Products?.Select(ToBundledProduct).ToList() ?? [],
 			Description = dto.Description,
-			ReleaseDate = ParseReleaseDate(dto.ReleaseDate),
-			ReleaseDateRaw = dto.ReleaseDate,
+			ReleaseDateAuthored = Authored.Of(dto.ReleaseDate, ParseReleaseDate(dto.ReleaseDate)),
 			GitRef = dto.GitRef,
 			HideFeatures = dto.HideFeatures ?? [],
 			Entries = dto.Entries?.Select(ToBundledEntry).ToList() ?? [],

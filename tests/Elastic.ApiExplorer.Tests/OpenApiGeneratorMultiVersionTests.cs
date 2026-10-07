@@ -59,14 +59,7 @@ public class OpenApiGeneratorMultiVersionTests
 		};
 
 	private static ProductCatalog ProductsFor(params Product[] products) =>
-		new()
-		{
-			Products = products.ToFrozenDictionary(p => p.Id, StringComparer.OrdinalIgnoreCase),
-			PublicReferenceProducts = products.ToFrozenDictionary(p => p.Id, StringComparer.OrdinalIgnoreCase),
-			ProductDisplayNames = products.ToDictionary(p => p.Id, p => p.DisplayName, StringComparer.OrdinalIgnoreCase).ToFrozenDictionary(
-				StringComparer.OrdinalIgnoreCase
-			)
-		};
+		new() { Products = products.ToFrozenDictionary(p => p.Id, StringComparer.OrdinalIgnoreCase) };
 
 	private static OpenApiDocument SpecDocument(string title) =>
 		new()

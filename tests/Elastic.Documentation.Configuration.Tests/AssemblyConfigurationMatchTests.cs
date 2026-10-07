@@ -34,7 +34,6 @@ public class AssemblyConfigurationMatchTests
 		{
 			Narrative = narrative,
 			ReferenceRepositories = repositories,
-			AvailableRepositories = repositories.Values.Concat([narrative]).ToDictionary(r => r.Name, r => r),
 			PrivateRepositories = new Dictionary<string, Repository>(),
 			AllPrivateRepositoryNames = new HashSet<string>(),
 			Environments = new Dictionary<string, PublishEnvironment>(),

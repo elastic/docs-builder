@@ -70,6 +70,43 @@ public class LinkLoaderTests
 		result.Diagnostics.Should().OnlyContain(d => d.File == "elastic/repo/main/links.json");
 	}
 
+	private const string PagesWithoutAnchors =
+		"""
+		{
+		  "origin": { "branch": "main", "remote": "https://example.test/repo.git", "ref": "abc", "name": "repo" },
+		  "url_path_prefix": "/docs",
+		  "links": { "missing.md": {}, "null.md": { "anchors": null }, "empty.md": { "anchors": [] }, "some.md": { "anchors": ["a"] } },
+		  "cross_links": []
+		}
+		""";
+
+	[Test]
+	public void LoadManifest_AMissingOrNullAnchorsListReadsAsEmpty()
+	{
+		var result = LinkLoader.LoadManifest(PagesWithoutAnchors, "links.json");
+
+		result.Diagnostics.Should().BeEmpty();
+		var links = result.Value!.Links;
+		links["missing.md"].Anchors.Should().BeEmpty();
+		links["null.md"].Anchors.Should().BeEmpty();
+		links["empty.md"].Anchors.Should().BeEmpty();
+		links["some.md"].Anchors.Should().Equal("a");
+		links["null.md"].Should().Be(links["missing.md"]);
+	}
+
+	[Test]
+	public void Serialize_AWrittenPageWithoutAnchorsHasNoAnchorsKey()
+	{
+		var manifest = LinkLoader.LoadManifest(PagesWithoutAnchors, "links.json").Value!;
+
+		var json = System.Text.Json.Nodes.JsonNode.Parse(LinkJson.Serialize(manifest))!["links"]!.AsObject();
+
+		json["missing.md"]!.AsObject().ContainsKey("anchors").Should().BeFalse();
+		json["null.md"]!.AsObject().ContainsKey("anchors").Should().BeFalse();
+		json["empty.md"]!.AsObject().ContainsKey("anchors").Should().BeFalse();
+		json["some.md"]!["anchors"]!.AsArray().Select(n => (string?)n).Should().Equal("a");
+	}
+
 	[Test]
 	public void LoadManifest_AValidManifestBreaksNothing() =>
 		LinkLoader.LoadManifest(ValidManifest, "links.json").Diagnostics.Should().BeEmpty();

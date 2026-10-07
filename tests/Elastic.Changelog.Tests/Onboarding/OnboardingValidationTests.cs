@@ -24,12 +24,7 @@ public class OnboardingValidationTests() : ChangelogTestBase()
 	private static IConfigurationContext ContextWith(params Product[] products)
 	{
 		var map = products.ToDictionary(p => p.Id, p => p).ToFrozenDictionary();
-		var configuration = new ProductCatalog
-		{
-			Products = map,
-			PublicReferenceProducts = map,
-			ProductDisplayNames = products.ToDictionary(p => p.Id, p => p.DisplayName).ToFrozenDictionary()
-		};
+		var configuration = new ProductCatalog { Products = map };
 		var context = A.Fake<IConfigurationContext>();
 		var catalog = new GlobalCatalog(
 			new VersioningSystemCatalog { VersioningSystems = new Dictionary<VersioningSystemId, VersioningSystem>() },

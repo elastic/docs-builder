@@ -38,4 +38,14 @@ public static partial class VersioningSystemConstraints
 		)
 		.WithSeverity(Severity.Hint)
 		.Describe("G91: A versionless system (current major at or above the sentinel) also has the sentinel as its base.");
+
+	public static Constraint<VersioningSystemCatalog> VersioningSystemKeyMatchesId
+	{
+		get;
+	} = Constraints<VersioningSystemCatalog>.KeysMatch(
+		m => m.VersioningSystems,
+		v => v.Id,
+		describe: (key, v) =>
+			$"Versioning system '{key.ToStringFast(true)}' in versions.yml holds a system whose id is '{v.Id.ToStringFast(true)}', so looking up one id returns the other's versions."
+	).Describe("G92: Each versioning system is stored under its own id: the key and the system's Id are the same value stored twice.");
 }

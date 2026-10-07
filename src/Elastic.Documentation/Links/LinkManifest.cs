@@ -17,11 +17,17 @@ namespace Elastic.Documentation.Links;
 [Equatable]
 public partial record LinkMetadata
 {
+	/// <summary>The page's anchors; never null (a missing or null <c>anchors</c> key reads as empty).</summary>
+	[JsonIgnore]
+	[OrderedEquality]
+	public string[] Anchors { get; internal init; } = [];
+
+	/// <summary>The wire form of <see cref="Anchors"/>: an empty list is omitted from the file.</summary>
 	[JsonPropertyName("anchors")]
 	[JsonInclude]
 	[JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-	[OrderedEquality]
-	public string[]? Anchors { get; internal init; } = [];
+	[IgnoreEquality]
+	internal string[]? AnchorsOnWire { get => Anchors.Length == 0 ? null : Anchors; init => Anchors = value ?? []; }
 
 	[JsonPropertyName("hidden")]
 	[JsonInclude]

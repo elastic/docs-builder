@@ -10,7 +10,7 @@ namespace Elastic.Documentation.Catalog;
 
 /// <summary>Every product from <c>products.yml</c>, with lookups by repository and display name. Part of the <see cref="GlobalCatalog"/> aggregate.</summary>
 /// <remarks>
-/// Constructed with <c>CatalogLoader.Load</c> or <see cref="ProductCatalog.FromPublicProducts"/>.
+/// Constructed with <c>CatalogLoader.Load</c> or <see cref="ProductCatalog.FromPublicProducts"/>. <c>PublicReferenceProducts</c> and <c>ProductDisplayNames</c> are computed from <c>Products</c>.
 /// </remarks>
 [Equatable]
 public sealed partial record ProductCatalog : IProductNameLookup
@@ -19,30 +19,27 @@ public sealed partial record ProductCatalog : IProductNameLookup
 	public required FrozenDictionary<string, Product> Products { get; init; }
 
 	/// <summary>A catalog of <paramref name="products"/>, every one of them a public reference product.</summary>
-	public static ProductCatalog FromPublicProducts(IEnumerable<KeyValuePair<string, Product>> products)
-	{
-		var byId = products.ToFrozenDictionary();
-		return new ProductCatalog
-		{
-			Products = byId,
-			PublicReferenceProducts = byId,
-			ProductDisplayNames = byId.ToFrozenDictionary(p => p.Key, p => p.Value.DisplayName)
-		};
-	}
+	public static ProductCatalog FromPublicProducts(IEnumerable<KeyValuePair<string, Product>> products) =>
+		new() { Products = products.ToFrozenDictionary() };
+
+	// A copy (a `with`) starts without the projections below: they are computed from the copy's own Products.
+	private ProductCatalog(ProductCatalog original) => Products = original.Products;
 
 	/// <summary>
-	/// Products with the <c>public-reference</c> feature enabled. These can appear in
+	/// Products with the <c>public-reference</c> feature enabled: a projection of <see cref="Products"/>, computed once. These can appear in
 	/// applies_to blocks, page frontmatter, and get display-name substitutions.
 	/// When a product has no explicit <c>features</c> map, it is included here by default.
 	/// </summary>
-	[UnorderedEquality]
-	public required FrozenDictionary<string, Product> PublicReferenceProducts { get; init; }
+	[IgnoreEquality]
+	public FrozenDictionary<string, Product> PublicReferenceProducts =>
+		field ??= Products.Where(p => p.Value.Features.PublicReference).ToFrozenDictionary();
 
 	/// <summary>
-	/// Product id to display name mappings for fast lookups.
+	/// Product id to display name mappings for fast lookups: a projection of <see cref="Products"/>, computed once.
 	/// </summary>
-	[UnorderedEquality]
-	public required FrozenDictionary<string, string> ProductDisplayNames { get; init; }
+	[IgnoreEquality]
+	public FrozenDictionary<string, string> ProductDisplayNames =>
+		field ??= Products.ToFrozenDictionary(p => p.Key, p => p.Value.DisplayName);
 
 	private FrozenDictionary<string, string>.AlternateLookup<ReadOnlySpan<char>>? _displayNameLookup;
 

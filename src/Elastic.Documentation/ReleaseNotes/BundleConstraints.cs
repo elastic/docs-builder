@@ -24,7 +24,7 @@ public static partial class BundleConstraints
 
 	public static Constraint<Bundle> BundleReleaseDateParses { get; } = Constraints<Bundle>
 		.Always(
-			b => b.ReleaseDateRaw,
+			b => b.ReleaseDateAuthored.Raw,
 			raw => string.IsNullOrWhiteSpace(raw) || DateOnly.TryParseExact(
 				raw,
 				"yyyy-MM-dd",

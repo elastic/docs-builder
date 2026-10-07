@@ -117,8 +117,7 @@ public static partial class LinkGraphConstraints
 			return null;
 		if (!target.Links.TryGetValue(path, out var page))
 			return $"'{link}': '{path}' is not a valid link in the '{uri.Scheme}' cross link index.";
-		return uri.Fragment.Length > 1
-			&& (page.Anchors is null || !page.Anchors.Contains(uri.Fragment.TrimStart('#'), StringComparer.OrdinalIgnoreCase))
+		return uri.Fragment.Length > 1 && (!page.Anchors.Contains(uri.Fragment.TrimStart('#'), StringComparer.OrdinalIgnoreCase))
 			? $"'{link}': '{path}' has no anchor named: '{uri.Fragment}'."
 			: null;
 	}

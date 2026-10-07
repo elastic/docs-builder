@@ -71,12 +71,7 @@ public class ConfigurationFileStorybookRegistryTests
 
 		var context = new MockDocumentationSetContext(collector, fileSystem, configPath, docsDir, environment);
 		var versionsConfig = new VersioningSystemCatalog { VersioningSystems = new Dictionary<VersioningSystemId, VersioningSystem>() };
-		var productsConfig = new ProductCatalog
-		{
-			Products = new Dictionary<string, Product>().ToFrozenDictionary(),
-			PublicReferenceProducts = new Dictionary<string, Product>().ToFrozenDictionary(),
-			ProductDisplayNames = new Dictionary<string, string>().ToFrozenDictionary()
-		};
+		var productsConfig = new ProductCatalog { Products = new Dictionary<string, Product>().ToFrozenDictionary(), };
 
 		var docSet = new DocumentationSetDto
 		{

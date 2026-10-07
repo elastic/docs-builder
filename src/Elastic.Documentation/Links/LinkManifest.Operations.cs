@@ -45,12 +45,7 @@ public partial record LinkManifest
 			.OrderBy(p => p.Path)
 			.ToDictionary(
 				p => p.Path,
-				p => new LinkMetadata
-				{
-					Anchors = p.Anchors.Count == 0 ? null : [.. p.Anchors],
-					Hidden = p.Hidden,
-					DuplicateAnchors = p.DuplicateAnchors
-				}
+				p => new LinkMetadata { Anchors = [.. p.Anchors], Hidden = p.Hidden, DuplicateAnchors = p.DuplicateAnchors }
 			);
 		var manifest = new LinkManifest
 		{

@@ -16,7 +16,7 @@ namespace Elastic.Documentation.Publishing;
 /// <c>AssemblyLoader</c>, with repository defaults applied and private repositories filtered when requested.
 /// </summary>
 /// <remarks>
-/// Constructed with <c>AssemblyLoader.Load</c>.
+/// Constructed with <c>AssemblyLoader.Load</c>. <c>AvailableRepositories</c> is computed from the references and the narrative.
 /// </remarks>
 [Equatable]
 public sealed partial record AssemblyConfiguration
@@ -28,9 +28,44 @@ public sealed partial record AssemblyConfiguration
 	[UnorderedEquality]
 	public required IReadOnlyDictionary<string, Repository> ReferenceRepositories { get; init; }
 
-	/// <summary>Every repository that publishes docs: references not marked <c>skip</c>, plus the narrative.</summary>
-	[UnorderedEquality]
-	public required IReadOnlyDictionary<string, Repository> AvailableRepositories { get; init; }
+	/// <summary>
+	/// Every repository that publishes docs, keyed by name: <see cref="ReferenceRepositories"/> not marked <c>skip</c>, plus the narrative. Computed once from them
+	/// (a name met twice keeps the last, so colliding names are reported by <c>AssemblyConstraints</c>, not lost).
+	/// </summary>
+	[IgnoreEquality]
+	public IReadOnlyDictionary<string, Repository> AvailableRepositories
+	{
+		get
+		{
+			var cached = _available;
+			if (
+				cached is not null
+				&& ReferenceEquals(cached.References, ReferenceRepositories)
+				&& ReferenceEquals(cached.Narrative, Narrative)
+			)
+				return cached.Result;
+			var byName = new Dictionary<string, Repository>();
+			foreach (var repository in ReferenceRepositories.Values.Where(r => !r.Skip).Concat([Narrative]))
+				byName[repository.Name] = repository;
+			_available = new AvailableSnapshot(ReferenceRepositories, Narrative, byName);
+			return byName;
+		}
+	}
+
+	// What AvailableRepositories was computed from: a copy made with `with { ReferenceRepositories = ... }` finds the snapshot stale and recomputes.
+	[IgnoreEquality]
+	private AvailableSnapshot? _available;
+
+	private sealed class AvailableSnapshot(
+		IReadOnlyDictionary<string, Repository> references,
+		NarrativeRepository narrative,
+		IReadOnlyDictionary<string, Repository> result
+	)
+	{
+		public IReadOnlyDictionary<string, Repository> References { get; } = references;
+		public NarrativeRepository Narrative { get; } = narrative;
+		public IReadOnlyDictionary<string, Repository> Result { get; } = result;
+	}
 
 	/// <summary>Private repositories that publish docs (<c>private: true</c> and not <c>skip</c>).</summary>
 	[UnorderedEquality]

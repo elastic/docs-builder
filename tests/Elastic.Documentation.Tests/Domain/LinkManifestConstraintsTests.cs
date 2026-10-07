@@ -96,7 +96,6 @@ public class LinkManifestConstraintsTests
 	} = new Dictionary<string, Func<LinkManifest, LinkManifest>>
 	{
 		["link-manifest-page-paths-are-markdown"] = m => WithPage(m, "notes.txt", new LinkMetadata()),
-		["link-manifest-anchors-present"] = m => WithPage(m, "null.md", new LinkMetadata { Anchors = null }),
 		["link-manifest-origin-named"] = m => m with { Origin = GitCheckoutInformation.Unavailable },
 		["url-path-prefix-normalized"] = m => m with { UrlPathPrefix = "docs/" },
 		["link-manifest-page-urls-unique"] =

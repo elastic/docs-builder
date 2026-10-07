@@ -59,10 +59,9 @@ internal static class ErrorCollectorAssertions
 	// The shared docs-tests redirects fixture deliberately contains a self-redirect and a redirect with several 'many' targets,
 	// which the redirect constraints report as warnings in every scenario. They are not what these assertions are about.
 	private static bool IsFixtureRedirectWarning(Diagnostic d) =>
-		// the fixture's pages have no anchors and the fixture has no git origin: the two link-manifest rules that surface as warnings for now
+		// the fixture has no git origin: the link-manifest rule that surfaces as a warning for now
 		d.RuleId
-			== LinkManifestConstraints.LinkManifestAnchorsPresent.Name
-			|| d.RuleId == LinkManifestConstraints.LinkManifestOriginNamed.Name
+			== LinkManifestConstraints.LinkManifestOriginNamed.Name
 			|| d.Message.StartsWith("Redirect 'testing/redirects/", StringComparison.Ordinal)
 				&& (d.Message.EndsWith("points to itself and is dropped.", StringComparison.Ordinal)
 					|| d.Message.EndsWith("only the first with a 'to' is used.", StringComparison.Ordinal));

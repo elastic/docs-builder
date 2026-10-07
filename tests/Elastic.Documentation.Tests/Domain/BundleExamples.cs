@@ -5,6 +5,7 @@
 using System.Globalization;
 using CsCheck;
 using Elastic.Documentation.ReleaseNotes;
+using Nullean.Entities;
 using Nullean.Entities.CsCheck;
 
 namespace Elastic.Documentation.Tests.Domain;
@@ -26,8 +27,17 @@ internal static class BundleExamples
 	public static LoadedBundle Loaded(Bundle data, string version = "9.0.0", string? path = null) =>
 		new(version, "elasticsearch", "elastic", data, path ?? $"/bundles/elasticsearch-elasticsearch-{version}.yaml", []);
 
+	// no date, or a date with the text it parses from (the shape a loader gives it)
+	private static Gen<Authored<DateOnly?>> ReleaseDates { get; } = Gen.OneOf(Gen.Const(
+		Authored.Defaulted<DateOnly?>(null)
+	), Gen.Int[0, 3650].Select(days =>
+	{
+		var date = new DateOnly(2020, 1, 1).AddDays(days);
+		return Authored.Of<DateOnly?>(date.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture), date);
+	}));
+
 	/// <summary>
-	/// Generated bundles that satisfy what the model promises: a changelog file named once, a release date written the way it parses, a loaded bundle
+	/// Generated bundles that satisfy what the model promises: a changelog file named once, a loaded bundle
 	/// named after its repo, first product and target, a version and a file once across the loaded bundles, and an amend that removes what its parent has and adds what it does not.
 	/// </summary>
 	public static Gen<T> Generated<T>() =>
@@ -35,10 +45,18 @@ internal static class BundleExamples
 			AutoMode.Plausible,
 			o => o
 				.Identity<BundledFile, string>(f => f.Name)
-				.Normalize<Bundle>(b => b with { ReleaseDateRaw = b.ReleaseDate?.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture) })
+				.Use(ReleaseDates)
 				.Normalize<LoadedBundle>(
 					b => b.Data.Products is [{ Target: { } target } product, ..]
-						? b with { FilePath = $"/bundles/{b.Repo}-{product.ProductId}-{target}.yaml" }
+						? b with
+						{
+							// one file name can only follow the convention for one product, so every product is that one
+							Data = b.Data with
+							{
+								Products = [.. b.Data.Products.Select(p => p with { ProductId = product.ProductId, Target = target })]
+							},
+							FilePath = $"/bundles/{b.Repo}-{product.ProductId}-{target}.yaml"
+						}
 						: b
 				)
 				.Normalize<LoadedBundles>(

@@ -3240,8 +3240,6 @@ public class BundleChangelogsTests : ChangelogTestBase
 		var productsConfiguration = new ProductCatalog
 		{
 			Products = new Dictionary<string, Product> { ["cloud-serverless"] = cloudServerless }.ToFrozenDictionary(),
-			PublicReferenceProducts = FrozenDictionary<string, Product>.Empty,
-			ProductDisplayNames = new Dictionary<string, string> { ["cloud-serverless"] = cloudServerless.DisplayName }.ToFrozenDictionary()
 		};
 		var catalogContext = new ConfigurationContext
 		{

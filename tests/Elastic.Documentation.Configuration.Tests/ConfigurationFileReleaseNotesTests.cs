@@ -134,12 +134,7 @@ public class ConfigurationFileReleaseNotesTests
 			}
 		};
 
-		return new ProductCatalog
-		{
-			Products = products.ToFrozenDictionary(),
-			PublicReferenceProducts = products.ToFrozenDictionary(),
-			ProductDisplayNames = products.ToFrozenDictionary(kv => kv.Key, kv => kv.Value.DisplayName)
-		};
+		return new ProductCatalog { Products = products.ToFrozenDictionary() };
 	}
 
 	private sealed class MockDocumentationSetContext(

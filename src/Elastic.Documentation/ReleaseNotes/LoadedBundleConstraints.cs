@@ -13,20 +13,20 @@ public static partial class LoadedBundleConstraints
 {
 	public static Constraint<LoadedBundle> BundleFilenameConvention { get; } = Constraints<LoadedBundle>
 		.Each(
-			m => m.Data.Products.Take(1),
+			m => m.Data.Products,
 			(m, product) => !string.IsNullOrWhiteSpace(product.Target) &&
 				!string.Equals(
 					FileName(m.FilePath),
 					$"{m.Repo}-{product.ProductId}-{product.Target}.yaml",
 					StringComparison.OrdinalIgnoreCase
 				)
-				? $"Bundle file '{FileName(m.FilePath)}' does not follow the naming convention '{{repo}}-{{product}}-{{version}}.yaml' " +
+				? $"Bundle file '{FileName(m.FilePath)}' does not follow the naming convention '{{repo}}-{{product}}-{{version}}.yaml' for product '{product.ProductId}' " +
 					$"('{m.Repo}-{product.ProductId}-{product.Target}.yaml'); the fallbacks are '{{product}}-{{version}}.yaml' and 'changelog-bundle.yaml'."
 				: null
 		)
 		.WithSeverity(Severity.Warning)
 		.Describe(
-			"R66: A bundle file is named {repo}-{product}-{version}.yaml; the generator falls back to {product}-{version}.yaml and then changelog-bundle.yaml, with a warning."
+			"R66: A bundle file is named {repo}-{product}-{version}.yaml for every product it lists; the generator falls back to {product}-{version}.yaml and then changelog-bundle.yaml, with a warning."
 		);
 
 	public static Constraint<LoadedBundle> BundleTargetPresent { get; } = Constraints<LoadedBundle>

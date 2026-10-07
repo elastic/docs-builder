@@ -92,15 +92,7 @@ public class ChangelogEntryValidationServiceTests() : ChangelogTestBase()
 		{
 			Endpoints = ConfigurationContext.Endpoints,
 			ConfigurationFileProvider = ConfigurationContext.ConfigurationFileProvider,
-			Catalog = ConfigurationContext.Catalog with
-			{
-				Products = new ProductCatalog
-				{
-					Products = productsDict.ToFrozenDictionary(),
-					PublicReferenceProducts = FrozenDictionary<string, Product>.Empty,
-					ProductDisplayNames = productsDict.ToDictionary(p => p.Key, p => p.Value.DisplayName).ToFrozenDictionary()
-				}
-			},
+			Catalog = ConfigurationContext.Catalog with { Products = new ProductCatalog { Products = productsDict.ToFrozenDictionary(), } },
 			SearchTuning = ConfigurationContext.SearchTuning
 		};
 
@@ -143,15 +135,7 @@ public class ChangelogEntryValidationServiceTests() : ChangelogTestBase()
 		{
 			Endpoints = ConfigurationContext.Endpoints,
 			ConfigurationFileProvider = ConfigurationContext.ConfigurationFileProvider,
-			Catalog = ConfigurationContext.Catalog with
-			{
-				Products = new ProductCatalog
-				{
-					Products = products.ToFrozenDictionary(),
-					PublicReferenceProducts = FrozenDictionary<string, Product>.Empty,
-					ProductDisplayNames = products.ToDictionary(p => p.Key, p => p.Value.DisplayName).ToFrozenDictionary()
-				}
-			},
+			Catalog = ConfigurationContext.Catalog with { Products = new ProductCatalog { Products = products.ToFrozenDictionary(), } },
 			SearchTuning = ConfigurationContext.SearchTuning
 		};
 	}

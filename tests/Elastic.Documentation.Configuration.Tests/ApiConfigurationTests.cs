@@ -915,12 +915,7 @@ public class ConfigurationFileApiTests
 
 		var productIds = DefaultProductIds.Concat(extraProducts ?? []);
 		var products = productIds.ToDictionary(id => id, id => new Product { Id = id, DisplayName = id }, StringComparer.OrdinalIgnoreCase);
-		var productsConfig = new ProductCatalog
-		{
-			Products = products.ToFrozenDictionary(StringComparer.OrdinalIgnoreCase),
-			PublicReferenceProducts = new Dictionary<string, Product>().ToFrozenDictionary(),
-			ProductDisplayNames = new Dictionary<string, string>().ToFrozenDictionary()
-		};
+		var productsConfig = new ProductCatalog { Products = products.ToFrozenDictionary(StringComparer.OrdinalIgnoreCase), };
 
 		var config = DocumentationSetResolver.Resolve(docSet, context, versionsConfig, productsConfig).EmitTo(context.Collector)!;
 		return (config, collector);

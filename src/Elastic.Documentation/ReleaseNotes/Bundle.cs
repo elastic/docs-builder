@@ -2,7 +2,9 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Globalization;
 using Generator.Equals;
+using Nullean.Entities;
 
 namespace Elastic.Documentation.ReleaseNotes;
 
@@ -33,11 +35,18 @@ public partial record Bundle
 	/// Useful for components released outside the usual stack lifecycle (e.g., APM/EDOT agents).
 	/// Parsed from YYYY-MM-DD format in YAML; serialized back as YYYY-MM-DD.
 	/// </summary>
-	public DateOnly? ReleaseDate { get; internal init; }
-
-	/// <summary>The <c>release-date</c> as written; null when absent or when the bundle was not read from YAML. A malformed date becomes a null <see cref="ReleaseDate"/>.</summary>
 	[IgnoreEquality]
-	public string? ReleaseDateRaw { get; internal init; }
+	public DateOnly? ReleaseDate
+	{
+		get => ReleaseDateAuthored.Value;
+		internal init => ReleaseDateAuthored = Authored.Of(value?.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture), value);
+	}
+
+	/// <summary>
+	/// The one stored release date: <see cref="Authored{T}.Raw"/> is the <c>release-date</c> as written (null when absent or when the bundle was not read from YAML),
+	/// <see cref="Authored{T}.Value"/> the date it parsed to (null for a malformed one). <see cref="ReleaseDate"/> is its value.
+	/// </summary>
+	public Authored<DateOnly?> ReleaseDateAuthored { get; internal init; } = Authored.Defaulted<DateOnly?>(null);
 
 	/// <summary>
 	/// Optional git ref of the published endpoint this bundle was cut for.

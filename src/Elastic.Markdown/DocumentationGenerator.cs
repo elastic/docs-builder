@@ -526,13 +526,9 @@ public partial class DocumentationGenerator
 	{
 		var file = DocumentationSet.LinkReferenceFile;
 		var checkedManifest = DocumentationSet.CreateLinkReference();
-		// The two rules the writer breaks surface through the collector (warnings for now, see LinkManifestConstraints); the rest of the manifest's
+		// The rule the writer can break surfaces through the collector (a warning for now, see LinkManifestConstraints); the rest of the manifest's
 		// findings (redirect shadows and chains) are reported by the redirect loader already.
-		var surfaced = new HashSet<string?>
-		{
-			LinkManifestConstraints.LinkManifestAnchorsPresent.Name,
-			LinkManifestConstraints.LinkManifestOriginNamed.Name
-		};
+		var surfaced = new HashSet<string?> { LinkManifestConstraints.LinkManifestOriginNamed.Name };
 		foreach (var diagnostic in checkedManifest.Diagnostics.Where(d => surfaced.Contains(d.RuleId)))
 			Context.Collector.Write(diagnostic);
 		var state = checkedManifest.OrThrowIfMissing();

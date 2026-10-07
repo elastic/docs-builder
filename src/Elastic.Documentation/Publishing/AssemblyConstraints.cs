@@ -58,11 +58,6 @@ public static partial class AssemblyConstraints
 		.WithSeverity(Severity.Warning)
 		.Describe("G15: A referenced repository's name is the key it is listed under in 'references'.");
 
-	public static Constraint<AssemblyConfiguration> AvailableKeysMatchNames { get; } = Constraints<AssemblyConfiguration>
-		.KeysMatch(a => a.AvailableRepositories, r => r.Name, message: "an available repository is keyed by a name other than its own.")
-		.WithSeverity(Severity.Warning)
-		.Describe("G15: An available repository's name is the key it is listed under.");
-
 	public static Constraint<AssemblyConfiguration> PrivateKeysMatchNames { get; } = Constraints<AssemblyConfiguration>
 		.KeysMatch(a => a.PrivateRepositories, r => r.Name, message: "a private repository is keyed by a name other than its own.")
 		.WithSeverity(Severity.Warning)
@@ -96,11 +91,6 @@ public static partial class AssemblyConstraints
 		.Each(m => m.ReferenceRepositories.Values, r => !r.Skip, r => $"Repository '{r.Name}' is skipped and not built.")
 		.WithSeverity(Severity.Warning)
 		.Describe("G28: A skipped repository is not built; it is listed so the omission is deliberate.");
-
-	public static Constraint<AssemblyConfiguration> AvailableRepositoriesPublish { get; } = Constraints<AssemblyConfiguration>
-		.Each(m => m.AvailableRepositories.Values, r => !r.Skip, r => $"Repository '{r.Name}' is available but skips publishing.")
-		.WithSeverity(Severity.Warning)
-		.Describe("G28: A repository that skips publishing is not in the available set.");
 
 	public static Constraint<AssemblyConfiguration> RepositoryNamesUniqueIgnoringCase { get; } = Constraints<AssemblyConfiguration>
 		.Unique(

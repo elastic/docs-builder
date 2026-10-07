@@ -127,11 +127,6 @@ public abstract class McpToolsIntegrationTestsBase
 
 		var productDisplayNames = products.ToDictionary(kvp => kvp.Key, kvp => kvp.Value.DisplayName);
 
-		return new ProductCatalog
-		{
-			Products = products.ToFrozenDictionary(),
-			PublicReferenceProducts = products.ToFrozenDictionary(),
-			ProductDisplayNames = productDisplayNames.ToFrozenDictionary()
-		};
+		return new ProductCatalog { Products = products.ToFrozenDictionary() };
 	}
 }

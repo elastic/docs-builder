@@ -7,6 +7,7 @@ using Elastic.Documentation.AppliesTo;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Links;
 using Elastic.Documentation.Publishing;
+using Elastic.Documentation.Serialization;
 using Elastic.Documentation.Versions;
 
 namespace Elastic.Documentation.Tests.Domain;
@@ -188,12 +189,13 @@ public class DomainOperationsTests
 	}
 
 	[Test]
-	public void LinkManifestFrom_PageWithoutAnchors_IsWrittenWithoutAListAndReportedByTheSchemaRule()
+	public void LinkManifestFrom_PageWithoutAnchors_HasNoAnchorsAndIsWrittenWithoutTheKey()
 	{
 		var result = LinkManifest.From(Origin(), "", [new LinkPage("a.md", [], false, [])], [], null);
 
-		result.Value!.Links["a.md"].Anchors.Should().BeNull("the wire format omits an empty anchors list");
-		result.Diagnostics.Should().Contain(d => d.Message.Contains("has no anchors list"));
+		result.Value!.Links["a.md"].Anchors.Should().BeEmpty();
+		result.Diagnostics.Should().NotContain(d => d.Message.Contains("anchors list"));
+		LinkJson.Serialize(result.Value).Should().NotContain("\"anchors\"", "the wire format omits an empty anchors list");
 	}
 
 	[Test]

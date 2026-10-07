@@ -43,16 +43,14 @@ internal static class DomainGen
 	public static AutoOptions Catalogs(this AutoOptions o) =>
 		o
 			.Normalize<VersioningSystem>(v => v.Base > v.Current ? v with { Base = v.Current, Current = v.Base } : v)
+			.KeyedBy<VersioningSystemCatalog, VersioningSystemId, VersioningSystem>(c => c.VersioningSystems, v => v.Id)
 			.Normalize<VersioningSystemCatalog>(
 				c => new VersioningSystemCatalog
 				{
 					VersioningSystems = VersioningSystemIdExtensions
 						.GetValues()
 						.Where(id => id != VersioningSystemId.None)
-						.ToDictionary(
-							id => id,
-							id => c.VersioningSystems.TryGetValue(id, out var v) ? v with { Id = id } : DefaultVersioning(id)
-						)
+						.ToDictionary(id => id, id => c.VersioningSystems.TryGetValue(id, out var v) ? v : DefaultVersioning(id))
 				}
 			)
 			.Normalize<Product>(

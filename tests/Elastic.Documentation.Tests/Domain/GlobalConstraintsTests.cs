@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.Collections.Frozen;
+using AwesomeAssertions;
 using CsCheck;
 using Elastic.Documentation.Catalog;
 using Elastic.Documentation.Codex;
@@ -94,12 +95,10 @@ public class AssemblyConstraintsTests
 					.GroupBy(kv => kv.Key, StringComparer.OrdinalIgnoreCase)
 					.Select(g => g.First())
 					.ToDictionary(kv => kv.Key, kv => kv.Value with { Name = kv.Key });
-				var available = new Dictionary<string, Repository>(reference) { [narrative.Name] = narrative };
 				var isPrivate = reference.Where(kv => kv.Value.Private).ToDictionary(kv => kv.Key, kv => kv.Value);
 				return a with
 				{
 					ReferenceRepositories = reference,
-					AvailableRepositories = available,
 					PrivateRepositories = isPrivate,
 					AllPrivateRepositoryNames = new HashSet<string>(isPrivate.Keys),
 					Environments = a
@@ -138,10 +137,9 @@ public class AssemblyConstraintsTests
 			["optimizely-has-id"] = a => WithProd(a, e => e with { Optimizely = new() { Enabled = true } }),
 			["environment-path-prefix-resolved"] = a => WithProd(a, e => e with { PathPrefix = "${ASSEMBLER_PREVIEW_PATH_PREFIX}" }),
 			["repository-name-matches-key"] = a => WithReference(a, "kibana", new Repository { Name = "beats" }),
-			["available-keys-match-names"] = a => WithAvailable(a, "kibana", new Repository { Name = "beats" }),
 			["private-keys-match-names"] =
 				a => WithPrivate(
-					WithAvailable(a, "kibana", new Repository { Name = "kibana" }),
+					WithReference(a, "kibana", new Repository { Name = "kibana" }),
 					"kibana",
 					new Repository { Name = "beats", Private = true }
 				),
@@ -150,17 +148,16 @@ public class AssemblyConstraintsTests
 			["repository-clone-timeout-positive"] =
 				a => WithReference(a, "kibana", new Repository { Name = "kibana", CloneTimeout = TimeSpan.Zero }),
 			["repository-skipped"] = a => WithReference(a, "kibana", new Repository { Name = "kibana", Skip = true }),
-			["available-repositories-publish"] = a => WithAvailable(a, "kibana", new Repository { Name = "kibana", Skip = true }),
 			["repository-names-unique-ignoring-case"] =
-				a => WithAvailable(
-					WithAvailable(a, "kibana", new Repository { Name = "kibana" }),
+				a => WithReference(
+					WithReference(a, "kibana", new Repository { Name = "kibana" }),
 					"Kibana",
 					new Repository { Name = "Kibana" }
 				),
 			["private-is-available"] = a => WithPrivate(a, "beats", new Repository { Name = "beats", Private = true }, listed: true),
 			["private-is-listed"] =
 				a => WithPrivate(
-					WithAvailable(a, "kibana", new Repository { Name = "kibana" }),
+					WithReference(a, "kibana", new Repository { Name = "kibana" }),
 					"kibana",
 					new Repository { Name = "kibana", Private = true },
 					listed: false
@@ -177,9 +174,6 @@ public class AssemblyConstraintsTests
 
 	private static AssemblyConfiguration WithReference(AssemblyConfiguration a, string key, Repository repository) =>
 		a with { ReferenceRepositories = new Dictionary<string, Repository>(a.ReferenceRepositories) { [key] = repository } };
-
-	private static AssemblyConfiguration WithAvailable(AssemblyConfiguration a, string key, Repository repository) =>
-		a with { AvailableRepositories = new Dictionary<string, Repository>(a.AvailableRepositories) { [key] = repository } };
 
 	private static AssemblyConfiguration WithPrivate(AssemblyConfiguration a, string key, Repository repository, bool listed = true) =>
 		a with
@@ -313,6 +307,20 @@ public class VersioningSystemConstraintsTests
 	[Test]
 	public void Laws() => VersioningSystemConstraints.All.Laws(DomainGen.Of<VersioningSystemCatalog>(), CounterExamples);
 
+	[Test]
+	public void KeyMatchesId_NamesTheKeyAndTheIdOfTheSystemFoundThere() =>
+		DomainGen.Of<VersioningSystemCatalog>().Sample(
+			catalog =>
+			{
+				var rule = VersioningSystemConstraints.VersioningSystemKeyMatchesId;
+				VersioningSystemConstraints.All.Report(catalog).Of(rule).Should().BeEmpty();
+				var broken = CounterExamples["versioning-system-key-matches-id"](catalog);
+				var violation = VersioningSystemConstraints.All.Report(broken).Of(rule).Should().ContainSingle().Subject;
+				violation.Message.Should().Contain("'stack'").And.Contain("'ecs'");
+			},
+			iter: 20
+		);
+
 	// the stack entry is the one the examples vary; every other id stays defined, so only the rule under test is broken
 	private static VersioningSystemCatalog WithStack(VersioningSystemCatalog c, string @base, string current) =>
 		new()
@@ -337,7 +345,15 @@ public class VersioningSystemConstraintsTests
 				{
 					VersioningSystems = c.VersioningSystems.Where(v => v.Key != VersioningSystemId.Ecs).ToDictionary()
 				},
-			["versionless-base-matches-current"] = c => WithStack(c, "9.0.0", "99999.0.0")
+			["versionless-base-matches-current"] = c => WithStack(c, "9.0.0", "99999.0.0"),
+			["versioning-system-key-matches-id"] =
+				c => new VersioningSystemCatalog
+				{
+					VersioningSystems = new Dictionary<VersioningSystemId, VersioningSystem>(c.VersioningSystems)
+					{
+						[VersioningSystemId.Stack] = c.VersioningSystems[VersioningSystemId.Ecs]
+					}
+				}
 		};
 }
 

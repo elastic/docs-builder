@@ -19,7 +19,7 @@ public class NavigationInAssemblyConstraintsTests
 		{
 			Assembly = p.Assembly with
 			{
-				AvailableRepositories = new Dictionary<string, Repository>(p.Assembly.AvailableRepositories)
+				ReferenceRepositories = new Dictionary<string, Repository>(p.Assembly.ReferenceRepositories)
 					.Concat(
 						SiteNavigationConstraints
 							.AllMounts(p.Navigation)

@@ -51,12 +51,6 @@ public class OpenApiGeneratorCurrentSpecResolutionTests
 		var products = new ProductCatalog
 		{
 			Products = new Dictionary<string, Product> { [product.Id] = product }.ToFrozenDictionary(StringComparer.OrdinalIgnoreCase),
-			PublicReferenceProducts = new Dictionary<string, Product> { [product.Id] = product }.ToFrozenDictionary(
-				StringComparer.OrdinalIgnoreCase
-			),
-			ProductDisplayNames = new Dictionary<string, string> { [product.Id] = product.DisplayName }.ToFrozenDictionary(
-				StringComparer.OrdinalIgnoreCase
-			)
 		};
 		var context = CreateContext(collector, versionless, products);
 		var localFile = new FileSystem().FileInfo.New(Path.Combine(Paths.WorkingDirectoryRoot.FullName, "docs", "elasticsearch.json"));
