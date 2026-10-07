@@ -199,7 +199,25 @@ public class GitHubCommitRangeServiceTests() : ChangelogTestBase()
 		result.ExcludedPullRequests.Should().ContainSingle();
 		result.ExcludedPullRequests[0].Number.Should().Be(11);
 		result.ExcludedPullRequests[0].BaseRef.Should().Be("feature/highlight");
-		result.CommitsWithoutPullRequest.Should().Equal(sha1);
+		// Excluded by base branch is not the same as "no associated PR": report it once.
+		result.CommitsWithoutPullRequest.Should().BeEmpty();
+	}
+
+	[Test]
+	public async Task ResolvePullRequests_BaseRef_StillReportsCommitsWithNoMergedPr()
+	{
+		var (sha1, sha2) = (Sha(1), Sha(2));
+		var handler = Handler(
+			_ => CompareJson(2, [sha1, sha2]),
+			_ => GraphQlJson([(sha1, [PrNode(11, mergeCommitSha: sha1, baseRefName: "feature/highlight")]), (sha2, [])])
+		);
+		var args = Args with { BaseRef = "main" };
+
+		var result = await Service(handler).ResolvePullRequestsAsync(Collector, args, TestContext.Current!.Execution.CancellationToken);
+
+		result.Should().NotBeNull();
+		result.ExcludedPullRequests.Select(pr => pr.Number).Should().Equal(11);
+		result.CommitsWithoutPullRequest.Should().Equal(sha2);
 	}
 
 	[Test]

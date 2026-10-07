@@ -219,10 +219,21 @@ public sealed partial class GitHubCommitRangeService(
 			{
 				var sha = batch[i];
 				_ = byAlias.TryGetValue($"c{i}", out var commitNode);
-				var selected = SelectPullRequest(collector, sha, commitNode, repoFullName, args.BaseRef, excludedByBase);
+				var selected = SelectPullRequest(
+					collector,
+					sha,
+					commitNode,
+					repoFullName,
+					args.BaseRef,
+					excludedByBase,
+					out var onlyExcludedByBase
+				);
 				if (selected == null)
 				{
-					commitsWithoutPr.Add(sha);
+					// A commit whose merged PRs were all excluded by base branch is already reported as
+					// excluded; only a commit with no merged PR at all is "without an associated PR".
+					if (!onlyExcludedByBase)
+						commitsWithoutPr.Add(sha);
 					continue;
 				}
 
@@ -272,9 +283,11 @@ public sealed partial class GitHubCommitRangeService(
 		GraphQlCommit? commitNode,
 		string repoFullName,
 		string? baseRef,
-		Dictionary<int, CommitRangeExcludedPullRequest> excludedByBase
+		Dictionary<int, CommitRangeExcludedPullRequest> excludedByBase,
+		out bool onlyExcludedByBase
 	)
 	{
+		onlyExcludedByBase = false;
 		var merged = commitNode?.AssociatedPullRequests?.Nodes?.OfType<GraphQlPullRequest>()
 			.Where(pr => pr.Merged && string.Equals(pr.BaseRepository?.NameWithOwner, repoFullName, StringComparison.OrdinalIgnoreCase))
 			.ToList()
@@ -302,7 +315,10 @@ public sealed partial class GitHubCommitRangeService(
 		}
 
 		if (candidates.Count == 0)
+		{
+			onlyExcludedByBase = merged.Count > 0;
 			return null;
+		}
 
 		var mergeCommitMatches = candidates
 			.Where(pr => string.Equals(pr.MergeCommit?.Oid, sha, StringComparison.OrdinalIgnoreCase))
