@@ -253,7 +253,8 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 			DirectiveBlock = block,
 			Title = block.Title,
 			Intro = block.Intro,
-			Anchor = block.Anchor
+			Anchor = block.Anchor,
+			HeadingLevel = block.Level
 		});
 		RenderRazorSlice(slice, renderer);
 	}
@@ -269,6 +270,7 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 			Anchor = block.Anchor,
 			Variant = block.Variant,
 			IsAccordion = explore is not null,
+			AccordionHeadingLevel = (explore?.Level ?? 2) + 1,
 			IsOpen = explore is not null && HubExplore.IsFirstCardGroup(explore, block)
 		});
 		RenderRazorSlice(slice, renderer);
@@ -276,13 +278,15 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 
 	private static void WriteLinkCard(HtmlRenderer renderer, LinkCardBlock block)
 	{
+		var explore = HubExplore.FindAncestor(block);
 		var slice = LinkCardView.Create(new LinkCardViewModel
 		{
 			DirectiveBlock = block,
 			Data = block.Data,
 			IconSvg = ProductIcons.Get(block.Data.Icon),
 			SitePathPrefix = block.Build.UrlPathPrefix,
-			IsColumn = HubExplore.FindAncestor(block) is not null
+			IsColumn = explore is not null,
+			ColumnHeadingLevel = (explore?.Level ?? 2) + 2
 		});
 		RenderRazorSlice(slice, renderer);
 	}

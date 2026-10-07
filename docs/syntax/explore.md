@@ -49,6 +49,7 @@ links:
 | `:title:` | **Required.** H2 heading, for example "Explore Elasticsearch". |
 | `:intro:` | Intro paragraph below the heading. |
 | `:id:` | Section anchor. Use `explore` so `{hero}`'s tertiary action can jump to it. |
+| `:level:` | Heading level of the section title: `2` (default) or `3`. See [Nest a section under another heading](#nested-sections). |
 
 ## What nesting changes
 
@@ -70,3 +71,40 @@ Nesting three directives needs three fence widths. The outer fence always needs 
 | `{explore}` | `:::::` |
 | `{card-group}` | `::::` |
 | `{link-card}` | `:::` |
+
+## Nested sections [nested-sections]
+
+By default the section title is an H2. A hub with several Explore sections can group them under one H2 and render the others as H3s. Set `:level: 3` on each section that belongs under the H2.
+
+```markdown
+:::::{explore}
+:id: explore
+:title: Explore Kibana docs
+:intro: Find the app or task you need.
+
+::::{card-group}
+:title: Quick links
+...
+::::
+:::::
+
+:::::{explore}
+:id: use-kibana
+:title: Use Kibana
+:level: 3
+
+::::{card-group}
+:title: Explore and analyze data
+...
+::::
+:::::
+```
+
+The level moves the whole outline with it:
+
+| `:level:` | Section title | Accordion title | Link column title |
+|---|---|---|---|
+| `2` | H2 | H3 | H4 |
+| `3` | H3 | H4 | H5 |
+
+An H3 section also renders a step smaller than an H2 section and sits closer to the section above it. A level other than `2` or `3` produces a warning, and the section renders as `2`.
