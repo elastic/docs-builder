@@ -179,4 +179,98 @@ public class ReleaseTargetResolverTests
 		results.Should().HaveCount(1);
 		results[0].Version.Should().Be("9.3.0");
 	}
+
+	// ── Latest build candidate ───────────────────────────────────────────
+
+	[Test]
+	public void LatestBuildCandidate_PicksNewestCompletedAt_NotLastInObjectOrder()
+	{
+		var release = new FutureRelease
+		{
+			Version = "9.5.5",
+			BuildCandidates = new Dictionary<string, BuildCandidateEntry>
+			{
+				["9.5.5-newest"] = new() { ManifestUrl = "newest", CompletedAt = "2026-10-03T10:00:00Z" },
+				["9.5.5-oldest"] = new() { ManifestUrl = "oldest", CompletedAt = "2026-10-01T10:00:00Z" },
+				["9.5.5-middle"] = new() { ManifestUrl = "middle", CompletedAt = "2026-10-02T10:00:00Z" },
+			},
+		};
+
+		release.LatestBuildCandidate!.ManifestUrl.Should().Be("newest");
+	}
+
+	[Test]
+	public void LatestBuildCandidate_WithoutParseableTimestamps_FallsBackToLastEntry()
+	{
+		var release = new FutureRelease
+		{
+			Version = "9.5.5",
+			BuildCandidates = new Dictionary<string, BuildCandidateEntry>
+			{
+				["a"] = new() { ManifestUrl = "first", CompletedAt = null },
+				["b"] = new() { ManifestUrl = "last", CompletedAt = "not a date" },
+			},
+		};
+
+		release.LatestBuildCandidate!.ManifestUrl.Should().Be("last");
+	}
+
+	[Test]
+	public void LatestBuildCandidate_IgnoresEntriesWithoutTimestampWhenOthersHaveOne()
+	{
+		var release = new FutureRelease
+		{
+			Version = "9.5.5",
+			BuildCandidates = new Dictionary<string, BuildCandidateEntry>
+			{
+				["dated"] = new() { ManifestUrl = "dated", CompletedAt = "2026-10-01T10:00:00Z" },
+				["undated"] = new() { ManifestUrl = "undated", CompletedAt = null },
+			},
+		};
+
+		release.LatestBuildCandidate!.ManifestUrl.Should().Be("dated");
+	}
+
+	[Test]
+	public void LatestBuildCandidate_NoCandidates_ReturnsNull() => FutureNoBc("9.5.5").LatestBuildCandidate.Should().BeNull();
+
+	// ── GA detection ─────────────────────────────────────────────────────
+
+	[Test]
+	public void ResolvePreviewTargets_PastReleaseWithoutManifestIsNotGa_SoPatchPreviewIsKept()
+	{
+		var past = new PastReleasesResponse
+		{
+			Releases =
+			[
+				new PastRelease { Version = "9.2.4", Manifest = "https://staging.elastic.co/9.2.4/manifest.json" },
+				new PastRelease { Version = "9.2.5", Manifest = null },
+			],
+		};
+		var future = new FutureReleasesResponse { Releases = [FutureWithBc("9.2.5", "https://staging.elastic.co/bc-9.2.5.json")], };
+
+		var results = ReleaseTargetResolver.ResolvePreviewTargets(past, future, null, null, "9.2.4");
+
+		results.Should().ContainSingle().Which.Version.Should().Be("9.2.5");
+	}
+
+	[Test]
+	public void IsGa_RequiresAManifest()
+	{
+		var past = new PastReleasesResponse
+		{
+			Releases =
+			[
+				new PastRelease { Version = "9.2.4", Manifest = "x" },
+				new PastRelease { Version = "9.2.5", Manifest = null },
+				new PastRelease { Version = "9.2.6", Manifest = "" },
+			],
+		};
+
+		ReleaseTargetResolver.IsGa(past, "9.2.4").Should().BeTrue();
+		ReleaseTargetResolver.IsGa(past, "9.2.5").Should().BeFalse();
+		ReleaseTargetResolver.IsGa(past, "9.2.6").Should().BeFalse();
+		ReleaseTargetResolver.IsGa(past, "9.9.9").Should().BeFalse();
+		ReleaseTargetResolver.IsGa(null, "9.2.4").Should().BeFalse();
+	}
 }

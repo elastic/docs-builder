@@ -115,6 +115,8 @@ internal sealed class UnifiedReleaseCommands(
 			return 0;
 		}
 
+		var productsMissingFromManifest = new List<string>();
+
 		foreach (var target in targets)
 		{
 			_logger.LogInformation(
@@ -145,11 +147,13 @@ internal sealed class UnifiedReleaseCommands(
 
 				if (!manifest.Projects.TryGetValue(artifactKey, out var project) || string.IsNullOrEmpty(project.CommitHash))
 				{
-					_logger.LogWarning(
-						"Skipping '{Product}': artifact key '{ArtifactKey}' not found in the build manifest.",
-						product.Id,
-						artifactKey
-					);
+					// A configured product that the manifest lacks (a mismatched dra_artifact, or a manifest
+					// omission) must not look like success: the bundle set would be incomplete.
+					var message =
+						$"Product '{product.Id}': artifact key '{artifactKey}' has no commit_hash in the build manifest for {target.Version} ({target.ManifestUrl}).";
+					_logger.LogError("{Message}", message);
+					collector.EmitError(string.Empty, message);
+					productsMissingFromManifest.Add($"{product.Id}@{target.Version}");
 					continue;
 				}
 
@@ -183,6 +187,16 @@ internal sealed class UnifiedReleaseCommands(
 			}
 		}
 
+		if (productsMissingFromManifest.Count > 0)
+		{
+			_logger.LogError(
+				"{Count} product(s) missing from the build manifest, so the bundle set is incomplete: {Products}",
+				productsMissingFromManifest.Count,
+				string.Join(", ", productsMissingFromManifest)
+			);
+			return 1;
+		}
+
 		return 0;
 	}
 
@@ -202,7 +216,7 @@ internal sealed class UnifiedReleaseCommands(
 			ctx
 		);
 
-		if (past?.Releases.Any(r => r.Version.Equals(versionOrKeyword, StringComparison.OrdinalIgnoreCase)) is true)
+		if (ReleaseTargetResolver.IsGa(past, versionOrKeyword))
 		{
 			_logger.LogInformation("Version {Version} is already GA. No bundle needed.", versionOrKeyword);
 			return [];
@@ -258,21 +272,14 @@ internal sealed class UnifiedReleaseCommands(
 		return [target];
 	}
 
-	private async Task<IReadOnlyList<ReleaseTarget>> ResolvePreviewTargetsAsync(HttpClient http, CancellationToken ctx)
+	private async Task<IReadOnlyList<ReleaseTarget>?> ResolvePreviewTargetsAsync(HttpClient http, CancellationToken ctx)
 	{
-		var past = await FetchJsonAsync<PastReleasesResponse>(
-			http,
-			PastReleasesUrl,
-			ReleaseScheduleJsonContext.Default.PastReleasesResponse,
-			ctx
-		);
-
-		var future = await FetchJsonAsync<FutureReleasesResponse>(
-			http,
-			FutureReleasesUrl,
-			ReleaseScheduleJsonContext.Default.FutureReleasesResponse,
-			ctx
-		);
+		// The release schedule is required. A snapshot pointer may legitimately not exist (404), but a
+		// failed request or an unreadable response must not turn into a "nothing to do" success.
+		var past = await FetchRequiredJsonAsync(http, PastReleasesUrl, ReleaseScheduleJsonContext.Default.PastReleasesResponse, ctx);
+		var future = await FetchRequiredJsonAsync(http, FutureReleasesUrl, ReleaseScheduleJsonContext.Default.FutureReleasesResponse, ctx);
+		if (past is null || future is null)
+			return null;
 
 		var currentGa = ReleaseTargetResolver.ResolveCurrentGa(past);
 		var currentGaVersion = currentGa?.Version;
@@ -283,20 +290,16 @@ internal sealed class UnifiedReleaseCommands(
 		if (currentGaVersion is not null && ReleaseTargetResolver.TryParseVersion(currentGaVersion) is { } gaVersion)
 		{
 			var patchUrl = $"https://snapshots.elastic.co/latest/{gaVersion.Major}.{gaVersion.Minor}.json";
-			patchPointer = await FetchJsonAsync<LatestBuildPointer>(
-				http,
-				patchUrl,
-				ReleaseScheduleJsonContext.Default.LatestBuildPointer,
-				ctx
-			);
+			var patch = await TryFetchJsonAsync(http, patchUrl, ReleaseScheduleJsonContext.Default.LatestBuildPointer, ctx);
+			if (patch.Failed)
+				return null;
+			patchPointer = patch.Value;
 		}
 
-		var minorPointer = await FetchJsonAsync<LatestBuildPointer>(
-			http,
-			MasterSnapshotUrl,
-			ReleaseScheduleJsonContext.Default.LatestBuildPointer,
-			ctx
-		);
+		var minor = await TryFetchJsonAsync(http, MasterSnapshotUrl, ReleaseScheduleJsonContext.Default.LatestBuildPointer, ctx);
+		if (minor.Failed)
+			return null;
+		var minorPointer = minor.Value;
 
 		var targets = ReleaseTargetResolver.ResolvePreviewTargets(past, future, patchPointer, minorPointer, currentGaVersion);
 
@@ -441,6 +444,73 @@ internal sealed class UnifiedReleaseCommands(
 		{
 			File.Delete(tempConfig);
 		}
+	}
+
+	private sealed record FetchResult<T>(T? Value, bool Failed) where T : class;
+
+	/// <summary>
+	/// Fetches JSON and tells a missing document (404, <c>Failed = false</c>, no value) from a failure
+	/// (other status, network error, unreadable body: <c>Failed = true</c>, logged and reported).
+	/// </summary>
+	private async Task<FetchResult<T>> TryFetchJsonAsync<T>(
+		HttpClient http,
+		string url,
+		System.Text.Json.Serialization.Metadata.JsonTypeInfo<T> typeInfo,
+		CancellationToken ctx
+	) where T : class
+	{
+		try
+		{
+			using var response = await http.GetAsync(url, ctx);
+			if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+			{
+				_logger.LogInformation("{Url} does not exist (404).", url);
+				return new FetchResult<T>(null, false);
+			}
+
+			if (!response.IsSuccessStatusCode)
+			{
+				Fail($"Request to {url} returned {(int)response.StatusCode}.");
+				return new FetchResult<T>(null, true);
+			}
+
+			var stream = await response.Content.ReadAsStreamAsync(ctx);
+			var value = await JsonSerializer.DeserializeAsync(stream, typeInfo, ctx);
+			if (value is null)
+			{
+				Fail($"The response from {url} was empty.");
+				return new FetchResult<T>(null, true);
+			}
+
+			return new FetchResult<T>(value, false);
+		}
+		catch (Exception ex) when (ex is HttpRequestException or JsonException or IOException or TaskCanceledException)
+		{
+			if (ctx.IsCancellationRequested)
+				throw;
+			Fail($"Could not read {url}: {ex.Message}");
+			return new FetchResult<T>(null, true);
+		}
+
+		void Fail(string message)
+		{
+			_logger.LogError("{Message}", message);
+			collector.EmitError(string.Empty, message);
+		}
+	}
+
+	/// <summary>Fetches a document the run cannot do without: a 404 is a failure too.</summary>
+	private async Task<T?> FetchRequiredJsonAsync<T>(
+		HttpClient http,
+		string url,
+		System.Text.Json.Serialization.Metadata.JsonTypeInfo<T> typeInfo,
+		CancellationToken ctx
+	) where T : class
+	{
+		var result = await TryFetchJsonAsync(http, url, typeInfo, ctx);
+		if (result is { Value: null, Failed: false })
+			collector.EmitError(string.Empty, $"Required document {url} was not found (404).");
+		return result.Value;
 	}
 
 	private static async Task<T?> FetchJsonAsync<T>(

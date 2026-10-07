@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Globalization;
 using System.Text.Json.Serialization;
 
 namespace Elastic.Documentation.Configuration.ReleaseSchedule;
@@ -37,8 +38,29 @@ public sealed record FutureRelease
 
 	public bool HasBuildCandidate => BuildCandidates is { Count: > 0 };
 
-	/// <summary>Latest BC, or null when none has been cut yet.</summary>
-	public BuildCandidateEntry? LatestBuildCandidate => BuildCandidates is { Count: > 0 } ? BuildCandidates.Values.Last() : null;
+	/// <summary>
+	/// Latest BC, or null when none has been cut yet. Chosen by the newest parsed <c>completed_at</c>:
+	/// a JSON object's member order is not a recency contract. When no entry has a parseable timestamp
+	/// the last entry is used.
+	/// </summary>
+	public BuildCandidateEntry? LatestBuildCandidate
+	{
+		get
+		{
+			if (BuildCandidates is not { Count: > 0 })
+				return null;
+
+			var newest = BuildCandidates
+				.Values
+				.Select(bc => (candidate: bc, completedAt: bc.ParseCompletedAt()))
+				.Where(t => t.completedAt is not null)
+				.OrderByDescending(t => t.completedAt)
+				.Select(t => t.candidate)
+				.FirstOrDefault();
+
+			return newest ?? BuildCandidates.Values.Last();
+		}
+	}
 }
 
 public sealed record BcScheduleEntry
@@ -57,6 +79,10 @@ public sealed record BuildCandidateEntry
 
 	[JsonPropertyName("date_removed")]
 	public string? DateRemoved { get; init; }
+
+	/// <summary><see cref="CompletedAt"/> as a point in time, or <c>null</c> when missing or malformed.</summary>
+	public DateTimeOffset? ParseCompletedAt() =>
+		DateTimeOffset.TryParse(CompletedAt, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal, out var at) ? at : null;
 }
 
 public sealed record PastReleasesResponse

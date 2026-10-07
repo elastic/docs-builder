@@ -150,8 +150,21 @@ public static class ReleaseTargetResolver
 		return null;
 	}
 
+	/// <summary>
+	/// Whether <paramref name="version"/> is GA: it appears in <paramref name="past"/> with a manifest.
+	/// An entry without a manifest is not GA, the same rule <see cref="ResolveCurrentGa"/> applies.
+	/// </summary>
+	public static bool IsGa(PastReleasesResponse? past, string version) =>
+		past is not null
+			&& past.Releases.Any(r => !string.IsNullOrEmpty(r.Manifest) && r.Version.Equals(version, StringComparison.OrdinalIgnoreCase));
+
 	private static HashSet<string> BuildGaSet(PastReleasesResponse? past) =>
-		past is null ? [] : new HashSet<string>(past.Releases.Select(r => r.Version), StringComparer.OrdinalIgnoreCase);
+		past is null
+			? []
+			: new HashSet<string>(
+				past.Releases.Where(r => !string.IsNullOrEmpty(r.Manifest)).Select(r => r.Version),
+				StringComparer.OrdinalIgnoreCase
+			);
 
 	/// <summary>
 	/// Parses a semver string (including prerelease suffixes like <c>-SNAPSHOT</c>) into a
