@@ -43,12 +43,7 @@
 			}
 			if (section.Items.Count > 0)
 			{
-				<ul class="api-group-list">
-					@foreach (var row in section.Items)
-					{
-						@(await RenderPartialAsync<_ApiGroupRow, ApiGroupRowModel>(new ApiGroupRowModel(row, apiHxAttrs)))
-					}
-				</ul>
+				@(await RenderPartialAsync<_ApiGroupList, ApiGroupListModel>(new ApiGroupListModel(section.Items, apiHxAttrs)))
 			}
 		}
 	</div>

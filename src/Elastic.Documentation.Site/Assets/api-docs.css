@@ -371,7 +371,10 @@
 	}
 }
 
-.api-group {
+/* The rows switch to a two-column layout by container width. The product landing page has no .api-group,
+   so the overview is a container too. */
+.api-group,
+.api-overview {
 	container-type: inline-size;
 	container-name: api-group;
 }

@@ -5,3 +5,5 @@
 namespace Elastic.ApiExplorer.Landing;
 
 public record ApiGroupRowModel(ApiOverviewRow Row, string HxAttributes);
+
+public record ApiGroupListModel(IReadOnlyList<ApiOverviewRow> Rows, string HxAttributes);

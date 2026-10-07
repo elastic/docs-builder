@@ -33,12 +33,7 @@
 	{
 		<div class="api-overview">
 			<p class="api-group-count">@Model.OverviewRows.Count @(Model.OverviewRows.Count == 1 ? "endpoint" : "endpoints")</p>
-			<ul class="api-group-list">
-				@foreach (var row in Model.OverviewRows)
-				{
-					@(await RenderPartialAsync<_ApiGroupRow, ApiGroupRowModel>(new ApiGroupRowModel(row, LayoutModel.HxAttributes)))
-				}
-			</ul>
+			@(await RenderPartialAsync<_ApiGroupList, ApiGroupListModel>(new ApiGroupListModel(Model.OverviewRows, LayoutModel.HxAttributes)))
 		</div>
 	}
 </section>
