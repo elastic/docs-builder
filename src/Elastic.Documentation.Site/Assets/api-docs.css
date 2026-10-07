@@ -605,44 +605,56 @@
 
 .api-method-get,
 .api-operation-description .operation-verb.get {
-	background-color: #d9e8ff;
-	border-color: #bfdbff;
-	color: #1750ba;
+	background-color: var(--color-blue-elastic-20);
+	border-color: var(--color-blue-elastic-30);
+	color: var(--color-blue-elastic-100);
 }
 .api-method-post,
 .api-operation-description .operation-verb.post {
-	background-color: #c9f3e3;
-	border-color: #aee8d2;
-	color: #0c5a3f;
+	background-color: var(--color-green-20);
+	border-color: var(--color-green-30);
+	color: var(--color-green-100);
 }
 .api-method-put,
+.api-operation-description .operation-verb.put {
+	background-color: var(--color-yellow-20);
+	border-color: var(--color-yellow-30);
+	color: var(--color-yellow-100);
+}
 .api-method-patch,
-.api-operation-description .operation-verb.put,
 .api-operation-description .operation-verb.patch {
-	background-color: #ffdebf;
-	border-color: #ffcda1;
-	color: #9e3e0d;
+	background-color: var(--color-teal-20);
+	border-color: var(--color-teal-30);
+	color: var(--color-teal-100);
 }
 .api-method-delete,
 .api-operation-description .operation-verb.delete {
-	background-color: #fdddd8;
-	border-color: #ffc9c2;
-	color: #c61e25;
+	background-color: var(--color-red-20);
+	border-color: var(--color-red-30);
+	color: var(--color-red-100);
 }
 .api-method-head,
+.api-operation-description .operation-verb.head {
+	background-color: var(--color-purple-20);
+	border-color: var(--color-purple-30);
+	color: var(--color-purple-100);
+}
 .api-method-options,
-.api-operation-description .operation-verb.head,
-.api-operation-description .operation-verb.options,
+.api-operation-description .operation-verb.options {
+	background-color: var(--color-grey-20);
+	border-color: var(--color-grey-30);
+	color: var(--color-grey-100);
+}
 .api-operation-description .operation-verb {
-	background-color: #fff;
-	border-color: #cad3e2;
-	color: #5a6d8c;
+	background-color: var(--color-white);
+	border-color: var(--color-grey-30);
+	color: var(--color-grey-100);
 }
 
 /*
- * Nav V2 method badges — Figma APIs (node 10065:6317):
- * GET blue + pivot 180°; POST green; PUT/PATCH orange; DELETE red + X;
- * multi-operation (and HEAD/OPTIONS) gray + branch glyph.
+ * Nav V2 method badges — Figma APIs (node 10065:6317).
+ * Colors follow Swagger UI conventions (GET blue, POST green, PUT amber, PATCH teal,
+ * DELETE red + X, HEAD purple, OPTIONS gray); GET pivots 180°.
  */
 #pages-nav .nav-v2-api-method {
 	display: inline-flex;
@@ -666,56 +678,82 @@
 }
 
 #pages-nav .nav-v2-api-method-get {
-	background-color: #d9e8ff;
-	border-color: #bfdbff;
-	color: #1750ba;
+	background-color: var(--color-blue-elastic-20);
+	border-color: var(--color-blue-elastic-30);
+	color: var(--color-blue-elastic-100);
 }
 
 #pages-nav .nav-v2-api-method-post {
-	background-color: #c9f3e3;
-	border-color: #aee8d2;
-	color: #0c5a3f;
+	background-color: var(--color-green-20);
+	border-color: var(--color-green-30);
+	color: var(--color-green-100);
 }
 
-#pages-nav .nav-v2-api-method-put,
+#pages-nav .nav-v2-api-method-put {
+	background-color: var(--color-yellow-20);
+	border-color: var(--color-yellow-30);
+	color: var(--color-yellow-100);
+}
+
 #pages-nav .nav-v2-api-method-patch {
-	background-color: #ffdebf;
-	border-color: #ffcda1;
-	color: #9e3e0d;
+	background-color: var(--color-teal-20);
+	border-color: var(--color-teal-30);
+	color: var(--color-teal-100);
 }
 
-/* Neutral gray reserved for multi-operation endpoints (and rare HEAD/OPTIONS). */
-#pages-nav .nav-v2-api-method-head,
-#pages-nav .nav-v2-api-method-options,
 #pages-nav .nav-v2-api-method-delete {
-	background-color: #fdddd8;
-	border-color: #ffc9c2;
-	color: #c61e25;
+	background-color: var(--color-red-20);
+	border-color: var(--color-red-30);
+	color: var(--color-red-100);
+}
+
+#pages-nav .nav-v2-api-method-head {
+	background-color: var(--color-purple-20);
+	border-color: var(--color-purple-30);
+	color: var(--color-purple-100);
+}
+
+#pages-nav .nav-v2-api-method-options {
+	background-color: var(--color-grey-20);
+	border-color: var(--color-grey-30);
+	color: var(--color-grey-100);
 }
 
 #pages-nav a.sidebar-link.current .nav-v2-api-method-get {
-	background-color: #bfdbff;
-	border-color: #1750ba;
+	background-color: var(--color-blue-elastic-30);
+	border-color: var(--color-blue-elastic-100);
 }
 
 #pages-nav a.sidebar-link.current .nav-v2-api-method-post {
-	background-color: #aee8d2;
-	border-color: #0c5a3f;
+	background-color: var(--color-green-30);
+	border-color: var(--color-green-100);
 }
 
-#pages-nav a.sidebar-link.current .nav-v2-api-method-put,
+#pages-nav a.sidebar-link.current .nav-v2-api-method-put {
+	background-color: var(--color-yellow-30);
+	border-color: var(--color-yellow-100);
+}
+
 #pages-nav a.sidebar-link.current .nav-v2-api-method-patch {
-	background-color: #ffcda1;
-	border-color: #9e3e0d;
+	background-color: var(--color-teal-30);
+	border-color: var(--color-teal-100);
 }
 
 #pages-nav a.sidebar-link.current .nav-v2-api-method-delete {
-	background-color: #ffc9c2;
-	border-color: #c61e25;
+	background-color: var(--color-red-30);
+	border-color: var(--color-red-100);
 }
 
-#pages-nav a.sidebar-link.current .nav-v2-api-method-head,
-#pages-nav a.sidebar-link.current .nav-v2-api-method-options,
+#pages-nav a.sidebar-link.current .nav-v2-api-method-head {
+	background-color: var(--color-purple-30);
+	border-color: var(--color-purple-100);
+}
+
+#pages-nav a.sidebar-link.current .nav-v2-api-method-options {
+	background-color: var(--color-grey-30);
+	border-color: var(--color-grey-100);
+}
+
 .api-url {
 	margin-left: calc(var(--spacing) * 2);
 	min-width: 0;
