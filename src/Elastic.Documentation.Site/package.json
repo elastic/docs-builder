@@ -135,7 +135,7 @@
     "htmx-ext-preload": "2.1.2",
     "htmx.org": "2.0.10",
     "idb-keyval": "6.3.0",
-    "katex": "^0.18.1",
+    "katex": "^0.18.2",
     "lodash": "^4.17.23",
     "marked": "17.0.6",
     "select-dom": "10.1.0",
