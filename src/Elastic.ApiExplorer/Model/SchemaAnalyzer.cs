@@ -131,6 +131,18 @@ public class SchemaAnalyzer(
 	/// One option per union member. A <c>$ref</c> member stays shallow (its name and id) so cyclic unions cannot recurse;
 	/// <see cref="ClassifyUnion"/> classifies inline unions in full instead.
 	/// </summary>
+	/// <summary>
+	/// A union member classified in full, as body-level and schema-page variant lists show it. The options a type keeps
+	/// while it is classified (<see cref="BuildUnionOptions"/>) stay shallow for <c>$ref</c> members, so cyclic unions
+	/// cannot recurse. The two disagree on a few members, such as named string aliases (<c>CatDfaColumn</c> against
+	/// <c>string</c>) and free-form inline objects, so each list keeps its own.
+	/// </summary>
+	public UnionOption ClassifyOption(IOpenApiSchema member)
+	{
+		var info = GetTypeInfo(member);
+		return new UnionOption(info.TypeName, info.SchemaRef, info.IsObject, member, info.IsArray);
+	}
+
 	private List<UnionOption> BuildUnionOptions(IEnumerable<IOpenApiSchema> members) =>
 		LabelInlineObjects([.. FlattenInlineUnions(members).Select(BuildUnionOption).OfType<UnionOption>()]);
 

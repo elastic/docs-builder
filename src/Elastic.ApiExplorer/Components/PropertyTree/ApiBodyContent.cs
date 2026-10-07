@@ -66,9 +66,9 @@ internal static class ApiBodyContent
 			return option;
 
 		// Keep the inline member's own name (its title) and label; take the classification from the type.
-		var info = analyzer.GetTypeInfo(option.Schema);
-		var name = string.IsNullOrEmpty(option.Ref) && option is { IsObject: true, IsArray: false } ? option.BaseName : info.TypeName;
-		return new UnionOption(name, info.SchemaRef, info.IsObject, option.Schema, info.IsArray) { Label = option.Label };
+		var classified = analyzer.ClassifyOption(option.Schema!);
+		var keepsName = string.IsNullOrEmpty(option.Ref) && option is { IsObject: true, IsArray: false };
+		return (keepsName ? classified with { BaseName = option.BaseName } : classified) with { Label = option.Label };
 	}
 
 	/// <summary>Names a collapsed section header lists; an array variant keeps its <c>[]</c> so it stays apart from the plain one.</summary>
