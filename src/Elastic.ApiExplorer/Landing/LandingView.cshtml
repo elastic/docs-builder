@@ -24,55 +24,27 @@
 		<p>Download source: <a href="@Model.JsonUrl" download>JSON</a> <a href="@Model.YamlUrl" download>YAML</a></p>
 	}
 	<div class="api-overview">
-		<table>
-			@foreach (var row in Model.OverviewRows)
+		@foreach (var section in Model.OverviewSections)
+		{
+			if (section.Heading is { } heading)
 			{
-				switch (row.Kind)
+				if (heading.Kind == OverviewRowKind.ClassificationHeading)
 				{
-					case OverviewRowKind.ClassificationHeading:
-					<tr>
-						<td colspan="2"><h2>@(row.Title)</h2></td>
-					</tr>
-						break;
-					case OverviewRowKind.TagHeading:
-					<tr>
-						<td colspan="2"><h3><a href="@row.Url" class="api-tag-landing-link" @apiHxAttrs>@row.Title</a></h3></td>
-					</tr>
-						break;
-					case OverviewRowKind.Operation:
-							<tr>
-								<td class="api-name">
-									@if (row.Url is not null)
-									{
-										<a href="@row.Url" class="api-overview-title" @apiHxAttrs>@(row.Title)</a>
-									}
-									else
-									{
-										@(row.Title)
-									}
-								</td>
-								<td>@(await RenderPartialAsync<_OperationUrlList, OperationUrlListModel>(new OperationUrlListModel(row.Endpoint)))</td>
-							</tr>
-						break;
-					case OverviewRowKind.SchemaCategoryHeading:
-					<tr>
-						<td colspan="2"><h3>@(row.Title)</h3></td>
-					</tr>
-						break;
-					case OverviewRowKind.Schema:
-					<tr>
-						<td class="api-name"><a href="@row.Url" @apiHxAttrs>@(row.Title)</a></td>
-						<td><code>@row.SchemaId</code></td>
-					</tr>
-						break;
-					case OverviewRowKind.MarkdownPage:
-					<tr>
-						<td class="api-name"><a href="@row.Url" @apiHxAttrs>@(row.Title)</a></td>
-						<td>Additional documentation</td>
-					</tr>
-						break;
+					<h2>@heading.Title</h2>
+				}
+				else if (heading.Url is not null)
+				{
+					<h3><a href="@heading.Url" @apiHxAttrs>@heading.Title</a></h3>
+				}
+				else
+				{
+					<h3>@heading.Title</h3>
 				}
 			}
-		</table>
+			if (section.Items.Count > 0)
+			{
+				@(await RenderPartialAsync<_ApiGroupList, ApiGroupListModel>(new ApiGroupListModel(section.Items, apiHxAttrs)))
+			}
+		}
 	</div>
 </section>
