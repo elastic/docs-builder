@@ -14,6 +14,13 @@ public record UnionOption(string BaseName, string? Ref, bool IsObject, IOpenApiS
 {
 	/// <summary>The display name: <see cref="BaseName"/>, with <c>[]</c> when the member is an array of it.</summary>
 	public string Name => IsArray ? $"{BaseName}[]" : BaseName;
+
+	/// <summary>
+	/// What an unnamed inline object member reads as, since many share the name <c>object</c>: its title, a field with a
+	/// constant value (<c>type: relative</c>), or the property names no sibling has (<c>{ and }</c>). Display only;
+	/// grouping, signatures and anchors keep using <see cref="Name"/>.
+	/// </summary>
+	public string? Label { get; init; }
 }
 
 /// <summary>A named schema merged into a type through <c>allOf</c>, beyond the one that names the type.</summary>

@@ -132,7 +132,47 @@ public class SchemaAnalyzer(
 	/// <see cref="ClassifyUnion"/> classifies inline unions in full instead.
 	/// </summary>
 	private List<UnionOption> BuildUnionOptions(IEnumerable<IOpenApiSchema> members) =>
-		[.. FlattenInlineUnions(members).Select(BuildUnionOption).OfType<UnionOption>()];
+		LabelInlineObjects([.. FlattenInlineUnions(members).Select(BuildUnionOption).OfType<UnionOption>()]);
+
+	/// <summary>Gives each unnamed inline object member a <see cref="UnionOption.Label"/> it can be told apart by.</summary>
+	private List<UnionOption> LabelInlineObjects(List<UnionOption> options)
+	{
+		var inline = options.Select((o, i) => (Option: o, Index: i)).Where(x => IsInlineObject(x.Option)).ToList();
+		if (inline.Count == 0)
+			return options;
+
+		var propertyNames = inline.ToDictionary(x => x.Index, x => GetSchemaProperties(x.Option.Schema)?.Keys.ToArray() ?? []);
+		return [
+			.. options.Select(
+				(o, i) => propertyNames.TryGetValue(i, out var own)
+					? o with { Label = InlineObjectLabel(o.Schema!, own, propertyNames.Where(p => p.Key != i).SelectMany(p => p.Value)) }
+					: o
+			)
+		];
+	}
+
+	private static bool IsInlineObject(UnionOption option) =>
+		option is { Ref: null or "", IsObject: true, IsArray: false, Schema: not null and not OpenApiSchemaReference };
+
+	private string? InlineObjectLabel(IOpenApiSchema member, IReadOnlyList<string> own, IEnumerable<string> siblingNames)
+	{
+		if (!string.IsNullOrWhiteSpace(member.Title))
+			return member.Title;
+
+		var properties = GetSchemaProperties(member) ?? new Dictionary<string, IOpenApiSchema>();
+		foreach (var (name, property) in properties)
+		{
+			if (GetEnumValues(property) is [var constant])
+				return $"{name}: {constant}";
+		}
+
+		// The fields no sibling has tell the variant apart; required ones define it, so they come first.
+		var others = siblingNames.ToHashSet(StringComparer.Ordinal);
+		var distinct = own.Where(n => !others.Contains(n)).ToList();
+		var required = member.Required ?? new HashSet<string>();
+		var ordered = distinct.Where(required.Contains).Concat(distinct.Where(n => !required.Contains(n))).ToList();
+		return ordered.Count == 0 ? null : $"{{ {string.Join(", ", ordered.Take(3))}{(ordered.Count > 3 ? ", …" : "")} }}";
+	}
 
 	/// <summary>
 	/// A member that is itself an inline <c>oneOf</c>/<c>anyOf</c>, with no properties of its own, lists its members in the
@@ -463,9 +503,9 @@ public class SchemaAnalyzer(
 		if (classified.All(m => m.Info is { IsEnum: true, IsArray: false, SchemaRef: null }))
 			return new TypeInfo { TypeName = "enum", IsEnum = true };
 
-		var options = classified.Select(
-			m => new UnionOption(m.Info.TypeName, m.Info.SchemaRef, m.Info.IsObject, m.Schema, m.Info.IsArray)
-		).ToList();
+		var options = LabelInlineObjects([
+			.. classified.Select(m => new UnionOption(m.Info.TypeName, m.Info.SchemaRef, m.Info.IsObject, m.Schema, m.Info.IsArray))
+		]);
 
 		// Multiple object options render as tabs.
 		if (options.Count > 1 && options.Any(o => o.IsObject))

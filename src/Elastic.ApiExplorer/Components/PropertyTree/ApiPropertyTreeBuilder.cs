@@ -73,7 +73,8 @@ public class ApiPropertyTreeBuilder(
 			var typeInfo = _analyzer.GetTypeInfo(propSchema);
 			var shapeKey = ShapeKey(typeInfo);
 			var (repeats, repeatsAncestor) = _shapes.Find(shapeKey);
-			var anchorName = name == DictionaryKeyName ? "string" : name;
+			// The synthetic map row reads "<string>"; its anchor avoids a real property named "string" on the same list.
+			var anchorName = name == DictionaryKeyName ? properties.ContainsKey("string") ? "string-map" : "string" : name;
 			var propId = string.IsNullOrEmpty(scope.Prefix) ? anchorName : $"{scope.Prefix}-{anchorName}";
 			var row = new PropertyRow(
 				name,
@@ -609,15 +610,40 @@ public class ApiPropertyTreeBuilder(
 
 	private static int CountRows(ApiPropertyList? properties) => properties?.Items.Sum(p => 1 + CountRows(p.Children)) ?? 0;
 
-	/// <summary>Each option's name and property names; two unions with the same signature offer the same shapes.</summary>
+	/// <summary>
+	/// What a union offers: each referenced option by its <c>$ref</c>, each inline option by a fingerprint of its fields.
+	/// Two unions with the same signature offer the same shapes, so the second can link to the first.
+	/// </summary>
 	private string UnionSignature(IEnumerable<UnionOption> unionOptions) =>
 		string.Join(
 			";",
 			unionOptions.Select(
-				o =>
-					$"{o.Name}{{{string.Join(",", (_analyzer.GetSchemaProperties(o.IsArray ? o.Schema?.Items : o.Schema)?.Keys ?? []).Order(StringComparer.Ordinal))}}}"
+				o => !string.IsNullOrEmpty(o.Ref) && o.Schema is not MergedVariantSchema
+					? $"ref:{o.Name}@{o.Ref}"
+					: $"{o.Name}{{{Fingerprint(o.IsArray ? o.Schema?.Items : o.Schema, depth: 2)}}}"
 			)
 		);
+
+	/// <summary>
+	/// Each field's name, requiredness and type, and one more level for inline objects. A union-typed field contributes
+	/// only its type, so a generated spec that repeats a recursive union level after level still matches its parent.
+	/// </summary>
+	private string Fingerprint(IOpenApiSchema? schema, int depth)
+	{
+		var properties = _analyzer.GetSchemaProperties(schema);
+		if (properties is null)
+			return "";
+
+		var required = (_analyzer.ResolveSchema(schema) ?? schema)?.Required ?? new HashSet<string>();
+		return string.Join(",", properties.OrderBy(p => p.Key, StringComparer.Ordinal).Select(p =>
+		{
+			var type = _analyzer.GetTypeInfo(p.Value);
+			var nested = depth > 1 && type is { IsObject: true, IsUnion: false, SchemaRef: null or "" }
+				? $"{{{Fingerprint(type.IsArray ? p.Value.Items : p.Value, depth - 1)}}}"
+				: "";
+			return $"{p.Key}{(required.Contains(p.Key) ? "!" : "")}:{(type.IsArray ? "[]" : "")}{type.TypeName}@{type.SchemaRef}{nested}";
+		}));
+	}
 
 	private bool DetectRecursion(IOpenApiSchema propSchema, TypeInfo typeInfo, IReadOnlySet<string>? ancestors)
 	{
@@ -726,7 +752,7 @@ public class ApiPropertyTreeBuilder(
 
 			variants.Add(new ApiUnionVariant
 			{
-				DisplayName = SchemaHelpers.ReadableSchemaName(variant.BaseName),
+				DisplayName = variant.Label ?? SchemaHelpers.ReadableSchemaName(variant.BaseName),
 				PageUrl = variant.PageUrl,
 				IsArrayVariant = variant.IsArray,
 				IsObjectType = variant.IsObject,
@@ -745,7 +771,7 @@ public class ApiPropertyTreeBuilder(
 							Depth = scope.Depth + 1,
 							Ancestors = newAncestors,
 							RequiredProperties = null,
-							Owner = SchemaHelpers.ReadableSchemaName(variant.BaseName)
+							Owner = variant.Label ?? SchemaHelpers.ReadableSchemaName(variant.BaseName)
 						}
 					) ?? new ApiPropertyList([])
 					: null,
@@ -827,7 +853,8 @@ public class ApiPropertyTreeBuilder(
 		bool IsObject,
 		IOpenApiSchema? Schema,
 		IDictionary<string, IOpenApiSchema>? Props,
-		string? PageUrl = null
+		string? PageUrl = null,
+		string? Label = null
 	);
 
 	/// <summary>
@@ -869,7 +896,8 @@ public class ApiPropertyTreeBuilder(
 					primaryOption.IsObject,
 					schemaToRender,
 					optionProps,
-					pageUrl
+					pageUrl,
+					primaryOption.Label
 				);
 
 			var hasArrayVariant = variants.Any(v => v.IsArray);

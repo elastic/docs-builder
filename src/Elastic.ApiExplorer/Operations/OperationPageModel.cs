@@ -916,8 +916,10 @@ public partial record OperationPageModel
 		if (option.Schema is MergedVariantSchema)
 			return option;
 
+		// Keep the inline member's own name (its title) and label; take the classification from the type.
 		var info = analyzer.GetTypeInfo(option.Schema);
-		return new UnionOption(info.TypeName, info.SchemaRef, info.IsObject, option.Schema, info.IsArray);
+		var name = string.IsNullOrEmpty(option.Ref) && option is { IsObject: true, IsArray: false } ? option.BaseName : info.TypeName;
+		return new UnionOption(name, info.SchemaRef, info.IsObject, option.Schema, info.IsArray) { Label = option.Label };
 	}
 
 	private static IReadOnlyList<string> NamesOf(IEnumerable<string?> names) => [.. names.OfType<string>().Where(static n => n.Length > 0)];

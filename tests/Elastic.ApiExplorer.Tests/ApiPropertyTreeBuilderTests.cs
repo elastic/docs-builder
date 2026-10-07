@@ -1115,7 +1115,11 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture)
 		var selector = list!.Items.Single(p => p.Name == "selector");
 		selector.Children.Kind.Should().Be(ChildKind.UnionVariants);
 		var variants = selector.Children.Variants!.Variants;
-		variants.Select(v => v.DisplayName).Should().Equal("string", "ByQuery", "object", "object");
+		variants.Select(v => v.DisplayName).Should().Equal("string", "ByQuery", "{ ids }", "{ all }");
+		variants
+			.Select(v => v.AnchorId)
+			.Should()
+			.Equal("selector-variant-string", "selector-variant-byquery", "selector-variant-object", "selector-variant-object-2");
 		variants.Select(v => v.Properties?.Items.Single().Name).Should().Equal(null, "query", "ids", "all");
 		variants.Select(v => v.AnchorId).Should().OnlyHaveUniqueItems();
 	}
@@ -1663,5 +1667,130 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture)
 		repeat.Repeats.Should().Be(new RepeatedShape("actions", first.AnchorId, IsUnion: false, Owner: "EqlRule"));
 		repeat.IsCollapsible.Should().BeFalse("a repeat lists nothing, so it has nothing to show or hide");
 		repeat.NestedCount.Should().Be(0);
+	}
+
+	[Test]
+	public async Task BuildTopLevelUnionVariants_UnnamedInlineMembers_AreLabelledByConstantOrDistinctFields()
+	{
+		var json =
+			"""
+			{
+			  "openapi": "3.1.0",
+			  "info": { "title": "t", "version": "1" },
+			  "paths": {},
+			  "components": {
+			    "schemas": {
+			      "Range": {
+			        "oneOf": [
+			          { "type": "object", "properties": { "type": { "type": "string", "enum": ["relative"] }, "from": { "type": "string" } } },
+			          { "type": "object", "properties": { "type": { "type": "string", "enum": ["absolute"] }, "start": { "type": "string" } } }
+			        ]
+			      },
+			      "Note": {
+			        "oneOf": [
+			          { "type": "object", "required": ["noteId"], "properties": { "noteId": { "type": "string" }, "version": { "type": "string" } } },
+			          { "type": "object", "required": ["noteIds"], "properties": { "noteIds": { "type": "array", "items": { "type": "string" } }, "version": { "type": "string" } } },
+			          { "type": "object", "title": "ByQuery", "properties": { "query": { "type": "string" } } }
+			        ]
+			      }
+			    }
+			  }
+			}
+			""";
+		var document = await LoadSpecAsync(json);
+		var builder = BuilderFor(document);
+		var analyzer = new SchemaAnalyzer(document);
+
+		var range = OperationPageModel.BuildTopLevelUnionVariants(
+			document.Components!.Schemas!["Range"],
+			new PropertyTreeScope { Prefix = "req" },
+			analyzer,
+			builder
+		);
+		range!.Variants.Select(v => v.DisplayName).Should().Equal("type: relative", "type: absolute");
+
+		var note = OperationPageModel.BuildTopLevelUnionVariants(
+			document.Components!.Schemas!["Note"],
+			new PropertyTreeScope { Prefix = "req" },
+			analyzer,
+			builder
+		);
+		note!.Variants.Select(v => v.DisplayName).Should().Equal("{ noteId }", "{ noteIds }", "ByQuery");
+	}
+
+	[Test]
+	public async Task BuildPropertyList_UnionsWithSameNamesButDifferentFieldTypes_AreNotShared()
+	{
+		var json =
+			"""
+			{
+			  "openapi": "3.1.0",
+			  "info": { "title": "t", "version": "1" },
+			  "paths": {},
+			  "components": {
+			    "schemas": {
+			      "Holder": {
+			        "type": "object",
+			        "properties": {
+			          "first": { "oneOf": [
+			            { "type": "object", "properties": { "f0": { "type": "string" }, "f1": { "type": "string" }, "f2": { "type": "string" }, "f3": { "type": "string" }, "f4": { "type": "string" }, "f5": { "type": "string" }, "f6": { "type": "string" }, "f7": { "type": "string" }, "f8": { "type": "string" }, "f9": { "type": "string" }, "value": { "type": "string" } } },
+			            { "type": "object", "properties": { "other": { "type": "string" } } } ] },
+			          "second": { "oneOf": [
+			            { "type": "object", "properties": { "f0": { "type": "string" }, "f1": { "type": "string" }, "f2": { "type": "string" }, "f3": { "type": "string" }, "f4": { "type": "string" }, "f5": { "type": "string" }, "f6": { "type": "string" }, "f7": { "type": "string" }, "f8": { "type": "string" }, "f9": { "type": "string" }, "value": { "type": "integer" } } },
+			            { "type": "object", "properties": { "other": { "type": "string" } } } ] },
+			          "third": { "oneOf": [
+			            { "type": "object", "properties": { "f0": { "type": "string" }, "f1": { "type": "string" }, "f2": { "type": "string" }, "f3": { "type": "string" }, "f4": { "type": "string" }, "f5": { "type": "string" }, "f6": { "type": "string" }, "f7": { "type": "string" }, "f8": { "type": "string" }, "f9": { "type": "string" }, "value": { "type": "string" } } },
+			            { "type": "object", "properties": { "other": { "type": "string" } } } ] }
+			        }
+			      }
+			    }
+			  }
+			}
+			""";
+		var document = await LoadSpecAsync(json);
+
+		var list = BuilderFor(document).BuildPropertyList(document.Components!.Schemas!["Holder"], new PropertyTreeScope { Prefix = "" })!;
+
+		ApiProperty Row(string name) => list.Items.Single(p => p.Name == name);
+
+		Row("second").Repeats.Should().BeNull("its value is an integer, not a string");
+		Row("third").Repeats!.Name.Should().Be("first");
+	}
+
+	[Test]
+	public async Task BuildPropertyList_MapVariantWithARealStringProperty_KeepsDistinctAnchors()
+	{
+		var json =
+			"""
+			{
+			  "openapi": "3.1.0",
+			  "info": { "title": "t", "version": "1" },
+			  "paths": {},
+			  "components": {
+			    "schemas": {
+			      "Input": { "type": "object", "properties": { "enabled": { "type": "boolean" } } },
+			      "Holder": {
+			        "type": "object",
+			        "properties": {
+			          "inputs": { "anyOf": [
+			            { "type": "string" },
+			            { "type": "object", "properties": { "string": { "type": "string" } }, "additionalProperties": { "$ref": "#/components/schemas/Input" } } ] }
+			        }
+			      }
+			    }
+			  }
+			}
+			""";
+		var document = await LoadSpecAsync(json);
+
+		var map = BuilderFor(document).BuildPropertyList(document.Components!.Schemas!["Holder"], new PropertyTreeScope { Prefix = "" })!
+			.Items
+			.Single()
+			.Children
+			.Variants!.Variants.Single(v => v.Properties is not null);
+
+		var anchors = map.Properties!.Items.Select(p => p.AnchorId).ToList();
+		anchors.Should().OnlyHaveUniqueItems();
+		map.Properties.Items.Single(p => p.Name == "<string>").AnchorId.Should().EndWith("-string-map");
 	}
 }
