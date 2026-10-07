@@ -81,6 +81,18 @@ internal sealed class ServerlessReleaseCommands(
 
 		var bundleVersion = date ?? DateTime.UtcNow.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
 
+		var rootOutput = outputDir ?? new DirectoryInfo(Path.Join(Directory.GetCurrentDirectory(), "bundles"));
+
+		// The bundling file system is scoped to the working directory and rejects hidden directories.
+		var relativeOutput = Path.GetRelativePath(Directory.GetCurrentDirectory(), rootOutput.FullName);
+		if (relativeOutput.Split(Path.DirectorySeparatorChar).Any(segment => segment.StartsWith('.') && segment != "." && segment != ".."))
+		{
+			collector.EmitError(string.Empty, $"--output-dir must not be or sit inside a hidden directory: {relativeOutput}");
+			return 1;
+		}
+		if (!rootOutput.Exists)
+			rootOutput.Create();
+
 		using var http = new HttpClient { BaseAddress = new Uri("https://api.github.com/") };
 		http.DefaultRequestHeaders.UserAgent.ParseAdd("docs-builder/1.0");
 		http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
@@ -96,10 +108,6 @@ internal sealed class ServerlessReleaseCommands(
 		}
 		_logger.LogInformation("Commit range for {Service}: {Start}..{End}", svc.Id, startRef, serviceVersion);
 		await githubActionsService.SetOutputAsync("start_ref", startRef);
-
-		var rootOutput = outputDir ?? new DirectoryInfo(Path.Join(Directory.GetCurrentDirectory(), "bundles"));
-		if (!rootOutput.Exists)
-			rootOutput.Create();
 
 		// One bundle per repository: the service repository over the serverless range, then each
 		// submodule over the range of commits the service repository pins at the two refs.
