@@ -131,11 +131,8 @@ class FilterableTableElement extends HTMLElement {
             .filter(Boolean)
     }
 
-    private distinctValues(colIndex: number): string[] {
-        const values = new Set<string>()
-        for (const row of this.rows)
-            for (const v of this.cellValues(row.cells[colIndex])) values.add(v)
-        return Array.from(values).sort((a, b) => a.localeCompare(b))
+    private columnValues(colIndex: number): string[][] {
+        return this.rows.map((row) => this.cellValues(row.cells[colIndex]))
     }
 
     /** The dropdowns the current table content warrants, in column order. */
@@ -146,14 +143,24 @@ class FilterableTableElement extends HTMLElement {
             // accessible name, so skip the column: a nameless filter is worse
             // than none.
             if (!label) return
-            const values = this.distinctValues(colIndex)
+            const perRow = this.columnValues(colIndex)
+            const values = Array.from(new Set(perRow.flat())).sort((a, b) =>
+                a.localeCompare(b)
+            )
+            // A key column holds one unique value per row, so a dropdown of it
+            // would never group anything. A multi-value column is never a key
+            // column, even when its token count reaches the row count, because
+            // its values are shared across rows.
+            const isKeyColumn =
+                perRow.every((v) => v.length === 1) &&
+                values.length === this.rows.length
             // Only offer a dropdown for columns that partition the data
-            // meaningfully: at least two values, not too many to scan, and not
-            // one-per-row (which is a key column, not a category).
+            // meaningfully: at least two values, few enough to scan, and not a
+            // key column.
             if (
                 values.length < 2 ||
                 values.length > FACET_MAX_DISTINCT ||
-                values.length >= this.rows.length
+                isKeyColumn
             )
                 return
             specs.push({ colIndex, label, values })

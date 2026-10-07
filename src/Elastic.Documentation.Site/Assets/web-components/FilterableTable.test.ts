@@ -359,6 +359,38 @@ describe('filterable-table', () => {
         ])
     })
 
+    it('keeps the dropdown when multi-value tokens equal the row count', () => {
+        // Three rows, three distinct tokens, but every token is shared across
+        // rows: this is a category column, not a key column, so it must keep
+        // its dropdown even though distinct-count equals row-count.
+        document.body.innerHTML = `
+          <filterable-table>
+            <table>
+              <thead><tr><th>Service</th><th>Data type</th></tr></thead>
+              <tbody>
+                <tr><td>a</td><td>Logs, Metrics</td></tr>
+                <tr><td>b</td><td>Metrics, Traces</td></tr>
+                <tr><td>c</td><td>Traces, Logs</td></tr>
+              </tbody>
+            </table>
+          </filterable-table>`
+        customElements.upgrade(document.body)
+        const options = Array.from(
+            document.querySelectorAll('.filterable-table-facet option')
+        ).map((o) => o.textContent)
+        expect(options).toEqual(['All', 'Logs', 'Metrics', 'Traces'])
+
+        const select = document.querySelector<HTMLSelectElement>(
+            '.filterable-table-facet select'
+        )!
+        select.value = 'Logs'
+        select.dispatchEvent(new Event('change'))
+        expect(visibleRows().map((r) => r.cells[0].textContent)).toEqual([
+            'a',
+            'c',
+        ])
+    })
+
     it('excludes section-header rows from the count and filtering', () => {
         document.body.innerHTML = `
           <filterable-table>
