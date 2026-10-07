@@ -28,7 +28,6 @@ internal sealed class ServerlessReleaseCommand(
 )
 {
 	private const string GitOpsRepository = "elastic/serverless-gitops";
-	private const int MaxHistoryPages = 10;
 
 	private readonly ILogger _logger = logFactory.CreateLogger<ServerlessReleaseCommand>();
 
@@ -249,36 +248,60 @@ internal sealed class ServerlessReleaseCommand(
 		CancellationToken ctx
 	)
 	{
-		var scanned = 0;
-		for (var page = 1; page <= MaxHistoryPages; page++)
+		async Task<IReadOnlyList<GitopsCommit>?> GetCommitsPage(int page)
 		{
-			var json = await GetJsonAsync(http, $"repos/{GitOpsRepository}/commits?path={svc.VersionsPath}&per_page=100&page={page}", ctx);
+			using var json = await GetJsonAsync(
+				http,
+				$"repos/{GitOpsRepository}/commits?path={svc.VersionsPath}&per_page=100&page={page}",
+				ctx
+			);
 			if (json is null)
 				return null;
-			using var doc = json;
-			var commits = doc.RootElement;
-			if (commits.GetArrayLength() == 0)
-				break;
-			scanned += commits.GetArrayLength();
-
-			foreach (var commit in commits.EnumerateArray())
-			{
-				var message = commit.GetProperty("commit").GetProperty("message").GetString() ?? string.Empty;
-				if (!ServerlessPromotion.IsFinalSlicePromotion(message))
-					continue;
-				var sha = commit.GetProperty("sha").GetString();
-				var content = await GetRawAsync(http, $"repos/{GitOpsRepository}/contents/{svc.VersionsPath}?ref={sha}", ctx);
-				var ds5 = content is null ? null : ServerlessPromotion.ParseFinalSliceVersion(content);
-				var previous = ServerlessPromotion.FindPreviousVersion([ds5], serviceVersion);
-				if (previous is not null)
-				{
-					_logger.LogInformation("Scanned {Scanned} gitops commits for {Path}", scanned, svc.VersionsPath);
-					return previous;
-				}
-			}
+			return [
+				.. json
+					.RootElement
+					.EnumerateArray()
+					.Select(
+						commit => new GitopsCommit(
+							commit.GetProperty("sha").GetString() ?? string.Empty,
+							commit.GetProperty("commit").GetProperty("message").GetString() ?? string.Empty
+						)
+					)
+			];
 		}
-		_logger.LogWarning("Scanned {Scanned} gitops commits for {Path} without finding a previous version", scanned, svc.VersionsPath);
-		return null;
+
+		var result = await ServerlessPromotion.FindPreviousVersionAsync(
+			GetCommitsPage,
+			sha => GetRawAsync(http, $"repos/{GitOpsRepository}/contents/{svc.VersionsPath}?ref={sha}", ctx),
+			serviceVersion
+		);
+
+		switch (result.Status)
+		{
+			case HistoryWalkStatus.Found:
+				_logger.LogInformation("Scanned {Scanned} gitops commits for {Path}", result.ScannedCommits, svc.VersionsPath);
+				return result.PreviousVersion;
+			case HistoryWalkStatus.Failed:
+				// The failed request is already logged. Do not guess: skipping a commit would pick an older version.
+				collector.EmitError(
+					string.Empty,
+					$"Could not read the {GitOpsRepository} history of {svc.VersionsPath} after {result.ScannedCommits} commits, so the previous version is unknown. Run again."
+				);
+				return null;
+			case HistoryWalkStatus.CapReached:
+				collector.EmitError(
+					string.Empty,
+					$"Read {result.ScannedCommits} commits of {svc.VersionsPath} ({ServerlessPromotion.MaxHistoryPages} pages) without finding a previous {ServerlessPromotion.FinalSlice} version."
+				);
+				return null;
+			default:
+				_logger.LogWarning(
+					"Read all {Scanned} gitops commits for {Path} without finding a previous version",
+					result.ScannedCommits,
+					svc.VersionsPath
+				);
+				return null;
+		}
 	}
 
 	private async Task<JsonDocument?> GetJsonAsync(HttpClient http, string path, CancellationToken ctx)

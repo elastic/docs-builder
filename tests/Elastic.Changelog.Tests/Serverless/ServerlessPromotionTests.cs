@@ -83,4 +83,102 @@ public class ServerlessPromotionTests
 		es.Submodules.Should().ContainSingle().Which.Repository.Should().Be("elasticsearch");
 		ServerlessPromotion.Services["kibana"].Submodules.Should().BeEmpty();
 	}
+
+	// ── History walk ─────────────────────────────────────────────────────
+
+	private static string Yaml(string ds5) =>
+		$"""
+		services:
+		  kibana:
+		    versions:
+		      production-noncanary-ds-1: "{ds5}"
+		      production-noncanary-ds-5: "{ds5}"
+		""";
+
+	private static GitopsCommit Dev(string sha) => new(sha, "gitops: dev Artifact promotion for kibana to 914daa00d40e (#1)");
+	private static GitopsCommit Prod(string sha) =>
+		new(sha, "gitops: production-noncanary-ds-4,production-noncanary-ds-5 Artifact promotion for kibana to x (#2)");
+
+	[Test]
+	public async Task FindPreviousVersionAsync_ReadsOnlyFinalSliceCommitsAndReturnsTheFirstDifferentVersion()
+	{
+		var reads = new List<string>();
+		var pages = new[] { (IReadOnlyList<GitopsCommit>)[Dev("d1"), Prod("p-current"), Dev("d2")], [Dev("d3"), Prod("p-previous")] };
+		var yaml = new Dictionary<string, string> { ["p-current"] = Yaml("7dd981dcd7d3"), ["p-previous"] = Yaml("03c0df903631") };
+
+		var result = await ServerlessPromotion.FindPreviousVersionAsync(
+			page => Task.FromResult<IReadOnlyList<GitopsCommit>?>(page <= pages.Length ? pages[page - 1] : []),
+			sha =>
+			{
+				reads.Add(sha);
+				return Task.FromResult<string?>(yaml[sha]);
+			},
+			"7DD981DCD7D3"
+		);
+
+		result.Status.Should().Be(HistoryWalkStatus.Found);
+		result.PreviousVersion.Should().Be("03c0df903631");
+		result.ScannedCommits.Should().Be(5);
+		reads.Should().Equal("p-current", "p-previous");
+	}
+
+	[Test]
+	public async Task FindPreviousVersionAsync_AFailedFileReadFailsTheWalk_NotSkipsTheCommit()
+	{
+		var result = await ServerlessPromotion.FindPreviousVersionAsync(
+			page => Task.FromResult<IReadOnlyList<GitopsCommit>?>(page == 1 ? [Prod("p-newer"), Prod("p-older")] : []),
+			sha => Task.FromResult<string?>(sha == "p-newer" ? null : Yaml("2fd663f3c363")),
+			"7dd981dcd7d3"
+		);
+
+		// Skipping p-newer would return the older version 2fd663f3c363 and bundle the wrong range.
+		result.Status.Should().Be(HistoryWalkStatus.Failed);
+		result.PreviousVersion.Should().BeNull();
+	}
+
+	[Test]
+	public async Task FindPreviousVersionAsync_AFailedPageRequestFailsTheWalk()
+	{
+		var result = await ServerlessPromotion.FindPreviousVersionAsync(
+			page => Task.FromResult<IReadOnlyList<GitopsCommit>?>(page == 1 ? [Dev("d1")] : null),
+			_ => Task.FromResult<string?>(Yaml("x")),
+			"7dd981dcd7d3"
+		);
+
+		result.Status.Should().Be(HistoryWalkStatus.Failed);
+		result.ScannedCommits.Should().Be(1);
+	}
+
+	[Test]
+	public async Task FindPreviousVersionAsync_FindsAVersionBeyondTheOldTenPageLimit()
+	{
+		var result = await ServerlessPromotion.FindPreviousVersionAsync(
+			page => Task.FromResult<IReadOnlyList<GitopsCommit>?>(page <= 15 ? [page == 15 ? Prod("p-old") : Dev($"d{page}")] : []),
+			_ => Task.FromResult<string?>(Yaml("03c0df903631")),
+			"7dd981dcd7d3"
+		);
+
+		result.Status.Should().Be(HistoryWalkStatus.Found);
+		result.ScannedCommits.Should().Be(15);
+	}
+
+	[Test]
+	public async Task FindPreviousVersionAsync_ReportsTheCapAndTheEndOfHistoryApart()
+	{
+		var capped = await ServerlessPromotion.FindPreviousVersionAsync(
+			_ => Task.FromResult<IReadOnlyList<GitopsCommit>?>([Dev("d")]),
+			_ => Task.FromResult<string?>(Yaml("x")),
+			"7dd981dcd7d3",
+			maxPages: 3
+		);
+		var exhausted = await ServerlessPromotion.FindPreviousVersionAsync(
+			page => Task.FromResult<IReadOnlyList<GitopsCommit>?>(page == 1 ? [Prod("p")] : []),
+			_ => Task.FromResult<string?>(Yaml("7dd981dcd7d3")),
+			"7dd981dcd7d3"
+		);
+
+		capped.Status.Should().Be(HistoryWalkStatus.CapReached);
+		capped.ScannedCommits.Should().Be(3);
+		exhausted.Status.Should().Be(HistoryWalkStatus.NotFound);
+	}
 }

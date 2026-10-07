@@ -26,6 +26,28 @@ public sealed record ServerlessService(
 	IReadOnlyList<ServerlessSubmodule> Submodules
 );
 
+/// <summary>A commit to a service's <c>versions.yaml</c> in serverless-gitops.</summary>
+public sealed record GitopsCommit(string Sha, string Message);
+
+/// <summary>How a walk of the gitops history ended.</summary>
+public enum HistoryWalkStatus
+{
+	/// <summary>A previous final-slice version was found.</summary>
+	Found,
+
+	/// <summary>The whole history was read and holds no different final-slice version.</summary>
+	NotFound,
+
+	/// <summary>A request failed; the previous version is unknown.</summary>
+	Failed,
+
+	/// <summary>The page limit was reached before the history ended.</summary>
+	CapReached
+}
+
+/// <summary>The result of <see cref="ServerlessPromotion.FindPreviousVersionAsync"/>.</summary>
+public sealed record HistoryWalkResult(HistoryWalkStatus Status, string? PreviousVersion, int ScannedCommits);
+
 /// <summary>Pure helpers for resolving a serverless promotion's commit range from serverless-gitops history.</summary>
 public static partial class ServerlessPromotion
 {
@@ -85,6 +107,51 @@ public static partial class ServerlessPromotion
 	/// </summary>
 	public static string? FindPreviousVersion(IEnumerable<string?> finalSliceVersionsNewestFirst, string currentVersion) =>
 		finalSliceVersionsNewestFirst.FirstOrDefault(v => !string.IsNullOrEmpty(v) && !SameRef(v, currentVersion));
+
+	/// <summary>Maximum pages of gitops history to read (100 commits each). Most commits to
+	/// <c>versions.yaml</c> are dev promotions, so a quiet week is hundreds of commits.</summary>
+	public const int MaxHistoryPages = 100;
+
+	/// <summary>
+	/// Walks the commit history of a service's <c>versions.yaml</c>, newest first, and returns the first
+	/// <see cref="FinalSlice"/> version that differs from <paramref name="currentVersion"/>.
+	/// A failed request is a failure of the walk: skipping a candidate would silently pick an older
+	/// version, and bundle the wrong commit range.
+	/// </summary>
+	/// <param name="getCommitsPage">Returns the commits of a 1-based page, or <c>null</c> when the request failed.
+	/// An empty page ends the history.</param>
+	/// <param name="getVersionsYaml">Returns the file content at a commit, or <c>null</c> when the request failed.</param>
+	public static async Task<HistoryWalkResult> FindPreviousVersionAsync(
+		Func<int, Task<IReadOnlyList<GitopsCommit>?>> getCommitsPage,
+		Func<string, Task<string?>> getVersionsYaml,
+		string currentVersion,
+		int maxPages = MaxHistoryPages
+	)
+	{
+		var scanned = 0;
+		for (var page = 1; page <= maxPages; page++)
+		{
+			var commits = await getCommitsPage(page);
+			if (commits is null)
+				return new HistoryWalkResult(HistoryWalkStatus.Failed, null, scanned);
+			if (commits.Count == 0)
+				return new HistoryWalkResult(HistoryWalkStatus.NotFound, null, scanned);
+			scanned += commits.Count;
+
+			foreach (var commit in commits.Where(c => IsFinalSlicePromotion(c.Message)))
+			{
+				var yaml = await getVersionsYaml(commit.Sha);
+				if (yaml is null)
+					return new HistoryWalkResult(HistoryWalkStatus.Failed, null, scanned);
+
+				var version = ParseFinalSliceVersion(yaml);
+				if (version is not null && !SameRef(version, currentVersion))
+					return new HistoryWalkResult(HistoryWalkStatus.Found, version, scanned);
+			}
+		}
+
+		return new HistoryWalkResult(HistoryWalkStatus.CapReached, null, scanned);
+	}
 
 	/// <summary>Reads a submodule's pinned commit from a GitHub git-tree response
 	/// (<c>GET /repos/{owner}/{repo}/git/trees/{sha}</c>): the entry with the given path and type <c>commit</c>.</summary>
