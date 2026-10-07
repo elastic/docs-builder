@@ -24,15 +24,18 @@ public sealed record PropertyTreeScope
 	public IReadOnlySet<string>? Ancestors { get; init; }
 	public IReadOnlyDictionary<string, string>? DescriptionOverrides { get; init; }
 
-	/// <summary>Enclosing union rows by option signature, so an anonymous union that repeats one stops instead of expanding again.</summary>
-	public IReadOnlyDictionary<string, UnionAncestor>? UnionAncestors { get; init; }
-
 	/// <summary>Overrides the schema's own required set at the top level; never inherited by children.</summary>
 	public ISet<string>? RequiredProperties { get; init; }
 }
 
-public class ApiPropertyTreeBuilder(OpenApiDocument document, PropertyDisplayOptions options, string? currentPageType = null)
+public class ApiPropertyTreeBuilder(
+	OpenApiDocument document,
+	PropertyDisplayOptions options,
+	string? currentPageType = null,
+	PageShapes? pageShapes = null
+)
 {
+	private readonly PageShapes _shapes = pageShapes ?? new();
 	private readonly SchemaAnalyzer _analyzer = new(document, currentPageType, options.SchemaResolveCache);
 
 	/// <summary>One renderable property before its display fields are derived.</summary>
@@ -44,7 +47,8 @@ public class ApiPropertyTreeBuilder(OpenApiDocument document, PropertyDisplayOpt
 		bool IsRequired,
 		bool IsLast,
 		bool IsRecursive,
-		UnionAncestor? RepeatsUnion = null
+		string? ShapeKey = null,
+		RepeatedShape? Repeats = null
 	);
 
 	/// <summary>Builds the property rows for a schema; null when it has no renderable properties.</summary>
@@ -64,7 +68,8 @@ public class ApiPropertyTreeBuilder(OpenApiDocument document, PropertyDisplayOpt
 				continue;
 
 			var typeInfo = _analyzer.GetTypeInfo(propSchema);
-			var repeatsUnion = RepeatedUnion(typeInfo, scope);
+			var shapeKey = ShapeKey(typeInfo);
+			var (repeats, repeatsAncestor) = _shapes.Find(shapeKey);
 			var anchorName = name == DictionaryKeyName ? "string" : name;
 			var propId = string.IsNullOrEmpty(scope.Prefix) ? anchorName : $"{scope.Prefix}-{anchorName}";
 			var row = new PropertyRow(
@@ -74,8 +79,9 @@ public class ApiPropertyTreeBuilder(OpenApiDocument document, PropertyDisplayOpt
 				propId,
 				IsRequired: requiredProps.Contains(name),
 				IsLast: i == propArray.Length - 1,
-				IsRecursive: repeatsUnion is not null || DetectRecursion(propSchema, typeInfo, scope.Ancestors),
-				RepeatsUnion: repeatsUnion
+				IsRecursive: repeatsAncestor || DetectRecursion(propSchema, typeInfo, scope.Ancestors),
+				ShapeKey: shapeKey,
+				Repeats: repeats
 			);
 			items.Add(BuildProperty(row, scope));
 		}
@@ -192,7 +198,7 @@ public class ApiPropertyTreeBuilder(OpenApiDocument document, PropertyDisplayOpt
 
 	private ApiProperty BuildProperty(PropertyRow row, PropertyTreeScope scope)
 	{
-		var (_, propSchema, typeInfo, _, _, _, isRecursive, _) = row;
+		var (_, propSchema, typeInfo, _, _, _, isRecursive, _, _) = row;
 		var expansion = ComputeExpansion(propSchema, typeInfo, scope.Depth, isRecursive);
 		var (descriptionHtml, descriptionMarkdown) = RenderDescription(row.Name, propSchema.Description, scope);
 		var typeLink = BuildTypeLink(typeInfo, expansion);
@@ -218,8 +224,8 @@ public class ApiPropertyTreeBuilder(OpenApiDocument document, PropertyDisplayOpt
 			ExternalDocs = BuildExternalDocs(propSchema, typeInfo),
 			Constraints = BuildConstraints(propSchema),
 			EnumValues = typeInfo.EnumValues ?? [],
-			Union = typeInfo.IsUnion && row.RepeatsUnion is null ? BuildUnionDisplay(propSchema, typeInfo, expansion) : null,
-			RepeatsUnion = row.RepeatsUnion,
+			Union = typeInfo.IsUnion && row.Repeats is null ? BuildUnionDisplay(propSchema, typeInfo, expansion) : null,
+			Repeats = row.Repeats,
 			// Type annotation already reads "[] …"; skip the redundant "Array of:" row.
 			ArrayItemTypeName = null,
 			TypeLink = typeLink,
@@ -227,7 +233,7 @@ public class ApiPropertyTreeBuilder(OpenApiDocument document, PropertyDisplayOpt
 			IsCollapsible = expansion.IsCollapsible,
 			DefaultExpanded = expansion.DefaultExpanded,
 			NestedCount = expansion.NestedCount,
-			Children = isRecursive ? ApiPropertyChildren.None : BuildChildren(row, scope, expansion)
+			Children = isRecursive || row.Repeats is not null ? ApiPropertyChildren.None : ListChildren(row, scope, expansion)
 		};
 	}
 
@@ -492,11 +498,7 @@ public class ApiPropertyTreeBuilder(OpenApiDocument document, PropertyDisplayOpt
 			{
 				Kind = ChildKind.UnionVariants,
 				UseHidden = false,
-				Variants = BuildUnionVariants(
-					typeInfo.UnionOptions!,
-					WithUnionAncestor(childScope, typeInfo.UnionOptions!, row),
-					_analyzer.GetUnionDiscriminator(row.Schema)
-				)
+				Variants = BuildUnionVariants(typeInfo.UnionOptions!, childScope, _analyzer.GetUnionDiscriminator(row.Schema))
 					?? ApiUnionVariants.Empty
 			};
 		}
@@ -507,11 +509,7 @@ public class ApiPropertyTreeBuilder(OpenApiDocument document, PropertyDisplayOpt
 			{
 				Kind = ChildKind.SimpleUnionVariants,
 				UseHidden = useHidden,
-				Variants = BuildUnionVariants(
-					expansion.SimpleUnionNestedOptions,
-					WithUnionAncestor(childScope, expansion.SimpleUnionNestedOptions, row),
-					_analyzer.GetUnionDiscriminator(row.Schema)
-				)
+				Variants = BuildUnionVariants(expansion.SimpleUnionNestedOptions, childScope, _analyzer.GetUnionDiscriminator(row.Schema))
 					?? ApiUnionVariants.Empty
 			};
 		}
@@ -575,20 +573,36 @@ public class ApiPropertyTreeBuilder(OpenApiDocument document, PropertyDisplayOpt
 	}
 
 	/// <summary>
-	/// Generated specs often inline a recursive union (a condition whose <c>and</c> holds more conditions) several levels
-	/// deep. Those copies have no name to recognise, so a union whose options match an enclosing union row is a repeat.
+	/// Lists a row's children and records the row as the page's first listing of its shape. While the children are built
+	/// the shape counts as an ancestor, so a generated spec that inlines a recursive union several levels deep stops at
+	/// the first repeat.
 	/// </summary>
-	private UnionAncestor? RepeatedUnion(TypeInfo typeInfo, PropertyTreeScope scope) =>
-		typeInfo is { IsUnion: true, UnionOptions.Count: > 0 }
-			&& scope.UnionAncestors is { } known
-			&& known.TryGetValue(UnionSignature(typeInfo.UnionOptions), out var ancestor) ? ancestor : null;
-
-	private PropertyTreeScope WithUnionAncestor(PropertyTreeScope scope, IEnumerable<UnionOption> unionOptions, PropertyRow row)
+	private ApiPropertyChildren ListChildren(PropertyRow row, PropertyTreeScope scope, Expansion expansion)
 	{
-		var known = new Dictionary<string, UnionAncestor>(scope.UnionAncestors ?? new Dictionary<string, UnionAncestor>());
-		_ = known.TryAdd(UnionSignature(unionOptions), new UnionAncestor(row.Name, row.AnchorId));
-		return scope with { UnionAncestors = known };
+		if (row.ShapeKey is not { } key)
+			return BuildChildren(row, scope, expansion);
+
+		var shape = new RepeatedShape(row.Name, row.AnchorId, row.TypeInfo.IsUnion);
+		_shapes.BeginListing(key, shape);
+		var children = BuildChildren(row, scope, expansion);
+		_shapes.EndListing(key, shape, CountRows(children));
+		return children;
 	}
+
+	/// <summary>Named object types repeat by <c>$ref</c>; unions, which are often inline, repeat by their option signature.</summary>
+	private string? ShapeKey(TypeInfo typeInfo) => typeInfo switch
+	{
+		{ IsUnion: true, UnionOptions.Count: > 1 } => "union:" + UnionSignature(typeInfo.UnionOptions),
+		{ IsObject: true, IsDictionary: false, SchemaRef: { Length: > 0 } reference } => "type:" + reference,
+		_ => null
+	};
+
+	private static int CountRows(ApiPropertyChildren children) =>
+		CountRows(children.Properties)
+			+ (children.Variants?.Variants.Sum(v => CountRows(v.Properties)) ?? 0)
+			+ CountRows(children.Dictionary?.Properties);
+
+	private static int CountRows(ApiPropertyList? properties) => properties?.Items.Sum(p => 1 + CountRows(p.Children)) ?? 0;
 
 	/// <summary>Each option's name and property names; two unions with the same signature offer the same shapes.</summary>
 	private string UnionSignature(IEnumerable<UnionOption> unionOptions) =>
@@ -677,7 +691,8 @@ public class ApiPropertyTreeBuilder(OpenApiDocument document, PropertyDisplayOpt
 		var childBuilder = new ApiPropertyTreeBuilder(
 			document,
 			options with { ShowDeprecated = true, ShowVersionInfo = true, ShowExternalDocs = true },
-			currentPageType
+			currentPageType,
+			_shapes
 		);
 
 		var variants = new List<ApiUnionVariant>(variantsToRender.Count);

@@ -79,8 +79,8 @@ internal static class ApiPropertyMarkdown
 		WriteNestedLine(markdown, depth, ApiMarkdown.Prepare(property.DescriptionMarkdown, apiBaseUrl));
 		WriteArrayItemType(markdown, property, depth);
 		WriteEnumOrUnion(markdown, property, depth);
-		if (property.RepeatsUnion is { } repeated)
-			WriteNestedLine(markdown, depth, $"Same options as `{repeated.Name}`");
+		if (property.Repeats is { } repeated)
+			WriteNestedLine(markdown, depth, $"{repeated.Label} `{repeated.Name}`");
 		if (property.TypeLink is { Url: { Length: > 0 } url })
 			WriteNestedLine(markdown, depth, $"See {ApiCommonMark.Link(property.TypeLink.TypeName, url)}");
 

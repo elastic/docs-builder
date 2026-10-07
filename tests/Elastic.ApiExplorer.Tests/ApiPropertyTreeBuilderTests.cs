@@ -1533,7 +1533,7 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture)
 		var variants = where.Children.Variants!.Variants;
 		variants[0].Properties!.Items.Select(p => p.Name).Should().Equal("field", "eq");
 		var and = variants[1].Properties!.Items.Single();
-		and.RepeatsUnion.Should().Be(new UnionAncestor("where", "where"));
+		and.Repeats.Should().Be(new RepeatedShape("where", "where", IsUnion: true));
 		and.Children.Kind.Should().Be(ChildKind.None);
 		and.Union.Should().BeNull("the repeat line replaces the empty \"Any of:\" row");
 	}
@@ -1580,5 +1580,49 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture)
 		container.PageUrl.Should().NotBeNullOrEmpty();
 		container.Properties.Should().BeNull("QueryContainer has its own page");
 		variants.Single(v => v.DisplayName == "RoleTemplateQuery").Properties!.Items.Select(p => p.Name).Should().Equal("template");
+	}
+
+	[Test]
+	public async Task BuildPropertyList_LargeTypeRepeatedOnThePage_IsListedOnceAndLinkedAfterwards()
+	{
+		var json =
+			"""
+			{
+			  "openapi": "3.0.3",
+			  "info": { "title": "t", "version": "1" },
+			  "paths": {},
+			  "components": {
+			    "schemas": {
+			      "Big": { "type": "object", "properties": { "f0": { "type": "string" }, "f1": { "type": "string" }, "f2": { "type": "string" }, "f3": { "type": "string" }, "f4": { "type": "string" }, "f5": { "type": "string" }, "f6": { "type": "string" }, "f7": { "type": "string" }, "f8": { "type": "string" }, "f9": { "type": "string" }, "f10": { "type": "string" }, "f11": { "type": "string" } } },
+			      "Small": { "type": "object", "properties": { "id": { "type": "string" }, "name": { "type": "string" } } },
+			      "Holder": {
+			        "type": "object",
+			        "properties": {
+			          "created": { "$ref": "#/components/schemas/Big" },
+			          "updated": { "$ref": "#/components/schemas/Big" },
+			          "owner": { "$ref": "#/components/schemas/Small" },
+			          "editor": { "$ref": "#/components/schemas/Small" }
+			        }
+			      }
+			    }
+			  }
+			}
+			""";
+		var document = await LoadSpecAsync(json);
+
+		var builder = BuilderFor(document);
+		var list = builder.BuildPropertyList(document.Components!.Schemas!["Holder"], new PropertyTreeScope { Prefix = "res-200" })!;
+
+		ApiProperty Row(string name) => list.Items.Single(p => p.Name == name);
+
+		Row("created").Children.Properties!.Items.Should().HaveCount(12);
+		Row("updated").Repeats.Should().Be(new RepeatedShape("created", "res-200-created", IsUnion: false));
+		Row("updated").Children.Kind.Should().Be(ChildKind.None);
+		Row("updated").IsRecursive.Should().BeFalse("a sibling repeat is not a recursion");
+		Row("editor").Repeats.Should().BeNull("small types read better inline");
+		Row("editor").Children.Properties!.Items.Should().HaveCount(2);
+
+		var later = builder.BuildPropertyList(document.Components!.Schemas!["Holder"], new PropertyTreeScope { Prefix = "req" })!;
+		later.Items.Single(p => p.Name == "created").Repeats!.AnchorId.Should().Be("res-200-created", "one builder serves one page");
 	}
 }

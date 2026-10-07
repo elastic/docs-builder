@@ -20,8 +20,11 @@ public record ExternalDocLink(string Url, bool IsElasticDocs, string? Descriptio
 			: IsElasticDocs ? "Read the reference documentation" : "External documentation";
 }
 
-/// <summary>An enclosing union row a nested union repeats; the row links back to it instead of expanding again.</summary>
-public record UnionAncestor(string Name, string AnchorId);
+/// <summary>An earlier row on the page whose fields (or union options) a row repeats; the row links back to it.</summary>
+public record RepeatedShape(string Name, string AnchorId, bool IsUnion)
+{
+	public string Label => IsUnion ? "Same options as" : "Same fields as";
+}
 
 /// <summary>A link from a group-4 property row to that schema's dedicated page.</summary>
 public record TypePageLink(string TypeName, string? Url);
@@ -154,8 +157,8 @@ public record ApiProperty
 
 	public TypePageLink? TypeLink { get; init; }
 
-	/// <summary>The enclosing union whose options this row repeats; set instead of expanding them a second time.</summary>
-	public UnionAncestor? RepeatsUnion { get; init; }
+	/// <summary>The earlier row whose fields or options this row repeats; set instead of listing them a second time.</summary>
+	public RepeatedShape? Repeats { get; init; }
 
 	/// <summary>Further schemas an <c>allOf</c> merges in; the row's type names only the first.</summary>
 	public IReadOnlyList<TypePageLink> AlsoIncludes { get; init; } = [];

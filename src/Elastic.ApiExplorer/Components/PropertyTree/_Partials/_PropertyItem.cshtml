@@ -81,10 +81,10 @@
 			</dd>
 		}
 	}
-	@if (Model.RepeatsUnion is { } repeated)
+	@if (Model.Repeats is { } repeated)
 	{
 		<dd class="union-options">
-			<span class="values-label">Same options as</span>
+			<span class="values-label">@repeated.Label</span>
 			<a href="#@repeated.AnchorId"><code>@repeated.Name</code></a>
 		</dd>
 	}
