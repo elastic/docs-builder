@@ -21,4 +21,16 @@ describe('flashTooltip', () => {
         jest.advanceTimersByTime(1500)
         expect(el.dataset.tippyContent).toBe('Copy')
     })
+
+    it('restarts the delay on a repeated flash', () => {
+        const el = document.createElement('button')
+        el.dataset.tippyContent = 'Copy'
+        flashTooltip(el, 'Copied!')
+        jest.advanceTimersByTime(1000)
+        flashTooltip(el, 'Copied!')
+        jest.advanceTimersByTime(1000)
+        expect(el.dataset.tippyContent).toBe('Copied!')
+        jest.advanceTimersByTime(500)
+        expect(el.dataset.tippyContent).toBe('Copy')
+    })
 })
