@@ -1119,4 +1119,93 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture)
 		variants.Select(v => v.Properties?.Items.Single().Name).Should().Equal(null, "query", "ids", "all");
 		variants.Select(v => v.AnchorId).Should().OnlyHaveUniqueItems();
 	}
+
+	[Test]
+	public async Task BuildPropertyList_RefToAllOfUnion_ExpandsTheVariantsWithLabels()
+	{
+		var json =
+			"""
+			{
+			  "openapi": "3.0.3",
+			  "info": { "title": "t", "version": "1" },
+			  "paths": {},
+			  "components": {
+			    "schemas": {
+			      "Base": { "type": "object", "required": ["id"], "properties": { "id": { "type": "string" } } },
+			      "Cat": { "type": "object", "properties": { "kind": { "type": "string" }, "lives": { "type": "integer" } } },
+			      "Dog": { "type": "object", "properties": { "kind": { "type": "string" }, "barks": { "type": "boolean" } } },
+			      "Pet": {
+			        "allOf": [
+			          { "$ref": "#/components/schemas/Base" },
+			          {
+			            "oneOf": [ { "$ref": "#/components/schemas/Cat" }, { "$ref": "#/components/schemas/Dog" } ],
+			            "discriminator": {
+			              "propertyName": "kind",
+			              "mapping": { "feline": "#/components/schemas/Cat", "canine": "#/components/schemas/Dog" }
+			            }
+			          }
+			        ]
+			      },
+			      "Holder": { "type": "object", "properties": { "pet": { "$ref": "#/components/schemas/Pet" } } }
+			    }
+			  }
+			}
+			""";
+		var document = await LoadSpecAsync(json);
+		var builder = BuilderFor(document);
+
+		var pet = builder.BuildPropertyList(document.Components!.Schemas!["Holder"], new PropertyTreeScope { Prefix = "" })!.Items.Single(
+			p => p.Name == "pet"
+		);
+
+		pet.Children.Kind.Should().Be(ChildKind.UnionVariants);
+		var variants = pet.Children.Variants!.Variants;
+		variants.Select(v => v.DisplayName).Should().Equal("Cat", "Dog");
+		variants.Select(v => v.DiscriminatorLabel).Should().Equal("kind: feline", "kind: canine");
+		variants[0].Properties!.Items.Where(p => p.IsRequired).Select(p => p.Name).Should().Equal("id");
+
+		var body = OperationPageModel.BuildTopLevelUnionVariants(
+			new OpenApiSchemaReference("Pet", document),
+			new PropertyTreeScope { Prefix = "req", IsRequest = true },
+			new SchemaAnalyzer(document),
+			builder
+		);
+		body!.Variants.Select(v => v.DisplayName).Should().Equal("Cat", "Dog");
+	}
+
+	[Test]
+	public async Task GetTypeInfo_RefToAllOfUnionThatRefersBackToItself_DoesNotRecurseForever()
+	{
+		var json =
+			"""
+			{
+			  "openapi": "3.0.3",
+			  "info": { "title": "t", "version": "1" },
+			  "paths": {},
+			  "components": {
+			    "schemas": {
+			      "Leaf": { "type": "object", "properties": { "value": { "type": "string" } } },
+			      "Node": {
+			        "allOf": [
+			          { "type": "object", "properties": { "name": { "type": "string" } } },
+			          { "oneOf": [ { "$ref": "#/components/schemas/Leaf" }, { "$ref": "#/components/schemas/Node" } ] }
+			        ]
+			      },
+			      "Holder": { "type": "object", "properties": { "node": { "$ref": "#/components/schemas/Node" } } }
+			    }
+			  }
+			}
+			""";
+		var document = await LoadSpecAsync(json);
+
+		var info = new SchemaAnalyzer(document).GetTypeInfo(new OpenApiSchemaReference("Node", document));
+
+		info.IsUnion.Should().BeTrue();
+		info.UnionOptions!.Select(o => o.Name).Should().Equal("Leaf", "Node");
+		var node = BuilderFor(document).BuildPropertyList(
+			document.Components!.Schemas!["Holder"],
+			new PropertyTreeScope { Prefix = "" }
+		)!.Items.Single();
+		node.Children.Kind.Should().Be(ChildKind.UnionVariants);
+	}
 }

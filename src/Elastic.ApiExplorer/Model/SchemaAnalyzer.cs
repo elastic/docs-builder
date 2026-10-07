@@ -33,6 +33,10 @@ public class SchemaAnalyzer(
 	// Falls back to a fresh per-instance dict when no external cache is provided.
 	private readonly ConcurrentDictionary<string, IOpenApiSchema?> _cache = resolveCache ?? new();
 
+	// Referenced allOf unions this instance is classifying; a variant that refers back to one of them stays a plain named type.
+	// Each page builds its own analyzer, so the set never crosses threads.
+	private readonly HashSet<string> _expandingAllOfRefs = [with(StringComparer.Ordinal)];
+
 	/// <summary>
 	/// Checks if a type should link to its container page, considering the current page.
 	/// </summary>
@@ -319,6 +323,11 @@ public class SchemaAnalyzer(
 					var built = BuildUnionOptions(members);
 					unionOptions = built.Count > 0 ? built : null;
 				}
+				else if (!isEnum && ClassifyReferencedAllOfUnion(refId, resolvedTarget) is { } allOfUnion)
+				{
+					unionKeyword = allOfUnion.UnionKeyword;
+					unionOptions = allOfUnion.UnionOptions;
+				}
 
 				return new TypeInfo
 				{
@@ -517,6 +526,26 @@ public class SchemaAnalyzer(
 			.Where(m => m.Discriminator is not null && UnionSchemas.IsUnion(m))
 			.Select(static m => m.Discriminator)
 			.FirstOrDefault();
+	}
+
+	/// <summary>
+	/// A named schema that is an <c>allOf</c> with a <c>oneOf</c>/<c>anyOf</c> member is a union too, so a <c>$ref</c> to it
+	/// expands its variants. The guard stops a variant that refers back to its parent from recursing forever.
+	/// </summary>
+	private TypeInfo? ClassifyReferencedAllOfUnion(string refId, IOpenApiSchema target)
+	{
+		if (target.AllOf is not { Count: > 0 } allOf || !TrySplitAllOfUnion(allOf, out var split) || !_expandingAllOfRefs.Add(refId))
+			return null;
+
+		try
+		{
+			var union = ClassifyAllOfUnion(split);
+			return union.IsUnion ? union : null;
+		}
+		finally
+		{
+			_ = _expandingAllOfRefs.Remove(refId);
+		}
 	}
 
 	/// <summary>Each object variant carries the shared base members, so it expands to base plus its own properties.</summary>
