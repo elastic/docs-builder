@@ -3098,6 +3098,13 @@ html:has(.api-page-shell) {
 	box-shadow: 0 6px 20px rgb(17 28 44 / 14%);
 }
 
+/* Without popover support the menu would render as a plain block; chips alone are the fallback. */
+@supports not selector(:popover-open) {
+	.api-example-menu {
+		display: none;
+	}
+}
+
 /* Stays at the top while the examples scroll; the white shadow hides what slides under its edges. */
 .api-example-menu-filter {
 	position: sticky;
