@@ -140,9 +140,9 @@ public class OpenApiGeneratorCatalogSplitTests
 		var html = await context.WriteFileSystem.File.ReadAllTextAsync(catalogPath, TestContext.Current!.Execution.CancellationToken);
 		html.Should().Contain("<h1>Elastic APIs</h1>");
 		html.Should().Contain(
-			"<a href=\"/docs/api/doc/elasticsearch/\" aria-labelledby=\"api-catalog-title-elasticsearch\" class=\"api-catalog-card "
+			"<a href=\"/docs/api/doc/elasticsearch\" aria-labelledby=\"api-catalog-title-elasticsearch\" class=\"api-catalog-card "
 		);
-		html.Should().Contain("<a href=\"/docs/api/doc/kibana/\" aria-labelledby=\"api-catalog-title-kibana\" class=\"api-catalog-card ");
+		html.Should().Contain("<a href=\"/docs/api/doc/kibana\" aria-labelledby=\"api-catalog-title-kibana\" class=\"api-catalog-card ");
 		html.Should().Contain(
 			"<h2 id=\"api-catalog-title-elasticsearch\" class=\"api-catalog-card-title ",
 			"the heading is inside the link and names it"
@@ -329,11 +329,7 @@ public class OpenApiGeneratorCatalogSplitTests
 		html.Should().NotContain("<ul class=\"api-catalog-featured ", "Kibana is missing, so there is no featured pair");
 		html.Should().Contain("lg:grid-cols-4");
 		html.Should().NotContain("Other APIs");
-		html
-			.Split("href=\"/docs/api/doc/elasticsearch/\"")
-			.Length
-			.Should()
-			.Be(2, "an API shows once, however many deployments it declares");
+		html.Split("href=\"/docs/api/doc/elasticsearch\"").Length.Should().Be(2, "an API shows once, however many deployments it declares");
 		html
 			.IndexOf("Cloud Connect", StringComparison.Ordinal)
 			.Should()
