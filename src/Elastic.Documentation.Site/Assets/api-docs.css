@@ -667,8 +667,8 @@
 /*
  * Nav method chips: a small text label at the right edge of the row, after the operation name.
  * Colors follow Swagger UI conventions (GET blue, POST green, PUT amber, PATCH teal,
- * DELETE red, HEAD purple, OPTIONS gray). The current row keeps the chip fill and darkens
- * only the border, so the 9px label stays above WCAG AA (4.5:1).
+ * DELETE red, HEAD purple, OPTIONS gray). Current and hovered rows keep the chip fill and darken only the border
+ * (hover a mid step, current the darkest), so the 9px label stays above WCAG AA (4.5:1).
  */
 #pages-nav .nav-v2-api-method {
 	display: inline-flex;
@@ -687,6 +687,7 @@
 	letter-spacing: 0.02em;
 	line-height: 1;
 	white-space: nowrap;
+	transition: border-color 0.12s ease;
 }
 
 #pages-nav .nav-v2-api-method-get {
@@ -731,28 +732,56 @@
 	color: var(--color-grey-100);
 }
 
+#pages-nav a.sidebar-link:hover .nav-v2-api-method-get {
+	border-color: var(--color-blue-elastic-60);
+}
+
 #pages-nav a.sidebar-link.current .nav-v2-api-method-get {
 	border-color: var(--color-blue-elastic-100);
+}
+
+#pages-nav a.sidebar-link:hover .nav-v2-api-method-post {
+	border-color: var(--color-green-60);
 }
 
 #pages-nav a.sidebar-link.current .nav-v2-api-method-post {
 	border-color: var(--color-green-100);
 }
 
+#pages-nav a.sidebar-link:hover .nav-v2-api-method-put {
+	border-color: var(--color-yellow-60);
+}
+
 #pages-nav a.sidebar-link.current .nav-v2-api-method-put {
 	border-color: var(--color-yellow-100);
+}
+
+#pages-nav a.sidebar-link:hover .nav-v2-api-method-patch {
+	border-color: var(--color-teal-60);
 }
 
 #pages-nav a.sidebar-link.current .nav-v2-api-method-patch {
 	border-color: var(--color-teal-100);
 }
 
+#pages-nav a.sidebar-link:hover .nav-v2-api-method-delete {
+	border-color: var(--color-red-60);
+}
+
 #pages-nav a.sidebar-link.current .nav-v2-api-method-delete {
 	border-color: var(--color-red-100);
 }
 
+#pages-nav a.sidebar-link:hover .nav-v2-api-method-head {
+	border-color: var(--color-purple-60);
+}
+
 #pages-nav a.sidebar-link.current .nav-v2-api-method-head {
 	border-color: var(--color-purple-100);
+}
+
+#pages-nav a.sidebar-link:hover .nav-v2-api-method-options {
+	border-color: var(--color-grey-60);
 }
 
 #pages-nav a.sidebar-link.current .nav-v2-api-method-options {
