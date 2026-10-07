@@ -80,5 +80,5 @@ public static partial class ChangelogEntryInConfigurationConstraints
 
 	private static IReadOnlyList<ProductReference> Products(ChangelogEntryInConfiguration m) => m.Entry.Products ?? [];
 
-	private static string Normalize(string productId) => productId.Replace('_', '-');
+	private static string Normalize(string productId) => ProductNames.Normalize(productId);
 }

@@ -217,7 +217,9 @@ public class BundleLoader(IFileSystem fileSystem)
 				continue;
 
 			var orderedAmends = group.OrderBy(a => BundleAmendMerger.GetAmendMergeOrder(a.FilePath)).ToList();
-			var amends = orderedAmends.Select(a => new BundleAmend(a.Data, !BundleAmendMerger.IsNotesAmendFile(a.FilePath))).ToList();
+			var amends = orderedAmends.Select(
+				a => new BundleAmend(a.Data, !BundleAmendMerger.IsNotesAmendFile(a.FilePath), a.FilePath)
+			).ToList();
 
 			var mergedBundleData = parentBundle.Data.ApplyAmends(amends).Value ?? parentBundle.Data;
 			var resolvedEntries = ResolveEntries(mergedBundleData, fileSystem.Path.GetFileName(parentPath), emitWarning);

@@ -12,7 +12,7 @@ public sealed record ChangelogConfigurationInCatalog(ChangelogConfiguration Conf
 {
 	internal bool IsKnownProduct(string id)
 	{
-		var normalized = id.Replace('_', '-');
+		var normalized = ProductNames.Normalize(id);
 		return Products.Products.Keys.Any(k => k.Equals(normalized, StringComparison.OrdinalIgnoreCase));
 	}
 

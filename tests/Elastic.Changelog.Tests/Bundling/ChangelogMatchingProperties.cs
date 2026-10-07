@@ -131,11 +131,10 @@ public class ChangelogMatchingProperties
 		});
 
 	/// <summary>
-	/// Law: a product pattern spelled with underscores (<c>cloud_hosted</c>, as the create command accepts it) matches the product <c>cloud-hosted</c>.
+	/// Law: a product pattern spelled with underscores (<c>cloud_hosted</c>, as the create command accepts it) matches the product <c>cloud-hosted</c> (<see cref="Elastic.Documentation.ProductNames.Normalize"/> is applied to the filter and to the entry's product).
 	/// Consequence if broken: the same product is spelled one way to create an entry and another way to bundle it.
 	/// </summary>
 	[Test]
-	[Skip("FINDING 5c: product spelling is normalised ('_' to '-') inline in seven places on the create side, but a bundle product filter is compared as written")]
 	public void ProductFilter_UnderscoreSpelling_MatchesTheHyphenatedProduct() =>
 		Files.Check(files =>
 		{

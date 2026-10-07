@@ -151,7 +151,7 @@ public static class ChangelogEntryValidator
 					findings.Add(Error(filePath, $"products[{i}].product is required"));
 				else if (knownProducts is not null)
 				{
-					var normalized = product.Product.Replace('_', '-');
+					var normalized = ProductNames.Normalize(product.Product);
 					if (!knownProducts.Contains(normalized))
 					{
 						var available = string.Join(", ", knownProducts.OrderBy(p => p));

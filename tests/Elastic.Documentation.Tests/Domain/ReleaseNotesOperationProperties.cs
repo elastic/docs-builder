@@ -287,11 +287,10 @@ public class BundleOperationProperties
 		});
 
 	/// <summary>
-	/// Law: applying a parent's amends twice gives what applying them once does.
+	/// Law: applying a parent's amends twice gives what applying them once does (an added entry already in the bundle, by file name and checksum, is not added again).
 	/// Consequence if broken: re-running a render over a bundle that was already amended duplicates the added entries or re-patches the intro.
 	/// </summary>
 	[Test]
-	[Skip("FINDING 5b: ApplyAmends appends an amend's added entries on every application, so applying [amend] twice duplicates them (parent with no entries, amend adding one entry X: once [X], twice [X, X]); exclusions and description patches are idempotent")]
 	public void ApplyAmends_IsIdempotent() =>
 		BundleExamples
 			.Generated<BundleAmendOfParent>()
@@ -442,11 +441,10 @@ public class LoadedBundleOperationProperties
 		});
 
 	/// <summary>
-	/// Law: merging the same bundles in any order gives an equal result.
+	/// Law: merging the same bundles in any order gives an equal result (the bundles of one version are taken in canonical order: release date ascending with undated last, then file path, repository, owner).
 	/// Consequence if broken: the page for a release depends on which repository's bundle the file system listed first.
 	/// </summary>
 	[Test]
-	[Skip("FINDING 5b: MergeByTarget keeps the first bundle's metadata, entry order, owner, file path and release date, so a permutation of the input changes the result (two bundles of one version with different descriptions: the first one listed wins)")]
 	public void MergeByTarget_IsOrderIndependent() =>
 		WithPermutation.Check(x =>
 		{

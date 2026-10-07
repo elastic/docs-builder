@@ -208,11 +208,14 @@ public class DomainOperationsTests
 	}
 
 	[Test]
-	public void LinkManifestFrom_UnavailableOrigin_IsAnErrorAndTheValueRidesAlong()
+	public void LinkManifestFrom_UnavailableOrigin_IsAWarningAndTheValueRidesAlong()
 	{
 		var result = LinkManifest.From(GitCheckoutInformation.Unavailable, "", [], [], null);
 
-		result.HasErrors.Should().BeTrue();
+		result
+			.Diagnostics
+			.Should()
+			.Contain(d => d.RuleId == LinkManifestConstraints.LinkManifestOriginNamed.Name && d.Severity == Severity.Warning);
 		result.Value.Should().NotBeNull();
 	}
 
@@ -239,7 +242,8 @@ public class DomainOperationsTests
 	}
 
 	[Test]
-	public void LinkManifestEmpty_BlankRepository_IsReported() => LinkManifest.Empty("").HasErrors.Should().BeTrue();
+	public void LinkManifestEmpty_BlankRepository_IsReported() =>
+		LinkManifest.Empty("").Diagnostics.Should().Contain(d => d.RuleId == LinkManifestConstraints.LinkManifestOriginNamed.Name);
 
 	// ---- ApplicableTo / AppliesCollection ----
 

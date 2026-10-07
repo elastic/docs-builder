@@ -10,8 +10,10 @@ namespace Elastic.Documentation.ReleaseNotes;
 public partial record LoadedBundle
 {
 	/// <summary>
-	/// Merges the bundles that share a target version into one (entries concatenated, repos joined with <c>+</c>, descriptions joined, the first release date
-	/// kept) and orders the result newest first. Each merged bundle is re-checked by <see cref="LoadedBundleConstraints"/>; a rule it breaks that is an error
+	/// Merges the bundles that share a target version into one (entries concatenated, repos joined with <c>+</c>, descriptions joined, the earliest release date
+	/// kept) and orders the result newest first. The result does not depend on the order of <paramref name="bundles"/>: the bundles of one version are taken in
+	/// the canonical order of <see cref="CanonicalOrder"/> (release date ascending with undated last, then file path, repository and owner, all ordinal), the
+	/// first of them supplies the metadata, and versions that compare equal as versions are ordered by their text. Each merged bundle is re-checked by <see cref="LoadedBundleConstraints"/>; a rule it breaks that is an error
 	/// is in the result (a warning the sources carried was reported when they were loaded).
 	/// </summary>
 	public static Result<IReadOnlyList<LoadedBundle>> MergeByTarget(IReadOnlyList<LoadedBundle> bundles)
@@ -19,14 +21,29 @@ public partial record LoadedBundle
 		if (bundles.Count <= 1)
 			return Result.Success(bundles);
 
-		var merged = bundles.GroupBy(b => b.Version).Select(MergeGroup).OrderByDescending(b => VersionOrDate.Parse(b.Version)).ToList();
+		var merged = bundles
+			.GroupBy(b => b.Version)
+			.Select(MergeGroup)
+			.OrderByDescending(b => VersionOrDate.Parse(b.Version))
+			.ThenBy(b => b.Version, StringComparer.Ordinal)
+			.ToList();
 		var errors = merged.SelectMany(b => DomainOperation.Derived(LoadedBundleConstraints.All, b).Diagnostics).ToList();
 		return Result.Success<IReadOnlyList<LoadedBundle>>(merged, errors);
 	}
 
+	/// <summary>The canonical order the bundles of one version are merged in: release date ascending (undated last), then file path, repository, owner (ordinal).</summary>
+	private static List<LoadedBundle> CanonicalOrder(IEnumerable<LoadedBundle> bundles) =>
+		bundles
+			.OrderBy(b => b.Data?.ReleaseDate is null)
+			.ThenBy(b => b.Data?.ReleaseDate)
+			.ThenBy(b => b.FilePath, StringComparer.Ordinal)
+			.ThenBy(b => b.Repo, StringComparer.Ordinal)
+			.ThenBy(b => b.Owner, StringComparer.Ordinal)
+			.ToList();
+
 	private static LoadedBundle MergeGroup(IGrouping<string, LoadedBundle> group)
 	{
-		var bundlesList = group.ToList();
+		var bundlesList = CanonicalOrder(group);
 
 		if (bundlesList.Count == 1)
 			return bundlesList[0];
@@ -35,9 +52,9 @@ public partial record LoadedBundle
 		var mergedEntries = bundlesList.SelectMany(b => b.Entries).ToList();
 
 		// Combine repo names from all contributing bundles
-		var combinedRepo = string.Join("+", bundlesList.Select(b => b.Repo).Distinct().OrderBy(r => r));
+		var combinedRepo = string.Join("+", bundlesList.Select(b => b.Repo).Distinct().OrderBy(r => r, StringComparer.Ordinal));
 
-		// Use the first bundle's metadata as the base
+		// The first bundle in canonical order supplies the metadata
 		var first = bundlesList[0];
 
 		var descriptions = bundlesList.Select(b => b.Data?.Description).Where(d => !string.IsNullOrEmpty(d)).ToList();

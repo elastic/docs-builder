@@ -526,9 +526,15 @@ public partial class DocumentationGenerator
 	{
 		var file = DocumentationSet.LinkReferenceFile;
 		var checkedManifest = DocumentationSet.CreateLinkReference();
-		// FINDING: the manifest's own rules are not reported to the collector (they would be new warnings and errors on every build, for
-		// example a page without anchors is written without a list, which the schema rule flags); they are logged for a shipped-docs sweep.
-		checkedManifest.LogFindings(_logger, "links.json");
+		// The two rules the writer breaks surface through the collector (warnings for now, see LinkManifestConstraints); the rest of the manifest's
+		// findings (redirect shadows and chains) are reported by the redirect loader already.
+		var surfaced = new HashSet<string?>
+		{
+			LinkManifestConstraints.LinkManifestAnchorsPresent.Name,
+			LinkManifestConstraints.LinkManifestOriginNamed.Name
+		};
+		foreach (var diagnostic in checkedManifest.Diagnostics.Where(d => surfaced.Contains(d.RuleId)))
+			Context.Collector.Write(diagnostic);
 		var state = checkedManifest.OrThrowIfMissing();
 		if (writeToDisk)
 		{

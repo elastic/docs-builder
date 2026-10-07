@@ -261,7 +261,7 @@ public static partial class DocumentationSetConstraints
 	public static Constraint<DocumentationSetInCatalog> ProductsKnown { get; } = Constraints<DocumentationSetInCatalog>
 		.References(
 			m => m.Docset.Products,
-			id => [id.Replace('_', '-')],
+			id => [ProductNames.Normalize(id)],
 			m => m.Products.Products.Keys,
 			message: "A 'products' id is not defined in products.yml, so it is dropped."
 		)
@@ -271,7 +271,7 @@ public static partial class DocumentationSetConstraints
 	public static Constraint<DocumentationSetInCatalog> ReleaseNotesProductsUnique { get; } = Constraints<DocumentationSetInCatalog>
 		.Unique(
 			m => m.Docset.ReleaseNotesProducts.OfType<string>().Where(p => !string.IsNullOrWhiteSpace(p)),
-			p => p.Trim().Replace('_', '-'),
+			p => ProductNames.Normalize(p),
 			message: "A release_notes product is declared more than once."
 		)
 		.WithSeverity(Severity.Warning)
@@ -927,7 +927,7 @@ public static partial class DocumentationSetConstraints
 			return $"Invalid 'release_notes' product '{product}'. Product ids must match [a-zA-Z0-9_-]+.";
 
 		// products.yml keys are hyphenated; accept the underscore variant for parity with `products`.
-		if (!m.Products.Products.TryGetValue(product.Replace('_', '-'), out var resolved))
+		if (!m.Products.Products.TryGetValue(ProductNames.Normalize(product), out var resolved))
 			return $"Unknown 'release_notes' product '{product}'. It must be a product id defined in products.yml.";
 
 		return resolved.Features.ParticipatesInReleaseNotes
@@ -1080,7 +1080,7 @@ public static partial class DocumentationSetConstraints
 			yield break;
 		}
 
-		var normalizedProduct = entry.Product.Trim().Replace('_', '-');
+		var normalizedProduct = ProductNames.Normalize(entry.Product);
 		if (!m.Products.Products.ContainsKey(normalizedProduct))
 		{
 			var hint = new Suggestion(m.Products.Products.Keys.ToHashSet(), normalizedProduct).GetSuggestionQuestion();

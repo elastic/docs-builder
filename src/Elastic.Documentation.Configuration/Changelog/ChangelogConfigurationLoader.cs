@@ -223,7 +223,7 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 			var resolvedProducts = new List<Product>();
 			foreach (var productId in productIdList)
 			{
-				var normalizedProductId = productId.Replace('_', '-');
+				var normalizedProductId = ProductNames.Normalize(productId);
 				if (!validProductIds.Contains(normalizedProductId))
 				{
 					var availableProducts = string.Join(", ", validProductIds.OrderBy(p => p));
@@ -384,7 +384,7 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 	{
 		// products.available ids were resolved against products.yml with the resolved product list
 		var available = yaml.Available?.Values is { Count: > 0 } availableValues
-			? availableValues.Select(id => id.Replace('_', '-')).ToList()
+			? availableValues.Select(id => ProductNames.Normalize(id)).ToList()
 			: null;
 
 		// Parse default products
@@ -395,7 +395,7 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 			foreach (var defaultYaml in yaml.Default)
 			{
 				// A missing id is kept, for ChangelogConfigurationConstraints to report
-				var normalizedProductId = defaultYaml.Product?.Replace('_', '-') ?? string.Empty;
+				var normalizedProductId = ProductNames.Normalize(defaultYaml.Product);
 				if (!string.IsNullOrWhiteSpace(normalizedProductId) && !validProductIds.Contains(normalizedProductId))
 				{
 					var availableProducts = string.Join(", ", validProductIds.OrderBy(p => p));
@@ -446,7 +446,7 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 				string? product = null;
 				if (!string.IsNullOrWhiteSpace(profileYaml.Product))
 				{
-					var normalizedProduct = profileYaml.Product.Replace('_', '-');
+					var normalizedProduct = ProductNames.Normalize(profileYaml.Product);
 					if (!validProductIds.Contains(normalizedProduct))
 					{
 						var availableProducts = string.Join(", ", validProductIds.OrderBy(p => p));
@@ -524,7 +524,7 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 					collector.EmitError(configPath, $"bundle.releases.products['{product}']: must map to a non-empty profile name.");
 					return null;
 				}
-				var normalizedProduct = product.Replace('_', '-');
+				var normalizedProduct = ProductNames.Normalize(product);
 				if (!validProductIds.Contains(normalizedProduct))
 				{
 					var available = string.Join(", ", validProductIds.OrderBy(p => p));
@@ -777,7 +777,7 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 				var productIds = productKey.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
 				foreach (var productId in productIds)
 				{
-					var normalizedProductId = productId.Replace('_', '-');
+					var normalizedProductId = ProductNames.Normalize(productId);
 					if (!validProductIds.Contains(normalizedProductId))
 					{
 						var availableProducts = string.Join(", ", validProductIds.OrderBy(p => p));
@@ -917,7 +917,7 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 		var result = new List<string>();
 		foreach (var rawId in values)
 		{
-			var normalizedId = rawId.Replace('_', '-');
+			var normalizedId = ProductNames.Normalize(rawId);
 			if (!validProductIds.Contains(normalizedId))
 			{
 				var availableProducts = string.Join(", ", validProductIds.OrderBy(p => p));
@@ -977,7 +977,7 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 				var productIds = productKey.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
 				foreach (var productId in productIds)
 				{
-					var normalizedProductId = productId.Replace('_', '-');
+					var normalizedProductId = ProductNames.Normalize(productId);
 					if (!validProductIds.Contains(normalizedProductId))
 					{
 						var availableProducts = string.Join(", ", validProductIds.OrderBy(p => p));
@@ -1050,7 +1050,7 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 				var productIds = productKey.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
 				foreach (var productId in productIds)
 				{
-					var normalizedProductId = productId.Replace('_', '-');
+					var normalizedProductId = ProductNames.Normalize(productId);
 					if (!validProductIds.Contains(normalizedProductId))
 					{
 						var availableProducts = string.Join(", ", validProductIds.OrderBy(p => p));

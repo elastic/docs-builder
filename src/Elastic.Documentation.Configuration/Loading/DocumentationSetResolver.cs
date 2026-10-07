@@ -123,7 +123,7 @@ internal static class DocumentationSetResolver
 		var releaseNotesProducts = report
 			.Keep(docset.ReleaseNotesProducts, DocumentationSetConstraints.ReleaseNotesProductKnown)
 			.OfType<string>()
-			.Select(p => productsConfig.Products[p.Trim().Replace('_', '-')].Id)
+			.Select(p => productsConfig.Products[ProductNames.Normalize(p)].Id)
 			.Distinct(StringComparer.Ordinal)
 			.ToArray();
 
@@ -146,7 +146,7 @@ internal static class DocumentationSetResolver
 		// Unknown product ids are dropped silently, as they always have been
 		var products = docset
 			.Products
-			.Select(id => productsConfig.Products.GetValueOrDefault(id.Replace('_', '-')))
+			.Select(id => productsConfig.Products.GetValueOrDefault(ProductNames.Normalize(id)))
 			.OfType<Product>()
 			.ToHashSet();
 
@@ -231,7 +231,7 @@ internal static class DocumentationSetResolver
 		return new ResolvedApiConfiguration
 		{
 			ProductKey = productKey,
-			Product = catalog.Products[entry.Product!.Trim().Replace('_', '-')],
+			Product = catalog.Products[ProductNames.Normalize(entry.Product)],
 			SpecFileName = Path.GetFileName(entry.Spec!.Trim()),
 			LocalSpecFile = specFile.Exists ? specFile : null,
 			Repository = string.IsNullOrWhiteSpace(entry.Repository) ? null : entry.Repository.Trim(),

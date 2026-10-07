@@ -4,6 +4,7 @@
 
 using System.Diagnostics;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.Links;
 
 namespace Elastic.Authoring.Tests.Framework;
 
@@ -58,9 +59,13 @@ internal static class ErrorCollectorAssertions
 	// The shared docs-tests redirects fixture deliberately contains a self-redirect and a redirect with several 'many' targets,
 	// which the redirect constraints report as warnings in every scenario. They are not what these assertions are about.
 	private static bool IsFixtureRedirectWarning(Diagnostic d) =>
-		d.Message.StartsWith("Redirect 'testing/redirects/", StringComparison.Ordinal)
-			&& (d.Message.EndsWith("points to itself and is dropped.", StringComparison.Ordinal)
-				|| d.Message.EndsWith("only the first with a 'to' is used.", StringComparison.Ordinal));
+		// the fixture's pages have no anchors and the fixture has no git origin: the two link-manifest rules that surface as warnings for now
+		d.RuleId
+			== LinkManifestConstraints.LinkManifestAnchorsPresent.Name
+			|| d.RuleId == LinkManifestConstraints.LinkManifestOriginNamed.Name
+			|| d.Message.StartsWith("Redirect 'testing/redirects/", StringComparison.Ordinal)
+				&& (d.Message.EndsWith("points to itself and is dropped.", StringComparison.Ordinal)
+					|| d.Message.EndsWith("only the first with a 'to' is used.", StringComparison.Ordinal));
 
 	private static List<Diagnostic> ScenarioWarnings(GeneratorResults results) =>
 		results.Context.Collector.Diagnostics.Where(d => d.Severity == Severity.Warning && !IsFixtureRedirectWarning(d)).ToList();

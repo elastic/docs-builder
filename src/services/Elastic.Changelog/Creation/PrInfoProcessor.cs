@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using Elastic.Changelog.GitHub;
+using Elastic.Documentation;
 using Elastic.Documentation.Configuration.Changelog;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.ReleaseNotes;
@@ -246,7 +247,7 @@ public class PrInfoProcessor(IGitHubPrService? githubPrService, ILogger logger)
 		{
 			foreach (var product in products)
 			{
-				var normalizedProductId = product.Product?.Replace('_', '-') ?? string.Empty;
+				var normalizedProductId = ProductNames.Normalize(product.Product);
 				if (createRules.ByProduct.TryGetValue(normalizedProductId, out var productRules))
 				{
 					// Product-specific rules override global rules
@@ -457,7 +458,7 @@ public class PrInfoProcessor(IGitHubPrService? githubPrService, ILogger logger)
 
 			products.Add(new ProductArgument
 			{
-				Product = parts[0].Replace('_', '-'),
+				Product = ProductNames.Normalize(parts[0]),
 				Target = parts.Length > 1 ? parts[1] : null,
 				Lifecycle = parts.Length > 2 ? parts[2] : null
 			});

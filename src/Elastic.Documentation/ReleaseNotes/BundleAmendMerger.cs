@@ -129,8 +129,16 @@ public static partial class BundleAmendMerger
 	private static List<BundledEntry> ApplySingleAmend(IReadOnlyList<BundledEntry> entries, Bundle amend)
 	{
 		var result = ApplyExclusions(entries, amend.ExcludeEntries);
-		if (amend.Entries.Count > 0)
-			result.AddRange(amend.Entries);
+		if (amend.Entries.Count == 0)
+			return result;
+
+		// an entry already in the bundle (same file name and checksum) is not added again: applying an amend twice is applying it once
+		var present = new HashSet<string>(result.Select(BuildExclusionKey), StringComparer.OrdinalIgnoreCase);
+		foreach (var added in amend.Entries)
+		{
+			if (NormalizeFileName(added.File?.Name) is null || present.Add(BuildExclusionKey(added)))
+				result.Add(added);
+		}
 		return result;
 	}
 

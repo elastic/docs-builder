@@ -12,8 +12,11 @@ public sealed record BundleSource(string FileName, string Checksum, ChangelogEnt
 /// <summary>A product as the CLI names it for a bundle (<c>--output-products</c>): <c>*</c> as a target or lifecycle is none.</summary>
 public sealed record BundleProductSpec(string? Product, string? Target, string? Lifecycle);
 
-/// <summary>An amend to apply to a bundle. <paramref name="PatchesDescription"/> is false for the reconciler-owned notes sidecar, which never patches the intro.</summary>
-public sealed record BundleAmend(Bundle Amend, bool PatchesDescription = true);
+/// <summary>
+/// An amend to apply to a bundle. <paramref name="PatchesDescription"/> is false for the reconciler-owned notes sidecar, which never patches the intro.
+/// <paramref name="FilePath"/> (the sidecar's path, when it has one) fixes the order amends are applied in: see <see cref="Bundle.ApplyAmends"/>.
+/// </summary>
+public sealed record BundleAmend(Bundle Amend, bool PatchesDescription = true, string? FilePath = null);
 
 /// <summary>
 /// The operations that make a <see cref="Bundle"/> from something that was not a file, or change one: pure functions (no IO, no clock) that return the
@@ -157,21 +160,37 @@ public partial record Bundle
 		);
 
 	/// <summary>
-	/// This bundle with its amends applied in order (see <see cref="BundleAmendMerger"/>): each amend's exclusions, then its additions; the intro is
+	/// This bundle with its amends applied (see <see cref="BundleAmendMerger"/>): each amend's exclusions, then its additions; the intro is
 	/// patched by the amends that patch it. The one way a bundle takes its amends.
+	/// <para>
+	/// Order: amends are numbered, so the order matters, and it is defined here and not by the caller: amends are applied by
+	/// <see cref="BundleAmendMerger.GetAmendMergeOrder"/> of their <see cref="BundleAmend.FilePath"/> (numbered amends ascending, the notes sidecar last), ties
+	/// by file path (ordinal); amends without a path keep the order they were given in, after the ones that have one.
+	/// </para>
+	/// <para>
+	/// Idempotent: an added entry whose file name and checksum are already in the bundle is not added again, so applying the same amends twice is
+	/// applying them once.
+	/// </para>
 	/// </summary>
-	public Result<Bundle> ApplyAmends(IReadOnlyList<BundleAmend> amendsInOrder) =>
-		DomainOperation.Derived(
+	public Result<Bundle> ApplyAmends(IReadOnlyList<BundleAmend> amends)
+	{
+		var ordered = amends
+			.OrderBy(a => a.FilePath is null)
+			.ThenBy(a => a.FilePath is null ? 0 : BundleAmendMerger.GetAmendMergeOrder(a.FilePath))
+			.ThenBy(a => a.FilePath, StringComparer.Ordinal)
+			.ToList();
+		return DomainOperation.Derived(
 			BundleReadConstraints.All,
 			this with
 			{
-				Entries = BundleAmendMerger.MergeEntries(Entries, amendsInOrder.Select(a => a.Amend).ToList()),
+				Entries = BundleAmendMerger.MergeEntries(Entries, ordered.Select(a => a.Amend).ToList()),
 				Description = BundleAmendMerger.MergeDescription(
 					Description,
-					amendsInOrder.Where(a => a.PatchesDescription).Select(a => a.Amend).ToList()
+					ordered.Where(a => a.PatchesDescription).Select(a => a.Amend).ToList()
 				)
 			}
 		);
+	}
 
 	/// <summary>This bundle without the references to repositories outside <paramref name="allowRepos"/>, its entries' and its intro's.</summary>
 	public Result<PrivateLinkScrub<Bundle>> WithoutPrivateLinks(

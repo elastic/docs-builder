@@ -225,7 +225,7 @@ public class CreateChangelogArgumentsValidator(IConfigurationContext configurati
 		foreach (var product in input.Products)
 		{
 			// Normalize product ID (replace underscores with hyphens for comparison)
-			var normalizedProductId = product.Product?.Replace('_', '-') ?? string.Empty;
+			var normalizedProductId = ProductNames.Normalize(product.Product);
 			if (!validProductIds.Contains(normalizedProductId))
 			{
 				var availableProducts = string.Join(", ", validProductIds.OrderBy(p => p));

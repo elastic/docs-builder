@@ -258,9 +258,10 @@ public class ChangelogEntryMatcher(IFileSystem fileSystem, ILogger logger)
 			// Check if any product in the changelog matches this filter
 			foreach (var changelogProduct in data.Products)
 			{
+				// product ids are compared in the catalog's spelling: a filter `cloud_hosted` matches the product `cloud-hosted`
 				var productMatches = MatchesPattern(
-					string.IsNullOrEmpty(changelogProduct.ProductId) ? null : changelogProduct.ProductId,
-					filter.ProductPattern
+					string.IsNullOrEmpty(changelogProduct.ProductId) ? null : ProductNames.Normalize(changelogProduct.ProductId),
+					filter.ProductPattern is null ? null : ProductNames.Normalize(filter.ProductPattern)
 				);
 
 				// Target filtering: null or "*" pattern matches everything.

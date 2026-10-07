@@ -640,7 +640,7 @@ public class GitHubReleaseChangelogService(
 		if (createRules == null)
 			return false;
 
-		var normalizedProductId = productInfo.Product?.Replace('_', '-') ?? string.Empty;
+		var normalizedProductId = ProductNames.Normalize(productInfo.Product);
 
 		// Check product-specific overrides first
 		if (createRules.ByProduct is { Count: > 0 } && createRules.ByProduct.TryGetValue(normalizedProductId, out var productRules))

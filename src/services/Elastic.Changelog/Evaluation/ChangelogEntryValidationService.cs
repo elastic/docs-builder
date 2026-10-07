@@ -130,7 +130,10 @@ public class ChangelogEntryValidationService(
 		IReadOnlySet<string>? knownProducts = null;
 		var availableProducts = configurationContext.Catalog.Products.Products;
 		if (availableProducts is { Count: > 0 })
-			knownProducts = new HashSet<string>(availableProducts.Keys.Select(k => k.Replace('_', '-')), StringComparer.OrdinalIgnoreCase);
+			knownProducts = new HashSet<string>(
+				availableProducts.Keys.Select(k => ProductNames.Normalize(k)),
+				StringComparer.OrdinalIgnoreCase
+			);
 
 		// ── Parse files, validate filenames, run field-level rules ───────────────────────────
 		var allFindings = new List<EntryFileFinding>();
@@ -169,7 +172,7 @@ public class ChangelogEntryValidationService(
 			{
 				foreach (var id in productIds)
 				{
-					var productId = id.Replace('_', '-').ToLowerInvariant();
+					var productId = ProductNames.Normalize(id).ToLowerInvariant();
 					if (availableProducts.TryGetValue(productId, out var product) && !string.IsNullOrWhiteSpace(product.Repository))
 					{
 						// RepositoryDto values are bare names (e.g. "elasticsearch") — qualify with owner.

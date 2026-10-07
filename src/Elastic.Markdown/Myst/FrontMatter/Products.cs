@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using Elastic.Documentation;
 using Elastic.Documentation.Catalog;
 using Elastic.Documentation.Suggestions;
 using YamlDotNet.Core;
@@ -42,7 +43,7 @@ public class ProductConverter(ProductCatalog products) : IYamlTypeConverter
 		if (string.IsNullOrWhiteSpace(productId))
 			throw new InvalidProductException("Product 'id' field is required. Example format:\nproducts:\n  - id: apm", products);
 
-		if (products.PublicReferenceProducts.TryGetValue(productId.Replace('_', '-'), out var product))
+		if (products.PublicReferenceProducts.TryGetValue(ProductNames.Normalize(productId), out var product))
 			return product;
 
 		throw new InvalidProductException(productId, products);

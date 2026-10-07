@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using Elastic.Changelog.GitHub;
+using Elastic.Documentation;
 using Elastic.Documentation.Configuration.Changelog;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.ReleaseNotes;
@@ -238,7 +239,7 @@ public class IssueInfoProcessor(IGitHubPrService? githubService, ILogger logger)
 		{
 			foreach (var product in products)
 			{
-				var normalizedProductId = product.Product?.Replace('_', '-') ?? string.Empty;
+				var normalizedProductId = ProductNames.Normalize(product.Product);
 				if (createRules.ByProduct.TryGetValue(normalizedProductId, out var productRules))
 				{
 					if (PrInfoProcessor.ShouldSkipByCreateRules(issueLabels, productRules, collector, issueUrl, product.Product))
