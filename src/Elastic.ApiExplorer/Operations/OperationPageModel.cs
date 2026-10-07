@@ -267,7 +267,9 @@ public partial record OperationPageModel
 			IsRequest = true,
 			DescriptionOverrides = supplemental?.RequestBodyOverrides
 		};
-		var requestProperties = requestSchema is not null ? builder.BuildPropertyList(requestSchema, requestScope) : null;
+		var (requestProperties, requestUnionVariants) = requestSchema is not null
+			? BuildBodyContent(requestSchema, requestScope, analyzer, builder)
+			: (null, null);
 
 		return new OperationPageModel
 		{
@@ -286,9 +288,7 @@ public partial record OperationPageModel
 				.ToArray(),
 			RequestContentType = requestContentEntry?.Key ?? "application/json",
 			RequestProperties = requestProperties,
-			RequestUnionVariants = requestSchema is not null && requestProperties is null
-				? BuildTopLevelUnionVariants(requestSchema, requestScope, analyzer, builder)
-				: null,
+			RequestUnionVariants = requestUnionVariants,
 			DescriptionMarkdown = endpoint.Description,
 			PostSections = ApiPostSection.From(context, supplemental?.PostSections ?? []),
 			RequestType = requestSchema is not null ? builder.Describe(requestSchema) : null,
@@ -843,10 +843,9 @@ public partial record OperationPageModel
 	)
 	{
 		var scope = new PropertyTreeScope { Prefix = $"res-{statusCode}" };
-		var properties = builder.BuildPropertyList(responseSchema, scope);
-		var arrayItemProperties = properties is null ? BuildArrayItemProperties(responseSchema, scope, analyzer, builder) : null;
-		var unionVariants = properties is null && arrayItemProperties is null
-			? BuildTopLevelUnionVariants(responseSchema, scope, analyzer, builder)
+		var (properties, unionVariants) = BuildBodyContent(responseSchema, scope, analyzer, builder);
+		var arrayItemProperties = properties is null && unionVariants is null
+			? BuildArrayItemProperties(responseSchema, scope, analyzer, builder)
 			: null;
 
 		return new ApiResponseContent
@@ -871,6 +870,25 @@ public partial record OperationPageModel
 
 		var arrayItemSchema = ResolveArrayItems(responseSchema, analyzer);
 		return arrayItemSchema is null ? null : builder.BuildPropertyList(arrayItemSchema, scope);
+	}
+
+	/// <summary>
+	/// The property list or the variant list of a request or response body. A union whose properties come only from an
+	/// <c>allOf</c> lists its variants, which already carry those shared properties. A union that declares properties
+	/// itself keeps listing them, as property rows do.
+	/// </summary>
+	internal static (ApiPropertyList? Properties, ApiUnionVariants? UnionVariants) BuildBodyContent(
+		IOpenApiSchema schema,
+		PropertyTreeScope scope,
+		SchemaAnalyzer analyzer,
+		ApiPropertyTreeBuilder builder
+	)
+	{
+		var declaresProperties = (analyzer.ResolveSchema(schema) ?? schema).Properties is { Count: > 0 };
+		var variants = analyzer.GetTypeInfo(schema).IsUnion && !declaresProperties
+			? BuildTopLevelUnionVariants(schema, scope, analyzer, builder)
+			: null;
+		return variants is not null ? (null, variants) : (builder.BuildPropertyList(schema, scope), null);
 	}
 
 	internal static ApiUnionVariants? BuildTopLevelUnionVariants(

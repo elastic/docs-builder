@@ -1254,4 +1254,65 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture)
 		cat.Select(p => p.Name).Should().Equal("id", "lives", "<string>");
 		cat.Single(p => p.Name == "<string>").Children.Properties!.Items.Select(p => p.Name).Should().Equal("enabled");
 	}
+
+	[Test]
+	public async Task BuildBodyContent_AllOfUnionWithBaseProperties_ListsTheVariantsNotJustTheBase()
+	{
+		var json =
+			"""
+			{
+			  "openapi": "3.0.3",
+			  "info": { "title": "t", "version": "1" },
+			  "paths": {},
+			  "components": {
+			    "schemas": {
+			      "Base": { "type": "object", "properties": { "id": { "type": "string" } } },
+			      "Cat": { "type": "object", "properties": { "lives": { "type": "integer" } } },
+			      "Dog": { "type": "object", "properties": { "barks": { "type": "boolean" } } },
+			      "Composed": {
+			        "allOf": [
+			          { "$ref": "#/components/schemas/Base" },
+			          { "oneOf": [ { "$ref": "#/components/schemas/Cat" }, { "$ref": "#/components/schemas/Dog" } ] }
+			        ]
+			      },
+			      "Declared": {
+			        "type": "object",
+			        "properties": { "kind": { "type": "string" } },
+			        "oneOf": [ { "$ref": "#/components/schemas/Cat" }, { "$ref": "#/components/schemas/Dog" } ]
+			      }
+			    }
+			  }
+			}
+			""";
+		var document = await LoadSpecAsync(json);
+		var builder = BuilderFor(document);
+		var analyzer = new SchemaAnalyzer(document);
+
+		var (properties, variants) = OperationPageModel.BuildBodyContent(
+			document.Components!.Schemas!["Composed"],
+			new PropertyTreeScope { Prefix = "req", IsRequest = true },
+			analyzer,
+			builder
+		);
+		properties.Should().BeNull();
+		variants!.Variants.Select(v => v.DisplayName).Should().Equal("Cat", "Dog");
+		variants.Variants[0].Properties!.Items.Select(p => p.Name).Should().Equal("id", "lives");
+
+		var (byReference, _) = OperationPageModel.BuildBodyContent(
+			new OpenApiSchemaReference("Composed", document),
+			new PropertyTreeScope { Prefix = "res-200" },
+			analyzer,
+			builder
+		);
+		byReference.Should().BeNull("a $ref to the same union lists its variants too");
+
+		var (declared, declaredVariants) = OperationPageModel.BuildBodyContent(
+			document.Components!.Schemas!["Declared"],
+			new PropertyTreeScope { Prefix = "res-200" },
+			analyzer,
+			builder
+		);
+		declared!.Items.Select(p => p.Name).Should().Equal("kind");
+		declaredVariants.Should().BeNull();
+	}
 }
