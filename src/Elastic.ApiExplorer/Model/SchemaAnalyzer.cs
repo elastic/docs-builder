@@ -353,7 +353,7 @@ public class SchemaAnalyzer(
 		// Check for allOf (usually inheritance/composition)
 		if (schema.AllOf is { Count: > 0 } allOf)
 		{
-			if (TrySplitAllOfUnion(allOf, out var allOfUnion))
+			if (AllOfUnion.TrySplit(allOf, this, out var allOfUnion))
 				return ClassifyAllOfUnion(allOfUnion);
 
 			var refSchemas = allOf.OfType<OpenApiSchemaReference>().ToArray();
@@ -465,33 +465,6 @@ public class SchemaAnalyzer(
 		};
 	}
 
-	/// <summary>
-	/// <c>allOf: [Base, { oneOf: [A, B] }]</c> means "Base plus one of A or B". The base members only count when
-	/// they contribute properties; an <c>allOf</c> that merely wraps a union <c>$ref</c> stays a plain named type.
-	/// </summary>
-	private bool TrySplitAllOfUnion(IList<IOpenApiSchema> allOf, out AllOfUnion split)
-	{
-		split = default;
-		foreach (var member in allOf)
-		{
-			var resolved = ResolveSchema(member);
-			if (resolved is null || resolved.Enum is { Count: > 0 })
-				continue;
-
-			if (!UnionSchemas.TryGet(resolved, out var keyword, out var variants))
-				continue;
-
-			var bases = allOf.Where(m => !ReferenceEquals(m, member)).ToArray();
-			if (!bases.Any(b => GetSchemaProperties(b)?.Count > 0))
-				continue;
-
-			split = new AllOfUnion(bases, variants, keyword);
-			return true;
-		}
-
-		return false;
-	}
-
 	/// <summary>The object schemas after the first <c>$ref</c> of an <c>allOf</c>; the first one names the type.</summary>
 	private List<ComposedType>? GetComposedTypes(OpenApiSchemaReference[] refSchemas)
 	{
@@ -534,7 +507,7 @@ public class SchemaAnalyzer(
 	/// </summary>
 	private TypeInfo? ClassifyReferencedAllOfUnion(string refId, IOpenApiSchema target)
 	{
-		if (target.AllOf is not { Count: > 0 } allOf || !TrySplitAllOfUnion(allOf, out var split) || !_expandingAllOfRefs.Add(refId))
+		if (target.AllOf is not { Count: > 0 } allOf || !AllOfUnion.TrySplit(allOf, this, out var split) || !_expandingAllOfRefs.Add(refId))
 			return null;
 
 		try
@@ -557,58 +530,10 @@ public class SchemaAnalyzer(
 
 		var options = union
 			.UnionOptions
-			.Select(
-				o => o is { IsObject: true, Schema: not null } && !o.IsArray ? o with { Schema = MergeBasesInto(split.Bases, o.Schema) } : o
-			)
+			.Select(o => o is { IsObject: true, Schema: not null } && !o.IsArray ? o with { Schema = split.MergeInto(o.Schema, this) } : o)
 			.ToList();
 		return union with { UnionOptions = options };
 	}
-
-	/// <summary>A synthetic <c>allOf</c> has no <c>required</c> list of its own, so it collects the lists of every member.</summary>
-	/// <summary>
-	/// Folds the shared base members and one variant into a single object schema. The variant's own properties and map value win
-	/// over a base one of the same name, and the <c>required</c> lists of every member carry over.
-	/// </summary>
-	private OpenApiSchema MergeBasesInto(IReadOnlyList<IOpenApiSchema> bases, IOpenApiSchema variant)
-	{
-		var properties = new Dictionary<string, IOpenApiSchema>();
-		foreach (var member in bases)
-		{
-			foreach (var (name, property) in GetSchemaProperties(member) ?? new Dictionary<string, IOpenApiSchema>())
-				_ = properties.TryAdd(name, property);
-		}
-
-		foreach (var (name, property) in GetSchemaProperties(variant) ?? new Dictionary<string, IOpenApiSchema>())
-			properties[name] = property;
-
-		var required = new HashSet<string>();
-		CollectRequired([.. bases, variant], required, [with(ReferenceEqualityComparer.Instance)]);
-		return new OpenApiSchema
-		{
-			Type = JsonSchemaType.Object,
-			Properties = properties,
-			Required = required,
-			AdditionalProperties = (ResolveSchema(variant) ?? variant).AdditionalProperties
-				?? bases.Select(b => (ResolveSchema(b) ?? b).AdditionalProperties).FirstOrDefault(a => a is not null),
-			Description = variant.Description
-		};
-	}
-
-	private void CollectRequired(IEnumerable<IOpenApiSchema> schemas, HashSet<string> required, HashSet<IOpenApiSchema> visited)
-	{
-		foreach (var schema in schemas)
-		{
-			var resolved = ResolveSchema(schema) ?? schema;
-			if (!visited.Add(resolved))
-				continue;
-
-			if (resolved.Required is { } declared)
-				required.UnionWith(declared);
-			CollectRequired(resolved.AllOf ?? [], required, visited);
-		}
-	}
-
-	private readonly record struct AllOfUnion(IReadOnlyList<IOpenApiSchema> Bases, IList<IOpenApiSchema> Variants, UnionKeyword Keyword);
 
 	/// <summary>
 	/// Known domain aliases (<c>Field</c>, <c>Id</c>) keep their name. Codegen wrappers that are

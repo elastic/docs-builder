@@ -913,10 +913,11 @@ public partial record OperationPageModel
 	/// </summary>
 	private static UnionOption DescribeMember(UnionOption option, SchemaAnalyzer analyzer)
 	{
+		if (option.Schema is MergedVariantSchema)
+			return option;
+
 		var info = analyzer.GetTypeInfo(option.Schema);
-		return string.IsNullOrEmpty(info.SchemaRef) && !string.IsNullOrEmpty(option.Ref)
-			? option
-			: new UnionOption(info.TypeName, info.SchemaRef, info.IsObject, option.Schema, info.IsArray);
+		return new UnionOption(info.TypeName, info.SchemaRef, info.IsObject, option.Schema, info.IsArray);
 	}
 
 	private static IReadOnlyList<string> NamesOf(IEnumerable<string?> names) => [.. names.OfType<string>().Where(static n => n.Length > 0)];

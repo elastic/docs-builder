@@ -1396,4 +1396,48 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture)
 		TypeOf("size").Should().Be("number | string");
 		TypeOf("nullableName").Should().Be("string");
 	}
+
+	[Test]
+	public async Task BuildPropertyList_AllOfUnionWithAMapOnlyBase_StaysAUnionAndKeepsTheMap()
+	{
+		var json =
+			"""
+			{
+			  "openapi": "3.0.3",
+			  "info": { "title": "t", "version": "1" },
+			  "paths": {},
+			  "components": {
+			    "schemas": {
+			      "Input": { "type": "object", "properties": { "enabled": { "type": "boolean" } } },
+			      "Cat": { "type": "object", "properties": { "lives": { "type": "integer" } } },
+			      "Dog": { "type": "object", "properties": { "barks": { "type": "boolean" } } },
+			      "Pet": {
+			        "allOf": [
+			          { "type": "object", "additionalProperties": { "$ref": "#/components/schemas/Input" } },
+			          { "oneOf": [ { "$ref": "#/components/schemas/Cat" }, { "$ref": "#/components/schemas/Dog" } ] }
+			        ]
+			      },
+			      "Holder": { "type": "object", "properties": { "pet": { "$ref": "#/components/schemas/Pet" } } }
+			    }
+			  }
+			}
+			""";
+		var document = await LoadSpecAsync(json);
+		var builder = BuilderFor(document);
+
+		var pet = builder.BuildPropertyList(document.Components!.Schemas!["Holder"], new PropertyTreeScope { Prefix = "" })!.Items.Single();
+		pet.Children.Kind.Should().Be(ChildKind.UnionVariants);
+		var cat = pet.Children.Variants!.Variants[0];
+		cat.DisplayName.Should().Be("Cat");
+		cat.Properties!.Items.Select(p => p.Name).Should().Equal("lives", "<string>");
+
+		var (properties, variants) = OperationPageModel.BuildBodyContent(
+			document.Components!.Schemas!["Pet"],
+			new PropertyTreeScope { Prefix = "req", IsRequest = true },
+			new SchemaAnalyzer(document),
+			builder
+		);
+		properties.Should().BeNull();
+		variants!.Variants.Select(v => v.DisplayName).Should().Equal("Cat", "Dog");
+	}
 }
