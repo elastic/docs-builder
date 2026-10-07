@@ -17,6 +17,11 @@ export function initTooltips(): void {
         delay: [80, 0],
         placement: 'top',
         touch: ['hold', 300],
+        // A click on a copy button swaps the text in place (flashTooltip); hiding the tooltip would make it flicker.
+        onCreate: (instance) => {
+            if (instance.reference.matches('.copybtn, .api-code-preview-btn'))
+                instance.setProps({ hideOnClick: false })
+        },
         appendTo: (reference) => reference.closest('dialog') ?? document.body,
     })
 }
@@ -33,8 +38,6 @@ export function flashTooltip(el: HTMLElement, text: string, ms = 1500): void {
         ;(el as HTMLElement & { _tippy?: Instance })._tippy?.setContent(value)
     }
     set(text)
-    // tippy hides a tooltip on click, which is when this runs, so bring it back with the new text.
-    ;(el as HTMLElement & { _tippy?: Instance })._tippy?.show()
     const timer = window.setTimeout(() => {
         set(original)
         flashes.delete(el)
