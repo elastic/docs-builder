@@ -6,7 +6,7 @@ import { iconCheckEui, iconCopyEui, temporarilyChangeIcon } from './copybutton'
 import { closeIcon, fullscreenIcon } from './icons'
 import { prefersReducedMotion } from './motion'
 import { lockPageScroll } from './scroll-lock'
-import { initTooltips } from './tooltip'
+import { flashTooltip, initTooltips } from './tooltip'
 
 export const apiLanguageStorageKey = 'api-language'
 const defaultLanguage = 'Console'
@@ -451,7 +451,10 @@ function openPreview(card: HTMLElement): HTMLDialogElement | null {
         )
         if (!write) return
         write.then(
-            () => temporarilyChangeIcon(copy, iconCopyEui, iconCheckEui),
+            () => {
+                temporarilyChangeIcon(copy, iconCopyEui, iconCheckEui)
+                flashTooltip(copy, 'Copied!')
+            },
             // Denied by permission or policy: the icon stays put, and the error is logged like the code block copy button does.
             (error: unknown) => console.error(error)
         )

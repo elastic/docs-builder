@@ -310,10 +310,4 @@
 		stroke: none;
 		fill: currentColor;
 	}
-
-	&.o-tooltip--left:after {
-		background-color: var(--code-fg);
-		color: var(--code-bg);
-		transform: translateX(-102%) translateY(0);
-	}
 }

@@ -75,12 +75,6 @@
 	fill: currentColor;
 }
 
-.api-url-copy.copybtn.o-tooltip--left:after {
-	background-color: #1d2a3e;
-	color: #f6f9fc;
-	transform: translateX(-102%) translateY(0);
-}
-
 /* Path chip — mirrors inline code (markdown/code.css) so routes read as code */
 .api-url-row > .api-url {
 	@apply bg-grey-10 border-grey-20 border-1 font-mono;

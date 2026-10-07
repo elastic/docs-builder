@@ -7,7 +7,7 @@ import { decorateApiCodeTokens } from './api-code-tokens'
 import { initApiExamples } from './api-examples-carousel'
 import { applyParamSummaryFit } from './api-param-summary'
 import { iconCheckEui, iconCopyEui } from './copybutton'
-import { initTooltips } from './tooltip'
+import { flashTooltip, initTooltips } from './tooltip'
 
 // Check if hidden="until-found" is supported (for find-in-page in collapsed sections)
 const supportsHiddenUntilFound = 'onbeforematch' in document.body
@@ -751,11 +751,10 @@ function initApiEndpointCopy(): void {
             void navigator.clipboard.writeText(text).then(
                 () => {
                     btn.classList.add('success')
-                    btn.setAttribute('data-tooltip', 'Copied!')
+                    flashTooltip(btn, 'Copied!')
                     btn.innerHTML = iconCheckEui
                     window.setTimeout(() => {
                         btn.classList.remove('success')
-                        btn.setAttribute('data-tooltip', 'Copy')
                         btn.innerHTML = iconCopyEui
                     }, 1500)
                 },

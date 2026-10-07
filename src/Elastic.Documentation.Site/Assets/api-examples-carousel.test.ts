@@ -59,7 +59,14 @@ function markup(): string {
 }
 
 type Tipped = HTMLElement & {
-    _tippy?: { props: { content: unknown; delay: unknown; appendTo: unknown } }
+    _tippy?: {
+        props: {
+            content: unknown
+            delay: unknown
+            appendTo: unknown
+            hideOnClick: unknown
+        }
+    }
 }
 
 function activeLang(scenario: string): string | undefined {
@@ -240,6 +247,19 @@ describe('API examples carousel', () => {
         expect(dot.hasAttribute('title')).toBe(false)
         expect(dot._tippy?.props.content).toBe('Java')
         expect(dot._tippy?.props.delay).toEqual([80, 0])
+    })
+
+    it('keeps a copy button tooltip open on click so its text changes in place', () => {
+        initApiExamples()
+        const copy = document.createElement('button')
+        copy.className = 'copybtn'
+        copy.dataset.tippyContent = 'Copy'
+        document.body.appendChild(copy)
+
+        copy.dispatchEvent(new MouseEvent('mouseover', { bubbles: true }))
+
+        expect((copy as Tipped)._tippy?.props.hideOnClick).toBe(false)
+        copy.remove()
     })
 
     it('mounts a tooltip inside the preview dialog, above its top layer', () => {
