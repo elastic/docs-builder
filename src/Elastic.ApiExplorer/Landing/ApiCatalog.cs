@@ -20,8 +20,16 @@ public sealed record ApiCatalogEntry(string Key, string Title, string Url, strin
 
 public class ApiCatalog : IApiGroupingModel
 {
-	public const string PageTitle = "API catalog";
-	public const string PageDescription = "API products in this documentation set.";
+	public const string PageTitle = "Elastic APIs";
+
+	/// <summary>The line under the title. It also tells a reader what the deployment tags on the cards refer to.</summary>
+	public const string PageLede =
+		"Reference documentation for the Elastic REST APIs, for self-managed, Elastic Cloud and Serverless deployments.";
+
+	/// <summary>Section the catalog view hands to its layout, rendered above the width-limited container.</summary>
+	public const string HeroSection = "api-catalog-hero";
+	public const string PageDescription =
+		"Reference documentation for Elastic REST APIs, including Elasticsearch, Kibana and Elastic Cloud.";
 
 	public required IReadOnlyList<ApiCatalogEntry> Entries { get; init; }
 

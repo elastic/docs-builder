@@ -2826,20 +2826,8 @@ button.example-response-tab:focus-visible {
 	}
 }
 
-/* API catalog — own markup and selectors. Values match hub cards so the
-   pages feel related; a hub.css change does not restyle this page. */
-.api-catalog {
-	margin: 0 auto;
-	max-width: 64rem;
-}
-
-.api-catalog-header {
-	padding: 40px 0 28px;
-	margin-bottom: 44px;
-	border-bottom: 1px solid var(--color-grey-20);
-}
-
-.api-catalog-header h1,
+/* API catalog. The cards use the docs landing page's Tailwind classes and the applies_to pill look,
+   so this file only holds what those utilities cannot express. */
 .api-landing-heading h1 {
 	margin: 0;
 	font-size: var(--text-4xl);
@@ -2849,151 +2837,119 @@ button.example-response-tab:focus-visible {
 	color: var(--color-ink-dark);
 }
 
-.api-catalog-lede {
-	margin: 16px 0 0;
-	max-width: 760px;
+/* The hero caps its inner width for hub pages, which would leave the centred title off-centre. */
+.api-catalog .hub-hero .hub-hero-inner {
+	max-width: none;
+}
+
+.api-catalog .hub-hero .hub-hero-top {
+	margin-bottom: 0;
+}
+
+/* The hero is a centred title and one line of text on a band that spans the screen, in the flat light grey the
+   docs landing page uses for its own hero, so the white cards below stand out against it. */
+.api-catalog-band {
+	background: var(--color-grey-10);
+}
+
+.api-catalog .hub-hero.api-catalog-hero {
+	padding: 56px 0 44px;
+	margin-bottom: 0;
+	border-bottom: 0;
+	text-align: center;
+}
+
+/* The title is set in Space Grotesk, which the Elastic brand guide (brand.elastic.co, Typography) names for
+   developer marketing headlines. The guide says that use needs the brand team's agreement. Headline leading is
+   the guide's 1.14, at its heaviest weight (Space Grotesk stops at 700), with the Mier B headline face and then
+   Inter behind it if the font does not load. The hub hero sets no family, which left this title in Inter. */
+.api-catalog .hub-hero .hub-hero-top h1 {
+	font-family: 'Space Grotesk', var(--font-sans);
+	font-size: clamp(var(--text-4xl), 3vw, var(--text-5xl));
+	font-weight: 700;
+	line-height: 1.14;
+	letter-spacing: -0.02em;
+}
+
+/* "Extra bold headlines with lighter accompanying text", per the brand guide: the line under the title is Inter
+   at regular weight in the lighter ink, with the guide's paragraph leading of 1.55. Its contrast on the band is
+   6.65:1, above the 4.5:1 the guide requires. */
+.api-catalog .api-catalog-lede {
+	max-width: 36rem;
+	margin: 12px auto 0;
+	font-family: var(--font-body);
 	font-size: var(--text-base);
-	line-height: 1.6;
+	line-height: 1.55;
 	color: var(--color-ink-light);
+	text-wrap: balance;
 }
 
-.api-catalog-grid {
-	display: grid;
-	grid-template-columns: repeat(auto-fill, minmax(min(310px, 100%), 1fr));
-	gap: 24px;
-	margin: 0;
-	padding: 0;
-	list-style: none;
+@media (max-width: 640px) {
+	.api-catalog .hub-hero.api-catalog-hero {
+		padding: 36px 0 32px;
+	}
 }
 
-.api-catalog-grid > li {
-	margin: 0;
-	list-style: none;
+.api-catalog .api-catalog-hero .hub-hero-top {
+	justify-content: center;
 }
 
-.api-catalog-grid .api-catalog-card {
-	display: flex;
-	flex-direction: column;
+.api-catalog .api-catalog-card-icon svg {
+	display: block;
+	width: 100%;
 	height: 100%;
-	box-sizing: border-box;
-	padding: 22px;
-	background: var(--color-white);
-	border: 1px solid var(--color-grey-20);
-	border-radius: 14px;
-	text-decoration: none;
+}
+
+/* The card is the link, so it takes the link out of its own colour and underline. The hover border is
+   grey-80 for the same reason the hub cards use it: it clears the 3:1 ratio a state indicator needs,
+   which the resting grey-20 container edge does not have to. */
+.api-catalog .api-catalog-card {
 	color: inherit;
+	text-decoration: none;
 	transition:
 		box-shadow 0.15s,
 		border-color 0.15s;
 }
 
-.api-catalog-grid .api-catalog-card:hover,
-.api-catalog-grid .api-catalog-card:focus-within {
+.api-catalog .api-catalog-card:hover .api-catalog-card-title,
+.api-catalog .api-catalog-card:focus-visible .api-catalog-card-title {
+	color: var(--color-blue-elastic);
+}
+
+.api-catalog .api-catalog-card:hover,
+.api-catalog .api-catalog-card:focus-visible {
 	border-color: var(--color-grey-80);
 	box-shadow: 0 2px 8px rgb(0 0 0 / 0.05);
 }
 
-.api-catalog-card-main {
-	display: block;
-	flex: 1 1 auto;
-	text-decoration: none;
-	color: inherit;
+.api-catalog .api-catalog-card:focus-visible {
+	outline: 2px solid var(--color-blue-elastic);
+	outline-offset: 2px;
 }
 
-.api-catalog-card-head {
-	display: flex;
-	align-items: center;
-	gap: 10px;
-	margin-bottom: 6px;
+@media (prefers-reduced-motion: reduce) {
+	.api-catalog .api-catalog-card {
+		transition: none;
+	}
 }
 
-.api-catalog-card-icon {
-	flex-shrink: 0;
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	width: 36px;
-	height: 36px;
-	border-radius: 8px;
-	background: var(--color-grey-10);
+/* Descriptions are up to 150 characters. Four across, that is too long to show whole. */
+.api-catalog .api-catalog-desc {
+	display: -webkit-box;
+	overflow: hidden;
+	-webkit-box-orient: vertical;
+	-webkit-line-clamp: 2;
+	line-clamp: 2;
 }
 
-.api-catalog-card-icon svg {
-	width: 22px;
-	height: 22px;
-	display: block;
+.api-catalog .api-catalog-featured .api-catalog-desc {
+	-webkit-line-clamp: 3;
+	line-clamp: 3;
 }
 
-.api-catalog-card-title {
-	margin: 0;
-	font-size: var(--text-base);
-	font-weight: 700;
-	color: var(--color-ink-dark);
-}
-
-.api-catalog-card:hover .api-catalog-card-title,
-.api-catalog-card:focus-within .api-catalog-card-title {
-	color: var(--color-blue-elastic);
-}
-
-.api-catalog-card-key {
-	display: inline-block;
-	margin-top: 4px;
-	font-size: var(--text-sm);
-	color: var(--color-ink-light);
-}
-
-.api-catalog-card-badges {
-	display: flex;
-	flex-wrap: wrap;
-	gap: 6px;
-	margin-top: 10px;
-}
-
-.api-catalog-badge {
-	display: inline-flex;
-	align-items: center;
-	padding: 2px 8px;
-	border-radius: 999px;
-	border: 1px solid var(--color-grey-20);
-	background: var(--color-grey-10);
-	font-size: var(--text-xs);
-	line-height: 1.4;
-	color: var(--color-ink-light);
-}
-
-.api-catalog-badge-rest {
-	border-color: var(--color-blue-elastic-30);
-	background: var(--color-blue-elastic-10);
-	color: var(--color-blue-elastic);
-	font-weight: 600;
-}
-
-.api-catalog-card-desc {
-	margin: 10px 0 0;
-	font-size: var(--text-base);
-	line-height: 1.5;
-	color: var(--color-ink-light);
-}
-
-.api-catalog-card-actions {
-	display: flex;
-	gap: 12px;
-	margin-top: 16px;
-	padding-top: 12px;
-	border-top: 1px solid var(--color-grey-20);
-}
-
-.api-catalog-card-actions a {
-	font-size: var(--text-sm);
-	font-weight: 600;
-	color: var(--color-blue-elastic);
-	text-decoration: none;
-}
-
-.api-catalog-card-actions a:hover,
-.api-catalog-card-actions a:focus-visible {
-	text-decoration: underline;
+/* The applies_to pill is built for running text. In a card it is tightened to a small tag. */
+.api-catalog .applies .applicable-info {
+	padding: 1px 8px;
 }
 
 .api-landing-heading {
