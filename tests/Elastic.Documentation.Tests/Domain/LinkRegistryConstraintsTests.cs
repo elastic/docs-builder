@@ -23,6 +23,24 @@ public class LinkRegistryConstraintsTests
 	public void ValidRegistry_BreaksNoRule() => LinkRegistryConstraints.All.Validate(Valid()).Should().BeEmpty();
 
 	[Test]
+	public void GitRefKnown_FiresExactlyForUnknown()
+	{
+		var rule = LinkRegistryConstraints.RegistryEntryGitRefKnown;
+
+		static IReadOnlyList<Nullean.Entities.Violation> Check(Nullean.Entities.Constraint<LinkRegistry> c, string gitRef)
+		{
+			var r = Registry(("kibana", "main", Entry("kibana", "main") with { GitReference = gitRef }));
+			return c.Check(r, r).ToList();
+		}
+
+		Check(rule, "abc123").Should().BeEmpty();
+		Check(rule, "unknown").Should().ContainSingle().Which.Message.Should().Contain("kibana/main").And.Contain("'unknown'");
+		Check(rule, null!).Should().ContainSingle();
+		Check(rule, "Unknown").Should().BeEmpty();
+		Check(LinkRegistryConstraints.RegistryEntryHasRefAndTimestamp, "unknown").Should().BeEmpty();
+	}
+
+	[Test]
 	public void AddingANewerEntry_IsMonotonic()
 	{
 		var before = Valid();
@@ -85,7 +103,9 @@ public class LinkRegistryConstraintsTests
 	} = new Dictionary<string, Func<LinkRegistry, LinkRegistry>>
 	{
 		["registry-entry-updated-at-monotonic"] = r => WithFirst(r, e => e with { UpdatedAt = e.UpdatedAt.AddDays(-1) }),
-		["registry-entry-has-ref-and-timestamp"] = r => WithFirst(r, e => e with { GitReference = "unknown" }),
+		["registry-entry-has-ref-and-timestamp"] =
+			r => With(r, "tools", "main", Entry("tools", "main") with { UpdatedAt = DateTime.MinValue }),
+		["registry-entry-git-ref-known"] = r => WithFirst(r, e => e with { GitReference = "unknown" }),
 		["repository-has-main-or-master"] = r => With(r, "tools", "dev", Entry("tools", "dev")),
 		["registry-entry-path-matches-key"] = r => WithFirst(r, e => e with { Path = "elastic/elsewhere/links.json" }),
 		["registry-repository-name-single-segment"] = r => With(r, "../evil", "main", Entry("../evil", "main"))

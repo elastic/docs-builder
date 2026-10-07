@@ -68,4 +68,88 @@ public class DiagnosticsCollectorTests
 		collector.Errors.Should().Be(2);
 		collector.Warnings.Should().Be(1);
 	}
+
+	private static Diagnostic Ruled(
+		string? ruleId = "rule-a",
+		string file = "f.md",
+		int? line = 3,
+		int? column = 1,
+		Severity severity = Severity.Warning,
+		string message = "m"
+	) =>
+		new()
+		{
+			RuleId = ruleId,
+			File = file,
+			Line = line,
+			Column = column,
+			Severity = severity,
+			Message = message
+		};
+
+	[Test]
+	public void IdenticalRuleDiagnostic_IsDroppedAndNotCounted()
+	{
+		var collector = new DiagnosticsCollector([]);
+		collector.Write(Ruled());
+		collector.Write(Ruled());
+		collector.Write(Ruled(severity: Severity.Error));
+		collector.Write(Ruled(severity: Severity.Error));
+		collector.Write(Ruled(severity: Severity.Hint));
+		collector.Write(Ruled(severity: Severity.Hint));
+
+		collector.Warnings.Should().Be(1);
+		collector.Errors.Should().Be(1);
+		collector.Hints.Should().Be(1);
+		collector.DuplicatesDropped.Should().HaveCount(3);
+		var queued = 0;
+		while (collector.Channel.Reader.TryRead(out _))
+			queued++;
+		queued.Should().Be(3);
+	}
+
+	[Test]
+	public void RuleDiagnostics_DifferingInAnyField_AreKept()
+	{
+		var collector = new DiagnosticsCollector([]);
+		collector.Write(Ruled());
+		collector.Write(Ruled(line: 4));
+		collector.Write(Ruled(column: 2));
+		collector.Write(Ruled(file: "g.md"));
+		collector.Write(Ruled(message: "other"));
+		collector.Write(Ruled(ruleId: "rule-b"));
+		collector.Write(Ruled(line: null));
+
+		collector.Warnings.Should().Be(7);
+		collector.DuplicatesDropped.Should().BeEmpty();
+	}
+
+	[Test]
+	public void DiagnosticWithoutRuleId_IsNeverDeduplicated()
+	{
+		var collector = new DiagnosticsCollector([]);
+		collector.Write(Ruled(ruleId: null));
+		collector.Write(Ruled(ruleId: null));
+		collector.Write(Ruled(ruleId: ""));
+		collector.Write(Ruled(ruleId: ""));
+		collector.EmitWarning("f.md", "same");
+		collector.EmitWarning("f.md", "same");
+
+		collector.Warnings.Should().Be(6);
+		collector.DuplicatesDropped.Should().BeEmpty();
+	}
+
+	[Test]
+	public async Task ConcurrentIdenticalWrites_AdmitExactlyOne()
+	{
+		var collector = new DiagnosticsCollector([]);
+		await Task.WhenAll(Enumerable.Range(0, 64).Select(_ => Task.Run(() =>
+		{
+			for (var i = 0; i < 50; i++)
+				collector.Write(Ruled(line: i));
+		})));
+
+		collector.Warnings.Should().Be(50);
+		collector.DuplicatesDropped.Should().HaveCount(64 * 50 - 50);
+	}
 }

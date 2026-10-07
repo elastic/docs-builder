@@ -89,7 +89,15 @@ public record LinkRegistryEntry
 	// TODO can be made required after all doc_sets have published again
 	[JsonPropertyName("ref")]
 	[JsonInclude]
-	public string GitReference { get; internal init; } = "unknown";
+	public string GitReference
+	{
+		get;
+		// An explicit "ref": null in the JSON is a legacy entry too, so it reads as 'unknown' like a missing key does; the value is never null.
+		internal init => field = value ?? UnknownGitReference;
+	} = UnknownGitReference;
+
+	/// <summary>The git ref of a legacy entry that has not republished since the ref was added.</summary>
+	public const string UnknownGitReference = "unknown";
 
 	// TODO can be made required after all doc_sets have published again
 	[JsonPropertyName("updated_at")]

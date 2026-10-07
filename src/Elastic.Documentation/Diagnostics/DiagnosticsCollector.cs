@@ -137,13 +137,41 @@ public class DiagnosticsCollector(
 
 	public void EmitCrossLink(string link) => CrossLinks.Add(link);
 
-	public virtual void Write(Diagnostic diagnostic)
+	private readonly ConcurrentDictionary<(string RuleId, string File, int? Line, int? Column, Severity Severity, string Message), byte> _seenRuleDiagnostics = [];
+	private readonly ConcurrentQueue<Diagnostic> _duplicatesDropped = [];
+
+	/// <summary>
+	/// The diagnostics <see cref="Write"/> dropped because an identical one (same <see cref="Diagnostic.RuleId"/>, file, line, column, severity and message)
+	/// was already written in this run. The output is deduplicated, so this is how a guard test sees double emission: it must be empty for a clean run.
+	/// </summary>
+	public IReadOnlyCollection<Diagnostic> DuplicatesDropped => _duplicatesDropped;
+
+	public virtual void Write(Diagnostic diagnostic) => _ = Accept(diagnostic);
+
+	/// <summary>
+	/// Counts and queues a diagnostic unless it is an exact duplicate of one with the same rule id already written, in which case it is recorded in
+	/// <see cref="DuplicatesDropped"/> and neither counted nor output. A diagnostic without a rule id is never deduplicated.
+	/// </summary>
+	/// <returns><c>false</c> when the diagnostic was dropped as a duplicate.</returns>
+	protected bool Accept(Diagnostic diagnostic)
 	{
+		if (
+			!string.IsNullOrEmpty(diagnostic.RuleId)
+			&& !_seenRuleDiagnostics.TryAdd(
+				(diagnostic.RuleId, diagnostic.File, diagnostic.Line, diagnostic.Column, diagnostic.Severity, diagnostic.Message),
+				0
+			)
+		)
+		{
+			_duplicatesDropped.Enqueue(diagnostic);
+			return false;
+		}
 		// IncrementSeverityCount MUST run unconditionally and before Channel.Write.
 		// The severity count is authoritative (drives exit-code decisions and programmatic
 		// inspection) even when the body is dropped by TryWrite on a completed channel.
 		IncrementSeverityCount(diagnostic);
 		Channel.Write(diagnostic);
+		return true;
 	}
 
 	public void Emit(Severity severity, string file, string message) =>

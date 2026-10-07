@@ -169,15 +169,41 @@ public sealed class CapturingDiagnosticsCollector() : DiagnosticsCollector([])
 {
 	private readonly List<Diagnostic> _diagnostics = [];
 
-	public IReadOnlyList<Diagnostic> Diagnostics => _diagnostics;
+	/// <summary>The diagnostics in emission order. Reading them is the guard against double reporting: it fails when one rule reported the same problem twice.</summary>
+	public IReadOnlyList<Diagnostic> Diagnostics
+	{
+		get
+		{
+			DoubleReportGuard.AssertNone(this);
+			return _diagnostics;
+		}
+	}
 
 	public override void Write(Diagnostic diagnostic)
 	{
-		IncrementSeverityCount(diagnostic);
-		_diagnostics.Add(diagnostic);
+		if (Accept(diagnostic))
+			_diagnostics.Add(diagnostic);
 	}
 
 	public override DiagnosticsCollector StartAsync(Cancel ctx) => this;
 
 	public override Task StopAsync(Cancel cancellationToken) => Task.CompletedTask;
+}
+
+/// <summary>
+/// The guard for "one emitter per problem": the collector drops an exact duplicate of a rule's diagnostic, which hides a double emission from the
+/// output; this reads the dropped duplicates so a shipped scenario that reports a problem twice still fails.
+/// </summary>
+public static class DoubleReportGuard
+{
+	public static void AssertNone(DiagnosticsCollector collector)
+	{
+		if (collector.DuplicatesDropped.Count == 0)
+			return;
+		throw new InvalidOperationException(
+			"A rule reported the same problem twice (one emitter per problem; a legacy emitter must tag the same RuleId and be removed):" + string.Concat(
+				collector.DuplicatesDropped.Select(d => $"{Environment.NewLine}  [{d.RuleId}] {d.File}:{d.Line}:{d.Column} {d.Message}")
+			)
+		);
+	}
 }

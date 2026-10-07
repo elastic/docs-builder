@@ -26,8 +26,20 @@ public static partial class LinkRegistryConstraints
 		Entries,
 		(_, e) => LegacyParts(e)
 	).Describe(
-		"N39: An entry has a git ref and an updated_at; legacy entries default to ref 'unknown' and updated_at MinValue, and cloning 'unknown' fails later."
+		"N39: An entry has an updated_at; legacy entries default to updated_at MinValue (the git ref part of this row is registry-entry-git-ref-known)."
 	);
+
+	// TODO(severity): promote to Error with WithSeverityUntil(Warning, <date>, Error) once the date is picked with the user
+	public static Constraint<LinkRegistry> RegistryEntryGitRefKnown { get; } = Constraints<LinkRegistry>
+		.Each(
+			Entries,
+			e => e.Entry.GitReference != LinkRegistryEntry.UnknownGitReference,
+			e => $"Entry {e.Repository}/{e.Branch} is a legacy entry: its ref is '{LinkRegistryEntry.UnknownGitReference}'."
+		)
+		.WithSeverity(Severity.Warning)
+		.Describe(
+			"N39: A registry entry's git ref is never 'unknown' (a legacy entry that has not republished); cloning 'unknown' fails later."
+		);
 
 	public static Constraint<LinkRegistry> RepositoryHasMainOrMaster { get; } = Constraints<LinkRegistry>.Each(
 		r => r.Repositories,
@@ -60,8 +72,6 @@ public static partial class LinkRegistryConstraints
 
 	private static IEnumerable<Violation> LegacyParts((string Repository, string Branch, LinkRegistryEntry Entry) e)
 	{
-		if (e.Entry.GitReference == "unknown")
-			yield return Violation.Warning($"Entry {e.Repository}/{e.Branch} is a legacy entry: its ref is 'unknown'.");
 		if (e.Entry.UpdatedAt == DateTime.MinValue)
 			yield return Violation.Warning($"Entry {e.Repository}/{e.Branch} is a legacy entry: its updated_at is unset.");
 	}

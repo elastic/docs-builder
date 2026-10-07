@@ -91,6 +91,14 @@ public static class AuthoringGenerator
 		await generator.GenerateAll(ctx);
 		await collector.StopAsync(ctx);
 
+		// the guard for double reporting: the collector drops an exact duplicate of a rule's diagnostic, so the output cannot show one
+		if (collector.DuplicatesDropped.Count > 0)
+			throw new InvalidOperationException(
+				"A rule reported the same problem twice (one emitter per problem):" + string.Concat(
+					collector.DuplicatesDropped.Select(d => $"{Environment.NewLine}  [{d.RuleId}] {d.File}:{d.Line}:{d.Column} {d.Message}")
+				)
+			);
+
 		// Materialize all results (including MinimalParse) so the lazy F# Seq-per-assertion
 		// pattern is gone — each MarkdownResult is computed once.
 		var markdownResults = await Task.WhenAll(conversionCollector

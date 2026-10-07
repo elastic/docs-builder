@@ -156,6 +156,14 @@ The assembler loads many documentation sets at once, so a loader (and the conver
 - A converter loop consumes an event on every path (`SkipThisAndNestedEvents` for what it does not read); a loop that can leave one unread spins forever on a stray line.
 - Proof: `ConcurrentLoadTests` runs every entry point over the shipped text and its bent variants on 32 threads and compares each outcome with the one it gives alone, with a timeout so a regression fails instead of hanging.
 
+## Double reporting: one emitter per problem
+
+A problem is reported by one emitter. While a legacy emitter (a hand-written `EmitError` in a loader or a parser) and a constraint report both describe the same problem, the legacy emitter tags its diagnostic with the **same `RuleId`** as the rule, at the same file, line, column, severity and message, so the output shows it once.
+
+- `DiagnosticsCollector.Write` drops an exact duplicate (same non-empty `RuleId`, file, line, column, severity and message as one already written in the run). A dropped duplicate is not counted in `Errors`/`Warnings`/`Hints` and not output. A diagnostic without a `RuleId` is never deduplicated, so untagged legacy emitters behave as before.
+- The dedupe hides a double emission from the output, so the dropped duplicates are kept in `DiagnosticsCollector.DuplicatesDropped`. It is the guard: the Authoring generator (`AuthoringGenerator.GenerateAsync`) and the Configuration `CapturingDiagnosticsCollector` (every golden and shipped-configuration load) fail when it is not empty. A failure means two emitters report one problem: remove the legacy emitter once the rule covers it; do not widen the dedupe.
+- A collector that overrides `Write` calls `Accept(diagnostic)` (it returns `false` for a dropped duplicate) instead of `IncrementSeverityCount`, so the counts and the output agree.
+
 ## Amend order and product spelling
 
 - **Amends are numbered, so their order is defined by the domain, not the caller.** `Bundle.ApplyAmends` applies amends by `BundleAmendMerger.GetAmendMergeOrder(FilePath)` (`.amend-1`, `.amend-2`, ..., the `.amend-notes` sidecar last), ties by file path (ordinal); an amend without a path keeps the order it was given in, after the ones with a path. It is idempotent: an added entry whose file name and checksum are already in the bundle is not added again, so applying the same amends twice is applying them once. `LoadedBundle.MergeByTarget` takes the bundles of one version in a canonical order (release date ascending, undated last, then file path, repository, owner; ordinal) and its result does not depend on the order the file system listed them in.

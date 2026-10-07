@@ -356,7 +356,8 @@ public class InMemoryBuildState(ILoggerFactory loggerFactory, IConfigurationCont
 	{
 		public override void Write(Diagnostic diagnostic)
 		{
-			base.Write(diagnostic);
+			if (!Accept(diagnostic))
+				return;
 
 			// Increment counters
 			buildState.IncrementCount(diagnostic.Severity);

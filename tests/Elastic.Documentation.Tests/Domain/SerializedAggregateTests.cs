@@ -118,6 +118,26 @@ public class SerializedAggregateTests
 	}
 
 	[Test]
+	public void LinkRegistryEntry_MissingRef_IsUnknown()
+	{
+		const string json = """{ "repository": "r", "path": "p", "branch": "b", "etag": "t" }""";
+
+		JsonSerializer.Deserialize(json, SourceGenerationContext.Default.LinkRegistryEntry)!.GitReference.Should().Be("unknown");
+	}
+
+	[Test]
+	public void LinkRegistryEntry_ExplicitNullRef_IsUnknown_NeverNull()
+	{
+		const string json = """{ "repository": "r", "path": "p", "branch": "b", "etag": "t", "ref": null }""";
+
+		var entry = JsonSerializer.Deserialize(json, SourceGenerationContext.Default.LinkRegistryEntry)!;
+
+		entry.GitReference.Should().Be("unknown");
+		(entry with { GitReference = null! }).GitReference.Should().Be("unknown");
+		JsonSerializer.Serialize(entry, SourceGenerationContext.Default.LinkRegistryEntry).Should().Contain("\"ref\": \"unknown\"");
+	}
+
+	[Test]
 	public void GitCheckoutInformation_DeserializesEveryField()
 	{
 		const string json =
