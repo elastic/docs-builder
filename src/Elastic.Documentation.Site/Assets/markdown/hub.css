@@ -165,14 +165,20 @@
 		margin-bottom: 56px;
 		scroll-margin-top: 96px;
 	}
+	/* The lead is a section heading like `.hub-zone`, so it takes the same type and the same
+	   gap above the content. */
+	.hub-get-started .hub-get-started-lead {
+		margin-bottom: 24px;
+	}
 	.hub-get-started .hub-get-started-title {
-		margin: 0 0 8px;
-		font-size: var(--text-xl);
+		margin: 0;
+		font-size: var(--text-2xl);
 		font-weight: 700;
-		color: var(--color-ink);
+		color: var(--color-ink-dark);
+		line-height: 1.2;
 	}
 	.hub-get-started .hub-get-started-intro {
-		margin: 0 0 20px;
+		margin: 8px 0 0;
 		font-size: var(--text-base);
 		color: var(--color-ink-light, #4c4c4c);
 		line-height: 1.5;
@@ -187,6 +193,13 @@
 		max-width: 100%;
 		min-width: 0;
 		margin: 0;
+		/* `code-block.css` pads `pre code` with an !important padding and fills it with its own
+		   background. Left alone, the code box is taller than the 37px `pre` and scrolls vertically.
+		   The `--code-*` properties are its theming hook, so the box shrinks to the command. */
+		--code-pad: 0;
+		--code-bg: transparent;
+		--code-size: var(--text-xs);
+		--code-leading: 1.2;
 	}
 	.hub-get-started .hub-get-started-install pre {
 		display: flex;
@@ -200,11 +213,6 @@
 		border-radius: 8px;
 	}
 	.hub-get-started .hub-get-started-install code {
-		font-family: var(--font-mono, monospace);
-		font-size: var(--text-xs);
-		line-height: 1.2;
-		color: var(--color-white);
-		background: transparent;
 		white-space: nowrap;
 	}
 
