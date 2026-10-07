@@ -8,27 +8,52 @@
 			<p class="api-examples-heading" id="api-examples-heading" role="heading" aria-level="2">Examples</p>
 			@if (Model.Scenarios.Count > 1)
 			{
-				<div class="api-example-chips" role="tablist" aria-labelledby="api-examples-heading">
-					@for (var i = 0; i < Model.Scenarios.Count; i++)
-					{
-						var scenario = Model.Scenarios[i];
-						var count = scenario.CodeSamples.Count;
-						<button
-							type="button"
-							role="tab"
-							class="api-example-chip@(i == 0 ? " is-active" : "")"
-							data-scenario="@scenario.TabId"
-							aria-selected="@(i == 0 ? "true" : "false")">
-							<span class="api-example-chip-title">@scenario.Title</span>
-							@if (count > 0)
+				@* Chips wrap over at most two lines; the ones that do not fit move into the "more" menu (api-examples-carousel.ts). *@
+				<div class="api-example-chips-row" data-example-chips>
+					<div class="api-example-chips" role="tablist" aria-labelledby="api-examples-heading">
+						@for (var i = 0; i < Model.Scenarios.Count; i++)
+						{
+							var scenario = Model.Scenarios[i];
+							var count = scenario.CodeSamples.Count;
+							<button
+								type="button"
+								role="tab"
+								class="api-example-chip@(i == 0 ? " is-active" : "")"
+								data-scenario="@scenario.TabId"
+								aria-selected="@(i == 0 ? "true" : "false")">
+								<span class="api-example-chip-title">@scenario.Title</span>
+								@if (count > 0)
+								{
+									var noun = count == 1 ? "language" : "languages";
+									<span class="api-example-chip-count" data-tippy-content="@count @noun">
+										<svg width="12" height="12" viewBox="0 0 16 16" aria-hidden="true"><use href="#icon-code"/></svg>@count<span class="sr-only"> @noun</span>
+									</span>
+								}
+							</button>
+						}
+					</div>
+					<button type="button" class="api-example-more" data-example-more aria-haspopup="menu" aria-expanded="false" aria-controls="api-example-menu" popovertarget="api-example-menu" hidden>
+						<span data-example-more-label></span>
+						<svg width="12" height="12" viewBox="0 0 16 16" aria-hidden="true"><use href="#icon-chevron-down"/></svg>
+					</button>
+					<div id="api-example-menu" class="api-example-menu simple-scrollbar" popover="auto" data-example-menu>
+						@if (Model.Scenarios.Count > 9)
+						{
+							<input type="search" class="api-example-menu-filter" data-example-filter placeholder="Filter examples" aria-label="Filter examples" autocomplete="off" />
+						}
+						<div role="menu" aria-label="More examples">
+							@foreach (var scenario in Model.Scenarios)
 							{
-								var noun = count == 1 ? "language" : "languages";
-								<span class="api-example-chip-count" data-tippy-content="@count @noun">
-									<svg width="12" height="12" viewBox="0 0 16 16" aria-hidden="true"><use href="#icon-code"/></svg>@count<span class="sr-only"> @noun</span>
-								</span>
+								<button type="button" role="menuitem" class="api-example-menu-item" data-scenario="@scenario.TabId" hidden>
+									<span class="api-example-menu-item-title">@scenario.Title</span>
+									@if (scenario.CodeSamples.Count > 0)
+									{
+										<span class="api-example-chip-count">@scenario.CodeSamples.Count</span>
+									}
+								</button>
 							}
-						</button>
-					}
+						</div>
+					</div>
 				</div>
 			}
 			@for (var i = 0; i < Model.Scenarios.Count; i++)

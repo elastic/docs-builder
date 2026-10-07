@@ -57,6 +57,30 @@ public class OperationExamplesPanelRenderingTests
 	}
 
 	[Test]
+	public async Task Render_MultipleScenarios_ListsEveryScenarioInTheMoreMenu()
+	{
+		var html = await RenderPanel(TermSearch, Slicing);
+
+		html.Should().Contain("data-example-more");
+		html.Should().Contain("popover=\"auto\"");
+		html.Should().Contain("class=\"api-example-menu-item\" data-scenario=\"slicing\"");
+		html.Should().NotContain("data-example-filter");
+	}
+
+	[Test]
+	public async Task Render_ManyScenarios_AddsAFilterToTheMoreMenu()
+	{
+		var scenarios = Enumerable
+			.Range(0, 10)
+			.Select(i => new ExampleScenario { Title = $"Example {i}", TabId = $"example-{i}", CodeSamples = [Sample("Console")] })
+			.ToArray();
+
+		var html = await RenderPanel(scenarios);
+
+		html.Should().Contain("data-example-filter");
+	}
+
+	[Test]
 	public async Task Render_SingleScenario_OmitsChips()
 	{
 		var html = await RenderPanel(TermSearch);
