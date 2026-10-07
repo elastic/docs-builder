@@ -181,7 +181,7 @@
 			@if (path.UnionOptions.Count > 0 && path.EnumValues.Count == 0)
 			{
 				<dd class="union-options">
-					<span class="values-label">One of:</span>
+					<span class="values-label">@path.UnionLabel</span>
 					@for (var optIndex = 0; optIndex < path.UnionOptions.Count; optIndex++)
 					{
 						var unionOpt = path.UnionOptions[optIndex];
@@ -241,7 +241,7 @@
 				@if (qp.UnionOptions.Count > 0 && qp.EnumValues.Count == 0)
 				{
 					<dd class="union-options">
-						<span class="values-label">One of:</span>
+						<span class="values-label">@qp.UnionLabel</span>
 						@for (var optIndex = 0; optIndex < qp.UnionOptions.Count; optIndex++)
 						{
 							var unionOpt = qp.UnionOptions[optIndex];
@@ -266,7 +266,7 @@
 		<div @ParamSectionHeader.WrapAttributes(collapseRequest)>
 		@if (collapseRequest)
 		{
-			@(await RenderPartialAsync<_ParamSectionHeader, ParamSectionHeader>(new ParamSectionHeader("Request", "request-body", pageModel.RequestPropertyNames)))
+			@(await RenderPartialAsync<_ParamSectionHeader, ParamSectionHeader>(new ParamSectionHeader("Request", "request-body", pageModel.RequestPropertyNames, pageModel.RequestNamesAreVariants)))
 		}
 		else
 		{
@@ -281,6 +281,10 @@
 		@if (pageModel.RequestProperties is not null)
 		{
 			@(await RenderPartialAsync<_PropertyList, ApiPropertyList>(pageModel.RequestProperties))
+		}
+		else if (pageModel.RequestUnionVariants is { Variants.Count: > 0 } requestVariants)
+		{
+			@(await RenderPartialAsync<_UnionOptions, ApiUnionVariants>(requestVariants))
 		}
 		else if (pageModel.RequestType is not null)
 		{

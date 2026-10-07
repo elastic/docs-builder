@@ -4,6 +4,7 @@
 
 using Elastic.ApiExplorer.Model;
 using Elastic.ApiExplorer.Operations;
+using Microsoft.AspNetCore.Html;
 
 namespace Elastic.ApiExplorer.Components.PropertyTree;
 
@@ -12,6 +13,9 @@ public record ApiUnionVariant
 {
 	/// <summary>Display name without the <c>[]</c> suffix when the array icon is already shown.</summary>
 	public required string DisplayName { get; init; }
+
+	/// <summary>The type's own page when it has one; the variant links there instead of listing its fields.</summary>
+	public string? PageUrl { get; init; }
 	public required bool IsArrayVariant { get; init; }
 	public required bool IsObjectType { get; init; }
 	public required string AnchorId { get; init; }
@@ -21,6 +25,13 @@ public record ApiUnionVariant
 	public required int NestedCount { get; init; }
 	public required bool UseHidden { get; init; }
 	public ApiPropertyList? Properties { get; init; }
+
+	/// <summary>The first paragraph of the variant schema's description; empty when it has none.</summary>
+	public HtmlString DescriptionHtml { get; init; } = HtmlString.Empty;
+	public string? DescriptionMarkdown { get; init; }
+
+	/// <summary>The discriminator property and the value that selects this variant, e.g. <c>type: eql</c>.</summary>
+	public string? DiscriminatorLabel { get; init; }
 }
 
 /// <summary>The expanded variants of a union; the model for <c>_UnionOptions</c>.</summary>
@@ -38,5 +49,8 @@ public record ApiUnionVariants
 	public required IReadOnlyList<ApiUnionVariant> Variants { get; init; }
 	public required bool ShouldCollapse { get; init; }
 	public required string ContainerId { get; init; }
+
+	/// <summary>"Any of:" or "One of:" above a body-level list that has no property row to carry it.</summary>
+	public string? Label { get; init; }
 	public required bool UseHiddenUntilFound { get; init; }
 }

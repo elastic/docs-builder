@@ -59,10 +59,20 @@ public record SchemaPageModel
 			},
 			ExternalDocs = externalDocs,
 			OneOfVariants = openApiSchema.OneOf is { Count: > 0 }
-				? builder.BuildUnionVariantsForSchemas(openApiSchema.OneOf, "oneof", rootAncestors) ?? ApiUnionVariants.Empty
+				? builder.BuildUnionVariantsForSchemas(
+					openApiSchema.OneOf,
+					new PropertyTreeScope { Prefix = "oneof", Ancestors = rootAncestors },
+					openApiSchema.Discriminator
+				)
+					?? ApiUnionVariants.Empty
 				: null,
 			AnyOfVariants = openApiSchema.AnyOf is { Count: > 0 }
-				? builder.BuildUnionVariantsForSchemas(openApiSchema.AnyOf, "anyof", rootAncestors) ?? ApiUnionVariants.Empty
+				? builder.BuildUnionVariantsForSchemas(
+					openApiSchema.AnyOf,
+					new PropertyTreeScope { Prefix = "anyof", Ancestors = rootAncestors },
+					openApiSchema.Discriminator
+				)
+					?? ApiUnionVariants.Empty
 				: null,
 			Properties = builder.BuildPropertyList(openApiSchema, new PropertyTreeScope { Prefix = "", Ancestors = rootAncestors }),
 			AdditionalPropertiesType = openApiSchema.AdditionalProperties is { } addProps ? builder.Describe(addProps) : null,

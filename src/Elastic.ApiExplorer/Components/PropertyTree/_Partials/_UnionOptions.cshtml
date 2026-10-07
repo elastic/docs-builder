@@ -6,6 +6,10 @@
 		return;
 	}
 }
+@if (Model.Label is { Length: > 0 } unionLabel)
+{
+	<span class="values-label">@unionLabel</span>
+}
 <div class="union-variants-container @(Model.ShouldCollapse ? "collapsible collapsed" : "")" id="@Model.ContainerId">
 	@if (Model.ShouldCollapse)
 	{
@@ -37,11 +41,26 @@
 				{
 					<span class="@SchemaHelpers.WrapperObjectIconCssClass">{}</span>
 				}
-				@if (!SchemaHelpers.IsInternalSchemaName(variant.DisplayName))
+				@if (!string.IsNullOrEmpty(variant.DisplayName))
 				{
-					<code class="schema-type"><span class="@SchemaHelpers.TypeAtomCssClassOrNull(variant.DisplayName)">@variant.DisplayName</span></code>
+					@if (variant.PageUrl is { Length: > 0 } pageUrl)
+					{
+						<code class="schema-type"><a href="@pageUrl" class="@SchemaHelpers.LinkedCssClass" data-hx-boost="false">@variant.DisplayName</a></code>
+					}
+					else
+					{
+						<code class="schema-type"><span class="@SchemaHelpers.TypeAtomCssClassOrNull(variant.DisplayName)">@variant.DisplayName</span></code>
+					}
+				}
+				@if (variant.DiscriminatorLabel is { Length: > 0 } discriminatorLabel)
+				{
+					<code class="discriminator-value">@discriminatorLabel</code>
 				}
 			</div>
+			@if (variant.DescriptionHtml.Value is { Length: > 0 })
+			{
+				<div class="union-variant-description">@variant.DescriptionHtml</div>
+			}
 			@if (variant.ShowProperties && variant.Properties is not null)
 			{
 				if (variant.IsCollapsible)

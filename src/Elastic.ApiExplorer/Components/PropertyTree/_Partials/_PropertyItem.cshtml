@@ -36,13 +36,35 @@
 			</a>
 		</dd>
 	}
+	@if (Model.AlsoIncludes.Count > 0)
+	{
+		<dd class="also-includes">
+			<span class="values-label">Also includes:</span>
+			@for (var i = 0; i < Model.AlsoIncludes.Count; i++)
+			{
+				var included = Model.AlsoIncludes[i];
+				if (i > 0)
+				{
+					<text>, </text>
+				}
+				if (included.Url is { Length: > 0 } includedUrl)
+				{
+					<code class="schema-type"><a href="@includedUrl" class="@SchemaHelpers.LinkedCssClass" data-hx-boost="false">@included.TypeName</a></code>
+				}
+				else
+				{
+					<code class="schema-type">@included.TypeName</code>
+				}
+			}
+		</dd>
+	}
 	@(await RenderPartialAsync<_EnumValues, EnumValueList>(new EnumValueList(Model.EnumValues)))
-	@if (Model.Union is not null)
+	@if (Model.Union is not null && Model.Repeats is null)
 	{
 		if (Model.Union.Kind == UnionDisplayKind.Badges)
 		{
 			<dd class="union-options">
-				<span class="values-label">One of:</span>
+				<span class="values-label">@Model.Union.Label</span>
 				@if (Model.Union.DiscriminatorProperty != null)
 				{
 					<span class="discriminator-note">(determined by <code>@Model.Union.DiscriminatorProperty</code>)</span>
@@ -58,6 +80,18 @@
 				}
 			</dd>
 		}
+	}
+	@if (Model.Repeats is { } repeated)
+	{
+		<dd class="union-options">
+			<span class="values-label">@repeated.Label</span>
+			<a href="#@repeated.AnchorId"><code>@repeated.Name</code></a>
+			@if (repeated.Owner is { Length: > 0 } owner)
+			{
+				<span class="values-label">in</span>
+				<code>@owner</code>
+			}
+		</dd>
 	}
 	@if (Model.ArrayItemTypeName != null)
 	{

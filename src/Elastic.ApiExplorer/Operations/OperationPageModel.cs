@@ -89,6 +89,7 @@ public record ApiQueryParameter
 	public required IReadOnlyList<ConstraintDisplay> Constraints { get; init; }
 	public required IReadOnlyList<string> EnumValues { get; init; }
 	public required IReadOnlyList<UnionBadge> UnionOptions { get; init; }
+	public string UnionLabel { get; init; } = SchemaHelpers.UnionLabel(null);
 	public required HtmlString DescriptionHtml { get; init; }
 	public required string? DescriptionMarkdown { get; init; }
 }
@@ -100,6 +101,7 @@ public record ApiPathParameter
 	public required TypeAnnotation? Type { get; init; }
 	public required IReadOnlyList<string> EnumValues { get; init; }
 	public required IReadOnlyList<UnionBadge> UnionOptions { get; init; }
+	public string UnionLabel { get; init; } = SchemaHelpers.UnionLabel(null);
 	public required HtmlString DescriptionHtml { get; init; }
 	public required string? DescriptionMarkdown { get; init; }
 
@@ -174,11 +176,23 @@ public partial record OperationPageModel
 
 	public IReadOnlyList<string> QueryParameterNames => NamesOf(QueryParameters.Select(static q => q.Parameter.Name));
 
-	public IReadOnlyList<string> RequestPropertyNames => NamesOf((RequestProperties?.Items ?? []).Select(static p => p.Name));
+	/// <summary>The request body is a union, so <see cref="RequestPropertyNames"/> names its variants, not its fields.</summary>
+	public bool RequestNamesAreVariants => RequestProperties is null && RequestUnionVariants is { Variants.Count: > 0 };
+
+	public IReadOnlyList<string> RequestPropertyNames =>
+		NamesOf(RequestProperties is not null ? RequestProperties.Items.Select(static p => p.Name) : VariantNames(RequestUnionVariants));
+
+	/// <summary>Names a collapsed section header lists; an array variant keeps its <c>[]</c> so it stays apart from the plain one.</summary>
+	internal static IEnumerable<string> VariantNames(ApiUnionVariants? variants) =>
+		(variants?.Variants ?? []).Select(static v => v.IsArrayVariant ? $"{v.DisplayName}[]" : v.DisplayName);
+
 	public required string? DescriptionMarkdown { get; init; }
 	public required IReadOnlyList<ApiPostSection> PostSections { get; init; }
 	public required string RequestContentType { get; init; }
 	public required ApiPropertyList? RequestProperties { get; init; }
+
+	/// <summary>The variants of a request body that is itself a <c>oneOf</c>/<c>anyOf</c>; set only when there are no plain properties.</summary>
+	public ApiUnionVariants? RequestUnionVariants { get; init; }
 	public required TypeAnnotation? RequestType { get; init; }
 	public required IReadOnlyList<ApiResponse> Responses { get; init; }
 	public required IReadOnlyList<CodeSample> CodeSamples { get; init; }
@@ -250,6 +264,16 @@ public partial record OperationPageModel
 			externalDocs = new ExternalDocLink(url, ApiPropertyTreeBuilder.IsElasticDocsUrl(url), operation.ExternalDocs.Description);
 		}
 
+		var requestScope = new PropertyTreeScope
+		{
+			Prefix = "req",
+			IsRequest = true,
+			DescriptionOverrides = supplemental?.RequestBodyOverrides
+		};
+		var (requestProperties, requestUnionVariants) = requestSchema is not null
+			? BuildBodyContent(requestSchema, requestScope, analyzer, builder)
+			: (null, null);
+
 		return new OperationPageModel
 		{
 			Availability = AvailabilityBadgeHelper.FromOperation(operation, context.BuildContext.VersionsConfiguration),
@@ -266,12 +290,8 @@ public partial record OperationPageModel
 				.Select(p => BuildQueryParameter(p, analyzer, builder, context, supplemental))
 				.ToArray(),
 			RequestContentType = requestContentEntry?.Key ?? "application/json",
-			RequestProperties = requestSchema is not null
-				? builder.BuildPropertyList(
-					requestSchema,
-					new PropertyTreeScope { Prefix = "req", IsRequest = true, DescriptionOverrides = supplemental?.RequestBodyOverrides }
-				)
-				: null,
+			RequestProperties = requestProperties,
+			RequestUnionVariants = requestUnionVariants,
 			DescriptionMarkdown = endpoint.Description,
 			PostSections = ApiPostSection.From(context, supplemental?.PostSections ?? []),
 			RequestType = requestSchema is not null ? builder.Describe(requestSchema) : null,
@@ -727,6 +747,7 @@ public partial record OperationPageModel
 			Type = type,
 			EnumValues = typeInfo.EnumValues ?? [],
 			UnionOptions = alternativesInType ? [] : UnionBadges(typeInfo),
+			UnionLabel = SchemaHelpers.UnionLabel(typeInfo.UnionKeyword),
 			DescriptionHtml = ApiMarkdown.Render(context, description),
 			DescriptionMarkdown = description,
 			Optional = optional,
@@ -752,6 +773,7 @@ public partial record OperationPageModel
 			Constraints = schema is not null ? ApiPropertyTreeBuilder.BuildConstraints(schema) : [],
 			EnumValues = typeInfo.EnumValues ?? [],
 			UnionOptions = UnionBadges(typeInfo),
+			UnionLabel = SchemaHelpers.UnionLabel(typeInfo.UnionKeyword),
 			DescriptionHtml = ApiMarkdown.Render(context, description),
 			DescriptionMarkdown = description
 		};
@@ -759,9 +781,7 @@ public partial record OperationPageModel
 
 	private static UnionBadge[] UnionBadges(TypeInfo typeInfo)
 	{
-		var names = typeInfo.AnyOfOptions is { Count: > 0 } options
-			? options.Select(o => o.Name)
-			: typeInfo.UnionOptions ?? Enumerable.Empty<string>();
+		var names = (typeInfo.UnionOptions ?? []).Select(o => o.Name);
 		return names
 			.Where(n => !string.IsNullOrEmpty(n))
 			.Select(n => new UnionBadge(n, ApiPropertyTreeBuilder.IsTypeOptionBadge(n)))
@@ -826,10 +846,9 @@ public partial record OperationPageModel
 	)
 	{
 		var scope = new PropertyTreeScope { Prefix = $"res-{statusCode}" };
-		var properties = builder.BuildPropertyList(responseSchema, scope);
-		var arrayItemProperties = properties is null ? BuildArrayItemProperties(responseSchema, scope, analyzer, builder) : null;
-		var unionVariants = properties is null && arrayItemProperties is null
-			? BuildResponseUnionVariants(responseSchema, statusCode, analyzer, builder)
+		var (properties, unionVariants) = BuildBodyContent(responseSchema, scope, analyzer, builder);
+		var arrayItemProperties = properties is null && unionVariants is null
+			? BuildArrayItemProperties(responseSchema, scope, analyzer, builder)
 			: null;
 
 		return new ApiResponseContent
@@ -856,19 +875,64 @@ public partial record OperationPageModel
 		return arrayItemSchema is null ? null : builder.BuildPropertyList(arrayItemSchema, scope);
 	}
 
-	private static ApiUnionVariants? BuildResponseUnionVariants(
-		IOpenApiSchema responseSchema,
-		string statusCode,
+	/// <summary>
+	/// The property list or the variant list of a request or response body. A union whose properties come only from an
+	/// <c>allOf</c> lists its variants, which already carry those shared properties. A union that declares properties
+	/// itself keeps listing them, as property rows do.
+	/// </summary>
+	internal static (ApiPropertyList? Properties, ApiUnionVariants? UnionVariants) BuildBodyContent(
+		IOpenApiSchema schema,
+		PropertyTreeScope scope,
 		SchemaAnalyzer analyzer,
 		ApiPropertyTreeBuilder builder
 	)
 	{
-		var typeInfo = analyzer.GetTypeInfo(responseSchema);
-		if (typeInfo is not { IsUnion: true, AnyOfOptions.Count: > 0 })
+		var declaresProperties = (analyzer.ResolveSchema(schema) ?? schema).Properties is { Count: > 0 };
+		var variants = analyzer.GetTypeInfo(schema).IsUnion && !declaresProperties
+			? BuildTopLevelUnionVariants(schema, scope, analyzer, builder)
+			: null;
+		return variants is not null ? (null, variants) : (builder.BuildPropertyList(schema, scope), null);
+	}
+
+	internal static ApiUnionVariants? BuildTopLevelUnionVariants(
+		IOpenApiSchema bodySchema,
+		PropertyTreeScope scope,
+		SchemaAnalyzer analyzer,
+		ApiPropertyTreeBuilder builder
+	)
+	{
+		var typeInfo = analyzer.GetTypeInfo(bodySchema);
+		if (typeInfo is not { IsUnion: true, UnionOptions.Count: > 0 })
 			return null;
 
-		var schemas = typeInfo.AnyOfOptions.Where(static o => o.Schema is not null).Select(static o => o.Schema!).ToList();
-		return schemas.Count == 0 ? null : builder.BuildUnionVariantsForSchemas(schemas, $"res-{statusCode}", ancestors: null);
+		var options = typeInfo.UnionOptions.Where(static o => o.Schema is not null).Select(o => DescribeMember(o, analyzer)).ToList();
+		var variants = options.Count == 0 ? null : builder.BuildUnionVariants(options, scope, analyzer.GetUnionDiscriminator(bodySchema));
+		return variants is null ? null : variants with { Label = BodyUnionLabel(typeInfo) };
+	}
+
+	/// <summary>
+	/// The label above a body's variants. An array whose items are a union says so, since the variants then describe each
+	/// item rather than the body.
+	/// </summary>
+	private static string BodyUnionLabel(TypeInfo typeInfo)
+	{
+		var label = SchemaHelpers.UnionLabel(typeInfo.UnionKeyword);
+		return typeInfo.IsArray ? $"An array; each item is {label.ToLowerInvariant()}" : label;
+	}
+
+	/// <summary>
+	/// Classifies a union member the way a body-level list always has. A merged <c>allOf</c> variant has no <c>$ref</c> of its own,
+	/// so it keeps the name and <c>$ref</c> of the option it came from; discriminator mappings match on that <c>$ref</c>.
+	/// </summary>
+	private static UnionOption DescribeMember(UnionOption option, SchemaAnalyzer analyzer)
+	{
+		if (option.Schema is MergedVariantSchema)
+			return option;
+
+		// Keep the inline member's own name (its title) and label; take the classification from the type.
+		var info = analyzer.GetTypeInfo(option.Schema);
+		var name = string.IsNullOrEmpty(option.Ref) && option is { IsObject: true, IsArray: false } ? option.BaseName : info.TypeName;
+		return new UnionOption(name, info.SchemaRef, info.IsObject, option.Schema, info.IsArray) { Label = option.Label };
 	}
 
 	private static IReadOnlyList<string> NamesOf(IEnumerable<string?> names) => [.. names.OfType<string>().Where(static n => n.Length > 0)];

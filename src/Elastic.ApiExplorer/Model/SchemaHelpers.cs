@@ -77,6 +77,16 @@ public static class SchemaHelpers
 		StringComparer.OrdinalIgnoreCase
 	);
 
+	// Display order for a schema with several types; it matches how the specs list them, since the type flags keep no order.
+	private static readonly (JsonSchemaType Type, string Name)[] PrimitiveTypeOrder =
+	[
+		(JsonSchemaType.Boolean, "boolean"),
+		(JsonSchemaType.Integer, "integer"),
+		(JsonSchemaType.Number, "number"),
+		(JsonSchemaType.String, "string"),
+		(JsonSchemaType.Object, "object")
+	];
+
 	/// <summary>
 	/// Primitive/generic type names that are not named schema types.
 	/// These should not be considered for recursive type detection since they
@@ -128,6 +138,9 @@ public static class SchemaHelpers
 		StringComparer.OrdinalIgnoreCase
 	);
 
+	/// <summary>The row label for a union: <c>anyOf</c> options can match together, so it says "Any of:".</summary>
+	public static string UnionLabel(UnionKeyword? keyword) => keyword == UnionKeyword.AnyOf ? "Any of:" : "One of:";
+
 	/// <summary>
 	/// Gets the URL for a container type's dedicated page under the given API root
 	/// (e.g. <c>/api/elasticsearch</c>), matching the URLs built by <c>SchemaNavigationItem</c>.
@@ -169,20 +182,11 @@ public static class SchemaHelpers
 		if (type is null)
 			return "";
 
-		if (type.Value.HasFlag(JsonSchemaType.Boolean))
-			return "boolean";
-		if (type.Value.HasFlag(JsonSchemaType.Integer))
-			return "integer";
-		if (type.Value.HasFlag(JsonSchemaType.String))
-			return "string";
-		if (type.Value.HasFlag(JsonSchemaType.Number))
-			return "number";
-		if (type.Value.HasFlag(JsonSchemaType.Null))
-			return "null";
-		if (type.Value.HasFlag(JsonSchemaType.Object))
-			return "object";
-
-		return "";
+		// OpenAPI 3.1 allows several types (`type: [number, string]`); show them all. Null only names a type on its own.
+		var names = PrimitiveTypeOrder.Where(t => type.Value.HasFlag(t.Type)).Select(t => t.Name).ToArray();
+		if (names.Length > 0)
+			return string.Join(" | ", names);
+		return type.Value.HasFlag(JsonSchemaType.Null) ? "null" : "";
 	}
 
 	/// <summary>
@@ -203,7 +207,9 @@ public static class SchemaHelpers
 	/// Checks if a type name is a primitive/generic type name (not a named schema type).
 	/// Primitive types like "object", "string", etc. should not be used for recursive type detection.
 	/// </summary>
-	public static bool IsPrimitiveTypeName(string typeName) => PrimitiveTypeNames.Contains(typeName);
+	public static bool IsPrimitiveTypeName(string typeName) =>
+		PrimitiveTypeNames.Contains(typeName)
+			|| (typeName.Contains(" | ", StringComparison.Ordinal) && typeName.Split(" | ").All(PrimitiveTypeNames.Contains));
 
 	/// <summary>True for JSON primitives and their plural array labels (<c>strings</c>, …).</summary>
 	public static bool IsPrimitiveDisplayName(string? name) => !string.IsNullOrEmpty(name) && PrimitiveDisplayNames.Contains(name);
@@ -238,19 +244,28 @@ public static class SchemaHelpers
 			&& !IsPrimitiveDisplayName(name);
 
 	/// <summary>
-	/// Last meaningful segment of a codegen id (<c>Security_Lists_API_PlatformErrorResponse</c> →
-	/// <c>PlatformErrorResponse</c>). Readable names are returned unchanged.
+	/// True for all-lowercase snake_case ids (<c>bedrock_config</c>). They are already readable names, and
+	/// shortening them to the last segment would make sibling variants read alike.
+	/// </summary>
+	public static bool IsSnakeCaseName(string? name) =>
+		!string.IsNullOrEmpty(name)
+			&& name.Contains('_', StringComparison.Ordinal)
+			&& name.All(static c => char.IsAsciiLetterLower(c) || char.IsAsciiDigit(c) || c == '_');
+
+	/// <summary>
+	/// Last meaningful segment of a PascalCase codegen id (<c>Security_Lists_API_PlatformErrorResponse</c> →
+	/// <c>PlatformErrorResponse</c>). Readable names and snake_case ids are returned unchanged.
 	/// </summary>
 	public static string ReadableSchemaName(string? typeName)
 	{
-		if (string.IsNullOrEmpty(typeName) || !IsInternalSchemaName(typeName))
+		if (string.IsNullOrEmpty(typeName) || !IsInternalSchemaName(typeName) || IsSnakeCaseName(typeName))
 			return typeName ?? "";
 
 		var parts = typeName.Split('_', StringSplitOptions.RemoveEmptyEntries);
 		for (var i = parts.Length - 1; i >= 0; i--)
 		{
 			if (!parts[i].Equals("API", StringComparison.Ordinal))
-				return parts[i];
+				return char.IsUpper(parts[i][0]) ? parts[i] : typeName;
 		}
 
 		return typeName;
@@ -301,7 +316,7 @@ public static class SchemaHelpers
 			return null;
 		if (schema.AdditionalProperties is not null)
 			return null;
-		if (schema.OneOf is { Count: > 0 } || schema.AnyOf is { Count: > 0 } || schema.AllOf is { Count: > 0 })
+		if (UnionSchemas.IsUnion(schema) || schema.AllOf is { Count: > 0 })
 			return null;
 		// Enums are not primitive aliases - they have special rendering
 		if (schema.Enum is { Count: > 0 })

@@ -20,6 +20,13 @@ public record ExternalDocLink(string Url, bool IsElasticDocs, string? Descriptio
 			: IsElasticDocs ? "Read the reference documentation" : "External documentation";
 }
 
+/// <summary>An earlier row on the page whose fields (or union options) a row repeats; the row links back to it.</summary>
+/// <remarks><see cref="Owner"/> names the variant or row the first listing sits in, since many listings share a name.</remarks>
+public record RepeatedShape(string Name, string AnchorId, bool IsUnion, string? Owner = null)
+{
+	public string Label => IsUnion ? "Same options as" : "Same fields as";
+}
+
 /// <summary>A link from a group-4 property row to that schema's dedicated page.</summary>
 public record TypePageLink(string TypeName, string? Url);
 
@@ -55,6 +62,12 @@ public record UnionDisplay
 
 	/// <summary>Union option badges (<see cref="UnionDisplayKind.Badges"/>).</summary>
 	public IReadOnlyList<UnionBadge> Badges { get; init; } = [];
+
+	/// <summary>The schema keyword the union came from, <c>oneOf</c> or <c>anyOf</c>.</summary>
+	public UnionKeyword? Keyword { get; init; }
+
+	/// <summary>"Any of:" when any number of options can match, "One of:" otherwise.</summary>
+	public string Label => SchemaHelpers.UnionLabel(Keyword);
 
 	/// <summary>Discriminator property name shown next to the badges.</summary>
 	public string? DiscriminatorProperty { get; init; }
@@ -144,6 +157,12 @@ public record ApiProperty
 	public string? ArrayItemTypeName { get; init; }
 
 	public TypePageLink? TypeLink { get; init; }
+
+	/// <summary>The earlier row whose fields or options this row repeats; set instead of listing them a second time.</summary>
+	public RepeatedShape? Repeats { get; init; }
+
+	/// <summary>Further schemas an <c>allOf</c> merges in; the row's type names only the first.</summary>
+	public IReadOnlyList<TypePageLink> AlsoIncludes { get; init; } = [];
 
 	public required bool IsCollapsible { get; init; }
 	public required bool DefaultExpanded { get; init; }
