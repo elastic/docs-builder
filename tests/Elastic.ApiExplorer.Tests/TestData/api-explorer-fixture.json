@@ -554,6 +554,49 @@
           }
         }
       },
+      "MyNamespace.Unknown": {
+        "type": "object",
+        "description": "A named schema whose display name matches the unknown fallback.",
+        "properties": {
+          "self": {
+            "$ref": "#/components/schemas/MyNamespace.Unknown"
+          }
+        }
+      },
+      "fixture.DiscoverPanel": {
+        "type": "object",
+        "description": "A Discover session embedded in a dashboard.",
+        "properties": {
+          "title": {
+            "type": "string"
+          }
+        }
+      },
+      "fixture.ImagePanel": {
+        "type": "object",
+        "description": "An image embedded in a dashboard.",
+        "properties": {
+          "url": {
+            "type": "string"
+          }
+        }
+      },
+      "fixture.SectionPanel": {
+        "type": "object",
+        "description": "A titled section in a dashboard.",
+        "properties": {
+          "title": {
+            "type": "string"
+          }
+        }
+      },
+      "fixture.unknown": {
+        "description": "Members that do not resolve to a concrete type.",
+        "anyOf": [
+          {},
+          {}
+        ]
+      },
       "fixture.SearchRequestBody": {
         "type": "object",
         "description": "The body of a search request.",
@@ -600,6 +643,42 @@
                 "$ref": "#/components/schemas/_types.ScoreSort"
               }
             ]
+          },
+          "panels": {
+            "description": "Dashboard panels. The outer anyOf wraps another anyOf.",
+            "anyOf": [
+              {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/fixture.DiscoverPanel"
+                  },
+                  {
+                    "$ref": "#/components/schemas/fixture.ImagePanel"
+                  }
+                ]
+              },
+              {
+                "$ref": "#/components/schemas/fixture.SectionPanel"
+              }
+            ]
+          },
+          "panel_list": {
+            "description": "An array whose items are a union of panel types.",
+            "type": "array",
+            "items": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/fixture.DiscoverPanel"
+                },
+                {
+                  "$ref": "#/components/schemas/fixture.SectionPanel"
+                }
+              ]
+            }
+          },
+          "unresolved": {
+            "description": "A union whose type name is the unknown fallback.",
+            "$ref": "#/components/schemas/fixture.unknown"
           },
           "mode": {
             "$ref": "#/components/schemas/_types.SearchMode"

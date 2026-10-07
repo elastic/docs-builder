@@ -51,6 +51,93 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture)
 	}
 
 	[Test]
+	public void BuildPropertyList_SchemaNamedUnknown_StopsAtSelfReference()
+	{
+		var builder = CreateBuilder(currentPageType: "Unknown");
+		var ancestors = new HashSet<string> { "Unknown" };
+
+		var list = builder.BuildPropertyList(Schema("MyNamespace.Unknown"), new PropertyTreeScope { Prefix = "", Ancestors = ancestors });
+
+		var self = list!.Items.Single(p => p.Name == "self");
+		self.IsRecursive.Should().BeTrue();
+		self.Children.Kind.Should().Be(ChildKind.None);
+	}
+
+	[Test]
+	public void BuildPropertyList_ObjectUnion_OmitsCompositionKeyword()
+	{
+		var builder = CreateBuilder();
+
+		var list = builder.BuildPropertyList(
+			Schema("fixture.SearchRequestBody"),
+			new PropertyTreeScope { Prefix = "req", IsRequest = true }
+		);
+
+		var sort = list!.Items.Single(p => p.Name == "sort");
+		sort.Type.Text.Should().Be("union");
+		sort.Type.Spans.Should().Contain(s => s.Text == "union" && s.CssClass == SchemaHelpers.WrapperUnionCssClass);
+		sort.Type.Spans.Select(s => s.Text).Should().NotIntersectWith(["oneOf", "anyOf", "allOf"]);
+		sort.Children.Kind.Should().Be(ChildKind.UnionVariants);
+		sort.Children.Variants!.Variants.Select(v => v.DisplayName).Should().BeEquivalentTo(["SortField", "ScoreSort"]);
+	}
+
+	[Test]
+	public void BuildPropertyList_NestedAnyOf_ShowsConcreteVariants()
+	{
+		var builder = CreateBuilder();
+
+		var list = builder.BuildPropertyList(
+			Schema("fixture.SearchRequestBody"),
+			new PropertyTreeScope { Prefix = "req", IsRequest = true }
+		);
+
+		var panels = list!.Items.Single(p => p.Name == "panels");
+		panels.Type.Text.Should().Be("union");
+		panels.Type.Spans.Select(s => s.Text).Should().NotIntersectWith(["oneOf", "anyOf", "allOf"]);
+		panels.Children.Kind.Should().Be(ChildKind.UnionVariants);
+		panels.Children.Variants!
+			.Variants
+			.Select(v => v.DisplayName)
+			.Should()
+			.BeEquivalentTo(["DiscoverPanel", "ImagePanel", "SectionPanel"]);
+		panels.IsRecursive.Should().BeFalse();
+	}
+
+	[Test]
+	public void BuildPropertyList_ArrayOfUnion_ShowsMemberVariants()
+	{
+		var builder = CreateBuilder();
+
+		var list = builder.BuildPropertyList(
+			Schema("fixture.SearchRequestBody"),
+			new PropertyTreeScope { Prefix = "req", IsRequest = true }
+		);
+
+		var panelList = list!.Items.Single(p => p.Name == "panel_list");
+		panelList.Type.Text.Should().Be("[] union");
+		panelList.Type.Spans.Select(s => s.Text).Should().NotIntersectWith(["oneOf", "anyOf", "allOf"]);
+		panelList.Children.Kind.Should().Be(ChildKind.UnionVariants);
+		panelList.Children.Variants!.Variants.Select(v => v.DisplayName).Should().BeEquivalentTo(["DiscoverPanel", "SectionPanel"]);
+		panelList.IsRecursive.Should().BeFalse();
+	}
+
+	[Test]
+	public void BuildPropertyList_UnknownUnion_KeepsUnknownLabel()
+	{
+		var builder = CreateBuilder();
+
+		var list = builder.BuildPropertyList(
+			Schema("fixture.SearchRequestBody"),
+			new PropertyTreeScope { Prefix = "req", IsRequest = true }
+		);
+
+		var unresolved = list!.Items.Single(p => p.Name == "unresolved");
+		unresolved.Type.Text.Should().Be("union unknown");
+		unresolved.Type.Spans.Select(s => s.Text).Should().Contain("unknown");
+		unresolved.Type.Spans.Select(s => s.Text).Should().NotIntersectWith(["oneOf", "anyOf", "allOf"]);
+	}
+
+	[Test]
 	public void BuildPropertyList_SimpleArrayUnion_DetectsFieldOrFieldArray()
 	{
 		var builder = CreateBuilder();
