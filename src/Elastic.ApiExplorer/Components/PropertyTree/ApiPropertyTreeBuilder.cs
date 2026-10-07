@@ -722,7 +722,10 @@ public class ApiPropertyTreeBuilder(OpenApiDocument document, PropertyDisplayOpt
 	private static string? FirstParagraph(string? description) =>
 		description?.Split(["\r\n\r\n", "\n\n"], 2, StringSplitOptions.TrimEntries)[0] is { Length: > 0 } first ? first : null;
 
-	/// <summary>An explicit <c>mapping</c> entry wins; otherwise a variant whose discriminator property has a single enum value declares it.</summary>
+	/// <summary>
+	/// An explicit <c>mapping</c> entry wins. Otherwise an enum on the variant's discriminator property lists the values that select it.
+	/// Otherwise a referenced variant is selected by its schema name, OpenAPI's implicit mapping.
+	/// </summary>
 	private string? BuildDiscriminatorLabel(OpenApiDiscriminator? discriminator, VariantCandidate variant)
 	{
 		if (discriminator?.PropertyName is not { Length: > 0 } propertyName)
@@ -736,7 +739,11 @@ public class ApiPropertyTreeBuilder(OpenApiDocument document, PropertyDisplayOpt
 
 		var property = variant.Props is not null && variant.Props.TryGetValue(propertyName, out var schema) ? schema : null;
 		var values = _analyzer.GetEnumValues(property);
-		return values.Count == 1 ? $"{propertyName}: {values[0]}" : null;
+		if (values.Count > 0)
+			return $"{propertyName}: {string.Join(" | ", values)}";
+
+		// OpenAPI's implicit mapping: a referenced schema with no mapping entry, and no enum on the property, is selected by its own name.
+		return string.IsNullOrEmpty(variant.Ref) ? null : $"{propertyName}: {variant.Ref}";
 	}
 
 	private sealed record VariantCandidate(

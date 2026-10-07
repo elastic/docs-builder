@@ -787,7 +787,7 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture)
 			list!.Items.Single(p => p.Name == name).Children.Variants!.Variants.Select(v => v.DiscriminatorLabel).ToList();
 
 		Labels("mapped").Should().Equal("kind: feline", "kind: canine");
-		Labels("implicit").Should().Equal("kind: cat", null);
+		Labels("implicit").Should().Equal("kind: cat", "kind: Fish");
 		Labels("plain").Should().Equal(null, null);
 
 		Labels("composed").Should().Equal("kind: feline", "kind: canine");
@@ -1314,5 +1314,52 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture)
 		);
 		declared!.Items.Select(p => p.Name).Should().Equal("kind");
 		declaredVariants.Should().BeNull();
+	}
+
+	[Test]
+	public async Task BuildPropertyList_DiscriminatorWithoutMappingOrEnum_LabelsVariantsWithTheirSchemaName()
+	{
+		var json =
+			"""
+			{
+			  "openapi": "3.0.3",
+			  "info": { "title": "t", "version": "1" },
+			  "paths": {},
+			  "components": {
+			    "schemas": {
+			      "Cat": { "type": "object", "properties": { "kind": { "type": "string" }, "lives": { "type": "integer" } } },
+			      "Dog": { "type": "object", "properties": { "kind": { "type": "string" }, "barks": { "type": "boolean" } } },
+			      "Pup": { "type": "object", "properties": { "kind": { "type": "string", "enum": ["dog", "puppy"] } } },
+			      "Holder": {
+			        "type": "object",
+			        "properties": {
+			          "enumerated": {
+			            "oneOf": [ { "$ref": "#/components/schemas/Cat" }, { "$ref": "#/components/schemas/Pup" } ],
+			            "discriminator": { "propertyName": "kind" }
+			          },
+			          "implicit": {
+			            "oneOf": [ { "$ref": "#/components/schemas/Cat" }, { "$ref": "#/components/schemas/Dog" } ],
+			            "discriminator": { "propertyName": "kind" }
+			          },
+			          "partial": {
+			            "oneOf": [ { "$ref": "#/components/schemas/Cat" }, { "$ref": "#/components/schemas/Dog" } ],
+			            "discriminator": { "propertyName": "kind", "mapping": { "feline": "#/components/schemas/Cat" } }
+			          }
+			        }
+			      }
+			    }
+			  }
+			}
+			""";
+		var document = await LoadSpecAsync(json);
+
+		var list = BuilderFor(document).BuildPropertyList(document.Components!.Schemas!["Holder"], new PropertyTreeScope { Prefix = "" });
+
+		List<string?> Labels(string name) =>
+			list!.Items.Single(p => p.Name == name).Children.Variants!.Variants.Select(v => v.DiscriminatorLabel).ToList();
+
+		Labels("implicit").Should().Equal("kind: Cat", "kind: Dog");
+		Labels("partial").Should().Equal("kind: feline", "kind: Dog");
+		Labels("enumerated").Should().Equal("kind: Cat", "kind: dog | puppy");
 	}
 }
