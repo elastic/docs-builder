@@ -10,6 +10,12 @@ using NetEscapades.EnumGenerators;
 namespace Elastic.Documentation.Catalog;
 
 /// <summary>Every versioning system from <c>versions.yml</c>, keyed by id. Part of the <see cref="GlobalCatalog"/> aggregate.</summary>
+/// <remarks>
+/// <para><b>Built by:</b> <c>CatalogLoader.Load</c> in <c>Elastic.Documentation.Configuration</c>, which reads <c>versions.yml</c>, <c>products.yml</c> and <c>legacy-url-mappings.yml</c> as one unit and returns a <c>Result&lt;GlobalCatalog&gt;</c>.</para>
+/// <para><b>Why it cannot be built from outside:</b> Its members are <c>internal init</c>: only <c>Elastic.Documentation</c>, <c>Elastic.Documentation.Configuration</c> and the test projects (<c>InternalsVisibleTo</c>) can set them, so a record that reaches a service has been through a loader or a checked operation.</para>
+/// <para><b>Members that must always be set</b> (they were <c>required</c> before the type was sealed; C# forbids <c>required</c> on a member whose setter is less visible than the type, CS9032): <c>VersioningSystems</c>. A loader or test that leaves one out gets the default; the aggregate's constraint set (<see cref="VersioningSystemConstraints"/>) reports it: <see cref="VersioningSystemConstraints.VersioningSystemsComplete"/> reports a versioning system id that has no entry.</para>
+/// <para><b>In a test:</b> build it with an object initializer through <c>InternalsVisibleTo</c> (<c>new VersioningSystemCatalog { ... }</c>) and <c>with</c> for variations.</para>
+/// </remarks>
 [Equatable]
 public sealed partial record VersioningSystemCatalog
 {
@@ -150,6 +156,12 @@ public enum VersioningSystemId
 }
 
 /// <summary>A version line with a <c>base</c> (first version the docs cover) and a <c>current</c> (latest release).</summary>
+/// <remarks>
+/// <para><b>Built by:</b> <c>CatalogLoader.Load</c> in <c>Elastic.Documentation.Configuration</c>, which reads <c>versions.yml</c>, <c>products.yml</c> and <c>legacy-url-mappings.yml</c> as one unit and returns a <c>Result&lt;GlobalCatalog&gt;</c>.</para>
+/// <para><b>Why it cannot be built from outside:</b> Its members are <c>internal init</c>: only <c>Elastic.Documentation</c>, <c>Elastic.Documentation.Configuration</c> and the test projects (<c>InternalsVisibleTo</c>) can set them, so a record that reaches a service has been through a loader or a checked operation.</para>
+/// <para><b>Members that must always be set</b> (they were <c>required</c> before the type was sealed; C# forbids <c>required</c> on a member whose setter is less visible than the type, CS9032): <c>Id</c>, <c>Base</c>, <c>Current</c>. A loader or test that leaves one out gets the default; the aggregate's constraint set (<see cref="VersioningSystemConstraints"/>) is where a missing member is reported, and the loader's mapping is what normally sets them.</para>
+/// <para><b>In a test:</b> build it with <c>CatalogFixtures.Versioning</c> or <c>DomainGen.DefaultVersioning</c> (tests), or an object initializer (<c>new VersioningSystem { Id = ..., Base = ..., Current = ... }</c>), and <c>with</c> for variations.</para>
+/// </remarks>
 public sealed record VersioningSystem
 {
 	/// <summary>

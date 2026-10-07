@@ -10,6 +10,12 @@ using Elastic.Documentation.Versions;
 
 namespace Elastic.Documentation.AppliesTo;
 
+/// <summary>The applicability entries of one <c>applies_to</c> key, ordered.</summary>
+/// <remarks>
+/// <para><b>Built by:</b> the <c>ApplicableToYamlConverter</c> in <c>Elastic.Documentation.Configuration</c> (YAML) and <c>ApplicableToJsonConverter</c> (JSON, in the domain), plus the domain helpers <c>ApplicableTo.ForStack</c>, <c>ApplicableTo.Default</c> and <c>AppliesCollection.Of</c>; it is also parsed by <c>Applicability.TryParse</c> from text.</para>
+/// <para><b>Why it cannot be built from outside:</b> Its members are <c>internal init</c>: only <c>Elastic.Documentation</c>, <c>Elastic.Documentation.Configuration</c> and the test projects (<c>InternalsVisibleTo</c>) can set them, so a record that reaches a service has been through a loader or a checked operation.</para>
+/// <para><b>In a test:</b> build it with an object initializer through <c>InternalsVisibleTo</c> (<c>new AppliesCollection { ... }</c>) and <c>with</c> for variations.</para>
+/// </remarks>
 public record AppliesCollection : IReadOnlyCollection<Applicability>
 {
 	private readonly Applicability[] _items;
@@ -163,6 +169,12 @@ public record AppliesCollection : IReadOnlyCollection<Applicability>
 	public int Count => _items.Length;
 }
 
+/// <summary>One lifecycle and version of an <c>applies_to</c> entry, for example <c>ga 9.1</c>.</summary>
+/// <remarks>
+/// <para><b>Built by:</b> the <c>ApplicableToYamlConverter</c> in <c>Elastic.Documentation.Configuration</c> (YAML) and <c>ApplicableToJsonConverter</c> (JSON, in the domain), plus the domain helpers <c>ApplicableTo.ForStack</c>, <c>ApplicableTo.Default</c> and <c>AppliesCollection.Of</c>; it is also parsed by <c>Applicability.TryParse</c> from text.</para>
+/// <para><b>Why it cannot be built from outside:</b> Its members are <c>internal init</c>: only <c>Elastic.Documentation</c>, <c>Elastic.Documentation.Configuration</c> and the test projects (<c>InternalsVisibleTo</c>) can set them, so a record that reaches a service has been through a loader or a checked operation.</para>
+/// <para><b>In a test:</b> build it with an object initializer through <c>InternalsVisibleTo</c> (<c>new Applicability { ... }</c>) and <c>with</c> for variations.</para>
+/// </remarks>
 public record Applicability : IComparable<Applicability>, IComparable
 {
 	public ProductLifecycle Lifecycle { get; internal init; }

@@ -10,6 +10,11 @@ namespace Elastic.Documentation.Codex;
 /// A codex site from <c>codex.yml</c>: where it mounts, which environment it indexes into, and the groups its
 /// documentation sets are listed under. Loaded once per codex command by <c>CodexConfigurationLoader</c>.
 /// </summary>
+/// <remarks>
+/// <para><b>Built by:</b> <c>CodexSiteLoader.Load</c> in <c>Elastic.Documentation.Configuration</c>, reading <c>codex.yml</c>.</para>
+/// <para><b>Why it cannot be built from outside:</b> Its members are <c>internal init</c>: only <c>Elastic.Documentation</c>, <c>Elastic.Documentation.Configuration</c> and the test projects (<c>InternalsVisibleTo</c>) can set them, so a record that reaches a service has been through a loader or a checked operation.</para>
+/// <para><b>In a test:</b> build it with an object initializer (<c>new CodexConfiguration { ... }</c>) or <c>DomainGen.Of&lt;CodexConfiguration&gt;()</c> (tests), and <c>with</c> for variations.</para>
+/// </remarks>
 [Equatable]
 public sealed partial record CodexConfiguration
 {
@@ -28,6 +33,11 @@ public sealed partial record CodexConfiguration
 }
 
 /// <summary>A group of documentation sets on the codex landing page.</summary>
+/// <remarks>
+/// <para><b>Built by:</b> <c>CodexSiteLoader.Load</c> in <c>Elastic.Documentation.Configuration</c>, reading <c>codex.yml</c>.</para>
+/// <para><b>Why it cannot be built from outside:</b> Its members are <c>internal init</c>: only <c>Elastic.Documentation</c>, <c>Elastic.Documentation.Configuration</c> and the test projects (<c>InternalsVisibleTo</c>) can set them, so a record that reaches a service has been through a loader or a checked operation.</para>
+/// <para><b>In a test:</b> build it with an object initializer through <c>InternalsVisibleTo</c> (<c>new CodexGroupDefinition { ... }</c>) and <c>with</c> for variations.</para>
+/// </remarks>
 public sealed record CodexGroupDefinition
 {
 	public string Id { get; internal init; } = string.Empty;
@@ -37,6 +47,11 @@ public sealed record CodexGroupDefinition
 }
 
 /// <summary>A documentation set a codex site builds: which repository and branch, and which group it lists under.</summary>
+/// <remarks>
+/// <para><b>Built by:</b> <c>CodexSiteLoader.Load</c> in <c>Elastic.Documentation.Configuration</c>, reading <c>codex.yml</c>, or the pure <see cref="CodexDocumentationSetReference.ForRepository"/>.</para>
+/// <para><b>Why it cannot be built from outside:</b> Its members are <c>internal init</c>: only <c>Elastic.Documentation</c>, <c>Elastic.Documentation.Configuration</c> and the test projects (<c>InternalsVisibleTo</c>) can set them, so a record that reaches a service has been through a loader or a checked operation.</para>
+/// <para><b>In a test:</b> build it with an object initializer through <c>InternalsVisibleTo</c> (<c>new CodexDocumentationSetReference { ... }</c>) and <c>with</c> for variations.</para>
+/// </remarks>
 public sealed record CodexDocumentationSetReference
 {
 	public string Name { get; internal init; } = string.Empty;

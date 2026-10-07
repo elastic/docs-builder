@@ -10,6 +10,11 @@ namespace Elastic.Documentation.ReleaseNotes;
 /// Domain type representing bundled changelog data.
 /// Contains products and entries for a changelog bundle.
 /// </summary>
+/// <remarks>
+/// <para><b>Built by:</b> <c>ReleaseNotesLoader.LoadBundle</c> / <c>BundleLoader</c> in <c>Elastic.Documentation.Configuration</c> (a bundle YAML file) or the pure operations <see cref="Bundle.Assemble"/>, <see cref="Bundle.ForRelease"/> and <see cref="Bundle.AmendOf"/>.</para>
+/// <para><b>Why it cannot be built from outside:</b> Its members are <c>internal init</c>: only <c>Elastic.Documentation</c>, <c>Elastic.Documentation.Configuration</c> and the test projects (<c>InternalsVisibleTo</c>) can set them, so a record that reaches a service has been through a loader or a checked operation.</para>
+/// <para><b>In a test:</b> build it with <c>BundleExamples.Bundle</c> or <c>BundleExamples.Generated&lt;Bundle&gt;()</c> (tests), or an object initializer (<c>new Bundle { ... }</c>), and <c>with</c> for variations.</para>
+/// </remarks>
 [Equatable]
 public partial record Bundle
 {

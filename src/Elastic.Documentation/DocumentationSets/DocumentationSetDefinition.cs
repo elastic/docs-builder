@@ -16,6 +16,12 @@ namespace Elastic.Documentation.DocumentationSets;
 /// <see cref="DocumentationSetConstraints"/> checks it, and <c>DocumentationSetResolver</c> joins it against the
 /// catalog into a <see cref="ResolvedDocumentationSet"/>.
 /// </summary>
+/// <remarks>
+/// <para><b>Built by:</b> <c>DocumentationSetLoader.Load</c> in <c>Elastic.Documentation.Configuration</c>, which reads <c>docset.yml</c>, every nested <c>toc.yml</c> and <c>redirects.yml</c>.</para>
+/// <para><b>Why it cannot be built from outside:</b> Its members are <c>internal init</c>: only <c>Elastic.Documentation</c>, <c>Elastic.Documentation.Configuration</c> and the test projects (<c>InternalsVisibleTo</c>) can set them, so a record that reaches a service has been through a loader or a checked operation.</para>
+/// <para><b>Members that must always be set</b> (they were <c>required</c> before the type was sealed; C# forbids <c>required</c> on a member whose setter is less visible than the type, CS9032): <c>SourceFile</c>, <c>SourceDirectory</c>, <c>FileSystem</c>. A loader or test that leaves one out gets the default; the aggregate's constraint set (<see cref="DocumentationSetConstraints"/>) is where a missing member is reported, and the loader's mapping is what normally sets them.</para>
+/// <para><b>In a test:</b> build it with an object initializer (<c>new DocumentationSetDefinition { SourceFile = ..., SourceDirectory = ..., FileSystem = ... }</c>), usually over a <c>MockFileSystem</c>, and <c>with</c> for variations.</para>
+/// </remarks>
 [Equatable]
 public sealed partial record DocumentationSetDefinition
 {
@@ -135,6 +141,11 @@ public sealed partial record DocumentationSetDefinition
 }
 
 /// <summary>A redirect the reader drops: the whole entry for <see cref="Source"/>, or its <c>many</c> item number <see cref="ManyItem"/> (0-based).</summary>
+/// <remarks>
+/// <para><b>Built by:</b> <c>RedirectFile</c> in <c>Elastic.Documentation.Configuration</c> (the <c>redirects.yml</c> reader), through <c>DocumentationSetLoader.Load</c>.</para>
+/// <para><b>Why it cannot be built from outside:</b> Its members are <c>internal init</c>: only <c>Elastic.Documentation</c>, <c>Elastic.Documentation.Configuration</c> and the test projects (<c>InternalsVisibleTo</c>) can set them, so a record that reaches a service has been through a loader or a checked operation.</para>
+/// <para><b>In a test:</b> build it with an object initializer through <c>InternalsVisibleTo</c> (<c>new DroppedRedirect { ... }</c>) and <c>with</c> for variations.</para>
+/// </remarks>
 public sealed record DroppedRedirect
 {
 	internal DroppedRedirect(string source, int? manyItem = null)
@@ -155,6 +166,11 @@ public sealed record DroppedRedirect
 }
 
 /// <summary>The <c>features</c> toggles of <c>docset.yml</c>; null when not set.</summary>
+/// <remarks>
+/// <para><b>Built by:</b> <c>DocumentationSetLoader.Load</c> in <c>Elastic.Documentation.Configuration</c>, which reads <c>docset.yml</c>, every nested <c>toc.yml</c> and <c>redirects.yml</c> (the <c>features</c> block).</para>
+/// <para><b>Why it cannot be built from outside:</b> Its members are <c>internal init</c>: only <c>Elastic.Documentation</c>, <c>Elastic.Documentation.Configuration</c> and the test projects (<c>InternalsVisibleTo</c>) can set them, so a record that reaches a service has been through a loader or a checked operation.</para>
+/// <para><b>In a test:</b> build it with an object initializer through <c>InternalsVisibleTo</c> (<c>new DeclaredFeatures { ... }</c>) and <c>with</c> for variations.</para>
+/// </remarks>
 public sealed record DeclaredFeatures
 {
 	internal DeclaredFeatures(bool? primaryNav = null, bool? disableGithubEditLink = null, bool? guideNav = null)
@@ -179,6 +195,11 @@ public sealed record DeclaredFeatures
 }
 
 /// <summary><c>branding</c> as written: image paths relative to the documentation source directory.</summary>
+/// <remarks>
+/// <para><b>Built by:</b> <c>DocumentationSetLoader.Load</c> in <c>Elastic.Documentation.Configuration</c>, which reads <c>docset.yml</c>, every nested <c>toc.yml</c> and <c>redirects.yml</c> (the <c>branding</c> block).</para>
+/// <para><b>Why it cannot be built from outside:</b> Its members are <c>internal init</c>: only <c>Elastic.Documentation</c>, <c>Elastic.Documentation.Configuration</c> and the test projects (<c>InternalsVisibleTo</c>) can set them, so a record that reaches a service has been through a loader or a checked operation.</para>
+/// <para><b>In a test:</b> build it with an object initializer through <c>InternalsVisibleTo</c> (<c>new BrandingDeclaration { ... }</c>) and <c>with</c> for variations.</para>
+/// </remarks>
 public sealed record BrandingDeclaration
 {
 	internal BrandingDeclaration(
@@ -217,6 +238,11 @@ public sealed record BrandingDeclaration
 }
 
 /// <summary>A <c>cta</c> template as written.</summary>
+/// <remarks>
+/// <para><b>Built by:</b> <c>DocumentationSetLoader.Load</c> in <c>Elastic.Documentation.Configuration</c>, which reads <c>docset.yml</c>, every nested <c>toc.yml</c> and <c>redirects.yml</c> (a <c>cta</c> template).</para>
+/// <para><b>Why it cannot be built from outside:</b> Its members are <c>internal init</c>: only <c>Elastic.Documentation</c>, <c>Elastic.Documentation.Configuration</c> and the test projects (<c>InternalsVisibleTo</c>) can set them, so a record that reaches a service has been through a loader or a checked operation.</para>
+/// <para><b>In a test:</b> build it with an object initializer through <c>InternalsVisibleTo</c> (<c>new CtaDeclaration { ... }</c>) and <c>with</c> for variations.</para>
+/// </remarks>
 [Equatable]
 public sealed partial record CtaDeclaration
 {
@@ -247,6 +273,11 @@ public sealed partial record CtaDeclaration
 }
 
 /// <summary>A key of the <c>api</c> map: normally a single entry; any other count is invalid.</summary>
+/// <remarks>
+/// <para><b>Built by:</b> <c>DocumentationSetLoader.Load</c> in <c>Elastic.Documentation.Configuration</c>, which reads <c>docset.yml</c>, every nested <c>toc.yml</c> and <c>redirects.yml</c> (a key of the <c>api</c> map).</para>
+/// <para><b>Why it cannot be built from outside:</b> Its members are <c>internal init</c>: only <c>Elastic.Documentation</c>, <c>Elastic.Documentation.Configuration</c> and the test projects (<c>InternalsVisibleTo</c>) can set them, so a record that reaches a service has been through a loader or a checked operation.</para>
+/// <para><b>In a test:</b> build it with an object initializer through <c>InternalsVisibleTo</c> (<c>new ApiDeclaration { ... }</c>) and <c>with</c> for variations.</para>
+/// </remarks>
 [Equatable]
 public sealed partial record ApiDeclaration
 {
@@ -269,6 +300,11 @@ public sealed partial record ApiDeclaration
 }
 
 /// <summary>One <c>api</c> entry as written, with where its keys are in <c>docset.yml</c>.</summary>
+/// <remarks>
+/// <para><b>Built by:</b> <c>DocumentationSetLoader.Load</c> in <c>Elastic.Documentation.Configuration</c>, which reads <c>docset.yml</c>, every nested <c>toc.yml</c> and <c>redirects.yml</c> (one <c>api</c> entry).</para>
+/// <para><b>Why it cannot be built from outside:</b> Its members are <c>internal init</c>: only <c>Elastic.Documentation</c>, <c>Elastic.Documentation.Configuration</c> and the test projects (<c>InternalsVisibleTo</c>) can set them, so a record that reaches a service has been through a loader or a checked operation.</para>
+/// <para><b>In a test:</b> build it with an object initializer through <c>InternalsVisibleTo</c> (<c>new ApiDeclarationEntry { ... }</c>) and <c>with</c> for variations.</para>
+/// </remarks>
 [Equatable]
 public sealed partial record ApiDeclarationEntry
 {

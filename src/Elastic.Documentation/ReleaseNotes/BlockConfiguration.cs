@@ -9,6 +9,11 @@ namespace Elastic.Documentation.ReleaseNotes;
 /// <summary>
 /// Top-level rules configuration for controlling changelog creation and publishing.
 /// </summary>
+/// <remarks>
+/// <para><b>Built by:</b> <c>ChangelogConfigurationLoader</c> in <c>Elastic.Documentation.Configuration</c> (<c>Load</c>, <c>LoadRequired</c>, <c>LoadForProfileMode</c>), reading <c>changelog.yml</c> (the <c>rules</c> block).</para>
+/// <para><b>Why it cannot be built from outside:</b> Its members are <c>internal init</c>: only <c>Elastic.Documentation</c>, <c>Elastic.Documentation.Configuration</c> and the test projects (<c>InternalsVisibleTo</c>) can set them, so a record that reaches a service has been through a loader or a checked operation.</para>
+/// <para><b>In a test:</b> build it with an object initializer through <c>InternalsVisibleTo</c> (<c>new RulesConfiguration { ... }</c>) and <c>with</c> for variations.</para>
+/// </remarks>
 public record RulesConfiguration
 {
 	/// <summary>
@@ -35,6 +40,12 @@ public record RulesConfiguration
 /// <summary>
 /// Rules for create-time blocking based on PR labels.
 /// </summary>
+/// <remarks>
+/// <para><b>Built by:</b> <c>ChangelogConfigurationLoader</c> in <c>Elastic.Documentation.Configuration</c> (<c>Load</c>, <c>LoadRequired</c>, <c>LoadForProfileMode</c>), reading <c>changelog.yml</c> (the <c>rules.create</c> block).</para>
+/// <para><b>Why it cannot be built from outside:</b> Its members are <c>internal init</c>: only <c>Elastic.Documentation</c>, <c>Elastic.Documentation.Configuration</c> and the test projects (<c>InternalsVisibleTo</c>) can set them, so a record that reaches a service has been through a loader or a checked operation.</para>
+/// <para><b>In a test:</b> build it with an object initializer through <c>InternalsVisibleTo</c> (<c>new CreateRules { ... }</c>) and <c>with</c> for variations.</para>
+/// <para><b>Serialised:</b> read and written by <c>CreateRulesJsonConverter</c> in this assembly, because a source-generated serializer in another assembly cannot reach an internal init setter.</para>
+/// </remarks>
 [Equatable]
 [System.Text.Json.Serialization.JsonConverter(typeof(Elastic.Documentation.Serialization.CreateRulesJsonConverter))]
 public partial record CreateRules
@@ -65,6 +76,11 @@ public partial record CreateRules
 /// <summary>
 /// Per-product bundle rule combining product filtering with type/area blocking.
 /// </summary>
+/// <remarks>
+/// <para><b>Built by:</b> <c>ChangelogConfigurationLoader</c> in <c>Elastic.Documentation.Configuration</c> (<c>Load</c>, <c>LoadRequired</c>, <c>LoadForProfileMode</c>), reading <c>changelog.yml</c>.</para>
+/// <para><b>Why it cannot be built from outside:</b> Its members are <c>internal init</c>: only <c>Elastic.Documentation</c>, <c>Elastic.Documentation.Configuration</c> and the test projects (<c>InternalsVisibleTo</c>) can set them, so a record that reaches a service has been through a loader or a checked operation.</para>
+/// <para><b>In a test:</b> build it with an object initializer through <c>InternalsVisibleTo</c> (<c>new BundlePerProductRule { ... }</c>) and <c>with</c> for variations.</para>
+/// </remarks>
 [Equatable]
 public partial record BundlePerProductRule
 {
@@ -159,6 +175,11 @@ public record ResolveResultWithRule(ResolveResult Result, BundlePerProductRule? 
 /// Applied during <c>changelog bundle</c> after the input stage gathers entries.
 /// Always applies regardless of input method (<c>--input-products</c>, <c>--prs</c>, <c>--all</c>, etc.).
 /// </summary>
+/// <remarks>
+/// <para><b>Built by:</b> <c>ChangelogConfigurationLoader</c> in <c>Elastic.Documentation.Configuration</c> (<c>Load</c>, <c>LoadRequired</c>, <c>LoadForProfileMode</c>), reading <c>changelog.yml</c> (the <c>rules.bundle</c> block).</para>
+/// <para><b>Why it cannot be built from outside:</b> Its members are <c>internal init</c>: only <c>Elastic.Documentation</c>, <c>Elastic.Documentation.Configuration</c> and the test projects (<c>InternalsVisibleTo</c>) can set them, so a record that reaches a service has been through a loader or a checked operation.</para>
+/// <para><b>In a test:</b> build it with an object initializer through <c>InternalsVisibleTo</c> (<c>new BundleRules { ... }</c>) and <c>with</c> for variations.</para>
+/// </remarks>
 [Equatable]
 public partial record BundleRules
 {
@@ -235,6 +256,11 @@ public static class BundleRulesExtensions
 /// <summary>
 /// Rules for publish-time blocking based on entry type and area.
 /// </summary>
+/// <remarks>
+/// <para><b>Built by:</b> <c>ChangelogConfigurationLoader</c> in <c>Elastic.Documentation.Configuration</c> (<c>Load</c>, <c>LoadRequired</c>, <c>LoadForProfileMode</c>), reading <c>changelog.yml</c> (the <c>rules.publish</c> block).</para>
+/// <para><b>Why it cannot be built from outside:</b> Its members are <c>internal init</c>: only <c>Elastic.Documentation</c>, <c>Elastic.Documentation.Configuration</c> and the test projects (<c>InternalsVisibleTo</c>) can set them, so a record that reaches a service has been through a loader or a checked operation.</para>
+/// <para><b>In a test:</b> build it with an object initializer through <c>InternalsVisibleTo</c> (<c>new PublishRules { ... }</c>) and <c>with</c> for variations.</para>
+/// </remarks>
 [Equatable]
 public partial record PublishRules
 {

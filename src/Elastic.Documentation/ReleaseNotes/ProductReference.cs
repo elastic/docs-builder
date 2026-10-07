@@ -9,6 +9,12 @@ namespace Elastic.Documentation.ReleaseNotes;
 /// <summary>
 /// Product reference with strongly typed lifecycle.
 /// </summary>
+/// <remarks>
+/// <para><b>Built by:</b> <c>ReleaseNotesLoader.LoadEntry</c> in <c>Elastic.Documentation.Configuration</c> (a changelog YAML file) or the pure operations <see cref="ChangelogEntry.FromPullRequest"/>, <see cref="ChangelogEntry.Create"/>, <c>ChangelogEntry.Marker</c> and <c>ChangelogEntry.SourcePointer</c>, or <see cref="ProductReference.Parse"/> and <see cref="ProductReference.Of"/>.</para>
+/// <para><b>Why it cannot be built from outside:</b> Its members are <c>internal init</c>: only <c>Elastic.Documentation</c>, <c>Elastic.Documentation.Configuration</c> and the test projects (<c>InternalsVisibleTo</c>) can set them, so a record that reaches a service has been through a loader or a checked operation.</para>
+/// <para><b>Members that must always be set</b> (they were <c>required</c> before the type was sealed; C# forbids <c>required</c> on a member whose setter is less visible than the type, CS9032): <c>ProductId</c>. A loader or test that leaves one out gets the default; the aggregate's constraint set (<see cref="ChangelogEntryConstraints"/>) reports it: <see cref="ChangelogEntryConstraints.EntryProductIdRequired"/> reports a product reference with no id.</para>
+/// <para><b>In a test:</b> build it with an object initializer through <c>InternalsVisibleTo</c> (<c>new ProductReference { ... }</c>) and <c>with</c> for variations.</para>
+/// </remarks>
 [Equatable]
 public partial record ProductReference
 {

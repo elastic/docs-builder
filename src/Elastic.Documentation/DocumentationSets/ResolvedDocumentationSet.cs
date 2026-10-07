@@ -18,6 +18,12 @@ namespace Elastic.Documentation.DocumentationSets;
 /// validated and joined against the <see cref="GlobalCatalog"/>. Produced once per build (or serve reload) by
 /// <c>DocumentationSetResolver</c>; holds no I/O and no runtime state.
 /// </summary>
+/// <remarks>
+/// <para><b>Built by:</b> <c>DocumentationSetResolver</c> in <c>Elastic.Documentation.Configuration</c>, which joins the checked <c>DocumentationSetDefinition</c> against the catalog (reached through <c>DocumentationSetLoader.Load</c>).</para>
+/// <para><b>Why it cannot be built from outside:</b> Its members are <c>internal init</c>: only <c>Elastic.Documentation</c>, <c>Elastic.Documentation.Configuration</c> and the test projects (<c>InternalsVisibleTo</c>) can set them, so a record that reaches a service has been through a loader or a checked operation.</para>
+/// <para><b>Members that must always be set</b> (they were <c>required</c> before the type was sealed; C# forbids <c>required</c> on a member whose setter is less visible than the type, CS9032): <c>SourceFile</c>, <c>ScopeDirectory</c>. A loader or test that leaves one out gets the default; the aggregate's constraint set (<see cref="DocumentationSetConstraints"/>) is where a missing member is reported, and the loader's mapping is what normally sets them.</para>
+/// <para><b>In a test:</b> build it with an object initializer (<c>new ResolvedDocumentationSet { SourceFile = ..., ScopeDirectory = ... }</c>), usually over a <c>MockFileSystem</c>, and <c>with</c> for variations.</para>
+/// </remarks>
 [Equatable]
 public sealed partial record ResolvedDocumentationSet
 {
@@ -120,6 +126,11 @@ public sealed partial record ResolvedDocumentationSet
 /// single path, and files excluded by a folder-level <c>exclude</c> in the table of contents. Matching lives with the
 /// loader, since glob semantics are not part of the domain.
 /// </summary>
+/// <remarks>
+/// <para><b>Built by:</b> <c>DocumentationSetResolver</c> in <c>Elastic.Documentation.Configuration</c>, which joins the checked <c>DocumentationSetDefinition</c> against the catalog (reached through <c>DocumentationSetLoader.Load</c>).</para>
+/// <para><b>Why it cannot be built from outside:</b> Its members are <c>internal init</c>: only <c>Elastic.Documentation</c>, <c>Elastic.Documentation.Configuration</c> and the test projects (<c>InternalsVisibleTo</c>) can set them, so a record that reaches a service has been through a loader or a checked operation.</para>
+/// <para><b>In a test:</b> build it with its constructor (<c>new DocumentationSetExclusions(...)</c>, internal and visible to the tests) or <c>DocumentationSetExclusions.None</c>.</para>
+/// </remarks>
 [Equatable]
 public sealed partial record DocumentationSetExclusions
 {
@@ -174,6 +185,11 @@ public enum DocSetRegistry
 }
 
 /// <summary>A parsed cross-link entry from docset.yml, with the target registry for lookup.</summary>
+/// <remarks>
+/// <para><b>Built by:</b> <c>DocumentationSetResolver</c> in <c>Elastic.Documentation.Configuration</c>, which joins the checked <c>DocumentationSetDefinition</c> against the catalog (reached through <c>DocumentationSetLoader.Load</c>).</para>
+/// <para><b>Why it cannot be built from outside:</b> Its members are <c>internal init</c>: only <c>Elastic.Documentation</c>, <c>Elastic.Documentation.Configuration</c> and the test projects (<c>InternalsVisibleTo</c>) can set them, so a record that reaches a service has been through a loader or a checked operation.</para>
+/// <para><b>In a test:</b> build it with its constructor (<c>new CrossLinkEntry(repository, registry)</c>, internal and visible to the tests).</para>
+/// </remarks>
 /// <param name="Repository">Repository name (e.g. elasticsearch, docs-eng-team).</param>
 /// <param name="Registry">Registry to use for lookup (public S3 or codex environment).</param>
 public record CrossLinkEntry
@@ -196,6 +212,11 @@ public record CrossLinkEntry
 }
 
 /// <summary>The <c>extensions</c> enabled in <c>docset.yml</c>.</summary>
+/// <remarks>
+/// <para><b>Built by:</b> <c>DocumentationSetResolver</c> in <c>Elastic.Documentation.Configuration</c>, which joins the checked <c>DocumentationSetDefinition</c> against the catalog (reached through <c>DocumentationSetLoader.Load</c>).</para>
+/// <para><b>Why it cannot be built from outside:</b> Its members are <c>internal init</c>: only <c>Elastic.Documentation</c>, <c>Elastic.Documentation.Configuration</c> and the test projects (<c>InternalsVisibleTo</c>) can set them, so a record that reaches a service has been through a loader or a checked operation.</para>
+/// <para><b>In a test:</b> build it with its constructor (<c>new EnabledExtensions(set)</c>, internal and visible to the tests) or <c>EnabledExtensions.None</c>.</para>
+/// </remarks>
 [Equatable]
 public sealed partial record EnabledExtensions
 {
@@ -214,6 +235,11 @@ public sealed partial record EnabledExtensions
 }
 
 /// <summary>White-label branding from <c>docset.yml</c>'s <c>branding</c>, with image paths validated against the docset.</summary>
+/// <remarks>
+/// <para><b>Built by:</b> <c>DocumentationSetResolver</c> in <c>Elastic.Documentation.Configuration</c>, which joins the checked <c>DocumentationSetDefinition</c> against the catalog (reached through <c>DocumentationSetLoader.Load</c>) (the <c>branding</c> block with its image paths validated).</para>
+/// <para><b>Why it cannot be built from outside:</b> Its members are <c>internal init</c>: only <c>Elastic.Documentation</c>, <c>Elastic.Documentation.Configuration</c> and the test projects (<c>InternalsVisibleTo</c>) can set them, so a record that reaches a service has been through a loader or a checked operation.</para>
+/// <para><b>In a test:</b> build it with an object initializer through <c>InternalsVisibleTo</c> (<c>new Branding { ... }</c>) and <c>with</c> for variations.</para>
+/// </remarks>
 public sealed record Branding
 {
 	public string? Icon { get; internal init; }
@@ -224,6 +250,12 @@ public sealed record Branding
 }
 
 /// <summary>A right-gutter call-to-action template.</summary>
+/// <remarks>
+/// <para><b>Built by:</b> <c>DocumentationSetResolver</c> in <c>Elastic.Documentation.Configuration</c>, which joins the checked <c>DocumentationSetDefinition</c> against the catalog (reached through <c>DocumentationSetLoader.Load</c>).</para>
+/// <para><b>Why it cannot be built from outside:</b> Its members are <c>internal init</c>: only <c>Elastic.Documentation</c>, <c>Elastic.Documentation.Configuration</c> and the test projects (<c>InternalsVisibleTo</c>) can set them, so a record that reaches a service has been through a loader or a checked operation.</para>
+/// <para><b>Members that must always be set</b> (they were <c>required</c> before the type was sealed; C# forbids <c>required</c> on a member whose setter is less visible than the type, CS9032): <c>Name</c>, <c>Label</c>, <c>Url</c>. A loader or test that leaves one out gets the default; the aggregate's constraint set (<see cref="DocumentationSetConstraints"/>) is where a missing member is reported, and the loader's mapping is what normally sets them.</para>
+/// <para><b>In a test:</b> build it with <c>Cta.Default</c> or an object initializer (<c>new Cta { Name = ..., Label = ..., Url = ... }</c>).</para>
+/// </remarks>
 [Equatable]
 public sealed partial record Cta
 {
@@ -251,6 +283,12 @@ public sealed partial record Cta
 }
 
 /// <summary>An <c>api</c> entry of <c>docset.yml</c>, validated and bound to its <see cref="Catalog.Product"/>.</summary>
+/// <remarks>
+/// <para><b>Built by:</b> <c>DocumentationSetResolver</c> in <c>Elastic.Documentation.Configuration</c>, which joins the checked <c>DocumentationSetDefinition</c> against the catalog (reached through <c>DocumentationSetLoader.Load</c>) (an <c>api</c> entry bound to its product).</para>
+/// <para><b>Why it cannot be built from outside:</b> Its members are <c>internal init</c>: only <c>Elastic.Documentation</c>, <c>Elastic.Documentation.Configuration</c> and the test projects (<c>InternalsVisibleTo</c>) can set them, so a record that reaches a service has been through a loader or a checked operation.</para>
+/// <para><b>Members that must always be set</b> (they were <c>required</c> before the type was sealed; C# forbids <c>required</c> on a member whose setter is less visible than the type, CS9032): <c>ProductKey</c>, <c>Product</c>, <c>SpecFileName</c>. A loader or test that leaves one out gets the default; the aggregate's constraint set (<see cref="DocumentationSetConstraints"/>) is where a missing member is reported, and the loader's mapping is what normally sets them.</para>
+/// <para><b>In a test:</b> build it with an object initializer through <c>InternalsVisibleTo</c> (<c>new ResolvedApiConfiguration { ... }</c>) and <c>with</c> for variations.</para>
+/// </remarks>
 [Equatable]
 public sealed partial record ResolvedApiConfiguration
 {

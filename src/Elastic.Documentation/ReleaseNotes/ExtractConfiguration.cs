@@ -7,6 +7,11 @@ namespace Elastic.Documentation.ReleaseNotes;
 /// <summary>
 /// Configuration for extraction of release notes and issues from PR descriptions.
 /// </summary>
+/// <remarks>
+/// <para><b>Built by:</b> <c>ChangelogConfigurationLoader</c> in <c>Elastic.Documentation.Configuration</c> (<c>Load</c>, <c>LoadRequired</c>, <c>LoadForProfileMode</c>), reading <c>changelog.yml</c> (the <c>extract</c> block).</para>
+/// <para><b>Why it cannot be built from outside:</b> Its members are <c>internal init</c>: only <c>Elastic.Documentation</c>, <c>Elastic.Documentation.Configuration</c> and the test projects (<c>InternalsVisibleTo</c>) can set them, so a record that reaches a service has been through a loader or a checked operation.</para>
+/// <para><b>In a test:</b> build it with an object initializer through <c>InternalsVisibleTo</c> (<c>new ExtractConfiguration { ... }</c>) and <c>with</c> for variations.</para>
+/// </remarks>
 public record ExtractConfiguration
 {
 	/// <summary>

@@ -6,6 +6,14 @@ using System.Text.Json.Serialization;
 
 namespace Elastic.Documentation;
 
+/// <summary>The git checkout a build ran in: branch, remote and ref (and the GitHub ref when known).</summary>
+/// <remarks>
+/// <para><b>Built by:</b> the factories <c>GitCheckoutInformation.Resolved</c>, <c>ForClonedRepository</c> and <c>ForElasticRepository</c> (the git reader, build contexts), the shared values <c>Unavailable</c> and <c>LegacyTestCheckout</c>, and <c>LinkLoader.LoadManifest</c> in <c>Elastic.Documentation.Configuration</c> for the origin of a read <c>links.json</c>.</para>
+/// <para><b>Why it cannot be built from outside:</b> Its members are <c>internal init</c>: only <c>Elastic.Documentation</c>, <c>Elastic.Documentation.Configuration</c> and the test projects (<c>InternalsVisibleTo</c>) can set them, so a record that reaches a service has been through a loader or a checked operation.</para>
+/// <para><b>Members that must always be set</b> (they were <c>required</c> before the type was sealed; C# forbids <c>required</c> on a member whose setter is less visible than the type, CS9032): <c>Branch</c>, <c>Remote</c>, <c>Ref</c>. A loader or test that leaves one out gets the default; the aggregate's constraint set (<see cref="LinkManifestConstraints"/>) is where a missing member is reported, and the loader's mapping is what normally sets them.</para>
+/// <para><b>In a test:</b> build it with <c>GitCheckoutInformation.Unavailable</c>, <c>LegacyTestCheckout</c> or an object initializer (<c>new GitCheckoutInformation { Branch = ..., Remote = ..., Ref = ... }</c>).</para>
+/// <para><b>Serialised:</b> <c>[JsonInclude]</c> on the internal setters and <c>[JsonRequired]</c> stand in for the lost <c>required</c>: the serializer cannot reach an internal setter without the first, and a missing key is still a parse error with the second.</para>
+/// </remarks>
 public record GitCheckoutInformation
 {
 	public static GitCheckoutInformation Unavailable { get; } = new()
