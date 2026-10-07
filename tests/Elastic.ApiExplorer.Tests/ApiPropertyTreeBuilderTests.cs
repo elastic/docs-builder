@@ -862,7 +862,7 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture)
 		var document = await LoadSpecAsync(json);
 		var builder = BuilderFor(document);
 
-		var variants = OperationPageModel.BuildTopLevelUnionVariants(
+		var variants = ApiBodyContent.BuildUnionVariants(
 			new OpenApiSchemaReference("Body", document),
 			new PropertyTreeScope { Prefix = "req", IsRequest = true },
 			new SchemaAnalyzer(document),
@@ -870,7 +870,7 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture)
 		);
 
 		variants!.Variants.Select(v => v.DisplayName).Should().Equal("Cat", "Cat");
-		OperationPageModel.VariantNames(variants).Should().Equal("Cat[]", "Cat");
+		ApiBodyContent.VariantNames(variants).Should().Equal("Cat[]", "Cat");
 	}
 
 	[Test]
@@ -899,7 +899,7 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture)
 		var plain = new OpenApiSchemaReference("Plain", document);
 
 		builder.BuildPropertyList(body, new PropertyTreeScope { Prefix = "req", IsRequest = true }).Should().BeNull();
-		var variants = OperationPageModel.BuildTopLevelUnionVariants(
+		var variants = ApiBodyContent.BuildUnionVariants(
 			body,
 			new PropertyTreeScope { Prefix = "req", IsRequest = true },
 			analyzer,
@@ -916,7 +916,7 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture)
 		var markdown = new System.Text.StringBuilder();
 		ApiPropertyMarkdown.WriteVariants(markdown, variants, "/api/doc/fixture");
 		markdown.ToString().Should().StartWith("Any of:").And.Contain("- `lives` (integer) — required");
-		OperationPageModel.BuildTopLevelUnionVariants(plain, new PropertyTreeScope { Prefix = "req" }, analyzer, builder).Should().BeNull();
+		ApiBodyContent.BuildUnionVariants(plain, new PropertyTreeScope { Prefix = "req" }, analyzer, builder).Should().BeNull();
 	}
 
 	[Test]
@@ -940,7 +940,7 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture)
 		var document = await LoadSpecAsync(json);
 		var builder = BuilderFor(document);
 
-		var variants = OperationPageModel.BuildTopLevelUnionVariants(
+		var variants = ApiBodyContent.BuildUnionVariants(
 			new OpenApiSchemaReference("Body", document),
 			new PropertyTreeScope { Prefix = "res-200" },
 			new SchemaAnalyzer(document),
@@ -1068,7 +1068,7 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture)
 		var document = await LoadSpecAsync(json);
 		var builder = BuilderFor(document);
 
-		var variants = OperationPageModel.BuildTopLevelUnionVariants(
+		var variants = ApiBodyContent.BuildUnionVariants(
 			document.Components!.Schemas!["Body"],
 			new PropertyTreeScope { Prefix = "req", IsRequest = true },
 			new SchemaAnalyzer(document),
@@ -1168,7 +1168,7 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture)
 		variants.Select(v => v.DiscriminatorLabel).Should().Equal("kind: feline", "kind: canine");
 		variants[0].Properties!.Items.Where(p => p.IsRequired).Select(p => p.Name).Should().Equal("id");
 
-		var body = OperationPageModel.BuildTopLevelUnionVariants(
+		var body = ApiBodyContent.BuildUnionVariants(
 			new OpenApiSchemaReference("Pet", document),
 			new PropertyTreeScope { Prefix = "req", IsRequest = true },
 			new SchemaAnalyzer(document),
@@ -1292,7 +1292,7 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture)
 		var builder = BuilderFor(document);
 		var analyzer = new SchemaAnalyzer(document);
 
-		var (properties, variants) = OperationPageModel.BuildBodyContent(
+		var (properties, variants) = ApiBodyContent.Build(
 			document.Components!.Schemas!["Composed"],
 			new PropertyTreeScope { Prefix = "req", IsRequest = true },
 			analyzer,
@@ -1302,7 +1302,7 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture)
 		variants!.Variants.Select(v => v.DisplayName).Should().Equal("Cat", "Dog");
 		variants.Variants[0].Properties!.Items.Select(p => p.Name).Should().Equal("id", "lives");
 
-		var (byReference, _) = OperationPageModel.BuildBodyContent(
+		var (byReference, _) = ApiBodyContent.Build(
 			new OpenApiSchemaReference("Composed", document),
 			new PropertyTreeScope { Prefix = "res-200" },
 			analyzer,
@@ -1310,7 +1310,7 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture)
 		);
 		byReference.Should().BeNull("a $ref to the same union lists its variants too");
 
-		var (declared, declaredVariants) = OperationPageModel.BuildBodyContent(
+		var (declared, declaredVariants) = ApiBodyContent.Build(
 			document.Components!.Schemas!["Declared"],
 			new PropertyTreeScope { Prefix = "res-200" },
 			analyzer,
@@ -1435,7 +1435,7 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture)
 		cat.DisplayName.Should().Be("Cat");
 		cat.Properties!.Items.Select(p => p.Name).Should().Equal("lives", "<string>");
 
-		var (properties, variants) = OperationPageModel.BuildBodyContent(
+		var (properties, variants) = ApiBodyContent.Build(
 			document.Components!.Schemas!["Pet"],
 			new PropertyTreeScope { Prefix = "req", IsRequest = true },
 			new SchemaAnalyzer(document),
@@ -1708,7 +1708,7 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture)
 		var builder = BuilderFor(document);
 		var analyzer = new SchemaAnalyzer(document);
 
-		var range = OperationPageModel.BuildTopLevelUnionVariants(
+		var range = ApiBodyContent.BuildUnionVariants(
 			document.Components!.Schemas!["Range"],
 			new PropertyTreeScope { Prefix = "req" },
 			analyzer,
@@ -1716,7 +1716,7 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture)
 		);
 		range!.Variants.Select(v => v.DisplayName).Should().Equal("type: relative", "type: absolute");
 
-		var note = OperationPageModel.BuildTopLevelUnionVariants(
+		var note = ApiBodyContent.BuildUnionVariants(
 			document.Components!.Schemas!["Note"],
 			new PropertyTreeScope { Prefix = "req" },
 			analyzer,
@@ -2018,7 +2018,7 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture)
 		var analyzer = new SchemaAnalyzer(document);
 		var builder = BuilderFor(document);
 
-		var (_, array) = OperationPageModel.BuildBodyContent(
+		var (_, array) = ApiBodyContent.Build(
 			document.Components!.Schemas!["Pets"],
 			new PropertyTreeScope { Prefix = "res-200" },
 			analyzer,
@@ -2030,7 +2030,7 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture)
 		ApiPropertyMarkdown.WriteVariants(markdown, array, "/api/doc/fixture");
 		markdown.ToString().Should().StartWith("An array; each item is one of:");
 
-		var (_, single) = OperationPageModel.BuildBodyContent(
+		var (_, single) = ApiBodyContent.Build(
 			document.Components!.Schemas!["Pet"],
 			new PropertyTreeScope { Prefix = "req" },
 			analyzer,
