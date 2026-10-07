@@ -614,7 +614,8 @@ public class ApiPropertyTreeBuilder(OpenApiDocument document, PropertyDisplayOpt
 
 	private const string DictionaryKeyName = "<string>";
 
-	private ApiUnionVariants? BuildUnionVariants(
+	/// <summary>Builds the variants of a union whose options are already classified, so each keeps its name and <c>$ref</c>.</summary>
+	public ApiUnionVariants? BuildUnionVariants(
 		List<UnionOption> unionOptions,
 		PropertyTreeScope scope,
 		OpenApiDiscriminator? discriminator = null

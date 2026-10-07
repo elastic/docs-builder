@@ -1034,4 +1034,49 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture)
 		policy.Properties!.Items.Select(p => p.Name).Should().Equal("name", "inputs");
 		variants.Single(v => v.DisplayName == "string").Properties.Should().BeNull();
 	}
+
+	[Test]
+	public async Task BuildTopLevelUnionVariants_AllOfUnionWithDiscriminatorMapping_KeepsNamesAndMappedLabels()
+	{
+		var json =
+			"""
+			{
+			  "openapi": "3.0.3",
+			  "info": { "title": "t", "version": "1" },
+			  "paths": {},
+			  "components": {
+			    "schemas": {
+			      "Base": { "type": "object", "properties": { "id": { "type": "string" } } },
+			      "Cat": { "type": "object", "properties": { "kind": { "type": "string" }, "lives": { "type": "integer" } } },
+			      "Dog": { "type": "object", "properties": { "kind": { "type": "string" }, "barks": { "type": "boolean" } } },
+			      "Body": {
+			        "allOf": [
+			          { "$ref": "#/components/schemas/Base" },
+			          {
+			            "oneOf": [ { "$ref": "#/components/schemas/Cat" }, { "$ref": "#/components/schemas/Dog" } ],
+			            "discriminator": {
+			              "propertyName": "kind",
+			              "mapping": { "feline": "#/components/schemas/Cat", "canine": "#/components/schemas/Dog" }
+			            }
+			          }
+			        ]
+			      }
+			    }
+			  }
+			}
+			""";
+		var document = await LoadSpecAsync(json);
+		var builder = BuilderFor(document);
+
+		var variants = OperationPageModel.BuildTopLevelUnionVariants(
+			document.Components!.Schemas!["Body"],
+			new PropertyTreeScope { Prefix = "req", IsRequest = true },
+			new SchemaAnalyzer(document),
+			builder
+		);
+
+		variants!.Variants.Select(v => v.DisplayName).Should().Equal("Cat", "Dog");
+		variants.Variants.Select(v => v.DiscriminatorLabel).Should().Equal("kind: feline", "kind: canine");
+		variants.Variants[0].Properties!.Items.Select(p => p.Name).Should().Equal("id", "kind", "lives");
+	}
 }

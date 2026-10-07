@@ -884,11 +884,21 @@ public partial record OperationPageModel
 		if (typeInfo is not { IsUnion: true, UnionOptions.Count: > 0 })
 			return null;
 
-		var schemas = typeInfo.UnionOptions.Where(static o => o.Schema is not null).Select(static o => o.Schema!).ToList();
-		var variants = schemas.Count == 0
-			? null
-			: builder.BuildUnionVariantsForSchemas(schemas, scope, analyzer.GetUnionDiscriminator(bodySchema));
+		var options = typeInfo.UnionOptions.Where(static o => o.Schema is not null).Select(o => DescribeMember(o, analyzer)).ToList();
+		var variants = options.Count == 0 ? null : builder.BuildUnionVariants(options, scope, analyzer.GetUnionDiscriminator(bodySchema));
 		return variants is null ? null : variants with { Label = SchemaHelpers.UnionLabel(typeInfo.UnionKeyword) };
+	}
+
+	/// <summary>
+	/// Classifies a union member the way a body-level list always has. A merged <c>allOf</c> variant has no <c>$ref</c> of its own,
+	/// so it keeps the name and <c>$ref</c> of the option it came from; discriminator mappings match on that <c>$ref</c>.
+	/// </summary>
+	private static UnionOption DescribeMember(UnionOption option, SchemaAnalyzer analyzer)
+	{
+		var info = analyzer.GetTypeInfo(option.Schema);
+		return string.IsNullOrEmpty(info.SchemaRef) && !string.IsNullOrEmpty(option.Ref)
+			? option
+			: new UnionOption(info.TypeName, info.SchemaRef, info.IsObject, option.Schema, info.IsArray);
 	}
 
 	private static IReadOnlyList<string> NamesOf(IEnumerable<string?> names) => [.. names.OfType<string>().Where(static n => n.Length > 0)];
