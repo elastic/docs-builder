@@ -1079,4 +1079,44 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture)
 		variants.Variants.Select(v => v.DiscriminatorLabel).Should().Equal("kind: feline", "kind: canine");
 		variants.Variants[0].Properties!.Items.Select(p => p.Name).Should().Equal("id", "kind", "lives");
 	}
+
+	[Test]
+	public async Task BuildPropertyList_UnionWithInlineObjectMembers_ExpandsEachOneSeparately()
+	{
+		var json =
+			"""
+			{
+			  "openapi": "3.0.3",
+			  "info": { "title": "t", "version": "1" },
+			  "paths": {},
+			  "components": {
+			    "schemas": {
+			      "Named": {
+			        "oneOf": [
+			          { "type": "string" },
+			          { "type": "object", "title": "ByQuery", "properties": { "query": { "type": "string" } } },
+			          { "type": "object", "properties": { "ids": { "type": "array", "items": { "type": "string" } } } },
+			          { "type": "object", "properties": { "all": { "type": "boolean" } } }
+			        ]
+			      },
+			      "Holder": {
+			        "type": "object",
+			        "properties": { "selector": { "$ref": "#/components/schemas/Named" } }
+			      }
+			    }
+			  }
+			}
+			""";
+		var document = await LoadSpecAsync(json);
+		var builder = BuilderFor(document);
+
+		var list = builder.BuildPropertyList(document.Components!.Schemas!["Holder"], new PropertyTreeScope { Prefix = "" });
+
+		var selector = list!.Items.Single(p => p.Name == "selector");
+		selector.Children.Kind.Should().Be(ChildKind.UnionVariants);
+		var variants = selector.Children.Variants!.Variants;
+		variants.Select(v => v.DisplayName).Should().Equal("string", "ByQuery", "object", "object");
+		variants.Select(v => v.Properties?.Items.Single().Name).Should().Equal(null, "query", "ids", "all");
+		variants.Select(v => v.AnchorId).Should().OnlyHaveUniqueItems();
+	}
 }

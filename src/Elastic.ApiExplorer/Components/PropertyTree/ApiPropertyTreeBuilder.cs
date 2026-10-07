@@ -636,11 +636,15 @@ public class ApiPropertyTreeBuilder(OpenApiDocument document, PropertyDisplayOpt
 		);
 
 		var variants = new List<ApiUnionVariant>(variantsToRender.Count);
+		var usedIds = new HashSet<string>(StringComparer.Ordinal);
 		foreach (var variant in variantsToRender)
 		{
 			var dictionaryValue = variant.Props is { Count: > 0 } ? null : _analyzer.GetExpandableDictionaryValue(variant.Schema);
 			var hasProperties = variant.Props is { Count: > 0 } || dictionaryValue is not null;
-			var optionId = $"{scope.Prefix}-variant-{variant.Name.ToLowerInvariant().Replace(" ", "-").Replace("[]", "-array")}";
+			var optionId = UniqueId(
+				$"{scope.Prefix}-variant-{variant.Name.ToLowerInvariant().Replace(" ", "-").Replace("[]", "-array")}",
+				usedIds
+			);
 			var hasBothVariants = variantsToRender.Count(v => v.BaseName == variant.BaseName) > 1;
 			var showProperties = hasProperties && (!variant.IsArray || !hasBothVariants);
 
@@ -691,6 +695,15 @@ public class ApiPropertyTreeBuilder(OpenApiDocument document, PropertyDisplayOpt
 	private static OpenApiSchema DictionaryKeyRow(IOpenApiSchema value) =>
 		new() { Type = JsonSchemaType.Object, Properties = new Dictionary<string, IOpenApiSchema> { [DictionaryKeyName] = value } };
 
+	/// <summary>Two variants with the same name (two inline <c>object</c> members) still need distinct anchors.</summary>
+	private static string UniqueId(string id, HashSet<string> used)
+	{
+		var candidate = id;
+		for (var n = 2; !used.Add(candidate); n++)
+			candidate = $"{id}-{n}";
+		return candidate;
+	}
+
 	private static string? FirstParagraph(string? description) =>
 		description?.Split(["\r\n\r\n", "\n\n"], 2, StringSplitOptions.TrimEntries)[0] is { Length: > 0 } first ? first : null;
 
@@ -721,11 +734,18 @@ public class ApiPropertyTreeBuilder(OpenApiDocument document, PropertyDisplayOpt
 		IDictionary<string, IOpenApiSchema>? Props
 	);
 
+	/// <summary>
+	/// Named options pair up as <c>X</c> and <c>X[]</c> by name. An inline object has no name to pair on, so each one
+	/// stays its own variant instead of folding into another <c>object</c>.
+	/// </summary>
+	private static object VariantGroupKey(UnionOption option) =>
+		option is { Ref: null or "", IsObject: true, Schema: { } schema } ? schema : option.BaseName;
+
 	private List<VariantCandidate> CollectVariantsToRender(List<UnionOption> unionOptions)
 	{
 		// One group per base name, array variant first; groups keep the order their first option appeared in.
 		var variantsToRender = new List<VariantCandidate>();
-		foreach (var variants in unionOptions.GroupBy(o => o.BaseName).Select(g => g.OrderByDescending(o => o.IsArray).ToList()))
+		foreach (var variants in unionOptions.GroupBy(VariantGroupKey).Select(g => g.OrderByDescending(o => o.IsArray).ToList()))
 		{
 			var primaryOption = variants.FirstOrDefault(o => !o.IsArray);
 			if (primaryOption?.Schema is null)

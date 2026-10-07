@@ -153,6 +153,10 @@ public class SchemaAnalyzer(
 		if (!string.IsNullOrEmpty(info.SchemaRef))
 			return new UnionOption(info.TypeName, info.SchemaRef, info.IsObject, member);
 
+		// An inline object with properties of its own expands like a named one; its title, when set, names it.
+		if (info is { IsObject: true, IsUnion: false, IsDictionary: false } && GetSchemaProperties(member)?.Count > 0)
+			return new UnionOption(string.IsNullOrWhiteSpace(member.Title) ? info.TypeName : member.Title, null, true, member);
+
 		var primitive = SchemaHelpers.GetPrimitiveTypeName(member.Type);
 		return new UnionOption(string.IsNullOrEmpty(primitive) ? "unknown" : primitive, null, false, member);
 	}
