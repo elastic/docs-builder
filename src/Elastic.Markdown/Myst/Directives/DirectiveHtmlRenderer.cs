@@ -274,7 +274,7 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 			Variant = block.Variant,
 			IsAccordion = explore is not null,
 			AccordionHeadingLevel = (explore?.Level ?? 2) + 1,
-			IsOpen = explore is not null && HubExplore.IsFirstCardGroup(explore, block)
+			IsOpen = explore is not null && HubExplore.IsOpenByDefault(explore, block)
 		});
 		RenderRazorSlice(slice, renderer);
 	}

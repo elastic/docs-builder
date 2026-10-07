@@ -40,12 +40,16 @@ public class ExploreBlock(DirectiveBlockParser parser, ParserContext context) : 
 	/// </summary>
 	public int Level { get; private set; } = 2;
 
+	/// <summary>Which accordions render open on load. Defaults to <see cref="ExploreMode.Collapsed"/>.</summary>
+	public ExploreMode Mode { get; private set; } = ExploreMode.Collapsed;
+
 	public override void FinalizeAndValidate(ParserContext context)
 	{
 		Title = Prop("title");
 		Intro = Prop("intro");
 		Anchor = Prop("id");
 		Level = ParseLevel(Prop("level"));
+		Mode = ParseMode(Prop("mode"));
 
 		if (string.IsNullOrWhiteSpace(Title))
 			this.EmitError("{explore} requires a `:title:` option.");
@@ -68,5 +72,39 @@ public class ExploreBlock(DirectiveBlockParser parser, ParserContext context) : 
 		}
 	}
 
+	private ExploreMode ParseMode(string? value)
+	{
+		if (string.IsNullOrWhiteSpace(value))
+			return ExploreMode.Collapsed;
+
+		switch (value.Trim().ToLowerInvariant())
+		{
+			case "collapsed":
+				return ExploreMode.Collapsed;
+			case "first":
+				return ExploreMode.First;
+			case "expanded":
+				return ExploreMode.Expanded;
+			default:
+				this.EmitWarning(
+					$"Invalid {{explore}} mode '{value}'. Valid modes are: collapsed, first, expanded. Defaulting to 'collapsed'."
+				);
+				return ExploreMode.Collapsed;
+		}
+	}
+
 	public override IEnumerable<string> GeneratedAnchors => string.IsNullOrWhiteSpace(Anchor) ? [] : [Anchor];
+}
+
+/// <summary>Controls which accordions in an <see cref="ExploreBlock"/> render open on load.</summary>
+public enum ExploreMode
+{
+	/// <summary>Every accordion is closed.</summary>
+	Collapsed,
+
+	/// <summary>Only the first accordion is open.</summary>
+	First,
+
+	/// <summary>Every accordion is open.</summary>
+	Expanded
 }
