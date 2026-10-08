@@ -6,6 +6,8 @@
 		return;
 	}
 	var menuId = $"{Model.ContainerId}-menu";
+	// Chips drop the words every variant name shares (bedrock_secrets → bedrock); the menu keeps the full names.
+	var chipLabels = Model.UseChips ? ChipLabels.Shorten([.. Model.Variants.Select(static v => v.DisplayName)]) : [];
 }
 @if (Model.Label is { Length: > 0 } unionLabel)
 {
@@ -21,14 +23,16 @@
 				@for (var i = 0; i < Model.Variants.Count; i++)
 				{
 					var variant = Model.Variants[i];
+					var chipLabel = variant.IsArrayVariant ? $"{chipLabels[i]}[]" : chipLabels[i];
 					<button
 						type="button"
 						role="tab"
 						class="api-example-chip@(i == 0 ? " is-active" : "")"
 						data-chip="@variant.AnchorId"
 						aria-controls="@variant.AnchorId"
-						aria-selected="@(i == 0 ? "true" : "false")">
-						<span class="api-example-chip-title" data-chip-title>@variant.ChipName</span>
+						aria-selected="@(i == 0 ? "true" : "false")"
+						title="@(chipLabel == variant.ChipName ? null : variant.ChipName)">
+						<span class="api-example-chip-title" data-chip-title>@chipLabel</span>
 					</button>
 				}
 			</div>

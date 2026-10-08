@@ -69,7 +69,7 @@ public class UnionOptionsRenderingTests
 		var slice = _UnionOptions.Create(variants);
 		var html = await slice.RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
 		// The chip buttons spread their attributes over several lines.
-		return System.Text.RegularExpressions.Regex.Replace(html, @"\s+", " ");
+		return string.Join(' ', html.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries));
 	}
 
 	private static ApiUnionVariant Variant(int i, bool foldable) =>
