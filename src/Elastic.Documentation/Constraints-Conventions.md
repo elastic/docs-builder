@@ -44,8 +44,8 @@ A loader is the one place that checks the entity it builds; nothing downstream c
 2. `var report = Set.All.Report(entity);` runs every rule once and reports all of them, not the first.
 3. Hand the report on: `Result.From(report, file)` (carries every diagnostic; `HasErrors` is true when a rule of Error severity was broken) or, where the loader owns a collector, `collector.Write(report, file)`, which returns whether the entity is usable. Both go through `ConstraintReport<T>.ToDiagnostics`, the only violation-to-diagnostic mapping, so every diagnostic carries the rule's id as `Diagnostic.RuleId`. Match on that, never on message text.
 4. Drop items only through the report, by the typed rule handle: `report.Keep(items, Set.SomeRule)` or `report.Rejected(Set.SomeRule)`, never by comparing a `ConstraintId` string. Only an Error rejects an item; a Warning never drops one.
-5. Never check in a callee. A caller of a loader uses `result.EmitTo(collector)` and `result.HasErrors`; it does not run the set again. The `Check(...)` one-liners on the sets are gone: use `Set.All.Report(...)`.
-6. Startup-critical configuration stops the process in one place, the composition root: `Loader.Load(...).OrThrow()` throws a `ConfigurationException` whose message lists every error and which carries every diagnostic.
+5. Never check in a callee. A caller of a loader writes the findings with `result.Report(collector)`, which returns the same `Result<T>`, and then chooses: `.OrThrow()`, `.Value`, or a match on `HasErrors`. It does not run the set again. `EmitTo(collector)` is shorthand for `Report(collector).Value`. The `Check(...)` one-liners on the sets are gone: use `Set.All.Report(...)`.
+6. Startup-critical configuration stops the process in one place, the composition root: `Loader.Load(...).Report(collector).OrThrow()` throws a `ConfigurationException` whose message lists every error and which carries every diagnostic.
 
 ## Ownership: three owners, by lifetime
 

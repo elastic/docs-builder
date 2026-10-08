@@ -15,13 +15,19 @@ public sealed record Result<T>(T? Value, IReadOnlyList<Diagnostic> Diagnostics) 
 {
 	public bool HasErrors => Diagnostics.Any(d => d.Severity == Severity.Error);
 
-	/// <summary>Writes every diagnostic to <paramref name="collector"/>, in order, and returns the value.</summary>
-	public T? EmitTo(IDiagnosticsCollector collector)
+	/// <summary>
+	/// Writes every diagnostic to <paramref name="collector"/>, in order, and returns this result, so the caller chooses what to do with it:
+	/// <c>.OrThrow()</c>, <c>.Value</c>, or a match on <see cref="HasErrors"/>.
+	/// </summary>
+	public Result<T> Report(IDiagnosticsCollector collector)
 	{
 		foreach (var diagnostic in Diagnostics)
 			collector.Write(diagnostic);
-		return Value;
+		return this;
 	}
+
+	/// <summary>Shorthand for <c>Report(collector).Value</c>: writes every diagnostic and returns the value.</summary>
+	public T? EmitTo(IDiagnosticsCollector collector) => Report(collector).Value;
 
 	/// <summary>
 	/// Writes only the error diagnostics to <paramref name="collector"/> and returns the value when there are none (null otherwise). For a caller that
