@@ -44,7 +44,15 @@ public enum UnionDisplayKind
 }
 
 /// <summary>One "One of:" badge for a union option.</summary>
-public record UnionBadge(string Text, bool IsTypeOption);
+/// <param name="Url">The page of a type documented on its own (QueryContainer, …), for <c>X</c> and <c>X[]</c> alike.</param>
+public record UnionBadge(string Text, bool IsTypeOption, string? Url = null)
+{
+	/// <summary>The linked type's name, without the <c>[]</c> an array option adds.</summary>
+	public string LinkText => Text.EndsWith("[]", StringComparison.Ordinal) ? Text[..^2] : Text;
+
+	/// <summary>What follows the link: <c>[]</c> for an array option, so the link names the type alone.</summary>
+	public string AfterLink => Text.EndsWith("[]", StringComparison.Ordinal) ? "[]" : "";
+}
 
 /// <summary>The precomputed inline rendering of a union type on a property row.</summary>
 public record UnionDisplay

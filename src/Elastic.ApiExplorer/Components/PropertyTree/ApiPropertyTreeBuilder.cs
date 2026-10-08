@@ -347,7 +347,7 @@ public partial class ApiPropertyTreeBuilder(
 			var badges = mixed
 				? typeInfo.EnumValues!.Select(static v => new UnionBadge(v, IsTypeOption: false))
 				: (expansion.HasUnionOptions ? [] : sortedOptions.Where(static o => !SchemaHelpers.IsInternalSchemaName(o))).Select(
-					o => new UnionBadge(o, IsTypeOptionBadge(o))
+					o => new UnionBadge(o, IsTypeOptionBadge(o), TypePageUrl(o))
 				);
 			return new UnionDisplay
 			{
@@ -360,6 +360,15 @@ public partial class ApiPropertyTreeBuilder(
 		}
 
 		return null;
+	}
+
+	/// <summary>The page of a type documented on its own, for an option naming it or an array of it; null otherwise.</summary>
+	private string? TypePageUrl(string option)
+	{
+		var typeName = option.EndsWith("[]", StringComparison.Ordinal) ? option[..^2] : option;
+		return SchemaHelpers.ShouldLinkToContainerPage(typeName, currentPageType)
+			? SchemaHelpers.GetContainerPageUrl(options.ApiRootUrl, typeName)
+			: null;
 	}
 
 	/// <summary>A union with literal members as well as object variants, e.g. a sort order: <c>asc</c>, <c>desc</c> or an object.</summary>

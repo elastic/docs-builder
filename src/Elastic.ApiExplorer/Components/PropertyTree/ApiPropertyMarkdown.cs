@@ -130,8 +130,10 @@ internal static class ApiPropertyMarkdown
 				WriteNestedLine(
 					markdown,
 					depth,
-					$"{property.Union.Label} " + string.Join(" or ", property.Union.Badges.Select(b => $"`{b.Text}`")) +
-						(property.Union.MoreOptions is { } more ? $" {more}" : "")
+					$"{property.Union.Label} " + string.Join(
+						" or ",
+						property.Union.Badges.Select(b => ApiCommonMark.Link($"`{b.Text}`", b.Url))
+					) + (property.Union.MoreOptions is { } more ? $" {more}" : "")
 				);
 				break;
 		}
