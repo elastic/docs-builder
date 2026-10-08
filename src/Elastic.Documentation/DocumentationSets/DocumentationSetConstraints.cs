@@ -139,6 +139,9 @@ public static partial class DocumentationSetConstraints
 		.WithSeverity(Severity.Warning)
 		.Describe("storybook.registry only interpolates allow-listed environment variables.");
 
+	// Not decided: an image size limit. docs-content has 62 of 2,651 images over 1 MB (GIFs up to 7 MB), so a limit is a judgment call; Files<T>.MaxSize
+	// would state it for these branding images (a Hint at 5 MB is the suggestion). Page images are referenced from Markdown, so a rule for those
+	// belongs to the Markdown build, not to this set.
 	public static Constraint<DocumentationSetInCatalog, DeclaredBrandingImage> BrandingImagesValid
 	{
 		get;
