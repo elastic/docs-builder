@@ -21,6 +21,8 @@ namespace Elastic.ApiExplorer.Tests;
 
 public class ExampleScenarioTests
 {
+	private const string IndexBody = /*lang=json,strict*/  """{"message":"GET /search HTTP/1.1 200 1070000"}""";
+
 	[Test]
 	public void BuildExampleScenarios_MergesRequestAndResponseByTitle()
 	{
@@ -333,6 +335,60 @@ public class ExampleScenarioTests
 		scenarios.Select(static s => s.Title).Should().Equal("Example", "Execute builtin ES|QL tool");
 		scenarios[0].CodeSamples.Should().ContainSingle();
 		scenarios[1].CodeSamples.Should().BeEmpty();
+	}
+
+	[Test]
+	public void BuildExampleScenarios_IdenticalBodies_PicksExampleWhoseRequestLineMatchesConsole()
+	{
+		var automatic = new ExampleDisplay("Automate document IDs", null, IndexBody, null) { RequestLine = ("POST", "my-index/_doc/") };
+		var defined = new ExampleDisplay("Define document IDs", null, IndexBody, null) { RequestLine = ("PUT", "my-index/_doc/1") };
+		var console = new CodeSample("Console", $"PUT my-index/_doc/1\n{IndexBody}", "language-console");
+
+		var scenarios = OperationPageModel.BuildExampleScenarios([automatic, defined], [], [console]);
+
+		scenarios.Select(static s => s.Title).Should().Equal("Automate document IDs", "Define document IDs");
+		scenarios[0].CodeSamples.Should().BeEmpty();
+		scenarios[1].CodeSamples.Should().ContainSingle();
+		scenarios[1].ShowRequest.Should().BeFalse();
+	}
+
+	[Test]
+	public void BuildExampleScenarios_IdenticalBodiesWithoutRequestLines_KeepsFirst()
+	{
+		var automatic = new ExampleDisplay("Automate document IDs", null, IndexBody, null);
+		var defined = new ExampleDisplay("Define document IDs", null, IndexBody, null);
+		var console = new CodeSample("Console", $"PUT my-index/_doc/1\n{IndexBody}", "language-console");
+
+		var scenarios = OperationPageModel.BuildExampleScenarios([automatic, defined], [], [console]);
+
+		scenarios[0].CodeSamples.Should().ContainSingle();
+		scenarios[1].CodeSamples.Should().BeEmpty();
+	}
+
+	[Test]
+	public void BuildExampleScenarios_IdenticalBodiesAndRoutes_TellsExamplesApartByQuery()
+	{
+		var ten = new ExampleDisplay("Ten hits", null, IndexBody, null) { RequestLine = ("GET", "/_search?size=10") };
+		var hundred = new ExampleDisplay("Hundred hits", null, IndexBody, null) { RequestLine = ("GET", "/_search?size=100") };
+		var console = new CodeSample("Console", $"GET /_search?size=100\n{IndexBody}", "language-console");
+
+		var scenarios = OperationPageModel.BuildExampleScenarios([ten, hundred], [], [console]);
+
+		scenarios[0].CodeSamples.Should().BeEmpty();
+		scenarios[1].CodeSamples.Should().ContainSingle();
+	}
+
+	[Test]
+	public void BuildExampleScenarios_ExactBodyBeatsEarlierContainedBody()
+	{
+		var inner = new ExampleDisplay("Inner", null, /*lang=json,strict*/  """{"a":1}""", null);
+		var outer = new ExampleDisplay("Outer", null, /*lang=json,strict*/  """{"x":{"a":1}}""", null);
+		var console = new CodeSample("Console", "POST /_things\n{\"x\":{\"a\":1}}", "language-console");
+
+		var scenarios = OperationPageModel.BuildExampleScenarios([inner, outer], [], [console]);
+
+		scenarios[0].CodeSamples.Should().BeEmpty();
+		scenarios[1].CodeSamples.Should().ContainSingle();
 	}
 
 	[Test]
