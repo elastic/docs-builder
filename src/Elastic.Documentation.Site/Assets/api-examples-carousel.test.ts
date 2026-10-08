@@ -155,6 +155,16 @@ describe('API examples carousel', () => {
                 window.localStorage.getItem(apiLanguageStorageKey)
             ).toBeNull()
 
+            // Without a reader scroll, a card settling into view is not a pick.
+            settle('curl')
+            expect(activeLang('term')).toBe('Console')
+            expect(
+                window.localStorage.getItem(apiLanguageStorageKey)
+            ).toBeNull()
+
+            document
+                .querySelector('[data-scenario="term"] [data-carousel-strip]')!
+                .dispatchEvent(new Event('touchstart'))
             settle('Python')
 
             expect(activeLang('term')).toBe('Python')
@@ -165,6 +175,29 @@ describe('API examples carousel', () => {
         } finally {
             window.IntersectionObserver = Original
         }
+    })
+
+    it('keeps the saved language when an example lacks it', () => {
+        window.localStorage.setItem(apiLanguageStorageKey, 'Java')
+        window.history.replaceState(null, '', '#example=slicing')
+        initApiExamples()
+
+        expect(activeLang('slicing')).toBe('Console')
+        expect(window.localStorage.getItem(apiLanguageStorageKey)).toBe('Java')
+
+        click('.api-example-chip[data-scenario="term"]')
+
+        expect(activeLang('term')).toBe('Java')
+    })
+
+    it('falls back to Console, not the current language, on example switch', () => {
+        window.history.replaceState(null, '', '#lang=curl')
+        initApiExamples()
+        expect(activeLang('term')).toBe('curl')
+
+        click('.api-example-chip[data-scenario="slicing"]')
+
+        expect(activeLang('slicing')).toBe('Console')
     })
 
     it('restores example and language from the deep link', () => {
