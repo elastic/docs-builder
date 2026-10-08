@@ -63,13 +63,15 @@ export function showVariant(container: HTMLElement, variantId: string): void {
 
 /**
  * Near the bottom of the page, a shorter variant shortens the page below the current scroll position; the browser then
- * clamps the scroll and the chips jump under the pointer. The variant list keeps the height that holds the position.
+ * clamps the scroll and the chips jump under the pointer. The variant list keeps the height that holds the position,
+ * and only for as long as it does: every switch starts from the list's own height.
  */
 function keepScrollPosition(container: HTMLElement, scrolled: number) {
     const list = container.querySelector<HTMLElement>(
         ':scope > .union-variants'
     )
     if (!list) return
+    list.style.minHeight = ''
     const maxScroll = document.documentElement.scrollHeight - window.innerHeight
     const shortfall = scrolled - maxScroll
     if (shortfall <= 0) return

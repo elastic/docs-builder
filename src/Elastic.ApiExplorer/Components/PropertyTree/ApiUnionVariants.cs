@@ -45,8 +45,11 @@ public record ApiUnionVariants
 
 	public required IReadOnlyList<ApiUnionVariant> Variants { get; init; }
 
+	/// <summary>From this many variants, a list shows one at a time behind a row of chips.</summary>
+	public const int ChipThreshold = 3;
+
 	/// <summary>Three or more variants show one at a time behind a row of chips, so a long list stays short to scan.</summary>
-	public bool UseChips => Variants.Count >= 3;
+	public bool UseChips => Variants.Count >= ChipThreshold;
 
 	/// <summary>Eleven or more variants also get a filter in the chips' "more" menu.</summary>
 	public bool HasFilter => Variants.Count >= 11;

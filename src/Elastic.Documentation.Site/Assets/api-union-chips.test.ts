@@ -95,6 +95,24 @@ describe('union variant chips', () => {
         expect(shown(['query', 'eql', 'esql'])).toEqual(['eql'])
     })
 
+    it('releases the height kept for the scroll position on the next switch', () => {
+        const list = byId('outer').querySelector<HTMLElement>(
+            ':scope > .union-variants'
+        )!
+        list.style.minHeight = '900px'
+        // jsdom has no layout: give the page room below the scroll position, as a page that is not at its bottom has.
+        Object.defineProperty(document.documentElement, 'scrollHeight', {
+            configurable: true,
+            get: () => 5000,
+        })
+
+        chip('esql').click()
+
+        expect(list.style.minHeight).toBe('')
+        delete (document.documentElement as unknown as Record<string, unknown>)
+            .scrollHeight
+    })
+
     it('reports whether a link target was inside a hidden variant', () => {
         expect(revealVariantsAround(byId('deep'))).toBe(true)
         expect(revealVariantsAround(byId('deep'))).toBe(false)

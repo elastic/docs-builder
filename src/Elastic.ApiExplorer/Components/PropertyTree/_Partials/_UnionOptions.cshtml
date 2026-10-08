@@ -61,10 +61,12 @@
 	{
 		var variant = Model.Variants[i];
 		// A picked chip is the choice to read that variant: its fields show at once, and its chip already names it, so
-		// the label keeps only what the chip does not say (the discriminator value, or the link to the type's page).
+		// the label keeps only what the chip does not say (the discriminator value, the link to the type's page, or
+		// that the variant is an array).
 		var collapsible = variant.IsCollapsible && !Model.UseChips;
 		var folded = variant.UseHidden && !Model.UseChips;
-		var showName = !Model.UseChips || variant.PageUrl is { Length: > 0 };
+		// An array variant keeps its "[] X" heading, so its fields read as each item's.
+		var showName = !Model.UseChips || variant.PageUrl is { Length: > 0 } || variant.IsArrayVariant;
 		var showLabel = showName || variant.DiscriminatorLabel is { Length: > 0 };
 
 		@if (i > 0 && !Model.UseChips)

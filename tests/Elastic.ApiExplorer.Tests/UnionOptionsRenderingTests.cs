@@ -43,7 +43,14 @@ public class UnionOptionsRenderingTests
 		html.Should().NotContain("show properties", "picking a chip is the choice to read that variant");
 		html.Should().Contain("""<div class="nested-properties" id="v-0-children">""", "the fields are not folded");
 		html.Should().NotContain(">Variant0</span></code>", "the chip already names the variant");
-		html.Should().Contain("""<div class="union-variant-label"> <code class="discriminator-value">kind: two</code> </div>""");
+		html.Should().Contain(
+			"""<div class="union-variant-label"> <code class="discriminator-value">kind: two</code> </div>""".Replace(
+				" <code class=\"discriminator",
+				" <span class=\"type-wrapper array-icon\">[]</span> <span class=\"type-wrapper object-icon\">{}</span> <code class=\"schema-type\"><span class=\"type-object\">Variant2</span></code> <code class=\"discriminator"
+			),
+			"an array variant keeps its [] heading, so its fields read as each item's"
+		);
+		html.Should().NotContain(">Variant1</span></code>", "a plain variant's name is on its chip");
 
 		var listed = await Render(2, foldable: true);
 		listed.Should().Contain("show properties", "two variants listed one after the other still fold their fields");
