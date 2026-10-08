@@ -2793,15 +2793,26 @@ button.example-response-tab:focus-visible {
 	margin-top: 0;
 }
 
-/* API page shell: same max width as docs. Sidebar plus one content column; operation
-   pages split that column in two themselves (.api-page-columns). */
+/* API page shell: like the codex layout, uncapped so the nav sits at the left edge
+   and the content is centered in the remaining space. Operation pages split that
+   content in two themselves (.api-page-columns). */
 .api-page-shell {
-	max-width: var(--max-layout-width);
+	max-width: none;
 }
 
 @media (min-width: 768px) {
 	.api-page-shell > .grid {
 		column-gap: 48px;
+	}
+
+	#api-content-grid {
+		width: 100%;
+		max-width: var(--max-api-content-width);
+		margin-inline: auto;
+	}
+
+	#api-content-grid:has(#api-examples-panel) {
+		max-width: calc(var(--max-api-content-width) * 5 / 3 + 24px);
 	}
 }
 
@@ -2895,6 +2906,17 @@ button.example-response-tab:focus-visible {
 		flex: 0 0 auto;
 		max-height: max(12rem, calc((100vh - var(--offset-top)) * 0.4));
 		overflow: auto;
+	}
+}
+
+/* Wide enough for the 3:2 split of the capped block. */
+@media (min-width: 1280px) {
+	.api-page-columns > #elastic-api-v3 {
+		flex-grow: 3;
+	}
+
+	.api-page-columns > #api-examples-panel {
+		flex-grow: 2;
 	}
 }
 
