@@ -29,10 +29,7 @@ public class SyncPlanConstraintsTests
 
 	[Test]
 	public void Laws() =>
-		SyncPlanConstraints
-			.All
-			.GatedByRequired()
-			.Laws(GenAuto.Of<SyncPlan>(AutoMode.Plausible, o => o.Normalize<SyncPlan>(Planned)), CounterExamples);
+		SyncPlanConstraints.All.Laws(GenAuto.Of<SyncPlan>(AutoMode.Plausible, o => o.Normalize<SyncPlan>(Planned)), CounterExamples);
 
 	private static IReadOnlyList<DeleteRequest> Deletes(int count) =>
 		[.. Enumerable.Range(0, count).Select(i => new DeleteRequest { DestinationPath = $"old/{i}.html" })];

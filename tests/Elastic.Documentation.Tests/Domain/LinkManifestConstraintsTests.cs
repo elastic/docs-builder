@@ -12,10 +12,7 @@ public class LinkManifestConstraintsTests
 {
 	[Test]
 	public void Laws() =>
-		LinkManifestConstraints
-			.All
-			.GatedByRequired()
-			.Laws(DomainGen.Of<LinkManifest>(o => o.Normalize<LinkManifest>(LinkExamples.Manifest)), CounterExamples);
+		LinkManifestConstraints.All.Laws(DomainGen.Of<LinkManifest>(o => o.Normalize<LinkManifest>(LinkExamples.Manifest)), CounterExamples);
 
 	[Test]
 	public void ValidManifest_BreaksNoRule() => LinkManifestConstraints.All.Validate(Valid()).Should().BeEmpty();

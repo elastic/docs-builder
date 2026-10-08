@@ -16,7 +16,7 @@ namespace Elastic.Documentation.Tests.Domain;
 public class RelatedLearningConstraintsTests
 {
 	[Test]
-	public void Laws() => RelatedLearningConstraints.All.GatedByRequired().Laws(DomainGen.Of<RelatedLearningCatalog>(), CounterExamples);
+	public void Laws() => RelatedLearningConstraints.All.Laws(DomainGen.Of<RelatedLearningCatalog>(), CounterExamples);
 
 	// each case adds one link that is wrong in one way (under an id no generated link has), so it holds whatever links were generated
 	private static RelatedLearningCatalog Plus(RelatedLearningCatalog c, RelatedLearningLink link, string? key = null) =>
@@ -117,7 +117,7 @@ public class AssemblyConstraintsTests
 	private static Gen<AssemblyConfiguration> Generated() => DomainGen.Of<AssemblyConfiguration>(o => Configure(o));
 
 	[Test]
-	public void Laws() => AssemblyConstraints.All.GatedByRequired().Laws(Generated(), CounterExamples);
+	public void Laws() => AssemblyConstraints.All.Laws(Generated(), CounterExamples);
 
 	private static PublishEnvironment Prod =>
 		new()
@@ -314,7 +314,7 @@ public class SiteNavigationConstraintsTests
 public class VersioningSystemConstraintsTests
 {
 	[Test]
-	public void Laws() => VersioningSystemConstraints.All.GatedByRequired().Laws(DomainGen.Of<VersioningSystemCatalog>(), CounterExamples);
+	public void Laws() => VersioningSystemConstraints.All.Laws(DomainGen.Of<VersioningSystemCatalog>(), CounterExamples);
 
 	[Test]
 	public void KeyMatchesId_NamesTheKeyAndTheIdOfTheSystemFoundThere() =>

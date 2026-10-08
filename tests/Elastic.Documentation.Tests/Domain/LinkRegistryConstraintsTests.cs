@@ -14,10 +14,10 @@ public class LinkRegistryConstraintsTests
 
 	[Test]
 	public void Laws() =>
-		LinkRegistryConstraints
-			.All
-			.GatedByRequired()
-			.Laws(DomainGen.Of<LinkRegistry>(o => o.Normalize<LinkRegistry>(r => LinkExamples.Registry(r))), CounterExamples);
+		LinkRegistryConstraints.All.Laws(
+			DomainGen.Of<LinkRegistry>(o => o.Normalize<LinkRegistry>(r => LinkExamples.Registry(r))),
+			CounterExamples
+		);
 
 	[Test]
 	public void ValidRegistry_BreaksNoRule() => LinkRegistryConstraints.All.Validate(Valid()).Should().BeEmpty();
