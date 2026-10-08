@@ -60,9 +60,10 @@ public partial class ApiPropertyTreeBuilder
 			var hasBothVariants = variantsToRender.Count(v => v.BaseName == variant.BaseName) > 1;
 			var showProperties = hasProperties && (!variant.IsArray || !hasBothVariants);
 
-			var newAncestors = scope.Ancestors is not null ? new HashSet<string>(scope.Ancestors) : [];
-			if (!string.IsNullOrEmpty(variant.BaseName))
-				_ = newAncestors.Add(variant.BaseName);
+			var newAncestors = scope.AncestorRefs is not null ? new HashSet<string>(scope.AncestorRefs) : [];
+			// An inline map takes its value's $ref, but the value type is listed below under the key row, not above it.
+			if (!string.IsNullOrEmpty(variant.Ref) && !_analyzer.GetTypeInfo(variant.Schema).IsDictionary)
+				_ = newAncestors.Add(variant.Ref);
 
 			var nestedCount = (variant.Props?.Count ?? 0) + (dictionaryValue is null ? 0 : 1);
 			var isCollapsible = showProperties && nestedCount > 1;
@@ -90,7 +91,7 @@ public partial class ApiPropertyTreeBuilder
 						{
 							Prefix = optionId,
 							Depth = scope.Depth + 1,
-							Ancestors = newAncestors,
+							AncestorRefs = newAncestors,
 							RequiredProperties = null,
 							Owner = variant.Label ?? SchemaHelpers.ReadableSchemaName(variant.BaseName)
 						}

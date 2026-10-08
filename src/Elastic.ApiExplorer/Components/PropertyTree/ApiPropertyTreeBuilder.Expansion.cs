@@ -122,7 +122,7 @@ public partial class ApiPropertyTreeBuilder
 		{
 			Prefix = row.AnchorId,
 			Depth = scope.Depth + 1,
-			Ancestors = AugmentAncestors(row.TypeInfo, scope.Ancestors),
+			AncestorRefs = AugmentAncestors(row.TypeInfo, scope.AncestorRefs),
 			RequiredProperties = null,
 			Owner = row.Name
 		};

@@ -114,13 +114,15 @@ public class SchemaAnalyzer(
 			return new EffectiveSchema(
 				resolved.Properties ?? new Dictionary<string, IOpenApiSchema>(),
 				resolved.Required ?? new HashSet<string>(),
-				resolved.AdditionalProperties
+				resolved.AdditionalProperties,
+				resolved.Discriminator
 			);
 		}
 
 		var properties = new Dictionary<string, IOpenApiSchema>(resolved.Properties ?? new Dictionary<string, IOpenApiSchema>());
 		var required = new HashSet<string>(resolved.Required ?? new HashSet<string>());
 		var mapValue = resolved.AdditionalProperties;
+		var discriminator = resolved.Discriminator;
 		foreach (var member in allOf.Select(m => ResolveSchema(m) ?? m))
 		{
 			var folded = Flatten(member, visited);
@@ -128,9 +130,11 @@ public class SchemaAnalyzer(
 				_ = properties.TryAdd(name, property);
 			required.UnionWith(folded.Required);
 			mapValue ??= folded.MapValue;
+			// Only a union member's discriminator selects between variants; a plain base's describes the base's own subtypes.
+			discriminator ??= UnionSchemas.IsUnion(member) ? member.Discriminator : null;
 		}
 
-		return new EffectiveSchema(properties, required, mapValue);
+		return new EffectiveSchema(properties, required, mapValue, discriminator);
 	}
 
 	/// <summary>
@@ -587,19 +591,8 @@ public class SchemaAnalyzer(
 		return composed.Count > 0 ? composed : null;
 	}
 
-	/// <summary>The discriminator of a union: its own, or the one declared on the <c>oneOf</c>/<c>anyOf</c> member of an <c>allOf</c>.</summary>
-	public OpenApiDiscriminator? GetUnionDiscriminator(IOpenApiSchema? schema)
-	{
-		var resolved = ResolveSchema(schema) ?? schema;
-		if (resolved?.Discriminator is { } own)
-			return own;
-
-		return (resolved?.AllOf ?? [])
-			.Select(m => ResolveSchema(m) ?? m)
-			.Where(m => m.Discriminator is not null && UnionSchemas.IsUnion(m))
-			.Select(static m => m.Discriminator)
-			.FirstOrDefault();
-	}
+	/// <summary>The discriminator of a union; see <see cref="EffectiveSchema.Discriminator"/>.</summary>
+	public OpenApiDiscriminator? GetUnionDiscriminator(IOpenApiSchema? schema) => Flatten(schema).Discriminator;
 
 	/// <summary>
 	/// A named schema that is an <c>allOf</c> with a <c>oneOf</c>/<c>anyOf</c> member is a union too, so a <c>$ref</c> to it

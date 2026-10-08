@@ -442,6 +442,50 @@ public class UnionVariantTests
 	}
 
 	[Test]
+	public async Task BuildPropertyList_SameNameInAnotherNamespace_IsNotARecursion()
+	{
+		var json =
+			"""
+			{
+			  "openapi": "3.0.3",
+			  "info": { "title": "t", "version": "1" },
+			  "paths": {},
+			  "components": {
+			    "schemas": {
+			      "ml.Settings": { "type": "object", "properties": { "inner": { "$ref": "#/components/schemas/indices.Settings" } } },
+			      "indices.Settings": { "type": "object", "properties": { "shards": { "type": "integer" } } },
+			      "Node": {
+			        "type": "object",
+			        "properties": {
+			          "child": { "oneOf": [ { "$ref": "#/components/schemas/Node" }, { "type": "string" } ] },
+			          "children": { "type": "array", "items": { "$ref": "#/components/schemas/Node" } }
+			        }
+			      }
+			    }
+			  }
+			}
+			""";
+		var document = await LoadSpecAsync(json);
+		var builder = BuilderFor(document);
+
+		var ml =
+			builder.BuildPropertyList(
+				document.Components!.Schemas!["ml.Settings"],
+				new PropertyTreeScope { Prefix = "", AncestorRefs = new HashSet<string> { "ml.Settings" } }
+			)!;
+		var inner = ml.Items.Single();
+		inner.IsRecursive.Should().BeFalse("indices.Settings only shares the short name Settings with its parent");
+		inner.Children.Properties!.Items.Select(p => p.Name).Should().Equal("shards");
+
+		var node =
+			builder.BuildPropertyList(
+				document.Components!.Schemas!["Node"],
+				new PropertyTreeScope { Prefix = "", AncestorRefs = new HashSet<string> { "Node" } }
+			)!;
+		node.Items.Should().OnlyContain(p => p.IsRecursive, "a union option and an array item that refer to Node both point back up");
+	}
+
+	[Test]
 	public async Task BuildPropertyList_InlineRecursiveUnion_ExpandsOnceAndPointsBackToTheParent()
 	{
 		var condition = """{ "type": "object", "properties": { "field": { "type": "string" }, "eq": { "type": "string" } } }""";
