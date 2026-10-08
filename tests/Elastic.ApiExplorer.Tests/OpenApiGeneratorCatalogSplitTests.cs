@@ -146,7 +146,7 @@ public class OpenApiGeneratorCatalogSplitTests
 			"<a href=\"/docs/api/doc/kibana\" aria-labelledby=\"api-catalog-title-kibana\" class=\"api-card api-catalog-card "
 		);
 		html.Should().Contain(
-			"<h3 id=\"api-catalog-title-elasticsearch\" class=\"api-card-title api-catalog-card-title ",
+			"<h2 id=\"api-catalog-title-elasticsearch\" class=\"api-card-title api-catalog-card-title ",
 			"the heading is inside the link and names it"
 		);
 		html.Should().NotContain("api-catalog-card-arrow");
@@ -335,6 +335,8 @@ public class OpenApiGeneratorCatalogSplitTests
 		html.Should().NotContain(">ECH</span>");
 		html.Should().NotContain(">Self-managed</span>");
 		html.Should().Contain("api-catalog-card-parent", "the Serverless card is attached under Elasticsearch");
+		html.Should().Contain("<h2 id=\"api-catalog-group-0\"", "the groups are labelled");
+		html.Should().Contain("<h3 id=\"api-catalog-title-elasticsearch\"", "so the cards sit one level below them");
 		html
 			.Split("api-catalog-card-compact")
 			.Length

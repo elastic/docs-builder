@@ -24,9 +24,10 @@ public class ApiCatalogCardTests
 		ApiCatalogItem item,
 		ApiCatalogCardKind kind = ApiCatalogCardKind.Standard,
 		bool hasVariant = false,
-		int? column = null
+		int? column = null,
+		int headingLevel = 3
 	) =>
-		await _ApiCatalogCard.Create(new ApiCatalogCard(item, kind, hasVariant, column)).RenderAsync(
+		await _ApiCatalogCard.Create(new ApiCatalogCard(item, kind, hasVariant, column, headingLevel)).RenderAsync(
 			cancellationToken: TestContext.Current!.Execution.CancellationToken
 		);
 
@@ -98,6 +99,17 @@ public class ApiCatalogCardTests
 	[Arguments(ApiCatalogCardKind.Compact)]
 	public async Task Render_Card_TopAlignsTheIconWithTheTitle(ApiCatalogCardKind kind) =>
 		(await Render(Item(), kind)).Should().Contain("flex h-full items-start");
+
+	[Test]
+	[Arguments(2)]
+	[Arguments(3)]
+	public async Task Render_Card_TitleUsesTheGivenHeadingLevel(int level)
+	{
+		var html = await Render(Item(), headingLevel: level);
+
+		html.Should().Contain($"<h{level} id=\"api-catalog-title-elasticsearch\"");
+		html.Should().Contain($"Elasticsearch API</h{level}>");
+	}
 
 	[Test]
 	[Arguments("elasticsearch", "elasticsearch")]

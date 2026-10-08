@@ -24,7 +24,7 @@
 	<a href="@item.Url" aria-labelledby="@titleId" class="api-card api-catalog-card @kind flex h-full items-start @box">
 		<span class="api-catalog-card-icon @icon shrink-0" aria-hidden="true">@(new HtmlString(item.IconSvg))</span>
 		<div class="flex min-w-0 grow flex-col self-stretch">
-			<h3 id="@titleId" class="api-card-title api-catalog-card-title font-sans font-bold text-ink-dark @title">@item.Title</h3>
+			@(new HtmlString($"<h{Model.HeadingLevel} id=\"{titleId}\" class=\"api-card-title api-catalog-card-title font-sans font-bold text-ink-dark {title}\">"))@item.Title@(new HtmlString($"</h{Model.HeadingLevel}>"))
 			@if (!string.IsNullOrWhiteSpace(item.Summary))
 			{
 				<p class="api-catalog-desc @desc">@item.Summary</p>

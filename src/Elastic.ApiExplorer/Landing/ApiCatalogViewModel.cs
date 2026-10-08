@@ -73,13 +73,15 @@ public enum ApiCatalogCardKind
 
 /// <summary>
 /// Input for the card partial. <see cref="HasVariant"/> marks a featured card with a tag-on attached under it.
-/// <see cref="Column"/> is the grid column of the card a tag-on is attached under.
+/// <see cref="Column"/> is the grid column of the card a tag-on is attached under. <see cref="HeadingLevel"/> is the level
+/// of the card title: 3 under a group heading, 2 when the page renders none.
 /// </summary>
 public sealed record ApiCatalogCard(
 	ApiCatalogItem Item,
 	ApiCatalogCardKind Kind = ApiCatalogCardKind.Standard,
 	bool HasVariant = false,
-	int? Column = null
+	int? Column = null,
+	int HeadingLevel = 3
 );
 
 public class ApiCatalogViewModel(ApiRenderContext context) : ApiViewModel(context)

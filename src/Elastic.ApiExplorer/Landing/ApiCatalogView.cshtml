@@ -26,6 +26,10 @@
 		return Task.CompletedTask;
 	}
 }
+@{
+	// Card titles sit under the group headings. A page without any (a lone group) puts them directly under the h1.
+	var cardHeadingLevel = Model.Groups.Any(g => g.Title is not null) ? 3 : 2;
+}
 <section id="elastic-docs-v3" class="api-catalog">
 	@for (var i = 0; i < Model.Groups.Count; i++)
 	{
@@ -48,7 +52,7 @@
 				<ul class="api-catalog-featured m-0 mb-2 grid list-none grid-cols-1 gap-6 p-0 @featuredColumns">
 					@foreach (var item in group.Featured)
 					{
-						@(await RenderPartialAsync<_ApiCatalogCard, ApiCatalogCard>(new ApiCatalogCard(item, ApiCatalogCardKind.Featured, HasVariant: group.HasVariant(item))))
+						@(await RenderPartialAsync<_ApiCatalogCard, ApiCatalogCard>(new ApiCatalogCard(item, ApiCatalogCardKind.Featured, HasVariant: group.HasVariant(item), HeadingLevel: cardHeadingLevel)))
 					}
 				</ul>
 			}
@@ -57,7 +61,7 @@
 				<ul class="@(tagOns ? "api-catalog-tagons " : "")m-0 grid list-none grid-cols-1 gap-x-6 gap-y-4 p-0 @otherColumns">
 					@foreach (var item in group.OthersInGridOrder)
 					{
-						@(await RenderPartialAsync<_ApiCatalogCard, ApiCatalogCard>(new ApiCatalogCard(item, otherKind, Column: group.ColumnOf(item))))
+						@(await RenderPartialAsync<_ApiCatalogCard, ApiCatalogCard>(new ApiCatalogCard(item, otherKind, Column: group.ColumnOf(item), HeadingLevel: cardHeadingLevel)))
 					}
 				</ul>
 			}
