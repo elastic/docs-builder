@@ -551,6 +551,29 @@ public partial class GitHubPrService(ILoggerFactory loggerFactory, GitHubApiTran
 		}
 	}
 
+	public async Task<string?> FetchFileContentAsync(string owner, string repo, string path, CancellationToken ctx = default)
+	{
+		var url = $"https://api.github.com/repos/{owner}/{repo}/contents/{Uri.EscapeDataString(path)}";
+		try
+		{
+			using var response = await _transport.GetAsync(url, ctx);
+			if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+				return null;
+			if (!response.IsSuccessStatusCode)
+				return null;
+			var json = await response.Content.ReadAsStringAsync(ctx);
+			var file = JsonSerializer.Deserialize(json, GitHubPrJsonContext.Default.GitHubFileContentResponse);
+			if (file?.Encoding != "base64" || file.Content is null)
+				return null;
+			return System.Text.Encoding.UTF8.GetString(Convert.FromBase64String(file.Content.Replace("\n", "")));
+		}
+		catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or JsonException)
+		{
+			_logger.LogDebug(ex, "Could not fetch {Path} from {Owner}/{Repo}", path, owner, repo);
+			return null;
+		}
+	}
+
 	private static string BuildPrExistenceQuery(string owner, string repo, IReadOnlyList<int> numbers)
 	{
 		var sb = new System.Text.StringBuilder();
@@ -559,6 +582,14 @@ public partial class GitHubPrService(ILoggerFactory loggerFactory, GitHubApiTran
 			_ = sb.Append(" p").Append(i).Append(": pullRequest(number: ").Append(numbers[i]).Append(") { number }");
 		_ = sb.Append(" } }");
 		return sb.ToString();
+	}
+
+	private sealed class GitHubFileContentResponse
+	{
+		[JsonPropertyName("content")]
+		public string? Content { get; set; }
+		[JsonPropertyName("encoding")]
+		public string? Encoding { get; set; }
 	}
 
 	private sealed class GitHubPrResponse
@@ -657,6 +688,7 @@ public partial class GitHubPrService(ILoggerFactory loggerFactory, GitHubApiTran
 	}
 
 	[JsonSourceGenerationOptions(PropertyNameCaseInsensitive = true)]
+	[JsonSerializable(typeof(GitHubFileContentResponse))]
 	[JsonSerializable(typeof(GitHubPrResponse))]
 	[JsonSerializable(typeof(GitHubIssueResponse))]
 	[JsonSerializable(typeof(GitHubLabel))]
