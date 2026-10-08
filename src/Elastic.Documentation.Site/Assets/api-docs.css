@@ -2395,8 +2395,10 @@ a.docs-reference-btn::after {
 .api-operation-description :not(pre) > code,
 .property-list
 	dd
-	code:not(.enum-value):not(.schema-type):not(.union-type-option),
-.example-description code,
+	code:not(pre > code):not(.enum-value):not(.schema-type):not(
+		.union-type-option
+	),
+.example-description :not(pre) > code,
 .union-option {
 	display: inline-flex;
 	align-items: center;
@@ -3486,7 +3488,7 @@ html:has(.api-page-shell) {
 	margin-top: 6px;
 }
 
-.api-example-description code {
+.api-example-description :not(pre) > code {
 	font-size: 12px;
 }
 
