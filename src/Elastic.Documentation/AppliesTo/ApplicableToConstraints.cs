@@ -50,6 +50,13 @@ public static partial class ApplicableToConstraints
 		"M96: Per key, one version per lifecycle, at most one '+' (greater-than-or-equal), range min <= max, and no overlapping ranges."
 	);
 
+	public static Constraint<ApplicableTo> ApplicabilityLifecycleProgresses { get; } = Constraints<ApplicableTo>
+		.EachCheck(a => Collections(a).Where(c => !c.Versionless), (_, c) => LifecycleMovesBackwards(c.Key, c.Items))
+		.WithSeverity(Severity.Hint)
+		.Describe(
+			"M99: Per key, the lifecycles follow the versions forward (preview or experimental, beta, ga, deprecated, removed): a later version never goes back to an earlier stage."
+		);
+
 	public static Constraint<ApplicableTo> ApplicabilityVersionReadable { get; } = Constraints<ApplicableTo>
 		.EachCheck(Collections, (_, c) => UnreadVersions(c.Key, c.Items))
 		.WithSeverity(Severity.Warning)
@@ -181,6 +188,23 @@ public static partial class ApplicableToConstraints
 				if (items is not null)
 					yield return (key, items, false);
 			}
+		}
+	}
+
+	// Ordered by the version each starts at, a lifecycle never falls to an earlier stage of ProductLifecycleMachine.
+	private static IEnumerable<Violation> LifecycleMovesBackwards(string key, AppliesCollection collection)
+	{
+		var ordered = collection
+			.Where(i => IsVersioned(i) && ProductLifecycleMachine.Rank(i.Lifecycle) is not null)
+			.OrderBy(i => i.Version!.Min)
+			.ToList();
+		for (var i = 1; i < ordered.Count; i++)
+		{
+			var (before, after) = (ordered[i - 1], ordered[i]);
+			if (ProductLifecycleMachine.Rank(after.Lifecycle) < ProductLifecycleMachine.Rank(before.Lifecycle))
+				yield return Violation.Hint(
+					$"Key '{key}': {after.GetLifeCycleName()} {after.Version} comes after {before.GetLifeCycleName()} {before.Version}, but a feature moves forward through its lifecycle, not back."
+				);
 		}
 	}
 

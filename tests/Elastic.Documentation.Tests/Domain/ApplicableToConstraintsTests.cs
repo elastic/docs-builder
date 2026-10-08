@@ -64,6 +64,64 @@ public class ApplicableToConstraintsTests
 					: cleaned with { Stack = Collection(Item(ProductLifecycle.GenerallyAvailable, "9.0")) };
 			}));
 
+	/// <summary>
+	/// Law: ordered by the version each starts at, a key's lifecycles move forward (preview, beta, ga, deprecated, removed) and never fall back to an
+	/// earlier stage; a stage may be skipped, and a lifecycle outside the progression, or one with no version, takes no part.
+	/// Consequence if broken: the page says a feature is ga in 9.0 and beta in 9.1, and a reader cannot tell which to believe.
+	/// </summary>
+	[Test]
+	public void LifecyclesMoveForwardWithTheVersions()
+	{
+		Hints(
+			Collection(
+				Item(ProductLifecycle.TechnicalPreview, "=9.0"),
+				Item(ProductLifecycle.Beta, "=9.1"),
+				Item(ProductLifecycle.GenerallyAvailable, "=9.2"),
+				Item(ProductLifecycle.Deprecated, "=9.5")
+			)
+		).Should().BeEmpty();
+		Hints(Collection(Item(ProductLifecycle.TechnicalPreview, "=9.0"), Item(ProductLifecycle.GenerallyAvailable, "=9.2")))
+			.Should()
+			.BeEmpty();
+		// written out of order is not backwards: it is the version that orders them
+		Hints(Collection(Item(ProductLifecycle.GenerallyAvailable, "=9.2"), Item(ProductLifecycle.Beta, "=9.0"))).Should().BeEmpty();
+
+		Hints(Collection(Item(ProductLifecycle.GenerallyAvailable, "=9.0"), Item(ProductLifecycle.Beta, "=9.1"))).Should().ContainSingle();
+
+		Hints(Collection(Item(ProductLifecycle.Removed, "=9.0"), Item(ProductLifecycle.Unavailable, "=9.1"))).Should().BeEmpty();
+		Hints(Collection(Item(ProductLifecycle.GenerallyAvailable, null), Item(ProductLifecycle.Beta, "=9.1"))).Should().BeEmpty();
+	}
+
+	private static IReadOnlyList<Nullean.Entities.Violation> Hints(AppliesCollection stack) =>
+		[
+			.. ApplicableToConstraints
+				.All
+				.Validate(Valid() with { Stack = stack })
+				.Where(v => v.ConstraintId == ApplicableToConstraints.ApplicabilityLifecycleProgresses.Name)
+		];
+
+	/// <summary>
+	/// Law: the lifecycle machine and the rank the rule reads agree: every move the machine allows goes forward, and its diagram is drawn from the declaration.
+	/// Consequence if broken: the documented lifecycle allows a move the rule reports.
+	/// </summary>
+	[Test]
+	public void TheLifecycleMachineAndItsRankAgree()
+	{
+		var machine = ProductLifecycleMachine.Machine;
+
+		machine.Transitions.Should().NotBeEmpty();
+		machine
+			.Transitions
+			.Should()
+			.OnlyContain(t => ProductLifecycleMachine.Rank(t.From) < ProductLifecycleMachine.Rank(t.To), "a lifecycle only moves forward");
+		machine.ToMermaid().Should().StartWith("stateDiagram-v2").And.Contain("GenerallyAvailable").And.Contain("Deprecated");
+		ProductLifecycleMachine.Rank(ProductLifecycle.Unavailable).Should().BeNull();
+		ProductLifecycleMachine
+			.Rank(ProductLifecycle.TechnicalPreview)
+			.Should()
+			.Be(ProductLifecycleMachine.Rank(ProductLifecycle.Experimental));
+	}
+
 	[Test]
 	public void ValidApplicability_BreaksNoRule() => ApplicableToConstraints.All.Validate(Valid()).Should().BeEmpty();
 
@@ -108,7 +166,7 @@ public class ApplicableToConstraintsTests
 			.Should()
 			.Contain("Invalid range");
 
-		var overlapping = Collection(Item(ProductLifecycle.GenerallyAvailable, "9.0-9.3"), Item(ProductLifecycle.Beta, "=9.2"));
+		var overlapping = Collection(Item(ProductLifecycle.Beta, "9.0-9.3"), Item(ProductLifecycle.GenerallyAvailable, "=9.2"));
 		ApplicableToConstraints
 			.All
 			.Validate(new ApplicableTo { Stack = overlapping })
@@ -260,6 +318,8 @@ public class ApplicableToConstraintsTests
 				{
 					Stack = Collection(Item(ProductLifecycle.GenerallyAvailable, "=9.0"), Item(ProductLifecycle.GenerallyAvailable, "=9.1"))
 				},
+		["applicability-lifecycle-progresses"] =
+			a => a with { Stack = Collection(Item(ProductLifecycle.GenerallyAvailable, "=9.0"), Item(ProductLifecycle.Beta, "=9.1")) },
 		["applicability-version-readable"] =
 			a => a with { Stack = Collection(new Applicability { Lifecycle = ProductLifecycle.Beta, Version = null, Raw = "beta 9.x" }) },
 		["applies-to-keys-read"] = a => a with { UnknownKeys = ["product.apm-agent-java"] },
