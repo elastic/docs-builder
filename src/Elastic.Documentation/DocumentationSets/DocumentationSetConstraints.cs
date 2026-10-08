@@ -879,17 +879,18 @@ public static partial class DocumentationSetConstraints
 
 	// Substitution keys the resolver generates and so overwrites: version.*, and product.{id} and .{id} for every public-reference product in either spelling of its id.
 	private static bool IsGeneratedSubstitutionKey(string key, ProductCatalog catalog) =>
-		key.StartsWith("version.", StringComparison.OrdinalIgnoreCase)
-			|| catalog
-				.PublicReferenceProducts
-				.Keys
-				.SelectMany(id => new[] { id, id.Replace('-', '_') })
-				.Any(
-					id => key.Equals($"product.{id}", StringComparison.OrdinalIgnoreCase) || key.Equals(
-						$".{id}",
-						StringComparison.OrdinalIgnoreCase
-					)
-				);
+		!string.IsNullOrEmpty(key)
+			&& (key.StartsWith("version.", StringComparison.OrdinalIgnoreCase)
+				|| catalog
+					.PublicReferenceProducts
+					.Keys
+					.SelectMany(id => new[] { id, id.Replace('-', '_') })
+					.Any(
+						id => key.Equals($"product.{id}", StringComparison.OrdinalIgnoreCase) || key.Equals(
+							$".{id}",
+							StringComparison.OrdinalIgnoreCase
+						)
+					));
 
 	// ── cross_links and release_notes ──────────────────────────────────────────────────────────────────────────────
 
