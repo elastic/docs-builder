@@ -1206,7 +1206,6 @@ button.response-status-toggle:focus {
 	font-weight: 400;
 	line-height: 1.5;
 	text-align: left;
-	cursor: text;
 }
 
 .response-description > :first-child {
