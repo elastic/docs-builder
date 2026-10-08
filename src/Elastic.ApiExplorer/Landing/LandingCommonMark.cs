@@ -11,14 +11,20 @@ namespace Elastic.ApiExplorer.Landing;
 
 internal static class LandingCommonMark
 {
+	internal const string OtherApisHeading = "Other APIs";
+
 	public static string Catalog(IReadOnlyList<ApiCatalogEntry> entries)
 	{
 		var markdown = new StringBuilder();
 		ApiCommonMark.Heading(markdown, 1, ApiCatalog.PageTitle);
-		foreach (var group in ApiCatalogViewModel.Group(entries))
+		var groups = ApiCatalogViewModel.Group(entries);
+		foreach (var group in groups)
 		{
-			if (group.Title is not null)
-				ApiCommonMark.Heading(markdown, 2, group.Title);
+			// The page has no label for the APIs that no group covers. In Markdown they need a heading, or they read
+			// as part of the group above them. A lone group needs none.
+			var heading = group.Title ?? (groups.Count > 1 ? OtherApisHeading : null);
+			if (heading is not null)
+				ApiCommonMark.Heading(markdown, 2, heading);
 			foreach (var entry in group.Entries)
 				WriteCatalogEntry(markdown, entry);
 		}
