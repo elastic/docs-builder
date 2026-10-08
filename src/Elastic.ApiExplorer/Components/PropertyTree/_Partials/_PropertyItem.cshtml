@@ -58,6 +58,14 @@
 			}
 		</dd>
 	}
+	@if (Model.SingleOrArrayOf is { } single)
+	{
+		<dd class="union-options">
+			<span class="values-label">A single</span>
+			<code>@single</code>
+			<span class="values-label">or an array of them</span>
+		</dd>
+	}
 	@if (Model.Requires is { } requires)
 	{
 		<dd class="union-options">
