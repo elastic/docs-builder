@@ -6,6 +6,7 @@
 import { decorateApiCodeTokens } from './api-code-tokens'
 import { initApiExamples } from './api-examples-carousel'
 import { applyParamSummaryFit } from './api-param-summary'
+import { initUnionChips, revealVariantsAround } from './api-union-chips'
 import { iconCheckEui, iconCopyEui } from './copybutton'
 import { flashTooltip, initTooltips } from './tooltip'
 
@@ -154,40 +155,6 @@ function expandUnionVariantItem(variantItem: HTMLElement): void {
     }
 }
 
-/**
- * Expand a union variants container and all its ancestors
- */
-function expandUnionContainer(container: HTMLElement): void {
-    if (!container) return
-
-    const toggleBtn = container.querySelector<HTMLButtonElement>(
-        ':scope > .union-collapse-toggle > .union-group-toggle'
-    )
-    const variantsContent = container.querySelector<HTMLElement>(
-        ':scope > .union-variants-content'
-    )
-
-    container.classList.remove('collapsed')
-    container.classList.add('expanded')
-    setDisclosureToggle(toggleBtn, true, 'type options')
-
-    if (variantsContent) {
-        variantsContent.removeAttribute('hidden')
-    }
-
-    // Recursively expand parent items
-    const parentItem = container.parentElement?.closest<HTMLElement>(
-        '.property-item, .union-variant-item'
-    )
-    if (parentItem) {
-        if (parentItem.classList.contains('union-variant-item')) {
-            expandUnionVariantItem(parentItem)
-        } else {
-            expandPropertyItem(parentItem)
-        }
-    }
-}
-
 function paramSectionBody(section: HTMLElement): HTMLElement | null {
     return section.querySelector<HTMLElement>(
         ':scope > .api-param-section-body'
@@ -258,9 +225,9 @@ function expandParamSectionForHash(): void {
 }
 
 /**
- * Opens every collapsed property, variant and "type options" list around a link target, so a
- * "Same fields as" link or a shared URL lands on visible content in every browser, including
- * those without hidden="until-found". The target's own row stays as it was.
+ * Opens every collapsed property and variant around a link target, and switches every variant chip list on the way
+ * to the variant that holds it, so a "Same fields as" link or a shared URL lands on visible content in every browser,
+ * including those without hidden="until-found". The target's own row stays as it was.
  */
 export function revealCollapsedAncestors(target: HTMLElement): boolean {
     const ownRow = target.closest<HTMLElement>('.property-item')
@@ -268,13 +235,10 @@ export function revealCollapsedAncestors(target: HTMLElement): boolean {
         ownRow && ownRow.contains(target) && target.tagName === 'DT'
             ? ownRow.parentElement
             : target.parentElement
-    let revealed = false
+    let revealed = revealVariantsAround(target)
     for (let el = start; el; el = el.parentElement) {
         if (!el.classList.contains('collapsed')) continue
-        if (el.classList.contains('union-variants-container')) {
-            expandUnionContainer(el)
-            revealed = true
-        } else if (el.classList.contains('union-variant-item')) {
+        if (el.classList.contains('union-variant-item')) {
             expandUnionVariantItem(el)
             revealed = true
         } else if (el.classList.contains('property-item')) {
@@ -305,24 +269,6 @@ function initOperationView(section: HTMLElement): void {
                         parentItem?.classList.contains('property-item')
                     ) {
                         expandPropertyItem(parentItem)
-                    }
-                })
-            })
-
-        // Add beforematch event listeners for union variants content
-        section
-            .querySelectorAll<HTMLElement>(
-                '.union-variants-content[hidden="until-found"]'
-            )
-            .forEach((variantsContent) => {
-                variantsContent.addEventListener('beforematch', function () {
-                    const container = variantsContent.parentElement
-                    if (
-                        container?.classList.contains(
-                            'union-variants-container'
-                        )
-                    ) {
-                        expandUnionContainer(container)
                     }
                 })
             })
@@ -392,42 +338,6 @@ function initOperationView(section: HTMLElement): void {
     // Click handler for OperationView-specific elements
     section.addEventListener('click', function (e) {
         const target = e.target as HTMLElement
-
-        // Handle union group toggle buttons (collapse/expand all union options)
-        const unionGroupToggle = target.closest<HTMLButtonElement>(
-            '.union-group-toggle'
-        )
-        if (unionGroupToggle) {
-            e.preventDefault()
-            e.stopPropagation()
-
-            const container = unionGroupToggle.closest<HTMLElement>(
-                '.union-variants-container'
-            )
-            if (!container) return
-
-            const isExpanded = container.classList.contains('expanded')
-            const variantsContent = container.querySelector<HTMLElement>(
-                ':scope > .union-variants-content'
-            )
-
-            if (isExpanded) {
-                container.classList.remove('expanded')
-                container.classList.add('collapsed')
-                setDisclosureToggle(unionGroupToggle, false, 'type options')
-                if (variantsContent && supportsHiddenUntilFound) {
-                    variantsContent.setAttribute('hidden', 'until-found')
-                }
-            } else {
-                container.classList.remove('collapsed')
-                container.classList.add('expanded')
-                setDisclosureToggle(unionGroupToggle, true, 'type options')
-                if (variantsContent) {
-                    variantsContent.removeAttribute('hidden')
-                }
-            }
-            return
-        }
 
         // Handle union variant expand/collapse
         const toggleBtn = target.closest<HTMLButtonElement>(
@@ -575,42 +485,6 @@ function initGlobalClickHandlers(): void {
             return
         }
 
-        // Handle union group toggle buttons (collapse/expand all union options)
-        const unionGroupToggle = target.closest<HTMLButtonElement>(
-            '.union-group-toggle'
-        )
-        if (unionGroupToggle) {
-            e.preventDefault()
-            e.stopPropagation()
-
-            const container = unionGroupToggle.closest<HTMLElement>(
-                '.union-variants-container'
-            )
-            if (!container) return
-
-            const isExpanded = container.classList.contains('expanded')
-            const variantsContent = container.querySelector<HTMLElement>(
-                ':scope > .union-variants-content'
-            )
-
-            if (isExpanded) {
-                container.classList.remove('expanded')
-                container.classList.add('collapsed')
-                setDisclosureToggle(unionGroupToggle, false, 'type options')
-                if (variantsContent && supportsHiddenUntilFound) {
-                    variantsContent.setAttribute('hidden', 'until-found')
-                }
-            } else {
-                container.classList.remove('collapsed')
-                container.classList.add('expanded')
-                setDisclosureToggle(unionGroupToggle, true, 'type options')
-                if (variantsContent) {
-                    variantsContent.removeAttribute('hidden')
-                }
-            }
-            return
-        }
-
         // Handle union variant expand/collapse
         const toggleBtn = target.closest<HTMLButtonElement>(
             'button.expand-toggle'
@@ -651,9 +525,6 @@ function initGlobalClickHandlers(): void {
             }
 
             // Handle property item expand/collapse toggle buttons
-            // Skip if this is a union toggle (already handled above)
-            if (toggleBtn.closest('.union-group-toggle')) return
-
             e.preventDefault()
             e.stopPropagation()
 
@@ -852,6 +723,7 @@ export function initApiDocs(): void {
     initApiEndpointCopy()
     initApiResponseStatusTabs()
     initApiExamples()
+    initUnionChips()
     initApiPageActions()
     // After initHighlight — gutters need final textContent line counts
     decorateApiCodeTokens()
@@ -860,8 +732,7 @@ export function initApiDocs(): void {
     initParamSummaries()
 
     const operationSection = document.getElementById('elastic-api-v3')
-    if (operationSection) {
-        initOperationView(operationSection)
-        expandParamSectionForHash()
-    }
+    if (operationSection) initOperationView(operationSection)
+    // Schema pages too: a link to a field inside a variant that is not picked must show that variant.
+    expandParamSectionForHash()
 }

@@ -80,9 +80,7 @@ public class ResponsesBlockRenderingTests
 							Variant("PlatformErrorResponse", "res-400-variant-platform"),
 							Variant("SiemErrorResponse", "res-400-variant-siem")
 						],
-						ShouldCollapse = false,
-						ContainerId = "res-400-union-options",
-						UseHiddenUntilFound = false
+						ContainerId = "res-400-union-options"
 					}
 				}
 			],
@@ -118,9 +116,7 @@ public class ResponsesBlockRenderingTests
 					UnionVariants = new ApiUnionVariants
 					{
 						Variants = [Variant(displayName, "res-400-variant-x")],
-						ShouldCollapse = false,
-						ContainerId = "res-400-union-options",
-						UseHiddenUntilFound = false
+						ContainerId = "res-400-union-options"
 					}
 				}
 			],

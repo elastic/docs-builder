@@ -5,33 +5,64 @@
 	{
 		return;
 	}
+	var menuId = $"{Model.ContainerId}-menu";
 }
 @if (Model.Label is { Length: > 0 } unionLabel)
 {
 	<span class="values-label">@unionLabel</span>
 }
-<div class="union-variants-container @(Model.ShouldCollapse ? "collapsible collapsed" : "")" id="@Model.ContainerId">
-	@if (Model.ShouldCollapse)
+@* Three or more variants show one at a time: chips pick the variant, as on the examples rail (chip-row.ts), and the
+   others use hidden="until-found", so find-in-page and links to their fields still reach them (api-union-chips.ts). *@
+<div class="union-variants-container@(Model.UseChips ? " union-variant-chips" : "")" id="@Model.ContainerId">
+	@if (Model.UseChips)
 	{
-		<div class="union-collapse-toggle">
-			<button class="expand-toggle union-group-toggle">
-				<span class="toggle-icon">+</span>
-				<span class="toggle-label">show type options</span>
+		<div class="api-example-chips-row union-chips-row" data-chip-row>
+			<div class="api-example-chips" role="tablist" aria-label="Variants">
+				@for (var i = 0; i < Model.Variants.Count; i++)
+				{
+					var variant = Model.Variants[i];
+					<button
+						type="button"
+						role="tab"
+						class="api-example-chip@(i == 0 ? " is-active" : "")"
+						data-chip="@variant.AnchorId"
+						aria-controls="@variant.AnchorId"
+						aria-selected="@(i == 0 ? "true" : "false")">
+						<span class="api-example-chip-title" data-chip-title>@variant.ChipName</span>
+					</button>
+				}
+			</div>
+			<button type="button" class="api-example-more" data-chip-more aria-haspopup="menu" aria-expanded="false" aria-controls="@menuId" popovertarget="@menuId" hidden>
+				<span data-chip-more-label></span>
+				<svg width="12" height="12" viewBox="0 0 16 16" aria-hidden="true"><use href="#icon-chevron-down"/></svg>
 			</button>
+			<div id="@menuId" class="api-example-menu simple-scrollbar" popover="auto" data-chip-menu>
+				@if (Model.HasFilter)
+				{
+					<input type="search" class="api-example-menu-filter" data-chip-filter placeholder="Filter variants" aria-label="Filter variants" autocomplete="off" />
+				}
+				<div role="menu" aria-label="More variants">
+					@foreach (var variant in Model.Variants)
+					{
+						<button type="button" role="menuitem" class="api-example-menu-item" data-chip="@variant.AnchorId" hidden>
+							<span class="api-example-menu-item-title" data-chip-item-title>@variant.ChipName@(variant.DiscriminatorLabel is { Length: > 0 } selects ? $" · {selects}" : "")</span>
+						</button>
+					}
+				</div>
+			</div>
 		</div>
 	}
-	<div class="union-variants @(Model.ShouldCollapse ? "union-variants-content" : "")" @(Model.ShouldCollapse && Model.UseHiddenUntilFound ? "hidden=\"until-found\"" : "")>
+	<div class="union-variants">
 	@for (var i = 0; i < Model.Variants.Count; i++)
 	{
 		var variant = Model.Variants[i];
 
-		// Add separator before each variant except the first
-		@if (i > 0)
+		@if (i > 0 && !Model.UseChips)
 		{
 			<div class="union-separator">or</div>
 		}
 
-		<div class="union-variant-item @(variant.ShowProperties ? "has-children" : "") @(variant.IsCollapsible ? (variant.DefaultExpanded ? "expanded" : "collapsed") : "")" id="@variant.AnchorId">
+		<div class="union-variant-item @(variant.ShowProperties ? "has-children" : "") @(variant.IsCollapsible ? (variant.DefaultExpanded ? "expanded" : "collapsed") : "")" id="@variant.AnchorId" hidden="@(Model.UseChips && i > 0 ? "until-found" : null)">
 			<div class="union-variant-label">
 				@if (variant.IsArrayVariant)
 				{

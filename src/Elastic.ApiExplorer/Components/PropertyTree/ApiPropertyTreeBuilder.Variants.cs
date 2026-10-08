@@ -92,13 +92,7 @@ public partial class ApiPropertyTreeBuilder
 			});
 		}
 
-		return new ApiUnionVariants
-		{
-			Variants = variants,
-			ShouldCollapse = variantsToRender.Count > 2,
-			ContainerId = $"{scope.Prefix}-union-options",
-			UseHiddenUntilFound = options.UseHiddenUntilFound
-		};
+		return new ApiUnionVariants { Variants = variants, ContainerId = $"{scope.Prefix}-union-options" };
 	}
 
 	/// <summary>

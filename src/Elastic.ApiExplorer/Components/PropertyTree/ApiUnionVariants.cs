@@ -30,6 +30,9 @@ public record ApiUnionVariant
 	public HtmlString DescriptionHtml { get; init; } = HtmlString.Empty;
 	public string? DescriptionMarkdown { get; init; }
 
+	/// <summary>The name a chip or menu entry shows; an array variant keeps its <c>[]</c> so it stays apart from the plain one.</summary>
+	public string ChipName => IsArrayVariant ? $"{DisplayName}[]" : DisplayName;
+
 	/// <summary>The discriminator property and the value that selects this variant, e.g. <c>type: eql</c>.</summary>
 	public string? DiscriminatorLabel { get; init; }
 }
@@ -38,19 +41,18 @@ public record ApiUnionVariant
 public record ApiUnionVariants
 {
 	/// <summary>Renders nothing; used where the original template early-returned but its wrapper still rendered.</summary>
-	public static readonly ApiUnionVariants Empty = new()
-	{
-		Variants = [],
-		ShouldCollapse = false,
-		ContainerId = "",
-		UseHiddenUntilFound = false
-	};
+	public static readonly ApiUnionVariants Empty = new() { Variants = [], ContainerId = "" };
 
 	public required IReadOnlyList<ApiUnionVariant> Variants { get; init; }
-	public required bool ShouldCollapse { get; init; }
+
+	/// <summary>Three or more variants show one at a time behind a row of chips, so a long list stays short to scan.</summary>
+	public bool UseChips => Variants.Count >= 3;
+
+	/// <summary>Eleven or more variants also get a filter in the chips' "more" menu.</summary>
+	public bool HasFilter => Variants.Count >= 11;
+
 	public required string ContainerId { get; init; }
 
 	/// <summary>"Any of:" or "One of:" above a body-level list that has no property row to carry it.</summary>
 	public string? Label { get; init; }
-	public required bool UseHiddenUntilFound { get; init; }
 }

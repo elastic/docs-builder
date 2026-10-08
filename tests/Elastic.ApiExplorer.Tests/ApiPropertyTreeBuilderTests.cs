@@ -259,7 +259,7 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture)
 
 		variants.Should().NotBeNull();
 		variants!.Variants.Should().HaveCount(2);
-		variants.ShouldCollapse.Should().BeFalse();
+		variants.UseChips.Should().BeFalse("two variants still list one after the other");
 		variants.Variants.Select(v => v.DisplayName).Should().BeEquivalentTo(["TermsAggregate", "MaxAggregate"]);
 	}
 
@@ -279,7 +279,7 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture)
 		variants.Should().NotBeNull();
 		variants!.Variants.Select(v => v.DisplayName).Should().BeEquivalentTo(["PlatformErrorResponse", "SiemErrorResponse"]);
 		variants.Variants.Should().AllSatisfy(v => v.ShowProperties.Should().BeTrue());
-		variants.ShouldCollapse.Should().BeFalse();
+		variants.UseChips.Should().BeFalse("two variants still list one after the other");
 	}
 
 	[Test]
