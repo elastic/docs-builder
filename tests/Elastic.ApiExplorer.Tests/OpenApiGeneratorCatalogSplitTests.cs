@@ -336,11 +336,13 @@ public class OpenApiGeneratorCatalogSplitTests
 			.IndexOf("Cloud Connect", StringComparison.Ordinal)
 			.Should()
 			.BeLessThan(html.IndexOf("Elasticsearch Serverless", StringComparison.Ordinal), "APIs without a priority key sort by title");
-		html.Should().Contain("<div class=\"applies mt-auto flex flex-wrap gap-1.5 pt-2\">");
-		html.Should().Contain("<span class=\"applicable-info\">");
-		html.Should().Contain("Self-managed");
-		html.Should().Contain("<abbr title=\"Elastic Cloud Hosted\" class=\"no-underline\">ECH</abbr>");
-		html.Should().NotContain("applicable-separator", "no lifecycle or version is known, so the pill is name only");
+		html.Should().Contain("<div class=\"mt-auto flex flex-wrap gap-1.5 pt-2\">");
+		html.Should().Contain("<span class=\"api-catalog-tag\" data-tippy-content=\"Elastic Cloud Hosted\">ECH</span>");
+		html.Should().Contain(
+			"<span class=\"api-catalog-tag\" data-tippy-content=\"\">Self-managed</span>",
+			"a label that is already the full name needs no tooltip"
+		);
+		html.Should().NotContain("applicable-", "the tags do not depend on applies_to");
 		html.Should().NotContain("data-group");
 		html.Should().NotContain("data-listing-groups");
 		html.Should().NotContain("listing-group-chips");
