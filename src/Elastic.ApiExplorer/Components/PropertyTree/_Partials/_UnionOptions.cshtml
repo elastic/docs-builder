@@ -56,23 +56,31 @@
 	@for (var i = 0; i < Model.Variants.Count; i++)
 	{
 		var variant = Model.Variants[i];
+		// A picked chip is the choice to read that variant: its fields show at once, and its chip already names it, so
+		// the label keeps only what the chip does not say (the discriminator value, or the link to the type's page).
+		var collapsible = variant.IsCollapsible && !Model.UseChips;
+		var folded = variant.UseHidden && !Model.UseChips;
+		var showName = !Model.UseChips || variant.PageUrl is { Length: > 0 };
+		var showLabel = showName || variant.DiscriminatorLabel is { Length: > 0 };
 
 		@if (i > 0 && !Model.UseChips)
 		{
 			<div class="union-separator">or</div>
 		}
 
-		<div class="union-variant-item @(variant.ShowProperties ? "has-children" : "") @(variant.IsCollapsible ? (variant.DefaultExpanded ? "expanded" : "collapsed") : "")" id="@variant.AnchorId" hidden="@(Model.UseChips && i > 0 ? "until-found" : null)">
+		<div class="union-variant-item @(variant.ShowProperties ? "has-children" : "") @(collapsible ? (variant.DefaultExpanded ? "expanded" : "collapsed") : "")" id="@variant.AnchorId" hidden="@(Model.UseChips && i > 0 ? "until-found" : null)">
+			@if (showLabel)
+			{
 			<div class="union-variant-label">
-				@if (variant.IsArrayVariant)
+				@if (showName && variant.IsArrayVariant)
 				{
 					<span class="@SchemaHelpers.WrapperArrayIconCssClass">[]</span>
 				}
-				@if (variant.IsObjectType)
+				@if (showName && variant.IsObjectType)
 				{
 					<span class="@SchemaHelpers.WrapperObjectIconCssClass">{}</span>
 				}
-				@if (!string.IsNullOrEmpty(variant.DisplayName))
+				@if (showName && !string.IsNullOrEmpty(variant.DisplayName))
 				{
 					@if (variant.PageUrl is { Length: > 0 } pageUrl)
 					{
@@ -88,13 +96,14 @@
 					<code class="discriminator-value">@discriminatorLabel</code>
 				}
 			</div>
+			}
 			@if (variant.DescriptionHtml.Value is { Length: > 0 })
 			{
 				<div class="union-variant-description">@variant.DescriptionHtml</div>
 			}
 			@if (variant.ShowProperties && variant.Properties is not null)
 			{
-				if (variant.IsCollapsible)
+				if (collapsible)
 				{
 					<div class="expand-toggle-row union-expand-toggle">
 						<button class="expand-toggle">
@@ -103,7 +112,7 @@
 						</button>
 					</div>
 				}
-				if (variant.UseHidden)
+				if (folded)
 				{
 					<div class="nested-properties" id="@variant.AnchorId-children" hidden="until-found">
 						@(await RenderPartialAsync<_PropertyList, ApiPropertyList>(variant.Properties))

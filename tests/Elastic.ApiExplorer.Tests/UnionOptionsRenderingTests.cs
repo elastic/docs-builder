@@ -36,6 +36,21 @@ public class UnionOptionsRenderingTests
 	}
 
 	[Test]
+	public async Task Render_ThreeVariants_ShowsTheFieldsAtOnceWithoutRepeatingTheName()
+	{
+		var html = await Render(3, foldable: true);
+
+		html.Should().NotContain("show properties", "picking a chip is the choice to read that variant");
+		html.Should().Contain("""<div class="nested-properties" id="v-0-children">""", "the fields are not folded");
+		html.Should().NotContain(">Variant0</span></code>", "the chip already names the variant");
+		html.Should().Contain("""<div class="union-variant-label"> <code class="discriminator-value">kind: two</code> </div>""");
+
+		var listed = await Render(2, foldable: true);
+		listed.Should().Contain("show properties", "two variants listed one after the other still fold their fields");
+		listed.Should().Contain(">Variant0</span></code>");
+	}
+
+	[Test]
 	public async Task Render_ElevenVariants_AddsAFilterToTheMenu()
 	{
 		var html = await Render(11);
@@ -44,27 +59,32 @@ public class UnionOptionsRenderingTests
 		html.Should().Contain("""id="opts-menu" class="api-example-menu simple-scrollbar" popover="auto" data-chip-menu>""");
 	}
 
-	private static async Task<string> Render(int count)
+	private static async Task<string> Render(int count, bool foldable = false)
 	{
-		var variants = new ApiUnionVariants { Variants = Enumerable.Range(0, count).Select(Variant).ToArray(), ContainerId = "opts" };
+		var variants = new ApiUnionVariants
+		{
+			Variants = Enumerable.Range(0, count).Select(i => Variant(i, foldable)).ToArray(),
+			ContainerId = "opts"
+		};
 		var slice = _UnionOptions.Create(variants);
 		var html = await slice.RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
 		// The chip buttons spread their attributes over several lines.
 		return System.Text.RegularExpressions.Regex.Replace(html, @"\s+", " ");
 	}
 
-	private static ApiUnionVariant Variant(int i) =>
+	private static ApiUnionVariant Variant(int i, bool foldable) =>
 		new()
 		{
 			DisplayName = $"Variant{i}",
 			IsArrayVariant = i == 2,
 			IsObjectType = true,
 			AnchorId = $"v-{i}",
-			ShowProperties = false,
-			IsCollapsible = false,
+			ShowProperties = foldable,
+			IsCollapsible = foldable,
 			DefaultExpanded = false,
-			NestedCount = 0,
-			UseHidden = false,
+			NestedCount = foldable ? 3 : 0,
+			UseHidden = foldable,
+			Properties = foldable ? new ApiPropertyList([]) : null,
 			DiscriminatorLabel = i == 2 ? "kind: two" : null
 		};
 }
