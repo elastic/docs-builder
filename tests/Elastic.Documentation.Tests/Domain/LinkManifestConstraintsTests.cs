@@ -99,6 +99,9 @@ public class LinkManifestConstraintsTests
 	} = new Dictionary<string, Func<LinkManifest, LinkManifest>>
 	{
 		["origin-required"] = m => m with { Origin = null! },
+		["origin-branch-required"] = m => m with { Origin = GitCheckoutInformation.Unavailable with { Branch = null! } },
+		["origin-remote-required"] = m => m with { Origin = GitCheckoutInformation.Unavailable with { Remote = null! } },
+		["origin-ref-required"] = m => m with { Origin = GitCheckoutInformation.Unavailable with { Ref = null! } },
 		["links-required"] = m => m with { Links = null! },
 		["cross-links-required"] = m => m with { CrossLinks = null! },
 		["link-manifest-page-paths-are-markdown"] = m => WithPage(m, "notes.txt", new LinkMetadata()),

@@ -43,6 +43,12 @@ public class SyncPlanConstraintsTests
 			["add-requests-required"] = p => p with { AddRequests = null! },
 			["update-requests-required"] = p => p with { UpdateRequests = null! },
 			["delete-requests-required"] = p => p with { DeleteRequests = null! },
+			["delete-requests-destination-path-required"] =
+				p => p with { DeleteRequests = [new DeleteRequest { DestinationPath = null! }] },
+			["skip-requests-local-path-required"] =
+				p => p with { SkipRequests = [new SkipRequest { LocalPath = null!, DestinationPath = "a.html" }] },
+			["skip-requests-destination-path-required"] =
+				p => p with { SkipRequests = [new SkipRequest { LocalPath = "a.html", DestinationPath = null! }] },
 			["remote-listing-complete"] = p => p with { RemoteListingCompleted = false },
 			["source-files-present"] = p => p with { TotalSourceFiles = 0 },
 			// 2000 remote files allow 0.2: 401 deletes are over it

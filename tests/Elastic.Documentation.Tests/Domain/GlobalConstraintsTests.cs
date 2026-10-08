@@ -19,8 +19,8 @@ public class RelatedLearningConstraintsTests
 	public void Laws() => RelatedLearningConstraints.All.GatedByRequired().Laws(DomainGen.Of<RelatedLearningCatalog>(), CounterExamples);
 
 	// each case adds one link that is wrong in one way (under an id no generated link has), so it holds whatever links were generated
-	private static RelatedLearningCatalog Plus(RelatedLearningCatalog c, RelatedLearningLink link) =>
-		new() { Links = new Dictionary<string, RelatedLearningLink>(c.Links) { [link.Id] = link }.ToFrozenDictionary() };
+	private static RelatedLearningCatalog Plus(RelatedLearningCatalog c, RelatedLearningLink link, string? key = null) =>
+		new() { Links = new Dictionary<string, RelatedLearningLink>(c.Links) { [key ?? link.Id] = link }.ToFrozenDictionary() };
 
 	private static RelatedLearningLink Link => new() { Id = "intro", Title = "Introduction", Url = "https://www.elastic.co/intro" };
 
@@ -28,6 +28,9 @@ public class RelatedLearningConstraintsTests
 		new Dictionary<string, Func<RelatedLearningCatalog, RelatedLearningCatalog>>
 		{
 			["links-required"] = c => c with { Links = null! },
+			["links-id-required"] = c => Plus(c, Link with { Id = null! }, "intro"),
+			["links-title-required"] = c => Plus(c, Link with { Title = null! }),
+			["links-url-required"] = c => Plus(c, Link with { Url = null! }),
 			["link-has-title"] = c => Plus(c, Link with { Title = "" }),
 			["link-has-url"] = c => Plus(c, Link with { Url = " " }),
 			["link-url-absolute-http"] = c => Plus(c, Link with { Url = "ftp://example.test/intro" })
@@ -342,10 +345,23 @@ public class VersioningSystemConstraintsTests
 			}
 		};
 
+	private static VersioningSystemCatalog WithStackSystem(VersioningSystemCatalog c, VersioningSystem system) =>
+		new()
+		{
+			VersioningSystems = new Dictionary<VersioningSystemId, VersioningSystem>(c.VersioningSystems)
+			{
+				[VersioningSystemId.Stack] = system
+			}
+		};
+
 	private static IReadOnlyDictionary<string, Func<VersioningSystemCatalog, VersioningSystemCatalog>> CounterExamples =>
 		new Dictionary<string, Func<VersioningSystemCatalog, VersioningSystemCatalog>>
 		{
 			["versioning-systems-required"] = c => c with { VersioningSystems = null! },
+			["versioning-systems-base-required"] =
+				c => WithStackSystem(c, new VersioningSystem { Id = VersioningSystemId.Stack, Base = null!, Current = (SemVersion)"9.1.0" }),
+			["versioning-systems-current-required"] =
+				c => WithStackSystem(c, new VersioningSystem { Id = VersioningSystemId.Stack, Base = (SemVersion)"8.0.0", Current = null! }),
 			["base-not-after-current"] = c => WithStack(c, "9.2.0", "9.1.0"),
 			["versioning-systems-complete"] =
 				c => new VersioningSystemCatalog

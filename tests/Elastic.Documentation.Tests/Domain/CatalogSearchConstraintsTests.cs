@@ -41,10 +41,16 @@ public class ProductCatalogConstraintsTests
 	private static ProductCatalog Added(ProductCatalog c, KeyValuePair<string, Product> product) =>
 		ProductCatalog.FromPublicProducts([.. c.Products, product]);
 
+	// built directly, as the catalog factory does not take a product with a missing member
+	private static ProductCatalog WithProduct(ProductCatalog c, Product product) =>
+		c with { Products = new Dictionary<string, Product>(c.Products) { ["kibana"] = product }.ToFrozenDictionary() };
+
 	private static IReadOnlyDictionary<string, Func<ProductCatalog, ProductCatalog>> CounterExamples =>
 		new Dictionary<string, Func<ProductCatalog, ProductCatalog>>
 		{
 			["products-required"] = c => c with { Products = null! },
+			["products-id-required"] = c => WithProduct(c, CatalogFixtures.Kibana with { Id = null! }),
+			["products-display-name-required"] = c => WithProduct(c, CatalogFixtures.Kibana with { DisplayName = null! }),
 			["product-id-matches-key"] = c => Added(c, new KeyValuePair<string, Product>("Kibana", CatalogFixtures.Kibana)),
 			["product-has-display-name"] =
 				c => Added(c, new KeyValuePair<string, Product>("kibana", CatalogFixtures.Kibana with { DisplayName = "" })),
@@ -180,6 +186,9 @@ public class SearchTuningConstraintsTests
 		{
 			["synonyms-required"] = s => s with { Synonyms = null! },
 			["rules-required"] = s => s with { Rules = null! },
+			["rules-rule-id-required"] = s => WithRules(s, Rule() with { RuleId = null! }),
+			["rules-criteria-required"] = s => WithRules(s, Rule() with { Criteria = null! }),
+			["rules-actions-required"] = s => WithRules(s, Rule() with { Actions = null! }),
 			["synonym-terms-single-word"] = s => s with { Synonyms = [.. s.Synonyms, new SynonymGroup(["ice cream", "gelato"])] },
 			["query-rule-id-unique"] = s => WithRules(s, Rule("dup"), Rule("dup")),
 			["query-rule-complete"] = s => WithRules(s, Rule("incomplete", ids: [])),

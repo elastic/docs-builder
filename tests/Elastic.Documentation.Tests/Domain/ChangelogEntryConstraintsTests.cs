@@ -48,6 +48,7 @@ public class ChangelogEntryConstraintsTests
 			["entry-type-required"] = e => e with { Type = ChangelogEntryType.Invalid },
 			["entry-subtype-only-breaking-change"] = e => e with { Type = ChangelogEntryType.Feature, Subtype = ChangelogEntrySubtype.Api },
 			["entry-products-required"] = e => e with { Products = [] },
+			["products-product-id-required"] = e => e with { Products = [new ProductReference { ProductId = null! }] },
 			["entry-product-id-required"] = e => e with { Products = [new ProductReference { ProductId = " " }] },
 			["entry-product-target-obsolete"] =
 				e =>
