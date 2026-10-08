@@ -2822,7 +2822,7 @@ button.example-response-tab:focus-visible {
 
 	/* Landing and group pages are lists, not a reference next to examples, so they read
 	   better narrower. They stay centered between the nav and the window edge. */
-	#api-content-grid:has(#elastic-docs-v3, .api-group) {
+	#api-content-grid:has(.api-landing, .api-group) {
 		--api-content-cap: calc(var(--spacing) * 240);
 	}
 }
