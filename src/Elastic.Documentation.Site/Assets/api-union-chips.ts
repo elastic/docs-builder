@@ -45,10 +45,12 @@ function ownPanels(container: HTMLElement): HTMLElement[] {
 export function showVariant(container: HTMLElement, variantId: string): void {
     const panels = ownPanels(container)
     if (!panels.some((panel) => panel.id === variantId)) return
+    const scrolled = window.scrollY
     panels.forEach((panel) => {
         if (panel.id === variantId) panel.removeAttribute('hidden')
         else panel.setAttribute('hidden', 'until-found')
     })
+    keepScrollPosition(container, scrolled)
     const row = ownRow(container)
     if (!row) return
     row.querySelectorAll<HTMLElement>(variantChips.chip).forEach((chip) => {
@@ -57,6 +59,22 @@ export function showVariant(container: HTMLElement, variantId: string): void {
         chip.setAttribute('aria-selected', match ? 'true' : 'false')
     })
     fitChipRow(row, variantChips)
+}
+
+/**
+ * Near the bottom of the page, a shorter variant shortens the page below the current scroll position; the browser then
+ * clamps the scroll and the chips jump under the pointer. The variant list keeps the height that holds the position.
+ */
+function keepScrollPosition(container: HTMLElement, scrolled: number) {
+    const list = container.querySelector<HTMLElement>(
+        ':scope > .union-variants'
+    )
+    if (!list) return
+    const maxScroll = document.documentElement.scrollHeight - window.innerHeight
+    const shortfall = scrolled - maxScroll
+    if (shortfall <= 0) return
+    list.style.minHeight = `${list.offsetHeight + shortfall}px`
+    window.scrollTo({ top: scrolled, behavior: 'instant' })
 }
 
 /** Whether a variant is the one its list shows: not hidden, and its chip the active one. */

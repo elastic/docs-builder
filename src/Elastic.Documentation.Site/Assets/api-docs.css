@@ -2185,6 +2185,12 @@ a.docs-reference-btn::after {
 	margin: calc(var(--spacing) * 1) 0;
 }
 
+/* hidden="until-found" keeps a box in the layout: without its padding, a hidden variant takes no room, so the picked
+   one sits right under the chips whichever it is. */
+.union-variant-chips > .union-variants > .union-variant-item[hidden] {
+	padding: 0;
+}
+
 .union-variants {
 	/* Variants list styling */
 }
