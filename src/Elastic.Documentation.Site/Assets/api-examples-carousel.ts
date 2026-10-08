@@ -312,9 +312,8 @@ function fitChips(examples: HTMLElement) {
 }
 
 function selectScenario(examples: HTMLElement, scenarioId: string) {
-    const language = activeLanguage(visibleCarousel(examples) ?? examples)
     showScenario(examples, scenarioId)
-    applyPreferredLanguage(examples, language)
+    applyPreferredLanguage(examples)
     writeDeepLink(
         activeLanguage(visibleCarousel(examples) ?? examples),
         scenarioId
@@ -345,12 +344,33 @@ function pickLanguage(examples: HTMLElement, language: string) {
     writeDeepLink(language, currentScenario(examples))
 }
 
-/** Follows swipes and free scrolls: the card that settles into view becomes the pick, like a dot click would. */
+const readerInputWindowMs = 1000
+const lastReaderInput = new WeakMap<HTMLElement, number>()
+
+/** Swipes, wheel and drags on the strip: the only scrolls that count as the reader's pick. */
+function trackReaderInput(strip: HTMLElement) {
+    const note = () => lastReaderInput.set(strip, Date.now())
+    for (const type of ['wheel', 'touchstart', 'pointerdown'])
+        strip.addEventListener(type, note, { passive: true })
+}
+
+function readerScrolled(strip: HTMLElement): boolean {
+    return (
+        Date.now() - (lastReaderInput.get(strip) ?? -Infinity) <
+        readerInputWindowMs
+    )
+}
+
+/**
+ * Follows swipes and free scrolls: the card that settles into view becomes the pick, like a dot click would.
+ * Only when the reader scrolled; a fallback card settling into view on its own must not replace the saved language.
+ */
 function observeStrip(carousel: HTMLElement) {
     const strip = carousel.querySelector<HTMLElement>('[data-carousel-strip]')
     const examples = carousel.closest<HTMLElement>('[data-api-examples]')
     if (!strip || !examples || strip.dataset.carouselObserved) return
     strip.dataset.carouselObserved = 'true'
+    trackReaderInput(strip)
     if (typeof IntersectionObserver === 'undefined') return
 
     const observer = new IntersectionObserver(
@@ -360,7 +380,7 @@ function observeStrip(carousel: HTMLElement) {
                 .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0]
             const language = (best?.target as HTMLElement | undefined)?.dataset
                 .lang
-            if (carousel.dataset.scrolling) return
+            if (carousel.dataset.scrolling || !readerScrolled(strip)) return
             if (!best || best.intersectionRatio < 0.6 || !language) return
             // Only a change counts: the first callback after load reports the card that is already active.
             if (sameLanguage(language, activeLanguage(carousel))) return
