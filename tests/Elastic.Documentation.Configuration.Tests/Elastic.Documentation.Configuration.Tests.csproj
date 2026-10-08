@@ -8,7 +8,7 @@
     <ProjectReference Include="..\..\src\Elastic.Documentation.Configuration\Elastic.Documentation.Configuration.csproj"/>
     <ProjectReference Include="..\..\src\Elastic.Documentation.Tooling\Elastic.Documentation.Tooling.csproj"/>
     <!-- GenAuto and the generators: the loader laws round-trip generated valid records. Not shipped. -->
-    <ProjectReference Include="$(NulleanEntitiesRoot)/src/Nullean.Entities.CsCheck/Nullean.Entities.CsCheck.csproj" />
+    <ProjectReference Include="$(NulleanEntitiesCsCheckProject)" />
   </ItemGroup>
 
   <ItemGroup>

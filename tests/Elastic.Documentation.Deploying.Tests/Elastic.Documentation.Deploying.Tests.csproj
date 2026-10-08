@@ -22,7 +22,7 @@
     <ProjectReference Include="..\..\src\services\Elastic.Documentation.Assembler\Elastic.Documentation.Assembler.csproj" />
     <ProjectReference Include="..\..\src\Elastic.Codex\Elastic.Codex.csproj" />
     <!-- Laws and the generators: how the domain constraints are tested. Not shipped. -->
-    <ProjectReference Include="$(NulleanEntitiesRoot)/src/Nullean.Entities.CsCheck/Nullean.Entities.CsCheck.csproj" />
+    <ProjectReference Include="$(NulleanEntitiesCsCheckProject)" />
   </ItemGroup>
 
 </Project>

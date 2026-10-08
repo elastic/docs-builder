@@ -8,8 +8,8 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <ProjectReference Include="$(NulleanEntitiesRoot)/src/Nullean.Entities/Nullean.Entities.csproj" />
-      <ProjectReference Include="$(NulleanEntitiesRoot)/src/Nullean.Entities.SourceGenerators/Nullean.Entities.SourceGenerators.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+      <ProjectReference Include="$(NulleanEntitiesProject)" />
+      <ProjectReference Include="$(NulleanEntitiesGeneratorProject)" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
     </ItemGroup>
 
     <ItemGroup>

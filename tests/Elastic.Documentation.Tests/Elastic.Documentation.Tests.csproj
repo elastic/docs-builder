@@ -7,8 +7,8 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\Elastic.Documentation\Elastic.Documentation.csproj"/>
     <!-- Probe, Laws and the generators: how the domain constraints are tested. Not shipped. -->
-    <ProjectReference Include="$(NulleanEntitiesRoot)/src/Nullean.Entities.CsCheck/Nullean.Entities.CsCheck.csproj" />
-    <ProjectReference Include="$(NulleanEntitiesRoot)/src/Nullean.Entities.CsCheck.FileSystem/Nullean.Entities.CsCheck.FileSystem.csproj" />
+    <ProjectReference Include="$(NulleanEntitiesCsCheckProject)" />
+    <ProjectReference Include="$(NulleanEntitiesCsCheckFileSystemProject)" />
   </ItemGroup>
 
   <ItemGroup>

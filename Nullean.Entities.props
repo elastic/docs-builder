@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project InitialTargets="CheckNulleanEntitiesCheckout" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <!--
+    Nullean.Entities (https://github.com/nullean/entities): the constraint model every domain rule is written in.
+
+    The packages are not published yet, so the projects are referenced from a checkout. This file is the only place that knows where:
+    every project refers to the paths below, never to $(NulleanEntitiesRoot) directly. When the packages are published, the four
+    ProjectReferences each project has become PackageReferences (versions in Directory.Packages.props) and this file goes away.
+
+    Build against another checkout with -p:NulleanEntitiesRoot=<path> or the NulleanEntitiesRoot environment variable.
+    The library targets net10.0 on this repository's stable SDK by itself.
+  -->
+  <PropertyGroup>
+    <NulleanEntitiesRoot Condition="'$(NulleanEntitiesRoot)' == ''">$(HOME)/Projects/nullean-entities</NulleanEntitiesRoot>
+
+    <!-- The constraint model: Constraint, ConstraintSet, Result-free and dependency-free. -->
+    <NulleanEntitiesProject>$(NulleanEntitiesRoot)/src/Nullean.Entities/Nullean.Entities.csproj</NulleanEntitiesProject>
+    <!-- The [Constraints] source generator: reference with OutputItemType="Analyzer" ReferenceOutputAssembly="false". -->
+    <NulleanEntitiesGeneratorProject>$(NulleanEntitiesRoot)/src/Nullean.Entities.SourceGenerators/Nullean.Entities.SourceGenerators.csproj</NulleanEntitiesGeneratorProject>
+    <!-- Property, spec and model-based testing with CsCheck: tests only, never shipped. -->
+    <NulleanEntitiesCsCheckProject>$(NulleanEntitiesRoot)/src/Nullean.Entities.CsCheck/Nullean.Entities.CsCheck.csproj</NulleanEntitiesCsCheckProject>
+    <NulleanEntitiesCsCheckFileSystemProject>$(NulleanEntitiesRoot)/src/Nullean.Entities.CsCheck.FileSystem/Nullean.Entities.CsCheck.FileSystem.csproj</NulleanEntitiesCsCheckFileSystemProject>
+  </PropertyGroup>
+
+  <!-- Say what is wrong in one line, instead of a NU1105 from a restore that never saw the project. -->
+  <Target Name="CheckNulleanEntitiesCheckout">
+    <Error
+      Condition="!Exists('$(NulleanEntitiesProject)')"
+      Text="Nullean.Entities was not found at '$(NulleanEntitiesRoot)'. Clone https://github.com/nullean/entities there, or pass -p:NulleanEntitiesRoot=&lt;path&gt; (or set the NulleanEntitiesRoot environment variable)."
+    />
+  </Target>
+</Project>

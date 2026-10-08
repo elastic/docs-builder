@@ -16,7 +16,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\tooling\docs-builder\docs-builder.csproj" />
     <!-- Script, SampleWith, SampleState: how the services are tested. Not shipped. -->
-    <ProjectReference Include="$(NulleanEntitiesRoot)/src/Nullean.Entities.CsCheck/Nullean.Entities.CsCheck.csproj" />
+    <ProjectReference Include="$(NulleanEntitiesCsCheckProject)" />
   </ItemGroup>
 
 </Project>
