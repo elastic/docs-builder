@@ -46,6 +46,30 @@ public class SchemaAnalyzer(
 	private bool IsLinkedType(string typeName) => SchemaHelpers.ShouldLinkToContainerPage(typeName, currentPageType);
 
 	/// <summary>
+	/// Whether a schema declares properties itself rather than only through an <c>allOf</c>. A union that does lists them
+	/// above its variants; one whose properties come only from an <c>allOf</c> lists just its variants, which carry them.
+	/// </summary>
+	public bool DeclaresProperties(IOpenApiSchema schema) => (ResolveSchema(schema) ?? schema).Properties is { Count: > 0 };
+
+	/// <summary>
+	/// The properties a union lists above its variants. An <c>allOf</c> union already merges its other <c>allOf</c> members
+	/// into every variant, so it lists only what it declares itself; a direct <c>oneOf</c>/<c>anyOf</c> lists everything.
+	/// </summary>
+	public IOpenApiSchema SharedProperties(IOpenApiSchema union)
+	{
+		var resolved = ResolveSchema(union) ?? union;
+		if (UnionSchemas.IsUnion(resolved) || resolved.AllOf is not { Count: > 0 })
+			return union;
+
+		return new OpenApiSchema
+		{
+			Type = JsonSchemaType.Object,
+			Properties = resolved.Properties,
+			Required = new HashSet<string>(Flatten(union).Required)
+		};
+	}
+
+	/// <summary>
 	/// Resolves a schema reference to its concrete target, using a per-unit cache to avoid repeated
 	/// <c>ResolveReference</c> calls through the OpenAPI workspace.
 	/// </summary>
@@ -54,12 +78,6 @@ public class SchemaAnalyzer(
 	/// the proxy (<see cref="OpenApiSchemaReference"/>) for external or unresolvable refs,
 	/// or <paramref name="schema"/> unchanged when it is not a reference.
 	/// </returns>
-	/// <summary>
-	/// Whether a schema declares properties itself rather than only through an <c>allOf</c>. A union that does lists them
-	/// above its variants; one whose properties come only from an <c>allOf</c> lists just its variants, which carry them.
-	/// </summary>
-	public bool DeclaresProperties(IOpenApiSchema schema) => (ResolveSchema(schema) ?? schema).Properties is { Count: > 0 };
-
 	public IOpenApiSchema? ResolveSchema(IOpenApiSchema? schema)
 	{
 		if (schema is null)

@@ -268,6 +268,56 @@ public class ApiBodyContentTests
 	}
 
 	[Test]
+	public async Task Build_AllOfUnionThatDeclaresProperties_ListsOnlyItsOwnPropertiesAboveTheVariants()
+	{
+		var json =
+			"""
+			{
+			  "openapi": "3.0.3",
+			  "info": { "title": "t", "version": "1" },
+			  "paths": {},
+			  "components": {
+			    "schemas": {
+			      "Base": { "type": "object", "required": ["id"], "properties": { "id": { "type": "string" } } },
+			      "Cat": { "type": "object", "properties": { "lives": { "type": "integer" } } },
+			      "Dog": { "type": "object", "properties": { "barks": { "type": "boolean" } } },
+			      "Pet": {
+			        "type": "object",
+			        "required": ["kind"],
+			        "properties": { "kind": { "type": "string" } },
+			        "allOf": [
+			          { "$ref": "#/components/schemas/Base" },
+			          { "oneOf": [ { "$ref": "#/components/schemas/Cat" }, { "$ref": "#/components/schemas/Dog" } ] }
+			        ]
+			      },
+			      "Holder": { "type": "object", "properties": { "pet": { "$ref": "#/components/schemas/Pet" } } }
+			    }
+			  }
+			}
+			""";
+		var document = await LoadSpecAsync(json);
+		var builder = BuilderFor(document);
+
+		var body = ApiBodyContent.Build(
+			new OpenApiSchemaReference("Pet", document),
+			new PropertyTreeScope { Prefix = "req", IsRequest = true },
+			new SchemaAnalyzer(document),
+			builder
+		);
+		body.Properties!.Items.Select(p => p.Name).Should().Equal(["kind"], "each variant already lists the base field id");
+		body.Properties.Items.Single().IsRequired.Should().BeTrue();
+		body.UnionVariants!
+			.Variants
+			.Select(v => v.Properties!.Items.Select(p => p.Name))
+			.Should()
+			.BeEquivalentTo([(string[])["id", "lives"], ["id", "barks"]], o => o.WithStrictOrdering());
+
+		var pet = builder.BuildPropertyList(document.Components!.Schemas!["Holder"], new PropertyTreeScope { Prefix = "" })!.Items.Single();
+		pet.Children.Properties!.Items.Select(p => p.Name).Should().Equal("kind");
+		pet.Children.Variants!.Variants.Select(v => v.DisplayName).Should().Equal("Cat", "Dog");
+	}
+
+	[Test]
 	public async Task Build_BodyWithRequiredOnlyAnyOf_SaysWhichFieldsAreRequired()
 	{
 		var json =

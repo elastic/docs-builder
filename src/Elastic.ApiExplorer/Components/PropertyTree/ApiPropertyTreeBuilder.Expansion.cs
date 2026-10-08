@@ -70,8 +70,9 @@ public partial class ApiPropertyTreeBuilder
 		var variantCount = hasUnionOptions ? typeInfo.UnionOptions!.Count(_analyzer.UnionOptionHasProperties) : 0;
 		var listsOwnProperties = typeInfo is { IsObject: true, HasLink: false }
 			&& (!typeInfo.IsUnion || _analyzer.DeclaresProperties(propSchema));
-		if (listsOwnProperties && PropertyCount(propSchema) is > 0 and var ownCount)
-			return new ChildPlan.Properties(propSchema, ownCount + variantCount, hasUnionOptions ? typeInfo.UnionOptions : null);
+		var listed = typeInfo.IsUnion ? _analyzer.SharedProperties(propSchema) : propSchema;
+		if (listsOwnProperties && PropertyCount(listed) is > 0 and var ownCount)
+			return new ChildPlan.Properties(listed, ownCount + variantCount, hasUnionOptions ? typeInfo.UnionOptions : null);
 
 		if (typeInfo is { IsArray: true, HasLink: false } && propSchema.Items is { } items && PropertyCount(items) is > 0 and var itemCount)
 			return new ChildPlan.Properties(items, itemCount);

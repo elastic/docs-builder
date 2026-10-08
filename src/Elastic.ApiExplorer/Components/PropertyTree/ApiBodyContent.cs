@@ -25,7 +25,9 @@ internal sealed record ApiBodyContent(ApiPropertyList? Properties, ApiUnionVaria
 	)
 	{
 		var variants = analyzer.GetTypeInfo(schema).IsUnion ? BuildUnionVariants(schema, scope, analyzer, builder) : null;
-		var properties = variants is not null && !analyzer.DeclaresProperties(schema) ? null : builder.BuildPropertyList(schema, scope);
+		var properties = variants is null
+			? builder.BuildPropertyList(schema, scope)
+			: analyzer.DeclaresProperties(schema) ? builder.BuildPropertyList(analyzer.SharedProperties(schema), scope) : null;
 		return new ApiBodyContent(properties, variants, builder.DescribeRequiredAlternatives(schema));
 	}
 
