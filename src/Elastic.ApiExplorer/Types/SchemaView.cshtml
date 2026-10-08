@@ -63,7 +63,7 @@
 	@if (pageModel.UnionVariants is { } unionVariants)
 	{
 		@(await RenderPartialAsync<_SectionHeader, SectionHeader>(new SectionHeader(Elastic.ApiExplorer.Types.SchemaCommonMark.UnionHeading(pageModel.UnionKeyword), "union-types")))
-		<p>@Elastic.ApiExplorer.Types.SchemaCommonMark.UnionIntro(pageModel.UnionKeyword)</p>
+		<p>@pageModel.UnionIntro</p>
 		@(await RenderPartialAsync<_UnionOptions, ApiUnionVariants>(unionVariants))
 	}
 

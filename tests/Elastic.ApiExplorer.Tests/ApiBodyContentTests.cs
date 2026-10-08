@@ -318,6 +318,44 @@ public class ApiBodyContentTests
 	}
 
 	[Test]
+	public async Task Build_OneOfOfRequiredSetsBesideAnAnyOfOfVariants_ShowsBoth()
+	{
+		var json =
+			"""
+			{
+			  "openapi": "3.0.3",
+			  "info": { "title": "t", "version": "1" },
+			  "paths": {},
+			  "components": {
+			    "schemas": {
+			      "Cat": { "type": "object", "properties": { "lives": { "type": "integer" } } },
+			      "Dog": { "type": "object", "properties": { "barks": { "type": "boolean" } } },
+			      "Body": {
+			        "type": "object",
+			        "oneOf": [ { "required": ["a"] }, { "required": ["b"] } ],
+			        "anyOf": [ { "$ref": "#/components/schemas/Cat" }, { "$ref": "#/components/schemas/Dog" } ],
+			        "properties": { "a": { "type": "string" }, "b": { "type": "string" } }
+			      }
+			    }
+			  }
+			}
+			""";
+		var document = await LoadSpecAsync(json);
+
+		var body = ApiBodyContent.Build(
+			new OpenApiSchemaReference("Body", document),
+			new PropertyTreeScope { Prefix = "req", IsRequest = true },
+			new SchemaAnalyzer(document),
+			BuilderFor(document)
+		);
+
+		body.UnionVariants!.Label.Should().Be("Any of:", "the oneOf only lists required sets, so the anyOf carries the variants");
+		body.UnionVariants.Variants.Select(v => v.DisplayName).Should().Equal("Cat", "Dog");
+		ApiPropertyMarkdown.Format(body.Requires!).Should().Be("Requires exactly one of: `a` or `b`");
+		body.Properties!.Items.Select(p => p.Name).Should().Equal("a", "b");
+	}
+
+	[Test]
 	public async Task Build_BodyWithRequiredOnlyAnyOf_SaysWhichFieldsAreRequired()
 	{
 		var json =

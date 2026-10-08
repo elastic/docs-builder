@@ -42,7 +42,7 @@ internal static class SchemaCommonMark
 			_ = markdown.AppendLine();
 		}
 
-		WriteUnion(markdown, page.UnionVariants, UnionHeading(page.UnionKeyword), UnionIntro(page.UnionKeyword), apiBaseUrl);
+		WriteUnion(markdown, page.UnionVariants, UnionHeading(page.UnionKeyword), page.UnionIntro, apiBaseUrl);
 
 		if (page.Properties is not null)
 		{

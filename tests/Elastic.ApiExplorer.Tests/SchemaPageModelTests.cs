@@ -3,12 +3,14 @@
 // See the LICENSE file in the project root for more information
 
 using AwesomeAssertions;
+using Elastic.ApiExplorer.Components.PropertyTree;
 using Elastic.ApiExplorer.Infrastructure;
 using Elastic.ApiExplorer.Model;
 using Elastic.ApiExplorer.Types;
 using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Site;
 using Elastic.Documentation.Site.FileProviders;
+using static Elastic.ApiExplorer.Tests.TestSpecs;
 
 namespace Elastic.ApiExplorer.Tests;
 
@@ -30,6 +32,40 @@ public class SchemaPageModelTests(ApiExplorerFixture fixture)
 		page.UnionVariants.Label.Should().BeNull("the section heading already names the keyword");
 		page.Requires.Should().BeNull();
 		SchemaCommonMark.Write(item.Model, page, context).Should().Contain("## Union Types (oneOf)");
+	}
+
+	[Test]
+	public async Task UnionIntroFor_ArrayOfUnion_SaysEachItemIsAVariant()
+	{
+		var json =
+			"""
+			{
+			  "openapi": "3.0.3",
+			  "info": { "title": "t", "version": "1" },
+			  "paths": {},
+			  "components": {
+			    "schemas": {
+			      "Cat": { "type": "object", "properties": { "lives": { "type": "integer" } } },
+			      "Dog": { "type": "object", "properties": { "barks": { "type": "boolean" } } },
+			      "Pets": { "type": "array", "items": { "oneOf": [ { "$ref": "#/components/schemas/Cat" }, { "$ref": "#/components/schemas/Dog" } ] } },
+			      "Pet": { "anyOf": [ { "$ref": "#/components/schemas/Cat" }, { "$ref": "#/components/schemas/Dog" } ] }
+			    }
+			  }
+			}
+			""";
+		var document = await LoadSpecAsync(json);
+		var analyzer = new SchemaAnalyzer(document);
+		var builder = BuilderFor(document);
+
+		string Intro(string id)
+		{
+			var schema = document.Components!.Schemas![id];
+			var variants = ApiBodyContent.BuildUnionVariants(schema, new PropertyTreeScope { Prefix = "oneof" }, analyzer, builder);
+			return SchemaPageModel.UnionIntroFor(analyzer.GetTypeInfo(schema), variants);
+		}
+
+		Intro("Pets").Should().Be("An array; each item is one of:");
+		Intro("Pet").Should().Be("This type can be any of the following:");
 	}
 
 	private ApiRenderContext RenderContext(INavigationItem current) =>

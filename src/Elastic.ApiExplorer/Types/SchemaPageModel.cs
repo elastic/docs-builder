@@ -25,6 +25,9 @@ public record SchemaPageModel
 	/// <summary>Which keyword the union came from; it names the section.</summary>
 	public required UnionKeyword UnionKeyword { get; init; }
 
+	/// <summary>The sentence under the section heading; an array of a union says each item is one of the variants.</summary>
+	public required string UnionIntro { get; init; }
+
 	/// <summary>Which of the type's fields it needs, when its <c>oneOf</c>/<c>anyOf</c> only lists <c>required</c> sets.</summary>
 	public required RequiredAlternatives? Requires { get; init; }
 
@@ -48,12 +51,14 @@ public record SchemaPageModel
 		var builder = new ApiPropertyTreeBuilder(context.Model, options, schema.DisplayName);
 		var analyzer = new SchemaAnalyzer(context.Model, schema.DisplayName, context.SchemaResolveCache);
 		var rootAncestors = new HashSet<string> { schema.SchemaId };
-		var keyword = analyzer.GetTypeInfo(openApiSchema).UnionKeyword ?? UnionKeyword.OneOf;
+		var typeInfo = analyzer.GetTypeInfo(openApiSchema);
+		var keyword = typeInfo.UnionKeyword ?? UnionKeyword.OneOf;
 		// Variant anchors keep their keyword prefix (oneof-variant-…), so links to them survive.
 		var variantScope = new PropertyTreeScope { Prefix = keyword.ToSchemaKeyword().ToLowerInvariant(), AncestorRefs = rootAncestors };
-		var variants = ApiBodyContent.BuildUnionVariants(openApiSchema, variantScope, analyzer, builder) is { } built
-			? built with { Label = null }
-			: null;
+		var built = ApiBodyContent.BuildUnionVariants(openApiSchema, variantScope, analyzer, builder);
+		// The section's intro sentence carries the label, so the list does not repeat it.
+		var variants = built is null ? null : built with { Label = null };
+		var intro = UnionIntroFor(typeInfo, built);
 		var listed = ApiBodyContent.ListedProperties(openApiSchema, variants, analyzer);
 
 		ExternalDocLink? externalDocs = null;
@@ -74,6 +79,7 @@ public record SchemaPageModel
 			ExternalDocs = externalDocs,
 			UnionVariants = variants,
 			UnionKeyword = keyword,
+			UnionIntro = intro,
 			Requires = builder.DescribeRequiredAlternatives(openApiSchema),
 			Properties = listed is null
 				? null
@@ -82,4 +88,13 @@ public record SchemaPageModel
 			EnumValues = analyzer.GetEnumValues(openApiSchema)
 		};
 	}
+
+	/// <summary>
+	/// "This type can be one of the following:", or for an array of a union the body label, "An array; each item is one of:",
+	/// since the variants then describe each item rather than the type.
+	/// </summary>
+	internal static string UnionIntroFor(TypeInfo typeInfo, ApiUnionVariants? variants) =>
+		typeInfo.IsArray && variants?.Label is { } arrayLabel
+			? arrayLabel
+			: SchemaCommonMark.UnionIntro(typeInfo.UnionKeyword ?? UnionKeyword.OneOf);
 }
