@@ -12,6 +12,8 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Logging;
+using Nullean.Entities;
+using Nullean.Entities.AspNetCore;
 
 namespace Elastic.Documentation.Api;
 
@@ -185,8 +187,10 @@ public static class MappingsExtension
 			Cancel ctx
 		) =>
 		{
-			if (!IsValidPageFeedback(request))
-				return Results.BadRequest();
+			// a 400 that says which field broke which rule
+			var validation = PageFeedbackRequestConstraints.All.Validated(request);
+			if (validation is not Result<PageFeedbackRequest>.Ok)
+				return validation.ToHttpResult();
 
 			var record = PageFeedbackRecord.From(feedbackId, request, TryGetEuid(context));
 			var pageUrlForLog = SanitizeForLog(request.PageUrl);
@@ -217,36 +221,6 @@ public static class MappingsExtension
 			return Results.NoContent();
 		}).DisableAntiforgery();
 	}
-
-	private static bool IsValidPageFeedback(PageFeedbackRequest request) =>
-		!string.IsNullOrWhiteSpace(request.PageUrl)
-			&& request.PageUrl.Length <= 2048
-			&& request.PageUrl.StartsWith('/')
-			&& !request.PageUrl.StartsWith("//", StringComparison.Ordinal)
-			&& Uri.TryCreate(request.PageUrl, UriKind.Relative, out _)
-			&& !string.IsNullOrWhiteSpace(request.PageTitle)
-			&& request.PageTitle.Length <= 500
-			&& request.Reaction is PageFeedbackReaction.ThumbsUp or PageFeedbackReaction.ThumbsDown
-			&& (request.Comment is null || request.Comment.Length <= 2000)
-			&& IsValidFeedbackDetails(request);
-
-	private static bool IsValidFeedbackDetails(PageFeedbackRequest request)
-	{
-		if (request.Reasons is null or [])
-			return request.ReasonSetVersion is null && string.IsNullOrWhiteSpace(request.Comment);
-
-		return request.ReasonSetVersion is > 0
-			&& request.Reasons.All(r => Enum.IsDefined(r) && IsReasonValidForReaction(request.Reaction, r));
-	}
-
-	private static bool IsReasonValidForReaction(PageFeedbackReaction reaction, PageFeedbackReason reason) => reaction switch
-	{
-		PageFeedbackReaction.ThumbsUp =>
-			reason is PageFeedbackReason.Accurate or PageFeedbackReason.SolvedProblem or PageFeedbackReason.EasyToUnderstand or PageFeedbackReason.HelpfulExamples or PageFeedbackReason.EasyToFind or PageFeedbackReason.AnotherReason,
-		PageFeedbackReaction.ThumbsDown =>
-			reason is PageFeedbackReason.Inaccurate or PageFeedbackReason.MissingInformation or PageFeedbackReason.HardToUnderstand or PageFeedbackReason.CodeSampleErrors or PageFeedbackReason.OutOfDate or PageFeedbackReason.AnotherReason,
-		_ => false
-	};
 
 	private static string? TryGetEuid(HttpContext context)
 	{
