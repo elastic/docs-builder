@@ -551,18 +551,18 @@ function initGlobalClickHandlers(): void {
             return
         }
 
-        const responsePanel = target
-            .closest('button.response-status-toggle')
-            ?.closest<HTMLElement>('.response-panel')
-        if (responsePanel) {
-            // The toggle's hit area covers the description, so selecting its text must not toggle.
-            const summary = responsePanel.querySelector('.response-summary')
+        const responseSummary = target.closest<HTMLElement>('.response-summary')
+        const responsePanel =
+            responseSummary?.closest<HTMLElement>('.response-panel')
+        if (responseSummary && responsePanel) {
+            // Links in the description navigate, and finishing a text selection must not toggle.
+            if (target.closest('.response-description a')) return
             const selection = window.getSelection()
             if (
                 selection &&
                 !selection.isCollapsed &&
-                (summary?.contains(selection.anchorNode) ||
-                    summary?.contains(selection.focusNode))
+                (responseSummary.contains(selection.anchorNode) ||
+                    responseSummary.contains(selection.focusNode))
             )
                 return
 
