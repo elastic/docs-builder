@@ -461,7 +461,14 @@ public class UnionVariantTests
 			        "type": "object",
 			        "properties": {
 			          "sort": { "oneOf": [ { "type": "string", "enum": ["asc", "desc"] }, { "$ref": "#/components/schemas/SortObject" } ] },
-			          "order": { "oneOf": [ { "type": "string", "enum": ["asc", "desc"] }, { "type": "integer" } ] }
+			          "order": { "oneOf": [ { "type": "string", "enum": ["asc", "desc"] }, { "type": "integer" } ] },
+			          "rank": {
+			            "oneOf": [
+			              { "type": "string", "enum": ["asc", "desc"] },
+			              { "type": "integer" },
+			              { "$ref": "#/components/schemas/SortObject" }
+			            ]
+			          }
 			        }
 			      }
 			    }
@@ -484,6 +491,10 @@ public class UnionVariantTests
 		var order = list.Items.Single(p => p.Name == "order");
 		order.EnumValues.Should().Equal(["asc", "desc"], "with no object variant the literals keep their Values row");
 		order.Union.Should().BeNull();
+
+		var rank = list.Items.Single(p => p.Name == "rank");
+		rank.Union!.MoreOptions.Should().Be("or a type listed below", "the list below holds integer as well as the object");
+		rank.Children.Variants!.Variants.Select(v => v.DisplayName).Should().Equal("integer", "SortObject");
 	}
 
 	[Test]

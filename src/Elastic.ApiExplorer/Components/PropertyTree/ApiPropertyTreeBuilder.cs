@@ -335,7 +335,7 @@ public partial class ApiPropertyTreeBuilder(
 				Keyword = typeInfo.UnionKeyword,
 				DiscriminatorProperty = _analyzer.GetUnionDiscriminator(propSchema)?.PropertyName,
 				Badges = badges.ToArray(),
-				MoreOptions = mixed ? "or an object listed below" : null
+				MoreOptions = mixed ? MoreOptionsText(typeInfo) : null
 			};
 		}
 
@@ -345,6 +345,13 @@ public partial class ApiPropertyTreeBuilder(
 	/// <summary>A union with literal members as well as object variants, e.g. a sort order: <c>asc</c>, <c>desc</c> or an object.</summary>
 	private static bool MixesLiteralsWithObjects(TypeInfo typeInfo, Expansion expansion) =>
 		typeInfo is { IsUnion: true, EnumValues.Length: > 0 } && expansion.HasUnionOptions;
+
+	/// <summary>
+	/// What the variant list below a mixed union holds besides the literals. It lists every other option, so a
+	/// primitive member such as <c>integer</c> makes it more than objects.
+	/// </summary>
+	private static string MoreOptionsText(TypeInfo typeInfo) =>
+		typeInfo.UnionOptions!.All(static o => o.IsObject) ? "or an object listed below" : "or a type listed below";
 
 	internal static bool IsTypeOptionBadge(string option) =>
 		SchemaHelpers.PrimitiveTypeNames.Contains(option)
