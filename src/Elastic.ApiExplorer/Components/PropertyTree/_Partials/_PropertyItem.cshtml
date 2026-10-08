@@ -61,15 +61,7 @@
 	@if (Model.Requires is { } requires)
 	{
 		<dd class="union-options">
-			<span class="values-label">@requires.Label</span>
-			@for (var i = 0; i < requires.Options.Count; i++)
-			{
-				if (i > 0)
-				{
-					<span class="union-inline-separator">or</span>
-				}
-				<code>@requires.Options[i]</code>
-			}
+			@(await RenderPartialAsync<_RequiredAlternatives, RequiredAlternatives>(requires))
 		</dd>
 	}
 	@(await RenderPartialAsync<_EnumValues, EnumValueList>(new EnumValueList(Model.EnumValues)))

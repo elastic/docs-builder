@@ -195,6 +195,8 @@ internal static class OperationCommonMark
 		if (!string.IsNullOrEmpty(page.RequestContentType))
 			ApiCommonMark.Paragraph(markdown, $"`{page.RequestContentType}`");
 		ApiCommonMark.Prepared(markdown, apiOperation.Operation.RequestBody.Description, apiBaseUrl);
+		if (page.RequestRequires is { } requestRequires)
+			ApiCommonMark.Paragraph(markdown, ApiPropertyMarkdown.Format(requestRequires));
 		if (page.HasRequestBody)
 		{
 			ApiPropertyMarkdown.WriteList(markdown, page.RequestProperties, apiBaseUrl);
@@ -222,6 +224,8 @@ internal static class OperationCommonMark
 			foreach (var content in response.Contents)
 			{
 				ApiCommonMark.Paragraph(markdown, $"`{content.ContentType}`");
+				if (content.Requires is { } requires)
+					ApiCommonMark.Paragraph(markdown, ApiPropertyMarkdown.Format(requires));
 				if (content.HasBody)
 				{
 					ApiPropertyMarkdown.WriteList(markdown, content.Properties, apiBaseUrl);

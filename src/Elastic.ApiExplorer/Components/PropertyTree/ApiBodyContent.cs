@@ -7,14 +7,17 @@ using Microsoft.OpenApi;
 
 namespace Elastic.ApiExplorer.Components.PropertyTree;
 
-/// <summary>What a request or response body lists: its properties, or the variants of a body that is itself a union.</summary>
-internal static class ApiBodyContent
+/// <summary>What a request or response body lists: its properties, the variants of a union body, or both.</summary>
+/// <param name="Requires">Which of the body's fields it needs, when its <c>oneOf</c>/<c>anyOf</c> only lists <c>required</c> sets.</param>
+internal sealed record ApiBodyContent(ApiPropertyList? Properties, ApiUnionVariants? UnionVariants, RequiredAlternatives? Requires)
 {
+	public static readonly ApiBodyContent Empty = new(null, null, null);
+
 	/// <summary>
-	/// The property list and the variant list of a request or response body, as property rows list them: a union that
-	/// declares properties lists them above its variants (see <see cref="SchemaAnalyzer.DeclaresProperties"/>).
+	/// The content of a request or response body, as property rows list it: a union that declares properties lists them
+	/// above its variants (see <see cref="SchemaAnalyzer.DeclaresProperties"/>).
 	/// </summary>
-	public static (ApiPropertyList? Properties, ApiUnionVariants? UnionVariants) Build(
+	public static ApiBodyContent Build(
 		IOpenApiSchema schema,
 		PropertyTreeScope scope,
 		SchemaAnalyzer analyzer,
@@ -22,10 +25,8 @@ internal static class ApiBodyContent
 	)
 	{
 		var variants = analyzer.GetTypeInfo(schema).IsUnion ? BuildUnionVariants(schema, scope, analyzer, builder) : null;
-		if (variants is not null && !analyzer.DeclaresProperties(schema))
-			return (null, variants);
-
-		return (builder.BuildPropertyList(schema, scope), variants);
+		var properties = variants is not null && !analyzer.DeclaresProperties(schema) ? null : builder.BuildPropertyList(schema, scope);
+		return new ApiBodyContent(properties, variants, builder.DescribeRequiredAlternatives(schema));
 	}
 
 	/// <summary>The variants of a body that is itself a union, under a label that says what they describe.</summary>

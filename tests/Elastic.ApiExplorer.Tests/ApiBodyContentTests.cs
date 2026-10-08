@@ -201,7 +201,7 @@ public class ApiBodyContentTests
 		var builder = BuilderFor(document);
 		var analyzer = new SchemaAnalyzer(document);
 
-		var (properties, variants) = ApiBodyContent.Build(
+		var (properties, variants, _) = ApiBodyContent.Build(
 			document.Components!.Schemas!["Composed"],
 			new PropertyTreeScope { Prefix = "req", IsRequest = true },
 			analyzer,
@@ -211,7 +211,7 @@ public class ApiBodyContentTests
 		variants!.Variants.Select(v => v.DisplayName).Should().Equal("Cat", "Dog");
 		variants.Variants[0].Properties!.Items.Select(p => p.Name).Should().Equal("id", "lives");
 
-		var (byReference, _) = ApiBodyContent.Build(
+		var (byReference, _, _) = ApiBodyContent.Build(
 			new OpenApiSchemaReference("Composed", document),
 			new PropertyTreeScope { Prefix = "res-200" },
 			analyzer,
@@ -247,7 +247,7 @@ public class ApiBodyContentTests
 		var builder = BuilderFor(document);
 		var analyzer = new SchemaAnalyzer(document);
 
-		var (properties, variants) = ApiBodyContent.Build(
+		var (properties, variants, _) = ApiBodyContent.Build(
 			new OpenApiSchemaReference("Declared", document),
 			new PropertyTreeScope { Prefix = "res-200" },
 			analyzer,
@@ -265,6 +265,40 @@ public class ApiBodyContentTests
 		var markdown = new System.Text.StringBuilder();
 		ApiPropertyMarkdown.WriteList(markdown, new ApiPropertyList([pet]), "/api/doc/fixture");
 		markdown.ToString().Should().Contain("`kind`").And.Contain("One of:").And.Contain("`lives`").And.Contain("`barks`");
+	}
+
+	[Test]
+	public async Task Build_BodyWithRequiredOnlyAnyOf_SaysWhichFieldsAreRequired()
+	{
+		var json =
+			"""
+			{
+			  "openapi": "3.0.3",
+			  "info": { "title": "t", "version": "1" },
+			  "paths": {},
+			  "components": {
+			    "schemas": {
+			      "Body": {
+			        "type": "object",
+			        "anyOf": [ { "required": ["a"] }, { "required": ["b"] } ],
+			        "properties": { "a": { "type": "string" }, "b": { "type": "string" } }
+			      }
+			    }
+			  }
+			}
+			""";
+		var document = await LoadSpecAsync(json);
+
+		var body = ApiBodyContent.Build(
+			new OpenApiSchemaReference("Body", document),
+			new PropertyTreeScope { Prefix = "req", IsRequest = true },
+			new SchemaAnalyzer(document),
+			BuilderFor(document)
+		);
+
+		body.Properties!.Items.Select(p => p.Name).Should().Equal("a", "b");
+		body.UnionVariants.Should().BeNull();
+		ApiPropertyMarkdown.Format(body.Requires!).Should().Be("Requires at least one of: `a` or `b`");
 	}
 
 	[Test]
@@ -339,7 +373,7 @@ public class ApiBodyContentTests
 		var analyzer = new SchemaAnalyzer(document);
 		var builder = BuilderFor(document);
 
-		var (_, array) = ApiBodyContent.Build(
+		var (_, array, _) = ApiBodyContent.Build(
 			document.Components!.Schemas!["Pets"],
 			new PropertyTreeScope { Prefix = "res-200" },
 			analyzer,
@@ -351,7 +385,7 @@ public class ApiBodyContentTests
 		ApiPropertyMarkdown.WriteVariants(markdown, array, "/api/doc/fixture");
 		markdown.ToString().Should().StartWith("An array; each item is one of:");
 
-		var (_, single) = ApiBodyContent.Build(
+		var (_, single, _) = ApiBodyContent.Build(
 			document.Components!.Schemas!["Pet"],
 			new PropertyTreeScope { Prefix = "req" },
 			analyzer,

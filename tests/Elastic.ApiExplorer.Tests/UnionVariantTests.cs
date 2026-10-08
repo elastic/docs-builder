@@ -64,6 +64,7 @@ public class UnionVariantTests
 			  "paths": {},
 			  "components": {
 			    "schemas": {
+			      "WindowRequired": { "required": ["window"] },
 			      "Holder": {
 			        "type": "object",
 			        "properties": {
@@ -74,7 +75,7 @@ public class UnionVariantTests
 			          },
 			          "range": {
 			            "type": "object",
-			            "oneOf": [ { "required": ["from", "to"] }, { "required": ["window"] } ],
+			            "oneOf": [ { "type": "object", "required": ["from", "to"] }, { "$ref": "#/components/schemas/WindowRequired" } ],
 			            "properties": { "from": { "type": "string" }, "to": { "type": "string" }, "window": { "type": "string" } }
 			          }
 			        }

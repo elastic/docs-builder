@@ -366,7 +366,7 @@ public class AllOfCompositionTests
 		cat.DisplayName.Should().Be("Cat");
 		cat.Properties!.Items.Select(p => p.Name).Should().Equal("lives", "<string>");
 
-		var (properties, variants) = ApiBodyContent.Build(
+		var (properties, variants, _) = ApiBodyContent.Build(
 			document.Components!.Schemas!["Pet"],
 			new PropertyTreeScope { Prefix = "req", IsRequest = true },
 			new SchemaAnalyzer(document),

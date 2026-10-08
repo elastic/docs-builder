@@ -278,6 +278,10 @@
 			<p>@Model.RenderMarkdown(operation.RequestBody.Description)</p>
 		}
 
+		@if (pageModel.RequestRequires is { } requestRequires)
+		{
+			<p class="union-options">@(await RenderPartialAsync<_RequiredAlternatives, RequiredAlternatives>(requestRequires))</p>
+		}
 		@if (pageModel.HasRequestBody)
 		{
 			if (pageModel.RequestProperties is not null)

@@ -222,7 +222,7 @@ public partial class ApiPropertyTreeBuilder(
 			ArrayItemTypeName = null,
 			TypeLink = typeLink,
 			AlsoIncludes = BuildAlsoIncludes(typeInfo),
-			Requires = BuildRequiredAlternatives(propSchema),
+			Requires = DescribeRequiredAlternatives(propSchema),
 			// A repeat lists nothing itself, so it gets no show/hide toggle.
 			IsCollapsible = repeats is null && expansion.IsCollapsible,
 			DefaultExpanded = expansion.DefaultExpanded,
@@ -231,8 +231,9 @@ public partial class ApiPropertyTreeBuilder(
 		};
 	}
 
-	private RequiredAlternatives? BuildRequiredAlternatives(IOpenApiSchema propSchema) =>
-		UnionSchemas.TryGetRequiredAlternatives(_analyzer.ResolveSchema(propSchema), out var keyword, out var alternatives)
+	/// <summary>The "Requires … of:" row of an object whose <c>oneOf</c>/<c>anyOf</c> only lists <c>required</c> sets.</summary>
+	public RequiredAlternatives? DescribeRequiredAlternatives(IOpenApiSchema schema) =>
+		UnionSchemas.TryGetRequiredAlternatives(_analyzer.ResolveSchema(schema), out var keyword, out var alternatives)
 			? new RequiredAlternatives(
 				keyword == UnionKeyword.AnyOf ? "Requires at least one of:" : "Requires exactly one of:",
 				alternatives.Select(static fields => string.Join(" + ", fields)).ToArray()

@@ -91,7 +91,7 @@ internal static class ApiPropertyMarkdown
 		WriteAlsoIncludes(markdown, property, depth);
 
 		if (property.Requires is { } requires)
-			WriteNestedLine(markdown, depth, $"{requires.Label} " + string.Join(" or ", requires.Options.Select(o => $"`{o}`")));
+			WriteNestedLine(markdown, depth, Format(requires));
 
 		WriteChildren(markdown, property, apiBaseUrl, depth);
 	}
@@ -148,6 +148,10 @@ internal static class ApiPropertyMarkdown
 				break;
 		}
 	}
+
+	/// <summary>A "Requires at least one of: `a` or `b`" line, for a property row or the root of a body.</summary>
+	public static string Format(RequiredAlternatives requires) =>
+		$"{requires.Label} " + string.Join(" or ", requires.Options.Select(o => $"`{o}`"));
 
 	private static void WriteNestedLine(StringBuilder markdown, int depth, string? text)
 	{

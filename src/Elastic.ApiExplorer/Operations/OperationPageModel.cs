@@ -46,6 +46,9 @@ public partial record OperationPageModel
 	/// <summary>The variants of a request body that is itself a <c>oneOf</c>/<c>anyOf</c>; listed below <see cref="RequestProperties"/> when it has both.</summary>
 	public ApiUnionVariants? RequestUnionVariants { get; init; }
 
+	/// <summary>Which of the request body's fields it needs, when its <c>oneOf</c>/<c>anyOf</c> only lists <c>required</c> sets.</summary>
+	public RequiredAlternatives? RequestRequires { get; init; }
+
 	/// <summary>Whether the request body lists properties, variants, or both, rather than only its type.</summary>
 	public bool HasRequestBody => RequestProperties is not null || RequestUnionVariants is { Variants.Count: > 0 };
 	public required TypeAnnotation? RequestType { get; init; }
@@ -125,9 +128,9 @@ public partial record OperationPageModel
 			IsRequest = true,
 			DescriptionOverrides = supplemental?.RequestBodyOverrides
 		};
-		var (requestProperties, requestUnionVariants) = requestSchema is not null
+		var request = requestSchema is not null
 			? ApiBodyContent.Build(requestSchema, requestScope, analyzer, builder)
-			: (null, null);
+			: ApiBodyContent.Empty;
 
 		return new OperationPageModel
 		{
@@ -145,8 +148,9 @@ public partial record OperationPageModel
 				.Select(p => BuildQueryParameter(p, analyzer, builder, context, supplemental))
 				.ToArray(),
 			RequestContentType = requestContentEntry?.Key ?? "application/json",
-			RequestProperties = requestProperties,
-			RequestUnionVariants = requestUnionVariants,
+			RequestProperties = request.Properties,
+			RequestUnionVariants = request.UnionVariants,
+			RequestRequires = request.Requires,
 			DescriptionMarkdown = endpoint.Description,
 			PostSections = ApiPostSection.From(context, supplemental?.PostSections ?? []),
 			RequestType = requestSchema is not null ? builder.Describe(requestSchema) : null,

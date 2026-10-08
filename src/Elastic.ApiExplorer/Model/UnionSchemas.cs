@@ -60,12 +60,15 @@ public static class UnionSchemas
 		return false;
 	}
 
-	/// <summary>A member like <c>{ "required": ["externalId"] }</c>: a constraint on the parent's fields, not a shape.</summary>
+	/// <summary>
+	/// A member like <c>{ "required": ["externalId"] }</c>, with or without <c>"type": "object"</c>: a constraint on the
+	/// parent's fields, not a shape. A <c>$ref</c> member reads through to its target.
+	/// </summary>
 	private static bool IsRequiredOnly(IOpenApiSchema member) =>
-		member is OpenApiSchema
+		member is
 		{
 			Required.Count: > 0,
-			Type: null,
+			Type: null or JsonSchemaType.Object,
 			Properties: null or { Count: 0 },
 			Items: null,
 			Enum: null or { Count: 0 },

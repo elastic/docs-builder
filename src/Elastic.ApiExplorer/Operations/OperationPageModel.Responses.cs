@@ -22,6 +22,9 @@ public record ApiResponseContent
 	/// <summary>Expanded oneOf/anyOf variants when the response body is a union of objects.</summary>
 	public ApiUnionVariants? UnionVariants { get; init; }
 
+	/// <summary>Which of the body's fields it needs, when its <c>oneOf</c>/<c>anyOf</c> only lists <c>required</c> sets.</summary>
+	public RequiredAlternatives? Requires { get; init; }
+
 	/// <summary>Whether the body lists properties, variants, or both, rather than only its type.</summary>
 	public bool HasBody => Properties is not null || UnionVariants is { Variants.Count: > 0 };
 }
@@ -113,8 +116,8 @@ public partial record OperationPageModel
 	)
 	{
 		var scope = new PropertyTreeScope { Prefix = $"res-{statusCode}" };
-		var (properties, unionVariants) = ApiBodyContent.Build(responseSchema, scope, analyzer, builder);
-		var arrayItemProperties = properties is null && unionVariants is null
+		var body = ApiBodyContent.Build(responseSchema, scope, analyzer, builder);
+		var arrayItemProperties = body is { Properties: null, UnionVariants: null }
 			? BuildArrayItemProperties(responseSchema, scope, analyzer, builder)
 			: null;
 
@@ -122,9 +125,10 @@ public partial record OperationPageModel
 		{
 			ContentType = contentType,
 			Type = builder.Describe(responseSchema),
-			Properties = properties,
+			Properties = body.Properties,
 			ArrayItemProperties = arrayItemProperties,
-			UnionVariants = unionVariants
+			UnionVariants = body.UnionVariants,
+			Requires = body.Requires
 		};
 	}
 
