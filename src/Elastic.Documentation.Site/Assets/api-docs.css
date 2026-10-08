@@ -2819,6 +2819,12 @@ button.example-response-tab:focus-visible {
 		max-width: var(--api-content-cap);
 		margin-inline: auto;
 	}
+
+	/* Landing and group pages are lists, not a reference next to examples, so they read
+	   better narrower. They stay centered between the nav and the window edge. */
+	#api-content-grid:has(#elastic-docs-v3, .api-group) {
+		--api-content-cap: calc(var(--spacing) * 240);
+	}
 }
 
 /* Examples rail cards sit flush with the article; they have their own chrome. */
