@@ -12,10 +12,10 @@ namespace Elastic.Changelog.Tests.Changelogs;
 
 /// <summary>
 /// Tests for the standardized bundle output naming (B2 — elastic/docs-builder#3774):
-/// explicit profile <c>output:</c> patterns are a hard error, names derive as
-/// <c>{repo}-{product}-{version}.yaml</c> when a repo resolves (else unprefixed with a warning)
-/// in both profile and option mode, and two profiles colliding on the same conventional
-/// target are rejected.
+/// explicit profile <c>output:</c> patterns are deprecated (load-time warning, ignored),
+/// names derive as <c>{repo}-{product}-{version}.yaml</c> when a repo resolves (else unprefixed
+/// with a warning) in both profile and option mode, and two profiles colliding on the same
+/// conventional target are rejected.
 /// </summary>
 public class BundleOutputConventionTests() : ChangelogTestBase()
 {
@@ -55,7 +55,7 @@ public class BundleOutputConventionTests() : ChangelogTestBase()
 	private ChangelogBundlingService Service() => new(LoggerFactory, FileSystem, ConfigurationContext, env: EmptyEnvironment);
 
 	[Test]
-	public async Task ProfileWithOutputPattern_EmitsHardError()
+	public async Task ProfileWithOutputPattern_WarnsAndBundlesByConvention()
 	{
 		var configPath = await WriteConfig(
 			"""
@@ -72,22 +72,23 @@ public class BundleOutputConventionTests() : ChangelogTestBase()
 		var input = new BundleChangelogsArguments { Profile = "es-release", ProfileArgument = "9.3.0", Config = configPath };
 		var result = await Service().BundleChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
-		result.Should().BeFalse();
+		result.Should().BeTrue(
+			$"Errors: {string.Join("; ", Collector.Diagnostics.Where(d => d.Severity == Severity.Error).Select(d => d.Message))}"
+		);
 		Collector
 			.Diagnostics
 			.Should()
 			.Contain(
-				d => d.Severity == Severity.Error && d.Message.Contains("'output' is no longer supported") && d.Message.Contains(
+				d => d.Severity == Severity.Warning && d.Message.Contains("output is deprecated") && d.Message.Contains(
 					"{repo}-{product}-{version}.yaml"
 				)
 			);
+		FileSystem.File.Exists(FileSystem.Path.Join(_changelogDir, "elasticsearch-9.3.0.yaml")).Should().BeTrue();
 	}
 
 	[Test]
-	public async Task OutputPatternOnAnotherProfile_AlsoErrors()
+	public async Task OutputPatternOnAnotherProfile_WarnsAndDoesNotBlock()
 	{
-		// The validation covers every profile in the file, not just the invoked one — a stale
-		// output: elsewhere would silently produce an unexpected path on its next invocation.
 		var configPath = await WriteConfig(
 			"""
 			bundle:
@@ -105,8 +106,14 @@ public class BundleOutputConventionTests() : ChangelogTestBase()
 		var input = new BundleChangelogsArguments { Profile = "es-release", ProfileArgument = "9.3.0", Config = configPath };
 		var result = await Service().BundleChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
-		result.Should().BeFalse();
-		Collector.Diagnostics.Should().Contain(d => d.Severity == Severity.Error && d.Message.Contains("Profile 'legacy'"));
+		result.Should().BeTrue(
+			$"Errors: {string.Join("; ", Collector.Diagnostics.Where(d => d.Severity == Severity.Error).Select(d => d.Message))}"
+		);
+		Collector
+			.Diagnostics
+			.Should()
+			.Contain(d => d.Severity == Severity.Warning && d.Message.Contains("bundle.profiles.legacy.output is deprecated"));
+		FileSystem.File.Exists(FileSystem.Path.Join(_changelogDir, "elasticsearch-9.3.0.yaml")).Should().BeTrue();
 	}
 
 	[Test]
@@ -362,7 +369,7 @@ public class BundleOutputConventionTests() : ChangelogTestBase()
 	}
 
 	[Test]
-	public async Task Plan_ProfileWithOutputPattern_FailsTheSameWay()
+	public async Task Plan_ProfileWithOutputPattern_WarnsAndSucceeds()
 	{
 		var configPath = await WriteConfig(
 			"""
@@ -383,8 +390,9 @@ public class BundleOutputConventionTests() : ChangelogTestBase()
 			TestContext.Current!.Execution.CancellationToken
 		);
 
-		plan.Should().BeNull();
-		Collector.Diagnostics.Should().Contain(d => d.Severity == Severity.Error && d.Message.Contains("'output' is no longer supported"));
+		plan.Should().NotBeNull();
+		FileSystem.Path.GetFileName(plan.OutputPath).Should().Be("elasticsearch-9.3.0.yaml");
+		Collector.Diagnostics.Should().Contain(d => d.Severity == Severity.Warning && d.Message.Contains("output is deprecated"));
 	}
 
 	[Test]

@@ -1847,6 +1847,40 @@ public class ChangelogConfigurationTests() : ChangelogTestBase()
 	}
 
 	[Test]
+	public async Task LoadChangelogConfiguration_ProfileOutput_Deprecated_IgnoredAndWarningEmitted()
+	{
+		var configLoader = new ChangelogConfigurationLoader(LoggerFactory, ConfigurationContext, FileSystem);
+		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog.yml");
+		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
+
+		// language=yaml
+		var configContent =
+			"""
+			bundle:
+			  directory: docs/changelog
+			  profiles:
+			    es-release:
+			      products: "elasticsearch {version} *"
+			      output: "elasticsearch-{version}.yaml"
+			""";
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current!.Execution.CancellationToken);
+
+		var config = await configLoader.LoadChangelogConfiguration(Collector, configPath, TestContext.Current!.Execution.CancellationToken);
+
+		config.Should().NotBeNull();
+		Collector.Errors.Should().Be(0);
+		config.Bundle!.Profiles.Should().ContainKey("es-release");
+		Collector
+			.Diagnostics
+			.Should()
+			.Contain(
+				d => d.Severity == Severity.Warning && d.Message.Contains(
+					"bundle.profiles.es-release.output is deprecated"
+				) && d.Message.Contains("{repo}-{product}-{version}.yaml")
+			);
+	}
+
+	[Test]
 	public async Task LoadChangelogConfiguration_UseLocalChangelogs_True_Parses()
 	{
 		var configLoader = new ChangelogConfigurationLoader(LoggerFactory, ConfigurationContext, FileSystem);
