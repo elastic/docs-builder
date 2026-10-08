@@ -37,7 +37,7 @@ internal static class BundleExamples
 	}));
 
 	/// <summary>
-	/// Generated bundles that satisfy what the model promises: a changelog file named once, a loaded bundle
+	/// Generated bundles that satisfy what the model promises: one product, a changelog file named once, a loaded bundle
 	/// named after its repo, first product and target, a version and a file once across the loaded bundles, and an amend that removes what its parent has and adds what it does not.
 	/// </summary>
 	public static Gen<T> Generated<T>() =>
@@ -46,17 +46,11 @@ internal static class BundleExamples
 			o => o
 				.Identity<BundledFile, string>(f => f.Name)
 				.Use(ReleaseDates)
+				// a bundle belongs to one product (bundle-has-one-product); a product keeps its one target (bundle-product-single-target)
+				.Normalize<Bundle>(b => b.Products is [var product, ..] ? b with { Products = [product] } : b)
 				.Normalize<LoadedBundle>(
-					b => b.Data.Products is [{ Target: { } target } product, ..]
-						? b with
-						{
-							// one file name can only follow the convention for one product, so every product is that one
-							Data = b.Data with
-							{
-								Products = [.. b.Data.Products.Select(p => p with { ProductId = product.ProductId, Target = target })]
-							},
-							FilePath = $"/bundles/{b.Repo}-{product.ProductId}-{target}.yaml"
-						}
+					b => b.Data.Products is [{ Target: { } target } product]
+						? b with { FilePath = $"/bundles/{b.Repo}-{product.ProductId}-{target}.yaml" }
 						: b
 				)
 				.Normalize<LoadedBundles>(

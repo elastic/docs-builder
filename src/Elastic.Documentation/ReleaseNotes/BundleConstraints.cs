@@ -22,6 +22,16 @@ public static partial class BundleConstraints
 		.WithSeverity(Severity.Warning)
 		.Describe("R84: A bundle lists a product with one target, not several.");
 
+	public static Constraint<Bundle> BundleHasOneProduct { get; } = Constraints<Bundle>.Check(b =>
+	{
+		var products = b.Products.Select(p => p.ProductId).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+		return products.Count > 1
+			? [Violation.Warning($"A bundle belongs to one product, but this one lists {products.Count}: {string.Join(", ", products)}.")]
+			: [];
+	}).Describe(
+		"R94: A bundle belongs to one product: bundles and products are one to one. A repository that hosts several products (elastic/cloud) has one profile, and so one bundle, per product."
+	);
+
 	public static Constraint<Bundle> BundleReleaseDateParses { get; } = Constraints<Bundle>
 		.Always(
 			b => b.ReleaseDateAuthored.Raw,

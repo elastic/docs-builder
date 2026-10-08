@@ -21,6 +21,8 @@ public class BundleConstraintsTests
 		{
 			["bundle-product-single-target"] =
 				b => b with { Products = [new BundledProduct("elasticsearch", "9.0.0"), new BundledProduct("elasticsearch", "9.1.0")] },
+			["bundle-has-one-product"] =
+				b => b with { Products = [new BundledProduct("elasticsearch", "9.0.0"), new BundledProduct("kibana", "9.0.0")] },
 			["bundle-release-date-parses"] = b => b with { ReleaseDateAuthored = Authored.Of<DateOnly?>("2025-13-45", null) },
 			["bundle-entries-inlined"] =
 				b => b with { Entries = [.. b.Entries, new BundledEntry { File = new BundledFile { Name = "3.yaml", Checksum = "c" } }] },
