@@ -286,54 +286,25 @@ public class SchemaAnalyzer(
 		);
 
 	/// <summary>
-	/// Checks if a union option has properties, resolving its reference if needed.
-	/// Also recursively checks nested unions.
+	/// Whether a union option lists anything when expanded: properties of its own (an array option's come from its items),
+	/// a map value with properties, or a nested union option that does.
 	/// </summary>
-	public bool UnionOptionHasProperties(UnionOption option)
+	public bool UnionOptionHasProperties(UnionOption option) =>
+		UnionOptionHasProperties(option, [with(ReferenceEqualityComparer.Instance)]);
+
+	private bool UnionOptionHasProperties(UnionOption option, HashSet<IOpenApiSchema> visited)
 	{
-		if (option.Schema == null)
+		var target = ResolveSchema(option is { IsArray: true, Schema.Items: { } items } ? items : option.Schema);
+		// A union that refers back to itself through an option has nothing new to list the second time.
+		if (target is null || !visited.Add(target))
 			return false;
 
 		if (GetExpandableDictionaryValue(option.Schema) is not null)
 			return true;
-
-		// For non-object types, check if they're nested unions with object options
-		if (!option.IsObject)
-		{
-			// Check if this is a union type that might contain objects
-			var nestedOptions = GetNestedUnionOptions(option.Schema);
-			return nestedOptions.Any(UnionOptionHasProperties);
-		}
-
-		// Try to get properties directly first
-		var props = GetSchemaProperties(option.Schema);
-		if (props?.Count > 0)
+		if (option.IsObject && GetSchemaProperties(target) is not null)
 			return true;
 
-		// For schema references, try resolving via the Ref ID or the schema reference itself
-		var refId = option.Ref;
-		if (string.IsNullOrEmpty(refId) && option.Schema is OpenApiSchemaReference schemaRef)
-			refId = schemaRef.Reference.Id;
-
-		if (!string.IsNullOrEmpty(refId) && document.Components?.Schemas?.TryGetValue(refId, out var resolvedSchema) == true)
-		{
-			props = GetSchemaProperties(resolvedSchema);
-			if (props?.Count > 0)
-				return true;
-
-			// Check if the resolved schema is itself a union
-			// Try the original schema reference first (OpenApiSchemaReference proxies OneOf/AnyOf)
-			var nestedOptions = GetNestedUnionOptions(option.Schema);
-			if (nestedOptions.Count == 0)
-			{
-				// Fallback to resolved schema
-				nestedOptions = GetNestedUnionOptions(resolvedSchema);
-			}
-			if (nestedOptions.Any(UnionOptionHasProperties))
-				return true;
-		}
-
-		return false;
+		return GetNestedUnionOptions(target).Any(nested => UnionOptionHasProperties(nested, visited));
 	}
 
 	/// <summary>

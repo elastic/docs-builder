@@ -138,11 +138,8 @@ internal static class ApiPropertyMarkdown
 		switch (property.Children.Kind)
 		{
 			case ChildKind.PropertyList:
-			case ChildKind.SimpleUnionVariants:
-				WriteList(markdown, property.Children.Properties, apiBaseUrl, depth + 1);
-				WriteVariants(markdown, property.Children.Variants, apiBaseUrl, depth + 1);
-				break;
 			case ChildKind.UnionVariants:
+				WriteList(markdown, property.Children.Properties, apiBaseUrl, depth + 1);
 				WriteVariants(markdown, property.Children.Variants, apiBaseUrl, depth + 1);
 				break;
 			case ChildKind.Dictionary when property.Children.Dictionary is { } dictionary:

@@ -177,12 +177,6 @@
 	}
 	else if (Model.Children.Kind == ChildKind.UnionVariants)
 	{
-			<div class="nested-properties" id="@Model.AnchorId-children">
-				@(await RenderPartialAsync<_UnionOptions, ApiUnionVariants>(Model.Children.Variants!))
-			</div>
-	}
-	else if (Model.Children.Kind == ChildKind.SimpleUnionVariants)
-	{
 		if (Model.Children.UseHidden)
 		{
 				<div class="nested-properties" id="@Model.AnchorId-children" hidden="until-found">
