@@ -245,14 +245,16 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture)
 	}
 
 	[Test]
-	public void BuildUnionVariantsForSchemas_TopLevelOneOf_BuildsVariantPerOption()
+	public void BuildUnionVariants_TopLevelOneOf_BuildsVariantPerOption()
 	{
 		var builder = CreateBuilder(currentPageType: "Aggregate");
 		var aggregate = Schema("_types.aggregations.Aggregate");
 
-		var variants = builder.BuildUnionVariantsForSchemas(
-			aggregate.OneOf!,
-			new PropertyTreeScope { Prefix = "oneof", AncestorRefs = new HashSet<string> { "_types.aggregations.Aggregate" } }
+		var variants = ApiBodyContent.BuildUnionVariants(
+			aggregate,
+			new PropertyTreeScope { Prefix = "oneof", AncestorRefs = new HashSet<string> { "_types.aggregations.Aggregate" } },
+			new SchemaAnalyzer(fixture.Document, "Aggregate"),
+			builder
 		);
 
 		variants.Should().NotBeNull();
@@ -262,12 +264,17 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture)
 	}
 
 	[Test]
-	public void BuildUnionVariantsForSchemas_CodegenOneOf_UsesReadableNames()
+	public void BuildUnionVariants_CodegenOneOf_UsesReadableNames()
 	{
 		var builder = CreateBuilder();
 		var schema = Schema("fixture.InvalidInputResponse");
 
-		var variants = builder.BuildUnionVariantsForSchemas(schema.OneOf!, new PropertyTreeScope { Prefix = "res-400" });
+		var variants = ApiBodyContent.BuildUnionVariants(
+			schema,
+			new PropertyTreeScope { Prefix = "res-400" },
+			new SchemaAnalyzer(fixture.Document),
+			builder
+		);
 
 		variants.Should().NotBeNull();
 		variants!.Variants.Select(v => v.DisplayName).Should().BeEquivalentTo(["PlatformErrorResponse", "SiemErrorResponse"]);

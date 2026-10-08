@@ -5,6 +5,7 @@
 using System.Text;
 using Elastic.ApiExplorer.Components.PropertyTree;
 using Elastic.ApiExplorer.Infrastructure;
+using Elastic.ApiExplorer.Model;
 
 namespace Elastic.ApiExplorer.Types;
 
@@ -41,12 +42,13 @@ internal static class SchemaCommonMark
 			_ = markdown.AppendLine();
 		}
 
-		WriteUnion(markdown, page.OneOfVariants, "Union Types (oneOf)", "This type can be one of the following:", apiBaseUrl);
-		WriteUnion(markdown, page.AnyOfVariants, "Union Types (anyOf)", "This type can be any of the following:", apiBaseUrl);
+		WriteUnion(markdown, page.UnionVariants, UnionHeading(page.UnionKeyword), UnionIntro(page.UnionKeyword), apiBaseUrl);
 
 		if (page.Properties is not null)
 		{
 			ApiCommonMark.Heading(markdown, 2, "Properties");
+			if (page.Requires is { } requires)
+				ApiCommonMark.Paragraph(markdown, ApiPropertyMarkdown.Format(requires));
 			ApiPropertyMarkdown.WriteList(markdown, page.Properties, apiBaseUrl);
 			_ = markdown.AppendLine();
 		}
@@ -65,6 +67,12 @@ internal static class SchemaCommonMark
 
 		return markdown.ToString();
 	}
+
+	/// <summary>The heading of a schema page's union section, naming the keyword the union came from.</summary>
+	public static string UnionHeading(UnionKeyword keyword) => $"Union Types ({keyword.ToSchemaKeyword()})";
+
+	public static string UnionIntro(UnionKeyword keyword) =>
+		keyword == UnionKeyword.AnyOf ? "This type can be any of the following:" : "This type can be one of the following:";
 
 	private static void WriteUnion(StringBuilder markdown, ApiUnionVariants? variants, string heading, string intro, string apiBaseUrl)
 	{

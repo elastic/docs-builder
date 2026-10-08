@@ -84,6 +84,10 @@
 					}
 					<code class="@SchemaHelpers.UnionOptionClasses(badge.IsTypeOption, badge.Text)">@badge.Text</code>
 				}
+				@if (Model.Union.MoreOptions is { } moreOptions)
+				{
+					<span class="union-inline-separator">@moreOptions</span>
+				}
 			</dd>
 		}
 	}

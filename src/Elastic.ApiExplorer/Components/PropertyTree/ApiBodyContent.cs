@@ -25,11 +25,17 @@ internal sealed record ApiBodyContent(ApiPropertyList? Properties, ApiUnionVaria
 	)
 	{
 		var variants = analyzer.GetTypeInfo(schema).IsUnion ? BuildUnionVariants(schema, scope, analyzer, builder) : null;
-		var properties = variants is null
-			? builder.BuildPropertyList(schema, scope)
-			: analyzer.DeclaresProperties(schema) ? builder.BuildPropertyList(analyzer.SharedProperties(schema), scope) : null;
+		var listed = ListedProperties(schema, variants, analyzer);
+		var properties = listed is null ? null : builder.BuildPropertyList(listed, scope);
 		return new ApiBodyContent(properties, variants, builder.DescribeRequiredAlternatives(schema));
 	}
+
+	/// <summary>
+	/// The schema whose properties a body or schema page lists, or null when it lists only variants. A union that
+	/// declares properties lists them above its variants (see <see cref="SchemaAnalyzer.SharedProperties"/>).
+	/// </summary>
+	public static IOpenApiSchema? ListedProperties(IOpenApiSchema schema, ApiUnionVariants? variants, SchemaAnalyzer analyzer) =>
+		variants is null ? schema : analyzer.DeclaresProperties(schema) ? analyzer.SharedProperties(schema) : null;
 
 	/// <summary>The variants of a body that is itself a union, under a label that says what they describe.</summary>
 	public static ApiUnionVariants? BuildUnionVariants(

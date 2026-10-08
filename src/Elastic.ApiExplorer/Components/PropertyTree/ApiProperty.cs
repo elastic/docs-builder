@@ -71,6 +71,12 @@ public record UnionDisplay
 
 	/// <summary>Discriminator property name shown next to the badges.</summary>
 	public string? DiscriminatorProperty { get; init; }
+
+	/// <summary>
+	/// Closes the badges of a union that mixes literal values with objects, pointing at the variants listed below, so the
+	/// literals and the objects read as one list of options.
+	/// </summary>
+	public string? MoreOptions { get; init; }
 }
 
 /// <summary>Which nested rendering a property expands into.</summary>

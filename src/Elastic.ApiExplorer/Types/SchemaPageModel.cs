@@ -19,8 +19,15 @@ public record SchemaPageModel
 	public required string? DictionaryTypeName { get; init; }
 
 	public required ExternalDocLink? ExternalDocs { get; init; }
-	public required ApiUnionVariants? OneOfVariants { get; init; }
-	public required ApiUnionVariants? AnyOfVariants { get; init; }
+	/// <summary>The variants of a union type, built by the same rules as a request or response body that is a union.</summary>
+	public required ApiUnionVariants? UnionVariants { get; init; }
+
+	/// <summary>Which keyword the union came from; it names the section.</summary>
+	public required UnionKeyword UnionKeyword { get; init; }
+
+	/// <summary>Which of the type's fields it needs, when its <c>oneOf</c>/<c>anyOf</c> only lists <c>required</c> sets.</summary>
+	public required RequiredAlternatives? Requires { get; init; }
+
 	public required ApiPropertyList? Properties { get; init; }
 	public required TypeAnnotation? AdditionalPropertiesType { get; init; }
 	public required IReadOnlyList<string> EnumValues { get; init; }
@@ -39,7 +46,15 @@ public record SchemaPageModel
 			SchemaResolveCache = context.SchemaResolveCache
 		};
 		var builder = new ApiPropertyTreeBuilder(context.Model, options, schema.DisplayName);
+		var analyzer = new SchemaAnalyzer(context.Model, schema.DisplayName, context.SchemaResolveCache);
 		var rootAncestors = new HashSet<string> { schema.SchemaId };
+		var keyword = analyzer.GetTypeInfo(openApiSchema).UnionKeyword ?? UnionKeyword.OneOf;
+		// Variant anchors keep their keyword prefix (oneof-variant-…), so links to them survive.
+		var variantScope = new PropertyTreeScope { Prefix = keyword.ToSchemaKeyword().ToLowerInvariant(), AncestorRefs = rootAncestors };
+		var variants = ApiBodyContent.BuildUnionVariants(openApiSchema, variantScope, analyzer, builder) is { } built
+			? built with { Label = null }
+			: null;
+		var listed = ApiBodyContent.ListedProperties(openApiSchema, variants, analyzer);
 
 		ExternalDocLink? externalDocs = null;
 		if (openApiSchema.ExternalDocs?.Url is not null)
@@ -57,25 +72,14 @@ public record SchemaPageModel
 				_ => null
 			},
 			ExternalDocs = externalDocs,
-			OneOfVariants = openApiSchema.OneOf is { Count: > 0 }
-				? builder.BuildUnionVariantsForSchemas(
-					openApiSchema.OneOf,
-					new PropertyTreeScope { Prefix = "oneof", AncestorRefs = rootAncestors },
-					openApiSchema.Discriminator
-				)
-					?? ApiUnionVariants.Empty
-				: null,
-			AnyOfVariants = openApiSchema.AnyOf is { Count: > 0 }
-				? builder.BuildUnionVariantsForSchemas(
-					openApiSchema.AnyOf,
-					new PropertyTreeScope { Prefix = "anyof", AncestorRefs = rootAncestors },
-					openApiSchema.Discriminator
-				)
-					?? ApiUnionVariants.Empty
-				: null,
-			Properties = builder.BuildPropertyList(openApiSchema, new PropertyTreeScope { Prefix = "", AncestorRefs = rootAncestors }),
+			UnionVariants = variants,
+			UnionKeyword = keyword,
+			Requires = builder.DescribeRequiredAlternatives(openApiSchema),
+			Properties = listed is null
+				? null
+				: builder.BuildPropertyList(listed, new PropertyTreeScope { Prefix = "", AncestorRefs = rootAncestors }),
 			AdditionalPropertiesType = openApiSchema.AdditionalProperties is { } addProps ? builder.Describe(addProps) : null,
-			EnumValues = new SchemaAnalyzer(context.Model, schema.DisplayName, context.SchemaResolveCache).GetEnumValues(openApiSchema)
+			EnumValues = analyzer.GetEnumValues(openApiSchema)
 		};
 	}
 }

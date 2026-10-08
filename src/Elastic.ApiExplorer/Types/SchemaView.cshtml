@@ -60,23 +60,20 @@
 		</ul>
 	}
 
-	@if (pageModel.OneOfVariants is not null)
+	@if (pageModel.UnionVariants is { } unionVariants)
 	{
-		@(await RenderPartialAsync<_SectionHeader, SectionHeader>(new SectionHeader("Union Types (oneOf)", "union-types")))
-		<p>This type can be one of the following:</p>
-		@(await RenderPartialAsync<_UnionOptions, ApiUnionVariants>(pageModel.OneOfVariants))
-	}
-
-	@if (pageModel.AnyOfVariants is not null)
-	{
-		@(await RenderPartialAsync<_SectionHeader, SectionHeader>(new SectionHeader("Union Types (anyOf)", "union-types")))
-		<p>This type can be any of the following:</p>
-		@(await RenderPartialAsync<_UnionOptions, ApiUnionVariants>(pageModel.AnyOfVariants))
+		@(await RenderPartialAsync<_SectionHeader, SectionHeader>(new SectionHeader(Elastic.ApiExplorer.Types.SchemaCommonMark.UnionHeading(pageModel.UnionKeyword), "union-types")))
+		<p>@Elastic.ApiExplorer.Types.SchemaCommonMark.UnionIntro(pageModel.UnionKeyword)</p>
+		@(await RenderPartialAsync<_UnionOptions, ApiUnionVariants>(unionVariants))
 	}
 
 	@if (pageModel.Properties is not null)
 	{
 		@(await RenderPartialAsync<_SectionHeader, SectionHeader>(new SectionHeader("Properties", "properties")))
+		@if (pageModel.Requires is { } requires)
+		{
+			<p class="union-options">@(await RenderPartialAsync<_RequiredAlternatives, RequiredAlternatives>(requires))</p>
+		}
 		@(await RenderPartialAsync<_PropertyList, ApiPropertyList>(pageModel.Properties))
 	}
 

@@ -12,17 +12,6 @@ namespace Elastic.ApiExplorer.Components.PropertyTree;
 
 public partial class ApiPropertyTreeBuilder
 {
-	/// <summary>Builds the expanded variants for a top-level oneOf/anyOf union (schema pages).</summary>
-	public ApiUnionVariants? BuildUnionVariantsForSchemas(
-		IList<IOpenApiSchema> unionSchemas,
-		PropertyTreeScope scope,
-		OpenApiDiscriminator? discriminator = null
-	)
-	{
-		var unionOptions = _analyzer.GetUnionOptions(unionSchemas.Where(static s => s is not null));
-		return BuildUnionVariants(unionOptions, scope, discriminator);
-	}
-
 	private const string DictionaryKeyName = "<string>";
 
 	/// <summary>Builds the variants of a union whose options are already classified, so each keeps its name and <c>$ref</c>.</summary>

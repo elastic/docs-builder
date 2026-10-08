@@ -87,6 +87,7 @@ internal static class ListingContent
 				.Append(property.Union?.Label)
 				.Append(property.Union?.DiscriminatorProperty)
 				.AppendJoin(',', property.Union?.Badges.Select(b => b.Text) ?? [])
+				.Append(property.Union?.MoreOptions)
 				.Append('|')
 				.AppendJoin(',', property.AlsoIncludes.Select(t => t.TypeName))
 				.Append('|')

@@ -351,9 +351,13 @@ public class SchemaAnalyzer(
 	}
 
 	/// <summary>
-	/// Every enum literal a value of <paramref name="schema"/> can take, looking through <c>$ref</c>,
-	/// <c>allOf</c>/<c>oneOf</c>/<c>anyOf</c> members and array <c>items</c>. The single source of enum values for all views.
+	/// Every enum literal a value of <paramref name="schema"/> can take, looking through <c>$ref</c>, <c>allOf</c> members,
+	/// union members and array <c>items</c>. The single source of enum values for all views.
 	/// </summary>
+	/// <remarks>
+	/// Union members come from <see cref="UnionSchemas.TryGet"/>, so the walk agrees with every other view on what a union
+	/// is. <c>allOf</c> members are walked here rather than through <see cref="Flatten"/>, which folds fields, not values.
+	/// </remarks>
 	public IReadOnlyList<string> GetEnumValues(IOpenApiSchema? schema)
 	{
 		var values = new List<string>();
@@ -376,7 +380,8 @@ public class SchemaAnalyzer(
 		if (resolved.Type?.HasFlag(JsonSchemaType.Array) == true)
 			CollectEnumValues(resolved.Items, values, visited);
 
-		foreach (var member in (resolved.AllOf ?? []).Concat(resolved.OneOf ?? []).Concat(resolved.AnyOf ?? []))
+		var unionMembers = UnionSchemas.TryGet(resolved, out _, out var members) ? members : [];
+		foreach (var member in (resolved.AllOf ?? []).Concat(unionMembers))
 			CollectEnumValues(member, values, visited);
 	}
 
@@ -544,15 +549,17 @@ public class SchemaAnalyzer(
 		if (flattened.All(m => m is not OpenApiSchemaReference && ClassifyType(m) is { IsEnum: true, IsArray: false, SchemaRef: null }))
 			return new TypeInfo { TypeName = "enum", IsEnum = true };
 
-		var options = LabelInlineObjects([.. flattened.Select(ClassifyOption)]);
+		// The type name counts every member; the options, as everywhere, leave the literals to EnumValues.
+		var classified = flattened.Select(ClassifyOption).ToArray();
+		var options = GetUnionOptions(flattened);
 
 		// Multiple object options render as tabs.
-		if (options.Count > 1 && options.Any(o => o.IsObject))
+		if (classified.Length > 1 && classified.Any(o => o.IsObject))
 			return new TypeInfo { TypeName = keyword.ToSchemaKeyword(), IsObject = true, UnionOptions = options, UnionKeyword = keyword };
 
 		return new TypeInfo
 		{
-			TypeName = string.Join(" | ", options.Select(o => SchemaHelpers.ReadableSchemaName(o.Name)).Distinct()),
+			TypeName = string.Join(" | ", classified.Select(o => SchemaHelpers.ReadableSchemaName(o.Name)).Distinct()),
 			UnionOptions = options,
 			UnionKeyword = keyword
 		};

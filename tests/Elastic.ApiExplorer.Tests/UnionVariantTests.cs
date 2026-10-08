@@ -173,9 +173,12 @@ public class UnionVariantTests
 		Labels("composed").Should().Equal("kind: feline", "kind: canine");
 		list!.Items.Single(p => p.Name == "composed").Union!.DiscriminatorProperty.Should().Be("kind");
 
-		var holder = new OpenApiSchemaReference("Pet", document);
-		var pet = document.Components!.Schemas!["Pet"];
-		var topLevel = builder.BuildUnionVariantsForSchemas(pet.OneOf!, new PropertyTreeScope { Prefix = "oneof" }, holder.Discriminator);
+		var topLevel = ApiBodyContent.BuildUnionVariants(
+			document.Components!.Schemas!["Pet"],
+			new PropertyTreeScope { Prefix = "oneof" },
+			new SchemaAnalyzer(document),
+			builder
+		);
 		topLevel!.Variants.Select(v => v.DiscriminatorLabel).Should().Equal("kind: tomcat", "kind: dog");
 	}
 
@@ -440,6 +443,89 @@ public class UnionVariantTests
 			.Select(v => v.Properties!.Items.Select(p => p.Name).First())
 			.Should()
 			.Equal("field", "field", "always");
+	}
+
+	[Test]
+	public async Task BuildPropertyList_UnionOfLiteralsAndAnObject_ListsTheLiteralsAsOptionsBesideTheVariant()
+	{
+		var json =
+			"""
+			{
+			  "openapi": "3.0.3",
+			  "info": { "title": "t", "version": "1" },
+			  "paths": {},
+			  "components": {
+			    "schemas": {
+			      "SortObject": { "type": "object", "properties": { "order": { "type": "string" }, "missing": { "type": "string" } } },
+			      "Holder": {
+			        "type": "object",
+			        "properties": {
+			          "sort": { "oneOf": [ { "type": "string", "enum": ["asc", "desc"] }, { "$ref": "#/components/schemas/SortObject" } ] },
+			          "order": { "oneOf": [ { "type": "string", "enum": ["asc", "desc"] }, { "type": "integer" } ] }
+			        }
+			      }
+			    }
+			  }
+			}
+			""";
+		var document = await LoadSpecAsync(json);
+
+		var list = BuilderFor(document).BuildPropertyList(document.Components!.Schemas!["Holder"], new PropertyTreeScope { Prefix = "" })!;
+
+		var sort = list.Items.Single(p => p.Name == "sort");
+		sort.EnumValues.Should().BeEmpty("the literals move into the One of row");
+		sort.Union!.Badges.Select(b => b.Text).Should().Equal("asc", "desc");
+		sort.Union.MoreOptions.Should().Be("or an object listed below");
+		sort.Children.Variants!.Variants.Select(v => v.DisplayName).Should().Equal("SortObject");
+		var markdown = new System.Text.StringBuilder();
+		ApiPropertyMarkdown.WriteList(markdown, new ApiPropertyList([sort]), "/api/doc/fixture");
+		markdown.ToString().Should().Contain("One of: `asc` or `desc` or an object listed below").And.NotContain("Values:");
+
+		var order = list.Items.Single(p => p.Name == "order");
+		order.EnumValues.Should().Equal(["asc", "desc"], "with no object variant the literals keep their Values row");
+		order.Union.Should().BeNull();
+	}
+
+	[Test]
+	public async Task BuildPropertyList_ArrayUnionOfAUnion_LabelsTheVariantsWithTheInnerType()
+	{
+		var json =
+			"""
+			{
+			  "openapi": "3.0.3",
+			  "info": { "title": "t", "version": "1" },
+			  "paths": {},
+			  "components": {
+			    "schemas": {
+			      "LikeDocument": { "type": "object", "properties": { "kind": { "type": "string" }, "_id": { "type": "string" } } },
+			      "LikeText": { "type": "object", "properties": { "kind": { "type": "string" }, "text": { "type": "string" } } },
+			      "Like": {
+			        "anyOf": [ { "$ref": "#/components/schemas/LikeDocument" }, { "$ref": "#/components/schemas/LikeText" } ],
+			        "discriminator": { "propertyName": "kind", "mapping": { "doc": "#/components/schemas/LikeDocument" } }
+			      },
+			      "Holder": {
+			        "type": "object",
+			        "properties": {
+			          "like": { "oneOf": [ { "$ref": "#/components/schemas/Like" }, { "type": "array", "items": { "$ref": "#/components/schemas/Like" } } ] }
+			        }
+			      }
+			    }
+			  }
+			}
+			""";
+		var document = await LoadSpecAsync(json);
+
+		var like = BuilderFor(document).BuildPropertyList(
+			document.Components!.Schemas!["Holder"],
+			new PropertyTreeScope { Prefix = "" }
+		)!.Items.Single();
+
+		like.Union.Should().BeNull("the type already reads Like | Like[]");
+		like.Children.Variants!.Label.Should().Be("Like or Like[]; each Like is any of:");
+		like.Children.Variants.Variants.Select(v => v.DiscriminatorLabel).Should().Equal("kind: doc", "kind: LikeText");
+		var markdown = new System.Text.StringBuilder();
+		ApiPropertyMarkdown.WriteList(markdown, new ApiPropertyList([like]), "/api/doc/fixture");
+		markdown.ToString().Should().Contain("Like or Like[]; each Like is any of:");
 	}
 
 	[Test]
