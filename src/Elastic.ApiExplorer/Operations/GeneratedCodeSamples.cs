@@ -56,12 +56,19 @@ public static partial class GeneratedCodeSamples
 		return (match.Groups[1].Value.ToUpperInvariant(), match.Groups[2].Value.Trim());
 	}
 
+	/// <summary>The request line a Console sample opens with, e.g. <c>PUT my-index/_doc/1</c>, and the body that follows it.</summary>
+	internal static ((string Method, string Path) Line, string Body)? SplitConsole(string? consoleSource)
+	{
+		if (string.IsNullOrWhiteSpace(consoleSource) || ConsoleRequestLine().Match(consoleSource) is not { Success: true } match)
+			return null;
+		return ((match.Groups[1].Value.ToUpperInvariant(), match.Groups[2].Value), consoleSource[(match.Index + match.Length)..]);
+	}
+
 	/// <summary>The target prefix Console samples put before the route, e.g. <c>kbn:</c> for Kibana. Empty for Elasticsearch.</summary>
 	private static string ConsolePrefix(string? consoleSource)
 	{
-		if (string.IsNullOrWhiteSpace(consoleSource) || ConsoleRequestLine().Match(consoleSource) is not { Success: true } match)
+		if (SplitConsole(consoleSource) is not { Line.Path: var target })
 			return "";
-		var target = match.Groups[1].Value;
 		var colon = target.IndexOf(':');
 		return colon < 0 ? "" : target[..(colon + 1)];
 	}
@@ -82,7 +89,7 @@ public static partial class GeneratedCodeSamples
 	[GeneratedRegex(@"^Run\s+`(GET|POST|PUT|PATCH|DELETE|HEAD)\s+([^`]+)`", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
 	private static partial Regex RunRequestLine();
 
-	[GeneratedRegex(@"^\s*(?:GET|POST|PUT|PATCH|DELETE|HEAD)\s+(\S+)", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
+	[GeneratedRegex(@"^\s*(GET|POST|PUT|PATCH|DELETE|HEAD)\s+(\S+)", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
 	private static partial Regex ConsoleRequestLine();
 
 	[GeneratedRegex(@"-d\s+'(?:[^']|'\\'')*'", RegexOptions.CultureInvariant)]

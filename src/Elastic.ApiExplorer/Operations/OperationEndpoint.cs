@@ -330,7 +330,7 @@ public sealed partial record OperationEndpoint(
 	/// The path part of a request target. Hosts (<c>https://host:9200</c>, <c>$ELASTICSEARCH_URL</c>) and Console
 	/// targets (<c>kbn:</c>) come off; a bare Console path (<c>_bulk</c>, <c>my-index/_search</c>) gets its slash.
 	/// </summary>
-	private static string PathOf(string target)
+	internal static string PathOf(string target)
 	{
 		var text = target.Trim();
 		var cut = text.IndexOfAny(['?', '#']);

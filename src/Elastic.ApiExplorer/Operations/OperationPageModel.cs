@@ -567,12 +567,41 @@ public partial record OperationPageModel
 				? 1
 				: statusCode.Length > 0 && statusCode[0] == '4' ? 2 : statusCode.Length > 0 && statusCode[0] == '5' ? 3 : 4;
 
+	/// <summary>
+	/// The example the samples were written for: the one whose body the Console sample sends. Examples with the
+	/// same body are told apart by the request line their description names. Only when no body is equal (a
+	/// curl-only spec, or an example body the spec wrote with its path line) does a body contained anywhere in
+	/// the sample count.
+	/// </summary>
 	private static int? FindScenarioForCodeSamples(IReadOnlyList<ExampleScenario> scenarios, IReadOnlyList<CodeSample> codeSamples)
 	{
-		var probe = codeSamples.FirstOrDefault(static s => string.Equals(s.Language, "Console", StringComparison.OrdinalIgnoreCase))
-			?? codeSamples[0];
-		var compactProbe = Compact(probe.Source);
+		var probe = codeSamples.FirstOrDefault(static s => s.IsConsole) ?? codeSamples[0];
+		var byBody = GeneratedCodeSamples.SplitConsole(probe.Source) is { } console
+			? FindByEqualBody(scenarios, console.Line, console.Body)
+			: null;
+		return byBody ?? FindByContainedBody(scenarios, probe.Source);
+	}
 
+	private static int? FindByEqualBody(IReadOnlyList<ExampleScenario> scenarios, (string Method, string Path) line, string body)
+	{
+		var compactBody = Compact(body);
+		if (compactBody.Length == 0)
+			return null;
+
+		var candidates = Enumerable
+			.Range(0, scenarios.Count)
+			.Where(i => scenarios[i].RequestJson is { } requestJson && Compact(requestJson) == compactBody)
+			.ToArray();
+		if (candidates.Length == 0)
+			return null;
+
+		var byLine = candidates.Where(i => scenarios[i].RequestLine is { } named && SameRequestLine(named, line)).ToArray();
+		return byLine.Length == 1 ? byLine[0] : candidates[0];
+	}
+
+	private static int? FindByContainedBody(IReadOnlyList<ExampleScenario> scenarios, string source)
+	{
+		var compactProbe = Compact(source);
 		for (var i = 0; i < scenarios.Count; i++)
 		{
 			if (scenarios[i].RequestJson is not { Length: > 0 } requestJson)
@@ -587,6 +616,10 @@ public partial record OperationPageModel
 		return null;
 	}
 
+	private static bool SameRequestLine((string Method, string Path) left, (string Method, string Path) right) =>
+		string.Equals(left.Method, right.Method, StringComparison.OrdinalIgnoreCase)
+			&& string.Equals(OperationEndpoint.PathOf(left.Path), OperationEndpoint.PathOf(right.Path), StringComparison.OrdinalIgnoreCase);
+
 	private static bool SamplesCarryABody(IReadOnlyList<CodeSample> codeSamples) =>
 		codeSamples.Any(static s => s.IsConsole ? s.Source.Trim().Contains('\n') : s.Source.Contains(" -d ", StringComparison.Ordinal));
 
@@ -598,7 +631,7 @@ public partial record OperationPageModel
 		return candidate;
 	}
 
-	private static string Compact(string value) => string.Concat(value.Where(static c => !char.IsWhiteSpace(c)));
+	internal static string Compact(string value) => string.Concat(value.Where(static c => !char.IsWhiteSpace(c)));
 
 	private static string ToTabId(string title, int index)
 	{
@@ -673,7 +706,7 @@ public partial record OperationPageModel
 	}
 
 	/// <summary>With <paramref name="endpoint"/>, a request description's <c>Run `METHOD path`</c> line follows the path's dominant method.</summary>
-	private static IReadOnlyList<ExampleDisplay> MapExamples(
+	internal static IReadOnlyList<ExampleDisplay> MapExamples(
 		IDictionary<string, IOpenApiExample>? examples,
 		Func<string?, HtmlString> renderMarkdown,
 		string? statusCode = null,
