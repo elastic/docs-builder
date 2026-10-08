@@ -616,9 +616,20 @@ public partial record OperationPageModel
 		return null;
 	}
 
+	/// <summary>Same method, route and query. The query matters: <c>?size=10</c> and <c>?size=100</c> are different examples.</summary>
 	private static bool SameRequestLine((string Method, string Path) left, (string Method, string Path) right) =>
 		string.Equals(left.Method, right.Method, StringComparison.OrdinalIgnoreCase)
-			&& string.Equals(OperationEndpoint.PathOf(left.Path), OperationEndpoint.PathOf(right.Path), StringComparison.OrdinalIgnoreCase);
+			&& string.Equals(OperationEndpoint.PathOf(left.Path), OperationEndpoint.PathOf(right.Path), StringComparison.OrdinalIgnoreCase)
+			&& string.Equals(QueryOf(left.Path), QueryOf(right.Path), StringComparison.Ordinal);
+
+	private static string QueryOf(string target)
+	{
+		var query = target.IndexOf('?');
+		if (query < 0)
+			return "";
+		var fragment = target.IndexOf('#', query);
+		return fragment < 0 ? target[(query + 1)..] : target[(query + 1)..fragment];
+	}
 
 	private static bool SamplesCarryABody(IReadOnlyList<CodeSample> codeSamples) =>
 		codeSamples.Any(static s => s.IsConsole ? s.Source.Trim().Contains('\n') : s.Source.Contains(" -d ", StringComparison.Ordinal));

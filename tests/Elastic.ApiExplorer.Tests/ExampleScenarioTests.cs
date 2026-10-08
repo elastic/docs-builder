@@ -366,6 +366,19 @@ public class ExampleScenarioTests
 	}
 
 	[Test]
+	public void BuildExampleScenarios_IdenticalBodiesAndRoutes_TellsExamplesApartByQuery()
+	{
+		var ten = new ExampleDisplay("Ten hits", null, IndexBody, null) { RequestLine = ("GET", "/_search?size=10") };
+		var hundred = new ExampleDisplay("Hundred hits", null, IndexBody, null) { RequestLine = ("GET", "/_search?size=100") };
+		var console = new CodeSample("Console", $"GET /_search?size=100\n{IndexBody}", "language-console");
+
+		var scenarios = OperationPageModel.BuildExampleScenarios([ten, hundred], [], [console]);
+
+		scenarios[0].CodeSamples.Should().BeEmpty();
+		scenarios[1].CodeSamples.Should().ContainSingle();
+	}
+
+	[Test]
 	public void BuildExampleScenarios_ExactBodyBeatsEarlierContainedBody()
 	{
 		var inner = new ExampleDisplay("Inner", null, /*lang=json,strict*/  """{"a":1}""", null);
