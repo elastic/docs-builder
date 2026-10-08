@@ -52,13 +52,20 @@
 				<div class="response-panel-body" id="@bodyId" hidden="until-found">
 					@foreach (var content in response.Contents)
 					{
-						if (content.Properties is not null)
+						if (content.Requires is { } requires)
 						{
-							@(await RenderPartialAsync<_PropertyList, ApiPropertyList>(content.Properties))
+							<p class="union-options">@(await RenderPartialAsync<_RequiredAlternatives, RequiredAlternatives>(requires))</p>
 						}
-						else if (content.UnionVariants is { Variants.Count: > 0 } unionVariants)
+						if (content.HasBody)
 						{
-							@(await RenderPartialAsync<_UnionOptions, ApiUnionVariants>(unionVariants))
+							if (content.Properties is not null)
+							{
+								@(await RenderPartialAsync<_PropertyList, ApiPropertyList>(content.Properties))
+							}
+							if (content.UnionVariants is { Variants.Count: > 0 } unionVariants)
+							{
+								@(await RenderPartialAsync<_UnionOptions, ApiUnionVariants>(unionVariants))
+							}
 						}
 						else if (content.ArrayItemProperties is not null)
 						{

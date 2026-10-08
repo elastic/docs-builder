@@ -39,7 +39,7 @@ public record SchemaPageModel
 			SchemaResolveCache = context.SchemaResolveCache
 		};
 		var builder = new ApiPropertyTreeBuilder(context.Model, options, schema.DisplayName);
-		var rootAncestors = new HashSet<string> { schema.DisplayName };
+		var rootAncestors = new HashSet<string> { schema.SchemaId };
 
 		ExternalDocLink? externalDocs = null;
 		if (openApiSchema.ExternalDocs?.Url is not null)
@@ -60,7 +60,7 @@ public record SchemaPageModel
 			OneOfVariants = openApiSchema.OneOf is { Count: > 0 }
 				? builder.BuildUnionVariantsForSchemas(
 					openApiSchema.OneOf,
-					new PropertyTreeScope { Prefix = "oneof", Ancestors = rootAncestors },
+					new PropertyTreeScope { Prefix = "oneof", AncestorRefs = rootAncestors },
 					openApiSchema.Discriminator
 				)
 					?? ApiUnionVariants.Empty
@@ -68,12 +68,12 @@ public record SchemaPageModel
 			AnyOfVariants = openApiSchema.AnyOf is { Count: > 0 }
 				? builder.BuildUnionVariantsForSchemas(
 					openApiSchema.AnyOf,
-					new PropertyTreeScope { Prefix = "anyof", Ancestors = rootAncestors },
+					new PropertyTreeScope { Prefix = "anyof", AncestorRefs = rootAncestors },
 					openApiSchema.Discriminator
 				)
 					?? ApiUnionVariants.Empty
 				: null,
-			Properties = builder.BuildPropertyList(openApiSchema, new PropertyTreeScope { Prefix = "", Ancestors = rootAncestors }),
+			Properties = builder.BuildPropertyList(openApiSchema, new PropertyTreeScope { Prefix = "", AncestorRefs = rootAncestors }),
 			AdditionalPropertiesType = openApiSchema.AdditionalProperties is { } addProps ? builder.Describe(addProps) : null,
 			EnumValues = new SchemaAnalyzer(context.Model, schema.DisplayName, context.SchemaResolveCache).GetEnumValues(openApiSchema)
 		};

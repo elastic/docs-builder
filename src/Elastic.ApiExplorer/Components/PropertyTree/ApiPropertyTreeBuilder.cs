@@ -21,7 +21,8 @@ public sealed record PropertyTreeScope
 	public required string Prefix { get; init; }
 	public bool IsRequest { get; init; }
 	public int Depth { get; init; }
-	public IReadOnlySet<string>? Ancestors { get; init; }
+	/// <summary>The <c>$ref</c> ids of the object types above this level; a row that refers to one again stops there.</summary>
+	public IReadOnlySet<string>? AncestorRefs { get; init; }
 	public IReadOnlyDictionary<string, string>? DescriptionOverrides { get; init; }
 
 	/// <summary>The variant or row these properties belong to, used to say where a shared listing sits.</summary>
@@ -85,7 +86,7 @@ public partial class ApiPropertyTreeBuilder(
 				propId,
 				IsRequired: requiredProps.Contains(name),
 				IsLast: i == propArray.Length - 1,
-				IsRecursive: ancestor is not null || DetectRecursion(propSchema, typeInfo, scope.Ancestors),
+				IsRecursive: ancestor is not null || DetectRecursion(propSchema, typeInfo, scope.AncestorRefs),
 				ShapeKey: shapeKey,
 				Repeats: ancestor
 			);
@@ -221,6 +222,7 @@ public partial class ApiPropertyTreeBuilder(
 			ArrayItemTypeName = null,
 			TypeLink = typeLink,
 			AlsoIncludes = BuildAlsoIncludes(typeInfo),
+			Requires = DescribeRequiredAlternatives(propSchema),
 			// A repeat lists nothing itself, so it gets no show/hide toggle.
 			IsCollapsible = repeats is null && expansion.IsCollapsible,
 			DefaultExpanded = expansion.DefaultExpanded,
@@ -228,6 +230,15 @@ public partial class ApiPropertyTreeBuilder(
 			Children = children
 		};
 	}
+
+	/// <summary>The "Requires … of:" row of an object whose <c>oneOf</c>/<c>anyOf</c> only lists <c>required</c> sets.</summary>
+	public RequiredAlternatives? DescribeRequiredAlternatives(IOpenApiSchema schema) =>
+		UnionSchemas.TryGetRequiredAlternatives(_analyzer.ResolveSchema(schema), out var keyword, out var alternatives)
+			? new RequiredAlternatives(
+				keyword == UnionKeyword.AnyOf ? "Requires at least one of:" : "Requires exactly one of:",
+				alternatives.Select(static fields => string.Join(" + ", fields)).ToArray()
+			)
+			: null;
 
 	// Object rows start collapsed. The request body root is the property list, so its fields stay visible.
 	private static bool ComputeDefaultExpanded() => false;
@@ -290,6 +301,10 @@ public partial class ApiPropertyTreeBuilder(
 	{
 		// The "Values:" row already lists the literals; a "One of:" row would only repeat the member types.
 		if (typeInfo.EnumValues is { Length: > 0 } && !expansion.HasUnionOptions)
+			return null;
+
+		// The variants listed below the union's own properties carry the label.
+		if (expansion.Plan is ChildPlan.Properties { UnionVariants: not null })
 			return null;
 
 		// An X | X[] union needs no options row when its type already reads X | X[] or X's fields expand below it.
@@ -355,78 +370,29 @@ public partial class ApiPropertyTreeBuilder(
 		};
 	}
 
-	private IReadOnlySet<string> AugmentAncestors(TypeInfo typeInfo, IReadOnlySet<string>? ancestors)
+	/// <summary>The ancestors below a row: these plus the type the row expands, the item or map value type for a collection.</summary>
+	private static IReadOnlySet<string> AugmentAncestors(TypeInfo typeInfo, IReadOnlySet<string>? ancestors)
 	{
 		var newAncestors = ancestors is not null ? new HashSet<string>(ancestors) : [];
-		if (string.IsNullOrEmpty(typeInfo.TypeName) || !typeInfo.IsObject)
-			return newAncestors;
-
-		if (typeInfo is { IsDictionary: true, DictValueSchema: not null })
-		{
-			var dictValueType = _analyzer.GetTypeInfo(typeInfo.DictValueSchema);
-			if (!string.IsNullOrEmpty(dictValueType.TypeName))
-				_ = newAncestors.Add(dictValueType.TypeName);
-		}
-		else
-			_ = newAncestors.Add(typeInfo.TypeName);
-
+		if (typeInfo is { IsObject: true, SchemaRef: { Length: > 0 } reference })
+			_ = newAncestors.Add(reference);
 		return newAncestors;
 	}
 
+	/// <summary>
+	/// Whether the row refers back to a type above it: by its own <c>$ref</c>, which an array or a map takes from its item
+	/// or value, or by the <c>$ref</c> of a union option.
+	/// </summary>
 	private bool DetectRecursion(IOpenApiSchema propSchema, TypeInfo typeInfo, IReadOnlySet<string>? ancestors)
 	{
-		if (ancestors is null)
+		if (ancestors is null || ancestors.Count == 0)
 			return false;
 
-		if (IsAncestorType(typeInfo.TypeName, ancestors))
-			return true;
-
-		if (typeInfo.IsArray && propSchema.Items is not null && IsAncestorType(_analyzer.GetTypeInfo(propSchema.Items).TypeName, ancestors))
-			return true;
-
-		if (
-			typeInfo is { IsDictionary: true, DictValueSchema: not null }
-			&& IsAncestorType(_analyzer.GetTypeInfo(typeInfo.DictValueSchema).TypeName, ancestors)
-		)
-			return true;
-
-		if (
-			typeInfo is { IsUnion: true, UnionOptions: not null }
-			&& typeInfo.UnionOptions.Select(option => option.BaseName).Any(baseName => IsAncestorType(baseName, ancestors))
-		)
-			return true;
-
-		return DetectDirectUnionRecursion(propSchema, ancestors);
+		var options = typeInfo.UnionOptions
+			?? (UnionSchemas.TryGet(propSchema, out _, out var members) ? _analyzer.GetUnionOptions(members) : []);
+		return IsAncestor(typeInfo.SchemaRef, ancestors) || options.Any(o => IsAncestor(o.Ref, ancestors));
 	}
 
-	private bool DetectDirectUnionRecursion(IOpenApiSchema propSchema, IReadOnlySet<string> ancestors)
-	{
-		if (!UnionSchemas.TryGet(propSchema, out _, out var unionSchemas))
-			return false;
-
-		foreach (var unionSchema in unionSchemas.Where(s => s is not null))
-		{
-			var unionTypeInfo = _analyzer.GetTypeInfo(unionSchema);
-			var typeName = unionTypeInfo.TypeName;
-			var baseName = typeName?.EndsWith("[]") == true ? typeName[..^2] : typeName;
-			if (IsAncestorType(baseName, ancestors))
-				return true;
-
-			if (
-				unionTypeInfo.IsArray
-				&& unionSchema.Items is not null
-				&& IsAncestorType(_analyzer.GetTypeInfo(unionSchema.Items).TypeName, ancestors)
-			)
-				return true;
-		}
-
-		return false;
-	}
-
-	// Primitive names and the "oneOf"/"anyOf" label of an inline union name no schema, so they never mark a recursion.
-	private static bool IsAncestorType(string? typeName, IReadOnlySet<string> ancestors) =>
-		!string.IsNullOrEmpty(typeName)
-			&& !SchemaHelpers.IsPrimitiveTypeName(typeName)
-			&& !UnionSchemas.IsKeywordName(typeName)
-			&& ancestors.Contains(typeName);
+	private static bool IsAncestor(string? reference, IReadOnlySet<string> ancestors) =>
+		!string.IsNullOrEmpty(reference) && ancestors.Contains(reference);
 }

@@ -84,11 +84,8 @@ public enum ChildKind
 	/// <summary>A plain nested property list (object, array items or simple-union base type).</summary>
 	PropertyList,
 
-	/// <summary>Union variants of a regular union property; always visible.</summary>
-	UnionVariants,
-
-	/// <summary>Union variants nested under an X | X[] simple union; participates in hidden="until-found".</summary>
-	SimpleUnionVariants
+	/// <summary>The variants of a union, or of <c>X</c> in an <c>X | X[]</c> union; hidden until found when collapsed.</summary>
+	UnionVariants
 }
 
 /// <summary>The synthetic <c>&lt;string&gt;</c> key row a dictionary property nests its value properties under.</summary>
@@ -164,6 +161,9 @@ public record ApiProperty
 	/// <summary>Further schemas an <c>allOf</c> merges in; the row's type names only the first.</summary>
 	public IReadOnlyList<TypePageLink> AlsoIncludes { get; init; } = [];
 
+	/// <summary>Which of the object's fields it needs, when a <c>oneOf</c>/<c>anyOf</c> only lists <c>required</c> sets.</summary>
+	public RequiredAlternatives? Requires { get; init; }
+
 	public required bool IsCollapsible { get; init; }
 	public required bool DefaultExpanded { get; init; }
 	public required int NestedCount { get; init; }
@@ -173,6 +173,9 @@ public record ApiProperty
 
 /// <summary>An ordered list of property rows; the model for <c>_PropertyList</c>.</summary>
 public record ApiPropertyList(IReadOnlyList<ApiProperty> Items);
+
+/// <summary>A "Requires at least one of:" row; each option is a field, or fields joined by <c>+</c> that go together.</summary>
+public record RequiredAlternatives(string Label, IReadOnlyList<string> Options);
 
 /// <summary>A "Values:" row; long lists show the first few literals and fold the rest behind a toggle.</summary>
 public record EnumValueList(IReadOnlyList<string> Values)

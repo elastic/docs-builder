@@ -17,9 +17,10 @@ public partial class ApiPropertyTreeBuilder
 		/// <summary>The properties of the dictionary's value type, under a <c>&lt;string&gt;</c> key row.</summary>
 		public sealed record Dictionary(int Count) : ChildPlan(Count);
 
-		public sealed record Properties(IOpenApiSchema Schema, int Count) : ChildPlan(Count);
+		/// <summary>The schema's properties, then the variants of a union that declares properties as well.</summary>
+		public sealed record Properties(IOpenApiSchema Schema, int Count, List<UnionOption>? UnionVariants = null) : ChildPlan(Count);
 
-		public sealed record Variants(List<UnionOption> Options, ChildKind Kind, int Count) : ChildPlan(Count);
+		public sealed record Variants(List<UnionOption> Options, int Count) : ChildPlan(Count);
 	}
 
 	/// <summary>An <c>X | X[]</c> union: the name of <c>X</c>, and whether <c>X</c> lists fields of its own.</summary>
@@ -66,22 +67,17 @@ public partial class ApiPropertyTreeBuilder
 		)
 			return new ChildPlan.Dictionary(valueCount);
 
-		// A union whose properties come only from an allOf expands as variants; one that declares properties itself keeps listing them.
+		var variantCount = hasUnionOptions ? typeInfo.UnionOptions!.Count(_analyzer.UnionOptionHasProperties) : 0;
 		var listsOwnProperties = typeInfo is { IsObject: true, HasLink: false }
-			&& (!typeInfo.IsUnion || propSchema.Properties is { Count: > 0 });
-		if (listsOwnProperties && PropertyCount(propSchema) is > 0 and var ownCount)
-			return new ChildPlan.Properties(propSchema, ownCount);
+			&& (!typeInfo.IsUnion || _analyzer.DeclaresProperties(propSchema));
+		var listed = typeInfo.IsUnion ? _analyzer.SharedProperties(propSchema) : propSchema;
+		if (listsOwnProperties && PropertyCount(listed) is > 0 and var ownCount)
+			return new ChildPlan.Properties(listed, ownCount + variantCount, hasUnionOptions ? typeInfo.UnionOptions : null);
 
 		if (typeInfo is { IsArray: true, HasLink: false } && propSchema.Items is { } items && PropertyCount(items) is > 0 and var itemCount)
 			return new ChildPlan.Properties(items, itemCount);
 
-		return hasUnionOptions
-			? new ChildPlan.Variants(
-				typeInfo.UnionOptions!,
-				ChildKind.UnionVariants,
-				typeInfo.UnionOptions!.Count(_analyzer.UnionOptionHasProperties)
-			)
-			: null;
+		return hasUnionOptions ? new ChildPlan.Variants(typeInfo.UnionOptions!, variantCount) : null;
 	}
 
 	private int PropertyCount(IOpenApiSchema? schema) => _analyzer.GetSchemaProperties(schema)?.Count ?? 0;
@@ -117,7 +113,7 @@ public partial class ApiPropertyTreeBuilder
 
 		var nested = _analyzer.GetNestedUnionOptions(schema);
 		return nested.Count > 0
-			? new ChildPlan.Variants(nested, ChildKind.SimpleUnionVariants, nested.Count(_analyzer.UnionOptionHasProperties))
+			? new ChildPlan.Variants(nested, nested.Count(_analyzer.UnionOptionHasProperties))
 			: new ChildPlan.Properties(schema, 0);
 	}
 
@@ -127,7 +123,7 @@ public partial class ApiPropertyTreeBuilder
 		{
 			Prefix = row.AnchorId,
 			Depth = scope.Depth + 1,
-			Ancestors = AugmentAncestors(row.TypeInfo, scope.Ancestors),
+			AncestorRefs = AugmentAncestors(row.TypeInfo, scope.AncestorRefs),
 			RequiredProperties = null,
 			Owner = row.Name
 		};
@@ -141,12 +137,13 @@ public partial class ApiPropertyTreeBuilder
 				{
 					Kind = ChildKind.PropertyList,
 					UseHidden = useHidden,
-					Properties = BuildPropertyList(properties.Schema, childScope) ?? new ApiPropertyList([])
+					Properties = BuildPropertyList(properties.Schema, childScope) ?? new ApiPropertyList([]),
+					Variants = properties.UnionVariants is { } variants ? BuildLabelledVariants(row, childScope, variants) : null
 				},
 			ChildPlan.Variants variants =>
 				new ApiPropertyChildren
 				{
-					Kind = variants.Kind,
+					Kind = ChildKind.UnionVariants,
 					UseHidden = useHidden,
 					Variants = BuildUnionVariants(variants.Options, childScope, _analyzer.GetUnionDiscriminator(row.Schema))
 						?? ApiUnionVariants.Empty
@@ -154,4 +151,10 @@ public partial class ApiPropertyTreeBuilder
 			_ => ApiPropertyChildren.None
 		};
 	}
+
+	/// <summary>Variants listed below the union's own properties, labelled so they read apart from those properties.</summary>
+	private ApiUnionVariants? BuildLabelledVariants(PropertyRow row, PropertyTreeScope childScope, List<UnionOption> variants) =>
+		BuildUnionVariants(variants, childScope, _analyzer.GetUnionDiscriminator(row.Schema)) is { } built
+			? built with { Label = SchemaHelpers.UnionLabel(row.TypeInfo.UnionKeyword) }
+			: null;
 }

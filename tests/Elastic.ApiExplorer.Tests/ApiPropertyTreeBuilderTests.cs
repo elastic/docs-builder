@@ -29,11 +29,11 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture)
 	public void BuildPropertyList_RecursiveSchema_StopsAtAncestor()
 	{
 		var builder = CreateBuilder(currentPageType: "QueryContainer");
-		var ancestors = new HashSet<string> { "QueryContainer" };
+		var ancestors = new HashSet<string> { "_types.query_dsl.QueryContainer" };
 
 		var list = builder.BuildPropertyList(
 			Schema("_types.query_dsl.QueryContainer"),
-			new PropertyTreeScope { Prefix = "", Ancestors = ancestors }
+			new PropertyTreeScope { Prefix = "", AncestorRefs = ancestors }
 		);
 
 		list.Should().NotBeNull();
@@ -252,7 +252,7 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture)
 
 		var variants = builder.BuildUnionVariantsForSchemas(
 			aggregate.OneOf!,
-			new PropertyTreeScope { Prefix = "oneof", Ancestors = new HashSet<string> { "Aggregate" } }
+			new PropertyTreeScope { Prefix = "oneof", AncestorRefs = new HashSet<string> { "_types.aggregations.Aggregate" } }
 		);
 
 		variants.Should().NotBeNull();

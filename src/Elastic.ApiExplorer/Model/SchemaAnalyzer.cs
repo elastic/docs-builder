@@ -46,6 +46,30 @@ public class SchemaAnalyzer(
 	private bool IsLinkedType(string typeName) => SchemaHelpers.ShouldLinkToContainerPage(typeName, currentPageType);
 
 	/// <summary>
+	/// Whether a schema declares properties itself rather than only through an <c>allOf</c>. A union that does lists them
+	/// above its variants; one whose properties come only from an <c>allOf</c> lists just its variants, which carry them.
+	/// </summary>
+	public bool DeclaresProperties(IOpenApiSchema schema) => (ResolveSchema(schema) ?? schema).Properties is { Count: > 0 };
+
+	/// <summary>
+	/// The properties a union lists above its variants. An <c>allOf</c> union already merges its other <c>allOf</c> members
+	/// into every variant, so it lists only what it declares itself; a direct <c>oneOf</c>/<c>anyOf</c> lists everything.
+	/// </summary>
+	public IOpenApiSchema SharedProperties(IOpenApiSchema union)
+	{
+		var resolved = ResolveSchema(union) ?? union;
+		if (UnionSchemas.IsUnion(resolved) || resolved.AllOf is not { Count: > 0 })
+			return union;
+
+		return new OpenApiSchema
+		{
+			Type = JsonSchemaType.Object,
+			Properties = resolved.Properties,
+			Required = new HashSet<string>(Flatten(union).Required)
+		};
+	}
+
+	/// <summary>
 	/// Resolves a schema reference to its concrete target, using a per-unit cache to avoid repeated
 	/// <c>ResolveReference</c> calls through the OpenAPI workspace.
 	/// </summary>
@@ -108,13 +132,15 @@ public class SchemaAnalyzer(
 			return new EffectiveSchema(
 				resolved.Properties ?? new Dictionary<string, IOpenApiSchema>(),
 				resolved.Required ?? new HashSet<string>(),
-				resolved.AdditionalProperties
+				resolved.AdditionalProperties,
+				resolved.Discriminator
 			);
 		}
 
 		var properties = new Dictionary<string, IOpenApiSchema>(resolved.Properties ?? new Dictionary<string, IOpenApiSchema>());
 		var required = new HashSet<string>(resolved.Required ?? new HashSet<string>());
 		var mapValue = resolved.AdditionalProperties;
+		var discriminator = resolved.Discriminator;
 		foreach (var member in allOf.Select(m => ResolveSchema(m) ?? m))
 		{
 			var folded = Flatten(member, visited);
@@ -122,9 +148,11 @@ public class SchemaAnalyzer(
 				_ = properties.TryAdd(name, property);
 			required.UnionWith(folded.Required);
 			mapValue ??= folded.MapValue;
+			// Only a union member's discriminator selects between variants; a plain base's describes the base's own subtypes.
+			discriminator ??= UnionSchemas.IsUnion(member) ? member.Discriminator : null;
 		}
 
-		return new EffectiveSchema(properties, required, mapValue);
+		return new EffectiveSchema(properties, required, mapValue, discriminator);
 	}
 
 	/// <summary>
@@ -276,54 +304,25 @@ public class SchemaAnalyzer(
 		);
 
 	/// <summary>
-	/// Checks if a union option has properties, resolving its reference if needed.
-	/// Also recursively checks nested unions.
+	/// Whether a union option lists anything when expanded: properties of its own (an array option's come from its items),
+	/// a map value with properties, or a nested union option that does.
 	/// </summary>
-	public bool UnionOptionHasProperties(UnionOption option)
+	public bool UnionOptionHasProperties(UnionOption option) =>
+		UnionOptionHasProperties(option, [with(ReferenceEqualityComparer.Instance)]);
+
+	private bool UnionOptionHasProperties(UnionOption option, HashSet<IOpenApiSchema> visited)
 	{
-		if (option.Schema == null)
+		var target = ResolveSchema(option is { IsArray: true, Schema.Items: { } items } ? items : option.Schema);
+		// A union that refers back to itself through an option has nothing new to list the second time.
+		if (target is null || !visited.Add(target))
 			return false;
 
 		if (GetExpandableDictionaryValue(option.Schema) is not null)
 			return true;
-
-		// For non-object types, check if they're nested unions with object options
-		if (!option.IsObject)
-		{
-			// Check if this is a union type that might contain objects
-			var nestedOptions = GetNestedUnionOptions(option.Schema);
-			return nestedOptions.Any(UnionOptionHasProperties);
-		}
-
-		// Try to get properties directly first
-		var props = GetSchemaProperties(option.Schema);
-		if (props?.Count > 0)
+		if (option.IsObject && GetSchemaProperties(target) is not null)
 			return true;
 
-		// For schema references, try resolving via the Ref ID or the schema reference itself
-		var refId = option.Ref;
-		if (string.IsNullOrEmpty(refId) && option.Schema is OpenApiSchemaReference schemaRef)
-			refId = schemaRef.Reference.Id;
-
-		if (!string.IsNullOrEmpty(refId) && document.Components?.Schemas?.TryGetValue(refId, out var resolvedSchema) == true)
-		{
-			props = GetSchemaProperties(resolvedSchema);
-			if (props?.Count > 0)
-				return true;
-
-			// Check if the resolved schema is itself a union
-			// Try the original schema reference first (OpenApiSchemaReference proxies OneOf/AnyOf)
-			var nestedOptions = GetNestedUnionOptions(option.Schema);
-			if (nestedOptions.Count == 0)
-			{
-				// Fallback to resolved schema
-				nestedOptions = GetNestedUnionOptions(resolvedSchema);
-			}
-			if (nestedOptions.Any(UnionOptionHasProperties))
-				return true;
-		}
-
-		return false;
+		return GetNestedUnionOptions(target).Any(nested => UnionOptionHasProperties(nested, visited));
 	}
 
 	/// <summary>
@@ -581,19 +580,8 @@ public class SchemaAnalyzer(
 		return composed.Count > 0 ? composed : null;
 	}
 
-	/// <summary>The discriminator of a union: its own, or the one declared on the <c>oneOf</c>/<c>anyOf</c> member of an <c>allOf</c>.</summary>
-	public OpenApiDiscriminator? GetUnionDiscriminator(IOpenApiSchema? schema)
-	{
-		var resolved = ResolveSchema(schema) ?? schema;
-		if (resolved?.Discriminator is { } own)
-			return own;
-
-		return (resolved?.AllOf ?? [])
-			.Select(m => ResolveSchema(m) ?? m)
-			.Where(m => m.Discriminator is not null && UnionSchemas.IsUnion(m))
-			.Select(static m => m.Discriminator)
-			.FirstOrDefault();
-	}
+	/// <summary>The discriminator of a union; see <see cref="EffectiveSchema.Discriminator"/>.</summary>
+	public OpenApiDiscriminator? GetUnionDiscriminator(IOpenApiSchema? schema) => Flatten(schema).Discriminator;
 
 	/// <summary>
 	/// A named schema that is an <c>allOf</c> with a <c>oneOf</c>/<c>anyOf</c> member is a union too, so a <c>$ref</c> to it

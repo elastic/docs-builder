@@ -16,7 +16,7 @@ namespace Elastic.ApiExplorer.Tests;
 public class UnionVariantTests
 {
 	[Test]
-	public async Task BuildPropertyList_UnionWithOwnProperties_KeepsListingTheSharedProperties()
+	public async Task BuildPropertyList_UnionWithOwnProperties_ListsTheSharedPropertiesThenTheVariants()
 	{
 		var json =
 			"""
@@ -50,6 +50,58 @@ public class UnionVariantTests
 		var pet = list!.Items.Single(p => p.Name == "pet");
 		pet.Children.Kind.Should().Be(ChildKind.PropertyList);
 		pet.Children.Properties!.Items.Select(p => p.Name).Should().Equal("kind");
+		pet.Children.Variants!.Variants.Select(v => v.DisplayName).Should().Equal("Cat", "Dog");
+	}
+
+	[Test]
+	public async Task BuildPropertyList_AnyOfRequiredOnlyMembers_SaysWhichFieldsAreRequired()
+	{
+		var json =
+			"""
+			{
+			  "openapi": "3.0.3",
+			  "info": { "title": "t", "version": "1" },
+			  "paths": {},
+			  "components": {
+			    "schemas": {
+			      "WindowRequired": { "required": ["window"] },
+			      "Holder": {
+			        "type": "object",
+			        "properties": {
+			          "incident": {
+			            "type": "object",
+			            "anyOf": [ { "required": ["correlation_id"] }, { "required": ["externalId"] } ],
+			            "properties": { "correlation_id": { "type": "string" }, "externalId": { "type": "string" } }
+			          },
+			          "range": {
+			            "type": "object",
+			            "oneOf": [ { "type": "object", "required": ["from", "to"] }, { "$ref": "#/components/schemas/WindowRequired" } ],
+			            "properties": { "from": { "type": "string" }, "to": { "type": "string" }, "window": { "type": "string" } }
+			          }
+			        }
+			      }
+			    }
+			  }
+			}
+			""";
+		var document = await LoadSpecAsync(json);
+
+		var list = BuilderFor(document).BuildPropertyList(document.Components!.Schemas!["Holder"], new PropertyTreeScope { Prefix = "" })!;
+
+		var incident = list.Items.Single(p => p.Name == "incident");
+		incident.Type.Text.Should().Be("object", "required-only members offer no shapes to choose between");
+		incident.Union.Should().BeNull();
+		incident.Requires.Should().BeEquivalentTo(new RequiredAlternatives("Requires at least one of:", ["correlation_id", "externalId"]));
+		incident.Children.Properties!.Items.Select(p => p.Name).Should().Equal("correlation_id", "externalId");
+		list.Items.Single(p => p.Name == "range").Requires!.Options.Should().Equal("from + to", "window");
+		var markdown = new System.Text.StringBuilder();
+		ApiPropertyMarkdown.WriteList(markdown, list, "/api/doc/fixture");
+		markdown
+			.ToString()
+			.Should()
+			.Contain("Requires at least one of: `correlation_id` or `externalId`")
+			.And
+			.Contain("Requires exactly one of: `from + to` or `window`");
 	}
 
 	[Test]
@@ -388,6 +440,50 @@ public class UnionVariantTests
 			.Select(v => v.Properties!.Items.Select(p => p.Name).First())
 			.Should()
 			.Equal("field", "field", "always");
+	}
+
+	[Test]
+	public async Task BuildPropertyList_SameNameInAnotherNamespace_IsNotARecursion()
+	{
+		var json =
+			"""
+			{
+			  "openapi": "3.0.3",
+			  "info": { "title": "t", "version": "1" },
+			  "paths": {},
+			  "components": {
+			    "schemas": {
+			      "ml.Settings": { "type": "object", "properties": { "inner": { "$ref": "#/components/schemas/indices.Settings" } } },
+			      "indices.Settings": { "type": "object", "properties": { "shards": { "type": "integer" } } },
+			      "Node": {
+			        "type": "object",
+			        "properties": {
+			          "child": { "oneOf": [ { "$ref": "#/components/schemas/Node" }, { "type": "string" } ] },
+			          "children": { "type": "array", "items": { "$ref": "#/components/schemas/Node" } }
+			        }
+			      }
+			    }
+			  }
+			}
+			""";
+		var document = await LoadSpecAsync(json);
+		var builder = BuilderFor(document);
+
+		var ml =
+			builder.BuildPropertyList(
+				document.Components!.Schemas!["ml.Settings"],
+				new PropertyTreeScope { Prefix = "", AncestorRefs = new HashSet<string> { "ml.Settings" } }
+			)!;
+		var inner = ml.Items.Single();
+		inner.IsRecursive.Should().BeFalse("indices.Settings only shares the short name Settings with its parent");
+		inner.Children.Properties!.Items.Select(p => p.Name).Should().Equal("shards");
+
+		var node =
+			builder.BuildPropertyList(
+				document.Components!.Schemas!["Node"],
+				new PropertyTreeScope { Prefix = "", AncestorRefs = new HashSet<string> { "Node" } }
+			)!;
+		node.Items.Should().OnlyContain(p => p.IsRecursive, "a union option and an array item that refer to Node both point back up");
 	}
 
 	[Test]
