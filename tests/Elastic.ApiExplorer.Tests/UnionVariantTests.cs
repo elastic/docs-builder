@@ -498,6 +498,52 @@ public class UnionVariantTests
 	}
 
 	[Test]
+	public async Task BuildPropertyList_SingleOrArrayRowListingFields_SaysAnArrayIsAccepted()
+	{
+		var json =
+			"""
+			{
+			  "openapi": "3.0.3",
+			  "info": { "title": "t", "version": "1" },
+			  "paths": {},
+			  "components": {
+			    "schemas": {
+			      "Rescore": { "type": "object", "properties": { "window_size": { "type": "integer" }, "query": { "type": "string" } } },
+			      "Field": { "type": "object", "properties": { "type": { "type": "string" }, "order": { "type": "string" } } },
+			      "NodeIds": { "oneOf": [ { "type": "string" }, { "type": "array", "items": { "type": "string" } } ] },
+			      "Holder": {
+			        "type": "object",
+			        "properties": {
+			          "rescore": { "oneOf": [ { "$ref": "#/components/schemas/Rescore" }, { "type": "array", "items": { "$ref": "#/components/schemas/Rescore" } } ] },
+			          "fields": {
+			            "oneOf": [
+			              { "type": "object", "additionalProperties": { "$ref": "#/components/schemas/Field" } },
+			              { "type": "array", "items": { "type": "object", "additionalProperties": { "$ref": "#/components/schemas/Field" } } }
+			            ]
+			          },
+			          "nodes": { "$ref": "#/components/schemas/NodeIds" }
+			        }
+			      }
+			    }
+			  }
+			}
+			""";
+		var document = await LoadSpecAsync(json);
+
+		var list = BuilderFor(document).BuildPropertyList(document.Components!.Schemas!["Holder"], new PropertyTreeScope { Prefix = "" })!;
+
+		ApiProperty Row(string name) => list.Items.Single(p => p.Name == name);
+
+		Row("rescore").SingleOrArrayOf.Should().Be("Rescore", "the row lists Rescore's fields and its type reads only union oneOf");
+		Row("rescore").Children.Properties!.Items.Select(p => p.Name).Should().Equal("window_size", "query");
+		Row("fields").SingleOrArrayOf.Should().Be("map string to Field");
+		Row("nodes").SingleOrArrayOf.Should().BeNull("a primitive X lists no fields, so the options row still names both shapes");
+		var markdown = new System.Text.StringBuilder();
+		ApiPropertyMarkdown.WriteList(markdown, new ApiPropertyList([Row("rescore")]), "/api/doc/fixture");
+		markdown.ToString().Should().Contain("A single `Rescore` or an array of them");
+	}
+
+	[Test]
 	public async Task BuildPropertyList_ArrayUnionOfAUnion_LabelsTheVariantsWithTheInnerType()
 	{
 		var json =
@@ -532,6 +578,7 @@ public class UnionVariantTests
 		)!.Items.Single();
 
 		like.Union.Should().BeNull("the type already reads Like | Like[]");
+		like.SingleOrArrayOf.Should().BeNull("the variant list's label already names both shapes");
 		like.Children.Variants!.Label.Should().Be("Like or Like[]; each Like is any of:");
 		like.Children.Variants.Variants.Select(v => v.DiscriminatorLabel).Should().Equal("kind: doc", "kind: LikeText");
 		var markdown = new System.Text.StringBuilder();

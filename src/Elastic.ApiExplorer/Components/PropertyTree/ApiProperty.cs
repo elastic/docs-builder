@@ -170,6 +170,12 @@ public record ApiProperty
 	/// <summary>Which of the object's fields it needs, when a <c>oneOf</c>/<c>anyOf</c> only lists <c>required</c> sets.</summary>
 	public RequiredAlternatives? Requires { get; init; }
 
+	/// <summary>
+	/// <c>X</c> of an <c>X | X[]</c> row whose type does not say so and whose fields list <c>X</c>'s: the row reads "A
+	/// single X or an array of them", since nothing else tells the reader an array is accepted too.
+	/// </summary>
+	public string? SingleOrArrayOf { get; init; }
+
 	public required bool IsCollapsible { get; init; }
 	public required bool DefaultExpanded { get; init; }
 	public required int NestedCount { get; init; }

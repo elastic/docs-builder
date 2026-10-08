@@ -224,6 +224,7 @@ public partial class ApiPropertyTreeBuilder(
 			TypeLink = typeLink,
 			AlsoIncludes = BuildAlsoIncludes(typeInfo),
 			Requires = DescribeRequiredAlternatives(propSchema),
+			SingleOrArrayOf = SingleOrArrayOf(typeInfo, expansion),
 			// A repeat lists nothing itself, so it gets no show/hide toggle.
 			IsCollapsible = repeats is null && expansion.IsCollapsible,
 			DefaultExpanded = expansion.DefaultExpanded,
@@ -296,6 +297,25 @@ public partial class ApiPropertyTreeBuilder(
 		if (string.IsNullOrEmpty(linkedTypeName))
 			return null;
 		return new TypePageLink(linkedTypeName, SchemaHelpers.GetContainerPageUrl(options.ApiRootUrl, linkedTypeName));
+	}
+
+	/// <summary>
+	/// <c>X</c> when an <c>X | X[]</c> row lists <c>X</c>'s fields and its type does not read <c>X | X[]</c>. Such a row
+	/// hides its options line; a row that lists <c>X</c>'s variants names both shapes in the list's label instead.
+	/// </summary>
+	private string? SingleOrArrayOf(TypeInfo typeInfo, Expansion expansion)
+	{
+		if (
+			expansion is not { ArrayUnion: { Expands: true } arrayUnion, Plan: ChildPlan.Properties }
+			|| typeInfo.TypeName?.Contains(" | ", StringComparison.Ordinal) == true
+		)
+			return null;
+
+		// A map reads "map string to X", as its type does elsewhere, not a bare "string to X".
+		var single = typeInfo.UnionOptions?.FirstOrDefault(o => o is { IsArray: false } && o.BaseName == arrayUnion.BaseName);
+		var isMap = single?.Schema is { } schema && _analyzer.GetTypeInfo(schema).IsDictionary;
+		var name = SchemaHelpers.ReadableSchemaName(arrayUnion.BaseName);
+		return isMap ? $"map {name}" : name;
 	}
 
 	private UnionDisplay? BuildUnionDisplay(IOpenApiSchema propSchema, TypeInfo typeInfo, Expansion expansion)
