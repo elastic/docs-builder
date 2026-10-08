@@ -12,18 +12,6 @@ using Microsoft.OpenApi;
 namespace Elastic.ApiExplorer.Components.PropertyTree;
 
 /// <summary>
-/// Controls how property sections collapse/expand by default.
-/// </summary>
-public enum CollapseMode
-{
-	/// <summary>Properties always start collapsed when toggle is shown (OperationView behavior).</summary>
-	AlwaysCollapsed,
-
-	/// <summary>Depth-based: depth 0 collapsed, deeper levels expand if less than 5 properties (SchemaView behavior).</summary>
-	DepthBased
-}
-
-/// <summary>
 /// Page-level display settings consumed by <see cref="ApiPropertyTreeBuilder"/>; views never see this.
 /// </summary>
 public record PropertyDisplayOptions
@@ -38,7 +26,6 @@ public record PropertyDisplayOptions
 	public bool ShowVersionInfo { get; init; } = true;
 	public bool ShowExternalDocs { get; init; } = true;
 	public bool UseHiddenUntilFound { get; init; } = true;
-	public CollapseMode CollapseMode { get; init; } = CollapseMode.AlwaysCollapsed;
 	public int MaxDepth { get; init; } = SchemaHelpers.MaxDepth;
 	public VersionsConfiguration? VersionsConfiguration { get; init; }
 
