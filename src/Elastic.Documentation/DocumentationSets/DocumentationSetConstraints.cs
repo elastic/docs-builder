@@ -351,6 +351,16 @@ public static partial class DocumentationSetConstraints
 		file => new Located(file.Context)
 	).Describe("D54: a file in the table of contents exists and is Markdown.");
 
+	public static Constraint<DocumentationSetInCatalog> TocFileNotEmpty { get; } = Files<DocumentationSetInCatalog>
+		.NotEmpty(
+			m => PagesNeedingAFile(m.Docset).Where(IsMarkdown),
+			(m, file) => m.Docset.FileSystem.FileInfo.New(PageFile(m.Docset, file)),
+			file => $"Table of contents references '{file.PathRelativeToDocumentationSet}' but the file is empty.",
+			file => new Located(file.Context)
+		)
+		.WithSeverity(Severity.Warning)
+		.Describe("D108: a Markdown file in the table of contents has content.");
+
 	public static Constraint<DocumentationSetInCatalog> TocDeepLinkedFileHasNoChildren { get; } = Constraints<DocumentationSetInCatalog>
 		.Each(
 			m => m.Docset.SuppressDiagnostics.Contains(HintType.DeepLinkingVirtualFile)

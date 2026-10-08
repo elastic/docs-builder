@@ -37,7 +37,10 @@ public class DocumentationSetGoldenTests
 		foreach (var relative in File.ReadAllLines(Path.Join(docsetDirectory, "files.txt")).Where(l => l.Length > 0))
 		{
 			var baselineCopy = Path.Join(docsetDirectory, relative);
-			var content = relative != "files.txt" && File.Exists(baselineCopy) ? File.ReadAllText(baselineCopy) : string.Empty;
+			// A page the baseline lists but does not carry is a stand-in with a heading, so the fixture is not full of empty pages.
+			var content = relative != "files.txt" && File.Exists(baselineCopy)
+				? File.ReadAllText(baselineCopy)
+				: relative.EndsWith(".md", StringComparison.OrdinalIgnoreCase) ? "# Page\n" : string.Empty;
 			fs.AddFile(Path.Join(DocsRoot, relative), new MockFileData(content));
 		}
 		return fs;

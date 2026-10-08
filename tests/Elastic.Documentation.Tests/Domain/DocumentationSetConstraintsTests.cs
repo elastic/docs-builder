@@ -194,6 +194,11 @@ public class DocumentationSetConstraintsTests
 			["default-cta-one-per-page"] = d => d with { TableOfContents = [Page("index.md", "serverless"), Page("./index.md", "other")] },
 			["default-cta-page-exists"] = d => d with { TocDefaultCtas = [new("missing.md", "serverless")] },
 			["toc-file-exists-and-markdown"] = d => d with { TableOfContents = [Page("missing.md")] },
+			["toc-file-not-empty"] = d =>
+			{
+				((MockFileSystem)d.FileSystem).AddFile("/docs/blank.md", new MockFileData(""));
+				return d with { TableOfContents = [Page("blank.md")] };
+			},
 			["toc-deep-linked-file-has-no-children"] = d =>
 			{
 				((MockFileSystem)d.FileSystem).AddFile("/docs/guides/intro.md", new MockFileData("# Intro"));
