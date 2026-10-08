@@ -7,13 +7,14 @@
     every project refers to the paths below, never to $(NulleanEntitiesRoot) directly. When the packages are published, the four
     ProjectReferences each project has become PackageReferences (versions in Directory.Packages.props) and this file goes away.
 
-    Build against another checkout with -p:NulleanEntitiesRoot=<path> or the NulleanEntitiesRoot environment variable.
+    The default is a fixed path on this machine; build against another checkout with -p:NulleanEntitiesRoot=<path>.
     The library targets net10.0 on this repository's stable SDK by itself.
   -->
   <PropertyGroup>
-    <NulleanEntitiesRoot Condition="'$(NulleanEntitiesRoot)' == ''">$(HOME)/Projects/nullean-entities</NulleanEntitiesRoot>
+    <!-- Temporary, until the packages are published: a fixed path, so an IDE needs no environment. -->
+    <NulleanEntitiesRoot Condition="'$(NulleanEntitiesRoot)' == ''">/Users/mpdreamz/Projects/nullean-entities</NulleanEntitiesRoot>
 
-    <!-- The constraint model: Constraint, ConstraintSet, Result-free and dependency-free. -->
+    <!-- The constraint model: Constraint and ConstraintSet, with no other dependency. -->
     <NulleanEntitiesProject>$(NulleanEntitiesRoot)/src/Nullean.Entities/Nullean.Entities.csproj</NulleanEntitiesProject>
     <!-- The [Constraints] source generator: reference with OutputItemType="Analyzer" ReferenceOutputAssembly="false". -->
     <NulleanEntitiesGeneratorProject>$(NulleanEntitiesRoot)/src/Nullean.Entities.SourceGenerators/Nullean.Entities.SourceGenerators.csproj</NulleanEntitiesGeneratorProject>
