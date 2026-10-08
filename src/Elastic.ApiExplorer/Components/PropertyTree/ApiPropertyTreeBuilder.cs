@@ -214,7 +214,8 @@ public partial class ApiPropertyTreeBuilder(
 			Availability = options.ShowVersionInfo ? AvailabilityBadgeHelper.FromSchema(propSchema, options.VersionsConfiguration) : null,
 			ExternalDocs = BuildExternalDocs(propSchema, typeInfo),
 			Constraints = BuildConstraints(propSchema),
-			EnumValues = typeInfo.EnumValues ?? [],
+			// A union that mixes literals with objects lists the literals in its "One of:" row instead.
+			EnumValues = MixesLiteralsWithObjects(typeInfo, expansion) ? [] : typeInfo.EnumValues ?? [],
 			// Kept on a repeat too, so it hashes like the row it repeats; the views show "Same … as" in its place.
 			Union = typeInfo.IsUnion ? BuildUnionDisplay(propSchema, typeInfo, expansion) : null,
 			Repeats = repeats,
@@ -322,20 +323,35 @@ public partial class ApiPropertyTreeBuilder(
 
 		if (sortedOptions.Length > 0 || expansion.HasUnionOptions)
 		{
-			var badgeOptions = expansion.HasUnionOptions
-				? []
-				: sortedOptions.Where(static o => !SchemaHelpers.IsInternalSchemaName(o)).ToArray();
+			var mixed = MixesLiteralsWithObjects(typeInfo, expansion);
+			var badges = mixed
+				? typeInfo.EnumValues!.Select(static v => new UnionBadge(v, IsTypeOption: false))
+				: (expansion.HasUnionOptions ? [] : sortedOptions.Where(static o => !SchemaHelpers.IsInternalSchemaName(o))).Select(
+					o => new UnionBadge(o, IsTypeOptionBadge(o))
+				);
 			return new UnionDisplay
 			{
 				Kind = UnionDisplayKind.Badges,
 				Keyword = typeInfo.UnionKeyword,
 				DiscriminatorProperty = _analyzer.GetUnionDiscriminator(propSchema)?.PropertyName,
-				Badges = badgeOptions.Select(o => new UnionBadge(o, IsTypeOptionBadge(o))).ToArray()
+				Badges = badges.ToArray(),
+				MoreOptions = mixed ? MoreOptionsText(typeInfo) : null
 			};
 		}
 
 		return null;
 	}
+
+	/// <summary>A union with literal members as well as object variants, e.g. a sort order: <c>asc</c>, <c>desc</c> or an object.</summary>
+	private static bool MixesLiteralsWithObjects(TypeInfo typeInfo, Expansion expansion) =>
+		typeInfo is { IsUnion: true, EnumValues.Length: > 0 } && expansion.HasUnionOptions;
+
+	/// <summary>
+	/// What the variant list below a mixed union holds besides the literals. It lists every other option, so a
+	/// primitive member such as <c>integer</c> makes it more than objects.
+	/// </summary>
+	private static string MoreOptionsText(TypeInfo typeInfo) =>
+		typeInfo.UnionOptions!.All(static o => o.IsObject) ? "or an object listed below" : "or a type listed below";
 
 	internal static bool IsTypeOptionBadge(string option) =>
 		SchemaHelpers.PrimitiveTypeNames.Contains(option)

@@ -17,15 +17,16 @@ public enum UnionKeyword
 public static class UnionSchemas
 {
 	/// <summary>
-	/// <c>oneOf</c> wins when a schema carries both keywords. Members that only list <c>required</c> fields offer no shapes,
-	/// so they make no union; <see cref="TryGetRequiredAlternatives"/> reads them instead.
+	/// The union a schema offers: the first of <c>oneOf</c> and <c>anyOf</c> whose members are shapes. Members that only
+	/// list <c>required</c> fields offer no shapes; <see cref="TryGetRequiredAlternatives"/> reads them instead, so a schema
+	/// can carry a <c>oneOf</c> of required sets next to an <c>anyOf</c> of variants.
 	/// </summary>
 	public static bool TryGet(IOpenApiSchema? schema, out UnionKeyword keyword, out IList<IOpenApiSchema> members) =>
-		TryGetMembers(schema, out keyword, out members) && !members.All(IsRequiredOnly);
+		TryFind(schema, requiredOnly: false, out keyword, out members);
 
 	/// <summary>
-	/// The field sets a <c>oneOf</c>/<c>anyOf</c> of <c>required</c>-only members asks for, e.g. <c>correlation_id</c> or
-	/// <c>externalId</c>: the object needs one of them (<c>anyOf</c>: at least one).
+	/// The field sets the first <c>oneOf</c>/<c>anyOf</c> of <c>required</c>-only members asks for, e.g. <c>correlation_id</c>
+	/// or <c>externalId</c>: the object needs one of them (<c>anyOf</c>: at least one).
 	/// </summary>
 	public static bool TryGetRequiredAlternatives(
 		IOpenApiSchema? schema,
@@ -33,25 +34,21 @@ public static class UnionSchemas
 		out IReadOnlyList<IReadOnlyList<string>> alternatives
 	)
 	{
-		alternatives = TryGetMembers(schema, out keyword, out var members) && members.All(IsRequiredOnly)
+		alternatives = TryFind(schema, requiredOnly: true, out keyword, out var members)
 			? members.Select(static m => (IReadOnlyList<string>)[.. m.Required!]).ToArray()
 			: [];
 		return alternatives.Count > 0;
 	}
 
-	private static bool TryGetMembers(IOpenApiSchema? schema, out UnionKeyword keyword, out IList<IOpenApiSchema> members)
+	/// <summary><c>oneOf</c> before <c>anyOf</c>: the first keyword whose members are all required-only, or all not.</summary>
+	private static bool TryFind(IOpenApiSchema? schema, bool requiredOnly, out UnionKeyword keyword, out IList<IOpenApiSchema> members)
 	{
-		if (schema?.OneOf is { Count: > 0 } oneOf)
+		foreach (var (candidate, list) in new[] { (UnionKeyword.OneOf, schema?.OneOf), (UnionKeyword.AnyOf, schema?.AnyOf) })
 		{
-			keyword = UnionKeyword.OneOf;
-			members = oneOf;
-			return true;
-		}
-
-		if (schema?.AnyOf is { Count: > 0 } anyOf)
-		{
-			keyword = UnionKeyword.AnyOf;
-			members = anyOf;
+			if (list is not { Count: > 0 } || list.All(IsRequiredOnly) != requiredOnly)
+				continue;
+			keyword = candidate;
+			members = list;
 			return true;
 		}
 

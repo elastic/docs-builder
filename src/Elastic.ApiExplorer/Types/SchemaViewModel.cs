@@ -34,7 +34,7 @@ public class SchemaViewModel(ApiRenderContext context) : ApiViewModel(context)
 			tocItems.Add(new ApiTocItem("Enum Values", "enum-values"));
 
 		// Union types (oneOf or anyOf)
-		if (UnionSchemas.IsUnion(openApiSchema))
+		if (Page.UnionVariants is not null)
 			tocItems.Add(new ApiTocItem("Union Types", "union-types"));
 
 		// Properties

@@ -127,7 +127,8 @@ internal static class ApiPropertyMarkdown
 				WriteNestedLine(
 					markdown,
 					depth,
-					$"{property.Union.Label} " + string.Join(" or ", property.Union.Badges.Select(b => $"`{b.Text}`"))
+					$"{property.Union.Label} " + string.Join(" or ", property.Union.Badges.Select(b => $"`{b.Text}`")) +
+						(property.Union.MoreOptions is { } more ? $" {more}" : "")
 				);
 				break;
 		}

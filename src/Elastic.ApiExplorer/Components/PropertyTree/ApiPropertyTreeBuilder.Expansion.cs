@@ -20,7 +20,13 @@ public partial class ApiPropertyTreeBuilder
 		/// <summary>The schema's properties, then the variants of a union that declares properties as well.</summary>
 		public sealed record Properties(IOpenApiSchema Schema, int Count, List<UnionOption>? UnionVariants = null) : ChildPlan(Count);
 
-		public sealed record Variants(List<UnionOption> Options, int Count) : ChildPlan(Count);
+		/// <summary>
+		/// A union's variants. <paramref name="Inner"/> is <c>X</c> of an <c>X | X[]</c> row: the row hides its own options
+		/// line, so the list names <c>X</c> and reads its discriminator from it.
+		/// </summary>
+		public sealed record Variants(List<UnionOption> Options, int Count, (string Name, IOpenApiSchema Schema)? Inner = null) : ChildPlan(
+			Count
+		);
 	}
 
 	/// <summary>An <c>X | X[]</c> union: the name of <c>X</c>, and whether <c>X</c> lists fields of its own.</summary>
@@ -113,7 +119,7 @@ public partial class ApiPropertyTreeBuilder
 
 		var nested = _analyzer.GetNestedUnionOptions(schema);
 		return nested.Count > 0
-			? new ChildPlan.Variants(nested, nested.Count(_analyzer.UnionOptionHasProperties))
+			? new ChildPlan.Variants(nested, nested.Count(_analyzer.UnionOptionHasProperties), (baseName, schema))
 			: new ChildPlan.Properties(schema, 0);
 	}
 
@@ -145,8 +151,7 @@ public partial class ApiPropertyTreeBuilder
 				{
 					Kind = ChildKind.UnionVariants,
 					UseHidden = useHidden,
-					Variants = BuildUnionVariants(variants.Options, childScope, _analyzer.GetUnionDiscriminator(row.Schema))
-						?? ApiUnionVariants.Empty
+					Variants = BuildVariantChildren(row, childScope, variants)
 				},
 			_ => ApiPropertyChildren.None
 		};
@@ -157,4 +162,17 @@ public partial class ApiPropertyTreeBuilder
 		BuildUnionVariants(variants, childScope, _analyzer.GetUnionDiscriminator(row.Schema)) is { } built
 			? built with { Label = SchemaHelpers.UnionLabel(row.TypeInfo.UnionKeyword) }
 			: null;
+
+	private ApiUnionVariants BuildVariantChildren(PropertyRow row, PropertyTreeScope childScope, ChildPlan.Variants plan)
+	{
+		var union = plan.Inner?.Schema ?? row.Schema;
+		var variants = BuildUnionVariants(plan.Options, childScope, _analyzer.GetUnionDiscriminator(union));
+		if (variants is null || plan.Inner is not { Name: var name })
+			return variants ?? ApiUnionVariants.Empty;
+
+		// The row's type does not always name X (an inline X | X[] reads "union oneOf"), so the label says both shapes.
+		var keyword = SchemaHelpers.UnionLabel(_analyzer.GetTypeInfo(union).UnionKeyword).ToLowerInvariant();
+		var readable = SchemaHelpers.ReadableSchemaName(name);
+		return variants with { Label = $"{readable} or {readable}[]; each {readable} is {keyword}" };
+	}
 }
