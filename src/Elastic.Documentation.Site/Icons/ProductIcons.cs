@@ -9,6 +9,9 @@ namespace Elastic.Documentation.Site.Icons;
 /// <summary>
 /// Looks up an inline SVG by product key. Used by hub directives and the API catalog.
 /// Keys are kept lowercase and match the product ids in <c>products.yml</c> wherever possible.
+/// The marks are EUI's logos. A part that has to contrast with the background carries EUI's
+/// <c>euiIcon__fillNegative</c> class instead of a fixed colour, and <c>product-icons.css</c> fills it
+/// for the current background. Do not hardcode a white fill: it only shows on a dark background.
 /// </summary>
 public static class ProductIcons
 {
@@ -18,7 +21,7 @@ public static class ProductIcons
 			"""
 			<svg viewBox="8 4.9995 47.7276 54.001" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
 				<path fill-rule="evenodd" clip-rule="evenodd" d="M55.7246 14.7075L55.7276 14.7015C50.7746 8.77351 43.3286 4.99951 34.9996 4.99951C24.4006 4.99951 15.2326 11.1115 10.8136 19.9995H46.0056C48.5306 19.9995 50.9886 19.1295 52.9206 17.5035C53.9246 16.6585 54.8636 15.7385 55.7246 14.7075Z" fill="#FEC514"/>
-				<path fill-rule="evenodd" clip-rule="evenodd" d="M8 32C8 34.422 8.324 36.767 8.922 39H42C45.866 39 49 35.866 49 32C49 28.134 45.866 25 42 25H8.922C8.324 27.233 8 29.578 8 32Z" fill="rgba(255,255,255,0.85)"/>
+				<path fill-rule="evenodd" clip-rule="evenodd" d="M8 32C8 34.422 8.324 36.767 8.922 39H42C45.866 39 49 35.866 49 32C49 28.134 45.866 25 42 25H8.922C8.324 27.233 8 29.578 8 32Z" class="euiIcon__fillNegative"/>
 				<path fill-rule="evenodd" clip-rule="evenodd" d="M55.7246 49.2925L55.7276 49.2985C50.7746 55.2265 43.3286 59.0005 34.9996 59.0005C24.4006 59.0005 15.2326 52.8885 10.8136 44.0005H46.0056C48.5306 44.0005 50.9886 44.8705 52.9206 46.4965C53.9246 47.3415 54.8636 48.2615 55.7246 49.2925Z" fill="#00BFB3"/>
 			</svg>
 			""",
@@ -27,7 +30,7 @@ public static class ProductIcons
 			<svg xmlns="http://www.w3.org/2000/svg" viewBox="4 0 24.935 31.991" aria-hidden="true">
 				<g fill="none" fill-rule="evenodd" transform="translate(4)">
 					<polygon fill="#F04E98" points="0 0 0 28.789 24.935 .017"/>
-					<path fill="rgba(255,255,255,0.25)" d="M0,12 L0,28.789 L11.906,15.051 C8.368,13.115 4.317,12 0,12"/>
+					<path class="euiIcon__fillNegative" d="M0,12 L0,28.789 L11.906,15.051 C8.368,13.115 4.317,12 0,12"/>
 					<path fill="#00BFB3" d="M14.4785,16.664 L2.2675,30.754 L1.1945,31.991 L24.3865,31.991 C23.1345,25.699 19.5035,20.272 14.4785,16.664"/>
 				</g>
 			</svg>
@@ -36,7 +39,7 @@ public static class ProductIcons
 			"""
 			<svg viewBox="6 6 53 53" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
 				<path fill-rule="evenodd" clip-rule="evenodd" d="M22 59H17.0906C10.966 59 6 54.0201 6 47.8785V32H22V59Z" fill="#F04E98"/>
-				<path fill-rule="evenodd" clip-rule="evenodd" d="M22 59H38V19H22V59Z" fill="rgba(255,255,255,0.85)"/>
+				<path fill-rule="evenodd" clip-rule="evenodd" d="M22 59H38V19H22V59Z" class="euiIcon__fillNegative"/>
 				<path fill-rule="evenodd" clip-rule="evenodd" d="M59 59H43V6L46.5081 6.04052C53.4282 6.11868 59 12.18 59 19.6277V42.9611V59Z" fill="#0077CC"/>
 			</svg>
 			""",
@@ -45,7 +48,7 @@ public static class ProductIcons
 			<svg viewBox="9 4 47 56" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
 				<path fill-rule="evenodd" clip-rule="evenodd" d="M20 17V4H56V34C56 41.0112 43.7467 45.6044 39 47V17H20Z" fill="#FA744E"/>
 				<path fill-rule="evenodd" clip-rule="evenodd" d="M9 39.3984V22H34V60C34 60 9 49.5847 9 39.3984Z" fill="#00BFB3"/>
-				<path fill-rule="evenodd" clip-rule="evenodd" d="M19 22H34V47C28.406 44.9626 19 40.292 19 34.4224V22Z" fill="rgba(255,255,255,0.85)"/>
+				<path fill-rule="evenodd" clip-rule="evenodd" d="M19 22H34V47C28.406 44.9626 19 40.292 19 34.4224V22Z" class="euiIcon__fillNegative"/>
 			</svg>
 			""",
 		["logstash"] =
@@ -54,7 +57,7 @@ public static class ProductIcons
 				<g transform="translate(3)">
 					<polygon fill="#3EBEB0" points="16 32 27 32 27 20 16 20"/>
 					<path fill="#FEC514" d="M1,0 L0,0 L0,20 L13,20 L13,12 C13,5.373 7.627,0 1,0"/>
-					<path fill="rgba(255,255,255,0.85)" d="M0,20 L0,20 C0,26.627 5.373,32 12,32 L13,32 L13,20 L0,20 Z"/>
+					<path class="euiIcon__fillNegative" d="M0,20 L0,20 C0,26.627 5.373,32 12,32 L13,32 L13,20 L0,20 Z"/>
 				</g>
 			</svg>
 			""",
@@ -66,11 +69,19 @@ public static class ProductIcons
 				<path fill="#07C" d="M0 23.111h32v6.519A2.37 2.37 0 0 1 29.63 32H2.37A2.37 2.37 0 0 1 0 29.63v-6.52Z"/>
 			</svg>
 			""",
+		["cloud-enterprise"] =
+			"""
+			<svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+				<path fill-rule="evenodd" clip-rule="evenodd" d="M18 0v10a6 6 0 0 0-5.53 8.33c-.034.009-.068.012-.1.023A18.947 18.947 0 0 0 3.975 23.7 15.934 15.934 0 0 1 2 16C2 7.164 9.163 0 18 0Zm0 13a3 3 0 1 1 0 6 3 3 0 0 1 0-6Z" class="euiIcon__fillNegative"/>
+				<path fill-rule="evenodd" clip-rule="evenodd" d="M22.742 21.218c-.71-.22-1.478-.135-2.146.188A5.947 5.947 0 0 1 18 22a5.94 5.94 0 0 1-2.596-.594c-.669-.323-1.436-.408-2.146-.188a16.006 16.006 0 0 0-7.54 5.032A15.959 15.959 0 0 0 18 32c4.936 0 9.348-2.236 12.283-5.75a16.016 16.016 0 0 0-7.54-5.032" fill="#00AEFA"/>
+				<path fill-rule="evenodd" clip-rule="evenodd" d="M18 0A15.959 15.959 0 0 0 5.717 5.75a16.006 16.006 0 0 0 7.541 5.032c.71.22 1.477.135 2.146-.188A5.94 5.94 0 0 1 18 10a5.94 5.94 0 0 1 2.596.594c.669.323 1.436.408 2.146.188a16.01 16.01 0 0 0 7.541-5.032A15.959 15.959 0 0 0 18 0" fill="#0080D5"/>
+			</svg>
+			""",
 		["ess"] =
 			"""
 			<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" aria-hidden="true">
 				<g fill="none" fill-rule="evenodd" transform="translate(2)">
-					<path fill="rgba(255,255,255,0.85)" d="M10.3691,18.3525 C10.4021,18.3415 10.4361,18.3385 10.4701,18.3295 C10.1671,17.6135 10.0001,16.8265 10.0001,15.9995 C10.0001,12.6865 12.6861,9.9995 16.0001,9.9995 L16.0001,-0.0005 C7.1631,-0.0005 0.0001,7.1635 0.0001,15.9995 C0.0001,18.7925 0.7191,21.4155 1.9761,23.7015 C4.2571,21.2015 7.1381,19.3545 10.3691,18.3525"/>
+					<path class="euiIcon__fillNegative" d="M10.3691,18.3525 C10.4021,18.3415 10.4361,18.3385 10.4701,18.3295 C10.1671,17.6135 10.0001,16.8265 10.0001,15.9995 C10.0001,12.6865 12.6861,9.9995 16.0001,9.9995 L16.0001,-0.0005 C7.1631,-0.0005 0.0001,7.1635 0.0001,15.9995 C0.0001,18.7925 0.7191,21.4155 1.9761,23.7015 C4.2571,21.2015 7.1381,19.3545 10.3691,18.3525"/>
 					<path fill="#0080D5" d="M16,0 C11.063,0 6.651,2.236 3.717,5.75 C5.669,8.088 8.277,9.858 11.258,10.782 C11.968,11.002 12.735,10.917 13.404,10.594 C14.189,10.214 15.069,10 16,10 C16.931,10 17.811,10.214 18.596,10.594 C19.265,10.917 20.032,11.002 20.742,10.782 C23.723,9.858 26.33,8.088 28.283,5.75 C25.349,2.236 20.937,0 16,0"/>
 					<path fill="#00BFB3" d="M20.7422,21.2178 C20.0322,20.9978 19.2642,21.0828 18.5962,21.4058 C17.8102,21.7858 16.9302,21.9998 16.0002,21.9998 C15.0692,21.9998 14.1892,21.7858 13.4042,21.4058 C12.7352,21.0828 11.9682,20.9978 11.2582,21.2178 C8.2772,22.1418 5.6692,23.9118 3.7172,26.2498 C6.6512,29.7638 11.0632,31.9998 16.0002,31.9998 C20.9362,31.9998 25.3482,29.7638 28.2832,26.2498 C26.3302,23.9118 23.7222,22.1418 20.7422,21.2178"/>
 				</g>
@@ -97,6 +108,7 @@ public static class ProductIcons
 		["serverless-observability"] = "observability",
 		["serverless-security"] = "security",
 		["serverless-vector-database"] = "vectordb",
+		["cloud-hosted"] = "ess",
 		["cloud-serverless"] = "ess"
 	}.ToFrozenDictionary(StringComparer.OrdinalIgnoreCase);
 

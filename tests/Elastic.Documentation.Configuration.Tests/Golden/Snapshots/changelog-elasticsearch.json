@@ -594,6 +594,7 @@
       {
         "$type": "Product",
         "DisplayName": "Elasticsearch",
+        "DraArtifact": null,
         "Features": {
           "$type": "ProductFeatures",
           "ParticipatesInReleaseNotes": true,
@@ -627,6 +628,7 @@
       {
         "$type": "Product",
         "DisplayName": "Elastic Cloud Serverless",
+        "DraArtifact": null,
         "Features": {
           "$type": "ProductFeatures",
           "ParticipatesInReleaseNotes": true,

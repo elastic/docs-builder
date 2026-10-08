@@ -615,6 +615,7 @@
       {
         "$type": "Product",
         "DisplayName": "Kibana",
+        "DraArtifact": null,
         "Features": {
           "$type": "ProductFeatures",
           "ParticipatesInReleaseNotes": true,
@@ -648,6 +649,7 @@
       {
         "$type": "Product",
         "DisplayName": "Elastic Observability",
+        "DraArtifact": null,
         "Features": {
           "$type": "ProductFeatures",
           "ParticipatesInReleaseNotes": true,
@@ -681,6 +683,7 @@
       {
         "$type": "Product",
         "DisplayName": "Elastic Cloud Serverless",
+        "DraArtifact": null,
         "Features": {
           "$type": "ProductFeatures",
           "ParticipatesInReleaseNotes": true,
@@ -714,6 +717,7 @@
       {
         "$type": "Product",
         "DisplayName": "Elastic Security",
+        "DraArtifact": null,
         "Features": {
           "$type": "ProductFeatures",
           "ParticipatesInReleaseNotes": true,

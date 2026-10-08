@@ -7,7 +7,7 @@
 	}
 }
 
-/* Operation page endpoints — radio rows, 8px between items, no chrome */
+/* Operation page endpoints — one row per route, 8px between items, no chrome */
 .api-page-intro .api-url-listing {
 	display: flex;
 	flex-direction: column;
@@ -37,44 +37,6 @@
 	cursor: default;
 }
 
-.api-page-intro .api-url-listing--multi > li > .api-url-row,
-.api-page-intro
-	.api-url-listing:not(.api-url-listing--multi)
-	> li
-	> .api-url-row {
-	cursor: pointer;
-}
-
-.api-page-intro
-	.api-url-listing
-	> li
-	> .api-url-row:has(.api-url-radio:focus-visible) {
-	outline: 2px solid var(--color-blue-elastic, #0b64dd);
-	outline-offset: 2px;
-}
-
-.api-page-intro .api-url-radio {
-	appearance: none;
-	-webkit-appearance: none;
-	width: 16px;
-	height: 16px;
-	margin: 0;
-	flex-shrink: 0;
-	border: 1px solid #98a2b3;
-	border-radius: 50%;
-	background-color: #fff;
-	cursor: pointer;
-}
-
-.api-page-intro .api-url-radio:checked {
-	border-color: #0b64dd;
-	background-image: radial-gradient(circle, #0b64dd 0 4px, #fff 4.5px);
-}
-
-.api-page-intro .api-url-radio:focus {
-	outline: none;
-}
-
 .api-url-copy.copybtn {
 	position: static;
 	top: auto;
@@ -90,7 +52,6 @@
 }
 
 .api-page-intro .api-url-row:hover .api-url-copy.copybtn,
-.api-operation-description .operation-path-row:hover > .api-url-copy.copybtn,
 .api-url-copy.copybtn:focus-visible,
 .api-url-copy.copybtn.success {
 	opacity: 1;
@@ -114,12 +75,6 @@
 	fill: currentColor;
 }
 
-.api-url-copy.copybtn.o-tooltip--left:after {
-	background-color: #1d2a3e;
-	color: #f6f9fc;
-	transform: translateX(-102%) translateY(0);
-}
-
 /* Path chip — mirrors inline code (markdown/code.css) so routes read as code */
 .api-url-row > .api-url {
 	@apply bg-grey-10 border-grey-20 border-1 font-mono;
@@ -137,16 +92,30 @@
 	overflow-wrap: anywhere;
 }
 
-.api-page-intro .api-url-listing--multi > li > .api-url-row:hover .api-url {
-	@apply border-grey-30;
+/* The first route is the one to read; the alternates below it are compact and muted. */
+.api-page-intro .api-url-listing > li:first-child .api-url {
+	padding: 4px 12px 4px 4px;
+	font-size: 16px;
+	font-weight: 400;
+	line-height: 22px;
 }
 
-.api-page-intro
-	.api-url-listing--multi
-	> li
-	> .api-url-row:has(.api-url-radio:checked)
-	.api-url {
-	@apply border-blue-elastic;
+.api-page-intro .api-url-listing > li + li .api-url {
+	padding: 2px 8px 2px 2px;
+	color: #516381;
+	font-size: 13px;
+	line-height: 18px;
+}
+
+.api-page-intro .api-url-listing > li + li .api-method {
+	height: 20px;
+	padding: 0 5px;
+	font-size: 11px;
+}
+
+.api-page-intro .api-url-listing > li + li .api-url-also-method {
+	font-size: 10px;
+	line-height: 14px;
 }
 
 .api-page-intro .api-security-badges {
@@ -188,8 +157,8 @@
 	min-width: 0;
 }
 
-/* Group-page intro only. Same reading measure as docs articles (--max-text-width). */
-.api-tag-description.docs-measure {
+/* Docs reading measure (--max-text-width): group-page intros and the product landing text. */
+.docs-measure {
 	max-width: var(--max-text-width);
 }
 
@@ -396,40 +365,12 @@
 		align-items: center;
 		gap: 8px;
 	}
-	table {
-		width: 100%;
-		border-collapse: collapse;
-		td {
-			text-align: left;
-			vertical-align: middle;
-		}
-		td:has(h3) {
-			@apply border-b-grey-20 mb-2 border-b-1 pb-2;
-		}
-		td.api-name {
-			@apply pr-2;
-			text-align: left;
-			font-weight: 700;
-		}
-		.api-overview-title {
-			color: inherit;
-			font-weight: 700;
-			text-decoration: none;
-		}
-		.api-overview-title:hover {
-			color: var(--color-blue-elastic, #0b64dd);
-		}
-		tr:has(td.api-name) {
-			border-bottom: 1px solid #e3e8f2;
-		}
-		tr:has(td.api-name) td {
-			padding-top: 16px;
-			padding-bottom: 16px;
-		}
-	}
 }
 
-.api-group {
+/* The rows switch to a two-column layout by container width. The product landing page has no .api-group,
+   so the overview is a container too. */
+.api-group,
+.api-overview {
 	container-type: inline-size;
 	container-name: api-group;
 }
@@ -442,10 +383,6 @@
 .api-group .api-page-heading > h1 {
 	font-size: 24px;
 	line-height: 32px;
-}
-
-.api-group .api-tag-canonical {
-	margin: 4px 0 0;
 }
 
 .api-group .api-tag-description {
@@ -465,9 +402,9 @@
 .api-group-list {
 	display: flex;
 	flex-direction: column;
-	gap: 8px;
 	margin: 12px 0 0;
 	padding: 0;
+	border-top: 1px solid var(--color-grey-20);
 	list-style: none;
 }
 
@@ -479,11 +416,8 @@
 .api-group-list > li {
 	margin: 0;
 	padding: 0;
+	border-bottom: 1px solid var(--color-grey-20);
 	list-style: none;
-}
-
-#markdown-content a.api-group-row {
-	text-decoration: none;
 }
 
 .api-group-row {
@@ -498,16 +432,40 @@
 	box-sizing: border-box;
 	min-height: 44px;
 	margin: 0;
-	padding: 16px;
-	border: 1px solid #e3e8f2;
-	border-radius: 8px;
-	background: #fff;
-	color: inherit;
-	text-decoration: none;
+	padding: 12px 8px;
 	-webkit-tap-highlight-color: rgb(11 100 221 / 16%);
 }
 
-.api-group .api-overview-title {
+/* The docs link style (blue, underlined) outranks the row, so the row wins it back here. */
+#markdown-content a.api-group-row {
+	color: inherit;
+	text-decoration: none;
+}
+
+.api-group-row:hover,
+.api-group-row:focus-visible {
+	background: var(--color-grey-10);
+}
+
+.api-group-row:focus-visible {
+	outline: 2px solid var(--color-blue-elastic, #0b64dd);
+	outline-offset: -2px;
+}
+
+.api-group-row:hover .api-overview-title,
+.api-group-row:focus-visible .api-overview-title,
+.api-group-row:hover .api-group-chevron,
+.api-group-row:focus-visible .api-group-chevron {
+	color: var(--color-blue-elastic, #0b64dd);
+}
+
+.api-group-row:hover .api-overview-title,
+.api-group-row:focus-visible .api-overview-title {
+	text-decoration: underline;
+	text-underline-offset: 2px;
+}
+
+.api-group-row .api-overview-title {
 	grid-area: title;
 	color: inherit;
 	font-size: 16px;
@@ -521,14 +479,14 @@
 	min-width: 0;
 }
 
-.api-group .api-url-row {
+.api-group-row .api-url-row {
 	display: grid;
 	grid-template-columns: auto minmax(0, 1fr);
 	align-items: center;
 	column-gap: 8px;
 }
 
-.api-group .api-url {
+.api-group-row .api-url {
 	margin-left: 0;
 	min-width: 0;
 	color: var(--color-subdued, #516381);
@@ -549,33 +507,231 @@
 	transform: rotate(-90deg);
 }
 
-.api-group-row:hover,
-.api-group-row:focus-visible {
-	border-color: var(--color-blue-elastic, #0b64dd);
-	background: #f6f9fc;
+/* Product landing: the groups as a flat index. Columns follow the container, not the viewport, so the index
+   reads the same beside the sidebar and in a narrow window. Classification headings span every column. */
+.api-index {
+	column-gap: 40px;
 }
 
-.api-group-row:hover .api-overview-title,
-.api-group-row:hover .api-group-chevron,
-.api-group-row:focus-visible .api-overview-title,
-.api-group-row:focus-visible .api-group-chevron {
+.api-index .api-index-heading {
+	column-span: all;
+	margin: 32px 0 8px;
+	font-size: 20px;
+	line-height: 28px;
+}
+
+/* Topic pages (Authentication, Servers) sit above the index: they are read once, not browsed with the endpoints. */
+.api-topics {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	margin: 16px 0 32px;
+}
+
+/* Quiet outlined link: topic pages and the spec downloads. */
+#markdown-content a.api-chip-link {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	padding: 4px 12px;
+	border: 1px solid var(--color-grey-20);
+	border-radius: 8px;
+	color: inherit;
+	font-size: 14px;
+	line-height: 20px;
+	text-decoration: none;
+}
+
+.api-chip-link svg {
+	width: 14px;
+	height: 14px;
+}
+
+#markdown-content a.api-chip-link:hover,
+#markdown-content a.api-chip-link:focus-visible {
+	border-color: var(--color-grey-80);
 	color: var(--color-blue-elastic, #0b64dd);
 }
 
-.api-group-row:hover .api-overview-title,
-.api-group-row:focus-visible .api-overview-title {
+#markdown-content a.api-chip-link:focus-visible {
+	outline: 2px solid var(--color-blue-elastic, #0b64dd);
+	outline-offset: 2px;
+}
+
+/* License and spec downloads: facts about the spec, so they sit under the description in the subdued colour. */
+.api-landing-meta {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 8px 24px;
+	margin: 16px 0 0;
+	color: var(--color-subdued, #516381);
+	font-size: 14px;
+	line-height: 20px;
+}
+
+.api-landing-download {
+	display: inline-flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 8px;
+}
+
+.api-index-group {
+	break-inside: avoid;
+	margin: 0 0 32px;
+}
+
+.api-index .api-index-group-title {
+	display: flex;
+	align-items: baseline;
+	justify-content: space-between;
+	gap: 12px;
+	margin: 0;
+	padding: 0 0 8px;
+	border-bottom: 1px solid var(--color-grey-20);
+	font-size: 16px;
+	font-weight: 600;
+	line-height: 24px;
+}
+
+.api-index-group-title a {
+	color: inherit;
+	text-decoration: none;
+}
+
+.api-index-group-title a:hover,
+.api-index-group-title a:focus-visible {
+	color: var(--color-blue-elastic, #0b64dd);
 	text-decoration: underline;
 	text-underline-offset: 2px;
 }
 
-.api-group-row:active {
-	border-color: var(--color-blue-elastic, #0b64dd);
-	background: #e8f1ff;
+.api-index-count {
+	color: var(--color-subdued, #516381);
+	font-size: 14px;
+	font-weight: 400;
 }
 
-.api-group-row:focus-visible {
+#markdown-content .api-index-list {
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.api-index-list > li {
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+#markdown-content a.api-index-item {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	min-height: 36px;
+	padding: 6px 4px;
+	border-bottom: 1px solid var(--color-grey-10);
+	color: inherit;
+	font-size: 14px;
+	line-height: 20px;
+	text-decoration: none;
+}
+
+/* One chip width, so the titles line up whatever the method. */
+.api-index-item .api-method {
+	min-width: 72px;
+	height: 20px;
+	font-size: 11px;
+}
+
+.api-index-item-title {
+	min-width: 0;
+	overflow-wrap: anywhere;
+}
+
+#markdown-content a.api-index-item:hover,
+#markdown-content a.api-index-item:focus-visible {
+	background: var(--color-grey-10);
+}
+
+#markdown-content a.api-index-item:hover .api-index-item-title,
+#markdown-content a.api-index-item:focus-visible .api-index-item-title {
+	color: var(--color-blue-elastic, #0b64dd);
+	text-decoration: underline;
+	text-underline-offset: 2px;
+}
+
+#markdown-content a.api-index-item:focus-visible,
+.api-index-group-title a:focus-visible {
+	outline: 2px solid var(--color-blue-elastic, #0b64dd);
+	outline-offset: -2px;
+}
+
+@container api-group (min-width: 44rem) {
+	.api-index {
+		column-count: 2;
+	}
+}
+
+@container api-group (min-width: 84rem) {
+	.api-index {
+		column-count: 3;
+	}
+}
+
+/* The /api catalog card. The border is grey-80 on hover for the same reason the hub cards use it: it clears the 3:1 ratio a
+   state indicator needs, which the resting grey-20 edge does not have to. */
+.api-card {
+	box-sizing: border-box;
+	border: 1px solid var(--color-grey-20);
+	border-radius: 12px;
+	background: var(--color-white);
+	color: inherit;
+	text-decoration: none;
+	transition:
+		box-shadow 0.15s,
+		border-color 0.15s;
+}
+
+/* The docs link style (blue, underlined) outranks .api-card, so the cards win it back here. */
+#markdown-content a.api-card {
+	color: inherit;
+	text-decoration: none;
+}
+
+.api-card:hover,
+.api-card:focus-visible {
+	border-color: var(--color-grey-80);
+	box-shadow: 0 2px 8px rgb(0 0 0 / 0.05);
+}
+
+.api-card:hover .api-card-title,
+.api-card:focus-visible .api-card-title {
+	color: var(--color-blue-elastic, #0b64dd);
+}
+
+.api-card:hover .api-card-title,
+.api-card:focus-visible .api-card-title {
+	text-decoration: underline;
+	text-underline-offset: 2px;
+}
+
+.api-card:active {
+	border-color: var(--color-grey-80);
+	background: var(--color-grey-10);
+	box-shadow: none;
+}
+
+.api-card:focus-visible {
 	outline: 2px solid var(--color-blue-elastic, #0b64dd);
 	outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.api-card {
+		transition: none;
+	}
 }
 
 @container api-group (min-width: 40rem) {
@@ -645,126 +801,187 @@
 
 .api-method-get,
 .api-operation-description .operation-verb.get {
-	background-color: #c9f3e3;
-	border-color: #aee8d2;
-	color: #008a5e;
+	background-color: var(--color-blue-elastic-20);
+	border-color: var(--color-blue-elastic-30);
+	color: var(--color-blue-elastic-100);
 }
 .api-method-post,
 .api-operation-description .operation-verb.post {
-	background-color: #d9e8ff;
-	border-color: #bfdbff;
-	color: #0b64dd;
+	background-color: var(--color-green-20);
+	border-color: var(--color-green-30);
+	color: var(--color-green-100);
 }
 .api-method-put,
+.api-operation-description .operation-verb.put {
+	background-color: var(--color-yellow-20);
+	border-color: var(--color-yellow-30);
+	color: var(--color-yellow-100);
+}
 .api-method-patch,
-.api-operation-description .operation-verb.put,
 .api-operation-description .operation-verb.patch {
-	background-color: #ffdebf;
-	border-color: #ffcda1;
-	color: #ed6723;
+	background-color: var(--color-teal-20);
+	border-color: var(--color-teal-30);
+	color: var(--color-teal-100);
 }
 .api-method-delete,
 .api-operation-description .operation-verb.delete {
-	background-color: #fdddd8;
-	border-color: #ffc9c2;
-	color: #c61e25;
+	background-color: var(--color-red-20);
+	border-color: var(--color-red-30);
+	color: var(--color-red-100);
 }
 .api-method-head,
+.api-operation-description .operation-verb.head {
+	background-color: var(--color-purple-20);
+	border-color: var(--color-purple-30);
+	color: var(--color-purple-100);
+}
 .api-method-options,
-.api-operation-description .operation-verb.head,
-.api-operation-description .operation-verb.options,
+.api-operation-description .operation-verb.options {
+	background-color: var(--color-grey-20);
+	border-color: var(--color-grey-30);
+	color: var(--color-grey-100);
+}
 .api-operation-description .operation-verb {
-	background-color: #fff;
-	border-color: #cad3e2;
-	color: #5a6d8c;
+	background-color: var(--color-white);
+	border-color: var(--color-grey-30);
+	color: var(--color-grey-100);
+}
+
+/* Legacy rows reserve 32px on the right; a row with a chip needs less. */
+#pages-nav li:has(> a.sidebar-link > .nav-v2-api-method) {
+	padding-right: 8px;
+}
+
+#pages-nav a.sidebar-link:has(> .nav-v2-api-method) {
+	display: flex;
+	align-items: flex-start;
+	justify-content: space-between;
+	width: 100%;
+	gap: 8px;
 }
 
 /*
- * Nav V2 method badges — Figma APIs (node 10065:6317):
- * GET green + pivot 180°; POST blue; PUT/PATCH orange; DELETE red + X;
- * multi-operation (and HEAD/OPTIONS) gray + branch glyph.
+ * Nav method chips: a small text label at the right edge of the row, after the operation name.
+ * Colors follow Swagger UI conventions (GET blue, POST green, PUT amber, PATCH teal,
+ * DELETE red, HEAD purple, OPTIONS gray). Current and hovered rows keep the chip fill and darken only the border
+ * (hover a mid step, current the darkest), so the 9px label stays above WCAG AA (4.5:1).
  */
 #pages-nav .nav-v2-api-method {
 	display: inline-flex;
 	flex-shrink: 0;
 	align-items: center;
 	justify-content: center;
-	width: 20px;
-	height: 20px;
-	border: 1px solid;
-	border-radius: 6px;
+	align-self: flex-start;
+	margin-top: 2px;
 	box-sizing: border-box;
-}
-
-#pages-nav .nav-v2-api-method svg {
-	display: block;
-}
-
-/* Only GET flips the pivot arrow (incoming). */
-#pages-nav .nav-v2-api-method-get svg {
-	transform: rotate(180deg);
+	height: 16px;
+	padding: 0 4px;
+	border: 1px solid;
+	border-radius: 4px;
+	font-size: 9px;
+	font-weight: 600;
+	letter-spacing: 0.02em;
+	line-height: 1;
+	white-space: nowrap;
+	transition: border-color 0.12s ease;
 }
 
 #pages-nav .nav-v2-api-method-get {
-	background-color: #c9f3e3;
-	border-color: #aee8d2;
-	color: #008a5e;
+	background-color: var(--color-blue-elastic-20);
+	border-color: var(--color-blue-elastic-30);
+	color: var(--color-blue-elastic-100);
 }
 
 #pages-nav .nav-v2-api-method-post {
-	background-color: #d9e8ff;
-	border-color: #bfdbff;
-	color: #0b64dd;
+	background-color: var(--color-green-20);
+	border-color: var(--color-green-30);
+	color: var(--color-green-100);
 }
 
-#pages-nav .nav-v2-api-method-put,
+#pages-nav .nav-v2-api-method-put {
+	background-color: var(--color-yellow-20);
+	border-color: var(--color-yellow-30);
+	color: var(--color-yellow-100);
+}
+
 #pages-nav .nav-v2-api-method-patch {
-	background-color: #ffdebf;
-	border-color: #ffcda1;
-	color: #ed6723;
-}
-
-/* Neutral gray reserved for multi-operation endpoints (and rare HEAD/OPTIONS). */
-#pages-nav .nav-v2-api-method-head,
-#pages-nav .nav-v2-api-method-options,
-#pages-nav .nav-v2-api-method-multi {
-	background-color: #fff;
-	border-color: #cad3e2;
-	color: #5a6d8c;
+	background-color: var(--color-teal-20);
+	border-color: var(--color-teal-30);
+	color: var(--color-teal-100);
 }
 
 #pages-nav .nav-v2-api-method-delete {
-	background-color: #fdddd8;
-	border-color: #ffc9c2;
-	color: #c61e25;
+	background-color: var(--color-red-20);
+	border-color: var(--color-red-30);
+	color: var(--color-red-100);
+}
+
+#pages-nav .nav-v2-api-method-head {
+	background-color: var(--color-purple-20);
+	border-color: var(--color-purple-30);
+	color: var(--color-purple-100);
+}
+
+#pages-nav .nav-v2-api-method-options {
+	background-color: var(--color-grey-20);
+	border-color: var(--color-grey-30);
+	color: var(--color-grey-100);
+}
+
+#pages-nav a.sidebar-link:hover .nav-v2-api-method-get {
+	border-color: var(--color-blue-elastic-60);
 }
 
 #pages-nav a.sidebar-link.current .nav-v2-api-method-get {
-	background-color: #aee8d2;
-	border-color: #008a5e;
+	border-color: var(--color-blue-elastic-100);
+}
+
+#pages-nav a.sidebar-link:hover .nav-v2-api-method-post {
+	border-color: var(--color-green-60);
 }
 
 #pages-nav a.sidebar-link.current .nav-v2-api-method-post {
-	background-color: #bfdbff;
-	border-color: #0b64dd;
+	border-color: var(--color-green-100);
 }
 
-#pages-nav a.sidebar-link.current .nav-v2-api-method-put,
+#pages-nav a.sidebar-link:hover .nav-v2-api-method-put {
+	border-color: var(--color-yellow-60);
+}
+
+#pages-nav a.sidebar-link.current .nav-v2-api-method-put {
+	border-color: var(--color-yellow-100);
+}
+
+#pages-nav a.sidebar-link:hover .nav-v2-api-method-patch {
+	border-color: var(--color-teal-60);
+}
+
 #pages-nav a.sidebar-link.current .nav-v2-api-method-patch {
-	background-color: #ffcda1;
-	border-color: #c24411;
+	border-color: var(--color-teal-100);
+}
+
+#pages-nav a.sidebar-link:hover .nav-v2-api-method-delete {
+	border-color: var(--color-red-60);
 }
 
 #pages-nav a.sidebar-link.current .nav-v2-api-method-delete {
-	background-color: #ffc9c2;
-	border-color: #c61e25;
+	border-color: var(--color-red-100);
 }
 
-#pages-nav a.sidebar-link.current .nav-v2-api-method-head,
-#pages-nav a.sidebar-link.current .nav-v2-api-method-options,
-#pages-nav a.sidebar-link.current .nav-v2-api-method-multi {
-	background-color: #fff;
-	border-color: #a2b1c9;
+#pages-nav a.sidebar-link:hover .nav-v2-api-method-head {
+	border-color: var(--color-purple-60);
+}
+
+#pages-nav a.sidebar-link.current .nav-v2-api-method-head {
+	border-color: var(--color-purple-100);
+}
+
+#pages-nav a.sidebar-link:hover .nav-v2-api-method-options {
+	border-color: var(--color-grey-60);
+}
+
+#pages-nav a.sidebar-link.current .nav-v2-api-method-options {
+	border-color: var(--color-grey-100);
 }
 
 .api-url {
@@ -780,6 +997,10 @@
 #elastic-api-v3,
 #schema-definition,
 #api-examples-panel {
+	/* Rail cards are compact: half the padding of a Markdown code fence around the code. */
+	--code-pad: calc(var(--spacing) * 3);
+	/* Code taller than this scrolls in its card; api-examples-carousel.ts shows the expand button past it. */
+	--api-max-lines: 16;
 	/* API pages use Inter only — drop Mier B (font-sans) from headings/chrome */
 	@apply font-body;
 
@@ -849,23 +1070,24 @@
 	border-radius: 16px;
 }
 
+/* Three columns: status code | description | media type, plus the toggle icon on summaries. */
 .response-status-row,
-.response-status-toggle {
-	display: flex;
+.response-summary {
+	display: grid;
 	box-sizing: border-box;
-	align-items: center;
-	justify-content: flex-start;
-	gap: 12px;
+	grid-template-columns: 56px minmax(0, 1fr) auto auto;
+	align-items: start;
+	column-gap: 16px;
 	width: 100%;
-}
-
-.response-status-row {
 	padding: 12px 16px;
 }
 
 .response-status-toggle {
+	grid-column: 1;
+	display: flex;
+	align-items: center;
 	margin: 0;
-	padding: 14px 16px;
+	padding: 0;
 	border: 0;
 	border-radius: 0;
 	background: transparent;
@@ -885,30 +1107,17 @@ button.response-status-toggle:focus {
 	border-radius: 12px;
 }
 
-.response-summary > .response-status-row {
-	padding: 0;
+.response-status-row > .response-status-chip {
+	grid-column: 1;
 }
 
 .response-summary {
-	position: relative;
 	cursor: pointer;
 	transition: background-color 0.12s ease;
 }
 
 .response-summary:hover {
 	background-color: #ecf1f9;
-}
-
-/* The toggle stays statically positioned so this stretches over the summary. */
-.response-status-toggle::after {
-	content: '';
-	position: absolute;
-	inset: 0;
-}
-
-/* Links sit above the stretched hit area so they still navigate. */
-.response-description a {
-	position: relative;
 }
 
 .response-status-chip {
@@ -989,8 +1198,9 @@ button.response-status-toggle:focus {
 }
 
 .response-description {
+	grid-column: 2;
 	margin: 0;
-	padding: 4px 16px 12px;
+	padding: 2px 0 0;
 	color: inherit;
 	font-size: 14px;
 	font-weight: 400;
@@ -1015,22 +1225,25 @@ button.response-status-toggle:focus {
 }
 
 .content-type-tag {
-	flex-shrink: 0;
-	color: #1d2a3e;
+	grid-column: 3;
+	justify-self: end;
+	color: #536480;
+	font-family: var(--font-mono, ui-monospace, monospace);
 	font-size: 12px;
 	font-weight: 400;
-	line-height: 16px;
+	line-height: 24px;
 	background: none;
+	white-space: nowrap;
 }
 
 .response-toggle-icon {
-	margin-left: auto;
+	grid-column: 4;
 	flex-shrink: 0;
 	color: #798eaf;
 	font-family: var(--font-mono, ui-monospace, monospace);
 	font-size: 14px;
 	font-weight: 600;
-	line-height: 16px;
+	line-height: 24px;
 }
 
 .response-panel.collapsed .response-toggle-icon::before {
@@ -1039,6 +1252,28 @@ button.response-status-toggle:focus {
 
 .response-panel.expanded .response-toggle-icon::before {
 	content: '−';
+}
+
+@media (max-width: 640px) {
+	.response-status-row,
+	.response-summary {
+		grid-template-columns: auto minmax(0, 1fr) auto;
+		row-gap: 8px;
+	}
+
+	.response-description {
+		grid-column: 1 / -1;
+		grid-row: 2;
+	}
+
+	.content-type-tag {
+		grid-column: 2;
+		justify-self: start;
+	}
+
+	.response-toggle-icon {
+		grid-column: 3;
+	}
 }
 
 .property-list .expand-toggle,
@@ -1704,7 +1939,7 @@ a.type-linked:hover {
 	@apply text-yellow-90 bg-yellow-10 border-yellow-30 rounded border px-1 py-0.5 text-xs font-medium;
 }
 
-/* Reference documentation link — text + 1px rule, not a button */
+/* Reference documentation link — styled like a regular docs link, on its own line */
 .markdown-content a.docs-reference-btn,
 a.docs-reference-btn {
 	display: inline-block;
@@ -1713,15 +1948,10 @@ a.docs-reference-btn {
 	margin-top: 0.75rem;
 	padding: 0;
 	border: none;
-	border-bottom: 1px solid #0b64dd;
 	border-radius: 0;
 	background: none;
 	color: var(--color-blue-elastic, #0b64dd);
-	font-family: var(--font-body, Inter, ui-sans-serif, system-ui, sans-serif);
-	font-size: 14px;
-	font-weight: 500;
-	line-height: 20px;
-	text-decoration: none;
+	text-decoration: underline;
 	transition: none;
 }
 
@@ -1729,7 +1959,6 @@ a.docs-reference-btn {
 a.docs-reference-btn:hover {
 	background: none;
 	color: var(--color-blue-elastic-100, #1750ba);
-	text-decoration: none;
 }
 
 .markdown-content a.docs-reference-btn::before,
@@ -1771,6 +2000,16 @@ a.docs-reference-btn::after {
 /* Discriminator note styling */
 .discriminator-note {
 	@apply text-grey-60 text-xs italic;
+}
+
+/* Discriminator value that selects a union variant */
+.discriminator-value {
+	@apply text-grey-60 ml-2 text-xs;
+}
+
+/* One-line summary under a union variant's label */
+.union-variant-description {
+	@apply text-grey-70 mt-1 text-sm;
 }
 
 /* Object type icon */
@@ -2156,8 +2395,10 @@ a.docs-reference-btn::after {
 .api-operation-description :not(pre) > code,
 .property-list
 	dd
-	code:not(.enum-value):not(.schema-type):not(.union-type-option),
-.example-description code,
+	code:not(pre > code):not(.enum-value):not(.schema-type):not(
+		.union-type-option
+	),
+.example-description :not(pre) > code,
 .union-option {
 	display: inline-flex;
 	align-items: center;
@@ -2365,18 +2606,6 @@ a.docs-reference-btn::after {
 		line-height: 20px;
 	}
 
-	.operation-path-row {
-		display: flex;
-		align-items: center;
-		gap: 8px;
-		width: fit-content;
-		cursor: pointer;
-	}
-
-	.operation-path-row > div:has(.operation-path) {
-		margin-bottom: 0;
-	}
-
 	/* Space the URL listing block away from the prose that follows it */
 	div:has(.operation-path) {
 		margin-bottom: 1.5rem;
@@ -2397,7 +2626,7 @@ a.docs-reference-btn::after {
 	--api-code-bg: var(--code-bg);
 	--api-code-border: var(--code-border);
 	--api-code-hover: var(--code-hover);
-	--api-code-radius: 16px;
+	--api-code-radius: var(--code-radius);
 	--api-code-text: var(--code-fg);
 	--api-code-muted: var(--code-muted);
 	--api-code-accent: var(--color-blue-elastic-50);
@@ -2630,8 +2859,7 @@ button.example-response-tab:focus-visible {
 		flex-direction: column;
 	}
 
-	#api-examples-panel .api-examples-body,
-	#api-examples-panel .api-examples-scenarios {
+	#api-examples-panel .api-examples-body {
 		flex: 0 0 auto;
 		display: flex;
 		flex-direction: column;
@@ -2639,19 +2867,12 @@ button.example-response-tab:focus-visible {
 		overflow: visible;
 	}
 
-	#api-examples-panel .api-examples-scenario-header {
-		flex-shrink: 0;
-		margin-bottom: calc(var(--spacing) * 3);
-	}
-
-	#api-examples-panel .api-examples-scenario-panel {
+	#api-examples-panel .api-examples-scenario-panel:not([hidden]) {
 		display: flex;
 		flex: 0 0 auto;
 		flex-direction: column;
-	}
-
-	#api-examples-panel .api-examples-scenario-panel[hidden] {
-		display: none !important;
+		/* Between the request rail and the response card. */
+		row-gap: calc(var(--spacing) * 4);
 	}
 
 	#api-examples-panel .api-examples-body {
@@ -2675,10 +2896,6 @@ button.example-response-tab:focus-visible {
 		max-height: max(12rem, calc((100vh - var(--offset-top)) * 0.4));
 		overflow: auto;
 	}
-}
-
-#api-examples-panel .nav-select-dropdown {
-	width: auto;
 }
 
 .api-code-sample-title {
@@ -2710,108 +2927,6 @@ button.example-response-tab:focus-visible {
 	font-weight: 600;
 	line-height: 20px;
 	white-space: nowrap;
-}
-
-/* Language / scenario trigger stays text + chevron. The open menu matches Copy page. */
-.api-select {
-	position: relative;
-	z-index: 6;
-	display: inline-flex;
-	flex-shrink: 0;
-	max-width: 100%;
-}
-
-.api-select.nav-select-dropdown {
-	width: auto;
-}
-
-.api-select-trigger {
-	box-sizing: border-box;
-	display: inline-flex;
-	align-items: center;
-	gap: 8px;
-	max-width: 100%;
-	height: 24px;
-	margin: 0;
-	padding: 0 8px;
-	border: 1px solid var(--api-code-border);
-	border-radius: 6px;
-	background: var(--api-code-bg);
-	color: var(--api-code-text);
-	font-family: var(--font-sans, Inter, ui-sans-serif, system-ui, sans-serif);
-	font-size: 14px;
-	font-weight: 400;
-	line-height: 20px;
-	cursor: pointer;
-	list-style: none;
-}
-
-.api-select-trigger::-webkit-details-marker {
-	display: none;
-}
-
-.api-select-value {
-	min-width: 0;
-	max-width: 12rem;
-	overflow: hidden;
-	text-overflow: ellipsis;
-	white-space: nowrap;
-}
-
-.api-select-chevron {
-	display: inline-flex;
-	flex-shrink: 0;
-	align-items: center;
-	justify-content: center;
-	width: 12px;
-	height: 12px;
-	color: inherit;
-}
-
-.api-select-chevron-icon {
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	width: 12px;
-	height: 12px;
-	transition: transform 0.15s ease;
-}
-
-.api-select-chevron-icon svg {
-	display: block;
-	width: 12px;
-	height: 12px;
-}
-
-.api-select-trigger:hover {
-	background: var(--api-code-hover);
-}
-
-.api-select-trigger:is(:disabled, [aria-disabled='true']),
-.api-select-trigger:is(:disabled, [aria-disabled='true']):hover {
-	color: var(--api-code-muted);
-	background: var(--api-code-bg);
-	cursor: not-allowed;
-}
-
-.api-select-trigger:focus-visible {
-	outline: 2px solid var(--api-code-accent);
-	outline-offset: 1px;
-}
-
-.api-select[open] .api-select-chevron-icon,
-.api-select.is-open .api-select-chevron-icon {
-	transform: rotate(180deg);
-}
-
-.api-select .api-page-actions-option.is-selected,
-.api-select .api-page-actions-option[aria-selected='true'] {
-	font-weight: 600;
-}
-
-.api-code-card:has(.api-select[open]),
-.api-code-card:has(.api-select.is-open) {
-	z-index: 7;
 }
 
 .api-code-sample-body {
@@ -2984,20 +3099,8 @@ button.example-response-tab:focus-visible {
 	}
 }
 
-/* API catalog — own markup and selectors. Values match hub cards so the
-   pages feel related; a hub.css change does not restyle this page. */
-.api-catalog {
-	margin: 0 auto;
-	max-width: 64rem;
-}
-
-.api-catalog-header {
-	padding: 40px 0 28px;
-	margin-bottom: 44px;
-	border-bottom: 1px solid var(--color-grey-20);
-}
-
-.api-catalog-header h1,
+/* API catalog. The cards use the docs landing page's Tailwind classes and the applies_to pill look,
+   so this file only holds what those utilities cannot express. */
 .api-landing-heading h1 {
 	margin: 0;
 	font-size: var(--text-4xl);
@@ -3007,151 +3110,93 @@ button.example-response-tab:focus-visible {
 	color: var(--color-ink-dark);
 }
 
-.api-catalog-lede {
-	margin: 16px 0 0;
-	max-width: 760px;
-	font-size: var(--text-base);
-	line-height: 1.6;
-	color: var(--color-ink-light);
+/* The hero caps its inner width for hub pages, which would leave the centred title off-centre. */
+.api-catalog .hub-hero .hub-hero-inner {
+	max-width: none;
 }
 
-.api-catalog-grid {
-	display: grid;
-	grid-template-columns: repeat(auto-fill, minmax(min(310px, 100%), 1fr));
-	gap: 24px;
-	margin: 0;
-	padding: 0;
-	list-style: none;
+.api-catalog .hub-hero .hub-hero-top {
+	margin-bottom: 0;
 }
 
-.api-catalog-grid > li {
-	margin: 0;
-	list-style: none;
-}
-
-.api-catalog-grid .api-catalog-card {
-	display: flex;
-	flex-direction: column;
-	height: 100%;
-	box-sizing: border-box;
-	padding: 22px;
-	background: var(--color-white);
-	border: 1px solid var(--color-grey-20);
-	border-radius: 14px;
-	text-decoration: none;
-	color: inherit;
-	transition:
-		box-shadow 0.15s,
-		border-color 0.15s;
-}
-
-.api-catalog-grid .api-catalog-card:hover,
-.api-catalog-grid .api-catalog-card:focus-within {
-	border-color: var(--color-grey-80);
-	box-shadow: 0 2px 8px rgb(0 0 0 / 0.05);
-}
-
-.api-catalog-card-main {
-	display: block;
-	flex: 1 1 auto;
-	text-decoration: none;
-	color: inherit;
-}
-
-.api-catalog-card-head {
-	display: flex;
-	align-items: center;
-	gap: 10px;
-	margin-bottom: 6px;
-}
-
-.api-catalog-card-icon {
-	flex-shrink: 0;
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	width: 36px;
-	height: 36px;
-	border-radius: 8px;
+/* The hero is a centred title and one line of text on a band that spans the screen, in the flat light grey the
+   docs landing page uses for its own hero, so the white cards below stand out against it. */
+.api-catalog-band {
 	background: var(--color-grey-10);
 }
 
-.api-catalog-card-icon svg {
-	width: 22px;
-	height: 22px;
-	display: block;
+.api-catalog .hub-hero.api-catalog-hero {
+	padding: 56px 0 44px;
+	margin-bottom: 0;
+	border-bottom: 0;
+	text-align: center;
 }
 
-.api-catalog-card-title {
-	margin: 0;
-	font-size: var(--text-base);
+/* The title is set in Space Grotesk, which the Elastic brand guide (brand.elastic.co, Typography) names for
+   developer marketing headlines. The guide says that use needs the brand team's agreement. Headline leading is
+   the guide's 1.14, at its heaviest weight (Space Grotesk stops at 700), with the Mier B headline face and then
+   Inter behind it if the font does not load. The hub hero sets no family, which left this title in Inter. */
+.api-catalog .hub-hero .hub-hero-top h1 {
+	font-family: 'Space Grotesk', var(--font-sans);
+	font-size: clamp(var(--text-4xl), 3vw, var(--text-5xl));
 	font-weight: 700;
-	color: var(--color-ink-dark);
+	line-height: 1.14;
+	letter-spacing: -0.02em;
 }
 
-.api-catalog-card:hover .api-catalog-card-title,
-.api-catalog-card:focus-within .api-catalog-card-title {
-	color: var(--color-blue-elastic);
-}
-
-.api-catalog-card-key {
-	display: inline-block;
-	margin-top: 4px;
-	font-size: var(--text-sm);
-	color: var(--color-ink-light);
-}
-
-.api-catalog-card-badges {
-	display: flex;
-	flex-wrap: wrap;
-	gap: 6px;
-	margin-top: 10px;
-}
-
-.api-catalog-badge {
-	display: inline-flex;
-	align-items: center;
-	padding: 2px 8px;
-	border-radius: 999px;
-	border: 1px solid var(--color-grey-20);
-	background: var(--color-grey-10);
-	font-size: var(--text-xs);
-	line-height: 1.4;
-	color: var(--color-ink-light);
-}
-
-.api-catalog-badge-rest {
-	border-color: var(--color-blue-elastic-30);
-	background: var(--color-blue-elastic-10);
-	color: var(--color-blue-elastic);
-	font-weight: 600;
-}
-
-.api-catalog-card-desc {
-	margin: 10px 0 0;
+/* "Extra bold headlines with lighter accompanying text", per the brand guide: the line under the title is Inter
+   at regular weight in the lighter ink, with the guide's paragraph leading of 1.55. Its contrast on the band is
+   6.65:1, above the 4.5:1 the guide requires. */
+.api-catalog .api-catalog-lede {
+	max-width: 36rem;
+	margin: 12px auto 0;
+	font-family: var(--font-body);
 	font-size: var(--text-base);
-	line-height: 1.5;
+	line-height: 1.55;
 	color: var(--color-ink-light);
+	text-wrap: balance;
 }
 
-.api-catalog-card-actions {
-	display: flex;
-	gap: 12px;
-	margin-top: 16px;
-	padding-top: 12px;
-	border-top: 1px solid var(--color-grey-20);
+@media (max-width: 640px) {
+	.api-catalog .hub-hero.api-catalog-hero {
+		padding: 36px 0 32px;
+	}
 }
 
-.api-catalog-card-actions a {
-	font-size: var(--text-sm);
-	font-weight: 600;
-	color: var(--color-blue-elastic);
-	text-decoration: none;
+.api-catalog .api-catalog-hero .hub-hero-top {
+	justify-content: center;
 }
 
-.api-catalog-card-actions a:hover,
-.api-catalog-card-actions a:focus-visible {
-	text-decoration: underline;
+.api-catalog .api-catalog-card-icon svg {
+	display: block;
+	width: 100%;
+	height: 100%;
+}
+
+/* Descriptions are up to 150 characters. Four across, that is too long to show whole. */
+.api-catalog .api-catalog-desc {
+	display: -webkit-box;
+	overflow: hidden;
+	-webkit-box-orient: vertical;
+	-webkit-line-clamp: 2;
+	line-clamp: 2;
+}
+
+.api-catalog .api-catalog-featured .api-catalog-desc {
+	-webkit-line-clamp: 3;
+	line-clamp: 3;
+}
+
+/* Deployment tag: the applies_to pill look, standalone. It sits inside the card link, so it keeps the link's pointer. */
+.api-catalog .api-catalog-tag {
+	padding: 1px 8px;
+	border: 1px solid var(--color-grey-20);
+	border-radius: 9999px;
+	background-color: #fff;
+	color: var(--color-subdued, #516381);
+	font-size: 12px;
+	line-height: 16px;
+	white-space: nowrap;
 }
 
 .api-landing-heading {
@@ -3178,5 +3223,735 @@ html:has(.api-page-shell) {
 	   height independent of which response status is selected. */
 	#api-examples-panel .api-code-card:not(.example-block--response) {
 		flex-shrink: 0;
+	}
+}
+
+/* Merged endpoint rows: dominant method, "also GET", optional segments dashed. */
+.api-url-also-method {
+	flex-shrink: 0;
+	padding: 0 6px;
+	border: 1px dashed var(--color-grey-40, #98a2b3);
+	border-radius: 999px;
+	color: #516381;
+	font-family: var(--font-body, Inter, ui-sans-serif, system-ui, sans-serif);
+	font-size: 11px;
+	font-weight: 500;
+	line-height: 16px;
+	white-space: nowrap;
+	cursor: help;
+}
+
+.api-url-path {
+	min-width: 0;
+}
+
+.api-url-optional {
+	border-bottom: 1.5px dashed var(--color-grey-50, #7e8a9e);
+	color: #516381;
+	cursor: help;
+}
+
+.api-url-optional:hover {
+	color: #1d2a3e;
+}
+
+.optional.type-status {
+	color: #516381;
+	padding: 0;
+	background-color: transparent;
+	border-radius: 0;
+	font-size: 13px;
+	line-height: 16px;
+}
+
+.api-path-param-optional-hint {
+	margin: 4px 0 0;
+	color: #516381;
+	font-size: 13px;
+}
+
+/* Examples rail: example chips over a carousel of language cards. */
+/* Small dimmed label so the chips below read as a list of examples. */
+.api-examples-heading {
+	margin: 0 0 8px;
+	color: var(--color-grey-90, #6b7a90);
+	font-size: 12px;
+	font-weight: 600;
+	letter-spacing: 0.06em;
+	line-height: 16px;
+	text-transform: uppercase;
+}
+
+.api-example-chips-row {
+	--api-chip-height: 28px;
+	--api-chip-gap: 6px;
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--api-chip-gap);
+	margin-bottom: 12px;
+}
+
+/* Before the script has fitted the chips, show the two lines they will take: two chip heights and the gap between. */
+.api-example-chips-row:not(.is-fitted) {
+	max-height: calc(2 * var(--api-chip-height) + var(--api-chip-gap));
+	overflow: hidden;
+}
+
+/* The tablist's chips flow into the row, so the "more" button can sit at the end of the last line. */
+.api-example-chips {
+	display: contents;
+}
+
+.api-example-chip {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	max-width: min(100%, 220px);
+	min-height: var(--api-chip-height);
+	padding: 4px 10px;
+	border: 1px solid var(--color-grey-20, #e3e8f2);
+	border-radius: 999px;
+	background: #fff;
+	color: #1d2a3e;
+	font-size: 12.5px;
+	line-height: 18px;
+	cursor: pointer;
+}
+
+.api-example-chip:hover {
+	border-color: var(--color-grey-40, #98a2b3);
+}
+
+.api-example-chip.is-active {
+	border-color: var(--color-blue-elastic, #0b64dd);
+	background: #eef5ff;
+	color: var(--color-blue-elastic, #0b64dd);
+	font-weight: 600;
+}
+
+/* Inset: the rail clips its overflow, and a chip sits flush against the left edge, so an outer ring would be cut off. */
+.api-example-chip:focus-visible {
+	outline: 2px solid var(--color-blue-elastic, #0b64dd);
+	outline-offset: -2px;
+}
+
+.api-example-chip[hidden],
+.api-example-more[hidden],
+.api-example-menu-item[hidden] {
+	display: none;
+}
+
+.api-example-chip-title {
+	min-width: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.api-example-more {
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+	padding: 4px 10px;
+	border: 1px dashed var(--color-grey-40, #98a2b3);
+	border-radius: 999px;
+	background: transparent;
+	color: #516381;
+	font-size: 12.5px;
+	line-height: 18px;
+	cursor: pointer;
+}
+
+.api-example-more:hover,
+.api-example-more[aria-expanded='true'] {
+	border-style: solid;
+	background: #fff;
+	color: #1d2a3e;
+}
+
+.api-example-more:focus-visible {
+	outline: 2px solid var(--color-blue-elastic, #0b64dd);
+	outline-offset: -2px;
+}
+
+.api-example-more svg {
+	fill: currentColor;
+}
+
+/* Positioned from the "more" button in api-examples-carousel.ts; the popover UA styles centre it otherwise. */
+.api-example-menu {
+	box-sizing: border-box;
+	width: max-content;
+	max-width: min(320px, calc(100vw - 16px));
+	max-height: min(320px, 50vh);
+	margin: 0;
+	padding: 4px;
+	overflow: auto;
+	border: 1px solid var(--color-grey-20, #e3e8f2);
+	border-radius: 8px;
+	background: #fff;
+	box-shadow: 0 6px 20px rgb(17 28 44 / 14%);
+}
+
+/* Without popover support the menu would render as a plain block; chips alone are the fallback. */
+@supports not selector(:popover-open) {
+	.api-example-menu {
+		display: none;
+	}
+}
+
+/* Stays at the top while the examples scroll; the white shadow hides what slides under its edges. */
+.api-example-menu-filter {
+	position: sticky;
+	top: 0;
+	z-index: 1;
+	box-sizing: border-box;
+	width: 100%;
+	margin: 0 0 4px;
+	background: #fff;
+	box-shadow:
+		0 -4px 0 #fff,
+		0 4px 0 #fff;
+	padding: 6px 8px;
+	border: 1px solid var(--color-grey-20, #e3e8f2);
+	border-radius: 6px;
+	font-size: 12.5px;
+}
+
+.api-example-menu-item {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+	width: 100%;
+	padding: 6px 8px;
+	border: 0;
+	border-radius: 6px;
+	background: transparent;
+	color: #1d2a3e;
+	font-size: 12.5px;
+	line-height: 18px;
+	text-align: left;
+	cursor: pointer;
+}
+
+.api-example-menu-item:hover,
+.api-example-menu-item:focus-visible {
+	background: var(--color-grey-10, #f5f7fa);
+	outline: none;
+}
+
+.api-example-chip-count {
+	display: inline-flex;
+	align-items: center;
+	gap: 3px;
+	padding: 0 6px;
+	border-radius: 999px;
+	background: var(--color-grey-10, #f5f7fa);
+	color: #516381;
+	font-size: 11px;
+	font-weight: 500;
+	line-height: 16px;
+}
+
+/* The example's description: a muted note under the chips, set apart from the code below it. */
+.api-example-description {
+	margin: 0 0 14px;
+	padding: 10px 12px;
+	border-left: 3px solid var(--color-grey-30, #c4cbd8);
+	border-radius: 0 10px 10px 0;
+	background: var(--color-grey-10, #f5f7fa);
+	color: #475569;
+	font-size: 13px;
+	line-height: 1.55;
+}
+
+.api-example-description-text {
+	display: -webkit-box;
+	-webkit-box-orient: vertical;
+	-webkit-line-clamp: 3;
+	line-clamp: 3;
+	overflow: hidden;
+}
+
+.api-example-description.is-open .api-example-description-text {
+	display: block;
+	-webkit-line-clamp: unset;
+	line-clamp: unset;
+}
+
+.api-example-description p {
+	margin: 0;
+}
+
+.api-example-description p + p {
+	margin-top: 6px;
+}
+
+.api-example-description :not(pre) > code {
+	font-size: 12px;
+}
+
+.api-example-description-toggle {
+	margin-top: 4px;
+	padding: 0;
+	border: 0;
+	background: none;
+	color: var(--color-blue-elastic, #0b64dd);
+	font-size: 12px;
+	font-weight: 600;
+	cursor: pointer;
+}
+
+.api-example-description-toggle[hidden] {
+	display: none;
+}
+
+.api-example-description-toggle:hover {
+	text-decoration: underline;
+}
+
+.api-code-carousel {
+	margin-bottom: 24px;
+}
+
+.api-code-carousel-head {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	margin-bottom: 8px;
+}
+
+/* Says what a card is before anything else does: Request above the samples, Response above the response. */
+.api-rail-label {
+	flex-shrink: 0;
+	margin-right: 6px;
+	color: var(--color-grey-90, #6b7a90);
+	font-size: 11px;
+	font-weight: 600;
+	letter-spacing: 0.06em;
+	line-height: 16px;
+	text-transform: uppercase;
+}
+
+.api-rail-response {
+	display: flex;
+	flex-direction: column;
+	min-height: 0;
+}
+
+.api-code-carousel-position {
+	flex: 1;
+	min-width: 0;
+	font-size: 13px;
+}
+
+.api-code-carousel-position span {
+	margin-left: 4px;
+	color: #516381;
+	font-size: 12px;
+}
+
+.api-code-carousel-arrow {
+	width: 28px;
+	height: 28px;
+	border: 1px solid var(--color-grey-20, #e3e8f2);
+	border-radius: 50%;
+	background: #fff;
+	color: #1d2a3e;
+	font-size: 16px;
+	line-height: 1;
+	cursor: pointer;
+}
+
+.api-code-carousel-arrow:hover:not(:disabled) {
+	border-color: #1d2a3e;
+}
+
+.api-code-carousel-arrow:disabled {
+	opacity: 0.35;
+	cursor: default;
+}
+
+.api-code-carousel-arrow:focus-visible,
+.api-code-carousel-dot:focus-visible,
+.api-code-carousel-strip:focus-visible {
+	outline: 2px solid var(--color-blue-elastic, #0b64dd);
+	outline-offset: 2px;
+}
+
+.api-code-carousel-strip {
+	display: flex;
+	align-items: flex-start;
+	gap: 12px;
+	overflow-x: auto;
+	scroll-snap-type: x mandatory;
+	scrollbar-width: none;
+	padding: 2px;
+}
+
+.api-code-carousel-strip::-webkit-scrollbar {
+	display: none;
+}
+
+#api-examples-panel .api-code-carousel-card {
+	flex: 0 0 86%;
+	min-width: 0;
+	margin: 0;
+	scroll-snap-align: start;
+	opacity: 0.55;
+	transform: scale(0.96);
+	transform-origin: left top;
+	transition:
+		opacity 0.25s,
+		transform 0.25s,
+		transform-origin 0.25s;
+}
+
+/* Inactive cards shrink towards the active one, so the gap beside it stays 12px on both sides. The last card
+   deliberately stops where the strip runs out, with the previous card showing beside it. */
+#api-examples-panel .api-code-carousel-card:has(~ .is-active) {
+	transform-origin: right top;
+}
+
+.api-code-carousel-card:not(.is-active) {
+	cursor: pointer;
+}
+
+/* While the remembered language is applied on load (api-examples-carousel.ts), nothing animates. */
+#api-examples-panel .is-settling .api-code-carousel-card,
+#api-examples-panel .is-settling .api-code-carousel-strip {
+	transition: none;
+}
+
+#api-examples-panel .api-code-carousel-card:not(.is-active):hover {
+	opacity: 0.8;
+}
+
+#api-examples-panel .api-code-carousel-card.is-active {
+	opacity: 1;
+	transform: none;
+}
+
+.api-code-carousel-card-header {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	height: 44px;
+	padding: 0 12px 0 14px;
+	border-bottom: 1px solid var(--api-code-border);
+	font-size: 13px;
+}
+
+/* Language and client label are different sizes, so they line up on the baseline, not by box centre. */
+.api-code-carousel-card-title {
+	display: flex;
+	align-items: baseline;
+	gap: 8px;
+	min-width: 0;
+}
+
+.api-code-carousel-card-language {
+	color: var(--api-code-text);
+	font-weight: 600;
+}
+
+.api-code-carousel-card-client {
+	min-width: 0;
+	overflow: hidden;
+	color: var(--api-code-muted);
+	font-family: var(--code-font);
+	font-size: 11.5px;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+/* The client label links to the client's docs page; a light blue reads as a link on the dark card. */
+.markdown-content a.api-code-carousel-card-client {
+	color: var(--color-blue-elastic-50, #85b7ff);
+	text-decoration: none;
+}
+
+.markdown-content a.api-code-carousel-card-client:hover,
+.markdown-content a.api-code-carousel-card-client:focus-visible {
+	color: var(--color-blue-elastic-30, #b8d4ff);
+	text-decoration: underline;
+}
+
+.api-code-carousel-card-actions {
+	display: flex;
+	margin-left: auto;
+}
+
+#api-examples-panel .api-code-carousel-card-body {
+	max-height: max(12rem, calc((100vh - var(--offset-top, 0px)) * 0.4));
+	overflow: auto;
+}
+
+/* At every width the strip is as tall as the active card (--api-strip-height, measured by api-examples-carousel.ts),
+   not as tall as the tallest card in the row. */
+#api-examples-panel .api-code-carousel {
+	display: flex;
+	flex: 0 1 auto;
+	flex-direction: column;
+	min-height: 0;
+	margin-bottom: 0;
+}
+
+#api-examples-panel .api-code-carousel-head,
+#api-examples-panel .api-code-carousel-dots {
+	flex: 0 0 auto;
+}
+
+#api-examples-panel .api-code-carousel-strip {
+	transition: flex-basis 0.2s ease;
+	flex: 0 1 var(--api-strip-height, auto);
+	align-items: flex-start;
+	height: auto;
+	min-height: 0;
+	overflow-y: hidden;
+}
+
+/* Expanded or dragged, the card may use the whole strip and its code scrolls, but it is not stretched
+   to fill it: a short sample keeps its own height and the spare room stays in the rail. */
+#api-examples-panel .api-code-carousel-card {
+	display: flex;
+	flex-direction: column;
+	min-height: 0;
+	max-height: 100%;
+}
+
+#api-examples-panel .api-code-carousel-card-header {
+	flex: 0 0 auto;
+}
+
+.api-code-carousel-dots {
+	display: flex;
+	flex-wrap: wrap;
+	justify-content: center;
+	gap: 6px;
+	margin-top: 10px;
+}
+
+/* A square cell so the active ring is concentric with the 22px badge: 2px ring, 2px gap, 10px radius. */
+.api-code-carousel-dot {
+	display: inline-grid;
+	place-items: center;
+	box-sizing: border-box;
+	width: 30px;
+	height: 30px;
+	padding: 0;
+	border: 2px solid transparent;
+	border-radius: 10px;
+	background: none;
+	/* Inactive dots are mostly desaturated, with a little transparency on top. */
+	filter: saturate(0.3);
+	opacity: 0.7;
+	cursor: pointer;
+	transition:
+		filter 0.2s,
+		opacity 0.2s;
+}
+
+.api-code-carousel-dot:hover,
+.api-code-carousel-dot.is-active {
+	filter: none;
+	opacity: 1;
+}
+
+.api-code-carousel-dot.is-active {
+	border-color: var(--color-blue-elastic, #0b64dd);
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.api-code-carousel-card,
+	.api-code-carousel-dot,
+	#api-examples-panel .api-code-carousel-strip {
+		transition: none;
+	}
+}
+
+@media (max-width: 640px) {
+	#api-examples-panel .api-code-carousel-card {
+		flex-basis: 100%;
+	}
+}
+
+/* Full screen preview of one code block. The card button shares the header copy button's rule (code-block.css).
+   A response card offers it only while the status panel on show has code. */
+.example-block--response:not(:has([data-code-panel]:not([hidden]) pre code))
+	[data-code-preview] {
+	display: none;
+}
+
+.api-code-preview-btn:focus-visible {
+	outline: 2px solid var(--color-blue-elastic, #0b64dd);
+	outline-offset: 2px;
+}
+
+[data-code-actions]:has(.api-code-preview-btn) {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+}
+
+/* Also an .api-code-card, which gives it the cards' border, radius and surface; position: fixed because
+   the card rule's position: relative would otherwise win over the modal's own. */
+.api-code-preview {
+	position: fixed;
+	flex-direction: column;
+	width: fit-content;
+	max-width: calc(100vw - 48px);
+	/* As tall as the code, up to the window; longer code scrolls in the body. */
+	max-height: calc(100vh - 48px);
+	/* On the optical centre rather than the geometric one: the dialog's 38.2% mark sits on the window's,
+	   so the space above and below is in the golden ratio whatever the dialog's height. */
+	top: 38.2%;
+	bottom: auto;
+	transform: translateY(-38.2%);
+	margin: 0 auto;
+	padding: 0;
+	/* Lifts the dialog off the dimmed page; cards in the rail have no shadow. */
+	box-shadow: 0 24px 64px rgb(0 0 0 / 0.5);
+}
+
+.api-code-preview[open] {
+	display: flex;
+}
+
+/* The header keeps its height when the body is capped and scrolls. */
+.api-code-preview > .api-code-carousel-card-header {
+	flex: 0 0 auto;
+}
+
+/* The page stays visible but stops competing with the code: darker, and blurred past legibility. */
+.api-code-preview::backdrop {
+	background: rgb(10 16 28 / 0.8);
+	-webkit-backdrop-filter: blur(4px);
+	backdrop-filter: blur(4px);
+}
+
+.api-code-preview-body {
+	flex: 1;
+	min-height: 0;
+	overflow: auto;
+}
+
+/* 100 characters of code; the dialog fits around it (gutter and padding add themselves) and longer lines scroll sideways. */
+.api-code-preview-body .highlight pre code {
+	box-sizing: content-box;
+	width: 100ch;
+}
+
+/*
+ * Fixed rail frame: from 1024px the rail is exactly the viewport tall and never scrolls.
+ * Example chips stay put, the request pane hugs the active sample, the response takes the
+ * rest, and only the code areas scroll.
+ */
+@media (min-width: 1024px) {
+	#api-examples-panel {
+		height: calc(100vh - var(--api-rail-top) - 16px);
+		max-height: none;
+	}
+
+	#api-examples-panel .api-examples-panel-nav {
+		flex: 1 1 auto;
+		overflow: hidden;
+	}
+
+	#api-examples-panel .api-examples {
+		display: flex;
+		flex: 1 1 auto;
+		flex-direction: column;
+		min-height: 0;
+	}
+
+	#api-examples-panel .api-examples-heading,
+	#api-examples-panel .api-example-chips-row,
+	#api-examples-panel .api-example-description {
+		flex: 0 0 auto;
+	}
+
+	#api-examples-panel .api-examples-scenario-panel:not([hidden]) {
+		flex: 1 1 auto;
+		min-height: 0;
+	}
+
+	#api-examples-panel .api-examples-scenario-panel[hidden='until-found'] {
+		flex: 0 0 0;
+		min-height: 0;
+		overflow: hidden;
+	}
+
+	/* Each snippet is as tall as its own code, up to --api-max-lines, and the strip follows the active one
+	   (--api-strip-height, measured from the code in api-examples-carousel.ts). The response takes whatever is left.
+	   Longer code scrolls, and the expand button shows all of it. */
+	#api-examples-panel .api-rail-request {
+		--api-code-cap: calc(
+			var(--api-max-lines, 16) * var(--code-size) * 1.5 +
+				var(--code-pad) * 2
+		);
+		display: flex;
+		flex: 0 1 auto;
+		flex-direction: column;
+		min-height: 120px;
+	}
+
+	#api-examples-panel .api-rail-request > .api-code-card {
+		flex: 0 1 auto;
+		min-height: 0;
+		margin-bottom: 0;
+	}
+
+	#api-examples-panel .api-code-carousel-card-body {
+		flex: 1 1 auto;
+		max-height: var(--api-code-cap, none);
+		min-height: 0;
+		overflow: auto;
+	}
+
+	#api-examples-panel .api-code-sample-body {
+		flex: 1 1 auto;
+		max-height: var(--api-code-cap, none);
+		min-height: 0;
+	}
+
+	/* The response has its own size: as tall as its JSON up to --api-response-height, and it never shrinks.
+	   The request pane gives way instead, so the response does not change size when the language or the
+	   example code changes. */
+	#api-examples-panel {
+		--api-response-height: clamp(140px, 24vh, 300px);
+	}
+
+	#api-examples-panel .api-rail-response {
+		flex: 0 0 auto;
+	}
+
+	#api-examples-panel .api-examples-scenario-panel .example-block--response {
+		flex: 0 0 auto;
+		max-height: var(--api-response-height);
+		min-height: 0;
+		margin-bottom: 0;
+	}
+
+	#api-examples-panel .example-block--response .example-block-body {
+		flex: 1 1 auto;
+		max-height: none;
+		min-height: 0;
+	}
+}
+
+@media (max-width: 1023px) {
+	/* Below the sidebar breakpoint the rail is one section among the page's, so its heading is a section heading. */
+	#api-examples-panel .api-examples-heading {
+		margin: 0 0 16px;
+		padding: 40px 0 16px;
+		border-bottom: 1px solid #e3e8f2;
+		color: var(--color-ink-navy, #111c2c);
+		font-size: 16px;
+		font-weight: 600;
+		letter-spacing: 0;
+		line-height: 24px;
+		text-transform: none;
 	}
 }

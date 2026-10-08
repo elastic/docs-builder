@@ -33,7 +33,6 @@ public sealed record NavigationRenderNode
 	/// <summary>Lowercase HTTP method for API operation leaves; drives the sidebar method glyph.</summary>
 	public string? HttpMethod { get; init; }
 	/// <summary>True when the row groups several HTTP operations under one endpoint.</summary>
-	public bool IsMultiOperation { get; init; }
 	/// <summary>Only projected for nodes, where it drives the expand/collapse checkbox and its persisted state.</summary>
 	public string? Id { get; init; }
 	public bool ShowToggle { get; init; }
@@ -385,7 +384,6 @@ public sealed record NavigationRenderModel
 			Badge = badge,
 			Url = isHeading ? "" : node.Url,
 			Id = node.Id,
-			IsMultiOperation = node is IMultiOperationNavigationItem,
 			ShowToggle = !node.NavigationItems.All(n => n.Hidden),
 			NavigationItems = [.. CreateNavigationItems(node, isTopLevel: false)]
 		};
@@ -464,7 +462,6 @@ public sealed record NavigationRenderModel
 		Append(hash, node.NavigationTitle);
 		Append(hash, node.Badge ?? string.Empty);
 		Append(hash, node.HttpMethod ?? string.Empty);
-		AppendInt(hash, node.IsMultiOperation ? 1 : 0);
 		Append(hash, node.Url);
 		Append(hash, node.Id ?? string.Empty);
 		AppendInt(hash, node.ShowToggle ? 1 : 0);

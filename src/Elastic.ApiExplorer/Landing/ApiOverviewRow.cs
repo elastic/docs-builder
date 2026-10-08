@@ -14,7 +14,6 @@ public enum OverviewRowKind
 {
 	ClassificationHeading,
 	TagHeading,
-	Endpoint,
 	Operation,
 	SchemaCategoryHeading,
 	Schema,
@@ -27,11 +26,18 @@ public record ApiOverviewRow
 	public required OverviewRowKind Kind { get; init; }
 	public required string Title { get; init; }
 	public string? Url { get; init; }
-	public IReadOnlyCollection<OperationNavigationItem> Operations { get; init; } = [];
+	/// <summary>Merged method and route rows of an operation row.</summary>
+	public OperationEndpoint? Endpoint { get; init; }
 
 	/// <summary>The full schema id shown next to schema rows.</summary>
 	public string? SchemaId { get; init; }
 }
+
+/// <summary>A heading row and the item rows under it. <see cref="Heading"/> is null for items that come before any heading.</summary>
+public record ApiOverviewSection(ApiOverviewRow? Heading, IReadOnlyList<ApiOverviewRow> Items);
+
+/// <summary>The product landing page: topic pages to read, and the sections the grouped index shows.</summary>
+public record ApiOverviewIndex(IReadOnlyList<ApiOverviewRow> Topics, IReadOnlyList<ApiOverviewSection> Groups);
 
 /// <summary>Flattens the navigation tree into overview rows so the landing views only iterate and print.</summary>
 public static class ApiOverviewBuilder
@@ -43,6 +49,60 @@ public static class ApiOverviewBuilder
 		AddProductRows(root, rows);
 		return rows;
 	}
+
+	/// <summary>Groups the flat rows into sections: each heading row starts one, item rows join the current one.</summary>
+	public static IReadOnlyList<ApiOverviewSection> Sections(IReadOnlyList<ApiOverviewRow> rows)
+	{
+		var sections = new List<ApiOverviewSection>();
+		ApiOverviewRow? heading = null;
+		var items = new List<ApiOverviewRow>();
+		foreach (var row in rows)
+		{
+			if (!IsHeading(row))
+			{
+				items.Add(row);
+				continue;
+			}
+			Flush();
+			heading = row;
+		}
+		Flush();
+		return sections;
+
+		void Flush()
+		{
+			if (heading is not null || items.Count > 0)
+				sections.Add(new ApiOverviewSection(heading, items));
+			heading = null;
+			items = [];
+		}
+	}
+
+	/// <summary>
+	/// Splits the pages that come before the first group (Authentication, Servers) from the grouped endpoints.
+	/// They are topics to read, not endpoints to browse.
+	/// </summary>
+	public static ApiOverviewIndex SplitTopics(IReadOnlyList<ApiOverviewSection> sections)
+	{
+		var topics = new List<ApiOverviewRow>();
+		var groups = new List<ApiOverviewSection>();
+		foreach (var section in sections)
+		{
+			if (section.Heading is not null)
+			{
+				groups.Add(section);
+				continue;
+			}
+			topics.AddRange(section.Items.Where(static r => r.Kind == OverviewRowKind.MarkdownPage));
+			var rest = section.Items.Where(static r => r.Kind != OverviewRowKind.MarkdownPage).ToList();
+			if (rest.Count > 0)
+				groups.Add(section with { Items = rest });
+		}
+		return new ApiOverviewIndex(topics, groups);
+	}
+
+	private static bool IsHeading(ApiOverviewRow row) =>
+		row.Kind is OverviewRowKind.ClassificationHeading or OverviewRowKind.TagHeading or OverviewRowKind.SchemaCategoryHeading;
 
 	/// <summary>Rows for a tag landing page: endpoints and operations only.</summary>
 	public static IReadOnlyList<ApiOverviewRow> BuildTagChildren(INavigationItem tagItem)
@@ -69,17 +129,8 @@ public static class ApiOverviewBuilder
 					rows.Add(new ApiOverviewRow { Kind = OverviewRowKind.TagHeading, Title = tag.NavigationTitle, Url = tag.Url });
 					AddProductRows(tag, rows);
 					break;
-				case EndpointNavigationItem endpoint:
-					AddEndpointRow(endpoint, rows, AddProductRows);
-					break;
 				case OperationNavigationItem operation:
-					rows.Add(new ApiOverviewRow
-					{
-						Kind = OverviewRowKind.Operation,
-						Title = operation.NavigationTitle,
-						Operations = [operation],
-						Url = operation.Url
-					});
+					rows.Add(OperationRow(operation));
 					break;
 				case SchemaCategoryNavigationItem schemaCategory:
 					rows.Add(new ApiOverviewRow { Kind = OverviewRowKind.SchemaCategoryHeading, Title = schemaCategory.NavigationTitle });
@@ -128,17 +179,8 @@ public static class ApiOverviewBuilder
 		{
 			switch (navigationItem)
 			{
-				case EndpointNavigationItem endpoint:
-					AddEndpointRow(endpoint, rows, AddTagRows);
-					break;
 				case OperationNavigationItem operation:
-					rows.Add(new ApiOverviewRow
-					{
-						Kind = OverviewRowKind.Operation,
-						Title = operation.NavigationTitle,
-						Operations = [operation],
-						Url = operation.Url
-					});
+					rows.Add(OperationRow(operation));
 					break;
 				case IntroHeadingNavigationItem:
 					break;
@@ -148,24 +190,12 @@ public static class ApiOverviewBuilder
 		}
 	}
 
-	private static void AddEndpointRow(
-		EndpointNavigationItem endpoint,
-		List<ApiOverviewRow> rows,
-		Action<INavigationItem, List<ApiOverviewRow>> recurse
-	)
-	{
-		var endpointOperations = endpoint is { NavigationItems.Count: > 0 } && endpoint.NavigationItems.All(n => n.Hidden)
-			? endpoint.NavigationItems
-			: [];
-		if (endpointOperations.Count > 0)
-			rows.Add(new ApiOverviewRow
-			{
-				Kind = OverviewRowKind.Endpoint,
-				Title = endpoint.NavigationTitle,
-				Operations = endpointOperations,
-				Url = endpoint.Url
-			});
-		else
-			recurse(endpoint, rows);
-	}
+	private static ApiOverviewRow OperationRow(OperationNavigationItem operation) =>
+		new()
+		{
+			Kind = OverviewRowKind.Operation,
+			Title = operation.NavigationTitle,
+			Endpoint = OperationEndpoint.Build(operation.Model, operation.Model.Operation.Description, operation.Siblings),
+			Url = operation.Url
+		};
 }

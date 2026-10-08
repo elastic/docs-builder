@@ -1,4 +1,4 @@
-import { hiddenCountToFit } from './api-param-summary'
+import { hiddenCountToFit, moreLabel } from './api-param-summary'
 
 describe('hiddenCountToFit', () => {
     it('returns 0 when everything fits', () => {
@@ -16,5 +16,16 @@ describe('hiddenCountToFit', () => {
 
     it('hides every name when even one plus the badge overflows', () => {
         expect(hiddenCountToFit(4, () => true)).toBe(4)
+    })
+})
+
+describe('moreLabel', () => {
+    it('keeps the short form for fields', () => {
+        expect(moreLabel(7)).toBe('7 more')
+    })
+
+    it('names variants, singular and plural', () => {
+        expect(moreLabel(7, 'variant')).toBe('7 more variants')
+        expect(moreLabel(1, 'variant')).toBe('1 more variant')
     })
 })

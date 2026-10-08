@@ -1,23 +1,24 @@
 import { initApiDocs } from './api-docs'
 
-function alternativePathsMarkup(): string {
+function endpointMarkup(): string {
     return `
-        <section id="elastic-api-v3">
-            <div class="api-operation-description">
-                <div>
-                    <span class="operation-verb put">PUT</span>
-                    <span class="operation-path">/{index}/_create/{id}</span>
-                </div>
-                <div>
-                    <span class="operation-verb post">POST</span>
-                    <span class="operation-path">/_create</span>
-                </div>
-            </div>
-        </section>
+        <header class="api-page-intro">
+            <ul id="paths" class="api-url-listing">
+                <li class="api-url-list-item"><span class="api-url-row">
+                    <span class="api-url"><span class="api-url-path">/{index}/_create/{id}</span></span>
+                    <button type="button" class="copybtn api-url-copy" data-copy="/{index}/_create/{id}"></button>
+                </span></li>
+                <li class="api-url-list-item"><span class="api-url-row">
+                    <span class="api-url"><span class="api-url-path">/_create</span></span>
+                    <button type="button" class="copybtn api-url-copy" data-copy="/_create"></button>
+                </span></li>
+            </ul>
+        </header>
+        <section id="elastic-api-v3"></section>
     `
 }
 
-describe('alternative path copy', () => {
+describe('endpoint path copy', () => {
     const writeText = jest.fn().mockResolvedValue(undefined)
 
     beforeAll(() => {
@@ -29,41 +30,15 @@ describe('alternative path copy', () => {
 
     beforeEach(() => {
         writeText.mockClear()
-        document.body.innerHTML = alternativePathsMarkup()
+        document.body.innerHTML = endpointMarkup()
         initApiDocs()
     })
 
-    it('adds a copy button beside each path chip', () => {
-        const rows = document.querySelectorAll('.operation-path-row')
-
-        expect(rows).toHaveLength(2)
-        rows.forEach((row) => {
-            expect(
-                row.firstElementChild?.querySelector('.operation-path')
-            ).not.toBeNull()
-            expect(row.lastElementChild?.matches('button.api-url-copy')).toBe(
-                true
-            )
-        })
-    })
-
-    it('does not add a second button when the view initialises again', () => {
-        initApiDocs()
-
-        expect(document.querySelectorAll('button.api-url-copy')).toHaveLength(2)
-    })
-
-    it('copies the path when the path text is clicked', () => {
-        document.querySelectorAll<HTMLElement>('.operation-path')[1].click()
-
-        expect(writeText).toHaveBeenCalledWith('/_create')
-    })
-
-    it('copies the path when the button is clicked', () => {
+    it('copies the route of the row whose button is clicked', () => {
         document
-            .querySelector<HTMLButtonElement>('button.api-url-copy')!
+            .querySelectorAll<HTMLButtonElement>('button.api-url-copy')[1]
             .click()
 
-        expect(writeText).toHaveBeenCalledWith('/{index}/_create/{id}')
+        expect(writeText).toHaveBeenCalledWith('/_create')
     })
 })

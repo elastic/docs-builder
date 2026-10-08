@@ -25,7 +25,7 @@ internal static class OperationCommonMark
 		ApiCommonMark.Heading(markdown, 1, title);
 		WriteBadges(markdown, operation, page);
 		WriteServers(markdown, page);
-		WritePaths(markdown, apiOperation, page);
+		WritePaths(markdown, page);
 		WriteSecurity(markdown, page);
 		WritePrerequisites(markdown, prerequisites, apiBaseUrl);
 		WritePathParameters(markdown, page, apiBaseUrl);
@@ -76,18 +76,22 @@ internal static class OperationCommonMark
 		_ = markdown.AppendLine();
 	}
 
-	private static void WritePaths(StringBuilder markdown, ApiOperation current, OperationPageModel page)
+	private static void WritePaths(StringBuilder markdown, OperationPageModel page)
 	{
 		ApiCommonMark.Heading(markdown, 2, "Paths");
-		foreach (var overload in page.Overloads)
-		{
-			var method = overload.Model.OperationType.ToString().ToUpperInvariant();
-			var marker = overload.Model.Route == current.Route && overload.Model.OperationType == current.OperationType ? " (current)" : "";
-			var deprecated = overload.Model.Operation?.Deprecated == true ? " — deprecated" : "";
-			_ = markdown.AppendLine($"- `{method}` `{overload.Model.Route}`{marker}{deprecated}");
-		}
+		foreach (var row in page.Endpoint.Rows)
+			_ = markdown.AppendLine($"- {PathLabel(row)}");
 
 		_ = markdown.AppendLine();
+	}
+
+	/// <summary><c>`POST` (also `GET`) `/{index}/_search`</c>.</summary>
+	public static string PathLabel(EndpointRow row)
+	{
+		var also = row.AlsoMethods.Count == 0
+			? ""
+			: $" (also {string.Join(", ", row.AlsoMethods.Select(static m => $"`{m.ToUpperInvariant()}`"))})";
+		return $"`{row.Method.ToUpperInvariant()}`{also} `{row.Route}`";
 	}
 
 	private static void WritePrerequisites(StringBuilder markdown, IReadOnlyList<string>? prerequisites, string apiBaseUrl)
@@ -111,11 +115,12 @@ internal static class OperationCommonMark
 		{
 			var type = path.Type is null ? "" : $" ({path.Type.Text})";
 			var deprecated = path.Deprecated is true ? " — deprecated" : "";
-			_ = markdown.AppendLine($"- `{path.Name}`{type}{deprecated}");
+			var optional = path.Optional ? $" — optional, leave it out to use `{page.Endpoint.ShortestRoute}`" : "";
+			_ = markdown.AppendLine($"- `{path.Name}`{type}{optional}{deprecated}");
 			var description = ApiMarkdown.Prepare(path.DescriptionMarkdown, apiBaseUrl);
 			if (!string.IsNullOrWhiteSpace(description))
 				_ = markdown.AppendLine($"  {description.TrimEnd()}");
-			WriteValues(markdown, path.UnionOptions, path.EnumValues);
+			WriteValues(markdown, path.UnionOptions, path.UnionLabel, path.EnumValues);
 		}
 
 		_ = markdown.AppendLine();
@@ -162,18 +167,23 @@ internal static class OperationCommonMark
 			if (!string.IsNullOrWhiteSpace(description))
 				_ = markdown.AppendLine($"  {description.TrimEnd()}");
 
-			WriteValues(markdown, query.UnionOptions, query.EnumValues);
+			WriteValues(markdown, query.UnionOptions, query.UnionLabel, query.EnumValues);
 		}
 
 		_ = markdown.AppendLine();
 	}
 
-	private static void WriteValues(StringBuilder markdown, IReadOnlyList<UnionBadge> unionOptions, IReadOnlyList<string> enumValues)
+	private static void WriteValues(
+		StringBuilder markdown,
+		IReadOnlyList<UnionBadge> unionOptions,
+		string unionLabel,
+		IReadOnlyList<string> enumValues
+	)
 	{
 		if (enumValues.Count > 0)
 			_ = markdown.AppendLine("  Values: " + string.Join(", ", enumValues.Select(v => $"`{v}`")));
 		else if (unionOptions.Count > 0)
-			_ = markdown.AppendLine("  One of: " + string.Join(" or ", unionOptions.Select(o => $"`{o.Text}`")));
+			_ = markdown.AppendLine($"  {unionLabel} " + string.Join(" or ", unionOptions.Select(o => $"`{o.Text}`")));
 	}
 
 	private static void WriteRequestBody(StringBuilder markdown, ApiOperation apiOperation, OperationPageModel page, string apiBaseUrl)
@@ -187,6 +197,8 @@ internal static class OperationCommonMark
 		ApiCommonMark.Prepared(markdown, apiOperation.Operation.RequestBody.Description, apiBaseUrl);
 		if (page.RequestProperties is not null)
 			ApiPropertyMarkdown.WriteList(markdown, page.RequestProperties, apiBaseUrl);
+		else if (page.RequestUnionVariants is { Variants.Count: > 0 })
+			ApiPropertyMarkdown.WriteVariants(markdown, page.RequestUnionVariants, apiBaseUrl);
 		else
 			ApiPropertyMarkdown.WriteType(markdown, page.RequestType);
 		_ = markdown.AppendLine();

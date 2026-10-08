@@ -6,12 +6,5 @@ using Elastic.ApiExplorer.Model;
 
 namespace Elastic.ApiExplorer.Infrastructure;
 
-/// <summary>Multi-language code sample widget with a header language selector.</summary>
-public record ApiCodeSampleModel(
-	string IdPrefix,
-	IReadOnlyList<CodeSample> Samples,
-	string? HttpMethod = null,
-	string? Route = null,
-	IReadOnlyList<ApiSelectOption>? Examples = null,
-	string? Title = null
-);
+/// <summary>Single code card in the examples rail, e.g. a request body.</summary>
+public record ApiCodeSampleModel(CodeSample Sample, string? HttpMethod = null, string? Route = null, string? Title = null);

@@ -15,6 +15,7 @@ using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.FileSystems;
+using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Site.FileProviders;
 using Elastic.Markdown.Helpers;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -289,10 +290,7 @@ public class TagMetadataTests
 		tagNavItem.Id.Should().NotBe("Machine Learning Anomaly Detection APIs"); // Not the display name
 	}
 
-	private static async Task<(OpenApiGenerator generator, OpenApiDocument document)> CreateGeneratorWithSpec(
-		string openApiJson,
-		bool apiNavGroupingEnabled = false
-	)
+	private static async Task<(OpenApiGenerator generator, OpenApiDocument document)> CreateGeneratorWithSpec(string openApiJson)
 	{
 		var collector = new DiagnosticsCollector([]);
 		var configurationContext = TestHelpers.CreateConfigurationContext(new FileSystem());
@@ -301,7 +299,6 @@ public class TagMetadataTests
 			DocumentationFileSystem.Resolve(Paths.WorkingDirectoryRoot.FullName),
 			configurationContext
 		);
-		context.OverrideFeatures(f => f.With("api-nav-grouping", apiNavGroupingEnabled));
 
 		var generator = new OpenApiGenerator(NullLoggerFactory.Instance, context, NoopMarkdownStringRenderer.Instance);
 
@@ -614,7 +611,7 @@ public class TagMetadataTests
 		}
 		""";
 
-		var (generator, openApiDocument) = await CreateGeneratorWithSpec(openApiJson, apiNavGroupingEnabled: true);
+		var (generator, openApiDocument) = await CreateGeneratorWithSpec(openApiJson);
 
 		// Act
 		var navigation = generator.CreateNavigation("elasticsearch", openApiDocument);
@@ -657,7 +654,7 @@ public class TagMetadataTests
 		}
 		""";
 
-		var (generator, openApiDocument) = await CreateGeneratorWithSpec(openApiJson, apiNavGroupingEnabled: true);
+		var (generator, openApiDocument) = await CreateGeneratorWithSpec(openApiJson);
 		var navigation = generator.CreateNavigation("elasticsearch", openApiDocument);
 
 		var expectedOverviewUrl = navigation.Index.Url;
@@ -757,7 +754,7 @@ public class TagMetadataTests
 		}
 		""";
 
-		var (generator, openApiDocument) = await CreateGeneratorWithSpec(openApiJson, apiNavGroupingEnabled: true);
+		var (generator, openApiDocument) = await CreateGeneratorWithSpec(openApiJson);
 		var navigation = generator.CreateNavigation("test", openApiDocument);
 
 		var titles = navigation.NavigationItems.OfType<ClassificationNavigationItem>().Select(c => c.NavigationTitle).ToList();
@@ -808,7 +805,7 @@ public class TagMetadataTests
 		}
 		""";
 
-		var (generator, openApiDocument) = await CreateGeneratorWithSpec(openApiJson, apiNavGroupingEnabled: true);
+		var (generator, openApiDocument) = await CreateGeneratorWithSpec(openApiJson);
 		var navigation = generator.CreateNavigation("test", openApiDocument);
 
 		var classifications = navigation.NavigationItems.OfType<ClassificationNavigationItem>().ToList();
@@ -1080,7 +1077,43 @@ public class TagMetadataTests
 		html.Should().Contain("Spaces");
 	}
 
-	private static async Task<string> RenderTagAsync(TagNavigationItem tag)
+	[Test]
+	public async Task ProductLanding_Render_ShowsGroupedIndexWithTextMeasure()
+	{
+		var openApiJson = /*lang=json,strict*/
+			"""
+			{
+			  "openapi": "3.0.3",
+			  "info": { "title": "Kibana", "version": "1.0" },
+			  "paths": {
+			    "/spaces": {
+			      "get": {
+			        "operationId": "get-spaces",
+			        "tags": ["spaces"],
+			        "responses": { "200": { "description": "ok" } }
+			      }
+			    }
+			  },
+			  "tags": [ { "name": "spaces", "x-displayName": "Spaces" } ]
+			}
+			""";
+
+		var (generator, document) = await CreateGeneratorWithSpec(openApiJson);
+		var navigation = generator.CreateNavigation("kibana", document);
+
+		var html = await RenderIndexAsync(navigation.Index, navigation);
+		html.Should().Contain("class=\"docs-measure\"");
+		html.Should().Contain("api-index-group");
+		// Every endpoint stays in the page so the browser's find-in-page matches it.
+		html.Should().Contain("api-index-item");
+		html.Should().Contain("Spaces");
+		// Authentication and Servers are topics, so they sit above the index, not in a group.
+		html.Should().NotContain("api-index-item\" href=\"/api/doc/kibana/authentication");
+	}
+
+	private static Task<string> RenderTagAsync(TagNavigationItem tag) => RenderIndexAsync(tag.Index, tag);
+
+	private static async Task<string> RenderIndexAsync(ILeafNavigationItem<IApiModel> index, INavigationItem current)
 	{
 		var collector = new DiagnosticsCollector([]);
 		var configurationContext = TestHelpers.CreateConfigurationContext(new FileSystem());
@@ -1094,11 +1127,11 @@ public class TagMetadataTests
 			new OpenApiDocument(),
 			new StaticFileContentHashProvider(new EmbeddedOrPhysicalFileProvider(context))
 		)
-		{ NavigationHtml = string.Empty, CurrentNavigation = tag, MarkdownRenderer = PassthroughMarkdownRenderer.Instance };
+		{ NavigationHtml = string.Empty, CurrentNavigation = current, MarkdownRenderer = PassthroughMarkdownRenderer.Instance };
 
 		var fs = new MockFileSystem();
 		await using (var stream = fs.FileStream.New("/out.html", FileMode.Create, FileAccess.Write))
-			await tag.Index.Model.RenderAsync(stream, renderContext, TestContext.Current!.Execution.CancellationToken);
+			await index.Model.RenderAsync(stream, renderContext, TestContext.Current!.Execution.CancellationToken);
 
 		return fs.File.ReadAllText("/out.html");
 	}

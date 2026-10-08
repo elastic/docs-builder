@@ -7,9 +7,7 @@
 @{
 	var operation = Model.Operation.Operation;
 	var pageModel = Model.Page;
-	var endpointListingAttrs = pageModel.HasMultipleOverloads
-		? new HtmlString(" role=\"radiogroup\" aria-label=\"Endpoints\"")
-		: HtmlString.Empty;
+	var endpoint = pageModel.Endpoint;
 }
 
 @* Intro keeps the full width; the reference and the examples rail share .api-page-columns below it. *@
@@ -48,31 +46,14 @@
 		</div>
 	}
 
-	<ul id="paths" class="api-url-listing@(pageModel.HasMultipleOverloads ? " api-url-listing--multi" : "")"@endpointListingAttrs>
-		@foreach (var overload in pageModel.Overloads)
+	<ul id="paths" class="api-url-listing" aria-label="Paths">
+		@foreach (var row in endpoint.Rows)
 		{
-			var method = overload.Model.OperationType.ToString().ToLowerInvariant();
-			var isCurrent = overload.Model.Route == Model.Operation.Route && overload.Model.OperationType == Model.Operation.OperationType;
 			<li class="api-url-list-item">
-				<label class="api-url-row@(isCurrent ? " current" : "")">
-					@if (pageModel.HasMultipleOverloads)
-					{
-						<input
-							type="radio"
-							class="api-url-radio"
-							name="api-endpoint"
-							value="@overload.Url"
-							aria-label="@(method.ToUpperInvariant()) @overload.Model.Route"
-							hx-get="@overload.Url"
-							@LayoutModel.HxAttributes
-							@(isCurrent ? "checked" : null) />
-					}
-					<span class="api-url">
-						@(await RenderPartialAsync<_HttpMethodBadge, string>(method))
-						<span>@overload.Model.Route</span>
-					</span>
-					@(await RenderPartialAsync<_EndpointCopyButton, string>(overload.Model.Route))
-				</label>
+				<span class="api-url-row">
+					@(await RenderPartialAsync<_EndpointPath, EndpointPathModel>(new EndpointPathModel(row, endpoint.ShortestRoute)))
+					@(await RenderPartialAsync<_EndpointCopyButton, string>(row.Route))
+				</span>
 			</li>
 		}
 	</ul>
@@ -181,16 +162,26 @@
 					{
 						<span class="required type-status">required</span>
 					}
+					else if (path.Optional)
+					{
+						<span class="optional type-status">optional</span>
+					}
 					@if (path.Deprecated is true)
 					{
 						<span class="deprecated-badge type-status">deprecated</span>
 					}
 				</dt>
-			<dd>@path.DescriptionHtml</dd>
+			<dd>
+				@path.DescriptionHtml
+				@if (path.Optional)
+				{
+					<p class="api-path-param-optional-hint">Leave it out to use <code>@endpoint.ShortestRoute</code>.</p>
+				}
+			</dd>
 			@if (path.UnionOptions.Count > 0 && path.EnumValues.Count == 0)
 			{
 				<dd class="union-options">
-					<span class="values-label">One of:</span>
+					<span class="values-label">@path.UnionLabel</span>
 					@for (var optIndex = 0; optIndex < path.UnionOptions.Count; optIndex++)
 					{
 						var unionOpt = path.UnionOptions[optIndex];
@@ -250,7 +241,7 @@
 				@if (qp.UnionOptions.Count > 0 && qp.EnumValues.Count == 0)
 				{
 					<dd class="union-options">
-						<span class="values-label">One of:</span>
+						<span class="values-label">@qp.UnionLabel</span>
 						@for (var optIndex = 0; optIndex < qp.UnionOptions.Count; optIndex++)
 						{
 							var unionOpt = qp.UnionOptions[optIndex];
@@ -275,7 +266,7 @@
 		<div @ParamSectionHeader.WrapAttributes(collapseRequest)>
 		@if (collapseRequest)
 		{
-			@(await RenderPartialAsync<_ParamSectionHeader, ParamSectionHeader>(new ParamSectionHeader("Request", "request-body", pageModel.RequestPropertyNames)))
+			@(await RenderPartialAsync<_ParamSectionHeader, ParamSectionHeader>(new ParamSectionHeader("Request", "request-body", pageModel.RequestPropertyNames, pageModel.RequestNamesAreVariants)))
 		}
 		else
 		{
@@ -290,6 +281,10 @@
 		@if (pageModel.RequestProperties is not null)
 		{
 			@(await RenderPartialAsync<_PropertyList, ApiPropertyList>(pageModel.RequestProperties))
+		}
+		else if (pageModel.RequestUnionVariants is { Variants.Count: > 0 } requestVariants)
+		{
+			@(await RenderPartialAsync<_UnionOptions, ApiUnionVariants>(requestVariants))
 		}
 		else if (pageModel.RequestType is not null)
 		{

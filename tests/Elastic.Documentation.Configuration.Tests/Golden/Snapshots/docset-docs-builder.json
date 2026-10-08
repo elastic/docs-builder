@@ -2115,8 +2115,7 @@
         "assemblerApiExplorer": false,
         "guideNav": false,
         "navigationPreview": false,
-        "pageFeedback": false,
-        "apiNavGrouping": false
+        "pageFeedback": false
       },
       "storybookRegistry": null,
       "storybookRegistryFallback": null,

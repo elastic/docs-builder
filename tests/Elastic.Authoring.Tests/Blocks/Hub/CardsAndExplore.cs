@@ -89,6 +89,7 @@ public class CardGroupNestedInExplore : MarkdownTest
 		:id: explore
 		:title: Explore the docs
 		:intro: Organized by task.
+		:mode: first
 
 		::::{card-group}
 		:title: Quick links
@@ -187,6 +188,276 @@ public class CardGroupNestedInExplore : MarkdownTest
 	public async Task HasNoErrors() => await Docs.HasNoErrors();
 }
 
+public class ExploreCollapsedByDefault : MarkdownTest
+{
+	protected override string Markdown =>
+		"""
+		:::::{explore}
+		:id: explore
+		:title: Explore the docs
+
+		::::{card-group}
+		:title: Quick links
+		:id: quick-links
+
+		:::{link-card}
+		title: Releases
+		:::
+		::::
+
+		::::{card-group}
+		:title: Authoring
+		:id: authoring
+
+		:::{link-card}
+		title: Syntax
+		:::
+		::::
+		:::::
+		""";
+
+	// Without `:mode:`, every accordion starts closed, so neither `<details>` carries `open`.
+	[Test, DisplayName("renders every accordion collapsed")]
+	public async Task RendersEveryAccordionCollapsed() =>
+		await Docs.ConvertsToContainingHtml(
+			"""
+		<div class="hub-explore">
+			<details class="hub-accordion" id="quick-links">
+				<summary class="hub-accordion-summary">
+					<h3 class="hub-accordion-title">Quick links</h3>
+					<svg class="hub-accordion-icon" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+						<path d="M3 8h10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"></path>
+						<path class="hub-accordion-icon-v" d="M8 3v10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"></path>
+					</svg>
+				</summary>
+				<div class="hub-accordion-body">
+					<ul class="hub-explore-cols">
+						<li class="hub-col">
+							<h4 class="hub-col-title">
+								Releases
+							</h4>
+						</li>
+					</ul>
+				</div>
+			</details>
+			<details class="hub-accordion" id="authoring">
+				<summary class="hub-accordion-summary">
+					<h3 class="hub-accordion-title">Authoring</h3>
+					<svg class="hub-accordion-icon" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+						<path d="M3 8h10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"></path>
+						<path class="hub-accordion-icon-v" d="M8 3v10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"></path>
+					</svg>
+				</summary>
+				<div class="hub-accordion-body">
+					<ul class="hub-explore-cols">
+						<li class="hub-col">
+							<h4 class="hub-col-title">
+								Syntax
+							</h4>
+						</li>
+					</ul>
+				</div>
+			</details>
+		</div>
+		"""
+		);
+
+	[Test, DisplayName("has no errors")]
+	public async Task HasNoErrors() => await Docs.HasNoErrors();
+}
+
+public class ExploreWithExpandedMode : MarkdownTest
+{
+	protected override string Markdown =>
+		"""
+		:::::{explore}
+		:id: explore
+		:title: Explore the docs
+		:mode: expanded
+
+		::::{card-group}
+		:title: Quick links
+		:id: quick-links
+
+		:::{link-card}
+		title: Releases
+		:::
+		::::
+
+		::::{card-group}
+		:title: Authoring
+		:id: authoring
+
+		:::{link-card}
+		title: Syntax
+		:::
+		::::
+		:::::
+		""";
+
+	[Test, DisplayName("opens every accordion")]
+	public async Task OpensEveryAccordion() =>
+		await Docs.ConvertsToContainingHtml(
+			"""
+		<div class="hub-explore">
+			<details class="hub-accordion" id="quick-links" open="">
+				<summary class="hub-accordion-summary">
+					<h3 class="hub-accordion-title">Quick links</h3>
+					<svg class="hub-accordion-icon" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+						<path d="M3 8h10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"></path>
+						<path class="hub-accordion-icon-v" d="M8 3v10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"></path>
+					</svg>
+				</summary>
+				<div class="hub-accordion-body">
+					<ul class="hub-explore-cols">
+						<li class="hub-col">
+							<h4 class="hub-col-title">
+								Releases
+							</h4>
+						</li>
+					</ul>
+				</div>
+			</details>
+			<details class="hub-accordion" id="authoring" open="">
+				<summary class="hub-accordion-summary">
+					<h3 class="hub-accordion-title">Authoring</h3>
+					<svg class="hub-accordion-icon" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+						<path d="M3 8h10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"></path>
+						<path class="hub-accordion-icon-v" d="M8 3v10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"></path>
+					</svg>
+				</summary>
+				<div class="hub-accordion-body">
+					<ul class="hub-explore-cols">
+						<li class="hub-col">
+							<h4 class="hub-col-title">
+								Syntax
+							</h4>
+						</li>
+					</ul>
+				</div>
+			</details>
+		</div>
+		"""
+		);
+
+	[Test, DisplayName("has no errors")]
+	public async Task HasNoErrors() => await Docs.HasNoErrors();
+}
+
+public class ExploreWithFirstMode : MarkdownTest
+{
+	protected override string Markdown =>
+		"""
+		:::::{explore}
+		:id: explore
+		:title: Explore the docs
+		:mode: first
+
+		::::{card-group}
+		:title: Quick links
+		:id: quick-links
+
+		:::{link-card}
+		title: Releases
+		:::
+		::::
+
+		::::{card-group}
+		:title: Authoring
+		:id: authoring
+
+		:::{link-card}
+		title: Syntax
+		:::
+		::::
+		:::::
+		""";
+
+	[Test, DisplayName("opens only the first accordion")]
+	public async Task OpensOnlyFirstAccordion() =>
+		await Docs.ConvertsToContainingHtml(
+			"""
+		<div class="hub-explore">
+			<details class="hub-accordion" id="quick-links" open="">
+				<summary class="hub-accordion-summary">
+					<h3 class="hub-accordion-title">Quick links</h3>
+					<svg class="hub-accordion-icon" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+						<path d="M3 8h10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"></path>
+						<path class="hub-accordion-icon-v" d="M8 3v10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"></path>
+					</svg>
+				</summary>
+				<div class="hub-accordion-body">
+					<ul class="hub-explore-cols">
+						<li class="hub-col">
+							<h4 class="hub-col-title">
+								Releases
+							</h4>
+						</li>
+					</ul>
+				</div>
+			</details>
+			<details class="hub-accordion" id="authoring">
+				<summary class="hub-accordion-summary">
+					<h3 class="hub-accordion-title">Authoring</h3>
+					<svg class="hub-accordion-icon" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+						<path d="M3 8h10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"></path>
+						<path class="hub-accordion-icon-v" d="M8 3v10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"></path>
+					</svg>
+				</summary>
+				<div class="hub-accordion-body">
+					<ul class="hub-explore-cols">
+						<li class="hub-col">
+							<h4 class="hub-col-title">
+								Syntax
+							</h4>
+						</li>
+					</ul>
+				</div>
+			</details>
+		</div>
+		"""
+		);
+
+	[Test, DisplayName("has no errors")]
+	public async Task HasNoErrors() => await Docs.HasNoErrors();
+}
+
+public class ExploreWithInvalidMode : MarkdownTest
+{
+	protected override string Markdown =>
+		"""
+		:::::{explore}
+		:id: explore
+		:title: Explore the docs
+		:mode: sideways
+
+		::::{card-group}
+		:title: Quick links
+		:id: quick-links
+
+		:::{link-card}
+		title: Releases
+		:::
+		::::
+
+		::::{card-group}
+		:title: Authoring
+		:id: authoring
+
+		:::{link-card}
+		title: Syntax
+		:::
+		::::
+		:::::
+		""";
+
+	[Test, DisplayName("warns about the unknown mode")]
+	public async Task WarnsAboutUnknownMode() => await Docs.HasWarning("Invalid {explore} mode 'sideways'");
+
+	[Test, DisplayName("falls back to collapsed")]
+	public async Task FallsBackToCollapsed() => await Docs.DoesNotConvertToContainingHtml(" open=\"\"");
+}
+
 public class LinkCardWithoutATitle : MarkdownTest
 {
 	protected override string Markdown => """
@@ -262,7 +533,7 @@ public class LinkCardWithACrossLink : MarkdownTest
 					<span class="hub-card-icon">
 						<svg viewBox="8 4.9995 47.7276 54.001" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
 							<path fill-rule="evenodd" clip-rule="evenodd" d="M55.7246 14.7075L55.7276 14.7015C50.7746 8.77351 43.3286 4.99951 34.9996 4.99951C24.4006 4.99951 15.2326 11.1115 10.8136 19.9995H46.0056C48.5306 19.9995 50.9886 19.1295 52.9206 17.5035C53.9246 16.6585 54.8636 15.7385 55.7246 14.7075Z" fill="#FEC514"></path>
-							<path fill-rule="evenodd" clip-rule="evenodd" d="M8 32C8 34.422 8.324 36.767 8.922 39H42C45.866 39 49 35.866 49 32C49 28.134 45.866 25 42 25H8.922C8.324 27.233 8 29.578 8 32Z" fill="rgba(255,255,255,0.85)"></path>
+							<path fill-rule="evenodd" clip-rule="evenodd" d="M8 32C8 34.422 8.324 36.767 8.922 39H42C45.866 39 49 35.866 49 32C49 28.134 45.866 25 42 25H8.922C8.324 27.233 8 29.578 8 32Z" class="euiIcon__fillNegative"></path>
 							<path fill-rule="evenodd" clip-rule="evenodd" d="M55.7246 49.2925L55.7276 49.2985C50.7746 55.2265 43.3286 59.0005 34.9996 59.0005C24.4006 59.0005 15.2326 52.8885 10.8136 44.0005H46.0056C48.5306 44.0005 50.9886 44.8705 52.9206 46.4965C53.9246 47.3415 54.8636 48.2615 55.7246 49.2925Z" fill="#00BFB3"></path>
 						</svg>
 					</span>
@@ -283,4 +554,102 @@ public class LinkCardWithACrossLink : MarkdownTest
 
 	[Test, DisplayName("has no errors")]
 	public async Task HasNoErrors() => await Docs.HasNoErrors();
+}
+
+// :level: 3 nests a section under another heading. The whole outline moves with it, so the
+// accordion and the column keep their relative depth.
+public class ExploreAtLevelThree : MarkdownTest
+{
+	protected override string Markdown =>
+		"""
+		:::::{explore}
+		:id: use-kibana
+		:title: Use Kibana
+		:level: 3
+		:mode: first
+
+		::::{card-group}
+		:title: Analyze data
+		:id: analyze
+
+		:::{link-card}
+		title: Discover
+		:::
+		::::
+		:::::
+		""";
+
+	[Test, DisplayName("renders the section as a nested h3")]
+	public async Task RendersNestedHeading() =>
+		await Docs.ConvertsToContainingHtml(
+			"""
+		<div class="hub-zone hub-zone-nested" id="use-kibana">
+			<h3 class="hub-zone-title">Use Kibana</h3>
+		</div>
+		"""
+		);
+
+	[Test, DisplayName("renders the accordion as h4 and the column as h5")]
+	public async Task RendersNestedOutline() =>
+		await Docs.ConvertsToContainingHtml(
+			"""
+		<div class="hub-explore">
+			<details class="hub-accordion" id="analyze" open="">
+				<summary class="hub-accordion-summary">
+					<h4 class="hub-accordion-title">Analyze data</h4>
+					<svg class="hub-accordion-icon" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+						<path d="M3 8h10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"></path>
+						<path class="hub-accordion-icon-v" d="M8 3v10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"></path>
+					</svg>
+				</summary>
+				<div class="hub-accordion-body">
+					<ul class="hub-explore-cols">
+						<li class="hub-col">
+							<h5 class="hub-col-title">
+								Discover
+							</h5>
+						</li>
+					</ul>
+				</div>
+			</details>
+		</div>
+		"""
+		);
+
+	[Test, DisplayName("has no errors")]
+	public async Task HasNoErrors() => await Docs.HasNoErrors();
+}
+
+public class ExploreWithInvalidLevel : MarkdownTest
+{
+	protected override string Markdown =>
+		"""
+		:::::{explore}
+		:id: explore
+		:title: Explore the docs
+		:level: 4
+
+		::::{card-group}
+		:title: Quick links
+		:id: quick-links
+
+		:::{link-card}
+		title: Releases
+		:::
+		::::
+		:::::
+		""";
+
+	[Test, DisplayName("warns")]
+	public async Task Warns() => await Docs.HasWarning("Invalid {explore} level '4'");
+
+	[Test, DisplayName("falls back to h2")]
+	public async Task FallsBackToH2() =>
+		await Docs.ConvertsToContainingHtml(
+			"""
+		<div class="hub-zone" id="explore">
+			<h2 class="hub-zone-title">Explore the docs</h2>
+		</div>
+		"""
+		);
 }

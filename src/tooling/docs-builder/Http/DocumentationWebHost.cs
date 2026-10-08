@@ -464,7 +464,7 @@ public class DocumentationWebHost
 		}
 	}
 
-	private static IResult LiveReloadHtml(string content, Encoding? encoding = null, int? statusCode = null)
+	internal static IResult LiveReloadHtml(string content, Encoding? encoding = null, int? statusCode = null)
 	{
 		if (LiveReloadConfiguration.Current.LiveReloadEnabled)
 		{

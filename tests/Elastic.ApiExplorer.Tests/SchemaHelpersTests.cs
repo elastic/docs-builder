@@ -4,6 +4,7 @@
 
 using AwesomeAssertions;
 using Elastic.ApiExplorer.Model;
+using Microsoft.OpenApi;
 
 namespace Elastic.ApiExplorer.Tests;
 
@@ -104,6 +105,42 @@ public class SchemaHelpersTests
 	[Arguments("Security_Lists_API_SiemErrorResponse", "SiemErrorResponse")]
 	[Arguments("Field", "Field")]
 	[Arguments("QueryContainer", "QueryContainer")]
+	[Arguments("bedrock_config", "bedrock_config")]
+	[Arguments("params_property_apm_anomaly", "params_property_apm_anomaly")]
+	[Arguments("Security_Lists_API_list_item", "Security_Lists_API_list_item")]
 	public void ReadableSchemaName_CodegenIds_UsesLastSegment(string input, string expected) =>
 		SchemaHelpers.ReadableSchemaName(input).Should().Be(expected);
+
+	[Test]
+	[Arguments("bedrock_config", true)]
+	[Arguments("no_data", true)]
+	[Arguments("Security_Lists_API_ListMetadata", false)]
+	[Arguments("QueryContainer", false)]
+	[Arguments("string", false)]
+	[Arguments(null, false)]
+	public void IsSnakeCaseName_Ids_MatchesOnlyLowercaseSnakeCase(string? name, bool expected) =>
+		SchemaHelpers.IsSnakeCaseName(name).Should().Be(expected);
+
+	[Test]
+	public void GetPrimitiveTypeName_SeveralTypes_ListsEveryTypeButNull()
+	{
+		SchemaHelpers.GetPrimitiveTypeName(JsonSchemaType.Number | JsonSchemaType.String).Should().Be("number | string");
+		SchemaHelpers
+			.GetPrimitiveTypeName(JsonSchemaType.Boolean | JsonSchemaType.Number | JsonSchemaType.String)
+			.Should()
+			.Be("boolean | number | string");
+		SchemaHelpers.GetPrimitiveTypeName(JsonSchemaType.String | JsonSchemaType.Object).Should().Be("string | object");
+		SchemaHelpers.GetPrimitiveTypeName(JsonSchemaType.String | JsonSchemaType.Null).Should().Be("string");
+		SchemaHelpers.GetPrimitiveTypeName(JsonSchemaType.Null).Should().Be("null");
+		SchemaHelpers.GetPrimitiveTypeName(JsonSchemaType.Integer).Should().Be("integer");
+	}
+
+	[Test]
+	[Arguments("string | object", true)]
+	[Arguments("boolean | number | string", true)]
+	[Arguments("string", true)]
+	[Arguments("Cat | Dog", false)]
+	[Arguments("QueryContainer", false)]
+	public void IsPrimitiveTypeName_SingleAndMultiTypeNames(string name, bool expected) =>
+		SchemaHelpers.IsPrimitiveTypeName(name).Should().Be(expected);
 }

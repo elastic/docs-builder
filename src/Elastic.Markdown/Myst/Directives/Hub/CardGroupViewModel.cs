@@ -14,6 +14,9 @@ public class CardGroupViewModel : DirectiveViewModel
 	/// <summary>Rendered as a collapsible accordion group inside an {explore} section.</summary>
 	public bool IsAccordion { get; init; }
 
+	/// <summary>Heading level of the accordion title: one below the enclosing {explore} title.</summary>
+	public int AccordionHeadingLevel { get; init; } = 3;
+
 	/// <summary>The accordion is expanded by default (the first group in an Explore stack).</summary>
 	public bool IsOpen { get; init; }
 }

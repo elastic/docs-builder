@@ -1,10 +1,10 @@
 import { initAgentSkillCopy } from './agent-skill'
 import { initApiDocs } from './api-docs'
 import { initAppliesSwitch } from './applies-switch'
-import { initCodeLineNumbers } from './code-line-numbers'
 import { config } from './config'
 import { initCopyButton } from './copybutton'
-import { initHighlight } from './hljs'
+import { initGetStarted } from './get-started'
+import { initHighlight, preloadHighlight } from './hljs'
 import { initImageCarousel } from './image-carousel'
 import { initListing } from './listing'
 import { initMermaid } from './mermaid'
@@ -194,6 +194,9 @@ function initCtaImpressions() {
     )
 }
 
+// The languages chunk is the long pole for code pages; fetch it before the init steps get to it.
+if (document.querySelector('pre code')) preloadHighlight()
+
 // Initialize on initial page load
 document.addEventListener('DOMContentLoaded', function () {
     runInitSteps([
@@ -201,6 +204,7 @@ document.addEventListener('DOMContentLoaded', function () {
         ['initMath', initMath],
         ['initMermaid', initMermaid],
         ['initCtaImpressions', initCtaImpressions],
+        ['initGetStarted', initGetStarted],
     ])
 })
 
@@ -210,7 +214,6 @@ document.addEventListener('htmx:load', function () {
         ['initTocNav', initTocNav],
         ['initHighlight', initHighlight],
         ['initCopyButton', initCopyButton],
-        ['initCodeLineNumbers', initCodeLineNumbers],
         ['initAgentSkillCopy', initAgentSkillCopy],
         ['initTabs', initTabs],
         ['initAppliesSwitch', initAppliesSwitch],
@@ -220,6 +223,7 @@ document.addEventListener('htmx:load', function () {
         ['initSmoothScroll', initSmoothScroll],
         ['openDetailsWithAnchor', openDetailsWithAnchor],
         ['initImageCarousel', initImageCarousel],
+        ['initGetStarted', initGetStarted],
         ['initListing', initListing],
         ['initTable', initTable],
         ['initApiDocs', initApiDocs],

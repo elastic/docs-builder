@@ -1,3 +1,4 @@
+import { prefersReducedMotion } from './motion'
 import { initPagesNavScroll } from './pages-nav-scroll'
 import { throttle } from 'lodash'
 import { $optional, $$optional } from 'select-dom'
@@ -156,13 +157,6 @@ function beginUserFolderGesture(nav: HTMLElement) {
     userFolderGesture = true
     suppressFolderSnapUntil = Date.now() + FOLDER_ANIM_MS + 80
     ensureSubtreeClips(nav)
-}
-
-function prefersReducedMotion() {
-    return (
-        typeof window.matchMedia === 'function' &&
-        window.matchMedia('(prefers-reduced-motion: reduce)').matches
-    )
 }
 
 function clearFolderAnim(panel: HTMLElement) {

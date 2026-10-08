@@ -323,8 +323,7 @@ public class DocumentationSetGoldenTests
 			("assemblerApiExplorer", Bool(f.AssemblerApiExplorerEnabled)),
 			("guideNav", Bool(f.GuideNavEnabled)),
 			("navigationPreview", Bool(f.NavigationPreviewEnabled)),
-			("pageFeedback", Bool(f.PageFeedbackEnabled)),
-			("apiNavGrouping", Bool(f.ApiNavGroupingEnabled))
+			("pageFeedback", Bool(f.PageFeedbackEnabled))
 		);
 
 	internal sealed class GoldenDocumentationSetContext(

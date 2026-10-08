@@ -24,12 +24,22 @@ public sealed record PropertyTreeScope
 	public IReadOnlySet<string>? Ancestors { get; init; }
 	public IReadOnlyDictionary<string, string>? DescriptionOverrides { get; init; }
 
+	/// <summary>The variant or row these properties belong to, used to say where a shared listing sits.</summary>
+	public string? Owner { get; init; }
+
 	/// <summary>Overrides the schema's own required set at the top level; never inherited by children.</summary>
 	public ISet<string>? RequiredProperties { get; init; }
 }
 
-public class ApiPropertyTreeBuilder(OpenApiDocument document, PropertyDisplayOptions options, string? currentPageType = null)
+public partial class ApiPropertyTreeBuilder(
+	OpenApiDocument document,
+	PropertyDisplayOptions options,
+	string? currentPageType = null,
+	PageShapes? pageShapes = null
+)
 {
+	private readonly PageShapes _shapes = pageShapes ?? new();
+
 	private readonly SchemaAnalyzer _analyzer = new(document, currentPageType, options.SchemaResolveCache);
 
 	/// <summary>One renderable property before its display fields are derived.</summary>
@@ -40,17 +50,20 @@ public class ApiPropertyTreeBuilder(OpenApiDocument document, PropertyDisplayOpt
 		string AnchorId,
 		bool IsRequired,
 		bool IsLast,
-		bool IsRecursive
+		bool IsRecursive,
+		string? ShapeKey = null,
+		RepeatedShape? Repeats = null
 	);
 
 	/// <summary>Builds the property rows for a schema; null when it has no renderable properties.</summary>
 	public ApiPropertyList? BuildPropertyList(IOpenApiSchema? schema, PropertyTreeScope scope)
 	{
-		var properties = _analyzer.GetSchemaProperties(schema);
-		if (properties is null || properties.Count == 0)
+		var effective = _analyzer.Flatten(schema);
+		var properties = effective.Properties;
+		if (properties.Count == 0)
 			return null;
 
-		var requiredProps = scope.RequiredProperties ?? schema?.Required ?? new HashSet<string>();
+		var requiredProps = scope.RequiredProperties ?? effective.Required;
 		var propArray = properties.ToArray();
 		var items = new List<ApiProperty>(propArray.Length);
 		for (var i = 0; i < propArray.Length; i++)
@@ -60,7 +73,11 @@ public class ApiPropertyTreeBuilder(OpenApiDocument document, PropertyDisplayOpt
 				continue;
 
 			var typeInfo = _analyzer.GetTypeInfo(propSchema);
-			var propId = string.IsNullOrEmpty(scope.Prefix) ? name : $"{scope.Prefix}-{name}";
+			var shapeKey = ShapeKey(typeInfo);
+			var ancestor = _shapes.Ancestor(shapeKey);
+			// The synthetic map row reads "<string>"; its anchor avoids a real property named "string" on the same list.
+			var anchorName = name == DictionaryKeyName ? properties.ContainsKey("string") ? "string-map" : "string" : name;
+			var propId = string.IsNullOrEmpty(scope.Prefix) ? anchorName : $"{scope.Prefix}-{anchorName}";
 			var row = new PropertyRow(
 				name,
 				propSchema,
@@ -68,31 +85,14 @@ public class ApiPropertyTreeBuilder(OpenApiDocument document, PropertyDisplayOpt
 				propId,
 				IsRequired: requiredProps.Contains(name),
 				IsLast: i == propArray.Length - 1,
-				IsRecursive: DetectRecursion(propSchema, typeInfo, scope.Ancestors)
+				IsRecursive: ancestor is not null || DetectRecursion(propSchema, typeInfo, scope.Ancestors),
+				ShapeKey: shapeKey,
+				Repeats: ancestor
 			);
 			items.Add(BuildProperty(row, scope));
 		}
 
 		return new ApiPropertyList(items);
-	}
-
-	/// <summary>Builds the expanded variants for a top-level oneOf/anyOf union (schema pages).</summary>
-	public ApiUnionVariants? BuildUnionVariantsForSchemas(
-		IList<IOpenApiSchema> unionSchemas,
-		string prefix,
-		IReadOnlySet<string>? ancestors
-	)
-	{
-		var unionOptions = unionSchemas
-			.Where(s => s is not null)
-			.Select(s =>
-			{
-				var info = _analyzer.GetTypeInfo(s);
-				var displayName = info.IsArray ? $"{info.TypeName}[]" : info.TypeName;
-				return new UnionOption(displayName, info.SchemaRef, info.IsObject, s);
-			})
-			.ToList();
-		return BuildUnionVariants(unionOptions, new PropertyTreeScope { Prefix = prefix, Ancestors = ancestors });
 	}
 
 	/// <summary>The display form (icons, keywords, name) of a schema's type.</summary>
@@ -114,8 +114,7 @@ public class ApiPropertyTreeBuilder(OpenApiDocument document, PropertyDisplayOpt
 		if (ReferenceEquals(resolved, schema) || resolved is null)
 			return Describe(schema);
 
-		var (isSimpleArrayUnion, _) = DetectSimpleArrayUnion(_analyzer.GetTypeInfo(resolved));
-		return isSimpleArrayUnion ? Describe(resolved) : Describe(schema);
+		return DetectSimpleArrayUnion(_analyzer.GetTypeInfo(resolved)) is not null ? Describe(resolved) : Describe(schema);
 	}
 
 	/// <summary>Validation constraint labels for a schema; empty when it declares none.</summary>
@@ -186,10 +185,13 @@ public class ApiPropertyTreeBuilder(OpenApiDocument document, PropertyDisplayOpt
 
 	private ApiProperty BuildProperty(PropertyRow row, PropertyTreeScope scope)
 	{
-		var (_, propSchema, typeInfo, _, _, _, isRecursive) = row;
+		var (_, propSchema, typeInfo, _, _, _, isRecursive, _, _) = row;
 		var expansion = ComputeExpansion(propSchema, typeInfo, scope.Depth, isRecursive);
 		var (descriptionHtml, descriptionMarkdown) = RenderDescription(row.Name, propSchema.Description, scope);
 		var typeLink = BuildTypeLink(typeInfo, expansion);
+		var (children, repeats) = isRecursive || row.Repeats is not null
+			? (ApiPropertyChildren.None, row.Repeats)
+			: ListChildren(row, scope, expansion);
 
 		return new ApiProperty
 		{
@@ -212,144 +214,23 @@ public class ApiPropertyTreeBuilder(OpenApiDocument document, PropertyDisplayOpt
 			ExternalDocs = BuildExternalDocs(propSchema, typeInfo),
 			Constraints = BuildConstraints(propSchema),
 			EnumValues = typeInfo.EnumValues ?? [],
+			// Kept on a repeat too, so it hashes like the row it repeats; the views show "Same … as" in its place.
 			Union = typeInfo.IsUnion ? BuildUnionDisplay(propSchema, typeInfo, expansion) : null,
+			Repeats = repeats,
 			// Type annotation already reads "[] …"; skip the redundant "Array of:" row.
 			ArrayItemTypeName = null,
 			TypeLink = typeLink,
-			IsCollapsible = expansion.IsCollapsible,
+			AlsoIncludes = BuildAlsoIncludes(typeInfo),
+			// A repeat lists nothing itself, so it gets no show/hide toggle.
+			IsCollapsible = repeats is null && expansion.IsCollapsible,
 			DefaultExpanded = expansion.DefaultExpanded,
-			NestedCount = expansion.NestedCount,
-			Children = isRecursive ? ApiPropertyChildren.None : BuildChildren(row, scope, expansion)
+			NestedCount = repeats is null ? expansion.NestedCount : 0,
+			Children = children
 		};
 	}
 
-	/// <summary>Everything the original view's opening code block derived about a property's expansion.</summary>
-	private sealed record Expansion(
-		bool HasNestedProps,
-		bool HasDictValueProps,
-		IOpenApiSchema? ArrayItemSchema,
-		bool HasArrayItemProps,
-		bool IsSimpleArrayUnion,
-		string? SimpleUnionBaseName,
-		bool HasUnionOptions,
-		bool SimpleUnionHasExpandableProps,
-		IOpenApiSchema? SimpleUnionSchema,
-		List<UnionOption>? SimpleUnionNestedOptions,
-		int NestedCount,
-		bool HasChildren,
-		bool IsCollapsible,
-		bool DefaultExpanded
-	);
-
-	private Expansion ComputeExpansion(IOpenApiSchema propSchema, TypeInfo typeInfo, int depth, bool isRecursive)
-	{
-		var dictHasLinkedValue = typeInfo is { IsDictionary: true, HasLink: true };
-		var hasNestedProps = typeInfo is { IsObject: true, HasLink: false } && depth < options.MaxDepth && HasActualProperties(propSchema);
-		var hasDictValueProps = typeInfo is { IsDictionary: true, DictValueSchema: not null }
-			&& depth < options.MaxDepth
-			&& !dictHasLinkedValue
-			&& HasActualProperties(typeInfo.DictValueSchema);
-		var arrayItemSchema = typeInfo.IsArray && propSchema.Items is not null ? propSchema.Items : null;
-		var hasArrayItemProps = arrayItemSchema is not null
-			&& !typeInfo.HasLink
-			&& depth < options.MaxDepth
-			&& HasActualProperties(arrayItemSchema);
-
-		var (isSimpleArrayUnion, simpleUnionBaseName) = DetectSimpleArrayUnion(typeInfo);
-
-		var hasUnionOptions = typeInfo is { IsUnion: true, AnyOfOptions: not null }
-			&& depth < options.MaxDepth
-			&& !isSimpleArrayUnion
-			&& typeInfo.AnyOfOptions.Any(_analyzer.UnionOptionHasProperties);
-
-		var (simpleUnionHasExpandableProps, simpleUnionSchema, simpleUnionNestedOptions) = ResolveSimpleUnionExpansion(
-			typeInfo,
-			isSimpleArrayUnion,
-			simpleUnionBaseName,
-			depth
-		);
-
-		var nestedCount = 0;
-		if (hasNestedProps)
-			nestedCount = _analyzer.GetSchemaProperties(propSchema)?.Count ?? 0;
-		else if (hasDictValueProps)
-			nestedCount = _analyzer.GetSchemaProperties(typeInfo.DictValueSchema)?.Count ?? 0;
-		else if (hasArrayItemProps)
-			nestedCount = _analyzer.GetSchemaProperties(arrayItemSchema)?.Count ?? 0;
-		else if (hasUnionOptions)
-			nestedCount = typeInfo.AnyOfOptions!.Count(_analyzer.UnionOptionHasProperties);
-		else if (simpleUnionHasExpandableProps && simpleUnionNestedOptions is { Count: > 0 })
-			nestedCount = simpleUnionNestedOptions.Count(_analyzer.UnionOptionHasProperties);
-		else if (simpleUnionHasExpandableProps && simpleUnionSchema is not null)
-			nestedCount = _analyzer.GetSchemaProperties(simpleUnionSchema)?.Count ?? 0;
-
-		var hasChildren = (hasNestedProps || hasDictValueProps || hasArrayItemProps || hasUnionOptions || simpleUnionHasExpandableProps)
-			&& !isRecursive;
-		var isCollapsible = hasChildren && nestedCount > 1 && !hasUnionOptions && !hasDictValueProps;
-		var defaultExpanded = ComputeDefaultExpanded(depth, nestedCount);
-
-		return new Expansion(
-			hasNestedProps,
-			hasDictValueProps,
-			arrayItemSchema,
-			hasArrayItemProps,
-			isSimpleArrayUnion,
-			simpleUnionBaseName,
-			hasUnionOptions,
-			simpleUnionHasExpandableProps,
-			simpleUnionSchema,
-			simpleUnionNestedOptions,
-			nestedCount,
-			hasChildren,
-			isCollapsible,
-			defaultExpanded
-		);
-	}
-
-	private static (bool IsSimpleArrayUnion, string? BaseName) DetectSimpleArrayUnion(TypeInfo typeInfo)
-	{
-		if (typeInfo is not { IsUnion: true, AnyOfOptions.Count: > 0 })
-			return (false, null);
-
-		var unionOptionNames = new List<string>();
-		unionOptionNames.AddRange(typeInfo.AnyOfOptions.Select(o => o.Name));
-		if (typeInfo.UnionOptions is not null)
-			unionOptionNames.AddRange(typeInfo.UnionOptions);
-		var distinctNames = unionOptionNames.Distinct().ToArray();
-		if (distinctNames.Length != 2)
-			return (false, null);
-
-		var baseNames = distinctNames.Select(n => n.EndsWith("[]") ? n[..^2] : n).Distinct().ToArray();
-		if (baseNames.Length == 1 && !string.IsNullOrEmpty(baseNames[0]))
-			return (true, baseNames[0]);
-		return (false, null);
-	}
-
-	private (bool Expandable, IOpenApiSchema? Schema, List<UnionOption>? NestedOptions) ResolveSimpleUnionExpansion(
-		TypeInfo typeInfo,
-		bool isSimpleArrayUnion,
-		string? simpleUnionBaseName,
-		int depth
-	)
-	{
-		if (!isSimpleArrayUnion || string.IsNullOrEmpty(simpleUnionBaseName) || depth >= options.MaxDepth)
-			return (false, null, null);
-
-		var baseOption = typeInfo.AnyOfOptions!.FirstOrDefault(o => o.Name == simpleUnionBaseName);
-		if (baseOption?.Schema is null)
-			return (false, null, null);
-
-		var baseTypeInfo = _analyzer.GetTypeInfo(baseOption.Schema);
-		if (baseTypeInfo.HasLink || !_analyzer.UnionOptionHasProperties(baseOption))
-			return (false, null, null);
-
-		var directProps = _analyzer.GetSchemaProperties(baseOption.Schema);
-		var nestedOptions = directProps is null or { Count: 0 } ? _analyzer.GetNestedUnionOptions(baseOption.Schema) : null;
-		return (true, baseOption.Schema, nestedOptions);
-	}
-
-	private bool ComputeDefaultExpanded(int depth, int nestedCount) =>
-		options.CollapseMode == CollapseMode.DepthBased && depth != 0 && nestedCount is > 0 and < 5;
+	// Object rows start collapsed. The request body root is the property list, so its fields stay visible.
+	private static bool ComputeDefaultExpanded() => false;
 
 	private ExternalDocLink? BuildExternalDocs(IOpenApiSchema propSchema, TypeInfo typeInfo)
 	{
@@ -378,6 +259,12 @@ public class ApiPropertyTreeBuilder(OpenApiDocument document, PropertyDisplayOpt
 		return new TypeAnnotation(spans);
 	}
 
+	private IReadOnlyList<TypePageLink> BuildAlsoIncludes(TypeInfo typeInfo) =>
+		typeInfo.AlsoIncludes?.Select(
+			c => new TypePageLink(c.Name, c.HasLink ? SchemaHelpers.GetContainerPageUrl(options.ApiRootUrl, c.Name) : null)
+		).ToArray()
+			?? [];
+
 	private TypePageLink? BuildTypeLink(TypeInfo typeInfo, Expansion expansion)
 	{
 		string? linkedTypeName = null;
@@ -387,11 +274,11 @@ public class ApiPropertyTreeBuilder(OpenApiDocument document, PropertyDisplayOpt
 				? _analyzer.GetTypeInfo(typeInfo.DictValueSchema).TypeName
 				: typeInfo.TypeName;
 		}
-		else if (expansion.IsSimpleArrayUnion && !string.IsNullOrEmpty(expansion.SimpleUnionBaseName))
+		else if (expansion.ArrayUnion is { BaseName: var baseName })
 		{
-			var baseOption = typeInfo.AnyOfOptions!.FirstOrDefault(o => o.Name == expansion.SimpleUnionBaseName);
+			var baseOption = typeInfo.UnionOptions!.FirstOrDefault(o => o.Name == baseName);
 			if (baseOption?.Schema is not null && _analyzer.GetTypeInfo(baseOption.Schema).HasLink)
-				linkedTypeName = expansion.SimpleUnionBaseName;
+				linkedTypeName = baseName;
 		}
 
 		if (string.IsNullOrEmpty(linkedTypeName))
@@ -405,15 +292,18 @@ public class ApiPropertyTreeBuilder(OpenApiDocument document, PropertyDisplayOpt
 		if (typeInfo.EnumValues is { Length: > 0 } && !expansion.HasUnionOptions)
 			return null;
 
-		var unionOptionNames = new List<string>();
-		if (typeInfo.AnyOfOptions is { Count: > 0 })
-			unionOptionNames.AddRange(typeInfo.AnyOfOptions.Select(o => o.Name));
-		if (typeInfo.UnionOptions is not null)
-			unionOptionNames.AddRange(typeInfo.UnionOptions);
-		var sortedOptions = unionOptionNames.Distinct().OrderByDescending(o => o.EndsWith("[]")).ToArray();
-
-		if (expansion.IsSimpleArrayUnion)
+		// An X | X[] union needs no options row when its type already reads X | X[] or X's fields expand below it.
+		// A named one (`union NodeIds`) that does not expand has only this row to name X.
+		var namesItsOptions = typeInfo.TypeName?.Contains(" | ", StringComparison.Ordinal) == true;
+		if (expansion.ArrayUnion is { } arrayUnion && (namesItsOptions || arrayUnion.Expands))
 			return null;
+
+		var sortedOptions = (typeInfo.UnionOptions ?? [])
+			.DistinctBy(o => o.Name)
+			.OrderByDescending(o => o.IsArray)
+			.Select(static o => SchemaHelpers.ReadableSchemaName(o.BaseName) + (o.IsArray ? "[]" : ""))
+			.Distinct()
+			.ToArray();
 
 		if (sortedOptions.Length > 0 || expansion.HasUnionOptions)
 		{
@@ -423,7 +313,8 @@ public class ApiPropertyTreeBuilder(OpenApiDocument document, PropertyDisplayOpt
 			return new UnionDisplay
 			{
 				Kind = UnionDisplayKind.Badges,
-				DiscriminatorProperty = propSchema.Discriminator?.PropertyName,
+				Keyword = typeInfo.UnionKeyword,
+				DiscriminatorProperty = _analyzer.GetUnionDiscriminator(propSchema)?.PropertyName,
 				Badges = badgeOptions.Select(o => new UnionBadge(o, IsTypeOptionBadge(o))).ToArray()
 			};
 		}
@@ -437,79 +328,11 @@ public class ApiPropertyTreeBuilder(OpenApiDocument document, PropertyDisplayOpt
 			|| char.IsUpper(option[0])
 			|| option.EndsWith("[]");
 
-	private ApiPropertyChildren BuildChildren(PropertyRow row, PropertyTreeScope scope, Expansion expansion)
-	{
-		var typeInfo = row.TypeInfo;
-		var childScope = scope with
-		{
-			Prefix = row.AnchorId,
-			Depth = scope.Depth + 1,
-			Ancestors = AugmentAncestors(typeInfo, scope.Ancestors),
-			RequiredProperties = null
-		};
-		var useHidden = options.UseHiddenUntilFound && expansion.IsCollapsible && !expansion.DefaultExpanded;
-
-		if (expansion.HasDictValueProps)
-			return BuildDictionaryChildren(row, childScope, expansion);
-
-		if (expansion.HasNestedProps)
-		{
-			return new ApiPropertyChildren
-			{
-				Kind = ChildKind.PropertyList,
-				UseHidden = useHidden,
-				Properties = BuildPropertyList(row.Schema, childScope) ?? new ApiPropertyList([])
-			};
-		}
-
-		if (expansion.HasArrayItemProps)
-		{
-			return new ApiPropertyChildren
-			{
-				Kind = ChildKind.PropertyList,
-				UseHidden = useHidden,
-				Properties = BuildPropertyList(expansion.ArrayItemSchema, childScope) ?? new ApiPropertyList([])
-			};
-		}
-
-		if (expansion.HasUnionOptions)
-		{
-			return new ApiPropertyChildren
-			{
-				Kind = ChildKind.UnionVariants,
-				UseHidden = false,
-				Variants = BuildUnionVariants(typeInfo.AnyOfOptions!, childScope) ?? ApiUnionVariants.Empty
-			};
-		}
-
-		if (expansion.SimpleUnionHasExpandableProps && expansion.SimpleUnionNestedOptions is { Count: > 0 })
-		{
-			return new ApiPropertyChildren
-			{
-				Kind = ChildKind.SimpleUnionVariants,
-				UseHidden = useHidden,
-				Variants = BuildUnionVariants(expansion.SimpleUnionNestedOptions, childScope) ?? ApiUnionVariants.Empty
-			};
-		}
-
-		if (expansion.SimpleUnionHasExpandableProps && expansion.SimpleUnionSchema is not null)
-		{
-			return new ApiPropertyChildren
-			{
-				Kind = ChildKind.PropertyList,
-				UseHidden = useHidden,
-				Properties = BuildPropertyList(expansion.SimpleUnionSchema, childScope) ?? new ApiPropertyList([])
-			};
-		}
-
-		return ApiPropertyChildren.None;
-	}
-
 	private ApiPropertyChildren BuildDictionaryChildren(PropertyRow row, PropertyTreeScope childScope, Expansion expansion)
 	{
 		var keyAnchorId = $"{row.AnchorId}-string";
-		var dictIsCollapsible = expansion.NestedCount > 1;
-		var dictDefaultExpanded = ComputeDefaultExpanded(childScope.Depth, expansion.NestedCount);
+		var dictIsCollapsible = expansion.NestedCount > 0;
+		var dictDefaultExpanded = ComputeDefaultExpanded();
 		return new ApiPropertyChildren
 		{
 			Kind = ChildKind.Dictionary,
@@ -568,11 +391,8 @@ public class ApiPropertyTreeBuilder(OpenApiDocument document, PropertyDisplayOpt
 			return true;
 
 		if (
-			typeInfo is { IsUnion: true, AnyOfOptions: not null }
-			&& typeInfo
-				.AnyOfOptions
-				.Select(option => option.Name.EndsWith("[]") ? option.Name[..^2] : option.Name)
-				.Any(baseName => IsAncestorType(baseName, ancestors))
+			typeInfo is { IsUnion: true, UnionOptions: not null }
+			&& typeInfo.UnionOptions.Select(option => option.BaseName).Any(baseName => IsAncestorType(baseName, ancestors))
 		)
 			return true;
 
@@ -581,8 +401,7 @@ public class ApiPropertyTreeBuilder(OpenApiDocument document, PropertyDisplayOpt
 
 	private bool DetectDirectUnionRecursion(IOpenApiSchema propSchema, IReadOnlySet<string> ancestors)
 	{
-		var unionSchemas = propSchema.OneOf ?? propSchema.AnyOf;
-		if (unionSchemas is not { Count: > 0 })
+		if (!UnionSchemas.TryGet(propSchema, out _, out var unionSchemas))
 			return false;
 
 		foreach (var unionSchema in unionSchemas.Where(s => s is not null))
@@ -604,278 +423,10 @@ public class ApiPropertyTreeBuilder(OpenApiDocument document, PropertyDisplayOpt
 		return false;
 	}
 
+	// Primitive names and the "oneOf"/"anyOf" label of an inline union name no schema, so they never mark a recursion.
 	private static bool IsAncestorType(string? typeName, IReadOnlySet<string> ancestors) =>
-		!string.IsNullOrEmpty(typeName) && !SchemaHelpers.IsPrimitiveTypeName(typeName) && ancestors.Contains(typeName);
-
-	private ApiUnionVariants? BuildUnionVariants(List<UnionOption> unionOptions, PropertyTreeScope scope)
-	{
-		if (unionOptions.Count == 0 || !unionOptions.Any(o => o.IsObject))
-			return null;
-
-		var variantsToRender = CollectVariantsToRender(unionOptions);
-		if (variantsToRender.Count == 0)
-			return null;
-
-		// Children of union variants always show deprecated/version/external-docs regardless of page settings.
-		var childBuilder = new ApiPropertyTreeBuilder(
-			document,
-			options with { ShowDeprecated = true, ShowVersionInfo = true, ShowExternalDocs = true },
-			currentPageType
-		);
-
-		var variants = new List<ApiUnionVariant>(variantsToRender.Count);
-		foreach (var variant in variantsToRender)
-		{
-			var hasProperties = variant.Props is { Count: > 0 };
-			var optionId = $"{scope.Prefix}-variant-{variant.Name.ToLowerInvariant().Replace(" ", "-").Replace("[]", "-array")}";
-			var hasBothVariants = variantsToRender.Count(v => v.BaseName == variant.BaseName) > 1;
-			var showProperties = hasProperties && (!variant.IsArray || !hasBothVariants);
-
-			var newAncestors = scope.Ancestors is not null ? new HashSet<string>(scope.Ancestors) : [];
-			if (!string.IsNullOrEmpty(variant.BaseName))
-				_ = newAncestors.Add(variant.BaseName);
-
-			var nestedCount = variant.Props?.Count ?? 0;
-			var isCollapsible = showProperties && nestedCount > 1;
-			var defaultExpanded = ComputeDefaultExpanded(scope.Depth, nestedCount);
-
-			variants.Add(new ApiUnionVariant
-			{
-				DisplayName = SchemaHelpers.ReadableSchemaName(
-					variant.IsArray && variant.Name.EndsWith("[]") ? variant.Name[..^2] : variant.Name
-				),
-				IsArrayVariant = variant.IsArray,
-				IsObjectType = variant.IsObject,
-				AnchorId = optionId,
-				ShowProperties = showProperties && variant.Schema is not null,
-				IsCollapsible = isCollapsible,
-				DefaultExpanded = defaultExpanded,
-				NestedCount = nestedCount,
-				UseHidden = options.UseHiddenUntilFound && isCollapsible && !defaultExpanded,
-				Properties = showProperties && variant.Schema is not null
-					? childBuilder.BuildPropertyList(
-						variant.Schema,
-						scope with { Prefix = optionId, Depth = scope.Depth + 1, Ancestors = newAncestors, RequiredProperties = null }
-					) ?? new ApiPropertyList([])
-					: null
-			});
-		}
-
-		return new ApiUnionVariants
-		{
-			Variants = variants,
-			ShouldCollapse = variantsToRender.Count > 2,
-			ContainerId = $"{scope.Prefix}-union-options",
-			UseHiddenUntilFound = options.UseHiddenUntilFound
-		};
-	}
-
-	private sealed record VariantCandidate(
-		string Name,
-		string BaseName,
-		bool IsArray,
-		bool IsObject,
-		IOpenApiSchema? Schema,
-		IDictionary<string, IOpenApiSchema>? Props
-	);
-
-	private List<VariantCandidate> CollectVariantsToRender(List<UnionOption> unionOptions)
-	{
-		// Sort: array variants first within each base-name group, preserving group order
-		var sortedOptions = unionOptions
-			.GroupBy(o => o.Name.EndsWith("[]") ? o.Name[..^2] : o.Name)
-			.SelectMany(g => g.OrderByDescending(o => o.Name.EndsWith("[]")))
-			.ToList();
-
-		var typeGroups = sortedOptions.GroupBy(o => o.Name.EndsWith("[]") ? o.Name[..^2] : o.Name).ToDictionary(
-			g => g.Key,
-			g => g.ToList()
-		);
-
-		var variantsToRender = new List<VariantCandidate>();
-		foreach (var (baseName, variants) in typeGroups)
-		{
-			var primaryOption = variants.FirstOrDefault(o => !o.Name.EndsWith("[]"));
-			if (primaryOption?.Schema is null)
-				primaryOption = variants.First();
-
-			var schemaToRender = primaryOption?.Schema;
-			var optionProps = primaryOption?.IsObject == true && schemaToRender is not null
-				? _analyzer.GetSchemaProperties(schemaToRender)
-				: null;
-
-			var isObject = primaryOption?.IsObject ?? false;
-			var hasArrayVariant = variants.Any(v => v.Name.EndsWith("[]"));
-			var hasNonArrayVariant = variants.Any(v => !v.Name.EndsWith("[]"));
-
-			if (hasArrayVariant && hasNonArrayVariant)
-			{
-				variantsToRender.Add(new VariantCandidate($"{baseName}[]", baseName, true, isObject, schemaToRender, optionProps));
-				variantsToRender.Add(new VariantCandidate(baseName, baseName, false, isObject, schemaToRender, optionProps));
-			}
-			else if (hasArrayVariant)
-				variantsToRender.Add(new VariantCandidate($"{baseName}[]", baseName, true, isObject, schemaToRender, optionProps));
-			else
-				variantsToRender.Add(new VariantCandidate(baseName, baseName, false, isObject, schemaToRender, optionProps));
-		}
-
-		return variantsToRender;
-	}
-
-	private static TypeAnnotation BuildAnnotation(TypeInfo typeInfo, bool hasActualProperties)
-	{
-		var spans = new List<TypeSpan>();
-		var typeName = typeInfo.TypeName ?? "unknown";
-
-		if (typeInfo.IsDictionary)
-		{
-			AppendDictionarySpans(spans, typeInfo, typeName, hasActualProperties);
-			return new TypeAnnotation(spans);
-		}
-
-		if (typeInfo.IsArray)
-		{
-			AppendArrayPrefix(spans);
-			AppendArrayKeywordSpans(spans, typeInfo, hasActualProperties);
-			AppendDisplayedTypeName(spans, typeInfo, hasActualProperties);
-			return new TypeAnnotation(spans);
-		}
-
-		AppendScalarKeywordSpans(spans, typeInfo, hasActualProperties);
-
-		if (typeInfo.IsUnion && typeName.Contains(" | ", StringComparison.Ordinal))
-		{
-			AppendUnionFormulaSpans(spans, typeName);
-			return new TypeAnnotation(spans);
-		}
-
-		if (typeInfo.HasLink)
-			AppendObjectIcon(spans);
-		AppendDisplayedTypeName(spans, typeInfo, hasActualProperties);
-		return new TypeAnnotation(spans);
-	}
-
-	private static void AppendArrayPrefix(List<TypeSpan> spans)
-	{
-		spans.Add(new TypeSpan("[]", SchemaHelpers.WrapperArrayIconCssClass));
-		spans.Add(new TypeSpan(" ", Bare: true));
-	}
-
-	private static void AppendObjectIcon(List<TypeSpan> spans)
-	{
-		spans.Add(new TypeSpan("{}", SchemaHelpers.WrapperObjectIconCssClass));
-		spans.Add(new TypeSpan(" ", Bare: true));
-	}
-
-	private static void AppendArrayKeywordSpans(List<TypeSpan> spans, TypeInfo typeInfo, bool hasActualProperties)
-	{
-		if (typeInfo.IsValueType && !string.IsNullOrEmpty(typeInfo.ValueTypeBase))
-		{
-			spans.Add(new TypeSpan(typeInfo.ValueTypeBase, SchemaHelpers.ValueKeywordCssClass));
-			spans.Add(new TypeSpan(" ", Bare: true));
-		}
-		else if (typeInfo.IsEnum)
-			AppendWrapperKeyword(spans, "enum", SchemaHelpers.WrapperEnumCssClass);
-		else if (typeInfo.IsUnion)
-			AppendWrapperKeyword(spans, "union", SchemaHelpers.WrapperUnionCssClass);
-		else if (typeInfo.IsObject && !string.IsNullOrEmpty(typeInfo.SchemaRef) && (hasActualProperties || typeInfo.HasLink))
-			AppendObjectIcon(spans);
-	}
-
-	private static void AppendScalarKeywordSpans(List<TypeSpan> spans, TypeInfo typeInfo, bool hasActualProperties)
-	{
-		if (typeInfo.IsEnum)
-			AppendWrapperKeyword(spans, "enum", SchemaHelpers.WrapperEnumCssClass);
-		else if (typeInfo.IsUnion)
-			AppendWrapperKeyword(spans, "union", SchemaHelpers.WrapperUnionCssClass);
-		else if (typeInfo.IsValueType && !string.IsNullOrEmpty(typeInfo.ValueTypeBase))
-		{
-			spans.Add(new TypeSpan(typeInfo.ValueTypeBase, SchemaHelpers.ValueKeywordCssClass));
-			spans.Add(new TypeSpan(" ", Bare: true));
-		}
-		else if (typeInfo.IsObject && !string.IsNullOrEmpty(typeInfo.SchemaRef) && !typeInfo.HasLink && hasActualProperties)
-			AppendObjectIcon(spans);
-	}
-
-	private static void AppendDictionarySpans(List<TypeSpan> spans, TypeInfo typeInfo, string typeName, bool hasActualProperties)
-	{
-		var valueTypeName = typeName.StartsWith("string to ") ? typeName["string to ".Length..] : typeName;
-		if (string.IsNullOrEmpty(valueTypeName))
-			valueTypeName = "unknown";
-
-		spans.Add(new TypeSpan("map", SchemaHelpers.WrapperMapKeywordCssClass));
-		spans.Add(new TypeSpan(" ", Bare: true));
-		spans.Add(NamedTypeSpan("string", null));
-		spans.Add(new TypeSpan(" to ", Bare: true));
-		if (typeInfo.HasLink || hasActualProperties)
-			AppendObjectIcon(spans);
-		AppendInternalOrNamed(spans, valueTypeName, typeInfo.HasLink || hasActualProperties);
-	}
-
-	private static void AppendDisplayedTypeName(List<TypeSpan> spans, TypeInfo typeInfo, bool hasActualProperties)
-	{
-		var typeName = typeInfo.TypeName ?? "unknown";
-		if (!SchemaHelpers.IsInternalSchemaName(typeName))
-		{
-			// "enum" is a keyword marker already appended — inline enums have no distinct type name to show.
-			if (typeInfo.IsEnum && typeName == "enum")
-				return;
-			spans.Add(NamedTypeSpan(typeName, typeInfo.SchemaRef, typeInfo.IsValueType));
-			return;
-		}
-
-		if (typeInfo.IsEnum || typeInfo.IsUnion || typeInfo.IsValueType || typeInfo.HasLink)
-			return;
-		if (typeInfo.IsObject && hasActualProperties)
-			return;
-
-		spans.Add(new TypeSpan("object", SchemaHelpers.PrimitiveCssClass));
-	}
-
-	private static void AppendInternalOrNamed(List<TypeSpan> spans, string typeName, bool labeledAlready)
-	{
-		if (!SchemaHelpers.IsInternalSchemaName(typeName))
-		{
-			spans.Add(NamedTypeSpan(typeName, null));
-			return;
-		}
-
-		if (!labeledAlready)
-			spans.Add(new TypeSpan("object", SchemaHelpers.PrimitiveCssClass));
-	}
-
-	private static void AppendWrapperKeyword(List<TypeSpan> spans, string keyword, string cssClass)
-	{
-		spans.Add(new TypeSpan(keyword, cssClass));
-		spans.Add(new TypeSpan(" ", Bare: true));
-	}
-
-	private static void AppendUnionFormulaSpans(List<TypeSpan> spans, string typeName)
-	{
-		var parts = typeName.Split(" | ", StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-		for (var i = 0; i < parts.Length; i++)
-		{
-			if (i > 0)
-				spans.Add(new TypeSpan(" | ", Bare: true));
-			AppendUnionPartSpans(spans, parts[i]);
-		}
-	}
-
-	private static void AppendUnionPartSpans(List<TypeSpan> spans, string part)
-	{
-		if (!part.EndsWith("[]", StringComparison.Ordinal))
-		{
-			AppendInternalOrNamed(spans, part, labeledAlready: false);
-			return;
-		}
-
-		AppendArrayPrefix(spans);
-		AppendInternalOrNamed(spans, part[..^2], labeledAlready: false);
-	}
-
-	private static TypeSpan NamedTypeSpan(string typeName, string? schemaRef, bool isValueType = false)
-	{
-		var css = isValueType ? SchemaHelpers.ValueCssClass : SchemaHelpers.TypeAtomCssClassOrNull(typeName);
-		return new(typeName, CssClass: css, Title: string.IsNullOrEmpty(schemaRef) ? null : schemaRef);
-	}
+		!string.IsNullOrEmpty(typeName)
+			&& !SchemaHelpers.IsPrimitiveTypeName(typeName)
+			&& !UnionSchemas.IsKeywordName(typeName)
+			&& ancestors.Contains(typeName);
 }

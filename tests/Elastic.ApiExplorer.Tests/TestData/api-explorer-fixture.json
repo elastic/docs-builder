@@ -288,7 +288,7 @@
       "get": {
         "operationId": "docs-get-source",
         "x-namespace": "docs",
-        "x-api-name": "get",
+        "x-api-name": "get_source",
         "tags": ["documents"],
         "summary": "Get the source of a document by id",
         "description": "Retrieves only the `_source` of the document with the specified id.",

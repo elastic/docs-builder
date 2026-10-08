@@ -55,6 +55,9 @@ public enum GitRangePrSourceKind
 	/// <summary>Excluded by <c>rules.create</c> label rules.</summary>
 	Excluded,
 
+	/// <summary>Merged into a branch other than the requested base branch (for example a feature branch).</summary>
+	ExcludedBaseBranch,
+
 	/// <summary>The PR's metadata could not be fetched; no entry could be produced.</summary>
 	Missing
 }
@@ -102,6 +105,7 @@ public record GitRangeBundleReport
 				GitRangePrSourceKind.InferredPrBody => "inferred (PR body)",
 				GitRangePrSourceKind.InferredTitle => "inferred (title)",
 				GitRangePrSourceKind.Excluded => "excluded (rules)",
+				GitRangePrSourceKind.ExcludedBaseBranch => "excluded (base branch)",
 				_ => "missing"
 			};
 			var entry = row.EntryFileNames.Count > 0 ? string.Join(", ", row.EntryFileNames.Select(f => $"`{f}`")) : "—";
@@ -197,6 +201,16 @@ public class GitRangeEntryResolver(IGitHubPrService prService, ILogger logger)
 				entries.Add(synthesized);
 			if (failed)
 				success = false;
+		}
+
+		foreach (var excluded in resolution.ExcludedPullRequests)
+		{
+			rows.Add(new GitRangePrReportRow
+			{
+				Number = excluded.Number,
+				Url = excluded.Url,
+				Source = GitRangePrSourceKind.ExcludedBaseBranch
+			});
 		}
 
 		var report = new GitRangeBundleReport

@@ -70,8 +70,6 @@ public sealed class FeatureFlags
 
 	public bool PageFeedbackEnabled => IsEnabled("page-feedback");
 
-	public bool ApiNavGroupingEnabled => IsEnabled("api-nav-grouping");
-
 	private bool IsEnabled(string key)
 	{
 		var envKey = $"FEATURE_{key.ToUpperInvariant().Replace('-', '_')}";

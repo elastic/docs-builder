@@ -75,7 +75,7 @@ public class AuthSchemeTests
 
 		var doc = await OpenApiReader.Instance.ReadAsync(new FileSystem().FileInfo.New(specPath));
 		doc.Should().NotBeNull();
-		var search = doc!.Paths!["/_search"].Operations![HttpMethod.Get]!;
+		var search = doc!.Paths!["/{index}/_search"].Operations![HttpMethod.Post]!;
 
 		var badges = OpenApiAuthSchemeResolver.Resolve(search, doc);
 

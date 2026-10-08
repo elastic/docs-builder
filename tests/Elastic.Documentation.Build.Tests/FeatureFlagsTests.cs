@@ -81,49 +81,6 @@ public class FeatureFlagsTests
 	}
 
 	[Test]
-	public void ApiNavGroupingEnabled_DefaultsToFalse()
-	{
-		var flags = new FeatureFlags([]);
-
-		flags.ApiNavGroupingEnabled.Should().BeFalse();
-	}
-
-	[Test]
-	public void ApiNavGroupingEnabled_SetEnablesIt()
-	{
-		var flags = new FeatureFlags([]);
-		flags = flags.With("API_NAV_GROUPING", true);
-
-		flags.ApiNavGroupingEnabled.Should().BeTrue();
-		flags.PrimaryNavEnabled.Should().BeFalse();
-	}
-
-	[Test]
-	public void ApiNavGroupingEnabled_EnvironmentVariableOverridesYaml()
-	{
-		var environment = new MockEnvironmentVariables();
-		environment.Set("FEATURE_API_NAV_GROUPING", "false");
-		var flags = new FeatureFlags(new Dictionary<string, bool> { ["api-nav-grouping"] = true }, environment);
-
-		flags.ApiNavGroupingEnabled.Should().BeFalse();
-	}
-
-	[Test]
-	public void ProdEnvironment_DoesNotEnableApiNavGrouping()
-	{
-		var config = AssemblyLoader.Create(new ConfigurationFileProvider(new TestLoggerFactory(), new ConfigurationFileSystem()));
-
-		foreach (var environmentName in new[] { "prod", "staging", "preview" })
-		{
-			var environment = config.Environments[environmentName];
-			environment.FeatureFlags.Should().NotContainKey("API_NAV_GROUPING");
-
-			var features = new FeatureFlags([]).With(environment.FeatureFlags);
-			features.ApiNavGroupingEnabled.Should().BeFalse();
-		}
-	}
-
-	[Test]
 	public void With_LeavesTheOriginalUnchanged()
 	{
 		var original = new FeatureFlags([]);
@@ -136,12 +93,12 @@ public class FeatureFlagsTests
 	[Test]
 	public void With_KeepsSiblingFlagsAndTheSearchScriptUrl()
 	{
-		var flags = new FeatureFlags(new Dictionary<string, bool> { ["guide-nav"] = true }, new MockEnvironmentVariables())
-			.WithWebsiteSearchScriptUrl("https://example.test/search.js")
-			.With("api-nav-grouping", true);
+		var flags = new FeatureFlags(
+			new Dictionary<string, bool> { ["guide-nav"] = true },
+			new MockEnvironmentVariables()
+		).WithWebsiteSearchScriptUrl("https://example.test/search.js");
 
 		flags.GuideNavEnabled.Should().BeTrue();
-		flags.ApiNavGroupingEnabled.Should().BeTrue();
 		flags.PrimaryNavEnabled.Should().BeFalse();
 		flags.WebsiteSearchScriptUrl.Should().Be("https://example.test/search.js");
 	}

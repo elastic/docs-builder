@@ -258,7 +258,7 @@
         "repository": "docs-playground-release-notes-changelogs",
         "features": {
           "publicReference": false,
-          "releaseNotes": "Prestage"
+          "releaseNotes": "DailyReleasableArtifacts"
         }
       },
       "docs-playground-release-notes-tagged": {

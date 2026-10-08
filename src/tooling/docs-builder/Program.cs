@@ -6,6 +6,7 @@ using Documentation.Builder;
 using Documentation.Builder.Commands;
 using Documentation.Builder.Commands.Assembler;
 using Documentation.Builder.Commands.Codex;
+using Documentation.Builder.Commands.ReleaseAutomation;
 using Documentation.Builder.Diagnostics.Console;
 using Documentation.Builder.Middleware;
 using Elastic.Documentation;
@@ -68,6 +69,12 @@ _ = builder.Services.AddArgh(args, app =>
 	_ = app.Map<ServeCommand>();
 	_ = app.Map<IndexCommand>();
 	_ = app.MapNamespace<ChangelogCommands>("changelog");
+
+	_ = app.MapNamespace<ReleaseCommands>("release", g =>
+	{
+		_ = g.MapNamespace<UnifiedReleaseCommands>("unified");
+		_ = g.Map<ServerlessReleaseCommand>();
+	});
 	_ = app.MapNamespace<InboundLinkCommands>("inbound-links");
 
 	_ = app.Map<AssembleOneShotCommand>();

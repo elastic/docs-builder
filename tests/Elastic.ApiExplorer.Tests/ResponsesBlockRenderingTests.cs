@@ -96,6 +96,41 @@ public class ResponsesBlockRenderingTests
 	}
 
 	[Test]
+	[Arguments("bedrock_config")]
+	[Arguments("Security_Lists_API_list_item")]
+	[Arguments("PlatformErrorResponse")]
+	public async Task Render_UnionVariant_ShowsItsNameWhateverTheIdStyle(string displayName)
+	{
+		var html = await RenderHtml(new ApiResponse
+		{
+			StatusCode = "400",
+			StatusClass = "error",
+			FirstContentType = "application/json",
+			Response = new OpenApiResponse { Description = "Invalid input data response" },
+			Contents =
+			[
+				new ApiResponseContent
+				{
+					ContentType = "application/json",
+					Type = new TypeAnnotation([new TypeSpan("union oneOf")]),
+					Properties = null,
+					ArrayItemProperties = null,
+					UnionVariants = new ApiUnionVariants
+					{
+						Variants = [Variant(displayName, "res-400-variant-x")],
+						ShouldCollapse = false,
+						ContainerId = "res-400-union-options",
+						UseHiddenUntilFound = false
+					}
+				}
+			],
+			Headers = []
+		});
+
+		html.Should().Contain($">{displayName}</span></code>");
+	}
+
+	[Test]
 	public async Task Render_ResponseDescription_RendersInlineCode()
 	{
 		var html = await RenderHtml(Response("200", "success", "Disabled by the `alerting:v2:enabled` setting."));
@@ -105,7 +140,7 @@ public class ResponsesBlockRenderingTests
 	}
 
 	[Test]
-	public async Task Render_Response_PutsStatusAndMediaTypeAboveTheDescription()
+	public async Task Render_Response_PutsStatusDescriptionAndMediaTypeInThreeColumns()
 	{
 		var html = await RenderHtml(
 			Response("200", "success", "A JSON object containing pipelines statistics.\n\n- queue depth\n- worker utilization")
@@ -113,20 +148,17 @@ public class ResponsesBlockRenderingTests
 
 		var button = html[html.IndexOf("<button", StringComparison.Ordinal)..html.IndexOf("</button>", StringComparison.Ordinal)];
 		button.Should().Contain("response-status-chip");
-		button.Should().Contain("application/json");
-		button.Should().Contain("response-toggle-icon");
+		button.Should().NotContain("application/json");
 		button.Should().NotContain("queue depth");
 		button.Should().NotContain("<ul>");
-		html.Should().Contain("<ul>");
 		html.Should().Contain("<li>queue depth</li>");
-		html
-			.IndexOf("response-description", StringComparison.Ordinal)
-			.Should()
-			.BeGreaterThan(html.IndexOf("</button>", StringComparison.Ordinal));
-		html
-			.IndexOf("content-type-tag", StringComparison.Ordinal)
-			.Should()
-			.BeLessThan(html.IndexOf("response-description", StringComparison.Ordinal));
+		var status = html.IndexOf("</button>", StringComparison.Ordinal);
+		var description = html.IndexOf("response-description", StringComparison.Ordinal);
+		var mediaType = html.IndexOf("content-type-tag", StringComparison.Ordinal);
+		var icon = html.IndexOf("response-toggle-icon", StringComparison.Ordinal);
+		description.Should().BeGreaterThan(status);
+		mediaType.Should().BeGreaterThan(description);
+		icon.Should().BeGreaterThan(mediaType);
 	}
 
 	[Test]
