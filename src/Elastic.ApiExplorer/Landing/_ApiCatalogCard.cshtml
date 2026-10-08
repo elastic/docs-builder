@@ -23,24 +23,12 @@
 			}
 			@if (item.Deployments.Count > 0)
 			{
-				@* The pills use the applies_to badge look (.applies > .applicable-info). Name only: the
-				   catalog knows the deployment, not a lifecycle or version, so none is shown. They sit at the
-				   bottom so the pills line up across a row. *@
-				<div class="applies mt-auto flex flex-wrap gap-1.5 pt-2">
+				@* Name-only tags: the catalog knows the deployment, not a lifecycle or version. They sit at the
+				   bottom so the tags line up across a row. *@
+				<div class="mt-auto flex flex-wrap gap-1.5 pt-2">
 					@foreach (var deployment in item.Deployments)
 					{
-						<span class="applicable-info">
-							<span class="applicable-name">
-								@if (deployment.Label == deployment.Name)
-								{
-									@deployment.Label
-								}
-								else
-								{
-									<abbr title="@deployment.Name" class="no-underline">@deployment.Label</abbr>
-								}
-							</span>
-						</span>
+						<span class="api-catalog-tag" data-tippy-content="@(deployment.Label == deployment.Name ? "" : deployment.Name)">@deployment.Label</span>
 					}
 				</div>
 			}

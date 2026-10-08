@@ -66,8 +66,8 @@ public partial class ApiPropertyTreeBuilder
 				_ = newAncestors.Add(variant.Ref);
 
 			var nestedCount = (variant.Props?.Count ?? 0) + (dictionaryValue is null ? 0 : 1);
-			var isCollapsible = showProperties && nestedCount > 1;
-			var defaultExpanded = ComputeDefaultExpanded(scope.Depth, nestedCount);
+			var isCollapsible = showProperties && nestedCount > 0;
+			var defaultExpanded = ComputeDefaultExpanded();
 
 			// An X[] / X pair describes the same schema twice, so only the plain variant carries the text.
 			var description = !variant.IsArray || !hasBothVariants ? FirstParagraph(variant.Schema?.Description) : null;

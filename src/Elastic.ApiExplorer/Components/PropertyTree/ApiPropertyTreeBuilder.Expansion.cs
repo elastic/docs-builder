@@ -46,13 +46,13 @@ public partial class ApiPropertyTreeBuilder
 			&& typeInfo.UnionOptions.Any(_analyzer.UnionOptionHasProperties);
 
 		var plan = withinDepth ? PlanChildren(propSchema, typeInfo, hasUnionOptions) ?? arrayUnionPlan : new ChildPlan.None();
-		var isCollapsible = !isRecursive && plan is ChildPlan.Properties or ChildPlan.Variants && plan.Count > 1 && !hasUnionOptions;
+		var isCollapsible = !isRecursive && plan is ChildPlan.Properties or ChildPlan.Variants && plan.Count > 0 && !hasUnionOptions;
 		return new Expansion(
 			plan,
 			hasUnionOptions,
 			arrayUnionBase is null ? null : new ArrayUnion(arrayUnionBase, arrayUnionPlan is not ChildPlan.None),
 			isCollapsible,
-			ComputeDefaultExpanded(depth, plan.Count)
+			ComputeDefaultExpanded()
 		);
 	}
 

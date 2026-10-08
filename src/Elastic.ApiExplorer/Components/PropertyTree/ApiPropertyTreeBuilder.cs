@@ -239,8 +239,8 @@ public partial class ApiPropertyTreeBuilder(
 			)
 			: null;
 
-	private bool ComputeDefaultExpanded(int depth, int nestedCount) =>
-		options.CollapseMode == CollapseMode.DepthBased && depth != 0 && nestedCount is > 0 and < 5;
+	// Object rows start collapsed. The request body root is the property list, so its fields stay visible.
+	private static bool ComputeDefaultExpanded() => false;
 
 	private ExternalDocLink? BuildExternalDocs(IOpenApiSchema propSchema, TypeInfo typeInfo)
 	{
@@ -345,8 +345,8 @@ public partial class ApiPropertyTreeBuilder(
 	private ApiPropertyChildren BuildDictionaryChildren(PropertyRow row, PropertyTreeScope childScope, Expansion expansion)
 	{
 		var keyAnchorId = $"{row.AnchorId}-string";
-		var dictIsCollapsible = expansion.NestedCount > 1;
-		var dictDefaultExpanded = ComputeDefaultExpanded(childScope.Depth, expansion.NestedCount);
+		var dictIsCollapsible = expansion.NestedCount > 0;
+		var dictDefaultExpanded = ComputeDefaultExpanded();
 		return new ApiPropertyChildren
 		{
 			Kind = ChildKind.Dictionary,

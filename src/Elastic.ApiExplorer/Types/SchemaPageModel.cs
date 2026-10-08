@@ -36,7 +36,6 @@ public record SchemaPageModel
 			ShowVersionInfo = false,
 			ShowExternalDocs = false,
 			UseHiddenUntilFound = false,
-			CollapseMode = CollapseMode.DepthBased,
 			SchemaResolveCache = context.SchemaResolveCache
 		};
 		var builder = new ApiPropertyTreeBuilder(context.Model, options, schema.DisplayName);
