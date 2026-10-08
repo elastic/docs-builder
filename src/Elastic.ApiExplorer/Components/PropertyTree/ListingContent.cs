@@ -90,6 +90,9 @@ internal static class ListingContent
 				.Append('|')
 				.AppendJoin(',', property.AlsoIncludes.Select(t => t.TypeName))
 				.Append('|')
+				.Append(property.Requires?.Label)
+				.AppendJoin(',', property.Requires?.Options ?? [])
+				.Append('|')
 				.Append(property.TypeLink?.Url)
 				.Append('|');
 			// Children count by their hash, so a full listing and a link to an identical listing contribute the same.

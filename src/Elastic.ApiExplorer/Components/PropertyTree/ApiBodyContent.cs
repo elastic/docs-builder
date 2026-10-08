@@ -7,26 +7,28 @@ using Microsoft.OpenApi;
 
 namespace Elastic.ApiExplorer.Components.PropertyTree;
 
-/// <summary>What a request or response body lists: its properties, or the variants of a body that is itself a union.</summary>
-internal static class ApiBodyContent
+/// <summary>What a request or response body lists: its properties, the variants of a union body, or both.</summary>
+/// <param name="Requires">Which of the body's fields it needs, when its <c>oneOf</c>/<c>anyOf</c> only lists <c>required</c> sets.</param>
+internal sealed record ApiBodyContent(ApiPropertyList? Properties, ApiUnionVariants? UnionVariants, RequiredAlternatives? Requires)
 {
+	public static readonly ApiBodyContent Empty = new(null, null, null);
+
 	/// <summary>
-	/// The property list or the variant list of a request or response body. A union whose properties come only from an
-	/// <c>allOf</c> lists its variants, which already carry those shared properties. A union that declares properties
-	/// itself keeps listing them, as property rows do.
+	/// The content of a request or response body, as property rows list it: a union that declares properties lists them
+	/// above its variants (see <see cref="SchemaAnalyzer.DeclaresProperties"/>).
 	/// </summary>
-	public static (ApiPropertyList? Properties, ApiUnionVariants? UnionVariants) Build(
+	public static ApiBodyContent Build(
 		IOpenApiSchema schema,
 		PropertyTreeScope scope,
 		SchemaAnalyzer analyzer,
 		ApiPropertyTreeBuilder builder
 	)
 	{
-		var declaresProperties = (analyzer.ResolveSchema(schema) ?? schema).Properties is { Count: > 0 };
-		var variants = analyzer.GetTypeInfo(schema).IsUnion && !declaresProperties
-			? BuildUnionVariants(schema, scope, analyzer, builder)
-			: null;
-		return variants is not null ? (null, variants) : (builder.BuildPropertyList(schema, scope), null);
+		var variants = analyzer.GetTypeInfo(schema).IsUnion ? BuildUnionVariants(schema, scope, analyzer, builder) : null;
+		var properties = variants is null
+			? builder.BuildPropertyList(schema, scope)
+			: analyzer.DeclaresProperties(schema) ? builder.BuildPropertyList(analyzer.SharedProperties(schema), scope) : null;
+		return new ApiBodyContent(properties, variants, builder.DescribeRequiredAlternatives(schema));
 	}
 
 	/// <summary>The variants of a body that is itself a union, under a label that says what they describe.</summary>

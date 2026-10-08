@@ -58,6 +58,12 @@
 			}
 		</dd>
 	}
+	@if (Model.Requires is { } requires)
+	{
+		<dd class="union-options">
+			@(await RenderPartialAsync<_RequiredAlternatives, RequiredAlternatives>(requires))
+		</dd>
+	}
 	@(await RenderPartialAsync<_EnumValues, EnumValueList>(new EnumValueList(Model.EnumValues)))
 	@if (Model.Union is not null && Model.Repeats is null)
 	{
@@ -150,22 +156,18 @@
 		{
 				<div class="nested-properties" id="@Model.AnchorId-children" hidden="until-found">
 					@(await RenderPartialAsync<_PropertyList, ApiPropertyList>(Model.Children.Properties!))
+					@(await RenderPartialAsync<_UnionOptions, ApiUnionVariants>(Model.Children.Variants ?? ApiUnionVariants.Empty))
 				</div>
 		}
 		else
 		{
 				<div class="nested-properties" id="@Model.AnchorId-children">
 					@(await RenderPartialAsync<_PropertyList, ApiPropertyList>(Model.Children.Properties!))
+					@(await RenderPartialAsync<_UnionOptions, ApiUnionVariants>(Model.Children.Variants ?? ApiUnionVariants.Empty))
 				</div>
 		}
 	}
 	else if (Model.Children.Kind == ChildKind.UnionVariants)
-	{
-			<div class="nested-properties" id="@Model.AnchorId-children">
-				@(await RenderPartialAsync<_UnionOptions, ApiUnionVariants>(Model.Children.Variants!))
-			</div>
-	}
-	else if (Model.Children.Kind == ChildKind.SimpleUnionVariants)
 	{
 		if (Model.Children.UseHidden)
 		{
