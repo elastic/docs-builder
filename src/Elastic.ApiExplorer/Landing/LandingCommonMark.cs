@@ -15,18 +15,26 @@ internal static class LandingCommonMark
 	{
 		var markdown = new StringBuilder();
 		ApiCommonMark.Heading(markdown, 1, ApiCatalog.PageTitle);
-		foreach (var entry in ApiCatalogViewModel.Order(entries))
+		foreach (var group in ApiCatalogViewModel.Group(entries))
 		{
-			_ = markdown.AppendLine($"- {ApiCommonMark.Link(entry.Title, entry.Url)} (`{entry.Key}`)");
-			if (ApiSeoDescription.Excerpt(entry.Description) is { } summary)
-				_ = markdown.AppendLine($"  {summary}");
-			if (ApiCatalogViewModel.DeploymentsOf(entry) is { Count: > 0 } deployments)
-				_ = markdown.AppendLine($"  Deployments: {string.Join(", ", deployments.Select(d => d.Name))}");
-			_ = markdown.AppendLine(
-				$"  {ApiCommonMark.Link("Markdown", ApiOutputPaths.MarkdownUrl(entry.Url))} · {ApiCommonMark.Link("JSON", ApiOutputPaths.JsonUrl(entry.Url))} · {ApiCommonMark.Link("YAML", ApiOutputPaths.YamlUrl(entry.Url))}"
-			);
+			if (group.Title is not null)
+				ApiCommonMark.Heading(markdown, 2, group.Title);
+			foreach (var entry in group.Entries)
+				WriteCatalogEntry(markdown, entry);
 		}
 		return markdown.ToString();
+	}
+
+	private static void WriteCatalogEntry(StringBuilder markdown, ApiCatalogEntry entry)
+	{
+		_ = markdown.AppendLine($"- {ApiCommonMark.Link(entry.Title, entry.Url)} (`{entry.Key}`)");
+		if (ApiSeoDescription.Excerpt(entry.Description) is { } summary)
+			_ = markdown.AppendLine($"  {summary}");
+		if (ApiCatalogViewModel.DeploymentsOf(entry) is { Count: > 0 } deployments)
+			_ = markdown.AppendLine($"  Deployments: {string.Join(", ", deployments.Select(d => d.Name))}");
+		_ = markdown.AppendLine(
+			$"  {ApiCommonMark.Link("Markdown", ApiOutputPaths.MarkdownUrl(entry.Url))} · {ApiCommonMark.Link("JSON", ApiOutputPaths.JsonUrl(entry.Url))} · {ApiCommonMark.Link("YAML", ApiOutputPaths.YamlUrl(entry.Url))}"
+		);
 	}
 
 	public static string Product(OpenApiInfo? info, IReadOnlyList<ApiOverviewRow> rows, string apiBaseUrl)

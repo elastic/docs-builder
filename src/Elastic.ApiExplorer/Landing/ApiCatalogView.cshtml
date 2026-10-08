@@ -27,22 +27,40 @@
 	}
 }
 <section id="elastic-docs-v3" class="api-catalog">
-	@if (Model.Featured.Count > 0)
+	@for (var i = 0; i < Model.Groups.Count; i++)
 	{
-		<ul class="api-catalog-featured m-0 mb-4 grid list-none grid-cols-1 gap-4 p-0 min-[1024px]:grid-cols-2">
-			@foreach (var item in Model.Featured)
+		var group = Model.Groups[i];
+		var headingId = "api-catalog-group-" + i;
+		var tagOns = group.Featured.Count > 0;
+		var featuredColumns = group.Featured.Count == 3 ? "min-[1024px]:grid-cols-3" : "min-[1024px]:grid-cols-2";
+		// Tag-ons share the featured row's columns, so each sits under its parent. Without featured cards the cards of a
+		// group sit three across, so a description has room to read as a sentence.
+		var otherColumns = tagOns ? featuredColumns : "min-[1024px]:grid-cols-2 lg:grid-cols-3";
+		// Everything in a group that is not featured is compact. Only the APIs that no group covers keep the full-size card.
+		var otherKind = group.Grouped ? ApiCatalogCardKind.Compact : ApiCatalogCardKind.Standard;
+		<section class="api-catalog-group" aria-labelledby="@(group.Title is null ? null : headingId)">
+			@if (group.Title is not null)
 			{
-				@(await RenderPartialAsync<_ApiCatalogCard, ApiCatalogCard>(new ApiCatalogCard(item, Featured: true)))
+				<h2 id="@headingId" class="api-catalog-group-title">@group.Title</h2>
 			}
-		</ul>
-	}
-	@if (Model.Others.Count > 0)
-	{
-		<ul class="m-0 grid list-none grid-cols-1 gap-4 p-0 min-[1024px]:grid-cols-2 lg:grid-cols-4">
-			@foreach (var item in Model.Others)
+			@if (group.Featured.Count > 0)
 			{
-				@(await RenderPartialAsync<_ApiCatalogCard, ApiCatalogCard>(new ApiCatalogCard(item, Featured: false)))
+				<ul class="api-catalog-featured m-0 mb-2 grid list-none grid-cols-1 gap-6 p-0 @featuredColumns">
+					@foreach (var item in group.Featured)
+					{
+						@(await RenderPartialAsync<_ApiCatalogCard, ApiCatalogCard>(new ApiCatalogCard(item, ApiCatalogCardKind.Featured, HasVariant: group.HasVariant(item))))
+					}
+				</ul>
 			}
-		</ul>
+			@if (group.Others.Count > 0)
+			{
+				<ul class="@(tagOns ? "api-catalog-tagons " : "")m-0 grid list-none grid-cols-1 gap-x-6 gap-y-4 p-0 @otherColumns">
+					@foreach (var item in group.Others)
+					{
+						@(await RenderPartialAsync<_ApiCatalogCard, ApiCatalogCard>(new ApiCatalogCard(item, otherKind, Column: group.ColumnOf(item))))
+					}
+				</ul>
+			}
+		</section>
 	}
 </section>

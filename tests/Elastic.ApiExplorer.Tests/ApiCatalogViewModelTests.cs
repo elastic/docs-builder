@@ -25,85 +25,112 @@ public class ApiCatalogViewModelTests
 	];
 
 	[Test]
-	public void Order_ProductionShape_ListsPriorityApisFirstThenTheRestByTitle() =>
-		ApiCatalogViewModel
-			.Order(Production)
+	public void Group_ProductionShape_SplitsTheStackFromOrchestration()
+	{
+		var groups = ApiCatalogViewModel.Group(Production);
+
+		groups.Select(g => g.Title).Should().Equal("Elastic Stack", "Orchestration");
+		groups[0]
+			.Entries
 			.Select(e => e.Key)
 			.Should()
-			.Equal(
-				"elasticsearch",
-				"kibana",
-				"elasticsearch-serverless",
-				"kibana-serverless",
-				"logstash",
-				"cloud",
-				"cloud-billing",
-				"cloud-connect",
-				"cloud-enterprise",
-				"cloud-serverless"
-			);
+			.Equal("elasticsearch", "kibana", "logstash", "elasticsearch-serverless", "kibana-serverless");
+		groups[1]
+			.Entries
+			.Select(e => e.Key)
+			.Should()
+			.Equal("cloud", "cloud-billing", "cloud-connect", "cloud-enterprise", "cloud-serverless");
+	}
 
 	[Test]
-	public void Order_ShowsEveryApiExactlyOnce()
+	public void Group_ShowsEveryApiExactlyOnce()
 	{
-		var ordered = ApiCatalogViewModel.Order(Production).Select(e => e.Key).ToArray();
+		var ordered = ApiCatalogViewModel.Group(Production).SelectMany(g => g.Entries).Select(e => e.Key).ToArray();
 
 		ordered.Should().BeEquivalentTo(Production.Select(e => e.Key));
 		ordered.Should().OnlyHaveUniqueItems();
 	}
 
 	[Test]
-	public void Order_UnknownApis_SortByTitleAfterThePriorityOnes() =>
-		ApiCatalogViewModel
-			.Order([Entry("zeta", "Zeta API"), Entry("alpha", "alpha API"), Entry("kibana", "Kibana APIs")])
-			.Select(e => e.Key)
-			.Should()
-			.Equal("kibana", "alpha", "zeta");
-
-	[Test]
-	public void Order_SameTitle_FallsBackToKey() =>
-		ApiCatalogViewModel.Order([Entry("b", "Same API"), Entry("a", "Same API")]).Select(e => e.Key).Should().Equal("a", "b");
-
-	[Test]
-	public void Order_Empty_ReturnsEmpty() => ApiCatalogViewModel.Order([]).Should().BeEmpty();
-
-	[Test]
-	public void Split_BothFeaturedPresent_PullsThemOutInOrder()
+	public void Group_UnknownApis_FollowTheGroupsSortedByTitle()
 	{
-		var (featured, others) = ApiCatalogViewModel.Split(Production);
+		var groups = ApiCatalogViewModel.Group([
+			Entry("zeta", "Zeta API"),
+			Entry("alpha", "alpha API"),
+			Entry("kibana", "Kibana APIs"),
+			Entry("cloud", "Elastic Cloud API")
+		]);
 
-		featured.Select(e => e.Key).Should().Equal("elasticsearch", "kibana");
-		others
-			.Select(e => e.Key)
-			.Should()
-			.Equal(
-				"elasticsearch-serverless",
-				"kibana-serverless",
-				"logstash",
-				"cloud",
-				"cloud-billing",
-				"cloud-connect",
-				"cloud-enterprise",
-				"cloud-serverless"
-			);
+		groups.Select(g => g.Title).Should().Equal("Elastic Stack", "Orchestration", null);
+		groups[2].Entries.Select(e => e.Key).Should().Equal("alpha", "zeta");
 	}
 
 	[Test]
-	public void Split_OneFeaturedMissing_KeepsEverythingInOneGrid()
+	public void Group_OnlyOneGroupHasApis_DropsItsTitle()
 	{
-		var (featured, others) = ApiCatalogViewModel.Split([Entry("kibana", "Kibana APIs"), Entry("logstash", "Logstash APIs")]);
+		var groups = ApiCatalogViewModel.Group([Entry("logstash", "Logstash APIs"), Entry("kibana", "Kibana APIs")]);
 
-		featured.Should().BeEmpty();
-		others.Select(e => e.Key).Should().Equal("kibana", "logstash");
+		groups.Should().ContainSingle().Which.Title.Should().BeNull();
+		groups[0].Entries.Select(e => e.Key).Should().Equal("kibana", "logstash");
 	}
 
 	[Test]
-	public void Split_Empty_ReturnsNothing()
+	public void Group_OnlyOneGroupHasApis_StaysGrouped()
 	{
-		var (featured, others) = ApiCatalogViewModel.Split([]);
+		var groups = ApiCatalogViewModel.Group([Entry("cloud", "Elastic Cloud API"), Entry("cloud-billing", "Cloud Billing API")]);
 
-		featured.Should().BeEmpty();
-		others.Should().BeEmpty();
+		groups.Should().ContainSingle().Which.Grouped.Should().BeTrue("a lone group keeps its compact cards, only its label goes");
+	}
+
+	[Test]
+	public void Group_UnknownApis_AreNotGrouped() =>
+		ApiCatalogViewModel.Group([Entry("zeta", "Zeta API"), Entry("cloud", "Elastic Cloud API")])[^1].Grouped.Should().BeFalse();
+
+	[Test]
+	public void Group_Empty_ReturnsNothing() => ApiCatalogViewModel.Group([]).Should().BeEmpty();
+
+	[Test]
+	public void Group_AllFeaturedPresent_PullsThemOutInOrder()
+	{
+		var stack = ApiCatalogViewModel.Group(Production)[0];
+
+		stack.Featured.Select(e => e.Key).Should().Equal("elasticsearch", "kibana", "logstash");
+		stack.Others.Select(e => e.Key).Should().Equal("elasticsearch-serverless", "kibana-serverless");
+	}
+
+	[Test]
+	public void Group_OnlyOneFeaturedPresent_KeepsEverythingInOneGrid()
+	{
+		var stack = ApiCatalogViewModel.Group([
+			Entry("kibana", "Kibana APIs"),
+			Entry("kibana-serverless", "Kibana Serverless APIs")
+		]).Single();
+
+		stack.Featured.Should().BeEmpty();
+		stack.Others.Select(e => e.Key).Should().Equal("kibana", "kibana-serverless");
+	}
+
+	[Test]
+	public void ColumnOf_Variant_IsTheColumnOfItsParentWhateverTheOrder()
+	{
+		var elasticsearch = Item("elasticsearch");
+		var kibana = Item("kibana");
+		var logstash = Item("logstash");
+		var kibanaServerless = Item("kibana-serverless", parentKey: "kibana");
+		var group = new ApiCatalogGroup("Elastic Stack", Grouped: true, [elasticsearch, kibana, logstash], [kibanaServerless]);
+
+		group.ColumnOf(kibanaServerless).Should().Be(2, "the tag-on sits under Kibana even though Elasticsearch has no variant");
+		group.HasVariant(kibana).Should().BeTrue();
+		group.HasVariant(elasticsearch).Should().BeFalse();
+	}
+
+	[Test]
+	public void ColumnOf_VariantWithoutAFeaturedParent_IsNull()
+	{
+		var orphan = Item("kibana-serverless", parentKey: "kibana");
+		var group = new ApiCatalogGroup("Elastic Stack", Grouped: true, [Item("elasticsearch"), Item("logstash")], [orphan]);
+
+		group.ColumnOf(orphan).Should().BeNull("Kibana is not featured here, so the tag-on stays a separate card");
 	}
 
 	[Test]
@@ -120,6 +147,9 @@ public class ApiCatalogViewModelTests
 	[Test]
 	public void DeploymentsOf_NoCategories_IsEmpty() =>
 		ApiCatalogViewModel.DeploymentsOf(Entry("cloud", "Elastic Cloud API")).Should().BeEmpty();
+
+	private static ApiCatalogItem Item(string key, string? parentKey = null) =>
+		new(key, key, $"/api/doc/{key}/", "<svg></svg>", null, [], parentKey);
 
 	private static ApiCatalogEntry Entry(string key, string title, params string[] categories) =>
 		new(key, title, $"/api/doc/{key}/") { CatalogCategories = categories };
