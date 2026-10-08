@@ -22,8 +22,8 @@ internal sealed class BuildHarness : IDisposable
 {
 	private readonly ManualTimeProvider _time;
 	private readonly InMemoryBuildState _state;
-	private readonly CancellationTokenSource _shutdown = new();
-	private readonly Task _loop;
+	private CancellationTokenSource _shutdown = new();
+	private Task _loop;
 	private readonly Task _client;
 	private readonly Lock _gate = new();
 	private readonly List<Timestamped<BuildEvent>> _log = [];
@@ -69,6 +69,54 @@ internal sealed class BuildHarness : IDisposable
 				return [.. _log];
 			}
 		}
+	}
+
+	/// <summary>Where the service says it is: idle, building or complete.</summary>
+	public BuildStatus Status => _state.Status;
+
+	/// <summary>A save that starts a build the test holds open. Does nothing while one is running (the service would queue the next).</summary>
+	public void Start()
+	{
+		if (_state.Status == BuildStatus.Building)
+			return;
+		_plan = new BuildPlan(0, TimeSpan.Zero);
+		_hold = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+		_state.ScheduleBuild("docs");
+		WaitUntil(() => _state.Status == BuildStatus.Building);
+	}
+
+	/// <summary>Lets the held build end. Does nothing when none is running.</summary>
+	public void EndBuild() => EndHeldBuild(hold => hold.SetResult());
+
+	/// <summary>Makes the held build throw. Does nothing when none is running.</summary>
+	public void Fail() => EndHeldBuild(hold => hold.SetException(new InvalidOperationException("the build failed")));
+
+	/// <summary>
+	/// The host stopping mid-build, then starting again: the build is cancelled and the service is at rest. Does nothing when none is running.
+	/// The service object is kept, and a new loop reads its queue, as a restarted host would.
+	/// </summary>
+	public void Interrupt()
+	{
+		if (_state.Status != BuildStatus.Building)
+			return;
+		_shutdown.Cancel();
+		WaitUntil(() => _state.Status != BuildStatus.Building);
+		try
+		{
+			_loop.Wait(TimeSpan.FromSeconds(5));
+		}
+		catch (AggregateException) { }
+		_shutdown.Dispose();
+		_shutdown = new CancellationTokenSource();
+		_loop = _state.RunAsync(_shutdown.Token);
+	}
+
+	private void EndHeldBuild(Action<TaskCompletionSource> end)
+	{
+		if (_state.Status != BuildStatus.Building || _hold is not { } hold)
+			return;
+		end(hold);
+		WaitUntil(() => _state.Status != BuildStatus.Building);
 	}
 
 	/// <summary>The service's snapshot, as the status endpoint serves it.</summary>
