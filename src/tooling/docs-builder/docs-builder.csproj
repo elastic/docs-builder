@@ -36,6 +36,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <InternalsVisibleTo Include="Documentation.Builder.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
     <EmbeddedResource Include="..\..\..\config\changelog.example.yml" Link="changelog.example.yml" LogicalName="Documentation.Builder.changelog.example.yml" />
   </ItemGroup>
 

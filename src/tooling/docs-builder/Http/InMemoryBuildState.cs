@@ -44,11 +44,41 @@ public record DiagnosticDto(
 	[property: JsonPropertyName("column")] int? Column = null
 );
 
-public class InMemoryBuildState(ILoggerFactory loggerFactory, IConfigurationContext configurationContext) : IDisposable
+/// <summary>The build a scheduled run performs: diagnostics are written to <paramref name="collector"/>. Production runs the isolated build; a test passes its own.</summary>
+internal delegate Task BuildStep(string sourcePath, DiagnosticsCollector collector, Cancel ct);
+
+public class InMemoryBuildState : IDisposable
 {
-	private readonly ILoggerFactory _loggerFactory = loggerFactory;
-	private readonly IConfigurationContext _configurationContext = configurationContext;
-	private readonly ILogger<InMemoryBuildState> _logger = loggerFactory.CreateLogger<InMemoryBuildState>();
+	private readonly ILoggerFactory _loggerFactory;
+	private readonly IConfigurationContext? _configurationContext;
+	private readonly ILogger<InMemoryBuildState> _logger;
+	private readonly TimeProvider _time;
+	private readonly BuildStep _buildStep;
+
+	public InMemoryBuildState(ILoggerFactory loggerFactory, IConfigurationContext configurationContext) : this(
+			loggerFactory,
+			configurationContext,
+			TimeProvider.System,
+			null
+		)
+	{ }
+
+	/// <summary>The clock stamps every event, and the build step is what a run does: both are injectable so the service can be driven in virtual time without a real build.</summary>
+	internal InMemoryBuildState(
+		ILoggerFactory loggerFactory,
+		IConfigurationContext? configurationContext,
+		TimeProvider time,
+		BuildStep? buildStep
+	)
+	{
+		_loggerFactory = loggerFactory;
+		_configurationContext = configurationContext;
+		_logger = loggerFactory.CreateLogger<InMemoryBuildState>();
+		_time = time;
+		_buildStep = buildStep ?? RunIsolatedBuildAsync;
+	}
+
+	internal long NowMs() => _time.GetUtcNow().ToUnixTimeMilliseconds();
 	// Capacity-1 bounded channel: a new trigger while a build is running queues one more run;
 	// additional triggers drop the queued one (DropOldest) so only the latest matters.
 	// The build loop (RunAsync) is the sole reader and never cancels a running build on file events.
@@ -155,46 +185,14 @@ public class InMemoryBuildState(ILoggerFactory loggerFactory, IConfigurationCont
 			}
 
 			// Emit build_start event
-			await BroadcastEventAsync(new BuildEvent("build_start", DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()));
+			await BroadcastEventAsync(new BuildEvent("build_start", NowMs()));
 
 			ct.ThrowIfCancellationRequested();
 
 			// Create a diagnostics collector that streams to our channel
 			var streamingCollector = new StreamingDiagnosticsCollector(_loggerFactory, this);
 
-			if (WriteFileSystem is null || _writeFsPath != sourcePath)
-			{
-				WriteFileSystem = new MockFileSystem();
-				_writeFsPath = sourcePath;
-			}
-			var service = new IsolatedBuildService(
-				_loggerFactory,
-				_configurationContext,
-				new NullCoreService(),
-				SystemEnvironmentVariables.Instance
-			);
-
-			_logger.LogInformation("Starting in-memory validation build for {Path}", sourcePath);
-
-			_ = await service.Build(
-				streamingCollector,
-				new IsolatedBuildOptions
-				{
-					Path = new DirectoryInfo(sourcePath),
-					Force = true,
-					Strict = false,
-					AllowIndexing = false,
-					MetadataOnly = false,
-					// Validation-only: parse + emit diagnostics without LLM export, config copy,
-					// link-index, or redirect generation — none make sense for an in-memory build.
-					Exporters = ExportOptions.Validation,
-					SkipApi = true,
-					SkipCrossLinks = false
-				},
-				WriteFileSystem, // reuse MockFileSystem across builds for caching; initialized above
-
-				ct
-			);
+			await _buildStep(sourcePath, streamingCollector, ct);
 
 			// Stop the collector to complete the channel
 			await streamingCollector.StopAsync(ct);
@@ -203,13 +201,7 @@ public class InMemoryBuildState(ILoggerFactory loggerFactory, IConfigurationCont
 
 			// Emit build_complete event
 			await BroadcastEventAsync(
-				new BuildEvent(
-					"build_complete",
-					DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
-					Errors: ErrorCount,
-					Warnings: WarningCount,
-					Hints: HintCount
-				)
+				new BuildEvent("build_complete", NowMs(), Errors: ErrorCount, Warnings: WarningCount, Hints: HintCount)
 			);
 
 			_logger.LogInformation(
@@ -225,7 +217,7 @@ public class InMemoryBuildState(ILoggerFactory loggerFactory, IConfigurationCont
 			Status = BuildStatus.Idle;
 
 			// Emit build_cancelled event
-			await BroadcastEventAsync(new BuildEvent("build_cancelled", DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()));
+			await BroadcastEventAsync(new BuildEvent("build_cancelled", NowMs()));
 		}
 		catch (Exception ex)
 		{
@@ -234,15 +226,48 @@ public class InMemoryBuildState(ILoggerFactory loggerFactory, IConfigurationCont
 
 			// Emit build_complete with current counts even on error
 			await BroadcastEventAsync(
-				new BuildEvent(
-					"build_complete",
-					DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
-					Errors: ErrorCount,
-					Warnings: WarningCount,
-					Hints: HintCount
-				)
+				new BuildEvent("build_complete", NowMs(), Errors: ErrorCount, Warnings: WarningCount, Hints: HintCount)
 			);
 		}
+	}
+
+	private async Task RunIsolatedBuildAsync(string sourcePath, DiagnosticsCollector collector, Cancel ct)
+	{
+		ArgumentNullException.ThrowIfNull(_configurationContext);
+
+		if (WriteFileSystem is null || _writeFsPath != sourcePath)
+		{
+			WriteFileSystem = new MockFileSystem();
+			_writeFsPath = sourcePath;
+		}
+		var service = new IsolatedBuildService(
+			_loggerFactory,
+			_configurationContext,
+			new NullCoreService(),
+			SystemEnvironmentVariables.Instance
+		);
+
+		_logger.LogInformation("Starting in-memory validation build for {Path}", sourcePath);
+
+		_ = await service.Build(
+			collector,
+			new IsolatedBuildOptions
+			{
+				Path = new DirectoryInfo(sourcePath),
+				Force = true,
+				Strict = false,
+				AllowIndexing = false,
+				MetadataOnly = false,
+				// Validation-only: parse + emit diagnostics without LLM export, config copy,
+				// link-index, or redirect generation — none make sense for an in-memory build.
+				Exporters = ExportOptions.Validation,
+				SkipApi = true,
+				SkipCrossLinks = false
+			},
+			WriteFileSystem, // reuse MockFileSystem across builds for caching; initialized above
+
+			ct
+		);
 	}
 
 	/// <summary>
@@ -324,7 +349,7 @@ public class InMemoryBuildState(ILoggerFactory loggerFactory, IConfigurationCont
 	public BuildEvent GetCurrentState() =>
 		new(
 			"state",
-			DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
+			NowMs(),
 			Errors: ErrorCount,
 			Warnings: WarningCount,
 			Hints: HintCount,
@@ -375,7 +400,7 @@ public class InMemoryBuildState(ILoggerFactory loggerFactory, IConfigurationCont
 			buildState.StoreDiagnostic(dto);
 
 			// Emit diagnostic event to all connected clients
-			var buildEvent = new BuildEvent("diagnostic", DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(), Diagnostic: dto);
+			var buildEvent = new BuildEvent("diagnostic", buildState.NowMs(), Diagnostic: dto);
 
 			_ = buildState.BroadcastEventAsync(buildEvent);
 		}
