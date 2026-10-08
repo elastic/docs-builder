@@ -55,7 +55,7 @@
 			@if (group.Others.Count > 0)
 			{
 				<ul class="@(tagOns ? "api-catalog-tagons " : "")m-0 grid list-none grid-cols-1 gap-x-6 gap-y-4 p-0 @otherColumns">
-					@foreach (var item in group.Others)
+					@foreach (var item in group.OthersInGridOrder)
 					{
 						@(await RenderPartialAsync<_ApiCatalogCard, ApiCatalogCard>(new ApiCatalogCard(item, otherKind, Column: group.ColumnOf(item))))
 					}

@@ -125,6 +125,35 @@ public class ApiCatalogViewModelTests
 	}
 
 	[Test]
+	public void OthersInGridOrder_UnattachedCardBeforeAnAttachedOne_PlacesTheAttachedOneFirst()
+	{
+		var orphan = Item("elasticsearch-serverless", parentKey: "elasticsearch");
+		var attached = Item("kibana-serverless", parentKey: "kibana");
+		var group = new ApiCatalogGroup("Elastic Stack", Grouped: true, [Item("kibana"), Item("logstash")], [orphan, attached]);
+
+		group.OthersInGridOrder.Should().Equal([attached, orphan], "the unattached card must not take the cell under Kibana");
+	}
+
+	[Test]
+	public void OthersInGridOrder_AttachedCards_AreOrderedByColumnAndTheRestKeepTheirOrder()
+	{
+		var elasticsearch = Item("elasticsearch");
+		var kibana = Item("kibana");
+		var kibanaServerless = Item("kibana-serverless", parentKey: "kibana");
+		var elasticsearchServerless = Item("elasticsearch-serverless", parentKey: "elasticsearch");
+		var extraB = Item("extra-b");
+		var extraA = Item("extra-a");
+		var group = new ApiCatalogGroup(
+			"Elastic Stack",
+			Grouped: true,
+			[elasticsearch, kibana],
+			[extraB, kibanaServerless, extraA, elasticsearchServerless]
+		);
+
+		group.OthersInGridOrder.Should().Equal([elasticsearchServerless, kibanaServerless, extraB, extraA]);
+	}
+
+	[Test]
 	public void ColumnOf_VariantWithoutAFeaturedParent_IsNull()
 	{
 		var orphan = Item("kibana-serverless", parentKey: "kibana");

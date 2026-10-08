@@ -32,6 +32,12 @@ public sealed record ApiCatalogGroup(
 	IReadOnlyList<ApiCatalogItem> Others
 )
 {
+	/// <summary>
+	/// The other cards in the order the grid places them: the attached tag-ons first, left to right, then the rest.
+	/// In document order an unattached card could take the cell an attached one needs and push it out of its parent's row.
+	/// </summary>
+	public IEnumerable<ApiCatalogItem> OthersInGridOrder => Others.OrderBy(o => ColumnOf(o) ?? int.MaxValue);
+
 	/// <summary>True when a tag-on in this group is attached under <paramref name="featured"/>.</summary>
 	public bool HasVariant(ApiCatalogItem featured) => Others.Any(o => o.ParentKey == featured.Key);
 
