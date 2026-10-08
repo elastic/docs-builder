@@ -1120,18 +1120,6 @@ button.response-status-toggle:focus {
 	background-color: #ecf1f9;
 }
 
-/* The toggle stays statically positioned so this stretches over the summary. */
-.response-status-toggle::after {
-	content: '';
-	position: absolute;
-	inset: 0;
-}
-
-/* Links sit above the stretched hit area so they still navigate. */
-.response-description a {
-	position: relative;
-}
-
 .response-status-chip {
 	display: inline-flex;
 	flex-shrink: 0;
@@ -1217,6 +1205,7 @@ button.response-status-toggle:focus {
 	font-weight: 400;
 	line-height: 1.5;
 	text-align: left;
+	cursor: text;
 }
 
 .response-description > :first-child {
