@@ -386,7 +386,6 @@
 }
 
 .api-group .api-tag-description {
-	max-width: 66ch;
 	margin-top: 8px;
 	font-size: 16px;
 	line-height: 24px;
@@ -2793,15 +2792,38 @@ button.example-response-tab:focus-visible {
 	margin-top: 0;
 }
 
-/* API page shell: same max width as docs. Sidebar plus one content column; operation
-   pages split that column in two themselves (.api-page-columns). */
+/* API page shell: like the codex layout, uncapped so the nav sits at the left edge
+   and the content is centered in the remaining space. Operation pages split that
+   content in two themselves (.api-page-columns). */
 .api-page-shell {
-	max-width: var(--max-layout-width);
+	max-width: none;
 }
 
 @media (min-width: 768px) {
+	/* The column gap and the right padding match (32px each, the shell adds 16px more on
+	   the right), so the content has the same space beside the nav as beside the window
+	   edge. Every API page uses the operation page's width, so the content keeps its
+	   left edge when you move between pages. */
 	.api-page-shell > .grid {
-		column-gap: 48px;
+		column-gap: 32px;
+		padding-right: 16px;
+	}
+
+	#api-content-grid {
+		--api-column-gap: 24px;
+		--api-content-cap: calc(
+			var(--max-api-content-width) + var(--api-column-gap) +
+				var(--max-examples-width)
+		);
+		width: 100%;
+		max-width: var(--api-content-cap);
+		margin-inline: auto;
+	}
+
+	/* Landing and group pages are lists, not a reference next to examples, so they read
+	   better narrower. They stay centered between the nav and the window edge. */
+	#api-content-grid:has(.api-landing, .api-group) {
+		--api-content-cap: calc(var(--spacing) * 240);
 	}
 }
 
@@ -2895,6 +2917,22 @@ button.example-response-tab:focus-visible {
 		flex: 0 0 auto;
 		max-height: max(12rem, calc((100vh - var(--offset-top)) * 0.4));
 		overflow: auto;
+	}
+}
+
+/* Wide enough for the capped block: the reference at the docs text width, the examples
+   rail at a fixed width, more air between them. */
+@media (min-width: 1280px) {
+	#api-content-grid {
+		--api-column-gap: 32px;
+	}
+
+	.api-page-columns {
+		gap: var(--api-column-gap);
+	}
+
+	.api-page-columns > #api-examples-panel {
+		flex: 0 0 var(--max-examples-width);
 	}
 }
 
@@ -3306,7 +3344,7 @@ html:has(.api-page-shell) {
 	display: inline-flex;
 	align-items: center;
 	gap: 6px;
-	max-width: min(100%, 220px);
+	max-width: calc((100% - var(--api-chip-gap)) / 2);
 	min-height: var(--api-chip-height);
 	padding: 4px 10px;
 	border: 1px solid var(--color-grey-20, #e3e8f2);
@@ -3844,14 +3882,14 @@ html:has(.api-page-shell) {
 }
 
 /*
- * Fixed rail frame: from 1024px the rail is exactly the viewport tall and never scrolls.
- * Example chips stay put, the request pane hugs the active sample, the response takes the
- * rest, and only the code areas scroll.
+ * Rail frame: from 1024px the rail is as tall as its examples, up to the viewport, and never
+ * scrolls. A short operation gets a short rail, so the rail does not stretch the row below
+ * the reference column. Example chips stay put, the request pane hugs the active sample, the
+ * response takes the rest, and only the code areas scroll.
  */
 @media (min-width: 1024px) {
 	#api-examples-panel {
-		height: calc(100vh - var(--api-rail-top) - 16px);
-		max-height: none;
+		max-height: calc(100vh - var(--api-rail-top) - 16px);
 	}
 
 	#api-examples-panel .api-examples-panel-nav {

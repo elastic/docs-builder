@@ -79,7 +79,8 @@ body {
 	);
 
 	--max-api-sidebar-width: calc(var(--spacing) * 70);
-	--max-examples-width: calc(var(--max-api-sidebar-width) * 2);
+	--max-examples-width: calc(var(--spacing) * 110);
+	--max-api-content-width: var(--max-text-width);
 }
 
 #pages-nav li.current {
