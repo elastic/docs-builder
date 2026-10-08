@@ -10,15 +10,18 @@ using Documentation.Builder.Commands.ReleaseAutomation;
 using Documentation.Builder.Diagnostics.Console;
 using Documentation.Builder.Middleware;
 using Elastic.Documentation;
+using Elastic.Documentation.Assembler.Building;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Configuration.Loading;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.Isolated;
 using Elastic.Documentation.ServiceDefaults;
 using Elastic.Documentation.ServiceDefaults.Telemetry;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Nullean.Argh;
 using Nullean.Argh.Hosting;
+using Nullean.Entities.Argh;
 
 // Pre-host fast path: run --help, --version, __schema, __completion directly and exit
 // before the host (and its startup logs) are ever constructed.
@@ -51,6 +54,10 @@ catch (ConfigurationException e)
 	Environment.ExitCode = 1;
 	return;
 }
+
+// cross-field rules for the option objects of a command: Argh checks them with its own and reports them as --flag errors
+ArghConstraints.Register(IsolatedBuildOptionsConstraints.All);
+ArghConstraints.Register(AssemblerBuildOptionsConstraints.All);
 
 _ = builder.Services.AddArgh(args, app =>
 {

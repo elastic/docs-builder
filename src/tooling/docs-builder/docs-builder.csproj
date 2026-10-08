@@ -40,6 +40,11 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- Cross-field rules for the option objects of a command, reported as Argh errors. -->
+    <ProjectReference Include="$(NulleanEntitiesArghProject)" />
+  </ItemGroup>
+
+  <ItemGroup>
     <EmbeddedResource Include="..\..\..\config\changelog.example.yml" Link="changelog.example.yml" LogicalName="Documentation.Builder.changelog.example.yml" />
   </ItemGroup>
 

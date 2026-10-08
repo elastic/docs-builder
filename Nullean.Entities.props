@@ -18,6 +18,8 @@
     <NulleanEntitiesProject>$(NulleanEntitiesRoot)/src/Nullean.Entities/Nullean.Entities.csproj</NulleanEntitiesProject>
     <!-- The [Constraints] source generator: reference with OutputItemType="Analyzer" ReferenceOutputAssembly="false". -->
     <NulleanEntitiesGeneratorProject>$(NulleanEntitiesRoot)/src/Nullean.Entities.SourceGenerators/Nullean.Entities.SourceGenerators.csproj</NulleanEntitiesGeneratorProject>
+    <!-- Validates the option objects a Nullean.Argh command receives against constraints: a flag error and exit code 2. -->
+    <NulleanEntitiesArghProject>$(NulleanEntitiesRoot)/src/Nullean.Entities.Argh/Nullean.Entities.Argh.csproj</NulleanEntitiesArghProject>
     <!-- Property, spec and model-based testing with CsCheck: tests only, never shipped. -->
     <NulleanEntitiesCsCheckProject>$(NulleanEntitiesRoot)/src/Nullean.Entities.CsCheck/Nullean.Entities.CsCheck.csproj</NulleanEntitiesCsCheckProject>
     <NulleanEntitiesCsCheckFileSystemProject>$(NulleanEntitiesRoot)/src/Nullean.Entities.CsCheck.FileSystem/Nullean.Entities.CsCheck.FileSystem.csproj</NulleanEntitiesCsCheckFileSystemProject>
