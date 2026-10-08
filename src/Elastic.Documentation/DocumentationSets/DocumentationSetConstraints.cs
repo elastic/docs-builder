@@ -10,6 +10,7 @@ using Elastic.Documentation.Extensions;
 using Elastic.Documentation.Links;
 using Elastic.Documentation.Suggestions;
 using Nullean.Entities;
+using Nullean.Entities.FileSystem;
 using static Elastic.Documentation.SymlinkValidator;
 using Located = Nullean.Entities.SourceLocation;
 
@@ -73,14 +74,16 @@ public static partial class DocumentationSetConstraints
 			: []
 	).Describe("A nested table of contents whose toc.yml exists lists at least one entry.");
 
-	public static Constraint<DocumentationSetInCatalog> CliSupplementalFolderExists { get; } = Constraints<DocumentationSetInCatalog>
-		.Each(
-			m => Entries<CliReferenceRef>(m).Where(
-				cli => cli.SupplementalFolder is { } folder &&
-					!m.Docset.FileSystem.Directory.Exists(m.Docset.FileSystem.Path.Join(m.Docset.SourceFile.Directory!.FullName, folder))
-			),
+	public static Constraint<DocumentationSetInCatalog> CliSupplementalFolderExists { get; } = Files<DocumentationSetInCatalog>
+		.DirectoriesExist(
+			m => Entries<CliReferenceRef>(m).Where(cli => cli.SupplementalFolder is not null),
+			(m, cli) => m
+				.Docset
+				.FileSystem
+				.DirectoryInfo
+				.New(m.Docset.FileSystem.Path.Join(m.Docset.SourceFile.Directory!.FullName, cli.SupplementalFolder)),
 			cli => $"CLI supplemental docs folder not found: {cli.SupplementalFolder}",
-			at: cli => new Located(cli.Context)
+			cli => new Located(cli.Context)
 		)
 		.WithSeverity(Severity.Warning)
 		.Describe("A CLI reference's supplemental docs folder exists.");
@@ -94,8 +97,8 @@ public static partial class DocumentationSetConstraints
 		at: l => new Located(l.Context)
 	).Describe("A listing whose glob may match non-Markdown files names an extension to handle them.");
 
-	public static Constraint<DocumentationSetInCatalog> DocsetFileExists { get; } = Constraints<DocumentationSetInCatalog>
-		.Always(m => m.Docset.SourceFile.Exists, "No configuration file found")
+	public static Constraint<DocumentationSetInCatalog> DocsetFileExists { get; } = Files<DocumentationSetInCatalog>
+		.Exist(m => [m.Docset.SourceFile], describe: _ => "No configuration file found")
 		.WithSeverity(Severity.Warning)
 		.Describe("docset.yml exists; without it the set is empty and its project is 'unknown'.");
 
@@ -188,9 +191,10 @@ public static partial class DocumentationSetConstraints
 		.WithSeverity(Severity.Warning)
 		.Describe("A registry, when set, names a known codex registry.");
 
-	public static Constraint<DocumentationSetInCatalog> DocsetFileNotSymlink { get; } = Constraints<DocumentationSetInCatalog>.Always(
-		m => m.Docset.SourceFile,
-		file => file is not { Exists: true, LinkTarget: not null },
+	// The file itself, not the folders above it: the root is its own folder, so a checkout under a linked directory is not reported.
+	public static Constraint<DocumentationSetInCatalog> DocsetFileNotSymlink { get; } = Files<DocumentationSetInCatalog>.NotSymlink(
+		m => [m.Docset.SourceFile],
+		m => m.Docset.SourceFile.Directory,
 		describe: file =>
 			$"Control file '{file.FullName}' is a symlink, which is not allowed for security reasons. Symlinked control files could be used for path traversal attacks."
 	).Describe("D4: docset.yml is not a symlink.");
@@ -328,12 +332,11 @@ public static partial class DocumentationSetConstraints
 		at: r => new Located(r.Context)
 	).Describe("D42: a page is not given two different default CTAs.");
 
-	public static Constraint<DocumentationSetInCatalog> DefaultCtaPageExists { get; } = Constraints<DocumentationSetInCatalog>
-		.Each(
+	public static Constraint<DocumentationSetInCatalog> DefaultCtaPageExists { get; } = Files<DocumentationSetInCatalog>
+		.Exist(
 			m => m.Docset.TocDefaultCtas,
-			(m, page) => m.Docset.FileSystem.File.Exists(m.Docset.FileSystem.Path.Join(m.Docset.SourceDirectory.FullName, page.Key))
-				? null
-				: $"'default_cta: {page.Value}' is registered on page '{page.Key}', which does not exist."
+			(m, page) => m.Docset.FileSystem.FileInfo.New(m.Docset.FileSystem.Path.Join(m.Docset.SourceDirectory.FullName, page.Key)),
+			page => $"'default_cta: {page.Value}' is registered on page '{page.Key}', which does not exist."
 		)
 		.WithSeverity(Severity.Warning)
 		.Describe("D43: a page registered through default_cta exists.");
@@ -421,17 +424,15 @@ public static partial class DocumentationSetConstraints
 			"D60: a folder's file is named after the folder, unless it is index.md or at the root, or FolderFileNameMismatch is suppressed."
 		);
 
-	public static Constraint<DocumentationSetInCatalog> TocFolderExists { get; } = Constraints<DocumentationSetInCatalog>.Each(
-		m => Entries<FolderRef>(m).Where(
-			f => f is not DeepLinkedFolderRef &&
-				!m
-					.Docset
-					.FileSystem
-					.Directory
-					.Exists(m.Docset.FileSystem.Path.Join(m.Docset.SourceDirectory.FullName, f.PathRelativeToDocumentationSet.Value))
-		),
+	public static Constraint<DocumentationSetInCatalog> TocFolderExists { get; } = Files<DocumentationSetInCatalog>.DirectoriesExist(
+		m => Entries<FolderRef>(m).Where(f => f is not DeepLinkedFolderRef),
+		(m, f) => m
+			.Docset
+			.FileSystem
+			.DirectoryInfo
+			.New(m.Docset.FileSystem.Path.Join(m.Docset.SourceDirectory.FullName, f.PathRelativeToDocumentationSet.Value)),
 		f => $"Folder '{f.PathRelativeToDocumentationSet}' does not exist in the documentation source directory.",
-		at: f => new Located(f.Context)
+		f => new Located(f.Context)
 	).Describe("D64: a folder entry names a directory that exists.");
 
 	public static Constraint<DocumentationSetInCatalog> NestedTocPathsUnique { get; } = Constraints<DocumentationSetInCatalog>
@@ -485,14 +486,16 @@ public static partial class DocumentationSetConstraints
 		at: l => new Located(l.Context)
 	).Describe("D81: a listing with island: true sets a visual other than none.");
 
-	public static Constraint<DocumentationSetInCatalog> DetectionRuleFoldersExist { get; } = Constraints<DocumentationSetInCatalog>.Each(
-		m => Entries<DetectionRuleOverviewRef>(m)
-			.SelectMany(overview => overview.DetectionRuleFolders.Select(folder => (Overview: overview, Folder: folder)))
-			.Where(
-				r => !m.Docset.FileSystem.Directory.Exists(m.Docset.FileSystem.Path.Join(OverviewDirectory(m.Docset, r.Overview), r.Folder))
-			),
+	public static Constraint<DocumentationSetInCatalog> DetectionRuleFoldersExist
+	{
+		get;
+	} = Files<DocumentationSetInCatalog>.DirectoriesExist(
+		m => Entries<DetectionRuleOverviewRef>(m).SelectMany(
+			overview => overview.DetectionRuleFolders.Select(folder => (Overview: overview, Folder: folder))
+		),
+		(m, r) => m.Docset.FileSystem.DirectoryInfo.New(m.Docset.FileSystem.Path.Join(OverviewDirectory(m.Docset, r.Overview), r.Folder)),
 		r => $"Detection rule folder '{r.Folder}' of '{r.Overview.PathRelativeToDocumentationSet}' does not exist.",
-		at: r => new Located(r.Overview.Context)
+		r => new Located(r.Overview.Context)
 	).Describe("D88: every rule folder of a detection_rules entry exists.");
 
 	public static Constraint<DocumentationSetInCatalog> RedirectTargetValid { get; } = Constraints<DocumentationSetInCatalog>.Each(
