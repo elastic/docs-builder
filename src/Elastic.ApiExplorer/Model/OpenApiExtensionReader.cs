@@ -38,6 +38,21 @@ public static class OpenApiExtensionReader
 			&& betaJsonValue.TryGetValue<bool>(out var betaFlag)
 			&& betaFlag;
 
+	/// <summary>Reads the raw <c>x-state</c> title label. A returned string is non-empty after trim.</summary>
+	public static string? GetState(OpenApiOperation operation)
+	{
+		if (
+			operation.Extensions?.TryGetValue("x-state", out var value) != true
+			|| value is not JsonNodeExtension json
+			|| json.Node is not JsonValue jsonValue
+			|| !jsonValue.TryGetValue<string>(out var state)
+			|| string.IsNullOrWhiteSpace(state)
+		)
+			return null;
+
+		return state.Trim();
+	}
+
 	/// <summary>Parses the document-level <c>x-tagGroups</c> extension; null when absent or empty.</summary>
 	public static XTagGroups? ParseXTagGroups(OpenApiDocument openApiDocument)
 	{
