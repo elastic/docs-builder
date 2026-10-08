@@ -112,6 +112,7 @@ public class VersionIndexProperties
 		).Check(x =>
 		{
 			var (keys, permuted) = x;
+			VersionIndexOrderConstraints.All.Validate(new KeyOrders(keys, permuted)).Should().BeEmpty();
 			Json(VersionIndexBuilder.Build(permuted).Index).Should().Be(Json(VersionIndexBuilder.Build(keys).Index));
 		});
 
