@@ -1070,23 +1070,24 @@
 	border-radius: 16px;
 }
 
+/* Three columns: status code | description | media type, plus the toggle icon on summaries. */
 .response-status-row,
-.response-status-toggle {
-	display: flex;
+.response-summary {
+	display: grid;
 	box-sizing: border-box;
-	align-items: center;
-	justify-content: flex-start;
-	gap: 12px;
+	grid-template-columns: 56px minmax(0, 1fr) auto auto;
+	align-items: start;
+	column-gap: 16px;
 	width: 100%;
-}
-
-.response-status-row {
 	padding: 12px 16px;
 }
 
 .response-status-toggle {
+	grid-column: 1;
+	display: flex;
+	align-items: center;
 	margin: 0;
-	padding: 14px 16px;
+	padding: 0;
 	border: 0;
 	border-radius: 0;
 	background: transparent;
@@ -1106,12 +1107,11 @@ button.response-status-toggle:focus {
 	border-radius: 12px;
 }
 
-.response-summary > .response-status-row {
-	padding: 0;
+.response-status-row > .response-status-chip {
+	grid-column: 1;
 }
 
 .response-summary {
-	position: relative;
 	cursor: pointer;
 	transition: background-color 0.12s ease;
 }
@@ -1198,8 +1198,9 @@ button.response-status-toggle:focus {
 }
 
 .response-description {
+	grid-column: 2;
 	margin: 0;
-	padding: 4px 16px 12px;
+	padding: 2px 0 0;
 	color: inherit;
 	font-size: 14px;
 	font-weight: 400;
@@ -1225,22 +1226,23 @@ button.response-status-toggle:focus {
 }
 
 .content-type-tag {
-	flex-shrink: 0;
+	grid-column: 3;
+	justify-self: end;
 	color: #1d2a3e;
 	font-size: 12px;
 	font-weight: 400;
-	line-height: 16px;
+	line-height: 24px;
 	background: none;
 }
 
 .response-toggle-icon {
-	margin-left: auto;
+	grid-column: 4;
 	flex-shrink: 0;
 	color: #798eaf;
 	font-family: var(--font-mono, ui-monospace, monospace);
 	font-size: 14px;
 	font-weight: 600;
-	line-height: 16px;
+	line-height: 24px;
 }
 
 .response-panel.collapsed .response-toggle-icon::before {
@@ -1249,6 +1251,28 @@ button.response-status-toggle:focus {
 
 .response-panel.expanded .response-toggle-icon::before {
 	content: '−';
+}
+
+@media (max-width: 640px) {
+	.response-status-row,
+	.response-summary {
+		grid-template-columns: auto minmax(0, 1fr) auto;
+		row-gap: 8px;
+	}
+
+	.response-description {
+		grid-column: 1 / -1;
+		grid-row: 2;
+	}
+
+	.content-type-tag {
+		grid-column: 2;
+		justify-self: start;
+	}
+
+	.response-toggle-icon {
+		grid-column: 3;
+	}
 }
 
 .property-list .expand-toggle,

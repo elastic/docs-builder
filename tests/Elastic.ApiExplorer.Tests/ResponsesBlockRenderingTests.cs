@@ -140,7 +140,7 @@ public class ResponsesBlockRenderingTests
 	}
 
 	[Test]
-	public async Task Render_Response_PutsStatusAndMediaTypeAboveTheDescription()
+	public async Task Render_Response_PutsStatusDescriptionAndMediaTypeInThreeColumns()
 	{
 		var html = await RenderHtml(
 			Response("200", "success", "A JSON object containing pipelines statistics.\n\n- queue depth\n- worker utilization")
@@ -148,20 +148,17 @@ public class ResponsesBlockRenderingTests
 
 		var button = html[html.IndexOf("<button", StringComparison.Ordinal)..html.IndexOf("</button>", StringComparison.Ordinal)];
 		button.Should().Contain("response-status-chip");
-		button.Should().Contain("application/json");
-		button.Should().Contain("response-toggle-icon");
+		button.Should().NotContain("application/json");
 		button.Should().NotContain("queue depth");
 		button.Should().NotContain("<ul>");
-		html.Should().Contain("<ul>");
 		html.Should().Contain("<li>queue depth</li>");
-		html
-			.IndexOf("response-description", StringComparison.Ordinal)
-			.Should()
-			.BeGreaterThan(html.IndexOf("</button>", StringComparison.Ordinal));
-		html
-			.IndexOf("content-type-tag", StringComparison.Ordinal)
-			.Should()
-			.BeLessThan(html.IndexOf("response-description", StringComparison.Ordinal));
+		var status = html.IndexOf("</button>", StringComparison.Ordinal);
+		var description = html.IndexOf("response-description", StringComparison.Ordinal);
+		var mediaType = html.IndexOf("content-type-tag", StringComparison.Ordinal);
+		var icon = html.IndexOf("response-toggle-icon", StringComparison.Ordinal);
+		description.Should().BeGreaterThan(status);
+		mediaType.Should().BeGreaterThan(description);
+		icon.Should().BeGreaterThan(mediaType);
 	}
 
 	[Test]
