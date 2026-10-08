@@ -432,7 +432,7 @@ public class DocumentationSetConstraintsTests
 	// api child or default-cta page exists on disk, so a generated tree is valid only when the generator builds the world from the tree (or the tree from the world) and the entries are
 	// unique, well-nested and well-named. GenAuto draws the file system and the tree independently; that coupling is not a repair of members but a model-first generator (a set of page
 	// paths, then both the files and the toc built from it).
-	public void Laws() => DocumentationSetConstraints.All.Laws(Valid(), CounterExamples);
+	public void Laws() => DocumentationSetConstraints.All.Laws(Valid(), CounterExamples, options: o => o.UseFileSystem());
 
 	private static DocumentationSetInCatalog Valid() => new(ValidDocset(), Products);
 
