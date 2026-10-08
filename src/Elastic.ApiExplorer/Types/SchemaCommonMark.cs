@@ -42,13 +42,14 @@ internal static class SchemaCommonMark
 			_ = markdown.AppendLine();
 		}
 
+		if (page.Requires is { } requires)
+			ApiCommonMark.Paragraph(markdown, ApiPropertyMarkdown.Format(requires));
+
 		WriteUnion(markdown, page.UnionVariants, UnionHeading(page.UnionKeyword), page.UnionIntro, apiBaseUrl);
 
 		if (page.Properties is not null)
 		{
 			ApiCommonMark.Heading(markdown, 2, "Properties");
-			if (page.Requires is { } requires)
-				ApiCommonMark.Paragraph(markdown, ApiPropertyMarkdown.Format(requires));
 			ApiPropertyMarkdown.WriteList(markdown, page.Properties, apiBaseUrl);
 			_ = markdown.AppendLine();
 		}

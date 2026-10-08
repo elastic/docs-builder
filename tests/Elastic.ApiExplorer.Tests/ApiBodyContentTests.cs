@@ -356,6 +356,40 @@ public class ApiBodyContentTests
 	}
 
 	[Test]
+	public async Task Build_OneOfMixingARequiredSetWithAShape_StaysAUnion()
+	{
+		var json =
+			"""
+			{
+			  "openapi": "3.0.3",
+			  "info": { "title": "t", "version": "1" },
+			  "paths": {},
+			  "components": {
+			    "schemas": {
+			      "Cat": { "type": "object", "properties": { "lives": { "type": "integer" } } },
+			      "Body": {
+			        "type": "object",
+			        "oneOf": [ { "required": ["a"] }, { "$ref": "#/components/schemas/Cat" } ],
+			        "properties": { "a": { "type": "string" } }
+			      }
+			    }
+			  }
+			}
+			""";
+		var document = await LoadSpecAsync(json);
+
+		var body = ApiBodyContent.Build(
+			new OpenApiSchemaReference("Body", document),
+			new PropertyTreeScope { Prefix = "req", IsRequest = true },
+			new SchemaAnalyzer(document),
+			BuilderFor(document)
+		);
+
+		body.UnionVariants!.Variants.Select(v => v.DisplayName).Should().Contain("Cat", "a mixed list is still a union of its shapes");
+		body.Requires.Should().BeNull("only a list of required sets alone becomes a Requires line");
+	}
+
+	[Test]
 	public async Task Build_BodyWithRequiredOnlyAnyOf_SaysWhichFieldsAreRequired()
 	{
 		var json =

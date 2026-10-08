@@ -35,6 +35,20 @@ public class SchemaPageModelTests(ApiExplorerFixture fixture)
 	}
 
 	[Test]
+	public void Write_RequiredSetsWithoutProperties_StillSaysWhichFieldsAreRequired()
+	{
+		var item = fixture.Walk().OfType<SchemaNavigationItem>().Single(n => n.Model.DisplayName == "Aggregate");
+		var context = RenderContext(item);
+		var page = SchemaPageModel.Create(item.Model, context) with
+		{
+			Properties = null,
+			Requires = new RequiredAlternatives("Requires exactly one of:", ["a", "b"])
+		};
+
+		SchemaCommonMark.Write(item.Model, page, context).Should().Contain("Requires exactly one of: `a` or `b`");
+	}
+
+	[Test]
 	public async Task UnionIntroFor_ArrayOfUnion_SaysEachItemIsAVariant()
 	{
 		var json =

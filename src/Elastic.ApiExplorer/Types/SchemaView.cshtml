@@ -60,6 +60,12 @@
 		</ul>
 	}
 
+	@* Shown on its own, so a type that lists only variants still says which fields it needs. *@
+	@if (pageModel.Requires is { } requires)
+	{
+		<p class="union-options">@(await RenderPartialAsync<_RequiredAlternatives, RequiredAlternatives>(requires))</p>
+	}
+
 	@if (pageModel.UnionVariants is { } unionVariants)
 	{
 		@(await RenderPartialAsync<_SectionHeader, SectionHeader>(new SectionHeader(Elastic.ApiExplorer.Types.SchemaCommonMark.UnionHeading(pageModel.UnionKeyword), "union-types")))
@@ -70,10 +76,6 @@
 	@if (pageModel.Properties is not null)
 	{
 		@(await RenderPartialAsync<_SectionHeader, SectionHeader>(new SectionHeader("Properties", "properties")))
-		@if (pageModel.Requires is { } requires)
-		{
-			<p class="union-options">@(await RenderPartialAsync<_RequiredAlternatives, RequiredAlternatives>(requires))</p>
-		}
 		@(await RenderPartialAsync<_PropertyList, ApiPropertyList>(pageModel.Properties))
 	}
 
