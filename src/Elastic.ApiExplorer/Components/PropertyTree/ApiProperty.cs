@@ -164,6 +164,9 @@ public record ApiProperty
 	/// <summary>Further schemas an <c>allOf</c> merges in; the row's type names only the first.</summary>
 	public IReadOnlyList<TypePageLink> AlsoIncludes { get; init; } = [];
 
+	/// <summary>Which of the object's fields it needs, when a <c>oneOf</c>/<c>anyOf</c> only lists <c>required</c> sets.</summary>
+	public RequiredAlternatives? Requires { get; init; }
+
 	public required bool IsCollapsible { get; init; }
 	public required bool DefaultExpanded { get; init; }
 	public required int NestedCount { get; init; }
@@ -173,6 +176,9 @@ public record ApiProperty
 
 /// <summary>An ordered list of property rows; the model for <c>_PropertyList</c>.</summary>
 public record ApiPropertyList(IReadOnlyList<ApiProperty> Items);
+
+/// <summary>A "Requires at least one of:" row; each option is a field, or fields joined by <c>+</c> that go together.</summary>
+public record RequiredAlternatives(string Label, IReadOnlyList<string> Options);
 
 /// <summary>A "Values:" row; long lists show the first few literals and fold the rest behind a toggle.</summary>
 public record EnumValueList(IReadOnlyList<string> Values)

@@ -54,6 +54,12 @@ public class SchemaAnalyzer(
 	/// the proxy (<see cref="OpenApiSchemaReference"/>) for external or unresolvable refs,
 	/// or <paramref name="schema"/> unchanged when it is not a reference.
 	/// </returns>
+	/// <summary>
+	/// Whether a schema declares properties itself rather than only through an <c>allOf</c>. A union that does lists them
+	/// above its variants; one whose properties come only from an <c>allOf</c> lists just its variants, which carry them.
+	/// </summary>
+	public bool DeclaresProperties(IOpenApiSchema schema) => (ResolveSchema(schema) ?? schema).Properties is { Count: > 0 };
+
 	public IOpenApiSchema? ResolveSchema(IOpenApiSchema? schema)
 	{
 		if (schema is null)

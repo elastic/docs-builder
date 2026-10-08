@@ -11,9 +11,8 @@ namespace Elastic.ApiExplorer.Components.PropertyTree;
 internal static class ApiBodyContent
 {
 	/// <summary>
-	/// The property list or the variant list of a request or response body. A union whose properties come only from an
-	/// <c>allOf</c> lists its variants, which already carry those shared properties. A union that declares properties
-	/// itself keeps listing them, as property rows do.
+	/// The property list and the variant list of a request or response body, as property rows list them: a union that
+	/// declares properties lists them above its variants (see <see cref="SchemaAnalyzer.DeclaresProperties"/>).
 	/// </summary>
 	public static (ApiPropertyList? Properties, ApiUnionVariants? UnionVariants) Build(
 		IOpenApiSchema schema,
@@ -22,11 +21,11 @@ internal static class ApiBodyContent
 		ApiPropertyTreeBuilder builder
 	)
 	{
-		var declaresProperties = (analyzer.ResolveSchema(schema) ?? schema).Properties is { Count: > 0 };
-		var variants = analyzer.GetTypeInfo(schema).IsUnion && !declaresProperties
-			? BuildUnionVariants(schema, scope, analyzer, builder)
-			: null;
-		return variants is not null ? (null, variants) : (builder.BuildPropertyList(schema, scope), null);
+		var variants = analyzer.GetTypeInfo(schema).IsUnion ? BuildUnionVariants(schema, scope, analyzer, builder) : null;
+		if (variants is not null && !analyzer.DeclaresProperties(schema))
+			return (null, variants);
+
+		return (builder.BuildPropertyList(schema, scope), variants);
 	}
 
 	/// <summary>The variants of a body that is itself a union, under a label that says what they describe.</summary>

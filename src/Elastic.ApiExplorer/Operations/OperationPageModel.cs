@@ -128,6 +128,9 @@ public record ApiResponseContent
 
 	/// <summary>Expanded oneOf/anyOf variants when the response body is a union of objects.</summary>
 	public ApiUnionVariants? UnionVariants { get; init; }
+
+	/// <summary>Whether the body lists properties, variants, or both, rather than only its type.</summary>
+	public bool HasBody => Properties is not null || UnionVariants is { Variants.Count: > 0 };
 }
 
 /// <summary>A response header with its type annotation precomputed.</summary>
@@ -191,8 +194,11 @@ public partial record OperationPageModel
 	public required string RequestContentType { get; init; }
 	public required ApiPropertyList? RequestProperties { get; init; }
 
-	/// <summary>The variants of a request body that is itself a <c>oneOf</c>/<c>anyOf</c>; set only when there are no plain properties.</summary>
+	/// <summary>The variants of a request body that is itself a <c>oneOf</c>/<c>anyOf</c>; listed below <see cref="RequestProperties"/> when it has both.</summary>
 	public ApiUnionVariants? RequestUnionVariants { get; init; }
+
+	/// <summary>Whether the request body lists properties, variants, or both, rather than only its type.</summary>
+	public bool HasRequestBody => RequestProperties is not null || RequestUnionVariants is { Variants.Count: > 0 };
 	public required TypeAnnotation? RequestType { get; init; }
 	public required IReadOnlyList<ApiResponse> Responses { get; init; }
 	public required IReadOnlyList<CodeSample> CodeSamples { get; init; }

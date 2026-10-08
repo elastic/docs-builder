@@ -90,6 +90,9 @@ internal static class ApiPropertyMarkdown
 
 		WriteAlsoIncludes(markdown, property, depth);
 
+		if (property.Requires is { } requires)
+			WriteNestedLine(markdown, depth, $"{requires.Label} " + string.Join(" or ", requires.Options.Select(o => $"`{o}`")));
+
 		WriteChildren(markdown, property, apiBaseUrl, depth);
 	}
 

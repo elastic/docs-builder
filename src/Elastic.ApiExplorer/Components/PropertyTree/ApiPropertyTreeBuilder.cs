@@ -221,6 +221,7 @@ public partial class ApiPropertyTreeBuilder(
 			ArrayItemTypeName = null,
 			TypeLink = typeLink,
 			AlsoIncludes = BuildAlsoIncludes(typeInfo),
+			Requires = BuildRequiredAlternatives(propSchema),
 			// A repeat lists nothing itself, so it gets no show/hide toggle.
 			IsCollapsible = repeats is null && expansion.IsCollapsible,
 			DefaultExpanded = expansion.DefaultExpanded,
@@ -228,6 +229,14 @@ public partial class ApiPropertyTreeBuilder(
 			Children = children
 		};
 	}
+
+	private RequiredAlternatives? BuildRequiredAlternatives(IOpenApiSchema propSchema) =>
+		UnionSchemas.TryGetRequiredAlternatives(_analyzer.ResolveSchema(propSchema), out var keyword, out var alternatives)
+			? new RequiredAlternatives(
+				keyword == UnionKeyword.AnyOf ? "Requires at least one of:" : "Requires exactly one of:",
+				alternatives.Select(static fields => string.Join(" + ", fields)).ToArray()
+			)
+			: null;
 
 	private bool ComputeDefaultExpanded(int depth, int nestedCount) =>
 		options.CollapseMode == CollapseMode.DepthBased && depth != 0 && nestedCount is > 0 and < 5;
@@ -290,6 +299,10 @@ public partial class ApiPropertyTreeBuilder(
 	{
 		// The "Values:" row already lists the literals; a "One of:" row would only repeat the member types.
 		if (typeInfo.EnumValues is { Length: > 0 } && !expansion.HasUnionOptions)
+			return null;
+
+		// The variants listed below the union's own properties carry the label.
+		if (expansion.Plan is ChildPlan.Properties { UnionVariants: not null })
 			return null;
 
 		// An X | X[] union needs no options row when its type already reads X | X[] or X's fields expand below it.

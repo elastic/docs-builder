@@ -195,10 +195,11 @@ internal static class OperationCommonMark
 		if (!string.IsNullOrEmpty(page.RequestContentType))
 			ApiCommonMark.Paragraph(markdown, $"`{page.RequestContentType}`");
 		ApiCommonMark.Prepared(markdown, apiOperation.Operation.RequestBody.Description, apiBaseUrl);
-		if (page.RequestProperties is not null)
+		if (page.HasRequestBody)
+		{
 			ApiPropertyMarkdown.WriteList(markdown, page.RequestProperties, apiBaseUrl);
-		else if (page.RequestUnionVariants is { Variants.Count: > 0 })
 			ApiPropertyMarkdown.WriteVariants(markdown, page.RequestUnionVariants, apiBaseUrl);
+		}
 		else
 			ApiPropertyMarkdown.WriteType(markdown, page.RequestType);
 		_ = markdown.AppendLine();
@@ -221,10 +222,11 @@ internal static class OperationCommonMark
 			foreach (var content in response.Contents)
 			{
 				ApiCommonMark.Paragraph(markdown, $"`{content.ContentType}`");
-				if (content.Properties is not null)
+				if (content.HasBody)
+				{
 					ApiPropertyMarkdown.WriteList(markdown, content.Properties, apiBaseUrl);
-				else if (content.UnionVariants is { Variants.Count: > 0 })
 					ApiPropertyMarkdown.WriteVariants(markdown, content.UnionVariants, apiBaseUrl);
+				}
 				else if (content.ArrayItemProperties is not null)
 				{
 					ApiPropertyMarkdown.WriteType(markdown, content.Type);

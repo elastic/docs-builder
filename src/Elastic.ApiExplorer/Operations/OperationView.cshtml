@@ -278,13 +278,16 @@
 			<p>@Model.RenderMarkdown(operation.RequestBody.Description)</p>
 		}
 
-		@if (pageModel.RequestProperties is not null)
+		@if (pageModel.HasRequestBody)
 		{
-			@(await RenderPartialAsync<_PropertyList, ApiPropertyList>(pageModel.RequestProperties))
-		}
-		else if (pageModel.RequestUnionVariants is { Variants.Count: > 0 } requestVariants)
-		{
-			@(await RenderPartialAsync<_UnionOptions, ApiUnionVariants>(requestVariants))
+			if (pageModel.RequestProperties is not null)
+			{
+				@(await RenderPartialAsync<_PropertyList, ApiPropertyList>(pageModel.RequestProperties))
+			}
+			if (pageModel.RequestUnionVariants is { Variants.Count: > 0 } requestVariants)
+			{
+				@(await RenderPartialAsync<_UnionOptions, ApiUnionVariants>(requestVariants))
+			}
 		}
 		else if (pageModel.RequestType is not null)
 		{

@@ -58,6 +58,20 @@
 			}
 		</dd>
 	}
+	@if (Model.Requires is { } requires)
+	{
+		<dd class="union-options">
+			<span class="values-label">@requires.Label</span>
+			@for (var i = 0; i < requires.Options.Count; i++)
+			{
+				if (i > 0)
+				{
+					<span class="union-inline-separator">or</span>
+				}
+				<code>@requires.Options[i]</code>
+			}
+		</dd>
+	}
 	@(await RenderPartialAsync<_EnumValues, EnumValueList>(new EnumValueList(Model.EnumValues)))
 	@if (Model.Union is not null && Model.Repeats is null)
 	{
@@ -150,12 +164,14 @@
 		{
 				<div class="nested-properties" id="@Model.AnchorId-children" hidden="until-found">
 					@(await RenderPartialAsync<_PropertyList, ApiPropertyList>(Model.Children.Properties!))
+					@(await RenderPartialAsync<_UnionOptions, ApiUnionVariants>(Model.Children.Variants ?? ApiUnionVariants.Empty))
 				</div>
 		}
 		else
 		{
 				<div class="nested-properties" id="@Model.AnchorId-children">
 					@(await RenderPartialAsync<_PropertyList, ApiPropertyList>(Model.Children.Properties!))
+					@(await RenderPartialAsync<_UnionOptions, ApiUnionVariants>(Model.Children.Variants ?? ApiUnionVariants.Empty))
 				</div>
 		}
 	}
