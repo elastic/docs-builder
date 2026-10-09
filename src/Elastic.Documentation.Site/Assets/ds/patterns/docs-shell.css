@@ -1,6 +1,6 @@
 /*
  * The page shell for documentation: sidebar, content column and right-hand rail.
- * Sizes come from tokens, and the breakpoints are the system's: 760 (drawer) and 1100 (rail drops below the content).
+ * Sizes come from tokens, and the breakpoints are the system's: 860 (drawer) and 1100 (rail drops below the content).
  */
 .docs-shell {
 	--docs-offset: var(--header-height, 3rem);
@@ -102,7 +102,7 @@
 	}
 }
 
-@media (max-width: 760px) {
+@media (max-width: 860px) {
 	.docs-shell {
 		grid-template-columns: minmax(0, 1fr);
 		gap: 0;
@@ -157,7 +157,7 @@
 	}
 }
 
-@media (max-width: 760px) {
+@media (max-width: 860px) {
 	:root[data-motion='full'] .docs-shell__nav {
 		transition: translate var(--duration-base) var(--ease-standard);
 	}

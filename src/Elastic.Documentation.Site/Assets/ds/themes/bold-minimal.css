@@ -61,6 +61,18 @@
 	--color-accent-surface: var(--ds-l, #e5eefc) var(--ds-d, #16315f);
 	--color-accent-border: var(--ds-l, #b9d1f5) var(--ds-d, #2d5ba8);
 
+	/* Buttons keep their blue fill in both themes; only the surfaces around them change. */
+	--color-action: var(--palette-elastic-blue);
+	--color-action-hover: var(--ds-l, var(--palette-elastic-blue-dark))
+		var(--ds-d, #3c86f0);
+	--color-action-deep: var(--ds-l, var(--palette-midnight))
+		var(--ds-d, #0a3d8f);
+	--color-action-border: var(--ds-l, var(--palette-developer-blue))
+		var(--ds-d, var(--palette-elastic-blue-dark));
+	--color-on-action: var(--palette-white);
+	--color-action-danger: #b42a20;
+	--color-action-danger-deep: #6f1710;
+
 	--color-brand-deep: var(--ds-l, var(--palette-midnight))
 		var(--ds-d, var(--palette-elastic-blue));
 	--color-brand-bright: var(--palette-teal);

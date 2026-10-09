@@ -6,7 +6,7 @@
 
 /* Explicit default: primary is the accent button. */
 .button-directive--primary a {
-	--btn-fg: var(--color-on-accent);
+	--btn-fg: var(--color-on-action);
 }
 
 .button-directive--left {
@@ -23,16 +23,16 @@
 
 .button-directive a,
 .button-directive__item a {
-	--btn-fg: var(--color-on-accent);
-	--btn-top: var(--color-accent);
-	--btn-bottom: var(--color-brand-deep);
+	--btn-fg: var(--color-on-action);
+	--btn-top: var(--color-action);
+	--btn-bottom: var(--color-action-deep);
 
 	display: inline-flex;
 	align-items: center;
 	justify-content: center;
 	height: 2.75rem;
 	padding: 0 var(--space-5);
-	border: var(--border-width) solid var(--color-border-strong);
+	border: var(--border-width) solid var(--color-action-border);
 	border-radius: var(--radius-md);
 	background: linear-gradient(
 		180deg,
@@ -41,7 +41,7 @@
 	);
 	box-shadow:
 		inset 0 1px 0 color-mix(in oklab, var(--btn-fg) 30%, transparent),
-		0 2px 0 var(--color-brand-deep);
+		0 2px 0 var(--color-action-deep);
 	color: var(--btn-fg);
 	font-size: var(--text-sm);
 	font-weight: var(--weight-semibold);
@@ -51,8 +51,8 @@
 
 .button-directive a:hover,
 .button-directive__item a:hover {
-	--btn-top: var(--color-accent-hover);
-	--btn-bottom: var(--color-accent);
+	--btn-top: var(--color-action-hover);
+	--btn-bottom: var(--color-action);
 }
 
 .button-directive--secondary a,

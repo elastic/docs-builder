@@ -1,10 +1,10 @@
 .btn {
 	/* Component tokens: a theme restyles buttons by overriding these or the roles they read. */
-	--btn-fg: var(--color-on-accent);
-	--btn-top: var(--color-accent);
-	--btn-bottom: var(--color-brand-deep);
-	--btn-border: var(--color-border-strong);
-	--btn-ledge: var(--color-brand-deep);
+	--btn-fg: var(--color-on-action);
+	--btn-top: var(--color-action);
+	--btn-bottom: var(--color-action-deep);
+	--btn-border: var(--color-action-border);
+	--btn-ledge: var(--color-action-deep);
 	--btn-height: 2.75rem;
 	--btn-padding: 0 var(--space-5) 0 var(--space-5);
 	--btn-size: var(--text-sm);
@@ -39,13 +39,13 @@
 }
 
 .btn:hover {
-	--btn-top: var(--color-accent-hover);
-	--btn-bottom: var(--color-accent);
+	--btn-top: var(--color-action-hover);
+	--btn-bottom: var(--color-action);
 }
 
 .btn:active {
-	--btn-top: var(--color-brand-deep);
-	--btn-bottom: var(--color-brand-deep);
+	--btn-top: var(--color-action-deep);
+	--btn-bottom: var(--color-action-deep);
 	box-shadow: inset 0 3px 6px
 		color-mix(in oklab, var(--color-heading) 45%, transparent);
 }
@@ -57,7 +57,7 @@
 
 /* The default look is primary; the explicit class keeps variants symmetrical in markup. */
 .btn--primary {
-	--btn-fg: var(--color-on-accent);
+	--btn-fg: var(--color-on-action);
 }
 
 .btn--secondary {
@@ -100,39 +100,24 @@
 }
 
 .btn--danger {
-	--btn-top: var(--color-danger);
-	--btn-bottom: color-mix(
-		in oklab,
-		var(--color-danger) 70%,
-		var(--color-brand-deep)
-	);
-	--btn-ledge: color-mix(
-		in oklab,
-		var(--color-danger) 60%,
-		var(--color-brand-deep)
-	);
+	--btn-top: var(--color-action-danger);
+	--btn-bottom: var(--color-action-danger-deep);
+	--btn-border: var(--color-action-danger-deep);
+	--btn-ledge: var(--color-action-danger-deep);
 }
 
 .btn--danger:hover {
 	--btn-top: color-mix(
 		in oklab,
-		var(--color-danger) 80%,
-		var(--color-heading)
+		var(--color-action-danger) 82%,
+		var(--palette-white)
 	);
-	--btn-bottom: var(--color-danger);
+	--btn-bottom: var(--color-action-danger);
 }
 
 .btn--danger:active {
-	--btn-top: color-mix(
-		in oklab,
-		var(--color-danger) 60%,
-		var(--color-brand-deep)
-	);
-	--btn-bottom: color-mix(
-		in oklab,
-		var(--color-danger) 60%,
-		var(--color-brand-deep)
-	);
+	--btn-top: var(--color-action-danger-deep);
+	--btn-bottom: var(--color-action-danger-deep);
 }
 
 .btn--sm {

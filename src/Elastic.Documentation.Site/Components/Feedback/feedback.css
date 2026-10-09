@@ -32,10 +32,10 @@
 }
 
 .feedback__choices .btn[aria-pressed='true'] {
-	--btn-fg: var(--color-on-accent);
-	--btn-top: var(--color-accent);
-	--btn-bottom: var(--color-brand-deep);
-	--btn-border: var(--color-border-strong);
+	--btn-fg: var(--color-on-action);
+	--btn-top: var(--color-action);
+	--btn-bottom: var(--color-action-deep);
+	--btn-border: var(--color-action-border);
 }
 
 .feedback__form {
