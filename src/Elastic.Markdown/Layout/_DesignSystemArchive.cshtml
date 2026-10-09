@@ -1,0 +1,17 @@
+@inherits RazorSlice<Elastic.Markdown.MarkdownLayoutViewModel>
+@using Elastic.Documentation.Site.Components.Link
+<main id="content-container" class="archive">
+	<header class="archive__intro">
+		<h1 class="archive__title">Archive</h1>
+		<p>Browse the archived documentation for older Elastic product releases.<br>Archived documentation is unmaintained and may be out-of-date.</p>
+	</header>
+	<ul class="archive__list">
+		@foreach (var (url, title) in ArchiveLinks.All)
+		{
+			<li><a href="@url" target="_blank" rel="noopener noreferrer">@title</a></li>
+		}
+	</ul>
+	<p class="archive__home">
+		@await RenderPartialAsync(_Link.Create(new LinkModel { Label = "Go to current documentation", Href = Model.Link("/"), Arrow = true }))
+	</p>
+</main>

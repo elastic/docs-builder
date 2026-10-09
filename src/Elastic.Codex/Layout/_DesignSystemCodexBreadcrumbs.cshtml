@@ -1,0 +1,12 @@
+@inherits RazorSlice<Elastic.Documentation.Site.GlobalLayoutViewModel>
+@using Elastic.Documentation.Site.Components.Breadcrumb
+@* The trail back to the codex home and the group that holds this docset. *@
+@if (Model.CodexBreadcrumbs is { Count: > 1 } crumbs)
+{
+	<div class="codex-trail" id="codex-breadcrumbs">
+		@await RenderPartialAsync(_Breadcrumb.Create(new BreadcrumbModel
+		{
+			Items = [new BreadcrumbItem(crumbs[0].Title, crumbs[0].Url), .. crumbs.Skip(1).Select(c => string.IsNullOrEmpty(c.Url) ? new BreadcrumbItem(c.Title) : new BreadcrumbItem(c.Title, c.Url))]
+		}))
+	</div>
+}

@@ -1,0 +1,5 @@
+@inherits RazorSlice<Elastic.Markdown.MarkdownLayoutViewModel>
+@using Elastic.Documentation.Site.Components.SearchPage
+<main id="content-container">
+	@await RenderPartialAsync(_SearchPage.Create(new SearchPageModel()))
+</main>

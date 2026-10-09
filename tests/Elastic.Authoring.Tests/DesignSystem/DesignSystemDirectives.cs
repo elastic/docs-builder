@@ -389,3 +389,53 @@ public class PageCardComponent : DesignSystemDirectiveTest
 		await Docs.DoesNotConvertToContainingHtml("rounded-lg");
 	}
 }
+
+public abstract class DesignSystemLayoutTest(string layout) : GeneratorTest
+{
+	protected override IReadOnlyCollection<TestFile> Files => [TestFile.Index($"---\nlayout: {layout}\n---\n# Test Document\n")];
+
+	protected override SetupOptions Options => new() { NavigationPreview = true };
+}
+
+public class NotFoundLayout() : DesignSystemLayoutTest("not-found")
+{
+	[Test, DisplayName("renders the page message without utility classes")]
+	public async Task Renders()
+	{
+		await Docs.ConvertsToContainingRawHtml("class=\"page-message\"");
+		await Docs.DoesNotConvertToContainingHtml("items-center justify-center");
+	}
+}
+
+public class ArchiveLayout() : DesignSystemLayoutTest("archive")
+{
+	[Test, DisplayName("renders the archive list from the shared link list")]
+	public async Task Renders()
+	{
+		await Docs.ConvertsToContainingRawHtml("class=\"archive__list\"");
+		await Docs.ConvertsToContainingRawHtml("Elasticsearch - The Definitive Guide");
+		await Docs.DoesNotConvertToContainingHtml("delorean");
+	}
+}
+
+public class LandingLayout() : DesignSystemLayoutTest("landing-page")
+{
+	[Test, DisplayName("renders the landing sections with design-system buttons")]
+	public async Task Renders()
+	{
+		await Docs.ConvertsToContainingRawHtml("class=\"landing\"");
+		await Docs.ConvertsToContainingRawHtml("class=\"landing__grid\"");
+		await Docs.ConvertsToContainingRawHtml("btn btn--primary");
+		await Docs.DoesNotConvertToContainingHtml("min-[1024px]");
+	}
+}
+
+public class FullSearchLayout() : DesignSystemLayoutTest("full-search")
+{
+	[Test, DisplayName("renders the search page component instead of the React element")]
+	public async Task Renders()
+	{
+		await Docs.ConvertsToContainingRawHtml("data-search-page");
+		await Docs.DoesNotConvertToContainingHtml("<full-page-search");
+	}
+}

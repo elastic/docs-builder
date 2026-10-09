@@ -1,0 +1,49 @@
+@inherits RazorSlice<Elastic.Documentation.Site.Components.SearchPage.SearchPageModel>
+<div class="search-page" data-search-page>
+	<form class="search-page__form" role="search" data-search-page-form>
+		<div class="field search-page__query">
+			<label class="field__label" for="@(Model.Id)-q">Search the documentation</label>
+			<input class="input" id="@(Model.Id)-q" name="q" type="search" autocomplete="off" spellcheck="false" placeholder="Search the documentation" data-search-page-query>
+		</div>
+		<button class="btn btn--primary" type="submit">Search</button>
+	</form>
+	<noscript><p class="search-page__status">Search needs JavaScript.</p></noscript>
+	<div class="search-page__layout">
+		<aside class="search-page__filters" aria-label="Filters" data-search-page-filters hidden></aside>
+		<div class="search-page__main">
+			<div class="search-page__toolbar">
+				<p class="search-page__status" role="status" data-search-page-status>Type a search term to begin.</p>
+				<div class="field search-page__sort">
+					<label class="field__label" for="@(Model.Id)-sort">Sort by</label>
+					<div class="select">
+						<select class="input select__control" id="@(Model.Id)-sort" name="sort" data-search-page-sort>
+							<option value="relevance">Relevance</option>
+							<option value="recent">Most recent</option>
+							<option value="alpha">Alphabetical</option>
+						</select>
+						@await RenderPartialAsync(_Icon.Create(new IconModel { Name = "arrow_down", Size = IconSize.Small }))
+					</div>
+				</div>
+			</div>
+			<ol class="search-page__results" data-search-page-results></ol>
+			<nav class="search-page__pager" aria-label="Pagination" data-search-page-pager hidden>
+				<button class="btn btn--tertiary btn--sm" type="button" data-search-page-prev>Previous</button>
+				<span class="search-page__page" data-search-page-page></span>
+				<button class="btn btn--tertiary btn--sm" type="button" data-search-page-next>Next</button>
+			</nav>
+		</div>
+	</div>
+	<template data-search-page-result>
+		<li class="search-card">
+			<p class="search-card__path" data-search-page-path></p>
+			<h2 class="search-card__title"><a class="search-card__link" href="#" data-search-page-title></a></h2>
+			<p class="search-card__excerpt" data-search-page-excerpt></p>
+		</li>
+	</template>
+	<template data-search-page-facet>
+		<fieldset class="search-facet">
+			<legend class="search-facet__title"></legend>
+			<div class="search-facet__options"></div>
+		</fieldset>
+	</template>
+</div>

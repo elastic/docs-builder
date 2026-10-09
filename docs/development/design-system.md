@@ -87,6 +87,19 @@ Directives that depended on utility classes or inline handlers are rebuilt as co
 | Listing | `Listing` | Page cards with a filter bar that script reveals |
 | Diagnostics console | `DiagnosticsPanel` | The developer console on `docs-builder serve`; script polls the build state |
 
+## Pages and layouts
+
+With the flag on, these layouts also use design-system markup:
+
+| Layout | Notes |
+|---|---|
+| Landing, 404, archive | Page patterns in `Assets/ds/patterns/pages.css`. The archive drops the animated easter egg, which flashed colour |
+| Full-page search | The `SearchPage` component: a form, facets and results drawn by script from the same search API as the dialog. The AI answer panel isn't part of it yet |
+| Codex | The same shell as documentation pages, with the search dialog in the header and landing pages built from `codex-card` markup. Ask AI isn't ported yet |
+| API reference | The documentation shell with the API switchers above the tree as link menus, a jump field that filters the tree, and `api-reference.css`, the previous API styles ported onto tokens |
+
+`Elastic.Markdown/Layout/_DesignSystemShell.cshtml` is the one place that composes the shell, so documentation and Codex pages share it.
+
 ## Page layout
 
 With the flag on, pages use a design-system shell: header, sidebar, article, right-hand rail and footer.

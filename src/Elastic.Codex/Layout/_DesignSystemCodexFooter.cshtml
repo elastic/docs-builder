@@ -1,0 +1,8 @@
+@inherits RazorSlice<Elastic.Documentation.Site.GlobalLayoutViewModel>
+@using Elastic.Documentation.Site.Components.SiteFooter
+@await RenderPartialAsync(_SiteFooter.Create(new SiteFooterModel
+{
+	LogoSrc = Model.Static("logo-elastic-horizontal-white.svg"),
+	Links = [],
+	Notices = ["Elastic Internal Docs."]
+}))

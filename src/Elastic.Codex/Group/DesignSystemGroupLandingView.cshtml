@@ -1,0 +1,24 @@
+@inherits RazorSlice<Elastic.Codex.Group.GroupLandingViewModel>
+@using System.Linq
+@using Elastic.Codex.Landing
+@using Elastic.Codex.Navigation
+@implements IUsesLayout<Elastic.Codex._GroupLayout, GlobalLayoutViewModel>
+@functions {
+	public GlobalLayoutViewModel LayoutModel => Model.CreateGlobalLayoutModel(
+		codexBreadcrumbs: [new CodexBreadcrumb("Home", Model.BuildContext.SiteRootPath ?? "/"), new CodexBreadcrumb(Model.Group.DisplayTitle, Model.Group.Url)]);
+}
+<section id="elastic-docs-v3" class="codex-landing">
+	<header class="codex-group-intro">
+		<h1 class="codex-hero__title">@Model.Group.DisplayTitle</h1>
+		@if (!string.IsNullOrEmpty(Model.Group.Description))
+		{
+			<p class="codex-hero__lead">@Model.Group.Description</p>
+		}
+	</header>
+	<div id="codex-grid" class="codex-grid">
+		@foreach (var docSet in Model.DocumentationSets.OrderBy(ds => ds.Title))
+		{
+			@(await RenderPartialAsync(_DesignSystemCodexCard.Create(CodexCardModel.FromDocumentationSet(docSet))))
+		}
+	</div>
+</section>

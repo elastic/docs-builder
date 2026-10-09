@@ -9,8 +9,10 @@ import { initLightboxes } from './ds/lightbox'
 import { initListings } from './ds/listing'
 import { bindOutsideClick, initMenus } from './ds/menu'
 import { initNav } from './ds/nav'
+import { initNavFilter } from './ds/nav-filter'
 import { initPopovers } from './ds/popover'
 import { bindSearchShortcut, initSearch } from './ds/search'
+import { initSearchPage } from './ds/search-page'
 import { initTabSync } from './ds/tabs'
 import { initThemeToggles } from './ds/theme'
 import { initToc } from './ds/toc'
@@ -32,7 +34,9 @@ function init(scope: ParentNode = document) {
     initPopovers(scope)
     initFeedback(scope)
     initSearch(scope)
+    initSearchPage(scope)
     initNav(scope)
+    initNavFilter(scope)
     initToc(scope)
     initVectorSizing(scope)
     initDiagnostics(scope)

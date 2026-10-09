@@ -1,0 +1,26 @@
+@inherits RazorSlice<Elastic.ApiExplorer.Infrastructure.ApiLayoutViewModel>
+@using Elastic.Documentation.Site.Components.LinkMenu
+@* The API sidebar: the switchers above the shared navigation tree. The jump field filters the tree and needs script, so it stays hidden until then. *@
+<div class="api-sidebar-chrome" data-nav-filter-scope>
+	@if (Model.VersionSwitcherItems.Count > 1)
+	{
+		@await RenderPartialAsync(_LinkMenu.Create(new LinkMenuModel
+		{
+			Label = "API version",
+			Items = [.. Model.VersionSwitcherItems.Select(item => new LinkMenuItem(item.Label, item.Url, item.Selected))]
+		}))
+	}
+	@if (Model.HubSwitcherItems.Count > 0 && Model.BuildType != BuildType.Assembler)
+	{
+		@await RenderPartialAsync(_LinkMenu.Create(new LinkMenuModel
+		{
+			Label = "API product",
+			Items = [.. Model.HubSwitcherItems.Select(item => new LinkMenuItem(item.Label, item.Url, item.Selected))]
+		}))
+	}
+	@if (Model.ShowJumpToPage)
+	{
+		<input class="input api-sidebar-chrome__filter" type="search" placeholder="Jump to API" aria-label="Jump to API" autocomplete="off" data-nav-filter hidden>
+	}
+	@(new HtmlString(Model.NavigationHtml))
+</div>

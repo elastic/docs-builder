@@ -16,6 +16,43 @@
 		return Task.CompletedTask;
 	}
 }
+@if (Model.Features.NavigationPreviewEnabled)
+{
+	if (Model.BuildType == BuildType.Assembler)
+	{
+		@await RenderPartialAsync(_DesignSystemAssemblerHeader.Create(Model))
+	}
+	else
+	{
+		@await RenderPartialAsync(_DesignSystemHeader.Create(Model))
+	}
+	<div id="main-container">
+		<div class="docs-shell api-page-shell">
+			<input class="docs-shell__drawer-toggle" type="checkbox" id="pages-nav-hamburger">
+			<label class="docs-shell__scrim" for="pages-nav-hamburger" aria-hidden="true"></label>
+			<aside class="docs-shell__nav" id="pages-nav">
+				@await RenderPartialAsync(_DesignSystemApiNav.Create(Model))
+			</aside>
+			<div class="docs-shell__main" id="api-content-grid">
+				<main id="content-container" class="docs-shell__content">
+					<label class="docs-shell__menu-button" for="pages-nav-hamburger">
+						@await RenderPartialAsync(Elastic.Documentation.Site.Components.Icon._Icon.Create(new Elastic.Documentation.Site.Components.Icon.IconModel { Name = "menu", Size = Elastic.Documentation.Site.Components.Icon.IconSize.Small }))
+						<span>Menu</span>
+					</label>
+					<div class="api-page-toolbar">
+						@await RenderPartialAsync(_DesignSystemApiBreadcrumbs.Create(Model))
+					</div>
+					<article id="markdown-content" class="prose content-container markdown-content">
+						@await RenderBodyAsync()
+					</article>
+					@await RenderPartialAsync(_DesignSystemPageFeedback.Create(Model))
+				</main>
+			</div>
+		</div>
+	</div>
+	@await RenderPartialAsync(_DesignSystemFooter.Create(Model))
+	return;
+}
 @if (Model.BuildType == BuildType.Assembler)
 {
 	@(await RenderPartialAsync(_AssemblerHeader.Create(Model)))

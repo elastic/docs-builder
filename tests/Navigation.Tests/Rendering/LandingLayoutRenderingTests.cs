@@ -33,14 +33,14 @@ public class LandingLayoutRenderingTests() : DocumentationSetNavigationTestBase(
 	}
 
 	[Test]
-	public async Task LandingPage_WithNavigationPreview_RendersMobileDrawer()
+	public async Task LandingPage_WithNavigationPreview_RendersDesignSystemLanding()
 	{
 		var html = await RenderLanding(navigationPreviewEnabled: true);
 
-		html.Should().Contain("pages-nav-hamburger");
-		html.Should().Contain("id=\"pages-nav\"");
-		html.Should().Contain("secondary-nav-mobile-menu");
-		html.Should().Contain("<version-dropdown");
+		html.Should().Contain("class=\"landing\"");
+		html.Should().Contain("class=\"docs-bar\"");
+		html.Should().NotContain("<version-dropdown");
+		html.Should().NotContain("secondary-nav-mobile-menu");
 	}
 
 	private async Task<string> RenderLanding(bool navigationPreviewEnabled)

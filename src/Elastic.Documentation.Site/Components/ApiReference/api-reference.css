@@ -1,0 +1,4373 @@
+/* Ported from the legacy api-docs.css onto design-system tokens. The structure and class names are unchanged. */
+.api-url-listing {
+	margin-left: 0;
+
+	li {
+		list-style-type: none;
+		margin-left: 0;
+	}
+}
+
+/* Operation page endpoints — one row per route, 8px between items, no chrome */
+.api-page-intro .api-url-listing {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	margin: 0;
+	padding: 0;
+}
+
+.api-page-intro .api-url-list-item {
+	margin: 0;
+	padding: 0;
+}
+
+.api-page-intro .api-url-listing > li > .api-url-row {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	box-sizing: border-box;
+	width: 100%;
+	margin: 0;
+	padding: 0;
+	border: 0;
+	background-color: transparent;
+	color: var(--color-heading);
+	font-weight: 400;
+	text-decoration: none;
+	cursor: default;
+}
+
+.api-url-copy.copybtn {
+	position: static;
+	top: auto;
+	right: auto;
+	flex-shrink: 0;
+	width: 16px;
+	height: 16px;
+	opacity: 0;
+	pointer-events: none;
+	background-color: transparent;
+	color: var(--color-text-muted);
+	border-radius: 0;
+}
+
+.api-page-intro .api-url-row:hover .api-url-copy.copybtn,
+.api-url-copy.copybtn:focus-visible,
+.api-url-copy.copybtn.success {
+	opacity: 1;
+	pointer-events: auto;
+}
+
+.api-url-copy.copybtn:hover {
+	color: var(--color-heading);
+}
+
+.api-url-copy.copybtn.success {
+	background-color: transparent;
+	color: var(--color-success);
+}
+
+.api-url-copy.copybtn svg {
+	width: 16px;
+	height: 16px;
+	padding: 0;
+	stroke: none;
+	fill: currentColor;
+}
+
+/* Path chip — mirrors inline code (markdown/code.css) so routes read as code */
+.api-url-row > .api-url {
+	background: var(--color-surface-sunken);
+	border-color: var(--color-border);
+	border-width: var(--border-width);
+	border-style: solid;
+	font-family: var(--font-mono);
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	min-width: 0;
+	margin-left: 0;
+	padding: 3px 10px 3px 3px;
+	border-radius: 10px;
+	color: var(--color-heading);
+	font-size: 14px;
+	font-weight: 300;
+	line-height: 20px;
+	overflow-wrap: anywhere;
+}
+
+/* The first route is the one to read; the alternates below it are compact and muted. */
+.api-page-intro .api-url-listing > li:first-child .api-url {
+	padding: 4px 12px 4px 4px;
+	font-size: 16px;
+	font-weight: 400;
+	line-height: 22px;
+}
+
+.api-page-intro .api-url-listing > li + li .api-url {
+	padding: 2px 8px 2px 2px;
+	color: var(--color-text-muted);
+	font-size: 13px;
+	line-height: 18px;
+}
+
+.api-page-intro .api-url-listing > li + li .api-method {
+	height: 20px;
+	padding: 0 5px;
+	font-size: 11px;
+}
+
+.api-page-intro .api-url-listing > li + li .api-url-also-method {
+	font-size: 10px;
+	line-height: 14px;
+}
+
+.api-page-intro .api-security-badges {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+}
+
+/* One 16px step between title, badges, servers, paths, and auth. */
+.api-page-intro {
+	display: flex;
+	flex-direction: column;
+	gap: 16px;
+}
+
+/* Operation / group page title — Figma APIs 10079:2802 */
+.api-page-intro h1,
+#elastic-api-v3 h1 {
+	margin: 0;
+	padding-top: 0;
+	color: var(--color-code-bg);
+	font-family: var(--font-body, Inter, ui-sans-serif, system-ui, sans-serif);
+	font-size: 30px;
+	font-weight: 600;
+	line-height: 36px;
+	letter-spacing: 0;
+}
+
+.api-page-heading {
+	display: flex;
+	align-items: center;
+	gap: 16px;
+	min-width: 0;
+	overflow: visible;
+}
+
+.api-page-heading > h1 {
+	flex: 1 1 auto;
+	min-width: 0;
+}
+
+/* Docs reading measure (--max-text-width): group-page intros and the product landing text. */
+.docs-measure {
+	max-width: var(--max-text-width);
+}
+
+.api-page-toolbar {
+	min-width: 0;
+	margin-bottom: calc(
+		var(--spacing) * 6
+	); /* docs h1 mt-6; API headings set margin: 0 */
+}
+
+.api-page-actions {
+	position: relative;
+	z-index: 6;
+	flex-shrink: 0;
+	margin-left: auto;
+}
+
+.api-page-actions-split {
+	display: inline-flex;
+	align-items: stretch;
+	height: 32px;
+	overflow: visible;
+	border: 1px solid var(--color-border-control);
+	border-radius: 8px;
+	background: var(--color-surface);
+	box-shadow: none;
+	color: var(--color-heading);
+	font-family: var(--font-body, Inter, ui-sans-serif, system-ui, sans-serif);
+	font-size: 14px;
+	line-height: 20px;
+}
+
+.api-page-actions-button,
+.api-page-actions-chevron {
+	margin: 0;
+	border: 0;
+	background: transparent;
+	color: inherit;
+	font: inherit;
+	cursor: pointer;
+}
+
+.api-page-actions-button {
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+	padding: 0 12px;
+	border-radius: 7px 0 0 7px;
+	white-space: nowrap;
+}
+
+.api-page-actions-chevron {
+	box-sizing: border-box;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 32px;
+	padding: 0;
+	border-left: 1px solid var(--color-border-control);
+	border-radius: 0 7px 7px 0;
+	list-style: none;
+}
+
+.api-page-actions-chevron::-webkit-details-marker {
+	display: none;
+}
+
+.api-page-actions-button:hover,
+.api-page-actions-chevron:hover {
+	background: var(--color-surface-sunken);
+}
+
+.api-page-actions-button:focus-visible,
+.api-page-actions-chevron:focus-visible,
+.api-page-actions-option:focus-visible {
+	outline: 2px solid var(--color-accent);
+	outline-offset: -2px;
+}
+
+.api-page-actions-chevron-icon {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 12px;
+	height: 12px;
+	color: var(--color-text-muted);
+	transition: transform 0.15s ease;
+}
+
+.api-page-actions-chevron-icon svg {
+	display: block;
+	width: 12px;
+	height: 12px;
+}
+
+.api-page-actions details.api-page-actions-dropdown,
+.api-page-actions details.nav-select-dropdown {
+	position: relative;
+	display: flex;
+	width: auto;
+	overflow: visible;
+}
+
+.api-page-actions-dropdown[open] .api-page-actions-chevron-icon,
+.api-page-actions-dropdown.is-open .api-page-actions-chevron-icon {
+	transform: rotate(180deg);
+}
+
+.api-page-actions-menu {
+	box-sizing: border-box;
+	position: absolute;
+	top: calc(100% + 6px);
+	right: 0;
+	z-index: 40;
+	width: max-content;
+	min-width: 196px;
+	margin: 0;
+	padding: 8px;
+	background: var(--color-surface);
+	border: 0;
+	border-radius: 4px;
+	filter: drop-shadow(
+			0 0 2px color-mix(in oklab, var(--color-text) 16%, transparent)
+		)
+		drop-shadow(
+			0 3px 10px color-mix(in oklab, var(--color-text) 10%, transparent)
+		)
+		drop-shadow(
+			0 6px 14px color-mix(in oklab, var(--color-text) 6%, transparent)
+		);
+	font-family: var(--font-body, Inter, ui-sans-serif, system-ui, sans-serif);
+	font-size: 14px;
+	font-weight: 400;
+	line-height: 20px;
+	color: var(--color-heading);
+}
+
+.api-page-actions-icon {
+	display: block;
+	flex-shrink: 0;
+	width: 16px;
+	height: 16px;
+	color: var(--color-text-muted);
+}
+
+.api-page-actions-option {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	width: 100%;
+	margin: 0;
+	padding: 6px 8px;
+	border: 0;
+	border-radius: 4px;
+	background: transparent;
+	font: inherit;
+	color: var(--color-heading);
+	text-align: left;
+	text-decoration: none;
+	cursor: pointer;
+}
+
+.api-page-actions-option:hover {
+	background: var(--color-surface-sunken);
+	color: var(--color-heading);
+}
+
+.markdown-content .api-page-actions a.api-page-actions-option {
+	color: var(--color-heading);
+	text-decoration: none;
+}
+
+.markdown-content
+	.api-page-actions
+	a.api-page-actions-option[target='_blank']::after {
+	content: none;
+}
+
+.api-pages-nav-toggle {
+	display: inline-flex;
+	align-items: center;
+	margin: calc(var(--spacing) * 6) 0 12px; /* replaces .api-page-main pt-6 above the mobile toggle */
+	padding: 0;
+	border: 0;
+	background: none;
+	color: var(--color-heading);
+}
+
+@media (min-width: 768px) {
+	.api-pages-nav-toggle {
+		display: none;
+	}
+}
+
+.api-overview {
+	.api-url-listing {
+		margin: 0;
+		padding: 0;
+	}
+	.api-url-list-item {
+		margin: 0;
+		padding: 0;
+		list-style: none;
+	}
+	.api-url-list-item + .api-url-list-item {
+		margin-top: 8px;
+	}
+	.api-url-row {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+	}
+}
+
+/* The rows switch to a two-column layout by container width. The product landing page has no .api-group,
+   so the overview is a container too. */
+.api-group,
+.api-overview {
+	container-type: inline-size;
+	container-name: api-group;
+}
+
+.api-group .api-page-heading {
+	flex-wrap: wrap;
+	align-items: flex-start;
+}
+
+.api-group .api-page-heading > h1 {
+	font-size: 24px;
+	line-height: 32px;
+}
+
+.api-group .api-tag-description {
+	margin-top: 8px;
+	font-size: 16px;
+	line-height: 24px;
+}
+
+.api-group-count {
+	margin: 24px 0 0;
+	color: var(--color-text-muted);
+	font-size: 14px;
+	line-height: 20px;
+}
+
+.api-group-list {
+	display: flex;
+	flex-direction: column;
+	margin: 12px 0 0;
+	padding: 0;
+	border-top: 1px solid var(--color-border);
+	list-style: none;
+}
+
+/* Docs list styles indent every ul. This list is the page body, not a bullet list. */
+#markdown-content .api-group-list {
+	margin-left: 0;
+}
+
+.api-group-list > li {
+	margin: 0;
+	padding: 0;
+	border-bottom: 1px solid var(--color-border);
+	list-style: none;
+}
+
+.api-group-row {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) 16px;
+	grid-template-areas:
+		'title chevron'
+		'routes chevron';
+	column-gap: 12px;
+	row-gap: 8px;
+	align-items: center;
+	box-sizing: border-box;
+	min-height: 44px;
+	margin: 0;
+	padding: 12px 8px;
+	-webkit-tap-highlight-color: color-mix(
+		in oklab,
+		var(--color-text) 16%,
+		transparent
+	);
+}
+
+/* The docs link style (blue, underlined) outranks the row, so the row wins it back here. */
+#markdown-content a.api-group-row {
+	color: inherit;
+	text-decoration: none;
+}
+
+.api-group-row:hover,
+.api-group-row:focus-visible {
+	background: var(--color-surface-sunken);
+}
+
+.api-group-row:focus-visible {
+	outline: 2px solid var(--color-accent);
+	outline-offset: -2px;
+}
+
+.api-group-row:hover .api-overview-title,
+.api-group-row:focus-visible .api-overview-title,
+.api-group-row:hover .api-group-chevron,
+.api-group-row:focus-visible .api-group-chevron {
+	color: var(--color-accent);
+}
+
+.api-group-row:hover .api-overview-title,
+.api-group-row:focus-visible .api-overview-title {
+	text-decoration: underline;
+	text-underline-offset: 2px;
+}
+
+.api-group-row .api-overview-title {
+	grid-area: title;
+	color: inherit;
+	font-size: 16px;
+	font-weight: 600;
+	line-height: 24px;
+	text-decoration: none;
+}
+
+.api-group-routes {
+	grid-area: routes;
+	min-width: 0;
+}
+
+.api-group-row .api-url-row {
+	display: grid;
+	grid-template-columns: auto minmax(0, 1fr);
+	align-items: center;
+	column-gap: 8px;
+}
+
+.api-group-row .api-url {
+	margin-left: 0;
+	min-width: 0;
+	color: var(--color-text-muted);
+	font-family:
+		'Roboto Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+		monospace;
+	font-size: 14px;
+	font-weight: 400;
+	line-height: 24px;
+}
+
+.api-group-chevron {
+	grid-area: chevron;
+	display: block;
+	width: 16px;
+	height: 16px;
+	color: var(--color-text-muted);
+	transform: rotate(-90deg);
+}
+
+/* Product landing: the groups as a flat index. Columns follow the container, not the viewport, so the index
+   reads the same beside the sidebar and in a narrow window. Classification headings span every column. */
+.api-index {
+	column-gap: 40px;
+}
+
+.api-index .api-index-heading {
+	column-span: all;
+	margin: 32px 0 8px;
+	font-size: 20px;
+	line-height: 28px;
+}
+
+/* Topic pages (Authentication, Servers) sit above the index: they are read once, not browsed with the endpoints. */
+.api-topics {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	margin: 16px 0 32px;
+}
+
+/* Quiet outlined link: topic pages and the spec downloads. */
+#markdown-content a.api-chip-link {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	padding: 4px 12px;
+	border: 1px solid var(--color-border);
+	border-radius: 8px;
+	color: inherit;
+	font-size: 14px;
+	line-height: 20px;
+	text-decoration: none;
+}
+
+.api-chip-link svg {
+	width: 14px;
+	height: 14px;
+}
+
+#markdown-content a.api-chip-link:hover,
+#markdown-content a.api-chip-link:focus-visible {
+	border-color: var(--color-border-strong);
+	color: var(--color-accent);
+}
+
+#markdown-content a.api-chip-link:focus-visible {
+	outline: 2px solid var(--color-accent);
+	outline-offset: 2px;
+}
+
+/* License and spec downloads: facts about the spec, so they sit under the description in the subdued colour. */
+.api-landing-meta {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 8px 24px;
+	margin: 16px 0 0;
+	color: var(--color-text-muted);
+	font-size: 14px;
+	line-height: 20px;
+}
+
+.api-landing-download {
+	display: inline-flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 8px;
+}
+
+.api-index-group {
+	break-inside: avoid;
+	margin: 0 0 32px;
+}
+
+.api-index .api-index-group-title {
+	display: flex;
+	align-items: baseline;
+	justify-content: space-between;
+	gap: 12px;
+	margin: 0;
+	padding: 0 0 8px;
+	border-bottom: 1px solid var(--color-border);
+	font-size: 16px;
+	font-weight: 600;
+	line-height: 24px;
+}
+
+.api-index-group-title a {
+	color: inherit;
+	text-decoration: none;
+}
+
+.api-index-group-title a:hover,
+.api-index-group-title a:focus-visible {
+	color: var(--color-accent);
+	text-decoration: underline;
+	text-underline-offset: 2px;
+}
+
+.api-index-count {
+	color: var(--color-text-muted);
+	font-size: 14px;
+	font-weight: 400;
+}
+
+#markdown-content .api-index-list {
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.api-index-list > li {
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+#markdown-content a.api-index-item {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	min-height: 36px;
+	padding: 6px 4px;
+	border-bottom: 1px solid var(--color-surface-sunken);
+	color: inherit;
+	font-size: 14px;
+	line-height: 20px;
+	text-decoration: none;
+}
+
+/* One chip width, so the titles line up whatever the method. */
+.api-index-item .api-method {
+	min-width: 72px;
+	height: 20px;
+	font-size: 11px;
+}
+
+.api-index-item-title {
+	min-width: 0;
+	overflow-wrap: anywhere;
+}
+
+#markdown-content a.api-index-item:hover,
+#markdown-content a.api-index-item:focus-visible {
+	background: var(--color-surface-sunken);
+}
+
+#markdown-content a.api-index-item:hover .api-index-item-title,
+#markdown-content a.api-index-item:focus-visible .api-index-item-title {
+	color: var(--color-accent);
+	text-decoration: underline;
+	text-underline-offset: 2px;
+}
+
+#markdown-content a.api-index-item:focus-visible,
+.api-index-group-title a:focus-visible {
+	outline: 2px solid var(--color-accent);
+	outline-offset: -2px;
+}
+
+@container api-group (min-width: 44rem) {
+	.api-index {
+		column-count: 2;
+	}
+}
+
+@container api-group (min-width: 84rem) {
+	.api-index {
+		column-count: 3;
+	}
+}
+
+/* The /api catalog card. The border is grey-80 on hover for the same reason the hub cards use it: it clears the 3:1 ratio a
+   state indicator needs, which the resting grey-20 edge does not have to. */
+.api-card {
+	box-sizing: border-box;
+	border: 1px solid var(--color-border);
+	border-radius: 12px;
+	background: var(--color-surface);
+	color: inherit;
+	text-decoration: none;
+	transition:
+		box-shadow 0.15s,
+		border-color 0.15s;
+}
+
+/* The docs link style (blue, underlined) outranks .api-card, so the cards win it back here. */
+#markdown-content a.api-card {
+	color: inherit;
+	text-decoration: none;
+}
+
+.api-card:hover,
+.api-card:focus-visible {
+	border-color: var(--color-border-strong);
+	box-shadow: 0 2px 8px color-mix(in oklab, var(--color-text) 5%, transparent);
+}
+
+.api-card:hover .api-card-title,
+.api-card:focus-visible .api-card-title {
+	color: var(--color-accent);
+}
+
+.api-card:hover .api-card-title,
+.api-card:focus-visible .api-card-title {
+	text-decoration: underline;
+	text-underline-offset: 2px;
+}
+
+.api-card:active {
+	border-color: var(--color-border-strong);
+	background: var(--color-surface-sunken);
+	box-shadow: none;
+}
+
+.api-card:focus-visible {
+	outline: 2px solid var(--color-accent);
+	outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.api-card {
+		transition: none;
+	}
+}
+
+@container api-group (min-width: 40rem) {
+	.api-group .api-page-heading > h1 {
+		font-size: 30px;
+		line-height: 36px;
+	}
+
+	.api-group-row {
+		grid-template-columns: minmax(12rem, 0.9fr) minmax(0, 1.5fr) 16px;
+		grid-template-areas: 'title routes chevron';
+	}
+}
+
+/*
+ * Labeled HTTP method chips on operation/overview pages — Figma APIs node 10067:6424.
+ * Icon + uppercase label, 24px tall, 8px radius. Sidebar glyphs stay in .nav-v2-api-method.
+ * .api-operation-description .operation-verb shares the same base; size overrides live there.
+ */
+.api-method,
+.api-operation-description .operation-verb {
+	display: inline-flex;
+	flex-shrink: 0;
+	align-items: center;
+	justify-content: center;
+	box-sizing: border-box;
+	height: 24px;
+	gap: 4px;
+	padding: 0 6px;
+	border: 1px solid;
+	border-radius: 8px;
+	font-family: var(--font-body, Inter, ui-sans-serif, system-ui, sans-serif);
+	font-size: 12px;
+	font-weight: 500;
+	line-height: 16px;
+	text-transform: uppercase;
+	white-space: nowrap;
+}
+
+.api-method-icon {
+	display: flex;
+	flex-shrink: 0;
+	align-items: center;
+	justify-content: center;
+	width: 12px;
+	height: 12px;
+	overflow: clip;
+}
+
+.api-method-icon svg,
+.api-method-label {
+	display: block;
+}
+
+.api-method-icon svg {
+	width: 12px;
+	height: 12px;
+}
+
+.api-method-label {
+	padding: 0 2px;
+}
+
+.api-method-get svg {
+	transform: rotate(180deg);
+}
+
+.api-method-get,
+.api-operation-description .operation-verb.get {
+	background-color: var(--color-accent-surface);
+	border-color: var(--color-accent-border);
+	color: var(--color-accent-hover);
+}
+.api-method-post,
+.api-operation-description .operation-verb.post {
+	background-color: var(--color-success-surface);
+	border-color: var(--color-success-surface);
+	color: var(--color-success);
+}
+.api-method-put,
+.api-operation-description .operation-verb.put {
+	background-color: var(--color-warning-surface);
+	border-color: var(--color-warning-surface);
+	color: var(--color-warning);
+}
+.api-method-patch,
+.api-operation-description .operation-verb.patch {
+	background-color: var(--color-success-surface);
+	border-color: var(--color-success-surface);
+	color: var(--color-success);
+}
+.api-method-delete,
+.api-operation-description .operation-verb.delete {
+	background-color: var(--color-danger-surface);
+	border-color: var(--color-danger-surface);
+	color: var(--color-danger);
+}
+.api-method-head,
+.api-operation-description .operation-verb.head {
+	background-color: var(--color-important-surface);
+	border-color: var(--color-important-surface);
+	color: var(--color-important);
+}
+.api-method-options,
+.api-operation-description .operation-verb.options {
+	background-color: var(--color-border);
+	border-color: var(--color-border-control);
+	color: var(--color-text-muted);
+}
+.api-operation-description .operation-verb {
+	background-color: var(--color-surface);
+	border-color: var(--color-border-control);
+	color: var(--color-text-muted);
+}
+
+/* Legacy rows reserve 32px on the right; a row with a chip needs less. */
+#pages-nav li:has(> a.sidebar-link > .nav-v2-api-method) {
+	padding-right: 8px;
+}
+
+#pages-nav a.sidebar-link:has(> .nav-v2-api-method) {
+	display: flex;
+	align-items: flex-start;
+	justify-content: space-between;
+	width: 100%;
+	gap: 8px;
+}
+
+/*
+ * Nav method chips: a small text label at the right edge of the row, after the operation name.
+ * Colors follow Swagger UI conventions (GET blue, POST green, PUT amber, PATCH teal,
+ * DELETE red, HEAD purple, OPTIONS gray). Current and hovered rows keep the chip fill and darken only the border
+ * (hover a mid step, current the darkest), so the 9px label stays above WCAG AA (4.5:1).
+ */
+#pages-nav .nav-v2-api-method {
+	display: inline-flex;
+	flex-shrink: 0;
+	align-items: center;
+	justify-content: center;
+	align-self: flex-start;
+	margin-top: 2px;
+	box-sizing: border-box;
+	height: 16px;
+	padding: 0 4px;
+	border: 1px solid;
+	border-radius: 4px;
+	font-size: 9px;
+	font-weight: 600;
+	letter-spacing: 0.02em;
+	line-height: 1;
+	white-space: nowrap;
+	transition: border-color 0.12s ease;
+}
+
+#pages-nav .nav-v2-api-method-get {
+	background-color: var(--color-accent-surface);
+	border-color: var(--color-accent-border);
+	color: var(--color-accent-hover);
+}
+
+#pages-nav .nav-v2-api-method-post {
+	background-color: var(--color-success-surface);
+	border-color: var(--color-success-surface);
+	color: var(--color-success);
+}
+
+#pages-nav .nav-v2-api-method-put {
+	background-color: var(--color-warning-surface);
+	border-color: var(--color-warning-surface);
+	color: var(--color-warning);
+}
+
+#pages-nav .nav-v2-api-method-patch {
+	background-color: var(--color-success-surface);
+	border-color: var(--color-success-surface);
+	color: var(--color-success);
+}
+
+#pages-nav .nav-v2-api-method-delete {
+	background-color: var(--color-danger-surface);
+	border-color: var(--color-danger-surface);
+	color: var(--color-danger);
+}
+
+#pages-nav .nav-v2-api-method-head {
+	background-color: var(--color-important-surface);
+	border-color: var(--color-important-surface);
+	color: var(--color-important);
+}
+
+#pages-nav .nav-v2-api-method-options {
+	background-color: var(--color-border);
+	border-color: var(--color-border-control);
+	color: var(--color-text-muted);
+}
+
+#pages-nav a.sidebar-link:hover .nav-v2-api-method-get {
+	border-color: var(--color-accent);
+}
+
+#pages-nav a.sidebar-link.current .nav-v2-api-method-get {
+	border-color: var(--color-accent-hover);
+}
+
+#pages-nav a.sidebar-link:hover .nav-v2-api-method-post {
+	border-color: var(--color-success);
+}
+
+#pages-nav a.sidebar-link.current .nav-v2-api-method-post {
+	border-color: var(--color-success);
+}
+
+#pages-nav a.sidebar-link:hover .nav-v2-api-method-put {
+	border-color: var(--color-warning);
+}
+
+#pages-nav a.sidebar-link.current .nav-v2-api-method-put {
+	border-color: var(--color-warning);
+}
+
+#pages-nav a.sidebar-link:hover .nav-v2-api-method-patch {
+	border-color: var(--color-success);
+}
+
+#pages-nav a.sidebar-link.current .nav-v2-api-method-patch {
+	border-color: var(--color-success);
+}
+
+#pages-nav a.sidebar-link:hover .nav-v2-api-method-delete {
+	border-color: var(--color-danger);
+}
+
+#pages-nav a.sidebar-link.current .nav-v2-api-method-delete {
+	border-color: var(--color-danger);
+}
+
+#pages-nav a.sidebar-link:hover .nav-v2-api-method-head {
+	border-color: var(--color-important);
+}
+
+#pages-nav a.sidebar-link.current .nav-v2-api-method-head {
+	border-color: var(--color-important);
+}
+
+#pages-nav a.sidebar-link:hover .nav-v2-api-method-options {
+	border-color: var(--color-text-muted);
+}
+
+#pages-nav a.sidebar-link.current .nav-v2-api-method-options {
+	border-color: var(--color-text-muted);
+}
+
+.api-url {
+	margin-left: calc(var(--spacing) * 2);
+	min-width: 0;
+	font-size: 14px;
+	line-height: 17px;
+	font-weight: 400;
+	overflow-wrap: anywhere;
+	word-break: break-word;
+}
+.api-page-intro,
+#elastic-api-v3,
+#schema-definition,
+#api-examples-panel {
+	/* Rail cards are compact: half the padding of a Markdown code fence around the code. */
+	--code-pad: calc(var(--spacing) * 3);
+	/* Code taller than this scrolls in its card; api-examples-carousel.ts shows the expand button past it. */
+	--api-max-lines: 16;
+	/* API pages use Inter only — drop Mier B (font-sans) from headings/chrome */
+	font-family: var(--font-body);
+
+	dt a {
+		text-decoration: none;
+	}
+	h1,
+	h2,
+	h3,
+	h4,
+	h5,
+	h6 {
+		font-family: var(--font-body);
+	}
+	h3 {
+		border-bottom-color: var(--color-border);
+		margin-top: var(--space-5);
+		border-bottom-width: var(--border-width);
+		border-bottom-style: solid;
+		padding-bottom: var(--space-2);
+	}
+}
+
+#elastic-api-v3 h2.section-header.responses-header,
+#schema-definition h2.section-header.responses-header {
+	padding-bottom: 0;
+	border-bottom: 0;
+}
+
+.responses-header.section-header {
+	justify-content: flex-start;
+	gap: var(--space-3);
+}
+
+.responses-title {
+	flex-shrink: 0;
+}
+
+.responses-list {
+	display: flex;
+	flex-direction: column;
+	gap: 0;
+	margin-top: 16px;
+	overflow: visible;
+	isolation: isolate;
+	background-color: var(--color-surface);
+	border: 1px solid var(--color-border-control);
+	border-radius: 16px;
+}
+
+.response-panel {
+	display: flex;
+	flex-direction: column;
+	align-items: stretch;
+	width: 100%;
+	gap: 0;
+}
+
+.response-panel + .response-panel {
+	border-top: 1px solid var(--color-border-control);
+}
+
+.response-panel:first-child {
+	border-radius: 16px 16px 0 0;
+}
+
+.response-panel:last-child {
+	border-radius: 0 0 16px 16px;
+}
+
+.response-panel:only-child {
+	border-radius: 16px;
+}
+
+/* Three columns: status code | description | media type, plus the toggle icon on summaries. */
+.response-status-row,
+.response-summary {
+	display: grid;
+	box-sizing: border-box;
+	grid-template-columns: 56px minmax(0, 1fr) auto auto;
+	align-items: start;
+	column-gap: 16px;
+	width: 100%;
+	padding: 12px 16px;
+}
+
+.response-status-toggle {
+	grid-column: 1;
+	display: flex;
+	align-items: center;
+	margin: 0;
+	padding: 0;
+	border: 0;
+	border-radius: 0;
+	background: transparent;
+	color: inherit;
+	font: inherit;
+	text-align: left;
+	cursor: pointer;
+}
+
+button.response-status-toggle:focus {
+	outline: none;
+}
+
+.response-summary:has(.response-status-toggle:focus-visible) {
+	outline: var(--outline-size) var(--outline-style) var(--outline-color);
+	outline-offset: -2px;
+	border-radius: 12px;
+}
+
+.response-status-row > .response-status-chip {
+	grid-column: 1;
+}
+
+.response-summary {
+	cursor: pointer;
+	transition: background-color 0.12s ease;
+}
+
+.response-summary:hover {
+	background-color: var(--color-surface-sunken);
+}
+
+.response-status-chip {
+	display: inline-flex;
+	flex-shrink: 0;
+	align-items: center;
+	justify-content: center;
+	box-sizing: border-box;
+	height: 24px;
+	padding: 0 8px;
+	border: 1px solid;
+	border-radius: 8px;
+	font-family: var(--font-body, Inter, ui-sans-serif, system-ui, sans-serif);
+	font-size: 12px;
+	font-weight: 500;
+	line-height: 16px;
+}
+
+.response-status-chip.status-success {
+	background-color: var(--color-success-surface);
+	border-color: var(--color-success-surface);
+	color: var(--color-success);
+}
+
+.response-status-chip.status-error {
+	background-color: var(--color-danger-surface);
+	border-color: var(--color-danger-surface);
+	color: var(--color-danger);
+}
+
+.response-status-chip.status-info {
+	background-color: var(--color-accent-surface);
+	border-color: var(--color-accent-border);
+	color: var(--color-accent);
+}
+
+.response-panel:first-child > .response-summary {
+	border-radius: 16px 16px 0 0;
+}
+
+.response-panel:last-child:not(.expanded) > .response-summary {
+	border-radius: 0 0 16px 16px;
+}
+
+.response-panel:only-child:not(.expanded) > .response-summary {
+	border-radius: 16px;
+}
+
+.response-panel.expanded {
+	position: relative;
+	z-index: 2;
+}
+
+/* Never set `display` here: a collapsed body relies on the `hidden="until-found"` default of `content-visibility: hidden` so find-in-page can reach it. */
+.response-panel-body {
+	box-sizing: border-box;
+	padding: 0;
+	overflow: visible;
+}
+
+.responses-list .property-list dt .property-anchor-icon {
+	z-index: 4;
+}
+
+.response-panel.collapsed > .response-panel-body:not([hidden='until-found']) {
+	display: none;
+}
+
+.response-panel.expanded > .response-panel-body {
+	margin: 8px 12px 12px;
+	padding: 4px 12px 8px;
+	border-radius: 8px;
+	background-color: var(--color-surface-sunken);
+}
+
+.response-panel-body > .property-list > :first-child > dt {
+	padding-top: 8px;
+}
+
+.response-description {
+	grid-column: 2;
+	margin: 0;
+	padding: 2px 0 0;
+	color: inherit;
+	font-size: 14px;
+	font-weight: 400;
+	line-height: 1.5;
+	text-align: left;
+}
+
+.response-description > :first-child {
+	margin-top: 0;
+}
+
+.response-description > :last-child {
+	margin-bottom: 0;
+}
+
+.response-description li {
+	margin-top: 0.25rem;
+}
+
+.response-description li:first-child {
+	margin-top: 0;
+}
+
+.content-type-tag {
+	grid-column: 3;
+	justify-self: end;
+	color: var(--color-text-muted);
+	font-family: var(--font-mono, ui-monospace, monospace);
+	font-size: 12px;
+	font-weight: 400;
+	line-height: 24px;
+	background: none;
+	white-space: nowrap;
+}
+
+.response-toggle-icon {
+	grid-column: 4;
+	flex-shrink: 0;
+	color: var(--color-text-muted);
+	font-family: var(--font-mono, ui-monospace, monospace);
+	font-size: 14px;
+	font-weight: 600;
+	line-height: 24px;
+}
+
+.response-panel.collapsed .response-toggle-icon::before {
+	content: '+';
+}
+
+.response-panel.expanded .response-toggle-icon::before {
+	content: '−';
+}
+
+@media (max-width: 640px) {
+	.response-status-row,
+	.response-summary {
+		grid-template-columns: auto minmax(0, 1fr) auto;
+		row-gap: 8px;
+	}
+
+	.response-description {
+		grid-column: 1 / -1;
+		grid-row: 2;
+	}
+
+	.content-type-tag {
+		grid-column: 2;
+		justify-self: start;
+	}
+
+	.response-toggle-icon {
+		grid-column: 3;
+	}
+}
+
+.property-list .expand-toggle,
+.union-expand-toggle .expand-toggle,
+.union-group-toggle {
+	display: inline-flex;
+	cursor: pointer;
+	align-items: center;
+	gap: var(--space-1);
+	border-width: 0;
+	background: transparent;
+	padding: 0;
+	font-size: var(--text-sm);
+	color: var(--color-heading);
+}
+
+.expand-toggle .toggle-icon,
+.union-group-toggle .toggle-icon {
+	font-family: var(--font-mono);
+	font-weight: var(--weight-semibold);
+}
+
+/* Property list — Figma APIs 10079:2948 (Query Parameters / properties) */
+.property-list {
+	margin-top: 0;
+	position: relative;
+
+	dt {
+		position: relative;
+		display: flex;
+		align-items: center;
+		flex-wrap: wrap;
+		gap: 8px;
+		overflow: visible;
+		padding-top: 16px;
+		padding-bottom: 0;
+		margin: 0;
+		line-height: 24px;
+
+		> a.property-anchor {
+			display: inline-flex;
+			flex: 0 0 auto;
+			align-items: center;
+			width: fit-content;
+			max-width: 100%;
+			overflow: visible;
+			text-decoration: none;
+		}
+
+		.property-anchor-icon {
+			position: absolute;
+			right: 100%;
+			top: 16px;
+			z-index: 2;
+			box-sizing: content-box;
+			width: 24px;
+			height: 24px;
+			padding-right: 8px;
+			opacity: 0;
+			transition: opacity 0.15s ease;
+		}
+
+		.property-anchor-icon::after {
+			content: '';
+			display: block;
+			box-sizing: border-box;
+			width: 24px;
+			height: 24px;
+			border: 1px solid var(--color-border-control);
+			border-radius: 8px;
+			background-color: var(--color-surface);
+			background-image: url("data:image/svg+xml,%3Csvg preserveAspectRatio='none' overflow='visible' style='display: block;' width='10.4997' height='10.5003' viewBox='0 0 10.4997 10.5003' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cg id='Glyph'%3E%3Cpath d='M6.542 4.95118C7.29377 4.75083 8.12919 4.94391 8.71802 5.53272L9.84083 6.65919C10.7192 7.53789 10.7194 8.96297 9.84083 9.84156C8.96223 10.7199 7.53783 10.7199 6.65919 9.84156L5.53272 8.71802C4.9441 8.12935 4.75183 7.29435 4.95191 6.54273L5.6272 7.21802C5.6488 7.57098 5.79323 7.91777 6.06226 8.18702L7.18873 9.31055C7.77451 9.89634 8.72477 9.89634 9.31055 9.31055C9.89616 8.72475 9.89628 7.77519 9.31055 7.18946L8.18775 6.06299C7.91856 5.79392 7.57174 5.64975 7.21876 5.62794L6.542 4.95118Z' fill='%235A6D8C'/%3E%3Cpath d='M7.76514 7.23487L7.23487 7.76514L2.73487 3.26514L3.26514 2.73487L7.76514 7.23487Z' fill='%235A6D8C'/%3E%3Cpath d='M0.659186 0.659186C1.53774 -0.219367 2.96212 -0.219846 3.84083 0.658454L4.96802 1.78272C5.55661 2.37148 5.74833 3.20596 5.5481 3.95728L4.87208 3.28126C4.85032 2.92856 4.70669 2.58205 4.43775 2.31299L3.31055 1.18946C2.72477 0.603687 1.77524 0.603678 1.18946 1.18946C0.603678 1.77524 0.603687 2.72477 1.18946 3.31055L2.313 4.43702C2.58184 4.70569 2.92808 4.84927 3.28052 4.87134L3.95655 5.54737C3.20507 5.7472 2.37053 5.55573 1.78199 4.96729L0.658454 3.84083C-0.219846 2.96212 -0.219367 1.53774 0.659186 0.659186Z' fill='%235A6D8C'/%3E%3C/g%3E%3C/svg%3E");
+			background-repeat: no-repeat;
+			background-position: center;
+			background-size: 12px 12px;
+		}
+
+		&:hover > .property-anchor .property-anchor-icon,
+		> .property-anchor:hover .property-anchor-icon,
+		> .property-anchor:focus-visible .property-anchor-icon {
+			opacity: 1;
+		}
+
+		> .property-anchor:focus-visible .property-anchor-icon::after {
+			outline: 2px solid var(--color-accent);
+			outline-offset: 2px;
+		}
+
+		> a.property-anchor > code,
+		> code {
+			color: var(--color-code-bg);
+			font-family:
+				'Roboto Mono', ui-monospace, SFMono-Regular, Menlo, Monaco,
+				Consolas, monospace;
+			font-size: 14px;
+			font-weight: 700;
+			line-height: 24px;
+			background: none;
+			border: 0;
+			padding: 0;
+			margin: 0;
+			border-radius: 0;
+			mix-blend-mode: normal;
+			word-break: break-word;
+			white-space: normal;
+		}
+	}
+
+	.property-item:hover > dt > .property-anchor .property-anchor-icon,
+	.query-param:hover > dt > .property-anchor .property-anchor-icon,
+	.path-param:hover > dt > .property-anchor .property-anchor-icon {
+		opacity: 1;
+	}
+
+	dd {
+		color: var(--color-text-muted);
+		padding: 8px 0 0 0;
+		margin: 0;
+		font-family: var(
+			--font-body,
+			Inter,
+			ui-sans-serif,
+			system-ui,
+			sans-serif
+		);
+		font-size: 14px;
+		font-weight: 400;
+		line-height: 20px;
+
+		p {
+			margin: 0;
+			color: inherit;
+			font-size: inherit;
+			line-height: inherit;
+		}
+
+		p:not(:first-of-type) {
+			margin-top: 8px;
+		}
+
+		/* Hide empty dd elements */
+		&:empty {
+			display: none;
+		}
+	}
+
+	/* Property item wrapper - handles tree connectors */
+	.property-item {
+		position: relative;
+		padding-left: 0;
+		padding-top: 0;
+		margin-top: 0;
+
+		&.depth-0 {
+			margin-top: 0;
+			padding-bottom: 16px;
+		}
+
+		&.depth-1 {
+			padding-left: 1.25rem;
+		}
+		&.depth-2 {
+			padding-left: 1.25rem;
+		}
+		&.depth-3 {
+			padding-left: 1.25rem;
+		}
+		&.depth-4 {
+			padding-left: 1.25rem;
+		}
+
+		/* Vertical line for siblings below - extends through to next sibling */
+		&.depth-1:not(.last-sibling),
+		&.depth-2:not(.last-sibling),
+		&.depth-3:not(.last-sibling),
+		&.depth-4:not(.last-sibling) {
+			&::after {
+				content: '';
+				position: absolute;
+				left: 0.375rem;
+				top: calc(var(--spacing) * 2 + 0.4rem);
+				bottom: calc(-1 * var(--spacing) * 3 - 0.125rem);
+				border-left: 1px solid var(--color-border-control);
+			}
+		}
+
+		/* L-shaped branch connector - horizontal aligns to middle of text */
+		&.depth-1,
+		&.depth-2,
+		&.depth-3,
+		&.depth-4 {
+			&::before {
+				content: '';
+				position: absolute;
+				left: 0.375rem;
+				height: calc(var(--spacing) * 5 + 0.525rem);
+				width: 0.5rem;
+				border-left: 1px solid var(--color-border-control);
+				border-bottom: 1px solid var(--color-border-control);
+				border-bottom-left-radius: 3px;
+			}
+		}
+	}
+
+	/* Nested properties container */
+	.nested-properties {
+		position: relative;
+		margin-left: 0;
+		overflow: visible;
+
+		/* Reset nested dl margins */
+		.property-list {
+			margin-top: 0;
+			overflow: visible;
+			position: relative;
+		}
+	}
+
+	/* Expand/collapse toggle row - aligned with nested properties */
+	.expand-toggle-row {
+		padding: calc(var(--spacing) * 1) 0;
+		padding-left: 1.25rem; /* Same as depth-1 indentation */
+		margin: 0;
+		margin-top: calc(var(--spacing) * 2);
+		position: relative;
+		display: flex;
+		align-items: center;
+
+		/* Vertical line - always visible when has children, extends to button center */
+		&::before {
+			content: '';
+			position: absolute;
+			left: 0.375rem;
+			top: 0;
+			height: 50%;
+			width: 0;
+			border-left: 1px solid var(--color-border-control);
+			opacity: 0;
+			transition: opacity 0.1s ease;
+		}
+
+		/* Horizontal connector - only when collapsed */
+		&::after {
+			content: '';
+			position: absolute;
+			left: 0.375rem;
+			top: 50%;
+			width: 0.5rem;
+			border-top: 1px solid var(--color-border-control);
+			opacity: 0;
+			transition: opacity 0.1s ease;
+		}
+	}
+
+	/* Expanded state - show vertical line extending through the row */
+	.property-item.expanded > .expand-toggle-row::before {
+		opacity: 1;
+		height: 100%; /* Extend to bottom of toggle row */
+	}
+
+	/* Continuation line from expand toggle down to nested properties */
+	.property-item.expanded > .nested-properties::before {
+		content: '';
+		position: absolute;
+		left: 0.375rem;
+		top: 0;
+		height: calc(
+			var(--spacing) * 5 + 0.4rem
+		); /* Connect to first child's L-connector */
+		border-left: 1px solid var(--color-border-control);
+	}
+
+	/* Collapsed state - show both vertical and horizontal connector */
+	.property-item.collapsed > .expand-toggle-row::before,
+	.property-item.collapsed > .expand-toggle-row::after {
+		opacity: 1;
+	}
+
+	/* Collapsed state - hide nested properties using hidden="until-found" for searchability */
+	/* The hidden attribute handles visibility; this is a fallback for unsupported browsers */
+	.property-item.collapsed > .nested-properties:not([hidden='until-found']) {
+		display: none;
+	}
+
+	/* Expanded state - show nested properties */
+	.property-item.expanded > .nested-properties {
+		display: block;
+	}
+
+	/* Ensure hidden="until-found" elements don't show borders/padding from container */
+	.nested-properties[hidden='until-found'] {
+		content-visibility: hidden;
+	}
+}
+
+.query-param,
+.path-param,
+.prerequisite-item,
+.auth-scheme-item {
+	border-bottom: 1px solid var(--color-border);
+	padding-bottom: 16px;
+}
+
+#elastic-api-v3,
+.api-param-section,
+.api-param-section-header {
+	overflow: visible;
+}
+
+/* A wide sample must scroll inside its block. Otherwise it grows the layout
+   viewport, and the fixed mobile drawer (width: 80%) becomes wider than the screen. */
+@media (max-width: 767px) {
+	.api-page-shell .markdown-content pre,
+	.api-page-shell .markdown-content pre code {
+		min-width: 0;
+		max-width: 100%;
+	}
+
+	#api-examples-panel .api-code-card {
+		max-width: 100%;
+		overflow-x: auto;
+	}
+}
+
+.api-param-section-header.section-header {
+	display: flex;
+	align-items: center;
+	justify-content: flex-start;
+	gap: 12px;
+}
+
+.api-param-section-toggle {
+	position: relative;
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	flex: 1 1 auto;
+	min-width: 0;
+	height: 24px;
+	margin: 0;
+	padding: 0;
+	border: 0;
+	background: none;
+	color: inherit;
+	font: inherit;
+	line-height: 24px;
+	text-align: left;
+	cursor: pointer;
+}
+
+.api-param-section-title {
+	display: flex;
+	align-items: center;
+	flex: 0 0 auto;
+	height: 24px;
+	line-height: 24px;
+}
+
+.api-param-chevron {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	flex: 0 0 24px;
+	margin-left: auto;
+	box-sizing: border-box;
+	width: 24px;
+	height: 24px;
+	color: var(--color-text-muted);
+}
+
+.api-param-chevron::after {
+	content: '';
+	width: 8px;
+	height: 8px;
+	border-right: 1.5px solid currentColor;
+	border-bottom: 1.5px solid currentColor;
+	transform: rotate(-45deg);
+	transition: transform 0.12s ease;
+}
+
+.api-param-section.expanded .api-param-chevron::after {
+	transform: rotate(45deg);
+}
+
+.api-param-section.collapsed
+	> .api-param-section-body:not([hidden='until-found']) {
+	display: none;
+}
+
+.api-param-section.expanded .api-param-summary {
+	display: none;
+}
+
+.api-param-summary {
+	display: flex;
+	align-items: center;
+	flex: 1 1 auto;
+	min-width: 0;
+	height: 24px;
+	margin: 0;
+	color: var(--color-text-muted);
+	font-family:
+		'Roboto Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+		monospace;
+	font-size: 14px;
+	font-weight: 400;
+	line-height: 24px;
+}
+
+.api-param-summary-line {
+	display: flex;
+	align-items: center;
+	width: 100%;
+	height: 24px;
+	min-width: 0;
+	overflow: hidden;
+	white-space: nowrap;
+}
+
+.api-param-summary-brace,
+.api-param-summary-sep {
+	display: flex;
+	align-items: center;
+	flex: 0 0 auto;
+	height: 24px;
+	color: var(--color-text-muted);
+	font-size: 14px;
+	font-weight: 400;
+	line-height: 24px;
+	white-space: pre;
+}
+
+.api-param-summary-item {
+	display: flex;
+	align-items: center;
+	flex: 0 0 auto;
+	height: 24px;
+	line-height: 24px;
+}
+
+.api-param-summary-item code {
+	color: var(--color-code-bg);
+	font-family:
+		'Roboto Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+		monospace;
+	font-size: 14px;
+	font-weight: 700;
+	line-height: 24px;
+	background: none;
+	border: 0;
+	padding: 0;
+	margin: 0;
+	border-radius: 0;
+}
+
+.api-param-more {
+	display: inline-flex;
+	align-items: center;
+	flex: 0 0 auto;
+	height: 24px;
+}
+
+.api-param-more[hidden] {
+	display: none;
+}
+
+.api-param-more:not(.has-leading-sep) > .api-param-summary-sep {
+	display: none;
+}
+
+.api-param-more-badge {
+	display: inline-flex;
+	align-items: center;
+	height: 20px;
+	margin-left: 2px;
+	padding: 0 6px;
+	border-radius: 4px;
+	background: var(--color-surface-sunken);
+	color: var(--color-text-muted);
+	font-family: var(--font-body, Inter, ui-sans-serif, system-ui, sans-serif);
+	font-size: 12px;
+	font-weight: 500;
+	line-height: 16px;
+}
+
+.type-primitive,
+.schema-type .type-primitive,
+.union-type-option.type-primitive,
+.primitive-type.type-primitive,
+.schema-type .type-constraint,
+.type-wrapper,
+.schema-type .type-wrapper,
+.array-keyword.type-wrapper,
+.map-keyword.type-wrapper,
+.enum-icon.type-wrapper,
+.union-icon.type-wrapper,
+.object-icon.type-wrapper,
+.array-icon.type-wrapper {
+	color: var(--color-text-muted);
+}
+
+.type-value,
+.schema-type .type-value,
+.union-type-option.type-value,
+.primitive-type.type-value,
+.value-type-keyword.type-value {
+	color: var(--color-success);
+}
+
+.type-object,
+.schema-type .type-object,
+.union-type-option.type-object,
+.primitive-type.type-object {
+	color: var(--color-danger);
+}
+
+.type-linked,
+.schema-type .type-linked,
+.schema-type a.type-linked,
+.union-type-option.type-linked {
+	color: var(--color-important);
+	text-decoration: none;
+}
+
+#elastic-api-v3 .schema-type a[href]:hover,
+#schema-definition .schema-type a[href]:hover,
+.schema-type a[href]:hover,
+a.type-linked:hover {
+	text-decoration: underline;
+	text-underline-offset: 2px;
+}
+
+.required.type-status {
+	color: var(--color-warning);
+	padding: 0;
+	background-color: transparent;
+	border-radius: 0;
+	font-size: 13px;
+	line-height: 16px;
+}
+
+.deprecated-badge.type-status,
+.beta-badge.type-status {
+	color: var(--color-important);
+}
+
+/* Auth scheme link — compact outlined button with a leading icon */
+.api-page-intro .api-security-badges .api-auth-button {
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+	box-sizing: border-box;
+	height: 24px;
+	padding: 0 8px 0 6px;
+	border: 1px solid var(--color-accent-border);
+	border-radius: 4px;
+	background-color: var(--color-surface);
+	color: var(--color-accent);
+	font-family: var(--font-body, Inter, ui-sans-serif, system-ui, sans-serif);
+	font-size: 12px;
+	font-weight: 500;
+	line-height: 16px;
+	white-space: nowrap;
+	text-decoration: none;
+}
+
+.api-page-intro .api-security-badges .api-auth-button svg {
+	flex: none;
+	width: 14px;
+	height: 14px;
+}
+
+.api-page-intro .api-security-badges .api-auth-button:hover {
+	border-color: var(--color-accent);
+	background-color: var(--color-accent-surface);
+}
+
+.api-page-intro .api-security-badges .api-auth-button:focus-visible {
+	outline: 2px solid var(--color-accent);
+	outline-offset: 2px;
+}
+
+/* Type badge — Figma APIs 10079:2957 (boolean / string / read). Not markdown code. */
+.property-list .api-type-badge {
+	display: inline-flex;
+	align-items: center;
+	box-sizing: border-box;
+	margin: 0;
+	padding: 0 6px;
+	border: 0;
+	border-radius: 4px;
+	background-color: var(--color-surface-sunken);
+	color: var(--color-text-muted);
+	font-family: var(--font-body, Inter, ui-sans-serif, system-ui, sans-serif);
+	font-size: 12px;
+	font-weight: 500;
+	line-height: 16px;
+	white-space: nowrap;
+	vertical-align: middle;
+	mix-blend-mode: normal;
+	text-decoration: none;
+}
+
+.property-list code.schema-type,
+.schema-type {
+	display: inline-flex;
+	align-items: center;
+	box-sizing: border-box;
+	margin: 0;
+	padding: 0;
+	border: 0;
+	border-radius: 0;
+	background-color: transparent;
+	color: var(--color-text-muted);
+	font-family:
+		'Roboto Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+		monospace;
+	font-size: 13px;
+	font-weight: 500;
+	line-height: 16px;
+	letter-spacing: -0.4px;
+	word-spacing: -4px;
+	white-space: nowrap;
+	vertical-align: middle;
+	mix-blend-mode: normal;
+}
+
+.property-list code.schema-type a,
+.schema-type a {
+	letter-spacing: normal;
+}
+
+.schema-type-sep {
+	white-space: pre;
+}
+
+.schema-type .type-constraint {
+	max-width: 40ch;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+/* Required badge */
+.required {
+	color: var(--color-danger);
+	background: var(--color-danger-surface);
+	border-radius: var(--radius-sm);
+	padding-inline: var(--space-1);
+	padding-block: 0.125rem;
+	font-size: var(--text-xs);
+	font-weight: var(--weight-medium);
+}
+
+/* Optional badge - more subtle than required */
+.optional {
+	color: var(--color-text-muted);
+	background: var(--color-surface-sunken);
+	border-radius: var(--radius-sm);
+	padding-inline: var(--space-1);
+	padding-block: 0.125rem;
+	font-size: var(--text-xs);
+	font-weight: var(--weight-regular);
+}
+
+.api-title-badges .deprecated-badge,
+.api-title-badges .beta-badge {
+	margin-right: var(--space-2);
+	display: inline;
+}
+
+/* Deprecated badge - red warning style */
+.deprecated-badge {
+	color: var(--color-danger);
+	background: var(--color-danger-surface);
+	border-radius: var(--radius-sm);
+	padding-inline: var(--space-1);
+	padding-block: 0.125rem;
+	font-size: var(--text-xs);
+	font-weight: var(--weight-medium);
+}
+
+/* Deprecated property/parameter styling - strikethrough */
+.property-item.deprecated > dt > a > code:first-child,
+.query-param.deprecated > dt > a > code:first-child,
+.path-param.deprecated > dt > a > code:first-child {
+	text-decoration: line-through;
+	opacity: 0.7;
+}
+
+/* Version badge - subtle grey */
+.version-badge {
+	color: var(--color-text-muted);
+	background: var(--color-surface-sunken);
+	border-radius: var(--radius-sm);
+	padding-inline: var(--space-1);
+	padding-block: 0.125rem;
+	font-size: var(--text-xs);
+	font-weight: var(--weight-regular);
+}
+
+/* Beta badge - orange/amber warning */
+.beta-badge {
+	color: var(--color-warning);
+	background: var(--color-warning-surface);
+	border-color: var(--color-warning);
+	border-radius: var(--radius-sm);
+	border: var(--border-width) solid var(--color-border);
+	padding-inline: var(--space-1);
+	padding-block: 0.125rem;
+	font-size: var(--text-xs);
+	font-weight: var(--weight-medium);
+}
+
+/* Reference documentation link — styled like a regular docs link, on its own line */
+.markdown-content a.docs-reference-btn,
+a.docs-reference-btn {
+	display: inline-block;
+	width: fit-content;
+	max-width: 100%;
+	margin-top: 0.75rem;
+	padding: 0;
+	border: none;
+	border-radius: 0;
+	background: none;
+	color: var(--color-accent);
+	text-decoration: underline;
+	transition: none;
+}
+
+.markdown-content a.docs-reference-btn:hover,
+a.docs-reference-btn:hover {
+	background: none;
+	color: var(--color-accent-hover);
+}
+
+.markdown-content a.docs-reference-btn::before,
+a.docs-reference-btn::before,
+.markdown-content a.docs-reference-btn[target='_blank']:not(:has(img))::after,
+a.docs-reference-btn[target='_blank']::after,
+a.docs-reference-btn::after {
+	content: none;
+	display: none;
+}
+
+/* A property's reference link: indented and sized like the "show properties" toggle right below it, but a link. */
+.property-list .reference-link-row {
+	font-size: var(--text-sm);
+	margin: calc(var(--spacing) * 2) 0 0;
+	padding: calc(var(--spacing) * 1) 0;
+	padding-left: 1.25rem;
+	position: relative;
+
+	/* The same L-shaped branch as the toggle row: down to the row's middle, then across to the link. */
+	&::before {
+		content: '';
+		position: absolute;
+		left: 0.375rem;
+		top: 0;
+		height: 50%;
+		border-left: 1px solid var(--color-border-control);
+	}
+
+	&::after {
+		content: '';
+		position: absolute;
+		left: 0.375rem;
+		top: 50%;
+		width: 0.5rem;
+		border-top: 1px solid var(--color-border-control);
+	}
+}
+
+/* With the toggle below, the line runs on into the toggle's own branch. */
+.property-list .reference-link-row:has(+ .expand-toggle-row)::before {
+	height: 100%;
+}
+
+.property-list .reference-link-row a {
+	color: var(--color-accent);
+	text-decoration: underline;
+}
+
+.property-list .reference-link-row a:hover {
+	color: var(--color-accent-hover);
+}
+
+/* The toggle follows the link directly, so the two read as one block. */
+.property-list .reference-link-row + .expand-toggle-row {
+	margin-top: 0;
+}
+
+/* Legacy external documentation link (keeping for backwards compat) */
+.external-docs-link {
+	color: var(--color-accent);
+	display: inline-flex;
+	align-items: center;
+	gap: var(--space-1);
+	font-size: var(--text-sm);
+	&:hover {
+		text-decoration: underline;
+	}
+}
+.external-docs-link::before {
+	content: '📖';
+	font-size: 0.9em;
+}
+
+/* Inline external docs link (for properties) - legacy */
+.external-docs-inline {
+	color: var(--color-accent);
+	font-size: var(--text-xs);
+	&:hover {
+		text-decoration: underline;
+	}
+	margin-left: 0.25rem;
+}
+.external-docs-inline::before {
+	content: '↗';
+}
+
+/* Discriminator note styling */
+.discriminator-note {
+	color: var(--color-text-muted);
+	font-size: var(--text-xs);
+	font-style: italic;
+}
+
+/* Discriminator value that selects a union variant */
+.discriminator-value {
+	color: var(--color-text-muted);
+	margin-left: var(--space-2);
+	font-size: var(--text-xs);
+}
+
+/* One-line summary under a union variant's label */
+.union-variant-description {
+	color: var(--color-text-muted);
+	margin-top: var(--space-1);
+	font-size: var(--text-sm);
+}
+
+/* Object type icon */
+.object-icon {
+	color: var(--color-text-muted);
+	font-weight: var(--weight-regular);
+	font-size: 1.2em;
+	font-variant: small-caps;
+}
+
+/* Array type icon (still used in union variant labels) */
+.array-icon {
+	color: var(--color-success);
+	font-weight: var(--weight-regular);
+	font-size: 1.2em;
+	font-variant: small-caps;
+}
+
+.array-keyword {
+	color: var(--color-text-muted);
+	font-weight: var(--weight-regular);
+	font-size: 0.85em;
+}
+
+/* Dictionary/map type icon - same color as object icon */
+.dict-icon {
+	color: var(--color-text-muted);
+	font-weight: var(--weight-regular);
+	font-size: 1.2em;
+	font-variant: small-caps;
+}
+
+/* Enum type icon - purple to match enum values */
+.enum-icon {
+	color: var(--color-important);
+	font-weight: var(--weight-regular);
+	font-size: 1.2em;
+	font-variant: small-caps;
+}
+
+.enum-icon.type-wrapper {
+	font-size: inherit;
+	font-variant: normal;
+}
+
+/* Union type icon - orange/yellow for distinction */
+.union-icon {
+	color: var(--color-warning);
+	font-weight: var(--weight-regular);
+	font-size: 1.2em;
+	font-variant: small-caps;
+}
+
+.union-icon.type-wrapper {
+	font-size: inherit;
+	font-variant: normal;
+}
+
+/* Enum values and union options display */
+.enum-values,
+.union-options {
+	margin-top: var(--space-1);
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: var(--space-1);
+	padding-left: calc(var(--spacing) * 2);
+}
+
+.values-label {
+	color: var(--color-text-muted);
+	margin-right: var(--space-1);
+	font-size: var(--text-xs);
+}
+
+.enum-value {
+	color: var(--color-important);
+	background: var(--color-important-surface);
+	border-radius: var(--radius-sm);
+	padding-inline: 0.375rem;
+	padding-block: 0.125rem;
+	font-size: var(--text-xs);
+}
+
+/* Folded literals join the row's wrap once shown; until-found keeps them searchable while folded. */
+.enum-values-folded:not([hidden]) {
+	display: contents;
+}
+
+.enum-values-folded[hidden='until-found'] {
+	display: block;
+}
+
+/* Response headers display */
+.response-headers {
+	border-color: var(--color-border);
+	margin-top: var(--space-4);
+	border-top-width: var(--border-width);
+	border-top-style: solid;
+	padding-top: var(--space-4);
+}
+
+/* Nested under the responses h2. Wins over the page h3 border and top margin. */
+#elastic-api-v3 .response-headers h3 {
+	color: var(--color-text-muted);
+	margin-bottom: var(--space-2);
+	font-size: var(--text-sm);
+	font-weight: var(--weight-medium);
+	margin-top: 0;
+	padding-bottom: 0;
+	border-bottom: 0;
+}
+
+.header-item {
+	margin-bottom: var(--space-2);
+}
+
+/* Server info display */
+.server-info {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: var(--space-2);
+	font-size: var(--text-sm);
+}
+
+.server-label {
+	color: var(--color-text-muted);
+	font-weight: var(--weight-medium);
+}
+
+.server-url {
+	display: flex;
+	align-items: center;
+	gap: var(--space-1);
+
+	code {
+		color: var(--color-text-muted);
+		background: var(--color-surface-sunken);
+		border-radius: var(--radius-sm);
+		padding-inline: 0.375rem;
+		padding-block: 0.125rem;
+		font-family: var(--font-mono);
+		font-size: var(--text-xs);
+	}
+}
+
+.server-description {
+	color: var(--color-text-muted);
+	font-size: var(--text-xs);
+}
+
+/* Union type option - styled like regular types, not enum values */
+.union-type-option {
+	color: var(--color-accent);
+	background: var(--color-accent-surface);
+	border-radius: var(--radius-sm);
+	padding-inline: 0.375rem;
+	padding-block: 0.125rem;
+	font-size: var(--text-xs);
+}
+
+/* Map keyword styling */
+.map-keyword {
+	color: var(--color-text-muted);
+	font-weight: var(--weight-regular);
+	font-size: 0.85em;
+}
+
+.schema-type .type-wrapper {
+	color: var(--color-text-muted);
+	font-size: inherit;
+	font-weight: inherit;
+	font-variant: normal;
+	line-height: inherit;
+}
+
+/* Primitive keyword inside a value type (string Duration) uses the plain string chip. */
+.schema-type .value-type-keyword {
+	color: var(--color-text-muted);
+}
+
+/* Inline union display for simple X | X[] unions */
+.union-inline-row {
+	margin-top: var(--space-1);
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: var(--space-1);
+	padding-left: calc(var(--spacing) * 2);
+}
+
+.union-inline-options {
+	display: flex;
+	align-items: center;
+	gap: var(--space-2);
+}
+
+.union-inline-option {
+	display: flex;
+	align-items: center;
+	gap: var(--space-1);
+}
+
+.union-inline-separator {
+	color: var(--color-text-muted);
+	font-size: var(--text-xs);
+}
+
+/* Primitive array type display */
+.primitive-array {
+	margin-top: var(--space-1);
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: var(--space-1);
+	padding-left: calc(var(--spacing) * 2);
+}
+
+.primitive-type {
+	color: var(--color-accent);
+	background: var(--color-accent-surface);
+	border-radius: var(--radius-sm);
+	padding-inline: 0.375rem;
+	padding-block: 0.125rem;
+	font-size: var(--text-xs);
+}
+
+/* Union variants container for expandable union type options */
+.union-variants-container {
+	margin-top: var(--space-1);
+	padding-left: calc(var(--spacing) * 2);
+	position: relative;
+}
+
+/* Non-collapsible union variants (just the content wrapper) */
+.union-variants-container:not(.collapsible) > .union-variants {
+	/* No additional styling needed */
+}
+
+/* Collapsible union variants container */
+.union-variants-container.collapsible {
+	/* Container for tree structure */
+}
+
+/* Union collapse toggle row - with tree connectors */
+.union-collapse-toggle {
+	padding: calc(var(--spacing) * 1) 0;
+	padding-left: 1.25rem;
+	margin: 0;
+	position: relative;
+	display: flex;
+	align-items: center;
+
+	/* Vertical line - extends to button center */
+	&::before {
+		content: '';
+		position: absolute;
+		left: 0.375rem;
+		top: 0;
+		height: 50%;
+		width: 0;
+		border-left: 1px solid var(--color-border-control);
+		opacity: 0;
+		transition: opacity 0.1s ease;
+	}
+
+	/* Horizontal connector - only when collapsed */
+	&::after {
+		content: '';
+		position: absolute;
+		left: 0.375rem;
+		top: 50%;
+		width: 0.5rem;
+		border-top: 1px solid var(--color-border-control);
+		opacity: 0;
+		transition: opacity 0.1s ease;
+	}
+}
+
+/* Expanded state - show vertical line extending through the toggle row */
+.union-variants-container.expanded > .union-collapse-toggle::before {
+	opacity: 1;
+	height: 100%; /* Extend to bottom of toggle row */
+}
+
+/* Collapsed state - show both vertical and horizontal connector */
+.union-variants-container.collapsed > .union-collapse-toggle::before,
+.union-variants-container.collapsed > .union-collapse-toggle::after {
+	opacity: 1;
+}
+
+/* Union variants content - the actual list of type options */
+.union-variants-content {
+	position: relative;
+}
+
+/* Hidden state for collapsed union content */
+.union-variants-container.collapsed
+	> .union-variants-content:not([hidden='until-found']) {
+	display: none;
+}
+
+/* Ensure hidden="until-found" elements work correctly */
+.union-variants-content[hidden='until-found'] {
+	content-visibility: hidden;
+}
+
+.union-variants {
+	/* Variants list styling */
+}
+
+/* Union variant item - type label without tree connectors */
+.union-variant-item {
+	padding: calc(var(--spacing) * 1) 0;
+
+	/* Collapsed state - hide nested properties using hidden="until-found" for searchability */
+	/* The hidden attribute handles visibility; this is a fallback for unsupported browsers */
+	&.collapsed > .nested-properties:not([hidden='until-found']) {
+		display: none;
+	}
+
+	/* Expanded state - show nested properties */
+	&.expanded > .nested-properties {
+		display: block;
+	}
+
+	/* Nested properties */
+	.nested-properties {
+		margin-top: 0;
+	}
+}
+
+.union-variant-label {
+	display: flex;
+	align-items: center;
+	gap: var(--space-1);
+}
+
+/* Union expand toggle row - on new line with tree connector when collapsed */
+.union-expand-toggle {
+	padding: calc(var(--spacing) * 1) 0;
+	padding-left: 1.25rem;
+	margin: 0;
+	position: relative;
+	display: flex;
+	align-items: center;
+
+	/* Vertical line - extends to button center */
+	&::before {
+		content: '';
+		position: absolute;
+		left: 0.375rem;
+		top: 0;
+		height: 50%;
+		width: 0;
+		border-left: 1px solid var(--color-border-control);
+		opacity: 0;
+		transition: opacity 0.1s ease;
+	}
+
+	/* Horizontal connector - only when collapsed */
+	&::after {
+		content: '';
+		position: absolute;
+		left: 0.375rem;
+		top: 50%;
+		width: 0.5rem;
+		border-top: 1px solid var(--color-border-control);
+		opacity: 0;
+		transition: opacity 0.1s ease;
+	}
+}
+
+/* Union expanded state - show vertical line extending through the toggle row */
+.union-variant-item.expanded > .union-expand-toggle::before {
+	opacity: 1;
+	height: 100%; /* Extend to bottom of toggle row */
+}
+
+/* Continuation line from union expand toggle down to nested properties */
+.union-variant-item.expanded > .nested-properties {
+	position: relative;
+}
+
+.union-variant-item.expanded > .nested-properties::before {
+	content: '';
+	position: absolute;
+	left: 0.375rem;
+	top: 0;
+	height: calc(
+		var(--spacing) * 5 + 0.4rem
+	); /* Connect to first child's L-connector */
+	border-left: 1px solid var(--color-border-control);
+}
+
+/* Union collapsed state - show both vertical and horizontal connector */
+.union-variant-item.collapsed > .union-expand-toggle::before,
+.union-variant-item.collapsed > .union-expand-toggle::after {
+	opacity: 1;
+}
+
+/* Union separator between type options */
+.union-separator {
+	color: var(--color-text-muted);
+	font-size: var(--text-xs);
+	padding: calc(var(--spacing) * 0.5) 0;
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+}
+
+.union-separator::before,
+.union-separator::after {
+	content: '';
+	flex: 1;
+	max-width: 2rem;
+	border-top: 1px dashed var(--color-border-control);
+}
+
+.variant-description {
+	color: var(--color-text-muted);
+	margin-top: var(--space-1);
+	font-size: var(--text-sm);
+}
+
+/* Schema ID display */
+.schema-id {
+	color: var(--color-text-muted);
+	margin-bottom: var(--space-4);
+	font-size: var(--text-sm);
+
+	code {
+		background: var(--color-surface-sunken);
+		border-radius: var(--radius-sm);
+		padding-inline: var(--space-2);
+		padding-block: var(--space-1);
+	}
+}
+
+/* Schema type info for container types */
+.schema-type-info {
+	margin-bottom: var(--space-4);
+	display: flex;
+	align-items: center;
+	gap: var(--space-2);
+}
+
+/* Type link inside schema-type */
+.schema-type .type-link {
+	color: var(--color-accent);
+	text-decoration: none;
+}
+.schema-type .type-link:hover {
+	text-decoration: underline;
+}
+
+/* Inline token chip — Figma APIs 10080:3030 (`q`, `false`, `_all`) */
+.api-operation-description :not(pre) > code,
+.property-list
+	dd
+	code:not(pre > code):not(.enum-value):not(.schema-type):not(
+		.union-type-option
+	),
+.example-description :not(pre) > code,
+.union-option {
+	display: inline-flex;
+	align-items: center;
+	box-sizing: border-box;
+	margin: 0 1px;
+	padding: 0 6px;
+	border: 1px solid var(--color-border);
+	border-radius: 4px;
+	background-color: var(--color-surface-sunken);
+	color: var(--color-text-muted);
+	font-family: var(--font-body, Inter, ui-sans-serif, system-ui, sans-serif);
+	font-size: 12px;
+	font-weight: 500;
+	line-height: 16px;
+	white-space: nowrap;
+	vertical-align: middle;
+	mix-blend-mode: normal;
+	word-break: normal;
+}
+
+/* Type definition link */
+.type-definition-link {
+	color: var(--color-accent);
+	margin-top: var(--space-2);
+	display: block;
+	font-size: var(--text-sm);
+	font-style: italic;
+}
+
+/* Enum/value list styling - improve code: description format */
+.property-list dd ul {
+	margin-top: var(--space-2);
+	padding-left: 0;
+	list-style: none;
+}
+
+.property-list dd ul li {
+	position: relative;
+	padding-left: var(--space-4);
+	margin-bottom: 4px;
+}
+
+.property-list dd ul li::before {
+	content: '•';
+	color: var(--color-text-muted);
+	position: absolute;
+	left: 0;
+}
+
+/* Style the value code in list items - more prominent */
+.property-list dd ul li > code:first-child {
+	color: var(--color-important);
+	background: var(--color-important-surface);
+	font-weight: var(--weight-semibold);
+}
+
+/* Type link in description - styled as button */
+.type-link-description {
+	margin-top: var(--space-1);
+	padding-left: calc(var(--spacing) * 2);
+
+	a {
+		color: var(--color-accent);
+		font-size: var(--text-sm);
+		text-decoration: none;
+		background: var(--color-accent-surface);
+		border-radius: var(--radius-sm);
+		padding-inline: var(--space-2);
+		padding-block: var(--space-1);
+		display: inline-flex;
+		align-items: center;
+		gap: var(--space-1);
+		border-color: var(--color-accent-border);
+		border: var(--border-width) solid var(--color-border);
+		transition:
+			background-color 0.15s ease,
+			border-color 0.15s ease;
+	}
+	a:hover {
+		background: var(--color-accent-surface);
+		border-color: var(--color-accent-border);
+	}
+}
+
+/* Section headings are h2. 16px sits under the 30px page title and above nested h3. */
+#elastic-api-v3 h2.section-header,
+#schema-definition h2.section-header {
+	background: var(--color-surface);
+	position: static;
+	box-sizing: border-box;
+	margin-top: 0;
+	margin-bottom: 0;
+	padding-top: 40px;
+	padding-bottom: 16px;
+	border-bottom: 1px solid var(--color-border);
+	color: var(--color-code-bg);
+	font-family: var(--font-body, Inter, ui-sans-serif, system-ui, sans-serif);
+	font-size: 16px;
+	font-weight: 600;
+	line-height: 24px;
+}
+
+/* The global .headerlink::after '#' positions against its link, so it lines up with the title, not the padded h2 */
+#elastic-api-v3 h2.section-header .headerlink,
+#schema-definition h2.section-header .headerlink,
+.api-operation-description h2 .headerlink {
+	position: relative;
+}
+
+/* Section header */
+.section-header {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	padding-top: 40px;
+	padding-bottom: 16px;
+}
+
+/* Content-type badge for request/response headers */
+.content-type-badge {
+	color: var(--color-text-muted);
+	background: var(--color-surface-sunken);
+	margin-left: var(--space-2);
+	border-radius: var(--radius-sm);
+	padding-inline: var(--space-2);
+	padding-block: 0.125rem;
+	font-size: var(--text-xs);
+	font-weight: 500;
+}
+
+.api-operation-description {
+	color: var(--color-text-muted);
+	font-family: var(--font-body, Inter, ui-sans-serif, system-ui, sans-serif);
+	font-size: 14px;
+	font-weight: 400;
+	line-height: 20px;
+	margin: 0 0 0.5rem;
+
+	> :first-child {
+		margin-top: 0;
+	}
+
+	> :last-child {
+		margin-bottom: 0;
+	}
+
+	p {
+		margin-top: 0;
+		margin-bottom: 24px;
+		color: inherit;
+		font-size: 14px;
+		line-height: 20px;
+	}
+
+	h2,
+	h3,
+	h4,
+	h5,
+	h6 {
+		margin-top: 0;
+		margin-bottom: 24px;
+		color: var(--color-text-muted);
+		font-family: var(
+			--font-body,
+			Inter,
+			ui-sans-serif,
+			system-ui,
+			sans-serif
+		);
+		font-size: 14px;
+		font-weight: 600;
+		line-height: 20px;
+	}
+
+	/* Match the h2.section-header rows rendered by the operation view */
+	h2 {
+		margin-bottom: 0;
+		padding-top: 40px;
+		padding-bottom: 16px;
+		border-bottom: 1px solid var(--color-border);
+		color: var(--color-code-bg);
+		font-size: 16px;
+		line-height: 24px;
+	}
+
+	strong,
+	b {
+		font-weight: 600;
+	}
+
+	a:not(.docs-reference-btn, .headerlink),
+	a.reference {
+		color: var(--color-accent);
+		text-decoration: underline;
+		text-underline-offset: 2px;
+	}
+
+	a:not(.docs-reference-btn, .headerlink):hover,
+	a.reference:hover {
+		color: var(--color-accent-hover);
+		text-decoration: underline;
+	}
+
+	/* bump.sh verb badge — inherits .api-method base and color rules; only size differs */
+	.operation-verb {
+		height: 18px;
+		padding: 0 4px;
+		border-radius: 5px;
+		font-size: 10px;
+		line-height: 12px;
+		vertical-align: middle;
+	}
+
+	/* The authored markup is <div><verb/><path/></div>; the div is the chip */
+	div:has(> .operation-verb + .operation-path) {
+		background: var(--color-surface-sunken);
+		border-color: var(--color-border);
+		border-width: var(--border-width);
+		border-style: solid;
+		font-family: var(--font-mono);
+		display: flex;
+		align-items: center;
+		gap: 6px;
+		width: fit-content;
+		max-width: 100%;
+		padding: 2px 8px 2px 2px;
+		border-radius: 7px;
+	}
+
+	.operation-path {
+		color: var(--color-heading);
+		font-size: 13px;
+		font-weight: 300;
+		line-height: 20px;
+	}
+
+	/* Space the URL listing block away from the prose that follows it */
+	div:has(.operation-path) {
+		margin-bottom: 1.5rem;
+	}
+}
+
+/* Card chrome around shared code blocks (code-block.css owns the code itself:
+   syntax colours, gutter, callouts). Request and response both carry .api-code-card
+   and opt into the contract with data-code-card / data-code-actions / data-code-panel.
+   Chrome roles, derived from the shared --code-* theme so card and code read as one surface:
+   --api-code-text    text/paragraph          titles, copy hover
+   --api-code-muted   text/disabled           inactive tabs, disabled controls
+   --api-code-accent  borders/strong/primary  active tab + underline
+   --api-code-border  borders/base            card + header dividers
+   --api-code-hover   hover surface           tabs, select, copy button
+   --api-code-bg      card fill */
+.api-code-card {
+	--api-code-bg: var(--color-code-bg);
+	--api-code-border: var(--color-code-border);
+	--api-code-hover: color-mix(
+		in oklab,
+		var(--color-code-text) 10%,
+		transparent
+	);
+	--api-code-radius: var(--radius-md);
+	--api-code-text: var(--color-code-text);
+	--api-code-muted: var(--color-code-muted);
+	--api-code-accent: var(--color-accent-border);
+	--api-code-scroll: var(--color-code-border);
+	--api-code-scroll-hover: var(--color-text-muted);
+	overflow: visible;
+	position: relative;
+	margin-bottom: 24px;
+	background-color: var(--api-code-bg);
+	color: var(--api-code-text);
+	border: 1px solid var(--api-code-border);
+	border-radius: var(--api-code-radius);
+	box-shadow: none;
+}
+
+/* Thin scrollbar thumb on the dark surface. */
+.api-code-card .api-code-sample-body,
+.api-code-card .example-block-body {
+	scrollbar-width: thin;
+	scrollbar-color: var(--api-code-scroll) transparent;
+}
+
+.api-code-card .api-code-sample-body::-webkit-scrollbar,
+.api-code-card .example-block-body::-webkit-scrollbar {
+	width: 8px;
+	height: 8px;
+}
+
+.api-code-card .api-code-sample-body::-webkit-scrollbar-track,
+.api-code-card .example-block-body::-webkit-scrollbar-track {
+	background: transparent;
+}
+
+.api-code-card .api-code-sample-body::-webkit-scrollbar-thumb,
+.api-code-card .example-block-body::-webkit-scrollbar-thumb {
+	background-color: var(--api-code-scroll);
+	border-radius: 9999px;
+}
+
+.api-code-card .api-code-sample-body::-webkit-scrollbar-thumb:hover,
+.api-code-card .example-block-body::-webkit-scrollbar-thumb:hover {
+	background-color: var(--api-code-scroll-hover);
+}
+
+.example-block {
+	position: relative;
+}
+
+.api-code-card .example-block-header,
+.api-code-card .api-code-sample-header {
+	display: flex;
+	min-width: 0;
+	flex-shrink: 0;
+	align-items: center;
+	gap: 8px;
+	box-sizing: border-box;
+	height: 48px;
+	max-height: 48px;
+	padding: 0 16px;
+	background-color: var(--api-code-bg);
+	border-bottom: 1px solid var(--api-code-border);
+	border-radius: var(--api-code-radius) var(--api-code-radius) 0 0;
+	overflow: visible;
+}
+
+.api-code-card .example-block-header {
+	overflow: visible;
+}
+
+.api-code-card .api-code-sample-body,
+.api-code-card .example-block-body {
+	border-radius: 0 0 var(--api-code-radius) var(--api-code-radius);
+}
+
+/* Status-code tabs; active underline sits on top of the header/body divider. */
+.example-response-tabs {
+	display: flex;
+	min-width: 0;
+	flex: 1;
+	align-items: stretch;
+	align-self: stretch;
+	gap: 8px;
+	height: calc(100% + 1px);
+	margin-bottom: -1px;
+	overflow-x: auto;
+	scrollbar-width: thin;
+	scrollbar-color: var(--api-code-scroll) transparent;
+	-webkit-overflow-scrolling: touch;
+}
+
+.example-response-tab {
+	box-sizing: border-box;
+	display: flex;
+	flex-direction: column;
+	align-items: flex-start;
+	justify-content: center;
+	flex-shrink: 0;
+	height: 100%;
+	margin: 0;
+	cursor: pointer;
+	border: 0;
+	border-bottom: 2px solid transparent;
+	background: transparent;
+	/* 3px top vs 0 bottom recovers the 2px underline so the label centers in the 48px header. */
+	padding: 3px 4px 0;
+	font-family: var(--font-body, Inter, ui-sans-serif, system-ui, sans-serif);
+	font-size: 14px;
+	font-weight: 400;
+	line-height: 16px;
+	white-space: nowrap;
+	color: var(--api-code-muted);
+	transition:
+		color 0.08s ease,
+		font-weight 0.08s ease;
+}
+
+.example-response-tab-label {
+	display: inline-block;
+	padding: 2px 4px;
+	border-radius: 6px;
+	transition:
+		background-color 0.08s ease,
+		color 0.08s ease;
+}
+
+.example-response-tab.is-active {
+	position: relative;
+	z-index: 1;
+	color: var(--api-code-accent);
+	border-bottom-color: var(--api-code-accent);
+	font-weight: 600;
+	cursor: pointer;
+}
+
+button.example-response-tab:not(.is-active):hover {
+	color: var(--api-code-text);
+}
+
+button.example-response-tab:hover .example-response-tab-label {
+	background-color: var(--api-code-hover);
+}
+
+button.example-response-tab:focus-visible {
+	outline: 2px solid var(--api-code-accent);
+	outline-offset: 2px;
+	border-radius: 2px;
+}
+
+.api-code-card .example-empty {
+	margin: 0;
+	padding: 12px 16px;
+	font-size: 13px;
+	line-height: 1.4;
+	color: var(--api-code-muted);
+	font-style: italic;
+}
+
+.example-block-actions,
+.api-code-sample-actions {
+	margin-left: auto;
+	display: flex;
+	flex-shrink: 0;
+	align-items: center;
+	gap: var(--space-1);
+}
+
+.api-code-card .highlight {
+	margin-top: 0;
+}
+
+/* API page shell: like the codex layout, uncapped so the nav sits at the left edge
+   and the content is centered in the remaining space. Operation pages split that
+   content in two themselves (.api-page-columns). */
+.api-page-shell {
+	max-width: none;
+}
+
+@media (min-width: 768px) {
+	/* The column gap and the right padding match (32px each, the shell adds 16px more on
+	   the right), so the content has the same space beside the nav as beside the window
+	   edge. Every API page uses the operation page's width, so the content keeps its
+	   left edge when you move between pages. */
+	.api-page-shell > .grid {
+		column-gap: 32px;
+		padding-right: 16px;
+	}
+
+	#api-content-grid {
+		--api-column-gap: 24px;
+		--api-content-cap: calc(
+			var(--max-api-content-width) + var(--api-column-gap) +
+				var(--max-examples-width)
+		);
+		width: 100%;
+		max-width: var(--api-content-cap);
+		margin-inline: auto;
+	}
+
+	/* Landing and group pages are lists, not a reference next to examples, so they read
+	   better narrower. They stay centered between the nav and the window edge. */
+	#api-content-grid:has(.api-landing, .api-group) {
+		--api-content-cap: calc(var(--spacing) * 240);
+	}
+}
+
+/* Examples rail cards sit flush with the article; they have their own chrome. */
+#api-examples-panel .api-code-card:last-child {
+	margin-bottom: 0;
+}
+
+/* Operation pages: the reference and the examples rail. One column; two from 1024px,
+   under the full-width intro. The intro already ends with a 16px step. */
+.api-page-columns {
+	display: flex;
+	flex-direction: column;
+	gap: 16px;
+	margin-top: 16px;
+}
+
+@media (min-width: 1024px) {
+	.api-page-columns {
+		flex-direction: row;
+		align-items: flex-start;
+		gap: 24px;
+	}
+
+	.api-page-columns > * {
+		flex: 1 1 0;
+		min-width: 0;
+	}
+
+	/* Examples rail: hug content, cap at the viewport, scroll inside.
+	   Same header-collapse transition as .sidebar-nav so the rails move together. */
+	#api-examples-panel {
+		--api-rail-top: calc(var(--offset-top) + 16px);
+		position: sticky;
+		top: var(--api-rail-top);
+		box-sizing: border-box;
+		max-height: calc(100vh - var(--api-rail-top));
+		overflow: hidden;
+		display: flex;
+		flex-direction: column;
+		transition:
+			top 0.3s ease,
+			max-height 0.3s ease;
+	}
+
+	/* The rail scrolls as a whole when it hits max-height. Cards must not shrink:
+	   with min-height: 0 the request card collapsed to its header and hid the code. */
+	#api-examples-panel .api-examples-panel-nav {
+		flex: 0 1 auto;
+		min-height: 0;
+		max-height: none;
+		overflow-x: hidden;
+		overflow-y: auto;
+		display: flex;
+		flex-direction: column;
+	}
+
+	#api-examples-panel .api-examples-body {
+		flex: 0 0 auto;
+		display: flex;
+		flex-direction: column;
+		flex-wrap: nowrap;
+		overflow: visible;
+	}
+
+	#api-examples-panel .api-examples-scenario-panel:not([hidden]) {
+		display: flex;
+		flex: 0 0 auto;
+		flex-direction: column;
+		/* Between the request rail and the response card. */
+		row-gap: calc(var(--spacing) * 4);
+	}
+
+	#api-examples-panel .api-examples-body {
+		display: flex;
+		flex: 0 0 auto;
+		flex-direction: column;
+		overflow: visible;
+		border: 0;
+		padding: 0;
+	}
+
+	#api-examples-panel .api-code-card {
+		display: flex;
+		flex: 0 0 auto;
+		flex-direction: column;
+	}
+
+	#api-examples-panel .api-code-sample-body,
+	#api-examples-panel .example-block-body {
+		flex: 0 0 auto;
+		max-height: max(12rem, calc((100vh - var(--offset-top)) * 0.4));
+		overflow: auto;
+	}
+}
+
+/* Wide enough for the capped block: the reference at the docs text width, the examples
+   rail at a fixed width, more air between them. */
+@media (min-width: 1280px) {
+	#api-content-grid {
+		--api-column-gap: 32px;
+	}
+
+	.api-page-columns {
+		gap: var(--api-column-gap);
+	}
+
+	.api-page-columns > #api-examples-panel {
+		flex: 0 0 var(--max-examples-width);
+	}
+}
+
+.api-code-sample-title {
+	display: flex;
+	min-width: 0;
+	flex: 1;
+	align-items: center;
+	gap: 8px;
+	overflow: hidden;
+}
+
+.api-code-sample-title .api-url {
+	margin-left: 0;
+	overflow: hidden;
+	color: var(--api-code-text);
+	font-family:
+		'Roboto Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+		monospace;
+	font-size: 12px;
+	font-weight: 300;
+	line-height: 20px;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.api-code-sample-title .api-code-sample-heading {
+	color: var(--api-code-text);
+	font-size: 12px;
+	font-weight: 600;
+	line-height: 20px;
+	white-space: nowrap;
+}
+
+.api-code-sample-body {
+	min-width: 0;
+}
+
+/*
+ * API tabs — forked from markdown/tabs.css so API pages can diverge
+ * without affecting Myst ::::{tabs} elsewhere. Child class names
+ * (tabs-input / tabs-label / tabs-content) stay shared for tabs.ts sync.
+ */
+.api-tabs {
+	position: relative;
+	margin-top: var(--space-4);
+	display: flex;
+	flex-wrap: wrap;
+	overflow: hidden;
+
+	.tabs-label {
+		color: var(--color-text-muted);
+		border-color: var(--color-border);
+		z-index: 20;
+		margin-bottom: -1px;
+		display: flex;
+		cursor: pointer;
+		align-items: center;
+		border-width: var(--border-width);
+		border-style: solid;
+		padding-inline: var(--space-5);
+		padding-block: var(--space-2);
+		&:not(:nth-of-type(1)) {
+			margin-left: -1px;
+		}
+
+		&:hover {
+			background: var(--color-surface-sunken);
+			border-bottom-width: var(--border-width);
+			border-bottom-style: solid;
+			border-bottom-color: var(--color-heading);
+			color: var(--color-heading);
+		}
+	}
+
+	.tabs-input {
+		position: absolute;
+		opacity: 0;
+	}
+
+	.tabs-content {
+		border-color: var(--color-border);
+		z-index: 0;
+		order: 99;
+		display: none;
+		width: 100%;
+		border-width: var(--border-width);
+		border-style: solid;
+		padding-inline: var(--space-5);
+		padding-top: var(--space-2);
+		padding-bottom: var(--space-5);
+	}
+
+	.tabs-input:checked + .tabs-label + .tabs-content {
+		display: block;
+	}
+
+	.tabs-input:checked + .tabs-label,
+	.tabs-label:active {
+		border-bottom-color: var(--color-accent);
+		color: var(--color-accent);
+		border-bottom-width: var(--border-width);
+		border-bottom-style: solid;
+	}
+
+	.tabs-input:focus-visible + .tabs-label {
+		outline: var(--outline-size) var(--outline-style) var(--outline-color);
+		outline-offset: var(--outline-offset, var(--outline-size));
+	}
+}
+
+.example-block--response .example-empty {
+	margin: 0;
+	padding: 12px 16px;
+	font-size: 13px;
+	line-height: 1.4;
+	color: var(--api-code-muted);
+	font-style: italic;
+}
+
+.example-block-actions {
+	margin-left: auto;
+	display: flex;
+	flex-shrink: 0;
+	align-items: center;
+	gap: var(--space-2);
+}
+
+.api-code-sample-actions {
+	margin-left: auto;
+	display: flex;
+	flex-shrink: 0;
+	align-items: center;
+	gap: var(--space-1);
+}
+
+.api-code-sample-body {
+	min-width: 0;
+}
+
+/*
+ * API tabs — forked from markdown/tabs.css so API pages can diverge
+ * without affecting Myst ::::{tabs} elsewhere. Child class names
+ * (tabs-input / tabs-label / tabs-content) stay shared for tabs.ts sync.
+ */
+.api-tabs {
+	position: relative;
+	margin-top: var(--space-4);
+	display: flex;
+	flex-wrap: wrap;
+	overflow: hidden;
+
+	.tabs-label {
+		color: var(--color-text-muted);
+		border-color: var(--color-border);
+		z-index: 20;
+		margin-bottom: -1px;
+		display: flex;
+		cursor: pointer;
+		align-items: center;
+		border-width: var(--border-width);
+		border-style: solid;
+		padding-inline: var(--space-5);
+		padding-block: var(--space-2);
+		&:not(:nth-of-type(1)) {
+			margin-left: -1px;
+		}
+
+		&:hover {
+			background: var(--color-surface-sunken);
+			border-bottom-width: var(--border-width);
+			border-bottom-style: solid;
+			border-bottom-color: var(--color-heading);
+			color: var(--color-heading);
+		}
+	}
+
+	.tabs-input {
+		position: absolute;
+		opacity: 0;
+	}
+
+	.tabs-content {
+		border-color: var(--color-border);
+		z-index: 0;
+		order: 99;
+		display: none;
+		width: 100%;
+		border-width: var(--border-width);
+		border-style: solid;
+		padding-inline: var(--space-5);
+		padding-top: var(--space-2);
+		padding-bottom: var(--space-5);
+	}
+
+	.tabs-input:checked + .tabs-label + .tabs-content {
+		display: block;
+	}
+
+	.tabs-input:checked + .tabs-label,
+	.tabs-label:active {
+		border-bottom-color: var(--color-accent);
+		color: var(--color-accent);
+		border-bottom-width: var(--border-width);
+		border-bottom-style: solid;
+	}
+
+	.tabs-input:focus-visible + .tabs-label {
+		outline: var(--outline-size) var(--outline-style) var(--outline-color);
+		outline-offset: var(--outline-offset, var(--outline-size));
+	}
+}
+
+/* Example description - smaller font like property descriptions */
+.example-description {
+	color: var(--color-text-muted);
+	font-size: 0.9em;
+	line-height: 1.5;
+	margin-bottom: 0.75rem;
+
+	p {
+		margin: 0;
+	}
+}
+
+/* Sticky Examples button - bottom right of content area */
+.examples-jump-btn {
+	background: var(--color-accent);
+	border-radius: var(--radius-pill);
+	box-shadow: var(--shadow-overlay);
+	color: white;
+	position: fixed;
+	bottom: 2rem;
+	/* Align with right edge of content area (account for TOC sidebar) */
+	right: calc(var(--max-sidebar-width) + 2rem);
+	padding: 0.75rem 1.25rem;
+	font-size: 0.875rem;
+	font-weight: 500;
+	cursor: pointer;
+	z-index: 50;
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+	transition: all 0.2s ease;
+	opacity: 0;
+	transform: translateY(1rem);
+	pointer-events: none;
+	text-decoration: none;
+}
+
+.examples-jump-btn.visible {
+	opacity: 1;
+	transform: translateY(0);
+	pointer-events: auto;
+}
+
+.examples-jump-btn:hover {
+	background: var(--color-accent);
+	color: white;
+	transform: translateY(-2px);
+	box-shadow: 0 6px 20px
+		color-mix(in oklab, var(--color-text) 15%, transparent);
+	text-decoration: none;
+}
+
+.examples-jump-btn .icon {
+	font-size: 1rem;
+	color: white;
+}
+
+/* Hide button on smaller screens where TOC is hidden */
+@media (max-width: 1023px) {
+	.examples-jump-btn {
+		display: none;
+	}
+}
+
+/* API catalog. The cards use the docs landing page's Tailwind classes and the applies_to pill look,
+   so this file only holds what those utilities cannot express. */
+.api-landing-heading h1 {
+	margin: 0;
+	font-size: var(--text-4xl);
+	font-weight: 700;
+	line-height: 1.2;
+	letter-spacing: -0.5px;
+	color: var(--color-heading);
+}
+
+/* The hero caps its inner width for hub pages, which would leave the centred title off-centre. */
+.api-catalog .hub-hero .hub-hero-inner {
+	max-width: none;
+}
+
+.api-catalog .hub-hero .hub-hero-top {
+	margin-bottom: 0;
+}
+
+/* The hero is a centred title and one line of text on a band that spans the screen, in the flat light grey the
+   docs landing page uses for its own hero, so the white cards below stand out against it. */
+.api-catalog-band {
+	background: var(--color-surface-sunken);
+}
+
+.api-catalog .hub-hero.api-catalog-hero {
+	padding: 36px 0 28px;
+	margin-bottom: 0;
+	border-bottom: 0;
+	text-align: center;
+}
+
+/* The title is set in Space Grotesk, which the Elastic brand guide (brand.elastic.co, Typography) names for
+   developer marketing headlines. The guide says that use needs the brand team's agreement. Headline leading is
+   the guide's 1.14, at its heaviest weight (Space Grotesk stops at 700), with the Mier B headline face and then
+   Inter behind it if the font does not load. The hub hero sets no family, which left this title in Inter. */
+.api-catalog .hub-hero .hub-hero-top h1 {
+	font-family: 'Space Grotesk', var(--font-heading);
+	font-size: clamp(var(--text-4xl), 3vw, var(--text-5xl));
+	font-weight: 700;
+	line-height: 1.14;
+	letter-spacing: -0.02em;
+}
+
+/* "Extra bold headlines with lighter accompanying text", per the brand guide: the line under the title is Inter
+   at regular weight in the lighter ink, with the guide's paragraph leading of 1.55. Its contrast on the band is
+   6.65:1, above the 4.5:1 the guide requires. */
+.api-catalog .api-catalog-lede {
+	max-width: 36rem;
+	margin: 12px auto 0;
+	font-family: var(--font-body);
+	font-size: var(--text-base);
+	line-height: 1.55;
+	color: var(--color-text-muted);
+	text-wrap: balance;
+}
+
+@media (max-width: 640px) {
+	.api-catalog .hub-hero.api-catalog-hero {
+		padding: 36px 0 32px;
+	}
+}
+
+.api-catalog .api-catalog-hero .hub-hero-top {
+	justify-content: center;
+}
+
+/* Light grouping: a small label per group, with the gap between groups kept tight so the page still fits one screen. */
+.api-catalog .api-catalog-group + .api-catalog-group {
+	margin-top: 32px;
+}
+
+.api-catalog .api-catalog-group-title {
+	margin: 0 0 8px;
+	font-family: var(--font-heading);
+	font-size: 12px;
+	font-weight: 700;
+	letter-spacing: 0.06em;
+	line-height: 16px;
+	text-transform: uppercase;
+	color: var(--color-text-muted);
+}
+
+/* The landing page card is rounded-2xl, which is 14px. The shared .api-card is 12px. */
+.api-catalog .api-catalog-card {
+	border-radius: 14px;
+}
+
+.api-catalog .api-catalog-card-icon svg {
+	display: block;
+	width: 100%;
+	height: 100%;
+}
+
+/* Descriptions are up to 150 characters, so they are clamped. */
+.api-catalog .api-catalog-desc {
+	display: -webkit-box;
+	overflow: hidden;
+	-webkit-box-orient: vertical;
+	-webkit-line-clamp: 3;
+	line-clamp: 3;
+}
+
+/* The compact card is the small one for everything in a group but the main APIs. Two lines are enough at its size. */
+.api-catalog .api-catalog-card-compact .api-catalog-desc {
+	-webkit-line-clamp: 2;
+	line-clamp: 2;
+}
+
+/* A tag-on is attached to its parent card, like a tab on its bottom edge: flush under it, sharing its border, with a
+   light fill and a one-line description. */
+.api-catalog .api-catalog-card-attached {
+	background: var(--color-surface-sunken);
+}
+
+.api-catalog .api-catalog-card-attached .api-catalog-desc {
+	-webkit-line-clamp: 1;
+	line-clamp: 1;
+}
+
+/* From the width where the featured cards sit in one row. Below that they stack in one column, so a tag-on has no
+   parent above it and stays a separate card. */
+@media (min-width: 1024px) {
+	.api-catalog .api-catalog-featured {
+		margin-bottom: 0;
+	}
+
+	.api-catalog .api-catalog-tagons {
+		row-gap: 0;
+		margin-top: -1px;
+	}
+
+	.api-catalog .api-catalog-cell {
+		grid-column-start: var(--api-catalog-column);
+	}
+
+	.api-catalog .api-catalog-card-parent {
+		border-bottom-left-radius: 0;
+		border-bottom-right-radius: 0;
+	}
+
+	.api-catalog .api-catalog-card-attached {
+		border-top-left-radius: 0;
+		border-top-right-radius: 0;
+	}
+
+	/* The shared border changes colour on hover. Lift the hovered card so its whole edge shows. */
+	.api-catalog .api-catalog-card-parent:hover,
+	.api-catalog .api-catalog-card-attached:hover {
+		position: relative;
+		z-index: 1;
+	}
+}
+
+/* Deployment tag: the applies_to pill look, standalone. It sits inside the card link, so it keeps the link's pointer. */
+.api-catalog .api-catalog-tag {
+	padding: 1px 8px;
+	border: 1px solid var(--color-border);
+	border-radius: 9999px;
+	background-color: var(--color-surface);
+	color: var(--color-text-muted);
+	font-size: 12px;
+	line-height: 16px;
+	white-space: nowrap;
+}
+
+.api-landing-heading {
+	display: flex;
+	align-items: center;
+	column-gap: 14px;
+}
+
+.api-landing-icon,
+.api-landing-icon svg {
+	width: auto;
+	height: 40px;
+}
+
+/* Keep the viewport scrollbar mounted. A scrollbar that appears when a
+   section expands changes the layout width and shifts both rails.
+   scrollbar-gutter does not reserve that space in current Chrome. */
+html:has(.api-page-shell) {
+	overflow-y: scroll;
+}
+
+@media (min-width: 1024px) {
+	/* The rail shrinks its cards to the viewport. Keep the request sample's
+	   height independent of which response status is selected. */
+	#api-examples-panel .api-code-card:not(.example-block--response) {
+		flex-shrink: 0;
+	}
+}
+
+/* Merged endpoint rows: dominant method, "also GET", optional segments dashed. */
+.api-url-also-method {
+	flex-shrink: 0;
+	padding: 0 6px;
+	border: 1px dashed var(--color-border-control);
+	border-radius: 999px;
+	color: var(--color-text-muted);
+	font-family: var(--font-body, Inter, ui-sans-serif, system-ui, sans-serif);
+	font-size: 11px;
+	font-weight: 500;
+	line-height: 16px;
+	white-space: nowrap;
+	cursor: help;
+}
+
+.api-url-path {
+	min-width: 0;
+}
+
+.api-url-optional {
+	border-bottom: 1.5px dashed var(--color-text-muted);
+	color: var(--color-text-muted);
+	cursor: help;
+}
+
+.api-url-optional:hover {
+	color: var(--color-heading);
+}
+
+.optional.type-status {
+	color: var(--color-text-muted);
+	padding: 0;
+	background-color: transparent;
+	border-radius: 0;
+	font-size: 13px;
+	line-height: 16px;
+}
+
+.api-path-param-optional-hint {
+	margin: 4px 0 0;
+	color: var(--color-text-muted);
+	font-size: 13px;
+}
+
+/* Examples rail: example chips over a carousel of language cards. */
+/* Small dimmed label so the chips below read as a list of examples. */
+.api-examples-heading {
+	margin: 0 0 8px;
+	color: var(--color-text-muted);
+	font-size: 12px;
+	font-weight: 600;
+	letter-spacing: 0.06em;
+	line-height: 16px;
+	text-transform: uppercase;
+}
+
+.api-example-chips-row {
+	--api-chip-height: 28px;
+	--api-chip-gap: 6px;
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--api-chip-gap);
+	margin-bottom: 12px;
+}
+
+/* Before the script has fitted the chips, show the two lines they will take: two chip heights and the gap between. */
+.api-example-chips-row:not(.is-fitted) {
+	max-height: calc(2 * var(--api-chip-height) + var(--api-chip-gap));
+	overflow: hidden;
+}
+
+/* The tablist's chips flow into the row, so the "more" button can sit at the end of the last line. */
+.api-example-chips {
+	display: contents;
+}
+
+.api-example-chip {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	max-width: calc((100% - var(--api-chip-gap)) / 2);
+	min-height: var(--api-chip-height);
+	padding: 4px 10px;
+	border: 1px solid var(--color-border);
+	border-radius: 999px;
+	background: var(--color-surface);
+	color: var(--color-heading);
+	font-size: 12.5px;
+	line-height: 18px;
+	cursor: pointer;
+}
+
+.api-example-chip:hover {
+	border-color: var(--color-border-control);
+}
+
+.api-example-chip.is-active {
+	border-color: var(--color-accent);
+	background: var(--color-accent-surface);
+	color: var(--color-accent);
+	font-weight: 600;
+}
+
+/* Inset: the rail clips its overflow, and a chip sits flush against the left edge, so an outer ring would be cut off. */
+.api-example-chip:focus-visible {
+	outline: 2px solid var(--color-accent);
+	outline-offset: -2px;
+}
+
+.api-example-chip[hidden],
+.api-example-more[hidden],
+.api-example-menu-item[hidden] {
+	display: none;
+}
+
+.api-example-chip-title {
+	min-width: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.api-example-more {
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+	padding: 4px 10px;
+	border: 1px dashed var(--color-border-control);
+	border-radius: 999px;
+	background: transparent;
+	color: var(--color-text-muted);
+	font-size: 12.5px;
+	line-height: 18px;
+	cursor: pointer;
+}
+
+.api-example-more:hover,
+.api-example-more[aria-expanded='true'] {
+	border-style: solid;
+	background: var(--color-surface);
+	color: var(--color-heading);
+}
+
+.api-example-more:focus-visible {
+	outline: 2px solid var(--color-accent);
+	outline-offset: -2px;
+}
+
+.api-example-more svg {
+	fill: currentColor;
+}
+
+/* Positioned from the "more" button in api-examples-carousel.ts; the popover UA styles centre it otherwise. */
+.api-example-menu {
+	box-sizing: border-box;
+	width: max-content;
+	max-width: min(320px, calc(100vw - 16px));
+	max-height: min(320px, 50vh);
+	margin: 0;
+	padding: 4px;
+	overflow: auto;
+	border: 1px solid var(--color-border);
+	border-radius: 8px;
+	background: var(--color-surface);
+	box-shadow: 0 6px 20px
+		color-mix(in oklab, var(--color-text) 14%, transparent);
+}
+
+/* Without popover support the menu would render as a plain block; chips alone are the fallback. */
+@supports not selector(:popover-open) {
+	.api-example-menu {
+		display: none;
+	}
+}
+
+/* Stays at the top while the examples scroll; the white shadow hides what slides under its edges. */
+.api-example-menu-filter {
+	position: sticky;
+	top: 0;
+	z-index: 1;
+	box-sizing: border-box;
+	width: 100%;
+	margin: 0 0 4px;
+	background: var(--color-surface);
+	box-shadow:
+		0 -4px 0 var(--color-surface),
+		0 4px 0 var(--color-surface);
+	padding: 6px 8px;
+	border: 1px solid var(--color-border);
+	border-radius: 6px;
+	font-size: 12.5px;
+}
+
+.api-example-menu-item {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+	width: 100%;
+	padding: 6px 8px;
+	border: 0;
+	border-radius: 6px;
+	background: transparent;
+	color: var(--color-heading);
+	font-size: 12.5px;
+	line-height: 18px;
+	text-align: left;
+	cursor: pointer;
+}
+
+.api-example-menu-item:hover,
+.api-example-menu-item:focus-visible {
+	background: var(--color-surface-sunken);
+	outline: none;
+}
+
+.api-example-chip-count {
+	display: inline-flex;
+	align-items: center;
+	gap: 3px;
+	padding: 0 6px;
+	border-radius: 999px;
+	background: var(--color-surface-sunken);
+	color: var(--color-text-muted);
+	font-size: 11px;
+	font-weight: 500;
+	line-height: 16px;
+}
+
+/* The example's description: a muted note under the chips, set apart from the code below it. */
+.api-example-description {
+	margin: 0 0 14px;
+	padding: 10px 12px;
+	border-left: 3px solid var(--color-border-control);
+	border-radius: 0 10px 10px 0;
+	background: var(--color-surface-sunken);
+	color: var(--color-text);
+	font-size: 13px;
+	line-height: 1.55;
+}
+
+.api-example-description-text {
+	display: -webkit-box;
+	-webkit-box-orient: vertical;
+	-webkit-line-clamp: 3;
+	line-clamp: 3;
+	overflow: hidden;
+}
+
+.api-example-description.is-open .api-example-description-text {
+	display: block;
+	-webkit-line-clamp: unset;
+	line-clamp: unset;
+}
+
+.api-example-description p {
+	margin: 0;
+}
+
+.api-example-description p + p {
+	margin-top: 6px;
+}
+
+.api-example-description :not(pre) > code {
+	font-size: 12px;
+}
+
+.api-example-description-toggle {
+	margin-top: 4px;
+	padding: 0;
+	border: 0;
+	background: none;
+	color: var(--color-accent);
+	font-size: 12px;
+	font-weight: 600;
+	cursor: pointer;
+}
+
+.api-example-description-toggle[hidden] {
+	display: none;
+}
+
+.api-example-description-toggle:hover {
+	text-decoration: underline;
+}
+
+.api-code-carousel {
+	margin-bottom: 24px;
+}
+
+.api-code-carousel-head {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	margin-bottom: 8px;
+}
+
+/* Says what a card is before anything else does: Request above the samples, Response above the response. */
+.api-rail-label {
+	flex-shrink: 0;
+	margin-right: 6px;
+	color: var(--color-text-muted);
+	font-size: 11px;
+	font-weight: 600;
+	letter-spacing: 0.06em;
+	line-height: 16px;
+	text-transform: uppercase;
+}
+
+.api-rail-response {
+	display: flex;
+	flex-direction: column;
+	min-height: 0;
+}
+
+.api-code-carousel-position {
+	flex: 1;
+	min-width: 0;
+	font-size: 13px;
+}
+
+.api-code-carousel-position span {
+	margin-left: 4px;
+	color: var(--color-text-muted);
+	font-size: 12px;
+}
+
+.api-code-carousel-arrow {
+	width: 28px;
+	height: 28px;
+	border: 1px solid var(--color-border);
+	border-radius: 50%;
+	background: var(--color-surface);
+	color: var(--color-heading);
+	font-size: 16px;
+	line-height: 1;
+	cursor: pointer;
+}
+
+.api-code-carousel-arrow:hover:not(:disabled) {
+	border-color: var(--color-heading);
+}
+
+.api-code-carousel-arrow:disabled {
+	opacity: 0.35;
+	cursor: default;
+}
+
+.api-code-carousel-arrow:focus-visible,
+.api-code-carousel-dot:focus-visible,
+.api-code-carousel-strip:focus-visible {
+	outline: 2px solid var(--color-accent);
+	outline-offset: 2px;
+}
+
+.api-code-carousel-strip {
+	display: flex;
+	align-items: flex-start;
+	gap: 12px;
+	overflow-x: auto;
+	scroll-snap-type: x mandatory;
+	scrollbar-width: none;
+	padding: 2px;
+}
+
+.api-code-carousel-strip::-webkit-scrollbar {
+	display: none;
+}
+
+#api-examples-panel .api-code-carousel-card {
+	flex: 0 0 86%;
+	min-width: 0;
+	margin: 0;
+	scroll-snap-align: start;
+	opacity: 0.55;
+	transform: scale(0.96);
+	transform-origin: left top;
+	transition:
+		opacity 0.25s,
+		transform 0.25s,
+		transform-origin 0.25s;
+}
+
+/* Inactive cards shrink towards the active one, so the gap beside it stays 12px on both sides. The last card
+   deliberately stops where the strip runs out, with the previous card showing beside it. */
+#api-examples-panel .api-code-carousel-card:has(~ .is-active) {
+	transform-origin: right top;
+}
+
+.api-code-carousel-card:not(.is-active) {
+	cursor: pointer;
+}
+
+/* While the remembered language is applied on load (api-examples-carousel.ts), nothing animates. */
+#api-examples-panel .is-settling .api-code-carousel-card,
+#api-examples-panel .is-settling .api-code-carousel-strip {
+	transition: none;
+}
+
+#api-examples-panel .api-code-carousel-card:not(.is-active):hover {
+	opacity: 0.8;
+}
+
+#api-examples-panel .api-code-carousel-card.is-active {
+	opacity: 1;
+	transform: none;
+}
+
+.api-code-carousel-card-header {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	height: 44px;
+	padding: 0 12px 0 14px;
+	border-bottom: 1px solid var(--api-code-border);
+	font-size: 13px;
+}
+
+/* Language and client label are different sizes, so they line up on the baseline, not by box centre. */
+.api-code-carousel-card-title {
+	display: flex;
+	align-items: baseline;
+	gap: 8px;
+	min-width: 0;
+}
+
+.api-code-carousel-card-language {
+	color: var(--api-code-text);
+	font-weight: 600;
+}
+
+.api-code-carousel-card-client {
+	min-width: 0;
+	overflow: hidden;
+	color: var(--api-code-muted);
+	font-family: var(--font-mono);
+	font-size: 11.5px;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+/* The client label links to the client's docs page; a light blue reads as a link on the dark card. */
+.markdown-content a.api-code-carousel-card-client {
+	color: var(--color-accent-border);
+	text-decoration: none;
+}
+
+.markdown-content a.api-code-carousel-card-client:hover,
+.markdown-content a.api-code-carousel-card-client:focus-visible {
+	color: var(--color-accent-border);
+	text-decoration: underline;
+}
+
+.api-code-carousel-card-actions {
+	display: flex;
+	margin-left: auto;
+}
+
+#api-examples-panel .api-code-carousel-card-body {
+	max-height: max(12rem, calc((100vh - var(--offset-top, 0px)) * 0.4));
+	overflow: auto;
+}
+
+/* At every width the strip is as tall as the active card (--api-strip-height, measured by api-examples-carousel.ts),
+   not as tall as the tallest card in the row. */
+#api-examples-panel .api-code-carousel {
+	display: flex;
+	flex: 0 1 auto;
+	flex-direction: column;
+	min-height: 0;
+	margin-bottom: 0;
+}
+
+#api-examples-panel .api-code-carousel-head,
+#api-examples-panel .api-code-carousel-dots {
+	flex: 0 0 auto;
+}
+
+#api-examples-panel .api-code-carousel-strip {
+	transition: flex-basis 0.2s ease;
+	flex: 0 1 var(--api-strip-height, auto);
+	align-items: flex-start;
+	height: auto;
+	min-height: 0;
+	overflow-y: hidden;
+}
+
+/* Expanded or dragged, the card may use the whole strip and its code scrolls, but it is not stretched
+   to fill it: a short sample keeps its own height and the spare room stays in the rail. */
+#api-examples-panel .api-code-carousel-card {
+	display: flex;
+	flex-direction: column;
+	min-height: 0;
+	max-height: 100%;
+}
+
+#api-examples-panel .api-code-carousel-card-header {
+	flex: 0 0 auto;
+}
+
+.api-code-carousel-dots {
+	display: flex;
+	flex-wrap: wrap;
+	justify-content: center;
+	gap: 6px;
+	margin-top: 10px;
+}
+
+/* A square cell so the active ring is concentric with the 22px badge: 2px ring, 2px gap, 10px radius. */
+.api-code-carousel-dot {
+	display: inline-grid;
+	place-items: center;
+	box-sizing: border-box;
+	width: 30px;
+	height: 30px;
+	padding: 0;
+	border: 2px solid transparent;
+	border-radius: 10px;
+	background: none;
+	/* Inactive dots are mostly desaturated, with a little transparency on top. */
+	filter: saturate(0.3);
+	opacity: 0.7;
+	cursor: pointer;
+	transition:
+		filter 0.2s,
+		opacity 0.2s;
+}
+
+.api-code-carousel-dot:hover,
+.api-code-carousel-dot.is-active {
+	filter: none;
+	opacity: 1;
+}
+
+.api-code-carousel-dot.is-active {
+	border-color: var(--color-accent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.api-code-carousel-card,
+	.api-code-carousel-dot,
+	#api-examples-panel .api-code-carousel-strip {
+		transition: none;
+	}
+}
+
+@media (max-width: 640px) {
+	#api-examples-panel .api-code-carousel-card {
+		flex-basis: 100%;
+	}
+}
+
+/* Full screen preview of one code block. The card button shares the header copy button's rule (code-block.css).
+   A response card offers it only while the status panel on show has code. */
+.example-block--response:not(:has([data-code-panel]:not([hidden]) pre code))
+	[data-code-preview] {
+	display: none;
+}
+
+.api-code-preview-btn:focus-visible {
+	outline: 2px solid var(--color-accent);
+	outline-offset: 2px;
+}
+
+[data-code-actions]:has(.api-code-preview-btn) {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+}
+
+/* Also an .api-code-card, which gives it the cards' border, radius and surface; position: fixed because
+   the card rule's position: relative would otherwise win over the modal's own. */
+.api-code-preview {
+	position: fixed;
+	flex-direction: column;
+	width: fit-content;
+	max-width: calc(100vw - 48px);
+	/* As tall as the code, up to the window; longer code scrolls in the body. */
+	max-height: calc(100vh - 48px);
+	/* On the optical centre rather than the geometric one: the dialog's 38.2% mark sits on the window's,
+	   so the space above and below is in the golden ratio whatever the dialog's height. */
+	top: 38.2%;
+	bottom: auto;
+	transform: translateY(-38.2%);
+	margin: 0 auto;
+	padding: 0;
+	/* Lifts the dialog off the dimmed page; cards in the rail have no shadow. */
+	box-shadow: 0 24px 64px
+		color-mix(in oklab, var(--color-text) 50%, transparent);
+}
+
+.api-code-preview[open] {
+	display: flex;
+}
+
+/* The header keeps its height when the body is capped and scrolls. */
+.api-code-preview > .api-code-carousel-card-header {
+	flex: 0 0 auto;
+}
+
+/* The page stays visible but stops competing with the code: darker, and blurred past legibility. */
+.api-code-preview::backdrop {
+	background: color-mix(in oklab, var(--color-text) 80%, transparent);
+	-webkit-backdrop-filter: blur(4px);
+	backdrop-filter: blur(4px);
+}
+
+.api-code-preview-body {
+	flex: 1;
+	min-height: 0;
+	overflow: auto;
+}
+
+/* 100 characters of code; the dialog fits around it (gutter and padding add themselves) and longer lines scroll sideways. */
+.api-code-preview-body .highlight pre code {
+	box-sizing: content-box;
+	width: 100ch;
+}
+
+/*
+ * Rail frame: from 1024px the rail is as tall as its examples, up to the viewport, and never
+ * scrolls. A short operation gets a short rail, so the rail does not stretch the row below
+ * the reference column. Example chips stay put, the request pane hugs the active sample, the
+ * response takes the rest, and only the code areas scroll.
+ */
+@media (min-width: 1024px) {
+	#api-examples-panel {
+		max-height: calc(100vh - var(--api-rail-top) - 16px);
+	}
+
+	#api-examples-panel .api-examples-panel-nav {
+		flex: 1 1 auto;
+		overflow: hidden;
+	}
+
+	#api-examples-panel .api-examples {
+		display: flex;
+		flex: 1 1 auto;
+		flex-direction: column;
+		min-height: 0;
+	}
+
+	#api-examples-panel .api-examples-heading,
+	#api-examples-panel .api-example-chips-row,
+	#api-examples-panel .api-example-description {
+		flex: 0 0 auto;
+	}
+
+	#api-examples-panel .api-examples-scenario-panel:not([hidden]) {
+		flex: 1 1 auto;
+		min-height: 0;
+	}
+
+	#api-examples-panel .api-examples-scenario-panel[hidden='until-found'] {
+		flex: 0 0 0;
+		min-height: 0;
+		overflow: hidden;
+	}
+
+	/* Each snippet is as tall as its own code, up to --api-max-lines, and the strip follows the active one
+	   (--api-strip-height, measured from the code in api-examples-carousel.ts). The response takes whatever is left.
+	   Longer code scrolls, and the expand button shows all of it. */
+	#api-examples-panel .api-rail-request {
+		--api-code-cap: calc(
+			var(--api-max-lines, 16) * var(--text-sm) * 1.5 + var(--code-pad) *
+				2
+		);
+		display: flex;
+		flex: 0 1 auto;
+		flex-direction: column;
+		min-height: 120px;
+	}
+
+	#api-examples-panel .api-rail-request > .api-code-card {
+		flex: 0 1 auto;
+		min-height: 0;
+		margin-bottom: 0;
+	}
+
+	#api-examples-panel .api-code-carousel-card-body {
+		flex: 1 1 auto;
+		max-height: var(--api-code-cap, none);
+		min-height: 0;
+		overflow: auto;
+	}
+
+	#api-examples-panel .api-code-sample-body {
+		flex: 1 1 auto;
+		max-height: var(--api-code-cap, none);
+		min-height: 0;
+	}
+
+	/* The response has its own size: as tall as its JSON up to --api-response-height, and it never shrinks.
+	   The request pane gives way instead, so the response does not change size when the language or the
+	   example code changes. */
+	#api-examples-panel {
+		--api-response-height: clamp(140px, 24vh, 300px);
+	}
+
+	#api-examples-panel .api-rail-response {
+		flex: 0 0 auto;
+	}
+
+	#api-examples-panel .api-examples-scenario-panel .example-block--response {
+		flex: 0 0 auto;
+		max-height: var(--api-response-height);
+		min-height: 0;
+		margin-bottom: 0;
+	}
+
+	#api-examples-panel .example-block--response .example-block-body {
+		flex: 1 1 auto;
+		max-height: none;
+		min-height: 0;
+	}
+}
+
+@media (max-width: 1023px) {
+	/* Below the sidebar breakpoint the rail is one section among the page's, so its heading is a section heading. */
+	#api-examples-panel .api-examples-heading {
+		margin: 0 0 16px;
+		padding: 40px 0 16px;
+		border-bottom: 1px solid var(--color-border);
+		color: var(--color-code-bg);
+		font-size: 16px;
+		font-weight: 600;
+		letter-spacing: 0;
+		line-height: 24px;
+		text-transform: none;
+	}
+}

@@ -34,6 +34,7 @@ using Elastic.Documentation.Site.Components.Prose;
 using Elastic.Documentation.Site.Components.ReleaseCard;
 using Elastic.Documentation.Site.Components.SearchDialog;
 using Elastic.Documentation.Site.Components.SearchField;
+using Elastic.Documentation.Site.Components.SearchPage;
 using Elastic.Documentation.Site.Components.SelectField;
 using Elastic.Documentation.Site.Components.SiteFooter;
 using Elastic.Documentation.Site.Components.SiteHeader;
@@ -141,7 +142,8 @@ public static class StyleGuideCatalog
 			CtaCardExamples.Ctas,
 			SiteFooterExamples.Footers,
 			FeedbackExamples.Feedbacks,
-			SearchDialogExamples.Dialogs
+			SearchDialogExamples.Dialogs,
+			SearchPageExamples.Pages
 		],
 		["cards"] = [CardExamples.Cards, LinkTileExamples.Tiles, ReleaseCardExamples.Releases],
 		["navigation"] = [BreadcrumbExamples.Trails, PagerExamples.Pagers],

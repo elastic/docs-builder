@@ -12,6 +12,28 @@
 		return Task.CompletedTask;
 	}
 }
+@if (Model.Features.NavigationPreviewEnabled)
+{
+	if (Model.BuildType == BuildType.Assembler)
+	{
+		@await RenderPartialAsync(_DesignSystemAssemblerHeader.Create(Model))
+	}
+	else
+	{
+		@await RenderPartialAsync(_DesignSystemHeader.Create(Model))
+	}
+		<div id="main-container" class="api-catalog-shell">
+		@await RenderSectionAsync(ApiCatalog.HeroSection)
+		<main id="content-container" class="api-catalog">
+			<div class="api-page-toolbar">
+				@await RenderPartialAsync(_DesignSystemApiBreadcrumbs.Create(Model))
+			</div>
+			@await RenderBodyAsync()
+		</main>
+	</div>
+	@await RenderPartialAsync(_DesignSystemFooter.Create(Model))
+	return;
+}
 @if (Model.BuildType == BuildType.Assembler)
 {
 	@(await RenderPartialAsync(_AssemblerHeader.Create(Model)))

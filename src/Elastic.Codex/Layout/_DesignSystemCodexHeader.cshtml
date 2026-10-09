@@ -1,0 +1,9 @@
+@inherits RazorSlice<Elastic.Documentation.Site.GlobalLayoutViewModel>
+@using Elastic.Documentation.Site.Components.SiteHeader
+@* The search dialog replaces the React search bar. Ask AI has no design-system version yet, so the header leaves it out. *@
+@await RenderPartialAsync(_SiteHeader.Create(new SiteHeaderModel
+{
+	Title = Model.HeaderTitle ?? Model.DocSetName,
+	HomeHref = Model.SiteLink("/"),
+	Search = true
+}))

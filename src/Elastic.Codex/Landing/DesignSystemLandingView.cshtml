@@ -1,0 +1,65 @@
+@inherits RazorSlice<Elastic.Codex.Landing.LandingViewModel>
+@using System.Linq
+@using Elastic.Codex.Landing
+@using Elastic.Codex.Navigation
+@using Elastic.Documentation.Site.Components.Link
+@implements IUsesLayout<Elastic.Codex._Layout, GlobalLayoutViewModel>
+@functions {
+	public GlobalLayoutViewModel LayoutModel => Model.CreateGlobalLayoutModel();
+}
+@{
+	var layout = LayoutModel;
+	var mcpUrl = layout.CanonicalBaseUrl is { } canonical
+		? $"{canonical.AbsoluteUri.TrimEnd('/')}/mcp"
+		: "https://codex.elastic.dev/mcp";
+	var totalGroups = Model.CodexNavigation?.GroupNavigations?.Count ?? 0;
+	var totalDocSets = Model.CodexNavigation?.DocumentationSetInfos?.Count ?? 0;
+	var totalPages = Model.CodexNavigation?.DocumentationSetInfos?.Sum(ds => ds.PageCount) ?? 0;
+	var sortedSections = Model.Groups
+		.Select(g => (sortKey: g.DisplayTitle, group: (GroupNavigation?)g, docSet: (CodexDocumentationSetInfo?)null))
+		.Concat(Model.UngroupedDocumentationSets
+			.Select(ds => (sortKey: ds.Title ?? ds.Name, group: (GroupNavigation?)null, docSet: (CodexDocumentationSetInfo?)ds)))
+		.OrderBy(x => x.sortKey, StringComparer.OrdinalIgnoreCase)
+		.ToList();
+}
+<section id="elastic-docs-v3" class="codex-landing codex-root-landing">
+	<div class="codex-hero">
+		<h1 class="codex-hero__title">@(layout.HeaderTitle ?? layout.DocSetName)</h1>
+		<p class="codex-hero__lead">Elastic's internal documentation platform. Discover docs, best practices, and resources across all teams and organizations.</p>
+		<button class="search-field search-field--trigger codex-hero__search" type="button" data-search-open hidden aria-label="Search">Search the documentation</button>
+		<p class="codex-hero__links">
+			@await RenderPartialAsync(_Link.Create(new LinkModel { Label = "Add your docs", Href = "/r/codex-environments/get-started" }))
+			@await RenderPartialAsync(_Link.Create(new LinkModel { Label = "Explore the syntax", Href = "https://elastic.github.io/docs-builder/syntax", External = true }))
+		</p>
+		<a class="codex-hero__mcp" href="/r/codex-environments/how-to/internal-docs-mcp-server" title="Connect AI assistants to search internal docs"><strong>New:</strong> @mcpUrl</a>
+	</div>
+	<p class="codex-stats"><strong>@totalGroups</strong> groups · <strong>@totalDocSets</strong> documentation sets · <strong>@totalPages.ToString("N0")</strong> pages</p>
+	<div id="codex-grid" class="codex-grid">
+		@foreach (var item in sortedSections)
+		{
+			@if (item.group is { } group)
+			{
+				<div class="codex-group@(group.DocumentationSetInfos.Count >= 2 ? " codex-group--wide" : "")">
+					<a class="codex-card codex-card--group" href="@group.Url" preload="mousedown">
+						<span class="codex-card__title">@group.DisplayTitle</span>
+						<span class="codex-card__path">/g/@group.GroupSlug</span>
+						@if (!string.IsNullOrEmpty(group.Description))
+						{
+							<span class="codex-card__description">@group.Description</span>
+						}
+					</a>
+					<div class="codex-grid codex-grid--nested">
+						@foreach (var docSet in group.DocumentationSetInfos.OrderBy(ds => ds.Title))
+						{
+							@(await RenderPartialAsync(_DesignSystemCodexCard.Create(CodexCardModel.FromDocumentationSet(docSet))))
+						}
+					</div>
+				</div>
+			}
+			else if (item.docSet is { } docSet)
+			{
+				@(await RenderPartialAsync(_DesignSystemCodexCard.Create(CodexCardModel.FromDocumentationSet(docSet))))
+			}
+		}
+	</div>
+</section>

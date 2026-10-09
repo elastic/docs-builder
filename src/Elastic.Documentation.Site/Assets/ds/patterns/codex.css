@@ -1,0 +1,183 @@
+/* The internal documentation portal: a landing of group and docset cards, and the trail back to them. */
+.codex-trail {
+	padding: var(--space-2) var(--layout-gutter);
+	border-bottom: var(--border-width) solid var(--color-border);
+	background: var(--color-surface-sunken);
+}
+
+.codex-main {
+	min-height: 60vh;
+}
+
+.codex-landing {
+	max-width: var(--layout-max);
+	margin-inline: auto;
+	padding: var(--space-6) var(--layout-gutter);
+}
+
+.codex-hero {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	max-width: 56rem;
+	margin: var(--space-6) auto;
+	text-align: center;
+}
+
+.codex-hero__title {
+	margin: 0;
+	color: var(--color-heading);
+	font-size: var(--text-5xl);
+	font-weight: var(--weight-bold);
+	line-height: var(--leading-tight);
+}
+
+.codex-hero__lead {
+	max-width: 40rem;
+	margin: var(--space-4) 0 0;
+	color: var(--color-text-muted);
+	font-size: var(--text-lg);
+}
+
+.codex-hero__search {
+	width: min(100%, 28rem);
+	margin-top: var(--space-5);
+}
+
+.codex-hero__search[hidden] {
+	display: none;
+}
+
+.codex-hero__links {
+	display: flex;
+	flex-wrap: wrap;
+	justify-content: center;
+	gap: var(--space-5);
+	margin: var(--space-5) 0 0;
+}
+
+.codex-hero__mcp {
+	margin-top: var(--space-5);
+	padding: var(--space-2) var(--space-4);
+	border: var(--border-width) solid var(--color-code-border);
+	border-radius: var(--radius-pill);
+	background: var(--color-code-bg);
+	color: var(--color-code-text);
+	font-family: var(--font-mono);
+	font-size: var(--text-sm);
+	text-decoration: none;
+}
+
+.codex-hero__mcp:hover {
+	border-color: var(--color-border-strong);
+}
+
+.codex-stats {
+	margin: 0 0 var(--space-5);
+	color: var(--color-text-muted);
+	font-size: var(--text-sm);
+	text-align: center;
+}
+
+.codex-stats strong {
+	color: var(--color-heading);
+}
+
+.codex-group-intro {
+	margin-bottom: var(--space-5);
+}
+
+.codex-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(18rem, 1fr));
+	gap: var(--space-4);
+}
+
+.codex-grid--nested {
+	margin-top: var(--space-3);
+}
+
+.codex-group {
+	padding: var(--space-3);
+	border: var(--border-width) dashed var(--color-border-strong);
+	border-radius: var(--radius-lg);
+}
+
+.codex-group--wide {
+	grid-column: 1 / -1;
+}
+
+.codex-card {
+	display: flex;
+	flex-direction: column;
+	gap: var(--space-3);
+	padding: var(--space-4);
+	border: var(--border-width) solid var(--color-border);
+	border-radius: var(--radius-md);
+	background: var(--color-surface);
+	color: var(--color-text);
+	text-decoration: none;
+	transition:
+		border-color var(--duration-fast) var(--ease-standard),
+		background-color var(--duration-fast) var(--ease-standard);
+}
+
+.codex-card:hover,
+.codex-card:focus-visible {
+	border-color: var(--color-accent);
+	background: var(--color-accent-surface);
+}
+
+.codex-card__head {
+	display: flex;
+	align-items: flex-start;
+	gap: var(--space-3);
+}
+
+.codex-card__icon {
+	flex: none;
+	padding: var(--space-2);
+	border-radius: var(--radius-sm);
+	background: var(--color-accent-surface);
+	color: var(--color-accent);
+}
+
+.codex-card__icon svg {
+	display: block;
+	width: 1rem;
+	height: 1rem;
+	fill: currentcolor;
+}
+
+.codex-card__text {
+	display: flex;
+	flex-direction: column;
+	min-width: 0;
+}
+
+.codex-card__title {
+	color: var(--color-heading);
+	font-size: var(--text-sm);
+	font-weight: var(--weight-semibold);
+}
+
+.codex-card__path {
+	color: var(--color-text-muted);
+	font-family: var(--font-mono);
+	font-size: var(--text-xs);
+}
+
+.codex-card__description {
+	display: -webkit-box;
+	overflow: hidden;
+	color: var(--color-text-muted);
+	font-size: var(--text-xs);
+	-webkit-box-orient: vertical;
+	-webkit-line-clamp: 2;
+}
+
+.codex-card__pages {
+	margin-top: auto;
+	color: var(--color-text-muted);
+	font-size: var(--text-xs);
+}

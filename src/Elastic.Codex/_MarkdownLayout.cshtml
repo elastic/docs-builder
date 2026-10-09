@@ -15,6 +15,16 @@
 		}
 	}
 }
+@if (Model.Features.NavigationPreviewEnabled)
+{
+	@await RenderPartialAsync(_DesignSystemCodexHeader.Create(Model))
+	<div id="main-container">
+		@await RenderPartialAsync(_DesignSystemCodexBreadcrumbs.Create(Model))
+		@await RenderPartialAsync(_DesignSystemShell.Create(new DesignSystemShellModel(Model, await RenderBodyAsync(), false)))
+	</div>
+	@await RenderPartialAsync(_DesignSystemCodexFooter.Create(Model))
+	return;
+}
 @(await RenderPartialAsync(_CodexHeader.Create(Model)))
 <div id="main-container" class="relative">
 	@await RenderPartialAsync(_CodexSubHeader.Create(Model))

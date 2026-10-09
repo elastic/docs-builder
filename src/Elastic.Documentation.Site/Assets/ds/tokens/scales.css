@@ -57,6 +57,19 @@
 	--header-height: 3rem;
 	--layout-max: 1440px;
 	--layout-gutter: var(--space-6);
+
+	/* The unit that older stylesheets multiply, kept so ported rules read the same. */
+	--spacing: 0.25rem;
+	--max-text-width: clamp(600px, 768px, 100%);
+	--max-sidebar-width: calc(var(--spacing) * 65);
+	--max-examples-width: calc(var(--spacing) * 110);
+	--max-api-content-width: var(--max-text-width);
+	--offset-top: var(--header-height);
+
+	--outline-size: 2px;
+	--outline-style: solid;
+	--outline-offset: 2px;
+	--outline-color: var(--color-focus-ring);
 }
 
 @media (max-width: 760px) {

@@ -114,7 +114,9 @@ public class CodexGenerator(ILoggerFactory logFactory, BuildContext context, IDi
 		if (!outputFile.Directory!.Exists)
 			outputFile.Directory.Create();
 
-		var slice = LandingView.Create(viewModel);
+		var slice = renderContext.BuildContext.Configuration.Features.NavigationPreviewEnabled
+			? DesignSystemLandingView.Create(viewModel)
+			: LandingView.Create(viewModel);
 
 		await using var stream = _writeFileSystem.FileStream.New(outputFile.FullName, FileMode.Create);
 		await slice.RenderAsync(stream, cancellationToken: ctx);
@@ -139,7 +141,9 @@ public class CodexGenerator(ILoggerFactory logFactory, BuildContext context, IDi
 			outputFile.Directory.Create();
 
 		await using var stream = _writeFileSystem.FileStream.New(outputFile.FullName, FileMode.Create);
-		var slice = GroupLandingView.Create(viewModel);
+		var slice = renderContext.BuildContext.Configuration.Features.NavigationPreviewEnabled
+			? DesignSystemGroupLandingView.Create(viewModel)
+			: GroupLandingView.Create(viewModel);
 		await slice.RenderAsync(stream, cancellationToken: ctx);
 
 		_logger.LogDebug("Generated group landing page: {Path}", outputFile.FullName);

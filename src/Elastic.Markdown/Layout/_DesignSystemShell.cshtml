@@ -1,0 +1,87 @@
+@inherits RazorSlice<Elastic.Markdown.Layout.DesignSystemShellModel>
+@using Elastic.Documentation
+@using Elastic.Documentation.Configuration.Toc
+@using Elastic.Markdown
+@using Elastic.Documentation.Site.Components.Breadcrumb
+@using Elastic.Documentation.Site.Components.CtaCard
+@using Elastic.Documentation.Site.Components.PageActions
+@using Elastic.Documentation.Site.Components.Pager
+@using Elastic.Documentation.Site.Components.Toc
+@functions {
+	private MarkdownLayoutViewModel Layout => Model.Layout;
+
+	private static string StripBadge(string title) =>
+		title.StartsWith("[ns]", StringComparison.Ordinal) ? title[4..] :
+		title.StartsWith("[cmd]", StringComparison.Ordinal) ? title[5..] : title;
+
+	private BreadcrumbModel? DesignSystemBreadcrumbs()
+	{
+		var items = Layout.Breadcrumbs;
+		if (items.Length == 0 || !(items.Length > 1 || Layout.BuildType != BuildType.Isolated))
+			return null;
+		return new BreadcrumbModel
+		{
+			Items = [.. items.Select((item, i) => i == items.Length - 1 ? new BreadcrumbItem(StripBadge(item.NavigationTitle)) : new BreadcrumbItem(StripBadge(item.NavigationTitle), item.Url))]
+		};
+	}
+
+	private bool ShowsContributionLinks => Layout.Features.PrimaryNavEnabled && Layout.BuildType != BuildType.Codex && Layout.Branding is null;
+
+	private bool ShowsCta => Layout.BuildType != BuildType.Codex && (Layout.Cta.Name != Cta.DefaultName || (Layout.BuildType == BuildType.Assembler && Layout.Branding is null));
+}
+@{
+	var hub = Model.Hub;
+	var breadcrumbs = hub ? null : DesignSystemBreadcrumbs();
+}
+<div class="docs-shell@(hub ? " docs-shell--hub" : "")">
+	<input class="docs-shell__drawer-toggle" type="checkbox" id="pages-nav-hamburger">
+	<label class="docs-shell__scrim" for="pages-nav-hamburger" aria-hidden="true"></label>
+	<aside class="docs-shell__nav" id="pages-nav">
+		@(new HtmlString(Layout.NavigationHtml))
+	</aside>
+	<div class="docs-shell__main">
+		<main id="content-container" class="docs-shell__content">
+			<label class="docs-shell__menu-button" for="pages-nav-hamburger">
+				@await RenderPartialAsync(Elastic.Documentation.Site.Components.Icon._Icon.Create(new Elastic.Documentation.Site.Components.Icon.IconModel { Name = "menu", Size = Elastic.Documentation.Site.Components.Icon.IconSize.Small }))
+				<span>Menu</span>
+			</label>
+			@if (breadcrumbs is not null)
+			{
+				@await RenderPartialAsync(_Breadcrumb.Create(breadcrumbs))
+			}
+			<article id="markdown-content" class="@(hub ? "hub-content" : "prose") min-w-0" data-pagefind-body>
+				@Model.Body
+			</article>
+			@if (!hub)
+			{
+				@await RenderPartialAsync(_DesignSystemPageFeedback.Create(Layout))
+				@await RenderPartialAsync(_Pager.Create(new PagerModel
+				{
+					Previous = Layout.Previous is { } previous ? new PagerLink(StripBadge(previous.NavigationTitle), previous.Url) : null,
+					Next = Layout.Next is { } next ? new PagerLink(StripBadge(next.NavigationTitle), next.Url) : null
+				}))
+			}
+			@if (Layout.Features.WebsiteSearchEnabled && Layout.Features.WebsiteSearchScriptUrl is not null)
+			{
+				<div id="elastic-website-search-input-container" hx-preserve="true" class="docs-shell__search"></div>
+			}
+		</main>
+		@if (!hub)
+		{
+			<aside class="docs-shell__rail">
+				@await RenderPartialAsync(_PageActions.Create(new PageActionsModel
+				{
+					MarkdownUrl = Layout.MarkdownUrl,
+					ReportIssueUrl = ShowsContributionLinks ? Layout.ReportIssueUrl : null,
+					EditUrl = !string.IsNullOrEmpty(Layout.GithubEditUrl) && !Layout.HideEditThisPage ? Layout.GithubEditUrl : null,
+					ContributeUrl = ShowsContributionLinks ? "https://www.elastic.co/docs/contribute-docs/" : null
+				}))
+				@if (ShowsCta)
+				{
+					@await RenderPartialAsync(_CtaCard.Create(new CtaCardModel { Label = Layout.Cta.Label, Url = Layout.Cta.Url, Name = Layout.Cta.Name, Benefits = [.. Layout.Cta.Benefits] }))
+				}
+				@await RenderPartialAsync(_Toc.Create(new TocModel { Items = [.. Layout.PageTocItems.Select(i => new TocItem(i.Heading, i.Slug, i.Level))] }))
+			</aside>
+		}
+	</div>
+</div>

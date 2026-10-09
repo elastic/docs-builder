@@ -1,0 +1,7 @@
+@inherits RazorSlice<Elastic.Markdown.MarkdownLayoutViewModel>
+@using Elastic.Documentation.Site.Components.Link
+<main id="content-container" class="page-message" hx-disable="true">
+	<h1 class="page-message__title">Page not found</h1>
+	<p class="page-message__text">The page you are looking for could not be found.</p>
+	@await RenderPartialAsync(_Link.Create(new LinkModel { Label = "Go back to docs home", Href = Model.Link("/"), Arrow = true }))
+</main>
