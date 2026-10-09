@@ -2,7 +2,7 @@
 <div class="split-button">
 	<a class="split-button__main" href="@Model.Href">@Model.Label</a>
 	<details class="split-button__menu" data-menu>
-		<summary class="split-button__toggle" aria-label="@Model.MenuLabel">@await RenderPartialAsync(_Icon.Create(new IconModel { Name = "arrow_down", Size = IconSize.Small }))</summary>
+		<summary class="split-button__toggle" aria-label="@Model.MenuLabel">@await RenderPartialAsync(_Icon.Create(new IconModel { Name = "chevron_single_down", Size = IconSize.Small }))</summary>
 		<ul class="split-button__list">
 			@foreach (var item in Model.Items)
 			{

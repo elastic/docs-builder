@@ -11,7 +11,7 @@
 	@foreach (var back in nav.BackLinks)
 	{
 		<a class="nav-side__back" href="@back.Url">
-			@await RenderPartialAsync(_Icon.Create(new IconModel { Name = "arrow_left", Size = IconSize.Small }))
+			@await RenderPartialAsync(_Icon.Create(new IconModel { Name = "chevron_double_left", Size = IconSize.Small }))
 			<span>@back.Title</span>
 		</a>
 	}

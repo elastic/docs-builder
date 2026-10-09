@@ -18,7 +18,7 @@
 			<li class="nav-tree__item">
 				<a class="nav-tree__link nav-tree__link--island" href="@item.Url">
 					@await RenderPartialAsync(_NavTreeLabel.Create(item))
-					@await RenderPartialAsync(_Icon.Create(new IconModel { Name = "chevron_limit_right", Size = IconSize.Small }))
+					@await RenderPartialAsync(_Icon.Create(new IconModel { Name = "chevron_double_right", Size = IconSize.Small }))
 				</a>
 			</li>
 			break;
@@ -29,7 +29,7 @@
 					<input class="nav-tree__toggle" type="checkbox" id="@item.Id" data-nav-toggle tabindex="-1" aria-hidden="true">
 					<label class="nav-tree__row nav-tree__row--heading" for="@item.Id">
 						@await RenderPartialAsync(_NavTreeLabel.Create(item))
-						@await RenderPartialAsync(_Icon.Create(new IconModel { Name = "arrow_down", Size = IconSize.Small }))
+						@await RenderPartialAsync(_Icon.Create(new IconModel { Name = "chevron_single_down", Size = IconSize.Small }))
 					</label>
 				}
 				else
@@ -52,7 +52,7 @@
 					@if (item.ShowToggle)
 					{
 						<label class="nav-tree__chevron" for="@item.Id" aria-hidden="true">
-							@await RenderPartialAsync(_Icon.Create(new IconModel { Name = "arrow_down", Size = IconSize.Small }))
+							@await RenderPartialAsync(_Icon.Create(new IconModel { Name = "chevron_single_down", Size = IconSize.Small }))
 						</label>
 					}
 				</div>

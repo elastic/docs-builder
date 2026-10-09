@@ -2,7 +2,7 @@
 <details class="link-menu" data-menu>
 	<summary class="link-menu__trigger" aria-label="@Model.Label: @Model.TriggerText">
 		<span class="link-menu__current">@Model.TriggerText</span>
-		@await RenderPartialAsync(_Icon.Create(new IconModel { Name = "arrow_down", Size = IconSize.Small }))
+		@await RenderPartialAsync(_Icon.Create(new IconModel { Name = "chevron_single_down", Size = IconSize.Small }))
 	</summary>
 	<ul class="link-menu__list">
 		@foreach (var item in Model.Items)

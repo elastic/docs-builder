@@ -15,7 +15,7 @@
 									@await RenderPartialAsync(_Icon.Create(new IconModel { Name = dropdownIcon, Size = IconSize.Small }))
 								}
 								<span>@item.Title</span>
-								@await RenderPartialAsync(_Icon.Create(new IconModel { Name = "arrow_down", Size = IconSize.Small }))
+								@await RenderPartialAsync(_Icon.Create(new IconModel { Name = "chevron_single_down", Size = IconSize.Small }))
 							</summary>
 							<div class="docs-bar__menu" aria-label="@item.Title">
 								@foreach (var group in item.Groups)

@@ -31,7 +31,7 @@
 							<option value="byte">int8</option>
 							<option value="bit">bit</option>
 						</select>
-						@await RenderPartialAsync(_Icon.Create(new IconModel { Name = "arrow_down", Size = IconSize.Small }))
+						@await RenderPartialAsync(_Icon.Create(new IconModel { Name = "chevron_single_down", Size = IconSize.Small }))
 					</div>
 					<p class="field__hint" id="@(Model.Id)-element-tip">@VectorSizingCopy.ElementType</p>
 				</div>
@@ -43,7 +43,7 @@
 							<option value="flat">Flat (brute-force)</option>
 							<option value="disk_bbq">DiskBBQ</option>
 						</select>
-						@await RenderPartialAsync(_Icon.Create(new IconModel { Name = "arrow_down", Size = IconSize.Small }))
+						@await RenderPartialAsync(_Icon.Create(new IconModel { Name = "chevron_single_down", Size = IconSize.Small }))
 					</div>
 					<p class="field__hint" id="@(Model.Id)-index-tip">@VectorSizingCopy.IndexStructure</p>
 					<p class="field__hint" id="@(Model.Id)-index-note" data-calc-index-note></p>
@@ -74,7 +74,7 @@
 						<label class="field__label" for="@(Model.Id)-quantization">Quantization</label>
 						<div class="select">
 							<select class="input select__control" id="@(Model.Id)-quantization" data-calc-quantization-select></select>
-							@await RenderPartialAsync(_Icon.Create(new IconModel { Name = "arrow_down", Size = IconSize.Small }))
+							@await RenderPartialAsync(_Icon.Create(new IconModel { Name = "chevron_single_down", Size = IconSize.Small }))
 						</div>
 						<p class="field__hint">@VectorSizingCopy.Quantization</p>
 					</div>
