@@ -205,6 +205,7 @@ public partial class ApiPropertyTreeBuilder(
 			AnchorId = row.AnchorId,
 			Depth = scope.Depth,
 			IsRequired = row.IsRequired,
+			IsNullable = _analyzer.IsNullable(propSchema),
 			IsLast = row.IsLast,
 			IsRecursive = isRecursive,
 			IsRequest = scope.IsRequest,
@@ -341,6 +342,8 @@ public partial class ApiPropertyTreeBuilder(
 		if (expansion.ArrayUnion is { } arrayUnion && (namesItsOptions || arrayUnion.Expands))
 			return null;
 
+		var discriminator = _analyzer.GetUnionDiscriminator(propSchema)?.PropertyName;
+
 		var sortedOptions = (typeInfo.UnionOptions ?? [])
 			.DistinctBy(o => o.Name)
 			.OrderByDescending(o => o.IsArray)
@@ -352,6 +355,15 @@ public partial class ApiPropertyTreeBuilder(
 			)
 			.DistinctBy(static o => o.Text)
 			.ToArray();
+
+		// Any other union whose type already reads `number | string` would only repeat it, unless the row has more to say.
+		if (
+			namesItsOptions
+			&& !expansion.HasUnionOptions
+			&& discriminator is null
+			&& NamesTheSameOptions(typeInfo.TypeName!, sortedOptions.Select(static o => o.Text))
+		)
+			return null;
 
 		if (sortedOptions.Length > 0 || expansion.HasUnionOptions)
 		{
@@ -365,7 +377,7 @@ public partial class ApiPropertyTreeBuilder(
 			{
 				Kind = UnionDisplayKind.Badges,
 				Keyword = typeInfo.UnionKeyword,
-				DiscriminatorProperty = _analyzer.GetUnionDiscriminator(propSchema)?.PropertyName,
+				DiscriminatorProperty = discriminator,
 				Badges = badges.ToArray(),
 				MoreOptions = mixed ? MoreOptionsText(typeInfo) : null
 			};
@@ -373,6 +385,10 @@ public partial class ApiPropertyTreeBuilder(
 
 		return null;
 	}
+
+	/// <summary>Whether a type formula such as <c>number | string</c> names exactly these options, in any order.</summary>
+	private static bool NamesTheSameOptions(string typeName, IEnumerable<string> options) =>
+		new HashSet<string>(typeName.Split(" | ", StringSplitOptions.TrimEntries), StringComparer.Ordinal).SetEquals(options);
 
 	/// <summary>A union with literal members as well as object variants, e.g. a sort order: <c>asc</c>, <c>desc</c> or an object.</summary>
 	private static bool MixesLiteralsWithObjects(TypeInfo typeInfo, Expansion expansion) =>

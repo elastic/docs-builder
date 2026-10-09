@@ -298,11 +298,29 @@ public class SchemaAnalyzer(
 	/// parent: <c>anyOf[anyOf[A, B], C]</c> offers A, B and C. Named unions stay one option, so cyclic references cannot recurse.
 	/// </summary>
 	private static IEnumerable<IOpenApiSchema> FlattenInlineUnions(IEnumerable<IOpenApiSchema> members) =>
-		members.SelectMany(
+		members
+		// A `{ "type": "null" }` member is no option to pick: it makes the value nullable (see IsNullable).
+		.Where(static m => !IsNullOnly(m)).SelectMany(
 			m => m is not OpenApiSchemaReference && m.Properties is not { Count: > 0 } && UnionSchemas.TryGet(m, out _, out var inner)
 				? FlattenInlineUnions(inner)
 				: [m]
 		);
+
+	private static bool IsNullOnly(IOpenApiSchema member) => member is OpenApiSchema { Type: JsonSchemaType.Null };
+
+	/// <summary>
+	/// Whether a value of <paramref name="schema"/> can be <c>null</c>: its type lists <c>null</c> (OpenAPI 3.1, or 3.0's
+	/// <c>nullable: true</c> once read), or a <c>oneOf</c>/<c>anyOf</c> member allows it. The type annotation leaves
+	/// <c>null</c> out, so the row says it with a badge instead.
+	/// </summary>
+	public bool IsNullable(IOpenApiSchema? schema)
+	{
+		var resolved = ResolveSchema(schema) ?? schema;
+		if (resolved?.Type?.HasFlag(JsonSchemaType.Null) == true)
+			return true;
+		var members = (resolved?.OneOf ?? []).Concat(resolved?.AnyOf ?? []);
+		return members.Any(m => (ResolveSchema(m) ?? m).Type?.HasFlag(JsonSchemaType.Null) == true);
+	}
 
 	/// <summary>
 	/// Whether a union option lists anything when expanded: properties of its own (an array option's come from its items),

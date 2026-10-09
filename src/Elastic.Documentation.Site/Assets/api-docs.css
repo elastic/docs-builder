@@ -1811,6 +1811,15 @@ a.type-linked:hover {
 	color: #f04e98;
 }
 
+/* Muted, unlike required: it describes the value rather than asking the reader for something. */
+.nullable-badge.type-status {
+	color: #516381;
+	padding: 0;
+	background-color: transparent;
+	font-size: 13px;
+	line-height: 16px;
+}
+
 /* Auth scheme link — compact outlined button with a leading icon */
 .api-page-intro .api-security-badges .api-auth-button {
 	display: inline-flex;

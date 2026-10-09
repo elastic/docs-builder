@@ -78,7 +78,7 @@ public class UnionOptionTests
 		var property = await PropertyAsync("node_or_count");
 
 		property.Type.Text.Should().Be("union NodeId | integer");
-		Badges(property).Should().Equal("NodeId", "integer");
+		property.Union.Should().BeNull("the type already reads NodeId | integer, so an options row would only repeat it");
 	}
 
 	[Test]

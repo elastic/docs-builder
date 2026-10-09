@@ -70,6 +70,8 @@ internal static class ApiPropertyMarkdown
 
 		if (property.IsRequest)
 			_ = markdown.Append(property.IsRequired ? " — required" : " — optional");
+		if (property.IsNullable)
+			_ = markdown.Append(" — nullable");
 		if (property.ShowDeprecatedBadge)
 			_ = markdown.Append(" — deprecated");
 		if (property.IsRecursive)
