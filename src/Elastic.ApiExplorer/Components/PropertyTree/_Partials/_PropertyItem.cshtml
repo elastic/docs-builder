@@ -28,14 +28,6 @@
 			@Model.DescriptionHtml
 		</dd>
 	}
-	@if (Model.ExternalDocs is not null)
-	{
-		<dd class="external-docs-row">
-			<a href="@Model.ExternalDocs.Url" class="docs-reference-btn" @(Model.ExternalDocs.IsElasticDocs ? "" : "target=\"_blank\" rel=\"noopener\"")>
-				@Model.ExternalDocs.LinkText
-			</a>
-		</dd>
-	}
 	@if (Model.AlsoIncludes.Count > 0)
 	{
 		<dd class="also-includes">
@@ -123,6 +115,13 @@
 		<dd class="primitive-array">
 			<span class="values-label">Array of:</span>
 			<code class="primitive-type @SchemaHelpers.TypeAtomCssClassOrNull(Model.ArrayItemTypeName)">@Model.ArrayItemTypeName</code>
+		</dd>
+	}
+	@* Indented like "show properties" and right above it, so the row's own lines stay together under the description. *@
+	@if (Model.ExternalDocs is not null)
+	{
+		<dd class="reference-link-row">
+			<a href="@Model.ExternalDocs.Url" target="@(Model.ExternalDocs.IsElasticDocs ? null : "_blank")" rel="@(Model.ExternalDocs.IsElasticDocs ? null : "noopener")">@Model.ExternalDocs.ShortLinkText</a>
 		</dd>
 	}
 	@if (Model.IsCollapsible)

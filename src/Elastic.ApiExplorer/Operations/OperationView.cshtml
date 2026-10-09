@@ -86,7 +86,7 @@
 			}
 			@if (pageModel.ExternalDocs is not null)
 			{
-				<a href="@pageModel.ExternalDocs.Url" class="docs-reference-btn" @(pageModel.ExternalDocs.IsElasticDocs ? "" : "target=\"_blank\" rel=\"noopener\"")>
+				<a href="@pageModel.ExternalDocs.Url" class="docs-reference-btn" target="@(pageModel.ExternalDocs.IsElasticDocs ? null : "_blank")" rel="@(pageModel.ExternalDocs.IsElasticDocs ? null : "noopener")">
 					@pageModel.ExternalDocs.LinkText
 				</a>
 			}
@@ -94,7 +94,7 @@
 	}
 	else if (pageModel.ExternalDocs is not null)
 	{
-		<a href="@pageModel.ExternalDocs.Url" class="docs-reference-btn" @(pageModel.ExternalDocs.IsElasticDocs ? "" : "target=\"_blank\" rel=\"noopener\"")>
+		<a href="@pageModel.ExternalDocs.Url" class="docs-reference-btn" target="@(pageModel.ExternalDocs.IsElasticDocs ? null : "_blank")" rel="@(pageModel.ExternalDocs.IsElasticDocs ? null : "noopener")">
 			@pageModel.ExternalDocs.LinkText
 		</a>
 	}
