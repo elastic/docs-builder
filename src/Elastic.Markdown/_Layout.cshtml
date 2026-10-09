@@ -23,7 +23,7 @@
 			await RenderSectionAsync(GlobalSections.Head);
 		}
 	}
-	private bool RenderHeaderAndFooter => Model.Layout is not MarkdownPageLayout.FullSearch;
+	private bool RenderHeaderAndFooter => Model.Layout is not MarkdownPageLayout.FullSearch || Model.Features.NavigationPreviewEnabled;
 
 	private async Task RenderDesignSystemPage(bool hub)
 	{
@@ -204,7 +204,14 @@
 {
 	if (Model.Features.NavigationPreviewEnabled)
 	{
-		@(await RenderPartialAsync(_DesignSystemFooter.Create(Model)))
+		if (Model.Layout is MarkdownPageLayout.Archive)
+		{
+			@(await RenderPartialAsync(_DesignSystemDarkFooter.Create(Model)))
+		}
+		else
+		{
+			@(await RenderPartialAsync(_DesignSystemFooter.Create(Model)))
+		}
 	}
 	else if (Model.BuildType == BuildType.Assembler)
 	{

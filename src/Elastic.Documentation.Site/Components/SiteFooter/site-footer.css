@@ -1,22 +1,59 @@
 .site-footer {
 	margin-top: var(--space-8);
-	background: var(--color-code-bg);
-	color: var(--color-code-text);
+	border-top: var(--border-width) solid var(--color-border);
+	background: var(--color-surface-sunken);
+	color: var(--color-text-muted);
 	font-size: var(--text-xs);
+}
+
+.site-footer--dark {
+	margin-top: 0;
+	border-top-color: var(--palette-developer-blue);
+	background: var(--palette-developer-blue);
+	color: var(--color-code-text);
 }
 
 .site-footer__inner {
 	display: flex;
-	flex-direction: column;
-	gap: var(--space-3);
+	flex-wrap: wrap;
+	align-items: center;
+	gap: var(--space-4) var(--space-6);
 	max-width: var(--layout-max);
 	margin-inline: auto;
 	padding: var(--space-6) var(--layout-gutter);
 }
 
+.site-footer__brand {
+	display: block;
+}
+
 .site-footer__logo {
 	display: block;
 	height: auto;
+}
+
+/* The two logos swap with the theme, using the same light and dark toggle pair as the colour roles. */
+.site-footer__logo--light {
+	display: var(--ds-l, block) var(--ds-d, none);
+}
+
+.site-footer__logo--dark {
+	display: var(--ds-l, none) var(--ds-d, block);
+}
+
+.site-footer__columns {
+	display: flex;
+	flex: 1;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: var(--space-3) var(--space-6);
+}
+
+.site-footer__nav {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: var(--space-3) var(--space-6);
 }
 
 .site-footer__legal {
@@ -25,34 +62,35 @@
 
 .site-footer__links {
 	display: flex;
-	gap: var(--space-4);
+	gap: var(--space-5);
 	margin: 0;
 	padding: 0;
 	list-style: none;
 }
 
 .site-footer__links a {
-	text-decoration: underline;
+	color: var(--color-heading);
+	font-weight: var(--weight-semibold);
+	text-decoration: none;
+}
+
+.site-footer--dark .site-footer__links a {
+	color: var(--palette-white);
 }
 
 .site-footer__links a:hover {
-	color: var(--color-code-keyword);
+	text-decoration: underline;
 }
 
 .site-footer__diagnostics {
 	height: 2.5rem;
 }
 
-.site-footer__columns {
-	display: grid;
-	grid-template-columns: repeat(2, minmax(0, 1fr));
-	gap: var(--space-5);
-}
-
 .site-footer__notices {
 	display: flex;
+	flex-basis: 100%;
 	flex-direction: column;
-	gap: var(--space-3);
+	gap: var(--space-2);
 }
 
 .site-footer__notices p {
@@ -64,11 +102,5 @@
 }
 
 .site-footer__link:hover {
-	color: var(--color-code-keyword);
-}
-
-@media (max-width: 760px) {
-	.site-footer__columns {
-		grid-template-columns: 1fr;
-	}
+	color: var(--color-accent);
 }

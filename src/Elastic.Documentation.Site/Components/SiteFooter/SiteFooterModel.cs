@@ -8,7 +8,16 @@ public sealed record FooterLink(string Label, string Href);
 
 public sealed record SiteFooterModel
 {
+	/// <summary>The logo for dark surfaces.</summary>
 	public required string LogoSrc { get; init; }
+
+	/// <summary>The coloured logo for light surfaces. Without it the light footer uses <see cref="LogoSrc" /> in both modes.</summary>
+	public string? ColorLogoSrc { get; init; }
+
+	/// <summary>A footer that stays dark in both themes, as on the archive and Codex pages.</summary>
+	public bool Dark { get; init; }
+
+	public string CssClass => Dark ? "site-footer site-footer--dark" : "site-footer";
 	public int Year { get; init; } = DateTime.Today.Year;
 
 	public IReadOnlyList<FooterLink> Links { get; init; } =

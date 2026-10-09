@@ -742,10 +742,8 @@
 	outline-offset: 2px;
 }
 
-@media (prefers-reduced-motion: reduce) {
-	.api-card {
-		transition: none;
-	}
+:root[data-motion='reduce'] .api-card {
+	transition: none;
 }
 
 @container api-group (min-width: 40rem) {
@@ -4178,12 +4176,10 @@ html:has(.api-page-shell) {
 	border-color: var(--color-accent);
 }
 
-@media (prefers-reduced-motion: reduce) {
-	.api-code-carousel-card,
-	.api-code-carousel-dot,
-	#api-examples-panel .api-code-carousel-strip {
-		transition: none;
-	}
+:root[data-motion='reduce'] .api-code-carousel-card,
+:root[data-motion='reduce'] .api-code-carousel-dot,
+:root[data-motion='reduce'] #api-examples-panel .api-code-carousel-strip {
+	transition: none;
 }
 
 @media (max-width: 640px) {

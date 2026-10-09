@@ -1,7 +1,16 @@
 @inherits RazorSlice<Elastic.Markdown.MarkdownLayoutViewModel>
-@using Elastic.Documentation.Site.Components.Link
+@using Elastic.Documentation.Site.Components.Button
 <main id="content-container" class="page-message" hx-disable="true">
+	<svg class="page-message__art" viewBox="0 0 160 140" width="240" height="210" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round" aria-hidden="true">
+		<rect x="20" y="30" width="116" height="76" rx="6" transform="translate(7 7)" style="fill: var(--color-border)"/>
+		<rect x="20" y="30" width="116" height="76" rx="6" style="fill: var(--color-surface)"/>
+		<rect x="20" y="30" width="116" height="16" rx="6" style="fill: var(--color-emphasis)"/>
+		<text x="78" y="88" text-anchor="middle" font-family="Inter" font-weight="800" font-size="30" stroke="none" style="fill: var(--color-accent)">404</text>
+	</svg>
 	<h1 class="page-message__title">Page not found</h1>
-	<p class="page-message__text">The page you are looking for could not be found.</p>
-	@await RenderPartialAsync(_Link.Create(new LinkModel { Label = "Go back to docs home", Href = Model.Link("/"), Arrow = true }))
+	<p class="page-message__text">The page may have moved or been renamed. Search for it, or go back to the start.</p>
+	<div class="page-message__actions">
+		@await RenderPartialAsync(_Button.Create(new ButtonModel { Label = "Go back to docs home", Href = Model.Link("/"), Variant = ButtonVariant.Primary }))
+		<button class="btn btn--secondary" type="button" data-search-open hidden>Search the docs</button>
+	</div>
 </main>

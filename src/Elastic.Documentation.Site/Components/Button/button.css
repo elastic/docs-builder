@@ -162,21 +162,16 @@
 	cursor: not-allowed;
 }
 
-@media (prefers-reduced-motion: no-preference) {
-	.btn:hover:not(:disabled) {
-		transform: translateY(-1px);
-	}
-
-	.btn:active:not(:disabled) {
-		transform: translateY(2px);
-	}
-
-	.btn--tertiary:hover,
-	.btn--tertiary:active {
-		transform: none;
-	}
-
-	.btn {
-		transition-property: box-shadow, border-color, color, transform;
-	}
+:root[data-motion='full'] .btn:hover:not(:disabled) {
+	transform: translateY(-1px);
+}
+:root[data-motion='full'] .btn:active:not(:disabled) {
+	transform: translateY(2px);
+}
+:root[data-motion='full'] .btn--tertiary:hover,
+:root[data-motion='full'] .btn--tertiary:active {
+	transform: none;
+}
+:root[data-motion='full'] .btn {
+	transition-property: box-shadow, border-color, color, transform;
 }

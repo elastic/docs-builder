@@ -13,6 +13,7 @@
 
 @import './ds/fonts.css' layer(ds.tokens);
 @import './ds/tokens/primitives.css' layer(ds.tokens);
+@import './ds/tokens/art.css' layer(ds.tokens);
 @import './ds/tokens/scales.css' layer(ds.tokens);
 @import './ds/themes/bold-minimal.css' layer(ds.theme);
 @import './ds/reset.css' layer(ds.reset);

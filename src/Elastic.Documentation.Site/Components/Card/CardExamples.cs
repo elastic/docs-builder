@@ -23,6 +23,18 @@ public static class CardExamples
 				}
 			),
 			ComponentExample.Of(
+				"Primary",
+				_Card.Create,
+				new CardModel
+				{
+					Title = "Elasticsearch",
+					Description = "Build search and analytics across structured data, logs, metrics, documents and vectors.",
+					Href = "#",
+					Icon = "search",
+					Primary = true
+				}
+			),
+			ComponentExample.Of(
 				"Compact",
 				_Card.Create,
 				new CardModel

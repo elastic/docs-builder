@@ -145,8 +145,35 @@
 	}
 }
 
-@media (max-width: 760px) and (prefers-reduced-motion: no-preference) {
-	.docs-shell__nav {
+@media (max-width: 760px) {
+	:root[data-motion='full'] .docs-shell__nav {
 		transition: translate var(--duration-base) var(--ease-standard);
 	}
+}
+
+/* A hub has no sidebar: it is a full-width page with a hero band and a wash behind the sections. */
+.docs-shell--hub {
+	display: block;
+	max-width: none;
+	padding-inline: 0;
+	background:
+		repeating-linear-gradient(
+			135deg,
+			transparent 0 22px,
+			var(--color-hatch) 22px 23px
+		),
+		var(--gradient-wash);
+}
+
+.docs-shell--hub .docs-shell__nav,
+.docs-shell--hub .docs-shell__scrim,
+.docs-shell--hub .docs-shell__menu-button {
+	display: none;
+}
+
+.docs-shell--hub .docs-shell__main,
+.docs-shell--hub .docs-shell__content {
+	display: block;
+	max-width: none;
+	padding-bottom: 0;
 }

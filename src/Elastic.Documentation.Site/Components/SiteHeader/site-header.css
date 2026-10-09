@@ -96,3 +96,36 @@
 	border-color: var(--color-accent);
 	color: var(--color-heading);
 }
+
+.site-header__theme-name {
+	color: var(--color-text-muted);
+}
+
+.site-header--dark {
+	border-bottom-color: var(--palette-developer-blue);
+	background: var(--palette-developer-blue);
+}
+
+.site-header--dark .site-header__brand,
+.site-header--dark .site-header__link {
+	color: var(--palette-white);
+}
+
+.site-header--dark .site-header__link {
+	border-color: transparent;
+}
+
+.site-header--dark .site-header__link:hover {
+	border-color: color-mix(in oklab, var(--palette-white) 55%, transparent);
+}
+
+.site-header--dark .site-header__revision,
+.site-header--dark .site-header__theme-name {
+	color: color-mix(in oklab, var(--palette-white) 70%, transparent);
+}
+
+.site-header--dark .site-header__theme {
+	border-color: color-mix(in oklab, var(--palette-white) 35%, transparent);
+	background: transparent;
+	color: var(--palette-white);
+}

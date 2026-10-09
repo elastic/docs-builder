@@ -5,6 +5,14 @@
 {
 	Title = Model.HeaderTitle ?? Model.DocSetName,
 	HomeHref = Model.SiteLink("/"),
-	Search = true
+	LogoSrc = Model.Static("logo-elastic-glyph-color.svg"),
+	Links =
+	[
+		new SiteHeaderLink("Groups", Model.SiteLink("/")),
+		new SiteHeaderLink("Add your docs", "/r/codex-environments/get-started"),
+		new SiteHeaderLink("Syntax", "https://elastic.github.io/docs-builder/syntax")
+	],
+	Search = true,
+	AskAi = true,
+	Dark = true
 }))
-@await RenderPartialAsync(Elastic.Documentation.Site.Components.AskAi._AskAi.Create(new Elastic.Documentation.Site.Components.AskAi.AskAiModel { Placeholder = "Ask me anything..." }))

@@ -345,14 +345,15 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 			});
 		}
 
-		var slice = GetStartedView.Create(new GetStartedViewModel
+		var model = new GetStartedViewModel
 		{
 			DirectiveBlock = block,
 			Title = data.Title,
 			IntroHtml = RenderInlineMarkdown(data.Intro),
 			Steps = steps,
 			SitePathPrefix = block.Build.UrlPathPrefix
-		});
+		};
+		var slice = DesignSystemDirectives.IsEnabled(block) ? GetStartedDesignView.Create(model) : GetStartedView.Create(model);
 		RenderRazorSlice(slice, renderer);
 	}
 

@@ -54,12 +54,9 @@
 	box-shadow: var(--shadow-slab);
 }
 
-@media (prefers-reduced-motion: no-preference) {
-	.release-card {
-		transition-property: border-color, box-shadow, transform;
-	}
-
-	.release-card:hover {
-		transform: translate(-3px, -3px);
-	}
+:root[data-motion='full'] .release-card {
+	transition-property: border-color, box-shadow, transform;
+}
+:root[data-motion='full'] .release-card:hover {
+	transform: translate(-3px, -3px);
 }

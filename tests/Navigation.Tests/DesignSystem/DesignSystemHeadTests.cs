@@ -25,7 +25,7 @@ public class DesignSystemHeadTests : DocumentationSetNavigationTestBase
 	{
 		var html = await RenderHead(new FeatureFlags([]), buildType);
 
-		html.Should().NotContain("ds.css").And.NotContain("ds.js").And.NotContain("docs-theme");
+		html.Should().NotContain("ds.css").And.NotContain("ds.js").And.NotContain("docs-theme").And.NotContain("docs-motion");
 		html.Should().Contain("styles.css").And.Contain("main.js");
 	}
 
@@ -36,6 +36,7 @@ public class DesignSystemHeadTests : DocumentationSetNavigationTestBase
 		var html = await RenderHead(new FeatureFlags(new Dictionary<string, bool> { ["navigation-preview"] = true }), buildType);
 
 		html.Should().Contain("ds.css").And.Contain("ds.js").And.Contain("docs-theme");
+		html.Should().Contain("docs-motion", "the head sets data-motion before first paint");
 		html.Should().NotContain("styles.css").And.NotContain("main.js");
 		html.Should().NotContain("assembler.css").And.NotContain("isolated.css").And.NotContain("codex.css");
 	}

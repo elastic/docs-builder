@@ -49,6 +49,7 @@ export function initCopyText(scope: ParentNode = document) {
         .forEach((button) => {
             if (!navigator.clipboard) return
             button.dataset.copyTextBound = ''
+            button.hidden = false
             button.addEventListener('click', async () => {
                 const text = button.dataset.copyText
                 if (!text) return

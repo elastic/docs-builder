@@ -35,12 +35,9 @@
 	box-shadow: var(--shadow-slab-sm);
 }
 
-@media (prefers-reduced-motion: no-preference) {
-	.link-tile {
-		transition-property: border-color, box-shadow, transform;
-	}
-
-	.link-tile:hover {
-		transform: translate(-2px, -2px);
-	}
+:root[data-motion='full'] .link-tile {
+	transition-property: border-color, box-shadow, transform;
+}
+:root[data-motion='full'] .link-tile:hover {
+	transform: translate(-2px, -2px);
 }

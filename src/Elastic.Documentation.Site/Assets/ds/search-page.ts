@@ -88,6 +88,7 @@ function bindSearchPage(root: HTMLElement) {
     const query = q<HTMLInputElement>('[data-search-page-query]')
     const sort = q<HTMLSelectElement>('[data-search-page-sort]')
     const status = q('[data-search-page-status]')
+    const heading = q('[data-search-page-heading]')
     const list = q('[data-search-page-results]')
     const pager = q('[data-search-page-pager]')
     const filters = q('[data-search-page-filters]')
@@ -135,6 +136,9 @@ function bindSearchPage(root: HTMLElement) {
 
     async function run() {
         query.value = state.query
+        heading.textContent = state.query
+            ? `Results for "${state.query}"`
+            : 'Search the documentation'
         sort.value = state.sort
         history.replaceState(null, '', `?${toSearch(state)}`)
         controller?.abort()

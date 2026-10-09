@@ -4,19 +4,15 @@
 	var icon = EuiSvgIcons.GetIcon(Model.Icon ?? "question", "icon") ?? EuiSvgIcons.GetIcon("question", "icon")!;
 }
 <a class="codex-card" href="@Model.Url" preload="mousedown">
-	<span class="codex-card__head">
-		<span class="codex-card__icon">@(new HtmlString(icon))</span>
-		<span class="codex-card__text">
-			<span class="codex-card__title">@Model.Title</span>
-			@if (!string.IsNullOrEmpty(Model.RepoPath))
-			{
-				<span class="codex-card__path">@Model.RepoPath</span>
-			}
-		</span>
-	</span>
+	<span class="icon-box">@(new HtmlString(icon))</span>
+	@if (!string.IsNullOrEmpty(Model.RepoPath))
+	{
+		<span class="codex-card__path">@Model.RepoPath</span>
+	}
+	<span class="codex-card__title">@Model.Title</span>
 	@if (!string.IsNullOrEmpty(Model.Description))
 	{
 		<span class="codex-card__description">@Model.Description</span>
 	}
-	<span class="codex-card__pages">@Model.PageCount pages</span>
+	<span class="codex-card__pages">@Model.PageCount.ToString("N0") pages</span>
 </a>

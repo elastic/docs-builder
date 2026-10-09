@@ -53,10 +53,8 @@
 	color: var(--color-heading);
 }
 
-@media (prefers-reduced-motion: no-preference) {
-	.toast {
-		animation: toast-in var(--duration-base) var(--ease-standard);
-	}
+:root[data-motion='full'] .toast {
+	animation: toast-in var(--duration-base) var(--ease-standard);
 }
 
 @keyframes toast-in {

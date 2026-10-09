@@ -1,5 +1,5 @@
 @inherits RazorSlice<Elastic.Documentation.Site.Components.SiteHeader.SiteHeaderModel>
-<header class="site-header" id="site-header" hx-preserve>
+<header class="@Model.CssClass" id="site-header" hx-preserve>
 	<div class="site-header__inner">
 		<a class="site-header__brand" href="@Model.HomeHref">
 			@if (Model.LogoSrc is { } logo)
@@ -27,9 +27,17 @@
 			{
 				<span class="site-header__revision">@revision</span>
 			}
+			@if (Model.AskAi)
+			{
+				@await RenderPartialAsync(_AskAi.Create(new AskAiModel { Floating = false, Placeholder = "Ask me anything..." }))
+			}
+			@if (Model.MotionToggle)
+			{
+				<button class="site-header__theme" type="button" data-motion-toggle hidden aria-label="Motion"><span class="site-header__theme-name">Motion</span> <span data-motion-label>System</span></button>
+			}
 			@if (Model.ThemeToggle)
 			{
-				<button class="site-header__theme" type="button" data-theme-toggle hidden aria-label="Theme"><span data-theme-label>System</span></button>
+				<button class="site-header__theme" type="button" data-theme-toggle hidden aria-label="Theme"><span class="site-header__theme-name">Theme</span> <span data-theme-label>System</span></button>
 			}
 		</nav>
 	</div>

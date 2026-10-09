@@ -155,8 +155,6 @@
 	background: var(--color-accent);
 }
 
-@media (prefers-reduced-motion: no-preference) {
-	.carousel__track {
-		scroll-behavior: smooth;
-	}
+:root[data-motion='full'] .carousel__track {
+	scroll-behavior: smooth;
 }

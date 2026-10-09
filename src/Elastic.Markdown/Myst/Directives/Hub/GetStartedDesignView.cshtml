@@ -1,0 +1,79 @@
+@inherits RazorSlice<Elastic.Markdown.Myst.Directives.Hub.GetStartedViewModel>
+@* The design-system Get started: one slab, a row per step. The step sits on the left; its options or its link sit in panels on the right. *@
+<section class="get-started" id="get-started">
+	<header class="get-started__head">
+		@if (!string.IsNullOrWhiteSpace(Model.Title))
+		{
+			<h2 class="get-started__heading">@Model.Title</h2>
+		}
+		@if (!string.IsNullOrWhiteSpace(Model.IntroHtml))
+		{
+			<p class="get-started__intro">@(new HtmlString(Model.IntroHtml))</p>
+		}
+	</header>
+	@if (Model.Steps.Count > 0)
+	{
+		<ol class="get-started__steps">
+			@foreach (var step in Model.Steps)
+			{
+				<li class="get-started__step">
+					<div class="get-started__lead">
+						<span class="get-started__num" aria-hidden="true">@step.Number</span>
+						<div class="get-started__text">
+							<p class="get-started__eyebrow">Step @step.Number.ToString("00")</p>
+							@if (!string.IsNullOrWhiteSpace(step.Title))
+							{
+								<h3 class="get-started__title">@step.Title</h3>
+							}
+							@if (!string.IsNullOrWhiteSpace(step.DescriptionHtml))
+							{
+								<p class="get-started__desc">@(new HtmlString(step.DescriptionHtml))</p>
+							}
+						</div>
+					</div>
+					@if (step.Options.Count > 0)
+					{
+						<div class="get-started__options">
+							@for (var i = 0; i < step.Options.Count; i++)
+							{
+								var option = step.Options[i];
+								if (i > 0)
+								{
+									<span class="get-started__or" aria-hidden="true">Or</span>
+								}
+								<div class="get-started__option@(i == 0 && step.Options.Count > 1 ? " get-started__option--lead" : "")">
+									@if (!string.IsNullOrWhiteSpace(option.Label))
+									{
+										<h4 class="get-started__option-title">@option.Label</h4>
+									}
+									@if (!string.IsNullOrWhiteSpace(option.DescriptionHtml))
+									{
+										<p class="get-started__option-desc">@(new HtmlString(option.DescriptionHtml))</p>
+									}
+									@if (!string.IsNullOrWhiteSpace(option.Code))
+									{
+										<div class="get-started__code">
+											<span class="get-started__prompt" aria-hidden="true">$</span>
+											<pre><code class="language-@(string.IsNullOrWhiteSpace(option.Language) ? "text" : option.Language)">@option.Code</code></pre>
+											<button class="get-started__copy" type="button" data-copy-text="@option.Code" hidden>Copy</button>
+										</div>
+									}
+									@if (!string.IsNullOrWhiteSpace(option.Url))
+									{
+										<a class="@(string.IsNullOrWhiteSpace(option.Code) ? "btn btn--primary btn--sm" : "get-started__link")" @Model.LinkAttributes(option.Url)>@(string.IsNullOrWhiteSpace(option.UrlLabel) ? (string.IsNullOrWhiteSpace(option.Code) ? "Get started" : "Learn more") : option.UrlLabel)</a>
+									}
+								</div>
+							}
+						</div>
+					}
+					else if (!string.IsNullOrWhiteSpace(step.Link))
+					{
+						<div class="get-started__action">
+							<a class="btn btn--secondary btn--sm" @Model.LinkAttributes(step.Link)>@(string.IsNullOrWhiteSpace(step.LinkLabel) ? "Open" : step.LinkLabel)</a>
+						</div>
+					}
+				</li>
+			}
+		</ol>
+	}
+</section>

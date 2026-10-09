@@ -18,7 +18,7 @@
 	@if (Model.Features.NavigationPreviewEnabled)
 	{
 		@* With the flag on the design system is the only bundle: it carries its own runtime, so styles.css and main.js are not loaded. *@
-		<script>try{var t=localStorage.getItem("docs-theme");if(t==="light"||t==="dark")document.documentElement.dataset.theme=t}catch(e){}</script>
+		<script>try{var t=localStorage.getItem("docs-theme");if(t==="light"||t==="dark")document.documentElement.dataset.theme=t}catch(e){}try{var m=localStorage.getItem("docs-motion");document.documentElement.dataset.motion=m==="full"||m==="reduce"?m:(matchMedia("(prefers-reduced-motion: reduce)").matches?"reduce":"full")}catch(e){document.documentElement.dataset.motion="reduce"}</script>
 		<link rel="stylesheet preload" as="style" type="text/css" href="@Model.Static("ds-layers.css")" crossorigin/>
 		<link rel="stylesheet preload" as="style" type="text/css" href="@Model.Static("ds.css")" crossorigin/>
 	}

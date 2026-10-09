@@ -1,11 +1,21 @@
 @inherits RazorSlice<Elastic.Documentation.Site.Components.SiteFooter.SiteFooterModel>
-<footer class="site-footer" hx-disable="true">
+<footer class="@Model.CssClass" hx-disable="true">
 	@if (!Model.Branded)
 	{
 		<div class="site-footer__inner">
-			<a href="https://www.elastic.co/"><img class="site-footer__logo" loading="lazy" alt="Elastic" src="@Model.LogoSrc" width="120" height="41"></a>
+			<a class="site-footer__brand" href="https://www.elastic.co/">
+				@if (!Model.Dark && Model.ColorLogoSrc is { } colorLogo)
+				{
+					<img class="site-footer__logo site-footer__logo--light" loading="lazy" alt="Elastic" src="@colorLogo" width="120" height="41">
+					<img class="site-footer__logo site-footer__logo--dark" loading="lazy" alt="" src="@Model.LogoSrc" width="120" height="41">
+				}
+				else
+				{
+					<img class="site-footer__logo" loading="lazy" alt="Elastic" src="@Model.LogoSrc" width="120" height="41">
+				}
+			</a>
 			<div class="site-footer__columns">
-				<div>
+				<div class="site-footer__nav">
 					<ul class="site-footer__links">
 						@foreach (var link in Model.Links)
 						{

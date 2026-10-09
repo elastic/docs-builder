@@ -1,16 +1,27 @@
 @inherits RazorSlice<Elastic.Documentation.Site.Components.SearchPage.SearchPageModel>
 <div class="search-page" data-search-page>
-	<form class="search-page__form" role="search" data-search-page-form>
-		<div class="field search-page__query">
-			<label class="field__label" for="@(Model.Id)-q">Search the documentation</label>
-			<input class="input" id="@(Model.Id)-q" name="q" type="search" autocomplete="off" spellcheck="false" placeholder="Search the documentation" data-search-page-query>
+	<header class="search-page__hero">
+		<div class="search-page__inner">
+			<p class="search-page__eyebrow">Search</p>
+			<h1 class="search-page__title" data-search-page-heading>Search the documentation</h1>
+			<form class="search-page__form" role="search" data-search-page-form>
+				<label class="search-page__label" for="@(Model.Id)-q">Search the documentation</label>
+				@await RenderPartialAsync(_Icon.Create(new IconModel { Name = "search", Size = IconSize.Small }))
+				<input class="search-page__input" id="@(Model.Id)-q" name="q" type="search" autocomplete="off" spellcheck="false" placeholder="Search the documentation" data-search-page-query>
+				<button class="btn btn--primary btn--sm" type="submit">Search</button>
+			</form>
 		</div>
-		<button class="btn btn--primary" type="submit">Search</button>
-	</form>
+	</header>
 	<noscript><p class="search-page__status">Search needs JavaScript.</p></noscript>
-	<div class="search-page__layout">
+	<div class="search-page__layout search-page__inner">
 		<aside class="search-page__filters" aria-label="Filters" data-search-page-filters hidden></aside>
 		<div class="search-page__main">
+			@* A question gets a streamed answer above the results. It needs the AI endpoint and script, so it stays hidden until then. *@
+			<section class="search-page__answer" data-search-page-answer hidden aria-label="AI answer">
+				<h2 class="search-page__answer-title">@await RenderPartialAsync(_Icon.Create(new IconModel { Name = "sparkles", Size = IconSize.Small }))AI answer</h2>
+				<div class="search-page__answer-body prose" data-search-page-answer-body aria-live="polite"></div>
+				<p class="search-page__answer-note">AI answers can be wrong. Check them against the results below.</p>
+			</section>
 			<div class="search-page__toolbar">
 				<p class="search-page__status" role="status" data-search-page-status>Type a search term to begin.</p>
 				<div class="field search-page__sort">
@@ -25,17 +36,11 @@
 					</div>
 				</div>
 			</div>
-			@* A question gets a streamed answer above the results. It needs the AI endpoint and script, so it stays hidden until then. *@
-			<section class="search-page__answer" data-search-page-answer hidden aria-label="AI answer">
-				<h2 class="search-page__answer-title">AI answer</h2>
-				<div class="search-page__answer-body prose" data-search-page-answer-body aria-live="polite"></div>
-				<p class="search-page__answer-note">AI answers can be wrong. Check them against the results below.</p>
-			</section>
 			<ol class="search-page__results" data-search-page-results></ol>
 			<nav class="search-page__pager" aria-label="Pagination" data-search-page-pager hidden>
-				<button class="btn btn--tertiary btn--sm" type="button" data-search-page-prev>Previous</button>
+				<button class="btn btn--secondary" type="button" data-search-page-prev>Previous</button>
 				<span class="search-page__page" data-search-page-page></span>
-				<button class="btn btn--tertiary btn--sm" type="button" data-search-page-next>Next</button>
+				<button class="btn btn--secondary" type="button" data-search-page-next>Next</button>
 			</nav>
 		</div>
 	</div>

@@ -1,17 +1,30 @@
 @inherits RazorSlice<Elastic.Markdown.MarkdownLayoutViewModel>
-@using Elastic.Documentation.Site.Components.Link
+@using Elastic.Documentation.Site.Components.Button
+@using Elastic.Documentation.Site.Components.Icon
 <main id="content-container" class="archive">
-	<header class="archive__intro">
+	<header class="archive__hero">
+		<p class="archive__eyebrow">Previous versions</p>
 		<h1 class="archive__title">Archive</h1>
-		<p>Browse the archived documentation for older Elastic product releases.<br>Archived documentation is unmaintained and may be out-of-date.</p>
+		<p class="archive__lead">Browse the archived documentation for older Elastic product releases. Archived documentation is unmaintained and may be out-of-date.</p>
+		<svg class="archive__art" viewBox="0 0 220 100" width="220" height="100" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round" aria-hidden="true">
+			<rect x="22" y="22" width="150" height="46" rx="6" transform="translate(7 7)" style="fill: var(--color-border)"/>
+			<rect x="22" y="22" width="150" height="46" rx="6" style="fill: var(--color-accent)"/>
+			<path d="M44 22l14-14h70l16 14" style="fill: var(--color-surface)"/>
+			<circle cx="56" cy="76" r="10" style="fill: var(--color-emphasis)"/>
+			<circle cx="142" cy="76" r="10" style="fill: var(--color-emphasis)"/>
+			<path d="M40 44h60" stroke-width="2" style="stroke: var(--color-surface)"/>
+		</svg>
 	</header>
-	<ul class="archive__list">
-		@foreach (var (url, title) in ArchiveLinks.All)
-		{
-			<li><a href="@url" target="_blank" rel="noopener noreferrer">@title</a></li>
-		}
-	</ul>
-	<p class="archive__home">
-		@await RenderPartialAsync(_Link.Create(new LinkModel { Label = "Go to current documentation", Href = Model.Link("/"), Arrow = true }))
-	</p>
+	<section class="archive__panel">
+		<div class="archive__inner">
+			<h2 class="archive__heading">Choose a version</h2>
+			<ul class="archive__list">
+				@foreach (var (url, title) in ArchiveLinks.All)
+				{
+					<li><a href="@url" target="_blank" rel="noopener noreferrer"><span>@title</span>@await RenderPartialAsync(_Icon.Create(new IconModel { Name = "arrow_right", Size = IconSize.Small }))</a></li>
+				}
+			</ul>
+			<p class="archive__home">@await RenderPartialAsync(_Button.Create(new ButtonModel { Label = "Go to current documentation", Href = Model.Link("/"), Variant = ButtonVariant.Secondary }))</p>
+		</div>
+	</section>
 </main>

@@ -72,6 +72,27 @@
 		var(--ds-d, #2c3c6b);
 	--color-on-emphasis: var(--palette-teal);
 
+	/* Page-level washes: the hero band and the pastel field behind landing, hub and Codex pages. */
+	--gradient-hero: linear-gradient(
+		180deg,
+		var(--palette-developer-blue),
+		var(--palette-elastic-blue)
+	);
+	--gradient-wash: var(
+			--ds-l,
+			linear-gradient(
+				180deg,
+				#edf2fb 0%,
+				#dde8f8 30%,
+				#eeebf8 55%,
+				#e2f1f3 78%,
+				#edf2fb 100%
+			)
+		)
+		var(--ds-d, linear-gradient(180deg, #101c3f 0%, #0c1634 100%));
+	--color-hatch: var(--ds-l, rgb(16 28 63 / 4%))
+		var(--ds-d, rgb(255 255 255 / 3%));
+
 	/* Code stays a dark panel in both modes; only its depth changes. */
 	--color-code-bg: var(--ds-l, var(--palette-developer-blue))
 		var(--ds-d, #0a1330);

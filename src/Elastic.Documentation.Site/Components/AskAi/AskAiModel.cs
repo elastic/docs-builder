@@ -13,6 +13,9 @@ public sealed record AskAiModel
 	/// <summary>Prefix for element ids.</summary>
 	public string Id { get; init; } = "ask-ai";
 
+	/// <summary>A button fixed to the corner of the page. Turn it off to place the button inside the header.</summary>
+	public bool Floating { get; init; } = true;
+
 	public string Title { get; init; } = "Ask AI";
 	public string Placeholder { get; init; } = "Ask the Elastic Docs AI Assistant";
 }

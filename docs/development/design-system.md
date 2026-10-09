@@ -94,12 +94,13 @@ With the flag on, these layouts also use design-system markup:
 
 | Layout | Notes |
 |---|---|
-| Landing, 404, archive | Page patterns in `Assets/ds/patterns/pages.css`. The archive drops the animated easter egg, which flashed colour |
 | Full-page search | The `SearchPage` component: a form, facets and results drawn by script from the same search API as the dialog. Questions also get a streamed AI answer above the results, from the same endpoint as Ask AI |
 | Codex | The same shell as documentation pages, with the search dialog in the header and landing pages built from `codex-card` markup |
 | API reference | The documentation shell with the API switchers above the tree as link menus, a jump field that filters the tree, and `api-reference.css`, the previous API styles ported onto tokens |
+| Hub | A full-bleed hero band on the gradient with the cluster art, a pastel page wash behind the sections, no sidebar, and a Get started slab built from `GetStartedDesignView.cshtml`. Compare against the Hub board in the design zip |
+| Landing, archive, 404, Codex landing, search | Built to the Landing, Archive, NotFound, Codex and Search boards. The footer is light by default and dark on archive and Codex pages, and the Codex header is a dark band |
 
-`Elastic.Markdown/Layout/_DesignSystemShell.cshtml` is the one place that composes the shell, so documentation and Codex pages share it.
+`Elastic.Markdown/Layout/_DesignSystemShellStart.cshtml` and `_DesignSystemShellEnd.cshtml` are the one place that composes the shell, so documentation and Codex pages share it. They are two partials because a layout writes its body in place, so the body is rendered between them.
 
 ## Page layout
 

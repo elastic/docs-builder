@@ -101,12 +101,21 @@
 	height: 2.5rem;
 }
 
-@media (prefers-reduced-motion: no-preference) {
-	.card {
-		transition-property: border-color, box-shadow, transform;
-	}
+:root[data-motion='full'] .card {
+	transition-property: border-color, box-shadow, transform;
+}
+:root[data-motion='full'] .card:hover {
+	transform: translate(-3px, -3px);
+}
 
-	.card:hover {
-		transform: translate(-3px, -3px);
-	}
+.card--primary .icon-box {
+	border-color: var(--color-emphasis);
+	background: var(--color-emphasis);
+	color: var(--color-on-emphasis);
+}
+
+.icon-box--dark {
+	border-color: var(--color-emphasis);
+	background: var(--color-emphasis);
+	color: var(--color-on-emphasis);
 }

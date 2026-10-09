@@ -15,5 +15,14 @@ public sealed record CardModel
 	/// <summary>Puts the icon beside the title and tightens the padding.</summary>
 	public bool Compact { get; init; }
 
-	public string CssClass => Compact ? "card card--compact" : "card";
+	/// <summary>The dark icon box used for the main entries on a landing page.</summary>
+	public bool Primary { get; init; }
+
+	public string CssClass => (Compact, Primary) switch
+	{
+		(true, true) => "card card--compact card--primary",
+		(true, false) => "card card--compact",
+		(false, true) => "card card--primary",
+		_ => "card"
+	};
 }

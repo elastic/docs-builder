@@ -62,6 +62,7 @@ describe('questions', () => {
 describe('search page', () => {
     const markup = `
 <div data-search-page>
+  <h1 data-search-page-heading></h1>
   <form data-search-page-form><input data-search-page-query></form>
   <aside data-search-page-filters hidden></aside>
   <p data-search-page-status></p>
@@ -99,6 +100,9 @@ describe('search page', () => {
         initSearchPage()
         await new Promise((r) => setTimeout(r, 0))
 
+        expect(
+            document.querySelector('[data-search-page-heading]')!.textContent
+        ).toBe('Results for "shards"')
         expect(
             document.querySelector('[data-search-page-status]')!.textContent
         ).toBe('41 results.')

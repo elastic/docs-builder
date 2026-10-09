@@ -185,3 +185,7 @@
 	border-color: var(--color-accent);
 	color: var(--color-accent);
 }
+
+.ask-ai__open--inline {
+	position: static;
+}

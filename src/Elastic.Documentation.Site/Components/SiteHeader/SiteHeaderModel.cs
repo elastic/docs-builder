@@ -20,6 +20,17 @@ public sealed record SiteHeaderModel
 	/// <summary>Adds a button that cycles system, light and dark. It stays hidden until script can store the choice.</summary>
 	public bool ThemeToggle { get; init; } = true;
 
+	/// <summary>Adds a button that cycles system, reduced and full motion, so large movement can be previewed or switched off whatever the system says.</summary>
+	public bool MotionToggle { get; init; } = true;
+
+	/// <summary>A dark band, as the Codex header on the boards.</summary>
+	public bool Dark { get; init; }
+
+	public string CssClass => Dark ? "site-header site-header--dark" : "site-header";
+
+	/// <summary>Adds the Ask AI button and panel to the header.</summary>
+	public bool AskAi { get; init; }
+
 	public string? LogoSrc { get; init; }
 	public IReadOnlyList<SiteHeaderLink> Links { get; init; } = [];
 

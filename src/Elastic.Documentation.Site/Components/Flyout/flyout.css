@@ -53,10 +53,8 @@
 }
 
 /* The slide is large movement, so it only runs when the reader hasn't asked for reduced motion. */
-@media (prefers-reduced-motion: no-preference) {
-	.flyout[open] {
-		animation: flyout-in var(--duration-base) var(--ease-standard);
-	}
+:root[data-motion='full'] .flyout[open] {
+	animation: flyout-in var(--duration-base) var(--ease-standard);
 }
 
 @keyframes flyout-in {

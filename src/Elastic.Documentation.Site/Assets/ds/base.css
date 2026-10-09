@@ -38,9 +38,8 @@ samp {
 	font-family: var(--font-mono);
 }
 
-@media (prefers-reduced-motion: reduce) {
-	/* Reduced, not removed: colour and focus changes stay; large movement is opted into per component with no-preference. */
+:root[data-motion='reduce'] /* Reduced,
+:root[data-motion='reduce'] not removed: colour and focus changes stay; large movement is opted into per component with no-preference. */
 	html {
-		scroll-behavior: auto;
-	}
+	scroll-behavior: auto;
 }
