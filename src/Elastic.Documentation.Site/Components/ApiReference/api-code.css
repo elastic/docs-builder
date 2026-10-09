@@ -185,3 +185,8 @@ button.copybtn svg {
 .simple-scrollbar {
 	scrollbar-width: thin;
 }
+
+/* Product marks mark the parts that must contrast with the background; they follow the heading colour. */
+.euiIcon__fillNegative {
+	fill: var(--color-heading);
+}

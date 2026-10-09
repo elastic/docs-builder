@@ -86,3 +86,4 @@
 @import '../Components/EmptyState/empty-state.css' layer(ds.components);
 @import '../Components/Flyout/flyout.css' layer(ds.components);
 @import '../Components/AskAi/ask-ai.css' layer(ds.components);
+@import './ds/tokens/language-icons.css' layer(ds.components);
