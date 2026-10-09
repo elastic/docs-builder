@@ -156,22 +156,50 @@
 	clip-path: inset(50%);
 }
 
-.ask-ai__input {
-	resize: vertical;
-}
-
-.ask-ai__actions {
+.ask-ai__field {
 	display: flex;
 	align-items: center;
-	gap: var(--space-3);
+	gap: var(--space-2);
 }
 
-.ask-ai__actions [hidden] {
+.ask-ai__field [hidden] {
 	display: none;
 }
 
-.ask-ai__legal {
+.ask-ai__input {
 	flex: 1;
+	min-height: 2.75rem;
+	resize: none;
+}
+
+.ask-ai__send {
+	display: inline-flex;
+	flex: none;
+	align-items: center;
+	justify-content: center;
+	width: 2.75rem;
+	height: 2.75rem;
+	padding: 0;
+	border: var(--border-width) solid var(--color-border-control);
+	border-radius: var(--radius-md);
+	background: var(--color-surface);
+	color: var(--color-accent);
+	cursor: pointer;
+	transition:
+		border-color var(--duration-fast) var(--ease-standard),
+		color var(--duration-fast) var(--ease-standard);
+}
+
+.ask-ai__send:hover {
+	border-color: var(--color-accent);
+}
+
+.ask-ai__send:focus-visible {
+	outline: 3px solid var(--color-focus-ring);
+	outline-offset: 2px;
+}
+
+.ask-ai__legal {
 	margin: 0;
 	color: var(--color-text-muted);
 	font-size: var(--text-xs);

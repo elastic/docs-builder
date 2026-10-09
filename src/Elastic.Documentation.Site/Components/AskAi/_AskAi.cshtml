@@ -17,12 +17,12 @@
 	</div>
 	<form class="ask-ai__form" data-ask-ai-form>
 		<label class="ask-ai__label" for="@(Model.Id)-input">Message</label>
-		<textarea class="input ask-ai__input" id="@(Model.Id)-input" name="message" rows="2" placeholder="@Model.Placeholder" data-ask-ai-input required></textarea>
-		<div class="ask-ai__actions">
-			<p class="ask-ai__legal">AI answers can be wrong. Check them against the documentation.</p>
-			<button class="btn btn--primary btn--sm" type="submit" data-ask-ai-send>Send</button>
+		<div class="ask-ai__field">
+			<textarea class="input ask-ai__input" id="@(Model.Id)-input" name="message" rows="1" placeholder="@Model.Placeholder" data-ask-ai-input required></textarea>
+			<button class="ask-ai__send" type="submit" data-ask-ai-send aria-label="Send">@await RenderPartialAsync(_Icon.Create(new IconModel { Name = "arrow_right", Size = IconSize.Small }))</button>
 			<button class="btn btn--secondary btn--sm" type="button" data-ask-ai-stop hidden>Stop</button>
 		</div>
+		<p class="ask-ai__legal">AI answers can be wrong. Check them against the documentation.</p>
 	</form>
 	<template data-ask-ai-message>
 		<li class="ask-ai__message">

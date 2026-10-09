@@ -116,6 +116,7 @@
 	color: var(--color-text-muted);
 }
 
+.nav-tree__link--external > .icon,
 .nav-tree__link--island > .icon {
 	margin-left: auto;
 	color: var(--color-text-muted);

@@ -9,9 +9,19 @@
 			break;
 		case NavigationRenderNodeKind.Leaf:
 			<li class="nav-tree__item">
-				<a class="nav-tree__link" href="@item.Url"@(item.Url.Contains('#') ? new HtmlString(" hx-boost=\"false\"") : HtmlString.Empty)>
-					@await RenderPartialAsync(_NavTreeLabel.Create(item))
-				</a>
+				@if (item.Url.StartsWith("http", StringComparison.OrdinalIgnoreCase))
+				{
+					<a class="nav-tree__link nav-tree__link--external" href="@item.Url" rel="noopener" target="_blank">
+						@await RenderPartialAsync(_NavTreeLabel.Create(item))
+						@await RenderPartialAsync(_Icon.Create(new IconModel { Name = "external", Size = IconSize.Small }))
+					</a>
+				}
+				else
+				{
+					<a class="nav-tree__link" href="@item.Url"@(item.Url.Contains('#') ? new HtmlString(" hx-boost=\"false\"") : HtmlString.Empty)>
+						@await RenderPartialAsync(_NavTreeLabel.Create(item))
+					</a>
+				}
 			</li>
 			break;
 		case NavigationRenderNodeKind.Island:

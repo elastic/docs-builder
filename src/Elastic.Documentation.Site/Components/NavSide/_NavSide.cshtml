@@ -17,7 +17,7 @@
 	}
 	@if (nav.TreeHeading is { } heading)
 	{
-		<p class="nav-side__heading">@heading</p>
+		<p class="nav-side__heading@(nav.BackLinks.Count > 0 ? " nav-side__heading--island" : "")">@heading</p>
 	}
 	<nav class="nav-side__scroll" aria-label="Documentation">
 		<ul class="nav-tree" id="nav-tree-@nav.ContentHash">
