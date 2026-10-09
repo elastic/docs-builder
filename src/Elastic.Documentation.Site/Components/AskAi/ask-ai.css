@@ -153,3 +153,35 @@
 	color: var(--color-text-muted);
 	font-size: var(--text-xs);
 }
+
+.ask-ai__references {
+	margin: var(--space-3) 0 0;
+	padding-left: var(--space-5);
+	font-size: var(--text-sm);
+}
+
+.ask-ai__feedback {
+	display: flex;
+	gap: var(--space-2);
+	margin-top: var(--space-2);
+}
+
+.ask-ai__reaction {
+	padding: var(--space-1) var(--space-2);
+	border: var(--border-width) solid var(--color-border-control);
+	border-radius: var(--radius-pill);
+	background: var(--color-surface);
+	color: var(--color-text-muted);
+	font: inherit;
+	font-size: var(--text-xs);
+	cursor: pointer;
+	transition:
+		border-color var(--duration-fast) var(--ease-standard),
+		color var(--duration-fast) var(--ease-standard);
+}
+
+.ask-ai__reaction:hover,
+.ask-ai__reaction[aria-pressed='true'] {
+	border-color: var(--color-accent);
+	color: var(--color-accent);
+}

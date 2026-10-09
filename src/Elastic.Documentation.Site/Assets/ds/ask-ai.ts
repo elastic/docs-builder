@@ -125,6 +125,8 @@ const historyKey = 'ask-ai-conversation'
 interface StoredMessage {
     role: 'user' | 'assistant'
     text: string
+    id?: string
+    reaction?: Reaction
 }
 
 interface StoredConversation {
@@ -150,6 +152,81 @@ function writeConversation(conversation: StoredConversation) {
     } catch {
         // storage unavailable: the conversation just isn't remembered
     }
+}
+
+export interface Reference {
+    url: string
+    title: string
+    description: string
+}
+
+/** Splits the answer from the references the assistant appends as a comment. A reference block still streaming is hidden, not shown as text. */
+export function splitReferences(content: string): {
+    main: string
+    references: Reference[]
+} {
+    const start = content.indexOf('<!--REFERENCES')
+    if (start === -1) return { main: content, references: [] }
+    const end = content.indexOf('-->', start)
+    const main = content.substring(0, start).trim()
+    if (end === -1) return { main, references: [] }
+    let json = content.substring(start + '<!--REFERENCES'.length, end).trim()
+    json = json
+        .replace(/^```(json)?/, '')
+        .replace(/```$/, '')
+        .trim()
+    try {
+        const parsed: unknown = JSON.parse(json)
+        return {
+            main,
+            references: Array.isArray(parsed)
+                ? (parsed as Reference[]).filter(
+                      (r) =>
+                          typeof r.url === 'string' &&
+                          typeof r.title === 'string'
+                  )
+                : [],
+        }
+    } catch {
+        return { main, references: [] }
+    }
+}
+
+export type Reaction = 'thumbsUp' | 'thumbsDown'
+
+export async function sendReaction(
+    messageId: string,
+    conversationId: string,
+    reaction: Reaction
+): Promise<void> {
+    await fetch(`${config.apiBasePath}/v1/ask-ai/message-feedback`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ messageId, conversationId, reaction }),
+    })
+}
+
+/** Draws an answer: sanitized Markdown, then the references as links. Safe to call again as more text arrives. */
+export function drawAnswer(body: HTMLElement, content: string) {
+    const { main, references } = splitReferences(content)
+    body.innerHTML = renderAnswer(main)
+    if (references.length === 0) return
+    const list = document.createElement('ul')
+    list.className = 'ask-ai__references'
+    references.forEach((reference) => {
+        const item = document.createElement('li')
+        const link = document.createElement('a')
+        link.href = reference.url
+        link.textContent = reference.title
+        item.append(link)
+        if (reference.description) {
+            const description = document.createElement('span')
+            description.textContent = ` ${reference.description}`
+            item.append(description)
+        }
+        list.append(item)
+    })
+    body.append(list)
 }
 
 export function renderAnswer(markdown: string): string {
@@ -240,6 +317,45 @@ function bindAskAi(dialog: HTMLDialogElement, stream: AskAiStream) {
     })
     if (history.length > 0) intro.hidden = true
 
+    // Thumbs under a finished answer. The choice is kept with the conversation and sent once per change.
+    function addFeedback(item: HTMLElement, messageId?: string) {
+        if (!messageId || item.querySelector('.ask-ai__feedback')) return
+        const stored = history.find((m) => m.id === messageId)
+        const row = document.createElement('div')
+        row.className = 'ask-ai__feedback'
+        row.setAttribute('role', 'group')
+        row.setAttribute('aria-label', 'Was this answer helpful?')
+        ;(
+            [
+                ['thumbsUp', 'Helpful'],
+                ['thumbsDown', 'Not helpful'],
+            ] as const
+        ).forEach(([reaction, label]) => {
+            const button = document.createElement('button')
+            button.type = 'button'
+            button.className = 'ask-ai__reaction'
+            button.textContent = label
+            button.setAttribute(
+                'aria-pressed',
+                String(stored?.reaction === reaction)
+            )
+            button.addEventListener('click', () => {
+                if (!conversationId || !stored || stored.reaction === reaction)
+                    return
+                stored.reaction = reaction
+                row.querySelectorAll('button').forEach((b) =>
+                    b.setAttribute('aria-pressed', String(b === button))
+                )
+                save()
+                void sendReaction(messageId, conversationId, reaction).catch(
+                    () => undefined
+                )
+            })
+            row.append(button)
+        })
+        item.append(row)
+    }
+
     function setBusy(busy: boolean) {
         send.hidden = busy
         stop.hidden = !busy
@@ -278,14 +394,14 @@ function bindAskAi(dialog: HTMLDialogElement, stream: AskAiStream) {
                     else if (event.type === 'message_chunk') {
                         received += event.content ?? ''
                         delete answer.item.dataset.state
-                        answer.body.innerHTML = renderAnswer(received)
+                        drawAnswer(answer.body, received)
                     } else if (
                         event.type === 'message_complete' &&
                         event.fullContent
                     ) {
                         received = event.fullContent
                         delete answer.item.dataset.state
-                        answer.body.innerHTML = renderAnswer(received)
+                        drawAnswer(answer.body, received)
                     } else if (event.type === 'error')
                         fail(event.message ?? 'Something went wrong.')
                 },
@@ -307,8 +423,12 @@ function bindAskAi(dialog: HTMLDialogElement, stream: AskAiStream) {
                 if (!answer.body.textContent)
                     answer.body.textContent = 'Stopped.'
             }
-            if (received) history.push({ role: 'assistant', text: received })
-            else history.pop()
+            if (received) {
+                const id =
+                    globalThis.crypto?.randomUUID?.() ?? `m-${Date.now()}`
+                history.push({ role: 'assistant', text: received, id })
+                addFeedback(answer.item, id)
+            } else history.pop()
             save()
             controller = null
             setBusy(false)

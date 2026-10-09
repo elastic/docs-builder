@@ -2,6 +2,7 @@ import {
     initAskAi,
     rateLimitMessage,
     renderAnswer,
+    splitReferences,
     streamAnswer,
     type AskAiStream,
 } from './ask-ai'
@@ -215,5 +216,64 @@ describe('conversation history', () => {
 
         document.querySelector<HTMLButtonElement>('[data-ask-ai-new]')!.click()
         expect(sessionStorage.getItem('ask-ai-conversation')).toBeNull()
+    })
+})
+
+describe('references and feedback', () => {
+    beforeEach(() => sessionStorage.clear())
+
+    it('splits references from the answer and hides an unfinished block', () => {
+        const done = splitReferences(
+            'Answer\n<!--REFERENCES [{"url":"/a","title":"A","description":"d"}] -->'
+        )
+        expect(done.main).toBe('Answer')
+        expect(done.references).toEqual([
+            { url: '/a', title: 'A', description: 'd' },
+        ])
+
+        expect(splitReferences('Answer <!--REFERENCES [{"url"')).toEqual({
+            main: 'Answer',
+            references: [],
+        })
+        expect(
+            splitReferences('Answer <!--REFERENCES nope -->').references
+        ).toEqual([])
+    })
+
+    it('lists references as links and sends a reaction once', async () => {
+        global.fetch = jest
+            .fn()
+            .mockResolvedValue({ ok: true }) as unknown as typeof fetch
+        setup(async (request) => {
+            request.onEvent({
+                type: 'conversation_start',
+                conversationId: 'c1',
+            })
+            request.onEvent({
+                type: 'message_complete',
+                fullContent:
+                    'Use a data stream.\n<!--REFERENCES [{"url":"/ds","title":"Data streams","description":""}] -->',
+            })
+        })
+        submit('How do I index logs?')
+        await flush()
+
+        expect(
+            document
+                .querySelector('.ask-ai__references a')!
+                .getAttribute('href')
+        ).toBe('/ds')
+        const [up] = Array.from(
+            document.querySelectorAll<HTMLButtonElement>('.ask-ai__reaction')
+        )
+        up.click()
+        up.click()
+
+        expect(up.getAttribute('aria-pressed')).toBe('true')
+        expect(global.fetch).toHaveBeenCalledTimes(1)
+        expect(
+            JSON.parse((global.fetch as jest.Mock).mock.calls[0][1].body)
+                .reaction
+        ).toBe('thumbsUp')
     })
 })
