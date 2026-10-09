@@ -66,6 +66,27 @@ public class UnionOptionsRenderingTests
 		html.Should().Contain("""id="opts-menu" class="api-example-menu simple-scrollbar" popover="auto" data-chip-menu>""");
 	}
 
+	[Test]
+	public async Task Render_SharedNameSuffix_IsTrimmedFromChipsAndMenuEntries()
+	{
+		var variants = new ApiUnionVariants
+		{
+			Variants = new[] { "bedrock_config", "email_config", "jira_config" }.Select(
+				(name, i) => Variant(i, foldable: false) with { DisplayName = name, IsArrayVariant = false, DiscriminatorLabel = null }
+			).ToArray(),
+			ContainerId = "opts"
+		};
+		var html = await _UnionOptions.Create(variants).RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
+		html = string.Join(' ', html.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries));
+
+		html.Should().Contain("""title="bedrock_config"> <span class="api-example-chip-title" data-chip-title>bedrock</span>""");
+		html.Should().Contain(
+			"""title="bedrock_config" hidden> <span class="api-example-menu-item-title" data-chip-item-title>bedrock</span>""",
+			"the menu reads like the chips"
+		);
+		html.Should().NotContain(">bedrock_config<", "the full name stays only as the tooltip");
+	}
+
 	private static async Task<string> Render(int count, bool foldable = false)
 	{
 		var variants = new ApiUnionVariants

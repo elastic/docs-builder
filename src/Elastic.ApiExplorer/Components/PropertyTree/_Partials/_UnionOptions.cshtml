@@ -6,8 +6,9 @@
 		return;
 	}
 	var menuId = $"{Model.ContainerId}-menu";
-	// Chips drop the words every variant name shares (bedrock_secrets → bedrock); the menu keeps the full names.
+	// Chips and menu entries drop the words every variant name shares (bedrock_secrets → bedrock); the full name stays as their tooltip.
 	var chipLabels = Model.UseChips ? ChipLabels.Shorten([.. Model.Variants.Select(static v => v.DisplayName)]) : [];
+	string ChipLabel(int i) => Model.Variants[i].IsArrayVariant ? $"{chipLabels[i]}[]" : chipLabels[i];
 }
 @if (Model.Label is { Length: > 0 } unionLabel)
 {
@@ -23,7 +24,7 @@
 				@for (var i = 0; i < Model.Variants.Count; i++)
 				{
 					var variant = Model.Variants[i];
-					var chipLabel = variant.IsArrayVariant ? $"{chipLabels[i]}[]" : chipLabels[i];
+					var chipLabel = ChipLabel(i);
 					<button
 						type="button"
 						role="tab"
@@ -46,10 +47,12 @@
 					<input type="search" class="api-example-menu-filter" data-chip-filter placeholder="Filter variants" aria-label="Filter variants" autocomplete="off" />
 				}
 				<div role="menu" aria-label="More variants">
-					@foreach (var variant in Model.Variants)
+					@for (var i = 0; i < Model.Variants.Count; i++)
 					{
-						<button type="button" role="menuitem" class="api-example-menu-item" data-chip="@variant.AnchorId" hidden>
-							<span class="api-example-menu-item-title" data-chip-item-title>@variant.ChipName@(variant.DiscriminatorLabel is { Length: > 0 } selects ? $" · {selects}" : "")</span>
+						var variant = Model.Variants[i];
+						var itemLabel = ChipLabel(i);
+						<button type="button" role="menuitem" class="api-example-menu-item" data-chip="@variant.AnchorId" title="@(itemLabel == variant.ChipName ? null : variant.ChipName)" hidden>
+							<span class="api-example-menu-item-title" data-chip-item-title>@itemLabel@(variant.DiscriminatorLabel is { Length: > 0 } selects ? $" · {selects}" : "")</span>
 						</button>
 					}
 				</div>
