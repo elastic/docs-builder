@@ -3,13 +3,16 @@
 // See the LICENSE file in the project root for more information
 
 using Elastic.Documentation.Site.Components;
+using Elastic.Documentation.Site.Components.Admonition;
 using Elastic.Documentation.Site.Components.AppliesBadge;
 using Elastic.Documentation.Site.Components.Badge;
 using Elastic.Documentation.Site.Components.Breadcrumb;
 using Elastic.Documentation.Site.Components.Button;
+using Elastic.Documentation.Site.Components.ButtonGroup;
 using Elastic.Documentation.Site.Components.Card;
 using Elastic.Documentation.Site.Components.Check;
 using Elastic.Documentation.Site.Components.Chip;
+using Elastic.Documentation.Site.Components.Disclosure;
 using Elastic.Documentation.Site.Components.Kbd;
 using Elastic.Documentation.Site.Components.Link;
 using Elastic.Documentation.Site.Components.LinkTile;
@@ -18,7 +21,9 @@ using Elastic.Documentation.Site.Components.Pager;
 using Elastic.Documentation.Site.Components.ReleaseCard;
 using Elastic.Documentation.Site.Components.SearchField;
 using Elastic.Documentation.Site.Components.SelectField;
+using Elastic.Documentation.Site.Components.Stepper;
 using Elastic.Documentation.Site.Components.Switch;
+using Elastic.Documentation.Site.Components.Tabs;
 using Elastic.Documentation.Site.Components.TextField;
 
 namespace Elastic.Documentation.Site.StyleGuide;
@@ -58,6 +63,12 @@ public static class StyleGuideCatalog
 			"Components",
 			"Buttons, links and form controls. Each example is the real component, rendered from the model call shown under Code."
 		),
+		new(
+			"content",
+			"Content directives",
+			"Components",
+			"The components behind MyST directives: admonitions, dropdowns, steppers, tabs and buttons."
+		),
 		new("cards", "Cards and tiles", "Components", "Cards, link tiles and release cards. Hover a card to see the slab shadow."),
 		new("navigation", "Navigation parts", "Components", "Breadcrumbs and previous/next links."),
 		new("badges", "Labels and badges", "Components", "Status and tag badges, HTTP methods, applies-to badges and keyboard keys.")
@@ -79,6 +90,14 @@ public static class StyleGuideCatalog
 			SwitchExamples.Switches,
 			ChipExamples.Chips,
 			SearchFieldExamples.Searches
+		],
+		["content"] =
+		[
+			AdmonitionExamples.Admonitions,
+			DisclosureExamples.Disclosures,
+			StepperExamples.Steppers,
+			TabsExamples.Tabs,
+			ButtonDirectiveExamples.Buttons
 		],
 		["cards"] = [CardExamples.Cards, LinkTileExamples.Tiles, ReleaseCardExamples.Releases],
 		["navigation"] = [BreadcrumbExamples.Trails, PagerExamples.Pagers],

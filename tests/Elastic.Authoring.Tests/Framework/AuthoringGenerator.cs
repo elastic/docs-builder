@@ -72,6 +72,8 @@ public static class AuthoringGenerator
 			CanonicalBaseUrl = new Uri("https://www.elastic.co/")
 		};
 
+		context.Configuration.Features.NavigationPreviewEnabled = options.NavigationPreview;
+
 		var loggerFactory = new TestLoggerFactory();
 		var conversionCollector = new TestConversionCollector();
 		var crossLinkResolver = new TestCrossLinkResolver(context.Configuration);

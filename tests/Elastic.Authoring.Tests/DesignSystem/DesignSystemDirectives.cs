@@ -1,0 +1,187 @@
+// Licensed to Elasticsearch B.V under one or more agreements.
+// Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
+// See the LICENSE file in the project root for more information
+
+namespace Elastic.Authoring.Tests.DesignSystem;
+
+/// <summary>Renders the document with <c>NAVIGATION_PREVIEW</c> on, so directives use design-system components.</summary>
+public abstract class DesignSystemDirectiveTest : GeneratorTest
+{
+	protected abstract string Markdown { get; }
+
+	protected override IReadOnlyCollection<TestFile> Files => [TestFile.Index($"# Test Document\n{Markdown}\n")];
+
+	protected override SetupOptions Options => new() { NavigationPreview = true };
+}
+
+public class AdmonitionKinds : DesignSystemDirectiveTest
+{
+	protected override string Markdown => """
+		:::{warning}
+		Back up first.
+		:::
+		""";
+
+	[Test, DisplayName("renders the warning admonition component")]
+	public async Task Renders()
+	{
+		await Docs.ConvertsToContainingRawHtml("<div class=\"admonition admonition--warning\" role=\"note\">");
+		await Docs.ConvertsToContainingRawHtml("<span class=\"admonition__title\">Warning</span>");
+		await Docs.ConvertsToContainingRawHtml("<div class=\"admonition__body\"><p>Back up first.</p></div>");
+	}
+
+	[Test, DisplayName("does not emit legacy admonition markup")]
+	public async Task NoLegacyMarkup() => await Docs.DoesNotConvertToContainingHtml("admonition-header");
+
+	[Test, DisplayName("has no errors")]
+	public async Task HasNoErrors() => await Docs.HasNoErrors();
+}
+
+public class AdmonitionInListStaysNested : DesignSystemDirectiveTest
+{
+	protected override string Markdown => """
+		- List Item 1
+		  :::::{note}
+		  Hello, World!
+		  :::::
+		""";
+
+	[Test, DisplayName("keeps the admonition inside the list item")]
+	public async Task Renders() => await Docs.ConvertsToContainingRawHtml("<li>List Item 1");
+
+	[Test, DisplayName("renders the note component")]
+	public async Task NoteComponent() => await Docs.ConvertsToContainingRawHtml("class=\"admonition admonition--note\"");
+}
+
+public class DropdownComponent : DesignSystemDirectiveTest
+{
+	protected override string Markdown =>
+		"""
+		:::{dropdown} What is a shard?
+		:open:
+		A unit of storage.
+		:::
+		""";
+
+	[Test, DisplayName("renders a native details element that is open")]
+	public async Task Renders() => await Docs.ConvertsToContainingRawHtml("<details class=\"disclosure");
+
+	[Test, DisplayName("keeps the open state and the title")]
+	public async Task OpenAndTitle()
+	{
+		await Docs.ConvertsToContainingRawHtml(" open>");
+		await Docs.ConvertsToContainingRawHtml("What is a shard?");
+	}
+
+	[Test, DisplayName("renders the body")]
+	public async Task Body() => await Docs.ConvertsToContainingRawHtml("<p>A unit of storage.</p>");
+}
+
+public class TabsComponent : DesignSystemDirectiveTest
+{
+	protected override string Markdown =>
+		"""
+		::::{tab-set}
+		:group: lang
+
+		:::{tab-item} curl
+		:sync: curl
+		Use curl.
+		:::
+
+		:::{tab-item} Python
+		:sync: python
+		Use Python.
+		:::
+		::::
+		""";
+
+	[Test, DisplayName("renders radio tabs with sync attributes")]
+	public async Task Renders()
+	{
+		await Docs.ConvertsToContainingRawHtml("class=\"tab-set\"");
+		await Docs.ConvertsToContainingRawHtml("data-tab-sync-key=\"curl\"");
+		await Docs.ConvertsToContainingRawHtml("data-tab-sync-group=\"lang\"");
+	}
+
+	[Test, DisplayName("checks only the first tab")]
+	public async Task FirstChecked()
+	{
+		await Docs.ConvertsToContainingRawHtml("id=\"tabs-item-1-0\" name=\"tabs-set-1\" checked>");
+		await Docs.ConvertsToContainingRawHtml("id=\"tabs-item-1-1\" name=\"tabs-set-1\">");
+	}
+
+	[Test, DisplayName("does not use the legacy tab classes the old script binds to")]
+	public async Task NoLegacyHooks()
+	{
+		await Docs.DoesNotConvertToContainingHtml("tabs-label");
+		await Docs.DoesNotConvertToContainingHtml("data-sync-id");
+	}
+}
+
+public class StepperComponent : DesignSystemDirectiveTest
+{
+	protected override string Markdown =>
+		"""
+		::::{stepper}
+		:::{step} Install
+		Download it.
+		:::
+
+		:::{step} Start
+		Run it.
+		:::
+		::::
+		""";
+
+	[Test, DisplayName("renders an ordered list of steps")]
+	public async Task Renders()
+	{
+		await Docs.ConvertsToContainingRawHtml("<ol class=\"stepper__list\">");
+		await Docs.ConvertsToContainingRawHtml("<li class=\"stepper__step\">");
+	}
+
+	[Test, DisplayName("renders step titles as headings with anchors")]
+	public async Task Titles() =>
+		await Docs.ConvertsToContainingRawHtml("<h2 class=\"stepper__title\" id=\"install\"><a href=\"#install\">Install</a></h2>");
+}
+
+public class ButtonDirectiveComponent : DesignSystemDirectiveTest
+{
+	protected override string Markdown => """
+		:::{button}
+		[Get started](https://www.elastic.co)
+		:::
+		""";
+
+	[Test, DisplayName("wraps the link in the button directive")]
+	public async Task Renders()
+	{
+		await Docs.ConvertsToContainingRawHtml("class=\"button-directive button-directive--primary");
+		await Docs.ConvertsToContainingRawHtml("Get started");
+	}
+}
+
+/// <summary>Flag off must keep producing the legacy markup, whatever the design system adds.</summary>
+public class FlagOffKeepsLegacyMarkup : MarkdownTest
+{
+	protected override string Markdown =>
+		"""
+		:::{warning}
+		Back up first.
+		:::
+
+		:::{dropdown} Title
+		Body
+		:::
+		""";
+
+	[Test, DisplayName("uses the legacy admonition and dropdown")]
+	public async Task Legacy()
+	{
+		await Docs.ConvertsToContainingRawHtml("class=\"admonition warning");
+		await Docs.ConvertsToContainingRawHtml("class=\"dropdown");
+		await Docs.DoesNotConvertToContainingHtml("admonition__");
+		await Docs.DoesNotConvertToContainingHtml("disclosure");
+	}
+}

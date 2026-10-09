@@ -37,3 +37,8 @@
 @import '../Components/ReleaseCard/release-card.css' layer(ds.components);
 @import '../Components/Breadcrumb/breadcrumb.css' layer(ds.components);
 @import '../Components/Pager/pager.css' layer(ds.components);
+@import '../Components/Admonition/admonition.css' layer(ds.components);
+@import '../Components/Disclosure/disclosure.css' layer(ds.components);
+@import '../Components/Stepper/stepper.css' layer(ds.components);
+@import '../Components/Tabs/tabs.css' layer(ds.components);
+@import '../Components/ButtonGroup/button-directive.css' layer(ds.components);

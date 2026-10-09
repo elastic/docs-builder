@@ -1,0 +1,12 @@
+@inherits RazorSlice<Elastic.Documentation.Site.Components.Admonition.AdmonitionModel>
+<div class="@Model.CssClass" role="note"@(Model.Id is { Length: > 0 } id ? new HtmlString($" id=\"{System.Net.WebUtility.HtmlEncode(id)}\"") : HtmlString.Empty)>
+	<div class="admonition__header">
+		@await RenderPartialAsync(_Icon.Create(new IconModel { Name = Model.Icon, Size = IconSize.Small }))
+		<span class="admonition__title">@Model.Title</span>
+		@if (Model.AppliesTo is { } appliesTo)
+		{
+			<span class="admonition__applies">@appliesTo</span>
+		}
+	</div>
+	<div class="admonition__body">@Model.Body</div>
+</div>

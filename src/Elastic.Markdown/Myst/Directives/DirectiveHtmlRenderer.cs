@@ -55,6 +55,9 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 	{
 		_ = renderer.EnsureLine();
 
+		if (DesignSystemDirectives.IsEnabled(directiveBlock) && DesignSystemDirectives.TryWrite(renderer, directiveBlock))
+			return;
+
 		switch (directiveBlock)
 		{
 			case FigureBlock imageBlock:

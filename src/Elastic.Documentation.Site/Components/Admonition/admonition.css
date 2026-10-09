@@ -1,0 +1,68 @@
+.admonition {
+	--admonition-tone: var(--color-accent);
+	--admonition-surface: var(--color-accent-surface);
+
+	margin-block: var(--space-5);
+	border: var(--border-width) solid
+		color-mix(in oklab, var(--admonition-tone) 40%, transparent);
+	border-left: 4px solid var(--admonition-tone);
+	border-radius: var(--radius-md);
+	background: var(--admonition-surface);
+	color: var(--color-text);
+}
+
+/* The default tone is info; the explicit class keeps every kind symmetrical in markup. */
+.admonition--note {
+	--admonition-tone: var(--color-accent);
+	--admonition-surface: var(--color-accent-surface);
+}
+
+.admonition--tip {
+	--admonition-tone: var(--color-success);
+	--admonition-surface: var(--color-success-surface);
+}
+
+.admonition--important {
+	--admonition-tone: var(--color-important);
+	--admonition-surface: var(--color-important-surface);
+}
+
+.admonition--warning {
+	--admonition-tone: var(--color-warning);
+	--admonition-surface: var(--color-warning-surface);
+}
+
+.admonition--caution {
+	--admonition-tone: var(--color-danger);
+	--admonition-surface: var(--color-danger-surface);
+}
+
+.admonition__header {
+	display: flex;
+	align-items: center;
+	gap: var(--space-2);
+	padding: var(--space-3) var(--space-4) 0;
+	color: var(--admonition-tone);
+	font-weight: var(--weight-bold);
+}
+
+.admonition__title {
+	font-size: var(--text-sm);
+}
+
+.admonition__applies {
+	margin-left: auto;
+	font-weight: var(--weight-regular);
+}
+
+.admonition__body {
+	padding: var(--space-2) var(--space-4) var(--space-3);
+}
+
+.admonition__body > :first-child {
+	margin-top: 0;
+}
+
+.admonition__body > :last-child {
+	margin-bottom: 0;
+}

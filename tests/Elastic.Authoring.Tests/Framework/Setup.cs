@@ -46,6 +46,12 @@ public sealed record SetupOptions
 	/// </summary>
 	public IReadOnlyCollection<string>? DocsetProducts { get; init; }
 
+	/// <summary>
+	/// Turns the <c>NAVIGATION_PREVIEW</c> feature flag on for this documentation set, so directives render with design-system components.
+	/// Off by default, which keeps every existing test on the legacy markup.
+	/// </summary>
+	public bool NavigationPreview { get; init; }
+
 	public static SetupOptions Empty { get; } = new();
 }
 

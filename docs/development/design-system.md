@@ -63,6 +63,16 @@ Tests render every example and check that:
 - ids are unique on a page, and
 - every component stylesheet is imported by the bundle.
 
+## Directives
+
+With the flag on, these directives render with design-system components instead of their legacy views: admonitions, dropdowns, tabs, steppers, buttons and button groups.
+`DirectiveHtmlRenderer` asks `DesignSystemDirectives` first; when it handles the block, the legacy view is skipped, and otherwise rendering continues as before.
+Parsing, nested Markdown and cross-references are unchanged, so only the markup differs.
+Tabs that share a `sync` group stay in step through `Assets/ds/tabs.ts`, which binds to `data-tab-sync-*` attributes and not to the legacy tab classes.
+
+Flag-on tests live in `tests/Elastic.Authoring.Tests/DesignSystem/`.
+Set `NavigationPreview = true` in the `SetupOptions` of an authoring test to render a document with the flag on.
+
 ## Layers
 
 The design system declares its cascade layers under a `ds` namespace so they never merge with other stylesheets' layers:

@@ -1,0 +1,9 @@
+@inherits RazorSlice<Elastic.Documentation.Site.Components.ButtonGroup.ButtonDirectiveModel>
+@if (Model.InGroup)
+{
+	<span class="@Model.CssClass">@Model.Link</span>
+}
+else
+{
+	<div class="@Model.CssClass">@Model.Link</div>
+}
