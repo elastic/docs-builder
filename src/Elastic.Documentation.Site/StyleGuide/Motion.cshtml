@@ -1,0 +1,57 @@
+@inherits RazorSlice<StyleGuideViewModel>
+@using Elastic.Documentation.Site.StyleGuide
+@implements IUsesLayout<Elastic.Documentation.Site.StyleGuide._StyleGuideLayout, StyleGuideViewModel>
+@functions {
+	public StyleGuideViewModel LayoutModel => Model;
+}
+<section class="sg-section">
+	<h2>Principles</h2>
+	<p>Motion confirms a change; it never decorates. Keep everything under 400ms. Reduced motion means <em>reduced</em>, not removed: small colour, focus and fade feedback stays, while large movement, springs, staggers, shimmer and flashing disappear.</p>
+</section>
+<section class="sg-section">
+	<h2>Durations</h2>
+	<table class="sg-table">
+		<thead><tr><th>Token</th><th>Use</th><th>Hover to preview</th></tr></thead>
+		<tbody>
+		@foreach (var token in StyleGuideTokens.Durations)
+		{
+			<tr>
+				<td><code>@token.Name</code></td>
+				<td>@token.Role</td>
+				<td><span class="sg-motion" style="transition-duration: var(@token.Name)" tabindex="0"></span></td>
+			</tr>
+		}
+		</tbody>
+	</table>
+</section>
+<section class="sg-section">
+	<h2>Easing</h2>
+	<table class="sg-table">
+		<thead><tr><th>Token</th><th>Use</th><th>Hover to preview</th></tr></thead>
+		<tbody>
+		<tr>
+			<td><code>--ease-standard</code></td>
+			<td>Everything by default</td>
+			<td><span class="sg-motion" tabindex="0"></span></td>
+		</tr>
+		<tr>
+			<td><code>--ease-spring</code></td>
+			<td>Selection indicators only (segmented control, tabs)</td>
+			<td><span class="sg-motion sg-motion--spring" tabindex="0"></span></td>
+		</tr>
+		</tbody>
+	</table>
+</section>
+<section class="sg-section">
+	<h2>Reduced motion policy</h2>
+	<table class="sg-table">
+		<thead><tr><th>Stays</th><th>Goes away</th></tr></thead>
+		<tbody>
+		<tr>
+			<td>Button and link colour changes<br>Focus rings<br>Short opacity fades<br>Chevron rotation</td>
+			<td>Card hover lifts and slab shifts<br>Flyout and drawer slides<br>Spring easing and staggered entrances<br>Skeleton shimmer and any flashing colour</td>
+		</tr>
+		</tbody>
+	</table>
+	<p style="margin-top: var(--space-3)">Components declare their large movement inside <code>@@media (prefers-reduced-motion: no-preference)</code>, so the default is calm. The squares above only translate when your system allows it; with reduced motion they just change colour.</p>
+</section>

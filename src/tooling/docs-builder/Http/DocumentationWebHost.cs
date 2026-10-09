@@ -22,6 +22,7 @@ using Elastic.Documentation.Configuration;
 using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.ServiceDefaults;
 using Elastic.Documentation.Site.FileProviders;
+using Elastic.Documentation.Site.StyleGuide;
 using Elastic.Markdown.IO;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -186,6 +187,8 @@ public class DocumentationWebHost
 			});
 
 		_ = _webApplication.UseRouting();
+
+		MapStyleGuide();
 
 		_ = _webApplication.MapGet(
 			"/",
@@ -461,6 +464,27 @@ public class DocumentationWebHost
 				var renderedNotFound = await generator.RenderLayout((notFoundDocumentationFile as MarkdownFile)!, ctx);
 				return Results.Content(renderedNotFound.Html, "text/html", null, (int)HttpStatusCode.NotFound);
 		}
+	}
+
+	// The living design-system guide. It renders the same Razor components as the site, so it is a dev-server route regardless of feature flags.
+	private void MapStyleGuide()
+	{
+		var hashes = new StaticFileContentHashProvider(new EmbeddedOrPhysicalFileProvider(Context));
+
+		string StaticUrl(string path)
+		{
+			var hash = hashes.GetContentHash(path);
+			return hash.Length == 0 ? $"/_static/{path}" : $"/_static/{path}?v={hash}";
+		}
+
+		async Task<IResult> Serve(string? page, Cancel ctx)
+		{
+			var html = await StyleGuideCatalog.RenderAsync(page, StaticUrl, ctx);
+			return html is null ? Results.NotFound() : LiveReloadHtml(html);
+		}
+
+		_ = _webApplication.MapGet(StyleGuideCatalog.Route, (Cancel ctx) => Serve(null, ctx));
+		_ = _webApplication.MapGet($"{StyleGuideCatalog.Route}/{{**page}}", (string? page, Cancel ctx) => Serve(page, ctx));
 	}
 
 	internal static IResult LiveReloadHtml(string content, Encoding? encoding = null, int? statusCode = null)

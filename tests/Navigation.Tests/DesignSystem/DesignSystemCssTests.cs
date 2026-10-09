@@ -1,0 +1,83 @@
+// Licensed to Elasticsearch B.V under one or more agreements.
+// Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
+// See the LICENSE file in the project root for more information
+
+using System.Text.RegularExpressions;
+using AwesomeAssertions;
+using Elastic.Documentation.Configuration;
+using Elastic.Documentation.Site.StyleGuide;
+
+namespace Elastic.Documentation.Navigation.Tests.DesignSystem;
+
+public static partial class DesignSystemFiles
+{
+	public static string SiteDirectory { get; } = Path.Join(
+		Paths.GetSolutionDirectory()?.FullName ?? throw new InvalidOperationException("Solution directory not found"),
+		"src",
+		"Elastic.Documentation.Site"
+	);
+
+	public static IEnumerable<string> AllCss() =>
+		Directory
+			.EnumerateFiles(Path.Join(SiteDirectory, "Assets", "ds"), "*.css", SearchOption.AllDirectories)
+			.Append(Path.Join(SiteDirectory, "Assets", "ds.css"))
+			.Append(Path.Join(SiteDirectory, "Assets", "ds-guide.css"))
+			.Concat(
+				Directory.Exists(Path.Join(SiteDirectory, "Components"))
+					? Directory.EnumerateFiles(Path.Join(SiteDirectory, "Components"), "*.css", SearchOption.AllDirectories)
+					: []
+			);
+
+	// Raw values belong to the token and theme files; everything else must read tokens so a theme can restyle it.
+	public static IEnumerable<string> ComponentCss() =>
+		AllCss().Where(
+			f => !f.Contains($"{Path.DirectorySeparatorChar}tokens{Path.DirectorySeparatorChar}", StringComparison.Ordinal) &&
+				!f.Contains($"{Path.DirectorySeparatorChar}themes{Path.DirectorySeparatorChar}", StringComparison.Ordinal) &&
+				!f.EndsWith("fonts.css", StringComparison.Ordinal)
+		);
+
+	public static string StripComments(string css) => CssComment().Replace(css, "");
+
+	[GeneratedRegex(@"/\*.*?\*/", RegexOptions.Singleline)]
+	private static partial Regex CssComment();
+}
+
+public partial class DesignSystemCssTests
+{
+	public static IEnumerable<string> TokenNames() => StyleGuideTokens.AllNames.Select(t => t.Name);
+
+	public static IEnumerable<string> ComponentCssFiles() => DesignSystemFiles.ComponentCss();
+
+	[Test]
+	[MethodDataSource(nameof(TokenNames))]
+	public void StyleGuideToken_IsDefinedInDesignSystemCss(string token)
+	{
+		var definitions = DesignSystemFiles
+			.AllCss()
+			.SelectMany(f => File.ReadAllLines(f))
+			.Any(l => l.TrimStart().StartsWith($"{token}:", StringComparison.Ordinal));
+
+		definitions.Should().BeTrue($"the style guide documents {token}, so a design-system CSS file must define it");
+	}
+
+	[Test]
+	[MethodDataSource(nameof(ComponentCssFiles))]
+	public void ComponentCss_ReadsTokensOnly(string file)
+	{
+		var css = DesignSystemFiles.StripComments(File.ReadAllText(file));
+
+		HexColor().Matches(css).Select(m => m.Value).Should().BeEmpty($"{Path.GetFileName(file)} must use colour roles, not hex literals");
+		ColorFunction()
+			.Matches(css)
+			.Select(m => m.Value)
+			.Should()
+			.BeEmpty($"{Path.GetFileName(file)} must use colour roles, not colour functions");
+		css.Should().NotContain("!important", $"{Path.GetFileName(file)} relies on layer order, not !important");
+	}
+
+	[GeneratedRegex(@"(?<![\w&-])#[0-9a-fA-F]{3,8}\b")]
+	private static partial Regex HexColor();
+
+	[GeneratedRegex(@"\b(?:rgb|rgba|hsl|hsla|oklch|oklab|lab|lch)\(")]
+	private static partial Regex ColorFunction();
+}

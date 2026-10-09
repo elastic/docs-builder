@@ -1,0 +1,28 @@
+# Elastic.Documentation.Site
+
+Shared Razor layout, the frontend bundles, and the design system. The full guide is `docs/development/design-system.md`; the living style guide runs at `/style-guide` under `docs-builder serve`.
+
+## Design system rules
+
+- **Colour never appears in component CSS.** Read a role (`--color-*`) or a scale (`--space-*`, `--radius-*`, `--text-*`). Raw values live only in `Assets/ds/tokens/` and `Assets/ds/themes/`. A test in `tests/Navigation.Tests/DesignSystem/` enforces this, and it also rejects `!important`.
+- **Layers are namespaced** (`ds.tokens` … `ds.utilities`, declared in `Assets/ds.css`). Put new rules in the layer that matches their job; don't reorder layers.
+- **JavaScript binds to `data-*` attributes and ARIA**, never to styling classes, and pages must be complete HTML without it.
+- **Reduced motion means reduced.** Keep small colour, focus and fade transitions; put large movement in `@media (prefers-reduced-motion: no-preference)`.
+- **New tokens need a style-guide entry.** Add it to `StyleGuide/StyleGuideTokens.cs`; a test checks the CSS defines every token the guide lists.
+- **Everything is behind `NAVIGATION_PREVIEW`.** Flag off must match the previous output; use `/feature-flag` when touching the flag.
+
+## Layout
+
+| Path | Purpose |
+|---|---|
+| `Assets/ds.css`, `Assets/ds.ts` | Design-system bundle entry points (Parcel targets `ds-css`, `ds-js`) |
+| `Assets/ds/` | Tokens, themes, reset, base, fonts, and enhancement modules |
+| `Assets/ds-guide.css` | Style-guide-only scaffolding; never loaded on product pages |
+| `StyleGuide/` | Style-guide pages (Razor slices), the page catalog, and the token metadata |
+
+## Commands
+
+```bash
+npm run build            # Parcel bundles, including ds.css / ds.js
+dotnet test tests/Navigation.Tests -- --treenode-filter "/*/Elastic.Documentation.Navigation.Tests.DesignSystem/*/*"
+```

@@ -1,0 +1,89 @@
+/*
+ * Bold Minimal: the default theme. Every role is written once as light-dark(light, dark), so both modes sit next to each other
+ * and a redesign only has to replace this file. The mode follows the system unless an element (usually <html>) sets
+ * data-theme="light" or data-theme="dark"; light-dark() resolves where the value is used, so a dark section can sit on a light page.
+ */
+:root {
+	color-scheme: light dark;
+
+	--color-page: light-dark(var(--palette-white), #101c3f);
+	--color-surface: light-dark(var(--palette-white), #172652);
+	--color-surface-sunken: light-dark(var(--palette-grey-50), #0c1634);
+
+	--color-heading: light-dark(
+		var(--palette-developer-blue),
+		var(--palette-white)
+	);
+	--color-text: light-dark(var(--palette-grey-800), var(--palette-grey-100));
+	--color-text-muted: light-dark(
+		var(--palette-grey-600),
+		var(--palette-grey-300)
+	);
+
+	--color-border: light-dark(var(--palette-grey-100), #2c3c6b);
+	--color-border-strong: light-dark(
+		var(--palette-developer-blue),
+		var(--palette-white)
+	);
+	--color-border-control: light-dark(var(--palette-grey-300), #4a5c8f);
+
+	--color-accent: light-dark(var(--palette-elastic-blue), #6fa8ff);
+	--color-accent-hover: light-dark(var(--palette-elastic-blue-dark), #9cc2ff);
+	--color-on-accent: light-dark(
+		var(--palette-white),
+		var(--palette-developer-blue)
+	);
+	--color-accent-surface: light-dark(#e5eefc, #16315f);
+	--color-accent-border: light-dark(#b9d1f5, #2d5ba8);
+
+	--color-brand-deep: light-dark(
+		var(--palette-midnight),
+		var(--palette-elastic-blue)
+	);
+	--color-brand-bright: var(--palette-teal);
+	--color-highlight: light-dark(var(--palette-pink), #ee72a6);
+	--color-highlight-surface: light-dark(#fbe3ee, rgb(238 114 166 / 12%));
+
+	--color-focus-ring: light-dark(
+		var(--palette-elastic-blue),
+		var(--palette-teal)
+	);
+
+	--color-success: light-dark(#0e7074, var(--palette-teal));
+	--color-success-surface: light-dark(#f0fbf8, rgb(72 239 207 / 10%));
+	--color-warning: light-dark(#b87400, #f9b110);
+	--color-warning-surface: light-dark(#fff9e8, rgb(249 177 16 / 10%));
+	--color-danger: light-dark(#b42a20, #ff957d);
+	--color-danger-surface: light-dark(#fff3f1, rgb(255 149 125 / 10%));
+	--color-important: light-dark(#4b3a9e, #b9a9f2);
+	--color-important-surface: light-dark(#f6f4fd, rgb(185 169 242 / 10%));
+
+	/* "Slab": the offset-plate elevation that carries the visual identity. */
+	--color-slab-plate: light-dark(var(--palette-grey-100), #0c1634);
+	--shadow-slab:
+		6px 6px 0 var(--color-brand-deep),
+		6px 6px 0 1px var(--color-border-strong);
+	--shadow-slab-sm:
+		4px 4px 0 var(--color-brand-deep),
+		4px 4px 0 1px var(--color-border-strong);
+	--shadow-slab-rest:
+		5px 5px 0 var(--color-slab-plate),
+		5px 5px 0 1px var(--color-border-strong);
+	--shadow-overlay: 0 12px 32px rgb(16 28 63 / 24%);
+}
+
+:root[data-theme='light'] {
+	color-scheme: light;
+}
+
+:root[data-theme='dark'] {
+	color-scheme: dark;
+}
+
+[data-theme='light'] {
+	color-scheme: light;
+}
+
+[data-theme='dark'] {
+	color-scheme: dark;
+}

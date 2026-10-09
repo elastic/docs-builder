@@ -1,0 +1,113 @@
+@inherits RazorSlice<StyleGuideViewModel>
+@using Elastic.Documentation.Site.StyleGuide
+@implements IUsesLayout<Elastic.Documentation.Site.StyleGuide._StyleGuideLayout, StyleGuideViewModel>
+@functions {
+	public StyleGuideViewModel LayoutModel => Model;
+
+	private static readonly (string Title, string Intro, IReadOnlyList<TokenInfo> Tokens)[] ColourGroups =
+	[
+		("Surfaces", "Backgrounds, from the page down to wells.", StyleGuideTokens.Surfaces),
+		("Text", "Three levels of text emphasis.", StyleGuideTokens.Text),
+		("Borders", "Dividers, control outlines and the strong outline used by slabs.", StyleGuideTokens.Borders),
+		("Accent and brand", "Links, primary actions, focus and brand colour.", StyleGuideTokens.Accent),
+		("Status", "Each status has a text/icon colour and a quiet fill.", StyleGuideTokens.Status)
+	];
+}
+<section class="sg-section">
+	<h2>Colour roles</h2>
+	<p>Components only read these roles. They resolve differently in light and dark; toggle the theme to see them change.</p>
+</section>
+@foreach (var group in ColourGroups)
+{
+	<section class="sg-section">
+		<h2>@group.Title</h2>
+		<p>@group.Intro</p>
+		<div class="sg-swatches">
+			@foreach (var token in group.Tokens)
+			{
+				<div class="sg-swatch">
+					<div class="sg-swatch__color" style="--swatch: var(@token.Name)"></div>
+					<div class="sg-swatch__meta">
+						<span class="sg-swatch__name">@token.Name</span>
+						<span class="sg-swatch__role">@token.Role</span>
+					</div>
+				</div>
+			}
+		</div>
+	</section>
+}
+<section class="sg-section">
+	<h2>Palette</h2>
+	<p>Raw brand colours. These never change between themes and are not meant for components; use a role instead.</p>
+	<div class="sg-swatches">
+		@foreach (var token in StyleGuideTokens.Palette)
+		{
+			<div class="sg-swatch">
+				<div class="sg-swatch__color" style="--swatch: var(@token.Name)"></div>
+				<div class="sg-swatch__meta">
+					<span class="sg-swatch__name">@token.Name</span>
+					<span class="sg-swatch__role">@token.Role</span>
+				</div>
+			</div>
+		}
+	</div>
+</section>
+<section class="sg-section">
+	<h2>Typography</h2>
+	<p>Inter for the interface and prose, JetBrains Mono for code, Geist Mono for display moments. The root size is 16px.</p>
+	<table class="sg-table">
+		<thead><tr><th>Token</th><th>Use</th><th>Sample</th></tr></thead>
+		<tbody>
+		@foreach (var token in StyleGuideTokens.TextSizes)
+		{
+			<tr>
+				<td><code>@token.Name</code></td>
+				<td>@token.Role</td>
+				<td style="font-size: var(@token.Name); line-height: var(--leading-tight); color: var(--color-heading)">Documentation that reads well</td>
+			</tr>
+		}
+		</tbody>
+	</table>
+</section>
+<section class="sg-section">
+	<h2>Spacing</h2>
+	<p>An 8px grid with a 4px half-step.</p>
+	<table class="sg-table">
+		<thead><tr><th>Token</th><th>Value</th><th>Scale</th></tr></thead>
+		<tbody>
+		@foreach (var token in StyleGuideTokens.Spacing)
+		{
+			<tr>
+				<td><code>@token.Name</code></td>
+				<td>@token.Role</td>
+				<td><span class="sg-bar" style="width: var(@token.Name)"></span></td>
+			</tr>
+		}
+		</tbody>
+	</table>
+</section>
+<section class="sg-section">
+	<h2>Radius</h2>
+	<table class="sg-table">
+		<thead><tr><th>Token</th><th>Use</th><th>Shape</th></tr></thead>
+		<tbody>
+		@foreach (var token in StyleGuideTokens.Radii)
+		{
+			<tr>
+				<td><code>@token.Name</code></td>
+				<td>@token.Role</td>
+				<td><span class="sg-radius" style="border-radius: var(@token.Name)"></span></td>
+			</tr>
+		}
+		</tbody>
+	</table>
+</section>
+<section class="sg-section">
+	<h2>Elevation: the slab</h2>
+	<p>Depth is a hard offset plate rather than a blur. It carries the visual identity, so it appears sparingly: on hover, on open overlays and on featured blocks.</p>
+	<div style="display: flex; gap: var(--space-6); flex-wrap: wrap; padding: var(--space-4) 0 var(--space-5)">
+		<div class="sg-slab sg-slab--rest"><code>--shadow-slab-rest</code></div>
+		<div class="sg-slab sg-slab--small"><code>--shadow-slab-sm</code></div>
+		<div class="sg-slab sg-slab--raised"><code>--shadow-slab</code></div>
+	</div>
+</section>

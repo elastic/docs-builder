@@ -1,0 +1,19 @@
+/*
+ * Design system entry point. Layer order is the theming contract (all layers live under a ds namespace so they never merge with other stylesheets' layers):
+ *   tokens     raw palette and scales (no meaning attached)
+ *   theme      semantic roles (--color-*), the only layer a theme has to override
+ *   reset/base element defaults
+ *   components one file per component under ../../Components/<Name>/
+ *   patterns   compositions of components (page sections, layouts)
+ *   pages      page-specific adjustments
+ *   utilities  single-purpose escape hatches
+ * A custom theme is one more file loaded after this one, written inside @layer ds.theme; layer order lets it win without !important.
+ */
+@layer ds.tokens, ds.theme, ds.reset, ds.base, ds.components, ds.patterns, ds.pages, ds.utilities;
+
+@import './ds/fonts.css' layer(ds.tokens);
+@import './ds/tokens/primitives.css' layer(ds.tokens);
+@import './ds/tokens/scales.css' layer(ds.tokens);
+@import './ds/themes/bold-minimal.css' layer(ds.theme);
+@import './ds/reset.css' layer(ds.reset);
+@import './ds/base.css' layer(ds.base);

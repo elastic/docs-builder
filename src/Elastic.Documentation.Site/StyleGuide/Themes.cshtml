@@ -1,0 +1,47 @@
+@inherits RazorSlice<StyleGuideViewModel>
+@using Elastic.Documentation.Site.StyleGuide
+@implements IUsesLayout<Elastic.Documentation.Site.StyleGuide._StyleGuideLayout, StyleGuideViewModel>
+@functions {
+	public StyleGuideViewModel LayoutModel => Model;
+
+	private static readonly string[] Modes = ["light", "dark"];
+}
+<section class="sg-section">
+	<h2>Light and dark, side by side</h2>
+	<p>Each panel pins its own mode with <code>data-theme</code>, so both modes are visible at once regardless of your system setting. The page toggle, top right, cycles system, light and dark and remembers the choice.</p>
+	<div class="sg-themes">
+		@foreach (var mode in Modes)
+		{
+			<div class="sg-themed" data-theme="@mode">
+				<h3>@(mode == "light" ? "Light" : "Dark") theme</h3>
+				<p>Body text sits on the page colour. <span style="color: var(--color-text-muted)">Muted text is for secondary information.</span> <a href="#" style="color: var(--color-accent); text-decoration: underline">Links use the accent.</a></p>
+				<div class="sg-swatches" style="margin-top: var(--space-4)">
+					@foreach (var token in StyleGuideTokens.Surfaces.Concat(StyleGuideTokens.Status.Where(t => t.Name.EndsWith("surface"))))
+					{
+						<div class="sg-swatch">
+							<div class="sg-swatch__color" style="--swatch: var(@token.Name)"></div>
+							<div class="sg-swatch__meta"><span class="sg-swatch__name">@token.Name</span></div>
+						</div>
+					}
+				</div>
+			</div>
+		}
+	</div>
+</section>
+<section class="sg-section">
+	<h2>How the default theme works</h2>
+	<p>The Bold Minimal theme is one file, <code>Assets/ds/themes/bold-minimal.css</code>. Each colour role is declared once as <code>light-dark(light, dark)</code>, so the two modes sit next to each other and can't drift apart. The mode follows the system by default; setting <code>data-theme="light"</code> or <code>"dark"</code> on any element, usually <code>&lt;html&gt;</code>, overrides it for that subtree. Without JavaScript the page simply follows the system.</p>
+</section>
+<section class="sg-section">
+	<h2>Writing your own theme</h2>
+	<p>A theme only overrides tokens. Components read colour roles, never raw values, so redefining the roles restyles everything, and layer order lets your file win without <code>!important</code>. For a bolder redesign, override the scales (<code>--radius-*</code>, <code>--font-*</code>, <code>--shadow-*</code>) or add rules to the <code>ds.theme</code> layer.</p>
+	<pre class="sg-themed" style="overflow-x: auto"><code>/* my-theme.css, loaded after ds.css */
+@@layer ds.theme {
+    :root {
+        --color-accent: oklch(55% 0.2 300);
+        --color-accent-hover: oklch(48% 0.2 300);
+        --radius-md: 0;
+        --shadow-slab: none;
+    }
+}</code></pre>
+</section>

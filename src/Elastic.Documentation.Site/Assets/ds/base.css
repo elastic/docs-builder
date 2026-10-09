@@ -1,0 +1,46 @@
+html {
+	font-size: 16px;
+	-webkit-text-size-adjust: 100%;
+}
+
+body {
+	background: var(--color-page);
+	color: var(--color-text);
+	font-family: var(--font-body);
+	font-size: var(--text-base);
+	line-height: var(--leading-normal);
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+	color: var(--color-heading);
+	font-family: var(--font-heading);
+	line-height: var(--leading-tight);
+}
+
+:focus-visible {
+	outline: 3px solid var(--color-focus-ring);
+	outline-offset: 2px;
+}
+
+::selection {
+	background: var(--color-accent-surface);
+}
+
+code,
+kbd,
+pre,
+samp {
+	font-family: var(--font-mono);
+}
+
+@media (prefers-reduced-motion: reduce) {
+	/* Reduced, not removed: colour and focus changes stay; large movement is opted into per component with no-preference. */
+	html {
+		scroll-behavior: auto;
+	}
+}

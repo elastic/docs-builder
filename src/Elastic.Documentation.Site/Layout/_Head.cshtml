@@ -28,11 +28,24 @@
 			<link rel="stylesheet preload" as="style" type="text/css" href="@Model.Static("codex.css")" crossorigin/>
 			break;
 	}
+	@if (Model.Features.NavigationPreviewEnabled)
+	{
+		@* Design system, loaded next to the legacy bundle until the chrome migrates. Its layers are namespaced under ds, so they never merge with Tailwind's. *@
+		<script>try{var t=localStorage.getItem("docs-theme");if(t==="light"||t==="dark")document.documentElement.dataset.theme=t}catch(e){}</script>
+		<link rel="stylesheet preload" as="style" type="text/css" href="@Model.Static("ds.css")" crossorigin/>
+	}
 	<script>window.__DOCS_CONFIG__=@(new HtmlString(Model.FrontendConfigJson));</script>
 	@* hx-history=false stops new snapshots but still restores sessionStorage
 	   leftovers from older pages, which keeps the previous island tree. *@
 	<script>try{sessionStorage.removeItem("htmx-history-cache")}catch(e){}</script>
+	@if (Model.Features.NavigationPreviewEnabled)
+	{
+		<script type="module" src="@Model.Static("ds.js")"></script>
+	}
+	else
+	{
 	<script type="module" src="@Model.Static("main.js")"></script>
+	}
 	@if (Model.BuildType == BuildType.Assembler && !Model.Features.AirGappedEnabled)
 	{
 		@* In <head> so head-support's merge keeps the identical tag across htmx navigations

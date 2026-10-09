@@ -64,6 +64,8 @@
     <NpmBuildInputFiles Include="Assets/**/*.ts" />
     <NpmBuildInputFiles Include="Assets/**/*.tsx" />
     <NpmBuildInputFiles Include="Assets/**/*.css" />
+    <NpmBuildInputFiles Include="Components/**/*.ts" />
+    <NpmBuildInputFiles Include="Components/**/*.css" />
     <NpmBuildInputFiles Include="package.json" />
     <NpmBuildInputFiles Include="package-lock.json" />
     <NpmBuildInputFiles Include="tsconfig.json" />
