@@ -6,7 +6,9 @@ using Elastic.Documentation.Site.Components;
 using Elastic.Documentation.Site.Components.Admonition;
 using Elastic.Documentation.Site.Components.AppliesBadge;
 using Elastic.Documentation.Site.Components.AppliesPopover;
+using Elastic.Documentation.Site.Components.AskAi;
 using Elastic.Documentation.Site.Components.Badge;
+using Elastic.Documentation.Site.Components.Banner;
 using Elastic.Documentation.Site.Components.Breadcrumb;
 using Elastic.Documentation.Site.Components.Button;
 using Elastic.Documentation.Site.Components.ButtonGroup;
@@ -18,7 +20,9 @@ using Elastic.Documentation.Site.Components.CtaCard;
 using Elastic.Documentation.Site.Components.DiagnosticsPanel;
 using Elastic.Documentation.Site.Components.Disclosure;
 using Elastic.Documentation.Site.Components.DocsBar;
+using Elastic.Documentation.Site.Components.EmptyState;
 using Elastic.Documentation.Site.Components.Feedback;
+using Elastic.Documentation.Site.Components.Flyout;
 using Elastic.Documentation.Site.Components.Image;
 using Elastic.Documentation.Site.Components.Kbd;
 using Elastic.Documentation.Site.Components.Link;
@@ -38,11 +42,14 @@ using Elastic.Documentation.Site.Components.SearchPage;
 using Elastic.Documentation.Site.Components.SelectField;
 using Elastic.Documentation.Site.Components.SiteFooter;
 using Elastic.Documentation.Site.Components.SiteHeader;
+using Elastic.Documentation.Site.Components.Skeleton;
 using Elastic.Documentation.Site.Components.Stepper;
 using Elastic.Documentation.Site.Components.Switch;
 using Elastic.Documentation.Site.Components.Tabs;
 using Elastic.Documentation.Site.Components.TextField;
+using Elastic.Documentation.Site.Components.Toast;
 using Elastic.Documentation.Site.Components.Toc;
+using Elastic.Documentation.Site.Components.Tooltip;
 using Elastic.Documentation.Site.Components.VectorSizing;
 
 namespace Elastic.Documentation.Site.StyleGuide;
@@ -101,6 +108,7 @@ public static class StyleGuideCatalog
 			"The pieces around the content: header, footer, sidebar tree, outline, menus and the right-hand rail."
 		),
 		new("cards", "Cards and tiles", "Components", "Cards, link tiles and release cards. Hover a card to see the slab shadow."),
+		new("feedback", "Feedback and overlays", "Components", "Tooltips, toasts, banners, skeletons, empty states and flyouts."),
 		new("navigation", "Navigation parts", "Components", "Breadcrumbs and previous/next links."),
 		new("badges", "Labels and badges", "Components", "Status and tag badges, HTTP methods, applies-to badges and keyboard keys.")
 	];
@@ -150,6 +158,15 @@ public static class StyleGuideCatalog
 			FeedbackExamples.Feedbacks,
 			SearchDialogExamples.Dialogs,
 			SearchPageExamples.Pages
+		],
+		["feedback"] =
+		[
+			TooltipExamples.Tooltips,
+			ToastExamples.Toasts,
+			BannerExamples.Banners,
+			SkeletonExamples.Skeletons,
+			EmptyStateExamples.EmptyStates,
+			FlyoutExamples.Flyouts
 		],
 		["cards"] = [CardExamples.Cards, LinkTileExamples.Tiles, ReleaseCardExamples.Releases],
 		["navigation"] = [BreadcrumbExamples.Trails, PagerExamples.Pagers],

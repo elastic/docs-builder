@@ -1,0 +1,11 @@
+@inherits RazorSlice<Elastic.Documentation.Site.Components.Skeleton.SkeletonModel>
+<div class="skeleton" aria-hidden="true">
+	@if (Model.Heading)
+	{
+		<span class="skeleton__line skeleton__line--heading"></span>
+	}
+	@for (var i = 0; i < Model.Lines; i++)
+	{
+		<span class="skeleton__line@(i == Model.Lines - 1 ? " skeleton__line--short" : "")"></span>
+	}
+</div>

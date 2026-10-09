@@ -1,0 +1,187 @@
+/* Code samples in the API reference are a plain highlight wrapper rather than the code-block component, so they carry their own surface. */
+.highlight {
+	position: relative;
+}
+
+.highlight pre {
+	display: grid;
+	margin: 0;
+}
+
+.highlight pre code {
+	display: block;
+	padding: var(--space-5);
+	overflow-x: auto;
+	border: 0;
+	border-radius: var(--radius-sm);
+	background: var(--color-code-bg);
+	color: var(--color-code-text);
+	font-family: var(--font-mono);
+	font-size: var(--text-sm);
+	line-height: 1.5;
+	word-break: normal;
+}
+
+.highlight pre code.language-apiheader + code.language-json {
+	margin-top: calc(var(--space-5) * -1);
+	padding-top: 0;
+}
+
+.highlight pre code.language-json + code.language-apiheader,
+.highlight pre code.language-apiheader + code.language-apiheader {
+	border-top: var(--border-width) dotted var(--color-code-muted);
+}
+
+.highlight .hljs-keyword,
+.highlight .hljs-selector-tag,
+.highlight .hljs-built_in,
+.highlight .hljs-name,
+.highlight .hljs-section,
+.highlight .hljs-link {
+	color: var(--color-code-keyword);
+	font-weight: var(--weight-bold);
+}
+
+.highlight .hljs-string,
+.highlight .hljs-regexp,
+.highlight .hljs-addition {
+	color: var(--color-code-string);
+}
+
+.highlight .hljs-number {
+	color: var(--color-code-number);
+}
+
+.highlight .hljs-comment,
+.highlight .hljs-quote,
+.highlight .hljs-doctag,
+.highlight .hljs-deletion {
+	color: var(--color-code-muted);
+}
+
+.highlight .hljs-attr,
+.highlight .hljs-attribute,
+.highlight .hljs-meta,
+.highlight .hljs-title,
+.highlight .hljs-operator,
+.highlight .hljs-bullet {
+	color: var(--color-code-attr);
+}
+
+.highlight .hljs-type,
+.highlight .hljs-symbol {
+	color: var(--color-code-type);
+}
+
+.highlight .hljs-variable,
+.highlight .hljs-template-variable,
+.highlight .hljs-params,
+.highlight .hljs-subst,
+.highlight .hljs-function {
+	color: var(--color-code-variable);
+}
+
+.highlight .hljs-literal {
+	color: var(--color-code-literal);
+}
+
+.highlight .hljs-punctuation {
+	color: var(--color-code-punctuation);
+}
+
+/* The line-number gutter is a sibling of the code, so it stays out of selection and copy. */
+.highlight .code-lines {
+	display: flex;
+	align-items: flex-start;
+	min-width: 0;
+	border-radius: var(--radius-sm);
+	background: var(--color-code-bg);
+}
+
+.highlight .code-lines > pre {
+	display: block;
+	flex: 1 0 auto;
+	width: max-content;
+	min-width: 0;
+}
+
+.highlight .code-lines > pre code {
+	display: block;
+	width: max-content;
+	padding-left: var(--space-2);
+	overflow: visible;
+	border-radius: 0;
+	background: transparent;
+	white-space: pre;
+}
+
+.highlight .code-line-gutter {
+	flex: none;
+	margin: 0;
+	padding: var(--space-5) var(--space-2) var(--space-5) var(--space-4);
+	color: var(--color-code-gutter);
+	font-family: var(--font-mono);
+	font-size: var(--text-sm);
+	font-variant-numeric: tabular-nums;
+	line-height: 1.5;
+	text-align: right;
+	white-space: pre;
+	pointer-events: none;
+	user-select: none;
+}
+
+[data-code-card] .code-lines,
+[data-code-card] .highlight pre code {
+	border-radius: 0;
+	background: transparent;
+}
+
+/* The copy button script mounts a button over the code, or in a card header. */
+button.copybtn {
+	position: absolute;
+	top: var(--space-4);
+	right: var(--space-3);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 1.75rem;
+	height: 1.75rem;
+	padding: 0;
+	border: var(--border-width) solid var(--color-code-border);
+	border-radius: var(--radius-sm);
+	background: var(--color-code-bg);
+	color: var(--color-code-muted);
+	cursor: pointer;
+	opacity: 0;
+	transition:
+		opacity var(--duration-base) var(--ease-standard),
+		background-color var(--duration-fast) var(--ease-standard);
+}
+
+.highlight:hover button.copybtn,
+button.copybtn:focus-visible,
+button.copybtn.success {
+	opacity: 1;
+}
+
+button.copybtn.success {
+	color: var(--color-success);
+}
+
+button.copybtn svg {
+	width: 1rem;
+	height: 1rem;
+	fill: currentcolor;
+}
+
+[data-code-card]
+	[data-code-actions]
+	:is(button.copybtn, .api-code-preview-btn) {
+	position: static;
+	opacity: 1;
+	color: var(--color-code-text);
+}
+
+.simple-scrollbar {
+	scrollbar-width: thin;
+}

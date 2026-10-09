@@ -1,0 +1,18 @@
+.banner {
+	padding: var(--space-2) var(--layout-gutter);
+	background: var(--color-emphasis);
+	color: var(--color-on-emphasis);
+	font-size: var(--text-sm);
+	text-align: center;
+}
+
+.banner__message {
+	margin: 0;
+}
+
+.banner__link {
+	color: inherit;
+	font-weight: var(--weight-semibold);
+	text-decoration: underline;
+	text-underline-offset: 3px;
+}

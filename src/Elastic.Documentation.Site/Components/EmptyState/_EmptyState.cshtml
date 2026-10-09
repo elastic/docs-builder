@@ -1,0 +1,10 @@
+@inherits RazorSlice<Elastic.Documentation.Site.Components.EmptyState.EmptyStateModel>
+<div class="empty-state">
+	<span class="empty-state__icon">@await RenderPartialAsync(_Icon.Create(new IconModel { Name = Model.Icon, Size = IconSize.Large }))</span>
+	<h2 class="empty-state__title">@Model.Title</h2>
+	<p class="empty-state__description">@Model.Description</p>
+	@if (Model.ActionHref is { } href && Model.ActionLabel is { } label)
+	{
+		@await RenderPartialAsync(_Button.Create(new ButtonModel { Label = label, Href = href, Variant = ButtonVariant.Secondary }))
+	}
+</div>

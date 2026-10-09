@@ -1,0 +1,4 @@
+@inherits RazorSlice<Elastic.Documentation.Site.Components.Banner.BannerModel>
+<aside class="banner" aria-label="Announcement">
+	<p class="banner__message">@Model.Message@if (Model.LinkHref is { } href && Model.LinkLabel is { } label){<text> </text><a class="banner__link" href="@href">@label</a>}</p>
+</aside>

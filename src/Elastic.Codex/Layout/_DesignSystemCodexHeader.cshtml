@@ -1,9 +1,10 @@
 @inherits RazorSlice<Elastic.Documentation.Site.GlobalLayoutViewModel>
 @using Elastic.Documentation.Site.Components.SiteHeader
-@* The search dialog replaces the React search bar. Ask AI has no design-system version yet, so the header leaves it out. *@
+@* The search dialog replaces the React search bar, and the Ask AI panel replaces the React assistant. *@
 @await RenderPartialAsync(_SiteHeader.Create(new SiteHeaderModel
 {
 	Title = Model.HeaderTitle ?? Model.DocSetName,
 	HomeHref = Model.SiteLink("/"),
 	Search = true
 }))
+@await RenderPartialAsync(Elastic.Documentation.Site.Components.AskAi._AskAi.Create(new Elastic.Documentation.Site.Components.AskAi.AskAiModel { Placeholder = "Ask me anything..." }))

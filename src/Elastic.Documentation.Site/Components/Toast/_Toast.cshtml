@@ -1,0 +1,5 @@
+@inherits RazorSlice<Elastic.Documentation.Site.Components.Toast.ToastModel>
+<div class="@Model.CssClass" role="@Model.Role" data-toast>
+	<p class="toast__message">@Model.Message</p>
+	<button class="toast__dismiss" type="button" data-toast-dismiss hidden aria-label="Dismiss">@await RenderPartialAsync(_Icon.Create(new IconModel { Name = "cross", Size = IconSize.Small }))</button>
+</div>

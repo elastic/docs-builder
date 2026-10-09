@@ -1,0 +1,66 @@
+.flyout {
+	position: fixed;
+	inset: 0 0 0 auto;
+	width: min(28rem, 100vw);
+	height: 100vh;
+	max-height: none;
+	margin: 0;
+	padding: 0;
+	border: 0;
+	border-left: var(--border-width) solid var(--color-border);
+	background: var(--color-surface);
+	color: var(--color-text);
+	box-shadow: var(--shadow-overlay);
+}
+
+.flyout::backdrop {
+	background: color-mix(in oklab, var(--color-emphasis) 50%, transparent);
+}
+
+.flyout__header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: var(--space-4) var(--space-5);
+	border-bottom: var(--border-width) solid var(--color-border);
+}
+
+.flyout__title {
+	margin: 0;
+	font-size: var(--text-lg);
+}
+
+.flyout__header form {
+	margin: 0;
+}
+
+.flyout__close {
+	display: inline-flex;
+	padding: var(--space-1);
+	border: 0;
+	background: transparent;
+	color: var(--color-text-muted);
+	cursor: pointer;
+}
+
+.flyout__close:hover {
+	color: var(--color-heading);
+}
+
+.flyout__body {
+	padding: var(--space-5);
+	overflow-y: auto;
+}
+
+/* The slide is large movement, so it only runs when the reader hasn't asked for reduced motion. */
+@media (prefers-reduced-motion: no-preference) {
+	.flyout[open] {
+		animation: flyout-in var(--duration-base) var(--ease-standard);
+	}
+}
+
+@keyframes flyout-in {
+	from {
+		transform: translateX(100%);
+	}
+}

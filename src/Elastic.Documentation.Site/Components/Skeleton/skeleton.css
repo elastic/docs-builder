@@ -1,0 +1,42 @@
+.skeleton {
+	display: flex;
+	flex-direction: column;
+	gap: var(--space-2);
+}
+
+.skeleton__line {
+	display: block;
+	height: 0.875rem;
+	border-radius: var(--radius-sm);
+	background: var(--color-surface-sunken);
+}
+
+.skeleton__line--heading {
+	width: 40%;
+	height: 1.5rem;
+	margin-bottom: var(--space-2);
+}
+
+.skeleton__line--short {
+	width: 60%;
+}
+
+/* Reduced motion keeps the static placeholder and drops the shimmer. */
+@media (prefers-reduced-motion: no-preference) {
+	.skeleton__line {
+		background: linear-gradient(
+			90deg,
+			var(--color-surface-sunken) 25%,
+			var(--color-border) 50%,
+			var(--color-surface-sunken) 75%
+		);
+		background-size: 200% 100%;
+		animation: skeleton-shimmer 1.6s linear infinite;
+	}
+}
+
+@keyframes skeleton-shimmer {
+	to {
+		background-position: -200% 0;
+	}
+}

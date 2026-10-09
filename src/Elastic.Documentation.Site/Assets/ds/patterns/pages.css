@@ -259,3 +259,8 @@
 	margin-inline: auto;
 	padding: 0 var(--space-5) var(--space-7);
 }
+
+/* The API page has no right-hand rail: the operation view opens its own examples column inside the content. */
+.api-page-shell .docs-shell__main {
+	grid-template-columns: minmax(0, 1fr);
+}

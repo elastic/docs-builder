@@ -4,6 +4,7 @@
 import { initApiDocs } from '../api-docs'
 import { initAppliesSwitch } from '../applies-switch'
 import { config } from '../config'
+import { initCopyButton } from '../copybutton'
 import { initGetStarted } from '../get-started'
 import { initHighlight, preloadHighlight } from '../hljs'
 import { initMermaid } from '../mermaid'
@@ -200,6 +201,7 @@ document.addEventListener('htmx:load', function () {
     runInitSteps([
         ['bootstrap', awaitBootstrap],
         ['initHighlight', initHighlight],
+        ['initCopyButton', initCopyButton],
         ['initAppliesSwitch', initAppliesSwitch],
         ['initMath', initMath],
         ['initMermaid', initMermaid],

@@ -1,6 +1,7 @@
 // Entry point of the design-system bundle, loaded instead of main.ts when NAVIGATION_PREVIEW is on.
 // Everything here is progressive enhancement: pages are complete HTML without it. Enhancements bind to data-* attributes,
 // never to styling classes, so a theme can rewrite the CSS without touching behaviour.
+import { initAskAi } from './ds/ask-ai'
 import { initCarousels } from './ds/carousel'
 import { initCopyButtons, initCopyText } from './ds/copy'
 import { initDiagnostics } from './ds/diagnostics'
@@ -10,6 +11,7 @@ import { initListings } from './ds/listing'
 import { bindOutsideClick, initMenus } from './ds/menu'
 import { initNav } from './ds/nav'
 import { initNavFilter } from './ds/nav-filter'
+import { initFlyouts, initToasts } from './ds/overlays'
 import { initPopovers } from './ds/popover'
 import './ds/runtime'
 import { bindSearchShortcut, initSearch } from './ds/search'
@@ -49,6 +51,9 @@ function init(scope: ParentNode = document) {
     initVectorSizing(scope)
     initDiagnostics(scope)
     initListings(scope)
+    initToasts(scope)
+    initFlyouts(scope)
+    initAskAi(scope)
     initLightboxes(scope)
     initCarousels(scope)
     void loadFilterableTables(scope)
