@@ -22,7 +22,7 @@
 	{
 		var ed = Model.ExternalDocsDisplay;
 		<p class="api-tag-external-docs">
-			<a href="@ed.Url" class="docs-reference-btn" @(ed.IsElasticDocs ? "" : "target=\"_blank\" rel=\"noopener noreferrer\"")>@ed.LinkText</a>
+			<a href="@ed.Url" class="docs-reference-btn" target="@(ed.IsElasticDocs ? null : "_blank")" rel="@(ed.IsElasticDocs ? null : "noopener noreferrer")">@ed.LinkText</a>
 		</p>
 	}
 	@if (Model.OverviewRows.Count > 0)
