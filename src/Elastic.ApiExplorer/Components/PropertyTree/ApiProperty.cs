@@ -18,6 +18,9 @@ public record ExternalDocLink(string Url, bool IsElasticDocs, string? Descriptio
 		!string.IsNullOrWhiteSpace(Description)
 			? Description
 			: IsElasticDocs ? "Read the reference documentation" : "External documentation";
+
+	/// <summary>The text for a property's name line, where the long default would wrap onto a line of its own.</summary>
+	public string ShortLinkText => !string.IsNullOrWhiteSpace(Description) ? Description : IsElasticDocs ? "Reference" : "External docs";
 }
 
 /// <summary>An earlier row on the page whose fields (or union options) a row repeats; the row links back to it.</summary>

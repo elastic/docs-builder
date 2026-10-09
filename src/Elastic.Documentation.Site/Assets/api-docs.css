@@ -1973,12 +1973,50 @@ a.docs-reference-btn::after {
 	display: none;
 }
 
-/* Container for external docs in property items */
-.external-docs-row {
-	margin-top: 0.25rem;
+/* A property's reference link: indented and sized like the "show properties" toggle right below it, but a link. */
+.property-list .reference-link-row {
+	@apply text-sm;
+	margin: calc(var(--spacing) * 2) 0 0;
+	padding: calc(var(--spacing) * 1) 0;
+	padding-left: 1.25rem;
+	position: relative;
+
+	/* The same L-shaped branch as the toggle row: down to the row's middle, then across to the link. */
+	&::before {
+		content: '';
+		position: absolute;
+		left: 0.375rem;
+		top: 0;
+		height: 50%;
+		border-left: 1px solid #cbd5e1;
+	}
+
+	&::after {
+		content: '';
+		position: absolute;
+		left: 0.375rem;
+		top: 50%;
+		width: 0.5rem;
+		border-top: 1px solid #cbd5e1;
+	}
 }
 
-.external-docs-row .docs-reference-btn {
+/* With the toggle below, the line runs on into the toggle's own branch. */
+.property-list .reference-link-row:has(+ .expand-toggle-row)::before {
+	height: 100%;
+}
+
+.property-list .reference-link-row a {
+	color: var(--color-blue-elastic, #0b64dd);
+	text-decoration: underline;
+}
+
+.property-list .reference-link-row a:hover {
+	color: var(--color-blue-elastic-100, #1750ba);
+}
+
+/* The toggle follows the link directly, so the two read as one block. */
+.property-list .reference-link-row + .expand-toggle-row {
 	margin-top: 0;
 }
 

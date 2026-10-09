@@ -55,6 +55,13 @@ public static partial class ServerlessPromotion
 	/// feature branch reaches the range when the branch merges, and the PR that merged the branch carries the note.</summary>
 	public const string BaseBranch = "main";
 
+	/// <summary>Product that every Serverless release-note entry carries, next to the product of its service.</summary>
+	public const string ServerlessProduct = "cloud-serverless";
+
+	/// <summary>Products set on every entry of a service's bundles: <see cref="ServerlessProduct"/> and the service's own product.
+	/// Team labels must not decide them, or an entry labelled for another product would miss the Serverless release notes.</summary>
+	public static IReadOnlyList<string> EntryProductIds(ServerlessService service) => [ServerlessProduct, service.Id];
+
 	/// <summary>The last production slice of a rollout; release notes publish when it completes.</summary>
 	public const string FinalSlice = "production-noncanary-ds-5";
 
