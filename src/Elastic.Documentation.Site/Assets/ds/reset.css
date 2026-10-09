@@ -26,6 +26,11 @@ video {
 	max-width: 100%;
 }
 
+/* A drawn icon or logo has a size of its own; a squeezed flex row must not shrink it. */
+svg {
+	flex-shrink: 0;
+}
+
 button,
 input,
 select,

@@ -52,6 +52,7 @@
 		<tbody>
 				<tr><td>Release notes layout</td><td>The board shows a version heading with a status pill and a row per change with a Feature, Fix or Breaking badge. The changelog directive still emits headings and lists, which the prose styles render; the board layout needs the directive to emit that structure.</td></tr>
 		<tr><td>Code diff blocks, console output, mermaid fullscreen</td><td>Use the code block and mermaid styles as they are.</td></tr>
+		<tr><td>elastic.co masthead (assembler)</td><td>The company header above the docs bar is fetched from elastic.co and keeps its own light styling, also in dark mode.</td></tr>
 		<tr><td>Cookie and consent banner</td><td>Comes from a third-party script and keeps its own look.</td></tr>
 		<tr><td>Print styles</td><td>Only the table controls are hidden when printing.</td></tr>
 		<tr><td>Older browsers</td><td>The bundle targets Chrome and Edge 111, Firefox 113 and Safari 16.2. Colour roles don't use <code>light-dark()</code>. <code>:has()</code>, container queries and popovers enhance the page where they exist and fall back to a simpler layout elsewhere.</td></tr>
