@@ -459,18 +459,6 @@
 	color: var(--palette-white);
 }
 
-.landing__band::after {
-	content: '';
-	position: absolute;
-	right: -3.75rem;
-	bottom: -16rem;
-	width: 32rem;
-	height: 26rem;
-	background: var(--art-cluster) center / contain no-repeat;
-	opacity: 0.85;
-	pointer-events: none;
-}
-
 .landing__band .landing__inner {
 	position: relative;
 	z-index: 1;
@@ -653,17 +641,6 @@
 	background: var(--palette-developer-blue);
 	box-shadow: none;
 	color: var(--palette-white);
-}
-
-.landing__promo--dark::before {
-	content: '';
-	position: absolute;
-	top: -4.5rem;
-	right: -5.5rem;
-	width: 30rem;
-	height: 24rem;
-	background: var(--art-cluster) center / contain no-repeat;
-	opacity: 0.9;
 }
 
 .landing__promo--dark .landing__promo-title {

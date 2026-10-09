@@ -165,6 +165,7 @@ public static class StyleGuideCatalog
 		],
 		["feedback"] =
 		[
+			AskAiExamples.Assistants,
 			TooltipExamples.Tooltips,
 			ToastExamples.Toasts,
 			BannerExamples.Banners,
