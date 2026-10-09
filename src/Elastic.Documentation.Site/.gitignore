@@ -13,3 +13,9 @@ _static/*.js.map
 _static/.build-stamp
 _static/.vite/
 _static/mermaid.min.js
+# Visual regression output stays local: the codex screenshots and HTML contain private internal content.
+visual/__snapshots__/
+visual/**/*.png
+visual/**/*.html
+test-results/
+playwright-report/
