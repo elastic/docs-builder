@@ -16,7 +16,11 @@ namespace Elastic.Documentation.Tests.Domain;
 public class RelatedLearningConstraintsTests
 {
 	[Test]
-	public void Laws() => RelatedLearningConstraints.All.Laws(DomainGen.Of<RelatedLearningCatalog>(), CounterExamples);
+	[MethodDataSource(nameof(Axes))]
+	public void EveryDeclaredAxisHolds(AxisCase axis) => axis.Run();
+
+	public static IEnumerable<Func<AxisCase>> Axes() =>
+		DomainAutoTest.For(RelatedLearningConstraints.All, DomainGen.Of<RelatedLearningCatalog>()).CounterExamples(CounterExamples).Axes();
 
 	// each case adds one link that is wrong in one way (under an id no generated link has), so it holds whatever links were generated
 	private static RelatedLearningCatalog Plus(RelatedLearningCatalog c, RelatedLearningLink link, string? key = null) =>
@@ -117,7 +121,11 @@ public class AssemblyConstraintsTests
 	private static Gen<AssemblyConfiguration> Generated() => DomainGen.Of<AssemblyConfiguration>(o => Configure(o));
 
 	[Test]
-	public void Laws() => AssemblyConstraints.All.Laws(Generated(), CounterExamples);
+	[MethodDataSource(nameof(Axes))]
+	public void EveryDeclaredAxisHolds(AxisCase axis) => axis.Run();
+
+	public static IEnumerable<Func<AxisCase>> Axes() =>
+		DomainAutoTest.For(AssemblyConstraints.All, Generated()).CounterExamples(CounterExamples).Axes();
 
 	private static PublishEnvironment Prod =>
 		new()
@@ -257,11 +265,14 @@ public class SiteNavigationConstraintsTests
 	}
 
 	[Test]
-	public void Laws() =>
-		SiteNavigationConstraints.All.Laws(
-			DomainGen.Of<SiteNavigationDefinition>(o => o.Normalize<SiteNavigationDefinition>(Valid)),
-			CounterExamples
-		);
+	[MethodDataSource(nameof(Axes))]
+	public void EveryDeclaredAxisHolds(AxisCase axis) => axis.Run();
+
+	public static IEnumerable<Func<AxisCase>> Axes() =>
+		DomainAutoTest
+			.For(SiteNavigationConstraints.All, DomainGen.Of<SiteNavigationDefinition>(o => o.Normalize<SiteNavigationDefinition>(Valid)))
+			.CounterExamples(CounterExamples)
+			.Axes();
 
 	private static SiteTableOfContentsRef Mount(string source, string pathPrefix) => new(new Uri(source), pathPrefix, []);
 
@@ -314,7 +325,11 @@ public class SiteNavigationConstraintsTests
 public class VersioningSystemConstraintsTests
 {
 	[Test]
-	public void Laws() => VersioningSystemConstraints.All.Laws(DomainGen.Of<VersioningSystemCatalog>(), CounterExamples);
+	[MethodDataSource(nameof(Axes))]
+	public void EveryDeclaredAxisHolds(AxisCase axis) => axis.Run();
+
+	public static IEnumerable<Func<AxisCase>> Axes() =>
+		DomainAutoTest.For(VersioningSystemConstraints.All, DomainGen.Of<VersioningSystemCatalog>()).CounterExamples(CounterExamples).Axes();
 
 	[Test]
 	public void KeyMatchesId_NamesTheKeyAndTheIdOfTheSystemFoundThere() =>
@@ -383,33 +398,42 @@ public class VersioningSystemConstraintsTests
 public class CodexPublishingConstraintsTests
 {
 	[Test]
-	public void Laws() =>
-		CodexPublishingConstraints.All.Laws(
-			DomainGen.Of<CodexConfiguration>(),
-			new Dictionary<string, Func<CodexConfiguration, CodexConfiguration>>
+	[MethodDataSource(nameof(Axes))]
+	public void EveryDeclaredAxisHolds(AxisCase axis) => axis.Run();
+
+	public static IEnumerable<Func<AxisCase>> Axes() =>
+		DomainAutoTest
+			.For(CodexPublishingConstraints.All, DomainGen.Of<CodexConfiguration>())
+			.CounterExamples(new Dictionary<string, Func<CodexConfiguration, CodexConfiguration>>
 			{
 				["environment-required"] = c => c with { Environment = " " }
-			}
-		);
+			})
+			.Axes();
 }
 
 public class CodexConfigurationConstraintsTests
 {
 	[Test]
-	public void Laws() =>
-		CodexConfigurationConstraints.All.Laws(
-			DomainGen.Of<CodexConfiguration>(
-				o => o.Identity<CodexGroupDefinition, string>(g => g.Id).Normalize<CodexConfiguration>(
-					c =>
-						c with
-						{
-							CanonicalBaseUrl = c.CanonicalBaseUrl is { } u && Uri.TryCreate(u, UriKind.Absolute, out _) ? u : null,
-							Groups = [.. c.Groups.GroupBy(g => g.Id, StringComparer.OrdinalIgnoreCase).Select(g => g.First())]
-						}
+	[MethodDataSource(nameof(Axes))]
+	public void EveryDeclaredAxisHolds(AxisCase axis) => axis.Run();
+
+	public static IEnumerable<Func<AxisCase>> Axes() =>
+		DomainAutoTest
+			.For(
+				CodexConfigurationConstraints.All,
+				DomainGen.Of<CodexConfiguration>(
+					o => o.Identity<CodexGroupDefinition, string>(g => g.Id).Normalize<CodexConfiguration>(
+						c =>
+							c with
+							{
+								CanonicalBaseUrl = c.CanonicalBaseUrl is { } u && Uri.TryCreate(u, UriKind.Absolute, out _) ? u : null,
+								Groups = [.. c.Groups.GroupBy(g => g.Id, StringComparer.OrdinalIgnoreCase).Select(g => g.First())]
+							}
+					)
 				)
-			),
-			CounterExamples
-		);
+			)
+			.CounterExamples(CounterExamples)
+			.Axes();
 
 	private static CodexGroupDefinition Group(string id, string name) => new() { Id = id, Name = name };
 

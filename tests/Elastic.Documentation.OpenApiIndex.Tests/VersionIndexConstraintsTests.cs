@@ -35,11 +35,16 @@ public class VersionIndexConstraintsTests
 	}
 
 	[Test]
-	public void Laws() =>
-		VersionIndexConstraints.All.Laws(
-			GenAuto.Of<RootVersionIndex>(AutoMode.Plausible, o => o.Normalize<RootVersionIndex>(Valid)),
-			CounterExamples
-		);
+	[MethodDataSource(nameof(Axes))]
+	public void EveryDeclaredAxisHolds(AxisCase axis) => axis.Run();
+
+	public static IEnumerable<Func<AxisCase>> Axes() =>
+		AutoTest
+			.For(VersionIndexConstraints.All, GenAuto.Of<RootVersionIndex>(AutoMode.Plausible, o => o.Normalize<RootVersionIndex>(Valid)))
+			.CounterExamples(CounterExamples)
+			.Seed(Elastic.Documentation.Tests.Domain.Props.Seed)
+			.Cases
+			.Select(c => (Func<AxisCase>)(() => c));
 
 	// each case adds one entry that is wrong in one way, under a repository the generator never names
 	private static RootVersionIndex Plus(RootVersionIndex index, string moniker, string version)

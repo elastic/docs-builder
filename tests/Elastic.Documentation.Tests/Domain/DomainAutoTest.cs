@@ -12,7 +12,7 @@ namespace Elastic.Documentation.Tests.Domain;
 public static class DomainAutoTest
 {
 	/// <summary>An auto-test over <paramref name="constraints"/> with the shared seed; without <paramref name="valid"/> the values come from <see cref="DomainGen.Of{T}"/>.</summary>
-	internal static AutoTest<T> For<T>(ConstraintSet<T> constraints, Gen<T>? valid = null) =>
+	public static AutoTest<T> For<T>(ConstraintSet<T> constraints, Gen<T>? valid = null) =>
 		AutoTest.For(constraints, valid ?? DomainGen.Of<T>()).Seed(Props.Seed);
 
 	/// <summary>The cases as a <c>[MethodDataSource]</c> source: TUnit runs each lazily, so a failing axis fails only its own test.</summary>

@@ -14,7 +14,11 @@ namespace Elastic.Documentation.Tests.Domain;
 public class BundleConstraintsTests
 {
 	[Test]
-	public void Laws() => BundleConstraints.All.Laws(BundleExamples.Generated<Bundle>(), CounterExamples);
+	[MethodDataSource(nameof(Axes))]
+	public void EveryDeclaredAxisHolds(AxisCase axis) => axis.Run();
+
+	public static IEnumerable<Func<AxisCase>> Axes() =>
+		DomainAutoTest.For(BundleConstraints.All, BundleExamples.Generated<Bundle>()).CounterExamples(CounterExamples).Axes();
 
 	private static IReadOnlyDictionary<string, Func<Bundle, Bundle>> CounterExamples =>
 		new Dictionary<string, Func<Bundle, Bundle>>
@@ -35,7 +39,14 @@ public class BundleConstraintsTests
 public class BundleAmendConstraintsTests
 {
 	[Test]
-	public void Laws() => BundleAmendConstraints.All.Laws(BundleExamples.Generated<BundleAmendOfParent>(), CounterExamples);
+	[MethodDataSource(nameof(Axes))]
+	public void EveryDeclaredAxisHolds(AxisCase axis) => axis.Run();
+
+	public static IEnumerable<Func<AxisCase>> Axes() =>
+		DomainAutoTest
+			.For(BundleAmendConstraints.All, BundleExamples.Generated<BundleAmendOfParent>())
+			.CounterExamples(CounterExamples)
+			.Axes();
 
 	private static BundledEntry Removal(string name, string checksum) =>
 		new() { File = new BundledFile { Name = name, Checksum = checksum } };
@@ -64,7 +75,11 @@ public class BundleAmendConstraintsTests
 public class LoadedBundleConstraintsTests
 {
 	[Test]
-	public void Laws() => LoadedBundleConstraints.All.Laws(BundleExamples.Generated<LoadedBundle>(), CounterExamples);
+	[MethodDataSource(nameof(Axes))]
+	public void EveryDeclaredAxisHolds(AxisCase axis) => axis.Run();
+
+	public static IEnumerable<Func<AxisCase>> Axes() =>
+		DomainAutoTest.For(LoadedBundleConstraints.All, BundleExamples.Generated<LoadedBundle>()).CounterExamples(CounterExamples).Axes();
 
 	[Test]
 	public void FilenameConvention_ChecksEveryProductAndNamesTheOneThatMismatches() =>
@@ -103,7 +118,11 @@ public class LoadedBundleConstraintsTests
 public class LoadedBundlesConstraintsTests
 {
 	[Test]
-	public void Laws() => LoadedBundlesConstraints.All.Laws(BundleExamples.Generated<LoadedBundles>(), CounterExamples);
+	[MethodDataSource(nameof(Axes))]
+	public void EveryDeclaredAxisHolds(AxisCase axis) => axis.Run();
+
+	public static IEnumerable<Func<AxisCase>> Axes() =>
+		DomainAutoTest.For(LoadedBundlesConstraints.All, BundleExamples.Generated<LoadedBundles>()).CounterExamples(CounterExamples).Axes();
 
 	private static IReadOnlyDictionary<string, Func<LoadedBundles, LoadedBundles>> CounterExamples =>
 		new Dictionary<string, Func<LoadedBundles, LoadedBundles>>

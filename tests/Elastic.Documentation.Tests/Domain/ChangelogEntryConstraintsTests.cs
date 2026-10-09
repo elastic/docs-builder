@@ -14,7 +14,29 @@ namespace Elastic.Documentation.Tests.Domain;
 public class ChangelogEntryConstraintsTests
 {
 	[Test]
-	public void Laws() => ChangelogEntryConstraints.All.Laws(ChangelogEntryExamples.Generated<ChangelogEntry>(), CounterExamples);
+	[MethodDataSource(nameof(Axes))]
+	public void EveryDeclaredAxisHolds(AxisCase axis) => axis.Run();
+
+	public static IEnumerable<Func<AxisCase>> Axes() =>
+		DomainAutoTest
+			.For(ChangelogEntryConstraints.All, WithMarkers(ChangelogEntryExamples.Generated<ChangelogEntry>()))
+			.CounterExamples(OnNonMarkers(CounterExamples))
+			.Axes();
+
+	// A marker is a valid entry too, and the only kind the marker rules apply to: without some in the sample those rules are never exercised (axis 09 says so).
+	private static Gen<ChangelogEntry> WithMarkers(Gen<ChangelogEntry> entries) =>
+		Gen.Frequency((9, entries), (1, Gen.Int[1, 500].Select(pr => ChangelogEntry.Marker(pr).Value!)));
+
+	// A marker is not a real entry (no title, no products), so a counter-example that breaks one entry rule would break the marker rules too: start those from a plain valid entry.
+	private static IReadOnlyDictionary<string, Func<ChangelogEntry, ChangelogEntry>> OnNonMarkers(
+		IReadOnlyDictionary<string, Func<ChangelogEntry, ChangelogEntry>> cases
+	) =>
+		cases.ToDictionary(
+			c => c.Key,
+			c => c.Key.StartsWith("marker", StringComparison.Ordinal)
+				? c.Value
+				: (Func<ChangelogEntry, ChangelogEntry>)(e => c.Value(e.IsMarker ? Valid() : e))
+		);
 
 	private static ChangelogEntry Valid() => ChangelogEntryExamples.Valid(new ChangelogEntry { Title = "Add a thing" });
 
@@ -67,7 +89,11 @@ public class ChangelogEntryConstraintsTests
 public class ChangelogEntryInConfigurationConstraintsTests
 {
 	[Test]
-	public void Laws() => ChangelogEntryInConfigurationConstraints.All.Laws(Generated, CounterExamples);
+	[MethodDataSource(nameof(Axes))]
+	public void EveryDeclaredAxisHolds(AxisCase axis) => axis.Run();
+
+	public static IEnumerable<Func<AxisCase>> Axes() =>
+		DomainAutoTest.For(ChangelogEntryInConfigurationConstraints.All, Generated).CounterExamples(CounterExamples).Axes();
 
 	private static ProductCatalog CatalogOf(IEnumerable<string> ids) =>
 		ProductCatalog.FromPublicProducts(

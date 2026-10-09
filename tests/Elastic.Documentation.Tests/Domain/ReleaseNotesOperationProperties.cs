@@ -472,9 +472,32 @@ public class LoadedBundleOperationProperties
 	/// </summary>
 	[Test]
 	public void MergeByTarget_IsOrderIndependent() =>
-		WithPermutation.Check(x =>
-		{
-			var (bundles, permuted) = x;
-			LoadedBundle.MergeByTarget(permuted).Value.Should().Equal(LoadedBundle.MergeByTarget(bundles).Value!);
-		});
+		DomainAutoTest
+			.For(
+				Nullean
+					.Entities
+					.ConstraintSet
+					.From(
+						("merge-by-target-is-order-independent", Nullean
+							.Entities
+							.Constraints<LoadedBundles>
+							.OrderIndependent(
+								b => b.Bundles,
+								(_, items) => new LoadedBundles(items),
+								b => LoadedBundle.MergeByTarget(b.Bundles).Value!,
+								new SequenceComparer()
+							))
+					),
+				Bundles.Select(b => new LoadedBundles(b))
+			)
+			.Confluence()
+			.Should()
+			.BeOfType<AxisResult.Passed>();
+
+	private sealed class SequenceComparer : IEqualityComparer<IReadOnlyList<LoadedBundle>>
+	{
+		public bool Equals(IReadOnlyList<LoadedBundle>? x, IReadOnlyList<LoadedBundle>? y) => x!.SequenceEqual(y!);
+
+		public int GetHashCode(IReadOnlyList<LoadedBundle> obj) => obj.Count;
+	}
 }

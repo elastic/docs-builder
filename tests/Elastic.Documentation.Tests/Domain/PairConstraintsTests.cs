@@ -33,16 +33,22 @@ public class NavigationInAssemblyConstraintsTests
 		};
 
 	[Test]
-	public void Laws() =>
-		NavigationInAssemblyConstraints.All.Laws(
-			DomainGen.Of<NavigationInAssembly>(
-				o => AssemblyConstraintsTests
-					.Configure(o)
-					.Normalize<SiteNavigationDefinition>(SiteNavigationConstraintsTests.Valid)
-					.Normalize<NavigationInAssembly>(Published)
-			),
-			CounterExamples
-		);
+	[MethodDataSource(nameof(Axes))]
+	public void EveryDeclaredAxisHolds(AxisCase axis) => axis.Run();
+
+	public static IEnumerable<Func<AxisCase>> Axes() =>
+		DomainAutoTest
+			.For(
+				NavigationInAssemblyConstraints.All,
+				DomainGen.Of<NavigationInAssembly>(
+					o => AssemblyConstraintsTests
+						.Configure(o)
+						.Normalize<SiteNavigationDefinition>(SiteNavigationConstraintsTests.Valid)
+						.Normalize<NavigationInAssembly>(Published)
+				)
+			)
+			.CounterExamples(CounterExamples)
+			.Axes();
 
 	private static IReadOnlyDictionary<string, Func<NavigationInAssembly, NavigationInAssembly>> CounterExamples =>
 		new Dictionary<string, Func<NavigationInAssembly, NavigationInAssembly>>

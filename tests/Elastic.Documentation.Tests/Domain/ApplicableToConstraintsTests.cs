@@ -14,7 +14,11 @@ namespace Elastic.Documentation.Tests.Domain;
 public class ApplicableToConstraintsTests
 {
 	[Test]
-	public void Laws() => ApplicableToConstraints.All.Laws(Generated, CounterExamples);
+	[MethodDataSource(nameof(Axes))]
+	public void EveryDeclaredAxisHolds(AxisCase axis) => axis.Run();
+
+	public static IEnumerable<Func<AxisCase>> Axes() =>
+		DomainAutoTest.For(ApplicableToConstraints.All, Generated).CounterExamples(CounterExamples).Axes();
 
 	private static readonly ProductLifecycle[] Current =
 	[

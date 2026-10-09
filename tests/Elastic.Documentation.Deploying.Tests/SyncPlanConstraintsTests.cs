@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information
 
 using Elastic.Documentation.Deploying.Synchronization;
-using Elastic.Documentation.Tests.Domain;
 using Nullean.Entities.CsCheck;
 
 namespace Elastic.Documentation.Deploying.Tests;
@@ -28,8 +27,16 @@ public class SyncPlanConstraintsTests
 	}
 
 	[Test]
-	public void Laws() =>
-		SyncPlanConstraints.All.Laws(GenAuto.Of<SyncPlan>(AutoMode.Plausible, o => o.Normalize<SyncPlan>(Planned)), CounterExamples);
+	[MethodDataSource(nameof(Axes))]
+	public void EveryDeclaredAxisHolds(AxisCase axis) => axis.Run();
+
+	public static IEnumerable<Func<AxisCase>> Axes() =>
+		AutoTest
+			.For(SyncPlanConstraints.All, GenAuto.Of<SyncPlan>(AutoMode.Plausible, o => o.Normalize<SyncPlan>(Planned)))
+			.CounterExamples(CounterExamples)
+			.Seed(Elastic.Documentation.Tests.Domain.Props.Seed)
+			.Cases
+			.Select(c => (Func<AxisCase>)(() => c));
 
 	private static IReadOnlyList<DeleteRequest> Deletes(int count) =>
 		[.. Enumerable.Range(0, count).Select(i => new DeleteRequest { DestinationPath = $"old/{i}.html" })];

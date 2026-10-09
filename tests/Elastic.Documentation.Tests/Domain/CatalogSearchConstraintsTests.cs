@@ -35,7 +35,11 @@ internal static class CatalogFixtures
 public class ProductCatalogConstraintsTests
 {
 	[Test]
-	public void Laws() => ProductCatalogConstraints.All.Laws(DomainGen.Of<ProductCatalog>(), CounterExamples);
+	[MethodDataSource(nameof(Axes))]
+	public void EveryDeclaredAxisHolds(AxisCase axis) => axis.Run();
+
+	public static IEnumerable<Func<AxisCase>> Axes() =>
+		DomainAutoTest.For(ProductCatalogConstraints.All, DomainGen.Of<ProductCatalog>()).CounterExamples(CounterExamples).Axes();
 
 	// each case adds one product that is wrong in one way, so it stands on its own whatever products the generated catalog holds
 	private static ProductCatalog Added(ProductCatalog c, KeyValuePair<string, Product> product) =>
@@ -62,11 +66,14 @@ public class ProductCatalogConstraintsTests
 public class ProductCatalogInVersioningSystemCatalogConstraintsTests
 {
 	[Test]
-	public void Laws() =>
-		ProductCatalogInVersioningSystemCatalogConstraints.All.Laws(
-			DomainGen.Of<ProductCatalogInVersioningSystemCatalog>(),
-			CounterExamples
-		);
+	[MethodDataSource(nameof(Axes))]
+	public void EveryDeclaredAxisHolds(AxisCase axis) => axis.Run();
+
+	public static IEnumerable<Func<AxisCase>> Axes() =>
+		DomainAutoTest
+			.For(ProductCatalogInVersioningSystemCatalogConstraints.All, DomainGen.Of<ProductCatalogInVersioningSystemCatalog>())
+			.CounterExamples(CounterExamples)
+			.Axes();
 
 	private static IReadOnlyDictionary<string, Func<ProductCatalogInVersioningSystemCatalog, ProductCatalogInVersioningSystemCatalog>> CounterExamples =>
 		new Dictionary<string, Func<ProductCatalogInVersioningSystemCatalog, ProductCatalogInVersioningSystemCatalog>>
@@ -98,9 +105,12 @@ public class ProductCatalogInVersioningSystemCatalogConstraintsTests
 public class LegacyUrlMappingCatalogInProductCatalogConstraintsTests
 {
 	[Test]
-	public void Laws() =>
-		LegacyUrlMappingCatalogInProductCatalogConstraints.All.Laws(
-			DomainGen.Of<LegacyUrlMappingCatalogInProductCatalog>(o => o.Normalize<LegacyUrlMappingCatalogInProductCatalog>(p =>
+	[MethodDataSource(nameof(Axes))]
+	public void EveryDeclaredAxisHolds(AxisCase axis) => axis.Run();
+
+	public static IEnumerable<Func<AxisCase>> Axes() =>
+		DomainAutoTest
+			.For(LegacyUrlMappingCatalogInProductCatalogConstraints.All, DomainGen.Of<LegacyUrlMappingCatalogInProductCatalog>(o => o.Normalize<LegacyUrlMappingCatalogInProductCatalog>(p =>
 			{
 				// every mapping is for a product of the catalog (the catalog gains one when it has none)
 				var catalog = p.Products.Products.Count > 0 ? p.Products : CatalogFixtures.Catalog(CatalogFixtures.Kibana);
@@ -113,9 +123,9 @@ public class LegacyUrlMappingCatalogInProductCatalogConstraintsTests
 						Mappings = [.. p.LegacyUrlMappings.Mappings.Select((m, i) => m with { Product = products[i % products.Count] })]
 					}
 				};
-			})),
-			CounterExamples
-		);
+			})))
+			.CounterExamples(CounterExamples)
+			.Axes();
 
 	private static LegacyUrlMapping Mapping(Product product) =>
 		new() { BaseUrl = "en/kibana/", Product = product, LegacyVersions = ["8.19"] };
@@ -139,33 +149,39 @@ public class LegacyUrlMappingCatalogInProductCatalogConstraintsTests
 public class SearchTuningConstraintsTests
 {
 	[Test]
-	public void Laws() =>
-		SearchTuningConstraints.All.Laws(
-			DomainGen.Of<SearchTuning>(
-				o => o
-					.Identity<QueryRule, string>(r => r.RuleId)
-					.Normalize<SynonymGroup>(g => new SynonymGroup([.. g.Terms.Select(t => t.Replace(' ', '-'))]))
-					.Normalize<QueryRuleCriteria>(
-						c =>
-							c with
-							{
-								TypeRaw = c.Type.ToString(),
-								Metadata = string.IsNullOrWhiteSpace(c.Metadata) ? "query" : c.Metadata,
-								Values = c.Values.Count > 0 ? c.Values : ["search"]
-							}
-					)
-					.Normalize<QueryRule>(
-						r =>
-							r with
-							{
-								TypeRaw = r.Type.ToString(),
-								Actions = r.Actions.Ids.Count > 0 ? r.Actions : new QueryRuleActions { Ids = ["doc-1"] }
-							}
-					)
-					.Normalize<SearchTuning>(s => s with { SourceFileName = "search.yml" })
-			),
-			CounterExamples
-		);
+	[MethodDataSource(nameof(Axes))]
+	public void EveryDeclaredAxisHolds(AxisCase axis) => axis.Run();
+
+	public static IEnumerable<Func<AxisCase>> Axes() =>
+		DomainAutoTest
+			.For(
+				SearchTuningConstraints.All,
+				DomainGen.Of<SearchTuning>(
+					o => o
+						.Identity<QueryRule, string>(r => r.RuleId)
+						.Normalize<SynonymGroup>(g => new SynonymGroup([.. g.Terms.Select(t => t.Replace(' ', '-'))]))
+						.Normalize<QueryRuleCriteria>(
+							c =>
+								c with
+								{
+									TypeRaw = c.Type.ToString(),
+									Metadata = string.IsNullOrWhiteSpace(c.Metadata) ? "query" : c.Metadata,
+									Values = c.Values.Count > 0 ? c.Values : ["search"]
+								}
+						)
+						.Normalize<QueryRule>(
+							r =>
+								r with
+								{
+									TypeRaw = r.Type.ToString(),
+									Actions = r.Actions.Ids.Count > 0 ? r.Actions : new QueryRuleActions { Ids = ["doc-1"] }
+								}
+						)
+						.Normalize<SearchTuning>(s => s with { SourceFileName = "search.yml" })
+				)
+			)
+			.CounterExamples(CounterExamples)
+			.Axes();
 
 	private static QueryRule Rule(string id = "rule-1", string[]? ids = null) =>
 		new()

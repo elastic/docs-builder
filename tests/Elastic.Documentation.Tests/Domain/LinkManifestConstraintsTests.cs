@@ -11,8 +11,14 @@ namespace Elastic.Documentation.Tests.Domain;
 public class LinkManifestConstraintsTests
 {
 	[Test]
-	public void Laws() =>
-		LinkManifestConstraints.All.Laws(DomainGen.Of<LinkManifest>(o => o.Normalize<LinkManifest>(LinkExamples.Manifest)), CounterExamples);
+	[MethodDataSource(nameof(Axes))]
+	public void EveryDeclaredAxisHolds(AxisCase axis) => axis.Run();
+
+	public static IEnumerable<Func<AxisCase>> Axes() =>
+		DomainAutoTest
+			.For(LinkManifestConstraints.All, DomainGen.Of<LinkManifest>(o => o.Normalize<LinkManifest>(LinkExamples.Manifest)))
+			.CounterExamples(CounterExamples)
+			.Axes();
 
 	[Test]
 	public void ValidManifest_BreaksNoRule() => LinkManifestConstraints.All.Validate(Valid()).Should().BeEmpty();
