@@ -14,7 +14,7 @@ namespace Elastic.ApiExplorer.Tests;
 public class PropertyItemRenderingTests
 {
 	[Test]
-	public async Task Render_ReferenceLink_SitsOnTheNameLine()
+	public async Task Render_ReferenceLink_SitsAfterTheDescriptionAboveTheToggle()
 	{
 		var json =
 			"""
@@ -28,7 +28,8 @@ public class PropertyItemRenderingTests
 			        "type": "object",
 			        "properties": {
 			          "chunking": {
-			            "type": "string",
+			            "type": "object",
+			            "properties": { "strategy": { "type": "string" }, "max_chunk_size": { "type": "integer" } },
 			            "description": "How the input is chunked.",
 			            "externalDocs": { "url": "https://www.elastic.co/docs/explore-analyze/elastic-inference/inference-api" }
 			          },
@@ -49,16 +50,19 @@ public class PropertyItemRenderingTests
 		var html = await _PropertyList.Create(list).RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
 
 		html.Should().Contain(
-			"""href="https://docs.oracle.com/javase/8/docs/api/java/util/regex/Matcher.html" class="docs-reference-btn property-docs-link" target="_blank" rel="noopener">"""
+			"""href="https://docs.oracle.com/javase/8/docs/api/java/util/regex/Matcher.html" target="_blank" rel="noopener">"""
 		);
 		html.Should().Contain(
-			"""href="https://www.elastic.co/docs/explore-analyze/elastic-inference/inference-api" class="docs-reference-btn property-docs-link">""",
+			"""href="https://www.elastic.co/docs/explore-analyze/elastic-inference/inference-api">""",
 			"an elastic.co link stays in the tab"
 		);
 		html.Should().NotContain("&quot;_blank&quot;");
-		var nameLine = html[html.IndexOf("<dt id=\"chunking\">", StringComparison.Ordinal)..];
-		nameLine[..nameLine.IndexOf("</dt>", StringComparison.Ordinal)]
-			.Should()
-			.Contain(">Reference</a>", "next to the name and type, short enough to fit there");
+		var row = html[html.IndexOf("<dt id=\"chunking\">", StringComparison.Ordinal)..];
+
+		int At(string marker) => row.IndexOf(marker, StringComparison.Ordinal);
+
+		At("How the input is chunked.").Should().BeLessThan(At("reference-link-row"), "the link follows the description");
+		At("reference-link-row").Should().BeLessThan(At("expand-toggle-row"), "and sits right above show properties");
+		row[..At("</dt>")].Should().NotContain(">Reference</a>", "the name line stays short");
 	}
 }

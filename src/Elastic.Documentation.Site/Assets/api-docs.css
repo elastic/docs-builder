@@ -1975,12 +1975,26 @@ a.docs-reference-btn::after {
 	display: none;
 }
 
-/* A property's reference link, on its name line after the type and badges. */
-.property-list dt a.docs-reference-btn.property-docs-link {
+/* A property's reference link: indented and sized like the "show properties" toggle right below it, but a link. */
+.property-list .reference-link-row {
+	@apply text-sm;
+	margin: calc(var(--spacing) * 2) 0 0;
+	padding: calc(var(--spacing) * 1) 0;
+	padding-left: 1.25rem;
+}
+
+.property-list .reference-link-row a {
+	color: var(--color-blue-elastic, #0b64dd);
+	text-decoration: underline;
+}
+
+.property-list .reference-link-row a:hover {
+	color: var(--color-blue-elastic-100, #1750ba);
+}
+
+/* The toggle follows the link directly, so the two read as one block. */
+.property-list .reference-link-row + .expand-toggle-row {
 	margin-top: 0;
-	font-family: var(--font-sans, inherit);
-	font-size: 0.875rem;
-	font-weight: 400;
 }
 
 /* Legacy external documentation link (keeping for backwards compat) */
