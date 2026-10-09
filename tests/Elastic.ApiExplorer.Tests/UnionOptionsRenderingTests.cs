@@ -13,12 +13,29 @@ namespace Elastic.ApiExplorer.Tests;
 public class UnionOptionsRenderingTests
 {
 	[Test]
-	public async Task Render_TwoVariants_ListsThemOneAfterTheOther()
+	public async Task Render_OneObjectAndAPrimitive_ListsThemOneAfterTheOther()
 	{
-		var html = await Render(2);
+		var html = await Render(2, objects: 1);
 
 		html.Should().NotContain("data-chip-row").And.NotContain("union-variant-chips").And.Contain("union-separator");
 		html.Should().NotContain("hidden=", "both variants stay visible");
+	}
+
+	[Test]
+	public async Task Render_TwoObjects_ShowChips()
+	{
+		var html = await Render(2);
+
+		html.Should().Contain("data-chip-row").And.Contain("""id="v-1" hidden="until-found">""");
+	}
+
+	[Test]
+	public async Task Render_PrimitiveVariantBehindChips_KeepsItsTypeName()
+	{
+		var html = await Render(3, objects: 2);
+
+		html.Should().Contain(">Variant2</span></code>", "a primitive's type is all its panel has to show");
+		html.Should().NotContain(">Variant0</span></code>", "an object variant's name is on its chip");
 	}
 
 	[Test]
@@ -52,8 +69,8 @@ public class UnionOptionsRenderingTests
 		);
 		html.Should().NotContain(">Variant1</span></code>", "a plain variant's name is on its chip");
 
-		var listed = await Render(2, foldable: true);
-		listed.Should().Contain("show properties", "two variants listed one after the other still fold their fields");
+		var listed = await Render(2, foldable: true, objects: 1);
+		listed.Should().Contain("show properties", "variants listed one after the other still fold their fields");
 		listed.Should().Contain(">Variant0</span></code>");
 	}
 
@@ -87,11 +104,15 @@ public class UnionOptionsRenderingTests
 		html.Should().NotContain(">bedrock_config<", "the full name stays only as the tooltip");
 	}
 
-	private static async Task<string> Render(int count, bool foldable = false)
+	/// <summary>Renders <paramref name="count"/> variants; the first <paramref name="objects"/> are objects, the rest primitives.</summary>
+	private static async Task<string> Render(int count, bool foldable = false, int? objects = null)
 	{
 		var variants = new ApiUnionVariants
 		{
-			Variants = Enumerable.Range(0, count).Select(i => Variant(i, foldable)).ToArray(),
+			Variants = Enumerable
+				.Range(0, count)
+				.Select(i => Variant(i, foldable) with { IsObjectType = i < (objects ?? count) })
+				.ToArray(),
 			ContainerId = "opts"
 		};
 		var slice = _UnionOptions.Create(variants);

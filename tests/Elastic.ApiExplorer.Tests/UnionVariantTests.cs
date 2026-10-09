@@ -646,7 +646,7 @@ public class UnionVariantTests
 			.Single(v => v.IsArrayVariant)
 			.ShowProperties
 			.Should()
-			.BeFalse("listed one after the other, the plain Cat carries them");
+			.BeTrue("an X[] / X pair is two object variants, so it shows behind chips too");
 	}
 
 	[Test]

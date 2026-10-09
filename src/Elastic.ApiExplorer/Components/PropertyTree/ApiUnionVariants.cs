@@ -45,11 +45,11 @@ public record ApiUnionVariants
 
 	public required IReadOnlyList<ApiUnionVariant> Variants { get; init; }
 
-	/// <summary>From this many variants, a list shows one at a time behind a row of chips.</summary>
-	public const int ChipThreshold = 3;
-
-	/// <summary>Three or more variants show one at a time behind a row of chips, so a long list stays short to scan.</summary>
-	public bool UseChips => Variants.Count >= ChipThreshold;
+	/// <summary>
+	/// A list with two or more object variants shows one at a time behind a row of chips, so every list of shapes to read
+	/// looks the same. A list with a single object, such as <c>TotalHits</c> or <c>number</c>, reads one after the other.
+	/// </summary>
+	public bool UseChips => Variants.Count(static v => v.IsObjectType) >= 2;
 
 	/// <summary>Eleven or more variants also get a filter in the chips' "more" menu.</summary>
 	public bool HasFilter => Variants.Count >= 11;
