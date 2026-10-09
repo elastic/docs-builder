@@ -3,6 +3,18 @@
 import { config } from '../config'
 import { searchPagefind } from '../web-components/ModalSearch/pagefind'
 
+// Results arrive ranked; grouping by section keeps that rank inside each group and orders groups by their best hit.
+export function groupResults(
+    results: SearchResult[]
+): Array<{ title: string; results: SearchResult[] }> {
+    const groups = new Map<string, SearchResult[]>()
+    results.forEach((result) => {
+        const title = result.parents[0]?.title ?? 'Results'
+        groups.set(title, [...(groups.get(title) ?? []), result])
+    })
+    return Array.from(groups, ([title, items]) => ({ title, results: items }))
+}
+
 export interface SearchResult {
     url: string
     title: string
@@ -129,25 +141,36 @@ class SearchDialog {
                 ? 'No results.'
                 : `${results.length} ${results.length === 1 ? 'result' : 'results'}.`
 
-        results.forEach((result, index) => {
-            const item = (
-                this.template.content.cloneNode(true) as DocumentFragment
-            ).querySelector<HTMLElement>('li')!
-            item.id = `search-result-${index}`
-            const link = item.querySelector<HTMLAnchorElement>('a')!
-            link.href = result.url
-            item.querySelector<HTMLElement>('[data-search-path]')!.textContent =
-                result.parents.map((p) => p.title).join(' / ')
-            item.querySelector<HTMLElement>(
-                '[data-search-title]'
-            )!.textContent = result.title
-            appendExcerpt(
-                item.querySelector<HTMLElement>('[data-search-excerpt]')!,
-                result.description ?? ''
-            )
-            this.list.append(item)
+        let index = 0
+        groupResults(results).forEach((group) => {
+            const heading = document.createElement('li')
+            heading.className = 'search-dialog__group'
+            heading.setAttribute('role', 'presentation')
+            heading.textContent = group.title
+            this.list.append(heading)
+            group.results.forEach((result) => {
+                this.list.append(this.renderResult(result, index++))
+            })
         })
         if (results.length > 0) this.move(0)
+    }
+
+    private renderResult(result: SearchResult, index: number): HTMLElement {
+        const item = (
+            this.template.content.cloneNode(true) as DocumentFragment
+        ).querySelector<HTMLElement>('li')!
+        item.id = `search-result-${index}`
+        const link = item.querySelector<HTMLAnchorElement>('a')!
+        link.href = result.url
+        item.querySelector<HTMLElement>('[data-search-path]')!.textContent =
+            result.parents.map((p) => p.title).join(' / ')
+        item.querySelector<HTMLElement>('[data-search-title]')!.textContent =
+            result.title
+        appendExcerpt(
+            item.querySelector<HTMLElement>('[data-search-excerpt]')!,
+            result.description ?? ''
+        )
+        return item
     }
 
     private items(): HTMLElement[] {

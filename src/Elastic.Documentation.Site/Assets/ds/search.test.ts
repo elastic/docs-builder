@@ -1,4 +1,9 @@
-import { appendExcerpt, initSearch, bindSearchShortcut } from './search'
+import {
+    appendExcerpt,
+    groupResults,
+    initSearch,
+    bindSearchShortcut,
+} from './search'
 
 jest.mock('../config', () => ({
     config: {
@@ -194,5 +199,30 @@ describe('search dialog', () => {
                 .value
         ).toBe('')
         expect(document.querySelectorAll('[role="option"]')).toHaveLength(0)
+    })
+})
+
+describe('groupResults', () => {
+    const hit = (title: string, section?: string) => ({
+        url: `/${title}`,
+        title,
+        description: '',
+        parents: section ? [{ url: '/s', title: section }] : [],
+    })
+
+    it('groups by section, keeping rank within and first appearance across groups', () => {
+        const groups = groupResults([
+            hit('a', 'Guides'),
+            hit('b', 'APIs'),
+            hit('c', 'Guides'),
+            hit('d'),
+        ])
+
+        expect(groups.map((g) => g.title)).toEqual([
+            'Guides',
+            'APIs',
+            'Results',
+        ])
+        expect(groups[0].results.map((r) => r.title)).toEqual(['a', 'c'])
     })
 })

@@ -44,6 +44,7 @@ using Elastic.Documentation.Site.Components.SelectField;
 using Elastic.Documentation.Site.Components.SiteFooter;
 using Elastic.Documentation.Site.Components.SiteHeader;
 using Elastic.Documentation.Site.Components.Skeleton;
+using Elastic.Documentation.Site.Components.SplitButton;
 using Elastic.Documentation.Site.Components.Stepper;
 using Elastic.Documentation.Site.Components.Switch;
 using Elastic.Documentation.Site.Components.Tabs;
@@ -130,6 +131,7 @@ public static class StyleGuideCatalog
 			SwitchExamples.Switches,
 			ChipExamples.Chips,
 			SegmentedExamples.Segmenteds,
+			SplitButtonExamples.SplitButtons,
 			SearchFieldExamples.Searches
 		],
 		["content"] =

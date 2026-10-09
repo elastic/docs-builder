@@ -1,0 +1,80 @@
+.split-button {
+	--split-radius: var(--radius-md);
+
+	position: relative;
+	display: inline-flex;
+}
+
+.split-button__menu {
+	display: flex;
+}
+
+.split-button__main,
+.split-button__toggle {
+	display: inline-flex;
+	align-items: center;
+	height: 2.75rem;
+	background: var(--color-emphasis);
+	color: var(--color-on-emphasis);
+	font-weight: var(--weight-semibold);
+	text-decoration: none;
+	cursor: pointer;
+	transition: background-color var(--duration-fast) var(--ease-standard);
+}
+
+.split-button__main {
+	padding: 0 var(--space-5);
+	border-radius: var(--split-radius) 0 0 var(--split-radius);
+}
+
+.split-button__toggle {
+	justify-content: center;
+	width: 2.75rem;
+	border-left: var(--border-width) solid var(--color-on-emphasis);
+	border-radius: 0 var(--split-radius) var(--split-radius) 0;
+	list-style: none;
+}
+
+.split-button__toggle::-webkit-details-marker {
+	display: none;
+}
+
+.split-button__main:hover,
+.split-button__toggle:hover {
+	background: var(--color-accent);
+}
+
+.split-button__main:focus-visible,
+.split-button__toggle:focus-visible {
+	outline: 3px solid var(--color-focus-ring);
+	outline-offset: 2px;
+}
+
+.split-button__list {
+	position: absolute;
+	inset-block-start: calc(100% + var(--space-1));
+	inset-inline-end: 0;
+	z-index: var(--z-overlay);
+	min-width: 12rem;
+	margin: 0;
+	padding: var(--space-1);
+	border: var(--border-width) solid var(--color-border);
+	border-radius: var(--radius-md);
+	background: var(--color-surface);
+	box-shadow: var(--shadow-overlay);
+	list-style: none;
+}
+
+.split-button__item {
+	display: block;
+	padding: var(--space-2) var(--space-3);
+	border-radius: var(--radius-sm);
+	color: var(--color-heading);
+	font-size: var(--text-sm);
+	text-decoration: none;
+}
+
+.split-button__item:hover,
+.split-button__item:focus-visible {
+	background: var(--color-surface-sunken);
+}

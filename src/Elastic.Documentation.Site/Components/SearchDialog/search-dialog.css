@@ -111,3 +111,12 @@
 	background: var(--color-warning-surface);
 	color: var(--color-heading);
 }
+
+.search-dialog__group {
+	padding: var(--space-3) var(--space-4) var(--space-1);
+	color: var(--color-text-muted);
+	font-family: var(--font-display);
+	font-size: var(--text-xs);
+	letter-spacing: 0.08em;
+	text-transform: uppercase;
+}
