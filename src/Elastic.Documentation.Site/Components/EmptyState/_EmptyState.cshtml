@@ -1,6 +1,10 @@
 @inherits RazorSlice<Elastic.Documentation.Site.Components.EmptyState.EmptyStateModel>
-<div class="empty-state">
+<div class="@Model.CssClass">
 	<span class="empty-state__icon">@await RenderPartialAsync(_Icon.Create(new IconModel { Name = Model.Icon, Size = IconSize.Large }))</span>
+	@if (Model.Eyebrow is { } eyebrow)
+	{
+		<p class="empty-state__eyebrow">@eyebrow</p>
+	}
 	<h2 class="empty-state__title">@Model.Title</h2>
 	<p class="empty-state__description">@Model.Description</p>
 	@if (Model.ActionHref is { } href && Model.ActionLabel is { } label)

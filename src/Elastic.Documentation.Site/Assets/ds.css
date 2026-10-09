@@ -31,6 +31,7 @@
 @import '../Components/Check/check.css' layer(ds.components);
 @import '../Components/Switch/switch.css' layer(ds.components);
 @import '../Components/Chip/chip.css' layer(ds.components);
+@import '../Components/Segmented/segmented.css' layer(ds.components);
 @import '../Components/SearchField/search-field.css' layer(ds.components);
 @import '../Components/Slab/slab.css' layer(ds.components);
 @import '../Components/Card/card.css' layer(ds.components);

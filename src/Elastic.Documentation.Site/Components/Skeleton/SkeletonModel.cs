@@ -9,4 +9,7 @@ public sealed record SkeletonModel
 {
 	public int Lines { get; init; } = 3;
 	public bool Heading { get; init; }
+
+	/// <summary>Draws an image block above the lines, the shape of a card.</summary>
+	public bool Media { get; init; }
 }

@@ -20,6 +20,14 @@ public sealed record ToastModel
 
 	public string CssClass => $"toast toast--{Kind.ToString().ToLowerInvariant()}";
 
+	public string Icon => Kind switch
+	{
+		ToastKind.Success => "checkInCircleFilled",
+		ToastKind.Warning => "warningFilled",
+		ToastKind.Danger => "errorFilled",
+		_ => "help"
+	};
+
 	/// <summary>Warnings and errors interrupt; the rest wait their turn.</summary>
 	public string Role => Kind is ToastKind.Warning or ToastKind.Danger ? "alert" : "status";
 }

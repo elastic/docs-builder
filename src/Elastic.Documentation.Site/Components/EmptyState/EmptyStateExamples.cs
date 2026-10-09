@@ -21,6 +21,31 @@ public static class EmptyStateExamples
 					ActionLabel = "Browse the docs",
 					ActionHref = "#docs"
 				}
+			),
+			ComponentExample.Of(
+				"Nothing yet",
+				_EmptyState.Create,
+				new EmptyStateModel
+				{
+					Eyebrow = "Nothing yet",
+					Title = "No saved searches",
+					Description = "Searches you save will show up here.",
+					Boxed = true
+				}
+			),
+			ComponentExample.Of(
+				"Error",
+				_EmptyState.Create,
+				new EmptyStateModel
+				{
+					Eyebrow = "Error",
+					Title = "We couldn't load this",
+					Description = "Something went wrong on our side. Try again in a moment.",
+					Icon = "warningFilled",
+					Boxed = true,
+					ActionLabel = "Try again",
+					ActionHref = "#retry"
+				}
 			)
 		]
 	);

@@ -12,6 +12,8 @@ public static class SkeletonExamples
 		"skeleton",
 		[
 			ComponentExample.Of("Text", _Skeleton.Create, new SkeletonModel { Lines = 3 }),
+			ComponentExample.Of("Card", _Skeleton.Create, new SkeletonModel { Media = true, Heading = true, Lines = 2 }),
+			ComponentExample.Of("Loading bar", _LoadingBar.Create, new LoadingBarModel()),
 			ComponentExample.Of("With heading", _Skeleton.Create, new SkeletonModel { Heading = true, Lines = 2 })
 		]
 	);

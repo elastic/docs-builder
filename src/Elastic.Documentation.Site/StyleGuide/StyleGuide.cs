@@ -39,6 +39,7 @@ using Elastic.Documentation.Site.Components.ReleaseCard;
 using Elastic.Documentation.Site.Components.SearchDialog;
 using Elastic.Documentation.Site.Components.SearchField;
 using Elastic.Documentation.Site.Components.SearchPage;
+using Elastic.Documentation.Site.Components.Segmented;
 using Elastic.Documentation.Site.Components.SelectField;
 using Elastic.Documentation.Site.Components.SiteFooter;
 using Elastic.Documentation.Site.Components.SiteHeader;
@@ -128,6 +129,7 @@ public static class StyleGuideCatalog
 			CheckExamples.Checks,
 			SwitchExamples.Switches,
 			ChipExamples.Chips,
+			SegmentedExamples.Segmenteds,
 			SearchFieldExamples.Searches
 		],
 		["content"] =

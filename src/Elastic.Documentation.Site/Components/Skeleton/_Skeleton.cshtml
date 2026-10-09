@@ -1,5 +1,9 @@
 @inherits RazorSlice<Elastic.Documentation.Site.Components.Skeleton.SkeletonModel>
 <div class="skeleton" aria-hidden="true">
+	@if (Model.Media)
+	{
+		<span class="skeleton__media"></span>
+	}
 	@if (Model.Heading)
 	{
 		<span class="skeleton__line skeleton__line--heading"></span>
