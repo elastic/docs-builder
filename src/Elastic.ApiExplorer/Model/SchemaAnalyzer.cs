@@ -310,16 +310,29 @@ public class SchemaAnalyzer(
 
 	/// <summary>
 	/// Whether a value of <paramref name="schema"/> can be <c>null</c>: its type lists <c>null</c> (OpenAPI 3.1, or 3.0's
-	/// <c>nullable: true</c> once read), or a <c>oneOf</c>/<c>anyOf</c> member allows it. The type annotation leaves
-	/// <c>null</c> out, so the row says it with a badge instead.
+	/// <c>nullable: true</c> once read), or its union lets <c>null</c> through, nested unions included. The type annotation
+	/// leaves <c>null</c> out, so the row says it with a badge instead.
 	/// </summary>
-	public bool IsNullable(IOpenApiSchema? schema)
+	public bool IsNullable(IOpenApiSchema? schema) => AllowsNull(schema, [with(ReferenceEqualityComparer.Instance)]);
+
+	/// <summary>
+	/// A union lets <c>null</c> through when any branch accepts it, a <c>oneOf</c> too. Read strictly, <c>null</c> matching
+	/// two <c>oneOf</c> branches fails it, but generated specs write <c>oneOf: [string | null, number | null]</c> for a
+	/// field the API accepts <c>null</c> for, and a missing badge would read as "never null".
+	/// </summary>
+	private bool AllowsNull(IOpenApiSchema? schema, HashSet<IOpenApiSchema> visited)
 	{
 		var resolved = ResolveSchema(schema) ?? schema;
-		if (resolved?.Type?.HasFlag(JsonSchemaType.Null) == true)
+		// A union that refers back to itself adds nothing on the second visit.
+		if (resolved is null || !visited.Add(resolved))
+			return false;
+		if (resolved.Type?.HasFlag(JsonSchemaType.Null) == true)
 			return true;
-		var members = (resolved?.OneOf ?? []).Concat(resolved?.AnyOf ?? []);
-		return members.Any(m => (ResolveSchema(m) ?? m).Type?.HasFlag(JsonSchemaType.Null) == true);
+
+		// Each branch is checked on its own path, so a schema two branches share counts for both.
+		return (resolved.OneOf ?? []).Concat(resolved.AnyOf ?? []).Any(
+			m => AllowsNull(m, new HashSet<IOpenApiSchema>(visited, ReferenceEqualityComparer.Instance))
+		);
 	}
 
 	/// <summary>

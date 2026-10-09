@@ -63,6 +63,40 @@ public class NullableTests
 	}
 
 	[Test]
+	public async Task BuildPropertyList_AnyUnionBranchAllowingNull_MakesTheFieldNullable()
+	{
+		var json =
+			"""
+			{
+			  "openapi": "3.1.0",
+			  "info": { "title": "t", "version": "1" },
+			  "paths": {},
+			  "components": {
+			    "schemas": {
+			      "Holder": {
+			        "type": "object",
+			        "properties": {
+			          "nested": { "oneOf": [ { "type": "integer" }, { "anyOf": [ { "type": "string" }, { "type": "null" } ] } ] },
+			          "oneOfTwice": { "oneOf": [ { "type": ["string", "null"] }, { "type": ["integer", "null"] } ] },
+			          "anyOfTwice": { "anyOf": [ { "type": ["string", "null"] }, { "type": ["integer", "null"] } ] }
+			        }
+			      }
+			    }
+			  }
+			}
+			""";
+		var document = await LoadSpecAsync(json);
+
+		var list = BuilderFor(document).BuildPropertyList(document.Components!.Schemas!["Holder"], new PropertyTreeScope { Prefix = "" })!;
+
+		bool Nullable(string name) => list.Items.Single(p => p.Name == name).IsNullable;
+
+		Nullable("nested").Should().BeTrue("null passes through the inner anyOf");
+		Nullable("oneOfTwice").Should().BeTrue("generated specs write a nullable field this way, so it reads as nullable");
+		Nullable("anyOfTwice").Should().BeTrue("an anyOf lets null through when any branch accepts it");
+	}
+
+	[Test]
 	public async Task BuildPropertyList_OpenApi30Nullable_IsFlagged()
 	{
 		var json =
