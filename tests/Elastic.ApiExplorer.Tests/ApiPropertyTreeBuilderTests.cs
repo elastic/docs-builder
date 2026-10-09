@@ -17,10 +17,10 @@ namespace Elastic.ApiExplorer.Tests;
 [ClassDataSource<ApiExplorerFixture>(Shared = SharedType.PerClass)]
 public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture)
 {
-	private ApiPropertyTreeBuilder CreateBuilder(string? currentPageType = null)
+	private ApiPropertyTreeBuilder CreateBuilder(string? currentPageSchemaId = null)
 	{
 		var options = new PropertyDisplayOptions { RenderMarkdown = s => new HtmlString($"<p>{s}</p>"), ApiRootUrl = "/api/doc/fixture" };
-		return new ApiPropertyTreeBuilder(fixture.Document, options, currentPageType);
+		return new ApiPropertyTreeBuilder(fixture.Document, options, currentPageSchemaId);
 	}
 
 	private IOpenApiSchema Schema(string id) => fixture.Document.Components!.Schemas![id];
@@ -28,7 +28,7 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture)
 	[Test]
 	public void BuildPropertyList_RecursiveSchema_StopsAtAncestor()
 	{
-		var builder = CreateBuilder(currentPageType: "QueryContainer");
+		var builder = CreateBuilder(currentPageSchemaId: "_types.query_dsl.QueryContainer");
 		var ancestors = new HashSet<string> { "_types.query_dsl.QueryContainer" };
 
 		var list = builder.BuildPropertyList(
@@ -247,13 +247,13 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture)
 	[Test]
 	public void BuildUnionVariants_TopLevelOneOf_BuildsVariantPerOption()
 	{
-		var builder = CreateBuilder(currentPageType: "Aggregate");
+		var builder = CreateBuilder(currentPageSchemaId: "_types.aggregations.Aggregate");
 		var aggregate = Schema("_types.aggregations.Aggregate");
 
 		var variants = ApiBodyContent.BuildUnionVariants(
 			aggregate,
 			new PropertyTreeScope { Prefix = "oneof", AncestorRefs = new HashSet<string> { "_types.aggregations.Aggregate" } },
-			new SchemaAnalyzer(fixture.Document, "Aggregate"),
+			new SchemaAnalyzer(fixture.Document, "_types.aggregations.Aggregate"),
 			builder
 		);
 

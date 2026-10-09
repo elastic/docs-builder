@@ -32,7 +32,7 @@ public partial class ApiPropertyTreeBuilder
 		var childBuilder = new ApiPropertyTreeBuilder(
 			document,
 			options with { ShowDeprecated = true, ShowVersionInfo = true, ShowExternalDocs = true },
-			currentPageType,
+			currentPageSchemaId,
 			_shapes
 		);
 
@@ -191,9 +191,7 @@ public partial class ApiPropertyTreeBuilder
 			if (primaryOption.IsArray && schemaToRender?.Items is { } items)
 				schemaToRender = items;
 			// A type with its own page (QueryContainer, …) links there instead of listing its fields again, as property rows do.
-			var pageUrl = schemaToRender is not null && _analyzer.GetTypeInfo(schemaToRender).HasLink
-				? SchemaHelpers.GetContainerPageUrl(options.ApiRootUrl, baseName)
-				: null;
+			var pageUrl = schemaToRender is null ? null : PageUrl(_analyzer.GetTypeInfo(schemaToRender).LinkedSchemaId);
 			var optionProps = primaryOption.IsObject && schemaToRender is not null && pageUrl is null
 				? _analyzer.GetSchemaProperties(schemaToRender)
 				: null;

@@ -16,7 +16,7 @@ namespace Elastic.ApiExplorer.Model;
 /// Creates a new SchemaAnalyzer.
 /// </remarks>
 /// <param name="document">The OpenAPI document for resolving schema references.</param>
-/// <param name="currentPageType">Optional current page type to prevent self-linking on schema pages.</param>
+/// <param name="currentPageSchemaId">The schema id of the type page being built, which never links to itself.</param>
 /// <param name="resolveCache">
 /// Optional cross-page cache for <c>$ref</c> resolutions.  When supplied (keyed by <c>refId</c>, value is the
 /// resolved concrete schema or <c>null</c> when unresolvable) each unique component schema is looked up in
@@ -25,7 +25,7 @@ namespace Elastic.ApiExplorer.Model;
 /// </param>
 public class SchemaAnalyzer(
 	OpenApiDocument document,
-	string? currentPageType = null,
+	string? currentPageSchemaId = null,
 	ConcurrentDictionary<string, IOpenApiSchema?>? resolveCache = null
 )
 {
@@ -43,7 +43,8 @@ public class SchemaAnalyzer(
 	/// <summary>
 	/// Checks if a type should link to its container page, considering the current page.
 	/// </summary>
-	private bool IsLinkedType(string typeName) => SchemaHelpers.ShouldLinkToContainerPage(typeName, currentPageType);
+	/// <summary>The schema id when it has a page of its own, other than the page being built.</summary>
+	private string? LinkedSchemaId(string? schemaId) => TypePages.Links(schemaId, currentPageSchemaId) ? schemaId : null;
 
 	/// <summary>
 	/// Whether a schema declares properties itself rather than only through an <c>allOf</c>. A union that does lists them
@@ -421,7 +422,7 @@ public class SchemaAnalyzer(
 			IsObject = !named.IsValueType && !isEnum && !named.IsPrimitiveAlias,
 			IsValueType = named.IsValueType,
 			ValueTypeBase = named.ValueTypeBase,
-			HasLink = IsLinkedType(named.TypeName),
+			LinkedSchemaId = LinkedSchemaId(refId),
 			UnionOptions = unionOptions,
 			IsEnum = isEnum,
 			UnionKeyword = unionKeyword,
@@ -479,7 +480,7 @@ public class SchemaAnalyzer(
 			IsObject = !named.IsValueType && !named.IsPrimitiveAlias,
 			IsValueType = named.IsValueType,
 			ValueTypeBase = named.ValueTypeBase,
-			HasLink = IsLinkedType(named.TypeName),
+			LinkedSchemaId = LinkedSchemaId(refId),
 			AlsoIncludes = GetComposedTypes(refSchemas)
 		};
 	}
@@ -500,7 +501,7 @@ public class SchemaAnalyzer(
 			IsObject = itemInfo.IsObject,
 			IsValueType = itemInfo.IsValueType,
 			ValueTypeBase = itemInfo.ValueTypeBase,
-			HasLink = itemInfo.HasLink,
+			LinkedSchemaId = itemInfo.LinkedSchemaId,
 			IsEnum = itemInfo.IsEnum,
 			ArrayItemType = isPrimitiveArray ? itemInfo.TypeName : null,
 			// An array of a union offers the union's variants for each item.
@@ -525,7 +526,7 @@ public class SchemaAnalyzer(
 				TypeName = $"string to {valueInfo.TypeName}",
 				SchemaRef = valueInfo.SchemaRef,
 				IsObject = true,
-				HasLink = valueInfo.HasLink,
+				LinkedSchemaId = valueInfo.LinkedSchemaId,
 				IsDictionary = true,
 				DictValueSchema = addProps
 			};
@@ -582,7 +583,7 @@ public class SchemaAnalyzer(
 			)
 				continue;
 			if (composed.All(c => c.Name != name))
-				composed.Add(new ComposedType(name, IsLinkedType(name)));
+				composed.Add(new ComposedType(name, LinkedSchemaId(reference.Reference.Id)));
 		}
 		return composed.Count > 0 ? composed : null;
 	}
