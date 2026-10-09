@@ -1975,13 +1975,12 @@ a.docs-reference-btn::after {
 	display: none;
 }
 
-/* Container for external docs in property items */
-.external-docs-row {
-	margin-top: 0.25rem;
-}
-
-.external-docs-row .docs-reference-btn {
+/* A property's reference link, on its name line after the type and badges. */
+.property-list dt a.docs-reference-btn.property-docs-link {
 	margin-top: 0;
+	font-family: var(--font-sans, inherit);
+	font-size: 0.875rem;
+	font-weight: 400;
 }
 
 /* Legacy external documentation link (keeping for backwards compat) */

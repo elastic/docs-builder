@@ -21,15 +21,12 @@
 		{
 			@(await RenderPartialAsync<_AppliesToBadge, Elastic.ApiExplorer.Infrastructure.AppliesToBadgeDisplay>(new Elastic.ApiExplorer.Infrastructure.AppliesToBadgeDisplay(Model.Availability, IsInline: true)))
 		}
+		@* On the name line, so the reference is found without reading the description first. *@
+		@if (Model.ExternalDocs is not null)
+		{
+			<a href="@Model.ExternalDocs.Url" class="docs-reference-btn property-docs-link" target="@(Model.ExternalDocs.IsElasticDocs ? null : "_blank")" rel="@(Model.ExternalDocs.IsElasticDocs ? null : "noopener")">@Model.ExternalDocs.ShortLinkText</a>
+		}
 	</dt>
-	@if (Model.ExternalDocs is not null)
-	{
-		<dd class="external-docs-row">
-			<a href="@Model.ExternalDocs.Url" class="docs-reference-btn" target="@(Model.ExternalDocs.IsElasticDocs ? null : "_blank")" rel="@(Model.ExternalDocs.IsElasticDocs ? null : "noopener")">
-				@Model.ExternalDocs.LinkText
-			</a>
-		</dd>
-	}
 	@if (Model.HasDescription)
 	{
 		<dd>

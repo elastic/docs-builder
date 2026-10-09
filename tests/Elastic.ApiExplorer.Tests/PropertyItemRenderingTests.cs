@@ -14,7 +14,7 @@ namespace Elastic.ApiExplorer.Tests;
 public class PropertyItemRenderingTests
 {
 	[Test]
-	public async Task Render_ReferenceLink_SitsUnderTheNameBeforeTheDescription()
+	public async Task Render_ReferenceLink_SitsOnTheNameLine()
 	{
 		var json =
 			"""
@@ -48,20 +48,17 @@ public class PropertyItemRenderingTests
 
 		var html = await _PropertyList.Create(list).RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
 
-		html
-			.IndexOf("Read the reference documentation", StringComparison.Ordinal)
-			.Should()
-			.BeLessThan(
-				html.IndexOf("How the input is chunked.", StringComparison.Ordinal),
-				"the link is found without reading the description"
-			);
 		html.Should().Contain(
-			"""href="https://docs.oracle.com/javase/8/docs/api/java/util/regex/Matcher.html" class="docs-reference-btn" target="_blank" rel="noopener">"""
+			"""href="https://docs.oracle.com/javase/8/docs/api/java/util/regex/Matcher.html" class="docs-reference-btn property-docs-link" target="_blank" rel="noopener">"""
 		);
 		html.Should().Contain(
-			"""href="https://www.elastic.co/docs/explore-analyze/elastic-inference/inference-api" class="docs-reference-btn">""",
+			"""href="https://www.elastic.co/docs/explore-analyze/elastic-inference/inference-api" class="docs-reference-btn property-docs-link">""",
 			"an elastic.co link stays in the tab"
 		);
 		html.Should().NotContain("&quot;_blank&quot;");
+		var nameLine = html[html.IndexOf("<dt id=\"chunking\">", StringComparison.Ordinal)..];
+		nameLine[..nameLine.IndexOf("</dt>", StringComparison.Ordinal)]
+			.Should()
+			.Contain(">Reference</a>", "next to the name and type, short enough to fit there");
 	}
 }
