@@ -59,7 +59,7 @@ public sealed class ApiExplorerFixture : IAsyncInitializer, IAsyncDisposable
 
 	public IEnumerable<INavigationItem> Walk() => Walk(Navigation);
 
-	private static IEnumerable<INavigationItem> Walk(INavigationItem item)
+	public static IEnumerable<INavigationItem> Walk(INavigationItem item)
 	{
 		yield return item;
 		if (item is not INodeNavigationItem<INavigationModel, INavigationItem> node)
