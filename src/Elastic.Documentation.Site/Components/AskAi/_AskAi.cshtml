@@ -1,6 +1,7 @@
 @inherits RazorSlice<Elastic.Documentation.Site.Components.AskAi.AskAiModel>
 <button class="ask-ai__open@(Model.Floating ? "" : " ask-ai__open--inline") btn btn--primary" type="button" data-ask-ai-open="@Model.Id" hidden>@await RenderPartialAsync(_Icon.Create(new IconModel { Name = "sparkles", Size = IconSize.Small }))<span>@Model.Title</span></button>
-<dialog class="flyout ask-ai" id="@Model.Id" aria-labelledby="@(Model.Id)-title" data-ask-ai>
+<dialog class="flyout ask-ai" id="@Model.Id" aria-labelledby="@(Model.Id)-title" data-ask-ai data-flyout-resizable>
+	<div class="flyout__handle" role="separator" aria-orientation="vertical" aria-label="Resize panel" tabindex="0" data-flyout-handle hidden></div>
 	<header class="flyout__header">
 		<h2 class="flyout__title" id="@(Model.Id)-title">@Model.Title</h2>
 		<div class="ask-ai__header-actions">

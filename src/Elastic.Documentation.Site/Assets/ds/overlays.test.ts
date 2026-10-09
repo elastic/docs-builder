@@ -1,4 +1,4 @@
-import { initFlyouts, initToasts } from './overlays'
+import { initFlyoutResize, initFlyouts, initToasts } from './overlays'
 
 describe('toast', () => {
     beforeEach(() => {
@@ -60,5 +60,40 @@ describe('flyout', () => {
         expect(
             document.querySelector<HTMLButtonElement>('button')!.hidden
         ).toBe(true)
+    })
+})
+
+describe('flyout resize', () => {
+    beforeEach(() => {
+        localStorage.clear()
+        document.body.innerHTML = `<dialog data-flyout-resizable><div data-flyout-handle hidden tabindex="0"></div></dialog>`
+    })
+
+    it('reveals the handle and resizes with the arrow keys', () => {
+        initFlyoutResize()
+        const dialog = document.querySelector<HTMLElement>('dialog')!
+        const handle = document.querySelector<HTMLElement>(
+            '[data-flyout-handle]'
+        )!
+        dialog.getBoundingClientRect = () => ({ width: 400 }) as DOMRect
+
+        handle.dispatchEvent(
+            new KeyboardEvent('keydown', { key: 'ArrowLeft', bubbles: true })
+        )
+
+        expect(handle.hidden).toBe(false)
+        expect(dialog.style.getPropertyValue('--flyout-width')).toBe('424px')
+        expect(localStorage.getItem('docs-flyout-width')).toBe('424')
+    })
+
+    it('restores the saved width and never goes below the minimum', () => {
+        localStorage.setItem('docs-flyout-width', '100')
+        initFlyoutResize()
+
+        expect(
+            document
+                .querySelector<HTMLElement>('dialog')!
+                .style.getPropertyValue('--flyout-width')
+        ).toBe('320px')
     })
 })

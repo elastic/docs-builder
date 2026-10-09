@@ -36,3 +36,59 @@ export function initFlyouts(scope: ParentNode = document) {
             })
         })
 }
+
+const flyoutWidthKey = 'docs-flyout-width'
+const flyoutMinWidth = 320
+const flyoutKeyStep = 24
+
+function clampFlyoutWidth(width: number): number {
+    return Math.min(Math.max(width, flyoutMinWidth), window.innerWidth)
+}
+
+// A resizable flyout grows from its left edge. The handle is hidden until script can move it; the arrow keys resize it too.
+export function initFlyoutResize(scope: ParentNode = document) {
+    scope
+        .querySelectorAll<HTMLElement>(
+            '[data-flyout-resizable]:not([data-flyout-resize-bound])'
+        )
+        .forEach((dialog) => {
+            const handle = dialog.querySelector<HTMLElement>(
+                '[data-flyout-handle]'
+            )
+            if (!handle) return
+            dialog.dataset.flyoutResizeBound = ''
+            handle.hidden = false
+
+            const apply = (width: number) => {
+                const next = clampFlyoutWidth(width)
+                dialog.style.setProperty('--flyout-width', `${next}px`)
+                localStorage.setItem(flyoutWidthKey, String(next))
+            }
+            const saved = Number(localStorage.getItem(flyoutWidthKey))
+            if (saved > 0) apply(saved)
+
+            handle.addEventListener('pointerdown', (event) => {
+                event.preventDefault()
+                handle.setPointerCapture?.(event.pointerId)
+                const move = (e: PointerEvent) =>
+                    apply(window.innerWidth - e.clientX)
+                const stop = () => {
+                    handle.removeEventListener('pointermove', move)
+                    handle.removeEventListener('pointerup', stop)
+                }
+                handle.addEventListener('pointermove', move)
+                handle.addEventListener('pointerup', stop)
+            })
+            handle.addEventListener('keydown', (event) => {
+                const grow =
+                    event.key === 'ArrowLeft'
+                        ? flyoutKeyStep
+                        : event.key === 'ArrowRight'
+                          ? -flyoutKeyStep
+                          : 0
+                if (grow === 0) return
+                event.preventDefault()
+                apply(dialog.getBoundingClientRect().width + grow)
+            })
+        })
+}

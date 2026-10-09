@@ -12,7 +12,7 @@ import { bindOutsideClick, initMenus } from './ds/menu'
 import { initMotionToggles } from './ds/motion'
 import { initNav } from './ds/nav'
 import { initNavFilter } from './ds/nav-filter'
-import { initFlyouts, initToasts } from './ds/overlays'
+import { initFlyoutResize, initFlyouts, initToasts } from './ds/overlays'
 import { initPopovers } from './ds/popover'
 import './ds/runtime'
 import { bindSearchShortcut, initSearch } from './ds/search'
@@ -55,6 +55,7 @@ function init(scope: ParentNode = document) {
     initListings(scope)
     initToasts(scope)
     initFlyouts(scope)
+    initFlyoutResize(scope)
     initAskAi(scope)
     initLightboxes(scope)
     initCarousels(scope)
