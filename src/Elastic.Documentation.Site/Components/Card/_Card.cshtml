@@ -1,5 +1,9 @@
 @inherits RazorSlice<Elastic.Documentation.Site.Components.Card.CardModel>
 <article class="@Model.CssClass">
+	@if (Model.Eyebrow is { } eyebrow)
+	{
+		<span class="card__eyebrow">@eyebrow</span>
+	}
 	<div class="card__head">
 		@if (Model.Icon is { } icon)
 		{

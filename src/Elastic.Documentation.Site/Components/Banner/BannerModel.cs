@@ -20,5 +20,13 @@ public sealed record BannerModel
 	public string? LinkLabel { get; init; }
 	public string? LinkHref { get; init; }
 
+	public string? Icon => Kind switch
+	{
+		BannerKind.Info => "help",
+		BannerKind.Warning => "warningFilled",
+		BannerKind.Danger => "errorFilled",
+		_ => null
+	};
+
 	public string CssClass => Kind is BannerKind.Announcement ? "banner" : $"banner banner--{Kind.ToString().ToLowerInvariant()}";
 }

@@ -18,11 +18,17 @@ public sealed record CardModel
 	/// <summary>The dark icon box used for the main entries on a landing page.</summary>
 	public bool Primary { get; init; }
 
-	public string CssClass => (Compact, Primary) switch
-	{
-		(true, true) => "card card--compact card--primary",
-		(true, false) => "card card--compact",
-		(false, true) => "card card--primary",
-		_ => "card"
-	};
+	/// <summary>Keeps the slab shadow on at rest, for the one card a page wants to lead with.</summary>
+	public bool Featured { get; init; }
+
+	/// <summary>A short mono label above the title, such as "New".</summary>
+	public string? Eyebrow { get; init; }
+
+	public string CssClass =>
+		string.Join(
+			' ',
+			new[] { "card", Compact ? "card--compact" : null, Primary ? "card--primary" : null, Featured ? "card--featured" : null }.Where(
+				c => c is not null
+			)
+		);
 }

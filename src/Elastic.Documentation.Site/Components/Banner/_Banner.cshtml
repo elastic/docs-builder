@@ -1,4 +1,8 @@
 @inherits RazorSlice<Elastic.Documentation.Site.Components.Banner.BannerModel>
 <aside class="@Model.CssClass" aria-label="Announcement">
+	@if (Model.Icon is { } icon)
+	{
+		<span class="banner__icon">@await RenderPartialAsync(_Icon.Create(new IconModel { Name = icon, Size = IconSize.Small }))</span>
+	}
 	<p class="banner__message">@Model.Message@if (Model.LinkHref is { } href && Model.LinkLabel is { } label){<text> </text><a class="banner__link" href="@href">@label</a>}</p>
 </aside>

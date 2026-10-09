@@ -21,14 +21,22 @@
 .banner--warning,
 .banner--danger {
 	border-bottom: var(--border-width) solid var(--banner-accent);
+	display: flex;
+	align-items: center;
+	gap: var(--space-3);
 	background: var(--banner-surface);
 	color: var(--color-text);
 	text-align: left;
 }
 
+.banner__icon {
+	display: inline-flex;
+	color: var(--banner-accent);
+}
+
 .banner--info {
 	--banner-accent: var(--color-accent);
-	--banner-surface: var(--color-surface-sunken);
+	--banner-surface: var(--color-accent-surface);
 }
 
 .banner--warning {

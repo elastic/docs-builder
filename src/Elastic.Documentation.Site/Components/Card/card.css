@@ -119,3 +119,20 @@
 	background: var(--color-emphasis);
 	color: var(--color-on-emphasis);
 }
+
+.card--featured {
+	border-color: var(--color-border-strong);
+	box-shadow: var(--shadow-slab);
+}
+
+.card__eyebrow {
+	align-self: flex-start;
+	padding: 0 var(--space-2);
+	background: var(--color-emphasis);
+	color: var(--color-on-emphasis);
+	font-family: var(--font-display);
+	font-size: var(--text-xs);
+	font-weight: var(--weight-bold);
+	letter-spacing: 0.08em;
+	text-transform: uppercase;
+}

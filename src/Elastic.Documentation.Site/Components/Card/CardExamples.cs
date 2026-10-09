@@ -48,6 +48,18 @@ public static class CardExamples
 				}
 			),
 			ComponentExample.Of(
+				"Featured",
+				_Card.Create,
+				new CardModel
+				{
+					Title = "Vector Database tutorial",
+					Description = "Semantic and hybrid search in 10 minutes.",
+					Href = "#",
+					Eyebrow = "New",
+					Featured = true
+				}
+			),
+			ComponentExample.Of(
 				"Without icon",
 				_Card.Create,
 				new CardModel { Title = "Release notes", Description = "What changed in each release.", Href = "#" }
