@@ -1,0 +1,282 @@
+/* Tables from the table directive and Markdown. table.ts wraps overflowing tables with a fullscreen button. */
+.table-wrapper {
+	--table-edge-fade: 1.5rem;
+
+	/* Isolation keeps the hover blend inside this wrapper's own scroll shadow. */
+	isolation: isolate;
+	width: 100%;
+	margin-block: var(--space-4);
+	overflow-x: auto;
+	background-color: var(--color-surface);
+
+	/* Pure CSS scroll shadows: the cover gradients scroll with the content and mask the fixed shadows at rest. */
+	background-image:
+		linear-gradient(to right, var(--color-surface) 30%, transparent),
+		linear-gradient(to left, var(--color-surface) 30%, transparent),
+		radial-gradient(
+			farthest-side at 0 50%,
+			color-mix(in oklab, var(--color-text) 18%, transparent),
+			transparent
+		),
+		radial-gradient(
+			farthest-side at 100% 50%,
+			color-mix(in oklab, var(--color-text) 18%, transparent),
+			transparent
+		);
+	background-repeat: no-repeat;
+	background-size:
+		var(--table-edge-fade) 100%,
+		var(--table-edge-fade) 100%,
+		10px 100%,
+		10px 100%;
+	background-position:
+		0 0,
+		100% 0,
+		0 0,
+		100% 0;
+	background-attachment: local, local, scroll, scroll;
+}
+
+.table-wrapper table {
+	width: 100%;
+	border-collapse: collapse;
+	border: var(--border-width) solid var(--color-border);
+	font-size: var(--text-sm);
+}
+
+.table-wrapper th,
+.table-wrapper td {
+	min-width: 7.5rem;
+	padding: var(--space-2) var(--space-4);
+	border-bottom: 0;
+	text-align: left;
+	vertical-align: top;
+}
+
+.table-wrapper th:not(:first-child),
+.table-wrapper td:not(:first-child) {
+	border-left: var(--border-width) solid var(--color-border);
+}
+
+.table-wrapper thead {
+	border-bottom: var(--border-width) solid var(--color-border);
+	background: var(--color-surface-sunken);
+	color: var(--color-heading);
+	font-weight: var(--weight-semibold);
+}
+
+/* A header row with no text in any cell carries no information, so it is hidden. */
+.table-wrapper thead:not(:has(th:not(:empty))) {
+	display: none;
+}
+
+.table-wrapper tbody tr:not(:last-child) {
+	border-bottom: var(--border-width) solid var(--color-border);
+}
+
+.table-wrapper tbody tr:hover {
+	background: var(--color-surface-sunken);
+	mix-blend-mode: multiply;
+}
+
+/* Matrix tables (opt-in) highlight the row and the column under the pointer, like a lookup table. */
+.table-matrix {
+	--crosshair-tint: color-mix(
+		in oklab,
+		var(--color-text-muted) 25%,
+		transparent
+	);
+	--row-heading-tint: color-mix(
+		in oklab,
+		var(--color-text-muted) 12%,
+		transparent
+	);
+}
+
+.table-matrix table {
+	overflow: hidden;
+}
+
+.table-matrix th,
+.table-matrix td {
+	position: relative;
+}
+
+.table-matrix tbody tr:hover {
+	background: var(--crosshair-tint);
+	mix-blend-mode: multiply;
+}
+
+.table-matrix tbody td:not(:first-child):hover::after,
+.table-matrix thead th:not(:first-child):hover::after {
+	content: '';
+	position: absolute;
+	top: -5000px;
+	bottom: -5000px;
+	left: 0;
+	width: 100%;
+	background: var(--crosshair-tint);
+	mix-blend-mode: multiply;
+	pointer-events: none;
+}
+
+.table-matrix td:hover {
+	color: var(--color-heading);
+	font-weight: var(--weight-semibold);
+}
+
+.table-matrix tbody td:first-child {
+	background: var(--row-heading-tint);
+	font-weight: var(--weight-semibold);
+	mix-blend-mode: multiply;
+}
+
+/* The fullscreen button docks on the table's top-right corner and appears only when the table overflows. */
+.table-container {
+	display: flex;
+	flex-direction: column;
+	align-items: flex-end;
+}
+
+.table-container .table-expand-btn {
+	display: none;
+}
+
+.table-container[data-overflowing] .table-expand-btn {
+	align-items: center;
+	justify-content: center;
+	width: 2rem;
+	height: 2rem;
+	border: var(--border-width) solid var(--color-border);
+	border-bottom: 0;
+	border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+	background: var(--color-surface);
+	color: var(--color-text);
+	cursor: pointer;
+}
+
+.table-container .table-expand-btn:hover {
+	background: var(--color-surface-sunken);
+}
+
+@media (min-width: 768px) {
+	.table-container[data-overflowing] .table-expand-btn {
+		display: flex;
+	}
+
+	.table-container[data-overflowing] .table-wrapper {
+		margin-top: 0;
+	}
+}
+
+dialog.table-modal {
+	max-width: 95vw;
+	max-height: 90vh;
+	margin: auto;
+	padding: 0;
+	border: var(--border-width) solid var(--color-border);
+	border-radius: var(--radius-lg);
+	background: var(--color-surface);
+	color: var(--color-text);
+}
+
+dialog.table-modal::backdrop {
+	background: color-mix(in oklab, var(--color-emphasis) 60%, transparent);
+}
+
+.table-modal-content {
+	display: flex;
+	flex-direction: column;
+	align-items: flex-end;
+	padding: var(--space-4);
+}
+
+.table-modal-close {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 1.75rem;
+	height: 1.75rem;
+	margin-bottom: var(--space-1);
+	border: 0;
+	border-radius: var(--radius-sm);
+	background: var(--color-surface);
+	color: var(--color-text-muted);
+	cursor: pointer;
+}
+
+.table-modal-close:hover {
+	color: var(--color-heading);
+}
+
+dialog.table-modal .table-wrapper {
+	max-height: calc(90vh - 4rem);
+	margin-block: 0;
+	overflow: auto;
+}
+
+dialog.table-modal filterable-table {
+	display: flex;
+	flex-direction: column;
+	width: 100%;
+	min-width: 0;
+}
+
+dialog.table-modal thead th {
+	position: sticky;
+	top: 0;
+	z-index: 1;
+	background: var(--color-surface-sunken);
+}
+
+/* The filter controls come from the filterable-table element. */
+filterable-table {
+	display: block;
+}
+
+.filterable-table-controls {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: var(--space-3);
+	margin: var(--space-3) 0;
+}
+
+.filterable-table-search,
+.filterable-table-facet select {
+	padding: var(--space-1) var(--space-2);
+	border: var(--border-width) solid var(--color-border-control);
+	border-radius: var(--radius-md);
+	background: var(--color-surface);
+	color: var(--color-text);
+	font-size: var(--text-sm);
+}
+
+.filterable-table-search {
+	min-width: 16rem;
+}
+
+.filterable-table-facet {
+	display: inline-flex;
+	align-items: center;
+	gap: var(--space-2);
+	font-size: var(--text-sm);
+}
+
+.filterable-table-status {
+	margin-inline-start: auto;
+	color: var(--color-text-muted);
+	font-size: var(--text-sm);
+}
+
+@media print {
+	.table-expand-btn,
+	.filterable-table-search,
+	.filterable-table-facet {
+		display: none;
+	}
+
+	filterable-table:not([data-filtered='true']) .filterable-table-controls {
+		display: none;
+	}
+}

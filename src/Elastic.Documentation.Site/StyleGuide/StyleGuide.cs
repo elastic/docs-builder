@@ -15,16 +15,20 @@ using Elastic.Documentation.Site.Components.Check;
 using Elastic.Documentation.Site.Components.Chip;
 using Elastic.Documentation.Site.Components.CodeBlock;
 using Elastic.Documentation.Site.Components.CtaCard;
+using Elastic.Documentation.Site.Components.DiagnosticsPanel;
 using Elastic.Documentation.Site.Components.Disclosure;
 using Elastic.Documentation.Site.Components.DocsBar;
 using Elastic.Documentation.Site.Components.Feedback;
+using Elastic.Documentation.Site.Components.Image;
 using Elastic.Documentation.Site.Components.Kbd;
 using Elastic.Documentation.Site.Components.Link;
 using Elastic.Documentation.Site.Components.LinkMenu;
 using Elastic.Documentation.Site.Components.LinkTile;
+using Elastic.Documentation.Site.Components.Listing;
 using Elastic.Documentation.Site.Components.Method;
 using Elastic.Documentation.Site.Components.NavSide;
 using Elastic.Documentation.Site.Components.PageActions;
+using Elastic.Documentation.Site.Components.PageCard;
 using Elastic.Documentation.Site.Components.Pager;
 using Elastic.Documentation.Site.Components.Prose;
 using Elastic.Documentation.Site.Components.ReleaseCard;
@@ -120,7 +124,11 @@ public static class StyleGuideCatalog
 			ButtonDirectiveExamples.Buttons,
 			CodeBlockExamples.CodeBlocks,
 			ProseExamples.Articles,
-			VectorSizingExamples.Calculators
+			VectorSizingExamples.Calculators,
+			DiagnosticsPanelExamples.Panels,
+			PageCardExamples.Cards,
+			ImageExamples.Images,
+			ListingExamples.Listings
 		],
 		["chrome"] =
 		[

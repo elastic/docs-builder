@@ -1,8 +1,12 @@
 // Entry point of the design-system bundle, loaded instead of main.ts when NAVIGATION_PREVIEW is on.
 // Everything here is progressive enhancement: pages are complete HTML without it. Enhancements bind to data-* attributes,
 // never to styling classes, so a theme can rewrite the CSS without touching behaviour.
-import { initCopyButtons } from './ds/copy'
+import { initCarousels } from './ds/carousel'
+import { initCopyButtons, initCopyText } from './ds/copy'
+import { initDiagnostics } from './ds/diagnostics'
 import { initFeedback } from './ds/feedback'
+import { initLightboxes } from './ds/lightbox'
+import { initListings } from './ds/listing'
 import { bindOutsideClick, initMenus } from './ds/menu'
 import { initNav } from './ds/nav'
 import { initPopovers } from './ds/popover'
@@ -12,10 +16,18 @@ import { initThemeToggles } from './ds/theme'
 import { initToc } from './ds/toc'
 import { initVectorSizing } from './ds/vector-sizing'
 
+// The filterable table is already framework-free, so the design system loads it as it is.
+async function loadFilterableTables(scope: ParentNode) {
+    if (customElements.get('filterable-table')) return
+    if (scope.querySelector('filterable-table'))
+        await import('./web-components/FilterableTable')
+}
+
 function init(scope: ParentNode = document) {
     initThemeToggles(scope)
     initTabSync(scope)
     initCopyButtons(scope)
+    initCopyText(scope)
     initMenus(scope)
     initPopovers(scope)
     initFeedback(scope)
@@ -23,6 +35,11 @@ function init(scope: ParentNode = document) {
     initNav(scope)
     initToc(scope)
     initVectorSizing(scope)
+    initDiagnostics(scope)
+    initListings(scope)
+    initLightboxes(scope)
+    initCarousels(scope)
+    void loadFilterableTables(scope)
 }
 
 bindOutsideClick()

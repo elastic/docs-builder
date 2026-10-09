@@ -39,3 +39,31 @@ export function initCopyButtons(scope: ParentNode = document) {
             })
         })
 }
+
+// Buttons that copy a fixed string, such as an install command: [data-copy-text] holds the text.
+export function initCopyText(scope: ParentNode = document) {
+    scope
+        .querySelectorAll<HTMLButtonElement>(
+            'button[data-copy-text]:not([data-copy-text-bound])'
+        )
+        .forEach((button) => {
+            if (!navigator.clipboard) return
+            button.dataset.copyTextBound = ''
+            button.addEventListener('click', async () => {
+                const text = button.dataset.copyText
+                if (!text) return
+                try {
+                    await navigator.clipboard.writeText(text)
+                } catch {
+                    return
+                }
+                const label = button.innerHTML
+                button.dataset.copied = ''
+                button.textContent = 'Copied!'
+                window.setTimeout(() => {
+                    delete button.dataset.copied
+                    button.innerHTML = label
+                }, 1500)
+            })
+        })
+}

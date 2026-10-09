@@ -1,0 +1,34 @@
+@inherits RazorSlice<Elastic.Documentation.Site.Components.Listing.ListingModel>
+<div class="listing" data-listing>
+	@if (Model.Total > 0)
+	{
+		@* Filtering needs script, so the bar stays hidden until script reveals it. *@
+		<div class="listing__bar" data-listing-bar hidden>
+			<input class="input" type="search" placeholder="@Model.Placeholder" aria-label="Filter pages" data-listing-filter>
+			@if (Model.Chips.Count > 0)
+			{
+				<div class="listing__chips" role="group" aria-label="Filter by group">
+					<button class="listing__chip" type="button" data-listing-chip="" aria-pressed="true">All</button>
+					@foreach (var chip in Model.Chips)
+					{
+						<button class="listing__chip" type="button" data-listing-chip="@chip.Key" aria-pressed="false">@chip.Title</button>
+					}
+				</div>
+			}
+		</div>
+	}
+	@foreach (var group in Model.Groups)
+	{
+		<div class="listing__group" data-listing-section="@(group.Key ?? "")">
+			@if (group.Title is not null)
+			{
+				<h2 class="listing__heading" id="@(group.Key ?? "")">@group.Title</h2>
+			}
+			@foreach (var card in group.Cards)
+			{
+				@await RenderPartialAsync(_PageCard.Create(card with { InListing = true, Group = group.Key }))
+			}
+		</div>
+	}
+	<p class="listing__empty" data-listing-empty hidden>No pages match your filter.</p>
+</div>

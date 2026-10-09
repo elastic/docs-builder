@@ -35,3 +35,8 @@
 .kbd .kbd-space {
 	width: 0;
 }
+
+.kbd .kbd-icon {
+	margin-right: var(--space-1);
+	color: var(--color-text-muted);
+}

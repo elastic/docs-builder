@@ -74,6 +74,19 @@ Code blocks keep `pre code`, so the existing client-side highlighter still finds
 Flag-on tests live in `tests/Elastic.Authoring.Tests/DesignSystem/`.
 Set `NavigationPreview = true` in the `SetupOptions` of an authoring test to render a document with the flag on.
 
+## Content directives
+
+Directives whose legacy markup already used semantic classes keep that markup and gain design-system CSS: agent skills, contributors, related learning, CLI modifiers, applies-to switches, hub pages, tables and mermaid diagrams.
+Directives that depended on utility classes or inline handlers are rebuilt as components:
+
+| Directive | Component | Notes |
+|---|---|---|
+| Image, figure | `Image` | A link to the image that opens a native `dialog` lightbox; without script the link opens the image |
+| Image carousel | `Image` | A scroll-snap row; script reveals the previous, next and dot controls |
+| Page card | `PageCard` | One whole-row link with one arrow |
+| Listing | `Listing` | Page cards with a filter bar that script reveals |
+| Diagnostics console | `DiagnosticsPanel` | The developer console on `docs-builder serve`; script polls the build state |
+
 ## Page layout
 
 With the flag on, pages use a design-system shell: header, sidebar, article, right-hand rail and footer.

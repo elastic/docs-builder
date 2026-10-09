@@ -1,0 +1,138 @@
+.mermaid-container {
+	position: relative;
+	margin-block: var(--space-4);
+	border: var(--border-width) solid var(--color-border);
+	border-radius: var(--radius-md);
+	background: var(--color-surface);
+}
+
+.mermaid-viewport {
+	overflow: auto;
+	padding: var(--space-4);
+}
+
+.mermaid-rendered {
+	display: flex;
+	justify-content: center;
+}
+
+.mermaid-rendered svg {
+	max-width: 100%;
+	height: auto;
+}
+
+/* Controls and the fullscreen view are built by mermaid.ts. */
+.mermaid-viewport {
+	cursor: grab;
+}
+
+.mermaid-viewport.is-dragging {
+	cursor: grabbing;
+}
+
+.mermaid-controls {
+	position: absolute;
+	top: var(--space-3);
+	right: var(--space-3);
+	z-index: 1;
+	display: flex;
+	gap: var(--space-1);
+	padding: var(--space-1);
+	border: var(--border-width) solid var(--color-border);
+	border-radius: var(--radius-md);
+	background: var(--color-surface);
+	opacity: 0;
+	transition: opacity var(--duration-base) var(--ease-standard);
+}
+
+.mermaid-container:hover .mermaid-controls,
+.mermaid-controls:focus-within {
+	opacity: 1;
+}
+
+.mermaid-btn {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 1.75rem;
+	height: 1.75rem;
+	padding: 0;
+	border: 0;
+	border-radius: var(--radius-sm);
+	background: transparent;
+	color: var(--color-text-muted);
+	cursor: pointer;
+	transition:
+		background-color var(--duration-fast) var(--ease-standard),
+		color var(--duration-fast) var(--ease-standard);
+}
+
+.mermaid-btn:hover {
+	background: var(--color-surface-sunken);
+	color: var(--color-heading);
+}
+
+.mermaid-btn svg {
+	width: 1rem;
+	height: 1rem;
+}
+
+.mermaid-modal {
+	position: fixed;
+	inset: 0;
+	z-index: var(--z-modal);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	background: color-mix(in oklab, var(--color-emphasis) 60%, transparent);
+}
+
+.mermaid-modal-content {
+	position: relative;
+	display: flex;
+	flex-direction: column;
+	width: 95vw;
+	height: 95vh;
+	overflow: hidden;
+	border-radius: var(--radius-lg);
+	background: var(--color-surface);
+	box-shadow: var(--shadow-overlay);
+}
+
+.mermaid-modal-close {
+	position: absolute;
+	top: var(--space-3);
+	right: var(--space-3);
+	z-index: 2;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 2rem;
+	height: 2rem;
+	padding: 0;
+	border: 0;
+	border-radius: var(--radius-md);
+	background: var(--color-surface-sunken);
+	color: var(--color-text);
+	cursor: pointer;
+}
+
+.mermaid-modal-viewport {
+	flex: 1;
+	min-height: 0;
+	overflow: hidden;
+	cursor: grab;
+}
+
+.mermaid-modal-controls {
+	position: absolute;
+	bottom: var(--space-3);
+	left: 50%;
+	display: flex;
+	gap: var(--space-1);
+	padding: var(--space-1);
+	border: var(--border-width) solid var(--color-border);
+	border-radius: var(--radius-md);
+	background: var(--color-surface);
+	transform: translateX(-50%);
+}

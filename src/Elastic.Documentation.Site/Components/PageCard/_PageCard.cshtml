@@ -1,0 +1,11 @@
+@inherits RazorSlice<Elastic.Documentation.Site.Components.PageCard.PageCardModel>
+<a class="page-card" href="@Model.Url"@(Model.Preload is { Length: > 0 } preload ? new HtmlString($" preload=\"{System.Net.WebUtility.HtmlEncode(preload)}\"") : HtmlString.Empty)@(Model.InListing ? new HtmlString($" data-listing-card data-listing-group=\"{System.Net.WebUtility.HtmlEncode(Model.Group ?? "")}\" data-listing-title=\"{System.Net.WebUtility.HtmlEncode(Model.Title.ToLowerInvariant())}\"") : HtmlString.Empty)>
+	<span class="page-card__text">
+		<span class="page-card__title">@Model.Title</span>
+		@if (Model.HasDescription)
+		{
+			<span class="page-card__description">@Model.Description</span>
+		}
+	</span>
+	@await RenderPartialAsync(_Icon.Create(new IconModel { Name = "arrow_right", Size = IconSize.Small }))
+</a>

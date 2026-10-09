@@ -1,4 +1,4 @@
-import { initCopyButtons } from './copy'
+import { initCopyButtons, initCopyText } from './copy'
 
 const block = `
 <figure class="code-block">
@@ -59,5 +59,36 @@ describe('initCopyButtons', () => {
         document.querySelector<HTMLButtonElement>('[data-copy]')!.click()
 
         expect(navigator.clipboard.writeText).toHaveBeenCalledTimes(1)
+    })
+})
+
+describe('initCopyText', () => {
+    beforeEach(() => {
+        jest.useFakeTimers()
+        Object.assign(navigator, {
+            clipboard: { writeText: jest.fn(async () => undefined) },
+        })
+        document.body.innerHTML =
+            '<button data-copy-text="npx skills add x">Copy install command</button>'
+        initCopyText()
+    })
+
+    afterEach(() => jest.useRealTimers())
+
+    it('copies the text, confirms, then restores the label', async () => {
+        const button = document.querySelector('button')!
+        button.click()
+        await Promise.resolve()
+        await Promise.resolve()
+
+        expect(navigator.clipboard.writeText).toHaveBeenCalledWith(
+            'npx skills add x'
+        )
+        expect(button.textContent).toBe('Copied!')
+        expect(button.hasAttribute('data-copied')).toBe(true)
+
+        jest.advanceTimersByTime(1500)
+        expect(button.textContent).toBe('Copy install command')
+        expect(button.hasAttribute('data-copied')).toBe(false)
     })
 })

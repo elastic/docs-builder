@@ -58,3 +58,17 @@
 @import '../Components/SearchDialog/search-dialog.css' layer(ds.components);
 @import '../Components/DocsBar/docs-bar.css' layer(ds.components);
 @import '../Components/VectorSizing/vector-sizing.css' layer(ds.components);
+@import '../Components/DiagnosticsPanel/diagnostics-panel.css'
+	layer(ds.components);
+@import '../Components/AgentSkill/agent-skill.css' layer(ds.components);
+@import '../Components/Contributors/contributors.css' layer(ds.components);
+@import '../Components/RelatedLearning/related-learning.css'
+	layer(ds.components);
+@import '../Components/CliModifiers/cli-modifiers.css' layer(ds.components);
+@import '../Components/AppliesSwitch/applies-switch.css' layer(ds.components);
+@import '../Components/Mermaid/mermaid.css' layer(ds.components);
+@import '../Components/Hub/hub.css' layer(ds.components);
+@import '../Components/Table/table.css' layer(ds.components);
+@import '../Components/PageCard/page-card.css' layer(ds.components);
+@import '../Components/Listing/listing.css' layer(ds.components);
+@import '../Components/Image/image.css' layer(ds.components);

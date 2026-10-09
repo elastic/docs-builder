@@ -9,6 +9,9 @@ using Elastic.Markdown.Myst.CodeBlocks;
 using Elastic.Markdown.Myst.Components;
 using Elastic.Markdown.Myst.Directives.Admonition;
 using Elastic.Markdown.Myst.Directives.Button;
+using Elastic.Markdown.Myst.Directives.Image;
+using Elastic.Markdown.Myst.Directives.Listing;
+using Elastic.Markdown.Myst.Directives.PageCard;
 using Elastic.Markdown.Myst.Directives.Stepper;
 using Elastic.Markdown.Myst.Directives.Tabs;
 using Elastic.Markdown.Myst.Directives.VectorSizing;
@@ -156,10 +159,129 @@ internal static class DesignSystemDirectives
 						})
 				);
 				return true;
+			case FigureBlock figure:
+				Write(
+					renderer,
+					Ds
+						.Image
+						._Figure
+						.Create(new Ds.Image.FigureModel
+						{
+							Image = ImageModelOf(figure, FigureUrl(figure)),
+							Label = figure.Label,
+							Caption = new BodyViewModel { DirectiveBlock = figure }.RenderBlock()
+						})
+				);
+				return true;
+			case ImageBlock image:
+				Write(renderer, Ds.Image._Image.Create(ImageModelOf(image, image.ImageUrl)));
+				return true;
+			case ImageCarouselBlock carousel:
+				Write(
+					renderer,
+					Ds
+						.Image
+						._ImageCarousel
+						.Create(new Ds.Image.ImageCarouselModel
+						{
+							Images = [.. carousel.Images.Select(img => ImageModelOf(img, img.ImageUrl))],
+							MaxHeight = CarouselHeight(carousel.MaxHeight)
+						})
+				);
+				return true;
+			case PageCardBlock card:
+				Write(
+					renderer,
+					Ds
+						.PageCard
+						._PageCard
+						.Create(new Ds.PageCard.PageCardModel
+						{
+							Title = card.Title,
+							Url = card.ResolvedUrl,
+							Description = new BodyViewModel { DirectiveBlock = card }.RenderBlock(),
+							Preload = Elastic.Documentation.Site.Htmx.Preload
+						})
+				);
+				return true;
+			case ListingBlock listing:
+				Write(renderer, Ds.Listing._Listing.Create(ListingModelOf(listing)));
+				return true;
 			default:
 				return false;
 		}
 	}
+
+	private static Ds.Image.ImageModel ImageModelOf(ImageBlock block, string? imageUrl)
+	{
+		var legacy = new ImageViewModel
+		{
+			DirectiveBlock = block,
+			Label = block.Label,
+			Align = block.Align,
+			Alt = block.Alt ?? string.Empty,
+			Title = block.Title,
+			Height = block.Height,
+			Scale = block.Scale ?? string.Empty,
+			Target = block.Target,
+			Width = block.Width,
+			Screenshot = block.Screenshot,
+			ImageUrl = imageUrl
+		};
+		return new Ds.Image.ImageModel
+		{
+			Src = imageUrl ?? string.Empty,
+			Id = legacy.UniqueImageId,
+			Alt = legacy.Alt,
+			Title = legacy.Title,
+			Style = legacy.Style,
+			Screenshot = !string.IsNullOrEmpty(block.Screenshot)
+		};
+	}
+
+	private static string? FigureUrl(ImageBlock block) =>
+		block.ImageUrl != null && (block.ImageUrl.StartsWith("/_static") || block.ImageUrl.StartsWith("_static"))
+			? $"{block.Build.UrlPathPrefix}/{block.ImageUrl.TrimStart('/')}"
+			: block.ImageUrl;
+
+	/// <summary>The directive's semantic heights as lengths; <c>none</c> and unknown values leave images at natural size.</summary>
+	private static string? CarouselHeight(string? maxHeight) => maxHeight?.ToLowerInvariant() switch
+	{
+		"small" => "350px",
+		"medium" => "750px",
+		_ => null
+	};
+
+	private static Ds.Listing.ListingModel ListingModelOf(ListingBlock block) =>
+		new()
+		{
+			Groups =
+			[
+				.. block
+					.Entries
+					.GroupBy(e => e.GroupKey)
+					.OrderBy(g => g.Key is null ? 1 : 0)
+					.Select(
+						g => new Ds.Listing.ListingGroup(
+							g.Key,
+							g.FirstOrDefault(e => e.GroupTitle is not null)?.GroupTitle,
+							[
+								.. g.Select(
+									e => new Ds.PageCard.PageCardModel
+									{
+										Title = e.Title,
+										Url = e.Url,
+										Description = string.IsNullOrWhiteSpace(e.Description)
+											? null
+											: new HtmlString(System.Net.WebUtility.HtmlEncode(e.Description)),
+										Preload = null
+									}
+								)
+							]
+						)
+					)
+			]
+		};
 
 	/// <summary>Writes a fenced code block as a design-system code block. Callout lists after the block stay with the shared renderer.</summary>
 	public static void WriteCodeBlock(HtmlRenderer renderer, EnhancedCodeBlock block)

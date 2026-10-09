@@ -1,0 +1,5 @@
+@inherits RazorSlice<Elastic.Documentation.Site.Components.Image.FigureModel>
+<figure class="figure"@(Model.Label is { Length: > 0 } label ? new HtmlString($" id=\"{System.Net.WebUtility.HtmlEncode(label)}\"") : HtmlString.Empty)>
+	<a class="image-reference image__link" href="@Model.Image.Src"><img class="image__img" alt="@Model.Image.Alt" src="@Model.Image.Src"@(Model.Image.Style is { Length: > 0 } style ? new HtmlString($" style=\"{System.Net.WebUtility.HtmlEncode(style)}\"") : HtmlString.Empty)></a>
+	<figcaption class="figure__caption">@Model.Caption@if (Model.Label is { Length: > 0 } anchor){<a class="headerlink" href="#@anchor" title="Link to this image">¶</a>}</figcaption>
+</figure>

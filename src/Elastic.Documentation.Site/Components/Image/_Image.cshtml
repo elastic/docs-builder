@@ -1,0 +1,5 @@
+@inherits RazorSlice<Elastic.Documentation.Site.Components.Image.ImageModel>
+<a class="image-reference image__link" href="@Model.Src" data-lightbox="@Model.DialogId">
+	<img class="@Model.ImageClass" loading="lazy" title="@Model.Title" alt="@Model.Alt" src="@Model.Src"@(Model.Style is { Length: > 0 } style ? new HtmlString($" style=\"{System.Net.WebUtility.HtmlEncode(style)}\"") : HtmlString.Empty)>
+</a>
+@await RenderPartialAsync(_Lightbox.Create(Model))

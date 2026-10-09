@@ -37,6 +37,6 @@
 	@if (Model.DiagnosticsPanel)
 	{
 		<div class="site-footer__diagnostics" data-diagnostics-placeholder></div>
-		<diagnostics-panel></diagnostics-panel>
+		@await RenderPartialAsync(_DiagnosticsPanel.Create(new DiagnosticsPanelModel()))
 	}
 </footer>

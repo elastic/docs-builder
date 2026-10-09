@@ -341,3 +341,51 @@ public class VectorSizingComponent : DesignSystemDirectiveTest
 		await Docs.ConvertsToContainingRawHtml("for=\"vector-sizing-dimensions\"");
 	}
 }
+
+public class ImageComponents : DesignSystemDirectiveTest
+{
+	protected override string Markdown =>
+		"""
+		:::{image} /images/logo.png
+		:alt: The logo
+		:::
+
+		:::{figure} /images/logo.png
+		:label: logo-figure
+		:alt: The logo
+		A caption
+		:::
+		""";
+
+	[Test, DisplayName("renders the image link with a native lightbox dialog")]
+	public async Task Image()
+	{
+		await Docs.ConvertsToContainingRawHtml("data-lightbox=\"lightbox-");
+		await Docs.ConvertsToContainingRawHtml("<dialog class=\"lightbox\"");
+		await Docs.DoesNotConvertToContainingHtml("onclick=");
+	}
+
+	[Test, DisplayName("renders the figure with its caption and anchor")]
+	public async Task Figure()
+	{
+		await Docs.ConvertsToContainingRawHtml("<figure class=\"figure\" id=\"logo-figure\">");
+		await Docs.ConvertsToContainingRawHtml("<figcaption class=\"figure__caption\">");
+	}
+}
+
+public class PageCardComponent : DesignSystemDirectiveTest
+{
+	protected override string Markdown => """
+		:::{page-card} index.md
+		A description.
+		:::
+		""";
+
+	[Test, DisplayName("renders the page card without utility classes")]
+	public async Task Renders()
+	{
+		await Docs.ConvertsToContainingRawHtml("class=\"page-card\"");
+		await Docs.ConvertsToContainingRawHtml("page-card__description");
+		await Docs.DoesNotConvertToContainingHtml("rounded-lg");
+	}
+}

@@ -1,0 +1,210 @@
+.diagnostics {
+	position: fixed;
+	inset: auto 0 0;
+	z-index: var(--z-toast);
+	display: flex;
+	flex-direction: column;
+	background: var(--color-code-bg);
+	color: var(--color-code-text);
+	font-family: var(--font-mono);
+	font-size: var(--text-xs);
+}
+
+.diagnostics[hidden] {
+	display: none;
+}
+
+.diagnostics__bar {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: var(--space-4);
+	width: 100%;
+	padding: var(--space-3) var(--space-4);
+	border: 0;
+	border-top: var(--border-width) solid var(--color-code-border);
+	background: transparent;
+	color: inherit;
+	font: inherit;
+	cursor: pointer;
+}
+
+.diagnostics[data-severity='error'] .diagnostics__bar {
+	border-top-color: var(--color-danger);
+}
+
+.diagnostics[data-severity='warning'] .diagnostics__bar {
+	border-top-color: var(--color-warning);
+}
+
+.diagnostics[data-severity='hint'] .diagnostics__bar {
+	border-top-color: var(--color-accent);
+}
+
+.diagnostics__summary {
+	display: inline-flex;
+	flex-wrap: wrap;
+	gap: var(--space-3);
+}
+
+.diagnostics[data-state='clear'] .diagnostics__summary {
+	color: var(--color-success);
+}
+
+.diagnostics__action {
+	color: var(--color-code-muted);
+}
+
+.diagnostics__count--error {
+	color: var(--color-danger);
+}
+
+.diagnostics__count--warning {
+	color: var(--color-warning);
+}
+
+.diagnostics__count--hint {
+	color: var(--color-accent);
+}
+
+.diagnostics__hud {
+	display: flex;
+	flex-direction: column;
+	height: var(--diagnostics-height, 12.5rem);
+	min-height: 8rem;
+	max-height: 66vh;
+}
+
+.diagnostics__hud[hidden] {
+	display: none;
+}
+
+.diagnostics__resize {
+	flex: none;
+	height: var(--space-2);
+	background: var(--color-code-border);
+	cursor: ns-resize;
+}
+
+.diagnostics__resize:hover,
+.diagnostics__resize:focus-visible {
+	background: var(--color-focus-ring);
+}
+
+.diagnostics__toolbar {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: var(--space-1) var(--space-4);
+	border-bottom: var(--border-width) solid var(--color-code-border);
+}
+
+.diagnostics__filters {
+	display: flex;
+	gap: var(--space-2);
+}
+
+.diagnostics__filter,
+.diagnostics__close,
+.diagnostics__copy {
+	padding: var(--space-1) var(--space-2);
+	border: 0;
+	border-radius: var(--radius-sm);
+	background: transparent;
+	color: var(--color-code-muted);
+	font: inherit;
+	cursor: pointer;
+	transition: color var(--duration-fast) var(--ease-standard);
+}
+
+.diagnostics__filter:hover,
+.diagnostics__close:hover,
+.diagnostics__copy:hover,
+.diagnostics__filter[aria-pressed='true'] {
+	color: var(--color-code-text);
+}
+
+.diagnostics__filter[aria-pressed='true'] {
+	text-decoration: underline;
+	text-underline-offset: var(--space-1);
+}
+
+.diagnostics__list {
+	flex: 1;
+	min-height: 0;
+	margin: 0;
+	padding: 0;
+	overflow-y: auto;
+	list-style: none;
+}
+
+.diagnostics__list:empty {
+	display: none;
+}
+
+.diagnostics__list:empty + .diagnostics__empty {
+	display: block;
+}
+
+.diagnostics__empty {
+	display: none;
+	margin: var(--space-6) 0;
+	color: var(--color-code-muted);
+	text-align: center;
+}
+
+.diagnostics__row {
+	display: grid;
+	grid-template-columns: 1fr auto;
+	gap: var(--space-1) var(--space-3);
+	padding: var(--space-3) var(--space-4);
+	border-bottom: var(--border-width) solid var(--color-code-border);
+	border-left: var(--space-1) solid var(--color-accent);
+}
+
+.diagnostics__row[data-severity='error'] {
+	border-left-color: var(--color-danger);
+}
+
+.diagnostics__row[data-severity='warning'] {
+	border-left-color: var(--color-warning);
+}
+
+.diagnostics__meta {
+	display: flex;
+	gap: var(--space-3);
+	min-width: 0;
+	color: var(--color-code-muted);
+}
+
+.diagnostics__severity {
+	font-weight: var(--weight-semibold);
+	letter-spacing: 0.05em;
+	text-transform: uppercase;
+}
+
+.diagnostics__row[data-severity='error'] .diagnostics__severity {
+	color: var(--color-danger);
+}
+
+.diagnostics__row[data-severity='warning'] .diagnostics__severity {
+	color: var(--color-warning);
+}
+
+.diagnostics__location {
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.diagnostics__message {
+	grid-column: 1;
+	margin: 0;
+	word-break: break-word;
+}
+
+.diagnostics__copy {
+	grid-column: 2;
+	grid-row: 1 / span 2;
+	align-self: start;
+}

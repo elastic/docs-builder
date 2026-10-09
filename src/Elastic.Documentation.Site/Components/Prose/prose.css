@@ -240,3 +240,135 @@
 	height: 1em;
 	fill: currentcolor;
 }
+
+/* Headings are wrapped so the anchor link and the section stay together; the link keeps the heading's look. */
+.prose .heading-wrapper {
+	position: relative;
+}
+
+.prose .headerlink {
+	color: inherit;
+	text-decoration: none;
+}
+
+.prose .headerlink:hover {
+	color: inherit;
+}
+
+/* Footnote references in the text and the list at the end of the article. */
+.prose .footnotes {
+	margin-top: var(--space-7);
+	padding-top: var(--space-3);
+	border-top: var(--border-width) solid var(--color-border);
+}
+
+.prose .footnotes h4 {
+	margin-top: var(--space-5);
+}
+
+.prose .footnotes ol {
+	margin-top: var(--space-3);
+	padding-left: var(--space-5);
+	list-style: decimal;
+}
+
+.prose .footnotes li {
+	margin-top: var(--space-2);
+	color: var(--color-text-muted);
+	font-size: var(--text-sm);
+	line-height: var(--leading-normal);
+}
+
+.prose .footnotes li p {
+	display: inline;
+}
+
+.prose .footnotes li p:not(:last-child) {
+	margin-bottom: var(--space-3);
+}
+
+.prose .footnote-ref,
+.prose .footnote-back-ref {
+	color: var(--color-accent);
+	font-weight: var(--weight-semibold);
+	text-decoration: none;
+}
+
+.prose .footnote-ref:hover,
+.prose .footnote-back-ref:hover {
+	color: var(--color-accent-hover);
+}
+
+.prose .footnote-ref {
+	display: inline-block;
+	margin: -0.15em 0;
+	padding: 0.15em 0.2em;
+	border-radius: var(--radius-sm);
+}
+
+.prose .footnote-back-ref {
+	font-family: var(--font-mono);
+	font-size: x-small;
+	vertical-align: super;
+}
+
+.prose .footnote-back-ref + .footnote-back-ref {
+	margin-left: var(--space-1);
+}
+
+/* Task lists drop their bullet and keep the checkbox in the margin. */
+.prose .contains-task-list,
+.prose .task-list-item {
+	list-style: none;
+}
+
+.prose .task-list-item input[type='checkbox'] {
+	margin: 0 var(--space-2) 0 calc(var(--space-5) * -1);
+	accent-color: var(--color-accent);
+	vertical-align: middle;
+}
+
+/* Math is rendered to MathML by script; display math centres on its own line. */
+.prose div.math {
+	margin-top: var(--space-4);
+	overflow-x: auto;
+	text-align: center;
+}
+
+.prose .versionmodified {
+	font-weight: var(--weight-semibold);
+}
+
+.prose .list-sub-pages {
+	margin-top: var(--space-4);
+}
+
+.prose .applies-block {
+	margin-top: var(--space-3);
+}
+
+.prose .applies-inline {
+	display: inline;
+}
+
+.prose .screenshot {
+	padding: var(--space-4);
+	border: var(--border-width) solid var(--color-border);
+	background: var(--color-surface-sunken);
+	box-shadow: var(--shadow-slab-rest);
+}
+
+.prose .code-block-caption {
+	margin-top: var(--space-4);
+	color: var(--color-text-muted);
+	font-size: var(--text-sm);
+}
+
+/* Reference markers from the Sphinx-style image and figure links need no extra look. */
+.prose a.reference.internal {
+	text-decoration: none;
+}
+
+.prose .plain {
+	list-style: none;
+}

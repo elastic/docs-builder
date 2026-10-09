@@ -128,7 +128,8 @@ public partial class ComponentExamplesTests
 	[MethodDataSource(nameof(ComponentStylesheets))]
 	public void ComponentStylesheet_IsImportedByTheBundle(string file)
 	{
-		var bundle = File.ReadAllText(Path.Join(DesignSystemFiles.SiteDirectory, "Assets", "ds.css"));
+		// Prettier wraps long import lines, so compare with whitespace collapsed.
+		var bundle = WhitespaceRun().Replace(File.ReadAllText(Path.Join(DesignSystemFiles.SiteDirectory, "Assets", "ds.css")), " ");
 		var relative = Path.GetRelativePath(Path.Join(DesignSystemFiles.SiteDirectory, "Assets"), file).Replace('\\', '/');
 
 		bundle.Should().Contain($"@import '{relative}' layer(ds.components);");
@@ -136,4 +137,7 @@ public partial class ComponentExamplesTests
 
 	[GeneratedRegex(@"\.([a-zA-Z_][\w-]*)")]
 	private static partial Regex ClassSelector();
+
+	[GeneratedRegex(@"\s+")]
+	private static partial Regex WhitespaceRun();
 }
