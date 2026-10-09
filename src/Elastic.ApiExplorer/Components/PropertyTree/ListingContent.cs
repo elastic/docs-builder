@@ -91,7 +91,7 @@ internal static class ListingContent
 				.Append('|')
 				.AppendJoin(',', property.AlsoIncludes.Select(t => t.TypeName))
 				.Append('|')
-				.Append(property.SingleOrArrayOf)
+				.Append(property.SingleOrArray?.One)
 				.Append(property.Requires?.Label)
 				.AppendJoin(',', property.Requires?.Options ?? [])
 				.Append('|')

@@ -50,12 +50,12 @@
 			}
 		</dd>
 	}
-	@if (Model.SingleOrArrayOf is { } single)
+	@if (Model.SingleOrArray is { } shapes)
 	{
 		<dd class="union-options">
-			<span class="values-label">A single</span>
-			<code>@single</code>
-			<span class="values-label">or an array of them</span>
+			<code>@shapes.One</code>
+			<span class="union-inline-separator">or</span>
+			<code>@shapes.Many</code>
 		</dd>
 	}
 	@if (Model.Requires is { } requires)
