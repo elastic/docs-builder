@@ -93,8 +93,8 @@ internal static class ApiPropertyMarkdown
 		if (property.Requires is { } requires)
 			WriteNestedLine(markdown, depth, Format(requires));
 
-		if (property.SingleOrArrayOf is { } single)
-			WriteNestedLine(markdown, depth, $"`{single}` or `{single}[]`");
+		if (property.SingleOrArray is { } shapes)
+			WriteNestedLine(markdown, depth, $"`{shapes.One}` or `{shapes.Many}`");
 
 		WriteChildren(markdown, property, apiBaseUrl, depth);
 	}

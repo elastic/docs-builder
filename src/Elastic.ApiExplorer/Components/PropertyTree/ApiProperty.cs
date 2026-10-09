@@ -182,10 +182,10 @@ public record ApiProperty
 	public RequiredAlternatives? Requires { get; init; }
 
 	/// <summary>
-	/// <c>X</c> of an <c>X | X[]</c> row whose type does not say so and whose fields list <c>X</c>'s: the row reads
+	/// The two shapes of an <c>X | X[]</c> row whose type does not say so and whose fields list <c>X</c>'s: the row reads
 	/// "X or X[]", since nothing else tells the reader an array is accepted too.
 	/// </summary>
-	public string? SingleOrArrayOf { get; init; }
+	public SingleOrArray? SingleOrArray { get; init; }
 
 	public required bool IsCollapsible { get; init; }
 	public required bool DefaultExpanded { get; init; }
@@ -196,6 +196,12 @@ public record ApiProperty
 
 /// <summary>An ordered list of property rows; the model for <c>_PropertyList</c>.</summary>
 public record ApiPropertyList(IReadOnlyList<ApiProperty> Items);
+
+/// <summary>
+/// How an <c>X | X[]</c> row names its two shapes: <c>Rescore</c> and <c>Rescore[]</c>. A map's array takes the
+/// <c>[]</c> in front, <c>[] map string to X</c>, since <c>map string to X[]</c> would read as a map of arrays.
+/// </summary>
+public record SingleOrArray(string One, string Many);
 
 /// <summary>A "Requires at least one of:" row; each option is a field, or fields joined by <c>+</c> that go together.</summary>
 public record RequiredAlternatives(string Label, IReadOnlyList<string> Options);

@@ -534,10 +534,16 @@ public class UnionVariantTests
 
 		ApiProperty Row(string name) => list.Items.Single(p => p.Name == name);
 
-		Row("rescore").SingleOrArrayOf.Should().Be("Rescore", "the row lists Rescore's fields and its type reads only union oneOf");
+		Row("rescore")
+			.SingleOrArray
+			.Should()
+			.Be(new SingleOrArray("Rescore", "Rescore[]"), "the row lists Rescore's fields and its type reads only union oneOf");
 		Row("rescore").Children.Properties!.Items.Select(p => p.Name).Should().Equal("window_size", "query");
-		Row("fields").SingleOrArrayOf.Should().Be("map string to Field");
-		Row("nodes").SingleOrArrayOf.Should().BeNull("a primitive X lists no fields, so the options row still names both shapes");
+		Row("fields")
+			.SingleOrArray
+			.Should()
+			.Be(new SingleOrArray("map string to Field", "[] map string to Field"), "map string to Field[] would read as a map of arrays");
+		Row("nodes").SingleOrArray.Should().BeNull("a primitive X lists no fields, so the options row still names both shapes");
 		var markdown = new System.Text.StringBuilder();
 		ApiPropertyMarkdown.WriteList(markdown, new ApiPropertyList([Row("rescore")]), "/api/doc/fixture");
 		markdown.ToString().Should().Contain("`Rescore` or `Rescore[]`");
@@ -578,7 +584,7 @@ public class UnionVariantTests
 		)!.Items.Single();
 
 		like.Union.Should().BeNull("the type already reads Like | Like[]");
-		like.SingleOrArrayOf.Should().BeNull("the variant list's label already names both shapes");
+		like.SingleOrArray.Should().BeNull("the variant list's label already names both shapes");
 		like.Children.Variants!.Label.Should().Be("Like or Like[]; each Like is any of:");
 		like.Children.Variants.Variants.Select(v => v.DiscriminatorLabel).Should().Equal("kind: doc", "kind: LikeText");
 		var markdown = new System.Text.StringBuilder();
