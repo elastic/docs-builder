@@ -3100,7 +3100,7 @@ button.example-response-tab:focus-visible {
 }
 
 .api-catalog .hub-hero.api-catalog-hero {
-	padding: 56px 0 44px;
+	padding: 36px 0 28px;
 	margin-bottom: 0;
 	border-bottom: 0;
 	text-align: center;
@@ -3141,24 +3141,91 @@ button.example-response-tab:focus-visible {
 	justify-content: center;
 }
 
+/* Light grouping: a small label per group, with the gap between groups kept tight so the page still fits one screen. */
+.api-catalog .api-catalog-group + .api-catalog-group {
+	margin-top: 32px;
+}
+
+.api-catalog .api-catalog-group-title {
+	margin: 0 0 8px;
+	font-family: var(--font-sans);
+	font-size: 12px;
+	font-weight: 700;
+	letter-spacing: 0.06em;
+	line-height: 16px;
+	text-transform: uppercase;
+	color: var(--color-ink-light);
+}
+
+/* The landing page card is rounded-2xl, which is 14px. The shared .api-card is 12px. */
+.api-catalog .api-catalog-card {
+	border-radius: 14px;
+}
+
 .api-catalog .api-catalog-card-icon svg {
 	display: block;
 	width: 100%;
 	height: 100%;
 }
 
-/* Descriptions are up to 150 characters. Four across, that is too long to show whole. */
+/* Descriptions are up to 150 characters, so they are clamped. */
 .api-catalog .api-catalog-desc {
 	display: -webkit-box;
 	overflow: hidden;
 	-webkit-box-orient: vertical;
+	-webkit-line-clamp: 3;
+	line-clamp: 3;
+}
+
+/* The compact card is the small one for everything in a group but the main APIs. Two lines are enough at its size. */
+.api-catalog .api-catalog-card-compact .api-catalog-desc {
 	-webkit-line-clamp: 2;
 	line-clamp: 2;
 }
 
-.api-catalog .api-catalog-featured .api-catalog-desc {
-	-webkit-line-clamp: 3;
-	line-clamp: 3;
+/* A tag-on is attached to its parent card, like a tab on its bottom edge: flush under it, sharing its border, with a
+   light fill and a one-line description. */
+.api-catalog .api-catalog-card-attached {
+	background: var(--color-grey-10);
+}
+
+.api-catalog .api-catalog-card-attached .api-catalog-desc {
+	-webkit-line-clamp: 1;
+	line-clamp: 1;
+}
+
+/* From the width where the featured cards sit in one row. Below that they stack in one column, so a tag-on has no
+   parent above it and stays a separate card. */
+@media (min-width: 1024px) {
+	.api-catalog .api-catalog-featured {
+		margin-bottom: 0;
+	}
+
+	.api-catalog .api-catalog-tagons {
+		row-gap: 0;
+		margin-top: -1px;
+	}
+
+	.api-catalog .api-catalog-cell {
+		grid-column-start: var(--api-catalog-column);
+	}
+
+	.api-catalog .api-catalog-card-parent {
+		border-bottom-left-radius: 0;
+		border-bottom-right-radius: 0;
+	}
+
+	.api-catalog .api-catalog-card-attached {
+		border-top-left-radius: 0;
+		border-top-right-radius: 0;
+	}
+
+	/* The shared border changes colour on hover. Lift the hovered card so its whole edge shows. */
+	.api-catalog .api-catalog-card-parent:hover,
+	.api-catalog .api-catalog-card-attached:hover {
+		position: relative;
+		z-index: 1;
+	}
 }
 
 /* Deployment tag: the applies_to pill look, standalone. It sits inside the card link, so it keeps the link's pointer. */
