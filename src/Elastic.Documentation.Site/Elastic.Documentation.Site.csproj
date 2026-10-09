@@ -87,30 +87,25 @@
           Inputs="@(NpmBuildInputFiles)"
           Outputs="_static/.build-stamp;_static/main.js;_static/styles.css">
     <Message Text="Building frontend with version: $(MinVerVersion)" Importance="high" />
-    <Exec Command="npm run build"
-          WorkingDirectory="$(MSBuildThisFileDirectory)"
-          EnvironmentVariables="DOCS_BUILDER_VERSION=$(MinVerVersion)"
-          IgnoreStandardErrorWarningFormat="true" />
-    <!-- Write the stamp file, so incremental builds work -->
-    <Touch Files="_static/.build-stamp" AlwaysCreate="true" />
-  </Target>
-
-  <Target Name="CleanGeneratedStaticAssets"
-          BeforeTargets="NpmRunBuild"
-          Condition="'$(DesignTimeBuild)' != 'true' And '$(SkipNpmBuild)' != 'true'">
+    <!-- Only remove content-hashed chunk/asset files from prior Vite runs so they
+         don't accumulate across builds. This runs inside NpmRunBuild so it only fires
+         when the build itself runs: a separate BeforeTargets target would also run when
+         NpmRunBuild is skipped as up to date, deleting chunks that nothing regenerates.
+         Do NOT list the stable named outputs here (main.js, styles.css, etc.). -->
     <RemoveDir Directories="_static/assets" Condition="Exists('_static/assets')" />
     <ItemGroup>
-      <!-- Only remove content-hashed chunk/asset files from prior Vite runs so they
-           don't accumulate across builds. Do NOT list the stable named outputs here
-           (main.js, styles.css, etc.) — deleting them before NpmRunBuild's incremental
-           output check would force a full npm run build on every dotnet build invocation
-           even when no source files changed. -->
       <ViteGeneratedFiles Include="_static/asset-*" />
       <ViteGeneratedFiles Include="_static/chunk-*" />
       <OldHashedBundles Include="_static/*.????????*.js" />
       <OldHashedBundles Include="_static/*.????????*.css" />
     </ItemGroup>
     <Delete Files="@(ViteGeneratedFiles);@(OldHashedBundles)" ContinueOnError="true" />
+    <Exec Command="npm run build"
+          WorkingDirectory="$(MSBuildThisFileDirectory)"
+          EnvironmentVariables="DOCS_BUILDER_VERSION=$(MinVerVersion)"
+          IgnoreStandardErrorWarningFormat="true" />
+    <!-- Write the stamp file, so incremental builds work -->
+    <Touch Files="_static/.build-stamp" AlwaysCreate="true" />
   </Target>
 
   <Target Name="EmbedGeneratedAssets" DependsOnTargets="NpmRunBuild" BeforeTargets="BeforeBuild">
