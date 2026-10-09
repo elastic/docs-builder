@@ -591,6 +591,42 @@
 	z-index: 1;
 }
 
+.landing__art {
+	flex: none;
+	width: 7rem;
+	margin-bottom: var(--space-4);
+}
+
+.landing__art--window {
+	position: absolute;
+	top: var(--space-6);
+	right: var(--space-6);
+	width: 10rem;
+}
+
+.art-plate {
+	fill: var(--color-brand-deep);
+}
+
+.art-paper {
+	fill: var(--color-surface);
+	stroke: var(--color-brand-deep);
+	stroke-width: 2;
+}
+
+.art-line {
+	fill: var(--color-border);
+}
+
+.art-dot,
+.art-block {
+	fill: var(--color-accent);
+}
+
+.art-accent {
+	fill: var(--palette-teal);
+}
+
 .landing__promo-title {
 	max-width: 26rem;
 	margin: var(--space-3) 0 0;
