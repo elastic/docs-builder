@@ -273,6 +273,8 @@ But it was found in:
 	// Generator-level assertions (operate on the index.md result)
 	// ────────────────────────────────────────────────────────────────────────────────
 
+	internal static string IndexHtml(GeneratorResults results) => FindIndexMd(results).Html;
+
 	private static MarkdownResult FindIndexMd(GeneratorResults results) =>
 		results.MarkdownResults.FirstOrDefault(r => r.File.RelativePath == "index.md")
 			?? throw new AwesomeAssertions.Execution.AssertionFailedException("Could not find 'index.md' in generator results");

@@ -14,7 +14,7 @@ using RazorSlices;
 
 namespace Elastic.Documentation.Navigation.Tests.DesignSystem;
 
-/// <summary>The design-system bundle is additive and gated by NAVIGATION_PREVIEW: flag off must match the previous head exactly.</summary>
+/// <summary>The design-system bundle replaces the legacy one behind NAVIGATION_PREVIEW: flag off must match the previous head exactly.</summary>
 public class DesignSystemHeadTests : DocumentationSetNavigationTestBase
 {
 	public static IEnumerable<BuildType> BuildTypes() => [BuildType.Isolated, BuildType.Assembler, BuildType.Codex];
@@ -31,25 +31,25 @@ public class DesignSystemHeadTests : DocumentationSetNavigationTestBase
 
 	[Test]
 	[MethodDataSource(nameof(BuildTypes))]
-	public async Task Head_FlagOn_AddsDesignSystemNextToLegacyBundle(BuildType buildType)
+	public async Task Head_FlagOn_LoadsOnlyTheDesignSystemBundle(BuildType buildType)
 	{
 		var html = await RenderHead(new FeatureFlags(new Dictionary<string, bool> { ["navigation-preview"] = true }), buildType);
 
 		html.Should().Contain("ds.css").And.Contain("ds.js").And.Contain("docs-theme");
-		html.Should().Contain("styles.css").And.Contain("main.js");
+		html.Should().NotContain("styles.css").And.NotContain("main.js");
+		html.Should().NotContain("assembler.css").And.NotContain("isolated.css").And.NotContain("codex.css");
 	}
 
 	[Test]
-	public async Task Head_FlagOn_LoadsTheLayerOrderBeforeEveryStylesheet()
+	public async Task Head_FlagOn_LoadsTheLayerOrderBeforeTheBundle()
 	{
 		var html = await RenderHead(new FeatureFlags(new Dictionary<string, bool> { ["navigation-preview"] = true }), BuildType.Isolated);
 
 		var layers = html.IndexOf("ds-layers.css", StringComparison.Ordinal);
 		layers.Should().BeGreaterThanOrEqualTo(0);
-		layers.Should().BeLessThan(html.IndexOf("ds.css", StringComparison.Ordinal));
 		layers.Should().BeLessThan(
-			html.IndexOf("styles.css", StringComparison.Ordinal),
-			"the order must be declared before Tailwind declares its own"
+			html.IndexOf("ds.css", StringComparison.Ordinal),
+			"the order must be declared before the layers it names"
 		);
 	}
 

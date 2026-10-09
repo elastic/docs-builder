@@ -25,8 +25,13 @@
 	}
 	private bool RenderHeaderAndFooter => Model.Layout is not MarkdownPageLayout.FullSearch;
 
-	private async Task RenderDesignSystemPage(bool hub) =>
-		await RenderPartialAsync(_DesignSystemShell.Create(new DesignSystemShellModel(Model, await RenderBodyAsync(), hub)));
+	private async Task RenderDesignSystemPage(bool hub)
+	{
+		var shell = new DesignSystemShellModel(Model, hub);
+		await RenderPartialAsync(_DesignSystemShellStart.Create(shell));
+		await RenderBodyAsync();
+		await RenderPartialAsync(_DesignSystemShellEnd.Create(shell));
+	}
 
 	private async Task RenderDefault()
 	{

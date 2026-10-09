@@ -20,7 +20,9 @@
 	@await RenderPartialAsync(_DesignSystemCodexHeader.Create(Model))
 	<div id="main-container">
 		@await RenderPartialAsync(_DesignSystemCodexBreadcrumbs.Create(Model))
-		@await RenderPartialAsync(_DesignSystemShell.Create(new DesignSystemShellModel(Model, await RenderBodyAsync(), false)))
+		@await RenderPartialAsync(_DesignSystemShellStart.Create(new DesignSystemShellModel(Model, false)))
+		@await RenderBodyAsync()
+		@await RenderPartialAsync(_DesignSystemShellEnd.Create(new DesignSystemShellModel(Model, false)))
 	</div>
 	@await RenderPartialAsync(_DesignSystemCodexFooter.Create(Model))
 	return;

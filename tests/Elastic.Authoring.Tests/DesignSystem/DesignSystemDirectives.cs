@@ -2,6 +2,8 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using AwesomeAssertions;
+
 namespace Elastic.Authoring.Tests.DesignSystem;
 
 /// <summary>Renders the document with <c>NAVIGATION_PREVIEW</c> on, so directives use design-system components.</summary>
@@ -246,6 +248,22 @@ public class PageShellComponents : DesignSystemDirectiveTest
 		await Docs.ConvertsToContainingRawHtml("class=\"docs-shell\"");
 		await Docs.ConvertsToContainingRawHtml("class=\"docs-shell__nav\"");
 		await Docs.ConvertsToContainingRawHtml("class=\"docs-shell__rail\"");
+	}
+
+	[Test, DisplayName("renders the page content inside the article, not before the shell")]
+	public async Task ContentSitsInsideTheArticle()
+	{
+		var html = await Docs.IndexHtmlAsync();
+
+		var shell = html.IndexOf("class=\"docs-shell\"", StringComparison.Ordinal);
+		var articleOpen = html.IndexOf("<article id=\"markdown-content\"", StringComparison.Ordinal);
+		var heading = html.IndexOf("First section", StringComparison.Ordinal);
+		var articleClose = html.IndexOf("</article>", StringComparison.Ordinal);
+
+		shell.Should().BeGreaterThan(-1);
+		articleOpen.Should().BeGreaterThan(shell);
+		heading.Should().BeGreaterThan(articleOpen);
+		heading.Should().BeLessThan(articleClose);
 	}
 
 	[Test, DisplayName("styles the article with prose instead of the legacy markdown-content class")]

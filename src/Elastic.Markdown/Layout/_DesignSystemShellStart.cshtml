@@ -50,38 +50,3 @@
 				@await RenderPartialAsync(_Breadcrumb.Create(breadcrumbs))
 			}
 			<article id="markdown-content" class="@(hub ? "hub-content" : "prose") min-w-0" data-pagefind-body>
-				@Model.Body
-			</article>
-			@if (!hub)
-			{
-				@await RenderPartialAsync(_DesignSystemPageFeedback.Create(Layout))
-				@await RenderPartialAsync(_Pager.Create(new PagerModel
-				{
-					Previous = Layout.Previous is { } previous ? new PagerLink(StripBadge(previous.NavigationTitle), previous.Url) : null,
-					Next = Layout.Next is { } next ? new PagerLink(StripBadge(next.NavigationTitle), next.Url) : null
-				}))
-			}
-			@if (Layout.Features.WebsiteSearchEnabled && Layout.Features.WebsiteSearchScriptUrl is not null)
-			{
-				<div id="elastic-website-search-input-container" hx-preserve="true" class="docs-shell__search"></div>
-			}
-		</main>
-		@if (!hub)
-		{
-			<aside class="docs-shell__rail">
-				@await RenderPartialAsync(_PageActions.Create(new PageActionsModel
-				{
-					MarkdownUrl = Layout.MarkdownUrl,
-					ReportIssueUrl = ShowsContributionLinks ? Layout.ReportIssueUrl : null,
-					EditUrl = !string.IsNullOrEmpty(Layout.GithubEditUrl) && !Layout.HideEditThisPage ? Layout.GithubEditUrl : null,
-					ContributeUrl = ShowsContributionLinks ? "https://www.elastic.co/docs/contribute-docs/" : null
-				}))
-				@if (ShowsCta)
-				{
-					@await RenderPartialAsync(_CtaCard.Create(new CtaCardModel { Label = Layout.Cta.Label, Url = Layout.Cta.Url, Name = Layout.Cta.Name, Benefits = [.. Layout.Cta.Benefits] }))
-				}
-				@await RenderPartialAsync(_Toc.Create(new TocModel { Items = [.. Layout.PageTocItems.Select(i => new TocItem(i.Heading, i.Slug, i.Level))] }))
-			</aside>
-		}
-	</div>
-</div>

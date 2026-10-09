@@ -113,6 +113,9 @@ public sealed class Scenario
 	public async Task DoesNotConvertToContainingHtml(string expected) =>
 		HtmlAssertions.DoesNotConvertToContainingHtml(expected, await BuildAsync());
 
+	/// <summary>The complete HTML of <c>index.md</c>, for assertions about where things appear relative to each other.</summary>
+	public async Task<string> IndexHtmlAsync() => HtmlAssertions.IndexHtml(await BuildAsync());
+
 	// ────────────────────────────────────────────────────────────────────────────────
 	// Diagnostics assertions
 	// ────────────────────────────────────────────────────────────────────────────────

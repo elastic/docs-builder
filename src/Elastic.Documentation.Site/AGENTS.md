@@ -11,7 +11,7 @@ Shared Razor layout, the frontend bundles, and the design system. The full guide
 - **New tokens need a style-guide entry.** Add it to `StyleGuide/StyleGuideTokens.cs`; a test checks the CSS defines every token the guide lists.
 - **Components are folder slices.** `Components/<Name>/` holds `_<Name>.cshtml`, `<Name>Model.cs`, `<name>.css` and `<Name>Examples.cs`. The model namespace is the folder namespace, `@inherits RazorSlice<...>` uses the fully qualified model type, and sibling components are imported in `Components/_ViewImports.cshtml`. Import the stylesheet from `Assets/ds.css`, register the examples in `StyleGuide/StyleGuide.cs`, and the tests pick them up.
 - **A directive that moves to the design system is handled in `src/Elastic.Markdown/Myst/Directives/DesignSystemDirectives.cs`.** Add a branch there and a flag-on test in `tests/Elastic.Authoring.Tests/DesignSystem/`; the legacy view stays untouched so flag-off output cannot change.
-- **Everything is behind `NAVIGATION_PREVIEW`.** Flag off must match the previous output; use `/feature-flag` when touching the flag.
+- **Everything is behind `NAVIGATION_PREVIEW`.** Flag off must match the previous output; use `/feature-flag` when touching the flag. With the flag on, the page loads only `ds.css` and `ds.js`, so a feature that needs script or style must be ported into the design-system bundle.
 
 ## Layout
 

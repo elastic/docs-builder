@@ -372,3 +372,100 @@
 .prose .plain {
 	list-style: none;
 }
+
+/* Headings and definition terms show a "#" in the margin on hover, as the link to themselves. */
+.prose :is(h1, h2, h3, h4, h5, h6) {
+	position: relative;
+}
+
+.prose .headerlink::after {
+	content: '#';
+	position: absolute;
+	top: 50%;
+	right: calc(100% + 0.4rem);
+	color: var(--color-text-muted);
+	font-size: 0.85em;
+	font-weight: var(--weight-regular);
+	opacity: 0;
+	pointer-events: none;
+	transform: translateY(-50%);
+	transition: opacity var(--duration-fast) var(--ease-standard);
+}
+
+.prose :is(h1, h2, h3, h4, h5, h6):hover .headerlink::after,
+.prose .headerlink:focus::after {
+	opacity: 1;
+}
+
+.prose dl dt[id] a.paramlink {
+	position: relative;
+	color: inherit;
+	text-decoration: none;
+}
+
+.prose dl dt[id] a.paramlink::before {
+	content: '#';
+	position: absolute;
+	top: 50%;
+	right: calc(100% + 0.35rem);
+	color: var(--color-text-muted);
+	font-size: 0.85em;
+	font-weight: var(--weight-regular);
+	opacity: 0;
+	pointer-events: none;
+	transform: translateY(-50%);
+	transition: opacity var(--duration-fast) var(--ease-standard);
+}
+
+.prose dl dt[id]:hover a.paramlink::before,
+.prose dl dt[id] a.paramlink:focus::before {
+	opacity: 1;
+}
+
+/* A CLI page names its type in a small badge at the end of the title. */
+.prose h1:has(.cli-badge-ns, .cli-badge-cmd, .cli-badge-alias) {
+	display: flex;
+	align-items: center;
+}
+
+.cli-badge-ns,
+.cli-badge-cmd,
+.cli-badge-alias {
+	--cli-badge-fg: var(--color-text-muted);
+	--cli-badge-bg: var(--color-surface-sunken);
+
+	flex: none;
+	margin-left: auto;
+	padding: 1px var(--space-2);
+	border: var(--border-width) solid var(--cli-badge-fg);
+	border-radius: var(--radius-sm);
+	background: var(--cli-badge-bg);
+	color: var(--cli-badge-fg);
+	font-family: var(--font-body);
+	font-size: 0.34em;
+	font-weight: var(--weight-bold);
+	letter-spacing: 0.04em;
+	line-height: 1.5;
+	text-transform: lowercase;
+}
+
+.cli-badge-ns {
+	--cli-badge-fg: var(--color-important);
+	--cli-badge-bg: var(--color-important-surface);
+}
+
+.cli-badge-cmd {
+	--cli-badge-fg: var(--color-warning);
+	--cli-badge-bg: var(--color-warning-surface);
+}
+
+.prose .applies,
+.hub-content {
+	min-width: 0;
+}
+
+.prose .applies-item {
+	display: inline-flex;
+	flex-wrap: wrap;
+	gap: var(--space-2);
+}

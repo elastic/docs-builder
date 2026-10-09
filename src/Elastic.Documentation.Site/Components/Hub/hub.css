@@ -1064,3 +1064,11 @@ a.hub-wn-card-link:hover,
 		transform: none;
 	}
 }
+
+/* Hub pages own the full content column; each hub directive sets its own width. */
+.hub-content {
+	width: 100%;
+	max-width: none;
+	margin-bottom: var(--space-8);
+	padding: 0;
+}

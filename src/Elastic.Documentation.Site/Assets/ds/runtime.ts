@@ -1,0 +1,303 @@
+// The runtime the design-system bundle needs beyond the enhancement modules: htmx navigation, telemetry, code highlighting,
+// math, diagrams, tables and CTA events. These are the framework-free parts of main.ts; the React islands and EUI loader are not
+// part of the design-system bundle, so nothing here pulls them in.
+import { initApiDocs } from '../api-docs'
+import { initAppliesSwitch } from '../applies-switch'
+import { config } from '../config'
+import { initGetStarted } from '../get-started'
+import { initHighlight, preloadHighlight } from '../hljs'
+import { initMermaid } from '../mermaid'
+import { openDetailsWithAnchor } from '../open-details-with-anchor'
+import { initPrivacyConsent } from '../privacy-consent'
+import { initSmoothScroll } from '../smooth-scroll'
+import { initTable } from '../table'
+import { logError, logInfo } from '../telemetry/logging'
+import {
+    ATTR_CTA_NAME,
+    ATTR_CTA_URL,
+    ATTR_CTA_LABEL,
+    ATTR_CTA_LOCATION,
+    ATTR_EVENT_NAME,
+    ATTR_URL_PATH,
+    ATTR_URL_FULL,
+} from '../telemetry/semconv'
+import {
+    getPathFromUrl,
+    isExternalDocsUrl,
+} from '../web-components/shared/htmx/utils'
+import 'htmx-ext-head-support'
+import 'htmx-ext-preload'
+import 'htmx.org'
+import { $optional, $$optional } from 'select-dom'
+import { UAParser } from 'ua-parser-js'
+
+// Injected at build time from MinVer
+const DOCS_BUILDER_VERSION =
+    process.env.DOCS_BUILDER_VERSION?.trim() ?? '0.0.0-dev'
+
+// Initialize OpenTelemetry before the web components when telemetry is enabled, so
+// their instrumented work runs after init. The OTel SDK is dynamically imported, so
+// pages built with telemetry disabled never fetch it.
+async function bootstrap() {
+    if (config.telemetryEnabled) {
+        const { initializeOtel } = await import('../telemetry/instrumentation')
+        initializeOtel({
+            serviceName: config.serviceName,
+            serviceVersion: DOCS_BUILDER_VERSION,
+            baseUrl: config.rootPath,
+            debug: false,
+        })
+    }
+}
+
+const bootstrapPromise = bootstrap()
+
+async function awaitBootstrap() {
+    await bootstrapPromise
+}
+
+const { getOS } = new UAParser()
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type HtmxEvent = any
+
+// Run each init step in isolation so a failure in one does not abort the rest.
+async function runInitSteps(
+    steps: Array<[string, () => void | Promise<void>]>
+) {
+    for (const [name, init] of steps) {
+        try {
+            await init()
+        } catch (error) {
+            console.error(`Init step "${name}" failed:`, error)
+            logError(`Init step failed: ${name}`, {
+                'init.step': name,
+                'error.message':
+                    error instanceof Error ? error.message : String(error),
+            })
+        }
+    }
+}
+
+function applyEditParam() {
+    const urlParams = new URLSearchParams(window.location.search)
+    if (urlParams.has('edit')) {
+        $optional('.edit-this-page.hidden')?.classList.remove('hidden')
+    }
+}
+
+/**
+ * Initialize KaTeX math rendering for elements with class 'math'.
+ * KaTeX's JS and fonts/CSS are lazy-loaded here so pages without math pay nothing for them.
+ */
+async function initMath() {
+    const mathElements = $$optional('.math:not([data-katex-processed])')
+    if (mathElements.length === 0) return
+
+    const [katex] = await Promise.all([import('katex'), import('../katex.css')])
+
+    mathElements.forEach((element) => {
+        try {
+            const content = element.textContent?.trim()
+            if (!content) return
+
+            // Determine if this is display math based on content and element type
+            const isDisplayMath =
+                element.tagName === 'DIV' ||
+                content.includes('\\[') ||
+                content.includes('$$') ||
+                content.includes('\\begin{') ||
+                content.includes('\n')
+
+            // Clean up common LaTeX delimiters
+            const cleanContent = content
+                .replace(/^\$\$|\$\$$/g, '') // Remove $$ delimiters
+                .replace(/^\\\[|\\\]$/g, '') // Remove \[ \] delimiters
+                .trim()
+
+            // Clear the element content before rendering
+            element.innerHTML = ''
+
+            katex.render(cleanContent, element, {
+                throwOnError: false,
+                displayMode: isDisplayMath,
+                strict: false, // Allow some LaTeX extensions
+                trust: false, // Security: don't trust arbitrary commands
+                output: 'mathml', // Only render MathML, not HTML
+                macros: {
+                    // Add common macros if needed
+                },
+            })
+
+            // Mark as processed to prevent double processing
+            element.setAttribute('data-katex-processed', 'true')
+        } catch (error) {
+            console.warn('KaTeX rendering error:', error)
+            // Fallback: keep the original content
+            element.innerHTML = element.textContent || ''
+        }
+    })
+}
+
+// Attributes shared by cta_viewed and cta_clicked so the two are directly comparable (CTR).
+function ctaAttributes(cta: HTMLAnchorElement) {
+    return {
+        [ATTR_CTA_NAME]: cta.dataset.cta ?? '',
+        [ATTR_CTA_URL]: cta.dataset.ctaUrl ?? '',
+        [ATTR_CTA_LABEL]: cta.dataset.ctaLabel ?? '',
+        [ATTR_CTA_LOCATION]: cta.dataset.ctaLocation ?? '',
+        [ATTR_URL_PATH]: window.location.pathname,
+        [ATTR_URL_FULL]: window.location.href,
+    }
+}
+
+// Emit a CTA event: event.name mirrors the body so records can be filtered by
+// exact keyword (attributes.event.name) instead of a text match on body.
+function logCtaEvent(eventName: string, cta: HTMLAnchorElement) {
+    logInfo(eventName, {
+        [ATTR_EVENT_NAME]: eventName,
+        ...ctaAttributes(cta),
+    })
+}
+
+let ctaImpressionObserver: IntersectionObserver | null = null
+
+// Fires 'cta_viewed' the first time a CTA becomes at least half visible, then stops
+// observing it (one impression per page view). The observer is created once and
+// reused across htmx swaps; re-observing an already-observed element is a no-op per
+// spec, so this only needs to (re-)register CTAs that are new since the last swap.
+function initCtaImpressions() {
+    ctaImpressionObserver ??= new IntersectionObserver(
+        (entries, observer) => {
+            for (const entry of entries) {
+                if (!entry.isIntersecting) continue
+                logCtaEvent('cta_viewed', entry.target as HTMLAnchorElement)
+                observer.unobserve(entry.target)
+            }
+        },
+        { threshold: 0.5 }
+    )
+    $$optional('a[data-cta]').forEach((cta) =>
+        ctaImpressionObserver?.observe(cta)
+    )
+}
+
+// The languages chunk is the long pole for code pages; fetch it before the init steps get to it.
+if (document.querySelector('pre code')) preloadHighlight()
+
+// Initialize on initial page load
+document.addEventListener('DOMContentLoaded', function () {
+    runInitSteps([
+        ['bootstrap', awaitBootstrap],
+        ['initMath', initMath],
+        ['initMermaid', initMermaid],
+        ['initCtaImpressions', initCtaImpressions],
+        ['initGetStarted', initGetStarted],
+    ])
+})
+
+document.addEventListener('htmx:load', function () {
+    runInitSteps([
+        ['bootstrap', awaitBootstrap],
+        ['initHighlight', initHighlight],
+        ['initAppliesSwitch', initAppliesSwitch],
+        ['initMath', initMath],
+        ['initMermaid', initMermaid],
+        ['initSmoothScroll', initSmoothScroll],
+        ['openDetailsWithAnchor', openDetailsWithAnchor],
+        ['initGetStarted', initGetStarted],
+        ['initTable', initTable],
+        ['initApiDocs', initApiDocs],
+        ['applyEditParam', applyEditParam],
+        ['initCtaImpressions', initCtaImpressions],
+    ])
+})
+
+// Delegated listeners: survive htmx swaps without needing re-init, unlike the
+// runInitSteps above which bind directly to elements that get replaced.
+// logInfo's export survives this same-tab navigation: the batch processor flushes on
+// 'pagehide' (registered in initializeOtel) via a keepalive fetch, which browsers keep
+// alive past unload.
+function handleCtaActivation(event: MouseEvent) {
+    const cta = (event.target as HTMLElement)?.closest<HTMLAnchorElement>(
+        'a[data-cta]'
+    )
+    if (!cta) return
+    logCtaEvent('cta_clicked', cta)
+}
+document.addEventListener('click', handleCtaActivation)
+initPrivacyConsent()
+// 'auxclick' with button 1 covers middle-click (open in new tab), which does NOT
+// fire 'click' per the DOM spec - without this those opens went untracked. Button 2
+// (right-click / context menu) also fires auxclick but isn't a real engagement.
+document.addEventListener('auxclick', function (event: MouseEvent) {
+    if (event.button === 1) handleCtaActivation(event)
+})
+
+// Don't remove style tags because they are used by the elastic global nav.
+document.addEventListener(
+    'htmx:removingHeadElement',
+    function (event: HtmxEvent) {
+        const headElement = event.detail.headElement
+        if (headElement.tagName === 'STYLE') {
+            event.preventDefault()
+            return
+        }
+        // Keep the Storybook bootstrap assets that <storybook-story> injects into
+        // <head>; htmx would otherwise strip them on navigation, which both breaks an
+        // in-flight first load (the stylesheet's onload never fires) and leaves the
+        // module-level load caches pointing at elements that no longer exist.
+        if (
+            headElement.dataset?.storybookScript !== undefined ||
+            headElement.dataset?.storybookStyle !== undefined
+        ) {
+            event.preventDefault()
+        }
+    }
+)
+
+document.addEventListener('htmx:beforeRequest', function (event: HtmxEvent) {
+    if (event.detail.requestConfig.verb !== 'get') return
+    // Speculative prefetches from the preload extension must pass through
+    // untouched — without this, preloading a non-docs link would trigger the
+    // full-page-load fallback below on mere mousedown/hover.
+    if (event.detail.requestConfig.headers['HX-Preloaded'] === 'true') return
+    // Only boosted link navigation needs scoping; explicit hx-get widgets
+    // manage their own requests.
+    if (!event.detail.boosted) return
+    const path: string = event.detail.requestConfig.path
+    if (event.detail.requestConfig.triggeringEvent) {
+        const { ctrlKey, metaKey, shiftKey }: PointerEvent =
+            event.detail.requestConfig.triggeringEvent
+        const { name: os } = getOS()
+        const modifierKey: boolean = os === 'macOS' ? metaKey : ctrlKey
+        if (shiftKey || modifierKey) {
+            event.preventDefault()
+            window.open(path, '_blank', 'noopener,noreferrer')
+            return
+        }
+    }
+    // hx-boost intercepts every same-origin link, but only internal docs URLs should
+    // navigate through htmx (for assembler that means /docs/*; isolated and codex own
+    // their whole origin). Anything else — marketing pages on the same domain, the
+    // separate /docs/api app — gets a normal full page load.
+    const docsPath = getPathFromUrl(new URL(path, location.href).pathname)
+    if (!docsPath || isExternalDocsUrl(docsPath)) {
+        event.preventDefault()
+        window.location.assign(path)
+    }
+})
+
+document.body.addEventListener(
+    'htmx:responseError',
+    function (event: HtmxEvent) {
+        // If you get a 404 error while clicking on a hx-get link, actually open the link
+        // This is needed because the browser doesn't update the URL when the response is a 404
+        // In production, cloudfront handles serving the 404 page.
+        // Locally, the DocumentationWebHost handles it.
+        // On previews, a generic 404 page is shown.
+        if (event.detail.xhr.status === 404) {
+            window.location.assign(event.detail.pathInfo.requestPath)
+        }
+    }
+)

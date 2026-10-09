@@ -5,7 +5,7 @@ navigation_title: Design system
 # Design system
 
 The design system gives Razor views, directive renderers, and client-side enhancements one set of tokens, components, and themes.
-It is in progress and ships behind the `NAVIGATION_PREVIEW` feature flag.
+It ships behind the `NAVIGATION_PREVIEW` feature flag.
 With the flag off, pages render exactly as before.
 
 ## Style guide
@@ -24,8 +24,9 @@ Set the flag through the environment when you run the server:
 FEATURE_NAVIGATION_PREVIEW=true dotnet run --project src/tooling/docs-builder -- serve
 ```
 
-When the flag is on, the page head loads `ds.css` and `ds.js` in addition to the existing bundle.
-The existing bundle stays until the page chrome moves to design-system components.
+When the flag is on, the page head loads `ds-layers.css`, `ds.css` and `ds.js` and nothing else: not `styles.css`, `main.js` or the build-type stylesheets.
+`ds.js` carries its own runtime in `Assets/ds/runtime.ts`, the framework-free parts of `main.ts`: htmx navigation, telemetry, code highlighting, math, diagrams and tables.
+`Assets/ds/bundle.test.ts` fails when anything in the `ds.ts` import graph pulls in React, EUI or Emotion.
 
 ## Tokens
 
@@ -134,7 +135,7 @@ The design system declares its cascade layers under a `ds` namespace so they nev
 ```
 
 Later layers win over earlier ones, so a theme in `ds.theme` overrides tokens without `!important`.
-While the legacy bundle still loads beside the design system, the order also names Tailwind's layers, so the design system sits above Tailwind's base and components and below its utilities.
+The order also names the `theme`, `base`, `components` and `utilities` layers that Tailwind used, so a stylesheet written for them still sorts around the design system.
 
 ## Themes
 
