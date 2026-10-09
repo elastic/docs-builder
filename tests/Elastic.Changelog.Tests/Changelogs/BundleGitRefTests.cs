@@ -381,7 +381,9 @@ public class BundleGitRefTests() : ChangelogTestBase()
 			);
 			result.Should().BeTrue();
 			var outputFile = FileSystem.Directory.GetFiles(outputDir, "*.yaml").Should().ContainSingle().Subject;
-			return await FileSystem.File.ReadAllTextAsync(outputFile, TestContext.Current!.Execution.CancellationToken);
+			var content = await FileSystem.File.ReadAllTextAsync(outputFile, TestContext.Current!.Execution.CancellationToken);
+			// The YAML writer uses the platform line ending.
+			return content.Replace("\r\n", "\n");
 		}
 
 		// Without entry products the label decides.
