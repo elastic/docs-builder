@@ -39,6 +39,9 @@ public partial class ApiPropertyTreeBuilder(
 	PageShapes? pageShapes = null
 )
 {
+	// Keep in sync with the max-width of `.schema-type .type-constraint` in api-docs.css.
+	private const int MaxInlineConstraintLength = 40;
+
 	private readonly PageShapes _shapes = pageShapes ?? new();
 
 	private readonly SchemaAnalyzer _analyzer = new(document, currentPageType, options.SchemaResolveCache);
@@ -164,7 +167,8 @@ public partial class ApiPropertyTreeBuilder(
 		{
 			spans.Add(new TypeSpan(" · ", Bare: true));
 			var label = constraint.Code is null ? constraint.Text : $"{constraint.Text}{constraint.Code}";
-			spans.Add(new TypeSpan(label, SchemaHelpers.ConstraintCssClass));
+			var title = label.Length > MaxInlineConstraintLength ? label : null;
+			spans.Add(new TypeSpan(label, SchemaHelpers.ConstraintCssClass, title));
 		}
 
 		return new TypeAnnotation(spans);
