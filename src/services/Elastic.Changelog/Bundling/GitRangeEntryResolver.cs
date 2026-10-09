@@ -38,6 +38,12 @@ public record GitRangeEntryResolutionOptions
 	/// to any product (typically the profile's <c>output_products</c>). Wildcards are ignored.
 	/// </summary>
 	public IReadOnlyList<ProductArgument>? FallbackProducts { get; init; }
+
+	/// <summary>
+	/// Products applied to every entry synthesized from PR metadata, replacing label-derived and
+	/// <see cref="FallbackProducts"/> products. Label-derived products still drive label blockers.
+	/// </summary>
+	public IReadOnlyList<ProductArgument>? EntryProducts { get; init; }
 }
 
 /// <summary>How a pull request's changelog entry was sourced for a commit-range bundle.</summary>
@@ -380,9 +386,9 @@ public class GitRangeEntryResolver(IGitHubPrService prService, ILogger logger)
 	}
 
 	/// <summary>
-	/// Products for a synthesized entry: label-derived products win; otherwise the concrete
-	/// (non-wildcard) fallback products from the profile/CLI. Returns null after emitting an
-	/// error when neither yields a product — a bundle entry without products is invalid.
+	/// Products for a synthesized entry: the explicit entry products when set; otherwise label-derived
+	/// products win; otherwise the concrete (non-wildcard) fallback products from the profile/CLI.
+	/// Returns null after emitting an error when none yields a product — a bundle entry without products is invalid.
 	/// </summary>
 	private static List<ProductReference>? ResolveProducts(
 		IDiagnosticsCollector collector,
@@ -391,6 +397,9 @@ public class GitRangeEntryResolver(IGitHubPrService prService, ILogger logger)
 		GitRangeEntryResolutionOptions options
 	)
 	{
+		if (options.EntryProducts is { Count: > 0 })
+			return options.EntryProducts.Select(p => p.ToProductReference()).ToList();
+
 		var source = labelProducts.Count > 0
 			? labelProducts
 			: (options.FallbackProducts ?? []).Where(p => !string.IsNullOrWhiteSpace(p.Product) && p.Product != "*").ToList();
