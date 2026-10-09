@@ -71,6 +71,7 @@ internal static class ListingContent
 				.Append(property.Type.Text)
 				.Append('|')
 				.Append(property.IsRequired)
+				.Append(property.IsNullable)
 				.Append('|')
 				.Append(property.IsRecursive)
 				.Append('|')

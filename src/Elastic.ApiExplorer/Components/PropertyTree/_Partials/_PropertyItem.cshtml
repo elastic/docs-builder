@@ -13,6 +13,10 @@
 		{
 			<span class="required @SchemaHelpers.StatusCssClass">required</span>
 		}
+		@if (Model.IsNullable)
+		{
+			<span class="nullable-badge @SchemaHelpers.StatusCssClass" data-tippy-content="This value can be null">nullable</span>
+		}
 		@if (Model.ShowDeprecatedBadge)
 		{
 			<span class="deprecated-badge @SchemaHelpers.StatusCssClass">deprecated</span>
