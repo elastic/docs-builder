@@ -24,7 +24,8 @@ public record UnionOption(string BaseName, string? Ref, bool IsObject, IOpenApiS
 }
 
 /// <summary>A named schema merged into a type through <c>allOf</c>, beyond the one that names the type.</summary>
-public record ComposedType(string Name, bool HasLink);
+/// <param name="LinkedSchemaId">The schema id of its page, when it has one (see <see cref="TypePages"/>).</param>
+public record ComposedType(string Name, string? LinkedSchemaId);
 
 /// <summary>
 /// Unified type information record used by both OperationView and SchemaView.
@@ -49,8 +50,14 @@ public record TypeInfo
 	/// <summary>The primitive base type for value types.</summary>
 	public string? ValueTypeBase { get; init; }
 
+	/// <summary>
+	/// The schema id of the type's own page, when it has one (see <see cref="TypePages"/>); an array or a map takes its
+	/// item's or value's.
+	/// </summary>
+	public string? LinkedSchemaId { get; init; }
+
 	/// <summary>Whether this type has a dedicated page to link to.</summary>
-	public bool HasLink { get; init; }
+	public bool HasLink => LinkedSchemaId is not null;
 
 	/// <summary>The options of a <c>oneOf</c>/<c>anyOf</c> union, with schema references for potential expansion.</summary>
 	public List<UnionOption>? UnionOptions { get; init; }

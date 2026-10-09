@@ -338,51 +338,31 @@ public class ApiNavigationBuilder(ILogger logger, BuildContext context)
 		var typesCategoryNav = new SchemaCategoryNavigationItem(typesCategory, rootNavigation, rootNavigation);
 		var categoryNavigationItems = new List<IApiGroupingNavigationItem<IApiGroupingModel, INavigationItem>>();
 
-		// Query DSL - only show QueryContainer (individual queries are shown as properties within it)
-		var queryContainerSchema = schemas.FirstOrDefault(s => s.Key == "_types.query_dsl.QueryContainer");
-
-		if (queryContainerSchema.Value is not null)
+		// One category per group of type pages (Query DSL, Aggregations, Ingest), in the order TypePages lists them.
+		foreach (var category in TypePages.All.GroupBy(static p => p.Category))
 		{
-			var queryCategory = new SchemaCategory("Query DSL", "Query type definitions");
-			var queryCategoryNav = new SchemaCategoryNavigationItem(queryCategory, rootNavigation, typesCategoryNav);
-			var apiSchema = new ApiSchema(queryContainerSchema.Key, "QueryContainer", "query-dsl", queryContainerSchema.Value);
-			var queryNavigationItems = new List<INavigationItem>
-			{
-				new SchemaNavigationItem(context.UrlPathPrefix, apiUrlSuffix, apiSchema, rootNavigation, queryCategoryNav)
-			};
-			queryCategoryNav.NavigationItems = queryNavigationItems;
-			categoryNavigationItems.Add(queryCategoryNav);
-		}
+			var present = category.Where(p => schemas.ContainsKey(p.SchemaId)).ToArray();
+			if (present.Length == 0)
+				continue;
 
-		// Aggregations - only show AggregationContainer and Aggregate
-		var aggContainerSchema = schemas.FirstOrDefault(s => s.Key == "_types.aggregations.AggregationContainer");
-
-		var aggregateSchema = schemas.FirstOrDefault(s => s.Key == "_types.aggregations.Aggregate");
-
-		if (aggContainerSchema.Value is not null || aggregateSchema.Value is not null)
-		{
-			var aggCategory = new SchemaCategory("Aggregations", "Aggregation type definitions");
-			var aggCategoryNav = new SchemaCategoryNavigationItem(aggCategory, rootNavigation, typesCategoryNav);
-			var aggNavigationItems = new List<INavigationItem>();
-
-			if (aggContainerSchema.Value is not null)
-			{
-				var apiSchema = new ApiSchema(aggContainerSchema.Key, "AggregationContainer", "aggregations", aggContainerSchema.Value);
-				aggNavigationItems.Add(
-					new SchemaNavigationItem(context.UrlPathPrefix, apiUrlSuffix, apiSchema, rootNavigation, aggCategoryNav)
-				);
-			}
-
-			if (aggregateSchema.Value is not null)
-			{
-				var apiSchema = new ApiSchema(aggregateSchema.Key, "Aggregate", "aggregations", aggregateSchema.Value);
-				aggNavigationItems.Add(
-					new SchemaNavigationItem(context.UrlPathPrefix, apiUrlSuffix, apiSchema, rootNavigation, aggCategoryNav)
-				);
-			}
-
-			aggCategoryNav.NavigationItems = aggNavigationItems;
-			categoryNavigationItems.Add(aggCategoryNav);
+			var categoryNav = new SchemaCategoryNavigationItem(
+				new SchemaCategory(category.Key.Title, category.Key.Description),
+				rootNavigation,
+				typesCategoryNav
+			);
+			categoryNav.NavigationItems =
+			[
+				.. present.Select(
+					page => new SchemaNavigationItem(
+						context.UrlPathPrefix,
+						apiUrlSuffix,
+						new ApiSchema(page.SchemaId, page.DisplayName, category.Key.Slug, schemas[page.SchemaId]),
+						rootNavigation,
+						categoryNav
+					)
+				)
+			];
+			categoryNavigationItems.Add(categoryNav);
 		}
 
 		if (categoryNavigationItems.Count > 0)

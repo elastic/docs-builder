@@ -90,7 +90,14 @@
 					{
 						<span class="union-inline-separator">or</span>
 					}
-					<code class="@SchemaHelpers.UnionOptionClasses(badge.IsTypeOption, badge.Text)">@badge.Text</code>
+					if (badge.Url is { Length: > 0 } badgeUrl)
+					{
+						<code class="union-type-option"><a href="@badgeUrl" class="@SchemaHelpers.LinkedCssClass" data-hx-boost="false">@badge.LinkText</a>@badge.AfterLink</code>
+					}
+					else
+					{
+						<code class="@SchemaHelpers.UnionOptionClasses(badge.IsTypeOption, badge.Text)">@badge.Text</code>
+					}
 				}
 				@if (Model.Union.MoreOptions is { } moreOptions)
 				{

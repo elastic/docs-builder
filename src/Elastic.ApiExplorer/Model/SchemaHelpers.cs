@@ -72,11 +72,6 @@ public static class SchemaHelpers
 	/// Types that have dedicated pages we can link to.
 	/// Only container types get their own pages - individual queries/aggregations are rendered inline.
 	/// </summary>
-	public static readonly HashSet<string> LinkedTypes = new(
-		["QueryContainer", "AggregationContainer", "Aggregate"],
-		StringComparer.OrdinalIgnoreCase
-	);
-
 	// Display order for a schema with several types; it matches how the specs list them, since the type flags keep no order.
 	private static readonly (JsonSchemaType Type, string Name)[] PrimitiveTypeOrder =
 	[
@@ -142,39 +137,6 @@ public static class SchemaHelpers
 	public static string UnionLabel(UnionKeyword? keyword) => keyword == UnionKeyword.AnyOf ? "Any of:" : "One of:";
 
 	/// <summary>
-	/// Gets the URL for a container type's dedicated page under the given API root
-	/// (e.g. <c>/api/elasticsearch</c>), matching the URLs built by <c>SchemaNavigationItem</c>.
-	/// </summary>
-	public static string? GetContainerPageUrl(string apiRootUrl, string typeName)
-	{
-		var schemaId = typeName switch
-		{
-			"QueryContainer" => "_types.query_dsl.QueryContainer",
-			"AggregationContainer" => "_types.aggregations.AggregationContainer",
-			"Aggregate" => "_types.aggregations.Aggregate",
-			_ => null
-		};
-		return schemaId is null ? null : $"{apiRootUrl.TrimEnd('/')}/types/{ApiUrlBuilder.SchemaMoniker(schemaId)}";
-	}
-
-	/// <summary>
-	/// Determines if a type should link to its container page.
-	/// </summary>
-	/// <param name="typeName">The type name to check.</param>
-	/// <param name="currentPageType">Optional current page type to prevent self-linking.</param>
-	public static bool ShouldLinkToContainerPage(string typeName, string? currentPageType = null)
-	{
-		if (!LinkedTypes.Contains(typeName))
-			return false;
-
-		// Prevent self-linking on schema pages
-		if (!string.IsNullOrEmpty(currentPageType) && typeName.Equals(currentPageType, StringComparison.OrdinalIgnoreCase))
-			return false;
-
-		return true;
-	}
-
-	/// <summary>
 	/// Converts a JsonSchemaType to a human-readable primitive type name.
 	/// </summary>
 	public static string GetPrimitiveTypeName(JsonSchemaType? type)
@@ -218,14 +180,11 @@ public static class SchemaHelpers
 
 	public static string? ValueCssClassOrNull(string? name) => !string.IsNullOrEmpty(name) && IsValueType(name) ? ValueCssClass : null;
 
-	public static string? LinkedCssClassOrNull(string? name) =>
-		!string.IsNullOrEmpty(name) && LinkedTypes.Contains(name) ? LinkedCssClass : null;
-
 	public static string? ObjectCssClassOrNull(string? name)
 	{
 		if (string.IsNullOrEmpty(name) || NonObjectDisplayNames.Contains(name) || IsCompoundTypeName(name))
 			return null;
-		if (IsPrimitiveDisplayName(name) || IsValueType(name) || LinkedTypes.Contains(name))
+		if (IsPrimitiveDisplayName(name) || IsValueType(name))
 			return null;
 		return ObjectCssClass;
 	}
@@ -273,7 +232,7 @@ public static class SchemaHelpers
 
 	/// <summary>Group class for a type atom: primitive → value → linked → named object.</summary>
 	public static string? TypeAtomCssClassOrNull(string? name) =>
-		PrimitiveCssClassOrNull(name) ?? ValueCssClassOrNull(name) ?? LinkedCssClassOrNull(name) ?? ObjectCssClassOrNull(name);
+		PrimitiveCssClassOrNull(name) ?? ValueCssClassOrNull(name) ?? ObjectCssClassOrNull(name);
 
 	public static string UnionOptionClasses(bool isTypeOption, string text)
 	{

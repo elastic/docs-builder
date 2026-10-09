@@ -35,7 +35,7 @@ public sealed record PropertyTreeScope
 public partial class ApiPropertyTreeBuilder(
 	OpenApiDocument document,
 	PropertyDisplayOptions options,
-	string? currentPageType = null,
+	string? currentPageSchemaId = null,
 	PageShapes? pageShapes = null
 )
 {
@@ -44,7 +44,7 @@ public partial class ApiPropertyTreeBuilder(
 
 	private readonly PageShapes _shapes = pageShapes ?? new();
 
-	private readonly SchemaAnalyzer _analyzer = new(document, currentPageType, options.SchemaResolveCache);
+	private readonly SchemaAnalyzer _analyzer = new(document, currentPageSchemaId, options.SchemaResolveCache);
 
 	/// <summary>One renderable property before its display fields are derived.</summary>
 	private sealed record PropertyRow(
@@ -103,7 +103,7 @@ public partial class ApiPropertyTreeBuilder(
 	public TypeAnnotation Describe(IOpenApiSchema? schema)
 	{
 		var typeInfo = _analyzer.GetTypeInfo(schema);
-		var annotation = BuildAnnotation(typeInfo, HasActualProperties(schema));
+		var annotation = WithTypeLink(BuildAnnotation(typeInfo, HasActualProperties(schema)), OwnPageLink(typeInfo));
 		return schema is null ? annotation : WithConstraints(annotation, BuildConstraints(schema));
 	}
 
@@ -277,31 +277,34 @@ public partial class ApiPropertyTreeBuilder(
 	}
 
 	private IReadOnlyList<TypePageLink> BuildAlsoIncludes(TypeInfo typeInfo) =>
-		typeInfo.AlsoIncludes?.Select(
-			c => new TypePageLink(c.Name, c.HasLink ? SchemaHelpers.GetContainerPageUrl(options.ApiRootUrl, c.Name) : null)
-		).ToArray()
-			?? [];
+		typeInfo.AlsoIncludes?.Select(c => new TypePageLink(c.Name, PageUrl(c.LinkedSchemaId))).ToArray() ?? [];
 
+	/// <summary>The link a row's type gets: its own page, or for an <c>X | X[]</c> union, the page of <c>X</c>.</summary>
 	private TypePageLink? BuildTypeLink(TypeInfo typeInfo, Expansion expansion)
 	{
-		string? linkedTypeName = null;
-		if (typeInfo.HasLink)
-		{
-			linkedTypeName = typeInfo is { IsDictionary: true, DictValueSchema: not null }
-				? _analyzer.GetTypeInfo(typeInfo.DictValueSchema).TypeName
-				: typeInfo.TypeName;
-		}
-		else if (expansion.ArrayUnion is { BaseName: var baseName })
-		{
-			var baseOption = typeInfo.UnionOptions!.FirstOrDefault(o => o.Name == baseName);
-			if (baseOption?.Schema is not null && _analyzer.GetTypeInfo(baseOption.Schema).HasLink)
-				linkedTypeName = baseName;
-		}
-
-		if (string.IsNullOrEmpty(linkedTypeName))
+		if (OwnPageLink(typeInfo) is { } own)
+			return own;
+		if (
+			expansion.ArrayUnion is not { BaseName: var baseName }
+			|| typeInfo.UnionOptions!.FirstOrDefault(o => o.Name == baseName)?.Schema is not { } baseSchema
+		)
 			return null;
-		return new TypePageLink(linkedTypeName, SchemaHelpers.GetContainerPageUrl(options.ApiRootUrl, linkedTypeName));
+		return PageUrl(_analyzer.GetTypeInfo(baseSchema).LinkedSchemaId) is { } url ? new TypePageLink(baseName, url) : null;
 	}
+
+	/// <summary>The link to the page of a type documented on its own, on the name its annotation shows: the map value's for a map.</summary>
+	private TypePageLink? OwnPageLink(TypeInfo typeInfo)
+	{
+		if (PageUrl(typeInfo.LinkedSchemaId) is not { } url)
+			return null;
+		var shown = typeInfo is { IsDictionary: true, DictValueSchema: { } value }
+			? _analyzer.GetTypeInfo(value).TypeName
+			: typeInfo.TypeName;
+		return new TypePageLink(shown, url);
+	}
+
+	/// <summary>The page of a type documented on its own (see <see cref="TypePages"/>); null for any other type.</summary>
+	private string? PageUrl(string? linkedSchemaId) => linkedSchemaId is null ? null : TypePages.Url(options.ApiRootUrl, linkedSchemaId);
 
 	/// <summary>
 	/// <c>X</c> when an <c>X | X[]</c> row lists <c>X</c>'s fields and its type does not read <c>X | X[]</c>. Such a row
@@ -341,8 +344,13 @@ public partial class ApiPropertyTreeBuilder(
 		var sortedOptions = (typeInfo.UnionOptions ?? [])
 			.DistinctBy(o => o.Name)
 			.OrderByDescending(o => o.IsArray)
-			.Select(static o => SchemaHelpers.ReadableSchemaName(o.BaseName) + (o.IsArray ? "[]" : ""))
-			.Distinct()
+			.Select(
+				o =>
+					(Text: SchemaHelpers.ReadableSchemaName(o.BaseName) + (o.IsArray ? "[]" : ""), Url: PageUrl(
+						_analyzer.GetTypeInfo(o.Schema).LinkedSchemaId
+					))
+			)
+			.DistinctBy(static o => o.Text)
 			.ToArray();
 
 		if (sortedOptions.Length > 0 || expansion.HasUnionOptions)
@@ -350,8 +358,8 @@ public partial class ApiPropertyTreeBuilder(
 			var mixed = MixesLiteralsWithObjects(typeInfo, expansion);
 			var badges = mixed
 				? typeInfo.EnumValues!.Select(static v => new UnionBadge(v, IsTypeOption: false))
-				: (expansion.HasUnionOptions ? [] : sortedOptions.Where(static o => !SchemaHelpers.IsInternalSchemaName(o))).Select(
-					o => new UnionBadge(o, IsTypeOptionBadge(o))
+				: (expansion.HasUnionOptions ? [] : sortedOptions.Where(static o => !SchemaHelpers.IsInternalSchemaName(o.Text))).Select(
+					static o => new UnionBadge(o.Text, IsTypeOptionBadge(o.Text), o.Url)
 				);
 			return new UnionDisplay
 			{

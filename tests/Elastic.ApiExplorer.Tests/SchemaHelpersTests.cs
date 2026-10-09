@@ -51,8 +51,8 @@ public class SchemaHelpersTests
 		SchemaHelpers.TypeAtomCssClassOrNull("TaskSettings").Should().Be("type-object");
 
 	[Test]
-	public void TypeAtomCssClassOrNull_LinkedContainer_ReturnsTypeLinked() =>
-		SchemaHelpers.TypeAtomCssClassOrNull("QueryContainer").Should().Be("type-linked");
+	public void TypeAtomCssClassOrNull_NameOfATypeWithItsOwnPage_IsAnObjectUntilLinked() =>
+		SchemaHelpers.TypeAtomCssClassOrNull("QueryContainer").Should().Be("type-object", "only a real link, by $ref id, gets type-linked");
 
 	[Test]
 	public void TypeAtomCssClassOrNull_Unknown_ReturnsNull() => SchemaHelpers.TypeAtomCssClassOrNull("unknown").Should().BeNull();
@@ -69,8 +69,8 @@ public class SchemaHelpersTests
 		SchemaHelpers.UnionOptionClasses(true, "TaskSettings").Should().Be("union-type-option type-object");
 
 	[Test]
-	public void UnionOptionClasses_LinkedContainer_IncludesTypeLinked() =>
-		SchemaHelpers.UnionOptionClasses(true, "AggregationContainer").Should().Be("union-type-option type-linked");
+	public void UnionOptionClasses_NameOfATypeWithItsOwnPage_IsAnObjectUntilLinked() =>
+		SchemaHelpers.UnionOptionClasses(true, "AggregationContainer").Should().Be("union-type-option type-object");
 
 	[Test]
 	public void UnionOptionClasses_PrimitiveTypeOption_IncludesTypePrimitive() =>

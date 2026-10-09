@@ -48,8 +48,8 @@ public record SchemaPageModel
 			UseHiddenUntilFound = false,
 			SchemaResolveCache = context.SchemaResolveCache
 		};
-		var builder = new ApiPropertyTreeBuilder(context.Model, options, schema.DisplayName);
-		var analyzer = new SchemaAnalyzer(context.Model, schema.DisplayName, context.SchemaResolveCache);
+		var builder = new ApiPropertyTreeBuilder(context.Model, options, schema.SchemaId);
+		var analyzer = new SchemaAnalyzer(context.Model, schema.SchemaId, context.SchemaResolveCache);
 		var rootAncestors = new HashSet<string> { schema.SchemaId };
 		var typeInfo = analyzer.GetTypeInfo(openApiSchema);
 		var keyword = typeInfo.UnionKeyword ?? UnionKeyword.OneOf;
@@ -70,12 +70,7 @@ public record SchemaPageModel
 
 		return new SchemaPageModel
 		{
-			DictionaryTypeName = schema.DisplayName switch
-			{
-				"AggregationContainer" => "Dictionary<string, AggregationContainer>",
-				"Aggregate" => "Dictionary<string, Aggregate>",
-				_ => null
-			},
+			DictionaryTypeName = TypePages.TryGet(schema.SchemaId, out var typePage) ? typePage.MapOf : null,
 			ExternalDocs = externalDocs,
 			UnionVariants = variants,
 			UnionKeyword = keyword,
