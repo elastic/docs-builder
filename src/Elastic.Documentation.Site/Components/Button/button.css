@@ -1,0 +1,182 @@
+.btn {
+	/* Component tokens: a theme restyles buttons by overriding these or the roles they read. */
+	--btn-fg: var(--color-on-accent);
+	--btn-top: var(--color-accent);
+	--btn-bottom: var(--color-brand-deep);
+	--btn-border: var(--color-border-strong);
+	--btn-ledge: var(--color-brand-deep);
+	--btn-height: 2.75rem;
+	--btn-padding: 0 var(--space-5) 0 var(--space-5);
+	--btn-size: var(--text-sm);
+
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: var(--space-2);
+	height: var(--btn-height);
+	padding: var(--btn-padding);
+	border: var(--border-width) solid var(--btn-border);
+	border-radius: var(--radius-md);
+	background: linear-gradient(
+		180deg,
+		var(--btn-top) 35%,
+		var(--btn-bottom) 175%
+	);
+	box-shadow:
+		inset 0 1px 0 color-mix(in oklab, var(--btn-fg) 30%, transparent),
+		0 2px 0 var(--btn-ledge);
+	color: var(--btn-fg);
+	font-family: var(--font-body);
+	font-size: var(--btn-size);
+	font-weight: var(--weight-semibold);
+	line-height: 1;
+	white-space: nowrap;
+	cursor: pointer;
+	transition:
+		box-shadow var(--duration-fast) var(--ease-standard),
+		border-color var(--duration-fast) var(--ease-standard),
+		color var(--duration-fast) var(--ease-standard);
+}
+
+.btn:hover {
+	--btn-top: var(--color-accent-hover);
+	--btn-bottom: var(--color-accent);
+}
+
+.btn:active {
+	--btn-top: var(--color-brand-deep);
+	--btn-bottom: var(--color-brand-deep);
+	box-shadow: inset 0 3px 6px
+		color-mix(in oklab, var(--color-heading) 45%, transparent);
+}
+
+.btn:focus-visible {
+	outline: 3px solid var(--color-focus-ring);
+	outline-offset: 3px;
+}
+
+/* The default look is primary; the explicit class keeps variants symmetrical in markup. */
+.btn--primary {
+	--btn-fg: var(--color-on-accent);
+}
+
+.btn--secondary {
+	--btn-fg: var(--color-heading);
+	--btn-top: var(--color-surface);
+	--btn-bottom: var(--color-surface-sunken);
+	--btn-border: var(--color-border-control);
+	--btn-ledge: var(--color-border-control);
+}
+
+.btn--secondary:hover {
+	--btn-fg: var(--color-accent-hover);
+	--btn-top: var(--color-accent-surface);
+	--btn-bottom: var(--color-accent-border);
+	--btn-border: var(--color-accent);
+	--btn-ledge: var(--color-accent-border);
+}
+
+.btn--secondary:active {
+	--btn-top: var(--color-accent-border);
+	--btn-bottom: var(--color-accent-surface);
+}
+
+.btn--tertiary {
+	--btn-fg: var(--color-accent);
+	--btn-padding: 0 var(--space-3) 0 var(--space-3);
+
+	border-color: transparent;
+	background: none;
+	box-shadow: none;
+}
+
+.btn--tertiary:hover {
+	background: var(--color-accent-surface);
+}
+
+.btn--tertiary:active {
+	box-shadow: none;
+	background: var(--color-accent-border);
+}
+
+.btn--danger {
+	--btn-top: var(--color-danger);
+	--btn-bottom: color-mix(
+		in oklab,
+		var(--color-danger) 70%,
+		var(--color-brand-deep)
+	);
+	--btn-ledge: color-mix(
+		in oklab,
+		var(--color-danger) 60%,
+		var(--color-brand-deep)
+	);
+}
+
+.btn--danger:hover {
+	--btn-top: color-mix(
+		in oklab,
+		var(--color-danger) 80%,
+		var(--color-heading)
+	);
+	--btn-bottom: var(--color-danger);
+}
+
+.btn--danger:active {
+	--btn-top: color-mix(
+		in oklab,
+		var(--color-danger) 60%,
+		var(--color-brand-deep)
+	);
+	--btn-bottom: color-mix(
+		in oklab,
+		var(--color-danger) 60%,
+		var(--color-brand-deep)
+	);
+}
+
+.btn--sm {
+	--btn-height: 2.125rem;
+	--btn-padding: 0 var(--space-3) 0 var(--space-3);
+	--btn-size: var(--text-xs);
+}
+
+.btn--lg {
+	--btn-height: 3.25rem;
+	--btn-padding: 0 var(--space-6) 0 var(--space-6);
+	--btn-size: var(--text-base);
+}
+
+.btn--icon {
+	--btn-padding: 0;
+
+	width: var(--btn-height);
+}
+
+.btn:disabled,
+.btn[aria-disabled='true'] {
+	border-color: var(--color-border);
+	background: var(--color-border);
+	box-shadow: none;
+	color: var(--color-text-muted);
+	cursor: not-allowed;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+	.btn:hover:not(:disabled) {
+		transform: translateY(-1px);
+	}
+
+	.btn:active:not(:disabled) {
+		transform: translateY(2px);
+	}
+
+	.btn--tertiary:hover,
+	.btn--tertiary:active {
+		transform: none;
+	}
+
+	.btn {
+		transition-property: box-shadow, border-color, color, transform;
+	}
+}

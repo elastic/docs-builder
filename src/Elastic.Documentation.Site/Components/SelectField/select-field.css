@@ -1,0 +1,19 @@
+.select {
+	position: relative;
+	display: block;
+}
+
+.select__control {
+	appearance: none;
+	padding-right: var(--space-7);
+	cursor: pointer;
+}
+
+.select > .icon {
+	position: absolute;
+	top: 50%;
+	right: var(--space-4);
+	translate: 0 -50%;
+	color: var(--color-text-muted);
+	pointer-events: none;
+}

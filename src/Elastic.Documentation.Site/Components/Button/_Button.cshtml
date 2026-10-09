@@ -1,0 +1,13 @@
+@inherits RazorSlice<Elastic.Documentation.Site.Components.Button.ButtonModel>
+@if (Model.Href is { } href && !Model.Disabled)
+{
+	<a class="@Model.CssClass" href="@href"@(Model.IconOnly ? new HtmlString($" aria-label=\"{System.Net.WebUtility.HtmlEncode(Model.Label)}\"") : HtmlString.Empty)>
+		@await RenderPartialAsync(_ButtonContent.Create(Model))
+	</a>
+}
+else
+{
+	<button class="@Model.CssClass" type="button"@(Model.Disabled ? new HtmlString(" disabled") : HtmlString.Empty)@(Model.IconOnly ? new HtmlString($" aria-label=\"{System.Net.WebUtility.HtmlEncode(Model.Label)}\"") : HtmlString.Empty)>
+		@await RenderPartialAsync(_ButtonContent.Create(Model))
+	</button>
+}

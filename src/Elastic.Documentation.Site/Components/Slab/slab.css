@@ -1,0 +1,16 @@
+/* The offset-plate surface that carries the visual identity. Cards, menus and overlays reuse it. */
+.slab {
+	border: var(--border-width) solid var(--color-border-strong);
+	border-radius: var(--radius-md);
+	background: var(--color-surface);
+	box-shadow: var(--shadow-slab);
+	margin: 0 6px 6px 0;
+}
+
+.slab--rest {
+	box-shadow: var(--shadow-slab-rest);
+}
+
+.slab--flat {
+	box-shadow: none;
+}

@@ -41,6 +41,28 @@ Tokens come in three tiers:
 Components read roles and scales and never raw colour values.
 A test fails the build when component CSS contains a hex colour, a colour function, or `!important`.
 
+## Components
+
+Each component is a Razor slice in its own folder under `src/Elastic.Documentation.Site/Components/<Name>/`:
+
+| File | Purpose |
+|---|---|
+| `_<Name>.cshtml` | The markup. Views only print the model; decisions such as class names live in the model |
+| `<Name>Model.cs` | A record with typed parameters, using enums instead of strings for variants |
+| `<name>.css` | Styles in the `ds.components` layer, imported from `Assets/ds.css` |
+| `<Name>Examples.cs` | The canonical examples, shared by the style guide and the tests |
+
+Call a component from another view with `@await RenderPartialAsync(_Button.Create(new ButtonModel { ... }))`.
+The style guide renders every example live and shows the model call and the exact HTML next to it.
+
+Tests render every example and check that:
+
+- no icon name is unknown,
+- every class in the markup is defined in the design-system CSS,
+- every link and button has an accessible name and every input has a label,
+- ids are unique on a page, and
+- every component stylesheet is imported by the bundle.
+
 ## Layers
 
 The design system declares its cascade layers under a `ds` namespace so they never merge with other stylesheets' layers:

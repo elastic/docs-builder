@@ -1,0 +1,19 @@
+@inherits RazorSlice<Elastic.Documentation.Site.Components.TextField.TextFieldModel>
+<div class="field">
+	<label class="field__label" for="@Model.Id">@Model.Label</label>
+	<input class="input" id="@Model.Id" name="@Model.Name" type="@Model.Type"
+		@(Model.Placeholder is { } placeholder ? new HtmlString($"placeholder=\"{System.Net.WebUtility.HtmlEncode(placeholder)}\"") : HtmlString.Empty)
+		@(Model.Value is { } value ? new HtmlString($"value=\"{System.Net.WebUtility.HtmlEncode(value)}\"") : HtmlString.Empty)
+		@(Model.DescribedBy is { } describedBy ? new HtmlString($"aria-describedby=\"{describedBy}\"") : HtmlString.Empty)
+		@(Model.Error is not null ? new HtmlString("aria-invalid=\"true\"") : HtmlString.Empty)
+		@(Model.Required ? new HtmlString("required") : HtmlString.Empty)
+		@(Model.Disabled ? new HtmlString("disabled") : HtmlString.Empty)>
+	@if (Model.Hint is { } hint)
+	{
+		<p class="field__hint" id="@(Model.Id)-hint">@hint</p>
+	}
+	@if (Model.Error is { } error)
+	{
+		<p class="field__error" id="@(Model.Id)-error" role="alert">@error</p>
+	}
+</div>

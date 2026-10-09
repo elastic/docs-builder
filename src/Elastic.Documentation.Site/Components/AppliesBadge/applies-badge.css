@@ -1,0 +1,81 @@
+.applies-badge {
+	display: inline-flex;
+	align-items: center;
+	overflow: hidden;
+	border: var(--border-width) solid var(--color-border);
+	border-radius: var(--radius-sm);
+	background: var(--color-surface);
+	font-size: var(--text-xs);
+	font-weight: var(--weight-semibold);
+	line-height: 1;
+}
+
+.applies-badge__product,
+.applies-badge__status {
+	padding: var(--space-2);
+}
+
+.applies-badge__product {
+	background: var(--color-emphasis);
+	color: var(--color-on-emphasis);
+}
+
+.applies-badge__status {
+	color: var(--color-text);
+}
+
+.applies-badge--ga .applies-badge__status {
+	color: var(--color-success);
+}
+
+.applies-badge--preview .applies-badge__status {
+	color: var(--color-warning);
+}
+
+.applies-badge--deprecated .applies-badge__status {
+	color: var(--color-danger);
+}
+
+.applies-badge--unavailable .applies-badge__status {
+	color: var(--color-text-muted);
+	text-decoration: line-through;
+}
+
+/* The outlined form that sits under page titles. */
+.applies-pill {
+	display: inline-flex;
+	align-items: center;
+	gap: var(--space-2);
+	padding: var(--space-2) var(--space-3);
+	border: var(--border-width) solid var(--color-border-control);
+	border-radius: var(--radius-pill);
+	color: var(--color-heading);
+	font-size: var(--text-xs);
+	font-weight: var(--weight-semibold);
+	line-height: 1;
+}
+
+.applies-pill__product {
+	font-weight: var(--weight-semibold);
+}
+
+.applies-pill__status {
+	color: var(--color-text-muted);
+	font-weight: var(--weight-medium);
+}
+
+.applies-pill--ga .applies-pill__status {
+	color: var(--color-success);
+}
+
+.applies-pill--preview .applies-pill__status {
+	color: var(--color-warning);
+}
+
+.applies-pill--deprecated .applies-pill__status {
+	color: var(--color-danger);
+}
+
+.applies-pill--unavailable .applies-pill__status {
+	text-decoration: line-through;
+}

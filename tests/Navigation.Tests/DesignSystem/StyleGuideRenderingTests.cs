@@ -29,6 +29,19 @@ public class StyleGuideRenderingTests
 	}
 
 	[Test]
+	public void ComponentPages_AllHaveANavigationEntry()
+	{
+		var slugs = StyleGuideCatalog.Pages.Select(p => p.Slug).ToHashSet();
+
+		StyleGuideCatalog
+			.ComponentPages
+			.Keys
+			.Where(k => !slugs.Contains(k))
+			.Should()
+			.BeEmpty("every component page needs an entry in the navigation");
+	}
+
+	[Test]
 	public async Task EmptySlug_RendersDefaultPage()
 	{
 		var html = await StyleGuideCatalog.RenderAsync(null, StaticUrl, TestContext.Current!.Execution.CancellationToken);

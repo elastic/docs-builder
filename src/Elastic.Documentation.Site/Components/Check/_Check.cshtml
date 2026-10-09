@@ -1,0 +1,6 @@
+@inherits RazorSlice<Elastic.Documentation.Site.Components.Check.CheckModel>
+<label class="@Model.CssClass" for="@Model.Id">
+	<input class="check__input" id="@Model.Id" name="@Model.Name" value="@Model.Value" type="@(Model.Radio ? "radio" : "checkbox")"@(Model.Checked ? new HtmlString(" checked") : HtmlString.Empty)@(Model.Disabled ? new HtmlString(" disabled") : HtmlString.Empty)>
+	<span class="check__box" aria-hidden="true"></span>
+	<span class="check__label">@Model.Label</span>
+</label>

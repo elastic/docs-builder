@@ -43,6 +43,8 @@ public static class StyleGuideTokens
 		new("--color-brand-deep", "Slab plate, brand blocks"),
 		new("--color-brand-bright", "Brand highlight"),
 		new("--color-highlight", "Editorial highlight"),
+		new("--color-emphasis", "Tags and badges that stand out"),
+		new("--color-on-emphasis", "Text on emphasis fills"),
 		new("--color-focus-ring", "Keyboard focus")
 	];
 

@@ -17,3 +17,23 @@
 @import './ds/themes/bold-minimal.css' layer(ds.theme);
 @import './ds/reset.css' layer(ds.reset);
 @import './ds/base.css' layer(ds.base);
+
+@import '../Components/Icon/icon.css' layer(ds.components);
+@import '../Components/Button/button.css' layer(ds.components);
+@import '../Components/Link/link.css' layer(ds.components);
+@import '../Components/Badge/badge.css' layer(ds.components);
+@import '../Components/Method/method.css' layer(ds.components);
+@import '../Components/AppliesBadge/applies-badge.css' layer(ds.components);
+@import '../Components/Kbd/kbd.css' layer(ds.components);
+@import '../Components/TextField/text-field.css' layer(ds.components);
+@import '../Components/SelectField/select-field.css' layer(ds.components);
+@import '../Components/Check/check.css' layer(ds.components);
+@import '../Components/Switch/switch.css' layer(ds.components);
+@import '../Components/Chip/chip.css' layer(ds.components);
+@import '../Components/SearchField/search-field.css' layer(ds.components);
+@import '../Components/Slab/slab.css' layer(ds.components);
+@import '../Components/Card/card.css' layer(ds.components);
+@import '../Components/LinkTile/link-tile.css' layer(ds.components);
+@import '../Components/ReleaseCard/release-card.css' layer(ds.components);
+@import '../Components/Breadcrumb/breadcrumb.css' layer(ds.components);
+@import '../Components/Pager/pager.css' layer(ds.components);

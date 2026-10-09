@@ -44,6 +44,9 @@
 	--color-highlight: light-dark(var(--palette-pink), #ee72a6);
 	--color-highlight-surface: light-dark(#fbe3ee, rgb(238 114 166 / 12%));
 
+	--color-emphasis: light-dark(var(--palette-developer-blue), #2c3c6b);
+	--color-on-emphasis: var(--palette-teal);
+
 	--color-focus-ring: light-dark(
 		var(--palette-elastic-blue),
 		var(--palette-teal)

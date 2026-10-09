@@ -1,0 +1,6 @@
+@inherits RazorSlice<Elastic.Documentation.Site.Components.Switch.SwitchModel>
+<label class="switch" for="@Model.Id">
+	<input class="switch__input" id="@Model.Id" name="@Model.Name" type="checkbox" role="switch"@(Model.On ? new HtmlString(" checked") : HtmlString.Empty)@(Model.Disabled ? new HtmlString(" disabled") : HtmlString.Empty)>
+	<span class="switch__track" aria-hidden="true"></span>
+	<span class="switch__label">@Model.Label</span>
+</label>

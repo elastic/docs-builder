@@ -1,0 +1,20 @@
+@inherits RazorSlice<Elastic.Documentation.Site.Components.Breadcrumb.BreadcrumbModel>
+<nav class="breadcrumb" aria-label="Breadcrumb">
+	<ol class="breadcrumb__list">
+		@for (var i = 0; i < Model.Items.Count; i++)
+		{
+			var item = Model.Items[i];
+			var current = i == Model.Items.Count - 1;
+			<li class="breadcrumb__item">
+				@if (current || item.Href is null)
+				{
+					<span@(current ? new HtmlString(" aria-current=\"page\"") : HtmlString.Empty)>@item.Label</span>
+				}
+				else
+				{
+					<a class="breadcrumb__link" href="@item.Href">@item.Label</a>
+				}
+			</li>
+		}
+	</ol>
+</nav>

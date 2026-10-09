@@ -1,0 +1,28 @@
+@inherits RazorSlice<Elastic.Documentation.Site.StyleGuide.ComponentsPageModel>
+@using Elastic.Documentation.Site.StyleGuide
+@implements IUsesLayout<Elastic.Documentation.Site.StyleGuide._StyleGuideLayout, StyleGuideViewModel>
+@functions {
+	public StyleGuideViewModel LayoutModel => Model.Guide;
+}
+@foreach (var block in Model.Sections)
+{
+	<section class="sg-section" id="@block.ClassName">
+		<h2>@block.Title</h2>
+		<p>@block.Intro</p>
+		<div class="sg-examples">
+			@foreach (var example in block.Examples)
+			{
+				var html = await example.RenderAsync();
+				<figure class="sg-example">
+					<figcaption>@example.Title</figcaption>
+					<div class="sg-example__stage"@(example.Theme is { } theme ? new HtmlString($" data-theme=\"{theme}\"") : HtmlString.Empty)>@(new HtmlString(html))</div>
+					<details class="sg-example__source">
+						<summary>Code</summary>
+						<pre><code>@example.ModelCode</code></pre>
+						<pre><code>@html</code></pre>
+					</details>
+				</figure>
+			}
+		</div>
+	</section>
+}

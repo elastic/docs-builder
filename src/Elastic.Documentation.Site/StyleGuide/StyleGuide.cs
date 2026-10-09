@@ -2,6 +2,25 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using Elastic.Documentation.Site.Components;
+using Elastic.Documentation.Site.Components.AppliesBadge;
+using Elastic.Documentation.Site.Components.Badge;
+using Elastic.Documentation.Site.Components.Breadcrumb;
+using Elastic.Documentation.Site.Components.Button;
+using Elastic.Documentation.Site.Components.Card;
+using Elastic.Documentation.Site.Components.Check;
+using Elastic.Documentation.Site.Components.Chip;
+using Elastic.Documentation.Site.Components.Kbd;
+using Elastic.Documentation.Site.Components.Link;
+using Elastic.Documentation.Site.Components.LinkTile;
+using Elastic.Documentation.Site.Components.Method;
+using Elastic.Documentation.Site.Components.Pager;
+using Elastic.Documentation.Site.Components.ReleaseCard;
+using Elastic.Documentation.Site.Components.SearchField;
+using Elastic.Documentation.Site.Components.SelectField;
+using Elastic.Documentation.Site.Components.Switch;
+using Elastic.Documentation.Site.Components.TextField;
+
 namespace Elastic.Documentation.Site.StyleGuide;
 
 public sealed record StyleGuidePage(string Slug, string Title, string Group, string Lead);
@@ -32,8 +51,39 @@ public static class StyleGuideCatalog
 			"Foundations",
 			"How light, dark and custom themes work, and how to write your own by overriding tokens only."
 		),
-		new("motion", "Motion", "Foundations", "Durations, easing and the reduced-motion policy.")
+		new("motion", "Motion", "Foundations", "Durations, easing and the reduced-motion policy."),
+		new(
+			"actions",
+			"Actions and inputs",
+			"Components",
+			"Buttons, links and form controls. Each example is the real component, rendered from the model call shown under Code."
+		),
+		new("cards", "Cards and tiles", "Components", "Cards, link tiles and release cards. Hover a card to see the slab shadow."),
+		new("navigation", "Navigation parts", "Components", "Breadcrumbs and previous/next links."),
+		new("badges", "Labels and badges", "Components", "Status and tag badges, HTTP methods, applies-to badges and keyboard keys.")
 	];
+
+	/// <summary>The component sections shown on each component page, keyed by page slug.</summary>
+	public static IReadOnlyDictionary<string, IReadOnlyList<ComponentSection>> ComponentPages
+	{
+		get;
+	} = new Dictionary<string, IReadOnlyList<ComponentSection>>(StringComparer.OrdinalIgnoreCase)
+	{
+		["actions"] =
+		[
+			ButtonExamples.Buttons,
+			LinkExamples.Links,
+			TextFieldExamples.Fields,
+			SelectFieldExamples.Selects,
+			CheckExamples.Checks,
+			SwitchExamples.Switches,
+			ChipExamples.Chips,
+			SearchFieldExamples.Searches
+		],
+		["cards"] = [CardExamples.Cards, LinkTileExamples.Tiles, ReleaseCardExamples.Releases],
+		["navigation"] = [BreadcrumbExamples.Trails, PagerExamples.Pagers],
+		["badges"] = [BadgeExamples.Badges, MethodBadgeExamples.Methods, AppliesBadgeExamples.Badges, KbdExamples.Keys]
+	};
 
 	public static StyleGuidePage Default => Pages[0];
 
@@ -51,6 +101,15 @@ public static class StyleGuideCatalog
 
 		var model = new StyleGuideViewModel { Page = page, Pages = Pages, Static = staticUrl };
 		using var writer = new StringWriter();
+		if (ComponentPages.TryGetValue(page.Slug, out var sections))
+		{
+			await ComponentsView.Create(new ComponentsPageModel { Guide = model, Sections = sections }).RenderAsync(
+				writer,
+				cancellationToken: ctx
+			);
+			return writer.ToString();
+		}
+
 		switch (page.Slug)
 		{
 			case "themes":

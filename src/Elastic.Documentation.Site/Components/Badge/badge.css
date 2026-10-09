@@ -1,0 +1,64 @@
+.badge {
+	--badge-tone: var(--color-text-muted);
+	--badge-surface: var(--color-surface-sunken);
+
+	display: inline-flex;
+	align-items: center;
+	gap: var(--space-2);
+	height: 1.625rem;
+	padding: 0 var(--space-3);
+	border: var(--border-width) solid
+		color-mix(in oklab, var(--badge-tone) 40%, transparent);
+	border-radius: var(--radius-sm);
+	background: var(--badge-surface);
+	color: var(--badge-tone);
+	font-family: var(--font-body);
+	font-size: var(--text-xs);
+	font-weight: var(--weight-semibold);
+	line-height: 1;
+	white-space: nowrap;
+}
+
+.badge--info {
+	--badge-tone: var(--color-accent);
+	--badge-surface: var(--color-accent-surface);
+}
+
+.badge--success {
+	--badge-tone: var(--color-success);
+	--badge-surface: var(--color-success-surface);
+}
+
+.badge--warning {
+	--badge-tone: var(--color-warning);
+	--badge-surface: var(--color-warning-surface);
+}
+
+.badge--danger {
+	--badge-tone: var(--color-danger);
+	--badge-surface: var(--color-danger-surface);
+}
+
+.badge--important {
+	--badge-tone: var(--color-important);
+	--badge-surface: var(--color-important-surface);
+}
+
+.badge--pill {
+	height: 1.75rem;
+	border-radius: var(--radius-pill);
+}
+
+.badge--tag {
+	border-color: var(--color-emphasis);
+	background: var(--color-emphasis);
+	color: var(--color-on-emphasis);
+	font-weight: var(--weight-bold);
+	letter-spacing: 0.08em;
+	text-transform: uppercase;
+}
+
+.badge--mono {
+	font-family: var(--font-mono);
+	font-weight: var(--weight-medium);
+}

@@ -1,0 +1,15 @@
+@inherits RazorSlice<Elastic.Documentation.Site.Components.LinkTile.LinkTileModel>
+<a class="link-tile" href="@Model.Href">
+	@if (Model.Icon is { } icon)
+	{
+		@await RenderPartialAsync(_Icon.Create(new IconModel { Name = icon, Size = IconSize.Large }))
+	}
+	<span class="link-tile__text">
+		<span class="link-tile__title">@Model.Title</span>
+		@if (Model.Subtitle is { } subtitle)
+		{
+			<span class="link-tile__sub">@subtitle</span>
+		}
+	</span>
+	@await RenderPartialAsync(_Icon.Create(new IconModel { Name = "arrow_right", Size = IconSize.Small }))
+</a>

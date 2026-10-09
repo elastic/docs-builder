@@ -1,0 +1,40 @@
+.search-field {
+	display: flex;
+	align-items: center;
+	gap: var(--space-2);
+	height: 2.375rem;
+	min-width: 16rem;
+	padding: 0 var(--space-3);
+	border: var(--border-width) solid var(--color-border-control);
+	border-radius: var(--radius-md);
+	background: var(--color-surface);
+	color: var(--color-text-muted);
+	font-size: var(--text-sm);
+	transition:
+		border-color var(--duration-fast) var(--ease-standard),
+		box-shadow var(--duration-fast) var(--ease-standard);
+}
+
+.search-field:hover {
+	border-color: var(--color-accent);
+}
+
+.search-field:focus-within {
+	border-color: var(--color-accent);
+	box-shadow: 0 0 0 3px
+		color-mix(in oklab, var(--color-accent) 24%, transparent);
+}
+
+.search-field__input {
+	flex: 1;
+	min-width: 0;
+	border: 0;
+	background: none;
+	color: var(--color-text);
+	font-size: inherit;
+	outline: none;
+}
+
+.search-field__input::placeholder {
+	color: var(--color-text-muted);
+}
