@@ -12,6 +12,14 @@
 	{
 		<p class="field__hint" id="@(Model.Id)-hint">@hint</p>
 	}
+	@if (Model.Warning is { } warning)
+	{
+		<p class="field__warning" id="@(Model.Id)-warning">@warning</p>
+	}
+	@if (Model.Success is { } success)
+	{
+		<p class="field__success" id="@(Model.Id)-success">@success</p>
+	}
 	@if (Model.Error is { } error)
 	{
 		<p class="field__error" id="@(Model.Id)-error" role="alert">@error</p>

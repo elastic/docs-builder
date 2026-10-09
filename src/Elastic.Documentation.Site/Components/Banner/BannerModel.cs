@@ -4,10 +4,21 @@
 
 namespace Elastic.Documentation.Site.Components.Banner;
 
+public enum BannerKind
+{
+	Announcement,
+	Info,
+	Warning,
+	Danger
+}
+
 /// <summary>A full-width announcement above the header, with an optional link.</summary>
 public sealed record BannerModel
 {
 	public required string Message { get; init; }
+	public BannerKind Kind { get; init; } = BannerKind.Announcement;
 	public string? LinkLabel { get; init; }
 	public string? LinkHref { get; init; }
+
+	public string CssClass => Kind is BannerKind.Announcement ? "banner" : $"banner banner--{Kind.ToString().ToLowerInvariant()}";
 }

@@ -17,12 +17,24 @@ public sealed record TextFieldModel
 	/// <summary>When set, the field is marked invalid and the message is announced.</summary>
 	public string? Error { get; init; }
 
+	/// <summary>A non-blocking caution shown under the field.</summary>
+	public string? Warning { get; init; }
+
+	/// <summary>Confirmation shown under the field once the value is accepted.</summary>
+	public string? Success { get; init; }
+
 	public bool Required { get; init; }
 	public bool Disabled { get; init; }
 
 	public string? DescribedBy =>
-		string.Join(' ', new[] { Hint is null ? null : $"{Id}-hint", Error is null ? null : $"{Id}-error" }.Where(i => i is not null)) is
-		{
-			Length: > 0
-		} ids ? ids : null;
+		string.Join(
+			' ',
+			new[]
+			{
+				Hint is null ? null : $"{Id}-hint",
+				Error is null ? null : $"{Id}-error",
+				Warning is null ? null : $"{Id}-warning",
+				Success is null ? null : $"{Id}-success"
+			}.Where(i => i is not null)
+		) is { Length: > 0 } ids ? ids : null;
 }

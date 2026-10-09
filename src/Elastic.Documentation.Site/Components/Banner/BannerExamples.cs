@@ -15,6 +15,23 @@ public static class BannerExamples
 				"Banner",
 				_Banner.Create,
 				new BannerModel { Message = "Elastic 9.1 is available.", LinkLabel = "Read the release notes", LinkHref = "#release-notes" }
+			),
+			ComponentExample.Of("Info", _Banner.Create, new BannerModel { Message = "Search is being reindexed.", Kind = BannerKind.Info }),
+			ComponentExample.Of(
+				"Warning",
+				_Banner.Create,
+				new BannerModel
+				{
+					Message = "This version is reaching end of life.",
+					Kind = BannerKind.Warning,
+					LinkLabel = "Upgrade",
+					LinkHref = "#upgrade"
+				}
+			),
+			ComponentExample.Of(
+				"Danger",
+				_Banner.Create,
+				new BannerModel { Message = "Some pages are temporarily unavailable.", Kind = BannerKind.Danger }
 			)
 		]
 	);

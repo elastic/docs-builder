@@ -16,3 +16,27 @@
 	text-decoration: underline;
 	text-underline-offset: 3px;
 }
+
+.banner--info,
+.banner--warning,
+.banner--danger {
+	border-bottom: var(--border-width) solid var(--banner-accent);
+	background: var(--banner-surface);
+	color: var(--color-text);
+	text-align: left;
+}
+
+.banner--info {
+	--banner-accent: var(--color-accent);
+	--banner-surface: var(--color-surface-sunken);
+}
+
+.banner--warning {
+	--banner-accent: var(--color-warning);
+	--banner-surface: var(--color-warning-surface);
+}
+
+.banner--danger {
+	--banner-accent: var(--color-danger);
+	--banner-surface: var(--color-danger-surface);
+}

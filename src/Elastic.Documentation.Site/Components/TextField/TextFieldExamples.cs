@@ -34,6 +34,23 @@ public static class TextFieldExamples
 				}
 			),
 			ComponentExample.Of(
+				"Warning",
+				_TextField.Create,
+				new TextFieldModel
+				{
+					Id = "ex-index",
+					Name = "name",
+					Label = "Index name",
+					Value = "Logs",
+					Warning = "Uppercase letters are not allowed in index names."
+				}
+			),
+			ComponentExample.Of(
+				"Success",
+				_TextField.Create,
+				new TextFieldModel { Id = "ex-slug", Name = "slug", Label = "Slug", Value = "my-logs", Success = "Available." }
+			),
+			ComponentExample.Of(
 				"Disabled",
 				_TextField.Create,
 				new TextFieldModel { Id = "ex-region", Name = "region", Label = "Region", Value = "eu-west-1", Disabled = true }
