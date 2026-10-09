@@ -6,7 +6,7 @@ using Elastic.Documentation.Site.Components.Badge;
 
 namespace Elastic.Documentation.Site.Components.Method;
 
-public enum HttpMethod
+public enum HttpVerb
 {
 	Get,
 	Post,
@@ -18,20 +18,20 @@ public enum HttpMethod
 
 public sealed record MethodBadgeModel
 {
-	public required HttpMethod Method { get; init; }
+	public required HttpVerb Method { get; init; }
 
 	/// <summary>The compact form used in navigation trees.</summary>
 	public bool Small { get; init; }
 
-	public string Text => Method == HttpMethod.Delete && Small ? "DEL" : Method.ToString().ToUpperInvariant();
+	public string Text => Method == HttpVerb.Delete && Small ? "DEL" : Method.ToString().ToUpperInvariant();
 
 	public Tone Tone => Method switch
 	{
-		HttpMethod.Get => Tone.Info,
-		HttpMethod.Post => Tone.Success,
-		HttpMethod.Put => Tone.Warning,
-		HttpMethod.Patch => Tone.Important,
-		HttpMethod.Delete => Tone.Danger,
+		HttpVerb.Get => Tone.Info,
+		HttpVerb.Post => Tone.Success,
+		HttpVerb.Put => Tone.Warning,
+		HttpVerb.Patch => Tone.Important,
+		HttpVerb.Delete => Tone.Danger,
 		_ => Tone.Neutral
 	};
 

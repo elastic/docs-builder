@@ -74,15 +74,26 @@ Code blocks keep `pre code`, so the existing client-side highlighter still finds
 Flag-on tests live in `tests/Elastic.Authoring.Tests/DesignSystem/`.
 Set `NavigationPreview = true` in the `SetupOptions` of an authoring test to render a document with the flag on.
 
+## Page layout
+
+With the flag on, pages use a design-system shell: header, sidebar, article, right-hand rail and footer.
+The article uses the `prose` class, so plain Markdown output is styled by tag from the design-system tokens, and dark mode applies to prose as well.
+On narrow screens the sidebar becomes a drawer that opens from a checkbox, so it needs no JavaScript.
+
+The sidebar tree is rendered once per section and shared by every page in it, so `NavigationCurrentMarker` stamps the current page into it for each page, adding `aria-current="page"` and opening the folders above it.
+Folders expand with native checkboxes, and `Assets/ds/nav.ts` only restores what the reader opened.
+The outline in the rail marks the heading in view through `Assets/ds/toc.ts`.
+
 ## Layers
 
-The design system declares its cascade layers under a `ds` namespace so they never merge with other stylesheets' layers:
+The design system declares its cascade layers under a `ds` namespace so they never merge with other stylesheets' layers. The order lives in `Assets/ds-layers.css`, which must load before `ds.css`:
 
 ```css
-@layer ds.tokens, ds.theme, ds.reset, ds.base, ds.components, ds.patterns, ds.pages, ds.utilities;
+@layer theme, base, components, ds.tokens, ds.theme, ds.reset, ds.base, ds.components, ds.patterns, ds.pages, ds.utilities, utilities;
 ```
 
 Later layers win over earlier ones, so a theme in `ds.theme` overrides tokens without `!important`.
+While the legacy bundle still loads beside the design system, the order also names Tailwind's layers, so the design system sits above Tailwind's base and components and below its utilities.
 
 ## Themes
 

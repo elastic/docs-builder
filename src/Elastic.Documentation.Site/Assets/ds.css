@@ -9,7 +9,7 @@
  *   utilities  single-purpose escape hatches
  * A custom theme is one more file loaded after this one, written inside @layer ds.theme; layer order lets it win without !important.
  */
-@layer ds.tokens, ds.theme, ds.reset, ds.base, ds.components, ds.patterns, ds.pages, ds.utilities;
+/* The layer order lives in ds-layers.css, which loads first. These imports only fill the layers. */
 
 @import './ds/fonts.css' layer(ds.tokens);
 @import './ds/tokens/primitives.css' layer(ds.tokens);
@@ -43,3 +43,13 @@
 @import '../Components/Tabs/tabs.css' layer(ds.components);
 @import '../Components/ButtonGroup/button-directive.css' layer(ds.components);
 @import '../Components/CodeBlock/code-block.css' layer(ds.components);
+@import '../Components/LinkMenu/link-menu.css' layer(ds.components);
+@import '../Components/NavTree/nav-tree.css' layer(ds.components);
+@import '../Components/NavSide/nav-side.css' layer(ds.components);
+@import '../Components/Toc/toc.css' layer(ds.components);
+@import '../Components/PageActions/page-actions.css' layer(ds.components);
+@import '../Components/CtaCard/cta-card.css' layer(ds.components);
+@import '../Components/SiteFooter/site-footer.css' layer(ds.components);
+@import '../Components/SiteHeader/site-header.css' layer(ds.components);
+@import './ds/patterns/docs-shell.css' layer(ds.patterns);
+@import '../Components/Prose/prose.css' layer(ds.components);

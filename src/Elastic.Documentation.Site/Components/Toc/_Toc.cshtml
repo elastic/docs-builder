@@ -1,0 +1,15 @@
+@inherits RazorSlice<Elastic.Documentation.Site.Components.Toc.TocModel>
+@if (Model.Items.Count > 0)
+{
+	<nav class="toc" aria-labelledby="toc-title" data-toc>
+		<p class="toc__title" id="toc-title">@Model.Title</p>
+		<ul class="toc__list">
+			@foreach (var item in Model.Items)
+			{
+				<li class="toc__item@(item.Level >= 3 ? " toc__item--nested" : "")">
+					<a class="toc__link" href="#@item.Slug" data-toc-link>@item.Heading</a>
+				</li>
+			}
+		</ul>
+	</nav>
+}

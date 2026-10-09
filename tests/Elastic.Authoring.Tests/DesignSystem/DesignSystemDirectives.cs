@@ -226,3 +226,50 @@ public class CodeBlockComponent : DesignSystemDirectiveTest
 	[Test, DisplayName("does not use the legacy highlight wrappers the old copy script binds to")]
 	public async Task NoLegacyHooks() => await Docs.DoesNotConvertToContainingHtml("class=\"highlight\"");
 }
+
+public class PageShellComponents : DesignSystemDirectiveTest
+{
+	protected override string Markdown =>
+		"""
+		## First section
+
+		Some text.
+
+		### A subsection
+
+		More text.
+		""";
+
+	[Test, DisplayName("wraps the page in the design-system shell")]
+	public async Task Shell()
+	{
+		await Docs.ConvertsToContainingRawHtml("class=\"docs-shell\"");
+		await Docs.ConvertsToContainingRawHtml("class=\"docs-shell__nav\"");
+		await Docs.ConvertsToContainingRawHtml("class=\"docs-shell__rail\"");
+	}
+
+	[Test, DisplayName("styles the article with prose instead of the legacy markdown-content class")]
+	public async Task Prose()
+	{
+		await Docs.ConvertsToContainingRawHtml("<article id=\"markdown-content\" class=\"prose min-w-0\"");
+		await Docs.DoesNotConvertToContainingHtml("class=\"markdown-content");
+	}
+
+	[Test, DisplayName("renders the outline from the page headings")]
+	public async Task Outline()
+	{
+		await Docs.ConvertsToContainingRawHtml("<nav class=\"toc\"");
+		await Docs.ConvertsToContainingRawHtml("href=\"#first-section\"");
+		await Docs.ConvertsToContainingRawHtml("toc__item--nested");
+	}
+
+	[Test, DisplayName("renders the design-system header and footer")]
+	public async Task HeaderAndFooter()
+	{
+		await Docs.ConvertsToContainingRawHtml("<header class=\"site-header\"");
+		await Docs.ConvertsToContainingRawHtml("<footer class=\"site-footer\"");
+	}
+
+	[Test, DisplayName("leaves out the legacy React header")]
+	public async Task NoLegacyHeader() => await Docs.DoesNotConvertToContainingHtml("<elastic-docs-header");
+}

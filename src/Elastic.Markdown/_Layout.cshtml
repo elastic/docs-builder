@@ -1,5 +1,11 @@
 @inherits RazorLayoutSlice<MarkdownLayoutViewModel>
 @using Elastic.Markdown
+@using Elastic.Documentation.Configuration.Toc
+@using Elastic.Documentation.Site.Components.Breadcrumb
+@using Elastic.Documentation.Site.Components.CtaCard
+@using Elastic.Documentation.Site.Components.PageActions
+@using Elastic.Documentation.Site.Components.Pager
+@using Elastic.Documentation.Site.Components.Toc
 @implements IUsesLayout<Elastic.Documentation.Site._GlobalLayout, GlobalLayoutViewModel>
 @functions {
 	public GlobalLayoutViewModel LayoutModel => Model;
@@ -24,8 +30,90 @@
 	}
 	private bool RenderHeaderAndFooter => Model.Layout is not MarkdownPageLayout.FullSearch;
 
+	private static string StripBadge(string title) =>
+		title.StartsWith("[ns]", StringComparison.Ordinal) ? title[4..] :
+		title.StartsWith("[cmd]", StringComparison.Ordinal) ? title[5..] : title;
+
+	private BreadcrumbModel? DesignSystemBreadcrumbs()
+	{
+		var items = Model.Breadcrumbs;
+		if (items.Length == 0 || !(items.Length > 1 || Model.BuildType != BuildType.Isolated))
+			return null;
+		return new BreadcrumbModel
+		{
+			Items = [.. items.Select((item, i) => i == items.Length - 1 ? new BreadcrumbItem(StripBadge(item.NavigationTitle)) : new BreadcrumbItem(StripBadge(item.NavigationTitle), item.Url))]
+		};
+	}
+
+	private bool ShowsContributionLinks => Model.Features.PrimaryNavEnabled && Model.BuildType != BuildType.Codex && Model.Branding is null;
+
+	private bool ShowsCta => Model.BuildType != BuildType.Codex && (Model.Cta.Name != Cta.DefaultName || (Model.BuildType == BuildType.Assembler && Model.Branding is null));
+
+	private async Task RenderDesignSystemPage(bool hub)
+	{
+		var breadcrumbs = hub ? null : DesignSystemBreadcrumbs();
+		<div class="docs-shell@(hub ? " docs-shell--hub" : "")">
+			<input class="docs-shell__drawer-toggle" type="checkbox" id="pages-nav-hamburger">
+			<label class="docs-shell__scrim" for="pages-nav-hamburger" aria-hidden="true"></label>
+			<aside class="docs-shell__nav" id="pages-nav">
+				@(new HtmlString(Model.NavigationHtml))
+			</aside>
+			<div class="docs-shell__main">
+				<main id="content-container" class="docs-shell__content">
+					<label class="docs-shell__menu-button" for="pages-nav-hamburger">
+						@await RenderPartialAsync(Elastic.Documentation.Site.Components.Icon._Icon.Create(new Elastic.Documentation.Site.Components.Icon.IconModel { Name = "menu", Size = Elastic.Documentation.Site.Components.Icon.IconSize.Small }))
+						<span>Menu</span>
+					</label>
+					@if (breadcrumbs is not null)
+					{
+						@await RenderPartialAsync(_Breadcrumb.Create(breadcrumbs))
+					}
+					<article id="markdown-content" class="@(hub ? "hub-content" : "prose") min-w-0" data-pagefind-body>
+						@await RenderBodyAsync()
+					</article>
+					@if (!hub)
+					{
+						@await RenderPartialAsync(_PageFeedback.Create(Model))
+						@await RenderPartialAsync(_Pager.Create(new PagerModel
+						{
+							Previous = Model.Previous is { } previous ? new PagerLink(StripBadge(previous.NavigationTitle), previous.Url) : null,
+							Next = Model.Next is { } next ? new PagerLink(StripBadge(next.NavigationTitle), next.Url) : null
+						}))
+					}
+					@if (Model.Features.WebsiteSearchEnabled && Model.Features.WebsiteSearchScriptUrl is not null)
+					{
+						<div id="elastic-website-search-input-container" hx-preserve="true" class="docs-shell__search"></div>
+					}
+				</main>
+				@if (!hub)
+				{
+					<aside class="docs-shell__rail">
+						@await RenderPartialAsync(_PageActions.Create(new PageActionsModel
+						{
+							MarkdownUrl = Model.MarkdownUrl,
+							ReportIssueUrl = ShowsContributionLinks ? Model.ReportIssueUrl : null,
+							EditUrl = !string.IsNullOrEmpty(Model.GithubEditUrl) && !Model.HideEditThisPage ? Model.GithubEditUrl : null,
+							ContributeUrl = ShowsContributionLinks ? "https://www.elastic.co/docs/contribute-docs/" : null
+						}))
+						@if (ShowsCta)
+						{
+							@await RenderPartialAsync(_CtaCard.Create(new CtaCardModel { Label = Model.Cta.Label, Url = Model.Cta.Url, Name = Model.Cta.Name, Benefits = [.. Model.Cta.Benefits] }))
+						}
+						@await RenderPartialAsync(_Toc.Create(new TocModel { Items = [.. Model.PageTocItems.Select(i => new TocItem(i.Heading, i.Slug, i.Level))] }))
+					</aside>
+				}
+			</div>
+		</div>
+	}
+
 	private async Task RenderDefault()
 	{
+		if (Model.Features.NavigationPreviewEnabled)
+		{
+			await RenderDesignSystemPage(hub: false);
+			return;
+		}
+
 		<div class="relative">
 			
 			<div class="min-h-screen
@@ -65,6 +153,12 @@
 	   pages nav so a reader can move between sibling hubs. *@
 	private async Task RenderHub()
 	{
+		if (Model.Features.NavigationPreviewEnabled)
+		{
+			await RenderDesignSystemPage(hub: true);
+			return;
+		}
+
 		<div class="relative hub-page">
 			<div class="min-h-screen
 						w-full
@@ -122,6 +216,10 @@
 		@(await RenderPartialAsync(_AssemblerHeader.Create(Model)))
 
 	}
+	else if (Model.Features.NavigationPreviewEnabled)
+	{
+		@(await RenderPartialAsync(_DesignSystemHeader.Create(Model)))
+	}
 	else
 	{
 		@(await RenderPartialAsync(_IsolatedHeader.Create(Model)))
@@ -161,7 +259,11 @@
 }
 @if (RenderHeaderAndFooter)
 {
-	if (Model.BuildType == BuildType.Assembler)
+	if (Model.Features.NavigationPreviewEnabled)
+	{
+		@(await RenderPartialAsync(_DesignSystemFooter.Create(Model)))
+	}
+	else if (Model.BuildType == BuildType.Assembler)
 	{
 		@(await RenderPartialAsync(_AssemblerFooter.Create(Model)))
 	}

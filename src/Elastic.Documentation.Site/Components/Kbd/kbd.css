@@ -21,3 +21,17 @@
 	font-weight: var(--weight-semibold);
 	line-height: 1.4;
 }
+
+/* Parts emitted by the kbd role for chords such as Ctrl+K. */
+.kbd .kbd-separator {
+	display: inline-block;
+	align-self: stretch;
+	width: 1px;
+	margin: 0 var(--space-1);
+	background: var(--color-border-control);
+	transform: translateY(-1px) rotate(30deg);
+}
+
+.kbd .kbd-space {
+	width: 0;
+}

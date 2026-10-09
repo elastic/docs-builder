@@ -1,0 +1,11 @@
+@inherits RazorSlice<Elastic.Documentation.Site.Navigation.NavigationRenderNode>
+@using Elastic.Documentation.Site.Components.NavTree
+<span class="nav-tree__text">@Model.NavigationTitle</span>
+@if (Model.Badge is { } badge)
+{
+	@await RenderPartialAsync(_Badge.Create(new BadgeModel { Text = badge, Tone = Tone.Info }))
+}
+@if (NavTreeModel.TryParseMethod(Model.HttpMethod, out var method))
+{
+	@await RenderPartialAsync(_MethodBadge.Create(new MethodBadgeModel { Method = method, Small = true }))
+}

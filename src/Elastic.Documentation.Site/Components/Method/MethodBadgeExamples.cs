@@ -11,13 +11,13 @@ public static class MethodBadgeExamples
 		"A badge with a fixed tone per method, so an operation reads the same in the API catalog, the page header and the navigation tree. The small form replaces two older variants.",
 		"method",
 		[
-			ComponentExample.Of("GET", _MethodBadge.Create, new MethodBadgeModel { Method = HttpMethod.Get }),
-			ComponentExample.Of("POST", _MethodBadge.Create, new MethodBadgeModel { Method = HttpMethod.Post }),
-			ComponentExample.Of("PUT", _MethodBadge.Create, new MethodBadgeModel { Method = HttpMethod.Put }),
-			ComponentExample.Of("PATCH", _MethodBadge.Create, new MethodBadgeModel { Method = HttpMethod.Patch }),
-			ComponentExample.Of("DELETE", _MethodBadge.Create, new MethodBadgeModel { Method = HttpMethod.Delete }),
-			ComponentExample.Of("HEAD", _MethodBadge.Create, new MethodBadgeModel { Method = HttpMethod.Head }),
-			ComponentExample.Of("Small", _MethodBadge.Create, new MethodBadgeModel { Method = HttpMethod.Delete, Small = true })
+			ComponentExample.Of("GET", _MethodBadge.Create, new MethodBadgeModel { Method = HttpVerb.Get }),
+			ComponentExample.Of("POST", _MethodBadge.Create, new MethodBadgeModel { Method = HttpVerb.Post }),
+			ComponentExample.Of("PUT", _MethodBadge.Create, new MethodBadgeModel { Method = HttpVerb.Put }),
+			ComponentExample.Of("PATCH", _MethodBadge.Create, new MethodBadgeModel { Method = HttpVerb.Patch }),
+			ComponentExample.Of("DELETE", _MethodBadge.Create, new MethodBadgeModel { Method = HttpVerb.Delete }),
+			ComponentExample.Of("HEAD", _MethodBadge.Create, new MethodBadgeModel { Method = HttpVerb.Head }),
+			ComponentExample.Of("Small", _MethodBadge.Create, new MethodBadgeModel { Method = HttpVerb.Delete, Small = true })
 		]
 	);
 }

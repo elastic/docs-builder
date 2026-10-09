@@ -40,6 +40,20 @@ public class DesignSystemHeadTests : DocumentationSetNavigationTestBase
 	}
 
 	[Test]
+	public async Task Head_FlagOn_LoadsTheLayerOrderBeforeEveryStylesheet()
+	{
+		var html = await RenderHead(new FeatureFlags(new Dictionary<string, bool> { ["navigation-preview"] = true }), BuildType.Isolated);
+
+		var layers = html.IndexOf("ds-layers.css", StringComparison.Ordinal);
+		layers.Should().BeGreaterThanOrEqualTo(0);
+		layers.Should().BeLessThan(html.IndexOf("ds.css", StringComparison.Ordinal));
+		layers.Should().BeLessThan(
+			html.IndexOf("styles.css", StringComparison.Ordinal),
+			"the order must be declared before Tailwind declares its own"
+		);
+	}
+
+	[Test]
 	public async Task Head_FlagOn_LoadsStylesBeforeScripts()
 	{
 		var html = await RenderHead(new FeatureFlags(new Dictionary<string, bool> { ["navigation-preview"] = true }), BuildType.Isolated);

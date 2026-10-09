@@ -13,19 +13,27 @@ using Elastic.Documentation.Site.Components.Card;
 using Elastic.Documentation.Site.Components.Check;
 using Elastic.Documentation.Site.Components.Chip;
 using Elastic.Documentation.Site.Components.CodeBlock;
+using Elastic.Documentation.Site.Components.CtaCard;
 using Elastic.Documentation.Site.Components.Disclosure;
 using Elastic.Documentation.Site.Components.Kbd;
 using Elastic.Documentation.Site.Components.Link;
+using Elastic.Documentation.Site.Components.LinkMenu;
 using Elastic.Documentation.Site.Components.LinkTile;
 using Elastic.Documentation.Site.Components.Method;
+using Elastic.Documentation.Site.Components.NavSide;
+using Elastic.Documentation.Site.Components.PageActions;
 using Elastic.Documentation.Site.Components.Pager;
+using Elastic.Documentation.Site.Components.Prose;
 using Elastic.Documentation.Site.Components.ReleaseCard;
 using Elastic.Documentation.Site.Components.SearchField;
 using Elastic.Documentation.Site.Components.SelectField;
+using Elastic.Documentation.Site.Components.SiteFooter;
+using Elastic.Documentation.Site.Components.SiteHeader;
 using Elastic.Documentation.Site.Components.Stepper;
 using Elastic.Documentation.Site.Components.Switch;
 using Elastic.Documentation.Site.Components.Tabs;
 using Elastic.Documentation.Site.Components.TextField;
+using Elastic.Documentation.Site.Components.Toc;
 
 namespace Elastic.Documentation.Site.StyleGuide;
 
@@ -70,6 +78,12 @@ public static class StyleGuideCatalog
 			"Components",
 			"The components behind MyST directives: admonitions, dropdowns, steppers, tabs and buttons."
 		),
+		new(
+			"chrome",
+			"Navigation and chrome",
+			"Components",
+			"The pieces around the content: header, footer, sidebar tree, outline, menus and the right-hand rail."
+		),
 		new("cards", "Cards and tiles", "Components", "Cards, link tiles and release cards. Hover a card to see the slab shadow."),
 		new("navigation", "Navigation parts", "Components", "Breadcrumbs and previous/next links."),
 		new("badges", "Labels and badges", "Components", "Status and tag badges, HTTP methods, applies-to badges and keyboard keys.")
@@ -99,7 +113,18 @@ public static class StyleGuideCatalog
 			StepperExamples.Steppers,
 			TabsExamples.Tabs,
 			ButtonDirectiveExamples.Buttons,
-			CodeBlockExamples.CodeBlocks
+			CodeBlockExamples.CodeBlocks,
+			ProseExamples.Articles
+		],
+		["chrome"] =
+		[
+			SiteHeaderExamples.Headers,
+			NavSideExamples.Sidebars,
+			LinkMenuExamples.Menus,
+			TocExamples.Tocs,
+			PageActionsExamples.Actions,
+			CtaCardExamples.Ctas,
+			SiteFooterExamples.Footers
 		],
 		["cards"] = [CardExamples.Cards, LinkTileExamples.Tiles, ReleaseCardExamples.Releases],
 		["navigation"] = [BreadcrumbExamples.Trails, PagerExamples.Pagers],

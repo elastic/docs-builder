@@ -1,0 +1,35 @@
+.cta-card {
+	display: flex;
+	flex-direction: column;
+	gap: var(--space-3);
+	padding: var(--space-4);
+	border: var(--border-width) solid var(--color-accent-border);
+	border-radius: var(--radius-md);
+	background: var(--color-accent-surface);
+}
+
+.cta-card .btn {
+	width: 100%;
+}
+
+.cta-card__list {
+	display: flex;
+	flex-direction: column;
+	gap: var(--space-2);
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.cta-card__list li {
+	display: flex;
+	align-items: flex-start;
+	gap: var(--space-2);
+	color: var(--color-text);
+	font-size: var(--text-sm);
+}
+
+.cta-card__list .icon {
+	margin-top: 2px;
+	color: var(--color-success);
+}

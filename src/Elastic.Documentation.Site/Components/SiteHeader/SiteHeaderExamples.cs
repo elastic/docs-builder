@@ -1,0 +1,28 @@
+// Licensed to Elasticsearch B.V under one or more agreements.
+// Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
+// See the LICENSE file in the project root for more information
+
+namespace Elastic.Documentation.Site.Components.SiteHeader;
+
+public static class SiteHeaderExamples
+{
+	public static ComponentSection Headers { get; } = new(
+		"Header",
+		"The header of a documentation set: brand, search and repository links. It is server rendered, and search works as a plain form.",
+		"site-header",
+		[
+			ComponentExample.Of(
+				"Documentation set",
+				_SiteHeader.Create,
+				new SiteHeaderModel
+				{
+					Title = "docs-builder",
+					HomeHref = "#",
+					SearchAction = "/search",
+					Links = [new("GitHub", "#", "logo_github")],
+					Revision = "main · 65728c5"
+				}
+			)
+		]
+	);
+}

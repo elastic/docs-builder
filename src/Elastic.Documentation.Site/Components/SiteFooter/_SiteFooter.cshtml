@@ -1,0 +1,42 @@
+@inherits RazorSlice<Elastic.Documentation.Site.Components.SiteFooter.SiteFooterModel>
+<footer class="site-footer" hx-disable="true">
+	@if (!Model.Branded)
+	{
+		<div class="site-footer__inner">
+			<a href="https://www.elastic.co/"><img class="site-footer__logo" loading="lazy" alt="Elastic" src="@Model.LogoSrc" width="120" height="41"></a>
+			<div class="site-footer__columns">
+				<div>
+					<ul class="site-footer__links">
+						@foreach (var link in Model.Links)
+						{
+							<li><a href="@link.Href">@link.Label</a></li>
+						}
+					</ul>
+					<p class="site-footer__legal">© @Model.Year Elasticsearch B.V. All Rights Reserved.</p>
+				</div>
+				@if (Model.Notices.Count > 0 || Model.PrivacyChoices)
+				{
+					<div class="site-footer__notices">
+						@foreach (var notice in Model.Notices)
+						{
+							<p>@notice</p>
+						}
+						@if (Model.PrivacyChoices)
+						{
+							<p>
+								<a class="site-footer__link iubenda-cs-uspr-link" href="#">Notice at Collection</a>
+								|
+								<a class="site-footer__link iubenda-cs-preferences-link" href="#">Your Privacy Choices</a>
+							</p>
+						}
+					</div>
+				}
+			</div>
+		</div>
+	}
+	@if (Model.DiagnosticsPanel)
+	{
+		<div class="site-footer__diagnostics" data-diagnostics-placeholder></div>
+		<diagnostics-panel></diagnostics-panel>
+	}
+</footer>

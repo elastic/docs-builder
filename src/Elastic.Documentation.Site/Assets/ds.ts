@@ -2,15 +2,22 @@
 // Everything here is progressive enhancement: pages are complete HTML without it. Enhancements bind to data-* attributes,
 // never to styling classes, so a theme can rewrite the CSS without touching behaviour.
 import { initCopyButtons } from './ds/copy'
+import { bindOutsideClick, initMenus } from './ds/menu'
+import { initNav } from './ds/nav'
 import { initTabSync } from './ds/tabs'
 import { initThemeToggles } from './ds/theme'
+import { initToc } from './ds/toc'
 
 function init(scope: ParentNode = document) {
     initThemeToggles(scope)
     initTabSync(scope)
     initCopyButtons(scope)
+    initMenus(scope)
+    initNav(scope)
+    initToc(scope)
 }
 
+bindOutsideClick()
 document.addEventListener('DOMContentLoaded', () => init())
 // htmx swaps #main-container; re-bind inside the swapped content
 document.addEventListener('htmx:load', (event) => {

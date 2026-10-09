@@ -16,10 +16,13 @@ public partial class ComponentExamplesTests
 	private static readonly HtmlParser Parser = new();
 
 	// Classes that are contracts with other tools rather than styling: translation services skip notranslate, and the
-	// client-side highlighter adds hljs and reads language-*. Everything else an example emits must be defined in the design-system CSS.
+	// client-side highlighter adds hljs and reads language-*, and the consent script binds to iubenda-*. Everything else an example emits must be defined in the design-system CSS.
 	private static readonly HashSet<string> MarkerClasses = ["notranslate", "hljs"];
 
-	private static bool IsMarker(string name) => MarkerClasses.Contains(name) || name.StartsWith("language-", StringComparison.Ordinal);
+	private static bool IsMarker(string name) =>
+		MarkerClasses.Contains(name)
+			|| name.StartsWith("language-", StringComparison.Ordinal)
+			|| name.StartsWith("iubenda-", StringComparison.Ordinal);
 
 	private static readonly Lazy<HashSet<string>> DefinedClasses = new(
 		() => DesignSystemFiles
@@ -79,8 +82,12 @@ public partial class ComponentExamplesTests
 
 		foreach (var control in body.QuerySelectorAll("a[href], button"))
 		{
-			var name = control.GetAttribute("aria-label") ?? control.TextContent;
-			name.Trim().Should().NotBeEmpty($"{control.OuterHtml} needs text or an aria-label");
+			// An image inside a link names it through its alt text.
+			var name = control.GetAttribute("aria-label")
+				?? (string.IsNullOrWhiteSpace(control.TextContent)
+					? control.QuerySelector("img[alt]")?.GetAttribute("alt")
+					: control.TextContent);
+			(name ?? string.Empty).Trim().Should().NotBeEmpty($"{control.OuterHtml} needs text, an image alt or an aria-label");
 		}
 
 		foreach (var input in body.QuerySelectorAll("input:not([type=hidden]), select, textarea"))

@@ -1,0 +1,32 @@
+@inherits RazorSlice<Elastic.Documentation.Site.GlobalLayoutViewModel>
+@using Elastic.Documentation
+@using Elastic.Documentation.Site.Components.SiteFooter
+@if (Model.BuildType == BuildType.Assembler)
+{
+	@await RenderPartialAsync(_SiteFooter.Create(new SiteFooterModel
+	{
+		LogoSrc = Model.Static("logo-elastic-horizontal-white.svg"),
+		Links =
+		[
+			new("Trademarks", "https://www.elastic.co/legal/trademarks"),
+			new("Terms of Use", "https://www.elastic.co/legal/terms-of-use"),
+			new("Privacy", "https://www.elastic.co/legal/privacy-statement"),
+			new("Sitemap", "https://www.elastic.co/sitemap")
+		],
+		Notices =
+		[
+			"This content is available in different formats for convenience only. All original licensing terms apply.",
+			"Elasticsearch is a trademark of Elasticsearch B.V., registered in the U.S. and in other countries. Apache, Apache Lucene, Apache Hadoop, Hadoop, HDFS and the yellow elephant logo are trademarks of the Apache Software Foundation in the United States and/or other countries."
+		],
+		PrivacyChoices = true
+	}))
+}
+else
+{
+	@await RenderPartialAsync(_SiteFooter.Create(new SiteFooterModel
+	{
+		LogoSrc = Model.Static("logo-elastic-horizontal-white.svg"),
+		Branded = Model.Branding is not null,
+		DiagnosticsPanel = Model.Features.DiagnosticsPanelEnabled
+	}))
+}

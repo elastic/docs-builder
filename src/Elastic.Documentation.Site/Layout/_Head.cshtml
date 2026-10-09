@@ -15,6 +15,14 @@
 	{
 		<link rel="preload" href="@fontFile" as="font" type="font/woff2" crossorigin>
 	}
+	@if (Model.Features.NavigationPreviewEnabled)
+	{
+		@* Design system, loaded next to the legacy bundle until the chrome migrates. It loads first so its layer order, which also
+		   names Tailwind's layers, takes effect: the design system then sits above Tailwind's base and components and below its utilities. *@
+		<script>try{var t=localStorage.getItem("docs-theme");if(t==="light"||t==="dark")document.documentElement.dataset.theme=t}catch(e){}</script>
+		<link rel="stylesheet preload" as="style" type="text/css" href="@Model.Static("ds-layers.css")" crossorigin/>
+		<link rel="stylesheet preload" as="style" type="text/css" href="@Model.Static("ds.css")" crossorigin/>
+	}
 	<link rel="stylesheet preload" as="style" type="text/css" href="@Model.Static("styles.css")" crossorigin/>
 	@switch (Model.BuildType)
 	{
@@ -27,12 +35,6 @@
 		case BuildType.Codex:
 			<link rel="stylesheet preload" as="style" type="text/css" href="@Model.Static("codex.css")" crossorigin/>
 			break;
-	}
-	@if (Model.Features.NavigationPreviewEnabled)
-	{
-		@* Design system, loaded next to the legacy bundle until the chrome migrates. Its layers are namespaced under ds, so they never merge with Tailwind's. *@
-		<script>try{var t=localStorage.getItem("docs-theme");if(t==="light"||t==="dark")document.documentElement.dataset.theme=t}catch(e){}</script>
-		<link rel="stylesheet preload" as="style" type="text/css" href="@Model.Static("ds.css")" crossorigin/>
 	}
 	<script>window.__DOCS_CONFIG__=@(new HtmlString(Model.FrontendConfigJson));</script>
 	@* hx-history=false stops new snapshots but still restores sessionStorage
