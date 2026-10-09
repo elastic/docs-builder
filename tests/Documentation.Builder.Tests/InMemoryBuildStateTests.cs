@@ -30,13 +30,19 @@ public class InMemoryBuildStateTests
 			.Delays(Gen.Int[0, 600_000].Select(ms => TimeSpan.FromMilliseconds(ms)))
 			.Length(3, 12);
 
+	private static EventAutoTest<BuildHarness, BuildEvent> Auto() =>
+		EventAutoTest.For(BuildEventSpec.All, Saves(), time => new BuildHarness(time), h => h.Finish()).Seed(Props.Seed).Samples(100);
+
+	public static IEnumerable<Func<AxisCase>> Axes() => Auto().Cases.Select(c => (Func<AxisCase>)(() => c));
+
 	/// <summary>
-	/// Law: whatever the saves, the broadcast follows the lifecycle (start, findings, end), every build ends, and an end comes within half an hour.
+	/// Law: whatever the saves, the broadcast follows the lifecycle (start, findings, end), every build ends, and an end comes within half an hour; each rule's
+	/// trigger was reached and the half-hour deadline was crossed in the sample.
 	/// Consequence if broken: the editor panel shows "building" for good, or findings from two builds mix.
 	/// </summary>
 	[Test]
-	public void TheBroadcast_KeepsTheBuildEventSpec() =>
-		Saves().SampleWith(time => new BuildHarness(time), h => h.Finish(), BuildEventSpec.All, seed: Props.Seed, iter: 100);
+	[MethodDataSource(nameof(Axes))]
+	public void TheBroadcast_KeepsTheBuildEventSpec(AxisCase axis) => axis.Run();
 
 	/// <summary>
 	/// Law: the random saves reach what the rules are about: builds start, report findings and end. Not seeded on purpose: a replayed seed is one run,

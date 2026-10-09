@@ -7,8 +7,8 @@ using Nullean.Entities;
 
 namespace Elastic.Documentation.OpenApiIndex;
 
-/// <summary>The same object keys, as a bucket listing returned them and in another order.</summary>
-public sealed record KeyOrders(IReadOnlyList<string> Listed, IReadOnlyList<string> Permuted);
+/// <summary>The object keys of a bucket listing, in the order it returned them.</summary>
+public sealed record KeyListing(IReadOnlyList<string> Keys);
 
 /// <summary>The laws of building the index from a listing: about how the keys arrive, not about the index they build.</summary>
 [Constraints]
@@ -20,8 +20,10 @@ public static partial class VersionIndexOrderConstraints
 			VersionIndexJsonContext.Default.SortedDictionaryStringSortedDictionaryStringSortedDictionaryStringVersionIndexEntry
 		);
 
-	public static Constraint<KeyOrders> BuildIsOrderIndependent { get; } = Constraints<KeyOrders>.Always(
-		k => Json(k.Permuted) == Json(k.Listed),
-		"The index must be the same whatever order the keys arrive in."
+	public static Constraint<KeyListing> BuildIsOrderIndependent { get; } = Constraints<KeyListing>.OrderIndependent(
+		k => k.Keys,
+		(k, keys) => k with { Keys = keys },
+		k => Json(k.Keys),
+		message: "The index must be the same whatever order the keys arrive in."
 	).Describe("Two rebuilds of one bucket publish the same index, whatever order the listing returned the keys in.");
 }

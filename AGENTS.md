@@ -79,7 +79,7 @@ Use the `/test` skill to pick the right test project automatically. A change to 
 
 ### Constraint sets and property tests
 
-Domain rules live in `Elastic.Documentation` as constraint sets (`XConstraints.All`, see `Constraints/Constraint.cs`). Each set has a test class deriving from `ConstraintSetTests<TModel>` (`tests/Elastic.Documentation.Tests/Domain/`) that supplies a valid model and one counter-example per constraint. The subclass **must** carry `[InheritsTests]`, or TUnit silently skips the inherited laws. New rules start as warnings.
+Domain rules live in `Elastic.Documentation` as constraint sets (`XConstraints.All`, see `Constraints/Constraint.cs`). Each set has a test class in `tests/Elastic.Documentation.Tests/Domain/` that supplies a generator of valid models and one counter-example per rule, and either calls `XConstraints.All.Laws(valid, counterExamples)` or, where the type declares more than invariants, runs `AutoTest.For(XConstraints.All, valid).CounterExamples(...).Action(...)` and exposes its `Cases` as a `[MethodDataSource]` test (one test per axis the type declares; see `LinkRegistryConstraintsTests`). There is no shared base class. New rules start as warnings.
 
 Property tests use [CsCheck](https://github.com/AnthonyLloyd/CsCheck). Their inputs are generated and their assertion is a law, so readability rules are stricter than elsewhere, and the doc comment is a deliberate exception to "comments only when *why* is non-obvious":
 

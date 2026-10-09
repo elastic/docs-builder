@@ -7,6 +7,7 @@ using System.Text.Json;
 using AwesomeAssertions;
 using CsCheck;
 using Elastic.Documentation.Tests.Domain;
+using Nullean.Entities.CsCheck;
 using RootVersionIndex = System.Collections.Generic.SortedDictionary<string, System.Collections.Generic.SortedDictionary<string, System.Collections.Generic.SortedDictionary<string, Elastic.Documentation.OpenApiIndex.VersionIndexEntry>>>;
 
 namespace Elastic.Documentation.OpenApiIndex.Tests;
@@ -104,17 +105,11 @@ public class VersionIndexProperties
 	/// </summary>
 	[Test]
 	public void Build_IsOrderIndependent() =>
-		Keys.SelectMany(
-			keys => Gen
-				.Int
-				.Array[keys.Length]
-				.Select(order => (keys, keys.Zip(order).OrderBy(p => p.Second).Select(p => p.First).ToArray()))
-		).Check(x =>
-		{
-			var (keys, permuted) = x;
-			VersionIndexOrderConstraints.All.Validate(new KeyOrders(keys, permuted)).Should().BeEmpty();
-			Json(VersionIndexBuilder.Build(permuted).Index).Should().Be(Json(VersionIndexBuilder.Build(keys).Index));
-		});
+		AutoTest
+			.For(VersionIndexOrderConstraints.All, Keys.Select(keys => new KeyListing(keys)))
+			.Confluence()
+			.Should()
+			.BeOfType<AxisResult.Passed>();
 
 	/// <summary>
 	/// Law: an index written and loaded again is the index that was written, and a built index breaks no rule.

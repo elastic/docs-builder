@@ -16,6 +16,38 @@ internal static class ReleaseNotesGen
 {
 	private static readonly string[] Repositories = ["elastic/kibana", "elastic/elasticsearch", "acme/secret", "acme/internal-tools"];
 
+	/// <summary>
+	/// The two laws of a private-link scrub as rules, declared here rather than on the entity because the allow-list is configuration, not domain: scrubbing twice is scrubbing once,
+	/// and what a scrub leaves names nothing outside the allow-list.
+	/// </summary>
+	public static Nullean.Entities.ConstraintSet<T> ScrubLaws<T>(Func<T, T> scrub, Func<T, IEnumerable<string>> texts) =>
+		Nullean
+			.Entities
+			.ConstraintSet
+			.From(
+				("scrub-is-idempotent", Nullean.Entities.Constraints<T>.Idempotent(scrub)),
+				("scrub-leaves-no-private-reference", Nullean
+					.Entities
+					.Constraints<T>
+					.Always(
+						value => texts(scrub(value)).All(text => !LeaksOutsideTheAllowList(text)),
+						"A scrubbed value names nothing outside the allow-list."
+					))
+			);
+
+	private static bool LeaksOutsideTheAllowList(string text)
+	{
+		try
+		{
+			LinkAllowlist.ValidateNoPrivateReferences(text, Allow);
+			return false;
+		}
+		catch (Exception)
+		{
+			return true;
+		}
+	}
+
 	/// <summary>The allow-list the scrubbing properties run against.</summary>
 	public static readonly IReadOnlyList<string> Allow = ["elastic/kibana", "elastic/elasticsearch"];
 
@@ -217,44 +249,37 @@ public class ChangelogEntryOperationProperties
 	/// Consequence if broken: a public release note links a private repository, or a second scrub changes what the first published.
 	/// </summary>
 	[Test]
-	public void WithoutPrivateLinks_Entry_IsIdempotent_AndLeavesNothingOutsideTheAllowList() =>
+	public void WithoutPrivateLinks_Entry_IsIdempotent_AndLeavesNothingOutsideTheAllowList()
+	{
+		var scrub = ReleaseNotesGen.ScrubLaws<ChangelogEntry>(
+			entry => entry.WithoutPrivateLinks(ReleaseNotesGen.Allow, "elastic", "kibana").Value!.Value,
+			e => (e.Prs ?? []).Concat(e.Issues ?? []).Append(e.Description).Append(e.Impact).Append(e.Action).Select(t => t ?? "")
+		);
+
+		DomainAutoTest.For(scrub, ReleaseNotesGen.EntriesWithReferences).Idempotency().Should().BeOfType<AxisResult.Passed>();
+		ReleaseNotesGen.EntriesWithReferences.Check(value => scrub.Validate(value).Should().BeEmpty());
 		ReleaseNotesGen.EntriesWithReferences.Check(entry =>
 		{
-			var first = entry.WithoutPrivateLinks(ReleaseNotesGen.Allow, "elastic", "kibana");
-			first.Value.Should().NotBeNull();
-			var once = first.Value!.Value;
-
-			var text = string.Join(
-				'\n',
-				(once.Prs ?? []).Concat(once.Issues ?? []).Append(once.Description).Append(once.Impact).Append(once.Action)
-			);
-			var leak = () => LinkAllowlist.ValidateNoPrivateReferences(text, ReleaseNotesGen.Allow);
-			leak.Should().NotThrow();
-
-			var second = once.WithoutPrivateLinks(ReleaseNotesGen.Allow, "elastic", "kibana").Value!;
-			second.Value.Should().Be(once);
-			second.Changed.Should().BeFalse();
-
-			once.Title.Should().Be(entry.Title);
-			once.Type.Should().Be(entry.Type);
-			(once.Prs ?? []).Should().BeSubsetOf(entry.Prs ?? []);
+			var once = entry.WithoutPrivateLinks(ReleaseNotesGen.Allow, "elastic", "kibana").Value!;
+			once.Value.WithoutPrivateLinks(ReleaseNotesGen.Allow, "elastic", "kibana").Value!.Changed.Should().BeFalse();
+			once.Value.Title.Should().Be(entry.Title);
+			once.Value.Type.Should().Be(entry.Type);
+			(once.Value.Prs ?? []).Should().BeSubsetOf(entry.Prs ?? []);
 		});
+	}
 
 	/// <summary>The same law for an entry of a bundle.</summary>
 	[Test]
-	public void WithoutPrivateLinks_BundledEntry_IsIdempotent_AndLeavesNothingOutsideTheAllowList() =>
-		ReleaseNotesGen.BundledEntriesWithReferences.Check(entry =>
-		{
-			var once = entry.WithoutPrivateLinks(ReleaseNotesGen.Allow, "elastic", "kibana").Value!.Value;
+	public void WithoutPrivateLinks_BundledEntry_IsIdempotent_AndLeavesNothingOutsideTheAllowList()
+	{
+		var scrub = ReleaseNotesGen.ScrubLaws<BundledEntry>(
+			entry => entry.WithoutPrivateLinks(ReleaseNotesGen.Allow, "elastic", "kibana").Value!.Value,
+			e => (e.Prs ?? []).Concat(e.Issues ?? []).Append(e.Description).Append(e.Impact).Append(e.Action).Select(t => t ?? "")
+		);
 
-			var text = string.Join(
-				'\n',
-				(once.Prs ?? []).Concat(once.Issues ?? []).Append(once.Description).Append(once.Impact).Append(once.Action)
-			);
-			var leak = () => LinkAllowlist.ValidateNoPrivateReferences(text, ReleaseNotesGen.Allow);
-			leak.Should().NotThrow();
-			once.WithoutPrivateLinks(ReleaseNotesGen.Allow, "elastic", "kibana").Value!.Value.Should().Be(once);
-		});
+		DomainAutoTest.For(scrub, ReleaseNotesGen.BundledEntriesWithReferences).Idempotency().Should().BeOfType<AxisResult.Passed>();
+		ReleaseNotesGen.BundledEntriesWithReferences.Check(value => scrub.Validate(value).Should().BeEmpty());
+	}
 }
 
 public class BundleOperationProperties
@@ -266,25 +291,26 @@ public class BundleOperationProperties
 	/// Consequence if broken: a published bundle carries a private link in a place the scrub did not look.
 	/// </summary>
 	[Test]
-	public void WithoutPrivateLinks_Bundle_IsIdempotent_AndLeavesNothingOutsideTheAllowList() =>
+	public void WithoutPrivateLinks_Bundle_IsIdempotent_AndLeavesNothingOutsideTheAllowList()
+	{
+		var scrub = ReleaseNotesGen.ScrubLaws<Bundle>(
+			bundle => bundle.WithoutPrivateLinks(ReleaseNotesGen.Allow, "elastic", "kibana").Value!.Value,
+			b => b
+				.Entries
+				.SelectMany(e => (e.Prs ?? []).Concat(e.Issues ?? []).Append(e.Description).Append(e.Impact).Append(e.Action))
+				.Append(b.Description)
+				.Select(t => t ?? "")
+		);
+
+		DomainAutoTest.For(scrub, ReleaseNotesGen.BundlesWithReferences).Idempotency().Should().BeOfType<AxisResult.Passed>();
+		ReleaseNotesGen.BundlesWithReferences.Check(value => scrub.Validate(value).Should().BeEmpty());
 		ReleaseNotesGen.BundlesWithReferences.Check(bundle =>
 		{
-			var once = bundle.WithoutPrivateLinks(ReleaseNotesGen.Allow, "elastic", "kibana").Value!.Value;
-
-			foreach (var e in once.Entries)
-			{
-				var text = string.Join('\n', (e.Prs ?? []).Concat(e.Issues ?? []).Append(e.Description).Append(e.Impact).Append(e.Action));
-				var leak = () => LinkAllowlist.ValidateNoPrivateReferences(text, ReleaseNotesGen.Allow);
-				leak.Should().NotThrow();
-			}
-			var intro = () => LinkAllowlist.ValidateNoPrivateReferences(once.Description ?? "", ReleaseNotesGen.Allow);
-			intro.Should().NotThrow();
-
-			var twice = once.WithoutPrivateLinks(ReleaseNotesGen.Allow, "elastic", "kibana").Value!;
-			twice.Value.Should().Be(once);
-			twice.Changed.Should().BeFalse();
-			once.Entries.Count.Should().Be(bundle.Entries.Count);
+			var once = bundle.WithoutPrivateLinks(ReleaseNotesGen.Allow, "elastic", "kibana").Value!;
+			once.Value.WithoutPrivateLinks(ReleaseNotesGen.Allow, "elastic", "kibana").Value!.Changed.Should().BeFalse();
+			once.Value.Entries.Count.Should().Be(bundle.Entries.Count);
 		});
+	}
 
 	/// <summary>
 	/// Law: applying a parent's amends twice gives what applying them once does (an added entry already in the bundle, by file name and checksum, is not added again).

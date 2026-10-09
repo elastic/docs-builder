@@ -4,16 +4,21 @@
 
 using AwesomeAssertions;
 using Elastic.Documentation.Publishing;
+using Nullean.Entities.CsCheck;
 
 namespace Elastic.Documentation.Tests.Domain;
 
 public class RepositoryConstraintsTests
 {
+	private static AutoTest<Repository> Auto() => DomainAutoTest.For(RepositoryConstraints.All);
+
+	public static IEnumerable<Func<AxisCase>> Axes() => Auto().Axes();
+
 	/// <summary>
-	/// Law: for any repository, the declared law holds: its configuration checkout, taken twice, is the checkout taken once.
+	/// Law: each axis the repository declares a rule on holds; its configuration checkout, taken twice, is the checkout taken once, and that rule is exercised.
 	/// Consequence if broken: cloning the configuration repository twice (a retry, a second command) alters it.
 	/// </summary>
 	[Test]
-	public void ConfigurationCheckout_KeepsItsDeclaredLaw() =>
-		DomainGen.Of<Repository>().Check(repository => RepositoryConstraints.All.Validate(repository).Should().BeEmpty());
+	[MethodDataSource(nameof(Axes))]
+	public void EveryDeclaredAxisHolds(AxisCase axis) => axis.Run();
 }

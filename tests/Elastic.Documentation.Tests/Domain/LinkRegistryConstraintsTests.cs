@@ -3,7 +3,9 @@
 // See the LICENSE file in the project root for more information
 
 using AwesomeAssertions;
+using CsCheck;
 using Elastic.Documentation.Links;
+using Nullean.Entities;
 using Nullean.Entities.CsCheck;
 
 namespace Elastic.Documentation.Tests.Domain;
@@ -12,12 +14,37 @@ public class LinkRegistryConstraintsTests
 {
 	private static readonly DateTime Published = LinkExamples.Published;
 
-	[Test]
-	public void Laws() =>
-		LinkRegistryConstraints.All.Laws(
-			DomainGen.Of<LinkRegistry>(o => o.Normalize<LinkRegistry>(r => LinkExamples.Registry(r))),
-			CounterExamples
+	// Arguments for WithLinkRegistryEntry drawn from the registry it runs on: a fresh entry for a key that is already there, a day older or newer, so the
+	// operation's "replace only by a strictly newer entry" decision is made on every draw. A random entry names a repository the registry has never seen and only ever adds.
+	private static Gen<LinkRegistryEntry> ExistingKeys(LinkRegistry registry)
+	{
+		var entries = registry.Repositories.SelectMany(r => r.Value.Values).ToArray();
+		return Gen.Select(
+			Gen.OneOfConst(entries),
+			Gen.Int[-2, 2],
+			(entry, days) => entry with { UpdatedAt = entry.UpdatedAt.AddDays(days) }
 		);
+	}
+
+	private static AutoTest<LinkRegistry> Auto() =>
+		DomainAutoTest
+			.For(LinkRegistryConstraints.All, DomainGen.Of<LinkRegistry>(o => o.Normalize<LinkRegistry>(r => LinkExamples.Registry(r))))
+			.CounterExamples(CounterExamples)
+			.Action<LinkRegistryEntry>("WithLinkRegistryEntry", (r, e) => r.WithLinkRegistryEntry(e).OrThrowIfMissing(), ExistingKeys);
+
+	public static IEnumerable<Func<AxisCase>> Axes() => Auto().Axes();
+
+	/// <summary>
+	/// Law: each axis the link registry declares a rule on holds (see <see cref="AxisCase.Law"/>): the invariants, an entry's updated_at never moving back, and every rule being reachable.
+	/// Consequence if broken: see <see cref="AxisCase.Consequence"/>; a failure message names both, the rule, a shrunk case and a seed.
+	/// </summary>
+	[Test]
+	[MethodDataSource(nameof(Axes))]
+	public void EveryDeclaredAxisHolds(AxisCase axis) => axis.Run();
+
+	[Test]
+	public void The_registry_declares_exactly_the_invariant_monotonicity_and_vacancy_axes() =>
+		Auto().Cases.Select(c => c.Axis).Should().Equal(Axis.Invariant, Axis.Monotonicity, Axis.Vacancy);
 
 	[Test]
 	public void ValidRegistry_BreaksNoRule() => LinkRegistryConstraints.All.Validate(Valid()).Should().BeEmpty();
@@ -38,14 +65,6 @@ public class LinkRegistryConstraintsTests
 		Check(rule, null!).Should().ContainSingle();
 		Check(rule, "Unknown").Should().BeEmpty();
 		Check(LinkRegistryConstraints.RegistryEntryHasRefAndTimestamp, "unknown").Should().BeEmpty();
-	}
-
-	[Test]
-	public void AddingANewerEntry_IsMonotonic()
-	{
-		var before = Valid();
-		var after = before.WithLinkRegistryEntry(Entry("kibana", "main") with { UpdatedAt = Published.AddDays(1) }).OrThrowIfMissing();
-		LinkRegistryConstraints.All.Check(before, after).Should().BeEmpty();
 	}
 
 	[Test]
