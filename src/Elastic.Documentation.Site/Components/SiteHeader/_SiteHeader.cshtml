@@ -27,6 +27,10 @@
 			{
 				<span class="site-header__revision">@revision</span>
 			}
+			@if (Model.ThemeToggle)
+			{
+				<button class="site-header__theme" type="button" data-theme-toggle hidden aria-label="Theme"><span data-theme-label>System</span></button>
+			}
 		</nav>
 	</div>
 	@if (Model.Search)

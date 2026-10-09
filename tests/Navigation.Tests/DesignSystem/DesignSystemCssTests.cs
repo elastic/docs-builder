@@ -75,6 +75,29 @@ public partial class DesignSystemCssTests
 		css.Should().NotContain("!important", $"{Path.GetFileName(file)} relies on layer order, not !important");
 	}
 
+	public static IEnumerable<string> AllCssFiles() => DesignSystemFiles.AllCss();
+
+	[Test]
+	[MethodDataSource(nameof(AllCssFiles))]
+	public void DesignSystemCss_DoesNotNeedNativeLightDark(string file)
+	{
+		var css = DesignSystemFiles.StripComments(File.ReadAllText(file));
+
+		css.Should().NotContain(
+			"light-dark(",
+			"colour roles use the var(--ds-l) / var(--ds-d) toggle pair so they work in browsers without light-dark()"
+		);
+	}
+
+	[Test]
+	public void Theme_DeclaresRolesOnEveryPinnedElementSoNestedThemesWork()
+	{
+		var theme = File.ReadAllText(Path.Join(DesignSystemFiles.SiteDirectory, "Assets", "ds", "themes", "bold-minimal.css"));
+
+		theme.Should().Contain(":root,\n[data-theme] {");
+		theme.Should().Contain("[data-theme='dark']").And.Contain("[data-theme='light']").And.Contain("prefers-color-scheme: dark");
+	}
+
 	[GeneratedRegex(@"(?<![\w&-])#[0-9a-fA-F]{3,8}\b")]
 	private static partial Regex HexColor();
 

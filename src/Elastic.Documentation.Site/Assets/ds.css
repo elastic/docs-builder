@@ -77,3 +77,4 @@
 @import '../Components/SearchPage/search-page.css' layer(ds.components);
 @import '../Components/ApiReference/api-reference.css' layer(ds.components);
 @import './ds/utilities.css' layer(ds.utilities);
+@import '../Components/Storybook/storybook.css' layer(ds.components);

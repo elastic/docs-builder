@@ -1,55 +1,82 @@
 /*
- * Bold Minimal: the default theme. Every role is written once as light-dark(light, dark), so both modes sit next to each other
- * and a redesign only has to replace this file. The mode follows the system unless an element (usually <html>) sets
- * data-theme="light" or data-theme="dark"; light-dark() resolves where the value is used, so a dark section can sit on a light page.
+ * Bold Minimal: the default theme. Every role is written once as a light and a dark value that sit next to each other, so the two
+ * modes can't drift apart and a redesign only has to replace this file.
+ *
+ * Each pair is `var(--ds-l, light) var(--ds-d, dark)`: a toggle pair, defined below, is "initial" for the active mode and empty for
+ * the other, so only the active value survives. This is what the native `light-dark()` does, written out so it works in browsers
+ * that predate it. The mode follows the system unless an element (usually <html>) sets data-theme="light" or data-theme="dark".
+ * Roles are declared again on every [data-theme] element, so a dark section can sit on a light page.
  */
 :root {
 	color-scheme: light dark;
+	--ds-l: initial;
+	--ds-d: ;
+}
 
-	--color-page: light-dark(var(--palette-white), #101c3f);
-	--color-surface: light-dark(var(--palette-white), #172652);
-	--color-surface-sunken: light-dark(var(--palette-grey-50), #0c1634);
+@media (prefers-color-scheme: dark) {
+	:root:not([data-theme]) {
+		--ds-l: ;
+		--ds-d: initial;
+	}
+}
 
-	--color-heading: light-dark(
-		var(--palette-developer-blue),
-		var(--palette-white)
-	);
-	--color-text: light-dark(var(--palette-grey-800), var(--palette-grey-100));
-	--color-text-muted: light-dark(
-		var(--palette-grey-600),
-		var(--palette-grey-300)
-	);
+[data-theme='light'] {
+	color-scheme: light;
+	--ds-l: initial;
+	--ds-d: ;
+}
 
-	--color-border: light-dark(var(--palette-grey-100), #2c3c6b);
-	--color-border-strong: light-dark(
-		var(--palette-developer-blue),
-		var(--palette-white)
-	);
-	--color-border-control: light-dark(var(--palette-grey-300), #4a5c8f);
+[data-theme='dark'] {
+	color-scheme: dark;
+	--ds-l: ;
+	--ds-d: initial;
+}
 
-	--color-accent: light-dark(var(--palette-elastic-blue), #6fa8ff);
-	--color-accent-hover: light-dark(var(--palette-elastic-blue-dark), #9cc2ff);
-	--color-on-accent: light-dark(
-		var(--palette-white),
-		var(--palette-developer-blue)
-	);
-	--color-accent-surface: light-dark(#e5eefc, #16315f);
-	--color-accent-border: light-dark(#b9d1f5, #2d5ba8);
+:root,
+[data-theme] {
+	--color-page: var(--ds-l, var(--palette-white)) var(--ds-d, #101c3f);
+	--color-surface: var(--ds-l, var(--palette-white)) var(--ds-d, #172652);
+	--color-surface-sunken: var(--ds-l, var(--palette-grey-50))
+		var(--ds-d, #0c1634);
 
-	--color-brand-deep: light-dark(
-		var(--palette-midnight),
-		var(--palette-elastic-blue)
-	);
+	--color-heading: var(--ds-l, var(--palette-developer-blue))
+		var(--ds-d, var(--palette-white));
+	--color-text: var(--ds-l, var(--palette-grey-800))
+		var(--ds-d, var(--palette-grey-100));
+	--color-text-muted: var(--ds-l, var(--palette-grey-600))
+		var(--ds-d, var(--palette-grey-300));
+
+	--color-border: var(--ds-l, var(--palette-grey-100)) var(--ds-d, #2c3c6b);
+	--color-border-strong: var(--ds-l, var(--palette-developer-blue))
+		var(--ds-d, var(--palette-white));
+	--color-border-control: var(--ds-l, var(--palette-grey-300))
+		var(--ds-d, #4a5c8f);
+
+	--color-accent: var(--ds-l, var(--palette-elastic-blue))
+		var(--ds-d, #6fa8ff);
+	--color-accent-hover: var(--ds-l, var(--palette-elastic-blue-dark))
+		var(--ds-d, #9cc2ff);
+	--color-on-accent: var(--ds-l, var(--palette-white))
+		var(--ds-d, var(--palette-developer-blue));
+	--color-accent-surface: var(--ds-l, #e5eefc) var(--ds-d, #16315f);
+	--color-accent-border: var(--ds-l, #b9d1f5) var(--ds-d, #2d5ba8);
+
+	--color-brand-deep: var(--ds-l, var(--palette-midnight))
+		var(--ds-d, var(--palette-elastic-blue));
 	--color-brand-bright: var(--palette-teal);
-	--color-highlight: light-dark(var(--palette-pink), #ee72a6);
-	--color-highlight-surface: light-dark(#fbe3ee, rgb(238 114 166 / 12%));
+	--color-highlight: var(--ds-l, var(--palette-pink)) var(--ds-d, #ee72a6);
+	--color-highlight-surface: var(--ds-l, #fbe3ee)
+		var(--ds-d, rgb(238 114 166 / 12%));
 
-	--color-emphasis: light-dark(var(--palette-developer-blue), #2c3c6b);
+	--color-emphasis: var(--ds-l, var(--palette-developer-blue))
+		var(--ds-d, #2c3c6b);
 	--color-on-emphasis: var(--palette-teal);
 
 	/* Code stays a dark panel in both modes; only its depth changes. */
-	--color-code-bg: light-dark(var(--palette-developer-blue), #0a1330);
-	--color-code-border: light-dark(transparent, var(--color-border));
+	--color-code-bg: var(--ds-l, var(--palette-developer-blue))
+		var(--ds-d, #0a1330);
+	--color-code-border: var(--ds-l, transparent)
+		var(--ds-d, var(--color-border));
 	--color-code-text: var(--palette-grey-100);
 	--color-code-muted: #8e9ab5;
 	--color-code-gutter: #6a7794;
@@ -62,22 +89,25 @@
 	--color-code-literal: #ffa3d2;
 	--color-code-punctuation: var(--palette-grey-300);
 
-	--color-focus-ring: light-dark(
-		var(--palette-elastic-blue),
-		var(--palette-teal)
-	);
+	--color-focus-ring: var(--ds-l, var(--palette-elastic-blue))
+		var(--ds-d, var(--palette-teal));
 
-	--color-success: light-dark(#0e7074, var(--palette-teal));
-	--color-success-surface: light-dark(#f0fbf8, rgb(72 239 207 / 10%));
-	--color-warning: light-dark(#b87400, #f9b110);
-	--color-warning-surface: light-dark(#fff9e8, rgb(249 177 16 / 10%));
-	--color-danger: light-dark(#b42a20, #ff957d);
-	--color-danger-surface: light-dark(#fff3f1, rgb(255 149 125 / 10%));
-	--color-important: light-dark(#4b3a9e, #b9a9f2);
-	--color-important-surface: light-dark(#f6f4fd, rgb(185 169 242 / 10%));
+	--color-success: var(--ds-l, #0e7074) var(--ds-d, var(--palette-teal));
+	--color-success-surface: var(--ds-l, #f0fbf8)
+		var(--ds-d, rgb(72 239 207 / 10%));
+	--color-warning: var(--ds-l, #b87400) var(--ds-d, #f9b110);
+	--color-warning-surface: var(--ds-l, #fff9e8)
+		var(--ds-d, rgb(249 177 16 / 10%));
+	--color-danger: var(--ds-l, #b42a20) var(--ds-d, #ff957d);
+	--color-danger-surface: var(--ds-l, #fff3f1)
+		var(--ds-d, rgb(255 149 125 / 10%));
+	--color-important: var(--ds-l, #4b3a9e) var(--ds-d, #b9a9f2);
+	--color-important-surface: var(--ds-l, #f6f4fd)
+		var(--ds-d, rgb(185 169 242 / 10%));
 
 	/* "Slab": the offset-plate elevation that carries the visual identity. */
-	--color-slab-plate: light-dark(var(--palette-grey-100), #0c1634);
+	--color-slab-plate: var(--ds-l, var(--palette-grey-100))
+		var(--ds-d, #0c1634);
 	--shadow-slab:
 		6px 6px 0 var(--color-brand-deep),
 		6px 6px 0 1px var(--color-border-strong);
@@ -88,20 +118,4 @@
 		5px 5px 0 var(--color-slab-plate),
 		5px 5px 0 1px var(--color-border-strong);
 	--shadow-overlay: 0 12px 32px rgb(16 28 63 / 24%);
-}
-
-:root[data-theme='light'] {
-	color-scheme: light;
-}
-
-:root[data-theme='dark'] {
-	color-scheme: dark;
-}
-
-[data-theme='light'] {
-	color-scheme: light;
-}
-
-[data-theme='dark'] {
-	color-scheme: dark;
 }

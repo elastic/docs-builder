@@ -26,6 +26,13 @@ async function loadFilterableTables(scope: ParentNode) {
         await import('./web-components/FilterableTable')
 }
 
+// So is the Storybook embed, which loads a story's own bundle into the page.
+async function loadStorybookStories(scope: ParentNode) {
+    if (customElements.get('storybook-story')) return
+    if (scope.querySelector('storybook-story'))
+        await import('./web-components/StorybookStory/StorybookStoryComponent')
+}
+
 function init(scope: ParentNode = document) {
     initThemeToggles(scope)
     initTabSync(scope)
@@ -45,6 +52,7 @@ function init(scope: ParentNode = document) {
     initLightboxes(scope)
     initCarousels(scope)
     void loadFilterableTables(scope)
+    void loadStorybookStories(scope)
 }
 
 bindOutsideClick()

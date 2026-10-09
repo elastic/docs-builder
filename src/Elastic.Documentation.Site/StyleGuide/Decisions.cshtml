@@ -1,0 +1,60 @@
+@inherits RazorSlice<StyleGuideViewModel>
+@using Elastic.Documentation.Site.StyleGuide
+@implements IUsesLayout<Elastic.Documentation.Site.StyleGuide._StyleGuideLayout, StyleGuideViewModel>
+@functions {
+	public StyleGuideViewModel LayoutModel => Model;
+}
+<section class="sg-section">
+	<h2>How to read this page</h2>
+	<p>The design arrived as a set of boards. Where a board was missing, thin or contradicted another, the component was still built, with a rudimentary style made only of tokens. This page lists those calls, so a designer can see what was decided on their behalf and which pieces most need a higher-fidelity design.</p>
+</section>
+<section class="sg-section">
+	<h2>Normalizations</h2>
+	<table class="sg-table">
+		<thead><tr><th>What</th><th>Decision</th></tr></thead>
+		<tbody>
+		<tr><td>Colour</td><td>About 400 hex literals became colour roles (<code>--color-*</code>). Each role is written once with its light and dark values side by side, so a theme overrides roles and never components.</td></tr>
+		<tr><td>Buttons</td><td>One <code>.btn</code> base. The boards defined it three times with small differences.</td></tr>
+		<tr><td>Focus ring</td><td>One token, <code>--color-focus-ring</code>: blue on light surfaces, teal on dark. The boards disagreed.</td></tr>
+		<tr><td>Motion</td><td>One easing for the interface. Springs are limited to selection indicators. Reduced motion keeps small colour, focus and fade feedback and drops large movement and flashing.</td></tr>
+		<tr><td>Native elements</td><td>Menus, drawers, tabs, search, lightboxes and the fullscreen table use <code>details</code>, radios, checkboxes and <code>dialog</code>. Script only adds what those cannot do.</td></tr>
+		<tr><td>Breakpoints</td><td>The boards used six widths between 760 and 1180. Components use 760, 1100 and 1280, plus container queries where a component answers to its own space.</td></tr>
+		<tr><td>Archive page</td><td>The animated easter egg that flashed the screen was dropped, because flashing colour conflicts with the motion policy.</td></tr>
+		</tbody>
+	</table>
+</section>
+<section class="sg-section">
+	<h2>Built without a design</h2>
+	<p>These have a working, token-only style. They are the best candidates for higher-fidelity boards.</p>
+	<table class="sg-table">
+		<thead><tr><th>Piece</th><th>State</th></tr></thead>
+		<tbody>
+		<tr><td>API reference</td><td>The previous styles were ported onto tokens mechanically. The structure and class names are unchanged and the look has not been redesigned. This is the largest area without a board.</td></tr>
+		<tr><td>Hub pages</td><td>Hero, get-started track, what's new, cards and accordions are ported from the previous hub styles.</td></tr>
+		<tr><td>Landing, archive, 404, Codex landing</td><td>Rebuilt from components and tokens, following the previous layouts.</td></tr>
+		<tr><td>Full-page search</td><td>Form, facets, results and pager. The AI answer panel is not part of it.</td></tr>
+		<tr><td>Vector sizing calculator</td><td>Native controls and a result panel.</td></tr>
+		<tr><td>Diagnostics console</td><td>The developer console, styled as a dark code surface.</td></tr>
+		<tr><td>Images</td><td>Lightbox, figure caption, screenshot frame and the scroll-snap carousel.</td></tr>
+		<tr><td>Tables</td><td>Scroll shadows, matrix highlight, fullscreen dialog and the filter controls. There is no sticky-header or compact variant yet.</td></tr>
+		<tr><td>Prose</td><td>Footnotes, task lists, definition lists, heading anchors, and h4 to h6.</td></tr>
+		<tr><td>Applies-to variants</td><td>Beta, unavailable, planned and removed share one treatment.</td></tr>
+		<tr><td>Other directives</td><td>Agent skill, contributors, CLI modifiers, related learning, mermaid controls, applies-to switch.</td></tr>
+		</tbody>
+	</table>
+</section>
+<section class="sg-section">
+	<h2>Not ported yet</h2>
+	<table class="sg-table">
+		<thead><tr><th>Piece</th><th>What happens with the flag on</th></tr></thead>
+		<tbody>
+		<tr><td>Ask AI (flyout and chat)</td><td>The entry points are left out. It needs a streaming chat design.</td></tr>
+		<tr><td>AI answer panel on the search page</td><td>Left out.</td></tr>
+		<tr><td>Tooltip, toast, banner, skeleton, empty state, flyout</td><td>Boards exist; no page needs them yet, so the components are not built.</td></tr>
+		<tr><td>Code diff blocks, console output, mermaid fullscreen</td><td>Use the code block and mermaid styles as they are.</td></tr>
+		<tr><td>Cookie and consent banner</td><td>Comes from a third-party script and keeps its own look.</td></tr>
+		<tr><td>Print styles</td><td>Only the table controls are hidden when printing.</td></tr>
+		<tr><td>Older browsers</td><td>The bundle targets Chrome and Edge 111, Firefox 113 and Safari 16.2. Colour roles don't use <code>light-dark()</code>. <code>:has()</code>, container queries and popovers enhance the page where they exist and fall back to a simpler layout elsewhere.</td></tr>
+		</tbody>
+	</table>
+</section>

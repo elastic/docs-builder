@@ -139,13 +139,15 @@ The order also names the `theme`, `base`, `components` and `utilities` layers th
 
 ## Themes
 
-The default theme, Bold Minimal, writes each colour role once as `light-dark(light, dark)`.
+The default theme, Bold Minimal, writes each colour role once, with the light and dark values side by side: `var(--ds-l, light) var(--ds-d, dark)`.
+`--ds-l` and `--ds-d` are a toggle pair. The one for the active mode is `initial` and the other is empty, so only the active value survives. This is what the native `light-dark()` does, written out so it works in browsers that predate it.
 The mode follows the system.
 Setting `data-theme="light"` or `data-theme="dark"` on any element, usually `<html>`, pins the mode for that element and its descendants.
-The theme switcher in the style guide persists the choice in `localStorage` under `docs-theme`.
+The theme declares the roles again on every `[data-theme]` element, so a dark section can sit on a light page.
+The theme switcher in the header and in the style guide persists the choice in `localStorage` under `docs-theme`.
 Without JavaScript the page follows the system setting.
 
-To write your own theme, load a stylesheet after `ds.css` that overrides tokens:
+To write your own theme, load a stylesheet after `ds.css` that overrides roles. A theme that doesn't need a dark mode can write plain values:
 
 ```css
 @layer ds.theme {
@@ -157,8 +159,10 @@ To write your own theme, load a stylesheet after `ds.css` that overrides tokens:
 }
 ```
 
-The design-system stylesheets target Chrome and Edge 123, Firefox 120, and Safari 17.5 or later, which support `light-dark()` natively.
+The design-system stylesheets target Chrome and Edge 111, Firefox 113 and Safari 16.2 or later.
 The bundle sets this floor in the `ds-css` and `ds-guide-css` targets in `package.json`.
+The floor is set by `color-mix()`, which has no fallback.
+`:has()`, container queries and popovers enhance the page where the browser has them and fall back to a simpler layout where it doesn't.
 
 ## Motion
 

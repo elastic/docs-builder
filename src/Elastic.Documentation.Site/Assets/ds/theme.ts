@@ -45,8 +45,14 @@ export function initThemeToggles(scope: ParentNode = document) {
         )
         .forEach((button) => {
             button.dataset.themeBound = ''
+            // A toggle rendered hidden is revealed here, because without script it would do nothing.
+            button.hidden = false
             const sync = (choice: ThemeChoice) => {
                 button.dataset.themeChoice = choice
+                const label = button.querySelector('[data-theme-label]')
+                if (label)
+                    label.textContent =
+                        choice.charAt(0).toUpperCase() + choice.slice(1)
                 button.setAttribute(
                     'aria-label',
                     `Theme: ${choice}. Activate to change.`

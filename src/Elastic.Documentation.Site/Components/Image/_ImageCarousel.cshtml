@@ -5,7 +5,7 @@
 		{
 			var image = Model.Images[i];
 			<div class="carousel__slide" role="group" aria-roledescription="slide" aria-label="@(i + 1) of @Model.Images.Count">
-				<a class="image-reference image__link" href="@image.Src" data-lightbox="@image.DialogId"><img class="carousel__img" title="@image.Title" alt="@image.Alt" src="@image.Src"@(image.Style is { Length: > 0 } imageStyle ? new HtmlString($" style=\"{System.Net.WebUtility.HtmlEncode(imageStyle)}\"") : HtmlString.Empty)></a>
+				<a class="image-reference image__link" href="@image.Src" hx-boost="false" data-lightbox="@image.DialogId"><img class="carousel__img" title="@image.Title" alt="@image.Alt" src="@image.Src"@(image.Style is { Length: > 0 } imageStyle ? new HtmlString($" style=\"{System.Net.WebUtility.HtmlEncode(imageStyle)}\"") : HtmlString.Empty)></a>
 			</div>
 		}
 	</div>

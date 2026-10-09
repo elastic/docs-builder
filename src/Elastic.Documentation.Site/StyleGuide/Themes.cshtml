@@ -30,7 +30,7 @@
 </section>
 <section class="sg-section">
 	<h2>How the default theme works</h2>
-	<p>The Bold Minimal theme is one file, <code>Assets/ds/themes/bold-minimal.css</code>. Each colour role is declared once as <code>light-dark(light, dark)</code>, so the two modes sit next to each other and can't drift apart. The mode follows the system by default; setting <code>data-theme="light"</code> or <code>"dark"</code> on any element, usually <code>&lt;html&gt;</code>, overrides it for that subtree. Without JavaScript the page simply follows the system.</p>
+	<p>The Bold Minimal theme is one file, <code>Assets/ds/themes/bold-minimal.css</code>. Each colour role is declared once as a light and a dark value side by side, written as <code>var(--ds-l, light) var(--ds-d, dark)</code>, so the two modes can't drift apart and no browser needs <code>light-dark()</code>. The mode follows the system by default; setting <code>data-theme="light"</code> or <code>"dark"</code> on any element, usually <code>&lt;html&gt;</code>, overrides it for that subtree. Without JavaScript the page simply follows the system.</p>
 </section>
 <section class="sg-section">
 	<h2>Writing your own theme</h2>

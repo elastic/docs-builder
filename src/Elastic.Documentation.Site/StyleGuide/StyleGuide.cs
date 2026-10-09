@@ -77,6 +77,12 @@ public static class StyleGuideCatalog
 		),
 		new("motion", "Motion", "Foundations", "Durations, easing and the reduced-motion policy."),
 		new(
+			"decisions",
+			"Design decisions and gaps",
+			"Foundations",
+			"What was normalized, which components were built without a design, and what is not ported yet."
+		),
+		new(
 			"actions",
 			"Actions and inputs",
 			"Components",
@@ -189,6 +195,9 @@ public static class StyleGuideCatalog
 				break;
 			case "motion":
 				await Motion.Create(model).RenderAsync(writer, cancellationToken: ctx);
+				break;
+			case "decisions":
+				await Decisions.Create(model).RenderAsync(writer, cancellationToken: ctx);
 				break;
 			default:
 				await Foundations.Create(model).RenderAsync(writer, cancellationToken: ctx);
