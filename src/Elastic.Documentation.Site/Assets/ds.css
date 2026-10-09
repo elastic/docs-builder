@@ -42,3 +42,4 @@
 @import '../Components/Stepper/stepper.css' layer(ds.components);
 @import '../Components/Tabs/tabs.css' layer(ds.components);
 @import '../Components/ButtonGroup/button-directive.css' layer(ds.components);
+@import '../Components/CodeBlock/code-block.css' layer(ds.components);

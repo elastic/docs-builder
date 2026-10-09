@@ -185,3 +185,44 @@ public class FlagOffKeepsLegacyMarkup : MarkdownTest
 		await Docs.DoesNotConvertToContainingHtml("disclosure");
 	}
 }
+
+public class CodeBlockComponent : DesignSystemDirectiveTest
+{
+	protected override string Markdown =>
+		"""
+		```json
+		{ "size": 10 }
+		```
+
+		```yaml
+		cluster.name: docs <1>
+		```
+
+		1. The cluster name.
+		""";
+
+	[Test, DisplayName("renders the code block component with the language label")]
+	public async Task Renders()
+	{
+		await Docs.ConvertsToContainingRawHtml("<figure class=\"code-block notranslate\" data-language=\"json\">");
+		await Docs.ConvertsToContainingRawHtml("<span class=\"code-block__language\">JSON</span>");
+		await Docs.ConvertsToContainingRawHtml("<pre class=\"code-block__pre\">");
+	}
+
+	[Test, DisplayName("keeps pre > code so the highlighter finds the code")]
+	public async Task KeepsPreCode() => await Docs.ConvertsToContainingRawHtml("<code class=\"language-json\">");
+
+	[Test, DisplayName("renders a copy button that stays hidden until the script reveals it")]
+	public async Task CopyButton() =>
+		await Docs.ConvertsToContainingRawHtml("<button class=\"code-block__copy\" type=\"button\" data-copy hidden>");
+
+	[Test, DisplayName("keeps the callout markers and the callout list")]
+	public async Task Callouts()
+	{
+		await Docs.ConvertsToContainingRawHtml("<span class=\"code-callout\" data-index=\"1\"></span>");
+		await Docs.ConvertsToContainingRawHtml("<ol class=\"code-callouts\">");
+	}
+
+	[Test, DisplayName("does not use the legacy highlight wrappers the old copy script binds to")]
+	public async Task NoLegacyHooks() => await Docs.DoesNotConvertToContainingHtml("class=\"highlight\"");
+}

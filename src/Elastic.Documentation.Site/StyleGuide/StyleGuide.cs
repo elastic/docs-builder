@@ -12,6 +12,7 @@ using Elastic.Documentation.Site.Components.ButtonGroup;
 using Elastic.Documentation.Site.Components.Card;
 using Elastic.Documentation.Site.Components.Check;
 using Elastic.Documentation.Site.Components.Chip;
+using Elastic.Documentation.Site.Components.CodeBlock;
 using Elastic.Documentation.Site.Components.Disclosure;
 using Elastic.Documentation.Site.Components.Kbd;
 using Elastic.Documentation.Site.Components.Link;
@@ -97,7 +98,8 @@ public static class StyleGuideCatalog
 			DisclosureExamples.Disclosures,
 			StepperExamples.Steppers,
 			TabsExamples.Tabs,
-			ButtonDirectiveExamples.Buttons
+			ButtonDirectiveExamples.Buttons,
+			CodeBlockExamples.CodeBlocks
 		],
 		["cards"] = [CardExamples.Cards, LinkTileExamples.Tiles, ReleaseCardExamples.Releases],
 		["navigation"] = [BreadcrumbExamples.Trails, PagerExamples.Pagers],

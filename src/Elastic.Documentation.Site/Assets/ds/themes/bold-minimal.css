@@ -47,6 +47,21 @@
 	--color-emphasis: light-dark(var(--palette-developer-blue), #2c3c6b);
 	--color-on-emphasis: var(--palette-teal);
 
+	/* Code stays a dark panel in both modes; only its depth changes. */
+	--color-code-bg: light-dark(var(--palette-developer-blue), #0a1330);
+	--color-code-border: light-dark(transparent, var(--color-border));
+	--color-code-text: var(--palette-grey-100);
+	--color-code-muted: #8e9ab5;
+	--color-code-gutter: #6a7794;
+	--color-code-keyword: var(--palette-teal);
+	--color-code-string: #ffa3d2;
+	--color-code-number: #f9b110;
+	--color-code-attr: #f9b110;
+	--color-code-type: #9ce9d9;
+	--color-code-variable: #b9a9f2;
+	--color-code-literal: #ffa3d2;
+	--color-code-punctuation: var(--palette-grey-300);
+
 	--color-focus-ring: light-dark(
 		var(--palette-elastic-blue),
 		var(--palette-teal)

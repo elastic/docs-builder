@@ -15,6 +15,12 @@ public partial class ComponentExamplesTests
 {
 	private static readonly HtmlParser Parser = new();
 
+	// Classes that are contracts with other tools rather than styling: translation services skip notranslate, and the
+	// client-side highlighter adds hljs and reads language-*. Everything else an example emits must be defined in the design-system CSS.
+	private static readonly HashSet<string> MarkerClasses = ["notranslate", "hljs"];
+
+	private static bool IsMarker(string name) => MarkerClasses.Contains(name) || name.StartsWith("language-", StringComparison.Ordinal);
+
 	private static readonly Lazy<HashSet<string>> DefinedClasses = new(
 		() => DesignSystemFiles
 			.AllCss()
@@ -60,7 +66,7 @@ public partial class ComponentExamplesTests
 			.Distinct();
 
 		used
-			.Where(c => !DefinedClasses.Value.Contains(c))
+			.Where(c => !IsMarker(c) && !DefinedClasses.Value.Contains(c))
 			.Should()
 			.BeEmpty("every class an example emits must be styled by the design system");
 	}

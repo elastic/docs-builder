@@ -48,6 +48,23 @@ public static class StyleGuideTokens
 		new("--color-focus-ring", "Keyboard focus")
 	];
 
+	public static IReadOnlyList<TokenInfo> Code { get; } =
+	[
+		new("--color-code-bg", "Code panel background"),
+		new("--color-code-border", "Code panel outline"),
+		new("--color-code-text", "Code text"),
+		new("--color-code-muted", "Code headers and comments"),
+		new("--color-code-gutter", "Line numbers"),
+		new("--color-code-keyword", "Keywords"),
+		new("--color-code-string", "Strings"),
+		new("--color-code-number", "Numbers"),
+		new("--color-code-attr", "Attributes"),
+		new("--color-code-type", "Types"),
+		new("--color-code-variable", "Variables"),
+		new("--color-code-literal", "Literals"),
+		new("--color-code-punctuation", "Punctuation")
+	];
+
 	public static IReadOnlyList<TokenInfo> Status { get; } =
 	[
 		new("--color-success", "Success text and icons"),

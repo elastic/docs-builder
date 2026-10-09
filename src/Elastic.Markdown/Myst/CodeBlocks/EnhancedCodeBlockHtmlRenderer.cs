@@ -9,6 +9,7 @@ using Elastic.Documentation.AppliesTo;
 using Elastic.Markdown.Diagnostics;
 using Elastic.Markdown.Helpers;
 using Elastic.Markdown.Myst.Comments;
+using Elastic.Markdown.Myst.Directives;
 using Elastic.Markdown.Myst.Directives.AppliesTo;
 using Elastic.Markdown.Myst.Directives.Contributors;
 using Markdig;
@@ -143,17 +144,22 @@ public class EnhancedCodeBlockHtmlRenderer : HtmlObjectRenderer<EnhancedCodeBloc
 
 		var callOuts = block.UniqueCallOuts;
 
-		var slice = Code.Create(new CodeViewModel
+		if (DesignSystemDirectives.IsEnabled(block.Build))
+			DesignSystemDirectives.WriteCodeBlock(renderer, block);
+		else
 		{
-			CrossReferenceName = string.Empty,// block.CrossReferenceName,
+			var slice = Code.Create(new CodeViewModel
+			{
+				CrossReferenceName = string.Empty,// block.CrossReferenceName,
 
-			Language = block.Language,
-			Caption = block.Caption,
-			ApiSegments = block.ApiSegments,
-			EnhancedCodeBlock = block
-		});
+				Language = block.Language,
+				Caption = block.Caption,
+				ApiSegments = block.ApiSegments,
+				EnhancedCodeBlock = block
+			});
 
-		RenderRazorSlice(slice, renderer);
+			RenderRazorSlice(slice, renderer);
+		}
 		if (!block.InlineAnnotations && callOuts.Count > 0)
 		{
 			var index = block.Parent!.IndexOf(block);

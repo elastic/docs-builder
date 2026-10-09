@@ -65,10 +65,11 @@ Tests render every example and check that:
 
 ## Directives
 
-With the flag on, these directives render with design-system components instead of their legacy views: admonitions, dropdowns, tabs, steppers, buttons and button groups.
+With the flag on, these directives render with design-system components instead of their legacy views: admonitions, dropdowns, tabs, steppers, buttons, button groups and fenced code blocks.
 `DirectiveHtmlRenderer` asks `DesignSystemDirectives` first; when it handles the block, the legacy view is skipped, and otherwise rendering continues as before.
 Parsing, nested Markdown and cross-references are unchanged, so only the markup differs.
 Tabs that share a `sync` group stay in step through `Assets/ds/tabs.ts`, which binds to `data-tab-sync-*` attributes and not to the legacy tab classes.
+Code blocks keep `pre code`, so the existing client-side highlighter still finds them, and `Assets/ds/copy.ts` reveals the copy button, which is hidden in the HTML because it cannot work without JavaScript.
 
 Flag-on tests live in `tests/Elastic.Authoring.Tests/DesignSystem/`.
 Set `NavigationPreview = true` in the `SetupOptions` of an authoring test to render a document with the flag on.

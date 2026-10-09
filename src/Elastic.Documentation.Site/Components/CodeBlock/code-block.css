@@ -1,0 +1,198 @@
+.code-block {
+	margin-block: var(--space-5);
+	overflow: hidden;
+	border: var(--border-width) solid var(--color-code-border);
+	border-radius: var(--radius-md);
+	background: var(--color-code-bg);
+	color: var(--color-code-text);
+	font-family: var(--font-mono);
+	font-size: 0.84rem;
+	line-height: 1.7;
+}
+
+.code-block__header {
+	display: flex;
+	align-items: center;
+	gap: var(--space-3);
+	padding: var(--space-2) var(--space-2) var(--space-2) var(--space-4);
+	border-bottom: var(--border-width) solid
+		color-mix(in oklab, var(--color-code-text) 14%, transparent);
+	color: var(--color-code-muted);
+	font-size: var(--text-xs);
+	font-weight: var(--weight-medium);
+}
+
+.code-block__caption {
+	flex: 1;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.code-block__language {
+	letter-spacing: 0.04em;
+}
+
+.code-block__copy {
+	display: inline-flex;
+	align-items: center;
+	margin-left: auto;
+	padding: var(--space-1) var(--space-3);
+	border: var(--border-width) solid
+		color-mix(in oklab, var(--color-code-text) 28%, transparent);
+	border-radius: var(--radius-sm);
+	background: color-mix(in oklab, var(--color-code-text) 8%, transparent);
+	color: var(--color-code-text);
+	font-family: var(--font-body);
+	font-size: var(--text-xs);
+	font-weight: var(--weight-semibold);
+	cursor: pointer;
+	transition:
+		background-color var(--duration-fast) var(--ease-standard),
+		border-color var(--duration-fast) var(--ease-standard);
+}
+
+.code-block__copy:hover {
+	border-color: var(--color-code-keyword);
+	background: color-mix(in oklab, var(--color-code-text) 16%, transparent);
+}
+
+.code-block__copy:focus-visible {
+	outline: 3px solid var(--color-code-keyword);
+	outline-offset: 2px;
+}
+
+.code-block__copied-label,
+.code-block__copy[data-copied] .code-block__copy-label {
+	display: none;
+}
+
+.code-block__copy[data-copied] .code-block__copied-label {
+	display: inline;
+	color: var(--color-code-keyword);
+}
+
+.code-block__pre {
+	margin: 0;
+	padding: var(--space-4);
+	overflow-x: auto;
+	tab-size: 4;
+}
+
+.code-block__pre code {
+	padding: 0;
+	background: none;
+	color: inherit;
+	font: inherit;
+}
+
+/* Syntax tokens, as emitted by the client-side highlighter. */
+.code-block .hljs-keyword,
+.code-block .hljs-selector-tag,
+.code-block .hljs-built_in,
+.code-block .hljs-name,
+.code-block .hljs-tag {
+	color: var(--color-code-keyword);
+}
+
+.code-block .hljs-string,
+.code-block .hljs-regexp,
+.code-block .hljs-addition {
+	color: var(--color-code-string);
+}
+
+.code-block .hljs-number,
+.code-block .hljs-quote {
+	color: var(--color-code-number);
+}
+
+.code-block .hljs-comment,
+.code-block .hljs-doctag,
+.code-block .hljs-deletion {
+	color: var(--color-code-muted);
+	font-style: italic;
+}
+
+.code-block .hljs-attr,
+.code-block .hljs-attribute,
+.code-block .hljs-meta,
+.code-block .hljs-section {
+	color: var(--color-code-attr);
+}
+
+.code-block .hljs-type,
+.code-block .hljs-title,
+.code-block .hljs-class .hljs-title {
+	color: var(--color-code-type);
+}
+
+.code-block .hljs-variable,
+.code-block .hljs-template-variable,
+.code-block .hljs-symbol,
+.code-block .hljs-params {
+	color: var(--color-code-variable);
+}
+
+.code-block .hljs-literal,
+.code-block .hljs-bullet {
+	color: var(--color-code-literal);
+}
+
+.code-block .hljs-punctuation,
+.code-block .hljs-operator {
+	color: var(--color-code-punctuation);
+}
+
+/* Numbered markers in the code; the matching list follows the block. */
+.code-callout {
+	display: inline-grid;
+	flex: none;
+	width: 1.125rem;
+	height: 1.125rem;
+	margin-left: var(--space-2);
+	place-items: center;
+	border-radius: 50%;
+	background: var(--color-code-keyword);
+	color: var(--color-code-bg);
+	font-family: var(--font-body);
+	font-size: 0.6875rem;
+	font-weight: var(--weight-bold);
+	line-height: 1;
+	vertical-align: middle;
+}
+
+.code-callout::before {
+	content: attr(data-index);
+}
+
+.code-callouts {
+	display: flex;
+	flex-direction: column;
+	gap: var(--space-2);
+	margin: var(--space-4) 0;
+	padding: 0;
+	list-style: none;
+	counter-reset: callout;
+}
+
+.code-callouts > li {
+	display: flex;
+	align-items: flex-start;
+	gap: var(--space-3);
+	counter-increment: callout;
+}
+
+.code-callouts > li::before {
+	content: counter(callout);
+	display: grid;
+	flex: none;
+	width: 1.125rem;
+	height: 1.125rem;
+	margin-top: var(--space-1);
+	place-items: center;
+	border-radius: 50%;
+	background: var(--color-emphasis);
+	color: var(--color-on-emphasis);
+	font-size: 0.6875rem;
+	font-weight: var(--weight-bold);
+}

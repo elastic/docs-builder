@@ -3,7 +3,9 @@
 // See the LICENSE file in the project root for more information
 
 using System.Diagnostics.CodeAnalysis;
+using Elastic.Documentation.Configuration;
 using Elastic.Markdown.Helpers;
+using Elastic.Markdown.Myst.CodeBlocks;
 using Elastic.Markdown.Myst.Components;
 using Elastic.Markdown.Myst.Directives.Admonition;
 using Elastic.Markdown.Myst.Directives.Button;
@@ -22,7 +24,9 @@ namespace Elastic.Markdown.Myst.Directives;
 /// </summary>
 internal static class DesignSystemDirectives
 {
-	public static bool IsEnabled(DirectiveBlock block) => block.Build.Configuration.Features.NavigationPreviewEnabled;
+	public static bool IsEnabled(DirectiveBlock block) => IsEnabled(block.Build);
+
+	public static bool IsEnabled(BuildContext build) => build.Configuration.Features.NavigationPreviewEnabled;
 
 	/// <returns><c>true</c> when the block was written; <c>false</c> leaves it to the legacy views.</returns>
 	public static bool TryWrite(HtmlRenderer renderer, DirectiveBlock block)
@@ -151,6 +155,43 @@ internal static class DesignSystemDirectives
 			default:
 				return false;
 		}
+	}
+
+	/// <summary>Writes a fenced code block as a design-system code block. Callout lists after the block stay with the shared renderer.</summary>
+	public static void WriteCodeBlock(HtmlRenderer renderer, EnhancedCodeBlock block)
+	{
+		var legacy = new CodeViewModel
+		{
+			CrossReferenceName = string.Empty,
+			Language = block.Language,
+			Caption = block.Caption,
+			ApiSegments = block.ApiSegments,
+			EnhancedCodeBlock = block
+		};
+		Write(
+			renderer,
+			Ds
+				.CodeBlock
+				._CodeBlock
+				.Create(new Ds.CodeBlock.CodeBlockModel { Language = block.Language, Caption = block.Caption, Body = CodeBody(legacy) })
+		);
+	}
+
+	private static HtmlString CodeBody(CodeViewModel code)
+	{
+		if (code.ApiSegments.Count == 0)
+			return code.RenderBlock();
+
+		var html = new System.Text.StringBuilder();
+		foreach (var segment in code.ApiSegments)
+		{
+			_ = html.Append($"<code class=\"language-apiheader\">{code.RenderLineWithCallouts(segment.Header, segment.LineNumber)}</code>");
+			if (segment.ContentLinesWithNumbers.Count > 0)
+				_ = html.Append(
+					$"<code class=\"language-json\">{code.RenderContentLinesWithCallouts(segment.ContentLinesWithNumbers)}</code>"
+				);
+		}
+		return new HtmlString(html.ToString());
 	}
 
 	private static void WriteStep(HtmlRenderer renderer, StepBlock step)
