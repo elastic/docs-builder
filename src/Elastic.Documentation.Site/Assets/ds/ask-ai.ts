@@ -74,6 +74,84 @@ export const streamFromApi: AskAiStream = async (request) => {
     })
 }
 
+export function rateLimitMessage(retryAfter: string | null): string {
+    const seconds = Number(retryAfter)
+    return Number.isFinite(seconds) && seconds > 0
+        ? `You have reached the limit for now. Try again in ${Math.ceil(seconds)} seconds.`
+        : 'You have reached the limit for now. Try again in a moment.'
+}
+
+/** Streams one answer and calls back with the markdown received so far. Used by the search page, which has no conversation. */
+export async function streamAnswer(
+    message: string,
+    signal: AbortSignal,
+    onText: (markdown: string, done: boolean) => void,
+    onFailure: (message: string) => void,
+    stream: AskAiStream = streamFromApi
+): Promise<void> {
+    let received = ''
+    try {
+        await stream({
+            message,
+            conversationId: null,
+            signal,
+            onEvent: (event) => {
+                if (event.type === 'message_chunk') {
+                    received += event.content ?? ''
+                    onText(received, false)
+                } else if (
+                    event.type === 'message_complete' &&
+                    event.fullContent
+                ) {
+                    received = event.fullContent
+                    onText(received, true)
+                } else if (event.type === 'error')
+                    onFailure(event.message ?? 'Something went wrong.')
+            },
+            onError: (error) => {
+                if (error.name !== 'AbortError')
+                    onFailure(error.message || 'Something went wrong.')
+            },
+            onClose: () => undefined,
+        })
+    } catch (error) {
+        if ((error as Error).name !== 'AbortError' && !received)
+            onFailure((error as Error).message || 'Something went wrong.')
+    }
+}
+
+const historyKey = 'ask-ai-conversation'
+
+interface StoredMessage {
+    role: 'user' | 'assistant'
+    text: string
+}
+
+interface StoredConversation {
+    conversationId: string | null
+    messages: StoredMessage[]
+}
+
+export function readConversation(): StoredConversation {
+    try {
+        const raw = sessionStorage.getItem(historyKey)
+        if (raw) return JSON.parse(raw) as StoredConversation
+    } catch {
+        // storage unavailable or unreadable: start a fresh conversation
+    }
+    return { conversationId: null, messages: [] }
+}
+
+function writeConversation(conversation: StoredConversation) {
+    try {
+        if (conversation.messages.length === 0)
+            sessionStorage.removeItem(historyKey)
+        else sessionStorage.setItem(historyKey, JSON.stringify(conversation))
+    } catch {
+        // storage unavailable: the conversation just isn't remembered
+    }
+}
+
 export function renderAnswer(markdown: string): string {
     return DOMPurify.sanitize(
         markdownRenderer.parse(markdown, { async: false })
@@ -106,8 +184,11 @@ function bindAskAi(dialog: HTMLDialogElement, stream: AskAiStream) {
     const stop = q<HTMLButtonElement>('[data-ask-ai-stop]')
     const template = q<HTMLTemplateElement>('template[data-ask-ai-message]')
 
-    let conversationId: string | null = null
+    const stored = readConversation()
+    let conversationId: string | null = stored.conversationId
+    const history: StoredMessage[] = [...stored.messages]
     let controller: AbortController | null = null
+    const save = () => writeConversation({ conversationId, messages: history })
 
     q('[data-ask-ai-description]').textContent =
         askAiConfig.assistantDescription
@@ -152,6 +233,13 @@ function bindAskAi(dialog: HTMLDialogElement, stream: AskAiStream) {
         return { item, body }
     }
 
+    history.forEach((message) => {
+        const restored = addMessage(message.role, message.text)
+        if (message.role === 'assistant')
+            restored.body.innerHTML = renderAnswer(message.text)
+    })
+    if (history.length > 0) intro.hidden = true
+
     function setBusy(busy: boolean) {
         send.hidden = busy
         stop.hidden = !busy
@@ -163,6 +251,7 @@ function bindAskAi(dialog: HTMLDialogElement, stream: AskAiStream) {
         if (!text || controller) return
         intro.hidden = true
         addMessage('user', text)
+        history.push({ role: 'user', text })
         const answer = addMessage('assistant', '')
         answer.item.dataset.state = 'pending'
         input.value = ''
@@ -218,6 +307,9 @@ function bindAskAi(dialog: HTMLDialogElement, stream: AskAiStream) {
                 if (!answer.body.textContent)
                     answer.body.textContent = 'Stopped.'
             }
+            if (received) history.push({ role: 'assistant', text: received })
+            else history.pop()
+            save()
             controller = null
             setBusy(false)
             input.focus()
@@ -238,6 +330,8 @@ function bindAskAi(dialog: HTMLDialogElement, stream: AskAiStream) {
     q('[data-ask-ai-new]').addEventListener('click', () => {
         controller?.abort()
         conversationId = null
+        history.length = 0
+        save()
         list.replaceChildren()
         intro.hidden = false
     })

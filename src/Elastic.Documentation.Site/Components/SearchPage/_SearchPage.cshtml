@@ -25,6 +25,12 @@
 					</div>
 				</div>
 			</div>
+			@* A question gets a streamed answer above the results. It needs the AI endpoint and script, so it stays hidden until then. *@
+			<section class="search-page__answer" data-search-page-answer hidden aria-label="AI answer">
+				<h2 class="search-page__answer-title">AI answer</h2>
+				<div class="search-page__answer-body prose" data-search-page-answer-body aria-live="polite"></div>
+				<p class="search-page__answer-note">AI answers can be wrong. Check them against the results below.</p>
+			</section>
 			<ol class="search-page__results" data-search-page-results></ol>
 			<nav class="search-page__pager" aria-label="Pagination" data-search-page-pager hidden>
 				<button class="btn btn--tertiary btn--sm" type="button" data-search-page-prev>Previous</button>

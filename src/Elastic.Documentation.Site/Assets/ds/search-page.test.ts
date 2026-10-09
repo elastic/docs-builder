@@ -1,4 +1,4 @@
-import { initSearchPage, parseState, toSearch } from './search-page'
+import { initSearchPage, isQuestion, parseState, toSearch } from './search-page'
 
 jest.mock('../config', () => ({
     config: {
@@ -44,6 +44,21 @@ describe('search page state', () => {
     })
 })
 
+describe('questions', () => {
+    it('treats questions and long phrases as worth an answer', () => {
+        expect(isQuestion('how do I index logs')).toBe(true)
+        expect(isQuestion('shards?')).toBe(true)
+        expect(isQuestion('index lifecycle policy rollover settings')).toBe(
+            true
+        )
+    })
+
+    it('leaves keyword lookups alone', () => {
+        expect(isQuestion('shards')).toBe(false)
+        expect(isQuestion('data stream')).toBe(false)
+    })
+})
+
 describe('search page', () => {
     const markup = `
 <div data-search-page>
@@ -53,6 +68,7 @@ describe('search page', () => {
   <select data-search-page-sort><option value="relevance">r</option><option value="recent">m</option></select>
   <ol data-search-page-results></ol>
   <nav data-search-page-pager hidden><button data-search-page-prev></button><span data-search-page-page></span><button data-search-page-next></button></nav>
+  <section data-search-page-answer hidden><div data-search-page-answer-body></div></section>
   <template data-search-page-result><li><p data-search-page-path></p><a data-search-page-title></a><p data-search-page-excerpt></p></li></template>
   <template data-search-page-facet><fieldset><legend></legend><div class="search-facet__options"></div></fieldset></template>
 </div>`
@@ -114,6 +130,27 @@ describe('search page', () => {
         await new Promise((r) => setTimeout(r, 0))
 
         expect(location.search).toBe('?q=shards&page=2')
+    })
+
+    it('keeps the answer panel hidden for a keyword search', async () => {
+        initSearchPage()
+        await new Promise((r) => setTimeout(r, 0))
+
+        expect(
+            document.querySelector<HTMLElement>('[data-search-page-answer]')!
+                .hidden
+        ).toBe(true)
+    })
+
+    it('shows the answer panel for a question', async () => {
+        window.history.replaceState(null, '', '/?q=how+do+I+index+logs')
+        initSearchPage()
+        await new Promise((r) => setTimeout(r, 0))
+
+        expect(
+            document.querySelector<HTMLElement>('[data-search-page-answer]')!
+                .hidden
+        ).toBe(false)
     })
 
     it('shows a message when the search fails', async () => {

@@ -1,4 +1,10 @@
-import { initAskAi, renderAnswer, type AskAiStream } from './ask-ai'
+import {
+    initAskAi,
+    rateLimitMessage,
+    renderAnswer,
+    streamAnswer,
+    type AskAiStream,
+} from './ask-ai'
 
 jest.mock('../config', () => ({
     config: {
@@ -44,6 +50,8 @@ const submit = (text: string) => {
 }
 
 describe('ask ai', () => {
+    beforeEach(() => sessionStorage.clear())
+
     it('reveals the trigger and opens the panel', () => {
         const dialog = setup(async () => undefined)
         const trigger =
@@ -145,5 +153,67 @@ describe('ask ai', () => {
         expect(renderAnswer('<img src=x onerror=alert(1)>hi')).not.toContain(
             'onerror'
         )
+    })
+})
+
+describe('rate limits', () => {
+    it('says how long to wait when the server says', () => {
+        expect(rateLimitMessage('30')).toContain('30 seconds')
+        expect(rateLimitMessage(null)).toContain('in a moment')
+    })
+})
+
+describe('single answers', () => {
+    it('reports text as it arrives and failures once', async () => {
+        const texts: string[] = []
+        const failures: string[] = []
+        await streamAnswer(
+            'q',
+            new AbortController().signal,
+            (text) => texts.push(text),
+            (message) => failures.push(message),
+            async (request) => {
+                request.onEvent({ type: 'message_chunk', content: 'a' })
+                request.onEvent({ type: 'message_chunk', content: 'b' })
+                request.onEvent({ type: 'error', message: 'nope' })
+            }
+        )
+
+        expect(texts).toEqual(['a', 'ab'])
+        expect(failures).toEqual(['nope'])
+    })
+})
+
+describe('conversation history', () => {
+    beforeEach(() => sessionStorage.clear())
+
+    it('remembers the conversation across pages and clears it on a new chat', async () => {
+        setup(async (request) => {
+            request.onEvent({
+                type: 'conversation_start',
+                conversationId: 'c9',
+            })
+            request.onEvent({
+                type: 'message_complete',
+                fullContent: 'Use **a data stream**.',
+            })
+        })
+        submit('How do I index logs?')
+        await flush()
+
+        // A new page brings a new dialog; it restores what was said.
+        setup(async () => undefined)
+
+        const messages = document.querySelectorAll('[data-ask-ai-messages] li')
+        expect(messages).toHaveLength(2)
+        expect(messages[1].querySelector('strong')!.textContent).toBe(
+            'a data stream'
+        )
+        expect(
+            document.querySelector<HTMLElement>('[data-ask-ai-intro]')!.hidden
+        ).toBe(true)
+
+        document.querySelector<HTMLButtonElement>('[data-ask-ai-new]')!.click()
+        expect(sessionStorage.getItem('ask-ai-conversation')).toBeNull()
     })
 })

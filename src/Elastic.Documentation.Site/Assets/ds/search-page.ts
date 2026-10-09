@@ -1,9 +1,22 @@
 // The full-page search. The server renders the form and templates; this reads the address, queries the same API as the dialog,
 // draws facets and results, and keeps the address in step so a search can be shared. Hooks are data attributes.
 import { config } from '../config'
+import { streamAnswer, renderAnswer } from './ask-ai'
 import { appendExcerpt, querySearch } from './search'
 
 const PAGE_SIZE = 20
+const QUESTION_START =
+    /^(how|why|what|when|where|can|should|is it|do i|does|will|would|could)\b/i
+
+/** A question, or a phrase long enough to read like one, is worth an AI answer; a keyword lookup is not. */
+export function isQuestion(query: string): boolean {
+    const trimmed = query.trim()
+    return (
+        QUESTION_START.test(trimmed) ||
+        trimmed.endsWith('?') ||
+        trimmed.split(/\s+/).length > 3
+    )
+}
 
 export interface SearchPageState {
     query: string
@@ -87,12 +100,45 @@ function bindSearchPage(root: HTMLElement) {
 
     let state = parseState(location.search)
     let controller: AbortController | null = null
+    let answerController: AbortController | null = null
+    let answeredQuery = ''
+    const answer = q('[data-search-page-answer]')
+    const answerBody = q('[data-search-page-answer-body]')
+
+    function runAnswer() {
+        if (config.buildType === 'isolated' || !isQuestion(state.query)) {
+            answerController?.abort()
+            answer.hidden = true
+            answeredQuery = ''
+            return
+        }
+        // Paging or filtering the same question keeps the answer it already has.
+        if (answeredQuery === state.query) return
+        answeredQuery = state.query
+        answerController?.abort()
+        answerController = new AbortController()
+        answer.hidden = false
+        delete answerBody.dataset.state
+        answerBody.textContent = 'Thinking…'
+        void streamAnswer(
+            state.query,
+            answerController.signal,
+            (markdown) => {
+                answerBody.innerHTML = renderAnswer(markdown)
+            },
+            (message) => {
+                answerBody.dataset.state = 'error'
+                answerBody.textContent = message
+            }
+        )
+    }
 
     async function run() {
         query.value = state.query
         sort.value = state.sort
         history.replaceState(null, '', `?${toSearch(state)}`)
         controller?.abort()
+        runAnswer()
         if (!state.query) {
             status.textContent = 'Type a search term to begin.'
             list.replaceChildren()

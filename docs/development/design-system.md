@@ -95,7 +95,7 @@ With the flag on, these layouts also use design-system markup:
 | Layout | Notes |
 |---|---|
 | Landing, 404, archive | Page patterns in `Assets/ds/patterns/pages.css`. The archive drops the animated easter egg, which flashed colour |
-| Full-page search | The `SearchPage` component: a form, facets and results drawn by script from the same search API as the dialog. The AI answer panel isn't part of it yet |
+| Full-page search | The `SearchPage` component: a form, facets and results drawn by script from the same search API as the dialog. Questions also get a streamed AI answer above the results, from the same endpoint as Ask AI |
 | Codex | The same shell as documentation pages, with the search dialog in the header and landing pages built from `codex-card` markup |
 | API reference | The documentation shell with the API switchers above the tree as link menus, a jump field that filters the tree, and `api-reference.css`, the previous API styles ported onto tokens |
 
@@ -122,7 +122,7 @@ These replace React components built on EUI. Each renders complete markup on the
 | Page feedback | `page-feedback` | The server renders the whole widget, hidden. Script reveals it, keeps a draft in `sessionStorage` and sends the same payload as before |
 | Version and section pickers | `version-dropdown` | A native `details` menu of plain links |
 | Vector sizing calculator | `vector-sizing-calculator` | The server renders the whole form, hidden, with native inputs, `datalist` presets and a `details` for advanced settings. `Assets/ds/vector-sizing.ts` reveals it and reuses the existing calculation modules for the arithmetic |
-| Ask AI | The React assistant | A button and a native `dialog` side panel. `Assets/ds/ask-ai.ts` streams the answer from the same endpoint as before and renders it as sanitized Markdown. Shown on assembler and Codex pages. Suggestions come from the existing assistant configuration |
+| Ask AI | The React assistant | A button and a native `dialog` side panel. `Assets/ds/ask-ai.ts` streams the answer from the same endpoint as before and renders it as sanitized Markdown. Shown on assembler and Codex pages. Suggestions come from the existing assistant configuration, the conversation is kept in session storage, and rate limits are explained |
 | Overlays | EUI tooltips, toasts and flyouts | `Tooltip` needs no script. `Toast` and `Flyout` reveal their dismiss and open buttons from script. `Banner`, `Skeleton` and `EmptyState` are plain markup |
 | Section bar | The secondary navigation | A server-rendered docs bar. The elastic.co header on assembled sites is still loaded by script from elastic.co |
 
