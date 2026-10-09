@@ -14,7 +14,7 @@
 {
 	<span class="values-label">@unionLabel</span>
 }
-@* Two or more object variants show one at a time: chips pick the variant, as on the examples rail (chip-row.ts), and the
+@* Two or more variants show one at a time: chips pick the variant, as on the examples rail (chip-row.ts), and the
    others use hidden="until-found", so find-in-page and links to their fields still reach them (api-union-chips.ts). *@
 <div class="union-variants-container@(Model.UseChips ? " union-variant-chips" : "")" id="@Model.ContainerId">
 	@if (Model.UseChips)
@@ -72,11 +72,6 @@
 		// all its panel has to show.
 		var showName = !Model.UseChips || variant.PageUrl is { Length: > 0 } || variant.IsArrayVariant || !variant.IsObjectType;
 		var showLabel = showName || variant.DiscriminatorLabel is { Length: > 0 };
-
-		@if (i > 0 && !Model.UseChips)
-		{
-			<div class="union-separator">or</div>
-		}
 
 		<div class="union-variant-item @(variant.ShowProperties ? "has-children" : "") @(collapsible ? (variant.DefaultExpanded ? "expanded" : "collapsed") : "")" id="@variant.AnchorId" hidden="@(Model.UseChips && i > 0 ? "until-found" : null)">
 			@if (showLabel)

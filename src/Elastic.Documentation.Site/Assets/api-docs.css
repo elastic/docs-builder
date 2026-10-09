@@ -2327,23 +2327,6 @@ a.docs-reference-btn::after {
 	opacity: 1;
 }
 
-/* Union separator between type options */
-.union-separator {
-	@apply text-grey-40 text-xs;
-	padding: calc(var(--spacing) * 0.5) 0;
-	display: flex;
-	align-items: center;
-	gap: 0.5rem;
-}
-
-.union-separator::before,
-.union-separator::after {
-	content: '';
-	flex: 1;
-	max-width: 2rem;
-	border-top: 1px dashed #cbd5e1;
-}
-
 .variant-description {
 	@apply text-grey-60 mt-1 text-sm;
 }

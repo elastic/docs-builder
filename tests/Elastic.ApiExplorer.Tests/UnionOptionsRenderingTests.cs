@@ -13,12 +13,24 @@ namespace Elastic.ApiExplorer.Tests;
 public class UnionOptionsRenderingTests
 {
 	[Test]
-	public async Task Render_OneObjectAndAPrimitive_ListsThemOneAfterTheOther()
+	public async Task Render_OneObjectAndAPrimitive_ShowChips()
 	{
 		var html = await Render(2, objects: 1);
 
-		html.Should().NotContain("data-chip-row").And.NotContain("union-variant-chips").And.Contain("union-separator");
-		html.Should().NotContain("hidden=", "both variants stay visible");
+		html
+			.Should()
+			.Contain("data-chip-row")
+			.And
+			.Contain("""id="v-1" hidden="until-found">""", "TotalHits or number reads like any other union");
+		html.Should().Contain(">Variant1</span></code>", "the primitive keeps its type name");
+	}
+
+	[Test]
+	public async Task Render_OneVariant_ShowsItWithoutChips()
+	{
+		var html = await Render(1);
+
+		html.Should().NotContain("data-chip-row").And.NotContain("union-variant-chips").And.NotContain("hidden=");
 	}
 
 	[Test]
@@ -69,9 +81,9 @@ public class UnionOptionsRenderingTests
 		);
 		html.Should().NotContain(">Variant1</span></code>", "a plain variant's name is on its chip");
 
-		var listed = await Render(2, foldable: true, objects: 1);
-		listed.Should().Contain("show properties", "variants listed one after the other still fold their fields");
-		listed.Should().Contain(">Variant0</span></code>");
+		var alone = await Render(1, foldable: true);
+		alone.Should().Contain("show properties", "a lone variant, with no chip to pick it, still folds its fields");
+		alone.Should().Contain(">Variant0</span></code>");
 	}
 
 	[Test]

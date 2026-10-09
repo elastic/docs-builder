@@ -46,8 +46,7 @@ public partial class ApiPropertyTreeBuilder
 				$"{scope.Prefix}-variant-{variant.Name.ToLowerInvariant().Replace(" ", "-").Replace("[]", "-array")}",
 				usedIds
 			);
-			// Each variant carries its own fields, an X[] one too: an X[] / X pair is two object variants, so it always
-			// shows behind chips, one variant at a time.
+			// Each variant carries its own fields, an X[] one too: a pair is two variants, so it shows behind chips, one at a time.
 			var showProperties = hasProperties;
 
 			var newAncestors = scope.AncestorRefs is not null ? new HashSet<string>(scope.AncestorRefs) : [];
