@@ -181,4 +181,10 @@ public class ServerlessPromotionTests
 		capped.ScannedCommits.Should().Be(3);
 		exhausted.Status.Should().Be(HistoryWalkStatus.NotFound);
 	}
+
+	[Test]
+	[Arguments("kibana", "cloud-serverless,kibana")]
+	[Arguments("elasticsearch", "cloud-serverless,elasticsearch")]
+	public void EntryProductIds_AreTheServerlessProductAndTheServiceProduct(string service, string expected) =>
+		string.Join(',', ServerlessPromotion.EntryProductIds(ServerlessPromotion.Services[service])).Should().Be(expected);
 }

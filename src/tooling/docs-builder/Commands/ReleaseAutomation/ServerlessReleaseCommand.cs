@@ -6,6 +6,7 @@ using System.Globalization;
 using System.Net.Http.Headers;
 using System.Text.Json;
 using Actions.Core.Services;
+using Elastic.Changelog;
 using Elastic.Changelog.Bundling;
 using Elastic.Changelog.Serverless;
 using Elastic.Documentation;
@@ -112,17 +113,7 @@ internal sealed class ServerlessReleaseCommand(
 		// One bundle per repository: the service repository over the serverless range, then each
 		// submodule over the range of commits the service repository pins at the two refs.
 		var bundles = new List<string>();
-		var primary = await BundleRangeAsync(
-			http,
-			svc.Repository,
-			svc.Profile,
-			startRef,
-			serviceVersion,
-			bundleVersion,
-			rootOutput,
-			dryRun,
-			ctx
-		);
+		var primary = await BundleRangeAsync(http, svc.Repository, svc, startRef, serviceVersion, bundleVersion, rootOutput, dryRun, ctx);
 		if (!primary.Success)
 			return 1;
 		bundles.AddRange(primary.Paths);
@@ -150,17 +141,7 @@ internal sealed class ServerlessReleaseCommand(
 				continue;
 			}
 			_logger.LogInformation("Submodule {Repository}: {Start}..{End}", submodule.Repository, startSha, endSha);
-			var result = await BundleRangeAsync(
-				http,
-				submodule.Repository,
-				svc.Profile,
-				startSha,
-				endSha,
-				bundleVersion,
-				rootOutput,
-				dryRun,
-				ctx
-			);
+			var result = await BundleRangeAsync(http, submodule.Repository, svc, startSha, endSha, bundleVersion, rootOutput, dryRun, ctx);
 			if (!result.Success)
 				return 1;
 			bundles.AddRange(result.Paths);
@@ -178,7 +159,7 @@ internal sealed class ServerlessReleaseCommand(
 	private async Task<(bool Success, IReadOnlyList<string> Paths)> BundleRangeAsync(
 		HttpClient http,
 		string repository,
-		string profile,
+		ServerlessService svc,
 		string startRef,
 		string endRef,
 		string bundleVersion,
@@ -201,7 +182,8 @@ internal sealed class ServerlessReleaseCommand(
 			var paths = new List<string>();
 			var arguments = new BundleChangelogsArguments
 			{
-				Profile = profile,
+				Profile = svc.Profile,
+				EntryProducts = [.. ServerlessPromotion.EntryProductIds(svc).Select(id => new ProductArgument { Product = id })],
 				ProfileArgument = bundleVersion,
 				OutputDirectory = rootOutput.FullName,
 				Config = tempConfig,
@@ -217,7 +199,7 @@ internal sealed class ServerlessReleaseCommand(
 				repository,
 				startRef,
 				endRef,
-				profile
+				svc.Profile
 			);
 			var bundleService = new ChangelogBundlingService(logFactory, ChangelogFileSystem.FromWorkingDirectory(), configurationContext);
 			var success = await bundleService.BundleChangelogs(collector, arguments, ctx);
