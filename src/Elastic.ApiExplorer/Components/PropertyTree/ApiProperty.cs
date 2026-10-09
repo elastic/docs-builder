@@ -147,6 +147,9 @@ public record ApiProperty
 	public required string AnchorId { get; init; }
 	public required int Depth { get; init; }
 	public required bool IsRequired { get; init; }
+
+	/// <summary>Whether the value can be <c>null</c>; the type annotation leaves <c>null</c> out, so a badge says it.</summary>
+	public bool IsNullable { get; init; }
 	public required bool IsLast { get; init; }
 	public required bool IsRecursive { get; init; }
 
