@@ -94,6 +94,7 @@ These replace React components built on EUI. Each renders complete markup on the
 | Search | The modal search in the header | A native `dialog`, opened by the header field or `Ctrl+K`. Isolated builds query the Pagefind index and assembled builds query the search API. Results are drawn from a template, and highlights are built from text nodes |
 | Page feedback | `page-feedback` | The server renders the whole widget, hidden. Script reveals it, keeps a draft in `sessionStorage` and sends the same payload as before |
 | Version and section pickers | `version-dropdown` | A native `details` menu of plain links |
+| Vector sizing calculator | `vector-sizing-calculator` | The server renders the whole form, hidden, with native inputs, `datalist` presets and a `details` for advanced settings. `Assets/ds/vector-sizing.ts` reveals it and reuses the existing calculation modules for the arithmetic |
 | Section bar | The secondary navigation | A server-rendered docs bar. The elastic.co header on assembled sites is still loaded by script from elastic.co |
 
 The server renders each of these without the legacy custom elements, so a flag-on page loads no EUI components.

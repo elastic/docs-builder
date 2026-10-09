@@ -38,6 +38,7 @@ using Elastic.Documentation.Site.Components.Switch;
 using Elastic.Documentation.Site.Components.Tabs;
 using Elastic.Documentation.Site.Components.TextField;
 using Elastic.Documentation.Site.Components.Toc;
+using Elastic.Documentation.Site.Components.VectorSizing;
 
 namespace Elastic.Documentation.Site.StyleGuide;
 
@@ -118,7 +119,8 @@ public static class StyleGuideCatalog
 			TabsExamples.Tabs,
 			ButtonDirectiveExamples.Buttons,
 			CodeBlockExamples.CodeBlocks,
-			ProseExamples.Articles
+			ProseExamples.Articles,
+			VectorSizingExamples.Calculators
 		],
 		["chrome"] =
 		[

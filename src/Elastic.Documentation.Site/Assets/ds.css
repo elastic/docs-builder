@@ -57,3 +57,4 @@
 @import '../Components/Feedback/feedback.css' layer(ds.components);
 @import '../Components/SearchDialog/search-dialog.css' layer(ds.components);
 @import '../Components/DocsBar/docs-bar.css' layer(ds.components);
+@import '../Components/VectorSizing/vector-sizing.css' layer(ds.components);

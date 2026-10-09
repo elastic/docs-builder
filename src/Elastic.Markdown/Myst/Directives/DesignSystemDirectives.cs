@@ -11,6 +11,7 @@ using Elastic.Markdown.Myst.Directives.Admonition;
 using Elastic.Markdown.Myst.Directives.Button;
 using Elastic.Markdown.Myst.Directives.Stepper;
 using Elastic.Markdown.Myst.Directives.Tabs;
+using Elastic.Markdown.Myst.Directives.VectorSizing;
 using Markdig.Renderers;
 using Microsoft.AspNetCore.Html;
 using RazorSlices;
@@ -100,6 +101,9 @@ internal static class DesignSystemDirectives
 							}.RenderBlock()
 						})
 				);
+				return true;
+			case VectorSizingBlock:
+				Write(renderer, Ds.VectorSizing._VectorSizing.Create(new Ds.VectorSizing.VectorSizingModel()));
 				return true;
 			case StepperBlock stepper:
 				Write(

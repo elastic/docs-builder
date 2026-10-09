@@ -1,0 +1,113 @@
+@inherits RazorSlice<Elastic.Documentation.Site.Components.VectorSizing.VectorSizingModel>
+@{
+	string[] vectorPresets = ["1,000", "10,000", "100,000", "1,000,000", "10,000,000", "50,000,000"];
+	string[] dimensionPresets = ["128", "256", "384", "512", "768", "1024", "1536", "2048", "3072", "4096"];
+}
+@* The calculator needs script for the arithmetic, so it stays hidden until the script finds it. *@
+<section class="calc" data-calc hidden>
+	<div class="calc__form">
+		<h3 class="calc__title">Vectors</h3>
+		<div class="field">
+			<label class="field__label" for="@(Model.Id)-vectors">Number of vectors</label>
+			<input class="input" id="@(Model.Id)-vectors" type="text" inputmode="numeric" list="@(Model.Id)-vector-presets" value="1,000,000" placeholder="e.g. 1,000,000" autocomplete="off" data-calc-vectors aria-describedby="@(Model.Id)-vectors-tip">
+			<datalist id="@(Model.Id)-vector-presets">@foreach (var preset in vectorPresets){<option value="@preset"></option>}</datalist>
+			<p class="field__hint" id="@(Model.Id)-vectors-tip">@VectorSizingCopy.Vectors</p>
+		</div>
+		<div class="field">
+			<label class="field__label" for="@(Model.Id)-dimensions">Dimensions</label>
+			<input class="input" id="@(Model.Id)-dimensions" type="text" inputmode="numeric" list="@(Model.Id)-dimension-presets" value="768" placeholder="e.g. 768" autocomplete="off" data-calc-dimensions aria-describedby="@(Model.Id)-dimensions-tip">
+			<datalist id="@(Model.Id)-dimension-presets">@foreach (var preset in dimensionPresets){<option value="@preset"></option>}</datalist>
+			<p class="field__hint" id="@(Model.Id)-dimensions-tip">@VectorSizingCopy.Dimensions</p>
+		</div>
+		<details class="calc__advanced">
+			<summary class="calc__advanced-summary">Advanced settings</summary>
+			<div class="calc__advanced-body">
+				<div class="field">
+					<label class="field__label" for="@(Model.Id)-element">Element type</label>
+					<div class="select">
+						<select class="input select__control" id="@(Model.Id)-element" data-calc-element aria-describedby="@(Model.Id)-element-tip">
+							<option value="float" selected>float32</option>
+							<option value="bfloat16">bfloat16</option>
+							<option value="byte">int8</option>
+							<option value="bit">bit</option>
+						</select>
+						@await RenderPartialAsync(_Icon.Create(new IconModel { Name = "arrow_down", Size = IconSize.Small }))
+					</div>
+					<p class="field__hint" id="@(Model.Id)-element-tip">@VectorSizingCopy.ElementType</p>
+				</div>
+				<div class="field">
+					<label class="field__label" for="@(Model.Id)-index">Index structure</label>
+					<div class="select">
+						<select class="input select__control" id="@(Model.Id)-index" data-calc-index aria-describedby="@(Model.Id)-index-tip @(Model.Id)-index-note">
+							<option value="hnsw" selected>HNSW</option>
+							<option value="flat">Flat (brute-force)</option>
+							<option value="disk_bbq">DiskBBQ</option>
+						</select>
+						@await RenderPartialAsync(_Icon.Create(new IconModel { Name = "arrow_down", Size = IconSize.Small }))
+					</div>
+					<p class="field__hint" id="@(Model.Id)-index-tip">@VectorSizingCopy.IndexStructure</p>
+					<p class="field__hint" id="@(Model.Id)-index-note" data-calc-index-note></p>
+				</div>
+				<div class="field" data-calc-for="disk_bbq" hidden>
+					<label class="field__label" for="@(Model.Id)-offheap">Vector data cached in RAM (%)</label>
+					<div class="calc__range">
+						<input class="calc__slider" type="range" id="@(Model.Id)-offheap" min="0" max="10" step="1" value="10" data-calc-offheap>
+						<input class="input calc__number" type="number" min="0" max="10" step="1" value="10" aria-label="Vector data cached in RAM (%)" data-calc-offheap-number>
+					</div>
+					<p class="field__hint">@VectorSizingCopy.OffHeapRam</p>
+				</div>
+				<div class="field" data-calc-for="hnsw">
+					<label class="field__label" for="@(Model.Id)-m">Graph connections (m)</label>
+					<div class="calc__range">
+						<input class="calc__slider" type="range" id="@(Model.Id)-m" min="2" max="512" step="2" value="16" data-calc-m>
+						<input class="input calc__number" type="number" min="2" max="512" step="2" value="16" aria-label="Graph connections (m)" data-calc-m-number>
+					</div>
+					<p class="field__hint">@VectorSizingCopy.GraphConnections</p>
+				</div>
+				<div class="field" data-calc-for="disk_bbq" hidden>
+					<label class="field__label" for="@(Model.Id)-cluster">Vectors per cluster</label>
+					<input class="input" type="number" id="@(Model.Id)-cluster" min="1" max="1000000" step="1" value="384" data-calc-cluster>
+					<p class="field__hint">@VectorSizingCopy.VectorsPerCluster</p>
+				</div>
+				<div class="calc__pair">
+					<div class="field" data-calc-quantization>
+						<label class="field__label" for="@(Model.Id)-quantization">Quantization</label>
+						<div class="select">
+							<select class="input select__control" id="@(Model.Id)-quantization" data-calc-quantization-select></select>
+							@await RenderPartialAsync(_Icon.Create(new IconModel { Name = "arrow_down", Size = IconSize.Small }))
+						</div>
+						<p class="field__hint">@VectorSizingCopy.Quantization</p>
+					</div>
+					<div class="field">
+						<label class="field__label" for="@(Model.Id)-replicas">Replica shards</label>
+						<input class="input" type="number" id="@(Model.Id)-replicas" min="0" max="99" step="1" value="0" data-calc-replicas>
+						<p class="field__hint">@VectorSizingCopy.Replicas</p>
+					</div>
+				</div>
+			</div>
+		</details>
+		<div class="calc__warning" role="alert" data-calc-warning hidden>
+			<p class="calc__warning-text" data-calc-warning-text></p>
+			<a class="link" data-calc-warning-link hidden>See documentation</a>
+		</div>
+	</div>
+	<div class="calc__results" aria-live="polite">
+		<p class="calc__label" data-calc-total-label>Cluster total:</p>
+		<div class="calc__hero">
+			<div class="calc__hero-column"><span class="calc__hero-value" data-calc-disk-value>0</span><span class="calc__hero-unit" data-calc-disk-unit>MiB Disk</span></div>
+			<div class="calc__hero-column"><span class="calc__hero-value" data-calc-ram-value>0</span><span class="calc__hero-unit" data-calc-ram-unit>MiB RAM</span></div>
+		</div>
+		<dl class="calc__details">
+			<dt>Index options type:</dt><dd data-calc-type>-</dd>
+			<dt>Quantization:</dt><dd data-calc-quantization-label>None</dd>
+			<dt>Disk per replica:</dt><dd data-calc-disk>0 MiB</dd>
+			<dt>RAM per replica:</dt><dd data-calc-ram>0 MiB</dd>
+		</dl>
+		<p class="calc__ratio" data-calc-ratio hidden title="@VectorSizingCopy.DiskToRam"></p>
+		<p class="calc__note">Sizes use binary units (1 GiB = 1,024 MiB).</p>
+		<div class="calc__disclaimer" data-calc-disclaimer hidden>
+			<p>@VectorSizingCopy.ServerlessNote</p>
+			<p>@VectorSizingCopy.Disclaimer</p>
+		</div>
+	</div>
+</section>

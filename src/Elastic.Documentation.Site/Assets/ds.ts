@@ -10,6 +10,7 @@ import { bindSearchShortcut, initSearch } from './ds/search'
 import { initTabSync } from './ds/tabs'
 import { initThemeToggles } from './ds/theme'
 import { initToc } from './ds/toc'
+import { initVectorSizing } from './ds/vector-sizing'
 
 function init(scope: ParentNode = document) {
     initThemeToggles(scope)
@@ -21,6 +22,7 @@ function init(scope: ParentNode = document) {
     initSearch(scope)
     initNav(scope)
     initToc(scope)
+    initVectorSizing(scope)
 }
 
 bindOutsideClick()

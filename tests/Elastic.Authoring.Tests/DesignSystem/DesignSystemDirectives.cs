@@ -318,3 +318,26 @@ public class AppliesToComponent : DesignSystemDirectiveTest
 		await Docs.ConvertsToContainingRawHtml("applies-badge--preview");
 	}
 }
+
+public class VectorSizingComponent : DesignSystemDirectiveTest
+{
+	protected override string Markdown => """
+		:::{vector-sizing-calculator}
+		:::
+		""";
+
+	[Test, DisplayName("renders the native form instead of the React element")]
+	public async Task Renders()
+	{
+		await Docs.ConvertsToContainingRawHtml("<section class=\"calc\" data-calc hidden>");
+		await Docs.ConvertsToContainingRawHtml("data-calc-vectors");
+		await Docs.DoesNotConvertToContainingHtml("<vector-sizing-calculator");
+	}
+
+	[Test, DisplayName("labels every control")]
+	public async Task Labels()
+	{
+		await Docs.ConvertsToContainingRawHtml("for=\"vector-sizing-vectors\"");
+		await Docs.ConvertsToContainingRawHtml("for=\"vector-sizing-dimensions\"");
+	}
+}
