@@ -34,7 +34,7 @@
 		<tr><td>Landing, archive, 404, Codex landing</td><td>Rebuilt from components and tokens, following the previous layouts.</td></tr>
 		<tr><td>Full-page search</td><td>Form, facets, results, pager, and a streamed AI answer above the results when the query reads like a question.</td></tr>
 		<tr><td>Vector sizing calculator</td><td>Native controls and a result panel.</td></tr>
-		<tr><td>Tooltip, toast, banner, skeleton, empty state, flyout</td><td>The boards exist but are thin, so these are rudimentary.</td></tr>
+		<tr><td>Tooltip, toast, banner, skeleton, empty state, flyout</td><td>The boards exist but are thin, so these are rudimentary. Banners have info, warning and danger kinds, toasts carry a status icon, and empty states can be boxed with a mono eyebrow.</td></tr>
 		<tr><td>Ask AI</td><td>A button and a side panel that streams the conversation. The conversation is kept in session storage, rate limits are explained, answers list their references, and a thumbs up or down is sent to the feedback endpoint.</td></tr>
 		<tr><td>Diagnostics console</td><td>The developer console, styled as a dark code surface.</td></tr>
 		<tr><td>Images</td><td>Lightbox, figure caption, screenshot frame and the scroll-snap carousel.</td></tr>
@@ -50,7 +50,8 @@
 	<table class="sg-table">
 		<thead><tr><th>Piece</th><th>What happens with the flag on</th></tr></thead>
 		<tbody>
-				<tr><td>Code diff blocks, console output, mermaid fullscreen</td><td>Use the code block and mermaid styles as they are.</td></tr>
+				<tr><td>Release notes layout</td><td>The board shows a version heading with a status pill and a row per change with a Feature, Fix or Breaking badge. The changelog directive still emits headings and lists, which the prose styles render; the board layout needs the directive to emit that structure.</td></tr>
+		<tr><td>Code diff blocks, console output, mermaid fullscreen</td><td>Use the code block and mermaid styles as they are.</td></tr>
 		<tr><td>Cookie and consent banner</td><td>Comes from a third-party script and keeps its own look.</td></tr>
 		<tr><td>Print styles</td><td>Only the table controls are hidden when printing.</td></tr>
 		<tr><td>Older browsers</td><td>The bundle targets Chrome and Edge 111, Firefox 113 and Safari 16.2. Colour roles don't use <code>light-dark()</code>. <code>:has()</code>, container queries and popovers enhance the page where they exist and fall back to a simpler layout elsewhere.</td></tr>

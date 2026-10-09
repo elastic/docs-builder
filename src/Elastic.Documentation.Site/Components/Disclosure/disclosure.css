@@ -41,12 +41,17 @@
 }
 
 .disclosure__summary > .icon {
+	rotate: -90deg;
 	color: var(--color-text-muted);
 	transition: rotate var(--duration-fast) var(--ease-standard);
 }
 
+.disclosure[open] {
+	box-shadow: var(--shadow-slab-sm);
+}
+
 .disclosure[open] > .disclosure__summary > .icon {
-	rotate: 180deg;
+	rotate: 0deg;
 }
 
 .disclosure__body {

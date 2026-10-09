@@ -96,6 +96,10 @@
 	cursor: pointer;
 }
 
+.nav-tree__chevron .icon {
+	rotate: -90deg;
+}
+
 .nav-tree__chevron:hover {
 	background: var(--color-accent-surface);
 	color: var(--color-accent-hover);
@@ -103,11 +107,12 @@
 
 .nav-tree__toggle:checked ~ .nav-tree__row .nav-tree__chevron .icon,
 .nav-tree__toggle:checked ~ .nav-tree__row--heading .icon {
-	rotate: 180deg;
+	rotate: 0deg;
 }
 
 .nav-tree__row--heading > .icon {
 	margin-left: auto;
+	rotate: -90deg;
 	color: var(--color-text-muted);
 }
 

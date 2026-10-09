@@ -90,6 +90,8 @@
 		position: static;
 		order: -1;
 		max-height: none;
+		flex-flow: row wrap;
+		gap: var(--space-2) var(--space-5);
 		padding-top: var(--space-3);
 		overflow: visible;
 	}
@@ -121,12 +123,14 @@
 		padding: var(--space-4);
 		border-right: var(--border-width) solid var(--color-border);
 		background: var(--color-surface);
-		box-shadow: var(--shadow-overlay);
 		translate: -100% 0;
+		visibility: hidden;
 	}
 
 	.docs-shell__drawer-toggle:checked ~ .docs-shell__nav {
+		box-shadow: var(--shadow-overlay);
 		translate: 0 0;
+		visibility: visible;
 	}
 
 	.docs-shell__drawer-toggle:checked ~ .docs-shell__scrim {
@@ -142,6 +146,12 @@
 		.docs-shell__menu-button {
 		outline: 3px solid var(--color-focus-ring);
 		outline-offset: 2px;
+	}
+}
+
+@media (max-width: 860px) {
+	.docs-shell__rail {
+		display: none;
 	}
 }
 
