@@ -654,16 +654,18 @@ public class UnionVariantTests
 			  "paths": {},
 			  "components": {
 			    "schemas": {
-			      "QueryContainer": { "type": "object", "properties": { "term": { "type": "object" } } },
+			      "_types.query_dsl.QueryContainer": { "type": "object", "properties": { "term": { "type": "object" } } },
+			      "local.QueryContainer": { "type": "object", "properties": { "term": { "type": "object" } } },
 			      "Holder": {
 			        "type": "object",
 			        "properties": {
 			          "filter": {
 			            "oneOf": [
-			              { "$ref": "#/components/schemas/QueryContainer" },
-			              { "type": "array", "items": { "$ref": "#/components/schemas/QueryContainer" } }
+			              { "$ref": "#/components/schemas/_types.query_dsl.QueryContainer" },
+			              { "type": "array", "items": { "$ref": "#/components/schemas/_types.query_dsl.QueryContainer" } }
 			            ]
-			          }
+			          },
+			          "local": { "$ref": "#/components/schemas/local.QueryContainer" }
 			        }
 			      }
 			    }
@@ -686,6 +688,10 @@ public class UnionVariantTests
 		var markdown = new System.Text.StringBuilder();
 		ApiPropertyMarkdown.WriteList(markdown, new ApiPropertyList([filter]), "/api/doc/fixture");
 		markdown.ToString().Should().Contain("One of: [`QueryContainer[]`](/api/doc/fixture/types/_types-query_dsl-querycontainer) or ");
+
+		var local = list.Items.Single(p => p.Name == "local");
+		local.TypeLink.Should().BeNull("only the schema with the page's id links there, not another one sharing its short name");
+		local.Children.Properties!.Items.Select(p => p.Name).Should().Equal("term");
 	}
 
 	[Test]
