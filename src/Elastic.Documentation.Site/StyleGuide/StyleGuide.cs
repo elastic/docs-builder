@@ -5,6 +5,7 @@
 using Elastic.Documentation.Site.Components;
 using Elastic.Documentation.Site.Components.Admonition;
 using Elastic.Documentation.Site.Components.AppliesBadge;
+using Elastic.Documentation.Site.Components.AppliesPopover;
 using Elastic.Documentation.Site.Components.Badge;
 using Elastic.Documentation.Site.Components.Breadcrumb;
 using Elastic.Documentation.Site.Components.Button;
@@ -15,6 +16,8 @@ using Elastic.Documentation.Site.Components.Chip;
 using Elastic.Documentation.Site.Components.CodeBlock;
 using Elastic.Documentation.Site.Components.CtaCard;
 using Elastic.Documentation.Site.Components.Disclosure;
+using Elastic.Documentation.Site.Components.DocsBar;
+using Elastic.Documentation.Site.Components.Feedback;
 using Elastic.Documentation.Site.Components.Kbd;
 using Elastic.Documentation.Site.Components.Link;
 using Elastic.Documentation.Site.Components.LinkMenu;
@@ -25,6 +28,7 @@ using Elastic.Documentation.Site.Components.PageActions;
 using Elastic.Documentation.Site.Components.Pager;
 using Elastic.Documentation.Site.Components.Prose;
 using Elastic.Documentation.Site.Components.ReleaseCard;
+using Elastic.Documentation.Site.Components.SearchDialog;
 using Elastic.Documentation.Site.Components.SearchField;
 using Elastic.Documentation.Site.Components.SelectField;
 using Elastic.Documentation.Site.Components.SiteFooter;
@@ -119,16 +123,26 @@ public static class StyleGuideCatalog
 		["chrome"] =
 		[
 			SiteHeaderExamples.Headers,
+			DocsBarExamples.Bars,
 			NavSideExamples.Sidebars,
 			LinkMenuExamples.Menus,
 			TocExamples.Tocs,
 			PageActionsExamples.Actions,
 			CtaCardExamples.Ctas,
-			SiteFooterExamples.Footers
+			SiteFooterExamples.Footers,
+			FeedbackExamples.Feedbacks,
+			SearchDialogExamples.Dialogs
 		],
 		["cards"] = [CardExamples.Cards, LinkTileExamples.Tiles, ReleaseCardExamples.Releases],
 		["navigation"] = [BreadcrumbExamples.Trails, PagerExamples.Pagers],
-		["badges"] = [BadgeExamples.Badges, MethodBadgeExamples.Methods, AppliesBadgeExamples.Badges, KbdExamples.Keys]
+		["badges"] =
+		[
+			BadgeExamples.Badges,
+			MethodBadgeExamples.Methods,
+			AppliesBadgeExamples.Badges,
+			AppliesPopoverExamples.Popovers,
+			KbdExamples.Keys
+		]
 	};
 
 	public static StyleGuidePage Default => Pages[0];

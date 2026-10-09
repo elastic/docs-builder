@@ -1,4 +1,16 @@
 @inherits RazorSlice<Elastic.Documentation.Site.Components.SearchField.SearchFieldModel>
+@if (Model.Trigger)
+{
+	<button class="search-field search-field--trigger" type="button" data-search-open hidden aria-label="@Model.Label">
+		@await RenderPartialAsync(_Icon.Create(new IconModel { Name = "search", Size = IconSize.Small }))
+		<span class="search-field__placeholder">@Model.Placeholder</span>
+		@if (Model.Shortcut is { } shortcut)
+		{
+			@await RenderPartialAsync(_Kbd.Create(new KbdModel { Keys = shortcut }))
+		}
+	</button>
+	return;
+}
 <form class="search-field" role="search" method="get" action="@Model.Action">
 	@await RenderPartialAsync(_Icon.Create(new IconModel { Name = "search", Size = IconSize.Small }))
 	<input class="search-field__input" id="@Model.Id" name="@Model.Name" type="search" placeholder="@Model.Placeholder" aria-label="@Model.Label" autocomplete="off">

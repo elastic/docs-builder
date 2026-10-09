@@ -1,0 +1,141 @@
+.feedback {
+	display: flex;
+	flex-direction: column;
+	gap: var(--space-4);
+	margin-top: var(--space-6);
+	padding-top: var(--space-5);
+	border-top: var(--border-width) solid var(--color-border);
+}
+
+.feedback[hidden],
+.feedback [hidden] {
+	display: none;
+}
+
+.feedback__prompt {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: var(--space-3);
+}
+
+.feedback__question {
+	margin: 0;
+	color: var(--color-heading);
+	font-size: var(--text-sm);
+	font-weight: var(--weight-semibold);
+}
+
+.feedback__choices {
+	display: flex;
+	gap: var(--space-2);
+}
+
+.feedback__choices .btn[aria-pressed='true'] {
+	--btn-fg: var(--color-on-accent);
+	--btn-top: var(--color-accent);
+	--btn-bottom: var(--color-brand-deep);
+	--btn-border: var(--color-border-strong);
+}
+
+.feedback__form {
+	display: flex;
+	flex-direction: column;
+	gap: var(--space-4);
+	max-width: 36rem;
+}
+
+.feedback__reasons {
+	display: flex;
+	flex-direction: column;
+	gap: var(--space-3);
+	margin: 0;
+	padding: 0;
+	border: 0;
+}
+
+.feedback__legend {
+	margin-bottom: var(--space-2);
+	padding: 0;
+	color: var(--color-heading);
+	font-weight: var(--weight-semibold);
+}
+
+.feedback__reason {
+	align-items: flex-start;
+	font-size: var(--text-sm);
+}
+
+.feedback__reason .check__box {
+	margin-top: 2px;
+}
+
+.feedback__reason-label {
+	display: block;
+	color: var(--color-heading);
+	font-weight: var(--weight-medium);
+}
+
+.feedback__reason-description {
+	display: block;
+	color: var(--color-text-muted);
+	font-size: var(--text-xs);
+}
+
+.feedback__details {
+	display: flex;
+	flex-direction: column;
+	gap: var(--space-2);
+}
+
+.feedback__textarea {
+	height: auto;
+	min-height: 6rem;
+	padding: var(--space-3) var(--space-4);
+	resize: vertical;
+}
+
+.feedback__footer {
+	display: flex;
+	align-items: baseline;
+	justify-content: space-between;
+	gap: var(--space-3);
+}
+
+.feedback__guidance,
+.feedback__count {
+	margin: 0;
+	color: var(--color-text-muted);
+	font-size: var(--text-xs);
+}
+
+.feedback__actions {
+	display: flex;
+	align-items: center;
+	gap: var(--space-3);
+}
+
+.feedback__error {
+	margin: 0;
+	color: var(--color-danger);
+	font-size: var(--text-sm);
+	font-weight: var(--weight-semibold);
+}
+
+.feedback__thanks {
+	display: flex;
+	align-items: center;
+	gap: var(--space-2);
+	margin: 0;
+	color: var(--color-success);
+	font-weight: var(--weight-semibold);
+}
+
+.feedback__sr-only {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	overflow: hidden;
+	clip-path: inset(50%);
+	white-space: nowrap;
+}

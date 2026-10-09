@@ -302,7 +302,8 @@ public class EnhancedCodeBlockHtmlRenderer : HtmlObjectRenderer<EnhancedCodeBloc
 		{
 			AppliesTo = appliesTo,
 			Inline = false,
-			VersionsConfig = appliesToDirective.Build.VersionsConfiguration
+			VersionsConfig = appliesToDirective.Build.VersionsConfiguration,
+			DesignSystem = appliesToDirective.Build.Configuration.Features.NavigationPreviewEnabled
 		};
 
 		var slice = AppliesToView.Create(viewModel);

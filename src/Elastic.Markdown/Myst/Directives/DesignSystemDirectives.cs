@@ -234,6 +234,7 @@ internal static class DesignSystemDirectives
 				AppliesTo = block.AppliesTo,
 				Inline = true,
 				ShowTooltip = showTooltip,
+				DesignSystem = true,
 				VersionsConfig = block.Build.VersionsConfiguration
 			})
 			.RenderAsync()

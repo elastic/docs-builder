@@ -8,7 +8,7 @@
 		@foreach (var item in Model.Items)
 		{
 			<li>
-				<a class="link-menu__item" href="@item.Url"@(item.Active ? new HtmlString(" aria-current=\"true\"") : HtmlString.Empty)@(item.External ? new HtmlString(" rel=\"noopener\" target=\"_blank\"") : HtmlString.Empty)>@item.Title</a>
+				<a class="link-menu__item" href="@item.Url"@(item.Active ? new HtmlString(" aria-current=\"true\"") : HtmlString.Empty)@(item.External ? new HtmlString(" rel=\"noopener\" target=\"_blank\"") : HtmlString.Empty)@(item.Download ? new HtmlString(" download hx-boost=\"false\"") : HtmlString.Empty)>@item.Title</a>
 			</li>
 		}
 		@if (Model.Footer is { } footer)

@@ -4,7 +4,7 @@
 
 namespace Elastic.Documentation.Site.Components.LinkMenu;
 
-public sealed record LinkMenuItem(string Title, string Url, bool Active = false, bool External = false);
+public sealed record LinkMenuItem(string Title, string Url, bool Active = false, bool External = false, bool Download = false);
 
 public sealed record LinkMenuModel
 {

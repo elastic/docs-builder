@@ -270,6 +270,51 @@ public class PageShellComponents : DesignSystemDirectiveTest
 		await Docs.ConvertsToContainingRawHtml("<footer class=\"site-footer\"");
 	}
 
+	[Test, DisplayName("adds a search trigger that stays hidden until script can open the dialog")]
+	public async Task SearchTrigger()
+	{
+		await Docs.ConvertsToContainingRawHtml(
+			"<button class=\"search-field search-field--trigger\" type=\"button\" data-search-open hidden"
+		);
+		await Docs.ConvertsToContainingRawHtml("<dialog class=\"search-dialog\" data-search-dialog");
+	}
+
 	[Test, DisplayName("leaves out the legacy React header")]
 	public async Task NoLegacyHeader() => await Docs.DoesNotConvertToContainingHtml("<elastic-docs-header");
+}
+
+public class AppliesToComponent : DesignSystemDirectiveTest
+{
+	protected override string Markdown =>
+		"""
+		:::{note}
+		:applies_to: stack: ga 9.1
+		This applies to the stack.
+		:::
+
+		Inline badge: {applies_to}`stack: preview 9.0`
+		""";
+
+	[Test, DisplayName("renders the design-system badge instead of the React element")]
+	public async Task Badge()
+	{
+		await Docs.ConvertsToContainingRawHtml("class=\"applies-badge applies-badge--ga");
+		await Docs.ConvertsToContainingRawHtml("class=\"applies-badge__product\">Stack</span>");
+		await Docs.DoesNotConvertToContainingHtml("<applies-to-popover");
+	}
+
+	[Test, DisplayName("opens details from a native details element with a top-layer hook")]
+	public async Task Details()
+	{
+		await Docs.ConvertsToContainingRawHtml("<details class=\"applies-popover\" data-menu data-popover>");
+		await Docs.ConvertsToContainingRawHtml("data-popover-panel");
+	}
+
+	[Test, DisplayName("shows the lifecycle text when the version is not released yet")]
+	public async Task Status()
+	{
+		// The documented versions are ahead of the test version config, so the badge shows its lifecycle text instead of a version.
+		await Docs.ConvertsToContainingRawHtml("Planned</span>");
+		await Docs.ConvertsToContainingRawHtml("applies-badge--preview");
+	}
 }

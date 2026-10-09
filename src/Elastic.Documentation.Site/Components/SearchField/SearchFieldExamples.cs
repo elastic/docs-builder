@@ -22,6 +22,11 @@ public static class SearchFieldExamples
 				"With shortcut",
 				_SearchField.Create,
 				new SearchFieldModel { Id = "ex-search2", Label = "Search", Shortcut = ["Ctrl", "K"] }
+			),
+			ComponentExample.Of(
+				"Opens the dialog",
+				_SearchField.Create,
+				new SearchFieldModel { Id = "ex-search3", Label = "Search", Trigger = true, Shortcut = ["Ctrl", "K"] }
 			)
 		]
 	);

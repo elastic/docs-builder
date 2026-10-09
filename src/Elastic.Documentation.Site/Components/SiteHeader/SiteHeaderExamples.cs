@@ -18,7 +18,7 @@ public static class SiteHeaderExamples
 				{
 					Title = "docs-builder",
 					HomeHref = "#",
-					SearchAction = "/search",
+					Search = true,
 					Links = [new("GitHub", "#", "logo_github")],
 					Revision = "main · 65728c5"
 				}

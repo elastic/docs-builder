@@ -84,6 +84,20 @@ The sidebar tree is rendered once per section and shared by every page in it, so
 Folders expand with native checkboxes, and `Assets/ds/nav.ts` only restores what the reader opened.
 The outline in the rail marks the heading in view through `Assets/ds/toc.ts`.
 
+## Interactive pieces
+
+These replace React components built on EUI. Each renders complete markup on the server and uses a small script only to add behaviour.
+
+| Piece | Replaces | How it works |
+|---|---|---|
+| Applies-to badge | `applies-to-popover` | A native `details` element holds the panel. Script moves the open panel into the browser's top layer, next to its trigger, so no ancestor can clip it |
+| Search | The modal search in the header | A native `dialog`, opened by the header field or `Ctrl+K`. Isolated builds query the Pagefind index and assembled builds query the search API. Results are drawn from a template, and highlights are built from text nodes |
+| Page feedback | `page-feedback` | The server renders the whole widget, hidden. Script reveals it, keeps a draft in `sessionStorage` and sends the same payload as before |
+| Version and section pickers | `version-dropdown` | A native `details` menu of plain links |
+| Section bar | The secondary navigation | A server-rendered docs bar. The elastic.co header on assembled sites is still loaded by script from elastic.co |
+
+The server renders each of these without the legacy custom elements, so a flag-on page loads no EUI components.
+
 ## Layers
 
 The design system declares its cascade layers under a `ds` namespace so they never merge with other stylesheets' layers. The order lives in `Assets/ds-layers.css`, which must load before `ds.css`:

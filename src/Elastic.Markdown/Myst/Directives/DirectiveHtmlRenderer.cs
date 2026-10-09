@@ -733,6 +733,7 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 			SettingsCollection = settings,
 			GroupHeadingLevel = block.GroupHeadingLevel,
 			VersionsConfig = block.Build.VersionsConfiguration,
+			DesignSystem = DesignSystemDirectives.IsEnabled(block),
 			ActiveDeploymentFilter = block.ActiveDeploymentFilter,
 			RenderMarkdown = s =>
 			{

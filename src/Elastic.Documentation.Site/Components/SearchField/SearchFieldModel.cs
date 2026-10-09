@@ -14,6 +14,9 @@ public sealed record SearchFieldModel
 	/// <summary>Where the form submits. Search works without JavaScript through a plain GET.</summary>
 	public string Action { get; init; } = "/search";
 
+	/// <summary>Renders a button that opens the search dialog instead of a form. It stays hidden until the script can open the dialog.</summary>
+	public bool Trigger { get; init; }
+
 	/// <summary>The shortcut hint shown at the end of the field, such as the keys that open search.</summary>
 	public IReadOnlyList<string>? Shortcut { get; init; }
 }

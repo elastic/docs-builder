@@ -1,0 +1,113 @@
+.search-dialog {
+	width: min(42rem, calc(100vw - var(--space-5)));
+	max-height: min(36rem, calc(100vh - var(--space-8)));
+	margin: var(--space-7) auto auto;
+	padding: 0;
+	border: var(--border-width) solid var(--color-border-strong);
+	border-radius: var(--radius-md);
+	background: var(--color-surface);
+	box-shadow: var(--shadow-slab);
+	color: var(--color-text);
+	overflow: hidden;
+}
+
+.search-dialog[open] {
+	display: flex;
+	flex-direction: column;
+}
+
+.search-dialog::backdrop {
+	background: color-mix(in oklab, var(--color-heading) 45%, transparent);
+}
+
+.search-dialog__bar {
+	display: flex;
+	align-items: center;
+	gap: var(--space-3);
+	padding: var(--space-3) var(--space-4);
+	border-bottom: var(--border-width) solid var(--color-border);
+	color: var(--color-text-muted);
+}
+
+.search-dialog__input {
+	flex: 1;
+	min-width: 0;
+	border: 0;
+	background: none;
+	color: var(--color-heading);
+	font-size: var(--text-lg);
+	outline: none;
+}
+
+.search-dialog__input::placeholder {
+	color: var(--color-text-muted);
+}
+
+.search-dialog__close {
+	flex: none;
+}
+
+.search-dialog__status {
+	margin: 0;
+	padding: var(--space-3) var(--space-4);
+	color: var(--color-text-muted);
+	font-size: var(--text-sm);
+}
+
+.search-dialog__results {
+	flex: 1;
+	min-height: 0;
+	margin: 0;
+	padding: 0 var(--space-2) var(--space-2);
+	overflow-y: auto;
+	list-style: none;
+}
+
+.search-dialog__footer {
+	display: flex;
+	gap: var(--space-4);
+	padding: var(--space-2) var(--space-4);
+	border-top: var(--border-width) solid var(--color-border);
+	background: var(--color-surface-sunken);
+	color: var(--color-text-muted);
+	font-size: var(--text-xs);
+}
+
+.search-result__link {
+	display: flex;
+	flex-direction: column;
+	gap: var(--space-1);
+	padding: var(--space-3);
+	border-radius: var(--radius-sm);
+	color: var(--color-text);
+}
+
+.search-result__link:hover,
+.search-result[aria-selected='true'] .search-result__link {
+	background: var(--color-accent-surface);
+}
+
+.search-result[aria-selected='true'] .search-result__link {
+	box-shadow: inset 3px 0 0 var(--color-accent);
+}
+
+.search-result__path {
+	color: var(--color-text-muted);
+	font-size: var(--text-xs);
+}
+
+.search-result__title {
+	color: var(--color-heading);
+	font-weight: var(--weight-semibold);
+}
+
+.search-result__excerpt {
+	color: var(--color-text-muted);
+	font-size: var(--text-sm);
+}
+
+.search-result__excerpt mark {
+	padding: 0 0.1em;
+	background: var(--color-warning-surface);
+	color: var(--color-heading);
+}

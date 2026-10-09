@@ -4,6 +4,7 @@
 {
 	Title = Model.HeaderTitle ?? Model.DocSetName,
 	HomeHref = Model.Link("/"),
+	Search = true,
 	Links = Model.GitHubDocsUrl is { Length: > 0 } github && Model.GitRepository is not null
 		? [new SiteHeaderLink("GitHub", github, "logo_github")]
 		: [],

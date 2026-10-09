@@ -26,7 +26,8 @@ public class AppliesToRoleHtmlRenderer : HtmlObjectRenderer<AppliesToRole>
 		{
 			AppliesTo = appliesTo,
 			Inline = true,
-			VersionsConfig = role.BuildContext.VersionsConfiguration
+			VersionsConfig = role.BuildContext.VersionsConfiguration,
+			DesignSystem = role.BuildContext.Configuration.Features.NavigationPreviewEnabled
 		};
 
 		var slice = ApplicableToRole.Create(viewModel);

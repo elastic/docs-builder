@@ -1,0 +1,143 @@
+/* The trigger and the static badge share the .applies-badge look; this file adds the panel and the lifecycle tones. */
+.applies-badge--block {
+	font-size: var(--text-sm);
+}
+
+.applies-badge__lifecycle + .applies-badge__version {
+	margin-left: var(--space-1);
+}
+
+.applies-badge__more {
+	margin-left: var(--space-1);
+	color: var(--color-text-muted);
+}
+
+.applies-badge--beta .applies-badge__status,
+.applies-badge--experimental .applies-badge__status,
+.applies-badge--planned .applies-badge__status,
+.applies-badge--development .applies-badge__status {
+	color: var(--color-warning);
+}
+
+.applies-badge--removed .applies-badge__status,
+.applies-badge--discontinued .applies-badge__status {
+	color: var(--color-danger);
+}
+
+.applies-popover {
+	position: relative;
+	display: inline-block;
+	vertical-align: middle;
+}
+
+/* The open popover stacks above later siblings, such as badges in the rows below a table cell. */
+.applies-popover[open] {
+	z-index: var(--z-overlay);
+}
+
+.applies-popover__trigger {
+	cursor: pointer;
+	list-style: none;
+}
+
+.applies-popover__trigger::-webkit-details-marker {
+	display: none;
+}
+
+.applies-popover__trigger:hover,
+.applies-popover[open] > .applies-popover__trigger {
+	border-color: var(--color-accent);
+}
+
+.applies-popover__trigger:focus-visible {
+	outline: 3px solid var(--color-focus-ring);
+	outline-offset: 2px;
+}
+
+.applies-popover__panel {
+	position: absolute;
+	z-index: var(--z-overlay);
+	top: calc(100% + var(--space-1));
+	left: 0;
+	width: min(24rem, 85vw);
+	padding: var(--space-4);
+	border: var(--border-width) solid var(--color-border-strong);
+	border-radius: var(--radius-md);
+	background: var(--color-surface);
+	box-shadow: var(--shadow-slab-sm);
+	color: var(--color-text);
+	font-size: var(--text-sm);
+	font-weight: var(--weight-regular);
+	line-height: var(--leading-snug);
+	text-align: left;
+	white-space: normal;
+}
+
+/* In the top layer the panel is placed by script, relative to the viewport. */
+.applies-popover__panel[popover] {
+	position: fixed;
+	inset: auto;
+	margin: 0;
+	overflow: auto;
+}
+
+.applies-popover__panel p {
+	margin: 0;
+}
+
+.applies-popover__description {
+	margin-bottom: var(--space-4);
+	color: var(--color-text-muted);
+}
+
+.applies-popover__description strong {
+	color: var(--color-heading);
+}
+
+.applies-popover__heading {
+	margin-bottom: var(--space-2);
+	color: var(--color-heading);
+	font-weight: var(--weight-bold);
+}
+
+.applies-popover__availability {
+	display: flex;
+	flex-direction: column;
+	gap: var(--space-2);
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.applies-popover__item > summary {
+	cursor: pointer;
+	color: var(--color-accent);
+	font-weight: var(--weight-semibold);
+}
+
+.applies-popover__item > p {
+	margin-top: var(--space-1);
+	color: var(--color-text-muted);
+	font-size: var(--text-xs);
+}
+
+.applies-popover__info {
+	margin-top: var(--space-3);
+	padding-top: var(--space-3);
+	border-top: var(--border-width) solid var(--color-border);
+	color: var(--color-text-muted);
+	font-size: var(--text-xs);
+}
+
+.applies-popover__note {
+	margin-top: var(--space-3);
+	padding: var(--space-2) var(--space-3);
+	border-radius: var(--radius-sm);
+	background: var(--color-surface-sunken);
+	color: var(--color-text-muted);
+	font-size: var(--text-xs);
+}
+
+.applies-popover__note a {
+	color: var(--color-accent);
+}

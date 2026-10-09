@@ -1,0 +1,20 @@
+@inherits RazorSlice<Elastic.Documentation.Site.GlobalLayoutViewModel>
+@using Elastic.Documentation
+@using Elastic.Documentation.Site.Components.Feedback
+@{
+	// The same rules as the legacy widget: assembled and codex sites, plus isolated builds in debug.
+	var supportedBuildType = Model.BuildType is BuildType.Assembler or BuildType.Codex;
+#if DEBUG
+	supportedBuildType |= Model.BuildType is BuildType.Isolated;
+#endif
+}
+@if (Model.Features.PageFeedbackEnabled && !Model.Features.AirGappedEnabled && supportedBuildType)
+{
+	@await RenderPartialAsync(_Feedback.Create(new FeedbackModel
+	{
+		PageUrl = Model.CurrentNavigationItem.Url,
+		PageTitle = Model.Title,
+		ApiBase = Model.FrontendConfig.ApiBasePath,
+		Surface = Model.PageFeedbackSurface == "api" ? FeedbackSurface.Api : FeedbackSurface.Docs
+	}))
+}

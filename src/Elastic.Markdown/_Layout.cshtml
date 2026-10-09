@@ -73,7 +73,7 @@
 					</article>
 					@if (!hub)
 					{
-						@await RenderPartialAsync(_PageFeedback.Create(Model))
+						@await RenderPartialAsync(_DesignSystemPageFeedback.Create(Model))
 						@await RenderPartialAsync(_Pager.Create(new PagerModel
 						{
 							Previous = Model.Previous is { } previous ? new PagerLink(StripBadge(previous.NavigationTitle), previous.Url) : null,
@@ -211,7 +211,11 @@
 
 @if (RenderHeaderAndFooter)
 {
-	if (Model.BuildType == BuildType.Assembler)
+	if (Model.BuildType == BuildType.Assembler && Model.Features.NavigationPreviewEnabled)
+	{
+		@(await RenderPartialAsync(_DesignSystemAssemblerHeader.Create(Model)))
+	}
+	else if (Model.BuildType == BuildType.Assembler)
 	{
 		@(await RenderPartialAsync(_AssemblerHeader.Create(Model)))
 

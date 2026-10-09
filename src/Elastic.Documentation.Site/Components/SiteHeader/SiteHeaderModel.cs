@@ -14,6 +14,9 @@ public sealed record SiteHeaderModel
 	/// <summary>Where the search form submits, or <c>null</c> to leave search out. Search works without JavaScript through a plain GET.</summary>
 	public string? SearchAction { get; init; }
 
+	/// <summary>Adds the search dialog and a trigger that opens it. The trigger stays hidden until script can open the dialog.</summary>
+	public bool Search { get; init; }
+
 	public string? LogoSrc { get; init; }
 	public IReadOnlyList<SiteHeaderLink> Links { get; init; } = [];
 

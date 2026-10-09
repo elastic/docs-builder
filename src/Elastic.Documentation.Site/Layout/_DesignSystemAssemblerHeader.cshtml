@@ -1,0 +1,75 @@
+@inherits RazorSlice<Elastic.Documentation.Site.GlobalLayoutViewModel>
+@using Elastic.Documentation.Configuration.Toc
+@using Elastic.Documentation.Site.Components.DocsBar
+@using Elastic.Documentation.Site.Components.LinkMenu
+@using Elastic.Documentation.Site.Components.SiteHeader
+@{
+	var currentSectionId = Model.CurrentNavigationItem.NavigationRoot?.Id;
+	var apiChrome = Model.PageFeedbackSurface == "api";
+	var homeHref = apiChrome && !string.IsNullOrEmpty(Model.ApiCatalogUrl) ? Model.ApiCatalogUrl : Model.Link("/");
+
+	string? IconFor(string title) => title switch
+	{
+		"Guides" => "documentation",
+		"Reference" => "list_bullet",
+		"Troubleshoot" => "wrench",
+		"Products" => "grid",
+		"APIs" => "code",
+		"Release notes" => "refresh_time",
+		_ => null
+	};
+
+	DocsBarItem[] ItemsFromNavigation() =>
+		apiChrome || Model.TopNav is null
+			? []
+			: [.. Model.TopNav.Items.Select(item => item switch
+			{
+				TopNavDropdownItem dropdown => new DocsBarItem
+				{
+					Title = dropdown.Title,
+					Icon = IconFor(dropdown.Title),
+					Groups = [.. dropdown.Groups.Select(g => new DocsBarGroup(g.Label, [.. g.Links.Select(l => new DocsBarLink(l.Title, l.Url))]))]
+				},
+				TopNavLinkItem link => new DocsBarItem { Title = link.Title, Href = link.Url, Active = link.IsActive(currentSectionId), External = link.IsExternal, Icon = IconFor(link.Title) },
+				_ => new DocsBarItem { Title = item.Title }
+			})];
+
+	DocsBarItem[] BuiltInItems() =>
+		apiChrome
+			? []
+			:
+			[
+				new DocsBarItem { Title = "Release notes", Href = Model.Link("/release-notes/"), Icon = "refresh_time" },
+				new DocsBarItem { Title = "Troubleshoot", Href = Model.Link("/troubleshoot/"), Icon = "wrench" },
+				new DocsBarItem { Title = "Reference", Href = Model.Link("/reference/"), Icon = "list_bullet" }
+			];
+
+	var items = Model.TopNav is not null ? ItemsFromNavigation() : BuiltInItems();
+	var hasSpecDownload = !string.IsNullOrEmpty(Model.SpecJsonUrl) && !string.IsNullOrEmpty(Model.SpecYamlUrl);
+}
+@if (Model.Features.AirGappedEnabled)
+{
+	@await RenderPartialAsync(_SiteHeader.Create(new SiteHeaderModel { Title = "Elastic Docs (air-gapped)", HomeHref = Model.Link("/"), Search = true }))
+}
+else
+{
+	@* The elastic.co navigation is loaded by script into this slot, once, and kept across page swaps. *@
+	<div id="elastic-nav-wrapper" hx-preserve>
+		<div id="elastic-nav" hx-disable="true"></div>
+	</div>
+	@await RenderPartialAsync(_DocsBar.Create(new DocsBarModel
+	{
+		HomeLabel = apiChrome ? "APIs" : "Docs",
+		HomeHref = homeHref,
+		Items = items,
+		Versions = Model.ShowVersionDropdown ? VersionMenu.FromJson(Model.VersionDropdownSerializedModel, Model.CurrentVersion, Model.AllVersionsUrl) : null,
+		Downloads = hasSpecDownload
+			? new LinkMenuModel
+			{
+				Label = "Download source",
+				Current = "Download source",
+				Items = [new("JSON", Model.SpecJsonUrl!, Download: true), new("YAML", Model.SpecYamlUrl!, Download: true)]
+			}
+			: null
+	}))
+}

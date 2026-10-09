@@ -1,0 +1,25 @@
+@inherits RazorSlice<Elastic.Documentation.Site.Components.SearchDialog.SearchDialogModel>
+@* Search needs script (an index or the search API), so the whole dialog stays inert until the script finds it. *@
+<dialog class="search-dialog" data-search-dialog aria-label="@Model.Label">
+	<form class="search-dialog__bar" method="dialog">
+		@await RenderPartialAsync(_Icon.Create(new IconModel { Name = "search", Size = IconSize.Small }))
+		<input class="search-dialog__input" type="search" data-search-input role="combobox" aria-expanded="false" aria-controls="@(Model.Id)-results" aria-autocomplete="list" autocomplete="off" spellcheck="false" placeholder="@Model.Placeholder" aria-label="@Model.Label">
+		<button class="search-dialog__close btn btn--tertiary btn--sm" type="submit" aria-label="Close search">Esc</button>
+	</form>
+	<p class="search-dialog__status" role="status" data-search-status>Type to search.</p>
+	<ol class="search-dialog__results" id="@(Model.Id)-results" role="listbox" aria-label="Results" data-search-results></ol>
+	<template data-search-result>
+		<li class="search-result" role="option">
+			<a class="search-result__link" href="#">
+				<span class="search-result__path" data-search-path></span>
+				<span class="search-result__title" data-search-title></span>
+				<span class="search-result__excerpt" data-search-excerpt></span>
+			</a>
+		</li>
+	</template>
+	<footer class="search-dialog__footer">
+		<span>@await RenderPartialAsync(_Kbd.Create(new KbdModel { Keys = ["↑", "↓"] })) to move</span>
+		<span>@await RenderPartialAsync(_Kbd.Create(new KbdModel { Keys = ["Enter"] })) to open</span>
+		<span>@await RenderPartialAsync(_Kbd.Create(new KbdModel { Keys = ["Esc"] })) to close</span>
+	</footer>
+</dialog>

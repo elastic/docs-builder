@@ -1,0 +1,67 @@
+@inherits RazorSlice<Elastic.Documentation.Site.Components.DocsBar.DocsBarModel>
+<nav class="docs-bar" id="docs-bar" aria-label="Documentation sections">
+	<div class="docs-bar__inner">
+		<a class="docs-bar__home" href="@Model.HomeHref">@Model.HomeLabel</a>
+		<ul class="docs-bar__list">
+			@foreach (var item in Model.Items)
+			{
+				<li class="docs-bar__item">
+					@if (item.IsDropdown)
+					{
+						<details class="docs-bar__dropdown" data-menu>
+							<summary class="docs-bar__link">
+								@if (item.Icon is { } dropdownIcon)
+								{
+									@await RenderPartialAsync(_Icon.Create(new IconModel { Name = dropdownIcon, Size = IconSize.Small }))
+								}
+								<span>@item.Title</span>
+								@await RenderPartialAsync(_Icon.Create(new IconModel { Name = "arrow_down", Size = IconSize.Small }))
+							</summary>
+							<div class="docs-bar__menu" aria-label="@item.Title">
+								@foreach (var group in item.Groups)
+								{
+									@if (group.Label is { } label)
+									{
+										<p class="docs-bar__group">@label</p>
+									}
+									@foreach (var link in group.Links)
+									{
+										<a class="docs-bar__menu-link" href="@link.Href">@link.Title</a>
+									}
+								}
+							</div>
+						</details>
+					}
+					else
+					{
+						<a class="docs-bar__link" href="@item.Href"@(item.Active ? new HtmlString(" aria-current=\"page\"") : HtmlString.Empty)@(item.External ? new HtmlString(" target=\"_blank\" rel=\"noopener noreferrer\"") : HtmlString.Empty)>
+							@if (item.Icon is { } icon)
+							{
+								@await RenderPartialAsync(_Icon.Create(new IconModel { Name = icon, Size = IconSize.Small }))
+							}
+							<span>@item.Title</span>
+							@if (item.External)
+							{
+								@await RenderPartialAsync(_Icon.Create(new IconModel { Name = "external", Size = IconSize.Small }))
+								<span class="docs-bar__sr">(opens in a new tab)</span>
+							}
+						</a>
+					}
+				</li>
+			}
+		</ul>
+		@if (Model.Downloads is not null || Model.Versions is not null)
+		{
+			<div class="docs-bar__actions">
+				@if (Model.Downloads is { } downloads)
+				{
+					@await RenderPartialAsync(_LinkMenu.Create(downloads))
+				}
+				@if (Model.Versions is { } versions)
+				{
+					@await RenderPartialAsync(_LinkMenu.Create(versions))
+				}
+			</div>
+		}
+	</div>
+</nav>

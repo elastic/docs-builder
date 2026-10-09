@@ -38,3 +38,17 @@
 .search-field__input::placeholder {
 	color: var(--color-text-muted);
 }
+
+.search-field--trigger {
+	cursor: pointer;
+	font-family: var(--font-body);
+	text-align: left;
+}
+
+.search-field--trigger[hidden] {
+	display: none;
+}
+
+.search-field__placeholder {
+	flex: 1;
+}
