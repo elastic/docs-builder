@@ -540,7 +540,7 @@ public class UnionVariantTests
 		Row("nodes").SingleOrArrayOf.Should().BeNull("a primitive X lists no fields, so the options row still names both shapes");
 		var markdown = new System.Text.StringBuilder();
 		ApiPropertyMarkdown.WriteList(markdown, new ApiPropertyList([Row("rescore")]), "/api/doc/fixture");
-		markdown.ToString().Should().Contain("A single `Rescore` or an array of them");
+		markdown.ToString().Should().Contain("`Rescore` or `Rescore[]`");
 	}
 
 	[Test]
