@@ -435,6 +435,18 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture)
 	}
 
 	[Test]
+	[Arguments("^[a-z]+$", false)]
+	[Arguments("^(?:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa)$", true)]
+	public void Describe_Pattern_SetsTitleOnlyWhenTooLongToShowInline(string pattern, bool expectTitle)
+	{
+		var schema = new OpenApiSchema { Type = JsonSchemaType.String, Pattern = pattern };
+
+		var span = CreateBuilder().Describe(schema).Spans.Single(s => s.CssClass == SchemaHelpers.ConstraintCssClass);
+
+		span.Title.Should().Be(expectTitle ? $"pattern: {pattern}" : null);
+	}
+
+	[Test]
 	public async Task DescribePathParameter_StringOrStringArray_ShowsBothAlternatives()
 	{
 		var json =
