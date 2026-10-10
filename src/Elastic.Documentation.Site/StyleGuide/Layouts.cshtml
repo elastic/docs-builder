@@ -4,37 +4,14 @@
 @functions {
 	public StyleGuideViewModel LayoutModel => Model;
 }
-@{
-	var devices = new[]
-	{
-		(Title: "Contained, 1440px window", Width: 1440, Scale: "0.34", Full: false),
-		(Title: "Contained, 2560px window", Width: 2560, Scale: "0.19", Full: false),
-		(Title: "Full width, 1440px window", Width: 1440, Scale: "0.34", Full: true),
-		(Title: "Full width, 2560px window", Width: 2560, Scale: "0.19", Full: true)
-	};
-}
 <section class="sg-section">
 	<h2>Two width modes</h2>
 	<p><strong>Contained</strong> is the default. The page box is as wide as the elastic.co header (<code>--layout-max</code>), centred, and the header follows the token, so the logo, the docs bar, the sidebar text and the content start on one line. The assembler has to be contained, because the header is not ours.</p>
 	<p><strong>Full width</strong> (<code>layout-full</code> on the body) lets the sidebar anchor to the left, with the content and rail centred in what is left. The header bar is always the whole window; what moves is its content, which shares <code>--layout-max</code> with the page, so the sidebar always starts under the header's left edge. It stops at <code>--layout-max-wide</code> and centres beyond it, so a 4K window is not sparse. Each window below is drawn to scale: the bar on top is the header, the dashed boxes are the sidebar, content and rail.</p>
 	<div class="grid grid--2 sg-devices">
-		@foreach (var device in devices)
+		@foreach (var window in LayoutDeviceModel.Windows(LayoutKind.ThreeColumns))
 		{
-			<figure class="sg-device" style="--w: @(device.Width)px; --h: @(device.Width * 3 / 10)px; --sg-scale: @device.Scale">
-				<figcaption>@device.Title</figcaption>
-				<div class="sg-device__frame">
-				<div class="sg-device__screen@(device.Full ? " layout-full" : "")">
-					<div class="sg-device__header"><div class="layout layout--single"><div class="sg-slot">Header content · --layout-max</div></div></div>
-					<div class="layout layout--three">
-						<aside class="layout__nav"><div class="sg-slot sg-slot--nav">Sidebar</div></aside>
-						<div class="layout__main">
-							<main class="layout__content"><div class="sg-slot sg-slot--content">Content</div></main>
-							<aside class="layout__rail"><div class="sg-slot sg-slot--rail">Rail</div></aside>
-						</div>
-					</div>
-				</div>
-				</div>
-			</figure>
+			@await RenderPartialAsync(_LayoutDevice.Create(window))
 		}
 	</div>
 </section>
@@ -69,50 +46,6 @@
 	</table>
 </section>
 <section class="sg-section">
-	<h2>Single column</h2>
-	<p>No sidebar: the content takes the page width. Landing pages, archives, the search page and the 404 are single-column. Add <code>layout--narrow</code> for text-led pages that read better at <code>--layout-narrow-max</code>.</p>
-	<div class="sg-frame">
-		<div class="layout layout--single">
-			<div class="layout__main"><div class="sg-slot sg-slot--content">Content</div></div>
-		</div>
-	</div>
-	<pre class="sg-themed"><code>&lt;div class="layout layout--single"&gt;
-  &lt;div class="layout__main"&gt;
-    &lt;main class="layout__content"&gt;…&lt;/main&gt;
-  &lt;/div&gt;
-&lt;/div&gt;</code></pre>
-</section>
-<section class="sg-section">
-	<h2>Hub</h2>
-	<p>A single column that ignores the page width: the hero band and the sections run edge to edge over a wash, and bring their own inner width. Hub pages use <code>layout--single layout--hub</code>.</p>
-	<pre class="sg-themed"><code>&lt;div class="layout layout--single layout--hub"&gt;
-  &lt;div class="layout__main"&gt;
-    &lt;main class="layout__content"&gt;hero, sections…&lt;/main&gt;
-  &lt;/div&gt;
-&lt;/div&gt;</code></pre>
-</section>
-<section class="sg-section">
-	<h2>Two columns</h2>
-	<p>Sidebar and content. The API pages use it: the content has no rail because the operation view opens its own examples column. The sidebar and content share the box the header content uses.</p>
-	<pre class="sg-themed"><code>&lt;div class="layout layout--two"&gt;
-  &lt;aside class="layout__nav"&gt;…&lt;/aside&gt;
-  &lt;div class="layout__main"&gt;
-    &lt;main class="layout__content"&gt;…&lt;/main&gt;
-  &lt;/div&gt;
-&lt;/div&gt;</code></pre>
-</section>
-<section class="sg-section">
-	<h2>Three columns</h2>
-	<p>Sidebar, content and a right-hand rail for the outline, page actions and feedback. Documentation articles use it. At 1100px the rail drops above the content as a compact row.</p>
-	<pre class="sg-themed"><code>&lt;div class="layout layout--three"&gt;
-  &lt;aside class="layout__nav"&gt;…&lt;/aside&gt;
-  &lt;div class="layout__main"&gt;
-    &lt;main class="layout__content"&gt;…&lt;/main&gt;
-    &lt;aside class="layout__rail"&gt;…&lt;/aside&gt;
-  &lt;/div&gt;
-&lt;/div&gt;</code></pre>
-</section>
-<section class="sg-section">
 	<h2>Breakpoints</h2>
 	<p>Custom properties cannot be used in media queries, so these numbers are written out wherever they apply. They are the only three the system uses.</p>
 	<table class="sg-table">
@@ -129,6 +62,6 @@
 	<ol>
 		<li>Pick the layout: <code>layout--single</code> without a sidebar, <code>layout--two</code> with one, <code>layout--three</code> with a sidebar and a rail. Set the full-width mode on the page (<code>FullWidth</code> on the layout model), never on a single layout, so the header follows.</li>
 		<li>Put a full-width band (hero, banner) outside the layout, and its content inside a <code>layout layout--single</code>, so it lines up with the page below.</li>
-		<li>Do not set widths, gutters or breakpoints in a page's own CSS; if the layouts do not fit, that is a gap to bring back here. Spacing and grids are on <a href="@StyleGuideCatalog.Route/grid">Grid and rhythm</a>.</li>
+		<li>Do not set widths, gutters or breakpoints in a page's own CSS; if the layouts do not fit, that is a gap to bring back here. Each layout is drawn on <a href="@StyleGuideCatalog.Route/page-layouts">Page layouts</a>, and spacing and grids are on <a href="@StyleGuideCatalog.Route/grid">Grid and rhythm</a>.</li>
 	</ol>
 </section>

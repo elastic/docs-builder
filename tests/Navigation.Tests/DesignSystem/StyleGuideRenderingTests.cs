@@ -29,21 +29,29 @@ public class StyleGuideRenderingTests
 	}
 
 	[Test]
-	public async Task LayoutsPage_ShowsBothWidthModesAndEveryLayoutWithTheirTokens()
+	public async Task LayoutsPage_ShowsBothWidthModesWithTheirTokens()
 	{
 		var html = await StyleGuideCatalog.RenderAsync("layouts", StaticUrl, TestContext.Current!.Execution.CancellationToken);
 
+		html.Should().Contain("sg-device__screen layout-full").And.Contain("--layout-measure").And.Contain("--layout-rail-max");
+	}
+
+	[Test]
+	public async Task PageLayoutsPage_DrawsEveryLayoutInBothWidthModes()
+	{
+		var html = await StyleGuideCatalog.RenderAsync("page-layouts", StaticUrl, TestContext.Current!.Execution.CancellationToken);
+
 		html
 			.Should()
-			.Contain("sg-device__screen layout-full")
+			.Contain("layout layout--three")
 			.And
-			.Contain("layout layout--three\"")
+			.Contain("layout layout--two")
 			.And
-			.Contain("layout--hub")
+			.Contain("layout layout--single layout--hub")
 			.And
-			.Contain("--layout-measure")
+			.Contain("layout layout--single layout--narrow")
 			.And
-			.Contain("--layout-rail-max");
+			.Contain("sg-device__screen layout-full");
 	}
 
 	[Test]

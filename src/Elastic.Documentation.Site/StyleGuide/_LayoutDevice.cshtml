@@ -1,0 +1,45 @@
+@inherits RazorSlice<LayoutDeviceModel>
+@using Elastic.Documentation.Site.StyleGuide
+<figure class="sg-device" style="--w: @(Model.WindowWidth)px; --h: @(Model.WindowHeight)px; --sg-scale: @Model.Scale">
+	<figcaption>@Model.Title</figcaption>
+	<div class="sg-device__frame">
+		<div class="sg-device__screen@(Model.Full ? " layout-full" : "")">
+			<div class="sg-device__header"><div class="layout layout--single"><div class="sg-slot">Header content · --layout-max</div></div></div>
+			@switch (Model.Kind)
+			{
+				case LayoutKind.OneColumn:
+				case LayoutKind.NarrowColumn:
+					<div class="layout layout--single@(Model.Kind == LayoutKind.NarrowColumn ? " layout--narrow" : "")">
+						<div class="layout__main"><main class="layout__content"><div class="sg-slot sg-slot--content">Content</div></main></div>
+					</div>
+					break;
+				case LayoutKind.Hub:
+					<div class="layout layout--single layout--hub">
+						<div class="layout__main">
+							<main class="layout__content">
+								<div class="sg-slot sg-slot--hero">Hero band · full bleed</div>
+								<div class="layout layout--single"><div class="sg-slot sg-slot--section">Section · --layout-max</div></div>
+								<div class="layout layout--single"><div class="sg-slot sg-slot--section">Section · --layout-max</div></div>
+							</main>
+						</div>
+					</div>
+					break;
+				case LayoutKind.TwoColumns:
+					<div class="layout layout--two">
+						<aside class="layout__nav"><div class="sg-slot sg-slot--nav">Sidebar</div></aside>
+						<div class="layout__main"><main class="layout__content"><div class="sg-slot sg-slot--content">Content</div></main></div>
+					</div>
+					break;
+				default:
+					<div class="layout layout--three">
+						<aside class="layout__nav"><div class="sg-slot sg-slot--nav">Sidebar</div></aside>
+						<div class="layout__main">
+							<main class="layout__content"><div class="sg-slot sg-slot--content">Content</div></main>
+							<aside class="layout__rail"><div class="sg-slot sg-slot--rail">Rail</div></aside>
+						</div>
+					</div>
+					break;
+			}
+		</div>
+	</div>
+</figure>

@@ -77,7 +77,7 @@ public partial class DesignSystemCssTests
 
 	public static IEnumerable<string> AllCssFiles() => DesignSystemFiles.AllCss();
 
-	// The system has three breakpoints (see Layouts and grid in the style guide); the elastic.co header ships its own at 1200.
+	// The system has three breakpoints (see Page width in the style guide); the elastic.co header ships its own at 1200.
 	private static readonly HashSet<string> BreakpointWidths = ["760", "761", "860", "861", "1100", "1101"];
 
 	[Test]

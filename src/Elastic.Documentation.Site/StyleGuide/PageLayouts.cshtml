@@ -1,0 +1,92 @@
+@inherits RazorSlice<StyleGuideViewModel>
+@using Elastic.Documentation.Site.StyleGuide
+@implements IUsesLayout<Elastic.Documentation.Site.StyleGuide._StyleGuideLayout, StyleGuideViewModel>
+@functions {
+	public StyleGuideViewModel LayoutModel => Model;
+}
+@{
+	var layouts = new[]
+	{
+		(
+			Kind: LayoutKind.OneColumn,
+			Title: "Single column",
+			Text: "No sidebar: the content takes the page box. Landing pages, archives, the search page and the 404 are single-column.",
+			Code: """
+				<div class="layout layout--single">
+				  <div class="layout__main">
+				    <main class="layout__content">…</main>
+				  </div>
+				</div>
+				"""
+		),
+		(
+			Kind: LayoutKind.NarrowColumn,
+			Title: "Narrow single column",
+			Text: "The same, in the narrower box of text-led pages, at --layout-narrow-max. The archive and the search page use it. It does not widen in full width.",
+			Code: """
+				<div class="layout layout--single layout--narrow">
+				  <div class="layout__main">
+				    <main class="layout__content">…</main>
+				  </div>
+				</div>
+				"""
+		),
+		(
+			Kind: LayoutKind.Hub,
+			Title: "Hub",
+			Text: "A single column that ignores the page box: the hero band and the sections run edge to edge over a wash, and each section puts its content in the box so it lines up with the header. Hub pages use it.",
+			Code: """
+				<div class="layout layout--single layout--hub">
+				  <div class="layout__main">
+				    <main class="layout__content">hero, sections…</main>
+				  </div>
+				</div>
+				"""
+		),
+		(
+			Kind: LayoutKind.TwoColumns,
+			Title: "Two columns",
+			Text: "Sidebar and content. The API pages use it: the content has no rail because the operation view opens its own examples column. The sidebar is sticky under the header and becomes a drawer at 860px.",
+			Code: """
+				<div class="layout layout--two">
+				  <aside class="layout__nav">…</aside>
+				  <div class="layout__main">
+				    <main class="layout__content">…</main>
+				  </div>
+				</div>
+				"""
+		),
+		(
+			Kind: LayoutKind.ThreeColumns,
+			Title: "Three columns",
+			Text: "Sidebar, content and a right-hand rail for the outline, page actions and feedback. Documentation articles use it. At 1100px the rail drops above the content as a compact row.",
+			Code: """
+				<div class="layout layout--three">
+				  <aside class="layout__nav">…</aside>
+				  <div class="layout__main">
+				    <main class="layout__content">…</main>
+				    <aside class="layout__rail">…</aside>
+				  </div>
+				</div>
+				"""
+		)
+	};
+}
+<section class="sg-section">
+	<h2>Choosing a layout</h2>
+	<p>Every page is one of these five. Each is drawn below in both width modes and two window sizes, to scale; the bar on top is the header, whose content shares the page width, and the dashed boxes are the slots a page fills. The page width, the measure and the modes are on <a href="@StyleGuideCatalog.Route/layouts">Page width</a>.</p>
+</section>
+@foreach (var layout in layouts)
+{
+	<section class="sg-section">
+		<h2>@layout.Title</h2>
+		<p>@layout.Text</p>
+		<div class="grid grid--2 sg-devices">
+			@foreach (var window in LayoutDeviceModel.Windows(layout.Kind))
+			{
+				@await RenderPartialAsync(_LayoutDevice.Create(window))
+			}
+		</div>
+		<pre class="sg-themed"><code>@layout.Code</code></pre>
+	</section>
+}

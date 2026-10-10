@@ -593,6 +593,20 @@
 		font-size: calc(0.6rem / var(--sg-scale));
 	}
 
+	.sg-device .sg-slot--hero {
+		min-height: 6rem;
+		border-radius: 0;
+		background: var(--color-accent-surface);
+	}
+
+	.sg-device .sg-slot--section {
+		min-height: 3.5rem;
+	}
+
+	.sg-device .layout--hub .layout__content > * + * {
+		margin-top: 1rem;
+	}
+
 	.sg-device .sg-slot--nav,
 	.sg-device .sg-slot--content,
 	.sg-device .sg-slot--rail {

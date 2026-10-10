@@ -92,9 +92,15 @@ public static class StyleGuideCatalog
 		),
 		new(
 			"layouts",
-			"Layouts and grid",
+			"Page width",
 			"Foundations",
-			"The page layouts and the two width modes: gutters, the content measure, and how the sidebar and rail take what is left. A new page starts from one of these."
+			"The two width modes, the content measure, and how the sidebar and rail take what is left."
+		),
+		new(
+			"page-layouts",
+			"Page layouts",
+			"Foundations",
+			"The five layouts a page is built on, drawn to scale in both width modes. A new page starts from one of these."
 		),
 		new("grid", "Grid and rhythm", "Foundations", "The content grid, and the six steps that space everything on a page."),
 		new("motion", "Motion", "Foundations", "Durations, easing and the reduced-motion policy."),
@@ -261,6 +267,9 @@ public static class StyleGuideCatalog
 				break;
 			case "grid":
 				await Grid.Create(model).RenderAsync(writer, cancellationToken: ctx);
+				break;
+			case "page-layouts":
+				await PageLayouts.Create(model).RenderAsync(writer, cancellationToken: ctx);
 				break;
 			case "layouts":
 				await Layouts.Create(model).RenderAsync(writer, cancellationToken: ctx);
