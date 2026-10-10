@@ -54,6 +54,14 @@ public class ApiStyleGuidePreviewTests(ApiExplorerFixture fixture)
 	}
 
 	[Test]
+	public async Task Operation_OpensItsTreeWithAVersionSwitcher()
+	{
+		var html = await RenderAsync("api-operation");
+
+		html.Should().Contain("/api/doc/lorem/v8/");
+	}
+
+	[Test]
 	public async Task UnknownPreview_IsNull()
 	{
 		using var provider = new EmbeddedOrPhysicalFileProvider(fixture.Context);

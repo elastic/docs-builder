@@ -123,13 +123,22 @@ public static class ApiStyleGuidePreviews
 		if (current is null)
 			return null;
 
-		var renderer = new IsolatedBuildNavigationHtmlWriter(context, navigation, suppressNavigationDropdown: true);
+		// A real API has several versions, so its tree opens with a version switcher; the generator builds it the same way.
+		ApiVersionSwitcherItem[] versions = [new("latest", "/api/doc/lorem/", true), new("v8", "/api/doc/lorem/v8/", false)];
+		var renderer = new IsolatedBuildNavigationHtmlWriter(
+			context,
+			navigation,
+			[.. versions.Select(v => new NavigationSelectOption(v.Label, v.Url, v.Selected))],
+			suppressNavigationDropdown: true
+		);
 		var rendered = await renderer.RenderNavigation(current.NavigationRoot, current, ctx);
 		var renderContext = new ApiRenderContext(context, document, hashes)
 		{
 			NavigationHtml = rendered.Html,
 			CurrentNavigation = current,
-			MarkdownRenderer = markdown
+			MarkdownRenderer = markdown,
+			VersionSwitcherItems = versions,
+			CurrentApiKey = "lorem"
 		};
 
 		IApiModel model = current switch
