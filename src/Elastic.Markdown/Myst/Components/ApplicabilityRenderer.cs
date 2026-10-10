@@ -188,13 +188,22 @@ public static class ApplicabilityRenderer
 
 		var showVersionNote = productInfo is { IncludeVersionNote: true } && versioningSystem.IsVersioned();
 
+		var allNegative = applicabilities.All(
+			a =>
+				a.Lifecycle
+				is ProductLifecycle.Unavailable
+					or ProductLifecycle.Removed
+					or ProductLifecycle.Deprecated
+					or ProductLifecycle.Discontinued
+		);
+
 		return new PopoverData(
 			ProductDescription: productInfo?.Description,
 			AvailabilityItems: orderedApplicabilities
 				.Select(applicability => BuildAvailabilityItem(applicability, versioningSystem, productName, applicabilities.Count))
 				.OfType<PopoverAvailabilityItem>()
 				.ToArray(),
-			AdditionalInfo: productInfo?.AdditionalAvailabilityInfo,
+			AdditionalInfo: allNegative ? null : productInfo?.AdditionalAvailabilityInfo,
 			ShowVersionNote: showVersionNote,
 			VersionNote: showVersionNote ? ProductDescriptions.VersionNote : null
 		);
