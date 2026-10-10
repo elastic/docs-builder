@@ -4,11 +4,19 @@ html {
 }
 
 body {
+	display: flex;
+	flex-direction: column;
+	min-height: 100vh;
 	background: var(--color-page);
 	color: var(--color-text);
 	font-family: var(--font-body);
 	font-size: var(--text-base);
 	line-height: var(--leading-normal);
+}
+
+/* The page body grows to fill the screen, which keeps the footer at the bottom of short pages. */
+body > #main-container {
+	flex: 1 0 auto;
 }
 
 h1,

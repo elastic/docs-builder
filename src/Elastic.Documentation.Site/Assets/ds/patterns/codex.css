@@ -1,6 +1,11 @@
 /* The internal documentation portal: a landing of group and docset cards, and the trail back to them. */
 .codex-trail {
-	padding: var(--space-2) var(--layout-gutter);
+	/* The trail follows the same container as the header, so its first crumb lines up with the logo. */
+	padding: var(--space-2)
+		max(
+			var(--layout-gutter),
+			calc((100% - var(--layout-max)) / 2 + var(--layout-gutter))
+		);
 	border-bottom: var(--border-width) solid var(--color-border);
 	background: var(--color-surface-sunken);
 }
