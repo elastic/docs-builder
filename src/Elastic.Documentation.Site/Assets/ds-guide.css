@@ -1,5 +1,26 @@
 /* Loaded only on /style-guide. Specimen scaffolding lives here so product CSS never carries demo classes. */
 @layer ds.patterns {
+	/*
+	 * The guide supplies only the sidebar and its backdrop: a grey wash from the window's left edge to the sidebar column, closed by
+	 * a full-height rule. Everything else is the layout. The edge is where the sidebar column ends, whatever the window width.
+	 */
+	.sg-page {
+		--sg-edge: calc(
+			max(0px, (100% - var(--layout-max)) / 2) + var(--layout-gutter) +
+				var(--layout-nav-width) - var(--space-3) +
+				var(--layout-column-gap) / 2
+		);
+		background:
+			linear-gradient(var(--color-border), var(--color-border)) no-repeat
+				var(--sg-edge) 0 / var(--border-width) 100%,
+			linear-gradient(
+					to bottom,
+					var(--color-surface-sunken),
+					var(--color-surface)
+				)
+				no-repeat 0 0 / var(--sg-edge) 100%;
+	}
+
 	/* The guide has no site header, so the sticky sidebar sticks to the top of the window. */
 	.sg-layout {
 		--layout-offset: 0px;
@@ -429,6 +450,10 @@
 			no-repeat;
 	}
 
+	.sg-frame .layout__nav > .sg-slot {
+		flex: 1;
+	}
+
 	.sg-frame .layout__nav,
 	.sg-frame .layout__rail {
 		position: static;
@@ -472,5 +497,13 @@
 	.sg-slot--rail,
 	.sg-slot--content {
 		min-height: 12rem;
+	}
+}
+
+@layer ds.patterns {
+	@media (max-width: 860px) {
+		.sg-page {
+			--sg-edge: 0px;
+		}
 	}
 }
