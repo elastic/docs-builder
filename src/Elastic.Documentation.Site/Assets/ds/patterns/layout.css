@@ -7,7 +7,7 @@
  *   .layout--three    sidebar | content | rail. Documentation articles.
  *
  * They share the page width (--layout-max), the side gutters (--layout-gutter) and the column gap (--layout-gap), which are tokens in
- * tokens/scales.css. Two width modes: contained (the default, as wide as the elastic.co header) and layout--full. The breakpoints are the system's: 1100 (the rail drops above the content) and 860 (the sidebar
+ * tokens/scales.css. Two width modes: contained (the default, as wide as the elastic.co header) and layout-full on the body. The breakpoints are the system's: 1100 (the rail drops above the content) and 860 (the sidebar
  * becomes a drawer). Custom properties cannot be used in media queries, so the two numbers live in this file and in the style guide.
  */
 /* The box every layout shares: the page width, centred, with a gutter each side. The hub's blocks are directives, so they take it by name. */
@@ -105,12 +105,20 @@
 	--layout-areas: var(--layout-areas-contained);
 }
 
-/* Full width: the sidebar anchors to the left, the content and rail are centred in the rest. The box stops at --layout-max-wide. */
-.layout--full {
+/*
+ * Full width is a mode of the page, set by layout-full on the body, not of one layout: the header's content and the page's box share
+ * --layout-max, so the sidebar stays aligned with the header's left edge. The header bar itself is always the whole window. The
+ * sidebar anchors to the left of that box and the content and rail are centred in the rest, and the box stops at --layout-max-wide.
+ */
+.layout-full {
+	--layout-max: var(--layout-max-wide);
 	--layout-measure: var(--layout-measure-wide);
+}
+
+.layout-full .layout--two,
+.layout-full .layout--three {
 	--layout-columns: var(--layout-columns-full);
 	--layout-areas: var(--layout-areas-full);
-	max-width: var(--layout-max-wide);
 }
 
 /* The slots take their cells by name. The wrapper around content and rail only groups them in the markup. */
@@ -187,7 +195,8 @@
 		--layout-areas: var(--layout-areas-contained-tablet);
 	}
 
-	.layout--full {
+	.layout-full .layout--two,
+	.layout-full .layout--three {
 		--layout-columns: var(--layout-columns-full-tablet);
 		--layout-areas: var(--layout-areas-full-tablet);
 	}
@@ -211,7 +220,8 @@
 @media (max-width: 860px) {
 	.layout--two,
 	.layout--three,
-	.layout--full {
+	.layout-full .layout--two,
+	.layout-full .layout--three {
 		--layout-columns: minmax(0, 1fr);
 		--layout-areas: 'rail' 'content';
 	}

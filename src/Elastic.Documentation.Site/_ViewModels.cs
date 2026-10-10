@@ -162,6 +162,9 @@ public record GlobalLayoutViewModel
 
 	public bool RenderHamburgerIcon { get; init; } = true;
 
+	/// <summary>Lays the page out at the full window width, up to the wide limit, instead of the width of the elastic.co header.</summary>
+	public bool FullWidth { get; init; }
+
 	/// <summary>Whether the git remote belongs to the <c>elastic</c> GitHub organization.</summary>
 	public bool IsElasticOrg => GitRepository?.StartsWith("elastic/", StringComparison.OrdinalIgnoreCase) == true;
 

@@ -35,7 +35,7 @@ public class StyleGuideRenderingTests
 
 		html
 			.Should()
-			.Contain("layout layout--three layout--full")
+			.Contain("sg-device__screen layout-full")
 			.And
 			.Contain("layout layout--three\"")
 			.And

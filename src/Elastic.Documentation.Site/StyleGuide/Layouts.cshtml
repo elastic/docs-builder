@@ -16,16 +16,16 @@
 <section class="sg-section">
 	<h2>Two width modes</h2>
 	<p><strong>Contained</strong> is the default. The page box is as wide as the elastic.co header (<code>--layout-max</code>), centred, and the header follows the token, so the logo, the docs bar, the sidebar text and the content start on one line. The assembler has to be contained, because the header is not ours.</p>
-	<p><strong>Full width</strong> (<code>layout--full</code>) lets the sidebar anchor to the left of the window, with the content and rail centred in what is left. It still stops at <code>--layout-max-wide</code> and centres beyond it, so a 4K window is not sparse. Each window below is drawn to scale: the bar on top is the header, the dashed boxes are the sidebar, content and rail.</p>
+	<p><strong>Full width</strong> (<code>layout-full</code> on the body) lets the sidebar anchor to the left, with the content and rail centred in what is left. The header bar is always the whole window; what moves is its content, which shares <code>--layout-max</code> with the page, so the sidebar always starts under the header's left edge. It stops at <code>--layout-max-wide</code> and centres beyond it, so a 4K window is not sparse. Each window below is drawn to scale: the bar on top is the header, the dashed boxes are the sidebar, content and rail.</p>
 	<div class="grid grid--2 sg-devices">
 		@foreach (var device in devices)
 		{
 			<figure class="sg-device" style="--w: @(device.Width)px; --h: @(device.Width * 3 / 10)px; --sg-scale: @device.Scale">
 				<figcaption>@device.Title</figcaption>
 				<div class="sg-device__frame">
-				<div class="sg-device__screen">
-					<div class="sg-device__header"><div class="layout layout--single"><div class="sg-slot">Header · --layout-max</div></div></div>
-					<div class="layout layout--three@(device.Full ? " layout--full" : "")">
+				<div class="sg-device__screen@(device.Full ? " layout-full" : "")">
+					<div class="sg-device__header"><div class="layout layout--single"><div class="sg-slot">Header content · --layout-max</div></div></div>
+					<div class="layout layout--three">
 						<aside class="layout__nav"><div class="sg-slot sg-slot--nav">Sidebar</div></aside>
 						<div class="layout__main">
 							<main class="layout__content"><div class="sg-slot sg-slot--content">Content</div></main>
@@ -93,7 +93,7 @@
 </section>
 <section class="sg-section">
 	<h2>Two columns</h2>
-	<p>Sidebar and content. The API pages use it: the content has no rail because the operation view opens its own examples column. Add <code>layout--full</code> for the full-width mode.</p>
+	<p>Sidebar and content. The API pages use it: the content has no rail because the operation view opens its own examples column. The sidebar and content share the box the header content uses.</p>
 	<pre class="sg-themed"><code>&lt;div class="layout layout--two"&gt;
   &lt;aside class="layout__nav"&gt;…&lt;/aside&gt;
   &lt;div class="layout__main"&gt;
@@ -127,7 +127,7 @@
 <section class="sg-section">
 	<h2>Starting a new page</h2>
 	<ol>
-		<li>Pick the layout: <code>layout--single</code> without a sidebar, <code>layout--two</code> with one, <code>layout--three</code> with a sidebar and a rail. Add <code>layout--full</code> only where the page wants the whole window.</li>
+		<li>Pick the layout: <code>layout--single</code> without a sidebar, <code>layout--two</code> with one, <code>layout--three</code> with a sidebar and a rail. Set the full-width mode on the page (<code>FullWidth</code> on the layout model), never on a single layout, so the header follows.</li>
 		<li>Put a full-width band (hero, banner) outside the layout, and its content inside a <code>layout layout--single</code>, so it lines up with the page below.</li>
 		<li>Do not set widths, gutters or breakpoints in a page's own CSS; if the layouts do not fit, that is a gap to bring back here. Spacing and grids are on <a href="@StyleGuideCatalog.Route/grid">Grid and rhythm</a>.</li>
 	</ol>
