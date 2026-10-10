@@ -15,6 +15,7 @@ using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Site.FileProviders;
 using Elastic.Documentation.Site.Navigation;
+using Elastic.Documentation.Site.StyleGuide;
 using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Elastic.ApiExplorer.StyleGuide;
@@ -119,6 +120,7 @@ public static class ApiStyleGuidePreviews
 		{
 			NavigationHtml = string.Empty,
 			CurrentNavigation = navigation.Index,
+			SiteTopNav = PreviewNavigation.TopNav,
 			MarkdownRenderer = markdown
 		};
 		var page = navigation.Index.Model;
@@ -158,6 +160,7 @@ public static class ApiStyleGuidePreviews
 			NavigationHtml = rendered.Html,
 			CurrentNavigation = current,
 			MarkdownRenderer = markdown,
+			SiteTopNav = PreviewNavigation.TopNav,
 			VersionSwitcherItems = versions,
 			CurrentApiKey = "lorem"
 		};

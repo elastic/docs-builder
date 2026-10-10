@@ -62,6 +62,16 @@ public class ApiStyleGuidePreviewTests(ApiExplorerFixture fixture)
 	}
 
 	[Test]
+	[Arguments("api-catalog")]
+	[Arguments("api-operation")]
+	public async Task Preview_CarriesTheSiteSectionsInItsDocsBar(string id)
+	{
+		var html = await RenderAsync(id);
+
+		html.Should().Contain(">Guides<").And.Contain(">Products<");
+	}
+
+	[Test]
 	public async Task UnknownPreview_IsNull()
 	{
 		using var provider = new EmbeddedOrPhysicalFileProvider(fixture.Context);

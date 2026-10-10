@@ -10,6 +10,7 @@ using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.Links.CrossLinks;
 using Elastic.Documentation.Site.Navigation;
+using Elastic.Documentation.Site.StyleGuide;
 using Elastic.Markdown.IO;
 using Elastic.Markdown.Page;
 using Microsoft.Extensions.Logging.Abstractions;

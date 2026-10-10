@@ -6,7 +6,9 @@
 @{
 	var currentSectionId = Model.CurrentNavigationItem.NavigationRoot?.Id;
 	var apiChrome = Model.PageFeedbackSurface == "api";
-	var homeHref = apiChrome && !string.IsNullOrEmpty(Model.ApiCatalogUrl) ? Model.ApiCatalogUrl : Model.Link("/");
+	var siteNav = Model.TopNav is not null;
+	var apiHome = apiChrome && !siteNav;
+	var homeHref = apiHome && !string.IsNullOrEmpty(Model.ApiCatalogUrl) ? Model.ApiCatalogUrl : Model.Link("/");
 
 	string? IconFor(string title) => title switch
 	{
@@ -20,7 +22,7 @@
 	};
 
 	DocsBarItem[] ItemsFromNavigation() =>
-		apiChrome || Model.TopNav is null
+		Model.TopNav is null
 			? []
 			: [.. Model.TopNav.Items.Select(item => item switch
 			{
@@ -59,7 +61,7 @@ else
 	</div>
 	@await RenderPartialAsync(_DocsBar.Create(new DocsBarModel
 	{
-		HomeLabel = apiChrome ? "APIs" : "Docs",
+		HomeLabel = apiHome ? "APIs" : "Docs",
 		HomeHref = homeHref,
 		Items = items,
 		Versions = Model.ShowVersionDropdown ? VersionMenu.FromJson(Model.VersionDropdownSerializedModel, Model.CurrentVersion, Model.AllVersionsUrl) : null,

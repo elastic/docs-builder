@@ -59,6 +59,9 @@ public record GlobalLayoutViewModel
 	/// <summary>Breadcrumb trail for codex sub-header (Home / Group / Docset).</summary>
 	public IReadOnlyList<CodexBreadcrumb>? CodexBreadcrumbs { get; init; }
 
+	/// <summary>The site's top navigation for pages that sit outside the site's navigation tree, such as the generated API pages.</summary>
+	public TopNavRenderModel? SiteTopNav { get; init; }
+
 	/// <summary>
 	/// The configured top navigation for assembler builds. Derived by walking the
 	/// <see cref="CurrentNavigationItem"/> parent chain to find a
@@ -69,6 +72,8 @@ public record GlobalLayoutViewModel
 	{
 		get
 		{
+			if (SiteTopNav is not null)
+				return SiteTopNav;
 			for (var item = (INavigationItem?)CurrentNavigationItem; item is not null; item = item.Parent)
 			{
 				if (item is ISiteNavigationRoot siteRoot)

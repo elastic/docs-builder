@@ -15,6 +15,7 @@ using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.Navigation.Isolated.Node;
 using Elastic.Documentation.Site;
 using Elastic.Documentation.Site.FileProviders;
+using Elastic.Documentation.Site.StyleGuide;
 using Elastic.Markdown.StyleGuide;
 using RazorSlices;
 

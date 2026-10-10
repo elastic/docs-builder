@@ -115,6 +115,7 @@ public abstract class ApiViewModel(ApiRenderContext context)
 				BuildContext.CanonicalBaseUrl
 			),
 			ProductName = RenderContext.Product?.DisplayName,
+			SiteTopNav = RenderContext.SiteTopNav,
 			VersionSwitcherItems = RenderContext.VersionSwitcherItems,
 			HubSwitcherItems = hubItems,
 			LegacyBarProductSwitcher = assembler

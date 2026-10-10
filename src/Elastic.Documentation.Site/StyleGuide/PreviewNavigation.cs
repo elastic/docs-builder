@@ -7,7 +7,7 @@ using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Navigation.Assembler;
 using Elastic.Documentation.Site.Navigation;
 
-namespace Elastic.Markdown.StyleGuide;
+namespace Elastic.Documentation.Site.StyleGuide;
 
 /// <summary>Placeholder navigation for the style guide's previews, so the real layouts have something to hang their chrome on.</summary>
 public static class PreviewNavigation
