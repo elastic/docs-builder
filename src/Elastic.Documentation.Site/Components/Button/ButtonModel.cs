@@ -12,7 +12,10 @@ public enum ButtonVariant
 	Primary,
 	Secondary,
 	Tertiary,
-	Danger
+	Danger,
+
+	/// <summary>The teal call to action, for heroes and bands only.</summary>
+	Cta
 }
 
 public enum ButtonSize

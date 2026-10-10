@@ -36,6 +36,9 @@ public sealed record DocsBarModel
 	/// <summary>The version picker, when the page has several versions.</summary>
 	public LinkMenuModel? Versions { get; init; }
 
+	/// <summary>The theme switch at the right of the bar.</summary>
+	public bool ThemeSwitch { get; init; }
+
 	/// <summary>The spec download menu on API pages.</summary>
 	public LinkMenuModel? Downloads { get; init; }
 }

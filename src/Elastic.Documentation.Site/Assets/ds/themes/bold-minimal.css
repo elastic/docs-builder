@@ -26,7 +26,8 @@
 	--ds-d: ;
 }
 
-[data-theme='dark'] {
+[data-theme='dark'],
+[data-theme='black'] {
 	color-scheme: dark;
 	--ds-l: ;
 	--ds-d: initial;
@@ -64,10 +65,10 @@
 
 	/* Buttons keep their blue fill in both themes; only the surfaces around them change. */
 	--color-action: var(--palette-elastic-blue);
-	--color-action-hover: var(--ds-l, var(--palette-elastic-blue-dark))
-		var(--ds-d, #3c86f0);
-	--color-action-deep: var(--ds-l, var(--palette-midnight))
-		var(--ds-d, #0a3d8f);
+	--color-action-hover: var(--ds-l, #0a5fd0) var(--ds-d, #3c86f0);
+	--color-action-hover-deep: var(--ds-l, #0a52b3) var(--ds-d, #0b64dd);
+	--color-action-deep: var(--ds-l, #0a58c4) var(--ds-d, #0a52b3);
+	--color-action-edge: var(--ds-l, #0a3fa0) var(--ds-d, #0a3d8f);
 	--color-action-border: var(--ds-l, var(--palette-developer-blue))
 		var(--ds-d, var(--palette-elastic-blue-dark));
 	--color-on-action: var(--palette-white);
@@ -156,4 +157,81 @@
 		5px 5px 0 var(--color-slab-plate),
 		5px 5px 0 1px var(--color-border-strong);
 	--shadow-overlay: 0 12px 32px rgb(16 28 63 / 24%);
+}
+
+/* The call-to-action button: a teal accent for heroes and bands only, never on a page's content. */
+:root,
+[data-theme] {
+	--cta-top: #7df7e0;
+	--cta-bottom: #3fe3c4;
+	--cta-edge: #17a58c;
+	--cta-border: #2fd3b4;
+	--cta-fg: #0b1b3a;
+	--cta-glow: rgb(72 239 207 / 35%);
+	--cta-hover-top: #92fae8;
+	--cta-hover-bottom: #52ebce;
+	--cta-active-top: #3fe3c4;
+	--cta-active-bottom: #36d6b8;
+	/* What the theme switch shows for each theme, whatever theme the page is in. */
+	--swatch-light: #fff;
+	--swatch-dark: #101c3f;
+	--swatch-black: #000;
+}
+
+/*
+ * True black: the dark roles on black, for OLED screens. Surfaces step up in grey, and the accent and borders are re-tuned to hold their
+ * contrast on black.
+ */
+[data-theme='black'] {
+	--color-page: #000;
+	--color-surface: #111;
+	--color-surface-sunken: #0a0a0a;
+	--color-heading: #ececec;
+	--color-text: #cfcfcf;
+	--color-text-muted: #9a9a9a;
+	--color-border: #2e2e2e;
+	--color-border-control: #6e6e6e;
+	--color-accent: #7faeef;
+	--color-accent-hover: #9cc2ff;
+	--color-accent-surface: #0a1b38;
+	--color-accent-border: #1b4b96;
+	--color-emphasis: #222;
+	--color-slab-plate: #0a0a0a;
+	--color-code-bg: #050505;
+	--gradient-wash: linear-gradient(180deg, #000 0%, #0a0a0a 100%);
+	--color-hatch: rgb(255 255 255 / 3%);
+}
+
+/* More contrast: text, hairlines and control borders are pushed apart from their surfaces, in each theme. */
+:root[data-contrast='more'],
+:root[data-contrast='more'] [data-theme] {
+	--color-heading: var(--ds-l, #0a1230) var(--ds-d, #fff);
+	--color-text: var(--ds-l, #101c3f) var(--ds-d, #fff);
+	--color-text-muted: var(--ds-l, #3a4257) var(--ds-d, #dce2ea);
+	--color-border: var(--ds-l, #6b7487) var(--ds-d, #8fa0c8);
+	--color-border-control: var(--ds-l, #4f596e) var(--ds-d, #b3c0de);
+	--color-surface-sunken: var(--ds-l, #eef1f6) var(--ds-d, #0c1634);
+	--color-accent: var(--ds-l, #0a52b3) var(--ds-d, #9cc2ff);
+	--color-accent-border: var(--ds-l, #7fa6e6) var(--ds-d, #2d5ba8);
+}
+
+:root[data-contrast='more'][data-theme='black'],
+:root[data-contrast='more'] [data-theme='black'] {
+	--color-border: #8a8a8a;
+	--color-border-control: #bdbdbd;
+	--color-text-muted: #e6e6e6;
+}
+
+@media (prefers-contrast: more) {
+	:root:not([data-contrast]),
+	:root:not([data-contrast]) [data-theme] {
+		--color-heading: var(--ds-l, #0a1230) var(--ds-d, #fff);
+		--color-text: var(--ds-l, #101c3f) var(--ds-d, #fff);
+		--color-text-muted: var(--ds-l, #3a4257) var(--ds-d, #dce2ea);
+		--color-border: var(--ds-l, #6b7487) var(--ds-d, #8fa0c8);
+		--color-border-control: var(--ds-l, #4f596e) var(--ds-d, #b3c0de);
+		--color-surface-sunken: var(--ds-l, #eef1f6) var(--ds-d, #0c1634);
+		--color-accent: var(--ds-l, #0a52b3) var(--ds-d, #9cc2ff);
+		--color-accent-border: var(--ds-l, #7fa6e6) var(--ds-d, #2d5ba8);
+	}
 }

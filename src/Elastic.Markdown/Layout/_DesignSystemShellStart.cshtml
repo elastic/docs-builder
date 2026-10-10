@@ -37,6 +37,10 @@
 	<input class="layout__drawer-toggle" type="checkbox" id="pages-nav-hamburger">
 	<label class="layout__scrim" for="pages-nav-hamburger" aria-hidden="true"></label>
 	<aside class="layout__nav" id="pages-nav">
+		@if (Layout.ShowVersionDropdown && Elastic.Documentation.Site.Components.LinkMenu.VersionMenu.FromJson(Layout.VersionDropdownSerializedModel, Layout.CurrentVersion, Layout.AllVersionsUrl) is { } versions)
+		{
+			<div class="layout__version">@await RenderPartialAsync(Elastic.Documentation.Site.Components.LinkMenu._LinkMenu.Create(versions))</div>
+		}
 		@(new HtmlString(Layout.NavigationHtml))
 	</aside>
 	<div class="layout__main">

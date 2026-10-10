@@ -31,13 +31,9 @@
 			{
 				@await RenderPartialAsync(_AskAi.Create(new AskAiModel { Floating = false, Placeholder = "Ask me anything..." }))
 			}
-			@if (Model.MotionToggle)
+			@if (Model.ThemeSwitch)
 			{
-				<button class="site-header__theme" type="button" data-motion-toggle hidden aria-label="Motion"><span class="site-header__theme-name">Motion</span> <span data-motion-label>System</span></button>
-			}
-			@if (Model.ThemeToggle)
-			{
-				<button class="site-header__theme" type="button" data-theme-toggle hidden aria-label="Theme"><span class="site-header__theme-name">Theme</span> <span data-theme-label>System</span></button>
+				@await RenderPartialAsync(_ThemeSwitch.Create(new ThemeSwitchModel { Id = "header-theme" }))
 			}
 		</nav>
 	</div>

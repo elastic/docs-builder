@@ -72,7 +72,7 @@ else
 		HomeLabel = apiHome ? "APIs" : "Docs",
 		HomeHref = homeHref,
 		Items = items,
-		Versions = Model.ShowVersionDropdown ? VersionMenu.FromJson(Model.VersionDropdownSerializedModel, Model.CurrentVersion, Model.AllVersionsUrl) : null,
+		ThemeSwitch = true,
 		Downloads = hasSpecDownload
 			? new LinkMenuModel
 			{

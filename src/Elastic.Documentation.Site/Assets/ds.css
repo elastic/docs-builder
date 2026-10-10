@@ -57,6 +57,7 @@
 @import '../Components/CtaCard/cta-card.css' layer(ds.components);
 @import '../Components/SiteFooter/site-footer.css' layer(ds.components);
 @import '../Components/SiteHeader/site-header.css' layer(ds.components);
+@import '../Components/ThemeSwitch/theme-switch.css' layer(ds.components);
 @import './ds/patterns/layout.css' layer(ds.patterns);
 @import './ds/patterns/pages.css' layer(ds.pages);
 @import './ds/patterns/codex.css' layer(ds.pages);

@@ -55,13 +55,12 @@ public class DocsBarRenderingTests : DocumentationSetNavigationTestBase
 	}
 
 	[Test]
-	public async Task DocsBar_RendersTheVersionPickerAsNativeLinks()
+	public async Task DocsBar_CarriesTheThemeSwitchAndLeavesTheVersionPickerToTheSidebar()
 	{
 		var html = await RenderHeader(airGapped: false);
 
-		html.Should().Contain("link-menu");
-		html.Should().Contain("href=\"/docs/8.19\"");
-		html.Should().Contain("All versions");
+		html.Should().Contain("theme-switch").And.Contain("data-pref=\"contrast\"");
+		html.Should().NotContain("All versions", "the version picker sits at the top of the sidebar, not in the bar");
 		html.Should().NotContain("<version-dropdown");
 	}
 

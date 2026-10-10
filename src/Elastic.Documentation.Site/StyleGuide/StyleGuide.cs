@@ -52,6 +52,7 @@ using Elastic.Documentation.Site.Components.Stepper;
 using Elastic.Documentation.Site.Components.Switch;
 using Elastic.Documentation.Site.Components.Tabs;
 using Elastic.Documentation.Site.Components.TextField;
+using Elastic.Documentation.Site.Components.ThemeSwitch;
 using Elastic.Documentation.Site.Components.Toast;
 using Elastic.Documentation.Site.Components.Toc;
 using Elastic.Documentation.Site.Components.Tooltip;
@@ -207,6 +208,7 @@ public static class StyleGuideCatalog
 		["chrome"] =
 		[
 			SiteHeaderExamples.Headers,
+			ThemeSwitchExamples.Switches,
 			DeploymentInfoExamples.Deployments,
 			DocsBarExamples.Bars,
 			LinkMenuExamples.Menus,

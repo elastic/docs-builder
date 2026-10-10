@@ -1,0 +1,49 @@
+@inherits RazorSlice<Elastic.Documentation.Site.Components.ThemeSwitch.ThemeSwitchModel>
+@functions {
+	private static readonly HtmlString Check = new("""<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5 9-10"/></svg>""");
+	private static readonly HtmlString Sun = new("""<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>""");
+	private static readonly HtmlString Moon = new("""<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 14.5A8 8 0 019.5 4a8 8 0 1010.5 10.5z"/></svg>""");
+	private static readonly HtmlString Cog = new("""<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 00.3 1.8l.1.1a2 2 0 11-2.8 2.8l-.1-.1a1.7 1.7 0 00-1.8-.3 1.7 1.7 0 00-1 1.5V21a2 2 0 11-4 0v-.1a1.7 1.7 0 00-1.1-1.5 1.7 1.7 0 00-1.8.3l-.1.1a2 2 0 11-2.8-2.8l.1-.1a1.7 1.7 0 00.3-1.8 1.7 1.7 0 00-1.5-1H3a2 2 0 110-4h.1a1.7 1.7 0 001.5-1.1 1.7 1.7 0 00-.3-1.8l-.1-.1a2 2 0 112.8-2.8l.1.1a1.7 1.7 0 001.8.3H9a1.7 1.7 0 001-1.5V3a2 2 0 114 0v.1a1.7 1.7 0 001 1.5 1.7 1.7 0 001.8-.3l.1-.1a2 2 0 112.8 2.8l-.1.1a1.7 1.7 0 00-.3 1.8V9a1.7 1.7 0 001.5 1H21a2 2 0 110 4h-.1a1.7 1.7 0 00-1.5 1z"/></svg>""");
+}
+@{
+	var id = Model.Id;
+	(string Pref, string Label, (string Value, string Label, string? Hint, bool Swatch, bool Checked)[] Options)[] groups =
+	[
+		("theme", "Theme", [("light", "Light", null, true, false), ("dark", "Dark", null, true, false), ("black", "True black", "OLED", true, false), ("system", "Match system", null, true, true)]),
+		("contrast", "Contrast", [("normal", "Standard", null, false, false), ("more", "More", null, false, false), ("system", "Match system", null, false, true)]),
+		("motion", "Motion", [("full", "Full", null, false, false), ("reduce", "Reduced", null, false, false), ("system", "Match system", null, false, true)])
+	];
+}
+<div class="theme-switch@(Model.OpensLeft ? " theme-switch--left" : "")">
+	<input class="theme-switch__open" type="checkbox" id="@(id)-open" aria-label="Display options">
+	<div class="theme-group">
+		<label class="theme-group__opt" data-v="light" for="@(id)-theme-light" title="Light">@Sun</label>
+		<label class="theme-group__opt" data-v="dark" for="@(id)-theme-dark" title="Dark">@Moon</label>
+		<span class="theme-group__sep"></span>
+		<label class="theme-group__opt theme-group__opt--cog" for="@(id)-open" title="Display options">@Cog</label>
+	</div>
+	<div class="theme-menu">
+		@foreach (var group in groups)
+		{
+			<div class="theme-menu__group" role="radiogroup" aria-label="@group.Label">
+				<div class="theme-menu__label">@group.Label</div>
+				@foreach (var option in group.Options)
+				{
+					<label class="theme-menu__option" data-v="@option.Value">
+						<input type="radio" name="@(id)-@group.Pref" id="@(id)-@(group.Pref)-@option.Value" value="@option.Value" data-pref="@group.Pref" data-v="@option.Value"@(option.Checked ? new HtmlString(" checked") : HtmlString.Empty)>
+						@if (option.Swatch)
+						{
+							<span class="theme-menu__swatch"></span>
+						}
+						@option.Label
+						@if (option.Hint is { } hint)
+						{
+							<small>@hint</small>
+						}
+						@Check
+					</label>
+				}
+			</div>
+		}
+	</div>
+</div>

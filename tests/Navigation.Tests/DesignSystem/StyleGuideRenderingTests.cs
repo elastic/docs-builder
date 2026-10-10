@@ -22,7 +22,7 @@ public class StyleGuideRenderingTests
 		html.Should().NotBeNull();
 		html.Should().Contain("/_static/ds.css").And.Contain("/_static/ds-guide.css").And.Contain("/_static/ds.js");
 		html.Should().NotContain("styles.css", "the style guide is built on the design system alone, with no legacy bundle");
-		html.Should().Contain("data-theme-select").And.Contain("data-motion-select");
+		html.Should().Contain("theme-switch").And.Contain("data-pref=\"theme\"");
 		html.Should().Contain($"<h1>{StyleGuideCatalog.Find(slug)!.Title}</h1>");
 		foreach (var page in StyleGuideCatalog.Pages)
 			html.Should().Contain($"href=\"/style-guide/{page.Slug}\"");

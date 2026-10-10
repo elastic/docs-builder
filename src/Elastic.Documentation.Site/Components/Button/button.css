@@ -4,7 +4,7 @@
 	--btn-top: var(--color-action);
 	--btn-bottom: var(--color-action-deep);
 	--btn-border: var(--color-action-border);
-	--btn-ledge: var(--color-action-deep);
+	--btn-ledge: var(--color-action-edge);
 	--btn-height: 2.75rem;
 	--btn-padding: 0 var(--space-5) 0 var(--space-5);
 	--btn-size: var(--text-sm);
@@ -17,13 +17,9 @@
 	padding: var(--btn-padding);
 	border: var(--border-width) solid var(--btn-border);
 	border-radius: var(--radius-md);
-	background: linear-gradient(
-		180deg,
-		var(--btn-top) 35%,
-		var(--btn-bottom) 175%
-	);
+	background: linear-gradient(180deg, var(--btn-top), var(--btn-bottom));
 	box-shadow:
-		inset 0 1px 0 color-mix(in oklab, var(--btn-fg) 30%, transparent),
+		inset 0 1px 0 color-mix(in oklab, var(--btn-fg) 12%, transparent),
 		0 2px 0 var(--btn-ledge);
 	color: var(--btn-fg);
 	font-family: var(--font-body);
@@ -40,7 +36,7 @@
 
 .btn:hover {
 	--btn-top: var(--color-action-hover);
-	--btn-bottom: var(--color-action);
+	--btn-bottom: var(--color-action-hover-deep);
 }
 
 .btn:active {
@@ -159,4 +155,47 @@
 }
 :root[data-motion='full'] .btn {
 	transition-property: box-shadow, border-color, color, transform;
+}
+
+/*
+ * The call to action: a teal accent for heroes and bands, drawn once per page at most. It is dark text on teal, so it never sits
+ * blue-on-blue on the hero gradient.
+ */
+.btn--cta {
+	--btn-fg: var(--cta-fg);
+	--btn-top: var(--cta-top);
+	--btn-bottom: var(--cta-bottom);
+	--btn-border: var(--cta-border);
+	--btn-ledge: var(--cta-edge);
+
+	font-weight: var(--weight-bold);
+	letter-spacing: 0.005em;
+	text-shadow: 0 1px 0
+		color-mix(in oklab, var(--palette-white) 35%, transparent);
+	box-shadow:
+		inset 0 1px 0 color-mix(in oklab, var(--palette-white) 70%, transparent),
+		0 3px 0 var(--btn-ledge),
+		0 8px 18px -6px var(--cta-glow);
+}
+
+.btn--cta:hover {
+	--btn-top: var(--cta-hover-top);
+	--btn-bottom: var(--cta-hover-bottom);
+	box-shadow:
+		inset 0 1px 0 color-mix(in oklab, var(--palette-white) 80%, transparent),
+		0 4px 0 var(--btn-ledge),
+		0 12px 22px -6px var(--cta-glow);
+}
+
+.btn--cta:active {
+	--btn-top: var(--cta-active-top);
+	--btn-bottom: var(--cta-active-bottom);
+	box-shadow:
+		inset 0 2px 5px color-mix(in oklab, var(--cta-fg) 35%, transparent),
+		0 0 0 var(--btn-ledge);
+}
+
+.btn--cta:focus-visible {
+	outline: 3px solid var(--palette-white);
+	outline-offset: 3px;
 }

@@ -1,7 +1,7 @@
 @inherits RazorLayoutSlice<StyleGuideViewModel>
 @using Elastic.Documentation.Site.StyleGuide
 @using Elastic.Documentation.Site.Components.Button
-@using Elastic.Documentation.Site.Components.Segmented
+@using Elastic.Documentation.Site.Components.ThemeSwitch
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -9,7 +9,7 @@
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<meta name="robots" content="noindex, nofollow">
 	<title>@Model.Page.Title · Style guide</title>
-	<script>try{var t=localStorage.getItem("docs-theme");if(t==="light"||t==="dark")document.documentElement.dataset.theme=t}catch(e){}try{var m=localStorage.getItem("docs-motion");document.documentElement.dataset.motion=m==="full"||m==="reduce"?m:(matchMedia("(prefers-reduced-motion: reduce)").matches?"reduce":"full")}catch(e){document.documentElement.dataset.motion="reduce"}</script>
+	@Elastic.Documentation.Site.Components.ThemeSwitch.PreferencesScript.Inline
 	<link rel="stylesheet" href="@Model.Static("ds-layers.css")">
 	<link rel="stylesheet" href="@Model.Static("ds.css")">
 	<link rel="stylesheet" href="@Model.Static("ds-guide.css")">
@@ -46,10 +46,7 @@
 				{
 					@await RenderPartialAsync(_Button.Create(new ButtonModel { Label = "Download", Href = $"{StyleGuideCatalog.Route}/download.zip", Download = true, Variant = ButtonVariant.Secondary, Size = ButtonSize.Small }))
 				}
-				<span class="sg-header__label">Motion</span>
-				@await RenderPartialAsync(_Segmented.Create(new SegmentedModel { Name = "sg-motion", Legend = "Motion", Data = new Dictionary<string, string> { ["motion-select"] = "" }, Options = [new("system", "System", true), new("full", "Full"), new("reduce", "Reduced")] }))
-				<span class="sg-header__label">Theme</span>
-				@await RenderPartialAsync(_Segmented.Create(new SegmentedModel { Name = "sg-theme", Legend = "Theme", Data = new Dictionary<string, string> { ["theme-select"] = "" }, Options = [new("system", "System", true), new("light", "Light"), new("dark", "Dark")] }))
+				@await RenderPartialAsync(_ThemeSwitch.Create(new ThemeSwitchModel { Id = "guide-theme" }))
 			</div>
 		</header>
 		@await RenderBodyAsync()

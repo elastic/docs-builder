@@ -50,7 +50,7 @@
 				</li>
 			}
 		</ul>
-		@if (Model.Downloads is not null || Model.Versions is not null)
+		@if (Model.Downloads is not null || Model.Versions is not null || Model.ThemeSwitch)
 		{
 			<div class="docs-bar__actions">
 				@if (Model.Downloads is { } downloads)
@@ -60,6 +60,10 @@
 				@if (Model.Versions is { } versions)
 				{
 					@await RenderPartialAsync(_LinkMenu.Create(versions))
+				}
+				@if (Model.ThemeSwitch)
+				{
+					@await RenderPartialAsync(_ThemeSwitch.Create(new ThemeSwitchModel { Id = "bar-theme" }))
 				}
 			</div>
 		}

@@ -139,6 +139,26 @@
 
 .layout__nav > .nav-side {
 	flex: 1;
+	min-height: 0;
+}
+
+/* A page with versions opens its sidebar with the version picker, above the tree. */
+.layout__nav {
+	flex-direction: column;
+}
+
+.layout__version {
+	flex: none;
+	padding-bottom: var(--space-3);
+}
+
+.layout__version .link-menu {
+	display: block;
+}
+
+.layout__version .link-menu__trigger {
+	width: 100%;
+	justify-content: space-between;
 }
 
 .layout__main {
