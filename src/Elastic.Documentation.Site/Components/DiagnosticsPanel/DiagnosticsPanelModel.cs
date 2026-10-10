@@ -4,5 +4,17 @@
 
 namespace Elastic.Documentation.Site.Components.DiagnosticsPanel;
 
-/// <summary>The developer console that streams build diagnostics. Everything it shows arrives from script.</summary>
-public sealed record DiagnosticsPanelModel;
+/// <param name="Severity">error, warning or hint.</param>
+public sealed record DiagnosticSample(string Severity, string Location, string Message);
+
+/// <summary>The developer console of docs-builder serve. With samples it is drawn open and still, to show what it looks like with messages.</summary>
+public sealed record DiagnosticsPanelModel
+{
+	public IReadOnlyList<DiagnosticSample> Samples { get; init; } = [];
+
+	public bool Static => Samples.Count > 0;
+
+	public int Count(string severity) => Samples.Count(s => s.Severity == severity);
+
+	public string Worst => Count("error") > 0 ? "error" : Count("warning") > 0 ? "warning" : "hint";
+}

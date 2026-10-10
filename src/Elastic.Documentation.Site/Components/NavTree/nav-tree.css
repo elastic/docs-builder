@@ -47,6 +47,11 @@
 	display: block;
 }
 
+/* A heading with no toggle is a label for what follows, so its pages are always shown. */
+.nav-tree__row--heading:not(label) + .nav-tree__children {
+	display: block;
+}
+
 .nav-tree__row {
 	display: flex;
 	align-items: center;

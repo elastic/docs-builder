@@ -208,3 +208,11 @@
 	grid-row: 1 / span 2;
 	align-self: start;
 }
+
+/* A specimen sits in the page flow instead of pinned to the bottom of the screen. */
+.diagnostics--static {
+	position: static;
+	z-index: auto;
+	border-radius: var(--radius-md);
+	overflow: hidden;
+}

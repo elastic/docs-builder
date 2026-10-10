@@ -5,6 +5,7 @@
 using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Navigation.Assembler;
+using Elastic.Documentation.Site.Navigation;
 
 namespace Elastic.Markdown.StyleGuide;
 
@@ -37,6 +38,42 @@ public static class PreviewNavigation
 		new TopNavLinkItem("Troubleshoot", "/docs/troubleshoot", false),
 		new TopNavLinkItem("Release notes", "/docs/release-notes", false)
 	]);
+
+	private static NavigationRenderNode Leaf(string title) =>
+		new() { Kind = NavigationRenderNodeKind.Leaf, IsTopLevel = false, NavigationTitle = title, Url = "#" };
+
+	private static NavigationRenderNode Docset(string title, params string[] pages) =>
+		new()
+		{
+			Kind = NavigationRenderNodeKind.Heading,
+			IsTopLevel = false,
+			NavigationTitle = title,
+			Url = "#",
+			NavigationItems = [.. pages.Select(Leaf)]
+		};
+
+	/// <summary>
+	/// The tree beside a documentation page of a Codex site. A set that belongs to a group sits beside its sibling set under the group's
+	/// title, with a way back to the codex; one that belongs to no group shows only its own pages.
+	/// </summary>
+	public static NavigationRenderModel CodexDocs(bool inGroup) =>
+		new()
+		{
+			IsUsingNavigationDropdown = false,
+			CurrentTopLevelNavigationTitle = "Lorem Ipsum",
+			CurrentTopLevelUrl = "#",
+			DropdownItems = [],
+			BackLinks = inGroup ? [new IslandBackLink("Codex", "/")] : [],
+			TreeHeading = inGroup ? "Search" : null,
+			ContentHash = inGroup ? "style-guide-codex-group" : "style-guide-codex-set",
+			Tree = inGroup
+				? [
+					Docset("Lorem Ipsum", "Overview", "Install", "Index data", "Search"),
+					Docset("Dolor Sit", "Overview", "Configure", "Operate")
+				]
+				: [Leaf("Overview"), Leaf("Install"), Leaf("Index data"), Leaf("Search"), Leaf("Operate")],
+			NavigationPreviewEnabled = true
+		};
 
 	public static INavigationItem Page(string title, string url, bool underSite) =>
 		new PreviewItem(title, url) { Parent = underSite ? new PreviewSiteRoot(TopNav) : null };

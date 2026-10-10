@@ -64,6 +64,15 @@ public static class StyleGuidePreviewCatalog
 			"The page that lists the versions of documentation that are no longer maintained."
 		),
 		new("assembler-not-found", "Page not found", "Assembler", "The 404 page."),
+		new("api-catalog", "API catalog", "API", "The page that lists every API, one card each."),
+		new("api-product", "API landing page", "API", "One API's landing page: its overview and the groups of operations."),
+		new(
+			"api-operation",
+			"Operation with examples",
+			"API",
+			"An operation page with request and response examples next to the description."
+		),
+		new("api-operation-plain", "Operation without examples", "API", "An operation page with no request body and no examples."),
 		new("codex-landing", "Landing page", "Codex", "The Codex home: hero with the MCP card, then every group of documentation sets."),
 		new("codex-group", "Group page", "Codex", "A group of documentation sets, under a hero of its own."),
 		new(

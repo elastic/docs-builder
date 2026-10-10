@@ -1,4 +1,43 @@
 @inherits RazorSlice<Elastic.Documentation.Site.Components.DiagnosticsPanel.DiagnosticsPanelModel>
+@if (Model.Static)
+{
+	@* A specimen: the console open with messages, with no script hooks, so it stays as drawn. *@
+	<aside class="diagnostics diagnostics--static" data-state="issues" data-severity="@Model.Worst" aria-label="Build diagnostics">
+		<div class="diagnostics__hud">
+			<div class="diagnostics__toolbar">
+				<div class="diagnostics__filters" role="group" aria-label="Filter diagnostics">
+					<button class="diagnostics__filter" type="button" aria-pressed="true">All</button>
+					<button class="diagnostics__filter" type="button" aria-pressed="false">Errors</button>
+					<button class="diagnostics__filter" type="button" aria-pressed="false">Warnings</button>
+					<button class="diagnostics__filter" type="button" aria-pressed="false">Hints</button>
+				</div>
+			</div>
+			<ol class="diagnostics__list">
+				@foreach (var sample in Model.Samples)
+				{
+					<li class="diagnostics__row" data-severity="@sample.Severity">
+						<div class="diagnostics__meta">
+							<span class="diagnostics__severity">@sample.Severity</span>
+							<span class="diagnostics__location">@sample.Location</span>
+						</div>
+						<p class="diagnostics__message">@sample.Message</p>
+						<button class="diagnostics__copy" type="button">Copy</button>
+					</li>
+				}
+			</ol>
+		</div>
+		<div class="diagnostics__bar">
+			<span class="diagnostics__summary">
+				<span>@Model.Samples.Count issues</span>
+				<span class="diagnostics__count--error">@Model.Count("error") errors</span>
+				<span class="diagnostics__count--warning">@Model.Count("warning") warnings</span>
+				<span class="diagnostics__count--hint">@Model.Count("hint") hints</span>
+			</span>
+			<span class="diagnostics__action">Hide Console</span>
+		</div>
+	</aside>
+	return;
+}
 @* Live build output cannot exist without script, so the panel stays hidden until the script reveals it. *@
 <aside class="diagnostics" data-diagnostics data-state="connecting" aria-label="Build diagnostics" hidden>
 	<div class="diagnostics__hud" id="diagnostics-hud" data-diagnostics-hud hidden>

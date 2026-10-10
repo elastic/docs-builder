@@ -99,3 +99,12 @@
 .button-group--right {
 	justify-content: flex-end;
 }
+
+/* Prose styles every link in an article; a button inside it keeps its own colour and has no underline. */
+.prose .button-directive a,
+.prose .button-directive__item a,
+.prose .button-directive a:hover,
+.prose .button-directive__item a:hover {
+	color: var(--btn-fg);
+	text-decoration: none;
+}

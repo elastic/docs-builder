@@ -2,25 +2,41 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using System.IO.Abstractions.TestingHelpers;
+using System.IO.Abstractions;
 using AwesomeAssertions;
+using Elastic.ApiExplorer.StyleGuide;
 using Elastic.Codex.StyleGuide;
-using Elastic.Documentation.Navigation.Tests.Isolation;
+using Elastic.Documentation;
+using Elastic.Documentation.Configuration;
+using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.Site.FileProviders;
 using Elastic.Documentation.Site.StyleGuide;
 using Elastic.Markdown.StyleGuide;
 
-namespace Elastic.Documentation.Navigation.Tests.DesignSystem;
+namespace Elastic.Markdown.Tests;
 
-public class StyleGuidePreviewTests() : DocumentationSetNavigationTestBase()
+public class StyleGuidePreviewTests
 {
-	private async Task<string?> RenderAsync(string id)
+	private static BuildContext Template()
 	{
-		var fileSystem = new MockFileSystem();
-		fileSystem.AddDirectory("/docs");
-		using var provider = new EmbeddedOrPhysicalFileProvider(CreateContext(fileSystem));
+		var realFs = new FileSystem();
+		var invocation = realFs.DirectoryInfo.New(Paths.WorkingDirectoryRoot.FullName);
+		return new BuildContext(
+			new DiagnosticsCollector([]),
+			DocumentationFileSystem.Resolve(invocation),
+			TestHelpers.CreateConfigurationContext(realFs)
+		);
+	}
+
+	private static async Task<string?> RenderAsync(string id)
+	{
+		var template = Template();
+		using var provider = new EmbeddedOrPhysicalFileProvider(template);
 		var ct = TestContext.Current!.Execution.CancellationToken;
-		return await StyleGuidePreviews.RenderAsync(id, provider, ct) ?? await CodexStyleGuidePreviews.RenderAsync(id, provider, ct);
+		return await StyleGuidePreviews.RenderAsync(id, template, ct)
+			?? await CodexStyleGuidePreviews.RenderAsync(id, template, provider, ct)
+			?? await ApiStyleGuidePreviews.RenderAsync(id, template, provider, ct);
 	}
 
 	[Test]
@@ -29,13 +45,18 @@ public class StyleGuidePreviewTests() : DocumentationSetNavigationTestBase()
 			.Entries
 			.Select(e => e.Id)
 			.Should()
-			.BeEquivalentTo([.. StyleGuidePreviews.Ids, .. CodexStyleGuidePreviews.Ids]);
+			.BeEquivalentTo([.. StyleGuidePreviews.Ids, .. CodexStyleGuidePreviews.Ids, .. ApiStyleGuidePreviews.Ids]);
 
 	[Test]
 	[Arguments("isolated-article", "docs-shell")]
 	[Arguments("isolated-article", "deployment")]
 	[Arguments("isolated-directives", "Every directive and role")]
 	[Arguments("isolated-directives", "admonition")]
+	[Arguments("isolated-directives", "diagnostics__row")]
+	[Arguments("api-catalog", "Elastic APIs")]
+	[Arguments("api-product", "Lorem API")]
+	[Arguments("api-operation", "Run a search")]
+	[Arguments("api-operation-plain", "Get a document")]
 	[Arguments("isolated-branded", "Lorem Ipsum Inc.")]
 	[Arguments("assembler-article", "id=\"docs-bar\"")]
 	[Arguments("assembler-article-island", "nav-side__back")]

@@ -1,7 +1,0 @@
-@inherits RazorSlice<Elastic.Markdown.StyleGuide.PreviewPageModel>
-@using Elastic.Markdown
-@implements IUsesLayout<Elastic.Codex._MarkdownLayout, MarkdownLayoutViewModel>
-@functions {
-	public MarkdownLayoutViewModel LayoutModel => Model.Layout;
-}
-@(new HtmlString(Model.BodyHtml))

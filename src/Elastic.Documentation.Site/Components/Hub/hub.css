@@ -199,7 +199,7 @@ a:focus-visible .hub-arrow {
 	scroll-margin-top: var(--space-8);
 }
 
-.hub-zone:first-of-type {
+.hub-zone:first-child {
 	margin-top: 0;
 }
 

@@ -3,7 +3,9 @@
 // See the LICENSE file in the project root for more information
 
 using Elastic.Codex.Landing;
+using Elastic.Codex.Page;
 using Elastic.Documentation;
+using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Configuration.Builder;
 using Elastic.Documentation.Site;
@@ -47,12 +49,29 @@ public static class CodexStyleGuidePreviews
 	];
 
 	/// <summary>Renders a preview as a complete HTML document, or <c>null</c> when the id is unknown.</summary>
-	public static async Task<string?> RenderAsync(string id, EmbeddedOrPhysicalFileProvider staticFiles, Cancel ctx = default)
+	public static async Task<string?> RenderAsync(
+		string id,
+		BuildContext template,
+		EmbeddedOrPhysicalFileProvider staticFiles,
+		Cancel ctx = default
+	)
 	{
 		if (id is "codex-docs-group" or "codex-docs-ungrouped")
 		{
-			var docs = await StyleGuidePreviews.CodexDocsPageAsync(staticFiles, inGroup: id == "codex-docs-group", ctx);
-			return await CodexDocsPreviewPage.Create(docs).RenderAsync(cancellationToken: ctx);
+			// A documentation set of a Codex site is built by the real generator with the Codex page view. A set in a group
+			// has the group in its trail and beside its sibling set in the tree.
+			var inGroup = id == "codex-docs-group";
+			var trail = inGroup
+				? new[] { new CodexBreadcrumb("Home", "/"), new CodexBreadcrumb("Search", "#"), new CodexBreadcrumb("Lorem Ipsum", "#") }
+				: [new CodexBreadcrumb("Home", "/"), new CodexBreadcrumb("Lorem Ipsum", "#")];
+			var options = new PreviewDocsetOptions
+			{
+				BuildType = BuildType.Codex,
+				PageViewFactory = new CodexPageViewFactory("Lorem Ipsum Docs", trail),
+				NavigationHtml = inGroup ? await StyleGuidePreviews.NavHtmlAsync(PreviewNavigation.CodexDocs(true), ctx) : null
+			};
+			await using var docset = await PreviewDocset.CreateAsync(template, options, ctx);
+			return await docset.RenderPageAsync("index.md", ctx);
 		}
 
 		var layout = Layout(new StaticFileContentHashProvider(staticFiles), id == "codex-group");
