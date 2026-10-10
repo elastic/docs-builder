@@ -9,7 +9,7 @@ import { initFeedback } from './ds/feedback'
 import { initLightboxes } from './ds/lightbox'
 import { initListings } from './ds/listing'
 import { bindOutsideClick, initMenus } from './ds/menu'
-import { initMotionToggles } from './ds/motion'
+import { initMotionSelects, initMotionToggles } from './ds/motion'
 import { initNav } from './ds/nav'
 import { initNavFilter } from './ds/nav-filter'
 import { initFlyoutResize, initFlyouts, initToasts } from './ds/overlays'
@@ -19,7 +19,7 @@ import './ds/runtime'
 import { bindSearchShortcut, initSearch } from './ds/search'
 import { initSearchPage } from './ds/search-page'
 import { initTabSync } from './ds/tabs'
-import { initThemeToggles } from './ds/theme'
+import { initThemeSelects, initThemeToggles } from './ds/theme'
 import { initToc } from './ds/toc'
 import { initVectorSizing } from './ds/vector-sizing'
 
@@ -40,6 +40,8 @@ async function loadStorybookStories(scope: ParentNode) {
 function init(scope: ParentNode = document) {
     initThemeToggles(scope)
     initMotionToggles(scope)
+    initThemeSelects(scope)
+    initMotionSelects(scope)
     initTabSync(scope)
     initCopyButtons(scope)
     initCopyText(scope)

@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using Elastic.Documentation.Site.Components.Icon;
+using Microsoft.AspNetCore.Html;
 
 namespace Elastic.Documentation.Site.Components.Button;
 
@@ -35,6 +36,14 @@ public sealed record ButtonModel
 	public string? TrailingIcon { get; init; }
 	public bool IconOnly { get; init; }
 	public bool Disabled { get; init; }
+
+	/// <summary>Offers the target as a download. Only an anchor can, so it is ignored without <see cref="Href"/>.</summary>
+	public bool Download { get; init; }
+
+	/// <summary>Hooks for scripts, written as <c>data-{key}</c>. Scripts bind to these, never to the styling classes.</summary>
+	public IReadOnlyDictionary<string, string>? Data { get; init; }
+
+	public HtmlString DataAttributes => ComponentData.Attributes(Data);
 
 	public string CssClass =>
 		string.Join(

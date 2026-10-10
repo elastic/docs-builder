@@ -1,5 +1,7 @@
 @inherits RazorLayoutSlice<StyleGuideViewModel>
 @using Elastic.Documentation.Site.StyleGuide
+@using Elastic.Documentation.Site.Components.Button
+@using Elastic.Documentation.Site.Components.Segmented
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -42,10 +44,12 @@
 			<div class="sg-header__actions">
 				@if (!Model.Offline)
 				{
-					<a class="sg-toggle" href="@StyleGuideCatalog.Route/download.zip" download>Download</a>
+					@await RenderPartialAsync(_Button.Create(new ButtonModel { Label = "Download", Href = $"{StyleGuideCatalog.Route}/download.zip", Download = true, Variant = ButtonVariant.Secondary, Size = ButtonSize.Small }))
 				}
-				<button type="button" class="sg-toggle" data-motion-toggle>Motion</button>
-				<button type="button" class="sg-toggle" data-theme-toggle>Theme</button>
+				<span class="sg-header__label">Motion</span>
+				@await RenderPartialAsync(_Segmented.Create(new SegmentedModel { Name = "sg-motion", Legend = "Motion", Data = new Dictionary<string, string> { ["motion-select"] = "" }, Options = [new("system", "System", true), new("full", "Full"), new("reduce", "Reduced")] }))
+				<span class="sg-header__label">Theme</span>
+				@await RenderPartialAsync(_Segmented.Create(new SegmentedModel { Name = "sg-theme", Legend = "Theme", Data = new Dictionary<string, string> { ["theme-select"] = "" }, Options = [new("system", "System", true), new("light", "Light"), new("dark", "Dark")] }))
 			</div>
 		</header>
 		@await RenderBodyAsync()

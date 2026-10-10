@@ -66,3 +66,24 @@ export function initThemeToggles(scope: ParentNode = document) {
             })
         })
 }
+
+// The same choice as a segmented control: a group of radios under data-theme-select, one per choice, which works from the saved value.
+export function initThemeSelects(scope: ParentNode = document) {
+    scope
+        .querySelectorAll<HTMLElement>(
+            '[data-theme-select]:not([data-theme-bound])'
+        )
+        .forEach((group) => {
+            group.dataset.themeBound = ''
+            const radios = group.querySelectorAll<HTMLInputElement>(
+                'input[type="radio"]'
+            )
+            const current = readTheme()
+            radios.forEach((radio) => {
+                radio.checked = radio.value === current
+                radio.addEventListener('change', () => {
+                    if (radio.checked) applyTheme(radio.value as ThemeChoice)
+                })
+            })
+        })
+}

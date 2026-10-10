@@ -12,4 +12,7 @@ public sealed record SegmentedModel
 	public required string Name { get; init; }
 	public required string Legend { get; init; }
 	public required IReadOnlyList<SegmentedOption> Options { get; init; }
+
+	/// <summary>Hooks for scripts, written as <c>data-{key}</c>.</summary>
+	public IReadOnlyDictionary<string, string>? Data { get; init; }
 }

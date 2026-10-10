@@ -1,5 +1,6 @@
 import {
     applyTheme,
+    initThemeSelects,
     initThemeToggles,
     nextTheme,
     readTheme,
@@ -55,5 +56,21 @@ describe('theme', () => {
             'Light'
         )
         expect(button.getAttribute('aria-label')).toContain('light')
+    })
+
+    it('shows the saved choice in a segmented control and applies a new one', () => {
+        localStorage.setItem(themeStorageKey, 'dark')
+        document.body.innerHTML =
+            '<fieldset data-theme-select><input type="radio" name="t" value="system"><input type="radio" name="t" value="light"><input type="radio" name="t" value="dark"></fieldset>'
+        initThemeSelects()
+        const radios = document.querySelectorAll<HTMLInputElement>('input')
+
+        expect(radios[2].checked).toBe(true)
+
+        radios[1].checked = true
+        radios[1].dispatchEvent(new Event('change'))
+
+        expect(document.documentElement.dataset.theme).toBe('light')
+        expect(localStorage.getItem(themeStorageKey)).toBe('light')
     })
 })

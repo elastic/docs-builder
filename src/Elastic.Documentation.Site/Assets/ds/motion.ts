@@ -88,3 +88,24 @@ export function initMotionToggles(scope: ParentNode = document) {
             })
         })
 }
+
+// The same choice as a segmented control: a group of radios under data-motion-select, one per choice, which works from the saved value.
+export function initMotionSelects(scope: ParentNode = document) {
+    scope
+        .querySelectorAll<HTMLElement>(
+            '[data-motion-select]:not([data-motion-bound])'
+        )
+        .forEach((group) => {
+            group.dataset.motionBound = ''
+            const radios = group.querySelectorAll<HTMLInputElement>(
+                'input[type="radio"]'
+            )
+            const current = readMotion()
+            radios.forEach((radio) => {
+                radio.checked = radio.value === current
+                radio.addEventListener('change', () => {
+                    if (radio.checked) applyMotion(radio.value as MotionChoice)
+                })
+            })
+        })
+}

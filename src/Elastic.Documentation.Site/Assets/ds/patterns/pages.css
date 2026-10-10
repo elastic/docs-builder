@@ -638,6 +638,7 @@
 
 /* API reference pages share the documentation shell; the sidebar adds the switchers and the jump field above the tree. */
 .api-sidebar-chrome {
+	flex: 1;
 	display: flex;
 	flex-direction: column;
 	gap: var(--space-2);

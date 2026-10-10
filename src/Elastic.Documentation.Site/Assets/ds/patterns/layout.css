@@ -51,7 +51,8 @@
 		var(--layout-rail-max)
 	);
 	/* The tree's rows carry their own padding, so the sidebar's box reaches left into the gutter to line its text up with the logo. */
-	--layout-nav-track: calc(var(--layout-nav-width) - var(--space-3));
+	--layout-nav-bleed: var(--space-3);
+	--layout-nav-track: calc(var(--layout-nav-width) - var(--layout-nav-bleed));
 
 	display: grid;
 	grid-template-columns: var(--layout-columns);
@@ -59,12 +60,6 @@
 }
 
 .layout--two {
-	--layout-free: calc(100% - var(--layout-measure) - var(--layout-gap));
-	--layout-nav-width: clamp(
-		var(--layout-nav-min),
-		var(--layout-free),
-		var(--layout-nav-max)
-	);
 	--layout-columns-contained: var(--layout-nav-track) var(--layout-gap)
 		minmax(0, 1fr);
 	--layout-areas-contained: 'nav . content';
@@ -117,6 +112,14 @@
 	--layout-areas: var(--layout-areas-full);
 }
 
+/*
+ * A tree's rows carry their own padding, so the sidebar's box reaches left into the gutter and the text lines up with the header. A
+ * sidebar whose controls start at the box edge, such as the API pages' version select and filter, is flush: no reach.
+ */
+.layout--nav-flush {
+	--layout-nav-bleed: 0rem;
+}
+
 /* The slots take their cells by name. The wrapper around content and rail only groups them in the markup. */
 .layout--two .layout__main,
 .layout--three .layout__main {
@@ -125,7 +128,7 @@
 
 .layout__nav {
 	grid-area: nav;
-	margin-left: calc(var(--space-3) * -1);
+	margin-left: calc(var(--layout-nav-bleed) * -1);
 	position: sticky;
 	top: var(--layout-offset);
 	align-self: start;

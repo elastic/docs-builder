@@ -1,5 +1,6 @@
 import {
     applyMotion,
+    initMotionSelects,
     initMotionToggles,
     motionStorageKey,
     nextMotion,
@@ -74,5 +75,22 @@ describe('motion', () => {
             'Full'
         )
         expect(button.getAttribute('aria-label')).toContain('full')
+    })
+
+    it('shows the saved choice in a segmented control and applies a new one', () => {
+        system(false)
+        localStorage.setItem(motionStorageKey, 'reduce')
+        document.body.innerHTML =
+            '<fieldset data-motion-select><input type="radio" name="m" value="system"><input type="radio" name="m" value="full"><input type="radio" name="m" value="reduce"></fieldset>'
+        initMotionSelects()
+        const radios = document.querySelectorAll<HTMLInputElement>('input')
+
+        expect(radios[2].checked).toBe(true)
+
+        radios[1].checked = true
+        radios[1].dispatchEvent(new Event('change'))
+
+        expect(document.documentElement.dataset.motion).toBe('full')
+        expect(localStorage.getItem(motionStorageKey)).toBe('full')
     })
 })
