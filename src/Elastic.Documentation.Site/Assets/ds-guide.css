@@ -1,26 +1,5 @@
 /* Loaded only on /style-guide. Specimen scaffolding lives here so product CSS never carries demo classes. */
 @layer ds.patterns {
-	/*
-	 * The guide supplies only the sidebar and its backdrop: a grey wash from the window's left edge to the sidebar column, closed by
-	 * a full-height rule. Everything else is the layout. The edge is where the sidebar column ends, whatever the window width.
-	 */
-	.sg-page {
-		--sg-edge: calc(
-			max(0px, (100% - var(--layout-max)) / 2) + var(--layout-gutter) +
-				var(--layout-nav-width) - var(--space-3) +
-				var(--layout-column-gap) / 2
-		);
-		background:
-			linear-gradient(var(--color-border), var(--color-border)) no-repeat
-				var(--sg-edge) 0 / var(--border-width) 100%,
-			linear-gradient(
-					to bottom,
-					var(--color-surface-sunken),
-					var(--color-surface)
-				)
-				no-repeat 0 0 / var(--sg-edge) 100%;
-	}
-
 	/* The guide has no site header, so the sticky sidebar sticks to the top of the window. */
 	.sg-layout {
 		--layout-offset: 0px;
@@ -501,9 +480,121 @@
 }
 
 @layer ds.patterns {
-	@media (max-width: 860px) {
-		.sg-page {
-			--sg-edge: 0px;
+	/*
+	 * The guide supplies only the sidebar and its backdrop: a grey wash that runs to the window's left edge, closed by a full-height
+	 * rule. The sidebar is as tall as the window and sticky, so a shadow that reaches left, clipped to the sidebar's own height, fills
+	 * the margin beside it at every window width.
+	 */
+	@media (min-width: 861px) {
+		.sg-layout .layout__nav {
+			border-right: var(--border-width) solid var(--color-border);
+			background: var(--color-surface-sunken);
+			box-shadow: -50vw 0 0 50vw var(--color-surface-sunken);
+			clip-path: inset(0 0 0 -100vw);
 		}
+	}
+
+	/* Windows drawn to scale: the real layout classes in a box of a given window width, shrunk by --sg-scale. */
+	.sg-devices {
+		--grid-gap: var(--rhythm-block);
+	}
+
+	.sg-device {
+		margin: 0;
+	}
+
+	.sg-device figcaption {
+		margin-bottom: var(--rhythm-tight);
+		color: var(--color-text-muted);
+		font-size: var(--text-sm);
+	}
+
+	/* A scaled box still takes its full size in the page, so the frame is cut down to what is drawn. */
+	.sg-device__frame {
+		position: relative;
+		width: calc(var(--w) * var(--sg-scale));
+		height: calc(var(--h) * var(--sg-scale));
+	}
+
+	.sg-device__screen {
+		position: absolute;
+		inset: 0 auto auto 0;
+		width: var(--w);
+		height: var(--h);
+		overflow: hidden;
+		border: var(--border-width) solid var(--color-border-strong);
+		background: var(--color-surface);
+		transform: scale(var(--sg-scale));
+		transform-origin: 0 0;
+	}
+
+	.sg-device__header {
+		margin-bottom: 1.5rem;
+		padding-block: 1rem;
+		border-bottom: var(--border-width) solid var(--color-border);
+		background: var(--color-surface-sunken);
+	}
+
+	/* The specimens always show the wide layout, whatever the window the guide is read in. */
+	.sg-device .layout--two,
+	.sg-device .layout--three {
+		--layout-columns: var(--layout-columns-contained);
+		--layout-areas: var(--layout-areas-contained);
+	}
+
+	.sg-device .layout--full {
+		--layout-columns: var(--layout-columns-full);
+		--layout-areas: var(--layout-areas-full);
+	}
+
+	.sg-device .layout__nav,
+	.sg-device .layout__rail {
+		position: static;
+		display: flex;
+		visibility: visible;
+		translate: none;
+		width: auto;
+		height: auto;
+		padding: 0;
+		border: 0;
+		box-shadow: none;
+		clip-path: none;
+		background: none;
+	}
+
+	.sg-device .layout__rail {
+		flex-direction: column;
+	}
+
+	.sg-device .layout__nav {
+		align-self: stretch;
+	}
+
+	.sg-device .layout__rail {
+		align-self: stretch;
+		overflow: visible;
+	}
+
+	.sg-device .layout__content {
+		padding-block: 0;
+	}
+
+	/* Labels and outlines are sized so they read after the scale-down. */
+	.sg-device .sg-slot {
+		border-width: calc(1.5px / var(--sg-scale));
+		background: var(--color-accent-surface);
+		min-height: 14rem;
+		font-size: calc(0.6rem / var(--sg-scale));
+	}
+
+	.sg-device .sg-slot--nav,
+	.sg-device .sg-slot--content,
+	.sg-device .sg-slot--rail {
+		height: 100%;
+		min-height: 20rem;
+	}
+
+	.sg-device__header .sg-slot {
+		min-height: 3rem;
 	}
 }

@@ -1,0 +1,38 @@
+@inherits RazorSlice<StyleGuideViewModel>
+@using Elastic.Documentation.Site.StyleGuide
+@implements IUsesLayout<Elastic.Documentation.Site.StyleGuide._StyleGuideLayout, StyleGuideViewModel>
+@functions {
+	public StyleGuideViewModel LayoutModel => Model;
+}
+<section class="sg-section">
+	<h2>Content grid</h2>
+	<p>Inside the content, repeating blocks sit in a <code>grid</code> with a column count. The count steps down by itself. The gap is <code>--grid-gap</code>, 24px unless a block sets another. <code>grid--auto</code> fits as many columns as the width allows, none narrower than <code>--grid-min</code> (16rem by default).</p>
+	<div class="sg-frame sg-frame--plain">
+		<div class="grid grid--2"><div class="sg-slot">grid--2</div><div class="sg-slot">grid--2</div></div>
+		<div class="grid grid--3"><div class="sg-slot">grid--3</div><div class="sg-slot">grid--3</div><div class="sg-slot">grid--3</div></div>
+		<div class="grid grid--4"><div class="sg-slot">grid--4</div><div class="sg-slot">grid--4</div><div class="sg-slot">grid--4</div><div class="sg-slot">grid--4</div></div>
+		<div class="grid grid--auto"><div class="sg-slot">grid--auto</div><div class="sg-slot">grid--auto</div><div class="sg-slot">grid--auto</div><div class="sg-slot">grid--auto</div><div class="sg-slot">grid--auto</div></div>
+	</div>
+</section>
+<section class="sg-section">
+	<h2>Vertical rhythm</h2>
+	<p>Gaps come from six named steps on the spacing scale, so every page breathes the same way. Use the name that says what is being separated; do not reach for a raw <code>--space</code> step in a page.</p>
+	<table class="sg-table">
+		<thead><tr><th>Token</th><th>Value and use</th><th>Gap</th></tr></thead>
+		<tbody>
+		@foreach (var token in StyleGuideTokens.Rhythm)
+		{
+			<tr>
+				<td><code>@token.Name</code></td>
+				<td>@token.Role</td>
+				<td><span class="sg-bar" style="width: var(@token.Name)"></span></td>
+			</tr>
+		}
+		</tbody>
+	</table>
+	<p>For running content, put <code>stack</code> on the parent and it spaces its children: <code>stack--tight</code>, <code>stack--block</code>, <code>stack--group</code> and <code>stack--section</code> pick a larger step than the default <code>--rhythm-stack</code>. A band of a page takes <code>section</code>; a hero, or the page's last band, takes <code>section--band</code>.</p>
+	<div class="sg-frame sg-frame--plain">
+		<div class="stack"><div class="sg-slot">stack</div><div class="sg-slot">stack</div><div class="sg-slot">stack</div></div>
+		<div class="stack stack--group"><div class="sg-slot">stack--group</div><div class="sg-slot">stack--group</div><div class="sg-slot">stack--group</div></div>
+	</div>
+</section>

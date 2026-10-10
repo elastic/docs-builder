@@ -152,13 +152,17 @@ public static class StyleGuideTokens
 
 	public static IReadOnlyList<TokenInfo> Layouts { get; } =
 	[
-		new("--layout-max", "1352px · the page width; everything is centred inside it"),
-		new("--layout-narrow-max", "68rem · the narrower single column of text-led pages"),
-		new("--layout-gutter", "16px · the space between the page edge and the content, at every width"),
-		new("--layout-column-gap", "32px · the space between columns"),
-		new("--layout-nav-width", "17rem · the sidebar column"),
-		new("--layout-rail-width", "15rem · the right-hand rail"),
-		new("--layout-content-max", "52rem · the reading measure of the content column"),
+		new("--layout-max", "84.5rem (1352px) · contained: as wide as the elastic.co header"),
+		new("--layout-max-wide", "120rem (1920px) · full width stops here and centres beyond it"),
+		new("--layout-narrow-max", "68rem · the narrower box of text-led single-column pages"),
+		new("--layout-gutter", "1rem · between the window edge and the box, at every width"),
+		new("--layout-gap", "2rem · between the sidebar, content and rail"),
+		new("--layout-measure", "90ch · the reading measure the content is optimised for"),
+		new("--layout-measure-wide", "110ch · the same in the full-width layout"),
+		new("--layout-nav-min", "14rem · the sidebar stops shrinking here"),
+		new("--layout-nav-max", "20rem · and stops growing here"),
+		new("--layout-rail-min", "11rem · the rail stops shrinking here"),
+		new("--layout-rail-max", "16rem · and stops growing here"),
 		new("--layout-offset", "3rem · where the sticky sidebar and rail stick, under the header")
 	];
 

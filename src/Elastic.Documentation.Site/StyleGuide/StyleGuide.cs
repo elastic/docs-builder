@@ -94,8 +94,9 @@ public static class StyleGuideCatalog
 			"layouts",
 			"Layouts and grid",
 			"Foundations",
-			"The three page layouts, their gutters and breakpoints, and the content grid. A new page starts from one of these."
+			"The page layouts and the two width modes: gutters, the content measure, and how the sidebar and rail take what is left. A new page starts from one of these."
 		),
+		new("grid", "Grid and rhythm", "Foundations", "The content grid, and the six steps that space everything on a page."),
 		new("motion", "Motion", "Foundations", "Durations, easing and the reduced-motion policy."),
 		new(
 			"decisions",
@@ -257,6 +258,9 @@ public static class StyleGuideCatalog
 		{
 			case "themes":
 				await Themes.Create(model).RenderAsync(writer, cancellationToken: ctx);
+				break;
+			case "grid":
+				await Grid.Create(model).RenderAsync(writer, cancellationToken: ctx);
 				break;
 			case "layouts":
 				await Layouts.Create(model).RenderAsync(writer, cancellationToken: ctx);

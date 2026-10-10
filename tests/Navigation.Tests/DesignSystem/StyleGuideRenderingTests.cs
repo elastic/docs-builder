@@ -29,25 +29,29 @@ public class StyleGuideRenderingTests
 	}
 
 	[Test]
-	public async Task LayoutsPage_ShowsEveryLayoutAndTheGridWithTheirTokens()
+	public async Task LayoutsPage_ShowsBothWidthModesAndEveryLayoutWithTheirTokens()
 	{
 		var html = await StyleGuideCatalog.RenderAsync("layouts", StaticUrl, TestContext.Current!.Execution.CancellationToken);
 
 		html
 			.Should()
-			.Contain("layout layout--single")
+			.Contain("layout layout--three layout--full")
 			.And
-			.Contain("layout layout--two")
-			.And
-			.Contain("layout layout--three")
+			.Contain("layout layout--three\"")
 			.And
 			.Contain("layout--hub")
 			.And
-			.Contain("grid grid--4")
+			.Contain("--layout-measure")
 			.And
-			.Contain("--layout-gutter")
-			.And
-			.Contain("--layout-rail-width");
+			.Contain("--layout-rail-max");
+	}
+
+	[Test]
+	public async Task GridPage_ShowsTheGridAndTheRhythmTokens()
+	{
+		var html = await StyleGuideCatalog.RenderAsync("grid", StaticUrl, TestContext.Current!.Execution.CancellationToken);
+
+		html.Should().Contain("grid grid--4").And.Contain("--rhythm-section").And.Contain("stack--group");
 	}
 
 	[Test]

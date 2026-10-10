@@ -329,6 +329,14 @@
 }
 
 /* Math is rendered to MathML by script; display math centres on its own line. */
+/* Long formulas scroll inside their own box instead of widening the page. */
+.prose span.math {
+	display: inline-block;
+	max-width: 100%;
+	overflow-x: auto;
+	vertical-align: bottom;
+}
+
 .prose div.math {
 	margin-top: var(--space-4);
 	overflow-x: auto;

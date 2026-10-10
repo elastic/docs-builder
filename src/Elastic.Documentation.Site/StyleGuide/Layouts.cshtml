@@ -4,9 +4,43 @@
 @functions {
 	public StyleGuideViewModel LayoutModel => Model;
 }
+@{
+	var devices = new[]
+	{
+		(Title: "Contained, 1440px window", Width: 1440, Scale: "0.34", Full: false),
+		(Title: "Contained, 2560px window", Width: 2560, Scale: "0.19", Full: false),
+		(Title: "Full width, 1440px window", Width: 1440, Scale: "0.34", Full: true),
+		(Title: "Full width, 2560px window", Width: 2560, Scale: "0.19", Full: true)
+	};
+}
 <section class="sg-section">
-	<h2>Page width and gutters</h2>
-	<p>Every page sits in one box: <code>--layout-max</code> wide, centred, with a gutter on each side. The gutter is the same 16px at every width, so the logo, the docs bar, the sidebar text and the content all start on one vertical line. Full-width bands (heroes, footers) run to the window edge and put a layout inside for their content.</p>
+	<h2>Two width modes</h2>
+	<p><strong>Contained</strong> is the default. The page box is as wide as the elastic.co header (<code>--layout-max</code>), centred, and the header follows the token, so the logo, the docs bar, the sidebar text and the content start on one line. The assembler has to be contained, because the header is not ours.</p>
+	<p><strong>Full width</strong> (<code>layout--full</code>) lets the sidebar anchor to the left of the window, with the content and rail centred in what is left. It still stops at <code>--layout-max-wide</code> and centres beyond it, so a 4K window is not sparse. Each window below is drawn to scale: the bar on top is the header, the dashed boxes are the sidebar, content and rail.</p>
+	<div class="grid grid--2 sg-devices">
+		@foreach (var device in devices)
+		{
+			<figure class="sg-device" style="--w: @(device.Width)px; --h: @(device.Width * 3 / 10)px; --sg-scale: @device.Scale">
+				<figcaption>@device.Title</figcaption>
+				<div class="sg-device__frame">
+				<div class="sg-device__screen">
+					<div class="sg-device__header"><div class="layout layout--single"><div class="sg-slot">Header · --layout-max</div></div></div>
+					<div class="layout layout--three@(device.Full ? " layout--full" : "")">
+						<aside class="layout__nav"><div class="sg-slot sg-slot--nav">Sidebar</div></aside>
+						<div class="layout__main">
+							<main class="layout__content"><div class="sg-slot sg-slot--content">Content</div></main>
+							<aside class="layout__rail"><div class="sg-slot sg-slot--rail">Rail</div></aside>
+						</div>
+					</div>
+				</div>
+				</div>
+			</figure>
+		}
+	</div>
+</section>
+<section class="sg-section">
+	<h2>Content measure, sidebar and rail</h2>
+	<p>The content is optimised for <code>--layout-measure</code>, 90 characters a line (110 in full width). The sidebar and rail fall in line from that: whatever is left of the box after the content and the gaps is shared between them, 55% to the sidebar and 45% to the rail, and each stops growing at its maximum. Beyond that the content grows rather than the sidebar and rail, or in full width the whole group is centred. Below its minimum a column stops shrinking and the content gives way; the rail drops at 1100px and the sidebar becomes a drawer at 860px.</p>
 	<table class="sg-table">
 		<thead><tr><th>Token</th><th>Value and use</th></tr></thead>
 		<tbody>
@@ -17,6 +51,20 @@
 				<td>@token.Role</td>
 			</tr>
 		}
+		</tbody>
+	</table>
+</section>
+<section class="sg-section">
+	<h2>Units</h2>
+	<p>Layout sizes are in <code>rem</code>, and the reading measure is in <code>ch</code>. Nothing is in <code>px</code> but hairlines and the breakpoints.</p>
+	<table class="sg-table">
+		<thead><tr><th>Unit</th><th>Used for</th><th>Why</th></tr></thead>
+		<tbody>
+		<tr><td><code>rem</code></td><td>Page widths, gutters, gaps, sidebar and rail widths, spacing, type</td><td>Follows the reader's font-size setting and browser zoom, so the layout scales with the text instead of cramping it. One root size means every number reads the same.</td></tr>
+		<tr><td><code>ch</code></td><td>The content measure only</td><td>The width of a "0" in the content's own font, so 90 means 90 characters whatever the font or size. Layout sizes are not in <code>ch</code>: they would shift when a font falls back.</td></tr>
+		<tr><td><code>%</code> and <code>fr</code></td><td>Sharing out what is left</td><td>The sidebar and rail are a share of the free space, clamped between rem limits.</td></tr>
+		<tr><td><code>em</code></td><td>Not used for layout</td><td>It compounds with nesting, so the same value means different things in different places.</td></tr>
+		<tr><td><code>px</code></td><td>Borders and the three breakpoints</td><td>Media queries cannot read custom properties, and a hairline should stay a hairline.</td></tr>
 		</tbody>
 	</table>
 </section>
@@ -45,13 +93,7 @@
 </section>
 <section class="sg-section">
 	<h2>Two columns</h2>
-	<p>Sidebar and content. The API pages use it: the content has no rail because the operation view opens its own examples column. The sidebar is sticky under the header and becomes a drawer at 860px.</p>
-	<div class="sg-frame">
-		<div class="layout layout--two">
-			<div class="layout__nav"><div class="sg-slot sg-slot--nav">Sidebar</div></div>
-			<div class="layout__main"><div class="sg-slot sg-slot--content">Content</div></div>
-		</div>
-	</div>
+	<p>Sidebar and content. The API pages use it: the content has no rail because the operation view opens its own examples column. Add <code>layout--full</code> for the full-width mode.</p>
 	<pre class="sg-themed"><code>&lt;div class="layout layout--two"&gt;
   &lt;aside class="layout__nav"&gt;…&lt;/aside&gt;
   &lt;div class="layout__main"&gt;
@@ -61,16 +103,7 @@
 </section>
 <section class="sg-section">
 	<h2>Three columns</h2>
-	<p>Sidebar, content and a right-hand rail for the outline, page actions and feedback. Documentation articles use it. The content keeps its reading measure (<code>--layout-content-max</code>); at 1100px the rail drops above the content as a compact row.</p>
-	<div class="sg-frame">
-		<div class="layout layout--three">
-			<div class="layout__nav"><div class="sg-slot sg-slot--nav">Sidebar</div></div>
-			<div class="layout__main">
-				<div class="layout__content"><div class="sg-slot sg-slot--content">Content</div></div>
-				<div class="layout__rail"><div class="sg-slot sg-slot--rail">Rail</div></div>
-			</div>
-		</div>
-	</div>
+	<p>Sidebar, content and a right-hand rail for the outline, page actions and feedback. Documentation articles use it. At 1100px the rail drops above the content as a compact row.</p>
 	<pre class="sg-themed"><code>&lt;div class="layout layout--three"&gt;
   &lt;aside class="layout__nav"&gt;…&lt;/aside&gt;
   &lt;div class="layout__main"&gt;
@@ -92,43 +125,10 @@
 	</table>
 </section>
 <section class="sg-section">
-	<h2>Content grid</h2>
-	<p>Inside the content, repeating blocks sit in a <code>grid</code> with a column count. The count steps down by itself. The gap is <code>--grid-gap</code>, 24px unless a block sets another. <code>grid--auto</code> fits as many columns as the width allows, none narrower than <code>--grid-min</code> (16rem by default).</p>
-	<div class="sg-frame sg-frame--plain">
-		<div class="grid grid--2"><div class="sg-slot">grid--2</div><div class="sg-slot">grid--2</div></div>
-		<div class="grid grid--3"><div class="sg-slot">grid--3</div><div class="sg-slot">grid--3</div><div class="sg-slot">grid--3</div></div>
-		<div class="grid grid--4"><div class="sg-slot">grid--4</div><div class="sg-slot">grid--4</div><div class="sg-slot">grid--4</div><div class="sg-slot">grid--4</div></div>
-		<div class="grid grid--auto"><div class="sg-slot">grid--auto</div><div class="sg-slot">grid--auto</div><div class="sg-slot">grid--auto</div><div class="sg-slot">grid--auto</div><div class="sg-slot">grid--auto</div></div>
-	</div>
-</section>
-<section class="sg-section">
-	<h2>Vertical rhythm</h2>
-	<p>Gaps come from six named steps on the spacing scale, so every page breathes the same way. Use the name that says what is being separated; do not reach for a raw <code>--space</code> step in a page.</p>
-	<table class="sg-table">
-		<thead><tr><th>Token</th><th>Value and use</th><th>Gap</th></tr></thead>
-		<tbody>
-		@foreach (var token in StyleGuideTokens.Rhythm)
-		{
-			<tr>
-				<td><code>@token.Name</code></td>
-				<td>@token.Role</td>
-				<td><span class="sg-bar" style="width: var(@token.Name)"></span></td>
-			</tr>
-		}
-		</tbody>
-	</table>
-	<p>For running content, put <code>stack</code> on the parent and it spaces its children: <code>stack--tight</code>, <code>stack--block</code>, <code>stack--group</code> and <code>stack--section</code> pick a larger step than the default <code>--rhythm-stack</code>. A band of a page takes <code>section</code>; a hero, or the page's last band, takes <code>section--band</code>.</p>
-	<div class="sg-frame sg-frame--plain">
-		<div class="stack"><div class="sg-slot">stack</div><div class="sg-slot">stack</div><div class="sg-slot">stack</div></div>
-		<div class="stack stack--group"><div class="sg-slot">stack--group</div><div class="sg-slot">stack--group</div><div class="sg-slot">stack--group</div></div>
-	</div>
-</section>
-<section class="sg-section">
 	<h2>Starting a new page</h2>
 	<ol>
-		<li>Pick the layout from the three above. Without a sidebar, <code>layout--single</code>. A sidebar, <code>layout--two</code>. A sidebar and a rail, <code>layout--three</code>.</li>
+		<li>Pick the layout: <code>layout--single</code> without a sidebar, <code>layout--two</code> with one, <code>layout--three</code> with a sidebar and a rail. Add <code>layout--full</code> only where the page wants the whole window.</li>
 		<li>Put a full-width band (hero, banner) outside the layout, and its content inside a <code>layout layout--single</code>, so it lines up with the page below.</li>
-		<li>Space bands with <code>section</code> and running content with <code>stack</code>. Any gap in a page's own CSS reads a <code>--rhythm</code> token.</li>
-		<li>Lay repeating blocks out with <code>grid</code>. Do not set widths, gutters or breakpoints in a page's own CSS; if the layouts do not fit, that is a gap to bring back here.</li>
+		<li>Do not set widths, gutters or breakpoints in a page's own CSS; if the layouts do not fit, that is a gap to bring back here. Spacing and grids are on <a href="@StyleGuideCatalog.Route/grid">Grid and rhythm</a>.</li>
 	</ol>
 </section>

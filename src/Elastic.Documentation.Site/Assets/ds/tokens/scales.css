@@ -55,14 +55,21 @@
 	--ease-spring: cubic-bezier(0.34, 1.45, 0.64, 1);
 
 	--header-height: 3rem;
-	/* The page layouts (patterns/layout.css). The breakpoints that go with them are 1100 (rail drops) and 860 (sidebar becomes a drawer). */
-	--layout-max: 1352px;
-	--layout-narrow-max: 68rem;
-	--layout-gutter: var(--space-4);
-	--layout-column-gap: var(--space-6);
-	--layout-nav-width: 17rem;
-	--layout-rail-width: 15rem;
-	--layout-content-max: 52rem;
+	/*
+	 * The page layouts (patterns/layout.css). Sizes are in rem, so they follow the reader's font size, and the one measure that is about
+	 * text is in ch. The breakpoints that go with them are 1100px (the rail drops) and 860px (the sidebar becomes a drawer).
+	 */
+	--layout-max: 84.5rem; /* contained: the width of the elastic.co header, which follows this token */
+	--layout-max-wide: 120rem; /* full width stops here, so a 4K window is not sparse */
+	--layout-narrow-max: 68rem; /* the narrower box of text-led single-column pages */
+	--layout-gutter: 1rem;
+	--layout-gap: 2rem;
+	--layout-measure: 90ch; /* the reading measure the content is optimised for */
+	--layout-measure-wide: 110ch; /* the same, in the full-width layout */
+	--layout-nav-min: 14rem;
+	--layout-nav-max: 20rem;
+	--layout-rail-min: 11rem;
+	--layout-rail-max: 16rem;
 	--layout-offset: var(--header-height);
 
 	/* Vertical rhythm: the gaps between things, from the tightest to the largest. Pages use these names instead of the raw steps. */

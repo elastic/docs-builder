@@ -6,8 +6,8 @@
  *   .layout--two      sidebar | content. The API pages.
  *   .layout--three    sidebar | content | rail. Documentation articles.
  *
- * All three share the page width (--layout-max), the side gutters (--layout-gutter) and the column gap (--layout-column-gap), which
- * are tokens in tokens/scales.css. The breakpoints are the system's: 1100 (the rail drops above the content) and 860 (the sidebar
+ * They share the page width (--layout-max), the side gutters (--layout-gutter) and the column gap (--layout-gap), which are tokens in
+ * tokens/scales.css. Two width modes: contained (the default, as wide as the elastic.co header) and layout--full. The breakpoints are the system's: 1100 (the rail drops above the content) and 860 (the sidebar
  * becomes a drawer). Custom properties cannot be used in media queries, so the two numbers live in this file and in the style guide.
  */
 /* The box every layout shares: the page width, centred, with a gutter each side. The hub's blocks are directives, so they take it by name. */
@@ -34,17 +34,93 @@
 	max-width: var(--layout-narrow-max);
 }
 
+/*
+ * Sidebar and rail.
+ *
+ * The content wants --layout-measure. Whatever is left of the box after that and the gaps is shared between the sidebar (55%) and the
+ * rail (45%), and each stops growing at its max; beyond that the content grows instead, in the contained layout, or the whole group
+ * is centred in the full-width layout. Below its min a column stops shrinking and the content gives way.
+ */
 .layout--two,
 .layout--three {
+	--layout-free: calc(100% - var(--layout-measure) - 2 * var(--layout-gap));
+	--layout-nav-width: clamp(
+		var(--layout-nav-min),
+		calc(var(--layout-free) * 0.55),
+		var(--layout-nav-max)
+	);
+	--layout-rail-width: clamp(
+		var(--layout-rail-min),
+		calc(var(--layout-free) * 0.45),
+		var(--layout-rail-max)
+	);
+	/* The tree's rows carry their own padding, so the sidebar's box reaches left into the gutter to line its text up with the logo. */
+	--layout-nav-track: calc(var(--layout-nav-width) - var(--space-3));
+
 	display: grid;
-	grid-template-columns:
-		calc(var(--layout-nav-width) - var(--space-3))
+	grid-template-columns: var(--layout-columns);
+	grid-template-areas: var(--layout-areas);
+}
+
+.layout--two {
+	--layout-free: calc(100% - var(--layout-measure) - var(--layout-gap));
+	--layout-nav-width: clamp(
+		var(--layout-nav-min),
+		var(--layout-free),
+		var(--layout-nav-max)
+	);
+	--layout-columns-contained: var(--layout-nav-track) var(--layout-gap)
 		minmax(0, 1fr);
-	gap: var(--layout-column-gap);
+	--layout-areas-contained: 'nav . content';
+	--layout-columns-full: var(--layout-nav-track)
+		minmax(var(--layout-gap), 1fr) minmax(0, var(--layout-measure))
+		minmax(0, 1fr);
+	--layout-areas-full: 'nav . content .';
+	--layout-areas-contained-tablet: 'nav . content';
+	--layout-areas-full-tablet: 'nav . content .';
+}
+
+.layout--three {
+	--layout-columns-contained: var(--layout-nav-track) var(--layout-gap)
+		minmax(0, 1fr) var(--layout-gap) var(--layout-rail-width);
+	--layout-areas-contained: 'nav . content . rail';
+	--layout-columns-full: var(--layout-nav-track)
+		minmax(var(--layout-gap), 1fr) minmax(0, var(--layout-measure))
+		var(--layout-gap) var(--layout-rail-width) minmax(0, 1fr);
+	--layout-areas-full: 'nav . content . rail .';
+	/* Below 1100px the rail sits above the content. */
+	--layout-areas-contained-tablet: 'nav . rail' 'nav . content';
+	--layout-areas-full-tablet: 'nav . rail .' 'nav . content .';
+}
+
+/* The tablet and phone columns have no rail column: the rail is a row above the content. */
+.layout--two,
+.layout--three {
+	--layout-columns-tablet: var(--layout-nav-track) var(--layout-gap)
+		minmax(0, 1fr);
+	--layout-columns-full-tablet: var(--layout-nav-track)
+		minmax(var(--layout-gap), 1fr) minmax(0, var(--layout-measure))
+		minmax(0, 1fr);
+	--layout-columns: var(--layout-columns-contained);
+	--layout-areas: var(--layout-areas-contained);
+}
+
+/* Full width: the sidebar anchors to the left, the content and rail are centred in the rest. The box stops at --layout-max-wide. */
+.layout--full {
+	--layout-measure: var(--layout-measure-wide);
+	--layout-columns: var(--layout-columns-full);
+	--layout-areas: var(--layout-areas-full);
+	max-width: var(--layout-max-wide);
+}
+
+/* The slots take their cells by name. The wrapper around content and rail only groups them in the markup. */
+.layout--two .layout__main,
+.layout--three .layout__main {
+	display: contents;
 }
 
 .layout__nav {
-	/* The tree's rows carry their own padding, so shifting it left lines the text up with the logo and the docs bar. */
+	grid-area: nav;
 	margin-left: calc(var(--space-3) * -1);
 	position: sticky;
 	top: var(--layout-offset);
@@ -59,21 +135,11 @@
 }
 
 .layout__main {
-	display: grid;
-	grid-template-columns: minmax(0, 1fr);
-	gap: var(--layout-column-gap);
 	min-width: 0;
 }
 
-/* Content with a rail: the rail keeps its width and the content its reading measure, with any spare room between them. */
-.layout--three .layout__main {
-	grid-template-columns: minmax(0, var(--layout-content-max)) var(
-			--layout-rail-width
-		);
-	justify-content: space-between;
-}
-
 .layout__content {
+	grid-area: content;
 	min-width: 0;
 	/* The breadcrumb's first line lines up with the first rows of the sidebar and the rail. */
 	padding-top: calc(var(--space-5) + var(--space-1));
@@ -81,6 +147,7 @@
 }
 
 .layout__rail {
+	grid-area: rail;
 	position: sticky;
 	top: var(--layout-offset);
 	align-self: start;
@@ -114,8 +181,15 @@
 }
 
 @media (max-width: 1100px) {
-	.layout--three .layout__main {
-		grid-template-columns: minmax(0, 1fr);
+	.layout--two,
+	.layout--three {
+		--layout-columns: var(--layout-columns-tablet);
+		--layout-areas: var(--layout-areas-contained-tablet);
+	}
+
+	.layout--full {
+		--layout-columns: var(--layout-columns-full-tablet);
+		--layout-areas: var(--layout-areas-full-tablet);
 	}
 
 	.layout__rail {
@@ -136,9 +210,10 @@
 
 @media (max-width: 860px) {
 	.layout--two,
-	.layout--three {
-		grid-template-columns: minmax(0, 1fr);
-		gap: 0;
+	.layout--three,
+	.layout--full {
+		--layout-columns: minmax(0, 1fr);
+		--layout-areas: 'rail' 'content';
 	}
 
 	.layout__menu-button {
