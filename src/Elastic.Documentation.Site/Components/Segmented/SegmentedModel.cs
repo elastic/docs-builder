@@ -4,7 +4,7 @@
 
 namespace Elastic.Documentation.Site.Components.Segmented;
 
-public sealed record SegmentedOption(string Value, string Label, bool Selected = false);
+public sealed record SegmentedOption(string Value, string Label, bool Selected = false, int? Count = null);
 
 /// <summary>A single-choice control for a few short options. Radios underneath, so it works without script.</summary>
 public sealed record SegmentedModel

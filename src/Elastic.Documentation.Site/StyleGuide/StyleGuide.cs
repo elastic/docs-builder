@@ -22,6 +22,7 @@ using Elastic.Documentation.Site.Components.Disclosure;
 using Elastic.Documentation.Site.Components.DocsBar;
 using Elastic.Documentation.Site.Components.EmptyState;
 using Elastic.Documentation.Site.Components.Feedback;
+using Elastic.Documentation.Site.Components.FilterBar;
 using Elastic.Documentation.Site.Components.Flyout;
 using Elastic.Documentation.Site.Components.Image;
 using Elastic.Documentation.Site.Components.Kbd;
@@ -131,6 +132,7 @@ public static class StyleGuideCatalog
 			SwitchExamples.Switches,
 			ChipExamples.Chips,
 			SegmentedExamples.Segmenteds,
+			FilterBarExamples.FilterBars,
 			SplitButtonExamples.SplitButtons,
 			SearchFieldExamples.Searches
 		],

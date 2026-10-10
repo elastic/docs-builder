@@ -5,7 +5,7 @@
 	{
 		<label class="segmented__option">
 			<input class="segmented__input" type="radio" name="@Model.Name" value="@option.Value"@(option.Selected ? new HtmlString(" checked") : HtmlString.Empty)>
-			<span class="segmented__label">@option.Label</span>
+			<span class="segmented__label">@option.Label@if (option.Count is { } count){<span class="segmented__count">@count</span>}</span>
 		</label>
 	}
 </fieldset>

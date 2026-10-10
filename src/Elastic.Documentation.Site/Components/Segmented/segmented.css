@@ -49,3 +49,17 @@
 	outline: 3px solid var(--color-focus-ring);
 	outline-offset: 2px;
 }
+
+.segmented__count {
+	margin-left: var(--space-2);
+	padding: 0 var(--space-1);
+	border-radius: var(--radius-sm);
+	background: var(--color-surface-sunken);
+	color: var(--color-text-muted);
+	font-size: var(--text-xs);
+}
+
+.segmented__input:checked + .segmented__label .segmented__count {
+	background: transparent;
+	color: inherit;
+}
