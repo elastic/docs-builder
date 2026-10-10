@@ -30,15 +30,15 @@
 }
 
 .diagnostics[data-severity='error'] .diagnostics__bar {
-	border-top-color: var(--color-danger);
+	border-top-color: var(--color-code-danger);
 }
 
 .diagnostics[data-severity='warning'] .diagnostics__bar {
-	border-top-color: var(--color-warning);
+	border-top-color: var(--color-code-warning);
 }
 
 .diagnostics[data-severity='hint'] .diagnostics__bar {
-	border-top-color: var(--color-accent);
+	border-top-color: var(--color-code-info);
 }
 
 .diagnostics__summary {
@@ -56,15 +56,15 @@
 }
 
 .diagnostics__count--error {
-	color: var(--color-danger);
+	color: var(--color-code-danger);
 }
 
 .diagnostics__count--warning {
-	color: var(--color-warning);
+	color: var(--color-code-warning);
 }
 
 .diagnostics__count--hint {
-	color: var(--color-accent);
+	color: var(--color-code-info);
 }
 
 .diagnostics__hud {
@@ -163,11 +163,11 @@
 }
 
 .diagnostics__row[data-severity='error'] {
-	border-left-color: var(--color-danger);
+	border-left-color: var(--color-code-danger);
 }
 
 .diagnostics__row[data-severity='warning'] {
-	border-left-color: var(--color-warning);
+	border-left-color: var(--color-code-warning);
 }
 
 .diagnostics__meta {
@@ -184,11 +184,11 @@
 }
 
 .diagnostics__row[data-severity='error'] .diagnostics__severity {
-	color: var(--color-danger);
+	color: var(--color-code-danger);
 }
 
 .diagnostics__row[data-severity='warning'] .diagnostics__severity {
-	color: var(--color-warning);
+	color: var(--color-code-warning);
 }
 
 .diagnostics__location {

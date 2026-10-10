@@ -5,6 +5,7 @@ import { initAskAi } from './ds/ask-ai'
 import { initCarousels } from './ds/carousel'
 import { initCopyButtons, initCopyText } from './ds/copy'
 import { initDiagnostics } from './ds/diagnostics'
+import { initDocsBarSync } from './ds/docs-bar'
 import { initFeedback } from './ds/feedback'
 import { initLightboxes } from './ds/lightbox'
 import { initListings } from './ds/listing'
@@ -68,6 +69,7 @@ function init(scope: ParentNode = document) {
 }
 
 bindOutsideClick()
+initDocsBarSync()
 bindSearchShortcut()
 document.addEventListener('DOMContentLoaded', () => init())
 // htmx swaps #main-container; re-bind inside the swapped content

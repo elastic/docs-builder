@@ -141,7 +141,7 @@
 #elastic-api-v3 h1 {
 	margin: 0;
 	padding-top: 0;
-	color: var(--color-code-bg);
+	color: var(--color-heading);
 	font-family: var(--font-body, Inter, ui-sans-serif, system-ui, sans-serif);
 	font-size: 1.875rem;
 	font-weight: 600;
@@ -1381,7 +1381,7 @@ button.response-status-toggle:focus {
 
 		> a.property-anchor > code,
 		> code {
-			color: var(--color-code-bg);
+			color: var(--color-heading);
 			font-family:
 				'Roboto Mono', ui-monospace, SFMono-Regular, Menlo, Monaco,
 				Consolas, monospace;
@@ -1732,7 +1732,7 @@ button.response-status-toggle:focus {
 }
 
 .api-param-summary-item code {
-	color: var(--color-code-bg);
+	color: var(--color-heading);
 	font-family:
 		'Roboto Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
 		monospace;
@@ -2682,7 +2682,7 @@ a.docs-reference-btn::after {
 /* Section headings are h2. 16px sits under the 30px page title and above nested h3. */
 #elastic-api-v3 h2.section-header,
 #schema-definition h2.section-header {
-	background: var(--color-surface);
+	background: transparent;
 	position: static;
 	box-sizing: border-box;
 	margin-top: 0;
@@ -2690,7 +2690,7 @@ a.docs-reference-btn::after {
 	padding-top: 2.5rem;
 	padding-bottom: var(--space-4);
 	border-bottom: 1px solid var(--color-border);
-	color: var(--color-code-bg);
+	color: var(--color-heading);
 	font-family: var(--font-body, Inter, ui-sans-serif, system-ui, sans-serif);
 	font-size: 1rem;
 	font-weight: 600;
@@ -2775,7 +2775,7 @@ a.docs-reference-btn::after {
 		padding-top: 2.5rem;
 		padding-bottom: var(--space-4);
 		border-bottom: 1px solid var(--color-border);
-		color: var(--color-code-bg);
+		color: var(--color-heading);
 		font-size: 1rem;
 		line-height: 1.5rem;
 	}
@@ -2984,8 +2984,9 @@ a.docs-reference-btn::after {
 .example-response-tab.is-active {
 	position: relative;
 	z-index: 1;
-	color: var(--api-code-accent);
-	border-bottom-color: var(--api-code-accent);
+	/* On the dark code panel in both themes, so the accent that reads on it is the teal, not the blue that reads on the page. */
+	color: var(--color-on-emphasis);
+	border-bottom-color: var(--color-on-emphasis);
 	font-weight: 600;
 	cursor: pointer;
 }
@@ -4024,13 +4025,13 @@ html:has(.api-page-shell) {
 
 /* The client label links to the client's docs page; a light blue reads as a link on the dark card. */
 .markdown-content a.api-code-carousel-card-client {
-	color: var(--color-accent-border);
+	color: var(--color-on-emphasis);
 	text-decoration: none;
 }
 
 .markdown-content a.api-code-carousel-card-client:hover,
 .markdown-content a.api-code-carousel-card-client:focus-visible {
-	color: var(--color-accent-border);
+	color: var(--color-on-emphasis);
 	text-decoration: underline;
 }
 
@@ -4302,7 +4303,7 @@ html:has(.api-page-shell) {
 		margin: 0 0 var(--space-4);
 		padding: 2.5rem 0 var(--space-4);
 		border-bottom: 1px solid var(--color-border);
-		color: var(--color-code-bg);
+		color: var(--color-heading);
 		font-size: 1rem;
 		font-weight: 600;
 		letter-spacing: 0;

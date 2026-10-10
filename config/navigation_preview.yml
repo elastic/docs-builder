@@ -48,8 +48,9 @@ toc:
   ########
   # APIs #
   ########
+  # A path that starts with / is a link within the site, so the site prefix is added and the tab is active on pages under it.
   - section: APIs
-    external: https://www.elastic.co/docs/api/
+    external: /api/
 
   ###########
   # PRODUCTS #

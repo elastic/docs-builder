@@ -10,6 +10,14 @@
 	var apiHome = apiChrome && !siteNav;
 	var homeHref = apiHome && !string.IsNullOrEmpty(Model.ApiCatalogUrl) ? Model.ApiCatalogUrl : Model.Link("/");
 
+	// A site link that owns no navigation section, such as the APIs tab, is active on the pages beneath its path.
+	var pagePath = (Model.CurrentNavigationItem.Url ?? string.Empty).TrimEnd('/');
+	bool UnderPath(string url)
+	{
+		var prefix = url.TrimEnd('/');
+		return prefix.Length > 0 && (pagePath == prefix || pagePath.StartsWith(prefix + "/", StringComparison.Ordinal));
+	}
+
 	string? IconFor(string title) => title switch
 	{
 		"Guides" => "documentation",
@@ -32,7 +40,7 @@
 					Icon = IconFor(dropdown.Title),
 					Groups = [.. dropdown.Groups.Select(g => new DocsBarGroup(g.Label, [.. g.Links.Select(l => new DocsBarLink(l.Title, l.Url))]))]
 				},
-				TopNavLinkItem link => new DocsBarItem { Title = link.Title, Href = link.Url, Active = link.IsActive(currentSectionId), External = link.IsExternal, Icon = IconFor(link.Title) },
+				TopNavLinkItem link => new DocsBarItem { Title = link.Title, Href = link.Url, Active = link.IsActive(currentSectionId) || (link.SectionId is null && !link.IsExternal && UnderPath(link.Url)), External = link.IsExternal, Icon = IconFor(link.Title) },
 				_ => new DocsBarItem { Title = item.Title }
 			})];
 

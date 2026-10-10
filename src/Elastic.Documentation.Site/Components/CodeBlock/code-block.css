@@ -30,6 +30,7 @@
 }
 
 .code-block__language {
+	color: var(--color-code-muted);
 	letter-spacing: 0.04em;
 }
 

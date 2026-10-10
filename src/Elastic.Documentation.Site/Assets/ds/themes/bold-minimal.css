@@ -112,8 +112,12 @@
 	--color-code-border: var(--ds-l, transparent)
 		var(--ds-d, var(--color-border));
 	--color-code-text: var(--palette-grey-100);
+	/* Status colours for text on the code panel, which is dark in both themes. */
+	--color-code-danger: #ff957d;
+	--color-code-warning: #f9b110;
+	--color-code-info: #6fa8ff;
 	--color-code-muted: #8e9ab5;
-	--color-code-gutter: #6a7794;
+	--color-code-gutter: #7d8cad;
 	--color-code-keyword: var(--palette-teal);
 	--color-code-string: #ffa3d2;
 	--color-code-number: #f9b110;
@@ -129,7 +133,7 @@
 	--color-success: var(--ds-l, #0e7074) var(--ds-d, var(--palette-teal));
 	--color-success-surface: var(--ds-l, #f0fbf8)
 		var(--ds-d, rgb(72 239 207 / 10%));
-	--color-warning: var(--ds-l, #b87400) var(--ds-d, #f9b110);
+	--color-warning: var(--ds-l, #9a6200) var(--ds-d, #f9b110);
 	--color-warning-surface: var(--ds-l, #fff9e8)
 		var(--ds-d, rgb(249 177 16 / 10%));
 	--color-danger: var(--ds-l, #b42a20) var(--ds-d, #ff957d);

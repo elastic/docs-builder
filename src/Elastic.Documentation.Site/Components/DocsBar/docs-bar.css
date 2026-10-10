@@ -18,6 +18,8 @@
 .docs-bar__home {
 	flex: none;
 	padding: var(--space-3) 0;
+	/* The same transparent rule the tabs carry for the current-page mark, so the label and the tabs centre on one line. */
+	border-bottom: 3px solid transparent;
 	color: var(--color-heading);
 	font-size: var(--text-sm);
 	font-weight: var(--weight-extrabold);
