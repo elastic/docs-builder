@@ -26,6 +26,12 @@ public sealed record PreviewDocsetOptions
 	public BuildType BuildType { get; init; } = BuildType.Isolated;
 	public IPageViewFactory? PageViewFactory { get; init; }
 	public string? NavigationHtml { get; init; }
+	public string RepositoryName { get; init; } = "lorem-ipsum";
+
+	/// <summary>The set's title and description, as its index page gives them.</summary>
+	public string? Title { get; init; }
+
+	public string? Description { get; init; }
 }
 
 /// <summary>
@@ -53,7 +59,7 @@ public sealed class PreviewDocset : IAsyncDisposable
 		_ = fileSystem.Directory.CreateDirectory(fileSystem.Path.Combine(root.FullName, ".git"));
 		var docs = fileSystem.Path.Combine(root.FullName, "docs");
 		Write(fileSystem, docs, "docset.yml", PreviewSamples.DocSet(options.Branded));
-		Write(fileSystem, docs, "index.md", PreviewSamples.Index);
+		Write(fileSystem, docs, "index.md", PreviewSamples.IndexPage(options.Title, options.Description));
 		Write(fileSystem, docs, "kitchen-sink.md", PreviewSamples.KitchenSink);
 		Write(fileSystem, docs, "product.md", PreviewSamples.Product);
 		Write(fileSystem, docs, "landing.md", PreviewSamples.Landing);
@@ -82,7 +88,7 @@ public sealed class PreviewDocset : IAsyncDisposable
 					Branch = "main",
 					Remote = "https://github.com/acme/lorem-ipsum.git",
 					Ref = "45954b6e0b1d4b0d8f5c6c0c3f1b4a5d9a7c2e11",
-					RepositoryName = "lorem-ipsum",
+					RepositoryName = options.RepositoryName,
 					GitHubRef = "refs/pull/42/merge"
 				}
 			}
@@ -113,6 +119,12 @@ public sealed class PreviewDocset : IAsyncDisposable
 			?? throw new InvalidOperationException($"The sample page {relativePath} was not found.");
 
 	/// <summary>The whole page as the isolated build writes it.</summary>
+	/// <summary>The set's own navigation, for building a Codex out of several sets.</summary>
+	public Elastic.Documentation.Navigation.Isolated.Node.IDocumentationSetNavigation Navigation => _generator.DocumentationSet.Navigation;
+
+	/// <summary>The context the set was built in.</summary>
+	public BuildContext Context => _generator.DocumentationSet.Context;
+
 	public async Task<string> RenderPageAsync(string relativePath, Cancel ctx) =>
 		(await _generator.RenderLayout(File(relativePath), ctx)).Html;
 

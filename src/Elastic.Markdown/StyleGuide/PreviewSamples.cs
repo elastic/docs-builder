@@ -51,7 +51,11 @@ internal static class PreviewSamples
 		# Not found
 		""";
 
-	public const string Index =
+	public static string IndexPage(string? title, string? description) =>
+		(description is null ? string.Empty : $"---\ndescription: {description}\n---\n\n")
+			+ (title is null ? Index : Index.Replace("# Lorem ipsum dolor sit amet", $"# {title}", StringComparison.Ordinal));
+
+	private const string Index =
 		$$"""
 		# Lorem ipsum dolor sit amet
 

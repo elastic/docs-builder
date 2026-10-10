@@ -2,12 +2,17 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.IO.Abstractions;
+using Elastic.Codex.Group;
 using Elastic.Codex.Landing;
+using Elastic.Codex.Navigation;
 using Elastic.Codex.Page;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
-using Elastic.Documentation.Configuration.Assembler;
-using Elastic.Documentation.Configuration.Builder;
+using Elastic.Documentation.Configuration.Codex;
+using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.FileSystems;
+using Elastic.Documentation.Navigation.Isolated.Node;
 using Elastic.Documentation.Site;
 using Elastic.Documentation.Site.FileProviders;
 using Elastic.Markdown.StyleGuide;
@@ -15,40 +20,54 @@ using RazorSlices;
 
 namespace Elastic.Codex.StyleGuide;
 
-/// <summary>The Codex pages of the style guide's previews, rendered with the real views around placeholder documentation sets.</summary>
+/// <summary>
+/// The Codex pages of the style guide's previews. A few small sample documentation sets in two groups go through the real Codex
+/// navigation and views, so the landing, a group and a set's pages are what a Codex build writes, around placeholder content.
+/// </summary>
 public static class CodexStyleGuidePreviews
 {
 	public static IReadOnlyList<string> Ids { get; } = ["codex-landing", "codex-group", "codex-docs-group", "codex-docs-ungrouped"];
 
 	private const string Lorem = "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt.";
 
-	private static CodexCardModel Card(string name, string title, int pages, string icon, string? description = Lorem) =>
-		new()
-		{
-			Url = "#",
-			Title = title,
-			Description = description,
-			Icon = icon,
-			PageCount = pages,
-			RepoPath = $"/r/{name}"
-		};
+	private const string ConfigurationYaml =
+		"""
+		title: Lorem Ipsum Docs
+		groups:
+		  - id: search
+		    name: Search
+		    description: Lorem ipsum dolor sit amet, consectetur adipiscing elit.
+		    icon: search
+		  - id: platform
+		    name: Platform
+		    description: Sed do eiusmod tempor incididunt ut labore.
+		    icon: gear
+		""";
 
-	private static readonly CodexCardModel[] SearchCards =
+	private sealed record SampleSet(string Name, string Title, string Icon, string? Group);
+
+	private static readonly SampleSet[] Sets =
 	[
-		Card("lorem-ipsum", "Lorem Ipsum", 1284, "search"),
-		Card("dolor-sit", "Dolor Sit", 540, "code"),
-		Card("amet-consectetur", "Amet Consectetur", 942, "database"),
-		Card("adipiscing-elit", "Adipiscing Elit", 310, "pulse")
+		new("lorem-ipsum", "Lorem Ipsum", "search", "search"),
+		new("dolor-sit", "Dolor Sit", "code", "search"),
+		new("amet-consectetur", "Amet Consectetur", "database", "platform"),
+		new("adipiscing-elit", "Adipiscing Elit", "cloud", "platform"),
+		new("quis-nostrud", "Quis Nostrud", "question", null)
 	];
 
-	private static readonly CodexCardModel[] PlatformCards =
-	[
-		Card("sed-do", "Sed Do Eiusmod", 186, "gear"),
-		Card("tempor-incididunt", "Tempor Incididunt", 702, "cloud"),
-		Card("ut-labore", "Ut Labore", 64, "documentation", null)
-	];
+	private sealed class PreviewCodexContext(BuildContext inner) : ICodexDocumentationContext
+	{
+		public IDiagnosticsCollector Collector => inner.Collector;
+		public DocumentationWriteFileSystem WriteFileSystem => inner.WriteFileSystem;
+		public IDirectoryInfo OutputDirectory => inner.OutputDirectory;
+		public IFileInfo ConfigurationPath => inner.ConfigurationPath;
+		public BuildType BuildType => BuildType.Codex;
+
+		public void EmitError(string message) { }
+	}
 
 	/// <summary>Renders a preview as a complete HTML document, or <c>null</c> when the id is unknown.</summary>
+	/// <param name="template">The context of the running site, lending its configuration to the sample documentation sets.</param>
 	public static async Task<string?> RenderAsync(
 		string id,
 		BuildContext template,
@@ -56,74 +75,96 @@ public static class CodexStyleGuidePreviews
 		Cancel ctx = default
 	)
 	{
-		if (id is "codex-docs-group" or "codex-docs-ungrouped")
-		{
-			// A documentation set of a Codex site is built by the real generator with the Codex page view. A set in a group
-			// has the group in its trail and beside its sibling set in the tree.
-			var inGroup = id == "codex-docs-group";
-			var trail = inGroup
-				? new[] { new CodexBreadcrumb("Home", "/"), new CodexBreadcrumb("Search", "#"), new CodexBreadcrumb("Lorem Ipsum", "#") }
-				: [new CodexBreadcrumb("Home", "/"), new CodexBreadcrumb("Lorem Ipsum", "#")];
-			var options = new PreviewDocsetOptions
-			{
-				BuildType = BuildType.Codex,
-				PageViewFactory = new CodexPageViewFactory("Lorem Ipsum Docs", trail),
-				NavigationHtml = inGroup ? await StyleGuidePreviews.NavHtmlAsync(PreviewNavigation.CodexDocs(true), ctx) : null
-			};
-			await using var docset = await PreviewDocset.CreateAsync(template, options, ctx);
-			return await docset.RenderPageAsync("index.md", ctx);
-		}
+		if (!Ids.Contains(id))
+			return null;
 
-		var layout = Layout(new StaticFileContentHashProvider(staticFiles), id == "codex-group");
-		var model = id switch
+		if (id is "codex-docs-group" or "codex-docs-ungrouped")
+			return await RenderDocsPageAsync(template, inGroup: id == "codex-docs-group", ctx);
+
+		var docsets = new List<PreviewDocset>();
+		try
 		{
-			"codex-landing" =>
-				new CodexPreviewModel(
-					layout,
-					Landing: new CodexLandingContent(
-						"Lorem Ipsum Docs",
-						"https://codex.example.dev/mcp",
-						2,
-						7,
-						4_028,
-						[
-							new CodexSection("Search", "#", Lorem, SearchCards.Length, SearchCards),
-							new CodexSection("Platform", "#", null, PlatformCards.Length, PlatformCards),
-							new CodexSection(
-								"Documentation sets",
-								null,
-								null,
-								2,
-								[Card("quis-nostrud", "Quis Nostrud", 83, "question"), Card("exercitation", "Exercitation", 36, "pencil")],
-								"codex-grid"
-							)
-						]
+			foreach (var set in Sets)
+			{
+				docsets.Add(
+					await PreviewDocset.CreateAsync(
+						template,
+						new PreviewDocsetOptions
+						{
+							BuildType = BuildType.Codex,
+							RepositoryName = set.Name,
+							Title = set.Title,
+							Description = Lorem
+						},
+						ctx
 					)
-				),
-			"codex-group" => new CodexPreviewModel(layout, Group: new CodexGroupContent("Search", Lorem, SearchCards)),
-			_ => null
-		};
-		return model is null ? null : await CodexPreviewPage.Create(model).RenderAsync(cancellationToken: ctx);
+				);
+			}
+
+			var context = docsets[0].Context;
+			var references = Sets.Select(
+				s => new CodexDocumentationSetReference { Name = s.Name, Branch = "main", Group = s.Group, Icon = s.Icon }
+			).ToList();
+			var navigations = Sets.Zip(docsets, (set, docset) => (set.Name, docset.Navigation)).ToDictionary(
+				pair => pair.Name,
+				pair => pair.Navigation
+			);
+			var navigation = new CodexNavigation(
+				CodexConfiguration.Deserialize(ConfigurationYaml),
+				references,
+				new PreviewCodexContext(context),
+				navigations
+			);
+
+			var hashes = new StaticFileContentHashProvider(staticFiles);
+			var writer = new CodexNavigationHtmlWriter(context, navigation);
+			if (id == "codex-landing")
+			{
+				var rendered = await writer.RenderNavigation(navigation, navigation.Index, ctx);
+				var viewModel = new LandingViewModel(RenderContext(context, navigation, hashes, navigation.Index, rendered.Html))
+				{
+					IndexPage = (CodexIndexPage)navigation.Index.Model
+				};
+				return await DesignSystemLandingView.Create(viewModel).RenderAsync(cancellationToken: ctx);
+			}
+
+			var group = navigation.GroupNavigations.First(g => g.GroupSlug == "search");
+			var groupRendered = await writer.RenderNavigation(group, group.Index, ctx);
+			var groupModel = new GroupLandingViewModel(RenderContext(context, navigation, hashes, group.Index, groupRendered.Html))
+			{
+				Group = group
+			};
+			return await DesignSystemGroupLandingView.Create(groupModel).RenderAsync(cancellationToken: ctx);
+		}
+		finally
+		{
+			foreach (var docset in docsets)
+				await docset.DisposeAsync();
+		}
 	}
 
-	private static GlobalLayoutViewModel Layout(StaticFileContentHashProvider hashes, bool group) =>
-		new()
+	private static CodexRenderContext RenderContext(
+		BuildContext context,
+		CodexNavigation navigation,
+		StaticFileContentHashProvider hashes,
+		Elastic.Documentation.Navigation.INavigationItem current,
+		string navigationHtml
+	) => new(context, navigation, hashes) { NavigationHtml = navigationHtml, CurrentNavigation = current };
+
+	// A set of a Codex site is built by the real generator with the Codex page view. A set in a group has the group in its
+	// trail and beside its sibling set in the tree.
+	private static async Task<string> RenderDocsPageAsync(BuildContext template, bool inGroup, Cancel ctx)
+	{
+		var trail = inGroup
+			? new[] { new CodexBreadcrumb("Home", "/"), new CodexBreadcrumb("Search", "#"), new CodexBreadcrumb("Lorem Ipsum", "#") }
+			: [new CodexBreadcrumb("Home", "/"), new CodexBreadcrumb("Lorem Ipsum", "#")];
+		var options = new PreviewDocsetOptions
 		{
-			DocSetName = "Lorem Ipsum Docs",
-			Description = Lorem,
-			CurrentNavigationItem = PreviewNavigation.Page("Lorem Ipsum Docs", "/", false),
-			Previous = null,
-			Next = null,
-			NavigationHtml = string.Empty,
-			UrlPathPrefix = null,
-			AllowIndexing = false,
-			CanonicalBaseUrl = null,
-			GoogleTagManager = new GoogleTagManagerConfiguration(),
-			Optimizely = new OptimizelyConfiguration(),
-			Features = new FeatureFlags(new Dictionary<string, bool> { ["navigation-preview"] = true }),
-			StaticFileContentHashProvider = hashes,
 			BuildType = BuildType.Codex,
-			HeaderTitle = "Lorem Ipsum Docs",
-			CodexBreadcrumbs = group ? [new CodexBreadcrumb("Home", "/"), new CodexBreadcrumb("Search", "#")] : null
+			PageViewFactory = new CodexPageViewFactory("Lorem Ipsum Docs", trail),
+			NavigationHtml = inGroup ? await StyleGuidePreviews.NavHtmlAsync(PreviewNavigation.CodexDocs(true), ctx) : null
 		};
+		await using var docset = await PreviewDocset.CreateAsync(template, options, ctx);
+		return await docset.RenderPageAsync("index.md", ctx);
+	}
 }
