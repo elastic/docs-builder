@@ -29,6 +29,11 @@
 		calc(var(--space-8) + var(--space-4));
 }
 
+.codex-hero__inner--group {
+	grid-template-columns: minmax(0, 1fr);
+	padding-block: var(--space-7);
+}
+
 .codex-hero__eyebrow {
 	margin: 0;
 	color: var(--palette-teal);
