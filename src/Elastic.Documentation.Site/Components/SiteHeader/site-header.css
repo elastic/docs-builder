@@ -58,12 +58,6 @@
 	border-color: var(--color-accent);
 }
 
-.site-header__revision {
-	color: var(--color-text-muted);
-	font-family: var(--font-mono);
-	font-size: var(--text-xs);
-}
-
 @media (max-width: 760px) {
 	.site-header__nav {
 		display: none;
@@ -119,7 +113,6 @@
 	border-color: color-mix(in oklab, var(--palette-white) 55%, transparent);
 }
 
-.site-header--dark .site-header__revision,
 .site-header--dark .site-header__theme-name {
 	color: color-mix(in oklab, var(--palette-white) 70%, transparent);
 }

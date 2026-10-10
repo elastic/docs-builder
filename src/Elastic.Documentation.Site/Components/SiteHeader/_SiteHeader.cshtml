@@ -23,9 +23,9 @@
 			{
 				<a class="site-header__link" href="@link.Href">@if (link.Icon is { } icon){@await RenderPartialAsync(_Icon.Create(new IconModel { Name = icon, Size = IconSize.Small }))}<span>@link.Label</span></a>
 			}
-			@if (Model.Revision is { } revision)
+			@if (Model.Deployment is { } deployment)
 			{
-				<span class="site-header__revision">@revision</span>
+				@await RenderPartialAsync(_DeploymentInfo.Create(deployment))
 			}
 			@if (Model.AskAi)
 			{

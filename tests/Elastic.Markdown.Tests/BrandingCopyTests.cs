@@ -52,4 +52,34 @@ branding:
 		var outputStaticDir = Path.Join(set.OutputDirectory.FullName, "_static");
 		fs.File.Exists(Path.Join(outputStaticDir, "logo.svg")).Should().BeTrue();
 	}
+
+	[Test]
+	public async Task Branding_ReadsTheCopyrightLine()
+	{
+		var fs = new MockFileSystem(
+			new Dictionary<string, MockFileData>
+			{
+				{
+					"docs/docset.yml",
+					//language=yaml
+					new MockFileData("""
+project: test
+toc:
+- file: index.md
+branding:
+  copyright: "© 2026 Acme Inc."
+""")
+				},
+				{ "docs/index.md", new MockFileData("# Hello") }
+			},
+			new MockFileSystemOptions { CurrentDirectory = Paths.WorkingDirectoryRoot.FullName }
+		);
+
+		await using var collector = new DiagnosticsCollector([]).StartAsync(TestContext.Current!.Execution.CancellationToken);
+		var configurationContext = TestHelpers.CreateConfigurationContext(fs);
+		var context = new BuildContext(collector, TestHelpers.CreateDocumentationFileSystem(fs), configurationContext);
+		await collector.StopAsync(TestContext.Current!.Execution.CancellationToken);
+
+		context.Configuration.Branding!.Copyright.Should().Be("© 2026 Acme Inc.");
+	}
 }

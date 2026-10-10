@@ -29,6 +29,8 @@ else
 		LogoSrc = Model.Static("logo-elastic-horizontal-white.svg"),
 		ColorLogoSrc = Model.Static("logo-elastic-horizontal-color.svg"),
 		Branded = Model.Branding is not null,
+		Copyright = Model.Branding?.Copyright,
+		BrandIconSrc = Model.BrandingIconStaticPath,
 		DiagnosticsPanel = Model.Features.DiagnosticsPanelEnabled
 	}))
 }

@@ -8,7 +8,7 @@ public static class SiteFooterExamples
 {
 	public static ComponentSection Footers { get; } = new(
 		"Footer",
-		"The site footer: logo, legal line and links, with optional notices and consent links. Branded builds drop it.",
+		"The site footer: logo, legal line and links, with optional notices and consent links. A branded build shows only its own copyright line, and no footer without one.",
 		"site-footer",
 		[
 			ComponentExample.Of(
@@ -25,6 +25,16 @@ public static class SiteFooterExamples
 					Year = 2026,
 					Notices = ["This content is available in different formats for convenience only."],
 					PrivacyChoices = true
+				}
+			),
+			ComponentExample.Of(
+				"Branded",
+				_SiteFooter.Create,
+				new SiteFooterModel
+				{
+					LogoSrc = "/_static/logo-elastic-horizontal-white.svg",
+					Branded = true,
+					Copyright = "© 2026 Acme Inc. All rights reserved."
 				}
 			)
 		]

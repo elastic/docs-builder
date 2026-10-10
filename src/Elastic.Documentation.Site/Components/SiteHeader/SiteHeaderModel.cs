@@ -34,6 +34,6 @@ public sealed record SiteHeaderModel
 	public string? LogoSrc { get; init; }
 	public IReadOnlyList<SiteHeaderLink> Links { get; init; } = [];
 
-	/// <summary>The branch and commit shown next to the links, for example "main · 65728c5".</summary>
-	public string? Revision { get; init; }
+	/// <summary>Where the build came from. Shown next to the links as a button that opens the details.</summary>
+	public Elastic.Documentation.Site.Components.DeploymentInfo.DeploymentInfoModel? Deployment { get; init; }
 }

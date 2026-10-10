@@ -1,0 +1,101 @@
+.deployment {
+	position: relative;
+}
+
+.deployment__trigger {
+	display: inline-flex;
+	align-items: center;
+	gap: var(--space-2);
+	padding: var(--space-1) var(--space-3);
+	border: var(--border-width) solid var(--color-border-control);
+	border-radius: var(--radius-md);
+	background: var(--color-surface);
+	color: var(--color-heading);
+	font-family: var(--font-mono);
+	font-size: var(--text-xs);
+	list-style: none;
+	cursor: pointer;
+	transition:
+		background-color var(--duration-fast) var(--ease-standard),
+		border-color var(--duration-fast) var(--ease-standard);
+}
+
+.deployment__trigger::-webkit-details-marker {
+	display: none;
+}
+
+.deployment__trigger:hover,
+.deployment[open] > .deployment__trigger {
+	border-color: var(--color-accent);
+}
+
+.deployment__trigger:focus-visible {
+	outline: 3px solid var(--color-focus-ring);
+	outline-offset: 2px;
+}
+
+.deployment__panel {
+	position: absolute;
+	z-index: var(--z-overlay);
+	inset: calc(100% + var(--space-1)) 0 auto auto;
+	min-width: 18rem;
+	border: var(--border-width) solid var(--color-border);
+	border-radius: var(--radius-md);
+	background: var(--color-surface);
+	box-shadow: var(--shadow-overlay);
+}
+
+.deployment__title {
+	margin: 0;
+	padding: var(--space-3) var(--space-4) 0;
+	color: var(--color-heading);
+	font-size: var(--text-sm);
+	font-weight: var(--weight-bold);
+}
+
+.deployment__subtitle {
+	margin: 0;
+	padding: var(--space-1) var(--space-4) var(--space-3);
+	color: var(--color-text-muted);
+	font-size: var(--text-sm);
+}
+
+.deployment__rows {
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.deployment__row {
+	display: flex;
+	align-items: center;
+	gap: var(--space-3);
+	padding: var(--space-3) var(--space-4);
+	border-top: var(--border-width) solid var(--color-border);
+	color: var(--color-text-muted);
+	font-size: var(--text-sm);
+	text-decoration: none;
+}
+
+a.deployment__row:hover {
+	background: var(--color-surface-sunken);
+}
+
+.deployment__label {
+	width: 6rem;
+	flex: none;
+}
+
+.deployment__value {
+	min-width: 0;
+	overflow-wrap: anywhere;
+	color: var(--color-heading);
+	font-family: var(--font-mono);
+}
+
+@media (max-width: 760px) {
+	.deployment__branch,
+	.deployment__commit {
+		display: none;
+	}
+}

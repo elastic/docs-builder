@@ -17,6 +17,7 @@ using Elastic.Documentation.Site.Components.Check;
 using Elastic.Documentation.Site.Components.Chip;
 using Elastic.Documentation.Site.Components.CodeBlock;
 using Elastic.Documentation.Site.Components.CtaCard;
+using Elastic.Documentation.Site.Components.DeploymentInfo;
 using Elastic.Documentation.Site.Components.DiagnosticsPanel;
 using Elastic.Documentation.Site.Components.Disclosure;
 using Elastic.Documentation.Site.Components.DocsBar;
@@ -154,6 +155,7 @@ public static class StyleGuideCatalog
 		["chrome"] =
 		[
 			SiteHeaderExamples.Headers,
+			DeploymentInfoExamples.Deployments,
 			DocsBarExamples.Bars,
 			NavSideExamples.Sidebars,
 			LinkMenuExamples.Menus,

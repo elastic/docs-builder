@@ -35,6 +35,12 @@ public sealed record SiteFooterModel
 	/// <summary>Branded builds drop the Elastic footer and keep only the diagnostics slot.</summary>
 	public bool Branded { get; init; }
 
+	/// <summary>The copyright line of a branded build. A branded build shows a footer only when it has one.</summary>
+	public string? Copyright { get; init; }
+
+	/// <summary>The site icon of a branded build, shown beside its copyright line.</summary>
+	public string? BrandIconSrc { get; init; }
+
 	/// <summary>Reserves room for the developer diagnostics panel so the full footer stays visible.</summary>
 	public bool DiagnosticsPanel { get; init; }
 }

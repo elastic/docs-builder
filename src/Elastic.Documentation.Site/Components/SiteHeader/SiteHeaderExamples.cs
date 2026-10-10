@@ -20,7 +20,13 @@ public static class SiteHeaderExamples
 					HomeHref = "#",
 					Search = true,
 					Links = [new("GitHub", "#", "logo_github")],
-					Revision = "main · 65728c5"
+					Deployment = new Elastic.Documentation.Site.Components.DeploymentInfo.DeploymentInfoModel
+					{
+						Branch = "main",
+						Commit = "65728c5",
+						Repository = "elastic/docs-builder",
+						GitHubRef = "refs/pull/123/merge"
+					}
 				}
 			)
 		]

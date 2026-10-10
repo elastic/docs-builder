@@ -104,3 +104,13 @@
 .site-footer__link:hover {
 	color: var(--color-accent);
 }
+
+.site-footer__inner--branded {
+	gap: var(--space-3);
+}
+
+.site-footer__brand-icon {
+	width: 2rem;
+	height: 2rem;
+	object-fit: contain;
+}

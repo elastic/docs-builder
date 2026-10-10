@@ -17,6 +17,9 @@ export function initMenus(scope: ParentNode = document) {
             menu.addEventListener('click', (event) => {
                 if ((event.target as Element).closest('a')) menu.open = false
             })
+
+            // A mouse can open a hover menu by resting on it; touch and keyboard still use the click.
+            if (menu.hasAttribute('data-hover-menu')) bindHover(menu)
         })
 }
 
@@ -31,5 +34,20 @@ export function bindOutsideClick() {
             .forEach((menu) => {
                 if (!menu.contains(event.target as Node)) menu.open = false
             })
+    })
+}
+
+const hoverCloseDelay = 150
+
+function bindHover(menu: HTMLDetailsElement) {
+    let timer = 0
+    menu.addEventListener('pointerenter', (event) => {
+        if (event.pointerType !== 'mouse') return
+        window.clearTimeout(timer)
+        menu.open = true
+    })
+    menu.addEventListener('pointerleave', (event) => {
+        if (event.pointerType !== 'mouse') return
+        timer = window.setTimeout(() => (menu.open = false), hoverCloseDelay)
     })
 }

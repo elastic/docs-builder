@@ -8,5 +8,7 @@
 	Links = Model.GitHubDocsUrl is { Length: > 0 } github && Model.GitRepository is not null
 		? [new SiteHeaderLink("GitHub", github, "logo_github")]
 		: [],
-	Revision = Model.GitBranch is { } branch ? (Model.GitCommitShort is { } commit ? $"{branch} · {commit}" : branch) : null
+	Deployment = Model.GitBranch is { } branch
+		? new Elastic.Documentation.Site.Components.DeploymentInfo.DeploymentInfoModel { Branch = branch, Commit = Model.GitCommitShort, Repository = Model.GitRepository, GitHubRef = Model.GitHubRef }
+		: null
 }))
