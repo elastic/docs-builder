@@ -28,10 +28,22 @@ public static class StyleGuidePreviewCatalog
 			"One page that uses every directive and role, rendered by the components that write them."
 		),
 		new(
+			"isolated-nested",
+			"Deeply nested page",
+			"Isolated",
+			"A page six levels down, to show a long breadcrumb trail and the sidebar opened to the current page."
+		),
+		new(
 			"isolated-branded",
 			"Branded documentation page",
 			"Isolated",
 			"The same page white-labelled, with a copyright line in the footer."
+		),
+		new(
+			"assembler-nested",
+			"Deeply nested page",
+			"Assembler",
+			"The same deep page in the assembler build, where the trail starts at the site."
 		),
 		new(
 			"assembler-article",

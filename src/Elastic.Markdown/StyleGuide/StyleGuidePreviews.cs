@@ -22,7 +22,9 @@ public static class StyleGuidePreviews
 		"isolated-article",
 		"isolated-directives",
 		"isolated-branded",
+		"isolated-nested",
 		"assembler-article",
+		"assembler-nested",
 		"assembler-article-island",
 		"assembler-product",
 		"assembler-landing",
@@ -64,6 +66,7 @@ public static class StyleGuidePreviews
 	{
 		"isolated-directives" => "kitchen-sink.md",
 		"assembler-product" => "product.md",
+		"isolated-nested" or "assembler-nested" => "guides/deploy/cloud/aws/networking/private-link.md",
 		"assembler-landing" => "landing.md",
 		"assembler-archive" => "archive.md",
 		"assembler-not-found" => "not-found.md",

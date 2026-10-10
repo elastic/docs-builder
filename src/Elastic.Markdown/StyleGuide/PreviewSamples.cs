@@ -25,6 +25,19 @@ internal static class PreviewSamples
 		      - file: index.md
 		      - file: install.md
 		      - file: configure.md
+		      - folder: deploy
+		        children:
+		          - file: index.md
+		          - folder: cloud
+		            children:
+		              - file: index.md
+		              - folder: aws
+		                children:
+		                  - file: index.md
+		                  - folder: networking
+		                    children:
+		                      - file: index.md
+		                      - file: private-link.md
 		""";
 
 	public const string Landing = """
@@ -96,6 +109,50 @@ internal static class PreviewSamples
 	public const string GuideInstall =
 		$$"""
 		# Install
+
+		{{Lorem}}
+		""";
+
+	public const string DeployIndex =
+		$$"""
+		# Deploy
+
+		{{Lorem}}
+		""";
+
+	public const string DeployCloudIndex =
+		$$"""
+		# Cloud
+
+		{{Lorem}}
+		""";
+
+	public const string DeployAwsIndex =
+		$$"""
+		# Amazon Web Services
+
+		{{Lorem}}
+		""";
+
+	public const string DeployNetworkingIndex =
+		$$"""
+		# Networking
+
+		{{Lorem}}
+		""";
+
+	/// <summary>A page six levels down, so the breadcrumb has a long trail to show.</summary>
+	public const string DeployPrivateLink =
+		$$"""
+		# Private link
+
+		{{Lorem}}
+
+		## Create the endpoint
+
+		{{Lorem}}
+
+		## Connect a deployment
 
 		{{Lorem}}
 		""";

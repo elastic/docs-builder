@@ -70,6 +70,11 @@ public sealed partial class PreviewDocset : IAsyncDisposable
 		Write(fileSystem, docs, "guides/index.md", PreviewSamples.GuideIndex);
 		Write(fileSystem, docs, "guides/install.md", PreviewSamples.GuideInstall);
 		Write(fileSystem, docs, "guides/configure.md", PreviewSamples.GuideConfigure);
+		Write(fileSystem, docs, "guides/deploy/index.md", PreviewSamples.DeployIndex);
+		Write(fileSystem, docs, "guides/deploy/cloud/index.md", PreviewSamples.DeployCloudIndex);
+		Write(fileSystem, docs, "guides/deploy/cloud/aws/index.md", PreviewSamples.DeployAwsIndex);
+		Write(fileSystem, docs, "guides/deploy/cloud/aws/networking/index.md", PreviewSamples.DeployNetworkingIndex);
+		Write(fileSystem, docs, "guides/deploy/cloud/aws/networking/private-link.md", PreviewSamples.DeployPrivateLink);
 
 		var configuration = new ConfigurationContext
 		{
