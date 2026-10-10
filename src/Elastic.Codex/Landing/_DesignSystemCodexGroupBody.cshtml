@@ -1,0 +1,17 @@
+@inherits RazorSlice<Elastic.Codex.Landing.CodexGroupContent>
+@using Elastic.Codex.Landing
+<section id="elastic-docs-v3" class="codex-landing">
+	<div class="codex-hero">
+		<div class="codex-hero__inner codex-hero__inner--group">
+			<div class="codex-hero__text">
+				<p class="codex-hero__eyebrow">Group</p>
+				<h1 class="codex-hero__title">@Model.Title</h1>
+				@if (!string.IsNullOrEmpty(Model.Description))
+				{
+					<p class="codex-hero__lead">@Model.Description</p>
+				}
+			</div>
+		</div>
+	</div>
+	@await RenderPartialAsync(_DesignSystemCodexSections.Create([new CodexSection("Documentation sets", null, null, Model.Cards.Count, Model.Cards, "codex-grid")]))
+</section>

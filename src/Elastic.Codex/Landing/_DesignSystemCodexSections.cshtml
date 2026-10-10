@@ -1,0 +1,32 @@
+@inherits RazorSlice<IReadOnlyList<Elastic.Codex.Landing.CodexSection>>
+@using Elastic.Codex.Landing
+<div class="codex-wash">
+	<div class="codex-sections">
+		@foreach (var entry in Model)
+		{
+			<section class="codex-group">
+				<h2 class="codex-group__title">
+					@if (entry.Url is { } url)
+					{
+						<a href="@url" preload="mousedown">@entry.Title</a>
+					}
+					else
+					{
+						@entry.Title
+					}
+					<small>@entry.DocumentationSetCount docsets</small>
+				</h2>
+				@if (!string.IsNullOrEmpty(entry.Description))
+				{
+					<p class="codex-group__description">@entry.Description</p>
+				}
+				<div class="codex-grid"@(entry.GridId is { } gridId ? new HtmlString($" id=\"{gridId}\"") : HtmlString.Empty)>
+					@foreach (var card in entry.Cards)
+					{
+						@(await RenderPartialAsync(_DesignSystemCodexCard.Create(card)))
+					}
+				</div>
+			</section>
+		}
+	</div>
+</div>

@@ -15,66 +15,29 @@
 	var totalDocSets = Model.CodexNavigation?.DocumentationSetInfos?.Count ?? 0;
 	var totalPages = Model.CodexNavigation?.DocumentationSetInfos?.Sum(ds => ds.PageCount) ?? 0;
 }
-<section id="elastic-docs-v3" class="codex-landing codex-root-landing">
-	<div class="codex-hero">
-		<div class="codex-hero__inner">
-			<div class="codex-hero__text">
-				<p class="codex-hero__eyebrow">Elastic internal docs</p>
-				<h1 class="codex-hero__title">@(layout.HeaderTitle ?? layout.DocSetName)</h1>
-				<p class="codex-hero__lead">Search, browse and cite documentation from every repository, built the same way and published together.</p>
-				<div class="codex-hero__actions">
-					<a class="landing__button landing__button--primary" href="/r/codex-environments/get-started">Add your docs</a>
-					<a class="landing__button" href="https://elastic.github.io/docs-builder/syntax" target="_blank" rel="noopener">Explore the syntax</a>
-				</div>
-				<dl class="codex-stats">
-					<div><dt>groups</dt><dd>@totalGroups</dd></div>
-					<div><dt>documentation sets</dt><dd>@totalDocSets</dd></div>
-					<div><dt>pages</dt><dd>@totalPages.ToString("N0")</dd></div>
-				</dl>
-			</div>
-			<aside class="codex-mcp">
-				<span class="landing__tag">New</span>
-				<h2 class="codex-mcp__title">Connect your agent to codex</h2>
-				<p class="codex-mcp__text">Give an agent search and page access over every docset with the MCP endpoint.</p>
-				<div class="get-started__code codex-mcp__code">
-					<span class="get-started__prompt" aria-hidden="true">$</span>
-					<pre><code class="language-shell">claude mcp add codex --transport http @mcpUrl</code></pre>
-					<button class="get-started__copy" type="button" data-copy-text="claude mcp add codex --transport http @mcpUrl" hidden>Copy</button>
-				</div>
-				<p class="codex-mcp__note"><a href="/r/codex-environments/how-to/internal-docs-mcp-server">Other agents and details</a></p>
-			</aside>
-		</div>
-	</div>
-	<div class="codex-wash">
-		<div class="codex-sections">
-			@foreach (var group in Model.Groups)
-			{
-				<section class="codex-group">
-					<h2 class="codex-group__title"><a href="@group.Url" preload="mousedown">@group.DisplayTitle</a> <small>@group.DocumentationSetInfos.Count docsets</small></h2>
-					@if (!string.IsNullOrEmpty(group.Description))
-					{
-						<p class="codex-group__description">@group.Description</p>
-					}
-					<div class="codex-grid">
-						@foreach (var docSet in group.DocumentationSetInfos.OrderBy(ds => ds.Title))
-						{
-							@(await RenderPartialAsync(_DesignSystemCodexCard.Create(CodexCardModel.FromDocumentationSet(docSet))))
-						}
-					</div>
-				</section>
-			}
-			@if (Model.UngroupedDocumentationSets.Any())
-			{
-				<section class="codex-group">
-					<h2 class="codex-group__title">Documentation sets <small>@Model.UngroupedDocumentationSets.Count() docsets</small></h2>
-					<div id="codex-grid" class="codex-grid">
-						@foreach (var docSet in Model.UngroupedDocumentationSets.OrderBy(ds => ds.Title))
-						{
-							@(await RenderPartialAsync(_DesignSystemCodexCard.Create(CodexCardModel.FromDocumentationSet(docSet))))
-						}
-					</div>
-				</section>
-			}
-		</div>
-	</div>
-</section>
+@{
+	var content = new CodexLandingContent(
+		layout.HeaderTitle ?? layout.DocSetName,
+		mcpUrl,
+		totalGroups,
+		totalDocSets,
+		totalPages,
+		[
+			.. Model.Groups.Select(group => new CodexSection(
+				group.DisplayTitle,
+				group.Url,
+				group.Description,
+				group.DocumentationSetInfos.Count,
+				[.. group.DocumentationSetInfos.OrderBy(ds => ds.Title).Select(CodexCardModel.FromDocumentationSet)])),
+			.. Model.UngroupedDocumentationSets.Any()
+				? [new CodexSection(
+					"Documentation sets",
+					null,
+					null,
+					Model.UngroupedDocumentationSets.Count(),
+					[.. Model.UngroupedDocumentationSets.OrderBy(ds => ds.Title).Select(CodexCardModel.FromDocumentationSet)],
+					"codex-grid")]
+				: Array.Empty<CodexSection>()
+		]);
+}
+@await RenderPartialAsync(_DesignSystemCodexLanding.Create(content))

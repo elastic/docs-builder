@@ -1,0 +1,14 @@
+@inherits RazorSlice<Elastic.Codex.StyleGuide.CodexPreviewModel>
+@using Elastic.Codex.Landing
+@implements IUsesLayout<Elastic.Codex._Layout, GlobalLayoutViewModel>
+@functions {
+	public GlobalLayoutViewModel LayoutModel => Model.Layout;
+}
+@if (Model.Landing is { } landing)
+{
+	@await RenderPartialAsync(_DesignSystemCodexLanding.Create(landing))
+}
+else if (Model.Group is { } group)
+{
+	@await RenderPartialAsync(_DesignSystemCodexGroupBody.Create(group))
+}

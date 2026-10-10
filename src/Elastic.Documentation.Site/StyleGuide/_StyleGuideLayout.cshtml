@@ -32,6 +32,10 @@
 				<h1>@Model.Page.Title</h1>
 				<p class="sg-header__lead">@Model.Page.Lead</p>
 			</div>
+			@if (!Model.Offline)
+			{
+				<a class="sg-toggle" href="@StyleGuideCatalog.Route/download.zip" download>Download</a>
+			}
 			<button type="button" class="sg-toggle" data-motion-toggle>Motion</button>
 			<button type="button" class="sg-toggle" data-theme-toggle>Theme</button>
 		</header>

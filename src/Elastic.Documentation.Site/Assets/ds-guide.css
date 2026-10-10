@@ -103,7 +103,13 @@
 		border-color: var(--color-accent);
 	}
 
-	.sg-toggle::after {
+	a.sg-toggle {
+		color: inherit;
+		text-decoration: none;
+	}
+
+	.sg-toggle[data-theme-toggle]::after,
+	.sg-toggle[data-motion-toggle]::after {
 		content: ' · system';
 		color: var(--color-text-muted);
 		font-weight: var(--weight-regular);
@@ -282,7 +288,7 @@
 @layer ds.patterns {
 	.sg-examples {
 		display: grid;
-		grid-template-columns: repeat(auto-fill, minmax(18rem, 1fr));
+		grid-template-columns: repeat(auto-fill, 18rem);
 		gap: var(--space-4);
 	}
 
@@ -335,5 +341,74 @@
 		background: var(--color-surface-sunken);
 		white-space: pre-wrap;
 		word-break: break-word;
+	}
+
+	.sg-previews {
+		display: grid;
+		grid-template-columns: repeat(auto-fill, minmax(18rem, 1fr));
+		gap: var(--space-5);
+	}
+
+	.sg-preview {
+		display: flex;
+		flex-direction: column;
+		gap: var(--space-2);
+	}
+
+	.sg-preview__open {
+		display: block;
+	}
+
+	.sg-preview__screen {
+		position: relative;
+		display: block;
+		aspect-ratio: 16 / 10;
+		overflow: hidden;
+		border: var(--border-width) solid var(--color-border);
+		border-radius: var(--radius-md);
+		background: var(--color-surface);
+	}
+
+	/* The page renders at desktop width and is scaled down to a thumbnail; clicks go to the link around it. */
+	.sg-preview__frame {
+		width: 1440px;
+		height: 900px;
+		border: 0;
+		pointer-events: none;
+		transform: scale(0.2);
+		transform-origin: 0 0;
+	}
+
+	.sg-preview__title {
+		margin: 0;
+		font-size: var(--text-base);
+	}
+
+	.sg-preview__text {
+		margin: 0;
+		color: var(--color-text-muted);
+		font-size: var(--text-sm);
+	}
+
+	.sg-variant {
+		margin: var(--space-6) 0 var(--space-1);
+		font-size: var(--text-lg);
+	}
+
+	.sg-variant + p {
+		margin-bottom: var(--space-3);
+		color: var(--color-text-muted);
+	}
+
+	/* A specimen frame keeps a full-width band inside the column and gives it an edge. */
+	.sg-frame {
+		overflow: hidden;
+		border: var(--border-width) solid var(--color-border);
+		border-radius: var(--radius-md);
+		background: var(--color-page);
+	}
+
+	.sg-frame--wash {
+		background: var(--gradient-wash);
 	}
 }

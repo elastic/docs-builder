@@ -65,6 +65,9 @@ public sealed class StyleGuideViewModel
 	public required StyleGuidePage Page { get; init; }
 	public required IReadOnlyList<StyleGuidePage> Pages { get; init; }
 	public required Func<string, string> Static { get; init; }
+
+	/// <summary>An exported copy has no dev server behind it, so it leaves out the download button.</summary>
+	public bool Offline { get; init; }
 }
 
 /// <summary>The living style guide served at <c>/style-guide</c>. Pages render real design-system markup, so the guide cannot drift from the product.</summary>
@@ -114,7 +117,19 @@ public static class StyleGuideCatalog
 		new("cards", "Cards and tiles", "Components", "Cards, link tiles and release cards. Hover a card to see the slab shadow."),
 		new("feedback", "Feedback and overlays", "Components", "Tooltips, toasts, banners, skeletons, empty states and flyouts."),
 		new("navigation", "Navigation parts", "Components", "Breadcrumbs and previous/next links."),
-		new("badges", "Labels and badges", "Components", "Status and tag badges, HTTP methods, applies-to badges and keyboard keys.")
+		new(
+			"heroes",
+			"Heroes and sections",
+			"Components",
+			"The bands that open a page and the sections that make up the landing pages, in every variant."
+		),
+		new("badges", "Labels and badges", "Components", "Status and tag badges, HTTP methods, applies-to badges and keyboard keys."),
+		new(
+			"previews",
+			"Page previews",
+			"Previews",
+			"Whole pages of the isolated, assembler and Codex builds, rendered with placeholder content."
+		)
 	];
 
 	/// <summary>The component sections shown on each component page, keyed by page slug.</summary>
@@ -197,13 +212,17 @@ public static class StyleGuideCatalog
 			: Pages.FirstOrDefault(p => string.Equals(p.Slug, slug.Trim('/'), StringComparison.OrdinalIgnoreCase));
 
 	/// <summary>Renders a guide page to a complete HTML document, or <c>null</c> when the slug is unknown.</summary>
-	public static async Task<string?> RenderAsync(string? slug, Func<string, string> staticUrl, Cancel ctx = default)
+	public static Task<string?> RenderAsync(string? slug, Func<string, string> staticUrl, Cancel ctx = default) =>
+		RenderPageAsync(slug, staticUrl, offline: false, ctx);
+
+	/// <summary>Renders a guide page, optionally as the offline copy that leaves out the dev-server controls.</summary>
+	public static async Task<string?> RenderPageAsync(string? slug, Func<string, string> staticUrl, bool offline, Cancel ctx)
 	{
 		var page = Find(slug);
 		if (page is null)
 			return null;
 
-		var model = new StyleGuideViewModel { Page = page, Pages = Pages, Static = staticUrl };
+		var model = new StyleGuideViewModel { Page = page, Pages = Pages, Static = staticUrl, Offline = offline };
 		using var writer = new StringWriter();
 		if (ComponentPages.TryGetValue(page.Slug, out var sections))
 		{
@@ -221,6 +240,12 @@ public static class StyleGuideCatalog
 				break;
 			case "motion":
 				await Motion.Create(model).RenderAsync(writer, cancellationToken: ctx);
+				break;
+			case "heroes":
+				await Heroes.Create(model).RenderAsync(writer, cancellationToken: ctx);
+				break;
+			case "previews":
+				await Previews.Create(model).RenderAsync(writer, cancellationToken: ctx);
 				break;
 			case "decisions":
 				await Decisions.Create(model).RenderAsync(writer, cancellationToken: ctx);

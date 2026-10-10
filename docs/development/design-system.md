@@ -16,6 +16,13 @@ The route doesn't depend on the feature flag.
 
 The style guide is only served by `docs-builder serve`.
 
+Besides the components, the guide lists the heroes and landing sections in every variant, and has page previews: whole pages of the isolated, assembler and Codex builds, rendered with the real layouts around placeholder content.
+The previews need no repository, so they show what a page looks like before any content exists.
+Each is also served on its own at `/style-guide/preview/<id>`.
+
+The **Download** button in the guide header downloads a zip with every guide page and preview as static HTML, next to the design-system assets in `_static`.
+The pages link to each other and to the assets with relative paths, so the folder opens from disk or can be shared.
+
 ## Enable the design system on site pages
 
 Set the flag through the environment when you run the server:

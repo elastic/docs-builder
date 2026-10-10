@@ -7,30 +7,7 @@
 	public GlobalLayoutViewModel LayoutModel => Model.CreateGlobalLayoutModel(
 		codexBreadcrumbs: [new CodexBreadcrumb("Home", Model.BuildContext.SiteRootPath ?? "/"), new CodexBreadcrumb(Model.Group.DisplayTitle, Model.Group.Url)]);
 }
-<section id="elastic-docs-v3" class="codex-landing">
-	<div class="codex-hero">
-		<div class="codex-hero__inner codex-hero__inner--group">
-			<div class="codex-hero__text">
-				<p class="codex-hero__eyebrow">Group</p>
-				<h1 class="codex-hero__title">@Model.Group.DisplayTitle</h1>
-				@if (!string.IsNullOrEmpty(Model.Group.Description))
-				{
-					<p class="codex-hero__lead">@Model.Group.Description</p>
-				}
-			</div>
-		</div>
-	</div>
-	<div class="codex-wash">
-		<div class="codex-sections">
-			<section class="codex-group">
-				<h2 class="codex-group__title">Documentation sets <small>@Model.DocumentationSets.Count() docsets</small></h2>
-				<div id="codex-grid" class="codex-grid">
-					@foreach (var docSet in Model.DocumentationSets.OrderBy(ds => ds.Title))
-					{
-						@(await RenderPartialAsync(_DesignSystemCodexCard.Create(CodexCardModel.FromDocumentationSet(docSet))))
-					}
-				</div>
-			</section>
-		</div>
-	</div>
-</section>
+@await RenderPartialAsync(_DesignSystemCodexGroupBody.Create(new CodexGroupContent(
+	Model.Group.DisplayTitle,
+	Model.Group.Description,
+	[.. Model.DocumentationSets.OrderBy(ds => ds.Title).Select(CodexCardModel.FromDocumentationSet)])))

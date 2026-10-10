@@ -1,0 +1,264 @@
+@inherits RazorSlice<StyleGuideViewModel>
+@using Elastic.Documentation.Site.Components.Button
+@using Elastic.Documentation.Site.Components.Card
+@using Elastic.Documentation.Site.Components.Icon
+@using Elastic.Documentation.Site.StyleGuide
+@implements IUsesLayout<Elastic.Documentation.Site.StyleGuide._StyleGuideLayout, StyleGuideViewModel>
+@functions {
+	public StyleGuideViewModel LayoutModel => Model;
+}
+<section class="sg-section">
+	<p>The bands that open a page, and the sections that make up the landing pages. They are specimens built from the same classes as the pages, with placeholder text. The page previews show them in place.</p>
+</section>
+
+<section class="sg-section">
+	<h2>Heroes</h2>
+	<p>Each page type opens with one of these. All of them sit on the page's own container and take their colours from the theme.</p>
+	<h3 class="sg-variant">Landing hero</h3>
+	<p>The docs home: eyebrow, large title, lead and two actions, over the blue gradient and the cluster artwork.</p>
+	<div class="sg-frame">
+		<section class="landing__hero">
+			<div class="landing__inner landing__hero-text">
+				<p class="landing__eyebrow">Elastic Docs</p>
+				<h1 class="landing__title">Lorem ipsum dolor sit amet</h1>
+				<p class="landing__lead">Consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation.</p>
+				<div class="landing__actions">
+					<a class="landing__button landing__button--primary" href="#">Primary action</a>
+					<a class="landing__button" href="#">Secondary action</a>
+				</div>
+			</div>
+		</section>
+	</div>
+
+	<h3 class="sg-variant">Codex hero</h3>
+	<p>A hero with a feature card beside it, and the figures that describe the site.</p>
+	<div class="sg-frame">
+		<div class="codex-hero">
+			<div class="codex-hero__inner">
+				<div class="codex-hero__text">
+					<p class="codex-hero__eyebrow">Internal docs</p>
+					<h1 class="codex-hero__title">Lorem ipsum dolor</h1>
+					<p class="codex-hero__lead">Search, browse and cite documentation from every repository.</p>
+					<div class="codex-hero__actions">
+						<a class="landing__button landing__button--primary" href="#">Primary action</a>
+						<a class="landing__button" href="#">Secondary action</a>
+					</div>
+					<dl class="codex-stats">
+						<div><dt>groups</dt><dd>5</dd></div>
+						<div><dt>documentation sets</dt><dd>84</dd></div>
+						<div><dt>pages</dt><dd>4,987</dd></div>
+					</dl>
+				</div>
+				<aside class="codex-mcp">
+					<span class="landing__tag">New</span>
+					<h2 class="codex-mcp__title">Lorem ipsum dolor sit</h2>
+					<p class="codex-mcp__text">Amet consectetur adipiscing elit sed do eiusmod tempor.</p>
+					<p class="codex-mcp__note"><a href="#">Other details</a></p>
+				</aside>
+			</div>
+		</div>
+	</div>
+
+	<h3 class="sg-variant">Group hero</h3>
+	<p>The same band reduced to a title and a lead, above a group's grid.</p>
+	<div class="sg-frame">
+		<div class="codex-hero">
+			<div class="codex-hero__inner codex-hero__inner--group">
+				<div class="codex-hero__text">
+					<p class="codex-hero__eyebrow">Group</p>
+					<h1 class="codex-hero__title">Lorem ipsum</h1>
+					<p class="codex-hero__lead">Consectetur adipiscing elit sed do eiusmod tempor incididunt.</p>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<h3 class="sg-variant">Search hero</h3>
+	<p>The title and one search field, centred on the gradient.</p>
+	<div class="sg-frame">
+		<div class="search-page">
+			<header class="search-page__hero">
+				<div class="search-page__inner">
+					<p class="search-page__eyebrow">Search</p>
+					<h1 class="search-page__title">Search the documentation</h1>
+					<form class="search-page__form" role="search" onsubmit="return false">
+						<label class="search-page__label" for="sg-hero-q">Search the documentation</label>
+						@await RenderPartialAsync(_Icon.Create(new IconModel { Name = "search", Size = IconSize.Small }))
+						<input class="search-page__input" id="sg-hero-q" type="search" placeholder="Search the documentation">
+						<button class="btn btn--primary btn--sm" type="submit">Search</button>
+					</form>
+				</div>
+			</header>
+		</div>
+	</div>
+
+	<h3 class="sg-variant">Archive hero</h3>
+	<p>A quiet light band with an illustration, for pages that explain a state rather than sell a product.</p>
+	<div class="sg-frame">
+		<div class="archive">
+			<header class="archive__hero">
+				<p class="archive__eyebrow">Previous versions</p>
+				<h1 class="archive__title">Archive</h1>
+				<p class="archive__lead">Browse the archived documentation for older product releases.</p>
+			</header>
+		</div>
+	</div>
+
+	<h3 class="sg-variant">Message page</h3>
+	<p>A centred illustration, a title, a sentence and the next step. Used for the 404 page.</p>
+	<div class="sg-frame">
+		<div class="page-message">
+			<h1 class="page-message__title">Page not found</h1>
+			<p class="page-message__text">The page may have moved or been renamed. Search for it, or go back to the start.</p>
+			<div class="page-message__actions">
+				@await RenderPartialAsync(_Button.Create(new ButtonModel { Label = "Go back to docs home", Href = "#", Variant = ButtonVariant.Primary }))
+			</div>
+		</div>
+	</div>
+</section>
+
+<section class="sg-section">
+	<h2>Landing sections</h2>
+	<p>The sections that stack below a hero. Sections alternate between the tinted wash and the dark band, and each keeps to the page container.</p>
+
+	<h3 class="sg-variant">Notice strip</h3>
+	<p>A single line under the hero, for something that applies to the whole page.</p>
+	<div class="sg-frame">
+		<p class="landing__notice"><span class="landing__inner">@await RenderPartialAsync(_Icon.Create(new IconModel { Name = "refresh_time", Size = IconSize.Small }))<strong>Lorem ipsum?</strong> Dolor sit amet, consectetur <a href="#">adipiscing elit</a>.</span></p>
+	</div>
+
+	<h3 class="sg-variant">Feature slab</h3>
+	<p>One featured item: a short pitch beside a code sample on a dark panel.</p>
+	<div class="sg-frame sg-frame--wash">
+		<section class="landing__section">
+			<div class="landing__inner">
+				<div class="landing__slab">
+					<div class="landing__slab-text">
+						<span class="landing__tag">New</span>
+						<h2 class="landing__slab-title">Lorem ipsum dolor sit amet</h2>
+						<p>Consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore.</p>
+						<div class="landing__slab-actions">
+							@await RenderPartialAsync(_Button.Create(new ButtonModel { Label = "Start", Href = "#", Variant = ButtonVariant.Primary }))
+							<span class="landing__duration">10 minutes</span>
+						</div>
+					</div>
+					<div class="landing__code" aria-hidden="true">
+						<span class="landing__dots"><i></i><i></i><i></i></span>
+						<pre><code><span class="landing__c"># lorem ipsum</span>
+<span class="landing__k">GET</span> /dolor/_search</code></pre>
+					</div>
+				</div>
+			</div>
+		</section>
+	</div>
+
+	<h3 class="sg-variant">Card grid</h3>
+	<p>Four cards a row. The first row uses the solid icon tile for the products; the second uses the light tile.</p>
+	<div class="sg-frame sg-frame--wash">
+		<section class="landing__section">
+			<div class="landing__inner">
+				<h2 class="landing__heading">Lorem ipsum</h2>
+				<div class="landing__grid">
+					@foreach (var title in new[] { "Dolor sit", "Amet elit", "Tempor", "Magna" })
+					{
+						@await RenderPartialAsync(_Card.Create(new CardModel { Title = title, Description = "Consectetur adipiscing elit sed do eiusmod tempor.", Href = "#", Icon = "search", Primary = true, CtaLabel = "View docs" }))
+					}
+				</div>
+				<div class="landing__grid">
+					@foreach (var title in new[] { "Ut enim", "Minim", "Veniam", "Nostrud" })
+					{
+						@await RenderPartialAsync(_Card.Create(new CardModel { Title = title, Description = "Quis nostrud exercitation ullamco laboris.", Href = "#", Icon = "database", CtaLabel = "View docs" }))
+					}
+				</div>
+			</div>
+		</section>
+	</div>
+
+	<h3 class="sg-variant">Reference band</h3>
+	<p>A dark band of wide links with a link to all of them.</p>
+	<div class="sg-frame">
+		<section class="landing__band">
+			<div class="landing__inner">
+				<div class="landing__band-head">
+					<h2 class="landing__heading landing__heading--light">Reference</h2>
+					<a class="landing__band-link" href="#">View all</a>
+				</div>
+				<div class="landing__references">
+					@foreach (var name in new[] { "Lorem ipsum", "Dolor sit", "Amet elit", "Tempor" })
+					{
+						<a class="landing__reference" href="#">
+							<span class="icon-box icon-box--dark">@await RenderPartialAsync(_Icon.Create(new IconModel { Name = "code", Size = IconSize.Medium }))</span>
+							<span class="landing__reference-name">@name</span>
+							@await RenderPartialAsync(_Icon.Create(new IconModel { Name = "arrow_right", Size = IconSize.Small }))
+						</a>
+					}
+				</div>
+			</div>
+		</section>
+	</div>
+
+	<h3 class="sg-variant">Resource tiles</h3>
+	<p>Small tiles for supporting material: an icon and a name.</p>
+	<div class="sg-frame sg-frame--wash">
+		<section class="landing__section">
+			<div class="landing__inner">
+				<h2 class="landing__heading">Resources</h2>
+				<div class="landing__grid">
+					@foreach (var name in new[] { "Lorem ipsum", "Dolor sit", "Amet elit", "Tempor" })
+					{
+						<a class="landing__resource" href="#">
+							<span class="icon-box">@await RenderPartialAsync(_Icon.Create(new IconModel { Name = "documentation", Size = IconSize.Medium }))</span>
+							<span class="landing__resource-name">@name @await RenderPartialAsync(_Icon.Create(new IconModel { Name = "arrow_right", Size = IconSize.Small }))</span>
+						</a>
+					}
+				</div>
+			</div>
+		</section>
+	</div>
+
+	<h3 class="sg-variant">Promo tiles</h3>
+	<p>A light and a dark tile side by side, each with an eyebrow, a title and one action.</p>
+	<div class="sg-frame sg-frame--wash">
+		<section class="landing__section landing__section--last">
+			<div class="landing__inner landing__promos">
+				<div class="landing__promo">
+					<p class="landing__eyebrow">Lorem</p>
+					<h2 class="landing__promo-title">Ipsum dolor sit amet</h2>
+					<p>Consectetur adipiscing elit sed do eiusmod.</p>
+					@await RenderPartialAsync(_Button.Create(new ButtonModel { Label = "Join now", Href = "#", Variant = ButtonVariant.Primary }))
+				</div>
+				<div class="landing__promo landing__promo--dark">
+					<p class="landing__eyebrow landing__eyebrow--light">Ipsum</p>
+					<h2 class="landing__promo-title">Tempor incididunt?</h2>
+					<p>Ut labore et dolore magna aliqua ut enim.</p>
+					<a class="landing__button landing__button--primary" href="#">Register now</a>
+				</div>
+			</div>
+		</section>
+	</div>
+
+	<h3 class="sg-variant">Codex group section</h3>
+	<p>A group's title with its count, then a grid of documentation set cards.</p>
+	<div class="sg-frame">
+		<div class="codex-wash">
+			<div class="codex-sections">
+				<section class="codex-group">
+					<h2 class="codex-group__title"><a href="#">Lorem ipsum</a> <small>3 docsets</small></h2>
+					<p class="codex-group__description">Consectetur adipiscing elit sed do eiusmod.</p>
+					<div class="codex-grid">
+						@foreach (var name in new[] { "Dolor sit", "Amet elit", "Tempor" })
+						{
+							<a class="codex-card" href="#">
+								<span class="icon-box">@await RenderPartialAsync(_Icon.Create(new IconModel { Name = "search", Size = IconSize.Large }))</span>
+								<span class="codex-card__path">/r/@name.ToLowerInvariant().Replace(' ', '-')</span>
+								<span class="codex-card__title">@name</span>
+								<span class="codex-card__description">Sed do eiusmod tempor incididunt ut labore.</span>
+								<span class="codex-card__pages">1,284 pages</span>
+							</a>
+						}
+					</div>
+				</section>
+			</div>
+		</div>
+	</div>
+</section>

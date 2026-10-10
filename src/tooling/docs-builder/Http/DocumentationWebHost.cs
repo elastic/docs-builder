@@ -24,6 +24,8 @@ using Elastic.Documentation.ServiceDefaults;
 using Elastic.Documentation.Site.FileProviders;
 using Elastic.Documentation.Site.StyleGuide;
 using Elastic.Markdown.IO;
+using Elastic.Codex.StyleGuide;
+using Elastic.Markdown.StyleGuide;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
@@ -483,6 +485,27 @@ public class DocumentationWebHost
 			return html is null ? Results.NotFound() : LiveReloadHtml(html);
 		}
 
+		_ = _webApplication.MapGet($"{StyleGuideCatalog.Route}/download.zip", async (Cancel ctx) =>
+		{
+			var provider = new EmbeddedOrPhysicalFileProvider(Context);
+			var zip = await StyleGuideExport.BuildZipAsync(
+				provider,
+				async id => await StyleGuidePreviews.RenderAsync(id, provider, ctx) ?? await CodexStyleGuidePreviews.RenderAsync(
+					id,
+					provider,
+					ctx
+				),
+				ctx
+			);
+			return Results.File(zip, "application/zip", "style-guide.zip");
+		});
+		_ = _webApplication.MapGet($"{StyleGuidePreviewCatalog.Route}/{{id}}", async (string id, Cancel ctx) =>
+		{
+			var provider = new EmbeddedOrPhysicalFileProvider(Context);
+			var html = await StyleGuidePreviews.RenderAsync(id, provider, ctx)
+				?? await CodexStyleGuidePreviews.RenderAsync(id, provider, ctx);
+			return html is null ? Results.NotFound() : LiveReloadHtml(html);
+		});
 		_ = _webApplication.MapGet(StyleGuideCatalog.Route, (Cancel ctx) => Serve(null, ctx));
 		_ = _webApplication.MapGet($"{StyleGuideCatalog.Route}/{{**page}}", (string? page, Cancel ctx) => Serve(page, ctx));
 	}

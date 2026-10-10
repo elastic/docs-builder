@@ -1,0 +1,34 @@
+@inherits RazorSlice<Elastic.Codex.Landing.CodexLandingContent>
+@using Elastic.Codex.Landing
+<section id="elastic-docs-v3" class="codex-landing codex-root-landing">
+	<div class="codex-hero">
+		<div class="codex-hero__inner">
+			<div class="codex-hero__text">
+				<p class="codex-hero__eyebrow">Elastic internal docs</p>
+				<h1 class="codex-hero__title">@Model.Title</h1>
+				<p class="codex-hero__lead">Search, browse and cite documentation from every repository, built the same way and published together.</p>
+				<div class="codex-hero__actions">
+					<a class="landing__button landing__button--primary" href="/r/codex-environments/get-started">Add your docs</a>
+					<a class="landing__button" href="https://elastic.github.io/docs-builder/syntax" target="_blank" rel="noopener">Explore the syntax</a>
+				</div>
+				<dl class="codex-stats">
+					<div><dt>groups</dt><dd>@Model.Groups</dd></div>
+					<div><dt>documentation sets</dt><dd>@Model.DocumentationSets</dd></div>
+					<div><dt>pages</dt><dd>@Model.Pages.ToString("N0")</dd></div>
+				</dl>
+			</div>
+			<aside class="codex-mcp">
+				<span class="landing__tag">New</span>
+				<h2 class="codex-mcp__title">Connect your agent to codex</h2>
+				<p class="codex-mcp__text">Give an agent search and page access over every docset with the MCP endpoint.</p>
+				<div class="get-started__code codex-mcp__code">
+					<span class="get-started__prompt" aria-hidden="true">$</span>
+					<pre><code class="language-shell">claude mcp add codex --transport http @Model.McpUrl</code></pre>
+					<button class="get-started__copy" type="button" data-copy-text="claude mcp add codex --transport http @Model.McpUrl" hidden>Copy</button>
+				</div>
+				<p class="codex-mcp__note"><a href="/r/codex-environments/how-to/internal-docs-mcp-server">Other agents and details</a></p>
+			</aside>
+		</div>
+	</div>
+	@await RenderPartialAsync(_DesignSystemCodexSections.Create(Model.Sections))
+</section>
