@@ -53,5 +53,5 @@
 		</tr>
 		</tbody>
 	</table>
-	<p style="margin-top: var(--space-3)">Components declare their large movement inside <code>@@media (prefers-reduced-motion: no-preference)</code>, so the default is calm. The squares above only translate when your system allows it; with reduced motion they just change colour.</p>
+	<p style="margin-top: var(--space-3)">Large movement is switched on by <code>data-motion="full"</code> on the root, so the default is calm. A script in the page head sets it before first paint, from the Motion control or, with the choice left on System, from <code>prefers-reduced-motion</code>, and keeps following the system setting as it changes. The squares above only translate when it is on; with reduced motion they just change colour.</p>
 </section>

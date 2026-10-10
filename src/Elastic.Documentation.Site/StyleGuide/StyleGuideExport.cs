@@ -86,8 +86,9 @@ public static partial class StyleGuideExport
 				continue;
 			var relinked = RelinkPages(html);
 			pages.Add(($"{page.Slug}.html", relinked));
+			// index.html sends the reader on instead of repeating the first page, so the two are not identical files.
 			if (page == StyleGuideCatalog.Default)
-				pages.Add(("index.html", relinked));
+				pages.Add(("index.html", RedirectTo($"{page.Slug}.html")));
 		}
 
 		foreach (var name in LayoutSamples.Names)
@@ -121,6 +122,9 @@ public static partial class StyleGuideExport
 		}
 		return stream.ToArray();
 	}
+
+	private static string RedirectTo(string target) =>
+		$"<!DOCTYPE html>\n<html lang=\"en\"><head><meta charset=\"utf-8\"><meta http-equiv=\"refresh\" content=\"0; url={target}\"><title>Style guide</title></head><body><a href=\"{target}\">Open the style guide</a></body></html>\n";
 
 	/// <summary>Points links between guide pages at the exported files instead of the dev-server routes.</summary>
 	public static string RelinkPages(string html)

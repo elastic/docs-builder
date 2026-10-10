@@ -85,6 +85,7 @@
 @import '../Components/ApiReference/api-reference.css' layer(ds.components);
 @import '../Components/ApiReference/api-code.css' layer(ds.components);
 @import './ds/utilities.css' layer(ds.utilities);
+@import './ds/a11y.css' layer(ds.utilities);
 @import '../Components/Storybook/storybook.css' layer(ds.components);
 @import '../Components/Tooltip/tooltip.css' layer(ds.components);
 @import '../Components/Toast/toast.css' layer(ds.components);

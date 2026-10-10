@@ -19,7 +19,7 @@
 	border-left: var(--space-1) solid var(--color-brand-deep);
 }
 
-.ask-ai:not([open]) {
+.ask-ai:not([open]):not(.ask-ai--preview) {
 	display: none;
 }
 
@@ -274,4 +274,14 @@
 .flyout__handle:focus-visible {
 	background: var(--color-accent);
 	outline: none;
+}
+
+/* The panel drawn in place, for the style guide: no fixed position, no slide. */
+.ask-ai--preview {
+	position: static;
+	inset: auto;
+	width: 100%;
+	max-width: 34rem;
+	height: 26rem;
+	box-shadow: var(--shadow-slab-rest);
 }

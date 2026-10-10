@@ -29,6 +29,7 @@
 }
 
 .tooltip:hover .tooltip__bubble,
-.tooltip:focus-within .tooltip__bubble {
+.tooltip:focus-within .tooltip__bubble,
+.tooltip--open .tooltip__bubble {
 	opacity: 1;
 }

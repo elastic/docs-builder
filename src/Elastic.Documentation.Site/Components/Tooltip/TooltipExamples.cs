@@ -20,6 +20,17 @@ public static class TooltipExamples
 					Label = "Quantization",
 					Text = "Compresses vectors to reduce memory, at some cost to accuracy."
 				}
+			),
+			ComponentExample.Of(
+				"Shown",
+				_Tooltip.Create,
+				new TooltipModel
+				{
+					Id = "example-tooltip-open",
+					Label = "Quantization",
+					Text = "Compresses vectors to reduce memory, at some cost to accuracy.",
+					Open = true
+				}
 			)
 		]
 	);

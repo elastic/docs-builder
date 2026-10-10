@@ -18,7 +18,7 @@
 		<tr><td>Focus ring</td><td>One token, <code>--color-focus-ring</code>: blue on light surfaces, teal on dark. The boards disagreed.</td></tr>
 		<tr><td>Motion</td><td>One easing for the interface. Springs are limited to selection indicators. Reduced motion keeps small colour, focus and fade feedback and drops large movement and flashing.</td></tr>
 		<tr><td>Native elements</td><td>Menus, drawers, tabs, search, lightboxes and the fullscreen table use <code>details</code>, radios, checkboxes and <code>dialog</code>. Script only adds what those cannot do.</td></tr>
-		<tr><td>Breakpoints</td><td>The boards used six widths between 760 and 1180. Components use 760, 1100 and 1280, and the page shell turns its tree into a drawer at 860 as the Responsive board shows, plus container queries where a component answers to its own space.</td></tr>
+		<tr><td>Breakpoints</td><td>The boards used six widths between 760 and 1180. Everything uses three: 1100 (the rail drops above the content), 860 (the tree becomes a drawer, as the Responsive board shows) and 760 (grids become one column), plus container queries where a component answers to its own space. A test fails on any other width.</td></tr>
 		<tr><td>Archive page</td><td>The animated easter egg that flashed the screen was dropped, because flashing colour conflicts with the motion policy.</td></tr>
 		</tbody>
 	</table>

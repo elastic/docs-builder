@@ -246,7 +246,7 @@
 @layer ds.patterns {
 	.sg-examples {
 		display: grid;
-		grid-template-columns: repeat(auto-fill, 18rem);
+		grid-template-columns: repeat(auto-fit, minmax(20rem, 1fr));
 		gap: var(--space-4);
 	}
 
@@ -780,5 +780,12 @@
 	.sg-bgsample__text {
 		margin: 0;
 		max-width: 40rem;
+	}
+}
+
+@layer ds.patterns {
+	/* A tooltip shown open hangs above its trigger, so the stage leaves room for it. */
+	.sg-example__stage:has(.tooltip--open) {
+		padding-top: var(--space-8);
 	}
 }

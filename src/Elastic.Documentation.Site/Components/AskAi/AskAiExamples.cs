@@ -8,8 +8,8 @@ public static class AskAiExamples
 {
 	public static ComponentSection Assistants { get; } = new(
 		"Ask AI",
-		"The assistant: a button and a side panel with a streamed conversation. Without script, or without the AI endpoint, the whole thing stays hidden. A rudimentary design, waiting for a board.",
+		"The assistant: a button and a side panel with a streamed conversation. Without script, or without the AI endpoint, the whole thing stays hidden. The specimen is the panel drawn in place; the live one slides in from the right edge and is revealed by script. A rudimentary design, waiting for a board.",
 		"ask-ai",
-		[ComponentExample.Of("Ask AI", _AskAi.Create, new AskAiModel { Id = "example-ask-ai" })]
+		[ComponentExample.Of("Panel, mid-conversation", _AskAiPreview.Create, new AskAiModel { Id = "example-ask-ai" })]
 	);
 }

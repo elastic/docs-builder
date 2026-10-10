@@ -10,4 +10,7 @@ public sealed record TooltipModel
 	public required string Id { get; init; }
 	public required string Label { get; init; }
 	public required string Text { get; init; }
+
+	/// <summary>Shows the tooltip as if the trigger were hovered, for the style guide.</summary>
+	public bool Open { get; init; }
 }

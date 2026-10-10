@@ -49,8 +49,9 @@
 	--color-border: var(--ds-l, var(--palette-grey-100)) var(--ds-d, #2c3c6b);
 	--color-border-strong: var(--ds-l, var(--palette-developer-blue))
 		var(--ds-d, var(--palette-white));
-	--color-border-control: var(--ds-l, var(--palette-grey-300))
-		var(--ds-d, #4a5c8f);
+	/* Control borders are 3:1 against their field (WCAG 1.4.11): 3.1 on white, 3.1 on the dark surface. */
+	--color-border-control: var(--ds-l, var(--palette-grey-400))
+		var(--ds-d, #5f73a8);
 
 	--color-accent: var(--ds-l, var(--palette-elastic-blue))
 		var(--ds-d, #6fa8ff);

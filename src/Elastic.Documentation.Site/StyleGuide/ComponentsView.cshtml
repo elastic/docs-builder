@@ -16,7 +16,7 @@
 				<figure class="sg-example">
 					<figcaption>@example.Title</figcaption>
 					<div class="sg-example__stage"@(example.Theme is { } theme ? new HtmlString($" data-theme=\"{theme}\"") : HtmlString.Empty)>@(new HtmlString(html))</div>
-					<details class="sg-example__source">
+					<details class="sg-example__source" open>
 						<summary>Code</summary>
 						<pre><code>@example.ModelCode</code></pre>
 						<pre><code>@html</code></pre>
