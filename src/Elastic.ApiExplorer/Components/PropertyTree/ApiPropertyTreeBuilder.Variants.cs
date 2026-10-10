@@ -46,8 +46,8 @@ public partial class ApiPropertyTreeBuilder
 				$"{scope.Prefix}-variant-{variant.Name.ToLowerInvariant().Replace(" ", "-").Replace("[]", "-array")}",
 				usedIds
 			);
-			var hasBothVariants = variantsToRender.Count(v => v.BaseName == variant.BaseName) > 1;
-			var showProperties = hasProperties && (!variant.IsArray || !hasBothVariants);
+			// Each variant carries its own fields, an X[] one too: a pair is two variants, so it shows behind chips, one at a time.
+			var showProperties = hasProperties;
 
 			var newAncestors = scope.AncestorRefs is not null ? new HashSet<string>(scope.AncestorRefs) : [];
 			// An inline map takes its value's $ref, but the value type is listed below under the key row, not above it.
@@ -58,8 +58,7 @@ public partial class ApiPropertyTreeBuilder
 			var isCollapsible = showProperties && nestedCount > 0;
 			var defaultExpanded = ComputeDefaultExpanded();
 
-			// An X[] / X pair describes the same schema twice, so only the plain variant carries the text.
-			var description = !variant.IsArray || !hasBothVariants ? FirstParagraph(variant.Schema?.Description) : null;
+			var description = FirstParagraph(variant.Schema?.Description);
 
 			variants.Add(new ApiUnionVariant
 			{
@@ -92,13 +91,7 @@ public partial class ApiPropertyTreeBuilder
 			});
 		}
 
-		return new ApiUnionVariants
-		{
-			Variants = variants,
-			ShouldCollapse = variantsToRender.Count > 2,
-			ContainerId = $"{scope.Prefix}-union-options",
-			UseHiddenUntilFound = options.UseHiddenUntilFound
-		};
+		return new ApiUnionVariants { Variants = variants, ContainerId = $"{scope.Prefix}-union-options" };
 	}
 
 	/// <summary>

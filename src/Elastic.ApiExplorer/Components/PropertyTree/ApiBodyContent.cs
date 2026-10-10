@@ -65,6 +65,5 @@ internal sealed record ApiBodyContent(ApiPropertyList? Properties, ApiUnionVaria
 	}
 
 	/// <summary>Names a collapsed section header lists; an array variant keeps its <c>[]</c> so it stays apart from the plain one.</summary>
-	public static IEnumerable<string> VariantNames(ApiUnionVariants? variants) =>
-		(variants?.Variants ?? []).Select(static v => v.IsArrayVariant ? $"{v.DisplayName}[]" : v.DisplayName);
+	public static IEnumerable<string> VariantNames(ApiUnionVariants? variants) => (variants?.Variants ?? []).Select(static v => v.ChipName);
 }

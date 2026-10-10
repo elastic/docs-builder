@@ -5,43 +5,87 @@
 	{
 		return;
 	}
+	var menuId = $"{Model.ContainerId}-menu";
+	// Chips and menu entries drop the words every variant name shares (bedrock_secrets → bedrock); the full name stays as their tooltip.
+	var chipLabels = Model.UseChips ? ChipLabels.Shorten([.. Model.Variants.Select(static v => v.DisplayName)]) : [];
+	string ChipLabel(int i) => Model.Variants[i].IsArrayVariant ? $"{chipLabels[i]}[]" : chipLabels[i];
 }
 @if (Model.Label is { Length: > 0 } unionLabel)
 {
 	<span class="values-label">@unionLabel</span>
 }
-<div class="union-variants-container @(Model.ShouldCollapse ? "collapsible collapsed" : "")" id="@Model.ContainerId">
-	@if (Model.ShouldCollapse)
+@* Two or more variants show one at a time: chips pick the variant, as on the examples rail (chip-row.ts), and the
+   others use hidden="until-found", so find-in-page and links to their fields still reach them (api-union-chips.ts). *@
+<div class="union-variants-container@(Model.UseChips ? " union-variant-chips" : "")" id="@Model.ContainerId">
+	@if (Model.UseChips)
 	{
-		<div class="union-collapse-toggle">
-			<button class="expand-toggle union-group-toggle">
-				<span class="toggle-icon">+</span>
-				<span class="toggle-label">show type options</span>
+		<div class="api-example-chips-row union-chips-row" data-chip-row>
+			<div class="api-example-chips" role="tablist" aria-label="Variants">
+				@for (var i = 0; i < Model.Variants.Count; i++)
+				{
+					var variant = Model.Variants[i];
+					var chipLabel = ChipLabel(i);
+					<button
+						type="button"
+						role="tab"
+						class="api-example-chip@(i == 0 ? " is-active" : "")"
+						data-chip="@variant.AnchorId"
+						aria-controls="@variant.AnchorId"
+						aria-selected="@(i == 0 ? "true" : "false")"
+						title="@(chipLabel == variant.ChipName ? null : variant.ChipName)">
+						<span class="api-example-chip-title" data-chip-title>@chipLabel</span>
+					</button>
+				}
+			</div>
+			<button type="button" class="api-example-more" data-chip-more aria-haspopup="menu" aria-expanded="false" aria-controls="@menuId" popovertarget="@menuId" hidden>
+				<span data-chip-more-label></span>
+				<svg width="12" height="12" viewBox="0 0 16 16" aria-hidden="true"><use href="#icon-chevron-down"/></svg>
 			</button>
+			<div id="@menuId" class="api-example-menu simple-scrollbar" popover="auto" data-chip-menu>
+				@if (Model.HasFilter)
+				{
+					<input type="search" class="api-example-menu-filter" data-chip-filter placeholder="Filter variants" aria-label="Filter variants" autocomplete="off" />
+				}
+				<div role="menu" aria-label="More variants">
+					@for (var i = 0; i < Model.Variants.Count; i++)
+					{
+						var variant = Model.Variants[i];
+						var itemLabel = ChipLabel(i);
+						<button type="button" role="menuitem" class="api-example-menu-item" data-chip="@variant.AnchorId" title="@(itemLabel == variant.ChipName ? null : variant.ChipName)" hidden>
+							<span class="api-example-menu-item-title" data-chip-item-title>@itemLabel@(variant.DiscriminatorLabel is { Length: > 0 } selects ? $" · {selects}" : "")</span>
+						</button>
+					}
+				</div>
+			</div>
 		</div>
 	}
-	<div class="union-variants @(Model.ShouldCollapse ? "union-variants-content" : "")" @(Model.ShouldCollapse && Model.UseHiddenUntilFound ? "hidden=\"until-found\"" : "")>
+	<div class="union-variants">
 	@for (var i = 0; i < Model.Variants.Count; i++)
 	{
 		var variant = Model.Variants[i];
+		// A picked chip is the choice to read that variant: its fields show at once, and its chip already names it, so
+		// the label keeps only what the chip does not say (the discriminator value, the link to the type's page, or
+		// that the variant is an array).
+		var collapsible = variant.IsCollapsible && !Model.UseChips;
+		var folded = variant.UseHidden && !Model.UseChips;
+		// An array variant keeps its "[] X" heading, so its fields read as each item's; a primitive keeps its type, which is
+		// all its panel has to show.
+		var showName = !Model.UseChips || variant.PageUrl is { Length: > 0 } || variant.IsArrayVariant || !variant.IsObjectType;
+		var showLabel = showName || variant.DiscriminatorLabel is { Length: > 0 };
 
-		// Add separator before each variant except the first
-		@if (i > 0)
-		{
-			<div class="union-separator">or</div>
-		}
-
-		<div class="union-variant-item @(variant.ShowProperties ? "has-children" : "") @(variant.IsCollapsible ? (variant.DefaultExpanded ? "expanded" : "collapsed") : "")" id="@variant.AnchorId">
+		<div class="union-variant-item @(variant.ShowProperties ? "has-children" : "") @(collapsible ? (variant.DefaultExpanded ? "expanded" : "collapsed") : "")" id="@variant.AnchorId" hidden="@(Model.UseChips && i > 0 ? "until-found" : null)">
+			@if (showLabel)
+			{
 			<div class="union-variant-label">
-				@if (variant.IsArrayVariant)
+				@if (showName && variant.IsArrayVariant)
 				{
 					<span class="@SchemaHelpers.WrapperArrayIconCssClass">[]</span>
 				}
-				@if (variant.IsObjectType)
+				@if (showName && variant.IsObjectType)
 				{
 					<span class="@SchemaHelpers.WrapperObjectIconCssClass">{}</span>
 				}
-				@if (!string.IsNullOrEmpty(variant.DisplayName))
+				@if (showName && !string.IsNullOrEmpty(variant.DisplayName))
 				{
 					@if (variant.PageUrl is { Length: > 0 } pageUrl)
 					{
@@ -57,13 +101,14 @@
 					<code class="discriminator-value">@discriminatorLabel</code>
 				}
 			</div>
+			}
 			@if (variant.DescriptionHtml.Value is { Length: > 0 })
 			{
 				<div class="union-variant-description">@variant.DescriptionHtml</div>
 			}
 			@if (variant.ShowProperties && variant.Properties is not null)
 			{
-				if (variant.IsCollapsible)
+				if (collapsible)
 				{
 					<div class="expand-toggle-row union-expand-toggle">
 						<button class="expand-toggle">
@@ -72,7 +117,7 @@
 						</button>
 					</div>
 				}
-				if (variant.UseHidden)
+				if (folded)
 				{
 					<div class="nested-properties" id="@variant.AnchorId-children" hidden="until-found">
 						@(await RenderPartialAsync<_PropertyList, ApiPropertyList>(variant.Properties))

@@ -1276,14 +1276,12 @@ button.response-status-toggle:focus {
 }
 
 .property-list .expand-toggle,
-.union-expand-toggle .expand-toggle,
-.union-group-toggle {
+.union-expand-toggle .expand-toggle {
 	@apply inline-flex cursor-pointer items-center gap-1 border-0 bg-transparent p-0 text-sm;
 	color: #1d2a3e;
 }
 
-.expand-toggle .toggle-icon,
-.union-group-toggle .toggle-icon {
+.expand-toggle .toggle-icon {
 	@apply font-mono font-semibold;
 }
 
@@ -2235,77 +2233,15 @@ a.docs-reference-btn::after {
 	position: relative;
 }
 
-/* Non-collapsible union variants (just the content wrapper) */
-.union-variants-container:not(.collapsible) > .union-variants {
-	/* No additional styling needed */
+/* Three or more variants: the examples rail's chips pick the one shown (_UnionOptions.cshtml, api-union-chips.ts). */
+.union-chips-row {
+	margin: calc(var(--spacing) * 1) 0;
 }
 
-/* Collapsible union variants container */
-.union-variants-container.collapsible {
-	/* Container for tree structure */
-}
-
-/* Union collapse toggle row - with tree connectors */
-.union-collapse-toggle {
-	padding: calc(var(--spacing) * 1) 0;
-	padding-left: 1.25rem;
-	margin: 0;
-	position: relative;
-	display: flex;
-	align-items: center;
-
-	/* Vertical line - extends to button center */
-	&::before {
-		content: '';
-		position: absolute;
-		left: 0.375rem;
-		top: 0;
-		height: 50%;
-		width: 0;
-		border-left: 1px solid #cbd5e1;
-		opacity: 0;
-		transition: opacity 0.1s ease;
-	}
-
-	/* Horizontal connector - only when collapsed */
-	&::after {
-		content: '';
-		position: absolute;
-		left: 0.375rem;
-		top: 50%;
-		width: 0.5rem;
-		border-top: 1px solid #cbd5e1;
-		opacity: 0;
-		transition: opacity 0.1s ease;
-	}
-}
-
-/* Expanded state - show vertical line extending through the toggle row */
-.union-variants-container.expanded > .union-collapse-toggle::before {
-	opacity: 1;
-	height: 100%; /* Extend to bottom of toggle row */
-}
-
-/* Collapsed state - show both vertical and horizontal connector */
-.union-variants-container.collapsed > .union-collapse-toggle::before,
-.union-variants-container.collapsed > .union-collapse-toggle::after {
-	opacity: 1;
-}
-
-/* Union variants content - the actual list of type options */
-.union-variants-content {
-	position: relative;
-}
-
-/* Hidden state for collapsed union content */
-.union-variants-container.collapsed
-	> .union-variants-content:not([hidden='until-found']) {
-	display: none;
-}
-
-/* Ensure hidden="until-found" elements work correctly */
-.union-variants-content[hidden='until-found'] {
-	content-visibility: hidden;
+/* hidden="until-found" keeps a box in the layout: without its padding, a hidden variant takes no room, so the picked
+   one sits right under the chips whichever it is. */
+.union-variant-chips > .union-variants > .union-variant-item[hidden] {
+	padding: 0;
 }
 
 .union-variants {
@@ -2398,23 +2334,6 @@ a.docs-reference-btn::after {
 .union-variant-item.collapsed > .union-expand-toggle::before,
 .union-variant-item.collapsed > .union-expand-toggle::after {
 	opacity: 1;
-}
-
-/* Union separator between type options */
-.union-separator {
-	@apply text-grey-40 text-xs;
-	padding: calc(var(--spacing) * 0.5) 0;
-	display: flex;
-	align-items: center;
-	gap: 0.5rem;
-}
-
-.union-separator::before,
-.union-separator::after {
-	content: '';
-	flex: 1;
-	max-width: 2rem;
-	border-top: 1px dashed #cbd5e1;
 }
 
 .variant-description {

@@ -6,12 +6,17 @@ function markup(): string {
             <div class="property-item collapsed" id="outer">
                 <dt id="rule">rule</dt>
                 <div class="nested-properties" hidden="until-found">
-                    <div class="union-variants-container collapsible collapsed" id="options">
-                        <div class="union-collapse-toggle">
-                            <button class="expand-toggle union-group-toggle" aria-expanded="false"></button>
+                    <div class="union-variants-container union-variant-chips" id="options">
+                        <div class="api-example-chips-row" data-chip-row>
+                            <div class="api-example-chips" role="tablist">
+                                <button class="api-example-chip is-active" data-chip="query" aria-selected="true"><span data-chip-title>query</span></button>
+                                <button class="api-example-chip" data-chip="eql" aria-selected="false"><span data-chip-title>eql</span></button>
+                                <button class="api-example-chip" data-chip="esql" aria-selected="false"><span data-chip-title>esql</span></button>
+                            </div>
                         </div>
-                        <div class="union-variants union-variants-content" hidden="until-found">
-                            <div class="union-variant-item collapsed" id="eql">
+                        <div class="union-variants">
+                            <div class="union-variant-item" id="query"></div>
+                            <div class="union-variant-item collapsed" id="eql" hidden="until-found">
                                 <div class="nested-properties" hidden="until-found">
                                     <div class="property-item collapsed" id="actions-row">
                                         <dt id="actions">actions</dt>
@@ -19,6 +24,7 @@ function markup(): string {
                                     </div>
                                 </div>
                             </div>
+                            <div class="union-variant-item" id="esql" hidden="until-found"></div>
                         </div>
                     </div>
                 </div>
@@ -38,13 +44,19 @@ describe('revealCollapsedAncestors', () => {
         expect(revealCollapsedAncestors(byId('actions'))).toBe(true)
 
         expect(byId('eql').classList.contains('expanded')).toBe(true)
-        expect(byId('options').classList.contains('expanded')).toBe(true)
         expect(byId('outer').classList.contains('expanded')).toBe(true)
+    })
+
+    it('switches a variant chip list to the variant that holds the target', () => {
+        revealCollapsedAncestors(byId('actions'))
+
+        expect(byId('eql').hasAttribute('hidden')).toBe(false)
+        expect(byId('query').getAttribute('hidden')).toBe('until-found')
         expect(
-            byId('options')
-                .querySelector('.union-variants-content')!
-                .hasAttribute('hidden')
-        ).toBe(false)
+            document
+                .querySelector('[data-chip="eql"]')!
+                .classList.contains('is-active')
+        ).toBe(true)
     })
 
     it("leaves the target's own row as it was", () => {
@@ -55,8 +67,13 @@ describe('revealCollapsedAncestors', () => {
 
     it('reports nothing to reveal when the target is already visible', () => {
         byId('outer').classList.remove('collapsed')
-        byId('options').classList.remove('collapsed')
         byId('eql').classList.remove('collapsed')
+        byId('eql').removeAttribute('hidden')
+        byId('query').setAttribute('hidden', 'until-found')
+        document
+            .querySelector('[data-chip="query"]')!
+            .classList.remove('is-active')
+        document.querySelector('[data-chip="eql"]')!.classList.add('is-active')
 
         expect(revealCollapsedAncestors(byId('actions'))).toBe(false)
     })

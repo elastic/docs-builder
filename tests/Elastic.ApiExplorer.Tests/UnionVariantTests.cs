@@ -593,6 +593,63 @@ public class UnionVariantTests
 	}
 
 	[Test]
+	public async Task BuildPropertyList_ArrayAndPlainPairBehindChips_BothShowTheFields()
+	{
+		var json =
+			"""
+			{
+			  "openapi": "3.0.3",
+			  "info": { "title": "t", "version": "1" },
+			  "paths": {},
+			  "components": {
+			    "schemas": {
+			      "Cat": { "type": "object", "description": "A cat.", "properties": { "lives": { "type": "integer" } } },
+			      "Dog": { "type": "object", "properties": { "barks": { "type": "boolean" } } },
+			      "Holder": {
+			        "type": "object",
+			        "properties": {
+			          "chips": {
+			            "oneOf": [
+			              { "$ref": "#/components/schemas/Cat" },
+			              { "type": "array", "items": { "$ref": "#/components/schemas/Cat" } },
+			              { "$ref": "#/components/schemas/Dog" }
+			            ]
+			          }
+			        }
+			      },
+			      "Pair": { "oneOf": [ { "$ref": "#/components/schemas/Cat" }, { "type": "array", "items": { "$ref": "#/components/schemas/Cat" } } ] }
+			    }
+			  }
+			}
+			""";
+		var document = await LoadSpecAsync(json);
+
+		var list = BuilderFor(document).BuildPropertyList(document.Components!.Schemas!["Holder"], new PropertyTreeScope { Prefix = "" })!;
+
+		ApiUnionVariant ArrayVariant(string name) =>
+			list.Items.Single(p => p.Name == name).Children.Variants!.Variants.Single(v => v.IsArrayVariant);
+
+		var chipArray = ArrayVariant("chips");
+		chipArray.ShowProperties.Should().BeTrue("behind chips the Cat[] panel shows alone, so it needs the fields");
+		chipArray.Properties!.Items.Select(p => p.Name).Should().Equal("lives");
+		chipArray.DescriptionMarkdown.Should().Be("A cat.");
+
+		var listed =
+			ApiBodyContent.BuildUnionVariants(
+				document.Components!.Schemas!["Pair"],
+				new PropertyTreeScope { Prefix = "req" },
+				new SchemaAnalyzer(document),
+				BuilderFor(document)
+			)!;
+		listed
+			.Variants
+			.Single(v => v.IsArrayVariant)
+			.ShowProperties
+			.Should()
+			.BeTrue("an X[] / X pair is two object variants, so it shows behind chips too");
+	}
+
+	[Test]
 	public async Task BuildPropertyList_OptionWithItsOwnPage_LinksToThatPage()
 	{
 		var json =
