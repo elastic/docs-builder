@@ -11,7 +11,7 @@
 		if (name == ApiCatalog.HeroSection)
 		{
 			<div class="api-catalog api-catalog-band w-full">
-				<div class="band__content">
+				<div class="@(Model.BuildContext.Configuration.Features.NavigationPreviewEnabled ? "band__content" : "mx-auto w-full max-w-(--max-layout-width) px-6")">
 					<section class="hub-hero api-catalog-hero">
 						<div class="hub-hero-inner">
 							<div class="hub-hero-top">
