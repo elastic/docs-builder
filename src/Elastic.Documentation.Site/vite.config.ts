@@ -12,6 +12,9 @@ const cssEntryNames: Record<string, string> = {
     assembler: 'assembler.css',
     isolated: 'isolated.css',
     codex: 'codex.css',
+    'ds-layers': 'ds-layers.css',
+    'ds-css': 'ds.css',
+    'ds-guide': 'ds-guide.css',
 }
 
 export default defineConfig({
@@ -25,6 +28,8 @@ export default defineConfig({
         'process.env.DOCS_BUILDER_VERSION': JSON.stringify(docsBuilderVersion),
     },
     build: {
+        // The design system's floor, which Vite lowers nesting and other newer CSS to. The legacy bundle is lowered the same way.
+        cssTarget: ['chrome111', 'edge111', 'firefox113', 'safari16.2'],
         outDir: '_static',
         emptyOutDir: false,
         sourcemap: true,
@@ -37,6 +42,12 @@ export default defineConfig({
                 assembler: path.resolve(__dirname, 'Assets/assembler.css'),
                 isolated: path.resolve(__dirname, 'Assets/isolated.css'),
                 codex: path.resolve(__dirname, 'Assets/codex.css'),
+                // The design-system bundle, loaded instead of the above when NAVIGATION_PREVIEW is on.
+                // ds-layers.css stays its own file: the cascade order must not be reordered by the bundler.
+                ds: path.resolve(__dirname, 'Assets/ds.ts'),
+                'ds-layers': path.resolve(__dirname, 'Assets/ds-layers.css'),
+                'ds-css': path.resolve(__dirname, 'Assets/ds.css'),
+                'ds-guide': path.resolve(__dirname, 'Assets/ds-guide.css'),
             },
             output: {
                 // Chunks import shared code back from the entry by file name. A content-hashed

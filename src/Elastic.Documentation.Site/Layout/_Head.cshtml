@@ -50,10 +50,6 @@
 	{
 	<script type="module" src="@Model.Static("main.js")"></script>
 	}
-	else
-	{
-	<script src="@Model.Static("main.js")" defer></script>
-	}
 	@if (Model.BuildType == BuildType.Assembler && !Model.Features.AirGappedEnabled)
 	{
 		@* In <head> so head-support's merge keeps the identical tag across htmx navigations

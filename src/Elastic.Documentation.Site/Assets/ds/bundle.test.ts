@@ -1,4 +1,4 @@
-// The design-system bundle must stay free of React, EUI and Emotion. Parcel's output lists every chunk of the build in a shared import map,
+// The design-system bundle must stay free of React, EUI and Emotion. The built output lists every chunk in a shared preload map,
 // so scanning the built file would give false alarms; this walks the source import graph from the entry instead.
 import { existsSync, readFileSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'

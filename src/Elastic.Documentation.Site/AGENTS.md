@@ -17,7 +17,7 @@ Shared Razor layout, the frontend bundles, and the design system. The full guide
 
 | Path | Purpose |
 |---|---|
-| `Assets/ds.css`, `Assets/ds.ts` | Design-system bundle entry points (Parcel targets `ds-css`, `ds-js`) |
+| `Assets/ds.css`, `Assets/ds.ts` | Design-system bundle entry points (Vite inputs `ds-css`, `ds`) |
 | `Assets/ds/` | Tokens, themes, reset, base, fonts, and enhancement modules |
 | `Assets/ds-guide.css` | Style-guide-only scaffolding; never loaded on product pages |
 | `StyleGuide/` | Style-guide pages (Razor slices), the page catalog, and the token metadata |
@@ -25,6 +25,6 @@ Shared Razor layout, the frontend bundles, and the design system. The full guide
 ## Commands
 
 ```bash
-npm run build            # Parcel bundles, including ds.css / ds.js
+npm run build            # Vite bundles, including ds.css / ds.js
 dotnet test tests/Navigation.Tests -- --treenode-filter "/*/Elastic.Documentation.Navigation.Tests.DesignSystem/*/*"
 ```
