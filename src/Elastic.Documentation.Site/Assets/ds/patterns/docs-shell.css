@@ -46,6 +46,8 @@
 
 .docs-shell__content {
 	min-width: 0;
+	/* The breadcrumb's first line lines up with the first rows of the sidebar and the rail. */
+	padding-top: calc(var(--space-5) + var(--space-1));
 	padding-bottom: var(--space-8);
 }
 
