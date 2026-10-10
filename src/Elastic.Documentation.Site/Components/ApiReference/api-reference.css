@@ -12,7 +12,7 @@
 .api-page-intro .api-url-listing {
 	display: flex;
 	flex-direction: column;
-	gap: 8px;
+	gap: var(--space-2);
 	margin: 0;
 	padding: 0;
 }
@@ -25,7 +25,7 @@
 .api-page-intro .api-url-listing > li > .api-url-row {
 	display: flex;
 	align-items: center;
-	gap: 8px;
+	gap: var(--space-2);
 	box-sizing: border-box;
 	width: 100%;
 	margin: 0;
@@ -43,8 +43,8 @@
 	top: auto;
 	right: auto;
 	flex-shrink: 0;
-	width: 16px;
-	height: 16px;
+	width: 1rem;
+	height: 1rem;
 	opacity: 0;
 	pointer-events: none;
 	background-color: transparent;
@@ -69,8 +69,8 @@
 }
 
 .api-url-copy.copybtn svg {
-	width: 16px;
-	height: 16px;
+	width: 1rem;
+	height: 1rem;
 	padding: 0;
 	stroke: none;
 	fill: currentColor;
@@ -85,55 +85,55 @@
 	font-family: var(--font-mono);
 	display: flex;
 	align-items: center;
-	gap: 8px;
+	gap: var(--space-2);
 	min-width: 0;
 	margin-left: 0;
-	padding: 3px 10px 3px 3px;
-	border-radius: 10px;
+	padding: 0.1875rem 0.625rem 0.1875rem 0.1875rem;
+	border-radius: 0.625rem;
 	color: var(--color-heading);
-	font-size: 14px;
+	font-size: 0.875rem;
 	font-weight: 300;
-	line-height: 20px;
+	line-height: 1.25rem;
 	overflow-wrap: anywhere;
 }
 
 /* The first route is the one to read; the alternates below it are compact and muted. */
 .api-page-intro .api-url-listing > li:first-child .api-url {
-	padding: 4px 12px 4px 4px;
-	font-size: 16px;
+	padding: var(--space-1) var(--space-3) var(--space-1) var(--space-1);
+	font-size: 1rem;
 	font-weight: 400;
-	line-height: 22px;
+	line-height: 1.375rem;
 }
 
 .api-page-intro .api-url-listing > li + li .api-url {
-	padding: 2px 8px 2px 2px;
+	padding: 2px var(--space-2) 2px 2px;
 	color: var(--color-text-muted);
-	font-size: 13px;
-	line-height: 18px;
+	font-size: 0.8125rem;
+	line-height: 1.125rem;
 }
 
 .api-page-intro .api-url-listing > li + li .api-method {
-	height: 20px;
-	padding: 0 5px;
-	font-size: 11px;
+	height: 1.25rem;
+	padding: 0 0.3125rem;
+	font-size: 0.6875rem;
 }
 
 .api-page-intro .api-url-listing > li + li .api-url-also-method {
-	font-size: 10px;
-	line-height: 14px;
+	font-size: 0.625rem;
+	line-height: 0.875rem;
 }
 
 .api-page-intro .api-security-badges {
 	display: flex;
 	flex-wrap: wrap;
-	gap: 8px;
+	gap: var(--space-2);
 }
 
 /* One 16px step between title, badges, servers, paths, and auth. */
 .api-page-intro {
 	display: flex;
 	flex-direction: column;
-	gap: 16px;
+	gap: var(--space-4);
 }
 
 /* Operation / group page title — Figma APIs 10079:2802 */
@@ -143,16 +143,16 @@
 	padding-top: 0;
 	color: var(--color-code-bg);
 	font-family: var(--font-body, Inter, ui-sans-serif, system-ui, sans-serif);
-	font-size: 30px;
+	font-size: 1.875rem;
 	font-weight: 600;
-	line-height: 36px;
+	line-height: 2.25rem;
 	letter-spacing: 0;
 }
 
 .api-page-heading {
 	display: flex;
 	align-items: center;
-	gap: 16px;
+	gap: var(--space-4);
 	min-width: 0;
 	overflow: visible;
 }
@@ -184,16 +184,16 @@
 .api-page-actions-split {
 	display: inline-flex;
 	align-items: stretch;
-	height: 32px;
+	height: 2rem;
 	overflow: visible;
 	border: 1px solid var(--color-border-control);
-	border-radius: 8px;
+	border-radius: 0.5rem;
 	background: var(--color-surface);
 	box-shadow: none;
 	color: var(--color-heading);
 	font-family: var(--font-body, Inter, ui-sans-serif, system-ui, sans-serif);
-	font-size: 14px;
-	line-height: 20px;
+	font-size: 0.875rem;
+	line-height: 1.25rem;
 }
 
 .api-page-actions-button,
@@ -209,9 +209,9 @@
 .api-page-actions-button {
 	display: inline-flex;
 	align-items: center;
-	gap: 8px;
-	padding: 0 12px;
-	border-radius: 7px 0 0 7px;
+	gap: var(--space-2);
+	padding: 0 var(--space-3);
+	border-radius: 0.4375rem 0 0 0.4375rem;
 	white-space: nowrap;
 }
 
@@ -220,10 +220,10 @@
 	display: inline-flex;
 	align-items: center;
 	justify-content: center;
-	width: 32px;
+	width: 2rem;
 	padding: 0;
 	border-left: 1px solid var(--color-border-control);
-	border-radius: 0 7px 7px 0;
+	border-radius: 0 0.4375rem 0.4375rem 0;
 	list-style: none;
 }
 
@@ -247,16 +247,16 @@
 	display: flex;
 	align-items: center;
 	justify-content: center;
-	width: 12px;
-	height: 12px;
+	width: 0.75rem;
+	height: 0.75rem;
 	color: var(--color-text-muted);
 	transition: transform 0.15s ease;
 }
 
 .api-page-actions-chevron-icon svg {
 	display: block;
-	width: 12px;
-	height: 12px;
+	width: 0.75rem;
+	height: 0.75rem;
 }
 
 .api-page-actions details.api-page-actions-dropdown,
@@ -275,16 +275,16 @@
 .api-page-actions-menu {
 	box-sizing: border-box;
 	position: absolute;
-	top: calc(100% + 6px);
+	top: calc(100% + 0.375rem);
 	right: 0;
 	z-index: 40;
 	width: max-content;
-	min-width: 196px;
+	min-width: 12.25rem;
 	margin: 0;
-	padding: 8px;
+	padding: var(--space-2);
 	background: var(--color-surface);
 	border: 0;
-	border-radius: 4px;
+	border-radius: 0.25rem;
 	filter: drop-shadow(
 			0 0 2px color-mix(in oklab, var(--color-text) 16%, transparent)
 		)
@@ -295,29 +295,29 @@
 			0 6px 14px color-mix(in oklab, var(--color-text) 6%, transparent)
 		);
 	font-family: var(--font-body, Inter, ui-sans-serif, system-ui, sans-serif);
-	font-size: 14px;
+	font-size: 0.875rem;
 	font-weight: 400;
-	line-height: 20px;
+	line-height: 1.25rem;
 	color: var(--color-heading);
 }
 
 .api-page-actions-icon {
 	display: block;
 	flex-shrink: 0;
-	width: 16px;
-	height: 16px;
+	width: 1rem;
+	height: 1rem;
 	color: var(--color-text-muted);
 }
 
 .api-page-actions-option {
 	display: flex;
 	align-items: center;
-	gap: 8px;
+	gap: var(--space-2);
 	width: 100%;
 	margin: 0;
-	padding: 6px 8px;
+	padding: 0.375rem var(--space-2);
 	border: 0;
-	border-radius: 4px;
+	border-radius: 0.25rem;
 	background: transparent;
 	font: inherit;
 	color: var(--color-heading);
@@ -369,12 +369,12 @@
 		list-style: none;
 	}
 	.api-url-list-item + .api-url-list-item {
-		margin-top: 8px;
+		margin-top: var(--space-2);
 	}
 	.api-url-row {
 		display: flex;
 		align-items: center;
-		gap: 8px;
+		gap: var(--space-2);
 	}
 }
 
@@ -392,27 +392,27 @@
 }
 
 .api-group .api-page-heading > h1 {
-	font-size: 24px;
-	line-height: 32px;
+	font-size: 1.5rem;
+	line-height: 2rem;
 }
 
 .api-group .api-tag-description {
-	margin-top: 8px;
-	font-size: 16px;
-	line-height: 24px;
+	margin-top: var(--space-2);
+	font-size: 1rem;
+	line-height: 1.5rem;
 }
 
 .api-group-count {
-	margin: 24px 0 0;
+	margin: var(--space-5) 0 0;
 	color: var(--color-text-muted);
-	font-size: 14px;
-	line-height: 20px;
+	font-size: 0.875rem;
+	line-height: 1.25rem;
 }
 
 .api-group-list {
 	display: flex;
 	flex-direction: column;
-	margin: 12px 0 0;
+	margin: var(--space-3) 0 0;
 	padding: 0;
 	border-top: 1px solid var(--color-border);
 	list-style: none;
@@ -436,13 +436,13 @@
 	grid-template-areas:
 		'title chevron'
 		'routes chevron';
-	column-gap: 12px;
-	row-gap: 8px;
+	column-gap: var(--space-3);
+	row-gap: var(--space-2);
 	align-items: center;
 	box-sizing: border-box;
-	min-height: 44px;
+	min-height: 2.75rem;
 	margin: 0;
-	padding: 12px 8px;
+	padding: var(--space-3) var(--space-2);
 	-webkit-tap-highlight-color: color-mix(
 		in oklab,
 		var(--color-text) 16%,
@@ -482,9 +482,9 @@
 .api-group-row .api-overview-title {
 	grid-area: title;
 	color: inherit;
-	font-size: 16px;
+	font-size: 1rem;
 	font-weight: 600;
-	line-height: 24px;
+	line-height: 1.5rem;
 	text-decoration: none;
 }
 
@@ -497,7 +497,7 @@
 	display: grid;
 	grid-template-columns: auto minmax(0, 1fr);
 	align-items: center;
-	column-gap: 8px;
+	column-gap: var(--space-2);
 }
 
 .api-group-row .api-url {
@@ -507,16 +507,16 @@
 	font-family:
 		'Roboto Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
 		monospace;
-	font-size: 14px;
+	font-size: 0.875rem;
 	font-weight: 400;
-	line-height: 24px;
+	line-height: 1.5rem;
 }
 
 .api-group-chevron {
 	grid-area: chevron;
 	display: block;
-	width: 16px;
-	height: 16px;
+	width: 1rem;
+	height: 1rem;
 	color: var(--color-text-muted);
 	transform: rotate(-90deg);
 }
@@ -524,41 +524,41 @@
 /* Product landing: the groups as a flat index. Columns follow the container, not the viewport, so the index
    reads the same beside the sidebar and in a narrow window. Classification headings span every column. */
 .api-index {
-	column-gap: 40px;
+	column-gap: 2.5rem;
 }
 
 .api-index .api-index-heading {
 	column-span: all;
-	margin: 32px 0 8px;
-	font-size: 20px;
-	line-height: 28px;
+	margin: var(--space-6) 0 var(--space-2);
+	font-size: 1.25rem;
+	line-height: 1.75rem;
 }
 
 /* Topic pages (Authentication, Servers) sit above the index: they are read once, not browsed with the endpoints. */
 .api-topics {
 	display: flex;
 	flex-wrap: wrap;
-	gap: 8px;
-	margin: 16px 0 32px;
+	gap: var(--space-2);
+	margin: var(--space-4) 0 var(--space-6);
 }
 
 /* Quiet outlined link: topic pages and the spec downloads. */
 #markdown-content a.api-chip-link {
 	display: inline-flex;
 	align-items: center;
-	gap: 6px;
-	padding: 4px 12px;
+	gap: 0.375rem;
+	padding: var(--space-1) var(--space-3);
 	border: 1px solid var(--color-border);
-	border-radius: 8px;
+	border-radius: 0.5rem;
 	color: inherit;
-	font-size: 14px;
-	line-height: 20px;
+	font-size: 0.875rem;
+	line-height: 1.25rem;
 	text-decoration: none;
 }
 
 .api-chip-link svg {
-	width: 14px;
-	height: 14px;
+	width: 0.875rem;
+	height: 0.875rem;
 }
 
 #markdown-content a.api-chip-link:hover,
@@ -577,36 +577,36 @@
 	display: flex;
 	flex-wrap: wrap;
 	align-items: center;
-	gap: 8px 24px;
-	margin: 16px 0 0;
+	gap: var(--space-2) var(--space-5);
+	margin: var(--space-4) 0 0;
 	color: var(--color-text-muted);
-	font-size: 14px;
-	line-height: 20px;
+	font-size: 0.875rem;
+	line-height: 1.25rem;
 }
 
 .api-landing-download {
 	display: inline-flex;
 	flex-wrap: wrap;
 	align-items: center;
-	gap: 8px;
+	gap: var(--space-2);
 }
 
 .api-index-group {
 	break-inside: avoid;
-	margin: 0 0 32px;
+	margin: 0 0 var(--space-6);
 }
 
 .api-index .api-index-group-title {
 	display: flex;
 	align-items: baseline;
 	justify-content: space-between;
-	gap: 12px;
+	gap: var(--space-3);
 	margin: 0;
-	padding: 0 0 8px;
+	padding: 0 0 var(--space-2);
 	border-bottom: 1px solid var(--color-border);
-	font-size: 16px;
+	font-size: 1rem;
 	font-weight: 600;
-	line-height: 24px;
+	line-height: 1.5rem;
 }
 
 .api-index-group-title a {
@@ -623,7 +623,7 @@
 
 .api-index-count {
 	color: var(--color-text-muted);
-	font-size: 14px;
+	font-size: 0.875rem;
 	font-weight: 400;
 }
 
@@ -642,21 +642,21 @@
 #markdown-content a.api-index-item {
 	display: flex;
 	align-items: center;
-	gap: 8px;
-	min-height: 36px;
-	padding: 6px 4px;
+	gap: var(--space-2);
+	min-height: 2.25rem;
+	padding: 0.375rem var(--space-1);
 	border-bottom: 1px solid var(--color-surface-sunken);
 	color: inherit;
-	font-size: 14px;
-	line-height: 20px;
+	font-size: 0.875rem;
+	line-height: 1.25rem;
 	text-decoration: none;
 }
 
 /* One chip width, so the titles line up whatever the method. */
 .api-index-item .api-method {
-	min-width: 72px;
-	height: 20px;
-	font-size: 11px;
+	min-width: 4.5rem;
+	height: 1.25rem;
+	font-size: 0.6875rem;
 }
 
 .api-index-item-title {
@@ -699,7 +699,7 @@
 .api-card {
 	box-sizing: border-box;
 	border: 1px solid var(--color-border);
-	border-radius: 12px;
+	border-radius: 0.75rem;
 	background: var(--color-surface);
 	color: inherit;
 	text-decoration: none;
@@ -748,8 +748,8 @@
 
 @container api-group (min-width: 40rem) {
 	.api-group .api-page-heading > h1 {
-		font-size: 30px;
-		line-height: 36px;
+		font-size: 1.875rem;
+		line-height: 2.25rem;
 	}
 
 	.api-group-row {
@@ -770,15 +770,15 @@
 	align-items: center;
 	justify-content: center;
 	box-sizing: border-box;
-	height: 24px;
-	gap: 4px;
-	padding: 0 6px;
+	height: 1.5rem;
+	gap: var(--space-1);
+	padding: 0 0.375rem;
 	border: 1px solid;
-	border-radius: 8px;
+	border-radius: 0.5rem;
 	font-family: var(--font-body, Inter, ui-sans-serif, system-ui, sans-serif);
-	font-size: 12px;
+	font-size: 0.75rem;
 	font-weight: 500;
-	line-height: 16px;
+	line-height: 1rem;
 	text-transform: uppercase;
 	white-space: nowrap;
 }
@@ -788,8 +788,8 @@
 	flex-shrink: 0;
 	align-items: center;
 	justify-content: center;
-	width: 12px;
-	height: 12px;
+	width: 0.75rem;
+	height: 0.75rem;
 	overflow: clip;
 }
 
@@ -799,8 +799,8 @@
 }
 
 .api-method-icon svg {
-	width: 12px;
-	height: 12px;
+	width: 0.75rem;
+	height: 0.75rem;
 }
 
 .api-method-label {
@@ -861,7 +861,7 @@
 
 /* Legacy rows reserve 32px on the right; a row with a chip needs less. */
 #pages-nav li:has(> a.sidebar-link > .nav-v2-api-method) {
-	padding-right: 8px;
+	padding-right: var(--space-2);
 }
 
 #pages-nav a.sidebar-link:has(> .nav-v2-api-method) {
@@ -869,7 +869,7 @@
 	align-items: flex-start;
 	justify-content: space-between;
 	width: 100%;
-	gap: 8px;
+	gap: var(--space-2);
 }
 
 /*
@@ -886,11 +886,11 @@
 	align-self: flex-start;
 	margin-top: 2px;
 	box-sizing: border-box;
-	height: 16px;
-	padding: 0 4px;
+	height: 1rem;
+	padding: 0 var(--space-1);
 	border: 1px solid;
-	border-radius: 4px;
-	font-size: 9px;
+	border-radius: 0.25rem;
+	font-size: 0.5625rem;
 	font-weight: 600;
 	letter-spacing: 0.02em;
 	line-height: 1;
@@ -999,8 +999,8 @@
 .api-url {
 	margin-left: calc(var(--spacing) * 2);
 	min-width: 0;
-	font-size: 14px;
-	line-height: 17px;
+	font-size: 0.875rem;
+	line-height: 1.0625rem;
 	font-weight: 400;
 	overflow-wrap: anywhere;
 	word-break: break-word;
@@ -1055,12 +1055,12 @@
 	display: flex;
 	flex-direction: column;
 	gap: 0;
-	margin-top: 16px;
+	margin-top: var(--space-4);
 	overflow: visible;
 	isolation: isolate;
 	background-color: var(--color-surface);
 	border: 1px solid var(--color-border-control);
-	border-radius: 16px;
+	border-radius: 1rem;
 }
 
 .response-panel {
@@ -1076,15 +1076,15 @@
 }
 
 .response-panel:first-child {
-	border-radius: 16px 16px 0 0;
+	border-radius: 1rem 1rem 0 0;
 }
 
 .response-panel:last-child {
-	border-radius: 0 0 16px 16px;
+	border-radius: 0 0 1rem 1rem;
 }
 
 .response-panel:only-child {
-	border-radius: 16px;
+	border-radius: 1rem;
 }
 
 /* Three columns: status code | description | media type, plus the toggle icon on summaries. */
@@ -1094,9 +1094,9 @@
 	box-sizing: border-box;
 	grid-template-columns: 56px minmax(0, 1fr) auto auto;
 	align-items: start;
-	column-gap: 16px;
+	column-gap: var(--space-4);
 	width: 100%;
-	padding: 12px 16px;
+	padding: var(--space-3) var(--space-4);
 }
 
 .response-status-toggle {
@@ -1121,7 +1121,7 @@ button.response-status-toggle:focus {
 .response-summary:has(.response-status-toggle:focus-visible) {
 	outline: var(--outline-size) var(--outline-style) var(--outline-color);
 	outline-offset: -2px;
-	border-radius: 12px;
+	border-radius: 0.75rem;
 }
 
 .response-status-row > .response-status-chip {
@@ -1143,14 +1143,14 @@ button.response-status-toggle:focus {
 	align-items: center;
 	justify-content: center;
 	box-sizing: border-box;
-	height: 24px;
-	padding: 0 8px;
+	height: 1.5rem;
+	padding: 0 var(--space-2);
 	border: 1px solid;
-	border-radius: 8px;
+	border-radius: 0.5rem;
 	font-family: var(--font-body, Inter, ui-sans-serif, system-ui, sans-serif);
-	font-size: 12px;
+	font-size: 0.75rem;
 	font-weight: 500;
-	line-height: 16px;
+	line-height: 1rem;
 }
 
 .response-status-chip.status-success {
@@ -1172,15 +1172,15 @@ button.response-status-toggle:focus {
 }
 
 .response-panel:first-child > .response-summary {
-	border-radius: 16px 16px 0 0;
+	border-radius: 1rem 1rem 0 0;
 }
 
 .response-panel:last-child:not(.expanded) > .response-summary {
-	border-radius: 0 0 16px 16px;
+	border-radius: 0 0 1rem 1rem;
 }
 
 .response-panel:only-child:not(.expanded) > .response-summary {
-	border-radius: 16px;
+	border-radius: 1rem;
 }
 
 .response-panel.expanded {
@@ -1204,14 +1204,14 @@ button.response-status-toggle:focus {
 }
 
 .response-panel.expanded > .response-panel-body {
-	margin: 8px 12px 12px;
-	padding: 4px 12px 8px;
-	border-radius: 8px;
+	margin: var(--space-2) var(--space-3) var(--space-3);
+	padding: var(--space-1) var(--space-3) var(--space-2);
+	border-radius: 0.5rem;
 	background-color: var(--color-surface-sunken);
 }
 
 .response-panel-body > .property-list > :first-child > dt {
-	padding-top: 8px;
+	padding-top: var(--space-2);
 }
 
 .response-description {
@@ -1219,7 +1219,7 @@ button.response-status-toggle:focus {
 	margin: 0;
 	padding: 2px 0 0;
 	color: inherit;
-	font-size: 14px;
+	font-size: 0.875rem;
 	font-weight: 400;
 	line-height: 1.5;
 	text-align: left;
@@ -1246,9 +1246,9 @@ button.response-status-toggle:focus {
 	justify-self: end;
 	color: var(--color-text-muted);
 	font-family: var(--font-mono, ui-monospace, monospace);
-	font-size: 12px;
+	font-size: 0.75rem;
 	font-weight: 400;
-	line-height: 24px;
+	line-height: 1.5rem;
 	background: none;
 	white-space: nowrap;
 }
@@ -1258,9 +1258,9 @@ button.response-status-toggle:focus {
 	flex-shrink: 0;
 	color: var(--color-text-muted);
 	font-family: var(--font-mono, ui-monospace, monospace);
-	font-size: 14px;
+	font-size: 0.875rem;
 	font-weight: 600;
-	line-height: 24px;
+	line-height: 1.5rem;
 }
 
 .response-panel.collapsed .response-toggle-icon::before {
@@ -1275,7 +1275,7 @@ button.response-status-toggle:focus {
 	.response-status-row,
 	.response-summary {
 		grid-template-columns: auto minmax(0, 1fr) auto;
-		row-gap: 8px;
+		row-gap: var(--space-2);
 	}
 
 	.response-description {
@@ -1323,12 +1323,12 @@ button.response-status-toggle:focus {
 		display: flex;
 		align-items: center;
 		flex-wrap: wrap;
-		gap: 8px;
+		gap: var(--space-2);
 		overflow: visible;
-		padding-top: 16px;
+		padding-top: var(--space-4);
 		padding-bottom: 0;
 		margin: 0;
-		line-height: 24px;
+		line-height: 1.5rem;
 
 		> a.property-anchor {
 			display: inline-flex;
@@ -1343,12 +1343,12 @@ button.response-status-toggle:focus {
 		.property-anchor-icon {
 			position: absolute;
 			right: 100%;
-			top: 16px;
+			top: 1rem;
 			z-index: 2;
 			box-sizing: content-box;
-			width: 24px;
-			height: 24px;
-			padding-right: 8px;
+			width: 1.5rem;
+			height: 1.5rem;
+			padding-right: var(--space-2);
 			opacity: 0;
 			transition: opacity 0.15s ease;
 		}
@@ -1357,10 +1357,10 @@ button.response-status-toggle:focus {
 			content: '';
 			display: block;
 			box-sizing: border-box;
-			width: 24px;
-			height: 24px;
+			width: 1.5rem;
+			height: 1.5rem;
 			border: 1px solid var(--color-border-control);
-			border-radius: 8px;
+			border-radius: 0.5rem;
 			background-color: var(--color-surface);
 			background-image: url("data:image/svg+xml,%3Csvg preserveAspectRatio='none' overflow='visible' style='display: block;' width='10.4997' height='10.5003' viewBox='0 0 10.4997 10.5003' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cg id='Glyph'%3E%3Cpath d='M6.542 4.95118C7.29377 4.75083 8.12919 4.94391 8.71802 5.53272L9.84083 6.65919C10.7192 7.53789 10.7194 8.96297 9.84083 9.84156C8.96223 10.7199 7.53783 10.7199 6.65919 9.84156L5.53272 8.71802C4.9441 8.12935 4.75183 7.29435 4.95191 6.54273L5.6272 7.21802C5.6488 7.57098 5.79323 7.91777 6.06226 8.18702L7.18873 9.31055C7.77451 9.89634 8.72477 9.89634 9.31055 9.31055C9.89616 8.72475 9.89628 7.77519 9.31055 7.18946L8.18775 6.06299C7.91856 5.79392 7.57174 5.64975 7.21876 5.62794L6.542 4.95118Z' fill='%235A6D8C'/%3E%3Cpath d='M7.76514 7.23487L7.23487 7.76514L2.73487 3.26514L3.26514 2.73487L7.76514 7.23487Z' fill='%235A6D8C'/%3E%3Cpath d='M0.659186 0.659186C1.53774 -0.219367 2.96212 -0.219846 3.84083 0.658454L4.96802 1.78272C5.55661 2.37148 5.74833 3.20596 5.5481 3.95728L4.87208 3.28126C4.85032 2.92856 4.70669 2.58205 4.43775 2.31299L3.31055 1.18946C2.72477 0.603687 1.77524 0.603678 1.18946 1.18946C0.603678 1.77524 0.603687 2.72477 1.18946 3.31055L2.313 4.43702C2.58184 4.70569 2.92808 4.84927 3.28052 4.87134L3.95655 5.54737C3.20507 5.7472 2.37053 5.55573 1.78199 4.96729L0.658454 3.84083C-0.219846 2.96212 -0.219367 1.53774 0.659186 0.659186Z' fill='%235A6D8C'/%3E%3C/g%3E%3C/svg%3E");
 			background-repeat: no-repeat;
@@ -1385,9 +1385,9 @@ button.response-status-toggle:focus {
 			font-family:
 				'Roboto Mono', ui-monospace, SFMono-Regular, Menlo, Monaco,
 				Consolas, monospace;
-			font-size: 14px;
+			font-size: 0.875rem;
 			font-weight: 700;
-			line-height: 24px;
+			line-height: 1.5rem;
 			background: none;
 			border: 0;
 			padding: 0;
@@ -1407,7 +1407,7 @@ button.response-status-toggle:focus {
 
 	dd {
 		color: var(--color-text-muted);
-		padding: 8px 0 0 0;
+		padding: var(--space-2) 0 0 0;
 		margin: 0;
 		font-family: var(
 			--font-body,
@@ -1416,9 +1416,9 @@ button.response-status-toggle:focus {
 			system-ui,
 			sans-serif
 		);
-		font-size: 14px;
+		font-size: 0.875rem;
 		font-weight: 400;
-		line-height: 20px;
+		line-height: 1.25rem;
 
 		p {
 			margin: 0;
@@ -1428,7 +1428,7 @@ button.response-status-toggle:focus {
 		}
 
 		p:not(:first-of-type) {
-			margin-top: 8px;
+			margin-top: var(--space-2);
 		}
 
 		/* Hide empty dd elements */
@@ -1446,7 +1446,7 @@ button.response-status-toggle:focus {
 
 		&.depth-0 {
 			margin-top: 0;
-			padding-bottom: 16px;
+			padding-bottom: var(--space-4);
 		}
 
 		&.depth-1 {
@@ -1591,7 +1591,7 @@ button.response-status-toggle:focus {
 .prerequisite-item,
 .auth-scheme-item {
 	border-bottom: 1px solid var(--color-border);
-	padding-bottom: 16px;
+	padding-bottom: var(--space-4);
 }
 
 #elastic-api-v3,
@@ -1619,24 +1619,24 @@ button.response-status-toggle:focus {
 	display: flex;
 	align-items: center;
 	justify-content: flex-start;
-	gap: 12px;
+	gap: var(--space-3);
 }
 
 .api-param-section-toggle {
 	position: relative;
 	display: flex;
 	align-items: center;
-	gap: 8px;
+	gap: var(--space-2);
 	flex: 1 1 auto;
 	min-width: 0;
-	height: 24px;
+	height: 1.5rem;
 	margin: 0;
 	padding: 0;
 	border: 0;
 	background: none;
 	color: inherit;
 	font: inherit;
-	line-height: 24px;
+	line-height: 1.5rem;
 	text-align: left;
 	cursor: pointer;
 }
@@ -1645,8 +1645,8 @@ button.response-status-toggle:focus {
 	display: flex;
 	align-items: center;
 	flex: 0 0 auto;
-	height: 24px;
-	line-height: 24px;
+	height: 1.5rem;
+	line-height: 1.5rem;
 }
 
 .api-param-chevron {
@@ -1656,15 +1656,15 @@ button.response-status-toggle:focus {
 	flex: 0 0 24px;
 	margin-left: auto;
 	box-sizing: border-box;
-	width: 24px;
-	height: 24px;
+	width: 1.5rem;
+	height: 1.5rem;
 	color: var(--color-text-muted);
 }
 
 .api-param-chevron::after {
 	content: '';
-	width: 8px;
-	height: 8px;
+	width: 0.5rem;
+	height: 0.5rem;
 	border-right: 1.5px solid currentColor;
 	border-bottom: 1.5px solid currentColor;
 	transform: rotate(-45deg);
@@ -1689,22 +1689,22 @@ button.response-status-toggle:focus {
 	align-items: center;
 	flex: 1 1 auto;
 	min-width: 0;
-	height: 24px;
+	height: 1.5rem;
 	margin: 0;
 	color: var(--color-text-muted);
 	font-family:
 		'Roboto Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
 		monospace;
-	font-size: 14px;
+	font-size: 0.875rem;
 	font-weight: 400;
-	line-height: 24px;
+	line-height: 1.5rem;
 }
 
 .api-param-summary-line {
 	display: flex;
 	align-items: center;
 	width: 100%;
-	height: 24px;
+	height: 1.5rem;
 	min-width: 0;
 	overflow: hidden;
 	white-space: nowrap;
@@ -1715,11 +1715,11 @@ button.response-status-toggle:focus {
 	display: flex;
 	align-items: center;
 	flex: 0 0 auto;
-	height: 24px;
+	height: 1.5rem;
 	color: var(--color-text-muted);
-	font-size: 14px;
+	font-size: 0.875rem;
 	font-weight: 400;
-	line-height: 24px;
+	line-height: 1.5rem;
 	white-space: pre;
 }
 
@@ -1727,8 +1727,8 @@ button.response-status-toggle:focus {
 	display: flex;
 	align-items: center;
 	flex: 0 0 auto;
-	height: 24px;
-	line-height: 24px;
+	height: 1.5rem;
+	line-height: 1.5rem;
 }
 
 .api-param-summary-item code {
@@ -1736,9 +1736,9 @@ button.response-status-toggle:focus {
 	font-family:
 		'Roboto Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
 		monospace;
-	font-size: 14px;
+	font-size: 0.875rem;
 	font-weight: 700;
-	line-height: 24px;
+	line-height: 1.5rem;
 	background: none;
 	border: 0;
 	padding: 0;
@@ -1750,7 +1750,7 @@ button.response-status-toggle:focus {
 	display: inline-flex;
 	align-items: center;
 	flex: 0 0 auto;
-	height: 24px;
+	height: 1.5rem;
 }
 
 .api-param-more[hidden] {
@@ -1764,16 +1764,16 @@ button.response-status-toggle:focus {
 .api-param-more-badge {
 	display: inline-flex;
 	align-items: center;
-	height: 20px;
+	height: 1.25rem;
 	margin-left: 2px;
-	padding: 0 6px;
-	border-radius: 4px;
+	padding: 0 0.375rem;
+	border-radius: 0.25rem;
 	background: var(--color-surface-sunken);
 	color: var(--color-text-muted);
 	font-family: var(--font-body, Inter, ui-sans-serif, system-ui, sans-serif);
-	font-size: 12px;
+	font-size: 0.75rem;
 	font-weight: 500;
-	line-height: 16px;
+	line-height: 1rem;
 }
 
 .type-primitive,
@@ -1828,8 +1828,8 @@ a.type-linked:hover {
 	padding: 0;
 	background-color: transparent;
 	border-radius: 0;
-	font-size: 13px;
-	line-height: 16px;
+	font-size: 0.8125rem;
+	line-height: 1rem;
 }
 
 .deprecated-badge.type-status,
@@ -1841,26 +1841,26 @@ a.type-linked:hover {
 .api-page-intro .api-security-badges .api-auth-button {
 	display: inline-flex;
 	align-items: center;
-	gap: 4px;
+	gap: var(--space-1);
 	box-sizing: border-box;
-	height: 24px;
-	padding: 0 8px 0 6px;
+	height: 1.5rem;
+	padding: 0 var(--space-2) 0 0.375rem;
 	border: 1px solid var(--color-accent-border);
-	border-radius: 4px;
+	border-radius: 0.25rem;
 	background-color: var(--color-surface);
 	color: var(--color-accent);
 	font-family: var(--font-body, Inter, ui-sans-serif, system-ui, sans-serif);
-	font-size: 12px;
+	font-size: 0.75rem;
 	font-weight: 500;
-	line-height: 16px;
+	line-height: 1rem;
 	white-space: nowrap;
 	text-decoration: none;
 }
 
 .api-page-intro .api-security-badges .api-auth-button svg {
 	flex: none;
-	width: 14px;
-	height: 14px;
+	width: 0.875rem;
+	height: 0.875rem;
 }
 
 .api-page-intro .api-security-badges .api-auth-button:hover {
@@ -1879,15 +1879,15 @@ a.type-linked:hover {
 	align-items: center;
 	box-sizing: border-box;
 	margin: 0;
-	padding: 0 6px;
+	padding: 0 0.375rem;
 	border: 0;
-	border-radius: 4px;
+	border-radius: 0.25rem;
 	background-color: var(--color-surface-sunken);
 	color: var(--color-text-muted);
 	font-family: var(--font-body, Inter, ui-sans-serif, system-ui, sans-serif);
-	font-size: 12px;
+	font-size: 0.75rem;
 	font-weight: 500;
-	line-height: 16px;
+	line-height: 1rem;
 	white-space: nowrap;
 	vertical-align: middle;
 	mix-blend-mode: normal;
@@ -1908,9 +1908,9 @@ a.type-linked:hover {
 	font-family:
 		'Roboto Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
 		monospace;
-	font-size: 13px;
+	font-size: 0.8125rem;
 	font-weight: 500;
-	line-height: 16px;
+	line-height: 1rem;
 	letter-spacing: -0.4px;
 	word-spacing: -4px;
 	white-space: nowrap;
@@ -2600,15 +2600,15 @@ a.docs-reference-btn::after {
 	align-items: center;
 	box-sizing: border-box;
 	margin: 0 1px;
-	padding: 0 6px;
+	padding: 0 0.375rem;
 	border: 1px solid var(--color-border);
-	border-radius: 4px;
+	border-radius: 0.25rem;
 	background-color: var(--color-surface-sunken);
 	color: var(--color-text-muted);
 	font-family: var(--font-body, Inter, ui-sans-serif, system-ui, sans-serif);
-	font-size: 12px;
+	font-size: 0.75rem;
 	font-weight: 500;
-	line-height: 16px;
+	line-height: 1rem;
 	white-space: nowrap;
 	vertical-align: middle;
 	mix-blend-mode: normal;
@@ -2634,7 +2634,7 @@ a.docs-reference-btn::after {
 .property-list dd ul li {
 	position: relative;
 	padding-left: var(--space-4);
-	margin-bottom: 4px;
+	margin-bottom: var(--space-1);
 }
 
 .property-list dd ul li::before {
@@ -2687,14 +2687,14 @@ a.docs-reference-btn::after {
 	box-sizing: border-box;
 	margin-top: 0;
 	margin-bottom: 0;
-	padding-top: 40px;
-	padding-bottom: 16px;
+	padding-top: 2.5rem;
+	padding-bottom: var(--space-4);
 	border-bottom: 1px solid var(--color-border);
 	color: var(--color-code-bg);
 	font-family: var(--font-body, Inter, ui-sans-serif, system-ui, sans-serif);
-	font-size: 16px;
+	font-size: 1rem;
 	font-weight: 600;
-	line-height: 24px;
+	line-height: 1.5rem;
 }
 
 /* The global .headerlink::after '#' positions against its link, so it lines up with the title, not the padded h2 */
@@ -2709,8 +2709,8 @@ a.docs-reference-btn::after {
 	display: flex;
 	justify-content: space-between;
 	align-items: center;
-	padding-top: 40px;
-	padding-bottom: 16px;
+	padding-top: 2.5rem;
+	padding-bottom: var(--space-4);
 }
 
 /* Content-type badge for request/response headers */
@@ -2728,9 +2728,9 @@ a.docs-reference-btn::after {
 .api-operation-description {
 	color: var(--color-text-muted);
 	font-family: var(--font-body, Inter, ui-sans-serif, system-ui, sans-serif);
-	font-size: 14px;
+	font-size: 0.875rem;
 	font-weight: 400;
-	line-height: 20px;
+	line-height: 1.25rem;
 	margin: 0 0 0.5rem;
 
 	> :first-child {
@@ -2743,10 +2743,10 @@ a.docs-reference-btn::after {
 
 	p {
 		margin-top: 0;
-		margin-bottom: 24px;
+		margin-bottom: var(--space-5);
 		color: inherit;
-		font-size: 14px;
-		line-height: 20px;
+		font-size: 0.875rem;
+		line-height: 1.25rem;
 	}
 
 	h2,
@@ -2755,7 +2755,7 @@ a.docs-reference-btn::after {
 	h5,
 	h6 {
 		margin-top: 0;
-		margin-bottom: 24px;
+		margin-bottom: var(--space-5);
 		color: var(--color-text-muted);
 		font-family: var(
 			--font-body,
@@ -2764,20 +2764,20 @@ a.docs-reference-btn::after {
 			system-ui,
 			sans-serif
 		);
-		font-size: 14px;
+		font-size: 0.875rem;
 		font-weight: 600;
-		line-height: 20px;
+		line-height: 1.25rem;
 	}
 
 	/* Match the h2.section-header rows rendered by the operation view */
 	h2 {
 		margin-bottom: 0;
-		padding-top: 40px;
-		padding-bottom: 16px;
+		padding-top: 2.5rem;
+		padding-bottom: var(--space-4);
 		border-bottom: 1px solid var(--color-border);
 		color: var(--color-code-bg);
-		font-size: 16px;
-		line-height: 24px;
+		font-size: 1rem;
+		line-height: 1.5rem;
 	}
 
 	strong,
@@ -2800,11 +2800,11 @@ a.docs-reference-btn::after {
 
 	/* bump.sh verb badge — inherits .api-method base and color rules; only size differs */
 	.operation-verb {
-		height: 18px;
-		padding: 0 4px;
-		border-radius: 5px;
-		font-size: 10px;
-		line-height: 12px;
+		height: 1.125rem;
+		padding: 0 var(--space-1);
+		border-radius: 0.3125rem;
+		font-size: 0.625rem;
+		line-height: 0.75rem;
 		vertical-align: middle;
 	}
 
@@ -2817,18 +2817,18 @@ a.docs-reference-btn::after {
 		font-family: var(--font-mono);
 		display: flex;
 		align-items: center;
-		gap: 6px;
+		gap: 0.375rem;
 		width: fit-content;
 		max-width: 100%;
-		padding: 2px 8px 2px 2px;
-		border-radius: 7px;
+		padding: 2px var(--space-2) 2px 2px;
+		border-radius: 0.4375rem;
 	}
 
 	.operation-path {
 		color: var(--color-heading);
-		font-size: 13px;
+		font-size: 0.8125rem;
 		font-weight: 300;
-		line-height: 20px;
+		line-height: 1.25rem;
 	}
 
 	/* Space the URL listing block away from the prose that follows it */
@@ -2863,7 +2863,7 @@ a.docs-reference-btn::after {
 	--api-code-scroll-hover: var(--color-text-muted);
 	overflow: visible;
 	position: relative;
-	margin-bottom: 24px;
+	margin-bottom: var(--space-5);
 	background-color: var(--api-code-bg);
 	color: var(--api-code-text);
 	border: 1px solid var(--api-code-border);
@@ -2880,8 +2880,8 @@ a.docs-reference-btn::after {
 
 .api-code-card .api-code-sample-body::-webkit-scrollbar,
 .api-code-card .example-block-body::-webkit-scrollbar {
-	width: 8px;
-	height: 8px;
+	width: 0.5rem;
+	height: 0.5rem;
 }
 
 .api-code-card .api-code-sample-body::-webkit-scrollbar-track,
@@ -2892,7 +2892,7 @@ a.docs-reference-btn::after {
 .api-code-card .api-code-sample-body::-webkit-scrollbar-thumb,
 .api-code-card .example-block-body::-webkit-scrollbar-thumb {
 	background-color: var(--api-code-scroll);
-	border-radius: 9999px;
+	border-radius: 624.9375rem;
 }
 
 .api-code-card .api-code-sample-body::-webkit-scrollbar-thumb:hover,
@@ -2910,11 +2910,11 @@ a.docs-reference-btn::after {
 	min-width: 0;
 	flex-shrink: 0;
 	align-items: center;
-	gap: 8px;
+	gap: var(--space-2);
 	box-sizing: border-box;
-	height: 48px;
-	max-height: 48px;
-	padding: 0 16px;
+	height: 3rem;
+	max-height: 3rem;
+	padding: 0 var(--space-4);
 	background-color: var(--api-code-bg);
 	border-bottom: 1px solid var(--api-code-border);
 	border-radius: var(--api-code-radius) var(--api-code-radius) 0 0;
@@ -2937,7 +2937,7 @@ a.docs-reference-btn::after {
 	flex: 1;
 	align-items: stretch;
 	align-self: stretch;
-	gap: 8px;
+	gap: var(--space-2);
 	height: calc(100% + 1px);
 	margin-bottom: -1px;
 	overflow-x: auto;
@@ -2960,11 +2960,11 @@ a.docs-reference-btn::after {
 	border-bottom: 2px solid transparent;
 	background: transparent;
 	/* 3px top vs 0 bottom recovers the 2px underline so the label centers in the 48px header. */
-	padding: 3px 4px 0;
+	padding: 0.1875rem var(--space-1) 0;
 	font-family: var(--font-body, Inter, ui-sans-serif, system-ui, sans-serif);
-	font-size: 14px;
+	font-size: 0.875rem;
 	font-weight: 400;
-	line-height: 16px;
+	line-height: 1rem;
 	white-space: nowrap;
 	color: var(--api-code-muted);
 	transition:
@@ -2974,8 +2974,8 @@ a.docs-reference-btn::after {
 
 .example-response-tab-label {
 	display: inline-block;
-	padding: 2px 4px;
-	border-radius: 6px;
+	padding: 2px var(--space-1);
+	border-radius: 0.375rem;
 	transition:
 		background-color 0.08s ease,
 		color 0.08s ease;
@@ -3006,8 +3006,8 @@ button.example-response-tab:focus-visible {
 
 .api-code-card .example-empty {
 	margin: 0;
-	padding: 12px 16px;
-	font-size: 13px;
+	padding: var(--space-3) var(--space-4);
+	font-size: 0.8125rem;
 	line-height: 1.4;
 	color: var(--api-code-muted);
 	font-style: italic;
@@ -3039,8 +3039,8 @@ button.example-response-tab:focus-visible {
 	   edge. Every API page uses the operation page's width, so the content keeps its
 	   left edge when you move between pages. */
 	.api-page-shell > .grid {
-		column-gap: 32px;
-		padding-right: 16px;
+		column-gap: var(--space-6);
+		padding-right: var(--space-4);
 	}
 
 	#api-content-grid {
@@ -3071,15 +3071,15 @@ button.example-response-tab:focus-visible {
 .api-page-columns {
 	display: flex;
 	flex-direction: column;
-	gap: 16px;
-	margin-top: 16px;
+	gap: var(--space-4);
+	margin-top: var(--space-4);
 }
 
 @media (min-width: 1101px) {
 	.api-page-columns {
 		flex-direction: row;
 		align-items: flex-start;
-		gap: 24px;
+		gap: var(--space-5);
 	}
 
 	.api-page-columns > * {
@@ -3175,7 +3175,7 @@ button.example-response-tab:focus-visible {
 	min-width: 0;
 	flex: 1;
 	align-items: center;
-	gap: 8px;
+	gap: var(--space-2);
 	overflow: hidden;
 }
 
@@ -3186,18 +3186,18 @@ button.example-response-tab:focus-visible {
 	font-family:
 		'Roboto Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
 		monospace;
-	font-size: 12px;
+	font-size: 0.75rem;
 	font-weight: 300;
-	line-height: 20px;
+	line-height: 1.25rem;
 	text-overflow: ellipsis;
 	white-space: nowrap;
 }
 
 .api-code-sample-title .api-code-sample-heading {
 	color: var(--api-code-text);
-	font-size: 12px;
+	font-size: 0.75rem;
 	font-weight: 600;
-	line-height: 20px;
+	line-height: 1.25rem;
 	white-space: nowrap;
 }
 
@@ -3280,8 +3280,8 @@ button.example-response-tab:focus-visible {
 
 .example-block--response .example-empty {
 	margin: 0;
-	padding: 12px 16px;
-	font-size: 13px;
+	padding: var(--space-3) var(--space-4);
+	font-size: 0.8125rem;
 	line-height: 1.4;
 	color: var(--api-code-muted);
 	font-style: italic;
@@ -3457,23 +3457,23 @@ button.example-response-tab:focus-visible {
 
 /* Light grouping: a small label per group, with the gap between groups kept tight so the page still fits one screen. */
 .api-catalog .api-catalog-group + .api-catalog-group {
-	margin-top: 32px;
+	margin-top: var(--space-6);
 }
 
 .api-catalog .api-catalog-group-title {
-	margin: 0 0 8px;
+	margin: 0 0 var(--space-2);
 	font-family: var(--font-heading);
-	font-size: 12px;
+	font-size: 0.75rem;
 	font-weight: 700;
 	letter-spacing: 0.06em;
-	line-height: 16px;
+	line-height: 1rem;
 	text-transform: uppercase;
 	color: var(--color-text-muted);
 }
 
 /* The landing page card is rounded-2xl, which is 14px. The shared .api-card is 12px. */
 .api-catalog .api-catalog-card {
-	border-radius: 14px;
+	border-radius: 0.875rem;
 }
 
 .api-catalog .api-catalog-card-icon svg {
@@ -3544,26 +3544,26 @@ button.example-response-tab:focus-visible {
 
 /* Deployment tag: the applies_to pill look, standalone. It sits inside the card link, so it keeps the link's pointer. */
 .api-catalog .api-catalog-tag {
-	padding: 1px 8px;
+	padding: 1px var(--space-2);
 	border: 1px solid var(--color-border);
-	border-radius: 9999px;
+	border-radius: 624.9375rem;
 	background-color: var(--color-surface);
 	color: var(--color-text-muted);
-	font-size: 12px;
-	line-height: 16px;
+	font-size: 0.75rem;
+	line-height: 1rem;
 	white-space: nowrap;
 }
 
 .api-landing-heading {
 	display: flex;
 	align-items: center;
-	column-gap: 14px;
+	column-gap: 0.875rem;
 }
 
 .api-landing-icon,
 .api-landing-icon svg {
 	width: auto;
-	height: 40px;
+	height: 2.5rem;
 }
 
 /* Keep the viewport scrollbar mounted. A scrollbar that appears when a
@@ -3584,14 +3584,14 @@ html:has(.api-page-shell) {
 /* Merged endpoint rows: dominant method, "also GET", optional segments dashed. */
 .api-url-also-method {
 	flex-shrink: 0;
-	padding: 0 6px;
+	padding: 0 0.375rem;
 	border: 1px dashed var(--color-border-control);
-	border-radius: 999px;
+	border-radius: 62.4375rem;
 	color: var(--color-text-muted);
 	font-family: var(--font-body, Inter, ui-sans-serif, system-ui, sans-serif);
-	font-size: 11px;
+	font-size: 0.6875rem;
 	font-weight: 500;
-	line-height: 16px;
+	line-height: 1rem;
 	white-space: nowrap;
 	cursor: help;
 }
@@ -3615,25 +3615,25 @@ html:has(.api-page-shell) {
 	padding: 0;
 	background-color: transparent;
 	border-radius: 0;
-	font-size: 13px;
-	line-height: 16px;
+	font-size: 0.8125rem;
+	line-height: 1rem;
 }
 
 .api-path-param-optional-hint {
-	margin: 4px 0 0;
+	margin: var(--space-1) 0 0;
 	color: var(--color-text-muted);
-	font-size: 13px;
+	font-size: 0.8125rem;
 }
 
 /* Examples rail: example chips over a carousel of language cards. */
 /* Small dimmed label so the chips below read as a list of examples. */
 .api-examples-heading {
-	margin: 0 0 8px;
+	margin: 0 0 var(--space-2);
 	color: var(--color-text-muted);
-	font-size: 12px;
+	font-size: 0.75rem;
 	font-weight: 600;
 	letter-spacing: 0.06em;
-	line-height: 16px;
+	line-height: 1rem;
 	text-transform: uppercase;
 }
 
@@ -3643,7 +3643,7 @@ html:has(.api-page-shell) {
 	display: flex;
 	flex-wrap: wrap;
 	gap: var(--api-chip-gap);
-	margin-bottom: 12px;
+	margin-bottom: var(--space-3);
 }
 
 /* Before the script has fitted the chips, show the two lines they will take: two chip heights and the gap between. */
@@ -3660,16 +3660,16 @@ html:has(.api-page-shell) {
 .api-example-chip {
 	display: inline-flex;
 	align-items: center;
-	gap: 6px;
+	gap: 0.375rem;
 	max-width: calc((100% - var(--api-chip-gap)) / 2);
 	min-height: var(--api-chip-height);
-	padding: 4px 10px;
+	padding: var(--space-1) 0.625rem;
 	border: 1px solid var(--color-border);
-	border-radius: 999px;
+	border-radius: 62.4375rem;
 	background: var(--color-surface);
 	color: var(--color-heading);
-	font-size: 12.5px;
-	line-height: 18px;
+	font-size: 0.7812rem;
+	line-height: 1.125rem;
 	cursor: pointer;
 }
 
@@ -3706,14 +3706,14 @@ html:has(.api-page-shell) {
 .api-example-more {
 	display: inline-flex;
 	align-items: center;
-	gap: 4px;
-	padding: 4px 10px;
+	gap: var(--space-1);
+	padding: var(--space-1) 0.625rem;
 	border: 1px dashed var(--color-border-control);
-	border-radius: 999px;
+	border-radius: 62.4375rem;
 	background: transparent;
 	color: var(--color-text-muted);
-	font-size: 12.5px;
-	line-height: 18px;
+	font-size: 0.7812rem;
+	line-height: 1.125rem;
 	cursor: pointer;
 }
 
@@ -3737,13 +3737,13 @@ html:has(.api-page-shell) {
 .api-example-menu {
 	box-sizing: border-box;
 	width: max-content;
-	max-width: min(320px, calc(100vw - 16px));
-	max-height: min(320px, 50vh);
+	max-width: min(20rem, calc(100vw - 1rem));
+	max-height: min(20rem, 50vh);
 	margin: 0;
-	padding: 4px;
+	padding: var(--space-1);
 	overflow: auto;
 	border: 1px solid var(--color-border);
-	border-radius: 8px;
+	border-radius: 0.5rem;
 	background: var(--color-surface);
 	box-shadow: 0 6px 20px
 		color-mix(in oklab, var(--color-text) 14%, transparent);
@@ -3763,30 +3763,30 @@ html:has(.api-page-shell) {
 	z-index: 1;
 	box-sizing: border-box;
 	width: 100%;
-	margin: 0 0 4px;
+	margin: 0 0 var(--space-1);
 	background: var(--color-surface);
 	box-shadow:
 		0 -4px 0 var(--color-surface),
 		0 4px 0 var(--color-surface);
-	padding: 6px 8px;
+	padding: 0.375rem var(--space-2);
 	border: 1px solid var(--color-border);
-	border-radius: 6px;
-	font-size: 12.5px;
+	border-radius: 0.375rem;
+	font-size: 0.7812rem;
 }
 
 .api-example-menu-item {
 	display: flex;
 	align-items: center;
 	justify-content: space-between;
-	gap: 12px;
+	gap: var(--space-3);
 	width: 100%;
-	padding: 6px 8px;
+	padding: 0.375rem var(--space-2);
 	border: 0;
-	border-radius: 6px;
+	border-radius: 0.375rem;
 	background: transparent;
 	color: var(--color-heading);
-	font-size: 12.5px;
-	line-height: 18px;
+	font-size: 0.7812rem;
+	line-height: 1.125rem;
 	text-align: left;
 	cursor: pointer;
 }
@@ -3800,25 +3800,25 @@ html:has(.api-page-shell) {
 .api-example-chip-count {
 	display: inline-flex;
 	align-items: center;
-	gap: 3px;
-	padding: 0 6px;
-	border-radius: 999px;
+	gap: 0.1875rem;
+	padding: 0 0.375rem;
+	border-radius: 62.4375rem;
 	background: var(--color-surface-sunken);
 	color: var(--color-text-muted);
-	font-size: 11px;
+	font-size: 0.6875rem;
 	font-weight: 500;
-	line-height: 16px;
+	line-height: 1rem;
 }
 
 /* The example's description: a muted note under the chips, set apart from the code below it. */
 .api-example-description {
-	margin: 0 0 14px;
-	padding: 10px 12px;
+	margin: 0 0 0.875rem;
+	padding: 0.625rem var(--space-3);
 	border-left: 3px solid var(--color-border-control);
-	border-radius: 0 10px 10px 0;
+	border-radius: 0 0.625rem 0.625rem 0;
 	background: var(--color-surface-sunken);
 	color: var(--color-text);
-	font-size: 13px;
+	font-size: 0.8125rem;
 	line-height: 1.55;
 }
 
@@ -3841,20 +3841,20 @@ html:has(.api-page-shell) {
 }
 
 .api-example-description p + p {
-	margin-top: 6px;
+	margin-top: 0.375rem;
 }
 
 .api-example-description :not(pre) > code {
-	font-size: 12px;
+	font-size: 0.75rem;
 }
 
 .api-example-description-toggle {
-	margin-top: 4px;
+	margin-top: var(--space-1);
 	padding: 0;
 	border: 0;
 	background: none;
 	color: var(--color-accent);
-	font-size: 12px;
+	font-size: 0.75rem;
 	font-weight: 600;
 	cursor: pointer;
 }
@@ -3868,25 +3868,25 @@ html:has(.api-page-shell) {
 }
 
 .api-code-carousel {
-	margin-bottom: 24px;
+	margin-bottom: var(--space-5);
 }
 
 .api-code-carousel-head {
 	display: flex;
 	align-items: center;
-	gap: 6px;
-	margin-bottom: 8px;
+	gap: 0.375rem;
+	margin-bottom: var(--space-2);
 }
 
 /* Says what a card is before anything else does: Request above the samples, Response above the response. */
 .api-rail-label {
 	flex-shrink: 0;
-	margin-right: 6px;
+	margin-right: 0.375rem;
 	color: var(--color-text-muted);
-	font-size: 11px;
+	font-size: 0.6875rem;
 	font-weight: 600;
 	letter-spacing: 0.06em;
-	line-height: 16px;
+	line-height: 1rem;
 	text-transform: uppercase;
 }
 
@@ -3899,23 +3899,23 @@ html:has(.api-page-shell) {
 .api-code-carousel-position {
 	flex: 1;
 	min-width: 0;
-	font-size: 13px;
+	font-size: 0.8125rem;
 }
 
 .api-code-carousel-position span {
-	margin-left: 4px;
+	margin-left: var(--space-1);
 	color: var(--color-text-muted);
-	font-size: 12px;
+	font-size: 0.75rem;
 }
 
 .api-code-carousel-arrow {
-	width: 28px;
-	height: 28px;
+	width: 1.75rem;
+	height: 1.75rem;
 	border: 1px solid var(--color-border);
 	border-radius: 50%;
 	background: var(--color-surface);
 	color: var(--color-heading);
-	font-size: 16px;
+	font-size: 1rem;
 	line-height: 1;
 	cursor: pointer;
 }
@@ -3939,7 +3939,7 @@ html:has(.api-page-shell) {
 .api-code-carousel-strip {
 	display: flex;
 	align-items: flex-start;
-	gap: 12px;
+	gap: var(--space-3);
 	overflow-x: auto;
 	scroll-snap-type: x mandatory;
 	scrollbar-width: none;
@@ -3992,18 +3992,18 @@ html:has(.api-page-shell) {
 .api-code-carousel-card-header {
 	display: flex;
 	align-items: center;
-	gap: 8px;
-	height: 44px;
-	padding: 0 12px 0 14px;
+	gap: var(--space-2);
+	height: 2.75rem;
+	padding: 0 var(--space-3) 0 0.875rem;
 	border-bottom: 1px solid var(--api-code-border);
-	font-size: 13px;
+	font-size: 0.8125rem;
 }
 
 /* Language and client label are different sizes, so they line up on the baseline, not by box centre. */
 .api-code-carousel-card-title {
 	display: flex;
 	align-items: baseline;
-	gap: 8px;
+	gap: var(--space-2);
 	min-width: 0;
 }
 
@@ -4017,7 +4017,7 @@ html:has(.api-page-shell) {
 	overflow: hidden;
 	color: var(--api-code-muted);
 	font-family: var(--font-mono);
-	font-size: 11.5px;
+	font-size: 0.7188rem;
 	text-overflow: ellipsis;
 	white-space: nowrap;
 }
@@ -4085,8 +4085,8 @@ html:has(.api-page-shell) {
 	display: flex;
 	flex-wrap: wrap;
 	justify-content: center;
-	gap: 6px;
-	margin-top: 10px;
+	gap: 0.375rem;
+	margin-top: 0.625rem;
 }
 
 /* A square cell so the active ring is concentric with the 22px badge: 2px ring, 2px gap, 10px radius. */
@@ -4094,11 +4094,11 @@ html:has(.api-page-shell) {
 	display: inline-grid;
 	place-items: center;
 	box-sizing: border-box;
-	width: 30px;
-	height: 30px;
+	width: 1.875rem;
+	height: 1.875rem;
 	padding: 0;
 	border: 2px solid transparent;
-	border-radius: 10px;
+	border-radius: 0.625rem;
 	background: none;
 	/* Inactive dots are mostly desaturated, with a little transparency on top. */
 	filter: saturate(0.3);
@@ -4146,7 +4146,7 @@ html:has(.api-page-shell) {
 [data-code-actions]:has(.api-code-preview-btn) {
 	display: inline-flex;
 	align-items: center;
-	gap: 6px;
+	gap: 0.375rem;
 }
 
 /* Also an .api-code-card, which gives it the cards' border, radius and surface; position: fixed because
@@ -4155,9 +4155,9 @@ html:has(.api-page-shell) {
 	position: fixed;
 	flex-direction: column;
 	width: fit-content;
-	max-width: calc(100vw - 48px);
+	max-width: calc(100vw - 3rem);
 	/* As tall as the code, up to the window; longer code scrolls in the body. */
-	max-height: calc(100vh - 48px);
+	max-height: calc(100vh - 3rem);
 	/* On the optical centre rather than the geometric one: the dialog's 38.2% mark sits on the window's,
 	   so the space above and below is in the golden ratio whatever the dialog's height. */
 	top: 38.2%;
@@ -4249,7 +4249,7 @@ html:has(.api-page-shell) {
 		display: flex;
 		flex: 0 1 auto;
 		flex-direction: column;
-		min-height: 120px;
+		min-height: 7.5rem;
 	}
 
 	#api-examples-panel .api-rail-request > .api-code-card {
@@ -4299,14 +4299,14 @@ html:has(.api-page-shell) {
 @media (max-width: 1100px) {
 	/* Below the sidebar breakpoint the rail is one section among the page's, so its heading is a section heading. */
 	#api-examples-panel .api-examples-heading {
-		margin: 0 0 16px;
-		padding: 40px 0 16px;
+		margin: 0 0 var(--space-4);
+		padding: 2.5rem 0 var(--space-4);
 		border-bottom: 1px solid var(--color-border);
 		color: var(--color-code-bg);
-		font-size: 16px;
+		font-size: 1rem;
 		font-weight: 600;
 		letter-spacing: 0;
-		line-height: 24px;
+		line-height: 1.5rem;
 		text-transform: none;
 	}
 }
