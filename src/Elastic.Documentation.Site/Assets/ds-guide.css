@@ -703,4 +703,67 @@
 	.sg-sample .layout__nav {
 		font-size: 3vw;
 	}
+
+	/* Spacing is in vw too, so the gaps between the header, bands and content look the same in every frame instead of growing with the scale. */
+	.sg-sample .sg-device__header {
+		margin-bottom: 3vw;
+		padding-block: 2vw;
+	}
+
+	.sg-sample .layout__content,
+	.sg-sample .layout--bands .layout__content {
+		padding-block: 0;
+	}
+
+	.sg-sample .layout__menu-button {
+		margin-block: 0 2vw;
+		padding: 0;
+		font-size: 2.6vw;
+	}
+
+	.sg-sample .band,
+	.sg-sample .band--hero {
+		padding-block: 3vw;
+	}
+
+	.sg-sample .band--hero {
+		padding-block: 4vw 5vw;
+	}
+
+	/* The sidebar fills the height of everything beside it, and the rail, when it moves above the content, fills the content's width. */
+	/* Below 860px the sidebar is the drawer, which stays out of the page. */
+	@media (min-width: 861px) {
+		.sg-sample .layout__nav {
+			position: static;
+			align-self: stretch;
+			max-height: none;
+			padding-top: 0;
+		}
+	}
+
+	.sg-sample .layout__nav > .sg-slot,
+	.sg-sample .layout__rail > .sg-slot {
+		flex: 1;
+	}
+
+	.sg-sample .layout__rail {
+		position: static;
+		align-self: stretch;
+		max-height: none;
+		padding-top: 0;
+	}
+
+	.sg-sample .sg-slot--nav {
+		min-height: 0;
+	}
+
+	@media (max-width: 1100px) {
+		.sg-sample .sg-slot--rail {
+			min-height: 7vw;
+		}
+
+		.sg-sample .layout__rail {
+			margin-bottom: 2vw;
+		}
+	}
 }
