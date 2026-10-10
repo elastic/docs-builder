@@ -628,3 +628,79 @@
 		min-height: 3rem;
 	}
 }
+
+@layer ds.patterns {
+	/* Live pages in frames of a given window width, shrunk by --sg-scale. The page inside answers to its own width. */
+	.sg-viewports {
+		display: flex;
+		flex-wrap: wrap;
+		gap: var(--rhythm-block);
+		align-items: flex-start;
+	}
+
+	.sg-viewport {
+		margin: 0;
+	}
+
+	.sg-viewport figcaption {
+		margin-bottom: var(--rhythm-tight);
+		color: var(--color-text-muted);
+		font-size: var(--text-sm);
+	}
+
+	.sg-viewport figcaption span {
+		color: var(--color-text-muted);
+		opacity: 0.7;
+	}
+
+	.sg-viewport__frame {
+		position: relative;
+		width: calc(var(--w) * var(--sg-scale));
+		height: calc(var(--h) * var(--sg-scale));
+		overflow: hidden;
+		border: var(--border-width) solid var(--color-border-strong);
+		background: var(--color-surface);
+	}
+
+	.sg-viewport__screen {
+		position: absolute;
+		inset: 0 auto auto 0;
+		width: var(--w);
+		height: var(--h);
+		border: 0;
+		transform: scale(var(--sg-scale));
+		transform-origin: 0 0;
+		pointer-events: none;
+	}
+}
+
+@layer ds.patterns {
+	/*
+	 * The sample pages are shown scaled down, with the scale chosen so the frame is about 240px wide at every window width. Because the
+	 * scale follows the width, sizes in vw come out the same size in every frame: outlines and labels that read at that scale.
+	 */
+	.sg-sample .sg-slot {
+		border-width: 0.4vw;
+		background: var(--color-accent-surface);
+		font-size: 3.6vw;
+	}
+
+	.sg-sample .sg-slot--nav,
+	.sg-sample .sg-slot--content,
+	.sg-sample .sg-slot--rail {
+		min-height: 30vw;
+	}
+
+	.sg-sample .sg-slot--section {
+		min-height: 7vw;
+	}
+
+	.sg-sample .sg-band__label {
+		font-size: 2.6vw;
+	}
+
+	.sg-sample .sg-slot--nav,
+	.sg-sample .layout__nav {
+		font-size: 3vw;
+	}
+}

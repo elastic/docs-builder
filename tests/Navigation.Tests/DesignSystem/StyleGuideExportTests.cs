@@ -39,7 +39,10 @@ public class StyleGuideExportTests
 
 		names.Should().Contain("index.html").And.Contain("decisions.html").And.Contain("_static/ds.css");
 		names.Should().NotContain(n => n.Contains("styles.1234", StringComparison.Ordinal));
-		names.Where(n => n.EndsWith(".html", StringComparison.Ordinal)).Should().HaveCount(StyleGuideCatalog.Pages.Count + 1);
+		names
+			.Where(n => n.EndsWith(".html", StringComparison.Ordinal) && !n.Contains('/', StringComparison.Ordinal))
+			.Should()
+			.HaveCount(StyleGuideCatalog.Pages.Count + 1);
 	}
 
 	[Test]
@@ -63,5 +66,17 @@ public class StyleGuideExportTests
 		foreach (var entry in StyleGuidePreviewCatalog.Entries)
 			names.Should().Contain($"preview/{entry.Id}.html");
 		Read(zip, $"preview/{StyleGuidePreviewCatalog.Entries[0].Id}.html").Should().Contain("href=\"../_static/ds.css\"");
+	}
+
+	[Test]
+	public async Task Zip_HoldsTheLayoutSamplesTheBreakpointsPageFrames()
+	{
+		using var zip = await ExportAsync();
+		var names = zip.Entries.Select(e => e.FullName).ToList();
+
+		foreach (var name in LayoutSamples.Names)
+			names.Should().Contain($"samples/{name}.html");
+		Read(zip, "samples/three-full.html").Should().Contain("layout-full").And.Contain("href=\"../_static/ds.css\"");
+		Read(zip, "breakpoints.html").Should().Contain("src=\"samples/three.html\"").And.NotContain("/style-guide/layout-sample");
 	}
 }

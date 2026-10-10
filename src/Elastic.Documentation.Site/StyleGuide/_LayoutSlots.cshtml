@@ -1,0 +1,61 @@
+@inherits RazorSlice<LayoutSlotsModel>
+@using Elastic.Documentation.Site.StyleGuide
+@switch (Model.Kind)
+{
+	case LayoutKind.OneColumn:
+		<div class="layout layout--single">
+			<div class="layout__main"><main class="layout__content"><div class="sg-slot sg-slot--content">Content</div></main></div>
+		</div>
+		break;
+	case LayoutKind.Bands:
+		<div class="layout layout--bands layout--wash">
+			<div class="band band--hero sg-band">
+				<span class="sg-band__label">Hero band · full window</span>
+				<div class="band__content"><div class="sg-slot sg-slot--section">Hero content · --layout-max</div></div>
+			</div>
+			<div class="band sg-band">
+				<span class="sg-band__label">Band · full window</span>
+				<div class="band__content"><div class="sg-slot sg-slot--section">Band content · --layout-max</div></div>
+			</div>
+		</div>
+		break;
+	case LayoutKind.TwoColumns:
+		<div class="layout layout--two">
+			@if (Model.Drawer)
+			{
+				<input class="layout__drawer-toggle" type="checkbox" id="sample-drawer">
+				<label class="layout__scrim" for="sample-drawer" aria-hidden="true"></label>
+			}
+			<aside class="layout__nav" id="pages-nav"><div class="sg-slot sg-slot--nav">Sidebar</div></aside>
+			<div class="layout__main">
+				<main class="layout__content">
+					@if (Model.Drawer)
+					{
+						<label class="layout__menu-button" for="sample-drawer"><span>Menu</span></label>
+					}
+					<div class="sg-slot sg-slot--content">Content</div>
+				</main>
+			</div>
+		</div>
+		break;
+	default:
+		<div class="layout layout--three">
+			@if (Model.Drawer)
+			{
+				<input class="layout__drawer-toggle" type="checkbox" id="sample-drawer">
+				<label class="layout__scrim" for="sample-drawer" aria-hidden="true"></label>
+			}
+			<aside class="layout__nav" id="pages-nav"><div class="sg-slot sg-slot--nav">Sidebar</div></aside>
+			<div class="layout__main">
+				<main class="layout__content">
+					@if (Model.Drawer)
+					{
+						<label class="layout__menu-button" for="sample-drawer"><span>Menu</span></label>
+					}
+					<div class="sg-slot sg-slot--content">Content</div>
+				</main>
+				<aside class="layout__rail"><div class="sg-slot sg-slot--rail">Rail</div></aside>
+			</div>
+		</div>
+		break;
+}

@@ -1,0 +1,58 @@
+@inherits RazorSlice<StyleGuideViewModel>
+@using Elastic.Documentation.Site.StyleGuide
+@implements IUsesLayout<Elastic.Documentation.Site.StyleGuide._StyleGuideLayout, StyleGuideViewModel>
+@functions {
+	public StyleGuideViewModel LayoutModel => Model;
+}
+@{
+	// Each frame is a real page at the window width shown, so its media queries answer to that width. Drawn at a size that fits four across.
+	var windows = new[]
+	{
+		(Title: "Wide · 1101px and up", Width: 1280, Scale: 0.17),
+		(Title: "Below 1100px", Width: 1000, Scale: 0.22),
+		(Title: "Below 860px", Width: 800, Scale: 0.275),
+		(Title: "Below 760px", Width: 390, Scale: 0.56)
+	};
+	var layouts = new[]
+	{
+		(Kind: LayoutKind.ThreeColumns, Title: "Three columns", Text: "At 1100px the rail leaves its column and sits above the content as a compact row, without the outline and call to action. At 860px the sidebar leaves too: it becomes a drawer behind the Menu button and the rail goes. Nothing changes at 760px."),
+		(Kind: LayoutKind.TwoColumns, Title: "Two columns", Text: "The sidebar stays beside the content until 860px, where it becomes a drawer behind the Menu button."),
+		(Kind: LayoutKind.Bands, Title: "Bands", Text: "Bands are already one column, so only the content inside them reflows: the grids step down at 1100px and 760px."),
+		(Kind: LayoutKind.OneColumn, Title: "Single column", Text: "One column at every width. The page box gives way to the window and the gutter stays 1rem.")
+	};
+}
+<section class="sg-section">
+	<h2>The three breakpoints</h2>
+	<p>Every layout and component breaks at the same three widths. Custom properties cannot be used in media queries, so each number is written out where it applies; a test fails on any other width. Container queries answer to a component's own width and are not breakpoints.</p>
+	<table class="sg-table">
+		<thead><tr><th>Width</th><th>What changes</th></tr></thead>
+		<tbody>
+		<tr><td><code>1100px</code></td><td>Three columns become two: the rail moves above the content and drops its outline and call to action. Three- and four-column grids become two.</td></tr>
+		<tr><td><code>860px</code></td><td>The sidebar becomes a drawer opened from a Menu button, and the rail is hidden, so every layout is one column.</td></tr>
+		<tr><td><code>760px</code></td><td>Content grids become a single column.</td></tr>
+		</tbody>
+	</table>
+</section>
+<section class="sg-section">
+	<h2>How the layouts break</h2>
+	<p>Each frame below is a live page at the window width in its caption, so what you see is what the media queries do. They break the same way in the contained and the full-width mode.</p>
+</section>
+@foreach (var layout in layouts)
+{
+	<section class="sg-section">
+		<h2>@layout.Title</h2>
+		<p>@layout.Text</p>
+		<div class="sg-viewports">
+			@foreach (var window in windows)
+			{
+				var height = (int)(240 / window.Scale);
+				<figure class="sg-viewport" style="--w: @(window.Width)px; --h: @(height)px; --sg-scale: @window.Scale.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture)">
+					<figcaption>@window.Title <span>(@(window.Width)px)</span></figcaption>
+					<div class="sg-viewport__frame">
+						<iframe class="sg-viewport__screen" title="@layout.Title at @(window.Width)px" src="@StyleGuideCatalog.Route/layout-sample/@LayoutSamples.Slug(layout.Kind)" loading="lazy" tabindex="-1"></iframe>
+					</div>
+				</figure>
+			}
+		</div>
+	</section>
+}

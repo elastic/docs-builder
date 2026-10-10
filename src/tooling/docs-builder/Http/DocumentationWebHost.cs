@@ -486,6 +486,12 @@ public class DocumentationWebHost
 			return html is null ? Results.NotFound() : LiveReloadHtml(html);
 		}
 
+		_ = _webApplication.MapGet($"{LayoutSamples.Route}/{{name}}", async (string name, Cancel ctx) =>
+		{
+			var html = await LayoutSamples.RenderAsync(name, StaticUrl, ctx);
+			return html is null ? Results.NotFound() : LiveReloadHtml(html);
+		});
+
 		_ = _webApplication.MapGet($"{StyleGuideCatalog.Route}/download.zip", async (Cancel ctx) =>
 		{
 			var provider = new EmbeddedOrPhysicalFileProvider(Context);

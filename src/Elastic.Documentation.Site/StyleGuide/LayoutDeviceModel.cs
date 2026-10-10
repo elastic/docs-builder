@@ -12,6 +12,9 @@ public enum LayoutKind
 	ThreeColumns
 }
 
+/// <param name="Drawer">Adds the checkbox, scrim and Menu button that open the sidebar drawer, which a live page needs and a drawing does not.</param>
+public sealed record LayoutSlotsModel(LayoutKind Kind, bool Drawer);
+
 /// <summary>A window drawn to scale, with the real layout classes inside it.</summary>
 public sealed record LayoutDeviceModel(string Title, int WindowWidth, bool Full, LayoutKind Kind)
 {

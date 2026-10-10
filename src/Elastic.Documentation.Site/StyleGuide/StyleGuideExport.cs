@@ -90,6 +90,12 @@ public static partial class StyleGuideExport
 				pages.Add(("index.html", relinked));
 		}
 
+		foreach (var name in LayoutSamples.Names)
+		{
+			if (await LayoutSamples.RenderAsync(name, path => $"../{StaticFolder}/{path}", ctx) is { } sample)
+				pages.Add(($"samples/{name}.html", sample));
+		}
+
 		if (previewRenderer is not null)
 		{
 			foreach (var entry in StyleGuidePreviewCatalog.Entries)
@@ -119,6 +125,8 @@ public static partial class StyleGuideExport
 	/// <summary>Points links between guide pages at the exported files instead of the dev-server routes.</summary>
 	public static string RelinkPages(string html)
 	{
+		foreach (var name in LayoutSamples.Names)
+			html = html.Replace($"\"{LayoutSamples.Route}/{name}\"", $"\"samples/{name}.html\"", StringComparison.Ordinal);
 		foreach (var entry in StyleGuidePreviewCatalog.Entries)
 			html = html.Replace(
 				$"\"{StyleGuidePreviewCatalog.Route}/{entry.Id}\"",

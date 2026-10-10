@@ -102,6 +102,12 @@ public static class StyleGuideCatalog
 			"Foundations",
 			"The four layouts a page is built on, drawn to scale in both width modes. A new page starts from one of these."
 		),
+		new(
+			"breakpoints",
+			"Breakpoints",
+			"Foundations",
+			"The three widths everything breaks at, and how each layout breaks, shown in live frames."
+		),
 		new("grid", "Grid and rhythm", "Foundations", "The content grid, and the six steps that space everything on a page."),
 		new("motion", "Motion", "Foundations", "Durations, easing and the reduced-motion policy."),
 		new(
@@ -267,6 +273,9 @@ public static class StyleGuideCatalog
 				break;
 			case "grid":
 				await Grid.Create(model).RenderAsync(writer, cancellationToken: ctx);
+				break;
+			case "breakpoints":
+				await Breakpoints.Create(model).RenderAsync(writer, cancellationToken: ctx);
 				break;
 			case "page-layouts":
 				await PageLayouts.Create(model).RenderAsync(writer, cancellationToken: ctx);
