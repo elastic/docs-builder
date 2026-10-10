@@ -122,7 +122,7 @@ describe('API examples carousel', () => {
         expect(activeLang('term')).toBe('Java')
     })
 
-    it('treats a swipe to another card as a pick: link and preference follow', () => {
+    it('treats a scroll to another card as a pick: link and preference follow', () => {
         type Callback = (entries: Partial<IntersectionObserverEntry>[]) => void
         const callbacks: Callback[] = []
         const Original = window.IntersectionObserver
@@ -155,17 +155,18 @@ describe('API examples carousel', () => {
                 window.localStorage.getItem(apiLanguageStorageKey)
             ).toBeNull()
 
-            // Without a reader scroll, a card settling into view is not a pick.
+            // While the page applies the remembered language, cards settling on the way are not picks.
             settle('curl')
             expect(activeLang('term')).toBe('Console')
             expect(
                 window.localStorage.getItem(apiLanguageStorageKey)
             ).toBeNull()
 
-            document
-                .querySelector('[data-scenario="term"] [data-carousel-strip]')!
-                .dispatchEvent(new Event('touchstart'))
+            // Later, any scroll that settles on another card is a pick, whether a swipe or find-in-page.
+            const now = Date.now()
+            const clock = jest.spyOn(Date, 'now').mockReturnValue(now + 5000)
             settle('Python')
+            clock.mockRestore()
 
             expect(activeLang('term')).toBe('Python')
             expect(window.location.hash).toBe('#example=term&lang=python')

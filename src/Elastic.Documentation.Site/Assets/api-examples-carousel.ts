@@ -586,6 +586,7 @@ function applyPreferredLanguage(examples: HTMLElement, preferred?: string) {
     const carousel = visibleCarousel(examples)
     if (!carousel) return
     carousel.classList.add('is-settling')
+    lastSettled.set(carousel, Date.now())
     const picked = [preferred, savedApiLanguage(), defaultLanguage].some(
         (language) => !!language && showLanguage(carousel, language, false)
     )
@@ -601,43 +602,39 @@ function pickLanguage(examples: HTMLElement, language: string) {
     writeDeepLink(language, currentScenario(examples))
 }
 
-const readerInputWindowMs = 1000
-const lastReaderInput = new WeakMap<HTMLElement, number>()
+const settleWindowMs = 1000
+const lastSettled = new WeakMap<HTMLElement, number>()
 
-/** Swipes, wheel and drags on the strip: the only scrolls that count as the reader's pick. */
-function trackReaderInput(strip: HTMLElement) {
-    const note = () => lastReaderInput.set(strip, Date.now())
-    for (const type of ['wheel', 'touchstart', 'pointerdown'])
-        strip.addEventListener(type, note, { passive: true })
-}
-
-function readerScrolled(strip: HTMLElement): boolean {
+/**
+ * Right after the page applies a language itself, the strip reports cards on the way: those are not picks.
+ * Not the data-scrolling hold: that one only covers smooth glides, and this apply jumps without animation.
+ */
+function recentlySettled(carousel: HTMLElement): boolean {
     return (
-        Date.now() - (lastReaderInput.get(strip) ?? -Infinity) <
-        readerInputWindowMs
+        Date.now() - (lastSettled.get(carousel) ?? -Infinity) < settleWindowMs
     )
 }
 
 /**
- * Follows swipes and free scrolls: the card that settles into view becomes the pick, like a dot click would.
- * Only when the reader scrolled; a fallback card settling into view on its own must not replace the saved language.
+ * Follows swipes, free scrolls and find-in-page: the card that settles into view becomes the pick, like a dot
+ * click would. Not while the page is applying the remembered language itself: a fallback card settling into view
+ * on its own must not replace the saved language.
  */
 function observeStrip(carousel: HTMLElement) {
     const strip = carousel.querySelector<HTMLElement>('[data-carousel-strip]')
     const examples = carousel.closest<HTMLElement>('[data-api-examples]')
     if (!strip || !examples || strip.dataset.carouselObserved) return
     strip.dataset.carouselObserved = 'true'
-    trackReaderInput(strip)
     if (typeof IntersectionObserver === 'undefined') return
 
     const observer = new IntersectionObserver(
         (entries) => {
+            if (carousel.dataset.scrolling || recentlySettled(carousel)) return
             const best = entries
                 .filter((entry) => entry.isIntersecting)
                 .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0]
             const language = (best?.target as HTMLElement | undefined)?.dataset
                 .lang
-            if (carousel.dataset.scrolling || !readerScrolled(strip)) return
             if (!best || best.intersectionRatio < 0.6 || !language) return
             // Only a change counts: the first callback after load reports the card that is already active.
             if (sameLanguage(language, activeLanguage(carousel))) return
