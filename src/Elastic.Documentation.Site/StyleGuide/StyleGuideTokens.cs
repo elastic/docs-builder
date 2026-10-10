@@ -150,6 +150,13 @@ public static class StyleGuideTokens
 		new("--rhythm-band", "72px · the top of a hero and the foot of the page's last band")
 	];
 
+	public static IReadOnlyList<TokenInfo> Fonts { get; } =
+	[
+		new("--font-body", "Inter · the interface and prose"),
+		new("--font-display", "Geist Mono · hero titles, section headings and eyebrows"),
+		new("--font-mono", "JetBrains Mono · code blocks, inline code and key caps")
+	];
+
 	public static IReadOnlyList<TokenInfo> Layouts { get; } =
 	[
 		new("--layout-max", "84.5rem (1352px) · contained: as wide as the elastic.co header"),
@@ -180,10 +187,8 @@ public static class StyleGuideTokens
 		.. Durations,
 		.. Layouts,
 		.. Rhythm,
+		.. Fonts,
 		new("--ease-standard", "Standard easing"),
-		new("--ease-spring", "Spring easing"),
-		new("--font-body", "Body font"),
-		new("--font-display", "Display font"),
-		new("--font-mono", "Monospace font")
+		new("--ease-spring", "Spring easing")
 	];
 }

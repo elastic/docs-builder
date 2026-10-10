@@ -1,0 +1,49 @@
+@inherits RazorSlice<StyleGuideViewModel>
+@using Elastic.Documentation.Site.StyleGuide
+@implements IUsesLayout<Elastic.Documentation.Site.StyleGuide._StyleGuideLayout, StyleGuideViewModel>
+@functions {
+	public StyleGuideViewModel LayoutModel => Model;
+}
+@{
+	var variants = new[]
+	{
+		(Class: "band", Title: "Plain", Tokens: "--color-surface", Text: "The page itself. Articles, and sections of cards on a white ground.", Used: "Documentation pages, the cards and track sections of the landing page", Hero: false),
+		(Class: "band band--sunken", Title: "Sunken", Tokens: "--color-surface-sunken", Text: "A light grey strip that sets a block apart without a colour. White cards stand out on it.", Used: "The API catalog's band, the footer, the docs bar", Hero: false),
+		(Class: "band band--wash", Title: "Wash", Tokens: "--gradient-wash, --color-hatch", Text: "The pastel field with a fine diagonal hatch, behind the sections of a page that is a stack of cards.", Used: "Hub pages, the landing page's sections, Codex pages", Hero: false),
+		(Class: "band band--accent", Title: "Accent", Tokens: "--color-accent-surface", Text: "A pale tint of the action colour for notices and call-out strips.", Used: "The upgrade notice on the landing page, banners", Hero: false),
+		(Class: "band band--gradient band--hero", Title: "Hero gradient", Tokens: "--gradient-hero, --palette-white", Text: "Deep blue to bright blue with the title in the display face. The text is white.", Used: "The hero of the landing page, hub pages and Codex landing and group pages", Hero: true),
+		(Class: "band band--dark", Title: "Dark", Tokens: "--palette-developer-blue, --palette-white", Text: "A flat midnight band for a block that should read as a change of pace. The text is white.", Used: "The reference band of the landing page, the archive panel, the dark promo card", Hero: false)
+	};
+}
+<section class="sg-section">
+	<h2>Band backgrounds</h2>
+	<p>A band is a full-width strip, and its content sits in <code>band__content</code>. Padding and background are separate: <code>band</code> gives the section rhythm, <code>band--hero</code> the larger hero rhythm, and one background modifier says what is behind it. Every background is a token, so a theme can restyle it, and the dark ones set a white text colour with them.</p>
+</section>
+@foreach (var variant in variants)
+{
+	<section class="sg-section">
+		<h2>@variant.Title</h2>
+		<p>@variant.Text</p>
+		<div class="sg-bgsample">
+			<div class="@variant.Class">
+				<div class="band__content stack stack--tight">
+					<p class="sg-bgsample__eyebrow">Elastic Docs</p>
+					<p class="sg-bgsample__title">Build, run and scale with Elastic</p>
+					<p class="sg-bgsample__text">Welcome to the technical documentation. Deploy, operate and scale with step-by-step guides, API references and examples.</p>
+				</div>
+			</div>
+		</div>
+		<table class="sg-table">
+			<thead><tr><th>Class</th><th>Tokens</th><th>Used by</th></tr></thead>
+			<tbody><tr><td><code>@variant.Class</code></td><td><code>@variant.Tokens</code></td><td>@variant.Used</td></tr></tbody>
+		</table>
+	</section>
+}
+<section class="sg-section">
+	<h2>Choosing one</h2>
+	<ol>
+		<li>A page that is a stack of bands (<code>layout--bands</code>) alternates them: a gradient hero first, then plain or wash for the sections, and a dark band for the one block that should stand out.</li>
+		<li>Use a dark or gradient band at most once or twice a page, so each still reads as a change of pace.</li>
+		<li>Do not set a background colour in a page's own CSS. If none of these fits, that is a gap to bring back here.</li>
+	</ol>
+</section>

@@ -55,7 +55,28 @@
 </section>
 <section class="sg-section">
 	<h2>Typography</h2>
-	<p>Inter for the interface and prose, JetBrains Mono for code, Geist Mono for display moments. The root size is 16px.</p>
+	<p>Three families, each with one job. The root size is 16px.</p>
+	<table class="sg-table">
+		<thead><tr><th>Token</th><th>Use</th><th>Sample</th></tr></thead>
+		<tbody>
+		<tr>
+			<td><code>--font-body</code></td>
+			<td>Inter · the interface and prose</td>
+			<td style="font-family: var(--font-body); font-size: var(--text-lg); color: var(--color-heading)">Documentation that reads well</td>
+		</tr>
+		<tr>
+			<td><code>--font-display</code></td>
+			<td>Geist Mono · hero titles, section headings and eyebrows. Always bold, never for running text</td>
+			<td style="font-family: var(--font-display); font-size: var(--text-2xl); font-weight: var(--weight-bold); line-height: var(--leading-tight); color: var(--color-heading)">Build, run and scale with Elastic</td>
+		</tr>
+		<tr>
+			<td><code>--font-mono</code></td>
+			<td>JetBrains Mono · code blocks, inline code and key caps</td>
+			<td style="font-family: var(--font-mono); font-size: var(--text-sm); color: var(--color-heading)">GET /products/_search { "query": { "match_all": {} } }</td>
+		</tr>
+		</tbody>
+	</table>
+	<h3 style="margin-top: var(--rhythm-group); margin-bottom: var(--rhythm-tight)">Sizes</h3>
 	<table class="sg-table">
 		<thead><tr><th>Token</th><th>Use</th><th>Sample</th></tr></thead>
 		<tbody>

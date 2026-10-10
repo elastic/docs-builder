@@ -305,7 +305,8 @@
 }
 
 /* The wash behind a page's sections, which the hub shows through its bands. */
-.layout--wash {
+.layout--wash,
+.band--wash {
 	background:
 		repeating-linear-gradient(
 			135deg,
@@ -397,4 +398,26 @@
 .band--hero {
 	padding-block: var(--rhythm-band)
 		calc(var(--rhythm-band) + var(--rhythm-block));
+}
+
+/*
+ * Backgrounds. A band is plain by default; these say what is behind it. Padding and background are separate: a hero is band--hero on
+ * any of them, usually band--gradient. The ones that are dark set the text colour with them.
+ */
+.band--sunken {
+	background: var(--color-surface-sunken);
+}
+
+.band--accent {
+	background: var(--color-accent-surface);
+}
+
+.band--gradient {
+	background: var(--gradient-hero);
+	color: var(--palette-white);
+}
+
+.band--dark {
+	background: var(--palette-developer-blue);
+	color: var(--palette-white);
 }

@@ -746,3 +746,39 @@
 		}
 	}
 }
+
+@layer ds.patterns {
+	/* A band as it appears on a page, with the text set the way a hero or section sets it. */
+	.sg-bgsample {
+		overflow: hidden;
+		border: var(--border-width) solid var(--color-border);
+		border-radius: var(--radius-md);
+		margin-bottom: var(--rhythm-block);
+	}
+
+	.sg-bgsample .band__content {
+		max-width: none;
+	}
+
+	.sg-bgsample__eyebrow {
+		margin: 0;
+		font-family: var(--font-display);
+		font-size: var(--text-xs);
+		font-weight: var(--weight-bold);
+		letter-spacing: 0.14em;
+		text-transform: uppercase;
+	}
+
+	.sg-bgsample__title {
+		margin: 0;
+		font-family: var(--font-display);
+		font-size: var(--text-3xl);
+		font-weight: var(--weight-bold);
+		line-height: var(--leading-tight);
+	}
+
+	.sg-bgsample__text {
+		margin: 0;
+		max-width: 40rem;
+	}
+}

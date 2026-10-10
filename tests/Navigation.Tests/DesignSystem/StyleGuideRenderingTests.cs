@@ -55,6 +55,32 @@ public class StyleGuideRenderingTests
 	}
 
 	[Test]
+	public async Task BackgroundsPage_ShowsEveryBandBackground()
+	{
+		var html = await StyleGuideCatalog.RenderAsync("backgrounds", StaticUrl, TestContext.Current!.Execution.CancellationToken);
+
+		html
+			.Should()
+			.Contain("band band--sunken")
+			.And
+			.Contain("band band--wash")
+			.And
+			.Contain("band band--accent")
+			.And
+			.Contain("band band--gradient band--hero")
+			.And
+			.Contain("band band--dark");
+	}
+
+	[Test]
+	public async Task FoundationsPage_ShowsAllThreeFontFamilies()
+	{
+		var html = await StyleGuideCatalog.RenderAsync("foundations", StaticUrl, TestContext.Current!.Execution.CancellationToken);
+
+		html.Should().Contain("--font-body").And.Contain("--font-display").And.Contain("--font-mono");
+	}
+
+	[Test]
 	public async Task GridPage_ShowsTheGridAndTheRhythmTokens()
 	{
 		var html = await StyleGuideCatalog.RenderAsync("grid", StaticUrl, TestContext.Current!.Execution.CancellationToken);

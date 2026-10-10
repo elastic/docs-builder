@@ -108,6 +108,12 @@ public static class StyleGuideCatalog
 			"Foundations",
 			"The three widths everything breaks at, and how each layout breaks, shown in live frames."
 		),
+		new(
+			"backgrounds",
+			"Hero and section backgrounds",
+			"Foundations",
+			"The backgrounds a band can have, from plain to the hero gradient, and which pages use each."
+		),
 		new("grid", "Grid and rhythm", "Foundations", "The content grid, and the six steps that space everything on a page."),
 		new("motion", "Motion", "Foundations", "Durations, easing and the reduced-motion policy."),
 		new(
@@ -273,6 +279,9 @@ public static class StyleGuideCatalog
 				break;
 			case "grid":
 				await Grid.Create(model).RenderAsync(writer, cancellationToken: ctx);
+				break;
+			case "backgrounds":
+				await Backgrounds.Create(model).RenderAsync(writer, cancellationToken: ctx);
 				break;
 			case "breakpoints":
 				await Breakpoints.Create(model).RenderAsync(writer, cancellationToken: ctx);
