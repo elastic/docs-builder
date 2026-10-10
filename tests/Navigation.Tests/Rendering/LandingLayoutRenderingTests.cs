@@ -37,7 +37,7 @@ public class LandingLayoutRenderingTests() : DocumentationSetNavigationTestBase(
 	{
 		var html = await RenderLanding(navigationPreviewEnabled: true);
 
-		html.Should().Contain("class=\"landing\"");
+		html.Should().Contain("class=\"landing layout layout--bands\"");
 		html.Should().Contain("class=\"docs-bar\"");
 		html.Should().NotContain("<version-dropdown");
 		html.Should().NotContain("secondary-nav-mobile-menu");

@@ -441,7 +441,7 @@ public class LandingLayout() : DesignSystemLayoutTest("landing-page")
 	[Test, DisplayName("renders the landing sections with design-system buttons")]
 	public async Task Renders()
 	{
-		await Docs.ConvertsToContainingRawHtml("class=\"landing\"");
+		await Docs.ConvertsToContainingRawHtml("class=\"landing layout layout--bands\"");
 		await Docs.ConvertsToContainingRawHtml("class=\"grid grid--4 landing__grid\"");
 		await Docs.ConvertsToContainingRawHtml("btn btn--primary");
 		await Docs.DoesNotConvertToContainingHtml("min-[1024px]");

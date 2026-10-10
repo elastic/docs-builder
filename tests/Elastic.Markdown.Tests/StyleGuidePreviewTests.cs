@@ -61,7 +61,7 @@ public class StyleGuidePreviewTests
 	[Arguments("assembler-article", "id=\"docs-bar\"")]
 	[Arguments("assembler-article-island", "nav-side__back")]
 	[Arguments("assembler-product", "hub-hero")]
-	[Arguments("assembler-landing", "class=\"landing\"")]
+	[Arguments("assembler-landing", "class=\"landing layout layout--bands\"")]
 	[Arguments("assembler-archive", "Archive")]
 	[Arguments("assembler-not-found", "Page not found")]
 	[Arguments("codex-landing", "codex-hero")]
