@@ -14,19 +14,25 @@
 	<script type="module" src="@Model.Static("ds.js")"></script>
 </head>
 <body>
-<div class="sg-layout">
-	<nav class="sg-nav" aria-label="Style guide">
-		<a class="sg-nav__brand" href="@StyleGuideCatalog.Route">Style guide</a>
-		@foreach (var group in Model.Pages.GroupBy(p => p.Group))
-		{
-			<span class="sg-nav__group">@group.Key</span>
-			@foreach (var entry in group)
+<div class="layout layout--two sg-layout">
+	<input class="layout__drawer-toggle" type="checkbox" id="pages-nav-hamburger">
+	<label class="layout__scrim" for="pages-nav-hamburger" aria-hidden="true"></label>
+	<aside class="layout__nav" id="pages-nav">
+		<nav class="sg-nav" aria-label="Style guide">
+			<a class="sg-nav__brand" href="@StyleGuideCatalog.Route">Style guide</a>
+			@foreach (var group in Model.Pages.GroupBy(p => p.Group))
 			{
-				<a href="@StyleGuideCatalog.Route/@entry.Slug" aria-current="@(entry.Slug == Model.Page.Slug ? "page" : null)">@entry.Title</a>
+				<span class="sg-nav__group">@group.Key</span>
+				@foreach (var entry in group)
+				{
+					<a href="@StyleGuideCatalog.Route/@entry.Slug" aria-current="@(entry.Slug == Model.Page.Slug ? "page" : null)">@entry.Title</a>
+				}
 			}
-		}
-	</nav>
-	<main class="sg-main" id="main">
+		</nav>
+	</aside>
+	<div class="layout__main">
+	<main class="layout__content" id="main">
+		<label class="layout__menu-button" for="pages-nav-hamburger"><span>Menu</span></label>
 		<header class="sg-header">
 			<div>
 				<h1>@Model.Page.Title</h1>
@@ -41,6 +47,7 @@
 		</header>
 		@await RenderBodyAsync()
 	</main>
+	</div>
 </div>
 </body>
 </html>

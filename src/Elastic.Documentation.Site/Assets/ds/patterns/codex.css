@@ -30,13 +30,13 @@
 	align-items: start;
 	max-width: var(--layout-max);
 	margin-inline: auto;
-	padding: var(--space-8) var(--layout-gutter)
-		calc(var(--space-8) + var(--space-4));
+	padding: var(--rhythm-band) var(--layout-gutter)
+		calc(var(--rhythm-band) + var(--rhythm-block));
 }
 
 .codex-hero__inner--group {
 	grid-template-columns: minmax(0, 1fr);
-	padding-block: var(--space-7);
+	padding-block: var(--rhythm-section);
 }
 
 .codex-hero__eyebrow {
@@ -133,7 +133,7 @@
 }
 
 .codex-wash {
-	padding: var(--space-2) 0 var(--space-8);
+	padding: var(--rhythm-tight) 0 var(--rhythm-band);
 	background:
 		repeating-linear-gradient(
 			135deg,
@@ -144,7 +144,7 @@
 }
 
 .codex-group {
-	padding-top: var(--space-7);
+	padding-top: var(--rhythm-section);
 }
 
 .codex-group__title {
@@ -178,9 +178,7 @@
 }
 
 .codex-grid {
-	display: grid;
-	grid-template-columns: repeat(2, minmax(0, 1fr));
-	gap: var(--space-4);
+	--grid-gap: var(--space-4);
 	margin-top: var(--space-4);
 }
 
@@ -241,12 +239,6 @@
 
 @media (max-width: 1100px) {
 	.codex-hero__inner {
-		grid-template-columns: minmax(0, 1fr);
-	}
-}
-
-@media (max-width: 760px) {
-	.codex-grid {
 		grid-template-columns: minmax(0, 1fr);
 	}
 }

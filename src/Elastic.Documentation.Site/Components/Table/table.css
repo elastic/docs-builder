@@ -159,7 +159,7 @@
 	background: var(--color-surface-sunken);
 }
 
-@media (min-width: 768px) {
+@media (min-width: 761px) {
 	.table-container[data-overflowing] .table-expand-btn {
 		display: flex;
 	}

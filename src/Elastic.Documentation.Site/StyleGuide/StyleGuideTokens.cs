@@ -140,6 +140,16 @@ public static class StyleGuideTokens
 		new("--duration-slow", "360ms · entrances and large movement")
 	];
 
+	public static IReadOnlyList<TokenInfo> Rhythm { get; } =
+	[
+		new("--rhythm-tight", "8px · inside a component, such as a label and its field"),
+		new("--rhythm-stack", "16px · between paragraphs and siblings in running content"),
+		new("--rhythm-block", "24px · between a heading and its content, and between components"),
+		new("--rhythm-group", "32px · between groups of components"),
+		new("--rhythm-section", "48px · between sections of a page, and the padding of a band"),
+		new("--rhythm-band", "72px · the top of a hero and the foot of the page's last band")
+	];
+
 	public static IReadOnlyList<TokenInfo> Layouts { get; } =
 	[
 		new("--layout-max", "1352px · the page width; everything is centred inside it"),
@@ -166,6 +176,7 @@ public static class StyleGuideTokens
 		.. Shadows,
 		.. Durations,
 		.. Layouts,
+		.. Rhythm,
 		new("--ease-standard", "Standard easing"),
 		new("--ease-spring", "Spring easing"),
 		new("--font-body", "Body font"),

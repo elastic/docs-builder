@@ -20,7 +20,7 @@
 				{
 					<p class="codex-group__description">@entry.Description</p>
 				}
-				<div class="codex-grid"@(entry.GridId is { } gridId ? new HtmlString($" id=\"{gridId}\"") : HtmlString.Empty)>
+				<div class="grid grid--2 codex-grid"@(entry.GridId is { } gridId ? new HtmlString($" id=\"{gridId}\"") : HtmlString.Empty)>
 					@foreach (var card in entry.Cards)
 					{
 						@(await RenderPartialAsync(_DesignSystemCodexCard.Create(card)))

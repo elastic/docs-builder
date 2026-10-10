@@ -77,6 +77,33 @@ public partial class DesignSystemCssTests
 
 	public static IEnumerable<string> AllCssFiles() => DesignSystemFiles.AllCss();
 
+	// The system has three breakpoints (see Layouts and grid in the style guide); the elastic.co header ships its own at 1200.
+	private static readonly HashSet<string> BreakpointWidths = ["760", "761", "860", "861", "1100", "1101"];
+
+	[Test]
+	[MethodDataSource(nameof(AllCssFiles))]
+	public void Css_UsesOnlyTheSystemBreakpoints(string file)
+	{
+		if (file.EndsWith("elastic-nav.css", StringComparison.Ordinal))
+			return;
+		var css = DesignSystemFiles.StripComments(File.ReadAllText(file));
+
+		MediaQuery()
+			.Matches(css)
+			.SelectMany(q => MediaWidth().Matches(q.Value))
+			.Select(m => m.Groups[1].Value)
+			.Where(w => !BreakpointWidths.Contains(w))
+			.Should()
+			.BeEmpty($"{Path.GetFileName(file)} may only use the 760, 860 and 1100 breakpoints");
+	}
+
+	// Container queries answer to a component's own width and are not breakpoints.
+	[GeneratedRegex(@"@media[^{]*")]
+	private static partial Regex MediaQuery();
+
+	[GeneratedRegex(@"\((?:min|max)-width:\s*(\d+)px\)")]
+	private static partial Regex MediaWidth();
+
 	[Test]
 	[MethodDataSource(nameof(AllCssFiles))]
 	public void DesignSystemCss_DoesNotNeedNativeLightDark(string file)

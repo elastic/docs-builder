@@ -158,13 +158,13 @@
 		<section class="landing__section">
 			<div class="layout layout--single landing__inner">
 				<h2 class="landing__heading">Lorem ipsum</h2>
-				<div class="landing__grid">
+				<div class="grid grid--4 landing__grid">
 					@foreach (var title in new[] { "Dolor sit", "Amet elit", "Tempor", "Magna" })
 					{
 						@await RenderPartialAsync(_Card.Create(new CardModel { Title = title, Description = "Consectetur adipiscing elit sed do eiusmod tempor.", Href = "#", Icon = "search", Primary = true, CtaLabel = "View docs" }))
 					}
 				</div>
-				<div class="landing__grid">
+				<div class="grid grid--4 landing__grid">
 					@foreach (var title in new[] { "Ut enim", "Minim", "Veniam", "Nostrud" })
 					{
 						@await RenderPartialAsync(_Card.Create(new CardModel { Title = title, Description = "Quis nostrud exercitation ullamco laboris.", Href = "#", Icon = "database", CtaLabel = "View docs" }))
@@ -183,7 +183,7 @@
 					<h2 class="landing__heading landing__heading--light">Reference</h2>
 					<a class="landing__band-link" href="#">View all</a>
 				</div>
-				<div class="landing__references">
+				<div class="grid grid--2 landing__references">
 					@foreach (var name in new[] { "Lorem ipsum", "Dolor sit", "Amet elit", "Tempor" })
 					{
 						<a class="landing__reference" href="#">
@@ -203,7 +203,7 @@
 		<section class="landing__section">
 			<div class="layout layout--single landing__inner">
 				<h2 class="landing__heading">Resources</h2>
-				<div class="landing__grid">
+				<div class="grid grid--4 landing__grid">
 					@foreach (var name in new[] { "Lorem ipsum", "Dolor sit", "Amet elit", "Tempor" })
 					{
 						<a class="landing__resource" href="#">
@@ -220,7 +220,7 @@
 	<p>A light and a dark tile side by side, each with an eyebrow, a title and one action.</p>
 	<div class="sg-frame sg-frame--wash">
 		<section class="landing__section landing__section--last">
-			<div class="layout layout--single landing__inner landing__promos">
+			<div class="layout layout--single landing__inner grid grid--2 landing__promos">
 				<div class="landing__promo">
 					<p class="landing__eyebrow">Lorem</p>
 					<h2 class="landing__promo-title">Ipsum dolor sit amet</h2>
@@ -245,7 +245,7 @@
 				<section class="codex-group">
 					<h2 class="codex-group__title"><a href="#">Lorem ipsum</a> <small>3 docsets</small></h2>
 					<p class="codex-group__description">Consectetur adipiscing elit sed do eiusmod.</p>
-					<div class="codex-grid">
+					<div class="grid grid--2 codex-grid">
 						@foreach (var name in new[] { "Dolor sit", "Amet elit", "Tempor" })
 						{
 							<a class="codex-card" href="#">

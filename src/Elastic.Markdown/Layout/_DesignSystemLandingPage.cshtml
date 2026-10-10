@@ -79,7 +79,7 @@
 		<section class="landing__section">
 			<div class="layout layout--single landing__inner">
 				<h2 class="landing__heading" id="solutions-use-cases">Solutions and use cases</h2>
-				<div class="landing__grid">
+				<div class="grid grid--4 landing__grid">
 					@foreach (var solution in solutions)
 					{
 						@await RenderPartialAsync(_Card.Create(new CardModel { Title = solution.Name, Description = solution.Description, Href = Model.Link(solution.Path), Icon = solution.Icon, Primary = true, CtaLabel = "View docs" }))
@@ -97,7 +97,7 @@
 		<section class="landing__section">
 			<div class="layout layout--single landing__inner">
 				<h2 class="landing__heading" id="how-to-guides">How-to guides</h2>
-				<div class="landing__grid">
+				<div class="grid grid--4 landing__grid">
 					@foreach (var guide in guides)
 					{
 						@await RenderPartialAsync(_Card.Create(new CardModel { Title = guide.Name, Description = guide.Description, Href = Model.Link(guide.Path), Icon = guide.Icon, CtaLabel = "View docs" }))
@@ -112,7 +112,7 @@
 				<h2 class="landing__heading landing__heading--light" id="references">Reference</h2>
 				<a class="landing__band-link" href="@Model.Link("/reference")">View all reference docs</a>
 			</div>
-			<div class="landing__references">
+			<div class="grid grid--2 landing__references">
 				@foreach (var reference in references)
 				{
 					<a class="landing__reference" href="@reference.Url"@(reference.External ? new HtmlString(" target=\"_blank\" rel=\"noopener noreferrer\"") : HtmlString.Empty)>
@@ -128,7 +128,7 @@
 		<section class="landing__section">
 			<div class="layout layout--single landing__inner">
 				<h2 class="landing__heading" id="product-resources">Product resources</h2>
-				<div class="landing__grid">
+				<div class="grid grid--4 landing__grid">
 					@foreach (var resource in resources)
 					{
 						<a class="landing__resource" href="@resource.Url"@(resource.External ? new HtmlString(" target=\"_blank\" rel=\"noopener noreferrer\" hx-disable=\"true\"") : HtmlString.Empty)>
@@ -140,7 +140,7 @@
 			</div>
 		</section>
 		<section class="landing__section landing__section--last">
-			<div class="layout layout--single landing__inner landing__promos">
+			<div class="layout layout--single landing__inner grid grid--2 landing__promos">
 				<div class="landing__promo">
 					<svg class="landing__art landing__art--window" viewBox="0 0 160 100" aria-hidden="true" focusable="false">
 						<rect class="art-plate" x="14" y="14" width="140" height="80" rx="6"/>

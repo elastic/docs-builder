@@ -72,7 +72,7 @@
 	height: 0.875rem;
 }
 
-@media (min-width: 768px) {
+@media (min-width: 761px) {
 	.agent-skill-content {
 		flex-direction: row;
 		align-items: flex-end;

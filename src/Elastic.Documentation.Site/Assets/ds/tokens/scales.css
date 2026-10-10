@@ -65,6 +65,14 @@
 	--layout-content-max: 52rem;
 	--layout-offset: var(--header-height);
 
+	/* Vertical rhythm: the gaps between things, from the tightest to the largest. Pages use these names instead of the raw steps. */
+	--rhythm-tight: var(--space-2);
+	--rhythm-stack: var(--space-4);
+	--rhythm-block: var(--space-5);
+	--rhythm-group: var(--space-6);
+	--rhythm-section: var(--space-7);
+	--rhythm-band: var(--space-8);
+
 	/* The unit that older stylesheets multiply, kept so ported rules read the same. */
 	--spacing: 0.25rem;
 	--max-text-width: clamp(600px, 768px, 100%);

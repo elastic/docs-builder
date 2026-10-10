@@ -1,23 +1,18 @@
 /* Loaded only on /style-guide. Specimen scaffolding lives here so product CSS never carries demo classes. */
 @layer ds.patterns {
+	/* The guide has no site header, so the sticky sidebar sticks to the top of the window. */
 	.sg-layout {
-		display: grid;
-		grid-template-columns: 15rem minmax(0, 1fr);
+		--layout-offset: 0px;
 		min-height: 100vh;
 	}
 
 	.sg-nav {
-		position: sticky;
-		top: 0;
-		align-self: start;
-		height: 100vh;
+		flex: 1;
 		overflow-y: auto;
-		padding: var(--space-5) var(--space-4);
-		border-right: var(--border-width) solid var(--color-border);
-		background: var(--color-surface-sunken);
 		display: flex;
 		flex-direction: column;
 		gap: var(--space-1);
+		padding-bottom: var(--rhythm-section);
 	}
 
 	.sg-nav__brand {
@@ -53,11 +48,6 @@
 		font-weight: var(--weight-semibold);
 	}
 
-	.sg-main {
-		padding: var(--space-6) var(--layout-gutter) var(--space-8);
-		max-width: 72rem;
-	}
-
 	.sg-header {
 		display: flex;
 		align-items: start;
@@ -73,16 +63,16 @@
 	}
 
 	.sg-section {
-		margin-top: var(--space-7);
+		margin-top: var(--rhythm-section);
 	}
 
 	.sg-section > h2 {
-		margin-bottom: var(--space-2);
+		margin-bottom: var(--rhythm-tight);
 		font-size: var(--text-2xl);
 	}
 
 	.sg-section > p {
-		margin-bottom: var(--space-4);
+		margin-bottom: var(--rhythm-stack);
 		max-width: 48rem;
 	}
 
@@ -268,19 +258,21 @@
 	}
 
 	@media (max-width: 760px) {
-		.sg-layout {
-			grid-template-columns: 1fr;
-		}
-
-		.sg-nav {
-			position: static;
-			height: auto;
-			border-right: 0;
-			border-bottom: var(--border-width) solid var(--color-border);
-		}
-
 		.sg-themes {
 			grid-template-columns: 1fr;
+		}
+
+		.sg-header {
+			flex-wrap: wrap;
+		}
+
+		.sg-table {
+			display: block;
+			overflow-x: auto;
+		}
+
+		.sg-themed {
+			overflow-x: auto;
 		}
 	}
 }
@@ -440,8 +432,21 @@
 	.sg-frame .layout__nav,
 	.sg-frame .layout__rail {
 		position: static;
+		align-self: stretch;
 		max-height: none;
 		padding-top: 0;
+	}
+
+	.sg-frame .layout__content {
+		align-self: stretch;
+		padding-block: 0;
+	}
+
+	.sg-frame .layout__main > .sg-slot,
+	.sg-frame .layout__nav > .sg-slot,
+	.sg-frame .layout__content > .sg-slot,
+	.sg-frame .layout__rail > .sg-slot {
+		height: 100%;
 	}
 
 	.sg-frame--plain {
@@ -464,10 +469,7 @@
 	}
 
 	.sg-slot--nav,
-	.sg-slot--rail {
-		min-height: 12rem;
-	}
-
+	.sg-slot--rail,
 	.sg-slot--content {
 		min-height: 12rem;
 	}

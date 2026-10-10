@@ -122,6 +122,10 @@ Every page is one of a few named layouts, defined in `Assets/ds/patterns/layout.
 
 All of them share the page box: `--layout-max` wide, centred, with a `--layout-gutter` (16px at every width) on each side. The columns come from `--layout-nav-width`, `--layout-rail-width` and `--layout-content-max`, with `--layout-column-gap` between them. The parts are `layout__nav`, `layout__main`, `layout__content` and `layout__rail`. The breakpoints are 1100px (the rail drops above the content), 860px (the sidebar becomes a drawer) and 760px (grids become one column); media queries cannot read custom properties, so they are written out in the CSS.
 
+Gaps between things come from six rhythm steps named for what they separate: `--rhythm-tight` (8px, inside a component), `--rhythm-stack` (16px, running content), `--rhythm-block` (24px, a heading and its content, and between components), `--rhythm-group` (32px), `--rhythm-section` (48px, between sections and the padding of a band) and `--rhythm-band` (72px, the top of a hero and the foot of the last band). `stack` spaces its children with them and `section` and `section--band` pad a band. Pages read these tokens, not raw `--space` steps.
+
+All stylesheets use three breakpoints only, 760, 860 and 1100 pixels; a test fails on any other `@media` width (container queries are exempt).
+
 Repeating blocks inside the content use the content grid: `grid grid--2`, `grid--3` or `grid--4` step down by themselves, and `grid--auto` fits as many columns as `--grid-min` allows. The style guide shows each layout and the grid at `/style-guide/layouts`.
 
 ## Page layout

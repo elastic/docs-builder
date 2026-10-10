@@ -3,7 +3,7 @@
 }
 
 .search-page__hero {
-	padding: var(--space-6) 0 var(--space-7);
+	padding: var(--rhythm-group) 0 var(--rhythm-section);
 	background: var(--gradient-hero);
 	color: var(--palette-white);
 }
@@ -61,9 +61,9 @@
 .search-page__layout {
 	display: grid;
 	grid-template-columns: 15rem minmax(0, 1fr);
-	gap: var(--space-7);
-	margin-top: var(--space-6);
-	padding-bottom: var(--space-8);
+	gap: var(--rhythm-section);
+	margin-top: var(--rhythm-group);
+	padding-bottom: var(--rhythm-band);
 }
 
 .search-page__filters[hidden] {

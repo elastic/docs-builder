@@ -24,7 +24,7 @@
 	}
 		<div id="main-container" class="api-catalog-shell">
 		@await RenderSectionAsync(ApiCatalog.HeroSection)
-		<main id="content-container" class="api-catalog">
+		<main id="content-container" class="layout layout--single api-catalog">
 			<div class="api-page-toolbar">
 				@await RenderPartialAsync(_DesignSystemApiBreadcrumbs.Create(Model))
 			</div>

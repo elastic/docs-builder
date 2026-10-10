@@ -102,10 +102,33 @@
 	</div>
 </section>
 <section class="sg-section">
+	<h2>Vertical rhythm</h2>
+	<p>Gaps come from six named steps on the spacing scale, so every page breathes the same way. Use the name that says what is being separated; do not reach for a raw <code>--space</code> step in a page.</p>
+	<table class="sg-table">
+		<thead><tr><th>Token</th><th>Value and use</th><th>Gap</th></tr></thead>
+		<tbody>
+		@foreach (var token in StyleGuideTokens.Rhythm)
+		{
+			<tr>
+				<td><code>@token.Name</code></td>
+				<td>@token.Role</td>
+				<td><span class="sg-bar" style="width: var(@token.Name)"></span></td>
+			</tr>
+		}
+		</tbody>
+	</table>
+	<p>For running content, put <code>stack</code> on the parent and it spaces its children: <code>stack--tight</code>, <code>stack--block</code>, <code>stack--group</code> and <code>stack--section</code> pick a larger step than the default <code>--rhythm-stack</code>. A band of a page takes <code>section</code>; a hero, or the page's last band, takes <code>section--band</code>.</p>
+	<div class="sg-frame sg-frame--plain">
+		<div class="stack"><div class="sg-slot">stack</div><div class="sg-slot">stack</div><div class="sg-slot">stack</div></div>
+		<div class="stack stack--group"><div class="sg-slot">stack--group</div><div class="sg-slot">stack--group</div><div class="sg-slot">stack--group</div></div>
+	</div>
+</section>
+<section class="sg-section">
 	<h2>Starting a new page</h2>
 	<ol>
 		<li>Pick the layout from the three above. Without a sidebar, <code>layout--single</code>. A sidebar, <code>layout--two</code>. A sidebar and a rail, <code>layout--three</code>.</li>
 		<li>Put a full-width band (hero, banner) outside the layout, and its content inside a <code>layout layout--single</code>, so it lines up with the page below.</li>
+		<li>Space bands with <code>section</code> and running content with <code>stack</code>. Any gap in a page's own CSS reads a <code>--rhythm</code> token.</li>
 		<li>Lay repeating blocks out with <code>grid</code>. Do not set widths, gutters or breakpoints in a page's own CSS; if the layouts do not fit, that is a gap to bring back here.</li>
 	</ol>
 </section>

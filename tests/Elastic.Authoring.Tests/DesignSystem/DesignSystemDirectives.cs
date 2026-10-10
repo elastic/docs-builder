@@ -430,7 +430,7 @@ public class ArchiveLayout() : DesignSystemLayoutTest("archive")
 	[Test, DisplayName("renders the archive list from the shared link list")]
 	public async Task Renders()
 	{
-		await Docs.ConvertsToContainingRawHtml("class=\"archive__list\"");
+		await Docs.ConvertsToContainingRawHtml("class=\"grid grid--3 archive__list\"");
 		await Docs.ConvertsToContainingRawHtml("Elasticsearch - The Definitive Guide");
 		await Docs.DoesNotConvertToContainingHtml("delorean");
 	}
@@ -442,7 +442,7 @@ public class LandingLayout() : DesignSystemLayoutTest("landing-page")
 	public async Task Renders()
 	{
 		await Docs.ConvertsToContainingRawHtml("class=\"landing\"");
-		await Docs.ConvertsToContainingRawHtml("class=\"landing__grid\"");
+		await Docs.ConvertsToContainingRawHtml("class=\"grid grid--4 landing__grid\"");
 		await Docs.ConvertsToContainingRawHtml("btn btn--primary");
 		await Docs.DoesNotConvertToContainingHtml("min-[1024px]");
 	}

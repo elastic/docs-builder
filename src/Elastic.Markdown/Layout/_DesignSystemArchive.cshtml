@@ -18,7 +18,7 @@
 	<section class="archive__panel">
 		<div class="layout layout--single layout--narrow archive__inner">
 			<h2 class="archive__heading">Choose a version</h2>
-			<ul class="archive__list">
+			<ul class="grid grid--3 archive__list">
 				@foreach (var (url, title) in ArchiveLinks.All)
 				{
 					<li><a href="@url" target="_blank" rel="noopener noreferrer"><span>@title</span>@await RenderPartialAsync(_Icon.Create(new IconModel { Name = "arrow_right", Size = IconSize.Small }))</a></li>

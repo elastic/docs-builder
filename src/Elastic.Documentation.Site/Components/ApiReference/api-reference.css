@@ -352,7 +352,7 @@
 	color: var(--color-heading);
 }
 
-@media (min-width: 768px) {
+@media (min-width: 761px) {
 	.api-pages-nav-toggle {
 		display: none;
 	}
@@ -1271,7 +1271,7 @@ button.response-status-toggle:focus {
 	content: '−';
 }
 
-@media (max-width: 640px) {
+@media (max-width: 760px) {
 	.response-status-row,
 	.response-summary {
 		grid-template-columns: auto minmax(0, 1fr) auto;
@@ -1602,7 +1602,7 @@ button.response-status-toggle:focus {
 
 /* A wide sample must scroll inside its block. Otherwise it grows the layout
    viewport, and the fixed mobile drawer (width: 80%) becomes wider than the screen. */
-@media (max-width: 767px) {
+@media (max-width: 760px) {
 	.api-page-shell .markdown-content pre,
 	.api-page-shell .markdown-content pre code {
 		min-width: 0;
@@ -3033,7 +3033,7 @@ button.example-response-tab:focus-visible {
 	max-width: none;
 }
 
-@media (min-width: 768px) {
+@media (min-width: 761px) {
 	/* The column gap and the right padding match (32px each, the shell adds 16px more on
 	   the right), so the content has the same space beside the nav as beside the window
 	   edge. Every API page uses the operation page's width, so the content keeps its
@@ -3075,7 +3075,7 @@ button.example-response-tab:focus-visible {
 	margin-top: 16px;
 }
 
-@media (min-width: 1024px) {
+@media (min-width: 1101px) {
 	.api-page-columns {
 		flex-direction: row;
 		align-items: flex-start;
@@ -3156,7 +3156,7 @@ button.example-response-tab:focus-visible {
 
 /* Wide enough for the capped block: the reference at the docs text width, the examples
    rail at a fixed width, more air between them. */
-@media (min-width: 1280px) {
+@media (min-width: 1101px) {
 	#api-content-grid {
 		--api-column-gap: 32px;
 	}
@@ -3438,7 +3438,7 @@ button.example-response-tab:focus-visible {
 }
 
 /* Hide button on smaller screens where TOC is hidden */
-@media (max-width: 1023px) {
+@media (max-width: 1100px) {
 	.examples-jump-btn {
 		display: none;
 	}
@@ -3502,7 +3502,7 @@ button.example-response-tab:focus-visible {
 	text-wrap: balance;
 }
 
-@media (max-width: 640px) {
+@media (max-width: 760px) {
 	.api-catalog .hub-hero.api-catalog-hero {
 		padding: 36px 0 32px;
 	}
@@ -3567,7 +3567,7 @@ button.example-response-tab:focus-visible {
 
 /* From the width where the featured cards sit in one row. Below that they stack in one column, so a tag-on has no
    parent above it and stays a separate card. */
-@media (min-width: 1024px) {
+@media (min-width: 1101px) {
 	.api-catalog .api-catalog-featured {
 		margin-bottom: 0;
 	}
@@ -3630,7 +3630,7 @@ html:has(.api-page-shell) {
 	overflow-y: scroll;
 }
 
-@media (min-width: 1024px) {
+@media (min-width: 1101px) {
 	/* The rail shrinks its cards to the viewport. Keep the request sample's
 	   height independent of which response status is selected. */
 	#api-examples-panel .api-code-card:not(.example-block--response) {
@@ -4182,7 +4182,7 @@ html:has(.api-page-shell) {
 	transition: none;
 }
 
-@media (max-width: 640px) {
+@media (max-width: 760px) {
 	#api-examples-panel .api-code-carousel-card {
 		flex-basis: 100%;
 	}
@@ -4261,7 +4261,7 @@ html:has(.api-page-shell) {
  * the reference column. Example chips stay put, the request pane hugs the active sample, the
  * response takes the rest, and only the code areas scroll.
  */
-@media (min-width: 1024px) {
+@media (min-width: 1101px) {
 	#api-examples-panel {
 		max-height: calc(100vh - var(--api-rail-top) - 16px);
 	}
@@ -4353,7 +4353,7 @@ html:has(.api-page-shell) {
 	}
 }
 
-@media (max-width: 1023px) {
+@media (max-width: 1100px) {
 	/* Below the sidebar breakpoint the rail is one section among the page's, so its heading is a section heading. */
 	#api-examples-panel .api-examples-heading {
 		margin: 0 0 16px;

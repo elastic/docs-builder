@@ -10,8 +10,15 @@
  * are tokens in tokens/scales.css. The breakpoints are the system's: 1100 (the rail drops above the content) and 860 (the sidebar
  * becomes a drawer). Custom properties cannot be used in media queries, so the two numbers live in this file and in the style guide.
  */
-/* The box every layout shares: the page width, centred, with a gutter each side. */
-.layout {
+/* The box every layout shares: the page width, centred, with a gutter each side. The hub's blocks are directives, so they take it by name. */
+.layout,
+.hub-on-this-page,
+.get-started,
+.hub-whats-new,
+.hub-zone,
+.hub-card-grid,
+.hub-explore,
+.codex-sections {
 	max-width: var(--layout-max);
 	margin-inline: auto;
 	padding-inline: var(--layout-gutter);
@@ -260,4 +267,43 @@
 	.grid--4 {
 		--grid-columns: 1;
 	}
+}
+
+/*
+ * Vertical rhythm. Gaps between things come from six steps, named for what they separate:
+ *   tight    inside a component (a label and its field)
+ *   stack    between paragraphs and siblings in running content
+ *   block    between a heading and its content, and between components
+ *   group    between groups of components
+ *   section  between sections of a page, and the padding of a band
+ *   band     the top of a hero and the foot of the page's last band
+ */
+.stack > * + * {
+	margin-top: var(--stack-space, var(--rhythm-stack));
+}
+
+.stack--tight {
+	--stack-space: var(--rhythm-tight);
+}
+
+.stack--block {
+	--stack-space: var(--rhythm-block);
+}
+
+.stack--group {
+	--stack-space: var(--rhythm-group);
+}
+
+.stack--section {
+	--stack-space: var(--rhythm-section);
+}
+
+/* A band of a page: full width, with the section rhythm above and below. A hero or the last band takes the larger one. */
+.section {
+	padding-block: var(--rhythm-section);
+}
+
+.section--band {
+	padding-block: var(--rhythm-band)
+		calc(var(--rhythm-band) + var(--rhythm-block));
 }
