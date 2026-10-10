@@ -120,3 +120,19 @@
 	letter-spacing: 0.08em;
 	text-transform: uppercase;
 }
+
+/* A specimen of a state: the dialog drawn open in the page flow, not as a modal. */
+.search-dialog--static {
+	position: static;
+	display: flex;
+	flex-direction: column;
+	margin: 0;
+}
+
+.search-dialog__loading[hidden] {
+	display: none;
+}
+
+.search-dialog__loading {
+	padding: 0 var(--space-4);
+}

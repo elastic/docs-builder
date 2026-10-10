@@ -22,16 +22,34 @@ public static class StyleGuidePreviewCatalog
 			"A page in a docs-builder site for one repository: header with deployment details, sidebar, article and the right rail."
 		),
 		new(
+			"isolated-directives",
+			"Every directive and role",
+			"Isolated",
+			"One page that uses every directive and role, rendered by the components that write them."
+		),
+		new(
 			"isolated-branded",
 			"Branded documentation page",
 			"Isolated",
-			"The same page white-labelled with a copyright line in the footer."
+			"The same page white-labelled, with a copyright line in the footer."
 		),
 		new(
 			"assembler-article",
 			"Documentation page",
 			"Assembler",
-			"A page of the combined site: the elastic.co header, the docs bar, sidebar, article and rail."
+			"A page at the top level of the combined site: the elastic.co header, the docs bar, the tree, the article and the rail. The top level is never an island."
+		),
+		new(
+			"assembler-article-island",
+			"Documentation page in an island",
+			"Assembler",
+			"The same page inside an island: the tree shows only that section, with back links and its title."
+		),
+		new(
+			"assembler-product",
+			"Product page",
+			"Assembler",
+			"A product hub: hero, get started, what's new and the explore sections, with no sidebar."
 		),
 		new(
 			"assembler-landing",
@@ -45,15 +63,21 @@ public static class StyleGuidePreviewCatalog
 			"Assembler",
 			"The page that lists the versions of documentation that are no longer maintained."
 		),
-		new(
-			"assembler-search",
-			"Search results",
-			"Assembler",
-			"The full search page: facets, an AI answer and results. It needs the search service to show results."
-		),
 		new("assembler-not-found", "Page not found", "Assembler", "The 404 page."),
 		new("codex-landing", "Landing page", "Codex", "The Codex home: hero with the MCP card, then every group of documentation sets."),
-		new("codex-group", "Group page", "Codex", "A group of documentation sets, under a hero of its own.")
+		new("codex-group", "Group page", "Codex", "A group of documentation sets, under a hero of its own."),
+		new(
+			"codex-docs-group",
+			"Documentation page in a group",
+			"Codex",
+			"A page of a documentation set that belongs to a group, so the group is part of its trail."
+		),
+		new(
+			"codex-docs-ungrouped",
+			"Documentation page outside a group",
+			"Codex",
+			"A page of a documentation set that belongs to no group: its trail goes straight from the home page."
+		)
 	];
 
 	public static PreviewEntry? Find(string id) => Entries.FirstOrDefault(e => string.Equals(e.Id, id, StringComparison.OrdinalIgnoreCase));

@@ -13,6 +13,7 @@ import { initMotionToggles } from './ds/motion'
 import { initNav } from './ds/nav'
 import { initNavFilter } from './ds/nav-filter'
 import { initFlyoutResize, initFlyouts, initToasts } from './ds/overlays'
+import { initPageJumpers } from './ds/page-jumper'
 import { initPopovers } from './ds/popover'
 import './ds/runtime'
 import { bindSearchShortcut, initSearch } from './ds/search'
@@ -56,6 +57,7 @@ function init(scope: ParentNode = document) {
     initToasts(scope)
     initFlyouts(scope)
     initFlyoutResize(scope)
+    initPageJumpers(scope)
     initAskAi(scope)
     initLightboxes(scope)
     initCarousels(scope)

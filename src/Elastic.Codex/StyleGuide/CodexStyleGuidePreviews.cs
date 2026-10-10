@@ -16,7 +16,7 @@ namespace Elastic.Codex.StyleGuide;
 /// <summary>The Codex pages of the style guide's previews, rendered with the real views around placeholder documentation sets.</summary>
 public static class CodexStyleGuidePreviews
 {
-	public static IReadOnlyList<string> Ids { get; } = ["codex-landing", "codex-group"];
+	public static IReadOnlyList<string> Ids { get; } = ["codex-landing", "codex-group", "codex-docs-group", "codex-docs-ungrouped"];
 
 	private const string Lorem = "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt.";
 
@@ -49,6 +49,12 @@ public static class CodexStyleGuidePreviews
 	/// <summary>Renders a preview as a complete HTML document, or <c>null</c> when the id is unknown.</summary>
 	public static async Task<string?> RenderAsync(string id, EmbeddedOrPhysicalFileProvider staticFiles, Cancel ctx = default)
 	{
+		if (id is "codex-docs-group" or "codex-docs-ungrouped")
+		{
+			var docs = await StyleGuidePreviews.CodexDocsPageAsync(staticFiles, inGroup: id == "codex-docs-group", ctx);
+			return await CodexDocsPreviewPage.Create(docs).RenderAsync(cancellationToken: ctx);
+		}
+
 		var layout = Layout(new StaticFileContentHashProvider(staticFiles), id == "codex-group");
 		var model = id switch
 		{

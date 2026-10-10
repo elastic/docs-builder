@@ -34,17 +34,20 @@ public class StyleGuidePreviewTests() : DocumentationSetNavigationTestBase()
 	[Test]
 	[Arguments("isolated-article", "docs-shell")]
 	[Arguments("isolated-article", "deployment")]
+	[Arguments("isolated-directives", "Every directive and role")]
+	[Arguments("isolated-directives", "admonition")]
 	[Arguments("isolated-branded", "Lorem Ipsum Inc.")]
 	[Arguments("assembler-article", "id=\"docs-bar\"")]
+	[Arguments("assembler-article-island", "nav-side__back")]
+	[Arguments("assembler-product", "hub-hero")]
 	[Arguments("assembler-landing", "class=\"landing\"")]
 	[Arguments("assembler-archive", "Archive")]
 	[Arguments("assembler-not-found", "Page not found")]
 	[Arguments("codex-landing", "codex-hero")]
 	[Arguments("codex-landing", "Lorem Ipsum")]
 	[Arguments("codex-group", "codex-group__title")]
-	[Arguments("codex-landing", "codex-hero")]
-	[Arguments("codex-landing", "Lorem Ipsum")]
-	[Arguments("codex-group", "codex-group__title")]
+	[Arguments("codex-docs-group", "docs-shell")]
+	[Arguments("codex-docs-ungrouped", "docs-shell")]
 	public async Task Preview_RendersTheRealLayout(string id, string expected)
 	{
 		var html = await RenderAsync(id);
@@ -52,6 +55,28 @@ public class StyleGuidePreviewTests() : DocumentationSetNavigationTestBase()
 		html.Should().NotBeNull().And.Contain("<!DOCTYPE html>").And.Contain(expected);
 		html.Should().Contain("ds.css").And.NotContain("styles.css");
 	}
+
+	[Test]
+	public async Task TopLevelPage_IsNeverAnIsland()
+	{
+		var top = await RenderAsync("assembler-article");
+		var island = await RenderAsync("assembler-article-island");
+
+		top.Should().NotContain("nav-side__back");
+		island.Should().Contain("nav-side__back").And.Contain("nav-side__heading--island");
+	}
+
+	[Test]
+	public async Task CodexDocsPage_PutsTheGroupInTheTrailOnlyWhenThereIsOne()
+	{
+		var grouped = await RenderAsync("codex-docs-group");
+		var ungrouped = await RenderAsync("codex-docs-ungrouped");
+
+		ungrouped.Should().Contain("codex-trail");
+		Crumbs(grouped).Should().Be(Crumbs(ungrouped) + 1, "the group adds one step to the trail");
+	}
+
+	private static int Crumbs(string? html) => System.Text.RegularExpressions.Regex.Count(html ?? string.Empty, "breadcrumb__item");
 
 	[Test]
 	public async Task UnknownPreview_IsNull() => (await RenderAsync("nope")).Should().BeNull();

@@ -35,6 +35,7 @@ using Elastic.Documentation.Site.Components.Method;
 using Elastic.Documentation.Site.Components.NavSide;
 using Elastic.Documentation.Site.Components.PageActions;
 using Elastic.Documentation.Site.Components.PageCard;
+using Elastic.Documentation.Site.Components.PageJumper;
 using Elastic.Documentation.Site.Components.Pager;
 using Elastic.Documentation.Site.Components.Prose;
 using Elastic.Documentation.Site.Components.ReleaseCard;
@@ -110,9 +111,21 @@ public static class StyleGuideCatalog
 		),
 		new(
 			"chrome",
-			"Navigation and chrome",
+			"Header and footer",
 			"Components",
-			"The pieces around the content: header, footer, sidebar tree, outline, menus and the right-hand rail."
+			"The bars above and below the page: the site header, the deployment details, the docs bar with its menus, and the footer."
+		),
+		new(
+			"sidebar",
+			"Sidebar and rail",
+			"Components",
+			"The tree beside the content, with and without islands, and the rail on its right: outline, page actions, call to action and feedback."
+		),
+		new(
+			"search",
+			"Search",
+			"Components",
+			"The search field, the dialog in each of its states, the page jumper that searches as you type, and the full search page."
 		),
 		new("cards", "Cards and tiles", "Components", "Cards, link tiles and release cards. Hover a card to see the slab shadow."),
 		new("feedback", "Feedback and overlays", "Components", "Tooltips, toasts, banners, skeletons, empty states and flyouts."),
@@ -149,8 +162,7 @@ public static class StyleGuideCatalog
 			ChipExamples.Chips,
 			SegmentedExamples.Segmenteds,
 			FilterBarExamples.FilterBars,
-			SplitButtonExamples.SplitButtons,
-			SearchFieldExamples.Searches
+			SplitButtonExamples.SplitButtons
 		],
 		["content"] =
 		[
@@ -172,16 +184,18 @@ public static class StyleGuideCatalog
 			SiteHeaderExamples.Headers,
 			DeploymentInfoExamples.Deployments,
 			DocsBarExamples.Bars,
-			NavSideExamples.Sidebars,
 			LinkMenuExamples.Menus,
+			SiteFooterExamples.Footers
+		],
+		["sidebar"] =
+		[
+			NavSideExamples.Sidebars,
 			TocExamples.Tocs,
 			PageActionsExamples.Actions,
 			CtaCardExamples.Ctas,
-			SiteFooterExamples.Footers,
-			FeedbackExamples.Feedbacks,
-			SearchDialogExamples.Dialogs,
-			SearchPageExamples.Pages
+			FeedbackExamples.Feedbacks
 		],
+		["search"] = [SearchFieldExamples.Searches, SearchDialogExamples.Dialogs, PageJumperExamples.Jumpers, SearchPageExamples.Pages],
 		["feedback"] =
 		[
 			AskAiExamples.Assistants,

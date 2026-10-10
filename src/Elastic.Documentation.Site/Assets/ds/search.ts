@@ -57,6 +57,47 @@ export function appendExcerpt(target: HTMLElement, excerpt: string) {
     })
 }
 
+export interface DrawOptions {
+    groupClass: string
+    idPrefix: string
+}
+
+// Draws results grouped by section from a server-provided row template, so every search surface shares one markup source.
+export function drawResults(
+    list: HTMLElement,
+    template: HTMLTemplateElement,
+    results: SearchResult[],
+    options: DrawOptions
+) {
+    list.replaceChildren()
+    let index = 0
+    groupResults(results).forEach((group) => {
+        const heading = document.createElement('li')
+        heading.className = options.groupClass
+        heading.setAttribute('role', 'presentation')
+        heading.textContent = group.title
+        list.append(heading)
+        group.results.forEach((result) => {
+            const item = (
+                template.content.cloneNode(true) as DocumentFragment
+            ).querySelector<HTMLElement>('li')!
+            item.id = `${options.idPrefix}-${index++}`
+            const link = item.querySelector<HTMLAnchorElement>('a')!
+            link.href = result.url
+            item.querySelector<HTMLElement>('[data-search-path]')!.textContent =
+                result.parents.map((p) => p.title).join(' / ')
+            item.querySelector<HTMLElement>(
+                '[data-search-title]'
+            )!.textContent = result.title
+            appendExcerpt(
+                item.querySelector<HTMLElement>('[data-search-excerpt]')!,
+                result.description ?? ''
+            )
+            list.append(item)
+        })
+    })
+}
+
 class SearchDialog {
     private readonly input: HTMLInputElement
     private readonly status: HTMLElement
@@ -102,6 +143,7 @@ class SearchDialog {
         this.list.replaceChildren()
         this.input.setAttribute('aria-expanded', 'false')
         this.status.textContent = 'Type to search.'
+        this.loading(false)
         this.active = -1
     }
 
@@ -121,19 +163,29 @@ class SearchDialog {
         this.controller?.abort()
         this.controller = new AbortController()
         this.status.textContent = 'Searching…'
+        this.loading(true)
         try {
             const results = await querySearch(term, this.controller.signal)
             if (this.input.value.trim() !== term) return
+            this.loading(false)
             this.render(results)
         } catch (error) {
             if ((error as Error).name === 'AbortError') return
+            this.loading(false)
             this.list.replaceChildren()
             this.status.textContent = 'Search is unavailable right now.'
         }
     }
 
+    // The loading bar is a single accent bar under the field; it is absent from the markup of a page without script.
+    private loading(on: boolean) {
+        const bar = this.dialog.querySelector<HTMLElement>(
+            '[data-search-loading]'
+        )
+        if (bar) bar.hidden = !on
+    }
+
     private render(results: SearchResult[]) {
-        this.list.replaceChildren()
         this.active = -1
         this.input.setAttribute('aria-expanded', String(results.length > 0))
         this.status.textContent =
@@ -141,36 +193,11 @@ class SearchDialog {
                 ? 'No results.'
                 : `${results.length} ${results.length === 1 ? 'result' : 'results'}.`
 
-        let index = 0
-        groupResults(results).forEach((group) => {
-            const heading = document.createElement('li')
-            heading.className = 'search-dialog__group'
-            heading.setAttribute('role', 'presentation')
-            heading.textContent = group.title
-            this.list.append(heading)
-            group.results.forEach((result) => {
-                this.list.append(this.renderResult(result, index++))
-            })
+        drawResults(this.list, this.template, results, {
+            groupClass: 'search-dialog__group',
+            idPrefix: 'search-result',
         })
         if (results.length > 0) this.move(0)
-    }
-
-    private renderResult(result: SearchResult, index: number): HTMLElement {
-        const item = (
-            this.template.content.cloneNode(true) as DocumentFragment
-        ).querySelector<HTMLElement>('li')!
-        item.id = `search-result-${index}`
-        const link = item.querySelector<HTMLAnchorElement>('a')!
-        link.href = result.url
-        item.querySelector<HTMLElement>('[data-search-path]')!.textContent =
-            result.parents.map((p) => p.title).join(' / ')
-        item.querySelector<HTMLElement>('[data-search-title]')!.textContent =
-            result.title
-        appendExcerpt(
-            item.querySelector<HTMLElement>('[data-search-excerpt]')!,
-            result.description ?? ''
-        )
-        return item
     }
 
     private items(): HTMLElement[] {

@@ -32,6 +32,7 @@
 @import '../Components/Switch/switch.css' layer(ds.components);
 @import '../Components/Chip/chip.css' layer(ds.components);
 @import '../Components/Segmented/segmented.css' layer(ds.components);
+@import '../Components/PageJumper/page-jumper.css' layer(ds.components);
 @import '../Components/DeploymentInfo/deployment-info.css' layer(ds.components);
 @import '../Components/FilterBar/filter-bar.css' layer(ds.components);
 @import '../Components/SplitButton/split-button.css' layer(ds.components);

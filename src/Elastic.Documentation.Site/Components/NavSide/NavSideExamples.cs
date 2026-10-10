@@ -60,10 +60,29 @@ public static class NavSideExamples
 		NavigationPreviewEnabled = true
 	};
 
+	/// <summary>The top-level documentation tree: no back links and no section title, because the docs home is never an island.</summary>
+	public static NavigationRenderModel TopLevel { get; } = Navigation with
+	{
+		BackLinks = [],
+		TreeHeading = null,
+		ContentHash = "style-guide-top",
+		Tree =
+		[
+			Leaf("Overview", "#"),
+			new() { Kind = NavigationRenderNodeKind.Separator, IsTopLevel = false, NavigationTitle = string.Empty, Url = string.Empty },
+			Group("sg-top-1", "Get started", "#", Leaf("Install", "#"), Leaf("Index data", "#"), Leaf("Search", "#")),
+			Group("sg-top-2", "Guides", "#", Leaf("Ingest data", "#"), Leaf("Query your data", "#")),
+			Leaf("Reference", "#")
+		]
+	};
+
 	public static ComponentSection Sidebars { get; } = new(
 		"Sidebar navigation",
-		"A server-rendered tree. Folders expand with a native checkbox, so they work without JavaScript; a small enhancement marks the current page, opens its ancestors and remembers what you expanded. An island link opens a section as its own tree, with a back link.",
+		"A server-rendered tree. Folders expand with a native checkbox, so they work without JavaScript; a small enhancement marks the current page, opens its ancestors and remembers what you expanded. An island link opens a section as its own tree, with back links and the section's title.",
 		"nav-side",
-		[ComponentExample.Of("Tree", _NavSide.Create, new NavSideModel { Navigation = Navigation })]
+		[
+			ComponentExample.Of("Top level, without an island", _NavSide.Create, new NavSideModel { Navigation = TopLevel }),
+			ComponentExample.Of("Inside an island", _NavSide.Create, new NavSideModel { Navigation = Navigation })
+		]
 	);
 }
