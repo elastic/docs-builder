@@ -19,6 +19,7 @@ Shared Razor layout, the frontend bundles, and the design system. The full guide
 |---|---|
 | `Assets/ds.css`, `Assets/ds.ts` | Design-system bundle entry points (Vite inputs `ds-css`, `ds`) |
 | `Assets/ds/` | Tokens, themes, reset, base, fonts, and enhancement modules |
+| `Assets/ds/patterns/layout.css` | The named page layouts (`layout--single`, `--two`, `--three`, `--hub`) and the content `grid`; new pages start from one |
 | `Assets/ds-guide.css` | Style-guide-only scaffolding; never loaded on product pages |
 | `StyleGuide/` | Style-guide pages (Razor slices), the page catalog, and the token metadata |
 

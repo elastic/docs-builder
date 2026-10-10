@@ -1,0 +1,263 @@
+/*
+ * The page layouts. Every page of the site is one of these, so a new page picks one and fills its slots.
+ *
+ *   .layout--single   one column inside the page width. Landing pages, archives, search, the 404.
+ *   .layout--hub      a single column with no page width: the hero and sections run edge to edge. Hub pages.
+ *   .layout--two      sidebar | content. The API pages.
+ *   .layout--three    sidebar | content | rail. Documentation articles.
+ *
+ * All three share the page width (--layout-max), the side gutters (--layout-gutter) and the column gap (--layout-column-gap), which
+ * are tokens in tokens/scales.css. The breakpoints are the system's: 1100 (the rail drops above the content) and 860 (the sidebar
+ * becomes a drawer). Custom properties cannot be used in media queries, so the two numbers live in this file and in the style guide.
+ */
+/* The box every layout shares: the page width, centred, with a gutter each side. */
+.layout {
+	max-width: var(--layout-max);
+	margin-inline: auto;
+	padding-inline: var(--layout-gutter);
+}
+
+/* No sidebar: the content simply takes the box. The class names the layout; the box itself needs no more rules. */
+.layout--single {
+	--layout-columns: 1;
+}
+
+/* The narrower box of text-led pages. */
+.layout--narrow {
+	max-width: var(--layout-narrow-max);
+}
+
+.layout--two,
+.layout--three {
+	display: grid;
+	grid-template-columns:
+		calc(var(--layout-nav-width) - var(--space-3))
+		minmax(0, 1fr);
+	gap: var(--layout-column-gap);
+}
+
+.layout__nav {
+	/* The tree's rows carry their own padding, so shifting it left lines the text up with the logo and the docs bar. */
+	margin-left: calc(var(--space-3) * -1);
+	position: sticky;
+	top: var(--layout-offset);
+	align-self: start;
+	display: flex;
+	max-height: calc(100vh - var(--layout-offset));
+	padding-top: var(--space-5);
+}
+
+.layout__nav > .nav-side {
+	flex: 1;
+}
+
+.layout__main {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr);
+	gap: var(--layout-column-gap);
+	min-width: 0;
+}
+
+/* Content with a rail: the rail keeps its width and the content its reading measure, with any spare room between them. */
+.layout--three .layout__main {
+	grid-template-columns: minmax(0, var(--layout-content-max)) var(
+			--layout-rail-width
+		);
+	justify-content: space-between;
+}
+
+.layout__content {
+	min-width: 0;
+	/* The breadcrumb's first line lines up with the first rows of the sidebar and the rail. */
+	padding-top: calc(var(--space-5) + var(--space-1));
+	padding-bottom: var(--space-8);
+}
+
+.layout__rail {
+	position: sticky;
+	top: var(--layout-offset);
+	align-self: start;
+	display: flex;
+	flex-direction: column;
+	gap: var(--space-5);
+	max-height: calc(100vh - var(--layout-offset));
+	padding-top: var(--space-5);
+	overflow-y: auto;
+}
+
+.layout__scrim {
+	display: none;
+}
+
+.layout__drawer-toggle {
+	position: absolute;
+	opacity: 0;
+	pointer-events: none;
+}
+
+.layout__menu-button {
+	display: none;
+	align-items: center;
+	gap: var(--space-2);
+	padding: var(--space-2) 0;
+	color: var(--color-accent);
+	font-size: var(--text-sm);
+	font-weight: var(--weight-semibold);
+	cursor: pointer;
+}
+
+@media (max-width: 1100px) {
+	.layout--three .layout__main {
+		grid-template-columns: minmax(0, 1fr);
+	}
+
+	.layout__rail {
+		position: static;
+		order: -1;
+		max-height: none;
+		flex-flow: row wrap;
+		gap: var(--space-2) var(--space-5);
+		padding-top: var(--space-3);
+		overflow: visible;
+	}
+
+	.layout__rail .toc,
+	.layout__rail .cta-card {
+		display: none;
+	}
+}
+
+@media (max-width: 860px) {
+	.layout--two,
+	.layout--three {
+		grid-template-columns: minmax(0, 1fr);
+		gap: 0;
+	}
+
+	.layout__menu-button {
+		display: inline-flex;
+		margin-top: var(--space-3);
+	}
+
+	/* The sidebar becomes a drawer that opens from a checkbox, so it needs no JavaScript. */
+	.layout__nav {
+		position: fixed;
+		inset: var(--layout-offset) auto 0 0;
+		margin-left: 0;
+		z-index: var(--z-overlay);
+		width: min(80vw, 20rem);
+		height: calc(100dvh - var(--layout-offset));
+		max-height: none;
+		overflow-y: auto;
+		padding: var(--space-4);
+		border-right: var(--border-width) solid var(--color-border);
+		background: var(--color-surface);
+		translate: -100% 0;
+		visibility: hidden;
+	}
+
+	.layout__drawer-toggle:checked ~ .layout__nav {
+		box-shadow: var(--shadow-overlay);
+		translate: 0 0;
+		visibility: visible;
+	}
+
+	.layout__drawer-toggle:checked ~ .layout__scrim {
+		position: fixed;
+		inset: 0;
+		z-index: calc(var(--z-overlay) - 1);
+		display: block;
+		background: color-mix(in oklab, var(--color-heading) 45%, transparent);
+	}
+
+	.layout__drawer-toggle:focus-visible
+		~ .layout__content
+		.layout__menu-button {
+		outline: 3px solid var(--color-focus-ring);
+		outline-offset: 2px;
+	}
+}
+
+@media (max-width: 860px) {
+	.layout__rail {
+		display: none;
+	}
+}
+
+@media (max-width: 860px) {
+	:root[data-motion='full'] .layout__nav {
+		transition: translate var(--duration-base) var(--ease-standard);
+	}
+}
+
+/* A hub is a single column that runs the full window width, with a hero band and a wash behind the sections. */
+.layout--hub {
+	display: block;
+	max-width: none;
+	padding-inline: 0;
+	background:
+		repeating-linear-gradient(
+			135deg,
+			transparent 0 22px,
+			var(--color-hatch) 22px 23px
+		),
+		var(--gradient-wash);
+}
+
+.layout--hub .layout__nav,
+.layout--hub .layout__scrim,
+.layout--hub .layout__menu-button {
+	display: none;
+}
+
+.layout--hub .layout__main,
+.layout--hub .layout__content {
+	display: block;
+	max-width: none;
+	padding-bottom: 0;
+}
+
+/*
+ * The content grid, for cards, tiles and any other repeating blocks inside a layout's content. Pick a column count; it steps down
+ * on its own: four columns become two at 1100, and everything is one column at 760.
+ */
+.grid {
+	display: grid;
+	grid-template-columns: repeat(var(--grid-columns, 1), minmax(0, 1fr));
+	gap: var(--grid-gap, var(--space-5));
+}
+
+.grid--2 {
+	--grid-columns: 2;
+}
+
+.grid--3 {
+	--grid-columns: 3;
+}
+
+.grid--4 {
+	--grid-columns: 4;
+}
+
+/* As many columns as fit, none narrower than --grid-min. */
+.grid--auto {
+	grid-template-columns: repeat(
+		auto-fill,
+		minmax(var(--grid-min, 16rem), 1fr)
+	);
+}
+
+@media (max-width: 1100px) {
+	.grid--3,
+	.grid--4 {
+		--grid-columns: 2;
+	}
+}
+
+@media (max-width: 760px) {
+	.grid--2,
+	.grid--3,
+	.grid--4 {
+		--grid-columns: 1;
+	}
+}

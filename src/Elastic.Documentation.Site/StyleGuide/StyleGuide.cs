@@ -90,6 +90,12 @@ public static class StyleGuideCatalog
 			"Foundations",
 			"How light, dark and custom themes work, and how to write your own by overriding tokens only."
 		),
+		new(
+			"layouts",
+			"Layouts and grid",
+			"Foundations",
+			"The three page layouts, their gutters and breakpoints, and the content grid. A new page starts from one of these."
+		),
 		new("motion", "Motion", "Foundations", "Durations, easing and the reduced-motion policy."),
 		new(
 			"decisions",
@@ -251,6 +257,9 @@ public static class StyleGuideCatalog
 		{
 			case "themes":
 				await Themes.Create(model).RenderAsync(writer, cancellationToken: ctx);
+				break;
+			case "layouts":
+				await Layouts.Create(model).RenderAsync(writer, cancellationToken: ctx);
 				break;
 			case "motion":
 				await Motion.Create(model).RenderAsync(writer, cancellationToken: ctx);

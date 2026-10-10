@@ -1,0 +1,111 @@
+@inherits RazorSlice<StyleGuideViewModel>
+@using Elastic.Documentation.Site.StyleGuide
+@implements IUsesLayout<Elastic.Documentation.Site.StyleGuide._StyleGuideLayout, StyleGuideViewModel>
+@functions {
+	public StyleGuideViewModel LayoutModel => Model;
+}
+<section class="sg-section">
+	<h2>Page width and gutters</h2>
+	<p>Every page sits in one box: <code>--layout-max</code> wide, centred, with a gutter on each side. The gutter is the same 16px at every width, so the logo, the docs bar, the sidebar text and the content all start on one vertical line. Full-width bands (heroes, footers) run to the window edge and put a layout inside for their content.</p>
+	<table class="sg-table">
+		<thead><tr><th>Token</th><th>Value and use</th></tr></thead>
+		<tbody>
+		@foreach (var token in StyleGuideTokens.Layouts)
+		{
+			<tr>
+				<td><code>@token.Name</code></td>
+				<td>@token.Role</td>
+			</tr>
+		}
+		</tbody>
+	</table>
+</section>
+<section class="sg-section">
+	<h2>Single column</h2>
+	<p>No sidebar: the content takes the page width. Landing pages, archives, the search page and the 404 are single-column. Add <code>layout--narrow</code> for text-led pages that read better at <code>--layout-narrow-max</code>.</p>
+	<div class="sg-frame">
+		<div class="layout layout--single">
+			<div class="layout__main"><div class="sg-slot sg-slot--content">Content</div></div>
+		</div>
+	</div>
+	<pre class="sg-themed"><code>&lt;div class="layout layout--single"&gt;
+  &lt;div class="layout__main"&gt;
+    &lt;main class="layout__content"&gt;…&lt;/main&gt;
+  &lt;/div&gt;
+&lt;/div&gt;</code></pre>
+</section>
+<section class="sg-section">
+	<h2>Hub</h2>
+	<p>A single column that ignores the page width: the hero band and the sections run edge to edge over a wash, and bring their own inner width. Hub pages use <code>layout--single layout--hub</code>.</p>
+	<pre class="sg-themed"><code>&lt;div class="layout layout--single layout--hub"&gt;
+  &lt;div class="layout__main"&gt;
+    &lt;main class="layout__content"&gt;hero, sections…&lt;/main&gt;
+  &lt;/div&gt;
+&lt;/div&gt;</code></pre>
+</section>
+<section class="sg-section">
+	<h2>Two columns</h2>
+	<p>Sidebar and content. The API pages use it: the content has no rail because the operation view opens its own examples column. The sidebar is sticky under the header and becomes a drawer at 860px.</p>
+	<div class="sg-frame">
+		<div class="layout layout--two">
+			<div class="layout__nav"><div class="sg-slot sg-slot--nav">Sidebar</div></div>
+			<div class="layout__main"><div class="sg-slot sg-slot--content">Content</div></div>
+		</div>
+	</div>
+	<pre class="sg-themed"><code>&lt;div class="layout layout--two"&gt;
+  &lt;aside class="layout__nav"&gt;…&lt;/aside&gt;
+  &lt;div class="layout__main"&gt;
+    &lt;main class="layout__content"&gt;…&lt;/main&gt;
+  &lt;/div&gt;
+&lt;/div&gt;</code></pre>
+</section>
+<section class="sg-section">
+	<h2>Three columns</h2>
+	<p>Sidebar, content and a right-hand rail for the outline, page actions and feedback. Documentation articles use it. The content keeps its reading measure (<code>--layout-content-max</code>); at 1100px the rail drops above the content as a compact row.</p>
+	<div class="sg-frame">
+		<div class="layout layout--three">
+			<div class="layout__nav"><div class="sg-slot sg-slot--nav">Sidebar</div></div>
+			<div class="layout__main">
+				<div class="layout__content"><div class="sg-slot sg-slot--content">Content</div></div>
+				<div class="layout__rail"><div class="sg-slot sg-slot--rail">Rail</div></div>
+			</div>
+		</div>
+	</div>
+	<pre class="sg-themed"><code>&lt;div class="layout layout--three"&gt;
+  &lt;aside class="layout__nav"&gt;…&lt;/aside&gt;
+  &lt;div class="layout__main"&gt;
+    &lt;main class="layout__content"&gt;…&lt;/main&gt;
+    &lt;aside class="layout__rail"&gt;…&lt;/aside&gt;
+  &lt;/div&gt;
+&lt;/div&gt;</code></pre>
+</section>
+<section class="sg-section">
+	<h2>Breakpoints</h2>
+	<p>Custom properties cannot be used in media queries, so these numbers are written out wherever they apply. They are the only three the system uses.</p>
+	<table class="sg-table">
+		<thead><tr><th>Width</th><th>What changes</th></tr></thead>
+		<tbody>
+		<tr><td><code>1100px</code></td><td>Three columns become two: the rail moves above the content and drops its outline and call to action. Four-column grids become two.</td></tr>
+		<tr><td><code>860px</code></td><td>The sidebar becomes a drawer opened from a Menu button, so every layout is a single column.</td></tr>
+		<tr><td><code>760px</code></td><td>Content grids become a single column.</td></tr>
+		</tbody>
+	</table>
+</section>
+<section class="sg-section">
+	<h2>Content grid</h2>
+	<p>Inside the content, repeating blocks sit in a <code>grid</code> with a column count. The count steps down by itself. The gap is <code>--grid-gap</code>, 24px unless a block sets another. <code>grid--auto</code> fits as many columns as the width allows, none narrower than <code>--grid-min</code> (16rem by default).</p>
+	<div class="sg-frame sg-frame--plain">
+		<div class="grid grid--2"><div class="sg-slot">grid--2</div><div class="sg-slot">grid--2</div></div>
+		<div class="grid grid--3"><div class="sg-slot">grid--3</div><div class="sg-slot">grid--3</div><div class="sg-slot">grid--3</div></div>
+		<div class="grid grid--4"><div class="sg-slot">grid--4</div><div class="sg-slot">grid--4</div><div class="sg-slot">grid--4</div><div class="sg-slot">grid--4</div></div>
+		<div class="grid grid--auto"><div class="sg-slot">grid--auto</div><div class="sg-slot">grid--auto</div><div class="sg-slot">grid--auto</div><div class="sg-slot">grid--auto</div><div class="sg-slot">grid--auto</div></div>
+	</div>
+</section>
+<section class="sg-section">
+	<h2>Starting a new page</h2>
+	<ol>
+		<li>Pick the layout from the three above. Without a sidebar, <code>layout--single</code>. A sidebar, <code>layout--two</code>. A sidebar and a rail, <code>layout--three</code>.</li>
+		<li>Put a full-width band (hero, banner) outside the layout, and its content inside a <code>layout layout--single</code>, so it lines up with the page below.</li>
+		<li>Lay repeating blocks out with <code>grid</code>. Do not set widths, gutters or breakpoints in a page's own CSS; if the layouts do not fit, that is a gap to bring back here.</li>
+	</ol>
+</section>

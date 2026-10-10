@@ -48,7 +48,7 @@ public class StyleGuidePreviewTests
 			.BeEquivalentTo([.. StyleGuidePreviews.Ids, .. CodexStyleGuidePreviews.Ids, .. ApiStyleGuidePreviews.Ids]);
 
 	[Test]
-	[Arguments("isolated-article", "docs-shell")]
+	[Arguments("isolated-article", "layout layout--three")]
 	[Arguments("isolated-article", "deployment")]
 	[Arguments("isolated-directives", "Every directive and role")]
 	[Arguments("isolated-directives", "admonition")]
@@ -67,8 +67,8 @@ public class StyleGuidePreviewTests
 	[Arguments("codex-landing", "codex-hero")]
 	[Arguments("codex-landing", "Lorem Ipsum")]
 	[Arguments("codex-group", "codex-group__title")]
-	[Arguments("codex-docs-group", "docs-shell")]
-	[Arguments("codex-docs-ungrouped", "docs-shell")]
+	[Arguments("codex-docs-group", "layout layout--three")]
+	[Arguments("codex-docs-ungrouped", "layout layout--three")]
 	public async Task Preview_RendersTheRealLayout(string id, string expected)
 	{
 		var html = await RenderAsync(id);

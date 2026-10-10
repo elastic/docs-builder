@@ -29,6 +29,28 @@ public class StyleGuideRenderingTests
 	}
 
 	[Test]
+	public async Task LayoutsPage_ShowsEveryLayoutAndTheGridWithTheirTokens()
+	{
+		var html = await StyleGuideCatalog.RenderAsync("layouts", StaticUrl, TestContext.Current!.Execution.CancellationToken);
+
+		html
+			.Should()
+			.Contain("layout layout--single")
+			.And
+			.Contain("layout layout--two")
+			.And
+			.Contain("layout layout--three")
+			.And
+			.Contain("layout--hub")
+			.And
+			.Contain("grid grid--4")
+			.And
+			.Contain("--layout-gutter")
+			.And
+			.Contain("--layout-rail-width");
+	}
+
+	[Test]
 	public void ComponentPages_AllHaveANavigationEntry()
 	{
 		var slugs = StyleGuideCatalog.Pages.Select(p => p.Slug).ToHashSet();

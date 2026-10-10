@@ -93,12 +93,6 @@
 	color: var(--palette-white);
 }
 
-.archive__inner {
-	max-width: 68rem;
-	margin-inline: auto;
-	padding-inline: var(--layout-gutter);
-}
-
 .archive__heading {
 	margin: 0;
 	color: var(--palette-white);
@@ -145,12 +139,6 @@
 .landing {
 	color: var(--color-text);
 	text-wrap: pretty;
-}
-
-.landing__inner {
-	max-width: var(--layout-max);
-	margin-inline: auto;
-	padding-inline: var(--layout-gutter);
 }
 
 .landing__hero {
@@ -700,9 +688,4 @@
 	max-width: var(--layout-max);
 	margin-inline: auto;
 	padding: 0 var(--space-5) var(--space-7);
-}
-
-/* The API page has no right-hand rail: the operation view opens its own examples column inside the content. */
-.api-page-shell .docs-shell__main {
-	grid-template-columns: minmax(0, 1fr);
 }

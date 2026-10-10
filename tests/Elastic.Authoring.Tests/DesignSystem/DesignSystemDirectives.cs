@@ -245,9 +245,9 @@ public class PageShellComponents : DesignSystemDirectiveTest
 	[Test, DisplayName("wraps the page in the design-system shell")]
 	public async Task Shell()
 	{
-		await Docs.ConvertsToContainingRawHtml("class=\"docs-shell\"");
-		await Docs.ConvertsToContainingRawHtml("class=\"docs-shell__nav\"");
-		await Docs.ConvertsToContainingRawHtml("class=\"docs-shell__rail\"");
+		await Docs.ConvertsToContainingRawHtml("class=\"layout layout--three\"");
+		await Docs.ConvertsToContainingRawHtml("class=\"layout__nav\"");
+		await Docs.ConvertsToContainingRawHtml("class=\"layout__rail\"");
 	}
 
 	[Test, DisplayName("renders the page content inside the article, not before the shell")]
@@ -255,7 +255,7 @@ public class PageShellComponents : DesignSystemDirectiveTest
 	{
 		var html = await Docs.IndexHtmlAsync();
 
-		var shell = html.IndexOf("class=\"docs-shell\"", StringComparison.Ordinal);
+		var shell = html.IndexOf("class=\"layout layout--three\"", StringComparison.Ordinal);
 		var articleOpen = html.IndexOf("<article id=\"markdown-content\"", StringComparison.Ordinal);
 		var heading = html.IndexOf("First section", StringComparison.Ordinal);
 		var articleClose = html.IndexOf("</article>", StringComparison.Ordinal);

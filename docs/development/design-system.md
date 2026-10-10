@@ -109,6 +109,21 @@ With the flag on, these layouts also use design-system markup:
 
 `Elastic.Markdown/Layout/_DesignSystemShellStart.cshtml` and `_DesignSystemShellEnd.cshtml` are the one place that composes the shell, so documentation and Codex pages share it. They are two partials because a layout writes its body in place, so the body is rendered between them.
 
+## Layouts and grid
+
+Every page is one of a few named layouts, defined in `Assets/ds/patterns/layout.css`. A new page picks one and fills its slots; it does not set its own widths, gutters or breakpoints.
+
+| Layout | Columns | Used by |
+|---|---|---|
+| `layout layout--single` | One column inside the page width. Add `layout--narrow` for text-led pages | Landing, archive, search, 404, Codex sections |
+| `layout layout--single layout--hub` | One column with no page width: hero and sections run edge to edge over a wash | Hub pages |
+| `layout layout--two` | Sidebar, content | API pages |
+| `layout layout--three` | Sidebar, content, right-hand rail | Documentation articles, Codex documentation |
+
+All of them share the page box: `--layout-max` wide, centred, with a `--layout-gutter` (16px at every width) on each side. The columns come from `--layout-nav-width`, `--layout-rail-width` and `--layout-content-max`, with `--layout-column-gap` between them. The parts are `layout__nav`, `layout__main`, `layout__content` and `layout__rail`. The breakpoints are 1100px (the rail drops above the content), 860px (the sidebar becomes a drawer) and 760px (grids become one column); media queries cannot read custom properties, so they are written out in the CSS.
+
+Repeating blocks inside the content use the content grid: `grid grid--2`, `grid--3` or `grid--4` step down by themselves, and `grid--auto` fits as many columns as `--grid-min` allows. The style guide shows each layout and the grid at `/style-guide/layouts`.
+
 ## Page layout
 
 With the flag on, pages use a design-system shell: header, sidebar, article, right-hand rail and footer.

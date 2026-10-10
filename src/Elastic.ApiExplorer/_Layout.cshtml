@@ -27,15 +27,15 @@
 		@await RenderPartialAsync(_DesignSystemHeader.Create(Model))
 	}
 	<div id="main-container">
-		<div class="docs-shell api-page-shell">
-			<input class="docs-shell__drawer-toggle" type="checkbox" id="pages-nav-hamburger">
-			<label class="docs-shell__scrim" for="pages-nav-hamburger" aria-hidden="true"></label>
-			<aside class="docs-shell__nav" id="pages-nav">
+		<div class="layout layout--two api-page-shell">
+			<input class="layout__drawer-toggle" type="checkbox" id="pages-nav-hamburger">
+			<label class="layout__scrim" for="pages-nav-hamburger" aria-hidden="true"></label>
+			<aside class="layout__nav" id="pages-nav">
 				@await RenderPartialAsync(_DesignSystemApiNav.Create(Model))
 			</aside>
-			<div class="docs-shell__main" id="api-content-grid">
-				<main id="content-container" class="docs-shell__content">
-					<label class="docs-shell__menu-button" for="pages-nav-hamburger">
+			<div class="layout__main" id="api-content-grid">
+				<main id="content-container" class="layout__content">
+					<label class="layout__menu-button" for="pages-nav-hamburger">
 						@await RenderPartialAsync(Elastic.Documentation.Site.Components.Icon._Icon.Create(new Elastic.Documentation.Site.Components.Icon.IconModel { Name = "menu", Size = Elastic.Documentation.Site.Components.Icon.IconSize.Small }))
 						<span>Menu</span>
 					</label>

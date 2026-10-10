@@ -1,7 +1,7 @@
 @inherits RazorSlice<IReadOnlyList<Elastic.Codex.Landing.CodexSection>>
 @using Elastic.Codex.Landing
 <div class="codex-wash">
-	<div class="codex-sections">
+	<div class="layout layout--single codex-sections">
 		@foreach (var entry in Model)
 		{
 			<section class="codex-group">

@@ -140,6 +140,18 @@ public static class StyleGuideTokens
 		new("--duration-slow", "360ms · entrances and large movement")
 	];
 
+	public static IReadOnlyList<TokenInfo> Layouts { get; } =
+	[
+		new("--layout-max", "1352px · the page width; everything is centred inside it"),
+		new("--layout-narrow-max", "68rem · the narrower single column of text-led pages"),
+		new("--layout-gutter", "16px · the space between the page edge and the content, at every width"),
+		new("--layout-column-gap", "32px · the space between columns"),
+		new("--layout-nav-width", "17rem · the sidebar column"),
+		new("--layout-rail-width", "15rem · the right-hand rail"),
+		new("--layout-content-max", "52rem · the reading measure of the content column"),
+		new("--layout-offset", "3rem · where the sticky sidebar and rail stick, under the header")
+	];
+
 	public static IReadOnlyList<TokenInfo> AllNames { get; } =
 	[
 		.. Surfaces,
@@ -153,6 +165,7 @@ public static class StyleGuideTokens
 		.. Radii,
 		.. Shadows,
 		.. Durations,
+		.. Layouts,
 		new("--ease-standard", "Standard easing"),
 		new("--ease-spring", "Spring easing"),
 		new("--font-body", "Body font"),

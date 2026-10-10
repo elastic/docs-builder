@@ -412,3 +412,63 @@
 		background: var(--gradient-wash);
 	}
 }
+
+@layer ds.patterns {
+	/* Layout specimens: the real layout classes, with the sticky behaviour switched off and the slots outlined. */
+	.sg-frame {
+		margin: var(--space-4) 0;
+		padding: var(--space-4) 0;
+		border: 1px dashed var(--color-border-strong);
+		border-radius: var(--radius-md);
+		background: var(--color-surface-sunken);
+	}
+
+	.sg-frame .layout {
+		/* The gutters are tinted so their width can be seen. */
+		background: linear-gradient(
+				to right,
+				color-mix(in oklab, var(--color-accent) 18%, transparent)
+					var(--layout-gutter),
+				transparent var(--layout-gutter),
+				transparent calc(100% - var(--layout-gutter)),
+				color-mix(in oklab, var(--color-accent) 18%, transparent)
+					calc(100% - var(--layout-gutter))
+			)
+			no-repeat;
+	}
+
+	.sg-frame .layout__nav,
+	.sg-frame .layout__rail {
+		position: static;
+		max-height: none;
+		padding-top: 0;
+	}
+
+	.sg-frame--plain {
+		display: grid;
+		gap: var(--space-4);
+		padding-inline: var(--space-4);
+	}
+
+	.sg-slot {
+		display: grid;
+		place-items: center;
+		min-height: 5rem;
+		padding: var(--space-3);
+		border: 1px dashed var(--color-accent);
+		border-radius: var(--radius-sm);
+		background: var(--color-surface);
+		color: var(--color-text-muted);
+		font-size: var(--text-sm);
+		font-weight: var(--weight-semibold);
+	}
+
+	.sg-slot--nav,
+	.sg-slot--rail {
+		min-height: 12rem;
+	}
+
+	.sg-slot--content {
+		min-height: 12rem;
+	}
+}

@@ -143,12 +143,6 @@
 		var(--gradient-wash);
 }
 
-.codex-sections {
-	max-width: var(--layout-max);
-	margin-inline: auto;
-	padding-inline: var(--layout-gutter);
-}
-
 .codex-group {
 	padding-top: var(--space-7);
 }

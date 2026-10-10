@@ -1,7 +1,7 @@
 @inherits RazorSlice<Elastic.Documentation.Site.Components.SearchPage.SearchPageModel>
 <div class="search-page" data-search-page>
 	<header class="search-page__hero">
-		<div class="search-page__inner">
+		<div class="layout layout--single layout--narrow">
 			<p class="search-page__eyebrow">Search</p>
 			<h1 class="search-page__title" data-search-page-heading>Search the documentation</h1>
 			<form class="search-page__form" role="search" data-search-page-form>
@@ -13,7 +13,7 @@
 		</div>
 	</header>
 	<noscript><p class="search-page__status">Search needs JavaScript.</p></noscript>
-	<div class="search-page__layout search-page__inner">
+	<div class="layout layout--narrow search-page__layout">
 		<aside class="search-page__filters" aria-label="Filters" data-search-page-filters hidden></aside>
 		<div class="search-page__main">
 			@* A question gets a streamed answer above the results. It needs the AI endpoint and script, so it stays hidden until then. *@

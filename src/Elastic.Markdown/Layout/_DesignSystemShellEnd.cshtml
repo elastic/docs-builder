@@ -44,12 +44,12 @@
 			}
 			@if (Layout.Features.WebsiteSearchEnabled && Layout.Features.WebsiteSearchScriptUrl is not null)
 			{
-				<div id="elastic-website-search-input-container" hx-preserve="true" class="docs-shell__search"></div>
+				<div id="elastic-website-search-input-container" hx-preserve="true" class="layout__search"></div>
 			}
 		</main>
 		@if (!hub)
 		{
-			<aside class="docs-shell__rail">
+			<aside class="layout__rail">
 				@await RenderPartialAsync(_PageActions.Create(new PageActionsModel
 				{
 					MarkdownUrl = Layout.MarkdownUrl,

@@ -2,12 +2,6 @@
 	color: var(--color-text);
 }
 
-.search-page__inner {
-	max-width: 68rem;
-	margin-inline: auto;
-	padding-inline: var(--layout-gutter);
-}
-
 .search-page__hero {
 	padding: var(--space-6) 0 var(--space-7);
 	background: var(--gradient-hero);
