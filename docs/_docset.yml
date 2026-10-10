@@ -295,15 +295,8 @@ toc:
       - folder: release-notes
         children:
           - file: index.md
-          - file: overview.md
-            children:
-              - file: configure.md
-                children:
-                  - file: configure-ref.md
-              - file: create.md
-              - file: bundle.md
-              - file: publish.md
-          - file: explorer.md
+          - file: bundle.md
+          - file: configure-ref.md
 
   # Integrations
   - folder: integrations
