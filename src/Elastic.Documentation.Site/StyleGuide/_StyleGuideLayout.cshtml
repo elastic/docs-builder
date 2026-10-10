@@ -14,6 +14,7 @@
 	<script type="module" src="@Model.Static("ds.js")"></script>
 </head>
 <body>
+<div id="main-container">
 <div class="layout layout--two sg-layout">
 	<input class="layout__drawer-toggle" type="checkbox" id="pages-nav-hamburger">
 	<label class="layout__scrim" for="pages-nav-hamburger" aria-hidden="true"></label>
@@ -38,16 +39,19 @@
 				<h1>@Model.Page.Title</h1>
 				<p class="sg-header__lead">@Model.Page.Lead</p>
 			</div>
-			@if (!Model.Offline)
-			{
-				<a class="sg-toggle" href="@StyleGuideCatalog.Route/download.zip" download>Download</a>
-			}
-			<button type="button" class="sg-toggle" data-motion-toggle>Motion</button>
-			<button type="button" class="sg-toggle" data-theme-toggle>Theme</button>
+			<div class="sg-header__actions">
+				@if (!Model.Offline)
+				{
+					<a class="sg-toggle" href="@StyleGuideCatalog.Route/download.zip" download>Download</a>
+				}
+				<button type="button" class="sg-toggle" data-motion-toggle>Motion</button>
+				<button type="button" class="sg-toggle" data-theme-toggle>Theme</button>
+			</div>
 		</header>
 		@await RenderBodyAsync()
 	</main>
 	</div>
+</div>
 </div>
 </body>
 </html>

@@ -56,6 +56,12 @@
 		margin-bottom: var(--space-6);
 	}
 
+	.sg-header__actions {
+		display: flex;
+		flex-shrink: 0;
+		gap: var(--space-2);
+	}
+
 	.sg-header__lead {
 		margin-top: var(--space-2);
 		max-width: 48rem;
@@ -486,11 +492,24 @@
 	 * the margin beside it at every window width.
 	 */
 	@media (min-width: 861px) {
+		/* The sidebar's cell is as tall as the page; the tree inside it is what sticks. */
 		.sg-layout .layout__nav {
+			position: static;
+			align-self: stretch;
+			display: block;
+			max-height: none;
+			padding-top: 0;
 			border-right: var(--border-width) solid var(--color-border);
 			background: var(--color-surface-sunken);
 			box-shadow: -50vw 0 0 50vw var(--color-surface-sunken);
 			clip-path: inset(0 0 0 -100vw);
+		}
+
+		.sg-layout .sg-nav {
+			position: sticky;
+			top: 0;
+			max-height: 100vh;
+			padding-top: var(--space-5);
 		}
 	}
 
