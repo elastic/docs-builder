@@ -3490,15 +3490,15 @@ button.example-response-tab:focus-visible {
 }
 
 /* "Extra bold headlines with lighter accompanying text", per the brand guide: the line under the title is Inter
-   at regular weight in the lighter ink, with the guide's paragraph leading of 1.55. Its contrast on the band is
-   6.65:1, above the 4.5:1 the guide requires. */
+   at regular weight, with the guide's paragraph leading of 1.55. It sits on the dark hero band, so it takes the same
+   near-white as the hub hero's description. */
 .api-catalog .api-catalog-lede {
 	max-width: 36rem;
 	margin: 12px auto 0;
 	font-family: var(--font-body);
 	font-size: var(--text-base);
 	line-height: 1.55;
-	color: var(--color-text-muted);
+	color: color-mix(in oklab, var(--palette-white) 90%, transparent);
 	text-wrap: balance;
 }
 

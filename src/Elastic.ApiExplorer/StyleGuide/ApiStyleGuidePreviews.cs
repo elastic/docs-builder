@@ -9,6 +9,7 @@ using Elastic.ApiExplorer.Landing;
 using Elastic.ApiExplorer.Model;
 using Elastic.ApiExplorer.Operations;
 using Elastic.Documentation;
+using Elastic.Documentation.AppliesTo;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Navigation;
@@ -83,11 +84,31 @@ public static class ApiStyleGuidePreviews
 		Cancel ctx
 	)
 	{
+		// The grouping, the featured cards and the icons follow the keys of the real catalog, so these are its names with made-up descriptions.
+		string[] stack = [ApplicabilityKeys.Self, ApplicabilityKeys.Ece, ApplicabilityKeys.Ess, ApplicabilityKeys.Serverless];
+
+		static ApiCatalogEntry Entry(string key, string title, string product, params string[] categories) =>
+			new(
+				key,
+				title,
+				$"/api/doc/{key}/",
+				product,
+				"Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua."
+			)
+			{ CatalogCategories = categories };
+
 		ApiCatalogEntry[] entries =
 		[
-			new("lorem", "Lorem API", "/api/doc/lorem/", Description: "Lorem ipsum dolor sit amet, consectetur adipiscing elit."),
-			new("dolor", "Dolor API", "/api/doc/dolor/", Description: "Sed do eiusmod tempor incididunt ut labore."),
-			new("amet", "Amet API", "/api/doc/amet/", Description: "Ut enim ad minim veniam, quis nostrud.")
+			Entry("elasticsearch", "Elasticsearch API", "elasticsearch", stack),
+			Entry("kibana", "Kibana APIs", "kibana", stack),
+			Entry("logstash", "Logstash APIs", "logstash", ApplicabilityKeys.Self),
+			Entry("elasticsearch-serverless", "Elasticsearch Serverless API", "elasticsearch", ApplicabilityKeys.Serverless),
+			Entry("kibana-serverless", "Kibana Serverless APIs", "kibana", ApplicabilityKeys.Serverless),
+			Entry("cloud", "Elastic Cloud API", "cloud-hosted", ApplicabilityKeys.Ess),
+			Entry("cloud-billing", "Cloud Billing API", "cloud-hosted", ApplicabilityKeys.Ess),
+			Entry("cloud-connect", "Elastic Cloud Connected API", "cloud-hosted", ApplicabilityKeys.Self),
+			Entry("cloud-enterprise", "Elastic Cloud Enterprise API", "cloud-enterprise", ApplicabilityKeys.Ece),
+			Entry("cloud-serverless", "Elastic Cloud Serverless API", "cloud-serverless", ApplicabilityKeys.Serverless)
 		];
 		var navigation = new ApiCatalogNavigationItem("/api/", entries);
 		var document = new Microsoft.OpenApi.OpenApiDocument
