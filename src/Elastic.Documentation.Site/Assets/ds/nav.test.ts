@@ -100,4 +100,18 @@ describe('initNav', () => {
         expect(() => initNav()).not.toThrow()
         expect(document.querySelector('[aria-current="page"]')).toBeNull()
     })
+
+    it('keeps the mark the server set when the page is shown under another address', () => {
+        document.body.innerHTML = tree.replace(
+            'href="/docs/guide/deep/page"',
+            'href="/docs/guide/deep/page" aria-current="page"'
+        )
+        goTo('/style-guide/preview/nested')
+
+        initNav()
+
+        expect(
+            document.querySelector('[aria-current="page"]')?.textContent
+        ).toBe('Page')
+    })
 })

@@ -74,18 +74,18 @@ export function markCurrent(side: ParentNode = document) {
     const tree = side.querySelector('.nav-tree')
     if (!tree) return
 
-    tree.querySelectorAll('[aria-current="page"]').forEach((link) =>
-        link.removeAttribute('aria-current')
-    )
-
     const link = Array.from(
         tree.querySelectorAll<HTMLAnchorElement>('a.nav-tree__link')
     ).find(
         (a) =>
             normalize(new URL(a.href, window.location.href).pathname) === path
     )
+    // A page shown under another address, such as a preview, keeps the mark the server put on its own link.
     if (!link) return
 
+    tree.querySelectorAll('[aria-current="page"]').forEach((current) =>
+        current.removeAttribute('aria-current')
+    )
     link.setAttribute('aria-current', 'page')
     openAncestors(link, tree)
 
