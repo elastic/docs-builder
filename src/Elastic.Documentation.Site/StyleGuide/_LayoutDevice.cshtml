@@ -4,23 +4,23 @@
 	<figcaption>@Model.Title</figcaption>
 	<div class="sg-device__frame">
 		<div class="sg-device__screen@(Model.Full ? " layout-full" : "")">
-			<div class="sg-device__header"><div class="layout layout--single"><div class="sg-slot">Header content · --layout-max</div></div></div>
+			<div class="sg-device__header"><div class="band__content"><div class="sg-slot">Header content · --layout-max</div></div></div>
 			@switch (Model.Kind)
 			{
 				case LayoutKind.OneColumn:
-				case LayoutKind.NarrowColumn:
-					<div class="layout layout--single@(Model.Kind == LayoutKind.NarrowColumn ? " layout--narrow" : "")">
+					<div class="layout layout--single">
 						<div class="layout__main"><main class="layout__content"><div class="sg-slot sg-slot--content">Content</div></main></div>
 					</div>
 					break;
-				case LayoutKind.Hub:
-					<div class="layout layout--single layout--hub">
-						<div class="layout__main">
-							<main class="layout__content">
-								<div class="sg-slot sg-slot--hero">Hero band · full bleed</div>
-								<div class="layout layout--single"><div class="sg-slot sg-slot--section">Section · --layout-max</div></div>
-								<div class="layout layout--single"><div class="sg-slot sg-slot--section">Section · --layout-max</div></div>
-							</main>
+				case LayoutKind.Bands:
+					<div class="layout layout--bands layout--wash">
+						<div class="band band--hero sg-band">
+							<span class="sg-band__label">Hero band · full window</span>
+							<div class="band__content"><div class="sg-slot sg-slot--section">Hero content · --layout-max</div></div>
+						</div>
+						<div class="band sg-band">
+							<span class="sg-band__label">Band · full window</span>
+							<div class="band__content"><div class="sg-slot sg-slot--section">Band content · --layout-max</div></div>
 						</div>
 					</div>
 					break;

@@ -61,7 +61,6 @@
 	 */
 	--layout-max: 84.5rem; /* contained: the width of the elastic.co header, which follows this token */
 	--layout-max-wide: 120rem; /* full width stops here, so a 4K window is not sparse */
-	--layout-narrow-max: 68rem; /* the narrower box of text-led single-column pages */
 	--layout-gutter: 1rem;
 	--layout-gap: 2rem;
 	--layout-measure: 90ch; /* the reading measure the content is optimised for */

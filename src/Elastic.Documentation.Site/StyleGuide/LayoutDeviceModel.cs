@@ -7,8 +7,7 @@ namespace Elastic.Documentation.Site.StyleGuide;
 public enum LayoutKind
 {
 	OneColumn,
-	NarrowColumn,
-	Hub,
+	Bands,
 	TwoColumns,
 	ThreeColumns
 }

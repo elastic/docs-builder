@@ -10,7 +10,7 @@
 		(
 			Kind: LayoutKind.OneColumn,
 			Title: "Single column",
-			Text: "No sidebar: the content takes the page box. Landing pages, archives, the search page and the 404 are single-column.",
+			Text: "No sidebar: the content takes the page box. The archive, the search page and the 404 are single-column.",
 			Code: """
 				<div class="layout layout--single">
 				  <div class="layout__main">
@@ -20,26 +20,17 @@
 				"""
 		),
 		(
-			Kind: LayoutKind.NarrowColumn,
-			Title: "Narrow single column",
-			Text: "The same, in the narrower box of text-led pages, at --layout-narrow-max. The archive and the search page use it. It does not widen in full width.",
+			Kind: LayoutKind.Bands,
+			Title: "Bands",
+			Text: "A page that is a stack of full-width strips: the hub and the landing page. Each strip is a band, so its background runs to the window edge, and what is in it sits in band__content, which takes the same box as the header's content. A hero is a band with band--hero. layout--wash puts the page wash behind the sections, as the hub does.",
 			Code: """
-				<div class="layout layout--single layout--narrow">
-				  <div class="layout__main">
-				    <main class="layout__content">…</main>
-				  </div>
-				</div>
-				"""
-		),
-		(
-			Kind: LayoutKind.Hub,
-			Title: "Hub",
-			Text: "A single column that ignores the page box: the hero band and the sections run edge to edge over a wash, and each section puts its content in the box so it lines up with the header. Hub pages use it.",
-			Code: """
-				<div class="layout layout--single layout--hub">
-				  <div class="layout__main">
-				    <main class="layout__content">hero, sections…</main>
-				  </div>
+				<div class="layout layout--bands layout--wash">
+				  <section class="band band--hero">
+				    <div class="band__content">hero…</div>
+				  </section>
+				  <section class="band">
+				    <div class="band__content">section…</div>
+				  </section>
 				</div>
 				"""
 		),
@@ -74,7 +65,7 @@
 }
 <section class="sg-section">
 	<h2>Choosing a layout</h2>
-	<p>Every page is one of these five. Each is drawn below in both width modes and two window sizes, to scale; the bar on top is the header, whose content shares the page width, and the dashed boxes are the slots a page fills. The page width, the measure and the modes are on <a href="@StyleGuideCatalog.Route/layouts">Page width</a>.</p>
+	<p>Every page is one of these four. Each is drawn below in both width modes and two window sizes, to scale; the bar on top is the header, whose content shares the page width, and the dashed boxes are the slots a page fills. The page width, the measure and the modes are on <a href="@StyleGuideCatalog.Route/layouts">Page width</a>.</p>
 </section>
 @foreach (var layout in layouts)
 {

@@ -61,7 +61,7 @@
 	<h2>Starting a new page</h2>
 	<ol>
 		<li>Pick the layout: <code>layout--single</code> without a sidebar, <code>layout--two</code> with one, <code>layout--three</code> with a sidebar and a rail. Set the full-width mode on the page (<code>FullWidth</code> on the layout model), never on a single layout, so the header follows.</li>
-		<li>Put a full-width band (hero, banner) outside the layout, and its content inside a <code>layout layout--single</code>, so it lines up with the page below.</li>
+		<li>Put a full-width strip (hero, banner) in a <code>band</code>, and its content in <code>band__content</code>, which takes the same box as the header's content, so it lines up with the header and the page below.</li>
 		<li>Do not set widths, gutters or breakpoints in a page's own CSS; if the layouts do not fit, that is a gap to bring back here. Each layout is drawn on <a href="@StyleGuideCatalog.Route/page-layouts">Page layouts</a>, and spacing and grids are on <a href="@StyleGuideCatalog.Route/grid">Grid and rhythm</a>.</li>
 	</ol>
 </section>

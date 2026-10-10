@@ -33,7 +33,7 @@
 	var hub = Model.Hub;
 	var breadcrumbs = hub ? null : DesignSystemBreadcrumbs();
 }
-<div class="layout @(hub ? "layout--single layout--hub" : "layout--three")">
+<div class="layout @(hub ? "layout--bands layout--wash" : "layout--three")">
 	<input class="layout__drawer-toggle" type="checkbox" id="pages-nav-hamburger">
 	<label class="layout__scrim" for="pages-nav-hamburger" aria-hidden="true"></label>
 	<aside class="layout__nav" id="pages-nav">

@@ -154,7 +154,6 @@ public static class StyleGuideTokens
 	[
 		new("--layout-max", "84.5rem (1352px) · contained: as wide as the elastic.co header"),
 		new("--layout-max-wide", "120rem (1920px) · full width stops here and centres beyond it"),
-		new("--layout-narrow-max", "68rem · the narrower box of text-led single-column pages"),
 		new("--layout-gutter", "1rem · between the window edge and the box, at every width"),
 		new("--layout-gap", "2rem · between the sidebar, content and rail"),
 		new("--layout-measure", "90ch · the reading measure the content is optimised for"),

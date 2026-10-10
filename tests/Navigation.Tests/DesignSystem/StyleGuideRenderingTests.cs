@@ -47,9 +47,9 @@ public class StyleGuideRenderingTests
 			.And
 			.Contain("layout layout--two")
 			.And
-			.Contain("layout layout--single layout--hub")
+			.Contain("layout layout--bands layout--wash")
 			.And
-			.Contain("layout layout--single layout--narrow")
+			.Contain("band__content")
 			.And
 			.Contain("sg-device__screen layout-full");
 	}

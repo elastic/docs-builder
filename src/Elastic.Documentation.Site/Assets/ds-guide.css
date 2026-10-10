@@ -593,9 +593,19 @@
 		font-size: calc(0.6rem / var(--sg-scale));
 	}
 
-	.sg-device .sg-slot--hero {
-		min-height: 6rem;
-		border-radius: 0;
+	.sg-device .sg-band {
+		position: relative;
+	}
+
+	.sg-device .sg-band__label {
+		position: absolute;
+		top: 0.4rem;
+		left: 0.6rem;
+		color: var(--color-text-muted);
+		font-size: calc(0.55rem / var(--sg-scale));
+	}
+
+	.sg-device .sg-band.band--hero {
 		background: var(--color-accent-surface);
 	}
 
@@ -603,8 +613,8 @@
 		min-height: 3.5rem;
 	}
 
-	.sg-device .layout--hub .layout__content > * + * {
-		margin-top: 1rem;
+	.sg-device .layout--bands .band {
+		padding-block: 1.25rem;
 	}
 
 	.sg-device .sg-slot--nav,

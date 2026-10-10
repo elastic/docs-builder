@@ -115,8 +115,8 @@ Every page is one of a few named layouts, defined in `Assets/ds/patterns/layout.
 
 | Layout | Columns | Used by |
 |---|---|---|
-| `layout layout--single` | One column inside the page width. Add `layout--narrow` for text-led pages | Landing, archive, search, 404, Codex sections |
-| `layout layout--single layout--hub` | One column with no page width: hero and sections run edge to edge over a wash | Hub pages |
+| `layout layout--single` | One column inside the page box | Archive, search, 404, Codex sections |
+| `layout layout--bands` (+ `layout--wash`) | A stack of full-width `band`s, each with its content in `band__content`, which takes the same box as the header's content; `band--hero` for a hero | Hub pages and the landing page |
 | `layout layout--two` | Sidebar, content | API pages |
 | `layout layout--three` | Sidebar, content, right-hand rail | Documentation articles, Codex documentation |
 

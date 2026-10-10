@@ -33,9 +33,9 @@
 		("Previous versions", "refresh_time", "https://www.elastic.co/guide?lang=en", true)
 	};
 }
-<main id="content-container" class="landing">
+<main id="content-container" class="landing layout layout--bands">
 	<section class="landing__hero" id="hero">
-		<div class="layout layout--single landing__inner landing__hero-text">
+		<div class="band__content landing__inner landing__hero-text">
 			<p class="landing__eyebrow">Elastic Docs</p>
 			<h1 class="landing__title">Build, run and scale with Elastic</h1>
 			<p class="landing__lead">Welcome to the technical documentation for Elastic Stack 9.0.0 and later, and Elastic Cloud Serverless. Deploy, operate, and scale with step-by-step guides, API references, examples, and best practices.</p>
@@ -49,10 +49,10 @@
 			}
 		</div>
 	</section>
-	<p class="landing__notice"><span class="layout layout--single landing__inner">@await RenderPartialAsync(_Icon.Create(new IconModel { Name = "refresh_time", Size = IconSize.Small }))<strong>Upgrading from an earlier version?</strong> Follow the <a href="@Model.Link("/deploy-manage/upgrade")">upgrade guide</a> to plan and complete your upgrade.</span></p>
+	<p class="landing__notice"><span class="band__content landing__inner">@await RenderPartialAsync(_Icon.Create(new IconModel { Name = "refresh_time", Size = IconSize.Small }))<strong>Upgrading from an earlier version?</strong> Follow the <a href="@Model.Link("/deploy-manage/upgrade")">upgrade guide</a> to plan and complete your upgrade.</span></p>
 	<div class="landing__wash">
 		<section class="landing__section">
-			<div class="layout layout--single landing__inner">
+			<div class="band__content landing__inner">
 				<div class="landing__slab">
 					<div class="landing__slab-text">
 						<span class="landing__tag">New</span>
@@ -77,7 +77,7 @@
 			</div>
 		</section>
 		<section class="landing__section">
-			<div class="layout layout--single landing__inner">
+			<div class="band__content landing__inner">
 				<h2 class="landing__heading" id="solutions-use-cases">Solutions and use cases</h2>
 				<div class="grid grid--4 landing__grid">
 					@foreach (var solution in solutions)
@@ -95,7 +95,7 @@
 			</div>
 		</section>
 		<section class="landing__section">
-			<div class="layout layout--single landing__inner">
+			<div class="band__content landing__inner">
 				<h2 class="landing__heading" id="how-to-guides">How-to guides</h2>
 				<div class="grid grid--4 landing__grid">
 					@foreach (var guide in guides)
@@ -107,7 +107,7 @@
 		</section>
 	</div>
 	<section class="landing__band">
-		<div class="layout layout--single landing__inner">
+		<div class="band__content landing__inner">
 			<div class="landing__band-head">
 				<h2 class="landing__heading landing__heading--light" id="references">Reference</h2>
 				<a class="landing__band-link" href="@Model.Link("/reference")">View all reference docs</a>
@@ -126,7 +126,7 @@
 	</section>
 	<div class="landing__wash">
 		<section class="landing__section">
-			<div class="layout layout--single landing__inner">
+			<div class="band__content landing__inner">
 				<h2 class="landing__heading" id="product-resources">Product resources</h2>
 				<div class="grid grid--4 landing__grid">
 					@foreach (var resource in resources)
@@ -140,7 +140,7 @@
 			</div>
 		</section>
 		<section class="landing__section landing__section--last">
-			<div class="layout layout--single landing__inner grid grid--2 landing__promos">
+			<div class="band__content landing__inner grid grid--2 landing__promos">
 				<div class="landing__promo">
 					<svg class="landing__art landing__art--window" viewBox="0 0 160 100" aria-hidden="true" focusable="false">
 						<rect class="art-plate" x="14" y="14" width="140" height="80" rx="6"/>

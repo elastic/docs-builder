@@ -2,7 +2,7 @@
  * The page layouts. Every page of the site is one of these, so a new page picks one and fills its slots.
  *
  *   .layout--single   one column inside the page width. Landing pages, archives, search, the 404.
- *   .layout--hub      a single column with no page width: the hero and sections run edge to edge. Hub pages.
+ *   .layout--bands    a stack of full-width bands, each with its content in the box. Hub pages and the landing page.
  *   .layout--two      sidebar | content. The API pages.
  *   .layout--three    sidebar | content | rail. Documentation articles.
  *
@@ -12,6 +12,7 @@
  */
 /* The box every layout shares: the page width, centred, with a gutter each side. The hub's blocks are directives, so they take it by name. */
 .layout,
+.band__content,
 .hub-on-this-page,
 .get-started,
 .hub-whats-new,
@@ -27,11 +28,6 @@
 /* No sidebar: the content simply takes the box. The class names the layout; the box itself needs no more rules. */
 .layout--single {
 	--layout-columns: 1;
-}
-
-/* The narrower box of text-led pages. */
-.layout--narrow {
-	max-width: var(--layout-narrow-max);
 }
 
 /*
@@ -282,11 +278,31 @@
 	}
 }
 
-/* A hub is a single column that runs the full window width, with a hero band and a wash behind the sections. */
-.layout--hub {
+/*
+ * Bands: a page that is a stack of full-width strips. Each strip is a band, and what is in it sits in band__content, which takes the
+ * same box as the header's content, so a hero lines up with the header above it. Hub pages and the landing page are this layout.
+ */
+.layout--bands {
 	display: block;
 	max-width: none;
 	padding-inline: 0;
+}
+
+.layout--bands .layout__nav,
+.layout--bands .layout__scrim,
+.layout--bands .layout__menu-button {
+	display: none;
+}
+
+.layout--bands .layout__main,
+.layout--bands .layout__content {
+	display: block;
+	max-width: none;
+	padding-bottom: 0;
+}
+
+/* The wash behind a page's sections, which the hub shows through its bands. */
+.layout--wash {
 	background:
 		repeating-linear-gradient(
 			135deg,
@@ -294,19 +310,6 @@
 			var(--color-hatch) 22px 23px
 		),
 		var(--gradient-wash);
-}
-
-.layout--hub .layout__nav,
-.layout--hub .layout__scrim,
-.layout--hub .layout__menu-button {
-	display: none;
-}
-
-.layout--hub .layout__main,
-.layout--hub .layout__content {
-	display: block;
-	max-width: none;
-	padding-bottom: 0;
 }
 
 /*
@@ -383,12 +386,12 @@
 	--stack-space: var(--rhythm-section);
 }
 
-/* A band of a page: full width, with the section rhythm above and below. A hero or the last band takes the larger one. */
-.section {
+/* A band: a full-width strip with the section rhythm above and below. A hero, or the page's last band, takes the larger one. */
+.band {
 	padding-block: var(--rhythm-section);
 }
 
-.section--band {
+.band--hero {
 	padding-block: var(--rhythm-band)
 		calc(var(--rhythm-band) + var(--rhythm-block));
 }

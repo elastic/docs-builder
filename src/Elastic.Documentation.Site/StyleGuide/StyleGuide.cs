@@ -100,7 +100,7 @@ public static class StyleGuideCatalog
 			"page-layouts",
 			"Page layouts",
 			"Foundations",
-			"The five layouts a page is built on, drawn to scale in both width modes. A new page starts from one of these."
+			"The four layouts a page is built on, drawn to scale in both width modes. A new page starts from one of these."
 		),
 		new("grid", "Grid and rhythm", "Foundations", "The content grid, and the six steps that space everything on a page."),
 		new("motion", "Motion", "Foundations", "Durations, easing and the reduced-motion policy."),
