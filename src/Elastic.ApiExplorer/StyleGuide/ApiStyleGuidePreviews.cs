@@ -70,7 +70,8 @@ public static class ApiStyleGuidePreviews
 			LegacyUrlMappings = template.LegacyUrlMappings,
 			SearchConfiguration = template.SearchConfiguration
 		};
-		var context = new BuildContext(template.Collector, template.FileSystem, configuration);
+		// The API reference is part of the assembled site, so its pages are written with the assembler chrome.
+		var context = new BuildContext(template.Collector, template.FileSystem, configuration) { BuildType = BuildType.Assembler };
 		context.Configuration.Features.NavigationPreviewEnabled = true;
 		return context;
 	}

@@ -32,6 +32,18 @@ public class ApiStyleGuidePreviewTests(ApiExplorerFixture fixture)
 	}
 
 	[Test]
+	[Arguments("api-catalog")]
+	[Arguments("api-product")]
+	[Arguments("api-operation")]
+	[Arguments("api-operation-plain")]
+	public async Task Preview_IsWrittenWithTheAssemblerChrome(string id)
+	{
+		var html = await RenderAsync(id);
+
+		html.Should().Contain("id=\"elastic-nav\"").And.Contain("id=\"docs-bar\"");
+	}
+
+	[Test]
 	public async Task Operation_ShowsExamplesOnlyWhenTheSpecHasThem()
 	{
 		var withExamples = await RenderAsync("api-operation");
