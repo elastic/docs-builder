@@ -57,6 +57,7 @@
 @import './ds/patterns/docs-shell.css' layer(ds.patterns);
 @import './ds/patterns/pages.css' layer(ds.pages);
 @import './ds/patterns/codex.css' layer(ds.pages);
+@import './ds/patterns/elastic-nav.css';
 @import '../Components/Prose/prose.css' layer(ds.components);
 @import '../Components/AppliesPopover/applies-popover.css' layer(ds.components);
 @import '../Components/Feedback/feedback.css' layer(ds.components);

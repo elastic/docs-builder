@@ -1,0 +1,9 @@
+/*
+ * The elastic.co masthead is injected by script together with its own unlayered CSS, so only an unlayered rule can size it.
+ * It follows the page's layout width instead of the width it ships with.
+ */
+@media (min-width: 1200px) {
+	#elastic-nav [data-component='Container'] {
+		max-width: var(--layout-max);
+	}
+}
