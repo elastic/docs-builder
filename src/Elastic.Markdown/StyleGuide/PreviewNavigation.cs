@@ -78,6 +78,9 @@ public static class PreviewNavigation
 	public static INavigationItem Page(string title, string url, bool underSite) =>
 		new PreviewItem(title, url) { Parent = underSite ? new PreviewSiteRoot(TopNav) : null };
 
+	/// <summary>Hangs a set's navigation under a site root, as an assembler build does, so the docs bar has the site's sections.</summary>
+	public static void UnderSite(INavigationItem root) => root.Parent = new PreviewSiteRoot(TopNav);
+
 	public static INavigationItem Crumb(string title, string url) => new PreviewItem(title, url);
 
 	private sealed record PreviewItem(string NavigationTitle, string Url) : INavigationItem

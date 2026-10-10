@@ -97,7 +97,9 @@ async function initMath() {
 
     const [katex] = await Promise.all([import('katex'), import('../katex.css')])
 
+    // The initial load and htmx:load both start this step; the second must not render over the first's output.
     mathElements.forEach((element) => {
+        if (element.hasAttribute('data-katex-processed')) return
         try {
             const content = element.textContent?.trim()
             if (!content) return

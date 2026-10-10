@@ -78,6 +78,22 @@ public class StyleGuidePreviewTests
 	}
 
 	[Test]
+	public async Task AssemblerPage_HasTheSiteSectionsInItsDocsBar()
+	{
+		var html = await RenderAsync("assembler-article");
+
+		html.Should().Contain("Guides").And.Contain("APIs").And.Contain("Products");
+	}
+
+	[Test]
+	public async Task Directives_CarriesTheDiagramInsideThePage()
+	{
+		var html = await RenderAsync("isolated-directives");
+
+		html.Should().Contain("src=\"data:image/svg+xml;base64,");
+	}
+
+	[Test]
 	public async Task TopLevelPage_IsNeverAnIsland()
 	{
 		var top = await RenderAsync("assembler-article");

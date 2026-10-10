@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions;
+using System.Text.RegularExpressions;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Diagnostics;
@@ -38,7 +39,7 @@ public sealed record PreviewDocsetOptions
 /// A small documentation set written to a temporary folder and built by the real pipeline, with the new design on,
 /// so the style guide's previews are pages the renderer wrote, not look-alikes.
 /// </summary>
-public sealed class PreviewDocset : IAsyncDisposable
+public sealed partial class PreviewDocset : IAsyncDisposable
 {
 	private readonly IDirectoryInfo _root;
 	private readonly DocumentationGenerator _generator;
@@ -97,6 +98,8 @@ public sealed class PreviewDocset : IAsyncDisposable
 		context.Configuration.Features.NavigationPreviewEnabled = true;
 
 		var set = new DocumentationSet(context, NullLoggerFactory.Instance, NoopCrossLinkResolver.Instance);
+		if (options.BuildType == BuildType.Assembler && options.NavigationHtml is null)
+			PreviewNavigation.UnderSite(set.Navigation);
 		var generator = new DocumentationGenerator(
 			set,
 			NullLoggerFactory.Instance,
@@ -126,7 +129,24 @@ public sealed class PreviewDocset : IAsyncDisposable
 	public BuildContext Context => _generator.DocumentationSet.Context;
 
 	public async Task<string> RenderPageAsync(string relativePath, Cancel ctx) =>
-		(await _generator.RenderLayout(File(relativePath), ctx)).Html;
+		InlineDiagrams((await _generator.RenderLayout(File(relativePath), ctx)).Html);
+
+	/// <summary>A build writes each diagram next to its page, which the style guide does not serve, so the pictures travel inside the page.</summary>
+	private string InlineDiagrams(string html) =>
+		DiagramSource().Replace(html, match =>
+		{
+			var file = Directory.EnumerateFiles(
+				Context.OutputDirectory.FullName,
+				match.Groups["file"].Value,
+				SearchOption.AllDirectories
+			).FirstOrDefault();
+			return file is null
+				? match.Value
+				: $"{match.Groups["attribute"].Value}=\"data:image/svg+xml;base64,{Convert.ToBase64String(System.IO.File.ReadAllBytes(file))}\"";
+		});
+
+	[GeneratedRegex(@"(?<attribute>data-src|src)=""[^""]*/(?<file>[^""/]+\.svg)""")]
+	private static partial Regex DiagramSource();
 
 	/// <summary>Only the article, as the Markdown renderer writes it, for dropping into another build's layout.</summary>
 	public async Task<string> RenderArticleAsync(string relativePath, Cancel ctx)
