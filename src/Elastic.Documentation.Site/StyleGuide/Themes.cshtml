@@ -4,16 +4,16 @@
 @functions {
 	public StyleGuideViewModel LayoutModel => Model;
 
-	private static readonly string[] Modes = ["light", "dark"];
+	private static readonly (string Key, string Label)[] Modes = [("light", "Light"), ("dark", "Dark"), ("black", "True black")];
 }
 <section class="sg-section">
-	<h2>Light and dark, side by side</h2>
-	<p>Each panel pins its own mode with <code>data-theme</code>, so both modes are visible at once regardless of your system setting. The page toggle, top right, cycles system, light and dark and remembers the choice.</p>
+	<h2>Light, dark and true black, side by side</h2>
+	<p>Each panel pins its own mode with <code>data-theme</code>, so every theme is visible at once regardless of your system setting. True black is the dark roles on black, for OLED screens: surfaces step up in grey, and the accent and borders are re-tuned to hold their contrast. The theme switch, top right, picks light or dark, and its menu adds true black, contrast and motion, each with a match-system choice.</p>
 	<div class="sg-themes">
 		@foreach (var mode in Modes)
 		{
-			<div class="sg-themed" data-theme="@mode">
-				<h3>@(mode == "light" ? "Light" : "Dark") theme</h3>
+			<div class="sg-themed" data-theme="@mode.Key">
+				<h3>@mode.Label theme</h3>
 				<p>Body text sits on the page colour. <span style="color: var(--color-text-muted)">Muted text is for secondary information.</span> <a href="#" style="color: var(--color-accent); text-decoration: underline">Links use the accent.</a></p>
 				<div class="sg-swatches" style="margin-top: var(--space-4)">
 					@foreach (var token in StyleGuideTokens.Surfaces.Concat(StyleGuideTokens.Status.Where(t => t.Name.EndsWith("surface"))))
@@ -30,7 +30,7 @@
 </section>
 <section class="sg-section">
 	<h2>How the default theme works</h2>
-	<p>The Bold Minimal theme is one file, <code>Assets/ds/themes/bold-minimal.css</code>. Each colour role is declared once as a light and a dark value side by side, written as <code>var(--ds-l, light) var(--ds-d, dark)</code>, so the two modes can't drift apart and no browser needs <code>light-dark()</code>. The mode follows the system by default; setting <code>data-theme="light"</code> or <code>"dark"</code> on any element, usually <code>&lt;html&gt;</code>, overrides it for that subtree. Without JavaScript the page simply follows the system.</p>
+	<p>The Bold Minimal theme is one file, <code>Assets/ds/themes/bold-minimal.css</code>. Each colour role is declared once as a light and a dark value side by side, written as <code>var(--ds-l, light) var(--ds-d, dark)</code>, so the two modes can't drift apart and no browser needs <code>light-dark()</code>. The mode follows the system by default; setting <code>data-theme="light"</code>, <code>"dark"</code> or <code>"black"</code> on any element, usually <code>&lt;html&gt;</code>, overrides it for that subtree. Without JavaScript the page simply follows the system.</p>
 </section>
 <section class="sg-section">
 	<h2>Writing your own theme</h2>
