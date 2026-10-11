@@ -210,6 +210,12 @@ Landing pages alternate these instead of leaving sections white. The Backgrounds
 The teal `btn--cta` button is for heroes and bands only, once per hero. A second action in a hero is a secondary button.
 The version picker, when a page has one, sits at the top of the left navigation.
 
+## Code blocks
+
+After the client-side highlighter runs, each line of a code block is wrapped in a `code-block__line` element.
+Closing and reopening any token that spans lines keeps the text, and so the copy button, unchanged.
+A block of six or more lines gets a numbered gutter, a one-line shell block gets a `$` prompt, and a `diff` block tints its added and removed lines.
+
 ## Motion
 
 Motion confirms a change and never decorates.
