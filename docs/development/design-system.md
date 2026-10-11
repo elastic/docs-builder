@@ -177,8 +177,10 @@ The default theme, Bold Minimal, writes each colour role once, with the light an
 The mode follows the system.
 Setting `data-theme="light"` or `data-theme="dark"` on any element, usually `<html>`, pins the mode for that element and its descendants.
 The theme declares the roles again on every `[data-theme]` element, so a dark section can sit on a light page.
-The theme switcher in the header and in the style guide persists the choice in `localStorage` under `docs-theme`.
-Without JavaScript the page follows the system setting.
+There are three themes: `light`, `dark` and `black`, a true black for OLED screens. `data-contrast="more"` pushes text and borders further from their surfaces, and `data-motion="reduce"` calms large movement.
+The theme switch, in the second navigation bar and in the style guide header, picks light or dark directly and keeps theme, contrast and motion, each with a "match system" choice, in a menu.
+The choices persist in `localStorage` under `docs-theme`, `docs-contrast` and `docs-motion`, and a script in `<head>` applies them before first paint.
+Without JavaScript the page follows the system settings.
 
 To write your own theme, load a stylesheet after `ds.css` that overrides roles. A theme that doesn't need a dark mode can write plain values:
 
@@ -196,6 +198,17 @@ The design-system stylesheets target Chrome and Edge 111, Firefox 113 and Safari
 The bundle sets this floor in the `ds-css` and `ds-guide-css` targets in `package.json`.
 The floor is set by `color-mix()`, which has no fallback.
 `:has()`, container queries and popovers enhance the page where the browser has them and fall back to a simpler layout where it doesn't.
+
+## Heroes, backgrounds and the call to action
+
+A `hero-block` carries a variant class (`spotlight`, `mesh`, `grain`, `dusk`, `halftone`, `blueprint`, `paper`, `split`, `stripe` or `compact`) and its own dark colour scope, so what sits in it reads on it.
+Each variant has a dimmed counterpart in dark and in true black. The style guide's Hero variants page shows all of them.
+
+Sections get a background from a `band` modifier: `soft`, `tint`, `dots`, `grid`, `hatch`, `halftone`, `wash`, `wash-a`, `wash-b`, `wash-c`, `ink`, `blue`, `lagoon`, `dusk`, `aurora`, `plain` or `edge-diag`.
+Landing pages alternate these instead of leaving sections white. The Backgrounds page lists them, and `cta-band` closes a page with a gradient, a title and one or two actions.
+
+The teal `btn--cta` button is for heroes and bands only, once per hero. A second action in a hero is a secondary button.
+The version picker, when a page has one, sits at the top of the left navigation.
 
 ## Motion
 
