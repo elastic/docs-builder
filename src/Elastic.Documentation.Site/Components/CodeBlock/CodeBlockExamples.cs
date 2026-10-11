@@ -14,12 +14,18 @@ public static class CodeBlockExamples
 			"<code class=\"language-json hljs\">{\n  <span class=\"hljs-attr\">\"query\"</span>: {\n    <span class=\"hljs-attr\">\"match\"</span>: { <span class=\"hljs-attr\">\"title\"</span>: <span class=\"hljs-string\">\"design system\"</span> }\n  },\n  <span class=\"hljs-attr\">\"size\"</span>: <span class=\"hljs-number\">10</span>,\n  <span class=\"hljs-attr\">\"track_total_hits\"</span>: <span class=\"hljs-literal\">true</span>\n}</code>"
 		);
 
+	private static HtmlString Diff =>
+		new(
+			"<code class=\"language-diff hljs\"><span class=\"hljs-deletion\">- \"size\": 10,</span>\n<span class=\"hljs-addition\">+ \"size\": 25,</span>\n  \"track_total_hits\": true</code>"
+		);
+
 	public static ComponentSection CodeBlocks { get; } = new(
 		"Code block",
 		"A dark panel with the language, an optional caption and a copy button. The button is hidden until the enhancement loads, because it cannot work without JavaScript.",
 		"code-block",
 		[
 			ComponentExample.Of("Highlighted", _CodeBlock.Create, new CodeBlockModel { Language = "json", Body = Highlighted }),
+			ComponentExample.Of("Diff", _CodeBlock.Create, new CodeBlockModel { Language = "diff", Body = Diff }),
 			ComponentExample.Of(
 				"With caption",
 				_CodeBlock.Create,

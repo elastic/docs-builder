@@ -97,8 +97,7 @@
 }
 
 .code-block .hljs-string,
-.code-block .hljs-regexp,
-.code-block .hljs-addition {
+.code-block .hljs-regexp {
 	color: var(--color-code-string);
 }
 
@@ -108,8 +107,7 @@
 }
 
 .code-block .hljs-comment,
-.code-block .hljs-doctag,
-.code-block .hljs-deletion {
+.code-block .hljs-doctag {
 	color: var(--color-code-muted);
 	font-style: italic;
 }
@@ -196,4 +194,26 @@
 	color: var(--color-on-emphasis);
 	font-size: 0.6875rem;
 	font-weight: var(--weight-bold);
+}
+
+/* A diff: each added or removed line is a full-width tinted row, running to the panel's edges. */
+.code-block .hljs-addition,
+.code-block .hljs-deletion {
+	display: inline-block;
+	box-sizing: border-box;
+	width: calc(100% + var(--space-4) * 2);
+	margin-inline: calc(var(--space-4) * -1);
+	padding-inline: var(--space-4);
+}
+
+.code-block .hljs-addition {
+	background: color-mix(in oklab, var(--color-code-keyword) 12%, transparent);
+	box-shadow: inset 2px 0 0 var(--color-code-keyword);
+	color: var(--color-code-keyword);
+}
+
+.code-block .hljs-deletion {
+	background: color-mix(in oklab, var(--color-code-danger) 14%, transparent);
+	box-shadow: inset 2px 0 0 var(--color-code-danger);
+	color: var(--color-code-danger);
 }
