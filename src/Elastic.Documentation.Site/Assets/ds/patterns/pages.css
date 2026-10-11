@@ -3,12 +3,14 @@
 	display: flex;
 	flex-direction: column;
 	align-items: center;
-	max-width: 40rem;
-	margin-inline: auto;
 	padding: var(--rhythm-band) var(--layout-gutter)
 		calc(var(--rhythm-band) + var(--rhythm-block));
 	color: var(--color-emphasis);
 	text-align: center;
+}
+
+.page-message > * {
+	max-width: 40rem;
 }
 
 .page-message__title {
@@ -48,7 +50,6 @@
 	flex-direction: column;
 	align-items: center;
 	padding: var(--rhythm-band) var(--layout-gutter) 0;
-	background: var(--color-surface-sunken);
 	color: var(--color-emphasis);
 	text-align: center;
 }
@@ -90,7 +91,6 @@
 
 .archive__panel {
 	padding: var(--rhythm-section) 0 var(--rhythm-band);
-	background: var(--palette-developer-blue);
 	color: var(--palette-white);
 }
 

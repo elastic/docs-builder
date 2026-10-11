@@ -4,8 +4,6 @@
 
 .search-page__hero {
 	padding: var(--rhythm-group) 0 var(--rhythm-section);
-	background: var(--gradient-hero);
-	color: var(--palette-white);
 }
 
 .search-page__eyebrow {

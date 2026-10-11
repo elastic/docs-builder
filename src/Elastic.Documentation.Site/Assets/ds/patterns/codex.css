@@ -19,11 +19,12 @@
 }
 
 .codex-hero {
-	background: var(--gradient-hero);
 	color: var(--palette-white);
 }
 
 .codex-hero__inner {
+	position: relative;
+	z-index: 1;
 	display: grid;
 	grid-template-columns: minmax(0, 1fr) 30rem;
 	gap: var(--space-7);
@@ -134,13 +135,6 @@
 
 .codex-wash {
 	padding: var(--rhythm-tight) 0 var(--rhythm-band);
-	background:
-		repeating-linear-gradient(
-			135deg,
-			transparent 0 22px,
-			var(--color-hatch) 22px 23px
-		),
-		var(--gradient-wash);
 }
 
 .codex-group {
