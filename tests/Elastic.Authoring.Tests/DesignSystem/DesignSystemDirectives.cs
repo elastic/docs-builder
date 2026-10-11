@@ -420,7 +420,7 @@ public class NotFoundLayout() : DesignSystemLayoutTest("not-found")
 	[Test, DisplayName("renders the page message without utility classes")]
 	public async Task Renders()
 	{
-		await Docs.ConvertsToContainingRawHtml("class=\"page-message\"");
+		await Docs.ConvertsToContainingRawHtml("class=\"page-message band ");
 		await Docs.DoesNotConvertToContainingHtml("items-center justify-center");
 	}
 }
