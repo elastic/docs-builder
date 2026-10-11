@@ -26,6 +26,7 @@ import {
     getPathFromUrl,
     isExternalDocsUrl,
 } from '../web-components/shared/htmx/utils'
+import { initCodeLines } from './code-lines'
 import 'htmx-ext-head-support'
 import 'htmx-ext-preload'
 import 'htmx.org'
@@ -203,6 +204,7 @@ document.addEventListener('htmx:load', function () {
     runInitSteps([
         ['bootstrap', awaitBootstrap],
         ['initHighlight', initHighlight],
+        ['initCodeLines', () => initCodeLines()],
         ['initCopyButton', initCopyButton],
         ['initAppliesSwitch', initAppliesSwitch],
         ['initMath', initMath],

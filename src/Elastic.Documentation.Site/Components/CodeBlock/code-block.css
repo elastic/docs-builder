@@ -217,3 +217,39 @@
 	box-shadow: inset 2px 0 0 var(--color-code-danger);
 	color: var(--color-code-danger);
 }
+
+/*
+ * Lines. The enhancement wraps each line in .code-block__line and marks the block: data-numbered on a long block gets a numbered
+ * gutter, data-prompt on a one-line shell block gets a prompt, and a row lights up under the pointer.
+ */
+.code-block__line {
+	display: block;
+	margin-inline: calc(var(--space-4) * -1);
+	padding-inline: var(--space-4);
+}
+
+.code-block__line:hover {
+	background: color-mix(in oklab, var(--color-code-text) 5%, transparent);
+}
+
+.code-block__pre code {
+	counter-reset: code-line;
+}
+
+.code-block[data-numbered] .code-block__line::before {
+	content: counter(code-line);
+	counter-increment: code-line;
+	display: inline-block;
+	width: 2rem;
+	margin-right: var(--space-4);
+	color: var(--color-code-gutter);
+	text-align: right;
+	user-select: none;
+}
+
+.code-block[data-prompt] .code-block__line::before {
+	content: '$';
+	margin-right: var(--space-3);
+	color: var(--color-code-keyword);
+	user-select: none;
+}
