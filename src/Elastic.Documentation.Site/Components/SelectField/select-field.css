@@ -26,3 +26,68 @@
 .select:has(.select__control:focus-visible) > .icon {
 	color: var(--color-accent);
 }
+
+/* Where the browser can style the open list, the select uses its own menu surface and picker arrow instead of the overlaid icon. */
+@supports (appearance: base-select) {
+	.select__control,
+	.select__control::picker(select) {
+		appearance: base-select;
+	}
+
+	.select__control {
+		display: flex;
+		align-items: center;
+		gap: var(--space-2);
+		width: 100%;
+	}
+
+	.select > .icon {
+		display: none;
+	}
+
+	.select__control::picker-icon {
+		margin-left: auto;
+		color: var(--color-text-muted);
+		transition: rotate var(--duration-fast) var(--ease-standard);
+	}
+
+	.select__control:open::picker-icon {
+		rotate: 180deg;
+	}
+
+	.select__control::picker(select) {
+		margin-top: var(--space-2);
+		padding: var(--space-2);
+		border: var(--border-width) solid var(--color-border-strong);
+		border-radius: var(--radius-lg);
+		background: var(--color-surface);
+		box-shadow: var(--shadow-slab-sm);
+	}
+
+	.select__control option {
+		display: flex;
+		align-items: center;
+		gap: var(--space-3);
+		padding: var(--space-2) var(--space-3);
+		border-radius: var(--radius-sm);
+		color: var(--color-text);
+		font-size: var(--text-sm);
+		font-weight: var(--weight-medium);
+	}
+
+	.select__control option:hover,
+	.select__control option:focus-visible {
+		outline: 0;
+		background: var(--color-accent-surface);
+	}
+
+	.select__control option:checked {
+		font-weight: var(--weight-bold);
+	}
+
+	.select__control option::checkmark {
+		order: 1;
+		margin-left: auto;
+		color: var(--color-accent);
+	}
+}
