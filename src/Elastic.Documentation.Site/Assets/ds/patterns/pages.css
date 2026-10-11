@@ -644,5 +644,5 @@
 }
 
 .api-catalog {
-	padding-bottom: var(--rhythm-section);
+	padding-block: var(--rhythm-block) var(--rhythm-section);
 }

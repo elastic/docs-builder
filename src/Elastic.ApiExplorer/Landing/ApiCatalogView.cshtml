@@ -8,42 +8,43 @@
 	// the band behind the title run edge to edge instead of sitting in a box.
 	protected override Task ExecuteSectionAsync(string name)
 	{
-		if (name != ApiCatalog.HeroSection)
-			return Task.CompletedTask;
-
-		if (Model.BuildContext.Configuration.Features.NavigationPreviewEnabled)
+		if (name == ApiCatalog.HeroSection)
 		{
-			@* The same intro as the landing page: the eyebrow, the title in the display face and the lead, on the hero gradient. *@
-			<section class="landing__hero" id="hero">
-				<div class="band__content landing__inner landing__hero-text">
-					<p class="landing__eyebrow">Reference</p>
-					<h1 class="landing__title">@ApiCatalog.PageTitle</h1>
-					<p class="landing__lead">@ApiCatalog.PageLede</p>
-				</div>
-			</section>
-			return Task.CompletedTask;
-		}
-
-		<div class="api-catalog api-catalog-band w-full">
-			<div class="mx-auto w-full max-w-(--max-layout-width) px-6">
-				<section class="hub-hero api-catalog-hero">
-					<div class="hub-hero-inner">
-						<div class="hub-hero-top">
-							<h1>@ApiCatalog.PageTitle</h1>
-						</div>
-						<p class="api-catalog-lede">@ApiCatalog.PageLede</p>
+			if (Model.BuildContext.Configuration.Features.NavigationPreviewEnabled)
+			{
+				@* The same intro as the landing page: the eyebrow, the title in the display face and the lead, on the hero gradient. *@
+				<section class="landing__hero" id="hero">
+					<div class="band__content landing__inner landing__hero-text">
+						<p class="landing__eyebrow">Reference</p>
+						<h1 class="landing__title">@ApiCatalog.PageTitle</h1>
+						<p class="landing__lead">@ApiCatalog.PageLede</p>
 					</div>
 				</section>
+				return Task.CompletedTask;
+			}
+
+			<div class="api-catalog api-catalog-band w-full">
+				<div class="mx-auto w-full max-w-(--max-layout-width) px-6">
+					<section class="hub-hero api-catalog-hero">
+						<div class="hub-hero-inner">
+							<div class="hub-hero-top">
+								<h1>@ApiCatalog.PageTitle</h1>
+							</div>
+							<p class="api-catalog-lede">@ApiCatalog.PageLede</p>
+						</div>
+					</section>
+				</div>
 			</div>
-		</div>
+		}
 		return Task.CompletedTask;
 	}
 }
 @{
 	// Card titles sit under the group headings. A page without any (a lone group) puts them directly under the h1.
 	var cardHeadingLevel = Model.Groups.Any(g => g.Title is not null) ? 3 : 2;
+	var catalogClass = Model.BuildContext.Configuration.Features.NavigationPreviewEnabled ? "api-catalog band band--soft band--wash-b" : "api-catalog";
 }
-<section id="elastic-docs-v3" class="api-catalog">
+<section id="elastic-docs-v3" class="@catalogClass">
 	@for (var i = 0; i < Model.Groups.Count; i++)
 	{
 		var group = Model.Groups[i];
