@@ -17,3 +17,12 @@
 	color: var(--color-text-muted);
 	pointer-events: none;
 }
+
+.select__control:hover {
+	border-color: var(--color-accent);
+}
+
+.select:has(.select__control:hover) > .icon,
+.select:has(.select__control:focus-visible) > .icon {
+	color: var(--color-accent);
+}

@@ -5,7 +5,15 @@
 	padding: var(--space-1);
 	border: var(--border-width) solid var(--color-border-control);
 	border-radius: var(--radius-pill);
-	background: var(--color-surface-sunken);
+	background: linear-gradient(
+		180deg,
+		var(--color-surface-sunken),
+		var(--color-surface) 55%
+	);
+	box-shadow:
+		inset 0 2px 3px
+			color-mix(in srgb, var(--color-border-strong) 16%, transparent),
+		0 2px 0 var(--color-slab-plate);
 }
 
 .segmented__option {
@@ -36,13 +44,30 @@
 		color var(--duration-fast) var(--ease-standard);
 }
 
+.segmented__option + .segmented__option {
+	box-shadow: inset 1px 0 0 var(--color-border);
+}
+
+.segmented__option:has(:checked),
+.segmented__option:has(:checked) + .segmented__option {
+	box-shadow: none;
+}
+
 .segmented__option:hover .segmented__label {
 	color: var(--color-heading);
 }
 
 .segmented__input:checked + .segmented__label {
-	background: var(--color-emphasis);
-	color: var(--color-on-emphasis);
+	background: linear-gradient(
+		180deg,
+		var(--color-action-hover-deep),
+		var(--color-action-deep)
+	);
+	box-shadow:
+		inset 0 1px 0
+			color-mix(in srgb, var(--color-on-action) 12%, transparent),
+		0 2px 0 var(--color-action-edge);
+	color: var(--color-on-action);
 }
 
 .segmented__input:focus-visible + .segmented__label {

@@ -12,16 +12,16 @@
 	color: var(--color-text-muted);
 }
 
-.applies-badge--beta .applies-badge__status,
-.applies-badge--experimental .applies-badge__status,
-.applies-badge--planned .applies-badge__status,
-.applies-badge--development .applies-badge__status {
-	color: var(--color-warning);
+.applies-badge--beta,
+.applies-badge--experimental,
+.applies-badge--planned,
+.applies-badge--development {
+	--applies-dot: var(--color-warning);
 }
 
-.applies-badge--removed .applies-badge__status,
-.applies-badge--discontinued .applies-badge__status {
-	color: var(--color-danger);
+.applies-badge--removed,
+.applies-badge--discontinued {
+	--applies-dot: var(--color-danger);
 }
 
 .applies-popover {
