@@ -783,3 +783,28 @@
 		padding-top: var(--space-8);
 	}
 }
+
+@layer ds.patterns {
+	/* A hero or band as a page shows it, framed so it can sit in the guide's column. */
+	.sg-herosample {
+		overflow: hidden;
+		margin-bottom: var(--rhythm-block);
+		border: var(--border-width) solid var(--color-border);
+		border-radius: var(--radius-md);
+	}
+
+	.sg-herosample .band__content {
+		max-width: none;
+	}
+
+	.sg-herosample__label {
+		margin: var(--rhythm-block) 0 var(--rhythm-tight);
+		color: var(--color-text-muted);
+		font-size: var(--text-sm);
+		font-weight: var(--weight-semibold);
+	}
+
+	.sg-ctasample {
+		margin-bottom: var(--rhythm-block);
+	}
+}

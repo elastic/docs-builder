@@ -32,7 +32,7 @@ describe('preferences', () => {
         document.body.innerHTML = control
     })
 
-    it('stores a pinned theme, including black, and clears it for system', () => {
+    it('stores a pinned theme, including black, and follows the device for system', () => {
         applyPref('theme', 'black')
 
         expect(document.documentElement.dataset.theme).toBe('black')
@@ -40,7 +40,7 @@ describe('preferences', () => {
 
         applyPref('theme', 'system')
 
-        expect(document.documentElement.dataset.theme).toBeUndefined()
+        expect(document.documentElement.dataset.theme).toBe('light')
         expect(localStorage.getItem('docs-theme')).toBeNull()
     })
 

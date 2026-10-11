@@ -284,11 +284,7 @@
 }
 
 .landing__section {
-	padding-top: var(--rhythm-band);
-}
-
-.landing__section--last {
-	padding-bottom: var(--rhythm-band);
+	padding-block: var(--rhythm-band);
 }
 
 .landing__heading {
@@ -427,11 +423,6 @@
 }
 
 .landing__band {
-	position: relative;
-	margin-top: var(--rhythm-tight);
-	padding-block: var(--rhythm-section);
-	overflow: hidden;
-	background: var(--palette-developer-blue);
 	color: var(--palette-white);
 }
 

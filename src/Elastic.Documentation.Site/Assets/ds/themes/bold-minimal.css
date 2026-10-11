@@ -5,7 +5,8 @@
  * Each pair is `var(--ds-l, light) var(--ds-d, dark)`: a toggle pair, defined below, is "initial" for the active mode and empty for
  * the other, so only the active value survives. This is what the native `light-dark()` does, written out so it works in browsers
  * that predate it. The mode follows the system unless an element (usually <html>) sets data-theme="light" or data-theme="dark".
- * Roles are declared again on every [data-theme] element, so a dark section can sit on a light page.
+ * Roles are declared again on every [data-theme] element, and on the dark bands and heroes (and the light lagoon band and teal call to action),
+ * so a dark section can sit on a light page and what is inside it reads on it.
  */
 :root {
 	color-scheme: light dark;
@@ -20,21 +21,37 @@
 	}
 }
 
-[data-theme='light'] {
+[data-theme='light'],
+.band--lagoon,
+.cta-band--teal {
 	color-scheme: light;
 	--ds-l: initial;
 	--ds-d: ;
 }
 
 [data-theme='dark'],
-[data-theme='black'] {
+[data-theme='black'],
+.hero-block:not(.hero-block--paper),
+.band--ink,
+.band--blue,
+.band--dusk,
+.band--aurora,
+.cta-band:not(.cta-band--teal) {
 	color-scheme: dark;
 	--ds-l: ;
 	--ds-d: initial;
 }
 
 :root,
-[data-theme] {
+[data-theme],
+.hero-block:not(.hero-block--paper),
+.band--ink,
+.band--blue,
+.band--dusk,
+.band--aurora,
+.cta-band:not(.cta-band--teal),
+.band--lagoon,
+.cta-band--teal {
 	--color-page: var(--ds-l, var(--palette-white)) var(--ds-d, #101c3f);
 	--color-surface: var(--ds-l, var(--palette-white)) var(--ds-d, #172652);
 	--color-surface-sunken: var(--ds-l, var(--palette-grey-50))
@@ -87,11 +104,7 @@
 	--color-on-emphasis: var(--palette-teal);
 
 	/* Page-level washes: the hero band and the pastel field behind landing, hub and Codex pages. */
-	--gradient-hero: linear-gradient(
-		180deg,
-		var(--palette-developer-blue),
-		var(--palette-elastic-blue)
-	);
+	--gradient-hero: var(--hero-bg);
 	--gradient-wash: var(
 			--ds-l,
 			linear-gradient(

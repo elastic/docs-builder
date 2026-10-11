@@ -40,8 +40,8 @@
 			<h1 class="landing__title">Build, run and scale with Elastic</h1>
 			<p class="landing__lead">Welcome to the technical documentation for Elastic Stack 9.0.0 and later, and Elastic Cloud Serverless. Deploy, operate, and scale with step-by-step guides, API references, examples, and best practices.</p>
 			<div class="landing__actions">
-				<a class="landing__button landing__button--primary" href="@Model.Link("/get-started")">Elastic Fundamentals</a>
-				<a class="landing__button" href="https://cloud.elastic.co/registration?page=docs&placement=docs-body">Start free trial</a>
+				@await RenderPartialAsync(_Button.Create(new ButtonModel { Label = "Elastic Fundamentals", Href = Model.Link("/get-started"), Variant = ButtonVariant.Cta }))
+				@await RenderPartialAsync(_Button.Create(new ButtonModel { Label = "Start free trial", Href = "https://cloud.elastic.co/registration?page=docs&placement=docs-body", Variant = ButtonVariant.Secondary }))
 			</div>
 			@if (Model.AllVersionsUrl is not null)
 			{
@@ -50,8 +50,7 @@
 		</div>
 	</section>
 	<p class="landing__notice"><span class="band__content landing__inner">@await RenderPartialAsync(_Icon.Create(new IconModel { Name = "refresh_time", Size = IconSize.Small }))<strong>Upgrading from an earlier version?</strong> Follow the <a href="@Model.Link("/deploy-manage/upgrade")">upgrade guide</a> to plan and complete your upgrade.</span></p>
-	<div class="landing__wash">
-		<section class="landing__section">
+		<section class="band band--wash landing__section">
 			<div class="band__content landing__inner">
 				<div class="landing__slab">
 					<div class="landing__slab-text">
@@ -76,7 +75,7 @@
 				</div>
 			</div>
 		</section>
-		<section class="landing__section">
+		<section class="band band--soft band--wash-a landing__section">
 			<div class="band__content landing__inner">
 				<h2 class="landing__heading" id="solutions-use-cases">Solutions and use cases</h2>
 				<div class="grid grid--4 landing__grid">
@@ -94,7 +93,7 @@
 				</p>
 			</div>
 		</section>
-		<section class="landing__section">
+		<section class="band band--dots band--wash-b landing__section">
 			<div class="band__content landing__inner">
 				<h2 class="landing__heading" id="how-to-guides">How-to guides</h2>
 				<div class="grid grid--4 landing__grid">
@@ -105,8 +104,7 @@
 				</div>
 			</div>
 		</section>
-	</div>
-	<section class="landing__band">
+	<section class="band band--ink landing__band">
 		<div class="band__content landing__inner">
 			<div class="landing__band-head">
 				<h2 class="landing__heading landing__heading--light" id="references">Reference</h2>
@@ -124,8 +122,7 @@
 			</div>
 		</div>
 	</section>
-	<div class="landing__wash">
-		<section class="landing__section">
+		<section class="band band--tint landing__section">
 			<div class="band__content landing__inner">
 				<h2 class="landing__heading" id="product-resources">Product resources</h2>
 				<div class="grid grid--4 landing__grid">
@@ -139,7 +136,7 @@
 				</div>
 			</div>
 		</section>
-		<section class="landing__section landing__section--last">
+		<section class="band band--soft band--wash-c landing__section">
 			<div class="band__content landing__inner grid grid--2 landing__promos">
 				<div class="landing__promo">
 					<svg class="landing__art landing__art--window" viewBox="0 0 160 100" aria-hidden="true" focusable="false">
@@ -171,9 +168,22 @@
 					<p class="landing__eyebrow landing__eyebrow--light">Events</p>
 					<h2 class="landing__promo-title">Looking for more?</h2>
 					<p>We'll show you how to solve toughest challenges with Search AI. Join us at an Elastic{ON} event near you!</p>
-					<a class="landing__button landing__button--primary" href="https://www.elastic.co/events/elasticon">Register now</a>
+					@await RenderPartialAsync(_Button.Create(new ButtonModel { Label = "Register now", Href = "https://www.elastic.co/events/elasticon", Variant = ButtonVariant.Cta }))
 				</div>
 			</div>
 		</section>
-	</div>
+	<section class="band band--wash landing__section">
+		<div class="band__content landing__inner">
+			<div class="cta-band">
+				<div>
+					<h2>Ready to deploy your data?</h2>
+					<p>Start a free 14-day trial. No credit card needed.</p>
+				</div>
+				<div class="cta-band__actions">
+					@await RenderPartialAsync(_Button.Create(new ButtonModel { Label = "Start free trial", Href = "https://cloud.elastic.co/registration?page=docs&placement=docs-body", Variant = ButtonVariant.Cta }))
+					@await RenderPartialAsync(_Button.Create(new ButtonModel { Label = "Talk to sales", Href = "https://www.elastic.co/contact", Variant = ButtonVariant.Secondary }))
+				</div>
+			</div>
+		</div>
+	</section>
 </main>

@@ -61,15 +61,33 @@ public class StyleGuideRenderingTests
 
 		html
 			.Should()
-			.Contain("band band--sunken")
+			.Contain("band band--soft")
+			.And
+			.Contain("band band--tint")
 			.And
 			.Contain("band band--wash")
 			.And
-			.Contain("band band--accent")
+			.Contain("band band--soft band--wash-a")
 			.And
-			.Contain("band band--gradient band--hero")
+			.Contain("band band--ink")
 			.And
-			.Contain("band band--dark");
+			.Contain("band band--aurora");
+	}
+
+	[Test]
+	public async Task HeroVariantsPage_ShowsEveryHeroWithTheCtaButton()
+	{
+		var html = await StyleGuideCatalog.RenderAsync("hero-variants", StaticUrl, TestContext.Current!.Execution.CancellationToken);
+
+		html
+			.Should()
+			.Contain("hero-block hero-block--mesh")
+			.And
+			.Contain("hero-block hero-block--paper")
+			.And
+			.Contain("btn--cta")
+			.And
+			.Contain("cta-band--teal");
 	}
 
 	[Test]

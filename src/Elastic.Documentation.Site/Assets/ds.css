@@ -16,6 +16,7 @@
 @import './ds/tokens/art.css' layer(ds.tokens);
 @import './ds/tokens/scales.css' layer(ds.tokens);
 @import './ds/themes/bold-minimal.css' layer(ds.theme);
+@import './ds/themes/surfaces.css' layer(ds.theme);
 @import './ds/reset.css' layer(ds.reset);
 @import './ds/base.css' layer(ds.base);
 
@@ -58,6 +59,7 @@
 @import '../Components/SiteFooter/site-footer.css' layer(ds.components);
 @import '../Components/SiteHeader/site-header.css' layer(ds.components);
 @import '../Components/ThemeSwitch/theme-switch.css' layer(ds.components);
+@import '../Components/Hero/hero.css' layer(ds.components);
 @import './ds/patterns/layout.css' layer(ds.patterns);
 @import './ds/patterns/pages.css' layer(ds.pages);
 @import './ds/patterns/codex.css' layer(ds.pages);

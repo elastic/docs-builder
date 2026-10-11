@@ -1,0 +1,128 @@
+@inherits RazorSlice<StyleGuideViewModel>
+@using Elastic.Documentation.Site.StyleGuide
+@using Elastic.Documentation.Site.Components.Button
+@implements IUsesLayout<Elastic.Documentation.Site.StyleGuide._StyleGuideLayout, StyleGuideViewModel>
+@functions {
+	public StyleGuideViewModel LayoutModel => Model;
+}
+@{
+	var variants = new[]
+	{
+		(Class: "spotlight", Title: "Spotlight", Text: "Centred on ink with a blue cone and a fine grid. For a page with one message and one action."),
+		(Class: "mesh", Title: "Mesh", Text: "A bold multi-colour gradient: blue, pink, teal and violet. The loudest of the set."),
+		(Class: "grain", Title: "Grain", Text: "Ink and blue with film grain and a teal glow in the corner. The calm default for product pages."),
+		(Class: "dusk", Title: "Dusk", Text: "Blue into violet with a pink horizon. Used by the Codex."),
+		(Class: "halftone", Title: "Halftone", Text: "Teal dots that fade into the corner, on near-black. For technical and reference pages."),
+		(Class: "blueprint", Title: "Blueprint", Text: "A dense grid with teal rules and a ringed circle. For API and CLI pages."),
+		(Class: "paper", Title: "Paper", Text: "Light, with cut-paper shapes, ink edges and fine grain. The one hero that is not dark."),
+		(Class: "split", Title: "Split", Text: "A dark text half beside a blue product half, cut on a diagonal."),
+		(Class: "stripe", Title: "Stripe", Text: "Flat blue with a teal rule on a diagonal. Short and graphic, for announcements."),
+		(Class: "compact", Title: "Compact", Text: "Page-header scale, for inner pages that still want a hero.")
+	};
+}
+<section class="sg-section">
+	<h2>Hero variants</h2>
+	<p>Every hero is a <code>hero-block</code> with one variant class, and a dark colour scope of its own, so whatever sits in it reads on it. The call to action is the teal <code>btn--cta</code>, used once per hero; a second action is a secondary button. Each variant has a dimmed counterpart in dark and in true black.</p>
+</section>
+@foreach (var variant in variants)
+{
+	<section class="sg-section">
+		<h2>@variant.Title</h2>
+		<p>@variant.Text</p>
+		<div class="sg-herosample">
+			<div class="hero-block hero-block--@variant.Class">
+				<div class="band__content hero-block__inner">
+					<p class="hero-block__eyebrow">Elastic Docs</p>
+					<h1 class="hero-block__title">Build search that finds the answer</h1>
+					<p class="hero-block__lead">Docs for every Elastic product, from quick starts to production.</p>
+					<div class="hero-block__actions">
+						@await RenderPartialAsync(_Button.Create(new ButtonModel { Label = "Get started", Href = "#", Variant = ButtonVariant.Cta }))
+						@await RenderPartialAsync(_Button.Create(new ButtonModel { Label = "Browse the API", Href = "#", Variant = ButtonVariant.Secondary }))
+					</div>
+				</div>
+			</div>
+		</div>
+		<pre class="sg-themed"><code>&lt;section class="hero-block hero-block--@variant.Class"&gt;
+  &lt;div class="band__content hero-block__inner"&gt;
+    &lt;p class="hero-block__eyebrow"&gt;…&lt;/p&gt;
+    &lt;h1 class="hero-block__title"&gt;…&lt;/h1&gt;
+    &lt;div class="hero-block__actions"&gt;btn--cta, btn--secondary&lt;/div&gt;
+  &lt;/div&gt;
+&lt;/section&gt;</code></pre>
+	</section>
+}
+<section class="sg-section">
+	<h2>Hero with an aside</h2>
+	<p>Add <code>hero-block--aside</code> and a <code>hero-block__aside</code> beside the text: a glass panel with code, a call to action, key figures or a list of links. It falls under the text below 860px.</p>
+	<div class="sg-herosample">
+		<div class="hero-block hero-block--grain hero-block--aside">
+			<div class="band__content hero-block__inner">
+				<div class="hero-block__text">
+					<p class="hero-block__eyebrow">Search</p>
+					<h1 class="hero-block__title">Ship AI search with confidence</h1>
+					<p class="hero-block__lead">Vector, hybrid and semantic search in one query.</p>
+					<div class="hero-block__actions">
+						@await RenderPartialAsync(_Button.Create(new ButtonModel { Label = "Start tutorial", Href = "#", Variant = ButtonVariant.Cta }))
+					</div>
+				</div>
+				<aside class="hero-block__aside hero-block__aside--glass">
+					<div class="hero-block__aside-head">POST /products/_search <b>200</b></div>
+					<pre class="hero-block__aside-body"><span class="k">retriever</span>: { <span class="k">rrf</span>: {
+  <span class="k">retrievers</span>: [ <span class="n">knn</span>, <span class="n">match</span> ]
+} }</pre>
+				</aside>
+			</div>
+		</div>
+	</div>
+	<div class="sg-herosample">
+		<div class="hero-block hero-block--mesh hero-block--aside">
+			<div class="band__content hero-block__inner">
+				<div class="hero-block__text">
+					<p class="hero-block__eyebrow">Elastic Cloud</p>
+					<h1 class="hero-block__title">Ready to deploy your data?</h1>
+					<p class="hero-block__lead">Start a free trial and index your first document today.</p>
+				</div>
+				<aside class="hero-block__aside hero-block__aside--cta">
+					<h3>Start free for 14 days</h3>
+					<p>All features, no setup.</p>
+					@await RenderPartialAsync(_Button.Create(new ButtonModel { Label = "Start free trial", Href = "#", Variant = ButtonVariant.Cta }))
+					<small>No credit card needed.</small>
+				</aside>
+			</div>
+		</div>
+	</div>
+	<div class="sg-herosample">
+		<div class="hero-block hero-block--dusk hero-block--aside">
+			<div class="band__content hero-block__inner">
+				<div class="hero-block__text">
+					<p class="hero-block__eyebrow">Observability</p>
+					<h1 class="hero-block__title">Built for scale</h1>
+					<p class="hero-block__lead">Numbers that hold up in production.</p>
+				</div>
+				<aside class="hero-block__aside hero-block__aside--stats">
+					<div><span>Ingest</span><b>4 TB/day</b></div>
+					<div><span>Uptime</span><b>99.99%</b></div>
+					<div><span>Query p95</span><b>12 ms</b></div>
+				</aside>
+			</div>
+		</div>
+	</div>
+</section>
+<section class="sg-section">
+	<h2>Call-to-action band</h2>
+	<p>The band that closes a page: a gradient with a title and one or two actions. The teal button is the call to action; the second is secondary.</p>
+	@foreach (var cta in new[] { (Mod: "", Name: "Default"), (Mod: " cta-band--teal", Name: "Teal"), (Mod: " cta-band--grain", Name: "Grain"), (Mod: " cta-band--full", Name: "Full width") })
+	{
+		<p class="sg-herosample__label">@cta.Name</p>
+		<div class="cta-band@(cta.Mod) sg-ctasample">
+			<div>
+				<h2>Ready to deploy your data?</h2>
+				<p>Start a free 14-day trial. No credit card needed.</p>
+			</div>
+			<div class="cta-band__actions">
+				@await RenderPartialAsync(_Button.Create(new ButtonModel { Label = "Start free trial", Href = "#", Variant = ButtonVariant.Cta }))
+				@await RenderPartialAsync(_Button.Create(new ButtonModel { Label = "Talk to sales", Href = "#", Variant = ButtonVariant.Secondary }))
+			</div>
+		</div>
+	}
+</section>

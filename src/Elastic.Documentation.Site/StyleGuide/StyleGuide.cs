@@ -110,6 +110,12 @@ public static class StyleGuideCatalog
 			"The three widths everything breaks at, and how each layout breaks, shown in live frames."
 		),
 		new(
+			"hero-variants",
+			"Hero variants",
+			"Foundations",
+			"The ten hero variants, the hero with an aside, and the call-to-action band, each with the teal call-to-action button."
+		),
+		new(
 			"backgrounds",
 			"Hero and section backgrounds",
 			"Foundations",
@@ -281,6 +287,9 @@ public static class StyleGuideCatalog
 				break;
 			case "grid":
 				await Grid.Create(model).RenderAsync(writer, cancellationToken: ctx);
+				break;
+			case "hero-variants":
+				await HeroVariants.Create(model).RenderAsync(writer, cancellationToken: ctx);
 				break;
 			case "backgrounds":
 				await Backgrounds.Create(model).RenderAsync(writer, cancellationToken: ctx);

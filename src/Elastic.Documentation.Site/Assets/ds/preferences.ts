@@ -28,10 +28,11 @@ export function readPref(pref: Pref): string {
     }
 }
 
-// Theme with "system" is left to the stylesheet, which follows prefers-color-scheme; the other two are resolved here, as the head script does.
-function resolve(pref: Pref, choice: string): string | null {
+// "System" is resolved from the device here, as the head script does, because the surface art keys off the resolved value.
+function resolve(pref: Pref, choice: string): string {
     if (choice !== 'system') return choice
-    if (pref === 'theme') return null
+    if (pref === 'theme')
+        return matches('(prefers-color-scheme: dark)') ? 'dark' : 'light'
     if (pref === 'contrast')
         return matches('(prefers-contrast: more)') ? 'more' : 'normal'
     return matches('(prefers-reduced-motion: reduce)') ? 'reduce' : 'full'
@@ -42,9 +43,7 @@ export function applyPref(
     choice: string,
     root: HTMLElement = document.documentElement
 ) {
-    const resolved = resolve(pref, choice)
-    if (resolved === null) delete root.dataset[pref]
-    else root.dataset[pref] = resolved
+    root.dataset[pref] = resolve(pref, choice)
     try {
         if (choice === 'system') localStorage.removeItem(storageKeys[pref])
         else localStorage.setItem(storageKeys[pref], choice)
@@ -63,6 +62,7 @@ function followSystem() {
         window.matchMedia?.(query).addEventListener?.('change', () => {
             if (readPref(pref) === 'system') applyPref(pref, 'system')
         })
+    follow('theme', '(prefers-color-scheme: dark)')
     follow('contrast', '(prefers-contrast: more)')
     follow('motion', '(prefers-reduced-motion: reduce)')
 }
