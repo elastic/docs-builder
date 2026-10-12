@@ -11,7 +11,7 @@ namespace Elastic.ApiExplorer.Operations;
 
 /// <summary>Required privileges and credentials for the Required authorization and Authentication sections; <paramref name="RenderMarkdown"/> renders descriptions.</summary>
 public record AuthorizationSectionModel(
-	IReadOnlyList<AuthScheme> Schemes,
+	IReadOnlyList<AuthRequirement> Requirements,
 	IReadOnlyList<PrivilegeRow> Privileges,
 	Func<string?, HtmlString> RenderMarkdown
 );
@@ -23,7 +23,8 @@ public class OperationViewModel(ApiRenderContext context) : ApiViewModel(context
 	/// <summary>Precomputed structural content of the page; built before the slice renders.</summary>
 	public required OperationPageModel Page { get; init; }
 
-	public AuthorizationSectionModel Authorization => new(Page.AuthSchemes, Page.RequiredPrivileges, markdown => RenderMarkdown(markdown));
+	public AuthorizationSectionModel Authorization =>
+		new(Page.AuthRequirements, Page.RequiredPrivileges, markdown => RenderMarkdown(markdown));
 
 	protected override string? LayoutPageTitle => Operation.Operation.Summary ?? CurrentNavigationItem.NavigationTitle;
 
@@ -41,7 +42,7 @@ public class OperationViewModel(ApiRenderContext context) : ApiViewModel(context
 		if (Page.RequiredPrivileges.Count > 0)
 			tocItems.Add(new ApiTocItem("Required authorization", "required-authorization"));
 
-		if (Page.AuthSchemes.Count > 0)
+		if (Page.AuthRequirements.Count > 0)
 			tocItems.Add(new ApiTocItem("Authentication", "authentication"));
 
 		if (Page.QueryParameters.Count > 0)

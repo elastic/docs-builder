@@ -8,9 +8,18 @@ namespace Elastic.ApiExplorer.Operations;
 
 public record AuthScheme(string Id, string Label, string? CredentialExample, string? DescriptionMarkdown);
 
+/// <summary>One way to authenticate. OpenAPI treats the schemes inside one security requirement as AND, so all of them are sent together.</summary>
+public record AuthRequirement(IReadOnlyList<AuthScheme> Schemes)
+{
+	public string Id => string.Join("-", Schemes.Select(static s => s.Id));
+
+	public string Label => string.Join(" + ", Schemes.Select(static s => s.Label));
+}
+
 public static class OpenApiAuthSchemeResolver
 {
-	public static IReadOnlyList<AuthScheme> Resolve(OpenApiOperation operation, OpenApiDocument document)
+	/// <summary>The alternatives (OR) from the operation's security, or the document's when the operation has none. Each holds the schemes (AND) it needs.</summary>
+	public static IReadOnlyList<AuthRequirement> Resolve(OpenApiOperation operation, OpenApiDocument document)
 	{
 		// Omitted operation security is null (inherit). An empty list is an explicit override to none.
 		var requirements = operation.Security ?? document.Security;
@@ -18,22 +27,29 @@ public static class OpenApiAuthSchemeResolver
 			return [];
 
 		var seen = new HashSet<string>(StringComparer.Ordinal);
-		var schemes = new List<AuthScheme>();
+		var alternatives = new List<AuthRequirement>();
 		foreach (var requirement in requirements)
 		{
-			foreach (var scheme in requirement)
-			{
-				if (scheme.Key is not OpenApiSecuritySchemeReference { Reference.Id: { Length: > 0 } id } || !seen.Add(id))
-					continue;
-				var target = Target(scheme.Key, document);
-				var label = LabelFor(target);
-				if (label is null)
-					continue;
-				var description = target?.Description;
-				schemes.Add(
-					new AuthScheme(id, label, CredentialExample(target), string.IsNullOrWhiteSpace(description) ? null : description)
-				);
-			}
+			var schemes = SchemesOf(requirement, document);
+			if (schemes.Count > 0 && new AuthRequirement(schemes) is var alternative && seen.Add(alternative.Id))
+				alternatives.Add(alternative);
+		}
+
+		return alternatives;
+	}
+
+	private static List<AuthScheme> SchemesOf(OpenApiSecurityRequirement requirement, OpenApiDocument document)
+	{
+		var schemes = new List<AuthScheme>();
+		foreach (var scheme in requirement)
+		{
+			if (scheme.Key is not OpenApiSecuritySchemeReference { Reference.Id: { Length: > 0 } id })
+				continue;
+			var target = Target(scheme.Key, document);
+			if (LabelFor(target) is not { } label)
+				continue;
+			var description = target?.Description;
+			schemes.Add(new AuthScheme(id, label, CredentialExample(target), string.IsNullOrWhiteSpace(description) ? null : description));
 		}
 
 		return schemes;

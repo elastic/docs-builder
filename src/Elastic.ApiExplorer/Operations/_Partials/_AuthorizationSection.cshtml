@@ -3,8 +3,8 @@
 @inherits RazorSlice<Elastic.ApiExplorer.Operations.AuthorizationSectionModel>
 @{
 	// The privileges stay visible; the credentials fold away, since a reader who is already set up does not need them.
-	var schemes = Model.Schemes;
-	var useTabs = schemes.Count > 1;
+	var requirements = Model.Requirements;
+	var useTabs = requirements.Count > 1;
 }
 @if (Model.Privileges.Count > 0)
 {
@@ -37,30 +37,42 @@
 		</dl>
 	</div>
 }
-@if (schemes.Count > 0)
+@if (requirements.Count > 0)
 {
 	<div @ParamSectionHeader.WrapAttributes(collapse: true)>
-		@(await RenderPartialAsync<_ParamSectionHeader, ParamSectionHeader>(new ParamSectionHeader("Authentication", "authentication", [.. schemes.Select(static s => s.Label)], NamesAreVariants: true)))
+		@(await RenderPartialAsync<_ParamSectionHeader, ParamSectionHeader>(new ParamSectionHeader("Authentication", "authentication", [.. requirements.Select(static r => r.Label)], NamesAreVariants: true)))
 		<div @ParamSectionHeader.BodyAttributes(collapse: true, "authentication-list")>
-			@* Schemes are alternatives, so several of them become tabs: the same radio-button tabs as the docs. Switching needs no script; tabs.ts makes the other panels findable. *@
+			@* Each requirement is an alternative, so several of them become tabs: the same radio-button tabs as the docs. Switching needs no script; tabs.ts makes the other panels findable.
+			   The schemes inside one requirement are sent together, so they share a panel. *@
 			<div class="@(useTabs ? "api-tabs api-authentication-tabs" : null)">
-				@for (var i = 0; i < schemes.Count; i++)
+				@for (var i = 0; i < requirements.Count; i++)
 				{
-					var scheme = schemes[i];
+					var requirement = requirements[i];
 					var tabId = $"authentication-tab-{i}";
 					@if (useTabs)
 					{
 						<input class="tabs-input" id="@tabId" name="authentication-tabs" type="radio" checked="@(i == 0 ? "checked" : null)" tabindex="0">
-						<label class="tabs-label" for="@tabId">@scheme.Label</label>
+						<label class="tabs-label" for="@tabId">@requirement.Label</label>
 					}
 					<div class="@(useTabs ? "tabs-content " : "")api-authorization-panel">
-						@if (!string.IsNullOrEmpty(scheme.CredentialExample))
+						@if (requirement.Schemes.Count > 1)
 						{
-							@(await RenderPartialAsync<_ApiCodeBlock, ApiCodeBlockModel>(new ApiCodeBlockModel("language-http", scheme.CredentialExample)))
+							<p>Send all of these together.</p>
 						}
-						@if (scheme.DescriptionMarkdown is not null)
+						@foreach (var scheme in requirement.Schemes)
 						{
-							@Model.RenderMarkdown(scheme.DescriptionMarkdown)
+							@if (requirement.Schemes.Count > 1)
+							{
+								<h3>@scheme.Label</h3>
+							}
+							@if (!string.IsNullOrEmpty(scheme.CredentialExample))
+							{
+								@(await RenderPartialAsync<_ApiCodeBlock, ApiCodeBlockModel>(new ApiCodeBlockModel("language-http", scheme.CredentialExample)))
+							}
+							@if (scheme.DescriptionMarkdown is not null)
+							{
+								@Model.RenderMarkdown(scheme.DescriptionMarkdown)
+							}
 						}
 					</div>
 				}

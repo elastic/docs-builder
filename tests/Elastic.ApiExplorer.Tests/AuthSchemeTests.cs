@@ -91,9 +91,30 @@ public class AuthSchemeTests
 		var schemes = OpenApiAuthSchemeResolver.Resolve(op, doc);
 
 		schemes
+			.SelectMany(r => r.Schemes)
 			.Select(s => s.CredentialExample)
 			.Should()
 			.Equal("Authorization: <value>", "Authorization: Basic <credentials>", "Authorization: Bearer <token>");
+	}
+
+	[Test]
+	public async Task Resolve_RequirementWithTwoSchemes_StaysOneAlternativeThatNeedsBoth()
+	{
+		var (op, doc) = await Load(EsShapedSpec(operationSecurity: """{ "basicAuth": [], "bearerAuth": [] }, { "apiKeyAuth": [] }"""));
+
+		var requirements = OpenApiAuthSchemeResolver.Resolve(op, doc);
+
+		requirements.Select(r => r.Label).Should().Equal("Basic + Bearer", "Api key");
+		requirements[0].Schemes.Select(s => s.Id).Should().Equal("basicAuth", "bearerAuth");
+		requirements[1].Schemes.Should().ContainSingle();
+	}
+
+	[Test]
+	public async Task Resolve_SameRequirementTwice_ListsItOnce()
+	{
+		var (op, doc) = await Load(EsShapedSpec(operationSecurity: """{ "apiKeyAuth": [] }, { "apiKeyAuth": [] }"""));
+
+		OpenApiAuthSchemeResolver.Resolve(op, doc).Should().ContainSingle().Which.Label.Should().Be("Api key");
 	}
 
 	private static string EsShapedSpec(string? operationSecurity)

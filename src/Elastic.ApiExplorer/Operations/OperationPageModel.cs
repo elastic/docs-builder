@@ -61,8 +61,8 @@ public partial record OperationPageModel
 	public required bool ShowResponseExamples { get; init; }
 	public required IReadOnlyList<ExampleScenario> Scenarios { get; init; }
 
-	/// <summary>Effective auth schemes. Empty when the spec declares no schemes.</summary>
-	public required IReadOnlyList<AuthScheme> AuthSchemes { get; init; }
+	/// <summary>The alternative ways to authenticate. Empty when the spec declares no schemes.</summary>
+	public required IReadOnlyList<AuthRequirement> AuthRequirements { get; init; }
 
 	/// <summary>Privileges the operation needs, from <c>x-req-auth</c> or lifted out of the description.</summary>
 	public required IReadOnlyList<PrivilegeRow> RequiredPrivileges { get; init; }
@@ -168,7 +168,7 @@ public partial record OperationPageModel
 			ShowResponseExamples = responseExamples.Count > 0,
 			Scenarios = scenarios,
 			RequiredPrivileges = privileges.Rows,
-			AuthSchemes = OpenApiAuthSchemeResolver.Resolve(operation, document)
+			AuthRequirements = OpenApiAuthSchemeResolver.Resolve(operation, document)
 		};
 	}
 

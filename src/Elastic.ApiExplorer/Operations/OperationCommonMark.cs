@@ -140,20 +140,31 @@ internal static class OperationCommonMark
 			_ = markdown.AppendLine();
 		}
 
-		if (page.AuthSchemes.Count == 0)
+		if (page.AuthRequirements.Count == 0)
 			return;
 
 		ApiCommonMark.Heading(markdown, 2, "Authentication");
-		foreach (var scheme in page.AuthSchemes)
-		{
-			var credential = scheme.CredentialExample is null ? "" : $": `{scheme.CredentialExample}`";
-			_ = markdown.AppendLine($"- {scheme.Label}{credential}");
-			var description = ApiMarkdown.Prepare(scheme.DescriptionMarkdown, apiBaseUrl);
-			if (!string.IsNullOrWhiteSpace(description))
-				_ = markdown.AppendLine($"  {description.Trim().ReplaceLineEndings("\n  ")}");
-		}
+		foreach (var requirement in page.AuthRequirements)
+			WriteRequirement(markdown, requirement, apiBaseUrl);
 
 		_ = markdown.AppendLine();
+	}
+
+	// One scheme is a plain bullet. Several schemes are sent together, so they nest under one bullet that says so.
+	private static void WriteRequirement(StringBuilder markdown, AuthRequirement requirement, string apiBaseUrl)
+	{
+		var together = requirement.Schemes.Count > 1;
+		var indent = together ? "  " : "";
+		if (together)
+			_ = markdown.AppendLine($"- {requirement.Label} (send all of these)");
+		foreach (var scheme in requirement.Schemes)
+		{
+			var credential = scheme.CredentialExample is null ? "" : $": `{scheme.CredentialExample}`";
+			_ = markdown.AppendLine($"{indent}- {scheme.Label}{credential}");
+			var description = ApiMarkdown.Prepare(scheme.DescriptionMarkdown, apiBaseUrl);
+			if (!string.IsNullOrWhiteSpace(description))
+				_ = markdown.AppendLine($"{indent}  {description.Trim().ReplaceLineEndings($"\n{indent}  ")}");
+		}
 	}
 
 	private static void WriteQueryParameters(StringBuilder markdown, OperationPageModel page, string apiBaseUrl)

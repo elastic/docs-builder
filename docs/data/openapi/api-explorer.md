@@ -390,7 +390,7 @@ The **Authentication** section shows how to send a credential. It sits below **R
 
 The API Explorer reads OpenAPI `security` on the operation, or the document-level `security` when the operation omits the field. An empty operation `security: []` is an explicit override to none and hides the section.
 
-Each listed scheme is resolved against `components.securitySchemes`, in first-seen order and de-duplicated:
+Each listed scheme is resolved against `components.securitySchemes`, in the order the spec lists them:
 
 | OpenAPI scheme | Label |
 |---|---|
@@ -401,7 +401,7 @@ Each listed scheme is resolved against `components.securitySchemes`, in first-se
 | `type: oauth2` | `OAuth 2.0` |
 | `type: openIdConnect` | `OpenID Connect` |
 
-Other scheme types, such as `mutualTLS`, are omitted. OpenAPI treats items in the `security` array as OR and keys inside one object as AND. The page flattens those groups into a unique list.
+Other scheme types, such as `mutualTLS`, are omitted. OpenAPI treats items in the `security` array as OR and keys inside one object as AND. Each item is one tab, and a requirement with several schemes is one tab labelled `Basic + Bearer` that shows every scheme together. Identical requirements show once.
 
 Open the section to see one tab per scheme. A tab shows the header or query parameter to send, for example `Authorization: Basic <credentials>`, and the scheme `description`. One scheme shows no tabs. A search with the browser's find-in-page opens the section and selects the tab that contains the match.
 
