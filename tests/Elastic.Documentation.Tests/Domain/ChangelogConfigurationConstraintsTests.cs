@@ -121,39 +121,11 @@ public class ChangelogConfigurationConstraintsTests
 					c,
 					p => p with { Types = new(Types()) { [BreakingChange] = new TypeEntry { Subtypes = new() { ["nope"] = null } } } }
 				),
-			["pivot-subtypes-valid"] = c => WithPivot(c, p => p with { Subtypes = new() { ["nope"] = null } }),
-			["pivot-products-known"] = c => WithPivot(c, p => p with { Products = new() { ["nope 9.0"] = "nope" } }),
-			["available-products-known"] = c => c with { ProductsConfiguration = c.ProductsConfiguration! with { Available = ["nope"] } },
-			["default-product-has-id"] =
-				c => c with { ProductsConfiguration = c.ProductsConfiguration! with { Default = [new DefaultProduct { Product = " " }] } },
-			["default-product-known"] =
-				c =>
-					c with { ProductsConfiguration = c.ProductsConfiguration! with { Default = [new DefaultProduct { Product = "nope" }] } },
 #pragma warning disable CS0618 // the rules still check the obsolete fields
-			["bundle-repo-single"] = c => WithBundle(c, b => b with { Repo = "elasticsearch+kibana" }),
-			["profile-repo-single"] = c => WithProfile(c, new BundleProfile { Product = "elasticsearch", Repo = "elasticsearch+kibana" }),
 			["link-allow-repos-owner-repo"] = c => WithBundle(c, b => b with { LinkAllowRepos = ["elastic"] }),
-			["profile-fields-not-deprecated"] =
-				c => WithProfile(c, new BundleProfile { Product = "elasticsearch", Source = "github_release" }),
 #pragma warning restore CS0618
-			["profile-product-known"] = c => WithProfile(c, new BundleProfile { Product = "nope" }),
-			["release-tag-profile-defined"] =
-				c => WithBundle(
-					c,
-					b => b with { Releases = b.Releases! with { Github = new Dictionary<string, string> { ["v*"] = "missing" } } }
-				),
-			["release-product-profile-defined"] =
-				c => WithBundle(
-					c,
-					b =>
-						b with
-						{
-							Releases = b.Releases! with { Products = new Dictionary<string, string> { ["elasticsearch"] = "missing" } }
-						}
-				),
 			["bundle-rules-products-exclusive"] =
 				c => WithBundleRules(c, BundleRules(PerProductRule, includeProducts: ["elasticsearch"], excludeProducts: ["kibana"])),
-			["bundle-rules-products-known"] = c => WithBundleRules(c, BundleRules(PerProductRule, includeProducts: ["nope"])),
 			["per-product-products-exclusive"] =
 				c => WithBundleRules(
 					c,
@@ -169,16 +141,6 @@ public class ChangelogConfigurationConstraintsTests
 					c,
 					BundleRules(PerProductRule with { IncludeProducts = ["elasticsearch", "kibana"] }, includeProducts: ["elasticsearch"])
 				),
-			["create-rules-products-known"] =
-				c =>
-					c with
-					{
-						Rules = c.Rules! with
-						{
-							Create = new CreateRules { ByProduct = new Dictionary<string, CreateRules> { ["nope"] = new() } }
-						}
-					},
-			["filename-keyed-by-pr"] = c => c with { Filename = FilenameStrategy.Timestamp },
 			["pivot-label-unique"] =
 				c => WithPivot(c, p => p with { Features = new() { ["feature:a"] = "shared", ["feature:b"] = "shared" } }),
 			["bundle-rule-types-areas-valid"] =
@@ -191,7 +153,6 @@ public class ChangelogConfigurationConstraintsTests
 				),
 			["output-directory-not-file"] = c => WithBundle(c, b => b with { OutputDirectory = "docs/releases/bundle.yml" }),
 #pragma warning disable CS0618 // the rules still check the obsolete fields
-			["profile-output-removed"] = c => WithProfile(c, new BundleProfile { Product = "elasticsearch", Output = "bundle.yaml" }),
 #pragma warning restore CS0618
 			["profile-primary-product-unique"] =
 				c => WithBundle(

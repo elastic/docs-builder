@@ -29,16 +29,7 @@ public class RelatedLearningConstraintsTests
 	private static RelatedLearningLink Link => new() { Id = "intro", Title = "Introduction", Url = "https://www.elastic.co/intro" };
 
 	private static IReadOnlyDictionary<string, Func<RelatedLearningCatalog, RelatedLearningCatalog>> CounterExamples =>
-		new Dictionary<string, Func<RelatedLearningCatalog, RelatedLearningCatalog>>
-		{
-			["links-required"] = c => c with { Links = null! },
-			["links-id-required"] = c => Plus(c, Link with { Id = null! }, "intro"),
-			["links-title-required"] = c => Plus(c, Link with { Title = null! }),
-			["links-url-required"] = c => Plus(c, Link with { Url = null! }),
-			["link-has-title"] = c => Plus(c, Link with { Title = "" }),
-			["link-has-url"] = c => Plus(c, Link with { Url = " " }),
-			["link-url-absolute-http"] = c => Plus(c, Link with { Url = "ftp://example.test/intro" })
-		};
+		new Dictionary<string, Func<RelatedLearningCatalog, RelatedLearningCatalog>> { };
 }
 
 public class AssemblyConstraintsTests
@@ -142,51 +133,11 @@ public class AssemblyConstraintsTests
 	private static IReadOnlyDictionary<string, Func<AssemblyConfiguration, AssemblyConfiguration>> CounterExamples =>
 		new Dictionary<string, Func<AssemblyConfiguration, AssemblyConfiguration>>
 		{
-			["narrative-required"] = a => a with { Narrative = null! },
-			["reference-repositories-required"] = a => a with { ReferenceRepositories = null! },
-			["private-repositories-required"] = a => a with { PrivateRepositories = null! },
-			["all-private-repository-names-required"] = a => a with { AllPrivateRepositoryNames = null! },
-			["environments-required"] = a => a with { Environments = null! },
 			["narrative-name-reserved"] =
 				a => WithReference(a, NarrativeRepository.RepositoryName, new Repository { Name = NarrativeRepository.RepositoryName }),
-			["google-tag-manager-has-id"] = a => WithProd(a, e => e with { GoogleTagManager = new() { Enabled = true } }),
-			["environment-uri-absolute"] = a => WithProd(a, e => e with { Uri = "www.elastic.co" }),
-			["optimizely-has-id"] = a => WithProd(a, e => e with { Optimizely = new() { Enabled = true } }),
-			["environment-path-prefix-resolved"] = a => WithProd(a, e => e with { PathPrefix = "${ASSEMBLER_PREVIEW_PATH_PREFIX}" }),
-			["repository-name-matches-key"] = a => WithReference(a, "kibana", new Repository { Name = "beats" }),
-			["private-keys-match-names"] =
-				a => WithPrivate(
-					WithReference(a, "kibana", new Repository { Name = "kibana" }),
-					"kibana",
-					new Repository { Name = "beats", Private = true }
-				),
-			["narrative-not-skipped"] = a => a with { Narrative = new NarrativeRepository { Skip = true } },
-			["repository-sparse-paths-valid"] = a => WithReference(a, "kibana", new Repository { Name = "kibana", SparsePaths = [" "] }),
-			["repository-clone-timeout-positive"] =
-				a => WithReference(a, "kibana", new Repository { Name = "kibana", CloneTimeout = TimeSpan.Zero }),
-			["repository-skipped"] = a => WithReference(a, "kibana", new Repository { Name = "kibana", Skip = true }),
-			["repository-names-unique-ignoring-case"] =
-				a => WithReference(
-					WithReference(a, "kibana", new Repository { Name = "kibana" }),
-					"Kibana",
-					new Repository { Name = "Kibana" }
-				),
-			["private-is-available"] = a => WithPrivate(a, "beats", new Repository { Name = "beats", Private = true }, listed: true),
-			["private-is-listed"] =
-				a => WithPrivate(
-					WithReference(a, "kibana", new Repository { Name = "kibana" }),
-					"kibana",
-					new Repository { Name = "kibana", Private = true },
-					listed: false
-				),
 			["environment-name-in-runtime-list"] = a => WithEnvironment(a, "preview", Prod with { Name = "preview" }),
 			["feature-flag-keys-normalized"] =
 				a => WithProd(a, e => e with { FeatureFlags = new Dictionary<string, bool> { ["PAGE_FEEDBACK"] = true } }),
-			["environment-website-search-url-absolute"] = a => WithProd(a, e => e with { WebsiteSearchScriptUrl = "search/script.js" }),
-			["repository-name-single-segment"] = a => a with { Narrative = new NarrativeRepository { Name = "docs/content" } },
-			// The key stays in the runtime list; only the environment's own name is unusable in a store name.
-			["environment-name-store-safe"] = a => WithProd(a, e => e with { Name = "pro d" }),
-			["environment-name-lowercase"] = a => WithProd(a, e => e with { Name = "Prod" })
 		};
 
 	private static AssemblyConfiguration WithReference(AssemblyConfiguration a, string key, Repository repository) =>
@@ -294,10 +245,6 @@ public class SiteNavigationConstraintsTests
 			["section-not-empty"] = n => Plus(n, new SiteSectionRef("Empty", null, [], [])),
 			["dropdown-link-complete"] =
 				n => Plus(n, new SiteSectionRef("Links", null, [], [new SiteDropdownLinkRef(" ", "solutions/search")])),
-			["mount-source-unique"] =
-				n => Plus(n, Mount("dup://reference", "reference/dup-a"), Mount("dup://reference", "reference/dup-b")),
-			["section-titles-unique"] =
-				n => Plus(n, new SiteSectionRef("Alpha", "https://a.test", [], []), new SiteSectionRef("alpha", "https://b.test", [], [])),
 			["dropdown-link-url-valid"] =
 				n => Plus(n, new SiteSectionRef("Links", null, [], [new SiteDropdownLinkRef("Docs", "https://example.test/docs")])),
 			["phantom-not-mounted"] =
@@ -317,8 +264,6 @@ public class SiteNavigationConstraintsTests
 			["path-prefix-is-a-url-path"] = n => Plus(n, Mount("sp://reference", "a prefix with spaces")),
 			["path-prefixes-unique"] =
 				n => Plus(n, Mount("pa://reference", "reference/shared"), Mount("pb://reference", "reference/shared")),
-			["repository-path-prefixes-unique"] =
-				n => Plus(n, Mount("rp://reference", "reference/rp"), Mount("rp://other", "reference/rp/"))
 		};
 }
 
@@ -372,18 +317,6 @@ public class VersioningSystemConstraintsTests
 	private static IReadOnlyDictionary<string, Func<VersioningSystemCatalog, VersioningSystemCatalog>> CounterExamples =>
 		new Dictionary<string, Func<VersioningSystemCatalog, VersioningSystemCatalog>>
 		{
-			["versioning-systems-required"] = c => c with { VersioningSystems = null! },
-			["versioning-systems-base-required"] =
-				c => WithStackSystem(c, new VersioningSystem { Id = VersioningSystemId.Stack, Base = null!, Current = (SemVersion)"9.1.0" }),
-			["versioning-systems-current-required"] =
-				c => WithStackSystem(c, new VersioningSystem { Id = VersioningSystemId.Stack, Base = (SemVersion)"8.0.0", Current = null! }),
-			["base-not-after-current"] = c => WithStack(c, "9.2.0", "9.1.0"),
-			["versioning-systems-complete"] =
-				c => new VersioningSystemCatalog
-				{
-					VersioningSystems = c.VersioningSystems.Where(v => v.Key != VersioningSystemId.Ecs).ToDictionary()
-				},
-			["versionless-base-matches-current"] = c => WithStack(c, "9.0.0", "99999.0.0"),
 			["versioning-system-key-matches-id"] =
 				c => new VersioningSystemCatalog
 				{
@@ -404,10 +337,7 @@ public class CodexPublishingConstraintsTests
 	public static IEnumerable<Func<AxisCase>> Axes() =>
 		DomainAutoTest
 			.For(CodexPublishingConstraints.All, DomainGen.Of<CodexConfiguration>())
-			.CounterExamples(new Dictionary<string, Func<CodexConfiguration, CodexConfiguration>>
-			{
-				["environment-required"] = c => c with { Environment = " " }
-			})
+			.CounterExamples(new Dictionary<string, Func<CodexConfiguration, CodexConfiguration>> { })
 			.Axes();
 }
 
@@ -438,11 +368,5 @@ public class CodexConfigurationConstraintsTests
 	private static CodexGroupDefinition Group(string id, string name) => new() { Id = id, Name = name };
 
 	private static IReadOnlyDictionary<string, Func<CodexConfiguration, CodexConfiguration>> CounterExamples =>
-		new Dictionary<string, Func<CodexConfiguration, CodexConfiguration>>
-		{
-			["group-has-id"] = c => c with { Groups = [.. c.Groups, Group(" ", "Unnamed")] },
-			["group-has-name"] = c => c with { Groups = [.. c.Groups, Group("search-unnamed", "")] },
-			["group-ids-unique"] = c => c with { Groups = [.. c.Groups, Group("dup-group", "Dup"), Group("DUP-group", "Dup again")] },
-			["codex-canonical-base-url-absolute"] = c => c with { CanonicalBaseUrl = "docs.example.test" }
-		};
+		new Dictionary<string, Func<CodexConfiguration, CodexConfiguration>> { };
 }

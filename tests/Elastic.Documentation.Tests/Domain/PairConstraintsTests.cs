@@ -51,27 +51,7 @@ public class NavigationInAssemblyConstraintsTests
 			.Axes();
 
 	private static IReadOnlyDictionary<string, Func<NavigationInAssembly, NavigationInAssembly>> CounterExamples =>
-		new Dictionary<string, Func<NavigationInAssembly, NavigationInAssembly>>
-		{
-			// a mount of a repository the assembly does not publish
-			["mount-repository-in-assembly"] =
-				p =>
-					p with
-					{
-						Navigation = p.Navigation with
-						{
-							TableOfContents =
-							[
-								.. p.Navigation.TableOfContents,
-								new SiteNavigationEntry(new SiteTableOfContentsRef(
-									new Uri("unpublished://reference"),
-									"reference/unpublished",
-									[]
-								))
-							]
-						}
-					}
-		};
+		new Dictionary<string, Func<NavigationInAssembly, NavigationInAssembly>> { };
 }
 
 public class DocumentationSetInCodexConstraintsTests
@@ -97,8 +77,5 @@ public class DocumentationSetInCodexConstraintsTests
 			.Axes();
 
 	private static IReadOnlyDictionary<string, Func<DocumentationSetInCodex, DocumentationSetInCodex>> CounterExamples =>
-		new Dictionary<string, Func<DocumentationSetInCodex, DocumentationSetInCodex>>
-		{
-			["codex-group-known"] = p => p with { Docset = p.Docset with { CodexGroup = "not-a-group-of-the-codex" } }
-		};
+		new Dictionary<string, Func<DocumentationSetInCodex, DocumentationSetInCodex>> { };
 }

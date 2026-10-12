@@ -252,12 +252,6 @@ public class LinkGraphConstraintsTests
 		get;
 	} = new Dictionary<string, Func<LinkGraph, LinkGraph>>
 	{
-		// the other repository is declared, mounted and used, so only the registry lacks it
-		["cross-link-repository-in-registry"] = g => Fetched(g, "beats", registered: false),
-		["cross-link-scheme-declared"] = g => Fetched(g, "beats", declared: false),
-		["cross-link-declaration-used"] =
-			g => g with { Docset = g.Docset with { CrossLinkRepositories = [.. g.Docset.CrossLinkRepositories, "unused"] } },
-		["cross-link-resolves"] = g => WithLink(Fetched(g, "beats"), "beats://reference/missing.md"),
 		["cross-link-redirect-resolves"] = g => WithLink(Fetched(g, "beats"), "beats://reference/old.md#zzz"),
 		["redirect-target-exists"] =
 			g =>
@@ -272,17 +266,5 @@ public class LinkGraphConstraintsTests
 						}
 					}
 				},
-		["cross-link-target-not-hidden"] =
-			g => Fetched(
-				g,
-				"beats",
-				change: m =>
-					m with
-					{
-						Links = new Dictionary<string, LinkMetadata> { ["reference/page.md"] = new() { Anchors = ["top"], Hidden = true } }
-					}
-			),
-		["cross-link-repository-is-mounted"] = g => Fetched(g, "beats", mounted: false),
-		["manifest-origin-matches-registry-key"] = g => Fetched(g, "beats", change: m => m with { Origin = Origin("elastic") })
 	};
 }

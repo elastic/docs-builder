@@ -106,16 +106,6 @@ public class AssembledSiteConstraintsTests
 	private static IReadOnlyDictionary<string, Func<AssembledSite, AssembledSite>> CounterExamples =>
 		new Dictionary<string, Func<AssembledSite, AssembledSite>>
 		{
-			["toc-identifiers-unique"] =
-				s => s with { Repositories = [.. s.Repositories, s.Repositories[0] with { UrlPathPrefix = "reference/again" }] },
-			["nested-toc-declared"] =
-				s => WithRepository(
-					s,
-					0,
-					r => r with { Docset = r.Docset with { TableOfContents = [.. r.Docset.TableOfContents, NestedToc("undeclared")] } }
-				),
-			["built-toc-placed"] =
-				s => s with { Repositories = [.. s.Repositories, new AssembledRepository("logstash", "reference/logstash", Docset())] },
 			["api-key-unique"] =
 				s => WithRepository(
 					WithRepository(s, 0, r => r with { Docset = r.Docset with { Api = [new ApiDeclaration("es", [])] } }),

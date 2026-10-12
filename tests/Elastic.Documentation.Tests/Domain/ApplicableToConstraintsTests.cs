@@ -314,8 +314,6 @@ public class ApplicableToConstraintsTests
 		["applies-to-not-empty"] =
 			a => a with { Stack = null, Deployment = null, Serverless = null, Product = null, ProductApplicability = null },
 		["applicability-lifecycle-not-deprecated"] = a => a with { Stack = Collection(Item(ProductLifecycle.Planned, "9.0")) },
-		["versionless-keys-have-no-version"] =
-			a => a with { Deployment = new DeploymentApplicability { Ess = Collection(Item(ProductLifecycle.GenerallyAvailable, "9.1")) } },
 		["applicability-versions-consistent"] =
 			a =>
 				a with

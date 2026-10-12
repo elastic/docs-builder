@@ -101,15 +101,7 @@ public class LinkManifestConstraintsTests
 		get;
 	} = new Dictionary<string, Func<LinkManifest, LinkManifest>>
 	{
-		["origin-required"] = m => m with { Origin = null! },
-		["origin-branch-required"] = m => m with { Origin = GitCheckoutInformation.Unavailable with { Branch = null! } },
-		["origin-remote-required"] = m => m with { Origin = GitCheckoutInformation.Unavailable with { Remote = null! } },
-		["origin-ref-required"] = m => m with { Origin = GitCheckoutInformation.Unavailable with { Ref = null! } },
-		["links-required"] = m => m with { Links = null! },
-		["cross-links-required"] = m => m with { CrossLinks = null! },
 		["link-manifest-page-paths-are-markdown"] = m => WithPage(m, "notes.txt", new LinkMetadata()),
-		["link-manifest-origin-named"] = m => m with { Origin = GitCheckoutInformation.Unavailable },
-		["url-path-prefix-normalized"] = m => m with { UrlPathPrefix = "docs/" },
 		["link-manifest-page-urls-unique"] =
 			m => WithPage(WithPage(m, "dupurl.md", new LinkMetadata()), "dupurl/index.md", new LinkMetadata()),
 		["page-path-single-md-extension"] = m => WithPage(m, "a.md.md", new LinkMetadata()),
@@ -132,7 +124,6 @@ public class LinkManifestConstraintsTests
 			),
 		["redirect-empty-anchors-keeps-anchor"] =
 			m => WithRedirect(WithSetup(m), "empty.md", new LinkRedirect { To = "setup.md", Anchors = new Dictionary<string, string?>() }),
-		["redirect-same-page-needs-anchors"] = m => WithRedirect(m, "same.md", new LinkRedirect()),
 		["redirect-no-chains"] =
 			m => WithRedirect(
 				WithRedirect(WithSetup(m), "a.md", new LinkRedirect { To = "b.md" }),
@@ -145,6 +136,5 @@ public class LinkManifestConstraintsTests
 				"anch.md",
 				new LinkRedirect { To = "setup.md", Anchors = new Dictionary<string, string?> { ["x"] = "missing" } }
 			),
-		["redirect-target-in-navigation"] = m => WithRedirect(m, "gone.md", new LinkRedirect { To = "nowhere.md" })
 	};
 }

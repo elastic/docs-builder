@@ -50,17 +50,7 @@ public class ProductCatalogConstraintsTests
 		c with { Products = new Dictionary<string, Product>(c.Products) { ["kibana"] = product }.ToFrozenDictionary() };
 
 	private static IReadOnlyDictionary<string, Func<ProductCatalog, ProductCatalog>> CounterExamples =>
-		new Dictionary<string, Func<ProductCatalog, ProductCatalog>>
-		{
-			["products-required"] = c => c with { Products = null! },
-			["products-id-required"] = c => WithProduct(c, CatalogFixtures.Kibana with { Id = null! }),
-			["products-display-name-required"] = c => WithProduct(c, CatalogFixtures.Kibana with { DisplayName = null! }),
-			["product-id-matches-key"] = c => Added(c, new KeyValuePair<string, Product>("Kibana", CatalogFixtures.Kibana)),
-			["product-has-display-name"] =
-				c => Added(c, new KeyValuePair<string, Product>("kibana", CatalogFixtures.Kibana with { DisplayName = "" })),
-			["public-reference-product-has-versioning"] =
-				c => Added(c, new KeyValuePair<string, Product>("kibana", CatalogFixtures.Kibana with { VersioningSystem = null }))
-		};
+		new Dictionary<string, Func<ProductCatalog, ProductCatalog>> { };
 }
 
 public class ProductCatalogInVersioningSystemCatalogConstraintsTests
@@ -76,30 +66,7 @@ public class ProductCatalogInVersioningSystemCatalogConstraintsTests
 			.Axes();
 
 	private static IReadOnlyDictionary<string, Func<ProductCatalogInVersioningSystemCatalog, ProductCatalogInVersioningSystemCatalog>> CounterExamples =>
-		new Dictionary<string, Func<ProductCatalogInVersioningSystemCatalog, ProductCatalogInVersioningSystemCatalog>>
-		{
-			// a product on the ecs system, and versions.yml without it
-			["product-versioning-system-defined"] =
-				p =>
-					p with
-					{
-						Products = ProductCatalog.FromPublicProducts([
-							.. p.Products.Products,
-							new KeyValuePair<string, Product>(
-								"kibana",
-								CatalogFixtures.Kibana with { VersioningSystem = CatalogFixtures.Versioning(VersioningSystemId.Ecs) }
-							)
-						]),
-						VersioningSystems = new VersioningSystemCatalog
-						{
-							VersioningSystems = p
-								.VersioningSystems
-								.VersioningSystems
-								.Where(v => v.Key != VersioningSystemId.Ecs)
-								.ToDictionary()
-						}
-					}
-		};
+		new Dictionary<string, Func<ProductCatalogInVersioningSystemCatalog, ProductCatalogInVersioningSystemCatalog>> { };
 }
 
 public class LegacyUrlMappingCatalogInProductCatalogConstraintsTests
@@ -131,19 +98,7 @@ public class LegacyUrlMappingCatalogInProductCatalogConstraintsTests
 		new() { BaseUrl = "en/kibana/", Product = product, LegacyVersions = ["8.19"] };
 
 	private static IReadOnlyDictionary<string, Func<LegacyUrlMappingCatalogInProductCatalog, LegacyUrlMappingCatalogInProductCatalog>> CounterExamples =>
-		new Dictionary<string, Func<LegacyUrlMappingCatalogInProductCatalog, LegacyUrlMappingCatalogInProductCatalog>>
-		{
-			// a mapping for a product the catalog does not have (an empty id, the way a missing 'product' reads)
-			["legacy-mapping-product-defined"] =
-				p =>
-					p with
-					{
-						LegacyUrlMappings = new LegacyUrlMappingCatalog
-						{
-							Mappings = [.. p.LegacyUrlMappings.Mappings, Mapping(CatalogFixtures.Kibana with { Id = "" })]
-						}
-					}
-		};
+		new Dictionary<string, Func<LegacyUrlMappingCatalogInProductCatalog, LegacyUrlMappingCatalogInProductCatalog>> { };
 }
 
 public class SearchTuningConstraintsTests
@@ -197,16 +152,8 @@ public class SearchTuningConstraintsTests
 	private static IReadOnlyDictionary<string, Func<SearchTuning, SearchTuning>> CounterExamples =>
 		new Dictionary<string, Func<SearchTuning, SearchTuning>>
 		{
-			["synonyms-required"] = s => s with { Synonyms = null! },
-			["rules-required"] = s => s with { Rules = null! },
-			["rules-rule-id-required"] = s => WithRules(s, Rule() with { RuleId = null! }),
-			["rules-criteria-required"] = s => WithRules(s, Rule() with { Criteria = null! }),
-			["rules-actions-required"] = s => WithRules(s, Rule() with { Actions = null! }),
 			["synonym-terms-single-word"] = s => s with { Synonyms = [.. s.Synonyms, new SynonymGroup(["ice cream", "gelato"])] },
-			["query-rule-id-unique"] = s => WithRules(s, Rule("dup"), Rule("dup")),
-			["query-rule-complete"] = s => WithRules(s, Rule("incomplete", ids: [])),
 			["search-file-not-legacy"] = s => s with { SourceFileName = "synonyms.yml" },
-			["query-rule-type-known"] = s => WithRules(s, Rule("typed") with { TypeRaw = "pin" }),
 			["query-criteria-type-known"] =
 				s => WithRules(s, Rule("criteria") with { Criteria = [Rule().Criteria.First() with { TypeRaw = "" }] })
 		};

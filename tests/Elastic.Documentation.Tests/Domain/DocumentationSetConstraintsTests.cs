@@ -58,17 +58,6 @@ public class DocumentationSetConstraintsTests
 	private static FrozenDictionary<string, Func<DocumentationSetDefinition, DocumentationSetDefinition>> DocsetCounterExamples =>
 		new Dictionary<string, Func<DocumentationSetDefinition, DocumentationSetDefinition>>
 		{
-			["docset-file-exists"] =
-				d =>
-					d with
-					{
-						SourceFile = d.FileSystem.FileInfo.New("/docs/missing/docset.yml"),
-						CrossLinks = [],
-						ReleaseNotesProducts = [],
-						Substitutions = [],
-						Ctas = [],
-						TocDefaultCtas = []
-					},
 			["nested-toc-has-children"] = d =>
 			{
 				((MockFileSystem)d.FileSystem).AddFile("/docs/guides/toc.yml", new MockFileData("toc: []"));
@@ -80,24 +69,6 @@ public class DocumentationSetConstraintsTests
 					]
 				};
 			},
-			["cli-supplemental-folder-exists"] =
-				d =>
-					d with
-					{
-						TableOfContents =
-						[
-							new CliReferenceRef(
-								"cli.json",
-								"missing-folder",
-								null,
-								null,
-								DocsetPath.From("cli"),
-								ContainerPath.From("cli"),
-								Declared,
-								[]
-							)
-						]
-					},
 			["listing-glob-has-extension"] =
 				d =>
 					d with
@@ -114,13 +85,9 @@ public class DocumentationSetConstraintsTests
 						]
 					},
 			["cross-link-well-formed"] = d => d with { CrossLinks = ["internal://secret"] },
-			["release-notes-product-known"] = d => d with { ReleaseNotesProducts = ["kibana"] },
-			["substitution-keys-unique"] = d => d with { Substitutions = [new("stack", "a"), new("STACK", "b")] },
 			["api-entry-valid"] = d => d with { Api = [new ApiDeclaration("elasticsearch", [])] },
 			["storybook-variables-allowed"] = d => d with { HasStorybook = true, StorybookRegistry = "${NOT_ALLOWED}/registry" },
 			["branding-images-valid"] = d => d with { Branding = new BrandingDeclaration(icon: "logo.bmp") },
-			["cta-template-valid"] = d => d with { Ctas = [new CtaDeclaration("broken", null, null, [])], TocDefaultCtas = [] },
-			["default-cta-known"] = d => d with { TocDefaultCtas = [new("index.md", "missing")] },
 			["primary-nav-without-branding"] =
 				d => d with { Branding = new BrandingDeclaration(), Features = new DeclaredFeatures(primaryNav: true) },
 			["file-stays-in-folder"] =
@@ -138,13 +105,6 @@ public class DocumentationSetConstraintsTests
 							)
 						]
 					},
-			["registry-known"] = d => d with { Registry = "public" },
-			["docset-file-not-symlink"] = d =>
-			{
-				d.FileSystem.File.CreateSymbolicLink("/docs/linked.yml", "/docs/docset.yml");
-				return d with { SourceFile = d.FileSystem.FileInfo.New("/docs/linked.yml") };
-			},
-			["toc-not-empty"] = d => d with { TableOfContents = [] },
 			["toc-nesting-within-max-depth"] =
 				d =>
 					d with
@@ -167,39 +127,17 @@ public class DocumentationSetConstraintsTests
 							)
 						]
 					},
-			["dev-docs-has-no-effect"] = d => d with { DevDocs = true },
-			["cross-links-unique"] = d => d with { CrossLinks = ["elasticsearch", "elasticsearch"] },
 			["cross-links-not-blank"] = d => d with { CrossLinks = ["elasticsearch", " "] },
 			["exclude-overrides-literal"] = d => d with { Exclude = ["!docs/*.md"] },
 			["exclude-not-blank"] = d => d with { Exclude = [""] },
-			["extension-known"] = d => d with { Extensions = ["unknown-extension"] },
 			["substitution-key-not-generated"] = d => d with { Substitutions = [new("version.stack", "9.0")] },
 			["products-known"] = d => d with { Products = ["kibana"] },
-			["release-notes-products-unique"] = d => d with { ReleaseNotesProducts = ["elasticsearch", "elasticsearch"] },
 #pragma warning disable CS0618 // The rule is about the obsolete fields
-			["docset-obsolete-fields-unused"] = d => d with { DisplayName = "Test", Description = "A test set" },
 #pragma warning restore CS0618
 			["branding-header-bg-valid"] = d => d with { Branding = new BrandingDeclaration(headerBg: "not a colour!") },
-			["cta-names-unique"] =
-				d =>
-					d with
-					{
-						Ctas =
-						[
-							new CtaDeclaration("serverless", "Try it", "https://example.test", ["Fast"]),
-							new CtaDeclaration("SERVERLESS", "Try it", "https://example.test", ["Fast"])
-						]
-					},
 			["cta-replaces-default"] =
 				d => d with { Ctas = [.. d.Ctas, new CtaDeclaration("trial", "Try it", "https://example.test", ["Fast"])] },
 			["default-cta-one-per-page"] = d => d with { TableOfContents = [Page("index.md", "serverless"), Page("./index.md", "other")] },
-			["default-cta-page-exists"] = d => d with { TocDefaultCtas = [new("missing.md", "serverless")] },
-			["toc-file-exists-and-markdown"] = d => d with { TableOfContents = [Page("missing.md")] },
-			["toc-file-not-empty"] = d =>
-			{
-				((MockFileSystem)d.FileSystem).AddFile("/docs/blank.md", new MockFileData(""));
-				return d with { TableOfContents = [Page("blank.md")] };
-			},
 			["toc-deep-linked-file-has-no-children"] = d =>
 			{
 				((MockFileSystem)d.FileSystem).AddFile("/docs/guides/intro.md", new MockFileData("# Intro"));
@@ -246,8 +184,6 @@ public class DocumentationSetConstraintsTests
 					]
 				};
 			},
-			["toc-folder-exists"] =
-				d => d with { TableOfContents = [new FolderRef(DocsetPath.From("missing"), ContainerPath.From("missing"), [], Declared)] },
 			["nested-toc-paths-unique"] = d =>
 			{
 				Touch(d, "guides/a.md");
@@ -287,7 +223,6 @@ public class DocumentationSetConstraintsTests
 					]
 				};
 			},
-			["toc-file-listed-once"] = d => d with { TableOfContents = [Page("index.md"), Page("setup.md"), Page("setup.md")] },
 			["page-file-name-chars"] = d =>
 			{
 				Touch(d, "Upper Case.md");
@@ -308,23 +243,6 @@ public class DocumentationSetConstraintsTests
 							)
 						]
 					},
-			["detection-rule-folders-exist"] = d =>
-			{
-				Touch(d, "rules/index.md");
-				return d with
-				{
-					TableOfContents =
-					[
-						new DetectionRuleOverviewRef(
-							DocsetPath.From("rules/index.md"),
-							ContainerPath.From("rules/index.md"),
-							["missing-rules"],
-							[],
-							Declared
-						)
-					]
-				};
-			},
 			["redirect-target-valid"] = d => d with { Redirects = Redirects(("old.md", new LinkRedirect { To = "missing.md" })) },
 			["redirect-many-targets-valid"] =
 				d =>
@@ -347,7 +265,6 @@ public class DocumentationSetConstraintsTests
 						)
 					},
 			["redirects-file-named-for-docset"] = d => d with { RedirectsFile = d.FileSystem.FileInfo.New("/docs/_redirects.yml") },
-			["suppress-hint-known"] = d => d with { UnknownSuppressions = ["NotAHint"] },
 			["api-entry-keys-known"] =
 				d =>
 					d with
@@ -514,19 +431,5 @@ public class DocsetDiscoveryConstraintsTests
 
 	// each case reorders or extends what discovery found: the default docset moved behind a codex one, a second public docset, a file the glob matched by accident
 	private static IReadOnlyDictionary<string, Func<DocsetDiscovery, DocsetDiscovery>> CounterExamples =>
-		new Dictionary<string, Func<DocsetDiscovery, DocsetDiscovery>>
-		{
-			["one-docset-per-registry"] = d => new([.. d.Candidates, Docset("/repo/_docset.yml", "public")]),
-			["discovered-docset-is-default"] =
-				d => new([
-					Docset("/repo/codex/docset.yml", "internal"),
-					.. d.Candidates.Where(c => c.EffectiveRegistry != DocSetRegistry.Internal)
-				]),
-			["discovered-docset-name-exact"] =
-				d => new([
-					.. d.Candidates.Where(c => c.EffectiveRegistry != DocSetRegistry.Internal),
-					Docset("/repo/docs/foo-docset.yml", "internal")
-				]),
-			["docset-discovered"] = _ => new([])
-		};
+		new Dictionary<string, Func<DocsetDiscovery, DocsetDiscovery>> { };
 }

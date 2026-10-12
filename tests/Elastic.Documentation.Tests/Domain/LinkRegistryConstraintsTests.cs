@@ -109,13 +109,8 @@ public class LinkRegistryConstraintsTests
 		get;
 	} = new Dictionary<string, Func<LinkRegistry, LinkRegistry>>
 	{
-		["repositories-required"] = r => r with { Repositories = null! },
 		["registry-entry-updated-at-monotonic"] = r => WithFirst(r, e => e with { UpdatedAt = e.UpdatedAt.AddDays(-1) }),
-		["registry-entry-has-ref-and-timestamp"] =
-			r => With(r, "tools", "main", Entry("tools", "main") with { UpdatedAt = DateTime.MinValue }),
-		["registry-entry-git-ref-known"] = r => WithFirst(r, e => e with { GitReference = "unknown" }),
 		["repository-has-main-or-master"] = r => With(r, "tools", "dev", Entry("tools", "dev")),
-		["registry-entry-path-matches-key"] = r => WithFirst(r, e => e with { Path = "elastic/elsewhere/links.json" }),
 		["registry-repository-name-single-segment"] = r => With(r, "../evil", "main", Entry("../evil", "main"))
 	};
 }

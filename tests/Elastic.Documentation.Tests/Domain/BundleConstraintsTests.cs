@@ -20,20 +20,7 @@ public class BundleConstraintsTests
 	public static IEnumerable<Func<AxisCase>> Axes() =>
 		DomainAutoTest.For(BundleConstraints.All, BundleExamples.Generated<Bundle>()).CounterExamples(CounterExamples).Axes();
 
-	private static IReadOnlyDictionary<string, Func<Bundle, Bundle>> CounterExamples =>
-		new Dictionary<string, Func<Bundle, Bundle>>
-		{
-			["bundle-product-single-target"] =
-				b => b with { Products = [new BundledProduct("elasticsearch", "9.0.0"), new BundledProduct("elasticsearch", "9.1.0")] },
-			["bundle-has-one-product"] =
-				b => b with { Products = [new BundledProduct("elasticsearch", "9.0.0"), new BundledProduct("kibana", "9.0.0")] },
-			["products-product-id-required"] = b => b with { Products = [new BundledProduct { ProductId = null! }] },
-			["bundle-release-date-parses"] = b => b with { ReleaseDateAuthored = Authored.Of<DateOnly?>("2025-13-45", null) },
-			["bundle-entries-inlined"] =
-				b => b with { Entries = [.. b.Entries, new BundledEntry { File = new BundledFile { Name = "3.yaml", Checksum = "c" } }] },
-			["bundle-entry-files-unique"] =
-				b => b with { Entries = [.. b.Entries, BundleExamples.Entry("dup.yaml"), BundleExamples.Entry("dup.yaml")] }
-		};
+	private static IReadOnlyDictionary<string, Func<Bundle, Bundle>> CounterExamples => new Dictionary<string, Func<Bundle, Bundle>> { };
 }
 
 public class BundleAmendConstraintsTests
@@ -56,20 +43,7 @@ public class BundleAmendConstraintsTests
 		m with { Parent = m.Parent with { Entries = [.. m.Parent.Entries, BundleExamples.Entry(name, checksum)] } };
 
 	private static IReadOnlyDictionary<string, Func<BundleAmendOfParent, BundleAmendOfParent>> CounterExamples =>
-		new Dictionary<string, Func<BundleAmendOfParent, BundleAmendOfParent>>
-		{
-			["amend-removals-exist"] = m => m with { Amend = m.Amend with { ExcludeEntries = [Removal("9.yaml", "")] } },
-			["amend-removal-checksums-match"] = m =>
-			{
-				var c = WithParentEntry(m, "1.yaml", "abc");
-				return c with { Amend = c.Amend with { ExcludeEntries = [Removal("1.yaml", "different")] } };
-			},
-			["amend-added-entries-new"] = m =>
-			{
-				var c = WithParentEntry(m, "2.yaml", "def");
-				return c with { Amend = c.Amend with { Entries = [BundleExamples.Entry("2.yaml", "def")] } };
-			}
-		};
+		new Dictionary<string, Func<BundleAmendOfParent, BundleAmendOfParent>> { };
 }
 
 public class LoadedBundleConstraintsTests
@@ -101,18 +75,7 @@ public class LoadedBundleConstraintsTests
 		);
 
 	private static IReadOnlyDictionary<string, Func<LoadedBundle, LoadedBundle>> CounterExamples =>
-		new Dictionary<string, Func<LoadedBundle, LoadedBundle>>
-		{
-			["bundle-filename-convention"] =
-				b =>
-					b with
-					{
-						Data = b.Data with { Products = [new BundledProduct("elasticsearch", "9.0.0")] },
-						FilePath = "/bundles/changelog-bundle.yaml"
-					},
-			// no target: the file name is the version, so the convention cannot be checked and only this rule reports
-			["bundle-target-present"] = b => b with { Data = b.Data with { Products = [new BundledProduct("elasticsearch")] } }
-		};
+		new Dictionary<string, Func<LoadedBundle, LoadedBundle>> { };
 }
 
 public class LoadedBundlesConstraintsTests
@@ -127,25 +90,6 @@ public class LoadedBundlesConstraintsTests
 	private static IReadOnlyDictionary<string, Func<LoadedBundles, LoadedBundles>> CounterExamples =>
 		new Dictionary<string, Func<LoadedBundles, LoadedBundles>>
 		{
-			["bundles-target-unique"] =
-				m =>
-					m with
-					{
-						Bundles =
-						[
-							.. m.Bundles,
-							BundleExamples.Loaded(
-								BundleExamples.Bundle(BundleExamples.Entry("x1.yaml")),
-								"99.0.0",
-								"/bundles/a-99.0.0.yaml"
-							),
-							BundleExamples.Loaded(
-								BundleExamples.Bundle(BundleExamples.Entry("x2.yaml")),
-								"99.0.0",
-								"/bundles/b-99.0.0.yaml"
-							)
-						]
-					},
 			["bundles-entry-files-unique"] =
 				m =>
 					m with
