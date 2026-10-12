@@ -355,13 +355,11 @@ The paths come from either of two sources, and both produce the same rows:
 - The `**All methods and paths for this operation:**` (or `**Spaces method and path for this operation:**`) HTML block that bump.sh-flavoured specs put in the operation description. The block is removed from the rendered description.
 - Separate spec operations that share `x-namespace` and `x-api-name` (see below).
 
-### Prerequisites [x-req-auth]
+### Required authorization [x-req-auth]
 
-Add the operation-level `x-req-auth` extension to list authentication or privilege requirements that users must satisfy before calling the API.
-The API Explorer renders these lines in a **Prerequisites** section on the operation page.
+The **Required authorization** section lists the privileges an operation needs. It follows the description and also appears in the on-page table of contents. The section is never collapsed.
 
-`x-req-auth` is a JSON array of strings.
-Each non-empty string becomes one item in the prerequisites list (leading and trailing whitespace is trimmed).
+Add the operation-level `x-req-auth` extension to list those privileges. It is a JSON array of strings. Each non-empty string becomes one row, with leading and trailing whitespace trimmed.
 
 ```json
 {
@@ -369,39 +367,45 @@ Each non-empty string becomes one item in the prerequisites list (leading and tr
     "operationId": "get-snapshot",
     "responses": { "200": { "description": "ok" } },
     "x-req-auth": [
-      "Cluster privilege: `cluster:admin/snapshot`"
+      "Cluster privileges: `cluster:admin/snapshot`"
     ]
   }
 }
 ```
 
+A line in the form ``Label: `value` `` shows the label as muted text and each value as a code chip. A line with several values, such as ``Index privileges: `read`, `view_index_metadata` ``, shows one chip per value. Any other line renders as Markdown.
 
+Specs that do not use `x-req-auth` still work. The API Explorer reads two patterns from the operation description and moves them into the same section, so the text does not show twice:
 
-When prerequisites are present, **Prerequisites** also appears in the on-page table of contents (after **Paths**).
-When the section has more than one item, it renders collapsed with a one-line name summary (same accordion as Query Parameters).
-When the extension is missing, empty, or not a JSON array, the section is omitted.
-Malformed values are skipped and the build may log a warning.
+- An Elasticsearch `## Required authorization` heading followed by bullets such as ``* Cluster privileges: `monitor` ``.
+- A Kibana line such as `[Required authorization] Route required privileges: fleet-agent-policies-read OR fleet-settings-read.` The privileges show as chips joined by **or**, or by **and** when the line uses `AND`.
 
-`x-req-auth` is independent of OpenAPI `security` / `securitySchemes`. Privilege lines go in **Prerequisites**; HTTP schemes go in **Authorization**.
+A line that mixes `OR` and `AND`, or a bullet with extra words around the values, stays in the description as written. When `x-req-auth` is present, it wins over the description. When neither source has privileges, the section is omitted. Malformed `x-req-auth` values are skipped and the build may log a warning.
 
-### Authorization
+`x-req-auth` is independent of OpenAPI `security` and `securitySchemes`. Privileges go in **Required authorization**. The credentials to send go in **Authentication**.
 
-The API Explorer reads OpenAPI `security` on the operation, or the document-level `security` when the operation omits the field.
-An empty operation `security: []` is an explicit override to none and hides the section.
+### Authentication
 
-Each listed scheme is resolved against `components.securitySchemes`. Only these labels are shown, in first-seen order and de-duplicated:
+The **Authentication** section shows how to send a credential. It sits below **Required authorization** and is collapsed by default, because a reader who already has auth set up does not need it. The header shows the scheme names, for example `Api key | Basic | Bearer`, and also appears in the on-page table of contents.
+
+The API Explorer reads OpenAPI `security` on the operation, or the document-level `security` when the operation omits the field. An empty operation `security: []` is an explicit override to none and hides the section.
+
+Each listed scheme is resolved against `components.securitySchemes`, in the order the spec lists them:
 
 | OpenAPI scheme | Label |
 |---|---|
 | `type: apiKey` | `Api key` |
 | `type: http`, `scheme: basic` | `Basic` |
 | `type: http`, `scheme: bearer` | `Bearer` |
+| `type: http`, another scheme | The scheme name |
+| `type: oauth2` | `OAuth 2.0` |
+| `type: openIdConnect` | `OpenID Connect` |
 
-Other scheme types (`oauth2`, `openIdConnect`, `mutualTLS`, HTTP digest, unknown HTTP schemes) are omitted.
-OpenAPI treats items in the `security` array as OR and keys inside one object as AND; the page flattens those groups into a unique label list.
+Other scheme types, such as `mutualTLS`, are omitted. OpenAPI treats items in the `security` array as OR and keys inside one object as AND. Each item is one tab, and a requirement with several schemes is one tab labelled `Basic + Bearer` that shows every scheme together. Identical requirements show once.
 
-When schemes are present, **Authorization** appears as a section heading (same visual weight as **Prerequisites**) and in the on-page table of contents.
-When the section has more than one scheme, it renders collapsed with a one-line name summary.
+Open the section to see one tab per scheme. A tab shows the header or query parameter to send, for example `Authorization: Basic <credentials>`, and the scheme `description`. One scheme shows no tabs. A search with the browser's find-in-page opens the section and selects the tab that contains the match.
+
+The `/authentication` page is still generated, so old links keep working. It is not in the navigation, and operation pages do not link to it.
 
 The same accordion applies to **Path Parameters**, **Query Parameters**, and **Request** when those sections have more than one item. A single-item section stays expanded as a plain heading.
 
