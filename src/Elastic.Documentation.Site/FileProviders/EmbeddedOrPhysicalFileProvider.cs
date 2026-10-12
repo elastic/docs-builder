@@ -49,22 +49,33 @@ public sealed class EmbeddedOrPhysicalFileProvider : IFileProvider, IDisposable
 		return result ?? default;
 	}
 
+	private IEnumerable<IFileProvider> Providers()
+	{
+		if (_staticWebFilesDuringDebug is not null)
+			yield return _staticWebFilesDuringDebug;
+		if (_staticFilesInDocsFolder is not null)
+			yield return _staticFilesInDocsFolder;
+		yield return _embeddedProvider;
+	}
+
+	// Merged rather than first-wins: a doc set's own `_static` folder must not hide the embedded bundle.
 	public IDirectoryContents GetDirectoryContents(string subpath)
 	{
 		var path = subpath.TrimStart('/');
-		var contents = FirstYielding(path, static (a, p) => p.GetDirectoryContents(a));
-		if (contents is null || !contents.Exists)
-			contents = _embeddedProvider.GetDirectoryContents(path);
-		return contents;
+		var existing = Providers().Select(p => p.GetDirectoryContents(path)).Where(c => c.Exists).ToArray();
+		return existing.Length switch
+		{
+			0 => NotFoundDirectoryContents.Singleton,
+			1 => existing[0],
+			_ => new MergedDirectoryContents(existing)
+		};
 	}
 
+	// The first provider that has the file wins; one that only answers "not found" must not shadow the next.
 	public IFileInfo GetFileInfo(string subpath)
 	{
 		var path = subpath.Replace($"{Path.DirectorySeparatorChar}_static", "").TrimStart('/');
-		var fileInfo = FirstYielding(path, static (a, p) => p.GetFileInfo(a));
-		if (fileInfo is null || !fileInfo.Exists)
-			fileInfo = _embeddedProvider.GetFileInfo(path);
-		return fileInfo;
+		return Providers().Select(p => p.GetFileInfo(path)).FirstOrDefault(f => f.Exists) ?? _embeddedProvider.GetFileInfo(path);
 	}
 
 	public IChangeToken Watch(string filter)
@@ -80,5 +91,14 @@ public sealed class EmbeddedOrPhysicalFileProvider : IFileProvider, IDisposable
 	{
 		_staticFilesInDocsFolder?.Dispose();
 		_staticWebFilesDuringDebug?.Dispose();
+	}
+
+	private sealed class MergedDirectoryContents(IReadOnlyList<IDirectoryContents> parts) : IDirectoryContents
+	{
+		public bool Exists => true;
+
+		public IEnumerator<IFileInfo> GetEnumerator() => parts.SelectMany(p => p).GetEnumerator();
+
+		System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => GetEnumerator();
 	}
 }
