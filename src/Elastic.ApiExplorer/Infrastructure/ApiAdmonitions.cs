@@ -2,7 +2,6 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using System.Text;
 using System.Text.RegularExpressions;
 
 namespace Elastic.ApiExplorer.Infrastructure;
@@ -16,20 +15,20 @@ public static partial class ApiAdmonitions
 {
 	public static string Convert(string markdown)
 	{
-		if (string.IsNullOrEmpty(markdown) || !MayContainAdmonition().IsMatch(markdown))
+		if (string.IsNullOrEmpty(markdown))
 			return markdown;
 
-		var lines = markdown.Replace("\r\n", "\n").Split('\n');
-		var result = new StringBuilder(markdown.Length + 64);
-		var openFence = (Fence?)null;
+		var lines = markdown.ReplaceLineEndings("\n").Split('\n');
+		var output = new List<string>(lines.Length + 8);
+		var converted = false;
+		CodeFences.Fence? openFence = null;
 
 		for (var i = 0; i < lines.Length; i++)
 		{
 			var line = lines[i];
-
-			if (IsFenceLine(line, ref openFence) || openFence is not null)
+			if (CodeFences.InCode(line, ref openFence))
 			{
-				AppendLine(result, line);
+				Append(output, line);
 				continue;
 			}
 
@@ -42,75 +41,47 @@ public static partial class ApiAdmonitions
 					body.Add(next.Groups["text"].Value);
 					i++;
 				}
-				WriteBlock(result, KindOf(quote.Groups["kind"].Value), body);
+				WriteBlock(output, KindOf(quote.Groups["kind"].Value), body);
+				converted = true;
 				continue;
 			}
 
-			var label = LabelPattern().Match(line);
-			if (label.Success && (i == 0 || string.IsNullOrWhiteSpace(lines[i - 1])))
+			// A label counts only at the start of a paragraph, and only capitalised: "note:" mid-prose is not a callout.
+			var label = i == 0 || string.IsNullOrWhiteSpace(lines[i - 1]) ? LabelPattern().Match(line) : Match.Empty;
+			if (label.Success && char.IsUpper(label.Groups["kind"].Value[0]))
 			{
 				var body = new List<string> { label.Groups["text"].Value };
-				while (i + 1 < lines.Length && !string.IsNullOrWhiteSpace(lines[i + 1]) && !FencePattern().IsMatch(lines[i + 1]))
+				while (i + 1 < lines.Length && !string.IsNullOrWhiteSpace(lines[i + 1]) && !CodeFences.IsFenceLine(lines[i + 1]))
 				{
 					body.Add(lines[i + 1]);
 					i++;
 				}
-				WriteBlock(result, KindOf(label.Groups["kind"].Value), body);
+				WriteBlock(output, KindOf(label.Groups["kind"].Value), body);
+				converted = true;
 				continue;
 			}
 
-			AppendLine(result, line);
+			Append(output, line);
 		}
 
-		return result.ToString().TrimEnd('\n');
-	}
-
-	private static bool IsFenceLine(string line, ref Fence? openFence)
-	{
-		// A fence inside a blockquote cannot outlive it: the first unquoted line ends both.
-		if (openFence is { Quoted: true } && !QuoteLinePattern().IsMatch(line))
-			openFence = null;
-
-		var match = FencePattern().Match(line);
-		if (!match.Success)
-			return false;
-
-		var fence = new Fence(match.Groups["fence"].Value, match.Groups["quote"].Success);
-		if (openFence is null)
-			openFence = fence;
-		else if (fence.Closes(openFence.Value, match.Groups["rest"].Value))
-			openFence = null;
-		return true;
+		return converted ? string.Join('\n', output).TrimEnd('\n') : markdown;
 	}
 
 	// Directives interrupt the surrounding paragraphs poorly, so always isolate them with blank lines.
-	private static void AppendLine(StringBuilder sb, string line)
+	private static void Append(List<string> output, string line)
 	{
-		if (line.Length > 0 && EndsWith(sb, ":::\n"))
-			_ = sb.Append('\n');
-		_ = sb.Append(line).Append('\n');
+		if (line.Length > 0 && output is [.., ":::"])
+			output.Add(string.Empty);
+		output.Add(line);
 	}
 
-	private static void WriteBlock(StringBuilder sb, string kind, List<string> body)
+	private static void WriteBlock(List<string> output, string kind, List<string> body)
 	{
-		if (sb.Length > 0 && !EndsWith(sb, "\n\n"))
-			_ = sb.Append('\n');
-		_ = sb.Append(":::{").Append(kind).Append("}\n");
-		foreach (var line in body)
-			_ = sb.Append(line).Append('\n');
-		_ = sb.Append(":::\n");
-	}
-
-	private static bool EndsWith(StringBuilder sb, string suffix)
-	{
-		if (sb.Length < suffix.Length)
-			return false;
-		for (var i = 0; i < suffix.Length; i++)
-		{
-			if (sb[sb.Length - suffix.Length + i] != suffix[i])
-				return false;
-		}
-		return true;
+		if (output is [.., not ""])
+			output.Add(string.Empty);
+		output.Add($":::{{{kind}}}");
+		output.AddRange(body);
+		output.Add(":::");
 	}
 
 	private static string KindOf(string label) => label.ToLowerInvariant() switch
@@ -121,33 +92,13 @@ public static partial class ApiAdmonitions
 		_ => "note"
 	};
 
-	// Cheap pre-check so descriptions without callouts skip the line-by-line pass.
-	[GeneratedRegex(@"^\s{0,3}(>\s*(info|warn)|\*{0,2}(note|important|warning|tip|deprecated)\b)", RegexOptions.IgnoreCase
-		| RegexOptions.Multiline)]
-	private static partial Regex MayContainAdmonition();
-
-	// A fence may sit inside a blockquote, so a `> info` line within that quoted code is still literal.
-	[GeneratedRegex(@"^(?<quote>\s{0,3}>\s?)?\s{0,3}(?<fence>`{3,}|~{3,})(?<rest>.*)$")]
-	private static partial Regex FencePattern();
-
 	[GeneratedRegex(@"^\s{0,3}>\s*(?<kind>info|warn|warning|note|tip|important|caution)\s*$", RegexOptions.IgnoreCase)]
 	private static partial Regex QuoteTypePattern();
 
 	[GeneratedRegex(@"^\s{0,3}>\s?(?<text>.*)$")]
 	private static partial Regex QuoteLinePattern();
 
-	// "NOTE: text", "Warning: text", "**Note:** text", "**IMPORTANT**: text" at the start of a paragraph.
-	[GeneratedRegex(@"^(?:\*\*(?<kind>NOTE|Note|IMPORTANT|Important|WARNING|Warning|TIP|Tip|DEPRECATED)(?::\*\*|\*\*:)|(?<kind>NOTE|Note|IMPORTANT|Important|WARNING|Warning|TIP|Tip|DEPRECATED|Deprecated):)\s*(?<text>.*)$")]
+	// "NOTE: text", "Warning: text", "**Note:** text", "**IMPORTANT**: text"; the colon sits inside or after the bold.
+	[GeneratedRegex(@"^(?<bold>\*\*)?(?<kind>note|important|warning|tip|deprecated)(?(bold)(?::\*\*|\*\*:)|:)\s*(?<text>.*)$", RegexOptions.IgnoreCase)]
 	private static partial Regex LabelPattern();
-
-	private readonly record struct Fence(string Delimiter, bool Quoted)
-	{
-		// CommonMark: the closing fence uses the same character, is at least as long and has nothing after it.
-		// It must also sit in the same quote context, so a quoted fence never closes an unquoted block.
-		public bool Closes(Fence open, string rest) =>
-			Quoted == open.Quoted
-				&& Delimiter[0] == open.Delimiter[0]
-				&& Delimiter.Length >= open.Delimiter.Length
-				&& string.IsNullOrWhiteSpace(rest);
-	}
 }
