@@ -13,7 +13,8 @@
 @* Intro keeps the full width; the reference and the examples rail share .api-page-columns below it. *@
 <header class="api-page-intro">
 	<div class="api-page-heading">
-		<h1>@operation.Summary</h1>
+		<h1>@operation.Summary@if (pageModel.State is { } state)
+			{<span class="api-state-badge">@state</span>}</h1>
 		@(await RenderPartialAsync<_PageActions, string>(LayoutModel.MarkdownUrl))
 	</div>
 	@if (operation.Deprecated || pageModel.IsBeta)

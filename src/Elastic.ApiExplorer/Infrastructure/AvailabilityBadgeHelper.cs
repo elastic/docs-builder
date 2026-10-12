@@ -59,17 +59,7 @@ public static partial class AvailabilityBadgeHelper
 		VersionsConfiguration? versionsConfig
 	)
 	{
-		if (extensions is null || !extensions.TryGetValue("x-state", out var stateExtension))
-			return null;
-
-		if (stateExtension is not JsonNodeExtension jsonNodeExtension)
-			return null;
-
-		if (
-			jsonNodeExtension.Node is not JsonValue jsonValue
-			|| !jsonValue.TryGetValue<string>(out var stateValue)
-			|| string.IsNullOrEmpty(stateValue)
-		)
+		if (OpenApiExtensionReader.TryGetString(extensions, "x-state") is not { Length: > 0 } stateValue)
 			return null;
 
 		var lifecycleString = ProjectToLifecycleFormat(stateValue);
