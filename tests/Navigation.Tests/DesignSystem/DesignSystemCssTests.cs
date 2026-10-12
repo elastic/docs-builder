@@ -119,7 +119,9 @@ public partial class DesignSystemCssTests
 	[Test]
 	public void Theme_DeclaresRolesOnEveryPinnedElementSoNestedThemesWork()
 	{
-		var theme = File.ReadAllText(Path.Join(DesignSystemFiles.SiteDirectory, "Assets", "ds", "themes", "bold-minimal.css"));
+		var theme = File.ReadAllText(
+			Path.Join(DesignSystemFiles.SiteDirectory, "Assets", "ds", "themes", "bold-minimal.css")
+		).ReplaceLineEndings("\n");
 
 		theme.Should().Contain(":root,\n[data-theme] {");
 		theme.Should().Contain("[data-theme='dark']").And.Contain("[data-theme='light']").And.Contain("prefers-color-scheme: dark");
