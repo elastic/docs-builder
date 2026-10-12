@@ -65,7 +65,10 @@ internal static partial class IntroHeadings
 		var skippedFirstH1 = false;
 		foreach (var rawLine in markdown.ReplaceLineEndings("\n").Split('\n'))
 		{
-			if (CodeFences.InCode(rawLine, ref openFence) || !TryAtx(rawLine.Trim(), out var level, out var title))
+			// Headings are matched on the trimmed line, so fences must be tracked the same way: a fence nested in a
+			// list item is indented past the three spaces CommonMark allows at the top level.
+			var line = rawLine.TrimStart();
+			if (CodeFences.InCode(line, ref openFence) || !TryAtx(line.TrimEnd(), out var level, out var title))
 				continue;
 
 			// RenderApiDescription drops the first h1, so it is not on the page.
