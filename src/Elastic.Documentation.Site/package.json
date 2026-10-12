@@ -17,7 +17,7 @@
     "visual": "playwright test -c visual",
     "visual:update": "playwright test -c visual --update-snapshots",
     "visual:seed": "node visual/seed.mjs",
-    "visual:check": "node visual/prepare.mjs && playwright test -c visual",
+    "visual:check": "node visual/check.mjs",
     "synthetics:test": "npx @elastic/synthetics ./synthetics/journeys --config=./synthetics/synthetics.config.ts",
     "synthetics:test:api": "FEATURE_ASSEMBLER_API_EXPLORER=true npx @elastic/synthetics ./synthetics/journeys/api-explorer.journey.ts --config=./synthetics/synthetics.config.ts",
     "synthetics:test:prod": "DOCS_ENV=prod npm run synthetics:test",
