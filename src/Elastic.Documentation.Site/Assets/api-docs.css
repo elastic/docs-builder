@@ -1181,7 +1181,12 @@ button.response-status-toggle:focus {
 	z-index: 4;
 }
 
-.response-panel.collapsed > .response-panel-body:not([hidden='until-found']) {
+/* Fallback for browsers without hidden="until-found": the class hides the body */
+.response-panel.collapsed > .response-panel-body:not([hidden='until-found']),
+.api-param-section.collapsed
+	> .api-param-section-body:not([hidden='until-found']),
+.union-variants-container.collapsed
+	> .union-variants-content:not([hidden='until-found']) {
 	display: none;
 }
 
@@ -1649,11 +1654,6 @@ button.response-status-toggle:focus {
 	transform: rotate(45deg);
 }
 
-.api-param-section.collapsed
-	> .api-param-section-body:not([hidden='until-found']) {
-	display: none;
-}
-
 .api-param-section.expanded .api-param-summary {
 	display: none;
 }
@@ -1674,20 +1674,22 @@ button.response-status-toggle:focus {
 	line-height: 24px;
 }
 
-.api-param-summary-line {
+.api-param-summary-list {
 	display: flex;
-	align-items: center;
-	width: 100%;
-	height: 24px;
+	flex-wrap: wrap;
+	flex: 0 1 auto;
 	min-width: 0;
+	height: 24px;
 	overflow: hidden;
-	white-space: nowrap;
+	--api-param-sep: ', ';
 }
 
-.api-param-summary-brace,
-.api-param-summary-sep {
-	display: flex;
-	align-items: center;
+/* The union body reads as alternatives (A | B), not as an object. */
+.api-param-summary-list.is-variants {
+	--api-param-sep: ' | ';
+}
+
+.api-param-summary-brace {
 	flex: 0 0 auto;
 	height: 24px;
 	color: var(--color-subdued, #516381);
@@ -1698,14 +1700,8 @@ button.response-status-toggle:focus {
 }
 
 .api-param-summary-item {
-	display: flex;
-	align-items: center;
 	flex: 0 0 auto;
 	height: 24px;
-	line-height: 24px;
-}
-
-.api-param-summary-item code {
 	color: var(--color-ink-navy, #111c2c);
 	font-family:
 		'Roboto Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
@@ -1720,19 +1716,28 @@ button.response-status-toggle:focus {
 	border-radius: 0;
 }
 
+.api-param-summary-item + .api-param-summary-item::before,
+.api-param-more::before {
+	content: var(--api-param-sep);
+	color: var(--color-subdued, #516381);
+	font-weight: 400;
+	white-space: pre;
+}
+
 .api-param-more {
 	display: inline-flex;
 	align-items: center;
 	flex: 0 0 auto;
 	height: 24px;
+	--api-param-sep: ', ';
 }
 
 .api-param-more[hidden] {
 	display: none;
 }
 
-.api-param-more:not(.has-leading-sep) > .api-param-summary-sep {
-	display: none;
+.api-param-summary-list.is-variants ~ .api-param-more {
+	--api-param-sep: ' | ';
 }
 
 .api-param-more-badge {
@@ -2299,12 +2304,6 @@ a.docs-reference-btn::after {
 /* Union variants content - the actual list of type options */
 .union-variants-content {
 	position: relative;
-}
-
-/* Hidden state for collapsed union content */
-.union-variants-container.collapsed
-	> .union-variants-content:not([hidden='until-found']) {
-	display: none;
 }
 
 /* Ensure hidden="until-found" elements work correctly */

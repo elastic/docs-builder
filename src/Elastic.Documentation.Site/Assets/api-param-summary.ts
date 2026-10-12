@@ -1,64 +1,37 @@
 /**
- * Fits a collapsed parameter-name summary into one line.
- * Hides trailing names and shows an "N more" badge instead of an ellipsis.
+ * Fits a collapsed parameter summary into one line. Names wrap inside a clipped list so the
+ * browser finds where the line ends; the wrapped ones are then hidden, which shrinks the list
+ * to its content and puts the "N more" badge right after the last visible name.
  */
 
-export function hiddenCountToFit(
-    total: number,
-    overflows: (hidden: number) => boolean
-): number {
-    if (total <= 0 || !overflows(0)) return 0
-
-    for (let hidden = 1; hidden < total; hidden++)
-        if (!overflows(hidden)) return hidden
-
-    return total
+function wrappedItems(items: HTMLElement[]): HTMLElement[] {
+    const firstRowTop = items[0].offsetTop
+    return items.filter((item) => item.offsetTop > firstRowTop)
 }
 
 export function applyParamSummaryFit(summary: HTMLElement): void {
-    const section = summary.closest<HTMLElement>('[data-param-section]')
-    if (section?.classList.contains('expanded')) return
-
-    const line = summary.querySelector<HTMLElement>('.api-param-summary-line')
     const items = [
-        ...summary.querySelectorAll<HTMLElement>('[data-param-item]'),
+        ...summary.querySelectorAll<HTMLElement>('.api-param-summary-item'),
     ]
     const more = summary.querySelector<HTMLElement>('[data-param-more]')
     const moreCount = summary.querySelector<HTMLElement>(
         '[data-param-more-count]'
     )
-    if (!line || !more || !moreCount || line.clientWidth === 0) return
-
-    const overflows = (hidden: number): boolean => {
-        applyHiddenState(items, more, moreCount, hidden)
-        return line.scrollWidth > line.clientWidth + 1
-    }
-
-    const hidden = hiddenCountToFit(items.length, overflows)
-    applyHiddenState(items, more, moreCount, hidden)
-}
-
-function applyHiddenState(
-    items: HTMLElement[],
-    more: HTMLElement,
-    moreCount: HTMLElement,
-    hidden: number
-): void {
-    const visible = items.length - hidden
-    for (let i = 0; i < items.length; i++) items[i].hidden = i >= visible
-
-    if (hidden <= 0) {
-        more.hidden = true
-        more.classList.remove('has-leading-sep')
-        moreCount.textContent = ''
+    // A hidden (expanded) summary has no width and nothing to fit
+    if (!items.length || !more || !moreCount || summary.clientWidth === 0)
         return
-    }
 
+    items.forEach((item) => (item.hidden = false))
+    more.hidden = true
+    if (wrappedItems(items).length === 0) return
+
+    // The badge takes room from the list, so measure again with it in place
     more.hidden = false
-    more.classList.toggle('has-leading-sep', visible > 0)
+    const wrapped = wrappedItems(items)
+    wrapped.forEach((item) => (item.hidden = true))
     moreCount.textContent = moreLabel(
-        hidden,
-        more.closest<HTMLElement>('[data-param-summary]')?.dataset.paramMoreNoun
+        wrapped.length,
+        summary.dataset.paramMoreNoun
     )
 }
 

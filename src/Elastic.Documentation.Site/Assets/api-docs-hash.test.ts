@@ -60,4 +60,29 @@ describe('revealCollapsedAncestors', () => {
 
         expect(revealCollapsedAncestors(byId('actions'))).toBe(false)
     })
+
+    it('opens a collapsed param section and response panel around a nested target', () => {
+        document.body.innerHTML = `
+            <section id="elastic-api-v3">
+                <div class="api-param-section collapsed" data-param-section id="sec">
+                    <h2 id="query-params" class="api-param-section-header">
+                        <button class="api-param-section-toggle" aria-expanded="false"></button>
+                    </h2>
+                    <div class="api-param-section-body" hidden="until-found">
+                        <div class="property-item" id="row"><dt id="param">p</dt></div>
+                    </div>
+                </div>
+            </section>`
+
+        expect(revealCollapsedAncestors(byId('query-params'))).toBe(false)
+        expect(byId('sec').classList.contains('collapsed')).toBe(true)
+
+        expect(revealCollapsedAncestors(byId('param'))).toBe(true)
+        expect(byId('sec').classList.contains('expanded')).toBe(true)
+        expect(
+            byId('sec')
+                .querySelector('.api-param-section-body')!
+                .hasAttribute('hidden')
+        ).toBe(false)
+    })
 })

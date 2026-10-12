@@ -1,31 +1,20 @@
 @inherits RazorSlice<Elastic.ApiExplorer.Infrastructure.ParamSectionHeader>
-@{
-	// Fields read as an object ({ a, b }); the variants of a union body read as alternatives (A | B) and say what is folded away.
-	var separator = Model.NamesAreVariants ? " | " : ", ";
-}
 <span class="api-param-summary" data-param-summary @(Model.NamesAreVariants ? new HtmlString("data-param-more-noun=\"variant\"") : HtmlString.Empty)>
-	<span class="api-param-summary-line">
-		@if (!Model.NamesAreVariants)
+	@if (!Model.NamesAreVariants)
+	{
+		<span class="api-param-summary-brace">{ </span>
+	}
+	<span class="api-param-summary-list@(Model.NamesAreVariants ? " is-variants" : "")" data-param-list>
+		@foreach (var name in Model.Names)
 		{
-			<span class="api-param-summary-brace">{ </span>
-		}
-		@for (var i = 0; i < Model.Names.Count; i++)
-		{
-			<span class="api-param-summary-item" data-param-item>
-				@if (i > 0)
-				{
-					<span class="api-param-summary-sep">@separator</span>
-				}
-				<code>@Model.Names[i]</code>
-			</span>
-		}
-		<span class="api-param-more" data-param-more hidden>
-			<span class="api-param-summary-sep">@separator</span>
-			<span class="api-param-more-badge" data-param-more-count></span>
-		</span>
-		@if (!Model.NamesAreVariants)
-		{
-			<span class="api-param-summary-brace"> }</span>
+			<code class="api-param-summary-item">@name</code>
 		}
 	</span>
+	<span class="api-param-more" data-param-more hidden>
+		<span class="api-param-more-badge" data-param-more-count></span>
+	</span>
+	@if (!Model.NamesAreVariants)
+	{
+		<span class="api-param-summary-brace"> }</span>
+	}
 </span>

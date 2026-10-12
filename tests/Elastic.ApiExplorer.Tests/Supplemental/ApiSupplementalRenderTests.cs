@@ -76,7 +76,7 @@ public class ApiSupplementalRenderTests(ApiExplorerFixture fixture)
 		html.Should().Contain("api-param-section collapsed");
 		html.Should().Contain("id=\"query-params-list\"");
 		html.Should().Contain("api-param-summary");
-		html.Should().Contain("data-param-item");
+		html.Should().Contain("api-param-summary-item");
 	}
 
 	[Test]
