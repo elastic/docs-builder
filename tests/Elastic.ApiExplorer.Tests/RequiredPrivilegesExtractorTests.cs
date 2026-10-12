@@ -154,4 +154,25 @@ public class RequiredPrivilegesExtractorTests
 				File.Delete(path);
 		}
 	}
+
+	[Test]
+	public void ExtractFromDescription_BulletWithQualifiers_LeavesBlockInPlace()
+	{
+		const string description = "Intro.\n\n## Required authorization\n\n* Index privileges: `read` or `all` on the target index\n";
+
+		var result = RequiredPrivilegesExtractor.ExtractFromDescription(description);
+
+		result.Rows.Should().BeEmpty();
+		result.Description.Should().Be(description);
+	}
+
+	[Test]
+	public void ExtractFromDescription_BulletWithCommaSeparatedValues_StillParses()
+	{
+		const string description = "Intro.\n\n## Required authorization\n\n* Index privileges: `read`, `view_index_metadata`\n";
+
+		var result = RequiredPrivilegesExtractor.ExtractFromDescription(description);
+
+		result.Rows.Should().ContainSingle().Which.Values.Should().Equal("read", "view_index_metadata");
+	}
 }

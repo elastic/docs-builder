@@ -70,8 +70,11 @@ public static partial class RequiredPrivilegesExtractor
 		var colon = line.IndexOf(':');
 		if (colon <= 0)
 			return null;
-		var values = BacktickValue().Matches(line[(colon + 1)..]).Select(static m => m.Groups["value"].Value).ToArray();
-		return values.Length == 0 ? null : new PrivilegeRow(line[..colon].Trim(), values);
+		var rest = line[(colon + 1)..];
+		var values = BacktickValue().Matches(rest).Select(static m => m.Groups["value"].Value).ToArray();
+		// Anything besides the values and their commas (an "or", a scope, a note) would be lost, so the line is not understood.
+		var leftover = BacktickValue().Replace(rest, "").Trim(' ', ',', '.');
+		return values.Length == 0 || leftover.Length > 0 ? null : new PrivilegeRow(line[..colon].Trim(), values);
 	}
 
 	private static string TakeKibana(Match match, List<PrivilegeRow> rows)
