@@ -51,7 +51,7 @@ A test fails the build when component CSS contains a hex colour, a colour functi
 
 ## Components
 
-Each component is a Razor slice in its own folder under `src/Elastic.Documentation.Site/Components/<Name>/`:
+Each component is a Razor slice in its own folder under `src/Elastic.Documentation.Site/Components/<Group>/<Name>/`, where the group is Primitives, Forms, Navigation, Chrome, Overlays, Cards or Pages:
 
 | File | Purpose |
 |---|---|
@@ -59,6 +59,8 @@ Each component is a Razor slice in its own folder under `src/Elastic.Documentati
 | `<Name>Model.cs` | A record with typed parameters, using enums instead of strings for variants |
 | `<name>.css` | Styles in the `ds.components` layer, imported from `Assets/ds.css` |
 | `<Name>Examples.cs` | The canonical examples, shared by the style guide and the tests |
+
+The components that render Markdown output, such as admonitions, tabs and code blocks, live in `src/Elastic.Markdown/Components/<Name>/` instead, and keep their stylesheets in the site bundle under `Components/Markdown/<Name>/`.
 
 Call a component from another view with `@await RenderPartialAsync(_Button.Create(new ButtonModel { ... }))`.
 The style guide renders every example live and shows the model call and the exact HTML next to it.
