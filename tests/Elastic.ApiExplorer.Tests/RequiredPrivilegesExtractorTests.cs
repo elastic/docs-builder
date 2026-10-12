@@ -175,4 +175,15 @@ public class RequiredPrivilegesExtractorTests
 
 		result.Rows.Should().ContainSingle().Which.Values.Should().Equal("read", "view_index_metadata");
 	}
+
+	[Test]
+	[Arguments(null, "Create a view", "Create a view")]
+	[Arguments("", "Create a view", "Create a view")]
+	[Arguments("  ", "Create a view", "Create a view")]
+	[Arguments("Creates a view.", "Create a view", "Creates a view.")]
+	public void DescriptionOrSummary_FallsBackToTheSummaryOnlyWhenTheDescriptionIsEmpty(
+		string? description,
+		string summary,
+		string expected
+	) => OperationViewModel.DescriptionOrSummary(description, summary).Should().Be(expected);
 }
