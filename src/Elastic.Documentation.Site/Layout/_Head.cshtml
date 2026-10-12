@@ -36,8 +36,10 @@
 	@if (Model.BuildType == BuildType.Assembler && !Model.Features.AirGappedEnabled)
 	{
 		@* In <head> so head-support's merge keeps the identical tag across htmx navigations
-		   instead of re-executing it in the swapped body. Fills #elastic-nav (hx-preserve). *@
-		<script src="@(Model.Features.StagingElasticNavEnabled ? "https://stag-www.elastic.co/elastic-nav.js" : "https://www.elastic.co/elastic-nav.js")" async></script>
+		   instead of re-executing it in the swapped body. Fills #elastic-nav (hx-preserve).
+		   defer, not async: the script dereferences #elastic-nav without a null check, so a
+		   cached copy running before the parser reaches the body throws. *@
+		<script src="@(Model.Features.StagingElasticNavEnabled ? "https://stag-www.elastic.co/elastic-nav.js" : "https://www.elastic.co/elastic-nav.js")" defer></script>
 	}
 	@if (Model.Features.WebsiteSearchEnabled && Model.Features.WebsiteSearchScriptUrl is { } websiteSearchUrl)
 	{
