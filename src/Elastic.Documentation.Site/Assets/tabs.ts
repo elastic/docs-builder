@@ -84,10 +84,16 @@ function panelFor(input: HTMLInputElement): HTMLElement | null {
 function syncPanels(root: ParentNode = document) {
     root.querySelectorAll<HTMLInputElement>('.tabs-input').forEach((input) => {
         const panel = panelFor(input)
-        if (!panel) return
-        if (input.checked) panel.removeAttribute('hidden')
-        else panel.setAttribute('hidden', 'until-found')
+        const hide = !input.checked
+        if (!panel || panel.hasAttribute('hidden') === hide) return
+        if (hide) panel.setAttribute('hidden', 'until-found')
+        else panel.removeAttribute('hidden')
     })
+}
+
+/** A tab's input and its siblings are one tab set; a change in one never touches another. */
+function syncSetOf(input: HTMLInputElement) {
+    syncPanels(input.parentElement ?? document)
 }
 
 function onTabChange(event: Event) {
@@ -95,7 +101,7 @@ function onTabChange(event: Event) {
         event.target instanceof HTMLInputElement &&
         event.target.matches('.tabs-input')
     )
-        syncPanels()
+        syncSetOf(event.target)
 }
 
 /** Find-in-page matched text in a hidden tab: select that tab before the browser reveals it. */
@@ -107,7 +113,7 @@ function onBeforeMatch(event: Event) {
     if (!(input instanceof HTMLInputElement) || !input.matches('.tabs-input'))
         return
     input.checked = true
-    syncPanels()
+    syncSetOf(input)
 }
 
 /**
@@ -125,9 +131,10 @@ function onSDLabelClick(this: HTMLLabelElement) {
         }
         if (label.previousElementSibling instanceof HTMLInputElement) {
             label.previousElementSibling.checked = true
+            // Programmatic checks fire no change event. The clicked tab's own set is synced by its change event.
+            syncSetOf(label.previousElementSibling)
         }
     }
-    syncPanels()
     window.sessionStorage.setItem(storageKeyPrefix + group, id)
 }
 

@@ -16,7 +16,8 @@ public sealed record RequiredPrivileges(IReadOnlyList<PrivilegeRow> Rows, string
 /// <summary>
 /// Finds the privileges an operation needs. Prefers the <c>x-req-auth</c> extension; otherwise lifts the block that
 /// Elasticsearch (<c>## Required authorization</c>) and Kibana (<c>[Required authorization] Route required privileges</c>)
-/// write into the description, and returns the description without it.
+/// write into the description, and returns the description without it. The description patterns are a legacy shim until the
+/// specs emit <c>x-req-auth</c> (docs-eng-team#1014), and a line that does not match one stays in the description.
 /// </summary>
 public static partial class RequiredPrivilegesExtractor
 {

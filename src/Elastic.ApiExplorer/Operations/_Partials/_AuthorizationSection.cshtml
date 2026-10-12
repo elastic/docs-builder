@@ -42,8 +42,8 @@
 	<div @ParamSectionHeader.WrapAttributes(collapse: true)>
 		@(await RenderPartialAsync<_ParamSectionHeader, ParamSectionHeader>(new ParamSectionHeader("Authentication", "authentication", [.. schemes.Select(static s => s.Label)], NamesAreVariants: true)))
 		<div @ParamSectionHeader.BodyAttributes(collapse: true, "authentication-list")>
-			@* Schemes are alternatives, so several of them become tabs: the same radio-button tabs as the docs, which need no script. *@
-			<div class="@(useTabs ? "api-tabs api-authentication-tabs" : "api-authentication-single")">
+			@* Schemes are alternatives, so several of them become tabs: the same radio-button tabs as the docs. Switching needs no script; tabs.ts makes the other panels findable. *@
+			<div class="@(useTabs ? "api-tabs api-authentication-tabs" : null)">
 				@for (var i = 0; i < schemes.Count; i++)
 				{
 					var scheme = schemes[i];
@@ -60,7 +60,7 @@
 						}
 						@if (scheme.DescriptionMarkdown is not null)
 						{
-							<div class="api-authorization-description">@Model.RenderMarkdown(scheme.DescriptionMarkdown)</div>
+							@Model.RenderMarkdown(scheme.DescriptionMarkdown)
 						}
 					</div>
 				}

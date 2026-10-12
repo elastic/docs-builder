@@ -85,10 +85,7 @@
 			@pageModel.ExternalDocs.LinkText
 		</a>
 	}
-	@if (pageModel.HasAuthorization)
-	{
-		@(await RenderPartialAsync<_AuthorizationSection, AuthorizationSectionModel>(Model.Authorization))
-	}
+	@(await RenderPartialAsync<_AuthorizationSection, AuthorizationSectionModel>(Model.Authorization))
 	@if (pageModel.PathParameters.Count > 0)
 	{
 		var collapsePath = ParamSectionHeader.ShouldCollapse(pageModel.PathParameterNames.Count);

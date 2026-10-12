@@ -38,7 +38,6 @@ public record ApiPostSection(string Heading, string Anchor, HtmlString BodyHtml,
 		[
 			"paths",
 			"prerequisites",
-			"authorization",
 			"required-authorization",
 			"authentication",
 			"description",

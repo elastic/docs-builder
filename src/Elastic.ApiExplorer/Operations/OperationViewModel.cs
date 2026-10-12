@@ -9,7 +9,7 @@ using Microsoft.OpenApi;
 
 namespace Elastic.ApiExplorer.Operations;
 
-/// <summary>Credentials and required privileges for the Authorization section; <paramref name="RenderMarkdown"/> renders descriptions.</summary>
+/// <summary>Required privileges and credentials for the Required authorization and Authentication sections; <paramref name="RenderMarkdown"/> renders descriptions.</summary>
 public record AuthorizationSectionModel(
 	IReadOnlyList<AuthScheme> Schemes,
 	IReadOnlyList<PrivilegeRow> Privileges,

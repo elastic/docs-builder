@@ -67,8 +67,6 @@ public partial record OperationPageModel
 	/// <summary>Privileges the operation needs, from <c>x-req-auth</c> or lifted out of the description.</summary>
 	public required IReadOnlyList<PrivilegeRow> RequiredPrivileges { get; init; }
 
-	public bool HasAuthorization => AuthSchemes.Count > 0 || RequiredPrivileges.Count > 0;
-
 	public static OperationPageModel Create(ApiOperation apiOperation, ApiRenderContext context)
 	{
 		var operation = apiOperation.Operation;
