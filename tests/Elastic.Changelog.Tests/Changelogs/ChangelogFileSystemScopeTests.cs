@@ -37,4 +37,13 @@ public class ChangelogFileSystemScopeTests
 	[Test]
 	public void IsWithin_PathThatEscapesThroughDotDot_ReturnsFalse() =>
 		ChangelogFileSystem.IsWithin(Root, Path.Join(Root, "bundles", "..", "..", "elsewhere")).Should().BeFalse();
+
+	[Test]
+	public void IsWithin_FilesystemRoot_ContainsItsChildren()
+	{
+		var root = Path.GetPathRoot(Root)!;
+
+		ChangelogFileSystem.IsWithin(root, Path.Join(root, "bundles")).Should().BeTrue();
+		ChangelogFileSystem.IsWithin(root, root).Should().BeTrue();
+	}
 }

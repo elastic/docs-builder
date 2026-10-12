@@ -38,7 +38,11 @@ public class ChangelogFileSystem(IDirectoryInfo root, IFileSystem? inner = null)
 		var comparison = OperatingSystem.IsWindows() || OperatingSystem.IsMacOS()
 			? StringComparison.OrdinalIgnoreCase
 			: StringComparison.Ordinal;
-		return fullPath.Equals(fullRoot, comparison) || fullPath.StartsWith(fullRoot + System.IO.Path.DirectorySeparatorChar, comparison);
+		// A filesystem root ("/" or "C:\\") keeps its separator after trimming, so only add one when it is missing.
+		var rootPrefix = fullRoot.EndsWith(System.IO.Path.DirectorySeparatorChar)
+			? fullRoot
+			: fullRoot + System.IO.Path.DirectorySeparatorChar;
+		return fullPath.Equals(fullRoot, comparison) || fullPath.StartsWith(rootPrefix, comparison);
 	}
 
 	/// <summary>
