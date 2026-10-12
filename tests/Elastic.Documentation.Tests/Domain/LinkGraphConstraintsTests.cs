@@ -16,7 +16,11 @@ namespace Elastic.Documentation.Tests.Domain;
 public class LinkGraphConstraintsTests
 {
 	[Test]
-	public void Laws() => LinkGraphConstraints.All.Laws(Generated(), CounterExamples, options: o => o.UseFileSystem());
+	[MethodDataSource(nameof(Axes))]
+	public void EveryDeclaredAxisHolds(AxisCase axis) => axis.Run();
+
+	public static IEnumerable<Func<AxisCase>> Axes() =>
+		DomainAutoTest.For(LinkGraphConstraints.All, Generated()).Options(o => o.UseFileSystem()).CounterExamples(CounterExamples).Axes();
 
 	/// <summary>
 	/// A graph in which every repository the manifest links to is fetched (a target of its own, filed under its own name), in the registry, declared under cross_links and mounted in the

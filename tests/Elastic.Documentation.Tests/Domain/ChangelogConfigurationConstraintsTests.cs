@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using Elastic.Documentation.Catalog;
+using CsCheck;
 using Nullean.Entities.CsCheck;
 using Elastic.Documentation.ReleaseNotes;
 
@@ -212,7 +213,11 @@ public class ChangelogConfigurationConstraintsTests
 	// consistent web of ids, and a normalizer that builds one is the loader's resolution logic written again. A generator for it would be model-first (a chosen product subset, then the
 	// sections built around it), not a repair of generated members. (At the default depth the sections generate empty, so those rules would only ever be checked against nothing.)
 	[Test]
-	public void Laws() => ChangelogConfigurationConstraints.All.Laws(Valid(), CounterExamples);
+	[MethodDataSource(nameof(Axes))]
+	public void EveryDeclaredAxisHolds(AxisCase axis) => axis.Run();
+
+	public static IEnumerable<Func<AxisCase>> Axes() =>
+		DomainAutoTest.For(ChangelogConfigurationConstraints.All, Gen.Const(0).Select(_ => Valid())).CounterExamples(CounterExamples).Axes();
 
 	private static ChangelogConfigurationInCatalog Valid() => new(ValidConfiguration(), Products);
 

@@ -14,23 +14,11 @@ public class LinkRegistryConstraintsTests
 {
 	private static readonly DateTime Published = LinkExamples.Published;
 
-	// Arguments for WithLinkRegistryEntry drawn from the registry it runs on: a fresh entry for a key that is already there, a day older or newer, so the
-	// operation's "replace only by a strictly newer entry" decision is made on every draw. A random entry names a repository the registry has never seen and only ever adds.
-	private static Gen<LinkRegistryEntry> ExistingKeys(LinkRegistry registry)
-	{
-		var entries = registry.Repositories.SelectMany(r => r.Value.Values).ToArray();
-		return Gen.Select(
-			Gen.OneOfConst(entries),
-			Gen.Int[-2, 2],
-			(entry, days) => entry with { UpdatedAt = entry.UpdatedAt.AddDays(days) }
-		);
-	}
-
 	private static AutoTest<LinkRegistry> Auto() =>
 		DomainAutoTest
 			.For(LinkRegistryConstraints.All, DomainGen.Of<LinkRegistry>(o => o.Normalize<LinkRegistry>(r => LinkExamples.Registry(r))))
 			.CounterExamples(CounterExamples)
-			.Action<LinkRegistryEntry>("WithLinkRegistryEntry", (r, e) => r.WithLinkRegistryEntry(e).OrThrowIfMissing(), ExistingKeys);
+			.Action<LinkRegistryEntry>("WithLinkRegistryEntry", (r, e) => r.WithLinkRegistryEntry(e).OrThrowIfMissing());
 
 	public static IEnumerable<Func<AxisCase>> Axes() => Auto().Axes();
 

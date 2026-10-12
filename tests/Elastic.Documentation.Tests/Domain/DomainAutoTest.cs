@@ -16,5 +16,5 @@ public static class DomainAutoTest
 		AutoTest.For(constraints, valid ?? DomainGen.Of<T>()).Seed(Props.Seed);
 
 	/// <summary>The cases as a <c>[MethodDataSource]</c> source: TUnit runs each lazily, so a failing axis fails only its own test.</summary>
-	public static IEnumerable<Func<AxisCase>> Axes<T>(this AutoTest<T> auto) => auto.Cases.Select(c => (Func<AxisCase>)(() => c));
+	public static IEnumerable<Func<AxisCase>> Axes<T>(this AutoTest<T> auto) => auto.AsDataSource();
 }

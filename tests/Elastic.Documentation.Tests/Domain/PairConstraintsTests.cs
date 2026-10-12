@@ -78,14 +78,23 @@ public class DocumentationSetInCodexConstraintsTests
 {
 	// codex.group refers to a group the codex site defines: the declared reference does it, so the groups are the generated ones
 	[Test]
-	public void Laws() =>
-		DocumentationSetInCodexConstraints.All.Laws(
-			DomainGen.Of<DocumentationSetInCodex>(
-				o => o.UseFileSystem().Reference<DocumentationSetDefinition, CodexGroupDefinition, string>(d => d.CodexGroup!, g => g.Id)
-			),
-			CounterExamples,
-			options: o => o.UseFileSystem()
-		);
+	[MethodDataSource(nameof(Axes))]
+	public void EveryDeclaredAxisHolds(AxisCase axis) => axis.Run();
+
+	public static IEnumerable<Func<AxisCase>> Axes() =>
+		DomainAutoTest
+			.For(
+				DocumentationSetInCodexConstraints.All,
+				DomainGen.Of<DocumentationSetInCodex>(
+					o => o.UseFileSystem().Reference<DocumentationSetDefinition, CodexGroupDefinition, string>(
+						d => d.CodexGroup!,
+						g => g.Id
+					)
+				)
+			)
+			.Options(o => o.UseFileSystem())
+			.CounterExamples(CounterExamples)
+			.Axes();
 
 	private static IReadOnlyDictionary<string, Func<DocumentationSetInCodex, DocumentationSetInCodex>> CounterExamples =>
 		new Dictionary<string, Func<DocumentationSetInCodex, DocumentationSetInCodex>>

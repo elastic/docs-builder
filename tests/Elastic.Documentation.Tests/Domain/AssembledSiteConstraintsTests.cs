@@ -15,12 +15,15 @@ namespace Elastic.Documentation.Tests.Domain;
 public class AssembledSiteConstraintsTests
 {
 	[Test]
-	public void Laws() =>
-		AssembledSiteConstraints.All.Laws(
-			DomainGen.Of<AssembledSite>(o => o.UseFileSystem().Normalize<AssembledSite>(Placed)),
-			CounterExamples,
-			options: o => o.UseFileSystem()
-		);
+	[MethodDataSource(nameof(Axes))]
+	public void EveryDeclaredAxisHolds(AxisCase axis) => axis.Run();
+
+	public static IEnumerable<Func<AxisCase>> Axes() =>
+		DomainAutoTest
+			.For(AssembledSiteConstraints.All, DomainGen.Of<AssembledSite>(o => o.UseFileSystem().Normalize<AssembledSite>(Placed)))
+			.Options(o => o.UseFileSystem())
+			.CounterExamples(CounterExamples)
+			.Axes();
 
 	/// <summary>
 	/// A site as the assembler builds it: at least two repositories, each named once and published under its own prefix, with the nested tables of contents its docset declares

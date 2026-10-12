@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.Collections.Frozen;
+using CsCheck;
 using System.IO.Abstractions.TestingHelpers;
 using AwesomeAssertions;
 using Elastic.Documentation.Catalog;
@@ -432,7 +433,15 @@ public class DocumentationSetConstraintsTests
 	// api child or default-cta page exists on disk, so a generated tree is valid only when the generator builds the world from the tree (or the tree from the world) and the entries are
 	// unique, well-nested and well-named. GenAuto draws the file system and the tree independently; that coupling is not a repair of members but a model-first generator (a set of page
 	// paths, then both the files and the toc built from it).
-	public void Laws() => DocumentationSetConstraints.All.Laws(Valid(), CounterExamples, options: o => o.UseFileSystem());
+	[MethodDataSource(nameof(Axes))]
+	public void EveryDeclaredAxisHolds(AxisCase axis) => axis.Run();
+
+	public static IEnumerable<Func<AxisCase>> Axes() =>
+		DomainAutoTest
+			.For(DocumentationSetConstraints.All, Gen.Const(0).Select(_ => Valid()))
+			.Options(o => o.UseFileSystem())
+			.CounterExamples(CounterExamples)
+			.Axes();
 
 	private static DocumentationSetInCatalog Valid() => new(ValidDocset(), Products);
 
@@ -490,12 +499,18 @@ public class DocsetDiscoveryConstraintsTests
 		new([Docset("/repo/docset.yml", null), .. d.Candidates.Skip(1).Take(1).Select(_ => Docset("/repo/docs/_docset.yml", "internal"))]);
 
 	[Test]
-	public void Laws() =>
-		DocsetDiscoveryConstraints.All.Laws(
-			DomainGen.Of<DocsetDiscovery>(o => o.UseFileSystem().Normalize<DocsetDiscovery>(Discovered)),
-			CounterExamples,
-			options: o => o.UseFileSystem()
-		);
+	[MethodDataSource(nameof(DiscoveryAxes))]
+	public void DiscoveryAxisHolds(AxisCase axis) => axis.Run();
+
+	public static IEnumerable<Func<AxisCase>> DiscoveryAxes() =>
+		DomainAutoTest
+			.For(
+				DocsetDiscoveryConstraints.All,
+				DomainGen.Of<DocsetDiscovery>(o => o.UseFileSystem().Normalize<DocsetDiscovery>(Discovered))
+			)
+			.Options(o => o.UseFileSystem())
+			.CounterExamples(CounterExamples)
+			.Axes();
 
 	// each case reorders or extends what discovery found: the default docset moved behind a codex one, a second public docset, a file the glob matched by accident
 	private static IReadOnlyDictionary<string, Func<DocsetDiscovery, DocsetDiscovery>> CounterExamples =>
