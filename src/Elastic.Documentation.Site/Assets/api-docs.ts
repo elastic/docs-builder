@@ -5,7 +5,7 @@
  */
 import { decorateApiCodeTokens } from './api-code-tokens'
 import { initApiExamples } from './api-examples-carousel'
-import { applyParamSummaryFit } from './api-param-summary'
+import { fitParamSummaries } from './api-param-summary'
 import { iconCheckEui, iconCopyEui } from './copybutton'
 import { prefersReducedMotion } from './motion'
 import { flashTooltip, initTooltips } from './tooltip'
@@ -16,14 +16,15 @@ const supportsHiddenUntilFound = 'onbeforematch' in document.body
 function setDisclosureToggle(
     toggleBtn: Element | null,
     expanded: boolean,
-    noun: string
+    noun?: string
 ): void {
     if (!toggleBtn) return
     toggleBtn.setAttribute('aria-expanded', expanded ? 'true' : 'false')
     const icon = toggleBtn.querySelector('.toggle-icon')
     const label = toggleBtn.querySelector('.toggle-label')
     if (icon) icon.textContent = expanded ? '−' : '+'
-    if (label) label.textContent = `${expanded ? 'hide' : 'show'} ${noun}`
+    if (label && noun)
+        label.textContent = `${expanded ? 'hide' : 'show'} ${noun}`
 }
 
 function setUntilFoundHidden(
@@ -61,7 +62,7 @@ interface Disclosure {
     toggle: string
     body: string
     trigger: string
-    noun: string
+    noun?: string
 }
 
 // Order matters where a row can match more than one entry: variants before properties.
@@ -93,14 +94,12 @@ const DISCLOSURES: Disclosure[] = [
         body: ':scope > .api-param-section-body',
         trigger:
             '.api-param-section-header > .headerlink, .api-param-section-toggle',
-        noun: '',
     },
     {
         container: '.response-panel',
         toggle: ':scope > .response-summary .response-status-toggle',
         body: ':scope > .response-panel-body',
         trigger: '.response-summary',
-        noun: '',
     },
 ]
 
@@ -137,78 +136,92 @@ export function revealCollapsedAncestors(target: HTMLElement): boolean {
 }
 
 let paramSummaryObserver: ResizeObserver | null = null
-let paramListenersBound = false
+let paramHashListenerBound = false
 
-function fitParamSummaries(): void {
-    document
-        .querySelectorAll<HTMLElement>('[data-param-summary]')
-        .forEach(applyParamSummaryFit)
+function fitAllParamSummaries(): void {
+    fitParamSummaries(
+        document.querySelectorAll<HTMLElement>('[data-param-summary]')
+    )
 }
 
 function initParamSummaries(): void {
     paramSummaryObserver?.disconnect()
-    // The observer reports each summary once on observe(), which does the first fit
-    paramSummaryObserver = new ResizeObserver((entries) => {
-        for (const entry of entries)
-            applyParamSummaryFit(entry.target as HTMLElement)
-    })
+    // The observer reports every summary once on observe(), which does the first fit
+    paramSummaryObserver = new ResizeObserver((entries) =>
+        fitParamSummaries(entries.map((entry) => entry.target as HTMLElement))
+    )
 
     document
         .querySelectorAll<HTMLElement>('[data-param-summary]')
         .forEach((summary) => paramSummaryObserver?.observe(summary))
 
-    if (!paramListenersBound) {
-        paramListenersBound = true
+    // A web font landing changes the name widths but not the summary's size
+    if (document.fonts && document.fonts.status !== 'loaded')
+        void document.fonts.ready.then(fitAllParamSummaries)
+
+    if (!paramHashListenerBound) {
+        paramHashListenerBound = true
         window.addEventListener('hashchange', revealHashTarget)
-        // A web font landing changes the name widths but not the summary's size
-        document.fonts?.addEventListener('loadingdone', fitParamSummaries)
     }
-    void document.fonts?.ready.then(fitParamSummaries)
+}
+
+/**
+ * Opens what hides a link target the way find-in-page does: each hidden="until-found" ancestor
+ * gets a beforematch event, so a widget such as the authentication tabs can select the panel
+ * that holds the target before it is shown.
+ */
+export function revealHiddenAncestors(target: HTMLElement): boolean {
+    let revealed = false
+    for (let el = target.parentElement; el; el = el.parentElement) {
+        if (el.getAttribute('hidden') !== 'until-found') continue
+        el.dispatchEvent(new Event('beforematch', { bubbles: true }))
+        setUntilFoundHidden(el, false)
+        revealed = true
+    }
+    return revealed
 }
 
 function revealHashTarget(): void {
     const id = window.location.hash.slice(1)
     const target = id ? document.getElementById(id) : null
-    if (target && revealCollapsedAncestors(target)) target.scrollIntoView()
+    if (!target) return
+    // Not short-circuited: a section can already be open while a tab inside it is not
+    const collapsed = revealCollapsedAncestors(target)
+    const hidden = revealHiddenAncestors(target)
+    if (collapsed || hidden) target.scrollIntoView()
 }
 
 /**
  * Initialize API docs for OperationView pages
  */
-function initOperationView(section: HTMLElement): void {
-    // Examples jump button visibility
+let examplesScrollBound = false
+
+/** Shows the "jump to examples" button while the examples are still below the fold. */
+function updateExamplesButtonVisibility(): void {
     const examplesBtn = document.getElementById('examples-jump-btn')
-    const examplesSection = section.querySelector(
-        'h3[data-section="request-examples"], h3[data-section="response-examples"]'
+    const examplesSection = document.querySelector(
+        '#elastic-api-v3 h3[data-section="request-examples"], #elastic-api-v3 h3[data-section="response-examples"]'
     )
+    if (!examplesBtn || !examplesSection) return
+    const belowFold =
+        examplesSection.getBoundingClientRect().top > window.innerHeight
+    examplesBtn.classList.toggle('visible', belowFold)
+}
 
-    function updateExamplesButtonVisibility(): void {
-        if (!examplesBtn || !examplesSection) return
-
-        const examplesTop = examplesSection.getBoundingClientRect().top
-        const viewportHeight = window.innerHeight
-
-        // Show button when examples are below the fold (not visible yet)
-        if (examplesTop > viewportHeight) {
-            examplesBtn.classList.add('visible')
-        } else {
-            examplesBtn.classList.remove('visible')
-        }
-    }
-
-    // Throttled scroll handler
-    let ticking = false
-    window.addEventListener('scroll', function () {
-        if (!ticking) {
-            window.requestAnimationFrame(function () {
+function initOperationView(): void {
+    // Bound once: htmx swaps the section, so the handler looks the elements up each time
+    if (!examplesScrollBound) {
+        examplesScrollBound = true
+        let ticking = false
+        window.addEventListener('scroll', () => {
+            if (ticking) return
+            ticking = true
+            window.requestAnimationFrame(() => {
                 updateExamplesButtonVisibility()
                 ticking = false
             })
-            ticking = true
-        }
-    })
-
-    // Initial check
+        })
+    }
     updateExamplesButtonVisibility()
 }
 
@@ -524,7 +537,7 @@ export function initApiDocs(): void {
 
     const operationSection = document.getElementById('elastic-api-v3')
     if (operationSection) {
-        initOperationView(operationSection)
+        initOperationView()
         revealHashTarget()
     }
 }

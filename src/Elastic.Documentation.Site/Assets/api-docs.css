@@ -1666,6 +1666,24 @@ button.response-status-toggle:focus {
 	font-size: 14px;
 	font-weight: 400;
 	line-height: 24px;
+	--api-param-sep: ', ';
+}
+
+/* The union body reads as alternatives (A | B), not as an object. */
+.api-param-summary.is-variants {
+	--api-param-sep: ' | ';
+}
+
+/* Invisible until the first fit, so it never shows the unfitted wrap. The animation reveals it anyway if the script never runs. */
+.api-param-summary:not(.is-fitted) {
+	visibility: hidden;
+	animation: api-param-summary-reveal 0s 1s forwards;
+}
+
+@keyframes api-param-summary-reveal {
+	to {
+		visibility: visible;
+	}
 }
 
 .api-param-summary-list {
@@ -1675,24 +1693,15 @@ button.response-status-toggle:focus {
 	min-width: 0;
 	height: 24px;
 	overflow: hidden;
-	--api-param-sep: ', ';
-}
-
-/* The union body reads as alternatives (A | B), not as an object. */
-.api-param-summary-list.is-variants {
-	--api-param-sep: ' | ';
 }
 
 .api-param-summary-brace {
 	flex: 0 0 auto;
 	height: 24px;
-	color: var(--color-subdued, #516381);
-	font-size: 14px;
-	font-weight: 400;
-	line-height: 24px;
 	white-space: pre;
 }
 
+/* Explicit type: the markdown `code` rule would otherwise shrink and lift the names */
 .api-param-summary-item {
 	flex: 0 0 auto;
 	height: 24px;
@@ -1723,15 +1732,16 @@ button.response-status-toggle:focus {
 	align-items: center;
 	flex: 0 0 auto;
 	height: 24px;
-	--api-param-sep: ', ';
 }
 
 .api-param-more[hidden] {
 	display: none;
 }
 
-.api-param-summary-list.is-variants ~ .api-param-more {
-	--api-param-sep: ' | ';
+/* No separator when every name folded away and the badge opens the line */
+.api-param-summary-list:not(:has(.api-param-summary-item:not([hidden])))
+	+ .api-param-more::before {
+	content: none;
 }
 
 .api-param-more-badge {

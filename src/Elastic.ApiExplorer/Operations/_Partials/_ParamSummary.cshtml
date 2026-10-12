@@ -1,10 +1,14 @@
 @inherits RazorSlice<Elastic.ApiExplorer.Infrastructure.ParamSectionHeader>
-<span class="api-param-summary" data-param-summary @(Model.NamesAreVariants ? new HtmlString("data-param-more-noun=\"variant\"") : HtmlString.Empty)>
-	@if (!Model.NamesAreVariants)
+@{
+	// A union body reads as alternatives (A | B) and says what is folded away; fields read as an object ({ a, b }).
+	var variants = Model.NamesAreVariants;
+}
+<span class="api-param-summary@(variants ? " is-variants" : "")" data-param-summary @(variants ? new HtmlString("data-param-more-noun=\"variant\"") : HtmlString.Empty)>
+	@if (!variants)
 	{
 		<span class="api-param-summary-brace">{ </span>
 	}
-	<span class="api-param-summary-list@(Model.NamesAreVariants ? " is-variants" : "")" data-param-list>
+	<span class="api-param-summary-list">
 		@foreach (var name in Model.Names)
 		{
 			<code class="api-param-summary-item">@name</code>
@@ -13,7 +17,7 @@
 	<span class="api-param-more" data-param-more hidden>
 		<span class="api-param-more-badge" data-param-more-count></span>
 	</span>
-	@if (!Model.NamesAreVariants)
+	@if (!variants)
 	{
 		<span class="api-param-summary-brace"> }</span>
 	}
