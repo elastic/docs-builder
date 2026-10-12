@@ -23,6 +23,7 @@ public class ApiSupplementalRenderTests(ApiExplorerFixture fixture)
 	private const string SpecOperationDescription = "Returns hits that match the query defined in the request.";
 	private const string SpecTagDescription = "Operations that run *queries* against fixture data.";
 	private const string SpecIndexDescription = "A comma-separated list of index names to search.";
+	private const string SpecApiKeyDescription = "Send the encoded key with the ApiKey prefix.";
 	private const string SpecQueryQDescription = "A query in the Lucene query string syntax.";
 	private const string SpecFieldsDescription = "A field or list of fields to return, exercising the X | X[] simple-union path.";
 
@@ -98,6 +99,7 @@ public class ApiSupplementalRenderTests(ApiExplorerFixture fixture)
 		html.Should().Contain("href=\"#authentication\"");
 		markdown.Should().Contain("## Authentication");
 		markdown.Should().Contain("- Basic: `Authorization: Basic <credentials>`");
+		markdown.Should().Contain(SpecApiKeyDescription);
 		markdown.Should().NotContain("/authentication#");
 	}
 

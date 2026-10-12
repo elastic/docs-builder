@@ -148,6 +148,9 @@ internal static class OperationCommonMark
 		{
 			var credential = scheme.CredentialExample is null ? "" : $": `{scheme.CredentialExample}`";
 			_ = markdown.AppendLine($"- {scheme.Label}{credential}");
+			var description = ApiMarkdown.Prepare(scheme.DescriptionMarkdown, apiBaseUrl);
+			if (!string.IsNullOrWhiteSpace(description))
+				_ = markdown.AppendLine($"  {description.Trim().ReplaceLineEndings("\n  ")}");
 		}
 
 		_ = markdown.AppendLine();
