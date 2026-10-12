@@ -18,7 +18,11 @@ public class LinkRegistryConstraintsTests
 		DomainAutoTest
 			.For(LinkRegistryConstraints.All, DomainGen.Of<LinkRegistry>(o => o.Normalize<LinkRegistry>(r => LinkExamples.Registry(r))))
 			.CounterExamples(CounterExamples)
-			.Action<LinkRegistryEntry>("WithLinkRegistryEntry", (r, e) => r.WithLinkRegistryEntry(e).OrThrowIfMissing());
+			// an entry the operation reports errors for is rejected: the registry stays as it was
+			.Action<LinkRegistryEntry>(
+				"WithLinkRegistryEntry",
+				(r, e) => r.WithLinkRegistryEntry(e) is { HasErrors: false, Value: { } added } ? added : r
+			);
 
 	public static IEnumerable<Func<AxisCase>> Axes() => Auto().Axes();
 
