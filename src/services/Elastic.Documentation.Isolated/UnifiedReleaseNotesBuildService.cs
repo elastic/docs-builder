@@ -132,9 +132,15 @@ public class UnifiedReleaseNotesBuildService(
 				continue;
 			}
 
-			var files = loaded.Select(
-				b => (FileName: realFs.Path.GetFileName(b.FilePath), Content: realFs.File.ReadAllText(b.FilePath))
-			).ToArray();
+			// Copy every YAML file, not only the loaded bundles: LoadBundles folds amend sidecars into their
+			// parent and drops them from its result, and the directive merges them again from the docset folder.
+			var files = realFs
+				.Directory
+				.EnumerateFiles(folder, "*.yaml")
+				.Concat(realFs.Directory.EnumerateFiles(folder, "*.yml"))
+				.Order(StringComparer.Ordinal)
+				.Select(file => (FileName: realFs.Path.GetFileName(file), Content: realFs.File.ReadAllText(file)))
+				.ToArray();
 			result.Add(new ProductBundles(product, files));
 		}
 

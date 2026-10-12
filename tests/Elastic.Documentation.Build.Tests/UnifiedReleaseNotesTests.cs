@@ -69,6 +69,14 @@ public class UnifiedReleaseNotesTests : IDisposable
 		return folder;
 	}
 
+	private string WriteFile(string product, string fileName, string content)
+	{
+		var folder = _fileSystem.Path.Join(_temp.FullName, "bundles", product);
+		_ = _fileSystem.Directory.CreateDirectory(folder);
+		_fileSystem.File.WriteAllText(_fileSystem.Path.Join(folder, fileName), content);
+		return folder;
+	}
+
 	private UnifiedReleaseNotesBuildOptions Options(params string[] requiredVersions) =>
 		new()
 		{
@@ -201,5 +209,70 @@ public class UnifiedReleaseNotesTests : IDisposable
 
 		succeeded.Should().BeFalse();
 		collector.Errors.Should().Be(2);
+	}
+
+	[Test]
+	public async Task Build_BundleWithAmendSidecar_RendersTheAmendedEntries()
+	{
+		// language=yaml
+		const string parent =
+			"""
+			products:
+			- product: elasticsearch
+			  target: 9.5.0
+			  repo: elasticsearch
+			  owner: elastic
+			entries:
+			- title: Original change
+			  type: enhancement
+			  file:
+			    name: original.yaml
+			    checksum: aaa
+			  products:
+			  - product: elasticsearch
+			    target: 9.5.0
+			  prs:
+			  - "100"
+			- title: Change removed by the amend
+			  type: enhancement
+			  file:
+			    name: removed.yaml
+			    checksum: bbb
+			  products:
+			  - product: elasticsearch
+			    target: 9.5.0
+			  prs:
+			  - "101"
+			""";
+		// language=yaml
+		const string amend =
+			"""
+			exclude-entries:
+			- file:
+			    name: removed.yaml
+			    checksum: bbb
+			entries:
+			- title: Change added by the amend
+			  type: enhancement
+			  products:
+			  - product: elasticsearch
+			    target: 9.5.0
+			  prs:
+			  - "102"
+			""";
+		_ = WriteFile("elasticsearch", "elasticsearch-elasticsearch-9.5.0.yaml", parent);
+		_ = WriteFile("elasticsearch", "elasticsearch-elasticsearch-9.5.0.amend-1.yaml", amend);
+		_ = WriteBundle("kibana", "kibana-kibana-9.5.0.yaml", "9.5.0", "Kibana unified change");
+		var collector = new DiagnosticsCollector([]);
+
+		var succeeded = await Service().Build(collector, Options("9.5.0"), TestContext.Current!.Execution.CancellationToken);
+
+		succeeded.Should().BeTrue();
+		var html = _fileSystem.File.ReadAllText(
+			_fileSystem.Path.Join(_temp.FullName, "site", "release-notes", "elasticsearch", "index.html")
+		);
+		html.Should().Contain("Original change");
+		html.Should().Contain("Change added by the amend");
+		html.Should().NotContain("Change removed by the amend");
 	}
 }
