@@ -101,6 +101,10 @@ internal sealed class UnifiedReleaseCommands(
 		);
 
 		var rootOutput = outputDir ?? new DirectoryInfo(Path.Combine(Directory.GetCurrentDirectory(), "bundles"));
+		// Entries are read from the repository and bundles are written to the output folder, which may
+		// live outside it: the scope covers the git root and that folder, like the documentation build does.
+		var fileSystem = ChangelogFileSystem.FromWorkingDirectory(extraRoots: [rootOutput.FullName]);
+
 		if (!rootOutput.Exists)
 			rootOutput.Create();
 
@@ -109,7 +113,6 @@ internal sealed class UnifiedReleaseCommands(
 		using var http = new HttpClient();
 		http.DefaultRequestHeaders.UserAgent.ParseAdd("docs-builder/1.0");
 
-		var fileSystem = ChangelogFileSystem.FromWorkingDirectory();
 		var bundleService = new ChangelogBundlingService(logFactory, fileSystem, configurationContext);
 
 		var targets = await ResolveTargetsAsync(http, versionOrKeyword, ctx);

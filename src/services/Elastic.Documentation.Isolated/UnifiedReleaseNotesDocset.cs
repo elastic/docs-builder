@@ -57,12 +57,8 @@ public static class UnifiedReleaseNotesDocset
 
 	private static string GenerateToc(IReadOnlyList<Product> products)
 	{
-		var lines = new List<string> { "toc:", "  - file: release-notes/index.md" };
-		if (products.Count > 0)
-		{
-			lines.Add("    children:");
-			lines.AddRange(products.Select(p => $"      - toc: release-notes/{p.Id}"));
-		}
+		var lines = new List<string> { "toc:", "  - folder: release-notes", "    children:", "      - file: index.md" };
+		lines.AddRange(products.Select(p => $"      - toc: {p.Id}"));
 		return string.Join('\n', lines) + "\n";
 	}
 

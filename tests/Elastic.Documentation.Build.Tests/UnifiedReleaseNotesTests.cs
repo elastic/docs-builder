@@ -132,7 +132,7 @@ public class UnifiedReleaseNotesTests : IDisposable
 		files["docset.yml"]
 			.Should()
 			.Be(
-				"project: unified-release-notes\ntoc:\n  - file: release-notes/index.md\n    children:\n      - toc: release-notes/elasticsearch\n      - toc: release-notes/kibana\n"
+				"project: unified-release-notes\ntoc:\n  - folder: release-notes\n    children:\n      - file: index.md\n      - toc: elasticsearch\n      - toc: kibana\n"
 			);
 		files.Should().NotContainKey("toc.yml");
 	}
@@ -170,6 +170,9 @@ public class UnifiedReleaseNotesTests : IDisposable
 		var succeeded = await Service().Build(collector, Options("9.5.0"), TestContext.Current!.Execution.CancellationToken);
 
 		succeeded.Should().BeTrue();
+		collector.Errors.Should().Be(0);
+		collector.Warnings.Should().Be(0);
+		collector.Hints.Should().Be(0, "the generated toc should not trigger structure hints");
 		var output = _fileSystem.Path.Join(_temp.FullName, "site");
 		_fileSystem.File.Exists(_fileSystem.Path.Join(output, "release-notes", "elasticsearch", "index.html")).Should().BeTrue();
 		_fileSystem
