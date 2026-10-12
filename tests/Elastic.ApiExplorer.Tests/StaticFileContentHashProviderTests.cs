@@ -60,6 +60,27 @@ public class StaticFileContentHashProviderTests
 	}
 
 	[Test]
+	public void GetUrl_DocSetShipsWebAppManifest_StillResolvesViteEntry()
+	{
+		using var docs = new TempDocs();
+		docs.WriteStatic("manifest.json", """{ "name": "Docs", "icons": [] }""");
+
+		var url = docs.Provider.GetUrl("main.js", string.Empty);
+
+		url.Should().MatchRegex(@"^/_static/main-[A-Za-z0-9_-]+\.js$");
+	}
+
+	[Test]
+	public void ParseManifest_NonObjectValues_AreIgnored()
+	{
+		using var stream = new MemoryStream(Encoding.UTF8.GetBytes("""{ "name": "Docs", "icons": [], "start_url": "/" }"""));
+
+		var entries = StaticFileContentHashProvider.ParseManifest(stream);
+
+		entries.Should().BeEmpty();
+	}
+
+	[Test]
 	public void ParseManifest_MapsEntryNamesToEmittedFiles()
 	{
 		const string json =
