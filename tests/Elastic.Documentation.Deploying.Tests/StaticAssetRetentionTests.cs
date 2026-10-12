@@ -22,6 +22,7 @@ public class StaticAssetRetentionTests
 
 	[Test]
 	[Arguments("docs/_static/styles.css")]
+	[Arguments("docs/_static/main.js")]
 	[Arguments("docs/_static/branding-logo.svg")]
 	[Arguments("docs/_static/mermaid.min.js")]
 	[Arguments("docs/index.html")]
@@ -33,15 +34,15 @@ public class StaticAssetRetentionTests
 	{
 		var start = new DateTime(2026, 10, 1, 0, 0, 0, DateTimeKind.Utc);
 		var stale = new List<S3Object>();
-		foreach (var i in Enumerable.Range(0, 12))
+		foreach (var i in Enumerable.Range(0, StaticAssetRetention.Keep + 2))
 			stale.Add(new S3Object { Key = $"docs/_static/main-hash{i:D4}.js", LastModified = start.AddDays(i) });
 		stale.Add(new S3Object { Key = "docs/_static/chunk-ModalSearch-aaaaaaaa.js", LastModified = start });
 		stale.Add(new S3Object { Key = "docs/_static/styles.css", LastModified = start });
 		stale.Add(new S3Object { Key = "docs/old-page.html", LastModified = start.AddDays(20) });
 
-		var retained = StaticAssetRetention.Retain(stale, 10);
+		var retained = StaticAssetRetention.Retain(stale);
 
-		retained.Should().HaveCount(11);
+		retained.Should().HaveCount(StaticAssetRetention.Keep + 1);
 		retained.Should().NotContain("docs/_static/main-hash0000.js");
 		retained.Should().NotContain("docs/_static/main-hash0001.js");
 		retained.Should().Contain("docs/_static/main-hash0002.js");
@@ -49,13 +50,5 @@ public class StaticAssetRetentionTests
 		retained.Should().Contain("docs/_static/chunk-ModalSearch-aaaaaaaa.js");
 		retained.Should().NotContain("docs/_static/styles.css");
 		retained.Should().NotContain("docs/old-page.html");
-	}
-
-	[Test]
-	public void Retain_ZeroKeep_RetainsNothing()
-	{
-		var stale = new[] { new S3Object { Key = "docs/_static/main-BM-isZMZ.js" } };
-
-		StaticAssetRetention.Retain(stale, 0).Should().BeEmpty();
 	}
 }

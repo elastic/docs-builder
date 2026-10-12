@@ -133,8 +133,8 @@ public class DocsSyncTests
 		var plan = await planStrategy.Plan(null, [], Cancel.None);
 
 		plan.AddRequests.Should().ContainSingle(i => i.DestinationPath == "docs/_static/main-newhash0.js");
-		plan.RetainRequests.Should().HaveCount(10);
-		plan.RetainRequests.Should().NotContain(i => i.DestinationPath == "docs/_static/main-old00000.js");
+		plan.RetainedPaths.Should().HaveCount(10);
+		plan.RetainedPaths.Should().NotContain("docs/_static/main-old00000.js");
 		plan
 			.DeleteRequests
 			.Select(i => i.DestinationPath)
