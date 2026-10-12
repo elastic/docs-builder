@@ -19,6 +19,7 @@ using Markdig.Renderers;
 using Microsoft.AspNetCore.Html;
 using RazorSlices;
 using Ds = Elastic.Documentation.Site.Components;
+using Md = Elastic.Markdown.Components;
 
 namespace Elastic.Markdown.Myst.Directives;
 
@@ -40,10 +41,10 @@ internal static class DesignSystemDirectives
 			case DropdownBlock dropdown:
 				Write(
 					renderer,
-					Ds
+					Md
 						.Disclosure
 						._Disclosure
-						.Create(new Ds.Disclosure.DisclosureModel
+						.Create(new Md.Disclosure.DisclosureModel
 						{
 							Title = dropdown.Title,
 							Body = new BodyViewModel { DirectiveBlock = dropdown }.RenderBlock(),
@@ -57,12 +58,12 @@ internal static class DesignSystemDirectives
 			case AdmonitionBlock admonition:
 				Write(
 					renderer,
-					Ds
+					Md
 						.Admonition
 						._Admonition
-						.Create(new Ds.Admonition.AdmonitionModel
+						.Create(new Md.Admonition.AdmonitionModel
 						{
-							Kind = Ds.Admonition.AdmonitionModel.KindFor(admonition.Admonition),
+							Kind = Md.Admonition.AdmonitionModel.KindFor(admonition.Admonition),
 							Title = admonition.Title,
 							Body = new BodyViewModel { DirectiveBlock = admonition }.RenderBlock(),
 							Id = admonition.CrossReferenceName,
@@ -74,19 +75,19 @@ internal static class DesignSystemDirectives
 			case TabSetBlock tabSet:
 				Write(
 					renderer,
-					Ds
+					Md
 						.Tabs
 						._TabSet
-						.Create(new Ds.Tabs.TabSetModel { Items = new TabSetViewModel { DirectiveBlock = tabSet }.RenderBlock() })
+						.Create(new Md.Tabs.TabSetModel { Items = new TabSetViewModel { DirectiveBlock = tabSet }.RenderBlock() })
 				);
 				return true;
 			case TabItemBlock tabItem:
 				Write(
 					renderer,
-					Ds
+					Md
 						.Tabs
 						._TabItem
-						.Create(new Ds.Tabs.TabItemModel
+						.Create(new Md.Tabs.TabItemModel
 						{
 							Title = tabItem.Title,
 							SetIndex = tabItem.TabSetIndex,
@@ -106,15 +107,15 @@ internal static class DesignSystemDirectives
 				);
 				return true;
 			case VectorSizingBlock:
-				Write(renderer, Ds.VectorSizing._VectorSizing.Create(new Ds.VectorSizing.VectorSizingModel()));
+				Write(renderer, Md.VectorSizing._VectorSizing.Create(new Md.VectorSizing.VectorSizingModel()));
 				return true;
 			case StepperBlock stepper:
 				Write(
 					renderer,
-					Ds
+					Md
 						.Stepper
 						._Stepper
-						.Create(new Ds.Stepper.StepperModel { Steps = new StepperViewModel { DirectiveBlock = stepper }.RenderBlock() })
+						.Create(new Md.Stepper.StepperModel { Steps = new StepperViewModel { DirectiveBlock = stepper }.RenderBlock() })
 				);
 				return true;
 			case StepBlock step:
@@ -123,10 +124,10 @@ internal static class DesignSystemDirectives
 			case ButtonGroupBlock group:
 				Write(
 					renderer,
-					Ds
+					Md
 						.ButtonGroup
 						._ButtonGroup
-						.Create(new Ds.ButtonGroup.ButtonGroupModel
+						.Create(new Md.ButtonGroup.ButtonGroupModel
 						{
 							Align = group.Align,
 							Buttons = new ButtonGroupViewModel { DirectiveBlock = group, Align = group.Align }.RenderBlock()
@@ -136,16 +137,16 @@ internal static class DesignSystemDirectives
 			case ButtonBlock button:
 				Write(
 					renderer,
-					Ds
+					Md
 						.ButtonGroup
 						._ButtonDirective
-						.Create(new Ds.ButtonGroup.ButtonDirectiveModel
+						.Create(new Md.ButtonGroup.ButtonDirectiveModel
 						{
 							Style = button.Type switch
 							{
-								"secondary" => Ds.ButtonGroup.ButtonDirectiveStyle.Secondary,
-								"neutral" => Ds.ButtonGroup.ButtonDirectiveStyle.Neutral,
-								_ => Ds.ButtonGroup.ButtonDirectiveStyle.Primary
+								"secondary" => Md.ButtonGroup.ButtonDirectiveStyle.Secondary,
+								"neutral" => Md.ButtonGroup.ButtonDirectiveStyle.Neutral,
+								_ => Md.ButtonGroup.ButtonDirectiveStyle.Primary
 							},
 							Align = button.Align,
 							InGroup = button.IsInGroup,
@@ -162,10 +163,10 @@ internal static class DesignSystemDirectives
 			case FigureBlock figure:
 				Write(
 					renderer,
-					Ds
+					Md
 						.Image
 						._Figure
-						.Create(new Ds.Image.FigureModel
+						.Create(new Md.Image.FigureModel
 						{
 							Image = ImageModelOf(figure, FigureUrl(figure)),
 							Label = figure.Label,
@@ -174,15 +175,15 @@ internal static class DesignSystemDirectives
 				);
 				return true;
 			case ImageBlock image:
-				Write(renderer, Ds.Image._Image.Create(ImageModelOf(image, image.ImageUrl)));
+				Write(renderer, Md.Image._Image.Create(ImageModelOf(image, image.ImageUrl)));
 				return true;
 			case ImageCarouselBlock carousel:
 				Write(
 					renderer,
-					Ds
+					Md
 						.Image
 						._ImageCarousel
-						.Create(new Ds.Image.ImageCarouselModel
+						.Create(new Md.Image.ImageCarouselModel
 						{
 							Images = [.. carousel.Images.Select(img => ImageModelOf(img, img.ImageUrl))],
 							MaxHeight = CarouselHeight(carousel.MaxHeight)
@@ -192,10 +193,10 @@ internal static class DesignSystemDirectives
 			case PageCardBlock card:
 				Write(
 					renderer,
-					Ds
+					Md
 						.PageCard
 						._PageCard
-						.Create(new Ds.PageCard.PageCardModel
+						.Create(new Md.PageCard.PageCardModel
 						{
 							Title = card.Title,
 							Url = card.ResolvedUrl,
@@ -205,14 +206,14 @@ internal static class DesignSystemDirectives
 				);
 				return true;
 			case ListingBlock listing:
-				Write(renderer, Ds.Listing._Listing.Create(ListingModelOf(listing)));
+				Write(renderer, Md.Listing._Listing.Create(ListingModelOf(listing)));
 				return true;
 			default:
 				return false;
 		}
 	}
 
-	private static Ds.Image.ImageModel ImageModelOf(ImageBlock block, string? imageUrl)
+	private static Md.Image.ImageModel ImageModelOf(ImageBlock block, string? imageUrl)
 	{
 		var legacy = new ImageViewModel
 		{
@@ -228,7 +229,7 @@ internal static class DesignSystemDirectives
 			Screenshot = block.Screenshot,
 			ImageUrl = imageUrl
 		};
-		return new Ds.Image.ImageModel
+		return new Md.Image.ImageModel
 		{
 			Src = imageUrl ?? string.Empty,
 			Id = legacy.UniqueImageId,
@@ -252,7 +253,7 @@ internal static class DesignSystemDirectives
 		_ => null
 	};
 
-	private static Ds.Listing.ListingModel ListingModelOf(ListingBlock block) =>
+	private static Md.Listing.ListingModel ListingModelOf(ListingBlock block) =>
 		new()
 		{
 			Groups =
@@ -262,12 +263,12 @@ internal static class DesignSystemDirectives
 					.GroupBy(e => e.GroupKey)
 					.OrderBy(g => g.Key is null ? 1 : 0)
 					.Select(
-						g => new Ds.Listing.ListingGroup(
+						g => new Md.Listing.ListingGroup(
 							g.Key,
 							g.FirstOrDefault(e => e.GroupTitle is not null)?.GroupTitle,
 							[
 								.. g.Select(
-									e => new Ds.PageCard.PageCardModel
+									e => new Md.PageCard.PageCardModel
 									{
 										Title = e.Title,
 										Url = e.Url,
@@ -296,10 +297,10 @@ internal static class DesignSystemDirectives
 		};
 		Write(
 			renderer,
-			Ds
+			Md
 				.CodeBlock
 				._CodeBlock
-				.Create(new Ds.CodeBlock.CodeBlockModel { Language = block.Language, Caption = block.Caption, Body = CodeBody(legacy) })
+				.Create(new Md.CodeBlock.CodeBlockModel { Language = block.Language, Caption = block.Caption, Body = CodeBody(legacy) })
 		);
 	}
 
@@ -332,10 +333,10 @@ internal static class DesignSystemDirectives
 		};
 		Write(
 			renderer,
-			Ds
+			Md
 				.Stepper
 				._Step
-				.Create(new Ds.Stepper.StepModel
+				.Create(new Md.Stepper.StepModel
 				{
 					Title = step.Title,
 					TitleHtml = string.IsNullOrEmpty(step.Title) ? null : legacy.RenderTitle(),

@@ -6,7 +6,7 @@
 {
 	foreach (var item in Model.GetApplicabilityItems())
 	{
-		@await RenderPartialAsync(Elastic.Documentation.Site.Components.AppliesPopover._AppliesPopover.Create(Elastic.Markdown.Myst.Components.DesignSystemApplicability.ToModel(item, Model)))
+		@await RenderPartialAsync(Elastic.Markdown.Components.AppliesPopover._AppliesPopover.Create(Elastic.Markdown.Myst.Components.DesignSystemApplicability.ToModel(item, Model)))
 	}
 	return;
 }

@@ -472,6 +472,7 @@ public class DocumentationWebHost
 	// The living design-system guide. It renders the same Razor components as the site, so it is a dev-server route regardless of feature flags.
 	private void MapStyleGuide()
 	{
+		MarkdownComponentSections.Register();
 		var hashes = new StaticFileContentHashProvider(new EmbeddedOrPhysicalFileProvider(Context));
 
 		string StaticUrl(string path) => hashes.GetUrl(path, string.Empty);

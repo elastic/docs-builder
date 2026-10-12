@@ -1,0 +1,15 @@
+@inherits RazorSlice<Elastic.Markdown.Components.CodeBlock.CodeBlockModel>
+<figure class="code-block notranslate" data-language="@Model.Language">
+	<figcaption class="code-block__header">
+		<span class="code-block__language">@Model.LanguageLabel</span>
+		@if (Model.Caption is { Length: > 0 } caption)
+		{
+			<span class="code-block__caption">@caption</span>
+		}
+		<button class="code-block__copy" type="button" data-copy hidden>
+			<span class="code-block__copy-label">Copy</span>
+			<span class="code-block__copied-label" aria-live="polite">Copied</span>
+		</button>
+	</figcaption>
+	<pre class="code-block__pre">@Model.Body</pre>
+</figure>

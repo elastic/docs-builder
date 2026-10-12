@@ -1,8 +1,0 @@
-@inherits RazorSlice<Elastic.Documentation.Site.Components.AppliesBadge.AppliesBadgeModel>
-<span class="@Model.CssClass">
-	<span class="@(Model.Part)__product">@Model.Product</span>
-	@if (!string.IsNullOrWhiteSpace(Model.Status))
-	{
-		<span class="@(Model.Part)__status">@Model.Status</span>
-	}
-</span>

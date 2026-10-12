@@ -25,7 +25,8 @@
 @import '../Components/Primitives/Link/link.css' layer(ds.components);
 @import '../Components/Primitives/Badge/badge.css' layer(ds.components);
 @import '../Components/Primitives/Method/method.css' layer(ds.components);
-@import '../Components/AppliesBadge/applies-badge.css' layer(ds.components);
+@import '../Components/Markdown/AppliesBadge/applies-badge.css'
+	layer(ds.components);
 @import '../Components/Primitives/Kbd/kbd.css' layer(ds.components);
 @import '../Components/Forms/TextField/text-field.css' layer(ds.components);
 @import '../Components/Forms/SelectField/select-field.css' layer(ds.components);
@@ -47,12 +48,13 @@
 @import '../Components/Navigation/Breadcrumb/breadcrumb.css'
 	layer(ds.components);
 @import '../Components/Navigation/Pager/pager.css' layer(ds.components);
-@import '../Components/Admonition/admonition.css' layer(ds.components);
-@import '../Components/Disclosure/disclosure.css' layer(ds.components);
-@import '../Components/Stepper/stepper.css' layer(ds.components);
-@import '../Components/Tabs/tabs.css' layer(ds.components);
-@import '../Components/ButtonGroup/button-directive.css' layer(ds.components);
-@import '../Components/CodeBlock/code-block.css' layer(ds.components);
+@import '../Components/Markdown/Admonition/admonition.css' layer(ds.components);
+@import '../Components/Markdown/Disclosure/disclosure.css' layer(ds.components);
+@import '../Components/Markdown/Stepper/stepper.css' layer(ds.components);
+@import '../Components/Markdown/Tabs/tabs.css' layer(ds.components);
+@import '../Components/Markdown/ButtonGroup/button-directive.css'
+	layer(ds.components);
+@import '../Components/Markdown/CodeBlock/code-block.css' layer(ds.components);
 @import '../Components/Navigation/LinkMenu/link-menu.css' layer(ds.components);
 @import '../Components/Navigation/NavTree/nav-tree.css' layer(ds.components);
 @import '../Components/Navigation/NavSide/nav-side.css' layer(ds.components);
@@ -68,27 +70,32 @@
 @import './ds/patterns/pages.css' layer(ds.pages);
 @import './ds/patterns/codex.css' layer(ds.pages);
 @import './ds/patterns/elastic-nav.css';
-@import '../Components/Prose/prose.css' layer(ds.components);
-@import '../Components/AppliesPopover/applies-popover.css' layer(ds.components);
+@import '../Components/Markdown/Prose/prose.css' layer(ds.components);
+@import '../Components/Markdown/AppliesPopover/applies-popover.css'
+	layer(ds.components);
 @import '../Components/Chrome/Feedback/feedback.css' layer(ds.components);
 @import '../Components/Overlays/SearchDialog/search-dialog.css'
 	layer(ds.components);
 @import '../Components/Navigation/DocsBar/docs-bar.css' layer(ds.components);
-@import '../Components/VectorSizing/vector-sizing.css' layer(ds.components);
-@import '../Components/DiagnosticsPanel/diagnostics-panel.css'
+@import '../Components/Markdown/VectorSizing/vector-sizing.css'
 	layer(ds.components);
-@import '../Components/AgentSkill/agent-skill.css' layer(ds.components);
-@import '../Components/Contributors/contributors.css' layer(ds.components);
-@import '../Components/RelatedLearning/related-learning.css'
+@import '../Components/Chrome/DiagnosticsPanel/diagnostics-panel.css'
 	layer(ds.components);
-@import '../Components/CliModifiers/cli-modifiers.css' layer(ds.components);
-@import '../Components/AppliesSwitch/applies-switch.css' layer(ds.components);
-@import '../Components/Mermaid/mermaid.css' layer(ds.components);
+@import '../Components/Markdown/AgentSkill/agent-skill.css' layer(ds.components);
+@import '../Components/Markdown/Contributors/contributors.css'
+	layer(ds.components);
+@import '../Components/Markdown/RelatedLearning/related-learning.css'
+	layer(ds.components);
+@import '../Components/Markdown/CliModifiers/cli-modifiers.css'
+	layer(ds.components);
+@import '../Components/Markdown/AppliesSwitch/applies-switch.css'
+	layer(ds.components);
+@import '../Components/Markdown/Mermaid/mermaid.css' layer(ds.components);
 @import '../Components/Pages/Hub/hub.css' layer(ds.components);
-@import '../Components/Table/table.css' layer(ds.components);
-@import '../Components/PageCard/page-card.css' layer(ds.components);
-@import '../Components/Listing/listing.css' layer(ds.components);
-@import '../Components/Image/image.css' layer(ds.components);
+@import '../Components/Markdown/Table/table.css' layer(ds.components);
+@import '../Components/Markdown/PageCard/page-card.css' layer(ds.components);
+@import '../Components/Markdown/Listing/listing.css' layer(ds.components);
+@import '../Components/Markdown/Image/image.css' layer(ds.components);
 @import '../Components/Pages/SearchPage/search-page.css' layer(ds.components);
 @import '../Components/Pages/ApiReference/api-reference.css'
 	layer(ds.components);

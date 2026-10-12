@@ -1,0 +1,17 @@
+@inherits RazorSlice<Elastic.Markdown.Components.Stepper.StepModel>
+<li class="stepper__step">
+	@if (!string.IsNullOrEmpty(Model.Title))
+	{
+		var title = Model.TitleHtml ?? new HtmlString(System.Net.WebUtility.HtmlEncode(Model.Title));
+		var level = Math.Clamp(Model.HeadingLevel, 1, 6);
+		if (Model.AsHeading)
+		{
+			@(new HtmlString($"<h{level} class=\"stepper__title\" id=\"{Model.Anchor}\">"))<a href="#@Model.Anchor">@title</a>@(new HtmlString($"</h{level}>"))
+		}
+		else
+		{
+			<div class="stepper__title" id="@Model.Anchor" role="heading" aria-level="@level"><a href="#@Model.Anchor">@title</a></div>
+		}
+	}
+	@Model.Body
+</li>

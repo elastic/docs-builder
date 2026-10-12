@@ -1,0 +1,28 @@
+@inherits RazorSlice<Elastic.Markdown.Components.AppliesPopover.AppliesPopoverModel>
+<span class="applies-badge__product">@Model.Product</span>
+@{
+	var hasLifecycleName = Model.ShowLifecycleName && !string.IsNullOrEmpty(Model.LifecycleName);
+	var hasVersion = Model.ShowVersion && !string.IsNullOrEmpty(Model.Version);
+	var hasStatus = hasLifecycleName || hasVersion || !string.IsNullOrEmpty(Model.LifecycleText) || Model.HasMultipleLifecycles;
+}
+@if (hasStatus)
+{
+<span class="applies-badge__status">
+	@if (hasLifecycleName)
+	{
+		<span class="applies-badge__lifecycle">@Model.LifecycleName</span>
+	}
+	@if (hasVersion)
+	{
+		<span class="applies-badge__version">@Model.Version</span>
+	}
+	else if (!string.IsNullOrEmpty(Model.LifecycleText))
+	{
+		@Model.LifecycleText
+	}
+	@if (Model.HasMultipleLifecycles)
+	{
+		<span class="applies-badge__more" aria-label="More lifecycles">…</span>
+	}
+</span>
+}

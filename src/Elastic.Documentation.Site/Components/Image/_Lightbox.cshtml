@@ -1,6 +1,0 @@
-@inherits RazorSlice<Elastic.Documentation.Site.Components.Image.ImageModel>
-@* A native dialog: Escape and the backdrop close it, and focus returns to the link that opened it. *@
-<dialog class="lightbox" id="@Model.DialogId" aria-label="@(string.IsNullOrEmpty(Model.Alt) ? "Image" : Model.Alt)">
-	<form method="dialog"><button class="lightbox__close" type="submit" aria-label="Close">@await RenderPartialAsync(_Icon.Create(new IconModel { Name = "cross", Size = IconSize.Small }))</button></form>
-	<a href="@Model.Src" target="_blank" rel="noopener"><img class="lightbox__img" loading="lazy" title="@Model.Title" alt="@Model.Alt" src="@Model.Src"></a>
-</dialog>

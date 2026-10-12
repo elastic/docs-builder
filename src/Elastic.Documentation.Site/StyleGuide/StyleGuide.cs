@@ -3,10 +3,6 @@
 // See the LICENSE file in the project root for more information
 
 using Elastic.Documentation.Site.Components;
-using Elastic.Documentation.Site.Components.Admonition;
-using Elastic.Documentation.Site.Components.AppliesBadge;
-using Elastic.Documentation.Site.Components.AppliesPopover;
-using Elastic.Documentation.Site.Components.ButtonGroup;
 using Elastic.Documentation.Site.Components.Cards.Card;
 using Elastic.Documentation.Site.Components.Cards.CtaCard;
 using Elastic.Documentation.Site.Components.Cards.EmptyState;
@@ -14,13 +10,11 @@ using Elastic.Documentation.Site.Components.Cards.LinkTile;
 using Elastic.Documentation.Site.Components.Cards.ReleaseCard;
 using Elastic.Documentation.Site.Components.Chrome.Banner;
 using Elastic.Documentation.Site.Components.Chrome.DeploymentInfo;
+using Elastic.Documentation.Site.Components.Chrome.DiagnosticsPanel;
 using Elastic.Documentation.Site.Components.Chrome.Feedback;
 using Elastic.Documentation.Site.Components.Chrome.SiteFooter;
 using Elastic.Documentation.Site.Components.Chrome.SiteHeader;
 using Elastic.Documentation.Site.Components.Chrome.ThemeSwitch;
-using Elastic.Documentation.Site.Components.CodeBlock;
-using Elastic.Documentation.Site.Components.DiagnosticsPanel;
-using Elastic.Documentation.Site.Components.Disclosure;
 using Elastic.Documentation.Site.Components.Forms.Check;
 using Elastic.Documentation.Site.Components.Forms.Chip;
 using Elastic.Documentation.Site.Components.Forms.FilterBar;
@@ -30,8 +24,6 @@ using Elastic.Documentation.Site.Components.Forms.SelectField;
 using Elastic.Documentation.Site.Components.Forms.SplitButton;
 using Elastic.Documentation.Site.Components.Forms.Switch;
 using Elastic.Documentation.Site.Components.Forms.TextField;
-using Elastic.Documentation.Site.Components.Image;
-using Elastic.Documentation.Site.Components.Listing;
 using Elastic.Documentation.Site.Components.Navigation.Breadcrumb;
 using Elastic.Documentation.Site.Components.Navigation.DocsBar;
 using Elastic.Documentation.Site.Components.Navigation.LinkMenu;
@@ -44,7 +36,6 @@ using Elastic.Documentation.Site.Components.Overlays.AskAi;
 using Elastic.Documentation.Site.Components.Overlays.Flyout;
 using Elastic.Documentation.Site.Components.Overlays.SearchDialog;
 using Elastic.Documentation.Site.Components.Overlays.Toast;
-using Elastic.Documentation.Site.Components.PageCard;
 using Elastic.Documentation.Site.Components.Pages.SearchPage;
 using Elastic.Documentation.Site.Components.Primitives.Badge;
 using Elastic.Documentation.Site.Components.Primitives.Button;
@@ -53,10 +44,6 @@ using Elastic.Documentation.Site.Components.Primitives.Link;
 using Elastic.Documentation.Site.Components.Primitives.Method;
 using Elastic.Documentation.Site.Components.Primitives.Skeleton;
 using Elastic.Documentation.Site.Components.Primitives.Tooltip;
-using Elastic.Documentation.Site.Components.Prose;
-using Elastic.Documentation.Site.Components.Stepper;
-using Elastic.Documentation.Site.Components.Tabs;
-using Elastic.Documentation.Site.Components.VectorSizing;
 
 namespace Elastic.Documentation.Site.StyleGuide;
 
@@ -177,11 +164,9 @@ public static class StyleGuideCatalog
 		)
 	];
 
-	/// <summary>The component sections shown on each component page, keyed by page slug.</summary>
-	public static IReadOnlyDictionary<string, IReadOnlyList<ComponentSection>> ComponentPages
-	{
-		get;
-	} = new Dictionary<string, IReadOnlyList<ComponentSection>>(StringComparer.OrdinalIgnoreCase)
+	// Components that render Markdown live in Elastic.Markdown, which depends on this project, so they add their sections through
+	// Add. Sections added later follow the ones listed here.
+	private static readonly Dictionary<string, List<ComponentSection>> Sections = new(StringComparer.OrdinalIgnoreCase)
 	{
 		["actions"] =
 		[
@@ -196,21 +181,7 @@ public static class StyleGuideCatalog
 			FilterBarExamples.FilterBars,
 			SplitButtonExamples.SplitButtons
 		],
-		["content"] =
-		[
-			AdmonitionExamples.Admonitions,
-			DisclosureExamples.Disclosures,
-			StepperExamples.Steppers,
-			TabsExamples.Tabs,
-			ButtonDirectiveExamples.Buttons,
-			CodeBlockExamples.CodeBlocks,
-			ProseExamples.Articles,
-			VectorSizingExamples.Calculators,
-			DiagnosticsPanelExamples.Panels,
-			PageCardExamples.Cards,
-			ImageExamples.Images,
-			ListingExamples.Listings
-		],
+		["content"] = [],
 		["chrome"] =
 		[
 			SiteHeaderExamples.Headers,
@@ -218,7 +189,8 @@ public static class StyleGuideCatalog
 			DeploymentInfoExamples.Deployments,
 			DocsBarExamples.Bars,
 			LinkMenuExamples.Menus,
-			SiteFooterExamples.Footers
+			SiteFooterExamples.Footers,
+			DiagnosticsPanelExamples.Panels
 		],
 		["sidebar"] =
 		[
@@ -241,15 +213,36 @@ public static class StyleGuideCatalog
 		],
 		["cards"] = [CardExamples.Cards, LinkTileExamples.Tiles, ReleaseCardExamples.Releases],
 		["navigation"] = [BreadcrumbExamples.Trails, PagerExamples.Pagers],
-		["badges"] =
-		[
-			BadgeExamples.Badges,
-			MethodBadgeExamples.Methods,
-			AppliesBadgeExamples.Badges,
-			AppliesPopoverExamples.Popovers,
-			KbdExamples.Keys
-		]
+		["badges"] = [BadgeExamples.Badges, MethodBadgeExamples.Methods, KbdExamples.Keys]
 	};
+
+	private static readonly Lock SectionsGate = new();
+
+	/// <summary>The component sections shown on each component page, keyed by page slug.</summary>
+	public static IReadOnlyDictionary<string, IReadOnlyList<ComponentSection>> ComponentPages
+	{
+		get
+		{
+			lock (SectionsGate)
+				return Sections.ToDictionary(
+					page => page.Key,
+					page => (IReadOnlyList<ComponentSection>)page.Value.ToArray(),
+					StringComparer.OrdinalIgnoreCase
+				);
+		}
+	}
+
+	/// <summary>Adds component sections to a component page. A section that is already on the page, by title, is not added twice.</summary>
+	public static void Add(string slug, params ComponentSection[] sections)
+	{
+		lock (SectionsGate)
+		{
+			if (!Sections.TryGetValue(slug, out var page))
+				Sections[slug] = page = [];
+			foreach (var section in sections.Where(s => page.TrueForAll(p => p.Title != s.Title)))
+				page.Add(section);
+		}
+	}
 
 	public static StyleGuidePage Default => Pages[0];
 
