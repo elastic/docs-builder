@@ -25,6 +25,22 @@ public class ChangelogFileSystem(IDirectoryInfo root, IFileSystem? inner = null)
 {
 	private static readonly FileSystem Physical = new();
 
+	/// <summary>The folder every read and write must stay inside.</summary>
+	public string Root { get; } = root.FullName;
+
+	/// <summary>Whether <paramref name="path"/> is the scope root or lies below it.</summary>
+	public bool Contains(string path) => IsWithin(Root, path);
+
+	public static bool IsWithin(string root, string path)
+	{
+		var fullRoot = System.IO.Path.TrimEndingDirectorySeparator(System.IO.Path.GetFullPath(root));
+		var fullPath = System.IO.Path.TrimEndingDirectorySeparator(System.IO.Path.GetFullPath(path));
+		var comparison = OperatingSystem.IsWindows() || OperatingSystem.IsMacOS()
+			? StringComparison.OrdinalIgnoreCase
+			: StringComparison.Ordinal;
+		return fullPath.Equals(fullRoot, comparison) || fullPath.StartsWith(fullRoot + System.IO.Path.DirectorySeparatorChar, comparison);
+	}
+
 	/// <summary>
 	/// Creates a scope anchored at the git root of the current working directory.
 	/// Falls back to the working directory itself when no <c>.git</c> root is found —
