@@ -739,6 +739,7 @@ function initApiResponseStatusTabs(): void {
 
 let apiEndpointCopyInitialized = false
 let apiPageActionsInitialized = false
+let apiPropertyAnchorCopyInitialized = false
 
 function closestEndpointCopyButton(
     target: EventTarget | null
@@ -796,6 +797,30 @@ function initApiEndpointCopy(): void {
     )
 }
 
+function initApiPropertyAnchorCopy(): void {
+    if (apiPropertyAnchorCopyInitialized) return
+    apiPropertyAnchorCopyInitialized = true
+
+    // The link icon still moves the page to the property (the click is not
+    // cancelled); it also copies the full URL so the link can be shared.
+    document.addEventListener('click', (e) => {
+        if (e.button !== 0 || e.ctrlKey || e.metaKey || e.shiftKey || e.altKey)
+            return
+        if (!(e.target instanceof Element)) return
+        const icon = e.target.closest<HTMLElement>('.property-anchor-icon')
+        const href = icon
+            ?.closest<HTMLAnchorElement>('a.property-anchor')
+            ?.getAttribute('href')
+        if (!icon || !href) return
+
+        const url = new URL(href, window.location.href).href
+        void navigator.clipboard?.writeText(url).then(
+            () => flashTooltip(icon, 'Copied!'),
+            (error) => console.error(error)
+        )
+    })
+}
+
 function closestCopyPageTrigger(
     target: EventTarget | null
 ): HTMLElement | null {
@@ -850,6 +875,7 @@ export function initApiDocs(): void {
     initGlobalClickHandlers()
     initTooltips()
     initApiEndpointCopy()
+    initApiPropertyAnchorCopy()
     initApiResponseStatusTabs()
     initApiExamples()
     initApiPageActions()
