@@ -21,7 +21,7 @@ public static partial class ApiAdmonitions
 
 		var lines = markdown.Replace("\r\n", "\n").Split('\n');
 		var result = new StringBuilder(markdown.Length + 64);
-		var openFence = (string?)null;
+		var openFence = (Fence?)null;
 
 		for (var i = 0; i < lines.Length; i++)
 		{
@@ -65,20 +65,16 @@ public static partial class ApiAdmonitions
 		return result.ToString().TrimEnd('\n');
 	}
 
-	// Only a fence with the same character, at least as long and with nothing after it closes the open block,
-	// so a shorter fence quoted inside a longer one stays part of the example.
-	private static bool IsFenceLine(string line, ref string? openFence)
+	private static bool IsFenceLine(string line, ref Fence? openFence)
 	{
-		var fence = FencePattern().Match(line);
-		if (!fence.Success)
+		var match = FencePattern().Match(line);
+		if (!match.Success)
 			return false;
 
-		var delimiter = fence.Groups["fence"].Value;
+		var fence = new Fence(match.Groups["fence"].Value, match.Groups["quote"].Success);
 		if (openFence is null)
-			openFence = delimiter;
-		else if (
-			delimiter[0] == openFence[0] && delimiter.Length >= openFence.Length && string.IsNullOrWhiteSpace(fence.Groups["rest"].Value)
-		)
+			openFence = fence;
+		else if (fence.Closes(openFence.Value, match.Groups["rest"].Value))
 			openFence = null;
 		return true;
 	}
@@ -127,7 +123,7 @@ public static partial class ApiAdmonitions
 	private static partial Regex MayContainAdmonition();
 
 	// A fence may sit inside a blockquote, so a `> info` line within that quoted code is still literal.
-	[GeneratedRegex(@"^\s{0,3}(?:>\s?)?\s{0,3}(?<fence>`{3,}|~{3,})(?<rest>.*)$")]
+	[GeneratedRegex(@"^\s{0,3}(?<quote>>\s?)?\s{0,3}(?<fence>`{3,}|~{3,})(?<rest>.*)$")]
 	private static partial Regex FencePattern();
 
 	[GeneratedRegex(@"^\s{0,3}>\s*(?<kind>info|warn|warning|note|tip|important|caution)\s*$", RegexOptions.IgnoreCase)]
@@ -139,4 +135,15 @@ public static partial class ApiAdmonitions
 	// "NOTE: text", "Warning: text", "**Note:** text", "**IMPORTANT**: text" at the start of a paragraph.
 	[GeneratedRegex(@"^(?:\*\*(?<kind>NOTE|Note|IMPORTANT|Important|WARNING|Warning|TIP|Tip|DEPRECATED)(?::\*\*|\*\*:)|(?<kind>NOTE|Note|IMPORTANT|Important|WARNING|Warning|TIP|Tip|DEPRECATED|Deprecated):)\s*(?<text>.*)$")]
 	private static partial Regex LabelPattern();
+
+	private readonly record struct Fence(string Delimiter, bool Quoted)
+	{
+		// CommonMark: the closing fence uses the same character, is at least as long and has nothing after it.
+		// It must also sit in the same quote context, so a quoted fence never closes an unquoted block.
+		public bool Closes(Fence open, string rest) =>
+			Quoted == open.Quoted
+				&& Delimiter[0] == open.Delimiter[0]
+				&& Delimiter.Length >= open.Delimiter.Length
+				&& string.IsNullOrWhiteSpace(rest);
+	}
 }

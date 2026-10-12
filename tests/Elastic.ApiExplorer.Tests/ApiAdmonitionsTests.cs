@@ -97,6 +97,14 @@ public class ApiAdmonitionsTests
 	}
 
 	[Test]
+	public void Convert_QuotedFenceInsideUnquotedFence_DoesNotCloseIt()
+	{
+		var markdown = "```md\n> ```\n\nNOTE: keep me\n```";
+
+		ApiAdmonitions.Convert(markdown).Should().Be(markdown);
+	}
+
+	[Test]
 	public void Render_ConvertsAdmonitionsBeforeRendering()
 	{
 		var renderer = new CapturingRenderer();
