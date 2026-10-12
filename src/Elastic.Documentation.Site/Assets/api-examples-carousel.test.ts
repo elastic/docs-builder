@@ -155,9 +155,10 @@ describe('API examples carousel', () => {
                 window.localStorage.getItem(apiLanguageStorageKey)
             ).toBeNull()
 
-            // While the page applies the remembered language, cards settling on the way are not picks.
+            // While the page applies the remembered language, a card settling on the way shows but is not a pick.
             settle('curl')
-            expect(activeLang('term')).toBe('Console')
+            expect(activeLang('term')).toBe('curl')
+            expect(window.location.hash).toBe('')
             expect(
                 window.localStorage.getItem(apiLanguageStorageKey)
             ).toBeNull()

@@ -617,8 +617,8 @@ function recentlySettled(carousel: HTMLElement): boolean {
 
 /**
  * Follows swipes, free scrolls and find-in-page: the card that settles into view becomes the pick, like a dot
- * click would. Not while the page is applying the remembered language itself: a fallback card settling into view
- * on its own must not replace the saved language.
+ * click would. Right after the page applies the remembered language itself, the card still follows the strip but is
+ * not saved: a fallback card settling into view on its own must not replace the saved language.
  */
 function observeStrip(carousel: HTMLElement) {
     const strip = carousel.querySelector<HTMLElement>('[data-carousel-strip]')
@@ -629,7 +629,7 @@ function observeStrip(carousel: HTMLElement) {
 
     const observer = new IntersectionObserver(
         (entries) => {
-            if (carousel.dataset.scrolling || recentlySettled(carousel)) return
+            if (carousel.dataset.scrolling) return
             const best = entries
                 .filter((entry) => entry.isIntersecting)
                 .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0]
@@ -638,7 +638,8 @@ function observeStrip(carousel: HTMLElement) {
             if (!best || best.intersectionRatio < 0.6 || !language) return
             // Only a change counts: the first callback after load reports the card that is already active.
             if (sameLanguage(language, activeLanguage(carousel))) return
-            if (setActive(carousel, language)) pickLanguage(examples, language)
+            if (!setActive(carousel, language)) return
+            if (!recentlySettled(carousel)) pickLanguage(examples, language)
         },
         { root: strip, threshold: [0.6, 0.9] }
     )
