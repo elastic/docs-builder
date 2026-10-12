@@ -39,9 +39,9 @@
 }
 @if (requirements.Count > 0)
 {
-	<div @ParamSectionHeader.WrapAttributes(collapse: true)>
+	<div @ParamSectionHeader.WrapAttributes()>
 		@(await RenderPartialAsync<_ParamSectionHeader, ParamSectionHeader>(new ParamSectionHeader("Authentication", "authentication", [.. requirements.Select(static r => r.Label)], NamesAreVariants: true)))
-		<div @ParamSectionHeader.BodyAttributes(collapse: true, "authentication-list")>
+		<div @ParamSectionHeader.BodyAttributes("authentication-list")>
 			@* Each requirement is an alternative, so several of them become tabs: the same radio-button tabs as the docs. Switching needs no script; tabs.ts makes the other panels findable.
 			   The schemes inside one requirement are sent together, so they share a panel. *@
 			<div class="@(useTabs ? "api-tabs api-authentication-tabs" : null)">
