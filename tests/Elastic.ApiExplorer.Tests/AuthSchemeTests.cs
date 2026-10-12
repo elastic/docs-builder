@@ -22,7 +22,7 @@ public class AuthSchemeTests
 		var badges = OpenApiAuthSchemeResolver.Resolve(op, doc);
 
 		badges.Select(b => b.Id).Should().Equal("apiKeyAuth", "basicAuth", "bearerAuth");
-		badges.Select(b => b.PillLabel).Should().Equal("Api key auth", "Basic auth", "Bearer auth");
+		badges.Select(b => b.Label).Should().Equal("Api key", "Basic", "Bearer");
 	}
 
 	[Test]
@@ -33,7 +33,7 @@ public class AuthSchemeTests
 		var badges = OpenApiAuthSchemeResolver.Resolve(op, doc);
 
 		badges.Select(b => b.Id).Should().Equal("apiKeyAuth");
-		badges.Select(b => b.PillLabel).Should().Equal("Api key auth");
+		badges.Select(b => b.Label).Should().Equal("Api key");
 	}
 
 	[Test]
@@ -80,23 +80,20 @@ public class AuthSchemeTests
 		var badges = OpenApiAuthSchemeResolver.Resolve(search, doc);
 
 		badges.Select(b => b.Id).Should().Equal("apiKeyAuth", "basicAuth", "bearerAuth");
-		badges.Select(b => b.PillLabel).Should().Equal("Api key auth", "Basic auth", "Bearer auth");
+		badges.Select(b => b.Label).Should().Equal("Api key", "Basic", "Bearer");
 	}
 
 	[Test]
-	public async Task Resolve_WithAuthenticationUrl_AppendsLowercasedSchemeAnchors()
+	public async Task Resolve_DocumentSecurity_CarriesCredentialExamples()
 	{
 		var (op, doc) = await Load(EsShapedSpec(operationSecurity: null));
-		var badges = OpenApiAuthSchemeResolver.Resolve(op, doc, "/api/doc/elasticsearch/authentication");
 
-		badges
-			.Select(b => b.Href)
+		var schemes = OpenApiAuthSchemeResolver.Resolve(op, doc);
+
+		schemes
+			.Select(s => s.CredentialExample)
 			.Should()
-			.Equal(
-				"/api/doc/elasticsearch/authentication#apikeyauth",
-				"/api/doc/elasticsearch/authentication#basicauth",
-				"/api/doc/elasticsearch/authentication#bearerauth"
-			);
+			.Equal("Authorization: <value>", "Authorization: Basic <credentials>", "Authorization: Bearer <token>");
 	}
 
 	private static string EsShapedSpec(string? operationSecurity)

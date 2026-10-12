@@ -4,9 +4,17 @@
 
 using Elastic.ApiExplorer.Infrastructure;
 using Elastic.ApiExplorer.Model;
+using Microsoft.AspNetCore.Html;
 using Microsoft.OpenApi;
 
 namespace Elastic.ApiExplorer.Operations;
+
+/// <summary>Credentials and required privileges for the Authorization section; <paramref name="RenderMarkdown"/> renders descriptions.</summary>
+public record AuthorizationSectionModel(
+	IReadOnlyList<AuthScheme> Schemes,
+	IReadOnlyList<PrivilegeRow> Privileges,
+	Func<string?, HtmlString> RenderMarkdown
+);
 
 public class OperationViewModel(ApiRenderContext context) : ApiViewModel(context)
 {
@@ -15,16 +23,7 @@ public class OperationViewModel(ApiRenderContext context) : ApiViewModel(context
 	/// <summary>Precomputed structural content of the page; built before the slice renders.</summary>
 	public required OperationPageModel Page { get; init; }
 
-	public IReadOnlyList<PrerequisiteRow>? Prerequisites =>
-		OpenApiXReqAuthParser.TryGetPrerequisiteRows(
-			Operation.Operation,
-			RenderContext.ApiExplorerLog,
-			Operation.Route,
-			Operation.Operation.OperationId
-		);
-
-	public IReadOnlyList<string> PrerequisiteNames =>
-		[.. (Prerequisites ?? []).Select(static r => r.Label).Where(static l => l.Length > 0)];
+	public AuthorizationSectionModel Authorization => new(Page.AuthSchemes, Page.RequiredPrivileges, markdown => RenderMarkdown(markdown));
 
 	protected override string? LayoutPageTitle => Operation.Operation.Summary ?? CurrentNavigationItem.NavigationTitle;
 
@@ -35,8 +34,8 @@ public class OperationViewModel(ApiRenderContext context) : ApiViewModel(context
 		var operation = Operation.Operation;
 		var tocItems = new List<ApiTocItem> { new("Paths", "paths") };
 
-		if (Prerequisites is { Count: > 0 })
-			tocItems.Add(new ApiTocItem("Prerequisites", "prerequisites"));
+		if (Page.HasAuthorization)
+			tocItems.Add(new ApiTocItem("Authorization", "authorization"));
 
 		if (Page.QueryParameters.Count > 0)
 			tocItems.Add(new ApiTocItem("Query parameters", "query-params"));

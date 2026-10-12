@@ -61,8 +61,13 @@ public partial record OperationPageModel
 	public required bool ShowResponseExamples { get; init; }
 	public required IReadOnlyList<ExampleScenario> Scenarios { get; init; }
 
-	/// <summary>Effective auth scheme badges. Empty when the spec declares no schemes.</summary>
-	public required IReadOnlyList<AuthSchemeBadge> AuthSchemes { get; init; }
+	/// <summary>Effective auth schemes. Empty when the spec declares no schemes.</summary>
+	public required IReadOnlyList<AuthScheme> AuthSchemes { get; init; }
+
+	/// <summary>Privileges the operation needs, from <c>x-req-auth</c> or lifted out of the description.</summary>
+	public required IReadOnlyList<PrivilegeRow> RequiredPrivileges { get; init; }
+
+	public bool HasAuthorization => AuthSchemes.Count > 0 || RequiredPrivileges.Count > 0;
 
 	public static OperationPageModel Create(ApiOperation apiOperation, ApiRenderContext context)
 	{
@@ -86,6 +91,7 @@ public partial record OperationPageModel
 			supplemental?.DescriptionOr(operation.Description) ?? operation.Description,
 			siblings
 		);
+		var privileges = RequiredPrivilegesExtractor.Extract(operation, endpoint.Description, context.ApiExplorerLog, apiOperation.Route);
 		var requestExamples = MapExamples(
 			operation.RequestBody?.Content?.FirstOrDefault().Value?.Examples,
 			options.RenderMarkdown,
@@ -153,7 +159,7 @@ public partial record OperationPageModel
 			RequestProperties = request.Properties,
 			RequestUnionVariants = request.UnionVariants,
 			RequestRequires = request.Requires,
-			DescriptionMarkdown = endpoint.Description,
+			DescriptionMarkdown = privileges.Description,
 			PostSections = ApiPostSection.From(context, supplemental?.PostSections ?? []),
 			RequestType = requestSchema is not null ? builder.Describe(requestSchema) : null,
 			Responses = BuildResponses(operation, analyzer, builder),
@@ -163,11 +169,8 @@ public partial record OperationPageModel
 			ShowRequestExamples = requestExamples.Count > 0 && scenarios.Any(static s => s.ShowRequest),
 			ShowResponseExamples = responseExamples.Count > 0,
 			Scenarios = scenarios,
-			AuthSchemes = OpenApiAuthSchemeResolver.Resolve(
-				operation,
-				document,
-				$"{context.CurrentNavigation.NavigationRoot.Url.TrimEnd('/')}/{ApiUrlBuilder.AuthenticationSegment}"
-			)
+			RequiredPrivileges = privileges.Rows,
+			AuthSchemes = OpenApiAuthSchemeResolver.Resolve(operation, document)
 		};
 	}
 

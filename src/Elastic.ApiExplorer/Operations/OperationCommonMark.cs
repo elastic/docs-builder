@@ -11,12 +11,7 @@ namespace Elastic.ApiExplorer.Operations;
 
 internal static class OperationCommonMark
 {
-	public static string Write(
-		ApiOperation apiOperation,
-		OperationPageModel page,
-		IReadOnlyList<string>? prerequisites,
-		ApiRenderContext context
-	)
+	public static string Write(ApiOperation apiOperation, OperationPageModel page, ApiRenderContext context)
 	{
 		var markdown = new StringBuilder();
 		var apiBaseUrl = context.CurrentNavigation.NavigationRoot.Url;
@@ -26,10 +21,9 @@ internal static class OperationCommonMark
 		WriteBadges(markdown, operation, page);
 		WriteServers(markdown, page);
 		WritePaths(markdown, page);
-		WriteSecurity(markdown, page);
-		WritePrerequisites(markdown, prerequisites, apiBaseUrl);
 		WritePathParameters(markdown, page, apiBaseUrl);
 		WriteDescription(markdown, page, apiBaseUrl);
+		WriteAuthorization(markdown, page, apiBaseUrl);
 		WriteQueryParameters(markdown, page, apiBaseUrl);
 		WriteRequestBody(markdown, apiOperation, page, apiBaseUrl);
 		WriteResponses(markdown, page, apiBaseUrl);
@@ -94,17 +88,6 @@ internal static class OperationCommonMark
 		return $"`{row.Method.ToUpperInvariant()}`{also} `{row.Route}`";
 	}
 
-	private static void WritePrerequisites(StringBuilder markdown, IReadOnlyList<string>? prerequisites, string apiBaseUrl)
-	{
-		if (prerequisites is not { Count: > 0 })
-			return;
-
-		ApiCommonMark.Heading(markdown, 2, "Prerequisites");
-		foreach (var line in prerequisites)
-			_ = markdown.AppendLine($"- {ApiMarkdown.Prepare(line, apiBaseUrl)}");
-		_ = markdown.AppendLine();
-	}
-
 	private static void WritePathParameters(StringBuilder markdown, OperationPageModel page, string apiBaseUrl)
 	{
 		if (page.PathParameters.Count == 0)
@@ -141,13 +124,24 @@ internal static class OperationCommonMark
 			ApiCommonMark.Paragraph(markdown, ApiCommonMark.Link(docs.LinkText, docs.Url));
 	}
 
-	private static void WriteSecurity(StringBuilder markdown, OperationPageModel page)
+	private static void WriteAuthorization(StringBuilder markdown, OperationPageModel page, string apiBaseUrl)
 	{
-		if (page.AuthSchemes.Count == 0)
+		if (!page.HasAuthorization)
 			return;
 
+		ApiCommonMark.Heading(markdown, 2, "Authorization");
 		foreach (var scheme in page.AuthSchemes)
-			_ = markdown.AppendLine($"- {ApiCommonMark.Link(scheme.PillLabel, scheme.Href)}");
+		{
+			var credential = scheme.CredentialExample is null ? "" : $": `{scheme.CredentialExample}`";
+			_ = markdown.AppendLine($"- {scheme.Label}{credential}");
+		}
+
+		foreach (var row in page.RequiredPrivileges)
+		{
+			var values = string.Join(row.Join is null ? ", " : $" {row.Join} ", row.Values.Select(static v => $"`{v}`"));
+			_ = markdown.AppendLine(values.Length == 0 ? $"- {ApiMarkdown.Prepare(row.Label, apiBaseUrl)}" : $"- {row.Label}: {values}");
+		}
+
 		_ = markdown.AppendLine();
 	}
 

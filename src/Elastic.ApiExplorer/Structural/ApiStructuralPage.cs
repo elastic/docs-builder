@@ -76,7 +76,8 @@ public class StructuralNavigationItem : ILeafNavigationItem<ApiStructuralPage>
 	public string Id { get; }
 	public ApiStructuralPage Model { get; }
 	public string Url { get; }
-	public bool Hidden => false;
+	// The Authentication page is still generated so old links keep working; operation pages show auth inline.
+	public bool Hidden => Model.Kind == ApiStructuralKind.Authentication;
 	public string NavigationTitle { get; }
 	public INodeNavigationItem<INavigationModel, INavigationItem>? Parent { get; set; }
 	public int NavigationIndex { get; set; }
@@ -136,7 +137,7 @@ public class StructuralViewModel(ApiRenderContext context) : ApiViewModel(contex
 		var displays = new List<AuthenticationSchemeDisplay>(schemes.Count);
 		foreach (var (id, scheme) in schemes)
 		{
-			var resolved = Resolve(scheme, context.Model);
+			var resolved = OpenApiAuthSchemeResolver.Target(scheme, context.Model);
 			var label = OpenApiAuthSchemeResolver.LabelFor(resolved) ?? id;
 			var description = resolved?.Description;
 			displays.Add(
@@ -146,7 +147,7 @@ public class StructuralViewModel(ApiRenderContext context) : ApiViewModel(contex
 					id.ToLowerInvariant(),
 					string.IsNullOrEmpty(description) ? null : ApiMarkdown.Render(context, description),
 					description,
-					CredentialExample(resolved)
+					OpenApiAuthSchemeResolver.CredentialExample(resolved)
 				)
 			);
 		}
@@ -159,30 +160,6 @@ public class StructuralViewModel(ApiRenderContext context) : ApiViewModel(contex
 			.Where(server => !string.IsNullOrEmpty(server.Url))
 			.Select(server => new ApiServerDisplay(server.Url!, server.Description))
 			.ToArray();
-
-	private static IOpenApiSecurityScheme? Resolve(IOpenApiSecurityScheme scheme, OpenApiDocument document)
-	{
-		if (
-			scheme is OpenApiSecuritySchemeReference { Reference.Id: { Length: > 0 } id }
-			&& document.Components?.SecuritySchemes?.TryGetValue(id, out var listed) == true
-		)
-			return listed;
-		return scheme;
-	}
-
-	private static string? CredentialExample(IOpenApiSecurityScheme? scheme) => scheme?.Type switch
-	{
-		SecuritySchemeType.ApiKey when scheme.In == ParameterLocation.Header && !string.IsNullOrEmpty(scheme.Name) =>
-			$"{scheme.Name}: <value>",
-		SecuritySchemeType.ApiKey when scheme.In == ParameterLocation.Query && !string.IsNullOrEmpty(scheme.Name) =>
-			$"?{scheme.Name}=<value>",
-		SecuritySchemeType.Http when string.Equals(scheme.Scheme, "basic", StringComparison.OrdinalIgnoreCase) =>
-			"Authorization: Basic <credentials>",
-		SecuritySchemeType.Http when string.Equals(scheme.Scheme, "bearer", StringComparison.OrdinalIgnoreCase) =>
-			"Authorization: Bearer <token>",
-		SecuritySchemeType.Http when !string.IsNullOrEmpty(scheme.Scheme) => $"Authorization: {scheme.Scheme} <token>",
-		_ => null
-	};
 }
 
 internal static class StructuralCommonMark

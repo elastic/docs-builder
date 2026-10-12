@@ -80,37 +80,25 @@ public class ApiSupplementalRenderTests(ApiExplorerFixture fixture)
 	}
 
 	[Test]
-	public async Task Operation_Authorization_RendersPillsUnderEndpoint()
+	public async Task Operation_Authorization_RendersInlineChipsWithCredentials()
 	{
 		var nav = SearchOperation();
 		var html = await RenderAsync(nav.Model, nav);
 		var markdown = await RenderCommonMarkAsync(nav.Model, nav);
 
-		html.Should().Contain("class=\"api-security-badges\"");
-		html.Should().Contain("class=\"api-auth-button\" href=\"/api/doc/fixture/authentication#apikey\">");
-		html.Should().Contain("<span>Api key auth</span>");
-		html.Should().Contain("class=\"api-auth-button\" href=\"/api/doc/fixture/authentication#basicauth\">");
-		html.Should().Contain("<span>Basic auth</span>");
-		html.Should().Contain("class=\"api-auth-button\" href=\"/api/doc/fixture/authentication#bearerauth\">");
-		html.Should().Contain("<span>Bearer auth</span>");
-		html.Should().NotContain("id=\"authorization\"");
-		html.Should().NotContain("auth-scheme-item");
-		markdown.Should().Contain("[Api key auth](/api/doc/fixture/authentication#apikey)");
-		markdown.Should().Contain("[Basic auth](/api/doc/fixture/authentication#basicauth)");
-		markdown.Should().Contain("[Bearer auth](/api/doc/fixture/authentication#bearerauth)");
-		markdown.Should().NotContain("## Authorization");
-	}
-
-	[Test]
-	public async Task Operation_Prerequisites_RendersCollapsedWhenMultipleItems()
-	{
-		var nav = SearchOperation();
-		var html = await RenderAsync(nav.Model, nav);
-
-		html.Should().Contain("id=\"prerequisites\"");
-		html.Should().Contain("id=\"prerequisites-list\"");
-		html.Should().Contain("aria-controls=\"prerequisites-list\"");
-		html.Should().Contain("href=\"#prerequisites\">Prerequisites</a>");
+		html.Should().Contain("id=\"authorization\"");
+		html.Should().Contain("union-variants-container union-variant-chips");
+		html.Should().Contain("data-chip=\"authorization-apikey\"");
+		html.Should().Contain("data-chip=\"authorization-basicauth\"");
+		html.Should().Contain("data-chip=\"authorization-bearerauth\"");
+		html.Should().Contain("Authorization: Basic &lt;credentials&gt;");
+		html.Should().NotContain("api-auth-button");
+		html.Should().NotContain("api-security-badges");
+		html.Should().NotContain("/authentication#");
+		html.Should().Contain("href=\"#authorization\"");
+		markdown.Should().Contain("## Authorization");
+		markdown.Should().Contain("- Basic: `Authorization: Basic <credentials>`");
+		markdown.Should().NotContain("/authentication#");
 	}
 
 	[Test]
