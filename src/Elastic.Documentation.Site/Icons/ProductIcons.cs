@@ -61,6 +61,25 @@ public static class ProductIcons
 				</g>
 			</svg>
 			""",
+		["beats"] =
+			"""
+			<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" aria-hidden="true">
+				<g transform="translate(4)">
+					<path fill="#0080D5" d="M11,20 L0,20 L0,0 L11,0 C16.522,0 21,4.478 21,10 C21,15.522 16.522,20 11,20"/>
+					<path fill="#00C2B3" d="M22.7021,15.624 C20.6001,19.979 16.1521,23 11.0001,23 L0.0001,23 L0.0001,32 L15.0001,32 C20.5221,32 25.0001,27.522 25.0001,22 C25.0001,19.576 24.1371,17.354 22.7021,15.624"/>
+					<path class="euiIcon__fillNegative" d="M20.3379,13.5537 C18.7919,12.5747 16.9649,11.9997 14.9999,11.9997 L-0.0001,11.9997 L-0.0001,19.9997 L10.9999,19.9997 C15.2699,19.9997 18.9029,17.3197 20.3379,13.5537"/>
+				</g>
+			</svg>
+			""",
+		// Placeholder: Elastic Agent has no official logo. A white "A" on its own grey tile, so it
+		// needs no theme-aware fill. Replace it when a logo exists.
+		["elastic-agent"] =
+			"""
+			<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" aria-hidden="true">
+				<rect width="32" height="32" rx="6" fill="#69707D"/>
+				<path fill="#FFFFFF" fill-rule="evenodd" d="M13.9 7h4.2l6.4 18h-3.7l-1.3-3.8h-7l-1.3 3.8H7.5l6.4-18Zm2.1 4.3-2.4 7h4.8l-2.4-7Z"/>
+			</svg>
+			""",
 		["elastic-stack"] =
 			"""
 			<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" aria-hidden="true">
