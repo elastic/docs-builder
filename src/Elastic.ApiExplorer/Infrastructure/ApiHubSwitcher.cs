@@ -3,21 +3,23 @@
 // See the LICENSE file in the project root for more information
 
 using Elastic.ApiExplorer.Landing;
+using Elastic.Documentation.Site;
 
 namespace Elastic.ApiExplorer.Infrastructure;
 
 public static class ApiHubSwitcher
 {
-	public static IReadOnlyList<ApiVersionSwitcherItem> Build(IReadOnlyList<ApiCatalogEntry> entries, string? currentApiKey, string hubUrl)
+	public static IReadOnlyList<ApiContextProduct> Build(IReadOnlyList<ApiCatalogEntry> entries, string? currentApiKey)
 	{
 		if (entries.Count == 0 || currentApiKey is null)
 			return [];
 
-		var items = new List<ApiVersionSwitcherItem>(entries.Count + 1) { new("Back to hub", hubUrl, Selected: false) };
-
-		foreach (var entry in entries.OrderBy(e => e.Title, StringComparer.OrdinalIgnoreCase))
-			items.Add(new(entry.Title, entry.Url, Selected: entry.Key == currentApiKey));
-
-		return items;
+		return [
+			.. entries
+				.OrderBy(e => ApiCatalogOrder.Rank(e.Key))
+				.ThenBy(e => e.Title, StringComparer.OrdinalIgnoreCase)
+				.ThenBy(e => e.Key, StringComparer.Ordinal)
+				.Select(e => new ApiContextProduct(e.Title, e.Url, e.Key == currentApiKey, e.IconSvg))
+		];
 	}
 }

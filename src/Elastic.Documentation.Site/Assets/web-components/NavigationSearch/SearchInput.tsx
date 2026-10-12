@@ -97,9 +97,9 @@ export const SearchInput = ({
                         )
                         ${size === 's' ? euiTheme.size.s : euiTheme.size.m};
                     padding-left: 34px;
-                    border: 1px solid ${euiTheme.colors.borderBasePlain};
-                    border-radius: ${euiTheme.border.radius.medium};
-                    background: ${euiTheme.colors.backgroundBaseSubdued};
+                    border: 1px solid #cad3e2;
+                    border-radius: 8px;
+                    background: #fff;
                     font-size: ${euiTheme.font.scale.s * euiTheme.base}px;
                     line-height: ${euiTheme.base * 1.25}px;
                     color: ${euiTheme.colors.textParagraph};
@@ -110,7 +110,8 @@ export const SearchInput = ({
                     }
 
                     &:focus {
-                        border-color: ${euiTheme.colors.primary};
+                        border-color: #0b64dd;
+                        box-shadow: 0 0 0 1px #0b64dd;
                     }
                 `}
             />

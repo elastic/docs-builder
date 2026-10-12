@@ -13,6 +13,9 @@
 	body.navigation-preview {
 		--offset-top: 56px;
 	}
+	body:has(.api-context-bar-host) {
+		--offset-top: var(--api-context-bar-height);
+	}
 }
 
 /* Reserve the space used by elastic-nav.js before its asynchronous render.

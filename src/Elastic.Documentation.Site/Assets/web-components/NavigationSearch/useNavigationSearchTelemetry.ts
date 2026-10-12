@@ -26,7 +26,7 @@ import {
 import { type TypeFilter } from './useNavigationSearchQuery'
 import { useCallback } from 'react'
 
-export type NavigationSearchTrigger = 'keyboard_shortcut' | 'focus' | 'click'
+export type NavigationSearchTrigger = 'focus' | 'click'
 export type NavigationSearchCloseReason =
     'escape' | 'blur' | 'navigate' | 'clear'
 export type NavigationMethod = 'keyboard' | 'mouse'

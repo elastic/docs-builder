@@ -1,0 +1,28 @@
+@inherits RazorSlice<Elastic.Documentation.Site.ApiContextBar>
+@if (Model.Versions.Count > 1)
+{
+	var current = Model.Versions.FirstOrDefault(static v => v.Selected) ?? Model.Versions[0];
+	<div class="api-context-version" id="api-version-switcher">
+		<button type="button"
+		        class="nav-select"
+		        popovertarget="api-version-menu"
+				        aria-label="API version">
+			<span class="nav-select__body">
+				<span class="nav-select__value">@current.Label</span>
+				<span class="nav-select__chevron" aria-hidden="true">
+					<svg viewBox="0 0 16 16"><use href="#icon-chevron-down"/></svg>
+				</span>
+			</span>
+		</button>
+		<div id="api-version-menu" class="api-menu" popover data-placement="bottom-start" aria-label="API version">
+			@foreach (var version in Model.Versions)
+			{
+				var selectedClass = version.Selected ? " secondary-nav-dropdown-link--selected" : "";
+				<a class="secondary-nav-dropdown-link@(selectedClass)"
+				   href="@version.Value"
+				   aria-current="@(version.Selected ? "true" : null)"
+				   hx-boost="false">@version.Label</a>
+			}
+		</div>
+	</div>
+}
