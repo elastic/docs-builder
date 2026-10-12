@@ -98,6 +98,52 @@ public class DocsSyncTests
 	}
 
 	[Test]
+	public async Task TestPlan_RetainsRecentHashedAssetsInsteadOfDeletingThem()
+	{
+		IReadOnlyCollection<IDiagnosticsOutput> diagnosticsOutputs = [];
+		var collector = new DiagnosticsCollector(diagnosticsOutputs);
+		var mockS3Client = A.Fake<IAmazonS3>();
+		var fileSystem = new MockFileSystem(
+			new Dictionary<string, MockFileData> { { "docs/_static/main-newhash0.js", new MockFileData("new") } },
+			new MockFileSystemOptions { CurrentDirectory = Path.Join(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "assembly"), }
+		);
+		var configurationContext = TestHelpers.CreateConfigurationContext(fileSystem);
+		var config = AssemblyConfiguration.Create(configurationContext.ConfigurationFileProvider);
+		var context = new AssembleContext(
+			config,
+			configurationContext,
+			"dev",
+			collector,
+			CheckoutsFileSystem.FromWorkingDirectory(fileSystem),
+			null,
+			Path.Join(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "assembly")
+		);
+		var start = new DateTime(2026, 10, 1, 0, 0, 0, DateTimeKind.Utc);
+		var remote = Enumerable
+			.Range(0, 11)
+			.Select(i => new S3Object { Key = $"docs/_static/main-old{i:D5}.js", LastModified = start.AddDays(i) })
+			.Append(new S3Object { Key = "docs/_static/styles.css", LastModified = start })
+			.ToList();
+		A.CallTo(() => mockS3Client.ListObjectsV2Async(A<ListObjectsV2Request>._, A<Cancel>._)).Returns(new ListObjectsV2Response
+		{
+			S3Objects = remote
+		});
+		var planStrategy = new AwsS3SyncPlanStrategy(new LoggerFactory(), mockS3Client, "fake", context);
+
+		var plan = await planStrategy.Plan(null, [], Cancel.None);
+
+		plan.AddRequests.Should().ContainSingle(i => i.DestinationPath == "docs/_static/main-newhash0.js");
+		plan.RetainedPaths.Should().HaveCount(10);
+		plan.RetainedPaths.Should().NotContain("docs/_static/main-old00000.js");
+		plan
+			.DeleteRequests
+			.Select(i => i.DestinationPath)
+			.Should()
+			.BeEquivalentTo("docs/_static/main-old00000.js", "docs/_static/styles.css");
+		plan.TotalSyncRequests.Should().Be(3);
+	}
+
+	[Test]
 	[Arguments(0, 10_000, 10_000, 0, 10_000, 0.2, false)]
 	[Arguments(8_000, 10_000, 10_000, 0, 2000, 0.2, true)]
 	[Arguments(7900, 10_000, 10_000, 0, 2100, 0.2, false)]

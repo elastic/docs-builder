@@ -23,6 +23,7 @@ public class ApiSupplementalRenderTests(ApiExplorerFixture fixture)
 	private const string SpecOperationDescription = "Returns hits that match the query defined in the request.";
 	private const string SpecTagDescription = "Operations that run *queries* against fixture data.";
 	private const string SpecIndexDescription = "A comma-separated list of index names to search.";
+	private const string SpecApiKeyDescription = "Send the encoded key with the ApiKey prefix.";
 	private const string SpecQueryQDescription = "A query in the Lucene query string syntax.";
 	private const string SpecFieldsDescription = "A field or list of fields to return, exercising the X | X[] simple-union path.";
 
@@ -61,7 +62,7 @@ public class ApiSupplementalRenderTests(ApiExplorerFixture fixture)
 
 		html.Should().Contain("SUPP_OP_DESCRIPTION");
 		html.Should().NotContain(SpecOperationDescription);
-		html.Should().Contain("Query Parameters");
+		html.Should().Contain("Query parameters");
 		html.Should().Contain("id=\"responses\"");
 		html.Should().Contain(SpecQueryQDescription);
 	}
@@ -80,37 +81,26 @@ public class ApiSupplementalRenderTests(ApiExplorerFixture fixture)
 	}
 
 	[Test]
-	public async Task Operation_Authorization_RendersPillsUnderEndpoint()
+	public async Task Operation_Authentication_RendersTabsWithCredentials()
 	{
 		var nav = SearchOperation();
 		var html = await RenderAsync(nav.Model, nav);
 		var markdown = await RenderCommonMarkAsync(nav.Model, nav);
 
-		html.Should().Contain("class=\"api-security-badges\"");
-		html.Should().Contain("class=\"api-auth-button\" href=\"/api/doc/fixture/authentication#apikey\">");
-		html.Should().Contain("<span>Api key auth</span>");
-		html.Should().Contain("class=\"api-auth-button\" href=\"/api/doc/fixture/authentication#basicauth\">");
-		html.Should().Contain("<span>Basic auth</span>");
-		html.Should().Contain("class=\"api-auth-button\" href=\"/api/doc/fixture/authentication#bearerauth\">");
-		html.Should().Contain("<span>Bearer auth</span>");
-		html.Should().NotContain("id=\"authorization\"");
-		html.Should().NotContain("auth-scheme-item");
-		markdown.Should().Contain("[Api key auth](/api/doc/fixture/authentication#apikey)");
-		markdown.Should().Contain("[Basic auth](/api/doc/fixture/authentication#basicauth)");
-		markdown.Should().Contain("[Bearer auth](/api/doc/fixture/authentication#bearerauth)");
-		markdown.Should().NotContain("## Authorization");
-	}
-
-	[Test]
-	public async Task Operation_Prerequisites_RendersCollapsedWhenMultipleItems()
-	{
-		var nav = SearchOperation();
-		var html = await RenderAsync(nav.Model, nav);
-
-		html.Should().Contain("id=\"prerequisites\"");
-		html.Should().Contain("id=\"prerequisites-list\"");
-		html.Should().Contain("aria-controls=\"prerequisites-list\"");
-		html.Should().Contain("href=\"#prerequisites\">Prerequisites</a>");
+		html.Should().Contain("id=\"authentication\"");
+		html.Should().Contain("api-tabs api-authentication-tabs");
+		html.Should().Contain("<label class=\"tabs-label\" for=\"authentication-tab-0\">Api key</label>");
+		html.Should().Contain("<label class=\"tabs-label\" for=\"authentication-tab-1\">Basic</label>");
+		html.Should().Contain("<label class=\"tabs-label\" for=\"authentication-tab-2\">Bearer</label>");
+		html.Should().Contain("Authorization: Basic &lt;credentials&gt;");
+		html.Should().NotContain("api-auth-button");
+		html.Should().NotContain("api-security-badges");
+		html.Should().NotContain("/authentication#");
+		html.Should().Contain("href=\"#authentication\"");
+		markdown.Should().Contain("## Authentication");
+		markdown.Should().Contain("- Basic: `Authorization: Basic <credentials>`");
+		markdown.Should().Contain(SpecApiKeyDescription);
+		markdown.Should().NotContain("/authentication#");
 	}
 
 	[Test]
@@ -120,7 +110,7 @@ public class ApiSupplementalRenderTests(ApiExplorerFixture fixture)
 		var html = await RenderAsync(nav.Model, nav);
 
 		html.Should().Contain("id=\"parameters\"");
-		html.Should().Contain("href=\"#parameters\">Path Parameters</a>");
+		html.Should().Contain("href=\"#parameters\">Path parameters</a>");
 		html.Should().NotContain(">Parameters</a>");
 		html.Should().NotContain("id=\"parameters-list\"");
 		html.Should().NotContain("aria-controls=\"parameters-list\"");
@@ -135,7 +125,7 @@ public class ApiSupplementalRenderTests(ApiExplorerFixture fixture)
 		html.Should().Contain("api-param-section collapsed");
 		html.Should().Contain("id=\"parameters-list\"");
 		html.Should().Contain("aria-controls=\"parameters-list\"");
-		html.Should().Contain("href=\"#parameters\">Path Parameters</a>");
+		html.Should().Contain("href=\"#parameters\">Path parameters</a>");
 	}
 
 	[Test]

@@ -6876,6 +6876,92 @@
                 "release",
                 "unified"
               ],
+              "name": "build",
+              "summary": "Build the unified release notes site from the bundles that release unified bundle wrote.",
+              "notes": "The docset is created in memory from products.yml. Every product with\nfeatures.release-notes: dra gets a release notes, known issues, breaking changes and\ndeprecations page. No documentation folder is needed.\n\n\n\nThe command resolves the argument like release unified bundle and fails when a product has\nno bundle for a resolved version.",
+              "usage": "docs-builder release unified build \u003Cversion-or-keyword\u003E [options]",
+              "examples": [],
+              "parameters": [
+                {
+                  "role": "positional",
+                  "name": "version-or-keyword",
+                  "type": "string",
+                  "required": true,
+                  "summary": "A version string (e.g. 9.5.5), \u0022current\u0022, or \u0022preview\u0022."
+                },
+                {
+                  "role": "flag",
+                  "name": "bundles-dir",
+                  "type": "string",
+                  "required": false,
+                  "summary": "Folder that holds one sub-folder of bundle files per product. Defaults to ./bundles."
+                },
+                {
+                  "role": "flag",
+                  "name": "output",
+                  "type": "string",
+                  "required": false,
+                  "summary": "Destination for the generated site. Defaults to ./site. The folder is cleaned first."
+                },
+                {
+                  "role": "flag",
+                  "name": "path-prefix",
+                  "type": "string",
+                  "required": false,
+                  "summary": "URL path prefix prepended to every generated link."
+                },
+                {
+                  "role": "flag",
+                  "name": "canonical-base-url",
+                  "type": "string",
+                  "required": false,
+                  "summary": "Base URL written into canonical link tags."
+                },
+                {
+                  "role": "flag",
+                  "name": "log-level",
+                  "shortName": "l",
+                  "type": "enum",
+                  "required": false,
+                  "summary": "Minimum log level. Default: information",
+                  "enumValues": [
+                    "trace",
+                    "debug",
+                    "information",
+                    "warning",
+                    "error",
+                    "critical",
+                    "none"
+                  ]
+                },
+                {
+                  "role": "flag",
+                  "name": "config-source",
+                  "shortName": "c",
+                  "type": "enum",
+                  "required": false,
+                  "summary": "Override the configuration source: local, remote",
+                  "enumValues": [
+                    "local",
+                    "remote",
+                    "embedded"
+                  ]
+                },
+                {
+                  "role": "flag",
+                  "name": "skip-private-repositories",
+                  "type": "boolean",
+                  "required": false,
+                  "summary": "Skip cloning private repositories"
+                }
+              ],
+              "hidden": true
+            },
+            {
+              "path": [
+                "release",
+                "unified"
+              ],
               "name": "bundle",
               "summary": "Generate changelog bundles for all DRA products at the given version, for the current GA, or for the next upcoming release(s).",
               "notes": "- \u0022current\u0022 \u2014 bundles the latest GA version from past-releases.json.\n  - \n    \u0022preview\u0022 \u2014 bundles both the next patch and next minor releases. Each uses its BC\n    manifest when one has been cut; otherwise the corresponding SNAPSHOT is used.\n  \n  - \n    Explicit version (e.g. 9.5.5) \u2014 bundles using the latest BC manifest. Errors when\n    no BC has been cut yet, and skips gracefully when the version is already GA.\n  \n\n\n\n\nOnly products with features.release-notes: dra in products.yml are bundled.\nBundle files are written to \u003CoutputDir\u003E/\u003Cproduct-id\u003E/.",

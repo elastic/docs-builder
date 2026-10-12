@@ -4,6 +4,7 @@
 
 using Elastic.Documentation.Configuration;
 using Microsoft.Extensions.FileProviders;
+using Microsoft.Extensions.FileProviders.Physical;
 using Microsoft.Extensions.Primitives;
 
 namespace Elastic.Documentation.Site.FileProviders;
@@ -18,6 +19,10 @@ public sealed class EmbeddedOrPhysicalFileProvider : IFileProvider, IDisposable
 
 	private readonly PhysicalFileProvider? _staticWebFilesDuringDebug;
 
+	// Most specific first: the checkout during debug, then the doc set's own `_static`, then the embedded resources.
+	// The first provider that has a file wins; one that only answers "not found" does not shadow the next.
+	private readonly CompositeFileProvider _providers;
+
 	public EmbeddedOrPhysicalFileProvider(IDocumentationSetContext context)
 	{
 		var documentationStaticFiles = Path.Join(context.DocumentationSourceDirectory.FullName, "_static");
@@ -29,52 +34,28 @@ public sealed class EmbeddedOrPhysicalFileProvider : IFileProvider, IDisposable
 		{
 
 			var debugWebFiles = Path.Join(solutionRoot.FullName, "src", "Elastic.Documentation.Site", "_static");
-			_staticWebFilesDuringDebug = new PhysicalFileProvider(debugWebFiles);
+			// No exclusions: the default hides dot-prefixed paths, and Vite writes `.vite/manifest.json`.
+			_staticWebFilesDuringDebug = new PhysicalFileProvider(debugWebFiles, ExclusionFilters.None);
 		}
 #else
 		_staticWebFilesDuringDebug = null;
 #endif
 		if (context.ReadFileSystem.Directory.Exists(documentationStaticFiles))
 			_staticFilesInDocsFolder = new PhysicalFileProvider(documentationStaticFiles);
+
+		IFileProvider?[] ordered = [_staticWebFilesDuringDebug, _staticFilesInDocsFolder, _embeddedProvider];
+		_providers = new CompositeFileProvider(ordered.OfType<IFileProvider>());
 	}
 
-	private T? FirstYielding<T>(string arg, Func<string, PhysicalFileProvider, T?> predicate) =>
-		Yield(arg, predicate, _staticWebFilesDuringDebug) ?? Yield(arg, predicate, _staticFilesInDocsFolder);
-
-	private static T? Yield<T>(string arg, Func<string, PhysicalFileProvider, T?> predicate, PhysicalFileProvider? provider)
-	{
-		if (provider is null)
-			return default;
-		var result = predicate(arg, provider);
-		return result ?? default;
-	}
-
-	public IDirectoryContents GetDirectoryContents(string subpath)
-	{
-		var path = subpath.TrimStart('/');
-		var contents = FirstYielding(path, static (a, p) => p.GetDirectoryContents(a));
-		if (contents is null || !contents.Exists)
-			contents = _embeddedProvider.GetDirectoryContents(path);
-		return contents;
-	}
+	public IDirectoryContents GetDirectoryContents(string subpath) => _providers.GetDirectoryContents(subpath.TrimStart('/'));
 
 	public IFileInfo GetFileInfo(string subpath)
 	{
 		var path = subpath.Replace($"{Path.DirectorySeparatorChar}_static", "").TrimStart('/');
-		var fileInfo = FirstYielding(path, static (a, p) => p.GetFileInfo(a));
-		if (fileInfo is null || !fileInfo.Exists)
-			fileInfo = _embeddedProvider.GetFileInfo(path);
-		return fileInfo;
+		return _providers.GetFileInfo(path);
 	}
 
-	public IChangeToken Watch(string filter)
-	{
-		var path = filter.TrimStart('/');
-		var changeToken = FirstYielding(path, static (f, p) => p.Watch(f));
-		if (changeToken is null or NullChangeToken)
-			changeToken = _embeddedProvider.Watch(path);
-		return changeToken;
-	}
+	public IChangeToken Watch(string filter) => _providers.Watch(filter.TrimStart('/'));
 
 	public void Dispose()
 	{

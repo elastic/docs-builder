@@ -31,7 +31,7 @@ public class SchemaPageModelTests(ApiExplorerFixture fixture)
 		page.UnionVariants.Variants.Should().OnlyContain(v => v.AnchorId.StartsWith("oneof-variant-"), "links to a variant keep working");
 		page.UnionVariants.Label.Should().BeNull("the section heading already names the keyword");
 		page.Requires.Should().BeNull();
-		SchemaCommonMark.Write(item.Model, page, context).Should().Contain("## Union Types (oneOf)");
+		SchemaCommonMark.Write(item.Model, page, context).Should().Contain("## Union types (oneOf)");
 	}
 
 	[Test]

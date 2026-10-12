@@ -36,7 +36,7 @@ internal static class SchemaCommonMark
 
 		if (page.EnumValues.Count > 0)
 		{
-			ApiCommonMark.Heading(markdown, 2, "Enum Values");
+			ApiCommonMark.Heading(markdown, 2, "Enum values");
 			foreach (var enumValue in page.EnumValues)
 				_ = markdown.AppendLine($"- `{enumValue}`");
 			_ = markdown.AppendLine();
@@ -56,7 +56,7 @@ internal static class SchemaCommonMark
 
 		if (page.AdditionalPropertiesType is not null)
 		{
-			ApiCommonMark.Heading(markdown, 2, "Additional Properties");
+			ApiCommonMark.Heading(markdown, 2, "Additional properties");
 			ApiPropertyMarkdown.WriteType(markdown, page.AdditionalPropertiesType);
 		}
 
@@ -70,7 +70,7 @@ internal static class SchemaCommonMark
 	}
 
 	/// <summary>The heading of a schema page's union section, naming the keyword the union came from.</summary>
-	public static string UnionHeading(UnionKeyword keyword) => $"Union Types ({keyword.ToSchemaKeyword()})";
+	public static string UnionHeading(UnionKeyword keyword) => $"Union types ({keyword.ToSchemaKeyword()})";
 
 	public static string UnionIntro(UnionKeyword keyword) =>
 		keyword == UnionKeyword.AnyOf ? "This type can be any of the following:" : "This type can be one of the following:";
