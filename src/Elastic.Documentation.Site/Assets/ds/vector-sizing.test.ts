@@ -15,11 +15,13 @@ const form = `
   <div data-calc-quantization><select data-calc-quantization-select></select></div>
   <input data-calc-replicas value="0">
   <div data-calc-warning hidden><p data-calc-warning-text></p><a data-calc-warning-link hidden></a></div>
+  <div data-calc-results>
   <p data-calc-total-label></p>
   <span data-calc-disk-value></span><span data-calc-disk-unit></span>
   <span data-calc-ram-value></span><span data-calc-ram-unit></span>
   <dd data-calc-type></dd><dd data-calc-quantization-label></dd><dd data-calc-disk></dd><dd data-calc-ram></dd>
   <p data-calc-ratio hidden></p><div data-calc-disclaimer hidden></div>
+  </div>
 </section>`
 
 const $ = <T extends Element>(s: string) => document.querySelector<T>(s)!
@@ -85,6 +87,7 @@ describe('vector sizing', () => {
 
         expect($<HTMLElement>('[data-calc-warning]').hidden).toBe(false)
         expect($<HTMLElement>('[data-calc-disclaimer]').hidden).toBe(true)
+        expect($<HTMLElement>('[data-calc-results]').hidden).toBe(true)
     })
 
     it('clears results without a warning while a field is empty', () => {
@@ -92,6 +95,26 @@ describe('vector sizing', () => {
 
         expect($<HTMLElement>('[data-calc-warning]').hidden).toBe(true)
         expect($<HTMLElement>('[data-calc-disclaimer]').hidden).toBe(true)
+        expect($<HTMLElement>('[data-calc-results]').hidden).toBe(true)
+    })
+
+    it('shows the results again once the inputs are valid', () => {
+        change($('[data-calc-dimensions]'), '')
+        change($('[data-calc-dimensions]'), '768')
+
+        expect($<HTMLElement>('[data-calc-results]').hidden).toBe(false)
+    })
+
+    it('keeps a quantization the user picks when the select fires input before change', () => {
+        const select = $<HTMLSelectElement>('[data-calc-quantization-select]')
+        const other = Array.from(select.options).find(
+            (option) => option.value !== select.value
+        )!
+        select.value = other.value
+        select.dispatchEvent(new Event('input', { bubbles: true }))
+        select.dispatchEvent(new Event('change', { bubbles: true }))
+
+        expect(select.value).toBe(other.value)
     })
 
     it('keeps the slider and number in step and clamps to an even value', () => {

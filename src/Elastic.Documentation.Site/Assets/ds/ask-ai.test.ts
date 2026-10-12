@@ -1,5 +1,6 @@
 import {
     initAskAi,
+    safeHref,
     rateLimitMessage,
     renderAnswer,
     splitReferences,
@@ -275,5 +276,80 @@ describe('references and feedback', () => {
             JSON.parse((global.fetch as jest.Mock).mock.calls[0][1].body)
                 .reaction
         ).toBe('thumbsUp')
+    })
+    it('links only http(s) and site-relative references', async () => {
+        setup(async (request) => {
+            request.onEvent({
+                type: 'message_complete',
+                fullContent:
+                    'Answer.\n<!--REFERENCES [{"url":"javascript:alert(1)","title":"Bad"},{"url":"https://example.dev/a","title":"Good"}] -->',
+            })
+        })
+        submit('question')
+        await flush()
+
+        const links = Array.from(
+            document.querySelectorAll('.ask-ai__references a')
+        )
+        expect(links.map((a) => a.getAttribute('href'))).toEqual([
+            'https://example.dev/a',
+        ])
+        expect(
+            document.querySelector('.ask-ai__references')!.textContent
+        ).toContain('Bad')
+        expect(safeHref('/docs/a')).toBe('/docs/a')
+        expect(safeHref('data:text/html,<script>1</script>')).toBeNull()
+        expect(safeHref('JaVaScRiPt:alert(1)')).toBeNull()
+    })
+
+    it('restores a saved answer with its references and reaction controls', async () => {
+        const stream: AskAiStream = async (request) => {
+            request.onEvent({
+                type: 'conversation_start',
+                conversationId: 'c1',
+            })
+            request.onEvent({
+                type: 'message_complete',
+                fullContent:
+                    'Use a data stream.\n<!--REFERENCES [{"url":"/ds","title":"Data streams","description":""}] -->',
+            })
+        }
+        setup(stream)
+        submit('How do I index logs?')
+        await flush()
+
+        setup(stream)
+
+        expect(document.querySelectorAll('.ask-ai__references a')).toHaveLength(
+            1
+        )
+        expect(document.querySelectorAll('.ask-ai__reaction')).toHaveLength(2)
+        expect(
+            document.querySelector('.ask-ai__text')!.innerHTML
+        ).not.toContain('REFERENCES')
+    })
+
+    it('does not bring an answer back after New chat clears the conversation', async () => {
+        let release: () => void = () => undefined
+        const gate = new Promise<void>((resolve) => (release = resolve))
+        setup(async (request) => {
+            await gate
+            request.onEvent({
+                type: 'message_complete',
+                fullContent: 'A late answer.',
+            })
+        })
+        submit('question')
+        document.querySelector<HTMLButtonElement>('[data-ask-ai-new]')!.click()
+        release()
+        await flush()
+
+        const stored = sessionStorage.getItem('ask-ai-conversation')
+        expect(
+            stored === null || JSON.parse(stored).messages.length === 0
+        ).toBe(true)
+        expect(
+            document.querySelectorAll('[data-ask-ai-messages] li')
+        ).toHaveLength(0)
     })
 })

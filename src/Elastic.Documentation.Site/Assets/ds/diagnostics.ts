@@ -173,6 +173,8 @@ function bindPanel(root: HTMLElement) {
     const resize = q('[data-diagnostics-resize]')
 
     let state = emptyState()
+    // Once a poll has succeeded, a later failure means the connection was lost, not that it is still being made.
+    let hasConnected = false
     let filter: Filter = 'all'
     let height = DEFAULT_HEIGHT
 
@@ -198,9 +200,10 @@ function bindPanel(root: HTMLElement) {
             summary.append(span)
         }
 
-        if (!state.connected && state.status === 'idle') {
-            root.dataset.state = 'connecting'
-            add('Connecting…')
+        // The last build's status says nothing about whether the results are current, so a lost connection is shown first.
+        if (!state.connected) {
+            root.dataset.state = hasConnected ? 'disconnected' : 'connecting'
+            add(hasConnected ? 'Disconnected, retrying…' : 'Connecting…')
         } else if (state.status === 'building' && total === 0) {
             root.dataset.state = 'building'
             add('Building...')
@@ -262,6 +265,7 @@ function bindPanel(root: HTMLElement) {
             } else {
                 const event = (await response.json()) as BuildEvent
                 state = { ...applyEvent(state, event), connected: true }
+                hasConnected = true
             }
         } catch {
             state = { ...state, connected: false }

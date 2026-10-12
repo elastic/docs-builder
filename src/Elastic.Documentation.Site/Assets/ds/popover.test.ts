@@ -1,4 +1,4 @@
-import { initPopovers } from './popover'
+import { initInlinePopovers, initPopovers } from './popover'
 
 const markup = `
 <details data-menu data-popover id="d">
@@ -81,5 +81,58 @@ describe('initPopovers', () => {
         expect(document.getElementById('p')!.hasAttribute('popover')).toBe(
             false
         )
+    })
+})
+
+describe('initInlinePopovers', () => {
+    const inline = `
+<p>Applies to <span class="applies-popover applies-popover--inline" data-applies-popover>
+  <button type="button" aria-expanded="false" data-applies-trigger>Stack 9.1+</button>
+  <span class="applies-popover__panel">Details</span>
+</span> and more.</p>
+<button id="outside">outside</button>`
+
+    beforeEach(() => {
+        document.body.innerHTML = inline
+        initInlinePopovers()
+    })
+
+    const root = () =>
+        document.querySelector<HTMLElement>('[data-applies-popover]')!
+    const trigger = () =>
+        document.querySelector<HTMLButtonElement>('[data-applies-trigger]')!
+
+    it('toggles the panel from the button and reports it', () => {
+        trigger().click()
+        expect(root().hasAttribute('data-open')).toBe(true)
+        expect(trigger().getAttribute('aria-expanded')).toBe('true')
+
+        trigger().click()
+        expect(root().hasAttribute('data-open')).toBe(false)
+        expect(trigger().getAttribute('aria-expanded')).toBe('false')
+    })
+
+    it('closes on Escape and returns focus to the button', () => {
+        trigger().click()
+        root().dispatchEvent(
+            new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })
+        )
+
+        expect(root().hasAttribute('data-open')).toBe(false)
+        expect(document.activeElement).toBe(trigger())
+    })
+
+    it('closes when something else is clicked', () => {
+        trigger().click()
+        document.getElementById('outside')!.click()
+
+        expect(root().hasAttribute('data-open')).toBe(false)
+    })
+
+    it('binds each badge once', () => {
+        initInlinePopovers()
+        trigger().click()
+
+        expect(root().hasAttribute('data-open')).toBe(true)
     })
 })

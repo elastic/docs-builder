@@ -165,4 +165,34 @@ describe('diagnostics panel', () => {
             document.querySelectorAll('[data-diagnostics-list] li')
         ).toHaveLength(1)
     })
+    it('says it is disconnected once a poll fails after a clean build', async () => {
+        jest.useFakeTimers()
+        try {
+            global.fetch = jest.fn().mockResolvedValueOnce({
+                ok: true,
+                json: async () => ({ type: 'state', status: 'complete' }),
+            }) as unknown as typeof fetch
+            initDiagnostics()
+            await jest.advanceTimersByTimeAsync(0)
+            const summary = document.querySelector(
+                '[data-diagnostics-summary]'
+            )!
+            expect(summary.textContent).toContain('All clear')
+
+            global.fetch = jest
+                .fn()
+                .mockRejectedValue(
+                    new Error('offline')
+                ) as unknown as typeof fetch
+            await jest.advanceTimersByTimeAsync(2000)
+
+            expect(summary.textContent).toContain('Disconnected')
+            expect(
+                document.querySelector<HTMLElement>('[data-diagnostics]')!
+                    .dataset.state
+            ).toBe('disconnected')
+        } finally {
+            jest.useRealTimers()
+        }
+    })
 })

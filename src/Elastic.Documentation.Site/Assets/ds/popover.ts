@@ -68,3 +68,36 @@ export function initPopovers(scope: ParentNode = document) {
             })
         })
 }
+
+// The inline applicability badge sits in a paragraph, so it is a button and spans rather than a details element. Script makes the button
+// toggle the panel and lets Escape or a click elsewhere close it. Hooks: [data-applies-popover] on the wrapper, [data-applies-trigger].
+export function initInlinePopovers(scope: ParentNode = document) {
+    scope
+        .querySelectorAll<HTMLElement>(
+            '[data-applies-popover]:not([data-applies-bound])'
+        )
+        .forEach((root) => {
+            const trigger = root.querySelector<HTMLButtonElement>(
+                '[data-applies-trigger]'
+            )
+            if (!trigger) return
+            root.dataset.appliesBound = ''
+
+            const setOpen = (open: boolean) => {
+                if (open) root.dataset.open = ''
+                else delete root.dataset.open
+                trigger.setAttribute('aria-expanded', String(open))
+            }
+            trigger.addEventListener('click', () =>
+                setOpen(!('open' in root.dataset))
+            )
+            root.addEventListener('keydown', (event) => {
+                if (event.key !== 'Escape') return
+                setOpen(false)
+                trigger.focus()
+            })
+            document.addEventListener('click', (event) => {
+                if (!root.contains(event.target as Node)) setOpen(false)
+            })
+        })
+}

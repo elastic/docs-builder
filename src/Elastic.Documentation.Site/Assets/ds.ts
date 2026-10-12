@@ -14,7 +14,7 @@ import { initNav } from './ds/nav'
 import { initNavFilter } from './ds/nav-filter'
 import { initFlyoutResize, initFlyouts, initToasts } from './ds/overlays'
 import { initPageJumpers } from './ds/page-jumper'
-import { initPopovers } from './ds/popover'
+import { initInlinePopovers, initPopovers } from './ds/popover'
 import { initPreferences } from './ds/preferences'
 import './ds/runtime'
 import { bindSearchShortcut, initSearch } from './ds/search'
@@ -44,6 +44,7 @@ function init(scope: ParentNode = document) {
     initCopyText(scope)
     initMenus(scope)
     initPopovers(scope)
+    initInlinePopovers(scope)
     initFeedback(scope)
     initSearch(scope)
     initSearchPage(scope)

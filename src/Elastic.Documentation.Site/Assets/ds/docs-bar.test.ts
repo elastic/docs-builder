@@ -28,6 +28,21 @@ describe('docs bar sync', () => {
         ).toBe(true)
     })
 
+    it('binds the theme switch of the new bar so its choices apply', () => {
+        const withSwitch = `<nav id="docs-bar"><div class="theme-switch"><input type="radio" name="theme" data-pref="theme" value="dark"><input type="radio" name="theme" data-pref="theme" value="light"></div></nav>`
+        document.documentElement.removeAttribute('data-theme')
+        localStorage.clear()
+        syncDocsBar(`<html><body>${withSwitch}</body></html>`)
+
+        const dark = document.querySelector<HTMLInputElement>(
+            'input[value="dark"]'
+        )!
+        dark.checked = true
+        dark.dispatchEvent(new Event('change'))
+
+        expect(document.documentElement.dataset.theme).toBe('dark')
+    })
+
     it('leaves the bar alone when the response has none', () => {
         const changed = syncDocsBar('<div>a search result</div>')
 

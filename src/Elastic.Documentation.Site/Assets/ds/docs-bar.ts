@@ -1,4 +1,5 @@
 import { initMenus } from './menu'
+import { initPreferences } from './preferences'
 
 // htmx swaps #main-container and the docs bar sits above it, so after a boosted navigation the bar would keep the previous page's
 // current tab. The response is a whole page, so the bar is taken from it.
@@ -11,7 +12,9 @@ export function syncDocsBar(html: string): boolean {
     // A partial response, such as a search result, has no bar and leaves ours alone.
     if (!next) return false
     current.replaceWith(next)
+    // The htmx:load initializers only scan the swapped container, so the new bar's menus and theme switch are bound here.
     initMenus(next)
+    initPreferences(next)
     return true
 }
 

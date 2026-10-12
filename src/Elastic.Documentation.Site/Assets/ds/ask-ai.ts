@@ -206,6 +206,19 @@ export async function sendReaction(
     })
 }
 
+// References are built after the Markdown is sanitized, so a link must be checked here: only http(s) and site-relative addresses
+// become links, never a javascript: or data: address from the model's answer.
+export function safeHref(url: string): string | null {
+    try {
+        const parsed = new URL(url, window.location.origin)
+        return parsed.protocol === 'http:' || parsed.protocol === 'https:'
+            ? url
+            : null
+    } catch {
+        return null
+    }
+}
+
 /** Draws an answer: sanitized Markdown, then the references as links. Safe to call again as more text arrives. */
 export function drawAnswer(body: HTMLElement, content: string) {
     const { main, references } = splitReferences(content)
@@ -215,10 +228,13 @@ export function drawAnswer(body: HTMLElement, content: string) {
     list.className = 'ask-ai__references'
     references.forEach((reference) => {
         const item = document.createElement('li')
-        const link = document.createElement('a')
-        link.href = reference.url
-        link.textContent = reference.title
-        item.append(link)
+        const href = safeHref(reference.url)
+        if (href) {
+            const link = document.createElement('a')
+            link.href = href
+            link.textContent = reference.title
+            item.append(link)
+        } else item.append(document.createTextNode(reference.title))
         if (reference.description) {
             const description = document.createElement('span')
             description.textContent = ` ${reference.description}`
@@ -265,6 +281,8 @@ function bindAskAi(dialog: HTMLDialogElement, stream: AskAiStream) {
     let conversationId: string | null = stored.conversationId
     const history: StoredMessage[] = [...stored.messages]
     let controller: AbortController | null = null
+    // Bumped by New chat, so an answer that is still arriving when the conversation is cleared is not written back into it.
+    let session = 0
     const save = () => writeConversation({ conversationId, messages: history })
 
     q('[data-ask-ai-description]').textContent =
@@ -310,13 +328,6 @@ function bindAskAi(dialog: HTMLDialogElement, stream: AskAiStream) {
         return { item, body }
     }
 
-    history.forEach((message) => {
-        const restored = addMessage(message.role, message.text)
-        if (message.role === 'assistant')
-            restored.body.innerHTML = renderAnswer(message.text)
-    })
-    if (history.length > 0) intro.hidden = true
-
     // Thumbs under a finished answer. The choice is kept with the conversation and sent once per change.
     function addFeedback(item: HTMLElement, messageId?: string) {
         if (!messageId || item.querySelector('.ask-ai__feedback')) return
@@ -356,6 +367,15 @@ function bindAskAi(dialog: HTMLDialogElement, stream: AskAiStream) {
         item.append(row)
     }
 
+    // A saved conversation is drawn the way new answers are: with their references and with the reaction controls.
+    history.forEach((message) => {
+        const restored = addMessage(message.role, message.text)
+        if (message.role !== 'assistant') return
+        drawAnswer(restored.body, message.text)
+        addFeedback(restored.item, message.id)
+    })
+    if (history.length > 0) intro.hidden = true
+
     function setBusy(busy: boolean) {
         send.hidden = busy
         stop.hidden = !busy
@@ -373,6 +393,7 @@ function bindAskAi(dialog: HTMLDialogElement, stream: AskAiStream) {
         input.value = ''
         setBusy(true)
         controller = new AbortController()
+        const mine = session
         let received = ''
 
         const fail = (message: string) => {
@@ -418,21 +439,23 @@ function bindAskAi(dialog: HTMLDialogElement, stream: AskAiStream) {
             )
                 fail('Something went wrong. Try again.')
         } finally {
-            if (answer.item.dataset.state === 'pending') {
-                delete answer.item.dataset.state
-                if (!answer.body.textContent)
-                    answer.body.textContent = 'Stopped.'
+            if (mine === session) {
+                if (answer.item.dataset.state === 'pending') {
+                    delete answer.item.dataset.state
+                    if (!answer.body.textContent)
+                        answer.body.textContent = 'Stopped.'
+                }
+                if (received) {
+                    const id =
+                        globalThis.crypto?.randomUUID?.() ?? `m-${Date.now()}`
+                    history.push({ role: 'assistant', text: received, id })
+                    addFeedback(answer.item, id)
+                } else history.pop()
+                save()
+                controller = null
+                setBusy(false)
+                input.focus()
             }
-            if (received) {
-                const id =
-                    globalThis.crypto?.randomUUID?.() ?? `m-${Date.now()}`
-                history.push({ role: 'assistant', text: received, id })
-                addFeedback(answer.item, id)
-            } else history.pop()
-            save()
-            controller = null
-            setBusy(false)
-            input.focus()
         }
     }
 
@@ -448,7 +471,10 @@ function bindAskAi(dialog: HTMLDialogElement, stream: AskAiStream) {
     })
     stop.addEventListener('click', () => controller?.abort())
     q('[data-ask-ai-new]').addEventListener('click', () => {
+        session += 1
         controller?.abort()
+        controller = null
+        setBusy(false)
         conversationId = null
         history.length = 0
         save()

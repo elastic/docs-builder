@@ -174,6 +174,8 @@ function bindCalculator(root: HTMLElement) {
         const validation = validate(inputs)
         showWarning(validation.warning, validation.warningLink)
         const result = validation.valid ? calculate(inputs) : null
+        // Without a valid calculation the previous figures no longer match the form, so they are hidden rather than left on show.
+        q('[data-calc-results]').hidden = !result
         q('[data-calc-disclaimer]').hidden = !result
         if (!result) {
             q('[data-calc-ratio]').hidden = true
@@ -199,9 +201,13 @@ function bindCalculator(root: HTMLElement) {
         q('[data-calc-ratio]').hidden = ratio === ''
     }
 
-    quantization.addEventListener('change', () => {
+    // A native select fires input before change, and render() rebuilds the options from selectedQuantization, so the choice has to be
+    // remembered before any render listener runs, on both events.
+    const rememberQuantization = () => {
         selectedQuantization = quantization.value as Quantization
-    })
+    }
+    quantization.addEventListener('input', rememberQuantization)
+    quantization.addEventListener('change', rememberQuantization)
     for (const control of [
         vectors,
         dimensions,
