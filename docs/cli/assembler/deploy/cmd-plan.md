@@ -1,1 +1,3 @@
 Creates an incremental synchronization plan by comparing the remote `--s3-bucket-name` with the local output of the build.
+
+Remote files that are no longer in the build output are planned for deletion, with one exception: content-hashed frontend assets under `_static/` (`main-[hash].js`, `chunk-*-[hash].js`, `chunk-*-[hash].css`, `asset-*-[hash].*`) keep their 10 newest stale versions per file. Pages that are open in a browser, or served from a cache, still import the assets of the build they were rendered with, and those must stay reachable after a deploy. The kept files are listed under `retain` in the plan.

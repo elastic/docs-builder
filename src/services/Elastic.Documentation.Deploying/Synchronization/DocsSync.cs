@@ -27,6 +27,13 @@ public record DeleteRequest : SyncRequest
 	public required string DestinationPath { get; init; }
 }
 
+/// A remote hashed asset that is no longer in the build output but is kept for pages that still reference it
+public record RetainRequest : SyncRequest
+{
+	[JsonPropertyName("destination_path")]
+	public required string DestinationPath { get; init; }
+}
+
 public record UploadRequest : SyncRequest
 {
 	[JsonPropertyName("local_path")]
@@ -87,6 +94,10 @@ public record SyncPlan
 	[JsonPropertyName("skip")]
 	public required IReadOnlyList<SkipRequest> SkipRequests { get; init; }
 
+	/// Stale hashed frontend assets kept by <see cref="StaticAssetRetention"/>; not counted in <see cref="TotalSyncRequests"/>
+	[JsonPropertyName("retain")]
+	public IReadOnlyList<RetainRequest> RetainRequests { get; init; } = [];
+
 	public static string Serialize(SyncPlan plan) => JsonSerializer.Serialize(plan, SyncSerializerContext.Default.SyncPlan);
 
 	public static SyncPlan Deserialize(string json) =>
@@ -100,4 +111,5 @@ public record SyncPlan
 [JsonSerializable(typeof(UpdateRequest))]
 [JsonSerializable(typeof(DeleteRequest))]
 [JsonSerializable(typeof(SkipRequest))]
+[JsonSerializable(typeof(RetainRequest))]
 public sealed partial class SyncSerializerContext : JsonSerializerContext;
