@@ -2568,13 +2568,7 @@ a.docs-reference-btn::after {
 		margin-top: 0;
 	}
 
-	> :last-child {
-		margin-bottom: 0;
-	}
-
 	p {
-		margin-top: 0;
-		margin-bottom: 24px;
 		color: inherit;
 		font-size: 14px;
 		line-height: 20px;
@@ -2585,8 +2579,6 @@ a.docs-reference-btn::after {
 	h4,
 	h5,
 	h6 {
-		margin-top: 0;
-		margin-bottom: 24px;
 		color: var(--color-subdued, #516381);
 		font-family: var(
 			--font-body,
@@ -2602,6 +2594,7 @@ a.docs-reference-btn::after {
 
 	/* Match the h2.section-header rows rendered by the operation view */
 	h2 {
+		margin-top: 0;
 		margin-bottom: 0;
 		padding-top: 40px;
 		padding-bottom: 16px;
