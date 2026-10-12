@@ -81,6 +81,14 @@ public class ApiAdmonitionsTests
 	}
 
 	[Test]
+	public void Convert_ShorterFenceInsideLongerFence_DoesNotCloseIt()
+	{
+		var markdown = "````md\n```\nNOTE: keep me\n```\n> info\n> keep me\n````";
+
+		ApiAdmonitions.Convert(markdown).Should().Be(markdown);
+	}
+
+	[Test]
 	public void Render_ConvertsAdmonitionsBeforeRendering()
 	{
 		var renderer = new CapturingRenderer();
