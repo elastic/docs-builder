@@ -80,23 +80,23 @@ public class ApiSupplementalRenderTests(ApiExplorerFixture fixture)
 	}
 
 	[Test]
-	public async Task Operation_Authorization_RendersInlineChipsWithCredentials()
+	public async Task Operation_Authentication_RendersTabsWithCredentials()
 	{
 		var nav = SearchOperation();
 		var html = await RenderAsync(nav.Model, nav);
 		var markdown = await RenderCommonMarkAsync(nav.Model, nav);
 
-		html.Should().Contain("id=\"authorization\"");
-		html.Should().Contain("union-variants-container union-variant-chips");
-		html.Should().Contain("data-chip=\"authorization-apikey\"");
-		html.Should().Contain("data-chip=\"authorization-basicauth\"");
-		html.Should().Contain("data-chip=\"authorization-bearerauth\"");
+		html.Should().Contain("id=\"authentication\"");
+		html.Should().Contain("api-tabs api-authentication-tabs");
+		html.Should().Contain("<label class=\"tabs-label\" for=\"authentication-tab-0\">Api key</label>");
+		html.Should().Contain("<label class=\"tabs-label\" for=\"authentication-tab-1\">Basic</label>");
+		html.Should().Contain("<label class=\"tabs-label\" for=\"authentication-tab-2\">Bearer</label>");
 		html.Should().Contain("Authorization: Basic &lt;credentials&gt;");
 		html.Should().NotContain("api-auth-button");
 		html.Should().NotContain("api-security-badges");
 		html.Should().NotContain("/authentication#");
-		html.Should().Contain("href=\"#authorization\"");
-		markdown.Should().Contain("## Authorization");
+		html.Should().Contain("href=\"#authentication\"");
+		markdown.Should().Contain("## Authentication");
 		markdown.Should().Contain("- Basic: `Authorization: Basic <credentials>`");
 		markdown.Should().NotContain("/authentication#");
 	}

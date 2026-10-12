@@ -34,8 +34,11 @@ public class OperationViewModel(ApiRenderContext context) : ApiViewModel(context
 		var operation = Operation.Operation;
 		var tocItems = new List<ApiTocItem> { new("Paths", "paths") };
 
-		if (Page.HasAuthorization)
-			tocItems.Add(new ApiTocItem("Authorization", "authorization"));
+		if (Page.RequiredPrivileges.Count > 0)
+			tocItems.Add(new ApiTocItem("Required authorization", "required-authorization"));
+
+		if (Page.AuthSchemes.Count > 0)
+			tocItems.Add(new ApiTocItem("Authentication", "authentication"));
 
 		if (Page.QueryParameters.Count > 0)
 			tocItems.Add(new ApiTocItem("Query parameters", "query-params"));

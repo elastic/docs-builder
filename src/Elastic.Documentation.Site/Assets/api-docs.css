@@ -1584,7 +1584,8 @@ button.response-status-toggle:focus {
 
 .api-param-section-header.section-header {
 	display: flex;
-	align-items: center;
+	/* The title and the monospace summary differ in font, so centring their boxes leaves the text a pixel apart. */
+	align-items: baseline;
 	justify-content: flex-start;
 	gap: 12px;
 }
@@ -1699,12 +1700,12 @@ button.response-status-toggle:focus {
 }
 
 .api-param-summary-item code {
-	color: var(--color-ink-navy, #111c2c);
+	color: #3f4f6b;
 	font-family:
 		'Roboto Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
 		monospace;
 	font-size: 14px;
-	font-weight: 700;
+	font-weight: 500;
 	line-height: 24px;
 	background: none;
 	border: 0;
@@ -2273,32 +2274,53 @@ a.docs-reference-btn::after {
 	/* Variants list styling */
 }
 
-/* Authorization section: credential schemes ride on the union chips, with no tree gutter. */
-.api-authorization .union-variants-container {
-	padding-left: 0;
-}
+/* Authentication section: the credential schemes are tabs, kept compact since most readers already have auth set up. */
+.api-authentication-tabs {
+	margin-top: calc(var(--spacing) * 2);
 
-.api-authorization-lead {
-	margin: 0;
-	color: #516381;
-	font-size: 14px;
-	line-height: 20px;
+	.tabs-label {
+		padding: calc(var(--spacing) * 1.5) calc(var(--spacing) * 4);
+		font-size: 14px;
+	}
+
+	.tabs-content {
+		padding: calc(var(--spacing) * 3) calc(var(--spacing) * 4);
+	}
 }
 
 .api-authorization-panel > * + * {
 	margin-top: calc(var(--spacing) * 2);
 }
 
-.api-authorization .privilege-join {
+/* The label is the quiet part and the privilege name the important one, so the name carries the code look. */
+.api-privileges dt {
+	padding-top: 8px;
+	font-size: 14px;
+}
+
+.api-privileges .privilege-label {
+	color: #516381;
+	font-weight: 400;
+}
+
+.api-privileges .api-type-badge {
+	padding: 0 6px;
+	font-family: var(
+		--font-mono,
+		ui-monospace,
+		SFMono-Regular,
+		Menlo,
+		monospace
+	);
+	font-size: 13px;
+	line-height: 20px;
+	color: #0b2f6b;
+}
+
+.api-privileges .privilege-join {
 	margin: 0 6px;
 	color: #516381;
 	font-size: 12px;
-}
-
-.api-authorization .privileges-heading {
-	margin: calc(var(--spacing) * 4) 0 calc(var(--spacing) * 2);
-	font-size: 14px;
-	font-weight: 600;
 }
 
 /* Union variant item - type label without tree connectors */

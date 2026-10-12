@@ -2,69 +2,15 @@
 @using Elastic.ApiExplorer.Operations
 @inherits RazorSlice<Elastic.ApiExplorer.Operations.AuthorizationSectionModel>
 @{
+	// The privileges stay visible; the credentials fold away, since a reader who is already set up does not need them.
 	var schemes = Model.Schemes;
-	var useChips = schemes.Count > 1;
-	var menuId = "authorization-schemes-menu";
-	string PanelId(AuthScheme scheme) => $"authorization-{scheme.Id.ToLowerInvariant()}";
+	var useTabs = schemes.Count > 1;
 }
-<div class="api-list-block api-authorization">
-	@(await RenderPartialAsync<_SectionHeader, SectionHeader>(new SectionHeader("Authorization", "authorization")))
-	@if (schemes.Count > 0)
-	{
-		<p class="api-authorization-lead">@(useChips ? "Send one of these credentials." : "Send this credential.")</p>
-		@* Schemes are alternatives, like union variants: the same chips pick one (chip-row.ts, api-union-chips.ts). Keep this row in
-		   step with the chip markup in Components/PropertyTree/_Partials/_UnionOptions.cshtml. The
-		   others use hidden="until-found" so find-in-page still reaches them. *@
-		<div class="union-variants-container@(useChips ? " union-variant-chips" : "")" id="authorization-schemes">
-			@if (useChips)
-			{
-				<div class="api-example-chips-row union-chips-row" data-chip-row>
-					<div class="api-example-chips" role="tablist" aria-label="Credentials">
-						@for (var i = 0; i < schemes.Count; i++)
-						{
-							<button type="button" role="tab" class="api-example-chip@(i == 0 ? " is-active" : "")" data-chip="@PanelId(schemes[i])" aria-controls="@PanelId(schemes[i])" aria-selected="@(i == 0 ? "true" : "false")">
-								<span class="api-example-chip-title" data-chip-title>@schemes[i].Label</span>
-							</button>
-						}
-					</div>
-					<button type="button" class="api-example-more" data-chip-more aria-haspopup="menu" aria-expanded="false" aria-controls="@menuId" popovertarget="@menuId" hidden>
-						<span data-chip-more-label></span>
-						<svg width="12" height="12" viewBox="0 0 16 16" aria-hidden="true"><use href="#icon-chevron-down"/></svg>
-					</button>
-					<div id="@menuId" class="api-example-menu simple-scrollbar" popover="auto" data-chip-menu>
-						<div role="menu" aria-label="More credentials">
-							@foreach (var scheme in schemes)
-							{
-								<button type="button" role="menuitem" class="api-example-menu-item" data-chip="@PanelId(scheme)" hidden>
-									<span class="api-example-menu-item-title" data-chip-item-title>@scheme.Label</span>
-								</button>
-							}
-						</div>
-					</div>
-				</div>
-			}
-			<div class="union-variants">
-				@for (var i = 0; i < schemes.Count; i++)
-				{
-					var scheme = schemes[i];
-					<div class="union-variant-item api-authorization-panel" id="@PanelId(scheme)" hidden="@(useChips && i > 0 ? "until-found" : null)">
-						@if (!string.IsNullOrEmpty(scheme.CredentialExample))
-						{
-							@(await RenderPartialAsync<_ApiCodeBlock, ApiCodeBlockModel>(new ApiCodeBlockModel("language-http", scheme.CredentialExample)))
-						}
-						@if (scheme.DescriptionMarkdown is not null)
-						{
-							<div class="api-authorization-description">@Model.RenderMarkdown(scheme.DescriptionMarkdown)</div>
-						}
-					</div>
-				}
-			</div>
-		</div>
-	}
-	@if (Model.Privileges.Count > 0)
-	{
-		<h3 class="privileges-heading">Required privileges</h3>
-		<dl class="property-list">
+@if (Model.Privileges.Count > 0)
+{
+	<div class="api-list-block">
+		@(await RenderPartialAsync<_SectionHeader, SectionHeader>(new SectionHeader("Required authorization", "required-authorization")))
+		<dl class="property-list api-privileges">
 			@foreach (var row in Model.Privileges)
 			{
 				<div class="prerequisite-item">
@@ -75,7 +21,7 @@
 						}
 						else
 						{
-							<code>@row.Label</code>
+							<span class="privilege-label">@row.Label</span>
 							@for (var i = 0; i < row.Values.Count; i++)
 							{
 								if (i > 0 && row.Join is not null)
@@ -89,5 +35,36 @@
 				</div>
 			}
 		</dl>
-	}
-</div>
+	</div>
+}
+@if (schemes.Count > 0)
+{
+	<div @ParamSectionHeader.WrapAttributes(collapse: true)>
+		@(await RenderPartialAsync<_ParamSectionHeader, ParamSectionHeader>(new ParamSectionHeader("Authentication", "authentication", [.. schemes.Select(static s => s.Label)], NamesAreVariants: true)))
+		<div @ParamSectionHeader.BodyAttributes(collapse: true, "authentication-list")>
+			@* Schemes are alternatives, so several of them become tabs: the same radio-button tabs as the docs, which need no script. *@
+			<div class="@(useTabs ? "api-tabs api-authentication-tabs" : "api-authentication-single")">
+				@for (var i = 0; i < schemes.Count; i++)
+				{
+					var scheme = schemes[i];
+					var tabId = $"authentication-tab-{i}";
+					@if (useTabs)
+					{
+						<input class="tabs-input" id="@tabId" name="authentication-tabs" type="radio" checked="@(i == 0 ? "checked" : null)" tabindex="0">
+						<label class="tabs-label" for="@tabId">@scheme.Label</label>
+					}
+					<div class="@(useTabs ? "tabs-content " : "")api-authorization-panel">
+						@if (!string.IsNullOrEmpty(scheme.CredentialExample))
+						{
+							@(await RenderPartialAsync<_ApiCodeBlock, ApiCodeBlockModel>(new ApiCodeBlockModel("language-http", scheme.CredentialExample)))
+						}
+						@if (scheme.DescriptionMarkdown is not null)
+						{
+							<div class="api-authorization-description">@Model.RenderMarkdown(scheme.DescriptionMarkdown)</div>
+						}
+					</div>
+				}
+			</div>
+		</div>
+	</div>
+}

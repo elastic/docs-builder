@@ -126,20 +126,28 @@ internal static class OperationCommonMark
 
 	private static void WriteAuthorization(StringBuilder markdown, OperationPageModel page, string apiBaseUrl)
 	{
-		if (!page.HasAuthorization)
+		if (page.RequiredPrivileges.Count > 0)
+		{
+			ApiCommonMark.Heading(markdown, 2, "Required authorization");
+			foreach (var row in page.RequiredPrivileges)
+			{
+				var values = string.Join(row.Join is null ? ", " : $" {row.Join} ", row.Values.Select(static v => $"`{v}`"));
+				_ = markdown.AppendLine(
+					values.Length == 0 ? $"- {ApiMarkdown.Prepare(row.Label, apiBaseUrl)}" : $"- {row.Label}: {values}"
+				);
+			}
+
+			_ = markdown.AppendLine();
+		}
+
+		if (page.AuthSchemes.Count == 0)
 			return;
 
-		ApiCommonMark.Heading(markdown, 2, "Authorization");
+		ApiCommonMark.Heading(markdown, 2, "Authentication");
 		foreach (var scheme in page.AuthSchemes)
 		{
 			var credential = scheme.CredentialExample is null ? "" : $": `{scheme.CredentialExample}`";
 			_ = markdown.AppendLine($"- {scheme.Label}{credential}");
-		}
-
-		foreach (var row in page.RequiredPrivileges)
-		{
-			var values = string.Join(row.Join is null ? ", " : $" {row.Join} ", row.Values.Select(static v => $"`{v}`"));
-			_ = markdown.AppendLine(values.Length == 0 ? $"- {ApiMarkdown.Prepare(row.Label, apiBaseUrl)}" : $"- {row.Label}: {values}");
 		}
 
 		_ = markdown.AppendLine();
