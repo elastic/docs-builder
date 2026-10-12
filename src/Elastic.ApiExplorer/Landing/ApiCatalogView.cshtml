@@ -3,59 +3,68 @@
 @implements IUsesLayout<Elastic.ApiExplorer._CatalogLayout, Elastic.ApiExplorer.Infrastructure.ApiLayoutViewModel>
 @functions {
 	public ApiLayoutViewModel LayoutModel => Model.CreateGlobalLayoutModel();
-}
-<section id="elastic-docs-v3" class="api-catalog listing-root" data-listing-total="@Model.Tiles.Count">
-	<header class="api-catalog-header">
-		<div class="api-page-heading">
-			<h1>@ApiCatalog.PageTitle</h1>
-			@(await RenderPartialAsync<_PageActions, string>(LayoutModel.MarkdownUrl))
-		</div>
-		<p class="api-catalog-lede">Choose a product to open its API reference.</p>
-	</header>
-	@if (Model.FilterChips.Count > 0)
+
+	// The hero is a section so the layout can render it above its width-limited container. That is what lets
+	// the band behind the title run edge to edge instead of sitting in a box.
+	protected override Task ExecuteSectionAsync(string name)
 	{
-		<div class="listing-filter-bar listing-group-chips flex flex-wrap items-center gap-2 mt-4 mb-6">
-			<button type="button" class="listing-chip listing-chip-all listing-chip-active px-3 py-1 text-xs rounded-full border border-blue-elastic text-blue-elastic" data-group="" aria-pressed="true">All</button>
-			<span class="text-grey-20 select-none">|</span>
-			@foreach (var chip in Model.FilterChips)
-			{
-				<button type="button" class="listing-chip px-3 py-1 text-xs rounded-full border border-grey-20 text-ink-light hover:border-blue-elastic hover:text-blue-elastic" data-group="@chip.Key" aria-pressed="false">@chip.Label</button>
-			}
-		</div>
-	}
-	<ul class="api-catalog-grid">
-		@foreach (var tile in Model.Tiles)
+		if (name == ApiCatalog.HeroSection)
 		{
-			<li data-listing-title="@($"{tile.Title} {tile.Key}".ToLowerInvariant())" data-listing-groups="@string.Join(' ', tile.Categories.Select(c => c.Key))">
-				<article class="api-catalog-card">
-					<a class="api-catalog-card-main" href="@tile.Url">
-						<div class="api-catalog-card-head">
-							@if (tile.IconSvg is not null)
-							{
-								<span class="api-catalog-card-icon">@(new HtmlString(tile.IconSvg))</span>
-							}
-							<h2 class="api-catalog-card-title">@tile.Title</h2>
+			<div class="api-catalog api-catalog-band w-full">
+				<div class="mx-auto w-full max-w-(--max-layout-width) px-6">
+					<section class="hub-hero api-catalog-hero">
+						<div class="hub-hero-inner">
+							<div class="hub-hero-top">
+								<h1>@ApiCatalog.PageTitle</h1>
+							</div>
+							<p class="api-catalog-lede">@ApiCatalog.PageLede</p>
 						</div>
-						<code class="api-catalog-card-key">@tile.Key</code>
-						<div class="api-catalog-card-badges">
-							<span class="api-catalog-badge api-catalog-badge-rest">REST</span>
-							@foreach (var category in tile.Categories)
-							{
-								<span class="api-catalog-badge">@category.Label</span>
-							}
-						</div>
-						@if (!string.IsNullOrWhiteSpace(tile.Description))
-						{
-							<p class="api-catalog-card-desc line-clamp-3">@tile.Description</p>
-						}
-					</a>
-					<div class="api-catalog-card-actions">
-						<a href="@tile.JsonUrl" download>JSON</a>
-						<a href="@tile.YamlUrl" download>YAML</a>
-					</div>
-				</article>
-			</li>
+					</section>
+				</div>
+			</div>
 		}
-	</ul>
-	<p class="listing-no-results hidden text-sm text-ink-light mt-4">No APIs match your filter.</p>
+		return Task.CompletedTask;
+	}
+}
+@{
+	// Card titles sit under the group headings. A page without any (a lone group) puts them directly under the h1.
+	var cardHeadingLevel = Model.Groups.Any(g => g.Title is not null) ? 3 : 2;
+}
+<section id="elastic-docs-v3" class="api-catalog">
+	@for (var i = 0; i < Model.Groups.Count; i++)
+	{
+		var group = Model.Groups[i];
+		var headingId = "api-catalog-group-" + i;
+		var tagOns = group.Featured.Count > 0;
+		var featuredColumns = group.Featured.Count == 3 ? "min-[1024px]:grid-cols-3" : "min-[1024px]:grid-cols-2";
+		// Tag-ons share the featured row's columns, so each sits under its parent. Without featured cards the cards of a
+		// group sit three across, so a description has room to read as a sentence.
+		var otherColumns = tagOns ? featuredColumns : "min-[1024px]:grid-cols-2 lg:grid-cols-3";
+		// Everything in a group that is not featured is compact. Only the APIs that no group covers keep the full-size card.
+		var otherKind = group.Grouped ? ApiCatalogCardKind.Compact : ApiCatalogCardKind.Standard;
+		<section class="api-catalog-group" aria-labelledby="@(group.Title is null ? null : headingId)">
+			@if (group.Title is not null)
+			{
+				<h2 id="@headingId" class="api-catalog-group-title">@group.Title</h2>
+			}
+			@if (group.Featured.Count > 0)
+			{
+				<ul class="api-catalog-featured m-0 mb-2 grid list-none grid-cols-1 gap-6 p-0 @featuredColumns">
+					@foreach (var item in group.Featured)
+					{
+						@(await RenderPartialAsync<_ApiCatalogCard, ApiCatalogCard>(new ApiCatalogCard(item, ApiCatalogCardKind.Featured, HasVariant: group.HasVariant(item), HeadingLevel: cardHeadingLevel)))
+					}
+				</ul>
+			}
+			@if (group.Others.Count > 0)
+			{
+				<ul class="@(tagOns ? "api-catalog-tagons " : "")m-0 grid list-none grid-cols-1 gap-x-6 gap-y-4 p-0 @otherColumns">
+					@foreach (var item in group.OthersInGridOrder)
+					{
+						@(await RenderPartialAsync<_ApiCatalogCard, ApiCatalogCard>(new ApiCatalogCard(item, otherKind, Column: group.ColumnOf(item), HeadingLevel: cardHeadingLevel)))
+					}
+				</ul>
+			}
+		</section>
+	}
 </section>

@@ -18,12 +18,20 @@ public class LandingViewModel(ApiRenderContext context) : ApiViewModel(context)
 	/// <summary>Flattened overview table rows; built before the slice renders.</summary>
 	public required IReadOnlyList<ApiOverviewRow> OverviewRows { get; init; }
 
+	public IReadOnlyList<ApiOverviewSection> OverviewSections => field ??= ApiOverviewBuilder.Sections(OverviewRows);
+
+	private ApiOverviewIndex Index => field ??= ApiOverviewBuilder.SplitTopics(OverviewSections);
+
+	/// <summary>Pages such as Authentication and Servers. They sit above the index, not in it.</summary>
+	public IReadOnlyList<ApiOverviewRow> TopicPages => Index.Topics;
+
+	/// <summary>The sections the grouped index shows.</summary>
+	public IReadOnlyList<ApiOverviewSection> IndexSections => Index.Groups;
+
 	public string JsonUrl { get; } = ApiOutputPaths.JsonUrl(context.CurrentNavigation.Url);
 	public string YamlUrl { get; } = ApiOutputPaths.YamlUrl(context.CurrentNavigation.Url);
 
 	public string? IconSvg { get; } = ProductIcons.Get(context.Product?.Id ?? context.CurrentApiKey);
-
-	protected override string BreadcrumbCurrentTitle => ApiInfo.Title ?? CurrentNavigationItem.NavigationTitle;
 
 	protected override string? LayoutPageDescription => ApiInfo.Description;
 }

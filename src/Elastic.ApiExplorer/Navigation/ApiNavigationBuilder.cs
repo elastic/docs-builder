@@ -59,6 +59,12 @@ public class ApiNavigationBuilder(ILogger logger, BuildContext context)
 			})
 			.ToArray();
 
+		// Every page URL claimed so far: each operation's own, plus each shared page as it is created, so a
+		// collapsed group never takes a URL that belongs to an operation outside it or to an earlier group.
+		var takenMonikers = ops.Select(o => ApiUrlBuilder.OperationMoniker(o.Operation.Value.OperationId, o.Path.Key)).ToHashSet(
+			StringComparer.Ordinal
+		);
+
 		var distinctTagNames = ops.Select(o => o.Tag ?? "unknown").Distinct().ToList();
 		var tagNameToUrlSegment = BuildTagMonikerMap(distinctTagNames);
 
@@ -109,8 +115,7 @@ public class ApiNavigationBuilder(ILogger logger, BuildContext context)
 		}
 
 		var topLevelNavigationItems = new List<IApiGroupingNavigationItem<IApiGroupingModel, INavigationItem>>();
-		var groupingEnabled = context.Configuration.Features.ApiNavGroupingEnabled;
-		var hasClassifications = groupingEnabled && classifications.Count > 1;
+		var hasClassifications = classifications.Count > 1;
 		foreach (var classification in classifications)
 		{
 			if (hasClassifications)
@@ -123,6 +128,7 @@ public class ApiNavigationBuilder(ILogger logger, BuildContext context)
 					classification,
 					classificationNavigationItem,
 					classificationNavigationItem,
+					takenMonikers,
 					tagNavigationItems
 				);
 				topLevelNavigationItems.Add(classificationNavigationItem);
@@ -131,10 +137,16 @@ public class ApiNavigationBuilder(ILogger logger, BuildContext context)
 					classificationNavigationItem.NavigationItems = tagNavigationItems;
 			}
 			else
-				CreateTagNavigationItems(apiUrlSuffix, classification, rootNavigation, rootNavigation, topLevelNavigationItems);
+				CreateTagNavigationItems(
+					apiUrlSuffix,
+					classification,
+					rootNavigation,
+					rootNavigation,
+					takenMonikers,
+					topLevelNavigationItems
+				);
 		}
-		if (groupingEnabled)
-			CreateSchemaNavigationItems(apiUrlSuffix, openApiDocument, rootNavigation, topLevelNavigationItems);
+		CreateSchemaNavigationItems(apiUrlSuffix, openApiDocument, rootNavigation, topLevelNavigationItems);
 
 		// Add explicit children declared via 'children:' below the landing page and before the
 		// generated OpenAPI groups, in declared order.
@@ -204,6 +216,7 @@ public class ApiNavigationBuilder(ILogger logger, BuildContext context)
 		ApiClassification classification,
 		IRootNavigationItem<IApiGroupingModel, INavigationItem> rootNavigation,
 		IApiGroupingNavigationItem<IApiGroupingModel, INavigationItem> parent,
+		HashSet<string> takenMonikers,
 		List<IApiGroupingNavigationItem<IApiGroupingModel, INavigationItem>> parentNavigationItems
 	)
 	{
@@ -211,9 +224,10 @@ public class ApiNavigationBuilder(ILogger logger, BuildContext context)
 		{
 			var endpointNavigationItems = new List<IEndpointOrOperationNavigationItem>();
 			var tagNavigationItem = new TagNavigationItem(tag, context.UrlPathPrefix, apiUrlSuffix, rootNavigation, parent);
-			CreateEndpointNavigationItems(apiUrlSuffix, rootNavigation, tag, tagNavigationItem, endpointNavigationItems);
+			CreateEndpointNavigationItems(apiUrlSuffix, rootNavigation, tag, tagNavigationItem, takenMonikers, endpointNavigationItems);
 			parentNavigationItems.Add(tagNavigationItem);
 			tagNavigationItem.NavigationItems = endpointNavigationItems;
+			tagNavigationItem.ApplyIntroHeadings(tag.Description);
 		}
 	}
 
@@ -222,33 +236,33 @@ public class ApiNavigationBuilder(ILogger logger, BuildContext context)
 		IRootNavigationItem<IApiGroupingModel, INavigationItem> rootNavigation,
 		ApiTag tag,
 		IApiGroupingNavigationItem<IApiGroupingModel, INavigationItem> parentNavigationItem,
+		HashSet<string> takenMonikers,
 		List<IEndpointOrOperationNavigationItem> endpointNavigationItems
 	)
 	{
-		var groupingEnabled = context.Configuration.Features.ApiNavGroupingEnabled;
 		foreach (var endpoint in tag.Endpoints)
 		{
-			if (groupingEnabled && endpoint.Operations.Count > 1)
+			// One page can only stand in for several operations when they are the same call; a sibling with
+			// its own parameters or responses keeps its own page rather than redirecting to a page that lacks them.
+			var differences = endpoint.Operations.Count > 1 ? OperationEndpoint.Differences(endpoint.Operations) : [];
+			if (endpoint.Operations.Count > 1 && differences.Count == 0)
 			{
-				var endpointNavigationItem = new EndpointNavigationItem(endpoint, rootNavigation, parentNavigationItem);
-				var operationNavigationItems = new List<OperationNavigationItem>();
-				foreach (var operation in endpoint.Operations)
-				{
-					var operationNavigationItem = new OperationNavigationItem(
-						context.UrlPathPrefix,
-						apiUrlSuffix,
-						operation,
-						rootNavigation,
-						endpointNavigationItem
-					)
-					{ Hidden = true };
-					operationNavigationItems.Add(operationNavigationItem);
-				}
-				endpointNavigationItem.NavigationItems = operationNavigationItems;
-				endpointNavigationItems.Add(endpointNavigationItem);
+				endpointNavigationItems.Add(
+					CreateCollapsedOperationNavigationItem(apiUrlSuffix, rootNavigation, endpoint, parentNavigationItem, takenMonikers)
+				);
 			}
 			else
 			{
+				// Siblings of one API are meant to be the same call; a difference is worth a look at the spec.
+				if (differences.Count > 0)
+				{
+					_logger.LogWarning(
+						"Operations {Operations} of API '{Api}' differ in {Facets}; each keeps its own page instead of sharing one.",
+						string.Join(", ", endpoint.Operations.Select(static o => $"{o.OperationType.Method.ToUpperInvariant()} {o.Route}")),
+						endpoint.Name,
+						string.Join(", ", differences)
+					);
+				}
 				foreach (var operation in endpoint.Operations)
 				{
 					var operationNavigationItem = new OperationNavigationItem(
@@ -262,6 +276,51 @@ public class ApiNavigationBuilder(ILogger logger, BuildContext context)
 				}
 			}
 		}
+	}
+
+	/// <summary>
+	/// Every method and route of one API renders as a single page built around the primary operation.
+	/// The other operations' former URLs become redirects.
+	/// </summary>
+	private OperationNavigationItem CreateCollapsedOperationNavigationItem(
+		string apiUrlSuffix,
+		IRootNavigationItem<IApiGroupingModel, INavigationItem> rootNavigation,
+		ApiEndpoint endpoint,
+		IApiGroupingNavigationItem<IApiGroupingModel, INavigationItem> parentNavigationItem,
+		HashSet<string> takenMonikers
+	)
+	{
+		var primary = OperationEndpoint.SelectPrimary(endpoint.Operations);
+		var moniker = ApiUrlBuilder.CanonicalOperationMoniker(endpoint.Operations, primary, takenMonikers);
+		var preferred = ApiUrlBuilder.CanonicalOperationMoniker(endpoint.Operations, primary);
+		if (moniker != preferred)
+		{
+			_logger.LogWarning(
+				"The shared page for API '{Api}' would be '{Preferred}', but another page already owns that URL; it is '{Moniker}' instead.",
+				endpoint.Name,
+				preferred,
+				moniker
+			);
+		}
+		_ = takenMonikers.Add(moniker);
+		var url = ApiUrlBuilder.OperationUrl(context.UrlPathPrefix, apiUrlSuffix, moniker);
+		var aliases = endpoint
+			.Operations
+			.Select(
+				o => ApiUrlBuilder.OperationUrl(
+					context.UrlPathPrefix,
+					apiUrlSuffix,
+					ApiUrlBuilder.OperationMoniker(o.Operation.OperationId, o.Route)
+				)
+			)
+			.Where(alias => alias != url)
+			.Distinct(StringComparer.Ordinal)
+			.ToArray();
+		return new OperationNavigationItem(context.UrlPathPrefix, apiUrlSuffix, primary, rootNavigation, parentNavigationItem, moniker)
+		{
+			Siblings = [.. endpoint.Operations.Where(o => !ReferenceEquals(o, primary))],
+			AliasUrls = aliases
+		};
 	}
 
 	private void CreateSchemaNavigationItems(
@@ -279,51 +338,31 @@ public class ApiNavigationBuilder(ILogger logger, BuildContext context)
 		var typesCategoryNav = new SchemaCategoryNavigationItem(typesCategory, rootNavigation, rootNavigation);
 		var categoryNavigationItems = new List<IApiGroupingNavigationItem<IApiGroupingModel, INavigationItem>>();
 
-		// Query DSL - only show QueryContainer (individual queries are shown as properties within it)
-		var queryContainerSchema = schemas.FirstOrDefault(s => s.Key == "_types.query_dsl.QueryContainer");
-
-		if (queryContainerSchema.Value is not null)
+		// One category per group of type pages (Query DSL, Aggregations, Ingest), in the order TypePages lists them.
+		foreach (var category in TypePages.All.GroupBy(static p => p.Category))
 		{
-			var queryCategory = new SchemaCategory("Query DSL", "Query type definitions");
-			var queryCategoryNav = new SchemaCategoryNavigationItem(queryCategory, rootNavigation, typesCategoryNav);
-			var apiSchema = new ApiSchema(queryContainerSchema.Key, "QueryContainer", "query-dsl", queryContainerSchema.Value);
-			var queryNavigationItems = new List<INavigationItem>
-			{
-				new SchemaNavigationItem(context.UrlPathPrefix, apiUrlSuffix, apiSchema, rootNavigation, queryCategoryNav)
-			};
-			queryCategoryNav.NavigationItems = queryNavigationItems;
-			categoryNavigationItems.Add(queryCategoryNav);
-		}
+			var present = category.Where(p => schemas.ContainsKey(p.SchemaId)).ToArray();
+			if (present.Length == 0)
+				continue;
 
-		// Aggregations - only show AggregationContainer and Aggregate
-		var aggContainerSchema = schemas.FirstOrDefault(s => s.Key == "_types.aggregations.AggregationContainer");
-
-		var aggregateSchema = schemas.FirstOrDefault(s => s.Key == "_types.aggregations.Aggregate");
-
-		if (aggContainerSchema.Value is not null || aggregateSchema.Value is not null)
-		{
-			var aggCategory = new SchemaCategory("Aggregations", "Aggregation type definitions");
-			var aggCategoryNav = new SchemaCategoryNavigationItem(aggCategory, rootNavigation, typesCategoryNav);
-			var aggNavigationItems = new List<INavigationItem>();
-
-			if (aggContainerSchema.Value is not null)
-			{
-				var apiSchema = new ApiSchema(aggContainerSchema.Key, "AggregationContainer", "aggregations", aggContainerSchema.Value);
-				aggNavigationItems.Add(
-					new SchemaNavigationItem(context.UrlPathPrefix, apiUrlSuffix, apiSchema, rootNavigation, aggCategoryNav)
-				);
-			}
-
-			if (aggregateSchema.Value is not null)
-			{
-				var apiSchema = new ApiSchema(aggregateSchema.Key, "Aggregate", "aggregations", aggregateSchema.Value);
-				aggNavigationItems.Add(
-					new SchemaNavigationItem(context.UrlPathPrefix, apiUrlSuffix, apiSchema, rootNavigation, aggCategoryNav)
-				);
-			}
-
-			aggCategoryNav.NavigationItems = aggNavigationItems;
-			categoryNavigationItems.Add(aggCategoryNav);
+			var categoryNav = new SchemaCategoryNavigationItem(
+				new SchemaCategory(category.Key.Title, category.Key.Description),
+				rootNavigation,
+				typesCategoryNav
+			);
+			categoryNav.NavigationItems =
+			[
+				.. present.Select(
+					page => new SchemaNavigationItem(
+						context.UrlPathPrefix,
+						apiUrlSuffix,
+						new ApiSchema(page.SchemaId, page.DisplayName, category.Key.Slug, schemas[page.SchemaId]),
+						rootNavigation,
+						categoryNav
+					)
+				)
+			];
+			categoryNavigationItems.Add(categoryNav);
 		}
 
 		if (categoryNavigationItems.Count > 0)

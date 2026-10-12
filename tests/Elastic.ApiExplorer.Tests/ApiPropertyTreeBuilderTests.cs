@@ -4,25 +4,23 @@
 
 using AwesomeAssertions;
 using Elastic.ApiExplorer.Components.PropertyTree;
+using Elastic.ApiExplorer.Components.PropertyTree._Partials;
 using Elastic.ApiExplorer.Model;
 using Elastic.ApiExplorer.Operations;
 using Microsoft.AspNetCore.Html;
 using Microsoft.OpenApi;
+using RazorSlices;
+using static Elastic.ApiExplorer.Tests.TestSpecs;
 
 namespace Elastic.ApiExplorer.Tests;
 
 [ClassDataSource<ApiExplorerFixture>(Shared = SharedType.PerClass)]
 public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture)
 {
-	private ApiPropertyTreeBuilder CreateBuilder(string? currentPageType = null, CollapseMode collapseMode = CollapseMode.AlwaysCollapsed)
+	private ApiPropertyTreeBuilder CreateBuilder(string? currentPageSchemaId = null)
 	{
-		var options = new PropertyDisplayOptions
-		{
-			RenderMarkdown = s => new HtmlString($"<p>{s}</p>"),
-			ApiRootUrl = "/api/doc/fixture",
-			CollapseMode = collapseMode
-		};
-		return new ApiPropertyTreeBuilder(fixture.Document, options, currentPageType);
+		var options = new PropertyDisplayOptions { RenderMarkdown = s => new HtmlString($"<p>{s}</p>"), ApiRootUrl = "/api/doc/fixture" };
+		return new ApiPropertyTreeBuilder(fixture.Document, options, currentPageSchemaId);
 	}
 
 	private IOpenApiSchema Schema(string id) => fixture.Document.Components!.Schemas![id];
@@ -30,12 +28,12 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture)
 	[Test]
 	public void BuildPropertyList_RecursiveSchema_StopsAtAncestor()
 	{
-		var builder = CreateBuilder(currentPageType: "QueryContainer");
-		var ancestors = new HashSet<string> { "QueryContainer" };
+		var builder = CreateBuilder(currentPageSchemaId: "_types.query_dsl.QueryContainer");
+		var ancestors = new HashSet<string> { "_types.query_dsl.QueryContainer" };
 
 		var list = builder.BuildPropertyList(
 			Schema("_types.query_dsl.QueryContainer"),
-			new PropertyTreeScope { Prefix = "", Ancestors = ancestors }
+			new PropertyTreeScope { Prefix = "", AncestorRefs = ancestors }
 		);
 
 		list.Should().NotBeNull();
@@ -247,12 +245,17 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture)
 	}
 
 	[Test]
-	public void BuildUnionVariantsForSchemas_TopLevelOneOf_BuildsVariantPerOption()
+	public void BuildUnionVariants_TopLevelOneOf_BuildsVariantPerOption()
 	{
-		var builder = CreateBuilder(currentPageType: "Aggregate", collapseMode: CollapseMode.DepthBased);
+		var builder = CreateBuilder(currentPageSchemaId: "_types.aggregations.Aggregate");
 		var aggregate = Schema("_types.aggregations.Aggregate");
 
-		var variants = builder.BuildUnionVariantsForSchemas(aggregate.OneOf!, "oneof", new HashSet<string> { "Aggregate" });
+		var variants = ApiBodyContent.BuildUnionVariants(
+			aggregate,
+			new PropertyTreeScope { Prefix = "oneof", AncestorRefs = new HashSet<string> { "_types.aggregations.Aggregate" } },
+			new SchemaAnalyzer(fixture.Document, "_types.aggregations.Aggregate"),
+			builder
+		);
 
 		variants.Should().NotBeNull();
 		variants!.Variants.Should().HaveCount(2);
@@ -261,12 +264,17 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture)
 	}
 
 	[Test]
-	public void BuildUnionVariantsForSchemas_CodegenOneOf_UsesReadableNames()
+	public void BuildUnionVariants_CodegenOneOf_UsesReadableNames()
 	{
 		var builder = CreateBuilder();
 		var schema = Schema("fixture.InvalidInputResponse");
 
-		var variants = builder.BuildUnionVariantsForSchemas(schema.OneOf!, "res-400", null);
+		var variants = ApiBodyContent.BuildUnionVariants(
+			schema,
+			new PropertyTreeScope { Prefix = "res-400" },
+			new SchemaAnalyzer(fixture.Document),
+			builder
+		);
 
 		variants.Should().NotBeNull();
 		variants!.Variants.Select(v => v.DisplayName).Should().BeEquivalentTo(["PlatformErrorResponse", "SiemErrorResponse"]);
@@ -425,4 +433,139 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture)
 			.Should()
 			.Equal("> 0", "< 100", "unique", "× 5", "pattern: [smdh]$", "default: 1m");
 	}
+
+	[Test]
+	[Arguments("^[a-z]+$", false)]
+	[Arguments("^(?:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa)$", true)]
+	public void Describe_Pattern_SetsTitleOnlyWhenTooLongToShowInline(string pattern, bool expectTitle)
+	{
+		var schema = new OpenApiSchema { Type = JsonSchemaType.String, Pattern = pattern };
+
+		var span = CreateBuilder().Describe(schema).Spans.Single(s => s.CssClass == SchemaHelpers.ConstraintCssClass);
+
+		span.Title.Should().Be(expectTitle ? $"pattern: {pattern}" : null);
+	}
+
+	[Test]
+	public async Task DescribePathParameter_StringOrStringArray_ShowsBothAlternatives()
+	{
+		var json =
+			"""
+			{
+			  "openapi": "3.0.3",
+			  "info": { "title": "t", "version": "1" },
+			  "paths": {},
+			  "components": {
+			    "schemas": {
+			      "_types.Name": { "type": "string" },
+			      "_types.Names": {
+			        "oneOf": [
+			          { "$ref": "#/components/schemas/_types.Name" },
+			          { "type": "array", "items": { "$ref": "#/components/schemas/_types.Name" } }
+			        ]
+			      },
+			      "_types.DataStreamName": { "type": "string" },
+			      "_types.DataStreamNames": {
+			        "oneOf": [
+			          { "$ref": "#/components/schemas/_types.DataStreamName" },
+			          { "type": "array", "items": { "$ref": "#/components/schemas/_types.DataStreamName" } }
+			        ]
+			      },
+			      "inline.StringOrArray": {
+			        "oneOf": [
+			          { "type": "string" },
+			          { "type": "array", "items": { "type": "string" } }
+			        ]
+			      }
+			    }
+			  }
+			}
+			""";
+		var document = await LoadSpecAsync(json);
+		var builder = BuilderFor(document);
+
+		var names = new OpenApiSchemaReference("_types.Names", document);
+		var dataStreams = new OpenApiSchemaReference("_types.DataStreamNames", document);
+		var name = new OpenApiSchemaReference("_types.Name", document);
+
+		builder.Describe(names).Text.Should().Be("union Names");
+		builder.DescribePathParameter(names).Text.Should().Be("union Name | [] Name");
+		builder.DescribePathParameter(dataStreams).Text.Should().Be("union DataStreamName | [] DataStreamName");
+		builder.DescribePathParameter(document.Components!.Schemas!["inline.StringOrArray"]).Text.Should().Be("union string | [] string");
+		builder.DescribePathParameter(name).Text.Should().Be("string Name");
+		builder.Describe(name).Text.Should().Be("string Name");
+		builder.DescribePathParameter(new OpenApiSchema { Type = JsonSchemaType.String }).Text.Should().Be("string");
+	}
+
+	[Test]
+	[Arguments(false)]
+	[Arguments(true)]
+	public async Task BuildPropertyList_ObjectsAtSameDepth_StartCollapsed(bool isRequest)
+	{
+		var builder = CreateBuilder();
+		var list = builder.BuildPropertyList(ObjectsAtTwoDepths(), new PropertyTreeScope { Prefix = "body", IsRequest = isRequest });
+
+		list.Should().NotBeNull();
+		var html = await _PropertyList.Create(list!).RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
+
+		AssertCollapsedPair(list.Items, "small", "large", html);
+		AssertStartsCollapsed(html, list.Items.Single(p => p.Name == "only").AnchorId);
+		var group = list.Items.Single(p => p.Name == "group");
+		group.Children.Properties.Should().NotBeNull();
+		AssertCollapsedPair(group.Children.Properties!.Items, "small", "large", html);
+		AssertStartsCollapsed(html, group.Children.Properties.Items.Single(p => p.Name == "only").AnchorId);
+	}
+
+	private static void AssertCollapsedPair(IReadOnlyList<ApiProperty> items, string smallName, string largeName, string html)
+	{
+		var small = items.Single(p => p.Name == smallName);
+		var large = items.Single(p => p.Name == largeName);
+		small.Depth.Should().Be(large.Depth);
+		small.IsCollapsible.Should().BeTrue();
+		large.IsCollapsible.Should().BeTrue();
+		AssertStartsCollapsed(html, small.AnchorId);
+		AssertStartsCollapsed(html, large.AnchorId);
+	}
+
+	private static void AssertStartsCollapsed(string html, string anchorId)
+	{
+		var match = System
+			.Text
+			.RegularExpressions
+			.Regex
+			.Match(html, $"id=\"{anchorId}\"([\\s\\S]*?)aria-expanded=\"(true|false)\"([\\s\\S]*?)(show|hide) properties");
+		match.Success.Should().BeTrue($"property {anchorId} renders an expand control");
+		match.Groups[2].Value.Should().Be("false", $"{anchorId} starts collapsed");
+		match.Groups[4].Value.Should().Be("show", $"{anchorId} offers show properties");
+		html.Should().Contain($"id=\"{anchorId}-children\"");
+	}
+
+	private static OpenApiSchema ObjectsAtTwoDepths() =>
+		new()
+		{
+			Type = JsonSchemaType.Object,
+			Properties = new Dictionary<string, IOpenApiSchema>
+			{
+				["only"] = StringFields("one"),
+				["small"] = StringFields("one", "two"),
+				["large"] = StringFields("one", "two", "three", "four", "five", "six"),
+				["group"] = new OpenApiSchema
+				{
+					Type = JsonSchemaType.Object,
+					Properties = new Dictionary<string, IOpenApiSchema>
+					{
+						["only"] = StringFields("one"),
+						["small"] = StringFields("one", "two"),
+						["large"] = StringFields("one", "two", "three", "four", "five", "six")
+					}
+				}
+			}
+		};
+
+	private static OpenApiSchema StringFields(params string[] names) =>
+		new()
+		{
+			Type = JsonSchemaType.Object,
+			Properties = names.ToDictionary(name => name, name => (IOpenApiSchema)new OpenApiSchema { Type = JsonSchemaType.String })
+		};
 }

@@ -162,3 +162,68 @@ describe('toLanguageFn', () => {
         expect(toLanguageFn({ default: fn })).toBe(fn)
     })
 })
+
+describe('API sample panels', () => {
+    it('highlights each panel with its own language, including the hidden one', async () => {
+        const { initHighlight } = await loadModule()
+        document.body.innerHTML = `
+            <div id="api-examples-panel">
+                <div data-code-panel="Console"><pre><code class="language-console">GET /_search</code></pre></div>
+                <div data-code-panel="Python" hidden><pre><code class="language-python">def f():\n    return 1</code></pre></div>
+            </div>`
+
+        await initHighlight()
+
+        const python = document.querySelector(
+            '[data-code-panel="Python"] code'
+        )!
+        const consoleCode = document.querySelector(
+            '[data-code-panel="Console"] code'
+        )!
+        expect(python.classList.contains('language-python')).toBe(true)
+        expect(python.querySelector('.hljs-keyword')?.textContent).toBe('def')
+        expect(consoleCode.classList.contains('language-console')).toBe(true)
+        expect((consoleCode as HTMLElement).dataset.highlighted).toBe('yes')
+    })
+
+    it('highlights the whole body of a console request, not just its first line', async () => {
+        const { initHighlight } = await loadModule()
+        document.body.innerHTML = `<div id="api-examples-panel"><pre><code class="language-console">GET /my-index-000001/_search
+{
+  "query": {
+    "term": {
+      "user.id": "kimchy"
+    }
+  }
+}</code></pre></div>`
+
+        await initHighlight()
+
+        const code = document.querySelector('code')!
+        const keys = Array.from(code.querySelectorAll('.hljs-attr')).map(
+            (e) => e.textContent
+        )
+        expect(keys).toEqual(['"query"', '"term"', '"user.id"'])
+        expect(code.querySelector('.hljs-keyword')?.textContent).toBe('GET')
+        expect(code.querySelector('.hljs-string')?.textContent).toBe(
+            '/my-index-000001/_search'
+        )
+    })
+
+    it('ends a console body at the next request', async () => {
+        const { initHighlight } = await loadModule()
+        document.body.innerHTML = `<div id="api-examples-panel"><pre><code class="language-console">PUT /a
+{
+  "x": 1
+}
+GET /b</code></pre></div>`
+
+        await initHighlight()
+
+        const code = document.querySelector('code')!
+        const methods = Array.from(code.querySelectorAll('.hljs-keyword')).map(
+            (e) => e.textContent
+        )
+        expect(methods).toEqual(['PUT', 'GET'])
+    })
+})

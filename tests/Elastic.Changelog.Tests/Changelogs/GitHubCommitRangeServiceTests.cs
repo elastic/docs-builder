@@ -33,9 +33,16 @@ public class GitHubCommitRangeServiceTests() : ChangelogTestBase()
 	}
 
 	/// <summary>One associated PR node for a GraphQL commit object.</summary>
-	private static string PrNode(int number, bool merged = true, string? mergeCommitSha = null, string repoFullName = Owner + "/" + Repo) =>
+	private static string PrNode(
+		int number,
+		bool merged = true,
+		string? mergeCommitSha = null,
+		string repoFullName = Owner + "/" + Repo,
+		string baseRefName = "main"
+	) =>
 		$$"""
 		{ "number": {{number}}, "url": "https://github.com/{{repoFullName}}/pull/{{number}}", "merged": {{(merged ? "true" : "false")}},
+		  "baseRefName": "{{baseRefName}}",
 		  "mergeCommit": {{(mergeCommitSha != null ? $$"""{ "oid": "{{mergeCommitSha}}" }""" : "null")}},
 		  "baseRepository": { "nameWithOwner": "{{repoFullName}}" } }
 		""";
@@ -170,6 +177,81 @@ public class GitHubCommitRangeServiceTests() : ChangelogTestBase()
 		result.PullRequests.Should().ContainSingle();
 		result.PullRequests[0].Number.Should().Be(60);
 		Collector.Diagnostics.Should().NotContain(d => d.Message.Contains("multiple merged pull requests"));
+	}
+
+	[Test]
+	public async Task ResolvePullRequests_BaseRef_ExcludesPullRequestsMergedIntoOtherBranches()
+	{
+		var (sha1, sha2) = (Sha(1), Sha(2));
+		var handler = Handler(
+			_ => CompareJson(2, [sha1, sha2]),
+			_ => GraphQlJson([
+				(sha1, [PrNode(11, mergeCommitSha: sha1, baseRefName: "feature/highlight")]),
+				(sha2, [PrNode(12, mergeCommitSha: sha2)])
+			])
+		);
+		var args = Args with { BaseRef = "main" };
+
+		var result = await Service(handler).ResolvePullRequestsAsync(Collector, args, TestContext.Current!.Execution.CancellationToken);
+
+		result.Should().NotBeNull();
+		result.PullRequests.Select(pr => pr.Number).Should().Equal(12);
+		result.ExcludedPullRequests.Should().ContainSingle();
+		result.ExcludedPullRequests[0].Number.Should().Be(11);
+		result.ExcludedPullRequests[0].BaseRef.Should().Be("feature/highlight");
+		// Excluded by base branch is not the same as "no associated PR": report it once.
+		result.CommitsWithoutPullRequest.Should().BeEmpty();
+	}
+
+	[Test]
+	public async Task ResolvePullRequests_BaseRef_StillReportsCommitsWithNoMergedPr()
+	{
+		var (sha1, sha2) = (Sha(1), Sha(2));
+		var handler = Handler(
+			_ => CompareJson(2, [sha1, sha2]),
+			_ => GraphQlJson([(sha1, [PrNode(11, mergeCommitSha: sha1, baseRefName: "feature/highlight")]), (sha2, [])])
+		);
+		var args = Args with { BaseRef = "main" };
+
+		var result = await Service(handler).ResolvePullRequestsAsync(Collector, args, TestContext.Current!.Execution.CancellationToken);
+
+		result.Should().NotBeNull();
+		result.ExcludedPullRequests.Select(pr => pr.Number).Should().Equal(11);
+		result.CommitsWithoutPullRequest.Should().Equal(sha2);
+	}
+
+	[Test]
+	public async Task ResolvePullRequests_NoBaseRef_KeepsPullRequestsFromAnyBranch()
+	{
+		var sha1 = Sha(1);
+		var handler = Handler(
+			_ => CompareJson(1, [sha1]),
+			_ => GraphQlJson([(sha1, [PrNode(11, mergeCommitSha: sha1, baseRefName: "feature/highlight")])])
+		);
+
+		var result = await Service(handler).ResolvePullRequestsAsync(Collector, Args, TestContext.Current!.Execution.CancellationToken);
+
+		result.Should().NotBeNull();
+		result.PullRequests.Select(pr => pr.Number).Should().Equal(11);
+		result.ExcludedPullRequests.Should().BeEmpty();
+	}
+
+	[Test]
+	public async Task ResolvePullRequests_BaseRef_PrefersTheMainPullRequestWhenACommitHasBoth()
+	{
+		var sha1 = Sha(1);
+		var handler = Handler(
+			_ => CompareJson(1, [sha1]),
+			_ => GraphQlJson([(sha1, [PrNode(11, baseRefName: "feature/highlight"), PrNode(12)])])
+		);
+		var args = Args with { BaseRef = "main" };
+
+		var result = await Service(handler).ResolvePullRequestsAsync(Collector, args, TestContext.Current!.Execution.CancellationToken);
+
+		result.Should().NotBeNull();
+		result.PullRequests.Select(pr => pr.Number).Should().Equal(12);
+		result.ExcludedPullRequests.Select(pr => pr.Number).Should().Equal(11);
+		Collector.Warnings.Should().Be(0);
 	}
 
 	[Test]

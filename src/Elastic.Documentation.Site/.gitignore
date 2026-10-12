@@ -1,5 +1,8 @@
 .parcel-cache/
 node_modules/
+_static/assets/
+_static/asset-*
+_static/chunk-*
 _static/*.css
 _static/*.css.map
 _static/*.ttf

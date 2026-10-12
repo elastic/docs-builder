@@ -19,8 +19,18 @@ public record SchemaPageModel
 	public required string? DictionaryTypeName { get; init; }
 
 	public required ExternalDocLink? ExternalDocs { get; init; }
-	public required ApiUnionVariants? OneOfVariants { get; init; }
-	public required ApiUnionVariants? AnyOfVariants { get; init; }
+	/// <summary>The variants of a union type, built by the same rules as a request or response body that is a union.</summary>
+	public required ApiUnionVariants? UnionVariants { get; init; }
+
+	/// <summary>Which keyword the union came from; it names the section.</summary>
+	public required UnionKeyword UnionKeyword { get; init; }
+
+	/// <summary>The sentence under the section heading; an array of a union says each item is one of the variants.</summary>
+	public required string UnionIntro { get; init; }
+
+	/// <summary>Which of the type's fields it needs, when its <c>oneOf</c>/<c>anyOf</c> only lists <c>required</c> sets.</summary>
+	public required RequiredAlternatives? Requires { get; init; }
+
 	public required ApiPropertyList? Properties { get; init; }
 	public required TypeAnnotation? AdditionalPropertiesType { get; init; }
 	public required IReadOnlyList<string> EnumValues { get; init; }
@@ -36,11 +46,20 @@ public record SchemaPageModel
 			ShowVersionInfo = false,
 			ShowExternalDocs = false,
 			UseHiddenUntilFound = false,
-			CollapseMode = CollapseMode.DepthBased,
 			SchemaResolveCache = context.SchemaResolveCache
 		};
-		var builder = new ApiPropertyTreeBuilder(context.Model, options, schema.DisplayName);
-		var rootAncestors = new HashSet<string> { schema.DisplayName };
+		var builder = new ApiPropertyTreeBuilder(context.Model, options, schema.SchemaId);
+		var analyzer = new SchemaAnalyzer(context.Model, schema.SchemaId, context.SchemaResolveCache);
+		var rootAncestors = new HashSet<string> { schema.SchemaId };
+		var typeInfo = analyzer.GetTypeInfo(openApiSchema);
+		var keyword = typeInfo.UnionKeyword ?? UnionKeyword.OneOf;
+		// Variant anchors keep their keyword prefix (oneof-variant-…), so links to them survive.
+		var variantScope = new PropertyTreeScope { Prefix = keyword.ToSchemaKeyword().ToLowerInvariant(), AncestorRefs = rootAncestors };
+		var built = ApiBodyContent.BuildUnionVariants(openApiSchema, variantScope, analyzer, builder);
+		// The section's intro sentence carries the label, so the list does not repeat it.
+		var variants = built is null ? null : built with { Label = null };
+		var intro = UnionIntroFor(typeInfo, built);
+		var listed = ApiBodyContent.ListedProperties(openApiSchema, variants, analyzer);
 
 		ExternalDocLink? externalDocs = null;
 		if (openApiSchema.ExternalDocs?.Url is not null)
@@ -51,22 +70,26 @@ public record SchemaPageModel
 
 		return new SchemaPageModel
 		{
-			DictionaryTypeName = schema.DisplayName switch
-			{
-				"AggregationContainer" => "Dictionary<string, AggregationContainer>",
-				"Aggregate" => "Dictionary<string, Aggregate>",
-				_ => null
-			},
+			DictionaryTypeName = TypePages.TryGet(schema.SchemaId, out var typePage) ? typePage.MapOf : null,
 			ExternalDocs = externalDocs,
-			OneOfVariants = openApiSchema.OneOf is { Count: > 0 }
-				? builder.BuildUnionVariantsForSchemas(openApiSchema.OneOf, "oneof", rootAncestors) ?? ApiUnionVariants.Empty
-				: null,
-			AnyOfVariants = openApiSchema.AnyOf is { Count: > 0 }
-				? builder.BuildUnionVariantsForSchemas(openApiSchema.AnyOf, "anyof", rootAncestors) ?? ApiUnionVariants.Empty
-				: null,
-			Properties = builder.BuildPropertyList(openApiSchema, new PropertyTreeScope { Prefix = "", Ancestors = rootAncestors }),
+			UnionVariants = variants,
+			UnionKeyword = keyword,
+			UnionIntro = intro,
+			Requires = builder.DescribeRequiredAlternatives(openApiSchema),
+			Properties = listed is null
+				? null
+				: builder.BuildPropertyList(listed, new PropertyTreeScope { Prefix = "", AncestorRefs = rootAncestors }),
 			AdditionalPropertiesType = openApiSchema.AdditionalProperties is { } addProps ? builder.Describe(addProps) : null,
-			EnumValues = new SchemaAnalyzer(context.Model, schema.DisplayName, context.SchemaResolveCache).GetEnumValues(openApiSchema)
+			EnumValues = analyzer.GetEnumValues(openApiSchema)
 		};
 	}
+
+	/// <summary>
+	/// "This type can be one of the following:", or for an array of a union the body label, "An array; each item is one of:",
+	/// since the variants then describe each item rather than the type.
+	/// </summary>
+	internal static string UnionIntroFor(TypeInfo typeInfo, ApiUnionVariants? variants) =>
+		typeInfo.IsArray && variants?.Label is { } arrayLabel
+			? arrayLabel
+			: SchemaCommonMark.UnionIntro(typeInfo.UnionKeyword ?? UnionKeyword.OneOf);
 }

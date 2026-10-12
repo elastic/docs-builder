@@ -7,12 +7,10 @@
 @{
 	var operation = Model.Operation.Operation;
 	var pageModel = Model.Page;
-	var endpointListingAttrs = pageModel.HasMultipleOverloads
-		? new HtmlString(" role=\"radiogroup\" aria-label=\"Endpoints\"")
-		: HtmlString.Empty;
+	var endpoint = pageModel.Endpoint;
 }
 
-@* Intro spans both columns (title + paths); reference column starts below. *@
+@* Intro keeps the full width; the reference and the examples rail share .api-page-columns below it. *@
 <header class="api-page-intro">
 	<div class="api-page-heading">
 		<h1>@operation.Summary</h1>
@@ -48,29 +46,14 @@
 		</div>
 	}
 
-	<ul id="paths" class="api-url-listing@(pageModel.HasMultipleOverloads ? " api-url-listing--multi" : "")"@endpointListingAttrs>
-		@foreach (var overload in pageModel.Overloads)
+	<ul id="paths" class="api-url-listing" aria-label="Paths">
+		@foreach (var row in endpoint.Rows)
 		{
-			var method = overload.Model.OperationType.ToString().ToLowerInvariant();
-			var isCurrent = overload.Model.Route == Model.Operation.Route && overload.Model.OperationType == Model.Operation.OperationType;
 			<li class="api-url-list-item">
-				<label class="api-url-row@(isCurrent ? " current" : "")">
-					@if (pageModel.HasMultipleOverloads)
-					{
-						<input
-							type="radio"
-							class="api-url-radio"
-							name="api-endpoint"
-							value="@overload.Url"
-							aria-label="@(method.ToUpperInvariant()) @overload.Model.Route"
-							hx-get="@overload.Url"
-							@LayoutModel.HxAttributes
-							@(isCurrent ? "checked" : null) />
-					}
-					@(await RenderPartialAsync<_HttpMethodBadge, string>(method))
-					<span class="api-url">@overload.Model.Route</span>
-					@(await RenderPartialAsync<_EndpointCopyButton, string>(overload.Model.Route))
-				</label>
+				<span class="api-url-row">
+					@(await RenderPartialAsync<_EndpointPath, EndpointPathModel>(new EndpointPathModel(row, endpoint.ShortestRoute)))
+					@(await RenderPartialAsync<_EndpointCopyButton, string>(row.Route))
+				</span>
 			</li>
 		}
 	</ul>
@@ -79,12 +62,18 @@
 		<div class="api-security-badges">
 			@foreach (var scheme in pageModel.AuthSchemes)
 			{
-				<a class="api-type-badge" href="@scheme.Href">@scheme.PillLabel</a>
+				<a class="api-auth-button" href="@scheme.Href">
+					<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+						<path fill-rule="evenodd" clip-rule="evenodd" d="M4 7V5a4 4 0 1 1 8 0v2h1a1 1 0 0 1 1 1v6a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1h1Zm1 0h6V5a3 3 0 1 0-6 0v2ZM3 8v6h10V8H3Z" fill="currentColor"/>
+					</svg>
+					<span>@scheme.PillLabel</span>
+				</a>
 			}
 		</div>
 	}
 </header>
-<section id="elastic-api-v3" class="api-page-reference">
+<div class="api-page-columns">
+<section id="elastic-api-v3">
 	@{
 		var prerequisites = Model.Prerequisites;
 	}
@@ -97,7 +86,7 @@
 			}
 			@if (pageModel.ExternalDocs is not null)
 			{
-				<a href="@pageModel.ExternalDocs.Url" class="docs-reference-btn" @(pageModel.ExternalDocs.IsElasticDocs ? "" : "target=\"_blank\" rel=\"noopener\"")>
+				<a href="@pageModel.ExternalDocs.Url" class="docs-reference-btn" target="@(pageModel.ExternalDocs.IsElasticDocs ? null : "_blank")" rel="@(pageModel.ExternalDocs.IsElasticDocs ? null : "noopener")">
 					@pageModel.ExternalDocs.LinkText
 				</a>
 			}
@@ -105,7 +94,7 @@
 	}
 	else if (pageModel.ExternalDocs is not null)
 	{
-		<a href="@pageModel.ExternalDocs.Url" class="docs-reference-btn" @(pageModel.ExternalDocs.IsElasticDocs ? "" : "target=\"_blank\" rel=\"noopener\"")>
+		<a href="@pageModel.ExternalDocs.Url" class="docs-reference-btn" target="@(pageModel.ExternalDocs.IsElasticDocs ? null : "_blank")" rel="@(pageModel.ExternalDocs.IsElasticDocs ? null : "noopener")">
 			@pageModel.ExternalDocs.LinkText
 		</a>
 	}
@@ -149,11 +138,11 @@
 		<div @ParamSectionHeader.WrapAttributes(collapsePath)>
 		@if (collapsePath)
 		{
-			@(await RenderPartialAsync<_ParamSectionHeader, ParamSectionHeader>(new ParamSectionHeader("Parameters", "parameters", pageModel.PathParameterNames)))
+			@(await RenderPartialAsync<_ParamSectionHeader, ParamSectionHeader>(new ParamSectionHeader("Path Parameters", "parameters", pageModel.PathParameterNames)))
 		}
 		else
 		{
-			@(await RenderPartialAsync<_SectionHeader, SectionHeader>(new SectionHeader("Parameters", "parameters")))
+			@(await RenderPartialAsync<_SectionHeader, SectionHeader>(new SectionHeader("Path Parameters", "parameters")))
 		}
 		<div @ParamSectionHeader.BodyAttributes(collapsePath, "parameters-list")>
 		<dl class="property-list">
@@ -173,16 +162,26 @@
 					{
 						<span class="required type-status">required</span>
 					}
+					else if (path.Optional)
+					{
+						<span class="optional type-status">optional</span>
+					}
 					@if (path.Deprecated is true)
 					{
 						<span class="deprecated-badge type-status">deprecated</span>
 					}
 				</dt>
-			<dd>@path.DescriptionHtml</dd>
+			<dd>
+				@path.DescriptionHtml
+				@if (path.Optional)
+				{
+					<p class="api-path-param-optional-hint">Leave it out to use <code>@endpoint.ShortestRoute</code>.</p>
+				}
+			</dd>
 			@if (path.UnionOptions.Count > 0 && path.EnumValues.Count == 0)
 			{
 				<dd class="union-options">
-					<span class="values-label">One of:</span>
+					<span class="values-label">@path.UnionLabel</span>
 					@for (var optIndex = 0; optIndex < path.UnionOptions.Count; optIndex++)
 					{
 						var unionOpt = path.UnionOptions[optIndex];
@@ -242,7 +241,7 @@
 				@if (qp.UnionOptions.Count > 0 && qp.EnumValues.Count == 0)
 				{
 					<dd class="union-options">
-						<span class="values-label">One of:</span>
+						<span class="values-label">@qp.UnionLabel</span>
 						@for (var optIndex = 0; optIndex < qp.UnionOptions.Count; optIndex++)
 						{
 							var unionOpt = qp.UnionOptions[optIndex];
@@ -267,7 +266,7 @@
 		<div @ParamSectionHeader.WrapAttributes(collapseRequest)>
 		@if (collapseRequest)
 		{
-			@(await RenderPartialAsync<_ParamSectionHeader, ParamSectionHeader>(new ParamSectionHeader("Request", "request-body", pageModel.RequestPropertyNames)))
+			@(await RenderPartialAsync<_ParamSectionHeader, ParamSectionHeader>(new ParamSectionHeader("Request", "request-body", pageModel.RequestPropertyNames, pageModel.RequestNamesAreVariants)))
 		}
 		else
 		{
@@ -279,9 +278,20 @@
 			<p>@Model.RenderMarkdown(operation.RequestBody.Description)</p>
 		}
 
-		@if (pageModel.RequestProperties is not null)
+		@if (pageModel.RequestRequires is { } requestRequires)
 		{
-			@(await RenderPartialAsync<_PropertyList, ApiPropertyList>(pageModel.RequestProperties))
+			<p class="union-options">@(await RenderPartialAsync<_RequiredAlternatives, RequiredAlternatives>(requestRequires))</p>
+		}
+		@if (pageModel.HasRequestBody)
+		{
+			if (pageModel.RequestProperties is not null)
+			{
+				@(await RenderPartialAsync<_PropertyList, ApiPropertyList>(pageModel.RequestProperties))
+			}
+			if (pageModel.RequestUnionVariants is { Variants.Count: > 0 } requestVariants)
+			{
+				@(await RenderPartialAsync<_UnionOptions, ApiUnionVariants>(requestVariants))
+			}
 		}
 		else if (pageModel.RequestType is not null)
 		{
@@ -301,3 +311,8 @@
 		<div>@extra.BodyHtml</div>
 	}
 </section>
+@if (Model.ExamplesPanel is { } examplesPanel)
+{
+	@await RenderPartialAsync(_OperationExamplesPanel.Create(examplesPanel))
+}
+</div>

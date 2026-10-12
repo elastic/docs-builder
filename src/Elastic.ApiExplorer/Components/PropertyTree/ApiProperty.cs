@@ -18,6 +18,16 @@ public record ExternalDocLink(string Url, bool IsElasticDocs, string? Descriptio
 		!string.IsNullOrWhiteSpace(Description)
 			? Description
 			: IsElasticDocs ? "Read the reference documentation" : "External documentation";
+
+	/// <summary>The text for a property's name line, where the long default would wrap onto a line of its own.</summary>
+	public string ShortLinkText => !string.IsNullOrWhiteSpace(Description) ? Description : IsElasticDocs ? "Reference" : "External docs";
+}
+
+/// <summary>An earlier row on the page whose fields (or union options) a row repeats; the row links back to it.</summary>
+/// <remarks><see cref="Owner"/> names the variant or row the first listing sits in, since many listings share a name.</remarks>
+public record RepeatedShape(string Name, string AnchorId, bool IsUnion, string? Owner = null)
+{
+	public string Label => IsUnion ? "Same options as" : "Same fields as";
 }
 
 /// <summary>A link from a group-4 property row to that schema's dedicated page.</summary>
@@ -37,7 +47,15 @@ public enum UnionDisplayKind
 }
 
 /// <summary>One "One of:" badge for a union option.</summary>
-public record UnionBadge(string Text, bool IsTypeOption);
+/// <param name="Url">The page of a type documented on its own (QueryContainer, …), for <c>X</c> and <c>X[]</c> alike.</param>
+public record UnionBadge(string Text, bool IsTypeOption, string? Url = null)
+{
+	/// <summary>The linked type's name, without the <c>[]</c> an array option adds.</summary>
+	public string LinkText => Text.EndsWith("[]", StringComparison.Ordinal) ? Text[..^2] : Text;
+
+	/// <summary>What follows the link: <c>[]</c> for an array option, so the link names the type alone.</summary>
+	public string AfterLink => Text.EndsWith("[]", StringComparison.Ordinal) ? "[]" : "";
+}
 
 /// <summary>The precomputed inline rendering of a union type on a property row.</summary>
 public record UnionDisplay
@@ -56,8 +74,20 @@ public record UnionDisplay
 	/// <summary>Union option badges (<see cref="UnionDisplayKind.Badges"/>).</summary>
 	public IReadOnlyList<UnionBadge> Badges { get; init; } = [];
 
+	/// <summary>The schema keyword the union came from, <c>oneOf</c> or <c>anyOf</c>.</summary>
+	public UnionKeyword? Keyword { get; init; }
+
+	/// <summary>"Any of:" when any number of options can match, "One of:" otherwise.</summary>
+	public string Label => SchemaHelpers.UnionLabel(Keyword);
+
 	/// <summary>Discriminator property name shown next to the badges.</summary>
 	public string? DiscriminatorProperty { get; init; }
+
+	/// <summary>
+	/// Closes the badges of a union that mixes literal values with objects, pointing at the variants listed below, so the
+	/// literals and the objects read as one list of options.
+	/// </summary>
+	public string? MoreOptions { get; init; }
 }
 
 /// <summary>Which nested rendering a property expands into.</summary>
@@ -71,11 +101,8 @@ public enum ChildKind
 	/// <summary>A plain nested property list (object, array items or simple-union base type).</summary>
 	PropertyList,
 
-	/// <summary>Union variants of a regular union property; always visible.</summary>
-	UnionVariants,
-
-	/// <summary>Union variants nested under an X | X[] simple union; participates in hidden="until-found".</summary>
-	SimpleUnionVariants
+	/// <summary>The variants of a union, or of <c>X</c> in an <c>X | X[]</c> union; hidden until found when collapsed.</summary>
+	UnionVariants
 }
 
 /// <summary>The synthetic <c>&lt;string&gt;</c> key row a dictionary property nests its value properties under.</summary>
@@ -120,6 +147,9 @@ public record ApiProperty
 	public required string AnchorId { get; init; }
 	public required int Depth { get; init; }
 	public required bool IsRequired { get; init; }
+
+	/// <summary>Whether the value can be <c>null</c>; the type annotation leaves <c>null</c> out, so a badge says it.</summary>
+	public bool IsNullable { get; init; }
 	public required bool IsLast { get; init; }
 	public required bool IsRecursive { get; init; }
 
@@ -145,6 +175,21 @@ public record ApiProperty
 
 	public TypePageLink? TypeLink { get; init; }
 
+	/// <summary>The earlier row whose fields or options this row repeats; set instead of listing them a second time.</summary>
+	public RepeatedShape? Repeats { get; init; }
+
+	/// <summary>Further schemas an <c>allOf</c> merges in; the row's type names only the first.</summary>
+	public IReadOnlyList<TypePageLink> AlsoIncludes { get; init; } = [];
+
+	/// <summary>Which of the object's fields it needs, when a <c>oneOf</c>/<c>anyOf</c> only lists <c>required</c> sets.</summary>
+	public RequiredAlternatives? Requires { get; init; }
+
+	/// <summary>
+	/// The two shapes of an <c>X | X[]</c> row whose type does not say so and whose fields list <c>X</c>'s: the row reads
+	/// "X or X[]", since nothing else tells the reader an array is accepted too.
+	/// </summary>
+	public SingleOrArray? SingleOrArray { get; init; }
+
 	public required bool IsCollapsible { get; init; }
 	public required bool DefaultExpanded { get; init; }
 	public required int NestedCount { get; init; }
@@ -154,6 +199,15 @@ public record ApiProperty
 
 /// <summary>An ordered list of property rows; the model for <c>_PropertyList</c>.</summary>
 public record ApiPropertyList(IReadOnlyList<ApiProperty> Items);
+
+/// <summary>
+/// How an <c>X | X[]</c> row names its two shapes: <c>Rescore</c> and <c>Rescore[]</c>. A map's array takes the
+/// <c>[]</c> in front, <c>[] map string to X</c>, since <c>map string to X[]</c> would read as a map of arrays.
+/// </summary>
+public record SingleOrArray(string One, string Many);
+
+/// <summary>A "Requires at least one of:" row; each option is a field, or fields joined by <c>+</c> that go together.</summary>
+public record RequiredAlternatives(string Label, IReadOnlyList<string> Options);
 
 /// <summary>A "Values:" row; long lists show the first few literals and fold the rest behind a toggle.</summary>
 public record EnumValueList(IReadOnlyList<string> Values)

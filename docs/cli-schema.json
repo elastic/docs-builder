@@ -1725,6 +1725,14 @@
             },
             {
               "role": "flag",
+              "name": "watch",
+              "type": "boolean",
+              "required": false,
+              "summary": "Refresh open pages when the server restarts after a rebuild. Used by ./dev.sh assembler-watch.",
+              "defaultValue": "false"
+            },
+            {
+              "role": "flag",
               "name": "log-level",
               "shortName": "l",
               "type": "enum",
@@ -5485,8 +5493,8 @@
             "changelog"
           ],
           "name": "validate-onboarding",
-          "summary": "Validate that every product registered with features.release-notes: prestage has the required onboarding files in its repository.",
-          "notes": "Probes each Prestage product\u0027s repository (resolved from products.yml: the product key\nor its repository: override) via the GitHub contents API for the changelog\nconfiguration (docs/changelog.yml or changelog.yml) and the\nchangelog-validate, changelog-submit, changelog-upload, and\nchangelog-bundle-stage workflows. Exits non-zero when anything is missing, so CI can\ngate on registration drift. Set GITHUB_TOKEN to probe private repositories.",
+          "summary": "Validate that every product registered with features.release-notes: dra or on-release has the required onboarding files in its repository.",
+          "notes": "Probes each DRA or on-release product\u0027s repository (resolved from products.yml: the product key\nor its repository: override) via the GitHub contents API for the changelog\nconfiguration (docs/changelog.yml or changelog.yml) and the\nchangelog-validate, changelog-submit, changelog-upload, and\nchangelog-bundle-stage workflows. Exits non-zero when anything is missing, so CI can\ngate on registration drift. Set GITHUB_TOKEN to probe private repositories.",
           "usage": "docs-builder changelog validate-onboarding [options]",
           "examples": [],
           "parameters": [
@@ -6194,6 +6202,14 @@
             },
             {
               "role": "flag",
+              "name": "watch",
+              "type": "boolean",
+              "required": false,
+              "summary": "Refresh open pages when the server restarts after a rebuild. Used by ./dev.sh codex-watch.",
+              "defaultValue": "false"
+            },
+            {
+              "role": "flag",
               "name": "log-level",
               "shortName": "l",
               "type": "enum",
@@ -6756,6 +6772,181 @@
         }
       ],
       "namespaces": []
+    },
+    {
+      "segment": "release",
+      "summary": "Release automation commands.",
+      "options": [],
+      "commands": [
+        {
+          "path": [
+            "release"
+          ],
+          "name": "serverless",
+          "summary": "Bundle the release notes of a serverless promotion, from the previously published endpoint ref to serviceVersion.",
+          "notes": "The previous endpoint ref is the last different production-noncanary-ds-5 version in the\nservice\u0027s versions.yaml history in elastic/serverless-gitops. Each repository\u0027s\ndocs/changelog.yml is read at its end ref, and one bundle per repository is built with\nits serverless-release profile from the commit range. Kibana produces one bundle.\nElasticsearch produces two: elasticsearch-serverless over the serverless range, and\nelasticsearch, a submodule of it, over the range of submodule commits pinned at the two refs.\n\n\nRequires GITHUB_TOKEN with read access to elastic/serverless-gitops and the service repositories.",
+          "usage": "docs-builder release serverless \u003Cservice\u003E \u003Cservice-version\u003E [options]",
+          "examples": [],
+          "parameters": [
+            {
+              "role": "positional",
+              "name": "service",
+              "type": "string",
+              "required": true,
+              "summary": "Serverless service, as emitted by gpctl (for example kibana)."
+            },
+            {
+              "role": "positional",
+              "name": "service-version",
+              "type": "string",
+              "required": true,
+              "summary": "Published endpoint ref of this promotion (SERVICE_VERSION). 12 characters or a full SHA."
+            },
+            {
+              "role": "flag",
+              "name": "date",
+              "type": "string",
+              "required": false,
+              "summary": "Bundle version, a date (YYYY-MM-DD). Defaults to today\u0027s UTC date. Named date because --version is the CLI\u0027s own flag."
+            },
+            {
+              "role": "flag",
+              "name": "output-dir",
+              "type": "string",
+              "required": false,
+              "summary": "Directory for the bundle file. Defaults to ./bundles."
+            },
+            {
+              "role": "flag",
+              "name": "dry-run",
+              "type": "boolean",
+              "required": false,
+              "summary": "Resolve the range and print the run report without writing a bundle.",
+              "defaultValue": "false"
+            },
+            {
+              "role": "flag",
+              "name": "log-level",
+              "shortName": "l",
+              "type": "enum",
+              "required": false,
+              "summary": "Minimum log level. Default: information",
+              "enumValues": [
+                "trace",
+                "debug",
+                "information",
+                "warning",
+                "error",
+                "critical",
+                "none"
+              ]
+            },
+            {
+              "role": "flag",
+              "name": "config-source",
+              "shortName": "c",
+              "type": "enum",
+              "required": false,
+              "summary": "Override the configuration source: local, remote",
+              "enumValues": [
+                "local",
+                "remote",
+                "embedded"
+              ]
+            },
+            {
+              "role": "flag",
+              "name": "skip-private-repositories",
+              "type": "boolean",
+              "required": false,
+              "summary": "Skip cloning private repositories"
+            }
+          ],
+          "hidden": true
+        }
+      ],
+      "namespaces": [
+        {
+          "segment": "unified",
+          "summary": "Unified release automation commands.",
+          "options": [],
+          "commands": [
+            {
+              "path": [
+                "release",
+                "unified"
+              ],
+              "name": "bundle",
+              "summary": "Generate changelog bundles for all DRA products at the given version, for the current GA, or for the next upcoming release(s).",
+              "notes": "- \u0022current\u0022 \u2014 bundles the latest GA version from past-releases.json.\n  - \n    \u0022preview\u0022 \u2014 bundles both the next patch and next minor releases. Each uses its BC\n    manifest when one has been cut; otherwise the corresponding SNAPSHOT is used.\n  \n  - \n    Explicit version (e.g. 9.5.5) \u2014 bundles using the latest BC manifest. Errors when\n    no BC has been cut yet, and skips gracefully when the version is already GA.\n  \n\n\n\n\nOnly products with features.release-notes: dra in products.yml are bundled.\nBundle files are written to \u003CoutputDir\u003E/\u003Cproduct-id\u003E/.",
+              "usage": "docs-builder release unified bundle \u003Cversion-or-keyword\u003E [options]",
+              "examples": [],
+              "parameters": [
+                {
+                  "role": "positional",
+                  "name": "version-or-keyword",
+                  "type": "string",
+                  "required": true,
+                  "summary": "A version string (e.g. 9.5.5), \u0022current\u0022, or \u0022preview\u0022."
+                },
+                {
+                  "role": "flag",
+                  "name": "output-dir",
+                  "type": "string",
+                  "required": false,
+                  "summary": "Root directory for bundle output. Defaults to ./bundles. Each product writes to a\n\u003Cproduct-id\u003E/ subdirectory."
+                },
+                {
+                  "role": "flag",
+                  "name": "changelog-configs",
+                  "type": "string",
+                  "required": false,
+                  "summary": "Optional directory of prototype \u003Cproduct-id\u003E.changelog.yml files. When present,\na product\u0027s local file takes precedence over the file fetched from GitHub, allowing teams to\niterate on the configuration ahead of landing it in their repository."
+                },
+                {
+                  "role": "flag",
+                  "name": "log-level",
+                  "shortName": "l",
+                  "type": "enum",
+                  "required": false,
+                  "summary": "Minimum log level. Default: information",
+                  "enumValues": [
+                    "trace",
+                    "debug",
+                    "information",
+                    "warning",
+                    "error",
+                    "critical",
+                    "none"
+                  ]
+                },
+                {
+                  "role": "flag",
+                  "name": "config-source",
+                  "shortName": "c",
+                  "type": "enum",
+                  "required": false,
+                  "summary": "Override the configuration source: local, remote",
+                  "enumValues": [
+                    "local",
+                    "remote",
+                    "embedded"
+                  ]
+                },
+                {
+                  "role": "flag",
+                  "name": "skip-private-repositories",
+                  "type": "boolean",
+                  "required": false,
+                  "summary": "Skip cloning private repositories"
+                }
+              ],
+              "hidden": true
+            }
+          ],
+          "namespaces": []
+        }
+      ]
     }
   ]
 }

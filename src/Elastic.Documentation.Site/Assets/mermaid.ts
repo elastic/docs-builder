@@ -1,4 +1,5 @@
 import { fullscreenIcon } from './icons'
+import { lockPageScroll } from './scroll-lock'
 
 // Zoom configuration
 const ZOOM_MIN = 0.5
@@ -337,7 +338,7 @@ function openFullscreenModal(imgSrc: string): void {
     const closeModal = () => {
         document.removeEventListener('mousemove', onMouseMove)
         document.removeEventListener('mouseup', onMouseUp)
-        document.body.style.overflow = ''
+        unlockScroll()
         modal.remove()
     }
 
@@ -360,8 +361,7 @@ function openFullscreenModal(imgSrc: string): void {
     }
     document.addEventListener('keydown', onKeyDown)
 
-    // Prevent body scroll
-    document.body.style.overflow = 'hidden'
+    const unlockScroll = lockPageScroll()
 
     // Add modal to document
     document.body.appendChild(modal)

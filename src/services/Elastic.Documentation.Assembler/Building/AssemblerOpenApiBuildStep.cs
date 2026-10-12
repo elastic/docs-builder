@@ -53,32 +53,30 @@ public static class AssemblerOpenApiBuildStep
 		var catalogEntries = new List<ApiCatalogEntry>();
 		using var versionIndexClient = new VersionIndexClient();
 
-		var hubEntries = new List<ApiCatalogEntry>();
-		var seenKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+		var planned = new List<(AssemblerApiOwner Owner, OpenApiGenerator Generator)>(owners.Count);
 		foreach (var owner in owners)
 		{
-			var declared = ApiHubSwitcher.CollectDeclaredEntries(
-				owner.Set.BuildContext.UrlPathPrefix,
-				owner.Set.BuildContext.Configuration.ApiConfigurations
+			ApplyFeatureFlags(owner.Set, env.FeatureFlags);
+			var markdown = new DocumentationGenerator(owner.Set.DocumentationSet, logFactory);
+			planned.Add(
+				(owner, new OpenApiGenerator(logFactory, owner.Set.BuildContext, markdown.MarkdownStringRenderer, versionIndexClient))
 			);
-			foreach (var entry in declared)
+		}
+
+		var hubEntries = new List<ApiCatalogEntry>();
+		var seenKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+		foreach (var (_, generator) in planned)
+		{
+			foreach (var entry in await generator.ResolveCatalogEntries(ctx).ConfigureAwait(false))
 			{
 				if (seenKeys.Add(entry.Key))
 					hubEntries.Add(entry);
 			}
 		}
 
-		foreach (var owner in owners)
+		foreach (var (_, generator) in planned)
 		{
-			ApplyFeatureFlags(owner.Set, env.FeatureFlags);
-			var generator = new DocumentationGenerator(owner.Set.DocumentationSet, logFactory);
-			var openApiGenerator = new OpenApiGenerator(
-				logFactory,
-				owner.Set.BuildContext,
-				generator.MarkdownStringRenderer,
-				versionIndexClient
-			);
-			var entries = await openApiGenerator.GenerateProducts(hubEntries: hubEntries, ctx).ConfigureAwait(false);
+			var entries = await generator.GenerateProducts(hubEntries: hubEntries, ctx).ConfigureAwait(false);
 			catalogEntries.AddRange(entries);
 		}
 
@@ -128,8 +126,13 @@ public static class AssemblerOpenApiBuildStep
 			if (apiConfigurations is null || apiConfigurations.Count == 0)
 				continue;
 
+			var publishesApi = false;
 			foreach (var apiKey in apiConfigurations.Keys)
 			{
+				if (IsolatedApiAliases.IsFixtureKey(apiKey))
+					continue;
+
+				publishesApi = true;
 				if (keyOwners.TryGetValue(apiKey, out var existingRepository))
 				{
 					collector.EmitGlobalError(
@@ -141,7 +144,8 @@ public static class AssemblerOpenApiBuildStep
 				keyOwners[apiKey] = set.Checkout.Repository.Name;
 			}
 
-			owners.Add(new AssemblerApiOwner(set));
+			if (publishesApi)
+				owners.Add(new AssemblerApiOwner(set));
 		}
 
 		return owners;

@@ -21,9 +21,9 @@ public class GetStartedWithATitleAndIntro : MarkdownTest
 	public async Task RendersHeading() =>
 		await Docs.ConvertsToContainingHtml("""<h2 class="hub-get-started-title">Get started in 3 steps</h2>""");
 
-	[Test, DisplayName("numbers steps from one, zero padded")]
+	[Test, DisplayName("numbers steps from one")]
 	public async Task NumbersStepsFromOne() =>
-		await Docs.ConvertsToContainingRawHtml("""<span class="hub-get-started-step-num" aria-hidden="true">01</span>""");
+		await Docs.ConvertsToContainingRawHtml("""<span class="hub-get-started-step-num" aria-hidden="true">1</span>""");
 
 	// Nothing renders between the intro and the numbered list. The section is the steps.
 	[Test, DisplayName("renders nothing above the steps")]
@@ -47,8 +47,8 @@ public class GetStartedWithALinkStep : MarkdownTest
 		:::
 		""";
 
-	[Test, DisplayName("makes the whole step clickable")]
-	public async Task MakesStepClickable() => await Docs.ConvertsToContainingHtml("""<span>Start writing</span>""");
+	[Test, DisplayName("renders the step link")]
+	public async Task RendersStepLink() => await Docs.ConvertsToContainingHtml("""<span>Start writing</span>""");
 
 	[Test, DisplayName("has no errors")]
 	public async Task HasNoErrors() => await Docs.HasNoErrors();
@@ -136,11 +136,39 @@ public class GetStartedWithFourSteps : MarkdownTest
 		""";
 
 	[Test, DisplayName("lays the three remaining steps across three tracks")]
-	public async Task LaysRemainingStepsAcrossThreeTracks() =>
-		await Docs.ConvertsToContainingRawHtml("""<ol class="hub-get-started-steps" style="--hub-step-columns: 3">""");
+	public async Task LaysRemainingStepsAcrossThreeTracks() => await Docs.ConvertsToContainingRawHtml("""--hub-step-columns: 3""");
+
+	[Test, DisplayName("continues the list count on the next row")]
+	public async Task ContinuesTheListCountOnTheNextRow() =>
+		await Docs.ConvertsToContainingRawHtml("""<ol class="hub-get-started-row" start="2">""");
+
+	[Test, DisplayName("marks exactly two options as a fork")]
+	public async Task MarksExactlyTwoOptionsAsAFork() => await Docs.ConvertsToContainingHtml("""is-fork""");
 
 	[Test, DisplayName("has no errors")]
 	public async Task HasNoErrors() => await Docs.HasNoErrors();
+}
+
+public class GetStartedWithThreeOptions : MarkdownTest
+{
+	protected override string Markdown =>
+		"""
+		:::{get-started}
+		title: Get started
+		steps:
+		  - title: Install
+		    options:
+		      - label: Source
+		        code: dotnet build
+		      - label: Container
+		        url: /index.md
+		      - label: Package
+		        url: /index.md
+		:::
+		""";
+
+	[Test, DisplayName("does not use the two-option fork layout")]
+	public async Task DoesNotUseTheTwoOptionForkLayout() => await Docs.DoesNotConvertToContainingHtml("is-fork");
 }
 
 public class GetStartedWithFiveSteps : MarkdownTest
@@ -160,8 +188,7 @@ public class GetStartedWithFiveSteps : MarkdownTest
 	// Four steps divide evenly into two rows of two, so they take two tracks rather than
 	// three with a single step stranded on the last row.
 	[Test, DisplayName("pairs four steps into two tracks")]
-	public async Task PairsFourStepsIntoTwoTracks() =>
-		await Docs.ConvertsToContainingRawHtml("""<ol class="hub-get-started-steps" style="--hub-step-columns: 2">""");
+	public async Task PairsFourStepsIntoTwoTracks() => await Docs.ConvertsToContainingRawHtml("""--hub-step-columns: 2""");
 
 	[Test, DisplayName("has no errors")]
 	public async Task HasNoErrors() => await Docs.HasNoErrors();

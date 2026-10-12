@@ -24,13 +24,21 @@ internal static class ApiPropertyMarkdown
 		if (variants is null || variants.Variants.Count == 0)
 			return;
 
+		if (variants.Label is { Length: > 0 } unionLabel)
+			_ = markdown.AppendLine(Indent(depth) + unionLabel);
+
 		foreach (var variant in variants.Variants)
 		{
-			var label = variant.IsArrayVariant ? $"[]{variant.DisplayName}" : variant.DisplayName;
+			var name = variant.PageUrl is { Length: > 0 } pageUrl ? ApiCommonMark.Link(variant.DisplayName, pageUrl) : variant.DisplayName;
+			var label = variant.IsArrayVariant ? $"[]{name}" : name;
 			_ = markdown.Append(Indent(depth));
 			_ = markdown.Append("- **");
 			_ = markdown.Append(label);
-			_ = markdown.AppendLine("**");
+			_ = markdown.Append("**");
+			if (variant.DiscriminatorLabel is { Length: > 0 } discriminatorLabel)
+				_ = markdown.Append($" (`{discriminatorLabel}`)");
+			_ = markdown.AppendLine();
+			WriteNestedLine(markdown, depth, ApiMarkdown.Prepare(variant.DescriptionMarkdown, apiBaseUrl));
 			if (variant.Properties is not null)
 				WriteList(markdown, variant.Properties, apiBaseUrl, depth + 1);
 		}
@@ -62,6 +70,8 @@ internal static class ApiPropertyMarkdown
 
 		if (property.IsRequest)
 			_ = markdown.Append(property.IsRequired ? " — required" : " — optional");
+		if (property.IsNullable)
+			_ = markdown.Append(" — nullable");
 		if (property.ShowDeprecatedBadge)
 			_ = markdown.Append(" — deprecated");
 		if (property.IsRecursive)
@@ -71,10 +81,35 @@ internal static class ApiPropertyMarkdown
 		WriteNestedLine(markdown, depth, ApiMarkdown.Prepare(property.DescriptionMarkdown, apiBaseUrl));
 		WriteArrayItemType(markdown, property, depth);
 		WriteEnumOrUnion(markdown, property, depth);
+		if (property.Repeats is { } repeated)
+			WriteNestedLine(
+				markdown,
+				depth,
+				$"{repeated.Label} `{repeated.Name}`" + (repeated.Owner is { Length: > 0 } owner ? $" in `{owner}`" : "")
+			);
 		if (property.TypeLink is { Url: { Length: > 0 } url })
 			WriteNestedLine(markdown, depth, $"See {ApiCommonMark.Link(property.TypeLink.TypeName, url)}");
 
+		WriteAlsoIncludes(markdown, property, depth);
+
+		if (property.Requires is { } requires)
+			WriteNestedLine(markdown, depth, Format(requires));
+
+		if (property.SingleOrArray is { } shapes)
+			WriteNestedLine(markdown, depth, $"`{shapes.One}` or `{shapes.Many}`");
+
 		WriteChildren(markdown, property, apiBaseUrl, depth);
+	}
+
+	private static void WriteAlsoIncludes(StringBuilder markdown, ApiProperty property, int depth)
+	{
+		if (property.AlsoIncludes.Count == 0)
+			return;
+
+		var names = property.AlsoIncludes.Select(
+			t => t.Url is { Length: > 0 } url ? ApiCommonMark.Link(t.TypeName, url) : $"`{t.TypeName}`"
+		);
+		WriteNestedLine(markdown, depth, "Also includes: " + string.Join(", ", names));
 	}
 
 	private static void WriteArrayItemType(StringBuilder markdown, ApiProperty property, int depth)
@@ -88,13 +123,20 @@ internal static class ApiPropertyMarkdown
 		if (property.EnumValues.Count > 0)
 			WriteNestedLine(markdown, depth, "Values: " + string.Join(", ", property.EnumValues.Select(v => $"`{v}`")));
 
-		if (property.Union is null)
+		if (property.Union is null || property.Repeats is not null)
 			return;
 
 		switch (property.Union.Kind)
 		{
 			case UnionDisplayKind.Badges when property.Union.Badges.Count > 0:
-				WriteNestedLine(markdown, depth, "One of: " + string.Join(" or ", property.Union.Badges.Select(b => $"`{b.Text}`")));
+				WriteNestedLine(
+					markdown,
+					depth,
+					$"{property.Union.Label} " + string.Join(
+						" or ",
+						property.Union.Badges.Select(b => ApiCommonMark.Link($"`{b.Text}`", b.Url))
+					) + (property.Union.MoreOptions is { } more ? $" {more}" : "")
+				);
 				break;
 		}
 	}
@@ -104,11 +146,8 @@ internal static class ApiPropertyMarkdown
 		switch (property.Children.Kind)
 		{
 			case ChildKind.PropertyList:
-			case ChildKind.SimpleUnionVariants:
-				WriteList(markdown, property.Children.Properties, apiBaseUrl, depth + 1);
-				WriteVariants(markdown, property.Children.Variants, apiBaseUrl, depth + 1);
-				break;
 			case ChildKind.UnionVariants:
+				WriteList(markdown, property.Children.Properties, apiBaseUrl, depth + 1);
 				WriteVariants(markdown, property.Children.Variants, apiBaseUrl, depth + 1);
 				break;
 			case ChildKind.Dictionary when property.Children.Dictionary is { } dictionary:
@@ -117,6 +156,10 @@ internal static class ApiPropertyMarkdown
 				break;
 		}
 	}
+
+	/// <summary>A "Requires at least one of: `a` or `b`" line, for a property row or the root of a body.</summary>
+	public static string Format(RequiredAlternatives requires) =>
+		$"{requires.Label} " + string.Join(" or ", requires.Options.Select(o => $"`{o}`"));
 
 	private static void WriteNestedLine(StringBuilder markdown, int depth, string? text)
 	{

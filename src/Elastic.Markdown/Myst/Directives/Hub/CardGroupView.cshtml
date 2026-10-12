@@ -9,7 +9,7 @@
 			@* A heading, not a span. Without it the accordion group is missing from the page
 			   outline, and a reader navigating by heading jumps from the section straight into the
 			   column titles inside it. *@
-			<h3 class="hub-accordion-title">@Model.Title</h3>
+			@(new HtmlString($"<h{Model.AccordionHeadingLevel} class=\"hub-accordion-title\">"))@Model.Title@(new HtmlString($"</h{Model.AccordionHeadingLevel}>"))
 			<svg class="hub-accordion-icon" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
 				<path d="M3 8h10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
 				<path class="hub-accordion-icon-v" d="M8 3v10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>

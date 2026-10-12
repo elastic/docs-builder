@@ -3,7 +3,8 @@ import { initApiDocs } from './api-docs'
 import { initAppliesSwitch } from './applies-switch'
 import { config } from './config'
 import { initCopyButton } from './copybutton'
-import { initHighlight } from './hljs'
+import { initGetStarted } from './get-started'
+import { initHighlight, preloadHighlight } from './hljs'
 import { initImageCarousel } from './image-carousel'
 import { initListing } from './listing'
 import { initMermaid } from './mermaid'
@@ -193,6 +194,9 @@ function initCtaImpressions() {
     )
 }
 
+// The languages chunk is the long pole for code pages; fetch it before the init steps get to it.
+if (document.querySelector('pre code')) preloadHighlight()
+
 // Initialize on initial page load
 document.addEventListener('DOMContentLoaded', function () {
     runInitSteps([
@@ -200,6 +204,7 @@ document.addEventListener('DOMContentLoaded', function () {
         ['initMath', initMath],
         ['initMermaid', initMermaid],
         ['initCtaImpressions', initCtaImpressions],
+        ['initGetStarted', initGetStarted],
     ])
 })
 
@@ -218,6 +223,7 @@ document.addEventListener('htmx:load', function () {
         ['initSmoothScroll', initSmoothScroll],
         ['openDetailsWithAnchor', openDetailsWithAnchor],
         ['initImageCarousel', initImageCarousel],
+        ['initGetStarted', initGetStarted],
         ['initListing', initListing],
         ['initTable', initTable],
         ['initApiDocs', initApiDocs],
@@ -299,23 +305,6 @@ document.addEventListener('htmx:beforeRequest', function (event: HtmxEvent) {
     if (!docsPath || isExternalDocsUrl(docsPath)) {
         event.preventDefault()
         window.location.assign(path)
-    }
-})
-
-// Boosted navigations swap #main-container. show:none on <body> stops HTMX
-// from scrolling the container into view (that jumps the page up to the
-// horizontal tabs). Instant window reset still matches a full page load.
-document.body.addEventListener('htmx:afterSwap', function (event: HtmxEvent) {
-    const target = event.target
-    if (
-        target === document.body ||
-        (target instanceof Element &&
-            (target.id === 'main-container' ||
-                target.id === 'content-container'))
-    ) {
-        if (window.scrollY !== 0) {
-            window.scrollTo(0, 0)
-        }
     }
 })
 

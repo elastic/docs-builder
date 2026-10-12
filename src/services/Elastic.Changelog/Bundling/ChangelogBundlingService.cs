@@ -35,6 +35,12 @@ public record BundleChangelogsArguments
 	public bool All { get; init; }
 	public IReadOnlyList<ProductArgument>? InputProducts { get; init; }
 	public IReadOnlyList<ProductArgument>? OutputProducts { get; init; }
+
+	/// <summary>
+	/// Commit-range mode only. Products set on every entry synthesized from PR metadata, replacing
+	/// label-derived and <see cref="OutputProducts"/> products. Entries from the changelog pool keep their own products.
+	/// </summary>
+	public IReadOnlyList<ProductArgument>? EntryProducts { get; init; }
 	public string[]? Prs { get; init; }
 	public string[]? Issues { get; init; }
 
@@ -141,6 +147,14 @@ public record BundleChangelogsArguments
 	/// bundle's <c>git_ref</c> metadata. Must be provided together with <see cref="StartGitRef"/>.
 	/// </summary>
 	public string? EndGitRef { get; init; }
+
+	/// <summary>
+	/// When set with a git ref range, only pull requests whose base branch is this branch are bundled.
+	/// Pull requests merged into other branches (for example feature branches that later merged into
+	/// the integration branch) appear in the run report as excluded. Set programmatically by
+	/// <c>release serverless</c>; not a <c>changelog bundle</c> option.
+	/// </summary>
+	public string? BaseRef { get; init; }
 
 	/// <summary>
 	/// When true, resolve the commit range and print the run report (resolved PR list with per-PR
@@ -957,7 +971,14 @@ public partial class ChangelogBundlingService(
 		var owner = string.IsNullOrWhiteSpace(sourcing.Owner) ? DefaultOwner : sourcing.Owner;
 		var resolution = await _commitRangeService.ResolvePullRequestsAsync(
 			collector,
-			new CommitRangeArguments { Owner = owner, Repo = sourcing.Repo, StartRef = input.StartGitRef!, EndRef = input.EndGitRef! },
+			new CommitRangeArguments
+			{
+				Owner = owner,
+				Repo = sourcing.Repo,
+				StartRef = input.StartGitRef!,
+				EndRef = input.EndGitRef!,
+				BaseRef = input.BaseRef
+			},
 			ctx
 		);
 		if (resolution == null)
@@ -984,7 +1005,8 @@ public partial class ChangelogBundlingService(
 				Repo = sourcing.Repo,
 				StartRef = input.StartGitRef!,
 				EndRef = input.EndGitRef!,
-				FallbackProducts = input.OutputProducts
+				FallbackProducts = input.OutputProducts,
+				EntryProducts = input.EntryProducts
 			},
 			ctx
 		);
@@ -1290,11 +1312,16 @@ public partial class ChangelogBundlingService(
 	}
 
 	/// <summary>
-	/// Profile <c>output_directory</c> when the invoked profile sets it; otherwise
-	/// <c>bundle.output_directory</c>.
+	/// Explicit <see cref="BundleChangelogsArguments.OutputDirectory"/> when set; otherwise
+	/// the profile's <c>output_directory</c>; otherwise <c>bundle.output_directory</c>.
+	/// Caller-supplied wins so that DRA bundling (and any explicit <c>--output-dir</c>) always
+	/// writes to the requested location rather than the profile's repo-relative default.
 	/// </summary>
 	private static string? ResolveConfiguredOutputDirectory(ChangelogConfiguration? config, BundleChangelogsArguments input)
 	{
+		if (!string.IsNullOrWhiteSpace(input.OutputDirectory))
+			return input.OutputDirectory;
+
 #pragma warning disable CS0618
 		if (
 			!string.IsNullOrWhiteSpace(input.Profile)
@@ -2268,7 +2295,7 @@ public partial class ChangelogBundlingService(
 	)
 	{
 		// Early validation: validate bundle has some product context
-		if ((outputProductIds == null || outputProductIds.Count == 0) && !entries.Any(e => e.Data.Products?.Any() == true))
+		if ((outputProductIds == null || outputProductIds.Count == 0) && !entries.Any(e => e.Data.Products?.Count > 0))
 		{
 			collector.EmitError(
 				string.Empty,

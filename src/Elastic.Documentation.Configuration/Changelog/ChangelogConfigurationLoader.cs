@@ -36,6 +36,16 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 		ConfigurationDeserializer.Deserialize<ChangelogConfigurationYaml>(yaml);
 
 	/// <summary>
+	/// Returns the bundle profile names declared in a <c>changelog.yml</c> YAML string,
+	/// in definition order. Returns an empty list when the YAML has no <c>bundle.profiles</c> block.
+	/// </summary>
+	public static IReadOnlyList<string> ReadBundleProfileNames(string changelogYaml)
+	{
+		var config = DeserializeConfiguration(changelogYaml);
+		return config.Bundle?.Profiles?.Keys.ToList() ?? [];
+	}
+
+	/// <summary>
 	/// Loads the publish blocker configuration from a changelog.
 	/// </summary>
 	/// <param name="fileSystem">The file system to read from.</param>

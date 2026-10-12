@@ -87,7 +87,7 @@ public class BundleGitRefTests() : ChangelogTestBase()
 		return service;
 	}
 
-	private async Task<string> WriteProfileConfig(string outputDir)
+	private async Task<string> WriteProfileConfig(string outputDir, string pivotProducts = "")
 	{
 		// language=yaml
 		var configContent = """
@@ -96,6 +96,7 @@ public class BundleGitRefTests() : ChangelogTestBase()
 			    feature: ">feature"
 			    bug-fix: ">bug"
 			    breaking-change: ">breaking"
+			PIVOT_PRODUCTS
 			bundle:
 			  output_directory: PLACEHOLDER
 			  repo: widget
@@ -106,7 +107,7 @@ public class BundleGitRefTests() : ChangelogTestBase()
 			""".Replace(
 			"PLACEHOLDER",
 			outputDir
-		);
+		).Replace("PIVOT_PRODUCTS", pivotProducts);
 
 		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog.yml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
@@ -339,6 +340,62 @@ public class BundleGitRefTests() : ChangelogTestBase()
 			.Contain(
 				d => d.Severity == Severity.Hint && d.Message.Contains("No release note description was found", StringComparison.Ordinal)
 			);
+	}
+
+	[Test]
+	public async Task InferredEntry_EntryProducts_ReplaceLabelDerivedProducts()
+	{
+		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
+		FileSystem.Directory.CreateDirectory(outputDir);
+		// A team label maps PR 300 to the product "security".
+		var configPath = await WriteProfileConfig(outputDir, "  products:\n    security: \">team-security\"");
+
+		var prService = A.Fake<IGitHubPrService>();
+		_ = A.CallTo(() => prService.FetchPrInfoAsync(A<string>._, A<string?>._, A<string?>._, A<Cancel>._)).Returns(new GitHubPrInfo
+		{
+			Title = "Faster entity resolution",
+			Body = "## Release Note\nEntity resolution runs faster.",
+			Labels = [">feature", ">team-security"],
+			LinkedIssues = []
+		});
+
+		var service = Service(PoolHandler(), RangeService(300), prService);
+
+		async Task<string> Bundle(IReadOnlyList<ProductArgument>? entryProducts)
+		{
+			foreach (var file in FileSystem.Directory.GetFiles(outputDir, "*.yaml"))
+				FileSystem.File.Delete(file);
+
+			var result = await service.BundleChangelogs(
+				Collector,
+				new BundleChangelogsArguments
+				{
+					Profile = "promotion",
+					ProfileArgument = "2026-08-13",
+					Config = configPath,
+					StartGitRef = StartRef,
+					EndGitRef = EndRef,
+					EntryProducts = entryProducts
+				},
+				TestContext.Current!.Execution.CancellationToken
+			);
+			result.Should().BeTrue();
+			var outputFile = FileSystem.Directory.GetFiles(outputDir, "*.yaml").Should().ContainSingle().Subject;
+			var content = await FileSystem.File.ReadAllTextAsync(outputFile, TestContext.Current!.Execution.CancellationToken);
+			// The YAML writer uses the platform line ending.
+			return content.Replace("\r\n", "\n");
+		}
+
+		// Without entry products the label decides.
+		var labelled = await Bundle(null);
+		labelled.Should().Contain("- product: security");
+		labelled.Should().NotContain("product: widget");
+
+		// With entry products the label no longer decides.
+		var forced = await Bundle([new ProductArgument { Product = "cloud-hosted" }, new ProductArgument { Product = "widget" }]);
+		forced.Should().Contain("Faster entity resolution");
+		forced.Should().Contain("  - product: cloud-hosted\n  - product: widget\n");
+		forced.Should().NotContain("product: security");
 	}
 
 	[Test]

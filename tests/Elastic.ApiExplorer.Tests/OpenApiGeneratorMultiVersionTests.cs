@@ -99,10 +99,10 @@ public class OpenApiGeneratorMultiVersionTests
 		var context = CreateContext(collector, stack, ProductsFor(product), GitForElasticsearch());
 		var handler = MultiVersionHandler();
 		using var versionIndexClient = new VersionIndexClient(BaseUri, handler, sleep: (_, _) => Task.CompletedTask);
-		var reader = CreateSequentialReader(
-			SpecDocument("Elasticsearch main"),
-			SpecDocument("Elasticsearch 9"),
-			SpecDocument("Elasticsearch 8")
+		var reader = CreateVersionedReader(
+			("main", SpecDocument("Elasticsearch main")),
+			("9.4", SpecDocument("Elasticsearch 9")),
+			("8.19", SpecDocument("Elasticsearch 8"))
 		);
 		var generator = CreateGenerator(context, versionIndexClient, reader);
 
@@ -140,7 +140,7 @@ public class OpenApiGeneratorMultiVersionTests
 			MultiVersionHandler(repository: "elastic/serverless-api-specification"),
 			sleep: (_, _) => Task.CompletedTask
 		);
-		var reader = CreateSequentialReader(SpecDocument("Serverless main"));
+		var reader = CreateVersionedReader(("main", SpecDocument("Serverless main")));
 		var generator = CreateGenerator(context, versionIndexClient, reader);
 		var apiConfig = ApiConfig(
 			product,
@@ -219,10 +219,10 @@ public class OpenApiGeneratorMultiVersionTests
 				);
 			if (path.Contains("/main/", StringComparison.Ordinal))
 				return new HttpResponseMessage(HttpStatusCode.NotFound);
-			return SpecResponse();
+			return SpecResponse(request);
 		});
 		using var versionIndexClient = new VersionIndexClient(BaseUri, handler, maxAttempts: 1, sleep: (_, _) => Task.CompletedTask);
-		var reader = CreateSequentialReader(SpecDocument("Elasticsearch 9"), SpecDocument("Elasticsearch 8"));
+		var reader = CreateVersionedReader(("9.4", SpecDocument("Elasticsearch 9")), ("8.19", SpecDocument("Elasticsearch 8")));
 		var generator = CreateGenerator(context, versionIndexClient, reader);
 
 		var resolved = await generator.ResolveDocumentsForProduct(
@@ -265,10 +265,10 @@ public class OpenApiGeneratorMultiVersionTests
 		var outputRoot = Path.Join(Paths.WorkingDirectoryRoot.FullName, $"api-explorer-output-{Guid.NewGuid():N}");
 		var context = CreateGenerateContext(collector, stack, ProductsFor(product), outputRoot, GitForElasticsearch());
 		using var versionIndexClient = new VersionIndexClient(BaseUri, MultiVersionHandler(), sleep: (_, _) => Task.CompletedTask);
-		var reader = CreateSequentialReader(
-			SpecDocument("Elasticsearch main"),
-			SpecDocument("Elasticsearch 9"),
-			SpecDocument("Elasticsearch 8")
+		var reader = CreateVersionedReader(
+			("main", SpecDocument("Elasticsearch main")),
+			("9.4", SpecDocument("Elasticsearch 9")),
+			("8.19", SpecDocument("Elasticsearch 8"))
 		);
 		var generator = CreateGenerator(context, versionIndexClient, reader);
 
@@ -362,13 +362,18 @@ public class OpenApiGeneratorMultiVersionTests
 		IOpenApiSpecificationReader reader
 	) => new(NullLoggerFactory.Instance, context, NoopMarkdownStringRenderer.Instance, versionIndexClient, reader);
 
-	private static IOpenApiSpecificationReader CreateSequentialReader(params OpenApiDocument[] documents)
+	/// <summary>Returns the document whose version segment (<c>main</c>, <c>9.4</c>, <c>8.19</c>) is in the fetched spec path.</summary>
+	private static IOpenApiSpecificationReader CreateVersionedReader(params (string Version, OpenApiDocument Document)[] documents)
 	{
-		var queue = new Queue<OpenApiDocument>(documents);
 		var reader = A.Fake<IOpenApiSpecificationReader>();
-		A.CallTo(() => reader.ReadAsync(A<Stream>._, A<string>._, A<IDiagnosticsCollector?>._)).ReturnsLazily(
-			_ => Task.FromResult<OpenApiDocument?>(queue.Dequeue())
-		);
+		A.CallTo(() => reader.ReadAsync(A<Stream>._, A<string>._, A<IDiagnosticsCollector?>._)).ReturnsLazily(call =>
+		{
+			using var body = new StreamReader(call.GetArgument<Stream>(0)!);
+			var path = body.ReadToEnd();
+			return Task.FromResult<OpenApiDocument?>(
+				documents.Single(d => path.Contains($"/{d.Version}/", StringComparison.Ordinal)).Document
+			);
+		});
 		return reader;
 	}
 
@@ -396,7 +401,7 @@ public class OpenApiGeneratorMultiVersionTests
 				);
 			}
 
-			return SpecResponse();
+			return SpecResponse(request);
 		});
 
 	private static GitCheckoutInformation GitForElasticsearch() =>
@@ -405,12 +410,13 @@ public class OpenApiGeneratorMultiVersionTests
 	private static HttpResponseMessage IndexResponse(string body) =>
 		new(HttpStatusCode.OK) { Content = new StringContent(body, System.Text.Encoding.UTF8, "application/json") };
 
-	private static HttpResponseMessage SpecResponse() =>
+	// The body carries the request path so a versioned reader can tell versions apart.
+	private static HttpResponseMessage SpecResponse(HttpRequestMessage request) =>
 		new(HttpStatusCode.OK)
 		{
 			Content = new StringContent(
 				/*lang=json,strict*/
-				"""{"openapi":"3.1.0","info":{"title":"Spec","version":"1.0"},"paths":{}}""",
+				$$$"""{"openapi":"3.1.0","info":{"title":"{{{request.RequestUri!.AbsolutePath}}}","version":"1.0"},"paths":{}}""",
 				System.Text.Encoding.UTF8,
 				"application/json"
 			)

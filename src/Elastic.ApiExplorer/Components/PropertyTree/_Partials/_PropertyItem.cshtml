@@ -13,6 +13,10 @@
 		{
 			<span class="required @SchemaHelpers.StatusCssClass">required</span>
 		}
+		@if (Model.IsNullable)
+		{
+			<span class="nullable-badge @SchemaHelpers.StatusCssClass" data-tippy-content="This value can be null">nullable</span>
+		}
 		@if (Model.ShowDeprecatedBadge)
 		{
 			<span class="deprecated-badge @SchemaHelpers.StatusCssClass">deprecated</span>
@@ -28,21 +32,49 @@
 			@Model.DescriptionHtml
 		</dd>
 	}
-	@if (Model.ExternalDocs is not null)
+	@if (Model.AlsoIncludes.Count > 0)
 	{
-		<dd class="external-docs-row">
-			<a href="@Model.ExternalDocs.Url" class="docs-reference-btn" @(Model.ExternalDocs.IsElasticDocs ? "" : "target=\"_blank\" rel=\"noopener\"")>
-				@Model.ExternalDocs.LinkText
-			</a>
+		<dd class="also-includes">
+			<span class="values-label">Also includes:</span>
+			@for (var i = 0; i < Model.AlsoIncludes.Count; i++)
+			{
+				var included = Model.AlsoIncludes[i];
+				if (i > 0)
+				{
+					<text>, </text>
+				}
+				if (included.Url is { Length: > 0 } includedUrl)
+				{
+					<code class="schema-type"><a href="@includedUrl" class="@SchemaHelpers.LinkedCssClass" data-hx-boost="false">@included.TypeName</a></code>
+				}
+				else
+				{
+					<code class="schema-type">@included.TypeName</code>
+				}
+			}
+		</dd>
+	}
+	@if (Model.SingleOrArray is { } shapes)
+	{
+		<dd class="union-options">
+			<code>@shapes.One</code>
+			<span class="union-inline-separator">or</span>
+			<code>@shapes.Many</code>
+		</dd>
+	}
+	@if (Model.Requires is { } requires)
+	{
+		<dd class="union-options">
+			@(await RenderPartialAsync<_RequiredAlternatives, RequiredAlternatives>(requires))
 		</dd>
 	}
 	@(await RenderPartialAsync<_EnumValues, EnumValueList>(new EnumValueList(Model.EnumValues)))
-	@if (Model.Union is not null)
+	@if (Model.Union is not null && Model.Repeats is null)
 	{
 		if (Model.Union.Kind == UnionDisplayKind.Badges)
 		{
 			<dd class="union-options">
-				<span class="values-label">One of:</span>
+				<span class="values-label">@Model.Union.Label</span>
 				@if (Model.Union.DiscriminatorProperty != null)
 				{
 					<span class="discriminator-note">(determined by <code>@Model.Union.DiscriminatorProperty</code>)</span>
@@ -54,16 +86,46 @@
 					{
 						<span class="union-inline-separator">or</span>
 					}
-					<code class="@SchemaHelpers.UnionOptionClasses(badge.IsTypeOption, badge.Text)">@badge.Text</code>
+					if (badge.Url is { Length: > 0 } badgeUrl)
+					{
+						<code class="union-type-option"><a href="@badgeUrl" class="@SchemaHelpers.LinkedCssClass" data-hx-boost="false">@badge.LinkText</a>@badge.AfterLink</code>
+					}
+					else
+					{
+						<code class="@SchemaHelpers.UnionOptionClasses(badge.IsTypeOption, badge.Text)">@badge.Text</code>
+					}
+				}
+				@if (Model.Union.MoreOptions is { } moreOptions)
+				{
+					<span class="union-inline-separator">@moreOptions</span>
 				}
 			</dd>
 		}
+	}
+	@if (Model.Repeats is { } repeated)
+	{
+		<dd class="union-options">
+			<span class="values-label">@repeated.Label</span>
+			<a href="#@repeated.AnchorId"><code>@repeated.Name</code></a>
+			@if (repeated.Owner is { Length: > 0 } owner)
+			{
+				<span class="values-label">in</span>
+				<code>@owner</code>
+			}
+		</dd>
 	}
 	@if (Model.ArrayItemTypeName != null)
 	{
 		<dd class="primitive-array">
 			<span class="values-label">Array of:</span>
 			<code class="primitive-type @SchemaHelpers.TypeAtomCssClassOrNull(Model.ArrayItemTypeName)">@Model.ArrayItemTypeName</code>
+		</dd>
+	}
+	@* Indented like "show properties" and right above it, so the row's own lines stay together under the description. *@
+	@if (Model.ExternalDocs is not null)
+	{
+		<dd class="reference-link-row">
+			<a href="@Model.ExternalDocs.Url" target="@(Model.ExternalDocs.IsElasticDocs ? null : "_blank")" rel="@(Model.ExternalDocs.IsElasticDocs ? null : "noopener")">@Model.ExternalDocs.ShortLinkText</a>
 		</dd>
 	}
 	@if (Model.IsCollapsible)
@@ -116,22 +178,18 @@
 		{
 				<div class="nested-properties" id="@Model.AnchorId-children" hidden="until-found">
 					@(await RenderPartialAsync<_PropertyList, ApiPropertyList>(Model.Children.Properties!))
+					@(await RenderPartialAsync<_UnionOptions, ApiUnionVariants>(Model.Children.Variants ?? ApiUnionVariants.Empty))
 				</div>
 		}
 		else
 		{
 				<div class="nested-properties" id="@Model.AnchorId-children">
 					@(await RenderPartialAsync<_PropertyList, ApiPropertyList>(Model.Children.Properties!))
+					@(await RenderPartialAsync<_UnionOptions, ApiUnionVariants>(Model.Children.Variants ?? ApiUnionVariants.Empty))
 				</div>
 		}
 	}
 	else if (Model.Children.Kind == ChildKind.UnionVariants)
-	{
-			<div class="nested-properties" id="@Model.AnchorId-children">
-				@(await RenderPartialAsync<_UnionOptions, ApiUnionVariants>(Model.Children.Variants!))
-			</div>
-	}
-	else if (Model.Children.Kind == ChildKind.SimpleUnionVariants)
 	{
 		if (Model.Children.UseHidden)
 		{

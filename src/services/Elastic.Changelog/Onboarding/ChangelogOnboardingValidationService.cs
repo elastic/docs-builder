@@ -31,7 +31,7 @@ public class ChangelogOnboardingValidationService(
 ) : IService
 {
 	/// <summary>
-	/// Workflow files a Prestage repository must carry. Covers both the legacy
+	/// Workflow files a DRA repository must carry. Covers both the legacy
 	/// <c>changelog-*.yml</c> callers (existing onboarded repos) and the new
 	/// <c>release-notes.yml</c> shape introduced by the shared workflow consolidation.
 	/// Legacy names are checked first; the new names are the forward target.
@@ -45,7 +45,7 @@ public class ChangelogOnboardingValidationService(
 	];
 
 	/// <summary>
-	/// Workflow files a Prestage repository must carry using the new shared-workflow shape.
+	/// Workflow files a DRA repository must carry using the new shared-workflow shape.
 	/// Checked when the legacy files are absent (i.e. the repo has been migrated).
 	/// </summary>
 	internal static readonly string[] RequiredWorkflowsPrestageNew =
@@ -73,14 +73,14 @@ public class ChangelogOnboardingValidationService(
 			.ProductsConfiguration
 			.Products
 			.Values
-			.Where(p => p.Features.ReleaseNotes is ReleaseNotesPath.Prestage or ReleaseNotesPath.OnRelease)
+			.Where(p => p.Features.ReleaseNotes is ReleaseNotesPath.DailyReleasableArtifacts or ReleaseNotesPath.OnRelease)
 			.OrderBy(p => p.Id, StringComparer.Ordinal)
 			.ToList();
 
 		if (managedProducts.Count == 0)
 		{
 			_logger.LogInformation(
-				"No products declare 'features.release-notes: prestage' or 'on-release' in products.yml; nothing to validate."
+				"No products declare 'features.release-notes: dra' or 'on-release' in products.yml; nothing to validate."
 			);
 			return true;
 		}
@@ -118,7 +118,7 @@ public class ChangelogOnboardingValidationService(
 		}
 		else
 		{
-			// Prestage: check new shape first; fall back to legacy names if legacy names are present
+			// DRA: check new shape first; fall back to legacy names if legacy names are present
 			var legacyPrimaryExists = await FileExistsAsync(collector, owner, repo, RequiredWorkflowsPrestage[0], ctx);
 			if (legacyPrimaryExists == null)
 				return false; // probe error already emitted
@@ -152,7 +152,7 @@ public class ChangelogOnboardingValidationService(
 
 		if (missing.Count > 0)
 		{
-			var pathLabel = path == ReleaseNotesPath.Prestage ? "prestage" : "on-release";
+			var pathLabel = path == ReleaseNotesPath.DailyReleasableArtifacts ? "dra" : "on-release";
 			collector.EmitError(
 				string.Empty,
 				$"Product '{productId}' declares 'features.release-notes: {pathLabel}' but {owner}/{repo} is missing required onboarding file(s): {string.Join(", ", missing)}. " +

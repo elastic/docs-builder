@@ -37,6 +37,13 @@ div.highlight {
 	position: relative;
 }
 
+/* A get-started option command is a one-line chip. Center the button in it. */
+.hub-get-started .hub-get-started-install > .copybtn {
+	top: 50%;
+	right: 6px;
+	transform: translateY(-50%);
+}
+
 /* Show the copybutton */
 .highlight:hover button.copybtn,
 button.copybtn.success {

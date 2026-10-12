@@ -146,9 +146,16 @@ public class TagNavigationItem(
 	string apiUrlSuffix,
 	IRootNavigationItem<IApiGroupingModel, INavigationItem> rootNavigation,
 	INodeNavigationItem<INavigationModel, INavigationItem> parent
-) : ApiGroupingNavigationItem<ApiTag, IEndpointOrOperationNavigationItem>(tag, rootNavigation, parent)
+) : ApiGroupingNavigationItem<ApiTag, INavigationItem>(tag, rootNavigation, parent)
 {
 	private readonly string _url = $"{ApiUrlBuilder.ProductRoot(urlPathPrefix, apiUrlSuffix)}/group/{tag.TagUrlSegment}";
+
+	internal void ApplyIntroHeadings(string? markdown)
+	{
+		var operations = NavigationItems.Where(item => item is not IntroHeadingNavigationItem).ToArray();
+		var headings = IntroHeadings.Parse(markdown).Select(heading => new IntroHeadingNavigationItem(this, heading));
+		NavigationItems = [.. headings, .. operations];
+	}
 
 	/// <inheritdoc />
 	public override string Url => _url;
@@ -160,22 +167,16 @@ public class TagNavigationItem(
 	public override string Id { get; } = ShortId.Create(tag.Name);
 }
 
-public interface IEndpointOrOperationNavigationItem : INavigationItem;
-
-public class EndpointNavigationItem(
-	ApiEndpoint endpoint,
-	IRootNavigationItem<IApiGroupingModel, INavigationItem> rootNavigation,
-	INodeNavigationItem<INavigationModel, INavigationItem> parent
-) : IApiGroupingNavigationItem<ApiEndpoint, OperationNavigationItem>, IEndpointOrOperationNavigationItem, IMultiOperationNavigationItem
+public sealed class IntroHeadingNavigationItem(TagNavigationItem parent, IntroHeading heading) : ILeafNavigationItem<IntroHeading>
 {
 	/// <inheritdoc />
-	public string Url => NavigationItems.First().Url;
+	public string Url { get; } = $"{parent.Url}#{heading.Slug}";
 
 	/// <inheritdoc />
-	public string NavigationTitle { get; } = endpoint.Operations.First().ApiName;
+	public string NavigationTitle { get; } = heading.Title;
 
 	/// <inheritdoc />
-	public IRootNavigationItem<INavigationModel, INavigationItem> NavigationRoot { get; } = rootNavigation;
+	public IRootNavigationItem<INavigationModel, INavigationItem> NavigationRoot { get; } = parent.NavigationRoot;
 
 	/// <inheritdoc />
 	public INodeNavigationItem<INavigationModel, INavigationItem>? Parent { get; set; } = parent;
@@ -187,17 +188,7 @@ public class EndpointNavigationItem(
 	public int NavigationIndex { get; set; }
 
 	/// <inheritdoc />
-	public string Id { get; } = ShortId.Create(
-		nameof(EndpointNavigationItem),
-		endpoint.Operations.First().ApiName,
-		endpoint.Operations.First().Route
-	);
-
-	//TODO ensure Index is not newed everytime
-	/// <inheritdoc />
-	public ILeafNavigationItem<ApiEndpoint> Index =>
-		new ApiIndexLeafNavigation<ApiEndpoint>(endpoint, Url, NavigationTitle, rootNavigation, Parent);
-
-	/// <inheritdoc />
-	public IReadOnlyCollection<OperationNavigationItem> NavigationItems { get; set; } = [];
+	public IntroHeading Model { get; } = heading;
 }
+
+public interface IEndpointOrOperationNavigationItem : INavigationItem;

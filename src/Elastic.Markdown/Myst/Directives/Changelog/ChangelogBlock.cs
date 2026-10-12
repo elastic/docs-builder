@@ -646,7 +646,7 @@ public class ChangelogBlock(DirectiveBlockParser parser, ParserContext context) 
 	}
 
 	/// <summary>
-	/// Prestage visibility filtering (release-notes onboarding RFC, B1): Prestage bundles are
+	/// DRA visibility filtering (release-notes onboarding RFC, B1): DRA bundles are
 	/// uploaded to S3 weeks before release day, so CDN-mode rendering must not show bundles whose
 	/// target version the published content source has not released yet. Production publishes the
 	/// <see cref="ContentSource.Current"/> content source, where only versions at or below the

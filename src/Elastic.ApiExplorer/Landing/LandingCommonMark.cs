@@ -11,18 +11,36 @@ namespace Elastic.ApiExplorer.Landing;
 
 internal static class LandingCommonMark
 {
+	internal const string OtherApisHeading = "Other APIs";
+
 	public static string Catalog(IReadOnlyList<ApiCatalogEntry> entries)
 	{
 		var markdown = new StringBuilder();
 		ApiCommonMark.Heading(markdown, 1, ApiCatalog.PageTitle);
-		foreach (var entry in entries.OrderBy(e => e.Key, StringComparer.Ordinal))
+		var groups = ApiCatalogViewModel.Group(entries);
+		foreach (var group in groups)
 		{
-			_ = markdown.AppendLine($"- {ApiCommonMark.Link(entry.Title, entry.Url)} (`{entry.Key}`)");
-			_ = markdown.AppendLine(
-				$"  {ApiCommonMark.Link("Markdown", ApiOutputPaths.MarkdownUrl(entry.Url))} · {ApiCommonMark.Link("JSON", ApiOutputPaths.JsonUrl(entry.Url))} · {ApiCommonMark.Link("YAML", ApiOutputPaths.YamlUrl(entry.Url))}"
-			);
+			// The page has no label for the APIs that no group covers. In Markdown they need a heading, or they read
+			// as part of the group above them. A lone group needs none.
+			var heading = group.Title ?? (groups.Count > 1 ? OtherApisHeading : null);
+			if (heading is not null)
+				ApiCommonMark.Heading(markdown, 2, heading);
+			foreach (var entry in group.Entries)
+				WriteCatalogEntry(markdown, entry);
 		}
 		return markdown.ToString();
+	}
+
+	private static void WriteCatalogEntry(StringBuilder markdown, ApiCatalogEntry entry)
+	{
+		_ = markdown.AppendLine($"- {ApiCommonMark.Link(entry.Title, entry.Url)} (`{entry.Key}`)");
+		if (ApiSeoDescription.Excerpt(entry.Description) is { } summary)
+			_ = markdown.AppendLine($"  {summary}");
+		if (ApiCatalogViewModel.DeploymentsOf(entry) is { Count: > 0 } deployments)
+			_ = markdown.AppendLine($"  Deployments: {string.Join(", ", deployments.Select(d => d.Name))}");
+		_ = markdown.AppendLine(
+			$"  {ApiCommonMark.Link("Markdown", ApiOutputPaths.MarkdownUrl(entry.Url))} · {ApiCommonMark.Link("JSON", ApiOutputPaths.JsonUrl(entry.Url))} · {ApiCommonMark.Link("YAML", ApiOutputPaths.YamlUrl(entry.Url))}"
+		);
 	}
 
 	public static string Product(OpenApiInfo? info, IReadOnlyList<ApiOverviewRow> rows, string apiBaseUrl)
@@ -80,7 +98,6 @@ internal static class LandingCommonMark
 				case OverviewRowKind.MarkdownPage:
 					_ = markdown.AppendLine($"- {ApiCommonMark.Link(row.Title, row.Url)}");
 					break;
-				case OverviewRowKind.Endpoint:
 				case OverviewRowKind.Operation:
 					WriteOperationRow(markdown, row);
 					break;
@@ -90,16 +107,13 @@ internal static class LandingCommonMark
 
 	private static void WriteOperationRow(StringBuilder markdown, ApiOverviewRow row)
 	{
-		if (row.Operations.Count == 0)
+		if (row.Endpoint is not { } endpoint || row.Url is null)
 		{
 			_ = markdown.AppendLine($"- {row.Title}");
 			return;
 		}
 
-		foreach (var operation in row.Operations)
-		{
-			var method = operation.Model.OperationType.ToString().ToUpperInvariant();
-			_ = markdown.AppendLine($"- {row.Title}: {ApiCommonMark.Link($"`{method}` `{operation.Model.Route}`", operation.Url)}");
-		}
+		var paths = string.Join(", ", endpoint.Rows.Select(OperationCommonMark.PathLabel));
+		_ = markdown.AppendLine($"- {ApiCommonMark.Link(row.Title, row.Url)}: {paths}");
 	}
 }

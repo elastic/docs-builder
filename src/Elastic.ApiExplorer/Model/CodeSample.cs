@@ -11,19 +11,86 @@ namespace Elastic.ApiExplorer.Model;
 /// </summary>
 public record CodeSample(string Language, string Source, string HighlightClass)
 {
-	private static readonly Dictionary<string, string> LanguageHighlightMap = new(StringComparer.OrdinalIgnoreCase)
+	/// <summary>True when docs-builder built this sample from an example body rather than reading it from the spec.</summary>
+	public bool Generated { get; init; }
+
+	/// <summary>
+	/// The example this sample belongs to when the spec encodes it in the language name, e.g. <c>cURL_tag_names</c>
+	/// is the curl sample of a "Tag names" example. Null for samples of the default example.
+	/// </summary>
+	public string? Scenario { get; init; }
+
+	/// <summary>
+	/// Splits a spec <c>lang</c> into the language, in its canonical casing (<c>cURL</c> is <c>curl</c>), and the
+	/// example suffix when one follows a known language name.
+	/// </summary>
+	public static (string Language, string? Scenario) SplitLanguage(string lang)
 	{
-		["Console"] = "language-console",
-		["curl"] = "language-curl",
-		["Python"] = "language-python",
-		["JavaScript"] = "language-javascript",
-		["Ruby"] = "language-ruby",
-		["PHP"] = "language-php",
-		["Java"] = "language-java",
-	};
+		var separator = lang.IndexOf('_');
+		if (separator > 0 && separator < lang.Length - 1 && Canonical(lang[..separator]) is { } prefix)
+			return (prefix, lang[(separator + 1)..]);
+		return (Canonical(lang) ?? lang, null);
+	}
+
+	private static string? Canonical(string language) => ByName.TryGetValue(language, out var known) ? known.Name : null;
+
+	public bool IsConsole => Language.Equals("Console", StringComparison.OrdinalIgnoreCase);
+
+	public bool IsCurl => Language.Equals("curl", StringComparison.OrdinalIgnoreCase);
+
+	/// <summary>The client or tool that runs this sample, e.g. <c>Elasticsearch Java Client</c>. Empty when unknown.</summary>
+	public string ClientLabel => ByName.TryGetValue(Language, out var known) ? known.Client ?? "" : "";
+
+	/// <summary>Docs page of the client that runs this sample; set from the product (see <see cref="ClientDocsUrlFor"/>).</summary>
+	public string? ClientDocsUrl { get; init; }
+
+	private const string ConsoleDocsUrl = "https://www.elastic.co/docs/explore-analyze/query-filter/tools/console";
+	private const string ClientDocsRoot = "https://www.elastic.co/docs/reference/elasticsearch/clients/";
+
+	/// <summary>
+	/// Console is the same tool for every API, so it always links. The client libraries are Elasticsearch's, so their
+	/// pages only link on Elasticsearch products; a Kibana spec's JavaScript sample runs something else.
+	/// </summary>
+	public static string? ClientDocsUrlFor(string language, string? productId)
+	{
+		if (!ByName.TryGetValue(language, out var known) || known.Docs is null)
+			return null;
+		if (known.Name == "Console")
+			return ConsoleDocsUrl;
+		return productId is "elasticsearch" or "serverless-elasticsearch" ? ClientDocsRoot + known.Docs : null;
+	}
+
+	/// <summary>Position in the carousel: Console, then languages by how many developers use them. Unranked languages sort last.</summary>
+	public int Rank => ByName.TryGetValue(Language, out var known) ? known.Rank : int.MaxValue;
 
 	public static string GetHighlightClass(string language) =>
-		LanguageHighlightMap.GetValueOrDefault(language, $"language-{language.ToLowerInvariant()}");
+		ByName.TryGetValue(language, out var known) && known.Highlight is { } highlight
+			? highlight
+			: $"language-{language.ToLowerInvariant()}";
+
+	private sealed record KnownLanguage(string Name, int Rank, string? Client, string? Highlight, string? Docs);
+
+	// One row per language we know, in carousel order: Console is the docs' native sample, the rest follow
+	// GitHub's Innovation Graph global ranking (unique pushers, 2026 Q1); curl counts as Shell there.
+	// https://innovationgraph.github.com/global-metrics/programming-languages
+	// Client is the product name from config/products.yml (elasticsearch-client-*), or the tool that runs the sample.
+	// Docs is the page under https://www.elastic.co/docs/reference/elasticsearch/clients/ (Console has its own page).
+	private static readonly Dictionary<string, KnownLanguage> ByName = new (string Name, string? Client, string? Highlight, string? Docs)[]
+	{
+		("Console", "Kibana Dev Tools", "language-console", "console"),
+		("JavaScript", "Elasticsearch JavaScript Client", "language-javascript", "javascript"),
+		("Python", "Elasticsearch Python Client", "language-python", "python"),
+		("curl", "Shell", "language-curl", null),
+		("Java", "Elasticsearch Java Client", "language-java", "java"),
+		("C#", "Elasticsearch .NET Client", "language-csharp", "dotnet"),
+		("PHP", "Elasticsearch PHP Client", "language-php", "php"),
+		("Ruby", "Elasticsearch Ruby Client", "language-ruby", "ruby"),
+		("Go", "Elasticsearch Go Client", null, "go"),
+		("Rust", "Elasticsearch Rust Client", null, "rust"),
+	}.Select(static (l, rank) => new KnownLanguage(l.Name, rank, l.Client, l.Highlight, l.Docs)).ToDictionary(
+		static l => l.Name,
+		StringComparer.OrdinalIgnoreCase
+	);
 
 	/// <summary>
 	/// Picks a highlight language for OpenAPI example bodies. Only real JSON objects/arrays

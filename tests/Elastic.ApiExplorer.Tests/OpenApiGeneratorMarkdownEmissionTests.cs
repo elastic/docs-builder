@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Collections.Concurrent;
 using System.Collections.Frozen;
 using System.IO.Abstractions;
 using System.IO.Abstractions.TestingHelpers;
@@ -51,10 +52,7 @@ public class OpenApiGeneratorMarkdownEmissionTests(ApiExplorerFixture fixture)
 		write.Exists(Path.Join(outputRoot, "api", "doc", "elasticsearch", "servers.md")).Should().BeTrue();
 		write.Exists(Path.Join(outputRoot, "api", "doc", "elasticsearch", "group", "endpoint-search.md")).Should().BeTrue();
 		write.Exists(Path.Join(outputRoot, "api", "doc", "elasticsearch", "operation", "operation-search.md")).Should().BeTrue();
-		write
-			.Exists(Path.Join(outputRoot, "api", "doc", "elasticsearch", "types", "_types-query_dsl-querycontainer.md"))
-			.Should()
-			.BeFalse();
+		write.Exists(Path.Join(outputRoot, "api", "doc", "elasticsearch", "types", "_types-query_dsl-querycontainer.md")).Should().BeTrue();
 	}
 
 	[Test]
@@ -109,13 +107,18 @@ public class OpenApiGeneratorMarkdownEmissionTests(ApiExplorerFixture fixture)
 		operation.Should().Contain("`/{index}/_search`");
 		operation.Should().Contain("## Description");
 		operation.Should().Contain("Returns hits that match the query");
+		operation.Should().Contain("Supports pagination through `size` and `from`.");
+		operation.Should().Contain("#### `200`");
+		operation.Should().Contain("Search results");
+		operation.Should().NotContain("#### `200` Search results");
+		operation.Should().Contain("`application/json`");
 		operation.Should().NotContain("<!DOCTYPE");
 		operation.Should().NotContain("<html");
 
 		catalog.Should().Contain("type: api");
-		catalog.Should().Contain("title: API catalog");
-		catalog.Should().Contain("description: API products in this documentation set.");
-		catalog.Should().Contain("# API catalog");
+		catalog.Should().Contain("title: Elastic APIs");
+		catalog.Should().Contain("description: Reference documentation for Elastic REST APIs");
+		catalog.Should().Contain("# Elastic APIs");
 		catalog.Should().Contain("Fixture API");
 		catalog.Should().Contain("`elasticsearch`");
 		catalog.Should().Contain("[Markdown](/api/doc/elasticsearch.md)");
@@ -202,6 +205,58 @@ public class OpenApiGeneratorMarkdownEmissionTests(ApiExplorerFixture fixture)
 		wrapped.Should().NotContain("<!DOCTYPE");
 	}
 
+	[Test]
+	public async Task Generate_CollapsedOperations_RedirectFormerUrls()
+	{
+		var outputRoot = Path.Join(Paths.WorkingDirectoryRoot.FullName, $"api-redirect-{Guid.NewGuid():N}");
+		var context = CreateGenerateContext(outputRoot);
+		using var versionIndexClient = new VersionIndexClient(BaseUri, MainOnlyHandler(), sleep: (_, _) => Task.CompletedTask);
+		var generator = new OpenApiGenerator(
+			NullLoggerFactory.Instance,
+			context,
+			PassthroughMarkdownRenderer.Instance,
+			versionIndexClient,
+			CreateSequentialReader(await LoadSpec(SearchVariantsSpec))
+		);
+
+		await generator.Generate(TestContext.Current!.Execution.CancellationToken);
+
+		var operationDir = Path.Join(outputRoot, "api", "doc", "elasticsearch", "operation");
+		var file = context.WriteFileSystem.File;
+		var canonical = await file.ReadAllTextAsync(Path.Join(operationDir, "operation-search", "index.html"));
+		var former = await file.ReadAllTextAsync(Path.Join(operationDir, "operation-search-1", "index.html"));
+		canonical.Should().Contain("api-url-also-method");
+		former.Should().Contain(
+			"window.location.replace(\"/api/doc/elasticsearch/operation/operation-search\" + window.location.search + window.location.hash)"
+		);
+		file.Exists(Path.Join(operationDir, "operation-search-1.md")).Should().BeFalse();
+	}
+
+	private const string SearchVariantsSpec = /*lang=json,strict*/
+		"""
+		{
+		  "openapi": "3.0.3",
+		  "info": { "title": "Elasticsearch", "version": "1.0" },
+		  "paths": {
+		    "/_search": {
+		      "get": { "operationId": "search", "summary": "Run a search", "tags": ["search"], "x-namespace": "_global", "x-api-name": "search", "responses": { "200": { "description": "ok" } } },
+		      "post": { "operationId": "search-1", "summary": "Run a search", "tags": ["search"], "x-namespace": "_global", "x-api-name": "search", "responses": { "200": { "description": "ok" } } }
+		    }
+		  },
+		  "tags": [ { "name": "search" } ]
+		}
+		""";
+
+	private static async Task<OpenApiDocument> LoadSpec(string json)
+	{
+		using var stream = new MemoryStream(System.Text.Encoding.UTF8.GetBytes(json));
+		var result = await OpenApiDocument.LoadAsync(
+			stream,
+			settings: new Microsoft.OpenApi.Reader.OpenApiReaderSettings { LeaveStreamOpen = false }
+		);
+		return result.Document!;
+	}
+
 	private static BuildContext CreateGenerateContext(string outputRoot)
 	{
 		var collector = new DiagnosticsCollector([]);
@@ -252,10 +307,10 @@ public class OpenApiGeneratorMarkdownEmissionTests(ApiExplorerFixture fixture)
 
 	private static IOpenApiSpecificationReader CreateSequentialReader(params OpenApiDocument[] documents)
 	{
-		var queue = new Queue<OpenApiDocument>(documents);
+		var queue = new ConcurrentQueue<OpenApiDocument>(documents);
 		var reader = A.Fake<IOpenApiSpecificationReader>();
 		A.CallTo(() => reader.ReadAsync(A<Stream>._, A<string>._, A<IDiagnosticsCollector?>._)).ReturnsLazily(
-			_ => Task.FromResult<OpenApiDocument?>(queue.Dequeue())
+			_ => Task.FromResult<OpenApiDocument?>(queue.TryDequeue(out var next) ? next : null)
 		);
 		return reader;
 	}

@@ -1,0 +1,10 @@
+@inherits RazorSlice<Elastic.ApiExplorer.Components.PropertyTree.RequiredAlternatives>
+<span class="values-label">@Model.Label</span>
+@for (var i = 0; i < Model.Options.Count; i++)
+{
+	if (i > 0)
+	{
+		<span class="union-inline-separator">or</span>
+	}
+	<code>@Model.Options[i]</code>
+}
