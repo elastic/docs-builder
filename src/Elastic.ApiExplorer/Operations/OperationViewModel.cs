@@ -39,7 +39,7 @@ public class OperationViewModel(ApiRenderContext context) : ApiViewModel(context
 			tocItems.Add(new ApiTocItem("Prerequisites", "prerequisites"));
 
 		if (Page.QueryParameters.Count > 0)
-			tocItems.Add(new ApiTocItem("Query Parameters", "query-params"));
+			tocItems.Add(new ApiTocItem("Query parameters", "query-params"));
 
 		if (operation.RequestBody is not null)
 			tocItems.Add(new ApiTocItem("Request", "request-body"));

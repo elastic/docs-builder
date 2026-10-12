@@ -28,7 +28,7 @@ public partial class OperationHeadingLevelTests(ApiExplorerFixture fixture)
 		html.Should().Contain("<h2 class=\"section-header api-param-section-header\" id=\"query-params\" data-section=\"query-params\">");
 		html.Should().Contain("<h2 class=\"section-header api-param-section-header\" id=\"request-body\" data-section=\"request-body\">");
 		html.Should().Contain("<h2 class=\"section-header responses-header\" id=\"responses\" data-section=\"responses\">");
-		html.Should().Contain("<h3>Response Headers</h3>");
+		html.Should().Contain("<h3>Response headers</h3>");
 	}
 
 	private async Task<string> RenderAsync(OperationNavigationItem nav)
