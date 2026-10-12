@@ -77,12 +77,12 @@ public class UnifiedReleaseNotesTests : IDisposable
 		return folder;
 	}
 
-	private UnifiedReleaseNotesBuildOptions Options(params string[] requiredVersions) =>
+	private UnifiedReleaseNotesBuildOptions Options(params string[] expectedVersions) =>
 		new()
 		{
 			BundlesDirectory = new DirectoryInfo(_fileSystem.Path.Join(_temp.FullName, "bundles")),
 			Output = new DirectoryInfo(_fileSystem.Path.Join(_temp.FullName, "site")),
-			RequiredVersions = requiredVersions
+			ExpectedVersions = expectedVersions
 		};
 
 	private UnifiedReleaseNotesBuildService Service()
@@ -189,9 +189,25 @@ public class UnifiedReleaseNotesTests : IDisposable
 	}
 
 	[Test]
-	public async Task Build_ProductWithoutBundlesFolder_FailsWithoutWritingASite()
+	public async Task Build_ProductWithoutBundlesFolder_LeavesItOutOfTheSite()
 	{
 		_ = WriteBundle("elasticsearch", "elasticsearch-elasticsearch-9.5.0.yaml", "9.5.0", "Elasticsearch unified change");
+		var collector = new DiagnosticsCollector([]);
+
+		var succeeded = await Service().Build(collector, Options("9.5.0"), TestContext.Current!.Execution.CancellationToken);
+
+		succeeded.Should().BeTrue();
+		collector.Errors.Should().Be(0);
+		var output = _fileSystem.Path.Join(_temp.FullName, "site", "release-notes");
+		_fileSystem.File.Exists(_fileSystem.Path.Join(output, "elasticsearch", "index.html")).Should().BeTrue();
+		_fileSystem.Directory.Exists(_fileSystem.Path.Join(output, "kibana")).Should().BeFalse("kibana has no bundles");
+		_fileSystem.File.ReadAllText(_fileSystem.Path.Join(output, "index.html")).Should().NotContain("kibana/");
+	}
+
+	[Test]
+	public async Task Build_NoProductHasBundles_FailsWithoutWritingASite()
+	{
+		_ = _fileSystem.Directory.CreateDirectory(_fileSystem.Path.Join(_temp.FullName, "bundles"));
 		var collector = new DiagnosticsCollector([]);
 
 		var succeeded = await Service().Build(collector, Options("9.5.0"), TestContext.Current!.Execution.CancellationToken);
@@ -202,16 +218,17 @@ public class UnifiedReleaseNotesTests : IDisposable
 	}
 
 	[Test]
-	public async Task Build_RequiredVersionMissingForAProduct_Fails()
+	public async Task Build_ExpectedVersionMissingForAProduct_StillBuilds()
 	{
+		// A product that did not change in a release has no bundle for it.
 		_ = WriteBundle("elasticsearch", "elasticsearch-elasticsearch-9.5.0.yaml", "9.5.0", "Elasticsearch unified change");
 		_ = WriteBundle("kibana", "kibana-kibana-9.5.0.yaml", "9.5.0", "Kibana unified change");
 		var collector = new DiagnosticsCollector([]);
 
 		var succeeded = await Service().Build(collector, Options("9.5.0", "9.6.0"), TestContext.Current!.Execution.CancellationToken);
 
-		succeeded.Should().BeFalse();
-		collector.Errors.Should().Be(2);
+		succeeded.Should().BeTrue();
+		collector.Errors.Should().Be(0);
 	}
 
 	[Test]

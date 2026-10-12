@@ -273,4 +273,72 @@ public class ReleaseTargetResolverTests
 		ReleaseTargetResolver.IsGa(past, "9.9.9").Should().BeFalse();
 		ReleaseTargetResolver.IsGa(null, "9.2.4").Should().BeFalse();
 	}
+
+	// ── ResolvePreviousRelease ──────────────────────────────────────────
+
+	private static PastReleasesResponse PastOf(params string[] versions) =>
+		new()
+		{
+			Releases =
+			[
+				.. versions.Select(v => new PastRelease { Version = v, Manifest = $"https://staging.elastic.co/{v}/manifest.json" })
+			]
+		};
+
+	[Test]
+	[Arguments("9.5.5", "9.5.4")]
+	[Arguments("9.5.6", "9.5.5")]
+	[Arguments("9.5.1", "9.5.0")]
+	public void ResolvePreviousRelease_Patch_ReturnsThePreviousPatchOfTheSameMinor(string version, string expected)
+	{
+		var past = PastOf("9.4.9", "9.5.0", "9.5.1", "9.5.4", "9.5.5");
+
+		ReleaseTargetResolver.ResolvePreviousRelease(past, version)!.Version.Should().Be(expected);
+	}
+
+	[Test]
+	public void ResolvePreviousRelease_Patch_IgnoresPatchesOfOtherMinors() =>
+		ReleaseTargetResolver.ResolvePreviousRelease(PastOf("9.4.9", "9.5.2"), "9.5.3")!.Version.Should().Be("9.5.2");
+
+	[Test]
+	public void ResolvePreviousRelease_NewMinor_ReturnsThePreviousMinorsDotZeroNotItsLatestPatch()
+	{
+		var past = PastOf("9.4.0", "9.4.1", "9.4.9", "9.5.0", "9.5.5");
+
+		ReleaseTargetResolver.ResolvePreviousRelease(past, "9.6.0")!.Version.Should().Be("9.5.0");
+	}
+
+	[Test]
+	public void ResolvePreviousRelease_NewMajor_ReturnsTheHighestEarlierMinorDotZero() =>
+		ReleaseTargetResolver.ResolvePreviousRelease(PastOf("8.18.0", "8.19.0", "8.19.4"), "9.0.0")!.Version.Should().Be("8.19.0");
+
+	[Test]
+	public void ResolvePreviousRelease_SortsNumericallyNotAlphabetically() =>
+		ReleaseTargetResolver.ResolvePreviousRelease(PastOf("9.9.0", "9.10.0"), "9.11.0")!.Version.Should().Be("9.10.0");
+
+	[Test]
+	public void ResolvePreviousRelease_ReleaseWithoutManifest_IsNotAStartPoint()
+	{
+		var past = new PastReleasesResponse
+		{
+			Releases =
+			[
+				new PastRelease { Version = "9.5.4", Manifest = "https://staging.elastic.co/9.5.4/manifest.json" },
+				new PastRelease { Version = "9.5.5", Manifest = null }
+			]
+		};
+
+		ReleaseTargetResolver.ResolvePreviousRelease(past, "9.5.6")!.Version.Should().Be("9.5.4");
+	}
+
+	[Test]
+	public void ResolvePreviousRelease_FirstEverRelease_ReturnsNull() =>
+		ReleaseTargetResolver.ResolvePreviousRelease(PastOf("9.5.0"), "9.5.0").Should().BeNull();
+
+	[Test]
+	public void ResolvePreviousRelease_UnparseableVersionOrNoReleases_ReturnsNull()
+	{
+		ReleaseTargetResolver.ResolvePreviousRelease(PastOf("9.5.0"), "not-a-version").Should().BeNull();
+		ReleaseTargetResolver.ResolvePreviousRelease(null, "9.5.1").Should().BeNull();
+	}
 }
