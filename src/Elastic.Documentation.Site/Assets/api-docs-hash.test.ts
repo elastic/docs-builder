@@ -1,4 +1,5 @@
-import { revealCollapsedAncestors } from './api-docs'
+import { revealCollapsedAncestors, revealHiddenAncestors } from './api-docs'
+import { initTabs } from './tabs'
 
 function markup(): string {
     return `
@@ -59,5 +60,82 @@ describe('revealCollapsedAncestors', () => {
         byId('eql').classList.remove('collapsed')
 
         expect(revealCollapsedAncestors(byId('actions'))).toBe(false)
+    })
+
+    it('opens a collapsed param section and response panel around a nested target', () => {
+        document.body.innerHTML = `
+            <section id="elastic-api-v3">
+                <div class="api-param-section collapsed" data-param-section id="sec">
+                    <h2 id="query-params" class="api-param-section-header">
+                        <button class="api-param-section-toggle" aria-expanded="false"></button>
+                    </h2>
+                    <div class="api-param-section-body" hidden="until-found">
+                        <div class="property-item" id="row"><dt id="param">p</dt></div>
+                    </div>
+                </div>
+            </section>`
+
+        expect(revealCollapsedAncestors(byId('query-params'))).toBe(false)
+        expect(byId('sec').classList.contains('collapsed')).toBe(true)
+
+        expect(revealCollapsedAncestors(byId('param'))).toBe(true)
+        expect(byId('sec').classList.contains('expanded')).toBe(true)
+        expect(
+            byId('sec')
+                .querySelector('.api-param-section-body')!
+                .hasAttribute('hidden')
+        ).toBe(false)
+    })
+})
+
+describe('revealHiddenAncestors', () => {
+    it('sends beforematch to each until-found ancestor, then shows it', () => {
+        document.body.innerHTML = `
+            <div id="panel" hidden="until-found"><p id="target">x</p></div>`
+        const seen: string[] = []
+        document.addEventListener(
+            'beforematch',
+            (e) => seen.push((e.target as HTMLElement).id),
+            { once: true }
+        )
+
+        const target = document.getElementById('target')!
+        expect(revealHiddenAncestors(target)).toBe(true)
+        expect(seen).toEqual(['panel'])
+        expect(document.getElementById('panel')!.hasAttribute('hidden')).toBe(
+            false
+        )
+    })
+
+    it('reports nothing when no ancestor is hidden', () => {
+        document.body.innerHTML = '<div><p id="target">x</p></div>'
+        expect(revealHiddenAncestors(document.getElementById('target')!)).toBe(
+            false
+        )
+    })
+})
+
+describe('revealHiddenAncestors with the docs tabs', () => {
+    it('selects the tab that holds a link target before showing its panel', () => {
+        document.body.innerHTML = `
+            <div class="api-tabs">
+                <input class="tabs-input" id="t0" name="auth" type="radio" checked>
+                <label class="tabs-label" for="t0">Api key</label>
+                <div class="tabs-content" id="p0">first</div>
+                <input class="tabs-input" id="t1" name="auth" type="radio">
+                <label class="tabs-label" for="t1">Basic</label>
+                <div class="tabs-content" id="p1" hidden="until-found"><p id="basic">x</p></div>
+            </div>`
+        initTabs()
+
+        expect(revealHiddenAncestors(document.getElementById('basic')!)).toBe(
+            true
+        )
+
+        const tabTwo = document.getElementById('t1') as HTMLInputElement
+        expect(tabTwo.checked).toBe(true)
+        expect(document.getElementById('p1')!.hasAttribute('hidden')).toBe(
+            false
+        )
     })
 })
