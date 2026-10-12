@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions.TestingHelpers;
+using System.Text.RegularExpressions;
 using AwesomeAssertions;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Configuration.Builder;
@@ -25,8 +26,10 @@ public class DesignSystemHeadTests : DocumentationSetNavigationTestBase
 	{
 		var html = await RenderHead(new FeatureFlags([]), buildType);
 
-		html.Should().NotContain("ds.css").And.NotContain("ds.js").And.NotContain("docs-theme").And.NotContain("docs-motion");
-		html.Should().Contain("styles.css").And.Contain("main.js");
+		html.Should().NotContain("ds.css").And.NotContain("docs-theme").And.NotContain("docs-motion");
+		EntryIndex(html, "ds").Should().Be(-1);
+		html.Should().Contain("styles.css");
+		EntryIndex(html, "main").Should().BeGreaterThanOrEqualTo(0);
 	}
 
 	[Test]
@@ -35,9 +38,11 @@ public class DesignSystemHeadTests : DocumentationSetNavigationTestBase
 	{
 		var html = await RenderHead(new FeatureFlags(new Dictionary<string, bool> { ["navigation-preview"] = true }), buildType);
 
-		html.Should().Contain("ds.css").And.Contain("ds.js").And.Contain("docs-theme");
+		html.Should().Contain("ds.css").And.Contain("docs-theme");
+		EntryIndex(html, "ds").Should().BeGreaterThanOrEqualTo(0);
 		html.Should().Contain("docs-motion", "the head sets data-motion before first paint");
-		html.Should().NotContain("styles.css").And.NotContain("main.js");
+		html.Should().NotContain("styles.css");
+		EntryIndex(html, "main").Should().Be(-1);
 		html.Should().NotContain("assembler.css").And.NotContain("isolated.css").And.NotContain("codex.css");
 	}
 
@@ -59,7 +64,14 @@ public class DesignSystemHeadTests : DocumentationSetNavigationTestBase
 	{
 		var html = await RenderHead(new FeatureFlags(new Dictionary<string, bool> { ["navigation-preview"] = true }), BuildType.Isolated);
 
-		html.IndexOf("ds.css", StringComparison.Ordinal).Should().BeLessThan(html.IndexOf("ds.js", StringComparison.Ordinal));
+		html.IndexOf("ds.css", StringComparison.Ordinal).Should().BeLessThan(EntryIndex(html, "ds"));
+	}
+
+	// Vite writes an entry bundle as <name>-[hash].js and the head references it by that name, so match the name with or without a hash.
+	private static int EntryIndex(string html, string name)
+	{
+		var match = Regex.Match(html, $@"/{name}(-[\w-]+)?\.js");
+		return match.Success ? match.Index : -1;
 	}
 
 	private async Task<string> RenderHead(FeatureFlags features, BuildType buildType)

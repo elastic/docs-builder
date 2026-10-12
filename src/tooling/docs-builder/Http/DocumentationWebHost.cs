@@ -474,11 +474,7 @@ public class DocumentationWebHost
 	{
 		var hashes = new StaticFileContentHashProvider(new EmbeddedOrPhysicalFileProvider(Context));
 
-		string StaticUrl(string path)
-		{
-			var hash = hashes.GetContentHash(path);
-			return hash.Length == 0 ? $"/_static/{path}" : $"/_static/{path}?v={hash}";
-		}
+		string StaticUrl(string path) => hashes.GetUrl(path, string.Empty);
 
 		async Task<IResult> Serve(string? page, Cancel ctx)
 		{

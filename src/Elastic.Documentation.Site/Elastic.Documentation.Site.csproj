@@ -101,6 +101,8 @@
       <ViteGeneratedFiles Include="_static/asset-*" />
       <ViteGeneratedFiles Include="_static/chunk-*" />
       <ViteGeneratedFiles Include="_static/main-*" />
+      <ViteGeneratedFiles Include="_static/ds-*.js*" />
+      <ViteGeneratedFiles Include="_static/ds.js" />
       <OldHashedBundles Include="_static/*.????????*.js" />
       <OldHashedBundles Include="_static/*.????????*.css" />
     </ItemGroup>

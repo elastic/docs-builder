@@ -54,8 +54,8 @@ export default defineConfig({
                 // name keeps that import and the <script> tag on one URL; `main.js?v=hash`
                 // next to `./main.js` made the browser evaluate the entry twice.
                 entryFileNames: (chunkInfo) => {
-                    if (chunkInfo.name === 'main') {
-                        return 'main-[hash].js'
+                    if (chunkInfo.name === 'main' || chunkInfo.name === 'ds') {
+                        return `${chunkInfo.name}-[hash].js`
                     }
 
                     return `${chunkInfo.name}.js`
