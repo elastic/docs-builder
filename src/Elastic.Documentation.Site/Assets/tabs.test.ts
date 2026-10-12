@@ -33,17 +33,19 @@ const supportedOwner = beforeMatchOwner()
 const supportedDescriptor = supportedOwner
     ? Object.getOwnPropertyDescriptor(supportedOwner, 'onbeforematch')
     : undefined
+// Where support is installed and removed. Without a native definition it is the document itself.
+const supportTarget = supportedOwner ?? document
 
 /** jsdom may or may not define beforematch support, so each test sets the browser feature on or off by hand. */
 function setUntilFoundSupport(supported: boolean) {
     if (supported && !('onbeforematch' in document))
         Object.defineProperty(
-            supportedOwner ?? document,
+            supportTarget,
             'onbeforematch',
             supportedDescriptor ?? { value: null, configurable: true }
         )
-    if (!supported && supportedOwner && 'onbeforematch' in document)
-        delete (supportedOwner as Record<string, unknown>).onbeforematch
+    if (!supported && 'onbeforematch' in document)
+        delete (supportTarget as Record<string, unknown>).onbeforematch
 }
 
 describe('tabs find-in-page', () => {
