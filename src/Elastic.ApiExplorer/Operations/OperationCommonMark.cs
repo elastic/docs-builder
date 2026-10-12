@@ -151,7 +151,7 @@ internal static class OperationCommonMark
 	}
 
 	// One scheme is a plain bullet. Several schemes are sent together, so they nest under one bullet that says so.
-	private static void WriteRequirement(StringBuilder markdown, AuthRequirement requirement, string apiBaseUrl)
+	internal static void WriteRequirement(StringBuilder markdown, AuthRequirement requirement, string apiBaseUrl)
 	{
 		var together = requirement.Schemes.Count > 1;
 		var indent = together ? "  " : "";
