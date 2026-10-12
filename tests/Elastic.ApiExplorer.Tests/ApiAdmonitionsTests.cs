@@ -113,6 +113,14 @@ public class ApiAdmonitionsTests
 	}
 
 	[Test]
+	public void Convert_IndentedCodeBlock_IsNotAFence()
+	{
+		var result = ApiAdmonitions.Convert("    ```\n    example\n\nNOTE: Actual note.");
+
+		result.Should().Be("    ```\n    example\n\n:::{note}\nActual note.\n:::");
+	}
+
+	[Test]
 	public void Render_ConvertsAdmonitionsBeforeRendering()
 	{
 		var renderer = new CapturingRenderer();
