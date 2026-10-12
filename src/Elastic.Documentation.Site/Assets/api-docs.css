@@ -2560,40 +2560,12 @@ a.docs-reference-btn::after {
 	font-weight: 500;
 }
 
+/* Prose typography (size, colour, links, headings) is inherited from .markdown-content */
 .api-operation-description {
-	color: var(--color-subdued, #516381);
-	font-family: var(--font-body, Inter, ui-sans-serif, system-ui, sans-serif);
-	font-size: 14px;
-	font-weight: 400;
-	line-height: 20px;
 	margin: 0 0 0.5rem;
 
 	> :first-child {
 		margin-top: 0;
-	}
-
-	p {
-		color: inherit;
-		font-size: 14px;
-		line-height: 20px;
-	}
-
-	h2,
-	h3,
-	h4,
-	h5,
-	h6 {
-		color: var(--color-subdued, #516381);
-		font-family: var(
-			--font-body,
-			Inter,
-			ui-sans-serif,
-			system-ui,
-			sans-serif
-		);
-		font-size: 14px;
-		font-weight: 600;
-		line-height: 20px;
 	}
 
 	/* Match the h2.section-header rows rendered by the operation view */
@@ -2605,25 +2577,8 @@ a.docs-reference-btn::after {
 		border-bottom: 1px solid #e3e8f2;
 		color: var(--color-ink-navy, #111c2c);
 		font-size: 16px;
-		line-height: 24px;
-	}
-
-	strong,
-	b {
 		font-weight: 600;
-	}
-
-	a:not(.docs-reference-btn, .headerlink),
-	a.reference {
-		color: var(--color-blue-elastic, #0b64dd);
-		text-decoration: underline;
-		text-underline-offset: 2px;
-	}
-
-	a:not(.docs-reference-btn, .headerlink):hover,
-	a.reference:hover {
-		color: var(--color-blue-elastic-100, #1750ba);
-		text-decoration: underline;
+		line-height: 24px;
 	}
 
 	/* bump.sh verb badge — inherits .api-method base and color rules; only size differs */
