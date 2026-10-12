@@ -7,6 +7,7 @@ import { decorateApiCodeTokens } from './api-code-tokens'
 import { initApiExamples } from './api-examples-carousel'
 import { applyParamSummaryFit } from './api-param-summary'
 import { iconCheckEui, iconCopyEui } from './copybutton'
+import { prefersReducedMotion } from './motion'
 import { flashTooltip, initTooltips } from './tooltip'
 
 // Check if hidden="until-found" is supported (for find-in-page in collapsed sections)
@@ -842,6 +843,7 @@ export function initApiPageActions(): void {
 }
 
 let examplesRailSteadyInitialized = false
+let examplesRailSlide: Animation | undefined
 
 /**
  * Expanding or collapsing a section flips the sticky examples rail between stuck and
@@ -856,16 +858,20 @@ export function initExamplesRailSteadying(): void {
         (e) => {
             if (!(e.target instanceof Element)) return
             if (!e.target.closest('#elastic-api-v3')) return
+            // The rail is only sticky from 1024px up; below that it moves with the page
+            if (!window.matchMedia?.('(min-width: 1024px)').matches) return
+            if (prefersReducedMotion()) return
             const rail = document.getElementById('api-examples-panel')
             if (!rail) return
-            if (window.matchMedia('(prefers-reduced-motion: reduce)').matches)
-                return
+            // A slide still running would skew the measurement and stack with the new one.
+            // Cancel only our own: getAnimations() would also cancel the rail's CSS transitions.
+            examplesRailSlide?.cancel()
             const before = rail.getBoundingClientRect().top
             // Runs after the click handlers change the DOM, before the next paint
             requestAnimationFrame(() => {
                 const shift = rail.getBoundingClientRect().top - before
                 if (Math.abs(shift) < 1) return
-                rail.animate(
+                examplesRailSlide = rail.animate(
                     [
                         { transform: `translateY(${-shift}px)` },
                         { transform: 'none' },
