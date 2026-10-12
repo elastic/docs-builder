@@ -22,10 +22,13 @@ Shared Razor layout, the frontend bundles, and the design system. The full guide
 | `Assets/ds/patterns/layout.css` | The named page layouts (`layout--single`, `--two`, `--three`, `--hub`) and the content `grid`; new pages start from one |
 | `Assets/ds-guide.css` | Style-guide-only scaffolding; never loaded on product pages |
 | `StyleGuide/` | Style-guide pages (Razor slices), the page catalog, and the token metadata |
+| `visual/` | Playwright screenshot checks of the flag-off site across `serve` and `assembler serve`; baselines are seeded from `main` and never committed |
 
 ## Commands
 
 ```bash
 npm run build            # Vite bundles, including ds.css / ds.js
+npm run visual:seed      # build origin/main in a temp worktree and save its output as the baselines (local, git-ignored)
+npm run visual:check     # build the assembler site from this branch and compare it with those baselines
 dotnet test tests/Navigation.Tests -- --treenode-filter "/*/Elastic.Documentation.Navigation.Tests.DesignSystem/*/*"
 ```

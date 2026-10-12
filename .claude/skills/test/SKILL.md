@@ -26,7 +26,7 @@ Use this decision table based on which directories have changed files:
 
 | Changed path | Test command |
 |---|---|
-| `src/Elastic.Documentation.Site/` | `cd src/Elastic.Documentation.Site && npm run test` |
+| `src/Elastic.Documentation.Site/` | `cd src/Elastic.Documentation.Site && npm run test`; shared views or layout CSS also `npm run visual:seed` once, then `npm run visual:check` |
 | `src/Elastic.Markdown/` | `dotnet test tests/Elastic.Markdown.Tests/` |
 | `src/Elastic.Documentation.Configuration/` | `dotnet test tests/Elastic.Documentation.Configuration.Tests/` |
 | `src/Elastic.Documentation.Navigation/` or `Navigation.Tests/` | `dotnet test tests/Navigation.Tests/` |

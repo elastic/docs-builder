@@ -228,3 +228,25 @@ Components declare their large movement inside `@media (prefers-reduced-motion: 
 Pages are complete HTML without JavaScript.
 Enhancements live in `Assets/ds.ts` and its modules, and they bind to `data-*` attributes and ARIA state, never to styling classes.
 A theme can therefore change class-based CSS freely without breaking behaviour.
+
+## Visual regression checks
+
+The visual runner in `src/Elastic.Documentation.Site/visual/` is a Playwright suite.
+It serves `docs-builder serve` and `assembler serve` on fixed local ports, and compares full-page screenshots and server-rendered HTML for a set of pages against saved baselines.
+Each run starts the servers with all `FEATURE_*` variables removed, and it refuses to run the assembler site when `config/assembler.yml` enables `NAVIGATION_PREVIEW` for `dev`.
+A passing run therefore shows that a branch with the flag off renders the same as the baselines.
+
+The baselines are the flag-off output of `main`.
+They are written to `visual/__snapshots__/`, which Git ignores, and they depend on your operating system.
+
+```bash
+npm run visual:seed    # build origin/main in a temporary worktree and save what it renders as the baselines
+npm run visual:check   # build the assembler site from this branch and compare it with the baselines
+```
+
+`visual:seed` accepts `--ref <ref>` to seed from another ref, and a list of hosts, for example `npm run visual:seed -- isolated`.
+The seed removes its temporary worktree when it finishes, and refuses to run when the snapshot folder isn't ignored by Git.
+To compare against a server you already started, set `VISUAL_REUSE=1`.
+
+The Codex site is not part of the default run, because Codex content can be private and its baselines must not leave your machine.
+To include it, set `VISUAL_CODEX_CONFIG` to a Codex config you can clone, and `VISUAL_CODEX_PAGES` to the paths to compare, separated by commas.

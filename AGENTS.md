@@ -73,7 +73,7 @@ Use the `/test` skill to pick the right test project automatically. A change to 
 | `src/tooling/essc/` | `./build.sh unit-test` (targets `Elastic.SiteSearch.Tests`) |
 | `src/Elastic.ApiExplorer/` | `./build.sh unit-test` (targets `Elastic.ApiExplorer.Tests`) |
 | `src/services/Elastic.Documentation.Deploying/` | `./build.sh unit-test` (targets `Elastic.Documentation.Deploying.Tests`) |
-| `src/Elastic.Documentation.Site/` | `cd src/Elastic.Documentation.Site && npm run test`; design-system, style-guide and `_Head` changes also run `./build.sh unit-test` (`Navigation.Tests`, `DesignSystem` folder). See [`src/Elastic.Documentation.Site/AGENTS.md`](src/Elastic.Documentation.Site/AGENTS.md) |
+| `src/Elastic.Documentation.Site/` | `cd src/Elastic.Documentation.Site && npm run test`; design-system, style-guide and `_Head` changes also run `./build.sh unit-test` (`Navigation.Tests`, `DesignSystem` folder); changes to shared views or layout CSS also run `npm run visual:seed` once and `npm run visual:check` to prove flag-off output is unchanged. See [`src/Elastic.Documentation.Site/AGENTS.md`](src/Elastic.Documentation.Site/AGENTS.md) |
 | `tests-integration/` | `./build.sh integrate` |
 | Multiple / uncertain | `./build.sh unit-test` |
 
