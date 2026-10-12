@@ -17,10 +17,10 @@ if (!existsSync(seedRef)) {
 const sha = readFileSync(seedRef, 'utf8').trim()
 git(['cat-file', '-e', `${sha}^{commit}`])
 
-function run(command, args, env) {
+function run(command, args, env, cwd = siteDir) {
 	console.log(`${command} ${args.join(' ')}`)
 	const result = spawnSync(command, args, {
-		cwd: siteDir,
+		cwd,
 		env,
 		stdio: 'inherit',
 	})
