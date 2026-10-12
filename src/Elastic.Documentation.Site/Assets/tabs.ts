@@ -65,6 +65,49 @@ function ready() {
             }
         }
     })
+    syncPanels()
+}
+
+/** The content panel that follows a tab's input and label. */
+function panelFor(input: HTMLInputElement): HTMLElement | null {
+    const panel = input.nextElementSibling?.nextElementSibling
+    return panel instanceof HTMLElement &&
+        panel.classList.contains('tabs-content')
+        ? panel
+        : null
+}
+
+/**
+ * Only the selected tab's panel is shown. The others use hidden="until-found" instead of display: none, so the
+ * browser's find-in-page still searches them; `onBeforeMatch` then selects the tab that holds the match.
+ */
+function syncPanels(root: ParentNode = document) {
+    root.querySelectorAll<HTMLInputElement>('.tabs-input').forEach((input) => {
+        const panel = panelFor(input)
+        if (!panel) return
+        if (input.checked) panel.removeAttribute('hidden')
+        else panel.setAttribute('hidden', 'until-found')
+    })
+}
+
+function onTabChange(event: Event) {
+    if (
+        event.target instanceof HTMLInputElement &&
+        event.target.matches('.tabs-input')
+    )
+        syncPanels()
+}
+
+/** Find-in-page matched text in a hidden tab: select that tab before the browser reveals it. */
+function onBeforeMatch(event: Event) {
+    const panel = (event.target as HTMLElement | null)?.closest<HTMLElement>(
+        '.tabs-content'
+    )
+    const input = panel?.previousElementSibling?.previousElementSibling
+    if (!(input instanceof HTMLInputElement) || !input.matches('.tabs-input'))
+        return
+    input.checked = true
+    syncPanels()
 }
 
 /**
@@ -84,9 +127,17 @@ function onSDLabelClick(this: HTMLLabelElement) {
             label.previousElementSibling.checked = true
         }
     }
+    syncPanels()
     window.sessionStorage.setItem(storageKeyPrefix + group, id)
 }
 
+let delegated = false
+
 export function initTabs() {
+    if (!delegated) {
+        delegated = true
+        document.addEventListener('change', onTabChange)
+        document.addEventListener('beforematch', onBeforeMatch)
+    }
     ready()
 }

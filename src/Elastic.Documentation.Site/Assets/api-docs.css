@@ -3014,6 +3014,13 @@ button.example-response-tab:focus-visible {
 		@apply block;
 	}
 
+	/* tabs.ts marks the other panels hidden="until-found" so find-in-page reaches them. They keep no box of their own. */
+	.tabs-content[hidden='until-found'] {
+		display: block;
+		border-width: 0;
+		padding: 0;
+	}
+
 	.tabs-input:checked + .tabs-label,
 	.tabs-label:active {
 		@apply border-b-blue-elastic text-blue-elastic border-b-1;
@@ -3075,6 +3082,13 @@ button.example-response-tab:focus-visible {
 
 	.tabs-input:checked + .tabs-label + .tabs-content {
 		@apply block;
+	}
+
+	/* tabs.ts marks the other panels hidden="until-found" so find-in-page reaches them. They keep no box of their own. */
+	.tabs-content[hidden='until-found'] {
+		display: block;
+		border-width: 0;
+		padding: 0;
 	}
 
 	.tabs-input:checked + .tabs-label,
