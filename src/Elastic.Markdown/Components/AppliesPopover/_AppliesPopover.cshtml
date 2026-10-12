@@ -6,7 +6,7 @@
 		<button type="button" class="@Model.CssClass applies-popover__trigger" aria-expanded="false" data-applies-trigger>
 			@await RenderPartialAsync(_AppliesPopoverBadge.Create(Model))
 		</button>
-		<span class="applies-popover__panel">
+		<span class="applies-popover__panel" data-applies-panel>
 			@if (inlineContent.ProductDescription is { } inlineDescription)
 			{
 				<span class="applies-popover__description">@inlineDescription</span>

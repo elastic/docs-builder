@@ -194,3 +194,15 @@
 	color: var(--color-text-muted);
 	font-size: var(--text-xs);
 }
+
+/* In the top layer the panel is placed by script, relative to the viewport, so no ancestor's overflow can clip it. */
+.applies-popover--inline > .applies-popover__panel[popover] {
+	position: fixed;
+	inset: auto;
+	margin: 0;
+	overflow: auto;
+}
+
+.applies-popover--inline > .applies-popover__panel[popover]:popover-open {
+	display: block;
+}

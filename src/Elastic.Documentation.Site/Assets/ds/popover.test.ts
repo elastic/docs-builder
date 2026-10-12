@@ -88,51 +88,115 @@ describe('initInlinePopovers', () => {
     const inline = `
 <p>Applies to <span class="applies-popover applies-popover--inline" data-applies-popover>
   <button type="button" aria-expanded="false" data-applies-trigger>Stack 9.1+</button>
-  <span class="applies-popover__panel">Details</span>
+  <span class="applies-popover__panel" data-applies-panel>Details</span>
 </span> and more.</p>
 <button id="outside">outside</button>`
 
-    beforeEach(() => {
+    let open: boolean
+    const original = {
+        show: HTMLElement.prototype.showPopover,
+        hide: HTMLElement.prototype.hidePopover,
+        matches: HTMLElement.prototype.matches,
+    }
+
+    const bind = (withPopovers: boolean) => {
+        open = false
         document.body.innerHTML = inline
+        if (withPopovers) {
+            HTMLElement.prototype.showPopover = function () {
+                open = true
+            }
+            HTMLElement.prototype.hidePopover = function () {
+                open = false
+            }
+            HTMLElement.prototype.matches = function (
+                this: HTMLElement,
+                selector: string
+            ) {
+                return selector === ':popover-open'
+                    ? open
+                    : original.matches.call(this, selector)
+            }
+        } else {
+            // @ts-expect-error a browser without the popover API has no such method
+            delete HTMLElement.prototype.showPopover
+        }
         initInlinePopovers()
+    }
+
+    afterEach(() => {
+        HTMLElement.prototype.showPopover = original.show
+        HTMLElement.prototype.hidePopover = original.hide
+        HTMLElement.prototype.matches = original.matches
     })
 
     const root = () =>
         document.querySelector<HTMLElement>('[data-applies-popover]')!
+    const panel = () =>
+        document.querySelector<HTMLElement>('[data-applies-panel]')!
     const trigger = () =>
         document.querySelector<HTMLButtonElement>('[data-applies-trigger]')!
 
-    it('toggles the panel from the button and reports it', () => {
-        trigger().click()
-        expect(root().hasAttribute('data-open')).toBe(true)
-        expect(trigger().getAttribute('aria-expanded')).toBe('true')
+    describe('with popovers', () => {
+        beforeEach(() => bind(true))
 
-        trigger().click()
-        expect(root().hasAttribute('data-open')).toBe(false)
-        expect(trigger().getAttribute('aria-expanded')).toBe('false')
+        it('toggles the panel from the button and reports it', () => {
+            trigger().click()
+            expect(root().hasAttribute('data-open')).toBe(true)
+            expect(trigger().getAttribute('aria-expanded')).toBe('true')
+
+            trigger().click()
+            expect(root().hasAttribute('data-open')).toBe(false)
+            expect(trigger().getAttribute('aria-expanded')).toBe('false')
+        })
+
+        it('shows the panel in the top layer, placed beside the button', () => {
+            expect(panel().getAttribute('popover')).toBe('manual')
+
+            trigger().click()
+            expect(open).toBe(true)
+            expect(panel().style.top).not.toBe('')
+            expect(panel().style.left).not.toBe('')
+
+            trigger().click()
+            expect(open).toBe(false)
+        })
+
+        it('closes on Escape and returns focus to the button', () => {
+            trigger().click()
+            root().dispatchEvent(
+                new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })
+            )
+
+            expect(root().hasAttribute('data-open')).toBe(false)
+            expect(open).toBe(false)
+            expect(document.activeElement).toBe(trigger())
+        })
+
+        it('closes when something else is clicked', () => {
+            trigger().click()
+            document.getElementById('outside')!.click()
+
+            expect(root().hasAttribute('data-open')).toBe(false)
+            expect(open).toBe(false)
+        })
+
+        it('binds each badge once', () => {
+            initInlinePopovers()
+            trigger().click()
+
+            expect(root().hasAttribute('data-open')).toBe(true)
+        })
     })
 
-    it('closes on Escape and returns focus to the button', () => {
-        trigger().click()
-        root().dispatchEvent(
-            new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })
-        )
+    describe('without popovers', () => {
+        beforeEach(() => bind(false))
 
-        expect(root().hasAttribute('data-open')).toBe(false)
-        expect(document.activeElement).toBe(trigger())
-    })
+        it('still toggles through data-open and leaves the panel in the page', () => {
+            expect(panel().hasAttribute('popover')).toBe(false)
 
-    it('closes when something else is clicked', () => {
-        trigger().click()
-        document.getElementById('outside')!.click()
-
-        expect(root().hasAttribute('data-open')).toBe(false)
-    })
-
-    it('binds each badge once', () => {
-        initInlinePopovers()
-        trigger().click()
-
-        expect(root().hasAttribute('data-open')).toBe(true)
+            trigger().click()
+            expect(root().hasAttribute('data-open')).toBe(true)
+        })
     })
 })

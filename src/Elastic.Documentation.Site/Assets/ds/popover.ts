@@ -4,9 +4,7 @@
 const gap = 4
 const margin = 8
 
-function place(details: HTMLDetailsElement, panel: HTMLElement) {
-    const trigger = details.querySelector('summary')
-    if (!trigger) return
+function placeBeside(trigger: HTMLElement, panel: HTMLElement) {
     const anchor = trigger.getBoundingClientRect()
     const width = panel.offsetWidth
 
@@ -22,6 +20,11 @@ function place(details: HTMLDetailsElement, panel: HTMLElement) {
 
     panel.style.left = `${left}px`
     panel.style.top = `${top}px`
+}
+
+function place(details: HTMLDetailsElement, panel: HTMLElement) {
+    const trigger = details.querySelector('summary')
+    if (trigger) placeBeside(trigger, panel)
 }
 
 function show(details: HTMLDetailsElement, panel: HTMLElement) {
@@ -70,8 +73,27 @@ export function initPopovers(scope: ParentNode = document) {
 }
 
 // The inline applicability badge sits in a paragraph, so it is a button and spans rather than a details element. Script makes the button
-// toggle the panel and lets Escape or a click elsewhere close it. Hooks: [data-applies-popover] on the wrapper, [data-applies-trigger].
+// toggle the panel, shows it in the top layer beside the button where the browser has popovers (so a table's overflow cannot clip it and
+// it stays on screen), and lets Escape or a click elsewhere close it. Hooks: [data-applies-popover] on the wrapper,
+// [data-applies-trigger] on the button and [data-applies-panel] on the panel.
+const inlineClosers = new WeakMap<HTMLElement, () => void>()
+let inlineOutsideBound = false
+
+// One listener for the whole page: it closes each open badge the click was not inside, and never touches a badge that has left the page.
+function closeInlinePopoversOutside(event: Event) {
+    document
+        .querySelectorAll<HTMLElement>('[data-applies-popover][data-open]')
+        .forEach((root) => {
+            if (!root.contains(event.target as Node))
+                inlineClosers.get(root)?.()
+        })
+}
+
 export function initInlinePopovers(scope: ParentNode = document) {
+    if (!inlineOutsideBound) {
+        inlineOutsideBound = true
+        document.addEventListener('click', closeInlinePopoversOutside)
+    }
     scope
         .querySelectorAll<HTMLElement>(
             '[data-applies-popover]:not([data-applies-bound])'
@@ -80,13 +102,34 @@ export function initInlinePopovers(scope: ParentNode = document) {
             const trigger = root.querySelector<HTMLButtonElement>(
                 '[data-applies-trigger]'
             )
-            if (!trigger) return
+            const panel = root.querySelector<HTMLElement>(
+                '[data-applies-panel]'
+            )
+            if (!trigger || !panel) return
             root.dataset.appliesBound = ''
 
+            const topLayer = Boolean(HTMLElement.prototype.showPopover)
+            // Manual popovers are not dismissed by the browser; Escape and the outside click below do it.
+            if (topLayer) panel.setAttribute('popover', 'manual')
+
+            const reposition = () => placeBeside(trigger, panel)
             const setOpen = (open: boolean) => {
                 if (open) root.dataset.open = ''
                 else delete root.dataset.open
                 trigger.setAttribute('aria-expanded', String(open))
+                if (!topLayer) return
+                if (open) {
+                    if (!panel.matches(':popover-open')) panel.showPopover()
+                    reposition()
+                    window.addEventListener('scroll', reposition, {
+                        passive: true,
+                    })
+                    window.addEventListener('resize', reposition)
+                } else {
+                    if (panel.matches(':popover-open')) panel.hidePopover()
+                    window.removeEventListener('scroll', reposition)
+                    window.removeEventListener('resize', reposition)
+                }
             }
             trigger.addEventListener('click', () =>
                 setOpen(!('open' in root.dataset))
@@ -96,8 +139,6 @@ export function initInlinePopovers(scope: ParentNode = document) {
                 setOpen(false)
                 trigger.focus()
             })
-            document.addEventListener('click', (event) => {
-                if (!root.contains(event.target as Node)) setOpen(false)
-            })
+            inlineClosers.set(root, () => setOpen(false))
         })
 }
