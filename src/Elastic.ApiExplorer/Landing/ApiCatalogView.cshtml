@@ -35,11 +35,10 @@
 	{
 		var group = Model.Groups[i];
 		var headingId = "api-catalog-group-" + i;
-		var tagOns = group.Featured.Count > 0;
 		var featuredColumns = group.Featured.Count == 3 ? "min-[1024px]:grid-cols-3" : "min-[1024px]:grid-cols-2";
-		// Tag-ons share the featured row's columns, so each sits under its parent. Without featured cards the cards of a
-		// group sit three across, so a description has room to read as a sentence.
-		var otherColumns = tagOns ? featuredColumns : "min-[1024px]:grid-cols-2 lg:grid-cols-3";
+		// Without featured cards the cards of a group sit three across, so a description has room to read as a sentence.
+		var otherColumns = group.Featured.Count > 0 ? featuredColumns : "min-[1024px]:grid-cols-2 lg:grid-cols-3";
+		var unattached = group.Unattached.ToList();
 		// Everything in a group that is not featured is compact. Only the APIs that no group covers keep the full-size card.
 		var otherKind = group.Grouped ? ApiCatalogCardKind.Compact : ApiCatalogCardKind.Standard;
 		<section class="api-catalog-group" aria-labelledby="@(group.Title is null ? null : headingId)">
@@ -49,19 +48,27 @@
 			}
 			@if (group.Featured.Count > 0)
 			{
-				<ul class="api-catalog-featured m-0 mb-2 grid list-none grid-cols-1 gap-6 p-0 @featuredColumns">
-					@foreach (var item in group.Featured)
+				@* A tag-on follows its parent in the list, so it stays attached under it when the cards stack on narrow screens.
+				   From 1024px the cells are placed by column: parents in row 1, tag-ons in row 2. *@
+				<ul class="api-catalog-featured m-0 mb-4 grid list-none grid-cols-1 gap-6 p-0 @featuredColumns">
+					@for (var f = 0; f < group.Featured.Count; f++)
 					{
-						@(await RenderPartialAsync<_ApiCatalogCard, ApiCatalogCard>(new ApiCatalogCard(item, ApiCatalogCardKind.Featured, HasVariant: group.HasVariant(item), HeadingLevel: cardHeadingLevel)))
+						var item = group.Featured[f];
+						var hasVariant = group.TryGetVariant(item, out var variant);
+						@(await RenderPartialAsync<_ApiCatalogCard, ApiCatalogCard>(new ApiCatalogCard(item, ApiCatalogCardKind.Featured, HasVariant: hasVariant, Column: f + 1, HeadingLevel: cardHeadingLevel)))
+						if (hasVariant)
+						{
+							@(await RenderPartialAsync<_ApiCatalogCard, ApiCatalogCard>(new ApiCatalogCard(variant, otherKind, Column: f + 1, HeadingLevel: cardHeadingLevel)))
+						}
 					}
 				</ul>
 			}
-			@if (group.Others.Count > 0)
+			@if (unattached.Count > 0)
 			{
-				<ul class="@(tagOns ? "api-catalog-tagons " : "")m-0 grid list-none grid-cols-1 gap-x-6 gap-y-4 p-0 @otherColumns">
-					@foreach (var item in group.OthersInGridOrder)
+				<ul class="m-0 grid list-none grid-cols-1 gap-x-6 gap-y-4 p-0 @otherColumns">
+					@foreach (var item in unattached)
 					{
-						@(await RenderPartialAsync<_ApiCatalogCard, ApiCatalogCard>(new ApiCatalogCard(item, otherKind, Column: group.ColumnOf(item), HeadingLevel: cardHeadingLevel)))
+						@(await RenderPartialAsync<_ApiCatalogCard, ApiCatalogCard>(new ApiCatalogCard(item, otherKind, HeadingLevel: cardHeadingLevel)))
 					}
 				</ul>
 			}

@@ -86,6 +86,15 @@ public class ApiCatalogCardTests
 	}
 
 	[Test]
+	public async Task Render_FeaturedCardWithAColumn_IsPlacedButNotAttached()
+	{
+		var html = await Render(Item(), ApiCatalogCardKind.Featured, column: 2);
+
+		html.Should().Contain("api-catalog-cell").And.Contain("--api-catalog-column: 2");
+		html.Should().NotContain("api-catalog-card-attached").And.NotContain("api-catalog-cell-variant");
+	}
+
+	[Test]
 	public async Task Render_CardWithoutAColumn_IsNotAttached()
 	{
 		var html = await Render(Item(), ApiCatalogCardKind.Compact);

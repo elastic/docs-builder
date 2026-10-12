@@ -120,37 +120,35 @@ public class ApiCatalogViewModelTests
 		var group = new ApiCatalogGroup("Elastic Stack", Grouped: true, [elasticsearch, kibana, logstash], [kibanaServerless]);
 
 		group.ColumnOf(kibanaServerless).Should().Be(2, "the tag-on sits under Kibana even though Elasticsearch has no variant");
-		group.HasVariant(kibana).Should().BeTrue();
-		group.HasVariant(elasticsearch).Should().BeFalse();
 	}
 
 	[Test]
-	public void OthersInGridOrder_UnattachedCardBeforeAnAttachedOne_PlacesTheAttachedOneFirst()
-	{
-		var orphan = Item("elasticsearch-serverless", parentKey: "elasticsearch");
-		var attached = Item("kibana-serverless", parentKey: "kibana");
-		var group = new ApiCatalogGroup("Elastic Stack", Grouped: true, [Item("kibana"), Item("logstash")], [orphan, attached]);
-
-		group.OthersInGridOrder.Should().Equal([attached, orphan], "the unattached card must not take the cell under Kibana");
-	}
-
-	[Test]
-	public void OthersInGridOrder_AttachedCards_AreOrderedByColumnAndTheRestKeepTheirOrder()
+	public void TryGetVariant_FeaturedWithATagOn_ReturnsIt()
 	{
 		var elasticsearch = Item("elasticsearch");
 		var kibana = Item("kibana");
 		var kibanaServerless = Item("kibana-serverless", parentKey: "kibana");
-		var elasticsearchServerless = Item("elasticsearch-serverless", parentKey: "elasticsearch");
-		var extraB = Item("extra-b");
-		var extraA = Item("extra-a");
+		var group = new ApiCatalogGroup("Elastic Stack", Grouped: true, [elasticsearch, kibana], [kibanaServerless]);
+
+		group.TryGetVariant(kibana, out var variant).Should().BeTrue();
+		variant.Should().Be(kibanaServerless);
+		group.TryGetVariant(elasticsearch, out _).Should().BeFalse();
+	}
+
+	[Test]
+	public void Unattached_MixedCards_ExcludesTheAttachedOnesAndKeepsTheRestInOrder()
+	{
+		var kibanaServerless = Item("kibana-serverless", parentKey: "kibana");
+		var orphan = Item("elasticsearch-serverless", parentKey: "elasticsearch");
+		var extra = Item("extra");
 		var group = new ApiCatalogGroup(
 			"Elastic Stack",
 			Grouped: true,
-			[elasticsearch, kibana],
-			[extraB, kibanaServerless, extraA, elasticsearchServerless]
+			[Item("kibana"), Item("logstash")],
+			[orphan, kibanaServerless, extra]
 		);
 
-		group.OthersInGridOrder.Should().Equal([elasticsearchServerless, kibanaServerless, extraB, extraA]);
+		group.Unattached.Should().Equal([orphan, extra]);
 	}
 
 	[Test]
