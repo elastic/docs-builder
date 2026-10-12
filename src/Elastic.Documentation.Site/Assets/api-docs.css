@@ -3253,9 +3253,11 @@ button.example-response-tab:focus-visible {
 }
 
 /* A tag-on is attached to its parent card, like a tab on its bottom edge: flush under it, sharing its border, with a
-   light fill and a one-line description. */
+   light fill and a one-line description. It follows its parent in the list, so this holds when the cards stack too. */
 .api-catalog .api-catalog-card-attached {
 	background: var(--color-grey-10);
+	border-top-left-radius: 0;
+	border-top-right-radius: 0;
 }
 
 .api-catalog .api-catalog-card-attached .api-catalog-desc {
@@ -3263,37 +3265,32 @@ button.example-response-tab:focus-visible {
 	line-clamp: 1;
 }
 
-/* From the width where the featured cards sit in one row. Below that they stack in one column, so a tag-on has no
-   parent above it and stays a separate card. */
+.api-catalog .api-catalog-card-parent {
+	border-bottom-left-radius: 0;
+	border-bottom-right-radius: 0;
+}
+
+/* Cancels the 1.5rem gap of the list, plus 1px so the two cards share one border. */
+.api-catalog .api-catalog-cell-variant {
+	margin-top: calc(-1.5rem - 1px);
+}
+
+/* The shared border changes colour on hover. Lift the hovered card so its whole edge shows. */
+.api-catalog .api-catalog-card-parent:hover,
+.api-catalog .api-catalog-card-attached:hover {
+	position: relative;
+	z-index: 1;
+}
+
+/* From the width where the featured cards sit in one row: parents in row 1, each tag-on in row 2 under its parent. */
 @media (min-width: 1024px) {
-	.api-catalog .api-catalog-featured {
-		margin-bottom: 0;
-	}
-
-	.api-catalog .api-catalog-tagons {
-		row-gap: 0;
-		margin-top: -1px;
-	}
-
 	.api-catalog .api-catalog-cell {
 		grid-column-start: var(--api-catalog-column);
+		grid-row: 1;
 	}
 
-	.api-catalog .api-catalog-card-parent {
-		border-bottom-left-radius: 0;
-		border-bottom-right-radius: 0;
-	}
-
-	.api-catalog .api-catalog-card-attached {
-		border-top-left-radius: 0;
-		border-top-right-radius: 0;
-	}
-
-	/* The shared border changes colour on hover. Lift the hovered card so its whole edge shows. */
-	.api-catalog .api-catalog-card-parent:hover,
-	.api-catalog .api-catalog-card-attached:hover {
-		position: relative;
-		z-index: 1;
+	.api-catalog .api-catalog-cell-variant {
+		grid-row: 2;
 	}
 }
 
