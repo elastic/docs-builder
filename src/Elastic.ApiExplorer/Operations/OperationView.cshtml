@@ -97,7 +97,7 @@
 			<div class="path-param @(path.Deprecated is true ? "deprecated" : "")">
 				<dt id="path-@path.Name">
 					<a class="property-anchor" href="#path-@path.Name">
-						<span class="property-anchor-icon" aria-hidden="true"></span>
+						<span class="property-anchor-icon" data-tippy-content="Copy link" aria-hidden="true"></span>
 						<code>@path.Name</code>
 					</a>
 					@if (path.Type is not null)
@@ -159,7 +159,7 @@
 				<div class="query-param @(qs.Deprecated == true ? "deprecated" : "")">
 					<dt id="query-@qs.Name">
 						<a class="property-anchor" href="#query-@qs.Name">
-							<span class="property-anchor-icon" aria-hidden="true"></span>
+							<span class="property-anchor-icon" data-tippy-content="Copy link" aria-hidden="true"></span>
 							<code>@qs.Name</code>
 						</a>
 						@if (qp.Type is not null)
