@@ -9,7 +9,7 @@ namespace Elastic.Documentation.Site.FileProviders;
 
 public class StaticFileContentHashProvider(EmbeddedOrPhysicalFileProvider fileProvider)
 {
-	private const string ManifestFile = "manifest.json";
+	private const string ManifestFile = "vite-manifest.json";
 	private static readonly Dictionary<string, string> NoEntries = [];
 
 	private readonly ConcurrentDictionary<string, string> _contentHashes = [];
@@ -39,6 +39,8 @@ public class StaticFileContentHashProvider(EmbeddedOrPhysicalFileProvider filePr
 		foreach (var chunk in document.RootElement.EnumerateObject())
 		{
 			var value = chunk.Value;
+			if (value.ValueKind != JsonValueKind.Object)
+				continue;
 			if (!value.TryGetProperty("isEntry", out var isEntry) || !isEntry.GetBoolean())
 				continue;
 			if (!value.TryGetProperty("name", out var name) || !value.TryGetProperty("file", out var file))
