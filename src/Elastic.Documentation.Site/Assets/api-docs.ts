@@ -7,6 +7,7 @@ import { decorateApiCodeTokens } from './api-code-tokens'
 import { initApiExamples } from './api-examples-carousel'
 import { applyParamSummaryFit } from './api-param-summary'
 import { iconCheckEui, iconCopyEui } from './copybutton'
+import { prefersReducedMotion } from './motion'
 import { flashTooltip, initTooltips } from './tooltip'
 
 // Check if hidden="until-found" is supported (for find-in-page in collapsed sections)
@@ -841,6 +842,52 @@ export function initApiPageActions(): void {
     })
 }
 
+let examplesRailSteadyInitialized = false
+let examplesRailSlide: Animation | undefined
+
+/**
+ * Expanding or collapsing a section flips the sticky examples rail between stuck and
+ * bottom-pinned, which moved it hundreds of px in one frame. Slide it there instead.
+ */
+export function initExamplesRailSteadying(): void {
+    if (examplesRailSteadyInitialized) return
+    examplesRailSteadyInitialized = true
+    // Capture: some toggle handlers stopPropagation, and we must measure before they mutate
+    document.addEventListener(
+        'click',
+        (e) => {
+            if (!(e.target instanceof Element)) return
+            if (!e.target.closest('#elastic-api-v3')) return
+            // The rail is only sticky from 1024px up; below that it moves with the page
+            if (!window.matchMedia?.('(min-width: 1024px)').matches) return
+            if (prefersReducedMotion()) return
+            const rail = document.getElementById('api-examples-panel')
+            if (!rail) return
+            // The in-flight slide's transform shows up in the rect. Keep that visual
+            // position, cancel the slide, then measure the untransformed layout.
+            const visualTop = rail.getBoundingClientRect().top
+            // Cancel only our own slide: getAnimations() would also cancel the rail's CSS transitions.
+            examplesRailSlide?.cancel()
+            const before = rail.getBoundingClientRect().top
+            const inFlight = visualTop - before
+            // Runs after the click handlers change the DOM, before the next paint
+            requestAnimationFrame(() => {
+                const offset =
+                    inFlight - (rail.getBoundingClientRect().top - before)
+                if (Math.abs(offset) < 1) return
+                examplesRailSlide = rail.animate(
+                    [
+                        { transform: `translateY(${offset}px)` },
+                        { transform: 'none' },
+                    ],
+                    { duration: 200, easing: 'ease-out' }
+                )
+            })
+        },
+        true
+    )
+}
+
 /**
  * Initialize API documentation interactivity
  * Call this after page load or HTMX content swap
@@ -853,6 +900,7 @@ export function initApiDocs(): void {
     initApiResponseStatusTabs()
     initApiExamples()
     initApiPageActions()
+    initExamplesRailSteadying()
     // After initHighlight — gutters need final textContent line counts
     decorateApiCodeTokens()
 

@@ -4,9 +4,17 @@
 
 using Elastic.ApiExplorer.Infrastructure;
 using Elastic.ApiExplorer.Model;
+using Microsoft.AspNetCore.Html;
 using Microsoft.OpenApi;
 
 namespace Elastic.ApiExplorer.Operations;
+
+/// <summary>Required privileges and credentials for the Required authorization and Authentication sections; <paramref name="RenderMarkdown"/> renders descriptions.</summary>
+public record AuthorizationSectionModel(
+	IReadOnlyList<AuthRequirement> Requirements,
+	IReadOnlyList<PrivilegeRow> Privileges,
+	Func<string?, HtmlString> RenderMarkdown
+);
 
 public class OperationViewModel(ApiRenderContext context) : ApiViewModel(context)
 {
@@ -15,28 +23,27 @@ public class OperationViewModel(ApiRenderContext context) : ApiViewModel(context
 	/// <summary>Precomputed structural content of the page; built before the slice renders.</summary>
 	public required OperationPageModel Page { get; init; }
 
-	public IReadOnlyList<PrerequisiteRow>? Prerequisites =>
-		OpenApiXReqAuthParser.TryGetPrerequisiteRows(
-			Operation.Operation,
-			RenderContext.ApiExplorerLog,
-			Operation.Route,
-			Operation.Operation.OperationId
-		);
-
-	public IReadOnlyList<string> PrerequisiteNames =>
-		[.. (Prerequisites ?? []).Select(static r => r.Label).Where(static l => l.Length > 0)];
+	public AuthorizationSectionModel Authorization =>
+		new(Page.AuthRequirements, Page.RequiredPrivileges, markdown => RenderMarkdown(markdown));
 
 	protected override string? LayoutPageTitle => Operation.Operation.Summary ?? CurrentNavigationItem.NavigationTitle;
 
-	protected override string? LayoutPageDescription => Page.DescriptionMarkdown;
+	// Lifting the authorization text out can leave nothing in the description, and a page with no meta description is worse.
+	protected override string? LayoutPageDescription => DescriptionOrSummary(Page.DescriptionMarkdown, Operation.Operation.Summary);
+
+	internal static string? DescriptionOrSummary(string? description, string? summary) =>
+		string.IsNullOrWhiteSpace(description) ? summary : description;
 
 	protected override IReadOnlyList<ApiTocItem> GetTocItems()
 	{
 		var operation = Operation.Operation;
 		var tocItems = new List<ApiTocItem> { new("Paths", "paths") };
 
-		if (Prerequisites is { Count: > 0 })
-			tocItems.Add(new ApiTocItem("Prerequisites", "prerequisites"));
+		if (Page.RequiredPrivileges.Count > 0)
+			tocItems.Add(new ApiTocItem("Required authorization", "required-authorization"));
+
+		if (Page.AuthRequirements.Count > 0)
+			tocItems.Add(new ApiTocItem("Authentication", "authentication"));
 
 		if (Page.QueryParameters.Count > 0)
 			tocItems.Add(new ApiTocItem("Query parameters", "query-params"));

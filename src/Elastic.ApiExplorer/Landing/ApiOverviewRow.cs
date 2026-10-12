@@ -117,7 +117,7 @@ public static class ApiOverviewBuilder
 		if (item is not INodeNavigationItem<INavigationModel, INavigationItem> node)
 			return;
 
-		foreach (var navigationItem in node.NavigationItems)
+		foreach (var navigationItem in node.NavigationItems.Where(static item => !item.Hidden))
 		{
 			switch (navigationItem)
 			{
