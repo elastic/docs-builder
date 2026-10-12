@@ -118,12 +118,6 @@
 	line-height: 14px;
 }
 
-.api-page-intro .api-security-badges {
-	display: flex;
-	flex-wrap: wrap;
-	gap: 8px;
-}
-
 /* One 16px step between title, badges, servers, paths, and auth. */
 .api-page-intro {
 	display: flex;
@@ -1560,8 +1554,7 @@ button.response-status-toggle:focus {
 
 .query-param,
 .path-param,
-.prerequisite-item,
-.auth-scheme-item {
+.prerequisite-item {
 	border-bottom: 1px solid #e3e8f2;
 	padding-bottom: 16px;
 }
@@ -1589,7 +1582,8 @@ button.response-status-toggle:focus {
 
 .api-param-section-header.section-header {
 	display: flex;
-	align-items: center;
+	/* The title and the monospace summary differ in font, so centring their boxes leaves the text a pixel apart. */
+	align-items: baseline;
 	justify-content: flex-start;
 	gap: 12px;
 }
@@ -1704,12 +1698,12 @@ button.response-status-toggle:focus {
 }
 
 .api-param-summary-item code {
-	color: var(--color-ink-navy, #111c2c);
+	color: #3f4f6b;
 	font-family:
 		'Roboto Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
 		monospace;
 	font-size: 14px;
-	font-weight: 700;
+	font-weight: 500;
 	line-height: 24px;
 	background: none;
 	border: 0;
@@ -1818,42 +1812,6 @@ a.type-linked:hover {
 	line-height: 16px;
 }
 
-/* Auth scheme link — compact outlined button with a leading icon */
-.api-page-intro .api-security-badges .api-auth-button {
-	display: inline-flex;
-	align-items: center;
-	gap: 4px;
-	box-sizing: border-box;
-	height: 24px;
-	padding: 0 8px 0 6px;
-	border: 1px solid #a9c9f5;
-	border-radius: 4px;
-	background-color: #fff;
-	color: #0b64dd;
-	font-family: var(--font-body, Inter, ui-sans-serif, system-ui, sans-serif);
-	font-size: 12px;
-	font-weight: 500;
-	line-height: 16px;
-	white-space: nowrap;
-	text-decoration: none;
-}
-
-.api-page-intro .api-security-badges .api-auth-button svg {
-	flex: none;
-	width: 14px;
-	height: 14px;
-}
-
-.api-page-intro .api-security-badges .api-auth-button:hover {
-	border-color: #0b64dd;
-	background-color: #f0f6ff;
-}
-
-.api-page-intro .api-security-badges .api-auth-button:focus-visible {
-	outline: 2px solid #0b64dd;
-	outline-offset: 2px;
-}
-
 /* Type badge — Figma APIs 10079:2957 (boolean / string / read). Not markdown code. */
 .property-list .api-type-badge {
 	display: inline-flex;
@@ -1944,6 +1902,10 @@ a.type-linked:hover {
 /* Version badge - subtle grey */
 .version-badge {
 	@apply text-grey-60 bg-grey-10 rounded px-1 py-0.5 text-xs font-normal;
+}
+
+.api-title-badges .api-state-badge {
+	@apply text-grey-100 mr-2 inline text-sm font-medium;
 }
 
 /* Beta badge - orange/amber warning */
@@ -2248,6 +2210,55 @@ a.docs-reference-btn::after {
 	/* Variants list styling */
 }
 
+/* Authentication section: the credential schemes are tabs, kept compact since most readers already have auth set up. */
+.api-authentication-tabs {
+	margin-top: calc(var(--spacing) * 2);
+
+	.tabs-label {
+		padding: calc(var(--spacing) * 1.5) calc(var(--spacing) * 4);
+		font-size: 14px;
+	}
+
+	.tabs-content {
+		padding: calc(var(--spacing) * 3) calc(var(--spacing) * 4);
+	}
+}
+
+.api-authorization-panel > * + * {
+	margin-top: calc(var(--spacing) * 2);
+}
+
+/* The label is the quiet part and the privilege name the important one, so the name carries the code look. */
+.api-privileges dt {
+	padding-top: 8px;
+	font-size: 14px;
+}
+
+.api-privileges .privilege-label {
+	color: #516381;
+	font-weight: 400;
+}
+
+.api-privileges .api-type-badge {
+	padding: 0 6px;
+	font-family: var(
+		--font-mono,
+		ui-monospace,
+		SFMono-Regular,
+		Menlo,
+		monospace
+	);
+	font-size: 13px;
+	line-height: 20px;
+	color: #0b2f6b;
+}
+
+.api-privileges .privilege-join {
+	margin: 0 6px;
+	color: #516381;
+	font-size: 12px;
+}
+
 /* Union variant item - type label without tree connectors */
 .union-variant-item {
 	padding: calc(var(--spacing) * 1) 0;
@@ -2475,77 +2486,25 @@ a.docs-reference-btn::after {
 	font-weight: 500;
 }
 
+/* Prose typography (size, colour, links, headings) is inherited from .markdown-content */
 .api-operation-description {
-	color: var(--color-subdued, #516381);
-	font-family: var(--font-body, Inter, ui-sans-serif, system-ui, sans-serif);
-	font-size: 14px;
-	font-weight: 400;
-	line-height: 20px;
 	margin: 0 0 0.5rem;
 
 	> :first-child {
 		margin-top: 0;
 	}
 
-	> :last-child {
-		margin-bottom: 0;
-	}
-
-	p {
-		margin-top: 0;
-		margin-bottom: 24px;
-		color: inherit;
-		font-size: 14px;
-		line-height: 20px;
-	}
-
-	h2,
-	h3,
-	h4,
-	h5,
-	h6 {
-		margin-top: 0;
-		margin-bottom: 24px;
-		color: var(--color-subdued, #516381);
-		font-family: var(
-			--font-body,
-			Inter,
-			ui-sans-serif,
-			system-ui,
-			sans-serif
-		);
-		font-size: 14px;
-		font-weight: 600;
-		line-height: 20px;
-	}
-
 	/* Match the h2.section-header rows rendered by the operation view */
 	h2 {
+		margin-top: 0;
 		margin-bottom: 0;
 		padding-top: 40px;
 		padding-bottom: 16px;
 		border-bottom: 1px solid #e3e8f2;
 		color: var(--color-ink-navy, #111c2c);
 		font-size: 16px;
-		line-height: 24px;
-	}
-
-	strong,
-	b {
 		font-weight: 600;
-	}
-
-	a:not(.docs-reference-btn, .headerlink),
-	a.reference {
-		color: var(--color-blue-elastic, #0b64dd);
-		text-decoration: underline;
-		text-underline-offset: 2px;
-	}
-
-	a:not(.docs-reference-btn, .headerlink):hover,
-	a.reference:hover {
-		color: var(--color-blue-elastic-100, #1750ba);
-		text-decoration: underline;
+		line-height: 24px;
 	}
 
 	/* bump.sh verb badge — inherits .api-method base and color rules; only size differs */
@@ -2974,6 +2933,13 @@ button.example-response-tab:focus-visible {
 		@apply block;
 	}
 
+	/* tabs.ts marks the other panels hidden="until-found" so find-in-page reaches them. They keep no box of their own. */
+	.tabs-content[hidden='until-found'] {
+		display: block;
+		border-width: 0;
+		padding: 0;
+	}
+
 	.tabs-input:checked + .tabs-label,
 	.tabs-label:active {
 		@apply border-b-blue-elastic text-blue-elastic border-b-1;
@@ -3004,48 +2970,6 @@ button.example-response-tab:focus-visible {
 
 .api-code-sample-body {
 	min-width: 0;
-}
-
-/*
- * API tabs — forked from markdown/tabs.css so API pages can diverge
- * without affecting Myst ::::{tabs} elsewhere. Child class names
- * (tabs-input / tabs-label / tabs-content) stay shared for tabs.ts sync.
- */
-.api-tabs {
-	@apply relative mt-4 flex flex-wrap overflow-hidden;
-
-	.tabs-label {
-		@apply text-ink-light border-grey-20 z-20 -mb-[1px] flex cursor-pointer items-center border-1 px-6 py-2;
-		&:not(:nth-of-type(1)) {
-			margin-left: -1px;
-		}
-
-		&:hover {
-			@apply bg-grey-10 border-b-1 border-b-black text-black;
-		}
-	}
-
-	.tabs-input {
-		@apply absolute opacity-0;
-	}
-
-	.tabs-content {
-		@apply border-grey-20 z-0 order-99 hidden w-full border-1 px-6 pt-2 pb-6;
-	}
-
-	.tabs-input:checked + .tabs-label + .tabs-content {
-		@apply block;
-	}
-
-	.tabs-input:checked + .tabs-label,
-	.tabs-label:active {
-		@apply border-b-blue-elastic text-blue-elastic border-b-1;
-	}
-
-	.tabs-input:focus-visible + .tabs-label {
-		outline: var(--outline-size) var(--outline-style) var(--outline-color);
-		outline-offset: var(--outline-offset, var(--outline-size));
-	}
 }
 
 /* Example description - smaller font like property descriptions */
@@ -3220,9 +3144,11 @@ button.example-response-tab:focus-visible {
 }
 
 /* A tag-on is attached to its parent card, like a tab on its bottom edge: flush under it, sharing its border, with a
-   light fill and a one-line description. */
+   light fill and a one-line description. It follows its parent in the list, so this holds when the cards stack too. */
 .api-catalog .api-catalog-card-attached {
 	background: var(--color-grey-10);
+	border-top-left-radius: 0;
+	border-top-right-radius: 0;
 }
 
 .api-catalog .api-catalog-card-attached .api-catalog-desc {
@@ -3230,37 +3156,32 @@ button.example-response-tab:focus-visible {
 	line-clamp: 1;
 }
 
-/* From the width where the featured cards sit in one row. Below that they stack in one column, so a tag-on has no
-   parent above it and stays a separate card. */
+.api-catalog .api-catalog-card-parent {
+	border-bottom-left-radius: 0;
+	border-bottom-right-radius: 0;
+}
+
+/* Cancels the 1.5rem gap of the list, plus 1px so the two cards share one border. */
+.api-catalog .api-catalog-cell-variant {
+	margin-top: calc(-1.5rem - 1px);
+}
+
+/* The shared border changes colour on hover. Lift the hovered card so its whole edge shows. */
+.api-catalog .api-catalog-card-parent:hover,
+.api-catalog .api-catalog-card-attached:hover {
+	position: relative;
+	z-index: 1;
+}
+
+/* From the width where the featured cards sit in one row: parents in row 1, each tag-on in row 2 under its parent. */
 @media (min-width: 1024px) {
-	.api-catalog .api-catalog-featured {
-		margin-bottom: 0;
-	}
-
-	.api-catalog .api-catalog-tagons {
-		row-gap: 0;
-		margin-top: -1px;
-	}
-
 	.api-catalog .api-catalog-cell {
 		grid-column-start: var(--api-catalog-column);
+		grid-row: 1;
 	}
 
-	.api-catalog .api-catalog-card-parent {
-		border-bottom-left-radius: 0;
-		border-bottom-right-radius: 0;
-	}
-
-	.api-catalog .api-catalog-card-attached {
-		border-top-left-radius: 0;
-		border-top-right-radius: 0;
-	}
-
-	/* The shared border changes colour on hover. Lift the hovered card so its whole edge shows. */
-	.api-catalog .api-catalog-card-parent:hover,
-	.api-catalog .api-catalog-card-attached:hover {
-		position: relative;
-		z-index: 1;
+	.api-catalog .api-catalog-cell-variant {
+		grid-row: 2;
 	}
 }
 

@@ -32,14 +32,16 @@ public sealed record ApiCatalogGroup(
 	IReadOnlyList<ApiCatalogItem> Others
 )
 {
-	/// <summary>
-	/// The other cards in the order the grid places them: the attached tag-ons first, left to right, then the rest.
-	/// In document order an unattached card could take the cell an attached one needs and push it out of its parent's row.
-	/// </summary>
-	public IEnumerable<ApiCatalogItem> OthersInGridOrder => Others.OrderBy(o => ColumnOf(o) ?? int.MaxValue);
+	/// <summary>The other cards that are not attached under a featured card. Attached ones render right after their parent.</summary>
+	public IEnumerable<ApiCatalogItem> Unattached => Others.Where(o => ColumnOf(o) is null);
 
-	/// <summary>True when a tag-on in this group is attached under <paramref name="featured"/>.</summary>
-	public bool HasVariant(ApiCatalogItem featured) => Others.Any(o => o.ParentKey == featured.Key);
+	/// <summary>The tag-on attached under <paramref name="featured"/>, if this group has one.</summary>
+	public bool TryGetVariant(ApiCatalogItem featured, out ApiCatalogItem variant)
+	{
+		var found = Others.FirstOrDefault(o => o.ParentKey == featured.Key);
+		variant = found!;
+		return found is not null;
+	}
 
 	/// <summary>The 1-based grid column of the featured card that <paramref name="variant"/> is attached under, if it has one here.</summary>
 	public int? ColumnOf(ApiCatalogItem variant)

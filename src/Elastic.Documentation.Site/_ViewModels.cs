@@ -191,15 +191,7 @@ public record GlobalLayoutViewModel
 
 	public string FrontendConfigJson => JsonSerializer.Serialize(FrontendConfig, FrontendConfigJsonContext.Default.FrontendConfig);
 
-	public string Static(string path)
-	{
-		var staticPath = $"_static/{path.TrimStart('/')}";
-		var contentHash = StaticFileContentHashProvider.GetContentHash(path.TrimStart('/'));
-
-		var fullPath = string.IsNullOrEmpty(StaticPathPrefix) ? $"/{staticPath}" : $"{StaticPathPrefix}/{staticPath}";
-
-		return string.IsNullOrEmpty(contentHash) ? fullPath : $"{fullPath}?v={contentHash}";
-	}
+	public string Static(string path) => StaticFileContentHashProvider.GetUrl(path, StaticPathPrefix);
 
 	private string GetStaticPathPrefix()
 	{

@@ -27,7 +27,7 @@ public static partial class ApiMarkdown
 		if (string.IsNullOrEmpty(markdown))
 			return HtmlString.Empty;
 
-		var rewritten = Prepare(markdown, context.CurrentNavigation.NavigationRoot.Url);
+		var rewritten = ApiAdmonitions.Convert(Prepare(markdown, context.CurrentNavigation.NavigationRoot.Url));
 		var source = CreateVirtualSource(context);
 		var html = context.MarkdownRenderer.RenderApiDescription(rewritten, source);
 		return new HtmlString(string.IsNullOrEmpty(html) ? html : context.SanitizedHtmlCache.GetOrAdd(html, SanitizeHtml));

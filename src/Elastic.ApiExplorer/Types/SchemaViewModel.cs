@@ -31,11 +31,11 @@ public class SchemaViewModel(ApiRenderContext context) : ApiViewModel(context)
 
 		// Enum values
 		if (Page.EnumValues.Count > 0)
-			tocItems.Add(new ApiTocItem("Enum Values", "enum-values"));
+			tocItems.Add(new ApiTocItem("Enum values", "enum-values"));
 
 		// Union types (oneOf or anyOf)
 		if (Page.UnionVariants is not null)
-			tocItems.Add(new ApiTocItem("Union Types", "union-types"));
+			tocItems.Add(new ApiTocItem("Union types", "union-types"));
 
 		// Properties
 		if (Page.Properties is { Items.Count: > 0 } properties)
@@ -47,7 +47,7 @@ public class SchemaViewModel(ApiRenderContext context) : ApiViewModel(context)
 
 		// Additional properties
 		if (openApiSchema.AdditionalProperties is not null)
-			tocItems.Add(new ApiTocItem("Additional Properties", "additional-properties"));
+			tocItems.Add(new ApiTocItem("Additional properties", "additional-properties"));
 
 		// Example
 		if (openApiSchema.Examples is { Count: > 0 })

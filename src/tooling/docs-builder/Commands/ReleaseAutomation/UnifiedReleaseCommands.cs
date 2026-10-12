@@ -2,14 +2,19 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.IO.Abstractions;
 using System.Text.Json;
+using Actions.Core.Services;
 using Elastic.Changelog.Bundling;
+using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Changelog;
 using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Configuration.ReleaseSchedule;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.FileSystems;
+using Elastic.Documentation.Isolated;
+using Elastic.Documentation.Services;
 using Microsoft.Extensions.Logging;
 using Nullean.Argh;
 using Nullean.Argh.Documentation;
@@ -21,7 +26,9 @@ namespace Documentation.Builder.Commands.ReleaseAutomation;
 internal sealed class UnifiedReleaseCommands(
 	ILoggerFactory logFactory,
 	IDiagnosticsCollector collector,
-	IConfigurationContext configurationContext
+	IConfigurationContext configurationContext,
+	ICoreService githubActionsService,
+	IEnvironmentVariables environmentVariables
 )
 {
 	private const string FutureReleasesUrl = "https://elastic-release-api.s3.us-west-2.amazonaws.com/public/future-releases.json";
@@ -200,6 +207,66 @@ internal sealed class UnifiedReleaseCommands(
 		return 0;
 	}
 
+	/// <summary>
+	/// Build the unified release notes site from the bundles that <c>release unified bundle</c> wrote.
+	/// </summary>
+	/// <remarks>
+	/// <para>
+	/// The docset is created in memory from <c>products.yml</c>. Every product with
+	/// <c>features.release-notes: dra</c> gets a release notes, known issues, breaking changes and
+	/// deprecations page. No documentation folder is needed.
+	/// </para>
+	/// <para>
+	/// The command resolves the argument like <c>release unified bundle</c> and fails when a product has
+	/// no bundle for a resolved version.
+	/// </para>
+	/// </remarks>
+	/// <param name="versionOrKeyword">
+	/// A version string (e.g. <c>9.5.5</c>), <c>"current"</c>, or <c>"preview"</c>.
+	/// </param>
+	/// <param name="bundlesDir">
+	/// Folder that holds one sub-folder of bundle files per product. Defaults to <c>./bundles</c>.
+	/// </param>
+	/// <param name="output">Destination for the generated site. Defaults to <c>./site</c>. The folder is cleaned first.</param>
+	/// <param name="pathPrefix">URL path prefix prepended to every generated link.</param>
+	/// <param name="canonicalBaseUrl">Base URL written into canonical link tags.</param>
+	[Hidden]
+	[NoOptionsInjection]
+	public async Task<int> Build(
+		[Argument] string versionOrKeyword,
+		[ExpandUserProfile] DirectoryInfo? bundlesDir = null,
+		[ExpandUserProfile] DirectoryInfo? output = null,
+		string? pathPrefix = null,
+		Uri? canonicalBaseUrl = null,
+		CancellationToken ctx = default
+	)
+	{
+		using var http = new HttpClient();
+		http.DefaultRequestHeaders.UserAgent.ParseAdd("docs-builder/1.0");
+
+		var targets = await ResolveTargetsAsync(http, versionOrKeyword, ctx);
+		if (targets is null)
+			return 1;
+
+		if (targets.Count == 0)
+		{
+			_logger.LogInformation("No release targets resolved. Nothing to build.");
+			return 0;
+		}
+
+		var options = new UnifiedReleaseNotesBuildOptions
+		{
+			BundlesDirectory = bundlesDir ?? new DirectoryInfo(Path.Combine(Directory.GetCurrentDirectory(), "bundles")),
+			Output = output ?? new DirectoryInfo(Path.Combine(Directory.GetCurrentDirectory(), "site")),
+			RequiredVersions = [.. targets.Select(t => t.Version)],
+			PathPrefix = pathPrefix,
+			CanonicalBaseUrl = canonicalBaseUrl
+		};
+
+		var service = new UnifiedReleaseNotesBuildService(logFactory, configurationContext, githubActionsService, environmentVariables);
+		return await service.Build(collector, options, ctx) ? 0 : 1;
+	}
+
 	private async Task<IReadOnlyList<ReleaseTarget>?> ResolveTargetsAsync(HttpClient http, string versionOrKeyword, CancellationToken ctx)
 	{
 		if (versionOrKeyword.Equals("current", StringComparison.OrdinalIgnoreCase))
@@ -209,12 +276,9 @@ internal sealed class UnifiedReleaseCommands(
 			return await ResolvePreviewTargetsAsync(http, ctx);
 
 		// Explicit version — guard against GA then require a BC.
-		var past = await FetchJsonAsync<PastReleasesResponse>(
-			http,
-			PastReleasesUrl,
-			ReleaseScheduleJsonContext.Default.PastReleasesResponse,
-			ctx
-		);
+		var past = await FetchRequiredJsonAsync(http, PastReleasesUrl, ReleaseScheduleJsonContext.Default.PastReleasesResponse, ctx);
+		if (past is null)
+			return null;
 
 		if (ReleaseTargetResolver.IsGa(past, versionOrKeyword))
 		{
@@ -222,14 +286,11 @@ internal sealed class UnifiedReleaseCommands(
 			return [];
 		}
 
-		var future = await FetchJsonAsync<FutureReleasesResponse>(
-			http,
-			FutureReleasesUrl,
-			ReleaseScheduleJsonContext.Default.FutureReleasesResponse,
-			ctx
-		);
+		var future = await FetchRequiredJsonAsync(http, FutureReleasesUrl, ReleaseScheduleJsonContext.Default.FutureReleasesResponse, ctx);
+		if (future is null)
+			return null;
 
-		var release = future?.Releases.FirstOrDefault(r => r.Version.Equals(versionOrKeyword, StringComparison.OrdinalIgnoreCase));
+		var release = future.Releases.FirstOrDefault(r => r.Version.Equals(versionOrKeyword, StringComparison.OrdinalIgnoreCase));
 
 		if (release is null)
 		{
@@ -253,12 +314,9 @@ internal sealed class UnifiedReleaseCommands(
 
 	private async Task<IReadOnlyList<ReleaseTarget>?> ResolveCurrentTargetAsync(HttpClient http, CancellationToken ctx)
 	{
-		var past = await FetchJsonAsync<PastReleasesResponse>(
-			http,
-			PastReleasesUrl,
-			ReleaseScheduleJsonContext.Default.PastReleasesResponse,
-			ctx
-		);
+		var past = await FetchRequiredJsonAsync(http, PastReleasesUrl, ReleaseScheduleJsonContext.Default.PastReleasesResponse, ctx);
+		if (past is null)
+			return null;
 
 		var target = ReleaseTargetResolver.ResolveCurrentGa(past);
 		if (target is null)
@@ -314,62 +372,8 @@ internal sealed class UnifiedReleaseCommands(
 		return targets;
 	}
 
-	private async Task<ElasticBuildManifest?> FetchManifestAsync(HttpClient http, string url, CancellationToken ctx)
-	{
-		try
-		{
-			return await FetchJsonAsync<ElasticBuildManifest>(http, url, ReleaseScheduleJsonContext.Default.ElasticBuildManifest, ctx);
-		}
-		catch (Exception ex)
-		{
-			_logger.LogError(ex, "Failed to fetch manifest from {Url}", url);
-			return null;
-		}
-	}
-
-	private async Task<string?> ResolveChangelogConfigAsync(
-		HttpClient http,
-		string productId,
-		string repoKey,
-		string commitHash,
-		string? changelogConfigsDir,
-		CancellationToken ctx
-	)
-	{
-		// Local prototype file wins over the GitHub-fetched config.
-		if (changelogConfigsDir is not null)
-		{
-			var localPath = Path.Combine(changelogConfigsDir, $"{productId}.changelog.yml");
-			if (File.Exists(localPath))
-			{
-				_logger.LogInformation("Using prototype changelog config for '{Product}': {Path}", productId, localPath);
-				return await File.ReadAllTextAsync(localPath, ctx);
-			}
-		}
-
-		// Fall back to the changelog.yml in the product's GitHub repo at the manifest commit.
-		var candidates = new[]
-		{
-			$"https://raw.githubusercontent.com/elastic/{repoKey}/{commitHash}/docs/changelog.yml",
-			$"https://raw.githubusercontent.com/elastic/{repoKey}/{commitHash}/changelog.yml",
-		};
-
-		foreach (var url in candidates)
-		{
-			try
-			{
-				var response = await http.GetAsync(url, ctx);
-				if (response.IsSuccessStatusCode)
-					return await response.Content.ReadAsStringAsync(ctx);
-			}
-			catch
-			{
-				// network error — fall through to next candidate
-			}
-		}
-
-		return null;
-	}
+	private async Task<ElasticBuildManifest?> FetchManifestAsync(HttpClient http, string url, CancellationToken ctx) =>
+		await FetchRequiredJsonAsync(http, url, ReleaseScheduleJsonContext.Default.ElasticBuildManifest, ctx);
 
 	private async Task<int> BundleProductAsync(
 		HttpClient http,
@@ -383,7 +387,12 @@ internal sealed class UnifiedReleaseCommands(
 		CancellationToken ctx
 	)
 	{
-		var changelogYaml = await ResolveChangelogConfigAsync(http, productId, repoKey, commitHash, changelogConfigsDir, ctx);
+		var resolver = new ChangelogConfigResolver(http, new FileSystem(), _logger, collector);
+		var config = await resolver.ResolveAsync(productId, repoKey, commitHash, changelogConfigsDir, ctx);
+		if (config.Failed)
+			return 1;
+
+		var changelogYaml = config.Content;
 		if (changelogYaml is null)
 		{
 			var msg = $"Product '{productId}' (repo: elastic/{repoKey}@{commitHash[..8]}) has no changelog.yml — "
@@ -511,26 +520,5 @@ internal sealed class UnifiedReleaseCommands(
 		if (result is { Value: null, Failed: false })
 			collector.EmitError(string.Empty, $"Required document {url} was not found (404).");
 		return result.Value;
-	}
-
-	private static async Task<T?> FetchJsonAsync<T>(
-		HttpClient http,
-		string url,
-		System.Text.Json.Serialization.Metadata.JsonTypeInfo<T> typeInfo,
-		CancellationToken ctx
-	) where T : class
-	{
-		try
-		{
-			var response = await http.GetAsync(url, ctx);
-			if (!response.IsSuccessStatusCode)
-				return null;
-			var stream = await response.Content.ReadAsStreamAsync(ctx);
-			return await JsonSerializer.DeserializeAsync(stream, typeInfo, ctx);
-		}
-		catch
-		{
-			return null;
-		}
 	}
 }

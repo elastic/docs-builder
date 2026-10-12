@@ -61,18 +61,14 @@ internal static partial class IntroHeadings
 			return [];
 
 		var headings = new List<IntroHeading>();
-		var inFence = false;
+		CodeFences.Fence? openFence = null;
 		var skippedFirstH1 = false;
 		foreach (var rawLine in markdown.ReplaceLineEndings("\n").Split('\n'))
 		{
-			var line = rawLine.Trim();
-			if (IsFence(line))
-			{
-				inFence = !inFence;
-				continue;
-			}
-
-			if (inFence || !TryAtx(line, out var level, out var title))
+			// Headings are matched on the trimmed line, so fences must be tracked the same way: a fence nested in a
+			// list item is indented past the three spaces CommonMark allows at the top level.
+			var line = rawLine.TrimStart();
+			if (CodeFences.InCode(line, ref openFence) || !TryAtx(line.TrimEnd(), out var level, out var title))
 				continue;
 
 			// RenderApiDescription drops the first h1, so it is not on the page.
@@ -87,9 +83,6 @@ internal static partial class IntroHeadings
 
 		return headings;
 	}
-
-	private static bool IsFence(string line) =>
-		line.StartsWith("```", StringComparison.Ordinal) || line.StartsWith("~~~", StringComparison.Ordinal);
 
 	private static bool TryAtx(string line, out int level, out string title)
 	{

@@ -16,6 +16,7 @@ namespace Elastic.ApiExplorer.Operations;
 public partial record OperationPageModel
 {
 	public required AvailabilityBadgeData? Availability { get; init; }
+	public required string? State { get; init; }
 	public required bool IsBeta { get; init; }
 	public required ExternalDocLink? ExternalDocs { get; init; }
 	public required IList<OpenApiServer>? Servers { get; init; }
@@ -60,8 +61,11 @@ public partial record OperationPageModel
 	public required bool ShowResponseExamples { get; init; }
 	public required IReadOnlyList<ExampleScenario> Scenarios { get; init; }
 
-	/// <summary>Effective auth scheme badges. Empty when the spec declares no schemes.</summary>
-	public required IReadOnlyList<AuthSchemeBadge> AuthSchemes { get; init; }
+	/// <summary>The alternative ways to authenticate. Empty when the spec declares no schemes.</summary>
+	public required IReadOnlyList<AuthRequirement> AuthRequirements { get; init; }
+
+	/// <summary>Privileges the operation needs, from <c>x-req-auth</c> or lifted out of the description.</summary>
+	public required IReadOnlyList<PrivilegeRow> RequiredPrivileges { get; init; }
 
 	public static OperationPageModel Create(ApiOperation apiOperation, ApiRenderContext context)
 	{
@@ -85,6 +89,7 @@ public partial record OperationPageModel
 			supplemental?.DescriptionOr(operation.Description) ?? operation.Description,
 			siblings
 		);
+		var privileges = RequiredPrivilegesExtractor.Extract(operation, endpoint.Description, context.ApiExplorerLog, apiOperation.Route);
 		var requestExamples = MapExamples(
 			operation.RequestBody?.Content?.FirstOrDefault().Value?.Examples,
 			options.RenderMarkdown,
@@ -135,6 +140,7 @@ public partial record OperationPageModel
 		return new OperationPageModel
 		{
 			Availability = AvailabilityBadgeHelper.FromOperation(operation, context.BuildContext.VersionsConfiguration),
+			State = OpenApiExtensionReader.GetState(operation),
 			IsBeta = OpenApiExtensionReader.IsBeta(operation),
 			ExternalDocs = externalDocs,
 			Servers = servers,
@@ -151,7 +157,7 @@ public partial record OperationPageModel
 			RequestProperties = request.Properties,
 			RequestUnionVariants = request.UnionVariants,
 			RequestRequires = request.Requires,
-			DescriptionMarkdown = endpoint.Description,
+			DescriptionMarkdown = privileges.Description,
 			PostSections = ApiPostSection.From(context, supplemental?.PostSections ?? []),
 			RequestType = requestSchema is not null ? builder.Describe(requestSchema) : null,
 			Responses = BuildResponses(operation, analyzer, builder),
@@ -161,11 +167,8 @@ public partial record OperationPageModel
 			ShowRequestExamples = requestExamples.Count > 0 && scenarios.Any(static s => s.ShowRequest),
 			ShowResponseExamples = responseExamples.Count > 0,
 			Scenarios = scenarios,
-			AuthSchemes = OpenApiAuthSchemeResolver.Resolve(
-				operation,
-				document,
-				$"{context.CurrentNavigation.NavigationRoot.Url.TrimEnd('/')}/{ApiUrlBuilder.AuthenticationSegment}"
-			)
+			RequiredPrivileges = privileges.Rows,
+			AuthRequirements = OpenApiAuthSchemeResolver.Resolve(operation, document)
 		};
 	}
 

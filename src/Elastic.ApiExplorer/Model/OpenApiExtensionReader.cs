@@ -24,7 +24,13 @@ public static class OpenApiExtensionReader
 {
 	/// <summary>Reads a string-valued extension; null when absent or not a string.</summary>
 	public static string? TryGetString(IDictionary<string, IOpenApiExtension>? extensions, string key) =>
-		extensions?.TryGetValue(key, out var value) == true && value is JsonNodeExtension json ? json.Node.GetValue<string>() : null;
+		extensions?.TryGetValue(key, out var value) == true
+			&& value is JsonNodeExtension { Node: JsonValue jsonValue }
+			&& jsonValue.TryGetValue<string>(out var text) ? text : null;
+
+	/// <summary>Reads the raw <c>x-state</c> label (for example "Generally available; Added in 7.7.0"); null when absent or blank.</summary>
+	public static string? GetState(OpenApiOperation operation) =>
+		TryGetString(operation.Extensions, "x-state") is { } state && !string.IsNullOrWhiteSpace(state) ? state.Trim() : null;
 
 	/// <summary>The <c>x-namespace</c> and <c>x-api-name</c> pair used to group operations into endpoints.</summary>
 	public static (string? Namespace, string? ApiName) GetNamespaceAndApiName(OpenApiOperation operation) =>

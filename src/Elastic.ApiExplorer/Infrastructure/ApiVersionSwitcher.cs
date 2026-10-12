@@ -25,7 +25,7 @@ public static class ApiVersionSwitcher
 			.Select(
 				m => new ApiVersionSwitcherItem(
 					Label: m == "main" ? "latest" : $"v{m}",
-					Url: $"{ApiUrlBuilder.ProductRoot(urlPathPrefix, ApiUrlBuilder.ProductSuffix(apiKey, m))}/",
+					Url: ApiUrlBuilder.ProductRoot(urlPathPrefix, ApiUrlBuilder.ProductSuffix(apiKey, m)),
 					Selected: m == currentMoniker
 				)
 			)
