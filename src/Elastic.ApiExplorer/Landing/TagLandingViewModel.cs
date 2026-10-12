@@ -61,18 +61,11 @@ internal static partial class IntroHeadings
 			return [];
 
 		var headings = new List<IntroHeading>();
-		var inFence = false;
+		CodeFences.Fence? openFence = null;
 		var skippedFirstH1 = false;
 		foreach (var rawLine in markdown.ReplaceLineEndings("\n").Split('\n'))
 		{
-			var line = rawLine.Trim();
-			if (IsFence(line))
-			{
-				inFence = !inFence;
-				continue;
-			}
-
-			if (inFence || !TryAtx(line, out var level, out var title))
+			if (CodeFences.InCode(rawLine, ref openFence) || !TryAtx(rawLine.Trim(), out var level, out var title))
 				continue;
 
 			// RenderApiDescription drops the first h1, so it is not on the page.
@@ -87,9 +80,6 @@ internal static partial class IntroHeadings
 
 		return headings;
 	}
-
-	private static bool IsFence(string line) =>
-		line.StartsWith("```", StringComparison.Ordinal) || line.StartsWith("~~~", StringComparison.Ordinal);
 
 	private static bool TryAtx(string line, out int level, out string title)
 	{

@@ -24,6 +24,10 @@ public class ApiAdmonitionsTests
 	[Test]
 	[Arguments("info", "note")]
 	[Arguments("warn", "warning")]
+	[Arguments("note", "note")]
+	[Arguments("tip", "tip")]
+	[Arguments("important", "important")]
+	[Arguments("caution", "warning")]
 	public void Convert_BlockquoteTypeLine_BecomesDirective(string type, string directive)
 	{
 		var result = ApiAdmonitions.Convert($"Intro.\n\n> {type}\n> First line.\n> Second line.\n\nAfter.");
@@ -70,6 +74,19 @@ public class ApiAdmonitionsTests
 		var markdown = "Skill IDs to enable. Note: only restricts when set.\n\nSee also:\nNOTE: not a paragraph start.";
 
 		ApiAdmonitions.Convert(markdown).Should().Be(markdown);
+	}
+
+	[Test]
+	[Arguments("note: lowercase prose is not a callout.")]
+	[Arguments("Noted: a different word.")]
+	public void Convert_LabelLookalike_IsKept(string markdown) => ApiAdmonitions.Convert(markdown).Should().Be(markdown);
+
+	[Test]
+	public void Convert_WithoutCallouts_ReturnsTheInput()
+	{
+		var markdown = "Line one.\r\n\r\n> A quote.\r\n";
+
+		ApiAdmonitions.Convert(markdown).Should().BeSameAs(markdown);
 	}
 
 	[Test]
