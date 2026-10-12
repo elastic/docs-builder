@@ -126,7 +126,8 @@ public static partial class ApiAdmonitions
 		| RegexOptions.Multiline)]
 	private static partial Regex MayContainAdmonition();
 
-	[GeneratedRegex(@"^\s{0,3}(?<fence>`{3,}|~{3,})(?<rest>.*)$")]
+	// A fence may sit inside a blockquote, so a `> info` line within that quoted code is still literal.
+	[GeneratedRegex(@"^\s{0,3}(?:>\s?)?\s{0,3}(?<fence>`{3,}|~{3,})(?<rest>.*)$")]
 	private static partial Regex FencePattern();
 
 	[GeneratedRegex(@"^\s{0,3}>\s*(?<kind>info|warn|warning|note|tip|important|caution)\s*$", RegexOptions.IgnoreCase)]

@@ -89,6 +89,14 @@ public class ApiAdmonitionsTests
 	}
 
 	[Test]
+	public void Convert_FencedCodeInsideBlockquote_IsKept()
+	{
+		var markdown = "> ```text\n> info\n> keep me\n> ```\n\nAfter.";
+
+		ApiAdmonitions.Convert(markdown).Should().Be(markdown);
+	}
+
+	[Test]
 	public void Render_ConvertsAdmonitionsBeforeRendering()
 	{
 		var renderer = new CapturingRenderer();
