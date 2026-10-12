@@ -125,17 +125,11 @@
 	gap: 16px;
 }
 
-/* Operation / group page title — Figma APIs 10079:2802 */
+/* Operation / group page title. Size, weight and font come from .markdown-content, like a docs page title. */
 .api-page-intro h1,
 #elastic-api-v3 h1 {
 	margin: 0;
 	padding-top: 0;
-	color: var(--color-ink-navy, #111c2c);
-	font-family: var(--font-body, Inter, ui-sans-serif, system-ui, sans-serif);
-	font-size: 30px;
-	font-weight: 600;
-	line-height: 36px;
-	letter-spacing: 0;
 }
 
 .api-page-heading {
@@ -374,11 +368,6 @@
 	align-items: flex-start;
 }
 
-.api-group .api-page-heading > h1 {
-	font-size: 24px;
-	line-height: 32px;
-}
-
 .api-group .api-tag-description {
 	margin-top: 8px;
 	font-size: 16px;
@@ -509,8 +498,7 @@
 .api-index .api-index-heading {
 	column-span: all;
 	margin: 32px 0 8px;
-	font-size: 20px;
-	line-height: 28px;
+	@apply text-2xl font-semibold;
 }
 
 /* Topic pages (Authentication, Servers) sit above the index: they are read once, not browsed with the endpoints. */
@@ -583,9 +571,7 @@
 	margin: 0;
 	padding: 0 0 8px;
 	border-bottom: 1px solid var(--color-grey-20);
-	font-size: 16px;
-	font-weight: 600;
-	line-height: 24px;
+	@apply text-xl;
 }
 
 .api-index-group-title a {
@@ -728,11 +714,6 @@
 }
 
 @container api-group (min-width: 40rem) {
-	.api-group .api-page-heading > h1 {
-		font-size: 30px;
-		line-height: 36px;
-	}
-
 	.api-group-row {
 		grid-template-columns: minmax(12rem, 0.9fr) minmax(0, 1.5fr) 16px;
 		grid-template-areas: 'title routes chevron';
@@ -994,19 +975,11 @@
 	--code-pad: calc(var(--spacing) * 3);
 	/* Code taller than this scrolls in its card; api-examples-carousel.ts shows the expand button past it. */
 	--api-max-lines: 16;
-	/* API pages use Inter only — drop Mier B (font-sans) from headings/chrome */
+	/* API chrome uses Inter; headings keep the docs font (font-sans) from .markdown-content */
 	@apply font-body;
 
 	dt a {
 		@apply no-underline;
-	}
-	h1,
-	h2,
-	h3,
-	h4,
-	h5,
-	h6 {
-		@apply font-body;
 	}
 	h3 {
 		@apply border-b-grey-20 mt-6 border-b-1 pb-2;
@@ -1597,14 +1570,14 @@ button.response-status-toggle:focus {
 	gap: 8px;
 	flex: 1 1 auto;
 	min-width: 0;
-	height: 24px;
+	min-height: 24px;
 	margin: 0;
 	padding: 0;
 	border: 0;
 	background: none;
 	color: inherit;
 	font: inherit;
-	line-height: 24px;
+	line-height: inherit;
 	text-align: left;
 	cursor: pointer;
 }
@@ -1613,8 +1586,8 @@ button.response-status-toggle:focus {
 	display: flex;
 	align-items: center;
 	flex: 0 0 auto;
-	height: 24px;
-	line-height: 24px;
+	min-height: 24px;
+	line-height: inherit;
 }
 
 .api-param-chevron {
@@ -2527,7 +2500,7 @@ a.docs-reference-btn::after {
 	}
 }
 
-/* Section headings are h2. 16px sits under the 30px page title and above nested h3. */
+/* Section headings are h2. API sections are dense, so they run a step below the docs h2: 24px at weight 600. */
 #elastic-api-v3 h2.section-header,
 #schema-definition h2.section-header {
 	@apply bg-white;
@@ -2538,11 +2511,7 @@ a.docs-reference-btn::after {
 	padding-top: 40px;
 	padding-bottom: 16px;
 	border-bottom: 1px solid #e3e8f2;
-	color: var(--color-ink-navy, #111c2c);
-	font-family: var(--font-body, Inter, ui-sans-serif, system-ui, sans-serif);
-	font-size: 16px;
-	font-weight: 600;
-	line-height: 24px;
+	@apply text-2xl font-semibold;
 }
 
 /* The global .headerlink::after '#' positions against its link, so it lines up with the title, not the padded h2 */
@@ -2582,10 +2551,7 @@ a.docs-reference-btn::after {
 		padding-top: 40px;
 		padding-bottom: 16px;
 		border-bottom: 1px solid #e3e8f2;
-		color: var(--color-ink-navy, #111c2c);
-		font-size: 16px;
-		font-weight: 600;
-		line-height: 24px;
+		@apply text-2xl font-semibold;
 	}
 
 	/* bump.sh verb badge — inherits .api-method base and color rules; only size differs */
@@ -3118,11 +3084,6 @@ button.example-response-tab:focus-visible {
    so this file only holds what those utilities cannot express. */
 .api-landing-heading h1 {
 	margin: 0;
-	font-size: var(--text-4xl);
-	font-weight: 700;
-	line-height: 1.2;
-	letter-spacing: -0.5px;
-	color: var(--color-ink-dark);
 }
 
 /* The hero caps its inner width for hub pages, which would leave the centred title off-centre. */
@@ -3290,7 +3251,7 @@ button.example-response-tab:focus-visible {
 .api-landing-icon,
 .api-landing-icon svg {
 	width: auto;
-	height: 40px;
+	height: 48px;
 }
 
 /* Keep the viewport scrollbar mounted. A scrollbar that appears when a
@@ -4029,11 +3990,10 @@ html:has(.api-page-shell) {
 		margin: 0 0 16px;
 		padding: 40px 0 16px;
 		border-bottom: 1px solid #e3e8f2;
-		color: var(--color-ink-navy, #111c2c);
-		font-size: 16px;
-		font-weight: 600;
+		/* A <p role="heading">, so it takes the docs h2 type by hand */
+		@apply text-ink-dark font-sans text-2xl font-semibold;
 		letter-spacing: 0;
-		line-height: 24px;
+		line-height: 1.2em;
 		text-transform: none;
 	}
 }
