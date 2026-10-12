@@ -123,8 +123,9 @@ public sealed partial class PreviewDocset : IAsyncDisposable
 		fileSystem.File.WriteAllText(path, content);
 	}
 
+	// The set keys its files by full path, which uses the platform's separator, so a path written with slashes must be converted.
 	private MarkdownFile File(string relativePath) =>
-		_generator.DocumentationSet.TryFindDocumentByRelativePath(relativePath) as MarkdownFile
+		_generator.DocumentationSet.TryFindDocumentByRelativePath(relativePath.Replace('/', Path.DirectorySeparatorChar)) as MarkdownFile
 			?? throw new InvalidOperationException($"The sample page {relativePath} was not found.");
 
 	/// <summary>The whole page as the isolated build writes it.</summary>
