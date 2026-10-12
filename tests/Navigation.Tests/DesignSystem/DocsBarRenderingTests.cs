@@ -37,7 +37,8 @@ public class DocsBarRenderingTests : DocumentationSetNavigationTestBase
 		html.Should().Contain("id=\"docs-bar\"");
 		html.Should().Contain("href=\"/docs/guides\" aria-current=\"page\"", "the guides section is current");
 		html.Should().NotContain("href=\"/docs/reference\" aria-current=\"page\"");
-		html.Should().Contain("<details class=\"docs-bar__dropdown\" data-menu>");
+		html.Should().Contain("<details class=\"docs-bar__dropdown\" data-menu data-popover>");
+		html.Should().Contain("data-popover-panel", "the menu is shown in the top layer, so the scrolling tab list cannot clip it");
 		html.Should().Contain("Elasticsearch");
 		html.Should().Contain("rel=\"noopener noreferrer\"").And.Contain("(opens in a new tab)");
 	}
@@ -52,6 +53,14 @@ public class DocsBarRenderingTests : DocumentationSetNavigationTestBase
 			.IndexOf("id=\"elastic-nav\"", StringComparison.Ordinal)
 			.Should()
 			.BeLessThan(html.IndexOf("id=\"docs-bar\"", StringComparison.Ordinal));
+	}
+
+	[Test]
+	public async Task DocsBar_RendersTheSearchDialogThatTheShortcutAndTheNotFoundPageOpen()
+	{
+		var html = await RenderHeader(airGapped: false);
+
+		html.Should().Contain("data-search-dialog");
 	}
 
 	[Test]

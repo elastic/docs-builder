@@ -8,7 +8,7 @@
 				<li class="docs-bar__item">
 					@if (item.IsDropdown)
 					{
-						<details class="docs-bar__dropdown" data-menu>
+						<details class="docs-bar__dropdown" data-menu data-popover>
 							<summary class="docs-bar__link">
 								@if (item.Icon is { } dropdownIcon)
 								{
@@ -17,7 +17,7 @@
 								<span>@item.Title</span>
 								@await RenderPartialAsync(_Icon.Create(new IconModel { Name = "chevron_single_down", Size = IconSize.Small }))
 							</summary>
-							<div class="docs-bar__menu" aria-label="@item.Title">
+							<div class="docs-bar__menu" aria-label="@item.Title" data-popover-panel>
 								@foreach (var group in item.Groups)
 								{
 									@if (group.Label is { } label)

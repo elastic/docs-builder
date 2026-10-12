@@ -36,7 +36,7 @@
 			<li class="nav-tree__group">
 				@if (item.ShowToggle)
 				{
-					<input class="nav-tree__toggle" type="checkbox" id="@item.Id" data-nav-toggle tabindex="-1" aria-hidden="true">
+					<input class="nav-tree__toggle" type="checkbox" id="@item.Id" data-nav-toggle>
 					<label class="nav-tree__row nav-tree__row--heading" for="@item.Id">
 						@await RenderPartialAsync(_NavTreeLabel.Create(item))
 						@await RenderPartialAsync(_Icon.Create(new IconModel { Name = "chevron_single_down", Size = IconSize.Small }))
@@ -55,7 +55,7 @@
 			<li class="nav-tree__group">
 				@if (item.ShowToggle)
 				{
-					<input class="nav-tree__toggle" type="checkbox" id="@item.Id" data-nav-toggle tabindex="-1" aria-hidden="true">
+					<input class="nav-tree__toggle" type="checkbox" id="@item.Id" data-nav-toggle aria-label="Show pages under @item.NavigationTitle">
 				}
 				<div class="nav-tree__row">
 					<a class="nav-tree__link" href="@item.Url">@await RenderPartialAsync(_NavTreeLabel.Create(item))</a>

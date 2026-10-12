@@ -11,9 +11,23 @@ namespace Elastic.Documentation.Navigation.Tests.DesignSystem;
 
 public class StyleGuideExportTests
 {
-	private static async Task<ZipArchive> ExportAsync(Func<string, Task<string?>>? previewRenderer = null)
+	private static async Task<ZipArchive> ExportAsync(Func<string, Task<string?>>? previewRenderer = null, bool hashedEntry = false)
 	{
 		var folder = Directory.CreateTempSubdirectory("style-guide-export");
+		if (hashedEntry)
+		{
+			_ = Directory.CreateDirectory(Path.Join(folder.FullName, ".vite"));
+			await File.WriteAllTextAsync(
+				Path.Join(folder.FullName, ".vite", "manifest.json"),
+				"{\"Assets/ds.ts\":{\"file\":\"ds-ABC123.js\",\"name\":\"ds\",\"isEntry\":true}}",
+				TestContext.Current!.Execution.CancellationToken
+			);
+			await File.WriteAllTextAsync(
+				Path.Join(folder.FullName, "ds-ABC123.js"),
+				"export {}",
+				TestContext.Current!.Execution.CancellationToken
+			);
+		}
 		await File.WriteAllTextAsync(Path.Join(folder.FullName, "ds.css"), "body{}", TestContext.Current!.Execution.CancellationToken);
 		await File.WriteAllTextAsync(
 			Path.Join(folder.FullName, "styles.1234.css"),
@@ -43,6 +57,16 @@ public class StyleGuideExportTests
 			.Where(n => n.EndsWith(".html", StringComparison.Ordinal) && !n.Contains('/', StringComparison.Ordinal))
 			.Should()
 			.HaveCount(StyleGuideCatalog.Pages.Count + 1);
+	}
+
+	[Test]
+	public async Task Pages_ReferenceTheHashedEntryBundleThatVitePacked()
+	{
+		using var zip = await ExportAsync(hashedEntry: true);
+		var html = Read(zip, "decisions.html");
+
+		zip.Entries.Select(e => e.FullName).Should().Contain("_static/ds-ABC123.js");
+		html.Should().Contain("_static/ds-ABC123.js").And.NotContain("_static/ds.js\"");
 	}
 
 	[Test]

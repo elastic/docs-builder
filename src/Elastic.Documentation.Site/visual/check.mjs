@@ -30,6 +30,8 @@ function run(command, args, env) {
 }
 
 await withWorktree(sha, (worktree) => {
+	// The comparison must exercise this checkout, so build it first; the debug binary on disk may predate the last edit.
+	run('dotnet', ['build', 'src/tooling/docs-builder'], process.env, repoRoot)
 	const env = { ...cleanEnv(), VISUAL_DOCS_DIR: join(worktree, 'docs') }
 	run('node', ['visual/prepare.mjs'], env)
 	run('npx', ['playwright', 'test', '-c', 'visual'], env)

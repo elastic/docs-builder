@@ -321,11 +321,20 @@ public class AppliesToComponent : DesignSystemDirectiveTest
 		await Docs.DoesNotConvertToContainingHtml("<applies-to-popover");
 	}
 
-	[Test, DisplayName("opens details from a native details element with a top-layer hook")]
+	[Test, DisplayName("shows the details in a panel that the button opens")]
 	public async Task Details()
 	{
-		await Docs.ConvertsToContainingRawHtml("<details class=\"applies-popover\" data-menu data-popover>");
-		await Docs.ConvertsToContainingRawHtml("data-popover-panel");
+		await Docs.ConvertsToContainingRawHtml("class=\"applies-popover__panel\"");
+		await Docs.ConvertsToContainingRawHtml("aria-expanded=\"false\" data-applies-trigger");
+		await Docs.DoesNotConvertToContainingHtml("<details class=\"applies-popover\"");
+	}
+
+	[Test, DisplayName("keeps the inline badge in its paragraph, using phrasing elements only")]
+	public async Task InlineStaysInTheParagraph()
+	{
+		await Docs.ConvertsToContainingRawHtml("<span class=\"applies-popover applies-popover--inline\" data-applies-popover>");
+		await Docs.ConvertsToContainingRawHtml("data-applies-trigger");
+		await Docs.ConvertsToContainingRawHtml("applies-popover__trigger");
 	}
 
 	[Test, DisplayName("shows the lifecycle text when the version is not released yet")]

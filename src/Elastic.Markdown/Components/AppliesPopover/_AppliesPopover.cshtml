@@ -1,5 +1,44 @@
 @inherits RazorSlice<Elastic.Markdown.Components.AppliesPopover.AppliesPopoverModel>
-@if (Model.Interactive && Model.Popover is { } content)
+@if (Model.Interactive && Model.Popover is { } inlineContent && !Model.Block)
+{
+	@* Inside a paragraph, so only phrasing content: a details, div, p or ul start tag would close the paragraph and split the sentence. *@
+	<span class="applies-popover applies-popover--inline" data-applies-popover>
+		<button type="button" class="@Model.CssClass applies-popover__trigger" aria-expanded="false" data-applies-trigger>
+			@await RenderPartialAsync(_AppliesPopoverBadge.Create(Model))
+		</button>
+		<span class="applies-popover__panel">
+			@if (inlineContent.ProductDescription is { } inlineDescription)
+			{
+				<span class="applies-popover__description">@inlineDescription</span>
+			}
+			@if (inlineContent.Availability.Count > 0)
+			{
+				<span class="applies-popover__heading">Availability</span>
+				<span class="applies-popover__availability" role="list">
+					@foreach (var item in inlineContent.Availability)
+					{
+						<span class="applies-popover__item" role="listitem">
+							<span class="applies-popover__item-name">@item.Text</span>
+							@if (item.LifecycleDescription is { Length: > 0 } itemDescription)
+							{
+								<span class="applies-popover__item-description">@itemDescription</span>
+							}
+						</span>
+					}
+				</span>
+			}
+			@if (inlineContent.AdditionalInfo is { Length: > 0 } inlineInfo)
+			{
+				<span class="applies-popover__info">@inlineInfo</span>
+			}
+			@if (inlineContent.VersionNote is { } inlineNote)
+			{
+				<span class="applies-popover__note">@inlineNote</span>
+			}
+		</span>
+	</span>
+}
+else if (Model.Interactive && Model.Popover is { } content)
 {
 	<details class="applies-popover" data-menu data-popover>
 		<summary class="@Model.CssClass applies-popover__trigger">

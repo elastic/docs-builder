@@ -33,10 +33,21 @@
 	border-radius: 0;
 }
 
+/* The real control: hidden from sight but still in the tab order and exposed to assistive technology. Its label is the click target. */
 .nav-tree__toggle {
 	position: absolute;
+	width: 1px;
+	height: 1px;
+	margin: -1px;
+	overflow: hidden;
 	opacity: 0;
 	pointer-events: none;
+}
+
+.nav-tree__toggle:focus-visible ~ .nav-tree__row--heading,
+.nav-tree__toggle:focus-visible ~ .nav-tree__row .nav-tree__chevron {
+	outline: 3px solid var(--color-focus-ring);
+	outline-offset: -3px;
 }
 
 .nav-tree__group {

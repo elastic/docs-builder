@@ -4,6 +4,7 @@
 
 using System.IO.Compression;
 using System.Text.RegularExpressions;
+using Elastic.Documentation.Site.FileProviders;
 using Microsoft.Extensions.FileProviders;
 
 namespace Elastic.Documentation.Site.StyleGuide;
@@ -29,6 +30,16 @@ public static partial class StyleGuideExport
 	// Files that are part of the design system's entry points; everything else is pulled in by being referenced.
 	private static readonly string[] EntryPoints = ["ds.js", "ds.css", "ds-layers.css", "ds-guide.css"];
 
+	/// <summary>Vite writes the entry bundle with a content hash in its name (<c>ds-[hash].js</c>), so the logical name is looked up in its manifest.</summary>
+	internal static Dictionary<string, string> ReadEntries(IFileProvider staticFiles)
+	{
+		var manifest = staticFiles.GetFileInfo(".vite/manifest.json");
+		if (!manifest.Exists)
+			return [];
+		using var stream = manifest.CreateReadStream();
+		return StaticFileContentHashProvider.ParseManifest(stream);
+	}
+
 	// A file name as it appears in the text of a page, script or stylesheet.
 	[GeneratedRegex(@"[A-Za-z0-9_.@-]+\.(?:js|css|woff2?|ttf|png|svg|jpe?g|webp|gif|avif)")]
 	private static partial Regex AssetName();
@@ -45,7 +56,8 @@ public static partial class StyleGuideExport
 			.Where(f => !f.IsDirectory && !f.Name.EndsWith(".map", StringComparison.Ordinal))
 			.ToDictionary(f => f.Name, StringComparer.Ordinal);
 		var reached = new Dictionary<string, IFileInfo>(StringComparer.Ordinal);
-		var queue = new Queue<string>(EntryPoints.Where(available.ContainsKey));
+		var entries = ReadEntries(staticFiles);
+		var queue = new Queue<string>(EntryPoints.Select(e => entries.GetValueOrDefault(e, e)).Where(available.ContainsKey));
 		foreach (var page in pages)
 			Enqueue(AssetName().Matches(page).Select(m => m.Value));
 
@@ -79,9 +91,13 @@ public static partial class StyleGuideExport
 	{
 		using var stream = new MemoryStream();
 		var pages = new List<(string Name, string Html)>();
+		var entries = ReadEntries(staticFiles);
+
+		string Emitted(string path) => entries.GetValueOrDefault(path, path);
+
 		foreach (var page in StyleGuideCatalog.Pages)
 		{
-			var html = await StyleGuideCatalog.RenderPageAsync(page.Slug, path => $"{StaticFolder}/{path}", offline: true, ctx);
+			var html = await StyleGuideCatalog.RenderPageAsync(page.Slug, path => $"{StaticFolder}/{Emitted(path)}", offline: true, ctx);
 			if (html is null)
 				continue;
 			var relinked = RelinkPages(html);
@@ -93,7 +109,7 @@ public static partial class StyleGuideExport
 
 		foreach (var name in LayoutSamples.Names)
 		{
-			if (await LayoutSamples.RenderAsync(name, path => $"../{StaticFolder}/{path}", ctx) is { } sample)
+			if (await LayoutSamples.RenderAsync(name, path => $"../{StaticFolder}/{Emitted(path)}", ctx) is { } sample)
 				pages.Add(($"samples/{name}.html", sample));
 		}
 

@@ -141,3 +141,56 @@
 .applies-popover__note a {
 	color: var(--color-accent);
 }
+
+/*
+ * The inline form sits inside a paragraph, so it is built from phrasing elements only: a button and spans. Without script the panel
+ * opens while the button has focus; once script has bound it, a click toggles it and Escape or a click elsewhere closes it.
+ */
+.applies-popover--inline > .applies-popover__trigger {
+	padding: 0;
+	appearance: none;
+	background: var(--color-surface);
+	color: inherit;
+	font: inherit;
+	text-align: left;
+}
+
+.applies-popover--inline > .applies-popover__panel {
+	display: none;
+}
+
+.applies-popover--inline:not([data-applies-bound]):focus-within
+	> .applies-popover__panel,
+.applies-popover--inline[data-open] > .applies-popover__panel {
+	display: block;
+}
+
+.applies-popover--inline:focus-within,
+.applies-popover--inline[data-open] {
+	z-index: var(--z-overlay);
+}
+
+.applies-popover--inline > .applies-popover__trigger:hover,
+.applies-popover--inline[data-open] > .applies-popover__trigger {
+	border-color: var(--color-accent);
+}
+
+.applies-popover--inline .applies-popover__description,
+.applies-popover--inline .applies-popover__heading,
+.applies-popover--inline .applies-popover__info,
+.applies-popover--inline .applies-popover__note,
+.applies-popover--inline .applies-popover__item-name,
+.applies-popover--inline .applies-popover__item-description {
+	display: block;
+}
+
+.applies-popover--inline .applies-popover__item-name {
+	color: var(--color-accent);
+	font-weight: var(--weight-semibold);
+}
+
+.applies-popover--inline .applies-popover__item-description {
+	margin-top: var(--space-1);
+	color: var(--color-text-muted);
+	font-size: var(--text-xs);
+}

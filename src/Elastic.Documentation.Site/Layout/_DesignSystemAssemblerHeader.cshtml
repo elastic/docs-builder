@@ -3,6 +3,7 @@
 @using Elastic.Documentation.Site.Components.Navigation.DocsBar
 @using Elastic.Documentation.Site.Components.Navigation.LinkMenu
 @using Elastic.Documentation.Site.Components.Chrome.SiteHeader
+@using Elastic.Documentation.Site.Components.Overlays.SearchDialog
 @{
 	var currentSectionId = Model.CurrentNavigationItem.NavigationRoot?.Id;
 	var apiChrome = Model.PageFeedbackSurface == "api";
@@ -82,4 +83,6 @@ else
 			}
 			: null
 	}))
+	@* The elastic.co masthead brings its own search box, but the Ctrl+K shortcut and the 404 page's search button open this dialog. *@
+	@await RenderPartialAsync(_SearchDialog.Create(new SearchDialogModel()))
 }

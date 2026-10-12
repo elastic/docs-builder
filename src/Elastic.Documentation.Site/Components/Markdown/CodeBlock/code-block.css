@@ -53,6 +53,11 @@
 		border-color var(--duration-fast) var(--ease-standard);
 }
 
+/* display above would otherwise win over the hidden attribute, and the button cannot work until the script has bound it. */
+.code-block__copy[hidden] {
+	display: none;
+}
+
 .code-block__copy:hover {
 	border-color: var(--color-code-keyword);
 	background: color-mix(in oklab, var(--color-code-text) 16%, transparent);

@@ -16,7 +16,11 @@ const siteRelative = 'src/Elastic.Documentation.Site'
 const args = process.argv.slice(2)
 const refIndex = args.indexOf('--ref')
 const ref = refIndex === -1 ? 'origin/main' : args[refIndex + 1]
-const requested = args.filter((a, i) => a !== '--ref' && i !== refIndex + 1)
+// Drop `--ref` and its value, and only those: without the option there is nothing to drop (an index of -1 would drop the first host).
+const requested =
+	refIndex === -1
+		? args
+		: args.filter((_, i) => i !== refIndex && i !== refIndex + 1)
 const hosts =
 	requested.length > 0
 		? requested

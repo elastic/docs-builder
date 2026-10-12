@@ -93,6 +93,14 @@
 	box-shadow: var(--shadow-slab-sm);
 }
 
+/* The tab list scrolls sideways, which would clip a menu hanging below it, so the script shows the menu in the top layer instead. */
+.docs-bar__menu[popover] {
+	position: fixed;
+	inset: auto;
+	margin: 0;
+	overflow: auto;
+}
+
 .docs-bar__group {
 	margin: 0;
 	padding: var(--space-2) var(--space-4) var(--space-1);
