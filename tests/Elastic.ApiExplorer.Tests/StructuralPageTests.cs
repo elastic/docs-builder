@@ -32,9 +32,20 @@ public class StructuralPageTests(ApiExplorerFixture fixture)
 			.Subject;
 
 		authentication.Url.Should().Be("/api/doc/fixture/authentication");
+		authentication.Hidden.Should().BeTrue("the page stays for old links but is not listed in the nav");
+		servers.Hidden.Should().BeFalse();
 		authentication.NavigationTitle.Should().Be("Authentication");
 		servers.Url.Should().Be("/api/doc/fixture/servers");
 		servers.NavigationTitle.Should().Be("Servers");
+	}
+
+	[Test]
+	public void Overview_ListsServersButNotTheHiddenAuthenticationPage()
+	{
+		var rows = ApiOverviewBuilder.Build(fixture.Navigation);
+
+		rows.Select(row => row.Url).Should().Contain("/api/doc/fixture/servers");
+		rows.Select(row => row.Url).Should().NotContain("/api/doc/fixture/authentication");
 	}
 
 	[Test]

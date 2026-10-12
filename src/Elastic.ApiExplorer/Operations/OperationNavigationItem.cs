@@ -36,8 +36,7 @@ public record ApiOperation(
 	public Task<string?> RenderCommonMarkAsync(ApiRenderContext context, OperationPageModel? pageModel, Cancel ctx = default)
 	{
 		var page = pageModel ?? OperationPageModel.Create(this, context);
-		var prerequisites = OpenApiXReqAuthParser.TryGetPrerequisiteLines(Operation, context.ApiExplorerLog, Route, Operation.OperationId);
-		return Task.FromResult<string?>(OperationCommonMark.Write(this, page, prerequisites, context));
+		return Task.FromResult<string?>(OperationCommonMark.Write(this, page, context));
 	}
 }
 
