@@ -34,6 +34,9 @@ export default defineConfig({
         command: `node host.mjs ${host} ${hostPorts[host]}`,
         url: `http://localhost:${hostPorts[host]}`,
         reuseExistingServer: !!process.env.VISUAL_REUSE,
+        // A host that fails to start explains itself in the test output.
+        stdout: 'pipe',
+        stderr: 'pipe',
         timeout: 180_000,
     })),
 })

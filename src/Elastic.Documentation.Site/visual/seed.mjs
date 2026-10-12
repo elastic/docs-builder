@@ -2,9 +2,9 @@
 // npm run visual:seed [-- --ref origin/main] [isolated|assembler|codex ...]
 // The baselines are the flag-off output of the ref. They are written to the ignored visual/__snapshots__/ and never committed.
 import { cleanEnv } from './host.mjs'
+import { git, withWorktree } from './worktree.mjs'
 import { spawnSync } from 'node:child_process'
-import { mkdtempSync, rmSync } from 'node:fs'
-import { tmpdir } from 'node:os'
+import { existsSync, readdirSync, rmSync, writeFileSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -57,11 +57,22 @@ function assertSnapshotsIgnored() {
 
 assertSnapshotsIgnored()
 
-const worktree = mkdtempSync(join(tmpdir(), 'visual-seed-'))
-try {
-	run('git', ['fetch', '--quiet', 'origin'])
-	run('git', ['worktree', 'add', '--detach', worktree, ref])
+// Baselines of the hosts being seeded are replaced whole, so files from an earlier seed never mix with the new ones.
+function clearBaselines() {
+	const root = join(here, '__snapshots__')
+	if (!existsSync(root)) return
+	for (const dir of readdirSync(root)) {
+		if (hosts.some((host) => dir.startsWith(`${host}-`)))
+			rmSync(join(root, dir), { recursive: true, force: true })
+	}
+}
 
+clearBaselines()
+
+run('git', ['fetch', '--quiet', 'origin'])
+const sha = git(['rev-parse', `${ref}^{commit}`])
+
+await withWorktree(sha, (worktree) => {
 	const baseSite = join(worktree, siteRelative)
 	run('npm', ['ci'], { cwd: baseSite })
 	run('npm', ['run', 'build'], { cwd: baseSite })
@@ -74,6 +85,8 @@ try {
 			worktree,
 			'.artifacts/bin/docs-builder/debug/docs-builder.dll'
 		),
+		// The binary reads its static files and config from the checkout it runs in, so run the whole site from the worktree.
+		VISUAL_ROOT: worktree,
 		VISUAL_DOCS_DIR: join(worktree, 'docs'),
 		VISUAL_HOSTS: hosts.join(','),
 	}
@@ -85,13 +98,9 @@ try {
 		cwd: siteDir,
 		env,
 	})
-	console.log(
-		`Seeded ${hosts.join(', ')} baselines from ${ref}. Compare this branch with: npm run visual:check`
-	)
-} finally {
-	spawnSync('git', ['worktree', 'remove', '--force', worktree], {
-		cwd: repoRoot,
-		stdio: 'inherit',
-	})
-	rmSync(worktree, { recursive: true, force: true })
-}
+})
+
+writeFileSync(join(here, '__snapshots__', '.seed-ref'), `${sha}\n`)
+console.log(
+	`Seeded ${hosts.join(', ')} baselines from ${ref} (${sha}). Compare this branch with: npm run visual:check`
+)

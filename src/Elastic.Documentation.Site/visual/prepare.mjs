@@ -8,7 +8,8 @@ import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const here = dirname(fileURLToPath(import.meta.url))
-const repoRoot = resolve(here, '../../..')
+// VISUAL_ROOT points at another checkout whose binary, static files and config are used instead of this one, as the seed does for its base ref.
+const repoRoot = process.env.VISUAL_ROOT ?? resolve(here, '../../..')
 const dll =
 	process.env.DOCS_BUILDER_DLL ??
 	join(repoRoot, '.artifacts/bin/docs-builder/debug/docs-builder.dll')
