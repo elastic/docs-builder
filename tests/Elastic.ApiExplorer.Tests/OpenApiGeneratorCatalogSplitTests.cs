@@ -225,8 +225,15 @@ public class OpenApiGeneratorCatalogSplitTests
 		var catalogHtml = context.WriteFileSystem.File.ReadAllText(Path.Join(outputRoot, "api", "index.html"));
 		productHtml.Should().Contain("id=\"api-hub-switcher\"");
 		productHtml.Should().Contain("<h1>Elasticsearch main</h1>");
+		productHtml.Should().Contain("<option value=\"/docs/api\">Back to hub</option>");
 		productHtml.Should().Contain("<option value=\"/docs/api/doc/elasticsearch\" selected>Elasticsearch main</option>");
-		productHtml.Should().Contain("Back to hub");
+		productHtml.Should().Contain(">APIs<");
+		productHtml.Should().Contain("href=\"/docs/api/doc/elasticsearch/operation/operation-ping\"");
+		productHtml.Should().NotContain("href=\"/docs/api/doc/elasticsearch/operation/operation-ping/\"");
+		productHtml.Should().NotContain("value=\"/docs/api/\"");
+		productHtml.Should().NotContain("value=\"/docs/api/doc/elasticsearch/\"");
+		catalogHtml.Should().Contain("<a href=\"/docs/api/doc/elasticsearch\" aria-labelledby");
+		catalogHtml.Should().NotContain("href=\"/docs/api/doc/elasticsearch/\"");
 		catalogHtml.Should().NotContain("id=\"api-hub-switcher\"");
 		catalogHtml.Should().Contain("<h1>Elastic APIs</h1>");
 		catalogHtml.Should().Contain("api-card api-catalog-card");
@@ -259,7 +266,7 @@ public class OpenApiGeneratorCatalogSplitTests
 
 		var productHtml = context.WriteFileSystem.File.ReadAllText(Path.Join(outputRoot, "api", "doc", "elasticsearch", "index.html"));
 		productHtml.Should().Contain("id=\"api-hub-switcher\"");
-		productHtml.Should().Contain("<option value=\"/docs/api/\">Back to hub</option>");
+		productHtml.Should().Contain("<option value=\"/docs/api\">Back to hub</option>");
 		productHtml.Should().Contain("<option value=\"/docs/api/doc/elasticsearch\" selected>Elasticsearch</option>");
 		productHtml.Should().Contain("<option value=\"/docs/api/doc/kibana\">Kibana</option>");
 	}
