@@ -105,6 +105,14 @@ public class ApiAdmonitionsTests
 	}
 
 	[Test]
+	public void Convert_QuotedFenceEndsWithItsBlockquote()
+	{
+		var result = ApiAdmonitions.Convert("> ```text\n> example\n\nNOTE: Actual note.");
+
+		result.Should().Be("> ```text\n> example\n\n:::{note}\nActual note.\n:::");
+	}
+
+	[Test]
 	public void Render_ConvertsAdmonitionsBeforeRendering()
 	{
 		var renderer = new CapturingRenderer();

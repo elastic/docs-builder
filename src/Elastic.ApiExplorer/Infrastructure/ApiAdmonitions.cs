@@ -67,6 +67,10 @@ public static partial class ApiAdmonitions
 
 	private static bool IsFenceLine(string line, ref Fence? openFence)
 	{
+		// A fence inside a blockquote cannot outlive it: the first unquoted line ends both.
+		if (openFence is { Quoted: true } && !QuoteLinePattern().IsMatch(line))
+			openFence = null;
+
 		var match = FencePattern().Match(line);
 		if (!match.Success)
 			return false;
