@@ -195,6 +195,110 @@ public class BundleGitRefTests() : ChangelogTestBase()
 	}
 
 	[Test]
+	public async Task ProfileMode_ConfigWithoutRepo_UsesTheRepositoryFromTheArguments()
+	{
+		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
+		FileSystem.Directory.CreateDirectory(outputDir);
+		// language=yaml
+		var configContent =
+			$"""
+			pivot:
+			  types:
+			    feature: ">feature"
+			    bug-fix: ">bug"
+			    breaking-change: ">breaking"
+			bundle:
+			  output_directory: {outputDir}
+			  profiles:
+			    promotion:
+			      product: cloud-hosted
+			""";
+		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog.yml");
+		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current!.Execution.CancellationToken);
+
+		var rangeService = RangeService(100);
+		var service = Service(PoolHandler(), rangeService);
+		var input = new BundleChangelogsArguments
+		{
+			Profile = "promotion",
+			ProfileArgument = "2026-08-13",
+			Config = configPath,
+			StartGitRef = StartRef,
+			EndGitRef = EndRef,
+			Repo = "widget",
+			Owner = "elastic"
+		};
+
+		var result = await service.BundleChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
+
+		result.Should().BeTrue(
+			$"Errors: {string.Join("; ", Collector.Diagnostics.Where(d => d.Severity == Severity.Error).Select(d => d.Message))}"
+		);
+		_ = A.CallTo(
+			() => rangeService.ResolvePullRequestsAsync(
+				A<IDiagnosticsCollector>._,
+				A<CommitRangeArguments>.That.Matches(a => a.Repo == "widget" && a.Owner == "elastic"),
+				A<Cancel>._
+			)
+		).MustHaveHappenedOnceExactly();
+	}
+
+	[Test]
+	public async Task ProfileMode_CdnNotesForTheTarget_AreMergedIntoTheBundle()
+	{
+		// language=yaml
+		const string note =
+			"""
+			title: Heads up for the August release
+			type: known-issue
+			products:
+			  - product: cloud-hosted
+			    target: 2026-08-13
+			    lifecycle: ga
+			""";
+		var handler = new StubHandler(req =>
+		{
+			var path = req.RequestUri!.AbsolutePath;
+			if (path.EndsWith("/registry.json", StringComparison.Ordinal))
+				return Json(RegistryJson);
+			if (path.EndsWith("100.yaml", StringComparison.Ordinal))
+				return Yaml(PoolEntryByName);
+			if (path.EndsWith("sturdier-snapshots.yaml", StringComparison.Ordinal))
+				return Yaml(PoolEntryByPrs);
+			if (path.EndsWith("notes-2026-08-13.json", StringComparison.Ordinal))
+				return Json(/*lang=json,strict*/ """{"schema_version":1,"notes":[{"path":"main/note-heads-up.yml","bundle_seq":0}]}""");
+			if (path.EndsWith("note-heads-up.yml", StringComparison.Ordinal))
+				return Yaml(note);
+			return new HttpResponseMessage(HttpStatusCode.NotFound);
+		});
+		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
+		FileSystem.Directory.CreateDirectory(outputDir);
+		var configPath = await WriteProfileConfig(outputDir);
+		var service = Service(handler, RangeService(100));
+		var input = new BundleChangelogsArguments
+		{
+			Profile = "promotion",
+			ProfileArgument = "2026-08-13",
+			Config = configPath,
+			StartGitRef = StartRef,
+			EndGitRef = EndRef
+		};
+
+		var result = await service.BundleChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
+
+		result.Should().BeTrue(
+			$"Errors: {string.Join("; ", Collector.Diagnostics.Where(d => d.Severity == Severity.Error).Select(d => d.Message))}"
+		);
+		var bundle = await FileSystem.File.ReadAllTextAsync(
+			FileSystem.Directory.GetFiles(outputDir, "*.yaml").Single(),
+			TestContext.Current!.Execution.CancellationToken
+		);
+		bundle.Should().Contain("Faster hosted search");
+		bundle.Should().Contain("Heads up for the August release");
+	}
+
+	[Test]
 	public async Task ProfileMode_DryRun_ResolvesButWritesNothing()
 	{
 		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());

@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using Elastic.Documentation.Configuration.Products;
+using Elastic.Documentation.Configuration.ReleaseSchedule;
 
 namespace Elastic.Documentation.Isolated;
 
@@ -25,12 +26,7 @@ public static class UnifiedReleaseNotesDocset
 
 	/// <summary>The products that appear in the docset, in navigation order.</summary>
 	public static IReadOnlyList<Product> SelectProducts(IEnumerable<Product> products) =>
-		[
-			.. products.Where(p => p.Features.ReleaseNotes == ReleaseNotesPath.DailyReleasableArtifacts).OrderBy(
-				p => p.Id,
-				StringComparer.Ordinal
-			)
-		];
+		[.. UnifiedBundlePlanner.SelectDraProducts(products).OrderBy(p => p.Id, StringComparer.Ordinal)];
 
 	/// <summary>Where the bundle files of a product live, relative to the docset root.</summary>
 	public static string BundlesPath(string productId) => $"{BundlesFolder}/{productId}";
