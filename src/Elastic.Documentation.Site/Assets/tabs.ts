@@ -78,10 +78,19 @@ function panelFor(input: HTMLInputElement): HTMLElement | null {
 }
 
 /**
+ * A browser that does not know hidden="until-found" treats it as plain hidden and the CSS that undoes display: none
+ * would then show every panel, so those browsers keep the CSS-only tabs (the checked tab's panel is the one shown).
+ */
+function supportsUntilFound(): boolean {
+    return 'onbeforematch' in document
+}
+
+/**
  * Only the selected tab's panel is shown. The others use hidden="until-found" instead of display: none, so the
  * browser's find-in-page still searches them; `onBeforeMatch` then selects the tab that holds the match.
  */
 function syncPanels(root: ParentNode = document) {
+    if (!supportsUntilFound()) return
     root.querySelectorAll<HTMLInputElement>('.tabs-input').forEach((input) => {
         const panel = panelFor(input)
         const hide = !input.checked

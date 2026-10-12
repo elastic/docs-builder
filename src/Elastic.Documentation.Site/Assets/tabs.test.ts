@@ -18,8 +18,37 @@ function tabSet(): string {
 const input = (id: string) => document.getElementById(id) as HTMLInputElement
 const panel = (id: string) => document.getElementById(id) as HTMLElement
 
+/** The object in the prototype chain that defines `onbeforematch`, which is what the feature check looks for. */
+function beforeMatchOwner(): object | null {
+    let owner: object | null = document
+    while (
+        owner &&
+        !Object.prototype.hasOwnProperty.call(owner, 'onbeforematch')
+    )
+        owner = Object.getPrototypeOf(owner)
+    return owner
+}
+
+const supportedOwner = beforeMatchOwner()
+const supportedDescriptor = supportedOwner
+    ? Object.getOwnPropertyDescriptor(supportedOwner, 'onbeforematch')
+    : undefined
+
+/** jsdom may or may not define beforematch support, so each test sets the browser feature on or off by hand. */
+function setUntilFoundSupport(supported: boolean) {
+    if (supported && !('onbeforematch' in document))
+        Object.defineProperty(
+            supportedOwner ?? document,
+            'onbeforematch',
+            supportedDescriptor ?? { value: null, configurable: true }
+        )
+    if (!supported && supportedOwner && 'onbeforematch' in document)
+        delete (supportedOwner as Record<string, unknown>).onbeforematch
+}
+
 describe('tabs find-in-page', () => {
     beforeEach(() => {
+        setUntilFoundSupport(true)
         document.body.innerHTML = tabSet()
         window.sessionStorage.clear()
         initTabs()
@@ -66,5 +95,18 @@ describe('tabs find-in-page', () => {
 
         expect(input('t1').checked).toBe(true)
         expect(panel('p1').hasAttribute('hidden')).toBe(false)
+    })
+
+    it('leaves the panels alone in a browser without hidden="until-found"', () => {
+        setUntilFoundSupport(false)
+        document.body.innerHTML = tabSet()
+
+        initTabs()
+        input('t1').checked = true
+        input('t1').dispatchEvent(new Event('change', { bubbles: true }))
+
+        expect(panel('p0').hasAttribute('hidden')).toBe(false)
+        expect(panel('p1').hasAttribute('hidden')).toBe(false)
+        expect(panel('p2').hasAttribute('hidden')).toBe(false)
     })
 })
