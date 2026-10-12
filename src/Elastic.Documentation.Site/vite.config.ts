@@ -28,6 +28,8 @@ export default defineConfig({
         outDir: '_static',
         emptyOutDir: false,
         sourcemap: true,
+        // Razor resolves `main.js` to the hashed entry through `.vite/manifest.json`.
+        manifest: true,
         rollupOptions: {
             input: {
                 main: path.resolve(__dirname, 'Assets/main.ts'),
@@ -37,9 +39,12 @@ export default defineConfig({
                 codex: path.resolve(__dirname, 'Assets/codex.css'),
             },
             output: {
+                // Chunks import shared code back from the entry by file name. A content-hashed
+                // name keeps that import and the <script> tag on one URL; `main.js?v=hash`
+                // next to `./main.js` made the browser evaluate the entry twice.
                 entryFileNames: (chunkInfo) => {
                     if (chunkInfo.name === 'main') {
-                        return 'main.js'
+                        return 'main-[hash].js'
                     }
 
                     return `${chunkInfo.name}.js`

@@ -39,7 +39,7 @@
   <Target Name="EnsureSkipNpmBuildArtifacts"
           BeforeTargets="NpmInstall;NpmRunBuild"
           Condition="'$(SkipNpmBuild)' == 'true'">
-    <Error Condition="!Exists('_static/main.js') Or !Exists('_static/styles.css') Or !Exists('_static/assembler.css') Or !Exists('_static/isolated.css') Or !Exists('_static/codex.css')"
+    <Error Condition="!Exists('_static/.vite/manifest.json') Or !Exists('_static/styles.css') Or !Exists('_static/assembler.css') Or !Exists('_static/isolated.css') Or !Exists('_static/codex.css')"
            Text="SkipNpmBuild is set but one or more _static artifacts are missing. Run a full frontend build first." />
   </Target>
 
@@ -85,17 +85,19 @@
           BeforeTargets="BeforeBuild"
           Condition="'$(DesignTimeBuild)' != 'true' And '$(SkipNpmBuild)' != 'true'"
           Inputs="@(NpmBuildInputFiles)"
-          Outputs="_static/.build-stamp;_static/main.js;_static/styles.css">
+          Outputs="_static/.build-stamp;_static/.vite/manifest.json;_static/styles.css">
     <Message Text="Building frontend with version: $(MinVerVersion)" Importance="high" />
     <!-- Only remove content-hashed chunk/asset files from prior Vite runs so they
          don't accumulate across builds. This runs inside NpmRunBuild so it only fires
          when the build itself runs: a separate BeforeTargets target would also run when
          NpmRunBuild is skipped as up to date, deleting chunks that nothing regenerates.
-         Do NOT list the stable named outputs here (main.js, styles.css, etc.). -->
+         Do NOT list the stable named outputs here (.vite/manifest.json, styles.css, etc.). The entry
+         bundle is content-hashed (main-[hash].js), so stale copies are removed like chunks. -->
     <RemoveDir Directories="_static/assets" Condition="Exists('_static/assets')" />
     <ItemGroup>
       <ViteGeneratedFiles Include="_static/asset-*" />
       <ViteGeneratedFiles Include="_static/chunk-*" />
+      <ViteGeneratedFiles Include="_static/main-*" />
       <OldHashedBundles Include="_static/*.????????*.js" />
       <OldHashedBundles Include="_static/*.????????*.css" />
     </ItemGroup>
@@ -110,6 +112,9 @@
 
   <Target Name="EmbedGeneratedAssets" DependsOnTargets="NpmRunBuild" BeforeTargets="BeforeBuild">
     <ItemGroup>
+      <!-- Explicit name: MSBuild would turn the ".vite" folder into "_vite", but EmbeddedFileProvider
+           looks the file up by its path with separators replaced by dots. -->
+      <EmbeddedResource Include="_static/.vite/manifest.json" LogicalName="Elastic.Documentation.Site._static..vite.manifest.json" Watch="false" />
       <EmbeddedResource Include="_static/**/*.js" Watch="false" />
       <EmbeddedResource Include="_static/**/*.js.map" Watch="false" Condition="'$(Configuration)' == 'Debug'" />
       <EmbeddedResource Include="_static/**/*.css" Watch="false" />
