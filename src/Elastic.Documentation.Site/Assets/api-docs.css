@@ -1949,7 +1949,7 @@ a.type-linked:hover {
 }
 
 .api-title-badges .api-state-badge {
-	@apply text-grey-100 bg-grey-10 border-grey-20 mr-2 inline rounded border px-1.5 py-px text-xs font-medium whitespace-nowrap;
+	@apply text-grey-100 bg-grey-20 mr-2 inline rounded-full px-2 py-px text-xs font-medium whitespace-nowrap;
 }
 
 /* Beta badge - orange/amber warning */
