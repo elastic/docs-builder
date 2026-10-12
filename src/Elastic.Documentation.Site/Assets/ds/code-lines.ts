@@ -10,19 +10,22 @@ export function splitLines(html: string): string[] {
     const open: string[] = []
     const lines: string[] = []
     let line = ''
+    let hasText = false
 
     for (const token of html.match(TOKEN) ?? []) {
         if (token === '\n') {
             lines.push(line + '</span>'.repeat(open.length) + '\n')
             line = open.join('')
+            hasText = false
         } else {
             if (token.startsWith('</')) open.pop()
             else if (token.startsWith('<')) open.push(token)
+            else hasText = true
             line += token
         }
     }
-    if (line.replace(/<[^>]+>/g, '') !== '')
-        lines.push(line + '</span>'.repeat(open.length))
+    // A trailing newline leaves only the reopened tags, which is not a line.
+    if (hasText) lines.push(line + '</span>'.repeat(open.length))
 
     return lines.map((l) => `<span class="${LINE_CLASS}">${l}</span>`)
 }

@@ -41,18 +41,20 @@ export async function querySearch(
     return data.results ?? []
 }
 
-// Excerpts come with <mark> highlights. Build them from text nodes so nothing from the index is ever parsed as HTML.
+// Excerpts come with <mark> highlights. Parse them into an inert document and copy text only, so nothing from the index is ever
+// inserted as HTML and any other markup is reduced to its text.
 export function appendExcerpt(target: HTMLElement, excerpt: string) {
     target.replaceChildren()
-    excerpt.split(/(<mark>.*?<\/mark>)/gs).forEach((part) => {
-        if (!part) return
-        const marked = /^<mark>(.*)<\/mark>$/s.exec(part)
-        if (marked) {
+    const { body } = new DOMParser().parseFromString(excerpt, 'text/html')
+    body.childNodes.forEach((node) => {
+        const text = node.textContent
+        if (!text) return
+        if (node instanceof Element && node.localName === 'mark') {
             const mark = document.createElement('mark')
-            mark.textContent = marked[1].replace(/<[^>]*>/g, '')
+            mark.textContent = text
             target.append(mark)
         } else {
-            target.append(document.createTextNode(part.replace(/<[^>]*>/g, '')))
+            target.append(document.createTextNode(text))
         }
     })
 }

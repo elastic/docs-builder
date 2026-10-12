@@ -62,6 +62,20 @@ describe('appendExcerpt', () => {
         expect(target.querySelector('img')).toBeNull()
         expect(target.querySelector('mark')!.textContent).toBe('hit')
     })
+
+    it('reduces nested and malformed markup to its text', () => {
+        const target = document.createElement('span')
+        appendExcerpt(
+            target,
+            '<<script>script>alert(1)</script> <b>bold</b> <mark>hit <i>it</i></mark>'
+        )
+
+        expect(target.querySelector('script')).toBeNull()
+        expect(target.querySelector('b')).toBeNull()
+        expect(target.querySelector('i')).toBeNull()
+        expect(target.querySelector('mark')!.textContent).toBe('hit it')
+        expect(target.textContent).toContain('bold')
+    })
 })
 
 describe('search dialog', () => {
