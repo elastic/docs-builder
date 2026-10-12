@@ -533,10 +533,10 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture)
 			.Text
 			.RegularExpressions
 			.Regex
-			.Match(html, $"id=\"{anchorId}\"([\\s\\S]*?)aria-expanded=\"(true|false)\"([\\s\\S]*?)(show|hide) properties");
+			.Match(html, $"id=\"{anchorId}\"([\\s\\S]*?)aria-expanded=\"(true|false)\"([\\s\\S]*?)(show|hide) parameters");
 		match.Success.Should().BeTrue($"property {anchorId} renders an expand control");
 		match.Groups[2].Value.Should().Be("false", $"{anchorId} starts collapsed");
-		match.Groups[4].Value.Should().Be("show", $"{anchorId} offers show properties");
+		match.Groups[4].Value.Should().Be("show", $"{anchorId} offers show parameters");
 		html.Should().Contain($"id=\"{anchorId}-children\"");
 	}
 

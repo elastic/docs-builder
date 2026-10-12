@@ -62,7 +62,7 @@ public class PropertyItemRenderingTests
 		int At(string marker) => row.IndexOf(marker, StringComparison.Ordinal);
 
 		At("How the input is chunked.").Should().BeLessThan(At("reference-link-row"), "the link follows the description");
-		At("reference-link-row").Should().BeLessThan(At("expand-toggle-row"), "and sits right above show properties");
+		At("reference-link-row").Should().BeLessThan(At("expand-toggle-row"), "and sits right above show parameters");
 		row[..At("</dt>")].Should().NotContain(">Reference</a>", "the name line stays short");
 	}
 }

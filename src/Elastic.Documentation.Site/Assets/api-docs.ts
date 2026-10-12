@@ -98,7 +98,7 @@ function expandPropertyItem(propertyItem: HTMLElement): void {
 
     propertyItem.classList.remove('collapsed')
     propertyItem.classList.add('expanded')
-    setDisclosureToggle(toggleBtn, true, 'properties')
+    setDisclosureToggle(toggleBtn, true, 'parameters')
 
     if (nestedProps) {
         nestedProps.removeAttribute('hidden')
@@ -135,7 +135,7 @@ function expandUnionVariantItem(variantItem: HTMLElement): void {
 
     variantItem.classList.remove('collapsed')
     variantItem.classList.add('expanded')
-    setDisclosureToggle(toggleBtn, true, 'properties')
+    setDisclosureToggle(toggleBtn, true, 'parameters')
 
     if (nestedProps) {
         nestedProps.removeAttribute('hidden')
@@ -453,14 +453,14 @@ function initOperationView(section: HTMLElement): void {
                 if (isExpanded) {
                     unionVariantItem.classList.remove('expanded')
                     unionVariantItem.classList.add('collapsed')
-                    setDisclosureToggle(toggleBtn, false, 'properties')
+                    setDisclosureToggle(toggleBtn, false, 'parameters')
                     if (nestedProps && supportsHiddenUntilFound) {
                         nestedProps.setAttribute('hidden', 'until-found')
                     }
                 } else {
                     unionVariantItem.classList.remove('collapsed')
                     unionVariantItem.classList.add('expanded')
-                    setDisclosureToggle(toggleBtn, true, 'properties')
+                    setDisclosureToggle(toggleBtn, true, 'parameters')
                     if (nestedProps) {
                         nestedProps.removeAttribute('hidden')
                     }
@@ -635,14 +635,14 @@ function initGlobalClickHandlers(): void {
                 if (isExpanded) {
                     unionVariantItem.classList.remove('expanded')
                     unionVariantItem.classList.add('collapsed')
-                    setDisclosureToggle(toggleBtn, false, 'properties')
+                    setDisclosureToggle(toggleBtn, false, 'parameters')
                     if (nestedProps && supportsHiddenUntilFound) {
                         nestedProps.setAttribute('hidden', 'until-found')
                     }
                 } else {
                     unionVariantItem.classList.remove('collapsed')
                     unionVariantItem.classList.add('expanded')
-                    setDisclosureToggle(toggleBtn, true, 'properties')
+                    setDisclosureToggle(toggleBtn, true, 'parameters')
                     if (nestedProps) {
                         nestedProps.removeAttribute('hidden')
                     }
@@ -669,14 +669,14 @@ function initGlobalClickHandlers(): void {
             if (isExpanded) {
                 propertyItem.classList.remove('expanded')
                 propertyItem.classList.add('collapsed')
-                setDisclosureToggle(toggleBtn, false, 'properties')
+                setDisclosureToggle(toggleBtn, false, 'parameters')
                 if (nestedProps && supportsHiddenUntilFound) {
                     nestedProps.setAttribute('hidden', 'until-found')
                 }
             } else {
                 propertyItem.classList.remove('collapsed')
                 propertyItem.classList.add('expanded')
-                setDisclosureToggle(toggleBtn, true, 'properties')
+                setDisclosureToggle(toggleBtn, true, 'parameters')
                 if (nestedProps) {
                     nestedProps.removeAttribute('hidden')
                 }

@@ -1984,7 +1984,7 @@ a.docs-reference-btn::after {
 	display: none;
 }
 
-/* A property's reference link: indented and sized like the "show properties" toggle right below it, but a link. */
+/* A property's reference link: indented and sized like the "show parameters" toggle right below it, but a link. */
 .property-list .reference-link-row {
 	@apply text-sm;
 	margin: calc(var(--spacing) * 2) 0 0;

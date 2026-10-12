@@ -177,7 +177,7 @@ public class ApiSupplementalRenderTests(ApiExplorerFixture fixture)
 		var nav = SearchOperation();
 		var html = await RenderAsync(nav.Model, nav);
 
-		html.Should().Contain("toggle-label\">show properties</span>");
+		html.Should().Contain("toggle-label\">show parameters</span>");
 		html.Should().NotContain("toggle-label\">Show ");
 		html.Should().NotContain("toggle-label\">Hide ");
 	}
