@@ -73,6 +73,11 @@
 							{
 								@Model.RenderMarkdown(scheme.DescriptionMarkdown)
 							}
+							@* OAuth 2.0 and OpenID Connect have no credential example, and a description is optional. The open section must still name the scheme. *@
+							@if (string.IsNullOrEmpty(scheme.CredentialExample) && scheme.DescriptionMarkdown is null && requirement.Schemes.Count == 1)
+							{
+								<p>Uses @scheme.Label authentication.</p>
+							}
 						}
 					</div>
 				}
