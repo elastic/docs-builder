@@ -95,28 +95,21 @@ internal sealed class UnifiedReleaseCommands(
 		CancellationToken ctx = default
 	)
 	{
-		var prestageProducts = configurationContext
-			.ProductsConfiguration
-			.Products
-			.Values
-			.Where(p => p.Features.ReleaseNotes == ReleaseNotesPath.DailyReleasableArtifacts)
-			.ToArray();
-
-		if (products is { Length: > 0 })
+		var (selected, unknown) = UnifiedBundlePlanner.FilterProducts(
+			UnifiedBundlePlanner.SelectDraProducts(configurationContext.ProductsConfiguration.Products.Values),
+			products
+		);
+		if (unknown.Count > 0)
 		{
-			var unknown = products.Where(id => prestageProducts.All(p => !p.Id.Equals(id, StringComparison.OrdinalIgnoreCase))).ToArray();
-			if (unknown.Length > 0)
-			{
-				var message = $"--products names no product with 'release-notes: dra' in products.yml: {string.Join(", ", unknown)}.";
-				_logger.LogError("{Message}", message);
-				collector.EmitError(string.Empty, message);
-				return 1;
-			}
-
-			prestageProducts = [.. prestageProducts.Where(p => products.Contains(p.Id, StringComparer.OrdinalIgnoreCase))];
+			var message = $"--products names no product with 'release-notes: dra' in products.yml: {string.Join(", ", unknown)}.";
+			_logger.LogError("{Message}", message);
+			collector.EmitError(string.Empty, message);
+			return 1;
 		}
 
-		if (prestageProducts.Length == 0)
+		var prestageProducts = selected;
+
+		if (prestageProducts.Count == 0)
 		{
 			_logger.LogWarning("No products with 'release-notes: dra' found in products.yml. Nothing to bundle.");
 			return 0;
@@ -124,7 +117,7 @@ internal sealed class UnifiedReleaseCommands(
 
 		_logger.LogInformation(
 			"Found {Count} DRA product(s): {Products}",
-			prestageProducts.Length,
+			prestageProducts.Count,
 			string.Join(", ", prestageProducts.Select(p => p.Id))
 		);
 
@@ -166,13 +159,13 @@ internal sealed class UnifiedReleaseCommands(
 		if (past is null)
 			return 1;
 
-		var productsMissingFromManifest = new List<string>();
-		var productsWithoutStart = new List<string>();
-
+		// Plan every target before bundling anything: a product that blocks the plan fails the run
+		// up front, not after minutes of bundling the others.
+		var planned = new List<(ReleaseTarget Target, PastRelease Previous, UnifiedBundlePlan Plan)>();
 		foreach (var target in targets)
 		{
 			_logger.LogInformation(
-				"Bundling target: version={Version} source={Source} manifest={Manifest}",
+				"Planning target: version={Version} source={Source} manifest={Manifest}",
 				target.Version,
 				target.Source,
 				target.ManifestUrl
@@ -180,17 +173,7 @@ internal sealed class UnifiedReleaseCommands(
 
 			var manifest = await FetchManifestAsync(http, target.ManifestUrl, ctx);
 			if (manifest is null)
-			{
-				_logger.LogError("Failed to fetch build manifest from {ManifestUrl}", target.ManifestUrl);
-				collector.EmitError(string.Empty, $"Failed to fetch build manifest from {target.ManifestUrl}");
 				return 1;
-			}
-
-			_logger.LogInformation(
-				"Manifest contains {Count} project(s): {Projects}",
-				manifest.Projects.Count,
-				string.Join(", ", manifest.Projects.Keys)
-			);
 
 			var previous = ReleaseTargetResolver.ResolvePreviousRelease(past, target.Version);
 			if (previous is null)
@@ -207,90 +190,51 @@ internal sealed class UnifiedReleaseCommands(
 
 			_logger.LogInformation("Release notes for {Version} start at the manifest of {Previous}", target.Version, previous.Version);
 
-			foreach (var product in prestageProducts)
-			{
-				var artifactKey = (product.DraArtifact ?? product.Repository ?? product.Id).ToLowerInvariant();
-				var repoKey = (product.Repository ?? product.Id).ToLowerInvariant();
+			var plan = UnifiedBundlePlanner.Plan(prestageProducts, target.Version, manifest, previousManifest);
+			ReportProblems(target, previous, plan);
+			planned.Add((target, previous, plan));
+		}
 
-				if (!manifest.Projects.TryGetValue(artifactKey, out var project) || string.IsNullOrEmpty(project.CommitHash))
-				{
-					// A configured product that the manifest lacks (a mismatched dra_artifact, or a manifest
-					// omission) must not look like success: the bundle set would be incomplete.
-					var message =
-						$"Product '{product.Id}': artifact key '{artifactKey}' has no commit_hash in the build manifest for {target.Version} ({target.ManifestUrl}).";
-					_logger.LogError("{Message}", message);
-					collector.EmitError(string.Empty, message);
-					productsMissingFromManifest.Add($"{product.Id}@{target.Version}");
-					continue;
-				}
+		var blocked = planned.SelectMany(p => p.Plan.Problems.Select(problem => $"{problem.ProductId}@{p.Target.Version}")).ToArray();
+		if (blocked.Length > 0)
+		{
+			_logger.LogError(
+				"{Count} product(s) cannot be bundled because a manifest has no commit for them, so nothing was bundled: {Products}",
+				blocked.Length,
+				string.Join(", ", blocked)
+			);
+			return 1;
+		}
 
-				if (
-					!previousManifest.Projects.TryGetValue(artifactKey, out var previousProject)
-					|| string.IsNullOrEmpty(previousProject.CommitHash)
-				)
-				{
-					// The start of the range is never guessed. A product that is new in this release has no
-					// earlier commit, and a silent full-history bundle would be wrong.
-					var message = $"Product '{product.Id}': artifact key '{artifactKey}' has no commit_hash in the manifest of {previous.Version} ({previous.Manifest}), "
-						+ $"so the range of the release notes for {target.Version} has no start.";
-					_logger.LogError("{Message}", message);
-					collector.EmitError(string.Empty, message);
-					productsWithoutStart.Add($"{product.Id}@{target.Version}");
-					continue;
-				}
-
-				if (string.Equals(previousProject.CommitHash, project.CommitHash, StringComparison.OrdinalIgnoreCase))
-				{
-					_logger.LogInformation(
-						"'{Product}' is unchanged between {Previous} and {Version} (commit {Commit}). No bundle is needed.",
-						product.Id,
-						previous.Version,
-						target.Version,
-						project.CommitHash[..8]
-					);
-					continue;
-				}
-
+		foreach (var (target, previous, plan) in planned)
+		{
+			foreach (var id in plan.Unchanged)
 				_logger.LogInformation(
-					"Bundling '{Product}' (artifact: '{ArtifactKey}', repo: '{RepoKey}', range: {Start}..{Commit})...",
-					product.Id,
-					artifactKey,
-					repoKey,
-					previousProject.CommitHash[..8],
-					project.CommitHash[..8]
+					"'{Product}' is unchanged between {Previous} and {Version}. No bundle is needed.",
+					id,
+					previous.Version,
+					target.Version
 				);
 
-				var productOutput = Path.Combine(rootOutput.FullName, product.Id);
+			foreach (var range in plan.Ranges)
+			{
+				_logger.LogInformation(
+					"Bundling '{Product}' (repo: '{RepoKey}', range: {Start}..{End})...",
+					range.ProductId,
+					range.RepoKey,
+					range.StartCommit[..8],
+					range.EndCommit[..8]
+				);
+
+				var productOutput = Path.Combine(rootOutput.FullName, range.ProductId);
 				_ = Directory.CreateDirectory(productOutput);
 
-				var range = new ProductBundleRange(product.Id, repoKey, target.Version, previousProject.CommitHash, project.CommitHash);
 				var result = await BundleProductAsync(http, bundleService, range, productOutput, changelogConfigs?.FullName, ctx);
-
 				if (result != 0)
 					return result;
 
-				_logger.LogInformation("Bundled '{Product}' @ {Version} successfully.", product.Id, target.Version);
+				_logger.LogInformation("Bundled '{Product}' @ {Version} successfully.", range.ProductId, target.Version);
 			}
-		}
-
-		if (productsWithoutStart.Count > 0)
-		{
-			_logger.LogError(
-				"{Count} product(s) have no start of range in the previous manifest, so the bundle set is incomplete: {Products}",
-				productsWithoutStart.Count,
-				string.Join(", ", productsWithoutStart)
-			);
-			return 1;
-		}
-
-		if (productsMissingFromManifest.Count > 0)
-		{
-			_logger.LogError(
-				"{Count} product(s) missing from the build manifest, so the bundle set is incomplete: {Products}",
-				productsMissingFromManifest.Count,
-				string.Join(", ", productsMissingFromManifest)
-			);
-			return 1;
 		}
 
 		return 0;
@@ -464,8 +408,18 @@ internal sealed class UnifiedReleaseCommands(
 	private async Task<ElasticBuildManifest?> FetchManifestAsync(HttpClient http, string url, CancellationToken ctx) =>
 		await FetchRequiredJsonAsync(http, url, ReleaseScheduleJsonContext.Default.ElasticBuildManifest, ctx);
 
-	/// <summary>The commits that bound the release notes of one product, and where its bundle is written.</summary>
-	private sealed record ProductBundleRange(string ProductId, string RepoKey, string Version, string StartCommit, string CommitHash);
+	private void ReportProblems(ReleaseTarget target, PastRelease previous, UnifiedBundlePlan plan)
+	{
+		foreach (var problem in plan.Problems)
+		{
+			var message = problem.Kind == PlanProblemKind.MissingFromManifest
+				? $"Product '{problem.ProductId}': artifact key '{problem.ArtifactKey}' has no commit_hash in the build manifest for {target.Version} ({target.ManifestUrl})."
+				: $"Product '{problem.ProductId}': artifact key '{problem.ArtifactKey}' has no commit_hash in the manifest of {previous.Version} ({previous.Manifest}), "
+					+ $"so the range of the release notes for {target.Version} has no start.";
+			_logger.LogError("{Message}", message);
+			collector.EmitError(string.Empty, message);
+		}
+	}
 
 	private async Task<int> BundleProductAsync(
 		HttpClient http,
@@ -476,7 +430,7 @@ internal sealed class UnifiedReleaseCommands(
 		CancellationToken ctx
 	)
 	{
-		var (productId, repoKey, version, startCommit, commitHash) = range;
+		var (productId, repoKey, _, _, commitHash) = range;
 		var resolver = new ChangelogConfigResolver(http, new FileSystem(), _logger, collector);
 		var config = await resolver.ResolveAsync(productId, repoKey, commitHash, changelogConfigsDir, ctx);
 		if (config.Failed)
@@ -528,17 +482,7 @@ internal sealed class UnifiedReleaseCommands(
 
 		try
 		{
-			var arguments = new BundleChangelogsArguments
-			{
-				Profile = profileName,
-				ProfileArgument = version,
-				OutputDirectory = outputDirectory,
-				Config = tempConfig,
-				StartGitRef = startCommit,
-				EndGitRef = commitHash,
-				Owner = "elastic",
-				Repo = repoKey
-			};
+			var arguments = UnifiedBundleArguments.Create(range, profileName, tempConfig, outputDirectory);
 
 			var success = await bundleService.BundleChangelogs(collector, arguments, ctx);
 			return success ? 0 : 1;
