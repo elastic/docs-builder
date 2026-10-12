@@ -18,6 +18,10 @@ public sealed class EmbeddedOrPhysicalFileProvider : IFileProvider, IDisposable
 
 	private readonly PhysicalFileProvider? _staticWebFilesDuringDebug;
 
+	// Most specific first: the checkout during debug, then the doc set's own `_static`, then the embedded resources.
+	// The first provider that has a file wins; one that only answers "not found" does not shadow the next.
+	private readonly CompositeFileProvider _providers;
+
 	public EmbeddedOrPhysicalFileProvider(IDocumentationSetContext context)
 	{
 		var documentationStaticFiles = Path.Join(context.DocumentationSourceDirectory.FullName, "_static");
@@ -36,78 +40,24 @@ public sealed class EmbeddedOrPhysicalFileProvider : IFileProvider, IDisposable
 #endif
 		if (context.ReadFileSystem.Directory.Exists(documentationStaticFiles))
 			_staticFilesInDocsFolder = new PhysicalFileProvider(documentationStaticFiles);
+
+		IFileProvider?[] ordered = [_staticWebFilesDuringDebug, _staticFilesInDocsFolder, _embeddedProvider];
+		_providers = new CompositeFileProvider(ordered.OfType<IFileProvider>());
 	}
 
-	private T? FirstYielding<T>(string arg, Func<string, PhysicalFileProvider, T?> predicate) =>
-		Yield(arg, predicate, _staticWebFilesDuringDebug) ?? Yield(arg, predicate, _staticFilesInDocsFolder);
+	public IDirectoryContents GetDirectoryContents(string subpath) => _providers.GetDirectoryContents(subpath.TrimStart('/'));
 
-	private static T? Yield<T>(string arg, Func<string, PhysicalFileProvider, T?> predicate, PhysicalFileProvider? provider)
-	{
-		if (provider is null)
-			return default;
-		var result = predicate(arg, provider);
-		return result ?? default;
-	}
-
-	private IEnumerable<IFileProvider> Providers()
-	{
-		if (_staticWebFilesDuringDebug is not null)
-			yield return _staticWebFilesDuringDebug;
-		if (_staticFilesInDocsFolder is not null)
-			yield return _staticFilesInDocsFolder;
-		yield return _embeddedProvider;
-	}
-
-	/// <summary>
-	/// The listing of every source that has the directory, most specific first: the checkout during debug,
-	/// then the doc set's own <c>_static</c>, then the embedded resources.
-	/// </summary>
-	public IEnumerable<IDirectoryContents> GetDirectoryContentsBySource(string subpath)
-	{
-		var path = subpath.TrimStart('/');
-		return Providers().Select(p => p.GetDirectoryContents(path)).Where(c => c.Exists);
-	}
-
-	// Merged rather than first-wins: a doc set's own `_static` folder must not hide the embedded bundle.
-	public IDirectoryContents GetDirectoryContents(string subpath)
-	{
-		var existing = GetDirectoryContentsBySource(subpath).ToArray();
-		return existing.Length switch
-		{
-			0 => NotFoundDirectoryContents.Singleton,
-			1 => existing[0],
-			_ => new MergedDirectoryContents(existing)
-		};
-	}
-
-	// The first provider that has the file wins; one that only answers "not found" must not shadow the next.
 	public IFileInfo GetFileInfo(string subpath)
 	{
 		var path = subpath.Replace($"{Path.DirectorySeparatorChar}_static", "").TrimStart('/');
-		return Providers().Select(p => p.GetFileInfo(path)).FirstOrDefault(f => f.Exists) ?? _embeddedProvider.GetFileInfo(path);
+		return _providers.GetFileInfo(path);
 	}
 
-	public IChangeToken Watch(string filter)
-	{
-		var path = filter.TrimStart('/');
-		var changeToken = FirstYielding(path, static (f, p) => p.Watch(f));
-		if (changeToken is null or NullChangeToken)
-			changeToken = _embeddedProvider.Watch(path);
-		return changeToken;
-	}
+	public IChangeToken Watch(string filter) => _providers.Watch(filter.TrimStart('/'));
 
 	public void Dispose()
 	{
 		_staticFilesInDocsFolder?.Dispose();
 		_staticWebFilesDuringDebug?.Dispose();
-	}
-
-	private sealed class MergedDirectoryContents(IReadOnlyList<IDirectoryContents> parts) : IDirectoryContents
-	{
-		public bool Exists => true;
-
-		public IEnumerator<IFileInfo> GetEnumerator() => parts.SelectMany(p => p).GetEnumerator();
-
-		System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => GetEnumerator();
 	}
 }

@@ -28,6 +28,8 @@ export default defineConfig({
         outDir: '_static',
         emptyOutDir: false,
         sourcemap: true,
+        // Razor resolves `main.js` to the hashed entry through this file.
+        manifest: 'manifest.json',
         rollupOptions: {
             input: {
                 main: path.resolve(__dirname, 'Assets/main.ts'),

@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions;
+using System.Text;
 using AwesomeAssertions;
 using Elastic.Documentation;
 using Elastic.Documentation.FileSystems;
@@ -18,18 +19,27 @@ namespace Elastic.ApiExplorer.Tests;
 public class StaticFileContentHashProviderTests
 {
 	[Test]
-	public void GetUrl_HashedSibling_ResolvesToExactNameWithoutQuery()
+	public void GetUrl_ViteEntry_UsesEmittedNameWithoutQuery()
 	{
 		using var docs = new TempDocs();
-		docs.WriteStatic("widget-abc12345.js", "console.log(1)");
 
-		var url = docs.Provider.GetUrl("widget.js", "/prefix");
+		var url = docs.Provider.GetUrl("main.js", "/prefix");
 
-		url.Should().Be("/prefix/_static/widget-abc12345.js");
+		url.Should().MatchRegex(@"^/prefix/_static/main-[A-Za-z0-9_-]+\.js$");
 	}
 
 	[Test]
-	public void GetUrl_PlainFile_AppendsContentHash()
+	public void GetUrl_EntryEmittedUnderItsOwnName_KeepsContentHashQuery()
+	{
+		using var docs = new TempDocs();
+
+		var url = docs.Provider.GetUrl("styles.css", string.Empty);
+
+		url.Should().MatchRegex(@"^/_static/styles\.css\?v=[0-9a-f]{16}$");
+	}
+
+	[Test]
+	public void GetUrl_DocSetFile_AppendsContentHash()
 	{
 		using var docs = new TempDocs();
 		docs.WriteStatic("plain.css", "body{}");
@@ -50,27 +60,21 @@ public class StaticFileContentHashProviderTests
 	}
 
 	[Test]
-	public void GetUrl_MainEntry_ResolvesThroughEmbeddedBundleNextToDocSetStatic()
+	public void ParseManifest_MapsEntryNamesToEmittedFiles()
 	{
-		using var docs = new TempDocs();
-		docs.WriteStatic("logo.png", "png");
+		const string json =
+			"""
+			{
+				"Assets/main.ts": { "file": "main-BNF4ozUv.js", "name": "main", "isEntry": true },
+				"Assets/styles.css": { "file": "styles.css", "names": ["styles.css"], "isEntry": true },
+				"_isolated.ts": { "file": "chunk-isolated-B5UY0lxh.js", "name": "isolated" }
+			}
+			""";
+		using var stream = new MemoryStream(Encoding.UTF8.GetBytes(json));
 
-		var url = docs.Provider.GetUrl("main.js", string.Empty);
+		var entries = StaticFileContentHashProvider.ParseManifest(stream);
 
-		url.Should().MatchRegex(@"^/_static/main-[A-Za-z0-9_-]+\.js$");
-	}
-
-	[Test]
-	public void GetDirectoryContentsBySource_ListsDocSetBeforeEmbedded()
-	{
-		using var docs = new TempDocs();
-		docs.WriteStatic("logo.png", "png");
-
-		var sources = docs.FileProvider.GetDirectoryContentsBySource(string.Empty).ToList();
-
-		sources.Count.Should().BeGreaterThanOrEqualTo(2);
-		sources[^1].Should().NotContain(f => f.Name == "logo.png", "the embedded resources come last");
-		sources[..^1].Should().Contain(s => s.Any(f => f.Name == "logo.png"));
+		entries.Should().Equal(new Dictionary<string, string> { ["main.js"] = "main-BNF4ozUv.js" });
 	}
 
 	private sealed class TempDocs : IDisposable
@@ -86,11 +90,8 @@ public class StaticFileContentHashProviderTests
 			var context = A.Fake<IDocumentationSetContext>();
 			A.CallTo(() => context.DocumentationSourceDirectory).Returns(fs.DirectoryInfo.New(_root));
 			A.CallTo(() => context.ReadFileSystem).Returns(readFs);
-			FileProvider = new EmbeddedOrPhysicalFileProvider(context);
-			Provider = new StaticFileContentHashProvider(FileProvider);
+			Provider = new StaticFileContentHashProvider(new EmbeddedOrPhysicalFileProvider(context));
 		}
-
-		public EmbeddedOrPhysicalFileProvider FileProvider { get; }
 
 		public StaticFileContentHashProvider Provider { get; }
 
