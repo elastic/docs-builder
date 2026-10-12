@@ -4,45 +4,41 @@
 
 using System.IO.Abstractions;
 using Elastic.Documentation.Configuration;
+using Elastic.Documentation.Extensions;
 using Nullean.ScopedFileSystem;
 
 namespace Elastic.Documentation.FileSystems;
 
 /// <summary>
-/// Scope for changelog commands: the git root of the target repository.
-/// Allows reading <c>.git</c> metadata (remote URL, branch) and writing under
+/// Scope for changelog commands: the git root of the target repository, plus any output folders the
+/// caller names. Allows reading <c>.git</c> metadata (remote URL, branch) and writing under
 /// the conventional <c>.artifacts</c> CI staging directory. Does not include
-/// AppData — changelog operates only within the repo working tree.
+/// AppData — changelog operates only within the repo working tree and the folders it was told to write to.
 /// </summary>
-public class ChangelogFileSystem(IDirectoryInfo root, IFileSystem? inner = null) : ScopedFileSystem(
+/// <param name="root">The git root. Everything read comes from below it.</param>
+/// <param name="inner">The underlying file system. Defaults to the real one.</param>
+/// <param name="extraRoots">
+/// Output folders outside <paramref name="root"/> that may be written to, like the output directory of
+/// the documentation build. A folder inside <paramref name="root"/> adds nothing.
+/// </param>
+public class ChangelogFileSystem(IDirectoryInfo root, IFileSystem? inner = null, IEnumerable<string>? extraRoots = null) : ScopedFileSystem(
 	inner ?? Physical,
-	new ScopedFileSystemOptions([root.FullName])
-	{
-		AllowedHiddenFolderNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { ".git", ".artifacts" },
-		AllowedHiddenFileNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { ".git" }
-	}
+	CreateOptions(root, inner ?? Physical, extraRoots)
 ), IChangelogFileSystem
 {
 	private static readonly FileSystem Physical = new();
 
-	/// <summary>The folder every read and write must stay inside.</summary>
-	public string Root { get; } = root.FullName;
-
-	/// <summary>Whether <paramref name="path"/> is the scope root or lies below it.</summary>
-	public bool Contains(string path) => IsWithin(Root, path);
-
-	public static bool IsWithin(string root, string path)
+	private static ScopedFileSystemOptions CreateOptions(IDirectoryInfo root, IFileSystem fileSystem, IEnumerable<string>? extraRoots)
 	{
-		var fullRoot = System.IO.Path.TrimEndingDirectorySeparator(System.IO.Path.GetFullPath(root));
-		var fullPath = System.IO.Path.TrimEndingDirectorySeparator(System.IO.Path.GetFullPath(path));
-		var comparison = OperatingSystem.IsWindows() || OperatingSystem.IsMacOS()
-			? StringComparison.OrdinalIgnoreCase
-			: StringComparison.Ordinal;
-		// A filesystem root ("/" or "C:\\") keeps its separator after trimming, so only add one when it is missing.
-		var rootPrefix = fullRoot.EndsWith(System.IO.Path.DirectorySeparatorChar)
-			? fullRoot
-			: fullRoot + System.IO.Path.DirectorySeparatorChar;
-		return fullPath.Equals(fullRoot, comparison) || fullPath.StartsWith(rootPrefix, comparison);
+		var roots = new List<string> { root.FullName };
+		foreach (var extra in extraRoots ?? [])
+			roots.AddDisjointRoot(extra, fileSystem);
+
+		return new ScopedFileSystemOptions([.. roots])
+		{
+			AllowedHiddenFolderNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { ".git", ".artifacts" },
+			AllowedHiddenFileNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { ".git" }
+		};
 	}
 
 	/// <summary>
@@ -50,11 +46,13 @@ public class ChangelogFileSystem(IDirectoryInfo root, IFileSystem? inner = null)
 	/// Falls back to the working directory itself when no <c>.git</c> root is found —
 	/// <c>changelog init</c> is designed to run before a git repository exists.
 	/// </summary>
-	public static ChangelogFileSystem FromWorkingDirectory(IFileSystem? inner = null)
+	/// <param name="inner">The underlying file system. Defaults to the real one.</param>
+	/// <param name="extraRoots">Output folders outside the git root that may be written to.</param>
+	public static ChangelogFileSystem FromWorkingDirectory(IFileSystem? inner = null, IEnumerable<string>? extraRoots = null)
 	{
 		var fs = inner ?? Physical;
 		var workingRoot = fs.DirectoryInfo.New(fs.Directory.GetCurrentDirectory());
 		var gitRoot = Paths.FindGitRoot(workingRoot) ?? workingRoot;
-		return new ChangelogFileSystem(gitRoot, inner);
+		return new ChangelogFileSystem(gitRoot, inner, extraRoots);
 	}
 }

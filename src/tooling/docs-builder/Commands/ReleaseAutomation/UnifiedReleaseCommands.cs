@@ -101,15 +101,9 @@ internal sealed class UnifiedReleaseCommands(
 		);
 
 		var rootOutput = outputDir ?? new DirectoryInfo(Path.Combine(Directory.GetCurrentDirectory(), "bundles"));
-		var fileSystem = ChangelogFileSystem.FromWorkingDirectory();
-		if (!fileSystem.Contains(rootOutput.FullName))
-		{
-			var message = $"--output-dir '{rootOutput.FullName}' is outside '{fileSystem.Root}', the git root of the working directory. "
-				+ "Bundling reads and writes only inside it. Choose a folder below it, for example ./bundles.";
-			_logger.LogError("{Message}", message);
-			collector.EmitError(string.Empty, message);
-			return 1;
-		}
+		// Entries are read from the repository and bundles are written to the output folder, which may
+		// live outside it: the scope covers the git root and that folder, like the documentation build does.
+		var fileSystem = ChangelogFileSystem.FromWorkingDirectory(extraRoots: [rootOutput.FullName]);
 
 		if (!rootOutput.Exists)
 			rootOutput.Create();
