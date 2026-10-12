@@ -841,6 +841,43 @@ export function initApiPageActions(): void {
     })
 }
 
+let examplesRailSteadyInitialized = false
+
+/**
+ * Expanding or collapsing a section flips the sticky examples rail between stuck and
+ * bottom-pinned, which moved it hundreds of px in one frame. Slide it there instead.
+ */
+export function initExamplesRailSteadying(): void {
+    if (examplesRailSteadyInitialized) return
+    examplesRailSteadyInitialized = true
+    // Capture: some toggle handlers stopPropagation, and we must measure before they mutate
+    document.addEventListener(
+        'click',
+        (e) => {
+            if (!(e.target instanceof Element)) return
+            if (!e.target.closest('#elastic-api-v3')) return
+            const rail = document.getElementById('api-examples-panel')
+            if (!rail) return
+            if (window.matchMedia('(prefers-reduced-motion: reduce)').matches)
+                return
+            const before = rail.getBoundingClientRect().top
+            // Runs after the click handlers change the DOM, before the next paint
+            requestAnimationFrame(() => {
+                const shift = rail.getBoundingClientRect().top - before
+                if (Math.abs(shift) < 1) return
+                rail.animate(
+                    [
+                        { transform: `translateY(${-shift}px)` },
+                        { transform: 'none' },
+                    ],
+                    { duration: 200, easing: 'ease-out' }
+                )
+            })
+        },
+        true
+    )
+}
+
 /**
  * Initialize API documentation interactivity
  * Call this after page load or HTMX content swap
@@ -853,6 +890,7 @@ export function initApiDocs(): void {
     initApiResponseStatusTabs()
     initApiExamples()
     initApiPageActions()
+    initExamplesRailSteadying()
     // After initHighlight — gutters need final textContent line counts
     decorateApiCodeTokens()
 
