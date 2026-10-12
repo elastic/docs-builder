@@ -48,9 +48,9 @@ describe('examples rail steadying', () => {
     // The real handler runs in capture phase, before the toggle mutates the layout
     const clickAndMoveRail = (id: string, newTop: number) => {
         const el = document.getElementById(id)!
-        el.addEventListener('click', () => (railTop = newTop))
+        el.addEventListener('click', () => (railTop = newTop), { once: true })
         el.click()
-        frames.forEach((cb) => cb(0))
+        frames.splice(0).forEach((cb) => cb(0))
     }
 
     it('slides the rail from its old position when a toggle moves it', () => {
@@ -104,5 +104,25 @@ describe('examples rail steadying', () => {
 
         expect(cancel).toHaveBeenCalledTimes(1)
         expect(rail.getAnimations).not.toHaveBeenCalled()
+    })
+
+    it('restarts an interrupted slide from where the rail is drawn', () => {
+        const rail = document.getElementById('api-examples-panel')!
+        let drawnOffset = 0
+        rail.getBoundingClientRect = () =>
+            ({ top: railTop + drawnOffset }) as DOMRect
+        const slide = jest.fn(() => ({ cancel: () => (drawnOffset = 0) }))
+        rail.animate = slide as unknown as typeof rail.animate
+
+        clickAndMoveRail('toggle', 64) // starts a slide from -285
+
+        drawnOffset = -200 // the slide is part-way, so the rail is drawn at -136
+        clickAndMoveRail('toggle', 300)
+
+        // The new slide starts at the drawn position: 300 - 436 = -136
+        expect(slide).toHaveBeenLastCalledWith(
+            [{ transform: 'translateY(-436px)' }, { transform: 'none' }],
+            expect.anything()
+        )
     })
 })

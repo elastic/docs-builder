@@ -863,17 +863,21 @@ export function initExamplesRailSteadying(): void {
             if (prefersReducedMotion()) return
             const rail = document.getElementById('api-examples-panel')
             if (!rail) return
-            // A slide still running would skew the measurement and stack with the new one.
-            // Cancel only our own: getAnimations() would also cancel the rail's CSS transitions.
+            // The in-flight slide's transform shows up in the rect. Keep that visual
+            // position, cancel the slide, then measure the untransformed layout.
+            const visualTop = rail.getBoundingClientRect().top
+            // Cancel only our own slide: getAnimations() would also cancel the rail's CSS transitions.
             examplesRailSlide?.cancel()
             const before = rail.getBoundingClientRect().top
+            const inFlight = visualTop - before
             // Runs after the click handlers change the DOM, before the next paint
             requestAnimationFrame(() => {
-                const shift = rail.getBoundingClientRect().top - before
-                if (Math.abs(shift) < 1) return
+                const offset =
+                    inFlight - (rail.getBoundingClientRect().top - before)
+                if (Math.abs(offset) < 1) return
                 examplesRailSlide = rail.animate(
                     [
-                        { transform: `translateY(${-shift}px)` },
+                        { transform: `translateY(${offset}px)` },
                         { transform: 'none' },
                     ],
                     { duration: 200, easing: 'ease-out' }
