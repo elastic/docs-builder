@@ -22,7 +22,7 @@ public partial class OperationHeadingLevelTests(ApiExplorerFixture fixture)
 		var html = await RenderAsync(nav);
 
 		HeadingOpenTags().Matches(html).Select(match => match.Groups[1].Value).Should().Equal("h1", "h2", "h2", "h2", "h2", "h2", "h3");
-		html.Should().Contain("<h1>Run a search<span class=\"api-state-badge\">Generally available; Added in 7.7.0</span></h1>");
+		html.Should().Contain("<h1>Run a search</h1>");
 		html.Should().Contain("<h2 class=\"section-header api-param-section-header\" id=\"prerequisites\" data-section=\"prerequisites\">");
 		html.Should().Contain("<h2 class=\"section-header\" id=\"parameters\" data-section=\"parameters\">");
 		html.Should().Contain("<h2 class=\"section-header api-param-section-header\" id=\"query-params\" data-section=\"query-params\">");

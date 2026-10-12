@@ -18,16 +18,15 @@ namespace Elastic.ApiExplorer.Tests;
 public class OperationStateBadgeRenderingTests(ApiExplorerFixture fixture)
 {
 	[Test]
-	public async Task Render_OperationWithXState_ShowsRawStateInsideTitle()
+	public async Task Render_OperationWithXState_ShowsRawStateInTitleBadges()
 	{
 		var nav = fixture.Walk().OfType<OperationNavigationItem>().First(n => n.Model.Operation.OperationId == "search");
 		var html = await RenderAsync(nav);
 
-		var title = Slice(html, "<h1>", "</h1>");
-		title.Should().Contain("Run a search");
-		title.Should().Contain("class=\"api-state-badge\">Generally available; Added in 7.7.0</span>");
-		title.Should().NotContain("7.7+");
-		title.Should().NotContain("applies-to-popover");
+		Slice(html, "<h1>", "</h1>").Should().Be("<h1>Run a search");
+		var badges = Slice(html, "<div class=\"api-title-badges\">", "</div>");
+		badges.Should().Contain("class=\"api-state-badge\">Generally available; Added in 7.7.0</span>");
+		badges.Should().NotContain("applies-to-popover");
 	}
 
 	[Test]
