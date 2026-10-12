@@ -244,6 +244,7 @@ npm run visual:seed    # build origin/main in a temporary worktree and save what
 npm run visual:check   # build the assembler site from this branch and compare it with the baselines
 ```
 
+`visual:check` serves the isolated site's `docs/` from the commit that was seeded, so a docs change in your branch isn't mistaken for a rendering change.
 `visual:seed` accepts `--ref <ref>` to seed from another ref, and a list of hosts, for example `npm run visual:seed -- isolated`.
 The seed removes its temporary worktree when it finishes, and refuses to run when the snapshot folder isn't ignored by Git.
 To compare against a server you already started, set `VISUAL_REUSE=1`.
