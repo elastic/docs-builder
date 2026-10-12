@@ -60,6 +60,19 @@ public class StaticFileContentHashProviderTests
 		url.Should().MatchRegex(@"^/_static/main-[A-Za-z0-9_-]+\.js$");
 	}
 
+	[Test]
+	public void GetDirectoryContentsBySource_ListsDocSetBeforeEmbedded()
+	{
+		using var docs = new TempDocs();
+		docs.WriteStatic("logo.png", "png");
+
+		var sources = docs.FileProvider.GetDirectoryContentsBySource(string.Empty).ToList();
+
+		sources.Count.Should().BeGreaterThanOrEqualTo(2);
+		sources[^1].Should().NotContain(f => f.Name == "logo.png", "the embedded resources come last");
+		sources[..^1].Should().Contain(s => s.Any(f => f.Name == "logo.png"));
+	}
+
 	private sealed class TempDocs : IDisposable
 	{
 		private readonly string _root = Path.Join(Path.GetTempPath(), $"static-url-{Guid.NewGuid():N}");
@@ -73,8 +86,11 @@ public class StaticFileContentHashProviderTests
 			var context = A.Fake<IDocumentationSetContext>();
 			A.CallTo(() => context.DocumentationSourceDirectory).Returns(fs.DirectoryInfo.New(_root));
 			A.CallTo(() => context.ReadFileSystem).Returns(readFs);
-			Provider = new StaticFileContentHashProvider(new EmbeddedOrPhysicalFileProvider(context));
+			FileProvider = new EmbeddedOrPhysicalFileProvider(context);
+			Provider = new StaticFileContentHashProvider(FileProvider);
 		}
+
+		public EmbeddedOrPhysicalFileProvider FileProvider { get; }
 
 		public StaticFileContentHashProvider Provider { get; }
 

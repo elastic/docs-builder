@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.Collections.Concurrent;
+using Microsoft.Extensions.FileProviders;
 
 namespace Elastic.Documentation.Site.FileProviders;
 
@@ -58,7 +59,8 @@ public class StaticFileContentHashProvider(EmbeddedOrPhysicalFileProvider filePr
 		return resolved;
 	}
 
-	// The newest match wins: `vite build --watch` leaves the entries of earlier builds behind.
+	// The newest match within the most specific source wins. `vite build --watch` leaves earlier entries behind,
+	// and a .NET rebuild embeds them all with one timestamp, so the checkout must be preferred over embedded copies.
 	private string FindHashedFile(string path)
 	{
 		if (fileProvider.GetFileInfo(path).Exists)
@@ -68,16 +70,16 @@ public class StaticFileContentHashProvider(EmbeddedOrPhysicalFileProvider filePr
 		var prefix = Path.GetFileNameWithoutExtension(path) + "-";
 		var extension = Path.GetExtension(path);
 		var match = fileProvider
-			.GetDirectoryContents(directory)
-			.Where(
-				f => !f.IsDirectory && f.Name.StartsWith(prefix, StringComparison.Ordinal) && f.Name.EndsWith(
-					extension,
-					StringComparison.Ordinal
-				)
-			)
-			.MaxBy(f => f.LastModified);
+			.GetDirectoryContentsBySource(directory)
+			.Select(source => source.Where(f => IsHashedSibling(f, prefix, extension)).MaxBy(f => f.LastModified))
+			.FirstOrDefault(f => f is not null);
 		if (match is null)
 			return path;
 		return directory.Length == 0 ? match.Name : $"{directory}/{match.Name}";
 	}
+
+	private static bool IsHashedSibling(IFileInfo file, string prefix, string extension) =>
+		!file.IsDirectory
+			&& file.Name.StartsWith(prefix, StringComparison.Ordinal)
+			&& file.Name.EndsWith(extension, StringComparison.Ordinal);
 }

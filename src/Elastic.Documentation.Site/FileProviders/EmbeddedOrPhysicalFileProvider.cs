@@ -58,11 +58,20 @@ public sealed class EmbeddedOrPhysicalFileProvider : IFileProvider, IDisposable
 		yield return _embeddedProvider;
 	}
 
+	/// <summary>
+	/// The listing of every source that has the directory, most specific first: the checkout during debug,
+	/// then the doc set's own <c>_static</c>, then the embedded resources.
+	/// </summary>
+	public IEnumerable<IDirectoryContents> GetDirectoryContentsBySource(string subpath)
+	{
+		var path = subpath.TrimStart('/');
+		return Providers().Select(p => p.GetDirectoryContents(path)).Where(c => c.Exists);
+	}
+
 	// Merged rather than first-wins: a doc set's own `_static` folder must not hide the embedded bundle.
 	public IDirectoryContents GetDirectoryContents(string subpath)
 	{
-		var path = subpath.TrimStart('/');
-		var existing = Providers().Select(p => p.GetDirectoryContents(path)).Where(c => c.Exists).ToArray();
+		var existing = GetDirectoryContentsBySource(subpath).ToArray();
 		return existing.Length switch
 		{
 			0 => NotFoundDirectoryContents.Singleton,
