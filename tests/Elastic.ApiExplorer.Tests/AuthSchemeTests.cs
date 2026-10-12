@@ -21,7 +21,7 @@ public class AuthSchemeTests
 
 		var badges = OpenApiAuthSchemeResolver.Resolve(op, doc);
 
-		badges.Select(b => b.Id).Should().Equal("apiKeyAuth", "basicAuth", "bearerAuth");
+		badges.SelectMany(b => b.Schemes).Select(s => s.Id).Should().Equal("apiKeyAuth", "basicAuth", "bearerAuth");
 		badges.Select(b => b.Label).Should().Equal("Api key", "Basic", "Bearer");
 	}
 
@@ -32,7 +32,7 @@ public class AuthSchemeTests
 
 		var badges = OpenApiAuthSchemeResolver.Resolve(op, doc);
 
-		badges.Select(b => b.Id).Should().Equal("apiKeyAuth");
+		badges.SelectMany(b => b.Schemes).Select(s => s.Id).Should().Equal("apiKeyAuth");
 		badges.Select(b => b.Label).Should().Equal("Api key");
 	}
 
@@ -79,7 +79,7 @@ public class AuthSchemeTests
 
 		var badges = OpenApiAuthSchemeResolver.Resolve(search, doc);
 
-		badges.Select(b => b.Id).Should().Equal("apiKeyAuth", "basicAuth", "bearerAuth");
+		badges.SelectMany(b => b.Schemes).Select(s => s.Id).Should().Equal("apiKeyAuth", "basicAuth", "bearerAuth");
 		badges.Select(b => b.Label).Should().Equal("Api key", "Basic", "Bearer");
 	}
 
@@ -115,6 +115,31 @@ public class AuthSchemeTests
 		var (op, doc) = await Load(EsShapedSpec(operationSecurity: """{ "apiKeyAuth": [] }, { "apiKeyAuth": [] }"""));
 
 		OpenApiAuthSchemeResolver.Resolve(op, doc).Should().ContainSingle().Which.Label.Should().Be("Api key");
+	}
+
+	[Test]
+	public async Task Resolve_AlternativesWhoseIdsJoinToTheSameText_AreBothKept()
+	{
+		var json = /*lang=json,strict*/
+			"""
+			{
+			  "openapi": "3.0.3",
+			  "info": { "title": "t", "version": "1" },
+			  "paths": { "/a": { "get": {
+			    "operationId": "op-a",
+			    "security": [ { "a": [], "b": [] }, { "a-b": [] } ],
+			    "responses": { "200": { "description": "ok" } }
+			  } } },
+			  "components": { "securitySchemes": {
+			    "a": { "type": "apiKey", "in": "header", "name": "X-A" },
+			    "b": { "type": "http", "scheme": "basic" },
+			    "a-b": { "type": "http", "scheme": "bearer" }
+			  } }
+			}
+			""";
+		var (op, doc) = await Load(json);
+
+		OpenApiAuthSchemeResolver.Resolve(op, doc).Select(r => r.Label).Should().Equal("Api key + Basic", "Bearer");
 	}
 
 	private static string EsShapedSpec(string? operationSecurity)

@@ -11,8 +11,6 @@ public record AuthScheme(string Id, string Label, string? CredentialExample, str
 /// <summary>One way to authenticate. OpenAPI treats the schemes inside one security requirement as AND, so all of them are sent together.</summary>
 public record AuthRequirement(IReadOnlyList<AuthScheme> Schemes)
 {
-	public string Id => string.Join("-", Schemes.Select(static s => s.Id));
-
 	public string Label => string.Join(" + ", Schemes.Select(static s => s.Label));
 }
 
@@ -31,8 +29,9 @@ public static class OpenApiAuthSchemeResolver
 		foreach (var requirement in requirements)
 		{
 			var schemes = SchemesOf(requirement, document);
-			if (schemes.Count > 0 && new AuthRequirement(schemes) is var alternative && seen.Add(alternative.Id))
-				alternatives.Add(alternative);
+			// The unit separator cannot be part of a scheme name, so {a, b} and {"a-b"} stay different alternatives.
+			if (schemes.Count > 0 && seen.Add(string.Join('\u001f', schemes.Select(static s => s.Id))))
+				alternatives.Add(new AuthRequirement(schemes));
 		}
 
 		return alternatives;
