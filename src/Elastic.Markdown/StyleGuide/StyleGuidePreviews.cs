@@ -5,7 +5,7 @@
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Site.Components.DiagnosticsPanel;
-using Elastic.Documentation.Site.Components.NavSide;
+using Elastic.Documentation.Site.Components.Navigation.NavSide;
 using Elastic.Documentation.Site.Navigation;
 using RazorSlices;
 

@@ -1,8 +1,8 @@
 @inherits RazorSlice<Elastic.Documentation.Site.GlobalLayoutViewModel>
 @using Elastic.Documentation.Configuration.Toc
-@using Elastic.Documentation.Site.Components.DocsBar
-@using Elastic.Documentation.Site.Components.LinkMenu
-@using Elastic.Documentation.Site.Components.SiteHeader
+@using Elastic.Documentation.Site.Components.Navigation.DocsBar
+@using Elastic.Documentation.Site.Components.Navigation.LinkMenu
+@using Elastic.Documentation.Site.Components.Chrome.SiteHeader
 @{
 	var currentSectionId = Model.CurrentNavigationItem.NavigationRoot?.Id;
 	var apiChrome = Model.PageFeedbackSurface == "api";

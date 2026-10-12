@@ -1,0 +1,46 @@
+@inherits RazorSlice<Elastic.Documentation.Site.Components.Overlays.SearchDialog.SearchDialogModel>
+@* Search needs script (an index or the search API), so the live dialog stays inert until the script finds it. A specimen of a state is drawn open and carries no script hooks. *@
+<dialog class="search-dialog@(Model.Live ? "" : " search-dialog--static")" @(Model.Live ? new HtmlString("data-search-dialog") : new HtmlString("open")) aria-label="@Model.Label">
+	<form class="search-dialog__bar" method="dialog">
+		@await RenderPartialAsync(_Icon.Create(new IconModel { Name = "search", Size = IconSize.Small }))
+		<input class="search-dialog__input" type="search" @(Model.Live ? new HtmlString("data-search-input") : HtmlString.Empty) role="combobox" aria-expanded="@(Model.State is SearchDialogState.Results ? "true" : "false")" aria-controls="@(Model.Id)-results" aria-autocomplete="list" autocomplete="off" spellcheck="false" placeholder="@Model.Placeholder" aria-label="@Model.Label"@(Model.Query.Length > 0 ? new HtmlString($" value=\"{System.Net.WebUtility.HtmlEncode(Model.Query)}\"") : HtmlString.Empty)>
+		<button class="search-dialog__close btn btn--tertiary btn--sm" type="submit" aria-label="Close search">Esc</button>
+	</form>
+	<div class="search-dialog__loading" @(Model.Live ? new HtmlString("data-search-loading hidden") : (Model.State is SearchDialogState.Loading ? HtmlString.Empty : new HtmlString("hidden")))>@await RenderPartialAsync(_LoadingBar.Create(new LoadingBarModel { Label = "Searching" }))</div>
+	<p class="search-dialog__status" role="status" @(Model.Live ? new HtmlString("data-search-status") : HtmlString.Empty)>@Model.StatusText</p>
+	<ol class="search-dialog__results" id="@(Model.Id)-results" role="listbox" aria-label="Results" @(Model.Live ? new HtmlString("data-search-results") : HtmlString.Empty)>
+		@{ string? group = null; var position = 0; }
+		@foreach (var result in Model.Results)
+		{
+			if (result.Group != group)
+			{
+				group = result.Group;
+				<li class="search-dialog__group" role="presentation">@group</li>
+			}
+			<li class="search-result" role="option" id="@(Model.Id)-result-@(position++)" aria-selected="@(result.Selected ? "true" : "false")">
+				<a class="search-result__link" href="#">
+					<span class="search-result__path">@result.Path</span>
+					<span class="search-result__title">@result.Title</span>
+					<span class="search-result__excerpt">@(new HtmlString(result.Excerpt))</span>
+				</a>
+			</li>
+		}
+	</ol>
+	@if (Model.Live)
+	{
+		<template data-search-result>
+			<li class="search-result" role="option">
+				<a class="search-result__link" href="#">
+					<span class="search-result__path" data-search-path></span>
+					<span class="search-result__title" data-search-title></span>
+					<span class="search-result__excerpt" data-search-excerpt></span>
+				</a>
+			</li>
+		</template>
+	}
+	<footer class="search-dialog__footer">
+		<span>@await RenderPartialAsync(_Kbd.Create(new KbdModel { Keys = ["↑", "↓"] })) to move</span>
+		<span>@await RenderPartialAsync(_Kbd.Create(new KbdModel { Keys = ["Enter"] })) to open</span>
+		<span>@await RenderPartialAsync(_Kbd.Create(new KbdModel { Keys = ["Esc"] })) to close</span>
+	</footer>
+</dialog>

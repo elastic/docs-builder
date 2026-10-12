@@ -1,4 +1,0 @@
-@inherits RazorSlice<Elastic.Documentation.Site.Components.NavTree.NavTreeModel>
-<ul class="nav-tree" id="nav-tree-@Model.Id">
-	@await RenderPartialAsync(_NavTreeItems.Create(Model.Items))
-</ul>

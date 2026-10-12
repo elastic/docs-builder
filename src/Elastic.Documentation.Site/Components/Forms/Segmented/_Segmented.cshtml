@@ -1,0 +1,12 @@
+@using Elastic.Documentation.Site.Components
+@inherits RazorSlice<Elastic.Documentation.Site.Components.Forms.Segmented.SegmentedModel>
+<fieldset class="segmented"@ComponentData.Attributes(Model.Data)>
+	<legend class="sr-only">@Model.Legend</legend>
+	@foreach (var option in Model.Options)
+	{
+		<label class="segmented__option">
+			<input class="segmented__input" type="radio" name="@Model.Name" value="@option.Value"@(option.Selected ? new HtmlString(" checked") : HtmlString.Empty)>
+			<span class="segmented__label">@option.Label@if (option.Count is { } count){<span class="segmented__count">@count</span>}</span>
+		</label>
+	}
+</fieldset>

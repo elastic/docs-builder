@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using AwesomeAssertions;
-using Elastic.Documentation.Site.Components.DeploymentInfo;
+using Elastic.Documentation.Site.Components.Chrome.DeploymentInfo;
 
 namespace Elastic.Documentation.Navigation.Tests.DesignSystem;
 

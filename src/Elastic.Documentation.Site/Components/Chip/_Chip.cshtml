@@ -1,5 +1,0 @@
-@inherits RazorSlice<Elastic.Documentation.Site.Components.Chip.ChipModel>
-<label class="chip" for="@Model.Id">
-	<input class="chip__input" id="@Model.Id" name="@Model.Name" value="@Model.Value" type="checkbox"@(Model.Selected ? new HtmlString(" checked") : HtmlString.Empty)>
-	<span class="chip__label">@Model.Label</span>
-</label>

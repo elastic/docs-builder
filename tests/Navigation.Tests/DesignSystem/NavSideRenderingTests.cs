@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using AwesomeAssertions;
-using Elastic.Documentation.Site.Components.NavSide;
+using Elastic.Documentation.Site.Components.Navigation.NavSide;
 using Elastic.Documentation.Site.Navigation;
 using RazorSlices;
 

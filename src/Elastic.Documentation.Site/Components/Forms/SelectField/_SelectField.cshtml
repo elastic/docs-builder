@@ -1,0 +1,13 @@
+@inherits RazorSlice<Elastic.Documentation.Site.Components.Forms.SelectField.SelectFieldModel>
+<div class="field">
+	<label class="field__label" for="@Model.Id">@Model.Label</label>
+	<div class="select">
+		<select class="input select__control" id="@Model.Id" name="@Model.Name"@(Model.Disabled ? new HtmlString(" disabled") : HtmlString.Empty)>
+			@foreach (var option in Model.Options)
+			{
+				<option value="@option.Value"@(option.Selected ? new HtmlString(" selected") : HtmlString.Empty)>@option.Label</option>
+			}
+		</select>
+		@await RenderPartialAsync(_Icon.Create(new IconModel { Name = "chevron_single_down", Size = IconSize.Small }))
+	</div>
+</div>

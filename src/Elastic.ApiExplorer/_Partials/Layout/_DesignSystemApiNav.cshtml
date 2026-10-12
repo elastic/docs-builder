@@ -1,5 +1,5 @@
 @inherits RazorSlice<Elastic.ApiExplorer.Infrastructure.ApiLayoutViewModel>
-@using Elastic.Documentation.Site.Components.LinkMenu
+@using Elastic.Documentation.Site.Components.Navigation.LinkMenu
 @* The API sidebar: the switchers above the shared navigation tree. The jump field filters the tree and needs script, so it stays hidden until then. *@
 <div class="api-sidebar-chrome" data-nav-filter-scope>
 	@if (Model.VersionSwitcherItems.Count > 1)

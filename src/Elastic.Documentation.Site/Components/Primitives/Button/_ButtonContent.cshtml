@@ -1,0 +1,13 @@
+@inherits RazorSlice<Elastic.Documentation.Site.Components.Primitives.Button.ButtonModel>
+@if (Model.Icon is { } icon)
+{
+	@await RenderPartialAsync(_Icon.Create(new IconModel { Name = icon, Size = Model.IconSize }))
+}
+@if (!Model.IconOnly)
+{
+	<span>@Model.Label</span>
+}
+@if (Model.TrailingIcon is { } trailing)
+{
+	@await RenderPartialAsync(_Icon.Create(new IconModel { Name = trailing, Size = Model.IconSize }))
+}

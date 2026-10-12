@@ -1,5 +1,5 @@
 @inherits RazorSlice<Elastic.ApiExplorer.Infrastructure.ApiLayoutViewModel>
-@using Elastic.Documentation.Site.Components.Breadcrumb
+@using Elastic.Documentation.Site.Components.Navigation.Breadcrumb
 @if (Model.Breadcrumbs.Length > 0)
 {
 	@await RenderPartialAsync(_Breadcrumb.Create(new BreadcrumbModel

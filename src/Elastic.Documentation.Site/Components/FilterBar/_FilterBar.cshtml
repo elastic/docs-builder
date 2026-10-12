@@ -1,9 +1,0 @@
-@inherits RazorSlice<Elastic.Documentation.Site.Components.FilterBar.FilterBarModel>
-<div class="filter-bar">
-	@await RenderPartialAsync(_Segmented.Create(Model.Views))
-	@if (Model.Summary is { } summary)
-	{
-		<p class="filter-bar__summary" role="status">@summary</p>
-	}
-	<div class="filter-bar__field">@await RenderPartialAsync(_SearchField.Create(Model.Filter))</div>
-</div>

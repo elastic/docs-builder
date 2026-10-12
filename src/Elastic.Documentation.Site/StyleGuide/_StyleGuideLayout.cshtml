@@ -1,7 +1,7 @@
 @inherits RazorLayoutSlice<StyleGuideViewModel>
 @using Elastic.Documentation.Site.StyleGuide
-@using Elastic.Documentation.Site.Components.Button
-@using Elastic.Documentation.Site.Components.ThemeSwitch
+@using Elastic.Documentation.Site.Components.Primitives.Button
+@using Elastic.Documentation.Site.Components.Chrome.ThemeSwitch
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -9,7 +9,7 @@
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<meta name="robots" content="noindex, nofollow">
 	<title>@Model.Page.Title · Style guide</title>
-	@Elastic.Documentation.Site.Components.ThemeSwitch.PreferencesScript.Inline
+	@Elastic.Documentation.Site.Components.Chrome.ThemeSwitch.PreferencesScript.Inline
 	<link rel="stylesheet" href="@Model.Static("ds-layers.css")">
 	<link rel="stylesheet" href="@Model.Static("ds.css")">
 	<link rel="stylesheet" href="@Model.Static("ds-guide.css")">

@@ -1,9 +1,0 @@
-@inherits RazorSlice<Elastic.Documentation.Site.Components.ReleaseCard.ReleaseCardModel>
-<article class="release-card">
-	<div class="release-card__meta">
-		@await RenderPartialAsync(_Badge.Create(new BadgeModel { Text = Model.Version, Shape = BadgeShape.Tag }))
-		<span class="release-card__category">@Model.Category</span>
-	</div>
-	<h4 class="release-card__title"><a class="release-card__link" href="@Model.Href">@Model.Title</a></h4>
-	<p class="release-card__summary">@Model.Summary</p>
-</article>

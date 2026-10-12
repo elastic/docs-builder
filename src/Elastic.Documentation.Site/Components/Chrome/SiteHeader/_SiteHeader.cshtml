@@ -1,0 +1,44 @@
+@inherits RazorSlice<Elastic.Documentation.Site.Components.Chrome.SiteHeader.SiteHeaderModel>
+<header class="@Model.CssClass" id="site-header" hx-preserve>
+	<div class="site-header__inner">
+		<a class="site-header__brand" href="@Model.HomeHref">
+			@if (Model.LogoSrc is { } logo)
+			{
+				<img class="site-header__logo" src="@logo" alt="" width="28" height="28">
+			}
+			<span class="site-header__title">@Model.Title</span>
+		</a>
+		<div class="site-header__search">
+			@if (Model.Search)
+			{
+				@await RenderPartialAsync(_SearchField.Create(new SearchFieldModel { Id = "site-header-search", Label = "Search the documentation", Placeholder = "Search", Trigger = true, Shortcut = ["Ctrl", "K"] }))
+			}
+			else if (Model.SearchAction is { } action)
+			{
+				@await RenderPartialAsync(_SearchField.Create(new SearchFieldModel { Id = "site-header-search", Label = "Search the documentation", Placeholder = "Search", Action = action, Shortcut = ["Ctrl", "K"] }))
+			}
+		</div>
+		<nav class="site-header__nav" aria-label="Site">
+			@foreach (var link in Model.Links)
+			{
+				<a class="site-header__link" href="@link.Href">@if (link.Icon is { } icon){@await RenderPartialAsync(_Icon.Create(new IconModel { Name = icon, Size = IconSize.Small }))}<span>@link.Label</span></a>
+			}
+			@if (Model.Deployment is { } deployment)
+			{
+				@await RenderPartialAsync(_DeploymentInfo.Create(deployment))
+			}
+			@if (Model.AskAi)
+			{
+				@await RenderPartialAsync(_AskAi.Create(new AskAiModel { Floating = false, Placeholder = "Ask me anything..." }))
+			}
+			@if (Model.ThemeSwitch)
+			{
+				@await RenderPartialAsync(_ThemeSwitch.Create(new ThemeSwitchModel { Id = "header-theme" }))
+			}
+		</nav>
+	</div>
+	@if (Model.Search)
+	{
+		@await RenderPartialAsync(_SearchDialog.Create(new SearchDialogModel()))
+	}
+</header>

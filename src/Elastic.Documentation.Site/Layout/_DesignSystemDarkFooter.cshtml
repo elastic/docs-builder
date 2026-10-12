@@ -1,6 +1,6 @@
 @inherits RazorSlice<Elastic.Documentation.Site.GlobalLayoutViewModel>
 @using Elastic.Documentation
-@using Elastic.Documentation.Site.Components.SiteFooter
+@using Elastic.Documentation.Site.Components.Chrome.SiteFooter
 @if (Model.BuildType == BuildType.Assembler)
 {
 	@await RenderPartialAsync(_SiteFooter.Create(new SiteFooterModel
