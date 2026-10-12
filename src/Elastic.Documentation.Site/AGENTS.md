@@ -15,14 +15,14 @@ Shared Razor layout, the frontend bundles, and the design system. The full guide
 
 ## Layout
 
-| Path | Purpose |
-|---|---|
-| `Assets/ds.css`, `Assets/ds.ts` | Design-system bundle entry points (Vite inputs `ds-css`, `ds`) |
-| `Assets/ds/` | Tokens, themes, reset, base, fonts, and enhancement modules |
-| `Assets/ds/patterns/layout.css` | The named page layouts (`layout--single`, `--two`, `--three`, `--hub`) and the content `grid`; new pages start from one |
-| `Assets/ds-guide.css` | Style-guide-only scaffolding; never loaded on product pages |
-| `StyleGuide/` | Style-guide pages (Razor slices), the page catalog, and the token metadata |
-| `visual/` | Playwright screenshot checks of the flag-off site across `serve` and `assembler serve`; baselines are seeded from `main` and never committed |
+| Path                            | Purpose                                                                                                                                      |
+| ------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Assets/ds.css`, `Assets/ds.ts` | Design-system bundle entry points (Vite inputs `ds-css`, `ds`)                                                                               |
+| `Assets/ds/`                    | Tokens, themes, reset, base, fonts, and enhancement modules                                                                                  |
+| `Assets/ds/patterns/layout.css` | The named page layouts (`layout--single`, `--two`, `--three`, `--hub`) and the content `grid`; new pages start from one                      |
+| `Assets/ds-guide.css`           | Style-guide-only scaffolding; never loaded on product pages                                                                                  |
+| `StyleGuide/`                   | Style-guide pages (Razor slices), the page catalog, and the token metadata                                                                   |
+| `visual/`                       | Playwright screenshot checks of the flag-off site across `serve` and `assembler serve`; baselines are seeded from `main` and never committed |
 
 ## Commands
 
