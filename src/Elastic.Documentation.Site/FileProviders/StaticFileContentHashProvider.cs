@@ -9,7 +9,7 @@ namespace Elastic.Documentation.Site.FileProviders;
 
 public class StaticFileContentHashProvider(EmbeddedOrPhysicalFileProvider fileProvider)
 {
-	private const string ManifestFile = "vite-manifest.json";
+	private const string ManifestFile = ".vite/manifest.json";
 	private static readonly Dictionary<string, string> NoEntries = [];
 
 	private readonly ConcurrentDictionary<string, string> _contentHashes = [];

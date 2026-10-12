@@ -28,9 +28,8 @@ export default defineConfig({
         outDir: '_static',
         emptyOutDir: false,
         sourcemap: true,
-        // Razor resolves `main.js` to the hashed entry through this file. Not `manifest.json`:
-        // a doc set may ship a web app manifest under that name in its own `_static`.
-        manifest: 'vite-manifest.json',
+        // Razor resolves `main.js` to the hashed entry through `.vite/manifest.json`.
+        manifest: true,
         rollupOptions: {
             input: {
                 main: path.resolve(__dirname, 'Assets/main.ts'),

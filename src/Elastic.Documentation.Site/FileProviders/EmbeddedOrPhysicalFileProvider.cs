@@ -4,6 +4,7 @@
 
 using Elastic.Documentation.Configuration;
 using Microsoft.Extensions.FileProviders;
+using Microsoft.Extensions.FileProviders.Physical;
 using Microsoft.Extensions.Primitives;
 
 namespace Elastic.Documentation.Site.FileProviders;
@@ -33,7 +34,8 @@ public sealed class EmbeddedOrPhysicalFileProvider : IFileProvider, IDisposable
 		{
 
 			var debugWebFiles = Path.Join(solutionRoot.FullName, "src", "Elastic.Documentation.Site", "_static");
-			_staticWebFilesDuringDebug = new PhysicalFileProvider(debugWebFiles);
+			// No exclusions: the default hides dot-prefixed paths, and Vite writes `.vite/manifest.json`.
+			_staticWebFilesDuringDebug = new PhysicalFileProvider(debugWebFiles, ExclusionFilters.None);
 		}
 #else
 		_staticWebFilesDuringDebug = null;
