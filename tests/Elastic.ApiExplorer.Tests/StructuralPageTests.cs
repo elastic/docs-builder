@@ -40,6 +40,15 @@ public class StructuralPageTests(ApiExplorerFixture fixture)
 	}
 
 	[Test]
+	public void Overview_ListsServersButNotTheHiddenAuthenticationPage()
+	{
+		var rows = ApiOverviewBuilder.Build(fixture.Navigation);
+
+		rows.Select(row => row.Url).Should().Contain("/api/doc/fixture/servers");
+		rows.Select(row => row.Url).Should().NotContain("/api/doc/fixture/authentication");
+	}
+
+	[Test]
 	public void Create_EmptyDocument_OmitsAuthenticationAndServersPages()
 	{
 		var items = CreateItems(new OpenApiDocument { Info = new OpenApiInfo { Title = "t", Version = "1" } });
