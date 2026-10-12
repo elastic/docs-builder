@@ -16,9 +16,13 @@
 		<h1>@operation.Summary</h1>
 		@(await RenderPartialAsync<_PageActions, string>(LayoutModel.MarkdownUrl))
 	</div>
-	@if (operation.Deprecated || pageModel.IsBeta)
+	@if (pageModel.State is not null || operation.Deprecated || pageModel.IsBeta)
 	{
 		<div class="api-title-badges">
+			@if (pageModel.State is { } state)
+			{
+				<span class="api-state-badge">@state</span>
+			}
 			@if (operation.Deprecated)
 			{
 				<span class="deprecated-badge type-status">deprecated</span>
