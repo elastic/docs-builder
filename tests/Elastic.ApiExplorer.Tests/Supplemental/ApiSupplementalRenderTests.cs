@@ -61,7 +61,7 @@ public class ApiSupplementalRenderTests(ApiExplorerFixture fixture)
 
 		html.Should().Contain("SUPP_OP_DESCRIPTION");
 		html.Should().NotContain(SpecOperationDescription);
-		html.Should().Contain("Query Parameters");
+		html.Should().Contain("Query parameters");
 		html.Should().Contain("id=\"responses\"");
 		html.Should().Contain(SpecQueryQDescription);
 	}
@@ -120,7 +120,7 @@ public class ApiSupplementalRenderTests(ApiExplorerFixture fixture)
 		var html = await RenderAsync(nav.Model, nav);
 
 		html.Should().Contain("id=\"parameters\"");
-		html.Should().Contain("href=\"#parameters\">Path Parameters</a>");
+		html.Should().Contain("href=\"#parameters\">Path parameters</a>");
 		html.Should().NotContain(">Parameters</a>");
 		html.Should().NotContain("id=\"parameters-list\"");
 		html.Should().NotContain("aria-controls=\"parameters-list\"");
@@ -135,7 +135,7 @@ public class ApiSupplementalRenderTests(ApiExplorerFixture fixture)
 		html.Should().Contain("api-param-section collapsed");
 		html.Should().Contain("id=\"parameters-list\"");
 		html.Should().Contain("aria-controls=\"parameters-list\"");
-		html.Should().Contain("href=\"#parameters\">Path Parameters</a>");
+		html.Should().Contain("href=\"#parameters\">Path parameters</a>");
 	}
 
 	[Test]

@@ -138,11 +138,11 @@
 		<div @ParamSectionHeader.WrapAttributes(collapsePath)>
 		@if (collapsePath)
 		{
-			@(await RenderPartialAsync<_ParamSectionHeader, ParamSectionHeader>(new ParamSectionHeader("Path Parameters", "parameters", pageModel.PathParameterNames)))
+			@(await RenderPartialAsync<_ParamSectionHeader, ParamSectionHeader>(new ParamSectionHeader("Path parameters", "parameters", pageModel.PathParameterNames)))
 		}
 		else
 		{
-			@(await RenderPartialAsync<_SectionHeader, SectionHeader>(new SectionHeader("Path Parameters", "parameters")))
+			@(await RenderPartialAsync<_SectionHeader, SectionHeader>(new SectionHeader("Path parameters", "parameters")))
 		}
 		<div @ParamSectionHeader.BodyAttributes(collapsePath, "parameters-list")>
 		<dl class="property-list">
@@ -207,11 +207,11 @@
 		<div @ParamSectionHeader.WrapAttributes(collapseQuery)>
 		@if (collapseQuery)
 		{
-			@(await RenderPartialAsync<_ParamSectionHeader, ParamSectionHeader>(new ParamSectionHeader("Query Parameters", "query-params", pageModel.QueryParameterNames)))
+			@(await RenderPartialAsync<_ParamSectionHeader, ParamSectionHeader>(new ParamSectionHeader("Query parameters", "query-params", pageModel.QueryParameterNames)))
 		}
 		else
 		{
-			@(await RenderPartialAsync<_SectionHeader, SectionHeader>(new SectionHeader("Query Parameters", "query-params")))
+			@(await RenderPartialAsync<_SectionHeader, SectionHeader>(new SectionHeader("Query parameters", "query-params")))
 		}
 		<div @ParamSectionHeader.BodyAttributes(collapseQuery, "query-params-list")>
 		<dl class="property-list">

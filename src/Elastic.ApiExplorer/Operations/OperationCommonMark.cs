@@ -34,8 +34,8 @@ internal static class OperationCommonMark
 		WriteRequestBody(markdown, apiOperation, page, apiBaseUrl);
 		WriteResponses(markdown, page, apiBaseUrl);
 		WriteCodeSamples(markdown, page);
-		WriteExamples(markdown, "Request Examples", page.ShowRequestExamples, page.RequestExamples, apiBaseUrl);
-		WriteExamples(markdown, "Response Examples", page.ShowResponseExamples, page.ResponseExamples, apiBaseUrl);
+		WriteExamples(markdown, "Request examples", page.ShowRequestExamples, page.RequestExamples, apiBaseUrl);
+		WriteExamples(markdown, "Response examples", page.ShowResponseExamples, page.ResponseExamples, apiBaseUrl);
 		foreach (var extra in page.PostSections)
 		{
 			ApiCommonMark.Heading(markdown, 2, extra.Heading);
@@ -110,7 +110,7 @@ internal static class OperationCommonMark
 		if (page.PathParameters.Count == 0)
 			return;
 
-		ApiCommonMark.Heading(markdown, 4, "Path Parameters");
+		ApiCommonMark.Heading(markdown, 4, "Path parameters");
 		foreach (var path in page.PathParameters)
 		{
 			var type = path.Type is null ? "" : $" ({path.Type.Text})";
@@ -156,7 +156,7 @@ internal static class OperationCommonMark
 		if (page.QueryParameters.Count == 0)
 			return;
 
-		ApiCommonMark.Heading(markdown, 2, "Query String Parameters");
+		ApiCommonMark.Heading(markdown, 2, "Query string parameters");
 		foreach (var query in page.QueryParameters)
 		{
 			var parameter = query.Parameter;
@@ -191,7 +191,7 @@ internal static class OperationCommonMark
 		if (apiOperation.Operation.RequestBody is null)
 			return;
 
-		ApiCommonMark.Heading(markdown, 2, "Request Body");
+		ApiCommonMark.Heading(markdown, 2, "Request body");
 		if (!string.IsNullOrEmpty(page.RequestContentType))
 			ApiCommonMark.Paragraph(markdown, $"`{page.RequestContentType}`");
 		ApiCommonMark.Prepared(markdown, apiOperation.Operation.RequestBody.Description, apiBaseUrl);
@@ -249,7 +249,7 @@ internal static class OperationCommonMark
 		if (response.Headers.Count == 0)
 			return;
 
-		ApiCommonMark.Heading(markdown, 5, "Response Headers");
+		ApiCommonMark.Heading(markdown, 5, "Response headers");
 		foreach (var header in response.Headers)
 		{
 			var type = header.Type is null ? "" : $" ({header.Type.Text})";
@@ -270,7 +270,7 @@ internal static class OperationCommonMark
 		if (page.CodeSamples.Count == 0)
 			return;
 
-		ApiCommonMark.Heading(markdown, 2, "Code Examples");
+		ApiCommonMark.Heading(markdown, 2, "Code examples");
 		foreach (var sample in page.CodeSamples)
 		{
 			ApiCommonMark.Heading(markdown, 4, sample.Language);

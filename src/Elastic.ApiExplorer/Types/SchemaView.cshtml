@@ -51,7 +51,7 @@
 
 	@if (hasEnum)
 	{
-		@(await RenderPartialAsync<_SectionHeader, SectionHeader>(new SectionHeader("Enum Values", "enum-values")))
+		@(await RenderPartialAsync<_SectionHeader, SectionHeader>(new SectionHeader("Enum values", "enum-values")))
 		<ul class="enum-values">
 			@foreach (var enumValue in pageModel.EnumValues)
 			{
@@ -81,7 +81,7 @@
 
 	@if (pageModel.AdditionalPropertiesType is not null)
 	{
-		@(await RenderPartialAsync<_SectionHeader, SectionHeader>(new SectionHeader("Additional Properties", "additional-properties")))
+		@(await RenderPartialAsync<_SectionHeader, SectionHeader>(new SectionHeader("Additional properties", "additional-properties")))
 		<p>This type allows additional properties of type: @(await RenderPartialAsync<_SchemaType, TypeAnnotation>(pageModel.AdditionalPropertiesType))</p>
 	}
 
