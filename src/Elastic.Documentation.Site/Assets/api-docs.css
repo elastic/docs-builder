@@ -3315,6 +3315,8 @@ html:has(.api-page-shell) {
 
 /* A placeholder reads as path text with a faint dotted cue; it turns into a link only on hover or focus. */
 #markdown-content a.api-url-param {
+	/* Markdown links set their own font; the placeholder must match the monospace path around it. */
+	font: inherit;
 	color: inherit;
 	text-decoration: underline dotted var(--color-grey-40, #98a2b3);
 	text-decoration-thickness: 1px;
