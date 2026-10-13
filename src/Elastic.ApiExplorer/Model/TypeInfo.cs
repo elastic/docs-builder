@@ -12,22 +12,35 @@ namespace Elastic.ApiExplorer.Model;
 /// </summary>
 public record UnionOption(string BaseName, string? Ref, bool IsObject, IOpenApiSchema? Schema, bool IsArray = false)
 {
-	/// <summary>The display name: <see cref="BaseName"/>, with <c>[]</c> when the member is an array of it.</summary>
+	/// <summary>
+	/// The option's identity: <see cref="BaseName"/>, with <c>[]</c> when the member is an array of it. Grouping,
+	/// signatures and anchors use it; readers see <see cref="Shown"/>.
+	/// </summary>
 	public string Name => IsArray ? $"{BaseName}[]" : BaseName;
 
 	/// <summary>
-	/// What an unnamed inline object member reads as, since many share the name <c>object</c>: its title, a field with a
-	/// constant value (<c>type: relative</c>), or the property names no sibling has (<c>{ and }</c>). Display only;
-	/// grouping, signatures and anchors keep using <see cref="Name"/>.
+	/// What readers see for <see cref="BaseName"/>: a page title, or the shape of a schema the spec names
+	/// (<c>object</c>, <c>enum</c>, <c>string</c>), since the spec's type names are code names.
+	/// </summary>
+	public string ShownBase { get => field ?? BaseName; init; }
+
+	/// <summary><see cref="ShownBase"/>, with <c>[]</c> when the member is an array of it: <c>(string | object)[]</c> for a formula.</summary>
+	public string Shown =>
+		IsArray ? ShownBase.Contains(" | ", StringComparison.Ordinal) ? $"({ShownBase})[]" : $"{ShownBase}[]" : ShownBase;
+
+	/// <summary>
+	/// What an object member reads as, since many look alike once their type names are gone: its title, a field with a
+	/// constant value (<c>type: relative</c>), or the property names no sibling has (<c>{ and }</c>). Display only.
 	/// </summary>
 	public string? Label { get; init; }
 }
 
 /// <summary>One type a formula names (<c>number</c> in <c>number | string</c>), with the <c>$ref</c> it stands for.</summary>
-public record TypeAlternative(string Name, string? SchemaRef, bool IsArray)
+/// <param name="Shown">What readers see for <see cref="Name"/>; see <see cref="UnionOption.ShownBase"/>.</param>
+public record TypeAlternative(string Name, string? SchemaRef, bool IsArray, string Shown)
 {
-	/// <summary>How the formula spells it: <see cref="Name"/>, with <c>[]</c> for an array of it.</summary>
-	public string Text => IsArray ? $"{Name}[]" : Name;
+	/// <summary>How the formula spells it: <see cref="Shown"/>, with <c>[]</c> for an array of it.</summary>
+	public string Text => IsArray ? $"{Shown}[]" : Shown;
 }
 
 /// <summary>A named schema merged into a type through <c>allOf</c>, beyond the one that names the type.</summary>
@@ -40,8 +53,14 @@ public record ComposedType(string Name, string? LinkedSchemaId);
 /// </summary>
 public record TypeInfo
 {
-	/// <summary>The display name of the type.</summary>
+	/// <summary>The spec's name for the type, or its shape for an unnamed one. Identity only; readers see <see cref="ShownName"/>.</summary>
 	public required string TypeName { get; init; }
+
+	/// <summary>
+	/// What readers see in place of <see cref="TypeName"/>: a page title, or the shape of a schema the spec names
+	/// (<c>object</c>, <c>enum</c>, <c>string</c>), since the spec's type names are code names.
+	/// </summary>
+	public string ShownName { get => field ?? TypeName; init; }
 
 	/// <summary>The schema reference ID, if applicable.</summary>
 	public string? SchemaRef { get; init; }

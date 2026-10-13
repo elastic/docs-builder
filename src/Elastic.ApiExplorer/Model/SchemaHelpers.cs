@@ -87,6 +87,9 @@ public static class SchemaHelpers
 	/// These should not be considered for recursive type detection since they
 	/// represent generic types rather than specific schema references.
 	/// </summary>
+	/// <summary>What a type the spec names reads as when it has no page of its own, besides a primitive.</summary>
+	public static readonly HashSet<string> ShapeNames = new(["enum", "union", "oneOf", "anyOf", "array"], StringComparer.Ordinal);
+
 	public static readonly HashSet<string> PrimitiveTypeNames = new(
 		["boolean", "number", "string", "integer", "object", "null", "array"],
 		StringComparer.OrdinalIgnoreCase

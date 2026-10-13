@@ -106,7 +106,7 @@ public partial record OperationPageModel
 
 	private static UnionBadge[] UnionBadges(TypeInfo typeInfo)
 	{
-		var names = (typeInfo.UnionOptions ?? []).Select(o => o.Name);
+		var names = (typeInfo.UnionOptions ?? []).Select(o => o.Shown).Distinct();
 		return names
 			.Where(n => !string.IsNullOrEmpty(n))
 			.Select(n => new UnionBadge(n, ApiPropertyTreeBuilder.IsTypeOptionBadge(n)))

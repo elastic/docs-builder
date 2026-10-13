@@ -58,7 +58,7 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture)
 
 		var fields = list!.Items.Single(p => p.Name == "fields");
 		fields.Union.Should().BeNull("X | X[] is already in the type annotation");
-		fields.Type.Text.Should().Be("union Field | Field[]");
+		fields.Type.Text.Should().Be("union string | string[]");
 		fields.AnchorId.Should().Be("req-fields");
 	}
 
@@ -75,13 +75,9 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture)
 		var aggs = list!.Items.Single(p => p.Name == "aggs");
 		aggs.Children.Kind.Should().Be(ChildKind.None, "the dictionary value type has its own page");
 		aggs.TypeLink.Should().NotBeNull();
-		aggs.TypeLink!.TypeName.Should().Be("AggregationContainer");
+		aggs.TypeLink!.TypeName.Should().Be("Aggregation");
 		aggs.TypeLink.Url.Should().Be("/api/doc/fixture/types/_types-aggregations-aggregationcontainer");
-		aggs
-			.Type
-			.Spans
-			.Should()
-			.Contain(s => s.Text == "AggregationContainer" && s.CssClass == "type-linked" && s.Href == aggs.TypeLink.Url);
+		aggs.Type.Spans.Should().Contain(s => s.Text == "Aggregation" && s.CssClass == "type-linked" && s.Href == aggs.TypeLink.Url);
 		aggs.Type.Spans.Where(s => s.Text is "map" or "{}").Should().OnlyContain(s => string.IsNullOrEmpty(s.Href));
 	}
 
@@ -97,7 +93,7 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture)
 
 		var query = list!.Items.Single(p => p.Name == "query");
 		query.TypeLink.Should().NotBeNull();
-		query.Type.Spans.Should().Contain(s => s.Text == "QueryContainer" && s.CssClass == "type-linked" && s.Href == query.TypeLink!.Url);
+		query.Type.Spans.Should().Contain(s => s.Text == "Query" && s.CssClass == "type-linked" && s.Href == query.TypeLink!.Url);
 	}
 
 	[Test]
@@ -125,15 +121,14 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture)
 	}
 
 	[Test]
-	public void Describe_ValueType_MarksKeywordAndAliasAsTypeValue()
+	public void Describe_ValueType_ReadsAsItsPrimitive()
 	{
 		var builder = CreateBuilder();
 
 		var annotation = builder.Describe(Schema("_types.SortField").Properties!["field"]);
 
-		annotation.Spans.Should().Contain(s => s.Text == "string" && s.CssClass != null && s.CssClass.Contains("type-value"));
-		annotation.Spans.Should().Contain(s => s.Text == "Field" && s.CssClass == "type-value");
-		annotation.Spans.Should().NotContain(s => s.CssClass != null && s.CssClass.Contains("type-primitive"));
+		annotation.Text.Should().Be("string");
+		annotation.Spans.Should().ContainSingle(s => s.Text == "string" && s.CssClass == SchemaHelpers.PrimitiveCssClass);
 	}
 
 	[Test]
@@ -174,13 +169,14 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture)
 	}
 
 	[Test]
-	public void Describe_NamedEnum_KeepsSchemaName()
+	public void Describe_NamedEnum_HidesSchemaName()
 	{
 		var builder = CreateBuilder();
 
 		var annotation = builder.Describe(Schema("fixture.SearchRequestBody").Properties!["mode"]);
 
-		annotation.Text.Should().Be("enum SearchMode");
+		annotation.Text.Should().Be("enum");
+		annotation.Spans.Should().NotContain(s => s.Bare && s.Text == " ", "no name follows the keyword");
 	}
 
 	[Test]
@@ -190,7 +186,7 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture)
 
 		var annotation = builder.Describe(Schema("fixture.SearchRequestBody").Properties!["fields"]);
 
-		annotation.Text.Should().Be("union Field | Field[]");
+		annotation.Text.Should().Be("union string | string[]");
 		annotation.Spans.Should().Contain(s => s.Text == "union" && s.CssClass == SchemaHelpers.WrapperUnionCssClass);
 		annotation.Spans.Should().Contain(s => s.Text == "[]" && s.CssClass == SchemaHelpers.WrapperArrayIconCssClass);
 		annotation.Spans.Should().NotContain(s => s.CssClass == "type-object");
@@ -215,8 +211,8 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture)
 
 		var annotation = builder.Describe(Schema("_types.query_dsl.BoolQuery").Properties!["must"]);
 
-		annotation.Text.Should().Be("{} QueryContainer[]");
-		annotation.Spans.Should().Contain(s => s.Text == "QueryContainer" && s.CssClass == "type-linked");
+		annotation.Text.Should().Be("{} Query[]");
+		annotation.Spans.Should().Contain(s => s.Text == "Query" && s.CssClass == "type-linked");
 	}
 
 	[Test]
@@ -226,8 +222,9 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture)
 
 		var annotation = builder.Describe(Schema("fixture.SearchRequestBody").Properties!["query"]);
 
-		annotation.Spans.Should().Contain(s => s.Text == "QueryContainer" && s.CssClass == "type-linked");
+		annotation.Spans.Should().Contain(s => s.Text == "Query" && s.CssClass == "type-linked");
 		annotation.Spans.Should().Contain(s => s.Text == "{}" && s.CssClass != null && s.CssClass.Contains("type-wrapper"));
+		annotation.Spans.Should().OnlyContain(s => s.Title == null, "a type's schema id never shows, not even as a tooltip");
 	}
 
 	[Test]
@@ -237,11 +234,11 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture)
 
 		var annotation = builder.Describe(Schema("fixture.SearchRequestBody").Properties!["aggs"]);
 
-		annotation.Text.Should().Be("map string to {} AggregationContainer");
+		annotation.Text.Should().Be("map string to {} Aggregation");
 		annotation.Spans.Should().Contain(s => s.Text == "map" && s.CssClass == SchemaHelpers.WrapperMapKeywordCssClass);
 		annotation.Spans.Should().Contain(s => s.Text == " to " && s.Bare);
 		annotation.Spans.Should().Contain(s => s.Text == "{}" && s.CssClass == SchemaHelpers.WrapperObjectIconCssClass);
-		annotation.Spans.Should().Contain(s => s.Text == "AggregationContainer" && s.CssClass == "type-linked");
+		annotation.Spans.Should().Contain(s => s.Text == "Aggregation" && s.CssClass == "type-linked");
 	}
 
 	[Test]
@@ -260,11 +257,11 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture)
 		variants.Should().NotBeNull();
 		variants!.Variants.Should().HaveCount(2);
 		variants.UseChips.Should().BeTrue("two object variants show one at a time behind chips");
-		variants.Variants.Select(v => v.DisplayName).Should().BeEquivalentTo(["TermsAggregate", "MaxAggregate"]);
+		variants.Variants.Select(v => v.DisplayName).Should().BeEquivalentTo(["{ buckets }", "{ value }"]);
 	}
 
 	[Test]
-	public void BuildUnionVariants_CodegenOneOf_UsesReadableNames()
+	public void BuildUnionVariants_CodegenOneOf_LabelsVariantsByTheFieldsOnlyTheyHave()
 	{
 		var builder = CreateBuilder();
 		var schema = Schema("fixture.InvalidInputResponse");
@@ -277,7 +274,7 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture)
 		);
 
 		variants.Should().NotBeNull();
-		variants!.Variants.Select(v => v.DisplayName).Should().BeEquivalentTo(["PlatformErrorResponse", "SiemErrorResponse"]);
+		variants!.Variants.Select(v => v.DisplayName).Should().BeEquivalentTo(["{ error, statusCode }", "{ status_code }"]);
 		variants.Variants.Should().AllSatisfy(v => v.ShowProperties.Should().BeTrue());
 		variants.UseChips.Should().BeTrue("two object variants show one at a time behind chips");
 	}
@@ -488,12 +485,12 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture)
 		var dataStreams = new OpenApiSchemaReference("_types.DataStreamNames", document);
 		var name = new OpenApiSchemaReference("_types.Name", document);
 
-		builder.Describe(names).Text.Should().Be("union Names");
-		builder.DescribePathParameter(names).Text.Should().Be("union Name | Name[]");
-		builder.DescribePathParameter(dataStreams).Text.Should().Be("union DataStreamName | DataStreamName[]");
+		builder.Describe(names).Text.Should().Be("union oneOf");
+		builder.DescribePathParameter(names).Text.Should().Be("union string | string[]");
+		builder.DescribePathParameter(dataStreams).Text.Should().Be("union string | string[]");
 		builder.DescribePathParameter(document.Components!.Schemas!["inline.StringOrArray"]).Text.Should().Be("union string | string[]");
-		builder.DescribePathParameter(name).Text.Should().Be("string Name");
-		builder.Describe(name).Text.Should().Be("string Name");
+		builder.DescribePathParameter(name).Text.Should().Be("string");
+		builder.Describe(name).Text.Should().Be("string");
 		builder.DescribePathParameter(new OpenApiSchema { Type = JsonSchemaType.String }).Text.Should().Be("string");
 	}
 

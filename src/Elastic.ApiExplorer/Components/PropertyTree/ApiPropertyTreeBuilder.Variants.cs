@@ -65,7 +65,7 @@ public partial class ApiPropertyTreeBuilder
 
 			variants[index] = new ApiUnionVariant
 			{
-				DisplayName = variant.Label ?? SchemaHelpers.ReadableSchemaName(variant.BaseName),
+				DisplayName = VariantDisplayName(variant),
 				PageUrl = variant.PageUrl,
 				IsArrayVariant = variant.IsArray,
 				IsObjectType = variant.IsObject,
@@ -84,7 +84,7 @@ public partial class ApiPropertyTreeBuilder
 							Depth = scope.Depth + 1,
 							AncestorRefs = newAncestors,
 							RequiredProperties = null,
-							Owner = variant.Label ?? SchemaHelpers.ReadableSchemaName(variant.BaseName)
+							Owner = VariantDisplayName(variant)
 						}
 					)
 						?? new ApiPropertyList([])
@@ -116,6 +116,16 @@ public partial class ApiPropertyTreeBuilder
 			},
 			Required = schema.Required
 		};
+
+	/// <summary>
+	/// What a variant's tab reads: its label (a title or the fields it is told apart by), its shown name when that says
+	/// something (a page title, a primitive), and as a last resort the shortened name of the schema it refers to.
+	/// </summary>
+	private static string VariantDisplayName(VariantCandidate variant) =>
+		variant.Label
+			?? (variant is { IsObject: true, Ref.Length: > 0 } && !TypePages.TryGet(variant.Ref, out _)
+				? SchemaHelpers.ReadableSchemaName(variant.BaseName)
+				: variant.ShownBase);
 
 	/// <summary>Two variants with the same name (two inline <c>object</c> members) still need distinct anchors.</summary>
 	private static string UniqueId(string id, HashSet<string> used)
@@ -161,6 +171,7 @@ public partial class ApiPropertyTreeBuilder
 		bool IsObject,
 		IOpenApiSchema? Schema,
 		IDictionary<string, IOpenApiSchema>? Props,
+		string ShownBase,
 		string? PageUrl = null,
 		string? Label = null
 	);
@@ -202,6 +213,7 @@ public partial class ApiPropertyTreeBuilder
 					primaryOption.IsObject,
 					schemaToRender,
 					optionProps,
+					primaryOption.ShownBase,
 					pageUrl,
 					primaryOption.Label
 				);

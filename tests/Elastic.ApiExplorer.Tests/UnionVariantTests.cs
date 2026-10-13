@@ -50,7 +50,7 @@ public class UnionVariantTests
 		var pet = list!.Items.Single(p => p.Name == "pet");
 		pet.Children.Kind.Should().Be(ChildKind.PropertyList);
 		pet.Children.Properties!.Items.Select(p => p.Name).Should().Equal("kind");
-		pet.Children.Variants!.Variants.Select(v => v.DisplayName).Should().Equal("Cat", "Dog");
+		pet.Children.Variants!.Variants.Select(v => v.DisplayName).Should().Equal("{ lives }", "{ barks }");
 	}
 
 	[Test]
@@ -483,7 +483,7 @@ public class UnionVariantTests
 		sort.EnumValues.Should().BeEmpty("the literals move into the One of row");
 		sort.Union!.Badges.Select(b => b.Text).Should().Equal("asc", "desc");
 		sort.Union.MoreOptions.Should().Be("or an object listed below");
-		sort.Children.Variants!.Variants.Select(v => v.DisplayName).Should().Equal("SortObject");
+		sort.Children.Variants!.Variants.Select(v => v.DisplayName).Should().Equal("{ order, missing }");
 		var markdown = new System.Text.StringBuilder();
 		ApiPropertyMarkdown.WriteList(markdown, new ApiPropertyList([sort]), "/api/doc/fixture");
 		markdown.ToString().Should().Contain("One of: `asc` or `desc` or an object listed below").And.NotContain("Values:");
@@ -494,7 +494,7 @@ public class UnionVariantTests
 
 		var rank = list.Items.Single(p => p.Name == "rank");
 		rank.Union!.MoreOptions.Should().Be("or a type listed below", "the list below holds integer as well as the object");
-		rank.Children.Variants!.Variants.Select(v => v.DisplayName).Should().Equal("integer", "SortObject");
+		rank.Children.Variants!.Variants.Select(v => v.DisplayName).Should().Equal("integer", "{ order, missing }");
 	}
 
 	[Test]
@@ -537,16 +537,19 @@ public class UnionVariantTests
 		Row("rescore")
 			.SingleOrArray
 			.Should()
-			.Be(new SingleOrArray("Rescore", "Rescore[]"), "the row lists Rescore's fields and its type reads only union oneOf");
+			.Be(new SingleOrArray("object", "object[]"), "the row lists the object's fields and its type reads only union oneOf");
 		Row("rescore").Children.Properties!.Items.Select(p => p.Name).Should().Equal("window_size", "query");
 		Row("fields")
 			.SingleOrArray
 			.Should()
-			.Be(new SingleOrArray("map string to Field", "[] map string to Field"), "map string to Field[] would read as a map of arrays");
+			.Be(
+				new SingleOrArray("map string to string", "[] map string to string"),
+				"map string to string[] would read as a map of arrays"
+			);
 		Row("nodes").SingleOrArray.Should().BeNull("a primitive X lists no fields, so the options row still names both shapes");
 		var markdown = new System.Text.StringBuilder();
 		ApiPropertyMarkdown.WriteList(markdown, new ApiPropertyList([Row("rescore")]), "/api/doc/fixture");
-		markdown.ToString().Should().Contain("`Rescore` or `Rescore[]`");
+		markdown.ToString().Should().Contain("`object` or `object[]`");
 	}
 
 	[Test]
@@ -585,11 +588,11 @@ public class UnionVariantTests
 
 		like.Union.Should().BeNull("the type already reads Like | Like[]");
 		like.SingleOrArray.Should().BeNull("the variant list's label already names both shapes");
-		like.Children.Variants!.Label.Should().Be("Like or Like[]; each Like is any of:");
+		like.Children.Variants!.Label.Should().Be("A value or an array; each item is any of:");
 		like.Children.Variants.Variants.Select(v => v.DiscriminatorLabel).Should().Equal("kind: doc", "kind: LikeText");
 		var markdown = new System.Text.StringBuilder();
 		ApiPropertyMarkdown.WriteList(markdown, new ApiPropertyList([like]), "/api/doc/fixture");
-		markdown.ToString().Should().Contain("Like or Like[]; each Like is any of:");
+		markdown.ToString().Should().Contain("A value or an array; each item is any of:");
 	}
 
 	[Test]
@@ -723,12 +726,12 @@ public class UnionVariantTests
 			.Select(b => (b.LinkText, b.AfterLink, b.Url))
 			.Should()
 			.Equal(
-				("QueryContainer", "[]", "/api/doc/fixture/types/_types-query_dsl-querycontainer"),
-				("QueryContainer", "", "/api/doc/fixture/types/_types-query_dsl-querycontainer")
+				("Query", "[]", "/api/doc/fixture/types/_types-query_dsl-querycontainer"),
+				("Query", "", "/api/doc/fixture/types/_types-query_dsl-querycontainer")
 			);
 		var markdown = new System.Text.StringBuilder();
 		ApiPropertyMarkdown.WriteList(markdown, new ApiPropertyList([filter]), "/api/doc/fixture");
-		markdown.ToString().Should().Contain("One of: [`QueryContainer[]`](/api/doc/fixture/types/_types-query_dsl-querycontainer) or ");
+		markdown.ToString().Should().Contain("One of: [`Query[]`](/api/doc/fixture/types/_types-query_dsl-querycontainer) or ");
 
 		var local = list.Items.Single(p => p.Name == "local");
 		local.TypeLink.Should().BeNull("only the schema with the page's id links there, not another one sharing its short name");
@@ -872,10 +875,10 @@ public class UnionVariantTests
 		)!.Items.Single();
 
 		var variants = query.Children.Variants!.Variants;
-		var container = variants.Single(v => v.DisplayName == "QueryContainer");
+		var container = variants.Single(v => v.DisplayName == "Query");
 		container.PageUrl.Should().NotBeNullOrEmpty();
 		container.Properties.Should().BeNull("QueryContainer has its own page");
-		variants.Single(v => v.DisplayName == "RoleTemplateQuery").Properties!.Items.Select(p => p.Name).Should().Equal("template");
+		variants.Single(v => v.DisplayName == "{ template }").Properties!.Items.Select(p => p.Name).Should().Equal("template");
 	}
 
 	[Test]

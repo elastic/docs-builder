@@ -70,7 +70,9 @@ public record SchemaPageModel
 
 		return new SchemaPageModel
 		{
-			DictionaryTypeName = TypePages.TryGet(schema.SchemaId, out var typePage) ? typePage.MapOf : null,
+			DictionaryTypeName = TypePages.TryGet(schema.SchemaId, out var typePage) && typePage.IsMap
+				? $"map string to {typePage.Title}"
+				: null,
 			ExternalDocs = externalDocs,
 			UnionVariants = variants,
 			UnionKeyword = keyword,
