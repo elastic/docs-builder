@@ -112,6 +112,40 @@ public class OpenApiGeneratorSpecDownloadTests(ApiExplorerFixture fixture)
 		html.Should().Contain("download");
 	}
 
+	[Test]
+	public async Task Generate_LandingShowsCopyableBaseUrlAndVersionAndKeepsCatalog()
+	{
+		var outputRoot = Path.Join(Paths.WorkingDirectoryRoot.FullName, $"api-landing-facts-{Guid.NewGuid():N}");
+		var context = CreateGenerateContext(outputRoot);
+		using var versionIndexClient = new VersionIndexClient(BaseUri, MainOnlyHandler(), sleep: (_, _) => Task.CompletedTask);
+		var generator = new OpenApiGenerator(
+			NullLoggerFactory.Instance,
+			context,
+			PassthroughMarkdownRenderer.Instance,
+			versionIndexClient,
+			CreateSequentialReader(fixture.Document)
+		);
+
+		await generator.Generate(TestContext.Current!.Execution.CancellationToken);
+
+		var ct = TestContext.Current!.Execution.CancellationToken;
+		var html = await context
+			.WriteFileSystem
+			.File
+			.ReadAllTextAsync(Path.Join(outputRoot, "api", "doc", "elasticsearch", "index.html"), ct);
+		html.Should().Contain("<dt>Base URL");
+		html.Should().Contain("data-copy=\"https://fixture.example.com\"");
+		html.Should().Contain("<dt>Version</dt>").And.Contain("1.2.3");
+		html.Should().Contain("api-index");
+
+		var markdown = await context.WriteFileSystem.File.ReadAllTextAsync(Path.Join(outputRoot, "api", "doc", "elasticsearch.md"), ct);
+		markdown = markdown.ReplaceLineEndings("\n");
+		markdown.Should().Contain("version: \"1.2.3\"");
+		markdown.Should().Contain("servers:\n  - \"https://fixture.example.com\"");
+		markdown.Should().Contain("spec:");
+		markdown.Should().NotContain("License:");
+	}
+
 	private static BuildContext CreateGenerateContext(string outputRoot)
 	{
 		var collector = new DiagnosticsCollector([]);
