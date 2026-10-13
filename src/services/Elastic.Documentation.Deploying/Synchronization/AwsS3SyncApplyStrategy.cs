@@ -201,6 +201,11 @@ public partial class AwsS3SyncApplyStrategy(
 					UploadFilesConcurrently = true
 				};
 				directoryRequest.UploadDirectoryProgressEvent += DisplayProgress;
+				directoryRequest.UploadDirectoryFileRequestEvent += (_, args) =>
+				{
+					if (SpecContentType(args.UploadRequest.FilePath) is { } contentType)
+						args.UploadRequest.ContentType = contentType;
+				};
 				_logger.LogInformation("Uploading {Count} files to S3 bucket {BucketName}", uploadRequests.Count, bucketName);
 				_logger.LogDebug("Starting directory upload from {TempDir}", tempDir);
 				await transferUtility.UploadDirectoryAsync(directoryRequest, ctx);
@@ -219,6 +224,18 @@ public partial class AwsS3SyncApplyStrategy(
 			}
 		}
 	}
+
+	/// <summary>
+	/// Explicit Content-Type for generated spec files. The SDK guesses from the extension and has no
+	/// <c>.yaml</c> entry, so YAML would be stored as application/octet-stream and browsers would download it.
+	/// YAML uses text/plain because browsers render it inline, unlike application/yaml.
+	/// </summary>
+	public static string? SpecContentType(string path) => Path.GetExtension(path).ToLowerInvariant() switch
+	{
+		".json" => "application/json",
+		".yaml" or ".yml" => "text/plain; charset=utf-8",
+		_ => null
+	};
 
 	private async Task Delete(SyncPlan plan, Cancel ctx)
 	{

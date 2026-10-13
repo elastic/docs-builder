@@ -281,6 +281,8 @@ public class DocsSyncTests
 	}
 
 	[Test]
+	[NotInParallel(nameof(AwsS3SyncApplyStrategy))] // TestApply asserts on spans from a process-wide ActivitySource
+
 	public async Task TestApply()
 	{
 		// Arrange
@@ -381,5 +383,78 @@ public class DocsSyncTests
 		tagObjects.Should().Contain(
 			t => t.Key == "docs.sync.files.total" && Convert.ToInt64(t.Value, System.Globalization.CultureInfo.InvariantCulture) == 6
 		);
+	}
+
+	[Test]
+	[NotInParallel(nameof(AwsS3SyncApplyStrategy))]
+	public async Task Apply_SetsContentTypeOnSpecUploads()
+	{
+		// Arrange
+		IReadOnlyCollection<IDiagnosticsOutput> diagnosticsOutputs = [];
+		var collector = new DiagnosticsCollector(diagnosticsOutputs);
+		var moxTransferUtility = A.Fake<ITransferUtility>();
+		var fileSystem = new MockFileSystem(
+			new Dictionary<string, MockFileData>
+			{
+				{ "docs/api/doc/es.yaml", new MockFileData("openapi: 3.1.0") },
+				{ "docs/api/doc/es.json", new MockFileData("{}") },
+				{ "docs/index.md", new MockFileData("# Index") },
+			},
+			new MockFileSystemOptions { CurrentDirectory = Path.Join(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "assembly"), }
+		);
+		var configurationContext = TestHelpers.CreateConfigurationContext(fileSystem);
+		var config = AssemblyConfiguration.Create(configurationContext.ConfigurationFileProvider);
+		var context = new AssembleContext(
+			config,
+			configurationContext,
+			"dev",
+			collector,
+			CheckoutsFileSystem.FromWorkingDirectory(fileSystem)
+		);
+		var plan = new SyncPlan
+		{
+			RemoteListingCompleted = true,
+			DeleteThresholdDefault = null,
+			ExcludePatterns = [],
+			TotalRemoteFiles = 0,
+			TotalSourceFiles = 3,
+			TotalSyncRequests = 3,
+			AddRequests =
+			[
+				new AddRequest { LocalPath = "docs/api/doc/es.yaml", DestinationPath = "docs/api/doc/es.yaml" },
+				new AddRequest { LocalPath = "docs/api/doc/es.json", DestinationPath = "docs/api/doc/es.json" },
+				new AddRequest { LocalPath = "docs/index.md", DestinationPath = "docs/index.md" }
+			],
+			UpdateRequests = [],
+			SkipRequests = [],
+			DeleteRequests = []
+		};
+		TransferUtilityUploadDirectoryRequest? captured = null;
+		A.CallTo(() => moxTransferUtility.UploadDirectoryAsync(A<TransferUtilityUploadDirectoryRequest>._, A<Cancel>._)).Invokes(
+			(TransferUtilityUploadDirectoryRequest request, Cancel _) => captured = request
+		);
+		var applier = new AwsS3SyncApplyStrategy(new LoggerFactory(), A.Fake<IAmazonS3>(), moxTransferUtility, "fake", context, collector);
+
+		// Act
+		await applier.Apply(plan, Cancel.None);
+
+		// Assert - raise the per-file event the way the SDK does for each uploaded file
+		captured.Should().NotBeNull();
+
+		string? ContentTypeAfterFileEvent(string path)
+		{
+			var uploadRequest = new TransferUtilityUploadRequest { FilePath = path };
+			var raise = typeof(TransferUtilityUploadDirectoryRequest).GetMethod(
+				"RaiseUploadDirectoryFileRequestEvent",
+				System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Public
+			);
+			raise.Should().NotBeNull("the SDK raises this event for each file in a directory upload");
+			_ = raise!.Invoke(captured, [uploadRequest]);
+			return uploadRequest.ContentType;
+		}
+
+		ContentTypeAfterFileEvent("/tmp/x/docs/api/doc/es.yaml").Should().Be("text/plain; charset=utf-8");
+		ContentTypeAfterFileEvent("/tmp/x/docs/api/doc/es.json").Should().Be("application/json");
+		ContentTypeAfterFileEvent("/tmp/x/docs/index.md").Should().BeNull();
 	}
 }
