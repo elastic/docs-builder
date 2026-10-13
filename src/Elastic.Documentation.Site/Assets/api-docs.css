@@ -1142,7 +1142,7 @@ button.response-status-toggle:focus {
 	overflow: visible;
 }
 
-.responses-list .property-list dt .property-anchor-icon {
+.responses-list .property-list dt > a.property-anchor {
 	z-index: 4;
 }
 
@@ -1270,21 +1270,16 @@ button.response-status-toggle:focus {
 		margin: 0;
 		line-height: 24px;
 
+		/* Icon-only link, pulled out of flow so the name stays plain, selectable text. */
 		> a.property-anchor {
-			display: inline-flex;
-			flex: 0 0 auto;
-			align-items: center;
-			width: fit-content;
-			max-width: 100%;
-			overflow: visible;
-			text-decoration: none;
-		}
-
-		.property-anchor-icon {
 			position: absolute;
 			right: 100%;
 			top: 16px;
 			z-index: 2;
+		}
+
+		.property-anchor-icon {
+			display: block;
 			box-sizing: content-box;
 			width: 24px;
 			height: 24px;
@@ -1319,7 +1314,6 @@ button.response-status-toggle:focus {
 			outline-offset: 2px;
 		}
 
-		> a.property-anchor > code,
 		> code {
 			color: var(--color-ink-navy, #111c2c);
 			font-family:
@@ -1871,6 +1865,11 @@ a.type-linked:hover {
 	@apply mr-2 inline;
 }
 
+/* x-state availability, rendered with the same applies_to badge as Markdown pages */
+.api-title-badges .applies {
+	@apply mr-2;
+}
+
 /* Deprecated badge - red warning style */
 .deprecated-badge {
 	@apply text-red-70 bg-red-10 rounded px-1 py-0.5 text-xs font-medium;
@@ -1886,10 +1885,6 @@ a.type-linked:hover {
 /* Version badge - subtle grey */
 .version-badge {
 	@apply text-grey-60 bg-grey-10 rounded px-1 py-0.5 text-xs font-normal;
-}
-
-.api-title-badges .api-state-badge {
-	@apply text-grey-100 mr-2 inline text-sm font-medium;
 }
 
 /* Beta badge - orange/amber warning */

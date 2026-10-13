@@ -45,13 +45,17 @@ internal static class OperationCommonMark
 			ApiCommonMark.Paragraph(markdown, "deprecated");
 		if (page.IsBeta)
 			ApiCommonMark.Paragraph(markdown, "Beta");
-		if (page.Availability is { } availability)
-		{
-			var text = availability.ShowVersion
-				? $"{availability.BadgeLifecycleText} {availability.BadgeVersion}".Trim()
-				: availability.BadgeLifecycleText;
-			ApiCommonMark.Paragraph(markdown, $"Availability: {text}");
-		}
+		if (page.Availability is null)
+			return;
+
+		var texts = page
+			.Availability
+			.GetApplicabilityItems()
+			.SelectMany(item => item.RenderData.PopoverData?.AvailabilityItems ?? [])
+			.Select(a => a.Text)
+			.ToArray();
+		if (texts.Length > 0)
+			ApiCommonMark.Paragraph(markdown, $"Availability: {string.Join(", ", texts)}");
 	}
 
 	private static void WriteServers(StringBuilder markdown, OperationPageModel page)

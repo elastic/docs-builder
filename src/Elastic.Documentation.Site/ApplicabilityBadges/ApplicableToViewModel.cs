@@ -7,7 +7,7 @@ using Elastic.Documentation.AppliesTo;
 using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Versions;
 
-namespace Elastic.Markdown.Myst.Components;
+namespace Elastic.Documentation.Site.ApplicabilityBadges;
 
 /// <summary>Controls how applicability badges are grouped (stack row vs supported-on row).</summary>
 public enum ApplicabilityBadgePlacement

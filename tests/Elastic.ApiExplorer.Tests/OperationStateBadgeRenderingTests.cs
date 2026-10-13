@@ -18,15 +18,31 @@ namespace Elastic.ApiExplorer.Tests;
 public class OperationStateBadgeRenderingTests(ApiExplorerFixture fixture)
 {
 	[Test]
-	public async Task Render_OperationWithXState_ShowsRawStateInTitleBadges()
+	public async Task Render_OperationWithXState_ShowsAppliesToBadgeInTitleBadges()
 	{
 		var nav = fixture.Walk().OfType<OperationNavigationItem>().First(n => n.Model.Operation.OperationId == "search");
 		var html = await RenderAsync(nav);
 
 		Slice(html, "<h1>", "</h1>").Should().Be("<h1>Run a search");
-		var badges = Slice(html, "<div class=\"api-title-badges\">", "</div>");
-		badges.Should().Contain("class=\"api-state-badge\">Generally available; Added in 7.7.0</span>");
-		badges.Should().NotContain("applies-to-popover");
+		var badges = Slice(html, "<div class=\"api-title-badges\">", "</applies-to-popover>");
+		badges.Should().Contain("<span class=\"applies applies-inline\">");
+		badges.Should().Contain("badge-key=\"Stack\"");
+		badges.Should().Contain("badge-version=\"7.7&#x2B;\"");
+		badges.Should().Contain("show-popover=\"true\"");
+		badges.Should().Contain("Generally available since 7.7");
+		html.Should().NotContain("api-state-badge");
+	}
+
+	[Test]
+	public async Task Render_PropertyWithXState_ShowsInlineAppliesToBadge()
+	{
+		var nav = fixture.Walk().OfType<OperationNavigationItem>().First(n => n.Model.Operation.OperationId == "search");
+		var html = await RenderAsync(nav);
+
+		var property = Slice(html, "<dt id=\"req-legacy_size\"", "</dt>");
+		property.Should().Contain("<span class=\"applies applies-inline\">");
+		property.Should().Contain("lifecycle-name=\"Deprecated\"");
+		property.Should().Contain("Deprecated since 7.0");
 	}
 
 	[Test]
@@ -36,7 +52,7 @@ public class OperationStateBadgeRenderingTests(ApiExplorerFixture fixture)
 		var html = await RenderAsync(nav);
 
 		html.Should().Contain("Get a document by id");
-		html.Should().NotContain("api-state-badge");
+		html.Should().NotContain("applies-to-popover");
 	}
 
 	[Test]

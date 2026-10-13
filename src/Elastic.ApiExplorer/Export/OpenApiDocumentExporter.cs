@@ -31,9 +31,6 @@ public partial class OpenApiDocumentExporter(VersionsConfiguration versionsConfi
 	private const string ElasticsearchOpenApiUrl = "https://d31bhlox0wglh.cloudfront.net/elasticsearch-openapi-docs.json";
 	private const string KibanaOpenApiUrl = "https://d31bhlox0wglh.cloudfront.net/kibana-openapi.json";
 
-	[GeneratedRegex(@"Added in (\d+\.\d+\.\d+)", RegexOptions.IgnoreCase)]
-	private static partial Regex AddedInVersionRegex();
-
 	[GeneratedRegex(@"\*\*[^*\n]*methods? and paths? for this operation:\*\*", RegexOptions.IgnoreCase)]
 	private static partial Regex OperationListIntroRegex();
 
@@ -112,6 +109,8 @@ public partial class OpenApiDocumentExporter(VersionsConfiguration versionsConfi
 	internal IEnumerable<DocumentationDocument> ConvertToDocuments(OpenApiDocument openApiDocument, string product)
 	{
 		var productUrl = ApiUrlBuilder.ProductRoot("/docs", product);
+		// All API products currently version against Stack
+		var currentStack = versionsConfiguration.GetVersioningSystem(VersioningSystemId.Stack).Current;
 
 		foreach (var path in openApiDocument.Paths)
 		{
@@ -122,8 +121,9 @@ public partial class OpenApiDocumentExporter(VersionsConfiguration versionsConfi
 			{
 				var operationId = operation.Value.OperationId ?? GenerateOperationId(operation.Key, path.Key);
 
-				// Check x-state extension for version filtering
-				if (!ShouldIncludeOperation(operation.Value))
+				// Skip APIs introduced in a Stack version that hasn't shipped yet
+				var applies = XStateApplicability.FromOperation(operation.Value);
+				if (XStateApplicability.IsUnreleased(applies, currentStack))
 					continue;
 
 				var operationMoniker = ApiUrlBuilder.OperationMoniker(operationId, path.Key);
@@ -168,9 +168,6 @@ public partial class OpenApiDocumentExporter(VersionsConfiguration versionsConfi
 				var headings = operation.Value.Tags?.Select(t => t.Name).Where(n => !string.IsNullOrEmpty(n)).OfType<string>().ToArray()
 					?? [];
 
-				// Extract ApplicableTo from x-state
-				var applies = ExtractApplicableTo(operation.Value);
-
 				// Infer product and repository metadata
 				var inference = documentInferrer?.InferForOpenApi(product);
 
@@ -200,40 +197,6 @@ public partial class OpenApiDocumentExporter(VersionsConfiguration versionsConfi
 				};
 			}
 		}
-	}
-
-	/// <summary>
-	/// Determines if an operation should be included based on its x-state extension.
-	/// </summary>
-	private bool ShouldIncludeOperation(OpenApiOperation operation)
-	{
-		// Try to get x-state extension
-		if (operation.Extensions == null || !operation.Extensions.TryGetValue("x-state", out var stateExtension))
-			return true; // No x-state, safe to include
-
-		// Get the state string value from JsonNodeExtension
-		if (stateExtension is not JsonNodeExtension jsonNodeExtension)
-			return true; // Not a JSON node, safe to include
-
-		var stateValue = jsonNodeExtension.Node.GetValue<string>();
-		if (string.IsNullOrEmpty(stateValue))
-			return true; // Empty state, safe to include
-
-		// Parse version from "Added in X.Y.Z"
-		var match = AddedInVersionRegex().Match(stateValue);
-		if (!match.Success)
-			return true; // No version found, safe to include
-
-		var versionString = match.Groups[1].Value;
-		if (!SemVersion.TryParse(versionString, out var addedInVersion))
-			return true; // Could not parse version, safe to include
-
-		// All API products currently version against Stack
-		var versioningSystem = versionsConfiguration.GetVersioningSystem(VersioningSystemId.Stack);
-		var currentVersion = versioningSystem.Current;
-
-		// Include if added version is <= current version
-		return addedInVersion <= currentVersion;
 	}
 
 	/// <summary>
@@ -321,75 +284,5 @@ public partial class OpenApiDocumentExporter(VersionsConfiguration versionsConfi
 	{
 		var cleanPath = path.TrimStart('/').Replace('/', '-').Replace('{', '-').Replace('}', '-');
 		return $"{method.ToString().ToLowerInvariant()}-{cleanPath}";
-	}
-
-	/// <summary>
-	/// Extracts ApplicableTo information from an operation's x-state extension.
-	/// </summary>
-	private static ApplicableTo? ExtractApplicableTo(OpenApiOperation operation)
-	{
-		// Try to get x-state extension
-		if (operation.Extensions == null || !operation.Extensions.TryGetValue("x-state", out var stateExtension))
-			return null;
-
-		// Get the state string value from JsonNodeExtension
-		if (stateExtension is not JsonNodeExtension jsonNodeExtension)
-			return null;
-
-		var stateValue = jsonNodeExtension.Node.GetValue<string>();
-		if (string.IsNullOrEmpty(stateValue))
-			return null;
-
-		// Parse lifecycle from state string (e.g., "Generally available; Added in 9.3.0")
-		var lifecycle = ParseLifecycle(stateValue);
-
-		// Parse version from "Added in X.Y.Z"
-		var version = ParseVersion(stateValue);
-
-		// Create Applicability instance
-		var applicability = new Applicability { Lifecycle = lifecycle, Version = version };
-
-		// Create AppliesCollection
-		var appliesCollection = new AppliesCollection([applicability]);
-
-		// Return ApplicableTo with Stack set
-		return new ApplicableTo { Stack = appliesCollection };
-	}
-
-	/// <summary>
-	/// Parses the product lifecycle from the x-state string.
-	/// </summary>
-	private static ProductLifecycle ParseLifecycle(string stateValue)
-	{
-		var lower = stateValue.ToLowerInvariant();
-
-		if (lower.Contains("generally available"))
-			return ProductLifecycle.GenerallyAvailable;
-		if (lower.Contains("beta"))
-			return ProductLifecycle.Beta;
-		if (lower.Contains("experimental"))
-			return ProductLifecycle.Experimental;
-		if (lower.Contains("tech") && lower.Contains("preview"))
-			return ProductLifecycle.TechnicalPreview;
-		if (lower.Contains("deprecated"))
-			return ProductLifecycle.Deprecated;
-		if (lower.Contains("removed"))
-			return ProductLifecycle.Removed;
-
-		// Default to GA if we can't parse
-		return ProductLifecycle.GenerallyAvailable;
-	}
-
-	/// <summary>
-	/// Parses the version from "Added in X.Y.Z" pattern in the x-state string.
-	/// </summary>
-	private static VersionSpec? ParseVersion(string stateValue)
-	{
-		var match = AddedInVersionRegex().Match(stateValue);
-		if (!match.Success)
-			return null;
-
-		var versionString = match.Groups[1].Value;
-		return VersionSpec.TryParse(versionString, out var version) ? version : null;
 	}
 }

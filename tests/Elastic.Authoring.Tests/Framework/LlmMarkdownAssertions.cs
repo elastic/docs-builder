@@ -5,8 +5,8 @@
 using System.Diagnostics;
 using System.Text;
 using Elastic.Documentation.AppliesTo;
+using Elastic.Documentation.Site.ApplicabilityBadges;
 using Elastic.Markdown.Exporters;
-using Elastic.Markdown.Myst.Components;
 using JetBrains.Annotations;
 
 namespace Elastic.Authoring.Tests.Framework;

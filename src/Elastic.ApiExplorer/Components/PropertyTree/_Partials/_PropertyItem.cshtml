@@ -4,10 +4,10 @@
 }
 <div class="property-item depth-@Model.Depth @(Model.IsLast ? "last-sibling" : "") @(hasChildren ? "has-children" : "") @(Model.IsCollapsible ? (Model.DefaultExpanded ? "expanded" : "collapsed") : "") @(Model.ShowDeprecatedBadge ? "deprecated" : "")">
 	<dt id="@Model.AnchorId">
-		<a class="property-anchor" href="#@Model.AnchorId">
+		<a class="property-anchor" href="#@Model.AnchorId" aria-label="Link to @Model.Name">
 			<span class="property-anchor-icon" data-tippy-content="Copy link" aria-hidden="true"></span>
-			<code>@Model.Name</code>
 		</a>
+		<code>@Model.Name</code>
 		@(await RenderPartialAsync<_SchemaType, TypeAnnotation>(Model.Type))
 		@if (Model.IsRequired)
 		{
@@ -23,7 +23,7 @@
 		}
 		@if (Model.Availability is not null)
 		{
-			@(await RenderPartialAsync<_AppliesToBadge, Elastic.ApiExplorer.Infrastructure.AppliesToBadgeDisplay>(new Elastic.ApiExplorer.Infrastructure.AppliesToBadgeDisplay(Model.Availability, IsInline: true)))
+			<span class="applies applies-inline">@await RenderPartialAsync(ApplicableToComponent.Create(Model.Availability))</span>
 		}
 	</dt>
 	@if (Model.HasDescription)

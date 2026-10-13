@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.Collections.Concurrent;
+using System.Text.Json.Nodes;
 using AwesomeAssertions;
 using Elastic.ApiExplorer.Export;
 using Elastic.ApiExplorer.Model;
@@ -286,5 +287,52 @@ public class OpenApiDocumentExporterTests
 
 		doc.Title.Should().Be("Create or update an ES|QL data source");
 		doc.Description.Should().Be(raw);
+	}
+
+	[Test]
+	[Arguments("Generally available; Added in 9.5.0", 0)]
+	[Arguments("Generally available; Added in 9.2.0", 1)]
+	[Arguments("Deprecated; Deprecated in 9.5.0", 1)]
+	[Arguments("Beta; Added in 8.12.0; Generally available; Added in 9.5.0", 1)]
+	public void ConvertToDocuments_XState_SkipsOnlyApisIntroducedAfterCurrentStack(string xState, int expectedCount) =>
+		ExportWithState(xState).Should().HaveCount(expectedCount);
+
+	[Test]
+	public void ConvertToDocuments_XState_IndexesSameApplicabilityAsBadge()
+	{
+		var applies = ExportWithState("Technical Preview; added in 9.0.0").Single().Applies;
+
+		applies.Should().NotBeNull();
+		var entry = applies.Single();
+		entry.Type.Should().Be("stack");
+		entry.Lifecycle.Should().Be("preview");
+		entry.Version.Should().StartWith("9.0");
+	}
+
+	private static List<DocumentationDocument> ExportWithState(string xState)
+	{
+		var spec = new OpenApiDocument
+		{
+			Paths = new OpenApiPaths
+			{
+				["/_thing"] = new OpenApiPathItem
+				{
+					Operations = new Dictionary<HttpMethod, OpenApiOperation>
+					{
+						[HttpMethod.Get] = new OpenApiOperation
+						{
+							OperationId = "thing",
+							Summary = "Get a thing",
+							Extensions = new Dictionary<string, IOpenApiExtension>
+							{
+								["x-state"] = new JsonNodeExtension(JsonValue.Create(xState))
+							}
+						}
+					}
+				}
+			}
+		};
+
+		return new OpenApiDocumentExporter(StackVersions()).ConvertToDocuments(spec, "elasticsearch").ToList();
 	}
 }

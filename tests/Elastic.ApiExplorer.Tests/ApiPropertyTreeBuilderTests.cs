@@ -513,6 +513,20 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture)
 		AssertStartsCollapsed(html, group.Children.Properties.Items.Single(p => p.Name == "only").AnchorId);
 	}
 
+	[Test]
+	public async Task PropertyItem_Name_IsNotInsideAnchorLink()
+	{
+		var builder = CreateBuilder();
+		var list = builder.BuildPropertyList(ObjectsAtTwoDepths(), new PropertyTreeScope { Prefix = "body", IsRequest = true });
+
+		list.Should().NotBeNull();
+		var html = await _PropertyList.Create(list!).RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
+
+		var anchorId = list.Items.Single(p => p.Name == "only").AnchorId;
+		html.Should().Contain($"href=\"#{anchorId}\" aria-label=\"Link to only\"");
+		html.Should().MatchRegex("</a>\\s*<code>only</code>");
+	}
+
 	private static void AssertCollapsedPair(IReadOnlyList<ApiProperty> items, string smallName, string largeName, string html)
 	{
 		var small = items.Single(p => p.Name == smallName);
