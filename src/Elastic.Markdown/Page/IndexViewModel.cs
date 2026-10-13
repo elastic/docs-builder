@@ -25,6 +25,9 @@ public class IndexViewModel
 	public required string SiteName { get; init; }
 	public required string DocSetName { get; init; }
 	public required string Title { get; init; }
+
+	/// <summary>The HTML title: the <c>meta_title</c> override when set, otherwise the page title, followed by the site name.</summary>
+	public string PageTitle => $"{(string.IsNullOrWhiteSpace(CurrentDocument.MetaTitle) ? Title : CurrentDocument.MetaTitle)} | {SiteName}";
 	public required string Description { get; init; }
 	public required string TitleRaw { get; init; }
 	public required string MarkdownHtml { get; init; }

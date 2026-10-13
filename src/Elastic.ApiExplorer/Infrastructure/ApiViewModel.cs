@@ -62,6 +62,9 @@ public abstract class ApiViewModel(ApiRenderContext context)
 	/// <summary>When set, drives <see cref="GlobalLayoutViewModel.Title"/> for this page (e.g. intro/outro markdown). Does not affect <see cref="GlobalLayoutViewModel.HeaderTitle"/> which stays as the API product name.</summary>
 	protected virtual string? LayoutPageTitle => null;
 
+	/// <summary>When set, replaces <see cref="LayoutPageTitle"/> in the HTML title only. Breadcrumbs keep <see cref="LayoutPageTitle"/>.</summary>
+	protected virtual string? LayoutDocumentTitle => null;
+
 	/// <summary>Raw markdown used for the meta description. Excerpted before it reaches the layout.</summary>
 	protected virtual string? LayoutPageDescription => null;
 
@@ -77,7 +80,7 @@ public abstract class ApiViewModel(ApiRenderContext context)
 	public ApiLayoutViewModel CreateGlobalLayoutModel()
 	{
 		var docTitle = Document.Info?.Title ?? "API Documentation";
-		var pageTitle = LayoutPageTitle;
+		var pageTitle = LayoutDocumentTitle ?? LayoutPageTitle;
 		var documentTitle = pageTitle is not null ? $"{pageTitle} | {docTitle}" : docTitle;
 		var catalogUrl = ApiUrlBuilder.ApiRoot(BuildContext.UrlPathPrefix);
 

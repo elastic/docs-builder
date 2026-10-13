@@ -30,7 +30,12 @@ Generated link text: [](titles.md)
 ```markdown
 ---
 navigation_title: Title as it appears on the left hand site navigation
+meta_title: Title as it appears in search results and browser tabs
 ---
 
 # This is my title
 ```
+
+Use `meta_title` when the browser and search title needs different wording than the page heading.
+The builder appends the site name to the page title, so do not include it in `meta_title`.
+See [](frontmatter.md#meta-title).

@@ -65,11 +65,12 @@ public class SimpleMarkdownNavigationItem(
 	public async Task RenderAsync(FileSystemStream stream, ApiRenderContext context, Cancel ctx = default)
 	{
 		var markdownContent = await context.BuildContext.ReadFileSystem.File.ReadAllTextAsync(FileInfo.FullName, ctx);
-		var htmlContent = context.MarkdownRenderer.RenderPreservingFirstHeading(markdownContent, FileInfo);
+		var rendered = context.MarkdownRenderer.RenderPreservingFirstHeadingWithMetadata(markdownContent, FileInfo);
 		var viewModel = new MarkdownPageViewModel(context)
 		{
 			PageTitle = NavigationTitle,
-			BodyHtml = new HtmlString(htmlContent ?? string.Empty),
+			MetaTitle = rendered.MetaTitle,
+			BodyHtml = new HtmlString(rendered.Html),
 			DescriptionMarkdown = ApiSeoDescription.FirstParagraph(ApiMarkdownFrontMatter.StripLeadingFrontMatter(markdownContent))
 		};
 		var slice = MarkdownPageView.Create(viewModel);
