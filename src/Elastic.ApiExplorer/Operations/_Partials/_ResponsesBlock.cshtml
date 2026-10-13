@@ -86,9 +86,10 @@
 								{
 									<div class="header-item">
 										<dt id="header-@response.StatusCode-@header.Name">
-											<a class="property-anchor" href="#header-@response.StatusCode-@header.Name">
-												<code>@header.Name</code>
+											<a class="property-anchor" href="#header-@response.StatusCode-@header.Name" aria-label="Link to @header.Name">
+												<span class="property-anchor-icon" data-tippy-content="Copy link" aria-hidden="true"></span>
 											</a>
+											<code>@header.Name</code>
 											@if (header.Type != null)
 											{
 												@(await RenderPartialAsync<_SchemaType, TypeAnnotation>(header.Type))

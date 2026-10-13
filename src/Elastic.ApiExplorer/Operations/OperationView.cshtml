@@ -102,10 +102,10 @@
 		{
 			<div class="path-param @(path.Deprecated is true ? "deprecated" : "")">
 				<dt id="path-@path.Name">
-					<a class="property-anchor" href="#path-@path.Name">
+					<a class="property-anchor" href="#path-@path.Name" aria-label="Link to @path.Name">
 						<span class="property-anchor-icon" data-tippy-content="Copy link" aria-hidden="true"></span>
-						<code>@path.Name</code>
 					</a>
+					<code>@path.Name</code>
 					@if (path.Type is not null)
 					{
 						@(await RenderPartialAsync<_SchemaType, TypeAnnotation>(path.Type))
@@ -164,10 +164,10 @@
 				var qs = qp.Parameter;
 				<div class="query-param @(qs.Deprecated == true ? "deprecated" : "")">
 					<dt id="query-@qs.Name">
-						<a class="property-anchor" href="#query-@qs.Name">
+						<a class="property-anchor" href="#query-@qs.Name" aria-label="Link to @qs.Name">
 							<span class="property-anchor-icon" data-tippy-content="Copy link" aria-hidden="true"></span>
-							<code>@qs.Name</code>
 						</a>
+						<code>@qs.Name</code>
 						@if (qp.Type is not null)
 						{
 							@(await RenderPartialAsync<_SchemaType, TypeAnnotation>(qp.Type))
