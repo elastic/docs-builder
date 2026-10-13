@@ -298,7 +298,7 @@ public class UnionVariantTests
 		var list = builder.BuildPropertyList(document.Components!.Schemas!["Holder"], new PropertyTreeScope { Prefix = "" });
 
 		var variants = list!.Items.Single(p => p.Name == "policies").Children.Variants!.Variants;
-		var policy = variants.Single(v => v.DisplayName == "Policy");
+		var policy = variants.Single(v => v.DisplayName == "{ name, inputs }");
 		policy.IsArrayVariant.Should().BeTrue();
 		policy.ShowProperties.Should().BeTrue("an array-only variant lists the properties of its items");
 		policy.Properties!.Items.Select(p => p.Name).Should().Equal("name", "inputs");

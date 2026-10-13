@@ -22,6 +22,10 @@ public class ShownTypeNameTests
 		  "paths": {},
 		  "components": {
 		    "schemas": {
+		      "_types.aggregations.Aggregate": { "oneOf": [ { "type": "object", "properties": { "buckets": { "type": "array" } } }, { "type": "object", "properties": { "value": { "type": "number" } } } ] },
+		      "_types.Mixed": { "type": "array", "items": { "type": ["string", "object"] } },
+		      "_types.StringBase": { "type": "string" },
+		      "_types.StringAlias": { "allOf": [ { "$ref": "#/components/schemas/_types.StringBase" } ] },
 		      "_types.query_dsl.QueryContainer": { "type": "object", "properties": { "term": { "type": "object" } } },
 		      "_types.Field": { "type": "string" },
 		      "_types.Id": { "type": "string" },
@@ -43,6 +47,10 @@ public class ShownTypeNameTests
 		          "rule": { "oneOf": [ { "$ref": "#/components/schemas/rule.Eql" }, { "$ref": "#/components/schemas/rule.Query" } ] },
 		          "same": { "oneOf": [ { "$ref": "#/components/schemas/same.EqlRuleProps" }, { "$ref": "#/components/schemas/same.QueryRuleProps" } ] },
 		          "linked": { "oneOf": [ { "$ref": "#/components/schemas/_types.query_dsl.QueryContainer" }, { "$ref": "#/components/schemas/titled.Cat" } ] },
+		          "titledArray": { "oneOf": [ { "type": "array", "items": { "$ref": "#/components/schemas/titled.Cat" } }, { "$ref": "#/components/schemas/titled.Dog" } ] },
+		          "aggs": { "type": "object", "additionalProperties": { "$ref": "#/components/schemas/_types.aggregations.Aggregate" } },
+		          "mixed": { "$ref": "#/components/schemas/_types.Mixed" },
+		          "alias": { "$ref": "#/components/schemas/_types.StringAlias" },
 		          "vector": { "allOf": [ { "$ref": "#/components/schemas/_types.QueryVector" } ] },
 		          "source": { "allOf": [ { "$ref": "#/components/schemas/_types.SourceConfig" } ] },
 		          "ids": { "oneOf": [ { "$ref": "#/components/schemas/_types.Field" }, { "$ref": "#/components/schemas/_types.Id" } ] }
@@ -59,6 +67,7 @@ public class ShownTypeNameTests
 	[Arguments("rule", new[] { "type: eql", "type: query" })]
 	[Arguments("same", new[] { "EqlRuleProps", "QueryRuleProps" })]
 	[Arguments("linked", new[] { "Query", "A cat" })]
+	[Arguments("titledArray", new[] { "A cat", "A dog" })]
 	public async Task BuildPropertyList_UnionVariants_GoByTitleThenConstantFieldThenShortenedName(string property, string[] expected)
 	{
 		var row = await Row(property);
@@ -70,11 +79,22 @@ public class ShownTypeNameTests
 	[Arguments("vector", "number[]")]
 	[Arguments("source", "union")]
 	[Arguments("ids", "union string")]
+	[Arguments("mixed", "(string | object)[]")]
+	[Arguments("alias", "string")]
 	public async Task BuildPropertyList_NamedType_ReadsAsItsShape(string property, string expected)
 	{
 		var row = await Row(property);
 
 		row.Type.Text.Should().Be(expected);
+	}
+
+	[Test]
+	public async Task BuildPropertyList_UnionWithItsOwnPage_ReadsAsThePageTitle()
+	{
+		var row = await Row("aggs");
+
+		row.Type.Text.Should().Be("map string to {} Aggregation result");
+		row.Type.Spans.Should().ContainSingle(s => s.Href != null).Which.Text.Should().Be("Aggregation result");
 	}
 
 	private static async Task<ApiProperty> Row(string name)

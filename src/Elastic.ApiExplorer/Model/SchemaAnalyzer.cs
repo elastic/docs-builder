@@ -210,7 +210,7 @@ public class SchemaAnalyzer(
 		// An option that is itself an array schema reads as one, though only an array member gets the [] suffix.
 		var shown = ShownName(refId, target);
 		var arrayItself = !isArray && target.Type?.HasFlag(JsonSchemaType.Array) == true;
-		return new UnionOption(name, refId, isObject, member, isArray) { ShownBase = arrayItself ? $"{shown}[]" : shown };
+		return new UnionOption(name, refId, isObject, member, isArray) { ShownBase = arrayItself ? SchemaHelpers.ArrayOf(shown) : shown };
 	}
 
 	/// <summary>
@@ -222,8 +222,8 @@ public class SchemaAnalyzer(
 		if (TypePages.TryGet(refId, out var page))
 			return page.Title;
 		if (target.Type?.HasFlag(JsonSchemaType.Array) == true)
-			return ItemShape(target.Items);
-		return Shape(refId, target);
+			return ItemShape(target.Items, depth: 0);
+		return Shape(refId, target, depth: 0);
 	}
 
 	/// <summary>
@@ -231,22 +231,21 @@ public class SchemaAnalyzer(
 	/// does not count as an array, so an array schema keeps its <c>[]</c> here.
 	/// </summary>
 	private string ComposedShownName(string refId, IOpenApiSchema target) =>
-		target.Type?.HasFlag(JsonSchemaType.Array) == true ? $"{ShownName(refId, target)}[]" : ShownName(refId, target);
+		target.Type?.HasFlag(JsonSchemaType.Array) == true ? SchemaHelpers.ArrayOf(ShownName(refId, target)) : ShownName(refId, target);
 
-	/// <summary>The shape of an array's items, without looking further into an item that is an array again.</summary>
-	private string ItemShape(IOpenApiSchema? items)
+	// Shapes look a few levels through arrays and allOf aliases, never further, so a schema that refers to itself ends.
+	private const int MaxShapeDepth = 4;
+
+	private string ItemShape(IOpenApiSchema? items, int depth)
 	{
-		if (items is OpenApiSchemaReference { Reference.Id: { Length: > 0 } itemId } itemRef)
-		{
-			var target = ResolveSchema(itemRef) ?? itemRef;
-			return TypePages.TryGet(itemId, out var page) ? page.Title : Shape(itemId, target);
-		}
 		if (items is null)
 			return "unknown";
-		return Shape(null, items);
+		if (items is not OpenApiSchemaReference { Reference.Id: { Length: > 0 } itemId } itemRef)
+			return Shape(null, items, depth);
+		return TypePages.TryGet(itemId, out var page) ? page.Title : Shape(itemId, ResolveSchema(itemRef) ?? itemRef, depth);
 	}
 
-	private static string Shape(string? refId, IOpenApiSchema target)
+	private string Shape(string? refId, IOpenApiSchema target, int depth)
 	{
 		var named = ClassifyNamedSchema(refId is null ? "" : SchemaHelpers.FormatSchemaName(refId), target);
 		if (named.IsValueType)
@@ -257,9 +256,29 @@ public class SchemaAnalyzer(
 			return "enum";
 		if (UnionSchemas.IsUnion(target))
 			return "union";
+		if (depth >= MaxShapeDepth)
+			return target.Type?.HasFlag(JsonSchemaType.Array) == true ? "array" : "object";
 		if (target.Type?.HasFlag(JsonSchemaType.Array) == true)
-			return "array";
-		return "object";
+			return SchemaHelpers.ArrayOf(ItemShape(target.Items, depth + 1));
+		return AllOfAliasShape(target, depth) ?? "object";
+	}
+
+	/// <summary>The shape of an <c>allOf</c> that only wraps another schema (an alias of a string, say); null for any other.</summary>
+	private string? AllOfAliasShape(IOpenApiSchema target, int depth)
+	{
+		if (target.Properties is { Count: > 0 } || target.AllOf is not { Count: > 0 } allOf)
+			return null;
+		var member = allOf.FirstOrDefault(
+			static m => m is OpenApiSchemaReference || m.Type is not null || m.Enum is { Count: > 0 } || UnionSchemas.IsUnion(m)
+		);
+		return member switch
+		{
+			OpenApiSchemaReference { Reference.Id: { Length: > 0 } id } when TypePages.TryGet(id, out var page) => page.Title,
+			OpenApiSchemaReference { Reference.Id: { Length: > 0 } id } reference =>
+				Shape(id, ResolveSchema(reference) ?? reference, depth + 1),
+			null => null,
+			_ => Shape(null, member, depth + 1)
+		};
 	}
 
 	/// <summary>
@@ -309,51 +328,68 @@ public class SchemaAnalyzer(
 	}
 
 	/// <summary>
-	/// Gives each object member a <see cref="UnionOption.Label"/> it can be told apart by, since its type name never
-	/// shows. A type with a page of its own goes by the page's title instead.
+	/// Gives each object member, or array of objects, a <see cref="UnionOption.Label"/> it can be told apart by, since its
+	/// type name never shows. A type with a page of its own goes by the page's title instead.
 	/// </summary>
+	/// <remarks>
+	/// <c>X</c> and <c>X[]</c> are one shape: they share a label, and neither counts as the other's sibling.
+	/// </remarks>
 	private List<UnionOption> LabelObjects(List<UnionOption> options)
 	{
-		var labelled = options.Select((o, i) => (Option: o, Index: i)).Where(x => IsLabelledObject(x.Option)).ToList();
+		var labelled = options
+			.Select((o, i) => (Option: o, Index: i, Schema: LabelSchema(o)))
+			.Where(static x => x.Schema is not null && !TypePages.TryGet(x.Option.Ref, out _))
+			.Select(
+				static x => (x.Option, x.Index, Schema: x.Schema!, Shape: string.IsNullOrEmpty(x.Option.Ref) ? $"#{x.Index}" : x.Option.Ref)
+			)
+			.ToList();
 		if (labelled.Count == 0)
 			return options;
 
-		var propertyNames = labelled.ToDictionary(x => x.Index, x => GetSchemaProperties(x.Option.Schema)?.Keys.ToArray() ?? []);
-		var constants = labelled.ToDictionary(x => x.Index, x => ConstantFields(x.Option.Schema!));
-		// The field every variant fixes to a value of its own is the one that selects between them: label them all by it.
-		var shared = labelled.Count > 1
-			? constants
-				.Values
-				.First()
+		var shapes = labelled.DistinctBy(static x => x.Shape).ToDictionary(
+			static x => x.Shape,
+			x => (x.Schema, Properties: GetSchemaProperties(x.Schema)?.Keys.ToArray() ?? [], Constants: ConstantFields(x.Schema)),
+			StringComparer.Ordinal
+		);
+		var shared = SelectingConstant(shapes.Values.Select(static s => s.Constants).ToList());
+		var labels = shapes.ToDictionary(
+			static s => s.Key,
+			s => ObjectLabel(
+				s.Value.Schema,
+				s.Value.Constants,
+				shared,
+				s.Value.Properties,
+				shapes.Where(o => o.Key != s.Key).SelectMany(static o => o.Value.Properties)
+			),
+			StringComparer.Ordinal
+		);
+		var byIndex = labelled.ToDictionary(static x => x.Index, x => labels[x.Shape]);
+		return [.. options.Select((o, i) => byIndex.TryGetValue(i, out var label) ? o with { Label = label } : o)];
+	}
+
+	/// <summary>The object schema a member's label describes: the member itself, or its items for an array of objects.</summary>
+	private IOpenApiSchema? LabelSchema(UnionOption option)
+	{
+		if (option is not { IsObject: true, Schema: { } schema })
+			return null;
+		return option.IsArray ? (ResolveSchema(schema) ?? schema).Items : schema;
+	}
+
+	/// <summary>
+	/// The field every shape fixes to a value of its own: the one that selects between them, so every label uses it.
+	/// Null for a single shape, which has nothing to be told apart from.
+	/// </summary>
+	private static string? SelectingConstant(List<Dictionary<string, string>> constants) =>
+		constants.Count < 2
+			? null
+			: constants[0]
 				.Keys
 				.FirstOrDefault(
-					name => constants.Values.All(c => c.ContainsKey(name)) && constants
-						.Values
+					name => constants.All(c => c.ContainsKey(name)) && constants
 						.Select(c => c[name])
 						.Distinct(StringComparer.Ordinal)
 						.Count() == constants.Count
-				)
-			: null;
-		return [
-			.. options.Select(
-				(o, i) => propertyNames.TryGetValue(i, out var own)
-					? o with
-					{
-						Label = ObjectLabel(
-							o.Schema!,
-							constants[i],
-							shared,
-							own,
-							propertyNames.Where(p => p.Key != i).SelectMany(p => p.Value)
-						)
-					}
-					: o
-			)
-		];
-	}
-
-	private static bool IsLabelledObject(UnionOption option) =>
-		option is { IsObject: true, IsArray: false, Schema: not null } && !TypePages.TryGet(option.Ref, out _);
+				);
 
 	/// <summary>The fields an object fixes to a single value (<c>type: eql</c>), in property order.</summary>
 	private Dictionary<string, string> ConstantFields(IOpenApiSchema member)
@@ -545,7 +581,10 @@ public class SchemaAnalyzer(
 		return new TypeInfo
 		{
 			TypeName = named.TypeName,
-			ShownName = unionKeyword?.ToSchemaKeyword() ?? ShownName(refId, resolvedTarget),
+			// A page title wins over the keyword: Aggregate is a oneOf, but readers know it as Aggregation result.
+			ShownName = TypePages.TryGet(refId, out _) || unionKeyword is null
+				? ShownName(refId, resolvedTarget)
+				: unionKeyword.Value.ToSchemaKeyword(),
 			Alternatives = Alternatives([(named.TypeName, null, named.TypeName)]),
 			SchemaRef = named.IsPrimitiveAlias ? null : refId,
 			IsArray = isArray,

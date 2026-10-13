@@ -87,6 +87,12 @@ public static class SchemaHelpers
 	/// These should not be considered for recursive type detection since they
 	/// represent generic types rather than specific schema references.
 	/// </summary>
+	/// <summary>An array of a shown type: <c>string[]</c>, or <c>(string | object)[]</c> so the suffix covers the whole formula.</summary>
+	public static string ArrayOf(string shown) => IsFormulaName(shown) ? $"({shown})[]" : $"{shown}[]";
+
+	/// <summary>Whether a shown name joins several types (<c>string | object</c>).</summary>
+	public static bool IsFormulaName(string shown) => shown.Contains(" | ", StringComparison.Ordinal);
+
 	/// <summary>What a type the spec names reads as when it has no page of its own, besides a primitive.</summary>
 	public static readonly HashSet<string> ShapeNames = new(["enum", "union", "oneOf", "anyOf", "array"], StringComparer.Ordinal);
 

@@ -25,7 +25,13 @@ public partial class ApiPropertyTreeBuilder
 		if (typeInfo.IsArray)
 		{
 			AppendArrayKeywordSpans(spans, typeInfo);
+			// The suffix covers the whole formula: (string | object)[], not string | object[].
+			var formula = SchemaHelpers.IsFormulaName(typeInfo.ShownName);
+			if (formula)
+				spans.Add(new TypeSpan("(", Bare: true));
 			AppendDisplayedTypeName(spans, typeInfo, hasActualProperties);
+			if (formula)
+				spans.Add(new TypeSpan(")", Bare: true));
 			AppendArraySuffix(spans);
 			return new TypeAnnotation(spans);
 		}

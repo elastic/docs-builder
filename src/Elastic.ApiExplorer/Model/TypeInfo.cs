@@ -25,8 +25,7 @@ public record UnionOption(string BaseName, string? Ref, bool IsObject, IOpenApiS
 	public string ShownBase { get => field ?? BaseName; init; }
 
 	/// <summary><see cref="ShownBase"/>, with <c>[]</c> when the member is an array of it: <c>(string | object)[]</c> for a formula.</summary>
-	public string Shown =>
-		IsArray ? ShownBase.Contains(" | ", StringComparison.Ordinal) ? $"({ShownBase})[]" : $"{ShownBase}[]" : ShownBase;
+	public string Shown => IsArray ? SchemaHelpers.ArrayOf(ShownBase) : ShownBase;
 
 	/// <summary>
 	/// What an object member reads as, since many look alike once their type names are gone: its title, a field with a
