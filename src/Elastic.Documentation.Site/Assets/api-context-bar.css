@@ -39,10 +39,11 @@
 		gap: 4px;
 	}
 
-	/* Beside the sidebar the logo lines up with the nav text: the page shell's 16px plus the trigger's 8px padding. */
+	/* Beside the sidebar the logo lines up with the nav text: the trigger's 8px padding plus this 8px
+	   gives the nav's 16px inset. The page shell has no side padding. */
 	@media (width >= 768px) {
 		.api-context-bar__inner {
-			padding-inline-start: calc(var(--spacing) * 6);
+			padding-inline-start: calc(var(--spacing) * 2);
 		}
 	}
 

@@ -2749,13 +2749,12 @@ button.example-response-tab:focus-visible {
 }
 
 @media (min-width: 768px) {
-	/* The column gap and the right padding match (32px each, the shell adds 16px more on
-	   the right), so the content has the same space beside the nav as beside the window
-	   edge. Every API page uses the operation page's width, so the content keeps its
-	   left edge when you move between pages. */
+	/* The column gap and the right padding match (32px each), so the content has the same
+	   space beside the nav as beside the window edge. Every API page uses the operation
+	   page's width, so the content keeps its left edge when you move between pages. */
 	.api-page-shell > .grid {
 		column-gap: 32px;
-		padding-right: 16px;
+		padding-right: 32px;
 	}
 
 	#api-content-grid {
