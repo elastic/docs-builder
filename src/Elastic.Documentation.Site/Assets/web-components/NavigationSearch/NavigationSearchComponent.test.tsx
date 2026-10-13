@@ -54,7 +54,7 @@ describe('NavigationSearchWrapper type attribute', () => {
     it('requests navigation-search with type=api when type is api', async () => {
         render(<NavigationSearchWrapper type="api" />)
 
-        const input = await screen.findByPlaceholderText('Jump to API')
+        const input = await screen.findByPlaceholderText('Find in all APIs')
         await userEvent.type(input, '_bulk')
 
         await waitFor(() => {
@@ -62,6 +62,17 @@ describe('NavigationSearchWrapper type attribute', () => {
                 searchRequestUrls().some((url) => url.includes('type=api'))
             ).toBe(true)
         })
+    })
+
+    it('renders the sidebar variant without the sticky wrapper or divider', async () => {
+        const { container } = render(
+            <NavigationSearchWrapper type="api" variant="sidebar" />
+        )
+
+        await screen.findByPlaceholderText('Find in all APIs')
+
+        expect(container.querySelector('.sticky')).toBeNull()
+        expect(container.querySelector('hr')).toBeNull()
     })
 
     it('filters the first query when a search term is already set', async () => {

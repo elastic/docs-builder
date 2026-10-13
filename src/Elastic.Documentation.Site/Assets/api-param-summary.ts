@@ -27,6 +27,8 @@ function partsOf(root: HTMLElement): Summary {
 }
 
 function wrappedItems({ list, items }: Summary): HTMLElement[] {
+    // An empty summary has nothing to measure; throwing here would abort the whole batch
+    if (items.length === 0) return []
     // A first name wider than the whole line would be clipped mid-word, so it folds away too
     if (items[0].offsetWidth > list.clientWidth) return items
     const firstRowTop = items[0].offsetTop

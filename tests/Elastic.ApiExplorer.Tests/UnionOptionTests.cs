@@ -86,7 +86,7 @@ public class UnionOptionTests
 	{
 		var assignees = await PropertyAsync("assignees");
 
-		assignees.Type.Text.Should().Be("union string | [] string");
+		assignees.Type.Text.Should().Be("union string | string[]");
 	}
 
 	[Test]

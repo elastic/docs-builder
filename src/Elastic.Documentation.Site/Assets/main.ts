@@ -1,5 +1,7 @@
 import { initAgentSkillCopy } from './agent-skill'
 import { initApiDocs } from './api-docs'
+import { initApiMenus } from './api-menu'
+import { changesPageChrome } from './api-navigation'
 import { initAppliesSwitch } from './applies-switch'
 import { config } from './config'
 import { initCopyButton } from './copybutton'
@@ -247,6 +249,7 @@ function handleCtaActivation(event: MouseEvent) {
 document.addEventListener('click', handleCtaActivation)
 initPrivacyConsent()
 initSecondaryNav()
+initApiMenus()
 // 'auxclick' with button 1 covers middle-click (open in new tab), which does NOT
 // fire 'click' per the DOM spec - without this those opens went untracked. Button 2
 // (right-click / context menu) also fires auxclick but isn't a real engagement.
@@ -300,9 +303,20 @@ document.addEventListener('htmx:beforeRequest', function (event: HtmxEvent) {
     // hx-boost intercepts every same-origin link, but only internal docs URLs should
     // navigate through htmx (for assembler that means /docs/*; isolated and codex own
     // their whole origin). Anything else — marketing pages on the same domain, the
-    // separate /docs/api app — gets a normal full page load.
-    const docsPath = getPathFromUrl(new URL(path, location.href).pathname)
-    if (!docsPath || isExternalDocsUrl(docsPath)) {
+    // separate /docs/api app — gets a normal full page load. So does a move between a docs
+    // page and an API page, or to another API product: the swap would leave the previous
+    // header or context bar in place.
+    const targetPath = new URL(path, location.href).pathname
+    const docsPath = getPathFromUrl(targetPath)
+    if (
+        !docsPath ||
+        isExternalDocsUrl(docsPath) ||
+        changesPageChrome(
+            targetPath,
+            location.pathname,
+            config.rootPath.replace(/\/$/, '')
+        )
+    ) {
         event.preventDefault()
         window.location.assign(path)
     }

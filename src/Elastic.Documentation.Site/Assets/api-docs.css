@@ -840,6 +840,11 @@
 	color: var(--color-grey-100);
 }
 
+/* A separator that leads the tree has no intro pages above it; the sidebar chrome already ends in a rule. */
+.api-sidebar-chrome + div > ul > li[role='separator']:first-child {
+	display: none;
+}
+
 /* Legacy rows reserve 32px on the right; a row with a chip needs less. */
 #pages-nav li:has(> a.sidebar-link > .nav-v2-api-method) {
 	padding-right: 8px;
@@ -2745,13 +2750,12 @@ button.example-response-tab:focus-visible {
 }
 
 @media (min-width: 768px) {
-	/* The column gap and the right padding match (32px each, the shell adds 16px more on
-	   the right), so the content has the same space beside the nav as beside the window
-	   edge. Every API page uses the operation page's width, so the content keeps its
-	   left edge when you move between pages. */
+	/* The column gap and the right padding match (32px each), so the content has the same
+	   space beside the nav as beside the window edge. Every API page uses the operation
+	   page's width, so the content keeps its left edge when you move between pages. */
 	.api-page-shell > .grid {
 		column-gap: 32px;
-		padding-right: 16px;
+		padding-right: 32px;
 	}
 
 	#api-content-grid {

@@ -69,7 +69,7 @@
 		// that the variant is an array).
 		var collapsible = variant.IsCollapsible && !Model.UseChips;
 		var folded = variant.UseHidden && !Model.UseChips;
-		// An array variant keeps its "[] X" heading, so its fields read as each item's; a primitive keeps its type, which is
+		// An array variant keeps its "X[]" heading, so its fields read as each item's; a primitive keeps its type, which is
 		// all its panel has to show.
 		var showName = !Model.UseChips || variant.PageUrl is { Length: > 0 } || variant.IsArrayVariant || !variant.IsObjectType;
 		var showLabel = showName || variant.DiscriminatorLabel is { Length: > 0 };
@@ -78,10 +78,6 @@
 			@if (showLabel)
 			{
 			<div class="union-variant-label">
-				@if (showName && variant.IsArrayVariant)
-				{
-					<span class="@SchemaHelpers.WrapperArrayIconCssClass">[]</span>
-				}
 				@if (showName && variant.IsObjectType)
 				{
 					<span class="@SchemaHelpers.WrapperObjectIconCssClass">{}</span>
@@ -90,11 +86,11 @@
 				{
 					@if (variant.PageUrl is { Length: > 0 } pageUrl)
 					{
-						<code class="schema-type"><a href="@pageUrl" class="@SchemaHelpers.LinkedCssClass" data-hx-boost="false">@variant.DisplayName</a></code>
+						<code class="schema-type"><a href="@pageUrl" class="@SchemaHelpers.LinkedCssClass" data-hx-boost="false">@variant.DisplayName</a>@if (variant.IsArrayVariant) {<span class="@SchemaHelpers.WrapperArrayIconCssClass">[]</span>}</code>
 					}
 					else
 					{
-						<code class="schema-type"><span class="@SchemaHelpers.TypeAtomCssClassOrNull(variant.DisplayName)">@variant.DisplayName</span></code>
+						<code class="schema-type"><span class="@SchemaHelpers.TypeAtomCssClassOrNull(variant.DisplayName)">@variant.DisplayName</span>@if (variant.IsArrayVariant) {<span class="@SchemaHelpers.WrapperArrayIconCssClass">[]</span>}</code>
 					}
 				}
 				@if (variant.DiscriminatorLabel is { Length: > 0 } discriminatorLabel)

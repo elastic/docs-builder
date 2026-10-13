@@ -94,6 +94,25 @@ describe('fitParamSummaries', () => {
         expect(el.classList.contains('is-fitted')).toBe(true)
     })
 
+    it('fits a summary with no names, hiding the badge', () => {
+        const el = summary({ rows: [] })
+        fitParamSummaries([el])
+        expect(badge(el).hidden).toBe(true)
+        expect(el.classList.contains('is-fitted')).toBe(true)
+    })
+
+    it('still fits the other summaries in a batch when one has no names', () => {
+        const full = summary({ rows: [0, 1, 1] })
+        const emptyEl = full.cloneNode(true) as HTMLElement
+        emptyEl
+            .querySelectorAll('.api-param-summary-item')
+            .forEach((i) => i.remove())
+        Object.defineProperty(emptyEl, 'clientWidth', { value: 300 })
+        fitParamSummaries([emptyEl, full])
+        expect(count(full)).toBe('2 more')
+        expect(full.classList.contains('is-fitted')).toBe(true)
+    })
+
     it('leaves a summary with no width alone', () => {
         const el = summary({ rows: [0, 1], width: 0 })
         fitParamSummaries([el])

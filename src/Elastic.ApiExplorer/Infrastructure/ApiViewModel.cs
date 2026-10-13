@@ -9,6 +9,7 @@ using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Site;
 using Elastic.Documentation.Site.FileProviders;
+using Elastic.Documentation.Site.Icons;
 using Elastic.Documentation.Site.Navigation;
 using Microsoft.AspNetCore.Html;
 using Microsoft.OpenApi;
@@ -22,8 +23,6 @@ public record ApiLayoutViewModel : GlobalLayoutViewModel
 	public required IReadOnlyList<ApiTocItem> TocItems { get; init; }
 
 	public required INavigationItem[] Breadcrumbs { get; init; }
-	public IReadOnlyList<ApiVersionSwitcherItem> VersionSwitcherItems { get; init; } = [];
-	public IReadOnlyList<ApiVersionSwitcherItem> HubSwitcherItems { get; init; } = [];
 
 	/// <summary>Assembler builds host Jump to API unless the site is air-gapped.</summary>
 	public bool ShowJumpToPage => BuildType == BuildType.Assembler && !Features.AirGappedEnabled;
@@ -82,11 +81,10 @@ public abstract class ApiViewModel(ApiRenderContext context)
 		var documentTitle = pageTitle is not null ? $"{pageTitle} | {docTitle}" : docTitle;
 		var catalogUrl = ApiUrlBuilder.ApiRoot(BuildContext.UrlPathPrefix);
 
-		var hubItems = ApiHubSwitcher.Build(RenderContext.CatalogEntries, RenderContext.CurrentApiKey, catalogUrl);
-		var assembler = BuildContext.BuildType == BuildType.Assembler;
 		var specRootUrl = CurrentNavigationItem.NavigationRoot.Url;
 		var onCatalog = SameUrl(specRootUrl, catalogUrl) || SameUrl(CurrentNavigationItem.Url, catalogUrl);
-		var breadcrumbs = ApiBreadcrumbs.Build(CurrentNavigationItem, catalogUrl, docTitle, onCatalog: onCatalog);
+		var docsUrl = string.IsNullOrEmpty(BuildContext.UrlPathPrefix) ? "/" : BuildContext.UrlPathPrefix;
+		var breadcrumbs = ApiBreadcrumbs.Build(CurrentNavigationItem, docsUrl, catalogUrl, docTitle, onCatalog: onCatalog);
 
 		return new()
 		{
@@ -115,22 +113,9 @@ public abstract class ApiViewModel(ApiRenderContext context)
 				BuildContext.CanonicalBaseUrl
 			),
 			ProductName = RenderContext.Product?.DisplayName,
-			VersionSwitcherItems = RenderContext.VersionSwitcherItems,
-			HubSwitcherItems = hubItems,
-			LegacyBarProductSwitcher = assembler
-				? [.. hubItems.Select(static i => new NavigationSelectOption(i.Label, i.Url, i.Selected))]
-				: [],
-			ApiCatalogUrl = catalogUrl,
-			SpecJsonUrl = onCatalog ? null : ApiOutputPaths.JsonUrl(specRootUrl),
-			SpecYamlUrl = onCatalog ? null : ApiOutputPaths.YamlUrl(specRootUrl),
+			ShowSecondaryNav = false,
+			ApiContext = onCatalog ? null : BuildApiContext(docTitle, catalogUrl, specRootUrl),
 			MarkdownUrl = ApiOutputPaths.MarkdownUrl(CurrentNavigationItem.Url),
-			ShowVersionDropdown = false,
-			ShowLegacyBarVersionDropdown = false,
-			CurrentVersion = ApiVersionSwitcher.CurrentVersionLabel(
-				RenderContext.Product?.VersioningSystem,
-				RenderContext.VersionSwitcherItems
-			),
-			VersionDropdownSerializedModel = ApiVersionSwitcher.SerializeDropdownItems(RenderContext.VersionSwitcherItems),
 			// Header properties for isolated mode
 			HeaderTitle = docTitle,
 			HeaderVersion = Document.Info?.Version ?? "1.0",
@@ -140,6 +125,23 @@ public abstract class ApiViewModel(ApiRenderContext context)
 			GitHubDocsUrl = GetGitHubDocsUrl(),
 			GitHubRef = BuildContext.Git.GitHubRef
 		};
+	}
+
+	private ApiContextBar BuildApiContext(string docTitle, string catalogUrl, string specRootUrl)
+	{
+		var productId = RenderContext.Product?.Id ?? RenderContext.CurrentApiKey;
+		var versions = RenderContext.VersionSwitcherItems;
+		var products = ApiHubSwitcher.Build(RenderContext.CatalogEntries, RenderContext.CurrentApiKey);
+		// Same text as the menu row, so the bar and the menu name the API alike.
+		var title = products.FirstOrDefault(static p => p.Selected)?.Label ?? RenderContext.Product?.DisplayName ?? docTitle;
+		return new ApiContextBar(
+			title,
+			ProductIcons.Get(productId),
+			products,
+			catalogUrl,
+			[.. versions.Select(static v => new NavigationSelectOption(v.Label, v.Url, v.Selected))],
+			new ApiSpecDownload(ApiOutputPaths.JsonUrl(specRootUrl), ApiOutputPaths.YamlUrl(specRootUrl))
+		);
 	}
 
 	private static bool SameUrl(string? left, string? right)
