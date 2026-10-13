@@ -37,6 +37,17 @@ export default defineConfig({
             ? { exclude: ['**/_static/**', '**/node_modules/**'] }
             : null,
         rollupOptions: {
+            // htmx evaluates hx-on/hx-vals expressions with a direct eval; it is a vendored
+            // dependency we can't change, so silence only that known warning.
+            onwarn(warning, defaultHandler) {
+                if (
+                    warning.code === 'EVAL' &&
+                    warning.id?.includes('node_modules/htmx.org/')
+                ) {
+                    return
+                }
+                defaultHandler(warning)
+            },
             input: {
                 main: path.resolve(__dirname, 'Assets/main.ts'),
                 styles: path.resolve(__dirname, 'Assets/styles.css'),
