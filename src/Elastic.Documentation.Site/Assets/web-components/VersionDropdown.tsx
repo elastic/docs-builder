@@ -1,5 +1,3 @@
-'strict'
-
 import '../eui-icons-cache'
 import {
     EuiContextMenu,
