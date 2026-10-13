@@ -29,6 +29,9 @@ public record ApiLayoutViewModel : GlobalLayoutViewModel
 
 	public required string MarkdownUrl { get; init; }
 
+	/// <summary>Intro/outro markdown pages have no Markdown export, so they have no Copy page.</summary>
+	public bool ShowPageActions { get; init; } = true;
+
 	public string? ProductName { get; init; }
 
 	/// <summary>
@@ -57,7 +60,11 @@ public abstract class ApiViewModel(ApiRenderContext context)
 
 	public HtmlString RenderMarkdown(string? markdown) => ApiMarkdown.Render(RenderContext, markdown);
 
+	public IReadOnlyList<ApiTocItem> TocItems => field ??= GetTocItems();
+
 	protected virtual IReadOnlyList<ApiTocItem> GetTocItems() => [];
+
+	protected virtual bool ShowPageActions => true;
 
 	/// <summary>When set, drives <see cref="GlobalLayoutViewModel.Title"/> for this page (e.g. intro/outro markdown). Does not affect <see cref="GlobalLayoutViewModel.HeaderTitle"/> which stays as the API product name.</summary>
 	protected virtual string? LayoutPageTitle => null;
@@ -105,7 +112,7 @@ public abstract class ApiViewModel(ApiRenderContext context)
 			StaticFileContentHashProvider = StaticFileContentHashProvider,
 			BuildType = BuildContext.BuildType,
 			PageFeedbackSurface = "api",
-			TocItems = GetTocItems(),
+			TocItems = TocItems,
 			Breadcrumbs = breadcrumbs,
 			StructuredBreadcrumbsJson = BreadcrumbJson.Serialize(
 				breadcrumbs,
@@ -116,6 +123,7 @@ public abstract class ApiViewModel(ApiRenderContext context)
 			ShowSecondaryNav = false,
 			ApiContext = onCatalog ? null : BuildApiContext(docTitle, catalogUrl, specRootUrl),
 			MarkdownUrl = ApiOutputPaths.MarkdownUrl(CurrentNavigationItem.Url),
+			ShowPageActions = ShowPageActions,
 			// Header properties for isolated mode
 			HeaderTitle = docTitle,
 			HeaderVersion = Document.Info?.Version ?? "1.0",

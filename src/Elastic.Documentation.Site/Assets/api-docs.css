@@ -314,12 +314,12 @@
 	color: #1d2a3e;
 }
 
-.markdown-content .api-page-actions a.api-page-actions-option {
+.api-page-rail .api-page-actions a.api-page-actions-option {
 	color: #1d2a3e;
 	text-decoration: none;
 }
 
-.markdown-content
+.api-page-rail
 	.api-page-actions
 	a.api-page-actions-option[target='_blank']::after {
 	content: none;
@@ -383,13 +383,6 @@
 	margin-top: 8px;
 	font-size: 16px;
 	line-height: 24px;
-}
-
-.api-group-count {
-	margin: 24px 0 0;
-	color: var(--color-subdued, #516381);
-	font-size: 14px;
-	line-height: 20px;
 }
 
 .api-group-list {
@@ -513,16 +506,8 @@
 	line-height: 28px;
 }
 
-/* Topic pages (Authentication, Servers) sit above the index: they are read once, not browsed with the endpoints. */
-.api-topics {
-	display: flex;
-	flex-wrap: wrap;
-	gap: 8px;
-	margin: 16px 0 32px;
-}
-
-/* Quiet outlined link: topic pages and the spec downloads. */
-#markdown-content a.api-chip-link {
+/* Quiet outlined link: the spec downloads in the rail. */
+.api-page-rail a.api-chip-link {
 	display: inline-flex;
 	align-items: center;
 	gap: 6px;
@@ -540,34 +525,15 @@
 	height: 14px;
 }
 
-#markdown-content a.api-chip-link:hover,
-#markdown-content a.api-chip-link:focus-visible {
+.api-page-rail a.api-chip-link:hover,
+.api-page-rail a.api-chip-link:focus-visible {
 	border-color: var(--color-grey-80);
 	color: var(--color-blue-elastic, #0b64dd);
 }
 
-#markdown-content a.api-chip-link:focus-visible {
+.api-page-rail a.api-chip-link:focus-visible {
 	outline: 2px solid var(--color-blue-elastic, #0b64dd);
 	outline-offset: 2px;
-}
-
-/* License and spec downloads: facts about the spec, so they sit under the description in the subdued colour. */
-.api-landing-meta {
-	display: flex;
-	flex-wrap: wrap;
-	align-items: center;
-	gap: 8px 24px;
-	margin: 16px 0 0;
-	color: var(--color-subdued, #516381);
-	font-size: 14px;
-	line-height: 20px;
-}
-
-.api-landing-download {
-	display: inline-flex;
-	flex-wrap: wrap;
-	align-items: center;
-	gap: 8px;
 }
 
 .api-index-group {
@@ -2742,16 +2708,16 @@ button.example-response-tab:focus-visible {
 }
 
 /* API page shell: like the codex layout, uncapped so the nav sits at the left edge
-   and the content is centered in the remaining space. Operation pages split that
-   content in two themselves (.api-page-columns). */
+   and the content is centered in the remaining space. */
 .api-page-shell {
 	max-width: none;
 }
 
 @media (min-width: 768px) {
 	/* The column gap and the right padding match (32px each), so the content has the same
-	   space beside the nav as beside the window edge. Every API page uses the operation
-	   page's width, so the content keeps its left edge when you move between pages. */
+	   space beside the nav as beside the window edge. Every API page has the same two
+	   columns (.api-page-grid), so the content keeps its left edge and width when you
+	   move between pages. */
 	.api-page-shell > .grid {
 		column-gap: 32px;
 		padding-right: 32px;
@@ -2767,12 +2733,6 @@ button.example-response-tab:focus-visible {
 		max-width: var(--api-content-cap);
 		margin-inline: auto;
 	}
-
-	/* Landing and group pages are lists, not a reference next to examples, so they read
-	   better narrower. They stay centered between the nav and the window edge. */
-	#api-content-grid:has(.api-landing, .api-group) {
-		--api-content-cap: calc(var(--spacing) * 240);
-	}
 }
 
 /* Examples rail cards sit flush with the article; they have their own chrome. */
@@ -2780,25 +2740,129 @@ button.example-response-tab:focus-visible {
 	margin-bottom: 0;
 }
 
-/* Operation pages: the reference and the examples rail. One column; two from 1024px,
-   under the full-width intro. The intro already ends with a 16px step. */
-.api-page-columns {
+/* Every API page: the article and the right rail. One column below 1024px, with Copy page
+   above the article and the rest of the rail under it. */
+.api-page-grid {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr);
+	column-gap: 24px;
+}
+
+.api-page-rail {
+	display: contents;
+}
+
+/* Stacked layout (below 1024px): Copy page gets its own row above the breadcrumbs. */
+.api-page-rail > .api-page-actions {
+	order: -1;
+	justify-self: end;
+	margin: 24px 0 -12px;
+}
+
+/* Below 768px the menu button shares that row. The main column starts with 24px padding and the
+   button's 24px margin, so the 32px split button centres on the button's 24px height. */
+@media (max-width: 767px) {
+	.api-page-rail > .api-page-actions {
+		margin: 44px 0 -76px;
+	}
+}
+
+.api-page-rail > :not(.api-page-actions) {
+	min-width: 0;
+	margin-bottom: 24px;
+}
+
+/* Facts about the page (license, downloads, counts). Quiet, like the metadata under a title. */
+.api-rail-facts {
 	display: flex;
 	flex-direction: column;
 	gap: 16px;
-	margin-top: 16px;
+	margin: 0;
+	font-family: var(--font-body, Inter, ui-sans-serif, system-ui, sans-serif);
+	font-size: 14px;
+	line-height: 20px;
+}
+
+.api-rail-fact {
+	display: flex;
+	flex-direction: column;
+	align-items: flex-start;
+	gap: 6px;
+}
+
+.api-rail-fact dt {
+	color: var(--color-subdued, #516381);
+	font-weight: 600;
+}
+
+.api-rail-fact dd {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	margin: 0;
+	color: var(--color-ink-navy, #111c2c);
+}
+
+.api-rail-fact dd.api-rail-fact-list {
+	flex-direction: column;
+	align-items: flex-start;
+	gap: 8px;
+}
+
+.api-rail-server {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+	min-width: 0;
+	max-width: 100%;
+}
+
+.api-rail-server-url {
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+	min-width: 0;
+}
+
+.api-rail-server-url code {
+	min-width: 0;
+	overflow-wrap: anywhere;
+}
+
+/* Hover-only elsewhere (the endpoint rows); in the rail it always shows, so touch screens can use it. */
+.api-rail-server .api-url-copy.copybtn {
+	opacity: 1;
+	pointer-events: auto;
+}
+
+.api-rail-server-description {
+	color: var(--color-subdued, #516381);
 }
 
 @media (min-width: 1024px) {
-	.api-page-columns {
-		flex-direction: row;
-		align-items: flex-start;
-		gap: 24px;
+	.api-page-grid {
+		grid-template-columns: minmax(0, 1fr) minmax(0, 40%);
 	}
 
-	.api-page-columns > * {
-		flex: 1 1 0;
+	/* Aligned with the breadcrumbs: the article starts under the same 24px. */
+	.api-page-rail {
+		display: flex;
+		flex-direction: column;
+		align-items: stretch;
+		gap: 16px;
 		min-width: 0;
+		padding-top: 24px;
+		padding-bottom: 48px;
+	}
+
+	.api-page-rail > .api-page-actions {
+		order: 0;
+		align-self: flex-start;
+		margin: 0;
+	}
+
+	.api-page-rail > :not(.api-page-actions) {
+		margin-bottom: 0;
 	}
 
 	/* Examples rail: hug content, cap at the viewport, scroll inside.
@@ -2875,12 +2939,9 @@ button.example-response-tab:focus-visible {
 		--api-column-gap: 32px;
 	}
 
-	.api-page-columns {
-		gap: var(--api-column-gap);
-	}
-
-	.api-page-columns > #api-examples-panel {
-		flex: 0 0 var(--max-examples-width);
+	.api-page-grid {
+		column-gap: var(--api-column-gap);
+		grid-template-columns: minmax(0, 1fr) var(--max-examples-width);
 	}
 }
 

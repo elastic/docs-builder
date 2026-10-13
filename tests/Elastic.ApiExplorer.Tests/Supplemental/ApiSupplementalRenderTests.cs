@@ -437,9 +437,58 @@ public class ApiSupplementalRenderTests(ApiExplorerFixture fixture)
 		html.Should().Contain("class=\"api-group-row\"");
 		html.Should().Contain("class=\"api-overview-title\"");
 		html.Should().Contain("api-url-row");
-		html.Should().Contain("api-group-count");
 		html.Should().NotContain("<table");
 		html.Should().NotContain("api-url-list-item-landing");
+	}
+
+	[Test]
+	public async Task Tag_Rail_HoldsCopyPageOutsideTheArticle()
+	{
+		var nav = SearchTag();
+		var html = await RenderAsync(nav.Index.Model, nav);
+
+		var rail = html.IndexOf("class=\"api-page-rail\"", StringComparison.Ordinal);
+		rail.Should().BeGreaterThan(html.IndexOf("id=\"markdown-content\"", StringComparison.Ordinal));
+		html.IndexOf("class=\"api-page-actions\"", StringComparison.Ordinal).Should().BeGreaterThan(rail);
+		html.Should().NotContain("api-page-columns");
+	}
+
+	[Test]
+	public async Task Operation_Rail_HoldsCopyPageThenExamples()
+	{
+		var nav = SearchOperation();
+		var html = await RenderAsync(nav.Model, nav);
+
+		var rail = html.IndexOf("class=\"api-page-rail\"", StringComparison.Ordinal);
+		var actions = html.IndexOf("class=\"api-page-actions\"", StringComparison.Ordinal);
+		var examples = html.IndexOf("id=\"api-examples-panel\"", StringComparison.Ordinal);
+		rail.Should().BeGreaterThan(html.IndexOf("id=\"markdown-content\"", StringComparison.Ordinal));
+		actions.Should().BeGreaterThan(rail);
+		examples.Should().BeGreaterThan(actions);
+		html.Should().NotContain("api-page-columns");
+	}
+
+	[Test]
+	public async Task Product_Rail_HoldsCopyPageOutsideTheArticle()
+	{
+		var html = await RenderAsync(fixture.Navigation.Index.Model, fixture.Navigation);
+
+		var rail = html.IndexOf("class=\"api-page-rail\"", StringComparison.Ordinal);
+		rail.Should().BeGreaterThan(html.IndexOf("id=\"markdown-content\"", StringComparison.Ordinal));
+		html.IndexOf("class=\"api-page-actions\"", StringComparison.Ordinal).Should().BeGreaterThan(rail);
+		html.Should().NotContain("api-landing-meta");
+		html.Should().NotContain("Reference topics");
+	}
+
+	[Test]
+	public async Task Product_Rail_ListsServersWithCopyButtons()
+	{
+		var html = await RenderAsync(fixture.Navigation.Index.Model, fixture.Navigation);
+
+		var rail = html.IndexOf("class=\"api-page-rail\"", StringComparison.Ordinal);
+		html.IndexOf("class=\"api-rail-server\"", StringComparison.Ordinal).Should().BeGreaterThan(rail);
+		html.Should().NotContain("<dt>Size</dt>").And.NotContain("<dt>Version</dt>");
+		html.Should().Contain("api-url-copy");
 	}
 
 	[Test]
