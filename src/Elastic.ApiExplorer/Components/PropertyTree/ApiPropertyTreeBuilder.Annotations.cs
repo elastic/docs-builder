@@ -25,9 +25,9 @@ public partial class ApiPropertyTreeBuilder
 
 		if (typeInfo.IsArray)
 		{
-			AppendArrayPrefix(spans);
 			AppendArrayKeywordSpans(spans, typeInfo, hasActualProperties);
 			AppendDisplayedTypeName(spans, typeInfo, hasActualProperties);
+			AppendArraySuffix(spans);
 			return new TypeAnnotation(spans);
 		}
 
@@ -46,10 +46,12 @@ public partial class ApiPropertyTreeBuilder
 		return new TypeAnnotation(spans);
 	}
 
-	private static void AppendArrayPrefix(List<TypeSpan> spans)
+	// A keyword with no name after it (an inline enum) leaves a trailing space; "enum[]" reads better than "enum []".
+	private static void AppendArraySuffix(List<TypeSpan> spans)
 	{
+		if (spans is [.., { Bare: true, Text: " " }])
+			spans.RemoveAt(spans.Count - 1);
 		spans.Add(new TypeSpan("[]", SchemaHelpers.WrapperArrayIconCssClass));
-		spans.Add(new TypeSpan(" ", Bare: true));
 	}
 
 	private static void AppendObjectIcon(List<TypeSpan> spans)
@@ -160,8 +162,8 @@ public partial class ApiPropertyTreeBuilder
 			return;
 		}
 
-		AppendArrayPrefix(spans);
 		AppendInternalOrNamed(spans, part[..^2], labeledAlready: false);
+		AppendArraySuffix(spans);
 	}
 
 	private static TypeSpan NamedTypeSpan(string typeName, string? schemaRef, bool isValueType = false)
