@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions;
-using System.Text.RegularExpressions;
 using AwesomeAssertions;
 using Elastic.ApiExplorer._Partials.Layout;
 using Elastic.ApiExplorer.Infrastructure;
@@ -21,28 +20,32 @@ using RazorSlices;
 
 namespace Elastic.ApiExplorer.Tests;
 
-public partial class ApiPagesNavRenderingTests
+public class ApiPagesNavRenderingTests
 {
 	[Test]
-	public async Task Render_HostsTheVersionSwitcherAheadOfTheTree()
+	public async Task Render_Isolated_HostsProductAndVersionAheadOfTheTree()
 	{
 		var model = CreateLayoutModel(
 			"/api/doc/elasticsearch/v9/",
 			"/api/doc/elasticsearch/v9.md",
-			versionSwitcherItems: [
-				new("latest", "/api/doc/elasticsearch/", Selected: false),
+			apiContext: CreateApiContext(versions: [
+				new("main", "/api/doc/elasticsearch/", Selected: false),
 				new("v9", "/api/doc/elasticsearch/v9/", Selected: true),
 				new("v8", "/api/doc/elasticsearch/v8/", Selected: false),
-			]
+			])
 		);
 
 		var html = await _ApiPagesNav.Create(model).RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
 
+		html.Should().Contain("id=\"api-hub-switcher\"");
 		html.Should().Contain("id=\"api-version-switcher\"");
-		html.Should().Contain("aria-selected=\"true\"");
-		html.Should().Contain("aria-selected=\"false\"");
-		html.Should().NotContain("selected=\"False\"");
-		html.Should().NotContain("selected=\"True\"");
+		// Menus are popovers placed by api-menu.ts, each opened by a button that names it.
+		html.Should().Contain("popovertarget=\"api-hub-menu\"").And.Contain("id=\"api-hub-menu\"");
+		html.Should().Contain("popovertarget=\"api-version-menu\"").And.Contain("id=\"api-version-menu\"");
+		// Only the selected product and the selected version are marked current.
+		CountOccurrences(html, "aria-current=\"true\"").Should().Be(2);
+		html.Should().NotContain("aria-current=\"false\"");
+		html.Should().NotContain("<details").And.NotContain("<summary");
 		html.Should().NotContain("<select");
 		html.Should().NotContain("<option");
 		html
@@ -52,48 +55,36 @@ public partial class ApiPagesNavRenderingTests
 	}
 
 	[Test]
-	public async Task Render_MarksOnlyCurrentHubProductSelected()
+	public async Task Render_Isolated_MarksOnlyCurrentProductSelected()
 	{
-		var model = CreateLayoutModel(
-			"/api/doc/elasticsearch/",
-			"/api/doc/elasticsearch.md",
-			hubSwitcherItems: [
-				new("Back to hub", "/api/", Selected: false),
-				new("Elasticsearch", "/api/doc/elasticsearch/", Selected: true),
-				new("Kibana", "/api/doc/kibana/", Selected: false),
-			]
-		);
+		var model = CreateLayoutModel("/api/doc/elasticsearch/", "/api/doc/elasticsearch.md", apiContext: CreateApiContext());
 
 		var html = await _ApiPagesNav.Create(model).RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
 
-		html.Should().Contain("id=\"api-hub-switcher\"");
 		html.Should().NotContain("api-version-switcher");
-		html.Should().NotContain("selected=\"False\"");
-		html.Should().NotContain("selected=\"True\"");
-		html.Should().Contain("<option value=\"/api/\">Back to hub</option>");
-		html.Should().Contain("<option value=\"/api/doc/elasticsearch/\" selected>Elasticsearch</option>");
-		html.Should().Contain("<option value=\"/api/doc/kibana/\">Kibana</option>");
-		CountSelectedOptions(html).Should().Be(1);
+		html.Should().Contain("href=\"/api/doc/kibana/\"");
+		html.Should().Contain("href=\"/api/\"");
+		CountOccurrences(html, "secondary-nav-dropdown-link--selected").Should().Be(1);
 	}
 
 	[Test]
-	public async Task Render_Assembler_OmitsTheHubSwitcher()
+	public async Task Render_Assembler_HasOnlyTheFilterBecauseTheBarCarriesTheApi()
 	{
 		var model = CreateLayoutModel(
 			"/api/doc/elasticsearch/",
 			"/api/doc/elasticsearch.md",
-			hubSwitcherItems: [
-				new("Back to hub", "/api/", Selected: false),
-				new("Elasticsearch", "/api/doc/elasticsearch/", Selected: true),
-			],
+			apiContext: CreateApiContext(versions: [
+				new("main", "/api/doc/elasticsearch/", Selected: true),
+				new("v8", "/api/doc/elasticsearch/v8/", Selected: false),
+			]),
 			buildType: BuildType.Assembler
 		);
 
 		var html = await _ApiPagesNav.Create(model).RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
 
-		html.Should().NotContain("api-hub-switcher");
-		html.Should().NotContain("<select");
-		html.Should().NotContain("<option");
+		html.Should().NotContain("api-hub-switcher").And.NotContain("api-version-switcher").And.NotContain("<select");
+		html.Should().Contain("navigation-search");
+		CountOccurrences(html, "border-b").Should().Be(1);
 	}
 
 	[Test]
@@ -112,29 +103,18 @@ public partial class ApiPagesNavRenderingTests
 	}
 
 	[Test]
-	public async Task Render_ShowsJumpToPageOnAssemblerBuilds()
+	public async Task Render_ShowsTheEndpointFilterOnAssemblerBuilds()
 	{
-		var model = CreateLayoutModel(
-			"/api/doc/elasticsearch/",
-			"/api/doc/elasticsearch.md",
-			versionSwitcherItems: [
-				new("latest", "/api/doc/elasticsearch/", Selected: true),
-				new("v8", "/api/doc/elasticsearch/v8/", Selected: false),
-			],
-			buildType: BuildType.Assembler
-		);
+		var model = CreateLayoutModel("/api/doc/elasticsearch/", "/api/doc/elasticsearch.md", buildType: BuildType.Assembler);
 
 		var html = await _ApiPagesNav.Create(model).RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
 
-		html.Should().Contain("<navigation-search type=\"api\" placeholder=\"Jump to API\"></navigation-search>");
-		html
-			.IndexOf("id=\"api-version-switcher\"", StringComparison.Ordinal)
-			.Should()
-			.BeLessThan(html.IndexOf("navigation-search", StringComparison.Ordinal));
+		html.Should().Contain("<navigation-search type=\"api\" variant=\"sidebar\"></navigation-search>");
+		CountOccurrences(html, "border-b").Should().Be(1);
 	}
 
 	[Test]
-	public async Task Render_ShowsJumpToPageWhenNavigationPreviewIsOn()
+	public async Task Render_ShowsTheEndpointFilterWhenNavigationPreviewIsOn()
 	{
 		var model = CreateLayoutModel(
 			"/api/doc/elasticsearch/",
@@ -145,12 +125,12 @@ public partial class ApiPagesNavRenderingTests
 
 		var html = await _ApiPagesNav.Create(model).RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
 
-		html.Should().Contain("<navigation-search type=\"api\" placeholder=\"Jump to API\"></navigation-search>");
+		html.Should().Contain("<navigation-search type=\"api\" variant=\"sidebar\"></navigation-search>");
 		html.Should().Contain("hx-preserve");
 	}
 
 	[Test]
-	public async Task Render_OmitsJumpToPageOnIsolatedBuilds()
+	public async Task Render_OmitsTheEndpointFilterOnIsolatedBuilds()
 	{
 		var model = CreateLayoutModel("/api/doc/elasticsearch/", "/api/doc/elasticsearch.md", buildType: BuildType.Isolated);
 
@@ -218,7 +198,7 @@ public partial class ApiPagesNavRenderingTests
 	}
 
 	[Test]
-	public async Task Render_OmitsJumpToPageWhenAirGapped()
+	public async Task Render_OmitsTheEndpointFilterWhenAirGapped()
 	{
 		var model = CreateLayoutModel(
 			"/api/doc/elasticsearch/",
@@ -272,8 +252,7 @@ public partial class ApiPagesNavRenderingTests
 	private static ApiLayoutViewModel CreateLayoutModel(
 		string navigationUrl,
 		string markdownUrl,
-		IReadOnlyList<ApiVersionSwitcherItem>? versionSwitcherItems = null,
-		IReadOnlyList<ApiVersionSwitcherItem>? hubSwitcherItems = null,
+		ApiContextBar? apiContext = null,
 		FeatureFlags? features = null,
 		BuildType buildType = BuildType.Isolated
 	)
@@ -303,13 +282,22 @@ public partial class ApiPagesNavRenderingTests
 			TocItems = [],
 			MarkdownUrl = markdownUrl,
 			Breadcrumbs = [],
-			VersionSwitcherItems = versionSwitcherItems ?? [],
-			HubSwitcherItems = hubSwitcherItems ?? [],
+			ApiContext = apiContext,
 		};
 	}
 
-	private static int CountSelectedOptions(string html) =>
-		OptionTag().Matches(html).Count(m => m.Value.Contains(" selected", StringComparison.Ordinal));
+	private static ApiContextBar CreateApiContext(IReadOnlyList<NavigationSelectOption>? versions = null) =>
+		new(
+			"Elasticsearch API",
+			IconSvg: null,
+			[
+				new("Elasticsearch", "/api/doc/elasticsearch/", Selected: true, IconSvg: null),
+				new("Kibana", "/api/doc/kibana/", Selected: false, IconSvg: null)
+			],
+			HubUrl: "/api/",
+			versions ?? [],
+			new ApiSpecDownload("/api/doc/elasticsearch.json", "/api/doc/elasticsearch.yaml")
+		);
 
 	private static int CountOccurrences(string html, string value)
 	{
@@ -323,7 +311,4 @@ public partial class ApiPagesNavRenderingTests
 
 		return count;
 	}
-
-	[GeneratedRegex("<option[^>]*>", RegexOptions.IgnoreCase)]
-	private static partial Regex OptionTag();
 }

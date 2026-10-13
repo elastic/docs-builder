@@ -1,0 +1,61 @@
+@using Microsoft.AspNetCore.Html
+@inherits RazorSlice<Elastic.Documentation.Site.ApiContextBar>
+@* The menu is a popover (top layer), positioned by api-menu.ts. *@
+@if (Model.Products.Count > 0)
+{
+	<div class="api-context-product" id="api-hub-switcher">
+		<button type="button"
+		        class="api-context-product-trigger"
+		        popovertarget="api-hub-menu"
+				        aria-label="API product: @Model.Title">
+			@if (Model.IconSvg is not null)
+			{
+				<span class="api-context-logo" aria-hidden="true">@(new HtmlString(Model.IconSvg))</span>
+			}
+			<span class="api-context-title">@Model.Title</span>
+			<span class="api-context-updown" aria-hidden="true">
+				<svg viewBox="0 0 16 16"><use href="#icon-chevron-updown"/></svg>
+			</span>
+		</button>
+		<div id="api-hub-menu" class="api-menu" popover data-placement="bottom-start" aria-label="API product">
+			@foreach (var product in Model.Products)
+			{
+				var selectedClass = product.Selected ? " secondary-nav-dropdown-link--selected" : "";
+				<a class="secondary-nav-dropdown-link api-context-product-link@(selectedClass)"
+				   href="@product.Url"
+				   aria-current="@(product.Selected ? "true" : null)"
+				   preload="mousedown"
+				   hx-boost="false">
+					@if (product.IconSvg is not null)
+					{
+						<span class="api-context-logo api-context-logo--sm" aria-hidden="true">@(new HtmlString(product.IconSvg))</span>
+					}
+					<span>@product.Label</span>
+				</a>
+			}
+			@if (Model.HubUrl is not null)
+			{
+				<div class="api-context-menu-sep" role="separator"></div>
+				<a class="secondary-nav-dropdown-link api-context-product-link"
+				   href="@Model.HubUrl"
+				   preload="mousedown"
+				   hx-boost="false">
+					<span class="api-context-logo api-context-logo--sm api-context-logo--muted" aria-hidden="true">
+						<svg viewBox="0 0 16 16"><use href="#icon-grid"/></svg>
+					</span>
+					<span>All APIs</span>
+				</a>
+			}
+		</div>
+	</div>
+}
+else
+{
+	<div class="api-context-product api-context-product--static">
+		@if (Model.IconSvg is not null)
+		{
+			<span class="api-context-logo" aria-hidden="true">@(new HtmlString(Model.IconSvg))</span>
+		}
+		<span class="api-context-title">@Model.Title</span>
+	</div>
+}

@@ -26,6 +26,10 @@ else
 }
 @* API content column. Sidebar is _ApiPagesNav (main), not Nav V2 _PagesNav. *@
 <div id="main-container" class="relative">
+	@if (Model.BuildType == BuildType.Assembler && Model.ApiContext is not null)
+	{
+		@(await RenderPartialAsync(_ApiContextBar.Create(Model.ApiContext)))
+	}
 	<div class="min-h-screen w-full mx-auto md:px-4 api-page-shell">
 		<div class="min-h-screen grid grid-cols-1 md:grid-cols-[var(--max-sidebar-width)_1fr] gap-4">
 			@* One column at every width. Operation pages open a second column for the
