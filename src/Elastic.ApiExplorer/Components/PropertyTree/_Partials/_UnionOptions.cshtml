@@ -32,6 +32,7 @@
 						data-chip="@variant.AnchorId"
 						aria-controls="@variant.AnchorId"
 						aria-selected="@(i == 0 ? "true" : "false")"
+						tabindex="@(i == 0 ? null : "-1")"
 						title="@(chipLabel == variant.ChipName ? null : variant.ChipName)">
 						<span class="api-example-chip-title" data-chip-title>@chipLabel</span>
 					</button>

@@ -650,6 +650,41 @@ public class UnionVariantTests
 	}
 
 	[Test]
+	public async Task BuildUnionVariants_ArrayAndPlainPairSharingALargeField_PlainVariantKeepsTheListing()
+	{
+		var json =
+			"""
+			{
+			  "openapi": "3.0.3",
+			  "info": { "title": "t", "version": "1" },
+			  "paths": {},
+			  "components": {
+			    "schemas": {
+			      "Big": { "type": "object", "properties": { "f0": { "type": "string" }, "f1": { "type": "string" }, "f2": { "type": "string" }, "f3": { "type": "string" }, "f4": { "type": "string" }, "f5": { "type": "string" }, "f6": { "type": "string" }, "f7": { "type": "string" }, "f8": { "type": "string" }, "f9": { "type": "string" }, "f10": { "type": "string" }, "f11": { "type": "string" } } },
+			      "Cat": { "type": "object", "properties": { "owner": { "$ref": "#/components/schemas/Big" } } },
+			      "Pair": { "oneOf": [ { "type": "array", "items": { "$ref": "#/components/schemas/Cat" } }, { "$ref": "#/components/schemas/Cat" } ] }
+			    }
+			  }
+			}
+			""";
+		var document = await LoadSpecAsync(json);
+
+		var variants = ApiBodyContent.BuildUnionVariants(
+			document.Components!.Schemas!["Pair"],
+			new PropertyTreeScope { Prefix = "req" },
+			new SchemaAnalyzer(document),
+			BuilderFor(document)
+		)!.Variants;
+
+		ApiProperty Owner(bool array) => variants.Single(v => v.IsArrayVariant == array).Properties!.Items.Single();
+
+		variants.Select(v => v.AnchorId).Should().Equal("req-variant-cat-array", "req-variant-cat");
+		Owner(array: false).Repeats.Should().BeNull("links into Cat's fields expect the plain variant to list them");
+		Owner(array: false).Children.Properties!.Items.Should().HaveCount(12);
+		Owner(array: true).Repeats!.AnchorId.Should().Be("req-variant-cat-owner");
+	}
+
+	[Test]
 	public async Task BuildPropertyList_OptionWithItsOwnPage_LinksToThatPage()
 	{
 		var json =

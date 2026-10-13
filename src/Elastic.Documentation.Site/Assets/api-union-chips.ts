@@ -57,6 +57,7 @@ export function showVariant(container: HTMLElement, variantId: string): void {
         const match = chip.dataset.chip === variantId
         chip.classList.toggle('is-active', match)
         chip.setAttribute('aria-selected', match ? 'true' : 'false')
+        chip.tabIndex = match ? 0 : -1
     })
     fitChipRow(row, variantChips)
 }
@@ -124,6 +125,35 @@ function onClick(event: MouseEvent) {
     row.querySelector<HTMLElement>(`${variantChips.chip}.is-active`)?.focus()
 }
 
+/** The chips a key can move to: the ones the row shows, in order. */
+const moves: Record<string, (index: number, count: number) => number> = {
+    ArrowRight: (i, n) => (i + 1) % n,
+    ArrowLeft: (i, n) => (i - 1 + n) % n,
+    Home: () => 0,
+    End: (_, n) => n - 1,
+}
+
+/** Arrow keys, Home and End move between the chips the row shows and pick the variant, as on a tab list. */
+function onKeydown(event: KeyboardEvent) {
+    const move = moves[event.key]
+    const from = (event.target as HTMLElement | null)?.closest<HTMLElement>(
+        variantChips.chip
+    )
+    const row = from?.closest<HTMLElement>(variantChips.row)
+    const container = row?.closest<HTMLElement>(chipList)
+    if (!move || !from || !row || !container) return
+    if (event.metaKey || event.ctrlKey || event.altKey) return
+
+    const chips = Array.from(
+        row.querySelectorAll<HTMLElement>(variantChips.chip)
+    ).filter((chip) => !chip.hidden)
+    const to = chips[move(chips.indexOf(from), chips.length)]
+    if (!to?.dataset.chip) return
+    event.preventDefault()
+    showVariant(container, to.dataset.chip)
+    to.focus()
+}
+
 /** Find-in-page matched text inside a hidden variant: switch to it before the browser reveals it. */
 function onBeforeMatch(event: Event) {
     const panel = (event.target as HTMLElement | null)?.closest<HTMLElement>(
@@ -137,6 +167,7 @@ export function initUnionChips(root: ParentNode = document): void {
     if (!delegated) {
         delegated = true
         document.addEventListener('click', onClick)
+        document.addEventListener('keydown', onKeydown)
         document.addEventListener('beforematch', onBeforeMatch)
     }
     registerChipRows(variantChips)

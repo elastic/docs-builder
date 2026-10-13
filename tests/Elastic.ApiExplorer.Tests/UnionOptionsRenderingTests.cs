@@ -44,9 +44,10 @@ public class UnionOptionsRenderingTests
 	[Test]
 	public async Task Render_PrimitiveVariantBehindChips_KeepsItsTypeName()
 	{
-		var html = await Render(3, objects: 2);
+		// Variant2 is an array, which keeps its name anyway; Variant3 is a plain primitive.
+		var html = await Render(4, objects: 3);
 
-		html.Should().Contain(">Variant2</span></code>", "a primitive's type is all its panel has to show");
+		html.Should().Contain(">Variant3</span></code>", "a primitive's type is all its panel has to show");
 		html.Should().NotContain(">Variant0</span></code>", "an object variant's name is on its chip");
 	}
 
@@ -60,6 +61,10 @@ public class UnionOptionsRenderingTests
 			"""<button type="button" role="tab" class="api-example-chip is-active" data-chip="v-0" aria-controls="v-0" aria-selected="true">"""
 		);
 		html.Should().Contain("""id="v-1" hidden="until-found">""", "other variants stay findable");
+		html.Should().Contain(
+			"""data-chip="v-1" aria-controls="v-1" aria-selected="false" tabindex="-1">""",
+			"only the picked chip is in the tab order"
+		);
 		html.Should().NotContain("data-chip-filter", "three variants fit the menu without a filter");
 		html.Should().Contain("Variant2[] &#xB7; kind: two", "a menu entry names the array form and the discriminator value");
 	}

@@ -36,16 +36,19 @@ public partial class ApiPropertyTreeBuilder
 			_shapes
 		);
 
-		var variants = new List<ApiUnionVariant>(variantsToRender.Count);
 		var usedIds = new HashSet<string>(StringComparer.Ordinal);
-		foreach (var variant in variantsToRender)
+		var optionIds = variantsToRender.Select(
+			v => UniqueId($"{scope.Prefix}-variant-{v.Name.ToLowerInvariant().Replace(" ", "-").Replace("[]", "-array")}", usedIds)
+		).ToArray();
+		// The plain variant of an X[] | X pair is built first, so it keeps the full listing of the fields both share and the
+		// array side links to it, as links into X's fields expect.
+		var variants = new ApiUnionVariant[variantsToRender.Count];
+		foreach (var index in Enumerable.Range(0, variantsToRender.Count).OrderBy(i => variantsToRender[i].IsArray))
 		{
+			var variant = variantsToRender[index];
+			var optionId = optionIds[index];
 			var dictionaryValue = variant.PageUrl is null ? _analyzer.GetExpandableDictionaryValue(variant.Schema) : null;
 			var hasProperties = variant.Props is { Count: > 0 } || dictionaryValue is not null;
-			var optionId = UniqueId(
-				$"{scope.Prefix}-variant-{variant.Name.ToLowerInvariant().Replace(" ", "-").Replace("[]", "-array")}",
-				usedIds
-			);
 			// Each variant carries its own fields, an X[] one too: a pair is two variants, so it shows behind chips, one at a time.
 			var showProperties = hasProperties;
 
@@ -60,7 +63,7 @@ public partial class ApiPropertyTreeBuilder
 
 			var description = FirstParagraph(variant.Schema?.Description);
 
-			variants.Add(new ApiUnionVariant
+			variants[index] = new ApiUnionVariant
 			{
 				DisplayName = variant.Label ?? SchemaHelpers.ReadableSchemaName(variant.BaseName),
 				PageUrl = variant.PageUrl,
@@ -83,12 +86,13 @@ public partial class ApiPropertyTreeBuilder
 							RequiredProperties = null,
 							Owner = variant.Label ?? SchemaHelpers.ReadableSchemaName(variant.BaseName)
 						}
-					) ?? new ApiPropertyList([])
+					)
+						?? new ApiPropertyList([])
 					: null,
 				DescriptionHtml = description is null ? HtmlString.Empty : options.RenderMarkdown(description),
 				DescriptionMarkdown = description,
 				DiscriminatorLabel = variant.IsArray ? null : BuildDiscriminatorLabel(discriminator, variant)
-			});
+			};
 		}
 
 		return new ApiUnionVariants { Variants = variants, ContainerId = $"{scope.Prefix}-union-options" };

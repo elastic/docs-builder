@@ -80,6 +80,26 @@ describe('union variant chips', () => {
         expect(shown(['a', 'b', 'c'])).toEqual(['c'])
     })
 
+    it('moves between the shown chips with the arrow keys and picks each one, as tabs do', () => {
+        const press = (from: string, key: string) =>
+            chip(from).dispatchEvent(
+                new KeyboardEvent('keydown', { key, bubbles: true })
+            )
+        chip('eql').hidden = true
+
+        press('query', 'ArrowRight')
+        expect(shown(['query', 'eql', 'esql'])).toEqual(['esql'])
+        expect(document.activeElement).toBe(chip('esql'))
+        expect(chip('esql').tabIndex).toBe(0)
+        expect(chip('query').tabIndex).toBe(-1)
+
+        press('esql', 'ArrowRight')
+        expect(shown(['query', 'eql', 'esql'])).toEqual(['query'])
+
+        press('query', 'End')
+        expect(shown(['query', 'eql', 'esql'])).toEqual(['esql'])
+    })
+
     it('switches every list around a find-in-page match, outermost first', () => {
         byId('deep').dispatchEvent(new Event('beforematch', { bubbles: true }))
 
