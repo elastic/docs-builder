@@ -23,7 +23,7 @@ public sealed record ApiCatalogEntry(string Key, string Title, string Url, strin
 
 public class ApiCatalog : IApiGroupingModel
 {
-	public const string PageTitle = "Elastic APIs";
+	public const string PageTitle = "Elastic API";
 
 	/// <summary>The line under the title. It also tells a reader what the deployment tags on the cards refer to.</summary>
 	public const string PageLede =

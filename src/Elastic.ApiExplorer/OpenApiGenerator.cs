@@ -256,6 +256,13 @@ public class OpenApiGenerator(
 
 		var canonical = resolved.Documents.FirstOrDefault(v => v.Version.Moniker == "main") ?? resolved.Documents[0];
 		var title = canonical.Document.Info?.Title ?? apiConfig.Product.DisplayName ?? prefix;
+		if (ApiNaming.UsesPlural(title))
+		{
+			context.Collector.EmitGlobalWarning(
+				$"API '{prefix}' is titled '{title}'. The API index uses the singular 'API', so it is listed as '{ApiNaming.Singularize(title)}'. Update the title in the spec."
+			);
+			title = ApiNaming.Singularize(title);
+		}
 		var url = ApiUrlBuilder.ProductRoot(context.UrlPathPrefix, prefix);
 		return new ApiCatalogEntry(prefix, title, url, apiConfig.Product.Id, canonical.Document.Info?.Description)
 		{

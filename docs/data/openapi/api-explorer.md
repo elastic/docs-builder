@@ -8,7 +8,7 @@ The API Explorer renders OpenAPI specifications as interactive API documentation
 
 Authored API Markdown pages can use [`meta_title`](../../syntax/frontmatter.md#meta-title) to set a different page title.
 
-The assembler also writes a combined **Elastic APIs** page at `/docs/api/`, on its own layout with no API sidebar. The cards match the ones on the [docs landing page](https://www.elastic.co/docs): a rounded box with the product icon, a bold title, and a short description. The whole card is one link to the API. The title sits on a full-width band with one line of text under it that says which deployments the APIs cover. Two small labels group the APIs into two full-width rows. **Elastic Stack** shows Elasticsearch, Kibana and Logstash as three equal large cards, with the Serverless variants of Elasticsearch and Kibana as small compact cards directly under their parents. **Orchestration** shows the five Elastic Cloud APIs three across, in the same compact card as the Serverless variants but without the attachment. An API that is in neither group follows them, sorted by title. Each API appears once. If only one group has APIs, the label is dropped. If fewer than two of Elasticsearch, Kibana and Logstash are present, the group has no larger cards.
+The assembler also writes a combined **Elastic API** page at `/docs/api/`, on its own layout with no API sidebar. The cards match the ones on the [docs landing page](https://www.elastic.co/docs): a rounded box with the product icon, a bold title, and a short description. The whole card is one link to the API. The title sits on a full-width band with one line of text under it that says which deployments the APIs cover. Two small labels group the APIs into two full-width rows. **Elastic Stack** shows Elasticsearch, Kibana and Logstash as three equal large cards, with the Serverless variants of Elasticsearch and Kibana as small compact cards directly under their parents. **Orchestration** shows the five Elastic Cloud APIs three across, in the same compact card as the Serverless variants but without the attachment. An API that is in neither group follows them, sorted by title. Each API appears once. If only one group has APIs, the label is dropped. If fewer than two of Elasticsearch, Kibana and Logstash are present, the group has no larger cards.
 
 The cards for APIs that are in neither group show the API's deployments as small pills taken from `catalog.categories`. They use the same look as `applies_to` badges and the same names (**Self-managed**, **ECE**, **ECH**, **Serverless**), but show the name only: the catalog knows the deployment, not a lifecycle or version. The grouped cards leave them out, and an API with no categories shows no pills. The description is a short plain-text summary of `info.description` (the first paragraph with Markdown removed). JSON, YAML, and Markdown downloads stay on each API's landing page and in the `/docs/api.md` export.
 
@@ -123,7 +123,7 @@ also fails with a duplicate-slug error.
 
 ### `catalog:` (optional)
 
-This sets the deployment tags on the API's row on the Elastic APIs page. An API may list several categories. The same identifiers are used in `applies_to`, but a category here does not mean the API is generally available for every version of that deployment. An API with no `catalog:` shows no tags.
+This sets the deployment tags on the API's row on the Elastic API page. An API may list several categories. The same identifiers are used in `applies_to`, but a category here does not mean the API is generally available for every version of that deployment. An API with no `catalog:` shows no tags.
 
 ```yaml
 api:
@@ -152,7 +152,7 @@ Each product key in the `api:` block must have **exactly one** entry, with **exa
 `spec:`. The build fails if a product sequence is empty or has more than one entry. Multiple
 specs per product are not currently supported.
 
-On assembler builds a bar under the site header says which API you are reading: `[logo] Elasticsearch API ⇅ [main ▾]`. The API name opens a switcher that lists every API whose spec loaded (each with its logo, plus an **All APIs** link back to the catalog), and the version picker sits right beside it. Each switcher row uses that spec's title (`info.title`), the same text as the landing page heading. On the right, the **Download OpenAPI spec** button downloads the whole spec as JSON or YAML; on narrow screens it shows only its icon. The page itself starts with the full breadcrumb, which begins at Docs. The bar looks the same whether or not `navigation-preview` is on. The catalog page has no API, so it has no bar.
+On assembler builds a bar under the site header says which API you are reading: `[logo] Elasticsearch API ⇅ [main ▾]`. The API name opens a switcher that lists every API whose spec loaded (each with its logo, plus an **Elastic API** link back to the catalog), and the version picker sits right beside it. Each switcher row uses that spec's title (`info.title`), the same text as the landing page heading. On the right, the **Download OpenAPI spec** button downloads the whole spec as JSON or YAML; on narrow screens it shows only its icon. The page itself starts with the full breadcrumb, which begins at Docs. The bar looks the same whether or not `navigation-preview` is on. The catalog page has no API, so it has no bar.
 
 The left navigation starts with a **Find in all APIs** box. It looks up operations by title across every API, not only the one you are reading, and shows the matches in a list; it does not filter the navigation tree. It is not the site-wide search. Isolated and air-gapped builds omit it. Isolated builds have no site header and no bar, so they put the API name, switcher and version picker at the top of the left navigation instead. Markdown docs pages do not get the filter box back.
 
@@ -470,3 +470,7 @@ Sidebar grouping:
 - A group's section title links to the main API overview for that product. It is not a separate page and does not point at the first tag in the group. Tag landings stay under `/group/`.
 - When `x-tagGroups` is absent, tags are listed directly under the API root.
 - Any operation tag that is not listed under any group is still included. It appears under a fallback section named `unknown`, and the build logs a warning so you can fix the spec.
+
+## Naming in the index
+
+The API index always uses the singular "API", as in "Elasticsearch API", for the page title, the breadcrumb, group labels and each API's title. The title of an API comes from `info.title` in its spec. If that title contains the plural "APIs", the build warns and lists the API with the singular. Fix the title in the spec to silence the warning.

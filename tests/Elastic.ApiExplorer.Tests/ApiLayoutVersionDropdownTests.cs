@@ -25,7 +25,7 @@ public class ApiLayoutVersionDropdownTests
 		var layout = CreateLayout();
 
 		layout.ShowSecondaryNav.Should().BeFalse();
-		layout.Breadcrumbs.Select(b => b.NavigationTitle).Should().Equal("Docs", "APIs");
+		layout.Breadcrumbs.Select(b => b.NavigationTitle).Should().Equal("Docs", "API");
 		layout.Breadcrumbs.Select(b => b.Url).Should().Equal("/", "/api");
 		layout.StructuredBreadcrumbsJson.Should().Contain("Elasticsearch API");
 		layout.StructuredBreadcrumbsJson.Should().NotContain("Api Overview");
@@ -53,7 +53,7 @@ public class ApiLayoutVersionDropdownTests
 		layout.ApiContext.Products.Should().ContainSingle(p => p.Selected && p.Label == "Elasticsearch");
 		layout.ApiContext.Products.Should().OnlyContain(p => p.IconSvg != null);
 		layout.ApiContext.Versions.Should().HaveCount(3);
-		layout.Breadcrumbs.Select(b => b.NavigationTitle).Should().Equal("Docs", "APIs");
+		layout.Breadcrumbs.Select(b => b.NavigationTitle).Should().Equal("Docs", "API");
 		layout.Breadcrumbs.Select(b => b.Url).Should().Equal("/docs", "/docs/api");
 	}
 

@@ -11,7 +11,7 @@ namespace Elastic.ApiExplorer.Landing;
 
 internal static class LandingCommonMark
 {
-	internal const string OtherApisHeading = "Other APIs";
+	internal const string OtherApisHeading = "Other API";
 
 	public static string Catalog(IReadOnlyList<ApiCatalogEntry> entries)
 	{

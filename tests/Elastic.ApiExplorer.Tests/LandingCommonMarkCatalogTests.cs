@@ -40,7 +40,7 @@ public class LandingCommonMarkCatalogTests
 	{
 		var markdown = LandingCommonMark.Catalog([Entry(key, "Some API")]);
 
-		markdown.Should().Contain("# Elastic APIs");
+		markdown.Should().Contain("# Elastic API");
 		markdown.Should().NotContain("## ");
 	}
 

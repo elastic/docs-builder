@@ -75,7 +75,7 @@ public class ApiBreadcrumbBuilderTests
 
 		var crumbs = ApiBreadcrumbs.Build(landing.Index, "/docs", "/docs/api/", "Elasticsearch API", onCatalog: false);
 
-		crumbs.Select(c => c.NavigationTitle).Should().Equal("Docs", "APIs");
+		crumbs.Select(c => c.NavigationTitle).Should().Equal("Docs", "API");
 		crumbs.Select(c => c.Url).Should().Equal("/docs", "/docs/api/");
 	}
 
@@ -88,7 +88,7 @@ public class ApiBreadcrumbBuilderTests
 
 		var crumbs = ApiBreadcrumbs.Build(op, "/docs", "/docs/api/", "Elasticsearch API", onCatalog: false);
 
-		crumbs.Select(c => c.NavigationTitle).Should().Equal("Docs", "APIs", "Elasticsearch API", "Search");
+		crumbs.Select(c => c.NavigationTitle).Should().Equal("Docs", "API", "Elasticsearch API", "Search");
 		crumbs.Select(c => c.Url).Should().Equal("/docs", "/docs/api/", "/api/doc/elasticsearch/", "/api/doc/elasticsearch/group/search");
 	}
 
@@ -102,7 +102,7 @@ public class ApiBreadcrumbBuilderTests
 
 		var crumbs = ApiBreadcrumbs.Build(op, "/docs", "/docs/api/", "Elasticsearch API", onCatalog: false);
 
-		crumbs.Select(c => c.NavigationTitle).Should().Equal("Docs", "APIs", "Elasticsearch API", "Search APIs");
+		crumbs.Select(c => c.NavigationTitle).Should().Equal("Docs", "API", "Elasticsearch API", "Search APIs");
 		crumbs.Select(c => c.Url).Should().Equal("/docs", "/docs/api/", "/api/doc/elasticsearch/", "/api/doc/elasticsearch/group/search");
 	}
 
