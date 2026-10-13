@@ -126,6 +126,9 @@ public partial class ApiPropertyTreeBuilder(
 	{
 		var constraints = new List<ConstraintDisplay>();
 
+		// The format refines the type, so it reads first: string · format: date-time. An array's comes from its items.
+		if (Format(schema) is { } format)
+			constraints.Add(new ConstraintDisplay($"format: {format}"));
 		if (schema.MinLength.HasValue)
 			constraints.Add(new ConstraintDisplay($"min length: {schema.MinLength.Value}"));
 		if (schema.MaxLength.HasValue)
@@ -154,6 +157,15 @@ public partial class ApiPropertyTreeBuilder(
 			constraints.Add(new ConstraintDisplay($"default: {defaultValue}"));
 
 		return constraints;
+	}
+
+	private static string? Format(IOpenApiSchema schema)
+	{
+		if (!string.IsNullOrWhiteSpace(schema.Format))
+			return schema.Format;
+		return schema.Type?.HasFlag(JsonSchemaType.Array) == true && !string.IsNullOrWhiteSpace(schema.Items?.Format)
+			? schema.Items.Format
+			: null;
 	}
 
 	private static TypeAnnotation WithConstraints(TypeAnnotation type, IReadOnlyList<ConstraintDisplay> constraints)

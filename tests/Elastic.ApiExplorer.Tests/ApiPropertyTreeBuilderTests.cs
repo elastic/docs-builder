@@ -432,6 +432,28 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture)
 	}
 
 	[Test]
+	public void BuildConstraints_Format_ReadsFirstBeforeTheDefault()
+	{
+		var schema = new OpenApiSchema { Type = JsonSchemaType.String, Format = "date-time", Default = "now" };
+
+		ApiPropertyTreeBuilder.BuildConstraints(schema).Select(c => c.Text).Should().Equal("format: date-time", "default: now");
+		CreateBuilder().Describe(schema).Text.Should().Be("string · format: date-time · default: now");
+	}
+
+	[Test]
+	public void BuildConstraints_ArrayWithFormattedItems_TakesTheItemsFormat()
+	{
+		var schema = new OpenApiSchema
+		{
+			Type = JsonSchemaType.Array,
+			Items = new OpenApiSchema { Type = JsonSchemaType.String, Format = "uri" }
+		};
+
+		ApiPropertyTreeBuilder.BuildConstraints(schema).Select(c => c.Text).Should().Equal("format: uri");
+		CreateBuilder().Describe(schema).Text.Should().Be("string[] · format: uri");
+	}
+
+	[Test]
 	[Arguments("^[a-z]+$", false)]
 	[Arguments("^(?:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa)$", true)]
 	public void Describe_Pattern_SetsTitleOnlyWhenTooLongToShowInline(string pattern, bool expectTitle)
