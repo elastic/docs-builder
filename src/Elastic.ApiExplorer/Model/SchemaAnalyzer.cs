@@ -37,6 +37,9 @@ public class SchemaAnalyzer(
 	// Each page builds its own analyzer, so the set never crosses threads.
 	private readonly HashSet<string> _expandingAllOfRefs = [with(StringComparer.Ordinal)];
 
+	// Referenced maps this instance is classifying; a map whose values refer back to it stays a plain named type.
+	private readonly HashSet<string> _expandingMapRefs = [with(StringComparer.Ordinal)];
+
 	// Each schema's allOf folds once per page.
 	private readonly Dictionary<IOpenApiSchema, EffectiveSchema> _flattened = [with(ReferenceEqualityComparer.Instance)];
 
@@ -573,6 +576,9 @@ public class SchemaAnalyzer(
 		// Description/Title/ReadOnly/WriteOnly intentionally stay on the proxy because
 		// OpenAPI 3.1 allows sibling keywords alongside $ref to override those fields.
 		var resolvedTarget = ResolveSchema(reference) ?? reference;
+		if (ClassifyReferencedMap(refId, resolvedTarget) is { } map)
+			return map;
+
 		var isArray = resolvedTarget.Type?.HasFlag(JsonSchemaType.Array) ?? false;
 		var named = ClassifyNamedSchema(SchemaHelpers.FormatSchemaName(refId), resolvedTarget);
 		var isEnum = resolvedTarget.Enum is { Count: > 0 };
@@ -831,6 +837,37 @@ public class SchemaAnalyzer(
 			_ = _expandingAllOfRefs.Remove(refId);
 		}
 	}
+
+	/// <summary>
+	/// A named map without a page of its own reads like an inline one (<c>map string to X</c>), since its name never shows.
+	/// Null for any other schema, so classification goes on as for a named type.
+	/// </summary>
+	private TypeInfo? ClassifyReferencedMap(string refId, IOpenApiSchema target)
+	{
+		if (!IsPlainMap(target) || TypePages.TryGet(refId, out _) || !_expandingMapRefs.Add(refId))
+			return null;
+
+		try
+		{
+			return ClassifyScalar(target);
+		}
+		finally
+		{
+			_ = _expandingMapRefs.Remove(refId);
+		}
+	}
+
+	/// <summary>An object made of map values only: no fields, composition, union or enum of its own.</summary>
+	private static bool IsPlainMap(IOpenApiSchema schema) =>
+		schema is
+		{
+			AdditionalProperties: not null,
+			Properties: null or { Count: 0 },
+			AllOf: null or { Count: 0 },
+			Enum: null or { Count: 0 }
+		}
+			&& schema.Type?.HasFlag(JsonSchemaType.Array) != true
+			&& !UnionSchemas.IsUnion(schema);
 
 	/// <summary>Each object variant carries the shared base members, so it expands to base plus its own properties.</summary>
 	private TypeInfo ClassifyAllOfUnion(AllOfUnion split)

@@ -47,6 +47,7 @@ public partial class ApiPropertyTreeBuilder(
 	private readonly SchemaAnalyzer _analyzer = new(document, currentPageSchemaId, options.SchemaResolveCache);
 
 	/// <summary>One renderable property before its display fields are derived.</summary>
+	/// <param name="Description">The schema's, or for a parameter row the parameter's.</param>
 	private sealed record PropertyRow(
 		string Name,
 		IOpenApiSchema Schema,
@@ -55,6 +56,8 @@ public partial class ApiPropertyTreeBuilder(
 		bool IsRequired,
 		bool IsLast,
 		bool IsRecursive,
+		string? Description,
+		bool IsDeprecated,
 		string? ShapeKey = null,
 		RepeatedShape? Repeats = null
 	);
@@ -76,27 +79,65 @@ public partial class ApiPropertyTreeBuilder(
 			if (propSchema is null)
 				continue;
 
-			var typeInfo = _analyzer.GetTypeInfo(propSchema);
-			var shapeKey = ShapeKey(typeInfo);
-			var ancestor = _shapes.Ancestor(shapeKey);
 			// The synthetic map row reads "<string>"; its anchor avoids a real property named "string" on the same list.
 			var anchorName = name == DictionaryKeyName ? properties.ContainsKey("string") ? "string-map" : "string" : name;
-			var propId = string.IsNullOrEmpty(scope.Prefix) ? anchorName : $"{scope.Prefix}-{anchorName}";
-			var row = new PropertyRow(
-				name,
-				propSchema,
-				typeInfo,
-				propId,
-				IsRequired: requiredProps.Contains(name),
-				IsLast: i == propArray.Length - 1,
-				IsRecursive: ancestor is not null || DetectRecursion(propSchema, typeInfo, scope.AncestorRefs),
-				ShapeKey: shapeKey,
-				Repeats: ancestor
-			);
+			var row = CreateRow(name, propSchema, anchorName, scope) with
+			{
+				IsRequired = requiredProps.Contains(name),
+				IsLast = i == propArray.Length - 1
+			};
 			items.Add(BuildProperty(row, scope));
 		}
 
 		return new ApiPropertyList(items);
+	}
+
+	/// <summary>
+	/// Parameters as property rows, so an object or a map lists its fields the way a body property does. Each parameter
+	/// gives its row's name, description, requiredness and deprecation; its schema gives the rest.
+	/// </summary>
+	public ApiPropertyList BuildParameterList(
+		IReadOnlyList<(IOpenApiParameter Parameter, string? Description)> parameters,
+		PropertyTreeScope scope
+	)
+	{
+		var items = new List<ApiProperty>(parameters.Count);
+		for (var i = 0; i < parameters.Count; i++)
+		{
+			var (parameter, description) = parameters[i];
+			var name = parameter.Name ?? "";
+			var row = CreateRow(name, parameter.Schema ?? new OpenApiSchema(), name, scope) with
+			{
+				IsRequired = parameter.Required,
+				IsLast = i == parameters.Count - 1,
+				Description = description,
+				IsDeprecated = parameter.Deprecated
+			};
+			items.Add(BuildProperty(row, scope));
+		}
+
+		return new ApiPropertyList(items);
+	}
+
+	/// <summary>A row for a schema under <paramref name="scope"/>, neither required nor last until the caller says so.</summary>
+	private PropertyRow CreateRow(string name, IOpenApiSchema schema, string anchorName, PropertyTreeScope scope)
+	{
+		var typeInfo = _analyzer.GetTypeInfo(schema);
+		var shapeKey = ShapeKey(typeInfo);
+		var ancestor = _shapes.Ancestor(shapeKey);
+		return new PropertyRow(
+			name,
+			schema,
+			typeInfo,
+			string.IsNullOrEmpty(scope.Prefix) ? anchorName : $"{scope.Prefix}-{anchorName}",
+			IsRequired: false,
+			IsLast: false,
+			IsRecursive: ancestor is not null || DetectRecursion(schema, typeInfo, scope.AncestorRefs),
+			Description: schema.Description,
+			IsDeprecated: schema.Deprecated,
+			ShapeKey: shapeKey,
+			Repeats: ancestor
+		);
 	}
 
 	/// <summary>The display form (icons, keywords, name) of a schema's type.</summary>
@@ -121,8 +162,19 @@ public partial class ApiPropertyTreeBuilder(
 		return DetectSimpleArrayUnion(_analyzer.GetTypeInfo(resolved)) is not null ? Describe(resolved) : Describe(schema);
 	}
 
-	/// <summary>Validation constraint labels for a schema; empty when it declares none.</summary>
+	/// <summary>Validation constraint labels for a schema, then its default; empty when it declares none.</summary>
 	public static IReadOnlyList<ConstraintDisplay> BuildConstraints(IOpenApiSchema schema)
+	{
+		var constraints = BuildLimits(schema);
+		var defaultValue = schema.Default?.ToString();
+		if (!string.IsNullOrEmpty(defaultValue))
+			constraints.Add(new ConstraintDisplay($"default: {defaultValue}"));
+
+		return constraints;
+	}
+
+	/// <summary>The format and validation limits of a schema: what a value must look like, unlike its default.</summary>
+	private static List<ConstraintDisplay> BuildLimits(IOpenApiSchema schema)
 	{
 		var constraints = new List<ConstraintDisplay>();
 
@@ -145,16 +197,16 @@ public partial class ApiPropertyTreeBuilder(
 			constraints.Add(new ConstraintDisplay($"> {schema.ExclusiveMinimum}"));
 		if (!string.IsNullOrEmpty(schema.ExclusiveMaximum))
 			constraints.Add(new ConstraintDisplay($"< {schema.ExclusiveMaximum}"));
+		if (schema.MinProperties.HasValue)
+			constraints.Add(new ConstraintDisplay($"min properties: {schema.MinProperties.Value}"));
+		if (schema.MaxProperties.HasValue)
+			constraints.Add(new ConstraintDisplay($"max properties: {schema.MaxProperties.Value}"));
 		if (schema.UniqueItems == true)
 			constraints.Add(new ConstraintDisplay("unique"));
 		if (schema.MultipleOf.HasValue)
 			constraints.Add(new ConstraintDisplay($"× {schema.MultipleOf.Value}"));
 		if (!string.IsNullOrEmpty(schema.Pattern))
 			constraints.Add(new ConstraintDisplay($"pattern: {schema.Pattern}"));
-
-		var defaultValue = schema.Default?.ToString();
-		if (!string.IsNullOrEmpty(defaultValue))
-			constraints.Add(new ConstraintDisplay($"default: {defaultValue}"));
 
 		return constraints;
 	}
@@ -202,9 +254,9 @@ public partial class ApiPropertyTreeBuilder(
 
 	private ApiProperty BuildProperty(PropertyRow row, PropertyTreeScope scope)
 	{
-		var (_, propSchema, typeInfo, _, _, _, isRecursive, _, _) = row;
+		var (propSchema, typeInfo, isRecursive) = (row.Schema, row.TypeInfo, row.IsRecursive);
 		var expansion = ComputeExpansion(propSchema, typeInfo, scope.Depth, isRecursive);
-		var (descriptionHtml, descriptionMarkdown) = RenderDescription(row.Name, propSchema.Description, scope);
+		var (descriptionHtml, descriptionMarkdown) = RenderDescription(row.Name, row.Description, scope);
 		var typeLink = BuildTypeLink(typeInfo, expansion);
 		var (children, repeats) = isRecursive || row.Repeats is not null
 			? (ApiPropertyChildren.None, row.Repeats)
@@ -227,7 +279,7 @@ public partial class ApiPropertyTreeBuilder(
 			),
 			DescriptionHtml = descriptionHtml,
 			DescriptionMarkdown = descriptionMarkdown,
-			ShowDeprecatedBadge = options.ShowDeprecated && propSchema.Deprecated,
+			ShowDeprecatedBadge = options.ShowDeprecated && row.IsDeprecated,
 			Availability = options.ShowVersionInfo ? AvailabilityBadge.FromSchema(propSchema, options.VersionsConfiguration) : null,
 			ExternalDocs = BuildExternalDocs(propSchema, typeInfo),
 			Constraints = BuildConstraints(propSchema),
@@ -432,6 +484,7 @@ public partial class ApiPropertyTreeBuilder(
 				NestedCount = expansion.NestedCount,
 				UseHidden = options.UseHiddenUntilFound && dictIsCollapsible && !dictDefaultExpanded,
 				ValueType = Describe(row.TypeInfo.DictValueSchema),
+				EnumValues = _analyzer.GetEnumValues(row.TypeInfo.DictValueSchema),
 				Properties = BuildPropertyList(
 					row.TypeInfo.DictValueSchema,
 					childScope with { Prefix = keyAnchorId, Depth = childScope.Depth + 1 }

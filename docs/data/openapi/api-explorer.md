@@ -301,6 +301,10 @@ The API Explorer generates the following types of pages from your OpenAPI spec:
 
 Schema names under `components/schemas` are names for code, not for readers, so the API Explorer never shows them. A property's type reads as its shape instead: `object`, `string[]`, `enum`, `map string to object`, or `union` with its options. A type with its own page reads as that page's title, such as **Query**.
 
+A map (`additionalProperties`) reads as `map string to X`, whether it's inline or a `$ref` to a named schema. When the map's values have fields, limits such as `maxLength` or `pattern`, or allowed values, a `<string>` row under the map lists them. A `default` alone doesn't add the row. The map's own `minProperties` and `maxProperties` show next to its type.
+
+Query parameters list like request body properties. An `object` or map parameter, such as one with `style: deepObject`, shows its fields under the parameter.
+
 The variants of a `oneOf` or `anyOf` are labelled by the first of these that applies:
 
 1. The variant schema's `title`.

@@ -1334,7 +1334,6 @@ button.response-status-toggle:focus {
 	}
 
 	.property-item:hover > dt > .property-anchor .property-anchor-icon,
-	.query-param:hover > dt > .property-anchor .property-anchor-icon,
 	.path-param:hover > dt > .property-anchor .property-anchor-icon {
 		opacity: 1;
 	}
@@ -1520,7 +1519,7 @@ button.response-status-toggle:focus {
 	}
 }
 
-.query-param,
+#query-params-list > .property-list > .property-item,
 .path-param,
 .prerequisite-item {
 	border-bottom: 1px solid #e3e8f2;
@@ -1877,7 +1876,6 @@ a.type-linked:hover {
 
 /* Deprecated property/parameter styling - strikethrough */
 .property-item.deprecated > dt > a > code:first-child,
-.query-param.deprecated > dt > a > code:first-child,
 .path-param.deprecated > dt > a > code:first-child {
 	@apply line-through opacity-70;
 }

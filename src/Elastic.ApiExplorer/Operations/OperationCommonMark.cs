@@ -173,23 +173,11 @@ internal static class OperationCommonMark
 
 	private static void WriteQueryParameters(StringBuilder markdown, OperationPageModel page, string apiBaseUrl)
 	{
-		if (page.QueryParameters.Count == 0)
+		if (page.QueryParameters.Items.Count == 0)
 			return;
 
 		ApiCommonMark.Heading(markdown, 2, "Query string parameters");
-		foreach (var query in page.QueryParameters)
-		{
-			var parameter = query.Parameter;
-			var type = query.Type is null ? "" : $" ({query.Type.Text})";
-			var deprecated = parameter.Deprecated ? " — deprecated" : "";
-			_ = markdown.AppendLine($"- `{parameter.Name}`{type}{deprecated}");
-			var description = ApiMarkdown.Prepare(query.DescriptionMarkdown, apiBaseUrl);
-			if (!string.IsNullOrWhiteSpace(description))
-				_ = markdown.AppendLine($"  {description.TrimEnd()}");
-
-			WriteValues(markdown, query.UnionOptions, query.UnionLabel, query.EnumValues);
-		}
-
+		ApiPropertyMarkdown.WriteList(markdown, page.QueryParameters, apiBaseUrl);
 		_ = markdown.AppendLine();
 	}
 

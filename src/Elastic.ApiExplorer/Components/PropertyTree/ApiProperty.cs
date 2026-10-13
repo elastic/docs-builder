@@ -118,6 +118,9 @@ public record DictionaryChildDisplay
 	public required int NestedCount { get; init; }
 	public required bool UseHidden { get; init; }
 	public required TypeAnnotation ValueType { get; init; }
+
+	/// <summary>The literals a map value can take, as a "Values:" row under the key.</summary>
+	public IReadOnlyList<string> EnumValues { get; init; } = [];
 	public required ApiPropertyList Properties { get; init; }
 }
 

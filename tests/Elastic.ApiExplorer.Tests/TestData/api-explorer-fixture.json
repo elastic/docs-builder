@@ -265,6 +265,14 @@
               "type": "array",
               "items": { "type": "string", "enum": ["open", "closed"] }
             }
+          },
+          {
+            "name": "tags",
+            "in": "query",
+            "style": "deepObject",
+            "explode": true,
+            "description": "Only documents with these tags and values.",
+            "schema": { "$ref": "#/components/schemas/fixture.Tags" }
           }
         ],
         "responses": {
@@ -679,6 +687,19 @@
             "type": "object"
           }
         }
+      },
+      "fixture.Tags": {
+        "type": "object",
+        "description": "Tags as key-value pairs.",
+        "minProperties": 1,
+        "maxProperties": 64,
+        "additionalProperties": { "$ref": "#/components/schemas/fixture.TagValue" }
+      },
+      "fixture.TagValue": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 128,
+        "pattern": "^[a-z0-9][a-z0-9_-]*$"
       },
       "fixture.ErrorResponse": {
         "type": "object",

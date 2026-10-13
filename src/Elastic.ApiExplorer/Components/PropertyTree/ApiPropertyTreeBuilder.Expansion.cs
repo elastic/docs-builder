@@ -63,15 +63,13 @@ public partial class ApiPropertyTreeBuilder
 	}
 
 	/// <summary>
-	/// The first of: the dictionary's value properties, the row's own properties, the array item's properties, the union's
+	/// The first of: the dictionary's value row, the row's own properties, the array item's properties, the union's
 	/// variants. Null when none applies.
 	/// </summary>
 	private ChildPlan? PlanChildren(IOpenApiSchema propSchema, TypeInfo typeInfo, bool hasUnionOptions)
 	{
-		if (
-			typeInfo is { IsDictionary: true, HasLink: false, DictValueSchema: { } value } && PropertyCount(value) is > 0 and var valueCount
-		)
-			return new ChildPlan.Dictionary(valueCount);
+		if (typeInfo is { IsDictionary: true, HasLink: false, DictValueSchema: { } value } && ListsMapValue(value))
+			return new ChildPlan.Dictionary(PropertyCount(value));
 
 		var variantCount = hasUnionOptions ? typeInfo.UnionOptions!.Count(_analyzer.UnionOptionHasProperties) : 0;
 		var listsOwnProperties = typeInfo is { IsObject: true, HasLink: false }
@@ -87,6 +85,13 @@ public partial class ApiPropertyTreeBuilder
 	}
 
 	private int PropertyCount(IOpenApiSchema? schema) => _analyzer.GetSchemaProperties(schema)?.Count ?? 0;
+
+	/// <summary>
+	/// Whether a map's values need a <c>&lt;string&gt;</c> row: they have fields, or limits and values the map's
+	/// <c>map string to X</c> type does not show. A default alone does not say what a value may be.
+	/// </summary>
+	private bool ListsMapValue(IOpenApiSchema value) =>
+		PropertyCount(value) > 0 || BuildLimits(value).Count > 0 || _analyzer.GetEnumValues(value).Count > 0;
 
 	/// <summary>The base name of an <c>X | X[]</c> union, or null for any other type.</summary>
 	private static string? DetectSimpleArrayUnion(TypeInfo typeInfo)
