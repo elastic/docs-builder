@@ -61,10 +61,11 @@ public class ApiMarkdownFrontMatterTests
 			"https://cdn.example/api/doc/es.yaml"
 		);
 
+		// AppendLine writes the platform newline; normalise so the multi-line assertions hold on Windows too.
 		var markdown = ApiMarkdownFrontMatter.Write(
 			"# Elasticsearch\n",
 			new ApiPageFrontMatter("Elasticsearch", null, "/api", null, facts)
-		);
+		).ReplaceLineEndings("\n");
 
 		markdown.Should().Contain("version: \"1.2\"");
 		markdown.Should().Contain("license: \"Apache 2.0: see terms\"");

@@ -139,6 +139,7 @@ public class OpenApiGeneratorSpecDownloadTests(ApiExplorerFixture fixture)
 		html.Should().Contain("api-index");
 
 		var markdown = await context.WriteFileSystem.File.ReadAllTextAsync(Path.Join(outputRoot, "api", "doc", "elasticsearch.md"), ct);
+		markdown = markdown.ReplaceLineEndings("\n");
 		markdown.Should().Contain("version: \"1.2.3\"");
 		markdown.Should().Contain("servers:\n  - \"https://fixture.example.com\"");
 		markdown.Should().Contain("spec:");
