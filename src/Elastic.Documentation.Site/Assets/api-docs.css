@@ -3313,6 +3313,16 @@ html:has(.api-page-shell) {
 	cursor: help;
 }
 
+.api-url-param {
+	color: inherit;
+	text-decoration: none;
+}
+
+.api-url-param:hover,
+.api-url-param:focus-visible {
+	text-decoration: underline;
+}
+
 .api-url-optional:hover {
 	color: #1d2a3e;
 }
