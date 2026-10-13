@@ -4,7 +4,7 @@
 
 using Elastic.Documentation.AppliesTo;
 
-namespace Elastic.Markdown.Myst.Components;
+namespace Elastic.Documentation.Site.ApplicabilityBadges;
 
 /// <summary>
 /// Contains static lifecycle descriptions for use in applicability popovers.

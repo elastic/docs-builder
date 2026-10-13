@@ -115,6 +115,22 @@ Several components have built-in support for `applies_to` and allow to surface v
 
 Refer to these component pages to learn about the required `applies_to` syntax.
 
+### API reference pages
+
+API reference pages don't use `applies_to` directly. They read the OpenAPI `x-state` extension on each operation and schema property, convert it to a `stack` applicability, and render it with the same badge and popover described on this page.
+
+| `x-state` | Equivalent `applies_to` | Badge |
+|-----------|-------------------------|-------|
+| `Generally available; Added in 7.7.0` | `stack: ga 7.7.0` | {applies_to}`stack: ga 7.7` |
+| `Technical Preview` | `stack: preview` | {applies_to}`stack: preview` |
+| `Beta; Added in 8.12.0` | `stack: beta 8.12.0` | {applies_to}`stack: beta 8.12` |
+| `Deprecated; Deprecated in 7.0.0` | `stack: deprecated 7.0.0` | {applies_to}`stack: deprecated 7.0` |
+| `Generally available` | `stack: ga` | No badge |
+
+- When the label names more than one lifecycle, the most restrictive one wins: removed, deprecated, beta, experimental, preview, then generally available.
+- A plain `Generally available` with no version gets no badge, because it tells readers nothing they can act on.
+- Operations added in a Stack version that isn't released yet show a **Planned** badge on their page, and are left out of the search index.
+
 ## Version syntax
 
 Versions can be specified using several formats to indicate different applicability scenarios.

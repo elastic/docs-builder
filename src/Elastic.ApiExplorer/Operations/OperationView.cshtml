@@ -16,12 +16,12 @@
 		<h1>@operation.Summary</h1>
 		@(await RenderPartialAsync<_PageActions, string>(LayoutModel.MarkdownUrl))
 	</div>
-	@if (pageModel.State is not null || operation.Deprecated || pageModel.IsBeta)
+	@if (pageModel.Availability is not null || operation.Deprecated || pageModel.IsBeta)
 	{
 		<div class="api-title-badges">
-			@if (pageModel.State is { } state)
+			@if (pageModel.Availability is { } availability)
 			{
-				<span class="api-state-badge">@state</span>
+				<span class="applies applies-inline">@await RenderPartialAsync(ApplicableToComponent.Create(availability))</span>
 			}
 			@if (operation.Deprecated)
 			{

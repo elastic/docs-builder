@@ -1900,6 +1900,11 @@ a.type-linked:hover {
 	@apply mr-2 inline;
 }
 
+/* x-state availability, rendered with the same applies_to badge as Markdown pages */
+.api-title-badges .applies {
+	@apply mr-2;
+}
+
 /* Deprecated badge - red warning style */
 .deprecated-badge {
 	@apply text-red-70 bg-red-10 rounded px-1 py-0.5 text-xs font-medium;
@@ -1915,10 +1920,6 @@ a.type-linked:hover {
 /* Version badge - subtle grey */
 .version-badge {
 	@apply text-grey-60 bg-grey-10 rounded px-1 py-0.5 text-xs font-normal;
-}
-
-.api-title-badges .api-state-badge {
-	@apply text-grey-100 mr-2 inline text-sm font-medium;
 }
 
 /* Beta badge - orange/amber warning */

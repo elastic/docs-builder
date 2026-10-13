@@ -6,6 +6,7 @@ using Elastic.ApiExplorer.Infrastructure;
 using Elastic.ApiExplorer.Model;
 using Elastic.ApiExplorer.Operations;
 using Elastic.ApiExplorer.Types;
+using Elastic.Documentation.Site.ApplicabilityBadges;
 using Microsoft.AspNetCore.Html;
 using Microsoft.OpenApi;
 
@@ -164,7 +165,7 @@ public record ApiProperty
 	public bool HasDescription => DescriptionHtml.Value is { Length: > 0 };
 
 	public required bool ShowDeprecatedBadge { get; init; }
-	public AvailabilityBadgeData? Availability { get; init; }
+	public ApplicableToViewModel? Availability { get; init; }
 	public ExternalDocLink? ExternalDocs { get; init; }
 	public IReadOnlyList<ConstraintDisplay> Constraints { get; init; } = [];
 	public IReadOnlyList<string> EnumValues { get; init; } = [];

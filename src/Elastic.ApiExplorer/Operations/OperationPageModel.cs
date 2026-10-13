@@ -5,6 +5,7 @@
 using Elastic.ApiExplorer.Components.PropertyTree;
 using Elastic.ApiExplorer.Infrastructure;
 using Elastic.ApiExplorer.Model;
+using Elastic.Documentation.Site.ApplicabilityBadges;
 using Microsoft.OpenApi;
 
 namespace Elastic.ApiExplorer.Operations;
@@ -15,8 +16,7 @@ namespace Elastic.ApiExplorer.Operations;
 /// </summary>
 public partial record OperationPageModel
 {
-	public required AvailabilityBadgeData? Availability { get; init; }
-	public required string? State { get; init; }
+	public required ApplicableToViewModel? Availability { get; init; }
 	public required bool IsBeta { get; init; }
 	public required ExternalDocLink? ExternalDocs { get; init; }
 	public required IList<OpenApiServer>? Servers { get; init; }
@@ -139,8 +139,7 @@ public partial record OperationPageModel
 
 		return new OperationPageModel
 		{
-			Availability = AvailabilityBadgeHelper.FromOperation(operation, context.BuildContext.VersionsConfiguration),
-			State = OpenApiExtensionReader.GetState(operation),
+			Availability = AvailabilityBadge.FromOperation(operation, context.BuildContext.VersionsConfiguration),
 			IsBeta = OpenApiExtensionReader.IsBeta(operation),
 			ExternalDocs = externalDocs,
 			Servers = servers,
