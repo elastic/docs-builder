@@ -6,6 +6,7 @@
 import { decorateApiCodeTokens } from './api-code-tokens'
 import { initApiExamples } from './api-examples-carousel'
 import { fitParamSummaries } from './api-param-summary'
+import { initUnionChips, revealVariantsAround } from './api-union-chips'
 import { iconCheckEui, iconCopyEui } from './copybutton'
 import { prefersReducedMotion } from './motion'
 import { flashTooltip, initTooltips } from './tooltip'
@@ -68,13 +69,6 @@ interface Disclosure {
 // Order matters where a row can match more than one entry: variants before properties.
 const DISCLOSURES: Disclosure[] = [
     {
-        container: '.union-variants-container',
-        toggle: ':scope > .union-collapse-toggle > .union-group-toggle',
-        body: ':scope > .union-variants-content',
-        trigger: '.union-group-toggle',
-        noun: 'type options',
-    },
-    {
         container: '.union-variant-item',
         toggle: ':scope > .union-expand-toggle > .expand-toggle',
         body: ':scope > .nested-properties',
@@ -119,12 +113,13 @@ function setDisclosureExpanded(
 }
 
 /**
- * Opens every collapsed disclosure whose body holds a link or find-in-page target, so it lands
- * on visible content in every browser, including those without hidden="until-found". A row
- * that only holds the target in its own header stays as it was.
+ * Opens every collapsed disclosure whose body holds a link or find-in-page target, and switches
+ * every variant chip list on the way to the variant that holds it, so the target lands on visible
+ * content in every browser, including those without hidden="until-found". A row that only holds
+ * the target in its own header stays as it was.
  */
 export function revealCollapsedAncestors(target: HTMLElement): boolean {
-    let revealed = false
+    let revealed = revealVariantsAround(target)
     for (let el = target.parentElement; el; el = el.parentElement) {
         if (!el.classList.contains('collapsed')) continue
         const d = disclosureFor(el)
@@ -553,6 +548,7 @@ export function initApiDocs(): void {
     initApiPropertyAnchorCopy()
     initApiResponseStatusTabs()
     initApiExamples()
+    initUnionChips()
     initApiPageActions()
     initExamplesRailSteadying()
     // After initHighlight — gutters need final textContent line counts
@@ -562,8 +558,7 @@ export function initApiDocs(): void {
     initParamSummaries()
 
     const operationSection = document.getElementById('elastic-api-v3')
-    if (operationSection) {
-        initOperationView()
-        revealHashTarget()
-    }
+    if (operationSection) initOperationView()
+    // Schema pages too: a link to a field inside a variant that is not picked must show that variant.
+    revealHashTarget()
 }
