@@ -11,6 +11,10 @@ using Microsoft.OpenApi;
 
 namespace Elastic.ApiExplorer.Operations;
 
+/// <summary>A collapsible section of parameter rows, such as Query parameters; the model for <c>_ParameterListSection</c>.</summary>
+/// <param name="MarkdownHeading">The section's heading in the page's markdown copy.</param>
+public record ParameterListSection(ParamSectionHeader Header, string ListId, ApiPropertyList Parameters, string MarkdownHeading);
+
 /// <summary>A path parameter with its structural display data precomputed.</summary>
 public record ApiPathParameter
 {
@@ -65,18 +69,31 @@ public partial record OperationPageModel
 		};
 	}
 
-	/// <summary>Query parameters as property rows: an object or a map lists its fields below the parameter, as in a body.</summary>
-	private static ApiPropertyList BuildQueryParameters(
+	// OpenAPI ignores header parameters with these names: the media types and the security schemes describe them.
+	private static readonly HashSet<string> IgnoredHeaders =
+	[
+		with(StringComparer.OrdinalIgnoreCase),
+		"Accept",
+		"Content-Type",
+		"Authorization"
+	];
+
+	/// <summary>
+	/// The parameters of one location as property rows: an object or a map lists its fields below the parameter, as in a
+	/// body. Anchors read <c>query-{name}</c> or <c>header-{name}</c>.
+	/// </summary>
+	private static ApiPropertyList BuildParameters(
 		IEnumerable<IOpenApiParameter> parameters,
+		ParameterLocation location,
 		ApiPropertyTreeBuilder builder,
 		ApiSupplementalDoc? supplemental
 	)
 	{
 		var described = parameters
-			.Where(static p => p.In == ParameterLocation.Query)
+			.Where(p => p.In == location && !(location == ParameterLocation.Header && IgnoredHeaders.Contains(p.Name ?? "")))
 			.Select(p => (p, supplemental?.ParameterOr(p.Name ?? "", p.Description) ?? p.Description))
 			.ToArray();
-		return builder.BuildParameterList(described, new PropertyTreeScope { Prefix = "query" });
+		return builder.BuildParameterList(described, new PropertyTreeScope { Prefix = location.ToString().ToLowerInvariant() });
 	}
 
 	private static UnionBadge[] UnionBadges(TypeInfo typeInfo)

@@ -303,7 +303,7 @@ Schema names under `components/schemas` are names for code, not for readers, so 
 
 A map (`additionalProperties`) reads as `map string to X`, whether it's inline or a `$ref` to a named schema. When the map's values have fields, limits such as `maxLength` or `pattern`, or allowed values, a `<string>` row under the map lists them. A `default` alone doesn't add the row. The map's own `minProperties` and `maxProperties` show next to its type.
 
-Query parameters list like request body properties. An `object` or map parameter, such as one with `style: deepObject`, shows its fields under the parameter.
+Query and header parameters list like request body properties, each in its own section. An `object` or map parameter, such as one with `style: deepObject`, shows its fields under the parameter. Header parameters named `Accept`, `Content-Type` or `Authorization` aren't listed, because OpenAPI ignores them: the media types and security schemes describe those headers.
 
 The variants of a `oneOf` or `anyOf` are labelled by the first of these that applies:
 

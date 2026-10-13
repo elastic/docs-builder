@@ -24,7 +24,7 @@ internal static class OperationCommonMark
 		WritePathParameters(markdown, page, apiBaseUrl);
 		WriteDescription(markdown, page, apiBaseUrl);
 		WriteAuthorization(markdown, page, apiBaseUrl);
-		WriteQueryParameters(markdown, page, apiBaseUrl);
+		WriteParameterSections(markdown, page, apiBaseUrl);
 		WriteRequestBody(markdown, apiOperation, page, apiBaseUrl);
 		WriteResponses(markdown, page, apiBaseUrl);
 		WriteCodeSamples(markdown, page);
@@ -171,14 +171,14 @@ internal static class OperationCommonMark
 		}
 	}
 
-	private static void WriteQueryParameters(StringBuilder markdown, OperationPageModel page, string apiBaseUrl)
+	private static void WriteParameterSections(StringBuilder markdown, OperationPageModel page, string apiBaseUrl)
 	{
-		if (page.QueryParameters.Items.Count == 0)
-			return;
-
-		ApiCommonMark.Heading(markdown, 2, "Query string parameters");
-		ApiPropertyMarkdown.WriteList(markdown, page.QueryParameters, apiBaseUrl);
-		_ = markdown.AppendLine();
+		foreach (var section in page.ParameterSections)
+		{
+			ApiCommonMark.Heading(markdown, 2, section.MarkdownHeading);
+			ApiPropertyMarkdown.WriteList(markdown, section.Parameters, apiBaseUrl);
+			_ = markdown.AppendLine();
+		}
 	}
 
 	private static void WriteValues(

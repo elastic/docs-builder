@@ -1520,6 +1520,7 @@ button.response-status-toggle:focus {
 }
 
 #query-params-list > .property-list > .property-item,
+#header-params-list > .property-list > .property-item,
 .path-param,
 .prerequisite-item {
 	border-bottom: 1px solid #e3e8f2;
