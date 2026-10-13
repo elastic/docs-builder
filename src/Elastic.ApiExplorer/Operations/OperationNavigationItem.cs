@@ -21,7 +21,9 @@ public record ApiOperation(
 	string ApiName
 ) : IApiModel<OperationPageModel>, IHttpMethodNavigationModel
 {
-	string IHttpMethodNavigationModel.HttpMethod => OperationType.Method.ToLowerInvariant();
+	// The page header leads with the dominant method, which can come from the description's method listing
+	// rather than the spec; the sidebar badge must agree with it.
+	string IHttpMethodNavigationModel.HttpMethod => OperationEndpoint.Build(this, Operation.Description, []).Rows[0].Method;
 
 	public OperationPageModel? CreatePageModel(ApiRenderContext context) => OperationPageModel.Create(this, context);
 

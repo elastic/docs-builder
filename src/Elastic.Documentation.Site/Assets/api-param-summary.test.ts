@@ -1,31 +1,133 @@
-import { hiddenCountToFit, moreLabel } from './api-param-summary'
+import { fitParamSummaries, moreLabel } from './api-param-summary'
 
-describe('hiddenCountToFit', () => {
-    it('returns 0 when everything fits', () => {
-        expect(hiddenCountToFit(5, () => false)).toBe(0)
+interface Layout {
+    /** The row each name lands on; a function gets whether the badge is showing. */
+    rows: (number | ((badgeShown: boolean) => number))[]
+    noun?: string
+    width?: number
+    firstNameWidth?: number
+}
+
+function summary({
+    rows,
+    noun,
+    width = 300,
+    firstNameWidth = 50,
+}: Layout): HTMLElement {
+    document.body.innerHTML = `
+        <span class="api-param-summary" data-param-summary ${noun ? `data-param-more-noun="${noun}"` : ''}>
+            <span class="api-param-summary-list">
+                ${rows.map((_, i) => `<code class="api-param-summary-item">n${i}</code>`).join('')}
+            </span>
+            <span data-param-more hidden><span data-param-more-count></span></span>
+        </span>`
+    const el = document.querySelector<HTMLElement>('[data-param-summary]')!
+    const list = el.querySelector<HTMLElement>('.api-param-summary-list')!
+    const more = el.querySelector<HTMLElement>('[data-param-more]')!
+    Object.defineProperty(el, 'clientWidth', { value: width })
+    Object.defineProperty(list, 'clientWidth', { value: width })
+    items(el).forEach((item, i) => {
+        Object.defineProperty(item, 'offsetWidth', {
+            value: i === 0 ? firstNameWidth : 50,
+        })
+        Object.defineProperty(item, 'offsetTop', {
+            get: () => {
+                const row = rows[i]
+                return (typeof row === 'number' ? row : row(!more.hidden)) * 24
+            },
+        })
+    })
+    return el
+}
+
+const items = (el: HTMLElement) => [
+    ...el.querySelectorAll<HTMLElement>('.api-param-summary-item'),
+]
+const hiddenFlags = (el: HTMLElement) => items(el).map((item) => item.hidden)
+const badge = (el: HTMLElement) =>
+    el.querySelector<HTMLElement>('[data-param-more]')!
+const count = (el: HTMLElement) =>
+    el.querySelector<HTMLElement>('[data-param-more-count]')!.textContent
+
+describe('fitParamSummaries', () => {
+    it('keeps the badge hidden when every name fits on one row', () => {
+        const el = summary({ rows: [0, 0, 0] })
+        fitParamSummaries([el])
+        expect(badge(el).hidden).toBe(true)
+        expect(hiddenFlags(el)).toEqual([false, false, false])
     })
 
-    it('returns 0 when there are no names', () => {
-        expect(hiddenCountToFit(0, () => true)).toBe(0)
+    it('hides the names that wrapped out of the first row and counts them', () => {
+        const el = summary({ rows: [0, 0, 1, 1, 2] })
+        fitParamSummaries([el])
+        expect(hiddenFlags(el)).toEqual([false, false, true, true, true])
+        expect(badge(el).hidden).toBe(false)
+        expect(count(el)).toBe('3 more')
     })
 
-    it('hides the fewest trailing names that make the line fit', () => {
-        const overflows = (hidden: number) => hidden < 3
-        expect(hiddenCountToFit(8, overflows)).toBe(3)
+    it('measures beside the badge, since its label takes room too', () => {
+        // The last name wraps on its own; once the badge shows, the fourth wraps as well
+        const el = summary({
+            rows: [0, 0, 0, (badgeShown) => (badgeShown ? 1 : 0), 1],
+        })
+        fitParamSummaries([el])
+        expect(hiddenFlags(el)).toEqual([false, false, false, true, true])
+        expect(count(el)).toBe('2 more')
     })
 
-    it('hides every name when even one plus the badge overflows', () => {
-        expect(hiddenCountToFit(4, () => true)).toBe(4)
+    it('folds every name away when even the first is wider than the line', () => {
+        const el = summary({ rows: [0, 1, 1], firstNameWidth: 400 })
+        fitParamSummaries([el])
+        expect(hiddenFlags(el)).toEqual([true, true, true])
+        expect(count(el)).toBe('3 more')
+    })
+
+    it('names what a union summary folds away', () => {
+        const el = summary({ rows: [0, 1], noun: 'variant' })
+        fitParamSummaries([el])
+        expect(count(el)).toBe('1 more variant')
+    })
+
+    it('marks a fitted summary so CSS can reveal it', () => {
+        const el = summary({ rows: [0, 1] })
+        fitParamSummaries([el])
+        expect(el.classList.contains('is-fitted')).toBe(true)
+    })
+
+    it('fits a summary with no names, hiding the badge', () => {
+        const el = summary({ rows: [] })
+        fitParamSummaries([el])
+        expect(badge(el).hidden).toBe(true)
+        expect(el.classList.contains('is-fitted')).toBe(true)
+    })
+
+    it('still fits the other summaries in a batch when one has no names', () => {
+        const full = summary({ rows: [0, 1, 1] })
+        const emptyEl = full.cloneNode(true) as HTMLElement
+        emptyEl
+            .querySelectorAll('.api-param-summary-item')
+            .forEach((i) => i.remove())
+        Object.defineProperty(emptyEl, 'clientWidth', { value: 300 })
+        fitParamSummaries([emptyEl, full])
+        expect(count(full)).toBe('2 more')
+        expect(full.classList.contains('is-fitted')).toBe(true)
+    })
+
+    it('leaves a summary with no width alone', () => {
+        const el = summary({ rows: [0, 1], width: 0 })
+        fitParamSummaries([el])
+        expect(badge(el).hidden).toBe(true)
+        expect(el.classList.contains('is-fitted')).toBe(false)
     })
 })
 
 describe('moreLabel', () => {
     it('keeps the short form for fields', () => {
-        expect(moreLabel(7)).toBe('7 more')
+        expect(moreLabel(3)).toBe('3 more')
     })
 
     it('names variants, singular and plural', () => {
-        expect(moreLabel(7, 'variant')).toBe('7 more variants')
         expect(moreLabel(1, 'variant')).toBe('1 more variant')
+        expect(moreLabel(3, 'variant')).toBe('3 more variants')
     })
 })

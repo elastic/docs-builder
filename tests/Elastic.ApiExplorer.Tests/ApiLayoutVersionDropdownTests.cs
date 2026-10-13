@@ -20,55 +20,50 @@ namespace Elastic.ApiExplorer.Tests;
 public class ApiLayoutVersionDropdownTests
 {
 	[Test]
-	public void CreateGlobalLayoutModel_KeepsVersionOffTheTopBar()
+	public void CreateGlobalLayoutModel_BringsItsOwnBarAndTrail()
 	{
 		var layout = CreateLayout();
 
-		layout.ShowVersionDropdown.Should().BeFalse();
-		layout.ShowLegacyBarVersionDropdown.Should().BeFalse();
-		layout.CurrentVersion.Should().Be("9.0+");
-		layout.VersionDropdownSerializedModel.Should().Contain("\"name\":\"latest\"");
-		layout.VersionDropdownSerializedModel.Should().Contain("\"name\":\"v9\"");
-		layout.ApiCatalogUrl.Should().Be("/api");
-		layout.Breadcrumbs.Select(b => b.NavigationTitle).Should().Equal("APIs");
-		layout.Breadcrumbs[0].Url.Should().Be("/api");
+		layout.ShowSecondaryNav.Should().BeFalse();
+		layout.Breadcrumbs.Select(b => b.NavigationTitle).Should().Equal("Docs", "APIs");
+		layout.Breadcrumbs.Select(b => b.Url).Should().Equal("/", "/api");
 		layout.StructuredBreadcrumbsJson.Should().Contain("Elasticsearch API");
 		layout.StructuredBreadcrumbsJson.Should().NotContain("Api Overview");
-		layout.SpecJsonUrl.Should().Be("/api/doc/elasticsearch.json");
-		layout.SpecYamlUrl.Should().Be("/api/doc/elasticsearch.yaml");
+		layout.ApiContext!.Spec.JsonUrl.Should().Be("/api/doc/elasticsearch.json");
+		layout.ApiContext.Spec.YamlUrl.Should().Be("/api/doc/elasticsearch.yaml");
 	}
 
 	[Test]
-	public void CreateGlobalLayoutModel_HidesDropdownWhenOnlyOneVersion()
+	public void CreateGlobalLayoutModel_HasNoVersionsToPickWhenThereIsOne()
 	{
 		var layout = CreateLayout(items: []);
 
-		layout.ShowVersionDropdown.Should().BeFalse();
-		layout.ShowLegacyBarVersionDropdown.Should().BeFalse();
-		layout.VersionDropdownSerializedModel.Should().Be("[]");
+		layout.ApiContext!.Versions.Should().BeEmpty();
 	}
 
 	[Test]
-	public void CreateGlobalLayoutModel_WiresProductSwitcherOnAssemblerGreyBar()
+	public void CreateGlobalLayoutModel_DescribesTheCurrentApiInTheContextBar()
 	{
 		var layout = CreateLayout(buildType: BuildType.Assembler, catalogEntries: Catalog);
 
-		layout.LegacyBarProductSwitcher.Should().HaveCount(3);
-		layout.LegacyBarProductSwitcher[0].Label.Should().Be("Back to hub");
-		layout.LegacyBarProductSwitcher[0].Value.Should().Be("/docs/api");
-		layout.Breadcrumbs[0].Url.Should().Be("/docs/api");
-		layout.Breadcrumbs[0].NavigationTitle.Should().Be("APIs");
-		layout.LegacyBarProductSwitcher.Should().ContainSingle(i => i.Selected && i.Label == "Elasticsearch");
-		layout.HubSwitcherItems.Should().HaveCount(3);
+		layout.ApiContext.Should().NotBeNull();
+		layout.ApiContext!.Title.Should().Be("Elasticsearch");
+		layout.ApiContext.HubUrl.Should().Be("/docs/api");
+		layout.ApiContext.Products.Select(p => p.Label).Should().Equal("Elasticsearch", "Kibana");
+		layout.ApiContext.Products.Should().ContainSingle(p => p.Selected && p.Label == "Elasticsearch");
+		layout.ApiContext.Products.Should().OnlyContain(p => p.IconSvg != null);
+		layout.ApiContext.Versions.Should().HaveCount(3);
+		layout.Breadcrumbs.Select(b => b.NavigationTitle).Should().Equal("Docs", "APIs");
+		layout.Breadcrumbs.Select(b => b.Url).Should().Equal("/docs", "/docs/api");
 	}
 
 	[Test]
-	public void CreateGlobalLayoutModel_KeepsProductSwitcherOffTheGreyBarInIsolated()
+	public void CreateGlobalLayoutModel_BuildsTheContextBarInIsolatedToo()
 	{
 		var layout = CreateLayout(catalogEntries: Catalog);
 
-		layout.LegacyBarProductSwitcher.Should().BeEmpty();
-		layout.HubSwitcherItems.Should().HaveCount(3);
+		layout.ApiContext.Should().NotBeNull();
+		layout.ApiContext!.Products.Should().HaveCount(2);
 	}
 
 	private static readonly ApiCatalogEntry[] Catalog =

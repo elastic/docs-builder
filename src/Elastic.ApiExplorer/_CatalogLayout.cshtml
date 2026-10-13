@@ -48,9 +48,6 @@ else
 	@await RenderSectionAsync(ApiCatalog.HeroSection)
 	<div class="max-w-(--max-layout-width) w-full px-6">
 		<main id="content-container" class="w-full pb-12">
-			<div class="api-page-toolbar">
-				@(await RenderPartialAsync(_Breadcrumbs.Create(new BreadcrumbsView(Model.Breadcrumbs, Model.BuildType, ShowSingle: true))))
-			</div>
 			@await RenderBodyAsync()
 		</main>
 	</div>

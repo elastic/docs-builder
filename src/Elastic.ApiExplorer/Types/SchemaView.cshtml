@@ -2,6 +2,14 @@
 @implements IUsesLayout<Elastic.ApiExplorer._Layout, ApiLayoutViewModel>
 @functions {
 	public ApiLayoutViewModel LayoutModel => Model.CreateGlobalLayoutModel();
+
+	protected override async Task ExecuteSectionAsync(string name)
+	{
+		if (name == ApiPageSections.Rail)
+		{
+			@await RenderPartialAsync(_ApiToc.Create(Model.TocItems))
+		}
+	}
 }
 @{
 	var schema = Model.Schema;
@@ -18,7 +26,6 @@
 <section id="schema-definition">
 	<div class="api-page-heading">
 		<h1>@schema.DisplayName</h1>
-		@(await RenderPartialAsync<_PageActions, string>(LayoutModel.MarkdownUrl))
 	</div>
 	<p class="schema-id"><code>@schema.SchemaId</code></p>
 

@@ -27,7 +27,7 @@ The body is **YAML, not markdown**. The directive expects a fixed schema and ren
 title: Writing content             # required, the card heading
 link: /getting-started/serve.md    # optional, makes the title clickable
 description: One short blurb.      # optional
-icon: elasticsearch                # optional, product-keyed inline SVG (elasticsearch, kibana, observability, security, vectordb)
+icon: elasticsearch                # optional, product-keyed inline SVG (elasticsearch, kibana, observability, security, vectordb, beats, elastic-agent)
 variant: es                        # optional accent: es, obs, or sec
 links:                             # optional, the card's links
   - label: Pages and links

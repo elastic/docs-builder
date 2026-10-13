@@ -1,4 +1,5 @@
-import { revealCollapsedAncestors } from './api-docs'
+import { revealCollapsedAncestors, revealHiddenAncestors } from './api-docs'
+import { initTabs } from './tabs'
 
 function markup(): string {
     return `
@@ -6,12 +7,17 @@ function markup(): string {
             <div class="property-item collapsed" id="outer">
                 <dt id="rule">rule</dt>
                 <div class="nested-properties" hidden="until-found">
-                    <div class="union-variants-container collapsible collapsed" id="options">
-                        <div class="union-collapse-toggle">
-                            <button class="expand-toggle union-group-toggle" aria-expanded="false"></button>
+                    <div class="union-variants-container union-variant-chips" id="options">
+                        <div class="api-example-chips-row" data-chip-row>
+                            <div class="api-example-chips" role="tablist">
+                                <button class="api-example-chip is-active" data-chip="query" aria-selected="true"><span data-chip-title>query</span></button>
+                                <button class="api-example-chip" data-chip="eql" aria-selected="false"><span data-chip-title>eql</span></button>
+                                <button class="api-example-chip" data-chip="esql" aria-selected="false"><span data-chip-title>esql</span></button>
+                            </div>
                         </div>
-                        <div class="union-variants union-variants-content" hidden="until-found">
-                            <div class="union-variant-item collapsed" id="eql">
+                        <div class="union-variants">
+                            <div class="union-variant-item" id="query"></div>
+                            <div class="union-variant-item collapsed" id="eql" hidden="until-found">
                                 <div class="nested-properties" hidden="until-found">
                                     <div class="property-item collapsed" id="actions-row">
                                         <dt id="actions">actions</dt>
@@ -19,6 +25,7 @@ function markup(): string {
                                     </div>
                                 </div>
                             </div>
+                            <div class="union-variant-item" id="esql" hidden="until-found"></div>
                         </div>
                     </div>
                 </div>
@@ -38,13 +45,19 @@ describe('revealCollapsedAncestors', () => {
         expect(revealCollapsedAncestors(byId('actions'))).toBe(true)
 
         expect(byId('eql').classList.contains('expanded')).toBe(true)
-        expect(byId('options').classList.contains('expanded')).toBe(true)
         expect(byId('outer').classList.contains('expanded')).toBe(true)
+    })
+
+    it('switches a variant chip list to the variant that holds the target', () => {
+        revealCollapsedAncestors(byId('actions'))
+
+        expect(byId('eql').hasAttribute('hidden')).toBe(false)
+        expect(byId('query').getAttribute('hidden')).toBe('until-found')
         expect(
-            byId('options')
-                .querySelector('.union-variants-content')!
-                .hasAttribute('hidden')
-        ).toBe(false)
+            document
+                .querySelector('[data-chip="eql"]')!
+                .classList.contains('is-active')
+        ).toBe(true)
     })
 
     it("leaves the target's own row as it was", () => {
@@ -55,9 +68,91 @@ describe('revealCollapsedAncestors', () => {
 
     it('reports nothing to reveal when the target is already visible', () => {
         byId('outer').classList.remove('collapsed')
-        byId('options').classList.remove('collapsed')
         byId('eql').classList.remove('collapsed')
+        byId('eql').removeAttribute('hidden')
+        byId('query').setAttribute('hidden', 'until-found')
+        document
+            .querySelector('[data-chip="query"]')!
+            .classList.remove('is-active')
+        document.querySelector('[data-chip="eql"]')!.classList.add('is-active')
 
         expect(revealCollapsedAncestors(byId('actions'))).toBe(false)
+    })
+
+    it('opens a collapsed param section and response panel around a nested target', () => {
+        document.body.innerHTML = `
+            <section id="elastic-api-v3">
+                <div class="api-param-section collapsed" data-param-section id="sec">
+                    <h2 id="query-params" class="api-param-section-header">
+                        <button class="api-param-section-toggle" aria-expanded="false"></button>
+                    </h2>
+                    <div class="api-param-section-body" hidden="until-found">
+                        <div class="property-item" id="row"><dt id="param">p</dt></div>
+                    </div>
+                </div>
+            </section>`
+
+        expect(revealCollapsedAncestors(byId('query-params'))).toBe(false)
+        expect(byId('sec').classList.contains('collapsed')).toBe(true)
+
+        expect(revealCollapsedAncestors(byId('param'))).toBe(true)
+        expect(byId('sec').classList.contains('expanded')).toBe(true)
+        expect(
+            byId('sec')
+                .querySelector('.api-param-section-body')!
+                .hasAttribute('hidden')
+        ).toBe(false)
+    })
+})
+
+describe('revealHiddenAncestors', () => {
+    it('sends beforematch to each until-found ancestor, then shows it', () => {
+        document.body.innerHTML = `
+            <div id="panel" hidden="until-found"><p id="target">x</p></div>`
+        const seen: string[] = []
+        document.addEventListener(
+            'beforematch',
+            (e) => seen.push((e.target as HTMLElement).id),
+            { once: true }
+        )
+
+        const target = document.getElementById('target')!
+        expect(revealHiddenAncestors(target)).toBe(true)
+        expect(seen).toEqual(['panel'])
+        expect(document.getElementById('panel')!.hasAttribute('hidden')).toBe(
+            false
+        )
+    })
+
+    it('reports nothing when no ancestor is hidden', () => {
+        document.body.innerHTML = '<div><p id="target">x</p></div>'
+        expect(revealHiddenAncestors(document.getElementById('target')!)).toBe(
+            false
+        )
+    })
+})
+
+describe('revealHiddenAncestors with the docs tabs', () => {
+    it('selects the tab that holds a link target before showing its panel', () => {
+        document.body.innerHTML = `
+            <div class="api-tabs">
+                <input class="tabs-input" id="t0" name="auth" type="radio" checked>
+                <label class="tabs-label" for="t0">Api key</label>
+                <div class="tabs-content" id="p0">first</div>
+                <input class="tabs-input" id="t1" name="auth" type="radio">
+                <label class="tabs-label" for="t1">Basic</label>
+                <div class="tabs-content" id="p1" hidden="until-found"><p id="basic">x</p></div>
+            </div>`
+        initTabs()
+
+        expect(revealHiddenAncestors(document.getElementById('basic')!)).toBe(
+            true
+        )
+
+        const tabTwo = document.getElementById('t1') as HTMLInputElement
+        expect(tabTwo.checked).toBe(true)
+        expect(document.getElementById('p1')!.hasAttribute('hidden')).toBe(
+            false
+        )
     })
 })

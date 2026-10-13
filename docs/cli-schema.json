@@ -6878,7 +6878,7 @@
               ],
               "name": "build",
               "summary": "Build the unified release notes site from the bundles that release unified bundle wrote.",
-              "notes": "The docset is created in memory from products.yml. Every product with\nfeatures.release-notes: dra gets a release notes, known issues, breaking changes and\ndeprecations page. No documentation folder is needed.\n\n\n\nThe command resolves the argument like release unified bundle and fails when a product has\nno bundle for a resolved version.",
+              "notes": "The docset is created in memory from products.yml. Every product with\nfeatures.release-notes: dra gets a release notes, known issues, breaking changes and\ndeprecations page. No documentation folder is needed.\n\n\n\nThe command resolves the argument like release unified bundle. A product without bundles is left\nout of the site, and the build fails only when no product has any bundle.",
               "usage": "docs-builder release unified build \u003Cversion-or-keyword\u003E [options]",
               "examples": [],
               "parameters": [
@@ -6964,7 +6964,7 @@
               ],
               "name": "bundle",
               "summary": "Generate changelog bundles for all DRA products at the given version, for the current GA, or for the next upcoming release(s).",
-              "notes": "- \u0022current\u0022 \u2014 bundles the latest GA version from past-releases.json.\n  - \n    \u0022preview\u0022 \u2014 bundles both the next patch and next minor releases. Each uses its BC\n    manifest when one has been cut; otherwise the corresponding SNAPSHOT is used.\n  \n  - \n    Explicit version (e.g. 9.5.5) \u2014 bundles using the latest BC manifest. Errors when\n    no BC has been cut yet, and skips gracefully when the version is already GA.\n  \n\n\n\n\nOnly products with features.release-notes: dra in products.yml are bundled.\nBundle files are written to \u003CoutputDir\u003E/\u003Cproduct-id\u003E/.",
+              "notes": "- \u0022current\u0022 \u2014 bundles the latest GA version from past-releases.json.\n  - \n    \u0022preview\u0022 \u2014 bundles both the next patch and next minor releases. Each uses its BC\n    manifest when one has been cut; otherwise the corresponding SNAPSHOT is used.\n  \n  - \n    Explicit version (e.g. 9.5.5) \u2014 bundles using the latest BC manifest. Errors when\n    no BC has been cut yet, and skips gracefully when the version is already GA.\n  \n\n\n\n\nOnly products with features.release-notes: dra in products.yml are bundled.\nBundle files are written to \u003CoutputDir\u003E/\u003Cproduct-id\u003E/.\n\n\n\nThe release notes of a version cover the commits between two build manifests. The end is the product\u0027s\ncommit in the manifest of the target. The start is its commit in the manifest of the previous release:\nthe previous patch of the same minor, or the previous minor\u0027s .0 for a x.y.0 release.\nA product whose commit is the same in both manifests has no changes and gets no bundle.\nThe pull requests in that range come from the GitHub GraphQL API, so GITHUB_TOKEN must be set.\nThe first profile of each product\u0027s changelog.yml shapes the bundle and must use product:\nor output_products:. A products: pattern cannot be combined with a commit range.",
               "usage": "docs-builder release unified bundle \u003Cversion-or-keyword\u003E [options]",
               "examples": [],
               "parameters": [
@@ -6988,6 +6988,15 @@
                   "type": "string",
                   "required": false,
                   "summary": "Optional directory of prototype \u003Cproduct-id\u003E.changelog.yml files. When present,\na product\u0027s local file takes precedence over the file fetched from GitHub, allowing teams to\niterate on the configuration ahead of landing it in their repository."
+                },
+                {
+                  "role": "flag",
+                  "name": "products",
+                  "type": "array",
+                  "required": false,
+                  "summary": "Limit the run to these products (repeatable). Every product with release-notes: dra is bundled by default.\nUse it to bundle only the products that have a changelog entry pool, or to try one product.",
+                  "repeatable": true,
+                  "elementType": "string"
                 },
                 {
                   "role": "flag",

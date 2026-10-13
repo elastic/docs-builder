@@ -9,6 +9,7 @@ using Elastic.ApiExplorer.Navigation;
 using Elastic.ApiExplorer.Operations;
 using Elastic.Documentation.Extensions;
 using Elastic.Documentation.Navigation;
+using Elastic.Documentation.Site.Icons;
 using RazorSlices;
 
 namespace Elastic.ApiExplorer.Landing;
@@ -16,6 +17,8 @@ namespace Elastic.ApiExplorer.Landing;
 public sealed record ApiCatalogEntry(string Key, string Title, string Url, string? ProductId = null, string? Description = null)
 {
 	public IReadOnlyList<string> CatalogCategories { get; init; } = [];
+
+	public string? IconSvg => ProductIcons.Get(ProductId ?? Key);
 }
 
 public class ApiCatalog : IApiGroupingModel

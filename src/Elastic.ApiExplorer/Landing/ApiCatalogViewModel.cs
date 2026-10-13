@@ -89,21 +89,13 @@ public sealed record ApiCatalogCard(
 public class ApiCatalogViewModel(ApiRenderContext context) : ApiViewModel(context)
 {
 	// The core stack APIs get the large cards at the top of their group.
-	private static readonly string[] FeaturedKeys = ["elasticsearch", "kibana", "logstash"];
-
-	// A variant is shown as a tag-on, attached under the card of the API it is a variant of.
-	private static readonly Dictionary<string, string> VariantParents = new(StringComparer.Ordinal)
-	{
-		["elasticsearch-serverless"] = "elasticsearch",
-		["kibana-serverless"] = "kibana"
-	};
 
 	// Each API belongs to exactly one group. Keys list the display order inside it. The titles are
 	// provisional while we collect naming feedback. An API in neither group follows them, ordered by title.
 	private static readonly (string Title, string[] Keys)[] GroupDefinitions =
 	[
-		("Elastic Stack", [.. FeaturedKeys, "elasticsearch-serverless", "kibana-serverless"]),
-		("Orchestration", ["cloud", "cloud-billing", "cloud-connect", "cloud-enterprise", "cloud-serverless"])
+		("Elastic Stack", [.. ApiCatalogOrder.StackKeys, .. ApiCatalogOrder.VariantParents.Keys]),
+		("Orchestration", ApiCatalogOrder.OrchestrationKeys)
 	];
 
 	private static readonly (string Category, string Label)[] DeploymentLabels =
@@ -165,7 +157,10 @@ public class ApiCatalogViewModel(ApiRenderContext context) : ApiViewModel(contex
 	/// </summary>
 	private static ApiCatalogEntryGroup WithFeatured(string title, ApiCatalogEntry[] members)
 	{
-		var featured = members.Where(e => FeaturedKeys.Contains(e.Key)).OrderBy(e => Array.IndexOf(FeaturedKeys, e.Key)).ToArray();
+		var featured = members
+			.Where(e => ApiCatalogOrder.StackKeys.Contains(e.Key))
+			.OrderBy(e => Array.IndexOf(ApiCatalogOrder.StackKeys, e.Key))
+			.ToArray();
 		return featured.Length >= 2
 			? new(title, Grouped: true, featured, [.. members.Except(featured)])
 			: new(title, Grouped: true, [], members);
@@ -183,9 +178,9 @@ public class ApiCatalogViewModel(ApiRenderContext context) : ApiViewModel(contex
 			entry.Key,
 			entry.Title,
 			entry.Url,
-			ProductIcons.Get(entry.ProductId ?? entry.Key) ?? FallbackIconSvg,
+			entry.IconSvg ?? FallbackIconSvg,
 			ApiSeoDescription.Excerpt(entry.Description),
 			DeploymentsOf(entry),
-			VariantParents.GetValueOrDefault(entry.Key)
+			ApiCatalogOrder.VariantParents.GetValueOrDefault(entry.Key)
 		);
 }

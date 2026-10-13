@@ -19,14 +19,10 @@ public partial class ApiPagesNavRenderingTests
 		var model = CreateLayoutModel(
 			"/api/doc/elasticsearch/v9/",
 			"/api/doc/elasticsearch/v9.md",
-			versionSwitcherItems: [
+			apiContext: CreateApiContext(versions: [
 				new("v9", "/api/doc/elasticsearch/v9/", Selected: true),
 				new("v8", "/api/doc/elasticsearch/v8/", Selected: false)
-			],
-			hubSwitcherItems: [
-				new("Elasticsearch", "/api/doc/elasticsearch/", Selected: true),
-				new("Kibana", "/api/doc/kibana/", Selected: false)
-			],
+			]),
 			features: NavigationPreview
 		);
 
@@ -66,7 +62,7 @@ public partial class ApiPagesNavRenderingTests
 		var model = CreateLayoutModel(
 			"/api/doc/elasticsearch/",
 			"/api/doc/elasticsearch.md",
-			hubSwitcherItems: [new("Elasticsearch", "/api/doc/elasticsearch/", Selected: true)],
+			apiContext: CreateApiContext(),
 			features: NavigationPreview,
 			buildType: Elastic.Documentation.BuildType.Assembler
 		);

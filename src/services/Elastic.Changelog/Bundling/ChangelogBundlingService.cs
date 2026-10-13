@@ -807,9 +807,11 @@ public partial class ChangelogBundlingService(
 			All = false,
 			Output = outputPath,
 			OutputProducts = outputProducts,
-			Repo = repo,
-			Owner = owner,
-			Branch = branch,
+			// Profile and bundle settings win. The arguments fill what they leave unset, so a profile that only
+			// names a product still bundles for the repository the caller passed.
+			Repo = repo ?? input.Repo,
+			Owner = owner ?? input.Owner,
+			Branch = branch ?? input.Branch,
 			HideFeatures = mergedHideFeatures,
 			Description = profileDescription ?? input.Description,
 			SuppressReleaseDate = profileSuppressReleaseDate
@@ -1024,7 +1026,13 @@ public partial class ChangelogBundlingService(
 		if (!result.Success || collector.Errors > 0)
 			return false;
 
-		if (result.Entries.Count == 0)
+		// Notes authored for the target are not tied to a pull request, so the range never finds them.
+		// Merge them like the filter pipeline does, so a range bundle is not missing them.
+		var allEntries = await MergeNotesAsync(collector, result.Entries, sourcing.UseCdn, owner, sourcing.Repo, input, ctx);
+		if (allEntries == null)
+			return false;
+
+		if (allEntries.Count == 0)
 		{
 			collector.EmitError(
 				string.Empty,
@@ -1033,7 +1041,7 @@ public partial class ChangelogBundlingService(
 			return false;
 		}
 
-		return await BuildAndWriteBundle(collector, input, config, result.Entries, outputPath, ctx);
+		return await BuildAndWriteBundle(collector, input, config, allEntries, outputPath, ctx);
 	}
 
 	/// <summary>Reads the local changelog directory into (file name, content) pairs for range matching.</summary>

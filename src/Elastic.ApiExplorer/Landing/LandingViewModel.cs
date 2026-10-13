@@ -5,6 +5,8 @@
 using Elastic.ApiExplorer.Infrastructure;
 using Elastic.ApiExplorer.Model;
 using Elastic.ApiExplorer.Operations;
+using Elastic.ApiExplorer.Structural;
+using Elastic.Documentation;
 using Elastic.Documentation.Site.Icons;
 using Microsoft.OpenApi;
 
@@ -22,11 +24,15 @@ public class LandingViewModel(ApiRenderContext context) : ApiViewModel(context)
 
 	private ApiOverviewIndex Index => field ??= ApiOverviewBuilder.SplitTopics(OverviewSections);
 
-	/// <summary>Pages such as Authentication and Servers. They sit above the index, not in it.</summary>
-	public IReadOnlyList<ApiOverviewRow> TopicPages => Index.Topics;
-
 	/// <summary>The sections the grouped index shows.</summary>
 	public IReadOnlyList<ApiOverviewSection> IndexSections => Index.Groups;
+
+	public string? License => ApiInfo.License?.Name;
+
+	/// <summary>The assembler hosts the download in its context bar.</summary>
+	public bool ShowSpecDownload => BuildContext.BuildType != BuildType.Assembler;
+
+	public IReadOnlyList<ApiServerDisplay> Servers => field ??= StructuralViewModel.ReadServers(Document);
 
 	public string JsonUrl { get; } = ApiOutputPaths.JsonUrl(context.CurrentNavigation.Url);
 	public string YamlUrl { get; } = ApiOutputPaths.YamlUrl(context.CurrentNavigation.Url);

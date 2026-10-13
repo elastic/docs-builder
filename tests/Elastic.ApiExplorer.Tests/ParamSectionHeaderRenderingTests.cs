@@ -17,7 +17,7 @@ public class ParamSectionHeaderRenderingTests
 		var html = await Render(new ParamSectionHeader("Request", "request-body", ["EqlRule", "QueryRule"], NamesAreVariants: true));
 
 		html.Should().Contain("data-param-more-noun=\"variant\"");
-		html.Should().Contain(" | ");
+		html.Should().Contain("api-param-summary is-variants");
 		html.Should().NotContain("api-param-summary-brace");
 	}
 
@@ -28,6 +28,7 @@ public class ParamSectionHeaderRenderingTests
 
 		html.Should().Contain("api-param-summary-brace");
 		html.Should().NotContain("data-param-more-noun");
+		html.Should().NotContain("is-variants");
 	}
 
 	private static async Task<string> Render(ParamSectionHeader model) =>

@@ -56,7 +56,9 @@
 			];
 
 	var items = Model.TopNav is not null ? ItemsFromNavigation() : BuiltInItems();
-	var hasSpecDownload = !string.IsNullOrEmpty(Model.SpecJsonUrl) && !string.IsNullOrEmpty(Model.SpecYamlUrl);
+	var specJsonUrl = Model.ApiContext?.Spec.JsonUrl;
+	var specYamlUrl = Model.ApiContext?.Spec.YamlUrl;
+	var hasSpecDownload = !string.IsNullOrEmpty(specJsonUrl) && !string.IsNullOrEmpty(specYamlUrl);
 }
 @if (Model.Features.AirGappedEnabled)
 {
@@ -79,7 +81,7 @@ else
 			{
 				Label = "Download source",
 				Current = "Download source",
-				Items = [new("JSON", Model.SpecJsonUrl!, Download: true), new("YAML", Model.SpecYamlUrl!, Download: true)]
+				Items = [new("JSON", specJsonUrl!, Download: true), new("YAML", specYamlUrl!, Download: true)]
 			}
 			: null
 	}))

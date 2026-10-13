@@ -140,46 +140,4 @@
 	.secondary-nav-dropdown-link--selected {
 		font-weight: 600;
 	}
-
-	/* Grey top bar: same text chrome as Release notes / Reference, EUI panel on open. */
-	.secondary-nav-legacy-product {
-		display: inline-flex;
-		align-items: center;
-		height: auto;
-	}
-
-	.secondary-nav-legacy-product > summary {
-		display: inline-flex;
-		align-items: center;
-		gap: 4px;
-		cursor: pointer;
-		font: inherit;
-		color: inherit;
-	}
-
-	.secondary-nav-legacy-product .secondary-nav-dropdown-menu {
-		/* The shared -8px open travel is tuned for a 56px tab. This control is
-		   only as tall as its label, so that travel covers the trigger. Start
-		   12px below it; the settled menu sits 4px under the label. */
-		top: calc(100% + 12px);
-		left: auto;
-		right: 0;
-		min-width: 175px;
-		width: max-content;
-		max-width: 16rem;
-	}
-
-	.secondary-nav-legacy-product[open] .nav-select__chevron,
-	.secondary-nav-legacy-product.is-open .nav-select__chevron {
-		transform: rotate(180deg);
-	}
-}
-
-/* Unlayered so this beats the bar's md:z-30 utility. The menu's own z-index
-   cannot escape that stacking context, and the API sidebar is z-index 10000
-   while the page header is --z-navigation: 200. */
-div:has(> #secondary-nav .secondary-nav-legacy-product[open]),
-div:has(> #secondary-nav .secondary-nav-legacy-product.is-open),
-div:has(> #secondary-nav .secondary-nav-legacy-product.is-closing) {
-	z-index: 10001;
 }

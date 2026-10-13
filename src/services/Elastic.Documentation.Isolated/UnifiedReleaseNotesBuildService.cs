@@ -24,8 +24,11 @@ public record UnifiedReleaseNotesBuildOptions
 	/// <summary>Destination for the generated site. The folder is cleaned before the build.</summary>
 	public required DirectoryInfo Output { get; init; }
 
-	/// <summary>Versions that every product must have a bundle for. Empty requires at least one bundle per product.</summary>
-	public IReadOnlyCollection<string> RequiredVersions { get; init; } = [];
+	/// <summary>
+	/// Versions the site is built for. A product without a bundle for one of them is reported, not rejected:
+	/// a product that did not change in a release has no bundle for it.
+	/// </summary>
+	public IReadOnlyCollection<string> ExpectedVersions { get; init; } = [];
 
 	/// <summary>URL path prefix prepended to every generated link.</summary>
 	public string? PathPrefix { get; init; }
@@ -63,8 +66,16 @@ public class UnifiedReleaseNotesBuildService(
 
 		var realFs = new FileSystem();
 		var bundles = LoadBundles(collector, realFs, products, options);
-		if (bundles is null)
+		if (bundles.Count == 0)
+		{
+			collector.EmitError(
+				options.BundlesDirectory.FullName,
+				$"No product has bundles under '{options.BundlesDirectory.FullName}'. Run 'release unified bundle' first."
+			);
 			return false;
+		}
+
+		products = [.. bundles.Select(b => b.Product)];
 
 		var docsRoot = Path.Join(Paths.WorkingDirectoryRoot.FullName, "unified-release-notes", "docs");
 		var mockFs = CreateVirtualDocset(docsRoot, products, bundles);
@@ -101,7 +112,7 @@ public class UnifiedReleaseNotesBuildService(
 		return await service.BuildFrom(collector, buildOptions, docFs, ctx);
 	}
 
-	private IReadOnlyList<ProductBundles>? LoadBundles(
+	private IReadOnlyList<ProductBundles> LoadBundles(
 		IDiagnosticsCollector collector,
 		IFileSystem realFs,
 		IReadOnlyList<Product> products,
@@ -110,27 +121,30 @@ public class UnifiedReleaseNotesBuildService(
 	{
 		var loader = new BundleLoader(realFs);
 		var result = new List<ProductBundles>(products.Count);
-		var failed = false;
 
 		foreach (var product in products)
 		{
 			var folder = realFs.Path.Join(options.BundlesDirectory.FullName, product.Id);
 			if (!realFs.Directory.Exists(folder))
 			{
-				collector.EmitError(folder, $"Product '{product.Id}' has no bundles folder. Run 'release unified bundle' first.");
-				failed = true;
+				_logger.LogInformation("'{Product}' has no bundles folder and is left out of the site.", product.Id);
 				continue;
 			}
 
 			var loaded = loader.LoadBundles(folder, warning => collector.EmitWarning(folder, warning));
-			var missing = MissingVersions(loaded.Select(b => b.Version), options.RequiredVersions);
-			if (loaded.Count == 0 || missing.Count > 0)
+			if (loaded.Count == 0)
 			{
-				var detail = loaded.Count == 0 ? "no bundle files" : $"no bundle for version(s) {string.Join(", ", missing)}";
-				collector.EmitError(folder, $"Product '{product.Id}' has {detail}.");
-				failed = true;
+				_logger.LogInformation("'{Product}' has no bundles and is left out of the site.", product.Id);
 				continue;
 			}
+
+			var missing = MissingVersions(loaded.Select(b => b.Version), options.ExpectedVersions);
+			if (missing.Count > 0)
+				_logger.LogInformation(
+					"'{Product}' has no bundle for {Versions}. It did not change in them.",
+					product.Id,
+					string.Join(", ", missing)
+				);
 
 			// Copy every YAML file, not only the loaded bundles: LoadBundles folds amend sidecars into their
 			// parent and drops them from its result, and the directive merges them again from the docset folder.
@@ -144,7 +158,7 @@ public class UnifiedReleaseNotesBuildService(
 			result.Add(new ProductBundles(product, files));
 		}
 
-		return failed ? null : result;
+		return result;
 	}
 
 	private static IReadOnlyList<string> MissingVersions(IEnumerable<string> bundleVersions, IReadOnlyCollection<string> required)

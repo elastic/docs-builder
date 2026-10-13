@@ -1,0 +1,294 @@
+/*
+ * API context bar on assembler API pages: which API this is (product and version together) and
+ * the spec download. Isolated builds have no bar, so the same product and version
+ * controls sit at the top of the sidebar (.api-sidebar-identity).
+ * Used on API pages in both navigation-preview states, so nothing here is scoped to
+ * body.navigation-preview. The menus are popovers placed by api-menu.ts; the rows reuse
+ * .secondary-nav-dropdown-link from secondary-nav-dropdown.css.
+ */
+
+/* The bar and the sticky offset below it must agree; assembler.css reads this for --offset-top. */
+:root {
+	--api-context-bar-height: 56px;
+}
+
+@layer components {
+	.api-context-bar {
+		background-color: #fff;
+		box-shadow: inset 0 -1px 0 #eeeff1;
+	}
+
+	.api-context-bar__inner {
+		box-sizing: border-box;
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		width: 100%;
+		min-width: 0;
+		height: var(--api-context-bar-height);
+		padding-inline: 16px;
+		font-family: var(--font-body);
+	}
+
+	/* Product and version side by side, close enough to read as a pair. */
+	.api-context-switcher {
+		display: flex;
+		flex-shrink: 1;
+		align-items: center;
+		min-width: 0;
+		gap: 4px;
+	}
+
+	/* Beside the sidebar the logo lines up with the nav text: the trigger's 8px padding plus this 8px
+	   gives the nav's 16px inset. The page shell has no side padding. */
+	@media (width >= 768px) {
+		.api-context-bar__inner {
+			padding-inline-start: calc(var(--spacing) * 2);
+		}
+	}
+
+	/* Product identity: the largest thing in the row. */
+	.api-context-product {
+		flex-shrink: 1;
+		min-width: 0;
+		height: 36px;
+	}
+
+	.api-context-product-trigger,
+	.api-context-product--static {
+		box-sizing: border-box;
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		min-width: 0;
+		height: 36px;
+		padding-inline: 8px;
+		border-radius: 6px;
+		color: #1d2a3e;
+	}
+
+	.api-context-product-trigger {
+		margin: 0;
+		border: 0;
+		background: none;
+		font: inherit;
+		text-align: start;
+		cursor: pointer;
+	}
+	.api-context-product-trigger:hover,
+	.api-context-product-trigger[aria-expanded='true'] {
+		background: #f6f9fc;
+	}
+	.api-context-product-trigger:focus-visible {
+		outline: 2px solid #0b64dd;
+		outline-offset: 2px;
+	}
+
+	.api-context-logo {
+		display: inline-flex;
+		flex-shrink: 0;
+		width: 20px;
+		height: 20px;
+	}
+	.api-context-logo svg,
+	.api-context-updown svg,
+	.api-context-spec__icon svg {
+		display: block;
+		width: 100%;
+		height: 100%;
+	}
+	.api-context-logo--sm {
+		width: 16px;
+		height: 16px;
+	}
+	.api-context-logo--muted {
+		color: #516381;
+	}
+
+	.api-context-title {
+		min-width: 0;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+		font-size: 16px;
+		font-weight: 600;
+		line-height: 24px;
+	}
+
+	.api-context-updown {
+		display: flex;
+		flex-shrink: 0;
+		width: 12px;
+		height: 12px;
+		color: #516381;
+	}
+
+	.api-context-product-link {
+		gap: 8px;
+	}
+
+	.api-context-menu-sep {
+		height: 1px;
+		margin: 6px 0;
+		background: #eeeff1;
+	}
+
+	/*
+	 * Menus. A popover sits in the top layer, so no ancestor can clip it. Floating UI sets
+	 * left/top (api-menu.ts); everything the browser puts on [popover] is reset here.
+	 */
+	.api-menu {
+		position: fixed;
+		inset: auto;
+		box-sizing: border-box;
+		min-width: 160px;
+		max-width: min(20rem, calc(100vw - 16px));
+		margin: 0;
+		padding: 8px;
+		overflow-y: auto;
+		border: 0;
+		border-radius: 4px;
+		background: #fff;
+		color: #1d2a3e;
+		font-family: var(--font-body);
+		font-size: 14px;
+		font-weight: 400;
+		line-height: 20px;
+		/* Borealis euiShadowMedium as filter, like the other menus. */
+		filter: drop-shadow(0 0 2px rgb(43 57 79 / 0.16))
+			drop-shadow(0 3px 10px rgb(43 57 79 / 0.1))
+			drop-shadow(0 6px 14px rgb(43 57 79 / 0.06));
+		transition: opacity 0.15s ease;
+	}
+	/* Hidden until api-menu.ts has placed it, so it never flashes at the wrong spot. */
+	.api-menu:not([data-placed]) {
+		visibility: hidden;
+	}
+	@starting-style {
+		.api-menu:popover-open {
+			opacity: 0;
+		}
+	}
+	@media (prefers-reduced-motion: reduce) {
+		.api-menu {
+			transition: none;
+		}
+	}
+
+	/* Version: a compact nav-select, shown when there is more than one to pick from. */
+	.api-context-version {
+		flex-shrink: 0;
+	}
+	.api-context-version .nav-select {
+		height: 28px;
+		box-shadow: none;
+	}
+	.api-context-version .nav-select__body {
+		gap: 6px;
+	}
+	.api-context-version .nav-select__value {
+		font-family: var(--font-mono, ui-monospace, monospace);
+		font-size: 13px;
+		font-weight: 500;
+	}
+
+	/* Spec download: quiet until hovered. */
+	.api-context-actions {
+		display: flex;
+		flex-shrink: 0;
+		align-items: center;
+		margin-inline-start: auto;
+	}
+
+	.api-context-spec-trigger {
+		box-sizing: border-box;
+		display: flex;
+		align-items: center;
+		gap: 6px;
+		height: 32px;
+		margin: 0;
+		padding-inline: 10px;
+		border: 1px solid transparent;
+		border-radius: 8px;
+		background: none;
+		color: #516381;
+		font: inherit;
+		font-size: 14px;
+		font-weight: 500;
+		line-height: 20px;
+		cursor: pointer;
+	}
+	.api-context-spec-trigger:hover,
+	.api-context-spec-trigger[aria-expanded='true'] {
+		border-color: #cad3e2;
+		color: #1d2a3e;
+	}
+	.api-context-spec-trigger:focus-visible {
+		outline: 2px solid #0b64dd;
+		outline-offset: 2px;
+	}
+	.api-context-bar [aria-expanded='true'] .nav-select__chevron,
+	.api-sidebar-identity [aria-expanded='true'] .nav-select__chevron {
+		transform: rotate(180deg);
+	}
+	.api-context-spec__icon {
+		display: flex;
+		width: 16px;
+		height: 16px;
+	}
+
+	@media (width < 768px) {
+		.api-context-spec__label,
+		.api-context-spec-trigger .nav-select__chevron {
+			display: none;
+		}
+	}
+
+	/* The sidebar carries the identity. Stacked so the name fits. */
+	.api-sidebar-identity {
+		display: flex;
+		flex-direction: column;
+		align-items: stretch;
+		gap: 8px;
+		min-width: 0;
+	}
+	.api-sidebar-identity .api-context-product {
+		flex-shrink: 0;
+		height: auto;
+	}
+	/* API names are long ("Elastic Cloud Connected API"), so the name wraps instead of truncating. */
+	.api-sidebar-identity .api-context-product-trigger {
+		align-items: flex-start;
+		/* Padding gives the hover background room around the logo. The negative margin keeps the
+		   logo lined up with the filter box below. */
+		width: calc(100% + 16px);
+		height: auto;
+		min-height: 36px;
+		margin-inline: -8px;
+		padding: 6px 8px;
+	}
+	.api-sidebar-identity .api-context-logo {
+		margin-top: 2px;
+	}
+	.api-sidebar-identity .api-context-title {
+		flex: 1 1 auto;
+		overflow: visible;
+		text-overflow: clip;
+		white-space: normal;
+		text-wrap: balance;
+		overflow-wrap: anywhere;
+		line-height: 1.25;
+	}
+	.api-sidebar-identity .api-context-updown {
+		margin-top: 4px;
+	}
+	/* Isolated builds have no bar, so the sidebar carries the product and version. */
+	.api-sidebar-identity .api-context-version,
+	.api-sidebar-identity .api-context-version .nav-select {
+		width: 100%;
+	}
+	.api-sidebar-identity .api-context-version .nav-select__body {
+		flex: 1 1 auto;
+		justify-content: space-between;
+	}
+}

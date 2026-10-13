@@ -1,21 +1,24 @@
 @inherits RazorSlice<Elastic.ApiExplorer.Infrastructure.ApiLayoutViewModel>
 @using Elastic.Documentation.Site.Components.Navigation.LinkMenu
+@{
+	var apiContext = Model.ApiContext;
+}
 @* The API sidebar: the switchers above the shared navigation tree. The jump field filters the tree and needs script, so it stays hidden until then. *@
 <div class="api-sidebar-chrome" data-nav-filter-scope>
-	@if (Model.VersionSwitcherItems.Count > 1)
+	@if (apiContext is not null && apiContext.Versions.Count > 1)
 	{
 		@await RenderPartialAsync(_LinkMenu.Create(new LinkMenuModel
 		{
 			Label = "API version",
-			Items = [.. Model.VersionSwitcherItems.Select(item => new LinkMenuItem(item.Label, item.Url, item.Selected))]
+			Items = [.. apiContext.Versions.Select(item => new LinkMenuItem(item.Label, item.Value, item.Selected))]
 		}))
 	}
-	@if (Model.HubSwitcherItems.Count > 0 && Model.BuildType != BuildType.Assembler)
+	@if (apiContext is not null && apiContext.Products.Count > 0 && Model.BuildType != BuildType.Assembler)
 	{
 		@await RenderPartialAsync(_LinkMenu.Create(new LinkMenuModel
 		{
 			Label = "API product",
-			Items = [.. Model.HubSwitcherItems.Select(item => new LinkMenuItem(item.Label, item.Url, item.Selected))]
+			Items = [.. apiContext.Products.Select(item => new LinkMenuItem(item.Label, item.Url, item.Selected))]
 		}))
 	}
 	@if (Model.ShowJumpToPage)

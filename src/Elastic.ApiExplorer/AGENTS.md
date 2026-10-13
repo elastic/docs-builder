@@ -28,7 +28,7 @@ Components/              Reusable View+ViewModel widgets embedded by more than o
     _Partials/           Its templates: _PropertyItem, _PropertyList, _UnionOptions, _SchemaType.
 
 Landing/                 Slice: product landing, tag landing and intro/outro markdown pages.
-Structural/              Slice: Bump.sh-compatible /authentication and /servers pages.
+Structural/              Slice: Bump.sh-compatible /authentication and /servers pages (generated for old links, hidden from nav).
 Operations/              Slice: operation pages (ApiOperation/ApiEndpoint, page model, view).
 Types/                   Slice: schema type pages under /api/{product}/types/.
 
@@ -37,6 +37,15 @@ _Partials/               Cross-slice partials only: _SectionHeader, _ApiCodeBloc
 
 Export/                  OpenApiDocumentExporter: search-index export, independent of page rendering.
 ```
+
+## Page layout
+
+Every page the layout renders has the same two columns inside `#api-content-grid`: the article and a right rail
+(`.api-page-grid` in `api-docs.css`). The layout puts Copy page at the top of the rail; a view adds the rest by
+overriding `ExecuteSectionAsync` for `ApiPageSections.Rail`. Only add what helps someone use the API: examples on
+operations, server URLs, license and the spec download on the spec landing, the external docs link on groups, and
+"On this page" on schema and structural pages. Below 1024px the rail's content stacks under the article and
+Copy page moves up beside the menu button.
 
 ## Rules
 

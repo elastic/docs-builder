@@ -127,17 +127,17 @@ public partial class ApiPropertyTreeBuilder(
 		var constraints = new List<ConstraintDisplay>();
 
 		if (schema.MinLength.HasValue)
-			constraints.Add(new ConstraintDisplay($"min: {schema.MinLength.Value}"));
+			constraints.Add(new ConstraintDisplay($"min length: {schema.MinLength.Value}"));
 		if (schema.MaxLength.HasValue)
-			constraints.Add(new ConstraintDisplay($"max: {schema.MaxLength.Value}"));
+			constraints.Add(new ConstraintDisplay($"max length: {schema.MaxLength.Value}"));
 		if (!string.IsNullOrEmpty(schema.Minimum))
 			constraints.Add(new ConstraintDisplay($"min: {schema.Minimum}"));
 		if (!string.IsNullOrEmpty(schema.Maximum))
 			constraints.Add(new ConstraintDisplay($"max: {schema.Maximum}"));
 		if (schema.MinItems.HasValue)
-			constraints.Add(new ConstraintDisplay($"min: {schema.MinItems.Value}"));
+			constraints.Add(new ConstraintDisplay($"min items: {schema.MinItems.Value}"));
 		if (schema.MaxItems.HasValue)
-			constraints.Add(new ConstraintDisplay($"max: {schema.MaxItems.Value}"));
+			constraints.Add(new ConstraintDisplay($"max items: {schema.MaxItems.Value}"));
 		if (!string.IsNullOrEmpty(schema.ExclusiveMinimum))
 			constraints.Add(new ConstraintDisplay($"> {schema.ExclusiveMinimum}"));
 		if (!string.IsNullOrEmpty(schema.ExclusiveMaximum))
@@ -224,7 +224,7 @@ public partial class ApiPropertyTreeBuilder(
 			// Kept on a repeat too, so it hashes like the row it repeats; the views show "Same … as" in its place.
 			Union = typeInfo.IsUnion ? BuildUnionDisplay(propSchema, typeInfo, expansion) : null,
 			Repeats = repeats,
-			// Type annotation already reads "[] …"; skip the redundant "Array of:" row.
+			// Type annotation already reads "…[]"; skip the redundant "Array of:" row.
 			ArrayItemTypeName = null,
 			TypeLink = typeLink,
 			AlsoIncludes = BuildAlsoIncludes(typeInfo),
