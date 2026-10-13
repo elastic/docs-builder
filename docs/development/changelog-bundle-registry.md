@@ -412,5 +412,5 @@ logic still applies via `assembler.yml`, exactly as for local bundles.
 ## Related
 
 - [Changelog directive](/syntax/changelog.md) — current (local-folder) behavior.
-- [Publish changelogs](/data/release-notes/publish.md) — the upload workflow.
+- [Changelog configuration and bundling](/data/release-notes/index.md) — the upload workflow.
 - [Link infrastructure](/documentation/distributed-builds.md) — the S3 + CloudFront pattern this reuses.

@@ -1,7 +1,7 @@
 ## Description
 
 Create a changelog file that describes a single item in the release documentation.
-For details and examples, go to [](/data/release-notes/create.md).
+For details and examples, go to [](/data/release-notes/index.md).
 
 For changelogs that don't need a PR link (for example, known issues or security advisories), use [`changelog note`](/cli/changelog/note.md) instead.
 
@@ -114,7 +114,7 @@ If a configuration file exists, the command validates its values before generati
 In each of these cases where validation fails, a changelog file is not created.
 
 If the configuration file contains `rules.create` definitions and a PR or issue has a blocking label, that PR is skipped and no changelog file is created for it.
-For more information, refer to [](/data/release-notes/create.md#rules).
+For more information, refer to [](/data/release-notes/index.md).
 
 ## Fetch failures
 

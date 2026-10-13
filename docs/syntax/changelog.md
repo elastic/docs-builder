@@ -497,7 +497,7 @@ The `{changelog}` directive is ideal for release notes pages that should always 
 
 ## Related
 
-- [Create and bundle changelogs](/data/release-notes/overview.md) — Overview, workflow, and links to detailed guides
+- [Create and bundle changelogs](/data/release-notes/index.md) — Overview, workflow, and links to detailed guides
 - [`changelog add`](/cli/changelog/add.md) — CLI command to create changelog entries
 - [`changelog bundle`](/cli/changelog/bundle.md) — CLI command to bundle changelog entries
 - [`changelog remove`](/cli/changelog/remove.md) — CLI command to remove changelog files
