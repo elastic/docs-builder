@@ -38,6 +38,15 @@ _Partials/               Cross-slice partials only: _SectionHeader, _ApiCodeBloc
 Export/                  OpenApiDocumentExporter: search-index export, independent of page rendering.
 ```
 
+## Page layout
+
+Every page the layout renders has the same two columns inside `#api-content-grid`: the article and a right rail
+(`.api-page-grid` in `api-docs.css`). The layout puts Copy page at the top of the rail; a view adds the rest by
+overriding `ExecuteSectionAsync` for `ApiPageSections.Rail`. Only add what helps someone use the API: examples on
+operations, server URLs, license and the spec download on the spec landing, the external docs link on groups, and
+"On this page" on schema and structural pages. Below 1024px the rail's content stacks under the article and
+Copy page moves up beside the menu button.
+
 ## Rules
 
 **MVVM mapping.** Each slice is a mini-MVVM stack: a model record (`ApiOperation`, `ApiSchema`,

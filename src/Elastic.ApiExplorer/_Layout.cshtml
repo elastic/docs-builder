@@ -32,24 +32,33 @@ else
 	}
 	<div class="min-h-screen w-full mx-auto api-page-shell">
 		<div class="min-h-screen grid grid-cols-1 md:grid-cols-[var(--max-sidebar-width)_1fr] gap-4">
-			@* One column at every width. Operation pages open a second column for the
-			   examples rail inside their body (.api-page-columns in api-docs.css).
-			   #api-content-grid is the htmx swap target for API pages (pages-nav.ts). *@
+			@* #api-content-grid is the htmx swap target for API pages (pages-nav.ts). Every API page has the same
+			   two columns inside it: the article and the right rail (.api-page-grid in api-docs.css). The rail holds
+			   Copy page, then whatever the page puts in ApiPageSections.Rail. *@
 			@* Placed explicitly: the nav follows in the document, so while a large page is still
 			   streaming the content must not fall into the nav's column. *@
 			<div id="api-content-grid" class="min-w-0 md:col-start-2 md:row-start-1 mx-4 md:mx-0">
-				<main id="content-container" class="relative pt-6 pb-12">
-					<input type="checkbox" class="hidden" id="pages-nav-hamburger">
-					@await RenderPartialAsync(_ApiPagesNavToggle.Create())
-					<div class="api-page-toolbar">
-						@* Isolated docs hide a one-item trail. The spec landing's only crumb is the catalog. *@
-						@(await RenderPartialAsync(_Breadcrumbs.Create(new BreadcrumbsView(Model.Breadcrumbs, Model.BuildType, ShowSingle: true))))
+				<div class="api-page-grid">
+					<main id="content-container" class="api-page-main relative pt-6 pb-12">
+						<input type="checkbox" class="hidden" id="pages-nav-hamburger">
+						@await RenderPartialAsync(_ApiPagesNavToggle.Create())
+						<div class="api-page-toolbar">
+							@* Isolated docs hide a one-item trail. The spec landing's only crumb is the catalog. *@
+							@(await RenderPartialAsync(_Breadcrumbs.Create(new BreadcrumbsView(Model.Breadcrumbs, Model.BuildType, ShowSingle: true))))
+						</div>
+						<article id="markdown-content" class="content-container markdown-content">
+							@await RenderBodyAsync()
+						</article>
+						@await RenderPartialAsync(_PageFeedback.Create(Model))
+					</main>
+					<div class="api-page-rail">
+						@if (Model.ShowPageActions)
+						{
+							@(await RenderPartialAsync<_PageActions, string>(Model.MarkdownUrl))
+						}
+						@await RenderSectionAsync(ApiPageSections.Rail)
 					</div>
-					<article id="markdown-content" class="content-container markdown-content">
-						@await RenderBodyAsync()
-					</article>
-					@await RenderPartialAsync(_PageFeedback.Create(Model))
-				</main>
+				</div>
 			</div>
 			@await RenderPartialAsync(_ApiPagesNav.Create(Model))
 		</div>

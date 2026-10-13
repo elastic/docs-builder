@@ -3,6 +3,15 @@
 @implements IUsesLayout<Elastic.ApiExplorer._Layout, ApiLayoutViewModel>
 @functions {
 	public ApiLayoutViewModel LayoutModel => Model.CreateGlobalLayoutModel();
+
+	// The examples sit in the right rail, under Copy page.
+	protected override async Task ExecuteSectionAsync(string name)
+	{
+		if (name == ApiPageSections.Rail && Model.ExamplesPanel is { } examplesPanel)
+		{
+			@await RenderPartialAsync(_OperationExamplesPanel.Create(examplesPanel))
+		}
+	}
 }
 @{
 	var operation = Model.Operation.Operation;
@@ -10,11 +19,9 @@
 	var endpoint = pageModel.Endpoint;
 }
 
-@* Intro keeps the full width; the reference and the examples rail share .api-page-columns below it. *@
 <header class="api-page-intro">
 	<div class="api-page-heading">
 		<h1>@operation.Summary</h1>
-		@(await RenderPartialAsync<_PageActions, string>(LayoutModel.MarkdownUrl))
 	</div>
 	@if (pageModel.State is not null || operation.Deprecated || pageModel.IsBeta)
 	{
@@ -62,7 +69,6 @@
 		}
 	</ul>
 </header>
-<div class="api-page-columns">
 <section id="elastic-api-v3">
 	@if (!string.IsNullOrWhiteSpace(pageModel.DescriptionMarkdown) || pageModel.ExternalDocs is not null)
 	{
@@ -241,8 +247,3 @@
 		<div>@extra.BodyHtml</div>
 	}
 </section>
-@if (Model.ExamplesPanel is { } examplesPanel)
-{
-	@await RenderPartialAsync(_OperationExamplesPanel.Create(examplesPanel))
-}
-</div>
