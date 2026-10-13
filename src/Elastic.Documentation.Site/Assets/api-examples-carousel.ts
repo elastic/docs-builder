@@ -56,7 +56,12 @@ function writeDeepLink(lang: string | undefined, example: string | undefined) {
     const params = new URLSearchParams()
     if (example) params.set('example', example.toLowerCase())
     if (lang) params.set('lang', lang.toLowerCase())
-    window.history.replaceState(null, '', `#${params.toString()}`)
+    // Keep htmx's history state, or Back/Forward can't restore this page.
+    window.history.replaceState(
+        window.history.state,
+        '',
+        `#${params.toString()}`
+    )
 }
 
 function sameLanguage(a: string | undefined, b: string | undefined) {
