@@ -46,7 +46,7 @@ The option names set the order, not the weight. All three render as neutral butt
 :::
 ```
 
-Actions render as buttons, and no button on the site carries an arrow. The arrow belongs to the eyebrow link, which sends the reader onward to the docs home.
+Actions render as buttons, and no button on the site carries an arrow.
 
 Action URLs validate at build time. Use one of these forms:
 

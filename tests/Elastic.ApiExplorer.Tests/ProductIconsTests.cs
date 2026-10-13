@@ -73,12 +73,13 @@ public class ProductIconsTests
 	public void Get_Beats_ReturnsOfficialMark() => ProductIcons.Get("beats").Should().Contain("<svg");
 
 	[Test]
-	public void Get_ElasticAgent_ReturnsPlaceholderOnItsOwnTile()
+	public void Get_ElasticAgent_ReturnsOfficialMark()
 	{
 		var svg = ProductIcons.Get("elastic-agent");
 
 		svg.Should().Contain("<svg");
-		svg.Should().Contain("<rect", "the white letter needs its own tile to show on a light background");
+		svg.Should().NotContain("<rect", "the official mark is a glyph, not a letter on a tile");
+		svg.Should().Contain("#101C3F", "the official mark keeps its navy outline");
 		svg.Should().NotBe(ProductIcons.Get("elastic-stack"));
 	}
 

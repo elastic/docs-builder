@@ -43,11 +43,13 @@ products:
 | `title` | H2 heading. |
 | `id` | Section anchor. Use `whats-new` so `{hero}`'s secondary action can jump to it. |
 | `intro` | One-line lead. |
-| `release-links` | Links to the full release notes, shown beside the heading. List more than one when a product has several release streams. |
+| `release-links` | Links to the full release notes, shown beside the heading after the label "Go to latest release notes:". List more than one when a product has several release streams. A label can use a substitution such as `{{version.stack}}`. |
 | `upgrade-link` | An upgrade prompt below the grid. Takes `label` and `url`. |
 | `items` | The highlight cards. |
 
-Each item takes a `title`, a `description`, a `link`, a `date` and a `tag`. Mark one item `featured: true` to span two columns.
+Each item takes a `title`, a `description`, a `link`, an `availability` list or a `date`, and a `tag`. Mark one item `featured: true` to span two columns.
+
+The `availability` list names where the item is available, for example `9.5` and `Serverless`. The card shows the entries in order, separated by a dot. When the list is empty, the card shows the `date` instead.
 
 The `date` renders as you write it. Use sentence case, for example `Aug 2026`.
 

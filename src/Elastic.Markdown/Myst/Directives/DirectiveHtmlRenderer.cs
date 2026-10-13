@@ -269,7 +269,7 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 		{
 			DirectiveBlock = block,
 			Title = block.Title,
-			Intro = block.Intro,
+			IntroHtml = RenderInlineMarkdown(block.Intro),
 			Anchor = block.Anchor,
 			Variant = block.Variant,
 			IsAccordion = explore is not null,

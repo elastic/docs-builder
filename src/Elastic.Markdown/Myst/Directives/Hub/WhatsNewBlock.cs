@@ -4,6 +4,7 @@
 
 using System.Collections.Concurrent;
 using Elastic.Markdown.Diagnostics;
+using Elastic.Markdown.Helpers;
 using YamlDotNet.Core;
 using YamlDotNet.Serialization;
 
@@ -78,12 +79,20 @@ public class WhatsNewBlock(DirectiveBlockParser parser, ParserContext context) :
 
 	private void ValidateLinks(ParserContext context)
 	{
+		// A release link label can carry a substitution, for example `{{version.stack}}`, so a
+		// patch release does not mean editing the panel.
 		foreach (var link in Data.ReleaseLinks)
+		{
+			link.Label = link.Label?.ReplaceSubstitutions(context);
 			link.Url = DirectiveLinkValidator.ValidateAndResolve(link.Url, this, context);
+		}
 		if (Data.UpgradeLink is { } upgrade)
 			upgrade.Url = DirectiveLinkValidator.ValidateAndResolve(upgrade.Url, this, context);
 		foreach (var item in Data.Items)
+		{
 			item.Link = DirectiveLinkValidator.ValidateAndResolve(item.Link, this, context);
+			item.Availability = [.. item.Availability.Select(entry => entry.ReplaceSubstitutions(context))];
+		}
 	}
 
 	/// <summary>
@@ -161,6 +170,13 @@ public record WhatsNewItem
 
 	[YamlMember(Alias = "link")]
 	public string? Link { get; set; }
+
+	/// <summary>
+	/// Where the item is available, for example <c>9.5</c> and <c>Serverless</c>. The card shows the
+	/// entries in order. When the list is empty the card falls back to <see cref="Date"/>.
+	/// </summary>
+	[YamlMember(Alias = "availability")]
+	public string[] Availability { get; set; } = [];
 
 	[YamlMember(Alias = "date")]
 	public string? Date { get; set; }

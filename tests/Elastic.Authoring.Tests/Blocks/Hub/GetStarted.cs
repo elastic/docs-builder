@@ -48,7 +48,10 @@ public class GetStartedWithALinkStep : MarkdownTest
 		""";
 
 	[Test, DisplayName("renders the step link")]
-	public async Task RendersStepLink() => await Docs.ConvertsToContainingHtml("""<span>Start writing</span>""");
+	public async Task RendersStepLink() => await Docs.ConvertsToContainingRawHtml("""Start <span class="hub-get-started-nowrap">writing""");
+
+	[Test, DisplayName("keeps the arrow with the last word")]
+	public async Task KeepsArrowWithLastWord() => await Docs.ConvertsToContainingRawHtml("""writing<svg class="hub-arrow" viewBox""");
 
 	[Test, DisplayName("has no errors")]
 	public async Task HasNoErrors() => await Docs.HasNoErrors();
@@ -113,9 +116,8 @@ public class GetStartedWithoutABody : MarkdownTest
 	public async Task Errors() => await Docs.HasError("{get-started}");
 }
 
-// The section is not fixed at three steps. The track count follows the steps that flow in
-// columns, so the last row is never short. A step carrying options spans the full row and
-// takes no track.
+// The section is not fixed at three steps. The first step sits in its own box. The column
+// count follows the steps after it, so the last row is never short.
 public class GetStartedWithFourSteps : MarkdownTest
 {
 	protected override string Markdown =>
@@ -138,9 +140,13 @@ public class GetStartedWithFourSteps : MarkdownTest
 	[Test, DisplayName("lays the three remaining steps across three tracks")]
 	public async Task LaysRemainingStepsAcrossThreeTracks() => await Docs.ConvertsToContainingRawHtml("""--hub-step-columns: 3""");
 
-	[Test, DisplayName("continues the list count on the next row")]
-	public async Task ContinuesTheListCountOnTheNextRow() =>
-		await Docs.ConvertsToContainingRawHtml("""<ol class="hub-get-started-row" start="2">""");
+	[Test, DisplayName("continues the list count after the first step")]
+	public async Task ContinuesTheListCountAfterTheFirstStep() =>
+		await Docs.ConvertsToContainingRawHtml("""<ol class="hub-get-started-grid has-three-columns" start="2">""");
+
+	[Test, DisplayName("puts the first step in its own box")]
+	public async Task PutsTheFirstStepInItsOwnBox() =>
+		await Docs.ConvertsToContainingRawHtml("""<li class="hub-get-started-box is-fork">""");
 
 	[Test, DisplayName("marks exactly two options as a fork")]
 	public async Task MarksExactlyTwoOptionsAsAFork() => await Docs.ConvertsToContainingHtml("""is-fork""");
@@ -185,10 +191,56 @@ public class GetStartedWithFiveSteps : MarkdownTest
 		:::
 		""";
 
-	// Four steps divide evenly into two rows of two, so they take two tracks rather than
-	// three with a single step stranded on the last row.
-	[Test, DisplayName("pairs four steps into two tracks")]
-	public async Task PairsFourStepsIntoTwoTracks() => await Docs.ConvertsToContainingRawHtml("""--hub-step-columns: 2""");
+	// The first of four steps sits in the box, and the three after it take three columns.
+	[Test, DisplayName("lays the steps after the first across three columns")]
+	public async Task LaysStepsAfterTheFirstAcrossThreeColumns() => await Docs.ConvertsToContainingRawHtml("""--hub-step-columns: 3""");
+
+	[Test, DisplayName("has no errors")]
+	public async Task HasNoErrors() => await Docs.HasNoErrors();
+}
+
+public class GetStartedWithFiveStepsAfterTheBox : MarkdownTest
+{
+	protected override string Markdown =>
+		"""
+		:::{get-started}
+		title: Get started
+		steps:
+		  - title: One
+		  - title: Two
+		  - title: Three
+		  - title: Four
+		  - title: Five
+		:::
+		""";
+
+	// Four steps after the first divide evenly into two rows of two, so they take two columns
+	// rather than three with a single step stranded on the last row.
+	[Test, DisplayName("pairs four remaining steps into two columns")]
+	public async Task PairsFourRemainingStepsIntoTwoColumns() => await Docs.ConvertsToContainingRawHtml("""--hub-step-columns: 2""");
+
+	[Test, DisplayName("has no errors")]
+	public async Task HasNoErrors() => await Docs.HasNoErrors();
+}
+
+public class GetStartedWithAFirstStepThatHasNoOptions : MarkdownTest
+{
+	protected override string Markdown =>
+		"""
+		:::{get-started}
+		title: Get started
+		steps:
+		  - title: Install
+		    description: Download the binary.
+		    link: /index.md
+		    link-label: See the install guide
+		  - title: Configure
+		    description: Write a config.
+		:::
+		""";
+
+	[Test, DisplayName("still puts the first step in the box")]
+	public async Task StillPutsTheFirstStepInTheBox() => await Docs.ConvertsToContainingRawHtml("""<li class="hub-get-started-box">""");
 
 	[Test, DisplayName("has no errors")]
 	public async Task HasNoErrors() => await Docs.HasNoErrors();

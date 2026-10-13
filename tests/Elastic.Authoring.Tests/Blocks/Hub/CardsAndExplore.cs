@@ -47,6 +47,28 @@ public class CardGroupStandalone : MarkdownTest
 	public async Task HasNoErrors() => await Docs.HasNoErrors();
 }
 
+public class CardGroupWithLinksInTheIntro : MarkdownTest
+{
+	protected override string Markdown =>
+		"""
+		::::{card-group}
+		:title: Components
+		:id: components
+		:intro: They power [solutions](#solutions) and have several ways to [deploy](#deploy).
+
+		:::{link-card}
+		title: Elasticsearch
+		:::
+		::::
+		""";
+
+	[Test, DisplayName("renders inline links in the intro")]
+	public async Task RendersInlineLinksInTheIntro() => await Docs.ConvertsToContainingRawHtml("""<a href="#solutions">solutions</a>""");
+
+	[Test, DisplayName("has no errors")]
+	public async Task HasNoErrors() => await Docs.HasNoErrors();
+}
+
 public class CardGroupWithSolutionsVariant : MarkdownTest
 {
 	protected override string Markdown =>

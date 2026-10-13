@@ -7,7 +7,8 @@ namespace Elastic.Markdown.Myst.Directives.Hub;
 public class CardGroupViewModel : DirectiveViewModel
 {
 	public required string? Title { get; init; }
-	public required string? Intro { get; init; }
+	/// <summary>The intro as inline HTML, so it can carry links to other sections of the page.</summary>
+	public required string? IntroHtml { get; init; }
 	public required string? Anchor { get; init; }
 	public required string? Variant { get; init; }
 

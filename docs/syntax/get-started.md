@@ -57,10 +57,9 @@ Every field except `title` is optional. The [example hub](../examples/products/d
 
 There is no fixed number. The layout arranges whatever you write:
 
-- A step carrying `options` spans the full row, as one chevron with the choices inside it.
-- The remaining steps share the row, three across when they divide by three, two when they are even, so the last row is never short.
-- A step that ends up alone on its row stays the width of one step and is centered.
-- Below a narrow width the steps stack into one column, and the content in each step is centered.
+- The first step always sits in a tinted box. When it has two `options`, they sit side by side with an "or" between them. This is true on every hub, including a hub with no options.
+- The remaining steps sit below in columns, with titles, text and links lined up across them. They use three columns when they divide by three, two when they are even, so the last row is never short.
+- Below a narrow width, the steps stack into one column and the first step's options stack with the "or" line between them. Steps in three columns stack sooner than steps in two.
 
 Keep the list short enough to read as one path. Four steps still scan. Ten do not.
 
@@ -75,7 +74,7 @@ A step takes one of three shapes.
   description: Serve the site locally, then publish it.
 ```
 
-**Link.** Add `link` and `link-label`. The step shows that label as a text link. The chevron itself is not the link.
+**Link.** Add `link` and `link-label`. The step shows that label as a text link that ends in an arrow.
 
 ```yaml
 - title: Write your first page
@@ -84,7 +83,7 @@ A step takes one of three shapes.
   link-label: Start writing
 ```
 
-**Options.** Add `options` for two or more equally weighted paths, shown side by side. Each option takes a `label`, a `description`, and either a copyable `code` snippet with its `language`, or a `url` with a `url-label`.
+**Options.** Add `options` for two or more equally weighted paths. Two options are shown side by side with an "or" between them. Each option takes a `label`, a `description`, and either a copyable `code` snippet with its `language`, or a `url` with a `url-label`.
 
 ```yaml
 - title: Preview and publish
@@ -99,7 +98,7 @@ A step takes one of three shapes.
       url-label: How to publish
 ```
 
-Steps are numbered automatically, in source order. Each number sits in a badge on the left of its chevron. The number carries the sequence, and a line joins one row to the next.
+Steps are numbered automatically, in source order. Each number sits to the left of its title.
 
 ## Links
 
