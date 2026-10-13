@@ -231,14 +231,13 @@ public partial class ApiPropertyTreeBuilder(
 		if (constraints.Count == 0)
 			return type;
 
-		var spans = new List<TypeSpan>(type.Spans.Count + (constraints.Count * 2));
+		var spans = new List<TypeSpan>(type.Spans.Count + constraints.Count);
 		spans.AddRange(type.Spans);
 		foreach (var constraint in constraints)
 		{
-			spans.Add(new TypeSpan(" · ", Bare: true));
 			var label = constraint.Code is null ? constraint.Text : $"{constraint.Text}{constraint.Code}";
 			var title = label.Length > MaxInlineConstraintLength ? label : null;
-			spans.Add(new TypeSpan(label, SchemaHelpers.ConstraintCssClass, title));
+			spans.Add(new TypeSpan(label, SchemaHelpers.ConstraintCssClass, title, Lead: " · "));
 		}
 
 		return new TypeAnnotation(spans);

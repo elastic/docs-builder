@@ -1832,6 +1832,9 @@ a.type-linked:hover {
 	white-space: nowrap;
 	vertical-align: middle;
 	mix-blend-mode: normal;
+	/* A long type breaks between its parts rather than running past the edge of a narrow screen. */
+	flex-wrap: wrap;
+	max-width: 100%;
 }
 
 .property-list code.schema-type a,
@@ -1843,8 +1846,16 @@ a.type-linked:hover {
 	white-space: pre;
 }
 
+/* A constraint and the separator before it wrap as one, so no line starts with a lone separator. */
+.schema-type-group {
+	display: inline-flex;
+	min-width: 0;
+	max-width: 100%;
+}
+
 .schema-type .type-constraint {
-	max-width: 40ch;
+	max-width: min(40ch, 100%);
+	min-width: 0;
 	overflow: hidden;
 	text-overflow: ellipsis;
 }
