@@ -84,34 +84,6 @@ internal static partial class IntroHeadings
 		return headings;
 	}
 
-	/// <summary>Splits the description before its first heading, so content can sit between the intro and the sections.</summary>
-	public static (string Lead, string? Remainder) SplitAtFirstHeading(string? markdown)
-	{
-		if (string.IsNullOrWhiteSpace(markdown))
-			return ("", null);
-
-		var lines = markdown.ReplaceLineEndings("\n").Split('\n');
-		CodeFences.Fence? openFence = null;
-		var skippedFirstH1 = false;
-		for (var i = 0; i < lines.Length; i++)
-		{
-			var line = lines[i].TrimStart();
-			if (CodeFences.InCode(line, ref openFence) || !TryAtx(line.TrimEnd(), out var level, out _))
-				continue;
-
-			// The first h1 is the page title, which RenderApiDescription drops, so it is not a section start.
-			if (level == 1 && !skippedFirstH1)
-			{
-				skippedFirstH1 = true;
-				continue;
-			}
-
-			return (string.Join('\n', lines[..i]), string.Join('\n', lines[i..]));
-		}
-
-		return (markdown, null);
-	}
-
 	private static bool TryAtx(string line, out int level, out string title)
 	{
 		level = 0;

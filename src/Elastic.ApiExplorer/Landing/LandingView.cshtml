@@ -26,16 +26,16 @@
 		<h1>@Model.ApiInfo.Title</h1>
 	</div>
 	<div class="docs-measure">
-		<p>@Model.RenderMarkdown(Model.DescriptionLead)</p>
+		<p>@Model.DescriptionLead</p>
 	</div>
 	@if (Model.HasFacts)
 	{
 		@await RenderPartialAsync(_LandingFacts.Create(new LandingFactsModel(Model, "inline")))
 	}
-	@if (Model.DescriptionRest is { Length: > 0 } rest)
+	@if (Model.DescriptionRemainder is { } remainder)
 	{
 		<div class="docs-measure">
-			@Model.RenderMarkdown(rest)
+			@remainder
 		</div>
 	}
 	<div class="api-overview">

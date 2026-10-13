@@ -22,6 +22,9 @@ namespace Elastic.ApiExplorer.Infrastructure;
 /// </summary>
 public static partial class ApiMarkdown
 {
+	/// <summary>An HTML description cut before its first heading. <see cref="Remainder"/> is null when it has none.</summary>
+	public sealed record HtmlSplit(string Lead, string? Remainder);
+
 	public static HtmlString Render(ApiRenderContext context, string? markdown)
 	{
 		if (string.IsNullOrEmpty(markdown))
@@ -31,6 +34,16 @@ public static partial class ApiMarkdown
 		var source = CreateVirtualSource(context);
 		var html = context.MarkdownRenderer.RenderApiDescription(rewritten, source);
 		return new HtmlString(string.IsNullOrEmpty(html) ? html : context.SanitizedHtmlCache.GetOrAdd(html, SanitizeHtml));
+	}
+
+	/// <summary>
+	/// Splits rendered HTML before its first heading. The description is rendered as one document first, so
+	/// reference-style links and the dropped page-title h1 behave exactly as without a split.
+	/// </summary>
+	public static HtmlSplit SplitAtFirstHeading(string html)
+	{
+		var heading = HeadingStart().Match(html);
+		return heading.Success ? new HtmlSplit(html[..heading.Index], html[heading.Index..]) : new HtmlSplit(html, null);
 	}
 
 	// HtmlSanitizer defaults already cover all standard HTML tags and exclude script/on*/etc.
@@ -82,6 +95,9 @@ public static partial class ApiMarkdown
 		var fullPath = Path.Join(context.BuildContext.OutputDirectory.FullName, relativePath, "description.md");
 		return context.BuildContext.WriteFileSystem.FileInfo.New(fullPath);
 	}
+
+	[GeneratedRegex(@"<h[1-6][\s>]")]
+	private static partial Regex HeadingStart();
 
 	[GeneratedRegex(@"\]\(\.\./group/([^)#]+)\)")]
 	private static partial Regex GroupLinkPattern();

@@ -8,6 +8,7 @@ using Elastic.ApiExplorer.Operations;
 using Elastic.ApiExplorer.Structural;
 using Elastic.Documentation;
 using Elastic.Documentation.Site.Icons;
+using Microsoft.AspNetCore.Html;
 using Microsoft.OpenApi;
 
 namespace Elastic.ApiExplorer.Landing;
@@ -30,12 +31,13 @@ public class LandingViewModel(ApiRenderContext context) : ApiViewModel(context)
 	/// <summary>The sections the grouped index shows.</summary>
 	public IReadOnlyList<ApiOverviewSection> IndexSections => Index.Groups;
 
-	private (string Lead, string? Remainder)? DescriptionParts => field ??= IntroHeadings.SplitAtFirstHeading(ApiInfo.Description);
+	private ApiMarkdown.HtmlSplit DescriptionParts =>
+		field ??= ApiMarkdown.SplitAtFirstHeading(RenderMarkdown(ApiInfo.Description).Value ?? "");
 
 	/// <summary>The description up to its first heading; the facts sit right after it on narrow screens.</summary>
-	public string DescriptionLead => DescriptionParts!.Value.Lead;
+	public HtmlString DescriptionLead => new(DescriptionParts.Lead);
 
-	public string? DescriptionRest => DescriptionParts!.Value.Remainder;
+	public HtmlString? DescriptionRemainder => DescriptionParts.Remainder is { } rest ? new HtmlString(rest) : null;
 
 	public string? License => ApiInfo.License?.Name;
 
