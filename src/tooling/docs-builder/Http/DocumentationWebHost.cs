@@ -350,7 +350,7 @@ public class DocumentationWebHost
 			if (slug.EndsWith(".json", StringComparison.OrdinalIgnoreCase))
 				return "application/json";
 			if (slug.EndsWith(".yaml", StringComparison.OrdinalIgnoreCase) || slug.EndsWith(".yml", StringComparison.OrdinalIgnoreCase))
-				return "text/yaml";
+				return "text/plain; charset=utf-8";
 			return null;
 		}
 	}
