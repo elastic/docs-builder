@@ -153,54 +153,12 @@
 		</div>
 	}
 
-	@if (pageModel.QueryParameters.Count > 0)
+	@if (pageModel.QueryParameters.Items.Count > 0)
 	{
 		<div @ParamSectionHeader.WrapAttributes()>
 		@(await RenderPartialAsync<_ParamSectionHeader, ParamSectionHeader>(new ParamSectionHeader("Query parameters", "query-params", pageModel.QueryParameterNames)))
 		<div @ParamSectionHeader.BodyAttributes("query-params-list")>
-		<dl class="property-list">
-			@foreach (var qp in pageModel.QueryParameters)
-			{
-				var qs = qp.Parameter;
-				<div class="query-param @(qs.Deprecated == true ? "deprecated" : "")">
-					<dt id="query-@qs.Name">
-						<a class="property-anchor" href="#query-@qs.Name" aria-label="Link to @qs.Name">
-							<span class="property-anchor-icon" data-tippy-content="Copy link" aria-hidden="true"></span>
-						</a>
-						<code>@qs.Name</code>
-						@if (qp.Type is not null)
-						{
-							@(await RenderPartialAsync<_SchemaType, TypeAnnotation>(qp.Type))
-						}
-						@if (qs.Required)
-						{
-							<span class="required type-status">required</span>
-						}
-						@if (qs.Deprecated == true)
-						{
-							<span class="deprecated-badge type-status">deprecated</span>
-						}
-					</dt>
-					<dd>@qp.DescriptionHtml</dd>
-				@if (qp.UnionOptions.Count > 0 && qp.EnumValues.Count == 0)
-				{
-					<dd class="union-options">
-						<span class="values-label">@qp.UnionLabel</span>
-						@for (var optIndex = 0; optIndex < qp.UnionOptions.Count; optIndex++)
-						{
-							var unionOpt = qp.UnionOptions[optIndex];
-							if (optIndex > 0)
-							{
-								<span class="union-inline-separator">or</span>
-							}
-							<code class="@SchemaHelpers.UnionOptionClasses(unionOpt.IsTypeOption, unionOpt.Text)">@unionOpt.Text</code>
-						}
-					</dd>
-				}
-				@(await RenderPartialAsync<_EnumValues, EnumValueList>(new EnumValueList(qp.EnumValues)))
-				</div>
-			}
-		</dl>
+		@(await RenderPartialAsync<_PropertyList, ApiPropertyList>(pageModel.QueryParameters))
 		</div>
 		</div>
 	}

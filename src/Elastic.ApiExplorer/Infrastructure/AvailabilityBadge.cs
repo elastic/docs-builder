@@ -11,18 +11,15 @@ using Microsoft.OpenApi;
 namespace Elastic.ApiExplorer.Infrastructure;
 
 /// <summary>
-/// Builds the same <c>applies_to</c> badge Markdown pages render, from an operation's or schema's <c>x-state</c>.
-/// Null when there is no x-state or it carries nothing worth a badge.
+/// Builds the same <c>applies_to</c> badge Markdown pages render, from the <c>x-state</c> of an operation, a parameter or a
+/// schema. Null when there is no x-state or it carries nothing worth a badge.
 /// </summary>
 public static class AvailabilityBadge
 {
-	public static ApplicableToViewModel? FromOperation(OpenApiOperation operation, VersionsConfiguration? versionsConfig) =>
-		Create(XStateApplicability.FromOperation(operation), versionsConfig);
+	public static ApplicableToViewModel? From(IDictionary<string, IOpenApiExtension>? extensions, VersionsConfiguration? versionsConfig) =>
+		Create(XStateApplicability.From(extensions), versionsConfig);
 
-	public static ApplicableToViewModel? FromSchema(IOpenApiSchema schema, VersionsConfiguration? versionsConfig) =>
-		Create(XStateApplicability.FromSchema(schema), versionsConfig);
-
-	private static ApplicableToViewModel? Create(ApplicableTo? applicableTo, VersionsConfiguration? versionsConfig)
+	public static ApplicableToViewModel? Create(ApplicableTo? applicableTo, VersionsConfiguration? versionsConfig)
 	{
 		if (applicableTo is null || versionsConfig is null || !XStateApplicability.IsWorthABadge(applicableTo))
 			return null;

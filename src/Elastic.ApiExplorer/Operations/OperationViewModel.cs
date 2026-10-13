@@ -45,7 +45,7 @@ public class OperationViewModel(ApiRenderContext context) : ApiViewModel(context
 		if (Page.AuthRequirements.Count > 0)
 			tocItems.Add(new ApiTocItem("Authentication", "authentication"));
 
-		if (Page.QueryParameters.Count > 0)
+		if (Page.QueryParameters.Items.Count > 0)
 			tocItems.Add(new ApiTocItem("Query parameters", "query-params"));
 
 		if (operation.RequestBody is not null)

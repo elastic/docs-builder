@@ -23,11 +23,11 @@ public partial record OperationPageModel
 	/// <summary>Every route and method of the operation, merged into display rows.</summary>
 	public required OperationEndpoint Endpoint { get; init; }
 	public required IReadOnlyList<ApiPathParameter> PathParameters { get; init; }
-	public required IReadOnlyList<ApiQueryParameter> QueryParameters { get; init; }
+	public required ApiPropertyList QueryParameters { get; init; }
 
 	public IReadOnlyList<string> PathParameterNames => NamesOf(PathParameters.Select(static p => p.Name));
 
-	public IReadOnlyList<string> QueryParameterNames => NamesOf(QueryParameters.Select(static q => q.Parameter.Name));
+	public IReadOnlyList<string> QueryParameterNames => NamesOf(QueryParameters.Items.Select(static q => q.Name));
 
 	/// <summary>The request body is a union, so <see cref="RequestPropertyNames"/> names its variants, not its fields.</summary>
 	public bool RequestNamesAreVariants => RequestProperties is null && RequestUnionVariants is { Variants.Count: > 0 };
@@ -127,6 +127,8 @@ public partial record OperationPageModel
 			externalDocs = new ExternalDocLink(url, ApiPropertyTreeBuilder.IsElasticDocsUrl(url), operation.ExternalDocs.Description);
 		}
 
+		// Built before the body, so a body field that repeats a query parameter's fields links up the page to it.
+		var queryParameters = BuildQueryParameters(operation.Parameters ?? [], builder, supplemental);
 		var requestScope = new PropertyTreeScope
 		{
 			Prefix = "req",
@@ -139,7 +141,7 @@ public partial record OperationPageModel
 
 		return new OperationPageModel
 		{
-			Availability = AvailabilityBadge.FromOperation(operation, context.BuildContext.VersionsConfiguration),
+			Availability = AvailabilityBadge.From(operation.Extensions, context.BuildContext.VersionsConfiguration),
 			IsBeta = OpenApiExtensionReader.IsBeta(operation),
 			ExternalDocs = externalDocs,
 			Servers = servers,
@@ -148,10 +150,7 @@ public partial record OperationPageModel
 				.Where(p => p.In == ParameterLocation.Path)
 				.Select(p => BuildPathParameter(p, analyzer, builder, context, supplemental, endpoint))
 				.ToArray(),
-			QueryParameters = (operation.Parameters ?? [])
-				.Where(p => p.In == ParameterLocation.Query)
-				.Select(p => BuildQueryParameter(p, analyzer, builder, context, supplemental))
-				.ToArray(),
+			QueryParameters = queryParameters,
 			RequestContentType = requestContentEntry?.Key ?? "application/json",
 			RequestProperties = request.Properties,
 			RequestUnionVariants = request.UnionVariants,

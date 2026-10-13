@@ -11,21 +11,6 @@ using Microsoft.OpenApi;
 
 namespace Elastic.ApiExplorer.Operations;
 
-/// <summary>A query string parameter with its structural display data precomputed.</summary>
-public record ApiQueryParameter
-{
-	/// <summary>The underlying OpenAPI parameter; views read scalar values off it directly.</summary>
-	public required IOpenApiParameter Parameter { get; init; }
-
-	public required TypeAnnotation? Type { get; init; }
-	public required IReadOnlyList<ConstraintDisplay> Constraints { get; init; }
-	public required IReadOnlyList<string> EnumValues { get; init; }
-	public required IReadOnlyList<UnionBadge> UnionOptions { get; init; }
-	public string UnionLabel { get; init; } = SchemaHelpers.UnionLabel(null);
-	public required HtmlString DescriptionHtml { get; init; }
-	public required string? DescriptionMarkdown { get; init; }
-}
-
 /// <summary>A path parameter with its structural display data precomputed.</summary>
 public record ApiPathParameter
 {
@@ -80,28 +65,18 @@ public partial record OperationPageModel
 		};
 	}
 
-	private static ApiQueryParameter BuildQueryParameter(
-		IOpenApiParameter parameter,
-		SchemaAnalyzer analyzer,
+	/// <summary>Query parameters as property rows: an object or a map lists its fields below the parameter, as in a body.</summary>
+	private static ApiPropertyList BuildQueryParameters(
+		IEnumerable<IOpenApiParameter> parameters,
 		ApiPropertyTreeBuilder builder,
-		ApiRenderContext context,
 		ApiSupplementalDoc? supplemental
 	)
 	{
-		var schema = parameter.Schema;
-		var typeInfo = analyzer.GetTypeInfo(schema);
-		var description = supplemental?.ParameterOr(parameter.Name ?? "", parameter.Description) ?? parameter.Description;
-		return new ApiQueryParameter
-		{
-			Parameter = parameter,
-			Type = schema is not null ? builder.Describe(schema) : null,
-			Constraints = schema is not null ? ApiPropertyTreeBuilder.BuildConstraints(schema) : [],
-			EnumValues = typeInfo.EnumValues ?? [],
-			UnionOptions = UnionBadges(typeInfo),
-			UnionLabel = SchemaHelpers.UnionLabel(typeInfo.UnionKeyword),
-			DescriptionHtml = ApiMarkdown.Render(context, description),
-			DescriptionMarkdown = description
-		};
+		var described = parameters
+			.Where(static p => p.In == ParameterLocation.Query)
+			.Select(p => (p, supplemental?.ParameterOr(p.Name ?? "", p.Description) ?? p.Description))
+			.ToArray();
+		return builder.BuildParameterList(described, new PropertyTreeScope { Prefix = "query" });
 	}
 
 	private static UnionBadge[] UnionBadges(TypeInfo typeInfo)

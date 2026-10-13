@@ -147,6 +147,7 @@
 							<code>&lt;string&gt;</code>
 							@(await RenderPartialAsync<_SchemaType, TypeAnnotation>(dict.ValueType))
 						</dt>
+						@(await RenderPartialAsync<_EnumValues, EnumValueList>(new EnumValueList(dict.EnumValues)))
 						@if (dict.IsCollapsible)
 						{
 							<dd class="expand-toggle-row">

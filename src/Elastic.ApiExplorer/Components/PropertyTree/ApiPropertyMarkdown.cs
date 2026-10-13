@@ -120,8 +120,7 @@ internal static class ApiPropertyMarkdown
 
 	private static void WriteEnumOrUnion(StringBuilder markdown, ApiProperty property, int depth)
 	{
-		if (property.EnumValues.Count > 0)
-			WriteNestedLine(markdown, depth, "Values: " + string.Join(", ", property.EnumValues.Select(v => $"`{v}`")));
+		WriteValues(markdown, property.EnumValues, depth);
 
 		if (property.Union is null || property.Repeats is not null)
 			return;
@@ -152,9 +151,16 @@ internal static class ApiPropertyMarkdown
 				break;
 			case ChildKind.Dictionary when property.Children.Dictionary is { } dictionary:
 				WriteNestedLine(markdown, depth, $"Map values ({dictionary.ValueType.Text})");
+				WriteValues(markdown, dictionary.EnumValues, depth + 1);
 				WriteList(markdown, dictionary.Properties, apiBaseUrl, depth + 1);
 				break;
 		}
+	}
+
+	private static void WriteValues(StringBuilder markdown, IReadOnlyList<string> values, int depth)
+	{
+		if (values.Count > 0)
+			WriteNestedLine(markdown, depth, "Values: " + string.Join(", ", values.Select(v => $"`{v}`")));
 	}
 
 	/// <summary>A "Requires at least one of: `a` or `b`" line, for a property row or the root of a body.</summary>
