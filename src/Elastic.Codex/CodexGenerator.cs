@@ -68,13 +68,16 @@ public class CodexGenerator(ILoggerFactory logFactory, BuildContext context, IDi
 			await RenderGroupLandingPage(groupNav, renderContext, navigationRenderer, ctx);
 	}
 
-	private async Task ExtractEmbeddedStaticResources(Cancel ctx)
+	internal async Task ExtractEmbeddedStaticResources(Cancel ctx)
 	{
 		_logger.LogInformation("Copying static files to codex output directory");
 		var assembly = typeof(EmbeddedOrPhysicalFileProvider).Assembly;
 
+		const string prefix = "Elastic.Documentation.Site._static.";
+
+		// Dot-prefixed entries (Vite's `.vite/manifest.json`) are build metadata, not site files.
 		foreach (var resourceName in assembly.GetManifestResourceNames().Where(
-			r => r.StartsWith("Elastic.Documentation.Site._static.", StringComparison.Ordinal)
+			r => r.StartsWith(prefix, StringComparison.Ordinal) && r[prefix.Length] != '.'
 		))
 		{
 			await using var resourceStream = assembly.GetManifestResourceStream(resourceName);
