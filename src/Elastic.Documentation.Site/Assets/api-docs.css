@@ -2752,12 +2752,19 @@ button.example-response-tab:focus-visible {
 	display: contents;
 }
 
-/* Pulled up onto the row of the menu button: the main column starts with 24px padding and the
-   button's 24px margin, so the 32px split button centres on the button's 24px height. */
+/* Stacked layout (below 1024px): Copy page gets its own row above the breadcrumbs. */
 .api-page-rail > .api-page-actions {
 	order: -1;
 	justify-self: end;
-	margin: 44px 0 -76px;
+	margin: 24px 0 -12px;
+}
+
+/* Below 768px the menu button shares that row. The main column starts with 24px padding and the
+   button's 24px margin, so the 32px split button centres on the button's 24px height. */
+@media (max-width: 767px) {
+	.api-page-rail > .api-page-actions {
+		margin: 44px 0 -76px;
+	}
 }
 
 .api-page-rail > :not(.api-page-actions) {
