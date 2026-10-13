@@ -25,7 +25,7 @@ public partial class ApiPropertyTreeBuilder
 
 		if (typeInfo.IsArray)
 		{
-			AppendArrayPrefix(spans);
+			AppendArrayKeyword(spans);
 			AppendArrayKeywordSpans(spans, typeInfo, hasActualProperties);
 			AppendDisplayedTypeName(spans, typeInfo, hasActualProperties);
 			return new TypeAnnotation(spans);
@@ -46,11 +46,8 @@ public partial class ApiPropertyTreeBuilder
 		return new TypeAnnotation(spans);
 	}
 
-	private static void AppendArrayPrefix(List<TypeSpan> spans)
-	{
-		spans.Add(new TypeSpan("[]", SchemaHelpers.WrapperArrayIconCssClass));
-		spans.Add(new TypeSpan(" ", Bare: true));
-	}
+	private static void AppendArrayKeyword(List<TypeSpan> spans) =>
+		AppendWrapperKeyword(spans, "array of", SchemaHelpers.WrapperArrayKeywordCssClass);
 
 	private static void AppendObjectIcon(List<TypeSpan> spans)
 	{
@@ -160,7 +157,7 @@ public partial class ApiPropertyTreeBuilder
 			return;
 		}
 
-		AppendArrayPrefix(spans);
+		AppendArrayKeyword(spans);
 		AppendInternalOrNamed(spans, part[..^2], labeledAlready: false);
 	}
 

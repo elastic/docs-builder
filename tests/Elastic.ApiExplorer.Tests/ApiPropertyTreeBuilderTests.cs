@@ -58,7 +58,7 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture)
 
 		var fields = list!.Items.Single(p => p.Name == "fields");
 		fields.Union.Should().BeNull("X | X[] is already in the type annotation");
-		fields.Type.Text.Should().Be("union Field | [] Field");
+		fields.Type.Text.Should().Be("union Field | array of Field");
 		fields.AnchorId.Should().Be("req-fields");
 	}
 
@@ -143,7 +143,7 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture)
 
 		var annotation = builder.Describe(Schema("fixture.ListCreateBody").Properties!["description"]);
 
-		annotation.Text.Should().Be("string · min: 1");
+		annotation.Text.Should().Be("string · min length: 1");
 		annotation.Spans.Should().Contain(s => s.Text == "string" && s.CssClass == SchemaHelpers.PrimitiveCssClass);
 		annotation.Spans.Should().NotContain(s => s.Text.Contains("Security_Lists", StringComparison.Ordinal));
 		annotation.Spans.Should().NotContain(s => s.CssClass != null && s.CssClass.Contains("type-value"));
@@ -190,32 +190,32 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture)
 
 		var annotation = builder.Describe(Schema("fixture.SearchRequestBody").Properties!["fields"]);
 
-		annotation.Text.Should().Be("union Field | [] Field");
+		annotation.Text.Should().Be("union Field | array of Field");
 		annotation.Spans.Should().Contain(s => s.Text == "union" && s.CssClass == SchemaHelpers.WrapperUnionCssClass);
-		annotation.Spans.Should().Contain(s => s.Text == "[]" && s.CssClass == SchemaHelpers.WrapperArrayIconCssClass);
+		annotation.Spans.Should().Contain(s => s.Text == "array of" && s.CssClass == SchemaHelpers.WrapperArrayKeywordCssClass);
 		annotation.Spans.Should().NotContain(s => s.CssClass == "type-object");
 	}
 
 	[Test]
-	public void Describe_ArrayOfInlineObjects_UsesBracketPrefix()
+	public void Describe_ArrayOfInlineObjects_UsesArrayOfKeyword()
 	{
 		var builder = CreateBuilder();
 
 		var annotation = builder.Describe(Schema("_types.aggregations.TermsAggregate").Properties!["buckets"]);
 
-		annotation.Text.Should().Be("[] object");
-		annotation.Spans.Should().Contain(s => s.Text == "[]" && s.CssClass == SchemaHelpers.WrapperArrayIconCssClass);
+		annotation.Text.Should().Be("array of object");
+		annotation.Spans.Should().Contain(s => s.Text == "array of" && s.CssClass == SchemaHelpers.WrapperArrayKeywordCssClass);
 		annotation.Spans.Should().Contain(s => s.Text == "object" && s.CssClass == "type-primitive");
 	}
 
 	[Test]
-	public void Describe_ArrayOfLinkedType_UsesBracketPrefix()
+	public void Describe_ArrayOfLinkedType_UsesArrayOfKeyword()
 	{
 		var builder = CreateBuilder();
 
 		var annotation = builder.Describe(Schema("_types.query_dsl.BoolQuery").Properties!["must"]);
 
-		annotation.Text.Should().Be("[] {} QueryContainer");
+		annotation.Text.Should().Be("array of {} QueryContainer");
 		annotation.Spans.Should().Contain(s => s.Text == "QueryContainer" && s.CssClass == "type-linked");
 	}
 
@@ -307,8 +307,8 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture)
 		var group = list!.Items.Single(p => p.Name == "recipient_group");
 		group.EnumValues.Should().BeEquivalentTo(["organization-admins", "billing-admins", "resource-viewers"]);
 		group.Type.Spans.Should().Contain(s => s.CssClass == SchemaHelpers.WrapperEnumCssClass && s.Text == "enum");
-		group.Type.Spans.Should().Contain(s => s.CssClass == SchemaHelpers.WrapperArrayIconCssClass && s.Text == "[]");
-		group.Type.Text.Should().Be("[] enum");
+		group.Type.Spans.Should().Contain(s => s.CssClass == SchemaHelpers.WrapperArrayKeywordCssClass && s.Text == "array of");
+		group.Type.Text.Should().Be("array of enum");
 	}
 
 	[Test]
@@ -404,13 +404,13 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture)
 	}
 
 	[Test]
-	public void BuildConstraints_StringAndArrayBounds_UseMinMaxWithoutQualifier()
+	public void BuildConstraints_StringAndArrayBounds_NameWhatTheyBound()
 	{
 		var text = new OpenApiSchema { Type = JsonSchemaType.String, MinLength = 1, MaxLength = 50 };
 		var items = new OpenApiSchema { Type = JsonSchemaType.Array, MinItems = 1, MaxItems = 100 };
 
-		ApiPropertyTreeBuilder.BuildConstraints(text).Select(c => c.Text).Should().Equal("min: 1", "max: 50");
-		ApiPropertyTreeBuilder.BuildConstraints(items).Select(c => c.Text).Should().Equal("min: 1", "max: 100");
+		ApiPropertyTreeBuilder.BuildConstraints(text).Select(c => c.Text).Should().Equal("min length: 1", "max length: 50");
+		ApiPropertyTreeBuilder.BuildConstraints(items).Select(c => c.Text).Should().Equal("min items: 1", "max items: 100");
 	}
 
 	[Test]
@@ -489,9 +489,13 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture)
 		var name = new OpenApiSchemaReference("_types.Name", document);
 
 		builder.Describe(names).Text.Should().Be("union Names");
-		builder.DescribePathParameter(names).Text.Should().Be("union Name | [] Name");
-		builder.DescribePathParameter(dataStreams).Text.Should().Be("union DataStreamName | [] DataStreamName");
-		builder.DescribePathParameter(document.Components!.Schemas!["inline.StringOrArray"]).Text.Should().Be("union string | [] string");
+		builder.DescribePathParameter(names).Text.Should().Be("union Name | array of Name");
+		builder.DescribePathParameter(dataStreams).Text.Should().Be("union DataStreamName | array of DataStreamName");
+		builder
+			.DescribePathParameter(document.Components!.Schemas!["inline.StringOrArray"])
+			.Text
+			.Should()
+			.Be("union string | array of string");
 		builder.DescribePathParameter(name).Text.Should().Be("string Name");
 		builder.Describe(name).Text.Should().Be("string Name");
 		builder.DescribePathParameter(new OpenApiSchema { Type = JsonSchemaType.String }).Text.Should().Be("string");
