@@ -217,6 +217,16 @@ describe('API examples carousel', () => {
         expect(activeLang('slicing')).toBe('curl')
     })
 
+    it('keeps the htmx history state when writing the link', () => {
+        window.history.replaceState({ htmx: true }, '')
+        initApiExamples()
+
+        click('[data-scenario="term"] [data-carousel-dot="Java"]')
+
+        expect(window.location.hash).toBe('#example=term&lang=java')
+        expect(window.history.state).toEqual({ htmx: true })
+    })
+
     it('writes the link in lowercase and reads it in any case', () => {
         initApiExamples()
         click('[data-scenario="term"] [data-carousel-dot="Java"]')
