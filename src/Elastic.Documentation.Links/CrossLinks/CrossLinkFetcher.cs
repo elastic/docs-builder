@@ -46,7 +46,13 @@ public record FetchedCrossLinks
 	/// True when all declared repositories resolved without falling back to placeholder data.
 	/// When false, callers should avoid caching so a subsequent reload retries the fetch.
 	/// </summary>
-	public bool IsComplete { get; init; } = true;
+	public bool IsComplete => FetchFailures.Count == 0;
+
+	/// <summary>
+	/// Repositories whose link index could not be fetched, mapped to a human-readable reason.
+	/// Callers emit one summary diagnostic and suppress per-link path errors for these repositories.
+	/// </summary>
+	public FrozenDictionary<string, string> FetchFailures { get; init; } = FrozenDictionary<string, string>.Empty;
 
 	public static FetchedCrossLinks Empty { get; } = new()
 	{
@@ -55,7 +61,8 @@ public record FetchedCrossLinks
 		LinkIndexEntries = new Dictionary<string, LinkRegistryEntry>().ToFrozenDictionary(),
 		RegistryUrlsByRepository = null,
 		RegistryByRepository = null,
-		CodexRepositories = null
+		CodexRepositories = null,
+		FetchFailures = FrozenDictionary<string, string>.Empty
 	};
 }
 
