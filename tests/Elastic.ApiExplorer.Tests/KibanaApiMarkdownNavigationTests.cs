@@ -41,7 +41,7 @@ public class KibanaApiMarkdownNavigationTests
 		public string RenderPreservingFirstHeading(string markdown, IFileInfo? source) => "<h1>Kibana spaces</h1><p>stub-body</p>";
 
 		public MarkdownRenderResult RenderPreservingFirstHeadingWithMetadata(string markdown, IFileInfo? source) =>
-			new(RenderPreservingFirstHeading(markdown, source), null, "Kibana spaces for browser tabs");
+			new(RenderPreservingFirstHeading(markdown, source), "Kibana spaces", "Kibana spaces for browser tabs");
 	}
 
 	private static (LandingNavigationItem navigation, SimpleMarkdownNavigationItem introNav) SetupKibanaNavigation()
@@ -103,9 +103,9 @@ public class KibanaApiMarkdownNavigationTests
 		// The H1 ("Kibana spaces") and the navigation title ("Spaces") differ from the meta title.
 		html.Should().Contain("<title>Kibana spaces for browser tabs | ");
 		html.Should().Contain("<h1>Kibana spaces</h1>");
-		html.Should().Contain("Spaces");
-		// The structured breadcrumb keeps the page title, so the override appears only in the HTML title metadata.
-		html.Should().Contain("\"name\": \"Spaces\"");
+		// The structured breadcrumb uses the parsed H1, not the navigation title or the override.
+		html.Should().Contain("\"name\": \"Kibana spaces\"");
+		html.Should().NotContain("\"name\": \"Spaces\"");
 		html.Should().NotContain("\"name\": \"Kibana spaces for browser tabs\"");
 	}
 
