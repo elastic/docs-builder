@@ -141,7 +141,7 @@ public partial record OperationPageModel
 
 		return new OperationPageModel
 		{
-			Availability = AvailabilityBadge.FromOperation(operation, context.BuildContext.VersionsConfiguration),
+			Availability = AvailabilityBadge.From(operation.Extensions, context.BuildContext.VersionsConfiguration),
 			IsBeta = OpenApiExtensionReader.IsBeta(operation),
 			ExternalDocs = externalDocs,
 			Servers = servers,

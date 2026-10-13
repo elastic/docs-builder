@@ -4,12 +4,14 @@
 
 using System.Text.Json.Nodes;
 using AwesomeAssertions;
+using Elastic.ApiExplorer.Components.PropertyTree;
 using Elastic.ApiExplorer.Infrastructure;
 using Elastic.ApiExplorer.Model;
 using Elastic.Documentation;
 using Elastic.Documentation.AppliesTo;
 using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Versions;
+using Microsoft.AspNetCore.Html;
 using Microsoft.OpenApi;
 
 namespace Elastic.ApiExplorer.Tests;
@@ -80,7 +82,7 @@ public class XStateApplicabilityTests
 		string popoverText
 	)
 	{
-		var badge = AvailabilityBadge.FromOperation(OperationWithState(xState), StackVersions());
+		var badge = AvailabilityBadge.From(OperationWithState(xState).Extensions, StackVersions());
 
 		badge.Should().NotBeNull();
 		badge.Inline.Should().BeTrue();
@@ -110,7 +112,7 @@ public class XStateApplicabilityTests
 		string[] popoverTexts
 	)
 	{
-		var item = AvailabilityBadge.FromOperation(OperationWithState(xState), StackVersions())!.GetApplicabilityItems().Single();
+		var item = AvailabilityBadge.From(OperationWithState(xState).Extensions, StackVersions())!.GetApplicabilityItems().Single();
 
 		item.RenderData.LifecycleName.Should().Be(lifecycleName);
 		item.RenderData.Version.Should().Be(version);
@@ -121,7 +123,53 @@ public class XStateApplicabilityTests
 	[Arguments("Generally available")]
 	[Arguments("   ")]
 	public void FromOperation_NothingWorthShowing_ReturnsNull(string xState) =>
-		AvailabilityBadge.FromOperation(OperationWithState(xState), StackVersions()).Should().BeNull();
+		AvailabilityBadge.From(OperationWithState(xState).Extensions, StackVersions()).Should().BeNull();
+
+	[Test]
+	public async Task BuildParameterList_ParameterState_WinsOverSchemaAndFallsBackToIt()
+	{
+		var document = await TestSpecs.LoadSpecAsync(
+			"""
+			{
+			  "openapi": "3.0.3",
+			  "info": { "title": "t", "version": "1" },
+			  "paths": {
+			    "/items": {
+			      "get": {
+			        "parameters": [
+			          {
+			            "name": "own",
+			            "in": "query",
+			            "x-state": "Generally available; Added in 8.11.0",
+			            "schema": { "type": "string", "x-state": "Generally available; Added in 8.1.0" }
+			          },
+			          { "name": "inherited", "in": "query", "schema": { "type": "string", "x-state": "Generally available; Added in 8.1.0" } },
+			          { "name": "plain", "in": "query", "x-state": "Generally available", "schema": { "type": "string" } }
+			        ],
+			        "responses": { "200": { "description": "ok" } }
+			      }
+			    }
+			  }
+			}
+			"""
+		);
+		var builder = new ApiPropertyTreeBuilder(
+			document,
+			new PropertyDisplayOptions
+			{
+				RenderMarkdown = s => new HtmlString(s ?? ""),
+				ApiRootUrl = "/api/doc/fixture",
+				VersionsConfiguration = StackVersions()
+			}
+		);
+		var parameters = document.Paths!["/items"].Operations![HttpMethod.Get].Parameters!.Select(p => (p, p.Description)).ToArray();
+
+		var rows = builder.BuildParameterList(parameters, new PropertyTreeScope { Prefix = "query" }).Items;
+
+		rows[0].Availability!.GetApplicabilityItems().Single().RenderData.Version.Should().Be("8.11+");
+		rows[1].Availability!.GetApplicabilityItems().Single().RenderData.Version.Should().Be("8.1+");
+		rows[2].Availability.Should().BeNull("plain Generally available says nothing a reader can act on");
+	}
 
 	private static OpenApiOperation OperationWithState(string xState) =>
 		new() { Extensions = new Dictionary<string, IOpenApiExtension> { ["x-state"] = new JsonNodeExtension(JsonValue.Create(xState)) } };

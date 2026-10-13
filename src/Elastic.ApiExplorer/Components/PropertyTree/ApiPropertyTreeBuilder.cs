@@ -5,6 +5,7 @@
 using Elastic.ApiExplorer.Infrastructure;
 using Elastic.ApiExplorer.Model;
 using Elastic.ApiExplorer.Operations;
+using Elastic.Documentation.AppliesTo;
 using Microsoft.AspNetCore.Html;
 using Microsoft.OpenApi;
 
@@ -48,6 +49,7 @@ public partial class ApiPropertyTreeBuilder(
 
 	/// <summary>One renderable property before its display fields are derived.</summary>
 	/// <param name="Description">The schema's, or for a parameter row the parameter's.</param>
+	/// <param name="AppliesTo">The schema's <c>x-state</c>, or for a parameter row the parameter's when it declares one.</param>
 	private sealed record PropertyRow(
 		string Name,
 		IOpenApiSchema Schema,
@@ -58,6 +60,7 @@ public partial class ApiPropertyTreeBuilder(
 		bool IsRecursive,
 		string? Description,
 		bool IsDeprecated,
+		ApplicableTo? AppliesTo,
 		string? ShapeKey = null,
 		RepeatedShape? Repeats = null
 	);
@@ -106,12 +109,14 @@ public partial class ApiPropertyTreeBuilder(
 		{
 			var (parameter, description) = parameters[i];
 			var name = parameter.Name ?? "";
-			var row = CreateRow(name, parameter.Schema ?? new OpenApiSchema(), name, scope) with
+			var schema = parameter.Schema ?? new OpenApiSchema();
+			var row = CreateRow(name, schema, name, scope) with
 			{
 				IsRequired = parameter.Required,
 				IsLast = i == parameters.Count - 1,
 				Description = description,
-				IsDeprecated = parameter.Deprecated
+				IsDeprecated = parameter.Deprecated,
+				AppliesTo = XStateApplicability.From(parameter.Extensions) ?? XStateApplicability.From(schema.Extensions)
 			};
 			items.Add(BuildProperty(row, scope));
 		}
@@ -135,6 +140,7 @@ public partial class ApiPropertyTreeBuilder(
 			IsRecursive: ancestor is not null || DetectRecursion(schema, typeInfo, scope.AncestorRefs),
 			Description: schema.Description,
 			IsDeprecated: schema.Deprecated,
+			AppliesTo: XStateApplicability.From(schema.Extensions),
 			ShapeKey: shapeKey,
 			Repeats: ancestor
 		);
@@ -280,7 +286,7 @@ public partial class ApiPropertyTreeBuilder(
 			DescriptionHtml = descriptionHtml,
 			DescriptionMarkdown = descriptionMarkdown,
 			ShowDeprecatedBadge = options.ShowDeprecated && row.IsDeprecated,
-			Availability = options.ShowVersionInfo ? AvailabilityBadge.FromSchema(propSchema, options.VersionsConfiguration) : null,
+			Availability = options.ShowVersionInfo ? AvailabilityBadge.Create(row.AppliesTo, options.VersionsConfiguration) : null,
 			ExternalDocs = BuildExternalDocs(propSchema, typeInfo),
 			Constraints = BuildConstraints(propSchema),
 			// A union that mixes literals with objects lists the literals in its "One of:" row instead.
