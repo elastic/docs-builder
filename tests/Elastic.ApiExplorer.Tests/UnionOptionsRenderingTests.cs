@@ -80,9 +80,9 @@ public class UnionOptionsRenderingTests
 		html.Should().Contain(
 			"""<div class="union-variant-label"> <code class="discriminator-value">kind: two</code> </div>""".Replace(
 				" <code class=\"discriminator",
-				" <span class=\"type-wrapper array-icon\">[]</span> <span class=\"type-wrapper object-icon\">{}</span> <code class=\"schema-type\"><span class=\"type-object\">Variant2</span></code> <code class=\"discriminator"
+				" <span class=\"type-wrapper object-icon\">{}</span> <code class=\"schema-type\"><span class=\"type-object\">Variant2</span><span class=\"type-wrapper array-icon\">[]</span></code> <code class=\"discriminator"
 			),
-			"an array variant keeps its [] heading, so its fields read as each item's"
+			"an array variant keeps its X[] heading, so its fields read as each item's"
 		);
 		html.Should().NotContain(">Variant1</span></code>", "a plain variant's name is on its chip");
 

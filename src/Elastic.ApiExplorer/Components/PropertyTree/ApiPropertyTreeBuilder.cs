@@ -224,7 +224,7 @@ public partial class ApiPropertyTreeBuilder(
 			// Kept on a repeat too, so it hashes like the row it repeats; the views show "Same … as" in its place.
 			Union = typeInfo.IsUnion ? BuildUnionDisplay(propSchema, typeInfo, expansion) : null,
 			Repeats = repeats,
-			// Type annotation already reads "[] …"; skip the redundant "Array of:" row.
+			// Type annotation already reads "…[]"; skip the redundant "Array of:" row.
 			ArrayItemTypeName = null,
 			TypeLink = typeLink,
 			AlsoIncludes = BuildAlsoIncludes(typeInfo),

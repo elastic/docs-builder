@@ -58,7 +58,7 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture)
 
 		var fields = list!.Items.Single(p => p.Name == "fields");
 		fields.Union.Should().BeNull("X | X[] is already in the type annotation");
-		fields.Type.Text.Should().Be("union Field | array of Field");
+		fields.Type.Text.Should().Be("union Field | Field[]");
 		fields.AnchorId.Should().Be("req-fields");
 	}
 
@@ -190,32 +190,32 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture)
 
 		var annotation = builder.Describe(Schema("fixture.SearchRequestBody").Properties!["fields"]);
 
-		annotation.Text.Should().Be("union Field | array of Field");
+		annotation.Text.Should().Be("union Field | Field[]");
 		annotation.Spans.Should().Contain(s => s.Text == "union" && s.CssClass == SchemaHelpers.WrapperUnionCssClass);
-		annotation.Spans.Should().Contain(s => s.Text == "array of" && s.CssClass == SchemaHelpers.WrapperArrayKeywordCssClass);
+		annotation.Spans.Should().Contain(s => s.Text == "[]" && s.CssClass == SchemaHelpers.WrapperArrayIconCssClass);
 		annotation.Spans.Should().NotContain(s => s.CssClass == "type-object");
 	}
 
 	[Test]
-	public void Describe_ArrayOfInlineObjects_UsesArrayOfKeyword()
+	public void Describe_ArrayOfInlineObjects_UsesBracketSuffix()
 	{
 		var builder = CreateBuilder();
 
 		var annotation = builder.Describe(Schema("_types.aggregations.TermsAggregate").Properties!["buckets"]);
 
-		annotation.Text.Should().Be("array of object");
-		annotation.Spans.Should().Contain(s => s.Text == "array of" && s.CssClass == SchemaHelpers.WrapperArrayKeywordCssClass);
+		annotation.Text.Should().Be("object[]");
+		annotation.Spans.Should().Contain(s => s.Text == "[]" && s.CssClass == SchemaHelpers.WrapperArrayIconCssClass);
 		annotation.Spans.Should().Contain(s => s.Text == "object" && s.CssClass == "type-primitive");
 	}
 
 	[Test]
-	public void Describe_ArrayOfLinkedType_UsesArrayOfKeyword()
+	public void Describe_ArrayOfLinkedType_UsesBracketSuffix()
 	{
 		var builder = CreateBuilder();
 
 		var annotation = builder.Describe(Schema("_types.query_dsl.BoolQuery").Properties!["must"]);
 
-		annotation.Text.Should().Be("array of {} QueryContainer");
+		annotation.Text.Should().Be("{} QueryContainer[]");
 		annotation.Spans.Should().Contain(s => s.Text == "QueryContainer" && s.CssClass == "type-linked");
 	}
 
@@ -307,8 +307,8 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture)
 		var group = list!.Items.Single(p => p.Name == "recipient_group");
 		group.EnumValues.Should().BeEquivalentTo(["organization-admins", "billing-admins", "resource-viewers"]);
 		group.Type.Spans.Should().Contain(s => s.CssClass == SchemaHelpers.WrapperEnumCssClass && s.Text == "enum");
-		group.Type.Spans.Should().Contain(s => s.CssClass == SchemaHelpers.WrapperArrayKeywordCssClass && s.Text == "array of");
-		group.Type.Text.Should().Be("array of enum");
+		group.Type.Spans.Should().Contain(s => s.CssClass == SchemaHelpers.WrapperArrayIconCssClass && s.Text == "[]");
+		group.Type.Text.Should().Be("enum[]");
 	}
 
 	[Test]
@@ -489,13 +489,9 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture)
 		var name = new OpenApiSchemaReference("_types.Name", document);
 
 		builder.Describe(names).Text.Should().Be("union Names");
-		builder.DescribePathParameter(names).Text.Should().Be("union Name | array of Name");
-		builder.DescribePathParameter(dataStreams).Text.Should().Be("union DataStreamName | array of DataStreamName");
-		builder
-			.DescribePathParameter(document.Components!.Schemas!["inline.StringOrArray"])
-			.Text
-			.Should()
-			.Be("union string | array of string");
+		builder.DescribePathParameter(names).Text.Should().Be("union Name | Name[]");
+		builder.DescribePathParameter(dataStreams).Text.Should().Be("union DataStreamName | DataStreamName[]");
+		builder.DescribePathParameter(document.Components!.Schemas!["inline.StringOrArray"]).Text.Should().Be("union string | string[]");
 		builder.DescribePathParameter(name).Text.Should().Be("string Name");
 		builder.Describe(name).Text.Should().Be("string Name");
 		builder.DescribePathParameter(new OpenApiSchema { Type = JsonSchemaType.String }).Text.Should().Be("string");
