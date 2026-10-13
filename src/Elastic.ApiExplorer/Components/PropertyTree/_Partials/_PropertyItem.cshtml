@@ -23,7 +23,7 @@
 		}
 		@if (Model.Availability is not null)
 		{
-			@(await RenderPartialAsync<_AppliesToBadge, Elastic.ApiExplorer.Infrastructure.AppliesToBadgeDisplay>(new Elastic.ApiExplorer.Infrastructure.AppliesToBadgeDisplay(Model.Availability, IsInline: true)))
+			<span class="applies applies-inline">@await RenderPartialAsync(ApplicableToComponent.Create(Model.Availability))</span>
 		}
 	</dt>
 	@if (Model.HasDescription)
