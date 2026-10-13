@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Buffers;
 using System.IO.Abstractions;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -37,14 +38,64 @@ public static partial class ApiMarkdown
 	}
 
 	/// <summary>
-	/// Splits rendered HTML before its first heading. The description is rendered as one document first, so
-	/// reference-style links and the dropped page-title h1 behave exactly as without a split.
+	/// Splits rendered HTML before its first top-level heading. The description is rendered as one document first, so
+	/// reference-style links and the dropped page-title h1 behave exactly as without a split. A heading inside a
+	/// blockquote, list, or HTML wrapper is not a split point, so both fragments stay balanced; HTML that never
+	/// balances stays whole in the lead.
 	/// </summary>
 	public static HtmlSplit SplitAtFirstHeading(string html)
 	{
-		var heading = HeadingStart().Match(html);
-		return heading.Success ? new HtmlSplit(html[..heading.Index], html[heading.Index..]) : new HtmlSplit(html, null);
+		var depth = 0;
+		foreach (var tag in HtmlTag().EnumerateMatches(html))
+		{
+			var text = html.AsSpan(tag.Index, tag.Length);
+			if (text[1] == '/')
+				depth = Math.Max(0, depth - 1);
+			else if (depth == 0 && StartsSection(text))
+				return new HtmlSplit(html[..tag.Index], html[tag.Index..]);
+			else if (!IsVoidOrSelfClosing(text))
+				depth++;
+		}
+
+		return new HtmlSplit(html, null);
 	}
+
+	// The Myst renderer wraps each heading in <div class="heading-wrapper">, so that wrapper is where a section starts.
+	private static bool StartsSection(ReadOnlySpan<char> tag) =>
+		IsHeading(tag) || (tag.StartsWith("<div", StringComparison.Ordinal) && tag.Contains("heading-wrapper", StringComparison.Ordinal));
+
+	private static bool IsHeading(ReadOnlySpan<char> tag) =>
+		tag.Length > 3 && tag[1] == 'h' && tag[2] is >= '1' and <= '6' && !char.IsLetterOrDigit(tag[3]);
+
+	private static bool IsVoidOrSelfClosing(ReadOnlySpan<char> tag)
+	{
+		if (tag[^2] == '/')
+			return true;
+
+		var name = tag[1..];
+		var end = name.IndexOfAny(TagNameEnd);
+		name = end < 0 ? name : name[..end];
+		return VoidElements.Contains(name.ToString(), StringComparer.OrdinalIgnoreCase);
+	}
+
+	private static readonly SearchValues<char> TagNameEnd = SearchValues.Create(" \t\r\n>/");
+
+	private static readonly string[] VoidElements =
+	[
+		"area",
+		"base",
+		"br",
+		"col",
+		"embed",
+		"hr",
+		"img",
+		"input",
+		"link",
+		"meta",
+		"source",
+		"track",
+		"wbr"
+	];
 
 	// HtmlSanitizer defaults already cover all standard HTML tags and exclude script/on*/etc.
 	// Add class so bump.sh verb/path badges (class="operation-verb get") are kept.
@@ -96,8 +147,9 @@ public static partial class ApiMarkdown
 		return context.BuildContext.WriteFileSystem.FileInfo.New(fullPath);
 	}
 
-	[GeneratedRegex(@"<h[1-6][\s>]")]
-	private static partial Regex HeadingStart();
+	// Tag tokens, with quoted attribute values skipped so a ">" inside one does not end the tag.
+	[GeneratedRegex(@"</?[a-zA-Z][a-zA-Z0-9]*(?:[^>""']|""[^""]*""|'[^']*')*>")]
+	private static partial Regex HtmlTag();
 
 	[GeneratedRegex(@"\]\(\.\./group/([^)#]+)\)")]
 	private static partial Regex GroupLinkPattern();

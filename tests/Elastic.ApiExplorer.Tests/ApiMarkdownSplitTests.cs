@@ -18,7 +18,7 @@ public class ApiMarkdownSplitTests
 		var split = ApiMarkdown.SplitAtFirstHeading(Html("Intro.\n\n## Source\n\nBody.\n"));
 
 		split.Lead.Should().Contain("Intro.").And.NotContain("Source");
-		split.Remainder.Should().StartWith("<h2").And.Contain("Body.");
+		split.Remainder.Should().StartWith("<div class=\"heading-wrapper\"").And.Contain("<h2").And.Contain("Body.");
 	}
 
 	[Test]
@@ -44,6 +44,33 @@ public class ApiMarkdownSplitTests
 	{
 		var split = ApiMarkdown.SplitAtFirstHeading(Html("Intro.\n\n# Authentication\n\nBody.\n"));
 
-		split.Remainder.Should().StartWith("<h1").And.Contain("Authentication");
+		split.Remainder.Should().StartWith("<div class=\"heading-wrapper\"").And.Contain("<h1").And.Contain("Authentication");
+	}
+
+	[Test]
+	public void SplitAtFirstHeading_DoesNotCutInsideABlockquote()
+	{
+		var split = ApiMarkdown.SplitAtFirstHeading(Html("Intro.\n\n> ## Note\n> Details.\n\n## Real\n\nBody.\n"));
+
+		split.Lead.Should().Contain("<blockquote>").And.Contain("</blockquote>").And.Contain("Details.");
+		split.Remainder.Should().StartWith("<div class=\"heading-wrapper\"").And.Contain("Real").And.NotContain("Details.");
+	}
+
+	[Test]
+	public void SplitAtFirstHeading_WithOnlyANestedHeading_KeepsTheDescriptionWhole()
+	{
+		var split = ApiMarkdown.SplitAtFirstHeading(Html("Intro.\n\n- item\n\n  ## Inside a list item\n"));
+
+		split.Lead.Should().Contain("Inside a list item");
+		split.Remainder.Should().BeNull();
+	}
+
+	[Test]
+	public void SplitAtFirstHeading_IgnoresHeadingsInsideHtmlWrappers()
+	{
+		var split = ApiMarkdown.SplitAtFirstHeading("<p>Intro.</p><div class=\"a>b\"><h3>Wrapped</h3></div><br><h2>Real</h2>");
+
+		split.Lead.Should().EndWith("<br>").And.Contain("Wrapped");
+		split.Remainder.Should().Be("<h2>Real</h2>");
 	}
 }
