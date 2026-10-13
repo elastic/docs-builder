@@ -89,10 +89,10 @@ export const SearchInput = ({
                     width: 100%;
                     padding: calc(
                             ${
-                                size === 's'
-                                    ? euiTheme.size.xs
-                                    : euiTheme.size.s
-                            } +
+                                    size === 's'
+                                        ? euiTheme.size.xs
+                                        : euiTheme.size.s
+                                } +
                                 2px
                         )
                         ${size === 's' ? euiTheme.size.s : euiTheme.size.m};
