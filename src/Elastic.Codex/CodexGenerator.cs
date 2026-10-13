@@ -68,7 +68,7 @@ public class CodexGenerator(ILoggerFactory logFactory, BuildContext context, IDi
 			await RenderGroupLandingPage(groupNav, renderContext, navigationRenderer, ctx);
 	}
 
-	private async Task ExtractEmbeddedStaticResources(Cancel ctx)
+	internal async Task ExtractEmbeddedStaticResources(Cancel ctx)
 	{
 		_logger.LogInformation("Copying static files to codex output directory");
 		var assembly = typeof(EmbeddedOrPhysicalFileProvider).Assembly;
