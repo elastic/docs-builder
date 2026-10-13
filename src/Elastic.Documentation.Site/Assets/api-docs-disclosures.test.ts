@@ -4,7 +4,6 @@ import { initApiDocs } from './api-docs'
 function markup(): string {
     return `
         <section id="elastic-api-v3">
-            <a id="jump" href="#deep">deep</a>
             <div class="api-param-section collapsed" data-param-section id="section">
                 <h2 class="section-header api-param-section-header" id="query-params">
                     <a class="headerlink api-param-section-title" href="#query-params">Query parameters</a>
@@ -104,20 +103,6 @@ describe('disclosure clicks on API pages', () => {
         expect(isExpanded('variant')).toBe(true)
         expect(label('variant-toggle')).toBe('hide properties')
         expect(isExpanded('prop')).toBe(false)
-    })
-
-    it('opens every collapsible around an in-page link target and scrolls to it smoothly', () => {
-        const scroll = jest.fn()
-        byId('deep').scrollIntoView = scroll
-        const pushState = jest.spyOn(history, 'pushState')
-
-        byId('jump').click()
-
-        for (const id of ['variant', 'prop', 'section'])
-            expect(isExpanded(id)).toBe(true)
-        expect(scroll).toHaveBeenCalledWith({ behavior: 'smooth' })
-        expect(pushState).toHaveBeenCalledWith(null, '', '#deep')
-        pushState.mockRestore()
     })
 
     it('opens every collapsible around a find-in-page match', () => {

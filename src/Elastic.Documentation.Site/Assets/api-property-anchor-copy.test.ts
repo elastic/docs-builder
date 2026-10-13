@@ -9,8 +9,6 @@ describe('property anchor copy', () => {
             value: { writeText },
             configurable: true,
         })
-        // The link still scrolls to the property, which jsdom cannot do
-        Element.prototype.scrollIntoView = jest.fn()
     })
 
     beforeEach(() => {
