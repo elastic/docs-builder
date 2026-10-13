@@ -23,6 +23,13 @@ public record UnionOption(string BaseName, string? Ref, bool IsObject, IOpenApiS
 	public string? Label { get; init; }
 }
 
+/// <summary>One type a formula names (<c>number</c> in <c>number | string</c>), with the <c>$ref</c> it stands for.</summary>
+public record TypeAlternative(string Name, string? SchemaRef, bool IsArray)
+{
+	/// <summary>How the formula spells it: <see cref="Name"/>, with <c>[]</c> for an array of it.</summary>
+	public string Text => IsArray ? $"{Name}[]" : Name;
+}
+
 /// <summary>A named schema merged into a type through <c>allOf</c>, beyond the one that names the type.</summary>
 /// <param name="LinkedSchemaId">The schema id of its page, when it has one (see <see cref="TypePages"/>).</param>
 public record ComposedType(string Name, string? LinkedSchemaId);
@@ -72,6 +79,17 @@ public record TypeInfo
 
 	/// <summary>The schema for dictionary value types.</summary>
 	public IOpenApiSchema? DictValueSchema { get; init; }
+
+	/// <summary>The type of a dictionary's values; <see cref="TypeName"/> spells it <c>string to X</c>.</summary>
+	public TypeInfo? DictValueType { get; init; }
+
+	/// <summary>
+	/// The types a value can be, for a type that reads as a formula (<c>number | string</c>, <c>NodeId | NodeId[]</c>);
+	/// null for any other. <see cref="TypeName"/> spells the same formula.
+	/// </summary>
+	public IReadOnlyList<TypeAlternative>? Alternatives { get; init; }
+
+	public bool IsFormula => Alternatives is not null;
 
 	public bool IsEnum { get; init; }
 
