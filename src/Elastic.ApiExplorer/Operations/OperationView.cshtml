@@ -153,14 +153,9 @@
 		</div>
 	}
 
-	@if (pageModel.QueryParameters.Items.Count > 0)
+	@foreach (var section in pageModel.ParameterSections)
 	{
-		<div @ParamSectionHeader.WrapAttributes()>
-		@(await RenderPartialAsync<_ParamSectionHeader, ParamSectionHeader>(new ParamSectionHeader("Query parameters", "query-params", pageModel.QueryParameterNames)))
-		<div @ParamSectionHeader.BodyAttributes("query-params-list")>
-		@(await RenderPartialAsync<_PropertyList, ApiPropertyList>(pageModel.QueryParameters))
-		</div>
-		</div>
+		@(await RenderPartialAsync<_ParameterListSection, ParameterListSection>(section))
 	}
 	@if (operation.RequestBody is not null)
 	{

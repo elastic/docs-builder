@@ -273,6 +273,18 @@
             "explode": true,
             "description": "Only documents with these tags and values.",
             "schema": { "$ref": "#/components/schemas/fixture.Tags" }
+          },
+          {
+            "name": "X-Opaque-Id",
+            "in": "header",
+            "description": "Traces the request in logs and tasks.",
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "Accept",
+            "in": "header",
+            "description": "Ignored: the response media types describe it.",
+            "schema": { "type": "string" }
           }
         ],
         "responses": {

@@ -1,0 +1,7 @@
+@inherits RazorSlice<Elastic.ApiExplorer.Operations.ParameterListSection>
+<div @ParamSectionHeader.WrapAttributes()>
+@(await RenderPartialAsync<_ParamSectionHeader, ParamSectionHeader>(Model.Header))
+<div @ParamSectionHeader.BodyAttributes(Model.ListId)>
+@(await RenderPartialAsync<_PropertyList, ApiPropertyList>(Model.Parameters))
+</div>
+</div>

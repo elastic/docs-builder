@@ -12,9 +12,9 @@ using Elastic.Documentation.Site.FileProviders;
 
 namespace Elastic.ApiExplorer.Tests;
 
-/// <summary>Query parameters are property rows: a <c>deepObject</c> map lists its values like a body map does.</summary>
+/// <summary>Query and header parameters are property rows: a <c>deepObject</c> map lists its values like a body map does.</summary>
 [ClassDataSource<ApiExplorerFixture>(Shared = SharedType.PerClass)]
-public class QueryParameterRowsTests(ApiExplorerFixture fixture)
+public class ParameterRowsTests(ApiExplorerFixture fixture)
 {
 	private OperationNavigationItem DocsGet =>
 		fixture.Walk().OfType<OperationNavigationItem>().First(n => n.Model.Operation.OperationId == "docs-get");
@@ -44,6 +44,44 @@ public class QueryParameterRowsTests(ApiExplorerFixture fixture)
 		var states = page.QueryParameters.Items.Single(p => p.Name == "stored_states");
 		states.EnumValues.Should().Equal("open", "closed");
 		states.Children.Kind.Should().Be(ChildKind.None);
+	}
+
+	[Test]
+	public void Create_HeaderParameters_ListedApartAndIgnoredNamesLeftOut()
+	{
+		var page = OperationPageModel.Create(DocsGet.Model, RenderContext(DocsGet));
+
+		page.HeaderParameterNames.Should().Equal(["X-Opaque-Id"], "OpenAPI ignores an Accept header parameter");
+		page.HeaderParameters.Items[0].AnchorId.Should().Be("header-X-Opaque-Id");
+		page.QueryParameterNames.Should().NotContain("X-Opaque-Id");
+		page.ParameterSections.Select(s => s.Header.Anchor).Should().Equal("query-params", "header-params");
+	}
+
+	[Test]
+	public void Write_HeaderParameters_HaveTheirOwnSection()
+	{
+		var context = RenderContext(DocsGet);
+		var markdown = OperationCommonMark.Write(DocsGet.Model, OperationPageModel.Create(DocsGet.Model, context), context);
+
+		markdown.Should().Contain(
+			"""
+			## Header parameters
+
+			- `X-Opaque-Id` (string)
+			  Traces the request in logs and tasks.
+			"""
+		);
+		markdown.Should().NotContain("`Accept`");
+	}
+
+	[Test]
+	public async Task Render_HeaderParameters_ShowSectionAndTocEntry()
+	{
+		var html = await RenderAsync(DocsGet);
+
+		html.Should().Contain("id=\"header-params-list\"");
+		html.Should().Contain("<dt id=\"header-X-Opaque-Id\">");
+		html.Should().Contain("href=\"#header-params\"");
 	}
 
 	[Test]

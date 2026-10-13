@@ -24,10 +24,33 @@ public partial record OperationPageModel
 	public required OperationEndpoint Endpoint { get; init; }
 	public required IReadOnlyList<ApiPathParameter> PathParameters { get; init; }
 	public required ApiPropertyList QueryParameters { get; init; }
+	public required ApiPropertyList HeaderParameters { get; init; }
 
 	public IReadOnlyList<string> PathParameterNames => NamesOf(PathParameters.Select(static p => p.Name));
 
 	public IReadOnlyList<string> QueryParameterNames => NamesOf(QueryParameters.Items.Select(static q => q.Name));
+
+	public IReadOnlyList<string> HeaderParameterNames => NamesOf(HeaderParameters.Items.Select(static h => h.Name));
+
+	/// <summary>The query and header parameter sections the page lists, in page order; a location with no parameters has none.</summary>
+	public IReadOnlyList<ParameterListSection> ParameterSections =>
+		[
+			.. new[]
+			{
+				new ParameterListSection(
+					new ParamSectionHeader("Query parameters", "query-params", QueryParameterNames),
+					"query-params-list",
+					QueryParameters,
+					"Query string parameters"
+				),
+				new ParameterListSection(
+					new ParamSectionHeader("Header parameters", "header-params", HeaderParameterNames),
+					"header-params-list",
+					HeaderParameters,
+					"Header parameters"
+				)
+			}.Where(static s => s.Parameters.Items.Count > 0)
+		];
 
 	/// <summary>The request body is a union, so <see cref="RequestPropertyNames"/> names its variants, not its fields.</summary>
 	public bool RequestNamesAreVariants => RequestProperties is null && RequestUnionVariants is { Variants.Count: > 0 };
@@ -127,8 +150,9 @@ public partial record OperationPageModel
 			externalDocs = new ExternalDocLink(url, ApiPropertyTreeBuilder.IsElasticDocsUrl(url), operation.ExternalDocs.Description);
 		}
 
-		// Built before the body, so a body field that repeats a query parameter's fields links up the page to it.
-		var queryParameters = BuildQueryParameters(operation.Parameters ?? [], builder, supplemental);
+		// Built in page order, before the body, so a field that repeats a parameter's fields links up the page to it.
+		var queryParameters = BuildParameters(operation.Parameters ?? [], ParameterLocation.Query, builder, supplemental);
+		var headerParameters = BuildParameters(operation.Parameters ?? [], ParameterLocation.Header, builder, supplemental);
 		var requestScope = new PropertyTreeScope
 		{
 			Prefix = "req",
@@ -151,6 +175,7 @@ public partial record OperationPageModel
 				.Select(p => BuildPathParameter(p, analyzer, builder, context, supplemental, endpoint))
 				.ToArray(),
 			QueryParameters = queryParameters,
+			HeaderParameters = headerParameters,
 			RequestContentType = requestContentEntry?.Key ?? "application/json",
 			RequestProperties = request.Properties,
 			RequestUnionVariants = request.UnionVariants,
