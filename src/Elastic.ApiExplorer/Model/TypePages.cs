@@ -6,13 +6,9 @@ using Elastic.ApiExplorer.Infrastructure;
 
 namespace Elastic.ApiExplorer.Model;
 
-/// <summary>A navigation group of type pages, such as Query DSL or Aggregations.</summary>
-/// <param name="Slug">The category part of the page's model, also used to group pages under one heading.</param>
-public sealed record TypePageCategory(string Slug, string Title, string Description);
-
 /// <summary>
-/// A type documented on a page of its own: large, recursive and shared by many operations, so rows that use it link
-/// there instead of listing it again.
+/// A type documented on a page of its own: a pluggable, usually recursive, union of many variants that many operations
+/// share, so rows that use it link there instead of listing it again.
 /// </summary>
 /// <param name="SchemaId">The <c>components/schemas</c> key; rows link by <c>$ref</c> id, never by display name.</param>
 /// <param name="Title">
@@ -20,21 +16,21 @@ public sealed record TypePageCategory(string Slug, string Title, string Descript
 /// (<c>QueryContainer</c>) is a code name, so it never shows.
 /// </param>
 /// <param name="IsMap">Whether the API sends the type as a map of itself (<c>aggs</c>), which the page says.</param>
-public sealed record TypePage(string SchemaId, string Title, TypePageCategory Category, bool IsMap = false);
+public sealed record TypePage(string SchemaId, string Title, bool IsMap = false);
 
-/// <summary>The types that get a page of their own. The one place that decides which ones, and where they go.</summary>
+/// <summary>The types that get a page of their own. The one place that decides which ones, and in what order.</summary>
 public static class TypePages
 {
-	private static readonly TypePageCategory QueryDsl = new("query-dsl", "Query DSL", "Query type definitions");
-	private static readonly TypePageCategory Aggregations = new("aggregations", "Aggregations", "Aggregation type definitions");
-	private static readonly TypePageCategory Ingest = new("ingest", "Ingest", "Ingest processor definitions");
+	/// <summary>The navigation group that lists every type page of a spec, the same for every product.</summary>
+	public const string GroupTitle = "Reference types";
 
 	public static readonly IReadOnlyList<TypePage> All =
 	[
-		new("_types.query_dsl.QueryContainer", "Query", QueryDsl),
-		new("_types.aggregations.AggregationContainer", "Aggregation", Aggregations, IsMap: true),
-		new("_types.aggregations.Aggregate", "Aggregation result", Aggregations, IsMap: true),
-		new("ingest._types.ProcessorContainer", "Processor", Ingest)
+		new("_types.query_dsl.QueryContainer", "Query"),
+		new("_types.aggregations.AggregationContainer", "Aggregation", IsMap: true),
+		new("_types.aggregations.Aggregate", "Aggregation result", IsMap: true),
+		new("ingest._types.ProcessorContainer", "Processor"),
+		new("_types.mapping.Property", "Field mapping")
 	];
 
 	private static readonly Dictionary<string, TypePage> BySchemaId = All.ToDictionary(static p => p.SchemaId, StringComparer.Ordinal);

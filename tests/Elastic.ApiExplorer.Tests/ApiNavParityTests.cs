@@ -72,7 +72,7 @@ public class ApiNavParityTests
 	}
 
 	[Test]
-	public async Task CreateNavigation_QueryContainerSchema_AddsTypesNav()
+	public async Task CreateNavigation_QueryContainerSchema_AddsReferenceTypesNav()
 	{
 		var (generator, document) = await CreateGeneratorWithSpec(QueryContainerSpec);
 		var navigation = generator.CreateNavigation("test", document);
@@ -81,9 +81,9 @@ public class ApiNavParityTests
 			.NavigationItems
 			.OfType<SchemaCategoryNavigationItem>()
 			.Should()
-			.ContainSingle(item => item.NavigationTitle == "Types")
+			.ContainSingle(item => item.NavigationTitle == "Reference types")
 			.Subject;
-		types.NavigationItems.OfType<SchemaCategoryNavigationItem>().Select(c => c.NavigationTitle).Should().Equal("Query DSL");
+		types.NavigationItems.OfType<SchemaNavigationItem>().Select(c => c.NavigationTitle).Should().Equal("Query");
 	}
 
 	[Test]

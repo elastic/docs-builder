@@ -14,7 +14,7 @@ using RazorSlices;
 
 namespace Elastic.ApiExplorer.Types;
 
-public record ApiSchema(string SchemaId, string DisplayName, string Category, IOpenApiSchema Schema) : IApiModel<SchemaPageModel>
+public record ApiSchema(string SchemaId, string DisplayName, IOpenApiSchema Schema) : IApiModel<SchemaPageModel>
 {
 	public SchemaPageModel? CreatePageModel(ApiRenderContext context) => SchemaPageModel.Create(this, context);
 

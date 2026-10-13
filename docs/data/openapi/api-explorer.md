@@ -295,7 +295,7 @@ The API Explorer generates the following types of pages from your OpenAPI spec:
 - **Landing page**: An overview of the API grouped by tag
 - **Tag landing pages**: One page per tag that lists operations in that tag, with the tag's display name, optional OpenAPI `description` (CommonMark), and optional `externalDocs` link
 - **Operation pages**: One page per API operation, with the HTTP method, path, parameters, request body, response schemas, and examples
-- **Schema type pages**: Dedicated pages for large, recursive types that many operations share: **Query** (Query DSL), **Aggregation** and **Aggregation result** (Aggregations), and **Processor** (Ingest). On operation pages, a property of one of these types links to its page instead of listing it again. Links match the schema id, such as `ingest._types.ProcessorContainer`, so another schema that shares the short name lists its own fields.
+- **Reference type pages**: Dedicated pages, listed under **Reference types** in the navigation, for the building blocks that many operations share: **Query**, **Aggregation**, **Aggregation result**, **Processor**, and **Field mapping**. A type gets a page when it's a pluggable union of many variants, usually recursive, that many operations reuse. On operation pages, a property of one of these types links to its page instead of listing it again. Links match the schema id, such as `ingest._types.ProcessorContainer`, so another schema that shares the short name lists its own fields.
 
 ### How types read
 
