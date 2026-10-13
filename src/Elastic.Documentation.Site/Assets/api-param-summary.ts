@@ -1,65 +1,61 @@
 /**
- * Fits a collapsed parameter-name summary into one line.
- * Hides trailing names and shows an "N more" badge instead of an ellipsis.
+ * Fits collapsed parameter summaries into one line. Names wrap inside a clipped list so the
+ * browser finds where the line ends; the wrapped ones are then hidden, which shrinks the list
+ * to its content and puts the "N more" badge right after the last visible name.
  */
 
-export function hiddenCountToFit(
-    total: number,
-    overflows: (hidden: number) => boolean
-): number {
-    if (total <= 0 || !overflows(0)) return 0
-
-    for (let hidden = 1; hidden < total; hidden++)
-        if (!overflows(hidden)) return hidden
-
-    return total
+interface Summary {
+    root: HTMLElement
+    list: HTMLElement
+    items: HTMLElement[]
+    more: HTMLElement
+    moreCount: HTMLElement
+    noun: string | undefined
 }
 
-export function applyParamSummaryFit(summary: HTMLElement): void {
-    const section = summary.closest<HTMLElement>('[data-param-section]')
-    if (section?.classList.contains('expanded')) return
-
-    const line = summary.querySelector<HTMLElement>('.api-param-summary-line')
-    const items = [
-        ...summary.querySelectorAll<HTMLElement>('[data-param-item]'),
-    ]
-    const more = summary.querySelector<HTMLElement>('[data-param-more]')
-    const moreCount = summary.querySelector<HTMLElement>(
-        '[data-param-more-count]'
-    )
-    if (!line || !more || !moreCount || line.clientWidth === 0) return
-
-    const overflows = (hidden: number): boolean => {
-        applyHiddenState(items, more, moreCount, hidden)
-        return line.scrollWidth > line.clientWidth + 1
+function partsOf(root: HTMLElement): Summary {
+    return {
+        root,
+        list: root.querySelector<HTMLElement>('.api-param-summary-list')!,
+        items: [
+            ...root.querySelectorAll<HTMLElement>('.api-param-summary-item'),
+        ],
+        more: root.querySelector<HTMLElement>('[data-param-more]')!,
+        moreCount: root.querySelector<HTMLElement>('[data-param-more-count]')!,
+        noun: root.dataset.paramMoreNoun,
     }
-
-    const hidden = hiddenCountToFit(items.length, overflows)
-    applyHiddenState(items, more, moreCount, hidden)
 }
 
-function applyHiddenState(
-    items: HTMLElement[],
-    more: HTMLElement,
-    moreCount: HTMLElement,
-    hidden: number
-): void {
-    const visible = items.length - hidden
-    for (let i = 0; i < items.length; i++) items[i].hidden = i >= visible
+function wrappedItems({ list, items }: Summary): HTMLElement[] {
+    // A first name wider than the whole line would be clipped mid-word, so it folds away too
+    if (items[0].offsetWidth > list.clientWidth) return items
+    const firstRowTop = items[0].offsetTop
+    return items.filter((item) => item.offsetTop > firstRowTop)
+}
 
-    if (hidden <= 0) {
-        more.hidden = true
-        more.classList.remove('has-leading-sep')
-        moreCount.textContent = ''
-        return
+/** Writes, one read across every summary, then writes: one layout however many summaries. */
+export function fitParamSummaries(summaries: Iterable<HTMLElement>): void {
+    // A hidden (expanded) summary has no width and nothing to fit
+    const shown = [...summaries]
+        .filter((root) => root.clientWidth > 0)
+        .map(partsOf)
+
+    // Measure beside the badge at its widest label: a name that fits there fits beside any shorter one
+    for (const { items, more, moreCount, noun } of shown) {
+        items.forEach((item) => (item.hidden = false))
+        more.hidden = false
+        moreCount.textContent = moreLabel(items.length, noun)
     }
 
-    more.hidden = false
-    more.classList.toggle('has-leading-sep', visible > 0)
-    moreCount.textContent = moreLabel(
-        hidden,
-        more.closest<HTMLElement>('[data-param-summary]')?.dataset.paramMoreNoun
-    )
+    const wrapped = shown.map(wrappedItems)
+
+    shown.forEach(({ root, more, moreCount, noun }, i) => {
+        wrapped[i].forEach((item) => (item.hidden = true))
+        more.hidden = wrapped[i].length === 0
+        if (wrapped[i].length > 0)
+            moreCount.textContent = moreLabel(wrapped[i].length, noun)
+        root.classList.add('is-fitted')
+    })
 }
 
 /** "3 more" for fields; "3 more variants" when the summary names what it folds away. */

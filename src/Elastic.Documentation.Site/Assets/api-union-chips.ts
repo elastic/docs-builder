@@ -1,5 +1,5 @@
 /**
- * Union variant lists with three or more variants show one variant at a time, picked from a row of chips that looks
+ * Union variant lists with two or more variants show one variant at a time, picked from a row of chips that looks
  * and packs like the examples rail (chip-row.ts). The other variants stay in the page with hidden="until-found", so
  * find-in-page and links to their fields reach them and switch the chip.
  */

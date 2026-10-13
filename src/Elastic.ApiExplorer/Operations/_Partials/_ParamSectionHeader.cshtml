@@ -7,10 +7,7 @@
 		aria-expanded="false"
 		aria-controls="@Model.Anchor-list"
 		aria-label="Toggle @Model.Title">
-		@if (Model.Names.Count > 0)
-		{
-			@(await RenderPartialAsync<_ParamSummary, Elastic.ApiExplorer.Infrastructure.ParamSectionHeader>(Model))
-		}
+		@(await RenderPartialAsync<_ParamSummary, Elastic.ApiExplorer.Infrastructure.ParamSectionHeader>(Model))
 		<span class="api-param-chevron" aria-hidden="true"></span>
 	</button>
 </h2>

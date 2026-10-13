@@ -19,7 +19,11 @@ export function initTooltips(): void {
         touch: ['hold', 300],
         // A click on a copy button swaps the text in place (flashTooltip); hiding the tooltip would make it flicker.
         onCreate: (instance) => {
-            if (instance.reference.matches('.copybtn, .api-code-preview-btn'))
+            if (
+                instance.reference.matches(
+                    '.copybtn, .api-code-preview-btn, .property-anchor-icon'
+                )
+            )
                 instance.setProps({ hideOnClick: false })
         },
         appendTo: (reference) => reference.closest('dialog') ?? document.body,

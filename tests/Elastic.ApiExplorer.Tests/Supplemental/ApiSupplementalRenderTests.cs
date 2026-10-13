@@ -77,7 +77,7 @@ public class ApiSupplementalRenderTests(ApiExplorerFixture fixture)
 		html.Should().Contain("api-param-section collapsed");
 		html.Should().Contain("id=\"query-params-list\"");
 		html.Should().Contain("api-param-summary");
-		html.Should().Contain("data-param-item");
+		html.Should().Contain("api-param-summary-item");
 	}
 
 	[Test]
@@ -104,7 +104,7 @@ public class ApiSupplementalRenderTests(ApiExplorerFixture fixture)
 	}
 
 	[Test]
-	public async Task Operation_PathParameters_SingleItem_RendersWithoutCollapse()
+	public async Task Operation_PathParameters_SingleItem_RendersCollapsedHeading()
 	{
 		var nav = SearchOperation();
 		var html = await RenderAsync(nav.Model, nav);
@@ -112,8 +112,9 @@ public class ApiSupplementalRenderTests(ApiExplorerFixture fixture)
 		html.Should().Contain("id=\"parameters\"");
 		html.Should().Contain("href=\"#parameters\">Path parameters</a>");
 		html.Should().NotContain(">Parameters</a>");
-		html.Should().NotContain("id=\"parameters-list\"");
-		html.Should().NotContain("aria-controls=\"parameters-list\"");
+		html.Should().Contain("api-param-section collapsed");
+		html.Should().Contain("id=\"parameters-list\"");
+		html.Should().Contain("aria-controls=\"parameters-list\"");
 	}
 
 	[Test]

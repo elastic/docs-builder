@@ -158,6 +158,35 @@ public static class ReleaseTargetResolver
 		past is not null
 			&& past.Releases.Any(r => !string.IsNullOrEmpty(r.Manifest) && r.Version.Equals(version, StringComparison.OrdinalIgnoreCase));
 
+	/// <summary>
+	/// Finds the GA release whose manifest marks where the release notes of <paramref name="version"/> start.
+	/// A patch release starts at the previous patch of the same minor. A <c>x.y.0</c> release starts at the
+	/// previous minor's <c>.0</c>, the point where that minor branched from main, so the range holds everything
+	/// new in the minor and no commit from the older branch. Returns <c>null</c> when no such release exists.
+	/// </summary>
+	public static PastRelease? ResolvePreviousRelease(PastReleasesResponse? past, string version)
+	{
+		if (past is null || TryParseVersion(version) is not { } target)
+			return null;
+
+		return past
+			.Releases
+			.Where(r => !string.IsNullOrEmpty(r.Manifest))
+			.Select(r => (release: r, version: TryParseVersion(r.Version)))
+			.Where(t => t.version is not null && t.version.Prerelease.Length == 0 && IsEarlierStartPoint(t.version, target))
+			.OrderByDescending(t => t.version)
+			.Select(t => t.release)
+			.FirstOrDefault();
+	}
+
+	private static bool IsEarlierStartPoint(SemVersion candidate, SemVersion target)
+	{
+		if (target.Patch > 0)
+			return candidate.Major == target.Major && candidate.Minor == target.Minor && candidate.Patch < target.Patch;
+
+		return candidate.Patch == 0 && (candidate.Major, candidate.Minor).CompareTo((target.Major, target.Minor)) < 0;
+	}
+
 	private static HashSet<string> BuildGaSet(PastReleasesResponse? past) =>
 		past is null
 			? []

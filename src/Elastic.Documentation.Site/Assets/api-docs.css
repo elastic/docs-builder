@@ -1175,7 +1175,10 @@ button.response-status-toggle:focus {
 	z-index: 4;
 }
 
-.response-panel.collapsed > .response-panel-body:not([hidden='until-found']) {
+/* Fallback for browsers without hidden="until-found": the class hides the body */
+.response-panel.collapsed > .response-panel-body:not([hidden='until-found']),
+.api-param-section.collapsed
+	> .api-param-section-body:not([hidden='until-found']) {
 	display: none;
 }
 
@@ -1641,11 +1644,6 @@ button.response-status-toggle:focus {
 	transform: rotate(45deg);
 }
 
-.api-param-section.collapsed
-	> .api-param-section-body:not([hidden='until-found']) {
-	display: none;
-}
-
 .api-param-section.expanded .api-param-summary {
 	display: none;
 }
@@ -1664,40 +1662,45 @@ button.response-status-toggle:focus {
 	font-size: 14px;
 	font-weight: 400;
 	line-height: 24px;
+	--api-param-sep: ', ';
 }
 
-.api-param-summary-line {
+/* The union body reads as alternatives (A | B), not as an object. */
+.api-param-summary.is-variants {
+	--api-param-sep: ' | ';
+}
+
+/* Invisible until the first fit, so it never shows the unfitted wrap. The animation reveals it anyway if the script never runs. */
+.api-param-summary:not(.is-fitted) {
+	visibility: hidden;
+	animation: api-param-summary-reveal 0s 1s forwards;
+}
+
+@keyframes api-param-summary-reveal {
+	to {
+		visibility: visible;
+	}
+}
+
+.api-param-summary-list {
 	display: flex;
-	align-items: center;
-	width: 100%;
-	height: 24px;
+	flex-wrap: wrap;
+	flex: 0 1 auto;
 	min-width: 0;
+	height: 24px;
 	overflow: hidden;
-	white-space: nowrap;
 }
 
-.api-param-summary-brace,
-.api-param-summary-sep {
-	display: flex;
-	align-items: center;
+.api-param-summary-brace {
 	flex: 0 0 auto;
 	height: 24px;
-	color: var(--color-subdued, #516381);
-	font-size: 14px;
-	font-weight: 400;
-	line-height: 24px;
 	white-space: pre;
 }
 
+/* Explicit type: the markdown `code` rule would otherwise shrink and lift the names */
 .api-param-summary-item {
-	display: flex;
-	align-items: center;
 	flex: 0 0 auto;
 	height: 24px;
-	line-height: 24px;
-}
-
-.api-param-summary-item code {
 	color: #3f4f6b;
 	font-family:
 		'Roboto Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
@@ -1712,6 +1715,14 @@ button.response-status-toggle:focus {
 	border-radius: 0;
 }
 
+.api-param-summary-item + .api-param-summary-item::before,
+.api-param-more::before {
+	content: var(--api-param-sep);
+	color: var(--color-subdued, #516381);
+	font-weight: 400;
+	white-space: pre;
+}
+
 .api-param-more {
 	display: inline-flex;
 	align-items: center;
@@ -1723,8 +1734,10 @@ button.response-status-toggle:focus {
 	display: none;
 }
 
-.api-param-more:not(.has-leading-sep) > .api-param-summary-sep {
-	display: none;
+/* No separator when every name folded away and the badge opens the line */
+.api-param-summary-list:not(:has(.api-param-summary-item:not([hidden])))
+	+ .api-param-more::before {
+	content: none;
 }
 
 .api-param-more-badge {
@@ -2195,7 +2208,7 @@ a.docs-reference-btn::after {
 	position: relative;
 }
 
-/* Three or more variants: the examples rail's chips pick the one shown (_UnionOptions.cshtml, api-union-chips.ts). */
+/* Two or more variants: the examples rail's chips pick the one shown (_UnionOptions.cshtml, api-union-chips.ts). */
 .union-chips-row {
 	margin: calc(var(--spacing) * 1) 0;
 }

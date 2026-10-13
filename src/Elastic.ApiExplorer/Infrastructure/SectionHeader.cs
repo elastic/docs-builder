@@ -20,15 +20,10 @@ public record SectionHeader(string Title, string Anchor, string? Route = null, s
 /// </summary>
 public record ParamSectionHeader(string Title, string Anchor, IReadOnlyList<string> Names, bool NamesAreVariants = false)
 {
-	public static bool ShouldCollapse(int count) => count > 1;
+	public static HtmlString WrapAttributes() => new("class=\"api-param-section collapsed\" data-param-section");
 
-	public static HtmlString WrapAttributes(bool collapse) =>
-		collapse ? new HtmlString("class=\"api-param-section collapsed\" data-param-section") : new HtmlString("class=\"api-list-block\"");
-
-	public static HtmlString BodyAttributes(bool collapse, string listId) =>
-		collapse
-			? new HtmlString($"class=\"api-param-section-body\" id=\"{listId}\" hidden=\"until-found\"")
-			: new HtmlString("class=\"api-list-block-body\"");
+	public static HtmlString BodyAttributes(string listId) =>
+		new($"class=\"api-param-section-body\" id=\"{listId}\" hidden=\"until-found\"");
 }
 
 /// <summary>A leftover <c>##</c> section from a supplemental file, pre-rendered for the view.</summary>

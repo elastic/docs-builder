@@ -88,24 +88,16 @@
 	@(await RenderPartialAsync<_AuthorizationSection, AuthorizationSectionModel>(Model.Authorization))
 	@if (pageModel.PathParameters.Count > 0)
 	{
-		var collapsePath = ParamSectionHeader.ShouldCollapse(pageModel.PathParameterNames.Count);
-		<div @ParamSectionHeader.WrapAttributes(collapsePath)>
-		@if (collapsePath)
-		{
-			@(await RenderPartialAsync<_ParamSectionHeader, ParamSectionHeader>(new ParamSectionHeader("Path parameters", "parameters", pageModel.PathParameterNames)))
-		}
-		else
-		{
-			@(await RenderPartialAsync<_SectionHeader, SectionHeader>(new SectionHeader("Path parameters", "parameters")))
-		}
-		<div @ParamSectionHeader.BodyAttributes(collapsePath, "parameters-list")>
+		<div @ParamSectionHeader.WrapAttributes()>
+		@(await RenderPartialAsync<_ParamSectionHeader, ParamSectionHeader>(new ParamSectionHeader("Path parameters", "parameters", pageModel.PathParameterNames)))
+		<div @ParamSectionHeader.BodyAttributes("parameters-list")>
 		<dl class="property-list">
 		@foreach (var path in pageModel.PathParameters)
 		{
 			<div class="path-param @(path.Deprecated is true ? "deprecated" : "")">
 				<dt id="path-@path.Name">
 					<a class="property-anchor" href="#path-@path.Name">
-						<span class="property-anchor-icon" aria-hidden="true"></span>
+						<span class="property-anchor-icon" data-tippy-content="Copy link" aria-hidden="true"></span>
 						<code>@path.Name</code>
 					</a>
 					@if (path.Type is not null)
@@ -157,17 +149,9 @@
 
 	@if (pageModel.QueryParameters.Count > 0)
 	{
-		var collapseQuery = ParamSectionHeader.ShouldCollapse(pageModel.QueryParameterNames.Count);
-		<div @ParamSectionHeader.WrapAttributes(collapseQuery)>
-		@if (collapseQuery)
-		{
-			@(await RenderPartialAsync<_ParamSectionHeader, ParamSectionHeader>(new ParamSectionHeader("Query parameters", "query-params", pageModel.QueryParameterNames)))
-		}
-		else
-		{
-			@(await RenderPartialAsync<_SectionHeader, SectionHeader>(new SectionHeader("Query parameters", "query-params")))
-		}
-		<div @ParamSectionHeader.BodyAttributes(collapseQuery, "query-params-list")>
+		<div @ParamSectionHeader.WrapAttributes()>
+		@(await RenderPartialAsync<_ParamSectionHeader, ParamSectionHeader>(new ParamSectionHeader("Query parameters", "query-params", pageModel.QueryParameterNames)))
+		<div @ParamSectionHeader.BodyAttributes("query-params-list")>
 		<dl class="property-list">
 			@foreach (var qp in pageModel.QueryParameters)
 			{
@@ -175,7 +159,7 @@
 				<div class="query-param @(qs.Deprecated == true ? "deprecated" : "")">
 					<dt id="query-@qs.Name">
 						<a class="property-anchor" href="#query-@qs.Name">
-							<span class="property-anchor-icon" aria-hidden="true"></span>
+							<span class="property-anchor-icon" data-tippy-content="Copy link" aria-hidden="true"></span>
 							<code>@qs.Name</code>
 						</a>
 						@if (qp.Type is not null)
@@ -216,17 +200,9 @@
 	}
 	@if (operation.RequestBody is not null)
 	{
-		var collapseRequest = ParamSectionHeader.ShouldCollapse(pageModel.RequestPropertyNames.Count);
-		<div @ParamSectionHeader.WrapAttributes(collapseRequest)>
-		@if (collapseRequest)
-		{
-			@(await RenderPartialAsync<_ParamSectionHeader, ParamSectionHeader>(new ParamSectionHeader("Request", "request-body", pageModel.RequestPropertyNames, pageModel.RequestNamesAreVariants)))
-		}
-		else
-		{
-			@(await RenderPartialAsync<_SectionHeader, SectionHeader>(new SectionHeader("Request", "request-body")))
-		}
-		<div @ParamSectionHeader.BodyAttributes(collapseRequest, "request-body-list")>
+		<div @ParamSectionHeader.WrapAttributes()>
+		@(await RenderPartialAsync<_ParamSectionHeader, ParamSectionHeader>(new ParamSectionHeader("Request", "request-body", pageModel.RequestPropertyNames, pageModel.RequestNamesAreVariants)))
+		<div @ParamSectionHeader.BodyAttributes("request-body-list")>
 		@if (!string.IsNullOrEmpty(operation.RequestBody.Description))
 		{
 			<p>@Model.RenderMarkdown(operation.RequestBody.Description)</p>
