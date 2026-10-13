@@ -125,9 +125,10 @@ API reference pages don't use `applies_to` directly. They read the OpenAPI `x-st
 | `Technical Preview` | `stack: preview` | {applies_to}`stack: preview` |
 | `Beta; Added in 8.12.0` | `stack: beta 8.12.0` | {applies_to}`stack: beta 8.12` |
 | `Deprecated; Deprecated in 7.0.0` | `stack: deprecated 7.0.0` | {applies_to}`stack: deprecated 7.0` |
+| `Generally available; Added in 7.7.0; Deprecated in 9.2.0` | `stack: ga 7.7.0, deprecated 9.2.0` | {applies_to}`stack: ga 7.7-9.1, deprecated 9.2+` |
 | `Generally available` | `stack: ga` | No badge |
 
-- When the label names more than one lifecycle, the most restrictive one wins: removed, deprecated, beta, experimental, preview, then generally available.
+- Each part of the label between `;` separators keeps its own version, so a label that records both when an API was added and when it was deprecated produces two lifecycles.
 - A plain `Generally available` with no version gets no badge, because it tells readers nothing they can act on.
 - Operations added in a Stack version that isn't released yet show a **Planned** badge on their page, and are left out of the search index.
 

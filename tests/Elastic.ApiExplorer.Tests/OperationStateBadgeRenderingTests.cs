@@ -39,7 +39,7 @@ public class OperationStateBadgeRenderingTests(ApiExplorerFixture fixture)
 		var nav = fixture.Walk().OfType<OperationNavigationItem>().First(n => n.Model.Operation.OperationId == "search");
 		var html = await RenderAsync(nav);
 
-		var property = Slice(html, "<code>legacy_size</code>\n\t\t</a>", "</dt>");
+		var property = Slice(html, "<dt id=\"req-legacy_size\"", "</dt>");
 		property.Should().Contain("<span class=\"applies applies-inline\">");
 		property.Should().Contain("lifecycle-name=\"Deprecated\"");
 		property.Should().Contain("Deprecated since 7.0");

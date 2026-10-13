@@ -29,6 +29,8 @@ public class XStateApplicabilityTests
 	[Arguments("Added in 7.7.0", "ga 7.7.0")]
 	[Arguments("Deprecated; Deprecated in 7.0.0", "deprecated 7.0.0")]
 	[Arguments("Generally available; Deprecated in 9.2.0", "deprecated 9.2.0")]
+	[Arguments("Generally available; Added in 7.7.0; Deprecated in 9.2.0", "ga 7.7.0, deprecated 9.2.0")]
+	[Arguments("Beta; Added in 8.12.0; Generally available; Added in 9.1.0", "beta 8.12.0, ga 9.1.0")]
 	[Arguments("   ", null)]
 	[Arguments("Something else", null)]
 	public void ToAppliesToSyntax_XStateLabel_MapsToAppliesToSyntax(string xState, string? expected) =>
@@ -50,6 +52,7 @@ public class XStateApplicabilityTests
 	[Arguments("Experimental; Added in 9.5.0", true)]
 	[Arguments("Generally available; Added in 9.2.0", false)]
 	[Arguments("Deprecated; Deprecated in 9.5.0", false)]
+	[Arguments("Generally available; Added in 7.7.0; Deprecated in 9.5.0", false)]
 	[Arguments("Technical Preview", false)]
 	public void IsUnreleased_XStateLabel_OnlyFlagsFutureIntroductions(string xState, bool expected) =>
 		XStateApplicability.IsUnreleased(XStateApplicability.Parse(xState), CurrentStack).Should().Be(expected);
@@ -85,6 +88,31 @@ public class XStateApplicabilityTests
 		item.RenderData.Version.Should().Be(version);
 		item.RenderData.BadgeLifecycleText.Should().Be(lifecycleText);
 		item.RenderData.PopoverData!.AvailabilityItems.Select(a => a.Text).Should().Equal(popoverText);
+	}
+
+	[Test]
+	[Arguments("Generally available; Added in 7.7.0; Deprecated in 9.2.0", "Deprecated", "9.2+", new[]
+	{
+		"Deprecated since 9.2",
+		"Generally available from 7.7 to 9.1"
+	})]
+	[Arguments("Generally available; Added in 7.7.0; Deprecated in 9.5.0", "GA", "7.7+", new[]
+	{
+		"Planned for deprecation",
+		"Generally available since 7.7"
+	})]
+	public void FromOperation_IntroducedThenDeprecated_KeepsEachVersionWithItsLifecycle(
+		string xState,
+		string lifecycleName,
+		string version,
+		string[] popoverTexts
+	)
+	{
+		var item = AvailabilityBadge.FromOperation(OperationWithState(xState), StackVersions())!.GetApplicabilityItems().Single();
+
+		item.RenderData.LifecycleName.Should().Be(lifecycleName);
+		item.RenderData.Version.Should().Be(version);
+		item.RenderData.PopoverData!.AvailabilityItems.Select(a => a.Text).Should().Equal(popoverTexts);
 	}
 
 	[Test]
