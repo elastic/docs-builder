@@ -18,13 +18,8 @@ function markup(): string {
                             </button>
                         </dd>
                         <div class="nested-properties" hidden="until-found">
-                            <div class="union-variants-container collapsible collapsed" id="options">
-                                <div class="union-collapse-toggle">
-                                    <button class="expand-toggle union-group-toggle" id="options-toggle" aria-expanded="false">
-                                        <span class="toggle-icon">+</span><span class="toggle-label">show type options</span>
-                                    </button>
-                                </div>
-                                <div class="union-variants union-variants-content" hidden="until-found">
+                            <div class="union-variants-container" id="options">
+                                <div class="union-variants">
                                     <div class="union-variant-item collapsed" id="variant">
                                         <div class="expand-toggle-row union-expand-toggle">
                                             <button class="expand-toggle" id="variant-toggle" aria-expanded="false">
@@ -103,12 +98,6 @@ describe('disclosure clicks on API pages', () => {
         ).toBe(false)
     })
 
-    it('toggles the type options of a union', () => {
-        byId('options-toggle').click()
-        expect(isExpanded('options')).toBe(true)
-        expect(label('options-toggle')).toBe('hide type options')
-    })
-
     it('toggles a union variant, not the property around it', () => {
         byId('variant-toggle').click()
         expect(isExpanded('variant')).toBe(true)
@@ -120,7 +109,7 @@ describe('disclosure clicks on API pages', () => {
         byId('variant-body').dispatchEvent(
             new Event('beforematch', { bubbles: true })
         )
-        for (const id of ['variant', 'options', 'prop', 'section'])
+        for (const id of ['variant', 'prop', 'section'])
             expect(isExpanded(id)).toBe(true)
     })
 })
