@@ -1,7 +1,8 @@
 /**
- * Boosted navigation swaps only `#main-container`. Each API product brings its own context
- * bar, and `pages-nav.ts` narrows API-to-API swaps even further, to `#api-content-grid`. A move
- * that changes the page chrome therefore has to reload the page instead.
+ * Boosted navigation swaps only `#main-container`, and the header sits outside it. Docs pages
+ * and API pages bring different headers, and each API product brings its own context bar, while
+ * `pages-nav.ts` narrows API-to-API swaps to `#api-content-grid`. A move that changes the page
+ * chrome therefore has to reload the page instead.
  */
 
 /** The API product in an API path, `null` for the catalog, and `undefined` for any other path. */
@@ -18,5 +19,7 @@ export function changesPageChrome(
 ): boolean {
     const target = apiProduct(targetPath, root)
     const current = apiProduct(currentPath, root)
+    // A docs page and an API page: the header would stay as the previous page had it.
+    if ((target === undefined) !== (current === undefined)) return true
     return !!target && !!current && target !== current
 }

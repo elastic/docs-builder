@@ -13,6 +13,34 @@ describe('changesPageChrome', () => {
         ).toBe(true)
     })
 
+    it('reloads between a docs page and an API page, in both directions', () => {
+        expect(
+            changesPageChrome(
+                '/docs/api/doc/elasticsearch',
+                '/docs/deploy-manage/',
+                root
+            )
+        ).toBe(true)
+        expect(
+            changesPageChrome(
+                '/docs/get-started/the-stack',
+                '/docs/api/doc/elasticsearch/group/search',
+                root
+            )
+        ).toBe(true)
+        expect(changesPageChrome('/docs/api', '/docs/', root)).toBe(true)
+    })
+
+    it('stays boosted between two docs pages', () => {
+        expect(
+            changesPageChrome(
+                '/docs/get-started/the-stack',
+                '/docs/deploy-manage/',
+                root
+            )
+        ).toBe(false)
+    })
+
     it('stays boosted within one API product, across versions too', () => {
         expect(
             changesPageChrome(
@@ -43,14 +71,21 @@ describe('changesPageChrome', () => {
         ).toBe(false)
     })
 
-    it('does not treat a path that only starts with api as an API page', () => {
+    it('treats a path that only starts with api as a docs page', () => {
+        expect(
+            changesPageChrome(
+                '/docs/api-keys/doc/x',
+                '/docs/deploy-manage/',
+                root
+            )
+        ).toBe(false)
         expect(
             changesPageChrome(
                 '/docs/api-keys/doc/x',
                 '/docs/api/doc/elasticsearch',
                 root
             )
-        ).toBe(false)
+        ).toBe(true)
     })
 
     it('works without a root path, as in isolated builds', () => {

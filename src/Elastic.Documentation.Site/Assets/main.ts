@@ -303,8 +303,9 @@ document.addEventListener('htmx:beforeRequest', function (event: HtmxEvent) {
     // hx-boost intercepts every same-origin link, but only internal docs URLs should
     // navigate through htmx (for assembler that means /docs/*; isolated and codex own
     // their whole origin). Anything else — marketing pages on the same domain, the
-    // separate /docs/api app — gets a normal full page load. So does a move to another API
-    // product, because the swap would leave the previous product's context bar in place.
+    // separate /docs/api app — gets a normal full page load. So does a move between a docs
+    // page and an API page, or to another API product: the swap would leave the previous
+    // header or context bar in place.
     const targetPath = new URL(path, location.href).pathname
     const docsPath = getPathFromUrl(targetPath)
     if (
