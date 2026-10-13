@@ -288,7 +288,28 @@ function initGlobalClickHandlers(): void {
                 history.pushState(null, '', trigger.hash)
             return
         }
+
+        const link = target.closest<HTMLAnchorElement>('a[href^="#"]')
+        if (link) scrollToLinkTarget(e, link)
     })
+}
+
+/**
+ * Opens the rows around an in-page link's target, then scrolls to it smoothly. The browser's own
+ * jump would skip the smooth scroll, and pushState fires no hashchange to open the rows.
+ */
+function scrollToLinkTarget(e: MouseEvent, link: HTMLAnchorElement): void {
+    if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey)
+        return
+    const href = link.getAttribute('href')!
+    const target = document.getElementById(href.slice(1))
+    if (!target) return
+
+    e.preventDefault()
+    revealCollapsedAncestors(target)
+    revealHiddenAncestors(target)
+    target.scrollIntoView({ behavior: 'smooth' })
+    if (window.location.hash !== href) history.pushState(null, '', href)
 }
 
 /**

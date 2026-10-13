@@ -26,7 +26,7 @@ describe('smooth scroll for in-page links', () => {
         expect(Element.prototype.scrollIntoView).toHaveBeenCalled()
     })
 
-    it('leaves API reference links to the hashchange that reveals their target', () => {
+    it('leaves API reference links to the API page', () => {
         expect(click('api-link').defaultPrevented).toBe(false)
         expect(Element.prototype.scrollIntoView).not.toHaveBeenCalled()
     })
