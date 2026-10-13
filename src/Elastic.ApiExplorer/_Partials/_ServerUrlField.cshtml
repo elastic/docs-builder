@@ -1,0 +1,12 @@
+@inherits RazorSlice<ApiServerDisplay>
+@* Base URL as a copy field: URL and copy button share one chip. Reused by the landing rail and operation pages. *@
+<span class="api-server">
+	<span class="api-server-field">
+		<code>@Model.Url</code>
+		@(await RenderPartialAsync<_EndpointCopyButton, string>(Model.Url))
+	</span>
+	@if (!string.IsNullOrEmpty(Model.Description))
+	{
+		<span class="api-server-description">@Model.Description</span>
+	}
+</span>

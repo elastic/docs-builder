@@ -486,8 +486,9 @@ public class ApiSupplementalRenderTests(ApiExplorerFixture fixture)
 		var html = await RenderAsync(fixture.Navigation.Index.Model, fixture.Navigation);
 
 		var rail = html.IndexOf("class=\"api-page-rail\"", StringComparison.Ordinal);
-		html.IndexOf("class=\"api-rail-server\"", StringComparison.Ordinal).Should().BeGreaterThan(rail);
-		html.Should().NotContain("<dt>Size</dt>").And.NotContain("<dt>Version</dt>");
+		html.IndexOf("class=\"api-server\"", StringComparison.Ordinal).Should().BeGreaterThan(rail);
+		html.Should().Contain("<dt>Base URL").And.Contain("api-server-field");
+		html.Should().NotContain("<dt>Size</dt>");
 		html.Should().Contain("api-url-copy");
 	}
 

@@ -29,6 +29,8 @@ public class LandingViewModel(ApiRenderContext context) : ApiViewModel(context)
 
 	public string? License => ApiInfo.License?.Name;
 
+	public string? Version => string.IsNullOrEmpty(ApiInfo.Version) ? null : ApiInfo.Version;
+
 	/// <summary>The assembler hosts the download in its context bar.</summary>
 	public bool ShowSpecDownload => BuildContext.BuildType != BuildType.Assembler;
 

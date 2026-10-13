@@ -48,9 +48,6 @@ internal static class LandingCommonMark
 		var markdown = new StringBuilder();
 		ApiCommonMark.Heading(markdown, 1, info?.Title ?? "API Documentation");
 		ApiCommonMark.Prepared(markdown, info?.Description, apiBaseUrl);
-		if (!string.IsNullOrEmpty(info?.License?.Name))
-			ApiCommonMark.Paragraph(markdown, $"License: {info.License.Name}");
-
 		WriteOverview(markdown, rows);
 		return markdown.ToString();
 	}

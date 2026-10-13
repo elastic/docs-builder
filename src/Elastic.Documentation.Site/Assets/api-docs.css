@@ -75,8 +75,9 @@
 	fill: currentColor;
 }
 
-/* Path chip — mirrors inline code (markdown/code.css) so routes read as code */
-.api-url-row > .api-url {
+/* Path chip — mirrors inline code (markdown/code.css) so routes read as code. Base URL fields share it. */
+.api-url-row > .api-url,
+.api-server-field {
 	@apply bg-grey-10 border-grey-20 border-1 font-mono;
 	display: flex;
 	align-items: center;
@@ -2103,14 +2104,6 @@ a.docs-reference-btn::after {
 	@apply text-grey-60 font-medium;
 }
 
-.server-url {
-	@apply flex items-center gap-1;
-
-	code {
-		@apply text-grey-80 bg-grey-10 rounded px-1.5 py-0.5 font-mono text-xs;
-	}
-}
-
 .server-description {
 	@apply text-grey-50 text-xs;
 }
@@ -2804,34 +2797,37 @@ button.example-response-tab:focus-visible {
 	gap: 8px;
 }
 
-.api-rail-server {
+.api-server {
 	display: flex;
 	flex-direction: column;
-	gap: 2px;
+	gap: 4px;
 	min-width: 0;
 	max-width: 100%;
 }
 
-.api-rail-server-url {
-	display: inline-flex;
-	align-items: center;
-	gap: 8px;
-	min-width: 0;
+.api-server-field {
+	justify-content: space-between;
+	padding: 4px 8px 4px 10px;
 }
 
-.api-rail-server-url code {
+.api-server-field code {
 	min-width: 0;
+	padding: 0;
+	border: 0;
+	background: transparent;
+	font-size: inherit;
 	overflow-wrap: anywhere;
 }
 
-/* Hover-only elsewhere (the endpoint rows); in the rail it always shows, so touch screens can use it. */
-.api-rail-server .api-url-copy.copybtn {
+/* Hover-only on endpoint rows; here it always shows so touch screens can use it. */
+.api-server-field .api-url-copy.copybtn {
 	opacity: 1;
 	pointer-events: auto;
 }
 
-.api-rail-server-description {
+.api-server-description {
 	color: var(--color-subdued, #516381);
+	font-size: 14px;
 }
 
 @media (min-width: 1024px) {

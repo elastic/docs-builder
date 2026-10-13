@@ -14,20 +14,11 @@
 			@if (Model.Servers.Count > 0)
 			{
 				<div class="api-rail-fact">
-					<dt>Server@(Model.Servers.Count > 1 ? "s" : "")</dt>
+					<dt>Base URL@(Model.Servers.Count > 1 ? "s" : "")</dt>
 					<dd class="api-rail-fact-list">
 						@foreach (var server in Model.Servers)
 						{
-							<span class="api-rail-server">
-								<span class="api-rail-server-url">
-									<code>@server.Url</code>
-									@(await RenderPartialAsync<_EndpointCopyButton, string>(server.Url))
-								</span>
-								@if (!string.IsNullOrEmpty(server.Description))
-								{
-									<span class="api-rail-server-description">@server.Description</span>
-								}
-							</span>
+							@await RenderPartialAsync(_ServerUrlField.Create(server))
 						}
 					</dd>
 				</div>
@@ -37,6 +28,13 @@
 				<div class="api-rail-fact">
 					<dt>License</dt>
 					<dd>@license</dd>
+				</div>
+			}
+			@if (Model.Version is { } version)
+			{
+				<div class="api-rail-fact">
+					<dt>Version</dt>
+					<dd>@version</dd>
 				</div>
 			}
 			@if (Model.ShowSpecDownload)
