@@ -1,6 +1,7 @@
 import { initAgentSkillCopy } from './agent-skill'
 import { initApiDocs } from './api-docs'
 import { initApiMenus } from './api-menu'
+import { changesPageChrome } from './api-navigation'
 import { initAppliesSwitch } from './applies-switch'
 import { config } from './config'
 import { initCopyButton } from './copybutton'
@@ -302,9 +303,19 @@ document.addEventListener('htmx:beforeRequest', function (event: HtmxEvent) {
     // hx-boost intercepts every same-origin link, but only internal docs URLs should
     // navigate through htmx (for assembler that means /docs/*; isolated and codex own
     // their whole origin). Anything else — marketing pages on the same domain, the
-    // separate /docs/api app — gets a normal full page load.
-    const docsPath = getPathFromUrl(new URL(path, location.href).pathname)
-    if (!docsPath || isExternalDocsUrl(docsPath)) {
+    // separate /docs/api app — gets a normal full page load. So does a move to another API
+    // product, because the swap would leave the previous product's context bar in place.
+    const targetPath = new URL(path, location.href).pathname
+    const docsPath = getPathFromUrl(targetPath)
+    if (
+        !docsPath ||
+        isExternalDocsUrl(docsPath) ||
+        changesPageChrome(
+            targetPath,
+            location.pathname,
+            config.rootPath.replace(/\/$/, '')
+        )
+    ) {
         event.preventDefault()
         window.location.assign(path)
     }
