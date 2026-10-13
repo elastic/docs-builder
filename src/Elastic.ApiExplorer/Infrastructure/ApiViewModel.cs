@@ -62,6 +62,9 @@ public abstract class ApiViewModel(ApiRenderContext context)
 	/// <summary>When set, drives <see cref="GlobalLayoutViewModel.Title"/> for this page (e.g. intro/outro markdown). Does not affect <see cref="GlobalLayoutViewModel.HeaderTitle"/> which stays as the API product name.</summary>
 	protected virtual string? LayoutPageTitle => null;
 
+	/// <summary>Current page name for the structured breadcrumb. Defaults to <see cref="LayoutPageTitle"/>.</summary>
+	protected virtual string? BreadcrumbCurrentTitle => LayoutPageTitle;
+
 	/// <summary>Raw markdown used for the meta description. Excerpted before it reaches the layout.</summary>
 	protected virtual string? LayoutPageDescription => null;
 
@@ -109,7 +112,7 @@ public abstract class ApiViewModel(ApiRenderContext context)
 			Breadcrumbs = breadcrumbs,
 			StructuredBreadcrumbsJson = BreadcrumbJson.Serialize(
 				breadcrumbs,
-				LayoutPageTitle ?? ApiBreadcrumbs.CurrentPageName(CurrentNavigationItem, docTitle),
+				BreadcrumbCurrentTitle ?? ApiBreadcrumbs.CurrentPageName(CurrentNavigationItem, docTitle),
 				BuildContext.CanonicalBaseUrl
 			),
 			ProductName = RenderContext.Product?.DisplayName,
