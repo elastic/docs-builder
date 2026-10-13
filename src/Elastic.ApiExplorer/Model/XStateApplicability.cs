@@ -87,15 +87,22 @@ public static partial class XStateApplicability
 	}
 
 	/// <summary>
-	/// True when the API is introduced in a Stack version newer than <paramref name="currentStack"/>.
-	/// A future deprecation or removal does not count: the API still exists today.
+	/// True when no lifecycle that introduces the API has shipped by <paramref name="currentStack"/>.
+	/// A later transition does not count: "Beta; Added in 8.12.0; Generally available; Added in 9.5.0"
+	/// is available today as beta, and a future deprecation or removal leaves the API in place.
 	/// </summary>
-	public static bool IsUnreleased(ApplicableTo? applicableTo, SemVersion currentStack) =>
-		applicableTo?.Stack?.Any(
-			a => a.Lifecycle is not (ProductLifecycle.Deprecated or ProductLifecycle.Removed) &&
-				a.Version is { } version && version != AllVersionsSpec.Instance && version.Min > currentStack
-		)
-			== true;
+	public static bool IsUnreleased(ApplicableTo? applicableTo, SemVersion currentStack)
+	{
+		var introductions = applicableTo?.Stack?.Where(
+			a => a.Lifecycle is not (ProductLifecycle.Deprecated or ProductLifecycle.Removed)
+		).ToArray()
+			?? [];
+
+		return introductions.Length > 0 && introductions.All(a => IsFuture(a.Version, currentStack));
+	}
+
+	private static bool IsFuture(VersionSpec? version, SemVersion currentStack) =>
+		version is not null && version != AllVersionsSpec.Instance && version.Min > currentStack;
 
 	/// <summary>
 	/// Plain "Generally available" with no version says nothing a reader can act on, so it gets no badge.

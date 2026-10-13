@@ -53,6 +53,8 @@ public class XStateApplicabilityTests
 	[Arguments("Generally available; Added in 9.2.0", false)]
 	[Arguments("Deprecated; Deprecated in 9.5.0", false)]
 	[Arguments("Generally available; Added in 7.7.0; Deprecated in 9.5.0", false)]
+	[Arguments("Beta; Added in 8.12.0; Generally available; Added in 9.5.0", false)]
+	[Arguments("Beta; Added in 9.4.0; Generally available; Added in 9.5.0", true)]
 	[Arguments("Technical Preview", false)]
 	public void IsUnreleased_XStateLabel_OnlyFlagsFutureIntroductions(string xState, bool expected) =>
 		XStateApplicability.IsUnreleased(XStateApplicability.Parse(xState), CurrentStack).Should().Be(expected);

@@ -293,6 +293,7 @@ public class OpenApiDocumentExporterTests
 	[Arguments("Generally available; Added in 9.5.0", 0)]
 	[Arguments("Generally available; Added in 9.2.0", 1)]
 	[Arguments("Deprecated; Deprecated in 9.5.0", 1)]
+	[Arguments("Beta; Added in 8.12.0; Generally available; Added in 9.5.0", 1)]
 	public void ConvertToDocuments_XState_SkipsOnlyApisIntroducedAfterCurrentStack(string xState, int expectedCount) =>
 		ExportWithState(xState).Should().HaveCount(expectedCount);
 
