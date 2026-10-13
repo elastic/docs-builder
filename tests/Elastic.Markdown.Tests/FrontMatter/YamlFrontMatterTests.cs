@@ -65,6 +65,21 @@ sub:
 	public void ReadsNavigationTitle() => File.NavigationTitle.Should().Be("Documentation Guide: value");
 }
 
+public class MetaTitleEmptyAfterSubstitution() : DirectiveTest(
+	"""
+---
+title: Elastic Docs v3
+meta_title: "{{empty}}"
+sub:
+  empty: ""
+---
+"""
+)
+{
+	[Test]
+	public void TreatsAnEmptyResultAsNoOverride() => File.MetaTitle.Should().BeNull();
+}
+
 public class ProductsSingle() : DirectiveTest("""
 	---
 	products:

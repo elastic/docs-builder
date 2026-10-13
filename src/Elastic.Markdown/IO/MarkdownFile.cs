@@ -207,7 +207,8 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 
 		if (metaTitle.AsSpan().ReplaceSubstitutions(substitutions, collector, out var replacement))
 			metaTitle = replacement;
-		return metaTitle.StripMarkdown();
+		metaTitle = metaTitle.StripMarkdown();
+		return string.IsNullOrWhiteSpace(metaTitle) ? null : metaTitle;
 	}
 
 	protected void ReadDocumentInstructions(MarkdownDocument document, Func<string, DocumentationFile?> documentationFileLookup)
