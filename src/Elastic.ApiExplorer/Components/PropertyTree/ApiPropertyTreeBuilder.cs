@@ -269,7 +269,7 @@ public partial class ApiPropertyTreeBuilder(
 		for (var i = 0; i < spans.Count; i++)
 		{
 			var span = spans[i];
-			if (span.Bare || span.Text != typeLink.TypeName)
+			if (span.Bare || span.SchemaId is null || span.SchemaId != typeLink.SchemaId)
 				continue;
 			spans[i] = span with { Href = url, CssClass = SchemaHelpers.LinkedCssClass };
 		}
@@ -278,7 +278,7 @@ public partial class ApiPropertyTreeBuilder(
 	}
 
 	private IReadOnlyList<TypePageLink> BuildAlsoIncludes(TypeInfo typeInfo) =>
-		typeInfo.AlsoIncludes?.Select(c => new TypePageLink(c.Name, PageUrl(c.LinkedSchemaId))).ToArray() ?? [];
+		typeInfo.AlsoIncludes?.Select(c => new TypePageLink(c.Name, PageUrl(c.LinkedSchemaId), c.LinkedSchemaId)).ToArray() ?? [];
 
 	/// <summary>The link a row's type gets: its own page, or for an <c>X | X[]</c> union, the page of <c>X</c>.</summary>
 	private TypePageLink? BuildTypeLink(TypeInfo typeInfo, Expansion expansion)
@@ -290,18 +290,17 @@ public partial class ApiPropertyTreeBuilder(
 			|| typeInfo.UnionOptions!.FirstOrDefault(o => o.Name == baseName)?.Schema is not { } baseSchema
 		)
 			return null;
-		return PageUrl(_analyzer.GetTypeInfo(baseSchema).LinkedSchemaId) is { } url ? new TypePageLink(baseName, url) : null;
+		var linkedSchemaId = _analyzer.GetTypeInfo(baseSchema).LinkedSchemaId;
+		return PageUrl(linkedSchemaId) is { } url ? new TypePageLink(baseName, url, linkedSchemaId) : null;
 	}
 
-	/// <summary>The link to the page of a type documented on its own, on the name its annotation shows: the map value's for a map.</summary>
+	/// <summary>The link to the page of a type documented on its own, named as its annotation shows it: the map value's for a map.</summary>
 	private TypePageLink? OwnPageLink(TypeInfo typeInfo)
 	{
 		if (PageUrl(typeInfo.LinkedSchemaId) is not { } url)
 			return null;
-		var shown = typeInfo is { IsDictionary: true, DictValueSchema: { } value }
-			? _analyzer.GetTypeInfo(value).TypeName
-			: typeInfo.TypeName;
-		return new TypePageLink(shown, url);
+		var shown = typeInfo is { IsDictionary: true, DictValueType: { } value } ? value.TypeName : typeInfo.TypeName;
+		return new TypePageLink(shown, url, typeInfo.LinkedSchemaId);
 	}
 
 	/// <summary>The page of a type documented on its own (see <see cref="TypePages"/>); null for any other type.</summary>
@@ -313,10 +312,7 @@ public partial class ApiPropertyTreeBuilder(
 	/// </summary>
 	private SingleOrArray? DescribeSingleOrArray(TypeInfo typeInfo, Expansion expansion)
 	{
-		if (
-			expansion is not { ArrayUnion: { Expands: true } arrayUnion, Plan: ChildPlan.Properties }
-			|| typeInfo.TypeName?.Contains(" | ", StringComparison.Ordinal) == true
-		)
+		if (expansion is not { ArrayUnion: { Expands: true } arrayUnion, Plan: ChildPlan.Properties } || typeInfo.IsFormula)
 			return null;
 
 		// A map reads "map string to X", as its type does elsewhere, not a bare "string to X".
@@ -338,7 +334,7 @@ public partial class ApiPropertyTreeBuilder(
 
 		// An X | X[] union needs no options row when its type already reads X | X[] or X's fields expand below it.
 		// A named one (`union NodeIds`) that does not expand has only this row to name X.
-		var namesItsOptions = typeInfo.TypeName?.Contains(" | ", StringComparison.Ordinal) == true;
+		var namesItsOptions = typeInfo.IsFormula;
 		if (expansion.ArrayUnion is { } arrayUnion && (namesItsOptions || arrayUnion.Expands))
 			return null;
 
@@ -361,7 +357,7 @@ public partial class ApiPropertyTreeBuilder(
 			namesItsOptions
 			&& !expansion.HasUnionOptions
 			&& discriminator is null
-			&& NamesTheSameOptions(typeInfo.TypeName!, sortedOptions.Select(static o => o.Text))
+			&& NamesTheSameOptions(typeInfo.Alternatives!, sortedOptions.Select(static o => o.Text))
 		)
 			return null;
 
@@ -387,8 +383,8 @@ public partial class ApiPropertyTreeBuilder(
 	}
 
 	/// <summary>Whether a type formula such as <c>number | string</c> names exactly these options, in any order.</summary>
-	private static bool NamesTheSameOptions(string typeName, IEnumerable<string> options) =>
-		new HashSet<string>(typeName.Split(" | ", StringSplitOptions.TrimEntries), StringComparer.Ordinal).SetEquals(options);
+	private static bool NamesTheSameOptions(IReadOnlyList<TypeAlternative> alternatives, IEnumerable<string> options) =>
+		new HashSet<string>(alternatives.Select(static a => a.Text), StringComparer.Ordinal).SetEquals(options);
 
 	/// <summary>A union with literal members as well as object variants, e.g. a sort order: <c>asc</c>, <c>desc</c> or an object.</summary>
 	private static bool MixesLiteralsWithObjects(TypeInfo typeInfo, Expansion expansion) =>

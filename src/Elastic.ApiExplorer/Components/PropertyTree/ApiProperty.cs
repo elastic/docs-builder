@@ -31,7 +31,9 @@ public record RepeatedShape(string Name, string AnchorId, bool IsUnion, string? 
 }
 
 /// <summary>A link from a group-4 property row to that schema's dedicated page.</summary>
-public record TypePageLink(string TypeName, string? Url);
+/// <param name="TypeName">The link text where it stands on its own ("See X", "Also includes").</param>
+/// <param name="SchemaId">The page's schema id; a row's type annotation links the spans that name it.</param>
+public record TypePageLink(string TypeName, string? Url, string? SchemaId = null);
 
 /// <summary>A single validation constraint, e.g. <c>min: 5</c> or <c>default: 10</c>.</summary>
 public record ConstraintDisplay(string Text, string? Code = null);

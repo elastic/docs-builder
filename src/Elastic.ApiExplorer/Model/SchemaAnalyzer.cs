@@ -448,6 +448,7 @@ public class SchemaAnalyzer(
 		return new TypeInfo
 		{
 			TypeName = named.TypeName,
+			Alternatives = Alternatives([(named.TypeName, null)]),
 			SchemaRef = named.IsPrimitiveAlias ? null : refId,
 			IsArray = isArray,
 			IsObject = !named.IsValueType && !isEnum && !named.IsPrimitiveAlias,
@@ -507,6 +508,7 @@ public class SchemaAnalyzer(
 		return new TypeInfo
 		{
 			TypeName = named.TypeName,
+			Alternatives = Alternatives([(named.TypeName, null)]),
 			SchemaRef = named.IsPrimitiveAlias ? null : refId,
 			IsObject = !named.IsValueType && !named.IsPrimitiveAlias,
 			IsValueType = named.IsValueType,
@@ -527,6 +529,7 @@ public class SchemaAnalyzer(
 		return new TypeInfo
 		{
 			TypeName = itemInfo.TypeName,
+			Alternatives = itemInfo.Alternatives,
 			SchemaRef = itemInfo.SchemaRef,
 			IsArray = true,
 			IsObject = itemInfo.IsObject,
@@ -559,7 +562,8 @@ public class SchemaAnalyzer(
 				IsObject = true,
 				LinkedSchemaId = valueInfo.LinkedSchemaId,
 				IsDictionary = true,
-				DictValueSchema = addProps
+				DictValueSchema = addProps,
+				DictValueType = valueInfo
 			};
 		}
 
@@ -568,7 +572,12 @@ public class SchemaAnalyzer(
 
 		var primitiveName = SchemaHelpers.GetPrimitiveTypeName(schema.Type);
 		if (!string.IsNullOrEmpty(primitiveName))
-			return new TypeInfo { TypeName = primitiveName, IsObject = primitiveName == "object" };
+			return new TypeInfo
+			{
+				TypeName = primitiveName,
+				Alternatives = Alternatives([(primitiveName, null)]),
+				IsObject = primitiveName == "object"
+			};
 
 		return new TypeInfo { TypeName = "object", IsObject = true };
 	}
@@ -589,12 +598,36 @@ public class SchemaAnalyzer(
 		if (classified.Length > 1 && classified.Any(o => o.IsObject))
 			return new TypeInfo { TypeName = keyword.ToSchemaKeyword(), IsObject = true, UnionOptions = options, UnionKeyword = keyword };
 
+		var parts = classified
+			.Select(static o => (Name: SchemaHelpers.ReadableSchemaName(o.Name), o.Ref))
+			.DistinctBy(static p => p.Name)
+			.ToArray();
 		return new TypeInfo
 		{
-			TypeName = string.Join(" | ", classified.Select(o => SchemaHelpers.ReadableSchemaName(o.Name)).Distinct()),
+			TypeName = string.Join(" | ", parts.Select(static p => p.Name)),
+			Alternatives = Alternatives(parts),
 			UnionOptions = options,
 			UnionKeyword = keyword
 		};
+	}
+
+	/// <summary>
+	/// The types a formula names, one per <c>|</c>: a part that is itself several primitives (<c>number | string</c>)
+	/// contributes each. Null when there is only one, so the type reads as a plain name.
+	/// </summary>
+	private static IReadOnlyList<TypeAlternative>? Alternatives(IEnumerable<(string Name, string? SchemaRef)> parts)
+	{
+		var alternatives = parts.SelectMany(static part =>
+		{
+			var names = part.Name.Split(" | ", StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+			var reference = names.Length == 1 ? part.SchemaRef : null;
+			return names.Select(
+				name => name.EndsWith("[]", StringComparison.Ordinal)
+					? new TypeAlternative(name[..^2], reference, IsArray: true)
+					: new TypeAlternative(name, reference, IsArray: false)
+			);
+		}).ToArray();
+		return alternatives.Length > 1 ? alternatives : null;
 	}
 
 	/// <summary>The object schemas after the first <c>$ref</c> of an <c>allOf</c>; the first one names the type.</summary>

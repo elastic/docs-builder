@@ -15,11 +15,10 @@ public partial class ApiPropertyTreeBuilder
 	private static TypeAnnotation BuildAnnotation(TypeInfo typeInfo, bool hasActualProperties)
 	{
 		var spans = new List<TypeSpan>();
-		var typeName = typeInfo.TypeName ?? "unknown";
 
 		if (typeInfo.IsDictionary)
 		{
-			AppendDictionarySpans(spans, typeInfo, typeName, hasActualProperties);
+			AppendDictionarySpans(spans, typeInfo, hasActualProperties);
 			return new TypeAnnotation(spans);
 		}
 
@@ -34,9 +33,9 @@ public partial class ApiPropertyTreeBuilder
 		AppendScalarKeywordSpans(spans, typeInfo, hasActualProperties);
 
 		// A union and a multi-type schema (`type: [number, string]`) both read as a formula of their parts.
-		if (typeName.Contains(" | ", StringComparison.Ordinal))
+		if (typeInfo.Alternatives is { } alternatives)
 		{
-			AppendUnionFormulaSpans(spans, typeName);
+			AppendUnionFormulaSpans(spans, alternatives);
 			return new TypeAnnotation(spans);
 		}
 
@@ -90,19 +89,18 @@ public partial class ApiPropertyTreeBuilder
 			AppendObjectIcon(spans);
 	}
 
-	private static void AppendDictionarySpans(List<TypeSpan> spans, TypeInfo typeInfo, string typeName, bool hasActualProperties)
+	private static void AppendDictionarySpans(List<TypeSpan> spans, TypeInfo typeInfo, bool hasActualProperties)
 	{
-		var valueTypeName = typeName.StartsWith("string to ") ? typeName["string to ".Length..] : typeName;
-		if (string.IsNullOrEmpty(valueTypeName))
-			valueTypeName = "unknown";
+		var valueType = typeInfo.DictValueType;
+		var valueTypeName = string.IsNullOrEmpty(valueType?.TypeName) ? "unknown" : valueType.TypeName;
 
 		spans.Add(new TypeSpan("map", SchemaHelpers.WrapperMapKeywordCssClass));
 		spans.Add(new TypeSpan(" ", Bare: true));
-		spans.Add(NamedTypeSpan("string", null));
+		spans.Add(NamedTypeSpan("string"));
 		spans.Add(new TypeSpan(" to ", Bare: true));
 		if (typeInfo.HasLink || hasActualProperties)
 			AppendObjectIcon(spans);
-		AppendInternalOrNamed(spans, valueTypeName, typeInfo.HasLink || hasActualProperties);
+		AppendInternalOrNamed(spans, valueTypeName, valueType?.SchemaRef, typeInfo.HasLink || hasActualProperties);
 	}
 
 	private static void AppendDisplayedTypeName(List<TypeSpan> spans, TypeInfo typeInfo, bool hasActualProperties)
@@ -113,7 +111,8 @@ public partial class ApiPropertyTreeBuilder
 			// "enum" is a keyword marker already appended — inline enums have no distinct type name to show.
 			if (typeInfo.IsEnum && typeName == "enum")
 				return;
-			spans.Add(NamedTypeSpan(typeName, typeInfo.SchemaRef, typeInfo.IsValueType));
+			var named = NamedTypeSpan(typeName, typeInfo.SchemaRef, typeInfo.IsValueType);
+			spans.Add(named with { Title = named.SchemaId });
 			return;
 		}
 
@@ -125,11 +124,11 @@ public partial class ApiPropertyTreeBuilder
 		spans.Add(new TypeSpan("object", SchemaHelpers.PrimitiveCssClass));
 	}
 
-	private static void AppendInternalOrNamed(List<TypeSpan> spans, string typeName, bool labeledAlready)
+	private static void AppendInternalOrNamed(List<TypeSpan> spans, string typeName, string? schemaId, bool labeledAlready)
 	{
 		if (!SchemaHelpers.IsInternalSchemaName(typeName))
 		{
-			spans.Add(NamedTypeSpan(typeName, null));
+			spans.Add(NamedTypeSpan(typeName, schemaId));
 			return;
 		}
 
@@ -143,32 +142,22 @@ public partial class ApiPropertyTreeBuilder
 		spans.Add(new TypeSpan(" ", Bare: true));
 	}
 
-	private static void AppendUnionFormulaSpans(List<TypeSpan> spans, string typeName)
+	private static void AppendUnionFormulaSpans(List<TypeSpan> spans, IReadOnlyList<TypeAlternative> alternatives)
 	{
-		var parts = typeName.Split(" | ", StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-		for (var i = 0; i < parts.Length; i++)
+		for (var i = 0; i < alternatives.Count; i++)
 		{
 			if (i > 0)
 				spans.Add(new TypeSpan(" | ", Bare: true));
-			AppendUnionPartSpans(spans, parts[i]);
+			var alternative = alternatives[i];
+			AppendInternalOrNamed(spans, alternative.Name, alternative.SchemaRef, labeledAlready: false);
+			if (alternative.IsArray)
+				AppendArraySuffix(spans);
 		}
 	}
 
-	private static void AppendUnionPartSpans(List<TypeSpan> spans, string part)
-	{
-		if (!part.EndsWith("[]", StringComparison.Ordinal))
-		{
-			AppendInternalOrNamed(spans, part, labeledAlready: false);
-			return;
-		}
-
-		AppendInternalOrNamed(spans, part[..^2], labeledAlready: false);
-		AppendArraySuffix(spans);
-	}
-
-	private static TypeSpan NamedTypeSpan(string typeName, string? schemaRef, bool isValueType = false)
+	private static TypeSpan NamedTypeSpan(string typeName, string? schemaId = null, bool isValueType = false)
 	{
 		var css = isValueType ? SchemaHelpers.ValueCssClass : SchemaHelpers.TypeAtomCssClassOrNull(typeName);
-		return new(typeName, CssClass: css, Title: string.IsNullOrEmpty(schemaRef) ? null : schemaRef);
+		return new(typeName, CssClass: css, SchemaId: string.IsNullOrEmpty(schemaId) ? null : schemaId);
 	}
 }
