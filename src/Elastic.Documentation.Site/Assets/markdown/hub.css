@@ -408,10 +408,12 @@
 		background: var(--color-grey-10);
 		color: var(--color-ink-dark);
 	}
-	/* Options that are not a pair of two (one, or three and more) share the row without an "or". */
+	/* Options that are not a pair of two (one, or three and more) share the row without an "or".
+	   The column minimum is capped at the width of the container, so in a narrow step column or
+	   on a small screen the options fall to one column instead of overflowing. */
 	.hub-get-started .hub-get-started-options {
 		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+		grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr));
 		gap: 16px var(--hub-col-gap);
 		margin-top: 12px;
 	}

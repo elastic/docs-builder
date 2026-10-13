@@ -155,3 +155,62 @@ public class WhatsNewWithAvailabilityAndSubstitutedLabel : MarkdownTest
 	[Test, DisplayName("has no errors")]
 	public async Task HasNoErrors() => await Docs.HasNoErrors();
 }
+
+// A :product: panel is read once and shared by every page that shows it, so each page has to
+// resolve its own substitutions from the original values.
+public class WhatsNewFromCentralConfigOnTwoPages : GeneratorTest
+{
+	protected override IReadOnlyCollection<TestFile> Files =>
+		[
+			new TestFile(
+				"hub-whats-new.yml",
+				"""
+				products:
+				  demo:
+				    title: What's new in Demo
+				    release-links:
+				      - label: "{{release}}"
+				        url: /index.md
+				    items:
+				      - title: Card
+				        description: A card.
+				        availability:
+				          - "{{release}}"
+				          - Serverless
+				"""
+			),
+			Index(
+				"""
+				---
+				sub:
+				  release: "1.0"
+				---
+				# First
+
+				:::{whats-new}
+				:product: demo
+				:::
+				"""
+			),
+			Page(
+				"second.md",
+				"""
+				---
+				sub:
+				  release: "2.0"
+				---
+				# Second
+
+				:::{whats-new}
+				:product: demo
+				:::
+				"""
+			)
+		];
+
+	[Test, DisplayName("resolves the substitution on the first page")]
+	public async Task FirstPage() => await Docs.Converts("index.md").ContainsRawHtml("1.0 &#xB7; Serverless");
+
+	[Test, DisplayName("resolves the substitution again on the second page")]
+	public async Task SecondPage() => await Docs.Converts("second.md").ContainsRawHtml("2.0 &#xB7; Serverless");
+}
