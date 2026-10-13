@@ -507,8 +507,8 @@
 	line-height: 28px;
 }
 
-/* Quiet outlined link: the spec downloads in the rail. */
-.api-page-rail a.api-chip-link {
+/* Quiet outlined link: the spec downloads in the landing facts (rail and under the intro). */
+.api-rail-facts a.api-chip-link {
 	display: inline-flex;
 	align-items: center;
 	gap: 6px;
@@ -526,13 +526,13 @@
 	height: 14px;
 }
 
-.api-page-rail a.api-chip-link:hover,
-.api-page-rail a.api-chip-link:focus-visible {
+.api-rail-facts a.api-chip-link:hover,
+.api-rail-facts a.api-chip-link:focus-visible {
 	border-color: var(--color-grey-80);
 	color: var(--color-blue-elastic, #0b64dd);
 }
 
-.api-page-rail a.api-chip-link:focus-visible {
+.api-rail-facts a.api-chip-link:focus-visible {
 	outline: 2px solid var(--color-blue-elastic, #0b64dd);
 	outline-offset: 2px;
 }
@@ -2830,7 +2830,36 @@ button.example-response-tab:focus-visible {
 	font-size: 14px;
 }
 
+/* The facts render twice: the rail copy is the right column on wide screens; below 1024px the rail
+   falls under the whole catalog, so the copy under the intro takes over. */
+.api-rail-facts--inline {
+	margin: 24px 0;
+}
+
+.api-rail-facts--inline .api-rail-fact {
+	align-self: stretch;
+}
+
+/* Inside the article, markdown's dt spacing would otherwise open a gap above every fact. */
+.api-rail-facts--inline .api-rail-fact dt {
+	margin: 0;
+}
+
+.api-rail-facts--inline .api-server {
+	width: 100%;
+}
+
+@media (max-width: 1023px) {
+	.api-rail-facts--rail {
+		display: none;
+	}
+}
+
 @media (min-width: 1024px) {
+	.api-rail-facts--inline {
+		display: none;
+	}
+
 	.api-page-grid {
 		grid-template-columns: minmax(0, 1fr) minmax(0, 40%);
 	}

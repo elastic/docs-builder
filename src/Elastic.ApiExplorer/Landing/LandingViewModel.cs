@@ -12,6 +12,9 @@ using Microsoft.OpenApi;
 
 namespace Elastic.ApiExplorer.Landing;
 
+/// <summary>The landing facts render twice: in the right rail on wide screens, under the intro on narrow ones.</summary>
+public sealed record LandingFactsModel(LandingViewModel Page, string Placement);
+
 public class LandingViewModel(ApiRenderContext context) : ApiViewModel(context)
 {
 	public required ApiLanding Landing { get; init; }
@@ -27,12 +30,21 @@ public class LandingViewModel(ApiRenderContext context) : ApiViewModel(context)
 	/// <summary>The sections the grouped index shows.</summary>
 	public IReadOnlyList<ApiOverviewSection> IndexSections => Index.Groups;
 
+	private (string Lead, string? Remainder)? DescriptionParts => field ??= IntroHeadings.SplitAtFirstHeading(ApiInfo.Description);
+
+	/// <summary>The description up to its first heading; the facts sit right after it on narrow screens.</summary>
+	public string DescriptionLead => DescriptionParts!.Value.Lead;
+
+	public string? DescriptionRest => DescriptionParts!.Value.Remainder;
+
 	public string? License => ApiInfo.License?.Name;
 
 	public string? Version => string.IsNullOrEmpty(ApiInfo.Version) ? null : ApiInfo.Version;
 
 	/// <summary>The assembler hosts the download in its context bar.</summary>
 	public bool ShowSpecDownload => BuildContext.BuildType != BuildType.Assembler;
+
+	public bool HasFacts => Servers.Count > 0 || License is { Length: > 0 } || Version is not null || ShowSpecDownload;
 
 	public IReadOnlyList<ApiServerDisplay> Servers => field ??= StructuralViewModel.ReadServers(Document);
 
