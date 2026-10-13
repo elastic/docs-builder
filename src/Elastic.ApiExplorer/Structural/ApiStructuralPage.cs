@@ -76,8 +76,8 @@ public class StructuralNavigationItem : ILeafNavigationItem<ApiStructuralPage>
 	public string Id { get; }
 	public ApiStructuralPage Model { get; }
 	public string Url { get; }
-	// The Authentication page is still generated so old links keep working; operation pages show auth inline.
-	public bool Hidden => Model.Kind == ApiStructuralKind.Authentication;
+	// Authentication and Servers are still generated so old Bump.sh links keep working; operation pages show both inline.
+	public bool Hidden => true;
 	public string NavigationTitle { get; }
 	public INodeNavigationItem<INavigationModel, INavigationItem>? Parent { get; set; }
 	public int NavigationIndex { get; set; }
