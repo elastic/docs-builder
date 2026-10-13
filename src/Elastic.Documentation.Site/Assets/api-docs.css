@@ -2458,7 +2458,7 @@ a.docs-reference-btn::after {
 
 /* Prose typography (size, colour, links, headings) is inherited from .markdown-content */
 .api-operation-description {
-	margin: 0 0 0.5rem;
+	margin: 16px 0 0.5rem;
 
 	> :first-child {
 		margin-top: 0;
