@@ -28,7 +28,7 @@ Components/              Reusable View+ViewModel widgets embedded by more than o
     _Partials/           Its templates: _PropertyItem, _PropertyList, _UnionOptions, _SchemaType.
 
 Landing/                 Slice: product landing, tag landing and intro/outro markdown pages.
-Structural/              Slice: Bump.sh-compatible /authentication and /servers pages.
+Structural/              Slice: Bump.sh-compatible /authentication and /servers pages (generated for old links, hidden from nav).
 Operations/              Slice: operation pages (ApiOperation/ApiEndpoint, page model, view).
 Types/                   Slice: schema type pages under /api/{product}/types/.
 
