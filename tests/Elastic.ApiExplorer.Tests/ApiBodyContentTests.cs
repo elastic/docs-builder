@@ -47,8 +47,8 @@ public class ApiBodyContentTests
 			builder
 		);
 
-		variants!.Variants.Select(v => v.DisplayName).Should().Equal("Cat", "Cat");
-		ApiBodyContent.VariantNames(variants).Should().Equal("Cat[]", "Cat");
+		variants!.Variants.Select(v => v.DisplayName).Should().Equal("{ lives }", "{ lives }");
+		ApiBodyContent.VariantNames(variants).Should().Equal("{ lives }[]", "{ lives }");
 	}
 
 	[Test]
@@ -84,7 +84,7 @@ public class ApiBodyContentTests
 			builder
 		);
 
-		variants!.Variants.Select(v => v.DisplayName).Should().Equal("Cat", "Dog");
+		variants!.Variants.Select(v => v.DisplayName).Should().Equal("{ lives }", "{ barks }");
 		variants.Variants[0].AnchorId.Should().StartWith("req-variant-");
 		variants.Variants[0].Properties!.Items.Single().IsRequired.Should().BeTrue();
 		variants.Variants[0].Properties!.Items.Single().IsRequest.Should().BeTrue("request variants keep the request flag");
@@ -168,7 +168,7 @@ public class ApiBodyContentTests
 			builder
 		);
 
-		variants!.Variants.Select(v => v.DisplayName).Should().Equal("Cat", "Dog");
+		variants!.Variants.Select(v => v.DisplayName).Should().Equal("{ lives }", "{ barks }");
 		variants.Variants.Select(v => v.DiscriminatorLabel).Should().Equal("kind: feline", "kind: canine");
 		variants.Variants[0].Properties!.Items.Select(p => p.Name).Should().Equal("id", "kind", "lives");
 	}
@@ -208,7 +208,7 @@ public class ApiBodyContentTests
 			builder
 		);
 		properties.Should().BeNull();
-		variants!.Variants.Select(v => v.DisplayName).Should().Equal("Cat", "Dog");
+		variants!.Variants.Select(v => v.DisplayName).Should().Equal("{ lives }", "{ barks }");
 		variants.Variants[0].Properties!.Items.Select(p => p.Name).Should().Equal("id", "lives");
 
 		var (byReference, _, _) = ApiBodyContent.Build(
@@ -255,12 +255,12 @@ public class ApiBodyContentTests
 		);
 		properties!.Items.Select(p => p.Name).Should().Equal("kind");
 		variants!.Label.Should().Be("One of:");
-		variants.Variants.Select(v => v.DisplayName).Should().Equal("Cat", "Dog");
+		variants.Variants.Select(v => v.DisplayName).Should().Equal("{ lives }", "{ barks }");
 
 		var pet = builder.BuildPropertyList(document.Components!.Schemas!["Holder"], new PropertyTreeScope { Prefix = "" })!.Items.Single();
 		pet.Children.Properties!.Items.Select(p => p.Name).Should().Equal("kind");
 		pet.Children.Variants!.Label.Should().Be("One of:", "a label on the row would sit above the properties instead");
-		pet.Children.Variants.Variants.Select(v => v.DisplayName).Should().Equal("Cat", "Dog");
+		pet.Children.Variants.Variants.Select(v => v.DisplayName).Should().Equal("{ lives }", "{ barks }");
 		pet.Union.Should().BeNull();
 		var markdown = new System.Text.StringBuilder();
 		ApiPropertyMarkdown.WriteList(markdown, new ApiPropertyList([pet]), "/api/doc/fixture");
@@ -314,7 +314,7 @@ public class ApiBodyContentTests
 
 		var pet = builder.BuildPropertyList(document.Components!.Schemas!["Holder"], new PropertyTreeScope { Prefix = "" })!.Items.Single();
 		pet.Children.Properties!.Items.Select(p => p.Name).Should().Equal("kind");
-		pet.Children.Variants!.Variants.Select(v => v.DisplayName).Should().Equal("Cat", "Dog");
+		pet.Children.Variants!.Variants.Select(v => v.DisplayName).Should().Equal("{ lives }", "{ barks }");
 	}
 
 	[Test]
@@ -350,7 +350,7 @@ public class ApiBodyContentTests
 		);
 
 		body.UnionVariants!.Label.Should().Be("Any of:", "the oneOf only lists required sets, so the anyOf carries the variants");
-		body.UnionVariants.Variants.Select(v => v.DisplayName).Should().Equal("Cat", "Dog");
+		body.UnionVariants.Variants.Select(v => v.DisplayName).Should().Equal("{ lives }", "{ barks }");
 		ApiPropertyMarkdown.Format(body.Requires!).Should().Be("Requires exactly one of: `a` or `b`");
 		body.Properties!.Items.Select(p => p.Name).Should().Equal("a", "b");
 	}
@@ -385,7 +385,11 @@ public class ApiBodyContentTests
 			BuilderFor(document)
 		);
 
-		body.UnionVariants!.Variants.Select(v => v.DisplayName).Should().Contain("Cat", "a mixed list is still a union of its shapes");
+		body.UnionVariants!
+			.Variants
+			.Select(v => v.DisplayName)
+			.Should()
+			.Contain("{ lives }", "a mixed list is still a union of its shapes");
 		body.Requires.Should().BeNull("only a list of required sets alone becomes a Requires line");
 	}
 
@@ -502,7 +506,7 @@ public class ApiBodyContentTests
 			builder
 		);
 		array!.Label.Should().Be("An array; each item is one of:");
-		array.Variants.Select(v => v.DisplayName).Should().Equal("Cat", "Dog");
+		array.Variants.Select(v => v.DisplayName).Should().Equal("{ lives }", "{ barks }");
 		var markdown = new System.Text.StringBuilder();
 		ApiPropertyMarkdown.WriteVariants(markdown, array, "/api/doc/fixture");
 		markdown.ToString().Should().StartWith("An array; each item is one of:");

@@ -24,13 +24,19 @@ public partial class ApiPropertyTreeBuilder
 
 		if (typeInfo.IsArray)
 		{
-			AppendArrayKeywordSpans(spans, typeInfo, hasActualProperties);
+			AppendArrayKeywordSpans(spans, typeInfo);
+			// The suffix covers the whole formula: (string | object)[], not string | object[].
+			var formula = SchemaHelpers.IsFormulaName(typeInfo.ShownName);
+			if (formula)
+				spans.Add(new TypeSpan("(", Bare: true));
 			AppendDisplayedTypeName(spans, typeInfo, hasActualProperties);
+			if (formula)
+				spans.Add(new TypeSpan(")", Bare: true));
 			AppendArraySuffix(spans);
 			return new TypeAnnotation(spans);
 		}
 
-		AppendScalarKeywordSpans(spans, typeInfo, hasActualProperties);
+		AppendScalarKeywordSpans(spans, typeInfo);
 
 		// A union and a multi-type schema (`type: [number, string]`) both read as a formula of their parts.
 		if (typeInfo.Alternatives is { } alternatives)
@@ -42,6 +48,9 @@ public partial class ApiPropertyTreeBuilder
 		if (typeInfo.HasLink)
 			AppendObjectIcon(spans);
 		AppendDisplayedTypeName(spans, typeInfo, hasActualProperties);
+		// A keyword with no name after it (enum) leaves a trailing space, which constraints would follow as a double space.
+		if (spans is [.., { Bare: true, Text: " " }])
+			spans.RemoveAt(spans.Count - 1);
 		return new TypeAnnotation(spans);
 	}
 
@@ -59,40 +68,29 @@ public partial class ApiPropertyTreeBuilder
 		spans.Add(new TypeSpan(" ", Bare: true));
 	}
 
-	private static void AppendArrayKeywordSpans(List<TypeSpan> spans, TypeInfo typeInfo, bool hasActualProperties)
-	{
-		if (typeInfo.IsValueType && !string.IsNullOrEmpty(typeInfo.ValueTypeBase))
-		{
-			spans.Add(new TypeSpan(typeInfo.ValueTypeBase, SchemaHelpers.ValueKeywordCssClass));
-			spans.Add(new TypeSpan(" ", Bare: true));
-		}
-		else if (typeInfo.IsEnum)
-			AppendWrapperKeyword(spans, "enum", SchemaHelpers.WrapperEnumCssClass);
-		else if (typeInfo.IsUnion)
-			AppendWrapperKeyword(spans, "union", SchemaHelpers.WrapperUnionCssClass);
-		else if (typeInfo.IsObject && !string.IsNullOrEmpty(typeInfo.SchemaRef) && (hasActualProperties || typeInfo.HasLink))
-			AppendObjectIcon(spans);
-	}
-
-	private static void AppendScalarKeywordSpans(List<TypeSpan> spans, TypeInfo typeInfo, bool hasActualProperties)
+	// A value type (Field, IndexName) reads as its primitive, which its shown name already is.
+	private static void AppendArrayKeywordSpans(List<TypeSpan> spans, TypeInfo typeInfo)
 	{
 		if (typeInfo.IsEnum)
 			AppendWrapperKeyword(spans, "enum", SchemaHelpers.WrapperEnumCssClass);
 		else if (typeInfo.IsUnion)
 			AppendWrapperKeyword(spans, "union", SchemaHelpers.WrapperUnionCssClass);
-		else if (typeInfo.IsValueType && !string.IsNullOrEmpty(typeInfo.ValueTypeBase))
-		{
-			spans.Add(new TypeSpan(typeInfo.ValueTypeBase, SchemaHelpers.ValueKeywordCssClass));
-			spans.Add(new TypeSpan(" ", Bare: true));
-		}
-		else if (typeInfo.IsObject && !string.IsNullOrEmpty(typeInfo.SchemaRef) && !typeInfo.HasLink && hasActualProperties)
+		else if (typeInfo is { IsObject: true, HasLink: true })
 			AppendObjectIcon(spans);
+	}
+
+	private static void AppendScalarKeywordSpans(List<TypeSpan> spans, TypeInfo typeInfo)
+	{
+		if (typeInfo.IsEnum)
+			AppendWrapperKeyword(spans, "enum", SchemaHelpers.WrapperEnumCssClass);
+		else if (typeInfo.IsUnion)
+			AppendWrapperKeyword(spans, "union", SchemaHelpers.WrapperUnionCssClass);
 	}
 
 	private static void AppendDictionarySpans(List<TypeSpan> spans, TypeInfo typeInfo, bool hasActualProperties)
 	{
 		var valueType = typeInfo.DictValueType;
-		var valueTypeName = string.IsNullOrEmpty(valueType?.TypeName) ? "unknown" : valueType.TypeName;
+		var valueTypeName = string.IsNullOrEmpty(valueType?.ShownName) ? "unknown" : valueType.ShownName;
 
 		spans.Add(new TypeSpan("map", SchemaHelpers.WrapperMapKeywordCssClass));
 		spans.Add(new TypeSpan(" ", Bare: true));
@@ -105,14 +103,20 @@ public partial class ApiPropertyTreeBuilder
 
 	private static void AppendDisplayedTypeName(List<TypeSpan> spans, TypeInfo typeInfo, bool hasActualProperties)
 	{
-		var typeName = typeInfo.TypeName ?? "unknown";
+		var typeName = typeInfo.ShownName;
 		if (!SchemaHelpers.IsInternalSchemaName(typeName))
 		{
-			// "enum" is a keyword marker already appended — inline enums have no distinct type name to show.
+			// "enum" is a keyword marker already appended; an enum has no other name to show.
 			if (typeInfo.IsEnum && typeName == "enum")
 				return;
-			var named = NamedTypeSpan(typeName, typeInfo.SchemaRef, typeInfo.IsValueType);
-			spans.Add(named with { Title = named.SchemaId });
+			// An allOf around an array schema reads as that array (number[]), though the type is not marked as one.
+			if (!typeInfo.IsArray && typeName.EndsWith("[]", StringComparison.Ordinal))
+			{
+				spans.Add(NamedTypeSpan(typeName[..^2], typeInfo.SchemaRef));
+				AppendArraySuffix(spans);
+				return;
+			}
+			spans.Add(NamedTypeSpan(typeName, typeInfo.SchemaRef));
 			return;
 		}
 
@@ -144,20 +148,19 @@ public partial class ApiPropertyTreeBuilder
 
 	private static void AppendUnionFormulaSpans(List<TypeSpan> spans, IReadOnlyList<TypeAlternative> alternatives)
 	{
-		for (var i = 0; i < alternatives.Count; i++)
+		// Types the spec tells apart can read the same once shown (Field and Id are both a string).
+		var shown = alternatives.DistinctBy(static a => a.Text).ToArray();
+		for (var i = 0; i < shown.Length; i++)
 		{
 			if (i > 0)
 				spans.Add(new TypeSpan(" | ", Bare: true));
-			var alternative = alternatives[i];
-			AppendInternalOrNamed(spans, alternative.Name, alternative.SchemaRef, labeledAlready: false);
+			var alternative = shown[i];
+			AppendInternalOrNamed(spans, alternative.Shown, alternative.SchemaRef, labeledAlready: false);
 			if (alternative.IsArray)
 				AppendArraySuffix(spans);
 		}
 	}
 
-	private static TypeSpan NamedTypeSpan(string typeName, string? schemaId = null, bool isValueType = false)
-	{
-		var css = isValueType ? SchemaHelpers.ValueCssClass : SchemaHelpers.TypeAtomCssClassOrNull(typeName);
-		return new(typeName, CssClass: css, SchemaId: string.IsNullOrEmpty(schemaId) ? null : schemaId);
-	}
+	private static TypeSpan NamedTypeSpan(string typeName, string? schemaId = null) =>
+		new(typeName, CssClass: SchemaHelpers.TypeAtomCssClassOrNull(typeName), SchemaId: string.IsNullOrEmpty(schemaId) ? null : schemaId);
 }

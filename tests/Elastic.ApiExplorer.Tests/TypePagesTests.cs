@@ -11,16 +11,16 @@ namespace Elastic.ApiExplorer.Tests;
 public class TypePagesTests
 {
 	[Test]
-	public void All_ListsEachPageOnceWithItsCategory() =>
+	public void All_ListsEachPageOnceWithItsTitleAndCategory() =>
 		TypePages
 			.All
-			.Select(p => (p.DisplayName, p.Category.Title))
+			.Select(p => (p.SchemaId, p.Title, p.Category.Title))
 			.Should()
 			.Equal(
-				("QueryContainer", "Query DSL"),
-				("AggregationContainer", "Aggregations"),
-				("Aggregate", "Aggregations"),
-				("ProcessorContainer", "Ingest")
+				("_types.query_dsl.QueryContainer", "Query", "Query DSL"),
+				("_types.aggregations.AggregationContainer", "Aggregation", "Aggregations"),
+				("_types.aggregations.Aggregate", "Aggregation result", "Aggregations"),
+				("ingest._types.ProcessorContainer", "Processor", "Ingest")
 			);
 
 	[Test]

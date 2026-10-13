@@ -167,12 +167,11 @@ public partial class ApiPropertyTreeBuilder
 	{
 		var union = plan.Inner?.Schema ?? row.Schema;
 		var variants = BuildUnionVariants(plan.Options, childScope, _analyzer.GetUnionDiscriminator(union));
-		if (variants is null || plan.Inner is not { Name: var name })
+		if (variants is null || plan.Inner is null)
 			return variants ?? ApiUnionVariants.Empty;
 
-		// The row's type does not always name X (an inline X | X[] reads "union oneOf"), so the label says both shapes.
+		// The row's type does not say it takes X or X[] (it reads "union oneOf"), so the label says both shapes.
 		var keyword = SchemaHelpers.UnionLabel(_analyzer.GetTypeInfo(union).UnionKeyword).ToLowerInvariant();
-		var readable = SchemaHelpers.ReadableSchemaName(name);
-		return variants with { Label = $"{readable} or {readable}[]; each {readable} is {keyword}" };
+		return variants with { Label = $"A value or an array; each item is {keyword}" };
 	}
 }

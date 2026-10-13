@@ -2330,15 +2330,6 @@ a.docs-reference-btn::after {
 	@apply text-grey-60 mt-1 text-sm;
 }
 
-/* Schema ID display */
-.schema-id {
-	@apply text-grey-60 mb-4 text-sm;
-
-	code {
-		@apply bg-grey-10 rounded px-2 py-1;
-	}
-}
-
 /* Schema type info for container types */
 .schema-type-info {
 	@apply mb-4 flex items-center gap-2;

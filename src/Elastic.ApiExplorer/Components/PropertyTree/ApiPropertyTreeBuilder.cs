@@ -126,6 +126,9 @@ public partial class ApiPropertyTreeBuilder(
 	{
 		var constraints = new List<ConstraintDisplay>();
 
+		// The format refines the type, so it reads first: string · format: date-time. An array's comes from its items.
+		if (Format(schema) is { } format)
+			constraints.Add(new ConstraintDisplay($"format: {format}"));
 		if (schema.MinLength.HasValue)
 			constraints.Add(new ConstraintDisplay($"min length: {schema.MinLength.Value}"));
 		if (schema.MaxLength.HasValue)
@@ -154,6 +157,15 @@ public partial class ApiPropertyTreeBuilder(
 			constraints.Add(new ConstraintDisplay($"default: {defaultValue}"));
 
 		return constraints;
+	}
+
+	private static string? Format(IOpenApiSchema schema)
+	{
+		if (!string.IsNullOrWhiteSpace(schema.Format))
+			return schema.Format;
+		return schema.Type?.HasFlag(JsonSchemaType.Array) == true && !string.IsNullOrWhiteSpace(schema.Items?.Format)
+			? schema.Items.Format
+			: null;
 	}
 
 	private static TypeAnnotation WithConstraints(TypeAnnotation type, IReadOnlyList<ConstraintDisplay> constraints)
@@ -277,8 +289,14 @@ public partial class ApiPropertyTreeBuilder(
 		return new TypeAnnotation(spans);
 	}
 
+	/// <summary>The merged-in types with a page of their own; any other one has only a code name, and its fields are listed already.</summary>
 	private IReadOnlyList<TypePageLink> BuildAlsoIncludes(TypeInfo typeInfo) =>
-		typeInfo.AlsoIncludes?.Select(c => new TypePageLink(c.Name, PageUrl(c.LinkedSchemaId), c.LinkedSchemaId)).ToArray() ?? [];
+		typeInfo.AlsoIncludes?.Where(static c => TypePages.TryGet(c.LinkedSchemaId, out _))
+			.Select(c => new TypePageLink(PageTitle(c.LinkedSchemaId), PageUrl(c.LinkedSchemaId), c.LinkedSchemaId))
+			.ToArray()
+			?? [];
+
+	private static string PageTitle(string? schemaId) => TypePages.TryGet(schemaId, out var page) ? page.Title : "";
 
 	/// <summary>The link a row's type gets: its own page, or for an <c>X | X[]</c> union, the page of <c>X</c>.</summary>
 	private TypePageLink? BuildTypeLink(TypeInfo typeInfo, Expansion expansion)
@@ -291,17 +309,14 @@ public partial class ApiPropertyTreeBuilder(
 		)
 			return null;
 		var linkedSchemaId = _analyzer.GetTypeInfo(baseSchema).LinkedSchemaId;
-		return PageUrl(linkedSchemaId) is { } url ? new TypePageLink(baseName, url, linkedSchemaId) : null;
+		return PageUrl(linkedSchemaId) is { } url ? new TypePageLink(PageTitle(linkedSchemaId), url, linkedSchemaId) : null;
 	}
 
-	/// <summary>The link to the page of a type documented on its own, named as its annotation shows it: the map value's for a map.</summary>
-	private TypePageLink? OwnPageLink(TypeInfo typeInfo)
-	{
-		if (PageUrl(typeInfo.LinkedSchemaId) is not { } url)
-			return null;
-		var shown = typeInfo is { IsDictionary: true, DictValueType: { } value } ? value.TypeName : typeInfo.TypeName;
-		return new TypePageLink(shown, url, typeInfo.LinkedSchemaId);
-	}
+	/// <summary>The link to the page of a type documented on its own (for a map, its value's), named by the page's title.</summary>
+	private TypePageLink? OwnPageLink(TypeInfo typeInfo) =>
+		PageUrl(typeInfo.LinkedSchemaId) is { } url
+			? new TypePageLink(PageTitle(typeInfo.LinkedSchemaId), url, typeInfo.LinkedSchemaId)
+			: null;
 
 	/// <summary>The page of a type documented on its own (see <see cref="TypePages"/>); null for any other type.</summary>
 	private string? PageUrl(string? linkedSchemaId) => linkedSchemaId is null ? null : TypePages.Url(options.ApiRootUrl, linkedSchemaId);
@@ -318,7 +333,7 @@ public partial class ApiPropertyTreeBuilder(
 		// A map reads "map string to X", as its type does elsewhere, not a bare "string to X".
 		var single = typeInfo.UnionOptions?.FirstOrDefault(o => o is { IsArray: false } && o.BaseName == arrayUnion.BaseName);
 		var isMap = single?.Schema is { } schema && _analyzer.GetTypeInfo(schema).IsDictionary;
-		var name = SchemaHelpers.ReadableSchemaName(arrayUnion.BaseName);
+		var name = single?.ShownBase ?? SchemaHelpers.ReadableSchemaName(arrayUnion.BaseName);
 		return isMap ? new SingleOrArray($"map {name}", $"[] map {name}") : new SingleOrArray(name, $"{name}[]");
 	}
 
@@ -343,12 +358,7 @@ public partial class ApiPropertyTreeBuilder(
 		var sortedOptions = (typeInfo.UnionOptions ?? [])
 			.DistinctBy(o => o.Name)
 			.OrderByDescending(o => o.IsArray)
-			.Select(
-				o =>
-					(Text: SchemaHelpers.ReadableSchemaName(o.BaseName) + (o.IsArray ? "[]" : ""), Url: PageUrl(
-						_analyzer.GetTypeInfo(o.Schema).LinkedSchemaId
-					))
-			)
+			.Select(o => (Text: o.Shown, Url: PageUrl(_analyzer.GetTypeInfo(o.Schema).LinkedSchemaId)))
 			.DistinctBy(static o => o.Text)
 			.ToArray();
 
@@ -398,7 +408,8 @@ public partial class ApiPropertyTreeBuilder(
 		typeInfo.UnionOptions!.All(static o => o.IsObject) ? "or an object listed below" : "or a type listed below";
 
 	internal static bool IsTypeOptionBadge(string option) =>
-		SchemaHelpers.PrimitiveTypeNames.Contains(option)
+		SchemaHelpers.ShapeNames.Contains(option.TrimEnd('[', ']'))
+			|| SchemaHelpers.PrimitiveTypeNames.Contains(option)
 			|| SchemaHelpers.PrimitiveTypeNames.Contains(option.TrimEnd('[', ']'))
 			|| char.IsUpper(option[0])
 			|| option.EndsWith("[]");

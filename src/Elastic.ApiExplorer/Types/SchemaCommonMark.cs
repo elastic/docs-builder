@@ -17,7 +17,6 @@ internal static class SchemaCommonMark
 		var apiBaseUrl = context.CurrentNavigation.NavigationRoot.Url;
 		var openApiSchema = schema.Schema;
 		ApiCommonMark.Heading(markdown, 1, schema.DisplayName);
-		ApiCommonMark.Paragraph(markdown, $"`{schema.SchemaId}`");
 
 		if (!string.IsNullOrEmpty(page.DictionaryTypeName))
 		{

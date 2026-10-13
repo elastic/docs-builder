@@ -295,7 +295,20 @@ The API Explorer generates the following types of pages from your OpenAPI spec:
 - **Landing page**: An overview of the API grouped by tag
 - **Tag landing pages**: One page per tag that lists operations in that tag, with the tag's display name, optional OpenAPI `description` (CommonMark), and optional `externalDocs` link
 - **Operation pages**: One page per API operation, with the HTTP method, path, parameters, request body, response schemas, and examples
-- **Schema type pages**: Dedicated pages for large, recursive types that many operations share: `QueryContainer` (Query DSL), `AggregationContainer` and `Aggregate` (Aggregations), and `ProcessorContainer` (Ingest). On operation pages, a property of one of these types links to its page instead of listing it again. Links match the schema id, such as `ingest._types.ProcessorContainer`, so another schema that shares the short name lists its own fields.
+- **Schema type pages**: Dedicated pages for large, recursive types that many operations share: **Query** (Query DSL), **Aggregation** and **Aggregation result** (Aggregations), and **Processor** (Ingest). On operation pages, a property of one of these types links to its page instead of listing it again. Links match the schema id, such as `ingest._types.ProcessorContainer`, so another schema that shares the short name lists its own fields.
+
+### How types read
+
+Schema names under `components/schemas` are names for code, not for readers, so the API Explorer never shows them. A property's type reads as its shape instead: `object`, `string[]`, `enum`, `map string to object`, or `union` with its options. A type with its own page reads as that page's title, such as **Query**.
+
+The variants of a `oneOf` or `anyOf` are labelled by the first of these that applies:
+
+1. The variant schema's `title`.
+2. A field with a single allowed value, such as `type: eql`.
+3. The fields no other variant has, such as `{ lives }`.
+4. A shortened form of the schema name, as a last resort.
+
+To control how a variant reads, set a `title` on its schema.
 
 ## OpenAPI extensions
 

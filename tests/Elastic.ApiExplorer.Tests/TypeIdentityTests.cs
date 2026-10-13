@@ -75,8 +75,8 @@ public class TypeIdentityTests
 			.Alternatives
 			.Should()
 			.Equal(
-				new TypeAlternative("Field", "_types.Field", IsArray: false),
-				new TypeAlternative("Field", "_types.Field", IsArray: true)
+				new TypeAlternative("Field", "_types.Field", IsArray: false, "string"),
+				new TypeAlternative("Field", "_types.Field", IsArray: true, "string")
 			);
 	}
 

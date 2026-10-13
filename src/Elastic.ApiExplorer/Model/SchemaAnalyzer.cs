@@ -171,7 +171,7 @@ public class SchemaAnalyzer(
 	/// Literal members surface through <see cref="TypeInfo.EnumValues"/>, not as options.
 	/// </summary>
 	public List<UnionOption> GetUnionOptions(IEnumerable<IOpenApiSchema> members) =>
-		LabelInlineObjects([
+		LabelObjects([
 			.. FlattenInlineUnions(members)
 				.Where(static m => m is OpenApiSchemaReference || m.Enum is not { Count: > 0 })
 				.Select(ClassifyOption)
@@ -191,7 +191,10 @@ public class SchemaAnalyzer(
 
 		var info = ClassifyType(member);
 		var titled = info is { IsObject: true, IsArray: false, SchemaRef: null or "" } && !string.IsNullOrWhiteSpace(member.Title);
-		return new UnionOption(titled ? member.Title! : info.TypeName, info.SchemaRef, info.IsObject, member, info.IsArray);
+		return new UnionOption(titled ? member.Title! : info.TypeName, info.SchemaRef, info.IsObject, member, info.IsArray)
+		{
+			ShownBase = titled ? member.Title! : info.ShownName
+		};
 	}
 
 	/// <summary>An option named after the schema a <c>$ref</c> points to; aliases of a primitive or an enum are not objects.</summary>
@@ -202,9 +205,80 @@ public class SchemaAnalyzer(
 		var target = ResolveSchema(reference) ?? reference;
 		var named = ClassifyNamedSchema(name, target);
 		var isObject = !named.IsValueType && !named.IsPrimitiveAlias && target.Enum is not { Count: > 0 };
-		return PrimitiveSpelling(name, named, target) is { } spelled
-			? new UnionOption(spelled.Name, refId, false, member, isArray || spelled.IsArray)
-			: new UnionOption(name, refId, isObject, member, isArray);
+		if (PrimitiveSpelling(name, named, target) is { } spelled)
+			return new UnionOption(spelled.Name, refId, false, member, isArray || spelled.IsArray);
+		// An option that is itself an array schema reads as one, though only an array member gets the [] suffix.
+		var shown = ShownName(refId, target);
+		var arrayItself = !isArray && target.Type?.HasFlag(JsonSchemaType.Array) == true;
+		return new UnionOption(name, refId, isObject, member, isArray) { ShownBase = arrayItself ? SchemaHelpers.ArrayOf(shown) : shown };
+	}
+
+	/// <summary>
+	/// What readers see for a schema the spec names: its page title, or its shape (<c>object</c>, <c>enum</c>, a
+	/// primitive). The spec's type names are code names, so they never show. An array reads as its items; the caller adds <c>[]</c>.
+	/// </summary>
+	private string ShownName(string refId, IOpenApiSchema target)
+	{
+		if (TypePages.TryGet(refId, out var page))
+			return page.Title;
+		if (target.Type?.HasFlag(JsonSchemaType.Array) == true)
+			return ItemShape(target.Items, depth: 0);
+		return Shape(refId, target, depth: 0);
+	}
+
+	/// <summary>
+	/// <see cref="ShownName(string, IOpenApiSchema)"/> for an <c>allOf</c> that names its type by a <c>$ref</c>: the type
+	/// does not count as an array, so an array schema keeps its <c>[]</c> here.
+	/// </summary>
+	private string ComposedShownName(string refId, IOpenApiSchema target) =>
+		target.Type?.HasFlag(JsonSchemaType.Array) == true ? SchemaHelpers.ArrayOf(ShownName(refId, target)) : ShownName(refId, target);
+
+	// Shapes look a few levels through arrays and allOf aliases, never further, so a schema that refers to itself ends.
+	private const int MaxShapeDepth = 4;
+
+	private string ItemShape(IOpenApiSchema? items, int depth)
+	{
+		if (items is null)
+			return "unknown";
+		if (items is not OpenApiSchemaReference { Reference.Id: { Length: > 0 } itemId } itemRef)
+			return Shape(null, items, depth);
+		return TypePages.TryGet(itemId, out var page) ? page.Title : Shape(itemId, ResolveSchema(itemRef) ?? itemRef, depth);
+	}
+
+	private string Shape(string? refId, IOpenApiSchema target, int depth)
+	{
+		var named = ClassifyNamedSchema(refId is null ? "" : SchemaHelpers.FormatSchemaName(refId), target);
+		if (named.IsValueType)
+			return named.ValueTypeBase ?? "string";
+		if (named.IsPrimitiveAlias)
+			return named.TypeName;
+		if (target.Enum is { Count: > 0 })
+			return "enum";
+		if (UnionSchemas.IsUnion(target))
+			return "union";
+		if (depth >= MaxShapeDepth)
+			return target.Type?.HasFlag(JsonSchemaType.Array) == true ? "array" : "object";
+		if (target.Type?.HasFlag(JsonSchemaType.Array) == true)
+			return SchemaHelpers.ArrayOf(ItemShape(target.Items, depth + 1));
+		return AllOfAliasShape(target, depth) ?? "object";
+	}
+
+	/// <summary>The shape of an <c>allOf</c> that only wraps another schema (an alias of a string, say); null for any other.</summary>
+	private string? AllOfAliasShape(IOpenApiSchema target, int depth)
+	{
+		if (target.Properties is { Count: > 0 } || target.AllOf is not { Count: > 0 } allOf)
+			return null;
+		var member = allOf.FirstOrDefault(
+			static m => m is OpenApiSchemaReference || m.Type is not null || m.Enum is { Count: > 0 } || UnionSchemas.IsUnion(m)
+		);
+		return member switch
+		{
+			OpenApiSchemaReference { Reference.Id: { Length: > 0 } id } when TypePages.TryGet(id, out var page) => page.Title,
+			OpenApiSchemaReference { Reference.Id: { Length: > 0 } id } reference =>
+				Shape(id, ResolveSchema(reference) ?? reference, depth + 1),
+			null => null,
+			_ => Shape(null, member, depth + 1)
+		};
 	}
 
 	/// <summary>
@@ -253,37 +327,96 @@ public class SchemaAnalyzer(
 		return string.IsNullOrEmpty(primitive) || primitive == "object" ? null : primitive;
 	}
 
-	/// <summary>Gives each unnamed inline object member a <see cref="UnionOption.Label"/> it can be told apart by.</summary>
-	private List<UnionOption> LabelInlineObjects(List<UnionOption> options)
+	/// <summary>
+	/// Gives each object member, or array of objects, a <see cref="UnionOption.Label"/> it can be told apart by, since its
+	/// type name never shows. A type with a page of its own goes by the page's title instead.
+	/// </summary>
+	/// <remarks>
+	/// <c>X</c> and <c>X[]</c> are one shape: they share a label, and neither counts as the other's sibling.
+	/// </remarks>
+	private List<UnionOption> LabelObjects(List<UnionOption> options)
 	{
-		var inline = options.Select((o, i) => (Option: o, Index: i)).Where(x => IsInlineObject(x.Option)).ToList();
-		if (inline.Count == 0)
+		var labelled = options
+			.Select((o, i) => (Option: o, Index: i, Schema: LabelSchema(o)))
+			.Where(static x => x.Schema is not null && !TypePages.TryGet(x.Option.Ref, out _))
+			.Select(
+				static x => (x.Option, x.Index, Schema: x.Schema!, Shape: string.IsNullOrEmpty(x.Option.Ref) ? $"#{x.Index}" : x.Option.Ref)
+			)
+			.ToList();
+		if (labelled.Count == 0)
 			return options;
 
-		var propertyNames = inline.ToDictionary(x => x.Index, x => GetSchemaProperties(x.Option.Schema)?.Keys.ToArray() ?? []);
-		return [
-			.. options.Select(
-				(o, i) => propertyNames.TryGetValue(i, out var own)
-					? o with { Label = InlineObjectLabel(o.Schema!, own, propertyNames.Where(p => p.Key != i).SelectMany(p => p.Value)) }
-					: o
-			)
-		];
+		var shapes = labelled.DistinctBy(static x => x.Shape).ToDictionary(
+			static x => x.Shape,
+			x => (x.Schema, Properties: GetSchemaProperties(x.Schema)?.Keys.ToArray() ?? [], Constants: ConstantFields(x.Schema)),
+			StringComparer.Ordinal
+		);
+		var shared = SelectingConstant(shapes.Values.Select(static s => s.Constants).ToList());
+		var labels = shapes.ToDictionary(
+			static s => s.Key,
+			s => ObjectLabel(
+				s.Value.Schema,
+				s.Value.Constants,
+				shared,
+				s.Value.Properties,
+				shapes.Where(o => o.Key != s.Key).SelectMany(static o => o.Value.Properties)
+			),
+			StringComparer.Ordinal
+		);
+		var byIndex = labelled.ToDictionary(static x => x.Index, x => labels[x.Shape]);
+		return [.. options.Select((o, i) => byIndex.TryGetValue(i, out var label) ? o with { Label = label } : o)];
 	}
 
-	private static bool IsInlineObject(UnionOption option) =>
-		option is { Ref: null or "", IsObject: true, IsArray: false, Schema: not null and not OpenApiSchemaReference };
+	/// <summary>The object schema a member's label describes: the member itself, or its items for an array of objects.</summary>
+	private IOpenApiSchema? LabelSchema(UnionOption option)
+	{
+		if (option is not { IsObject: true, Schema: { } schema })
+			return null;
+		return option.IsArray ? (ResolveSchema(schema) ?? schema).Items : schema;
+	}
 
-	private string? InlineObjectLabel(IOpenApiSchema member, IReadOnlyList<string> own, IEnumerable<string> siblingNames)
+	/// <summary>
+	/// The field every shape fixes to a value of its own: the one that selects between them, so every label uses it.
+	/// Null for a single shape, which has nothing to be told apart from.
+	/// </summary>
+	private static string? SelectingConstant(List<Dictionary<string, string>> constants) =>
+		constants.Count < 2
+			? null
+			: constants[0]
+				.Keys
+				.FirstOrDefault(
+					name => constants.All(c => c.ContainsKey(name)) && constants
+						.Select(c => c[name])
+						.Distinct(StringComparer.Ordinal)
+						.Count() == constants.Count
+				);
+
+	/// <summary>The fields an object fixes to a single value (<c>type: eql</c>), in property order.</summary>
+	private Dictionary<string, string> ConstantFields(IOpenApiSchema member)
+	{
+		var constants = new Dictionary<string, string>(StringComparer.Ordinal);
+		foreach (var (name, property) in GetSchemaProperties(member) ?? new Dictionary<string, IOpenApiSchema>())
+		{
+			if (GetEnumValues(property) is [var constant])
+				constants[name] = constant;
+		}
+		return constants;
+	}
+
+	private static string? ObjectLabel(
+		IOpenApiSchema member,
+		Dictionary<string, string> constants,
+		string? sharedConstant,
+		IReadOnlyList<string> own,
+		IEnumerable<string> siblingNames
+	)
 	{
 		if (!string.IsNullOrWhiteSpace(member.Title))
 			return member.Title;
 
-		var properties = GetSchemaProperties(member) ?? new Dictionary<string, IOpenApiSchema>();
-		foreach (var (name, property) in properties)
-		{
-			if (GetEnumValues(property) is [var constant])
-				return $"{name}: {constant}";
-		}
+		var constant = sharedConstant ?? constants.Keys.FirstOrDefault();
+		if (constant is not null)
+			return $"{constant}: {constants[constant]}";
 
 		// The fields no sibling has tell the variant apart; required ones define it, so they come first.
 		var others = siblingNames.ToHashSet(StringComparer.Ordinal);
@@ -448,7 +581,11 @@ public class SchemaAnalyzer(
 		return new TypeInfo
 		{
 			TypeName = named.TypeName,
-			Alternatives = Alternatives([(named.TypeName, null)]),
+			// A page title wins over the keyword: Aggregate is a oneOf, but readers know it as Aggregation result.
+			ShownName = TypePages.TryGet(refId, out _) || unionKeyword is null
+				? ShownName(refId, resolvedTarget)
+				: unionKeyword.Value.ToSchemaKeyword(),
+			Alternatives = Alternatives([(named.TypeName, null, named.TypeName)]),
 			SchemaRef = named.IsPrimitiveAlias ? null : refId,
 			IsArray = isArray,
 			IsObject = !named.IsValueType && !isEnum && !named.IsPrimitiveAlias,
@@ -503,12 +640,19 @@ public class SchemaAnalyzer(
 
 		// allOf wrapping a single enum $ref is how OpenAPI 3.1 attaches a description to a $ref.
 		if (resolvedTarget.Enum is { Count: > 0 })
-			return new TypeInfo { TypeName = named.TypeName, SchemaRef = named.IsPrimitiveAlias ? null : refId, IsEnum = true };
+			return new TypeInfo
+			{
+				TypeName = named.TypeName,
+				ShownName = ComposedShownName(refId, resolvedTarget),
+				SchemaRef = named.IsPrimitiveAlias ? null : refId,
+				IsEnum = true
+			};
 
 		return new TypeInfo
 		{
 			TypeName = named.TypeName,
-			Alternatives = Alternatives([(named.TypeName, null)]),
+			ShownName = ComposedShownName(refId, resolvedTarget),
+			Alternatives = Alternatives([(named.TypeName, null, named.TypeName)]),
 			SchemaRef = named.IsPrimitiveAlias ? null : refId,
 			IsObject = !named.IsValueType && !named.IsPrimitiveAlias,
 			IsValueType = named.IsValueType,
@@ -529,6 +673,7 @@ public class SchemaAnalyzer(
 		return new TypeInfo
 		{
 			TypeName = itemInfo.TypeName,
+			ShownName = itemInfo.ShownName,
 			Alternatives = itemInfo.Alternatives,
 			SchemaRef = itemInfo.SchemaRef,
 			IsArray = true,
@@ -558,6 +703,7 @@ public class SchemaAnalyzer(
 			return new TypeInfo
 			{
 				TypeName = $"string to {valueInfo.TypeName}",
+				ShownName = $"string to {valueInfo.ShownName}",
 				SchemaRef = valueInfo.SchemaRef,
 				IsObject = true,
 				LinkedSchemaId = valueInfo.LinkedSchemaId,
@@ -575,7 +721,7 @@ public class SchemaAnalyzer(
 			return new TypeInfo
 			{
 				TypeName = primitiveName,
-				Alternatives = Alternatives([(primitiveName, null)]),
+				Alternatives = Alternatives([(primitiveName, null, primitiveName)]),
 				IsObject = primitiveName == "object"
 			};
 
@@ -599,7 +745,7 @@ public class SchemaAnalyzer(
 			return new TypeInfo { TypeName = keyword.ToSchemaKeyword(), IsObject = true, UnionOptions = options, UnionKeyword = keyword };
 
 		var parts = classified
-			.Select(static o => (Name: SchemaHelpers.ReadableSchemaName(o.Name), o.Ref))
+			.Select(static o => (Name: SchemaHelpers.ReadableSchemaName(o.Name), o.Ref, o.Shown))
 			.DistinctBy(static p => p.Name)
 			.ToArray();
 		return new TypeInfo
@@ -615,19 +761,24 @@ public class SchemaAnalyzer(
 	/// The types a formula names, one per <c>|</c>: a part that is itself several primitives (<c>number | string</c>)
 	/// contributes each. Null when there is only one, so the type reads as a plain name.
 	/// </summary>
-	private static IReadOnlyList<TypeAlternative>? Alternatives(IEnumerable<(string Name, string? SchemaRef)> parts)
+	private static IReadOnlyList<TypeAlternative>? Alternatives(IEnumerable<(string Name, string? SchemaRef, string Shown)> parts)
 	{
 		var alternatives = parts.SelectMany(static part =>
 		{
 			var names = part.Name.Split(" | ", StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-			var reference = names.Length == 1 ? part.SchemaRef : null;
-			return names.Select(
-				name => name.EndsWith("[]", StringComparison.Ordinal)
-					? new TypeAlternative(name[..^2], reference, IsArray: true)
-					: new TypeAlternative(name, reference, IsArray: false)
-			);
+			// A part that splits into several is a set of primitives, which read as themselves.
+			var (reference, shown) = names.Length == 1 ? (part.SchemaRef, part.Shown) : (null, null);
+			return names.Select(name => Alternative(name, reference, shown ?? name));
 		}).ToArray();
 		return alternatives.Length > 1 ? alternatives : null;
+	}
+
+	private static TypeAlternative Alternative(string name, string? reference, string shown)
+	{
+		if (!name.EndsWith("[]", StringComparison.Ordinal))
+			return new TypeAlternative(name, reference, IsArray: false, shown);
+		var shownBase = shown.EndsWith("[]", StringComparison.Ordinal) ? shown[..^2] : shown;
+		return new TypeAlternative(name[..^2], reference, IsArray: true, shownBase);
 	}
 
 	/// <summary>The object schemas after the first <c>$ref</c> of an <c>allOf</c>; the first one names the type.</summary>
