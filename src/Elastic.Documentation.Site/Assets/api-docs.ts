@@ -66,6 +66,13 @@ interface Disclosure {
     noun?: string
 }
 
+const RESPONSE_DISCLOSURE: Disclosure = {
+    container: '.response-panel',
+    toggle: ':scope > .response-summary .response-status-toggle',
+    body: ':scope > .response-panel-body',
+    trigger: '.response-summary',
+}
+
 // Order matters where a row can match more than one entry: variants before properties.
 const DISCLOSURES: Disclosure[] = [
     {
@@ -89,12 +96,7 @@ const DISCLOSURES: Disclosure[] = [
         trigger:
             '.api-param-section-header > .headerlink, .api-param-section-toggle',
     },
-    {
-        container: '.response-panel',
-        toggle: ':scope > .response-summary .response-status-toggle',
-        body: ':scope > .response-panel-body',
-        trigger: '.response-summary',
-    },
+    RESPONSE_DISCLOSURE,
 ]
 
 function disclosureFor(el: Element): Disclosure | undefined {
@@ -110,6 +112,38 @@ function setDisclosureExpanded(
     container.classList.toggle('collapsed', !expanded)
     setDisclosureToggle(container.querySelector(d.toggle), expanded, d.noun)
     setUntilFoundHidden(container.querySelector<HTMLElement>(d.body), !expanded)
+    if (expanded && d === RESPONSE_DISCLOSURE) onResponseOpened(container)
+}
+
+/** Responses behave as an accordion and keep the examples rail on the same status code. */
+function onResponseOpened(panel: HTMLElement): void {
+    panel
+        .closest('[data-api-responses]')
+        ?.querySelectorAll<HTMLElement>('.response-panel.expanded')
+        .forEach((other) => {
+            if (other !== panel)
+                setDisclosureExpanded(other, RESPONSE_DISCLOSURE, false)
+        })
+    const status = panel.dataset.status
+    if (!status) return
+    document
+        .querySelectorAll<HTMLElement>('[data-api-response-samples]')
+        .forEach((widget) => {
+            // applyApiResponseStatus falls back to the first tab, so skip rails without this status
+            if (
+                widget.querySelector(
+                    `.example-response-tab[data-status="${status}"]`
+                )
+            )
+                applyApiResponseStatus(widget, status)
+        })
+}
+
+function openMainResponse(status: string): void {
+    const panel = document.querySelector<HTMLElement>(
+        `[data-api-responses] .response-panel:not(.response-panel--static)[data-status="${status}"]`
+    )
+    if (panel) setDisclosureExpanded(panel, RESPONSE_DISCLOSURE, true)
 }
 
 /**
@@ -378,7 +412,9 @@ function initApiResponseStatusTabs(): void {
         )
         if (!(tab instanceof HTMLElement) || !tab.dataset.status) return
         const widget = tab.closest<HTMLElement>('[data-api-response-samples]')
-        if (widget) applyApiResponseStatus(widget, tab.dataset.status)
+        if (!widget) return
+        applyApiResponseStatus(widget, tab.dataset.status)
+        openMainResponse(tab.dataset.status)
     })
 }
 
