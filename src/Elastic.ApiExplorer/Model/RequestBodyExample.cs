@@ -117,7 +117,10 @@ public static class RequestBodyExample
 			// readOnly may sit on the reference itself (OpenAPI 3.1) or on the schema it points to.
 			if (!required.Contains(name) || property.ReadOnly || analyzer.ResolveSchema(property)?.ReadOnly == true)
 				continue;
-			if (Value(analyzer, property, depth + 1) is { } value)
+			// A property whose only type is null is sent as null; that is its value, not a value we lack.
+			if ((analyzer.ResolveSchema(property) ?? property).Type == JsonSchemaType.Null)
+				body[name] = null;
+			else if (Value(analyzer, property, depth + 1) is { } value)
 				body[name] = value;
 		}
 

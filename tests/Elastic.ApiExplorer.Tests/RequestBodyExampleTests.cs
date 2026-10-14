@@ -298,6 +298,17 @@ public class RequestBodyExampleTests
 	}
 
 	[Test]
+	public async Task Build_SendsNullForARequiredPropertyOfTypeNull()
+	{
+		var body = await BuildFrom(
+			/*lang=json,strict*/
+			"""{ "type": "object", "required": ["value"], "properties": { "value": { "type": "null" } } }"""
+		);
+
+		Parse(body).ToJsonString().Should().Be("""{"value":null}""");
+	}
+
+	[Test]
 	public async Task Build_SkipsANullVariantOfAUnion()
 	{
 		var body = await BuildFrom(
