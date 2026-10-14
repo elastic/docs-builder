@@ -109,12 +109,12 @@ public class ApiSupplementalRenderTests(ApiExplorerFixture fixture)
 		var nav = SearchOperation();
 		var html = await RenderAsync(nav.Model, nav);
 
-		html.Should().Contain("id=\"parameters\"");
-		html.Should().Contain("href=\"#parameters\">Path parameters</a>");
+		html.Should().Contain("id=\"path-params\"");
+		html.Should().Contain("href=\"#path-params\">Path parameters</a>");
 		html.Should().NotContain(">Parameters</a>");
 		html.Should().Contain("api-param-section collapsed");
-		html.Should().Contain("id=\"parameters-list\"");
-		html.Should().Contain("aria-controls=\"parameters-list\"");
+		html.Should().Contain("id=\"path-params-list\"");
+		html.Should().Contain("aria-controls=\"path-params-list\"");
 	}
 
 	[Test]
@@ -124,9 +124,9 @@ public class ApiSupplementalRenderTests(ApiExplorerFixture fixture)
 		var html = await RenderAsync(nav.Model, nav);
 
 		html.Should().Contain("api-param-section collapsed");
-		html.Should().Contain("id=\"parameters-list\"");
-		html.Should().Contain("aria-controls=\"parameters-list\"");
-		html.Should().Contain("href=\"#parameters\">Path parameters</a>");
+		html.Should().Contain("id=\"path-params-list\"");
+		html.Should().Contain("aria-controls=\"path-params-list\"");
+		html.Should().Contain("href=\"#path-params\">Path parameters</a>");
 	}
 
 	[Test]

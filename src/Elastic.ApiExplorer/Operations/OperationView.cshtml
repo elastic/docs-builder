@@ -92,8 +92,8 @@
 	@if (pageModel.PathParameters.Count > 0)
 	{
 		<div @ParamSectionHeader.WrapAttributes()>
-		@(await RenderPartialAsync<_ParamSectionHeader, ParamSectionHeader>(new ParamSectionHeader("Path parameters", "parameters", pageModel.PathParameterNames)))
-		<div @ParamSectionHeader.BodyAttributes("parameters-list")>
+		@(await RenderPartialAsync<_ParamSectionHeader, ParamSectionHeader>(new ParamSectionHeader("Path parameters", "path-params", pageModel.PathParameterNames)))
+		<div @ParamSectionHeader.BodyAttributes("path-params-list")>
 		<dl class="property-list">
 		@foreach (var path in pageModel.PathParameters)
 		{
