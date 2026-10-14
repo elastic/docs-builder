@@ -58,6 +58,12 @@ public record CommitRangePullRequest
 
 	/// <summary>Shas of the range commits associated with this pull request (provenance).</summary>
 	public required IReadOnlyList<string> CommitShas { get; init; }
+
+	/// <summary>Pull request title, when GitHub returned it.</summary>
+	public string? Title { get; init; }
+
+	/// <summary>Names of the labels on the pull request.</summary>
+	public IReadOnlyList<string> Labels { get; init; } = [];
 }
 
 /// <summary>

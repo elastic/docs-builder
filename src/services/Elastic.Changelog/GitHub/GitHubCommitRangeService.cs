@@ -202,7 +202,7 @@ public sealed partial class GitHubCommitRangeService(
 			return null;
 		}
 
-		var prsByNumber = new Dictionary<int, (string Url, List<string> Shas)>();
+		var prsByNumber = new Dictionary<int, (string Url, string? Title, IReadOnlyList<string> Labels, List<string> Shas)>();
 		var orderedPrNumbers = new List<int>();
 		var commitsWithoutPr = new List<string>();
 		var excludedByBase = new Dictionary<int, CommitRangeExcludedPullRequest>();
@@ -241,14 +241,24 @@ public sealed partial class GitHubCommitRangeService(
 					existing.Shas.Add(sha);
 				else
 				{
-					prsByNumber[selected.Number] = (selected.Url ?? $"https://github.com/{repoFullName}/pull/{selected.Number}", [sha]);
+					prsByNumber[selected.Number] =
+						(selected.Url ?? $"https://github.com/{repoFullName}/pull/{selected.Number}", selected.Title, [
+							.. selected.Labels?.Nodes?.Select(l => l?.Name).OfType<string>() ?? []
+						], [sha]);
 					orderedPrNumbers.Add(selected.Number);
 				}
 			}
 		}
 
 		var pullRequests = orderedPrNumbers.Select(
-			number => new CommitRangePullRequest { Number = number, Url = prsByNumber[number].Url, CommitShas = prsByNumber[number].Shas }
+			number => new CommitRangePullRequest
+			{
+				Number = number,
+				Url = prsByNumber[number].Url,
+				CommitShas = prsByNumber[number].Shas,
+				Title = prsByNumber[number].Title,
+				Labels = prsByNumber[number].Labels
+			}
 		).ToList();
 
 		_logger.LogInformation(
@@ -404,7 +414,9 @@ public sealed partial class GitHubCommitRangeService(
 				.Append(" oid associatedPullRequests(first: ")
 				.Append(MaxAssociatedPullRequests)
 				.Append(") { nodes {")
-				.Append(" number url merged baseRefName mergeCommit { oid } baseRepository { nameWithOwner }")
+				.Append(
+					" number url title merged baseRefName mergeCommit { oid } baseRepository { nameWithOwner } labels(first: 30) { nodes { name } }"
+				)
 				.Append(" } } } }");
 		}
 
@@ -480,6 +492,12 @@ public sealed partial class GitHubCommitRangeService(
 		[JsonPropertyName("url")]
 		public string? Url { get; set; }
 
+		[JsonPropertyName("title")]
+		public string? Title { get; set; }
+
+		[JsonPropertyName("labels")]
+		public GraphQlLabelConnection? Labels { get; set; }
+
 		[JsonPropertyName("merged")]
 		public bool Merged { get; set; }
 
@@ -491,6 +509,18 @@ public sealed partial class GitHubCommitRangeService(
 
 		[JsonPropertyName("baseRepository")]
 		public GraphQlRepositoryRef? BaseRepository { get; set; }
+	}
+
+	private sealed class GraphQlLabelConnection
+	{
+		[JsonPropertyName("nodes")]
+		public List<GraphQlLabel?>? Nodes { get; set; }
+	}
+
+	private sealed class GraphQlLabel
+	{
+		[JsonPropertyName("name")]
+		public string? Name { get; set; }
 	}
 
 	private sealed class GraphQlCommitRef

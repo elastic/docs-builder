@@ -206,7 +206,8 @@ public partial class ChangelogBundlingService(
 	CdnChangelogEntryFetcher? entryFetcher = null,
 	IGitHubPrService? prService = null,
 	IGitHubCommitRangeService? commitRangeService = null,
-	IEnvironmentVariables? env = null
+	IEnvironmentVariables? env = null,
+	IGitHubBackportService? backportService = null
 ) : IService
 {
 	private readonly ILogger _logger = logFactory.CreateLogger<ChangelogBundlingService>();
@@ -215,6 +216,7 @@ public partial class ChangelogBundlingService(
 	private readonly CdnChangelogEntryFetcher _entryFetcher = entryFetcher ?? new CdnChangelogEntryFetcher(logFactory);
 	private readonly IGitHubPrService _prService = prService ?? new GitHubPrService(logFactory);
 	private readonly IGitHubCommitRangeService _commitRangeService = commitRangeService ?? new GitHubCommitRangeService(logFactory);
+	private readonly IGitHubBackportService _backportService = backportService ?? new GitHubBackportService(logFactory);
 	private readonly ChangelogConfigurationLoader? _configLoader = configurationContext != null
 		? new ChangelogConfigurationLoader(logFactory, configurationContext, fileSystem)
 		: null;
@@ -986,6 +988,24 @@ public partial class ChangelogBundlingService(
 		if (resolution == null)
 			return false;
 
+		var backportReport = string.Empty;
+		if (config?.Bundle?.Backports is { Labels.Count: > 0 } backports)
+		{
+			var trace = await BackportTracer.TraceAsync(
+				collector,
+				_backportService,
+				(owner, sourcing.Repo),
+				backports.Labels,
+				resolution,
+				ctx
+			);
+			if (trace == null)
+				return false;
+
+			resolution = trace.Resolution;
+			backportReport = trace.ToMarkdown();
+		}
+
 		var directory = input.Directory!;
 		var outputPath = ResolveResolvedOutputPath(collector, input, config);
 
@@ -1013,7 +1033,7 @@ public partial class ChangelogBundlingService(
 			ctx
 		);
 
-		var report = result.Report.ToMarkdown();
+		var report = result.Report.ToMarkdown() + (backportReport.Length > 0 ? "\n" + backportReport : string.Empty);
 		_logger.LogInformation("Commit-range bundle report:\n{Report}", report);
 
 		if (input.DryRun)
