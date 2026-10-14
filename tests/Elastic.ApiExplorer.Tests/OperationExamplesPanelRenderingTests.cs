@@ -145,23 +145,28 @@ public class OperationExamplesPanelRenderingTests
 	}
 
 	[Test]
-	public async Task Render_GeneratedSample_CarriesABadgeInTheHeaderNotAFooter()
+	public async Task Render_GeneratedSamples_GetOneNoteUnderTheCarousel()
 	{
 		var html = await RenderScenario(Slicing);
 
 		html.Should().Contain("data-generated");
-		html.Should().Contain("class=\"api-code-carousel-card-generated\"");
-		html.Should().NotContain("Built from this example");
+		html.Should().Contain("class=\"api-code-carousel-note\"");
+		html.Should().Contain("Generated from the API spec");
+		// The note sits after the strip, outside the cards, so the card height the carousel measures is unchanged.
+		html
+			.IndexOf("api-code-carousel-note", StringComparison.Ordinal)
+			.Should()
+			.BeGreaterThan(html.LastIndexOf("</section>", StringComparison.Ordinal));
 		html.Should().NotContain("<footer");
 	}
 
 	[Test]
-	public async Task Render_SpecSample_HasNoGeneratedBadge()
+	public async Task Render_SpecSamples_HaveNoNote()
 	{
 		var html = await RenderScenario(Slicing with { CodeSamples = [Sample("Console"), Sample("curl")] });
 
 		html.Should().NotContain("data-generated");
-		html.Should().NotContain("api-code-carousel-card-generated");
+		html.Should().NotContain("api-code-carousel-note");
 	}
 
 	[Test]

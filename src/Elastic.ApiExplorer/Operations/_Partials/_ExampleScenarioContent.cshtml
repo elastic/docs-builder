@@ -52,10 +52,6 @@
 							{
 								<span class="api-code-carousel-card-client">@sample.ClientLabel</span>
 							}
-							@if (sample.Generated)
-							{
-								<span class="api-code-carousel-card-generated" title="Built by docs-builder from the OpenAPI spec, not written by the API's authors. Replace placeholder values before you run it.">Generated</span>
-							}
 						</span>
 						<span class="api-code-carousel-card-actions" data-code-actions></span>
 					</header>
@@ -65,6 +61,10 @@
 				</section>
 			}
 		</div>
+		@if (samples.All(static s => s.Generated))
+		{
+			<p class="api-code-carousel-note">Generated from the API spec, not written by hand. Check placeholder values such as <code>string</code> or <code>{id}</code> before you run it.</p>
+		}
 		@if (samples.Count > 1)
 		{
 			<div class="api-code-carousel-dots" role="group" aria-label="Languages">
