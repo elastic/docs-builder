@@ -101,6 +101,14 @@
 	overflow: auto;
 }
 
+/* Without the Popover API the menu cannot leave the tab list, which scrolls and so clips it, so the tabs wrap instead of scrolling. */
+@supports not selector(:popover-open) {
+	.docs-bar__list {
+		flex-wrap: wrap;
+		overflow: visible;
+	}
+}
+
 .docs-bar__group {
 	margin: 0;
 	padding: var(--space-2) var(--space-4) var(--space-1);

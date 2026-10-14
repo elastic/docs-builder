@@ -50,7 +50,9 @@ export function initTabSync(scope: ParentNode = document) {
             const key = label.dataset.tabSyncKey!
             label.dataset.tabSyncBound = ''
 
-            label.addEventListener('click', () => {
+            // The radio's change event covers a click on the label and the arrow keys or Space on the radio, which never click the label.
+            inputFor(label)?.addEventListener('change', (event) => {
+                if (!(event.target as HTMLInputElement).checked) return
                 writeSelection(group, key)
                 selectTab(group, key, document)
             })

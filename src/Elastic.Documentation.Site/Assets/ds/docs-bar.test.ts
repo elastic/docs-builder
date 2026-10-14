@@ -43,6 +43,19 @@ describe('docs bar sync', () => {
         expect(document.documentElement.dataset.theme).toBe('dark')
     })
 
+    it('binds the popovers of the new bar so its menu is shown in the top layer', () => {
+        HTMLElement.prototype.showPopover = function () {}
+        HTMLElement.prototype.hidePopover = function () {}
+        const withMenu = `<nav id="docs-bar"><details data-menu data-popover><summary>Products</summary><div data-popover-panel>Menu</div></details></nav>`
+        syncDocsBar(`<html><body>${withMenu}</body></html>`)
+
+        expect(
+            document
+                .querySelector('[data-popover-panel]')
+                ?.getAttribute('popover')
+        ).toBe('manual')
+    })
+
     it('leaves the bar alone when the response has none', () => {
         const changed = syncDocsBar('<div>a search result</div>')
 

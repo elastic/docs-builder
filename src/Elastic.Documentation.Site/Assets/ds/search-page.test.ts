@@ -1,4 +1,10 @@
-import { initSearchPage, isQuestion, parseState, toSearch } from './search-page'
+import {
+    initSearchPage,
+    isQuestion,
+    parseState,
+    toApiSearch,
+    toSearch,
+} from './search-page'
 
 jest.mock('../config', () => ({
     config: {
@@ -19,10 +25,29 @@ describe('search page state', () => {
             )
         ).toEqual({
             query: 'shards',
+            version: '',
             page: 2,
             sort: 'recent',
             filters: { type: ['doc', 'api'], section: [], product: ['es'] },
         })
+    })
+
+    it('reads an older version from the address and writes it back the same way', () => {
+        const state = parseState('?q=shards&v=8')
+
+        expect(state.version).toBe('8.19')
+        expect(toSearch(state)).toBe('q=shards&v=8')
+        expect(parseState('?q=a&v=7').version).toBe('7.17')
+        expect(parseState('?q=a&v=9').version).toBe('')
+    })
+
+    it('asks the API for the version by name', () => {
+        const state = parseState('?q=shards&v=8')
+
+        expect(toApiSearch(state, 20)).toBe('q=shards&size=20&version=8.19')
+        expect(toApiSearch(parseState('?q=shards'), 20)).toBe(
+            'q=shards&size=20'
+        )
     })
 
     it('falls back to the first page for a bad page number', () => {
@@ -134,6 +159,17 @@ describe('search page', () => {
         await new Promise((r) => setTimeout(r, 0))
 
         expect(location.search).toBe('?q=shards&page=2')
+    })
+
+    it('keeps an older version in the address and in the API request', async () => {
+        window.history.replaceState(null, '', '/?q=shards&v=8')
+        initSearchPage()
+        await new Promise((r) => setTimeout(r, 0))
+
+        expect(location.search).toBe('?q=shards&v=8')
+        expect((global.fetch as jest.Mock).mock.calls[0][0]).toContain(
+            'version=8.19'
+        )
     })
 
     it('keeps the answer panel hidden for a keyword search', async () => {

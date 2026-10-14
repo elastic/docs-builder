@@ -18,8 +18,14 @@ export function isQuestion(query: string): boolean {
     )
 }
 
+// Older versions are written in the address as v=8 or v=7, which existing shared links use, and sent to the API as the version name.
+// The current version has no parameter.
+const VERSION_TO_ADDRESS: Record<string, string> = { '8.19': '8', '7.17': '7' }
+const ADDRESS_TO_VERSION: Record<string, string> = { '8': '8.19', '7': '7.17' }
+
 export interface SearchPageState {
     query: string
+    version: string
     page: number
     sort: string
     filters: Record<'type' | 'section' | 'product', string[]>
@@ -47,8 +53,10 @@ interface FullSearchResponse {
 export function parseState(search: string): SearchPageState {
     const params = new URLSearchParams(search)
     const page = Number(params.get('page') ?? '1')
+    const address = params.get('v') ?? ''
     return {
         query: params.get('q') ?? '',
+        version: ADDRESS_TO_VERSION[address] ?? '',
         page: Number.isFinite(page) && page >= 1 ? Math.floor(page) : 1,
         sort: params.get('sort') ?? 'relevance',
         filters: {
@@ -62,11 +70,21 @@ export function parseState(search: string): SearchPageState {
 export function toSearch(state: SearchPageState, size?: number): string {
     const params = new URLSearchParams()
     if (state.query) params.set('q', state.query)
+    if (VERSION_TO_ADDRESS[state.version])
+        params.set('v', VERSION_TO_ADDRESS[state.version])
     if (state.page > 1) params.set('page', String(state.page))
     if (state.sort !== 'relevance') params.set('sort', state.sort)
     if (size) params.set('size', String(size))
     for (const key of ['type', 'section', 'product'] as const)
         state.filters[key].forEach((value) => params.append(key, value))
+    return params.toString()
+}
+
+/** The query string for the search API, which names the version in full instead of using the address's short form. */
+export function toApiSearch(state: SearchPageState, size?: number): string {
+    const params = new URLSearchParams(toSearch(state, size))
+    params.delete('v')
+    if (state.version) params.set('version', state.version)
     return params.toString()
 }
 
@@ -167,7 +185,7 @@ function bindSearchPage(root: HTMLElement) {
                 return
             }
             const response = await fetch(
-                `${config.apiBasePath}/v1/search?${toSearch(state, PAGE_SIZE)}`,
+                `${config.apiBasePath}/v1/search?${toApiSearch(state, PAGE_SIZE)}`,
                 { signal: controller.signal }
             )
             if (!response.ok) throw new Error(String(response.status))

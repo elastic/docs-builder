@@ -32,6 +32,20 @@ describe('initTabSync', () => {
         expect(window.sessionStorage.getItem('tab-id-lang')).toBe('python')
     })
 
+    it('follows a radio changed from the keyboard, which never clicks the label', () => {
+        setup(tabs(1, 0) + tabs(2, 0))
+        initTabSync()
+
+        const radio = document.querySelector<HTMLInputElement>('#s1-1')!
+        radio.checked = true
+        radio.dispatchEvent(new Event('change', { bubbles: true }))
+
+        expect(document.querySelector<HTMLInputElement>('#s2-1')!.checked).toBe(
+            true
+        )
+        expect(window.sessionStorage.getItem('tab-id-lang')).toBe('python')
+    })
+
     it('restores the stored selection on load', () => {
         window.sessionStorage.setItem('tab-id-lang', 'python')
         setup(tabs(1, 0))
