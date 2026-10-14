@@ -27,10 +27,10 @@ public static partial class GeneratedCodeSamples
 	/// <summary>The host variable a product's own curl samples use, for a spec that names no server.</summary>
 	public static string HostVariableFor(string? productId) => productId switch
 	{
-		"elasticsearch" or "serverless-elasticsearch" => "$ELASTICSEARCH_URL",
-		"kibana" => "$KIBANA_URL",
-		"logstash" => "$LOGSTASH_URL",
-		_ => "$API_URL"
+		"elasticsearch" or "serverless-elasticsearch" => "${ELASTICSEARCH_URL}",
+		"kibana" => "${KIBANA_URL}",
+		"logstash" => "${LOGSTASH_URL}",
+		_ => "${API_URL}"
 	};
 
 	/// <summary>Adds generated samples to every scenario that has a request body but no code samples.</summary>

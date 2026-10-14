@@ -16,8 +16,8 @@ public sealed record SyntheticSampleInput(HttpMethod Method, string Route, OpenA
 
 	public IList<OpenApiServer>? Servers { get; init; }
 
-	/// <summary>The host the curl calls when the spec names no server, e.g. <c>$ELASTICSEARCH_URL</c>.</summary>
-	public string HostVariable { get; init; } = "$API_URL";
+	/// <summary>The host the curl calls when the spec names no server, e.g. <c>${ELASTICSEARCH_URL}</c>.</summary>
+	public string HostVariable { get; init; } = "${API_URL}";
 
 	/// <summary>An example request body; the samples carry it instead of leaving it in a block of its own.</summary>
 	public string? Body { get; init; }
@@ -39,7 +39,7 @@ public sealed record SyntheticSampleInput(HttpMethod Method, string Route, OpenA
 public static partial class SyntheticCodeSamples
 {
 	/// <summary>The shell variable that stands for an API key in a sample.</summary>
-	internal const string ApiKeyVariable = "$API_KEY";
+	internal const string ApiKeyVariable = "${API_KEY}";
 
 	public static IReadOnlyList<CodeSample> Create(SyntheticSampleInput input)
 	{
@@ -140,7 +140,7 @@ public static partial class SyntheticCodeSamples
 	/// <summary>
 	/// The first server's URL before the path; a spec that names no server gets the product's host variable, so the curl has
 	/// a host at all. A server URL that is one variable (<c>https://{kibana_url}</c>) becomes that variable as the shell variable
-	/// the product's own samples use (<c>$KIBANA_URL</c>); any other server variable is named the same way in place.
+	/// the product's own samples use (<c>${KIBANA_URL}</c>); any other server variable is named the same way in place.
 	/// </summary>
 	private static string BuildRequestUrl(string pathWithQuery, IList<OpenApiServer>? servers, string hostVariable)
 	{
@@ -148,8 +148,8 @@ public static partial class SyntheticCodeSamples
 		if (string.IsNullOrEmpty(serverUrl))
 			return hostVariable + pathWithQuery;
 		if (WholeHostVariable().Match(serverUrl) is { Success: true } host)
-			return "$" + Placeholder(host.Groups[1].Value) + pathWithQuery;
-		return Template().Replace(serverUrl, static m => "$" + Placeholder(m.Groups[1].Value)) + pathWithQuery;
+			return Placeholder(host.Groups[1].Value, forShell: true) + pathWithQuery;
+		return Template().Replace(serverUrl, static m => Placeholder(m.Groups[1].Value, forShell: true)) + pathWithQuery;
 	}
 
 	/// <summary>
@@ -318,12 +318,12 @@ public static partial class SyntheticCodeSamples
 		SecuritySchemeType.ApiKey when scheme.In == ParameterLocation.Header && !string.IsNullOrEmpty(scheme.Name) =>
 			(scheme.Name, $"-H \"{DoubleQuoted(scheme.Name)}: {ApiKeyVariable}\""),
 		SecuritySchemeType.Http when string.Equals(scheme.Scheme, "basic", StringComparison.OrdinalIgnoreCase) =>
-			("Authorization", "-u \"$USERNAME:$PASSWORD\""),
+			("Authorization", "-u \"${USERNAME}:${PASSWORD}\""),
 		SecuritySchemeType.Http when !string.IsNullOrEmpty(scheme.Scheme)
 			&& !string.Equals(scheme.Scheme, "bearer", StringComparison.OrdinalIgnoreCase) =>
-			("Authorization", $"-H \"Authorization: {scheme.Scheme} $TOKEN\""),
+			("Authorization", $"-H \"Authorization: {scheme.Scheme} ${{TOKEN}}\""),
 		SecuritySchemeType.Http or SecuritySchemeType.OAuth2 or SecuritySchemeType.OpenIdConnect =>
-			("Authorization", "-H \"Authorization: Bearer $TOKEN\""),
+			("Authorization", "-H \"Authorization: Bearer ${TOKEN}\""),
 		_ => null
 	};
 }

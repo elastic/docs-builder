@@ -406,7 +406,7 @@ public class ExampleScenarioTests
 			new CodeSample("Console", "GET /my-index/_search\n{}", "language-console"),
 			new CodeSample(
 				"curl",
-				"curl -X GET -H \"Authorization: ApiKey $ELASTIC_API_KEY\" -d '{}' \"$ELASTICSEARCH_URL/my-index/_search\"",
+				"curl -X GET -H \"Authorization: ApiKey $ELASTIC_API_KEY\" -d '{}' \"${ELASTICSEARCH_URL}/my-index/_search\"",
 				"language-curl"
 			)
 		};
@@ -425,7 +425,7 @@ public class ExampleScenarioTests
 		samples[1]
 			.Source
 			.Should()
-			.Be("curl -X POST -H \"Authorization: ApiKey $ELASTIC_API_KEY\" -d '{\"slice\":{\"id\":0}}' \"$ELASTICSEARCH_URL/_search\"");
+			.Be("curl -X POST -H \"Authorization: ApiKey $ELASTIC_API_KEY\" -d '{\"slice\":{\"id\":0}}' \"${ELASTICSEARCH_URL}/_search\"");
 		filled.Single().CodeSamplesIncludeRequest.Should().BeTrue();
 	}
 
@@ -471,13 +471,13 @@ public class ExampleScenarioTests
 		};
 		var spec = new List<CodeSample>
 		{
-			new("curl", "curl -X POST \"https://api.example.test/things?key=$API_KEY\" -d '{\"a\":1}'", "language-curl")
+			new("curl", "curl -X POST \"https://api.example.test/things?key=${API_KEY}\" -d '{\"a\":1}'", "language-curl")
 		};
 		var endpoint = OperationEndpoint.FromVariants([new EndpointVariant("post", "/things")], "/things");
 
 		var curl = GeneratedCodeSamples.Fill([scenario], spec, endpoint, productConsolePrefix: null).Single().CodeSamples.Single();
 
-		curl.Source.Should().Contain("\"https://api.example.test/things?size=1&key=$API_KEY\"");
+		curl.Source.Should().Contain("\"https://api.example.test/things?size=1&key=${API_KEY}\"");
 	}
 
 	[Test]
@@ -516,13 +516,13 @@ public class ExampleScenarioTests
 		};
 		var spec = new List<CodeSample>
 		{
-			new("curl", "curl -X POST \"https://api.example.test/things?size=$SIZE&key=$API_KEY\" -d '{\"a\":1}'", "language-curl")
+			new("curl", "curl -X POST \"https://api.example.test/things?size=$SIZE&key=${API_KEY}\" -d '{\"a\":1}'", "language-curl")
 		};
 		var endpoint = OperationEndpoint.FromVariants([new EndpointVariant("post", "/things")], "/things");
 
 		var curl = GeneratedCodeSamples.Fill([scenario], spec, endpoint, productConsolePrefix: null).Single().CodeSamples.Single();
 
-		curl.Source.Should().Contain("\"https://api.example.test/things?size=1&key=$API_KEY\"");
+		curl.Source.Should().Contain("\"https://api.example.test/things?size=1&key=${API_KEY}\"");
 		curl.Source.Should().NotContain("$SIZE");
 	}
 

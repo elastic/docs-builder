@@ -58,7 +58,7 @@ public class SyntheticCodeSamplesTests
 		});
 
 		samples[0].Source.Should().Be("DELETE /api/cases?ids=IDS");
-		samples[1].Source.Should().Contain("$KIBANA_URL/api/cases?ids=${IDS}");
+		samples[1].Source.Should().Contain("${KIBANA_URL}/api/cases?ids=${IDS}");
 		samples[1].Source.Should().Contain("kbn-xsrf: true");
 		samples[1].Source.Should().NotContain("optional");
 	}
@@ -132,10 +132,10 @@ public class SyntheticCodeSamplesTests
 	{
 		var samples = SyntheticCodeSamples.Create(new SyntheticSampleInput(HttpMethod.Get, "/_search", new OpenApiOperation())
 		{
-			HostVariable = "$ELASTICSEARCH_URL"
+			HostVariable = "${ELASTICSEARCH_URL}"
 		});
 
-		samples[1].Source.Should().StartWith("curl -X GET \"$ELASTICSEARCH_URL/_search\"");
+		samples[1].Source.Should().StartWith("curl -X GET \"${ELASTICSEARCH_URL}/_search\"");
 	}
 
 	[Test]
@@ -152,12 +152,12 @@ public class SyntheticCodeSamplesTests
 	}
 
 	[Test]
-	[Arguments("elasticsearch", "$ELASTICSEARCH_URL")]
-	[Arguments("serverless-elasticsearch", "$ELASTICSEARCH_URL")]
-	[Arguments("kibana", "$KIBANA_URL")]
-	[Arguments("logstash", "$LOGSTASH_URL")]
-	[Arguments("cloud-enterprise", "$API_URL")]
-	[Arguments(null, "$API_URL")]
+	[Arguments("elasticsearch", "${ELASTICSEARCH_URL}")]
+	[Arguments("serverless-elasticsearch", "${ELASTICSEARCH_URL}")]
+	[Arguments("kibana", "${KIBANA_URL}")]
+	[Arguments("logstash", "${LOGSTASH_URL}")]
+	[Arguments("cloud-enterprise", "${API_URL}")]
+	[Arguments(null, "${API_URL}")]
 	public void HostVariableFor_NamesTheProductsHost(string? productId, string expected) =>
 		GeneratedCodeSamples.HostVariableFor(productId).Should().Be(expected);
 
@@ -348,7 +348,7 @@ public class SyntheticCodeSamplesTests
 			.Source
 			.Should()
 			.Be(
-				"curl -X POST \"$KIBANA_URL/api/apm/fleet/apm_server_schema\" \\\n" + "  -H \"kbn-xsrf: true\" \\\n" +
+				"curl -X POST \"${KIBANA_URL}/api/apm/fleet/apm_server_schema\" \\\n" + "  -H \"kbn-xsrf: true\" \\\n" +
 					"  -H \"Content-Type: application/json\" \\\n" + "  -d '" + body.Replace("\n", "\n  ") + "'"
 			);
 	}
@@ -413,7 +413,7 @@ public class SyntheticCodeSamplesTests
 			Security = [scheme]
 		});
 
-		samples[1].Source.Should().Contain("-H \"Authorization: ApiKey $API_KEY\"");
+		samples[1].Source.Should().Contain("-H \"Authorization: ApiKey ${API_KEY}\"");
 		samples[0].Source.Should().Be("GET /api/x");
 	}
 
@@ -427,7 +427,7 @@ public class SyntheticCodeSamplesTests
 			Security = [scheme]
 		});
 
-		samples[1].Source.Should().Contain("-H \"X-Api-Key: $API_KEY\"").And.NotContain("ApiKey $API_KEY");
+		samples[1].Source.Should().Contain("-H \"X-Api-Key: ${API_KEY}\"").And.NotContain("ApiKey ${API_KEY}");
 	}
 
 	[Test]
@@ -451,7 +451,7 @@ public class SyntheticCodeSamplesTests
 			Servers = [new OpenApiServer { Url = "https://{kibana_url}" }]
 		});
 
-		samples[1].Source.Should().StartWith("curl -X GET \"$KIBANA_URL/api/status\"");
+		samples[1].Source.Should().StartWith("curl -X GET \"${KIBANA_URL}/api/status\"");
 	}
 
 	[Test]
@@ -462,7 +462,7 @@ public class SyntheticCodeSamplesTests
 			Servers = [new OpenApiServer { Url = "https://{region}.api.example.test/v1" }]
 		});
 
-		samples[1].Source.Should().StartWith("curl -X GET \"https://$REGION.api.example.test/v1/x\"");
+		samples[1].Source.Should().StartWith("curl -X GET \"https://${REGION}.api.example.test/v1/x\"");
 	}
 
 	[Test]
@@ -478,7 +478,7 @@ public class SyntheticCodeSamplesTests
 
 		var samples = SyntheticCodeSamples.Create(new SyntheticSampleInput(HttpMethod.Delete, "/api/dashboards/{id}", operation));
 
-		samples[1].Source.Should().StartWith("curl -X DELETE \"$API_URL/api/dashboards/d1\"");
+		samples[1].Source.Should().StartWith("curl -X DELETE \"${API_URL}/api/dashboards/d1\"");
 	}
 
 	[Test]
@@ -491,7 +491,7 @@ public class SyntheticCodeSamplesTests
 			Security = [scheme]
 		});
 
-		samples[1].Source.Should().Contain("\"$API_URL/api/x?key=$API_KEY\"");
+		samples[1].Source.Should().Contain("\"${API_URL}/api/x?key=${API_KEY}\"");
 		samples[0].Source.Should().Be("GET /api/x");
 	}
 
@@ -505,7 +505,7 @@ public class SyntheticCodeSamplesTests
 			Security = [scheme]
 		});
 
-		samples[1].Source.Should().Contain("-u \"$USERNAME:$PASSWORD\"");
+		samples[1].Source.Should().Contain("-u \"${USERNAME}:${PASSWORD}\"");
 	}
 
 	[Test]
@@ -521,7 +521,7 @@ public class SyntheticCodeSamplesTests
 			Security = [scheme]
 		});
 
-		samples[1].Source.Should().Contain("-H \"Authorization: Bearer $TOKEN\"");
+		samples[1].Source.Should().Contain("-H \"Authorization: Bearer ${TOKEN}\"");
 	}
 
 	[Test]
@@ -544,7 +544,7 @@ public class SyntheticCodeSamplesTests
 
 		var samples = SyntheticCodeSamples.Create(new SyntheticSampleInput(HttpMethod.Get, "/api/x", operation) { Security = [scheme] });
 
-		samples[1].Source.Should().Contain("Authorization: ApiKey abc").And.NotContain("$API_KEY");
+		samples[1].Source.Should().Contain("Authorization: ApiKey abc").And.NotContain("${API_KEY}");
 	}
 
 	[Test]
@@ -558,7 +558,7 @@ public class SyntheticCodeSamplesTests
 
 		var samples = SyntheticCodeSamples.Create(new SyntheticSampleInput(HttpMethod.Get, "/api/x", operation) { Security = [scheme] });
 
-		samples[1].Source.Should().Contain("-H \"X-Api-Key: $API_KEY\"").And.NotContain("X-Api-Key: string");
+		samples[1].Source.Should().Contain("-H \"X-Api-Key: ${API_KEY}\"").And.NotContain("X-Api-Key: string");
 	}
 
 	[Test]
