@@ -59,7 +59,7 @@
 						@(await RenderPartialAsync<_ApiCodeBlock, ApiCodeBlockModel>(new ApiCodeBlockModel(sample.HighlightClass, sample.Source, LineNumbers: true)))
 						@if (sample.Generated)
 						{
-							<p class="api-code-carousel-card-note"><span tabindex="0" data-tippy-content="docs-builder built this sample from the API spec; nobody wrote it by hand. Check placeholder values such as string or {id} before you run it.">Generated from the API spec</span></p>
+							<p class="api-code-carousel-card-note"><span tabindex="0" data-tippy-content="This sample was generated from the API spec, not written by hand. Check placeholder values such as string or INDEX before you run it.">Generated from the API spec</span></p>
 						}
 					</div>
 				</section>

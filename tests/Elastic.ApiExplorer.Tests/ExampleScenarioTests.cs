@@ -481,7 +481,7 @@ public class ExampleScenarioTests
 	}
 
 	[Test]
-	public void GeneratedCodeSamples_CopiedCurlTurnsGlobbingOffForAPlaceholderRoute()
+	public void GeneratedCodeSamples_CopiedCurlNamesAPlaceholderAfterItsParameter()
 	{
 		var scenario = new ExampleScenario { Title = "One", TabId = "one", RequestJson = "{}", RequestLine = ("PUT", "/things/{id}") };
 		var spec = new List<CodeSample> { new("curl", "curl -X POST \"https://api.example.test/things\" -d '{\"a\":1}'", "language-curl") };
@@ -489,11 +489,11 @@ public class ExampleScenarioTests
 
 		var curl = GeneratedCodeSamples.Fill([scenario], spec, endpoint, productConsolePrefix: null).Single().CodeSamples.Single();
 
-		curl.Source.Should().StartWith("curl --globoff -X PUT \"https://api.example.test/things/{id}\"");
+		curl.Source.Should().StartWith("curl -X PUT \"https://api.example.test/things/ID\"");
 	}
 
 	[Test]
-	public void GeneratedCodeSamples_CopiedCurlKeepsGlobbingOnWhenTheRouteIsFilled()
+	public void GeneratedCodeSamples_CopiedCurlKeepsAFilledRoute()
 	{
 		var scenario = new ExampleScenario { Title = "One", TabId = "one", RequestJson = "{}", RequestLine = ("PUT", "/things/1") };
 		var spec = new List<CodeSample> { new("curl", "curl -X POST \"https://api.example.test/things\" -d '{\"a\":1}'", "language-curl") };

@@ -165,7 +165,7 @@ public class OperationExamplesPanelRenderingTests
 		{
 			card.Should().Contain("<p class=\"api-code-carousel-card-note\">");
 			card.Should().Contain(">Generated from the API spec</span>");
-			card.Should().Contain("data-tippy-content=\"docs-builder built this sample from the API spec;");
+			card.Should().Contain("data-tippy-content=\"This sample was generated from the API spec, not written by hand.");
 			// Inside the code area, so the strip height measured from the body includes it.
 			card
 				.IndexOf("api-code-carousel-card-note", StringComparison.Ordinal)

@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.Text.Json.Nodes;
+using System.Text.RegularExpressions;
 using Microsoft.OpenApi;
 
 namespace Elastic.ApiExplorer.Model;
@@ -35,7 +36,7 @@ public sealed record SyntheticSampleInput(HttpMethod Method, string Route, OpenA
 /// example body the samples carry it, so the body sits in the request like a spec sample's would
 /// instead of in a block of its own.
 /// </summary>
-public static class SyntheticCodeSamples
+public static partial class SyntheticCodeSamples
 {
 	/// <summary>The shell variable that stands for an API key in a sample.</summary>
 	internal const string ApiKeyVariable = "$API_KEY";
@@ -69,7 +70,7 @@ public static class SyntheticCodeSamples
 		return samples;
 	}
 
-	/// <summary>The path with each parameter that has an example filled in, then the required query parameters. A parameter without an example keeps its <c>{name}</c>.</summary>
+	/// <summary>The path with each parameter that has an example filled in, then the required query parameters. A parameter without an example shows its name as a placeholder (see <see cref="Placeholder"/>).</summary>
 	private static string BuildPath(string route, IReadOnlyList<IOpenApiParameter> parameters)
 	{
 		var path = string.IsNullOrEmpty(route) ? "/" : route.StartsWith('/') ? route : "/" + route;
@@ -79,6 +80,8 @@ public static class SyntheticCodeSamples
 			if (UrlExample(parameter) is { } value)
 				path = path.Replace($"{{{parameter.Name}}}", value, StringComparison.Ordinal);
 		}
+
+		path = NamePlaceholders(path);
 
 		var query = parameters
 			.Where(static p => p.In == ParameterLocation.Query && p.Required && !string.IsNullOrEmpty(p.Name))
@@ -99,9 +102,7 @@ public static class SyntheticCodeSamples
 	)
 	{
 		var (headers, authFlags) = flags;
-		// curl reads braces as a glob and would send a placeholder's bare name as its value, so a URL that still holds one turns globbing off.
-		var globbing = url.Contains('{') ? " --globoff" : "";
-		var parts = new List<string> { $"curl{globbing} -X {methodLabel} \"{url}\"" };
+		var parts = new List<string> { $"curl -X {methodLabel} \"{url}\"" };
 		parts.AddRange(headers.Select(static h => $"-H \"{DoubleQuoted(h.Name ?? "")}: {DoubleQuoted(HeaderExampleValue(h))}\""));
 		parts.AddRange(authFlags);
 
@@ -130,12 +131,45 @@ public static class SyntheticCodeSamples
 			.Replace('\r', ' ')
 			.Replace('\n', ' ');
 
-	/// <summary>The first server's URL before the path; a spec that names no server gets the product's host variable, so the curl has a host at all.</summary>
+	/// <summary>
+	/// The first server's URL before the path; a spec that names no server gets the product's host variable, so the curl has
+	/// a host at all. A server URL that is one variable (<c>https://{kibana_url}</c>) becomes that variable as the shell variable
+	/// the product's own samples use (<c>$KIBANA_URL</c>); any other server variable is named the same way in place.
+	/// </summary>
 	private static string BuildRequestUrl(string pathWithQuery, IList<OpenApiServer>? servers, string hostVariable)
 	{
 		var serverUrl = servers?.FirstOrDefault()?.Url?.Trim().TrimEnd('/');
-		return (string.IsNullOrEmpty(serverUrl) ? hostVariable : serverUrl) + pathWithQuery;
+		if (string.IsNullOrEmpty(serverUrl))
+			return hostVariable + pathWithQuery;
+		if (WholeHostVariable().Match(serverUrl) is { Success: true } host)
+			return "$" + Placeholder(host.Groups[1].Value) + pathWithQuery;
+		return Template().Replace(serverUrl, static m => "$" + Placeholder(m.Groups[1].Value)) + pathWithQuery;
 	}
+
+	/// <summary>
+	/// A value the reader must supply, named after its parameter the way GitHub's API docs do: <c>{agentPolicyId}</c> is
+	/// <c>AGENT_POLICY_ID</c>. Braces are left out because curl reads them as a glob and would silently send the bare name.
+	/// </summary>
+	internal static string Placeholder(string name)
+	{
+		var snake = CamelBoundary().Replace(name.Trim('{', '}'), "$1_$2");
+		return NotWord().Replace(snake, "_").Trim('_').ToUpperInvariant();
+	}
+
+	/// <summary>Every <c>{name}</c> still in a path becomes its placeholder.</summary>
+	internal static string NamePlaceholders(string path) => Template().Replace(path, static m => Placeholder(m.Groups[1].Value));
+
+	[GeneratedRegex(@"\{([^{}]+)\}", RegexOptions.CultureInvariant)]
+	private static partial Regex Template();
+
+	[GeneratedRegex(@"^https?://\{([^{}/]+)\}$", RegexOptions.CultureInvariant)]
+	private static partial Regex WholeHostVariable();
+
+	[GeneratedRegex(@"([a-z0-9])([A-Z])", RegexOptions.CultureInvariant)]
+	private static partial Regex CamelBoundary();
+
+	[GeneratedRegex(@"[^A-Za-z0-9]+", RegexOptions.CultureInvariant)]
+	private static partial Regex NotWord();
 
 	private static IEnumerable<IOpenApiParameter> RequiredHeaders(IReadOnlyList<IOpenApiParameter> parameters) =>
 		parameters.Where(static p => p.In == ParameterLocation.Header && p.Required).OrderBy(
@@ -229,7 +263,7 @@ public static class SyntheticCodeSamples
 		if (parameter.Explode && isForm && ExampleParts(parameter) is { Length: > 1 } parts)
 			return parts.Select(part => $"{name}={Uri.EscapeDataString(part)}");
 
-		return [$"{name}={UrlExample(parameter) ?? $"{{{parameter.Name}}}"}"];
+		return [$"{name}={UrlExample(parameter) ?? Placeholder(parameter.Name ?? "")}"];
 	}
 
 	/// <summary>

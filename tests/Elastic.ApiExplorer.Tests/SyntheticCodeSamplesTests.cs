@@ -20,10 +20,10 @@ public class SyntheticCodeSamplesTests
 
 		samples.Should().HaveCount(2);
 		samples[0].Language.Should().Be("Console");
-		samples[0].Source.Should().Be("DELETE /api/dashboards/{id}");
+		samples[0].Source.Should().Be("DELETE /api/dashboards/ID");
 		samples[1].Language.Should().Be("curl");
 		samples[1].Source.Should().Contain("DELETE");
-		samples[1].Source.Should().Contain("/api/dashboards/{id}");
+		samples[1].Source.Should().Contain("/api/dashboards/ID");
 	}
 
 	[Test]
@@ -57,8 +57,8 @@ public class SyntheticCodeSamplesTests
 			Servers = [new OpenApiServer { Url = "https://{kibana_url}" }]
 		});
 
-		samples[0].Source.Should().Be("DELETE /api/cases?ids={ids}");
-		samples[1].Source.Should().Contain("https://{kibana_url}/api/cases?ids={ids}");
+		samples[0].Source.Should().Be("DELETE /api/cases?ids=IDS");
+		samples[1].Source.Should().Contain("$KIBANA_URL/api/cases?ids=IDS");
 		samples[1].Source.Should().Contain("kbn-xsrf: true");
 		samples[1].Source.Should().NotContain("optional");
 	}
@@ -124,7 +124,7 @@ public class SyntheticCodeSamplesTests
 
 		var samples = SyntheticCodeSamples.Create(new SyntheticSampleInput(HttpMethod.Get, "/things/{id}", operation));
 
-		samples[0].Source.Should().Be("GET /things/{id}");
+		samples[0].Source.Should().Be("GET /things/ID");
 	}
 
 	[Test]
@@ -148,7 +148,7 @@ public class SyntheticCodeSamplesTests
 
 		var samples = SyntheticCodeSamples.Create(new SyntheticSampleInput(HttpMethod.Get, "/_search?pretty", operation));
 
-		samples[0].Source.Should().Be("GET /_search?pretty&size={size}");
+		samples[0].Source.Should().Be("GET /_search?pretty&size=SIZE");
 	}
 
 	[Test]
@@ -199,7 +199,7 @@ public class SyntheticCodeSamplesTests
 
 		var samples = SyntheticCodeSamples.Create(new SyntheticSampleInput(HttpMethod.Get, "/a/{id}/b/{name}", operation));
 
-		samples[0].Source.Should().Be("GET /a/own/b/{name}");
+		samples[0].Source.Should().Be("GET /a/own/b/NAME");
 	}
 
 	[Test]
@@ -320,7 +320,7 @@ public class SyntheticCodeSamplesTests
 
 		var samples = SyntheticCodeSamples.Create(new SyntheticSampleInput(HttpMethod.Get, "/items", operation));
 
-		samples[0].Source.Should().Be("GET /items?ids={ids}");
+		samples[0].Source.Should().Be("GET /items?ids=IDS");
 	}
 
 	private static OpenApiOperation JsonPost() =>
@@ -348,7 +348,7 @@ public class SyntheticCodeSamplesTests
 			.Source
 			.Should()
 			.Be(
-				"curl --globoff -X POST \"https://{kibana_url}/api/apm/fleet/apm_server_schema\" \\\n" + "  -H \"kbn-xsrf: true\" \\\n" +
+				"curl -X POST \"$KIBANA_URL/api/apm/fleet/apm_server_schema\" \\\n" + "  -H \"kbn-xsrf: true\" \\\n" +
 					"  -H \"Content-Type: application/json\" \\\n" + "  -d '" + body.Replace("\n", "\n  ") + "'"
 			);
 	}
@@ -431,17 +431,41 @@ public class SyntheticCodeSamplesTests
 	}
 
 	[Test]
-	public void Create_WithAPlaceholderLeftInTheUrl_TurnsCurlGlobbingOff()
+	[Arguments("/api/fleet/agent_policies/{agentPolicyId}/status", "GET /api/fleet/agent_policies/AGENT_POLICY_ID/status")]
+	[Arguments("/organizations/{organization_id}/subscription", "GET /organizations/ORGANIZATION_ID/subscription")]
+	[Arguments("/deployments/{deployment-id}/{ref_id}", "GET /deployments/DEPLOYMENT_ID/REF_ID")]
+	public void Create_WithoutAnExample_NamesThePlaceholderAfterTheParameter(string route, string expected)
 	{
-		var samples = SyntheticCodeSamples.Create(
-			new SyntheticSampleInput(HttpMethod.Delete, "/api/dashboards/{id}", new OpenApiOperation())
-		);
+		var samples = SyntheticCodeSamples.Create(new SyntheticSampleInput(HttpMethod.Get, route, new OpenApiOperation()));
 
-		samples[1].Source.Should().StartWith("curl --globoff -X DELETE \"$API_URL/api/dashboards/{id}\"");
+		samples[0].Source.Should().Be(expected);
+		samples[1].Source.Should().NotContain("{").And.NotContain("--globoff");
 	}
 
 	[Test]
-	public void Create_WithEveryPlaceholderFilled_LeavesCurlGlobbingOn()
+	public void Create_WithAServerUrlThatIsOneVariable_UsesItAsTheHostVariable()
+	{
+		var samples = SyntheticCodeSamples.Create(new SyntheticSampleInput(HttpMethod.Get, "/api/status", new OpenApiOperation())
+		{
+			Servers = [new OpenApiServer { Url = "https://{kibana_url}" }]
+		});
+
+		samples[1].Source.Should().StartWith("curl -X GET \"$KIBANA_URL/api/status\"");
+	}
+
+	[Test]
+	public void Create_WithAServerVariableInsideTheUrl_NamesItInPlace()
+	{
+		var samples = SyntheticCodeSamples.Create(new SyntheticSampleInput(HttpMethod.Get, "/x", new OpenApiOperation())
+		{
+			Servers = [new OpenApiServer { Url = "https://{region}.api.example.test/v1" }]
+		});
+
+		samples[1].Source.Should().StartWith("curl -X GET \"https://$REGION.api.example.test/v1/x\"");
+	}
+
+	[Test]
+	public void Create_WithEveryPlaceholderFilled_ShowsTheValues()
 	{
 		var operation = new OpenApiOperation
 		{
