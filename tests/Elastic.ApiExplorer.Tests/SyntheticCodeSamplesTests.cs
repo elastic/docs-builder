@@ -376,6 +376,24 @@ public class SyntheticCodeSamplesTests
 	}
 
 	[Test]
+	[Arguments("name: one\ncount: 1", "application/yaml")]
+	[Arguments("{\"index\":{\"_id\":1}}\n{\"field\":\"value\"}", "application/x-ndjson")]
+	public void Create_WithABodyThatIsNotOneJsonDocument_SendsItAsWritten(string body, string mediaType)
+	{
+		var operation = new OpenApiOperation
+		{
+			RequestBody = new OpenApiRequestBody
+			{
+				Content = new Dictionary<string, IOpenApiMediaType> { [mediaType] = new OpenApiMediaType() }
+			}
+		};
+
+		var samples = SyntheticCodeSamples.Create(new SyntheticSampleInput(HttpMethod.Post, "/x", operation) { Body = body });
+
+		samples[1].Source.Should().EndWith($"-d '{body}'");
+	}
+
+	[Test]
 	public void Create_WithASingleQuoteInTheBody_EscapesItForTheShell()
 	{
 		var samples = SyntheticCodeSamples.Create(new SyntheticSampleInput(HttpMethod.Post, "/api/foo", JsonPost())

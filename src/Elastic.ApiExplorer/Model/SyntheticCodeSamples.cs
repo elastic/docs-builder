@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
 using Microsoft.OpenApi;
@@ -103,11 +104,29 @@ public static partial class SyntheticCodeSamples
 
 	/// <summary>
 	/// The <c>-d</c> flag with its body in single quotes. A single quote ends the quoted argument, so it becomes <c>'\''</c> as
-	/// the shell expects, and the body's other lines are indented under the flag, as <see cref="CurlSourceFormatter"/> lays
-	/// out spec samples.
+	/// the shell expects. A JSON document's other lines are indented under the flag, as <see cref="CurlSourceFormatter"/> lays
+	/// out spec samples; any other body stays as written, because the added spaces reach the server and would break YAML
+	/// or newline-delimited JSON.
 	/// </summary>
-	internal static string SingleQuotedBody(string body) =>
-		$"-d '{body.Trim().Replace("'", "'\\''", StringComparison.Ordinal).Replace("\n", "\n  ", StringComparison.Ordinal)}'";
+	internal static string SingleQuotedBody(string body)
+	{
+		var trimmed = body.Trim();
+		var laidOut = IsJsonDocument(trimmed) ? trimmed.Replace("\n", "\n  ", StringComparison.Ordinal) : trimmed;
+		return $"-d '{laidOut.Replace("'", "'\\''", StringComparison.Ordinal)}'";
+	}
+
+	private static bool IsJsonDocument(string text)
+	{
+		try
+		{
+			_ = JsonNode.Parse(text);
+			return true;
+		}
+		catch (JsonException)
+		{
+			return false;
+		}
+	}
 
 	/// <summary>
 	/// Spec text inside a double-quoted shell argument. The shell reads <c>\</c>, <c>"</c>, <c>$</c> and <c>`</c> there, so each
