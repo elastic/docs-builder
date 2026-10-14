@@ -270,6 +270,20 @@ public class RequestBodyExampleTests
 	}
 
 	[Test]
+	public async Task Build_KeepsTheJsonTypeOfAnUntypedConst()
+	{
+		var body = await BuildFrom(
+			/*lang=json,strict*/
+			"""
+			{ "type": "object", "required": ["version", "flag", "kind"],
+			  "properties": { "version": { "const": 5 }, "flag": { "const": true }, "kind": { "const": "extension" } } }
+			"""
+		);
+
+		Parse(body).ToJsonString().Should().Be("""{"version":5,"flag":true,"kind":"extension"}""");
+	}
+
+	[Test]
 	public async Task Build_ParsesANumericConst()
 	{
 		var body = await BuildFrom(

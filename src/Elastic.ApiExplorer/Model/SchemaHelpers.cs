@@ -37,16 +37,22 @@ public static class SchemaHelpers
 				?? Const(schema)
 				?? schema.Enum?.FirstOrDefault(IsValue);
 
-	/// <summary>The reader keeps <c>const</c> as text, so a number or boolean is parsed back unless the schema says it is a string.</summary>
+	/// <summary>
+	/// The reader keeps <c>const</c> as text, so a number or boolean is parsed back unless the schema says it is a string. A
+	/// schema that names no type keeps the constant's own JSON type: <c>{ "const": 5 }</c> is the number 5.
+	/// </summary>
 	private static JsonNode? Const(IOpenApiSchema schema)
 	{
 		if (string.IsNullOrEmpty(schema.Const))
 			return null;
-		if (schema.Type?.HasFlag(JsonSchemaType.String) != false)
+		if (schema.Type?.HasFlag(JsonSchemaType.String) == true)
 			return JsonValue.Create(schema.Const);
+		// A boolean constant comes back as the .NET text "True"/"False", which is not JSON.
+		var text = schema.Const.Equals("true", StringComparison.OrdinalIgnoreCase)
+			|| schema.Const.Equals("false", StringComparison.OrdinalIgnoreCase) ? schema.Const.ToLowerInvariant() : schema.Const;
 		try
 		{
-			return JsonNode.Parse(schema.Const);
+			return JsonNode.Parse(text);
 		}
 		catch (JsonException)
 		{
