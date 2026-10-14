@@ -86,67 +86,6 @@
 		</a>
 	}
 	@(await RenderPartialAsync<_AuthorizationSection, AuthorizationSectionModel>(Model.Authorization))
-	@if (pageModel.PathParameters.Count > 0)
-	{
-		<div @ParamSectionHeader.WrapAttributes()>
-		@(await RenderPartialAsync<_ParamSectionHeader, ParamSectionHeader>(new ParamSectionHeader("Path parameters", "parameters", pageModel.PathParameterNames)))
-		<div @ParamSectionHeader.BodyAttributes("parameters-list")>
-		<dl class="property-list">
-		@foreach (var path in pageModel.PathParameters)
-		{
-			<div class="path-param @(path.Deprecated is true ? "deprecated" : "")">
-				<dt id="path-@path.Name">
-					<a class="property-anchor" href="#path-@path.Name" aria-label="Link to @path.Name">
-						<span class="property-anchor-icon" data-tippy-content="Copy link" aria-hidden="true"></span>
-					</a>
-					<code>@path.Name</code>
-					@if (path.Type is not null)
-					{
-						@(await RenderPartialAsync<_SchemaType, TypeAnnotation>(path.Type))
-					}
-					@if (path.Required)
-					{
-						<span class="required type-status">required</span>
-					}
-					else if (path.Optional)
-					{
-						<span class="optional type-status">optional</span>
-					}
-					@if (path.Deprecated is true)
-					{
-						<span class="deprecated-badge type-status">deprecated</span>
-					}
-				</dt>
-			<dd>
-				@path.DescriptionHtml
-				@if (path.Optional)
-				{
-					<p class="api-path-param-optional-hint">Leave it out to use <code>@endpoint.ShortestRoute</code>.</p>
-				}
-			</dd>
-			@if (path.UnionOptions.Count > 0 && path.EnumValues.Count == 0)
-			{
-				<dd class="union-options">
-					<span class="values-label">@path.UnionLabel</span>
-					@for (var optIndex = 0; optIndex < path.UnionOptions.Count; optIndex++)
-					{
-						var unionOpt = path.UnionOptions[optIndex];
-						if (optIndex > 0)
-						{
-							<span class="union-inline-separator">or</span>
-						}
-						<code class="@SchemaHelpers.UnionOptionClasses(unionOpt.IsTypeOption, unionOpt.Text)">@unionOpt.Text</code>
-					}
-				</dd>
-			}
-			@(await RenderPartialAsync<_EnumValues, EnumValueList>(new EnumValueList(path.EnumValues)))
-		</div>
-		}
-		</dl>
-		</div>
-		</div>
-	}
-
 	@foreach (var section in pageModel.ParameterSections)
 	{
 		@(await RenderPartialAsync<_ParameterListSection, ParameterListSection>(section))

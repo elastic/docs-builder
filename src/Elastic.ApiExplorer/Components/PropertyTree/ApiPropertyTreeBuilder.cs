@@ -36,6 +36,10 @@ public sealed record PropertyTreeScope
 	public ISet<string>? RequiredProperties { get; init; }
 }
 
+/// <summary>A parameter to list as a row, with the description to show.</summary>
+/// <param name="RouteWithout">For a path parameter that some routes leave out, the route to use without it; null otherwise.</param>
+public record ParameterRowInput(IOpenApiParameter Parameter, string? Description, string? RouteWithout = null);
+
 public partial class ApiPropertyTreeBuilder(
 	OpenApiDocument document,
 	PropertyDisplayOptions options,
@@ -65,7 +69,8 @@ public partial class ApiPropertyTreeBuilder(
 		bool IsDeprecated,
 		ApplicableTo? AppliesTo,
 		string? ShapeKey = null,
-		RepeatedShape? Repeats = null
+		RepeatedShape? Repeats = null,
+		string? OptionalRoute = null
 	);
 
 	/// <summary>Builds the property rows for a schema; null when it has no renderable properties.</summary>
@@ -99,29 +104,45 @@ public partial class ApiPropertyTreeBuilder(
 	/// Parameters as property rows, so an object or a map lists its fields the way a body property does. Each parameter
 	/// gives its row's name, description, requiredness and deprecation; its schema gives the rest.
 	/// </summary>
-	public ApiPropertyList BuildParameterList(
-		IReadOnlyList<(IOpenApiParameter Parameter, string? Description)> parameters,
-		PropertyTreeScope scope
-	)
+	public ApiPropertyList BuildParameterList(IReadOnlyList<ParameterRowInput> parameters, PropertyTreeScope scope)
 	{
 		var items = new List<ApiProperty>(parameters.Count);
 		for (var i = 0; i < parameters.Count; i++)
 		{
-			var (parameter, description) = parameters[i];
+			var (parameter, description, routeWithout) = parameters[i];
 			var name = parameter.Name ?? "";
-			var schema = parameter.Schema ?? new OpenApiSchema();
+			var schema = RowSchema(parameter);
 			var row = CreateRow(name, schema, name, scope) with
 			{
-				IsRequired = parameter.Required,
+				// A path parameter is required unless some route leaves its segment out.
+				IsRequired = parameter.Required && routeWithout is null,
 				IsLast = i == parameters.Count - 1,
 				Description = description,
 				IsDeprecated = parameter.Deprecated,
-				AppliesTo = XStateApplicability.From(parameter.Extensions) ?? XStateApplicability.From(schema.Extensions)
+				AppliesTo = XStateApplicability.From(parameter.Extensions) ?? XStateApplicability.From(schema.Extensions),
+				OptionalRoute = routeWithout
 			};
 			items.Add(BuildProperty(row, scope));
 		}
 
 		return new ApiPropertyList(items);
+	}
+
+	/// <summary>
+	/// The schema a parameter's row describes. A path parameter that is a <c>$ref</c> to <c>X | X[]</c> describes the
+	/// resolved union, so its type reads <c>X | X[]</c>; query and body rows keep the wrapper's name.
+	/// </summary>
+	private IOpenApiSchema RowSchema(IOpenApiParameter parameter)
+	{
+		if (parameter.Schema is not { } schema)
+			return new OpenApiSchema();
+		if (parameter.In != ParameterLocation.Path)
+			return schema;
+
+		var resolved = _analyzer.ResolveSchema(schema);
+		return resolved is not null
+			&& !ReferenceEquals(resolved, schema)
+			&& DetectSimpleArrayUnion(_analyzer.GetTypeInfo(resolved)) is not null ? resolved : schema;
 	}
 
 	/// <summary>A row for a schema under <paramref name="scope"/>, neither required nor last until the caller says so.</summary>
@@ -152,20 +173,6 @@ public partial class ApiPropertyTreeBuilder(
 		var typeInfo = _analyzer.GetTypeInfo(schema);
 		var annotation = WithTypeLink(BuildAnnotation(typeInfo, HasActualProperties(schema)), OwnPageLink(typeInfo));
 		return schema is null ? annotation : WithConstraints(annotation, BuildConstraints(schema));
-	}
-
-	/// <summary>
-	/// Path-parameter type chip. A <c>$ref</c> to <c>X | X[]</c> is described from the resolved union
-	/// so both alternatives show. <see cref="Describe"/> still returns the wrapper name, which query
-	/// and body rows keep.
-	/// </summary>
-	public TypeAnnotation DescribePathParameter(IOpenApiSchema? schema)
-	{
-		var resolved = _analyzer.ResolveSchema(schema);
-		if (ReferenceEquals(resolved, schema) || resolved is null)
-			return Describe(schema);
-
-		return DetectSimpleArrayUnion(_analyzer.GetTypeInfo(resolved)) is not null ? Describe(resolved) : Describe(schema);
 	}
 
 	/// <summary>Validation constraint labels for a schema, then its default; empty when it declares none.</summary>
@@ -297,6 +304,7 @@ public partial class ApiPropertyTreeBuilder(
 			ArrayItemTypeName = null,
 			TypeLink = typeLink,
 			AlsoIncludes = BuildAlsoIncludes(typeInfo),
+			OptionalRoute = row.OptionalRoute,
 			Requires = DescribeRequiredAlternatives(propSchema),
 			SingleOrArray = DescribeSingleOrArray(typeInfo, expansion),
 			// A repeat lists nothing itself, so it gets no show/hide toggle.

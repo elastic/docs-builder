@@ -5,10 +5,13 @@
 using System.IO.Abstractions.TestingHelpers;
 using AwesomeAssertions;
 using Elastic.ApiExplorer.Components.PropertyTree;
+using Elastic.ApiExplorer.Components.PropertyTree._Partials;
 using Elastic.ApiExplorer.Infrastructure;
 using Elastic.ApiExplorer.Operations;
 using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Site.FileProviders;
+using Microsoft.OpenApi;
+using RazorSlices;
 
 namespace Elastic.ApiExplorer.Tests;
 
@@ -54,7 +57,7 @@ public class ParameterRowsTests(ApiExplorerFixture fixture)
 		page.HeaderParameterNames.Should().Equal(["X-Opaque-Id"], "OpenAPI ignores an Accept header parameter");
 		page.HeaderParameters.Items[0].AnchorId.Should().Be("header-X-Opaque-Id");
 		page.QueryParameterNames.Should().NotContain("X-Opaque-Id");
-		page.ParameterSections.Select(s => s.Header.Anchor).Should().Equal("query-params", "header-params");
+		page.ParameterSections.Select(s => s.Header.Anchor).Should().Equal("parameters", "query-params", "header-params");
 	}
 
 	[Test]
@@ -99,6 +102,103 @@ public class ParameterRowsTests(ApiExplorerFixture fixture)
 			.Should()
 			.OnlyContain(p => p.IsRequest, "parameters are part of the request");
 		markdown.ToString().Should().StartWith("- `mode` (enum) — required");
+	}
+
+	[Test]
+	public async Task BuildParameterList_PathParameterSomeRoutesLeaveOut_ReadsOptionalWithTheRoute()
+	{
+		var document = await TestSpecs.LoadSpecAsync("""{ "openapi": "3.0.3", "info": { "title": "t", "version": "1" }, "paths": {} }""");
+		var parameters = new[]
+		{
+			new ParameterRowInput(
+				new OpenApiParameter
+				{
+					Name = "index",
+					In = ParameterLocation.Path,
+					Required = true,
+					Schema = new OpenApiSchema { Type = JsonSchemaType.String }
+				},
+				"Where to look.",
+				RouteWithout: "/_search"
+			),
+			new ParameterRowInput(
+				new OpenApiParameter
+				{
+					Name = "id",
+					In = ParameterLocation.Path,
+					Required = true,
+					Schema = new OpenApiSchema { Type = JsonSchemaType.String }
+				},
+				"Which one."
+			)
+		};
+
+		var list = TestSpecs.BuilderFor(document).BuildParameterList(
+			parameters,
+			new PropertyTreeScope { Prefix = "path", IsRequest = true }
+		);
+
+		list
+			.Items
+			.Select(p => (p.AnchorId, p.IsRequired, p.OptionalRoute))
+			.Should()
+			.Equal(("path-index", false, "/_search"), ("path-id", true, null));
+		var html = await _PropertyList.Create(list).RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
+		html.Should().Contain("<span class=\"optional type-status\">optional</span>");
+		html.Should().Contain("<p class=\"api-path-param-optional-hint\">Leave it out to use <code>/_search</code>.</p>");
+		System
+			.Text
+			.RegularExpressions
+			.Regex
+			.Matches(html, "required type-status")
+			.Should()
+			.ContainSingle("only the parameter every route needs reads required");
+		var markdown = new System.Text.StringBuilder();
+		ApiPropertyMarkdown.WriteList(markdown, list, "/api/doc/fixture");
+		markdown
+			.ToString()
+			.Should()
+			.Contain("- `index` (string) — optional, leave it out to use `/_search`")
+			.And
+			.Contain("- `id` (string) — required");
+	}
+
+	[Test]
+	public async Task Render_PathParameters_KeepTheirSectionIdsAndAnchors()
+	{
+		var html = await RenderAsync(DocsGet);
+
+		html.Should().Contain("id=\"parameters-list\"");
+		html.Should().Contain("<dt id=\"path-index\">");
+		html.Should().Contain("href=\"#parameters\">Path parameters</a>");
+		html.Should().NotContain("class=\"path-param", "path parameters are property rows now");
+	}
+
+	[Test]
+	public void Write_PathParameters_SitBeforeTheDescriptionOneLevelDeeper()
+	{
+		var context = RenderContext(DocsGet);
+		var markdown = OperationCommonMark.Write(DocsGet.Model, OperationPageModel.Create(DocsGet.Model, context), context);
+
+		markdown.Should().MatchRegex("#### Path parameters\\s+- `index` \\(.*\\) — required");
+		markdown
+			.IndexOf("#### Path parameters", StringComparison.Ordinal)
+			.Should()
+			.BeLessThan(markdown.IndexOf("## Query string parameters", StringComparison.Ordinal));
+	}
+
+	[Test]
+	public void TocItems_PathParameters_AreLeftOut()
+	{
+		var context = RenderContext(DocsGet);
+		var viewModel = new OperationViewModel(context)
+		{
+			Operation = DocsGet.Model,
+			Page = OperationPageModel.Create(DocsGet.Model, context)
+		};
+
+		viewModel.Page.PathParameterNames.Should().Equal("index", "id");
+		viewModel.TocItems.Select(t => t.Slug).Should().Contain("query-params").And.NotContain("parameters");
 	}
 
 	[Test]

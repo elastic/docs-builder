@@ -22,28 +22,37 @@ public partial record OperationPageModel
 	public required IList<OpenApiServer>? Servers { get; init; }
 	/// <summary>Every route and method of the operation, merged into display rows.</summary>
 	public required OperationEndpoint Endpoint { get; init; }
-	public required IReadOnlyList<ApiPathParameter> PathParameters { get; init; }
+	public required ApiPropertyList PathParameters { get; init; }
 	public required ApiPropertyList QueryParameters { get; init; }
 	public required ApiPropertyList HeaderParameters { get; init; }
 
-	public IReadOnlyList<string> PathParameterNames => NamesOf(PathParameters.Select(static p => p.Name));
+	public IReadOnlyList<string> PathParameterNames => NamesOf(PathParameters.Items.Select(static p => p.Name));
 
 	public IReadOnlyList<string> QueryParameterNames => NamesOf(QueryParameters.Items.Select(static q => q.Name));
 
 	public IReadOnlyList<string> HeaderParameterNames => NamesOf(HeaderParameters.Items.Select(static h => h.Name));
 
-	/// <summary>The query and header parameter sections the page lists, in page order; a location with no parameters has none.</summary>
+	/// <summary>The parameter sections the page lists, in page order; a location with no parameters has none.</summary>
 	public IReadOnlyList<ParameterListSection> ParameterSections =>
 		[
 			.. new[]
 			{
 				new ParameterListSection(
+					ParameterLocation.Path,
+					new ParamSectionHeader("Path parameters", "parameters", PathParameterNames),
+					"parameters-list",
+					PathParameters,
+					"Path parameters"
+				),
+				new ParameterListSection(
+					ParameterLocation.Query,
 					new ParamSectionHeader("Query parameters", "query-params", QueryParameterNames),
 					"query-params-list",
 					QueryParameters,
 					"Query string parameters"
 				),
 				new ParameterListSection(
+					ParameterLocation.Header,
 					new ParamSectionHeader("Header parameters", "header-params", HeaderParameterNames),
 					"header-params-list",
 					HeaderParameters,
@@ -151,8 +160,10 @@ public partial record OperationPageModel
 		}
 
 		// Built in page order, before the body, so a field that repeats a parameter's fields links up the page to it.
-		var queryParameters = BuildParameters(operation.Parameters ?? [], ParameterLocation.Query, builder, supplemental);
-		var headerParameters = BuildParameters(operation.Parameters ?? [], ParameterLocation.Header, builder, supplemental);
+		var parameterSource = new ParameterRowSource(builder, supplemental, endpoint);
+		var pathParameters = BuildParameters(operation.Parameters ?? [], ParameterLocation.Path, parameterSource);
+		var queryParameters = BuildParameters(operation.Parameters ?? [], ParameterLocation.Query, parameterSource);
+		var headerParameters = BuildParameters(operation.Parameters ?? [], ParameterLocation.Header, parameterSource);
 		var requestScope = new PropertyTreeScope
 		{
 			Prefix = "req",
@@ -170,10 +181,7 @@ public partial record OperationPageModel
 			ExternalDocs = externalDocs,
 			Servers = servers,
 			Endpoint = endpoint,
-			PathParameters = (operation.Parameters ?? [])
-				.Where(p => p.In == ParameterLocation.Path)
-				.Select(p => BuildPathParameter(p, analyzer, builder, context, supplemental, endpoint))
-				.ToArray(),
+			PathParameters = pathParameters,
 			QueryParameters = queryParameters,
 			HeaderParameters = headerParameters,
 			RequestContentType = requestContentEntry?.Key ?? "application/json",

@@ -508,13 +508,31 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture)
 		var name = new OpenApiSchemaReference("_types.Name", document);
 
 		builder.Describe(names).Text.Should().Be("union oneOf");
-		builder.DescribePathParameter(names).Text.Should().Be("union string | string[]");
-		builder.DescribePathParameter(dataStreams).Text.Should().Be("union string | string[]");
-		builder.DescribePathParameter(document.Components!.Schemas!["inline.StringOrArray"]).Text.Should().Be("union string | string[]");
-		builder.DescribePathParameter(name).Text.Should().Be("string");
 		builder.Describe(name).Text.Should().Be("string");
-		builder.DescribePathParameter(new OpenApiSchema { Type = JsonSchemaType.String }).Text.Should().Be("string");
+
+		string PathType(IOpenApiSchema schema) => PathRow(builder, schema).Type.Text;
+
+		string QueryType(IOpenApiSchema schema) => ParameterRow(builder, schema, ParameterLocation.Query).Type.Text;
+
+		PathType(names).Should().Be("union string | string[]");
+		PathType(dataStreams).Should().Be("union string | string[]");
+		PathType(document.Components!.Schemas!["inline.StringOrArray"]).Should().Be("union string | string[]");
+		PathType(name).Should().Be("string");
+		PathType(new OpenApiSchema { Type = JsonSchemaType.String }).Should().Be("string");
+		QueryType(names).Should().Be("union oneOf", "a query row keeps the wrapper's name");
 	}
+
+	private static ApiProperty PathRow(ApiPropertyTreeBuilder builder, IOpenApiSchema schema) =>
+		ParameterRow(builder, schema, ParameterLocation.Path);
+
+	private static ApiProperty ParameterRow(ApiPropertyTreeBuilder builder, IOpenApiSchema schema, ParameterLocation location) =>
+		builder
+			.BuildParameterList(
+				[new ParameterRowInput(new OpenApiParameter { Name = "p", In = location, Required = true, Schema = schema }, null)],
+				new PropertyTreeScope { Prefix = location.ToString().ToLowerInvariant(), IsRequest = true }
+			)
+			.Items
+			.Single();
 
 	[Test]
 	[Arguments(false)]

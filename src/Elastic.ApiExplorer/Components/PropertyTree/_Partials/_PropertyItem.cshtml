@@ -13,6 +13,10 @@
 		{
 			<span class="required @SchemaHelpers.StatusCssClass">required</span>
 		}
+		@if (Model.OptionalRoute is not null)
+		{
+			<span class="optional @SchemaHelpers.StatusCssClass">optional</span>
+		}
 		@if (Model.IsNullable)
 		{
 			<span class="nullable-badge @SchemaHelpers.StatusCssClass" data-tippy-content="This value can be null">nullable</span>
@@ -26,10 +30,14 @@
 			<span class="applies applies-inline">@await RenderPartialAsync(ApplicableToComponent.Create(Model.Availability))</span>
 		}
 	</dt>
-	@if (Model.HasDescription)
+	@if (Model.HasDescription || Model.OptionalRoute is not null)
 	{
 		<dd>
 			@Model.DescriptionHtml
+			@if (Model.OptionalRoute is { } routeWithout)
+			{
+				<p class="api-path-param-optional-hint">Leave it out to use <code>@routeWithout</code>.</p>
+			}
 		</dd>
 	}
 	@if (Model.AlsoIncludes.Count > 0)
