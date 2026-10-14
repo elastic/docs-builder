@@ -416,7 +416,7 @@ public class ExampleScenarioTests
 			"/_search"
 		);
 
-		var filled = GeneratedCodeSamples.Fill([slicing], spec, endpoint);
+		var filled = GeneratedCodeSamples.Fill([slicing], spec, endpoint, "");
 
 		var samples = filled.Single().CodeSamples;
 		samples.Select(static s => s.Language).Should().Equal("Console", "curl");
@@ -443,7 +443,7 @@ public class ExampleScenarioTests
 		};
 		var endpoint = OperationEndpoint.FromVariants([new EndpointVariant("post", "/_search")], "/_search");
 
-		var curl = GeneratedCodeSamples.Fill([scenario], spec, endpoint).Single().CodeSamples.Single(static s => s.IsCurl);
+		var curl = GeneratedCodeSamples.Fill([scenario], spec, endpoint, "").Single().CodeSamples.Single(static s => s.IsCurl);
 
 		curl.Source.Should().Be("curl -X POST -H \"kbn-xsrf: true\" -d '{}' \"https://localhost:9200/_search\"");
 	}
@@ -454,7 +454,7 @@ public class ExampleScenarioTests
 		var slicing = new ExampleScenario { Title = "Slicing", TabId = "slicing", RequestJson = "{}", RequestLine = ("GET", "/_search") };
 		var endpoint = OperationEndpoint.FromVariants([new EndpointVariant("post", "/_search")], "/_search");
 
-		var console = GeneratedCodeSamples.Fill([slicing], [], endpoint).Single().CodeSamples.Single();
+		var console = GeneratedCodeSamples.Fill([slicing], [], endpoint, "").Single().CodeSamples.Single();
 
 		console.Source.Should().StartWith("GET /_search\n");
 	}
@@ -569,7 +569,7 @@ public class ExampleScenarioTests
 			"/{index}/_search"
 		);
 
-		var console = GeneratedCodeSamples.Fill([scenario], [], endpoint).Single().CodeSamples.Single();
+		var console = GeneratedCodeSamples.Fill([scenario], [], endpoint, "").Single().CodeSamples.Single();
 
 		console.Source.Should().StartWith("POST /my-index-000001/_search?from=40\n");
 	}
@@ -587,7 +587,7 @@ public class ExampleScenarioTests
 			"/api/agent_builder/tools/_execute"
 		);
 
-		var console = GeneratedCodeSamples.Fill([esql], spec, endpoint).Single().CodeSamples.Single();
+		var console = GeneratedCodeSamples.Fill([esql], spec, endpoint, "").Single().CodeSamples.Single();
 
 		console.Source.Should().StartWith("POST kbn:/api/agent_builder/tools/_execute\n");
 	}

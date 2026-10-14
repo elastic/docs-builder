@@ -43,91 +43,77 @@ public static partial class SyntheticCodeSamples
 
 	public static IReadOnlyList<CodeSample> Create(SyntheticSampleInput input)
 	{
-		var operation = input.Operation;
 		var methodLabel = input.Method.Method.ToUpperInvariant();
 		var body = string.IsNullOrWhiteSpace(input.Body) ? null : input.Body.Trim();
-		var requiredHeaders = RequiredHeaders(input.Parameters).ToArray();
-		var (authFlags, authQuery, authHeaders) = AuthParts(input.Security, requiredHeaders);
-		var headers = requiredHeaders.Where(h => h.Name is null || !authHeaders.Contains(h.Name)).ToArray();
-		var path = BuildPath(input.Route, input.Parameters, forShell: false);
+		var auth = CurlAuth.From(input.Security, RequiredHeaders(input.Parameters));
+		// The path keeps `{name}` where the spec gives no value; each sample then names the placeholder its own way.
+		var path = BuildPath(input.Route, input.Parameters);
 
 		var samples = new List<CodeSample>();
 		if (input.ConsolePrefix is { } prefix)
 		{
-			var requestLine = $"{methodLabel} {prefix}{path}";
+			var requestLine = $"{methodLabel} {prefix}{NamePlaceholders(path, forShell: false)}";
 			samples.Add(CodeSample.Generate("Console", body is null ? requestLine : $"{requestLine}\n{body}"));
 		}
 
-		var shellPath = BuildPath(input.Route, input.Parameters, forShell: true);
-		var curlPath = authQuery.Count == 0
-			? shellPath
-			: $"{shellPath}{(shellPath.Contains('?') ? '&' : '?')}{string.Join('&', authQuery)}";
-		var curl = BuildCurl(
-			methodLabel,
-			BuildRequestUrl(curlPath, input.Servers, input.HostVariable),
-			operation,
-			(headers, authFlags),
-			body
-		);
-		samples.Add(CodeSample.Generate("curl", curl));
+		var url = BuildRequestUrl(AppendQuery(NamePlaceholders(path, forShell: true), auth.Query), input.Servers, input.HostVariable);
+		var contentType = input.Operation.RequestBody?.Content?.Keys.FirstOrDefault() ?? "application/json";
+		samples.Add(CodeSample.Generate("curl", BuildCurl($"curl -X {methodLabel} \"{url}\"", auth, contentType, body)));
 		return samples;
 	}
 
-	/// <summary>
-	/// The path with each parameter that has an example filled in, then the required query parameters. A parameter without an
-	/// example shows its name as a placeholder (see <see cref="Placeholder"/>), as a shell variable in the curl.
-	/// </summary>
-	private static string BuildPath(string route, IReadOnlyList<IOpenApiParameter> parameters, bool forShell)
+	/// <summary>The path with each parameter that has an example filled in, then the required query parameters.</summary>
+	private static string BuildPath(string route, IReadOnlyList<IOpenApiParameter> parameters)
 	{
 		var path = string.IsNullOrEmpty(route) ? "/" : route.StartsWith('/') ? route : "/" + route;
 
 		foreach (var parameter in parameters.Where(static p => p.In == ParameterLocation.Path && !string.IsNullOrEmpty(p.Name)))
 		{
-			if (UrlExample(parameter) is { } value)
+			if (UrlExample(parameter, ParameterExample.Of(parameter)) is { } value)
 				path = path.Replace($"{{{parameter.Name}}}", value, StringComparison.Ordinal);
 		}
-
-		path = NamePlaceholders(path, forShell);
 
 		var query = parameters
 			.Where(static p => p.In == ParameterLocation.Query && p.Required && !string.IsNullOrEmpty(p.Name))
 			.DistinctBy(static p => p.Name, StringComparer.Ordinal)
-			.SelectMany(p => QueryPairs(p, forShell))
+			.SelectMany(static p => QueryPairs(p, ParameterExample.Of(p)))
 			.ToArray();
 
-		return query.Length == 0 ? path : $"{path}{(path.Contains('?') ? '&' : '?')}{string.Join('&', query)}";
+		return AppendQuery(path, query);
 	}
 
+	/// <summary><paramref name="pairs"/> joined onto the URL's query, whether or not it has one yet.</summary>
+	internal static string AppendQuery(string url, IReadOnlyCollection<string> pairs) =>
+		pairs.Count == 0 ? url : $"{url}{(url.Contains('?') ? '&' : '?')}{string.Join('&', pairs)}";
+
 	/// <summary>One flag per continuation line, the layout <see cref="CurlSourceFormatter"/> gives spec samples.</summary>
-	private static string BuildCurl(
-		string methodLabel,
-		string url,
-		OpenApiOperation operation,
-		(IOpenApiParameter[] Headers, IReadOnlyList<string> AuthFlags) flags,
-		string? body
-	)
+	private static string BuildCurl(string request, CurlAuth auth, string contentType, string? body)
 	{
-		var (headers, authFlags) = flags;
-		var parts = new List<string> { $"curl -X {methodLabel} \"{url}\"" };
-		parts.AddRange(headers.Select(static h => $"-H \"{DoubleQuoted(h.Name ?? "")}: {DoubleQuoted(HeaderExampleValue(h))}\""));
-		parts.AddRange(authFlags);
+		var parts = new List<string> { request };
+		parts.AddRange(auth.Headers.Select(static h => $"-H \"{DoubleQuoted(h.Name)}: {DoubleQuoted(h.Value)}\""));
+		parts.AddRange(auth.Flags);
 
-		if (body is not null && !headers.Any(static h => string.Equals(h.Name, "Content-Type", StringComparison.OrdinalIgnoreCase)))
-			parts.Add($"-H \"Content-Type: {DoubleQuoted(operation.RequestBody?.Content?.Keys.FirstOrDefault() ?? "application/json")}\"");
-
-		// A single quote ends the quoted argument, so it becomes '\'' as the shell expects. The body's other lines are
-		// indented under the flag, the layout CurlSourceFormatter gives spec samples.
+		if (body is not null && !auth.Headers.Any(static h => string.Equals(h.Name, "Content-Type", StringComparison.OrdinalIgnoreCase)))
+			parts.Add($"-H \"Content-Type: {DoubleQuoted(contentType)}\"");
 		if (body is not null)
-			parts.Add($"-d '{body.Replace("'", "'\\''", StringComparison.Ordinal).Replace("\n", "\n  ", StringComparison.Ordinal)}'");
+			parts.Add(SingleQuotedBody(body));
 
 		return string.Join(" \\\n  ", parts);
 	}
 
 	/// <summary>
+	/// The <c>-d</c> flag with its body in single quotes. A single quote ends the quoted argument, so it becomes <c>'\''</c> as
+	/// the shell expects, and the body's other lines are indented under the flag, as <see cref="CurlSourceFormatter"/> lays
+	/// out spec samples.
+	/// </summary>
+	internal static string SingleQuotedBody(string body) =>
+		$"-d '{body.Trim().Replace("'", "'\\''", StringComparison.Ordinal).Replace("\n", "\n  ", StringComparison.Ordinal)}'";
+
+	/// <summary>
 	/// Spec text inside a double-quoted shell argument. The shell reads <c>\</c>, <c>"</c>, <c>$</c> and <c>`</c> there, so each
 	/// is escaped, and a line break would end the command, so it becomes a space.
 	/// </summary>
-	internal static string DoubleQuoted(string text) =>
+	private static string DoubleQuoted(string text) =>
 		text
 			.Replace("\\", "\\\\", StringComparison.Ordinal)
 			.Replace("\"", "\\\"", StringComparison.Ordinal)
@@ -149,7 +135,7 @@ public static partial class SyntheticCodeSamples
 			return hostVariable + pathWithQuery;
 		if (WholeHostVariable().Match(serverUrl) is { Success: true } host)
 			return Placeholder(host.Groups[1].Value, forShell: true) + pathWithQuery;
-		return Template().Replace(serverUrl, static m => Placeholder(m.Groups[1].Value, forShell: true)) + pathWithQuery;
+		return NamePlaceholders(serverUrl, forShell: true) + pathWithQuery;
 	}
 
 	/// <summary>
@@ -157,16 +143,19 @@ public static partial class SyntheticCodeSamples
 	/// <c>AGENT_POLICY_ID</c>, and in a curl the shell variable <c>${AGENT_POLICY_ID}</c>, like the host and credential beside
 	/// it. Bare braces are never kept, because curl reads them as a glob and would silently send the bare name.
 	/// </summary>
-	internal static string Placeholder(string name, bool forShell = false)
+	private static string Placeholder(string name, bool forShell)
 	{
-		var snake = CamelBoundary().Replace(name.Trim('{', '}'), "$1_$2");
+		var snake = CamelBoundary().Replace(name, "$1_$2");
 		var upper = NotWord().Replace(snake, "_").Trim('_').ToUpperInvariant();
 		return forShell ? $"${{{upper}}}" : upper;
 	}
 
 	/// <summary>Every <c>{name}</c> still in a path becomes its placeholder.</summary>
 	internal static string NamePlaceholders(string path, bool forShell) =>
-		Template().Replace(path, m => Placeholder(m.Groups[1].Value, forShell));
+		forShell ? Template().Replace(path, ShellPlaceholder) : Template().Replace(path, ConsolePlaceholder);
+
+	private static readonly MatchEvaluator ShellPlaceholder = static m => Placeholder(m.Groups[1].Value, forShell: true);
+	private static readonly MatchEvaluator ConsolePlaceholder = static m => Placeholder(m.Groups[1].Value, forShell: false);
 
 	[GeneratedRegex(@"\{([^{}]+)\}", RegexOptions.CultureInvariant)]
 	private static partial Regex Template();
@@ -180,60 +169,60 @@ public static partial class SyntheticCodeSamples
 	[GeneratedRegex(@"[^A-Za-z0-9]+", RegexOptions.CultureInvariant)]
 	private static partial Regex NotWord();
 
-	private static IEnumerable<IOpenApiParameter> RequiredHeaders(IReadOnlyList<IOpenApiParameter> parameters) =>
-		parameters.Where(static p => p.In == ParameterLocation.Header && p.Required).OrderBy(
-			static p => p.Name,
-			StringComparer.OrdinalIgnoreCase
-		);
+	/// <summary>The required headers with the value each sends: its example, else <c>true</c> for <c>kbn-xsrf</c>, else a placeholder.</summary>
+	private static IReadOnlyList<Header> RequiredHeaders(IReadOnlyList<IOpenApiParameter> parameters) =>
+		[
+			.. parameters
+				.Where(static p => p.In == ParameterLocation.Header && p.Required && !string.IsNullOrEmpty(p.Name))
+				.OrderBy(static p => p.Name, StringComparer.OrdinalIgnoreCase)
+				.Select(
+					static p => ParameterExample.Of(p).Scalars is { } example
+						? new Header(p.Name!, string.Join(',', example), FromSpec: true)
+						: new Header(
+							p.Name!,
+							string.Equals(p.Name, "kbn-xsrf", StringComparison.OrdinalIgnoreCase) ? "true" : "string",
+							FromSpec: false
+						)
+				)
+		];
 
-	private static string HeaderExampleValue(IOpenApiParameter header)
+	private sealed record Header(string Name, string Value, bool FromSpec);
+
+	/// <summary>
+	/// The value the spec gives a parameter, read once: as plain strings (one per array item, one for a scalar), or as an
+	/// object's entries. Both are null when the spec gives none, or a value that is not plain.
+	/// </summary>
+	private sealed record ParameterExample(string[]? Scalars, (string Key, string Value)[]? Entries)
 	{
-		if (ExampleParts(header) is { } example)
-			return string.Join(',', example);
-
-		if (string.Equals(header.Name, "kbn-xsrf", StringComparison.OrdinalIgnoreCase))
-			return "true";
-
-		return "string";
-	}
-
-	/// <summary>The value the spec gives a parameter: its example, then its schema's example, default or first enum member.</summary>
-	private static JsonNode? ExampleNode(IOpenApiParameter parameter) =>
-		(SchemaHelpers.IsValue(parameter.Example) ? parameter.Example : null)
-			?? parameter.Examples?.Values.Select(static e => e.Value).FirstOrDefault(SchemaHelpers.IsValue)
-			?? SchemaHelpers.FirstExample(parameter.Schema)
-			?? (SchemaHelpers.IsValue(parameter.Schema?.Default) ? parameter.Schema!.Default : null)
-			?? parameter.Schema?.Enum?.FirstOrDefault(SchemaHelpers.IsValue);
-
-	/// <summary>One part per array item, one part for a scalar. Null when the spec gives no example, and for an object (see <see cref="ExampleEntries"/>).</summary>
-	private static string[]? ExampleParts(IOpenApiParameter parameter)
-	{
-		var node = ExampleNode(parameter);
-		if (node is JsonArray items)
+		public static ParameterExample Of(IOpenApiParameter parameter)
 		{
-			var parts = items.Select(static i => i is JsonValue ? i.ToString() : null).ToArray();
-			return parts.Length > 0 && parts.All(static p => !string.IsNullOrEmpty(p)) ? [.. parts.OfType<string>()] : null;
+			var node = (SchemaHelpers.IsValue(parameter.Example) ? parameter.Example : null)
+				?? parameter.Examples?.Values.Select(static e => e.Value).FirstOrDefault(SchemaHelpers.IsValue)
+				?? SchemaHelpers.StatedValue(parameter.Schema);
+			return node switch
+			{
+				JsonArray items => new ParameterExample(PlainStrings(items), null),
+				JsonObject properties => new ParameterExample(null, EntriesOf(properties)),
+				null => new ParameterExample(null, null),
+				_ => new ParameterExample(PlainStrings([node]), null)
+			};
 		}
 
-		if (node is null or JsonObject)
-			return null;
+		private static (string Key, string Value)[]? EntriesOf(JsonObject properties) =>
+			properties.Count > 0 && PlainStrings(properties.Select(static p => p.Value)) is { } values
+				? [.. properties.Select((p, i) => (p.Key, values[i]))]
+				: null;
 
-		var text = node.ToString();
-		return string.IsNullOrEmpty(text) ? null : [text];
-	}
-
-	/// <summary>The properties of an object example. Null for any other example, and when a property is not a plain value.</summary>
-	private static (string Key, string Value)[]? ExampleEntries(IOpenApiParameter parameter)
-	{
-		if (ExampleNode(parameter) is not JsonObject { Count: > 0 } properties)
-			return null;
-
-		var entries = properties.Select(static p => (p.Key, Value: p.Value is JsonValue ? p.Value.ToString() : null)).ToArray();
-		return entries.All(static e => !string.IsNullOrEmpty(e.Value)) ? [.. entries.Select(static e => (e.Key, e.Value!))] : null;
+		/// <summary>Every node as text, or null when any is missing, empty, or itself an array or object.</summary>
+		private static string[]? PlainStrings(IEnumerable<JsonNode?> nodes)
+		{
+			var parts = nodes.Select(static n => n is JsonValue ? n.ToString() : null).ToArray();
+			return parts.Length > 0 && parts.All(static p => !string.IsNullOrEmpty(p)) ? [.. parts.OfType<string>()] : null;
+		}
 	}
 
 	/// <summary>The example as it goes into a URL, escaped and joined with the delimiter the parameter's style names. An object is its keys and values in turn, or <c>key=value</c> pairs when exploded.</summary>
-	private static string? UrlExample(IOpenApiParameter parameter)
+	private static string? UrlExample(IOpenApiParameter parameter, ParameterExample example)
 	{
 		var delimiter = parameter.Style switch
 		{
@@ -241,7 +230,7 @@ public static partial class SyntheticCodeSamples
 			ParameterStyle.PipeDelimited => "%7C",
 			_ => ","
 		};
-		if (ExampleEntries(parameter) is { } entries)
+		if (example.Entries is { } entries)
 		{
 			var items = parameter.Explode
 				? entries.Select(static e => $"{Uri.EscapeDataString(e.Key)}={Uri.EscapeDataString(e.Value)}")
@@ -249,18 +238,19 @@ public static partial class SyntheticCodeSamples
 			return string.Join(delimiter, items);
 		}
 
-		return ExampleParts(parameter) is { } parts ? string.Join(delimiter, parts.Select(Uri.EscapeDataString)) : null;
+		return example.Scalars is { } parts ? string.Join(delimiter, parts.Select(Uri.EscapeDataString)) : null;
 	}
 
 	/// <summary>
 	/// The default form style repeats the name for each array item (<c>ids=a&amp;ids=b</c>) and sends an object as one pair
-	/// per property (<c>a=1&amp;b=2</c>); <c>deepObject</c> names each property (<c>filter[a]=1</c>); other styles send one delimited value.
+	/// per property (<c>a=1&amp;b=2</c>); <c>deepObject</c> names each property (<c>filter[a]=1</c>); other styles send one delimited
+	/// value. Without an example the value stays <c>{name}</c> for <see cref="NamePlaceholders"/>.
 	/// </summary>
-	private static IEnumerable<string> QueryPairs(IOpenApiParameter parameter, bool forShell)
+	private static IEnumerable<string> QueryPairs(IOpenApiParameter parameter, ParameterExample example)
 	{
 		var isForm = (parameter.Style ?? ParameterStyle.Form) == ParameterStyle.Form;
 		var name = Uri.EscapeDataString(parameter.Name ?? "");
-		if (ExampleEntries(parameter) is { } entries)
+		if (example.Entries is { } entries)
 		{
 			// Brackets are escaped because curl would read them as a glob.
 			if (parameter.Style == ParameterStyle.DeepObject)
@@ -269,46 +259,22 @@ public static partial class SyntheticCodeSamples
 				return entries.Select(static e => $"{Uri.EscapeDataString(e.Key)}={Uri.EscapeDataString(e.Value)}");
 		}
 
-		if (parameter.Explode && isForm && ExampleParts(parameter) is { Length: > 1 } parts)
+		if (parameter.Explode && isForm && example.Scalars is { Length: > 1 } parts)
 			return parts.Select(part => $"{name}={Uri.EscapeDataString(part)}");
 
-		return [$"{name}={UrlExample(parameter) ?? Placeholder(parameter.Name ?? "", forShell)}"];
+		return [$"{name}={UrlExample(parameter, example) ?? $"{{{parameter.Name}}}"}"];
 	}
 
-	/// <summary>
-	/// What the operation's security schemes add to the curl: flags, query parameters for schemes that travel in the URL,
-	/// and the required headers a flag replaces.
-	/// </summary>
-	private static (IReadOnlyList<string> Flags, IReadOnlyList<string> Query, HashSet<string> Replaced) AuthParts(
-		IReadOnlyList<IOpenApiSecurityScheme> schemes,
-		IOpenApiParameter[] requiredHeaders
-	)
-	{
-		var replaced = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-		if (schemes.Count == 0)
-			return ([], [], replaced);
+	/// <summary>Whether a curl has a form for a scheme's credential: a cookie key or mutual TLS has none.</summary>
+	internal static bool Sends(IOpenApiSecurityScheme scheme) => QueryKey(scheme) is not null || AuthFlag(scheme) is not null;
 
-		// A required header with an example of its own keeps it. One without is a placeholder, so the credential replaces it.
-		var exampled = requiredHeaders
-			.Where(static h => ExampleParts(h) is not null)
-			.Select(static h => h.Name)
-			.ToHashSet(StringComparer.OrdinalIgnoreCase);
-		var flags = new List<string>();
-		var query = new List<string>();
-		foreach (var scheme in schemes)
-		{
-			if (scheme.Type == SecuritySchemeType.ApiKey && scheme.In == ParameterLocation.Query && !string.IsNullOrEmpty(scheme.Name))
-				query.Add($"{scheme.Name}={ApiKeyVariable}");
-			else if (AuthFlag(scheme) is { } flag && !exampled.Contains(flag.Header))
-			{
-				flags.Add(flag.Flag);
-				_ = replaced.Add(flag.Header);
-			}
-		}
+	/// <summary>The query pair for an API key that travels in the URL.</summary>
+	private static string? QueryKey(IOpenApiSecurityScheme scheme) =>
+		scheme.Type == SecuritySchemeType.ApiKey && scheme.In == ParameterLocation.Query && !string.IsNullOrEmpty(scheme.Name)
+			? $"{scheme.Name}={ApiKeyVariable}"
+			: null;
 
-		return (flags, query, replaced);
-	}
-
+	/// <summary>The curl flag that sends a scheme's credential, and the header it fills.</summary>
 	private static (string Header, string Flag)? AuthFlag(IOpenApiSecurityScheme scheme) => scheme.Type switch
 	{
 		// An API key in the Authorization header travels behind the ApiKey scheme word, as every Elastic API expects it.
@@ -326,4 +292,34 @@ public static partial class SyntheticCodeSamples
 			("Authorization", "-H \"Authorization: Bearer ${TOKEN}\""),
 		_ => null
 	};
+
+	/// <summary>
+	/// What the curl sends to authenticate: flags, query pairs for keys that travel in the URL, and the required headers
+	/// still to send once a credential has taken the place of a placeholder one.
+	/// </summary>
+	private sealed record CurlAuth(IReadOnlyList<string> Flags, IReadOnlyList<string> Query, IReadOnlyList<Header> Headers)
+	{
+		public static CurlAuth From(IReadOnlyList<IOpenApiSecurityScheme> schemes, IReadOnlyList<Header> requiredHeaders)
+		{
+			var flags = new List<string>();
+			var query = new List<string>();
+			var replaced = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+			foreach (var scheme in schemes)
+			{
+				if (QueryKey(scheme) is { } pair)
+					query.Add(pair);
+				// A required header with an example of its own keeps it; one without is a placeholder the credential replaces.
+				else if (
+					AuthFlag(scheme) is { } flag
+					&& !requiredHeaders.Any(h => h.FromSpec && string.Equals(h.Name, flag.Header, StringComparison.OrdinalIgnoreCase))
+				)
+				{
+					flags.Add(flag.Flag);
+					_ = replaced.Add(flag.Header);
+				}
+			}
+
+			return new CurlAuth(flags, query, [.. requiredHeaders.Where(h => !replaced.Contains(h.Name))]);
+		}
+	}
 }

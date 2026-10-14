@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Text.Json;
 using System.Text.Json.Nodes;
 using Elastic.ApiExplorer.Infrastructure;
 using Elastic.ApiExplorer.Operations;
@@ -26,6 +27,32 @@ public static class SchemaHelpers
 
 	/// <summary>A node that holds a value: not null, and not the sentinel string the reader stores for a literal JSON <c>null</c>.</summary>
 	public static bool IsValue(JsonNode? node) => node is not null && !JsonNullSentinel.IsJsonNullSentinel(node);
+
+	/// <summary>The first value a schema states for itself: an example, its default, its constant, or its first enum member.</summary>
+	public static JsonNode? StatedValue(IOpenApiSchema? schema) =>
+		schema is null
+			? null
+			: FirstExample(schema)
+				?? (IsValue(schema.Default) ? schema.Default : null)
+				?? Const(schema)
+				?? schema.Enum?.FirstOrDefault(IsValue);
+
+	/// <summary>The reader keeps <c>const</c> as text, so a number or boolean is parsed back unless the schema says it is a string.</summary>
+	private static JsonNode? Const(IOpenApiSchema schema)
+	{
+		if (string.IsNullOrEmpty(schema.Const))
+			return null;
+		if (schema.Type?.HasFlag(JsonSchemaType.String) != false)
+			return JsonValue.Create(schema.Const);
+		try
+		{
+			return JsonNode.Parse(schema.Const);
+		}
+		catch (JsonException)
+		{
+			return JsonValue.Create(schema.Const);
+		}
+	}
 
 	/// <summary>
 	/// Maximum depth for recursive property rendering.

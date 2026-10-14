@@ -29,16 +29,15 @@ public record ApiOperation(
 	/// The operation's parameters and the path item's, which apply to every operation on the path unless the operation
 	/// declares one of the same name and location itself.
 	/// </summary>
-	public IOpenApiParameter[] Parameters
+	public IOpenApiParameter[] Parameters { get; } = MergeParameters(Operation, Path);
+
+	private static IOpenApiParameter[] MergeParameters(OpenApiOperation operation, IOpenApiPathItem path)
 	{
-		get
-		{
-			var own = Operation.Parameters ?? [];
-			var inherited = (Path.Parameters ?? []).Where(
-				p => !own.Any(o => o.In == p.In && string.Equals(o.Name, p.Name, StringComparison.Ordinal))
-			);
-			return [.. own, .. inherited];
-		}
+		var own = operation.Parameters ?? [];
+		var inherited = (path.Parameters ?? []).Where(
+			p => !own.Any(o => o.In == p.In && string.Equals(o.Name, p.Name, StringComparison.Ordinal))
+		);
+		return [.. own, .. inherited];
 	}
 
 	public OperationPageModel? CreatePageModel(ApiRenderContext context) => OperationPageModel.Create(this, context);

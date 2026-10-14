@@ -11,26 +11,23 @@ namespace Elastic.ApiExplorer.Operations;
 /// Console and curl samples for example scenarios that only ship a JSON body, so Console (the default
 /// language, runnable in Kibana Dev Tools) exists for every example.
 /// </summary>
+/// <summary>Where a product's generated samples go: Console's route prefix (null when Console can't call the API) and the curl's host variable.</summary>
+public sealed record SampleTarget(string? ConsolePrefix, string HostVariable);
+
 public static partial class GeneratedCodeSamples
 {
 	/// <summary>
-	/// What Console puts before the route for a product: empty for Elasticsearch, <c>kbn:</c> for Kibana, and null where
-	/// Console can't call the API (Cloud, Logstash, ...). A spec without a product keeps Console.
+	/// What a product's generated samples address: what Console puts before the route (empty for Elasticsearch, <c>kbn:</c> for
+	/// Kibana, null where Console can't call the API), and the host variable the product's own curl samples use for a spec
+	/// that names no server. A spec without a product keeps Console.
 	/// </summary>
-	public static string? ConsolePrefixFor(string? productId) => productId switch
+	public static SampleTarget SampleTargetFor(string? productId) => productId switch
 	{
-		null or "elasticsearch" or "serverless-elasticsearch" => "",
-		"kibana" => "kbn:",
-		_ => null
-	};
-
-	/// <summary>The host variable a product's own curl samples use, for a spec that names no server.</summary>
-	public static string HostVariableFor(string? productId) => productId switch
-	{
-		"elasticsearch" or "serverless-elasticsearch" => "${ELASTICSEARCH_URL}",
-		"kibana" => "${KIBANA_URL}",
-		"logstash" => "${LOGSTASH_URL}",
-		_ => "${API_URL}"
+		null => new SampleTarget("", "${API_URL}"),
+		"elasticsearch" or "serverless-elasticsearch" => new SampleTarget("", "${ELASTICSEARCH_URL}"),
+		"kibana" => new SampleTarget("kbn:", "${KIBANA_URL}"),
+		"logstash" => new SampleTarget(null, "${LOGSTASH_URL}"),
+		_ => new SampleTarget(null, "${API_URL}")
 	};
 
 	/// <summary>Adds generated samples to every scenario that has a request body but no code samples.</summary>
@@ -38,7 +35,7 @@ public static partial class GeneratedCodeSamples
 		IReadOnlyList<ExampleScenario> scenarios,
 		IReadOnlyList<CodeSample> specSamples,
 		OperationEndpoint endpoint,
-		string? productConsolePrefix = ""
+		string? productConsolePrefix
 	)
 	{
 		var console = specSamples.FirstOrDefault(static s => s.IsConsole);
@@ -61,14 +58,8 @@ public static partial class GeneratedCodeSamples
 					samples.Add(CodeSample.Generate("Console", $"{method} {prefix}{consolePath}\n{scenario.RequestJson.Trim()}"));
 				}
 
-				if (
-					Curl(
-						curl?.Source,
-						method,
-						SyntheticCodeSamples.NamePlaceholders(path, forShell: true),
-						scenario.RequestJson
-					) is { } curlSource
-				)
+				var shellPath = SyntheticCodeSamples.NamePlaceholders(path, forShell: true);
+				if (Curl(curl?.Source, method, shellPath, scenario.RequestJson) is { } curlSource)
 					samples.Add(CodeSample.Generate("curl", curlSource));
 
 				// Nothing runnable to show, so the request stays in the rail's own block.
@@ -108,9 +99,7 @@ public static partial class GeneratedCodeSamples
 		if (string.IsNullOrWhiteSpace(curlSource) || !CurlBody().IsMatch(curlSource) || !CurlHostPath().IsMatch(curlSource))
 			return null;
 
-		// Other lines of the body sit under the -d flag, as CurlSourceFormatter lays out spec samples.
-		var escapedBody = body.Trim().Replace("'", "'\\''", StringComparison.Ordinal).Replace("\n", "\n  ", StringComparison.Ordinal);
-		var withBody = CurlBody().Replace(curlSource, _ => $"-d '{escapedBody}'", 1);
+		var withBody = CurlBody().Replace(curlSource, _ => SyntheticCodeSamples.SingleQuotedBody(body), 1);
 		var withMethod = CurlMethod().Replace(withBody, $"-X {method}", 1);
 		var route = path.StartsWith('/') ? path : "/" + path;
 		return CurlHostPath().Replace(withMethod, match => match.Groups[1].Value + WithCredentials(route, match.Value), 1);
@@ -130,7 +119,7 @@ public static partial class GeneratedCodeSamples
 					!route.Contains(pair, StringComparison.Ordinal)
 			)
 			.ToArray();
-		return credentials.Length == 0 ? route : $"{route}{(route.Contains('?') ? '&' : '?')}{string.Join('&', credentials)}";
+		return SyntheticCodeSamples.AppendQuery(route, credentials);
 	}
 
 	[GeneratedRegex(@"^Run\s+`(GET|POST|PUT|PATCH|DELETE|HEAD)\s+([^`]+)`", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]

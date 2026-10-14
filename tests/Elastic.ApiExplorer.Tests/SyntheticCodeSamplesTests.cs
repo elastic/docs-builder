@@ -159,7 +159,7 @@ public class SyntheticCodeSamplesTests
 	[Arguments("cloud-enterprise", "${API_URL}")]
 	[Arguments(null, "${API_URL}")]
 	public void HostVariableFor_NamesTheProductsHost(string? productId, string expected) =>
-		GeneratedCodeSamples.HostVariableFor(productId).Should().Be(expected);
+		GeneratedCodeSamples.SampleTargetFor(productId).HostVariable.Should().Be(expected);
 
 	[Test]
 	public void Create_WithTheExampleOfAnOpenApi30Schema_FillsItIn()
@@ -607,5 +607,5 @@ public class SyntheticCodeSamplesTests
 	[Arguments("cloud-hosted", null)]
 	[Arguments("logstash", null)]
 	public void ConsolePrefixFor_OnlyElasticsearchAndKibanaCanRunConsole(string? productId, string? expected) =>
-		GeneratedCodeSamples.ConsolePrefixFor(productId).Should().Be(expected);
+		GeneratedCodeSamples.SampleTargetFor(productId).ConsolePrefix.Should().Be(expected);
 }

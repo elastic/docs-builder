@@ -16,7 +16,7 @@ namespace Elastic.ApiExplorer.Model;
 /// </summary>
 public static class RequestBodyExample
 {
-	/// <summary>Required objects nested in required objects stop here; a deeper compound value is <c>null</c>. A scalar still gets its value at any depth.</summary>
+	/// <summary>Required objects nested in required objects stop here; a deeper compound value is left out. A scalar still gets its value at any depth.</summary>
 	private const int MaxDepth = 6;
 
 	private static readonly JsonSerializerOptions PrettyJson = new() { WriteIndented = true };
@@ -42,89 +42,41 @@ public static class RequestBodyExample
 		if (resolved is null)
 			return null;
 
-		if (Stated(resolved) is { } stated)
-			return WithoutSentinels(stated.DeepClone());
+		if (SchemaHelpers.StatedValue(resolved) is { } stated)
+			return CloneWithoutSentinels(stated);
+
+		var type = resolved.Type ?? JsonSchemaType.Null;
+		if (depth >= MaxDepth)
+			return Placeholder(type);
 
 		if (UnionSchemas.TryGet(resolved, out _, out var members))
 		{
 			// The first variant that is a value; `null` is listed as a variant only to allow leaving the field out.
 			var variant = members.FirstOrDefault(m => (analyzer.ResolveSchema(m) ?? m).Type != JsonSchemaType.Null);
-			return depth < MaxDepth && variant is not null ? Value(analyzer, variant, depth + 1) : null;
+			return variant is null ? null : Value(analyzer, variant, depth + 1);
 		}
 
-		var effective = analyzer.Flatten(resolved);
-		var type = resolved.Type ?? JsonSchemaType.Null;
 		if (type.HasFlag(JsonSchemaType.Array))
-			return depth < MaxDepth ? Items(analyzer, resolved, depth) : null;
+			return Value(analyzer, resolved.Items, depth + 1) is { } item ? new JsonArray(item) : [];
+
+		var effective = analyzer.Flatten(resolved);
 		if (effective.Properties.Count > 0 || effective.MapValue is not null || type.HasFlag(JsonSchemaType.Object))
-			return depth < MaxDepth ? Object(analyzer, effective, depth) : null;
+			return Object(analyzer, effective, depth);
 
 		// A property written as `allOf: [{ $ref }]` plus a description has no type of its own; the member it wraps does.
-		if (resolved.Type is null && resolved.AllOf is { Count: > 0 } wrapped && depth < MaxDepth)
+		if (resolved.Type is null && resolved.AllOf is { Count: > 0 } wrapped)
 			return wrapped.Select(member => Value(analyzer, member, depth + 1)).FirstOrDefault(static v => v is not null);
 
 		return Placeholder(type);
 	}
 
-	/// <summary>A literal <c>null</c> inside an example is stored as a sentinel string by the reader; the body gets the <c>null</c> back.</summary>
-	private static JsonNode? WithoutSentinels(JsonNode? node)
+	/// <summary>A copy of a stated value. A literal <c>null</c> inside it is stored as a sentinel string by the reader; the copy gets the <c>null</c> back.</summary>
+	private static JsonNode? CloneWithoutSentinels(JsonNode? node) => node switch
 	{
-		// A child keeps its slot unless it is the sentinel; putting an attached node back into its own slot throws.
-		switch (node)
-		{
-			case JsonObject obj:
-				foreach (var (key, child) in obj.ToArray())
-				{
-					if (IsSentinel(child))
-						obj[key] = null;
-					else
-						_ = WithoutSentinels(child);
-				}
-
-				return obj;
-			case JsonArray array:
-				for (var i = 0; i < array.Count; i++)
-				{
-					if (IsSentinel(array[i]))
-						array[i] = null;
-					else
-						_ = WithoutSentinels(array[i]);
-				}
-
-				return array;
-			default:
-				return IsSentinel(node) ? null : node;
-		}
-	}
-
-	private static bool IsSentinel(JsonNode? node) => node is not null && JsonNullSentinel.IsJsonNullSentinel(node);
-
-	/// <summary>The first value the schema states itself, whether an example, a default, a constant or an enum member.</summary>
-	private static JsonNode? Stated(IOpenApiSchema schema) =>
-		SchemaHelpers.FirstExample(schema)
-			?? (SchemaHelpers.IsValue(schema.Default) ? schema.Default : null)
-			?? Const(schema)
-			?? schema.Enum?.FirstOrDefault(SchemaHelpers.IsValue);
-
-	/// <summary>The reader keeps <c>const</c> as text, so a number or boolean is parsed back unless the schema says it is a string.</summary>
-	private static JsonNode? Const(IOpenApiSchema schema)
-	{
-		if (string.IsNullOrEmpty(schema.Const))
-			return null;
-		if (schema.Type?.HasFlag(JsonSchemaType.String) != false)
-			return JsonValue.Create(schema.Const);
-		try
-		{
-			return JsonNode.Parse(schema.Const);
-		}
-		catch (JsonException)
-		{
-			return JsonValue.Create(schema.Const);
-		}
-	}
-
-	private static JsonArray Items(SchemaAnalyzer analyzer, IOpenApiSchema array, int depth) =>
-		Value(analyzer, array.Items, depth + 1) is { } item ? [item] : [];
+		JsonObject obj => new JsonObject(obj.Select(static p => KeyValuePair.Create(p.Key, CloneWithoutSentinels(p.Value)))),
+		JsonArray array => new JsonArray([.. array.Select(CloneWithoutSentinels)]),
+		_ => SchemaHelpers.IsValue(node) ? node!.DeepClone() : null
+	};
 
 	/// <summary>
 	/// The required properties, without the ones the server sets (<c>readOnly</c>). A property with nothing to show is left

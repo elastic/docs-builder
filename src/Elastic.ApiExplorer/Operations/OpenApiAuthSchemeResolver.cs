@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using Elastic.ApiExplorer.Model;
 using Microsoft.OpenApi;
 
 namespace Elastic.ApiExplorer.Operations;
@@ -44,20 +45,12 @@ public static class OpenApiAuthSchemeResolver
 		{
 			var schemes = requirement.Keys.OfType<OpenApiSecuritySchemeReference>().Select(key => Target(key, document)).ToArray();
 			// The schemes of one requirement are sent together, so one a curl can't send rules the whole alternative out.
-			if (schemes.Length > 0 && schemes.All(static s => s is not null && CanSendInCurl(s)))
+			if (schemes.Length > 0 && schemes.All(static s => s is not null && SyntheticCodeSamples.Sends(s)))
 				return [.. schemes.OfType<IOpenApiSecurityScheme>()];
 		}
 
 		return [];
 	}
-
-	/// <summary>Header and query API keys, HTTP schemes and tokens. A cookie key, mutual TLS and the like have no curl flag here.</summary>
-	internal static bool CanSendInCurl(IOpenApiSecurityScheme scheme) => scheme.Type switch
-	{
-		SecuritySchemeType.ApiKey => scheme.In is ParameterLocation.Header or ParameterLocation.Query && !string.IsNullOrEmpty(scheme.Name),
-		SecuritySchemeType.Http or SecuritySchemeType.OAuth2 or SecuritySchemeType.OpenIdConnect => true,
-		_ => false
-	};
 
 	private static List<AuthScheme> SchemesOf(OpenApiSecurityRequirement requirement, OpenApiDocument document)
 	{
