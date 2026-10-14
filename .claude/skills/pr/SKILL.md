@@ -74,10 +74,12 @@ Required structure:
  `https://docs-v3-preview.elastic.dev/elastic/docs-builder/docs/<PR number>/<path>`:
  the link, a dash, then the one thing to look at there. Pick pages that each show a
  different behaviour of the change, and one control page the change must leave alone.
- The preview does not exist yet when the PR is created, so check each <path> against
- the local build instead: `.artifacts/docs/html/<path>/index.html`, or the page on
- `docs-builder serve`. The preview serves the same paths once its workflow finishes.
- Omit when nothing renders differently.>
+ The preview does not exist yet when the PR is created, so the links cannot be opened
+ then. Take each <path> from the page's own address instead: a Markdown page's docset
+ path, or `api/doc/<api>/operation/operation-<operation id>` for an API operation.
+ A local build (`.artifacts/docs/html/<path>/index.html`) confirms a path when one is
+ already at hand; do not build the site only for this. The preview serves the paths
+ once its workflow finishes. Omit when nothing renders differently.>
 ```
 
 A **Check on the preview** entry reads like this:
@@ -159,7 +161,7 @@ gh pr edit --add-label "<new-label>" --remove-label "<old-label>"
 
 ### 8. Create the PR
 
-One call — title, label, and body together. When the change renders differently, one `gh pr edit` follows right away to add **Check on the preview**: the section needs the PR number, which exists only after creation, so read it from the URL `gh pr create` prints and build the links from it. Do not wait for the preview workflow; the paths were checked against the local build, and the preview serves them once it has run.
+One call — title, label, and body together. When the change renders differently, one `gh pr edit` follows right away to add **Check on the preview**: the section needs the PR number, which exists only after creation, so read it from the URL `gh pr create` prints and build the links from it. Do not wait for the preview workflow and do not build the site for this; the paths come from the pages' own addresses, and the preview serves them once it has run.
 
 ```bash
 gh pr create --title "<title>" --label "<label>" --body "$(cat <<'EOF'
