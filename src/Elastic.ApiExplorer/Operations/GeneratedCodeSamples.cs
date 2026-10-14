@@ -96,7 +96,7 @@ public static partial class GeneratedCodeSamples
 		return CurlHostPath().Replace(withMethod, match => match.Groups[1].Value + WithCredentials(route, match.Value), 1);
 	}
 
-	/// <summary>A query parameter of the copied URL whose value is a shell variable (<c>?key=$API_KEY</c>) is a credential, so it follows the sample to the new route.</summary>
+	/// <summary>A query parameter of the copied URL that carries the API key (<c>?key=$API_KEY</c>) is a credential, so it follows the sample to the new route. Other variables are the sample's own options and stay behind.</summary>
 	private static string WithCredentials(string route, string originalUrl)
 	{
 		var at = originalUrl.IndexOf('?', StringComparison.Ordinal);
@@ -105,7 +105,10 @@ public static partial class GeneratedCodeSamples
 
 		var credentials = originalUrl[(at + 1)..]
 			.Split('&', StringSplitOptions.RemoveEmptyEntries)
-			.Where(pair => pair.Contains("=$", StringComparison.Ordinal) && !route.Contains(pair, StringComparison.Ordinal))
+			.Where(
+				pair => pair.EndsWith("=" + SyntheticCodeSamples.ApiKeyVariable, StringComparison.Ordinal) &&
+					!route.Contains(pair, StringComparison.Ordinal)
+			)
 			.ToArray();
 		return credentials.Length == 0 ? route : $"{route}{(route.Contains('?') ? '&' : '?')}{string.Join('&', credentials)}";
 	}

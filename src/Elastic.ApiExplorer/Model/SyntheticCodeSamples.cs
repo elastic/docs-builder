@@ -31,6 +31,9 @@ public sealed record SyntheticSampleInput(HttpMethod Method, string Route, OpenA
 /// </summary>
 public static class SyntheticCodeSamples
 {
+	/// <summary>The shell variable that stands for an API key in a sample.</summary>
+	internal const string ApiKeyVariable = "$API_KEY";
+
 	public static IReadOnlyList<CodeSample> Create(SyntheticSampleInput input)
 	{
 		var operation = input.Operation;
@@ -227,7 +230,7 @@ public static class SyntheticCodeSamples
 		foreach (var scheme in schemes)
 		{
 			if (scheme.Type == SecuritySchemeType.ApiKey && scheme.In == ParameterLocation.Query && !string.IsNullOrEmpty(scheme.Name))
-				query.Add($"{scheme.Name}=$API_KEY");
+				query.Add($"{scheme.Name}={ApiKeyVariable}");
 			else if (AuthFlag(scheme) is { } flag && !exampled.Contains(flag.Header))
 			{
 				flags.Add(flag.Flag);
@@ -241,7 +244,7 @@ public static class SyntheticCodeSamples
 	private static (string Header, string Flag)? AuthFlag(IOpenApiSecurityScheme scheme) => scheme.Type switch
 	{
 		SecuritySchemeType.ApiKey when scheme.In == ParameterLocation.Header && !string.IsNullOrEmpty(scheme.Name) =>
-			(scheme.Name, $"-H \"{scheme.Name}: $API_KEY\""),
+			(scheme.Name, $"-H \"{scheme.Name}: {ApiKeyVariable}\""),
 		SecuritySchemeType.Http when string.Equals(scheme.Scheme, "basic", StringComparison.OrdinalIgnoreCase) =>
 			("Authorization", "-u \"$USERNAME:$PASSWORD\""),
 		SecuritySchemeType.Http when !string.IsNullOrEmpty(scheme.Scheme)
