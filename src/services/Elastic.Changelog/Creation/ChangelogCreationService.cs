@@ -33,6 +33,12 @@ public record CreateChangelogArguments
 	public string? Description { get; init; }
 	public string? Impact { get; init; }
 	public string? Action { get; init; }
+
+	/// <summary>Impact held by an existing entry file, from <c>CHANGELOG_ENTRY_IMPACT</c>. Unlike <see cref="Impact"/> it survives disabled extraction.</summary>
+	public string? CiEntryImpact { get; init; }
+
+	/// <summary>Action held by an existing entry file, from <c>CHANGELOG_ENTRY_ACTION</c>. See <see cref="CiEntryImpact"/>.</summary>
+	public string? CiEntryAction { get; init; }
 	public string? FeatureId { get; init; }
 	public bool? Highlight { get; init; }
 	public string? Output { get; init; }
@@ -633,21 +639,28 @@ public class ChangelogCreationService(
 		string? cliAction
 	)
 	{
-		if (!input.ExtractionDisabled)
-			return input;
+		if (input.ExtractionDisabled)
+		{
+			var clearDescription = string.IsNullOrWhiteSpace(cliDescription) && !string.IsNullOrWhiteSpace(input.Description);
+			var clearImpact = string.IsNullOrWhiteSpace(cliImpact) && !string.IsNullOrWhiteSpace(input.Impact);
+			var clearAction = string.IsNullOrWhiteSpace(cliAction) && !string.IsNullOrWhiteSpace(input.Action);
+			if (clearDescription || clearImpact || clearAction)
+			{
+				_logger.LogInformation("Clearing CI-provided description, impact, and action because release note extraction is disabled");
+				input = input with
+				{
+					Description = clearDescription ? null : input.Description,
+					Impact = clearImpact ? null : input.Impact,
+					Action = clearAction ? null : input.Action
+				};
+			}
+		}
 
-		var clearDescription = string.IsNullOrWhiteSpace(cliDescription) && !string.IsNullOrWhiteSpace(input.Description);
-		var clearImpact = string.IsNullOrWhiteSpace(cliImpact) && !string.IsNullOrWhiteSpace(input.Impact);
-		var clearAction = string.IsNullOrWhiteSpace(cliAction) && !string.IsNullOrWhiteSpace(input.Action);
-		if (!clearDescription && !clearImpact && !clearAction)
-			return input;
-
-		_logger.LogInformation("Clearing CI-provided description, impact, and action because release note extraction is disabled");
+		// Values that the PR's existing entry file already holds are not extracted from anywhere, so disabling extraction keeps them.
 		return input with
 		{
-			Description = clearDescription ? null : input.Description,
-			Impact = clearImpact ? null : input.Impact,
-			Action = clearAction ? null : input.Action
+			Impact = string.IsNullOrWhiteSpace(input.Impact) ? input.CiEntryImpact : input.Impact,
+			Action = string.IsNullOrWhiteSpace(input.Action) ? input.CiEntryAction : input.Action
 		};
 	}
 
@@ -695,6 +708,8 @@ public class ChangelogCreationService(
 		var ciDescription = env.GetEnvironmentVariable("CHANGELOG_DESCRIPTION");
 		var ciImpact = env.GetEnvironmentVariable("CHANGELOG_IMPACT");
 		var ciAction = env.GetEnvironmentVariable("CHANGELOG_ACTION");
+		var ciEntryImpact = env.GetEnvironmentVariable("CHANGELOG_ENTRY_IMPACT");
+		var ciEntryAction = env.GetEnvironmentVariable("CHANGELOG_ENTRY_ACTION");
 		var ciType = env.GetEnvironmentVariable("CHANGELOG_TYPE");
 		var ciOwner = env.GetEnvironmentVariable("CHANGELOG_OWNER");
 		var ciRepo = env.GetEnvironmentVariable("CHANGELOG_REPO");
@@ -721,6 +736,8 @@ public class ChangelogCreationService(
 			Description = enrichedDescription,
 			Impact = !string.IsNullOrWhiteSpace(input.Impact) ? input.Impact : input.ExtractionDisabled ? null : ciImpact,
 			Action = !string.IsNullOrWhiteSpace(input.Action) ? input.Action : input.ExtractionDisabled ? null : ciAction,
+			CiEntryImpact = ciEntryImpact,
+			CiEntryAction = ciEntryAction,
 			Type = !string.IsNullOrWhiteSpace(input.Type) ? input.Type : ciType,
 			Owner = input.Owner ?? ciOwner,
 			Repo = !string.IsNullOrWhiteSpace(input.Repo) ? input.Repo : ciRepo,

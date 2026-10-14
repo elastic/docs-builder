@@ -363,10 +363,12 @@ public class ChangelogPrEvaluationService(
 			productLabelTable: productLabelTable,
 			changelogDir: changelogDir,
 			existingFilename: existingFilename,
-			// An entry file that passed the match check is the source when the description has no section,
-			// so generation keeps the fields instead of regenerating the entry without them.
-			resolvedImpact: impact ?? breakingEntry?.Impact,
-			resolvedAction: action ?? breakingEntry?.Action
+			resolvedImpact: impact,
+			resolvedAction: action,
+			// Kept apart from the description-derived values: changelog add discards those when extraction is disabled,
+			// but must never lose what the entry file already holds.
+			resolvedEntryImpact: breakingEntry?.Impact,
+			resolvedEntryAction: breakingEntry?.Action
 		);
 	}
 
@@ -562,7 +564,9 @@ public class ChangelogPrEvaluationService(
 		string? existingFilename = null,
 		string? skipLabels = null,
 		string? resolvedImpact = null,
-		string? resolvedAction = null
+		string? resolvedAction = null,
+		string? resolvedEntryImpact = null,
+		string? resolvedEntryAction = null
 	)
 	{
 		var statusString = status == PrEvaluationResult.Success ? ProceedStatus : status.ToStringFast(true);
@@ -591,6 +595,16 @@ public class ChangelogPrEvaluationService(
 			await coreService.SetOutputAsync(
 				"action",
 				OutputSanitizer.SanitizeForOutput(resolvedAction, OutputSanitizer.DescriptionMaxLength)
+			);
+		if (!string.IsNullOrWhiteSpace(resolvedEntryImpact))
+			await coreService.SetOutputAsync(
+				"entry-impact",
+				OutputSanitizer.SanitizeForOutput(resolvedEntryImpact, OutputSanitizer.DescriptionMaxLength)
+			);
+		if (!string.IsNullOrWhiteSpace(resolvedEntryAction))
+			await coreService.SetOutputAsync(
+				"entry-action",
+				OutputSanitizer.SanitizeForOutput(resolvedEntryAction, OutputSanitizer.DescriptionMaxLength)
 			);
 		if (resolvedType != null)
 			await coreService.SetOutputAsync("type", OutputSanitizer.SanitizeForOutput(resolvedType, OutputSanitizer.TypeMaxLength));

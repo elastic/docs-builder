@@ -148,6 +148,8 @@ When running inside GitHub Actions, `changelog add` automatically reads the foll
 | `CHANGELOG_DESCRIPTION` | `--description` | `steps.evaluate.outputs.description` |
 | `CHANGELOG_IMPACT` | `--impact` | `steps.evaluate.outputs.impact` |
 | `CHANGELOG_ACTION` | `--action` | `steps.evaluate.outputs.action` |
+| `CHANGELOG_ENTRY_IMPACT` | `--impact` | `steps.evaluate.outputs.entry-impact` |
+| `CHANGELOG_ENTRY_ACTION` | `--action` | `steps.evaluate.outputs.entry-action` |
 | `CHANGELOG_TYPE` | `--type` | `steps.evaluate.outputs.type` |
 | `CHANGELOG_PRODUCTS` | `--products` | `steps.evaluate.outputs.products` |
 | `CHANGELOG_OWNER` | `--owner` | `github.repository_owner` |
@@ -161,7 +163,7 @@ Explicit CLI arguments always take priority over environment variables.
 - If `--no-extract-release-notes` is passed (or `extract.release_notes: false` is set in the changelog configuration), `CHANGELOG_DESCRIPTION` is ignored.
 - Otherwise, `CHANGELOG_DESCRIPTION` fills `--description` when it is not set on the command line.
 
-`CHANGELOG_IMPACT` and `CHANGELOG_ACTION` follow the same rules: explicit `--impact` and `--action` win, and both are ignored when release note extraction is disabled. When `--prs` is used without them, `changelog add` also derives `impact` and `action` from the `## Impact` and `## Action` sections of the PR description. For a `breaking-change` entry with extraction enabled, it fetches the PR for this even when the title, type, and products are already set. Disabling extraction, on the command line or with `extract.release_notes: false`, also drops the CI-provided values.
+`CHANGELOG_IMPACT` and `CHANGELOG_ACTION` follow the same rules: explicit `--impact` and `--action` win, and both are ignored when release note extraction is disabled. `CHANGELOG_ENTRY_IMPACT` and `CHANGELOG_ENTRY_ACTION` carry what the PR's existing entry file already holds, so they apply even when extraction is disabled and fill `--impact` and `--action` only when the other sources are empty. When `--prs` is used without them, `changelog add` also derives `impact` and `action` from the `## Impact` and `## Action` sections of the PR description. For a `breaking-change` entry with extraction enabled, it fetches the PR for this even when the title, type, and products are already set. Disabling extraction, on the command line or with `extract.release_notes: false`, also drops the CI-provided values.
 
 This allows the CI action to invoke `changelog add` with a minimal command line:
 

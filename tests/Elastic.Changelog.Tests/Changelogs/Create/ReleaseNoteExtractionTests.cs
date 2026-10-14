@@ -993,6 +993,70 @@ public class ReleaseNoteExtractionTests() : CreateChangelogTestBase()
 	}
 
 	[Test]
+	public async Task CreateChangelog_InCI_ExtractionDisabledByConfig_KeepsEntryFileImpactAndAction()
+	{
+		var prInfo = new GitHubPrInfo { Title = "Remove a parameter", Body = "Nothing relevant.", Labels = ["type:breaking"] };
+		A.CallTo(
+			() => MockGitHubService.FetchPrInfoAsync(
+				"https://github.com/elastic/elasticsearch/pull/12345",
+				null,
+				null,
+				A<CancellationToken>._
+			)
+		).Returns(prInfo);
+
+		// language=yaml
+		var configContent =
+			"""
+			extract:
+			  release_notes: false
+			pivot:
+			  types:
+			    feature:
+			    bug-fix:
+			    breaking-change: "type:breaking"
+			lifecycles:
+			  - preview
+			  - beta
+			  - ga
+			""";
+		var configPath = await CreateConfigDirectory(configContent);
+
+		var env = A.Fake<IEnvironmentVariables>();
+		A.CallTo(() => env.IsRunningOnCI).Returns(true);
+		A.CallTo(() => env.GetEnvironmentVariable("CHANGELOG_PR_NUMBER")).Returns("12345");
+		A.CallTo(() => env.GetEnvironmentVariable("CHANGELOG_TITLE")).Returns("Remove a parameter");
+		A.CallTo(() => env.GetEnvironmentVariable("CHANGELOG_DESCRIPTION")).Returns(null);
+		A.CallTo(() => env.GetEnvironmentVariable("CHANGELOG_IMPACT")).Returns("Scraped impact");
+		A.CallTo(() => env.GetEnvironmentVariable("CHANGELOG_ACTION")).Returns(null);
+		A.CallTo(() => env.GetEnvironmentVariable("CHANGELOG_ENTRY_IMPACT")).Returns("Entry impact");
+		A.CallTo(() => env.GetEnvironmentVariable("CHANGELOG_ENTRY_ACTION")).Returns("Entry action");
+		A.CallTo(() => env.GetEnvironmentVariable("CHANGELOG_TYPE")).Returns("breaking-change");
+		A.CallTo(() => env.GetEnvironmentVariable("CHANGELOG_OWNER")).Returns(null);
+		A.CallTo(() => env.GetEnvironmentVariable("CHANGELOG_REPO")).Returns(null);
+		A.CallTo(() => env.GetEnvironmentVariable("CHANGELOG_PRODUCTS")).Returns(null);
+
+		var input = new CreateChangelogArguments
+		{
+			Prs = ["https://github.com/elastic/elasticsearch/pull/12345"],
+			Products = [new ProductArgument { Product = "elasticsearch", Lifecycle = "ga" }],
+			Config = configPath,
+			Output = CreateOutputDirectory(),
+			ExtractReleaseNotes = null
+		};
+
+		var result = await CreateService(env).CreateChangelog(Collector, input, TestContext.Current!.Execution.CancellationToken);
+
+		result.Should().BeTrue();
+		var files = FileSystem.Directory.GetFiles(input.Output, "*.yaml");
+		files.Should().HaveCount(1);
+		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current!.Execution.CancellationToken);
+		yamlContent.Should().Contain("Entry impact");
+		yamlContent.Should().Contain("Entry action");
+		yamlContent.Should().NotContain("Scraped impact");
+	}
+
+	[Test]
 	public async Task CreateChangelog_BreakingTypeSupplied_ExtractionEnabled_FetchesPrForImpactAndAction()
 	{
 		var prInfo = new GitHubPrInfo

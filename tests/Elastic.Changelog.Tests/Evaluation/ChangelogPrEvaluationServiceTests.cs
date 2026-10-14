@@ -1257,7 +1257,7 @@ public class ChangelogPrEvaluationServiceTests : ChangelogTestBase
 	}
 
 	[Test]
-	public async Task EvaluatePr_BotAuthoredBreakingEntry_BodyHasNoSections_OutputsComeFromTheFile()
+	public async Task EvaluatePr_BotAuthoredBreakingEntry_BodyHasNoSections_FileValuesGoToEntryOutputs()
 	{
 		await WriteMinimalConfig();
 		await WriteHumanEntry("breaking-change", impact: "File impact.", action: "File action.", humanAuthor: false);
@@ -1269,7 +1269,8 @@ public class ChangelogPrEvaluationServiceTests : ChangelogTestBase
 		result.Should().BeTrue();
 		Collector.Errors.Should().Be(0);
 		VerifyOutputSet("status", "proceed");
-		VerifyOutputSet("impact", "File impact.");
-		VerifyOutputSet("action", "File action.");
+		VerifyOutputSet("entry-impact", "File impact.");
+		A.CallTo(() => _mockCore.SetOutputAsync("impact", A<string>._)).MustNotHaveHappened();
+		VerifyOutputSet("entry-action", "File action.");
 	}
 }

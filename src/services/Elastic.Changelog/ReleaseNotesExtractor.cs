@@ -99,6 +99,35 @@ public static partial class ReleaseNotesExtractor
 	/// <summary>Finds the "Action" section of a PR description. See <see cref="FindImpact"/> for the recognized forms.</summary>
 	public static string? FindAction(string? markdown) => FindSection(markdown, ActionStartRegex());
 
+	/// <summary>Marks the fence lines and every line between them, so section boundaries are never read from code samples.</summary>
+	private static bool[] MarkCodeLines(string[] lines)
+	{
+		var inCode = new bool[lines.Length];
+		string? openFence = null;
+		for (var i = 0; i < lines.Length; i++)
+		{
+			var trimmed = lines[i].TrimStart();
+			var marker = trimmed.StartsWith("```", StringComparison.Ordinal)
+				? "```"
+				: trimmed.StartsWith("~~~", StringComparison.Ordinal) ? "~~~" : null;
+			if (openFence == null)
+			{
+				if (marker == null)
+					continue;
+				openFence = marker;
+				inCode[i] = true;
+			}
+			else
+			{
+				inCode[i] = true;
+				if (marker == openFence)
+					openFence = null;
+			}
+		}
+
+		return inCode;
+	}
+
 	/// <summary>A match is a section start when it is a bare heading (<c>## Impact</c>) or a label with a colon (<c>Impact: ...</c>).</summary>
 	private static bool IsSectionStart(Match start, out int hashes, out string inline)
 	{
@@ -119,8 +148,13 @@ public static partial class ReleaseNotesExtractor
 			return null;
 
 		var lines = StripHtmlComments(markdown).Replace("\r\n", "\n").Split('\n');
+		var inCode = MarkCodeLines(lines);
 		for (var i = 0; i < lines.Length; i++)
 		{
+			// A heading or label inside a fenced code block is content, not a section.
+			if (inCode[i])
+				continue;
+
 			var start = startRegex.Match(lines[i]);
 			if (!start.Success)
 				continue;
@@ -138,6 +172,12 @@ public static partial class ReleaseNotesExtractor
 			for (var j = i + 1; j < lines.Length; j++)
 			{
 				var line = lines[j];
+				if (inCode[j])
+				{
+					content.Add(line);
+					continue;
+				}
+
 				// One section never swallows the next: stop at the start of either Impact or Action.
 				if (
 					IsSectionStart(ImpactStartRegex().Match(line), out _, out _)

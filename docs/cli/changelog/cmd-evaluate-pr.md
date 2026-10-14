@@ -18,6 +18,8 @@ When running under GitHub Actions (the `GITHUB_ACTIONS` environment variable is 
 | `description` | Release note extracted from the PR body (when `extract.release_notes` is enabled and a release note is found). Long or multi-line release notes (over 120 characters) are placed here. Passed downstream as `CHANGELOG_DESCRIPTION` for `changelog add`. |
 | `impact` | Content of the `## Impact` section (or `Impact:` label) in the PR body. Passed downstream as `CHANGELOG_IMPACT` for `changelog add`. |
 | `action` | Content of the `## Action` section (or `Action:` label) in the PR body. Passed downstream as `CHANGELOG_ACTION` for `changelog add`. |
+| `entry-impact` | `impact:` held by the PR's existing breaking-change entry file, if any. Passed downstream as `CHANGELOG_ENTRY_IMPACT`. |
+| `entry-action` | `action:` held by the PR's existing breaking-change entry file, if any. Passed downstream as `CHANGELOG_ENTRY_ACTION`. |
 | `type` | Resolved changelog type |
 | `products` | Comma-separated product specs resolved from PR labels via `pivot.products` mappings |
 | `label-table` | Markdown table of configured label-to-type mappings |

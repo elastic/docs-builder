@@ -392,4 +392,49 @@ public class ReleaseNotesExtractorTests
 		ReleaseNotesExtractor.FindImpact(prBody).Should().Be("Clients break.");
 		ReleaseNotesExtractor.FindAction(prBody).Should().Be("Upgrade the client.");
 	}
+
+	[Test]
+	public void FindAction_YamlExampleInsideFence_StaysInTheSection()
+	{
+		// language=markdown
+		var prBody =
+			"""
+			## Impact
+			Clients break.
+
+			## Action
+			Set the option:
+
+			```yaml
+			action: restart
+			## not a heading
+			```
+
+			Then migrate your clients.
+
+			## Checklist
+			- [ ] tests
+			""";
+
+		ReleaseNotesExtractor
+			.FindAction(prBody)
+			.Should()
+			.Be("Set the option:\n\n```yaml\naction: restart\n## not a heading\n```\n\nThen migrate your clients.");
+		ReleaseNotesExtractor.FindImpact(prBody).Should().Be("Clients break.");
+	}
+
+	[Test]
+	public void FindImpact_LabelInsideFencedExampleOnly_DoesNotStartASection()
+	{
+		// language=markdown
+		var prBody = """
+			Example:
+
+			```
+			Impact: not a real section
+			```
+			""";
+
+		ReleaseNotesExtractor.FindImpact(prBody).Should().BeNull();
+	}
 }
