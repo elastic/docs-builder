@@ -336,6 +336,20 @@ public class SyntheticCodeSamplesTests
 	}
 
 	[Test]
+	public void Create_WhenTheRequiredHeaderHasNoExample_TheCredentialReplacesIt()
+	{
+		var scheme = new OpenApiSecurityScheme { Type = SecuritySchemeType.ApiKey, Name = "X-Api-Key", In = ParameterLocation.Header };
+		var operation = new OpenApiOperation
+		{
+			Parameters = [new OpenApiParameter { Name = "X-Api-Key", In = ParameterLocation.Header, Required = true }]
+		};
+
+		var samples = SyntheticCodeSamples.Create(new SyntheticSampleInput(HttpMethod.Get, "/api/x", operation) { Security = [scheme] });
+
+		samples[1].Source.Should().Contain("-H \"X-Api-Key: $API_KEY\"").And.NotContain("X-Api-Key: string");
+	}
+
+	[Test]
 	public void Create_WithoutAConsolePrefix_BuildsOnlyCurl()
 	{
 		var samples = SyntheticCodeSamples.Create(new SyntheticSampleInput(HttpMethod.Get, "/api/x", new OpenApiOperation())

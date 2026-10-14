@@ -36,8 +36,9 @@ public static class SyntheticCodeSamples
 		var operation = input.Operation;
 		var methodLabel = input.Method.Method.ToUpperInvariant();
 		var body = string.IsNullOrWhiteSpace(input.Body) ? null : input.Body.Trim();
-		var headers = RequiredHeaders(operation).ToArray();
-		var (authFlags, authQuery) = AuthParts(input.Security, headers);
+		var requiredHeaders = RequiredHeaders(operation).ToArray();
+		var (authFlags, authQuery, authHeaders) = AuthParts(input.Security, requiredHeaders);
+		var headers = requiredHeaders.Where(h => h.Name is null || !authHeaders.Contains(h.Name)).ToArray();
 		var path = BuildPath(input.Route, operation);
 
 		var samples = new List<CodeSample>();
@@ -177,28 +178,38 @@ public static class SyntheticCodeSamples
 		return [$"{parameter.Name}={UrlExample(parameter) ?? $"{{{parameter.Name}}}"}"];
 	}
 
-	/// <summary>What the operation's security schemes add to the curl: flags, and query parameters for schemes that travel in the URL.</summary>
-	private static (IReadOnlyList<string> Flags, IReadOnlyList<string> Query) AuthParts(
+	/// <summary>
+	/// What the operation's security schemes add to the curl: flags, query parameters for schemes that travel in the URL,
+	/// and the required headers a flag replaces.
+	/// </summary>
+	private static (IReadOnlyList<string> Flags, IReadOnlyList<string> Query, HashSet<string> Replaced) AuthParts(
 		IReadOnlyList<IOpenApiSecurityScheme> schemes,
 		IOpenApiParameter[] requiredHeaders
 	)
 	{
+		var replaced = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 		if (schemes.Count == 0)
-			return ([], []);
+			return ([], [], replaced);
 
-		// A header the operation already requires carries its own example, so the scheme doesn't repeat it.
-		var required = requiredHeaders.Select(static h => h.Name).ToHashSet(StringComparer.OrdinalIgnoreCase);
+		// A required header with an example of its own keeps it. One without is a placeholder, so the credential replaces it.
+		var exampled = requiredHeaders
+			.Where(static h => ExampleParts(h) is not null)
+			.Select(static h => h.Name)
+			.ToHashSet(StringComparer.OrdinalIgnoreCase);
 		var flags = new List<string>();
 		var query = new List<string>();
 		foreach (var scheme in schemes)
 		{
 			if (scheme.Type == SecuritySchemeType.ApiKey && scheme.In == ParameterLocation.Query && !string.IsNullOrEmpty(scheme.Name))
 				query.Add($"{scheme.Name}=$API_KEY");
-			else if (AuthFlag(scheme) is { } flag && !required.Contains(flag.Header))
+			else if (AuthFlag(scheme) is { } flag && !exampled.Contains(flag.Header))
+			{
 				flags.Add(flag.Flag);
+				_ = replaced.Add(flag.Header);
+			}
 		}
 
-		return (flags, query);
+		return (flags, query, replaced);
 	}
 
 	private static (string Header, string Flag)? AuthFlag(IOpenApiSecurityScheme scheme) => scheme.Type switch
