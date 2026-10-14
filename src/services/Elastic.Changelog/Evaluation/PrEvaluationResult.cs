@@ -39,6 +39,10 @@ public enum PrEvaluationResult
 	[Display(Name = "missing-impact-action")]
 	MissingImpactAction,
 
+	/// <summary>A human-authored changelog entry file exists and the PR description also has Impact and/or Action sections. One source only.</summary>
+	[Display(Name = "conflicting-impact-action")]
+	ConflictingImpactAction,
+
 	/// <summary>An error occurred during artifact preparation (e.g., generate step failed or YAML missing).</summary>
 	[Display(Name = "error")]
 	Error

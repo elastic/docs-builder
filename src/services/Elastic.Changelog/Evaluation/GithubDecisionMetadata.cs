@@ -48,6 +48,8 @@ public record GithubDecisionMetadata
 	public string? ResolvedProducts { get; init; }
 	/// <summary>Comma-separated sections (<c>impact</c>, <c>action</c>) missing from a breaking-change PR description when the <c>missing-impact-action</c> gate failed.</summary>
 	public string? MissingSections { get; init; }
+	/// <summary>Comma-separated sections (<c>impact</c>, <c>action</c>) found in the PR description when a human-authored entry file already provides them.</summary>
+	public string? ConflictingSections { get; init; }
 	/// <summary>Resolved changelog type (for example <c>breaking-change</c>), written by <c>evaluate-pr</c> on success.</summary>
 	public string? ResolvedType { get; init; }
 	/// <summary>Impact section captured from the PR description, written by <c>evaluate-pr</c> for breaking changes so the comment can echo it without a staged entry file.</summary>

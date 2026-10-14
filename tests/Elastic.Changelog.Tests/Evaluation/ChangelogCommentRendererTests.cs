@@ -432,4 +432,24 @@ public class ChangelogCommentRendererTests
 		// The fence around the value must be longer than the embedded backtick run.
 		body.Should().Contain("````text\n```\n</details>\n```\n````");
 	}
+
+	[Test]
+	public void RenderConflictingImpactAction_NamesEntryFileAndSections()
+	{
+		var body = ChangelogCommentRenderer.RenderConflictingImpactAction("docs/changelog/42.yaml", "impact,action", 42);
+
+		body.Should().StartWith(ChangelogCommentRenderer.Title);
+		body.Should().Contain("docs/changelog/42.yaml");
+		body.Should().Contain("## Impact").And.Contain("## Action");
+	}
+
+	[Test]
+	public void RenderMissingImpactAction_WithEntryFile_AsksForYamlFields()
+	{
+		var body = ChangelogCommentRenderer.RenderMissingImpactAction("action", 42, "docs/changelog/42.yaml");
+
+		body.Should().Contain("docs/changelog/42.yaml");
+		body.Should().Contain("action: ");
+		body.Should().NotContain("## Action");
+	}
 }

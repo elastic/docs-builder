@@ -422,4 +422,58 @@ public class ChangelogGithubCommentServiceTests() : ChangelogTestBase()
 			)
 		).MustHaveHappenedOnceExactly();
 	}
+
+	[Test]
+	public async Task PostComment_ConflictingImpactAction_RendersConflictBody()
+	{
+		await WriteMetadata(BaseMetadata(status: "conflicting-impact-action") with
+		{
+			Gate = ValidationGate.File,
+			ChangelogDir = "docs/changelog",
+			ChangelogFilename = "42.yaml",
+			ConflictingSections = "impact"
+		});
+		var commentSvc = CreateCommentFake();
+
+		await CreateService(commentSvc).PostComment(DefaultArgs(), CancellationToken.None);
+
+		A.CallTo(
+			() => commentSvc.UpsertStickyCommentAsync(
+				"elastic",
+				"test-repo",
+				42,
+				A<string>.That.Matches(b => b.Contains("docs/changelog/42.yaml") && b.Contains("## Impact") && !b.Contains("## Action")),
+				A<CancellationToken>._
+			)
+		).MustHaveHappenedOnceExactly();
+	}
+
+	[Test]
+	public async Task PostComment_ManuallyEditedBreakingEntry_EchoesCapturedValues()
+	{
+		await WriteMetadata(BaseMetadata(status: "manually-edited", canCommit: false) with
+		{
+			Gate = ValidationGate.File,
+			ChangelogDir = "docs/changelog",
+			ChangelogFilename = "42.yaml",
+			ResolvedType = "breaking-change",
+			Impact = "Users break.",
+			Action = "Upgrade now."
+		});
+		var commentSvc = CreateCommentFake();
+
+		await CreateService(commentSvc).PostComment(DefaultArgs(), CancellationToken.None);
+
+		A.CallTo(
+			() => commentSvc.UpsertStickyCommentAsync(
+				"elastic",
+				"test-repo",
+				42,
+				A<string>.That.Matches(
+					b => b.Contains("docs/changelog/42.yaml") && b.Contains("Users break.") && b.Contains("Upgrade now.")
+				),
+				A<CancellationToken>._
+			)
+		).MustHaveHappenedOnceExactly();
+	}
 }

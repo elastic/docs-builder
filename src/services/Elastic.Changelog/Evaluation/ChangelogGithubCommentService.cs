@@ -84,7 +84,8 @@ public class ChangelogGithubCommentService(
 		var body = SelectBaseBody(metadata, metadataDir, owner, repo);
 
 		// Breaking changes keep their comment on success and echo what was captured, so there are no surprises at bundling time.
-		var generated = metadata.Gate is not ValidationGate.Entries && (IsSuccess(metadata.Status) || metadata.CommitOutcome is not null);
+		var generated = metadata.Gate is not ValidationGate.Entries
+			&& (IsSuccess(metadata.Status) || IsManuallyEdited(metadata.Status) || metadata.CommitOutcome is not null);
 		if (!generated)
 			return body;
 
@@ -95,7 +96,11 @@ public class ChangelogGithubCommentService(
 			_logger.LogInformation("Echoing captured Impact/Action for breaking change in PR #{PrNumber}", metadata.PrNumber);
 			// A gate-only run stages no entry file, so the generic comment-only body would warn that the entry could not be read.
 			return body is null || metadata.CommitOutcome is null
-				? ChangelogCommentRenderer.RenderBreakingChangeResolved(metadata.Impact, metadata.Action)
+				? ChangelogCommentRenderer.RenderBreakingChangeResolved(
+					metadata.Impact,
+					metadata.Action,
+					IsManuallyEdited(metadata.Status) ? EntryPath(metadata) : null
+				)
 				: ChangelogCommentRenderer.AppendBreakingChangeCaptured(body, metadata.Impact, metadata.Action);
 		}
 
@@ -135,7 +140,21 @@ public class ChangelogGithubCommentService(
 		)
 		{
 			_logger.LogInformation("Rendering missing-impact-action body for PR #{PrNumber}", metadata.PrNumber);
-			return ChangelogCommentRenderer.RenderMissingImpactAction(metadata.MissingSections, metadata.PrNumber);
+			return ChangelogCommentRenderer.RenderMissingImpactAction(metadata.MissingSections, metadata.PrNumber, EntryPath(metadata));
+		}
+
+		// Gate failure: a human-authored entry file and the PR description both provide Impact/Action.
+		if (
+			metadata.Gate == ValidationGate.File
+			&& string.Equals(metadata.Status, "conflicting-impact-action", StringComparison.OrdinalIgnoreCase)
+		)
+		{
+			_logger.LogInformation("Rendering conflicting-impact-action body for PR #{PrNumber}", metadata.PrNumber);
+			return ChangelogCommentRenderer.RenderConflictingImpactAction(
+				EntryPath(metadata),
+				metadata.ConflictingSections,
+				metadata.PrNumber
+			);
 		}
 
 		// Committed: entry-committed body with blob + edit links.
@@ -258,6 +277,15 @@ public class ChangelogGithubCommentService(
 		string.Equals(status, "success", StringComparison.OrdinalIgnoreCase)
 			|| string.Equals(status, "proceed", StringComparison.OrdinalIgnoreCase)
 			|| string.Equals(status, "ok", StringComparison.OrdinalIgnoreCase);
+
+	private static bool IsManuallyEdited(string status) => string.Equals(status, "manually-edited", StringComparison.OrdinalIgnoreCase);
+
+	private static string? EntryPath(GithubDecisionMetadata metadata) =>
+		string.IsNullOrWhiteSpace(metadata.ChangelogFilename)
+			? null
+			: string.IsNullOrWhiteSpace(metadata.ChangelogDir)
+				? metadata.ChangelogFilename
+				: metadata.ChangelogDir + "/" + metadata.ChangelogFilename;
 
 	private static bool IsNoLabel(string status) => string.Equals(status, "no-label", StringComparison.OrdinalIgnoreCase);
 	private static bool IsSkipped(string status) => string.Equals(status, "skipped", StringComparison.OrdinalIgnoreCase);

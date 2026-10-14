@@ -12,7 +12,7 @@ When running under GitHub Actions (the `GITHUB_ACTIONS` environment variable is 
 
 | Output | Description |
 |--------|-------------|
-| `status` | Evaluation result: `skipped`, `manually-edited`, `no-title`, `no-label`, `missing-entry`, `missing-impact-action`, or `proceed` |
+| `status` | Evaluation result: `skipped`, `manually-edited`, `no-title`, `no-label`, `missing-entry`, `missing-impact-action`, `conflicting-impact-action`, or `proceed` |
 | `should-generate` | `true` if `changelog add` should run |
 | `title` | Resolved PR title |
 | `description` | Release note extracted from the PR body (when `extract.release_notes` is enabled and a release note is found). Long or multi-line release notes (over 120 characters) are placed here. Passed downstream as `CHANGELOG_DESCRIPTION` for `changelog add`. |
@@ -53,6 +53,13 @@ Pass `--require-changelog-file` to fail the PR (`missing-entry`) when no changel
 
 ### Require Impact and Action for breaking changes [require-impact-action]
 
-Pass `--require-impact-action` to fail the PR (`missing-impact-action`) when its resolved type is `breaking-change` and the PR description lacks an `Impact` and/or `Action` section. Recognized forms are a markdown heading of any level (`## Impact`, `### Action`) or a label (`Impact: ...`). Sections that contain only HTML comments, such as an unfilled PR template, count as missing. Like `--require-changelog-file`, this flag is designed to be passed as a workflow input.
+Impact and Action come from one source, in this order of precedence:
+
+1. A changelog entry file that a person added to the PR. Its `impact:` and `action:` fields win, and the PR description is not scraped.
+2. The PR description, when there is no such file.
+
+A breaking-change PR that has a person-authored entry file and also has `## Impact` or `## Action` in its description fails with `conflicting-impact-action`, whether or not `--require-impact-action` is set. The comment asks the author to keep them in one place. An entry file that the workflow generated from the description is not a conflict.
+
+Pass `--require-impact-action` to fail the PR (`missing-impact-action`) when its resolved type is `breaking-change` and the PR description lacks an `Impact` and/or `Action` section, or whose person-authored entry file lacks the `impact:` and/or `action:` field. Recognized forms are a markdown heading of any level (`## Impact`, `### Action`) or a label (`Impact: ...`). Sections that contain only HTML comments, such as an unfilled PR template, count as missing. Like `--require-changelog-file`, this flag is designed to be passed as a workflow input.
 
 The sticky PR comment lists the missing sections with a template to paste into the description. Once the sections are present, `evaluate-pr` sets the `impact` and `action` outputs. For breaking changes the comment stays on the PR and echoes the captured Impact and Action in a collapsible block, so you can check them before bundling. `evaluate-pr` records the captured sections in the decision metadata, so the echo works even when no entry file is generated in the same run.

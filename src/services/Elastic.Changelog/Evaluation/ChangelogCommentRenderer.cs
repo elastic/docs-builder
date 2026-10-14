@@ -70,24 +70,80 @@ internal static class ChangelogCommentRenderer
 	/// Renders the body shown on success for a breaking change that has nothing else to say
 	/// (the entry is committed by the pipeline): a short confirmation plus the captured Impact and Action.
 	/// </summary>
-	internal static string RenderBreakingChangeResolved(string? impact, string? action) =>
+	internal static string RenderBreakingChangeResolved(string? impact, string? action, string? entryPath = null) =>
 		Truncate(
 			string.Join(
 				"\n",
 				Title,
 				"",
-				"✅ **Changelog entry generated for this breaking change.**",
+				string.IsNullOrWhiteSpace(entryPath)
+					? "✅ **Changelog entry generated for this breaking change.**"
+					: $"✅ **Changelog entry for this breaking change:** {WrapInlineCode(entryPath)}",
 				"",
 				RenderBreakingChangeCaptured(impact, action)
 			)
 		);
 
 	/// <summary>
+	/// Renders the conflicting-impact-action body: the PR has a changelog entry file, which is the source of Impact and Action,
+	/// and its description also has those sections. The author keeps one of them.
+	/// </summary>
+	internal static string RenderConflictingImpactAction(string? entryPath, string? conflictingSections, int prNumber)
+	{
+		var sections = (conflictingSections ?? "impact,action")
+			.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+			.Select(s => string.Equals(s, "action", StringComparison.OrdinalIgnoreCase) ? "Action" : "Impact")
+			.ToList();
+		var headings = string.Join(" and ", sections.Select(s => $"`## {s}`"));
+		var file = string.IsNullOrWhiteSpace(entryPath) ? "a changelog entry file" : $"the changelog entry {WrapInlineCode(entryPath)}";
+
+		return Truncate(
+			string.Join(
+				"\n",
+				Title,
+				"",
+				$"❌ PR #{prNumber} is a breaking change with {file} and also has {headings} in its description.",
+				"",
+				"A changelog entry file on the PR is the source of Impact and Action, so the description cannot repeat them. " +
+					"Remove the section(s) from the PR description, or delete the entry file to take Impact and Action from the description."
+			)
+		);
+	}
+
+	/// <summary>
 	/// Renders the missing-impact-action body: tells the author which sections their breaking-change PR
 	/// description lacks and shows a copy-pasteable template.
 	/// </summary>
-	internal static string RenderMissingImpactAction(string? missingSections, int prNumber)
+	internal static string RenderMissingImpactAction(string? missingSections, int prNumber, string? entryPath = null)
 	{
+		if (!string.IsNullOrWhiteSpace(entryPath))
+		{
+			var fields = (missingSections ?? "impact,action")
+				.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+				.Select(s => string.Equals(s, "action", StringComparison.OrdinalIgnoreCase) ? "action" : "impact")
+				.ToList();
+			var snippet = string.Join(
+				"\n",
+				fields.Select(
+					f => f == "impact"
+						? "impact: Who and what is affected by this change."
+						: "action: The steps or workarounds users need to adapt."
+				)
+			);
+			return Truncate(
+				string.Join(
+					"\n",
+					Title,
+					"",
+					$"❌ PR #{prNumber} is a breaking change but its changelog entry {WrapInlineCode(entryPath)} is missing {string.Join(" and ", fields.Select(f => WrapInlineCode(f + ":")))}.",
+					"",
+					"The release notes publish these fields so users know who is affected and what to do. Add them to the entry file:",
+					"",
+					WrapCodeFence(snippet, "yaml")
+				)
+			);
+		}
+
 		var missing = (missingSections ?? "impact,action")
 			.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
 			.Select(s => string.Equals(s, "action", StringComparison.OrdinalIgnoreCase) ? "Action" : "Impact")

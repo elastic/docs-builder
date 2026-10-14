@@ -11,11 +11,13 @@ using Elastic.Changelog.Utilities;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Changelog;
+using Elastic.Documentation.Configuration.ReleaseNotes;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.ReleaseNotes;
 using Elastic.Documentation.Services;
 using Microsoft.Extensions.Logging;
+using YamlDotNet.Core;
 
 namespace Elastic.Changelog.Evaluation;
 
@@ -75,6 +77,19 @@ public class ChangelogPrEvaluationService(
 			if (!string.IsNullOrEmpty(fileAuthor) && !string.Equals(fileAuthor, input.BotName, StringComparison.OrdinalIgnoreCase))
 			{
 				_logger.LogInformation("Skipping: changelog file {File} manually edited by {Author}", changelogFilePath, fileAuthor);
+				// A human-authored entry file is the source of Impact/Action for a breaking change, so it is checked even though generation is skipped.
+				if (
+					await EvaluateAuthoredEntryImpactAction(
+						collector,
+						input,
+						changelogFilePath,
+						changelogDir,
+						existingFilename!,
+						defaultBranch,
+						ctx
+					)
+				)
+					return false;
 				return await SetOutputs(PrEvaluationResult.ManuallyEdited);
 			}
 		}
@@ -335,6 +350,128 @@ public class ChangelogPrEvaluationService(
 		);
 	}
 
+	/// <summary>
+	/// Applies the Impact/Action rules to a human-authored breaking-change entry file. The file is the only source:
+	/// sections in the PR description as well are an error, and <see cref="EvaluatePrArguments.RequireImpactAction"/>
+	/// enforces that the file provides both. Returns <c>true</c> when the evaluation failed and outputs are already set.
+	/// On success it records the captured values so the PR comment can echo them.
+	/// </summary>
+	private async Task<bool> EvaluateAuthoredEntryImpactAction(
+		IDiagnosticsCollector collector,
+		EvaluatePrArguments input,
+		string entryPath,
+		string changelogDir,
+		string entryFilename,
+		string defaultBranch,
+		Cancel ctx
+	)
+	{
+		var entry = TryReadEntry(entryPath);
+		if (entry is not { Type: ChangelogEntryType.BreakingChange })
+			return false;
+
+		var breaking = ChangelogEntryType.BreakingChange.ToStringFast(true);
+		var bodyImpact = ReleaseNotesExtractor.FindImpact(input.PrBody);
+		var bodyAction = ReleaseNotesExtractor.FindAction(input.PrBody);
+
+		var conflicting = new List<string>();
+		if (bodyImpact != null)
+			conflicting.Add("impact");
+		if (bodyAction != null)
+			conflicting.Add("action");
+
+		if (conflicting.Count > 0)
+		{
+			var conflictingSections = string.Join(",", conflicting);
+			_logger.LogInformation(
+				"PR #{PrNumber} has entry file {File} and PR description sections: {Sections}",
+				input.PrNumber,
+				entryFilename,
+				conflictingSections
+			);
+			collector.EmitError(
+				string.Empty,
+				$"Breaking-change PR #{input.PrNumber} has a changelog entry file ({entryPath}) and also {string.Join(" and ", conflicting.Select(c => $"`## {(c == "impact" ? "Impact" : "Action")}`"))} in the PR description. " +
+					"Keep Impact and Action in one place: remove the section(s) from the description and set them in the entry file."
+			);
+			_ = await SetOutputs(
+				PrEvaluationResult.ConflictingImpactAction,
+				resolvedType: breaking,
+				changelogDir: changelogDir,
+				existingFilename: entryFilename
+			);
+			await WriteDecisionMetadataAsync(
+				input,
+				"conflicting-impact-action",
+				changelogDir: changelogDir,
+				changelogFilename: entryFilename,
+				defaultBranch: defaultBranch,
+				conflictingSections: conflictingSections,
+				ctx: ctx
+			);
+			return true;
+		}
+
+		var missing = new List<string>();
+		if (string.IsNullOrWhiteSpace(entry.Impact))
+			missing.Add("impact");
+		if (string.IsNullOrWhiteSpace(entry.Action))
+			missing.Add("action");
+
+		if (input.RequireImpactAction && missing.Count > 0)
+		{
+			var missingSections = string.Join(",", missing);
+			_logger.LogInformation("Entry file {File} is missing sections: {Sections}", entryFilename, missingSections);
+			collector.EmitError(
+				string.Empty,
+				$"Breaking-change changelog entry file {entryPath} is missing {string.Join(" and ", missing.Select(m => $"`{m}:`"))}. " +
+					"Add the field(s) so the release notes can tell users who is affected and what to do."
+			);
+			_ = await SetOutputs(
+				PrEvaluationResult.MissingImpactAction,
+				resolvedType: breaking,
+				changelogDir: changelogDir,
+				existingFilename: entryFilename
+			);
+			await WriteDecisionMetadataAsync(
+				input,
+				"missing-impact-action",
+				changelogDir: changelogDir,
+				changelogFilename: entryFilename,
+				defaultBranch: defaultBranch,
+				missingSections: missingSections,
+				ctx: ctx
+			);
+			return true;
+		}
+
+		await WriteDecisionMetadataAsync(
+			input,
+			PrEvaluationResult.ManuallyEdited.ToStringFast(true),
+			changelogDir: changelogDir,
+			changelogFilename: entryFilename,
+			defaultBranch: defaultBranch,
+			resolvedType: breaking,
+			impact: entry.Impact,
+			action: entry.Action,
+			ctx: ctx
+		);
+		return false;
+	}
+
+	private ChangelogEntry? TryReadEntry(string entryPath)
+	{
+		try
+		{
+			return ReleaseNotesSerialization.DeserializeEntry(_fileSystem.File.ReadAllText(entryPath));
+		}
+		catch (Exception ex) when (ex is YamlException or IOException or UnauthorizedAccessException)
+		{
+			_logger.LogWarning(ex, "Could not read changelog entry file {File}", entryPath);
+			return null;
+		}
+	}
+
 	/// <summary>The evaluate-pr output value when evaluation succeeds and generation should proceed.</summary>
 	internal const string ProceedStatus = "proceed";
 
@@ -356,6 +493,7 @@ public class ChangelogPrEvaluationService(
 		string? defaultBranch = null,
 		string? resolvedProducts = null,
 		string? missingSections = null,
+		string? conflictingSections = null,
 		string? resolvedType = null,
 		string? impact = null,
 		string? action = null
@@ -384,6 +522,7 @@ public class ChangelogPrEvaluationService(
 			DefaultBranch = defaultBranch,
 			ResolvedProducts = resolvedProducts,
 			MissingSections = missingSections,
+			ConflictingSections = conflictingSections,
 			ResolvedType = resolvedType,
 			Impact = impact,
 			Action = action
