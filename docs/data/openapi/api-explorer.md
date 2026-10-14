@@ -305,7 +305,7 @@ A map (`additionalProperties`) reads as `map string to X`, whether it's inline o
 
 A request body leaves out `readOnly` fields, because only the server sets them, and a response leaves out `writeOnly` fields, because only the client sends them. Schema type pages list both.
 
-Query and header parameters list like request body properties, each in its own section. An `object` or map parameter, such as one with `style: deepObject`, shows its fields under the parameter. Header parameters named `Accept`, `Content-Type` or `Authorization` aren't listed, because OpenAPI ignores them: the media types and security schemes describe those headers.
+Path, query and header parameters list like request body properties, each in its own section. An `object` or map parameter, such as one with `style: deepObject`, shows its fields under the parameter. Header parameters named `Accept`, `Content-Type` or `Authorization` aren't listed, because OpenAPI ignores them: the media types and security schemes describe those headers.
 
 The variants of a `oneOf` or `anyOf` are labelled by the first of these that applies:
 

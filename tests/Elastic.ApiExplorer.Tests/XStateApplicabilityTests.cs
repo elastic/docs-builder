@@ -162,7 +162,9 @@ public class XStateApplicabilityTests
 				VersionsConfiguration = StackVersions()
 			}
 		);
-		var parameters = document.Paths!["/items"].Operations![HttpMethod.Get].Parameters!.Select(p => (p, p.Description)).ToArray();
+		var parameters = document.Paths!["/items"].Operations![HttpMethod.Get].Parameters!.Select(
+			p => new ParameterRowInput(p, p.Description)
+		).ToArray();
 
 		var rows = builder.BuildParameterList(parameters, new PropertyTreeScope { Prefix = "query" }).Items;
 

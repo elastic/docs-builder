@@ -92,25 +92,11 @@ internal static class OperationCommonMark
 		return $"`{row.Method.ToUpperInvariant()}`{also} `{row.Route}`";
 	}
 
+	// Path parameters sit right under the paths, before the description, one level deeper than the other parameter sections.
 	private static void WritePathParameters(StringBuilder markdown, OperationPageModel page, string apiBaseUrl)
 	{
-		if (page.PathParameters.Count == 0)
-			return;
-
-		ApiCommonMark.Heading(markdown, 4, "Path parameters");
-		foreach (var path in page.PathParameters)
-		{
-			var type = path.Type is null ? "" : $" ({path.Type.Text})";
-			var deprecated = path.Deprecated is true ? " — deprecated" : "";
-			var optional = path.Optional ? $" — optional, leave it out to use `{page.Endpoint.ShortestRoute}`" : "";
-			_ = markdown.AppendLine($"- `{path.Name}`{type}{optional}{deprecated}");
-			var description = ApiMarkdown.Prepare(path.DescriptionMarkdown, apiBaseUrl);
-			if (!string.IsNullOrWhiteSpace(description))
-				_ = markdown.AppendLine($"  {description.TrimEnd()}");
-			WriteValues(markdown, path.UnionOptions, path.UnionLabel, path.EnumValues);
-		}
-
-		_ = markdown.AppendLine();
+		foreach (var section in page.ParameterSections.Where(static s => s.Location == ParameterLocation.Path))
+			WriteParameterSection(markdown, section, headingLevel: 4, apiBaseUrl);
 	}
 
 	private static void WriteDescription(StringBuilder markdown, OperationPageModel page, string apiBaseUrl)
@@ -173,25 +159,15 @@ internal static class OperationCommonMark
 
 	private static void WriteParameterSections(StringBuilder markdown, OperationPageModel page, string apiBaseUrl)
 	{
-		foreach (var section in page.ParameterSections)
-		{
-			ApiCommonMark.Heading(markdown, 2, section.MarkdownHeading);
-			ApiPropertyMarkdown.WriteList(markdown, section.Parameters, apiBaseUrl);
-			_ = markdown.AppendLine();
-		}
+		foreach (var section in page.ParameterSections.Where(static s => s.Location != ParameterLocation.Path))
+			WriteParameterSection(markdown, section, headingLevel: 2, apiBaseUrl);
 	}
 
-	private static void WriteValues(
-		StringBuilder markdown,
-		IReadOnlyList<UnionBadge> unionOptions,
-		string unionLabel,
-		IReadOnlyList<string> enumValues
-	)
+	private static void WriteParameterSection(StringBuilder markdown, ParameterListSection section, int headingLevel, string apiBaseUrl)
 	{
-		if (enumValues.Count > 0)
-			_ = markdown.AppendLine("  Values: " + string.Join(", ", enumValues.Select(v => $"`{v}`")));
-		else if (unionOptions.Count > 0)
-			_ = markdown.AppendLine($"  {unionLabel} " + string.Join(" or ", unionOptions.Select(o => $"`{o.Text}`")));
+		ApiCommonMark.Heading(markdown, headingLevel, section.MarkdownHeading);
+		ApiPropertyMarkdown.WriteList(markdown, section.Parameters, apiBaseUrl);
+		_ = markdown.AppendLine();
 	}
 
 	private static void WriteRequestBody(StringBuilder markdown, ApiOperation apiOperation, OperationPageModel page, string apiBaseUrl)

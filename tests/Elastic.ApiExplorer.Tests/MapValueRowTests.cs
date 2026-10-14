@@ -108,7 +108,9 @@ public class MapValueRowTests
 	public async Task BuildParameterList_ObjectParameter_ListsFieldsAndKeepsParameterFlags()
 	{
 		var document = await LoadSpecAsync(Spec);
-		var parameters = document.Paths!["/items"].Operations![HttpMethod.Get].Parameters!.Select(p => (p, p.Description)).ToArray();
+		var parameters = document.Paths!["/items"].Operations![HttpMethod.Get].Parameters!.Select(
+			p => new ParameterRowInput(p, p.Description)
+		).ToArray();
 
 		var list = BuilderFor(document).BuildParameterList(parameters, new PropertyTreeScope { Prefix = "query" });
 

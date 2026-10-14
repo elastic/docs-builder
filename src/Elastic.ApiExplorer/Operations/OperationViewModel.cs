@@ -45,7 +45,13 @@ public class OperationViewModel(ApiRenderContext context) : ApiViewModel(context
 		if (Page.AuthRequirements.Count > 0)
 			tocItems.Add(new ApiTocItem("Authentication", "authentication"));
 
-		tocItems.AddRange(Page.ParameterSections.Select(static s => new ApiTocItem(s.Header.Title, s.Header.Anchor)));
+		// The path parameters have never had an entry: they sit right under the paths they belong to.
+		tocItems.AddRange(
+			Page
+				.ParameterSections
+				.Where(static s => s.Location != ParameterLocation.Path)
+				.Select(static s => new ApiTocItem(s.Header.Title, s.Header.Anchor))
+		);
 
 		if (operation.RequestBody is not null)
 			tocItems.Add(new ApiTocItem("Request", "request-body"));

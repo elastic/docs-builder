@@ -68,7 +68,9 @@ internal static class ApiPropertyMarkdown
 			_ = markdown.Append(')');
 		}
 
-		if (property.IsRequest)
+		if (property.OptionalRoute is { } routeWithout)
+			_ = markdown.Append($" — optional, leave it out to use `{routeWithout}`");
+		else if (property.IsRequest)
 			_ = markdown.Append(property.IsRequired ? " — required" : " — optional");
 		if (property.IsNullable)
 			_ = markdown.Append(" — nullable");
