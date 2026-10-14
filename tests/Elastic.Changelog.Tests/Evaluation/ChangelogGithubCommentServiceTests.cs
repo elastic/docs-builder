@@ -417,7 +417,10 @@ public class ChangelogGithubCommentServiceTests() : ChangelogTestBase()
 				"elastic",
 				"test-repo",
 				42,
-				A<string>.That.Matches(b => b.Contains("Users break.") && b.Contains("Upgrade now.") && !b.Contains("could not be read")),
+				A<string>.That.Matches(
+					b => b.Contains("Users break.") && b.Contains("Upgrade now.") && b.Contains("found in the PR description") &&
+						!b.Contains("generated") && !b.Contains("could not be read")
+				),
 				A<CancellationToken>._
 			)
 		).MustHaveHappenedOnceExactly();
@@ -569,5 +572,25 @@ public class ChangelogGithubCommentServiceTests() : ChangelogTestBase()
 		);
 
 		written!.ConfigFile.Should().Be("docs/changelog.yml");
+	}
+
+	[Test]
+	public async Task PostComment_StagedBreakingEntry_StillSaysTheEntryWasGenerated()
+	{
+		await WriteMetadata(BaseMetadata(status: "proceed", canCommit: true));
+		WriteYaml("42.yaml", BreakingYaml);
+		var commentSvc = CreateCommentFake();
+
+		await CreateService(commentSvc).PostComment(DefaultArgs(), CancellationToken.None);
+
+		A.CallTo(
+			() => commentSvc.UpsertStickyCommentAsync(
+				"elastic",
+				"test-repo",
+				42,
+				A<string>.That.Contains("Changelog entry generated for this breaking change"),
+				A<CancellationToken>._
+			)
+		).MustHaveHappenedOnceExactly();
 	}
 }

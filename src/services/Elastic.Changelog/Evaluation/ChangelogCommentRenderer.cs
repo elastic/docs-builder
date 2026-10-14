@@ -67,16 +67,19 @@ internal static class ChangelogCommentRenderer
 		Truncate(body + "\n\n" + RenderBreakingChangeCaptured(impact, action));
 
 	/// <summary>
-	/// Renders the body shown on success for a breaking change that has nothing else to say
-	/// (the entry is committed by the pipeline): a short confirmation plus the captured Impact and Action.
+	/// Renders the body shown on success for a breaking change that has nothing else to say: a short confirmation plus
+	/// the captured Impact and Action. <paramref name="entryGenerated"/> is <c>true</c> only when the pipeline generated
+	/// an entry, which the validate-only run never does.
 	/// </summary>
-	internal static string RenderBreakingChangeResolved(string? impact, string? action) =>
+	internal static string RenderBreakingChangeResolved(string? impact, string? action, bool entryGenerated) =>
 		Truncate(
 			string.Join(
 				"\n",
 				Title,
 				"",
-				"✅ **Changelog entry generated for this breaking change.**",
+				entryGenerated
+					? "✅ **Changelog entry generated for this breaking change.**"
+					: "✅ **Breaking change: Impact and Action found in the PR description.**",
 				"",
 				RenderBreakingChangeCaptured(impact, action)
 			)

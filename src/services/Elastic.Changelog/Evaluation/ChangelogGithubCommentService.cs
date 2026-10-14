@@ -97,7 +97,7 @@ public class ChangelogGithubCommentService(
 
 			_logger.LogInformation("Echoing staged Impact/Action for breaking change in PR #{PrNumber}", metadata.PrNumber);
 			return body is null
-				? ChangelogCommentRenderer.RenderBreakingChangeResolved(entry.Impact, entry.Action)
+				? ChangelogCommentRenderer.RenderBreakingChangeResolved(entry.Impact, entry.Action, entryGenerated: true)
 				: ChangelogCommentRenderer.AppendBreakingChangeCaptured(body, entry.Impact, entry.Action);
 		}
 
@@ -113,7 +113,7 @@ public class ChangelogGithubCommentService(
 		// After a commit attempt the body already carries the commit result, so append. Otherwise the generic comment-only body
 		// would only warn that the entry could not be read, so replace it.
 		return body is null || metadata.CommitOutcome is null
-			? ChangelogCommentRenderer.RenderBreakingChangeResolved(metadata.Impact, metadata.Action)
+			? ChangelogCommentRenderer.RenderBreakingChangeResolved(metadata.Impact, metadata.Action, entryGenerated: false)
 			: ChangelogCommentRenderer.AppendBreakingChangeCaptured(body, metadata.Impact, metadata.Action);
 	}
 
