@@ -57,14 +57,14 @@
 					</header>
 					<div class="api-code-carousel-card-body">
 						@(await RenderPartialAsync<_ApiCodeBlock, ApiCodeBlockModel>(new ApiCodeBlockModel(sample.HighlightClass, sample.Source, LineNumbers: true)))
+						@if (sample.Generated)
+						{
+							<p class="api-code-carousel-card-note">This sample is generated from the API spec, not written by hand. Check placeholder values such as <code>string</code> or <code>{id}</code> before you run it.</p>
+						}
 					</div>
 				</section>
 			}
 		</div>
-		@if (samples.All(static s => s.Generated))
-		{
-			<p class="api-code-carousel-note">Generated from the API spec, not written by hand. Check placeholder values such as <code>string</code> or <code>{id}</code> before you run it.</p>
-		}
 		@if (samples.Count > 1)
 		{
 			<div class="api-code-carousel-dots" role="group" aria-label="Languages">

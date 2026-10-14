@@ -145,28 +145,44 @@ public class OperationExamplesPanelRenderingTests
 	}
 
 	[Test]
-	public async Task Render_GeneratedSamples_GetOneNoteUnderTheCarousel()
+	public async Task Render_GeneratedSample_SaysSoInsideItsOwnCard()
 	{
 		var html = await RenderScenario(Slicing);
 
 		html.Should().Contain("data-generated");
-		html.Should().Contain("class=\"api-code-carousel-note\"");
-		html.Should().Contain("Generated from the API spec");
-		// The note sits after the strip, outside the cards, so the card height the carousel measures is unchanged.
-		html
-			.IndexOf("api-code-carousel-note", StringComparison.Ordinal)
-			.Should()
-			.BeGreaterThan(html.LastIndexOf("</section>", StringComparison.Ordinal));
-		html.Should().NotContain("<footer");
+		// One note per generated card, inside the card after its code, so it is about this sample and no other.
+		var cards = System
+			.Text
+			.RegularExpressions
+			.Regex
+			.Matches(
+				html,
+				"<section class=\"api-code-card api-code-carousel-card.*?</section>",
+				System.Text.RegularExpressions.RegexOptions.Singleline
+			);
+		cards.Should().HaveCount(2);
+		foreach (var card in cards.Select(static c => c.Value))
+		{
+			card.Should().Contain("<p class=\"api-code-carousel-card-note\">This sample is generated from the API spec");
+			// Inside the code area, so the strip height measured from the body includes it.
+			card
+				.IndexOf("api-code-carousel-card-note", StringComparison.Ordinal)
+				.Should()
+				.BeLessThan(card.LastIndexOf("</div>", StringComparison.Ordinal));
+			card
+				.IndexOf("api-code-carousel-card-note", StringComparison.Ordinal)
+				.Should()
+				.BeGreaterThan(card.IndexOf("api-code-carousel-card-body", StringComparison.Ordinal));
+		}
 	}
 
 	[Test]
-	public async Task Render_SpecSamples_HaveNoNote()
+	public async Task Render_SpecSample_HasNoNote()
 	{
 		var html = await RenderScenario(Slicing with { CodeSamples = [Sample("Console"), Sample("curl")] });
 
 		html.Should().NotContain("data-generated");
-		html.Should().NotContain("api-code-carousel-note");
+		html.Should().NotContain("api-code-carousel-card-note");
 	}
 
 	[Test]

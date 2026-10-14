@@ -3785,16 +3785,23 @@ html:has(.api-page-shell) {
 	white-space: nowrap;
 }
 
-/* The samples docs-builder built get one caption under the card, in the rail's muted note tone (see .api-example-description),
-   so a reader knows the values are placeholders. The card itself looks like a spec sample's; the strip height is not measured here. */
-#api-examples-panel .api-code-carousel-note {
-	margin: 8px 2px 0;
-	color: #475569;
-	font-size: 12px;
-	line-height: 1.5;
+/* A sample docs-builder built says so at the end of its own code block, so the note is about this sample and no other.
+   It is part of the scrolling code area (so the strip height measured from it counts the note) but not of the code:
+   selection and the copy button leave it out, like the line numbers. */
+#api-examples-panel .api-code-carousel-card-body .api-code-carousel-card-note {
+	margin: 0;
+	padding: 2px 14px 10px;
+	color: var(--api-code-muted);
+	font-size: 11.5px;
+	line-height: 1.45;
+	user-select: none;
+	-webkit-user-select: none;
 }
 
-.markdown-content .api-code-carousel-note code {
+.markdown-content .api-code-carousel-card-note code {
+	padding: 0;
+	background: none;
+	color: inherit;
 	font-size: 11px;
 }
 
