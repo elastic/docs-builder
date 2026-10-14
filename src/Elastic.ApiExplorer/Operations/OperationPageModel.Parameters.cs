@@ -93,7 +93,10 @@ public partial record OperationPageModel
 			.Where(p => p.In == location && !(location == ParameterLocation.Header && IgnoredHeaders.Contains(p.Name ?? "")))
 			.Select(p => (p, supplemental?.ParameterOr(p.Name ?? "", p.Description) ?? p.Description))
 			.ToArray();
-		return builder.BuildParameterList(described, new PropertyTreeScope { Prefix = location.ToString().ToLowerInvariant() });
+		return builder.BuildParameterList(
+			described,
+			new PropertyTreeScope { Prefix = location.ToString().ToLowerInvariant(), IsRequest = true }
+		);
 	}
 
 	private static UnionBadge[] UnionBadges(TypeInfo typeInfo)

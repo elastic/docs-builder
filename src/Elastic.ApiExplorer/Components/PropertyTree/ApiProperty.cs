@@ -108,10 +108,18 @@ public enum ChildKind
 	UnionVariants
 }
 
+/// <summary>The id of the container that holds a row's nested rows, which its show/hide toggle controls.</summary>
+public static class NestedRowsId
+{
+	// A field's anchor is "{row}-{name}", so a field named "children" would take a single-dash suffix: the double dash keeps them apart.
+	public static string Of(string anchorId) => $"{anchorId}--children";
+}
+
 /// <summary>The synthetic <c>&lt;string&gt;</c> key row a dictionary property nests its value properties under.</summary>
 public record DictionaryChildDisplay
 {
 	public required string KeyAnchorId { get; init; }
+	public string ChildrenId => NestedRowsId.Of(KeyAnchorId);
 	public required int Depth { get; init; }
 	public required bool IsCollapsible { get; init; }
 	public required bool DefaultExpanded { get; init; }
@@ -151,6 +159,7 @@ public record ApiProperty
 	public required IOpenApiSchema Schema { get; init; }
 
 	public required string AnchorId { get; init; }
+	public string ChildrenId => NestedRowsId.Of(AnchorId);
 	public required int Depth { get; init; }
 	public required bool IsRequired { get; init; }
 
@@ -159,7 +168,7 @@ public record ApiProperty
 	public required bool IsLast { get; init; }
 	public required bool IsRecursive { get; init; }
 
-	/// <summary>Whether the row is in a request body (vs response); kept for callers that branch on context.</summary>
+	/// <summary>Whether the row is part of the request, in its body or its parameters, rather than a response or a type page.</summary>
 	public required bool IsRequest { get; init; }
 
 	public required TypeAnnotation Type { get; init; }

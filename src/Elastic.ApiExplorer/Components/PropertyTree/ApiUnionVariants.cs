@@ -19,6 +19,7 @@ public record ApiUnionVariant
 	public required bool IsArrayVariant { get; init; }
 	public required bool IsObjectType { get; init; }
 	public required string AnchorId { get; init; }
+	public string ChildrenId => NestedRowsId.Of(AnchorId);
 	public required bool ShowProperties { get; init; }
 	public required bool IsCollapsible { get; init; }
 	public required bool DefaultExpanded { get; init; }

@@ -75,7 +75,7 @@ public class UnionOptionsRenderingTests
 		var html = await Render(3, foldable: true);
 
 		html.Should().NotContain("show properties", "picking a chip is the choice to read that variant");
-		html.Should().Contain("""<div class="nested-properties" id="v-0-children">""", "the fields are not folded");
+		html.Should().Contain("""<div class="nested-properties" id="v-0--children">""", "the fields are not folded");
 		html.Should().NotContain(">Variant0</span></code>", "the chip already names the variant");
 		html.Should().Contain(
 			"""<div class="union-variant-label"> <code class="discriminator-value">kind: two</code> </div>""".Replace(

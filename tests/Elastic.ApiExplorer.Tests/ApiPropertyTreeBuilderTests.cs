@@ -570,7 +570,7 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture)
 		match.Success.Should().BeTrue($"property {anchorId} renders an expand control");
 		match.Groups[2].Value.Should().Be("false", $"{anchorId} starts collapsed");
 		match.Groups[4].Value.Should().Be("show", $"{anchorId} offers show properties");
-		html.Should().Contain($"id=\"{anchorId}-children\"");
+		html.Should().Contain($"id=\"{anchorId}--children\"");
 	}
 
 	private static OpenApiSchema ObjectsAtTwoDepths() =>

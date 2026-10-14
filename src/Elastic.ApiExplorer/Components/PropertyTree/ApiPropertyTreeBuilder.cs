@@ -21,6 +21,9 @@ public sealed record PropertyTreeScope
 {
 	public required string Prefix { get; init; }
 	public bool IsRequest { get; init; }
+
+	/// <summary>A response lists no <c>writeOnly</c> fields, as a request lists no <c>readOnly</c> ones.</summary>
+	public bool IsResponse { get; init; }
 	public int Depth { get; init; }
 	/// <summary>The <c>$ref</c> ids of the object types above this level; a row that refers to one again stops there.</summary>
 	public IReadOnlySet<string>? AncestorRefs { get; init; }
@@ -70,18 +73,15 @@ public partial class ApiPropertyTreeBuilder(
 	{
 		var effective = _analyzer.Flatten(schema);
 		var properties = effective.Properties;
-		if (properties.Count == 0)
+		var propArray = properties.Where(p => p.Value is not null && IsListed(p.Value, scope)).ToArray();
+		if (propArray.Length == 0)
 			return null;
 
 		var requiredProps = scope.RequiredProperties ?? effective.Required;
-		var propArray = properties.ToArray();
 		var items = new List<ApiProperty>(propArray.Length);
 		for (var i = 0; i < propArray.Length; i++)
 		{
 			var (name, propSchema) = propArray[i];
-			if (propSchema is null)
-				continue;
-
 			// The synthetic map row reads "<string>"; its anchor avoids a real property named "string" on the same list.
 			var anchorName = name == DictionaryKeyName ? properties.ContainsKey("string") ? "string-map" : "string" : name;
 			var row = CreateRow(name, propSchema, anchorName, scope) with
@@ -260,7 +260,7 @@ public partial class ApiPropertyTreeBuilder(
 	private ApiProperty BuildProperty(PropertyRow row, PropertyTreeScope scope)
 	{
 		var (propSchema, typeInfo, isRecursive) = (row.Schema, row.TypeInfo, row.IsRecursive);
-		var expansion = ComputeExpansion(propSchema, typeInfo, scope.Depth, isRecursive);
+		var expansion = ComputeExpansion(propSchema, typeInfo, scope, isRecursive);
 		var (descriptionHtml, descriptionMarkdown) = RenderDescription(row.Name, row.Description, scope);
 		var typeLink = BuildTypeLink(typeInfo, expansion);
 		var (children, repeats) = isRecursive || row.Repeats is not null
