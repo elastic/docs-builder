@@ -129,15 +129,16 @@ public static class SyntheticCodeSamples
 		return "string";
 	}
 
-	/// <summary>
-	/// The example the spec gives a parameter: its own, then its schema's. One part per array item, one part for a
-	/// scalar. Null when it gives none, and for an object, which has no single value to show.
-	/// </summary>
-	private static string[]? ExampleParts(IOpenApiParameter parameter)
-	{
-		var node = parameter.Example
+	/// <summary>The example the spec gives a parameter: its own, then its schema's.</summary>
+	private static JsonNode? ExampleNode(IOpenApiParameter parameter) =>
+		parameter.Example
 			?? parameter.Examples?.Values.Select(static e => e.Value).FirstOrDefault(static v => v is not null)
 			?? parameter.Schema?.Examples?.FirstOrDefault(static v => v is not null);
+
+	/// <summary>One part per array item, one part for a scalar. Null when the spec gives no example, and for an object (see <see cref="ExampleEntries"/>).</summary>
+	private static string[]? ExampleParts(IOpenApiParameter parameter)
+	{
+		var node = ExampleNode(parameter);
 		if (node is JsonArray items)
 		{
 			var parts = items.Select(static i => i is JsonValue ? i.ToString().Trim('"') : null).ToArray();
@@ -151,28 +152,53 @@ public static class SyntheticCodeSamples
 		return string.IsNullOrEmpty(text) ? null : [text];
 	}
 
-	/// <summary>The example as it goes into a URL: each item escaped, joined with the delimiter the parameter's style names.</summary>
-	private static string? UrlExample(IOpenApiParameter parameter) =>
-		ExampleParts(parameter) is { } parts
-			? string.Join(
-				parameter.Style switch
-				{
-					ParameterStyle.SpaceDelimited => "%20",
-					ParameterStyle.PipeDelimited => "%7C",
-					_ => ","
-				},
-				parts.Select(Uri.EscapeDataString)
-			)
-			: null;
+	/// <summary>The properties of an object example. Null for any other example, and when a property is not a plain value.</summary>
+	private static (string Key, string Value)[]? ExampleEntries(IOpenApiParameter parameter)
+	{
+		if (ExampleNode(parameter) is not JsonObject { Count: > 0 } properties)
+			return null;
 
-	/// <summary>The default form style repeats the name for each array item (<c>ids=a&amp;ids=b</c>); other styles send one delimited value.</summary>
+		var entries = properties.Select(static p => (p.Key, Value: p.Value is JsonValue ? p.Value.ToString().Trim('"') : null)).ToArray();
+		return entries.All(static e => !string.IsNullOrEmpty(e.Value)) ? [.. entries.Select(static e => (e.Key, e.Value!))] : null;
+	}
+
+	/// <summary>The example as it goes into a URL, escaped and joined with the delimiter the parameter's style names. An object is its keys and values in turn, or <c>key=value</c> pairs when exploded.</summary>
+	private static string? UrlExample(IOpenApiParameter parameter)
+	{
+		var delimiter = parameter.Style switch
+		{
+			ParameterStyle.SpaceDelimited => "%20",
+			ParameterStyle.PipeDelimited => "%7C",
+			_ => ","
+		};
+		if (ExampleEntries(parameter) is { } entries)
+		{
+			var items = parameter.Explode
+				? entries.Select(static e => $"{Uri.EscapeDataString(e.Key)}={Uri.EscapeDataString(e.Value)}")
+				: entries.SelectMany(static e => new[] { Uri.EscapeDataString(e.Key), Uri.EscapeDataString(e.Value) });
+			return string.Join(delimiter, items);
+		}
+
+		return ExampleParts(parameter) is { } parts ? string.Join(delimiter, parts.Select(Uri.EscapeDataString)) : null;
+	}
+
+	/// <summary>
+	/// The default form style repeats the name for each array item (<c>ids=a&amp;ids=b</c>) and sends an object as one pair
+	/// per property (<c>a=1&amp;b=2</c>); <c>deepObject</c> names each property (<c>filter[a]=1</c>); other styles send one delimited value.
+	/// </summary>
 	private static IEnumerable<string> QueryPairs(IOpenApiParameter parameter)
 	{
-		if (
-			parameter.Explode
-			&& (parameter.Style ?? ParameterStyle.Form) == ParameterStyle.Form
-			&& ExampleParts(parameter) is { Length: > 1 } parts
-		)
+		var isForm = (parameter.Style ?? ParameterStyle.Form) == ParameterStyle.Form;
+		if (ExampleEntries(parameter) is { } entries)
+		{
+			// Brackets are escaped because curl would read them as a glob.
+			if (parameter.Style == ParameterStyle.DeepObject)
+				return entries.Select(e => $"{parameter.Name}%5B{Uri.EscapeDataString(e.Key)}%5D={Uri.EscapeDataString(e.Value)}");
+			if (parameter.Explode && isForm)
+				return entries.Select(static e => $"{Uri.EscapeDataString(e.Key)}={Uri.EscapeDataString(e.Value)}");
+		}
+
+		if (parameter.Explode && isForm && ExampleParts(parameter) is { Length: > 1 } parts)
 			return parts.Select(part => $"{parameter.Name}={Uri.EscapeDataString(part)}");
 
 		return [$"{parameter.Name}={UrlExample(parameter) ?? $"{{{parameter.Name}}}"}"];

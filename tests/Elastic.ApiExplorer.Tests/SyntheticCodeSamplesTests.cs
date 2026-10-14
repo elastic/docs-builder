@@ -188,9 +188,45 @@ public class SyntheticCodeSamplesTests
 	}
 
 	[Test]
-	public void Create_WithAnObjectExample_KeepsThePlaceholder()
+	[Arguments(ParameterStyle.Form, true, "GET /items?a=1&b=x")]
+	[Arguments(ParameterStyle.Form, false, "GET /items?ids=a,1,b,x")]
+	[Arguments(ParameterStyle.DeepObject, true, "GET /items?ids%5Ba%5D=1&ids%5Bb%5D=x")]
+	public void Create_WithAnObjectExample_FollowsTheStyleAndExplode(ParameterStyle style, bool explode, string expected)
 	{
-		var operation = WithQueryExample(new JsonObject { ["a"] = 1 });
+		var operation = WithQueryExample(new JsonObject { ["a"] = 1, ["b"] = "x" }, style, explode);
+
+		var samples = SyntheticCodeSamples.Create(new SyntheticSampleInput(HttpMethod.Get, "/items", operation));
+
+		samples[0].Source.Should().Be(expected);
+	}
+
+	[Test]
+	public void Create_WithAnObjectExampleOnAPathParameter_UsesTheSimpleStyle()
+	{
+		var operation = new OpenApiOperation
+		{
+			Parameters =
+			[
+				new OpenApiParameter
+				{
+					Name = "id",
+					In = ParameterLocation.Path,
+					Required = true,
+					Explode = true,
+					Example = new JsonObject { ["a"] = 1, ["b"] = 2 }
+				}
+			]
+		};
+
+		var samples = SyntheticCodeSamples.Create(new SyntheticSampleInput(HttpMethod.Get, "/items/{id}", operation));
+
+		samples[0].Source.Should().Be("GET /items/a=1,b=2");
+	}
+
+	[Test]
+	public void Create_WithAnObjectExampleHoldingAnObject_KeepsThePlaceholder()
+	{
+		var operation = WithQueryExample(new JsonObject { ["a"] = new JsonObject { ["b"] = 1 } });
 
 		var samples = SyntheticCodeSamples.Create(new SyntheticSampleInput(HttpMethod.Get, "/items", operation));
 
