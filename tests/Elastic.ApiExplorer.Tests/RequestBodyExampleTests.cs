@@ -140,7 +140,113 @@ public class RequestBodyExampleTests
 			""" "Node": { "type": "object", "required": ["next"], "properties": { "next": { "$ref": "#/components/schemas/Node" } } } """
 		);
 
-		body.Should().NotBeNull().And.Contain("null");
+		body.Should().NotBeNull().And.NotContain("null");
+		// Objects at depth 0 to 5 are built; the one at depth 6 is cut and its property left out.
+		Parse(body).ToJsonString().Should().Be("""{"next":{"next":{"next":{"next":{"next":{}}}}}}""");
+	}
+
+	[Test]
+	public async Task Build_BelowTheDepthLimit_StillGivesScalarsTheirValue()
+	{
+		// Seven required objects deep: the innermost object is cut, but the scalar beside it keeps its example.
+		var nested = /*lang=json,strict*/  """{ "type": "object", "required": ["leaf"], "properties": { "leaf": { "type": "string" } } }""";
+		for (var i = 0; i < 6; i++)
+		{
+			nested =
+				$$"""
+				{ "type": "object", "required": ["next", "tag"],
+				  "properties": { "next": {{nested}}, "tag": { "type": "string", "examples": ["t{{i}}"] } } }
+				""";
+		}
+
+		var body = await BuildFrom(nested);
+
+		var json = Parse(body);
+		json["tag"]!.ToString().Should().Be("t5");
+		var deepest = json;
+		for (var i = 0; i < 5; i++)
+			deepest = deepest!["next"]!;
+		deepest["tag"]!.ToString().Should().Be("t0");
+		deepest["next"].Should().BeNull();
+		body.Should().NotContain("null");
+	}
+
+	[Test]
+	public async Task Build_UnwrapsAnAllOfAroundAReference()
+	{
+		var body = await BuildFrom(
+			/*lang=json,strict*/
+			"""
+			{ "type": "object", "required": ["index", "status"],
+			  "properties": {
+			    "index": { "description": "The index.", "allOf": [ { "$ref": "#/components/schemas/IndexName" } ] },
+			    "status": { "description": "The status.", "allOf": [ { "$ref": "#/components/schemas/Status" } ] } } }
+			""",
+			/*lang=json,strict*/
+			""" "IndexName": { "type": "string" }, "Status": { "type": "string", "enum": ["created", "needs_configuration"] } """
+		);
+
+		Parse(body).ToJsonString().Should().Be("""{"index":"string","status":"created"}""");
+	}
+
+	[Test]
+	public async Task Build_SkipsALiteralNullExampleDefaultOrEnumMember()
+	{
+		var body = await BuildFrom(
+			/*lang=json,strict*/
+			"""
+			{ "type": "object", "required": ["a", "b", "c"],
+			  "properties": {
+			    "a": { "type": ["string", "null"], "example": null },
+			    "b": { "type": ["string", "null"], "default": null, "enum": [null, "x"] },
+			    "c": { "type": "string", "examples": [null, "y"] } } }
+			"""
+		);
+
+		body.Should().NotContain("sentinel");
+		Parse(body).ToJsonString().Should().Be("""{"a":"string","b":"x","c":"y"}""");
+	}
+
+	[Test]
+	public async Task Build_ParsesANumericConst()
+	{
+		var body = await BuildFrom(
+			/*lang=json,strict*/
+			"""
+			{ "type": "object", "required": ["version", "kind"],
+			  "properties": { "version": { "type": "integer", "const": 5 }, "kind": { "type": "string", "const": "7" } } }
+			"""
+		);
+
+		Parse(body).ToJsonString().Should().Be("""{"version":5,"kind":"7"}""");
+	}
+
+	[Test]
+	public async Task Build_LeavesOutARequiredPropertyThatHasNoValue()
+	{
+		var body = await BuildFrom(
+			/*lang=json,strict*/
+			"""
+			{ "type": "object", "required": ["name", "data"],
+			  "properties": { "name": { "not": {} }, "data": { "type": "string" } } }
+			"""
+		);
+
+		Parse(body).ToJsonString().Should().Be("""{"data":"string"}""");
+	}
+
+	[Test]
+	public async Task Build_SkipsANullVariantOfAUnion()
+	{
+		var body = await BuildFrom(
+			/*lang=json,strict*/
+			"""
+			{ "type": "object", "required": ["value"],
+			  "properties": { "value": { "oneOf": [ { "type": "null" }, { "type": "integer" } ] } } }
+			"""
+		);
+
+		Parse(body).ToJsonString().Should().Be("""{"value":0}""");
 	}
 
 	[Test]

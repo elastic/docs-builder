@@ -16,7 +16,7 @@ namespace Elastic.ApiExplorer.Model;
 /// </summary>
 public static class RequestBodyExample
 {
-	/// <summary>Required properties of required properties stop here; deeper values are <c>null</c>.</summary>
+	/// <summary>Required objects nested in required objects stop here; a deeper compound value is <c>null</c>. A scalar still gets its value at any depth.</summary>
 	private const int MaxDepth = 6;
 
 	private static readonly JsonSerializerOptions PrettyJson = new() { WriteIndented = true };
@@ -39,21 +39,29 @@ public static class RequestBodyExample
 	private static JsonNode? Value(SchemaAnalyzer analyzer, IOpenApiSchema? schema, int depth)
 	{
 		var resolved = analyzer.ResolveSchema(schema);
-		if (resolved is null || depth > MaxDepth)
+		if (resolved is null)
 			return null;
 
 		if (Stated(resolved) is { } stated)
 			return stated.DeepClone();
 
 		if (UnionSchemas.TryGet(resolved, out _, out var members))
-			return Value(analyzer, members[0], depth + 1);
+		{
+			// The first variant that is a value; `null` is listed as a variant only to allow leaving the field out.
+			var variant = members.FirstOrDefault(m => (analyzer.ResolveSchema(m) ?? m).Type != JsonSchemaType.Null);
+			return depth < MaxDepth && variant is not null ? Value(analyzer, variant, depth + 1) : null;
+		}
 
 		var effective = analyzer.Flatten(resolved);
 		var type = resolved.Type ?? JsonSchemaType.Null;
 		if (type.HasFlag(JsonSchemaType.Array))
-			return Items(analyzer, resolved, depth);
+			return depth < MaxDepth ? Items(analyzer, resolved, depth) : null;
 		if (effective.Properties.Count > 0 || effective.MapValue is not null || type.HasFlag(JsonSchemaType.Object))
-			return Object(analyzer, effective, depth);
+			return depth < MaxDepth ? Object(analyzer, effective, depth) : null;
+
+		// A property written as `allOf: [{ $ref }]` plus a description has no type of its own; the member it wraps does.
+		if (resolved.Type is null && resolved.AllOf is { Count: > 0 } wrapped && depth < MaxDepth)
+			return wrapped.Select(member => Value(analyzer, member, depth + 1)).FirstOrDefault(static v => v is not null);
 
 		return Placeholder(type);
 	}
@@ -61,14 +69,34 @@ public static class RequestBodyExample
 	/// <summary>The first value the schema states itself, whether an example, a default, a constant or an enum member.</summary>
 	private static JsonNode? Stated(IOpenApiSchema schema) =>
 		SchemaHelpers.FirstExample(schema)
-			?? schema.Default
-			?? (string.IsNullOrEmpty(schema.Const) ? null : JsonValue.Create(schema.Const))
-			?? schema.Enum?.FirstOrDefault(static e => e is not null);
+			?? (SchemaHelpers.IsValue(schema.Default) ? schema.Default : null)
+			?? Const(schema)
+			?? schema.Enum?.FirstOrDefault(SchemaHelpers.IsValue);
+
+	/// <summary>The reader keeps <c>const</c> as text, so a number or boolean is parsed back unless the schema says it is a string.</summary>
+	private static JsonNode? Const(IOpenApiSchema schema)
+	{
+		if (string.IsNullOrEmpty(schema.Const))
+			return null;
+		if (schema.Type?.HasFlag(JsonSchemaType.String) != false)
+			return JsonValue.Create(schema.Const);
+		try
+		{
+			return JsonNode.Parse(schema.Const);
+		}
+		catch (JsonException)
+		{
+			return JsonValue.Create(schema.Const);
+		}
+	}
 
 	private static JsonArray Items(SchemaAnalyzer analyzer, IOpenApiSchema array, int depth) =>
 		Value(analyzer, array.Items, depth + 1) is { } item ? [item] : [];
 
-	/// <summary>The required properties, without the ones the server sets (<c>readOnly</c>).</summary>
+	/// <summary>
+	/// The required properties, without the ones the server sets (<c>readOnly</c>). A property with nothing to show is left
+	/// out rather than written as <c>null</c>, which a schema such as <c>not: {}</c> would reject.
+	/// </summary>
 	private static JsonObject Object(SchemaAnalyzer analyzer, EffectiveSchema effective, int depth)
 	{
 		var body = new JsonObject();
@@ -76,7 +104,8 @@ public static class RequestBodyExample
 		{
 			if (!effective.Required.Contains(name) || analyzer.ResolveSchema(property)?.ReadOnly == true)
 				continue;
-			body[name] = Value(analyzer, property, depth + 1);
+			if (Value(analyzer, property, depth + 1) is { } value)
+				body[name] = value;
 		}
 
 		return body;

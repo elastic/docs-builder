@@ -21,8 +21,11 @@ public static class SchemaHelpers
 	/// </summary>
 #pragma warning disable CS0618
 	public static JsonNode? FirstExample(IOpenApiSchema? schema) =>
-		schema?.Examples?.FirstOrDefault(static e => e is not null) ?? schema?.Example;
+		schema?.Examples?.FirstOrDefault(IsValue) ?? (IsValue(schema?.Example) ? schema!.Example : null);
 #pragma warning restore CS0618
+
+	/// <summary>A node that holds a value: not null, and not the sentinel string the reader stores for a literal JSON <c>null</c>.</summary>
+	public static bool IsValue(JsonNode? node) => node is not null && !JsonNullSentinel.IsJsonNullSentinel(node);
 
 	/// <summary>
 	/// Maximum depth for recursive property rendering.
