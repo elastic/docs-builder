@@ -74,8 +74,10 @@ Required structure:
  `https://docs-v3-preview.elastic.dev/elastic/docs-builder/docs/<PR number>/<path>`:
  the link, a dash, then the one thing to look at there. Pick pages that each show a
  different behaviour of the change, and one control page the change must leave alone.
- Open every link before adding it; a link that does not answer is worse than none.
- Added after the preview has built (see step 8). Omit when nothing renders differently.>
+ The preview does not exist yet when the PR is created, so check each <path> against
+ the local build instead: `.artifacts/docs/html/<path>/index.html`, or the page on
+ `docs-builder serve`. The preview serves the same paths once its workflow finishes.
+ Omit when nothing renders differently.>
 ```
 
 A **Check on the preview** entry reads like this:
@@ -157,7 +159,7 @@ gh pr edit --add-label "<new-label>" --remove-label "<old-label>"
 
 ### 8. Create the PR
 
-One call — title, label, and body together. The only follow-up `gh pr edit` is the **Check on the preview** section: it needs the PR number and a built preview, so add it once the preview workflow has finished, after opening every link.
+One call — title, label, and body together. When the change renders differently, one `gh pr edit` follows right away to add **Check on the preview**: the section needs the PR number, which exists only after creation, so read it from the URL `gh pr create` prints and build the links from it. Do not wait for the preview workflow; the paths were checked against the local build, and the preview serves them once it has run.
 
 ```bash
 gh pr create --title "<title>" --label "<label>" --body "$(cat <<'EOF'
