@@ -3780,6 +3780,20 @@ html:has(.api-page-shell) {
 	white-space: nowrap;
 }
 
+/* A sample docs-builder built from the spec says so, in the same muted tone as the client label, so a reader knows its values are placeholders. */
+.api-code-carousel-card-generated {
+	flex: none;
+	padding: 1px 6px;
+	border: 1px solid var(--api-code-muted);
+	border-radius: 999px;
+	color: var(--api-code-muted);
+	font-size: 10.5px;
+	font-weight: 600;
+	letter-spacing: 0.02em;
+	text-transform: uppercase;
+	cursor: help;
+}
+
 /* The client label links to the client's docs page; a light blue reads as a link on the dark card. */
 .markdown-content a.api-code-carousel-card-client {
 	color: var(--color-blue-elastic-50, #85b7ff);

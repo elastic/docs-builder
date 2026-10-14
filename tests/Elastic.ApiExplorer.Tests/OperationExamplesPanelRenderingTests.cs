@@ -145,13 +145,23 @@ public class OperationExamplesPanelRenderingTests
 	}
 
 	[Test]
-	public async Task Render_GeneratedSample_IsMarkedInTheMarkupButNotInTheCard()
+	public async Task Render_GeneratedSample_CarriesABadgeInTheHeaderNotAFooter()
 	{
 		var html = await RenderScenario(Slicing);
 
 		html.Should().Contain("data-generated");
+		html.Should().Contain("class=\"api-code-carousel-card-generated\"");
 		html.Should().NotContain("Built from this example");
 		html.Should().NotContain("<footer");
+	}
+
+	[Test]
+	public async Task Render_SpecSample_HasNoGeneratedBadge()
+	{
+		var html = await RenderScenario(Slicing with { CodeSamples = [Sample("Console"), Sample("curl")] });
+
+		html.Should().NotContain("data-generated");
+		html.Should().NotContain("api-code-carousel-card-generated");
 	}
 
 	[Test]
