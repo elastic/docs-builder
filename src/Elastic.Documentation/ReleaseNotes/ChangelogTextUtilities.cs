@@ -11,7 +11,7 @@ namespace Elastic.Documentation.ReleaseNotes;
 /// </summary>
 public static partial class ChangelogTextUtilities
 {
-	[GeneratedRegex(@"\d+$", RegexOptions.None)]
+	[GeneratedRegex(@"\d+$", RegexOptions.None, matchTimeoutMilliseconds: 2000)]
 	private static partial Regex TrailingNumberRegex();
 
 	/// <summary>
@@ -134,7 +134,7 @@ public static partial class ChangelogTextUtilities
 	}
 
 	[GeneratedRegex(@"^(?:feat|fix|docs|chore|refactor|perf|test|style|build|ci|revert)(?:\([^)\s]*\))?!?:\s+", RegexOptions.IgnoreCase
-		| RegexOptions.CultureInvariant)]
+		| RegexOptions.CultureInvariant, matchTimeoutMilliseconds: 2000)]
 	private static partial Regex ConventionalCommitPrefixRegex();
 
 	/// <summary>
@@ -608,7 +608,7 @@ public static partial class ChangelogTextUtilities
 		return parts.Length >= 2 ? (parts[0], parts[1]) : (null, parts[0]);
 	}
 
-	[GeneratedRegex(@"[^a-z0-9]+", RegexOptions.None)]
+	[GeneratedRegex(@"[^a-z0-9]+", RegexOptions.None, matchTimeoutMilliseconds: 2000)]
 	private static partial Regex NonAlphanumericRegex();
 
 	/// <summary>

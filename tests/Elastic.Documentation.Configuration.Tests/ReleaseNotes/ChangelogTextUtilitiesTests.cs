@@ -2,6 +2,8 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Reflection;
+using System.Text.RegularExpressions;
 using AwesomeAssertions;
 using Elastic.Documentation.ReleaseNotes;
 
@@ -289,5 +291,19 @@ public class ChangelogTextUtilitiesTests
 			"https://github.com/elastic/elasticsearch/pull/1"
 		]);
 		result.Should().Equal("https://github.com/elastic/elasticsearch/pull/1");
+	}
+
+	[Test]
+	public void AllRegexes_HaveAMatchTimeout()
+	{
+		var regexes = typeof(ChangelogTextUtilities)
+			.GetMethods(BindingFlags.NonPublic | BindingFlags.Static)
+			.Where(method => method.ReturnType == typeof(Regex) && method.GetParameters().Length == 0)
+			.Select(method => (method.Name, Regex: (Regex)method.Invoke(null, null)!))
+			.ToList();
+
+		regexes.Should().NotBeEmpty();
+		foreach (var (name, regex) in regexes)
+			regex.MatchTimeout.Should().NotBe(Regex.InfiniteMatchTimeout, $"{name} needs a match timeout");
 	}
 }
