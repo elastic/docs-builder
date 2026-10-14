@@ -1162,7 +1162,7 @@ button.response-status-toggle:focus {
 }
 
 .response-panel-body > .property-list > :first-child > dt {
-	padding-top: 8px;
+	--property-row-pad: 8px;
 }
 
 .response-description {
@@ -1266,7 +1266,8 @@ button.response-status-toggle:focus {
 		flex-wrap: wrap;
 		gap: 8px;
 		overflow: visible;
-		padding-top: 16px;
+		--property-row-pad: 16px;
+		padding-top: var(--property-row-pad);
 		padding-bottom: 0;
 		margin: 0;
 		line-height: 24px;
@@ -1275,7 +1276,7 @@ button.response-status-toggle:focus {
 		> a.property-anchor {
 			position: absolute;
 			right: 100%;
-			top: 16px;
+			top: var(--property-row-pad);
 			z-index: 2;
 		}
 
