@@ -134,6 +134,9 @@ public partial record OperationPageModel
 		{
 			// Built around the first example's body, so the samples attach to that example and carry its request.
 			var body = requestExamples.FirstOrDefault(static e => !string.IsNullOrWhiteSpace(e.JsonValue))?.JsonValue;
+			// Without an example the body comes from the schema, so the sample of an operation that takes one is not a bare request.
+			var requestMedia = operation.RequestBody?.Content?.FirstOrDefault();
+			body ??= RequestBodyExample.Build(analyzer, requestMedia?.Key, requestMedia?.Value?.Schema);
 			codeSamples = SyntheticCodeSamples.Create(new SyntheticSampleInput(apiOperation.OperationType, apiOperation.Route, operation)
 			{
 				Servers = servers,

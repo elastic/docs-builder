@@ -92,12 +92,8 @@ public static class SyntheticCodeSamples
 		parts.AddRange(headers.Select(static h => $"-H \"{h.Name}: {HeaderExampleValue(h)}\""));
 		parts.AddRange(authFlags);
 
-		// A body-less request still states the type it accepts when the spec declares one.
-		var contentType = operation.RequestBody?.Content?.Keys.FirstOrDefault();
-		if (contentType is null && body is not null)
-			contentType = "application/json";
-		if (contentType is not null && !headers.Any(static h => string.Equals(h.Name, "Content-Type", StringComparison.OrdinalIgnoreCase)))
-			parts.Add($"-H \"Content-Type: {contentType}\"");
+		if (body is not null && !headers.Any(static h => string.Equals(h.Name, "Content-Type", StringComparison.OrdinalIgnoreCase)))
+			parts.Add($"-H \"Content-Type: {operation.RequestBody?.Content?.Keys.FirstOrDefault() ?? "application/json"}\"");
 
 		// A single quote ends the quoted argument, so it becomes '\'' as the shell expects.
 		if (body is not null)
@@ -136,7 +132,7 @@ public static class SyntheticCodeSamples
 	private static JsonNode? ExampleNode(IOpenApiParameter parameter) =>
 		parameter.Example
 			?? parameter.Examples?.Values.Select(static e => e.Value).FirstOrDefault(static v => v is not null)
-			?? parameter.Schema?.Examples?.FirstOrDefault(static v => v is not null);
+			?? SchemaHelpers.FirstExample(parameter.Schema);
 
 	/// <summary>One part per array item, one part for a scalar. Null when the spec gives no example, and for an object (see <see cref="ExampleEntries"/>).</summary>
 	private static string[]? ExampleParts(IOpenApiParameter parameter)

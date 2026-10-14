@@ -89,6 +89,23 @@ public class SyntheticCodeSamplesTests
 	}
 
 	[Test]
+	public void Create_WithTheExampleOfAnOpenApi30Schema_FillsItIn()
+	{
+		// The reader keeps the `example` of an OpenAPI 3.0 schema in Example, not Examples.
+#pragma warning disable CS0618
+		var schema = new OpenApiSchema { Example = JsonValue.Create("198583657190") };
+#pragma warning restore CS0618
+		var operation = new OpenApiOperation
+		{
+			Parameters = [new OpenApiParameter { Name = "organization_id", In = ParameterLocation.Path, Required = true, Schema = schema }]
+		};
+
+		var samples = SyntheticCodeSamples.Create(new SyntheticSampleInput(HttpMethod.Get, "/organizations/{organization_id}", operation));
+
+		samples[0].Source.Should().Be("GET /organizations/198583657190");
+	}
+
+	[Test]
 	public void Create_WithParameterExampleOnTheParameter_PrefersItToTheSchemasAndKeepsOtherPlaceholders()
 	{
 		var operation = new OpenApiOperation
@@ -284,11 +301,11 @@ public class SyntheticCodeSamplesTests
 	}
 
 	[Test]
-	public void Create_WithADeclaredRequestTypeButNoBody_StillStatesTheContentType()
+	public void Create_WithoutABody_SendsNoContentType()
 	{
 		var samples = SyntheticCodeSamples.Create(new SyntheticSampleInput(HttpMethod.Post, "/api/foo", JsonPost()));
 
-		samples[1].Source.Should().Contain("-H \"Content-Type: application/json\"").And.NotContain("-d ");
+		samples[1].Source.Should().NotContain("Content-Type").And.NotContain("-d ");
 	}
 
 	[Test]

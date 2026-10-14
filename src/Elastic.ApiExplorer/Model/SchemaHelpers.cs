@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Text.Json.Nodes;
 using Elastic.ApiExplorer.Infrastructure;
 using Elastic.ApiExplorer.Operations;
 using Elastic.ApiExplorer.Types;
@@ -14,6 +15,15 @@ namespace Elastic.ApiExplorer.Model;
 /// </summary>
 public static class SchemaHelpers
 {
+	/// <summary>
+	/// The example a schema states: the first of <c>examples</c> (OpenAPI 3.1), else its <c>example</c>. The reader keeps the
+	/// <c>example</c> of an OpenAPI 3.0 schema in <see cref="IOpenApiSchema.Example"/> and leaves <c>examples</c> empty.
+	/// </summary>
+#pragma warning disable CS0618
+	public static JsonNode? FirstExample(IOpenApiSchema? schema) =>
+		schema?.Examples?.FirstOrDefault(static e => e is not null) ?? schema?.Example;
+#pragma warning restore CS0618
+
 	/// <summary>
 	/// Maximum depth for recursive property rendering.
 	/// </summary>
