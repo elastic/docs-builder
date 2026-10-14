@@ -281,6 +281,28 @@ public class SyntheticCodeSamplesTests
 	}
 
 	[Test]
+	public void Create_WithShellCharactersInAHeaderExample_EscapesThemForTheShell()
+	{
+		var operation = new OpenApiOperation
+		{
+			Parameters =
+			[
+				new OpenApiParameter
+				{
+					Name = "X-Note",
+					In = ParameterLocation.Header,
+					Required = true,
+					Example = JsonValue.Create("say \"hi\" to $HOME, `whoami` and C:\\dir\nnext")
+				}
+			]
+		};
+
+		var samples = SyntheticCodeSamples.Create(new SyntheticSampleInput(HttpMethod.Get, "/api/x", operation));
+
+		samples[1].Source.Should().Contain("-H \"X-Note: say \\\"hi\\\" to \\$HOME, \\`whoami\\` and C:\\\\dir next\"");
+	}
+
+	[Test]
 	public void Create_WithASingleQuoteInTheBody_EscapesItForTheShell()
 	{
 		var samples = SyntheticCodeSamples.Create(new SyntheticSampleInput(HttpMethod.Post, "/api/foo", JsonPost())

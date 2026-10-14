@@ -91,11 +91,11 @@ public static class SyntheticCodeSamples
 	{
 		var (headers, authFlags) = flags;
 		var parts = new List<string> { $"curl -X {methodLabel} \"{url}\"" };
-		parts.AddRange(headers.Select(static h => $"-H \"{h.Name}: {HeaderExampleValue(h)}\""));
+		parts.AddRange(headers.Select(static h => $"-H \"{DoubleQuoted(h.Name ?? "")}: {DoubleQuoted(HeaderExampleValue(h))}\""));
 		parts.AddRange(authFlags);
 
 		if (body is not null && !headers.Any(static h => string.Equals(h.Name, "Content-Type", StringComparison.OrdinalIgnoreCase)))
-			parts.Add($"-H \"Content-Type: {operation.RequestBody?.Content?.Keys.FirstOrDefault() ?? "application/json"}\"");
+			parts.Add($"-H \"Content-Type: {DoubleQuoted(operation.RequestBody?.Content?.Keys.FirstOrDefault() ?? "application/json")}\"");
 
 		// A single quote ends the quoted argument, so it becomes '\'' as the shell expects.
 		if (body is not null)
@@ -103,6 +103,20 @@ public static class SyntheticCodeSamples
 
 		return string.Join(" \\\n  ", parts);
 	}
+
+	/// <summary>
+	/// Spec text inside a double-quoted shell argument. The shell reads <c>\</c>, <c>"</c>, <c>$</c> and <c>`</c> there, so each
+	/// is escaped, and a line break would end the command, so it becomes a space.
+	/// </summary>
+	internal static string DoubleQuoted(string text) =>
+		text
+			.Replace("\\", "\\\\", StringComparison.Ordinal)
+			.Replace("\"", "\\\"", StringComparison.Ordinal)
+			.Replace("$", "\\$", StringComparison.Ordinal)
+			.Replace("`", "\\`", StringComparison.Ordinal)
+			.Replace("\r\n", " ", StringComparison.Ordinal)
+			.Replace('\r', ' ')
+			.Replace('\n', ' ');
 
 	private static string BuildRequestUrl(string pathWithQuery, IList<OpenApiServer>? servers)
 	{
@@ -142,14 +156,14 @@ public static class SyntheticCodeSamples
 		var node = ExampleNode(parameter);
 		if (node is JsonArray items)
 		{
-			var parts = items.Select(static i => i is JsonValue ? i.ToString().Trim('"') : null).ToArray();
+			var parts = items.Select(static i => i is JsonValue ? i.ToString() : null).ToArray();
 			return parts.Length > 0 && parts.All(static p => !string.IsNullOrEmpty(p)) ? [.. parts.OfType<string>()] : null;
 		}
 
 		if (node is null or JsonObject)
 			return null;
 
-		var text = node.ToString().Trim('"');
+		var text = node.ToString();
 		return string.IsNullOrEmpty(text) ? null : [text];
 	}
 
@@ -159,7 +173,7 @@ public static class SyntheticCodeSamples
 		if (ExampleNode(parameter) is not JsonObject { Count: > 0 } properties)
 			return null;
 
-		var entries = properties.Select(static p => (p.Key, Value: p.Value is JsonValue ? p.Value.ToString().Trim('"') : null)).ToArray();
+		var entries = properties.Select(static p => (p.Key, Value: p.Value is JsonValue ? p.Value.ToString() : null)).ToArray();
 		return entries.All(static e => !string.IsNullOrEmpty(e.Value)) ? [.. entries.Select(static e => (e.Key, e.Value!))] : null;
 	}
 
@@ -190,19 +204,20 @@ public static class SyntheticCodeSamples
 	private static IEnumerable<string> QueryPairs(IOpenApiParameter parameter)
 	{
 		var isForm = (parameter.Style ?? ParameterStyle.Form) == ParameterStyle.Form;
+		var name = Uri.EscapeDataString(parameter.Name ?? "");
 		if (ExampleEntries(parameter) is { } entries)
 		{
 			// Brackets are escaped because curl would read them as a glob.
 			if (parameter.Style == ParameterStyle.DeepObject)
-				return entries.Select(e => $"{parameter.Name}%5B{Uri.EscapeDataString(e.Key)}%5D={Uri.EscapeDataString(e.Value)}");
+				return entries.Select(e => $"{name}%5B{Uri.EscapeDataString(e.Key)}%5D={Uri.EscapeDataString(e.Value)}");
 			if (parameter.Explode && isForm)
 				return entries.Select(static e => $"{Uri.EscapeDataString(e.Key)}={Uri.EscapeDataString(e.Value)}");
 		}
 
 		if (parameter.Explode && isForm && ExampleParts(parameter) is { Length: > 1 } parts)
-			return parts.Select(part => $"{parameter.Name}={Uri.EscapeDataString(part)}");
+			return parts.Select(part => $"{name}={Uri.EscapeDataString(part)}");
 
-		return [$"{parameter.Name}={UrlExample(parameter) ?? $"{{{parameter.Name}}}"}"];
+		return [$"{name}={UrlExample(parameter) ?? $"{{{parameter.Name}}}"}"];
 	}
 
 	/// <summary>
@@ -242,7 +257,7 @@ public static class SyntheticCodeSamples
 	private static (string Header, string Flag)? AuthFlag(IOpenApiSecurityScheme scheme) => scheme.Type switch
 	{
 		SecuritySchemeType.ApiKey when scheme.In == ParameterLocation.Header && !string.IsNullOrEmpty(scheme.Name) =>
-			(scheme.Name, $"-H \"{scheme.Name}: {ApiKeyVariable}\""),
+			(scheme.Name, $"-H \"{DoubleQuoted(scheme.Name)}: {ApiKeyVariable}\""),
 		SecuritySchemeType.Http when string.Equals(scheme.Scheme, "basic", StringComparison.OrdinalIgnoreCase) =>
 			("Authorization", "-u \"$USERNAME:$PASSWORD\""),
 		SecuritySchemeType.Http when !string.IsNullOrEmpty(scheme.Scheme)
