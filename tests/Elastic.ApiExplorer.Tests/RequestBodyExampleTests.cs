@@ -208,6 +208,21 @@ public class RequestBodyExampleTests
 	}
 
 	[Test]
+	public async Task Build_GivesAnObjectExampleItsLiteralNullsBack()
+	{
+		var body = await BuildFrom(
+			/*lang=json,strict*/
+			"""
+			{ "type": "object", "required": ["settings"],
+			  "properties": { "settings": { "type": "object", "examples": [ { "refresh_interval": null, "list": [null, 1] } ] } } }
+			"""
+		);
+
+		body.Should().NotContain("sentinel");
+		Parse(body).ToJsonString().Should().Be("""{"settings":{"refresh_interval":null,"list":[null,1]}}""");
+	}
+
+	[Test]
 	public async Task Build_ParsesANumericConst()
 	{
 		var body = await BuildFrom(

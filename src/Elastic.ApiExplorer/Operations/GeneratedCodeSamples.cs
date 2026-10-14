@@ -102,8 +102,14 @@ public static partial class GeneratedCodeSamples
 		var withBody = CurlBody().Replace(curlSource, _ => $"-d '{escapedBody}'", 1);
 		var withMethod = CurlMethod().Replace(withBody, $"-X {method}", 1);
 		var route = path.StartsWith('/') ? path : "/" + path;
-		return CurlHostPath().Replace(withMethod, match => match.Groups[1].Value + WithCredentials(route, match.Value), 1);
+		var rewritten = CurlHostPath().Replace(withMethod, match => match.Groups[1].Value + WithCredentials(route, match.Value), 1);
+		// curl reads braces as a glob, so a route that still holds a {placeholder} turns globbing off, as the built curl does.
+		return route.Contains('{') ? GlobOff().Replace(rewritten, "curl --globoff", 1) : rewritten;
 	}
+
+	/// <summary>Matches the leading <c>curl</c> when the sample has no glob-off flag yet; the flag may follow it on the same line.</summary>
+	[GeneratedRegex(@"^\s*curl(?![^\n]*(?:--globoff|\s-g\b))", RegexOptions.CultureInvariant)]
+	private static partial Regex GlobOff();
 
 	/// <summary>A query parameter of the copied URL that carries the API key (<c>?key=$API_KEY</c>) is a credential, so it follows the sample to the new route. Other variables are the sample's own options and stay behind.</summary>
 	private static string WithCredentials(string route, string originalUrl)

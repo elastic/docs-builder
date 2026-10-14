@@ -43,7 +43,7 @@ public static class RequestBodyExample
 			return null;
 
 		if (Stated(resolved) is { } stated)
-			return stated.DeepClone();
+			return WithoutSentinels(stated.DeepClone());
 
 		if (UnionSchemas.TryGet(resolved, out _, out var members))
 		{
@@ -65,6 +65,39 @@ public static class RequestBodyExample
 
 		return Placeholder(type);
 	}
+
+	/// <summary>A literal <c>null</c> inside an example is stored as a sentinel string by the reader; the body gets the <c>null</c> back.</summary>
+	private static JsonNode? WithoutSentinels(JsonNode? node)
+	{
+		// A child keeps its slot unless it is the sentinel; putting an attached node back into its own slot throws.
+		switch (node)
+		{
+			case JsonObject obj:
+				foreach (var (key, child) in obj.ToArray())
+				{
+					if (IsSentinel(child))
+						obj[key] = null;
+					else
+						_ = WithoutSentinels(child);
+				}
+
+				return obj;
+			case JsonArray array:
+				for (var i = 0; i < array.Count; i++)
+				{
+					if (IsSentinel(array[i]))
+						array[i] = null;
+					else
+						_ = WithoutSentinels(array[i]);
+				}
+
+				return array;
+			default:
+				return IsSentinel(node) ? null : node;
+		}
+	}
+
+	private static bool IsSentinel(JsonNode? node) => node is not null && JsonNullSentinel.IsJsonNullSentinel(node);
 
 	/// <summary>The first value the schema states itself, whether an example, a default, a constant or an enum member.</summary>
 	private static JsonNode? Stated(IOpenApiSchema schema) =>

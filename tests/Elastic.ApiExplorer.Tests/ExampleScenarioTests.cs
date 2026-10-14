@@ -481,6 +481,30 @@ public class ExampleScenarioTests
 	}
 
 	[Test]
+	public void GeneratedCodeSamples_CopiedCurlTurnsGlobbingOffForAPlaceholderRoute()
+	{
+		var scenario = new ExampleScenario { Title = "One", TabId = "one", RequestJson = "{}", RequestLine = ("PUT", "/things/{id}") };
+		var spec = new List<CodeSample> { new("curl", "curl -X POST \"https://api.example.test/things\" -d '{\"a\":1}'", "language-curl") };
+		var endpoint = OperationEndpoint.FromVariants([new EndpointVariant("put", "/things/{id}")], "/things/{id}");
+
+		var curl = GeneratedCodeSamples.Fill([scenario], spec, endpoint, productConsolePrefix: null).Single().CodeSamples.Single();
+
+		curl.Source.Should().StartWith("curl --globoff -X PUT \"https://api.example.test/things/{id}\"");
+	}
+
+	[Test]
+	public void GeneratedCodeSamples_CopiedCurlKeepsGlobbingOnWhenTheRouteIsFilled()
+	{
+		var scenario = new ExampleScenario { Title = "One", TabId = "one", RequestJson = "{}", RequestLine = ("PUT", "/things/1") };
+		var spec = new List<CodeSample> { new("curl", "curl -X POST \"https://api.example.test/things\" -d '{\"a\":1}'", "language-curl") };
+		var endpoint = OperationEndpoint.FromVariants([new EndpointVariant("put", "/things/{id}")], "/things/{id}");
+
+		var curl = GeneratedCodeSamples.Fill([scenario], spec, endpoint, productConsolePrefix: null).Single().CodeSamples.Single();
+
+		curl.Source.Should().StartWith("curl -X PUT \"https://api.example.test/things/1\"");
+	}
+
+	[Test]
 	public void GeneratedCodeSamples_CopiedCurlLeavesItsOtherQueryVariablesBehind()
 	{
 		var scenario = new ExampleScenario
