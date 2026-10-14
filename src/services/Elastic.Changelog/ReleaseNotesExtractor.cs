@@ -99,29 +99,40 @@ public static partial class ReleaseNotesExtractor
 	/// <summary>Finds the "Action" section of a PR description. See <see cref="FindImpact"/> for the recognized forms.</summary>
 	public static string? FindAction(string? markdown) => FindSection(markdown, ActionStartRegex());
 
-	/// <summary>Marks the fence lines and every line between them, so section boundaries are never read from code samples.</summary>
+	/// <summary>
+	/// Marks the fence lines and every line between them, so section boundaries are never read from code samples.
+	/// Follows CommonMark: a closing fence uses the same character as the opening one, is at least as long, and has nothing after it.
+	/// </summary>
 	private static bool[] MarkCodeLines(string[] lines)
 	{
 		var inCode = new bool[lines.Length];
-		string? openFence = null;
+		var openChar = '\0';
+		var openLength = 0;
 		for (var i = 0; i < lines.Length; i++)
 		{
 			var trimmed = lines[i].TrimStart();
-			var marker = trimmed.StartsWith("```", StringComparison.Ordinal)
-				? "```"
-				: trimmed.StartsWith("~~~", StringComparison.Ordinal) ? "~~~" : null;
-			if (openFence == null)
+			var fenceChar = trimmed.Length > 0 && trimmed[0] is '`' or '~' ? trimmed[0] : '\0';
+			var runLength = 0;
+			if (fenceChar != '\0')
 			{
-				if (marker == null)
+				while (runLength < trimmed.Length && trimmed[runLength] == fenceChar)
+					runLength++;
+			}
+
+			if (openChar == '\0')
+			{
+				if (runLength < 3)
 					continue;
-				openFence = marker;
+				openChar = fenceChar;
+				openLength = runLength;
 				inCode[i] = true;
 			}
 			else
 			{
 				inCode[i] = true;
-				if (marker == openFence)
-					openFence = null;
+				var closes = fenceChar == openChar && runLength >= openLength && string.IsNullOrWhiteSpace(trimmed[runLength..]);
+				if (closes)
+					openChar = '\0';
 			}
 		}
 

@@ -437,4 +437,54 @@ public class ReleaseNotesExtractorTests
 
 		ReleaseNotesExtractor.FindImpact(prBody).Should().BeNull();
 	}
+
+	[Test]
+	public void FindImpactAndAction_ShorterFenceInsideLongerFence_DoesNotCloseIt()
+	{
+		// language=markdown
+		var prBody =
+			"""
+			## Impact
+			Clients break. Example:
+
+			````markdown
+			```yaml
+			action: restart
+			```
+			## not a heading
+			````
+
+			## Action
+			Upgrade the client.
+			""";
+
+		ReleaseNotesExtractor.FindAction(prBody).Should().Be("Upgrade the client.");
+		ReleaseNotesExtractor
+			.FindImpact(prBody)
+			.Should()
+			.Be("Clients break. Example:\n\n````markdown\n```yaml\naction: restart\n```\n## not a heading\n````");
+	}
+
+	[Test]
+	public void FindAction_FenceWithTextAfterTheRun_DoesNotCloseTheBlock()
+	{
+		// language=markdown
+		var prBody =
+			"""
+			## Action
+			Run:
+
+			```bash
+			```not a closing fence
+			## still code
+			```
+
+			Then restart.
+			""";
+
+		ReleaseNotesExtractor
+			.FindAction(prBody)
+			.Should()
+			.Be("Run:\n\n```bash\n```not a closing fence\n## still code\n```\n\nThen restart.");
+	}
 }
