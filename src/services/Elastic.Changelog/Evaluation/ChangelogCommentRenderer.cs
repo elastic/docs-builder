@@ -255,7 +255,8 @@ internal static class ChangelogCommentRenderer
 		string? defaultBranch = null
 	)
 	{
-		var configFileName = string.IsNullOrWhiteSpace(configFile) ? "docs/changelog.yml" : configFile;
+		// An absolute path is a runner location, not a repository path, so it cannot form a link.
+		var configFileName = string.IsNullOrWhiteSpace(configFile) || Path.IsPathRooted(configFile) ? "docs/changelog.yml" : configFile;
 		var configUrl = !string.IsNullOrWhiteSpace(owner) && !string.IsNullOrWhiteSpace(repo)
 			? $"https://github.com/{owner}/{repo}/blob/{defaultBranch ?? "main"}/{configFileName}"
 			: null;

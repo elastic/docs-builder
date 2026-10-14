@@ -557,4 +557,17 @@ public class ChangelogGithubCommentServiceTests() : ChangelogTestBase()
 			() => commentSvc.DeleteStickyCommentAsync("elastic", "test-repo", 42, A<CancellationToken>._)
 		).MustHaveHappenedOnceExactly();
 	}
+
+	[Test]
+	public async Task WriteMetadata_ConfigFileInsideTheCheckout_IsStoredRepoRelative()
+	{
+		await WriteMetadata(BaseMetadata() with { ConfigFile = Path.Join(Root, "docs", "changelog.yml") });
+
+		var written = await new GithubDecisionMetadataWriter(LoggerFactory, RunnerTempFileSystem).ReadAsync(
+			MetadataPath,
+			CancellationToken.None
+		);
+
+		written!.ConfigFile.Should().Be("docs/changelog.yml");
+	}
 }
