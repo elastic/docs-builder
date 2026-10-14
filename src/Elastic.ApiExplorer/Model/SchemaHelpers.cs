@@ -2,8 +2,8 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using System.Globalization;
 using System.Text.Json.Nodes;
+using System.Text.RegularExpressions;
 using Elastic.ApiExplorer.Infrastructure;
 using Elastic.ApiExplorer.Operations;
 using Elastic.ApiExplorer.Types;
@@ -14,7 +14,7 @@ namespace Elastic.ApiExplorer.Model;
 /// <summary>
 /// Shared static utilities for OpenAPI schema rendering.
 /// </summary>
-public static class SchemaHelpers
+public static partial class SchemaHelpers
 {
 	/// <summary>
 	/// The example a schema states: the first of <c>examples</c> (OpenAPI 3.1), else its <c>example</c>. The reader keeps the
@@ -54,10 +54,12 @@ public static class SchemaHelpers
 			return JsonValue.Create(text == "True");
 		if (schema.Type?.HasFlag(JsonSchemaType.Boolean) == true && bool.TryParse(text, out var flag))
 			return JsonValue.Create(flag);
-		return decimal.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out var number)
-			? JsonValue.Create(number)
-			: JsonValue.Create(text);
+		// A JSON number is kept as its own token, so 1e30 or 1e-30 keep their range and precision.
+		return JsonNumber().IsMatch(text) ? JsonNode.Parse(text) : JsonValue.Create(text);
 	}
+
+	[GeneratedRegex(@"^-?(0|[1-9][0-9]*)(\.[0-9]+)?([eE][+-]?[0-9]+)?$", RegexOptions.CultureInvariant)]
+	private static partial Regex JsonNumber();
 
 	/// <summary>
 	/// Maximum depth for recursive property rendering.

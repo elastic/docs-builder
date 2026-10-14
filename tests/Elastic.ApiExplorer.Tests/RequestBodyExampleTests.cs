@@ -302,6 +302,24 @@ public class RequestBodyExampleTests
 	}
 
 	[Test]
+	public async Task Build_KeepsTheRangeAndPrecisionOfANumericConst()
+	{
+		var body = await BuildFrom(
+			/*lang=json,strict*/
+			"""
+			{ "type": "object", "required": ["big", "tiny", "exact"],
+			  "properties": { "big": { "const": 1e30 }, "tiny": { "const": 1e-30 }, "exact": { "type": "number", "const": 0.1 } } }
+			"""
+		);
+
+		var json = Parse(body);
+		json["big"]!.GetValue<double>().Should().Be(1e30);
+		json["tiny"]!.GetValue<double>().Should().Be(1e-30);
+		json["exact"]!.ToJsonString().Should().Be("0.1");
+		body.Should().NotContain("\"1");
+	}
+
+	[Test]
 	public async Task Build_ReadsAnUntypedConstOfDigitsAsANumber()
 	{
 		// The reader hands "7" and 7 over as the same text, so without a type the digits read as a number.
