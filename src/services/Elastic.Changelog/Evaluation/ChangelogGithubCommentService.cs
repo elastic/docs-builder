@@ -88,6 +88,17 @@ public class ChangelogGithubCommentService(
 		if (!generated)
 			return body;
 
+		// evaluate-pr records the captured sections in the metadata. Runs that stage an entry file (changelog add) are read from the YAML.
+		var breakingTypeName = ChangelogEntryType.BreakingChange.ToStringFast(true);
+		if (string.Equals(metadata.ResolvedType, breakingTypeName, StringComparison.OrdinalIgnoreCase))
+		{
+			_logger.LogInformation("Echoing captured Impact/Action for breaking change in PR #{PrNumber}", metadata.PrNumber);
+			// A gate-only run stages no entry file, so the generic comment-only body would warn that the entry could not be read.
+			return body is null || metadata.CommitOutcome is null
+				? ChangelogCommentRenderer.RenderBreakingChangeResolved(metadata.Impact, metadata.Action)
+				: ChangelogCommentRenderer.AppendBreakingChangeCaptured(body, metadata.Impact, metadata.Action);
+		}
+
 		var entry = TryReadStagedEntry(metadataDir);
 		if (entry is not { Type: ChangelogEntryType.BreakingChange })
 			return body;

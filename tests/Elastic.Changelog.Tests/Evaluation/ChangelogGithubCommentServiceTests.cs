@@ -397,4 +397,29 @@ public class ChangelogGithubCommentServiceTests() : ChangelogTestBase()
 			() => commentSvc.DeleteStickyCommentAsync("elastic", "test-repo", 42, A<CancellationToken>._)
 		).MustHaveHappenedOnceExactly();
 	}
+
+	[Test]
+	public async Task PostComment_GateOnlyBreakingChange_EchoesMetadataWithoutStagedYaml()
+	{
+		await WriteMetadata(BaseMetadata(status: "proceed", canCommit: false) with
+		{
+			Gate = ValidationGate.File,
+			ResolvedType = "breaking-change",
+			Impact = "Users break.",
+			Action = "Upgrade now."
+		});
+		var commentSvc = CreateCommentFake();
+
+		await CreateService(commentSvc).PostComment(DefaultArgs(), CancellationToken.None);
+
+		A.CallTo(
+			() => commentSvc.UpsertStickyCommentAsync(
+				"elastic",
+				"test-repo",
+				42,
+				A<string>.That.Matches(b => b.Contains("Users break.") && b.Contains("Upgrade now.") && !b.Contains("could not be read")),
+				A<CancellationToken>._
+			)
+		).MustHaveHappenedOnceExactly();
+	}
 }

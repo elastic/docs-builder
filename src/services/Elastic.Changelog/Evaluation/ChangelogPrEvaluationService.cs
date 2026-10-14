@@ -316,6 +316,9 @@ public class ChangelogPrEvaluationService(
 			changelogFilename: existingFilename,
 			skipLabels: skipLabels,
 			defaultBranch: defaultBranch,
+			resolvedType: resolvedType,
+			impact: impact,
+			action: action,
 			ctx: ctx
 		);
 		return await SetOutputs(
@@ -352,7 +355,10 @@ public class ChangelogPrEvaluationService(
 		string? ambiguousTypeLabels = null,
 		string? defaultBranch = null,
 		string? resolvedProducts = null,
-		string? missingSections = null
+		string? missingSections = null,
+		string? resolvedType = null,
+		string? impact = null,
+		string? action = null
 	)
 	{
 		if (env?.IsRunningOnCI != true || input.PrNumber <= 0)
@@ -377,7 +383,10 @@ public class ChangelogPrEvaluationService(
 			AmbiguousTypeLabels = ambiguousTypeLabels,
 			DefaultBranch = defaultBranch,
 			ResolvedProducts = resolvedProducts,
-			MissingSections = missingSections
+			MissingSections = missingSections,
+			ResolvedType = resolvedType,
+			Impact = impact,
+			Action = action
 		};
 		await _metadataWriter.WriteAsync(metadata, ctx);
 	}
