@@ -105,7 +105,10 @@ public static partial class GeneratedCodeSamples
 		return CurlHostPath().Replace(withMethod, match => match.Groups[1].Value + WithCredentials(route, match.Value), 1);
 	}
 
-	/// <summary>A query parameter of the copied URL that carries the API key (<c>?key=$API_KEY</c>) is a credential, so it follows the sample to the new route. Other variables are the sample's own options and stay behind.</summary>
+	/// <summary>
+	/// A query parameter of the copied URL that carries the API key is a credential, so it follows the sample to the new route,
+	/// whether the sample writes it <c>$API_KEY</c> or <c>${API_KEY}</c>. Other variables are the sample's own options and stay behind.
+	/// </summary>
 	private static string WithCredentials(string route, string originalUrl)
 	{
 		var at = originalUrl.IndexOf('?', StringComparison.Ordinal);
@@ -114,13 +117,13 @@ public static partial class GeneratedCodeSamples
 
 		var credentials = originalUrl[(at + 1)..]
 			.Split('&', StringSplitOptions.RemoveEmptyEntries)
-			.Where(
-				pair => pair.EndsWith("=" + SyntheticCodeSamples.ApiKeyVariable, StringComparison.Ordinal) &&
-					!route.Contains(pair, StringComparison.Ordinal)
-			)
+			.Where(pair => ApiKeyPair().IsMatch(pair) && !route.Contains(pair, StringComparison.Ordinal))
 			.ToArray();
 		return SyntheticCodeSamples.AppendQuery(route, credentials);
 	}
+
+	[GeneratedRegex(@"=\$\{?API_KEY\}?$", RegexOptions.CultureInvariant)]
+	private static partial Regex ApiKeyPair();
 
 	[GeneratedRegex(@"^Run\s+`(GET|POST|PUT|PATCH|DELETE|HEAD)\s+([^`]+)`", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
 	private static partial Regex RunRequestLine();

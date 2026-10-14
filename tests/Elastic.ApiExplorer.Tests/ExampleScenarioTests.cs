@@ -505,6 +505,27 @@ public class ExampleScenarioTests
 	}
 
 	[Test]
+	public void GeneratedCodeSamples_CopiedCurlKeepsAnUnbracedQueryCredential()
+	{
+		var scenario = new ExampleScenario
+		{
+			Title = "Other",
+			TabId = "other",
+			RequestJson = "{}",
+			RequestLine = ("POST", "/things?size=1")
+		};
+		var spec = new List<CodeSample>
+		{
+			new("curl", "curl -X POST \"https://api.example.test/things?key=$API_KEY\" -d '{\"a\":1}'", "language-curl")
+		};
+		var endpoint = OperationEndpoint.FromVariants([new EndpointVariant("post", "/things")], "/things");
+
+		var curl = GeneratedCodeSamples.Fill([scenario], spec, endpoint, productConsolePrefix: null).Single().CodeSamples.Single();
+
+		curl.Source.Should().Contain("\"https://api.example.test/things?size=1&key=$API_KEY\"");
+	}
+
+	[Test]
 	public void GeneratedCodeSamples_CopiedCurlLeavesItsOtherQueryVariablesBehind()
 	{
 		var scenario = new ExampleScenario
