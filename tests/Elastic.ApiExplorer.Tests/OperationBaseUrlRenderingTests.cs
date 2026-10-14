@@ -29,6 +29,26 @@ public class OperationBaseUrlRenderingTests(ApiExplorerFixture fixture)
 	}
 
 	[Test]
+	public async Task Render_OperationWithExamples_PutsTheExamplesPanelAfterTheBaseUrl()
+	{
+		string? html = null;
+		foreach (var nav in fixture.Walk().OfType<OperationNavigationItem>())
+		{
+			var candidate = await RenderAsync(nav);
+			if (!candidate.Contains("id=\"api-examples-panel\"", StringComparison.Ordinal))
+				continue;
+			html = candidate;
+			break;
+		}
+
+		html.Should().NotBeNull("the fixture has an operation with examples");
+		var rail = html!.IndexOf("class=\"api-page-rail\"", StringComparison.Ordinal);
+		var baseUrl = html.IndexOf("api-rail-facts--rail", rail, StringComparison.Ordinal);
+		baseUrl.Should().BeGreaterThan(rail);
+		html.IndexOf("id=\"api-examples-panel\"", baseUrl, StringComparison.Ordinal).Should().BeGreaterThan(baseUrl);
+	}
+
+	[Test]
 	public async Task Render_Operation_KeepsAnInlineBaseUrlForNarrowScreens()
 	{
 		var nav = fixture.Walk().OfType<OperationNavigationItem>().First(n => n.Model.Operation.OperationId == "docs-get-source");
